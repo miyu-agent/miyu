@@ -24,6 +24,10 @@ on:
         description: "装哪一次发布的分包（例如 v0.0.0-rc.5）；不写的只做静态检查"
         required: false
         default: ""
+      applet_tag:
+        description: "托盘仓库 miyu-agent/miyu-applet 的哪一次发布（例如 v0.1.0，施工 RL-5补）；不写的不装托盘、合集"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -48,6 +52,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
+          APPLET_TAG: ${{ inputs.applet_tag }}
         run: |
           set -euo pipefail
           mkdir sums
@@ -66,8 +71,21 @@ jobs:
             echo "RELEASE=v0.0.0-rc.0" >> "$GITHUB_ENV"
           fi
           cat sums/SHA256SUMS
+          # 托盘（施工 RL-5补）：写了托盘标签的照它真的 SHA256SUMS；只做静态检查的造一份；真装核心却没写托盘的不填托盘。
+          if [ -n "${APPLET_TAG}" ]; then
+            gh release download "${APPLET_TAG}" -R miyu-agent/miyu-applet -p SHA256SUMS -O sums/APPLET-SHA256SUMS
+            echo "APPLET=--applet ${APPLET_TAG} --applet-sums sums/APPLET-SHA256SUMS" >> "$GITHUB_ENV"
+          elif [ -z "${TAG}" ]; then
+            for target in linux-x86_64.tar.gz linux-aarch64.tar.gz macos-aarch64.zip; do
+              printf '%064d  miyu-applet-0.1.0-%s\n' 0 "${target}" >> sums/APPLET-SHA256SUMS
+            done
+            echo "APPLET=--applet v0.1.0 --applet-sums sums/APPLET-SHA256SUMS" >> "$GITHUB_ENV"
+          else
+            echo "APPLET=" >> "$GITHUB_ENV"
+          fi
       - name: 填
-        run: cargo xtask packaging "${RELEASE}" --sums sums/SHA256SUMS --out out
+        # APPLET 是空的或者几个参数，要拆开。
+        run: cargo xtask packaging "${RELEASE}" --sums sums/SHA256SUMS ${APPLET} --out out
       - name: Arch
         if: matrix.check == 'aur'
         run: docker run --rm -v "$PWD/out:/o:ro" -v "$PWD/packaging:/p:ro" archlinux:latest sh /p/test-aur.sh /o "${MODE}"

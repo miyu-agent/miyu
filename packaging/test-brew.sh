@@ -3,10 +3,11 @@
 #
 #   sh packaging/test-brew.sh <填好的目录> [static|install]
 #
-# static：brew style 四个 formula。
+# static：brew style 四个 formula，填了托盘的加上 cask（RL-5补）。
 # install：照真的发布建一个本地 tap（local/miyu-test，不是 miyu-agent/homebrew-miyu），brew install miyu-agent，查：
 #   - miyu --version 报这一版，install.toml 写 brew，miyu upgrade 说用 brew 升级；
 #   - 隔离的数据根里 miyu pkg list：miyu-tui、miyu-webui 是系统加装那一层、程序找得到；brew test 四个都过；
+#   - 填了托盘的：brew install --cask 托盘，/Applications/Miyu.app 在，卸掉以后没了；
 #   - brew uninstall 以后 share/miyu 没了，tap 删掉。
 set -eu
 
@@ -19,13 +20,22 @@ fail() {
   exit 1
 }
 
-brew style "${OUT}"/homebrew/Formula/*.rb || fail "brew style 没过"
+casks=""
+if [ -d "${OUT}/homebrew/Casks" ]; then
+  casks=$(ls "${OUT}"/homebrew/Casks/*.rb)
+fi
+# shellcheck disable=SC2086 # casks 是空的或者几个路径，要拆开
+brew style "${OUT}"/homebrew/Formula/*.rb ${casks} || fail "brew style 没过"
 echo "brew: static checks passed"
 [ "${MODE}" = install ] || exit 0
 
 brew tap-new --no-git "${TAP}" >/dev/null
 tap_dir="$(brew --repository "${TAP}")"
 cp "${OUT}"/homebrew/Formula/*.rb "${tap_dir}/Formula/"
+if [ -n "${casks}" ]; then
+  mkdir -p "${tap_dir}/Casks"
+  cp "${OUT}"/homebrew/Casks/*.rb "${tap_dir}/Casks/"
+fi
 brew install "${TAP}/miyu-agent" || fail "brew install 没成"
 
 prefix=$(brew --prefix)
@@ -56,6 +66,12 @@ for name in miyu-core miyu-tui miyu-webui miyu-agent; do
   brew test "${TAP}/${name}" || fail "brew test ${name} 没过"
 done
 
+if [ -n "${casks}" ]; then
+  brew install --cask "${TAP}/miyu-applet" || fail "brew install --cask 托盘没成"
+  [ -d /Applications/Miyu.app ] || fail "没有 /Applications/Miyu.app"
+  brew uninstall --cask miyu-applet
+  [ ! -e /Applications/Miyu.app ] || fail "Miyu.app 还在"
+fi
 brew uninstall miyu-agent miyu-webui miyu-tui miyu-core
 [ ! -e "${prefix}/share/miyu/packages/miyu-tui" ] || fail "share/miyu 还在"
 brew untap "${TAP}"

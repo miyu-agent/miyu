@@ -78,7 +78,7 @@ fn filled(scratch: &Scratch, text: &str) -> Result<Vec<PathBuf>, String> {
         "--out".to_string(),
         scratch.0.join("out").to_string_lossy().into_owned(),
     ];
-    packaging(&root(), None, &args)
+    packaging(&root(), None, &args).map(|(written, _)| written)
 }
 
 fn out(scratch: &Scratch, file: &str) -> String {
@@ -89,7 +89,12 @@ fn out(scratch: &Scratch, file: &str) -> String {
 fn every_template_is_filled_with_its_own_version_and_hashes() {
     let scratch = Scratch::new("good");
     let written = filled(&scratch, &sums()).expect("填得全");
-    assert_eq!(written.len(), FILES.len() + COPIED.len());
+    assert_eq!(
+        written.len(),
+        FILES.len() - 2 + COPIED.len(),
+        "没写 --applet，托盘那两份不填"
+    );
+    assert!(!scratch.0.join("out/aur/miyu-applet").exists());
 
     let core = out(&scratch, "aur/miyu-core/PKGBUILD");
     assert!(
@@ -243,4 +248,98 @@ fn the_core_package_writes_the_same_file_type_as_the_repository() {
     let end = start + core[start..].find("\nXML\n").expect("XML 收尾");
     let mime = read(&root().join("packaging/mime/miyu.xml")).unwrap();
     assert_eq!(normalized(&core[start..end]), normalized(&mime));
+}
+
+/// 托盘的发布（施工 RL-5补）：`miyu-applet-<版本>-linux-<架构>.tar.gz`、`-macos-aarch64.zip`。
+fn applet_sums() -> String {
+    [
+        format!("{}  miyu-applet-0.1.0-linux-x86_64.tar.gz", hash('7')),
+        format!("{}  miyu-applet-0.1.0-linux-aarch64.tar.gz", hash('8')),
+        format!("{}  miyu-applet-0.1.0-macos-aarch64.zip", hash('9')),
+    ]
+    .join("\n")
+        + "\n"
+}
+
+/// 照核心、托盘两次发布一起填。
+fn with_applet(scratch: &Scratch, applet: &str) -> Result<(Vec<PathBuf>, bool), String> {
+    let core = scratch.0.join("SHA256SUMS");
+    let own = scratch.0.join("APPLET-SHA256SUMS");
+    fs::write(&core, sums()).expect("写得进");
+    fs::write(&own, applet).expect("写得进");
+    let args = [
+        "v0.0.0-rc.5".to_string(),
+        "--sums".to_string(),
+        core.to_string_lossy().into_owned(),
+        "--applet".to_string(),
+        "v0.1.0".to_string(),
+        "--applet-sums".to_string(),
+        own.to_string_lossy().into_owned(),
+        "--out".to_string(),
+        scratch.0.join("out").to_string_lossy().into_owned(),
+    ];
+    packaging(&root(), None, &args)
+}
+
+#[test]
+fn the_applet_is_filled_from_its_own_release() {
+    let scratch = Scratch::new("applet");
+    let (written, applet) = with_applet(&scratch, &applet_sums()).expect("填得全");
+    assert!(applet);
+    assert_eq!(written.len(), FILES.len() + COPIED.len());
+    let aur = out(&scratch, "aur/miyu-applet/PKGBUILD");
+    assert!(aur.contains("_version=0.1.0\npkgver=0.1.0\n"), "{aur}");
+    assert!(aur.contains(&format!("sha256sums_x86_64=('{}')", hash('7'))));
+    assert!(aur.contains(&format!("sha256sums_aarch64=('{}')", hash('8'))));
+    let cask = out(&scratch, "homebrew/Casks/miyu-applet.rb");
+    assert!(cask.contains("version \"0.1.0\""), "{cask}");
+    assert!(
+        cask.contains(&format!("sha256 \"{}\"", hash('9'))),
+        "macOS 的是 zip"
+    );
+    let core = out(&scratch, "aur/miyu-core/PKGBUILD");
+    assert!(core.contains("_version=0.0.0-rc.5\n"), "核心照核心的发布");
+    let bundle = out(&scratch, "aur/miyu-agent/PKGBUILD");
+    assert!(bundle.contains("'miyu-applet'"), "合集带托盘：{bundle}");
+}
+
+#[test]
+fn an_applet_release_must_be_whole_and_both_options_go_together() {
+    let scratch = Scratch::new("applet-bad");
+    let missing = applet_sums().replace("macos-aarch64.zip", "macos-aarch64.tar.gz");
+    let error = with_applet(&scratch, &missing).expect_err("macOS 的要是 zip");
+    assert!(
+        error.contains("miyu-applet-0.1.0-macos-aarch64.zip"),
+        "{error}"
+    );
+    assert!(!scratch.0.join("out").exists(), "哪一份都不写");
+    let sums = scratch.0.join("SHA256SUMS");
+    let args = [
+        "v0.0.0-rc.5".to_string(),
+        "--sums".to_string(),
+        sums.to_string_lossy().into_owned(),
+        "--applet".to_string(),
+        "v0.1.0".to_string(),
+    ];
+    let error = packaging(&root(), None, &args).expect_err("只写了 --applet");
+    assert!(error.contains("要一起写"), "{error}");
+}
+
+/// 没写 `--applet` 的：托盘那两份不填，交回「没填托盘」，`run` 照它说一句。
+#[test]
+fn without_an_applet_release_the_applet_is_reported_as_not_filled() {
+    let scratch = Scratch::new("no-applet");
+    let file = scratch.0.join("SHA256SUMS");
+    fs::write(&file, sums()).expect("写得进");
+    let args = [
+        "v0.0.0-rc.5".to_string(),
+        "--sums".to_string(),
+        file.to_string_lossy().into_owned(),
+        "--out".to_string(),
+        scratch.0.join("out").to_string_lossy().into_owned(),
+    ];
+    let (_, applet) = packaging(&root(), None, &args).expect("填得全");
+    assert!(!applet);
+    let (_, applet) = with_applet(&scratch, &applet_sums()).expect("填得全");
+    assert!(applet);
 }

@@ -4,10 +4,11 @@
 #   sh packaging/test-aur.sh <填好的目录> [static|install]
 #
 # static：每份 PKGBUILD 语法对、makepkg --printsrcinfo 出得来、namcap 只报已知的那一种（source_x86_64 里写 x86_64 的误报）。
-# install：照真的发布装 miyu-core、miyu-tui、miyu-webui、miyu-agent（makepkg 下载、核哈希、装），查：
+# install：照真的发布装 miyu-core、miyu-tui、miyu-webui；填了托盘的（RL-5补）另装 miyu-applet、miyu-agent（合集依赖托盘），查：
 #   - /usr/bin/miyu --version 报这一版，install.toml 写 aur，miyu upgrade 说用包管理器升级；
 #   - 隔离的数据根里 miyu pkg list：miyu-tui、miyu-webui 是系统加装那一层（distro）、程序找得到；
-#   - pacman -R 卸掉以后 /usr/lib/miyu、/usr/share/miyu 都没了。
+#   - 托盘：/usr/bin/miyu-applet 能跑、桌面文件和图标在；
+#   - pacman -R 卸掉以后 /usr/lib/miyu、/usr/share/miyu、/usr/bin/miyu-applet 都没了。
 set -eu
 
 OUT="$1"
@@ -36,7 +37,11 @@ for dir in /home/builder/aur/*; do
 done
 [ "${MODE}" = install ] || exit 0
 
-for name in miyu-core miyu-tui miyu-webui miyu-agent; do
+names="miyu-core miyu-tui miyu-webui"
+if [ -d /home/builder/aur/miyu-applet ]; then
+  names="${names} miyu-applet miyu-agent"
+fi
+for name in ${names}; do
   su builder -c "cd /home/builder/aur/${name} && makepkg --noconfirm -f" || fail "${name}：makepkg 没成"
   pacman -U --noconfirm /home/builder/aur/"${name}"/*.pkg.tar.zst || fail "${name}：装不上"
 done
@@ -64,7 +69,14 @@ print("distro layer ok")
 ' || fail "系统加装那一层不对"
 rm -rf "${home}"
 
-pacman -R --noconfirm miyu-agent miyu-webui miyu-tui miyu-core
+if [ -d /home/builder/aur/miyu-applet ]; then
+  [ -x /usr/bin/miyu-applet ] || fail "没有 /usr/bin/miyu-applet"
+  [ -f /usr/share/applications/miyu-applet.desktop ] || fail "没有桌面文件"
+  [ -f /usr/share/icons/hicolor/128x128/apps/miyu-applet.png ] || fail "没有图标"
+  pacman -R --noconfirm miyu-agent miyu-applet
+fi
+pacman -R --noconfirm miyu-webui miyu-tui miyu-core
 [ ! -e /usr/lib/miyu ] || fail "/usr/lib/miyu 还在"
 [ ! -e /usr/share/miyu ] || fail "/usr/share/miyu 还在"
+[ ! -e /usr/bin/miyu-applet ] || fail "/usr/bin/miyu-applet 还在"
 echo "aur: all install checks passed"

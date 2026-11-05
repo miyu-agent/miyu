@@ -1,6 +1,6 @@
 ## RL-5 系统源打包：AUR、Homebrew
 
-状态：施工完，待 core1 审（2026-11-05，sub1）。设计 `59-发版.md` 第三节第 3 条、第六节第 5 条；`60-系统源分包.md` 第二节、第五节第 1、2 条；
+状态：已合（715de271e）；托盘见末尾「RL-5补」（2026-11-05，sub1）。设计 `59-发版.md` 第三节第 3 条、第六节第 5 条；`60-系统源分包.md` 第二节、第五节第 1、2 条；
 SD-1（系统加装层）、SD-2（分包的布局）、RL-4（`miyu upgrade` 认 `install.toml`）。
 
 ### 目的
@@ -141,4 +141,47 @@ AUR、Homebrew 上的 Miyu 照设计 60 分包：`miyu-core`、`miyu-tui`、`miy
   - 写 `command-line`，不写 `command line`；
   - 取别的 formula 的程序用 `formula_opt_bin`；
   - 一行不超过 118 个字符。
+  - 只给 macOS 的 cask 要写 `depends_on :macos`（RL-5补 第一趟红在这里）；几行 `depends_on` 照 `arch`、`formula`、`macos` 的先后排（第二趟）。
 - **`miyu-agent-git` 没有在 CI 上真编**：编一整套要几十分钟、要网络取头，只做静态检查。发版前在 Arch 上手动 `makepkg` 一次。
+
+### RL-5补：托盘 miyu-applet 的 PKGBUILD 和 cask
+
+托盘仓库做好了只装托盘的产物（托盘 main fa92da492，AP-11），版本照托盘自己的 `Cargo.toml`（现在 0.1.0），地址照
+`https://github.com/miyu-agent/miyu-applet/releases/download/v<版本>/<产物名>`，附件带 `SHA256SUMS`、没签名（core1 11-05 转告）。
+
+- **`packaging/aur/miyu-applet/PKGBUILD.in`**：下载 `miyu-applet-<版本>-linux-{x86_64,aarch64}.tar.gz`。
+  - 里面一层 `miyu-applet-<版本>-linux-<架构>/` 照 `/usr` 摆好，整层拷进 `/usr`。
+  - `depends` 有 `miyu-core`、`miyu-webui`，加上直接链接的 gtk3、cairo、gdk-pixbuf2、glib2，以及托盘仓库蓝图写的 ayatana 托盘库（运行时才加载）。
+  - 托盘的完整包（deb、rpm 带核心）和 `miyu-core` 冲突，AUR 上不发那种，不写 `conflicts`。
+- **`packaging/homebrew/miyu-applet.cask.rb.in`**：下载 `miyu-applet-<版本>-macos-aarch64.zip`，`app "Miyu.app"`，`depends_on formula:` `miyu-core`、`miyu-webui`。
+  填出来放 `homebrew/Casks/`。
+- **合集**：AUR 的 `miyu-agent` 依赖加上 `miyu-applet`。Homebrew 的 formula 依赖不了 cask，`miyu-agent` 在 caveats 里说
+  `brew install --cask miyu-agent/miyu/miyu-applet`。
+- **`cargo xtask packaging`** 多 `--applet <托盘的标签> --applet-sums <托盘的 SHA256SUMS>`：
+  - 两个要一起写；托盘那两份照托盘的发布填，版本照托盘的标签，macOS 的产物是 `.zip`；
+  - 没写的，这两份不填，说一句（核心发了、托盘还没发的时候也能填核心的）。
+- **实测**：
+  - `test-aur.sh` 的 install 填了托盘的另装 `miyu-applet`、`miyu-agent`，查程序、桌面文件、图标，卸干净；
+  - `test-brew.sh` 的 static 也查 cask，install 填了托盘的 `brew install --cask`，查 `/Applications/Miyu.app`，卸掉；
+  - `packaging-test` 手动跑多一个 `applet_tag`，静态那一趟照造的托盘 `SHA256SUMS` 填。
+
+**怎么验**：
+- xtask 的 packaging 8 条过，新加两条：
+  - 照托盘的发布填对版本、哈希（macOS 的是 zip 那一行），合集带托盘；
+  - 缺一份什么都不写，`--applet` 没配 `--applet-sums` 拒。
+- Arch 容器 static 六份都过。
+- 拿托盘流水线 42025906874 的 x86_64 真产物填哈希、在 Arch 容器里 `makepkg` 真打一次托盘的包：
+  - 文件是 `/usr/bin/miyu-applet`、桌面文件、三种大小的图标、两份许可证，版本 0.1.0；
+  - 核心、网页的包还没发，打包时跳过依赖检查。
+- 真装、cask 要托盘正式发版以后，手动跑 `packaging-test` 写 `applet_tag`。
+
+**变异**：手写 7 个，都抓住：
+- macOS 的不当 zip；
+- 托盘的版本照文件名找；
+- 托盘照核心的发布填；
+- `--applet` 不配 `--applet-sums` 也收；
+- 没给托盘也报「填了」；
+- 合集不带托盘；
+- cask 的版本写错。
+
+「没给托盘也报填了」第一次没抓住：这一格只管最后那一句提示，补了一条测试查它，抓住了。

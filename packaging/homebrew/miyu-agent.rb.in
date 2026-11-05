@@ -1,5 +1,5 @@
-# Miyu 的合集（施工 RL-5，设计 60 第二节、第五节第 2 条）：只依赖核心、终端、网页三个 formula，装它就是装一整套。托盘程序
-# miyu-applet 以后做成 cask，这里在说明里提示怎么装（另一步）。
+# Miyu 的合集（施工 RL-5、RL-5补，设计 60 第二节、第五节第 2 条）：只依赖核心、终端、网页三个 formula。托盘程序是 cask
+# miyu-applet，formula 依赖不了 cask，在 caveats 里说怎么装。
 # Homebrew 的 formula 一定要有一个下载：用这一版的 SHA256SUMS（小，哈希由 `cargo xtask packaging` 照本地那份算），装进文档目录。
 # 这个文件是模板，由 `cargo xtask packaging <标签> --sums <SHA256SUMS>` 填好，再推到 tap 仓库 miyu-agent/homebrew-miyu。
 class MiyuAgent < Formula
@@ -18,6 +18,13 @@ class MiyuAgent < Formula
 
   def install
     doc.install "SHA256SUMS"
+  end
+
+  def caveats
+    <<~EOS
+      The tray app is a cask:
+        brew install --cask miyu-agent/miyu/miyu-applet
+    EOS
   end
 
   test do

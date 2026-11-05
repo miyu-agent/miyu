@@ -1,0 +1,21 @@
+# Miyu 的托盘程序（施工 RL-5补，设计 60 第五节第 2 条）：装托盘仓库 miyu-agent/miyu-applet 的 Release 上的
+# miyu-applet-<版本>-macos-aarch64.zip（里面是 Miyu.app，只有托盘、不带核心）。托盘照 PATH 找 miyu，PATH 里没有的再看
+# /opt/homebrew/bin、/usr/local/bin，所以核心、网页照 formula 装。
+# 这个文件是模板，由 `cargo xtask packaging … --applet <托盘的标签> --applet-sums <托盘的 SHA256SUMS>` 填好，再推到 tap 仓库
+# miyu-agent/homebrew-miyu 的 Casks/。
+cask "miyu-applet" do
+  version "@VERSION@"
+  sha256 "@SHA256_MACOS_AARCH64@"
+
+  url "https://github.com/miyu-agent/miyu-applet/releases/download/v#{version}/miyu-applet-#{version}-macos-aarch64.zip"
+  name "Miyu"
+  desc "Tray app for Miyu, an AI assistant that runs on your own computer"
+  homepage "https://github.com/miyu-agent/miyu-applet"
+
+  depends_on arch: :arm64
+  depends_on formula: "miyu-core"
+  depends_on formula: "miyu-webui"
+  depends_on :macos
+
+  app "Miyu.app"
+end

@@ -1,0 +1,30 @@
+# Maintainer: SHORiN <shorin@users.noreply.github.com>
+#
+# Miyu 的托盘程序（施工 RL-5补，设计 60 第二节）：装托盘仓库 miyu-agent/miyu-applet 的 Release 上的
+# miyu-applet-<版本>-linux-<架构>.tar.gz，只有托盘、不带核心，照 PATH 找系统装的 miyu。版本照托盘自己的。
+# 这个文件是模板，由 `cargo xtask packaging <核心的标签> --sums … --applet <托盘的标签> --applet-sums <托盘的 SHA256SUMS>` 填好再发；
+# 别手改填出来的那份。
+#
+# 压缩包里一层 miyu-applet-<版本>-linux-<架构>/，照 /usr 摆好（bin/、share/applications/、share/icons/、share/licenses/），整层拷进
+# /usr。托盘的完整包（deb、rpm，带核心）和 miyu-core 冲突，AUR 上不发那种，这里不写 conflicts（core1 11-05）。
+
+pkgname=miyu-applet
+_version=@VERSION@
+pkgver=@PKGVER@
+pkgrel=1
+pkgdesc='Miyu, an AI assistant that runs on your own computer: the tray app'
+arch=('x86_64' 'aarch64')
+url='https://github.com/miyu-agent/miyu-applet'
+license=('AGPL-3.0-or-later')
+# 直接链接的是 gtk3、cairo、gdk-pixbuf2、glib2；托盘图标照托盘仓库的蓝图（desktop.md「包」）要 ayatana 的托盘库，运行时才加载。
+depends=('miyu-core' 'miyu-webui' 'gtk3' 'cairo' 'gdk-pixbuf2' 'glib2' 'libayatana-appindicator' 'glibc' 'gcc-libs')
+options=('!strip' '!debug')
+source_x86_64=("miyu-applet-${_version}-linux-x86_64.tar.gz::${url}/releases/download/v${_version}/miyu-applet-${_version}-linux-x86_64.tar.gz")
+source_aarch64=("miyu-applet-${_version}-linux-aarch64.tar.gz::${url}/releases/download/v${_version}/miyu-applet-${_version}-linux-aarch64.tar.gz")
+sha256sums_x86_64=('@SHA256_LINUX_X86_64@')
+sha256sums_aarch64=('@SHA256_LINUX_AARCH64@')
+
+package() {
+  install -d "${pkgdir}/usr"
+  cp -a "miyu-applet-${_version}-linux-${CARCH}/." "${pkgdir}/usr/"
+}
