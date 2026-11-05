@@ -43,6 +43,7 @@ mod audit_extension_core_key;
 mod audit_login_race;
 mod audit_sec_1030;
 mod audit_sec_r3;
+mod audit_tool_declare;
 mod avatar;
 mod backstage;
 mod blind_venue;

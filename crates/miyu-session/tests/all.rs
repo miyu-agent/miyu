@@ -10,6 +10,8 @@ mod support;
 
 mod actor;
 mod attachments;
+mod audit_old_snapshot;
+mod audit_tool_scope;
 mod backlog;
 mod busy;
 mod caller;
