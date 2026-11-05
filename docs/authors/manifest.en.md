@@ -10,7 +10,7 @@ Every table and field of a package manifest. Only these are accepted; unknown ta
 
 ```toml
 [package]
-version = "0.1.0"                                   # optional, for people only
+version = "0.1.0"                                   # optional, for people; also what other packages' version floors compare (semver)
 protocol = [1, 1]                                   # required for extensions: protocol major versions [lowest, highest]; only 1 exists
 name = { en = "Hello", zh = "打招呼" }
 summary = { en = "Greets people by name", zh = "照名字打招呼" }   # optional
@@ -302,6 +302,18 @@ With several platforms, start tool names with the platform: `qq_send` is only gi
 ## `[depends]`, `[recommends]`
 
 `packages`: ids of packages it depends on or recommends. A missing dependency blocks installing and starting; a missing recommendation doesn't, it just loses some abilities. The older spelling `workers` is still read, into the same list.
+
+To need at least some version of another package, write `<id>>=<version>`:
+
+```toml
+[depends]
+packages = ["onebot>=1.2.0", "miyu-embed"]
+```
+
+- Only `>=`, with no spaces; the version is semver (`1.2.0`, `1.2.0-rc.1`). Two-part `1.2`, a leading `v`, `=`, `<` and the like are `bad_dependency`. `workers` takes ids only.
+- Versions compare by semver: `1.10.0` is newer than `1.2.0`, and `1.2.0-rc.1` falls short of `1.2.0`. An installed package with no `version`, or one that isn't semver, falls short.
+- An installed version below the floor counts as missing: the package won't install (`depends_missing`) and won't start; installing from a package source, Miyu picks a version from the source that meets the floor and installs or upgrades it along.
+- Older Miyu can't read this spelling: a package using it should set `miyu` in `[package]` to the lowest version it needs (see the table above).
 
 ## `[mascot]`
 

@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>1048</b><span>/ 1057 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>1049</b><span>/ 1058 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">CI-2</b><span>最近一步（CI-2 测试分流）</span></li>
+    <li><b class="mono">PK-2</b><span>最近一步（PK-2 依赖的版本下限）</span></li>
   </ul>
 </header>
 
@@ -528,6 +528,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sV50"><span class="n">V-50</span>认指纹挪到阻塞线程<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV52"><span class="n">V-52</span>脚本规格不进缓存<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sCI2"><span class="n">CI-2</span>测试分流<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sPK2"><span class="n">PK-2</span>依赖的版本下限<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sMN1a"><span class="n">MN-1 上</span>后台命令出一行就叫醒她<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sMN1b"><span class="n">MN-1 下</span>监视的命令在视图流里<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sSH1a"><span class="n">SH-1 上</span>人在输入框里用 ! 跑命令<span class="st">✓</span></a></li>
@@ -12698,6 +12699,63 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/CI-2-测试分流.md</code>；<code>AGENTS.md</code>「测试」；<code>.github/workflows/ci.yml</code>；蓝图 <code>venues.md</code>、<code>view.md</code>、<code>protocol.md</code>、<code>protocol/undo.md</code>、<code>kernel/request.md</code>、<code>session/fork.md</code>、<code>memory.md</code> 的测试表。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sPK2" aria-labelledby="h-sPK2">
+  <div class="sheet-head"><h2 id="h-sPK2"><span class="no">PK-2</span>依赖的版本下限</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">依赖原来只认装没装：新版的包靠旧包的新本事时，旧的装着也照装、照起。照 pacman 加「至少某一版」：<code>packages = ["onebot&gt;=1.2.0"]</code>，装、读、从软件源装、收录都照 semver 比。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">依赖的版本下限</span><span class="dir-note">PK-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>miyu-config</code> 新 <code>package/depend.rs</code>：<code>Dependency { id, at_least }</code>，只认 <code>&gt;=</code>、版本照 semver 2.0.0；<code>fits</code> 照第 11 条的先后比，装着的没写版本、不是 semver 的不够；协议上照写的原样</li>
+              <li>清单的 <code>depends</code>、<code>recommends</code> 换成 <code>Vec&lt;Dependency&gt;</code>；别的写法、<code>workers</code> 里带下限的照旧 <code>bad_dependency</code></li>
+              <li>端点 <code>depends::missing</code> 照 <code>fits</code> 判、交回原样：装（含看一眼）、列表、<code>miyu check</code>、扩展拉起都走它</li>
+              <li>从软件源装（<code>fetch.rs</code>）：装着够的不动，不够的、没装的照先后找第一个那一版够的源一起装、一起升；看一眼的推荐照下限列</li>
+              <li>索引两格照旧是字的数组，收录照原样写，读的写法检查照清单的写法</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">只认 <code>&gt;=</code>，版本照 semver 比；不写版本的照旧</span><span class="rl">core1 11-05 排</span></div>
+          <div class="tile new"><span class="nm">semver 的比较自己写，不加 crate；下限照严格的三段写</span><span class="rl">PK-2 技术题</span></div>
+          <div class="tile new"><span class="nm">装着的版本读不成 semver 的算不够；协议、索引上照写的原样</span><span class="rl">PK-2 技术题</span></div>
+          <div class="tile new"><span class="nm">改了清单写法：合后 core1 换 packages 的 miyu-rev</span><span class="rl">蓝图「还没有的」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">PK-2</dd></div>
+        <div><dt>名称</dt><dd>依赖的版本下限</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-05</dd></div>
+        <div><dt>提交</dt><dd class="mono">PK-2</dd></div>
+        <div><dt>验收</dt><dd>真核心：比下限低、预发布、没写版本的装不上，<code>data.missing</code> 是 <code>["base&gt;=1.2.0"]</code>；降级以后列表 <code>depends_missing</code>、<code>miyu check</code> 报；假软件源上装着 1.0.0 的依赖一起升到 1.3.0</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span><code>depend/tests.rs</code> 5 条：写法、拒的 23 种写法、semver 第 11 条那一串正反两向、装着的版本够不够</span></li>
+        <li><span class="ok">✓</span><span>清单、索引、收录：照原样留着、照原样带，错写报在那一格</span></li>
+        <li><span class="ok">✓</span><span><code>fetch</code> 单测：照先后挑够的源、装着不够一起升、够的不动、缺的照原样、排过的不够</span></li>
+        <li><span class="ok">✓</span><span>真核心 <code>package_depends_floor.rs</code> 两条；原来的依赖测试照过</span></li>
+        <li><span class="ok">✓</span><span>手写变异 16 个都逮住</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/PK-2-依赖的版本下限.md</code>；蓝图 <code>packages.md</code>「依赖」、「出错」、「还没有的」，<code>protocol.md</code>；参考 <code>packages</code>、<code>errors</code>（中英）；作者文档 <code>manifest</code>（中英）；设计 31 第三节。</li>
       </ul>
     </div>
   </div>

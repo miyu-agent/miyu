@@ -127,7 +127,7 @@
 | `package_conflict`、`package_exists` | 带的名字撞了；和出厂的同编号 | |
 | `package_file_bad`、`wrong_target` | 包文件解不开；清单写的 `targets` 里没有本机这一种系统 | |
 | `download_failed`、`source_unreachable` | 从软件源装：包文件哪一处都没下成；软件源一处都没连上，本机也没有索引 | `why` |
-| `depends_missing`、`package_depended` | 依赖没装；别的包依赖它 | `missing`、`by` |
+| `depends_missing`、`package_depended` | 依赖没装、装着的版本不够下限；别的包依赖它 | `missing`、`by` |
 | `program_missing`、`not_switchable` | 程序没找到；没有开关 | |
 | `not_restartable`、`package_off` | 没有能重启的；关着 | |
 | `extension_off` | 重启一个关着的扩展 | |

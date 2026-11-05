@@ -10,7 +10,7 @@
 
 ```toml
 [package]
-version = "0.1.0"                                   # 可以不写，只给人看
+version = "0.1.0"                                   # 可以不写，给人看；别的包写了版本下限的照它比（semver）
 protocol = [1, 1]                                   # 扩展必写：说得了的协议主版本 [最低, 最高]，现在只有 1
 name = { en = "Hello", zh = "打招呼" }
 summary = { en = "Greets people by name", zh = "照名字打招呼" }   # 可以不写
@@ -302,6 +302,18 @@ summary = { en = "Decides whether to reply in a group.", zh = "群里有人说�
 ## `[depends]`、`[recommends]`
 
 `packages`：依赖的、推荐的包的编号（以前的写法 `workers` 照认，读进同一份）。依赖的缺了装不上、装着的不起；推荐的缺了照装、照起，少一部分本事。
+
+要别的包至少某一版的，写 `<编号>>=<版本>`：
+
+```toml
+[depends]
+packages = ["onebot>=1.2.0", "miyu-embed"]
+```
+
+- 只认 `>=`，不加空格；版本照 semver 写（`1.2.0`、`1.2.0-rc.1`），两段的 `1.2`、带 `v` 的、`=`、`<` 这些都报 `bad_dependency`。`workers` 里只写编号。
+- 照 semver 比：`1.10.0` 比 `1.2.0` 新，`1.2.0-rc.1` 不够 `1.2.0`。装着的那一份没写 `version`、写的不是 semver 的，算不够。
+- 装着的版本不够和没装一样：装不上（`depends_missing`），装着的不起；从软件源装的，Miyu 照下限从源里挑够的那一版一起装、一起升。
+- 旧的 Miyu 读不了这种写法，用了它的包在 `[package]` 写上 `miyu` 要的最低版本（见上面那张表）。
 
 ## `[mascot]`
 
