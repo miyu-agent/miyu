@@ -7,6 +7,7 @@
 
 use std::collections::BTreeSet;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use miyu_kernel::event::{Body, ContextInjected, Event};
 use miyu_kernel::id::VenueId;
@@ -211,7 +212,7 @@ async fn recalled_unfilled() -> usize {
         )),
     };
     let vectors = home.memory.vectors().expect("接上了").clone();
-    assert!(vectors.query(&using, ASKED).await.is_some(), "算得出");
+    warm(&vectors, &using).await;
     let handle = home
         .create_full(
             &says(1),
@@ -222,6 +223,16 @@ async fn recalled_unfilled() -> usize {
         .await;
     let log = chat(&home, &handle, 1, ASKED).await;
     blocks(&log, "recall").len()
+}
+
+/// 一直问到算得出，最多 60 秒（施工 FL-4）：问句的向量产品只等 1 秒，冷的那一回要核对包里的文件、拉起小程序，Windows 的 CI
+/// 上会超过（CI-2 那一趟红在「算得出」）；等不到的那一条照样在后台算完，小程序起来了再问就快。等的是算出来这件事，不睡定时。
+async fn warm(vectors: &Vectors, using: &Using) {
+    let deadline = Instant::now() + Duration::from_secs(60);
+    while vectors.query(using, ASKED).await.is_none() {
+        assert!(Instant::now() < deadline, "六十秒还算不出");
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
 }
 
 /// 场所会话里也联想（施工 R-13 下）：主人自己的 QQ 私聊（没关起来）是主人那边，照样想起来。场所里只冒出在
