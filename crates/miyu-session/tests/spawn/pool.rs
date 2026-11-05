@@ -283,7 +283,7 @@ async fn without_pools_to_offer_there_is_no_pool_parameter() {
     one_turn(&home, &handle, 1).await;
     assert_eq!(
         subagent_parameters(&script.requests()[0].1),
-        r#"{"type":"object","properties":{"description":{"type":"string","description":"Short title, 3 to 5 words."},"prompt":{"type":"string"},"attachments":{"type":"array","items":{"type":"string"},"description":"File paths, at most 8."},"persona":{"type":"string","enum":["engineer"],"description":"Default: none.\nengineer: Software Engineer — Writes code and tracks down problems, no role-play"},"fork":{"type":"boolean","description":"true: it continues from a copy of this conversation, with your model and persona."}},"required":["description","prompt"]}"#,
+        r#"{"type":"object","properties":{"description":{"type":"string","description":"Short title, 3 to 5 words."},"prompt":{"type":"string"},"attachments":{"type":"array","items":{"type":"string"},"description":"File paths, at most 8."},"persona":{"type":"string","enum":["engineer"],"description":"Default: none.\nengineer: Software Engineer — Writes code and tracks down problems, no role-play"},"fork":{"type":"boolean","description":"true: it continues from a copy of this conversation, with your model and persona."},"read_only":{"type":"boolean","description":"true: it can read but not change files."}},"required":["description","prompt"]}"#,
         "没有池的拿掉 pool；人格照这台机器上的填，带名字和简单描述（施工 P-2 补、P-10）"
     );
 }
