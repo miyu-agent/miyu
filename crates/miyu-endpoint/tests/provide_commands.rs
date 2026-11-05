@@ -22,7 +22,7 @@ use crate::support::venues::configured_core;
 use crate::support::*;
 
 /// 等到 `path` 里记下的有 `n` 行。
-async fn lines(path: &Path, n: usize) {
+pub(crate) async fn lines(path: &Path, n: usize) {
     until(&format!("记下 {n} 行"), || {
         read(path).lines().count() >= n
     })
@@ -30,7 +30,7 @@ async fn lines(path: &Path, n: usize) {
 }
 
 /// 一件会跑命令的工具：参数 `call` 是命令里要调的工具名。
-fn runner(runs: Value) -> Value {
+pub(crate) fn runner(runs: Value) -> Value {
     json!({"tools": [{
         "name": "ext_run", "description": "Run a command.",
         "input_schema": {"type": "object", "properties": {"call": {"type": "string"}}, "required": ["call"]},
@@ -39,7 +39,7 @@ fn runner(runs: Value) -> Value {
 }
 
 /// 装上包 `runner`，清单声明、批过 `capabilities`；扩展照 `steps` 走（记、握手、登记 `offered` 以后的那几步）。
-fn install_runner(
+pub(crate) fn install_runner(
     home: &Home,
     program: &Program,
     capabilities: &[&str],
@@ -71,7 +71,7 @@ fn probe() -> Catalog {
 }
 
 /// 照 `channel` 那一格连上去，拿令牌 `token` 调 `probe`，读回答；连不上的没有。测试进程是核心，是扩展的父进程，不是它的子孙。
-fn knock(sock: &str, token: &str) -> Option<Value> {
+pub(crate) fn knock(sock: &str, token: &str) -> Option<Value> {
     use std::io::{Read, Write};
     #[cfg(unix)]
     let mut stream = std::os::unix::net::UnixStream::connect(sock).ok()?;
@@ -95,7 +95,7 @@ fn knock(sock: &str, token: &str) -> Option<Value> {
 }
 
 /// 扩展收到的 `tool.call`，照先后。
-fn calls(path: &Path) -> Vec<Value> {
+pub(crate) fn calls(path: &Path) -> Vec<Value> {
     read(path)
         .lines()
         .filter(|line| line.contains(r#""method":"tool.call""#))

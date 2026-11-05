@@ -39,6 +39,7 @@ mod turn_inject;
 mod answer;
 mod attach;
 mod attach_send;
+mod audit_ext_commands;
 mod audit_extension_core_key;
 mod audit_login_race;
 mod audit_sec_1030;
