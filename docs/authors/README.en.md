@@ -38,6 +38,7 @@ hello/
 1. **Id** (the folder name): starts with a lowercase letter; only lowercase letters, digits, `-`, `_`; at most 64 characters. It can't clash with packages shipped with Miyu (`basesystem`, `memory`, `roleplay`, `mermaid`, `net`, `tui`, `web` and so on), and shouldn't clash with other people's extensions (installing the same id again is an upgrade and replaces theirs).
 2. **Names it brings must not clash either**: tools, skills, MCP servers and slash commands that clash with an installed package won't install. Prefixing names with the package id helps.
 3. **Don't write into the package folder after installing**: every file's hash is recorded at install time, and later additions show up in `miyu pkg check`. Write runtime state into the state directory `MIYU_STATE_DIR` names (the other folders are listed on the extensions page).
+4. **Don't keep people's data in the state directory**: removing the package deletes the whole state directory, and the screen before removing says `Will delete <path> (<size>)`. Put what belongs to the person (exported records, data carried over from elsewhere, files made for them to read) in `MIYU_DOCUMENTS_DIR` (`root/documents/`), `MIYU_PICTURES_DIR` and the like, where people can see it and removing the package leaves it alone; keep only what your package uses itself (databases, logins) in the state directory; it goes away with the package.
 
 ## Install, try, check
 

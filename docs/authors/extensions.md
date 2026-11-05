@@ -156,7 +156,7 @@ core.close()
   - `MIYU_PICTURES_DIR`、`MIYU_VIDEOS_DIR`、`MIYU_DOCUMENTS_DIR`、`MIYU_DOWNLOADS_DIR`：给人的文件存这里。
 
   人在终端敲 `miyu <你的命令>` 时也设这一套。旧名字 `MIYU_PACKAGE_DIR`（同 `MIYU_APP_DIR`）、`MIYU_PACKAGE_STATE`（同 `MIYU_STATE_DIR`）过渡期间照样给，下一版去掉。
-- 你的东西照上面分开放，卸载时这几格一起删。一律照这些变量找，别靠工作目录（被拉起时工作目录是 `MIYU_STATE_DIR`，可人敲命令时是人当时所在的目录），也别自己拼 `MIYU_HOME` 下的路径。
+- 你的东西照上面分开放，卸载时这几格一起删（给人的四处不删）。人的数据别放 `MIYU_STATE_DIR`：卸之前那一屏写「会删掉 <路径>（<大小>）」，删了就没了；要留给人的放 `MIYU_DOCUMENTS_DIR`（`root/documents/`）这些人看得见的地方。一律照这些变量找，别靠工作目录（被拉起时工作目录是 `MIYU_STATE_DIR`，可人敲命令时是人当时所在的目录），也别自己拼 `MIYU_HOME` 下的路径。
 - 这个变量只给扩展本身和人敲的命令用：她在沙盒里跑的脚本读不到状态目录（它在数据根里，沙盒整个藏着）。
 - 标准错误接到 `~/.miyu/var/log/<编号>/stderr`（就在 `MIYU_LOG_DIR` 里），出了问题先看它。
 

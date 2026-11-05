@@ -1383,6 +1383,7 @@ flowchart LR
 | 步 | 名字 | 做什么 |
 |---|---|---|
 | PK-2 | 依赖的版本下限 | `[depends]`、`[recommends]` 的 `packages` 里能写 `<编号>>=<版本>`：只认 `>=`，版本照 semver 2.0.0 写、照它的先后比（`miyu_config::package::Dependency`，自己写的比较，不加 crate），别的写法、`workers` 里带下限的照旧 `bad_dependency`；不写版本的照旧。装着的版本没写、不是 semver、比下限低的同缺了：装（含看一眼）拒 `depends_missing`，`package.list` 写 `depends_missing`、`miyu check` 报，扩展不拉起；`data.missing`、`missing`、协议和索引上的依赖都照写的原样（`onebot>=1.2.0`）。从软件源装照先后找第一个那一版够的源，装着不够的一起升；看一眼的推荐照下限列。索引照旧是字的数组、`version` 1，读的写法检查照清单的写法。新测试：`depend/tests.rs` 5 条、清单一条、索引和收录、`fetch` 单测一条、真核心 `package_depends_floor.rs` 两条（含假软件源上一起升）；手写变异 16 个都逮住。合后 core1 换 packages 的 `miyu-rev`。施工单见 `PK-2-依赖的版本下限.md` |
+| PK-4 | 卸包说清状态目录 | `package.remove` 看一眼的 `state` 从有没有（`true`/`false`）改成 `{"path", "size"}`：状态目录 `var/lib/<编号>/` 的位置（照 `DataRoot::package_state`）和底下普通文件的字节数，阻塞线程里量、不跟符号链接（状态目录自己是链接的算 0），没有的不写。命令行卸之前那一屏另起一行「会删掉 <路径>（<大小>）」，大小照 pacman 的写法；旧核心的 `true` 照旧列「状态目录」。作者文档（中英）写明人的数据别放状态目录，要留给人的放 `MIYU_DOCUMENTS_DIR`（`root/documents/`）这些人看得见的地方。终端、网页照 `state == true` 判的要跟着改。施工单见 `PK-4-卸包说清状态目录.md` |
 
 **发版**（RL 线，设计 59，2026-11-04 项目主人定渠道、版本号、钥匙；施工 RL-3、RL-5 照设计 60 分包，排在 SD 之后）
 

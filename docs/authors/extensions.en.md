@@ -156,7 +156,7 @@ Slash commands, methods, pushes, the Rust example and the full example package a
   - `MIYU_PICTURES_DIR`, `MIYU_VIDEOS_DIR`, `MIYU_DOCUMENTS_DIR`, `MIYU_DOWNLOADS_DIR`: files for the person.
 
   The same set is given when a person runs `miyu <your command>` in a terminal. The old names `MIYU_PACKAGE_DIR` (same as `MIYU_APP_DIR`) and `MIYU_PACKAGE_STATE` (same as `MIYU_STATE_DIR`) are still set during the transition and go away in the next release.
-- Keep your things apart as above; all of these are removed on uninstall. Always find them through these variables: not through the working directory (it is `MIYU_STATE_DIR` when the core starts you, but the person's current directory when they run your command), and not by building a path under `MIYU_HOME`.
+- Keep your things apart as above; all of these are removed on uninstall (the four for the person are not). Don't keep people's data in `MIYU_STATE_DIR`: the screen before removing says `Will delete <path> (<size>)`, and once it's gone it's gone; put what should stay with the person in `MIYU_DOCUMENTS_DIR` (`root/documents/`) and the other places people can see. Always find them through these variables: not through the working directory (it is `MIYU_STATE_DIR` when the core starts you, but the person's current directory when they run your command), and not by building a path under `MIYU_HOME`.
 - Only your program and the commands people run get this variable: scripts she runs in the sandbox can't read the state directory (it is inside the data root, which the sandbox hides).
 - Stderr goes to `~/.miyu/var/log/<id>/stderr` (inside `MIYU_LOG_DIR`); look there first when something goes wrong.
 

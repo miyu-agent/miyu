@@ -81,7 +81,7 @@
 | `package.remove` | `package` | `{"package", "removed": true}` |
 | `package.remove` | `package`：组名是把组里装着的一起卸掉；组外装着的包依赖组里的整个拒（`package_depended`，`data.by` 是它们） | `{"group", "removed": [<编号>…]}` |
 
-都可以带 `preview: true`：只看一眼、什么都不动，拒绝照真做的那一样。`install` 的预览回 `package`、`version`、要换掉的 `replaces: {"version"}`、装回出厂的 `restores: true`，和带了什么（`program`、`mcp`、`command`（第一个子命令名）、`commands`（全部子命令名）、`page`、`mascot`、`theme`、`connection`、`settings`、`capabilities`、`files`、`size`）；`remove` 的预览回 `package`、`layer`、`version`、`files`、`size`、`settings`（要一并删掉的配置键）、`state`（有没有状态目录）。
+都可以带 `preview: true`：只看一眼、什么都不动，拒绝照真做的那一样。`install` 的预览回 `package`、`version`、要换掉的 `replaces: {"version"}`、装回出厂的 `restores: true`，和带了什么（`program`、`mcp`、`command`（第一个子命令名）、`commands`（全部子命令名）、`page`、`mascot`、`theme`、`connection`、`settings`、`capabilities`、`files`、`size`）；`remove` 的预览回 `package`、`layer`、`version`、`files`、`size`、`settings`（要一并删掉的配置键）、`state`（会一并删掉的状态目录：`{"path", "size"}`，`path` 是 `var/lib/<编号>/` 的位置，`size` 是底下文件一共多少字节，符号链接不跟进去；没有状态目录的不写这一格。以前这一格是 `true`/`false`）。
 
 从软件源装的预览另有 `source`（源的名字）、`official`、`origin`、`download`（要下的字节数，连依赖）、`with`（一起装的依赖 `[{"package", "version"}]`）、`recommends`（要装的包推荐的、还没装的，去重：`[{"package", "version", "download", "installed_size"?}]`，没有的是空的）、`installed`（要装的全部包装好以后一共多少字节，不算推荐的；有一个索引没写的不写这一格）；`capabilities` 同从包文件夹装的那一格（`{"id", "name", "summary"}`）。
 
