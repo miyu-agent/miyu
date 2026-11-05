@@ -149,14 +149,36 @@ impl Language {
         }
     }
 
-    /// 卸的时候配置目录怎么办（施工 PK-5）：留下的「配置留在 <路径>」，写了 `--purge` 的「会删掉 <路径>」。
-    pub(crate) fn config_dir(&self, path: &str, kept: bool) -> String {
-        match (self, kept) {
-            (Language::Chinese, true) => format!("配置留在 {path}"),
-            (Language::Chinese, false) => format!("会删掉 {path}"),
-            (Language::English, true) => format!("Config kept in {path}"),
-            (Language::English, false) => format!("Will delete {path}"),
-        }
+    /// 卸的时候配置目录、配置里它的几项设置怎么办（施工 PK-5、PK-5补）：留下的「配置留在 <路径>」，另有设置的接「，另有 N 项
+    /// 设置」，没有配置目录的「N 项设置留在配置里」；写了 `--purge` 的「会删掉 <路径>」（要删的设置在「一并删除」那一行列了
+    /// 键，不再说几项）。没什么可说的是空的。
+    pub(crate) fn config_dir(
+        &self,
+        path: Option<&str>,
+        settings: u64,
+        kept: bool,
+    ) -> Option<String> {
+        let plural = if settings == 1 { "" } else { "s" };
+        Some(match (self, kept, path) {
+            (_, true, None) if settings == 0 => return None,
+            (_, false, None) => return None,
+            (Language::Chinese, true, Some(path)) if settings == 0 => format!("配置留在 {path}"),
+            (Language::Chinese, true, Some(path)) => {
+                format!("配置留在 {path}，另有 {settings} 项设置")
+            }
+            (Language::Chinese, true, None) => format!("{settings} 项设置留在配置里"),
+            (Language::Chinese, false, Some(path)) => format!("会删掉 {path}"),
+            (Language::English, true, Some(path)) if settings == 0 => {
+                format!("Config kept in {path}")
+            }
+            (Language::English, true, Some(path)) => {
+                format!("Config kept in {path}, plus {settings} setting{plural}")
+            }
+            (Language::English, true, None) => {
+                format!("{settings} setting{plural} kept in the config")
+            }
+            (Language::English, false, Some(path)) => format!("Will delete {path}"),
+        })
     }
 
     /// 一并删除的状态目录（旧的核心只说有没有，施工 PK-4 以前）。

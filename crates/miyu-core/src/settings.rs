@@ -13,7 +13,7 @@ use std::path::Path;
 use miyu_config::merge::Origin;
 use miyu_config::package::Manifest;
 use miyu_config::{Item, Layer, Missing, Values, Words, reference, schema};
-use miyu_endpoint::config::{Config, Environment};
+use miyu_endpoint::config::{Config, Environment, Left};
 use miyu_endpoint::settings::{
     CommandSettings, EXTERNAL_BINDINGS, PermissionSettings, PersonaSettings, PresetSettings,
     SOURCE_FEEDS, SourceSettings, TerminalSettings, UiSettings,
@@ -209,8 +209,9 @@ pub fn render(items: &[Item], words: &dyn Words) -> [Result<String, Missing>; 2]
 
 /// 核心起来时读配置（第二条第 1 条）：配置、信任的记录、密钥文件（施工 8-5），照登记的
 /// 全部清单认，带 `env` 的项、`{ env = … }` 照进程的环境变量。`home` 是系统的家目录。读不进来不影响起不起得来：有问题的每份记一条 `WARN`。
-pub fn read(root: &DataRoot, home: Option<&Path>, packaged: &Packaged) -> Config {
-    Config::load(root, home, packaged.all(), Environment::process())
+/// 已经卸掉的包留下的设置项（`left`，施工 PK-5补）不报不认识。
+pub fn read(root: &DataRoot, home: Option<&Path>, packaged: &Packaged, left: Left) -> Config {
+    Config::load_leaving(root, home, (packaged.all(), left), Environment::process())
 }
 
 /// 读完配置，照 `log.level` 的最终值换运行日志的级别（第二条第 7 条，`log.md`）：`MIYU_LOG` 设了、读得懂的照它（装日志时

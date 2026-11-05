@@ -776,6 +776,7 @@
     "config/trust-header": "Miyu 记着的项目配置的信任：哪个仓库、哪一份内容、信不信任。",
     "config/unreadable": "读不了这份文件：{why}",
     "config/too-big": "这份文件超过 1 MiB，不读",
+    "config/settings-left": "有 {count} 项是已经卸掉的 {package} 留下的设置：重装 {package} 会照原样生效；不要了用 miyu pkg remove {package} --purge 删掉",
     "config/not-utf8": "这份文件不是 UTF-8",
     "config/syntax": "TOML 写法不对：{why}",
     "config/unknown-key": "没有 {key} 这一项。是不是想写 {suggest}？",

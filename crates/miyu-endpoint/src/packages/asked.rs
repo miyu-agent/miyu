@@ -34,7 +34,8 @@ pub(crate) struct RemoveParams {
     /// 只看一眼、什么都不动（施工 F-8 下补）。
     #[serde(default)]
     preview: bool,
-    /// 连配置目录 `etc/<编号>/` 一起删（施工 PK-5，照 pacman 的 `-Rn`）；不写的留下，重装同编号照旧读。
+    /// 连配置目录 `etc/<编号>/`、配置里它的设置项一起删（施工 PK-5、PK-5补，照 pacman 的 `-Rn`）；不写的留下，重装同编号照旧
+    /// 用。没装、还留着这几样的编号也收（只删留下的）。
     #[serde(default)]
     purge: bool,
 }
@@ -71,8 +72,17 @@ pub(crate) async fn install(
     }
 }
 
-/// `package.remove`：装上的删掉，出厂的记一笔，被依赖着的拒绝；配置目录照 `purge` 留下或删掉（施工 PK-5）。
+/// `package.remove`：装上的删掉，出厂的记一笔，被依赖着的拒绝；配置目录、配置里它的设置项照 `purge` 留下或删掉（施工 PK-5、
+/// PK-5补）。没装的带 `purge` 的只删留下的那几样。
 pub(crate) async fn remove(core: &Arc<Core>, params: RemoveParams) -> Result<Value, Refusal> {
+    // 没装、带了 `purge` 的：只删它留下的（施工 PK-5补）。
+    let installed = core
+        .system_packages()
+        .iter()
+        .any(|one| one.id == params.package);
+    if params.purge && !installed {
+        return super::settings_left::purge(core, &params.package, params.preview).await;
+    }
     if params.preview {
         let _one_at_a_time = core.packaging.lock().await;
         return super::preview::removing(core, &params.package, params.purge).await;

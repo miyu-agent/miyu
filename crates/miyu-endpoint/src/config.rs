@@ -30,6 +30,7 @@ pub(crate) mod from_package;
 pub(crate) mod handout;
 pub(crate) mod hub;
 pub(crate) mod journal;
+pub(crate) mod left;
 pub(crate) mod methods;
 pub(crate) mod observe;
 mod options;
@@ -58,6 +59,7 @@ use miyu_store::root::DataRoot;
 
 pub use environment::Environment;
 use file::File;
+pub use left::Left;
 
 use crate::secrets::SecretsFile;
 
@@ -79,6 +81,8 @@ const SYSTEM_SCHEMA: &str = "../var/cache/config/config.schema.json";
 pub struct Config {
     /// 登记的全部配置项。
     items: Vec<Item>,
+    /// 已经卸掉的包留下的设置项的前缀（施工 PK-5补，`config/left.rs`）：读的时候这几个键不报不认识。
+    left: Left,
     /// 系统的家目录（真实的位置）：项目配置往上找到它就停，写成 `~/…`。
     home: Option<PathBuf>,
     /// 数据根（真实的位置）：落在它里面的目录不找项目配置。
@@ -161,13 +165,23 @@ impl Config {
         items: Vec<Item>,
         environment: Environment,
     ) -> Config {
+        Config::load_leaving(root, home, (items, Left::default()), environment)
+    }
+
+    /// 同 [`Config::load`]，另带已经卸掉的包留下的设置项的前缀 `left`（施工 PK-5补）：这几个键不报不认识。核心起来时用它。
+    pub fn load_leaving(
+        root: &DataRoot,
+        home: Option<&Path>,
+        (items, left): (Vec<Item>, Left),
+        environment: Environment,
+    ) -> Config {
         let env: BTreeMap<&'static str, String> = items
             .iter()
             .filter_map(|item| item.env)
             .filter_map(|name| environment.get(name).map(|value| (name, value)))
             .collect();
         let (path, shown) = system_at(root);
-        let system = File::read(&items, Layer::System, path, shown);
+        let system = File::read((&items, &left), Layer::System, path, shown);
         let trust_path = root.trust_file();
         let trust = trust::read(&trust_path).unwrap_or_else(|error| {
             tracing::warn!(
@@ -185,6 +199,7 @@ impl Config {
         let secrets = SecretsFile::read(&secrets_path(root), SECRETS);
         crate::secrets::told(&secrets);
         let mut config = Config::assemble(root, home, items, env, system, trust);
+        config.left = left;
         config.environment = environment;
         config.secrets = secrets;
         config
@@ -211,6 +226,7 @@ impl Config {
             home: home.map(real),
             data_root: real(root.path()),
             items,
+            left: Left::default(),
             env,
             system,
             trust,
@@ -227,6 +243,16 @@ impl Config {
     /// 登记的全部配置项。
     pub fn items(&self) -> &[Item] {
         &self.items
+    }
+
+    /// 读一份配置文件要的两样（施工 PK-5补）：登记的全部配置项、已经卸掉的包留下的设置项的前缀。
+    pub(crate) fn reading(&self) -> (&[Item], &Left) {
+        (&self.items, &self.left)
+    }
+
+    /// 已经卸掉的包留下的设置项的前缀（施工 PK-5补）。
+    pub(crate) fn left(&self) -> &Left {
+        &self.left
     }
 
     /// 模型默认的思考强度照 `data` 查档位（施工 8-18）：核心造家底时交进来。
@@ -348,7 +374,7 @@ impl Config {
         let repo = project::find(&start, self.home.as_deref(), &self.data_root)?;
         let path = project::config_in(&repo);
         let shown = project::shown(&path, self.home.as_deref());
-        let file = File::read(&self.items, Layer::Project, path, shown);
+        let file = File::read(self.reading(), Layer::Project, path, shown);
         let trust = match &file.version {
             Some(version) => trust::trust_of(&self.trust, &repo, version, self.home.as_deref()),
             None => Trust::Unknown,

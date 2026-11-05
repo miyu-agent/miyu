@@ -780,6 +780,8 @@
     "config/trust-header": "Which project configs Miyu trusts: the repository, the exact content, and the answer.",
     "config/unreadable": "Cannot read this file: {why}",
     "config/too-big": "The file is over 1 MiB and is not read",
+    "config/settings-left": "{count} settings were left by the removed package {package}: reinstalling {package} uses them as they are; to delete them, run miyu pkg remove {package} --purge",
+    "config/settings-left/one": "{count} setting was left by the removed package {package}: reinstalling {package} uses it as it is; to delete it, run miyu pkg remove {package} --purge",
     "config/not-utf8": "The file is not UTF-8",
     "config/syntax": "Not valid TOML: {why}",
     "config/unknown-key": "There is no {key}. Did you mean {suggest}?",

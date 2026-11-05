@@ -5,6 +5,8 @@
 
 use miyu_config::Item;
 
+use super::Left;
+
 use super::file::File;
 use super::hub::Pushing;
 use super::observe::differences;
@@ -13,24 +15,26 @@ use super::{Config, TARGET};
 use crate::Core;
 
 impl Config {
-    /// 换上清单 `items`：系统配置照手里的字重新认，最终值跟着重算。交回换以前的那一份。带 `env` 的只有核心自己的项
-    /// （`log.level`），换了清单也还在：起来时取的环境变量照旧。
-    fn refit(&mut self, items: Vec<Item>) -> [File; 1] {
+    /// 换上清单 `items` 和已卸的包留下的前缀 `left`（施工 PK-5补）：系统配置照手里的字重新认，最终值跟着重算。交回换以前的
+    /// 那一份。带 `env` 的只有核心自己的项（`log.level`），换了清单也还在：起来时取的环境变量照旧。
+    fn refit(&mut self, items: Vec<Item>, left: Left) -> [File; 1] {
         self.items = items;
-        let system = self.system.refit(&self.items);
+        self.left = left;
+        let system = self.system.refit((&self.items, &self.left));
         let old = [std::mem::replace(&mut self.system, system)];
         self.resolved = self.merged(None);
         old
     }
 }
 
-/// 核心照新的配置清单 `items` 换（[`Core::reload_packages`] 调）：和手里的一样的什么都不做。
-pub(crate) fn refit(core: &Core, items: Vec<Item>) {
+/// 核心照新的配置清单 `items`、已卸的包留下的前缀 `left`（施工 PK-5补）换（[`Core::reload_packages`] 调）：都和手里的一样的
+/// 什么都不做。
+pub(crate) fn refit(core: &Core, items: Vec<Item>, left: Left) {
     let mut config = core.config();
-    if config.items() == items.as_slice() {
+    if config.items() == items.as_slice() && *config.left() == left {
         return;
     }
-    let old = config.refit(items);
+    let old = config.refit(items, left);
     let mut pushed = false;
     for old in &old {
         let new = config.file();

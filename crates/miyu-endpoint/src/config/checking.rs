@@ -73,13 +73,28 @@ pub(crate) fn check_text(
     (layer, text): (Layer, &str),
     known: Option<&Known>,
 ) -> Result<Vec<Value>, Refusal> {
-    let parsed = match parse(config.items(), layer, text) {
+    check_leaving(config, words, (layer, text), known).map(|(problems, _)| problems)
+}
+
+/// 同 [`check_text`]，另交回已经卸掉的包留下的键（施工 PK-5补，`config/left.rs`）：键和留下它的包。这几个不报不认识，`check`
+/// 照它另说一句（`settings_left`）。
+pub(crate) fn check_leaving(
+    config: &Config,
+    words: &Human,
+    (layer, text): (Layer, &str),
+    known: Option<&Known>,
+) -> Result<(Vec<Value>, super::left::Taken), Refusal> {
+    let mut parsed = match parse(config.items(), layer, text) {
         Ok(parsed) => parsed,
         Err(problem) => {
             let layers = config.layers(None);
-            return Ok(vec![said(config, &layers, &problem, None, words)?]);
+            return Ok((
+                vec![said(config, &layers, &problem, None, words)?],
+                Vec::new(),
+            ));
         }
     };
+    let leftover = config.left().take(&mut parsed);
     let mut layers = config.layers(None);
     let missing = config.missing_if(&parsed, layer);
     let external = super::private::external_dirs(&parsed, layer);
@@ -115,5 +130,5 @@ pub(crate) fn check_text(
     for problem in found {
         problems.push(said(config, &layers, problem, None, words)?);
     }
-    Ok(problems)
+    Ok((problems, leftover))
 }

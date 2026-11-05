@@ -776,6 +776,7 @@
     "config/trust-header": "Miyu が記録しているプロジェクト設定の信頼：どのリポジトリの、どの内容を、信頼するかどうか。",
     "config/unreadable": "このファイルを読めません：{why}",
     "config/too-big": "このファイルは 1 MiB を超えているので読みません",
+    "config/settings-left": "{count} 項目はアンインストール済みの {package} が残した設定です。{package} を再インストールするとそのまま有効になります。不要なら miyu pkg remove {package} --purge で削除できます",
     "config/not-utf8": "このファイルは UTF-8 ではありません",
     "config/syntax": "TOML の書き方が正しくありません：{why}",
     "config/unknown-key": "{key} という項目はありません。{suggest} のことですか？",

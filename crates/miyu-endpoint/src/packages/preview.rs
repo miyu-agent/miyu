@@ -99,8 +99,8 @@ pub(crate) fn provided(
     (Value::Object(carried), capabilities)
 }
 
-/// 卸：编号、哪一层、版本；家目录里的几个文件多大；一并删掉的配置项（配置里写了的键）、状态目录在哪多大（施工 PK-4，没有的不写）；
-/// 配置目录在哪、留不留（施工 PK-5：不 `purge` 的留，不在的、空的不写）。
+/// 卸：编号、哪一层、版本；家目录里的几个文件多大；一并删掉的配置项（`purge` 的才有，配置里写了的键）、状态目录在哪多大（施工 PK-4，
+/// 没有的不写）；配置目录在哪、配置里它有几项设置、留不留（施工 PK-5、PK-5补：不 `purge` 的留，[`config_entry`]）。
 pub(crate) async fn removing(core: &Arc<Core>, id: &str, purge: bool) -> Result<Value, Refusal> {
     let found = core.system_packages();
     let one = removable(&found, id)?;
@@ -117,7 +117,9 @@ pub(crate) async fn removing(core: &Arc<Core>, id: &str, purge: bool) -> Result<
         answer.insert("size".into(), json!(local::size(&looked.files)));
     }
     let settings = crate::config::forget::present(core, &setting_keys(one));
-    answer.insert("settings".into(), json!(settings));
+    // 顶上的 `settings` 照旧是「一并删掉的配置项」（施工 PK-5补）：不 `purge` 的留着、是空的，没跟着改的头不会说错成删掉。
+    let deleted: &[String] = if purge { &settings } else { &[] };
+    answer.insert("settings".into(), json!(deleted));
     // 状态目录（施工 PK-4）：在哪、多大，好让人知道卸掉会丢什么；没有的不写。量大小要走一遍目录，放在阻塞线程里。配置目录
     // （施工 PK-5）：在哪、照 `purge` 留下还是删掉；没东西可留的不写，同一个阻塞线程里看。
     let (state, config) = (core.root.package_state(id), core.root.package_config(id));
@@ -133,19 +135,33 @@ pub(crate) async fn removing(core: &Arc<Core>, id: &str, purge: bool) -> Result<
             json!({"path": path.to_string_lossy(), "size": size}),
         );
     }
-    if let Some(path) = config {
-        answer.insert(
-            "config".into(),
-            json!({"path": path.to_string_lossy(), "kept": !purge}),
-        );
+    if let Some(entry) = config_entry(config.as_deref(), settings.len(), purge) {
+        answer.insert("config".into(), entry);
     }
     Ok(Value::Object(answer))
+}
+
+/// 看一眼的 `config` 那一格（施工 PK-5、PK-5补）：`{path?, kept, settings?}`。`path` 是有东西可留、可删的配置目录，`settings` 是
+/// 配置里它写了几项设置（0 的不写），`kept` 是 `!purge`：两样一起留下或者一起删掉。两样都没有的整格不写。
+pub(super) fn config_entry(path: Option<&Path>, settings: usize, purge: bool) -> Option<Value> {
+    if path.is_none() && settings == 0 {
+        return None;
+    }
+    let mut entry = Map::new();
+    if let Some(path) = path {
+        entry.insert("path".into(), json!(path.to_string_lossy()));
+    }
+    entry.insert("kept".into(), json!(!purge));
+    if settings > 0 {
+        entry.insert("settings".into(), json!(settings));
+    }
+    Some(Value::Object(entry))
 }
 
 /// 配置目录 `dir` 里有没有东西可留、可删（施工 PK-5）：是目录、底下至少一项；本身是链接的也算（留着的是那个链接，`purge`
 /// 删的也只是链接，同 [`measured`] 不跟链接）。不在的、空的、是普通文件的不算：空的卸的时候删掉（`manage.rs` 的 `drop_if_empty`），
 /// 普通文件不是包的配置目录。
-fn holds_something(dir: &Path) -> bool {
+pub(super) fn holds_something(dir: &Path) -> bool {
     match std::fs::symlink_metadata(dir) {
         Ok(meta) if meta.file_type().is_symlink() => true,
         Ok(meta) if meta.is_dir() => {

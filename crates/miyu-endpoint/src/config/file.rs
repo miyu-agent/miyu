@@ -10,6 +10,8 @@ use miyu_config::problem::{Code, Problem, Severity};
 use miyu_config::{Item, Layer};
 use miyu_store::config_file::{self, ConfigText, ReadError};
 
+use super::Left;
+
 /// 读好的一份。
 #[derive(Debug, Clone)]
 pub(crate) struct File {
@@ -29,16 +31,23 @@ pub(crate) struct File {
     pub(crate) parsed: Parsed,
     /// 整份的问题。
     pub(crate) broken: Option<Problem>,
+    /// 已经卸掉的包留下的键（施工 PK-5补，`config/left.rs`）：键和留下它的包。不算问题，`parsed` 的问题里拿掉了。
+    pub(crate) leftover: super::left::Taken,
     /// 读不进来、`parsed` 是上一次读好的那一份（施工 8-4）：问题的「现在照什么用着」说 `last_good`，不说 `nothing`。
     pub(crate) last_good: bool,
 }
 
 impl File {
-    /// 照清单 `items` 读 `layer` 这一层的 `path`，写法是 `shown`。
-    pub(crate) fn read(items: &[Item], layer: Layer, path: PathBuf, shown: String) -> File {
+    /// 照清单 `items` 读 `layer` 这一层的 `path`，写法是 `shown`；`left` 前缀下的不认识的键是已卸的包留下的，不报（施工 PK-5补）。
+    pub(crate) fn read(
+        (items, left): (&[Item], &Left),
+        layer: Layer,
+        path: PathBuf,
+        shown: String,
+    ) -> File {
         let mut file = File::nothing(layer, &path, &shown);
         match config_file::read(&file.path) {
-            Ok(Some(text)) => File::of(items, file, text),
+            Ok(Some(text)) => File::of((items, left), file, text),
             Ok(None) => file,
             Err(error) => {
                 file.broken = Some(broken(layer, &error));
@@ -48,8 +57,12 @@ impl File {
     }
 
     /// 照清单 `items` 认读好的字 `text`：写成了以后记下新的字当「上一次读的」（第五条第 8 条），不再读一次盘。
-    pub(crate) fn written(items: &[Item], old: &File, text: ConfigText) -> File {
-        File::of(items, File::nothing(old.layer, &old.path, &old.shown), text)
+    pub(crate) fn written(reading: (&[Item], &Left), old: &File, text: ConfigText) -> File {
+        File::of(
+            reading,
+            File::nothing(old.layer, &old.path, &old.shown),
+            text,
+        )
     }
 
     /// 什么都没读的一层：核心没给配置的时候（测试里）。
@@ -63,6 +76,7 @@ impl File {
             bom: false,
             parsed: Parsed::default(),
             broken: None,
+            leftover: Vec::new(),
             last_good: false,
         }
     }
@@ -75,6 +89,7 @@ impl File {
                 problems: Vec::new(),
                 ..old.parsed.clone()
             };
+            self.leftover = Vec::new();
             self.last_good = old.broken.is_none() || old.last_good;
         }
         self
@@ -82,15 +97,12 @@ impl File {
 
     /// 照新的清单 `items` 重新认手里的字（施工 F-5 补：装卸软件包以后），不重读盘：版本、字照旧。整份读不进来的、还没有的
     /// 照旧。
-    pub(crate) fn refit(&self, items: &[Item]) -> File {
+    pub(crate) fn refit(&self, reading: (&[Item], &Left)) -> File {
         let mut file = self.clone();
         if self.broken.is_some() || self.version.is_none() {
             return file;
         }
-        match parse(items, self.layer, &self.text) {
-            Ok(parsed) => file.parsed = parsed,
-            Err(problem) => file.broken = Some(*problem),
-        }
+        file.parse(reading, &self.text);
         file
     }
 
@@ -100,15 +112,26 @@ impl File {
     }
 
     /// 在空的一份 `file` 上记下读好的字，解析。
-    fn of(items: &[Item], mut file: File, text: ConfigText) -> File {
+    fn of(reading: (&[Item], &Left), mut file: File, text: ConfigText) -> File {
         file.version = Some(text.version);
         file.bom = text.bom;
-        match parse(items, file.layer, &text.text) {
-            Ok(parsed) => file.parsed = parsed,
-            Err(problem) => file.broken = Some(*problem),
-        }
+        file.parse(reading, &text.text);
         file.text = text.text;
         file
+    }
+
+    /// 照清单解析 `text`，已卸的包留下的键从问题里拿掉、另记（施工 PK-5补）。
+    fn parse(&mut self, (items, left): (&[Item], &Left), text: &str) {
+        match parse(items, self.layer, text) {
+            Ok(mut parsed) => {
+                self.leftover = left.take(&mut parsed);
+                self.parsed = parsed;
+            }
+            Err(problem) => {
+                self.leftover = Vec::new();
+                self.broken = Some(*problem);
+            }
+        }
     }
 
     /// 这份文件的全部问题：整份的在前。

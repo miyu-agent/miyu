@@ -29,6 +29,7 @@ pub mod install;
 mod launch;
 pub mod leftovers;
 pub mod local;
+pub mod settings_left;
 
 pub use launch::{Launch, first_line, launcher};
 /// 编号是保留名字的那一条问题（表在 `miyu_config::package`，施工 FH-5下 挪过去）。

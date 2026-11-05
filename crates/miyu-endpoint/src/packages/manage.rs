@@ -6,15 +6,16 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use serde_json::{Value, json};
+use serde_json::Value;
 
 use miyu_config::package;
 use miyu_store::packages::conflicts::conflicts;
 use miyu_store::packages::install::{self, Placed};
-use miyu_store::packages::{Found, Issue, Layer};
+use miyu_store::packages::{Found, Issue};
 
 use super::folder::source;
 use super::progress::{self, At, Stage};
+pub(crate) use super::remove::{removable, remove_package, setting_keys};
 use super::{TARGET, compiled, listed, load, packages, sentence, settle};
 use crate::Core;
 use crate::config::methods::words;
@@ -33,12 +34,14 @@ impl Core {
         if let Some(built_in) = &self.built_in {
             compiled(&mut found, built_in);
         }
+        // 已卸的包留下的设置项的前缀（施工 PK-5补）：照新的清单算，跟配置清单一起换。
+        let left = super::settings_left::left(&packages(self), &self.root, &found);
         let items = match &self.builtins {
-            Some(builtins) => Some(builtins.settings(&mut found)),
+            Some(builtins) => builtins.settings(&mut found),
             None => {
                 let items = self.config().items().to_vec();
                 let _ = settle(&mut found, &items);
-                None
+                items
             }
         };
         self.rebuild_builtins(&found);
@@ -50,9 +53,7 @@ impl Core {
         self.visible_packages.forget();
         // 脚本照新的清单重找、重登记（施工 X-12 中）。
         self.follow_scripts();
-        if let Some(items) = items {
-            crate::config::refit::refit(self, items);
-        }
+        crate::config::refit::refit(self, items, left);
         super::changes::announce(self, &before, &super::changes::snapshot(self));
         // 给别的包带的内容照新的清单查一遍（施工 X-22）。
         self.content_rereads.bump();
@@ -62,7 +63,7 @@ impl Core {
     /// R-10：开着的会话照它交不交摘要、抽不抽），扩展进程跟着停下、拉起（[`Core::follow_packages`]），本机的向量模型照 `now`
     /// 换（`Vectors::replace_local`，一样的不动，旧的小程序退完才返回）。卸包、升级在动文件以前照去掉它的清单换一遍：Windows
     /// 上开着的文件删不掉、挪不走。
-    async fn switch_packages(self: &Arc<Self>, before: &[&Found], now: &[&Found]) {
+    pub(super) async fn switch_packages(self: &Arc<Self>, before: &[&Found], now: &[&Found]) {
         let memory = now
             .iter()
             .any(|one| super::is_installed(std::slice::from_ref(*one), crate::memory::PACKAGE));
@@ -126,134 +127,6 @@ impl Core {
     }
 }
 
-/// 卸 `id` 之前查的（卸、看一眼共用）：编号合写法、装着、不是必需的。
-pub(super) fn removable<'a>(found: &'a [Found], id: &str) -> Result<&'a Found, Refusal> {
-    if !miyu_store::personas::valid(id) {
-        return Err(Refusal::BAD_PARAMS);
-    }
-    let one = found
-        .iter()
-        .find(|one| one.id == id)
-        .ok_or(Refusal::UNKNOWN_PACKAGE)?;
-    // 被别的装着的包依赖着的卸不掉，说清被谁（施工 F-11，照 pacman）。
-    let by = super::depends::dependents(found, id);
-    if !by.is_empty() {
-        return Err(Refusal::package_depended(&by));
-    }
-    Ok(one)
-}
-
-/// 包 `one` 的配置项的真的键（`<前缀>.<名字>`，施工 PN-1），照清单列的；读坏了的清单没有。
-pub(super) fn setting_keys(one: &Found) -> Vec<String> {
-    one.read
-        .as_ref()
-        .map(|manifest| {
-            manifest
-                .settings
-                .iter()
-                .map(|setting| format!("{}.{}", manifest.prefix_of(&one.id), setting.name))
-                .collect()
-        })
-        .unwrap_or_default()
-}
-
-/// 卸包 `id`（`package.remove`，施工 F-6 上起 `package.disable` 关出厂的内置包也走这里）。配置目录 `etc/<编号>/` 照 pacman
-/// 默认留下（施工 PK-5），`purge` 的才一起删。
-pub(crate) async fn remove_package(
-    core: &Arc<Core>,
-    id: String,
-    purge: bool,
-) -> Result<Value, Refusal> {
-    let _one_at_a_time = core.packaging.lock().await;
-    let found = core.system_packages();
-    let one = removable(&found, &id)?;
-    let home = home(core)?;
-    let local_root = packages(core).local_root();
-    let markers = packages(core).removed_markers();
-    // 卸就是清干净（施工 F-8 中下补，设计 31 定了的 H；设计 55 第三节第 4 条）：它的配置项照清单列的删，各层它的 `<编号>/`
-    // 整个删，开关、批过的能力删（施工 F-8 五补）。配置目录 `etc/<编号>/` 是给人改的，照 pacman 默认留下、重装同编号照旧读，
-    // `purge` 的才删（施工 PK-5，2026-11-05 项目主人定）。
-    let config = core.root.package_config(&id);
-    let places: Vec<PathBuf> = core
-        .root
-        .package_places(&id)
-        .into_iter()
-        .filter(|place| purge || *place != config)
-        .collect();
-    let keys = setting_keys(one);
-    // 它带的 MCP 服务的缓存、工作目录也清掉（施工 X-3 下）：它们不在包的状态目录里。
-    let services: Vec<String> = one
-        .read
-        .as_ref()
-        .map(|manifest| {
-            manifest
-                .mcp
-                .iter()
-                .map(|server| server.name.clone())
-                .collect()
-        })
-        .unwrap_or_default();
-    let layer = one.layer;
-    // 它带的人格、预设在你那一层有改动的，卸成了记一笔是它留下的（施工 P-11 下）。
-    let noting = super::left::noting(core, &id, &one.files_dir());
-    // 先停下用着它的、再删文件（施工 F-5 补）：Windows 上开着的文件删不掉。删不成的照原来的清单换回来。
-    let all = refs(&found);
-    let without = leaving(&all, &id);
-    core.switch_packages(&all, &without).await;
-    let removed = blocking(move || {
-        let left = noting();
-        let removed = match layer {
-            Layer::Home => install::take_out(&home, &id).map(|()| {
-                super::local::forget(&local_root, &id);
-                id
-            }),
-            // 出厂的、系统加装的（施工 SD-1）：文件不动，记一笔不再加载；系统加装的文件归系统的包管理器。
-            Layer::Shipped | Layer::Distro => install::mark_removed(&markers, &id).map(|()| id),
-        };
-        if removed.is_ok() {
-            left.keep();
-        }
-        removed
-    })
-    .await;
-    let removed = match removed {
-        Ok(removed) => removed,
-        Err(refusal) => {
-            core.switch_packages(&without, &all).await;
-            return Err(refusal);
-        }
-    };
-    core.reload_packages();
-    let now = core.system_packages();
-    core.switch_packages(&without, &refs(&now)).await;
-    crate::config::forget::forget(core, &keys);
-    // 开关的文件里它开没开、批过的能力（施工 F-8 五补）：装回来从头开、从头批。
-    crate::extensions::forget_switch(core, &removed).await;
-    // 它的脚本的状态和缓存（施工 X-44）、它交过的「给」的那一份（`var/cache/provide/<编号>.json`）：同各层的目录一起删。
-    let (root, package) = (core.root.clone(), removed.clone());
-    let cleared = blocking(move || {
-        for place in &places {
-            remove_dir_if_there(place)?;
-        }
-        if !purge {
-            drop_if_empty(&config);
-        }
-        remove_file_if_there(&root.provide_cache(&package))?;
-        miyu_store::scripts::forget_states(&root, &package)
-    });
-    if let Err(refusal) = cleared.await {
-        tracing::warn!(target: TARGET, package = removed.as_str(), reason = refusal.reason, "package state not removed");
-    }
-    for service in &services {
-        crate::mcp::forget(core, service);
-    }
-    // 它拿得到的 blob（施工 W-6 三补）：装回来从空的开始。
-    core.blob_grants.forget(&removed);
-    tracing::info!(target: TARGET, package = removed.as_str(), "package removed");
-    // 系统加装的说一声：文件还在，要删用系统的包管理器（施工 SD-1，命令行照 `layer` 说）。
-    Ok(json!({"package": removed, "removed": true, "layer": layer.as_str()}))
-}
-
 /// 从 `path` 这个包文件夹装（施工 F-8 上：一个文件夹就是一个包；写成文件夹里的 `package.toml` 也认）：读得成、不和出厂的撞、
 /// 带的名字不和装着的别的包撞（施工 F-8 六补）、拷进去以后照两层重读还是好的，才算装上。编号是文件夹的名字。查清单、冲突之前
 /// 推一次核对，拷进去之前推一次安装（施工 IN-3，推给 `caller`，只有一个包：第 1 个、一共 1 个）。
@@ -305,11 +178,13 @@ pub(super) async fn from_path(
         return Err(refusal);
     }
     placed.keep();
-    // 它以前卸掉时留下的改动接着叠在它上面，那几笔划掉（施工 P-11 下）。
+    // 它以前卸掉时留下的改动接着叠在它上面，那几笔划掉（施工 P-11 下）；留下的设置项的记号删掉（施工 PK-5补）：装着的照新清单
+    // 认，前缀变了的以新清单为准。
     let back = super::left::back(core, &id);
+    let (root, unmarked) = (core.root.clone(), id.clone());
     if blocking(move || {
         back();
-        Ok(())
+        miyu_store::packages::settings_left::unmark(&root, &unmarked)
     })
     .await
     .is_err()
@@ -436,7 +311,7 @@ pub(super) async fn restored_clear_of_conflicts(
 }
 
 /// 你装的那一层（`home`）的目录。
-fn home(core: &Core) -> Result<PathBuf, Refusal> {
+pub(super) fn home(core: &Core) -> Result<PathBuf, Refusal> {
     packages(core)
         .home_dir()
         .map(Path::to_path_buf)
@@ -465,35 +340,11 @@ pub(super) async fn blocking<T: Send + 'static>(
 }
 
 /// 清单里的每一份。
-fn refs(found: &[Found]) -> Vec<&Found> {
+pub(super) fn refs(found: &[Found]) -> Vec<&Found> {
     found.iter().collect()
 }
 
 /// 去掉编号是 `id` 的那一份。
-fn leaving<'a>(all: &[&'a Found], id: &str) -> Vec<&'a Found> {
+pub(super) fn leaving<'a>(all: &[&'a Found], id: &str) -> Vec<&'a Found> {
     all.iter().copied().filter(|one| one.id != id).collect()
-}
-
-/// 删掉目录 `dir`；本来就没有的不算错。
-fn remove_dir_if_there(dir: &Path) -> std::io::Result<()> {
-    match std::fs::remove_dir_all(dir) {
-        Err(error) if error.kind() != std::io::ErrorKind::NotFound => Err(error),
-        _ => Ok(()),
-    }
-}
-
-/// 留下的配置目录 `dir` 是空的（拉起扩展前各处都建好，没写过东西的也在）就删掉，不留空目录（施工 PK-5）；是链接的、不空的、
-/// 删不掉的不动。
-fn drop_if_empty(dir: &Path) {
-    if std::fs::symlink_metadata(dir).is_ok_and(|meta| meta.is_dir()) {
-        drop(std::fs::remove_dir(dir));
-    }
-}
-
-/// 删掉文件 `file`；本来就没有的不算错。
-fn remove_file_if_there(file: &Path) -> std::io::Result<()> {
-    match std::fs::remove_file(file) {
-        Err(error) if error.kind() != std::io::ErrorKind::NotFound => Err(error),
-        _ => Ok(()),
-    }
 }

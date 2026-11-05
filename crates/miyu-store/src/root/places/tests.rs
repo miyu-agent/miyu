@@ -39,6 +39,7 @@ fn reserved_ids_are_exactly_the_names_the_core_uses_beside_packages() {
                 root.logins_file(),
                 root.sandbox_record_file(),
                 root.removed_markers().join(x),
+                root.leftover_settings(x),
             ],
         ),
         (

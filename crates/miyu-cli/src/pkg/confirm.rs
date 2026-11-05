@@ -86,11 +86,12 @@ pub(crate) fn plan(preview: &Value, doing: Doing, language: &Language) -> Vec<St
             let bytes = preview["state"]["size"].as_u64().unwrap_or_default();
             rows.push(language.deletes_state(path, &size(bytes)));
         }
-        // 配置目录（施工 PK-5）：照 pacman 默认留下，写了 `--purge` 的删掉；核心没说的（没东西、旧的核心）不印。
-        if let Some(path) = preview["config"]["path"].as_str() {
-            let kept = preview["config"]["kept"].as_bool().unwrap_or(true);
-            rows.push(language.config_dir(path, kept));
-        }
+        // 配置目录、配置里它的几项设置（施工 PK-5、PK-5补）：照 pacman 默认留下，写了 `--purge` 的删掉；核心没说的（没东西、
+        // 旧的核心）不印。
+        let config = &preview["config"];
+        let kept = config["kept"].as_bool().unwrap_or(true);
+        let settings = config["settings"].as_u64().unwrap_or_default();
+        rows.extend(language.config_dir(config["path"].as_str(), settings, kept));
     }
     // 从软件源装的（施工 G-4 下）：一起装的依赖、要下多大、来源仓库和官方还是社区。
     let with = preview["with"]

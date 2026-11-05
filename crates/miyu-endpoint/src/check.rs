@@ -29,12 +29,13 @@ use crate::Core;
 
 mod embedding;
 mod known;
+mod left;
 mod mcp;
 mod run;
 mod schedules;
 mod skipped;
 mod unsandboxed;
-use crate::config::checking::{Known, check_text};
+use crate::config::checking::{Known, check_leaving};
 use crate::config::methods::{said_at, words};
 use crate::hello::Peer;
 use crate::personas::personas;
@@ -208,7 +209,10 @@ fn check_config(
         Ok(None) => return Ok(Vec::new()),
         Err(error) => return Ok(vec![unreadable(words, &file.shown, "config", &error)]),
     };
-    let mut problems = check_text(&core.config(), words, (file.layer, &text), Some(known))?;
+    let (mut problems, leftover) =
+        check_leaving(&core.config(), words, (file.layer, &text), Some(known))?;
+    // 已经卸掉的包留下的设置项（施工 PK-5补）：不报不认识，一个包一句提示。
+    problems.extend(left::settings_left(words, &leftover));
     for problem in &mut problems {
         problem["file"] = json!(file.shown);
         problem["kind"] = json!("config");

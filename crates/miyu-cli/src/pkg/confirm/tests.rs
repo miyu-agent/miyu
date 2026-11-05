@@ -102,6 +102,40 @@ fn a_removal_says_what_goes_with_it() {
     );
 }
 
+/// 配置里留下的设置项（施工 PK-5补）：留下的说几项，没有配置目录的单说设置；`--purge` 的键列在「一并删除」，不再说几项。
+#[test]
+fn a_removal_says_how_many_settings_stay() {
+    let both = json!({"package": "pudding", "settings": [],
+                      "config": {"path": "/x/etc/pudding", "kept": true, "settings": 2}});
+    assert_eq!(
+        plan(&both, Doing::Remove, &Language::Chinese),
+        ["将卸载 pudding", "配置留在 /x/etc/pudding，另有 2 项设置"]
+    );
+    assert_eq!(
+        plan(&both, Doing::Remove, &Language::English),
+        [
+            "Will remove pudding",
+            "Config kept in /x/etc/pudding, plus 2 settings"
+        ]
+    );
+    let only =
+        json!({"package": "pudding", "settings": [], "config": {"kept": true, "settings": 1}});
+    assert_eq!(
+        plan(&only, Doing::Remove, &Language::Chinese),
+        ["将卸载 pudding", "1 项设置留在配置里"]
+    );
+    assert_eq!(
+        plan(&only, Doing::Remove, &Language::English),
+        ["Will remove pudding", "1 setting kept in the config"]
+    );
+    let purged = json!({"package": "pudding", "settings": ["pudding.port"],
+                        "config": {"kept": false, "settings": 1}});
+    assert_eq!(
+        plan(&purged, Doing::Remove, &Language::Chinese),
+        ["将卸载 pudding", "一并删除：设置 pudding.port"]
+    );
+}
+
 /// 答 `answer` 的结果、印在标准输出上的、印在标准错误上的。
 fn answered(answer: &[u8], doing: Doing) -> (Result<(), u8>, String, String) {
     let (mut out, mut err) = (Vec::new(), Vec::new());

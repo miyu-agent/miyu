@@ -83,7 +83,8 @@ impl Config {
 /// 这一层变了的项、问题有了变化的，记日志、推送。
 pub(super) fn observe(core: &Core, config: &mut Config, layer: Layer) {
     let old = config.file();
-    let fresh = File::read(config.items(), layer, old.path.clone(), old.shown.clone()).keeping(old);
+    let fresh =
+        File::read(config.reading(), layer, old.path.clone(), old.shown.clone()).keeping(old);
     if fresh.same_as(old) {
         return;
     }

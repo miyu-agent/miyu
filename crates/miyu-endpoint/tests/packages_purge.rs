@@ -54,10 +54,11 @@ async fn removing_a_package_forgets_its_settings_and_state() {
     }
     let removed = call(&mut client, "package.remove", json!({"package": "xcfg"})).await;
     assert_eq!(removed["result"]["removed"], true, "{removed}");
+    // 配置里它的设置项照 pacman 留着（施工 PK-5补），`purge` 的才删（`packages_settings_left.rs`）。
     let system = std::fs::read_to_string(home.root.config_file()).unwrap_or_default();
     assert!(
-        !system.contains("port") && !system.contains("[xcfg]"),
-        "系统配置里那一项删了，空了的表头也删了：{system}"
+        system.contains("[xcfg]\nport = 9000"),
+        "设置项原样留着：{system}"
     );
     assert!(
         system.contains("# 留着") && system.contains("log.level = \"debug\""),
@@ -102,7 +103,10 @@ async fn removing_a_shipped_package_forgets_its_settings_too() {
     let removed = call(&mut client, "package.remove", json!({"package": "courier"})).await;
     assert_eq!(removed["result"]["removed"], true, "{removed}");
     let system = std::fs::read_to_string(home.root.config_file()).unwrap_or_default();
-    assert!(!system.contains("listen"), "{system}");
+    assert!(
+        system.contains("listen = 9999"),
+        "设置项留着（施工 PK-5补）：{system}"
+    );
     assert!(system.contains("level = \"debug\""), "{system}");
     assert!(!state.exists());
     assert!(!config.exists(), "空的配置目录不留");

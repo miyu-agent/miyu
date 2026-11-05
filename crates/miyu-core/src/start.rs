@@ -29,8 +29,14 @@ pub(super) async fn start(
     }
     crate::leftovers::tidy(&root);
     let mut found = load_packages(&resources, &root);
+    let places = miyu_store::packages::Packages::new(
+        &resources,
+        &root,
+        crate::packages::distro_dirs(&resources),
+    );
+    let left = miyu_endpoint::packages::settings_left::left(&places, &root, &found);
     let packaged = settings::Packaged::of(&mut found);
-    let config = settings::read(&root, env.home.as_deref(), &packaged);
+    let config = settings::read(&root, env.home.as_deref(), &packaged, left);
     settings::log_level(&config, level, log);
     let locale = miyu_store::env::locale();
     settings::generate(

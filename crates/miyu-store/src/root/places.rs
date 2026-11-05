@@ -61,6 +61,17 @@ impl DataRoot {
         self.etc().join(super::REMOVED)
     }
 
+    /// 卸包留下的设置项的记号放在哪：`etc/leftover/`，一个包一份 `<编号>.toml`（施工 PK-5补，[`crate::packages::settings_left`]）。
+    pub fn leftover_settings_dir(&self) -> PathBuf {
+        self.etc().join("leftover")
+    }
+
+    /// 你装的包 `id` 不带 `purge` 卸掉、`etc/config.toml` 里还留着它的设置项的记号：`etc/leftover/<编号>.toml`，写着它的前缀
+    /// （施工 PK-5补）。
+    pub fn leftover_settings(&self, id: &str) -> PathBuf {
+        self.leftover_settings_dir().join(format!("{id}.toml"))
+    }
+
     // ---- 你的东西（设计 55：`root/`） ----
 
     /// 你那一层的根（施工 FH-2）：你的人格、预设、提示词和工具说明的覆盖都在它下面，照名字分（`personas/`、`presets/`、

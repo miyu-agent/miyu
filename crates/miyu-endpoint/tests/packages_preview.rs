@@ -133,7 +133,29 @@ async fn removing_shows_what_goes_with_it_and_changes_nothing() {
         (json!("home"), json!("1"), json!(1)),
         "{shown}"
     );
-    assert_eq!(result["settings"], json!(["pane.port"]), "只说写了的");
+    // 配置里的设置项照 pacman 留着（施工 PK-5补）：一并删掉的是空的，`config` 说留下几项；`purge` 的才列出来，只列写了的。
+    assert_eq!(result["settings"], json!([]), "{shown}");
+    assert_eq!(
+        result["config"],
+        json!({"kept": true, "settings": 1}),
+        "{shown}"
+    );
+    let purging = call(
+        &mut client,
+        "package.remove",
+        json!({"package": "pane", "preview": true, "purge": true}),
+    )
+    .await;
+    assert_eq!(
+        purging["result"]["settings"],
+        json!(["pane.port"]),
+        "只说写了的"
+    );
+    assert_eq!(
+        purging["result"]["config"],
+        json!({"kept": false, "settings": 1}),
+        "{purging}"
+    );
     // 状态目录（施工 PK-4）：真实位置、底下普通文件的字节数；链接不跟进去，指到外面那个 4 KiB 的不算。
     assert_eq!(
         result["state"],

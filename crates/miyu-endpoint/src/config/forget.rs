@@ -81,3 +81,16 @@ pub(crate) fn present(core: &Core, keys: &[String]) -> Vec<String> {
         .cloned()
         .collect()
 }
+
+/// 配置里已经卸掉的包 `id` 留下的键（施工 PK-5补，`config/left.rs`）：先照盘上现在的重读，照文件里的先后。
+pub(crate) fn left_by(core: &Core, id: &str) -> Vec<String> {
+    let mut config = core.config();
+    observe(core, &mut config, Layer::System);
+    config
+        .file()
+        .leftover
+        .iter()
+        .filter(|(_, owner)| owner == id)
+        .map(|(key, _)| key.clone())
+        .collect()
+}

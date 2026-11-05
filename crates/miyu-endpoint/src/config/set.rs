@@ -453,7 +453,7 @@ pub(super) fn done(
     cause: Option<&CommandId>,
 ) -> Json {
     let old = config.file().clone();
-    let new = File::written(config.items(), &old, written);
+    let new = File::written(config.reading(), &old, written);
     let version = new.version.clone();
     let changes = differences(&old, &new);
     config.replace(new);
