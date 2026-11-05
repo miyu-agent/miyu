@@ -275,3 +275,32 @@ fn the_subject_names_one_of_the_parameters() {
 fn schema_without_properties() -> Value {
     json!({"type": "object"})
 }
+
+/// 职能、范围（施工 XG-2 下，`64-工具职能.md` 第四、五节）：写了的进规格，没写的没有职能、范围是 `any`；认不得的、写成别的类型的
+/// 拒 `bad_tool`，`problem` 是 `role`、`scope`。
+#[test]
+fn role_and_scope_are_declared_like_the_built_in_tools() {
+    let plain = checked(tool("read", json!(["local"]))).expect("合写法");
+    assert_eq!((plain.spec.role, plain.spec.scope), (None, Scope::Any));
+    let declared = |role: Value, scope: Value| {
+        let mut params = tool("read", json!(["local"]));
+        params.role = Some(role);
+        params.scope = Some(scope);
+        params
+    };
+    let reader = checked(declared(json!("read_file"), json!("local_main"))).expect("合写法");
+    assert_eq!(reader.spec.role, Some(Role::ReadFile));
+    assert_eq!(reader.spec.scope, Scope::LocalMain);
+    for (role, scope, problem) in [
+        (json!("write_file"), json!("local"), "role"),
+        (json!(true), json!("local"), "role"),
+        (json!("read_file"), json!("everywhere"), "scope"),
+        (json!("read_file"), json!(["local"]), "scope"),
+    ] {
+        assert_eq!(
+            refused_for(declared(role, scope))["problem"],
+            problem,
+            "{problem}"
+        );
+    }
+}

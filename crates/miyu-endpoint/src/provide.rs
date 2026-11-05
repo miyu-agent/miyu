@@ -13,8 +13,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use miyu_kernel::raw::RawJson;
-use miyu_kernel::tool::Access;
-use miyu_tool::{Problem, Spec, Tool, Venues};
+use miyu_kernel::tool::{Access, Role};
+use miyu_tool::{Problem, Scope, Spec, Tool, Venues};
 
 use crate::Core;
 use crate::extensions::Instance;
@@ -118,6 +118,14 @@ struct ToolParams {
     /// 照旧。1 到 64 个字，写法同包的编号（小写字母开头，小写字母、数字、`-`）；别的写法 `bad_tool`，`problem` 是 `plugin`。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     plugin: Option<Value>,
+    /// 职能（施工 XG-2 下，`docs/designs/64-工具职能.md` 第四节）：核心要找「哪件是干这个的」时照它认，不照名字。取值同出厂的说明
+    /// 文件（`read_file`）；别的写法 `bad_tool`，`problem` 是 `role`。不写的没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    role: Option<Value>,
+    /// 范围（施工 XG-2 下，设计 64 第五节）：`any`、`local`、`local_main`、`local_main_attended`、`spawn`；只能收窄，`venues` 照旧
+    /// 管。别的写法 `bad_tool`，`problem` 是 `scope`。不写的是 `any`。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    scope: Option<Value>,
 }
 
 /// 不写时等多久：一分钟。
@@ -294,6 +302,18 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
         Some(Value::String(name)) if plugin_name(name) => Some(name.clone()),
         Some(_) => return Err(bad_tool(&tool.name, "plugin")),
     };
+    let role = match &tool.role {
+        None => None,
+        Some(value) => Some(
+            serde_json::from_value::<Role>(value.clone())
+                .map_err(|_| bad_tool(&tool.name, "role"))?,
+        ),
+    };
+    let scope = match &tool.scope {
+        None => Scope::Any,
+        Some(value) => serde_json::from_value::<Scope>(value.clone())
+            .map_err(|_| bad_tool(&tool.name, "scope"))?,
+    };
     Ok(Checked {
         spec: Spec {
             name: tool.name,
@@ -303,8 +323,8 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
             clicall,
             result,
             plugin,
-            role: None,
-            scope: miyu_tool::Scope::Any,
+            role,
+            scope,
         },
         venues,
         timeout: Duration::from_millis(timeout),

@@ -97,6 +97,8 @@ Register every tool this package provides now, replacing the previous registrati
 | `access` | What it touches: `read` (only looks, stays inside Miyu), `write`, `execute`, `network`, `outbound` (sends things out), `venue` (actions on a chat platform: recall, mute), `install` |
 | `venues` | Which sessions: one or more of `local`, `private`, `group` |
 | `plugin` | A venue plugin name, written like a package id: in groups and private chats the tool is only given where that venue has it on ([`venue.plugins`](venues.en.md#venueplugins)); local sessions are unaffected. Unset means always given |
+| `role` | What the tool is for, so the core recognizes it by role rather than by name. The only role now is `read_file` (reads a text file: the AI sees the skill list only when a tool like this is there). Unset means none |
+| `scope` | Which sessions get it, narrowing further within `venues`: `any` (the default), `local` (sessions on this machine), `local_main` (the main session on this machine, not subagents), `local_main_attended` (the main session on this machine, with someone watching), `spawn` (this machine, while subagents may still go one level deeper) |
 | `timeout_ms` | 1000 to 600000, default 60000 |
 | `need_load` | Retired (construction FL-1, tools are always sent whole): still accepted, ignored |
 | `clicall` | `true`: the AI can also call it with `miyu call` inside a command (only read, network and execute tools can be); unset means it cannot. Put a structured result in the response's `data` and the script gets one line of JSON |
@@ -106,7 +108,7 @@ Register every tool this package provides now, replacing the previous registrati
 
 **Response**: `{"tools": <count>}`. If the connection drops, the tools stay in the catalog and answer "temporarily unavailable" when called.
 
-**Errors**: `not_a_provider` (not an extension the core launched); `bad_tool`: `data.tool` is which one, `data.problem` is `duplicate`, `name`, `parameters`, `access`, `venues`, `timeout`, `clicall`, `result`, `display_name`, `subject`, `feature`, `plugin`.
+**Errors**: `not_a_provider` (not an extension the core launched); `bad_tool`: `data.tool` is which one, `data.problem` is `duplicate`, `name`, `parameters`, `access`, `venues`, `timeout`, `clicall`, `result`, `display_name`, `subject`, `feature`, `plugin`, `role`, `scope`.
 
 ## `tool.call`, `tool.cancel`
 

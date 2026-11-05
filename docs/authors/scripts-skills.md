@@ -67,6 +67,8 @@ Linux、macOS 上 `chmod +x dice.py`。
 | `Need load` | 不写是先加载：AI 平时只看到名字和一行说明，要用时先加载完整的参数，省钱。`no`：一直给完整的参数，常用的写上 |
 | `Clicall` | `yes`：AI 在命令里写脚本时也能用 `miyu call` 调它，结果交给脚本。不写是不能，只能直接调。要读、要查，并且 AI 在命令里自己不方便做到的脚本，都该写上：AI 能在脚本里批量调，省下一轮轮来回；会改东西、发东西、花额度的别写 |
 | `Venues` | 给哪种会话：`local`（本机的终端、网页这些）、`private`（通讯平台的私聊）、`group`（群）里的几个，逗号隔开，例如 `Venues: local, private`。不写是哪种会话都有；写错的整个脚本不登记，`miyu check` 报出来 |
+| `Role` | 职能，写法同扩展的 `role`：`read_file` 表示这件是读文本文件的。写错的整个不收 |
+| `Scope` | 给哪种会话，写法同扩展的 `scope`（`local`、`local_main`、`local_main_attended`、`spawn`），在 `Venues` 之内再收窄；不写是 `any`，写错的整个不收 |
 
 开头是文件开头连着的那一段注释，遇到第一行不是注释的就完。开头写完空一行再写别的注释，不然说明里一句「Timeout: …」也会被当成开头读。
 

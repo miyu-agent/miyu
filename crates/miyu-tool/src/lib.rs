@@ -104,6 +104,8 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 use miyu_kernel::raw::RawJson;
+/// 范围（施工 XG-2 上）：定义在内核里，和职能放在一起（脚本的注释头在 `miyu-policy` 里读，它不依赖这里），这里照旧导出。
+pub use miyu_kernel::tool::Scope;
 use miyu_kernel::tool::{Access, Role};
 
 /// 一件工具的规格（05 第六节）：第一批四格（施工 4-1）。显示名、摘要随施工 4-5；默认超时、场所、
@@ -133,24 +135,6 @@ pub struct Spec {
     /// 范围（施工 XG-2 上，设计 64 第五节）：给哪种会话，组工具面时照它筛。只能收窄、不能放宽：别处原有的限制（场所的
     /// `venues`、子代理的层数）照旧都算。不写的是 [`Scope::Any`]。
     pub scope: Scope,
-}
-
-/// 一件工具给哪种会话（施工 XG-2 上，`docs/designs/64-工具职能.md` 第五节）：组工具面（`miyu-session` 的 `face()`）时照它多拿掉，
-/// 不让一件工具出现在它本来出现不了的会话里。取值是封闭的，写在说明文件里认不得的读不进。
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Scope {
-    /// 哪种会话都给。
-    #[default]
-    Any,
-    /// 本机的会话，场所里的不给。
-    Local,
-    /// 本机的主会话，场所的、子会话不给。
-    LocalMain,
-    /// 本机的主会话，而且有人看着（能回答问题）。
-    LocalMainAttended,
-    /// 派子会话的工具：本机、子代理的层数没到上限。
-    Spawn,
 }
 
 /// 提供者的工具给哪种会话（施工 O-2 上，`docs/blueprint/providers.md`）：本机的、通讯平台的私聊、群。

@@ -71,6 +71,24 @@ impl Role {
     }
 }
 
+/// 一件工具给哪种会话（施工 XG-2 上，`docs/designs/64-工具职能.md` 第五节）：组工具面（`miyu-session` 的 `face()`）时照它多拿掉，
+/// 不让一件工具出现在它本来出现不了的会话里。取值是封闭的，写在说明文件里认不得的读不进。
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Scope {
+    /// 哪种会话都给。
+    #[default]
+    Any,
+    /// 本机的会话，场所里的不给。
+    Local,
+    /// 本机的主会话，场所的、子会话不给。
+    LocalMain,
+    /// 本机的主会话，而且有人看着（能回答问题）。
+    LocalMainAttended,
+    /// 派子会话的工具：本机、子代理的层数没到上限。
+    Spawn,
+}
+
 /// 内核要知道的一件工具：访问类别、参数格式、脚本里能不能调。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ToolRule {

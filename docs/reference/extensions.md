@@ -97,6 +97,8 @@
 | `access` | 会碰什么：`read`（只看、不出 Miyu）、`write`、`execute`、`network`、`outbound`（往外发东西）、`venue`（在聊天平台上做动作：撤回、禁言）、`install` |
 | `venues` | 给哪种会话：`local`、`private`、`group` 里的一个或几个 |
 | `plugin` | 场所插件的名字，写法同包的编号：群、私聊里只有那个场所开着它（[`venue.plugins`](venues.md#venueplugins)）才给，本机会话照旧。不写是一直给 |
+| `role` | 职能：核心照它认这件是干什么的，不看名字。现在只有 `read_file`（读文本文件：工具面上有这样一件，AI 才看得到技能列表）。不写是没有 |
+| `scope` | 给哪种会话，只能在 `venues` 之内再收窄：`any`（不写就是它）、`local`（本机的会话）、`local_main`（本机的主会话，不给子代理）、`local_main_attended`（本机的主会话，而且有人看着）、`spawn`（本机、子代理的层数没到上限） |
 | `timeout_ms` | 1000 到 600000，默认 60000 |
 | `need_load` | 退役（施工 FL-1，工具一律全量）：写了的照旧登记得上，不看 |
 | `clicall` | `true`：AI 在命令里用 `miyu call` 也能调它（只读、联网、执行类的才调得成），不写是不能。有结构化结果的写进回应的 `data`，脚本拿到一行 JSON |
@@ -106,7 +108,7 @@
 
 **回应**：`{"tools": <件数>}`。连接断了工具照旧留在目录里，被调到时回「暂时不可用」。
 
-**出错**：`not_a_provider`（不是核心拉起的扩展）；`bad_tool`：`data.tool` 是哪一件，`data.problem` 是 `duplicate`、`name`、`parameters`、`access`、`venues`、`timeout`、`clicall`、`result`、`display_name`、`subject`、`feature`、`plugin`。
+**出错**：`not_a_provider`（不是核心拉起的扩展）；`bad_tool`：`data.tool` 是哪一件，`data.problem` 是 `duplicate`、`name`、`parameters`、`access`、`venues`、`timeout`、`clicall`、`result`、`display_name`、`subject`、`feature`、`plugin`、`role`、`scope`。
 
 ## `tool.call`、`tool.cancel`
 

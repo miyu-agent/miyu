@@ -57,3 +57,21 @@ fn every_variable_a_script_gets_is_in_the_authors_docs() {
     }
     assert!(missing.is_empty(), "{}", missing.join("\n"));
 }
+
+/// 开头写的职能、范围进规格（施工 XG-2 下，`64-工具职能.md` 第四、五节）：没写的没有职能、范围是 `any`。
+#[test]
+fn a_scripts_role_and_scope_reach_its_spec() {
+    let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
+    let load = |text: &str| {
+        let head = miyu_policy::script::read("peek.py", text).expect("开头读得进");
+        Script::load(&resources, &head, PathBuf::from("/x/peek.py"), "~home").expect("造得出")
+    };
+    let plain = load("# Description: Peek.\n");
+    assert_eq!(
+        (plain.spec.role, plain.spec.scope),
+        (None, miyu_tool::Scope::Any)
+    );
+    let reader = load("# Description: Peek.\n# Role: read_file\n# Scope: local\n");
+    assert_eq!(reader.spec.role, Some(miyu_kernel::tool::Role::ReadFile));
+    assert_eq!(reader.spec.scope, miyu_tool::Scope::Local);
+}

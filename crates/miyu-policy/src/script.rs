@@ -20,6 +20,7 @@ use std::collections::BTreeMap;
 use std::fmt;
 
 use miyu_config::package::venues_fit;
+use miyu_kernel::tool::{Role, Scope};
 use serde_json::Value;
 
 /// 没写 `Timeout` 的等多少秒（同旧版）。
@@ -58,6 +59,11 @@ pub struct ScriptHead {
     pub clicall: bool,
     /// 给哪种会话（`Venues`，施工 X-43）：照写的先后；没写的没有，哪种会话都有。
     pub venues: Option<Vec<String>>,
+    /// 职能（`Role`，施工 XG-2 下，`docs/designs/64-工具职能.md` 第四节）：写法同出厂的说明文件（`read_file`）；没写的没有。
+    pub role: Option<Role>,
+    /// 范围（`Scope`，施工 XG-2 下，设计 64 第五节）：写法同出厂的说明文件（`local`、`local_main`……），只能收窄，`Venues`
+    /// 照旧管；没写的是 `any`。
+    pub scope: Scope,
 }
 
 /// 哪里不对。
@@ -77,6 +83,10 @@ pub enum ScriptProblem {
     BadClicall(String),
     /// `Venues` 不是认的几种（施工 X-43）：空的、不认识的、重了的。写的原样。
     BadVenues(String),
+    /// `Role` 不是认的职能（施工 XG-2 下）：写的原样。
+    BadRole(String),
+    /// `Scope` 不是认的范围（施工 XG-2 下）：写的原样。
+    BadScope(String),
 }
 
 impl fmt::Display for ScriptProblem {
@@ -93,6 +103,11 @@ impl fmt::Display for ScriptProblem {
             ScriptProblem::BadVenues(text) => write!(
                 f,
                 "Venues {text:?} must list some of local, private, group, each once"
+            ),
+            ScriptProblem::BadRole(text) => write!(f, "Role {text:?} is not a known role"),
+            ScriptProblem::BadScope(text) => write!(
+                f,
+                "Scope {text:?} must be one of any, local, local_main, local_main_attended, spawn"
             ),
         }
     }
@@ -115,6 +130,8 @@ pub fn read(file_name: &str, text: &str) -> Result<ScriptHead, ScriptProblem> {
         summary: BTreeMap::new(),
         clicall: false,
         venues: None,
+        role: None,
+        scope: Scope::Any,
     };
     let mut rest = lines.iter();
     while let Some(line) = rest.next() {
@@ -137,6 +154,16 @@ pub fn read(file_name: &str, text: &str) -> Result<ScriptHead, ScriptProblem> {
             // 退役的 `Need load`（施工 L-1 登记、FL-1 拆掉：工具一律全量）：写了的照别的不认识的那几行，不管。
             "Clicall" => head.clicall = yes_or_no(value, ScriptProblem::BadClicall)?,
             "Venues" => head.venues = Some(venues(value)?),
+            "Role" => {
+                head.role = Some(
+                    serde_json::from_value(Value::String(value.to_string()))
+                        .map_err(|_| ScriptProblem::BadRole(value.to_string()))?,
+                );
+            }
+            "Scope" => {
+                head.scope = serde_json::from_value(Value::String(value.to_string()))
+                    .map_err(|_| ScriptProblem::BadScope(value.to_string()))?;
+            }
             _ => {}
         }
     }

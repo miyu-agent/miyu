@@ -190,3 +190,23 @@ fn venues_read_like_the_manifest() {
         "Venues \"room\" must list some of local, private, group, each once"
     );
 }
+
+/// `Role`、`Scope`（施工 XG-2 下，`64-工具职能.md` 第四、五节）：写法同出厂的说明文件；没写的没有职能、范围是 `any`；写错的报，
+/// 这件脚本不登记。
+#[test]
+fn role_and_scope_are_read_from_the_head() {
+    let plain = read("a.py", "# Description: Hi.\n").expect("读得进");
+    assert_eq!((plain.role, plain.scope), (None, Scope::Any));
+    let head = read(
+        "a.py",
+        "# Description: Hi.\n# Role: read_file\n# Scope: local_main\n",
+    )
+    .expect("读得进");
+    assert_eq!(head.role, Some(Role::ReadFile));
+    assert_eq!(head.scope, Scope::LocalMain);
+    let bad = read("a.py", "# Description: Hi.\n# Role: writer\n").unwrap_err();
+    assert_eq!(bad, ScriptProblem::BadRole("writer".to_string()));
+    assert_eq!(bad.to_string(), "Role \"writer\" is not a known role");
+    let bad = read("a.py", "# Description: Hi.\n# Scope: everywhere\n").unwrap_err();
+    assert_eq!(bad, ScriptProblem::BadScope("everywhere".to_string()));
+}

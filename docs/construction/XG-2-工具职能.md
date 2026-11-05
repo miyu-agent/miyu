@@ -1,6 +1,6 @@
 ## XG-2 工具职能：照声明认，不照名字
 
-状态：XG-2上 施工完，待 core1 审（2026-11-05，sub1）；XG-2下 未开工。设计 `64-工具职能.md`（core1 2026-11-05 定）；蓝图 `tools/interface.md`「规格」、
+状态：XG-2上 已合（c1afde841）；XG-2下 施工完，待 core1 审（2026-11-05，sub1）。设计 `64-工具职能.md`（core1 2026-11-05 定）；蓝图 `tools/interface.md`「规格」、
 `session/tools.md`「工具面」、`skills.md`；设计 26 第十节登记簿。
 
 ### 目的
@@ -57,11 +57,31 @@
 `skills.rs` 那条第三方 `open_file` 的真会话测试，抓住了。原来守着名字特判的几条测试（`sessions`、`questions`、`messages`）照旧守着
 换成范围以后的样子。
 
-### XG-2下（下一步）
+### XG-2下（这一步）
 
-- 扩展经 `provide` 交的工具（`ToolParams`）、包里的脚本工具（注释头）认 `role`、`scope`，认不得的拒 `bad_params`、跳过并记一行。
-- 参考 `docs/reference/`（中英）、作者文档 `extensions`、`scripts-skills` 写怎么声明。
-- 设计 15 第二节、蓝图 `models.md` 第八条写 Zen 的占位为什么照旧照名字。
+- **扩展交的工具**（`miyu-endpoint/src/provide.rs`）：`ToolParams` 多 `role`、`scope`，`checked()` 照内核的封闭表读。认不得的、写成别的类型的
+  回 `bad_tool`，`problem` 是 `role`、`scope`。这是这条路原有的拒法，写错哪一格都这样回；core1 说的「拒」照它。
+- **包里的脚本工具**（`miyu-policy/src/script.rs`）：注释头多 `Role:`、`Scope:` 两行，写法同出厂的说明文件。
+  - 写错的报 `BadRole`、`BadScope`：同写错的 `Clicall`，这件脚本不登记，`miyu check` 报出来。
+  - 照 `basesystem/src/shell/script.rs` 拼进规格。
+- **`Scope` 挪进内核**（`miyu-kernel/src/tool.rs`，和 `Role` 放在一起）：脚本的注释头在 `miyu-policy` 里读，它不依赖 `miyu-tool`。
+  `miyu-tool` 照旧导出 `Scope`，原来写 `miyu_tool::Scope` 的地方不用动。
+- **文档**：
+  - 参考 `extensions`（中英）：`provide` 的两格，`bad_tool` 的 `problem` 多两种；
+  - 作者文档 `extensions`、`scripts-skills`（中英）：怎么声明；
+  - 蓝图 `providers.md`、`skills.md`（脚本的头）；
+  - 设计 15 第二节、蓝图 `models.md` 第八条第 2 条：Zen 的占位为什么照旧照名字。
+
+### 怎么验（XG-2下）
+
+- `provide` 单元：没写的没有职能、范围是 `any`；写了的进规格；`write_file`、`true`、`everywhere`、`["local"]` 各拒 `bad_tool`，
+  `problem` 是对的那一格。
+- 脚本注释头单元：没写的、写了的、写错的（`BadRole`、`BadScope`，原话对）。
+- 脚本拼规格单元（basesystem）：开头写的职能、范围进规格，没写的没有、是 `any`。
+- 手写变异 8 个，都抓住：
+  - `provide` 不带职能、不带范围、认不得的职能当 `read_file`、认不得的范围当 `any`；
+  - 注释头不认 `Role`、不认 `Scope`；
+  - 拼脚本的规格时丢了职能、丢了范围。
 
 ### 坑
 
