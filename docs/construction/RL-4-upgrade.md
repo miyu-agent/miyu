@@ -86,6 +86,15 @@ rc.3 实测（不带 `--prerelease` 报「还没有正式版」、退出码 1；
   报出来；字那条看计数、最多 5 样、没有的不说。
 - 变异 6 个都抓住：全当 Miyu 的、不看固定名单、不看程序名单、程序名不带后缀、不交回留着的、不限 5 样。
 
+### 偶发
+
+RL-4补3 那一趟碰上两次和改动无关的失败（这一步只改 `miyu-cli`）：
+
+- 门禁（.91 忙，在本机跑）红在 `miyu-sandbox` 的 `tests/lifeline.rs` `the_watcher_holds_nothing_but_the_lifeline`（读 `/proc` 下的文件报
+  NotFound，像是看门的进程先退了）；单独重跑三次都过。
+- 分支 CI run 41994268890 只有 Windows 红：`miyu-session` 的 `fork_subagent::limits::a_fork_stops_at_the_fork_step_limit`，
+  「六十秒内磁盘上没等到」预期的那串事件；`rerun --failed` 重跑。core1 11-05 定：再出一次就开 FL 步修。
+
 ### 没验到
 
 - **真的 GitHub、真的下载、真的替换**：合的时候发版公钥还没有，`script` 的走到第 3 步就停。RL-4补 填上了公钥；等主人跑出带签名的
