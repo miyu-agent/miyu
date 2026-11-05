@@ -1,7 +1,7 @@
 # 发版（施工 RL-2，设计 59 第三、四、五节）：推 `v<版本>` 标签（版本是 Cargo.toml 的 [workspace.package] version；演练用
 # `v<版本>-rc.N` 的预发布标签，编之前在 CI 机器上把工作区版本临时改成标签里的版本，RL-2补2）时，四种系统各在自己的机器上
-# `cargo xtask dist` 打一个压缩包、`cargo xtask dist-check` 查包，
-# 查不过的这一趟不发；四个都过了，写 SHA256SUMS、用发版钥匙签、验，加构建出处证明，建一个**草稿** Release 把这些传上去。
+# `cargo xtask dist` 打包、`cargo xtask dist-check` 逐个查包（一体的一份；Linux 两种和 macOS 另有给系统源的三份：核心、
+# 终端、网页，施工 SD-2），查不过的这一趟不发；十三个都过了，写 SHA256SUMS、用发版钥匙签、验，加构建出处证明，建一个**草稿** Release 把这些传上去。
 # 发不发由项目主人看过草稿以后自己点（公开发布要主人当面同意），这里不发布。
 #
 # 要主人自己配的两样（施工单 RL-2「要什么」）：
@@ -74,18 +74,23 @@ jobs:
       # 放在默认的 target/dist/：相对仓库的路径在 Windows 的 bash 里也照常通配（$RUNNER_TEMP 在那边带反斜杠）。
       - name: 打包
         run: cargo xtask dist --target "${{ matrix.target }}"
+      # Windows 只有一体的一份；别的系统一体的加系统源的三份（施工 SD-2）。头那一份查的时候要用旁边核心那一份，都在 target/dist/。
       - name: 查包
         run: |
           set -euo pipefail
           shopt -s nullglob
           found=(target/dist/miyu-*-"${{ matrix.target }}".tar.gz target/dist/miyu-*-"${{ matrix.target }}".zip)
-          [ "${#found[@]}" -eq 1 ] || { echo "::error::target/dist/ 里该正好一个压缩包，有 ${#found[@]} 个"; exit 1; }
-          cargo xtask dist-check "${found[0]}"
-          echo "ARCHIVE=${found[0]}" >> "$GITHUB_ENV"
+          case "${{ matrix.target }}" in windows-*) want=1 ;; *) want=4 ;; esac
+          [ "${#found[@]}" -eq "${want}" ] || { echo "::error::target/dist/ 里该有 ${want} 个压缩包，有 ${#found[@]} 个：${found[*]}"; exit 1; }
+          for archive in "${found[@]}"; do
+            cargo xtask dist-check "${archive}"
+          done
       - uses: actions/upload-artifact@v7
         with:
           name: dist-${{ matrix.target }}
-          path: ${{ env.ARCHIVE }}
+          path: |
+            target/dist/miyu-*-${{ matrix.target }}.tar.gz
+            target/dist/miyu-*-${{ matrix.target }}.zip
           if-no-files-found: error
           retention-days: 7
 
@@ -109,7 +114,7 @@ jobs:
         run: |
           set -euo pipefail
           ls -1 miyu-*.tar.gz miyu-*.zip | sort > files
-          [ "$(wc -l < files)" -eq 4 ] || { echo "::error::要四个压缩包，拿到的是：$(tr '\n' ' ' < files)"; exit 1; }
+          [ "$(wc -l < files)" -eq 13 ] || { echo "::error::要十三个压缩包（四个一体的，三种系统各三份分包），拿到的是：$(tr '\n' ' ' < files)"; exit 1; }
           xargs sha256sum < files > SHA256SUMS
           rm files
           cat SHA256SUMS
@@ -153,6 +158,7 @@ jobs:
             echo
             echo "核对：\`sha256sum -c SHA256SUMS\`；SHA256SUMS 的签名在 SHA256SUMS.sig（Ed25519，发版钥匙）；"
             echo "构建出处：\`gh attestation verify <文件> -R $GITHUB_REPOSITORY\`。"
+            echo "装用 \`miyu-<版本>-<系统>\`（一体的）；\`miyu-core-*\`、\`miyu-tui-*\`、\`miyu-webui-*\` 是给系统源（AUR、Homebrew）打包用的分包。"
             echo
             echo '```'
             cat dist/SHA256SUMS

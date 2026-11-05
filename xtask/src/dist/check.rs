@@ -56,9 +56,20 @@ fn check(root: &Path, archive: &Path) -> Result<Vec<String>, String> {
         .map(|name| name.to_string_lossy().into_owned())
         .unwrap_or_default();
     let expected = archive_name(&version, target);
+    // 系统源分包用的几份（施工 SD-2）：核心那一份、两个头的。
+    let core = format!("{}.tar.gz", super::split::core_name(&version, target));
+    if super::split::wanted(target) && name == core {
+        return checked_core(root, archive, &version, target);
+    }
+    if super::split::wanted(target)
+        && let Some((id, head_version)) = parts::head_of(&name, target)
+    {
+        return checked_head(archive, &archive.with_file_name(&core), id, &head_version);
+    }
     if name != expected {
         return Ok(vec![format!(
-            "压缩包叫 {name}，这一版、这一种该叫 {expected}"
+            "压缩包叫 {name}，这一版、这一种该叫 {expected}（或者分包的 {core}、miyu-tui-<版本>-{target}.tar.gz、\
+             miyu-webui-<版本>-{target}.tar.gz）"
         )]);
     }
     let stem = format!("miyu-{version}-{target}");
@@ -72,6 +83,54 @@ fn check(root: &Path, archive: &Path) -> Result<Vec<String>, String> {
             let resources = tracked(root, "resources")?;
             problems.extend(contents(root, &dir, &version, target, &resources)?);
             problems.extend(runs(&dir, &work.join("home"), &version));
+        }
+        Ok(problems)
+    });
+    remove(&work)?;
+    found
+}
+
+/// 核心那一份（施工 SD-2）：一层 `miyu-core-<版本>-<系统>/`，照仓库比，再跑包里的 `miyu --version`、隔离的数据根里 `miyu check`。
+fn checked_core(
+    root: &Path,
+    archive: &Path,
+    version: &str,
+    target: &str,
+) -> Result<Vec<String>, String> {
+    let stem = super::split::core_name(version, target);
+    let work = archive.with_file_name(format!("{stem}.check"));
+    remove(&work)?;
+    make_dir(&work)?;
+    let found = unpack(archive, &work).and_then(|()| {
+        let mut problems = top(&work, &stem)?;
+        if problems.is_empty() {
+            let dir = work.join(&stem);
+            let resources = tracked(root, "resources")?;
+            problems.extend(parts::core_contents(root, &dir, &resources)?);
+            problems.extend(runs(&dir, &work.join("home"), version));
+        }
+        Ok(problems)
+    });
+    remove(&work)?;
+    found
+}
+
+/// 头那一份（施工 SD-2）：一层包文件夹 `<编号>/`，看齐不齐；再照系统加装层的找法放好，问旁边核心那一份 `core` 认不认得出。
+fn checked_head(
+    archive: &Path,
+    core: &Path,
+    id: &str,
+    version: &str,
+) -> Result<Vec<String>, String> {
+    let work = archive.with_file_name(format!("{id}.check"));
+    remove(&work)?;
+    make_dir(&work)?;
+    let distro = work.join("distro");
+    let found = unpack(archive, &distro).and_then(|()| {
+        let mut problems = top(&distro, id)?;
+        if problems.is_empty() {
+            problems.extend(parts::head_contents(&distro.join(id), id, version));
+            problems.extend(parts::as_distro(core, &work, &distro, id)?);
         }
         Ok(problems)
     });
@@ -260,6 +319,8 @@ fn runnable(file: &Path) -> bool {
         file.is_file()
     }
 }
+
+mod parts;
 
 #[cfg(test)]
 mod tests;

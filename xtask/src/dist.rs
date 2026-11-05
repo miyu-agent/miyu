@@ -20,6 +20,7 @@ mod archive;
 pub mod check;
 mod fetch;
 mod layout;
+mod split;
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -30,7 +31,7 @@ use toml_edit::DocumentMut;
 use crate::heads;
 use archive::{digest, pack};
 use fetch::{fetch, head_cargo, python, status, target_dir, tracked};
-use layout::{Sources, notices, readme, remove, stage};
+use layout::{Sources, copy_tree, notices, readme, remove, stage};
 #[cfg(test)]
 use {crate::heads::Pin, layout::executable};
 
@@ -72,10 +73,12 @@ struct Packed {
 /// `cargo xtask dist [--target <系统>] [--out <目录>]`。
 pub fn run(root: &Path, cargo: &str, args: &[String]) -> ExitCode {
     match dist(root, cargo, args) {
-        Ok(packed) => {
-            println!("打好了 {}", packed.path.display());
-            println!("SHA-256：{}", packed.sha256);
-            println!("大小：{} 字节", packed.bytes);
+        Ok(all) => {
+            for packed in all {
+                println!("打好了 {}", packed.path.display());
+                println!("SHA-256：{}", packed.sha256);
+                println!("大小：{} 字节", packed.bytes);
+            }
             ExitCode::SUCCESS
         }
         Err(error) => {
@@ -85,7 +88,7 @@ pub fn run(root: &Path, cargo: &str, args: &[String]) -> ExitCode {
     }
 }
 
-fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Packed, String> {
+fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Vec<Packed>, String> {
     let options = options(args, HOST)?;
     let version = version(&read(&root.join("Cargo.toml"))?)?;
     let pins = heads::pins(&read(&root.join(heads::PATH))?).map_err(|found| found.join("\n"))?;
@@ -145,6 +148,8 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Packed, String> {
             .join(format!("{TUI_PROGRAM}{exe}")),
     );
     programs.push(web_binary);
+    let core_programs: Vec<PathBuf> = programs[..CORE.len()].to_vec();
+    let tui_program = programs[CORE.len()].clone();
     let mut tui_package: Vec<(PathBuf, PathBuf)> = tracked(tui, "miyu-tui")?
         .into_iter()
         .map(|file| {
@@ -156,7 +161,7 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Packed, String> {
         tui_package.push((tui.join(name), PathBuf::from(name)));
     }
     let resources = root.join("resources");
-    let resource_files = tracked(root, "resources")?
+    let resource_files: Vec<PathBuf> = tracked(root, "resources")?
         .into_iter()
         .map(|file| {
             file.strip_prefix("resources")
@@ -164,8 +169,9 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Packed, String> {
                 .to_path_buf()
         })
         .collect();
+    let core_notices = read(&root.join("THIRD-PARTY-LICENSES.txt"))?;
     let notices = notices(
-        &read(&root.join("THIRD-PARTY-LICENSES.txt"))?,
+        &core_notices,
         (&pins[0], &read(&tui.join("THIRD-PARTY-LICENSES.txt"))?),
         (
             &pins[1],
@@ -174,10 +180,10 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Packed, String> {
     );
     let sources = Sources {
         programs,
-        resources,
-        resource_files,
-        tui_package,
-        web_package: web_stage,
+        resources: resources.clone(),
+        resource_files: resource_files.clone(),
+        tui_package: tui_package.clone(),
+        web_package: web_stage.clone(),
         license: root.join("LICENSE"),
         notices,
         readme: readme(&version, &options.target),
@@ -190,9 +196,54 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Packed, String> {
     let archive = work.join(archive_name(&version, &options.target));
     say("打压缩包");
     pack(&dir, &name, &archive)?;
-    let (sha256, bytes) = digest(&archive)?;
+    let mut all = vec![packed(archive)?];
+
+    // 系统源分包用的三份（施工 SD-2）：Windows 不出。
+    if !split::wanted(&options.target) {
+        say("这台不出分包（没有系统源）");
+        return Ok(all);
+    }
+    let suffix = "tar.gz";
+    let core = split::core_name(&version, &options.target);
+    let core_dir = work.join(&core);
+    say(&format!("搭 {}", core_dir.display()));
+    remove(&core_dir)?;
+    split::stage_core(
+        &core_programs,
+        (&resources, &resource_files),
+        &root.join("LICENSE"),
+        &core_notices,
+        &core_dir,
+    )?;
+    let core_archive = work.join(format!("{core}.{suffix}"));
+    pack(&core_dir, &core, &core_archive)?;
+    all.push(packed(core_archive)?);
+
+    let tui_version = split::version_of(&read(&tui.join("miyu-tui/package.toml"))?)?;
+    let web_version = split::version_of(&read(&web_stage.join("package.toml"))?)?;
+    for (id, head_version) in [("miyu-tui", &tui_version), ("miyu-webui", &web_version)] {
+        // 包文件夹叫编号，放在一个单独的目录下面：压缩包里那一层就是它。
+        let holder = work.join("split").join(id);
+        remove(&holder)?;
+        let folder = holder.join(id);
+        say(&format!("搭 {}", folder.display()));
+        match id {
+            "miyu-tui" => split::stage_head(&tui_package, &tui_program, &folder)?,
+            _ => copy_tree(&web_stage, &folder, &[])?,
+        }
+        let name = split::head_name(id, head_version, &options.target);
+        let archive = work.join(format!("{name}.{suffix}"));
+        pack(&folder, id, &archive)?;
+        all.push(packed(archive)?);
+    }
+    Ok(all)
+}
+
+/// 打好的一个压缩包：算 SHA-256、字节数。
+fn packed(path: PathBuf) -> Result<Packed, String> {
+    let (sha256, bytes) = digest(&path)?;
     Ok(Packed {
-        path: archive,
+        path,
         sha256,
         bytes,
     })

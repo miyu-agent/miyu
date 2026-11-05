@@ -17,6 +17,15 @@
 `LICENSE`、合了核心和两个头的 `THIRD-PARTY-LICENSES.txt`、`README.txt`。放在 cargo 的 target 目录下的 `dist/`，`--out` 换地方。`cargo xtask dist-check <压缩包>` 发布前查包（施工 RL-2）；推 `v<版本>`
 标签时 `.github/workflows/release.yml` 在四种机器上打包、查包，写 `SHA256SUMS`、用发版钥匙签、加构建出处证明，建草稿 Release。
 
+Linux 两种和 macOS 上 `cargo xtask dist` 另打三份给系统源（AUR、Homebrew）分包用（施工 SD-2，设计 `60-系统源分包.md`），Windows 不打：
+
+- `miyu-core-<版本>-<系统>.tar.gz`：一层同名目录，`miyu`、`miyu-sandbox`、`miyu-extract`、只有核心的 `resources/`（不带两个头）、`LICENSE`、
+  核心的 `THIRD-PARTY-LICENSES.txt`。整层放进 `/usr/lib/miyu/`（Homebrew 是 `libexec/`），`miyu` 链进 `bin/`。
+- `miyu-tui-<终端版本>-<系统>.tar.gz`、`miyu-webui-<网页版本>-<系统>.tar.gz`：里面直接是包文件夹，程序在它的 `bin/`。原样拷进
+  `share/miyu/packages/`（`/usr/share/miyu/packages/miyu-tui/`），核心照系统加装那一层认它。版本照头自己的清单。
+
+`dist-check` 也认这三种：头那一份要同一目录里有核心那一份，照系统加装层放好问核心认不认得出。
+
 每个安装包的根目录都放仓库根上的 `LICENSE`（AGPL-3.0 全文）和 `THIRD-PARTY-LICENSES.txt`（编进程序的第三方包的许可证原文，`cargo xtask notices` 生成，蓝图 `licenses.md`「第三方许可证清单」）。带了头的，头的那一份也放进去（施工 AU-2）。
 
 ## 个人机器（第一版的重点）
