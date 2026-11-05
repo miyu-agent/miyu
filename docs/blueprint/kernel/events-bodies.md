@@ -334,6 +334,7 @@
 - 改前改后的内容：小的由执行器照原文写进 `before_text`、`after_text`，别的存成 blob；效果里都有它们的哈希（`session/tools.md` 第 2 条）。
 - 缺了 `kind`、认识的种类缺了必有的格、哈希或者任务编号不合写法的，读不进来。
 - 不认识的种类，例如第三方的工具报来的，整块原样留着，内核不解读。
+- 扩展的工具交的效果（施工 XG-1 上，`providers.md`「扩展交的效果」）：协议端点查过才交给执行器，只收文件的三种和 `todo.written`，路径要是这次调用过了链的，改前改后、读的哈希由核心自己读；从这里往下和内置工具交的分不出来。
 - 她看过的文件照效果记（`session/actor.md`）。施工 U-1 起撤销不再照效果改回文件。`job.started`、`job.messaged`、`peer.watch`、`todo.written`、`package.state`、`file.shown` 不改回什么，撤销时也不算改过文件。
 - `job.started` 的编号整份日志里不重复，撤掉的回合里的也算，由账本查（`kernel/history.md`）。
 

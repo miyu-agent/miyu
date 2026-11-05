@@ -186,6 +186,8 @@ core.close()
 | `clicall` | `true`：AI 在命令里写脚本时也能用 `miyu call` 调它，结果交给脚本。只读、联网、执行类的才调得成，不写是不能。要读、要查，并且 AI 在命令里自己不方便做到的工具，都该写上：AI 能在脚本里批量调，省下一轮轮来回；会改东西、发东西的别写。有结构化结果的写进回答的 `data`，脚本拿到一行 JSON |
 | `role` | 职能：`read_file` 表示这件是读文本文件的（参数里给路径）。核心照职能认、不看名字：你替换了读文件的工具，AI 照样看得到技能列表。不写是没有 |
 | `scope` | 给哪种会话，在 `venues` 之内再收窄：`local`（本机的会话）、`local_main`（本机的主会话，子代理没有）、`local_main_attended`（本机的主会话、有人看着，比如要问人的工具）、`spawn`（派子会话的工具）。不写是 `any` |
+| `paths` | 哪几个参数是文件路径、是读是写：`[{"parameter": "file_path", "write": true}]`。读写文件的工具都该写：核心照它做权限检查（工作区外的写要问人），你回报的文件效果才收得下。见下面「改文件的工具」 |
+| `background_parameters` | 只在会话能放到后台时才有意义的参数名（比如 `["run_in_background"]`）：后台运行关着的会话里，AI 看到的参数格式没有它们。要是不必填的 |
 
 写错的整份不收，回应的 `data` 说哪一件、哪里不对（`{"tool": "hello_greet", "problem": "name"}`）。
 
@@ -210,6 +212,34 @@ core.close()
 - 写了 `clicall` 的工具，想让脚本拿到结构化的结果：回答里加 `data`，任意 JSON（比如 `{"items": [...]}`；搜不到的也交同一个样子，列表是空的，脚本照 JSON 解析不会崩）。AI 在命令里 `miyu call` 调到时，脚本拿到它的一行 JSON，没有 `data` 的拿到 `blocks` 里的字。`data` 不给 AI 看，`error` 是真的不交。
 - 同一时间可能来好几个 `tool.call`，照 `id` 对着回。
 - 过了 `timeout_ms`、人打断了，核心发通知 `tool.cancel {"session", "call_id"}`：放下那一件。
+
+## 改文件的工具
+
+自己写一件编辑器、格式化、改名这类工具，想让它和内置的 `edit` 一样：时间线上有增删行数、能看差异，AI 读过的文件被你改了不用重读。
+
+1. 规格里写 `paths`，说哪个参数是路径、要不要写，`access` 写 `write`：
+
+   ```json
+   {"name": "my_edit", "access": "write", "venues": ["local"],
+    "input_schema": {"type": "object", "properties": {"file_path": {"type": "string"}, "old": {"type": "string"}, "new": {"type": "string"}}, "required": ["file_path", "old", "new"]},
+    "paths": [{"parameter": "file_path", "write": true}]}
+   ```
+
+   参数要是 `input_schema.properties` 顶层的一个，类型是字或字的数组（数组的每一项各算一条）。核心照它做权限检查，和内置的 `edit` 一样：工作区一级下写工作区外的文件先问人，人点头以前你收不到 `tool.call`；Miyu 自己的数据目录、私密目录照规矩拒。没写 `paths` 的工具核心不知道你要碰哪个文件，你报的文件效果一条都不收。
+2. `tool.call` 多一格 `checked`：检查判过的真实位置，照参数里路径的先后。写这几个：你自己把参数里的路径换成真实位置（相对的照 `cwd`，`~` 照家目录，跟着链接走），不在 `checked` 里的别碰：检查以后路径上的链接可能被换过，写下去就不是人同意的那个。
+3. 回答里加 `effects`，只说「哪个文件怎么了」，内容核心自己读：
+
+   ```json
+   {"blocks": [{"type": "text", "text": "Edited a.txt."}], "effects": [{"kind": "file.changed", "path": "a.txt"}]}
+   ```
+
+   - `file.changed {"path"}`：改了、新建了。改前是发 `tool.call` 之前核心读的那份，改后是你回答以后核心现读的；前后一样的不收。想多一层保险可以带 `before`、`after`（`sha256:` 开头的哈希）或 `before_text`、`after_text`，对不上的不收。
+   - `file.read {"path", "lines"?}`：读了（`lines` 是 `[从, 到]`，从 1 数起）。AI 改文件之前照它核对看没看过。
+   - `file.trashed {"path", "trash"}`：移进了回收站，`trash` 是回收站里的位置，只给人看。
+   - `todo.written {"todos", "done"?}`：换上一整份待办，写法同内置的 `todowrite`（替换它的工具用）。
+   - 路径要是 `checked` 里的：改、删的要判了写。别的种类、没判过的路径、写法不对的那一条丢掉，结果照常；运行日志记一行 `tool effect dropped`，排查时看 `why`。
+   - 改了一半出了错，照样回 `error: true` 并报改了的文件：改了的是真的。
+4. 撤销不改回文件（内置的也不改），只退回 AI 看过的：撤掉一轮以后再改那个文件，AI 要先重读。
 
 ## 退出、崩了
 

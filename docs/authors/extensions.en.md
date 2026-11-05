@@ -186,6 +186,8 @@ After the handshake, send `provide`; `tools` is **all** the tools you provide no
 | `clicall` | `true`: the AI can also call it with `miyu call` from a script it runs, and the result goes to the script. Only read, network and execute tools can be; unset means it cannot. Tools that read or look things up, and that the AI can't easily do from a command on its own, should set it: the AI can call them in bulk from a script and skip many round trips. Don't set it on tools that change or send things. Put a structured result in the answer's `data` and the script gets one line of JSON |
 | `role` | What the tool is for: `read_file` means it reads a text file (the path is a parameter). The core goes by the role, not the name, so if you replace the file reader, the AI still sees the skill list. Unset means none |
 | `scope` | Which sessions get it, narrowing further within `venues`: `local` (sessions on this machine), `local_main` (the main session on this machine, not subagents), `local_main_attended` (the main session with someone watching, e.g. a tool that asks the user), `spawn` (a tool that starts subagents). Unset means `any` |
+| `paths` | Which arguments are file paths, and whether they are written: `[{"parameter": "file_path", "write": true}]`. Every tool that reads or writes files should set it: the core runs the permission check from it (writing outside the workspace asks a person), and only then are the file effects you report taken. See **Tools that change files** below |
+| `background_parameters` | Names of arguments that only make sense when the session can run things in the background (such as `["run_in_background"]`): in sessions with background running off, the AI's schema doesn't have them. They must be optional |
 
 A mistake rejects the whole set; the response's `data` says which tool and what's wrong (`{"tool": "hello_greet", "problem": "name"}`).
 
@@ -210,6 +212,34 @@ Response:
 - For a tool with `clicall`, to give scripts a structured result, add `data` to the answer, any JSON (for example `{"items": [...]}`; when nothing is found, send the same shape with an empty list so scripts that parse it as JSON don't break). When the AI calls the tool with `miyu call` inside a command, the script gets that one line of JSON; without `data` it gets the text in `blocks`. The AI doesn't see `data`, and it isn't passed on when `error` is true.
 - Several `tool.call`s may be in flight at once; answer each by its `id`.
 - After `timeout_ms`, or when a person interrupts, the core sends the notification `tool.cancel {"session", "call_id"}`: drop that call.
+
+## Tools that change files
+
+For an editor, formatter, renamer or similar tool of your own to work like the built-in `edit`: lines added and removed on the timeline, a viewable diff, and the AI not having to re-read a file you changed.
+
+1. Declare `paths` in the spec, saying which argument is a path and whether it's written, with `access` set to `write`:
+
+   ```json
+   {"name": "my_edit", "access": "write", "venues": ["local"],
+    "input_schema": {"type": "object", "properties": {"file_path": {"type": "string"}, "old": {"type": "string"}, "new": {"type": "string"}}, "required": ["file_path", "old", "new"]},
+    "paths": [{"parameter": "file_path", "write": true}]}
+   ```
+
+   The argument must be a top-level one in `input_schema.properties`, a string or an array of strings (each item counts). The core runs the permission check from it, as for the built-in `edit`: at the workspace level, writing outside the workspace asks a person first, and you get no `tool.call` until they agree; Miyu's own data directory and private folders are refused as usual. Without `paths` the core doesn't know which files you touch, and none of the file effects you report are taken.
+2. `tool.call` carries `checked`: the real locations the check approved, in the order of the paths in the arguments. Write to these: resolve the path from the arguments yourself (relative to `cwd`, `~` as the home directory, following links), and don't touch it unless it is in `checked`: a link on the way may have been swapped after the check, and writing there would not be what the person agreed to.
+3. Add `effects` to the answer, saying only *which* file and what happened; the core reads the contents itself:
+
+   ```json
+   {"blocks": [{"type": "text", "text": "Edited a.txt."}], "effects": [{"kind": "file.changed", "path": "a.txt"}]}
+   ```
+
+   - `file.changed {"path"}`: changed or created. The before is the copy the core read before sending `tool.call`, the after is what it reads once you answer; if they are the same it isn't taken. For an extra check you may add `before`, `after` (hashes starting with `sha256:`) or `before_text`, `after_text`; anything that doesn't match isn't taken.
+   - `file.read {"path", "lines"?}`: read (`lines` is `[from, to]`, counted from 1). The AI's file edits are checked against what it has seen.
+   - `file.trashed {"path", "trash"}`: moved to the trash; `trash` is where it is there, only shown to people.
+   - `todo.written {"todos", "done"?}`: a whole new to-do list, written as for the built-in `todowrite` (for tools that replace it).
+   - Paths must be in `checked`, as a write for changes and trashing. Other kinds, unchecked paths and malformed items are dropped one by one and the result goes on; the core log gets a line `tool effect dropped`, whose `why` helps when you debug.
+   - If you fail halfway, still answer `error: true` and report the files you did change: those changes are real.
+4. Undo doesn't put files back (nor does it for the built-in tools); it only rolls back what the AI has seen, so after a turn is undone the AI has to re-read that file before changing it again.
 
 ## Exiting and crashing
 

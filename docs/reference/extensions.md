@@ -105,10 +105,12 @@
 | `result` | 有结构化结果的写它的样子，一行字，例如 `{"memes":[{"id","tags"}]}`：告诉 AI 脚本里能直接取哪几格（`miyu call --schema` 也印）。不写是没有 |
 | `display_name` | 给人看的名字：`{"zh": "…", "en": "…"}` |
 | `subject` | 给人看的名字后面跟哪个参数的值，要是 `input_schema.properties` 里的一个 |
+| `paths` | 哪几个参数是路径：`[{"parameter": "file_path", "write": true}]`。参数要是 `input_schema.properties` 顶层的一个，类型是字或字的数组；`write` 不写是读，写了真的 `access` 要是 `write`。核心照它判这次调用要碰的路径（工作区外的写问人，和内置的 `edit` 一样），`tool.call` 带 `checked`，回应里的文件效果只收这几条。不写的不报路径，文件效果一条都不收 |
+| `background_parameters` | 只在会话有后台时才给的参数名：`["run_in_background"]`。要是 `input_schema.properties` 顶层的、不在 `required` 里的。后台运行关着的会话里，AI 看到的参数格式没有它们 |
 
 **回应**：`{"tools": <件数>}`。连接断了工具照旧留在目录里，被调到时回「暂时不可用」。
 
-**出错**：`not_a_provider`（不是核心拉起的扩展）；`bad_tool`：`data.tool` 是哪一件，`data.problem` 是 `duplicate`、`name`、`parameters`、`access`、`venues`、`timeout`、`clicall`、`result`、`display_name`、`subject`、`feature`、`plugin`、`role`、`scope`。
+**出错**：`not_a_provider`（不是核心拉起的扩展）；`bad_tool`：`data.tool` 是哪一件，`data.problem` 是 `duplicate`、`name`、`parameters`、`access`、`venues`、`timeout`、`clicall`、`result`、`display_name`、`subject`、`feature`、`plugin`、`role`、`scope`、`paths`、`background_parameters`。
 
 ## `tool.call`、`tool.cancel`
 
@@ -124,8 +126,9 @@
 | `pictures` | 放图的目录（数据根里照 XDG 的 `pictures/`，施工 Y-11 下）：画出来、生成的图放这里，人在终端、网页里找得到。真实位置，可能还没建，写之前自己建好（缺的上级一起建）。只给本机的会话：会话外面的调用、场所会话（群、私聊，关在自己的工作区里，施工 Y-11 下修）没有这一格，照旧放工作区 |
 | `by` | 是谁要她做的：触发这一轮的那条消息的 `by`；没有触发的回合不写 |
 | `owner` | 核心认不认 `by` 是主人本人 |
+| `checked` | 只给声明了 `paths` 的：权限检查判过的真实位置，照参数里路径的先后（数组每项一条）。写文件就写这几个：你自己把参数里的路径换成真实位置以后，不在这里面的别碰（检查以后路径上的链接可能被换过） |
 
-**回应** `{"result": {"blocks": [...], "error"?, "end_turn"?, "sent"?, "detail"?, "data"?, "state"?}}`：
+**回应** `{"result": {"blocks": [...], "error"?, "end_turn"?, "sent"?, "detail"?, "data"?, "state"?, "effects"?}}`：
 
 | 名字 | 说明 |
 |---|---|
@@ -136,6 +139,21 @@
 | `detail` | 给头看的结构化结果，照下面三种通用形状写一种；不给模型看。形状不对的、`error` 是真的，核心丢掉这一格、结果照常 |
 | `data` | 给脚本的结构化结果，任意 JSON：AI 在命令里用 `miyu call` 调到的（`clicall`），印成一行 JSON 交给脚本；不给模型看，不记进 `tool.result`。`error` 是真的不交 |
 | `state` | 你这个包在这个会话里的一份状态，写法见下面「`session.set_state`、`session.state`」：核心照会话记最新一份，撤销、清空上下文跟着走。写坏了整份丢掉、结果照常；`null` 当没写，清掉写 `{}`；`error` 是真的不收 |
+| `effects` | 这次调用读了、改了、删了哪些文件，换上的待办，照先后：写法见下面「效果」。核心查过才收，收下的和内置工具报的一样：时间线上有增删行数、能看差异，AI 读过的文件被你改了不用重读 |
+
+**效果**（`effects` 的每一项，`kind` 分开）：
+
+| `kind` | 其余几格 | 核心怎么查 |
+|---|---|---|
+| `file.changed` | `path`；可以带 `before`、`after`（内容哈希 `sha256:…`）、`before_text`、`after_text` | `path` 要是 `checked` 里判了写的。改前是发 `tool.call` 之前核心读的，改后是回应到了核心现读的；前后一样的、带了的哈希原文对不上的、超过 20 MiB 的不收 |
+| `file.read` | `path`；`lines`：`[从, 到]`，从 1 数起 | `path` 要是 `checked` 里的（读写都行）；哈希由核心照现在的整份算 |
+| `file.trashed` | `path`、`trash`（回收站里的位置，只给人看，至多 4096 个字） | `path` 要是 `checked` 里判了写的，现在要不在了 |
+| `todo.written` | `todos: [{"content", "status"}]`、`done`?（同内置的 `todowrite`） | 只查写法；`error` 是真的不收 |
+
+- 相对的 `path` 照这次调用的 `cwd` 算，`~` 开头的照家目录。只报「哪个文件」：内容核心自己读，你报的内容骗不了看差异的人。
+- 别的种类、写法不对的、没判过的路径、同一种同一个文件报第二遍的，这一条丢掉，结果别的照常，不算出错；运行日志记一行 `tool effect dropped`（`why` 是 `not_checked`、`unchanged`、`mismatch`、`too_big`、`kind`、`shape` 之一）。
+- `error` 是真的照样收文件效果：改了一半出错，改了的是真的。
+- 撤销不改回文件（和内置工具一样），只退回 AI 看过的。
 
 `detail` 的三种形状（整份写成 JSON 至多 64 KiB）：
 

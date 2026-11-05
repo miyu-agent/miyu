@@ -138,6 +138,7 @@
 | `venue`（施工 O-31 前） | 场所会话：放行；本机的会话：拒绝（`venues` 有 `local` 的照 `outbound`，施工 O-31 补） | 同左 | 同左 |
 
 - 读写不报路径的放行：查不到路径的，执行时工具自己报错。
+- 扩展的工具声明了 `paths` 的（施工 XG-1 上，设计 63 第三节，`providers.md`「声明了 `paths` 的」）照参数报路径，走第三条那张表，和内置 `edit` 一样；没声明的照这一条。
 - 在场所里做的事（`venue`，施工 O-31 前，2026-10-10 核心定）不看级别、不看报的路径：场所会话（场所不是 `local` 的）里放行，不问人，有没有人能确认都一样（场所会话本来就没人能确认，问了等于拒）；本机的会话（终端、网页）里拒绝，`by` 是 `permissions`，写给她出厂的那一句（`core/permissions/not-in-venue.txt`），说法 `core/permissions/not-in-venue`。也给本机用的（工具的 `venues` 里有 `local`，施工 O-31 补，2026-10-17 接入QQ 的会话要的「主动发消息」）本机的会话里不拒，照对外发消息（`outbound`）判：完全放开放行，工作区问人，没人能确认的拒（本机的会话就是主人本人）。谁能叫、能动谁是提供者的事（`providers.md`「在场所里做的事」）。本机的会话的工具面本来就没有只给场所的工具（`venues` 不含 `local`），这一条是兜底。
 - 只碰得到自己工作区的会话（施工 5-12，`11-权限与沙盒.md` 第三节「外部身份」，2026-10-11 项目主人定）：关在沙盒里的场所会话（群会话、陌生人的私聊；记在 `session.created` 的 `confined`，载入照它）。不看级别：文件类工具报的每一条路径换成真实的位置以后，要在这一轮的工作区或者加进来的目录里，外面的（连读）一律拒（放开只读的技能文件夹里的读除外，施工 X-10 上），`by` 是 `permissions`，写给她出厂的那一句（`core/permissions/outside-workspace.txt`，字段 `path`），说法 `core/permissions/outside-workspace`；访问类别是执行命令的：沙盒能用、又关得住读、系统服务的 Unix 套接字也管得住（`miyu_sandbox::confines_others`：读要 Linux、macOS，套接字在 Linux 上要 Landlock 第 9 版或 seccomp，施工 MB-1）的放行，在只准读名单里的沙盒里跑（施工 5-12 下，`session/tools.md` 第 1a 条）；别的一律拒（`no-commands.txt`，说法 `core/permissions/no-commands`）；要在沙盒外跑的、装包卸包的（访问类别 `install`）一律拒。主人本人的场所会话、本机的会话照旧。
 - 问人时不提规则，只能选允许这一次或者拒绝；说明照第五条第 4 款。

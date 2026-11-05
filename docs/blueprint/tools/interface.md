@@ -51,7 +51,7 @@
 | 方法 | 做什么 |
 |---|---|
 | `spec()` | 交出规格 |
-| `targets(&Call)` | 这次调用要碰的路径、是读是写；默认一条都没有 |
+| `targets(&Call)` | 这次调用要碰的路径、是读是写；默认一条都没有。扩展的工具照 `provide` 规格的 `paths` 报（施工 XG-1 上，`providers.md`） |
 | `run(Call, Progress)` | 执行一次调用，交回 `Running`：一个交回 `Done` 的 future |
 | `venues()` | 给哪种会话（`Venues`：本机的、私聊、群）：提供者的工具照它挑；核心自带的没有，照工具面自己的规矩挑（施工 O-2 上，`providers.md`） |
 | `platform()` | 是哪个通讯平台专用的（施工 IM-3，`venues.md`「平台专用的工具」）：场所会话里只给平台对得上的，本机的会话照给；接平台的包登记的、名字以 `<平台>_` 开头的有，别的没有 |
@@ -60,7 +60,7 @@
 | `clicall_section(tools, shapes)` | 说明末尾讲脚本调工具的那一段（施工 M-4，`tools/shell.md`「脚本调工具」第 10 条）：组工具面时，有脚本里能调的工具才照它接上，`tools` 是能调的名单、`shapes` 是结果的样子；跑命令的工具有，默认没有 |
 | `runs_commands()` | 跑命令的工具（施工 BS-1 上，设计 44 第三节第 3 条）：它跑的命令里开 `miyu call` 的通道、说明后面接 `clicall_section`、放行它在沙盒外跑时 `miyu check` 提醒 `sandbox_shell`。核心照这一条认，不看名字；出厂的 `shell` 是，默认不是 |
 | `run_for_person(PersonCommand, Halt)` | 给人跑一条（施工 SH-1 上，「七、给人跑一条」）：**只给人用**，跑命令的工具实现，默认没有（`None`） |
-| `background_parameter()` | 只在会话有后台时才给的参数（施工 BS-1 上）：后台运行关着的会话，组工具面时去掉它。出厂的 `shell` 是 `run_in_background`，默认没有 |
+| `background_parameters()` | 只在会话有后台时才给的那几个参数（施工 BS-1 上；施工 XG-1 上起交 `Vec<&str>`、借自己的）：后台运行关着的会话，组工具面时去掉它们。出厂的 `shell` 是 `run_in_background`、`watch`；扩展的工具照 `provide` 规格的 `background_parameters`（`providers.md`）；默认没有 |
 | `command_only()` | 不上工具面（施工 BS-1 中，设计 44 第三节第 4 条）：不写进 tools 数组，她直接调、`miyu call` 调都当不认识，只给核心自带的命令（会话里的 `miyu pkg`）经通道调（`op: "pkg"`），照常过链、问人。出厂的 `packages`、`package` 是，默认不是 |
 
 **一次调用交给工具的** `Call`：

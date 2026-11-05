@@ -105,10 +105,12 @@ Register every tool this package provides now, replacing the previous registrati
 | `result` | For a tool with a structured result, its shape on one line, for example `{"memes":[{"id","tags"}]}`: tells the AI which fields a script can take directly (`miyu call --schema` prints it too). Unset means none |
 | `display_name` | Name shown to people: `{"zh": "…", "en": "…"}` |
 | `subject` | Which argument's value is shown after the name; must be one of `input_schema.properties` |
+| `paths` | Which arguments are paths: `[{"parameter": "file_path", "write": true}]`. The argument must be a top-level one in `input_schema.properties` whose type is a string or an array of strings; `write` defaults to false (a read), and when true `access` must be `write`. The core checks the paths of each call against the permission rules (writing outside the workspace asks, as with the built-in `edit`), `tool.call` carries `checked`, and the file effects in the response are taken only for these paths. Without it no paths are reported and no file effect is taken |
+| `background_parameters` | Names of arguments that only exist when the session has a background: `["run_in_background"]`. Each must be a top-level one in `input_schema.properties` and not in `required`. In sessions with background running off, the AI's schema doesn't have them |
 
 **Response**: `{"tools": <count>}`. If the connection drops, the tools stay in the catalog and answer "temporarily unavailable" when called.
 
-**Errors**: `not_a_provider` (not an extension the core launched); `bad_tool`: `data.tool` is which one, `data.problem` is `duplicate`, `name`, `parameters`, `access`, `venues`, `timeout`, `clicall`, `result`, `display_name`, `subject`, `feature`, `plugin`, `role`, `scope`.
+**Errors**: `not_a_provider` (not an extension the core launched); `bad_tool`: `data.tool` is which one, `data.problem` is `duplicate`, `name`, `parameters`, `access`, `venues`, `timeout`, `clicall`, `result`, `display_name`, `subject`, `feature`, `plugin`, `role`, `scope`, `paths`, `background_parameters`.
 
 ## `tool.call`, `tool.cancel`
 
@@ -124,8 +126,9 @@ Register every tool this package provides now, replacing the previous registrati
 | `pictures` | The session owner's picture folder (the XDG-style `pictures/` in their home, step Y-11): put images you draw or generate here, where people find them in the terminal and web UI. A real path that may not exist yet; create it (with any missing parents) before writing. Calls outside a session have no such field; keep using the workspace there. Only local sessions get it: venue sessions (groups, private chats) are kept inside their own workspace and don't have it either (step Y-11 fix) |
 | `by` | Who asked her: the `by` of the message that triggered the turn; omitted for turns without a trigger |
 | `owner` | Whether the core recognizes `by` as the owner |
+| `checked` | Only for tools that declare `paths`: the real locations the permission check approved, in the order of the paths in the arguments (one per array item). Write to these: after resolving a path from the arguments yourself, don't touch it unless it is in this list (a link on the way may have been swapped after the check) |
 
-**Response** `{"result": {"blocks": [...], "error"?, "end_turn"?, "sent"?, "detail"?, "data"?, "state"?}}`:
+**Response** `{"result": {"blocks": [...], "error"?, "end_turn"?, "sent"?, "detail"?, "data"?, "state"?, "effects"?}}`:
 
 | Name | Notes |
 |---|---|
@@ -136,6 +139,21 @@ Register every tool this package provides now, replacing the previous registrati
 | `detail` | A structured result for heads, in one of the three common shapes below; not shown to the model. If the shape is wrong or `error` is true, the core drops this field and keeps the rest of the result |
 | `data` | A structured result for scripts, any JSON: when the AI calls the tool with `miyu call` inside a command (`clicall`), the script gets it as one line of JSON. Not shown to the model, not kept in `tool.result`. Not passed on when `error` is true |
 | `state` | Your package's state in this session, written as in **`session.set_state`, `session.state`** below: the core keeps the latest one per session, and undo and clearing the context follow it. A bad one is dropped whole and the result goes on; `null` means not written, `{}` clears; ignored when `error` is true |
+| `effects` | Which files this call read, changed or trashed, and a new to-do list, in order: see **Effects** below. The core checks them before taking them; once taken they are the same as the built-in tools': the timeline shows lines added and removed, the diff can be viewed, and the AI doesn't have to read a file again after you changed it |
+
+**Effects** (each item of `effects`, told apart by `kind`):
+
+| `kind` | Other fields | What the core checks |
+|---|---|---|
+| `file.changed` | `path`; optionally `before`, `after` (content hashes `sha256:…`), `before_text`, `after_text` | `path` must be in `checked` as a write. The before is what the core read before sending `tool.call`, the after is what it reads when the response arrives; dropped when they are the same, when a hash or text you gave doesn't match, or over 20 MiB |
+| `file.read` | `path`; `lines`: `[from, to]`, counted from 1 | `path` must be in `checked` (read or write); the core hashes the whole file as it is now |
+| `file.trashed` | `path`, `trash` (where it is in the trash, only shown to people, at most 4096 characters) | `path` must be in `checked` as a write and no longer exist |
+| `todo.written` | `todos: [{"content", "status"}]`, `done`? (as the built-in `todowrite`) | Only the shape is checked; ignored when `error` is true |
+
+- A relative `path` is taken from this call's `cwd`, one starting with `~` from the home directory. Only say *which* file: the core reads the contents itself, so what people see in the diff can't be made up.
+- Other kinds, malformed items, paths that weren't checked, and a second item of the same kind for the same file are dropped one by one; the rest of the result goes on and the call doesn't fail. The core log gets a line `tool effect dropped` (`why` is one of `not_checked`, `unchanged`, `mismatch`, `too_big`, `kind`, `shape`).
+- File effects are taken even when `error` is true: a change made before failing is real.
+- Undo doesn't put files back (as with the built-in tools); it only rolls back what the AI has seen.
 
 The three shapes of `detail` (at most 64 KiB as JSON):
 

@@ -189,4 +189,4 @@
 ### 还没有的
 
 - 沙盒里跑：另做（`network`、`fs.*` 现在管的是经核心做的，扩展自己联网、读写文件不挡）。照能力挡方法、扩展说的话记成它自己：施工 X-30 做了（「谁能调」）。
-- 扩展提供工具、命令：O-2；回合开始的挂接点：X-16；放在 system 尾部的：X-20。`tool.guard`、`tool.rewrite` 还没有。
+- 扩展提供工具、命令：O-2；回合开始的挂接点：X-16；放在 system 尾部的：X-20。`tool.guard`、`tool.rewrite` 还没有。扩展的工具声明路径、交效果、声明后台参数：XG-1 上做了（`providers.md`）；声明跑命令（`runs_commands`、能力 `tools.commands`）：XG-1 下。
