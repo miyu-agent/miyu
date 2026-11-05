@@ -55,6 +55,8 @@ enum Command {
     Mcp(miyu_cli::Mcp),
     /// 让核心开机、登录就起：装、卸、看本人这一层的服务（施工 Z-1 下）。
     Service(miyu_cli::Service),
+    /// 升级 Miyu 本身，或者说该用哪个包管理器（施工 RL-4）。
+    Upgrade(miyu_cli::Upgrade),
     /// 看配置、改配置、信任项目配置（施工 8-2、8-3）。
     Config(miyu_cli::Config),
     /// 查手写的文件有没有写错：配置、密钥文件、人格（施工 8-30）。
@@ -231,6 +233,9 @@ fn main() -> ExitCode {
                 .mut_subcommand("disable", |disable| disable.override_help(help))
                 .mut_subcommand("status", |status| status.override_help(help))
         })
+        .mut_subcommand("upgrade", |upgrade| {
+            upgrade.override_help(page(language, Page::Upgrade))
+        })
         .mut_subcommand("sandbox", |sandbox| {
             let help = page(language, Page::Sandbox);
             sandbox
@@ -256,6 +261,7 @@ fn main() -> ExitCode {
         Some(Command::Sandbox(args)) => miyu_cli::sandbox(args),
         Some(Command::Mcp(args)) => miyu_cli::mcp(args, core),
         Some(Command::Service(args)) => miyu_cli::service(args),
+        Some(Command::Upgrade(args)) => miyu_cli::upgrade(args),
         // 不带子命令、在终端里：打开界面的设置页（施工 9-3，原来的 8-24）；界面不认设置页的照旧印帮助。
         Some(Command::Config(args)) if args.command.is_none() && terminal() => {
             match miyu_cli::head::open(Some("config"), core) {

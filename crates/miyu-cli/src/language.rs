@@ -23,6 +23,7 @@ mod schedule;
 mod service;
 mod setup;
 mod undo;
+mod upgrade;
 
 pub(crate) use confirm::{Carried, Doing, PlanLabel};
 pub(crate) use pkg::{CameFrom, Checked, InfoKey, LogoWhy};

@@ -1,0 +1,15 @@
+Usage: miyu upgrade [<options>]
+
+Upgrade Miyu itself. When it was installed by the install script, download
+the new version, verify its signature and checksum, and replace it. When it
+came from AUR or Homebrew, print the package manager command to use. When it
+was unpacked by hand, print where to download it. Your data is not touched.
+
+The whole folder the program lives in is replaced. A core that is already
+running stays on the old version until 'miyu core stop'; the next start uses
+the new one.
+
+Options:
+      --pre   Include pre-releases
+      --yes   Upgrade without asking
+  -h, --help  Print help

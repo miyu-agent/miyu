@@ -41,6 +41,7 @@
 | `provider` | `login`、`list`、`logout`：存、列、删供应商的 key（施工 8-5，Y-13 上从 `login`、`logout` 挪来） | `cli/login.md` |
 | `setup` | 接上第一个模型：找现成的 key 和本机的服务，或者搜目录、贴 key，试通了写进系统配置（施工 8-11） | `cli/setup.md` |
 | `service` | `enable`、`disable`、`status`：让核心开机、登录就起，替本人装、卸、看本人这一层的服务（施工 Z-1 下） | `cli/service.md` |
+| `upgrade` | 升级 Miyu 本身：安装脚本装的自己下载、核对、替换，包管理器装的说用哪条命令（施工 RL-4） | `cli/upgrade.md` |
 | `sandbox` | `setup`、`remove`：Windows 上装好、撤掉沙盒用户，要管理员权限；别的平台上说一句不用装 | `sandbox/windows.md` |
 | `call` | 在 AI 跑的命令里调这个会话的工具（施工 M-3，设计 39）：不读清单、不经 clap，`main.rs` 当场交给 `miyu_cli::call`；不写进总帮助，`miyu call -h` 印它自己的那一页 | `cli/call.md` |
 | `core` | 核心进程：由头拉起，平时不用人敲；不写进帮助 | `core.md` |
@@ -114,6 +115,7 @@
 
 系统：
   service <命令>      管理后台服务
+  upgrade             升级 Miyu
   sandbox <命令>      配置或移除沙盒用户（Windows）
 
 选项：
@@ -162,6 +164,7 @@ Settings:
 
 System:
   service <command>   Manage the background service
+  upgrade             Upgrade Miyu
   sandbox <command>   Set up or remove the sandbox user (Windows)
 
 Options:
@@ -259,5 +262,5 @@ Run 'miyu help <command>' for more on a command.
 
 - 只敲 `miyu` 打开终端界面（`22-命令行.md` 第五节、`13-终端界面.md`）：现在只说还没做好。
 - 会话怎么接：现在每次 `miyu ask` 开一个一次性会话，`--continue`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename` 管的都是上一次 `miyu ask` 开的那个，容易让人迷惑。做头的时候和终端里的会话一起重定（2026-09-28 项目主人定）。
-- 第五节表里的其余命令：`stdio`、`web`、`status`、`doctor`、`logs`、`session`、`config`、`persona`、`preset`、`memory`、`venue`、`listen`、`stt`、`pkg`、`tools`、`account`、`service`、`upgrade`、`completions`（`shellhook` 归终端界面的包，`22-命令行.md` 第七节）。
+- 第五节表里的其余命令：`stdio`、`web`、`status`、`doctor`、`logs`、`session`、`config`、`persona`、`preset`、`memory`、`venue`、`listen`、`stt`、`pkg`、`tools`、`account`、`service`、`completions`（`shellhook` 归终端界面的包，`22-命令行.md` 第七节）。
 - 界面语言是配置里跟着人走的一项（`14-配置.md` 第一节、`16-人格与预设.md` 第五节）；界面的字放在代码之外（`00-设计理念.md` 第六节）：现在照环境变量，字写在代码里。

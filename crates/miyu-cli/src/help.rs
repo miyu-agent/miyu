@@ -48,6 +48,8 @@ pub enum Page {
     Mcp,
     /// `miyu session -h`，`export`、`import` 的 `-h` 也印它（施工 SE-1 中上）。
     Session,
+    /// `miyu upgrade -h`（施工 RL-4）。
+    Upgrade,
 }
 
 /// 有子命令的那几个命令照名字是哪一页（施工 K-7 修：少了参数时照它说子命令怎么写）；别的没有。
@@ -111,6 +113,8 @@ pub fn page(language: Language, page: Page) -> &'static str {
         (Language::English, Page::Mcp) => include_str!("help/en/mcp.txt"),
         (Language::Chinese, Page::Session) => include_str!("help/zh/session.txt"),
         (Language::English, Page::Session) => include_str!("help/en/session.txt"),
+        (Language::Chinese, Page::Upgrade) => include_str!("help/zh/upgrade.txt"),
+        (Language::English, Page::Upgrade) => include_str!("help/en/upgrade.txt"),
     }
 }
 

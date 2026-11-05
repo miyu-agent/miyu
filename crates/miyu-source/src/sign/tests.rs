@@ -74,3 +74,16 @@ fn the_official_source_has_a_key() {
         "官方软件源的公钥编进来了（施工 G-7）"
     );
 }
+
+#[test]
+fn the_release_keys_read_and_match_their_ids() {
+    for (id, text) in RELEASE {
+        let key = PublicKey::from_base64(text).expect("发版公钥读得成");
+        assert_eq!(key.id, *id, "编号照公钥算");
+    }
+    assert_eq!(release().len(), RELEASE.len());
+    assert!(
+        release().iter().all(|key| !official().contains(key)),
+        "发版钥匙和软件源那把分开"
+    );
+}
