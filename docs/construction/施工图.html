@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>1049</b><span>/ 1058 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>1050</b><span>/ 1059 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">PK-2</b><span>最近一步（PK-2 依赖的版本下限）</span></li>
+    <li><b class="mono">SH-2</b><span>最近一步（SH-2 人跑的命令导出成 Markdown）</span></li>
   </ul>
 </header>
 
@@ -533,6 +533,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sMN1b"><span class="n">MN-1 下</span>监视的命令在视图流里<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sSH1a"><span class="n">SH-1 上</span>人在输入框里用 ! 跑命令<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sSH1b"><span class="n">SH-1 下</span>人跑的命令在视图流里<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sSH2"><span class="n">SH-2</span>人跑的命令导出成 Markdown<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27"><span class="n">X-27</span>脚本列表和全局开关<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27a"><span class="n">X-27 补</span>包里的服务和打开目录<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s514a"><span class="n">5-14 上</span>工作目录和工作区分开<span class="st">✓</span></a></li>
@@ -12756,6 +12757,61 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/PK-2-依赖的版本下限.md</code>；蓝图 <code>packages.md</code>「依赖」、「出错」、「还没有的」，<code>protocol.md</code>；参考 <code>packages</code>、<code>errors</code>（中英）；作者文档 <code>manifest</code>（中英）；设计 31 第三节。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sSH2" aria-labelledby="h-sSH2">
+  <div class="sheet-head"><h2 id="h-sSH2"><span class="no">SH-2</span>人跑的命令导出成 Markdown</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">人用 <code>!</code> 跑的命令，导出的 Markdown 里原来只是一句 <code>## User</code> 下的普通话，看不出是命令、也没有输出和退出码。现在写成命令、怎么结束的、输出。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-view/src/markdown/shell.rs</span><span class="dir-note">SH-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>带 <code>shell</code> 的 <code>user</code>：<code>console</code> 代码块里写 <code>$ &lt;命令&gt;</code></li>
+              <li>下一行：异常结束的原因（到时、打断、核心停了）、退出码或信号、用时；还在跑的写「还在跑」</li>
+              <li>输出照工具的写法：<code>read</code> 长的折起来，<code>agent</code>、<code>chat</code> 照 <code>tools</code> 截头尾，<code>tools: line</code> 不写</li>
+              <li><code>agent</code> 的字是英文常量，<code>read</code>、<code>chat</code> 照连接的语言（<code>core/export/shell/…</code>）</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">小标题照旧 <code>## User</code>，命令写成 <code>$ </code> 开头的 <code>console</code> 代码块</span><span class="rl">core1 11-05 定</span></div>
+          <div class="tile new"><span class="nm">输出的截法、折法和工具输出一样</span><span class="rl">core1 11-05 定</span></div>
+          <div class="tile new"><span class="nm">不认得的结束原因不写（视图流照事件原样给）</span><span class="rl">SH-2 技术题</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">SH-2</dd></div>
+        <div><dt>名称</dt><dd>人跑的命令导出成 Markdown</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-05</dd></div>
+        <div><dt>提交</dt><dd class="mono">SH-2</dd></div>
+        <div><dt>验收</dt><dd><code>markdown_shell.rs</code> 6 条逐段对；手写变异 8 个都逮住</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span><code>read</code>：命令、退出码、用时、输出逐段对；30 行的输出折起来</span></li>
+        <li><span class="ok">✓</span><span>还在跑、到时被停（信号）、打断各一句</span></li>
+        <li><span class="ok">✓</span><span><code>agent</code> 英文、一万字的输出截了；<code>tools: line</code> 不写输出；普通的话照旧</span></li>
+        <li><span class="ok">✓</span><span>手写变异 8 个都逮住</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/SH-2-人跑的命令导出成Markdown.md</code></li>
+        <li>蓝图 <code>docs/blueprint/view.md</code>「在哪」markdown 那一行</li>
       </ul>
     </div>
   </div>
