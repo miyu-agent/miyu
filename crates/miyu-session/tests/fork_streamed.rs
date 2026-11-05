@@ -279,6 +279,7 @@ fn setup<'a>(
             call,
             depth: 2,
             placeholder: "Forked; the parent keeps going.".to_string(),
+            read_only: false,
         }),
     }
 }

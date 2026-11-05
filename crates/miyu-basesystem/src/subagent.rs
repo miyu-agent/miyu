@@ -67,6 +67,9 @@ struct Args {
     /// fork（施工 A-F 中）：不写、写 `null`、`false` 的是不 fork。
     #[serde(default)]
     fork: Option<bool>,
+    /// 只读（施工 SA-1）：不写、写 `null`、`false` 的照父会话的权限。
+    #[serde(default)]
+    read_only: Option<bool>,
 }
 
 /// 写了列表里没有的池（施工 P-2 补起人格也是）：原话照 `serde` 的 `unknown_variant`，列出能写的几个（`models.md`
@@ -170,6 +173,7 @@ impl Tool for Subagent {
                 persona,
                 attached,
                 fork,
+                read_only: args.read_only.unwrap_or(false),
             };
             let Ok(spawned) = port.spawn(order).await else {
                 return not_started();

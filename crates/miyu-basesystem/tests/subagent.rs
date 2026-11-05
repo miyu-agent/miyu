@@ -139,11 +139,17 @@ fn it_declares_a_title_the_task_and_a_pool() {
             "fork",
             "persona",
             "pool",
-            "prompt"
+            "prompt",
+            "read_only"
         ]
     );
     // fork（施工 A-F 中）：布尔，不进 `required`。
     assert_eq!(parameters["properties"]["fork"]["type"], "boolean");
+    // 只读（施工 SA-1）：布尔，一句说明，不进 `required`。
+    assert_eq!(
+        parameters["properties"]["read_only"],
+        json!({"type": "boolean", "description": "true: it can read but not change files."})
+    );
     assert_eq!(parameters["required"], json!(["description", "prompt"]));
     assert_eq!(
         parameters["properties"]["pool"],

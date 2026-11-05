@@ -20,6 +20,10 @@ use crate::support::*;
 #[path = "fork_subagent/limits.rs"]
 mod limits;
 
+/// 写了只读的 fork 子代理（施工 SA-1）。
+#[path = "fork_subagent/read_only.rs"]
+mod read_only;
+
 const PLACEHOLDER: &str = include_str!("../../../resources/core/tool-results/forked.txt");
 const SHELL: &str = include_str!("../../../resources/core/jobs/fork-directive.txt");
 const NO_FORK: &str = include_str!("../../../resources/software/basesystem/agent/no-fork.txt");
@@ -85,6 +89,7 @@ impl SessionPort for Forks {
                     call: child.call,
                     depth: child.lineage.depth,
                     placeholder: child.placeholder.clone(),
+                    read_only: child.read_only,
                 }),
             })
             .await

@@ -23,6 +23,7 @@ impl Sessions {
             command,
             call,
             placeholder,
+            read_only,
         } = child;
         let at = now();
         let id = new_id(at);
@@ -48,6 +49,7 @@ impl Sessions {
                     call,
                     depth: lineage.depth,
                     placeholder,
+                    read_only,
                 }),
             })
             .await

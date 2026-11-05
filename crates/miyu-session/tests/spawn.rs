@@ -40,6 +40,10 @@ mod unclaimed;
 #[path = "spawn/recorded.rs"]
 mod recorded;
 
+/// 子代理写了只读（施工 SA-1）。
+#[path = "spawn/read_only.rs"]
+mod read_only;
+
 /// 场所说明的原文。
 const VENUE: &str = include_str!("../../../resources/core/jobs/subagent-venue.txt");
 /// 核心的几行（施工 2-7 补）：权限那一句、本机文件的路径那一句、本机是什么系统那一句（施工 2-7 再补），一行一句。

@@ -30,7 +30,7 @@
 ```json
 {
   "description": "Start a subagent in a new session to do one task in the background. Its report arrives as a message when it finishes. Without fork it sees only the prompt, not this conversation.",
-  "parameters": {"type":"object","properties":{"description":{"type":"string","description":"Short title, 3 to 5 words."},"prompt":{"type":"string"},"attachments":{"type":"array","items":{"type":"string"},"description":"File paths, at most 8."},"pool":{"type":"string","description":"Default: your own model."},"persona":{"type":"string","description":"Default: none."},"fork":{"type":"boolean","description":"true: it continues from a copy of this conversation, with your model and persona."}},"required":["description","prompt"]}
+  "parameters": {"type":"object","properties":{"description":{"type":"string","description":"Short title, 3 to 5 words."},"prompt":{"type":"string"},"attachments":{"type":"array","items":{"type":"string"},"description":"File paths, at most 8."},"pool":{"type":"string","description":"Default: your own model."},"persona":{"type":"string","description":"Default: none."},"fork":{"type":"boolean","description":"true: it continues from a copy of this conversation, with your model and persona."},"read_only":{"type":"boolean","description":"true: it can read but not change files."}},"required":["description","prompt"]}
 }
 ```
 
@@ -41,6 +41,7 @@
 | `attachments` | 否 | 附件：同 `send_message` 的 `attachments`，记进交给子会话的那一句（施工 C-9） |
 | `persona` | 否 | 人格的编号（施工 P-2 补，走查 C5）：只能是这个会话列着的（端口的 `personas()`，同 `pool`：开会话时照这台机器上几层里写了 `[persona] subagent = true` 的人格填进 `enum`（施工 P-10 补，一个都没有的拿掉这个参数），进快照；说明后面一个人格一行 `<编号>: <名字> — <简单描述>`，名字、简单描述是 `persona.toml` 的 `name`、`summary`，挑英文的，缺一样给另一样，都没有的只有编号，施工 P-10）。交给端口，子会话照它造；不写、写 `null` 的是软件工程师 `engineer`。写错的同 `pool`，照参数不对列出能写的几个 |
 | `fork` | 否 | 布尔（施工 A-F 中，`agents.md`「fork 子代理」）：`true` 的，子会话从这一轮派它的那一步分叉，看得到这一轮之前的一切，模型、人格、快照照父会话；写了 `pool`、`persona` 的参数不对。不写、`false` 的照旧造一个空白的子会话 |
+| `read_only` | 否 | 布尔（施工 SA-1，2026-11-05 项目主人定）：`true` 的，子会话的权限照父会话的抄、只读开关打开（`session/guard.md`：写的调用照只读拦，命令照只读进沙盒）；fork 的也一样，记进它的 `session.created`。不写、`false` 的照父会话；父会话只读的本来就只读。人在界面上照样能放开子会话的权限，她自己改不了 |
 | `pool` | 否 | 池的名字，不带 `@`：只能是这个会话列着的（施工 8-8 补，端口的 `pools()`）。交给端口，子会话记 `@<池>`；不写、写 `null` 的，子会话用父会话这时用的（`models.md`「怎么走」第三条第 4 条）。这个会话一个池都没列的，参数格式里没有它 |
 
 - 别的参数不认，也不报错。以前的会话快照里冻着 `tier`（施工 8-8 造的），她照旧写的不报错、不理它，照不写办。没有 `preset`：子会话一律照父会话的预设，写了也不理（2026-10-08 项目主人定：子代理只看得到池和人格）。

@@ -16,7 +16,7 @@ use std::num::NonZeroU32;
 use std::path::Path;
 use std::sync::Arc;
 
-use miyu_kernel::event::{Body, Event, Forked, SessionCreated};
+use miyu_kernel::event::{Body, Event, Forked, Permission, SessionCreated};
 use miyu_kernel::facts::Environment;
 use miyu_kernel::id::{CallId, CommandId, Seq, SessionId};
 use miyu_kernel::origin::By;
@@ -64,6 +64,8 @@ pub struct Within {
     pub depth: u32,
     /// 那一步每个调用的占位结果（`core/tool-results/forked.txt`）。
     pub placeholder: String,
+    /// 只读（施工 SA-1）：权限照父会话那一刻的抄，再把只读开关打开；父会话只读的本来就开着。
+    pub read_only: bool,
 }
 
 /// 分叉不成。
@@ -185,7 +187,12 @@ async fn forked<H: Hand>(setup: Fork<'_>) -> Result<(Seq, H::Handed), ForkError>
         let child = SessionCreated {
             venue: created.venue,
             policy: plan.policy,
-            permission: plan.permission,
+            // 只读（施工 SA-1）：fork 子代理写了只读的，只读开关打开。
+            permission: Permission {
+                read_only: plan.permission.read_only
+                    || within.as_ref().is_some_and(|within| within.read_only),
+                ..plan.permission
+            },
             oneshot: false,
             cwd: cwd.clone().or(created.cwd),
             parent: Some(parent.clone()),

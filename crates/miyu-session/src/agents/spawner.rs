@@ -40,6 +40,7 @@ impl AgentPort for Spawner {
             persona,
             attached,
             fork,
+            read_only,
             ..
         } = order;
         Box::pin(async move {
@@ -68,7 +69,11 @@ impl AgentPort for Spawner {
                 command: command_id(parent, &job, ""),
                 persona: persona.map(str::to_string),
                 venue: agents.venue.clone(),
-                permission: self.permission.clone(),
+                // 只读（施工 SA-1）：父会话的权限照抄，写了只读的再把只读开关打开；父会话只读的本来就开着。
+                permission: Permission {
+                    read_only: self.permission.read_only || read_only,
+                    ..self.permission.clone()
+                },
                 attended: agents.attended,
                 cwd: self.cwd.clone(),
                 dirs: self.dirs.clone(),
@@ -83,7 +88,7 @@ impl AgentPort for Spawner {
                 NotSpawned
             })?;
             let made = match fork {
-                true => self.forked(child).await,
+                true => self.forked(child, read_only).await,
                 false => agents.port.create(child).await,
             };
             let session = made.map_err(|error| {
@@ -160,7 +165,7 @@ impl Spawner {
     }
 
     /// 经会话表从这次调用那一步分叉出子会话（施工 A-F 中）：父会话、层数、命令编号照 `child`，别的照父会话落了盘的日志。
-    async fn forked(&self, child: Child) -> Result<SessionId, String> {
+    async fn forked(&self, child: Child, read_only: bool) -> Result<SessionId, String> {
         let placeholder = self
             .agents
             .resources
@@ -171,6 +176,7 @@ impl Spawner {
             command: child.command,
             call: self.call,
             placeholder,
+            read_only,
         };
         self.agents.port.fork(fork).await
     }

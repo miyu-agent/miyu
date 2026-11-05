@@ -169,4 +169,6 @@ pub struct ForkChild {
     pub call: CallId,
     /// 那一步每个调用的占位结果（`core/tool-results/forked.txt`）。
     pub placeholder: String,
+    /// 只读（施工 SA-1）：子会话的只读开关打开。
+    pub read_only: bool,
 }

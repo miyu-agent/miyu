@@ -146,6 +146,7 @@ async fn a_fork_at_the_depth_limit_starts_no_subagent() {
             call: subagent_call(&child_log),
             depth: 3,
             placeholder: PLACEHOLDER.to_string(),
+            read_only: false,
         }),
     })
     .await;
