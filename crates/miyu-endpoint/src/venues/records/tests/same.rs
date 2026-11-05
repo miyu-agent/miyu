@@ -225,17 +225,33 @@ fn below(history: &History, reach: Seq) -> Vec<Event> {
         .collect()
 }
 
-/// 第 `k` 条要判的比不比第 `w` 样窗口：都比的太慢（调试版三千段要十分钟），平时比出厂的那样和轮着的两样；
-/// `MIYU_RECORDS_FULL=1` 的每样都比（施工时照它跑过一遍 release）。
-fn every(k: usize, w: usize) -> bool {
-    w == 0 || (k + w).is_multiple_of(3) || std::env::var_os("MIYU_RECORDS_FULL").is_some()
+/// 设了 `MIYU_RECORDS_FULL` 的全量跑：CI 的 randomized 那一项设（施工 CI-2）。
+fn full() -> bool {
+    std::env::var_os("MIYU_RECORDS_FULL").is_some()
 }
 
-/// 第 `seeds` 段：新旧比，交回三条退路各走了几次。
+/// 平时每份比前几段：每份五百段都比，Windows 的 debug 一份要一百多秒、六份压着 check 的时限（施工 CI-2）；全量每份五百段。
+const QUICK: u64 = 40;
+
+/// 这一份要比的种子：平时前 [`QUICK`] 段，全量整份。
+fn part(seeds: std::ops::RangeInclusive<u64>) -> std::ops::RangeInclusive<u64> {
+    match full() {
+        true => seeds,
+        false => *seeds.start()..=(*seeds.start() + QUICK - 1).min(*seeds.end()),
+    }
+}
+
+/// 第 `k` 条要判的比不比第 `w` 样窗口：都比的太慢（调试版三千段要十分钟），平时比出厂的那样和轮着的两样；
+/// 全量的每样都比（施工时照它跑过一遍 release）。
+fn every(k: usize, w: usize) -> bool {
+    w == 0 || (k + w).is_multiple_of(3) || full()
+}
+
+/// 第 `seeds` 段（平时只比前几段，见 [`part`]）：新旧比，交回三条退路各走了几次。
 fn compare(seeds: std::ops::RangeInclusive<u64>) -> [usize; 3] {
     let mut paths = [0; 3];
     let texts = |_: Option<&Event>| Ok((chat(), None));
-    for seed in seeds {
+    for seed in part(seeds) {
         let events = events(seed);
         let only = only(seed);
         reaches_hold(&events);
@@ -262,11 +278,13 @@ fn compare(seeds: std::ops::RangeInclusive<u64>) -> [usize; 3] {
     paths
 }
 
-// 三千段分六份并着跑；三条退路合起来都要走到（整份读的那条靠骨架认不得的几段，种子里约百分之一）。
+// 三千段分六份并着跑（平时每份只比前几段）；三条退路合起来都要走到（整份读的那条靠骨架认不得的几段，种子里约百分之一，
+// 平时那几十段里不一定有，只在全量查）。
 #[test]
 fn chats_read_the_same_as_before_1() {
     let paths = compare(1..=500);
-    assert!(paths.iter().all(|&n| n > 0), "{paths:?}");
+    let wanted: &[usize] = if full() { &[0, 1, 2] } else { &[0, 2] };
+    assert!(wanted.iter().all(|&k| paths[k] > 0), "{paths:?}");
 }
 
 #[test]

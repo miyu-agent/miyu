@@ -34,8 +34,8 @@ use crate::testkit::undo_log::{Dice, UndoLog};
 mod old;
 mod script;
 
-/// 默认几个种子。
-const SEEDS: u64 = 240;
+/// 平时几个种子：原来的 240 个 Windows 的 debug 要一分多钟，挪到 CI 的 randomized 那一项照 `MIYU_V43_SEEDS` 跑（施工 CI-2）。
+const SEEDS: u64 = 24;
 
 fn seeds() -> u64 {
     std::env::var("MIYU_V43_SEEDS")

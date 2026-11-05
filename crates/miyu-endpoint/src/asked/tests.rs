@@ -144,10 +144,20 @@ fn seeded(seed: u64) -> (PathBuf, TempDir, Script) {
     (dir, temp, script)
 }
 
+/// 全量几份。
+const FULL: u64 = 3000;
+
+/// 平时几份：全量的 Windows debug 要一百多秒（施工 CI-2）。设了 `MIYU_ASKED_FULL` 的照 [`FULL`]，CI 的 randomized 那一项设。
+const QUICK: u64 = 300;
+
 #[test]
 fn the_same_as_the_whole_read_over_seeded_sessions() {
+    let seeds = match std::env::var_os("MIYU_ASKED_FULL") {
+        Some(_) => FULL,
+        None => QUICK,
+    };
     let (mut again, mut unsure, mut reverted, mut listed) = (0, 0, 0, 0);
-    for seed in 1..=3000 {
+    for seed in 1..=seeds {
         let (dir, _temp, script) = seeded(seed);
         let tuning = tuning(seed);
         let new = list(&dir, tuning).map_err(|error| error.to_string());
@@ -169,13 +179,18 @@ fn the_same_as_the_whole_read_over_seeded_sessions() {
         listed += old.map_or(0, |old| old.len());
         drop(script);
     }
-    assert!(again > 50, "放早了再读一遍的才 {again} 份");
-    assert!(unsure > 3, "骨架认不得、整份读的才 {unsure} 份");
+    // 下限照全量定，平时照份数折；骨架认不得的千份里才一两份，平时那几百份里不一定有，只在全量查（施工 CI-2）。
+    let least = |full: u64| usize::try_from(full * seeds / FULL).unwrap_or(usize::MAX);
+    assert!(again > least(50), "放早了再读一遍的才 {again} 份");
     assert!(
-        reverted > 1000,
+        seeds < FULL || unsure > 3,
+        "骨架认不得、整份读的才 {unsure} 份"
+    );
+    assert!(
+        reverted > least(1000),
         "有效历史和全列出来不一样的才 {reverted} 份"
     );
-    assert!(listed > 30_000, "一共才列了 {listed} 句");
+    assert!(listed > least(30_000), "一共才列了 {listed} 句");
 }
 
 /// 坏了的报坏了（哪一段、第几行同整份读），坏在后头的也报；序号断了的报坏了；一整行都还没写完的是空的、没有目录的是没有，同整份读。

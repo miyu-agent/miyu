@@ -7,6 +7,7 @@ use std::time::Duration;
 
 use serde_json::{Value, json};
 
+use miyu_endpoint::extensions::Timing;
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::Body;
 use miyu_session::testkit::{Play, Script};
@@ -200,6 +201,10 @@ async fn an_upgraded_extension_restarts() {
 }
 
 /// 卸包先停再删（施工 F-5 补）：扩展退出的时候，它的清单还在盘上。
+///
+/// 扩展读到标准输入关了才去看清单在不在、记一行再退出：核心关了它的输入以后等它自己退出，`quick` 的 300 毫秒等不到就杀掉。
+/// Windows 的 CI 忙的时候扩展过了 300 毫秒还没轮到记那一行，被杀了，测试等不到第三行（2026-11-04，施工 CI-2）。这里等它真的
+/// 退出（核心等的是进程退出这件事，退了当场往下走），60 秒只是兜底。
 #[tokio::test]
 async fn a_removed_extension_stops_before_its_files_go() {
     let home = Home::new();
@@ -214,9 +219,13 @@ async fn a_removed_extension_stops_before_its_files_go() {
         "always",
         &steps(&[&step, "hello", "serve", &check]),
     );
+    let patient = Timing {
+        grace: Duration::from_secs(60),
+        ..quick()
+    };
     let core = Arc::new(
         home.core_full(&Script::new([]), Catalog::default(), None, TOKEN)
-            .with_extension_timing(quick()),
+            .with_extension_timing(patient),
     );
     core.start_extensions();
     let mut client = Client::connect(Arc::clone(&core));

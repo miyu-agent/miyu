@@ -77,7 +77,7 @@
 |---|---|
 | `crates/miyu-endpoint/tests/undo.rs` | 不写回合编号的撤最后一轮：`events`、`cwd`、`turns`、`said`、`commands`、`files`，没撤掉压缩的不写 `compactions`；恢复时不带 `commands`；改回了内容的、之后又被改过的都附差异，连同 `added`、`removed`（施工 4-7 再补）；最多 20 行、`more`；两轮的会话只算撤掉的那一轮、`said` 只取第一行去掉空白；恢复时对照改前的；上下文 3 行、不加「没有换行」；太大的、不是文本的不附差异；工作目录是链接的写真实的位置；被打断的一轮只算跑过的命令、排在后面没派的不算；`said` 跳过开头的空行，全是空白的没有这一格 |
 | `crates/miyu-endpoint/src/undo/tests.rs` | 数跑过的命令：跑过的、可能跑了一半的算，没跑过的不算；数压缩：`turn` 在撤掉的几轮里的才算，一轮里压过两次的是 2（施工 6-9）；清空另数，数压缩的不算它（施工 6-8 补）；改回了内容的附差异、`added`、`removed`，恢复时反过来；新建的文件改回以前当空的算；`trash`、`untrash`、两边一样的不附差异；太大的不附；长差异 `added`、`removed` 照整份算（施工 4-7 再补） |
-| `crates/miyu-endpoint/src/undo/tests/same.rs`（施工 V-41 中） | 照种子造的会话（`miyu_session::testkit::undo_log`，过得了账本：读改删文件、后台命令和子代理、留言、两种回报、撤最近一轮、几轮、很早的一轮、恢复、重做、撤回、压缩和清空、分叉出来的、撤到分叉点以前的）写成几段真文件，每一次撤销、恢复的回应和以前整份读、整份过账本的（照抄在 `tests/old.rs`）逐字一样；日志停在撤销刚落盘那一刻的也比；分叉出来的不列停掉的任务；坏一行、少一行、末尾半行：坏在撤的第一轮开头以后的同以前，坏在跳过的那一截的同以前或同没坏的 |
+| `crates/miyu-endpoint/src/undo/tests/same.rs`（施工 V-41 中） | 照种子造的会话（`miyu_session::testkit::undo_log`，过得了账本：读改删文件、后台命令和子代理、留言、两种回报、撤最近一轮、几轮、很早的一轮、恢复、重做、撤回、压缩和清空、分叉出来的、撤到分叉点以前的）写成几段真文件，每一次撤销、恢复的回应和以前整份读、整份过账本的（照抄在 `tests/old.rs`）逐字一样；日志停在撤销刚落盘那一刻的也比；分叉出来的不列停掉的任务；坏一行、少一行、末尾半行：坏在撤的第一轮开头以后的同以前，坏在跳过的那一截的同以前或同没坏的。平时 100 个种子，`MIYU_UNDO_SEEDS` 改（CI 的 randomized 那一项 10000 个，同 `miyu-session` 的 `store/tests/seen.rs`，施工 CI-2） |
 | `crates/miyu-endpoint/tests/redo.rs` | 重做的回应：撤销那几样照撤销写，`events` 最后是重发的那一句（施工 4-7 再补，`protocol.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/undo_jobs.rs`（施工 7-8） | 撤销、重做的回应列出停掉的任务（编号、种类、标题），回应之前后台命令已经杀了、随后记 `undone`；恢复的不带、停过的再撤销不列 |
 | `crates/miyu-endpoint/tests/revert.rs` | 撤销、恢复的 `events`；`nothing_to_unrevert`、`unknown_turn`、`nothing_to_revert` 照头的语言；`turn` 写 0 |

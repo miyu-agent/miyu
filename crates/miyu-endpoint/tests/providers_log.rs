@@ -24,15 +24,12 @@ async fn a_test_is_one_line_and_the_pasted_key_is_nowhere() {
         None,
     ))
     .expect("这个测试程序只装这一次");
-    let words = |text: &str| {
-        let event = json!({"id": "c1", "object": "chat.completion.chunk", "model": "x",
-            "choices": [{"index": 0, "delta": {"content": text}, "finish_reason": null}]});
-        Piece::Bytes(format!("data: {event}\n\n").into_bytes())
-    };
     let listing = json!({"object": "list", "data": [{"id": "deepseek-flash"}]}).to_string();
+    // 头一家（目录里的、没给模型）只列模型；后一家不给列（404），拿写的模型发一句，401。以前第二个回应是一句字以后停住，落在
+    // 后一家列模型那一下，要等列模型的 30 秒到时才接着发那一句（施工 CI-2）。
     let server = Server::start(vec![
         Reply::stream(vec![Piece::Bytes(listing.into_bytes())]),
-        Reply::stream(vec![words("OK"), Piece::Stall]),
+        Reply::error(404, &[], r#"{"error":{"message":"not found"}}"#),
         Reply::error(401, &[], r#"{"error":{"message":"bad key"}}"#),
         Reply::error(401, &[], r#"{"error":{"message":"bad key"}}"#),
     ])

@@ -6,7 +6,8 @@
 //! 和以前不一样的只有两样，都在下面单独的测试里写明：不要的种类的正文合 JSON、不合那一种的写法的不报坏了（只解要的种类，同
 //! 判官的，2026-11-03 项目主人拍板接受）；底子在分叉点以后坏了的不报（读到分叉点就停，同施工 V-37 下的 `Base::each`）。
 //!
-//! 默认 1000 个种子（施工时跑过 10000 个）；`MIYU_UNDO_SEEDS` 改个数。
+//! 平时 100 个种子（施工 CI-2：原来的 1000 个 Windows 的 debug 要两三分钟，挪到 CI 的 randomized 那一项照 `MIYU_UNDO_SEEDS`
+//! 跑）；施工时跑过 10000 个；`MIYU_UNDO_SEEDS` 改个数。
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -46,8 +47,11 @@ fn seeds() -> u64 {
     std::env::var("MIYU_UNDO_SEEDS")
         .ok()
         .and_then(|text| text.parse().ok())
-        .unwrap_or(1000)
+        .unwrap_or(QUICK)
 }
+
+/// 平时几个种子。
+const QUICK: u64 = 100;
 
 /// 新旧：以前整份读（`Store::events`）再算的，和边读边记的。
 fn both(store: &dyn Store) -> (Result<Seen, String>, Result<Seen, String>) {

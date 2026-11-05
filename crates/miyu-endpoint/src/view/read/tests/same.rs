@@ -219,14 +219,15 @@ fn same_session(seed: u64, place: &TempDir, (texts, blobs): (&Arc<Texts>, &Blobs
     miyu_store::testkit::remove_tree(&dir);
 }
 
-/// 第 `part` 份种子：每份五百个，平时只跑前十五个（Windows CI 的门禁一趟限 45 分钟，六十个会超），`MIYU_PAGES_FULL=1` 的全跑
-/// （施工时 debug、release 都跑过一遍）。
+/// 设了 `MIYU_PAGES_FULL` 的全量跑：CI 的 randomized 那一项设（施工 CI-2）。
+fn full() -> bool {
+    std::env::var_os("MIYU_PAGES_FULL").is_some()
+}
+
+/// 第 `part` 份种子：每份五百个，平时只跑前三个（十五个时 Windows 的 debug 一份要六七十秒，压着 check 的时限，施工 CI-2），
+/// 全量的全跑（施工时 debug、release 都跑过一遍）。
 fn seeds(part: u64) {
-    let each = if std::env::var_os("MIYU_PAGES_FULL").is_some() {
-        500
-    } else {
-        15
-    };
+    let each = if full() { 500 } else { 3 };
     let (root, place) = temp_root("v41-same");
     let blobs = Blobs::new(root.blobs());
     let texts = texts();
@@ -304,7 +305,9 @@ fn a_broken_line_is_reported_when_read_and_counted_past_when_not() {
     let blobs = Blobs::new(root.blobs());
     let texts = texts();
     let (mut reported, mut past) = (0, 0);
-    for seed in 0..160 {
+    // 平时 40 份，全量 160 份（施工 CI-2）。
+    let seeds: u64 = if full() { 160 } else { 40 };
+    for seed in 0..seeds {
         let clean = place.join(format!("c{seed}"));
         let lines = made(seed, &clean);
         let broken = place.join(format!("b{seed}"));
@@ -353,8 +356,10 @@ fn a_broken_line_is_reported_when_read_and_counted_past_when_not() {
         miyu_store::testkit::remove_tree(&clean);
         miyu_store::testkit::remove_tree(&broken);
     }
+    // 全量两样各三十以上；平时照份数折。
+    let least = 30 * seeds / 160;
     assert!(
-        reported > 30 && past > 30,
+        reported > least && past > least,
         "两样都有：报了 {reported}、没读到 {past}"
     );
 }

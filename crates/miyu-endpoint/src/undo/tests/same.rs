@@ -4,7 +4,8 @@
 //! 的也比。坏一行、末尾半行、不是最后一段的末尾半行、少一行的：坏在新的读到的那一截里的（撤的第一轮开头到最后），和以前一样
 //! 交回空的；坏在跳过的那一截里的，同以前照没坏的日志写的一样（跳过的不自检，2026-11-03 项目主人定）。
 //!
-//! 默认 1000 个种子（施工时跑过 10000 个）；`MIYU_UNDO_SEEDS` 改个数。
+//! 平时 100 个种子（施工 CI-2：原来的 1000 个 Windows 的 debug 要两三分钟，挪到 CI 的 randomized 那一项照 `MIYU_UNDO_SEEDS`
+//! 跑）；施工时跑过 10000 个；`MIYU_UNDO_SEEDS` 改个数。
 
 use std::fs;
 use std::path::Path;
@@ -34,8 +35,11 @@ fn seeds() -> u64 {
     std::env::var("MIYU_UNDO_SEEDS")
         .ok()
         .and_then(|text| text.parse().ok())
-        .unwrap_or(1000)
+        .unwrap_or(QUICK)
 }
+
+/// 平时几个种子。
+const QUICK: u64 = 100;
 
 /// 照种子造一段（偶尔是分叉出来的，交回父会话的那一段），写进 `dir`。
 fn made(dice: &mut Dice, dir: &Path) -> (UndoLog, Option<UndoLog>) {
@@ -231,7 +235,9 @@ fn damage_read_by_the_new_way_is_reported_and_damage_skipped_is_not_checked() {
 fn a_forked_session_lists_no_stopped_jobs() {
     let (_root, temp) = temp_root("undo-forked");
     let mut checked = 0;
-    for seed in 0..200 {
+    // 种子数的五分之一（施工 CI-2：原来定死 200 份，平时 20 份，CI 的 randomized 那一项 2000 份）。
+    let forks = seeds() / 5;
+    for seed in 0..forks {
         let mut dice = Dice(seed * 7919 + 3);
         let parent = UndoLog::run(&mut dice, 60, None);
         let upto = parent.first + parent.lines.len() as u64 - 1;
@@ -246,5 +252,5 @@ fn a_forked_session_lists_no_stopped_jobs() {
         }
         drop(fs::remove_dir_all(&dir));
     }
-    assert!(checked > 200, "比了 {checked} 次");
+    assert!(checked as u64 > forks, "比了 {checked} 次");
 }

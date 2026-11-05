@@ -75,11 +75,21 @@ fn same(dir: &Path, msg: Seq, k: usize, tuning: Tuning) -> Result<String, Refusa
     new.map(|records| records.records + &records.current)
 }
 
+/// 平时造几份：全量 150 份，Windows 的 debug 要八十秒上下（施工 CI-2）；`MIYU_RECORDS_FULL` 设了的全量。
+const FILES_QUICK: u64 = 15;
+
+/// 全量造几份。
+const FILES_FULL: u64 = 150;
+
 #[test]
 fn logs_in_segments_read_the_same_as_before() {
     let (_root, temp) = temp_root("v39-files");
+    let seeds = match std::env::var_os("MIYU_RECORDS_FULL") {
+        Some(_) => FILES_FULL,
+        None => FILES_QUICK,
+    };
     let mut judged = 0;
-    for seed in 1..=150_u64 {
+    for seed in 1..=seeds {
         let events = events(seed);
         let dir = temp.join(format!("s{seed}"));
         let n = events.len();
@@ -99,7 +109,9 @@ fn logs_in_segments_read_the_same_as_before() {
             }
         }
     }
-    assert!(judged > 1000, "判成了的太少：{judged}");
+    // 全量一千条以上；平时照份数折。
+    let least = 1000 * seeds / FILES_FULL;
+    assert!(judged as u64 > least, "判成了的太少：{judged}");
 }
 
 /// 怎么弄坏：目录、原来的各行。

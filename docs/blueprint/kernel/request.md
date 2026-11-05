@@ -672,7 +672,7 @@ Carry on from where the summary leaves off, without redoing work it records as d
 | `crates/miyu-assemble/src/size/tests.rs`（施工 O-33） | 人看得懂的大小：`999 B`/`1 KB`、KB 四舍五入、999.5 KB 和 999.95 KB 和 1000 KB 进位成 `1.0 MB`、999.95 MB 进位成 `1.0 GB`、最大的数不溢出 |
 | `crates/miyu-assemble/src/group/recent/tests.rs`（施工 O-13 下） | 群聊近况：收两次触发之间的旁听、不收睡着的，回合中途到的归下一块；排在事实后面、触发前面；别的线的 `[you]` 行、自己这条线的不收；撤回的标记（自己撤的、别人撤的、看不到身份的），触发以后才撤的不标；预算从老的去掉、写缺口提示，正好装下的不写；没有的、私聊的、O-13 中的快照不出；回报开的回合不算界；以后的请求里一字不差；旁听的一行照同一个记号写法（施工 O-33）；旁听的一条带着转发，那几行跟着它、连着算预算（施工 O-34） |
 | `crates/miyu-assemble/src/group/records/tests.rs`（施工 O-24） | 判官看的记录：写法同一行；旁听的、开过回合的收，睡着的不收；主线、别的线的 `[you]` 行都收；撤回只认要判的那一条以前的；条数从新往旧取；不是场所消息的没有、前面没有的是空的 |
-| `crates/miyu-assemble/src/group/records/tests/same.rs`、`tests/old.rs`（施工 V-39 上） | 挑行、渲染分两半以后一个字节不变：以前一行行全渲染再挑的照抄当准绳，照种子造三千段群聊（睡着的、补拉的、引用重复的和没有的编号、撤回、转发），每一条、几样窗口新旧比；只交最后 `Window::most` 条的也一样 |
+| `crates/miyu-assemble/src/group/records/tests/same.rs`、`tests/old.rs`（施工 V-39 上） | 挑行、渲染分两半以后一个字节不变：以前一行行全渲染再挑的照抄当准绳，照种子造三千段群聊（睡着的、补拉的、引用重复的和没有的编号、撤回、转发），每一条、几样窗口新旧比；只交最后 `Window::most` 条的也一样。平时每份只比前五十段，三千段都比的是名字以 `_for_longer` 结尾的六个（`#[ignore]`，CI 的 randomized 那一项跑，施工 CI-2） |
 | `crates/miyu-assemble/src/render/tests/respond.rs`（施工 O-14 上） | 照记下的几条开的回合：那几条在回合开始的地方、事实和近况在前，群会话里一行一条、别的照原样；以后的近况不收当过触发的；以前的请求一字不差；并进去的在 `turn.joined` 的位置、接着开的那一轮事实在前（施工 O-14 下） |
 | `crates/miyu-assemble/src/vision/tests.rs`（施工 8-17） | 转述的请求：一条 user、没有 system 和工具面，指令在前、图在后、图去掉了名字；有人的话的接那一行和原话、原样不转义；快照里没有字的没有 |
 | `crates/miyu-kernel/src/request/tests.rs` 的转述那几条（施工 8-17） | `described` 空的不写进字节、哈希不变，有的写在最后；不算进指纹 |

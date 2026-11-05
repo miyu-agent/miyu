@@ -22,7 +22,7 @@ on:
 permissions:
   contents: read
 
-# 每项最多跑 45 分钟：测试卡住时（例如会话 actor 的测试等一个不会来的回应），不白等 GitHub 默认的六个小时
+# 每项最多跑 45 分钟（check 后来放到 60，施工 CI-1）：测试卡住时（例如会话 actor 的测试等一个不会来的回应），不白等 GitHub 默认的六个小时
 # （施工 3-7 中）。原来是 30 分钟，2026-10-07 项目主人定改成 45：Windows 平时要 28、29 分钟，长跑 20 到 29 分钟，
 # 几个分支同时排队时卡在线上被取消。
 jobs:
@@ -58,6 +58,14 @@ jobs:
         os: [ubuntu-24.04, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
+      # 腾出盘（施工 CI-2）：GitHub 托管的 ubuntu 机器的盘被编译缓存加 debug 的测试程序吃满过（runner 报
+      # 「No space left on device」，门禁开头就死）。删掉用不上的 .NET、Android SDK、GHC、CodeQL，删前删后各打一行 `df -h`。
+      - name: 腾出盘
+        if: runner.os == 'Linux'
+        run: |
+          df -h / | tail -1
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          df -h / | tail -1
       - uses: actions/checkout@v7
       - name: 装上 rust-toolchain.toml 钉住的工具链
         run: rustup toolchain install
@@ -78,14 +86,30 @@ jobs:
 
   # 长跑：随机测试接着平时的往后跑两万例（照 niri 的 randomized-tests，施工 2-10）。平时的
   # cargo test 和本地门禁跳过这几个 #[ignore] 的测试；纯逻辑不碰平台，只在 Linux 上、release 模式跑。
-  # 只编有长跑测试的两个 crate、只跑名字以 for_longer 结尾的（2026-10-08）：原来 release 编整个工作区要 38 分钟，
+  # 只编有长跑测试的 crate、只跑名字以 for_longer 结尾的（2026-10-08）：原来 release 编整个工作区要 38 分钟，
   # 测试本身不到 2 分钟；别的 #[ignore] 是量尺、要外网、要虚拟机的，在这里跑了也白跑。新加长跑测试照这个名字、
-  # 放在别的 crate 里的，把 crate 加进下面这一行。
+  # 放在别的 crate 里的，把 crate 加进下面的 CRATES。
+  # 新旧对照的全量也在这一项跑（施工 CI-2，docs/construction/CI-2-测试分流.md）：check 里只跑够快的几份种子。
   randomized:
     needs: tested
     timeout-minutes: 45
     runs-on: ubuntu-24.04
+    # 查对错，不量快慢：不用 release 的整体优化（施工 V-5 下），省下编的时间；断言、溢出检查照 debug 开着（施工 CI-2：对照
+    # 全量比的和 check 里 debug 比的一样，溢出、debug_assert 照样拦）。放在整项上：下面两步编的是同一份。
+    env:
+      CARGO_PROFILE_RELEASE_LTO: "false"
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
+      CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS: "true"
+      CARGO_PROFILE_RELEASE_OVERFLOW_CHECKS: "true"
+      # 有长跑、有对照全量测试的 crate：只编它们的库和 tests/all.rs。新加的放在别的 crate 里的，把 crate 加进这一行。
+      CRATES: -p miyu-kernel -p miyu-assemble -p miyu-endpoint -p miyu-session -p miyu-basesystem -p miyu-drivers -p miyu-sandbox
     steps:
+      # 腾出盘（施工 CI-2）：同 check。
+      - name: 腾出盘
+        run: |
+          df -h / | tail -1
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          df -h / | tail -1
       - uses: actions/checkout@v7
       - name: 装上 rust-toolchain.toml 钉住的工具链
         run: rustup toolchain install
@@ -97,11 +121,36 @@ jobs:
           add-rust-environment-hash-key: false
       - name: 长跑
         if: needs.tested.outputs.already != 'true' || steps.cache.outputs.cache-hit != 'true'
-        # 查对错，不量快慢：不用 release 的整体优化（施工 V-5 下），省下编的时间。
+        run: cargo test --release --no-fail-fast $CRATES --lib --test all -- --ignored for_longer
+      # 新旧对照的全量（施工 CI-2）：check 里这些测试只跑够快的几份种子（照 Windows debug 的时长定），全量在这里照环境变量开，
+      # 比的东西和 check 里的一样，只是种子多。新加的对照测试照这个样子：默认少跑、环境变量全量，开关和名字加到下面两处。
+      # 纯逻辑的层（miyu-kernel、miyu-assemble）不读环境变量：全量写成名字以 for_longer 结尾的 #[ignore] 测试，上一步跑。
+      - name: 对照全量
+        if: needs.tested.outputs.already != 'true' || steps.cache.outputs.cache-hit != 'true'
         env:
-          CARGO_PROFILE_RELEASE_LTO: "false"
-          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
-        run: cargo test --release --no-fail-fast -p miyu-kernel -p miyu-assemble -- --ignored for_longer
+          MIYU_ASKED_FULL: "1"
+          MIYU_HANDED_FULL: "1"
+          MIYU_HISTORY_FULL: "1"
+          MIYU_MEMO_SEEDS: "1000"
+          MIYU_PAGES_FULL: "1"
+          MIYU_RECORDS_FULL: "1"
+          MIYU_UNDO_SEEDS: "5000"
+          MIYU_V43_SEEDS: "2400"
+          MIYU_V46_SEEDS: "50000"
+          MIYU_V47_SEEDS: "5000"
+        run: >-
+          cargo test --release --no-fail-fast $CRATES --lib --test all --
+          asked::tests::the_same_as_the_whole_read_over_seeded_sessions
+          undo::tests::same::
+          venues::records::tests::
+          view::read::tests::same::
+          store::tests::seen::
+          actor::extract::planned::tests::swept::
+          fork_streamed::handed::
+          history::tests::same
+          memo::
+          linux::reads::tests::same::
+          linux::cache::tests::same::
 
   # 量尺（施工 V-3，23 F4）：照 23 第二节的预算量核心这一边，表贴进这一次跑的摘要和日志。只在 Linux 上：预算照 Linux 定的。
   # 不等会话闲够了退下（--idle-wait 0）：那一项没有预算，等它要多三分多钟。闸门：时间、内存超过预算本身就红（施工 V-5 下，以前时间放到 1.5 倍）
@@ -111,6 +160,12 @@ jobs:
     timeout-minutes: 45
     runs-on: ubuntu-24.04
     steps:
+      # 腾出盘（施工 CI-2）：同 check。
+      - name: 腾出盘
+        run: |
+          df -h / | tail -1
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          df -h / | tail -1
       - uses: actions/checkout@v7
       - name: 装上 rust-toolchain.toml 钉住的工具链
         run: rustup toolchain install

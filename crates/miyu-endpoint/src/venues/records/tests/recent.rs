@@ -22,8 +22,8 @@ use crate::venues::records::answer;
 use crate::venues::records::read::{Log, ONLY};
 use crate::venues::records::recent::{Caps, Recent};
 
-/// 平时跑几段。
-const SEEDS: u64 = 250;
+/// 平时跑几段（施工 CI-2：原来 250 段，Windows 的 debug 要二十来秒；全量挪到 CI 的 randomized 那一项）。
+const SEEDS: u64 = 80;
 /// `MIYU_RECORDS_FULL=1` 跑几段。
 const SEEDS_FULL: u64 = 6000;
 

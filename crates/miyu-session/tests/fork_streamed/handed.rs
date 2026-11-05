@@ -19,8 +19,11 @@ use super::make::{Dice, Make};
 use super::{Start, first_line, pending_of, setup, write};
 use crate::support::*;
 
-/// 造多少份。
+/// 全量造多少份。
 const CASES: u64 = 2500;
+
+/// 平时造多少份：全量的 Windows debug 要两分钟上下（施工 CI-2）。设了 `MIYU_HANDED_FULL` 的照 [`CASES`]，CI 的 randomized 那一项设。
+const QUICK: u64 = 250;
 
 /// 交过去以后怎么载入。
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -52,7 +55,11 @@ async fn a_handed_base_loads_what_reading_the_parent_again_did() {
         _ => panic!("第一条是造会话"),
     };
     let mut reached = std::collections::BTreeMap::<String, usize>::new();
-    for seed in 0..CASES {
+    let cases = match std::env::var_os("MIYU_HANDED_FULL") {
+        Some(_) => CASES,
+        None => QUICK,
+    };
+    for seed in 0..cases {
         let mut dice = Dice(seed.wrapping_mul(0xA24B_AED4_963E_E407) | 1);
         let parent = new_id(now());
         let mut make = Make::new(&parent, first_line(&created, Start::Main), policy.clone());

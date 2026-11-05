@@ -31,7 +31,7 @@
 | `crates/miyu-endpoint/tests/view_stream.rs`、`src/subscriptions/view/tests.rs` | 视图流（9-8 下）：回应排在推送前面、推送拼到那一页上和翻页一样、`turn.started` 另推；改了语言之后的照新的字；带 `after` 的拒、退订了不推；接着的 `view.append` 并成一条 |
 | `resources/core/view.json` | 工具算哪一类（命令、编辑、子代理、留言）、参数里哪一格是会话编号：数据，不登记 |
 | `crates/miyu-endpoint/src/view/` | `view.page` 多交条目、`view.detail` 多交的（9-8 中，`project.rs` 接上投影要的字和改了多少行）；视图流订阅时的最新一页（9-8 下，`newest`）；一页只读要的那一截（施工 V-41 上，`read.rs`：先数行、不解，再只解最后几轮和切点前要的那几行） |
-| `crates/miyu-endpoint/src/view/read/tests/`（施工 V-41 上） | 以前的读法（整份读、整份切、整份学）照抄在 `old.rs`；`script.rs` 照种子造会话日志（撤销、恢复、重做、撤回、压缩、撤销跨压缩、派后台命令和子代理、留言、脚本里调的工具、回报、分叉、子会话、在跑一轮当中、内核写不出来但读得成的几种样子），写成几段真文件（空段、末尾半行）；`same.rs` 三千份（平时每份六十个，`MIYU_PAGES_FULL=1` 全跑）新旧逐字比：几种轮数、字节上限从最新一页翻到头，日志里每一处当 `before`，交事件的、交条目的；视图流订阅到各处的最新一页连同会话状态，后面的事件接着喂两台投影每一条一样；一行坏了的，读到的报坏了、没读到的和没坏的一样 |
+| `crates/miyu-endpoint/src/view/read/tests/`（施工 V-41 上） | 以前的读法（整份读、整份切、整份学）照抄在 `old.rs`；`script.rs` 照种子造会话日志（撤销、恢复、重做、撤回、压缩、撤销跨压缩、派后台命令和子代理、留言、脚本里调的工具、回报、分叉、子会话、在跑一轮当中、内核写不出来但读得成的几种样子），写成几段真文件（空段、末尾半行）；`same.rs` 三千份（平时每份三个，`MIYU_PAGES_FULL=1` 全跑，CI 的 randomized 那一项设，施工 CI-2）新旧逐字比：几种轮数、字节上限从最新一页翻到头，日志里每一处当 `before`，交事件的、交条目的；视图流订阅到各处的最新一页连同会话状态，后面的事件接着喂两台投影每一条一样；一行坏了的，读到的报坏了、没读到的和没坏的一样（平时 40 份，全量 160 份） |
 | `crates/miyu-endpoint/src/subscriptions/view.rs`、`connection/streams.rs` 的 `subscribe_view` | 视图流（9-8 下）：订阅、转发、合并 `view.append`、换字；压着的工具进度到点推出来（施工 X-45 补） |
 | `crates/miyu-view/src/projector/progress.rs` | 在跑的工具的进度（施工 X-45 补）：攒半行、认进度行、0.5 秒合并 |
 | `crates/miyu-view/tests/progress.rs`、`src/projector/progress/tests.rs`、`crates/miyu-endpoint/tests/view_progress.rs` | 工具进度（施工 X-45 补）：切半行、只认前缀、取最后一条、截长、半行不涨；视图流带上、结果到了去掉、翻页没有；0.5 秒里一条、压着的到点推、两个调用各算；真订阅里真 `shell` 印的进度到得了、结果以后不带 |

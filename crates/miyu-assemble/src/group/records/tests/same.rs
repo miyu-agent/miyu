@@ -1,5 +1,8 @@
 //! 挑行、渲染分两半以后（施工 V-39 上）判官看到的字一个字节不变：照种子造三千段群聊（分六份并着跑），每一条都当要判的那一条，`count`、
 //! `grow` 各取几样，新的 `records_in` 和以前的（`old.rs`）比；端点那样只交最后 [`Window::most`] 条的也比。
+//!
+//! 平时每份只比前 [`QUICK`] 段（施工 CI-2：三千段都比 Windows 的 debug 要近两分钟）；三千段都比的是名字以 `_for_longer`
+//! 结尾的那六个（`#[ignore]`，CI 的 randomized 那一项跑）。
 
 use std::collections::BTreeMap;
 
@@ -173,11 +176,21 @@ fn trimmed(
     records_from(&picked, window, texts, None)
 }
 
+/// 平时每份比前几段。
+const QUICK: u64 = 50;
+
+/// 一份的前 [`QUICK`] 段。
+fn quick(seeds: std::ops::RangeInclusive<u64>) -> std::ops::RangeInclusive<u64> {
+    *seeds.start()..=(*seeds.start() + QUICK - 1).min(*seeds.end())
+}
+
 /// 第 `seeds` 段的每一条、每一样窗口，新旧比。
 fn compare(seeds: std::ops::RangeInclusive<u64>) {
     let texts = group_texts(480).group.expect("群会话");
     let forward = forward_texts();
     let windows = windows();
+    // 全量每份五百段、一万条以上；平时照段数折。
+    let least = 20 * seeds.clone().count();
     let mut judged = 0;
     for seed in seeds {
         let mut dice = Dice(seed.wrapping_mul(0x9E37_79B9_7F4A_7C15) | 1);
@@ -203,37 +216,74 @@ fn compare(seeds: std::ops::RangeInclusive<u64>) {
             }
         }
     }
-    assert!(judged > 10_000, "判过的太少：{judged}");
+    assert!(judged > least, "判过的太少：{judged}");
 }
 
-// 三千段分六份，并着跑。
+// 三千段分六份，并着跑：平时每份只比前几段，全量是 `_for_longer` 那六个（`#[ignore]`，CI 的 randomized 那一项用
+// `--ignored for_longer` 跑，施工 CI-2；这一层是纯逻辑，不读环境变量）。
 #[test]
 fn chats_render_the_same_as_before_1() {
-    compare(1..=500);
+    compare(quick(1..=500));
 }
 
 #[test]
 fn chats_render_the_same_as_before_2() {
-    compare(501..=1000);
+    compare(quick(501..=1000));
 }
 
 #[test]
 fn chats_render_the_same_as_before_3() {
-    compare(1001..=1500);
+    compare(quick(1001..=1500));
 }
 
 #[test]
 fn chats_render_the_same_as_before_4() {
-    compare(1501..=2000);
+    compare(quick(1501..=2000));
 }
 
 #[test]
 fn chats_render_the_same_as_before_5() {
-    compare(2001..=2500);
+    compare(quick(2001..=2500));
 }
 
 #[test]
 fn chats_render_the_same_as_before_6() {
+    compare(quick(2501..=3000));
+}
+
+#[test]
+#[ignore = "全量，CI 的 randomized 那一项用 --ignored 跑（施工 CI-2）"]
+fn chats_render_the_same_as_before_1_for_longer() {
+    compare(1..=500);
+}
+
+#[test]
+#[ignore = "全量，CI 的 randomized 那一项用 --ignored 跑（施工 CI-2）"]
+fn chats_render_the_same_as_before_2_for_longer() {
+    compare(501..=1000);
+}
+
+#[test]
+#[ignore = "全量，CI 的 randomized 那一项用 --ignored 跑（施工 CI-2）"]
+fn chats_render_the_same_as_before_3_for_longer() {
+    compare(1001..=1500);
+}
+
+#[test]
+#[ignore = "全量，CI 的 randomized 那一项用 --ignored 跑（施工 CI-2）"]
+fn chats_render_the_same_as_before_4_for_longer() {
+    compare(1501..=2000);
+}
+
+#[test]
+#[ignore = "全量，CI 的 randomized 那一项用 --ignored 跑（施工 CI-2）"]
+fn chats_render_the_same_as_before_5_for_longer() {
+    compare(2001..=2500);
+}
+
+#[test]
+#[ignore = "全量，CI 的 randomized 那一项用 --ignored 跑（施工 CI-2）"]
+fn chats_render_the_same_as_before_6_for_longer() {
     compare(2501..=3000);
 }
 
