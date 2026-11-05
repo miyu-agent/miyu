@@ -3,6 +3,8 @@
 //! 「暂时不可用」。登记缓存在磁盘上，核心起来、开扩展时先照缓存登记；关掉扩展，它的工具出目录（施工 O-2 中，[`cache`]）。
 
 mod cache;
+mod declared;
+mod effects;
 mod remote;
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
@@ -126,6 +128,15 @@ struct ToolParams {
     /// 管。别的写法 `bad_tool`，`problem` 是 `scope`。不写的是 `any`。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     scope: Option<Value>,
+    /// 哪几个参数是路径（施工 XG-1 上，`docs/designs/63-扩展工具的效果和声明.md` 第二、三节）：`[{"parameter", "write"?}]`，核心
+    /// 照它报要碰的路径、过权限链，回应里的文件效果只收过了链的。写法见 [`declared::paths`]；不对的 `bad_tool`，`problem` 是
+    /// `paths`。不写的没有：调用不报路径，文件效果一条都不收。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    paths: Option<Value>,
+    /// 只在会话有后台时才给的几个参数（施工 XG-1 上，设计 63 第六节第 1 条）：后台运行关着的会话工具面上去掉。写法见
+    /// [`declared::background`]；不对的 `bad_tool`，`problem` 是 `background_parameters`。不写的没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    background_parameters: Option<Value>,
 }
 
 /// 不写时等多久：一分钟。
@@ -134,13 +145,15 @@ const DEFAULT_TIMEOUT_MS: u64 = 60_000;
 /// 能写的时限：一秒到十分钟。
 const TIMEOUT_MS: std::ops::RangeInclusive<u64> = 1_000..=600_000;
 
-/// 查过的一件：规格、给哪种会话、等它多久。
+/// 查过的一件：规格、给哪种会话、等它多久、哪几个参数是路径、哪几个只在有后台时给。
 struct Checked {
     spec: Spec,
     venues: Venues,
     timeout: Duration,
     display_name: BTreeMap<String, String>,
     subject: Option<String>,
+    paths: Vec<declared::PathParameter>,
+    background: Vec<String>,
 }
 
 /// `provide`：见模块的说明。
@@ -314,6 +327,12 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
         Some(value) => serde_json::from_value::<Scope>(value.clone())
             .map_err(|_| bad_tool(&tool.name, "scope"))?,
     };
+    let paths = declared::paths(&tool.name, tool.paths.as_ref(), &tool.input_schema, &access)?;
+    let background = declared::background(
+        &tool.name,
+        tool.background_parameters.as_ref(),
+        &tool.input_schema,
+    )?;
     Ok(Checked {
         spec: Spec {
             name: tool.name,
@@ -330,6 +349,8 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
         timeout: Duration::from_millis(timeout),
         display_name: tool.display_name,
         subject: tool.subject,
+        paths,
+        background,
     })
 }
 

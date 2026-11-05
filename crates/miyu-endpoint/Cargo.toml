@@ -158,6 +158,11 @@ path = "tests/robust_methods.rs"
 name = "providers_log"
 path = "tests/providers_log.rs"
 
+# 扩展报假的效果丢掉时的运行日志（施工 XG-1 上）：同 providers_log，全局订阅者一个程序只装一次。
+[[test]]
+name = "provide_effects_log"
+path = "tests/provide_effects_log.rs"
+
 [[test]]
 name = "secrets_log"
 path = "tests/secrets_log.rs"

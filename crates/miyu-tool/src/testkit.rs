@@ -273,12 +273,9 @@ impl Tool for Fake {
         self.commands.is_some()
     }
 
-    fn background_parameters(&self) -> &'static [&'static str] {
-        // 只有一个的造法照旧收一个名字（施工 MN-1 上把声明改成一组）：测试里漏一个一格的切片不要紧。
-        match self.commands.flatten() {
-            Some(parameter) => Box::leak(Box::new([parameter])),
-            None => &[],
-        }
+    fn background_parameters(&self) -> Vec<&str> {
+        // 只有一个的造法照旧收一个名字（施工 MN-1 上把声明改成一组）。
+        self.commands.flatten().into_iter().collect()
     }
 
     fn venues(&self) -> Option<Venues> {

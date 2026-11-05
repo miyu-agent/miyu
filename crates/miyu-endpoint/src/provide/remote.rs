@@ -5,6 +5,10 @@
 //!
 //! 交回的图、文件引用的 blob 是扩展经 `blob.put` 传进存处的，和会话共用一个存处（施工 SU-4 下）：回应到了查一遍在不在，
 //! 块原样不动；不在的照暂时不可用（施工 O-2 三补）。
+//!
+//! 声明了 `paths` 的（施工 XG-1 上，设计 `63-扩展工具的效果和声明.md` 第三节）：照参数报要碰的路径，权限链和内置工具一样判；
+//! `tool.call` 多带 `checked`（链判过的真实位置）；要写的那几条发之前核心先读一份改前，回应里的 `effects` 照 [`super::effects`]
+//! 查过才收。
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -18,8 +22,10 @@ use miyu_kernel::event::{Said, Sent};
 use miyu_kernel::id::ContentHash;
 use miyu_kernel::template::Template;
 use miyu_store::root::DataRoot;
-use miyu_tool::{Call, Done, Progress, Running, Spec, Tool, Venues};
+use miyu_tool::{Call, Done, Progress, Running, Spec, Target, Tool, Venues};
 
+use super::declared::{self, PathParameter};
+use super::effects;
 use super::{Checked, Provided};
 use crate::reverse::{Gone, Peer};
 
@@ -55,6 +61,10 @@ pub(crate) struct RemoteTool {
     package: String,
     /// 是哪个通讯平台专用的（施工 IM-3，[`Tool::platform`]）。
     platform: Option<String>,
+    /// 哪几个参数是路径（施工 XG-1 上）：[`Tool::targets`] 照它报。
+    paths: Vec<PathParameter>,
+    /// 只在会话有后台时才给的参数（施工 XG-1 上，[`Tool::background_parameters`]）。
+    background: Vec<String>,
     provided: Arc<Provided>,
     texts: Texts,
     stores: Stores,
@@ -82,6 +92,9 @@ struct Answer {
     /// 清掉写 `{}`。出错的不收。
     #[serde(default)]
     state: Option<Value>,
+    /// 效果（施工 XG-1 上，设计 63 第四节）：原样留着，照这次调用判过的路径查过才收（[`effects::vet`]）。
+    #[serde(default)]
+    effects: Option<Value>,
 }
 
 /// 一次至多发几张图。
@@ -104,6 +117,8 @@ impl RemoteTool {
             timeout: checked.timeout,
             package: package.to_string(),
             platform: None,
+            paths: checked.paths,
+            background: checked.background,
             provided,
             texts,
             stores,
@@ -152,46 +167,52 @@ impl RemoteTool {
         }
     }
 
-    /// 照回应交回结果。
-    fn answered(&self, outcome: Result<Result<Value, Value>, Gone>) -> Done {
+    /// 照回应交回结果，连同还没查的效果（施工 XG-1 上：要读盘，由 [`effects::vetted`] 在阻塞线程里查）。
+    fn answered(&self, outcome: Result<Result<Value, Value>, Gone>) -> (Done, Option<Value>) {
         match outcome {
             Ok(Ok(result)) => match serde_json::from_value::<Answer>(result.clone()) {
-                Ok(answer) if answer.sent.len() <= MOST_SENT => Done {
-                    detail: answer
-                        .detail
-                        .filter(|_| !answer.error)
-                        .and_then(|detail| self.shaped(&detail)),
-                    data: answer.data.filter(|_| !answer.error),
-                    effects: answer
-                        .state
-                        .filter(|_| !answer.error)
-                        .and_then(|state| self.state(&state))
-                        .into_iter()
-                        .collect(),
-                    error: answer.error,
-                    blocks: answer.blocks,
-                    end_turn: answer.end_turn && !answer.error,
-                    // 本机路径不收：扩展说的位置不可信，头照 blob 取图（施工 X-19）。
-                    sent: answer
-                        .sent
-                        .into_iter()
-                        .map(|mut sent| {
-                            sent.image.path = None;
-                            sent
-                        })
-                        .collect(),
-                    ..Done::ok("")
-                },
-                Ok(_) => failed(result.to_string()),
-                Err(_) => failed(result.to_string()),
+                Ok(answer) if answer.sent.len() <= MOST_SENT => (
+                    Done {
+                        detail: answer
+                            .detail
+                            .filter(|_| !answer.error)
+                            .and_then(|detail| self.shaped(&detail)),
+                        data: answer.data.filter(|_| !answer.error),
+                        effects: answer
+                            .state
+                            .filter(|_| !answer.error)
+                            .and_then(|state| self.state(&state))
+                            .into_iter()
+                            .collect(),
+                        error: answer.error,
+                        blocks: answer.blocks,
+                        end_turn: answer.end_turn && !answer.error,
+                        // 本机路径不收：扩展说的位置不可信，头照 blob 取图（施工 X-19）。
+                        sent: answer
+                            .sent
+                            .into_iter()
+                            .map(|mut sent| {
+                                sent.image.path = None;
+                                sent
+                            })
+                            .collect(),
+                        ..Done::ok("")
+                    },
+                    answer.effects,
+                ),
+                Ok(_) => (failed(result.to_string()), None),
+                Err(_) => (failed(result.to_string()), None),
             },
-            Ok(Err(error)) => failed(
-                error
-                    .get("message")
-                    .and_then(Value::as_str)
-                    .map_or_else(|| error.to_string(), str::to_string),
+            Ok(Err(error)) => (
+                failed(
+                    error
+                        .get("message")
+                        .and_then(Value::as_str)
+                        .map_or_else(|| error.to_string(), str::to_string),
+                ),
+                None,
             ),
-            Err(Gone) => self.unavailable(),
+            Err(Gone) => (self.unavailable(), None),
         }
     }
 
@@ -266,6 +287,14 @@ impl Tool for RemoteTool {
         self.subject.clone()
     }
 
+    fn targets(&self, call: &Call) -> Vec<Target> {
+        declared::targets(&self.paths, &call.args)
+    }
+
+    fn background_parameters(&self) -> Vec<&str> {
+        self.background.iter().map(String::as_str).collect()
+    }
+
     fn run(&self, call: Call, _progress: Progress) -> Running<'_> {
         Box::pin(async move {
             let ids = call.ids.as_ref();
@@ -288,6 +317,16 @@ impl Tool for RemoteTool {
             if let Some(by) = asked {
                 params["by"] = json!(by);
             }
+            // 链判过的真实位置（施工 XG-1 上）：只给声明了 `paths` 的，交给别的程序用的写法（去掉 Windows 的 `\\?\`）。
+            let judged = effects::judged(&self.paths, &call);
+            if !self.paths.is_empty() {
+                let checked: Vec<String> = judged
+                    .iter()
+                    .map(|one| miyu_fs::usable(&one.real).to_string_lossy().into_owned())
+                    .collect();
+                params["checked"] = json!(checked);
+            }
+            let befores = effects::befores(&judged).await;
             // 数据根的 pictures（施工 Y-11 下）：画出来的图放这里，照数据根的真实位置接上；不建，扩展写之前自己建。会话外面的
             // 调用没有数据根，不写。只给本机的会话（施工 Y-11 下修）：场所会话关在自己的工作区里（施工 5-12），图存进数据根
             // 她就读不到、发不出，几个群还共用一处；扩展照旧存工作区。不知道在哪个场所的也不给。
@@ -312,7 +351,10 @@ impl Tool for RemoteTool {
                 tokio::select! {
                     outcome = &mut answer => {
                         cancel.state = Sending::Done;
-                        return self.handed(self.answered(outcome), in_session).await;
+                        let (done, raw) = self.answered(outcome);
+                        let judged = (&call, judged, befores);
+                        let done = effects::vetted(&self.spec.name, done, raw, judged).await;
+                        return self.handed(done, in_session).await;
                     }
                     // 超时：交回那一句，`tool.cancel` 由 `cancel` 丢掉时发。
                     () = tokio::time::sleep_until(deadline) => return self.timed_out(),

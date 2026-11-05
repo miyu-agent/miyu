@@ -313,7 +313,8 @@ impl Agents {
                 // 只在有后台时才给的参数照工具自己声明的去掉（施工 BS-1 上，原来照名字认 `shell`）。
                 for parameter in tool
                     .filter(|_| foreground)
-                    .map_or(&[][..], |tool| tool.background_parameters())
+                    .map(|tool| tool.background_parameters())
+                    .unwrap_or_default()
                 {
                     entry.without(parameter);
                 }

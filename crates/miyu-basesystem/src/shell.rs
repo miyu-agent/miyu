@@ -304,8 +304,8 @@ impl Tool for Shell {
         Some(self.person(command, halt))
     }
 
-    fn background_parameters(&self) -> &'static [&'static str] {
-        &[miyu_tool::RUN_IN_BACKGROUND, WATCH]
+    fn background_parameters(&self) -> Vec<&str> {
+        vec![miyu_tool::RUN_IN_BACKGROUND, WATCH]
     }
 
     fn outside_sandbox(&self, call: &Call) -> bool {

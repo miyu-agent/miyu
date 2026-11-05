@@ -88,7 +88,6 @@ async fn detail(client: &mut Client, session: &str, result: &ToolResult) -> Valu
 }
 
 #[tokio::test]
-#[ignore = "红：等 XG-1"]
 async fn an_extension_edit_reports_the_same_effects_as_the_builtin_one() {
     let home = Home::new();
     let program = Program::new();
@@ -172,7 +171,12 @@ async fn an_extension_edit_reports_the_same_effects_as_the_builtin_one() {
         Effect::FileChanged(changed) => Some(changed.path.clone()),
         _ => None,
     });
-    assert_eq!(changed_path, Some(plain(&a)), "照真实的位置记");
+    // 照真实的位置记，写法和内置的一样（Windows 上内置的也带 `\\?\`）；交给扩展的 `checked` 才去掉前缀。
+    assert_eq!(
+        changed_path,
+        Some(a.to_string_lossy().into_owned()),
+        "照真实的位置记"
+    );
     let called: Value = serde_json::from_str(
         read(&path)
             .lines()

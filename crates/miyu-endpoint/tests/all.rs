@@ -26,6 +26,7 @@ mod provide_end_turn;
 mod provide_exit;
 mod provide_features;
 mod provide_later;
+mod provide_paths;
 mod provide_venue;
 mod sent_media;
 mod subagent_model_fact;

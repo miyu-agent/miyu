@@ -30,6 +30,7 @@
 //!   `-`）；`slow` 过 600 毫秒再照 `hint` 答；`silent` 不答；`boom` 回一个错误；`garbled` 回写法不对的；`many` 交四块；`empty` 交空的。不写的不答；
 //! - `edits:<路径>`：之后 `serve` 答工具 `ext_edit` 时照参数里的 `old_string`、`new_string` 改这个文件（同内置 `edit`，只换第一处），
 //!   回应的效果里只报哪个文件改了，改前改后由核心自己读（施工 XG-1，设计 63 第四节）；
+//! - `effects:<JSON 数组>`：之后 `serve` 答名字以 `ext_fake` 开头的工具时什么都不改，回应的 `effects` 原样放这一份（施工 XG-1 上：报假的效果）；
 //! - `sent:<blob>`：之后 `serve` 答工具 `sticker` 时，`sent` 里放这个 blob 的一张图（施工 X-19）；
 //! - `give:<字,字>`：之后 `serve` 答 `method.call` 的 `give` 时回 `{"given": [这几段字]}`（施工 W-6 三补：回应里带 blob）；
 //! - `pause:<路径>`：等到这个路径有了再往下走（施工 X-20：测试照会话说完了几轮放它走）；
@@ -61,6 +62,8 @@ fn main() {
     let mut give = String::new();
     // `serve` 答工具 `ext_edit` 时改的文件（施工 XG-1）。
     let mut edits = String::new();
+    // `serve` 答工具 `ext_fake` 时原样交的效果（施工 XG-1 上）。
+    let mut faked = String::from("[]");
     // 请求编号的前缀。
     let mut ids = String::from("s");
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -137,6 +140,8 @@ fn main() {
             keep(&mut record, &reply);
         } else if let Some(path) = step.strip_prefix("edits:") {
             path.clone_into(&mut edits);
+        } else if let Some(effects) = step.strip_prefix("effects:") {
+            effects.clone_into(&mut faked);
         } else if let Some(blob) = step.strip_prefix("sent:") {
             blob.clone_into(&mut sent);
         } else if let Some(given) = step.strip_prefix("give:") {
@@ -165,6 +170,15 @@ fn main() {
                     && let Some(id) = field(&line, "id")
                 {
                     send(&edited(&id, &line, &edits));
+                    continue;
+                }
+                if line.contains(r#""method":"tool.call""#)
+                    && field(&line, "tool").is_some_and(|tool| tool.starts_with("ext_fake"))
+                    && let Some(id) = field(&line, "id")
+                {
+                    send(&format!(
+                        r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"faked"}}],"effects":{faked}}}}}"#
+                    ));
                     continue;
                 }
                 if line.contains(r#""method":"tool.call""#)

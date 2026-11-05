@@ -215,6 +215,8 @@ fn result_is_a_line_of_text() {
     }
 }
 
+mod declared_tests;
+mod effects_tests;
 mod remote_tests;
 
 /// 给人看的名字（施工 9-8 六补）：照语言收下，派出去那一刻交给执行器；不写的是空的；语言、名字是空白的拒。
