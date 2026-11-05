@@ -5,6 +5,9 @@
 //! - `miyu-index sign <index.json> [--key <私钥文件>]`：先照客户端那一套读一遍索引，读不成的不签；私钥从环境变量
 //!   `MIYU_INDEX_KEY` 读，没有的读 `--key` 那个文件；写 `<index.json>.sig`。
 //! - `miyu-index verify <index.json> [--public <base64>]…`：照旁边的签名文件验；不写 `--public` 的照编进来的官方公钥。
+//! - `miyu-index sign-sums <SHA256SUMS> [--key <私钥文件>]`、`verify-sums <SHA256SUMS> --public <base64>…`（施工 RL-2，设计 59
+//!   第四节第 2 条）：核心发版的校验和清单，签法同索引，另一把钥匙（发版的 Actions 里私钥照样从 `MIYU_INDEX_KEY` 读，那里填的是
+//!   发版钥匙）。签之前照 [`miyu_source::sums::check`] 查，写坏的不签；验的时候一定要写 `--public`，官方软件源的钥匙不算数。
 //! - `miyu-index build <规则目录> <输出目录> [--github]`（施工 G-2 下）：照规则目录里的四份 TOML 收一趟，写 `<输出目录>/index.json`（没签名，
 //!   之后跑 `sign`），新占的编号写回 `names.toml`，包自带的图标写进 `<输出目录>/logos/`（施工 F-18 下，随索引一起发），一行一件事印出这一趟收了什么、跳过了什么。GitHub 的令牌照环境变量
 //!   `GITHUB_TOKEN`，只发给 API 的 `/repos/`、`/search/` 下面（后一个是社区来源搜话题，施工 CC-1）；API 的地址默认 `https://api.github.com`，环境变量 `MIYU_INDEX_API` 能换（测试用）。
@@ -33,7 +36,7 @@ use miyu_source::stats::{self, Stats};
 /// 环境变量：私钥（Actions 的密钥）。
 const KEY_VAR: &str = "MIYU_INDEX_KEY";
 
-const USAGE: &str = "usage: miyu-index build <rules-dir> <out-dir> [--github]\n       miyu-index folder <package-dir> <out-dir> --url <source-url>\n       miyu-index keygen <secret-file>\n       miyu-index sign <index.json> [--key <secret-file>]\n       miyu-index verify <index.json> [--public <base64>]...";
+const USAGE: &str = "usage: miyu-index build <rules-dir> <out-dir> [--github]\n       miyu-index folder <package-dir> <out-dir> --url <source-url>\n       miyu-index keygen <secret-file>\n       miyu-index sign <index.json> [--key <secret-file>]\n       miyu-index verify <index.json> [--public <base64>]...\n       miyu-index sign-sums <SHA256SUMS> [--key <secret-file>]\n       miyu-index verify-sums <SHA256SUMS> --public <base64> [--public <base64>]...";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -55,23 +58,35 @@ fn main() -> ExitCode {
             [file] => keygen(Path::new(file)),
             _ => return usage(),
         },
-        Some("sign") => match &args[1..] {
-            [index] => sign_file(Path::new(index), std::env::var(KEY_VAR).ok(), None),
-            [index, flag, key] if flag == "--key" => sign_file(
-                Path::new(index),
-                std::env::var(KEY_VAR).ok(),
-                Some(Path::new(key)),
-            ),
-            _ => return usage(),
-        },
-        Some("verify") => {
-            let Some((index, rest)) = args[1..].split_first() else {
+        Some(command @ ("sign" | "sign-sums")) => {
+            let check = if command == "sign" { index_ok } else { sums_ok };
+            match &args[1..] {
+                [file] => sign_file(Path::new(file), std::env::var(KEY_VAR).ok(), None, check),
+                [file, flag, key] if flag == "--key" => sign_file(
+                    Path::new(file),
+                    std::env::var(KEY_VAR).ok(),
+                    Some(Path::new(key)),
+                    check,
+                ),
+                _ => return usage(),
+            }
+        }
+        Some(command @ ("verify" | "verify-sums")) => {
+            let Some((file, rest)) = args[1..].split_first() else {
                 return usage();
             };
             let Some(publics) = publics(rest) else {
                 return usage();
             };
-            verify_file(Path::new(index), &publics)
+            if command == "verify-sums" && publics.is_empty() {
+                return usage();
+            }
+            let check = if command == "verify" {
+                index_ok
+            } else {
+                sums_ok
+            };
+            verify_file(Path::new(file), &publics, check)
         }
         _ => return usage(),
     };
@@ -124,11 +139,25 @@ fn write_secret(file: &Path, secret: &str) -> std::io::Result<()> {
     out.sync_all()
 }
 
-/// 签 `index`，写旁边的 `.sig`。私钥照 `from_env`、`key_file` 的先后取。
+/// 索引读得成。
+fn index_ok(bytes: &[u8]) -> Result<(), String> {
+    Index::parse(bytes)
+        .map(|_| ())
+        .map_err(|error| error.to_string())
+}
+
+/// 校验和清单写得对（施工 RL-2）。
+fn sums_ok(bytes: &[u8]) -> Result<(), String> {
+    let text = std::str::from_utf8(bytes).map_err(|_| "SHA256SUMS is not UTF-8".to_string())?;
+    miyu_source::sums::check(text).map(|_| ())
+}
+
+/// 签 `index`（索引，或者发版的校验和清单），写旁边的 `.sig`；`check` 不过的不签。私钥照 `from_env`、`key_file` 的先后取。
 fn sign_file(
     index: &Path,
     from_env: Option<String>,
     key_file: Option<&Path>,
+    check: fn(&[u8]) -> Result<(), String>,
 ) -> Result<String, String> {
     let secret = match (from_env, key_file) {
         (Some(secret), _) if !secret.trim().is_empty() => secret,
@@ -138,7 +167,7 @@ fn sign_file(
         _ => return Err(format!("no secret key: set {KEY_VAR} or pass --key")),
     };
     let bytes = std::fs::read(index).map_err(|error| format!("{}: {error}", index.display()))?;
-    Index::parse(&bytes).map_err(|error| error.to_string())?;
+    check(&bytes)?;
     let signed = sign::sign(&bytes, &secret).map_err(|error| error.to_string())?;
     let out = signature_of(index);
     let text = serde_json::to_string(&signed).map_err(|error| error.to_string())?;
@@ -151,8 +180,12 @@ fn sign_file(
     ))
 }
 
-/// 验 `index` 旁边的签名：照 `publics`，没写的照官方的。
-fn verify_file(index: &Path, publics: &[String]) -> Result<String, String> {
+/// 验 `index` 旁边的签名：照 `publics`，没写的照官方的；签名对了再照 `check` 读一遍。
+fn verify_file(
+    index: &Path,
+    publics: &[String],
+    check: fn(&[u8]) -> Result<(), String>,
+) -> Result<String, String> {
     let keys: Vec<PublicKey> = if publics.is_empty() {
         sign::official()
     } else {
@@ -168,7 +201,7 @@ fn verify_file(index: &Path, publics: &[String]) -> Result<String, String> {
     let signed =
         std::fs::read(&signature).map_err(|error| format!("{}: {error}", signature.display()))?;
     let key = sign::verify(&bytes, &signed, &keys).map_err(|error| error.to_string())?;
-    Index::parse(&bytes).map_err(|error| error.to_string())?;
+    check(&bytes)?;
     Ok(format!("good signature from key {key}"))
 }
 

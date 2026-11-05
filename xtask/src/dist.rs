@@ -17,6 +17,7 @@
 //! `<dist>` 默认是 cargo 的 target 目录下的 `dist/`，`--out` 换地方。查包、签名、Release 是 RL-2 的事。
 
 mod archive;
+pub mod check;
 mod fetch;
 mod layout;
 

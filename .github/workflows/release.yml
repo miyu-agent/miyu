@@ -1,0 +1,149 @@
+# 发版（施工 RL-2，设计 59 第三、四、五节）：推 `v<版本>` 标签（版本是 Cargo.toml 的 [workspace.package] version；演练用
+# `v<版本>-rc.N` 的预发布标签）时，四种系统各在自己的机器上 `cargo xtask dist` 打一个压缩包、`cargo xtask dist-check` 查包，
+# 查不过的这一趟不发；四个都过了，写 SHA256SUMS、用发版钥匙签、验，加构建出处证明，建一个**草稿** Release 把这些传上去。
+# 发不发由项目主人看过草稿以后自己点（公开发布要主人当面同意），这里不发布。
+#
+# 要主人自己配的两样（施工单 RL-2「要什么」）：
+#   - 密钥 MIYU_RELEASE_KEY：发版钥匙的私钥（`miyu-index keygen` 生成的 PKCS#8 base64），不经任何会话；
+#   - 变量 MIYU_RELEASE_PUBLIC：同一把的公钥（base64），签完照它验一遍。
+# 少了哪一样，签名那一步报错停下，不建 Release：不跳过签名。
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  dist:
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            target: linux-x86_64
+          - os: ubuntu-24.04-arm
+            target: linux-aarch64
+          - os: macos-latest
+            target: macos-aarch64
+          - os: windows-latest
+            target: windows-x86_64
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - name: 标签和版本对得上
+        run: |
+          set -euo pipefail
+          version=$(sed -n '/^\[workspace\.package\]/,/^\[/s/^version = "\(.*\)"$/\1/p' Cargo.toml)
+          tag="$GITHUB_REF_NAME"
+          case "$tag" in
+            "v$version") ;;
+            "v$version"-rc.[0-9]*) ;;
+            *) echo "::error::标签 $tag 和 Cargo.toml 的版本 $version 对不上（要 v$version 或者 v$version-rc.N）"; exit 1;;
+          esac
+          echo "标签 $tag，版本 $version"
+      - name: 装上 rust-toolchain.toml 钉住的工具链
+        run: rustup toolchain install
+      # 放在默认的 target/dist/：相对仓库的路径在 Windows 的 bash 里也照常通配（$RUNNER_TEMP 在那边带反斜杠）。
+      - name: 打包
+        run: cargo xtask dist --target "${{ matrix.target }}"
+      - name: 查包
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          found=(target/dist/miyu-*-"${{ matrix.target }}".tar.gz target/dist/miyu-*-"${{ matrix.target }}".zip)
+          [ "${#found[@]}" -eq 1 ] || { echo "::error::target/dist/ 里该正好一个压缩包，有 ${#found[@]} 个"; exit 1; }
+          cargo xtask dist-check "${found[0]}"
+          echo "ARCHIVE=${found[0]}" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-${{ matrix.target }}
+          path: ${{ env.ARCHIVE }}
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    needs: dist
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+      - name: SHA256SUMS
+        working-directory: dist
+        run: |
+          set -euo pipefail
+          ls -1 miyu-*.tar.gz miyu-*.zip | sort > files
+          [ "$(wc -l < files)" -eq 4 ] || { echo "::error::要四个压缩包，拿到的是：$(tr '\n' ' ' < files)"; exit 1; }
+          xargs sha256sum < files > SHA256SUMS
+          rm files
+          cat SHA256SUMS
+      - name: 装上 rust-toolchain.toml 钉住的工具链
+        run: rustup toolchain install
+      - name: 签名（发版钥匙）
+        env:
+          MIYU_INDEX_KEY: ${{ secrets.MIYU_RELEASE_KEY }}
+          RELEASE_PUBLIC: ${{ vars.MIYU_RELEASE_PUBLIC }}
+        run: |
+          set -euo pipefail
+          if [ -z "${MIYU_INDEX_KEY:-}" ]; then
+            echo "::error::没有密钥 MIYU_RELEASE_KEY：发版钥匙由项目主人生成、放进这个仓库的 Actions secret（施工单 RL-2）。不签不发。"
+            exit 1
+          fi
+          if [ -z "${RELEASE_PUBLIC:-}" ]; then
+            echo "::error::没有变量 MIYU_RELEASE_PUBLIC：发版钥匙的公钥（base64），签完照它验。不验不发。"
+            exit 1
+          fi
+          cargo build --quiet --locked -p miyu-source --bin miyu-index
+          target/debug/miyu-index sign-sums dist/SHA256SUMS
+          target/debug/miyu-index verify-sums dist/SHA256SUMS --public "$RELEASE_PUBLIC"
+      - name: 构建出处证明
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: |
+            dist/miyu-*.tar.gz
+            dist/miyu-*.zip
+            dist/SHA256SUMS
+      - name: 草稿 Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="$GITHUB_REF_NAME"
+          files=(dist/miyu-*.tar.gz dist/miyu-*.zip dist/SHA256SUMS dist/SHA256SUMS.sig)
+          prerelease=()
+          case "$tag" in *-rc.*) prerelease=(--prerelease);; esac
+          {
+            echo "草稿：$tag（打包的提交 $GITHUB_SHA）。"
+            echo
+            echo "核对：\`sha256sum -c SHA256SUMS\`；SHA256SUMS 的签名在 SHA256SUMS.sig（Ed25519，发版钥匙）；"
+            echo "构建出处：\`gh attestation verify <文件> -R $GITHUB_REPOSITORY\`。"
+            echo
+            echo '```'
+            cat dist/SHA256SUMS
+            echo '```'
+          } > notes.md
+          if state=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null); then
+            if [ "$state" != "true" ]; then
+              echo "::error::$tag 的 Release 已经发布了，不覆盖"
+              exit 1
+            fi
+            gh release edit "$tag" --notes-file notes.md "${prerelease[@]}"
+            gh release upload "$tag" "${files[@]}" --clobber
+          else
+            gh release create "$tag" --draft --verify-tag --title "Miyu $tag" --notes-file notes.md "${prerelease[@]}" "${files[@]}"
+          fi

@@ -1,11 +1,13 @@
 //! 软件源（设计 `37-软件源.md`）：包文件怎么打、怎么解（施工 G-1，[`archive`]），索引的写法和签名（施工 G-2 上，[`index`]、
-//! [`sign`]），收录（施工 G-2 下，[`collect`]），上线时刻和下载次数（施工 DL-2，[`stats`]）。之后的下载也住这里。
+//! [`sign`]），收录（施工 G-2 下，[`collect`]），上线时刻和下载次数（施工 DL-2，[`stats`]）。之后的下载也住这里。核心发版的校验和清单也照索引的签法签（施工 RL-2，
+//! [`sums`]）。
 
 pub mod archive;
 pub mod collect;
 pub mod index;
 pub mod sign;
 pub mod stats;
+pub mod sums;
 pub mod tools;
 
 #[cfg(test)]
