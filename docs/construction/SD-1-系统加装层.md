@@ -1,6 +1,6 @@
 ## SD-1 系统加装层
 
-状态：施工完，待 core1 审（2026-11-05，sub1）。设计 `60-系统源分包.md` 第三节、第六节第 1 条；蓝图 `packages.md`「三层怎么认」「系统加装」
+状态：已合（6b184555a）；补见末尾「SD-1补」（2026-11-05，sub1）。设计 `60-系统源分包.md` 第三节、第六节第 1 条；蓝图 `packages.md`「三层怎么认」「系统加装」
 「协议」「`miyu check`」「本地库」「装卸」、`protocol.md`、`cli/pkg.md`；参考 `packages`（中英）；作者文档 `README`（中英）。
 
 ### 目的
@@ -74,3 +74,42 @@
   包管理器卸。
 - **Windows 上 `/usr/share` 不算绝对路径**：`distro::dirs` 那几条用 Unix 路径的测试只在 Unix 上跑；XDG 照规定用 `:` 拆，不用随平台变的
   `split_paths`。
+
+### SD-1补：系统加装的装回来，被盖住的那一格改名 `shadowed`
+
+core1 拿 6b184555a 和网页实测，找到两处问题。
+
+1. **系统加装的包卸掉以后装不回来**。`MIYU_DISTRO_PACKAGES` 下放一个 `kit/`，先 `miyu pkg remove --yes kit`，再 `miyu pkg install --yes kit`，
+   报「软件包不存在」；网页「装回」发的 `package.install {package: "kit"}` 也一样。原因是 `package.install` 只写编号时，只有出厂包的
+   编号才走装回，别的编号都去了软件源。改法：
+   - 只写编号时，出厂、系统加装哪一层有这个编号（卸没卸都算，`packages::underneath`），就走装回；
+   - 看一眼（`restores: true`、版本、带了什么）和装回前查冲突，都照 `read_removed` 里装回来的那一份，两层都有的取系统加装的；
+   - 记号原来就是照编号去掉的，不用改；
+   - 她的 `package` 工具那一路（`port.rs` 的 `Back`）本来就照记号认，只把名字从 `Shipped` 改成 `Removed`。
+2. **包级的 `covered` 撞名**。F-9 补早就用 `covered: true` 表示「包里的 MCP 服务全被同名自制服务替代」，带它的是认的那一份；SD-1 又用
+   `covered: {by, …}` 表示「被上面一层盖住」。只看 `covered` 真不真的头，会把 F-9 那种认的那份当成被盖住、直接丢掉。改法：
+   - `package.list` 的这一格改叫 `shadowed: {by, version, over, newer}`；
+   - `miyu check` 的代码改成 `shadowed`；
+   - 字的键改成 `package-problems/shadowed`、`shadowed_newer`、`shadowed_newer_distro`；
+   - F-9 的 `covered` 不动；
+   - Rust 里 `Issue::Covered` 不改名，人格、预设的 `layers.rs` 也用这个词，改了牵连太大；
+   - 终端、网页由 core1 通知。
+
+**怎么验**：`tests/package_distro.rs` 加一条真核心测试，依次查这几步：
+- 卸系统加装的 `dkit`，记号写上；
+- 只写编号看一眼，得 `restores: true`、版本 `1.2.0`；
+- 装回后是 `layer: distro`、没有 `removed`，记号去掉，列表里只剩一项；
+- 再装一次，得 `unknown_package`，不去软件源。
+
+另一条：卸掉以后家目录装了一个子命令也叫 `dkit` 的包，看一眼、真装回都报 `package_conflict`，记号留着（查的是系统加装那份的清单）。
+
+原来那几条照新名字改。文档改了蓝图 `packages.md`、`protocol.md`，参考 `packages`（中英）。
+
+**变异**：手写 7 个，都抓住：
+- 只写编号从不走装回；
+- 只有出厂的走装回；
+- 看一眼照出厂那层找；
+- 查冲突照出厂那层找；
+- 格子写回 `covered`；
+- `miyu check` 的代码写回 `covered`；
+- 字用旧键。

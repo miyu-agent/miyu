@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 use miyu_config::package;
 use miyu_store::packages::conflicts::conflicts;
 use miyu_store::packages::install::{self, Placed};
-use miyu_store::packages::{Found, Issue, Layer, Packages};
+use miyu_store::packages::{Found, Issue, Layer};
 
 use super::folder::source;
 use super::progress::{self, At, Stage};
@@ -352,7 +352,7 @@ pub(super) async fn bring_back(core: &Arc<Core>, peer: Peer, id: &str) -> Result
     if !places.removed().iter().any(|removed| removed == id) {
         return Err(Refusal::UNKNOWN_PACKAGE);
     }
-    shipped_clear_of_conflicts((core, peer), id).await?;
+    restored_clear_of_conflicts((core, peer), id).await?;
     let markers = places.removed_markers();
     let target = id.to_string();
     let before = core.system_packages();
@@ -418,13 +418,14 @@ pub(super) async fn clear_of_conflicts(
     }
 }
 
-/// 把卸掉的出厂的包 `id` 装回来之前也查（同 [`clear_of_conflicts`]）：卸掉以后家目录里装了同名的。
-pub(super) async fn shipped_clear_of_conflicts(
+/// 把卸掉的出厂的、系统加装的包 `id` 装回来之前也查（同 [`clear_of_conflicts`]）：卸掉以后家目录里装了同名的。查的是装回来
+/// 的那一份（两层都有的取系统加装的，施工 SD-1补）。
+pub(super) async fn restored_clear_of_conflicts(
     (core, peer): (&Arc<Core>, Peer),
     id: &str,
 ) -> Result<(), Refusal> {
-    let shipped = Packages::shipped(&core.resources).read();
-    let Some((manifest, dir)) = shipped
+    let removed = packages(core).read_removed();
+    let Some((manifest, dir)) = removed
         .iter()
         .find(|one| one.id == id)
         .and_then(|one| Some((one.read.as_ref().ok()?.clone(), one.files_dir())))

@@ -49,6 +49,14 @@ use crate::refusal::Refusal;
 use item::listed;
 pub use status::absent;
 
+/// 编号 `id` 在出厂、系统加装哪一层有（卸没卸都算，施工 SD-1补）：`package.install` 只写编号的照装回走，不去软件源。
+pub(crate) fn underneath(core: &Core, id: &str) -> bool {
+    packages(core).dirs().any(|(layer, dir)| {
+        layer != miyu_store::packages::Layer::Home
+            && dir.join(id).join(miyu_store::packages::MANIFEST).is_file()
+    })
+}
+
 /// 编号 `id` 的包文件夹：核心手里这时的清单里的（`Found::files_dir`）。没有的交回空路径，照它找不到包自己带的程序（施工
 /// F-8 上再补：程序先找包文件夹的 `bin/`）。
 pub(crate) fn dir_of(core: &Core, id: &str) -> std::path::PathBuf {
@@ -85,7 +93,7 @@ pub(crate) fn cover(all: &[Found], id: &str, mine: Option<&str>) -> (Option<Stri
 
 /// 被盖住的一份给人看的话（`miyu check`、施工 SD-1）：被哪一层盖住、两边的版本；这一份更新的接一句怎么换回来（盖它的是装上的
 /// 卸掉那一份；是系统加装的用系统的包管理器卸，`pkg remove` 的记号照编号记，会连这一份一起藏起来）。
-pub(crate) fn covered_sentence(
+pub(crate) fn shadowed_sentence(
     words: &Human,
     id: &str,
     by: miyu_store::packages::Layer,
@@ -97,7 +105,7 @@ pub(crate) fn covered_sentence(
         .unwrap_or_else(|| by.as_str().to_string());
     let mut said = Words::sentence(
         words,
-        "package-problems/covered",
+        "package-problems/shadowed",
         &[
             ("by", layer.as_str()),
             ("version", mine.unwrap_or(unknown)),
@@ -107,8 +115,8 @@ pub(crate) fn covered_sentence(
     .unwrap_or_default();
     if newer {
         let key = match by {
-            miyu_store::packages::Layer::Home => "package-problems/covered_newer",
-            _ => "package-problems/covered_newer_distro",
+            miyu_store::packages::Layer::Home => "package-problems/shadowed_newer",
+            _ => "package-problems/shadowed_newer_distro",
         };
         if let Some(hint) = Words::sentence(words, key, &[("id", id)]) {
             said.push(' ');
@@ -151,7 +159,7 @@ pub fn load(resources: &ResourceRoot, root: &DataRoot, distro: Vec<PathBuf>) -> 
                 tracing::warn!(target: TARGET, package = one.id.as_str(), file = %one.path.display(), error = %error, "package unreadable");
             }
             Err(Issue::Covered { by, .. }) => {
-                tracing::info!(target: TARGET, package = one.id.as_str(), layer = one.layer.as_str(), by = by.as_str(), "package covered");
+                tracing::info!(target: TARGET, package = one.id.as_str(), layer = one.layer.as_str(), by = by.as_str(), "package shadowed");
             }
         }
     }

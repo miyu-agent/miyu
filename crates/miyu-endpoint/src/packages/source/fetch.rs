@@ -20,7 +20,6 @@ use serde_json::{Value, json};
 use miyu_config::package::Target;
 use miyu_source::archive;
 use miyu_source::index::{Entry, File, Index};
-use miyu_store::packages::Packages;
 
 use super::super::archive::Then;
 use super::super::progress::{self, At, Stage};
@@ -78,8 +77,8 @@ impl SourceParams {
     }
 }
 
-/// 这一条 `package.install` 是不是从软件源装：写了 `source` 的；只写了 `package`、那个编号不是出厂包的（出厂包的编号照旧是
-/// 装回来：卸掉了的装回来，没卸的 `unknown_package`；软件源里也不会有同编号的，装上会撞 `package_exists`）。
+/// 这一条 `package.install` 是不是从软件源装：写了 `source` 的；只写了 `package`、那个编号出厂、系统加装两层都没有的（这两层
+/// 的编号照旧是装回来：卸掉了的装回来，没卸的 `unknown_package`；施工 SD-1补 加上系统加装的）。
 pub(crate) fn wanted(core: &Core, params: &Value) -> bool {
     if params.get("source").is_some() {
         return true;
@@ -90,11 +89,7 @@ pub(crate) fn wanted(core: &Core, params: &Value) -> bool {
     ) {
         // 组名（施工 BS-1 下中）照装回出厂的那一路走。
         (Some(id), None) => {
-            !Packages::shipped(&core.resources)
-                .read()
-                .iter()
-                .any(|shipped| shipped.id == id)
-                && !crate::packages::group::is_group(core, id)
+            !crate::packages::underneath(core, id) && !crate::packages::group::is_group(core, id)
         }
         _ => false,
     }

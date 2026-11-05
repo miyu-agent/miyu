@@ -248,7 +248,7 @@ fn a_builtin_the_core_lacks_is_not_built_in() {
                 Ok(_) => None,
                 Err(miyu_store::packages::Issue::Wrong(problem)) => Some(problem.code.as_str()),
                 Err(miyu_store::packages::Issue::Unreadable(_)) => Some("unreadable"),
-                Err(miyu_store::packages::Issue::Covered { .. }) => Some("covered"),
+                Err(miyu_store::packages::Issue::Covered { .. }) => Some("shadowed"),
             };
             (one.id.as_str(), code)
         })
@@ -316,9 +316,9 @@ async fn broken_taken_and_mismatched_ones_carry_a_code_and_a_sentence() {
         "装上的盖住出厂的（施工 SD-1，原来的 duplicate 去掉了）"
     );
     assert_eq!(mermaid[0]["layer"], "home", "{mermaid:?}");
-    assert!(mermaid[0].get("covered").is_none() && mermaid[0].get("code").is_none());
+    assert!(mermaid[0].get("shadowed").is_none() && mermaid[0].get("code").is_none());
     assert_eq!(mermaid[1]["layer"], "shipped");
-    assert_eq!(mermaid[1]["covered"]["by"], "home", "{mermaid:?}");
+    assert_eq!(mermaid[1]["shadowed"]["by"], "home", "{mermaid:?}");
     assert!(mermaid[1].get("code").is_none(), "被盖住的不算错");
     assert_eq!(by_id("web2")[0]["code"], "command_taken");
     let later = &by_id("later")[0];

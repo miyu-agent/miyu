@@ -8,11 +8,11 @@ use std::sync::Arc;
 use serde_json::{Map, Value, json};
 
 use miyu_config::package::{Manifest, PackageKind};
+use miyu_store::packages::Layer;
 use miyu_store::packages::local;
-use miyu_store::packages::{Layer, Packages};
 
 use super::folder::source;
-use super::manage::{clear_of_conflicts, removable, setting_keys, shipped_clear_of_conflicts};
+use super::manage::{clear_of_conflicts, removable, restored_clear_of_conflicts, setting_keys};
 use super::packages;
 use crate::Core;
 use crate::hello::Peer;
@@ -52,14 +52,15 @@ pub(super) async fn looked(
     Ok((answer, manifest))
 }
 
-/// 把卸掉的出厂的包装回来：编号、版本、带了什么，`restores: true`。没卸过的 `unknown_package`。
+/// 把卸掉的出厂的、系统加装的包装回来：编号、版本、带了什么，`restores: true`。没卸过的 `unknown_package`。看的是装回来的那一份
+/// （两层都有的取系统加装的，施工 SD-1补）。
 pub(crate) async fn restoring(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value, Refusal> {
     if !packages(core).removed().iter().any(|removed| removed == id) {
         return Err(Refusal::UNKNOWN_PACKAGE);
     }
-    shipped_clear_of_conflicts((core, peer), id).await?;
-    let shipped = Packages::shipped(&core.resources).read();
-    let one = shipped
+    restored_clear_of_conflicts((core, peer), id).await?;
+    let removed = packages(core).read_removed();
+    let one = removed
         .iter()
         .find(|one| one.id == id)
         .ok_or(Refusal::UNKNOWN_PACKAGE)?;

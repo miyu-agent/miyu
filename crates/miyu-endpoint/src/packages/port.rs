@@ -213,7 +213,7 @@ impl PackagesPort for Port {
                         .await
                         .map_err(refused);
                 }
-                Some(Back::Shipped) => {
+                Some(Back::Removed) => {
                     return super::preview::restoring(&core, self.peer(), &package)
                         .await
                         .map_err(refused);
@@ -242,7 +242,7 @@ impl PackagesPort for Port {
                     done["package"] = json!(package);
                     return Ok(done);
                 }
-                Some(Back::Shipped) => {
+                Some(Back::Removed) => {
                     let entry = super::manage::bring_back(&core, self.peer(), &package)
                         .await
                         .map_err(refused)?;
@@ -285,10 +285,10 @@ impl PackagesPort for Port {
     }
 }
 
-/// 她装的编号是要装回来的（施工 BS-1 中下修）：组名，或者卸掉了的出厂包；都不是的走软件源。
+/// 她装的编号是要装回来的（施工 BS-1 中下修）：组名，或者卸掉了的出厂包、系统加装的包（施工 SD-1补）；都不是的走软件源。
 enum Back {
     Group,
-    Shipped,
+    Removed,
 }
 
 /// `package` 装回来走哪一路；不是装回来的没有。
@@ -300,7 +300,7 @@ fn back(core: &Core, package: &str) -> Option<Back> {
         .removed()
         .iter()
         .any(|removed| removed == package)
-        .then_some(Back::Shipped)
+        .then_some(Back::Removed)
 }
 
 /// 在会话用的预设 `preset` 里打开她装的包 `package`（施工 F-10 下下，16 第三节）：预设不开没列出来的软件、也没写这个包的，往

@@ -53,7 +53,7 @@ fn only(reply: &Value, id: &str) -> Vec<Value> {
 }
 
 #[tokio::test]
-async fn distro_packages_are_listed_covered_checked_and_removed_without_touching_files() {
+async fn distro_packages_are_listed_shadowed_checked_and_removed_without_touching_files() {
     let home = Home::new();
     let at = distro(&home);
     // dview：只有系统加装的一份，程序在 bin/。
@@ -77,13 +77,13 @@ async fn distro_packages_are_listed_covered_checked_and_removed_without_touching
         (dview[0]["layer"].as_str(), dview[0]["from"].as_str()),
         (Some("distro"), Some("distro"))
     );
-    assert!(dview[0].get("covered").is_none());
+    assert!(dview[0].get("shadowed").is_none());
     let dterm = only(&listed, "dterm");
     assert_eq!(dterm.len(), 2, "{dterm:?}");
     assert_eq!(dterm[0]["layer"], "home");
     assert_eq!(dterm[1]["layer"], "distro");
     assert_eq!(
-        dterm[1]["covered"],
+        dterm[1]["shadowed"],
         json!({"by": "home", "version": "0.3.0", "over": "0.2.0", "newer": true})
     );
     assert!(dterm[1].get("code").is_none(), "被盖住的不算错");
@@ -93,7 +93,7 @@ async fn distro_packages_are_listed_covered_checked_and_removed_without_touching
         .as_array()
         .expect("测试的前提")
         .iter()
-        .filter(|problem| problem["code"] == "covered")
+        .filter(|problem| problem["code"] == "shadowed")
         .collect();
     assert_eq!(covered.len(), 1, "{checked}");
     assert_eq!(covered[0]["level"], "warning");
@@ -170,5 +170,106 @@ async fn a_broken_distro_manifest_is_reported_by_package_check() {
         only(&files, "dbad")[0]["manifest"],
         "two_programs",
         "{files}"
+    );
+}
+
+#[tokio::test]
+async fn a_removed_distro_package_comes_back_by_its_id() {
+    let home = Home::new();
+    let at = distro(&home);
+    put(&at, "dkit/package.toml", &ui("dkit", "1.2.0"));
+    let mut client = Client::connect(core(&home));
+    client.hello().await;
+    let gone = client
+        .call("r1", "package.remove", json!({"package": "dkit"}))
+        .await;
+    assert_eq!(gone["result"]["removed"], true, "{gone}");
+    let marker = home.root.removed_markers().join("dkit");
+    assert!(marker.exists(), "记号写上了");
+
+    // 只写编号：照装回走，不去软件源（施工 SD-1补）。看一眼的同出厂的，`restores: true`、版本照系统加装的那份。
+    let preview = client
+        .call(
+            "p1",
+            "package.install",
+            json!({"package": "dkit", "preview": true}),
+        )
+        .await;
+    assert_eq!(preview["result"]["restores"], true, "{preview}");
+    assert_eq!(preview["result"]["version"], "1.2.0", "{preview}");
+    let back = client
+        .call("i1", "package.install", json!({"package": "dkit"}))
+        .await;
+    assert_eq!(back["result"]["package"], "dkit", "{back}");
+    assert_eq!(back["result"]["layer"], "distro", "{back}");
+    assert!(
+        back["result"]
+            .get("removed")
+            .is_none_or(|removed| removed == false),
+        "{back}"
+    );
+    assert!(!marker.exists(), "装回去掉记号");
+    let listed = client.call("l1", "package.list", json!({})).await;
+    let dkit = only(&listed, "dkit");
+    assert_eq!(dkit.len(), 1, "{dkit:?}");
+    assert!(
+        dkit[0]
+            .get("removed")
+            .is_none_or(|removed| removed == false),
+        "{dkit:?}"
+    );
+
+    // 没卸过的再装：同出厂的没卸过的，`unknown_package`，不去软件源。
+    let again = client
+        .call("i2", "package.install", json!({"package": "dkit"}))
+        .await;
+    assert_eq!(
+        again["error"]["data"]["reason"], "unknown_package",
+        "{again}"
+    );
+}
+
+#[tokio::test]
+async fn bringing_a_distro_package_back_checks_its_own_names() {
+    let home = Home::new();
+    let at = distro(&home);
+    put(&at, "dkit/package.toml", &ui("dkit", "1.0.0"));
+    let mut client = Client::connect(core(&home));
+    client.hello().await;
+    let gone = client
+        .call("r1", "package.remove", json!({"package": "dkit"}))
+        .await;
+    assert_eq!(gone["result"]["removed"], true, "{gone}");
+    // 卸掉以后装了一个子命令也叫 dkit 的包：装回系统加装那份前照它的清单查，撞了拒。
+    let other = home.root.path().join("tmp").join("other");
+    put(
+        &other,
+        "package.toml",
+        &ui("dkit", "1.0.0").replace("program = \"miyu-dkit\"", "program = \"miyu-other\""),
+    );
+    let put_in = client
+        .call(
+            "i1",
+            "package.install",
+            json!({"path": other.to_string_lossy()}),
+        )
+        .await;
+    assert!(put_in.get("result").is_some(), "{put_in}");
+    for (n, preview) in [("p1", true), ("i2", false)] {
+        let back = client
+            .call(
+                n,
+                "package.install",
+                json!({"package": "dkit", "preview": preview}),
+            )
+            .await;
+        assert_eq!(
+            back["error"]["data"]["reason"], "package_conflict",
+            "{back}"
+        );
+    }
+    assert!(
+        home.root.removed_markers().join("dkit").exists(),
+        "拒了不去掉记号"
     );
 }
