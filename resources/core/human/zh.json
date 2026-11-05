@@ -561,6 +561,8 @@
     "preset-sections/extensions": "扩展",
     "extensions/capabilities/tools": "提供工具",
     "extensions/capabilities/tools/summary": "给 AI 加能调用的工具",
+    "extensions/capabilities/tools.commands": "工具会跑命令",
+    "extensions/capabilities/tools.commands/summary": "它提供的工具会跑命令，命令里能以当前会话的身份调用 AI 的工具",
     "extensions/capabilities/commands": "提供命令",
     "extensions/capabilities/commands/summary": "加斜杠命令",
     "extensions/capabilities/widgets": "在界面上显示内容",

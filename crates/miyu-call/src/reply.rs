@@ -5,23 +5,23 @@ use miyu_kernel::event::NestedStatus;
 use miyu_kernel::session::NestedRefusal;
 use miyu_tool::{Nested, NestedPort, Settled};
 
-use super::Texts;
-use crate::load::say;
+use crate::Texts;
+use miyu_tool::load::say;
 
 /// 退出码：用法不对。
-pub(super) const USAGE: u8 = 2;
+pub(crate) const USAGE: u8 = 2;
 
 /// 答回去的：`miyu call` 照它印、退出。
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct Reply {
-    pub(super) code: u8,
-    pub(super) stdout: String,
-    pub(super) stderr: String,
+pub(crate) struct Reply {
+    pub(crate) code: u8,
+    pub(crate) stdout: String,
+    pub(crate) stderr: String,
 }
 
 impl Reply {
     /// 只在标准错误上说一句。
-    pub(super) fn said(code: u8, stderr: String) -> Reply {
+    pub(crate) fn said(code: u8, stderr: String) -> Reply {
         Reply {
             code,
             stdout: String::new(),
@@ -31,7 +31,7 @@ impl Reply {
 }
 
 /// 调一次：等内核记过、落了盘的结局。
-pub(super) async fn call(
+pub(crate) async fn call(
     port: &dyn NestedPort,
     texts: &Texts,
     name: String,
@@ -43,7 +43,7 @@ pub(super) async fn call(
 
 /// 会话里的 `miyu pkg` 调一次（施工 BS-1 中，设计 `44-基础系统拆包.md` 第三节第 4 条）：只调得了不上工具面的那几件；这个会话
 /// 没有它们（`packages` 包关着）的说这里用不了，不列 `miyu call` 能调的。
-pub(super) async fn command(
+pub(crate) async fn command(
     port: &dyn NestedPort,
     texts: &Texts,
     name: String,
@@ -58,7 +58,7 @@ pub(super) async fn command(
 }
 
 /// 结局写成答回去的。
-pub(super) fn settle(port: &dyn NestedPort, texts: &Texts, name: &str, nested: Nested) -> Reply {
+pub(crate) fn settle(port: &dyn NestedPort, texts: &Texts, name: &str, nested: Nested) -> Reply {
     match nested {
         Nested::Refused(NestedRefusal::Gone) => Reply::said(3, say(&texts.ended, &[])),
         Nested::Refused(NestedRefusal::Unknown) => Reply::said(USAGE, unknown(port, texts, name)),
@@ -100,7 +100,7 @@ fn finished(texts: &Texts, name: &str, settled: Settled) -> Reply {
 }
 
 /// `--schema`：这件的说明和参数格式；脚本里调不了的照不认识、调不了说。
-pub(super) fn schema(port: &dyn NestedPort, texts: &Texts, name: &str) -> Reply {
+pub(crate) fn schema(port: &dyn NestedPort, texts: &Texts, name: &str) -> Reply {
     match schema_text(port, texts, name) {
         Some(text) => Reply {
             code: 0,

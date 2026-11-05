@@ -3,6 +3,7 @@
 //! 「暂时不可用」。登记缓存在磁盘上，核心起来、开扩展时先照缓存登记；关掉扩展，它的工具出目录（施工 O-2 中，[`cache`]）。
 
 mod cache;
+mod commands;
 mod declared;
 mod effects;
 mod remote;
@@ -14,12 +15,13 @@ use std::time::Duration;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
+use miyu_config::package::Capability;
 use miyu_kernel::raw::RawJson;
 use miyu_kernel::tool::{Access, Role};
 use miyu_tool::{Problem, Scope, Spec, Tool, Venues};
 
 use crate::Core;
-use crate::extensions::Instance;
+use crate::extensions::{Instance, State};
 use crate::hello::Caller;
 use crate::refusal::Refusal;
 use crate::reverse::Peer;
@@ -31,7 +33,8 @@ use remote::{RemoteTool, Stores, Texts};
 /// 哪个包的进程现在由哪个连接提供。
 #[derive(Default)]
 pub(crate) struct Provided {
-    peers: Mutex<HashMap<Instance, Peer>>,
+    /// 连接，和登记时那个扩展进程的进程号（施工 XG-1 下：通道照它认子孙；问不出的没有）。
+    peers: Mutex<HashMap<Instance, (Peer, Option<u32>)>>,
     /// 握手成了的那几份的连接（施工 J-4）：不管登没登记工具，推通知（`schedule.fired`）照它找。工具调用照旧只认登记了工具的
     /// （[`Provided::peers`]），握了手还没登记的不转过去。
     linked: Mutex<HashMap<Instance, Peer>>,
@@ -49,15 +52,24 @@ impl Provided {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .get(instance)
-            .cloned()
+            .map(|(peer, _)| peer.clone())
     }
 
-    /// 记下 `instance` 由 `peer` 提供，换掉以前的。
-    fn register(&self, instance: Instance, peer: Peer) {
+    /// 现在提供包 `package` 的那个扩展进程的进程号（施工 XG-1 下）：没有连接、问不出的没有。
+    pub(crate) fn pid(&self, package: &str) -> Option<u32> {
         self.peers
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .insert(instance, peer);
+            .get(&Instance::of(package))
+            .and_then(|(_, pid)| *pid)
+    }
+
+    /// 记下 `instance` 由 `peer` 提供、扩展进程是 `pid`，换掉以前的。
+    fn register(&self, instance: Instance, peer: Peer, pid: Option<u32>) {
+        self.peers
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .insert(instance, (peer, pid));
     }
 
     /// 记下 `instance` 握手成了、连接是 `peer`（施工 J-4），换掉以前的。
@@ -137,6 +149,11 @@ struct ToolParams {
     /// [`declared::background`]；不对的 `bad_tool`，`problem` 是 `background_parameters`。不写的没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     background_parameters: Option<Value>,
+    /// 会跑命令（施工 XG-1 下，设计 63 第二节、第六节第 2 条）：`true` 的，说明后面接 `miyu call` 那一段，`tool.call` 带
+    /// `channel`，命令里的 `miyu call` 照它连上来调会话的工具。不写、`false` 的不是；别的写法 `bad_tool`，`problem` 是
+    /// `runs_commands`；包没批能力 `tools.commands` 的 `needs_approval`。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    runs_commands: Option<Value>,
 }
 
 /// 不写时等多久：一分钟。
@@ -145,7 +162,7 @@ const DEFAULT_TIMEOUT_MS: u64 = 60_000;
 /// 能写的时限：一秒到十分钟。
 const TIMEOUT_MS: std::ops::RangeInclusive<u64> = 1_000..=600_000;
 
-/// 查过的一件：规格、给哪种会话、等它多久、哪几个参数是路径、哪几个只在有后台时给。
+/// 查过的一件：规格、给哪种会话、等它多久、哪几个参数是路径、哪几个只在有后台时给、会不会跑命令。
 struct Checked {
     spec: Spec,
     venues: Venues,
@@ -154,6 +171,7 @@ struct Checked {
     subject: Option<String>,
     paths: Vec<declared::PathParameter>,
     background: Vec<String>,
+    runs_commands: bool,
 }
 
 /// `provide`：见模块的说明。
@@ -167,8 +185,13 @@ pub(crate) async fn provide(
     };
     let kept = serde_json::to_vec(&params).map_err(|_| Refusal::INTERNAL)?;
     let count = register(core, package, params.tools)?;
+    // 扩展进程的进程号（施工 XG-1 下）：拉起以后就记下了（`Starting`），握了手的连接一定有。
+    let pid = match core.extensions.status(package).state {
+        State::Starting { pid } | State::Running { pid } => pid,
+        _ => None,
+    };
     core.provided
-        .register(Instance::of(package), caller.reverse.clone());
+        .register(Instance::of(package), caller.reverse.clone(), pid);
     cache::write(core, package, &kept);
     tracing::info!(target: "miyu::endpoint", package, tools = count, "provided");
     Ok(json!({ "tools": count }))
@@ -191,7 +214,7 @@ fn register(core: &Core, package: &str, tools: Vec<ToolParams>) -> Result<usize,
     let listed = listed(core, package);
     let platforms = crate::venues::platforms_of_package(core, package);
     let declared = Arc::new(crate::sessions::state::Declared::of(core, package));
-    let mut built: Vec<Arc<dyn Tool>> = Vec::with_capacity(count);
+    let mut all = Vec::with_capacity(count);
     for tool in tools {
         // `mcp__` 开头的名字留给 MCP 服务（施工 X-3 上）：包自己登记的用了，预设会把它归到服务的功能上。
         if tool.name.starts_with(miyu_tool::MCP_PREFIX) {
@@ -204,9 +227,24 @@ fn register(core: &Core, package: &str, tools: Vec<ToolParams>) -> Result<usize,
         {
             return Err(bad_tool(&tool.name, "feature"));
         }
+        all.push(checked(tool)?);
+    }
+    // 会跑命令的要包批过 `tools.commands`（施工 XG-1 下，设计 63 第七节第 3 条：开的时候人批，出厂的算批过）。
+    let runs = all.iter().any(|checked| checked.runs_commands);
+    if runs && !crate::extensions::held(core, package).contains(&Capability::ToolsCommands) {
+        return Err(Refusal::needs_approval(json!([
+            Capability::ToolsCommands.as_str()
+        ])));
+    }
+    let commands = match runs {
+        true => Some(commands::Commands::load(core)?),
+        false => None,
+    };
+    let mut built: Vec<Arc<dyn Tool>> = Vec::with_capacity(count);
+    for checked in all {
         built.push(Arc::new(
             RemoteTool::new(
-                checked(tool)?,
+                checked,
                 package,
                 Arc::clone(&core.provided),
                 texts.clone(),
@@ -215,7 +253,8 @@ fn register(core: &Core, package: &str, tools: Vec<ToolParams>) -> Result<usize,
                     declared: Arc::clone(&declared),
                 },
             )
-            .for_platform(platforms.iter()),
+            .for_platform(platforms.iter())
+            .running(commands.clone()),
         ));
     }
     core.tools
@@ -333,6 +372,11 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
         tool.background_parameters.as_ref(),
         &tool.input_schema,
     )?;
+    let runs_commands = match &tool.runs_commands {
+        None => false,
+        Some(Value::Bool(runs)) => *runs,
+        Some(_) => return Err(bad_tool(&tool.name, "runs_commands")),
+    };
     Ok(Checked {
         spec: Spec {
             name: tool.name,
@@ -351,6 +395,7 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
         subject: tool.subject,
         paths,
         background,
+        runs_commands,
     })
 }
 

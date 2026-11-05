@@ -561,6 +561,8 @@
     "preset-sections/extensions": "拡張",
     "extensions/capabilities/tools": "ツールを提供",
     "extensions/capabilities/tools/summary": "AI が呼び出せるツールを追加する",
+    "extensions/capabilities/tools.commands": "コマンドを実行するツール",
+    "extensions/capabilities/tools.commands/summary": "提供するツールがコマンドを実行し、そのコマンドから現在のセッションとして AI のツールを呼び出せる",
     "extensions/capabilities/commands": "コマンドを提供",
     "extensions/capabilities/commands/summary": "スラッシュコマンドを追加する",
     "extensions/capabilities/widgets": "画面に表示する",

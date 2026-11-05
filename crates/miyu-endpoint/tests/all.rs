@@ -19,6 +19,7 @@ mod projects_scope;
 mod projects_sessions;
 mod prompt_override;
 mod provide;
+mod provide_commands;
 mod provide_data;
 mod provide_detail;
 mod provide_effects;

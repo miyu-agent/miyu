@@ -149,7 +149,7 @@ pub(super) async fn send(
             by = venues::speaker(core, &found.handle, speaking)?;
         }
     }
-    if shell_sent && !runs_commands(core) {
+    if shell_sent && !serves_person(core) {
         return Err(Refusal::SHELL_UNAVAILABLE);
     }
     // 先换目录再说（施工 9-7 再补）：这一句开的那一轮照新目录跑。
@@ -192,13 +192,14 @@ fn shell_allowed(params: &SendParams, caller: &Caller) -> Result<(), Refusal> {
     }
 }
 
-/// 有没有跑命令的工具（设计 57 第二节第 1 条）：装着、包没关的目录里有一件声明跑命令的；预设不管。
-fn runs_commands(core: &Core) -> bool {
+/// 有没有给人跑命令的工具（设计 57 第二节第 1 条）：装着、包没关的目录里有一件给人跑命令的（`Tool::serves_person`，施工 XG-1
+/// 下：只认内置 `shell`，扩展声明了 `runs_commands` 的不算）；预设不管。
+fn serves_person(core: &Core) -> bool {
     let tools = core.tools();
     tools.specs().any(|spec| {
         tools
             .get(&spec.name)
-            .is_some_and(|tool| tool.runs_commands())
+            .is_some_and(|tool| tool.serves_person())
     })
 }
 

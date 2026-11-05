@@ -108,17 +108,8 @@ pub(super) struct Watch {
     job: Option<miyu_sandbox::lifeline::Job>,
 }
 
-/// 脚本调工具的通道认人时照它（施工 M-3）：Unix 上是命令的进程组号，Windows 上是命令的作业对象。
-#[cfg(unix)]
-pub(in crate::shell) type Member = u32;
-
-/// 同上：Windows 上是命令的作业对象。
-#[cfg(windows)]
-pub(in crate::shell) type Member = miyu_sandbox::lifeline::Job;
-
-/// 同上：别的系统没有通道。
-#[cfg(not(any(unix, windows)))]
-pub(in crate::shell) type Member = ();
+/// 脚本调工具的通道认人时照它（施工 M-3）：Unix 上是命令的进程组号，Windows 上是命令的作业对象（定义在 `miyu-call`）。
+pub(in crate::shell) use miyu_call::Member;
 
 /// 一条命令的 [`Member`]：Windows 上作业对象建不成的没有。
 #[cfg(unix)]

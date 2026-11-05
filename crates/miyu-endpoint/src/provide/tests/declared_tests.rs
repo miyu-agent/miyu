@@ -161,13 +161,58 @@ async fn the_tool_reports_the_declared_paths() {
     assert_eq!(background.background_parameters(), ["in_background"]);
 }
 
-/// 不写两格的规格：登记缓存逐字节和以前一样（两格都不写出来）；写了的原样存、读回来一样。
+/// 不写这几格的规格：登记缓存逐字节和以前一样（都不写出来）；写了的原样存、读回来一样（施工 XG-1 下加了 `runs_commands`）。
 #[test]
 fn specs_without_the_declarations_are_cached_as_before() {
     let before = r#"{"tools":[{"name":"ext_edit","description":"Edit a file.","input_schema":{"type":"object"},"access":"write","venues":["local"]}]}"#;
     let params: ProvideParams = serde_json::from_str(before).expect("合写法");
     assert_eq!(serde_json::to_string(&params).expect("写得成"), before);
-    let declared = r#"{"tools":[{"name":"ext_edit","description":"Edit a file.","input_schema":{"type":"object"},"access":"write","venues":["local"],"paths":[{"parameter":"file_path","write":true}],"background_parameters":["in_background"]}]}"#;
+    let declared = r#"{"tools":[{"name":"ext_edit","description":"Edit a file.","input_schema":{"type":"object"},"access":"write","venues":["local"],"paths":[{"parameter":"file_path","write":true}],"background_parameters":["in_background"],"runs_commands":true}]}"#;
     let params: ProvideParams = serde_json::from_str(declared).expect("合写法");
     assert_eq!(serde_json::to_string(&params).expect("写得成"), declared);
+}
+
+/// `runs_commands`（施工 XG-1 下，设计 63 第二节）：布尔，不写是假；别的写法 `bad_tool`，`problem` 是 `runs_commands`。只有写了真的
+/// 才跑命令、接说明末尾那一段（要的字交给它以后）；没交的不接。
+#[test]
+fn runs_commands_is_a_boolean_and_only_true_runs_commands() {
+    let with = |runs: Option<Value>| {
+        let mut tool = editor("execute");
+        tool.runs_commands = runs;
+        tool
+    };
+    assert!(!checked(with(None)).expect("合写法").runs_commands);
+    assert!(
+        !checked(with(Some(json!(false))))
+            .expect("合写法")
+            .runs_commands
+    );
+    assert!(
+        checked(with(Some(json!(true))))
+            .expect("合写法")
+            .runs_commands
+    );
+    for bad in [json!("yes"), json!(1), json!([true])] {
+        assert_eq!(
+            refused_for(with(Some(bad.clone()))),
+            json!({"tool": "ext_edit", "problem": "runs_commands"}),
+            "{bad}"
+        );
+    }
+    let tool = |runs: Option<Value>| {
+        RemoteTool::new(
+            checked(with(runs)).expect("合写法"),
+            "editor",
+            Arc::new(Provided::default()),
+            texts(),
+            stores().0,
+        )
+    };
+    let runs = tool(Some(json!(true)));
+    assert!(runs.runs_commands());
+    assert!(!runs.serves_person(), "人跑命令只认内置的");
+    assert!(runs.clicall_section("probe", "").is_none(), "没交字的不接");
+    let plain = tool(None);
+    assert!(!plain.runs_commands());
+    assert!(plain.clicall_section("probe", "").is_none());
 }

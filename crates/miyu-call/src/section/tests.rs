@@ -43,25 +43,19 @@ impl Drop for Bin {
 fn powershell_gets_its_own_example_and_posix_shells_look_for_jq_then_python() {
     let none = Bin::with(&[]);
     assert_eq!(
-        Example::pick(Kind::WindowsPowerShell, Some(&none.path())),
+        Example::pick(false, Some(&none.path())),
         Some(Example::PowerShell)
     );
-    assert_eq!(
-        Example::pick(Kind::PowerShell7, None),
-        Some(Example::PowerShell)
-    );
+    assert_eq!(Example::pick(false, None), Some(Example::PowerShell));
     let both = Bin::with(&["jq", "python3"]);
-    assert_eq!(
-        Example::pick(Kind::Bash, Some(&both.path())),
-        Some(Example::Jq)
-    );
+    assert_eq!(Example::pick(true, Some(&both.path())), Some(Example::Jq));
     let python = Bin::with(&["python3"]);
     assert_eq!(
-        Example::pick(Kind::Zsh, Some(&python.path())),
+        Example::pick(true, Some(&python.path())),
         Some(Example::Python)
     );
-    assert_eq!(Example::pick(Kind::Bash, Some(&none.path())), None);
-    assert_eq!(Example::pick(Kind::Bash, None), None);
+    assert_eq!(Example::pick(true, Some(&none.path())), None);
+    assert_eq!(Example::pick(true, None), None);
 }
 
 #[test]

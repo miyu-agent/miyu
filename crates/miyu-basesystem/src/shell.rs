@@ -17,7 +17,6 @@ mod process;
 mod program;
 mod results;
 pub(crate) mod script;
-mod section;
 #[cfg(test)]
 mod tests;
 mod touched;
@@ -62,10 +61,10 @@ const WATCH: &str = "watch";
 pub(crate) struct Shell {
     spec: Spec,
     texts: Texts,
-    /// 脚本调工具的通道给她的几句（施工 M-3）。
-    call: Arc<channel::Texts>,
-    /// 说明末尾讲脚本调工具的那一段（施工 M-4）。
-    section: section::Section,
+    /// 脚本调工具的通道给她的几句（施工 M-3；XG-1 下起在 `miyu-call`，字在 `core/call/`）。
+    call: Arc<miyu_call::Texts>,
+    /// 说明末尾讲脚本调工具的那一段（施工 M-4；同上）。
+    section: miyu_call::Section,
     program: Program,
 }
 
@@ -142,10 +141,10 @@ impl Shell {
                     })
                     .collect::<Result<_, LoadError>>()?,
             },
-            call: channel::Texts::load(resources)?,
-            section: section::Section::load(
+            call: miyu_call::Texts::load(resources)?,
+            section: miyu_call::Section::load(
                 resources,
-                section::Example::pick(program.kind, std::env::var_os("PATH").as_deref()),
+                miyu_call::Example::pick(program.kind.posix(), std::env::var_os("PATH").as_deref()),
             )?,
             program,
         })
@@ -175,12 +174,12 @@ impl Shell {
         };
         let started = background::start(command, args.watch).and_then(|(background, member)| {
             // 通道跟着进程交给任务表，挂到任务下面以后才认人：之前连上来的等着（施工 M-3）。
-            let binder = channel.as_ref().map(channel::Channel::binder);
+            let binder = channel.as_ref().and_then(miyu_call::Channel::binder);
             let background = Background {
                 output: background.output,
                 lines: background.lines,
                 process: match channel {
-                    Some(channel) => channel::keep(background.process, channel),
+                    Some(channel) => miyu_call::keep(background.process, channel),
                     None => background.process,
                 },
             };
@@ -231,7 +230,7 @@ impl Shell {
         call: &Call,
         handover: Handover,
         title: String,
-        channel: Option<channel::Channel>,
+        channel: Option<miyu_call::Channel>,
     ) -> Done {
         let Some(jobs) = &call.jobs else {
             handover.process.kill();
@@ -249,7 +248,7 @@ impl Shell {
             lines: None,
             // 通道跟着进程交给任务表（施工 M-3）：脚本接着调，挂到任务下面。
             process: match channel {
-                Some(channel) => channel::keep(process, channel),
+                Some(channel) => miyu_call::keep(process, channel),
                 None => process,
             },
         };
@@ -296,6 +295,11 @@ impl Tool for Shell {
     }
 
     fn runs_commands(&self) -> bool {
+        true
+    }
+
+    /// 人在会话里跑命令交给它（设计 57、63 第六节第 2 条）：只认内置的这一件。
+    fn serves_person(&self) -> bool {
         true
     }
 
@@ -420,8 +424,9 @@ impl Tool for Shell {
                     Ok(started) => started,
                     Err(error) => return self.failed(&error),
                 };
-            if let (Some(channel), Some(member)) = (&channel, started.member()) {
-                channel.binder().bind(member);
+            let binder = channel.as_ref().and_then(miyu_call::Channel::binder);
+            if let (Some(binder), Some(member)) = (binder, started.member()) {
+                binder.bind(member);
             }
             // 起来了就看着：这次调用被叫停（future 被丢掉）时，整组杀掉。
             let guard = Guard::new(started.group());

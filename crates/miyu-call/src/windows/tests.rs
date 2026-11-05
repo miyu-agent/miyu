@@ -43,13 +43,13 @@ impl NestedPort for Port {
 
 /// 开一个端点，记下一个别的进程的作业对象：测试进程自己不在里面。交回端点和那个进程（测完收掉）。
 fn open() -> (Channel, std::process::Child) {
-    let channel = Channel::open(Arc::new(Port), texts()).expect("开得了");
+    let channel = Channel::open(Arc::new(Port), texts(), Kin::command()).expect("开得了");
     let mut other = Command::new("cmd")
         .args(["/c", "ping -n 30 127.0.0.1 >NUL"])
         .spawn()
         .expect("起得来");
     match miyu_sandbox::lifeline::Job::for_child(&other) {
-        Ok(job) => channel.binder().bind(job),
+        Ok(job) => channel.binder().expect("命令的有").bind(job),
         Err(error) => {
             stop(&mut other);
             panic!("作业对象建不成：{error}");
@@ -159,6 +159,50 @@ impl NestedPort for Answers {
     }
 }
 
+/// 扩展的那一种（施工 XG-1 下，设计 63 第六节第 2 条）：照进程快照认，测试进程是它父进程的子孙，答；不是另一个进程的子孙，照
+/// 「不是这条命令的进程」拒。没有记作业对象的那一头。
+#[tokio::test]
+async fn an_extension_s_endpoint_answers_its_descendants_only() {
+    let parents = miyu_pipe::process_parents().expect("拍得成");
+    let parent = parents[&std::process::id()];
+    let ours =
+        Channel::open(Arc::new(Answers), texts(), Kin::descendant_of(parent)).expect("开得了");
+    assert!(ours.binder().is_none());
+    let answered = ask(&ours.name, &ours.token).await;
+    let mut other = Command::new("cmd")
+        .args(["/c", "ping -n 30 127.0.0.1 >NUL"])
+        .spawn()
+        .expect("起得来");
+    let theirs =
+        Channel::open(Arc::new(Answers), texts(), Kin::descendant_of(other.id())).expect("开得了");
+    let refused = ask(&theirs.name, &theirs.token).await;
+    stop(&mut other);
+    assert_eq!(answered["code"], 0, "{answered}");
+    assert_eq!(refused["code"], 2);
+    assert_eq!(
+        refused["stderr"],
+        "miyu call only works from processes started by the command Miyu ran.\n"
+    );
+    let handed = ours.handed().expect("交得出");
+    assert_eq!(handed.sock, ours.name);
+    assert_eq!(handed.token, ours.token);
+}
+
+/// 连上管道 `name` 带令牌 `token` 调一次 `web_search`，读回答。
+async fn ask(name: &str, token: &str) -> Value {
+    let mut pipe = ClientOptions::new().open(name).expect("连得上");
+    let body = json!({"v": 1, "op": "call", "tool": "web_search", "args": "{}", "token": token})
+        .to_string();
+    pipe.write_u32(u32::try_from(body.len()).unwrap())
+        .await
+        .unwrap();
+    pipe.write_all(body.as_bytes()).await.unwrap();
+    let len = pipe.read_u32().await.expect("答了");
+    let mut reply = vec![0u8; len as usize];
+    pipe.read_exact(&mut reply).await.unwrap();
+    serde_json::from_slice(&reply).unwrap()
+}
+
 /// 一个用完就删的临时目录。
 struct Scratch(PathBuf);
 
@@ -208,7 +252,7 @@ async fn a_command_in_the_sandbox_reaches_the_pipe() {
         eprintln!("助手没编，跳过：先 cargo build -p miyu-sandbox");
         return;
     };
-    let channel = Channel::open(Arc::new(Answers), texts()).expect("开得了");
+    let channel = Channel::open(Arc::new(Answers), texts(), Kin::command()).expect("开得了");
     let (work, outside) = (Scratch::new(), Scratch::new());
     let script = work.0.join("call.ps1");
     std::fs::write(&script, SANDBOXED).expect("写得进");
@@ -258,7 +302,7 @@ async fn a_command_in_the_sandbox_reaches_the_pipe() {
         .spawn()
         .expect("起得来");
     let job = miyu_sandbox::lifeline::Job::for_child(&child).expect("作业对象建得成");
-    channel.binder().bind(job);
+    channel.binder().expect("命令的有").bind(job);
     let out = tokio::task::spawn_blocking(move || child.wait_with_output())
         .await
         .unwrap()

@@ -1,5 +1,5 @@
-//! 通道的 Unix 那一半（施工 M-3 上）：套接字，照对方的进程号（`SO_PEERCRED` / `LOCAL_PEERPID`）查它的进程组认人，`PATH`
-//! 里的 `miyu` 是符号链接。协议、令牌、等它记下是谁在 `serve.rs`。
+//! 通道的 Unix 那一半（施工 M-3 上）：套接字，对方的进程号照 `SO_PEERCRED` / `LOCAL_PEERPID` 拿，交给 `kin.rs` 认人，`PATH`
+//! 里的 `miyu` 是符号链接。协议、令牌在 `serve.rs`。
 
 use std::ffi::OsString;
 use std::io;
@@ -12,59 +12,51 @@ use tokio::task::{AbortHandle, JoinSet};
 use miyu_sandbox::Sandboxed;
 use miyu_tool::{NestedPort, Process};
 
-use super::serve::{self, Binder, Bound, TARGET};
+use crate::kin::{Binder, Kin};
+use crate::serve::{self, Handed};
 #[cfg(test)]
-use super::serve::{MAX_OPEN, MAX_REQUEST, VERSION};
-use super::{Texts, leftovers};
+use crate::serve::{MAX_OPEN, MAX_REQUEST, VERSION};
+use crate::{TARGET, Texts, leftovers};
 
-/// 一条命令的端点。丢掉就关。
-pub(in crate::shell) struct Channel {
+/// 一次跑命令的端点。丢掉就关。
+pub struct Channel {
     path: PathBuf,
     token: String,
-    /// 这条命令的进程组：起来以后才知道（放到后台的，交给任务表、挂到任务下面以后才记）。
-    group: Bound,
+    /// 认谁：`shell` 的这条命令的进程组（起来以后才知道，放到后台的交给任务表、挂到任务下面以后才记），或者扩展的子孙。
+    kin: Kin,
     server: AbortHandle,
 }
 
 impl Channel {
-    /// 照端口 `port` 开一个：建套接字、起服务的任务。建不成的交回出错，命令照旧跑，只是没有通道。
+    /// 照端口 `port` 开一个，认 `kin`：建套接字、起服务的任务。建不成的交回出错，命令照旧跑，只是没有通道。
     ///
     /// # Errors
     ///
     /// 放套接字的目录建不成、随机数读不出、套接字绑不上。
-    pub(in crate::shell) fn open(
-        port: Arc<dyn NestedPort>,
-        texts: Arc<Texts>,
-    ) -> io::Result<Channel> {
+    pub fn open(port: Arc<dyn NestedPort>, texts: Arc<Texts>, kin: Kin) -> io::Result<Channel> {
         let dir = home()?.join("s");
         create_private(&dir)?;
         let token = serve::random_hex()?;
         let path = dir.join(format!("{}.sock", &token[..16]));
         let listener = UnixListener::bind(&path)?;
-        let group: Bound = Arc::new(OnceLock::new());
-        let server = tokio::spawn(accept(
-            listener,
-            port,
-            texts,
-            token.clone(),
-            Arc::clone(&group),
-        ))
-        .abort_handle();
+        let server =
+            tokio::spawn(accept(listener, port, texts, token.clone(), kin.clone())).abort_handle();
         Ok(Channel {
             path,
             token,
-            group,
+            kin,
             server,
         })
     }
 
-    /// 记进程组的那一头：命令起来了（放到后台的，挂到任务下面以后）照它记，之后连上来的照它认。
-    pub(in crate::shell) fn binder(&self) -> Binder {
-        Binder(Arc::clone(&self.group))
+    /// 记进程组的那一头（只有 `shell` 的 [`Kin::Command`] 有）：命令起来了（放到后台的，挂到任务下面以后）照它记，之后连上来的
+    /// 照它认。
+    pub fn binder(&self) -> Option<Binder> {
+        self.kin.binder()
     }
 
     /// 环境变量：套接字的路径、令牌，`PATH` 最前面加上放 `miyu` 的目录。加在挑好的那几个后面。
-    pub(in crate::shell) fn env(&self, env: &mut Vec<(OsString, OsString)>) {
+    pub fn env(&self, env: &mut Vec<(OsString, OsString)>) {
         serve::env(
             env,
             self.path.clone().into_os_string(),
@@ -73,9 +65,14 @@ impl Channel {
         );
     }
 
+    /// 交给扩展的那一格（`tool.call` 的 `channel`）：同 [`Channel::env`] 设的几样。路径不是 UTF-8 的没有。
+    pub fn handed(&self) -> Option<Handed> {
+        serve::handed(self.path.clone().into_os_string(), &self.token, bin_dir())
+    }
+
     /// 沙盒的规格放行这个套接字；只准读名单里的（外部身份的会话），再放开读 `miyu` 和它指着的程序。核心的程序被藏起来的盖住了
     /// 的（私密目录包住了装的位置），单独只读放开，`miyu call` 才起得来（施工 5-15 下再修）。
-    pub(in crate::shell) fn sandboxed(&self, sandboxed: &Sandboxed) -> Sandboxed {
+    pub fn sandboxed(&self, sandboxed: &Sandboxed) -> Sandboxed {
         let mut sandboxed = sandboxed.clone();
         sandboxed.spec.sockets.push(self.path.clone());
         let exe = std::env::current_exe().ok();
@@ -102,7 +99,7 @@ impl Drop for Channel {
 }
 
 /// 放到后台的命令带着它的端点交给任务表：任务结束（进程收掉）时一起关。
-pub(in crate::shell) fn keep(process: Box<dyn Process>, channel: Channel) -> Box<dyn Process> {
+pub fn keep(process: Box<dyn Process>, channel: Channel) -> Box<dyn Process> {
     serve::keep(process, channel)
 }
 
@@ -173,16 +170,20 @@ async fn accept(
     port: Arc<dyn NestedPort>,
     texts: Arc<Texts>,
     token: String,
-    group: Bound,
+    kin: Kin,
 ) {
     let mut open = JoinSet::new();
     loop {
         tokio::select! {
             accepted = listener.accept() => match accepted {
                 Ok((stream, _)) if open.len() < serve::MAX_OPEN => {
-                    let pid = stream.peer_cred().ok().and_then(|cred| cred.pid());
-                    let group = Arc::clone(&group);
-                    let ours = move || ours(pid, group);
+                    let pid = stream
+                        .peer_cred()
+                        .ok()
+                        .and_then(|cred| cred.pid())
+                        .and_then(|pid| u32::try_from(pid).ok());
+                    let kin = kin.clone();
+                    let ours = move || async move { kin.ours(pid).await };
                     open.spawn(serve::answer(stream, ours, Arc::clone(&port), Arc::clone(&texts), token.clone()));
                 }
                 // 多了的：丢掉，对方读到结尾。
@@ -195,18 +196,6 @@ async fn accept(
             Some(_) = open.join_next(), if !open.is_empty() => {}
         }
     }
-}
-
-/// 连上来的进程 `pid` 在不在这条命令的进程组里。组还没记下的等一会儿。
-async fn ours(pid: Option<i32>, group: Bound) -> bool {
-    let Some(group) = serve::bound(&group).await else {
-        return false;
-    };
-    let Some(pid) = pid.and_then(rustix::process::Pid::from_raw) else {
-        return false;
-    };
-    rustix::process::getpgid(Some(pid))
-        .is_ok_and(|pgid| u32::try_from(pgid.as_raw_nonzero().get()) == Ok(group))
 }
 
 #[cfg(test)]

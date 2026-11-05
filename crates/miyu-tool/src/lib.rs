@@ -279,6 +279,13 @@ pub trait Tool: Send + Sync {
         None
     }
 
+    /// 人在会话里跑命令（设计 57）交给它（施工 XG-1 下，设计 `63-扩展工具的效果和声明.md` 第六节第 2 条）：`session.send
+    /// {shell: true}` 照这一条挑那一件，再调 [`Tool::run_for_person`]。只照 [`Tool::runs_commands`] 挑会挑到扩展声明的跑命令工具，
+    /// 它给不了人跑（拿到 `None`）。内置 `shell` 是；默认不是。
+    fn serves_person(&self) -> bool {
+        false
+    }
+
     /// 只在会话有后台时才给的那几个参数（施工 BS-1 上，设计 44 第三节第 3 条）：后台运行关着的会话，工具面上去掉它们。`shell`
     /// 的是 `run_in_background` 和 `watch`（施工 MN-1 上）；扩展的工具照 `provide` 规格的 `background_parameters`（施工 XG-1 上，
     /// 设计 63 第六节第 1 条），名字是登记时读进来的，所以借自己的。默认没有。

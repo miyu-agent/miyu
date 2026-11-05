@@ -63,6 +63,8 @@ reqwest = { version = "0.12", default-features = false }
 sha2 = { version = "0.11", default-features = false }
 # 工具目录：造会话时交给它，照它存下工具面（施工 4-1）。
 miyu-tool = { path = "../miyu-tool" }
+# 脚本调工具的通道（施工 XG-1 下）：扩展声明了 `runs_commands` 的工具，一次调用开一个端点、认扩展的子孙，说明末尾那一段。
+miyu-call = { path = "../miyu-call" }
 # MCP 的客户端（施工 X-3 上）：起 `bundle` 包带的服务，认时代、列工具、调工具。
 miyu-mcp = { path = "../miyu-mcp" }
 # 视图投影（施工 9-8 中）：`view.page` 照它把一页日志算成条目。

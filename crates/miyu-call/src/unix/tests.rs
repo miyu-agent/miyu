@@ -65,10 +65,11 @@ impl NestedPort for Port {
 
 /// 开一个端点，记下测试进程自己的进程组。
 fn open(port: Arc<Port>) -> Channel {
-    let channel = Channel::open(port, texts()).expect("开得了");
+    let channel = Channel::open(port, texts(), Kin::command()).expect("开得了");
     let own = rustix::process::getpgid(None).expect("查得到");
     channel
         .binder()
+        .expect("命令的有")
         .bind(u32::try_from(own.as_raw_nonzero().get()).unwrap());
     channel
 }
@@ -290,4 +291,58 @@ fn directories_of_gone_cores_are_swept() {
     std::fs::remove_dir_all(&temp).expect("删得掉");
     assert!(kept, "自己的留着");
     assert!(swept, "进程不在了的删掉");
+}
+
+/// 扩展的那一种（施工 XG-1 下，设计 63 第六节第 2 条）：测试进程是它父进程的子孙，答；不是另一个进程的子孙，照「不是这条命令的
+/// 进程」拒，那一次一回都没调。没有记进程组的那一头。
+#[tokio::test]
+async fn an_extension_s_endpoint_answers_its_descendants_only() {
+    let port = Arc::new(Port::default());
+    let parent = std::os::unix::process::parent_id();
+    let ours = Channel::open(port.clone(), texts(), Kin::descendant_of(parent)).expect("开得了");
+    assert!(ours.binder().is_none());
+    let answered = ask(&ours.path, &request(&ours.token, VERSION))
+        .await
+        .expect("答了");
+    let mut child = std::process::Command::new("sleep")
+        .arg("5")
+        .spawn()
+        .expect("起得来");
+    let theirs =
+        Channel::open(port.clone(), texts(), Kin::descendant_of(child.id())).expect("开得了");
+    let refused = ask(&theirs.path, &request(&theirs.token, VERSION))
+        .await
+        .expect("答了");
+    child.kill().expect("收得掉");
+    child.wait().expect("等得到");
+    assert_eq!(answered["code"], 0);
+    assert_eq!(refused["code"], 2);
+    assert_eq!(
+        refused["stderr"],
+        "miyu call only works from processes started by the command Miyu ran.\n"
+    );
+    assert_eq!(*port.calls.lock().unwrap(), ["web_search"]);
+}
+
+/// 交给扩展的那一格（`tool.call` 的 `channel`）：和设进命令的环境变量一样。
+#[tokio::test]
+async fn the_extension_is_handed_the_same_endpoint_token_and_bin() {
+    let channel =
+        Channel::open(Arc::new(Port::default()), texts(), Kin::descendant_of(1)).expect("开得了");
+    let handed = channel.handed().expect("交得出");
+    let mut env = vec![(OsString::from("PATH"), OsString::from("/usr/bin"))];
+    channel.env(&mut env);
+    let get = |name: &str| {
+        env.iter()
+            .find(|(key, _)| key == name)
+            .map(|(_, value)| value.to_string_lossy().into_owned())
+    };
+    assert_eq!(Some(handed.sock.clone()), get("MIYU_CALL_SOCK"));
+    assert_eq!(Some(handed.token.clone()), get("MIYU_CALL_TOKEN"));
+    let bin = handed.bin.clone().expect("建得了放 `miyu` 的目录");
+    assert_eq!(get("PATH"), Some(format!("{bin}:/usr/bin")));
+    assert_eq!(
+        serde_json::to_value(&handed).unwrap(),
+        json!({"sock": handed.sock, "token": handed.token, "bin": bin})
+    );
 }

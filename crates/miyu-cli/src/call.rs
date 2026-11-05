@@ -6,7 +6,7 @@
 //!
 //! 写法：`miyu call <工具> --<参数> <值>…`（值一律当字符串发，核心照工具的格式修；写几次的是数组），`--json '<对象>'`、
 //! `--json -`（从标准输入读），具名的盖过 `--json` 里同名的；`miyu call --schema <工具>…`、`miyu call <工具> --schema`。
-//! 给她看的几句和核心那头的放在一起（`resources/software/basesystem/shell/call/`），编进程序。
+//! 给她看的几句和核心那头的放在一起（`resources/core/call/`），编进程序。
 
 use std::ffi::OsString;
 use std::io::{Read, Write};
@@ -30,22 +30,20 @@ pub(crate) const SOCK: &str = "MIYU_CALL_SOCK";
 pub(crate) const VERSION: u32 = 1;
 
 /// 不在 Miyu 跑的命令里。
-const OUTSIDE: &str = include_str!("../../../resources/software/basesystem/shell/call/outside.txt");
+const OUTSIDE: &str = include_str!("../../../resources/core/call/outside.txt");
 
 /// 所属的命令已经结束。
-const ENDED_TEXT: &str =
-    include_str!("../../../resources/software/basesystem/shell/call/ended.txt");
+const ENDED_TEXT: &str = include_str!("../../../resources/core/call/ended.txt");
 
 /// 怎么写。
-const HOW: &str = include_str!("../../../resources/software/basesystem/shell/call/usage.txt");
+const HOW: &str = include_str!("../../../resources/core/call/usage.txt");
 
 /// `--json` 给的不是一个对象。
-const BAD_JSON: &str =
-    include_str!("../../../resources/software/basesystem/shell/call/bad-json.txt");
+const BAD_JSON: &str = include_str!("../../../resources/core/call/bad-json.txt");
 
 /// 直接跟在 `--json` 后面的读不懂、又像双引号被吃掉（有花括号、没有双引号）时接在 [`BAD_JSON`] 后面（施工 M-8）：Windows
 /// PowerShell 5.1 把参数交给程序时不转义里面的双引号，命令行解析把它们吃掉了，只有标准输入过得去。
-const QUOTES: &str = include_str!("../../../resources/software/basesystem/shell/call/quotes.txt");
+const QUOTES: &str = include_str!("../../../resources/core/call/quotes.txt");
 
 /// `miyu call` 后面的参数 `args`；`-h`、`--help` 印 `language` 的帮助页。
 pub fn call(args: &[OsString], language: Language) -> ExitCode {

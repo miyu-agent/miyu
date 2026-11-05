@@ -1900,7 +1900,6 @@ name = "miyu-basesystem"
 version = "0.0.0"
 dependencies = [
  "base64 0.22.1",
- "getrandom 0.4.3",
  "globset",
  "grep-matcher",
  "grep-regex",
@@ -1908,11 +1907,11 @@ dependencies = [
  "ignore",
  "image",
  "memchr",
+ "miyu-call",
  "miyu-config",
  "miyu-fs",
  "miyu-kernel",
  "miyu-log",
- "miyu-pipe",
  "miyu-policy",
  "miyu-sandbox",
  "miyu-store",
@@ -1923,6 +1922,22 @@ dependencies = [
  "tokio",
  "tracing",
  "unicode-normalization",
+]
+
+[[package]]
+name = "miyu-call"
+version = "0.0.0"
+dependencies = [
+ "getrandom 0.4.3",
+ "miyu-kernel",
+ "miyu-pipe",
+ "miyu-sandbox",
+ "miyu-tool",
+ "rustix",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -2045,6 +2060,7 @@ dependencies = [
  "memchr",
  "miyu-assemble",
  "miyu-basesystem",
+ "miyu-call",
  "miyu-config",
  "miyu-endpoint",
  "miyu-fs",
@@ -2277,6 +2293,7 @@ dependencies = [
 name = "miyu-pipe"
 version = "0.0.0"
 dependencies = [
+ "libc",
  "tokio",
  "windows-sys 0.61.2",
 ]

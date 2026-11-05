@@ -1,7 +1,7 @@
 //! 人用 `!` 打的命令（施工 SH-1 上，`docs/blueprint/session/tools.md`「人跑的命令」）：内核的 `RunShell` 到了，照现在的目录找
-//! 声明跑命令的那件工具（`Tool::runs_commands`，预设不管，包关了、没装的没有），调它给人跑的钩子（`Tool::run_for_person`），
-//! 不判权限、不进沙盒；跑完的样子从 `backs` 送回，写成内核的 `ShellRan`。`HaltShell` 举起这一条的叫停口子，工具整组杀、
-//! 照常交回到这时的输出。一个会话同一时刻最多跑一条（内核一条一条交）。
+//! 给人跑命令的那件工具（`Tool::serves_person`，施工 XG-1 下起只认内置 `shell`；预设不管，包关了、没装的没有），调它给人跑的
+//! 钩子（`Tool::run_for_person`），不判权限、不进沙盒；跑完的样子从 `backs` 送回，写成内核的 `ShellRan`。`HaltShell` 举起这一条
+//! 的叫停口子，工具整组杀、照常交回到这时的输出。一个会话同一时刻最多跑一条（内核一条一条交）。
 
 use std::path::{Path, PathBuf};
 
@@ -41,7 +41,7 @@ impl Tools {
         let tool = catalog
             .specs()
             .filter_map(|spec| catalog.get(&spec.name))
-            .find(|tool| tool.runs_commands())
+            .find(|tool| tool.serves_person())
             .cloned();
         let halt = Halt::new();
         self.person.0 = Some((message, halt.clone()));

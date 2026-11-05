@@ -565,6 +565,8 @@
     "preset-sections/extensions": "Extensions",
     "extensions/capabilities/tools": "Provide tools",
     "extensions/capabilities/tools/summary": "Add tools the AI can call",
+    "extensions/capabilities/tools.commands": "Tools that run commands",
+    "extensions/capabilities/tools.commands/summary": "Its tools run commands, and those commands can call the AI's tools as the current session",
     "extensions/capabilities/commands": "Provide commands",
     "extensions/capabilities/commands/summary": "Add slash commands",
     "extensions/capabilities/widgets": "Show things in the interface",

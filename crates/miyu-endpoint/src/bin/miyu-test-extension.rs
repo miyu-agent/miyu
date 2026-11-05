@@ -31,6 +31,8 @@
 //! - `edits:<路径>`：之后 `serve` 答工具 `ext_edit` 时照参数里的 `old_string`、`new_string` 改这个文件（同内置 `edit`，只换第一处），
 //!   回应的效果里只报哪个文件改了，改前改后由核心自己读（施工 XG-1，设计 63 第四节）；
 //! - `effects:<JSON 数组>`：之后 `serve` 答名字以 `ext_fake` 开头的工具时什么都不改，回应的 `effects` 原样放这一份（施工 XG-1 上：报假的效果）；
+//! - `hold:<路径>`：之后 `serve` 答工具 `ext_run` 时，照 `channel` 起自己当 `miyu call` 调参数 `call` 写的工具，等到这个路径有了
+//!   再答（施工 XG-1 下，`run.rs`）；不写的跑完就答；
 //! - `sent:<blob>`：之后 `serve` 答工具 `sticker` 时，`sent` 里放这个 blob 的一张图（施工 X-19）；
 //! - `give:<字,字>`：之后 `serve` 答 `method.call` 的 `give` 时回 `{"given": [这几段字]}`（施工 W-6 三补：回应里带 blob）；
 //! - `pause:<路径>`：等到这个路径有了再往下走（施工 X-20：测试照会话说完了几轮放它走）；
@@ -40,13 +42,21 @@
 //!
 //! 照 `#!` 起的（包里的程序是一个脚本、第一行 `#!` 指着它，施工 X-34），第一个参数是脚本本身：是一个在的文件的跳过。
 //!
+//! 第一个参数是 `client` 的不当扩展，当 `miyu call`（施工 XG-1 下，`run.rs`）：第二个参数是工具名。
+//!
 //! 做完了以退出码 0 退出。
 
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufRead, Write};
 use std::time::Duration;
 
+#[path = "miyu-test-extension/run.rs"]
+mod run;
+
 fn main() {
+    if std::env::args().nth(1).as_deref() == Some("client") {
+        run::client(&std::env::args().nth(2).unwrap_or_default());
+    }
     let stdin = io::stdin();
     let mut input = stdin.lock();
     let mut record: Option<File> = None;
@@ -64,6 +74,8 @@ fn main() {
     let mut edits = String::new();
     // `serve` 答工具 `ext_fake` 时原样交的效果（施工 XG-1 上）。
     let mut faked = String::from("[]");
+    // `serve` 答工具 `ext_run` 前等的路径（施工 XG-1 下）。
+    let mut hold = String::new();
     // 请求编号的前缀。
     let mut ids = String::from("s");
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -142,6 +154,8 @@ fn main() {
             path.clone_into(&mut edits);
         } else if let Some(effects) = step.strip_prefix("effects:") {
             effects.clone_into(&mut faked);
+        } else if let Some(path) = step.strip_prefix("hold:") {
+            path.clone_into(&mut hold);
         } else if let Some(blob) = step.strip_prefix("sent:") {
             blob.clone_into(&mut sent);
         } else if let Some(given) = step.strip_prefix("give:") {
@@ -170,6 +184,13 @@ fn main() {
                     && let Some(id) = field(&line, "id")
                 {
                     send(&edited(&id, &line, &edits));
+                    continue;
+                }
+                if line.contains(r#""method":"tool.call""#)
+                    && field(&line, "tool").as_deref() == Some("ext_run")
+                    && let Some(id) = field(&line, "id")
+                {
+                    send(&run::run(&id, &line, &hold));
                     continue;
                 }
                 if line.contains(r#""method":"tool.call""#)

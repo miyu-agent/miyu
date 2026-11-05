@@ -3640,7 +3640,7 @@ Make one concrete step of progress now, or end the goal — both calls are compl
 which you set yourself with the goal tool
 ```
 
-#### `software/basesystem/shell/call/bad-args.txt`
+#### `core/call/bad-args.txt`
 
 - 什么时候加进来：脚本里调的参数不是 JSON 对象（退出码 2），后面跟上这件的 `schema.txt`（施工 M-3）
 - token：12（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面，同上）
@@ -3651,7 +3651,7 @@ which you set yourself with the goal tool
 Bad args for {name}: not a JSON object.
 ```
 
-#### `software/basesystem/shell/call/bad-json.txt`
+#### `core/call/bad-json.txt`
 
 - 什么时候加进来：`miyu call --json` 给的不是一个对象（退出码 2，命令行那头编进程序）（施工 M-3）
 - token：8（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面）
@@ -3662,7 +3662,7 @@ Bad args for {name}: not a JSON object.
 --json takes one JSON object.
 ```
 
-#### `software/basesystem/shell/call/bad-request.txt`
+#### `core/call/bad-request.txt`
 
 - 什么时候加进来：连上来的发的不是 `miyu call` 的请求（退出码 2）（施工 M-3）
 - token：8（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面）
@@ -3673,7 +3673,7 @@ Bad args for {name}: not a JSON object.
 Bad request from miyu call.
 ```
 
-#### `software/basesystem/shell/call/ended.txt`
+#### `core/call/ended.txt`
 
 - 什么时候加进来：所属的命令已经结束，端点关了（退出码 3；命令行连不上时也说它）（施工 M-3）
 - token：10（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面）
@@ -3684,7 +3684,7 @@ Bad request from miyu call.
 The command this call belongs to has ended.
 ```
 
-#### `software/basesystem/shell/call/example-powershell.txt`
+#### `core/call/example-powershell.txt`
 
 - 什么时候加进来：PowerShell 5.1、7（施工 M-4）
 - token：算在 `example.txt` 里
@@ -3695,7 +3695,7 @@ The command this call belongs to has ended.
 miyu call web_search --query niri | ConvertFrom-Json | ForEach-Object { $_.links.site } | Group-Object | Sort-Object Count
 ```
 
-#### `software/basesystem/shell/call/example-python.txt`
+#### `core/call/example-python.txt`
 
 - 什么时候加进来：bash、zsh，`PATH` 上没有 `jq`、有 `python3`（施工 M-4）
 - token：算在 `example.txt` 里
@@ -3706,7 +3706,7 @@ miyu call web_search --query niri | ConvertFrom-Json | ForEach-Object { $_.links
 miyu call web_search --query niri | python3 -c 'import sys,json,collections; print(collections.Counter(l["site"] for l in json.load(sys.stdin)["links"]))'
 ```
 
-#### `software/basesystem/shell/call/guess.txt`
+#### `core/call/guess.txt`
 
 - 什么时候加进来：接在 `unknown.txt` 后面：能调的里面有只差一两个字的（施工 M-3）
 - token：7（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面，`{name}` 按 `web_search` 填）
@@ -3717,7 +3717,7 @@ miyu call web_search --query niri | python3 -c 'import sys,json,collections; pri
 Did you mean {name}?
 ```
 
-#### `software/basesystem/shell/call/images.txt`
+#### `core/call/images.txt`
 
 - 什么时候加进来：脚本里调的工具交回了图（退出码 0，写在标准错误）（施工 M-3）
 - token：9（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面）
@@ -3728,7 +3728,7 @@ Did you mean {name}?
 Images were not passed to the script.
 ```
 
-#### `software/basesystem/shell/call/interrupted.txt`
+#### `core/call/interrupted.txt`
 
 - 什么时候加进来：被打断、父级先结束时还没跑完（退出码 3）（施工 M-3）
 - token：4（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面）
@@ -3739,7 +3739,7 @@ Images were not passed to the script.
 Interrupted.
 ```
 
-#### `software/basesystem/shell/call/not-allowed.txt`
+#### `core/call/not-allowed.txt`
 
 - 什么时候加进来：调的工具脚本里调不了（类别不准、`clicall` 没开，退出码 2）（施工 M-3）
 - token：TX-1 后 26（o200k 数，改前 26）；原来 39（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面，`{name}` 按 `web_search`、`{tools}` 按出厂五件填）
@@ -3750,7 +3750,7 @@ Interrupted.
 {name} works only as a direct call, not via miyu call. Tools that work with miyu call: {tools}.
 ```
 
-#### `software/basesystem/shell/call/outside.txt`
+#### `core/call/outside.txt`
 
 - 什么时候加进来：不在 Miyu 跑的命令里调，或者这个会话一件都不能在脚本里调（预设关了「脚本调工具」，施工 M-6）：没有那两个变量、连不上；退出码 2，命令行那头编进程序（施工 M-3）
 - token：22（2026-10-23 照开发端点量，接在 `hi` 和一个换行后面；原来 13）
@@ -3761,7 +3761,7 @@ Interrupted.
 miyu call only works inside a command Miyu runs, in a session where scripts can call tools.
 ```
 
-#### `software/basesystem/shell/call/pkg-off.txt`
+#### `core/call/pkg-off.txt`
 
 - 什么时候加进来：会话里的 `miyu pkg` 走通道，这个会话没有只给它调的工具（`packages` 包关着）（退出码 2）（施工 BS-1 中）
 - token：约 9（估的，按 o200k）
@@ -3772,7 +3772,7 @@ miyu call only works inside a command Miyu runs, in a session where scripts can 
 miyu pkg does not work in this session.
 ```
 
-#### `software/basesystem/shell/call/pkg-unavailable.txt`
+#### `core/call/pkg-unavailable.txt`
 
 - 什么时候加进来：会话里的 `miyu pkg` 用了只在本机做的子命令（`files`、`owns`、`check`、`update`、`clean`、只有 `-y`、`-c` 的 `-S`）（退出码 2，命令行那头编进程序）（施工 BS-1 中下）
 - token：约 13，`{command}` 按 `files` 填（估的，按 o200k）
@@ -3783,7 +3783,7 @@ miyu pkg does not work in this session.
 miyu pkg {command} does not work inside a Miyu session.
 ```
 
-#### `software/basesystem/shell/call/schema.txt`
+#### `core/call/schema.txt`
 
 - 什么时候加进来：`miyu call --schema` 印的样子：名字、说明、参数格式（施工 M-3）
 - token：8（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面，说明、参数格式按空的算（它们是工具面上的原样，不另记））
@@ -3795,7 +3795,7 @@ miyu pkg {command} does not work inside a Miyu session.
 Parameters: {parameters}
 ```
 
-#### `software/basesystem/shell/call/stranger.txt`
+#### `core/call/stranger.txt`
 
 - 什么时候加进来：令牌不对、连上来的进程不在这条命令的进程组里（退出码 2）（施工 M-3）
 - token：16（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面）
@@ -3806,7 +3806,7 @@ Parameters: {parameters}
 miyu call only works from processes started by the command Miyu ran.
 ```
 
-#### `software/basesystem/shell/call/unknown.txt`
+#### `core/call/unknown.txt`
 
 - 什么时候加进来：工具面上没有这个名字（退出码 2）（施工 M-3）
 - token：7（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面，`{name}` 按 `web_search` 填）
@@ -3817,7 +3817,7 @@ miyu call only works from processes started by the command Miyu ran.
 No tool named {name}.
 ```
 
-#### `software/basesystem/shell/call/usage.txt`
+#### `core/call/usage.txt`
 
 - 什么时候加进来：`miyu call` 写法不对（退出码 2，命令行那头编进程序）（施工 M-3）
 - token：39（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面）
@@ -3828,7 +3828,7 @@ No tool named {name}.
 Usage: miyu call <tool> --<param> <value>... | miyu call <tool> --json '<object>' | miyu call --schema <tool>...
 ```
 
-#### `software/basesystem/shell/call/version.txt`
+#### `core/call/version.txt`
 
 - 什么时候加进来：`miyu call` 和在跑的核心不是同一个版本（退出码 2）（施工 M-3）
 - token：TX-1 后 20（o200k 数，改前 20）；原来 21（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面）
@@ -5491,9 +5491,9 @@ set by the user with `/goal`
 "{path}" is {from} pixels, scaled down to {to} to fit the image limit.
 ```
 
-### 工具结果（`shell` 的输出）
+### 工具结果（`shell` 的输出；施工 XG-1 下起也有扩展声明了 `runs_commands` 的工具跑的命令的输出）
 
-#### `software/basesystem/shell/call/approval.txt`
+#### `core/call/approval.txt`
 
 - 什么时候加进来：脚本里调的工具判出要问人、又不能停下来问（退出码 4）：挂在后台任务下面的、子会话里的、没人能确认的（施工 M-3；施工 M-7 上起前台、有人能确认的主会话里停下来等人，不出这句）
 - token：TX-1 后 17（o200k 数，改前 18）；原来 18（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面，`{name}` 按 `web_search` 填）
@@ -5506,7 +5506,7 @@ This call needs approval, which only a direct {name} call can ask for.
 
 ### 同上，接在 `bad-json.txt` 后面一行（空一格）
 
-#### `software/basesystem/shell/call/quotes.txt`
+#### `core/call/quotes.txt`
 
 - 什么时候加进来：直接写在命令行上的 `--json` 读不懂、又像双引号被吃掉（有花括号、没有双引号）（退出码 2，命令行那头编进程序）（施工 M-8）
 - token：37（2026-10-24 照开发端点量，接在 `hi` 和一个换行后面）
@@ -5517,11 +5517,11 @@ This call needs approval, which only a direct {name} call can ask for.
 Its double quotes were lost on the way, as Windows PowerShell 5.1 does. Pipe the JSON instead: '<json>' | miyu call <tool> --json -
 ```
 
-### tools 数组，`shell` 说明的末尾
+### tools 数组，跑命令的工具（`shell`，扩展声明了 `runs_commands` 的，施工 XG-1 下）说明的末尾
 
-#### `software/basesystem/shell/call/describe.txt`
+#### `core/call/describe.txt`
 
-- 什么时候加进来：工具面上有跑命令的工具（出厂的是 `shell`，施工 BS-1 上起照 `Tool::runs_commands` 认）、有脚本里能调的工具的会话，每次请求（施工 M-4 起；没有的、以前造的会话不带，一个字节不变）。`{tools}` 照会话的工具面填
+- 什么时候加进来：工具面上有跑命令的工具（出厂的是 `shell`，施工 BS-1 上起照 `Tool::runs_commands` 认；施工 XG-1 下起字从 `software/basesystem/shell/call/` 挪成核心的一份，字节不变，这一节 `core/call/` 的几行同）、有脚本里能调的工具的会话，每次请求（施工 M-4 起；没有的、以前造的会话不带，一个字节不变）。`{tools}` 照会话的工具面填
 - token：256，`{tools}` 按出厂九件填（2026-10-21 照开发端点量，接在 `hi` 和一个换行后面）
 - 为什么加：设计 39 第九节：她不知道就不会用（第十节第一轮 27 次只用了 4 次）；写法照第四重跑、第五轮
 - 指纹：`27c6beca`
@@ -5532,7 +5532,7 @@ Commands and scripts you run here can call tools: miyu call <tool> --<param> <va
 
 ### 换进 `example.txt` 的 `{example}`
 
-#### `software/basesystem/shell/call/example-jq.txt`
+#### `core/call/example-jq.txt`
 
 - 什么时候加进来：bash、zsh，`PATH` 上有 `jq`（施工 M-4）
 - token：算在 `example.txt` 里
@@ -5545,7 +5545,7 @@ miyu call web_search --query niri | jq -r '.links[].site' | sort | uniq -c
 
 ### 同上，接在 `describe.txt` 后面一行
 
-#### `software/basesystem/shell/call/example.txt`
+#### `core/call/example.txt`
 
 - 什么时候加进来：同上，这台机器挑得出例子的（PowerShell，或 bash、zsh 的 `PATH` 上有 `jq`、`python3`）；都没有的不带
 - token：31～47，`{example}` 按三行各填一次：jq 31、PowerShell 38、Python 47（含这一行本身）（2026-10-21 照开发端点量，接在 `hi` 和一个换行后面）
@@ -5558,7 +5558,7 @@ Example: {example}
 
 ### `miyu call --schema` 的输出（脚本的标准输出，不进上下文，除非她印出来）
 
-#### `software/basesystem/shell/call/result.txt`
+#### `core/call/result.txt`
 
 - 什么时候加进来：`--schema` 查的那件写了 `result` 的（施工 M-4）
 - token：14，`{result}` 按 `kb_read` 的填（2026-10-21 照开发端点量，接在 `hi` 和一个换行后面）
@@ -5571,7 +5571,7 @@ Result: {result}
 
 ### 同上，接在例子后面一行
 
-#### `software/basesystem/shell/call/shapes.txt`
+#### `core/call/shapes.txt`
 
 - 什么时候加进来：同上，能调的工具里有写了 `result` 的（施工 M-4）；一件都没有的不带
 - token：94，`{shapes}` 按出厂四件填（2026-10-21 照开发端点量，接在 `hi` 和一个换行后面）

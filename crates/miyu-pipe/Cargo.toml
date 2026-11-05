@@ -1,6 +1,6 @@
 [package]
 name = "miyu-pipe"
-description = "Windows 的命名管道只对本人开放：调 Windows 的安全接口，放开 unsafe 的小 crate（施工 3-8 补）"
+description = "Windows 的命名管道只对本人开放、问进程：调系统接口，放开 unsafe 的小 crate（施工 3-8 补；XG-1 下加问父进程，macOS 也有这一样）"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -16,9 +16,14 @@ windows-sys = { version = "0.61", features = [
     "Win32_Security",
     "Win32_Security_Authorization",
     "Win32_System_Console",
+    "Win32_System_Diagnostics_ToolHelp",
     "Win32_System_Pipes",
     "Win32_System_Threading",
 ] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+# 问一个进程的父进程（施工 XG-1 下，`src/parent.rs`）：`proc_pidinfo` 和它的结构。MIT OR Apache-2.0，工作区里本来就有。
+libc = "0.2"
 
 [target.'cfg(windows)'.dev-dependencies]
 # 测试里建管道、连管道要 tokio 的运行时。

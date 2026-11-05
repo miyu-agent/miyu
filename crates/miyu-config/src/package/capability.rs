@@ -1,11 +1,14 @@
 //! 扩展能力（施工 9-4 下上，`docs/designs/05-内核接口.md` 第三节）：清单的 `[process] capabilities` 声明要哪些，主人
-//! 在开的那一下批（`extensions.md`）。只认这张表里的十七个名字（施工 X-15 上加了 `widgets`，施工 X-20 加了 `context.system`，施工 X-18 加了 `packages.call`，施工 N-5 加了 `search`，施工 X-30 加了 `memory.write`），先后照这张表。
+//! 在开的那一下批（`extensions.md`）。只认这张表里的十八个名字（施工 X-15 上加了 `widgets`，施工 X-20 加了 `context.system`，施工 X-18 加了 `packages.call`，施工 N-5 加了 `search`，施工 X-30 加了 `memory.write`，施工 XG-1 下加了 `tools.commands`），先后照这张表。
 
 /// 一种扩展能力。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Capability {
     /// 向工具目录提供工具。
     Tools,
+    /// 提供的工具会跑命令（施工 XG-1 下，设计 `63-扩展工具的效果和声明.md` 第七节第 3 条）：规格写了 `runs_commands` 的要它，命令里
+    /// 能以这个会话的身份调她的工具（`miyu call`）。
+    ToolsCommands,
     /// 提供斜杠命令。
     Commands,
     /// 在界面上显示它自己的内容（施工 X-15 上，设计 `33-界面扩展.md`）。
@@ -42,8 +45,9 @@ pub enum Capability {
 
 impl Capability {
     /// 全部，照表的先后。
-    pub const ALL: [Capability; 17] = [
+    pub const ALL: [Capability; 18] = [
         Capability::Tools,
+        Capability::ToolsCommands,
         Capability::Commands,
         Capability::Widgets,
         Capability::ContextInject,
@@ -66,6 +70,7 @@ impl Capability {
     pub fn as_str(self) -> &'static str {
         match self {
             Capability::Tools => "tools",
+            Capability::ToolsCommands => "tools.commands",
             Capability::Commands => "commands",
             Capability::Widgets => "widgets",
             Capability::ContextInject => "context.inject",

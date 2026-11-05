@@ -21,11 +21,10 @@ use crate::call::{VERSION, exchange, print_out};
 const USAGE: u8 = 2;
 
 /// 这个会话没有 `packages` 包、通道连不上。
-const OFF: &str = include_str!("../../../../resources/software/basesystem/shell/call/pkg-off.txt");
+const OFF: &str = include_str!("../../../../resources/core/call/pkg-off.txt");
 
 /// 这个子命令在会话里用不了：`{command}` 换成子命令。
-const UNAVAILABLE: &str =
-    include_str!("../../../../resources/software/basesystem/shell/call/pkg-unavailable.txt");
+const UNAVAILABLE: &str = include_str!("../../../../resources/core/call/pkg-unavailable.txt");
 
 /// 读的那件、改的那件。
 const PACKAGES: &str = "packages";

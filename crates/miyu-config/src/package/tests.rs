@@ -298,6 +298,7 @@ fn capabilities_are_read_in_the_table_order() {
         Capability::ALL.map(Capability::as_str),
         [
             "tools",
+            "tools.commands",
             "commands",
             "widgets",
             "context.inject",

@@ -10,11 +10,14 @@
 //! - `current_user`：当前用户的 SID；
 //! - `server_user`：管道另一头（服务端）进程的用户 SID；
 //! - `uninherit_std_handles`：拉起常驻的子进程之前，本进程的三个标准句柄标成不能继承（施工 CS-2）；
-//! - `process_running`：一个进程还在不在跑（施工 WC-1，脚本调工具的通道清别的核心留下的临时目录）。
+//! - `process_running`：一个进程还在不在跑（施工 WC-1，脚本调工具的通道清别的核心留下的临时目录）；
+//! - `process_parents`：这一刻每个进程的父进程（施工 XG-1 下，脚本调工具的通道认扩展的子孙）。
 //!
-//! 等连接、管道忙了再连这些用不着 `unsafe` 的，在 `miyu-ipc` 里。别的平台上这个 crate 只有
-//! [`owner_only`]。
+//! 等连接、管道忙了再连这些用不着 `unsafe` 的，在 `miyu-ipc` 里。macOS 上只有一样：`parent_process`，一个进程的父进程（施工
+//! XG-1 下，同上，`proc_pidinfo`）。别的平台上这个 crate 只有 [`owner_only`]。
 
+#[cfg(any(windows, target_os = "macos"))]
+mod parent;
 #[cfg(windows)]
 mod process;
 #[cfg(windows)]
@@ -22,6 +25,10 @@ mod stdio;
 #[cfg(windows)]
 mod windows;
 
+#[cfg(target_os = "macos")]
+pub use parent::parent_process;
+#[cfg(windows)]
+pub use parent::process_parents;
 #[cfg(windows)]
 pub use process::process_running;
 #[cfg(windows)]

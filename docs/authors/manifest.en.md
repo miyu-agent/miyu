@@ -102,11 +102,12 @@ Makes it an extension; needs `[command]`.
 | `start` | `manual`: started when switched on (default); `always`: started with the core |
 | `capabilities` | What it needs, see below |
 
-**Capabilities**: only these seventeen. The install screen lists each one your package asks for (name and one-line summary are Miyu's wording; a package can't supply its own), and answering yes approves them; after an upgrade the upgrade screen lists only the new ones, and approvals the manifest no longer asks for are dropped and must be approved again if they come back. Installing from a local folder or package file (including reinstalling while developing) doesn't keep earlier approvals: each install approves again. Community and local-file packages also get "not officially reviewed" on that screen, and those carrying programs, MCP servers or scripts one more line: "the programs it carries run as you on this machine, outside any sandbox". **Declare honestly**: calling a method whose capability isn't declared returns `needs_approval`.
+**Capabilities**: only these eighteen. The install screen lists each one your package asks for (name and one-line summary are Miyu's wording; a package can't supply its own), and answering yes approves them; after an upgrade the upgrade screen lists only the new ones, and approvals the manifest no longer asks for are dropped and must be approved again if they come back. Installing from a local folder or package file (including reinstalling while developing) doesn't keep earlier approvals: each install approves again. Community and local-file packages also get "not officially reviewed" on that screen, and those carrying programs, MCP servers or scripts one more line: "the programs it carries run as you on this machine, outside any sandbox". **Declare honestly**: calling a method whose capability isn't declared returns `needs_approval`.
 
 | Capability | Allows |
 |---|---|
 | `tools` | Registering tools in the tool catalog |
+| `tools.commands` | Registered tools run commands (`runs_commands` in the spec): those commands can use `miyu call` to call her tools as the session, see [Writing an extension](extensions.en.md) |
 | `commands` | Providing slash commands (`[[slash]]`) |
 | `search` | Being a search provider (`[[search]]`) |
 | `widgets` | Showing its own content in the UI (`[[widget]]`) |

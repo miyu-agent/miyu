@@ -1,0 +1,41 @@
+[package]
+name = "miyu-call"
+description = "脚本调工具的通道（`miyu call` 的核心那一头）：一次跑命令开一个端点，认人两种，内置 `shell` 和扩展的跑命令工具共用（施工 M-3 起在基础系统，XG-1 下挪出来）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+# 给她看的几句是模板；结局、拒绝的种类。
+miyu-kernel = { path = "../miyu-kernel" }
+# 脚本调工具的端口、命令的进程（交给任务表）；读字照工具的读法。
+miyu-tool = { path = "../miyu-tool" }
+# 带沙盒的命令要放行端点（`Sandboxed`）；Windows 上认人照作业对象（`lifeline::Job`）。
+miyu-sandbox = { path = "../miyu-sandbox" }
+# 一问一答的帧。
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+# 端点上等连接、读写一帧，等这条命令记下是谁有时限。
+tokio = { version = "1", features = ["rt", "net", "io-util", "macros", "time"] }
+# 运行日志的门面：端点开不成、停了记一行。
+tracing = { version = "0.1", default-features = false, features = ["std"] }
+# 令牌：系统给的随机字节。MIT OR Apache-2.0，工作区里本来就有。
+getrandom = { version = "0.4", features = ["std"] }
+
+[target.'cfg(unix)'.dependencies]
+# 对方的进程组、进程在不在、有效用户：安全的系统调用封装。
+rustix = { version = "1", features = ["process"] }
+
+[target.'cfg(any(windows, target_os = "macos"))'.dependencies]
+# Windows：只开给本人（和本人沙盒里的命令）的命名管道、问另一头的进程编号、进程还在不在、父进程（施工 XG-1 下）；macOS：
+# 问一个进程的父进程（`proc_pidinfo`，施工 XG-1 下）。都要调系统接口，在放开了 unsafe 的那个小 crate 里。
+miyu-pipe = { path = "../miyu-pipe" }
+
+[dev-dependencies]
+# 测试里的调用在异步里跑。
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread", "time", "process"] }
+
+[lints]
+workspace = true

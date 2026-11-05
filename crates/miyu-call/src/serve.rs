@@ -1,93 +1,50 @@
-//! 通道两个平台共用的（施工 M-3）：一问一答的协议、令牌、认人等的那一会儿、环境变量、端点跟着进程交给任务表。端点本身
-//! （Unix 套接字、Windows 命名管道）和怎么认连上来的进程在 `unix.rs`、`windows.rs`。
+//! 通道两个平台共用的（施工 M-3）：一问一答的协议、令牌、环境变量、交给扩展的那一格、端点跟着进程交给任务表。端点本身
+//! （Unix 套接字、Windows 命名管道）在 `unix.rs`、`windows.rs`，认连上来的进程在 `kin.rs`。
 
 use std::ffi::OsString;
 use std::future::Future;
 use std::io;
 use std::path::PathBuf;
-use std::sync::{Arc, OnceLock};
-use std::time::Duration;
+use std::sync::Arc;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 use miyu_tool::{Exit, NestedPort, Process};
 
-use super::Texts;
-use super::reply::{self, Reply, USAGE};
-use crate::load::say;
-use crate::shell::process::Member;
+use miyu_tool::load::say;
+
+use crate::reply::{self, Reply, USAGE};
+use crate::{TARGET, Texts};
 
 /// 告诉 `miyu call` 端点在哪的环境变量：Unix 上是套接字的路径，Windows 上是管道的名字。
-pub(super) const SOCK_VAR: &str = "MIYU_CALL_SOCK";
+pub(crate) const SOCK_VAR: &str = "MIYU_CALL_SOCK";
 
 /// 令牌的环境变量。
-pub(super) const TOKEN_VAR: &str = "MIYU_CALL_TOKEN";
+pub(crate) const TOKEN_VAR: &str = "MIYU_CALL_TOKEN";
 
 /// 协议版本：请求带它，对不上的回一句、退出码 2。
-pub(super) const VERSION: u32 = 1;
+pub(crate) const VERSION: u32 = 1;
 
 /// 请求帧的上限。
-pub(super) const MAX_REQUEST: u32 = 1 << 20;
+pub(crate) const MAX_REQUEST: u32 = 1 << 20;
 
 /// 同一个端点同时连着的上限。
-pub(super) const MAX_OPEN: usize = 32;
-
-/// 命令刚起、还没记下它是谁时，连上来的最多等多久。
-const BIND_WAIT: Duration = Duration::from_secs(5);
-
-/// 运行日志的来处，和 `shell` 的别处一样。
-pub(super) const TARGET: &str = "miyu::shell";
-
-/// 这条命令是谁（进程组、作业对象）：起来以后才知道，记一次。
-pub(super) type Bound = Arc<OnceLock<Member>>;
-
-/// 记这条命令是谁的那一头。
-pub(in crate::shell) struct Binder(pub(super) Bound);
-
-impl Binder {
-    /// 记下 `member`：只记一次。
-    pub(in crate::shell) fn bind(self, member: Member) {
-        if self.0.set(member).is_err() {
-            tracing::debug!(target: TARGET, "miyu call endpoint bound twice");
-        }
-    }
-}
-
-/// 等到记下了这条命令是谁，最多等 [`BIND_WAIT`]；等不到的没有。
-#[cfg_attr(
-    unix,
-    expect(
-        clippy::clone_on_copy,
-        reason = "Unix 上是进程组号，Windows 上是作业对象，那边要 clone"
-    )
-)]
-pub(super) async fn bound(member: &OnceLock<Member>) -> Option<Member> {
-    tokio::time::timeout(BIND_WAIT, async {
-        loop {
-            if let Some(member) = member.get() {
-                return member.clone();
-            }
-            tokio::time::sleep(Duration::from_millis(10)).await;
-        }
-    })
-    .await
-    .ok()
-}
+pub(crate) const MAX_OPEN: usize = 32;
 
 /// 32 个十六进制字符的随机串：128 位。
 ///
 /// # Errors
 ///
 /// 系统给不出随机数。
-pub(super) fn random_hex() -> io::Result<String> {
+pub(crate) fn random_hex() -> io::Result<String> {
     let mut bytes = [0u8; 16];
     getrandom::fill(&mut bytes).map_err(io::Error::other)?;
     Ok(bytes.iter().map(|byte| format!("{byte:02x}")).collect())
 }
 
 /// 环境变量：端点、令牌，`PATH` 最前面加上放 `miyu` 的目录 `bin`（照这个系统的写法连）。加在挑好的那几个后面。
-pub(super) fn env(
+pub(crate) fn env(
     env: &mut Vec<(OsString, OsString)>,
     endpoint: OsString,
     token: &str,
@@ -108,6 +65,29 @@ pub(super) fn env(
     }
 }
 
+/// 交给扩展的那一格（`tool.call` 的 `channel`，施工 XG-1 下）：扩展把 `sock`、`token` 设成 `MIYU_CALL_SOCK`、`MIYU_CALL_TOKEN`
+/// 进它起的命令，`bin` 放 `PATH` 最前面；`bin` 建不成的不写。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Handed {
+    /// 端点：Unix 上是套接字的路径，Windows 上是管道的名字。
+    pub sock: String,
+    /// 令牌。
+    pub token: String,
+    /// 放 `miyu` 的目录。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bin: Option<String>,
+}
+
+/// 交给扩展的那一格：端点 `endpoint`、令牌 `token`、放 `miyu` 的目录 `bin`。端点不是 UTF-8 的交不出去（JSON 里写不了），没有；
+/// `bin` 不是的不写。
+pub(crate) fn handed(endpoint: OsString, token: &str, bin: Option<PathBuf>) -> Option<Handed> {
+    Some(Handed {
+        sock: endpoint.into_string().ok()?,
+        token: token.to_string(),
+        bin: bin.and_then(|bin| bin.into_os_string().into_string().ok()),
+    })
+}
+
 /// 是不是 `PATH`：Windows 上名字不分大小写。
 fn is_path(name: &OsString) -> bool {
     match cfg!(windows) {
@@ -117,7 +97,7 @@ fn is_path(name: &OsString) -> bool {
 }
 
 /// 放到后台的命令带着它的端点 `channel` 交给任务表：任务结束（进程收掉）时一起关。
-pub(super) fn keep<C: Send + Sync + 'static>(
+pub(crate) fn keep<C: Send + Sync + 'static>(
     process: Box<dyn Process>,
     channel: C,
 ) -> Box<dyn Process> {
@@ -155,7 +135,7 @@ struct Request {
 }
 
 /// 在连上来的流上答一个请求：读一帧，令牌对得上、`ours` 认得出这个进程才调，答一帧。读写出错就丢掉：对方已经不在了。
-pub(super) async fn answer<S, F>(
+pub(crate) async fn answer<S, F>(
     mut stream: S,
     ours: impl FnOnce() -> F,
     port: Arc<dyn NestedPort>,

@@ -9,6 +9,9 @@
 //! 声明了 `paths` 的（施工 XG-1 上，设计 `63-扩展工具的效果和声明.md` 第三节）：照参数报要碰的路径，权限链和内置工具一样判；
 //! `tool.call` 多带 `checked`（链判过的真实位置）；要写的那几条发之前核心先读一份改前，回应里的 `effects` 照 [`super::effects`]
 //! 查过才收。
+//!
+//! 声明了 `runs_commands` 的（施工 XG-1 下，设计 63 第六节第 2 条，[`super::commands`]）：说明后面接 `miyu call` 那一段；拿到了
+//! 端口的调用开一个端点，`tool.call` 多带 `channel`，这次调用完了就关。
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -24,6 +27,7 @@ use miyu_kernel::template::Template;
 use miyu_store::root::DataRoot;
 use miyu_tool::{Call, Done, Progress, Running, Spec, Target, Tool, Venues};
 
+use super::commands::Commands;
 use super::declared::{self, PathParameter};
 use super::effects;
 use super::{Checked, Provided};
@@ -65,6 +69,10 @@ pub(crate) struct RemoteTool {
     paths: Vec<PathParameter>,
     /// 只在会话有后台时才给的参数（施工 XG-1 上，[`Tool::background_parameters`]）。
     background: Vec<String>,
+    /// 会跑命令（施工 XG-1 下，[`Tool::runs_commands`]）。
+    runs_commands: bool,
+    /// 会跑命令的才有：说明末尾那一段、开通道（施工 XG-1 下）。
+    commands: Option<Commands>,
     provided: Arc<Provided>,
     texts: Texts,
     stores: Stores,
@@ -119,6 +127,8 @@ impl RemoteTool {
             platform: None,
             paths: checked.paths,
             background: checked.background,
+            runs_commands: checked.runs_commands,
+            commands: None,
             provided,
             texts,
             stores,
@@ -138,6 +148,12 @@ impl RemoteTool {
                     .is_some_and(|rest| rest.starts_with('_'))
             })
             .cloned();
+        self
+    }
+
+    /// 会跑命令的交给它说明末尾那一段、开通道要的（施工 XG-1 下）；不跑命令的不要。
+    pub(super) fn running(mut self, commands: Option<Commands>) -> RemoteTool {
+        self.commands = commands.filter(|_| self.runs_commands);
         self
     }
 
@@ -295,6 +311,16 @@ impl Tool for RemoteTool {
         self.background.iter().map(String::as_str).collect()
     }
 
+    fn runs_commands(&self) -> bool {
+        self.runs_commands
+    }
+
+    fn clicall_section(&self, tools: &str, shapes: &str) -> Option<String> {
+        self.commands
+            .as_ref()
+            .map(|commands| commands.section(tools, shapes))
+    }
+
     fn run(&self, call: Call, _progress: Progress) -> Running<'_> {
         Box::pin(async move {
             let ids = call.ids.as_ref();
@@ -327,6 +353,13 @@ impl Tool for RemoteTool {
                 params["checked"] = json!(checked);
             }
             let befores = effects::befores(&judged).await;
+            // 通道（施工 XG-1 下）：端点跟着这个 future，答了、超时、被掐都丢掉、关上。
+            let channel = self.commands.as_ref().and_then(|commands| {
+                commands.open(&call, &self.package, self.provided.pid(&self.package))
+            });
+            if let Some((_, handed)) = &channel {
+                params["channel"] = json!(handed);
+            }
             // 数据根的 pictures（施工 Y-11 下）：画出来的图放这里，照数据根的真实位置接上；不建，扩展写之前自己建。会话外面的
             // 调用没有数据根，不写。只给本机的会话（施工 Y-11 下修）：场所会话关在自己的工作区里（施工 5-12），图存进数据根
             // 她就读不到、发不出，几个群还共用一处；扩展照旧存工作区。不知道在哪个场所的也不给。

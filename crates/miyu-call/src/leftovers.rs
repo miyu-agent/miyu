@@ -5,14 +5,14 @@
 use std::fs::Metadata;
 use std::path::Path;
 
-use super::serve::TARGET;
+use crate::TARGET;
 
 /// 目录名的前缀，后面跟核心的进程号。
-pub(super) const PREFIX: &str = "miyu-call-";
+pub(crate) const PREFIX: &str = "miyu-call-";
 
 /// 删掉临时目录 `temp` 下进程已经不在了的 `miyu-call-<进程号>`：名字对得上（前缀后面全是数字）、是目录（不是链接）、`ours` 说是
 /// 自己的、`alive` 说那个进程不在了的才删。删不掉的记一行 `debug`，下次再删。
-pub(super) fn sweep(temp: &Path, alive: impl Fn(u32) -> bool, ours: impl Fn(&Metadata) -> bool) {
+pub(crate) fn sweep(temp: &Path, alive: impl Fn(u32) -> bool, ours: impl Fn(&Metadata) -> bool) {
     let Ok(entries) = std::fs::read_dir(temp) else {
         return;
     };
