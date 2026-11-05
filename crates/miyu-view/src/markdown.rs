@@ -31,6 +31,7 @@ mod options;
 mod raw;
 mod scrub;
 mod select;
+mod shell;
 mod sources;
 mod steps;
 mod text;
@@ -242,11 +243,13 @@ fn assistant(out: &mut Out, speaker: Speaker) {
     }
 }
 
-/// 一条消息：小标题照来处，正文原样，附件写占位。
+/// 一条消息：小标题照来处，正文原样，人用 `!` 跑的写成命令和输出（`markdown/shell.rs`），附件写占位。
 fn write_user(out: &mut Out, user: &User, doc: &Document<'_>, say: &Say<'_>) {
     out.block(&format!("## {}", who(user.from.as_ref())));
-    if !user.text.trim().is_empty() {
-        out.block(&prose(&user.text, false));
+    match &user.shell {
+        Some(ran) => shell::write(out, &user.text, ran, doc, say),
+        None if !user.text.trim().is_empty() => out.block(&prose(&user.text, false)),
+        None => {}
     }
     let attached: Vec<String> = user
         .attachments

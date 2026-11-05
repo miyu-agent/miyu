@@ -8,6 +8,7 @@ mod markdown_attached;
 mod markdown_extras;
 mod markdown_presets;
 mod markdown_ranges;
+mod markdown_shell;
 mod media;
 mod nested;
 mod notices;

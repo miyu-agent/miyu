@@ -43,6 +43,12 @@ const WORDS: &[(&str, &str)] = &[
         "export/end/aborted",
         "The turn was cut off when Miyu stopped",
     ),
+    ("export/shell/running", "Still running"),
+    ("export/shell/exit", "Exit code {code}"),
+    ("export/shell/signal", "Signal {signal}"),
+    ("export/shell/timed-out", "Stopped at the time limit"),
+    ("export/shell/interrupted", "Interrupted"),
+    ("export/shell/aborted", "Cut off when Miyu stopped"),
 ];
 
 /// 编号 `key`（带 `core/` 的全名）照字段说一句；这里没有的是 `None`。
