@@ -32,6 +32,7 @@ use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
 use crate::reverse::Peer as Reverse;
+use miyu_store::packages::local::Kind;
 
 /// `package.install` 从软件源装的参数：`source` 写编号；只写 `package` 的、那个编号又不是卸掉的出厂包的也走这里（施工 G-4 下：
 /// 装只有一个动词，核心判断是装回出厂的还是从软件源装）。
@@ -210,6 +211,10 @@ pub(super) fn came(feed: &Feed, entry: &Entry) -> Came {
     Came {
         origin: entry.origin.clone(),
         feed: (feed.tier != Tier::Official).then(|| feed.name.clone()),
+        kind: match super::glance::source(feed, entry) {
+            "official" => Kind::Official,
+            _ => Kind::Community,
+        },
     }
 }
 

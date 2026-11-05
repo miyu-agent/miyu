@@ -220,6 +220,7 @@ program = "miyu-embed"
 | `status` | 读成了的（施工 F-6 上） | `running`、`starting`、`stopped`、`off`、`ready`、`program_missing` 之一，算法见 `package-pages.md`；依赖的包缺了的（卸掉的出厂的不算）是 `depends_missing`（施工 F-11） |
 | `enabled` | 有开关的（施工 F-6 上） | 开关现在开没开：扩展照它的开关，出厂的内置包照有没有卸掉（施工 BS-1 上中起没有必需的包，都有开关） |
 | `contents` | 给别的包带了内容的（施工 G-9） | 给哪几个包带了内容：清单里 `[content.<包>]` 的编号，照编号排。im 的商城照它挑 im 的插件 |
+| `source`、`feed` | 读成了的（施工 PK-6，设计 61 第五节第 4 条） | 是怎么来的，同装之前看一眼的 `source`：出厂的 `shipped`、系统加装的 `distro`，装上的照本地库 `desc` 的 `kind`（`official`、`community`、`file`），没记、推不出来的 `unknown`；`feed` 从软件源装的才有，官方的是 `official`。原来的 `from` 照旧（把社区的也写成 `official`） |
 | `removed` | 卸掉了的出厂的、系统加装的包（施工 F-5 上、SD-1） | `true`，接在后面；同一个编号两层都有的列盖得住的那一份 |
 | `code`、`problem`、`line` | 写错的、撞了的、读不了的、协议版本对不上的 | 代码；给人看的一句（照连接的语言，`core/human` 的 `package-problems/<code>`，读不了的是 `config/unreadable`）；第几行，有的才有。写错的、撞了的、读不了的只有 `package`、`layer` 和这几格；协议版本对不上的（`code` 是 `protocol_mismatch`）照样带全，头自己决定用不用 |
 
@@ -329,8 +330,8 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 照 pacman 的 `local/`（`miyu_store::packages::local`，端点的 `packages/local.rs`）：
 
 1. **在哪**：`<数据根>/var/lib/packages/<编号>/`。点开头：和包自己放状态的 `var/lib/<编号>/` 在同一层，编号不会撞上（设计 31 原来写的 `local/` 会撞上编号叫 `local` 的包）。
-2. **记什么**：`desc` 是一个 JSON 对象（`id`、`version` 写了的才有、`installed` 装的时刻、`source` 从哪装的、`size` 总字节数、从软件源装的另有 `origin` 来源仓库（施工 G-4 上，升级照它判断）、非官方源的名字 `feed`（施工 U23 下下）；施工 PK-3 上起两格随装一起记，装之前照旧的这两格判断前面批过的能力接不接着用，「装卸」第 9 条）；`files` 一个文件一行 `<SHA-256> <字节数> <相对包目录的路径>`，路径用 `/` 分开、照路径排、放最后（带空格也认得）。写的时候整份先写进 `.<编号>.new` 再换上。
-3. **什么时候写**：装成、升级成的照装好的包目录现算一份，记不成的记一行 `WARN package not recorded`、装照算成；卸掉的删掉那一份。核心起来读清单时，装上的读成了、还没记的补一份（`source` 是空的），记 `INFO package recorded`。出厂的、系统加装的（施工 SD-1）不进本地库（归系统的包管理器）。
+2. **记什么**：`desc` 是一个 JSON 对象（`id`、`version` 写了的才有、`installed` 装的时刻、`source` 从哪装的、`size` 总字节数、从软件源装的另有 `origin` 来源仓库（施工 G-4 上，升级照它判断）、非官方源的名字 `feed`（施工 U23 下下）；施工 PK-3 上起两格随装一起记，装之前照旧的这两格判断前面批过的能力接不接着用，「装卸」第 9 条；是怎么来的 `kind`（施工 PK-6，`official`、`community`、`file`，照装的时候看一眼的 `source` 记，没有的不写）；`files` 一个文件一行 `<SHA-256> <字节数> <相对包目录的路径>`，路径用 `/` 分开、照路径排、放最后（带空格也认得）。写的时候整份先写进 `.<编号>.new` 再换上。
+3. **什么时候写**：装成、升级成的照装好的包目录现算一份，记不成的记一行 `WARN package not recorded`、装照算成；卸掉的删掉那一份。核心起来读清单时，装上的读成了、还没记的补一份（`source` 是空的），记 `INFO package recorded`。接着没记 `kind` 的推一次、写回（施工 PK-6，`miyu-endpoint` 的 `local::infer`）：有来源仓库、有 `feed` 的算社区；有来源仓库、没 `feed` 的照本机存的官方索引（读一次、验一次签名）里编号、来源仓库都对得上的那一条认官方、社区；没来源仓库、记了路径的算本机文件；推不出来的不写，下次起来再推，协议上是 `unknown`。写回只换 `desc`，先写 `.desc.new` 再换上，记 `INFO package kind inferred`。出厂的、系统加装的（施工 SD-1）不进本地库（归系统的包管理器）。
 4. **答什么**：`package.info`、`package.files`（`protocol.md`），装上的照本地库（没记的现算），出厂的照现在的文件现算。`package.info` 另照清单答名字、说明、依赖、推荐、带了什么（同装之前看一眼的「包含」）、要的能力，照装着的包答「被依赖」（`required_by`），从软件源装的答来源仓库（施工 IN-2，设计 `49-装包照pacman.md`）；没装的照软件源答（端点的 `packages/source/look.rs`：同从软件源装的找法，先拿索引、照先后找各个源，找到第一个就用，文件挑本机能用的那一份），照 pacman 的 `-Qi`、`-Si`。写 `path` 的（施工 IN-4，端点的 `packages/file_info.rs`）看本机一个包目录、包文件，照 pacman 的 `-Qip`：拿装卸那把锁，包文件先解进暂存处（`packages/archive.rs`，用完就删），照看一眼的 `preview::looked` 查（写错的、撞了的、缺依赖的照真装拒），再照清单补名字、说明、作者、上游、依赖、推荐，带了什么收进 `provides`，交回的样子同装着的那一份、`from` 是 `file`。
 5. **查**（施工 F-8 中下，端点的 `packages/verify.rs`）：`package.owns` 照真实的位置看路径在哪个包的目录里、本地库里记没记；`package.check` 照本地库比：改了的（哈希不一样）、少了的、多出来的（包自己运行时写的也算，只是提示）。认的那一份是系统加装的（施工 SD-1）不比哈希、文件归系统的包管理器：那一项多 `"layer": "distro"`，清单读不成的写 `manifest`（问题的代码或 `unreadable`），读成了的 `[command]`、`[worker]` 写的程序不在包文件夹 `bin/` 的进 `missing`（`bin/<程序>`，Windows 上带 `.exe`）；被盖住的不查。`miyu check` 不写文件时也报：改了的 `files_modified`、少了的 `files_missing`，各一条警告，`detail` 是几个，写在那个包的清单上。
 
@@ -473,6 +474,5 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 - 握手时把包自己的配置交给扩展：9-4（下），见 `extensions.md`「还没有的」。
 - 写了文件的 `check` 交给包自己的检查：包怎么认自己的文件、怎么交给它，和通讯平台的会话对好再做。
 - 锁文件（`07-存储.md` 第二节）。（从软件源装、命令行 `miyu pkg …`、装卸以后当场换都已经有了：设计 37、49，施工 F-5 中下。）
-- 装着的包的 `from` 分得出社区（本地库 `desc` 多一格记装的时候是不是官方的条目）：施工 PK-6（设计 61 第五节第 4 条）。
 - 系统加装层：设计 60，施工 SD-1。
 - 改了清单写法的提交，软件源的 `miyu-rev` 要跟着换，不然打包、收录认不了新写法（2026-11-05 迁移程序撞过）：合这类提交时 core1 记得换。

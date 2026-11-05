@@ -26,7 +26,7 @@ pub(super) fn listed(
     match &found.read {
         Ok(manifest) => {
             fill::fill(&mut item, &found.id, manifest, language);
-            item["from"] = json!(fill::from(found, places).as_str());
+            fill::origin(&mut item, found, places);
             services::fill(core, &found.id, manifest, &mut item);
             // 施工 F-6 上（`package-pages.md`）：状态、开关、后台页。
             item["status"] = json!(status::status(core, found, manifest, removed));

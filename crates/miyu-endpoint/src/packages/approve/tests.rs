@@ -9,6 +9,7 @@ fn came(origin: &str, feed: Option<&str>) -> Came {
     Came {
         origin: origin.to_string(),
         feed: feed.map(str::to_string),
+        kind: miyu_store::packages::local::Kind::Official,
     }
 }
 
@@ -21,6 +22,7 @@ fn desc(origin: Option<&str>, feed: Option<&str>) -> Desc {
         size: 0,
         origin: origin.map(str::to_string),
         feed: feed.map(str::to_string),
+        kind: None,
     }
 }
 

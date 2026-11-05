@@ -1,9 +1,10 @@
 //! `package.list` 一项里照清单写的几格（施工 9-1 上起，F-12 从 `packages.rs` 挪出来）：种类、名字、命令、功能、依赖、界面块……；
-//! 作者、上游（施工 F-12）；这个包是从哪来的（[`from`]）。
+//! 作者、上游（施工 F-12）；这个包是从哪来的（[`origin`]）。
 
 use serde_json::{Value, json};
 
 use miyu_config::package::{Manifest, PackageKind};
+use miyu_store::packages::local::{self, Kind};
 use miyu_store::packages::{Found, Layer, Packages};
 
 use crate::personas::pick;
@@ -199,15 +200,37 @@ impl From {
     }
 }
 
-/// `found` 是从哪来的：出厂那一层的是出厂；装进来的照装的时候记的来源仓库（`desc` 的 `origin`）认。碰磁盘：读一份小文件。
-pub(crate) fn from(found: &Found, places: &Packages) -> From {
-    match found.layer {
-        Layer::Shipped => return From::Shipped,
-        Layer::Distro => return From::Distro,
-        Layer::Home => {}
-    }
-    match miyu_store::packages::local::origin(&places.local_root(), &found.id) {
-        Some(_) => From::Official,
-        None => From::Local,
+/// `found` 是从哪来的，写进 `item`（`package.list` 的一项、`package.info` 装着的那一份）：
+///
+/// - `from`（施工 F-12，原样不动）：出厂那一层的是出厂；装进来的照装的时候记的来源仓库（`desc` 的 `origin`）认，有的算
+///   `official`，所以社区的也写成 `official`；
+/// - `source`（施工 PK-6，取值同 PK-3 上看一眼的）：出厂的 `shipped`、系统加装的 `distro`；装进来的照本地库记的是怎么来的
+///   （`official`、`community`、`file`），没记、推不出来的 `unknown`，不猜；
+/// - `feed`：从软件源装的才有，官方的写 `official`（同看一眼的），配置里加的源写它的名字。
+///
+/// 碰磁盘：家目录的读一份小文件（`desc`），只读一次。
+pub(crate) fn origin(item: &mut Value, found: &Found, places: &Packages) {
+    let (from, source, feed) = match found.layer {
+        Layer::Shipped => (From::Shipped, "shipped", None),
+        Layer::Distro => (From::Distro, "distro", None),
+        Layer::Home => {
+            let desc = local::desc(&places.local_root(), &found.id);
+            let came = desc.as_ref().filter(|desc| desc.origin.is_some());
+            let from = match came {
+                Some(_) => From::Official,
+                None => From::Local,
+            };
+            let source = desc
+                .as_ref()
+                .and_then(|desc| desc.kind)
+                .map_or("unknown", Kind::as_str);
+            let feed = came.map(|desc| desc.feed.clone().unwrap_or_else(|| "official".to_string()));
+            (from, source, feed)
+        }
+    };
+    item["from"] = json!(from.as_str());
+    item["source"] = json!(source);
+    if let Some(feed) = feed {
+        item["feed"] = json!(feed);
     }
 }

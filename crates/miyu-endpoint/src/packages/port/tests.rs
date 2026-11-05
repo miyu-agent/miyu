@@ -115,9 +115,13 @@ async fn a_confined_session_cannot_change_packages() {
     assert_eq!(state(owner.list().await.expect("列得出")), Some(true));
     assert_eq!(state(outsider.list().await.expect("列得出")), Some(false));
     let mine = owner.info("kit".to_string()).await.expect("看得了");
-    assert!(mine.get("source").is_some(), "{mine}");
+    assert!(mine.get("path").is_some(), "{mine}");
     let theirs = outsider.info("kit".to_string()).await.expect("看得了");
-    assert!(theirs.get("source").is_none(), "{theirs}");
+    assert!(theirs.get("path").is_none(), "{theirs}");
+    assert_eq!(
+        theirs["source"], "file",
+        "是怎么来的不是路径，照给（施工 PK-6）：{theirs}"
+    );
     drop(core);
     if let Err(error) = std::fs::remove_dir_all(&dir) {
         eprintln!("临时目录没删掉：{error}");

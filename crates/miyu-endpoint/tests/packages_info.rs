@@ -163,7 +163,8 @@ async fn an_installed_package_carries_its_manifest_and_who_needs_it() {
     // 原来的几格照旧。
     assert_eq!(got["layer"], "home", "{got}");
     assert_eq!(got["from"], "local");
-    assert_eq!(got["source"], base.display().to_string());
+    assert_eq!(got["path"], base.display().to_string());
+    assert_eq!(got["source"], "file");
     assert!(got["installed"].is_string());
     assert!(got["files"].as_u64().is_some_and(|n| n >= 2));
     // 多的几格。

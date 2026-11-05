@@ -158,6 +158,25 @@ async fn the_preview_says_where_each_package_comes_from_and_holds_only_on_the_sa
     assert_eq!(reply["result"]["package"], "app", "{reply}");
     assert_eq!(approved(&home, "app"), json!(["network"]));
     assert_eq!(approved(&home, "lib"), json!(["search"]));
+    // 装着的也分得出官方、社区（施工 PK-6）：官方源里官方收录的 app、社区收录的 lib；原来的 `from` 都是 `official`，照旧不动。
+    let listed = client.call("p", "package.list", json!({})).await;
+    let item = |id: &str| {
+        listed["result"]["packages"]
+            .as_array()
+            .expect("有列表")
+            .iter()
+            .find(|item| item["package"] == id)
+            .cloned()
+            .unwrap_or_else(|| panic!("列了 {id}：{listed}"))
+    };
+    for (id, source) in [("app", "official"), ("lib", "community")] {
+        let one = item(id);
+        assert_eq!(
+            (&one["source"], &one["feed"], &one["from"]),
+            (&json!(source), &json!("official"), &json!("official")),
+            "{one}"
+        );
+    }
 
     // 来路没变：批过的标 `held`，没批的不标。
     let (again, _) = call_collecting(&mut client, "package.install", look.clone()).await;
@@ -174,6 +193,14 @@ async fn the_preview_says_where_each_package_comes_from_and_holds_only_on_the_sa
         .await;
     assert_eq!(local["result"]["package"], "app", "{local}");
     assert_eq!(approved(&home, "app"), Value::Null);
+    let info = client
+        .call("i", "package.info", json!({"package": "app"}))
+        .await;
+    assert_eq!(
+        info["result"]["source"], "file",
+        "本机文件盖过去照这一次重记：{info}"
+    );
+    assert!(info["result"].get("feed").is_none(), "{info}");
     let (after, _) = call_collecting(&mut client, "package.install", look).await;
     assert_eq!(
         held(&after["result"]["capabilities"]),

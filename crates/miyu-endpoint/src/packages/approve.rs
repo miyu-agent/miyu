@@ -35,11 +35,13 @@ pub(crate) fn valid(approve: Option<&Approve>) -> Result<(), Refusal> {
     fine.then_some(()).ok_or(Refusal::BAD_PARAMS)
 }
 
-/// 从软件源装的来路：来源仓库、软件源的名字（官方的没有，同本地库 `desc` 的 `feed`）。从本机文件夹、包文件装的没有来路。
+/// 从软件源装的来路：来源仓库、软件源的名字（官方的没有，同本地库 `desc` 的 `feed`）、官方还是社区收录的（施工 PK-6，同看一眼的
+/// `source`）。从本机文件夹、包文件装的没有来路。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Came {
     pub(crate) origin: String,
     pub(crate) feed: Option<String>,
+    pub(crate) kind: miyu_store::packages::local::Kind,
 }
 
 /// 一次装的来路和批了什么：从软件源装的带 `came`，`approve` 是请求里的那一张表（没写的没有）。

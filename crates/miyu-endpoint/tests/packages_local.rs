@@ -55,7 +55,13 @@ async fn an_installed_package_is_recorded_listed_and_forgotten() {
     let info = &info["result"];
     assert_eq!(info["layer"], "home", "{info}");
     assert_eq!(info["version"], "1.0");
-    assert_eq!(info["source"], folder.display().to_string());
+    assert_eq!(
+        info["path"],
+        folder.display().to_string(),
+        "施工 PK-6 起路径叫 path"
+    );
+    assert_eq!(info["source"], "file", "包文件夹装的（施工 PK-6）");
+    assert!(info.get("feed").is_none(), "不是从软件源装的没有 feed");
     assert_eq!(info["files"], 2);
     assert_eq!(
         info["size"],
@@ -145,7 +151,11 @@ async fn an_older_install_is_recorded_when_the_core_reads_its_packages() {
     let info = call(&mut client, "package.info", json!({"package": "xtool"})).await;
     assert_eq!(info["result"]["version"], "0.9", "{info}");
     assert!(info["result"]["installed"].is_string(), "补上了：{info}");
-    assert!(info["result"].get("source").is_none(), "补的不知道从哪装的");
+    assert!(info["result"].get("path").is_none(), "补的不知道从哪装的");
+    assert_eq!(
+        info["result"]["source"], "unknown",
+        "推不出来是怎么来的，不猜（施工 PK-6）"
+    );
     assert!(recorded(&home, "xtool").join("files").is_file());
 }
 

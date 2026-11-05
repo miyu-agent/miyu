@@ -64,7 +64,8 @@ fn an_installed_package_has_who_needs_it_and_when_it_came() {
     let info = json!({
         "package": "pudding", "layer": "home", "from": "official", "origin": "github.com/a/pudding",
         "version": "2.0", "name": "Pudding", "files": 3, "size": 1536,
-        "installed": "2026-10-11T06:03:00.000Z", "source": "/w/pudding.miyu",
+        "installed": "2026-10-11T06:03:00.000Z", "path": "/w/pudding.miyu", "source": "community",
+        "feed": "official",
         "depends": ["base"], "required_by": ["a", "b"],
         "provides": {"program": "process", "command": "pudding", "page": true, "settings": 2},
         "capabilities": [{"id": "network", "name": "network"}],
@@ -79,7 +80,7 @@ fn an_installed_package_has_who_needs_it_and_when_it_came() {
             "Recommends      : None",
             "Provides        : extension, command miyu pudding, admin page, 2 settings",
             "Capabilities    : network",
-            "Origin          : github.com/a/pudding (repository)",
+            "Origin          : github.com/a/pudding (community)",
             "Installed Size  : 1.5 KiB",
             "Required By     : a  b",
             "Install Date    : 2026-10-11 14:03",
@@ -99,6 +100,41 @@ fn an_installed_package_has_who_needs_it_and_when_it_came() {
             "安装时间    : 出厂自带",
         ]
     );
+}
+
+/// 来源照核心的 `source`（施工 PK-6）：不知道的照实写「不知道」，不说成官方；连的核心还没有 `source` 的照 `from` 只说「软件源」。
+#[test]
+fn an_installed_package_says_where_it_came_from_and_admits_when_it_does_not_know() {
+    let origin_row = |info: serde_json::Value| {
+        rows(&info, east_eight(), &Language::Chinese)
+            .into_iter()
+            .find(|row| row.starts_with("来源"))
+            .expect("有来源这一行")
+    };
+    let home = |source: Option<&str>| {
+        let mut info = json!({"package": "x", "layer": "home", "from": "official",
+            "origin": "github.com/a/x", "files": 1, "size": 1});
+        if let Some(source) = source {
+            info["source"] = json!(source);
+        }
+        info
+    };
+    assert_eq!(
+        origin_row(home(Some("unknown"))),
+        "来源        : github.com/a/x（不知道）"
+    );
+    assert_eq!(
+        origin_row(home(Some("official"))),
+        "来源        : github.com/a/x（官方）"
+    );
+    assert_eq!(
+        origin_row(home(None)),
+        "来源        : github.com/a/x（软件源）",
+        "老核心"
+    );
+    let distro = json!({"package": "x", "layer": "distro", "from": "distro", "source": "distro",
+        "files": 1, "size": 1});
+    assert_eq!(origin_row(distro), "来源        : 系统装的");
 }
 
 #[test]

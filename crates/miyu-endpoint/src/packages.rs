@@ -151,8 +151,13 @@ pub fn load(resources: &ResourceRoot, root: &DataRoot, distro: Vec<PathBuf>) -> 
     }
     let packages = Packages::new(resources, root, distro);
     let found = packages.read();
-    // 本地库（施工 F-8 中上）：以前装的、还没记的补一份。
+    // 本地库（施工 F-8 中上）：以前装的、还没记的补一份；没记是怎么来的推一次（施工 PK-6）。
     local::backfill(&packages, &found);
+    local::infer(
+        &packages,
+        &root.official_feed(),
+        &miyu_source::sign::official(),
+    );
     for one in &found {
         match &one.read {
             Ok(_) => {}

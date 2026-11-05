@@ -35,9 +35,13 @@ pub(crate) enum CameFrom {
     Shipped,
     Official,
     Community,
-    /// 装着的、从软件源装的：本地库只记了来源仓库，分不出是不是官方的源，不说官方。
+    /// 装着的、从软件源装的：本地库只记了来源仓库，分不出是不是官方的源，不说官方（连的核心没有 `source` 的时候）。
     Source,
     Local,
+    /// 系统的包管理器装的（施工 PK-6）。
+    Distro,
+    /// 核心也不知道是怎么来的（施工 PK-6：PK-6 以前装的、推不出来的）：照实说，不说成官方。
+    Unknown,
 }
 
 impl Language {
@@ -85,11 +89,15 @@ impl Language {
             (Language::Chinese, CameFrom::Community) => "社区",
             (Language::Chinese, CameFrom::Source) => "软件源",
             (Language::Chinese, CameFrom::Local) => "本地",
+            (Language::Chinese, CameFrom::Distro) => "系统装的",
+            (Language::Chinese, CameFrom::Unknown) => "不知道",
             (Language::English, CameFrom::Shipped) => "shipped",
             (Language::English, CameFrom::Official) => "official",
             (Language::English, CameFrom::Community) => "community",
             (Language::English, CameFrom::Source) => "repository",
             (Language::English, CameFrom::Local) => "local",
+            (Language::English, CameFrom::Distro) => "system",
+            (Language::English, CameFrom::Unknown) => "unknown",
         };
         match (self, origin) {
             (_, None) => word.to_string(),

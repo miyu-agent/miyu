@@ -261,6 +261,11 @@ async fn get(client: &reqwest::Client, url: &str, limit: usize) -> Result<Vec<u8
     }
 }
 
+/// 本机存在 `dir` 里的那份索引，照 `keys` 验得过签名、读得成的才有（施工 PK-6：核心起来时推旧包是怎么来的，不上网）。
+pub(crate) fn stored_index(dir: &Path, keys: &[PublicKey]) -> Option<Index> {
+    stored(dir, keys).map(|(index, _)| index)
+}
+
 /// 本机存的那份：签名验得过、读得成的才算；拿到的时刻读不成的当很久以前。
 fn stored(dir: &Path, keys: &[PublicKey]) -> Option<(Index, Timestamp)> {
     let bytes = std::fs::read(dir.join(INDEX)).ok()?;

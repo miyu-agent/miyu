@@ -1,7 +1,8 @@
 //! 本地库（施工 F-8 中上，设计 `31-软件包.md` 第四节，照 pacman 的 `local/`）：家目录里装的每个包记一份，放在
 //! `<数据根>/var/lib/packages/<编号>/`（设计 55；`packages` 是保留的编号，不会和包自己放状态的 `var/lib/<编号>/` 撞上）。
 //!
-//! - `desc`：一个 JSON 对象，编号、版本（清单写了的）、装的时刻、从哪装的（核心起来时补的是空的）、总字节数。
+//! - `desc`：一个 JSON 对象，编号、版本（清单写了的）、装的时刻、从哪装的（核心起来时补的是空的）、总字节数；施工 PK-6 起另记
+//!   是怎么来的（[`Kind`]：官方的、社区的、本机文件）。
 //! - `files`：一个文件一行 `<SHA-256> <字节数> <相对包目录的路径>`，路径用 `/` 分开，照路径排；路径放最后，带空格也认得。
 //!
 //! 出厂的包不进本地库：资源目录归系统的包管理。写的时候整份先写进点开头的暂存处再换上。
@@ -39,6 +40,34 @@ pub struct Desc {
     /// 别的源上（换源就是换信任的对象）。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub feed: Option<String>,
+    /// 是怎么来的（施工 PK-6，设计 `61-装包说清来源和能力.md`）：装的时候照 PK-3 上看一眼的 `source` 记。PK-6 以前装的没有这一格，
+    /// 核心起来时照能推出来的推一次、写回（`miyu-endpoint` 的 `local::infer`），推不出来的一直没有，协议上说 `unknown`。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kind: Option<Kind>,
+}
+
+/// 家目录里的一个包是怎么来的（施工 PK-6）：取值同 PK-3 上看一眼的 `source` 里家目录那几种。出厂的、系统加装的不进本地库，
+/// 照它在哪一层算。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Kind {
+    /// 从官方软件源装的、官方收录的。
+    Official,
+    /// 从软件源装的、社区收录的（官方源里的社区包，和配置里自己加的源里的）。
+    Community,
+    /// 从本机的包文件夹、包文件装的。
+    File,
+}
+
+impl Kind {
+    /// 协议上的写法。
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Kind::Official => "official",
+            Kind::Community => "community",
+            Kind::File => "file",
+        }
+    }
 }
 
 /// 包目录里的一个文件（`files` 的一行）。
@@ -115,6 +144,26 @@ pub fn write(root: &Path, desc: &Desc, files: &[Entry]) -> io::Result<()> {
         fs::remove_dir_all(&target)?;
     }
     fs::rename(&staged, &target)
+}
+
+/// 只换包 `desc.id` 的 `desc`，文件清单不动（施工 PK-6：核心起来时推出来是怎么来的，写回去）：整份先写进旁边的 `.desc.new`
+/// 再换上，不会半写。这个包还没记的不写。
+///
+/// # Errors
+///
+/// 这个包没记过；写不进、换不上。
+pub fn rewrite_desc(root: &Path, desc: &Desc) -> io::Result<()> {
+    let dir = root.join(&desc.id);
+    if !dir.join("desc").is_file() {
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            "package not recorded",
+        ));
+    }
+    let staged = dir.join(".desc.new");
+    let json = serde_json::to_string(desc).map_err(io::Error::other)?;
+    fs::write(&staged, json + "\n")?;
+    fs::rename(&staged, dir.join("desc"))
 }
 
 /// 包 `id` 的 `desc`，不读文件清单（施工 PK-3 上：装之前照它判断来路变没变）。没记的、读不了的没有。

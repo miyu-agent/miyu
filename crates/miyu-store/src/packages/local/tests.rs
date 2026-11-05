@@ -33,6 +33,7 @@ fn a_package_is_scanned_written_and_read_back() {
         size: size(&files),
         origin: Some("github.com/miyu-agent/pkg".to_string()),
         feed: Some("friends".to_string()),
+        kind: Some(Kind::Community),
     };
     write(&root, &desc, &files).expect("写得进");
     assert_eq!(read(&root, "pkg"), Some((desc.clone(), files.clone())));
@@ -70,4 +71,41 @@ fn a_broken_files_list_reads_as_nothing() {
     .unwrap();
     fs::write(root.join("pkg/files"), "not a line\n").unwrap();
     assert_eq!(read(&root, "pkg"), None);
+}
+
+/// 是怎么来的（施工 PK-6）：PK-6 以前写的 `desc` 没有这一格，照样读得进、是 `None`；写回去只换 `desc`，文件清单不动，没留暂存；
+/// 没记过的包不写。
+#[test]
+fn the_kind_is_optional_and_only_the_desc_is_rewritten() {
+    let scratch = temp();
+    let root = scratch.path().join(".local");
+    let old = r#"{"id":"pkg","installed":"2026-10-11T00:00:00.000Z","source":"","size":0}"#;
+    let mut desc: Desc = serde_json::from_str(old).expect("老的读得进");
+    assert_eq!(desc.kind, None);
+    assert!(
+        !serde_json::to_string(&desc)
+            .expect("写得出")
+            .contains("kind"),
+        "没有的不写"
+    );
+    let files = vec![Entry {
+        path: "package.toml".to_string(),
+        sha256: "0".repeat(64),
+        size: 1,
+    }];
+    write(&root, &desc, &files).expect("写得进");
+    desc.kind = Some(Kind::File);
+    rewrite_desc(&root, &desc).expect("换得上");
+    assert_eq!(read(&root, "pkg"), Some((desc.clone(), files)));
+    assert!(!root.join("pkg").join(".desc.new").exists(), "暂存换上了");
+    let stranger = Desc {
+        id: "nobody".to_string(),
+        ..desc
+    };
+    assert!(rewrite_desc(&root, &stranger).is_err(), "没记过的不写");
+    assert!(!root.join("nobody").exists());
+    // 目录在、却没有 `desc` 的（半截留下的）也不写。
+    fs::create_dir_all(root.join("nobody")).expect("建得了");
+    assert!(rewrite_desc(&root, &stranger).is_err(), "没记过的不写");
+    assert!(!root.join("nobody").join("desc").exists());
 }

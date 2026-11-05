@@ -198,10 +198,24 @@ pub(super) fn capabilities(info: &Value, language: &Language) -> Option<String> 
     (!names.is_empty()).then(|| names.join(language.list_separator()))
 }
 
-/// 「来源」：没装的照索引的来源仓库和是不是官方；装着的照 `from`，从软件源装的接来源仓库。装着的分不出装自官方的源还是别人的
-/// 源（核心的 `from` 把从软件源装的都记成 `official`），只说「软件源」，不说官方。
+/// 「来源」：没装的照索引的来源仓库和是不是官方；装着的照核心的 `source`（施工 PK-6：官方、社区、本机文件、出厂、系统装的，
+/// 不知道的照实说「不知道」，不说成官方），从软件源装的接来源仓库。连的核心没有 `source` 的照 `from`：它把从软件源装的都记成
+/// `official`，分不出是不是官方的源，只说「软件源」。
 fn came(info: &Value, language: &Language) -> Option<String> {
     let origin = info["origin"].as_str();
+    if info["from"] != "source"
+        && let Some(source) = info["source"].as_str()
+    {
+        let from = match source {
+            "official" => CameFrom::Official,
+            "community" => CameFrom::Community,
+            "file" => CameFrom::Local,
+            "shipped" => CameFrom::Shipped,
+            "distro" => CameFrom::Distro,
+            _ => CameFrom::Unknown,
+        };
+        return Some(language.came_from(from, origin));
+    }
     let from = match info["from"].as_str()? {
         "source" if info["official"] == true => CameFrom::Official,
         "source" => CameFrom::Community,

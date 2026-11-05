@@ -87,10 +87,10 @@ async fn a_package_file_installs_and_is_recorded_as_its_source() {
     let info = client
         .call("f", "package.info", json!({"package": "xtool"}))
         .await;
+    assert_eq!(info["result"]["path"], file.display().to_string(), "{info}");
     assert_eq!(
-        info["result"]["source"],
-        file.display().to_string(),
-        "{info}"
+        info["result"]["source"], "file",
+        "包文件装的（施工 PK-6）：{info}"
     );
     assert_eq!(info["result"]["files"], 2, "{info}");
     assert_eq!(left_unpacked(&home), 0, "暂存处用完就删");
