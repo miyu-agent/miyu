@@ -1,5 +1,6 @@
 # 发版（施工 RL-2，设计 59 第三、四、五节）：推 `v<版本>` 标签（版本是 Cargo.toml 的 [workspace.package] version；演练用
-# `v<版本>-rc.N` 的预发布标签）时，四种系统各在自己的机器上 `cargo xtask dist` 打一个压缩包、`cargo xtask dist-check` 查包，
+# `v<版本>-rc.N` 的预发布标签，编之前在 CI 机器上把工作区版本临时改成标签里的版本，RL-2补2）时，四种系统各在自己的机器上
+# `cargo xtask dist` 打一个压缩包、`cargo xtask dist-check` 查包，
 # 查不过的这一趟不发；四个都过了，写 SHA256SUMS、用发版钥匙签、验，加构建出处证明，建一个**草稿** Release 把这些传上去。
 # 发不发由项目主人看过草稿以后自己点（公开发布要主人当面同意），这里不发布。
 #
@@ -42,14 +43,34 @@ jobs:
           set -euo pipefail
           version=$(sed -n '/^\[workspace\.package\]/,/^\[/s/^version = "\(.*\)"$/\1/p' Cargo.toml)
           tag="$GITHUB_REF_NAME"
-          case "$tag" in
-            "v$version") ;;
-            "v$version"-rc.[0-9]*) ;;
-            *) echo "::error::标签 $tag 和 Cargo.toml 的版本 $version 对不上（要 v$version 或者 v$version-rc.N）"; exit 1;;
+          case "${tag}" in
+            "v${version}") ;;
+            "v${version}"-rc.[0-9]*) ;;
+            *) echo "::error::标签 ${tag} 和 Cargo.toml 的版本 ${version} 对不上（要 v${version} 或者 v${version}-rc.N）"; exit 1;;
           esac
           echo "标签 ${tag}，版本 ${version}"
       - name: 装上 rust-toolchain.toml 钉住的工具链
         run: rustup toolchain install
+      # 演练标签（v<版本>-rc.N）：只在这台机器上把工作区版本改成标签里的版本，不提交（施工 RL-2补2）。压缩包照它起名、包里的
+      # 程序照它报版本，`miyu upgrade` 照标签找得到、核得上，演练走的就是正式版的路子。Cargo.lock 里工作区自己那几个 crate 也记着
+      # 版本，改完跑一次 `cargo metadata` 把它跟着刷新，后面带 --locked 的编译才不拒。正式标签 v<版本> 这一步什么都不动。
+      - name: 演练标签用标签里的版本
+        run: |
+          set -euo pipefail
+          version=$(sed -n '/^\[workspace\.package\]/,/^\[/s/^version = "\(.*\)"$/\1/p' Cargo.toml)
+          tag="${GITHUB_REF_NAME}"
+          if [ "${tag}" = "v${version}" ]; then
+            echo "正式标签：版本照 Cargo.toml 的 ${version}"
+            exit 0
+          fi
+          wanted="${tag#v}"
+          echo "演练标签：工作区版本临时改成 ${wanted}（只在这台机器上，不提交）"
+          # -i 后面紧跟后缀：GNU、BSD（macOS）的 sed 都认这种写法。
+          sed -i.orig '/^\[workspace\.package\]/,/^\[/s/^version = ".*"$/version = "'"${wanted}"'"/' Cargo.toml
+          rm Cargo.toml.orig
+          now=$(sed -n '/^\[workspace\.package\]/,/^\[/s/^version = "\(.*\)"$/\1/p' Cargo.toml)
+          [ "${now}" = "${wanted}" ] || { echo "::error::工作区版本没改成 ${wanted}，现在是 ${now}"; exit 1; }
+          cargo metadata --format-version 1 > /dev/null
       # 放在默认的 target/dist/：相对仓库的路径在 Windows 的 bash 里也照常通配（$RUNNER_TEMP 在那边带反斜杠）。
       - name: 打包
         run: cargo xtask dist --target "${{ matrix.target }}"
