@@ -73,6 +73,9 @@ pub enum PkgCommand {
     Remove {
         /// 卸哪一个。
         package: String,
+        /// 连配置目录 `etc/<编号>/` 一起删（施工 PK-5）；不写的留下，照 pacman。`-n` 是 pacman `-Rn` 的写法。
+        #[arg(long, short = 'n')]
+        purge: bool,
     },
     /// 把一个包文件夹打成 `.miyu`（施工 G-1）：不连核心。
     Pack {
@@ -301,8 +304,8 @@ async fn act(
             let params = installing(&what, &plan.cwd);
             install::run(rpc, plan, (params, &what), (input, out, err)).await
         }
-        PkgCommand::Remove { package } => {
-            group::remove(rpc, plan, &package, (input, out, err)).await
+        PkgCommand::Remove { package, purge } => {
+            group::remove(rpc, plan, (&package, purge), (input, out, err)).await
         }
         PkgCommand::Info { package, source } => {
             info::show(rpc, plan, (&package, source), (out, err)).await

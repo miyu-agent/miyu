@@ -319,7 +319,8 @@ impl DataRoot {
     }
 
     /// 卸包 `id` 时整个删的那几个目录（设计 55 第三节第 4 条）：`etc/`、`var/lib/`、`var/cache/`、`var/log/`、`tmp/`、`run/` 下
-    /// 它的 `<编号>/`。包文件夹 `opt/<编号>/`、本地库那一份由装卸那边删；它带的脚本、MCP 服务、知识库的几处照名字各自清。
+    /// 它的 `<编号>/`；其中 `etc/<编号>/` 照 pacman 默认留下，`purge` 的才删（施工 PK-5，装卸那边挑）。包文件夹 `opt/<编号>/`、
+    /// 本地库那一份由装卸那边删；它带的脚本、MCP 服务、知识库的几处照名字各自清。
     pub fn package_places(&self, id: &str) -> [PathBuf; 6] {
         [
             self.package_config(id),

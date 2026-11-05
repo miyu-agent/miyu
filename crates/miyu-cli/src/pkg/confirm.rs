@@ -32,7 +32,7 @@ pub(crate) fn group_plan(preview: &Value, doing: Doing, language: &Language) -> 
 }
 
 /// 看一眼的回应 `preview` 印成几行：哪个包（版本、换下哪一份）、包含什么、读不成的（施工 X-13 补）、需要什么能力、一并删除
-/// 什么、会删掉的状态目录（施工 PK-4）、多大。没有的那一行不印。
+/// 什么、会删掉的状态目录（施工 PK-4）、配置目录留下还是删掉（施工 PK-5）、多大。没有的那一行不印。
 pub(crate) fn plan(preview: &Value, doing: Doing, language: &Language) -> Vec<String> {
     let separator = language.list_separator();
     let mut head = language.will(doing, preview["package"].as_str().unwrap_or_default());
@@ -85,6 +85,11 @@ pub(crate) fn plan(preview: &Value, doing: Doing, language: &Language) -> Vec<St
         if let Some(path) = preview["state"]["path"].as_str() {
             let bytes = preview["state"]["size"].as_u64().unwrap_or_default();
             rows.push(language.deletes_state(path, &size(bytes)));
+        }
+        // 配置目录（施工 PK-5）：照 pacman 默认留下，写了 `--purge` 的删掉；核心没说的（没东西、旧的核心）不印。
+        if let Some(path) = preview["config"]["path"].as_str() {
+            let kept = preview["config"]["kept"].as_bool().unwrap_or(true);
+            rows.push(language.config_dir(path, kept));
         }
     }
     // 从软件源装的（施工 G-4 下）：一起装的依赖、要下多大、来源仓库和官方还是社区。

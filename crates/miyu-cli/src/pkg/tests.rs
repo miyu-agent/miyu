@@ -65,7 +65,17 @@ fn parsed(args: &[&str]) -> Result<PkgCommand, clap::Error> {
 fn pacman_options_are_the_plain_commands() {
     let one = |args: &[&str]| parsed(args).expect("认得");
     assert!(matches!(one(&["pkg", "-U", "./x"]), PkgCommand::Install { what } if what == "./x"));
-    assert!(matches!(one(&["pkg", "-R", "x"]), PkgCommand::Remove { package } if package == "x"));
+    assert!(matches!(
+        one(&["pkg", "-R", "x"]),
+        PkgCommand::Remove { package, purge: false } if package == "x"
+    ));
+    // 连配置一起删（施工 PK-5）：`--purge`，pacman 的 `-Rn`。
+    for args in [&["pkg", "remove", "x", "--purge"][..], &["pkg", "-Rn", "x"]] {
+        assert!(matches!(
+            one(args),
+            PkgCommand::Remove { package, purge: true } if package == "x"
+        ));
+    }
     assert!(matches!(one(&["pkg", "-Q"]), PkgCommand::List));
     // `-Qi` 只查装着的、`-Si` 只查软件源、`info` 不写（施工 IN-2）。
     let info = |args: &[&str]| match one(args) {

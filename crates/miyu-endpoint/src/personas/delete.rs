@@ -78,7 +78,7 @@ pub(crate) async fn delete(core: &Arc<Core>, params: DeleteParams) -> Result<Jso
     .await
     .map_err(|_| Refusal::INTERNAL)??;
     if let Deleting::Package(package) = deleting {
-        crate::packages::manage::remove_package(core, package).await?;
+        crate::packages::manage::remove_package(core, package, false).await?;
     }
     // 人起的编号不进运行日志（LG-1）。
     tracing::info!(target: TARGET, "persona deleted");

@@ -53,15 +53,19 @@ pub(super) async fn run(
     Ok(())
 }
 
-/// `miyu pkg remove <编号或组>`：先看一眼（写的是组的照 [`run`]），没写 `--yes` 的印出来、问一句，卸掉。
+/// `miyu pkg remove <编号或组>`：先看一眼（写的是组的照 [`run`]），没写 `--yes` 的印出来、问一句，卸掉。写了 `--purge` 的
+/// 看一眼、真卸都带 `purge`（施工 PK-5），不写的不带：旧的核心不认这一格。
 pub(super) async fn remove(
     rpc: &mut Rpc,
     plan: &PkgPlan,
-    package: &str,
+    (package, purge): (&str, bool),
     (input, out, err): (&mut dyn BufRead, &mut dyn Write, &mut dyn Write),
 ) -> Result<(), u8> {
     let language = &plan.language;
-    let params = json!({"package": package});
+    let mut params = json!({"package": package});
+    if purge {
+        params["purge"] = json!(true);
+    }
     let shown = ask(rpc, "package.remove", previewed(&params), language, err).await?;
     if is_group(&shown) {
         return run(

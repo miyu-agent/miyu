@@ -5,8 +5,8 @@ Runs list when no command is given.
 Commands:
   list               List installed packages (alias: -Q)
   install <package>  Install a package (alias: -U)
-  remove <id>        Remove a package with its settings and state
-                     (alias: -R)
+  remove <id>        Remove a package with its settings and state,
+                     keeping its config (alias: -R)
   info <package>     Show package details, from the source if not installed;
                      a folder or .miyu file is shown, not installed
   files <id>         List the files of a package (alias: -Ql)
@@ -29,6 +29,7 @@ pacman forms: -S <id>… installs from the source, -Syu updates and upgrades,
 Options:
       --format <text|json>  Output format (default: text)
       --yes, --noconfirm    Install or remove without asking
+  -n, --purge               Remove the config too
       --target <target>     Target system for pack
   -o, --out <dir>           Output directory for pack (default: current)
   -h, --help                Print help

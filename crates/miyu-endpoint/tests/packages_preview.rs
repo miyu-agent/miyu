@@ -172,6 +172,82 @@ async fn removing_shows_what_goes_with_it_and_changes_nothing() {
     );
 }
 
+/// 卸之前说清配置目录（施工 PK-5）：有东西的写 `config: {path, kept}`，不 `purge` 的留（`kept: true`）、`purge` 的删；不在的、
+/// 空的不写，`purge` 的也一样；什么都不动。
+#[tokio::test]
+async fn removing_says_whether_the_config_stays() {
+    let home = Home::new();
+    home.write("opt/pane/package.toml", &pane("1"));
+    let mut client = Client::connect(packaged::core(&home));
+    client.hello().await;
+    let config = home.root.package_config("pane");
+    let looked = |purge: bool| json!({"package": "pane", "preview": true, "purge": purge});
+    for purge in [false, true] {
+        let none = call(&mut client, "package.remove", looked(purge)).await;
+        assert!(
+            none["result"].is_object() && none["result"].get("config").is_none(),
+            "不在的不写：{none}"
+        );
+    }
+    std::fs::create_dir_all(&config).expect("建得了");
+    for purge in [false, true] {
+        let empty = call(&mut client, "package.remove", looked(purge)).await;
+        assert!(
+            empty["result"].is_object() && empty["result"].get("config").is_none(),
+            "空的不写：{empty}"
+        );
+    }
+    std::fs::write(config.join("settings.toml"), "volume = 3\n").expect("写得进");
+    for purge in [false, true] {
+        let shown = call(&mut client, "package.remove", looked(purge)).await;
+        assert_eq!(
+            shown["result"]["config"],
+            json!({"path": config.to_string_lossy(), "kept": !purge}),
+            "{shown}"
+        );
+    }
+    let plain = call(
+        &mut client,
+        "package.remove",
+        json!({"package": "pane", "preview": true}),
+    )
+    .await;
+    assert_eq!(
+        plain["result"]["config"]["kept"], true,
+        "不写 purge 的留：{plain}"
+    );
+    assert!(
+        installed(&home, "pane") && config.join("settings.toml").exists(),
+        "什么都不动"
+    );
+}
+
+/// 配置目录本身是个链接（施工 PK-5）：留的是链接，`purge` 删的也只是链接，照样写这一格。
+#[cfg(unix)]
+#[tokio::test]
+async fn a_linked_config_directory_is_still_shown() {
+    let home = Home::new();
+    home.write("opt/pane/package.toml", &pane("1"));
+    let mut client = Client::connect(packaged::core(&home));
+    client.hello().await;
+    let elsewhere = home.work.join("dotfiles");
+    std::fs::create_dir_all(&elsewhere).expect("建得了");
+    let config = home.root.package_config("pane");
+    std::fs::create_dir_all(config.parent().expect("有上一层")).expect("建得了");
+    std::os::unix::fs::symlink(&elsewhere, &config).expect("建得了链接");
+    let shown = call(
+        &mut client,
+        "package.remove",
+        json!({"package": "pane", "preview": true}),
+    )
+    .await;
+    assert_eq!(
+        shown["result"]["config"],
+        json!({"path": config.to_string_lossy(), "kept": true}),
+        "{shown}"
+    );
+}
+
 /// 状态目录里放一个指到 `to` 的符号链接 `at`（Windows 上建链接要权限，放一个空目录顶替：同样不该算进大小）。
 fn linked(to: &Path, at: &Path) {
     #[cfg(unix)]

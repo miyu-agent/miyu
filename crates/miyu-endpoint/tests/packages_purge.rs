@@ -1,7 +1,7 @@
 //! 卸就是清干净（施工 F-8 中下补，设计 `31-软件包.md` 第三节第 3 条、定了的 H）：真核心走一遍。卸掉的包，配置
 //! 里它的几项删掉，别的项、注释不动；各层它的 `<编号>/`（设计 55 第三节第 4 条）、脚本的状态和缓存、`provide/` 那一份整个
 //! 删掉。家目录里装的、出厂的都一样。开关的文件里它开没开、批过的能力也清掉
-//! （施工 F-8 五补）：装回来从头开、从头批。
+//! （施工 F-8 五补）：装回来从头开、从头批。配置目录 `etc/<编号>/` 照 pacman 留下、重装照旧读，`purge` 的才删（施工 PK-5）。
 
 use std::sync::Arc;
 
@@ -9,7 +9,9 @@ use serde_json::{Value, json};
 
 use miyu_session::testkit::Script;
 
-use crate::support::extensions::{Program, install_asking, quick, status, steps, until_state};
+use crate::support::extensions::{
+    Program, install, install_asking, quick, read, record, status, steps, until_state,
+};
 use crate::support::*;
 
 /// 一份带配置项的界面包：`xcfg.port` 写在系统配置里。
@@ -61,8 +63,12 @@ async fn removing_a_package_forgets_its_settings_and_state() {
         system.contains("# 留着") && system.contains("log.level = \"debug\""),
         "别的不动：{system}"
     );
+    // 配置目录照 pacman 留下（施工 PK-5），别的几处删了。
+    let config = home.root.package_config("xcfg");
     for place in &places {
-        assert!(!place.exists(), "{} 删了", place.display());
+        let kept = *place == config;
+        assert_eq!(place.join("data").exists(), kept, "{}", place.display());
+        assert_eq!(place.exists(), kept, "{}", place.display());
     }
     assert!(!provided.exists(), "provide 那一份删了");
     for tree in &trees {
@@ -90,12 +96,116 @@ async fn removing_a_shipped_package_forgets_its_settings_too() {
     client.hello().await;
     let state = home.root.package_state("courier");
     std::fs::create_dir_all(&state).expect("建得了");
+    // 拉起前建好、什么都没写过的配置目录（施工 PK-5）：没东西可留，卸的时候删掉，不留空目录。
+    let config = home.root.package_config("courier");
+    std::fs::create_dir_all(&config).expect("建得了");
     let removed = call(&mut client, "package.remove", json!({"package": "courier"})).await;
     assert_eq!(removed["result"]["removed"], true, "{removed}");
     let system = std::fs::read_to_string(home.root.config_file()).unwrap_or_default();
     assert!(!system.contains("listen"), "{system}");
     assert!(system.contains("level = \"debug\""), "{system}");
     assert!(!state.exists());
+    assert!(!config.exists(), "空的配置目录不留");
+}
+
+/// 照 pacman 卸包留配置（施工 PK-5，2026-11-05 项目主人定）：不 `purge` 的 `etc/<编号>/` 原样留下，状态目录照删；留下的
+/// 目录 `package.list` 不列、`check` 不报；重装同编号，扩展拿到的 `MIYU_CONFIG_DIR` 还是它、读得到留下的；`purge` 的一起删。
+#[tokio::test]
+async fn removing_keeps_the_config_until_purged() {
+    let home = Home::new();
+    let program = Program::new();
+    let (path, keep) = record(&home, "echo");
+    let settings = home.root.package_config("echo").join("settings.toml");
+    let looked = format!("exists:{}", settings.display());
+    let args = [
+        keep.as_str(),
+        "env:MIYU_CONFIG_DIR",
+        &looked,
+        "hello",
+        "wait",
+    ];
+    install(&home, "echo", &program.name(), "manual", &steps(&args));
+    write(&settings, "volume = 3\n");
+    let state = home.root.package_state("echo");
+    write(&state.join("data"), "x");
+    let source = home.work.join("again").join("echo");
+    write(
+        &source.join("package.toml"),
+        &std::fs::read_to_string(home.root.packages().join("echo/package.toml")).expect("读得到"),
+    );
+    let core = crate::support::extensions::core(&home, quick());
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let ran = |times: usize| {
+        let path = path.clone();
+        async move {
+            let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(60);
+            // 一回四行：工作目录、`MIYU_CONFIG_DIR`、配置在不在、握手的回应。
+            while read(&path).lines().count() < times * 4 {
+                assert!(tokio::time::Instant::now() < deadline, "{}", read(&path));
+                tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+            }
+            read(&path)
+        }
+    };
+    let on = call(&mut client, "extension.enable", json!({"package": "echo"})).await;
+    assert_eq!(on["result"]["on"], true, "{on}");
+    ran(1).await;
+
+    let removed = call(&mut client, "package.remove", json!({"package": "echo"})).await;
+    assert_eq!(removed["result"]["removed"], true, "{removed}");
+    assert_eq!(
+        std::fs::read_to_string(&settings).ok().as_deref(),
+        Some("volume = 3\n"),
+        "配置留下、原样"
+    );
+    assert!(!state.exists(), "状态目录照删");
+    let listed = call(&mut client, "package.list", json!({})).await;
+    let ids: Vec<&str> = listed["result"]["packages"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{listed}"))
+        .iter()
+        .filter_map(|one| one["package"].as_str())
+        .collect();
+    assert!(!ids.contains(&"echo"), "留下的配置不算装着：{ids:?}");
+    let checked = call(&mut client, "check", json!({})).await;
+    let problems = &checked["result"]["problems"];
+    assert!(
+        problems.is_array() && !problems.to_string().contains("echo"),
+        "留下的配置不报：{checked}"
+    );
+
+    let back = call(
+        &mut client,
+        "package.install",
+        json!({"path": source.to_string_lossy()}),
+    )
+    .await;
+    assert_eq!(back["result"]["package"], "echo", "{back}");
+    let on = call(&mut client, "extension.enable", json!({"package": "echo"})).await;
+    assert_eq!(on["result"]["on"], true, "{on}");
+    let recorded = ran(2).await;
+    let config =
+        miyu_fs::usable(&std::fs::canonicalize(home.root.package_config("echo")).expect("在"));
+    let again: Vec<&str> = recorded.lines().skip(5).take(2).collect();
+    assert_eq!(
+        again,
+        [
+            format!("MIYU_CONFIG_DIR={}", config.display()),
+            "exists:true".to_string()
+        ],
+        "重装同编号照旧读留下的配置：{recorded}"
+    );
+
+    let purged = call(
+        &mut client,
+        "package.remove",
+        json!({"package": "echo", "purge": true}),
+    )
+    .await;
+    assert_eq!(purged["result"]["removed"], true, "{purged}");
+    assert!(!home.root.package_config("echo").exists(), "purge 的一起删");
+    core.stop_extensions().await;
 }
 
 #[tokio::test]

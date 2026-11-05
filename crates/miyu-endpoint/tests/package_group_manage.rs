@@ -60,9 +60,13 @@ async fn the_base_system_goes_and_comes_back_as_a_group() {
         "看一眼不卸"
     );
 
+    // 组里各包的配置目录照单个卸的留下（施工 PK-5）。
+    let kept = home.root.package_config("miyu-base-shell").join("x.toml");
+    home.write("etc/miyu-base-shell/x.toml", "a = 1\n");
     let removed = owner
         .call("r", "package.remove", json!({"package": "basesystem"}))
         .await;
+    assert!(kept.exists(), "不 purge 的留配置");
     let mut gone = ids(&removed["result"]["removed"]);
     gone.sort();
     let mut expected = group.clone();
@@ -94,6 +98,24 @@ async fn the_base_system_goes_and_comes_back_as_a_group() {
         group.iter().all(|id| now.contains(id)),
         "全装回来了：{now:?}"
     );
+    // `purge`（施工 PK-5）：装回的不认，卸的连配置一起删。
+    let wrong = owner
+        .call(
+            "w",
+            "package.install",
+            json!({"package": "basesystem", "purge": true}),
+        )
+        .await;
+    assert_eq!(wrong["error"]["data"]["reason"], "bad_params", "{wrong}");
+    let purged = owner
+        .call(
+            "x",
+            "package.remove",
+            json!({"package": "basesystem", "purge": true}),
+        )
+        .await;
+    assert!(purged["result"]["removed"].is_array(), "{purged}");
+    assert!(!kept.exists(), "purge 的一起删");
 }
 
 #[tokio::test]

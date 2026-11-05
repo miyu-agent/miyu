@@ -45,13 +45,16 @@ pub(crate) fn named(core: &Core, params: &Value) -> bool {
         .is_some_and(|id| is_group(core, id))
 }
 
-/// 写组名的参数：只认这两格。
+/// 写组名的参数：只认这三格。
 #[derive(Debug, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct GroupParams {
     package: String,
     #[serde(default)]
     preview: bool,
+    /// 卸的连各包的配置目录一起删（施工 PK-5，同 `package.remove` 的 `purge`）；装回的写了拒 `bad_params`。
+    #[serde(default)]
+    purge: bool,
 }
 
 impl GroupParams {
@@ -60,6 +63,7 @@ impl GroupParams {
         GroupParams {
             package: package.to_string(),
             preview,
+            purge: false,
         }
     }
 }
@@ -72,7 +76,8 @@ pub(crate) async fn call(
     params: GroupParams,
 ) -> Result<Value, Refusal> {
     match method {
-        "package.remove" => remove(core, &params.package, params.preview).await,
+        "package.remove" => remove(core, &params.package, params.preview, params.purge).await,
+        _ if params.purge => Err(Refusal::BAD_PARAMS),
         _ => restore(core, peer, &params.package, params.preview).await,
     }
 }
@@ -113,8 +118,14 @@ async fn restore(
     Ok(json!({"group": group, "packages": entries}))
 }
 
-/// 把组里装着的包卸掉；`preview` 的只交回会卸掉的那几个。组外装着的包依赖组里的整个拒。
-async fn remove(core: &Arc<Core>, group: &str, preview: bool) -> Result<Value, Refusal> {
+/// 把组里装着的包卸掉；`preview` 的只交回会卸掉的那几个。组外装着的包依赖组里的整个拒。`purge` 的连各包的配置目录一起删
+/// （施工 PK-5）。
+async fn remove(
+    core: &Arc<Core>,
+    group: &str,
+    preview: bool,
+    purge: bool,
+) -> Result<Value, Refusal> {
     let installed = core.system_packages();
     let mut left: Vec<String> = members(core, group)
         .into_iter()
@@ -142,7 +153,7 @@ async fn remove(core: &Arc<Core>, group: &str, preview: bool) -> Result<Value, R
             .position(|id| depends::dependents(&now, id).is_empty())
             .unwrap_or(0);
         let id = left.remove(at);
-        super::manage::remove_package(core, id.clone()).await?;
+        super::manage::remove_package(core, id.clone(), purge).await?;
         removed.push(id);
     }
     Ok(json!({"group": group, "removed": removed}))

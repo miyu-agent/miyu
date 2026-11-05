@@ -114,6 +114,9 @@ fn what_works_only_on_this_machine_is_refused() {
         (&["clean"], "clean"),
         (&["-Sy"], "-Sy"),
         (&["-Sc"], "-Sc"),
+        // 她的工具不收 `purge`（施工 PK-5）。
+        (&["remove", "net", "--purge"], "remove --purge"),
+        (&["-Rn", "net"], "remove --purge"),
     ] {
         assert_eq!(mapped(args), Err(said.to_string()), "{args:?}");
     }

@@ -7,7 +7,7 @@
 //!   `package.toml` 的取它所在的文件夹。
 //! - `pack` 照旧在本机打（不连核心，[`super::run`] 先做了）。
 //! - 别的（`files`、`owns`、`check`、`update`、`clean`、只有 `-y`、`-c` 的 `-S`）说这里用不了，退出码 2。
-//! - `--yes` 不认：问不问由权限策略判，她跳不过。
+//! - `--yes` 不认：问不问由权限策略判，她跳不过。`remove --purge` 也说这里用不了（施工 PK-5）：她的工具不收它。
 //! - 通道连不上的（端点不在了、令牌不对）说这里用不了，退出码 2，不退回去走协议。
 
 use std::path::{Component, Path};
@@ -89,7 +89,9 @@ pub(super) fn calls(
             one(PACKAGE, json!({"install": folder(&what, cwd)}))
         }
         PkgCommand::Install { what } => one(PACKAGE, json!({"install": what})),
-        PkgCommand::Remove { package } => one(PACKAGE, json!({"remove": package})),
+        // 她的工具不收 `purge`（施工 PK-5）：连配置一起删要人在终端里自己敲。
+        PkgCommand::Remove { purge: true, .. } => Err("remove --purge".to_string()),
+        PkgCommand::Remove { package, .. } => one(PACKAGE, json!({"remove": package})),
         PkgCommand::Upgrade => one(PACKAGE, json!({"upgrade": "all"})),
         PkgCommand::Sync(flags) if flags.upgrade() => one(PACKAGE, json!({"upgrade": "all"})),
         PkgCommand::Sync(flags) if flags.cleans() => Err("-Sc".to_string()),

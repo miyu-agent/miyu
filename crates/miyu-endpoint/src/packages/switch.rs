@@ -133,7 +133,7 @@ pub(crate) async fn disable(
                 turn_off(core, peer, &params.package).await?;
             }
             Switch::Shipped => {
-                manage::remove_package(core, params.package.clone()).await?;
+                manage::remove_package(core, params.package.clone(), false).await?;
             }
             Switch::Bundle => crate::mcp::turn_off(core, &params.package, &manifest).await?,
         }

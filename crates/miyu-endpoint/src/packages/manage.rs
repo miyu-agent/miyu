@@ -157,8 +157,13 @@ pub(super) fn setting_keys(one: &Found) -> Vec<String> {
         .unwrap_or_default()
 }
 
-/// 卸包 `id`（`package.remove`，施工 F-6 上起 `package.disable` 关出厂的内置包也走这里）。
-pub(crate) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value, Refusal> {
+/// 卸包 `id`（`package.remove`，施工 F-6 上起 `package.disable` 关出厂的内置包也走这里）。配置目录 `etc/<编号>/` 照 pacman
+/// 默认留下（施工 PK-5），`purge` 的才一起删。
+pub(crate) async fn remove_package(
+    core: &Arc<Core>,
+    id: String,
+    purge: bool,
+) -> Result<Value, Refusal> {
     let _one_at_a_time = core.packaging.lock().await;
     let found = core.system_packages();
     let one = removable(&found, &id)?;
@@ -166,8 +171,15 @@ pub(crate) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value
     let local_root = packages(core).local_root();
     let markers = packages(core).removed_markers();
     // 卸就是清干净（施工 F-8 中下补，设计 31 定了的 H；设计 55 第三节第 4 条）：它的配置项照清单列的删，各层它的 `<编号>/`
-    // 整个删，开关、批过的能力删（施工 F-8 五补）。
-    let places = core.root.package_places(&id);
+    // 整个删，开关、批过的能力删（施工 F-8 五补）。配置目录 `etc/<编号>/` 是给人改的，照 pacman 默认留下、重装同编号照旧读，
+    // `purge` 的才删（施工 PK-5，2026-11-05 项目主人定）。
+    let config = core.root.package_config(&id);
+    let places: Vec<PathBuf> = core
+        .root
+        .package_places(&id)
+        .into_iter()
+        .filter(|place| purge || *place != config)
+        .collect();
     let keys = setting_keys(one);
     // 它带的 MCP 服务的缓存、工作目录也清掉（施工 X-3 下）：它们不在包的状态目录里。
     let services: Vec<String> = one
@@ -221,6 +233,9 @@ pub(crate) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value
     let cleared = blocking(move || {
         for place in &places {
             remove_dir_if_there(place)?;
+        }
+        if !purge {
+            drop_if_empty(&config);
         }
         remove_file_if_there(&root.provide_cache(&package))?;
         miyu_store::scripts::forget_states(&root, &package)
@@ -461,6 +476,14 @@ fn remove_dir_if_there(dir: &Path) -> std::io::Result<()> {
     match std::fs::remove_dir_all(dir) {
         Err(error) if error.kind() != std::io::ErrorKind::NotFound => Err(error),
         _ => Ok(()),
+    }
+}
+
+/// 留下的配置目录 `dir` 是空的（拉起扩展前各处都建好，没写过东西的也在）就删掉，不留空目录（施工 PK-5）；是链接的、不空的、
+/// 删不掉的不动。
+fn drop_if_empty(dir: &Path) {
+    if std::fs::symlink_metadata(dir).is_ok_and(|meta| meta.is_dir()) {
+        drop(std::fs::remove_dir(dir));
     }
 }
 

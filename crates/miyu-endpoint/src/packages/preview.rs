@@ -98,8 +98,9 @@ pub(crate) fn provided(
     (Value::Object(carried), capabilities)
 }
 
-/// 卸：编号、哪一层、版本；家目录里的几个文件多大；一并删掉的配置项（配置里写了的键）、状态目录在哪多大（施工 PK-4，没有的不写）。
-pub(crate) async fn removing(core: &Arc<Core>, id: &str) -> Result<Value, Refusal> {
+/// 卸：编号、哪一层、版本；家目录里的几个文件多大；一并删掉的配置项（配置里写了的键）、状态目录在哪多大（施工 PK-4，没有的不写）；
+/// 配置目录在哪、留不留（施工 PK-5：不 `purge` 的留，不在的、空的不写）。
+pub(crate) async fn removing(core: &Arc<Core>, id: &str, purge: bool) -> Result<Value, Refusal> {
     let found = core.system_packages();
     let one = removable(&found, id)?;
     let mut answer = Map::new();
@@ -116,18 +117,41 @@ pub(crate) async fn removing(core: &Arc<Core>, id: &str) -> Result<Value, Refusa
     }
     let settings = crate::config::forget::present(core, &setting_keys(one));
     answer.insert("settings".into(), json!(settings));
-    // 状态目录（施工 PK-4）：在哪、多大，好让人知道卸掉会丢什么；没有的不写。量大小要走一遍目录，放在阻塞线程里。
-    let state = core.root.package_state(id);
-    let measured = tokio::task::spawn_blocking(move || measured(&state).map(|size| (state, size)))
-        .await
-        .map_err(|_| Refusal::INTERNAL)?;
+    // 状态目录（施工 PK-4）：在哪、多大，好让人知道卸掉会丢什么；没有的不写。量大小要走一遍目录，放在阻塞线程里。配置目录
+    // （施工 PK-5）：在哪、照 `purge` 留下还是删掉；没东西可留的不写，同一个阻塞线程里看。
+    let (state, config) = (core.root.package_state(id), core.root.package_config(id));
+    let (measured, config) = tokio::task::spawn_blocking(move || {
+        let measured = measured(&state).map(|size| (state, size));
+        (measured, holds_something(&config).then_some(config))
+    })
+    .await
+    .map_err(|_| Refusal::INTERNAL)?;
     if let Some((path, size)) = measured {
         answer.insert(
             "state".into(),
             json!({"path": path.to_string_lossy(), "size": size}),
         );
     }
+    if let Some(path) = config {
+        answer.insert(
+            "config".into(),
+            json!({"path": path.to_string_lossy(), "kept": !purge}),
+        );
+    }
     Ok(Value::Object(answer))
+}
+
+/// 配置目录 `dir` 里有没有东西可留、可删（施工 PK-5）：是目录、底下至少一项；本身是链接的也算（留着的是那个链接，`purge`
+/// 删的也只是链接，同 [`measured`] 不跟链接）。不在的、空的、是普通文件的不算：空的卸的时候删掉（`manage.rs` 的 `drop_if_empty`），
+/// 普通文件不是包的配置目录。
+fn holds_something(dir: &Path) -> bool {
+    match std::fs::symlink_metadata(dir) {
+        Ok(meta) if meta.file_type().is_symlink() => true,
+        Ok(meta) if meta.is_dir() => {
+            std::fs::read_dir(dir).is_ok_and(|mut entries| entries.next().is_some())
+        }
+        _ => false,
+    }
 }
 
 /// 卸包会删掉的状态目录 `dir` 有多大（施工 PK-4）：底下普通文件的字节数之和。不跟符号链接（卸的时候只删链接本身，指到的

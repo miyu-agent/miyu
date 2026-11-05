@@ -149,6 +149,16 @@ impl Language {
         }
     }
 
+    /// 卸的时候配置目录怎么办（施工 PK-5）：留下的「配置留在 <路径>」，写了 `--purge` 的「会删掉 <路径>」。
+    pub(crate) fn config_dir(&self, path: &str, kept: bool) -> String {
+        match (self, kept) {
+            (Language::Chinese, true) => format!("配置留在 {path}"),
+            (Language::Chinese, false) => format!("会删掉 {path}"),
+            (Language::English, true) => format!("Config kept in {path}"),
+            (Language::English, false) => format!("Will delete {path}"),
+        }
+    }
+
     /// 一并删除的状态目录（旧的核心只说有没有，施工 PK-4 以前）。
     pub(crate) fn state_dir(&self) -> &'static str {
         match self {
