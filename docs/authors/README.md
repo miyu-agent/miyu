@@ -57,10 +57,49 @@ hello/
 2. **发**：包放在自己的 GitHub 仓库里，用官方的打包模板 `miyu-agent/packages/.github/workflows/pack.yml`：打 tag（`v` 加上清单的 `version`）就打包、传进这个 tag 的 Release。怎么写见 [miyu-agent/packages](https://github.com/miyu-agent/packages)。
 3. **收录**：给仓库打上话题（topic）`miyu-package`，软件源每天收一次各仓库最新的 Release，签名后发出去，下一次收录就在里面，标「社区」。编号先到先得：第一个发出这个编号的仓库一直占着它，别的仓库再用这个编号的不收。分叉出来的仓库、存档了的仓库不收。
 
-也能经系统的包管理器（AUR、Homebrew 这些）发：把包文件夹装进 Miyu 认的「系统加装」那一处，`<那一处>/<编号>/package.toml`，程序放在
-包文件夹的 `bin/`。那一处在 Linux 上是 `$XDG_DATA_DIRS` 里每一处的 `miyu/packages/`（没设时 `/usr/local/share`、`/usr/share`，先列的
-优先；Linuxbrew 装在它自己的 `share` 下，用户要把它写进 `XDG_DATA_DIRS`），macOS 上是 Homebrew 前缀的 `share/miyu/packages/`，
-Windows 上没有这一处。同一个编号用户用 `miyu pkg install` 装了的，用户装的盖过系统装的。
+## 经系统源发
+
+也能经系统的包管理器（AUR、Homebrew 这些）发，Miyu 自己的终端、网页就是这样发的（`miyu-tui`、`miyu-webui` 两个包）。Miyu 不另设
+审核：系统源由各家自己审，核心只管装上以后照规矩读、查。
+
+1. **装到哪**：把包文件夹原样装进 Miyu 认的「系统加装」那一处，成为 `<那一处>/<编号>/package.toml`：
+   - Linux：`$XDG_DATA_DIRS` 里每一处的 `miyu/packages/`（没设时 `/usr/local/share`、`/usr/share`，先列的优先），系统包装进
+     `/usr/share/miyu/packages/<编号>/`；Linuxbrew 装在它自己的 `share` 下，用户要把它写进 `XDG_DATA_DIRS`；
+   - macOS：Homebrew 前缀的 `share/miyu/packages/`（前缀照 `miyu` 所在的目录往上一级算）；
+   - Windows：没有这一处，只经软件源发。
+2. **包文件夹的样子**：同 `miyu pkg pack` 打进 `.miyu` 的那一份，清单照原样，程序放在包文件夹的 `bin/`、带可执行权限。别往核心自己的
+   目录（`/usr/lib/miyu/`、Homebrew 的 `libexec/`）里放：那是核心的出厂层，归 `miyu-core` 管。
+3. **包名和依赖**：包名建议 `miyu-<编号>`。依赖写 `miyu-core`（核心的包；`miyu-agent` 是合集，别依赖它），版本下限写第一个说得了你
+   清单 `protocol` 的核心版本（现在协议只有 `1`，发了的核心都说得了，不写下限也行）。依赖别的 Miyu 包的，清单的 `depends` 和系统包的依赖都写上。
+4. **装好以后**：核心起来时读一次（已经开着的重启核心才认）。`miyu pkg list` 里这个包的层是 `distro`。清单的协议、适用系统、依赖
+   对不上的不加载，`miyu check` 报原因；写错了，坏的只是这一个包。
+5. **和软件源一起发**：同一个包两边都可以有。用户用 `miyu pkg install` 装了的进数据根，盖过系统装的；系统装的那份更新时，`miyu check`
+   报一条 `shadowed` 警告，说怎么换回去。
+6. **卸**：`miyu pkg remove <编号>` 碰到系统装的，只记一笔不再加载，文件不动，删文件要用系统的包管理器；记了的照编号
+   `miyu pkg install <编号>` 装回来。
+7. **自己先试**：环境变量 `MIYU_DISTRO_PACKAGES` 指一处，核心就只把那一处当系统加装那一层；配一个临时数据根 `MIYU_HOME`，跑
+   `miyu pkg list` 看层是不是 `distro`、`miyu pkg check <编号>` 看程序找不找得到。
+
+AUR 的 `PKGBUILD` 大致这样（照自己的包改）：
+
+```sh
+pkgname=miyu-hello
+depends=(miyu-core)
+package() {
+  install -d "$pkgdir/usr/share/miyu/packages"
+  cp -a hello "$pkgdir/usr/share/miyu/packages/hello"
+}
+```
+
+Homebrew 的 formula：
+
+```ruby
+depends_on "miyu-core"
+
+def install
+  (share/"miyu/packages/hello").install Dir["hello/*"]
+end
+```
 
 ## 三个平台
 

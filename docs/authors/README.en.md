@@ -57,7 +57,41 @@ hello/
 2. **Publish**: keep the package in its own GitHub repository and use the official template `miyu-agent/packages/.github/workflows/pack.yml`. Pushing a tag (`v` followed by the manifest's `version`) packs it and uploads it to that tag's release. See [miyu-agent/packages](https://github.com/miyu-agent/packages).
 3. **Collection**: add the topic `miyu-package` to your repository. The package source collects each repository's latest release once a day and publishes a signed index, so your package shows up after the next collection, marked as community. Package ids are first come, first served: the first repository to publish an id keeps it for good, and other repositories using that id are skipped. Forks and archived repositories are not collected.
 
-You can also ship through a system package manager (AUR, Homebrew and the like): install the package folder into the place Miyu reads as "system-installed", `<that place>/<id>/package.toml`, with its programs in the folder's `bin/`. On Linux that place is `miyu/packages/` under each entry of `$XDG_DATA_DIRS` (`/usr/local/share` and `/usr/share` when unset, earlier entries first; Linuxbrew installs under its own `share`, which users add to `XDG_DATA_DIRS`); on macOS it is `share/miyu/packages/` under the Homebrew prefix; Windows has no such place. When the user installs the same id with `miyu pkg install`, their copy covers the system one.
+## Publishing through a system package manager
+
+You can also ship through a system package manager (AUR, Homebrew and the like); Miyu's own terminal and web interfaces ship this way (the `miyu-tui` and `miyu-webui` packages). Miyu adds no review of its own: each package manager reviews its packages, and the core only reads and checks what is installed, by the usual rules.
+
+1. **Where**: install the package folder as it is into the place Miyu reads as "system-installed", so that it becomes `<that place>/<id>/package.toml`:
+   - Linux: `miyu/packages/` under each entry of `$XDG_DATA_DIRS` (`/usr/local/share` and `/usr/share` when unset, earlier entries first), so a system package goes into `/usr/share/miyu/packages/<id>/`. Linuxbrew installs under its own `share`, which users add to `XDG_DATA_DIRS`.
+   - macOS: `share/miyu/packages/` under the Homebrew prefix (the folder above the one `miyu` is in).
+   - Windows: there is no such place; publish through the package source only.
+2. **The folder**: the same folder `miyu pkg pack` puts into a `.miyu` file, with the manifest unchanged and the programs in the folder's `bin/` with their executable bit. Don't put it in the core's own folder (`/usr/lib/miyu/`, Homebrew's `libexec/`): that is the core's built-in layer, owned by `miyu-core`.
+3. **Name and dependencies**: call the package `miyu-<id>`. Depend on `miyu-core` (the core package; `miyu-agent` is the bundle, don't depend on it), with the first core version that speaks your manifest's `protocol` as the lower bound (the protocol is only `1` for now and every released core speaks it, so no bound is needed yet). If you depend on other Miyu packages, list them both in the manifest's `depends` and in the system package's dependencies.
+4. **After installing**: the core reads the folder when it starts (restart a running core to pick it up). `miyu pkg list` shows the package in the `distro` layer. A manifest whose protocol, systems or dependencies don't fit is not loaded, and `miyu check` says why; a mistake breaks only that package.
+5. **Both channels**: the same package can be in the package source too. What a user installs with `miyu pkg install` goes into the data root and covers the system copy. When the system copy is newer, `miyu check` warns `shadowed` and says how to switch back.
+6. **Removing**: `miyu pkg remove <id>` on a system package only records it and stops loading it. The files stay; removing them is the package manager's job. `miyu pkg install <id>` brings a recorded one back.
+7. **Try it first**: set `MIYU_DISTRO_PACKAGES` to a folder and the core uses only that folder as the system-installed layer. With a scratch data root in `MIYU_HOME`, `miyu pkg list` should show the `distro` layer, and `miyu pkg check <id>` shows whether its programs are found.
+
+An AUR `PKGBUILD` looks roughly like this (adapt it to your package):
+
+```sh
+pkgname=miyu-hello
+depends=(miyu-core)
+package() {
+  install -d "$pkgdir/usr/share/miyu/packages"
+  cp -a hello "$pkgdir/usr/share/miyu/packages/hello"
+}
+```
+
+A Homebrew formula:
+
+```ruby
+depends_on "miyu-core"
+
+def install
+  (share/"miyu/packages/hello").install Dir["hello/*"]
+end
+```
 
 ## Three platforms
 
