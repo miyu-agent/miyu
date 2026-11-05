@@ -46,6 +46,9 @@ pub fn run(root: &Path, args: &[String]) -> ExitCode {
 }
 
 fn check(root: &Path, archive: &Path) -> Result<Vec<String>, String> {
+    // 查包的家目录就在压缩包旁边，核心只认绝对路径的 MIYU_HOME。
+    let archive = &std::path::absolute(archive)
+        .map_err(|error| format!("{} 换不成绝对路径：{error}", archive.display()))?;
     let version = version(&read(&root.join("Cargo.toml"))?)?;
     let target = HOST.ok_or("本机不是发的四种系统之一，跑不了包里的程序")?;
     let name = archive
