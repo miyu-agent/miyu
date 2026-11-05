@@ -60,7 +60,7 @@
 
 ## 能力
 
-清单 `[process] capabilities` 声明要什么。自己装的包要人批（`extension.enable` 带 `approve`）；出厂的算批过。还有没批的不拉起。批过的记在开关文件 `extensions.json` 的 `approved` 里（包的编号到能力），卸包时删掉。
+清单 `[process] capabilities` 声明要什么。自己装的包要人批：装的时候批（`package.install`、`package.upgrade` 带 `approve`，施工 PK-3 上，见 [软件包](packages.md)），没批全的打开时再批（`extension.enable` 带 `approve`）；出厂的算批过。还有没批的不拉起。批过的记在开关文件 `extensions.json` 的 `approved` 里（包的编号到能力），只留这一份清单声明了的；换了来路（本机文件盖过去、换了源、换了来源仓库）装的不接着用以前批的；卸包时删掉。
 
 | 能力 | 能做什么 |
 |---|---|

@@ -84,7 +84,11 @@
 
 都可以带 `preview: true`：只看一眼、什么都不动，拒绝照真做的那一样。`install` 的预览回 `package`、`version`、要换掉的 `replaces: {"version"}`、装回出厂的、系统加装的 `restores: true`，和带了什么（`program`、`mcp`、`command`（第一个子命令名）、`commands`（全部子命令名）、`page`、`mascot`、`theme`、`connection`、`settings`、`capabilities`、`files`、`size`）；`remove` 的预览回 `package`、`layer`、`version`、`files`、`size`、`settings`（要一并删掉的配置键：只有 `purge` 的列，不 `purge` 的是 `[]`）、`state`（会一并删掉的状态目录：`{"path", "size"}`，`path` 是 `var/lib/<编号>/` 的位置，`size` 是底下文件一共多少字节，符号链接不跟进去；没有状态目录的不写这一格。以前这一格是 `true`/`false`）、`config`（配置目录和设置项：`{"path"?, "kept", "settings"?}`，`path` 是 `etc/<编号>/` 的位置，不在的、空的不写；`settings` 是系统配置里写了的它的设置项有几项，0 的不写；`kept` 是 `true` 两样都留下、`false` 都删掉（写了 `purge: true`）；`path`、`settings` 都没有的不写这一格）。卸掉的包留在配置里的设置项不生效，`check` 不报不认识，一个包说一句 `settings_left`。
 
-从软件源装的预览另有 `source`（源的名字）、`official`、`origin`、`download`（要下的字节数，连依赖）、`with`（一起装的依赖 `[{"package", "version"}]`）、`recommends`（要装的包推荐的、还没装的，去重：`[{"package", "version", "download", "installed_size"?}]`，没有的是空的）、`installed`（要装的全部包装好以后一共多少字节，不算推荐的；有一个索引没写的不写这一格）；`capabilities` 同从包文件夹装的那一格（`{"id", "name", "summary"}`）。
+从软件源装的预览另有 `source`（从哪来：`official` 官方源里官方的、`community` 官方源里社区收录的或者配置里自己加的源里的）、`feed`（源的名字，官方的是 `official`；施工 PK-3 上以前这一格叫 `source`）、`official`、`origin`、`download`（要下的字节数，连依赖）、`with`（一起装的依赖 `[{"package", "version", "source", "feed", "capabilities"?}]`）、`recommends`（要装的包推荐的、还没装的，去重：`[{"package", "version", "source", "feed", "capabilities"?, "download", "installed_size"?}]`，没有的是空的）、`installed`（要装的全部包装好以后一共多少字节，不算推荐的；有一个索引没写的不写这一格）；`capabilities` 同从包文件夹装的那一格（`{"id", "name", "summary"}`）。
+
+从哪来、要的能力（施工 PK-3 上）：预览的 `source` 一共五种，从软件源装的 `official`、`community`，从包文件夹、包文件装的 `file`，装回的 `shipped`、`distro`。能力的每一项这一刻已经批过、装完照旧留着的多 `held: true`：只有从软件源装、源和来源仓库都和装着的那一份一样时才有（本机文件装的、换了源的、换了来源仓库的前面批过的不接着用）。社区的、本机文件的预览多 `notice`：要给人看的话，照连接的语言、一句一个字符串（「这个包没经过官方审核。」，带程序、子命令、MCP 服务、脚本的再一句「它带的程序会以你的身份在这台机器上跑，不在沙盒里。」，几个包的写出是哪几个）；推荐的里有的另放 `recommends_notice`。照它原样印，「注意：」这样的前缀是头自己的字。
+
+装的时候批（施工 PK-3 上）：`package.install`（`path`、`source`）、`package.upgrade` 可以带 `approve`：`{"<编号>": ["<能力>", …]}`，这一次装上的每个包各写各的（照预览里列出来的拼：要装的、`with` 的，升级的 `upgrades`、`with` 的）。能力名、编号写法不对的 `bad_params`；装上的那一份没声明的、编号不是这一次装的不理；不写的装上不批，打开时照旧用 `package.enable`、`extension.enable` 的 `approve` 批。批过的记进 `extensions.json` 的 `approved`：照「(源和来源仓库都没变时以前批过的 ∪ 这一次批的) ∩ 这一份声明的」，所以新版不再要的会去掉、以后加回来要重新批。手动开（`start = "manual"`）的装好以后打开不用再批，开着就跑的装上当场跑。
 
 真装时推给这个连接的 `package.progress`：`{"package", "stage", "index", "count", "done"?, "total"?}`。`stage` 是 `download`（带 `done`、`total` 字节）、`verify`（核对之前）、`install`（装之前）；`index`、`count` 是第几个（从 1 数）、一共几个。从包文件夹、包文件装的只推 `verify`、`install` 各一次（`1`、`1`）。老的核心只推 `{"package", "done", "total"}`，没写 `stage` 的当 `download`。
 
@@ -139,7 +143,7 @@
 | 方法 | 参数 | 回应 |
 |---|---|---|
 | `package.upgrades` | 无 | `{"upgrades": [{"package", "from", "to"}], "moved": [{"package", "was", "now"}], "gone", "blocked": [{"package", "reason"}], "held", "generated", "stale"?}`：能升的；来源仓库变了、不升的；软件源里没有了的；被拉黑的；系统配置 `packages.hold` 跳过的 |
-| `package.upgrade` | `packages`（可以不写，只升这几个）、`preview` | 看一眼 `{"upgrades", "download"}`；真升 `{"upgraded": [{"package", "from", "to"}]}`，下载时同 `package.install {"source"}` 推进度 |
+| `package.upgrade` | `packages`（可以不写，只升这几个）、`preview`、`approve`（同 `package.install`，施工 PK-3 上） | 看一眼 `{"upgrades", "download", "with", "notice"?}`：`upgrades` 每一项多 `source`、`feed`、`capabilities`（新版声明的，带 `held`），`with` 是一起装的新依赖（同 `package.install` 预览的那一格）；真升 `{"upgraded": [{"package", "from", "to"}]}`，下载时同 `package.install {"source"}` 推进度 |
 
 ## `package.enable`、`package.disable`、`package.restart`
 

@@ -73,7 +73,7 @@
 **能力**（施工 9-4 下上，`05-内核接口.md` 第三节、I5；项目主人 2026-10-08 照推荐定）：
 
 1. 清单 `[process] capabilities` 声明要哪些（`packages.md`；声明斜杠命令 `[[slash]]` 的要 `commands`，施工 X-14 下，`slash.md`），只认那张表里的十七个名字（`crates/miyu-config/src/package/capability.rs` 的 `ALL`；施工 X-15 上加了 `widgets`，`widgets.md`；X-20 加了 `context.system`，X-18 加了 `packages.call`，N-5 加了 `search`，X-30 加了 `memory.write`）：`tools`、`commands`、`widgets`、`context.inject`、`context.system`、`tool.guard`、`tool.rewrite`、`events.read`、`events.write`、`sessions.drive`、`packages.call`、`search`、`act_for_external`、`network`、`fs.read`、`fs.write`、`memory.write`。
-2. 装上的（数据根的 `opt/`，施工 U23 上上）要批：在 `extension.enable` 那一下带上 `approve`。批的时候记下它这时声明的全部（`approved`）；还没批的是「声明的减记着的」，升级以后多了的只问多的；关掉不清批准，卸掉一起删（施工 SU-2 中）。
+2. 装上的（数据根的 `opt/`，施工 U23 上上）要批。施工 PK-3 上起在装的时候批（设计 `61-装包说清来源和能力.md` 第四节，`packages.md`「装卸」第 9 条）：`package.install`、`package.upgrade` 带 `approve`（`{编号: [能力…]}`），装成以后、拉起之前把 `approved` 重算成「(来路没变时旧的 ∪ 这一次批的) ∩ 这一份清单声明的」，`start = "always"` 的装上当场拉起；来路变了的（本机文件盖过去、换了源、换了来源仓库、本地库没记的）前面批过的不接着用，清单不再要的去掉、以后加回来要重新批。打开时批照旧留着当兜底：在 `extension.enable`、`package.enable` 那一下带上 `approve`，走到它的只剩 PK-3 以前装的、没带 `approve` 装的（没跟上的头）、确认屏和真装的不一样多出来的、装的时候写不进开关文件的、系统加装的（设计 61 定了的 8）；批的时候照同一个算法记（结果是这时声明的全部）。还没批的是「声明的减记着的」；不替装着的包补批，旧数据不迁；关掉不清批准，卸掉一起删（施工 SU-2 中），没有另外的撤销入口（定了的 7）。
 3. 出厂的（资源目录里随 Miyu 一起装的，通讯平台的桥）算批过的：和编译进核心的模块一样本来就被信任（05 第三节「内置模块」）。
 4. 开着、还有没批的（开关文件里开着的，`start = "always"` 没写开关的）不拉起：`stopped`、`needs_approval`，不拦核心空闲退出；批了就拉起。
 5. 照包手里有的能力挡方法（施工 X-30，下面「谁能调」；照开关文件的 `approved` 算，出厂的算全有），连接起来时算一次，批、升级都会重新拉起。`context.inject` 是挂接点不是方法，照旧在 `hooks.rs` 查。沙盒里跑另做（「还没有的」）。
@@ -188,6 +188,5 @@
 
 ### 还没有的
 
-- 装包时批能力：有了装包那一步，审批挪到装的时候。
 - 沙盒里跑：另做（`network`、`fs.*` 现在管的是经核心做的，扩展自己联网、读写文件不挡）。照能力挡方法、扩展说的话记成它自己：施工 X-30 做了（「谁能调」）。
 - 扩展提供工具、命令：O-2；回合开始的挂接点：X-16；放在 system 尾部的：X-20。`tool.guard`、`tool.rewrite` 还没有。

@@ -43,8 +43,8 @@ hello/
 
 ## Install, try, check
 
-1. **Install**: `miyu pkg install ./hello`. It first prints what will happen (the program, commands it adds, capabilities it wants, size) and asks `[Y/n]`; `--yes` skips the question. It takes effect immediately, no core restart.
-2. **Turn on**: after installing it asks "Turn it on now?"; yes approves the capabilities it asks for and turns it on; no leaves that for later, in the Packages page of the terminal or web UI. Packages with only skills and scripts have no switch; each skill and script is switched in presets.
+1. **Install**: `miyu pkg install ./hello`. It first prints what will happen (the program, commands it adds, the capabilities it wants with a line on each, where it comes from, size) and asks `[Y/n]`: yes installs it and approves those capabilities; `--yes` skips the question and approves just the same. It takes effect immediately, no core restart; one that always runs (`start = "always"`) starts right away.
+2. **Turn on**: for a manual one it then asks "Turn it on now?"; yes turns it on, without asking about capabilities again (they were approved while installing); no leaves that for later, in the Packages page of the terminal or web UI. Packages with only skills and scripts have no switch; each skill and script is switched in presets.
 3. **Change and reinstall**: while developing, run `miyu pkg install ./hello` again after a change (it's an upgrade). To try things in a separate data directory without touching your everyday one: `MIYU_HOME=/tmp/miyu-try miyu …`.
 4. **Look**: `miyu pkg info hello` (name, version, size, install time), `miyu pkg files hello` (installed files), `miyu pkg check hello` (whether installed files changed), `miyu check` (mistakes in manifests, scripts, skills). The Packages page shows whether an extension is running, waiting to restart, or stopped (with the reason and the last lines of stderr).
 5. **Logs**: an extension's stderr is in `~/.miyu/var/log/<id>/stderr`; the core's log is `~/.miyu/var/log/core.log`.
