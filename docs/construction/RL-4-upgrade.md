@@ -71,6 +71,21 @@ rc.2 实测时不带 `--prerelease` 报「没有找到可用的发行版」：�
 
 另外 rc.2 那一趟带 `--prerelease` 报缺 `miyu-0.0.0-rc.2-linux-x86_64.tar.gz`：是演练标签没改版本号，RL-2补2 改了 `release.yml`，等 rc.3 再试。
 
+### 补3：只换 Miyu 自己的东西（2026-11-05）
+
+rc.3 实测（不带 `--prerelease` 报「还没有正式版」、退出码 1；带 `--prerelease --yes` 4 秒换成 `miyu 0.0.0-rc.3`，`install.toml` 留着、没有
+暂存和旧版目录剩下；再跑说已是最新）时看到：人放进安装目录的 `notes.txt` 也跟着旧版一起删了。core1 定折中：
+
+- 照安装目录的第一层分：新压缩包第一层有的、固定名单上的（五个程序带后缀、`resources`、`LICENSE`、`README.txt`、
+  `THIRD-PARTY-LICENSES.txt`）整样换；名单是为了以后新版拿掉某个程序，旧的也清得掉。只照新压缩包换会让新版删掉的出厂包、预设一直
+  留在 `resources/` 里被加载，比丢文件更糟，所以 `resources/` 照旧整个换。
+- `install.toml` 照旧留着；第一层别的原样留着，`Said::Upgraded` 多 `kept`，最后一句「安装目录里还有 N 样不是 Miyu 的，原样留着：…」，
+  最多列 5 样。帮助页写明安装目录别放自己的东西、`resources/` 每次升级整个换。
+- 测试：新压缩包拿掉了 `miyu-extract`、没带 `README.txt`，安装目录里旧的两样清掉，`notes.txt`、`my-tools/` 留下并报出来，
+  `resources/old.txt` 没了；Windows 上名单照 `.exe` 认（不带后缀的同名文件不算程序、留着）；走一趟的那条装着 `notes.txt` 的留下、
+  报出来；字那条看计数、最多 5 样、没有的不说。
+- 变异 6 个都抓住：全当 Miyu 的、不看固定名单、不看程序名单、程序名不带后缀、不交回留着的、不限 5 样。
+
 ### 没验到
 
 - **真的 GitHub、真的下载、真的替换**：合的时候发版公钥还没有，`script` 的走到第 3 步就停。RL-4补 填上了公钥；等主人跑出带签名的

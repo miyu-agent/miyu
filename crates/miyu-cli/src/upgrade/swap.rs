@@ -4,6 +4,10 @@
 //! 旧的那几样挪进安装目录里的 `.miyu-old-<旧版本>/`，新的挪进来；中途哪一步出错，照反方向挪回去，留着旧的不动。挪完删
 //! `.miyu-old-…`，删不掉的（Windows 上跑着的那个程序）留到下一次 `miyu upgrade` 开头再删（[`tidy`]）。
 //! `install.toml` 和这几个暂存目录不动。
+//!
+//! 换哪几样照安装目录的第一层分（施工 RL-4补3，core1 11-05 定）：Miyu 自己的整样换，是新压缩包第一层有的每一样，再加上一张固定的
+//! 名单（[`OWNED`]、[`PROGRAMS_OWNED`]：以后新版去掉某个程序，旧的那份也清得掉）；第一层别的东西原样留着，交回名字给人说一句。
+//! `resources/` 整个换，放在里面的东西照样没了：帮助页里写着安装目录别放自己的东西。
 
 use std::fs;
 use std::io;
@@ -16,6 +20,23 @@ pub(crate) const STAGE: &str = ".miyu-upgrade";
 
 /// 挪出来的旧版放在这个名字开头的目录里。
 pub(crate) const OLD: &str = ".miyu-old-";
+
+/// 安装目录第一层一定归 Miyu 的（程序另算，[`PROGRAMS_OWNED`]）：新版没带也照样换掉、清掉。
+const OWNED: [&str; 4] = [
+    "resources",
+    "LICENSE",
+    "README.txt",
+    "THIRD-PARTY-LICENSES.txt",
+];
+
+/// 一定归 Miyu 的程序（不带 `.exe`）：以后新版拿掉的，旧的那份也清掉。
+const PROGRAMS_OWNED: [&str; 5] = [
+    "miyu",
+    "miyu-tui",
+    "miyu-web",
+    "miyu-sandbox",
+    "miyu-extract",
+];
 
 /// 新版里一定要有的程序（不带 `.exe`）。
 const PROGRAMS: [&str; 5] = [
@@ -53,37 +74,45 @@ pub(crate) fn missing(top: &Path, exe: &str) -> Vec<String> {
     missing
 }
 
-/// 安装目录 `dir` 里要换掉的那几样：除了标记文件、暂存和挪出来的旧版。照名字排。
-fn current(dir: &Path) -> io::Result<Vec<String>> {
-    let mut names = Vec::new();
+/// 安装目录 `dir` 第一层的东西分两份，照名字排：要换掉的（`owned` 认的）、原样留着的（不是 Miyu 的）。标记文件、暂存、挪出来
+/// 的旧版两份都不算。
+fn current(dir: &Path, owned: &dyn Fn(&str) -> bool) -> io::Result<(Vec<String>, Vec<String>)> {
+    let (mut outgoing, mut kept) = (Vec::new(), Vec::new());
     for entry in fs::read_dir(dir)? {
         let name = entry?.file_name().to_string_lossy().into_owned();
         if name == MARKER || name == STAGE || name.starts_with(OLD) {
             continue;
         }
-        names.push(name);
+        match owned(&name) {
+            true => outgoing.push(name),
+            false => kept.push(name),
+        }
     }
-    names.sort();
-    Ok(names)
+    outgoing.sort();
+    kept.sort();
+    Ok((outgoing, kept))
 }
 
-/// 换好以后：旧版挪去了哪（删掉了的没有）。
+/// 换好以后：旧版挪去了哪（删掉了的没有）、原样留着的不是 Miyu 的那几样。
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct Swapped {
     /// 删不掉、留着的旧版目录。
     pub(crate) left: Option<PathBuf>,
+    /// 安装目录第一层原样留着的（不是 Miyu 的），照名字排。
+    pub(crate) kept: Vec<String>,
 }
 
-/// 把 `dir` 里的东西换成 `top` 里的：旧的挪进 `old`，新的挪进来，最后删 `old`。`rename` 是挪一样东西（真跑的是
-/// [`fs::rename`]，测试换成会在某一步出错的）。出错的照反方向挪回去，交回哪一步、系统的原话。
+/// 把 `dir` 里归 Miyu 的东西换成 `top` 里的：旧的挪进 `old`，新的挪进来，最后删 `old`；不是 Miyu 的原样留着。`exe` 是程序名的
+/// 后缀（Windows 上 `.exe`）。`rename` 是挪一样东西（真跑的是 [`fs::rename`]，测试换成会在某一步出错的）。出错的照反方向挪回去，
+/// 交回哪一步、系统的原话。
 pub(crate) fn swap(
     dir: &Path,
     top: &Path,
     old: &Path,
+    exe: &str,
     rename: &mut dyn FnMut(&Path, &Path) -> io::Result<()>,
 ) -> Result<Swapped, (String, String)> {
     let failed = |step: &str, error: io::Error| (step.to_string(), error.to_string());
-    let outgoing = current(dir).map_err(|error| failed("read", error))?;
     let mut incoming = Vec::new();
     for entry in fs::read_dir(top).map_err(|error| failed("read", error))? {
         incoming.push(
@@ -95,6 +124,14 @@ pub(crate) fn swap(
         );
     }
     incoming.sort();
+    let owned = |name: &str| {
+        incoming.iter().any(|one| one == name)
+            || OWNED.contains(&name)
+            || PROGRAMS_OWNED
+                .iter()
+                .any(|program| format!("{program}{exe}") == name)
+    };
+    let (outgoing, kept) = current(dir, &owned).map_err(|error| failed("read", error))?;
     fs::create_dir(old).map_err(|error| failed("move-old", error))?;
     let mut moved_out = Vec::new();
     let mut moved_in = Vec::new();
@@ -128,6 +165,7 @@ pub(crate) fn swap(
     }
     Ok(Swapped {
         left: fs::remove_dir_all(old).err().map(|_| old.to_path_buf()),
+        kept,
     })
 }
 

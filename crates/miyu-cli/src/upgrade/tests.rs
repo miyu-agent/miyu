@@ -181,14 +181,21 @@ fn a_script_install_upgrades_itself() {
     // 上一次删不掉、留下来的：这一次开头删（不删的话这一次的 .miyu-old-0.9.0 建不了）。
     setup.scratch.put("install/.miyu-old-0.9.0/miyu", "older");
     setup.scratch.put("install/.miyu-old-0.8.0/miyu", "oldest");
+    // 人自己放进安装目录的：原样留着、说出来（施工 RL-4补3）。
+    setup.scratch.put("install/notes.txt", "mine");
     let (said, steps, asked) = run(&setup, plain(), "0.9.0", "miyu 1.0.0\n", Answer::Yes);
     assert_eq!(
         said,
         Said::Upgraded {
             from: "0.9.0".to_string(),
             to: "1.0.0".to_string(),
-            left: None
+            left: None,
+            kept: vec!["notes.txt".to_string()],
         }
+    );
+    assert_eq!(
+        fs::read_to_string(setup.dir.join("notes.txt")).unwrap(),
+        "mine"
     );
     assert_eq!(asked, 1);
     assert_eq!(

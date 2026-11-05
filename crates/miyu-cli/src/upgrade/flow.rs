@@ -215,11 +215,12 @@ fn staged(
     }
     (world.step)(Step::Replacing);
     let old = dir.join(format!("{OLD}{}", world.current));
-    match swap::swap(dir, &top, &old, world.rename) {
+    match swap::swap(dir, &top, &old, world.exe_suffix, world.rename) {
         Ok(swapped) => Said::Upgraded {
             from: world.current.to_string(),
             to: version.to_string(),
             left: swapped.left,
+            kept: swapped.kept,
         },
         Err((step, why)) => Said::Failed(step, why),
     }

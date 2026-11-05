@@ -112,6 +112,8 @@ pub(crate) enum Said {
         to: String,
         /// 留着的旧版目录。
         left: Option<PathBuf>,
+        /// 安装目录第一层原样留着的、不是 Miyu 的（施工 RL-4补3）。
+        kept: Vec<String>,
     },
 }
 

@@ -14,7 +14,12 @@ impl Language {
         let shown = |path: &std::path::Path| clean(&path.display().to_string());
         let pick = |chinese: String, english: String| if zh { chinese } else { english };
         let problem = match said {
-            Said::Upgraded { from, to, left } => {
+            Said::Upgraded {
+                from,
+                to,
+                left,
+                kept,
+            } => {
                 let mut lines = vec![
                     pick(format!("已升级 Miyu {from} → {to}"), format!("upgraded Miyu {from} → {to}")),
                     pick(
@@ -22,6 +27,25 @@ impl Language {
                         "hint: a core that is already running is still the old version: run 'miyu core stop' and the next start uses the new one".to_string(),
                     ),
                 ];
+                // 不是 Miyu 的原样留着（施工 RL-4补3）：说几样、列最多 5 样。
+                if !kept.is_empty() {
+                    let shown: Vec<String> = kept.iter().take(5).map(|name| clean(name)).collect();
+                    let more = kept.len() > 5;
+                    lines.push(pick(
+                        format!(
+                            "提示：安装目录里还有 {} 样不是 Miyu 的，原样留着：{}{}",
+                            kept.len(),
+                            shown.join("、"),
+                            if more { "……" } else { "" }
+                        ),
+                        format!(
+                            "hint: {} item(s) in the install folder are not Miyu's and were left as they were: {}{}",
+                            kept.len(),
+                            shown.join(", "),
+                            if more { ", …" } else { "" }
+                        ),
+                    ));
+                }
                 if let Some(left) = left {
                     lines.push(pick(
                         format!("提示：旧版目录 {} 还在用，下次运行 'miyu upgrade' 时删除", shown(left)),

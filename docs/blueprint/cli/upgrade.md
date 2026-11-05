@@ -51,9 +51,13 @@ channel = "script"   # script：安装脚本；aur：AUR 的包；brew：Homebre
    不 `sudo`、不提权；装进系统目录又没写标记的也停在这里。
 8. **下载、查新版**：下载压缩包，SHA-256 要和清单一致；解开（不许写到目录外面），`miyu-<版本>-<系统>/` 里要有五个程序和
    `resources/`；跑新的 `miyu --version` 要报 `miyu <新版本>`。
-9. **对换**：安装目录里的每一样（标记、暂存、`.miyu-old-…` 除外）挪进 `.miyu-old-<旧版本>/`，新版的每一样挪进来，删掉
-   `.miyu-old-…`。逐样挪、不整个目录改名：Windows 上跑着的 `miyu.exe` 改得了名、删不掉，目录却改不了名。中途哪一步出错，照反方向
-   挪回去，留着旧的，报哪一步、系统的原话，退出码 1。删不掉的旧版目录说一句，下一次 `miyu upgrade` 开头删。
+9. **对换**：照安装目录的第一层分（施工 RL-4补3，core1 11-05 定）。Miyu 自己的整样换：新压缩包第一层有的每一样，加上一张固定的名单
+   （`miyu`、`miyu-tui`、`miyu-web`、`miyu-sandbox`、`miyu-extract`，Windows 带 `.exe`；`resources`、`LICENSE`、`README.txt`、
+   `THIRD-PARTY-LICENSES.txt`：以后新版拿掉某个程序，旧的那份也清得掉）；`install.toml`、暂存、`.miyu-old-…` 不动；第一层别的东西
+   原样留着，最后说一句「安装目录里还有 N 样不是 Miyu 的，原样留着」、列最多 5 样。`resources/` 整个换，放在里面的照样没了（帮助页
+   写着安装目录别放自己的东西）。要换的每一样挪进 `.miyu-old-<旧版本>/`，新版的每一样挪进来，删掉 `.miyu-old-…`。逐样挪、不整个
+   目录改名：Windows 上跑着的 `miyu.exe` 改得了名、删不掉，目录却改不了名。中途哪一步出错，照反方向挪回去，留着旧的，报哪一步、
+   系统的原话，退出码 1。删不掉的旧版目录说一句，下一次 `miyu upgrade` 开头删。
 10. **说**：「已升级 Miyu <旧> → <新>」，提示已经在跑的核心还是旧版、`miyu core stop` 以后下次打开就是新版。头请求核心空闲时重启
     （设计 04 第八节 `kernel.restart_when_idle`）还没有，有了以后照它走。
 

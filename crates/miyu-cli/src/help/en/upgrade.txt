@@ -5,9 +5,10 @@ the new version, verify its signature and checksum, and replace it. When it
 came from AUR or Homebrew, print the package manager command to use. When it
 was unpacked by hand, print where to download it. Your data is not touched.
 
-The whole folder the program lives in is replaced. A core that is already
-running stays on the old version until 'miyu core stop'; the next start uses
-the new one.
+Miyu's own files in the folder the program lives in are replaced and anything
+else is left alone, but resources/ is replaced as a whole each time, so keep
+your own files out of the install folder. A core that is already running stays
+on the old version until 'miyu core stop'; the next start uses the new one.
 
 Options:
       --prerelease  Include pre-releases

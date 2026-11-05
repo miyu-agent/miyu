@@ -36,6 +36,7 @@ fn every_outcome_reads_in_both_languages() {
             from: "0.9.0".to_string(),
             to: "1.0.0".to_string(),
             left: Some(PathBuf::from("/x/.miyu-old-0.9.0")),
+            kept: vec!["notes.txt".to_string()],
         },
     ];
     for language in [Language::Chinese, Language::English] {
@@ -73,7 +74,8 @@ fn every_outcome_reads_in_both_languages() {
                 .upgrade(&Said::Upgraded {
                     from: "0.9.0".into(),
                     to: "1.0.0".into(),
-                    left: None
+                    left: None,
+                    kept: Vec::new(),
                 })
                 .iter()
                 .any(|l| l.contains("miyu core stop"))
@@ -91,4 +93,45 @@ fn every_outcome_reads_in_both_languages() {
             assert!(!language.upgrade_step(&step).is_empty());
         }
     }
+}
+
+#[test]
+fn what_was_left_in_the_install_folder_is_said_with_at_most_five_names() {
+    use crate::language::Language;
+    let kept: Vec<String> = ["a", "b", "c", "d", "e", "f", "g"]
+        .iter()
+        .map(|n| n.to_string())
+        .collect();
+    let said = |kept: Vec<String>, language: Language| {
+        language.upgrade(&Said::Upgraded {
+            from: "0.9.0".into(),
+            to: "1.0.0".into(),
+            left: None,
+            kept,
+        })
+    };
+    let zh = said(kept.clone(), Language::Chinese);
+    let line = zh
+        .iter()
+        .find(|l| l.contains("不是 Miyu 的"))
+        .expect("说了");
+    assert!(
+        line.contains("还有 7 样")
+            && line.contains("a、b、c、d、e")
+            && !line.contains("f")
+            && line.ends_with("……"),
+        "{line}"
+    );
+    let en = said(vec!["notes.txt".into()], Language::English);
+    let line = en.iter().find(|l| l.contains("not Miyu's")).expect("said");
+    assert!(
+        line.contains("1 item(s)") && line.ends_with("notes.txt"),
+        "{line}"
+    );
+    assert!(
+        !said(Vec::new(), Language::Chinese)
+            .iter()
+            .any(|l| l.contains("不是 Miyu 的")),
+        "没有的不说"
+    );
 }

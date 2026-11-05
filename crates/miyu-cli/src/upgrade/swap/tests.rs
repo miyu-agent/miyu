@@ -107,8 +107,14 @@ fn swapping_puts_the_new_files_in_keeps_the_marker_and_removes_the_old() {
     let dir = installed(&scratch);
     let top = new_version(&scratch, "install/.miyu-upgrade/unpacked/miyu-1.0.0-t");
     let old = dir.join(".miyu-old-0.9.0");
-    let swapped = swap(&dir, &top, &old, &mut |from, to| fs::rename(from, to)).unwrap();
-    assert_eq!(swapped, Swapped { left: None });
+    let swapped = swap(&dir, &top, &old, "", &mut |from, to| fs::rename(from, to)).unwrap();
+    assert_eq!(
+        swapped,
+        Swapped {
+            left: None,
+            kept: Vec::new()
+        }
+    );
     assert_eq!(fs::read_to_string(dir.join("miyu")).unwrap(), "new");
     assert_eq!(
         fs::read_to_string(dir.join("resources/core/a.md")).unwrap(),
@@ -141,7 +147,7 @@ fn a_failure_halfway_puts_everything_back() {
                 false => fs::rename(from, to),
             }
         };
-        let (step, why) = swap(&dir, &top, &old, &mut rename).unwrap_err();
+        let (step, why) = swap(&dir, &top, &old, "", &mut rename).unwrap_err();
         assert!(step.starts_with("move-"), "{step}");
         assert_eq!(why, "disk full");
         assert_eq!(
@@ -179,4 +185,58 @@ fn tidying_removes_leftovers_only() {
             && dir.join("resources").is_dir()
     );
     tidy(&scratch.0.join("nowhere"));
+}
+
+/// 换哪几样照第一层分（施工 RL-4补3）：新压缩包有的、固定名单上的（新版拿掉了的程序也清掉）整样换；别的原样留着、交回名字；
+/// `resources/` 整个换，放在里面的没了。
+#[test]
+fn only_miyus_own_first_level_entries_are_swapped() {
+    let scratch = Scratch::new("owned");
+    let dir = installed(&scratch);
+    scratch.put("install/notes.txt", "人自己放的");
+    scratch.put("install/my-tools/run.sh", "人自己放的目录");
+    scratch.put("install/miyu-extract", "旧的");
+    scratch.put("install/README.txt", "旧的说明");
+    scratch.put("install/resources/old.txt", "旧资源");
+    let top = new_version(&scratch, "install/.miyu-upgrade/unpacked/miyu-1.0.0-t");
+    // 新版拿掉了 miyu-extract、没带 README.txt：名单上有，旧的照样清掉。
+    fs::remove_file(top.join("miyu-extract")).unwrap();
+    let old = dir.join(".miyu-old-0.9.0");
+    let swapped = swap(&dir, &top, &old, "", &mut |from, to| fs::rename(from, to)).unwrap();
+    assert_eq!(
+        swapped.kept,
+        vec!["my-tools".to_string(), "notes.txt".to_string()]
+    );
+    assert_eq!(
+        fs::read_to_string(dir.join("notes.txt")).unwrap(),
+        "人自己放的"
+    );
+    assert!(dir.join("my-tools/run.sh").is_file());
+    assert!(!dir.join("miyu-extract").exists(), "名单上的旧程序清掉");
+    assert!(!dir.join("README.txt").exists(), "名单上的旧说明清掉");
+    assert!(!dir.join("resources/old.txt").exists(), "resources/ 整个换");
+    assert_eq!(fs::read_to_string(dir.join("miyu")).unwrap(), "new");
+    assert!(dir.join("install.toml").is_file());
+    assert!(!old.exists());
+}
+
+#[test]
+fn on_windows_the_owned_programs_carry_exe() {
+    let scratch = Scratch::new("owned-exe");
+    let dir = installed(&scratch);
+    scratch.put("install/miyu-extract.exe", "旧的");
+    scratch.put("install/miyu-extract", "不带后缀的不是程序");
+    let top = new_version(&scratch, "install/.miyu-upgrade/unpacked/miyu-1.0.0-t");
+    fs::remove_file(top.join("miyu-extract")).unwrap();
+    let old = dir.join(".miyu-old-0.9.0");
+    let swapped = swap(&dir, &top, &old, ".exe", &mut |from, to| {
+        fs::rename(from, to)
+    })
+    .unwrap();
+    assert!(!dir.join("miyu-extract.exe").exists());
+    assert_eq!(
+        swapped.kept,
+        vec!["miyu-extract".to_string()],
+        "Windows 上名单照 .exe 认"
+    );
 }
