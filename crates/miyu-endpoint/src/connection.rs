@@ -169,10 +169,12 @@ async fn read_all<R: AsyncRead + Unpin>(
                 let locale = shaken
                     .as_ref()
                     .map_or(Locale::En, |shaken| shaken.now(&core).locale);
-                // 超长的读不完，行界也找不回来了：回一句读不懂，断开。
-                tracing::warn!(target: "miyu::endpoint", "line too long, closed");
-                send(&out, wire::error(Value::Null, Refusal::PARSE, locale)).await;
-                break;
+                // 超长的这一行已经跳到换行（施工 FX-1）：只拒这一条、回一句读不懂，连接照旧，扩展不至于当成断线退出。
+                tracing::warn!(target: "miyu::endpoint", "line too long, refused");
+                if !send(&out, wire::error(Value::Null, Refusal::PARSE, locale)).await {
+                    break;
+                }
+                continue;
             }
             Ok(Read::Closed) | Err(_) => break,
         };

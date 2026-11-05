@@ -11,6 +11,8 @@
 //!   核心照主人加命令编号认重发的）；
 //! - `hello`：发握手（不带凭据），读一行回应记下；
 //! - `call:<方法>`：发一条不带参数的请求，读一行回应记下；
+//! - `long:<字节数>`：发一条 `extension.status`，参数里塞一段这么多字节的 `x`，整条写成一行，读一行回应记下（施工 FX-1：超长的一行
+//!   核心只拒这一条，连接照旧）；
 //! - `ask:<方法>:<JSON 参数>`：发一条带参数的请求，读一行回应记下；参数里的 `{session}` 换成最近一条带 `"session"` 的回应里
 //!   的会话编号（施工 O-4 下：造了场所会话接着对它说话），`{upload}` 换成最近一条带 `"upload"` 的回应里的上传编号（施工 Y-2中下：
 //!   分块上传接着写）。等回应时先来的 `widget.watch` 照 `serve` 答、接着等，`widget.set`
@@ -92,6 +94,12 @@ fn main() {
         } else if let Some(method) = step.strip_prefix("call:") {
             send(&format!(
                 r#"{{"jsonrpc":"2.0","id":"{ids}{n}","method":"{method}","params":{{}}}}"#
+            ));
+            keep(&mut record, &read(&mut input));
+        } else if let Some(bytes) = step.strip_prefix("long:") {
+            let pad = "x".repeat(bytes.parse().expect("字节数是数"));
+            send(&format!(
+                r#"{{"jsonrpc":"2.0","id":"{ids}{n}","method":"extension.status","params":{{"pad":"{pad}"}}}}"#
             ));
             keep(&mut record, &read(&mut input));
         } else if let Some(rest) = step.strip_prefix("ask:") {

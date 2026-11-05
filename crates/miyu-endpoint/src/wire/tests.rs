@@ -132,4 +132,29 @@ async fn lines_lose_their_ends_and_long_ones_are_refused() {
         read_line(&mut reader).await.expect("读得了"),
         Read::TooLong
     ));
+    assert!(matches!(
+        read_line(&mut reader).await.expect("读得了"),
+        Read::Closed
+    ));
+}
+
+/// 太长的一行跳到换行，下一行照常读（施工 FX-1）：缓冲区比一行小、换行落在缓冲区中间、紧跟着 `\r\n` 的都一样。
+#[tokio::test]
+async fn after_a_long_line_the_next_one_is_read() {
+    for tail in [&b"\nnext\n"[..], &b"\r\nnext\r\n"[..]] {
+        let mut data = vec![b'x'; LINE_LIMIT * 3 + 7];
+        data.extend_from_slice(tail);
+        data.extend_from_slice(b"after");
+        let mut reader = tokio::io::BufReader::with_capacity(4096, &data[..]);
+        assert!(matches!(
+            read_line(&mut reader).await.expect("读得了"),
+            Read::TooLong
+        ));
+        for want in ["next", "after"] {
+            match read_line(&mut reader).await.expect("读得了") {
+                Read::Line(line) => assert_eq!(line, want.as_bytes()),
+                other => panic!("应该是一行：{other:?}"),
+            }
+        }
+    }
 }

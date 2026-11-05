@@ -342,6 +342,11 @@ impl Client {
         self.writer.take().expect("写的一头还在")
     }
 
+    /// 拿走的写的一头还回来（施工 FX-1：太长的一行写完以后接着说话）。
+    pub fn attach_writer(&mut self, writer: Writer) {
+        self.writer = Some(writer);
+    }
+
     /// 写一行。
     pub async fn line(&mut self, line: &str) {
         self.writer

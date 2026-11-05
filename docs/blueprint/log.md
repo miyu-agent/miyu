@@ -188,7 +188,7 @@
 | `endpoint` | DEBUG | `connected` | | 接到一个连接 |
 | `endpoint` | WARN | `accept failed` | `error` | 接连接出错 |
 | `endpoint` | ERROR | `connection task failed` | `panic`（是不是 panic；原话不写） | 服务一个连接的任务没正常结束 |
-| `endpoint` | WARN | `line too long, closed` | | 一行太长，断开 |
+| `endpoint` | WARN | `line too long, refused` | | 一行太长，只拒这一行、连接照旧（施工 FX-1） |
 | `endpoint` | DEBUG | `request` | `method` | 收到一个请求 |
 | `endpoint` | WARN | `protocol mismatch` | `head`、`low`、`high` | 握手时协议版本对不上 |
 | `endpoint` | WARN | `bad token` | `head` | 握手时令牌不对 |

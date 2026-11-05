@@ -62,7 +62,7 @@ pub(crate) enum Read {
     Line(Vec<u8>),
     /// 对方关了。
     Closed,
-    /// 太长。
+    /// 太长：这一行剩下的已经跳过了（施工 FX-1），下一次读的是下一行。
     TooLong,
 }
 
@@ -85,9 +85,31 @@ pub(crate) async fn read_line<R: AsyncBufRead + Unpin>(reader: &mut R) -> std::i
             line.pop();
         }
     } else if line.len() > LINE_LIMIT {
+        drop(line);
+        skip_line(reader).await?;
         return Ok(Read::TooLong);
     }
     Ok(Read::Line(line))
+}
+
+/// 太长的那一行剩下的不读进内存，一段段丢掉，直到换行（连换行一起丢）或者对方关了（施工 FX-1）：行界照样找得回来，只拒这一条。
+async fn skip_line<R: AsyncBufRead + Unpin>(reader: &mut R) -> std::io::Result<()> {
+    loop {
+        let buffer = reader.fill_buf().await?;
+        if buffer.is_empty() {
+            return Ok(());
+        }
+        match buffer.iter().position(|&byte| byte == b'\n') {
+            Some(end) => {
+                reader.consume(end + 1);
+                return Ok(());
+            }
+            None => {
+                let all = buffer.len();
+                reader.consume(all);
+            }
+        }
+    }
 }
 
 /// 把一行认成请求。

@@ -252,23 +252,27 @@ async fn json_rpc_errors_follow_the_standard() {
 }
 
 #[tokio::test]
-async fn a_line_too_long_is_refused_and_closes() {
+async fn a_line_too_long_is_refused_and_the_next_still_works() {
     let home = Home::new();
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
     // 超长的一行放到另一个任务里写：核心读到上限就不读了，写的一头不能挡着读的一头。
     let mut writer = client.detach_writer();
     let written = tokio::spawn(async move {
-        #[expect(
-            clippy::let_underscore_must_use,
-            reason = "核心读到上限就断开了，剩下的写不进去是对的"
-        )]
-        let _ = writer.write_all(&vec![b'x'; LINE_LIMIT + 10]).await;
+        let mut line = vec![b'x'; LINE_LIMIT + 10];
+        line.push(b'\n');
+        writer
+            .write_all(&line)
+            .await
+            .expect("核心把剩下的读完丢掉，写得进去");
+        writer
     });
     let reply = client.next().await.expect("有回应");
     assert_eq!(reply["error"]["code"], json!(-32700), "{reply}");
-    assert!(client.next().await.is_none(), "太长的一行以后断开");
-    written.await.expect("写的任务没 panic");
+    // 只拒这一条（施工 FX-1）：连接还在，下一条照常回。
+    client.attach_writer(written.await.expect("写的任务没 panic"));
+    let reply = client.call("c3", "session.fly", json!({})).await;
+    assert_eq!(reply["id"], json!("c3"), "太长的一行以后连接照旧：{reply}");
 }
 
 #[tokio::test]

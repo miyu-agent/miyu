@@ -61,7 +61,7 @@
 #### 一行一条
 
 - 每条消息是一行 JSON，以 `\n` 结尾。读的时候 `\r\n` 也认；连接关之前最后没带换行的那一行也认。
-- 一行最长 1 MiB（1,048,576 字节，不算最后的 `\n`；`\r\n` 结尾的，`\r` 算在里面）。
+- 一行最长 1 MiB（1,048,576 字节，不算最后的 `\n`；`\r\n` 结尾的，`\r` 算在里面）。太长的那一行回 `parse_error`（`id` 是 `null`），剩下的读到换行丢掉、不攒在内存里，连接照旧，下一行照常读（施工 FX-1：以前是断开，扩展读到头当成断线退出、被记成失败）。
 - 核心写出的每一行是紧凑的 JSON，加 `\n`。回应里各层对象的格照名字的字母先后排（例如 `id`、`jsonrpc`、`result`）；推送的外层照 `jsonrpc`、`method`、`params` 的先后，`params` 里先写 `session`（下面「推送」）。
 - 会话命令说「落了盘才回」的：它产生的事件都已经推过来了，也都同步到了磁盘，才回（施工 V-19，`session/actor.md` 第 5 条第 10 款）。会话不等回应就往下走，后面的事件（例如下一次请求的增量、工具的结果）可能排在回应前面推过来。
 
@@ -1389,7 +1389,7 @@ Markdown 的回应 `{"path" | "text", "bytes", "tokens", "upto", "redacted", "ch
 
 1. 请求一条条办：上一条的回应放进了写队列（订阅着的会话的，交给了它的转发任务，下面「先见结果，后见回应」），才读下一行。要等的（`session.send` 等落盘，撤销等改完文件，载入会话）等着的时候，这个连接上的下一条也等着。例外是在后台答的：登记成在后台答的查询（现在只有 `link.preview`，施工 W-7），和自带的 `model.call`（要等模型说完，施工 8-20 补）、`memory.dream`、`command.run` 的 `/dream`（几秒到十几秒，施工 R-7 补）、`job.stop`（停子代理要等它连它派的停下、回报落了盘，几秒；一下子停上百个不能排成一队，施工 7-4 修，2026-10-26；`command.run` 的照命令表问，别的命令照旧按顺序答），由 `methods.rs` 的 `answered_later` 认：交给这个连接的一个后台任务，接着读下一行；办完了回应照 `id` 对上，照办完那一刻的订阅走「先见结果，后见回应」第 1 条（`/dream` 的回应排在它那条 `command.ran` 后面，和按顺序答的命令一样；`subscriptions/later.rs`），别的直接放进写队列；连接断了，这些任务一起停。
 2. 读和写分开：写的一头从写队列里一行行写出去，队列最多攒 256 行。这时已经排在队列里的几行一起写、只冲一次（施工 V-22，`connection/outbox.rs`）：不等后面的，一次最多攒 256 KiB；写出去的字节、先后和一行行写的一模一样（回应、推送都从这一个队列出来）。流式时一个字一条推送，以前每条两次写、一次冲。写不出去就停；读的一头往写队列放回应、放不进去时发现，断开（交给转发任务的那一条放得进，要到再下一条）。
-3. 断开：一行太长的，回 `parse_error`（`id` 是 `null`）；`protocol_mismatch`、`bad_token` 回完；对方关了、读出错。
+3. 断开：`protocol_mismatch`、`bad_token` 回完；对方关了、读出错。一行太长的只回 `parse_error`（`id` 是 `null`），不断开（施工 FX-1）。
 4. 断开以后，这个连接的订阅都停了。会话照常跑：头走了，在跑的那一轮照样跑完。
 
 **办之前过的几道**（施工 Y-2 上收到一处，`crates/miyu-endpoint/src/connection/checks.rs`：每一条路都过同一道检查）
@@ -1461,7 +1461,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 
 | 原因码 | `code` | 什么时候 |
 |---|---|---|
-| `parse_error` | -32700 | 不是 JSON；一行太长（之后断开） |
+| `parse_error` | -32700 | 不是 JSON；一行太长（只拒这一行，连接照旧，施工 FX-1） |
 | `invalid_request` | -32600 | 是 JSON，不是请求（「请求」的表） |
 | `unknown_method` | -32601 | 握手以后，没有这个方法 |
 | `bad_params` | -32602 | 参数读不成、类型不对；会话编号、人格编号不合写法；`turn` 写了 0；`stream` 不是 `events`、`config`，`config` 带了 `session`、`after`（施工 8-4）；切权限级别两格都不写、`level` 不是 `workspace`、`full`；`blob.put` 第 1 条那几种；`session.send`、`session.redo` 的附件缺了格、格不合写法；`session.send` 的 `from` 不是字符串、去掉控制字符以后是空的（施工 7-10）；改标题两格都不写，标题去掉空白以后是空的、超过 200 个字；`job.stop`、`job.output` 的任务编号不合写法（施工 7-4），`job.output` 的 `tail` 不是 1 到 2000 的整数（施工 7-4 补），`after` 不是非负整数、和 `tail` 都写了、`wait` 没带 `after`（施工 V-6 上）；`model.list` 的 `models` 不是字符串数组、哪一个没有 `/` 或者 `/` 一边是空的（施工 V-6 上）；`human.get` 的 `language` 不合写法（施工 W-1）；`fs.realpath` 的 `path` 是相对的、没给 `cwd`（施工 W-3）；`mermaid.render` 的源码是空的（去掉前后空白以后，施工 W-4）；`blob.write` 的 `data` 不是 base64、解出来超过 512 KiB、加上它超过 `size`（施工 W-5）；`model.call` 的 `purpose` 不合写法、`messages` 不是那个样子、`max_tokens` 是 0 或者太大、`model` 是空字、图的 blob 不是图（施工 8-20）；`fs.read` 的 `path` 是相对的；`blob.get`、`fs.read` 的 `length` 超过 512 KiB（施工 W-6）；`link.preview` 的 `url` 没写、不是字符串（施工 W-7）；`usage.query` 的分组不认识、时刻和时区写法不对、会话编号不合写法、类型不对（施工 8-15）；`session.answer` 的 `decision`、`answers` 两样都写或都不写、`decision` 不是那三种、回答提问带了 `reason`、`call` 不合写法（施工 D-1）；`command.run` 的 `text` 不以 `/` 开头、本机的会话带了 `as`（施工 O-6）；`view.page` 第 7 条那几种（施工 9-6 下）；`session.prompts` 第 7 条那几种（施工 SP-2） |
@@ -1582,7 +1582,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `WARN` | `protocol mismatch head=… low=… high=…`、`bad token head=…`、`bad code head=…`、`bad login head=…`、`bad password head=…`、`bad ticket head=…`（施工 LT-1）、`login throttled head=…` | 握手被拒、断开 |
 | `INFO` | `login revoked, closed` | 这个连接靠的登录令牌作废了，断开（施工 W-8） |
 | `DEBUG` | `request method=…` | 每一条请求 |
-| `WARN` | `line too long, closed` | 一行太长 |
+| `WARN` | `line too long, refused` | 一行太长（施工 FX-1 起不断开） |
 | `INFO` | `disconnected` | 握过手的连接断了 |
 | `WARN` | `accept failed error=…` | 接不了连接 |
 | `WARN` | `memory failed error=…`；崩了的是 `panic=…` | `memory.*`、`/remember` 写不进、读不了记忆日志（施工 R-3 补）；订阅记忆日志读不了（施工 R-12 上） |
@@ -1769,8 +1769,8 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu-endpoint/src/connection/outbox/tests.rs`（施工 V-22） | 写的一头：回应、推送交错入队，写出去的照入队的先后、字节同一行行写的一样；排着的一次冲完；没排着的来一行写一行不等；攒到上限分几次写、字节不变；写不出去就停 |
-| `crates/miyu-endpoint/src/wire/tests.rs` | 认请求的每一条、回应是一行、去掉行尾、太长的 |
-| `crates/miyu-endpoint/tests/endpoint.rs` | 握手先行、令牌（长短也比）、版本对不上，被拒的断开；握手的回应照核心探到的报沙盒，四种（施工 5-4 下）；造会话、说话；同一个造会话只造一个；没有的会话；载入上一次运行的会话；两个连接只载入一次；照头的语言拒绝；JSON-RPC 的错误码、通知不回应；太长的断开；工作目录跟着头；不能输入的头造的会话没人确认；空消息；停了的会话下次再载入；打断时排着的接着发 |
+| `crates/miyu-endpoint/src/wire/tests.rs` | 认请求的每一条、回应是一行、去掉行尾、太长的；太长的跳到换行、下一行照读（施工 FX-1） |
+| `crates/miyu-endpoint/tests/endpoint.rs` | 握手先行、令牌（长短也比）、版本对不上，被拒的断开；握手的回应照核心探到的报沙盒，四种（施工 5-4 下）；造会话、说话；同一个造会话只造一个；没有的会话；载入上一次运行的会话；两个连接只载入一次；照头的语言拒绝；JSON-RPC 的错误码、通知不回应；太长的只拒这一行、连接照旧（施工 FX-1）；工作目录跟着头；不能输入的头造的会话没人确认；空消息；停了的会话下次再载入；打断时排着的接着发 |
 | `crates/miyu-endpoint/tests/limits.rs` | 订阅的回应带限额（施工 6-3 补）：窗口、压缩线照核心的模型算；没报窗口的是 `{}`，窗口太小的只有 `window`；已经订阅着的再订阅也带；核心重启以后载入的照样带；`unsubscribe` 还是 `{}`；回应带 `model`，照蓝图的例子一字不差（施工 8-10） |
 | `crates/miyu-endpoint/tests/subscribe.rs` | 先见结果后见回应；两个会话不串；取消订阅以后不推；掉队推 `resync`、回应一条不丢、重新订阅照常推；积压时回应排在推送后面；取消订阅时已经交给转发任务的回应照样到；会话停了推 `resync`；订阅要握手、要有这个会话、只认 `events` |
 | `crates/miyu-endpoint/tests/replay.rs`（施工 3-8 六补） | 补发推出去的行逐字节和原来的写法（推的时候一条条 `event.to_line()` 写成通知）一样，`after` 落在头、中间、最后一条前面（施工 V-37 下）；补发：`after` 是 0 补整份日志、一字不差、都在回应前面、回应带 `upto`、没有瞬时的，补完接着推下一条；中间的序号补之后的；最后一条、比最后一条大的什么都不补、照常推、一条不重；不写、写 `null` 的照旧、回应没有 `upto`；写错的八种 `bad_params`、先查参数不找会话、一个都没订阅上；核心重启以后要载入的照样补；订阅着、推送堵着时带 `after` 再订阅，旧的手里的回应照样到、补的中间不夹旧的、之后只有新的在推；日志坏了的 `session_broken`、没订阅上，没有要补的不读日志 |

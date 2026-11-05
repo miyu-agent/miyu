@@ -75,6 +75,7 @@ mod endpoint;
 mod env_package;
 mod extension_approval;
 mod extension_config;
+mod extension_long_line;
 mod extension_rights;
 mod extension_stream;
 mod extensions;
