@@ -67,8 +67,8 @@ On Linux and macOS, `chmod +x dice.py`.
 | `Need load` | Loaded on demand unless you write it: the AI normally sees only the name and one line and loads the full parameters when needed, which saves money. `no`: always send the full parameters; write it for ones used often |
 | `Clicall` | `yes`: the AI can also call it with `miyu call` from a script it runs, and the result goes to the script. Unset means it cannot, and it can only be called directly. Scripts that read or look things up, and that the AI can't easily do from a command on its own, should set it: the AI can call them in bulk from a script and skip many round trips. Don't set it on scripts that change or send things or spend quota |
 | `Venues` | Which sessions get it: some of `local` (this machine: the terminal, the web page and so on), `private` (private chats on a messaging platform), `group` (groups), comma separated, e.g. `Venues: local, private`. Unset means every kind of session; if it is wrong the whole script is not registered and `miyu check` reports it |
-| `Role` | What the tool is for, as an extension's `role`: `read_file` means it reads a text file. A wrong value rejects the script |
-| `Scope` | Which sessions get it, as an extension's `scope` (`local`, `local_main`, `local_main_attended`, `spawn`), narrowing further within `Venues`; unset means `any`, and a wrong value rejects the script |
+| `Role` | What the tool is for, as an extension's `role`: `read_file` means it reads a text file. A wrong value rejects the script, and so does a key that looks like it but is misspelled (`role`, `Rloe`: wrong case or one letter off) |
+| `Scope` | Which sessions get it, as an extension's `scope` (`local`, `local_main`, `local_main_attended`, `spawn`), narrowing further within `Venues`; unset means `any`, and a wrong value rejects the script, as does a misspelled key such as `scope` or `Scpoe` |
 
 The header is the run of comment lines at the very top of the file; it ends at the first line that is not a comment. Leave a blank line after the header before any other comment, or a sentence like "Timeout: …" in your notes is read as part of the header.
 

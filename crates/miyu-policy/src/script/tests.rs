@@ -206,7 +206,54 @@ fn role_and_scope_are_read_from_the_head() {
     assert_eq!(head.scope, Scope::LocalMain);
     let bad = read("a.py", "# Description: Hi.\n# Role: writer\n").unwrap_err();
     assert_eq!(bad, ScriptProblem::BadRole("writer".to_string()));
-    assert_eq!(bad.to_string(), "Role \"writer\" is not a known role");
+    assert_eq!(
+        bad.to_string(),
+        "Role \"writer\" is not understood: write the key as Role and the value as read_file"
+    );
     let bad = read("a.py", "# Description: Hi.\n# Scope: everywhere\n").unwrap_err();
     assert_eq!(bad, ScriptProblem::BadScope("everywhere".to_string()));
+}
+
+/// 键名像 `Role`、`Scope` 却写错的（施工 XG-2补）：不分大小写、差一个字（相邻对调也算）的报，说出写错的键名；离得远的照旧不认识、
+/// 跳过。
+#[test]
+fn a_near_miss_key_is_reported_and_a_far_one_skipped() {
+    for (line, problem) in [
+        ("scope: local", ScriptProblem::BadScope("scope".to_string())),
+        ("SCOPE: local", ScriptProblem::BadScope("SCOPE".to_string())),
+        ("Scpoe: local", ScriptProblem::BadScope("Scpoe".to_string())),
+        ("Scop: local", ScriptProblem::BadScope("Scop".to_string())),
+        (
+            "Scopes: local",
+            ScriptProblem::BadScope("Scopes".to_string()),
+        ),
+        (
+            "role: read_file",
+            ScriptProblem::BadRole("role".to_string()),
+        ),
+        (
+            "Rloe: read_file",
+            ScriptProblem::BadRole("Rloe".to_string()),
+        ),
+        (
+            "Roles: read_file",
+            ScriptProblem::BadRole("Roles".to_string()),
+        ),
+        ("Rule: x", ScriptProblem::BadRole("Rule".to_string())),
+    ] {
+        let found = read("a.py", &format!("# Description: Hi.\n# {line}\n"));
+        assert_eq!(found, Err(problem), "{line}");
+    }
+    for line in [
+        "Author: someone",
+        "Note: x",
+        "Scopeless: x",
+        "Rooles: x",
+        "Sco: x",
+    ] {
+        let head = read("a.py", &format!("# Description: Hi.\n# {line}\n")).expect(line);
+        assert_eq!(head.scope, Scope::Any, "{line}");
+    }
+    assert!(near("Scope", "Scope") && near("cSope", "Scope"));
+    assert!(!near("Scoep", "Role") && !near("Sopce", "Scope"));
 }

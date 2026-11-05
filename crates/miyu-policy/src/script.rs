@@ -83,9 +83,9 @@ pub enum ScriptProblem {
     BadClicall(String),
     /// `Venues` 不是认的几种（施工 X-43）：空的、不认识的、重了的。写的原样。
     BadVenues(String),
-    /// `Role` 不是认的职能（施工 XG-2 下）：写的原样。
+    /// `Role` 不是认的职能（施工 XG-2 下）：写的原样；或者键名像 `Role` 却写错了（施工 XG-2补，见 `read` 里的 `near`）：写错的键名。
     BadRole(String),
-    /// `Scope` 不是认的范围（施工 XG-2 下）：写的原样。
+    /// `Scope` 不是认的范围（施工 XG-2 下）：写的原样；或者键名像 `Scope` 却写错了（施工 XG-2补）：写错的键名。
     BadScope(String),
 }
 
@@ -104,10 +104,13 @@ impl fmt::Display for ScriptProblem {
                 f,
                 "Venues {text:?} must list some of local, private, group, each once"
             ),
-            ScriptProblem::BadRole(text) => write!(f, "Role {text:?} is not a known role"),
+            ScriptProblem::BadRole(text) => write!(
+                f,
+                "Role {text:?} is not understood: write the key as Role and the value as read_file"
+            ),
             ScriptProblem::BadScope(text) => write!(
                 f,
-                "Scope {text:?} must be one of any, local, local_main, local_main_attended, spawn"
+                "Scope {text:?} is not understood: write the key as Scope and the value as one of any, local, local_main, local_main_attended, spawn"
             ),
         }
     }
@@ -164,6 +167,10 @@ pub fn read(file_name: &str, text: &str) -> Result<ScriptHead, ScriptProblem> {
                 head.scope = serde_json::from_value(Value::String(value.to_string()))
                     .map_err(|_| ScriptProblem::BadScope(value.to_string()))?;
             }
+            // 键名写错的（施工 XG-2补，core1 2026-11-06）：原来照不认识的静默跳过，范围变回 `any`，往放宽那边失败。认得出的报，
+            // 整份不收。
+            key if near(key, "Role") => return Err(ScriptProblem::BadRole(key.to_string())),
+            key if near(key, "Scope") => return Err(ScriptProblem::BadScope(key.to_string())),
             _ => {}
         }
     }
@@ -171,6 +178,38 @@ pub fn read(file_name: &str, text: &str) -> Result<ScriptHead, ScriptProblem> {
         return Err(ScriptProblem::NoDescription);
     }
     Ok(head)
+}
+
+/// 键名 `key` 是不是 `target` 写错了（施工 XG-2补）：不分大小写，Damerau 编辑距离（增、删、改一个字，或者相邻两个字对调，各算
+/// 一次）不超过 1。写对了的（大小写也对）前面已经认了，到不了这里。已知的误伤：真想写 `Rule: …` 的会被当成 `Role` 写错，报得出来、
+/// 作者看得见，比静默放宽好。
+fn near(key: &str, target: &str) -> bool {
+    let key: Vec<char> = key.to_lowercase().chars().collect();
+    let target: Vec<char> = target.to_lowercase().chars().collect();
+    let (short, long) = match key.len() <= target.len() {
+        true => (&key, &target),
+        false => (&target, &key),
+    };
+    match long.len() - short.len() {
+        // 一样长：一样的、改了一个字的、相邻两个字对调的。
+        0 => {
+            let differ: Vec<usize> = (0..long.len()).filter(|&i| long[i] != short[i]).collect();
+            match differ.as_slice() {
+                [] | [_] => true,
+                [a, b] => *b == a + 1 && long[*a] == short[*b] && long[*b] == short[*a],
+                _ => false,
+            }
+        }
+        // 差一个字：长的去掉一个字就是短的。
+        1 => (0..long.len()).any(|skip| {
+            long.iter()
+                .enumerate()
+                .filter(|(i, _)| *i != skip)
+                .map(|(_, c)| c)
+                .eq(short.iter())
+        }),
+        _ => false,
+    }
 }
 
 /// `Need load` 的值：`yes`、`true` 是要，`no`、`false` 是不要，大小写不论（施工 L-1）。

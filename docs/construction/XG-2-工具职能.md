@@ -83,6 +83,29 @@
   - 注释头不认 `Role`、不认 `Scope`；
   - 拼脚本的规格时丢了职能、丢了范围。
 
+### XG-2补：脚本注释头的键名写错不再静默跳过
+
+e0 复核 XG-2 时发现：脚本注释头里 `Role`、`Scope` 的键名写错（`scope: local` 小写、`Scpoe: local` 拼错），会被当成不认识的行静默跳过，
+范围变回 `any`。这一格本来是用来收窄的，静默跳过等于往放宽那边失败（core1 2026-11-06）。
+
+- **怎么认**（照 e0 的红测试 `audit_tool_declare.rs` 的 `a_misspelled_role_or_scope_key_is_not_silently_skipped`）：
+  - 键和 `Role`、`Scope` 不分大小写比，Damerau 编辑距离不超过 1 的算写错（`miyu-policy/src/script.rs` 的 `near`）：
+    增、删、改一个字，或者相邻两字对调，各算一次；
+  - 报 `BadRole`、`BadScope`，括号里放写错的键名，这件脚本不登记，`miyu check` 照现有的 `script_skipped` 报出来；
+  - 离得远的（`Author`、`Note`、`Scopeless`、`Sco`）照旧静默跳过；
+  - 已知的误伤：真想写 `Rule: …` 的会被当成 `Role` 写错。报得出来、作者看得见，比静默放宽好。
+- **给人看的那句**同时说清键和值：`Role "…" is not understood: write the key as Role and the value as read_file`，`Scope` 的同样，
+  值写错的、键名写错的一句话都说得通。
+- **文档**：
+  - 设计 64 第三节的写法改成大写 `Role:`、`Scope:`，写明键名写错的报；
+  - 第七节补一句已知的边界：工具面上一件都没写职能的新会话里，叫 `read`、没声明职能的第三方工具会被照名字认成读文件；
+  - 作者文档 `scripts-skills`（中英）补「键名写错的也不收」。
+- **验**：
+  - e0 的红测试去掉 `ignore`，绿了；
+  - 单元 `a_near_miss_key_is_reported_and_a_far_one_skipped`：九种写错的各报对、带键名，五种离得远的照常登记，`near` 的几个边界；
+  - XG-2 复核的几条（`audit_tool_declare`、`audit_tool_scope`、`audit_old_snapshot`）照旧过。
+  - 手写变异 5 个，都抓住：一律不认写错的、不认相邻对调、不认差一个字、分大小写、只认 `Scope` 不认 `Role`。
+
 ### 坑
 
 - **两棵工作树共用 target，同名 crate 的测试程序会互相盖**：同时开着 RL-5，在一棵里跑 `cargo test -p xtask` 跑到的是另一棵编的。跑之前

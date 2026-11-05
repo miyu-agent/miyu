@@ -124,7 +124,6 @@ async fn a_script_with_a_wrong_role_or_scope_is_skipped_and_checked() {
 /// 只比这两格，别的键（`Description` 这些）不在这一步的范围里。离得远的（`Author`、`Note`）照旧不认识、静默跳过，脚本照常登记。
 /// 已知的误伤：真想写一行 `Rule: …` 的（和 `Role` 差一个字）会被当成写错；报得出来，作者看得见，比静默放宽好。
 #[tokio::test]
-#[ignore = "红：等 XG-2补"]
 async fn a_misspelled_role_or_scope_key_is_not_silently_skipped() {
     let home = Home::new();
     let head = |name: &str, line: &str| {
