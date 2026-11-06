@@ -32,8 +32,13 @@ echo "brew: static checks passed"
 brew tap-new --no-git "${TAP}" >/dev/null
 # 新的 Homebrew 不从没信任过的 tap 载 formula：装的那一个照命令行信任，它依赖的 miyu-core 那几个不算（rc.6 真装红在这里）。
 # 整个本地 tap 信任上；旧的 Homebrew 没有这个命令，也不查。
+# 日志里记下这台机器的 Homebrew、python3 版本，和 trust 调没调（RL-5补3）：没调的就没验到「依赖的 formula 被拒」。
+echo "brew: $(brew --version | head -n 1); python3: $(python3 --version 2>&1)"
 if brew trust --help >/dev/null 2>&1; then
   brew trust "${TAP}" || fail "brew trust 没成"
+  echo "brew: trusted ${TAP}"
+else
+  echo "brew: no trust command, skipped"
 fi
 tap_dir="$(brew --repository "${TAP}")"
 cp "${OUT}"/homebrew/Formula/*.rb "${tap_dir}/Formula/"
@@ -60,9 +65,11 @@ items = {item["package"]: item for item in json.load(sys.stdin)}
 for id in ("miyu-tui", "miyu-webui"):
     item = items.get(id)
     assert item, f"{id} not listed"
-    assert item["layer"] == "distro", f"{id} layer {item[\"layer\"]}"
+    # f 串的花括号里不写引号：外面是 sh 的单引号，里面写 \" 是 Python 看到的反斜杠，语法错（同 test-aur.sh，RL-5补3）。
+    layer, code = item.get("layer"), item.get("code")
+    assert layer == "distro", f"{id} layer {layer}"
     assert item.get("status") != "program_missing", f"{id} program missing"
-    assert "code" not in item, f"{id} code {item.get(\"code\")}"
+    assert "code" not in item, f"{id} code {code}"
 print("distro layer ok")
 ' || fail "系统加装那一层不对"
 rm -rf "${home}"

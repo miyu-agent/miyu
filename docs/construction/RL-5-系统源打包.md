@@ -224,7 +224,9 @@ AUR、Homebrew 上的 Miyu 照设计 60 分包：`miyu-core`、`miyu-tui`、`miy
     语法错。install 那一段以前没真跑过，一直没露出来。改成先取到变量里再放进 f 串，断言一样。真装、版本、`install.toml`、`upgrade`
     那几步在它前面，都过了。
   - `test-brew.sh`：新的 Homebrew 不从没信任过的 tap 载 formula，`brew install` 照命令行信任了 `miyu-agent`，它依赖的 `miyu-core` 不算。
-    建完本地 tap 以后整个 `brew trust` 上（旧的 Homebrew 没有这个命令，不调）。
+    建完本地 tap 以后整个 `brew trust` 上（旧的 Homebrew 没有这个命令，不调）；日志里记下 Homebrew、python3 的版本和 trust 调没调。
+  - `test-brew.sh` 里查加装层的那段 Python 和 `test-aur.sh` 的是同一段、同一个错，第一次只改了 AUR 那份（run 42218977482 的 brew 红在
+    这里，trust 那一步已经真调了、合集和三个依赖都装上了），照同样的改法补上。3.12 以前的 Python f 串里根本不许反斜杠，这个改法也避开了。
 - **namcap 不许说明里带包名**（`packaging-test` 第一趟红在这里）：它照子串比，过渡包叫 `miyu`，说明里的 `Miyu`、`miyu-agent`、
   `miyu migrate` 都算，改成一个 `miyu` 都不写（`the new agent packages`、`the migrate command`），怎么搬旧数据由装上时那两句说。
   本机照 `packaging-test` 的造法填好、在 Arch 容器里跑 `test-aur.sh static`，七份都过。
