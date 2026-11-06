@@ -1,6 +1,7 @@
 //! 扩展要交接票（施工 W-8 补、LP-1）：核心拉起的扩展只能要 `via` 是 `page` 的，要批过能力 `login.page`，没批的
 //! `needs_approval`，别的 `via`、不写的照旧 `local_only`；它要的票只在本机的连接上换：本机的握手、`login.redeem` 换得到设备令牌，
-//! 网页软件说过 `connection.remote` 的（局域网的、同机反向代理转来的回环地址）一律 `bad_ticket`，票当场作废。人要的票照旧哪儿都能换。
+//! 网页软件说过 `connection.remote` 的（局域网的、同机反向代理转来的回环地址）一律 `bad_ticket`，票当场作废。人要的 `open` 票照旧
+//! 哪儿都能换（人要的 `page` 票施工 LP-2 起也只在本机换，见 `login_ticket.rs`）。
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -165,10 +166,10 @@ async fn an_approved_extension_gets_page_tickets_that_work_only_on_this_machine(
         .await;
     assert_eq!(why(&refused), "bad_ticket", "{refused}");
 
-    // 人要的票照旧哪儿都能换。
+    // 人要的 `open` 票照旧哪儿都能换。
     let person = ticket(
         &owner
-            .call("t", "login.ticket", json!({"via": "page"}))
+            .call("t", "login.ticket", json!({"via": "open"}))
             .await,
     );
     let mut far = remote(&core, "192.168.1.30").await;

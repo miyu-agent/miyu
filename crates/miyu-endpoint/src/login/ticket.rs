@@ -4,11 +4,14 @@
 //!
 //! - `login.ticket`：给人（本机令牌、设备令牌、密码连上的），一次性码连上的回 `local_only`。回应 `{ticket, expires}`。
 //!   参数可以写 `via`（施工 LT-2）：`page` 是网页服务替本机页面要的（本机打开网页不要凭据，网页 W-1089），`open` 是 `miyu web`
-//!   开网页要的；人要的只进运行日志（连同这个连接怎么认出来的），不进回应、不改票。别的值、别的格 `bad_params`。
+//!   开网页要的；进运行日志（连同这个连接怎么认出来的），不进回应。`page` 的票不管谁要的都记成「只在本机换」（人要的施工 LP-2，
+//!   扩展要的 LP-1，下面）；别的、不写的哪儿都能换。别的值、别的格 `bad_params`。
 //! - 核心拉起的扩展（施工 LP-1，项目主人 11-06 定只给本机免密）：只能要 `via` 是 `page` 的，要批过能力 `login.page`（出厂的也要人批），
 //!   没批的 `needs_approval`；别的 `via`、不写的照旧 `local_only`（都在 `connection/rights.rs` 挡）。它要的票记成「只在本机换」：
 //!   远程的连接（网页软件说过 `connection.remote` 的，不管说的是什么地址）拿它握手、`login.redeem` 都回 `bad_ticket`，票当场作废。
 //!   扩展只该给核过是本机来的页面要票（参考 `extensions.md`），核心这一道挡的是票被带到远程的连接上换。
+//! - 人要的 `page` 票（施工 LP-2）：网页软件 `/ticket` 出示本机令牌替本机页面要的，页面在本机的 `/ws` 上握手用掉；一样只在本机换，
+//!   挡法同上。`open`（`miyu web --print` 印出来交给别的程序）、不写的（网页给 im 的页面开新标签页）照旧哪儿都能换。
 //! - 每发一张记一行 `INFO ticket issued`：`purpose` 是 `via`，`by` 是这个连接怎么认出来的，扩展要的另记 `package`；不记票。
 //! - `login.redeem {ticket}`：谁拿着票谁能换（票是 32 个随机字节，猜不出来）；没有、过期、用过的回 `bad_ticket`。
 //! - 握手的凭据 `ticket`（施工 LT-1，接入通讯平台设计 07 第四节 4.6 第 4 样）：待遇同密码，对上了当场作废，回应带新的设备令牌
@@ -35,16 +38,16 @@ const MOST_TICKETS: usize = 16;
 struct Ticket {
     value: String,
     expires: Instant,
-    /// 只在本机换（施工 LP-1：扩展替本机页面要的）。
+    /// 只在本机换（`page` 的票：扩展要的施工 LP-1，人要的 LP-2）。
     here: bool,
 }
 
 /// 一张票是只在本机换的，还是哪儿都能换。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Reach {
-    /// 哪儿都能换：人要的。
+    /// 哪儿都能换：人要的 `open`、不写 `via` 的。
     Anywhere,
-    /// 只在本机的连接上换：扩展替本机页面要的（施工 LP-1）。
+    /// 只在本机的连接上换：`page` 的，扩展（施工 LP-1）、人（LP-2）替本机页面要的。
     Here,
 }
 
@@ -91,7 +94,7 @@ struct IssueParams {
     via: Option<Purpose>,
 }
 
-/// 票是给谁要的：只进运行日志。
+/// 票是给谁要的：进运行日志；`page` 的只在本机换（[`Purpose::reach`]）。
 #[derive(Deserialize, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
 enum Purpose {
@@ -106,6 +109,14 @@ impl Purpose {
         match self {
             Purpose::Page => "page",
             Purpose::Open => "open",
+        }
+    }
+
+    /// 要的票在哪儿能换：`page` 的只在本机（不管是人还是扩展要的，施工 LP-1、LP-2），别的、不写的哪儿都能。
+    fn reach(purpose: Option<Self>) -> Reach {
+        match purpose {
+            Some(Purpose::Page) => Reach::Here,
+            Some(Purpose::Open) | None => Reach::Anywhere,
         }
     }
 }
@@ -147,27 +158,28 @@ pub(crate) async fn call(
     }
 }
 
-/// `login.ticket`：交回 `{ticket, expires}`。人要的哪儿都能换；扩展只能要 `page` 的（能力 `login.page` 在 `connection/rights.rs`
-/// 挡过了），只在本机换（施工 LP-1）。运行日志记一行：给谁要的（`purpose`）、这个连接怎么认出来的（`by`），扩展的另记包编号，不记票。
+/// `login.ticket`：交回 `{ticket, expires}`。人什么 `via` 都能要；扩展只能要 `page` 的（能力 `login.page` 在 `connection/rights.rs`
+/// 挡过了）。`page` 的票只在本机换（施工 LP-1、LP-2），别的哪儿都能换（[`Purpose::reach`]）。运行日志记一行：给谁要的
+/// （`purpose`）、这个连接怎么认出来的（`by`），扩展的另记包编号，不记票。
 fn issue(core: &Core, asker: Asker<'_>, purpose: Option<Purpose>) -> Result<Value, Refusal> {
-    let (by, reach) = match (asker.via, purpose) {
-        (Some(Via::Token), _) => ("token", Reach::Anywhere),
-        (Some(Via::Login(_)), _) => ("login", Reach::Anywhere),
-        (Some(Via::Password(_)), _) => ("password", Reach::Anywhere),
-        (Some(Via::Spawned), Some(Purpose::Page)) => ("extension", Reach::Here),
+    let by = match (asker.via, purpose) {
+        (Some(Via::Token), _) => "token",
+        (Some(Via::Login(_)), _) => "login",
+        (Some(Via::Password(_)), _) => "password",
+        (Some(Via::Spawned), Some(Purpose::Page)) => "extension",
         _ => return Err(Refusal::LOCAL_ONLY),
     };
+    let reach = Purpose::reach(purpose);
     let ticket = random_hex()?;
     let until = Instant::now() + TICKET_TTL;
     core.identity.tickets.put(ticket.clone(), until, reach);
     let expires = crate::sessions::now().unix_millis() + millis(TICKET_TTL);
     let purpose = purpose.map_or("unknown", Purpose::as_str);
-    match reach {
-        Reach::Here => {
-            let package = asker.package.unwrap_or_default();
-            tracing::info!(target: TARGET, purpose, by, package, "ticket issued");
-        }
-        Reach::Anywhere => tracing::info!(target: TARGET, purpose, by, "ticket issued"),
+    if by == "extension" {
+        let package = asker.package.unwrap_or_default();
+        tracing::info!(target: TARGET, purpose, by, package, "ticket issued");
+    } else {
+        tracing::info!(target: TARGET, purpose, by, "ticket issued");
     }
     Ok(json!({"ticket": ticket, "expires": stamp(expires)}))
 }
@@ -189,7 +201,7 @@ pub(crate) async fn handshake(
     Ok((login, Via::Login(hash)))
 }
 
-/// 用掉票、造一个设备令牌：交回 `{token, expires}`、令牌的哈希。只在本机换的票（施工 LP-1）到了不是本机的连接（`here` 是假的）上，
+/// 用掉票、造一个设备令牌：交回 `{token, expires}`、令牌的哈希。只在本机换的票（`page` 的，施工 LP-1、LP-2）到了不是本机的连接（`here` 是假的）上，
 /// 照不认得的回 `bad_ticket`，票已经作废了，记一行 `WARN`（不记票）。
 async fn exchange(core: &Core, ticket: &str, here: bool) -> Result<(Value, String), Refusal> {
     match core.identity.tickets.take(ticket) {

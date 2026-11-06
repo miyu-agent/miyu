@@ -18,12 +18,19 @@ fn a_ticket_remembers_where_it_may_be_taken() {
     let later = Instant::now() + TICKET_TTL;
     tickets.put("page".to_string(), later, Reach::Here);
     tickets.put("person".to_string(), later, Reach::Anywhere);
-    assert_eq!(
-        tickets.take("page"),
-        Some(Reach::Here),
-        "扩展替本机页面要的"
-    );
+    assert_eq!(tickets.take("page"), Some(Reach::Here), "替本机页面要的");
     assert_eq!(tickets.take("person"), Some(Reach::Anywhere));
+}
+
+#[test]
+fn only_page_tickets_stay_on_this_machine() {
+    assert_eq!(
+        Purpose::reach(Some(Purpose::Page)),
+        Reach::Here,
+        "人要的、扩展要的 page 都是"
+    );
+    assert_eq!(Purpose::reach(Some(Purpose::Open)), Reach::Anywhere);
+    assert_eq!(Purpose::reach(None), Reach::Anywhere, "不写 via 的");
 }
 
 #[test]
