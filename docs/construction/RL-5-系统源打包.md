@@ -219,6 +219,12 @@ AUR、Homebrew 上的 Miyu 照设计 60 分包：`miyu-core`、`miyu-tui`、`miy
   - 过渡包编的时候合集刚卸掉，`makepkg` 报缺依赖：编它用 `-d`，依赖由 `pacman -Syu` 从软件源带；
   - pacman 平常就印「looking for conflicting packages」「checking for file conflicts」：查冲突只认真的那几句。
 - 整段 `test-aur.sh install` 要真的发布（rc.6 以后，托盘也发了），到时手动跑 `packaging-test` 写 `tag`、`applet_tag`。
+- **rc.6 第一次真装红在测具两处**（packaging-test run 42218108759，RL-5补3）：
+  - `test-aur.sh` 查系统加装那一层的那段 Python：f 串花括号里写了 `item[\"layer\"]`，外面是 sh 的单引号，Python 看到反斜杠在字符串外面，
+    语法错。install 那一段以前没真跑过，一直没露出来。改成先取到变量里再放进 f 串，断言一样。真装、版本、`install.toml`、`upgrade`
+    那几步在它前面，都过了。
+  - `test-brew.sh`：新的 Homebrew 不从没信任过的 tap 载 formula，`brew install` 照命令行信任了 `miyu-agent`，它依赖的 `miyu-core` 不算。
+    建完本地 tap 以后整个 `brew trust` 上（旧的 Homebrew 没有这个命令，不调）。
 - **namcap 不许说明里带包名**（`packaging-test` 第一趟红在这里）：它照子串比，过渡包叫 `miyu`，说明里的 `Miyu`、`miyu-agent`、
   `miyu migrate` 都算，改成一个 `miyu` 都不写（`the new agent packages`、`the migrate command`），怎么搬旧数据由装上时那两句说。
   本机照 `packaging-test` 的造法填好、在 Arch 容器里跑 `test-aur.sh static`，七份都过。

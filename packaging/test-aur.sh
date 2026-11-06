@@ -80,9 +80,11 @@ items = {item["package"]: item for item in json.load(sys.stdin)}
 for id in ("miyu-tui", "miyu-webui"):
     item = items.get(id)
     assert item, f"{id} not listed"
-    assert item["layer"] == "distro", f"{id} layer {item[\"layer\"]}"
+    # f 串的花括号里不写引号：外面是 sh 的单引号，里面写 \" 是 Python 看到的反斜杠，语法错（rc.6 真装红在这里）。
+    layer, code = item.get("layer"), item.get("code")
+    assert layer == "distro", f"{id} layer {layer}"
     assert item.get("status") != "program_missing", f"{id} program missing"
-    assert "code" not in item, f"{id} code {item.get(\"code\")}"
+    assert "code" not in item, f"{id} code {code}"
 print("distro layer ok")
 ' || fail "系统加装那一层不对"
 rm -rf "${home}"

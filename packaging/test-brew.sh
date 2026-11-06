@@ -30,6 +30,11 @@ echo "brew: static checks passed"
 [ "${MODE}" = install ] || exit 0
 
 brew tap-new --no-git "${TAP}" >/dev/null
+# 新的 Homebrew 不从没信任过的 tap 载 formula：装的那一个照命令行信任，它依赖的 miyu-core 那几个不算（rc.6 真装红在这里）。
+# 整个本地 tap 信任上；旧的 Homebrew 没有这个命令，也不查。
+if brew trust --help >/dev/null 2>&1; then
+  brew trust "${TAP}" || fail "brew trust 没成"
+fi
 tap_dir="$(brew --repository "${TAP}")"
 cp "${OUT}"/homebrew/Formula/*.rb "${tap_dir}/Formula/"
 if [ -n "${casks}" ]; then
