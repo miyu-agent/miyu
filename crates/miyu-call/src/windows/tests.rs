@@ -186,6 +186,9 @@ async fn an_extension_s_endpoint_answers_its_descendants_only() {
     let handed = ours.handed().expect("交得出");
     assert_eq!(handed.sock, ours.name);
     assert_eq!(handed.token, ours.token);
+    // 管道名全机看得到，不带令牌的任何一段（施工 XG-1补2）。
+    assert!(!handed.sock.contains(&handed.token[..8]));
+    assert!(!handed.sock.contains(&handed.token[16..24]));
 }
 
 /// 连上管道 `name` 带令牌 `token` 调一次 `web_search`，读回答。

@@ -36,6 +36,48 @@ fn a_loop_or_a_chain_too_long_stops() {
     assert!(descends(1, 200, table(&long)));
 }
 
+/// 照一张假的表问创建时间。
+fn born(pairs: &[(u32, u64)]) -> impl Fn(u32) -> Option<u64> {
+    let created: BTreeMap<u32, u64> = pairs.iter().copied().collect();
+    move |pid| created.get(&pid).copied()
+}
+
+#[test]
+fn a_parent_created_after_its_child_is_a_reused_pid() {
+    // 扩展 100 起在 10，shell 200 起在 20，`miyu call` 300 起在 30：一层层都是先起的父进程。
+    let parent = table(&[(100, 1), (200, 100), (300, 200)]);
+    let created = born(&[(1, 0), (100, 10), (200, 20), (300, 30)]);
+    let windows = |pid| elder_parent(pid, &parent, &created);
+    assert_eq!(windows(300), Some(200));
+    assert!(descends(300, 100, windows));
+    // shell 200 走了，编号被一个 40 才起的进程重用：快照里 300 的父进程号还是 200，可它起得比 300 晚，链断了。
+    let reused = born(&[(1, 0), (100, 10), (200, 40), (300, 30)]);
+    let windows = |pid| elder_parent(pid, &parent, &reused);
+    assert_eq!(windows(300), None);
+    assert!(!descends(300, 100, windows));
+    // 扩展自己的编号被重用（起在 25）也一样：200 的父进程不是它。
+    let reused = born(&[(1, 0), (100, 25), (200, 20), (300, 30)]);
+    assert!(!descends(300, 100, |pid| elder_parent(
+        pid, &parent, &reused
+    )));
+}
+
+#[test]
+fn a_parent_born_at_the_same_moment_counts_and_an_unknown_time_does_not() {
+    let parent = table(&[(200, 100), (300, 200)]);
+    // 同一刻起的父子：算数。
+    let same = born(&[(100, 10), (200, 20), (300, 20)]);
+    assert_eq!(elder_parent(300, &parent, &same), Some(200));
+    assert!(descends(300, 100, |pid| elder_parent(pid, &parent, &same)));
+    // 父进程问不出时间（打不开、不在了）、自己问不出时间的：当问不出父进程。
+    let no_parent = born(&[(100, 10), (300, 30)]);
+    assert_eq!(elder_parent(300, &parent, &no_parent), None);
+    let no_child = born(&[(100, 10), (200, 20)]);
+    assert_eq!(elder_parent(300, &parent, &no_child), None);
+    // 表里没有父进程的，不问时间。
+    assert_eq!(elder_parent(999, &parent, &same), None);
+}
+
 #[test]
 fn the_parent_in_proc_stat_comes_after_the_last_parenthesis() {
     assert_eq!(linux_parent("300 (miyu) S 200 300 200 0 -1"), Some(200));

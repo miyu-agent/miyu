@@ -29,7 +29,8 @@ pub fn parent_process(pid: u32) -> Option<u32> {
 }
 
 /// 这一刻每个进程的父进程（Windows，`CreateToolhelp32Snapshot`）：进程号到父进程号。Windows 不过继：父进程走了以后它的编号
-/// 可能被别的进程重用，查的一方要知道「父进程号」可能指着一个后来才起的进程。
+/// 可能被别的进程重用，查的一方要知道「父进程号」可能指着一个后来才起的进程：照 [`crate::process_created`] 比先后
+/// （施工 XG-1补2）。
 ///
 /// # Errors
 ///

@@ -37,7 +37,7 @@ impl Channel {
         let dir = home()?.join("s");
         create_private(&dir)?;
         let token = serve::random_hex()?;
-        let path = dir.join(format!("{}.sock", &token[..16]));
+        let path = dir.join(format!("{}.sock", serve::endpoint_tag()?));
         let listener = UnixListener::bind(&path)?;
         let server =
             tokio::spawn(accept(listener, port, texts, token.clone(), kin.clone())).abort_handle();

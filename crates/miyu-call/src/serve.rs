@@ -43,6 +43,32 @@ pub(crate) fn random_hex() -> io::Result<String> {
     Ok(bytes.iter().map(|byte| format!("{byte:02x}")).collect())
 }
 
+/// 端点名里的那一段（施工 XG-1补2）：另取一个随机串的前 16 个字符，不用令牌的。Windows 的命名管道名全机的进程都列得出来，
+/// 用令牌的前一半就等于把半个令牌摆出来。
+///
+/// # Errors
+///
+/// 系统给不出随机数。
+pub(crate) fn endpoint_tag() -> io::Result<String> {
+    let mut tag = random_hex()?;
+    tag.truncate(16);
+    Ok(tag)
+}
+
+/// 令牌对不对（施工 XG-1补2）：等时比较，每个字节都比完再说，不在第一个不同的字节就停：那样的话，量回答多快就能一个字节一个
+/// 字节地猜。长度不同的直接不对：令牌的长度本来是公开的（32 个十六进制字符）。
+pub(crate) fn same_token(given: &str, token: &str) -> bool {
+    let (given, token) = (given.as_bytes(), token.as_bytes());
+    if given.len() != token.len() {
+        return false;
+    }
+    let differ = given
+        .iter()
+        .zip(token)
+        .fold(0u8, |differ, (a, b)| differ | (a ^ b));
+    std::hint::black_box(differ) == 0
+}
+
 /// 环境变量：端点、令牌，`PATH` 最前面加上放 `miyu` 的目录 `bin`（照这个系统的写法连）。加在挑好的那几个后面。
 pub(crate) fn env(
     env: &mut Vec<(OsString, OsString)>,
@@ -159,7 +185,9 @@ pub(crate) async fn answer<S, F>(
     let refused = |template| Reply::said(USAGE, say(template, &[]));
     let reply = match serde_json::from_slice::<Request>(&body) {
         Err(_) => refused(&texts.bad_request),
-        Ok(request) if request.token != token || !ours().await => refused(&texts.stranger),
+        Ok(request) if !same_token(&request.token, &token) || !ours().await => {
+            refused(&texts.stranger)
+        }
         Ok(request) if request.v != VERSION => refused(&texts.version),
         Ok(request) => match request.op.as_str() {
             "call" => reply::call(&*port, &texts, request.tool, request.args).await,
@@ -186,3 +214,6 @@ async fn send<S: AsyncWrite + Unpin>(stream: &mut S, body: &str) -> io::Result<(
     stream.write_all(body.as_bytes()).await?;
     stream.flush().await
 }
+
+#[cfg(test)]
+mod tests;

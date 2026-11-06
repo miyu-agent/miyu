@@ -27,3 +27,21 @@ fn an_exited_child_is_not_running() {
 fn a_pid_nobody_has_is_not_running() {
     assert!(!process_running(u32::MAX - 2));
 }
+
+/// 子进程起得不比自己早，自己起得不比子进程晚（施工 XG-1补2）：认子孙时就照这个先后认出被重用的父进程号。系统里没有的进程号
+/// 问不出。
+#[test]
+fn a_child_is_created_no_earlier_than_this_process() {
+    let mut child = Command::new("cmd")
+        .args(["/c", "ping -n 3 127.0.0.1 >NUL"])
+        .spawn()
+        .expect("起得来");
+    let child_created = process_created(child.id());
+    let own = process_created(std::process::id()).expect("问得出自己的");
+    child.kill().expect("杀得掉");
+    child.wait().expect("等得到");
+    let child_created = child_created.expect("问得出子进程的");
+    assert!(own <= child_created, "自己 {own}，子进程 {child_created}");
+    assert!(own > 0);
+    assert_eq!(process_created(u32::MAX - 2), None);
+}

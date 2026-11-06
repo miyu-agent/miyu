@@ -339,6 +339,9 @@ async fn the_extension_is_handed_the_same_endpoint_token_and_bin() {
     };
     assert_eq!(Some(handed.sock.clone()), get("MIYU_CALL_SOCK"));
     assert_eq!(Some(handed.token.clone()), get("MIYU_CALL_TOKEN"));
+    // 端点名不带令牌的任何一段（施工 XG-1补2）。
+    assert!(!handed.sock.contains(&handed.token[..8]));
+    assert!(!handed.sock.contains(&handed.token[16..24]));
     let bin = handed.bin.clone().expect("建得了放 `miyu` 的目录");
     assert_eq!(get("PATH"), Some(format!("{bin}:/usr/bin")));
     assert_eq!(

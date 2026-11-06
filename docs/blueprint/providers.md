@@ -109,7 +109,7 @@
 **会跑命令的**（施工 XG-1 下，设计 63 第六节第 2 条、第七节第 3 条，2026-11-05 core1 定 3A；照内置 `shell` 的几处，一处不按名字）：
 
 1. `RemoteTool::runs_commands` 照规格交。核心照它认跑命令的工具的几处都接上：说明后面接 `miyu call` 那一段（`Tool::clicall_section`，字是核心的一份 `core/call/`，`shell` 也读它，字节不变；例子照这台机器挑：Windows 上 PowerShell 的，别处有 `jq` 用它、没有有 `python3` 用 Python、都没有不带）；会话照现在的条件开端口（`session/tools.md` 第 6 条：工具面上有脚本里能调的、或者核心自带的命令能调的）；后台运行关着的会话造工具面、拼 system 时算它一件（`agents.rs`）；`miyu check` 放行出沙盒的跑命令工具照旧提醒 `sandbox_shell`（`session/guard.md`）。
-2. 通道：这次调用拿到了端口、知道扩展进程的进程号的（提供者表在 `provide` 时照扩展的状态记下，`Starting`、`Running` 的 `pid`），开一个端点（`miyu-call`，`tools/shell.md`「脚本调工具」），`tool.call` 带 `channel`。认人照「连上来的是这个扩展进程的子孙」加令牌：Linux 照 `/proc/<pid>/stat` 的父进程链，macOS 照 `proc_pidinfo`，Windows 照进程快照的父进程号（`miyu_pipe::process_parents`）；扩展进程自己不算，`setsid`、两次 `fork` 甩出去的链断了，调不成；过不了的退出码 2。这一层防误用（令牌漏给别的进程、命令甩出去以后还在调），不是安全边界、不防扩展本身：扩展起一个子进程就能调。对扩展的关口是能力 `tools.commands` 要人批（设计 63 第七节第 3 条）。命令里调的照会话的链判，记 `tool.nested`，挂在这次调用下面（同 `shell`）。
+2. 通道：这次调用拿到了端口、知道扩展进程的进程号的（提供者表在 `provide` 时照扩展的状态记下，`Starting`、`Running` 的 `pid`），开一个端点（`miyu-call`，`tools/shell.md`「脚本调工具」），`tool.call` 带 `channel`。认人照「连上来的是这个扩展进程的子孙」加令牌：Linux 照 `/proc/<pid>/stat` 的父进程链，macOS 照 `proc_pidinfo`，Windows 照进程快照的父进程号（`miyu_pipe::process_parents`），每一层还要父进程起得不比它晚（`miyu_pipe::process_created`，施工 XG-1补2：Windows 不过继，被重用的编号是后起的，问不出时间的当链断）；扩展进程自己不算，`setsid`、两次 `fork` 甩出去的链断了，调不成；过不了的退出码 2。这一层防误用（令牌漏给别的进程、命令甩出去以后还在调），不是安全边界、不防扩展本身：扩展起一个子进程就能调。对扩展的关口是能力 `tools.commands` 要人批（设计 63 第七节第 3 条）。命令里调的照会话的链判，记 `tool.nested`，挂在这次调用下面（同 `shell`）。
 3. 端点跟着这次调用：答了、超时、被掐（这次调用的等待被丢掉），丢掉就关，套接字删掉、令牌作废，还在等的、之后连的 `miyu call` 退出码 3。扩展起不了会话的后台任务（不收 `job.started`），没有 `shell` 那种「交给任务表、跟着任务走」。
 4. 开不成的（建不了目录、套接字）记一行 `WARN miyu call endpoint not opened`，调用照旧发，只是没有这一格；不知道进程号的（不是核心拉起的连接）不开，记 `DEBUG`。
 5. 人在会话里跑命令（`session.send {shell: true}`，设计 57）不交给扩展：认的是 `Tool::serves_person`（内置 `shell` 是），扩展的跑命令工具不算，只有它们的会话照「没有能跑命令的工具」拒（`shell_unavailable`）。
@@ -162,7 +162,7 @@
 | `crates/miyu-endpoint/tests/provide_effects_log.rs`（施工 XG-1 上，单独一个测试程序） | 契约：报工作区别的文件、工作区外的私密文件、没改说改了、还在说删了、不收的种类、写法不对的各自丢、记 `WARN tool effect dropped`、结果照常；私密文件的路径不进日志、不进运行日志；没声明 `paths` 的一条文件效果不收 |
 | `crates/miyu-endpoint/src/provide/tests/declared_tests.rs` 的 `runs_commands_is_a_boolean_and_only_true_runs_commands`（施工 XG-1 下） | `runs_commands` 是布尔、不写是假，别的 `bad_tool`；只有真的跑命令，人跑命令不交给它（`serves_person` 是假）；登记缓存原样存 |
 | `crates/miyu-endpoint/tests/provide_commands.rs`（施工 XG-1 下） | 契约：扩展起的命令里经通道调 `probe` 成了，记一条 `tool.nested`、挂在那次调用下面；`tool.call` 带 `channel`（令牌 32 个字、有 `bin`）；核心进程（扩展的父进程，不是子孙）拿着令牌连上来退出码 2、那一次没调；答完端点关了、连不上；没批 `tools.commands` 的 `needs_approval`、不是布尔的 `bad_tool`；说明后面接 `miyu call` 那一段、不跑命令的照登记的；`!命令` 只有扩展的跑命令工具时 `shell_unavailable`；放行出沙盒的跑命令扩展工具 `miyu check` 报 `sandbox_shell` |
-| `crates/miyu-call/src/kin/tests.rs`、`unix/tests.rs`、`windows/tests.rs`（施工 XG-1 下） | 子孙照父进程链认：子、孙是，自己、别人家的、问不出的、绕回来的、太长的不是；`/proc/<pid>/stat` 的父进程照最后一个 `)` 往后数；真的子进程照这台机器问得出；扩展的端点答它父进程（测试进程是子孙）、拒另一个进程的子孙；交给扩展的那一格和设进命令的环境变量一样 |
+| `crates/miyu-call/src/kin/tests.rs`、`unix/tests.rs`、`windows/tests.rs`（施工 XG-1 下） | 子孙照父进程链认：子、孙是，自己、别人家的、问不出的、绕回来的、太长的不是；`/proc/<pid>/stat` 的父进程照最后一个 `)` 往后数；Windows 上父进程起得比子进程晚的（重用了的编号）、问不出时间的链断，同一刻起的算数（`elder_parent`，施工 XG-1补2，到处跑）；真的子进程照这台机器问得出；扩展的端点答它父进程（测试进程是子孙）、拒另一个进程的子孙；交给扩展的那一格和设进命令的环境变量一样，端点名不带令牌的任何一段（施工 XG-1补2） |
 | `crates/miyu-endpoint/tests/provide_later.rs` | 契约：先造的会话下一个回合有扩展的工具、调得通、记 `session.policy_changed`，缓存照登记的原样；关掉以后下一个回合拿掉；重启以后扩展没登记，照缓存在目录里，载入的第一个回合对上、调到的暂时不可用，新造的带上；关着的包不读缓存 |
 
 ### 还没有的

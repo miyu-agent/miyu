@@ -7,7 +7,8 @@
 //!   （`miyu_pipe::process_parents`）。扩展进程自己不算（「子孙」）；`setsid`、两次 `fork` 甩出去的，父进程链断了，从一开始就
 //!   调不成，同 `shell` 的命令出了进程组。这一层防误用（令牌漏给别的进程、命令甩出去以后还在调），不是安全边界：扩展起一个子
 //!   进程就能调，对扩展的关口是能力 `tools.commands` 要人批。Unix 上父进程先走了的过继给 1 号（或收养它的进程），链上的编号
-//!   总是还在的进程；Windows 不过继，链上可能有被重用的旧编号，还要令牌对得上才进得来。
+//!   总是还在的进程；Windows 不过继，链上可能有被重用的旧编号：每一层都要父进程起得不比它晚（[`elder_parent`]，施工
+//!   XG-1补2），重用了编号的进程是后起的，认得出来。
 
 use std::sync::{Arc, OnceLock};
 use std::time::Duration;
@@ -148,6 +149,22 @@ pub(crate) fn descends(pid: u32, ancestor: u32, parent: impl Fn(u32) -> Option<u
     false
 }
 
+/// Windows 上 `pid` 的父进程：表里记的父进程号，还要那个进程起得不比 `pid` 晚（施工 XG-1补2）。Windows 不过继，父进程走了以后
+/// 编号可能被后起的进程重用，快照里的父进程号就指着它，照创建时间认得出来。问不出时间的（不在了、打不开）当问不出父进程，链到
+/// 这里断。同一刻起的算数：创建时间照系统时钟走，父子可能落在同一刻；重用编号的进程起在子进程之后，晚得出来。
+#[cfg_attr(
+    not(any(windows, test)),
+    expect(dead_code, reason = "只有 Windows 的父进程号会被重用；测试到处跑")
+)]
+pub(crate) fn elder_parent(
+    pid: u32,
+    parent: impl Fn(u32) -> Option<u32>,
+    created: impl Fn(u32) -> Option<u64>,
+) -> Option<u32> {
+    let up = parent(pid)?;
+    (created(up)? <= created(pid)?).then_some(up)
+}
+
 /// 照这台机器问父进程（Linux）：`/proc/<pid>/stat` 的第四格。
 #[cfg(target_os = "linux")]
 fn descends_here(pid: u32, ancestor: u32) -> bool {
@@ -173,11 +190,17 @@ fn descends_here(pid: u32, ancestor: u32) -> bool {
     descends(pid, ancestor, miyu_pipe::parent_process)
 }
 
-/// 照这台机器问父进程（Windows）：拍一张快照，照它找。
+/// 照这台机器问父进程（Windows）：拍一张快照，照它找，每一层比创建时间（[`elder_parent`]）。
 #[cfg(windows)]
 fn descends_here(pid: u32, ancestor: u32) -> bool {
     match miyu_pipe::process_parents() {
-        Ok(parents) => descends(pid, ancestor, |pid| parents.get(&pid).copied()),
+        Ok(parents) => descends(pid, ancestor, |pid| {
+            elder_parent(
+                pid,
+                |pid| parents.get(&pid).copied(),
+                miyu_pipe::process_created,
+            )
+        }),
         Err(error) => {
             tracing::warn!(target: crate::TARGET, error = %error, "process snapshot not taken");
             false

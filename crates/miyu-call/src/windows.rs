@@ -39,7 +39,7 @@ impl Channel {
     /// 随机数读不出、管道建不成（名字被占了）。
     pub fn open(port: Arc<dyn NestedPort>, texts: Arc<Texts>, kin: Kin) -> io::Result<Channel> {
         let token = serve::random_hex()?;
-        let name = format!(r"\\.\pipe\miyu-call-{}", &token[..16]);
+        let name = format!(r"\\.\pipe\miyu-call-{}", serve::endpoint_tag()?);
         let first = miyu_pipe::create_for_containers(name.as_ref(), true)?;
         let server = tokio::spawn(accept(
             first,
