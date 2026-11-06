@@ -319,11 +319,22 @@ fn one(
                 trash: trashed.trash,
             })
         }
-        TODOS => serde_json::from_value::<TodoWritten>(item)
-            .map(Effect::TodoWritten)
-            .map_err(|_| Why::Shape),
+        TODOS => todos(item),
         _ => Err(Why::Kind),
     }
+}
+
+/// `todo.written`：只查写法（同内置的 `todowrite`）。`done` 写 `null` 的当没写（施工 XG-1 补：同 `effects`、`state` 的
+/// `null`），写成别的样子的整条丢。
+fn todos(mut item: Value) -> Result<Effect, Why> {
+    if item["done"].is_null()
+        && let Some(fields) = item.as_object_mut()
+    {
+        fields.remove("done");
+    }
+    serde_json::from_value::<TodoWritten>(item)
+        .map(Effect::TodoWritten)
+        .map_err(|_| Why::Shape)
 }
 
 /// 把扩展报的 `path` 换成真实位置（同 [`miyu_tool::Call::real`]），要是链判过的一条；`write` 的要是判了写的。

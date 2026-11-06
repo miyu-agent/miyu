@@ -198,3 +198,21 @@ fn other_kinds_and_bad_shapes_are_dropped() {
         assert!(vetted(&work, &judged, &Befores::new(), whole, false).is_empty());
     }
 }
+
+/// 待办的 `done` 写 `null` 的当没写，照收（施工 XG-1 补，同 `effects`、`state` 的 `null`）；写了的照收；写成别的样子的整条丢。
+#[test]
+fn a_null_done_on_todos_is_unwritten() {
+    let (work, _dir) = workspace();
+    let todos = json!([{"content": "Ship", "status": "completed"}]);
+    let reported = json!([
+        {"kind": "todo.written", "todos": [], "done": null},
+        {"kind": "todo.written", "todos": [], "done": todos},
+        {"kind": "todo.written", "todos": [], "done": "all"},
+        {"kind": "todo.written", "todos": [], "done": {}},
+        {"kind": "todo.written", "todos": null},
+    ]);
+    let kept = vetted(&work, &[], &Befores::new(), reported, false);
+    assert_eq!(kept.len(), 2, "{kept:?}");
+    assert!(matches!(&kept[0], Effect::TodoWritten(written) if written.done.is_empty()));
+    assert!(matches!(&kept[1], Effect::TodoWritten(written) if written.done.len() == 1));
+}

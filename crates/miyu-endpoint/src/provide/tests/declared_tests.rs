@@ -216,3 +216,17 @@ fn runs_commands_is_a_boolean_and_only_true_runs_commands() {
     assert!(!plain.runs_commands());
     assert!(plain.clicall_section("probe", "").is_none());
 }
+
+/// 三格写 `null` 的同不写（施工 XG-1 补）：登记得上，不报路径、没有只在后台给的参数、不跑命令。
+#[test]
+fn null_declarations_are_unwritten() {
+    let mut tool = serde_json::to_value(editor("execute")).expect("写得成");
+    for name in ["paths", "background_parameters", "runs_commands"] {
+        tool[name] = Value::Null;
+    }
+    let tool = serde_json::from_value::<ToolParams>(tool).expect("合写法");
+    let declared = checked(tool).expect("登记得上");
+    assert!(declared.paths.is_empty());
+    assert!(declared.background.is_empty());
+    assert!(!declared.runs_commands);
+}
