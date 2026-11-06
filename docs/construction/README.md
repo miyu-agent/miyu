@@ -993,6 +993,7 @@ flowchart LR
 | UC-2 | 旁路请求的用量记场所 | `model.call` 写了 `session` 的，`usage.oneshot` 和汇总那一行挂上那个会话的场所；`usage.query` 照场所、用途分得出群的判官用量 | `UC-2-旁路请求的用量记场所.md` |
 | J-4 | 扩展建定时 | `schedule.*` 开放给批过 `sessions.drive` 的扩展，只看改自己建的；`target` 多 `package`，到点推 `schedule.fired` 给它自己，带错过的次数 | `J-4-扩展建定时.md` |
 | FL-1 | 工具一律全量 | 工具的参数格式一开始就发完整的，没有外壳、没有 `load_tools`；下一步拆掉整套懒加载 | `FL-1-工具一律全量.md` |
+| FL-7 | settle 测试用硬链接放出睡着的那一份 | LP-2 分支 CI 42182867724 的 check ubuntu 红在 `dist::check::settle::tests::a_running_program_inside_is_waited_for_then_removed`：起 sleeper 报 Text file busy。根因在测试：`fs::copy` 把测试程序拷进临时目录马上起，拷的时候开着写的句柄，同一个测试程序里别的线程这时 fork，子进程 exec 以前也带着它，接着 exec 刚拷好的文件，Linux 回 ETXTBSY；生产代码没有拷完马上起。改测试：Unix 上硬链接、连不成才拷，临时目录挪到测试程序旁边（同一个文件系统才连得成），Windows 照旧拷。本机 12 并发加 12 个死循环：改前 120 遍红 6 遍（都是 Text file busy），改后 180 遍 0 遍；ubuntu CI 4 并发加 4 个死循环：改前 80 遍红 1 遍，改后 80 遍 0 遍 |
 | Y-1 上补 | 停用的账号说已停用 | 停用了的账号用户名、密码都对的握手回 `account_disabled`（回完断开），网页说「这个账号已被停用」；密码不对的照旧 `bad_password`，不透露停没停（项目主人验收时要的）。施工单见 `Y-1上-多账号和邀请.md` 末节「补」 |
 | Y-1 下 | 本机和远程 | 连接分本机、本机的另一个人、远程（网页软件握手之前说 `connection.remote`）；读本机文件、交本机路径、选本机目录这一类只给本机，别的回 `local_machine_only`，握手回应不给 `host`。下：第二个本机入口 `run/public.sock`。施工单见 `Y-1下-本机和远程.md` |
 | Z-1 上 | 核心一直开着 | 核心起来了就不因为空闲退出，系统配置 `core.idle_exit`（分钟，`0` 不退，默认 `0`，只在系统层，当场生效）配了的照原规矩退，`--idle-seconds` 盖过它；`packaging/` 放 systemd 用户服务、XDG 自启动、launchd、Windows 任务计划，服务器的 systemd 系统服务（专门的用户 `miyu`、`/var/lib/miyu`）、网页软件那一份（`miyu-web serve`，`web.idle_seconds = 0`）和 OpenRC、runit、dinit 样例；头先拉起的照握手说 `running` 退出码 0。施工单见 `Z-1-进程形态.md` |
