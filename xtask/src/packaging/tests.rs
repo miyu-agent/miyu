@@ -122,6 +122,18 @@ fn every_template_is_filled_with_its_own_version_and_hashes() {
 
     let agent = out(&scratch, "aur/miyu-agent/PKGBUILD");
     assert!(agent.contains("pkgver=2026.11.0rc1\n"), "{agent}");
+    // 旧版的过渡包：版本跟核心走，只依赖合集，装上时照原样拷的脚本说话（施工 RL-5补2）。
+    let transition = out(&scratch, "aur/miyu/PKGBUILD");
+    assert!(
+        transition.contains("pkgname=miyu\npkgver=2026.11.0rc1\n"),
+        "{transition}"
+    );
+    assert!(transition.contains("depends=('miyu-agent')\ninstall=miyu.install\n"));
+    assert!(!transition.contains("source"), "过渡包不带文件");
+    assert_eq!(
+        out(&scratch, "aur/miyu/miyu.install"),
+        read(&root().join("packaging/aur/miyu/miyu.install")).unwrap()
+    );
 
     let formula = out(&scratch, "homebrew/Formula/miyu-tui.rb");
     assert!(
@@ -220,7 +232,7 @@ fn leftover_placeholders_are_named_and_emails_are_not() {
 }
 
 #[test]
-fn the_core_conflicts_with_the_old_miyu_and_nothing_replaces_it() {
+fn the_core_conflicts_with_the_old_miyu_only_and_nothing_replaces_it() {
     for (template, _, _) in FILES {
         let text = read(&root().join("packaging").join(template)).unwrap();
         assert!(
@@ -228,8 +240,25 @@ fn the_core_conflicts_with_the_old_miyu_and_nothing_replaces_it() {
             "{template} 不写 replaces（core1 11-05）"
         );
     }
+    // 只挡 0.7.x 那一代、不冒充过渡包 `miyu`（施工 RL-5补2）：`-git` 也一样。
     let core = read(&root().join("packaging/aur/miyu-core/PKGBUILD.in")).unwrap();
-    assert!(core.contains("conflicts=('miyu')") && core.contains("provides=('miyu')"));
+    assert!(core.contains("\nconflicts=('miyu<2026')\n"), "{core}");
+    assert!(!core.contains("\nprovides="), "{core}");
+    let git = read(&root().join("packaging/aur/miyu-agent-git/PKGBUILD")).unwrap();
+    let field = |name: &str| {
+        git.lines()
+            .find(|line| line.starts_with(&format!("{name}=(")))
+            .unwrap_or_default()
+            .to_string()
+    };
+    assert!(field("conflicts").contains("'miyu<2026'"), "{git}");
+    assert!(!field("conflicts").contains("'miyu'"), "{git}");
+    assert!(!field("provides").contains("'miyu'"), "{git}");
+    assert!(field("provides").contains("'miyu-agent'"), "{git}");
+    // 过渡包装上、升级时都说怎么搬旧数据。
+    let install = read(&root().join("packaging/aur/miyu/miyu.install")).unwrap();
+    assert!(install.contains("post_install()") && install.contains("post_upgrade()"));
+    assert!(install.contains("miyu migrate"));
     assert!(
         core.lines().any(|line| line.contains("install.toml")
             && line.trim_start().starts_with("printf")

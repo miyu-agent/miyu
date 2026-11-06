@@ -3,7 +3,8 @@
 //! Homebrew formula。托盘 `miyu-applet` 的 PKGBUILD、cask 照托盘仓库自己的发布填（施工 RL-5补）：版本照托盘的标签，产物是
 //! `miyu-applet-<版本>-linux-<架构>.tar.gz`、`-macos-aarch64.zip`；没写 `--applet` 的这两份不填，说一句。
 //!
-//! - 模板在 `packaging/aur/<包>/PKGBUILD.in`、`packaging/homebrew/<包>.rb.in`，`miyu-agent-git` 的 `PKGBUILD` 不是模板、照原样拷；
+//! - 模板在 `packaging/aur/<包>/PKGBUILD.in`、`packaging/homebrew/<包>.rb.in`，`miyu-agent-git` 的 `PKGBUILD`、旧版过渡包 `miyu` 的
+//!   `miyu.install` 不是模板、照原样拷（施工 RL-5补2：过渡包 `miyu` 的版本跟核心走）；
 //! - 占位：`@VERSION@` 核心的版本（发版标签去掉 `v`，下载地址照它）、`@PKG_VERSION@` 这个包自己的版本（终端、网页照压缩包名里
 //!   写的，同它们自己的清单）、`@PKGVER@` 同 `@PKG_VERSION@` 照 AUR 的写法（[`pkgver`]：pacman 的 pkgver 不许有 `-`，
 //!   `2026.11.0-rc.1` 写成 `2026.11.0rc1`，照样排在 `2026.11.0` 前面，施工 VR-1）、`@SHA256_<系统>@` 这个包那一种系统的压缩包的哈希、`@SHA256_SUMS@` 这份 `SHA256SUMS` 自己的
@@ -28,7 +29,7 @@ const TARGETS: [(&str, &str); 3] = [
 ];
 
 /// 填一份：模板（相对 `packaging/`）、填出来放哪（相对 `--out`）、照哪个分包（`<编号>-<版本>-<系统>.tar.gz`）的版本和哈希填。
-const FILES: [(&str, &str, &str); 10] = [
+const FILES: [(&str, &str, &str); 11] = [
     (
         "aur/miyu-core/PKGBUILD.in",
         "aur/miyu-core/PKGBUILD",
@@ -49,6 +50,8 @@ const FILES: [(&str, &str, &str); 10] = [
         "aur/miyu-agent/PKGBUILD",
         "miyu-core",
     ),
+    // 旧版的过渡包（施工 RL-5补2）：版本跟核心走。
+    ("aur/miyu/PKGBUILD.in", "aur/miyu/PKGBUILD", "miyu-core"),
     (
         "homebrew/miyu-core.rb.in",
         "homebrew/Formula/miyu-core.rb",
@@ -84,8 +87,11 @@ const FILES: [(&str, &str, &str); 10] = [
 /// 托盘程序的编号：照托盘仓库自己的发布填（施工 RL-5补）。
 const APPLET: &str = "miyu-applet";
 
-/// 照原样拷的（不是模板）。
-const COPIED: [(&str, &str); 1] = [("aur/miyu-agent-git/PKGBUILD", "aur/miyu-agent-git/PKGBUILD")];
+/// 照原样拷的（不是模板）：`-git` 的 PKGBUILD、过渡包装上时说话的脚本（施工 RL-5补2）。
+const COPIED: [(&str, &str); 2] = [
+    ("aur/miyu-agent-git/PKGBUILD", "aur/miyu-agent-git/PKGBUILD"),
+    ("aur/miyu/miyu.install", "aur/miyu/miyu.install"),
+];
 
 /// `cargo xtask packaging <标签> --sums <SHA256SUMS> [--out <目录>]`。
 pub fn run(root: &Path, target_dir: Option<PathBuf>, args: &[String]) -> ExitCode {

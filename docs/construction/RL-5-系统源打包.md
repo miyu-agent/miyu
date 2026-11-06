@@ -185,3 +185,46 @@ AUR、Homebrew 上的 Miyu 照设计 60 分包：`miyu-core`、`miyu-tui`、`miy
 - cask 的版本写错。
 
 「没给托盘也报填了」第一次没抓住：这一格只管最后那一句提示，补了一条测试查它，抓住了。
+
+### RL-5补2：旧版的过渡包，`miyu-core` 只挡旧版
+
+项目主人 2026-11-06 定旧版过渡的做法，core1 转来（2026-11-06，sub1，和 VR-1 同一条分支）。原来是 `miyu-core` 无条件
+`conflicts=('miyu')`、发了以后从 AUR 删旧的 `miyu`（设计 59 第三节第 3 条、第五节）：旧用户 `-Syu` 什么都不会发生，要自己
+`paru -S miyu-agent`、答一次冲突。改成 AUR 上的 `miyu` 升级成一个过渡包，照常 `-Syu` 就换成新版的一整套。
+
+- **`packaging/aur/miyu/PKGBUILD.in`**：`pkgname=miyu`，版本跟核心走（`@PKGVER@`，`2026.11.0` 起，比 0.7.x 新），`arch=('any')`，
+  不带文件、没有 `package()`（同合集），`depends=('miyu-agent')`，`install=miyu.install`。
+- **`packaging/aur/miyu/miyu.install`**：不是模板，照原样拷。`post_install`、`post_upgrade` 印「运行 miyu migrate 把旧版数据搬过来」
+  中英两句。
+- **`miyu-core`**：`conflicts=('miyu<2026')`，只挡 0.7.x 那一代；`provides=('miyu')` 去掉（core1 定：真有一个叫 `miyu` 的包了，
+  不冒充它）。**`miyu-agent-git`** 同样：`conflicts` 里 `miyu` 换成 `miyu<2026`，`provides` 去掉 `miyu`，留着 `miyu-agent`（过渡包
+  依赖它，装 `-git` 的也满足得了）。
+- **`cargo xtask packaging`** 一起填过渡包（`FILES` 多一份，版本照核心的发布），`miyu.install` 进 `COPIED`。
+- **`test-aur.sh`** 的 install 多一段（填了托盘的才做：合集依赖托盘）：
+  - 照 AUR 上 0.7.x 的样子造一个假的旧 `miyu` 0.7.4（自己有 `/usr/bin/miyu`），装上；
+  - 过渡包和那五份放进本机的 `file://` 软件源（`repo-add`），照用户平常那样 `pacman -Syu --noconfirm`；
+  - 查：升级成了（`--noconfirm` 遇到要问的冲突答「不」，成了就是没有冲突）、没有「are in conflict」「conflicting files」
+    「unresolvable」、印了 `miyu migrate`、`miyu` 是过渡包这一版、五个包都在、`/usr/bin/miyu` 报新版、归 `miyu-core`；
+  - 卸干净，`pacman.conf` 换回去。
+- **Homebrew 不在这一步**：见下面「发版那天」第 5 条。
+
+**怎么验**：
+- xtask 的 packaging 10 条过：过渡包照核心的版本填、只依赖合集、不带下载，`miyu.install` 照原样拷；`miyu-core` 只写
+  `conflicts=('miyu<2026')`、不写 `provides`；`-git` 的 `conflicts` 有 `miyu<2026`、没有 `miyu`，`provides` 没有 `miyu`、有 `miyu-agent`；
+  `miyu.install` 两个钩子都在、都说 `miyu migrate`。
+- 本机 Arch 容器（`archlinux:latest`，不加特权）照 `test-aur.sh` 新那一段的写法，用真的过渡包模板加假的 `miyu-core`、`miyu-agent`
+  跑了一遍：旧的 0.7.4 升成 `2026.11.0rc1-1`，带进 `miyu-core`、`miyu-agent`，`/usr/bin/miyu` 从旧包挪到 `miyu-core`，没有冲突，印了两句
+  `miyu migrate`。对照：把假的 `miyu-core` 换回 `conflicts=('miyu')`，同一个升级报「miyu-core and miyu are in conflict」失败。
+- 模拟里踩到两处，照改进了 `test-aur.sh`：
+  - 过渡包编的时候合集刚卸掉，`makepkg` 报缺依赖：编它用 `-d`，依赖由 `pacman -Syu` 从软件源带；
+  - pacman 平常就印「looking for conflicting packages」「checking for file conflicts」：查冲突只认真的那几句。
+- 整段 `test-aur.sh install` 要真的发布（rc.6 以后，托盘也发了），到时手动跑 `packaging-test` 写 `tag`、`applet_tag`。
+- 手写变异 7 个全抓住：`miyu-core` 写回 `conflicts=('miyu')`、加回 `provides=('miyu')`；`-git` 加回 `provides` 的 `miyu`、`conflicts` 写回 `miyu`；
+  `miyu.install` 拷错地方；过渡包照终端的版本填；`post_upgrade` 写错名字。
+
+**发版那天**跟着改（替换上面「发版那天」的第 3、4、6 条里说旧 `miyu` 的部分）：
+- AUR 的 `miyu` 不删：主人维护着它，填好的 `aur/miyu/PKGBUILD`、`miyu.install` 推进去（在 `miyu-agent` 那几个都推上去以后，
+  不然 `-Syu` 找不到依赖），旧用户 `-Syu` 就换过来了；`miyu-git` 照旧删。
+- paru、yay 那一问换成：装旧的 `miyu` 0.7.4，`paru -Syu`、`yay -Syu`，看是不是不问冲突就换成一整套、印了 `miyu migrate`。
+- Homebrew：旧 tap（`SHORiN-KiWATA/homebrew-miyu`）的 `miyu` formula 改成提示换新 tap（`brew install miyu-agent/miyu/miyu-agent`），
+  等新 tap 建好再做，不在这一步。

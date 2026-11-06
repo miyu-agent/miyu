@@ -1,0 +1,11 @@
+# 旧版 Miyu 的过渡包装上、升级以后（施工 RL-5补2）：说一句怎么把旧版的数据搬过来。不是模板，照原样发。
+
+post_install() {
+  printf '%s\n' \
+    '==> 运行 miyu migrate 把旧版数据搬过来' \
+    '==> Run "miyu migrate" to bring your data over from the old Miyu'
+}
+
+post_upgrade() {
+  post_install
+}

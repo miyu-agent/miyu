@@ -8,7 +8,10 @@
 #   - /usr/bin/miyu --version 报这一版，install.toml 写 aur，miyu upgrade 说用包管理器升级；
 #   - 隔离的数据根里 miyu pkg list：miyu-tui、miyu-webui 是系统加装那一层（distro）、程序找得到；
 #   - 托盘：/usr/bin/miyu-applet 能跑、桌面文件和图标在；
-#   - pacman -R 卸掉以后 /usr/lib/miyu、/usr/share/miyu、/usr/bin/miyu-applet 都没了。
+#   - pacman -R 卸掉以后 /usr/lib/miyu、/usr/share/miyu、/usr/bin/miyu-applet 都没了；
+#   - 旧版升级（RL-5补2，填了托盘的才做：合集依赖托盘）：先装一个假的旧 miyu 0.7.4（自己有 /usr/bin/miyu），再把这几份放进一个
+#     本机的 file:// 软件源，照用户平常那样 pacman -Syu：旧的 miyu 升成过渡包、带进一整套，没有冲突要问、/usr/bin/miyu 换成新的，
+#     还印了怎么搬旧数据。
 set -eu
 
 OUT="$1"
@@ -94,4 +97,56 @@ pacman -R --noconfirm miyu-webui miyu-tui miyu-core
 [ ! -e /usr/lib/miyu ] || fail "/usr/lib/miyu 还在"
 [ ! -e /usr/share/miyu ] || fail "/usr/share/miyu 还在"
 [ ! -e /usr/bin/miyu-applet ] || fail "/usr/bin/miyu-applet 还在"
+
+if [ -d /home/builder/aur/miyu-applet ]; then
+  # 假的旧版：AUR 上 0.7.x 那一代的样子，自己装一个 /usr/bin/miyu。
+  old=/home/builder/old-miyu
+  rm -rf "${old}"
+  mkdir -p "${old}"
+  cat > "${old}/PKGBUILD" <<'PKG'
+pkgname=miyu
+pkgver=0.7.4
+pkgrel=1
+pkgdesc='Old Miyu, for the upgrade test'
+arch=('any')
+license=('MIT')
+package() {
+  install -Dm755 /dev/stdin "${pkgdir}/usr/bin/miyu" <<'SH'
+#!/bin/sh
+echo "miyu 0.7.4"
+SH
+}
+PKG
+  chown -R builder "${old}"
+  su builder -c "cd '${old}' && makepkg --noconfirm -f" || fail "假的旧 miyu：makepkg 没成"
+  pacman -U --noconfirm "${old}"/miyu-0.7.4-1-any.pkg.tar.zst || fail "假的旧 miyu 装不上"
+  [ "$(/usr/bin/miyu)" = "miyu 0.7.4" ] || fail "旧 miyu 没装好"
+
+  # 它依赖的合集刚卸掉，编的时候不查依赖（-d）：装的时候由 pacman 从下面的软件源带进来。
+  su builder -c "cd /home/builder/aur/miyu && makepkg --noconfirm -d -f" || fail "过渡包 miyu：makepkg 没成"
+  repo=/home/builder/repo
+  rm -rf "${repo}"
+  mkdir -p "${repo}"
+  for name in miyu miyu-core miyu-tui miyu-webui miyu-applet miyu-agent; do
+    cp /home/builder/aur/"${name}"/*.pkg.tar.zst "${repo}/"
+  done
+  repo-add -q "${repo}/miyutest.db.tar.gz" "${repo}"/*.pkg.tar.zst
+  cp /etc/pacman.conf /etc/pacman.conf.orig
+  printf '\n[miyutest]\nSigLevel = Optional TrustAll\nServer = file://%s\n' "${repo}" >> /etc/pacman.conf
+  # 照用户平常的升级：--noconfirm 遇到冲突要问时答「不」，升级就失败，所以这一步成了就是没有冲突要问。只认真的冲突那几句：
+  # pacman 平常就印「looking for conflicting packages」「checking for file conflicts」。
+  upgraded=$(pacman -Syu --noconfirm 2>&1) || fail "pacman -Syu 没成：${upgraded}"
+  printf '%s\n' "${upgraded}" | grep -qE 'are in conflict|conflicting files|unresolvable' && fail "升级时报了冲突：${upgraded}"
+  printf '%s\n' "${upgraded}" | grep -q 'miyu migrate' || fail "升级时没说怎么搬旧数据：${upgraded}"
+  wanted=$(sed -n 's/^pkgver=//p' /home/builder/aur/miyu/PKGBUILD)
+  [ "$(pacman -Q miyu)" = "miyu ${wanted}-1" ] || fail "miyu 没升成过渡包：$(pacman -Q miyu)"
+  pacman -Q miyu-core miyu-tui miyu-webui miyu-applet miyu-agent >/dev/null || fail "一整套没带进来"
+  [ "$(/usr/bin/miyu --version)" = "miyu ${version}" ] || fail "/usr/bin/miyu 不是新的：$(/usr/bin/miyu --version)"
+  [ "$(pacman -Qqo /usr/bin/miyu)" = miyu-core ] || fail "/usr/bin/miyu 该归 miyu-core"
+
+  pacman -R --noconfirm miyu miyu-agent miyu-applet miyu-webui miyu-tui miyu-core
+  mv /etc/pacman.conf.orig /etc/pacman.conf
+  pacman -Sy >/dev/null
+  echo "aur: the old miyu upgrades to the transitional package and the whole set"
+fi
 echo "aur: all install checks passed"

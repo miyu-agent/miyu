@@ -1,0 +1,16 @@
+# Maintainer: SHORiN <shorin@users.noreply.github.com>
+#
+# 旧版 Miyu 的过渡包（施工 RL-5补2，2026-11-06 项目主人定）：AUR 上原来的 `miyu`（0.7.x 那一代）照常升级到这一版，就换成了新版的
+# 一整套。不带文件，只依赖合集 `miyu-agent`；版本跟核心走（2026.11.0 起，比 0.7.x 新，`pacman -Syu` 当它是一次升级）。
+# `miyu-core` 只挡 0.7.x 那一代（`conflicts=('miyu<2026')`），不挡它。装上、升级时印一句怎么把旧版的数据搬过来（`miyu.install`）。
+# 这个文件是模板，由 `cargo xtask packaging <标签> --sums <SHA256SUMS>` 填好版本再发；别手改填出来的那份。
+
+pkgname=miyu
+pkgver=@PKGVER@
+pkgrel=1
+pkgdesc='Transitional package: Miyu is now miyu-agent; run miyu migrate to bring your old data over'
+arch=('any')
+url='https://github.com/miyu-agent/miyu'
+license=('AGPL-3.0-or-later')
+depends=('miyu-agent')
+install=miyu.install

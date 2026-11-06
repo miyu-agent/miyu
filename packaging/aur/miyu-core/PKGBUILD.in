@@ -6,6 +6,8 @@
 # 整层放进 /usr/lib/miyu/（程序照自己真实位置的旁边找 resources/），/usr/bin/miyu 链过去；旁边写 install.toml
 # （channel = "aur"，`miyu upgrade` 照它说用包管理器升级）。终端、网页是另外的包，装在 /usr/share/miyu/packages/。
 # 旧的 miyu（0.7.x 那一代）是另一套程序：这里只写 conflicts、不写 replaces，装的人要明白自己在换掉它（core1 11-05 定）。
+# 只挡 0.7.x 那一代（`miyu<2026`），不挡 AUR 上新的过渡包 `miyu`（2026 起，依赖合集），也不再 provides miyu：真有一个叫
+# miyu 的包了，不冒充它（施工 RL-5补2，core1 2026-11-06 定）。
 
 pkgname=miyu-core
 _version=@VERSION@
@@ -17,8 +19,7 @@ url='https://github.com/miyu-agent/miyu'
 license=('AGPL-3.0-or-later')
 depends=('glibc' 'gcc-libs')
 optdepends=('bubblewrap: sandbox commands with mounts (Landlock alone otherwise)')
-provides=('miyu')
-conflicts=('miyu')
+conflicts=('miyu<2026')
 options=('!strip' '!debug')
 source_x86_64=("miyu-core-${_version}-linux-x86_64.tar.gz::${url}/releases/download/v${_version}/miyu-core-${_version}-linux-x86_64.tar.gz")
 source_aarch64=("miyu-core-${_version}-linux-aarch64.tar.gz::${url}/releases/download/v${_version}/miyu-core-${_version}-linux-aarch64.tar.gz")

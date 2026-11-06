@@ -5,7 +5,8 @@
 #
 # 编法同发版：`cargo xtask dist` 照 heads.toml 取两个头一起编、打包（要 rustup，头照各自的 rust-toolchain.toml 编；要 python3
 # 搭网页的包文件夹；要网络取头和依赖），再照分包的三份装：核心进 /usr/lib/miyu/，终端、网页进 /usr/share/miyu/packages/，
-# 同 miyu-core、miyu-tui、miyu-webui。
+# 同 miyu-core、miyu-tui、miyu-webui。旧版的 miyu 同 miyu-core 只挡 0.7.x 那一代、不 provides（施工 RL-5补2）：过渡包 miyu 依赖
+# miyu-agent，这里 provides 它，装了过渡包也能换成这一份。
 
 pkgname=miyu-agent-git
 pkgver=0.0.0.r0.g0000000
@@ -17,8 +18,8 @@ license=('AGPL-3.0-or-later')
 depends=('glibc' 'gcc-libs')
 makedepends=('git' 'rustup' 'python')
 optdepends=('bubblewrap: sandbox commands with mounts (Landlock alone otherwise)')
-provides=('miyu' 'miyu-core' 'miyu-tui' 'miyu-webui' 'miyu-agent')
-conflicts=('miyu' 'miyu-core' 'miyu-tui' 'miyu-webui' 'miyu-agent')
+provides=('miyu-core' 'miyu-tui' 'miyu-webui' 'miyu-agent')
+conflicts=('miyu<2026' 'miyu-core' 'miyu-tui' 'miyu-webui' 'miyu-agent')
 options=('!strip' '!debug' '!lto')
 source=("miyu::git+${url}.git")
 sha256sums=('SKIP')
