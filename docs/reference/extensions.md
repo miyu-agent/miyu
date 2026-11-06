@@ -106,13 +106,13 @@
 | `result` | 有结构化结果的写它的样子，一行字，例如 `{"memes":[{"id","tags"}]}`：告诉 AI 脚本里能直接取哪几格（`miyu call --schema` 也印）。不写是没有 |
 | `display_name` | 给人看的名字：`{"zh": "…", "en": "…"}` |
 | `subject` | 给人看的名字后面跟哪个参数的值，要是 `input_schema.properties` 里的一个 |
-| `paths` | 哪几个参数是路径：`[{"parameter": "file_path", "write": true}]`。参数要是 `input_schema.properties` 顶层的一个，类型是字或字的数组；`write` 不写是读，写了真的 `access` 要是 `write`。核心照它判这次调用要碰的路径（工作区外的写问人，和内置的 `edit` 一样），`tool.call` 带 `checked`，回应里的文件效果只收这几条。不写的不报路径，文件效果一条都不收 |
-| `background_parameters` | 只在会话有后台时才给的参数名：`["run_in_background"]`。要是 `input_schema.properties` 顶层的、不在 `required` 里的。后台运行关着的会话里，AI 看到的参数格式没有它们 |
-| `runs_commands` | `true`：这件工具会跑命令（施工 XG-1 下）。包要批过能力 `tools.commands`。AI 看到的说明后面接上 `miyu call` 怎么用那一段（和内置 `shell` 一样）；拿到了通道的调用，`tool.call` 带 `channel`（见下面「跑命令」）。不写、`false` 的不是 |
+| `paths` | 哪几个参数是路径：`[{"parameter": "file_path", "write": true}]`。参数要是 `input_schema.properties` 顶层的一个，类型是字或字的数组；`write` 不写是读，写了真的 `access` 要是 `write`。核心照它判这次调用要碰的路径（工作区外的写问人，和内置的 `edit` 一样），`tool.call` 带 `checked`，回应里的文件效果只收这几条。不写的（写 `null` 同不写）不报路径，文件效果一条都不收 |
+| `background_parameters` | 只在会话有后台时才给的参数名：`["run_in_background"]`。要是 `input_schema.properties` 顶层的、不在 `required` 里的。后台运行关着的会话里，AI 看到的参数格式没有它们。写 `null` 同不写 |
+| `runs_commands` | `true`：这件工具会跑命令（施工 XG-1 下）。包要批过能力 `tools.commands`。AI 看到的说明后面接上 `miyu call` 怎么用那一段（和内置 `shell` 一样）；拿到了通道的调用，`tool.call` 带 `channel`（见下面「跑命令」）。不写、写 `null`、`false` 的不是 |
 
 **回应**：`{"tools": <件数>}`。连接断了工具照旧留在目录里，被调到时回「暂时不可用」。
 
-**出错**：`not_a_provider`（不是核心拉起的扩展）；`bad_tool`：`data.tool` 是哪一件，`data.problem` 是 `duplicate`、`name`、`parameters`、`access`、`venues`、`timeout`、`clicall`、`result`、`display_name`、`subject`、`feature`、`plugin`、`role`、`scope`、`paths`、`background_parameters`、`runs_commands`（不是布尔）；`needs_approval`：写了 `runs_commands` 的、包没批 `tools.commands`，`data.capabilities` 是 `["tools.commands"]`，整个不收。
+**出错**：`not_a_provider`（不是核心拉起的扩展）；`bad_tool`：`data.tool` 是哪一件，`data.problem` 是 `duplicate`、`name`、`parameters`、`access`、`venues`、`timeout`、`clicall`、`result`、`display_name`、`subject`、`feature`、`plugin`、`role`、`scope`、`paths`、`background_parameters`、`runs_commands`（写了真假、`null` 以外的）；`needs_approval`：写了 `runs_commands` 的、包没批 `tools.commands`，`data.capabilities` 是 `["tools.commands"]`，整个不收。
 
 ## `tool.call`、`tool.cancel`
 
@@ -149,9 +149,9 @@
 | `kind` | 其余几格 | 核心怎么查 |
 |---|---|---|
 | `file.changed` | `path`；可以带 `before`、`after`（内容哈希 `sha256:…`）、`before_text`、`after_text` | `path` 要是 `checked` 里判了写的。改前是发 `tool.call` 之前核心读的，改后是回应到了核心现读的；前后一样的、带了的哈希原文对不上的、超过 20 MiB 的不收 |
-| `file.read` | `path`；`lines`：`[从, 到]`，从 1 数起 | `path` 要是 `checked` 里的（读写都行）；哈希由核心照现在的整份算 |
+| `file.read` | `path`；`lines`：`[从, 到]`，从 1 数起，从不大于到（写错的整条丢） | `path` 要是 `checked` 里的（读写都行）；哈希由核心照现在的整份算 |
 | `file.trashed` | `path`、`trash`（回收站里的位置，只给人看，至多 4096 个字） | `path` 要是 `checked` 里判了写的，现在要不在了 |
-| `todo.written` | `todos: [{"content", "status"}]`、`done`?（同内置的 `todowrite`） | 只查写法；`error` 是真的不收 |
+| `todo.written` | `todos: [{"content", "status"}]`、`done`?（同内置的 `todowrite`；写 `null` 同不写） | 只查写法；`error` 是真的不收 |
 
 - 相对的 `path` 照这次调用的 `cwd` 算，`~` 开头的照家目录。只报「哪个文件」：内容核心自己读，你报的内容骗不了看差异的人。
 - 别的种类、写法不对的、没判过的路径、同一种同一个文件报第二遍的，这一条丢掉，结果别的照常，不算出错；运行日志记一行 `tool effect dropped`（`why` 是 `not_checked`、`unchanged`、`mismatch`、`too_big`、`kind`、`shape` 之一）。
@@ -167,7 +167,7 @@
 | `bin` | 只放着 `miyu` 的目录，放到 `PATH` 最前面：命令里调到的 `miyu` 和在跑的核心是同一个版本。建不成的不写 |
 
 - 把这三样设进你为这次调用起的命令。命令里的 `miyu call <工具>` 照会话的权限、预设调 AI 的工具，用法、退出码和内置 `shell` 里跑的一样（退出码 1 工具出错或被拒，2 用法不对或认不出你，3 这次调用已经完了，4 要人确认）。
-- 只认你这个扩展进程的子孙：连上来的进程照父进程一层层往上找，要找得到你的进程；你自己、`setsid` 或两次 `fork` 甩出去的、别的进程拿着令牌也连不上（退出码 2）。
+- 只认你这个扩展进程的子孙：连上来的进程照父进程一层层往上找，要找得到你的进程；你自己、`setsid` 或两次 `fork` 甩出去的、别的进程拿着令牌也连不上（退出码 2）。这是防误用（令牌漏给了别的进程、命令甩出去以后还想调），不是挡你的扩展：你起一个子进程就能调。真正的关口是包的能力 `tools.commands` 要人批。
 - 这次调用答了、超时、被掐，端点就关，还在等的、之后连的 `miyu call` 退出码 3：要命令里调工具，等命令跑完再回应。
 - 人在会话里打的命令（`!`）不交给你，只交给内置 `shell`。
 

@@ -5,8 +5,9 @@
 //! - [`Kin::Descendant`]：扩展起的命令，照「是这个扩展进程的子孙」认：从连上来的进程照父进程一层层往上找，找到扩展的进程号
 //!   就是。Linux 读 `/proc/<pid>/stat`，macOS 问 `proc_pidinfo`（`miyu_pipe::parent_process`），Windows 拍一张进程快照
 //!   （`miyu_pipe::process_parents`）。扩展进程自己不算（「子孙」）；`setsid`、两次 `fork` 甩出去的，父进程链断了，从一开始就
-//!   调不成，同 `shell` 的命令出了进程组。Unix 上父进程先走了的过继给 1 号（或收养它的进程），链上的编号总是还在的进程；
-//!   Windows 不过继，链上可能有被重用的旧编号，还要令牌对得上才进得来。
+//!   调不成，同 `shell` 的命令出了进程组。这一层防误用（令牌漏给别的进程、命令甩出去以后还在调），不是安全边界：扩展起一个子
+//!   进程就能调，对扩展的关口是能力 `tools.commands` 要人批。Unix 上父进程先走了的过继给 1 号（或收养它的进程），链上的编号
+//!   总是还在的进程；Windows 不过继，链上可能有被重用的旧编号，还要令牌对得上才进得来。
 
 use std::sync::{Arc, OnceLock};
 use std::time::Duration;

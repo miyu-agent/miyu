@@ -235,7 +235,7 @@ For an editor, formatter, renamer or similar tool of your own to work like the b
    ```
 
    - `file.changed {"path"}`: changed or created. The before is the copy the core read before sending `tool.call`, the after is what it reads once you answer; if they are the same it isn't taken. For an extra check you may add `before`, `after` (hashes starting with `sha256:`) or `before_text`, `after_text`; anything that doesn't match isn't taken.
-   - `file.read {"path", "lines"?}`: read (`lines` is `[from, to]`, counted from 1). The AI's file edits are checked against what it has seen.
+   - `file.read {"path", "lines"?}`: read (`lines` is `[from, to]`, counted from 1, with from not above to). The AI's file edits are checked against what it has seen.
    - `file.trashed {"path", "trash"}`: moved to the trash; `trash` is where it is there, only shown to people.
    - `todo.written {"todos", "done"?}`: a whole new to-do list, written as for the built-in `todowrite` (for tools that replace it).
    - Paths must be in `checked`, as a write for changes and trashing. Other kinds, unchecked paths and malformed items are dropped one by one and the result goes on; the core log gets a line `tool effect dropped`, whose `why` helps when you debug.
@@ -260,7 +260,7 @@ To write your own tool that runs commands (replacing the built-in `shell`, or ru
    subprocess.run(command, shell=True, env=env, cwd=params["cwd"])
    ```
 
-3. The commands must be started by your extension process (children and grandchildren are fine): the core follows parent processes up to yours, and the token alone isn't enough. Anything detached with `setsid` or a double `fork`, or handed to some other long-running process, can't call (exit code 2).
+3. The commands must be started by your extension process (children and grandchildren are fine): the core follows parent processes up to yours, and the token alone isn't enough. Anything detached with `setsid` or a double `fork`, or handed to some other long-running process, can't call (exit code 2). This guards against mistakes (a token leaked to another process, a command that detached and keeps calling), not against your extension: you can call by starting a child process. The real gate is step 1, `tools.commands`, which a person approves.
 4. The channel closes as soon as you respond to the call: `miyu call` in a command must finish before you respond. Commands still running in the background after your response can't call (exit code 3).
 5. Tools called from those commands go through the session's permissions and preset like direct calls, and are recorded under this call. Commands people type in the session (`!`) are not handed to you, only to the built-in `shell`.
 
