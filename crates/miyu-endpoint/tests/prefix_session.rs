@@ -45,6 +45,31 @@ async fn touch(home: &Home, core: &Core, path: &str, bytes: &[u8]) {
     panic!("十秒内没看到改动：{path}");
 }
 
+/// 等会话空下来（`session.list` 那一项不写 `busy`，十秒为限）：回合结束的事件落了盘，会话的「在跑」稍后才放下；在跑时说的
+/// 不问（施工 OV-1 下），要断言「会问」的那一句先等它空（施工 PX-1补：不等的话偶尔照在跑放过去）。
+async fn until_idle(client: &mut Client, session: &str) {
+    for round in 0..1000 {
+        let listed = client
+            .call(
+                &format!("idle-{round}"),
+                "session.list",
+                json!({"limit": 50}),
+            )
+            .await;
+        let busy = listed["result"]["sessions"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .find(|entry| entry["session"] == session)
+            .is_some_and(|entry| entry["busy"] == true);
+        if !busy {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    panic!("十秒内会话没空下来：{session}");
+}
+
 /// 拒绝的原因，没拒的是 `ok`。
 fn reason(reply: &Value) -> &str {
     reply["error"]["data"]["reason"].as_str().unwrap_or("ok")
@@ -104,6 +129,7 @@ async fn its_own_persona_still_asks_and_only_its_files_are_named() {
         b"You are Miyu, edited.\n",
     )
     .await;
+    until_idle(&mut client, &session).await;
     let refused = client.say("s2", &session, "在吗").await;
     assert_eq!(reason(&refused), "prefix_changing", "{refused}");
     assert_eq!(
@@ -151,7 +177,7 @@ async fn a_recast_session_is_not_asked_again() {
     assert!(recast.get("error").is_none(), "{recast}");
     let second = client.say("s2", &session, "在吗").await;
     assert_eq!(reason(&second), "ok", "换人格压缩过了，不再问：{second}");
-    home.until_turns(&session, 2).await;
+    home.until_turns(&session, 3).await;
     touch(&home, &core, "root/personas/other/avatar.png", b"png").await;
     let third = client.say("s3", &session, "在吗").await;
     assert_eq!(reason(&third), "ok", "别的人格的图片不问：{third}");
@@ -187,9 +213,11 @@ async fn a_recast_before_any_turn_is_not_asked_either() {
     assert_eq!(reason(&first), "ok", "换人格时已经放行：{first}");
 }
 
+/// 换人格时的手动压缩单开一轮，也记 `turn.ended`：之后说的那一句是第三轮。
+///
 /// 说过几句、换了人格（压缩过）、下一句还没发：之后有人给别的人格换了头像（施工 PX-1补，网页的复现）。快照等下一个回合才换成
 /// 新人格的，干算的基准要是那一份，不是还没换下来的旧快照：
-/// - 这一句不问，取消了什么都不改再发也不问；
+/// - 这一句不问（网页那边问了、取消再发照样问的那一种，修好以后第一句就不问了）；
 /// - 再改它新人格的人设，问，`data.files` 只列那一个，不把别的人格的图片一起列上。
 #[tokio::test]
 async fn a_recast_then_another_persona_s_picture_does_not_ask() {
@@ -219,9 +247,7 @@ async fn a_recast_then_another_persona_s_picture_does_not_ask() {
     touch(&home, &core, "root/personas/other/avatar.png", b"png").await;
     let second = client.say("s2", &session, "在吗").await;
     assert_eq!(reason(&second), "ok", "别的人格的头像不问：{second}");
-    let again = client.say("s2b", &session, "在吗").await;
-    assert_eq!(reason(&again), "ok", "再发也不问：{again}");
-    home.until_turns(&session, 2).await;
+    home.until_turns(&session, 3).await;
 }
 
 /// 同上，换的是它自己将要用的新人格的人设：问，只列那一个文件。
@@ -258,6 +284,7 @@ async fn a_recast_then_its_new_persona_edited_names_only_that_file() {
         b"You are Miyu, edited.\n",
     )
     .await;
+    until_idle(&mut client, &session).await;
     let refused = client.say("s2", &session, "在吗").await;
     assert_eq!(reason(&refused), "prefix_changing", "{refused}");
     assert_eq!(
@@ -332,7 +359,7 @@ async fn the_baseline_is_dropped_once_the_new_persona_is_in() {
         .await;
     assert!(recast.get("error").is_none(), "{recast}");
     assert_eq!(reason(&client.say("s2", &session, "在吗").await), "ok");
-    home.until_turns(&session, 2).await;
+    home.until_turns(&session, 3).await;
     touch(
         &home,
         &core,
@@ -340,6 +367,7 @@ async fn the_baseline_is_dropped_once_the_new_persona_is_in() {
         b"You are Miyu, edited.\n",
     )
     .await;
+    until_idle(&mut client, &session).await;
     let edited = client.say("s3", &session, "在吗").await;
     assert_eq!(reason(&edited), "prefix_changing", "{edited}");
     let kept = client
@@ -350,7 +378,7 @@ async fn the_baseline_is_dropped_once_the_new_persona_is_in() {
         )
         .await;
     assert!(kept.get("error").is_none(), "{kept}");
-    home.until_turns(&session, 3).await;
+    home.until_turns(&session, 4).await;
     touch(
         &home,
         &core,
@@ -358,6 +386,7 @@ async fn the_baseline_is_dropped_once_the_new_persona_is_in() {
         b"You are Miyu.\n",
     )
     .await;
+    until_idle(&mut client, &session).await;
     let reverted = client.say("s4", &session, "在吗").await;
     assert_eq!(
         reason(&reverted),
