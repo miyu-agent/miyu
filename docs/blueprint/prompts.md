@@ -835,6 +835,17 @@ This tool works only in group or private chats on messaging platforms.
 Commands can't run in this chat yet.
 ```
 
+#### `core/guard/blocked.txt`
+
+- 什么时候加进来：扩展的守卫拒绝了这次调用（施工 HK-1，设计 65 第三节第 4 条「拒绝的理由」）：字段 `package`（包编号）、`reason`（守卫写的理由截到 300 个字，或者下面几句核心自己的），照模板转义成一行
+- token：模板 8；整句 12（`acme-policy`、`no writes under /etc`，2026-11-07 照 o200k 数，接在 `hi` 和一个换行后面、带行尾换行）
+- 为什么加：告诉她是谁拦的、为什么，她好换个做法：理由是第三方写的字，套进核心固定的一句、转义成一行，伪造不出另一条记录、另一个说话的人（core1 2026-11-06 定）。只在被拒时出现，是追加，不进前缀；理由落盘时定了，重放照日志
+- 指纹：`23bee6bc`
+
+```text
+Blocked by {package}: {reason}
+```
+
 #### `software/basesystem/common/missing.txt`
 
 - 什么时候加进来：`read`、`glob`、`grep` 要的文件或目录不存在
@@ -5352,6 +5363,63 @@ Rerun this script outside the sandbox. When the sandbox blocks the script, retry
   "clicall": true,
   "result": "{\"kind\":\"links\",\"links\":[{\"title\",\"url\",\"snippet\",\"site\",\"date\"}]}"
 }
+```
+
+### 工具结果，`blocked.txt` 的 `reason`
+
+#### `core/guard/no-reason.txt`
+
+- 什么时候加进来：守卫拒绝了、没写理由（施工 HK-1）
+- token：4（同上量，单独一句带行尾换行；换进模板时去掉换行，整句 10）
+- 为什么加：不写的话那一句收在冒号上，她看不出是没写还是丢了
+- 指纹：`0e77dfac`
+
+```text
+no reason given
+```
+
+#### `core/guard/timed-out.txt`
+
+- 什么时候加进来：守卫没在清单的时限里答（施工 HK-1，设计 65 第三节第 5 条「守卫超时」）
+- token：8（同上量；整句 14）
+- 为什么加：失效往严里走，算拒绝；告诉她不是守卫判了不许，是没答上，过一会儿可以再试
+- 指纹：`52b03d44`
+
+```text
+the guard did not answer in time
+```
+
+#### `core/guard/not-running.txt`
+
+- 什么时候加进来：守卫开着却没在跑（正在起、刚崩、起不来），或者问着问着连接断了（施工 HK-1，「守卫不在」）
+- token：6（同上量）
+- 为什么加：同上，算拒绝；说清是守卫不在
+- 指纹：`5dbe1408`
+
+```text
+the guard is not running
+```
+
+#### `core/guard/failed.txt`
+
+- 什么时候加进来：守卫回了 JSON-RPC 错误（施工 HK-1，「守卫出错」）
+- token：6（同上量）
+- 为什么加：同上
+- 指纹：`52b32ed4`
+
+```text
+the guard returned an error
+```
+
+#### `core/guard/malformed.txt`
+
+- 什么时候加进来：守卫的回应写法不对（施工 HK-1，「守卫答得不对」）
+- token：8（同上量）
+- 为什么加：同上
+- 指纹：`00ba1b64`
+
+```text
+the guard answered in a wrong format
 ```
 
 ### 人这边

@@ -38,6 +38,14 @@ impl Kind {
     }
 }
 
+/// 挂着一个立即答的守卫时的「read 小文件」（施工 HK-1，`guard.rs`）：别的几种量完、打开守卫以后量，和 `KINDS` 的头一种比。
+pub const GUARDED: Kind = Kind {
+    name: "read 小文件（挂着一个立即答的守卫）",
+    tool: "read",
+    full: false,
+    args: read_small,
+};
+
 /// 量的几种，照这个先后量。
 pub const KINDS: [Kind; 14] = [
     Kind {

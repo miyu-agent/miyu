@@ -55,6 +55,11 @@ impl super::Tools {
         self.callers.start(turn, speakers);
     }
 
+    /// 派在 `turn` 这一轮的调用的事实（施工 HK-1：问扩展的守卫时交 `owner`）。
+    pub(crate) fn caller_of(&self, turn: Option<TurnId>) -> Caller {
+        self.callers.of(turn)
+    }
+
     /// 交给内核的限额换了模型（施工 E-M）：以后派的调用照它。
     pub(crate) fn model_in_use(&mut self, model: Option<InUse>) {
         self.callers.model = model;

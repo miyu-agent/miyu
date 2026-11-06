@@ -30,7 +30,12 @@ fn shipped(core: &Core, id: &str) -> bool {
 }
 
 /// 包 `id` 手里有的能力，照能力表的先后：出厂的是声明的全部（要人批的那几项除外，施工 LP-1），别的是声明的里面开关文件记着批过的。
-fn holds(core: &Core, id: &str, manifest: &Manifest, switches: &Switches) -> Vec<Capability> {
+pub(super) fn holds(
+    core: &Core,
+    id: &str,
+    manifest: &Manifest,
+    switches: &Switches,
+) -> Vec<Capability> {
     let shipped = shipped(core, id);
     let approved = switches.approved.get(id).map_or(&[][..], Vec::as_slice);
     declared(manifest)

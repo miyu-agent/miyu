@@ -28,6 +28,10 @@ use sandbox::Sandbox;
 #[tokio::main(flavor = "multi_thread", worker_threads = 2)]
 async fn main() -> ExitCode {
     let words: Vec<String> = std::env::args().skip(1).collect();
+    // 工具一步里当守卫的扩展（施工 HK-1）：核心拉起的就是量尺自己。
+    if words.first().map(String::as_str) == Some(measure::tools::guard::ARG) {
+        return measure::tools::guard::serve();
+    }
     let outcome = match args::parse(&words) {
         Ok(args) => run(args).await,
         Err(error) => Err(error),

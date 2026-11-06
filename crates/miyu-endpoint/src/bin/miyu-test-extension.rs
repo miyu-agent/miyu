@@ -28,6 +28,8 @@
 //!   （施工 X-16）；是 `search.query` 的照 `query` 答（施工 N-5）：`limit` 回限额的错误，`boom` 回一个错误，别的答一条；
 //! - `inject:<怎么答>`：之后的 `serve` 照它答 `user.append`：`hint` 交一块 `meme`，字是 `hint <venue> <text>`（没有 `text` 的写
 //!   `-`）；`slow` 过 600 毫秒再照 `hint` 答；`silent` 不答；`boom` 回一个错误；`garbled` 回写法不对的；`many` 交四块；`empty` 交空的。不写的不答；
+//! - `guard:<怎么答>`：之后的 `serve` 照它答 `tool.guard`（施工 HK-1，`hooks.rs`）：`allow`、`deny`、`ask`、`forged`（拒绝，理由里塞
+//!   伪造的指令、工具结果、换行和引号），`silent` 不答，`boom` 回一个错误，`garbled` 回写法不对的，`crash` 当场退出（退出码 3）。不写的不答；
 //! - `edits:<路径>`：之后 `serve` 答工具 `ext_edit` 时照参数里的 `old_string`、`new_string` 改这个文件（同内置 `edit`，只换第一处），
 //!   回应的效果里只报哪个文件改了，改前改后由核心自己读（施工 XG-1，设计 63 第四节）；
 //! - `effects:<JSON 数组>`：之后 `serve` 答名字以 `ext_fake` 开头的工具时什么都不改，回应的 `effects` 原样放这一份（施工 XG-1 上：报假的效果）；
@@ -50,6 +52,8 @@ use std::fs::{File, OpenOptions};
 use std::io::{self, BufRead, Write};
 use std::time::Duration;
 
+#[path = "miyu-test-extension/hooks.rs"]
+mod hooks;
 #[path = "miyu-test-extension/run.rs"]
 mod run;
 
@@ -64,8 +68,9 @@ fn main() {
     let mut session = String::new();
     // 最近一次 `blob.open` 回的上传编号（施工 Y-2中下）。
     let mut upload = String::new();
-    // `serve` 怎么答 `user.append`（施工 X-16）。
+    // `serve` 怎么答 `user.append`（施工 X-16）、`tool.guard`（施工 HK-1）。
     let mut inject = String::from("silent");
+    let mut guard = String::from("silent");
     // `serve` 答工具 `sticker` 时发出去的那张图的 blob（施工 X-19）。
     let mut sent = String::new();
     // `serve` 答 `method.call` 的 `give` 时交回的几段字（施工 W-6 三补）。
@@ -162,6 +167,8 @@ fn main() {
             given.clone_into(&mut give);
         } else if let Some(how) = step.strip_prefix("inject:") {
             how.clone_into(&mut inject);
+        } else if let Some(how) = step.strip_prefix("guard:") {
+            how.clone_into(&mut guard);
         } else if step == "wait" {
             while !read(&mut input).is_empty() {}
         } else if step == "listen" {
@@ -237,7 +244,14 @@ fn main() {
                 }
                 if line.contains(r#""method":"user.append""#)
                     && let Some(id) = field(&line, "id")
-                    && let Some(answer) = injected(&id, &inject, &line)
+                    && let Some(answer) = hooks::injected(&id, &inject, &line)
+                {
+                    send(&answer);
+                }
+                // 工具调用前的守卫（施工 HK-1）：照 `guard` 答。
+                if line.contains(r#""method":"tool.guard""#)
+                    && let Some(id) = field(&line, "id")
+                    && let Some(answer) = hooks::guarded(&id, &guard)
                 {
                     send(&answer);
                 }
@@ -445,37 +459,6 @@ fn commanded(id: &str, command: &str, argument: &str) -> Option<String> {
             r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"said":"{command} {argument}\nok"}}}}"#
         ),
     })
-}
-
-/// 答编号是 `id` 的那一次 `user.append`（施工 X-16），照 `how`。
-fn injected(id: &str, how: &str, line: &str) -> Option<String> {
-    let block = |text: &str| format!(r#"{{"kind":"meme","text":"{text}"}}"#);
-    let blocks = match how {
-        "hint" | "slow" => {
-            if how == "slow" {
-                std::thread::sleep(std::time::Duration::from_millis(600));
-            }
-            let venue = field(line, "venue").unwrap_or_default();
-            let text = field(line, "text").unwrap_or_else(|| "-".to_string());
-            block(&format!("hint {venue} {text}"))
-        }
-        "many" => vec![block("a"); 4].join(","),
-        "empty" => String::new(),
-        "boom" => {
-            return Some(format!(
-                r#"{{"jsonrpc":"2.0","id":"{id}","error":{{"code":-32000,"message":"boom"}}}}"#
-            ));
-        }
-        "garbled" => {
-            return Some(format!(
-                r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"content":[{{"kind":"Bad Kind","text":"x"}}]}}}}"#
-            ));
-        }
-        _ => return None,
-    };
-    Some(format!(
-        r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"content":[{blocks}]}}}}"#
-    ))
 }
 
 /// 推块 `widget` 的一段字（施工 X-15 中）：`<字> <块>`，跟着会话的后面接会话编号；`temp` 那一块只推字本身。

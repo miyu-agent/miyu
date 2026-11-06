@@ -35,6 +35,7 @@ fs.find
 fs.list
 fs.read
 fs.realpath
+guard.cancel
 human.get
 job.output
 job.stop
@@ -183,6 +184,7 @@ skill.remove
 system.append
 tool.call
 tool.cancel
+tool.guard
 tool.set_loading
 usage.query
 user.append

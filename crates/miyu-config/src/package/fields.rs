@@ -137,6 +137,9 @@ pub(super) const SEARCH: &[&str] = &["id", "name"];
 /// `[[widget]]`。
 pub(super) const WIDGET: &[&str] = &["id", "place", "title", "scope", "command", "state"];
 
+/// `[guard]`（施工 HK-1）。
+pub(super) const GUARD: &[&str] = &["tools", "access", "timeout_ms"];
+
 /// `[export]`。
 pub(super) const EXPORT: &[&str] = &["methods"];
 
@@ -144,7 +147,7 @@ pub(super) const EXPORT: &[&str] = &["methods"];
 pub(super) const CONTENT: &[&str] = &["dir"];
 
 /// 清单认得的表，照这个先后；哪种包能写哪几张见 `kinds::tables`。
-pub(super) const TABLES: [Table; 23] = [
+pub(super) const TABLES: [Table; 24] = [
     table("package", &[PACKAGE]),
     Table {
         name: "builtin",
@@ -189,6 +192,7 @@ pub(super) const TABLES: [Table; 23] = [
     table("side", &[SIDE]),
     table("search", &[SEARCH]),
     table("widget", &[WIDGET]),
+    table("guard", &[GUARD]),
     table("export", &[EXPORT]),
     table("content", &[CONTENT]),
 ];

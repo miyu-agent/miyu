@@ -34,11 +34,7 @@ impl Actor {
     /// 这一轮要问的端口和问的话。
     fn turn_ask(&self, text: Option<String>) -> Option<(Arc<dyn HooksPort>, TurnAsk)> {
         let ((port, session), refresh) = (self.tools.hooks()?, self.persona.as_ref()?);
-        let venue = match (refresh.venue.as_str(), refresh.snapshot.group.is_some()) {
-            ("local", _) => Where::Local,
-            (_, true) => Where::Group,
-            (_, false) => Where::Private,
-        };
+        let venue = self.place()?;
         let ask = TurnAsk {
             session: session.as_str().to_string(),
             venue,
@@ -51,6 +47,18 @@ impl Actor {
                 .collect(),
         };
         Some((port, ask))
+    }
+
+    /// 这个会话在哪说的：照人格那一份的场所、有没有群；测试里造的（没有人格的几层）没有。
+    pub(super) fn place(&self) -> Option<Where> {
+        let refresh = self.persona.as_ref()?;
+        Some(
+            match (refresh.venue.as_str(), refresh.snapshot.group.is_some()) {
+                ("local", _) => Where::Local,
+                (_, true) => Where::Group,
+                (_, false) => Where::Private,
+            },
+        )
     }
 }
 

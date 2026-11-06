@@ -4,6 +4,8 @@
 //! 端口拿着核心的弱引用（同 `spawn.rs`）：核心没了（正在退出）的不问。在跑、`provide` 过的连接才问：扩展没批过的能力起不来
 //! （`extensions/approval.rs`），在跑就是批过的。没在跑的不为这一问拉起：
 //! 每一轮都问，不能让一轮等它起来。
+//!
+//! 工具调用前的守卫（施工 HK-1）也经这个端口，照 `extensions/guards.rs` 问：和这里不同，开着却没在跑的守卫算拒绝。
 
 use std::collections::BTreeMap;
 use std::sync::{Arc, Weak};
@@ -13,7 +15,7 @@ use serde_json::{Value, json};
 
 use miyu_config::package::Capability;
 use miyu_kernel::id::{FactKind, ModuleId};
-use miyu_tool::{HooksPort, Inject, Injecting, TurnAsk};
+use miyu_tool::{GuardAsk, Guarded, Guarding, HooksPort, Inject, Injecting, TurnAsk};
 
 use crate::Core;
 use crate::reverse::Peer;
@@ -43,6 +45,24 @@ impl HooksPort for Hooks {
                 appended
             })
             .unwrap_or_default()
+    }
+
+    /// 工具调用前的守卫（施工 HK-1，`extensions/guards.rs`）：核心没了（正在退出）的没有。
+    fn guards(&self, tool: &str, access: &str) -> bool {
+        self.0
+            .upgrade()
+            .is_some_and(|core| crate::extensions::guards::watched(&core, tool, access))
+    }
+
+    fn guard(&self, ask: GuardAsk) -> Guarding {
+        let core = self.0.upgrade();
+        Box::pin(async move {
+            match core {
+                Some(core) => crate::extensions::guards::ask(core, ask).await,
+                // 核心正在退出：不放行，等会话跟着停时照打断、重启收尾（失效往严里走）。
+                None => std::future::pending::<Guarded>().await,
+            }
+        })
     }
 
     fn turn_start(&self, ask: TurnAsk) -> Injecting<'_> {

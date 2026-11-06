@@ -37,6 +37,7 @@ mod back;
 mod durable;
 mod extract;
 mod goal;
+mod guarding;
 mod halt;
 mod injects;
 mod life;
@@ -53,6 +54,7 @@ mod store;
 mod watchers;
 
 use back::answer_back;
+pub(crate) use guarding::Waiting;
 pub(crate) use life::{span, spawn};
 use mail::Mail;
 
@@ -92,6 +94,8 @@ pub(crate) struct Actor {
     jobs: SessionJobs,
     /// 执行前的链：权限策略（施工 4-3 下）。在阻塞线程里判，所以放在 `Arc` 里交过去（施工 4-9 再补四下）。
     guard: Arc<Guard>,
+    /// 在等扩展守卫的调用（施工 HK-1，`guarding.rs`）。
+    guarding: guarding::Guarding,
     /// 有没有在跑的回合，和 `Handle` 共用：每送完一批输入写一次；actor 退出了写成没有（施工 3-9 上）。
     busy: Arc<AtomicBool>,
     /// 在不在等人确认、回答（施工 SL-1），和 `Handle` 共用：照 `busy` 每送完一批写一次。
@@ -190,6 +194,7 @@ impl Actor {
             tools,
             jobs,
             guard: Arc::new(guard),
+            guarding: guarding::Guarding::default(),
             busy,
             waiting: Arc::new(AtomicBool::new(false)),
             onlookers: Arc::default(),
@@ -403,7 +408,7 @@ impl Actor {
                 // 判要碰磁盘（换真实的位置、造边界表）：在阻塞线程里判，不占跑异步任务的线程，慢盘上只让这个会话
                 // 自己等（施工 4-9 再补四下：原来当场在这里判）。
                 let guard = Arc::clone(&self.guard);
-                let (asked, looked) = ((name.clone(), args.clone()), cwd.clone());
+                let asked = (name.clone(), args.clone(), cwd.clone());
                 let (verdict, checked) =
                     blocking(move || guard.judge(&name, args, cwd, &dirs, &permission, &grants))
                         .await;
@@ -412,15 +417,18 @@ impl Actor {
                 // 要问人的先看一眼（施工 F-10 下）：装包问人的卡片照看一眼的那一份。
                 let (verdict, preview) = self
                     .tools
-                    .previewed(&asked.0, asked.1, looked, verdict)
+                    .previewed(&asked.0, asked.1.clone(), asked.2.clone(), verdict)
                     .await;
                 // 卡片上那一份跑的时候交给工具（施工 PK-3 上：装包照它批能力）。
                 self.tools.preview_for(call_id, preview);
-                Some(Input::ToolGuarded {
-                    at: self.clock.now(),
-                    call_id,
-                    verdict,
-                })
+                // 挂着扩展守卫的另起任务问，答了再送（施工 HK-1，`guarding.rs`）。
+                let call = (asked.0.as_str(), asked.1.as_str(), asked.2.as_str());
+                self.guarded(guarding::Waiting::Call(call_id), call, verdict)
+                    .map(|verdict| Input::ToolGuarded {
+                        at: self.clock.now(),
+                        call_id,
+                        verdict,
+                    })
             }
             action @ Action::RunTool { .. } => self.run_tool(action), // `actor/run.rs`
             // 叫它停（施工 4-9 再补一）：只举旗，工具交回来照常送回。

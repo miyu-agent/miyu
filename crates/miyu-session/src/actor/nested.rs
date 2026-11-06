@@ -24,7 +24,7 @@ impl Actor {
                 grants,
             } => {
                 let guard = Arc::clone(&self.guard);
-                let (asked, looked) = ((name.clone(), args.clone()), cwd.clone());
+                let asked = (name.clone(), args.clone(), cwd.clone());
                 let (verdict, checked) =
                     blocking(move || guard.judge(&name, args, cwd, &dirs, &permission, &grants))
                         .await;
@@ -32,15 +32,20 @@ impl Actor {
                 self.tools.checked_nested(&id, checked);
                 let (verdict, preview) = self
                     .tools
-                    .previewed(&asked.0, asked.1, looked, verdict)
+                    .previewed(&asked.0, asked.1.clone(), asked.2.clone(), verdict)
                     .await;
                 // 卡片上那一份跑的时候交给工具（施工 PK-3 上：装包照它批能力）。
                 self.tools.previewed_nested(&id, preview);
-                Some(Input::Nested(NestedInput::Guarded {
-                    at: self.clock.now(),
-                    id,
-                    verdict,
-                }))
+                // 脚本里调的同样过扩展的守卫（施工 HK-1，设计 65 第三节第 7 条）。
+                let call = (asked.0.as_str(), asked.1.as_str(), asked.2.as_str());
+                let waiting = super::guarding::Waiting::Nested(id.clone());
+                self.guarded(waiting, call, verdict).map(|verdict| {
+                    Input::Nested(NestedInput::Guarded {
+                        at: self.clock.now(),
+                        id,
+                        verdict,
+                    })
+                })
             }
             NestedAction::Run {
                 id,

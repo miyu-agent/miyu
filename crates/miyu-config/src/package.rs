@@ -17,6 +17,7 @@ mod depend;
 mod features;
 mod fields;
 pub mod groups;
+mod guard;
 mod kinds;
 mod links;
 mod look;
@@ -39,6 +40,7 @@ pub use code::Code;
 pub use content::Content;
 pub use depend::Dependency;
 pub use features::Feature;
+pub use guard::{ACCESS as GUARD_ACCESS, Guard};
 pub use links::{Connection, Worker};
 pub use look::{LOGO_MAX_BYTES, LOGO_MAX_SIDE};
 pub use mcp::{
@@ -120,6 +122,8 @@ pub struct Manifest {
     pub search: Vec<SearchSource>,
     /// 界面块（施工 X-15 上，`[[widget]]`）：照写的先后，没有的是空的。只有扩展包能写。
     pub widgets: Vec<Widget>,
+    /// 守卫（施工 HK-1，`[guard]`）：工具调用前问它的那几种调用；没写的没有。只有扩展包能写，要声明 `tool.guard`。
+    pub guard: Option<Guard>,
     /// 给别的软件调的方法（施工 X-18，`[export] methods`）：声明了 `packages.call` 的扩展经 `package.call` 只调得到这几个。只有
     /// 扩展包能写，没写的是空的。
     pub export: Vec<String>,
@@ -434,6 +438,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         None => Vec::new(),
     };
     widget::check(&widgets, capabilities, &slash)?;
+    let guard = guard::read(&reader, root.get("guard"), capabilities)?;
     let export = match root.get("export").and_then(Item::as_table_like) {
         Some(table) => links::export(&reader, table)?,
         None => Vec::new(),
@@ -471,6 +476,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         side,
         search,
         widgets,
+        guard,
         export,
         content,
         needs: head.needs,

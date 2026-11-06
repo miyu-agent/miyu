@@ -103,6 +103,8 @@ impl Actor {
         };
         let mut store = self.store.take().ok_or(Stop)?;
         let reseen = effects::reverts(&events);
+        // 在等扩展守卫的调用有了结果（打断、插话、重启时内核补的）：不等了，掐掉问它的任务（施工 HK-1，`guarding.rs`）。
+        self.guarding.settled(&events);
         // 派出去的任务、回报记进名册（施工 7-4）：写不进去的，会话照样停下，记了也不要紧。
         self.jobs.note(&events);
         // 挂在刚报了开始的后台命令下面、等着的脚本调用，这时交进内核（施工 M-3，`tools/nested/port.rs`）。

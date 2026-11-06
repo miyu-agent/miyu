@@ -7,6 +7,7 @@
 
 mod approval;
 pub(crate) mod config;
+pub(crate) mod guards;
 mod instance;
 pub(crate) mod methods;
 mod offers;
@@ -68,6 +69,8 @@ pub(crate) struct Extensions {
     ports: ports::Ports,
     /// 扩展交的预设功能（施工 IM-6，`offers.rs`）。
     pub(crate) offers: offers::Offers,
+    /// 工具调用前的守卫的表（施工 HK-1，`guards.rs`）。
+    pub(crate) guards: guards::Guards,
 }
 
 impl Extensions {
@@ -84,6 +87,7 @@ impl Extensions {
             changed: broadcast::channel(CHANGES).0,
             ports: ports::Ports::default(),
             offers: offers::Offers::default(),
+            guards: guards::Guards::default(),
         }
     }
 
@@ -252,6 +256,8 @@ impl Core {
         for (id, manifest) in processes_of(&all) {
             self.start_one(id, manifest, &switches);
         }
+        // 守卫的表（施工 HK-1）：起来时照这一份清单建好，调用前查表。
+        self.extensions.guards.build(self);
         // `bundle` 带的 MCP 服务同样照开关起（施工 X-3 上）；配置里的写了就起（施工 F-9 下）。
         self.start_mcp();
         self.start_home_mcp();

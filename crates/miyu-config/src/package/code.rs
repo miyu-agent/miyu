@@ -101,6 +101,8 @@ pub enum Code {
     BadSlash,
     /// `[[search]]` 写错了（施工 N-5）：编号、名字，同一个包里重了，没声明 `search` 能力。
     BadSearch,
+    /// `[guard]` 写错了（施工 HK-1）：工具名、访问类别、时限，两样都没写，没声明 `tool.guard` 能力。
+    BadGuard,
     /// `[[side]]` 写错了（施工 Q-3）：编号、档位、名字、说明，同一个包里重了。
     BadSide,
     /// `[tray]` 写错了（施工 TR-2）：没写 `[page]`，写了 `name` 以外的格（托盘入口只能打开这个包自己的后台页）。
@@ -182,6 +184,7 @@ impl Code {
             Code::BadMcp => "bad_mcp",
             Code::BadSlash => "bad_slash",
             Code::BadSearch => "bad_search",
+            Code::BadGuard => "bad_guard",
             Code::BadSide => "bad_side",
             Code::BadTray => "bad_tray",
             Code::BadAuthor => "bad_author",
@@ -199,7 +202,7 @@ impl Code {
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 60] = [
+    pub const ALL: [Code; 61] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -249,6 +252,7 @@ impl Code {
         Code::BadMcp,
         Code::BadSlash,
         Code::BadSearch,
+        Code::BadGuard,
         Code::BadSide,
         Code::BadTray,
         Code::BadAuthor,

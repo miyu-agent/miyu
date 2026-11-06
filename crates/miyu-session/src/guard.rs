@@ -161,6 +161,11 @@ impl Guard {
         self.with_attachments(miyu_store::attachments::dir(root, id))
     }
 
+    /// 工具目录里这时的 `name` 的访问类别（施工 HK-1：照它查有没有挂着扩展的守卫）；目录里没有的没有。
+    pub(crate) fn access_of(&self, name: &str) -> Option<Access> {
+        Some(self.catalog.get(name)?.spec().access.clone())
+    }
+
     /// 主人管得住的地方：回合开始照它和这一轮的放行表拼一份。
     pub(crate) fn confines(&self) -> &Confines {
         &self.confines

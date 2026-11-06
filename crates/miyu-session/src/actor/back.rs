@@ -39,6 +39,7 @@ impl Actor {
         Some(match back {
             Back::Woke { seen } => Input::Woke { at, seen },
             Back::Tool(back) => return self.tools.back(at, back),
+            Back::Guarded { waiting, verdict } => self.guards_answered(at, waiting, verdict),
             Back::Nested(back) => return self.tools.nested_back(at, back),
             // `goal` 工具交来的（施工 X-8 上，`goal/asked.rs`）。
             Back::Goal {
