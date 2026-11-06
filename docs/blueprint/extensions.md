@@ -16,12 +16,13 @@
 | `crates/miyu-endpoint/src/extensions/stderr.rs` | 标准错误的文件：拉起前太大的挪成 `.old`，状态里给最后几行 |
 | `crates/miyu-endpoint/src/appends.rs` | `system.append`：照包、照会话记下扩展放的，交给端口；`miyu-session` 的 `appended.rs` 照工具面挑、钉进快照 |
 | `crates/miyu-endpoint/src/hooks.rs` | 回合开始的挂接点（施工 X-16）：会话的 `HooksPort` 照清单、提供者挑要问的扩展，并行发 `user.append`、各自限时，照写法收；`miyu-session` 的 `actor/injects.rs` 拼问的话、换成注入 |
+| `crates/miyu-endpoint/src/extensions/guards.rs`、`guards/answer.rs`、`guards/texts.rs` | 工具调用前的守卫（施工 HK-1，下面「工具调用前的守卫」）：照清单的 `[guard]` 建表、查表，并行发 `tool.guard`、各自限时、照包的编号合；读答；拒绝的那一句套模板、转义；不等了发 `guard.cancel`。`miyu-session` 的 `actor/guarding.rs` 在权限策略之后问端口、合上策略的结论 |
 | `crates/miyu-endpoint/src/extensions/methods.rs` | `extension.enable`、`extension.disable`、`extension.restart`、`extension.status`；推送用的一项（`entry`，施工 9-4 补） |
 | `crates/miyu-endpoint/src/subscriptions/listed.rs` | 扩展的状态的订阅（施工 9-4 补；F-8 三补起和软件包列表的订阅共用这一份）：先写回应，收到哪个包变了照这一刻算那一项推 `extension.changed`，掉了队推 `resync` |
 | `crates/miyu-endpoint/src/connection.rs`、`hello.rs`、`login.rs` | 核心亲手给的连接：握手不看凭据（`Via::Spawned`） |
 | `crates/miyu-endpoint/src/connection/rights.rs` | 扩展能调什么的表（施工 X-30，「谁能调」）：只给人、要哪项能力、都能调；连接起来时照清单算一次声明了哪些；门禁 `xtask/src/rights.rs` 查代码里分发的方法都在表里 |
 | `crates/miyu-core/src/lib.rs`、`serve.rs` | 写了 `ready` 以后照开关拉起，停的时候请扩展退出 |
-| `crates/miyu-endpoint/src/bin/miyu-test-extension.rs` | 测试用的扩展：照参数一步步做（握手、调方法、带参数调方法（参数里的 `{session}` 换成最近回应里的会话编号，施工 O-4 下）、等标准输入读到头、不理它、退出码、往标准错误写、记下一个环境变量（施工 O-18）），不随发行带出去；`inject:<怎么答>` 定 `serve` 怎么答 `user.append`（施工 X-16、X-16 补） |
+| `crates/miyu-endpoint/src/bin/miyu-test-extension.rs` | 测试用的扩展：照参数一步步做（握手、调方法、带参数调方法（参数里的 `{session}` 换成最近回应里的会话编号，施工 O-4 下）、等标准输入读到头、不理它、退出码、往标准错误写、记下一个环境变量（施工 O-18）），不随发行带出去；`inject:<怎么答>` 定 `serve` 怎么答 `user.append`（施工 X-16、X-16 补），`guard:<怎么答>` 定怎么答 `tool.guard`（施工 HK-1，答法在 `miyu-test-extension/hooks.rs`） |
 
 ### 对外的样子
 
@@ -129,6 +130,18 @@
 4. **记**：交回的一块记成 `context.injected`，`by` 是这个包（模块编号就是包的编号），`kind` 照交的，`after` 是真：排在触发的那句话**后面**（施工 X-16 补，项目主人定「插到用户消息尾部」；记忆、知识库的照旧排前面）。写进日志就不变：下一轮照日志原样回放，前缀稳定。
 5. **不问的**：没有这种扩展的会话一个字节不变；子会话照问（它的工具面上有那件工具才问）。
 
+**工具调用前的守卫**（施工 HK-1，设计 `65-工具挂接点.md` 第三节、第十节；`kernel/asking.md`「执行前的链」）：
+
+1. **谁挂得上**：扩展包（有进程的），清单 `[process] capabilities` 声明了 `tool.guard`、写了 `[guard]`（`tools`、`access` 至少一样，`timeout_ms` 100 到 5000、不写是 1000；两样都没写、没声明能力的读不进，`bad_guard`，`packages.md`）、主人批了、开关开着。出厂的内置包不走这一路（它们的检查在权限策略里）；脚本、MCP 服务、技能挂不了。不要求 `provide`：问的是握了手的连接（`Provided::linked`）。
+2. **表**：照核心手上的清单建（`Guards`，扩展表里一份）：扩展包、写了 `[guard]`、声明了 `tool.guard` 的，照包的编号排。核心起来时建一次（`start_extensions`）；清单换了（装卸、升级，`system_packages` 换了一份）照新的那一份重建，照 `Arc` 认是不是同一份。调用前查一次：工具名在 `tools` 里或者访问类别在 `access` 里的才算挂着；对上了才读开关文件、看批没批，所以没挂守卫的调用一点不多（设计 65 第六节）。工具是它自己登记的（`Catalog::package_of`）不问它；主人关掉的不问。
+3. **问**（会话那一头，`miyu-session` 的 `actor/guarding.rs`）：权限策略照旧先判、在阻塞线程里判、看一眼卡片；判了拒绝的到此为止。判了放行、要问人的，经端口查表（`HooksPort::guards`），没挂着的当场送进内核，照原来的路；挂着的起一个任务问（`HooksPort::guard`），actor 不等它，答了合上策略的结论经执行器的回报（`Back::Guarded`）送回内核。脚本里调的（`miyu call`，嵌套调用的 `Guard` 动作）同一条路，`call_id` 是嵌套调用的编号。
+4. **问什么**：`tool.guard {"session", "call_id", "tool", "args", "access", "cwd", "owner", "venue"}`：`args` 是修正过的参数（解成 JSON，解不开的是 `{}`），`owner` 照这一轮开口的人（同 `tool.call`），`venue` 是 `local`、`private`、`group`（同 `user.append`）。几个并行问（`JoinSet`），各自照清单的 `timeout_ms`。
+5. **答**：`{"verdict": "allow" | "deny" | "ask", "reason"?}`，多了格、少了 `verdict`、不认识的、`reason` 不是字的算答得不对。合（照包的编号，不照到达的先后）：有拒绝的（答得不对、超时、连接断了、回错误、开着却没在跑的都算），取编号在前的那一个；没有的，要问人的编号在前的那一个；都放行的放行。算拒绝的四种各记一行 `WARN tool.guard counted as a denial why=timed_out|not_running|failed|malformed`。开着却没在跑（还没握手、刚崩、起不来、没有连接）不问，直接算。
+6. **合上策略**（最严者胜、只能收紧）：守卫拒绝的拒绝，`by` 是那个包；策略要问人的照旧问人（它带着放行规则；守卫也要问人的照策略的问）；策略放行、守卫要问人的问人：`Ask {module: 那个包, access: 这件工具的访问类别, rule: 没有, detail: {"guard", "tool", "reason"?}}`，只能允许这一次或者拒绝，没人能确认的会话照内核的规矩拒。守卫不改参数、不改沙盒的规格。
+7. **拒绝的那一句**（理由是第三方写的字，进模型的上下文：`guards/texts.rs`）：理由去掉头尾空白、截到 300 个字，换进出厂的 `core/guard/blocked.txt`（`Blocked by {package}: {reason}`），照模板转义（`kernel/request.md`，同旧版 `safe_prompt_field`）：换行、控制字符、引号、`&`、尖括号写成 `\n`、`\u003c` 这样，整句一行，包编号同样转义。没写理由的是 `core/guard/no-reason.txt`；超时、不在、出错、答得不对是 `core/guard/` 的另四句，同样换进这个模板。几份字编进程序（同 `miyu-cli` 的 `core/call/`）。给人看的说法：`core/guard/denied-with-reason`（字段 `package`、截过的原文 `reason`）、`denied`、`timed-out`、`not-running`、`failed`、`malformed`（字段 `package`），字在 `resources/core/human/{zh,en,ja}.json`。登记在 `26-提示词.md` 第十节。
+8. **不等了**：在等的调用一有了结果（打断、急着插话、收紧成只读、重启时内核补的 `tool.result`、`tool.nested`，actor 追加之前看一眼），它的任务掐掉：端口的 future 丢掉，还没答的守卫收到通知 `guard.cancel {"session", "call_id"}`（同 `tool.cancel` 的写法），这次调用照打断收尾。超时的同样发。actor 退出时一起掐。核心没了（正在退出）的不放行：等会话跟着停时照重启收尾。
+9. **缓存前缀**：放行、问人都不进上下文；拒绝只在历史末尾追加一条 `denied` 的结果，理由落盘时定了，重放照日志。工具面、system 都不变（`tests/tool_guard.rs` 比过：挂着放行的守卫，第二次请求和没装守卫时逐字节一样）。
+
 **放在 system 尾部的**（施工 X-20，设计 `34-表情包.md` 第五节第 5 条）：
 
 1. **谁能放**：清单 `[process] capabilities` 写了 `context.system`、在跑的扩展（`appends.rs`），经 `system.append {content, session?}`。
@@ -181,6 +194,7 @@
 | `crates/miyu-endpoint/tests/audit_extension_core_key.rs`（施工 5-19） | 包编号和核心模块同名（`ui`）、没声明配置项的扩展改 `ui.language` 回 `local_only`，系统配置里什么都没写 |
 | `crates/miyu-endpoint/tests/packages_extensions.rs`（施工 F-5 下） | 真核心装上一个 `always` 的扩展当场拉起、它登记的工具进工具面、调得到；卸掉当场停下、`extension.status` 不列、用过它的会话照旧留着、调到报「已卸载」；升级了的停下再拉起；装别的包时清单没变的进程不换。卸包先停再删（停下时清单还在）；升级成撞了别的包的撤回、原来的重新拉起；换不成、删不成的（Unix 上目录只读）照原来的重新拉起（施工 F-5 补） |
 | `crates/miyu-endpoint/tests/turn_inject.rs`、`src/hooks/tests.rs`（施工 X-16） | 真核心拉起八个测试扩展：声明了、工具面上有的交的两块照包的编号进日志（`by` 是包）、进请求排在人说的话前面；没声明的、工具只在群里的不问；超时、回错误、写法不对、交了四块的当没交、这一轮照常走完；回应的写法（至多 3 块、1 到 4000 字、类别和包的编号合写法、一块不对整份不要） |
+| `crates/miyu-endpoint/tests/tool_guard.rs`、`tool_guard_more.rs`、`src/extensions/guards/tests.rs`、`crates/miyu-session/src/actor/guarding/tests.rs`、`crates/miyu-config/src/package/guard/tests.rs`（施工 HK-1） | 真核心拉起测试扩展：两个守卫一个拒一个放，拒绝、`by` 是拒的包、那一句和说法、工具没跑，两个都被问到、问的八格；两个都拒（一个答得不对）记编号在前的；要问人的记请求、`by` 是包、不提规则，人允许了才跑；放行的第二次请求和没装守卫时逐字节一样；理由里伪造的指令、工具结果、记录头、换行、引号只在那一行里、转义过，请求里找不到原样的；超时的拒绝、收到 `guard.cancel`；回错误的、崩了的、开着却没握手的拒绝（没握手的不问）；打断时不等守卫、照打断收尾、它收到 `guard.cancel`；关掉的不问；自己登记的工具、策略先拒了的不问；脚本里调的同样挡下、`call_id` 是嵌套调用的编号，父级被打断时它的守卫当场收到 `guard.cancel`。单元：答的读法、照编号合、没答的那几句、截到 300 字先截后转义、访问类别的写法和内核一样；合上策略只收紧；`[guard]` 的读法、两样都没写、范围外的时限、没声明能力、不是扩展包的报错 |
 | `crates/miyu-endpoint/tests/bridge_venues.rs`、`crates/miyu-store/src/packages/tests.rs`（施工 O-4 下，SU-4 中改） | 平台桥开的群会话在主人名下、关在沙盒里、找回同一个；对应表里的主人的私聊不关、本机的头也开得了；群里主人说的记成外部身份带 `owner: true`；不是桥的扩展开群会话 `needs_approval` |
 
 ### 起草时定的
@@ -198,4 +212,4 @@
 ### 还没有的
 
 - 沙盒里跑：另做（`network`、`fs.*` 现在管的是经核心做的，扩展自己联网、读写文件不挡）。照能力挡方法、扩展说的话记成它自己：施工 X-30 做了（「谁能调」）。
-- 扩展提供工具、命令：O-2；回合开始的挂接点：X-16；放在 system 尾部的：X-20。`tool.guard`、`tool.rewrite` 还没有。扩展的工具声明路径、交效果、声明后台参数：XG-1 上做了；声明跑命令（`runs_commands`、能力 `tools.commands`、`tool.call` 的 `channel`）：XG-1 下做了（`providers.md`「会跑命令的」）。
+- 扩展提供工具、命令：O-2；回合开始的挂接点：X-16；放在 system 尾部的：X-20；工具调用前的守卫 `tool.guard`：HK-1。执行后的只读通知 `tool.after` 还没有（HK-2，设计 65 第四节）；改写结果 `tool.rewrite` 不做（第七节）。扩展的工具声明路径、交效果、声明后台参数：XG-1 上做了；声明跑命令（`runs_commands`、能力 `tools.commands`、`tool.call` 的 `channel`）：XG-1 下做了（`providers.md`「会跑命令的」）。

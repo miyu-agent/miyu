@@ -122,7 +122,8 @@ place = "status"
 | `memory.write` | 写记忆、知识库 |
 | `fs.read`、`network` | 经核心读文件、抓链接 |
 | `fs.write` | 写指定的路径：扩展进沙盒以后照它放行 |
-| `tool.guard`、`tool.rewrite` | 工具执行前拦下、执行后改写结果：还没有 |
+| `tool.guard` | 工具调用执行前放行、拒绝或者要问人（`[guard]`） |
+| `tool.rewrite` | 工具执行后改写结果：还没有 |
 
 ## `[settings.<名字>]`
 
@@ -250,6 +251,24 @@ name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
 | `name` | 给人看的名字 |
 
 设置页「搜索服务供应商」的下拉里多一项，值是 `<包的编号>/<编号>`。人选了它才用，不进「自动」的顺序：你的程序不会在人不知道的时候拿到搜索词。AI 搜网页时核心调你的程序 `search.query`，你用不了的（出错、限额），照出厂的几家兜底。见 [写扩展](extensions.md)。
+
+## `[guard]`
+
+把你的程序登记成工具调用前的守卫：AI 的调用执行之前问你放行、拒绝还是要问人；`capabilities` 里要有 `tool.guard`。
+
+| 格 | 说明 |
+|---|---|
+| `tools` | 问哪几件工具：工具名的数组，自带的、别的包的、MCP 服务的都照名字认 |
+| `access` | 问哪几类访问：`read`、`write`、`execute`、`network`、`outbound`、`venue`、`install` 里的 |
+| `timeout_ms` | 等你多久，毫秒：100 到 5000，不写是 1000。到了没答的算拒绝 |
+
+```toml
+[guard]
+tools = ["write", "edit"]
+access = ["execute"]
+```
+
+调用的工具名在 `tools` 里，或者访问类别在 `access` 里，才问你；两样至少写一样，不许什么都问。你自己登记的工具不问你。开着却没在跑、超时、出错的都算拒绝。核心调你的程序 `tool.guard`，见 [写扩展](extensions.md)。
 
 ## `[[side]]`
 

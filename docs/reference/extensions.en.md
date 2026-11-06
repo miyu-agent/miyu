@@ -12,6 +12,7 @@ An extension is a program a package brings. The core launches it from the manife
 | [`port.claim`, `port.release`, `port.list`](#portclaim-portrelease-portlist) | extension → core (`port.list` for the owner) | Claim and release the ports it listens on; see the whole table (construction IM-5) |
 | [`command.call`](#commandcall) | core → extension | A person typed a slash command it declared |
 | [`user.append`](#userappend) | core → extension | At the start of a turn, ask whether it wants to add a few lines to the context |
+| [`tool.guard`, `guard.cancel`](#toolguard-guardcancel) | core → extension | Ask it before a tool call runs: allow, deny or ask the person; stop waiting |
 | [`system.append`](#systemappend) | extension → core | Put a section at the end of the system prompt |
 | [`widget.set`, `widget.clear`, `widget.watch`, `widget.unwatch`](#widgetset-widgetclear-widgetwatch-widgetunwatch) | both | Widget content |
 | [`extension.config`](#extensionconfig) | core → extension | Its own settings changed |
@@ -81,7 +82,8 @@ The manifest's `[process] capabilities` declares what it needs. Packages you ins
 | `fs.read` | Reading files through the core (`fs.*`) |
 | `network` | Fetching links through the core (`link.preview`) |
 | `fs.write` | Writing given paths: granted once extensions run in a sandbox |
-| `tool.guard`, `tool.rewrite` | Stopping a tool before it runs, rewriting its result afterwards: not available yet |
+| `tool.guard` | Allowing, denying or asking the person before a tool call runs (manifest `[guard]`, `tool.guard`) |
+| `tool.rewrite` | Rewriting a tool's result after it runs: not available yet |
 
 Calling a method whose capability isn't declared returns `needs_approval`, with the missing one in `data.capabilities`. `network` and `fs.*` cover what goes through the core; your program's own network and file access is only checked once extensions run in a sandbox.
 
@@ -261,6 +263,46 @@ Asked at the start of a turn (core → extension). Only extensions that declare 
 `{"session", "venue", "text"?}`: `venue` is `local`, `private` or `group`; `text` is the person's message that started the turn (absent for turns not started by a person).
 
 **Response** `{"content": [{"kind", "text"}…]}`, at most 3 blocks: `kind` is lowercase letters, digits, `-`, `_`; `text` 1 to 4000 characters. What it returns is recorded in the session after the triggering message and replayed as-is later. Empty, late or malformed answers count as nothing this turn.
+
+## `tool.guard`, `guard.cancel`
+
+Asked before one of the AI's tool calls runs: allow, deny, or ask the person (core → extension, with an `id`, expects a response). For company policies (no writes under some folders, ask before some commands), auditing and the like.
+
+**Who is asked**: extensions whose manifest declares `tool.guard` in `[process] capabilities` and has a `[guard]` table, approved by the owner and switched on. `[guard]` is a static table the core builds its lookup from at startup:
+
+```toml
+[guard]
+tools = ["shell", "write", "edit"]   # tool names, optional
+access = ["execute", "write"]        # access classes, optional
+timeout_ms = 1000                    # how long to wait for you, optional
+```
+
+- You are asked about a call when its tool name is in `tools` or its access class is in `access`. A manifest with neither doesn't load (`bad_guard`, reported by `miyu check`): no "ask about everything". Access classes are `read`, `write`, `execute`, `network`, `outbound`, `venue`, `install`.
+- Built-in tools, other packages' tools and MCP tools are all matched by name and access class; tools you `provide` yourself are not asked about. You can be a guard without providing any tool.
+- `timeout_ms` defaults to 1000 and must be 100 to 5000.
+- The permission policy decides first: calls it denies never reach you; allowed and ask-the-person calls do. Several guards are asked in parallel and the strictest wins: one deny denies; with no deny, one ask asks the person; when the policy asks, your allow still asks. You can only tighten, never loosen, and you don't change the sandbox.
+- Tools called from scripts (`miyu call`) are asked about too; `call_id` is the nested call's id (like `call_12_1#3`).
+
+**Params**: `{"session", "call_id", "tool", "args", "access", "cwd", "owner", "venue"}`: the session, this call's id, the tool name, the repaired arguments (exactly what will run), the access class, the turn's working directory, whether the speaker is the owner (as `owner` in `tool.call`), and where it was said (`local`, `private`, `group`).
+
+**Response** `{"verdict": "allow" | "deny" | "ask", "reason"?}`:
+
+- `allow`: go ahead. Nothing enters the context; the AI only sees the tool's result.
+- `deny`: the tool doesn't run. The AI sees the result `Blocked by <your package id>: <reason>`: `reason` is trimmed, cut to 300 characters, and escaped into one line (newlines, quotes and angle brackets become `\n`, `\u0022` and so on); without one it says `no reason given`. The result on the timeline has `by` set to your package, and people see your original words.
+- `ask`: ask the person through the usual approval (`tool.approval_requested` with `by` set to your package and `detail` `{"guard", "tool", "reason"?}`); they can allow once or deny. Sessions where no one can approve deny it.
+- Extra fields, an unknown `verdict` or a `reason` that isn't text count as a deny with the reason `the guard answered in a wrong format`.
+
+**No answer is a deny** (a failing guard fails closed):
+
+| When | Reason the AI sees |
+|---|---|
+| No answer within `timeout_ms` | `the guard did not answer in time` |
+| You are switched on but not running (starting, just crashed, can't start), or the connection dropped while asking | `the guard is not running` |
+| A JSON-RPC error | `the guard returned an error` |
+
+Extensions the owner switched off are not asked. Aim for a p95 under 20 ms: the person waits on this step.
+
+**`guard.cancel`** (core → extension, notification): `{"session", "call_id"}`. The person interrupted, the turn was cancelled, or you timed out: the core no longer waits. The call ends as interrupted (or was already denied for the timeout), and an answer arriving later is ignored.
 
 ## `system.append`
 

@@ -122,7 +122,8 @@ Makes it an extension; needs `[command]`.
 | `memory.write` | Writing memories and knowledge bases |
 | `fs.read`, `network` | Reading files and fetching links through the core |
 | `fs.write` | Writing given paths: granted once extensions run in a sandbox |
-| `tool.guard`, `tool.rewrite` | Stopping a tool before it runs, rewriting its result afterwards: not available yet |
+| `tool.guard` | Allowing, denying or asking the person before a tool call runs (`[guard]`) |
+| `tool.rewrite` | Rewriting a tool's result after it runs: not available yet |
 
 ## `[settings.<name>]`
 
@@ -250,6 +251,24 @@ Registers your program as a search provider, one per entry; `capabilities` must 
 | `name` | Shown to people |
 
 The settings screen's "Search provider" dropdown gets one more entry, valued `<package id>/<id>`. It's used only when a person picks it and never joins the "Auto" order, so your program never receives search terms without the person knowing. When the AI searches, the core calls your program with `search.query`; when you can't answer (an error, a rate limit), the shipped providers take over. See [Writing an extension](extensions.en.md).
+
+## `[guard]`
+
+Registers your program as a guard before tool calls: before one of the AI's calls runs, you are asked whether to allow it, deny it or ask the person; `capabilities` must include `tool.guard`.
+
+| Field | Notes |
+|---|---|
+| `tools` | Which tools to be asked about: an array of tool names; built-in tools, other packages' tools and MCP tools are all matched by name |
+| `access` | Which access classes: any of `read`, `write`, `execute`, `network`, `outbound`, `venue`, `install` |
+| `timeout_ms` | How long to wait for you, in milliseconds: 100 to 5000, default 1000. No answer by then is a deny |
+
+```toml
+[guard]
+tools = ["write", "edit"]
+access = ["execute"]
+```
+
+You are asked when the call's tool name is in `tools` or its access class is in `access`; write at least one of the two, there is no "ask about everything". Tools you register yourself are not asked about. Being switched on but not running, timing out and errors all count as a deny. The core calls your program with `tool.guard`; see [Writing an extension](extensions.en.md).
 
 ## `[[side]]`
 

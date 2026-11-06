@@ -1458,6 +1458,12 @@ flowchart LR
 |---|---|---|
 | HP-1 | 头自己的设置存进数据根 | `prefs.get {package}` 交整份（没有的 `{}`），`prefs.set {package, values}` 照顶层的键并、`null` 删，交回整份；存在那个包状态目录里的 `prefs.json`（`DataRoot::package_state`，照只给自己看的 JSON 小文件写），整份写成 JSON 最多 64 KiB，超了 `prefs_too_big`（`data` 带 `size`、`limit`）；只有装着的界面包（`[ui]`）有，没装的 `unknown_package`、别的种类 `not_a_ui_package`；`subscribe {stream: "prefs", package}` 回这一刻的整份，别的连接改了推 `prefs.changed {package, values}`，改的那个不推；只给人，扩展、平台桥调、订都 `local_only`。蓝图 `protocol.md`「头自己的设置」，参考 `prefs.md` |
 
+**工具挂接点**（HK 线，设计 65，core1 2026-11-06 定；项目主人 2026-11-07 定挪到首个正式版以前）
+
+| 步 | 名字 | 做什么 |
+|---|---|---|
+| HK-1 | 工具调用前的挂接点 | 清单 `[guard]`（`tools`、`access` 至少一样，`timeout_ms` 100 到 5000、默认 1000，写错 `bad_guard`），能力 `tool.guard` 装时批；核心起来时照清单建表，调用前查一次；权限策略之后并行问挂着的扩展 `tool.guard`，照包的编号合、最严者胜、只能收紧；超时、断了、回错误、答得不对、开着却没在跑的算拒绝；打断、超时发 `guard.cancel`；脚本里调的同样过。拒绝的理由截到 300 字、转义成一行、套 `Blocked by <包>: <理由>`（登记六份字）；放行时请求逐字节不变。量尺工具一步多一种。施工单见 `HK-1-工具调用前的挂接点.md` |
+
 ### 四、施工单的格式
 
 每一张施工单只写这几节（2026-09-28 项目主人定：有了蓝图，施工单变薄）：

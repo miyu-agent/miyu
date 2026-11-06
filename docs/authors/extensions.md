@@ -281,6 +281,13 @@ core.close()
 
 **回合开始往她的上下文里加几句**（`context.inject`）：每一轮开始核心发 `user.append {"session", "venue", "text"?}`，300 毫秒内答 `{"content": [{"kind", "text"}]}`（至多 3 块）。没得加就答 `{"content": []}`。只问这个会话的工具面上有你的工具的扩展。字是给模型看的：英文短句，外面套一层 XML 标签。
 
+**工具调用前拦一道**（`tool.guard`）：清单写 `[guard]`，列出要问的工具名、访问类别（见 [清单](manifest.md)）。AI 的调用过了权限策略、执行之前，核心发 `tool.guard {"session", "call_id", "tool", "args", "access", "cwd", "owner", "venue"}`，你答 `{"verdict": "allow"}`、`{"verdict": "deny", "reason": "<为什么>"}` 或者 `{"verdict": "ask", "reason": "<为什么>"}`（要人确认）。拒绝时 AI 看到 `Blocked by <你的包编号>: <理由>`，理由截到 300 个字、转义成一行：写一句英文，说清为什么、该怎么改（守卫不改参数，要改的让她重调）。放行不进上下文。不用 `provide`。
+
+- 答得快：人一直等着这一步，p95 最好在 20 毫秒以内；到了 `timeout_ms`（不写是 1 秒）没答的算拒绝。
+- 你没在跑（正在起、崩了）的时候，挂在你身上的调用一律拒绝：守卫失效往严里走。别在握手以后才去慢慢加载规则。
+- 人打断了、你超时了，核心发 `guard.cancel {"session", "call_id"}`，那一次你不用再答。
+- 几个守卫都问，有一个拒绝就拒绝；你只能收紧权限策略，放不开它。
+
 **往系统提示词末尾放一段**（`context.system`）：调 `system.append {"content", "session"?}`。不写 `session` 管全部会话；`content` 写 `null` 去掉。改了下一轮整段重算一次，别频繁改；只想放固定几句的，起来时调一次就行。
 
 **按意思搜**：调 `model.embed {"texts": [...]}` 拿向量（用人在设置里选的语义模型）。没配的回 `embedding_off`，退回关键词搜就好。不用另批能力。

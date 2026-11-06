@@ -281,6 +281,13 @@ Each needs the matching capability declared in the manifest (see [The manifest](
 
 **Adding a few lines to her context at the start of a turn** (`context.inject`): at the start of every turn the core sends `user.append {"session", "venue", "text"?}`; answer within 300 ms with `{"content": [{"kind", "text"}]}` (at most 3 blocks), or `{"content": []}` when there's nothing to add. Only extensions with a tool in the session's tool set are asked. This is text for the model: short English, wrapped in an XML tag.
 
+**A check before tool calls run** (`tool.guard`): write `[guard]` in the manifest, listing the tool names and access classes to be asked about (see [Manifest](manifest.en.md)). After one of the AI's calls passes the permission policy and before it runs, the core sends `tool.guard {"session", "call_id", "tool", "args", "access", "cwd", "owner", "venue"}`; answer `{"verdict": "allow"}`, `{"verdict": "deny", "reason": "<why>"}` or `{"verdict": "ask", "reason": "<why>"}` (the person confirms). On a deny the AI sees `Blocked by <your package id>: <reason>`, with the reason cut to 300 characters and escaped into one line: write one English sentence saying why and what to change (a guard doesn't change arguments; let her call again). An allow adds nothing to the context. No `provide` needed.
+
+- Answer fast: the person waits on this step, so aim for a p95 under 20 ms; no answer within `timeout_ms` (1 second by default) is a deny.
+- While you aren't running (starting, crashed), every call you guard is denied: a failing guard fails closed. Don't load your rules slowly after the handshake.
+- When the person interrupts or you time out, the core sends `guard.cancel {"session", "call_id"}`; you no longer need to answer that one.
+- All guards are asked and one deny denies; you can only tighten the permission policy, never loosen it.
+
 **A section at the end of the system prompt** (`context.system`): call `system.append {"content", "session"?}`. Without `session` it applies to all sessions; `content: null` removes it. A change recomputes the whole system prompt at the next turn, so don't change it often; for a few fixed lines, call it once at startup.
 
 **Searching by meaning**: call `model.embed {"texts": [...]}` for vectors (using the embedding model the person chose in settings). Without one configured you get `embedding_off`; fall back to keyword search. No extra capability needed.

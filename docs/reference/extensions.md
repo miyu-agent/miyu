@@ -12,6 +12,7 @@
 | [`port.claim`、`port.release`、`port.list`](#portclaimportreleaseportlist) | 扩展 → 核心（`port.list` 给主人） | 登记、放开要听的端口；看整张表（施工 IM-5） |
 | [`command.call`](#commandcall) | 核心 → 扩展 | 人打了它声明的斜杠命令 |
 | [`user.append`](#userappend) | 核心 → 扩展 | 回合开始时问它要不要往上下文里放几句 |
+| [`tool.guard`、`guard.cancel`](#toolguardguardcancel) | 核心 → 扩展 | 工具调用执行前问它放行、拒绝还是问人；不等了 |
 | [`system.append`](#systemappend) | 扩展 → 核心 | 往系统提示词末尾放一段 |
 | [`widget.set`、`widget.clear`、`widget.watch`、`widget.unwatch`](#widgetsetwidgetclearwidgetwatchwidgetunwatch) | 两个方向 | 界面块的内容 |
 | [`extension.config`](#extensionconfig) | 核心 → 扩展 | 它自己的配置变了 |
@@ -81,7 +82,8 @@
 | `fs.read` | 经核心读文件（`fs.*`） |
 | `network` | 经核心抓链接（`link.preview`） |
 | `fs.write` | 写指定的路径：扩展进沙盒以后照它放行 |
-| `tool.guard`、`tool.rewrite` | 工具执行前拦下、执行后改写结果：还没有 |
+| `tool.guard` | 工具调用执行前放行、拒绝或者要问人（清单 `[guard]`，`tool.guard`） |
+| `tool.rewrite` | 工具执行后改写结果：还没有 |
 
 没声明的，调对应的方法回 `needs_approval`，`data.capabilities` 是缺的那一项。`network`、`fs.*` 管的是经核心做的；你的程序自己联网、读写文件，等扩展进沙盒以后才照它们挡。
 
@@ -261,6 +263,46 @@
 `{"session", "venue", "text"?}`：`venue` 是 `local`、`private`、`group`；`text` 是触发这一轮的人话（不是人开的一轮不带）。
 
 **回应** `{"content": [{"kind", "text"}…]}`，至多 3 块：`kind` 小写字母、数字、`-`、`_`；`text` 1 到 4000 个字。交回的记进会话，排在触发的那句话后面，以后原样回放。空的、超时的、写法不对的当这一轮没交。
+
+## `tool.guard`、`guard.cancel`
+
+AI 的一次工具调用执行之前问你：放行、拒绝，还是要问人（核心 → 扩展，带 `id`，要回应）。公司策略（某些目录不许写、某些命令要问人）、审计这类用法。
+
+**谁被问**：清单 `[process] capabilities` 声明了 `tool.guard`、写了 `[guard]`、主人批了、开着的扩展。`[guard]` 写一张静态的表，核心起来时就照它建好：
+
+```toml
+[guard]
+tools = ["shell", "write", "edit"]   # 工具名，可以不写
+access = ["execute", "write"]        # 访问类别，可以不写
+timeout_ms = 1000                    # 等你多久，可以不写
+```
+
+- 一次调用的工具名在 `tools` 里，或者它的访问类别在 `access` 里，才问你；两样都没写的清单读不进（`bad_guard`，`miyu check` 报），不许「什么都问」。访问类别是 `read`、`write`、`execute`、`network`、`outbound`、`venue`、`install`。
+- 自带的、别的包的、MCP 服务的工具都照名字、访问类别认；你自己 `provide` 的工具不问你。不用 `provide` 也能当守卫。
+- `timeout_ms` 不写是 1000，只能写 100 到 5000。
+- 权限策略先判：它拒绝的不问你；放行、要问人的再问你。几个守卫并行问，最严者胜：有一个拒绝就拒绝，没有拒绝、有一个要问人的问人；策略要问人的，你说放行也照旧问人。你只能收紧，不能放开，也不改沙盒。
+- 脚本里调的工具（`miyu call`）同样问你，`call_id` 是嵌套调用的编号（`call_12_1#3` 这样）。
+
+**参数**：`{"session", "call_id", "tool", "args", "access", "cwd", "owner", "venue"}`：会话、这次调用的编号、工具名、修正过的参数（执行时就是这一份）、访问类别、这一轮的工作目录、开口的是不是主人（同 `tool.call` 的 `owner`）、在哪说的（`local`、`private`、`group`）。
+
+**回应** `{"verdict": "allow" | "deny" | "ask", "reason"?}`：
+
+- `allow`：放行，不进上下文，AI 只看到工具的结果。
+- `deny`：拒绝，工具不跑。AI 看到的结果是 `Blocked by <你的包编号>: <reason>`：`reason` 去掉头尾空白、截到 300 个字，换行、引号、尖括号转义成 `\n`、`\u0022` 这样，整句一行；没写的是 `no reason given`。时间线上的结果 `by` 是你的包，给人看的照你写的原文。
+- `ask`：要问人，走平常的确认（`tool.approval_requested`，`by` 是你的包，`detail` 是 `{"guard", "tool", "reason"?}`），只能允许这一次或者拒绝；没人能确认的会话照拒。
+- 多了格、`verdict` 不认识、`reason` 不是字的，照拒绝算，理由 `the guard answered in a wrong format`。
+
+**没答的算拒绝**（守卫失效往严里走）：
+
+| 什么时候 | AI 看到的理由 |
+|---|---|
+| 过了 `timeout_ms` 没答 | `the guard did not answer in time` |
+| 你开着却没在跑（正在起、刚崩、起不来），问着问着连接断了 | `the guard is not running` |
+| 回了 JSON-RPC 错误 | `the guard returned an error` |
+
+主人关掉的扩展不问。p95 最好在 20 毫秒以内：人一直等着这一步。
+
+**`guard.cancel`**（核心 → 扩展，通知）：`{"session", "call_id"}`。人打断、回合被取消、你超时了，核心不等了：这次调用照打断收尾（或者已经照超时拒了），你的回答到了也不理。
 
 ## `system.append`
 

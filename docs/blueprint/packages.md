@@ -403,6 +403,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `bad_miyu` | `[package] miyu` 不是三段数字的版本（施工 X-31） |
 | `needs_newer_miyu` | 要比正在跑的这一版新的 Miyu（施工 X-31）：`detail` 是清单写的版本。装包、读装了的包时（`miyu_config::package::read_for`）第一件事比它，比不过的整份不再往下读，不报新版本才有的格是不认识的键；正在跑的是 `0.0.0`（开发时编的，没发过版）的不比；打包（`miyu pkg pack`）、软件源收录照 `read` 读，不比，只查写法 |
 | `bad_search` | `[[search]]` 写错了：编号、名字，重了，没声明 `search` 能力（施工 N-5） |
+| `bad_guard` | `[guard]` 写错了：工具名、访问类别、时限（100 到 5000），`tools`、`access` 两样都没写，没声明 `tool.guard` 能力（施工 HK-1） |
 | `bad_side` | `[[side]]` 写错了（施工 Q-3）：编号不合写法、少了，档位不是 `lite`、`normal`、`flagship`，少了名字、说明，同一个包里重了；`detail` 是哪一格（`side.<编号>.<格>`） |
 | `bad_tray` | `[tray]` 写错了（施工 TR-2）：没写 `[page]`（`detail` 是 `tray`），写了 `name` 以外的格（`detail` 是 `tray.<格>`）；`name` 本身照「语言到一句话」那几个代码报 |
 | `bad_author` | `[package] author` 不是一行 1 到 100 个字（施工 F-12） |
