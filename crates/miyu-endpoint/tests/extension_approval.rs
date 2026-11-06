@@ -1,5 +1,5 @@
 //! 扩展能力的审批（施工 9-4 下上，`docs/blueprint/extensions.md`「能力」）：你装的包声明了能力，开的那一下要批；
-//! 批过的记在开关的文件里，能力多了只问多的；`always` 的没批不拉起、不拦空闲；出厂的包算批过的。
+//! 批过的记在开关的文件里，能力多了只问多的；`always` 的没批不拉起、不拦空闲；出厂的包算批过的，`login.page` 除外（施工 LP-1）。
 
 use std::sync::Arc;
 
@@ -212,6 +212,36 @@ async fn a_shipped_extension_counts_as_approved() {
         ]
     );
     assert!(bridge.get("unapproved").is_none(), "出厂的不用批：{bridge}");
+}
+
+/// 出厂的也要人批的 `login.page`（施工 LP-1）：别的照旧算批过，只有它列在没批的里，批了才不列。
+#[tokio::test]
+async fn a_shipped_extension_still_asks_for_login_page() {
+    let home = Home::new();
+    let resources = shipped::resources(&home);
+    let manifest = resources
+        .join("packages")
+        .join(shipped::ID)
+        .join("package.toml");
+    let asking = shipped::COURIER.replace("\"network\"]", "\"network\", \"login.page\"]");
+    assert_ne!(asking, shipped::COURIER, "改得到能力那一行");
+    std::fs::write(&manifest, asking).expect("写得进");
+    let core = Arc::new(
+        shipped::core(&home, &resources, &miyu_session::testkit::Script::new([]))
+            .with_extension_timing(quick()),
+    );
+    core.start_extensions();
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let courier = status(&mut client, shipped::ID).await;
+    assert_eq!(
+        courier["unapproved"],
+        json!(["login.page"]),
+        "出厂的不算批过它：{courier}"
+    );
+    approve(&home, shipped::ID, &["login.page"]);
+    let courier = status(&mut client, shipped::ID).await;
+    assert!(courier.get("unapproved").is_none(), "批了就不列：{courier}");
 }
 
 /// 开关文件里记着批过的（施工 SU-2 中）：起来照它认，开着的直接拉起、不再问；声明多了的只问多的那个。

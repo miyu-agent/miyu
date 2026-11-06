@@ -146,6 +146,20 @@ fn some_hang_on_the_params() {
         right("provide", &json!({"tools": [{"name": "a"}]})),
         Right::Needs(Capability::Tools)
     );
+    // 替本机页面换票（施工 LP-1）：只认 `via` 是 `page` 的，别的、不写的、不是字的照旧只给人。
+    assert_eq!(
+        right("login.ticket", &json!({"via": "page"})),
+        Right::Needs(Capability::LoginPage)
+    );
+    for params in [
+        json!({"via": "open"}),
+        json!({"via": "Page"}),
+        json!({"via": ["page"]}),
+        json!({"via": null}),
+        json!({}),
+    ] {
+        assert_eq!(right("login.ticket", &params), Right::People, "{params}");
+    }
     for (stream, wanted) in [
         ("events", Right::Needs(Capability::EventsRead)),
         ("view", Right::Needs(Capability::EventsRead)),

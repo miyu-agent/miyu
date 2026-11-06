@@ -25,7 +25,7 @@ use crate::refusal::Refusal;
 /// `approve` 参数：包的编号到这一次批的能力名。
 pub(crate) type Approve = BTreeMap<String, Vec<String>>;
 
-/// 写法对不对：编号照包编号的写法、能力名是十八个之一，不对的 `bad_params`。是能力、但清单没声明的这里不管（装的时候不理：
+/// 写法对不对：编号照包编号的写法、能力名是十九个之一，不对的 `bad_params`。是能力、但清单没声明的这里不管（装的时候不理：
 /// 看一眼和真装之间清单可能变了），编号不是这一次装的也不管。
 pub(crate) fn valid(approve: Option<&Approve>) -> Result<(), Refusal> {
     let fine = approve.into_iter().flatten().all(|(id, names)| {

@@ -1,7 +1,8 @@
 //! 扩展能力的审批（施工 9-4 下上，`docs/blueprint/extensions.md`「能力」，`05-内核接口.md` 第三节）：清单的
 //! `[process] capabilities` 声明要哪些，人在 `extension.enable` 那一下带上 `approve` 批。批了就是记进开关文件
 //! `extensions.json` 的 `approved`（施工 SU-2 中：组表拿掉了），批的时候声明的全部。还没批的是「声明的减记着的」：升级
-//! 以后多了的只问多的。出厂的包（资源目录里随 Miyu 装的）和编译进核心的模块一样本来就被信任，算批过的、不记。
+//! 以后多了的只问多的。出厂的包（资源目录里随 Miyu 装的）和编译进核心的模块一样本来就被信任，算批过的、不记；只有
+//! `login.page`（施工 LP-1，[`Capability::needs_person`]）出厂的也要人批：换到的票能换主人的设备令牌。
 
 use serde_json::{Value, json};
 
@@ -28,18 +29,21 @@ fn shipped(core: &Core, id: &str) -> bool {
         .any(|found| found.id == id && found.layer == Layer::Shipped)
 }
 
-/// 包 `id` 手里有的能力，照能力表的先后：出厂的是声明的全部，别的是声明的里面开关文件记着批过的。
+/// 包 `id` 手里有的能力，照能力表的先后：出厂的是声明的全部（要人批的那几项除外，施工 LP-1），别的是声明的里面开关文件记着批过的。
 fn holds(core: &Core, id: &str, manifest: &Manifest, switches: &Switches) -> Vec<Capability> {
     let shipped = shipped(core, id);
     let approved = switches.approved.get(id).map_or(&[][..], Vec::as_slice);
     declared(manifest)
         .iter()
         .copied()
-        .filter(|capability| shipped || approved.iter().any(|one| one == capability.as_str()))
+        .filter(|capability| {
+            (shipped && !capability.needs_person())
+                || approved.iter().any(|one| one == capability.as_str())
+        })
         .collect()
 }
 
-/// 包 `id` 还没批的能力，照能力表的先后：出厂的没有。
+/// 包 `id` 还没批的能力，照能力表的先后：出厂的只有要人批、还没批的那几项（施工 LP-1）。
 pub(super) fn unapproved(core: &Core, id: &str, manifest: &Manifest) -> Vec<Capability> {
     let held = holds(core, id, manifest, &super::read_switches(core).0);
     declared(manifest)
@@ -49,7 +53,7 @@ pub(super) fn unapproved(core: &Core, id: &str, manifest: &Manifest) -> Vec<Capa
         .collect()
 }
 
-/// 包 `package` 的连接调方法时手里有的能力（`connection/rights.rs` 照它挡）：批过的（出厂的是声明的全部）。
+/// 包 `package` 的连接调方法时手里有的能力（`connection/rights.rs` 照它挡）：批过的（出厂的是声明的全部，要人批的除外）。
 pub(crate) fn held(core: &Core, package: &str) -> Vec<Capability> {
     let packages = core.system_packages();
     let Some(manifest) = packages

@@ -35,6 +35,10 @@ fn only_known_capabilities_and_ids_are_accepted() {
     let table = |id: &str, name: &str| Approve::from([(id.to_string(), names(&[name]))]);
     assert!(valid(None).is_ok());
     assert!(valid(Some(&table("kit", "network"))).is_ok());
+    assert!(
+        valid(Some(&table("kit", "login.page"))).is_ok(),
+        "装的时候也能批（施工 LP-1）"
+    );
     assert!(valid(Some(&table("kit", "teleport"))).is_err(), "不是能力");
     assert!(
         valid(Some(&table("Kit Pack", "network"))).is_err(),

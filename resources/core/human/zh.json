@@ -587,6 +587,8 @@
     "extensions/capabilities/search/summary": "在搜索服务供应商里列出来，选了它的，搜索词会交给它",
     "extensions/capabilities/act_for_external": "代平台用户发言",
     "extensions/capabilities/act_for_external/summary": "替聊天平台上的人发消息、命令",
+    "extensions/capabilities/login.page": "替本机页面换登录票",
+    "extensions/capabilities/login.page/summary": "它能让本机打开的页面不用密码登进来",
     "extensions/capabilities/network": "联网",
     "extensions/capabilities/network/summary": "访问网络、开端口",
     "extensions/capabilities/fs.read": "读取文件",

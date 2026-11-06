@@ -591,6 +591,8 @@
     "extensions/capabilities/search/summary": "Listed as a search provider; when chosen, it receives the search terms",
     "extensions/capabilities/act_for_external": "Speak for platform users",
     "extensions/capabilities/act_for_external/summary": "Send messages and commands for people on a chat platform",
+    "extensions/capabilities/login.page": "Sign in pages on this machine",
+    "extensions/capabilities/login.page/summary": "Lets pages opened on this machine sign in without the password",
     "extensions/capabilities/network": "Network",
     "extensions/capabilities/network/summary": "Access the network and open ports",
     "extensions/capabilities/fs.read": "Read files",

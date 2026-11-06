@@ -102,7 +102,7 @@ Makes it an extension; needs `[command]`.
 | `start` | `manual`: started when switched on (default); `always`: started with the core |
 | `capabilities` | What it needs, see below |
 
-**Capabilities**: only these eighteen. The install screen lists each one your package asks for (name and one-line summary are Miyu's wording; a package can't supply its own), and answering yes approves them; after an upgrade the upgrade screen lists only the new ones, and approvals the manifest no longer asks for are dropped and must be approved again if they come back. Installing from a local folder or package file (including reinstalling while developing) doesn't keep earlier approvals: each install approves again. Community and local-file packages also get "not officially reviewed" on that screen, and those carrying programs, MCP servers or scripts one more line: "the programs it carries run as you on this machine, outside any sandbox". **Declare honestly**: calling a method whose capability isn't declared returns `needs_approval`.
+**Capabilities**: only these nineteen. The install screen lists each one your package asks for (name and one-line summary are Miyu's wording; a package can't supply its own), and answering yes approves them; after an upgrade the upgrade screen lists only the new ones, and approvals the manifest no longer asks for are dropped and must be approved again if they come back. Installing from a local folder or package file (including reinstalling while developing) doesn't keep earlier approvals: each install approves again. Community and local-file packages also get "not officially reviewed" on that screen, and those carrying programs, MCP servers or scripts one more line: "the programs it carries run as you on this machine, outside any sandbox". **Declare honestly**: calling a method whose capability isn't declared returns `needs_approval`.
 
 | Capability | Allows |
 |---|---|
@@ -115,6 +115,7 @@ Makes it an extension; needs `[command]`.
 | `context.system` | Putting a section at the end of the system prompt |
 | `packages.call` | Calling methods other packages export |
 | `act_for_external` | Speaking for people on a chat platform: for platform bridges only |
+| `login.page` | Getting sign-in tickets for pages opened on this machine (`login.ticket {"via": "page"}`); the ticket only turns into a device token over a connection from this machine. Shipped packages need approval for it too. Only ask for pages you have checked come from this machine; pages from elsewhere always sign in with the access password, see [Writing extensions](extensions.en.md) |
 | `sessions.drive` | Driving sessions: creating, sending, interrupting, reverting, compacting, forking, running slash commands |
 | `events.read` | Reading sessions: subscribing to events, reading history and background command output |
 | `events.write` | Recording your own events in a session |

@@ -1,5 +1,6 @@
 //! 扩展能力（施工 9-4 下上，`docs/designs/05-内核接口.md` 第三节）：清单的 `[process] capabilities` 声明要哪些，主人
-//! 在开的那一下批（`extensions.md`）。只认这张表里的十八个名字（施工 X-15 上加了 `widgets`，施工 X-20 加了 `context.system`，施工 X-18 加了 `packages.call`，施工 N-5 加了 `search`，施工 X-30 加了 `memory.write`，施工 XG-1 下加了 `tools.commands`），先后照这张表。
+//! 在开的那一下批（`extensions.md`）。只认这张表里的十九个名字（施工 X-15 上加了 `widgets`，施工 X-20 加了 `context.system`，施工 X-18 加了 `packages.call`，施工 N-5 加了 `search`，施工 X-30 加了 `memory.write`，施工 XG-1 下加了 `tools.commands`，施工 LP-1 加了 `login.page`），先后照这张表。
+//! 出厂的包算批过声明的全部，[`Capability::needs_person`] 的几项除外（施工 LP-1：`login.page` 出厂的也要人批）。
 
 /// 一种扩展能力。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -33,6 +34,8 @@ pub enum Capability {
     Search,
     /// 代表平台上的外部用户发命令：只给通讯平台的桥。
     ActForExternal,
+    /// 替本机打开的页面换登录票（施工 LP-1，`login.ticket {via: "page"}`）：换到的票能换主人的设备令牌，出厂的也要人批。
+    LoginPage,
     /// 访问网络。
     Network,
     /// 读指定的路径。
@@ -45,7 +48,7 @@ pub enum Capability {
 
 impl Capability {
     /// 全部，照表的先后。
-    pub const ALL: [Capability; 18] = [
+    pub const ALL: [Capability; 19] = [
         Capability::Tools,
         Capability::ToolsCommands,
         Capability::Commands,
@@ -60,6 +63,7 @@ impl Capability {
         Capability::PackagesCall,
         Capability::Search,
         Capability::ActForExternal,
+        Capability::LoginPage,
         Capability::Network,
         Capability::FsRead,
         Capability::FsWrite,
@@ -83,11 +87,17 @@ impl Capability {
             Capability::PackagesCall => "packages.call",
             Capability::Search => "search",
             Capability::ActForExternal => "act_for_external",
+            Capability::LoginPage => "login.page",
             Capability::Network => "network",
             Capability::FsRead => "fs.read",
             Capability::FsWrite => "fs.write",
             Capability::MemoryWrite => "memory.write",
         }
+    }
+
+    /// 出厂的包声明了也不算批过、要人批的（施工 LP-1）：`login.page`。别的出厂的算批过。
+    pub fn needs_person(self) -> bool {
+        self == Capability::LoginPage
     }
 
     /// 照写法认；不认识的没有。

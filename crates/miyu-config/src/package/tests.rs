@@ -311,6 +311,7 @@ fn capabilities_are_read_in_the_table_order() {
             "packages.call",
             "search",
             "act_for_external",
+            "login.page",
             "network",
             "fs.read",
             "fs.write",
@@ -320,6 +321,13 @@ fn capabilities_are_read_in_the_table_order() {
     for name in Capability::ALL.map(Capability::as_str) {
         assert_eq!(Capability::parse(name).map(Capability::as_str), Some(name));
     }
+    // 出厂的也要人批的只有 `login.page`（施工 LP-1）。
+    let by_person: Vec<&str> = Capability::ALL
+        .into_iter()
+        .filter(|capability| capability.needs_person())
+        .map(Capability::as_str)
+        .collect();
+    assert_eq!(by_person, ["login.page"]);
     for (list, code) in [
         ("[\"telepathy\"]", Code::BadCapability),
         ("[\"network\", \"network\"]", Code::BadCapability),

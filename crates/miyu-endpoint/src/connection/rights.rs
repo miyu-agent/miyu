@@ -28,8 +28,8 @@ pub(super) enum Right {
 /// 的才要 `tools`（空的照收：斜杠命令、搜索要先 `provide` 一次），订阅照流分。
 pub(super) fn right(method: &str, params: &Value) -> Right {
     use Capability::{
-        ActForExternal, ContextSystem, EventsRead, EventsWrite, FsRead, MemoryWrite, Network,
-        PackagesCall, SessionsDrive, Tools, Widgets,
+        ActForExternal, ContextSystem, EventsRead, EventsWrite, FsRead, LoginPage, MemoryWrite,
+        Network, PackagesCall, SessionsDrive, Tools, Widgets,
     };
     use Right::{Anyone, Needs, People};
     let acting = params.get("as").is_some_and(|acting| !acting.is_null());
@@ -50,6 +50,10 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
                 .is_some_and(|tools| !tools.is_empty()) =>
         {
             Needs(Tools)
+        }
+        // 替本机打开的页面换登录票（施工 LP-1）：只认 `via` 是 `page` 的，别的写法、不写的照旧只给人。
+        "login.ticket" if params.get("via").and_then(Value::as_str) == Some("page") => {
+            Needs(LoginPage)
         }
         "subscribe" => match params.get("stream").and_then(Value::as_str) {
             Some("events" | "view" | "sessions") => Needs(EventsRead),

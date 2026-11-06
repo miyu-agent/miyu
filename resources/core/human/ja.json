@@ -587,6 +587,8 @@
     "extensions/capabilities/search/summary": "検索プロバイダーに並び、選ばれると検索語を受け取る",
     "extensions/capabilities/act_for_external": "プラットフォーム利用者の代理で発言",
     "extensions/capabilities/act_for_external/summary": "チャットプラットフォームの利用者に代わってメッセージやコマンドを送る",
+    "extensions/capabilities/login.page": "このマシンのページ用にログインチケットを発行",
+    "extensions/capabilities/login.page/summary": "このマシンで開いたページがパスワードなしでログインできるようにする",
     "extensions/capabilities/network": "ネットワーク",
     "extensions/capabilities/network/summary": "ネットワークにアクセスし、ポートを開く",
     "extensions/capabilities/fs.read": "ファイルを読み取り",

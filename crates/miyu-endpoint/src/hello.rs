@@ -257,9 +257,9 @@ async fn credentials(
             .map(|via| (via, None))
             .ok_or((Refusal::BAD_LOGIN, Some("bad login")));
     }
-    // 交接票（施工 LT-1）：同密码，对上了当场作废、回应带新的登录令牌。
+    // 交接票（施工 LT-1）：同密码，对上了当场作废、回应带新的登录令牌。扩展替本机页面要的只在本机的连接上换（施工 LP-1）。
     if let Some(ticket) = &params.ticket {
-        return login::ticket::handshake(core, ticket)
+        return login::ticket::handshake(core, ticket, source.is_none())
             .await
             .map(|(issued, via)| (via, Some(issued)))
             .map_err(|refusal| (refusal, Some("bad ticket")));
