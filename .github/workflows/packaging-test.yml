@@ -3,7 +3,7 @@
 #
 # - 平时（改了模板、实测脚本、填的程序、这个文件）：照一份造出来的 SHA256SUMS 填，只做静态检查（语法、.SRCINFO、namcap、
 #   brew style）；
-# - 手动跑、写了标签（例如 v0.0.0-rc.5）：照这一次发布真的 SHA256SUMS 填，真下载、装、查、卸（packaging/test-aur.sh、
+# - 手动跑、写了标签（例如 v2026.11.0-rc.1）：照这一次发布真的 SHA256SUMS 填，真下载、装、查、卸（packaging/test-aur.sh、
 #   test-brew.sh 的 install）。要那一次发布带着分包（SD-2 以后的）。
 name: packaging-test
 
@@ -21,7 +21,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "装哪一次发布的分包（例如 v0.0.0-rc.5）；不写的只做静态检查"
+        description: "装哪一次发布的分包（例如 v2026.11.0-rc.1）；不写的只做静态检查"
         required: false
         default: ""
       applet_tag:
@@ -61,14 +61,14 @@ jobs:
             echo "MODE=install" >> "$GITHUB_ENV"
             echo "RELEASE=${TAG}" >> "$GITHUB_ENV"
           else
-            # 造一份：核心 0.0.0-rc.0、终端 0.1.0、网页 0.2.0，三种系统，哈希随便写。
+            # 造一份：核心 2026.11.0-rc.1、终端 0.1.0、网页 0.2.0，三种系统，哈希随便写。
             for target in linux-x86_64 linux-aarch64 macos-aarch64; do
-              for part in miyu-core-0.0.0-rc.0 miyu-tui-0.1.0 miyu-webui-0.2.0; do
+              for part in miyu-core-2026.11.0-rc.1 miyu-tui-0.1.0 miyu-webui-0.2.0; do
                 printf '%064d  %s-%s.tar.gz\n' 0 "${part}" "${target}" >> sums/SHA256SUMS
               done
             done
             echo "MODE=static" >> "$GITHUB_ENV"
-            echo "RELEASE=v0.0.0-rc.0" >> "$GITHUB_ENV"
+            echo "RELEASE=v2026.11.0-rc.1" >> "$GITHUB_ENV"
           fi
           cat sums/SHA256SUMS
           # 托盘（施工 RL-5补）：写了托盘标签的照它真的 SHA256SUMS；只做静态检查的造一份；真装核心却没写托盘的不填托盘。

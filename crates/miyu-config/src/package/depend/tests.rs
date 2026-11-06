@@ -80,6 +80,24 @@ fn installed_versions_are_compared_by_semver() {
     assert!(!dep.fits(None), "没写版本的不够");
 }
 
+/// 核心的版本号是 年.月.序号（施工 VR-1）：`>=2026.11.0` 照数字比，候选版不够、跨月够、九月不够。
+#[test]
+fn a_year_month_floor_compares_by_number() {
+    let dep = Dependency::parse("miyu-core>=2026.11.0").unwrap();
+    for (version, fits) in [
+        ("2026.11.0", true),
+        ("2026.11.1", true),
+        ("2026.12.0", true),
+        ("2027.1.0", true),
+        ("2026.11.0-rc.1", false),
+        ("2026.10.9", false),
+        ("2026.9.0", false),
+        ("0.0.0", false),
+    ] {
+        assert_eq!(dep.fits(Some(version)), fits, "{version}");
+    }
+}
+
 /// semver 2.0.0 第 11 条的那一串：一个比一个高。
 #[test]
 fn precedence_follows_the_semver_spec() {

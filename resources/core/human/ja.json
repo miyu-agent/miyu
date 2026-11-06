@@ -702,7 +702,7 @@
     "package-problems/bad_prefix": "プレフィックスの書き方がパッケージ ID の形ではありません: {detail}",
     "package-problems/prefix_taken": "プレフィックス {detail} はほかのパッケージが使っています。こちらは数えません",
     "package-problems/bad_targets": "システムの書き方が正しくありません。使えるのは linux-x86_64、linux-aarch64、macos-aarch64、windows-x86_64 で、重複はできません: {detail}",
-    "package-problems/bad_miyu": "{detail} は 0.2.0 のような三つの数字のバージョンで書いてください",
+    "package-problems/bad_miyu": "{detail} は 2026.11.0 のような三つの数字のバージョンで書いてください",
     "package-problems/needs_newer_miyu": "このパッケージには Miyu {detail} 以上が必要です。先に Miyu を更新してください",
     "package-problems/page_missing": "{detail} に index.html がありません",
     "package-problems/depends_missing": "依存するパッケージがありません：{detail}",

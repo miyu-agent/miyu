@@ -47,7 +47,7 @@ protocol = [1, 1]                # 说得了的协议主版本 [最低, 最高]�
 name = { en = "Terminal interface", zh = "终端界面", ja = "ターミナル画面" }
 summary = { en = "…", zh = "…" } # 可以不写
 needs = ["images"]               # 要这个地方有什么才有用（施工 X-25），可以不写；现在只认 images：显示不了图片的会话里整包当没开
-miyu = "0.2.0"                   # 最低要哪一版 Miyu（施工 X-31）：三段数字，可以不写；读清单时先比它，见「出错」的 `needs_newer_miyu`
+miyu = "2026.11.0"               # 最低要哪一版 Miyu（施工 X-31）：三段数字，可以不写；读清单时先比它，见「出错」的 `needs_newer_miyu`
 targets = ["linux-x86_64"]       # 能装在哪几种系统上（施工 G-1，设计 37 第二节第 3 条），可以不写（哪种都能装）；只认 linux-x86_64、linux-aarch64、macos-aarch64、windows-x86_64，带了本机程序的写它能跑的几种
 author = "miyu-agent"              # 作者（施工 F-12，项目主人 2026-10-19 定每个包都写），可以不写；一行，1 到 100 个字
 upstream = "https://github.com/miyu-agent/miyu"   # 上游源码仓库（施工 F-12），可以不写；https:// 开头，至多 300 个字。`package.list`、`package.info` 原样交出去，另交 `from`（shipped、official、local）

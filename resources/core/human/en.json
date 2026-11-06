@@ -706,7 +706,7 @@
     "package-problems/bad_prefix": "Prefix is not written like a package id: {detail}",
     "package-problems/prefix_taken": "The prefix {detail} is taken by another package; this one does not count",
     "package-problems/bad_targets": "Unknown or repeated target, known are linux-x86_64, linux-aarch64, macos-aarch64, windows-x86_64: {detail}",
-    "package-problems/bad_miyu": "{detail} must be a version of three numbers, such as 0.2.0",
+    "package-problems/bad_miyu": "{detail} must be a version of three numbers, such as 2026.11.0",
     "package-problems/needs_newer_miyu": "This package needs Miyu {detail} or newer: update Miyu first",
     "package-problems/page_missing": "{detail} has no index.html",
     "package-problems/depends_missing": "Missing required packages: {detail}",

@@ -35,6 +35,21 @@ for dir in /home/builder/aur/*; do
   [ -z "${warnings}" ] || fail "${name}：namcap 报了 ${warnings}"
   echo "${name}: static checks passed"
 done
+# 版本号是 年.月.序号（施工 VR-1，设计 59 第十节）：pacman 照数字比，候选版写成紧跟的 rc<号>，排在同号的正式版前面。
+older() {
+  [ "$(vercmp "$1" "$2")" = -1 ] || fail "vercmp 该说 $1 比 $2 旧"
+}
+older 2026.11.0rc1 2026.11.0rc2
+older 2026.11.0rc2 2026.11.0rc10
+older 2026.11.0rc10 2026.11.0
+older 2026.11.0 2026.11.1
+older 2026.11.1 2026.11.10
+older 2026.9.0 2026.10.0
+older 2026.11.10 2026.12.0rc1
+older 2026.12.0 2027.1.0
+older 0.7.4 2026.11.0rc1
+echo "vercmp: year.month versions order by number"
+
 [ "${MODE}" = install ] || exit 0
 
 names="miyu-core miyu-tui miyu-webui"

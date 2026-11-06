@@ -16,13 +16,13 @@ fn hash(digit: char) -> String {
     std::iter::repeat_n(digit, 64).collect()
 }
 
-/// 造一份 `SHA256SUMS`：核心 `0.0.0-rc.5`，终端 `0.1.0`，网页 `0.2.0`；四个一体的加九份分包。哈希和名字之间一个空格（二进制
+/// 造一份 `SHA256SUMS`：核心 `2026.11.0-rc.1`，终端 `0.1.0`，网页 `0.2.0`；四个一体的加九份分包。哈希和名字之间一个空格（二进制
 /// 模式带 `*`），`sha256sum` 两种都写。
 fn sums() -> String {
     let mut lines = Vec::new();
     for (index, (target, _)) in TARGETS.iter().enumerate() {
         for (part, version, digit) in [
-            ("miyu-core", "0.0.0-rc.5", 'a'),
+            ("miyu-core", "2026.11.0-rc.1", 'a'),
             ("miyu-tui", "0.1.0", 'b'),
             ("miyu-webui", "0.2.0", 'c'),
         ] {
@@ -38,9 +38,15 @@ fn sums() -> String {
                 hash(digit)
             ));
         }
-        lines.push(format!("{}  miyu-0.0.0-rc.5-{target}.tar.gz", hash('0')));
+        lines.push(format!(
+            "{}  miyu-2026.11.0-rc.1-{target}.tar.gz",
+            hash('0')
+        ));
     }
-    lines.push(format!("{}  miyu-0.0.0-rc.5-windows-x86_64.zip", hash('1')));
+    lines.push(format!(
+        "{}  miyu-2026.11.0-rc.1-windows-x86_64.zip",
+        hash('1')
+    ));
     lines.join("\n") + "\n"
 }
 
@@ -72,7 +78,7 @@ fn filled(scratch: &Scratch, text: &str) -> Result<Vec<PathBuf>, String> {
     let sums = scratch.0.join("SHA256SUMS");
     fs::write(&sums, text).expect("写得进");
     let args = [
-        "v0.0.0-rc.5".to_string(),
+        "v2026.11.0-rc.1".to_string(),
         "--sums".to_string(),
         sums.to_string_lossy().into_owned(),
         "--out".to_string(),
@@ -98,7 +104,7 @@ fn every_template_is_filled_with_its_own_version_and_hashes() {
 
     let core = out(&scratch, "aur/miyu-core/PKGBUILD");
     assert!(
-        core.contains("_version=0.0.0-rc.5\npkgver=0.0.0rc.5\n"),
+        core.contains("_version=2026.11.0-rc.1\npkgver=2026.11.0rc1\n"),
         "{core}"
     );
     assert!(core.contains(&format!("sha256sums_x86_64=('{}')", hash('a'))));
@@ -106,7 +112,7 @@ fn every_template_is_filled_with_its_own_version_and_hashes() {
 
     let tui = out(&scratch, "aur/miyu-tui/PKGBUILD");
     assert!(
-        tui.contains("_release=0.0.0-rc.5\npkgver=0.1.0\n_version=0.1.0\n"),
+        tui.contains("_release=2026.11.0-rc.1\npkgver=0.1.0\n_version=0.1.0\n"),
         "{tui}"
     );
     assert!(tui.contains(&format!("sha256sums_x86_64=('{}')", hash('b'))));
@@ -115,11 +121,11 @@ fn every_template_is_filled_with_its_own_version_and_hashes() {
     assert!(web.contains(&format!("sha256sums_aarch64=('{}')", hash('d'))));
 
     let agent = out(&scratch, "aur/miyu-agent/PKGBUILD");
-    assert!(agent.contains("pkgver=0.0.0rc.5\n"), "{agent}");
+    assert!(agent.contains("pkgver=2026.11.0rc1\n"), "{agent}");
 
     let formula = out(&scratch, "homebrew/Formula/miyu-tui.rb");
     assert!(
-        formula.contains("/download/v0.0.0-rc.5/miyu-tui-0.1.0-macos-aarch64.tar.gz"),
+        formula.contains("/download/v2026.11.0-rc.1/miyu-tui-0.1.0-macos-aarch64.tar.gz"),
         "{formula}"
     );
     assert!(formula.contains(&format!("sha256 \"{}\"", hash('d'))));
@@ -160,12 +166,12 @@ fn a_missing_or_mismatched_archive_stops_everything() {
     assert!(error.contains("三种系统写的版本不一样"), "{error}");
 
     let core_missing = sums().replace(
-        "miyu-core-0.0.0-rc.5-linux-x86_64",
-        "miyu-core-0.0.0-rc.4-linux-x86_64",
+        "miyu-core-2026.11.0-rc.1-linux-x86_64",
+        "miyu-core-2026.11.0-rc.0-linux-x86_64",
     );
     let error = filled(&scratch, &core_missing).expect_err("核心那份不是这一版");
     assert!(
-        error.contains("miyu-core-0.0.0-rc.5-linux-x86_64.tar.gz"),
+        error.contains("miyu-core-2026.11.0-rc.1-linux-x86_64.tar.gz"),
         "{error}"
     );
 }
@@ -175,7 +181,7 @@ fn bad_sums_lines_and_tags_are_refused() {
     let scratch = Scratch::new("bad");
     let error = filled(
         &scratch,
-        "nothex  miyu-core-0.0.0-rc.5-linux-x86_64.tar.gz\n",
+        "nothex  miyu-core-2026.11.0-rc.1-linux-x86_64.tar.gz\n",
     )
     .expect_err("哈希不对");
     assert!(error.contains("哈希不对"), "{error}");
@@ -268,7 +274,7 @@ fn with_applet(scratch: &Scratch, applet: &str) -> Result<(Vec<PathBuf>, bool), 
     fs::write(&core, sums()).expect("写得进");
     fs::write(&own, applet).expect("写得进");
     let args = [
-        "v0.0.0-rc.5".to_string(),
+        "v2026.11.0-rc.1".to_string(),
         "--sums".to_string(),
         core.to_string_lossy().into_owned(),
         "--applet".to_string(),
@@ -298,7 +304,10 @@ fn the_applet_is_filled_from_its_own_release() {
         "macOS 的是 zip"
     );
     let core = out(&scratch, "aur/miyu-core/PKGBUILD");
-    assert!(core.contains("_version=0.0.0-rc.5\n"), "核心照核心的发布");
+    assert!(
+        core.contains("_version=2026.11.0-rc.1\n"),
+        "核心照核心的发布"
+    );
     let bundle = out(&scratch, "aur/miyu-agent/PKGBUILD");
     assert!(bundle.contains("'miyu-applet'"), "合集带托盘：{bundle}");
 }
@@ -315,7 +324,7 @@ fn an_applet_release_must_be_whole_and_both_options_go_together() {
     assert!(!scratch.0.join("out").exists(), "哪一份都不写");
     let sums = scratch.0.join("SHA256SUMS");
     let args = [
-        "v0.0.0-rc.5".to_string(),
+        "v2026.11.0-rc.1".to_string(),
         "--sums".to_string(),
         sums.to_string_lossy().into_owned(),
         "--applet".to_string(),
@@ -332,7 +341,7 @@ fn without_an_applet_release_the_applet_is_reported_as_not_filled() {
     let file = scratch.0.join("SHA256SUMS");
     fs::write(&file, sums()).expect("写得进");
     let args = [
-        "v0.0.0-rc.5".to_string(),
+        "v2026.11.0-rc.1".to_string(),
         "--sums".to_string(),
         file.to_string_lossy().into_owned(),
         "--out".to_string(),
@@ -342,4 +351,13 @@ fn without_an_applet_release_the_applet_is_reported_as_not_filled() {
     assert!(!applet);
     let (_, applet) = with_applet(&scratch, &applet_sums()).expect("填得全");
     assert!(applet);
+}
+
+/// pacman 的 pkgver（施工 VR-1）：预发布写成紧跟的 `rc<号>`，没有 `-`。
+#[test]
+fn a_pkgver_has_no_dash_and_a_tight_rc() {
+    assert_eq!(pkgver("2026.11.0"), "2026.11.0");
+    assert_eq!(pkgver("2026.11.0-rc.1"), "2026.11.0rc1");
+    assert_eq!(pkgver("2026.12.3-rc.10"), "2026.12.3rc10");
+    assert_eq!(pkgver("0.1.0-beta"), "0.1.0beta");
 }

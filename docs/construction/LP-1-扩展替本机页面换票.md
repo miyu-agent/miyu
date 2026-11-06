@@ -44,7 +44,7 @@ im 的网页想做到本机打开不用输密码，要替页面向核心换一�
 
 ### 定的技术题
 
-1. **排第十九、`model.driver` 挪到第二十**：LP-1 先落地，设计 66 是 1.0 以后的步子；`login.page` 排在 `act_for_external` 后面，
+1. **排第十九、`model.driver` 挪到第二十**：LP-1 先落地，设计 66 是首个正式版以后的步子；`login.page` 排在 `act_for_external` 后面，
    都是替人做事的一类。设计 66 三处改了编号，`model.driver` 在表里的位置（`search` 后面）不变。
 2. **出厂例外放在能力上**（`Capability::needs_person`），不在批准的那一处写死名字：以后还有这类能力加一行就行；全部走 `holds`
    一处，`unapproved`、`held`、`approve` 自动跟着。

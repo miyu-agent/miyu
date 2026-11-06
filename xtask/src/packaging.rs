@@ -5,8 +5,8 @@
 //!
 //! - 模板在 `packaging/aur/<包>/PKGBUILD.in`、`packaging/homebrew/<包>.rb.in`，`miyu-agent-git` 的 `PKGBUILD` 不是模板、照原样拷；
 //! - 占位：`@VERSION@` 核心的版本（发版标签去掉 `v`，下载地址照它）、`@PKG_VERSION@` 这个包自己的版本（终端、网页照压缩包名里
-//!   写的，同它们自己的清单）、`@PKGVER@` 同 `@PKG_VERSION@` 但去掉 `-`（pacman 的 pkgver 不许有 `-`，`0.0.0-rc.5` 写成
-//!   `0.0.0rc.5`，照样排在 `0.0.0` 前面）、`@SHA256_<系统>@` 这个包那一种系统的压缩包的哈希、`@SHA256_SUMS@` 这份 `SHA256SUMS` 自己的
+//!   写的，同它们自己的清单）、`@PKGVER@` 同 `@PKG_VERSION@` 照 AUR 的写法（[`pkgver`]：pacman 的 pkgver 不许有 `-`，
+//!   `2026.11.0-rc.1` 写成 `2026.11.0rc1`，照样排在 `2026.11.0` 前面，施工 VR-1）、`@SHA256_<系统>@` 这个包那一种系统的压缩包的哈希、`@SHA256_SUMS@` 这份 `SHA256SUMS` 自己的
 //!   哈希（Homebrew 的合集 formula 拿它当下载）；
 //! - 填完还有 `@…@` 的、`SHA256SUMS` 里缺哪一份的、终端网页三种系统写的版本不一样的，都报错、不写。
 //!
@@ -267,7 +267,7 @@ impl Release {
         let mut values = vec![
             ("VERSION".to_string(), self.version.clone()),
             ("PKG_VERSION".to_string(), version.clone()),
-            ("PKGVER".to_string(), version.replace('-', "")),
+            ("PKGVER".to_string(), pkgver(&version)),
             ("SHA256_SUMS".to_string(), self.own.clone()),
         ];
         for (target, key) in TARGETS {
@@ -280,6 +280,12 @@ impl Release {
         }
         Ok(values)
     }
+}
+
+/// pacman 的 pkgver（施工 VR-1）：不许有 `-`，预发布照 AUR 的惯例写成紧跟的 `rc<号>`（`2026.11.0-rc.1` 写成 `2026.11.0rc1`），
+/// 别的 `-` 去掉。`vercmp` 把 `rc` 排在同号的正式版前面，`rc2` 在 `rc10` 前面（数字照数比）。
+pub(crate) fn pkgver(version: &str) -> String {
+    version.replace("-rc.", "rc").replace('-', "")
 }
 
 /// 分包 `part` 在系统 `target` 上的产物后缀：托盘的 macOS 版是 `Miyu.app` 打的 zip，别的都是 tar.gz。

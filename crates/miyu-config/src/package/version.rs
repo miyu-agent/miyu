@@ -47,7 +47,7 @@ pub(super) fn checked(reader: &Reader<'_>, item: &Item) -> Result<(), Problem> {
                 Some(item),
                 Code::BadMiyu,
                 "package.miyu",
-                "package.miyu must be a version like 0.2.0".to_string(),
+                "package.miyu must be a version like 2026.11.0".to_string(),
             )
         })
 }

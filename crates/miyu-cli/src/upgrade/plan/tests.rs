@@ -75,6 +75,36 @@ fn versions_order_like_semver() {
     assert!(v("1.0.0-1") < v("1.0.0-rc"), "数字排在字前面");
 }
 
+/// 年.月.序号（施工 VR-1，设计 59 第十节）：照数字比，跨月、跨年、十月以后不按字比，候选版排在同号正式版前面。
+#[test]
+fn year_month_versions_order_by_number() {
+    let ordered = [
+        "0.0.0",
+        "2026.9.0",
+        "2026.10.0",
+        "2026.11.0-rc.1",
+        "2026.11.0-rc.2",
+        "2026.11.0-rc.10",
+        "2026.11.0",
+        "2026.11.1",
+        "2026.11.10",
+        "2026.12.0-rc.1",
+        "2026.12.0",
+        "2027.1.0",
+    ];
+    for pair in ordered.windows(2) {
+        assert!(v(pair[0]) < v(pair[1]), "{} < {}", pair[0], pair[1]);
+    }
+    let list = json!([
+        release("v2026.11.0", false, false),
+        release("v2026.11.1", false, false),
+        release("v2026.12.0-rc.1", false, true),
+        release("v2026.9.3", false, false),
+    ]);
+    assert_eq!(newest(&list, false).unwrap().version, v("2026.11.1"));
+    assert_eq!(newest(&list, true).unwrap().version, v("2026.12.0-rc.1"));
+}
+
 fn release(tag: &str, draft: bool, prerelease: bool) -> Value {
     json!({
         "tag_name": tag,

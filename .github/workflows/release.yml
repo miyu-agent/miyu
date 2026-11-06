@@ -48,6 +48,12 @@ jobs:
             "v${version}"-rc.[0-9]*) ;;
             *) echo "::error::标签 ${tag} 和 Cargo.toml 的版本 ${version} 对不上（要 v${version} 或者 v${version}-rc.N）"; exit 1;;
           esac
+          # 版本号是 年.月.这个月第几版（设计 59 第十节，2026-11-06 项目主人定）：年四位，月 1 到 12，月、序号不补零。
+          # 写错了停下：工作区的版本要先用 `cargo xtask version <年.月.序号>` 定好（演练也是），这条正则同 xtask/src/version.rs。
+          if ! [[ "${version}" =~ ^[1-9][0-9]{3}\.([1-9]|1[0-2])\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::Cargo.toml 的版本 ${version} 不是 年.月.序号（例如 2026.11.0，月、序号不补零）：先用 cargo xtask version 定号"
+            exit 1
+          fi
           echo "标签 ${tag}，版本 ${version}"
       - name: 装上 rust-toolchain.toml 钉住的工具链
         run: rustup toolchain install

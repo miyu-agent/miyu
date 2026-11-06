@@ -67,11 +67,11 @@ channel = "script"   # script：安装脚本；aur：AUR 的包；brew：Homebre
 
 ```text
 $ miyu upgrade
-升级 Miyu 1.0.0 → 1.0.1？[Y/n]
-正在下载 miyu-1.0.1-linux-x86_64.tar.gz
+升级 Miyu 2026.11.0 → 2026.11.1？[Y/n]
+正在下载 miyu-2026.11.1-linux-x86_64.tar.gz
 正在核对新版
 正在替换
-已升级 Miyu 1.0.0 → 1.0.1
+已升级 Miyu 2026.11.0 → 2026.11.1
 提示：已经在跑的核心还是旧版：运行 'miyu core stop'，下次打开就是新版
 ```
 
