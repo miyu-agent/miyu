@@ -66,7 +66,9 @@ pub(crate) fn of(
         .cloned();
     // 别的工具后面跟结果那一句；命令有预览、编辑有加减的行数、子代理有任务编号，不写；留言送到了的和对象重了，不写。
     // 记住（9-8 十补只为收起那一行单算）照别的工具接「记成 m14」。
+    // 被拒的不分工具都写（施工 HK-1补）：守卫、权限策略、只读、人拒的为什么，不然人只能点开看给模型的那一句。
     let said = match kind {
+        _ if state == ToolState::Denied => said.and_then(|s| words.say(s)),
         None | Some(ToolKind::Remember | ToolKind::Search | ToolKind::Fetch) => {
             said.and_then(|s| words.say(s))
         }

@@ -91,6 +91,36 @@ fn a_delivered_message_does_not_repeat_its_recipient_but_a_failed_one_says_why()
     assert!(failed["said"].is_string(), "没送到的写为什么：{failed}");
 }
 
+/// 施工 HK-1补：命令被拒的写为什么，出错的照旧不写（有预览）。
+#[test]
+fn a_denied_command_says_why_but_a_failed_one_does_not() {
+    let command = |status: &str, by: &str, said: &str| {
+        let result = format!(
+            r#"{{"seq":5,"at":"2026-09-25T07:00:04.000Z","kind":"tool.result","turn":3,"by":{by},"cause":"cmd-1","body":{{"call_id":"call_4_1","status":"{status}","blocks":[{{"type":"text","text":"x"}}],"human":{said}}}}}"#
+        );
+        let entries = feed(&[
+            CREATED,
+            ASKED,
+            STARTED,
+            r#"{"seq":4,"at":"2026-09-25T07:00:03.000Z","kind":"message.assistant","turn":3,"by":{"kind":"model","endpoint":"e","model":"m"},"cause":"cmd-1","body":{"blocks":[{"type":"tool_call","call_id":"call_4_1","name":"shell","args":"{\"command\":\"make\",\"description\":\"Build\"}"}],"seen":3}}"#,
+            &result,
+        ]);
+        json(of_kind(&entries, "tool")[0])["title"].clone()
+    };
+    let denied = command(
+        "denied",
+        r#"{"kind":"module","id":"acme-guard"}"#,
+        r#"{"key":"core/guard/denied","fields":{"package":"acme-guard"}}"#,
+    );
+    assert_eq!(denied["said"], "Blocked by acme-guard", "{denied}");
+    let failed = command(
+        "error",
+        r#"{"kind":"tool","call_id":"call_4_1"}"#,
+        r#"{"key":"core/tool-results/crashed"}"#,
+    );
+    assert!(failed.get("said").is_none(), "出错的命令照旧不写：{failed}");
+}
+
 /// 请求 3 的第 `index` 块的一段增量。
 fn delta(index: usize, piece: Piece) -> Transient {
     Transient {

@@ -2,6 +2,7 @@
 
 mod support;
 
+mod denied;
 mod lines;
 mod markdown;
 mod markdown_attached;
