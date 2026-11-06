@@ -27,7 +27,7 @@ im 的网页想做到本机打开不用输密码，要替页面向核心换一�
 - **换票**（`login/ticket.rs` 的 `exchange`）：照旧先用掉票；是 `Here` 的、换的连接不是本机的，回 `bad_ticket`（和不认得的一样，
   不说为什么），票已经作废，记一行 `WARN ticket for this machine refused off it`（不记票）。本机不本机照连接的 `Reach`：没说过
   `connection.remote` 的是本机。握手（`hello.rs`，`source.is_none()`）、`login.redeem`（`connection.rs`，`reach.is_local()`）两条路
-  都交进来。人要的票哪儿都能换，不变。
+  都交进来。人要的票哪儿都能换，不变（人要的 `page` 票后来由 LP-2 也改成只在本机换，见 `LP-2-人要的页面票只在本机换.md`）。
 - **设计 66**：第十节第 1 条、第十二节第 5 条、第十四节第 1 条的 `model.driver` 改成第二十项，写明第十九项被 LP-1 先占了。
 
 ### 协议最终形状（core1 转 im 和两个头）
@@ -38,7 +38,7 @@ im 的网页想做到本机打开不用输密码，要替页面向核心换一�
 - 不写 `via`、写别的：`local_only`（照旧）。参数多别的格：`bad_params`（照旧）。
 - 换：页面握手交 `ticket`，或者扩展在扩展连接上 `login.redeem {"ticket"}`，都只在本机的连接上成。网页软件说过 `connection.remote`
   的连接（不管地址）拿它握手、`login.redeem` 都回 `bad_ticket`，票作废。
-- 人要的票（终端、网页、`miyu web`）形状、行为都不变。
+- 人要的票（终端、网页、`miyu web`）形状、行为都不变（LP-2 起人要的 `page` 票也只在本机换）。
 - 头那边：能力列表多一项 `login.page`（`extension.status`、`package.install` 预览的 `capabilities`，名字和说明照连接的语言）；出厂的
   包声明了它也会出现在 `unapproved` 里。
 
@@ -65,14 +65,14 @@ im 的网页想做到本机打开不用输密码，要替页面向核心换一�
    义务第 1 条），认不出的反向代理（不加任何这类头的）在扩展那头会被当成本机——这是扩展侧的边界，核心挡不住。
 3. **人要的 `via: "page"` 票要不要也只在本机换**（网页软件 `/ticket` 替本机页面要的，用本机令牌）：这一步没改（派工单「非扩展连接
    的行为不变」）。推荐以后也改成只在本机换：那张票本来就只给本机页面，换的那条路（网页软件转来的本机连接）也是本机的，改了不碍事、
-   多一道防。
+   多一道防。core1 照推荐定，由 LP-2 做了（`LP-2-人要的页面票只在本机换.md`）。
 
 ### 怎么验
 
 - `tests/ticket_extension.rs`：没声明的要 `page` 的票 `needs_approval`（`data.capabilities` 对）、不写 `via` 和 `open` 的
   `local_only`；批过的要得到 5 张，本机握手换得到设备令牌、令牌认得，本机 `login.redeem` 换得到；局域网地址的远程握手 `bad_ticket`、
   回本机再用也 `bad_ticket`（作废了）；`127.0.0.1` 的远程（同机反向代理）握手 `bad_ticket`；`::ffff:127.0.0.1` 远程用密码登录着的
-  `login.redeem` `bad_ticket`；批过了不写 `via`、写 `open` 的照旧 `local_only`；人要的票远程照旧换得到。
+  `login.redeem` `bad_ticket`；批过了不写 `via`、写 `open` 的照旧 `local_only`；人要的票远程照旧换得到（LP-2 起这一条改用 `open` 的票）。
 - `tests/extension_approval.rs`：出厂的夹具扩展多声明 `login.page`，`unapproved` 只有它；开关文件记上批准以后不列。
 - `tests/login_log.rs`：两张票两行 `ticket issued`，带 `purpose=page`、`package=pages`；远程那次有 `ticket for this machine refused
   off it`；整份日志（`TRACE` 起）搜不到这两张票。

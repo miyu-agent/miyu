@@ -238,12 +238,12 @@ Hand-off tickets: a signed-in person jumps from one page to another program's pa
 
 | Method | Params | Result |
 |---|---|---|
-| `login.ticket` | optional `via`: `"page"` (the web service or an extension asking for a page opened on this machine) or `"open"` (`miyu web`) | `{"ticket", "expires"}`: a 64-hex-digit ticket, valid for 60 seconds. For people, `via` only goes into the core's run log, with how the connection was recognised; it does not change the ticket. A ticket an extension asked for only works on this machine (below). Other values or fields get `bad_params` |
+| `login.ticket` | optional `via`: `"page"` (the web service or an extension asking for a page opened on this machine) or `"open"` (`miyu web`) | `{"ticket", "expires"}`: a 64-hex-digit ticket, valid for 60 seconds. `via` goes into the core's run log, with how the connection was recognised; a `"page"` ticket only works on this machine (below), whether a person or an extension asked for it, while `"open"` and no `via` work anywhere. Other values or fields get `bad_params` |
 | `login.redeem` | `ticket` | `{"login": {"expires", "token"}}`: a new device token (30 days) |
 
 A ticket works once, whether given in a handshake or redeemed. At most 16 exist at a time; the oldest is dropped. Tickets live only in the core's memory and die with a restart.
 
-A ticket an extension asked for only works on this machine (step LP-1): a remote connection passed on by the web software (one that sent `connection.remote` before the hello, whatever address it named, including a loopback address from a reverse proxy on this machine) gets `bad_ticket` for it, in the handshake or with `login.redeem`, and the ticket is spent. Tickets people ask for still work anywhere.
+A ticket with `via` `"page"` only works on this machine (asked for by an extension: step LP-1; by a person, such as the web software asking for a page opened on this machine: step LP-2): a remote connection passed on by the web software (one that sent `connection.remote` before the hello, whatever address it named, including a loopback address from a reverse proxy on this machine) gets `bad_ticket` for it, in the handshake or with `login.redeem`, and the ticket is spent. Tickets people ask for with `"open"` or without `via` still work anywhere.
 
 **Errors**
 
@@ -252,5 +252,5 @@ A ticket an extension asked for only works on this machine (step LP-1): a remote
 | `bad_params` (`-32602`) | `login.redeem` without `ticket` |
 | `local_only` | An extension asked for a ticket without `via`, or with one other than `"page"` |
 | `needs_approval` | An extension asked for a `page` ticket without `login.page` approved (`data.capabilities` is `["login.page"]`) |
-| `bad_ticket` | No such ticket, expired, or already used; or a ticket an extension asked for, used on a remote connection |
+| `bad_ticket` | No such ticket, expired, or already used; or a `page` ticket used on a remote connection |
 

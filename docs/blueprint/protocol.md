@@ -232,7 +232,7 @@
 | `blob.put` | 传一个附件，存成 blob（施工 3-9 三补） |
 | `account.setup_code` | 要一个一次性码：网页第一次设访问密码；只给出示本机令牌的连接（施工 W-8） |
 | `core.stop` | 叫核心停下：回应 `{}` 写出去以后照收到停的信号那样停（`core.md`「停下」第 10 条）；只给出示本机令牌的连接，别的回 `local_only`，远程的回 `local_machine_only`（施工 DT-4 下：桌面端托盘里的「退出」连核心一起关） |
-| `login.ticket`、`login.redeem` | 交接票（施工 W-8 补，接入通讯平台要的）：人要一张 60 秒、一次性的票（本机令牌、设备令牌、密码、交接票连上的都能要）；接的一方握手交 `ticket`（施工 LT-1），或者 `login.redeem` 换一个设备令牌。要票时可以写 `via`（`page`、`open`，施工 LT-2），人要的只进运行日志。扩展（施工 LP-1，项目主人 2026-11-06 定只给本机免密）只能要 `via: "page"` 的，要批过能力 `login.page`（出厂的也要人批），没批的 `needs_approval`，不写、别的 `via` `local_only`；它要的票记成只在本机换：远程的连接（说过 `connection.remote` 的，不管地址）握手交它、`login.redeem` 它都回 `bad_ticket`，票当场作废（`login/ticket.rs` 的 `Reach`）。详见 `docs/reference/connection.md`、`docs/reference/extensions.md`「替本机页面换登录票」 |
+| `login.ticket`、`login.redeem` | 交接票（施工 W-8 补，接入通讯平台要的）：人要一张 60 秒、一次性的票（本机令牌、设备令牌、密码、交接票连上的都能要）；接的一方握手交 `ticket`（施工 LT-1），或者 `login.redeem` 换一个设备令牌。要票时可以写 `via`（`page`、`open`，施工 LT-2），进运行日志；人要的 `page` 票（网页软件 `/ticket` 替本机页面要的）也只在本机换（施工 LP-2，同下面扩展的），`open`、不写的哪儿都能换。扩展（施工 LP-1，项目主人 2026-11-06 定只给本机免密）只能要 `via: "page"` 的，要批过能力 `login.page`（出厂的也要人批），没批的 `needs_approval`，不写、别的 `via` `local_only`；它要的票记成只在本机换：远程的连接（说过 `connection.remote` 的，不管地址）握手交它、`login.redeem` 它都回 `bad_ticket`，票当场作废（`login/ticket.rs` 的 `Reach`）。详见 `docs/reference/connection.md`、`docs/reference/extensions.md`「替本机页面换登录票」 |
 | `account.setup` | 设、改访问密码（施工 W-8）：`{"password"}`，本机令牌连上的回 `{}`，别的换一个设备令牌；以前的设备全部作废、连着的断开。设备令牌连上的（施工 SU-1 补）设过的要带对现在的 `old`，照来源限流同密码登录 |
 | `account.logout` | 作废设备令牌：这一个，或者 `all` 全部（施工 W-8） |
 | `account.set_avatar`、`account.avatar` | 你的头像（施工 AV-1，`login/avatar.rs`）：放在数据根 `avatar.<扩展名>`，查法、写法、上限同人格头像（`personas/picture.rs` 的 `check`、`replace`、`encoded`）；握手回应带版本 |
@@ -1584,7 +1584,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `WARN` | `protocol mismatch head=… low=… high=…`、`bad token head=…`、`bad code head=…`、`bad login head=…`、`bad password head=…`、`bad ticket head=…`（施工 LT-1）、`login throttled head=…` | 握手被拒、断开 |
 | `INFO` | `login revoked, closed` | 这个连接靠的登录令牌作废了，断开（施工 W-8） |
 | `INFO` | `ticket issued purpose=… by=…`；扩展要的多 `package=…` | 发了一张交接票：`purpose` 是 `via`（没写的 `unknown`），`by` 是这个连接怎么认出来的（`token`、`login`、`password`、`extension`），不记票（施工 LT-2、LP-1） |
-| `WARN` | `ticket for this machine refused off it` | 扩展要的票拿到远程的连接上换，回 `bad_ticket`、票作废（施工 LP-1） |
+| `WARN` | `ticket for this machine refused off it` | `page` 的票（扩展、人要的）拿到远程的连接上换，回 `bad_ticket`、票作废（施工 LP-1、LP-2） |
 | `DEBUG` | `request method=…` | 每一条请求 |
 | `WARN` | `line too long, refused` | 一行太长（施工 FX-1 起不断开） |
 | `INFO` | `disconnected` | 握过手的连接断了 |
@@ -1828,8 +1828,8 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/core_stop.rs`（施工 DT-4 下） | `core.stop`：本机令牌连上的回 `{}` 以后叫停；设备令牌连上的 `local_only`、远程的 `local_machine_only`，没叫停、核心照旧能用 |
 | `crates/miyu-endpoint/tests/login.rs`、`login_log.rs`（施工 W-8） | 握手的四种凭据、`account.setup_code`、`account.setup`、`account.logout`、作废了断开、运行日志里没有码、密码、令牌（`web-module.md`「守着它的」）；交接票换一次、换出的登录令牌认得（W-8 补）；扩展要票一张一行、带包编号和 `via`，远程换不了记一行，日志里没有票（LP-1） |
 | `crates/miyu-store/src/access/tests.rs`（施工 SU-6 上） | 访问密码 `access.json` 读写：没设的是空的、设了验得过 |
-| `crates/miyu-endpoint/tests/login_ticket.rs`（施工 LT-1） | 握手交 `ticket`：连上来、回应带新的登录令牌、换出的认得、同一张只能用一次（再交、再 `login.redeem` 都是 `bad_ticket`，断开）；不认得的票 `bad_ticket`；和本机令牌、密码、登录令牌一起写的 `bad_params`，票没被用掉 |
-| `crates/miyu-endpoint/tests/ticket_extension.rs`、`src/login/ticket/tests.rs`、`crates/miyu/tests/login_ticket.rs`（施工 W-8 补、LP-1） | 扩展没批 `login.page` 要 `page` 的票回 `needs_approval`，不写、别的 `via` 回 `local_only`；批过的要得到，本机握手、本机 `login.redeem` 换得到设备令牌，局域网、回环地址（同机反向代理）的远程握手、远程登录着的 `login.redeem` 都 `bad_ticket`、票作废，人要的票远程照旧换得到（LP-1）；一张只换一次、过期的不认、最多 16 张；真核心、真套接字上照登录令牌连（`connect_login`）、要票、换票，登录令牌不认的连不上 |
+| `crates/miyu-endpoint/tests/login_ticket.rs`（施工 LT-1） | 握手交 `ticket`：连上来、回应带新的登录令牌、换出的认得、同一张只能用一次（再交、再 `login.redeem` 都是 `bad_ticket`，断开）；不认得的票 `bad_ticket`；和本机令牌、密码、登录令牌一起写的 `bad_params`，票没被用掉；人要的 `page` 票本机握手、本机 `login.redeem` 换得到，局域网、`127.0.0.1` 的远程握手、远程登录着的 `login.redeem` 都 `bad_ticket`、票作废，`open`、不写 `via` 的远程照旧换得到（LP-2） |
+| `crates/miyu-endpoint/tests/ticket_extension.rs`、`src/login/ticket/tests.rs`、`crates/miyu/tests/login_ticket.rs`（施工 W-8 补、LP-1） | 扩展没批 `login.page` 要 `page` 的票回 `needs_approval`，不写、别的 `via` 回 `local_only`；批过的要得到，本机握手、本机 `login.redeem` 换得到设备令牌，局域网、回环地址（同机反向代理）的远程握手、远程登录着的 `login.redeem` 都 `bad_ticket`、票作废，人要的 `open` 票远程照旧换得到（LP-1）；`page` 的票记成只在本机换、别的哪儿都能换（LP-2）；一张只换一次、过期的不认、最多 16 张；真核心、真套接字上照登录令牌连（`connect_login`）、要票、换票，登录令牌不认的连不上 |
 | `crates/miyu-endpoint/tests/reads.rs`（施工 W-6） | `blob.get`：读一段、读到结尾就停、`offset` 过了结尾是空的、不写 `offset`、`length` 的默认值、`length` 写 0 只问大小；没有这个 blob `unknown_blob`。`fs.read`：数据根拒、工作区能读、相对的 `bad_params`、`~` 接系统的家目录；没有、目录、（Unix）套接字 `path_unreadable`。两个方法 `length` 超过 512 KiB 都是 `bad_params`；拒绝的中英文 |
 | `crates/miyu-endpoint/tests/blob_grants.rs`、`src/attach/grants/tests.rs`（施工 W-6 三补） | 扩展不写 `session`：自己存的读得到、主人存的读不到、别的包存的没拿到过读不到；经 `package.call` 拿回来、答的包拿得到的读得到，答的包写进回应、自己拿不到的读不到；包卸了从空的开始。扩展写了 `session`：会话引用过的读得到、没引用过的读不到。人的连接照旧 |
 | `crates/miyu-endpoint/tests/blob_bridge.rs`、`sent_media.rs`、`crates/miyu-core/tests/packages.rs`（施工 Y-2 中下，SU-4 中改） | 桥一次传、分块传的都在同一个存处，发出去以后主人那边读得到；替主人干活的扩展 `blob.put` 存的，`model.call` 带这张图找得到（施工 BUG-2）；包工具交回的图在存处里；核心起来时留下的分块暂存清掉 |

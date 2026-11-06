@@ -106,7 +106,7 @@
 2. `login.page` 出厂的也不算批过（上面「能力」第 3 条）：换到的票能换主人的设备令牌，要人在装的时候、打开的时候批。
 3. 它要的票记成只在本机换（`Reach::Here`）：拿去换设备令牌的连接是远程的（握手之前说过 `connection.remote`，不管说的是什么地址）的，握手交它、`login.redeem` 它都回 `bad_ticket`，票当场作废，记一行 `WARN ticket for this machine refused off it`。核心这头只有网页软件说的这一句：同机反向代理转来的，网页软件看反向代理加的头也标成远程，所以回环地址的远程照样拒；核心不另外看地址。
 4. 扩展自己在扩展连接上 `login.redeem` 算本机：核心看不到扩展的页面是谁、从哪儿打开的。只给核过回环地址、`Host` 是本机写法、`Origin` 同源或没带的请求换票，远处来的页面一律走核心的访问密码（`connect_password`），是扩展的义务（参考 `extensions.md`「替本机页面换登录票」）。
-5. 每发一张记一行 `INFO ticket issued purpose=page by=extension package=<编号>`，不记票。人要的票（本机令牌、设备令牌、密码连上的）不变：哪儿都能换。
+5. 每发一张记一行 `INFO ticket issued purpose=page by=extension package=<编号>`，不记票。人要的 `page` 票（网页软件 `/ticket` 替本机页面要的）施工 LP-2 起同样只在本机换（`protocol.md` `login.ticket` 那一行）；人要的 `open`、不写 `via` 的哪儿都能换。
 
 **推送**（施工 9-4 补，两个头的设置页要的，照会话列表的推送那一路，`protocol.md`「会话列表的推送」）：
 
