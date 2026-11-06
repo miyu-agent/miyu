@@ -100,6 +100,28 @@ async fn an_oversized_frame_is_dropped_at_once() {
     stop(&mut other);
 }
 
+/// 一个连上以后紧接着再连（施工 XG-1补2）：一直留着空着的实例，第二个不会拿到 `ERROR_PIPE_BUSY`，也不用重试。只留一个实例的时候，
+/// 第二个落在「连上了、下一个还没建好」那一下子里就是 231。每一对之间歇一会儿，让端点把空着的补齐。
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_second_client_right_after_the_first_is_not_busy() {
+    let (channel, mut other) = open();
+    for round in 0..100 {
+        let first = ClientOptions::new().open(&channel.name);
+        let second = ClientOptions::new().open(&channel.name);
+        let busy = |opened: &std::io::Result<_>| match opened {
+            Ok(_) => None,
+            Err(error) => Some(error.raw_os_error()),
+        };
+        if let (Some(code), _) | (_, Some(code)) = (busy(&first), busy(&second)) {
+            stop(&mut other);
+            panic!("第 {round} 对连不上：{code:?}");
+        }
+        drop((first, second));
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
+    stop(&mut other);
+}
+
 #[tokio::test]
 async fn dropping_it_removes_the_pipe() {
     let (channel, mut other) = open();

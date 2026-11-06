@@ -140,7 +140,14 @@ fn sweep(temp: &Path) {
     leftovers::sweep(temp, miyu_pipe::process_running, |_| true);
 }
 
-/// 服务：等一个连上来，交给一个任务答，接着建下一个实例等。多了的直接断开。
+/// 同时空着等人连的实例有几个（施工 XG-1补2）。
+const IDLE: usize = 2;
+
+/// 服务：一直留 [`IDLE`] 个空着的实例等人连。连上了一个，先建好下一个顶上，再交给一个任务答；多了的直接断开。
+///
+/// 只留一个的话，连上那一刻到建好下一个之间再来连的拿到 `ERROR_PIPE_BUSY`（231）：`miyu call` 会等着重试，扩展作者自己写的
+/// 客户端不一定（施工 XG-1补2，e0 查 Windows 偶发时发现的）。客户端连到哪个空着的实例由系统挑，所以每个都要有人等着：各自
+/// 放进一个任务里等，连上了的连同管道一起交回来。
 async fn accept(
     first: NamedPipeServer,
     name: String,
@@ -150,16 +157,32 @@ async fn accept(
     kin: Kin,
 ) {
     let mut open = JoinSet::new();
-    let mut next = first;
+    let mut idle = JoinSet::new();
+    idle.spawn(connected(first));
+    for _ in 1..IDLE {
+        match miyu_pipe::create_for_containers(name.as_ref(), false) {
+            Ok(another) => idle.spawn(connected(another)),
+            Err(error) => {
+                tracing::warn!(target: TARGET, error = %error, "miyu call endpoint stopped");
+                return;
+            }
+        };
+    }
     loop {
         tokio::select! {
-            connected = next.connect() => {
-                if let Err(error) = connected {
-                    tracing::warn!(target: TARGET, error = %error, "miyu call endpoint stopped");
-                    break;
-                }
-                let pipe = match miyu_pipe::create_for_containers(name.as_ref(), false) {
-                    Ok(another) => std::mem::replace(&mut next, another),
+            Some(done) = idle.join_next() => {
+                let pipe = match done {
+                    Ok(Ok(pipe)) => pipe,
+                    Ok(Err(error)) => {
+                        tracing::warn!(target: TARGET, error = %error, "miyu call endpoint stopped");
+                        break;
+                    }
+                    // 等的任务没了（这个任务正被取消）：收工。
+                    Err(_) => break,
+                };
+                // 先顶上一个空着的，再去答：这一下子再来连的有实例接着。
+                match miyu_pipe::create_for_containers(name.as_ref(), false) {
+                    Ok(another) => idle.spawn(connected(another)),
                     Err(error) => {
                         tracing::warn!(target: TARGET, error = %error, "miyu call endpoint stopped");
                         break;
@@ -175,8 +198,14 @@ async fn accept(
                 open.spawn(serve::answer(pipe, ours, Arc::clone(&port), Arc::clone(&texts), token.clone()));
             },
             Some(_) = open.join_next(), if !open.is_empty() => {}
+            else => break,
         }
     }
+}
+
+/// 等一个实例有人连上，连同它交回来。
+async fn connected(pipe: NamedPipeServer) -> io::Result<NamedPipeServer> {
+    pipe.connect().await.map(|()| pipe)
 }
 
 #[cfg(test)]
