@@ -60,7 +60,7 @@ A connection the core didn't start gets `not_an_extension` from `port.claim` and
 
 ## Capabilities
 
-The manifest's `[process] capabilities` declares what it needs. Packages you installed need your approval: given while installing (`package.install` and `package.upgrade` with `approve`, PK-3, see [Packages](packages.en.md)), and for anything still unapproved when opening (`extension.enable` with `approve`); built-in ones count as approved. A package with unapproved capabilities isn't started. Approvals live in the switches file `extensions.json` under `approved` (package id to capabilities), keeping only what the current manifest declares; installing the same id another way (a local file over it, another source, another origin repository) does not keep earlier approvals; they are removed when the package is removed.
+The manifest's `[process] capabilities` declares what it needs. Packages you installed need your approval: given while installing (`package.install` and `package.upgrade` with `approve`, PK-3, see [Packages](packages.en.md)), and for anything still unapproved when opening (`extension.enable` with `approve`); built-in ones count as approved, except for `login.page`, which needs approval even for shipped packages (step LP-1). A package with unapproved capabilities isn't started. Approvals live in the switches file `extensions.json` under `approved` (package id to capabilities), keeping only what the current manifest declares; installing the same id another way (a local file over it, another source, another origin repository) does not keep earlier approvals; they are removed when the package is removed.
 
 | Capability | Allows |
 |---|---|
@@ -73,6 +73,7 @@ The manifest's `[process] capabilities` declares what it needs. Packages you ins
 | `packages.call` | Calling methods other packages export (`package.call`) |
 | `search` | Being a search provider (manifest `[[search]]`, `search.query`) |
 | `act_for_external` | Speaking for people on a platform (`session.send` and `command.run` with `as`), `session.note`, `session.respond` without `to`, `venue.*`, recording `venue.*` events: for platform bridges only |
+| `login.page` | Getting sign-in tickets for pages opened on this machine (`login.ticket {"via": "page"}`, see "Signing in pages on this machine" below): shipped packages need approval for it too |
 | `sessions.drive` | Driving sessions: `session.create`, `send`, `interrupt`, `revert`, `unrevert`, `redo`, `compact`, `clear`, `configure`, `fork`, `set_meta`, `respond`, `command.run`, `job.stop` |
 | `events.read` | Reading sessions: subscribing to the `events`, `view` and `sessions` streams, `session.list`, `session.recap`, `view.page`, `view.detail`, `job.output` |
 | `events.write` | Recording your own events in a session (`events.append`) |
@@ -83,6 +84,25 @@ The manifest's `[process] capabilities` declares what it needs. Packages you ins
 | `tool.guard`, `tool.rewrite` | Stopping a tool before it runs, rewriting its result afterwards: not available yet |
 
 Calling a method whose capability isn't declared returns `needs_approval`, with the missing one in `data.capabilities`. `network` and `fs.*` cover what goes through the core; your program's own network and file access is only checked once extensions run in a sandbox.
+
+## Signing in pages on this machine: `login.ticket`
+
+Your package serves a web page (a bridge's admin page, say) and wants the owner to open it on this computer without typing the access password (step LP-1; the project owner decided on 2026-11-06: no password on this machine only). Declare `login.page`; once it is approved, call `login.ticket {"via": "page"}` on the extension connection and get `{"ticket", "expires"}`: valid for 60 seconds, once. The page signs in with it like any hand-off ticket: the `ticket` credential in the handshake (pages that talk to the core directly), or you redeem it for a device token on the extension connection with `login.redeem {"ticket"}` (see [Connection](connection.en.md), "`login.ticket`, `login.redeem`").
+
+- Only `via` `"page"` is accepted: without `via`, or with another one, you get `local_only`; without `login.page` approved, `needs_approval` with `data.capabilities` `["login.page"]`. A shipped package that declares it needs approval too; it doesn't count as approved.
+- The ticket only works on this machine: a remote connection passed on by the web software (one that sent `connection.remote` before the hello, whatever address it named) gets `bad_ticket` for it in the handshake or with `login.redeem`, and the ticket is spent. Your own `login.redeem` on the extension connection counts as this machine: the core can't see who opened your page or from where, so only you can keep the rules below.
+- For every ticket the core's run log gets one line `ticket issued purpose=page by=extension package=<your id>`, never the ticket.
+
+**Your obligations**:
+
+1. Only ask for and redeem a ticket for a request that:
+   - comes from a loopback address: IPv4 `127.0.0.0/8`, IPv6 `::1`; an IPv4 address mapped into IPv6 (`::ffff:127.0.0.1`) counts as IPv4;
+   - carries none of the headers reverse proxies add (`Forwarded`, `X-Forwarded-*`, `X-Real-IP`, `Via`, `CF-Connecting-IP`, `True-Client-IP`, `Tailscale-*` and the like): a reverse proxy on this machine connects from loopback too, and these headers are the only way to tell; treat such requests as coming from elsewhere;
+   - has a `Host` written the local way: `127.0.0.1`, `localhost` or `[::1]` with the port you listen on; accept only these even when you listen on the LAN (against DNS rebinding);
+   - has an `Origin` exactly equal to `http://` plus the `Host` (same origin), or none.
+2. Pages from elsewhere (the LAN, a reverse proxy) always sign in with the core's access password (the `password` credential, `connect_password` in `miyu-client`). Never hand them this ticket instead, and don't set up a password of your own and swap tickets after checking it.
+3. Keep tickets out of your logs; hand one to the page in the URL fragment (`#`), and have the page redeem it at once and drop it from the address bar.
+4. Recommended, as the web software's `/ticket` does: require a custom header on the request for a ticket (such as `X-Miyu-Local: 1`) and a body that isn't one of the three form types; pages on other sites can't send a custom header.
 
 ## `provide`
 

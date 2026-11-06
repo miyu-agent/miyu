@@ -115,7 +115,7 @@ place = "status"
 | `context.system` | 往系统提示词末尾放一段 |
 | `packages.call` | 调别的包导出的方法 |
 | `act_for_external` | 代表聊天平台上的人说话：只给平台的桥 |
-| `login.page` | 替这台电脑上打开的页面换登录票（`login.ticket {"via": "page"}`），换到的票只在本机的连接上换得成设备令牌。出厂的包也要人批。只给核过是本机来的页面要票，远处来的页面一律走访问密码，见 [写扩展](extensions.md) |
+| `login.page` | 替这台电脑上打开的页面换登录票（`login.ticket {"via": "page"}`），换到的票只在本机的连接上换得成设备令牌。出厂的包也要人批。只给核过是本机来的页面要票，远处来的页面一律走访问密码，见 [扩展参考](../reference/extensions.md)「替本机页面换登录票」 |
 | `sessions.drive` | 驱动会话：开会话、说话、打断、撤销、压缩、分叉、发斜杠命令 |
 | `events.read` | 读会话：订阅事件、读历史、读后台命令的输出 |
 | `events.write` | 往会话里记自己的事件 |

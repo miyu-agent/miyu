@@ -115,7 +115,7 @@ Makes it an extension; needs `[command]`.
 | `context.system` | Putting a section at the end of the system prompt |
 | `packages.call` | Calling methods other packages export |
 | `act_for_external` | Speaking for people on a chat platform: for platform bridges only |
-| `login.page` | Getting sign-in tickets for pages opened on this machine (`login.ticket {"via": "page"}`); the ticket only turns into a device token over a connection from this machine. Shipped packages need approval for it too. Only ask for pages you have checked come from this machine; pages from elsewhere always sign in with the access password, see [Writing extensions](extensions.en.md) |
+| `login.page` | Getting sign-in tickets for pages opened on this machine (`login.ticket {"via": "page"}`); the ticket only turns into a device token over a connection from this machine. Shipped packages need approval for it too. Only ask for pages you have checked come from this machine; pages from elsewhere always sign in with the access password, see [the extensions reference](../reference/extensions.en.md), "Signing in pages on this machine" |
 | `sessions.drive` | Driving sessions: creating, sending, interrupting, reverting, compacting, forking, running slash commands |
 | `events.read` | Reading sessions: subscribing to events, reading history and background command output |
 | `events.write` | Recording your own events in a session |

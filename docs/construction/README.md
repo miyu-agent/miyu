@@ -1395,6 +1395,7 @@ flowchart LR
 | XG-1 上 | 扩展工具声明路径、交效果 | 设计 63（2026-11-05 core1 定五条）：`provide` 规格多 `paths`（哪个参数是路径、读还是写，权限链照它判，工作区外的写问人，同内置 `edit`）、`background_parameters`（后台运行关着的会话去掉）；`tool.call` 多 `checked`；回应多 `effects`（`file.changed`、`file.read`、`file.trashed`、`todo.written`），只收过了链的路径，改前改后、读的哈希核心自己读，对不上的丢、记 `WARN tool effect dropped`。`Tool::background_parameters` 改交 `Vec<&str>`。e0 的红测试转绿。`runs_commands` 是 XG-1 下。见 `XG-1上-扩展工具的效果.md` |
 | XG-1 下 | 扩展工具声明跑命令 | 设计 63（2026-11-05 core1 定 3A、5A）：`provide` 规格多 `runs_commands`（布尔），包要批新能力 `tools.commands`（第十八项，没批的 `needs_approval`）；说明后面接 `miyu call` 那一段；拿到端口的调用开一个端点，`tool.call` 多 `channel: {sock, token, bin}`，只认扩展进程的子孙（Linux `/proc`、macOS `proc_pidinfo`、Windows 进程快照）加令牌，调用完了就关。通道从基础系统挪进新的一层 `miyu-call`，字挪到 `resources/core/call/`（字节不变）；`miyu-pipe` 多问父进程。人跑命令只认内置（`Tool::serves_person`）。见 `XG-1下-扩展工具跑命令.md` |
 | XG-1 补 | 扩展工具协议的几处小出入和一处措辞 | 开发包对照时发现、core1 定：`todo.written` 的 `done: null` 当没写（原来整条丢）；规格三格写 `null` 同不写（代码本来如此，参考、蓝图写明）；`file.read` 的 `lines` 参考写明「从 1 数起，从不大于到」；认「扩展进程的子孙」写清是防误用、不是安全边界，关口是 `tools.commands` 要人批（e0 复核提的）。见 `XG-1补-协议小处.md` |
+| LP-1 | 扩展替本机页面换登录票 | 项目主人 11-06 定 B（只给本机免密）：新能力 `login.page`（第十九项，出厂的也要人批，`Capability::needs_person`）；扩展调 `login.ticket {"via": "page"}` 批过的回 `{ticket, expires}`、没批的 `needs_approval`，别的 `via` 照旧 `local_only`；扩展要的票只在本机的连接上换，说过 `connection.remote` 的握手、`login.redeem` 都 `bad_ticket`、票作废；每张一行 `INFO`（包编号、`via`），不记票；参考写清扩展作者的义务；设计 66 的 `model.driver` 改第二十项。见 `LP-1-扩展替本机页面换票.md` |
 
 **发版**（RL 线，设计 59，2026-11-04 项目主人定渠道、版本号、钥匙；施工 RL-3、RL-5 照设计 60 分包，排在 SD 之后）
 

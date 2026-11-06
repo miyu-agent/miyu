@@ -60,7 +60,7 @@
 
 ## 能力
 
-清单 `[process] capabilities` 声明要什么。自己装的包要人批：装的时候批（`package.install`、`package.upgrade` 带 `approve`，施工 PK-3 上，见 [软件包](packages.md)），没批全的打开时再批（`extension.enable` 带 `approve`）；出厂的算批过。还有没批的不拉起。批过的记在开关文件 `extensions.json` 的 `approved` 里（包的编号到能力），只留这一份清单声明了的；换了来路（本机文件盖过去、换了源、换了来源仓库）装的不接着用以前批的；卸包时删掉。
+清单 `[process] capabilities` 声明要什么。自己装的包要人批：装的时候批（`package.install`、`package.upgrade` 带 `approve`，施工 PK-3 上，见 [软件包](packages.md)），没批全的打开时再批（`extension.enable` 带 `approve`）；出厂的算批过，`login.page` 除外（出厂的也要人批，施工 LP-1）。还有没批的不拉起。批过的记在开关文件 `extensions.json` 的 `approved` 里（包的编号到能力），只留这一份清单声明了的；换了来路（本机文件盖过去、换了源、换了来源仓库）装的不接着用以前批的；卸包时删掉。
 
 | 能力 | 能做什么 |
 |---|---|
@@ -73,6 +73,7 @@
 | `packages.call` | 调别的包导出的方法（`package.call`） |
 | `search` | 当搜索服务供应商（清单 `[[search]]`，`search.query`） |
 | `act_for_external` | 代表平台上的人说话（带 `as` 的 `session.send`、`command.run`）、`session.note`、不写 `to` 的 `session.respond`、`venue.*`、记 `venue.*` 事件：只给通讯平台的桥 |
+| `login.page` | 替本机打开的页面换登录票（`login.ticket {"via": "page"}`，下面「替本机页面换登录票」）：出厂的也要人批 |
 | `sessions.drive` | 驱动会话：`session.create`、`send`、`interrupt`、`revert`、`unrevert`、`redo`、`compact`、`clear`、`configure`、`fork`、`set_meta`、`respond`，`command.run`、`job.stop` |
 | `events.read` | 读会话：订阅 `events`、`view`、`sessions` 流，`session.list`、`session.recap`、`view.page`、`view.detail`、`job.output` |
 | `events.write` | 往会话里记自己的事件（`events.append`） |
@@ -83,6 +84,25 @@
 | `tool.guard`、`tool.rewrite` | 工具执行前拦下、执行后改写结果：还没有 |
 
 没声明的，调对应的方法回 `needs_approval`，`data.capabilities` 是缺的那一项。`network`、`fs.*` 管的是经核心做的；你的程序自己联网、读写文件，等扩展进沙盒以后才照它们挡。
+
+## 替本机页面换登录票：`login.ticket`
+
+你的包带一个网页（例如平台桥的管理页），想让主人在这台电脑上打开它时不用输访问密码（施工 LP-1，项目主人 2026-11-06 定：只给本机免密）。声明 `login.page`、人批过以后，在扩展连接上调 `login.ticket {"via": "page"}`，回 `{"ticket", "expires"}`：60 秒、一次性。页面拿它照交接票登录：握手凭据 `ticket`（直连核心的页面），或者你在扩展连接上替它 `login.redeem {"ticket"}` 换一个设备令牌（见 [连接](connection.md)「`login.ticket`、`login.redeem`」）。
+
+- 只认 `via` 是 `"page"`：不写、写别的回 `local_only`；没批 `login.page` 的回 `needs_approval`，`data.capabilities` 是 `["login.page"]`。出厂的包声明了它也要人批，不算批过。
+- 票只在本机换：网页软件转来的远程连接（握手之前说过 `connection.remote` 的，不管说的是什么地址）拿它握手、`login.redeem` 都回 `bad_ticket`，票当场作废。你自己在扩展连接上 `login.redeem` 算本机：核心看不到你的页面是谁、从哪儿打开的，下面几条只有你守得住。
+- 每发一张，核心的运行日志记一行 `ticket issued purpose=page by=extension package=<你的编号>`，不记票。
+
+**你的义务**：
+
+1. 只给这样的请求要票、换票：
+   - 对端地址是回环：IPv4 的 `127.0.0.0/8`、IPv6 的 `::1`；IPv4 映射进 IPv6 的（`::ffff:127.0.0.1`）照 IPv4 算。
+   - 不带反向代理加的头（`Forwarded`、`X-Forwarded-*`、`X-Real-IP`、`Via`、`CF-Connecting-IP`、`True-Client-IP`、`Tailscale-*` 这类）：同机的反向代理转进来的，对端也是回环，只能靠这些头认出来，认出来的当远处来的。
+   - `Host` 是本机的写法：`127.0.0.1`、`localhost`、`[::1]`，加你在听的那个端口；你听局域网时也只认这几种（挡 DNS 重绑定）。
+   - `Origin` 和 `http://` 加 `Host` 逐字一样（同源），或者没带。
+2. 远处来的页面（局域网、反向代理转来的）一律走核心的访问密码登录（握手凭据 `password`，`miyu-client` 的 `connect_password`），不能拿这张票顶替，也不能自己另设密码、核过了再替它换票。
+3. 票不进你的日志；交给页面放在网址的片段（`#`）里，页面拿到就换掉、从地址栏去掉。
+4. 建议照网页软件的 `/ticket` 再加一道：要票的请求带一个自定义头（例如 `X-Miyu-Local: 1`），正文不是表单的三种类型；别的网站的页面发不出带自定义头的请求。
 
 ## `provide`
 

@@ -72,17 +72,17 @@
 
 **能力**（施工 9-4 下上，`05-内核接口.md` 第三节、I5；项目主人 2026-10-08 照推荐定）：
 
-1. 清单 `[process] capabilities` 声明要哪些（`packages.md`；声明斜杠命令 `[[slash]]` 的要 `commands`，施工 X-14 下，`slash.md`），只认那张表里的十八个名字（`crates/miyu-config/src/package/capability.rs` 的 `ALL`；施工 X-15 上加了 `widgets`，`widgets.md`；X-20 加了 `context.system`，X-18 加了 `packages.call`，N-5 加了 `search`，X-30 加了 `memory.write`，XG-1 下加了 `tools.commands`，`providers.md`「会跑命令的」）：`tools`、`tools.commands`、`commands`、`widgets`、`context.inject`、`context.system`、`tool.guard`、`tool.rewrite`、`events.read`、`events.write`、`sessions.drive`、`packages.call`、`search`、`act_for_external`、`network`、`fs.read`、`fs.write`、`memory.write`。
+1. 清单 `[process] capabilities` 声明要哪些（`packages.md`；声明斜杠命令 `[[slash]]` 的要 `commands`，施工 X-14 下，`slash.md`），只认那张表里的十九个名字（`crates/miyu-config/src/package/capability.rs` 的 `ALL`；施工 X-15 上加了 `widgets`，`widgets.md`；X-20 加了 `context.system`，X-18 加了 `packages.call`，N-5 加了 `search`，X-30 加了 `memory.write`，XG-1 下加了 `tools.commands`，`providers.md`「会跑命令的」；LP-1 加了 `login.page`，下面「替本机页面换票」）：`tools`、`tools.commands`、`commands`、`widgets`、`context.inject`、`context.system`、`tool.guard`、`tool.rewrite`、`events.read`、`events.write`、`sessions.drive`、`packages.call`、`search`、`act_for_external`、`login.page`、`network`、`fs.read`、`fs.write`、`memory.write`。
 2. 装上的（数据根的 `opt/`，施工 U23 上上）要批。施工 PK-3 上起在装的时候批（设计 `61-装包说清来源和能力.md` 第四节，`packages.md`「装卸」第 9 条）：`package.install`、`package.upgrade` 带 `approve`（`{编号: [能力…]}`），装成以后、拉起之前把 `approved` 重算成「(来路没变时旧的 ∪ 这一次批的) ∩ 这一份清单声明的」，`start = "always"` 的装上当场拉起；来路变了的（本机文件盖过去、换了源、换了来源仓库、本地库没记的）前面批过的不接着用，清单不再要的去掉、以后加回来要重新批。打开时批照旧留着当兜底：在 `extension.enable`、`package.enable` 那一下带上 `approve`，走到它的只剩 PK-3 以前装的、没带 `approve` 装的（没跟上的头）、确认屏和真装的不一样多出来的、装的时候写不进开关文件的、系统加装的（设计 61 定了的 8）；批的时候照同一个算法记（结果是这时声明的全部）。还没批的是「声明的减记着的」；不替装着的包补批，旧数据不迁；关掉不清批准，卸掉一起删（施工 SU-2 中），没有另外的撤销入口（定了的 7）。
-3. 出厂的（资源目录里随 Miyu 一起装的，通讯平台的桥）算批过的：和编译进核心的模块一样本来就被信任（05 第三节「内置模块」）。
+3. 出厂的（资源目录里随 Miyu 一起装的，通讯平台的桥）算批过的：和编译进核心的模块一样本来就被信任（05 第三节「内置模块」）。只有 `login.page` 例外（施工 LP-1，`Capability::needs_person`）：换到的票能换主人的设备令牌，出厂的也要人批，没批的照第 4 条不拉起。
 4. 开着、还有没批的（开关文件里开着的，`start = "always"` 没写开关的）不拉起：`stopped`、`needs_approval`，不拦核心空闲退出；批了就拉起。
-5. 照包手里有的能力挡方法（施工 X-30，下面「谁能调」；照开关文件的 `approved` 算，出厂的算全有），连接起来时算一次，批、升级都会重新拉起。`context.inject` 是挂接点不是方法，照旧在 `hooks.rs` 查。沙盒里跑另做（「还没有的」）。
+5. 照包手里有的能力挡方法（施工 X-30，下面「谁能调」；照开关文件的 `approved` 算，出厂的算全有，`login.page` 除外），连接起来时算一次，批、升级都会重新拉起。`context.inject` 是挂接点不是方法，照旧在 `hooks.rs` 查。沙盒里跑另做（「还没有的」）。
 
 **谁能调**（施工 X-30，`05-内核接口.md` 第三节、I5，`04-核心协议.md` 第四节；2026-10-20 项目主人定）：核心拉起的扩展的每一条请求，先照 `connection/rights.rs` 的表判，参数都不看就拒；头的连接不经这里。
 
 | 种 | 回 | 方法 |
 |---|---|---|
-| 只给人 | `local_only` | `session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`；`account.*`、`login.ticket`；`preset.set`、`preset.delete`、`persona.set`、`persona.delete`；`package.install`、`remove`、`enable`、`disable`、`restart`、`sync`、`search`、`clean`、`upgrades`、`upgrade`、`file`；`extension.*`、`mcp.*`、`project.*`；`skill.remove`、`tool.set_loading`、`feature.set`；`config.trust`、`secret.set`、`secret.delete`；头自己的设置 `prefs.get`、`prefs.set`（施工 HP-1：设置是人的，扩展、平台桥都不替人读写，主会话定）；`subscribe` 的 `projects`、`prefs` 流；核心发出去的（`tool.call`、`view.*` 这些），扩展调了没意义 |
+| 只给人 | `local_only` | `session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`；`account.*`、不写 `via` 或者 `via` 不是 `page` 的 `login.ticket`；`preset.set`、`preset.delete`、`persona.set`、`persona.delete`；`package.install`、`remove`、`enable`、`disable`、`restart`、`sync`、`search`、`clean`、`upgrades`、`upgrade`、`file`；`extension.*`、`mcp.*`、`project.*`；`skill.remove`、`tool.set_loading`、`feature.set`；`config.trust`、`secret.set`、`secret.delete`；头自己的设置 `prefs.get`、`prefs.set`（施工 HP-1：设置是人的，扩展、平台桥都不替人读写，主会话定）；`subscribe` 的 `projects`、`prefs` 流；核心发出去的（`tool.call`、`view.*` 这些），扩展调了没意义 |
 | `session.delete`（施工 Y-2 上） | 要 `sessions.drive` | 只删得掉碰得到的（`connection/checks.rs`）：平台的桥删它那几个平台的场所会话，它的后台照这条给主人删（2026-10-23 项目主人定） |
 | 要 `sessions.drive` | `needs_approval` | `session.create`、`send`（不带 `as`）、`interrupt`、`revert`、`unrevert`、`redo`、`compact`、`clear`、`configure`、`fork`、`set_meta`、`respond`，`command.run`（不带 `as`）、`job.stop`，包的会话状态 `session.set_state`、`session.state`（施工 TW-1） |
 | 要 `events.read` | 同上 | `subscribe` 的 `events`、`view`、`sessions` 流，`session.list`、`session.recap`、`session.tools`、`view.page`、`view.detail`、`job.output` |
@@ -90,6 +90,7 @@
 | 要 `act_for_external` | 同上 | 带 `as` 的 `session.send`、`command.run`，`session.note`，不写 `to` 的 `session.respond`（施工 R3S-3），`venue.*`，`events.append` 的 `venue.*` |
 | 要 `memory.write` | 同上 | `memory.remember`、`import`（施工 MI-1）、`update`、`forget`、`restore`、`dream`、`dream_stop`、`card_update`、`card_forget`（施工 E-1 下），`kb.add`、`create`、`update`、`mount`、`remove`、`delete`、`reindex` |
 | 要 `fs.read`、`network` | 同上 | `fs.*`；`link.preview` |
+| 要 `login.page`（施工 LP-1） | 同上 | `via` 是 `page` 的 `login.ticket`：替本机打开的页面换登录票（下面「替本机页面换票」） |
 | 要 `tools`、`widgets`、`context.system`、`packages.call` | 同上 | 有工具的 `provide`（空的照收：斜杠命令、搜索要先 `provide` 一次）；`widget.set`、`widget.clear`；`system.append`；`package.call`（照旧另查对方的 `[export]`） |
 | 都能调 | 照常 | 别的：读配置和密钥的名字、`blob.*`、`model.*`、`human.get`、读软件包的、`content.*`、人格和预设读的、技能、脚本、记忆和知识库读的、`subscribe` 的别的流、`login.redeem` |
 
@@ -98,6 +99,14 @@
 3. 扩展的身份是它自己：不带 `as` 的 `session.send` 记成 `harness`、名字是包的编号，它自己写 `from` 回 `bad_params`（`protocol.md` 的 `session.send`）。
 4. 带 `as` 的只看 `act_for_external`。`venue.session` 这些另照旧只给平台桥（施工 SU-4 中，`venues.md`）。
 5. 记忆、知识库的写一项能力管两样（2026-10-20 项目主人定；原来推荐只给人）。
+
+**替本机页面换票**（施工 LP-1；来源 im 网页「本机打开不要密码」，项目主人 2026-11-05 定、11-06 定 B：只给本机免密，`login/ticket.rs`）：
+
+1. 扩展在扩展连接上调 `login.ticket {"via": "page"}`，只认这一个 `via`，回 `{ticket, expires}`（60 秒、一次性，同人要的）。要批过 `login.page`，没批的 `needs_approval`（`data.capabilities` 是 `["login.page"]`）；不写、别的 `via` 照旧 `local_only`。都在 `connection/rights.rs` 那张表里挡。
+2. `login.page` 出厂的也不算批过（上面「能力」第 3 条）：换到的票能换主人的设备令牌，要人在装的时候、打开的时候批。
+3. 它要的票记成只在本机换（`Reach::Here`）：拿去换设备令牌的连接是远程的（握手之前说过 `connection.remote`，不管说的是什么地址）的，握手交它、`login.redeem` 它都回 `bad_ticket`，票当场作废，记一行 `WARN ticket for this machine refused off it`。核心这头只有网页软件说的这一句：同机反向代理转来的，网页软件看反向代理加的头也标成远程，所以回环地址的远程照样拒；核心不另外看地址。
+4. 扩展自己在扩展连接上 `login.redeem` 算本机：核心看不到扩展的页面是谁、从哪儿打开的。只给核过回环地址、`Host` 是本机写法、`Origin` 同源或没带的请求换票，远处来的页面一律走核心的访问密码（`connect_password`），是扩展的义务（参考 `extensions.md`「替本机页面换登录票」）。
+5. 每发一张记一行 `INFO ticket issued purpose=page by=extension package=<编号>`，不记票。人要的票（本机令牌、设备令牌、密码连上的）不变：哪儿都能换。
 
 **推送**（施工 9-4 补，两个头的设置页要的，照会话列表的推送那一路，`protocol.md`「会话列表的推送」）：
 

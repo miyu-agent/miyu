@@ -234,20 +234,23 @@
 - 握手时交 `ticket`（上面「握手」的凭据）：一步连上，回应带换到的设备令牌。浏览器里直连核心的页面用它。
 - `login.redeem` 换一个设备令牌，再照这个设备令牌连核心（`miyu-client` 的 `connect_login`，经本机套接字，握手带 `login`；页面自己的登录框用 `connect_password`，交回换到的登录令牌）。老的接法，照旧能用。
 
-**谁能调**：`login.ticket` 只给人：本机令牌（终端）、设备令牌、密码、交接票连上的都能要，核心拉起的扩展回 `local_only`；`login.redeem` 谁拿着票谁能调。
+**谁能调**：`login.ticket` 给人：本机令牌（终端）、设备令牌、密码、交接票连上的都能要。核心拉起的扩展只能要 `via` 是 `"page"` 的，要批过能力 `login.page`（施工 LP-1，见 [扩展](extensions.md)「替本机页面换登录票」），没批的回 `needs_approval`，不写 `via`、写别的回 `local_only`。`login.redeem` 谁拿着票谁能调。
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `login.ticket` | 可写 `via`：`"page"`（网页服务替本机打开的页面要的）、`"open"`（`miyu web` 要的） | `{"ticket", "expires"}`：64 位十六进制的票，60 秒后作废。`via` 只进核心的运行日志（连同这个连接怎么认出来的），不改票；别的值、别的格回 `bad_params` |
+| `login.ticket` | 可写 `via`：`"page"`（网页服务、扩展替本机打开的页面要的）、`"open"`（`miyu web` 要的） | `{"ticket", "expires"}`：64 位十六进制的票，60 秒后作废。人要的 `via` 只进核心的运行日志（连同这个连接怎么认出来的），不改票；扩展要的票只在本机换（下面）。别的值、别的格回 `bad_params` |
 | `login.redeem` | `ticket` | `{"login": {"expires", "token"}}`：换出的设备令牌（30 天） |
 
 一张票只用一次（握手交了、`login.redeem` 换了都算）；同时最多 16 张，多了作废最早的。票只在核心的内存里，核心重启全部作废。
+
+扩展要的票只在本机换（施工 LP-1）：网页软件转来的远程连接（握手之前说过 `connection.remote` 的，不管说的是什么地址，同机反向代理转来的回环地址也一样）握手交它、`login.redeem` 它都回 `bad_ticket`，票当场作废。人要的票照旧哪儿都能换。
 
 **出错**
 
 | `data.reason` | 什么时候 |
 |---|---|
 | `bad_params`（`-32602`） | `login.redeem` 没写 `ticket` |
-| `local_only` | 扩展要票 |
-| `bad_ticket` | 票没有、过期了、用过了 |
+| `local_only` | 扩展要票没写 `via`，或者写的不是 `"page"` |
+| `needs_approval` | 扩展要 `page` 的票，没批 `login.page`（`data.capabilities` 是 `["login.page"]`） |
+| `bad_ticket` | 票没有、过期了、用过了；扩展要的票拿到远程的连接上换 |
 
