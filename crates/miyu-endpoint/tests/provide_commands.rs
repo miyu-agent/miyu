@@ -76,11 +76,7 @@ pub(crate) fn knock(sock: &str, token: &str) -> Option<Value> {
     #[cfg(unix)]
     let mut stream = std::os::unix::net::UnixStream::connect(sock).ok()?;
     #[cfg(windows)]
-    let mut stream = std::fs::OpenOptions::new()
-        .read(true)
-        .write(true)
-        .open(sock)
-        .ok()?;
+    let mut stream = open_pipe(sock).ok()?;
     let body =
         json!({"v": 1, "op": "call", "tool": "probe", "args": "{}", "token": token}).to_string();
     stream
@@ -92,6 +88,30 @@ pub(crate) fn knock(sock: &str, token: &str) -> Option<Value> {
     let mut reply = vec![0u8; u32::from_be_bytes(len) as usize];
     stream.read_exact(&mut reply).ok()?;
     serde_json::from_slice(&reply).ok()
+}
+
+/// Windows：命名管道当文件开。同 `miyu call`（`miyu-cli` 的 `connect`）：几个实例都忙着的（`ERROR_PIPE_BUSY`）等一会儿再试，最多
+/// 两秒。核心这一头一个连上来以后才建下一个实例，扩展起的子进程刚连上时测试来敲，正好撞在没有空实例的那一小会儿（batch-1106-r3 的
+/// Windows 红过，测试会话 e0 查的）。
+#[cfg(windows)]
+pub(crate) fn open_pipe(sock: &str) -> std::io::Result<std::fs::File> {
+    const PIPE_BUSY: i32 = 231;
+    let deadline = std::time::Instant::now() + Duration::from_secs(2);
+    loop {
+        match std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(sock)
+        {
+            Err(error)
+                if error.raw_os_error() == Some(PIPE_BUSY)
+                    && std::time::Instant::now() < deadline =>
+            {
+                std::thread::sleep(Duration::from_millis(20));
+            }
+            opened => return opened,
+        }
+    }
 }
 
 /// 扩展收到的 `tool.call`，照先后。

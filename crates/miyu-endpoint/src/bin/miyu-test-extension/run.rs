@@ -136,14 +136,27 @@ fn connect(sock: &str) -> Option<std::os::unix::net::UnixStream> {
     std::os::unix::net::UnixStream::connect(sock).ok()
 }
 
-/// 连端点：Windows 上是命名管道，当文件开。
+/// 连端点：Windows 上是命名管道，当文件开。同 `miyu call`：几个实例都忙着的（`ERROR_PIPE_BUSY`）等一会儿再试，最多两秒（核心
+/// 一个连上来以后才建下一个实例，和测试同时来连会撞上没有空实例的那一小会儿）。
 #[cfg(windows)]
 fn connect(sock: &str) -> Option<std::fs::File> {
-    std::fs::OpenOptions::new()
-        .read(true)
-        .write(true)
-        .open(sock)
-        .ok()
+    const PIPE_BUSY: i32 = 231;
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    loop {
+        match std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(sock)
+        {
+            Err(error)
+                if error.raw_os_error() == Some(PIPE_BUSY)
+                    && std::time::Instant::now() < deadline =>
+            {
+                std::thread::sleep(std::time::Duration::from_millis(20));
+            }
+            opened => return opened.ok(),
+        }
+    }
 }
 
 /// 别的系统没有通道。
