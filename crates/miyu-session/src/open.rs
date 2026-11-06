@@ -387,6 +387,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         room: room.clone(),
         plugins,
         frozen: false,
+        baseline: None,
     });
     let busy = actor.busy();
     let watched = actor.watched();

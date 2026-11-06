@@ -66,6 +66,8 @@ pub(crate) struct Refresh {
     pub(crate) plugins: crate::VenuePlugins,
     /// 快照冻住了（fork 子代理，施工 A-F 中）：一直用父会话那一份，请求前缀才和父会话、兄弟的一样，回合开始不换。
     pub(crate) frozen: bool,
+    /// 换人格、换预设那一刻下一个回合要用的快照（施工 PX-1补，[`check::Baseline`]）：发送前干算照它比。回合开始换过就清掉。
+    pub(crate) baseline: Option<check::Baseline>,
 }
 
 /// 看了一遍的结果。
@@ -85,8 +87,8 @@ enum Seen {
     Unreadable(String),
     /// 改了，换不了：拼不成、存不进：照旧。
     Kept(String),
-    /// 只干算的（施工 PX-1，[`check`]）：改了、回合开始会换。不建策略、不存。
-    Would,
+    /// 只干算的（施工 PX-1，[`check`]）：改了、回合开始会换成这一份（施工 PX-1补：拿它比基准）。不建策略、不存。
+    Would(Box<Snapshot>),
 }
 
 impl Actor {
@@ -132,6 +134,7 @@ impl Actor {
                 prefix.see(edits);
                 if let Some(refresh) = self.persona.as_mut() {
                     refresh.seen = Some(seen);
+                    refresh.baseline = None;
                 }
                 None
             }
@@ -146,6 +149,7 @@ impl Actor {
                 if let Some(refresh) = self.persona.as_mut() {
                     refresh.snapshot = *snapshot;
                     refresh.seen = Some(seen);
+                    refresh.baseline = None;
                 }
                 if let Some(Recast { shelves }) = recast {
                     self.rehome(to, shelves).await;
@@ -160,7 +164,7 @@ impl Actor {
                 tracing::warn!(target: TARGET, persona = persona.as_deref(), error = error.as_str(), "persona not swapped");
                 None
             }
-            Seen::Would => None,
+            Seen::Would(_) => None,
         }
     }
 }
@@ -389,7 +393,7 @@ fn look(
         return Seen::Same;
     }
     if dry {
-        return Seen::Would;
+        return Seen::Would(Box::new(new));
     }
     let built = || -> Result<(Policy, Retext), String> {
         let texts = Retext {

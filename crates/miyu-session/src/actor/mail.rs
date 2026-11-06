@@ -78,6 +78,10 @@ impl Actor {
                 self.check_prefix(version, reply);
                 Mail::Done
             }
+            Message::PrefixSettle => {
+                self.settle_prefix();
+                Mail::Done
+            }
             Message::Context(crate::handle::context::Asked::Now(reply)) => {
                 self.context(reply);
                 Mail::Done

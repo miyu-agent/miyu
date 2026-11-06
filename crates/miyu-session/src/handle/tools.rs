@@ -29,4 +29,13 @@ impl Handle {
         self.send(Message::PrefixCheck(version, reply))?;
         answer.await.map_err(|_| Stopped)
     }
+
+    /// 人换了人格、预设、已经先压缩过（施工 PX-1补）：放行到号 `version`，再叫会话照这一刻的文件记下下一个回合要用的快照，之后
+    /// 发送前的干算照它比（[`Handle::check_prefix`]），别的人格的头像这类改动不再让它问。会话停了的不管：没有下一个回合了。
+    pub fn settle_prefix(&self, version: u64) {
+        self.prefix().allow(version);
+        if self.send(Message::PrefixSettle).is_err() {
+            tracing::debug!(target: crate::TARGET, "prefix not settled: the session stopped");
+        }
+    }
 }

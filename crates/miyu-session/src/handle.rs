@@ -90,6 +90,8 @@ pub(crate) enum Message {
     Current(oneshot::Sender<crate::current::Current>),
     /// 发送前照这个会话自己判前缀变不变（施工 PX-1）：号是这一次的。
     PrefixCheck(u64, oneshot::Sender<crate::prefix::PrefixCheck>),
+    /// 换人格、换预设刚放行：照这一刻的文件记下下一个回合要用的快照（施工 PX-1补）。
+    PrefixSettle,
     /// 下一次请求会发的工具（施工 S-T，`handle/tools.rs`）。
     Tools(oneshot::Sender<Vec<String>>),
     /// 这时的上下文一块块的（施工 CX-1 上，`handle/context.rs`）。

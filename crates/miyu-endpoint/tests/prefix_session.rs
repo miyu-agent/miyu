@@ -186,3 +186,182 @@ async fn a_recast_before_any_turn_is_not_asked_either() {
     let first = client.say("s1", &session, "在吗").await;
     assert_eq!(reason(&first), "ok", "换人格时已经放行：{first}");
 }
+
+/// 说过几句、换了人格（压缩过）、下一句还没发：之后有人给别的人格换了头像（施工 PX-1补，网页的复现）。快照等下一个回合才换成
+/// 新人格的，干算的基准要是那一份，不是还没换下来的旧快照：
+/// - 这一句不问，取消了什么都不改再发也不问；
+/// - 再改它新人格的人设，问，`data.files` 只列那一个，不把别的人格的图片一起列上。
+#[tokio::test]
+async fn a_recast_then_another_persona_s_picture_does_not_ask() {
+    let home = Home::new();
+    personas(&home);
+    let script = Script::new([
+        Play::Says("好。"),
+        Play::Says("<analysis>a</analysis>\n<summary>\nThe user said hi.\n</summary>"),
+        Play::Says("在。"),
+    ])
+    .window(1_000_000);
+    let core = home.core(&script);
+    let mut client = Client::connect(Arc::clone(&core));
+    hello_asking(&mut client).await;
+    let session = client.create("c", "~").await;
+    let first = format!("在吗{}", "x".repeat(70_000));
+    assert_eq!(reason(&client.say("s1", &session, &first).await), "ok");
+    home.until_turns(&session, 1).await;
+    let recast = client
+        .call(
+            "r",
+            "session.configure",
+            json!({"session": session, "persona": "miyu"}),
+        )
+        .await;
+    assert!(recast.get("error").is_none(), "{recast}");
+    touch(&home, &core, "root/personas/other/avatar.png", b"png").await;
+    let second = client.say("s2", &session, "在吗").await;
+    assert_eq!(reason(&second), "ok", "别的人格的头像不问：{second}");
+    let again = client.say("s2b", &session, "在吗").await;
+    assert_eq!(reason(&again), "ok", "再发也不问：{again}");
+    home.until_turns(&session, 2).await;
+}
+
+/// 同上，换的是它自己将要用的新人格的人设：问，只列那一个文件。
+#[tokio::test]
+async fn a_recast_then_its_new_persona_edited_names_only_that_file() {
+    let home = Home::new();
+    personas(&home);
+    let script = Script::new([
+        Play::Says("好。"),
+        Play::Says("<analysis>a</analysis>\n<summary>\nThe user said hi.\n</summary>"),
+        Play::Says("在。"),
+    ])
+    .window(1_000_000);
+    let core = home.core(&script);
+    let mut client = Client::connect(Arc::clone(&core));
+    hello_asking(&mut client).await;
+    let session = client.create("c", "~").await;
+    let first = format!("在吗{}", "x".repeat(70_000));
+    assert_eq!(reason(&client.say("s1", &session, &first).await), "ok");
+    home.until_turns(&session, 1).await;
+    let recast = client
+        .call(
+            "r",
+            "session.configure",
+            json!({"session": session, "persona": "miyu"}),
+        )
+        .await;
+    assert!(recast.get("error").is_none(), "{recast}");
+    touch(&home, &core, "root/personas/other/avatar.png", b"png").await;
+    touch(
+        &home,
+        &core,
+        "root/personas/miyu/prompts/persona.md",
+        b"You are Miyu, edited.\n",
+    )
+    .await;
+    let refused = client.say("s2", &session, "在吗").await;
+    assert_eq!(reason(&refused), "prefix_changing", "{refused}");
+    assert_eq!(
+        refused["error"]["data"]["files"],
+        json!(["personas/miyu/prompts/persona.md"]),
+        "只列它新人格的那一个：{refused}"
+    );
+}
+
+/// 换回无人格（施工 PX-1补，网页复现的第 4 步）：同样不为别的人格的头像问。
+#[tokio::test]
+async fn a_recast_to_no_persona_then_a_picture_does_not_ask() {
+    let home = Home::new();
+    personas(&home);
+    let script = Script::new([
+        Play::Says("好。"),
+        Play::Says("<analysis>a</analysis>\n<summary>\nThe user said hi.\n</summary>"),
+        Play::Says("在。"),
+    ])
+    .window(1_000_000);
+    let core = home.core(&script);
+    let mut client = Client::connect(Arc::clone(&core));
+    hello_asking(&mut client).await;
+    let session = client.create_as("c", "~", "other").await;
+    let first = format!("在吗{}", "x".repeat(70_000));
+    assert_eq!(reason(&client.say("s1", &session, &first).await), "ok");
+    home.until_turns(&session, 1).await;
+    let recast = client
+        .call(
+            "r",
+            "session.configure",
+            json!({"session": session, "persona": null}),
+        )
+        .await;
+    assert!(recast.get("error").is_none(), "{recast}");
+    touch(&home, &core, "root/personas/other/avatar.png", b"png").await;
+    let second = client.say("s2", &session, "在吗").await;
+    assert_eq!(
+        reason(&second),
+        "ok",
+        "无人格的不为别的人格的头像问：{second}"
+    );
+}
+
+/// 换上了新人格以后基准就作废（施工 PX-1补）：换人格那一刻记下的那一份已经用过了，之后改了人设、跑了一轮、又改回去，前缀从
+/// 改过的那一份变回原样，照样要问，不能因为它和旧基准一样就放过。
+#[tokio::test]
+async fn the_baseline_is_dropped_once_the_new_persona_is_in() {
+    let home = Home::new();
+    personas(&home);
+    let script = Script::new([
+        Play::Says("好。"),
+        Play::Says("<analysis>a</analysis>\n<summary>\nThe user said hi.\n</summary>"),
+        Play::Says("在。"),
+        Play::Says("嗯。"),
+        Play::Says("哦。"),
+    ])
+    .window(1_000_000);
+    let core = home.core(&script);
+    let mut client = Client::connect(Arc::clone(&core));
+    hello_asking(&mut client).await;
+    let session = client.create("c", "~").await;
+    let first = format!("在吗{}", "x".repeat(70_000));
+    assert_eq!(reason(&client.say("s1", &session, &first).await), "ok");
+    home.until_turns(&session, 1).await;
+    let recast = client
+        .call(
+            "r",
+            "session.configure",
+            json!({"session": session, "persona": "miyu"}),
+        )
+        .await;
+    assert!(recast.get("error").is_none(), "{recast}");
+    assert_eq!(reason(&client.say("s2", &session, "在吗").await), "ok");
+    home.until_turns(&session, 2).await;
+    touch(
+        &home,
+        &core,
+        "root/personas/miyu/prompts/persona.md",
+        b"You are Miyu, edited.\n",
+    )
+    .await;
+    let edited = client.say("s3", &session, "在吗").await;
+    assert_eq!(reason(&edited), "prefix_changing", "{edited}");
+    let kept = client
+        .call(
+            "s3k",
+            "session.send",
+            json!({"session": session, "text": "在吗", "prefix": "keep"}),
+        )
+        .await;
+    assert!(kept.get("error").is_none(), "{kept}");
+    home.until_turns(&session, 3).await;
+    touch(
+        &home,
+        &core,
+        "root/personas/miyu/prompts/persona.md",
+        b"You are Miyu.\n",
+    )
+    .await;
+    let reverted = client.say("s4", &session, "在吗").await;
+    assert_eq!(
+        reason(&reverted),
+        "prefix_changing",
+        "改回去也要问：{reverted}"
+    );
+}

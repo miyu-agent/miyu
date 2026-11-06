@@ -464,6 +464,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
         room: room.clone(),
         plugins,
         frozen: fork_child,
+        baseline: None,
     });
     span.in_scope(|| {
         tracing::info!(

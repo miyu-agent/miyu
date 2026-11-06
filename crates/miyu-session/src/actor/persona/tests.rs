@@ -85,6 +85,7 @@ fn setup_with(
         room: Default::default(),
         plugins: Default::default(),
         frozen: false,
+        baseline: None,
     };
     (scratch, root, refresh)
 }

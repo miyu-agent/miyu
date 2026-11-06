@@ -456,8 +456,8 @@ pub(super) async fn configure(core: &Arc<Core>, request: &Request) -> Result<Val
     if let Some(command) = recast {
         recast::send(core, request, &session, &found.handle, command).await?;
         // 换人格、换预设已经先压缩过（施工 PX-1）：这一刻以前的改动不再问第二次。记成放行、不记成看过：回合开始照旧照现在的
-        // 文件重拼，改过的覆盖照样换上。
-        found.handle.prefix().allow(core.edits.version());
+        // 文件重拼，改过的覆盖照样换上。快照等下一个回合才换，会话照这一刻的文件记下那一份当基准（施工 PX-1补）。
+        found.handle.settle_prefix(core.edits.version());
     }
     Ok(json!({}))
 }

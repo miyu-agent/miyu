@@ -171,6 +171,7 @@ pub(super) fn setup_in(name: &str, text: &str, tools: Catalog) -> (Scratch, Data
         room: Default::default(),
         plugins: Default::default(),
         frozen: false,
+        baseline: None,
     };
     (scratch, root, refresh)
 }
