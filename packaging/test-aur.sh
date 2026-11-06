@@ -60,6 +60,13 @@ if [ -d /home/builder/aur/miyu-applet ]; then
   names="${names} miyu-applet miyu-agent"
 fi
 for name in ${names}; do
+  # 官方源里的依赖先由 root 装上（RL-5补4）：makepkg 以 builder 跑、没有 sudo，用不了 -s；用户用 paru、yay 时是它们去装。
+  # 照静态那一段出的 .SRCINFO 读 depends（连同按架构写的），去掉版本条件，自家的 miyu-* 照上面的先后由 pacman -U 装上。
+  deps=$(sed -n 's/^\tdepends\(_x86_64\)\{0,1\} = //p' "/home/builder/aur/${name}/.SRCINFO" | sed 's/[<>=].*//' | grep -v '^miyu' || true)
+  if [ -n "${deps}" ]; then
+    # shellcheck disable=SC2086
+    pacman -S --needed --noconfirm --asdeps ${deps} >/dev/null || fail "${name}：官方源里的依赖装不上：${deps}"
+  fi
   su builder -c "cd /home/builder/aur/${name} && makepkg --noconfirm -f" || fail "${name}：makepkg 没成"
   pacman -U --noconfirm /home/builder/aur/"${name}"/*.pkg.tar.zst || fail "${name}：装不上"
 done
@@ -126,7 +133,8 @@ PKG
 
   # 它依赖的合集刚卸掉，编的时候不查依赖（-d）：装的时候由 pacman 从下面的软件源带进来。
   su builder -c "cd /home/builder/aur/miyu && makepkg --noconfirm -d -f" || fail "过渡包 miyu：makepkg 没成"
-  repo=/home/builder/repo
+  # 放在谁都读得到的地方（RL-5补4）：pacman 7 下载照它的沙箱用户（alpm）来，file:// 的也一样，读不了 builder 的家目录（0700）。
+  repo=/srv/miyutest
   rm -rf "${repo}"
   mkdir -p "${repo}"
   for name in miyu miyu-core miyu-tui miyu-webui miyu-applet miyu-agent; do

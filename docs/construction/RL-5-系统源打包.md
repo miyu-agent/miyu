@@ -227,6 +227,17 @@ AUR、Homebrew 上的 Miyu 照设计 60 分包：`miyu-core`、`miyu-tui`、`miy
     建完本地 tap 以后整个 `brew trust` 上（旧的 Homebrew 没有这个命令，不调）；日志里记下 Homebrew、python3 的版本和 trust 调没调。
   - `test-brew.sh` 里查加装层的那段 Python 和 `test-aur.sh` 的是同一段、同一个错，第一次只改了 AUR 那份（run 42218977482 的 brew 红在
     这里，trust 那一步已经真调了、合集和三个依赖都装上了），照同样的改法补上。3.12 以前的 Python f 串里根本不许反斜杠，这个改法也避开了。
+- **带托盘的真装红在测具两处**（packaging-test run 42256221072，tag 和 applet_tag 都是 v2026.11.0-rc.1，RL-5补4）：
+  - `miyu-applet` 的 `makepkg` 报缺 gtk3、cairo、gdk-pixbuf2、libayatana-appindicator：测具里 `makepkg` 以 builder 跑、没有 sudo，用不了
+    `-s`，核心、终端、网页只要 glibc 这些容器里本来就有的，以前碰不到。用户用 paru、yay 时是它们去装官方源的依赖。改成每个包
+    `makepkg` 之前，照静态那一段出的 `.SRCINFO` 读 `depends`（连同按架构写的），去掉版本条件、去掉自家的 `miyu-*`，由 root
+    `pacman -S --needed --asdeps` 装上。
+  - 旧版升级那一段的本机软件源原来放在 `/home/builder/repo`：pacman 7 下载照它的沙箱用户（alpm）来，`file://` 的也一样，读不了
+    builder 的家目录（0700），`-Syu` 报 `Could not open file /home/builder/repo/miyutest.db`。挪到 `/srv/miyutest`。RL-5补2 时本机模拟
+    放在 `/repo`，所以没露出来。
+  - 两处改完，本机照 `packaging-test` 的填法、用 rc.6 核心和托盘真的 `SHA256SUMS`，在 Arch 容器（`archlinux:latest`，不加特权）里跑
+    `test-aur.sh install`，从头到尾过：真装七份里的五份加合集、系统加装那一层对、旧的 0.7.4 经本机软件源 `-Syu` 换成过渡包和一整套。
+  - Homebrew 那一项这一趟就是绿的：合集、三个依赖、托盘的 cask 都真装上了（Homebrew 7.0.11，trust 真调了）。
 - **namcap 不许说明里带包名**（`packaging-test` 第一趟红在这里）：它照子串比，过渡包叫 `miyu`，说明里的 `Miyu`、`miyu-agent`、
   `miyu migrate` 都算，改成一个 `miyu` 都不写（`the new agent packages`、`the migrate command`），怎么搬旧数据由装上时那两句说。
   本机照 `packaging-test` 的造法填好、在 Arch 容器里跑 `test-aur.sh static`，七份都过。
