@@ -27,6 +27,7 @@ mod sight;
 mod stage;
 mod stream;
 mod swap;
+mod venue;
 
 pub use opening::{CHILD_SESSION, SESSION};
 pub use respond::model;

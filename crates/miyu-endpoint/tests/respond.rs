@@ -236,3 +236,62 @@ async fn respond_while_running_joins_the_turn() {
         .count();
     assert_eq!(started, 1, "打断以后不由它另开一轮");
 }
+
+/// 带了 `tail` 的（施工 RT-1）：记在 `turn.started` 上，发给模型的请求带着它；空的当没写。
+#[tokio::test]
+async fn a_tail_is_recorded_on_the_turn_and_sent_with_the_request() {
+    let home = Home::new();
+    let script = Script::new([Play::Says("在。"), Play::Says("嗯。")]);
+    let (mut client, session, seqs) = overheard_twice(&home, &script).await;
+    let mut params = respond(&session, json!([seqs[0]]));
+    params["tail"] = json!("（群里的提示）");
+    let reply = client.call("t1", "session.respond", params).await;
+    assert!(reply.get("error").is_none(), "{reply}");
+    home.until_turns(&session, 1).await;
+    let mut params = respond(&session, json!([seqs[1]]));
+    params["tail"] = json!("");
+    let reply = client.call("t2", "session.respond", params).await;
+    assert!(reply.get("error").is_none(), "空的当没写：{reply}");
+    home.until_turns(&session, 2).await;
+    let tails: Vec<Option<String>> = home
+        .log(&session)
+        .iter()
+        .filter_map(|event| match &event.body {
+            Body::TurnStarted(turn) => Some(turn.tail.clone()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(tails, [Some("（群里的提示）".to_string()), None]);
+    let sent: Vec<Option<String>> = script
+        .requests()
+        .into_iter()
+        .map(|(_, request)| request.tail)
+        .collect();
+    assert_eq!(sent, [Some("（群里的提示）".to_string()), None]);
+}
+
+/// `tail` 不是字符串的、超过 2 KiB 的：`bad_params`，`data.field` 是 `tail`，什么都不记（施工 RT-1）。
+#[tokio::test]
+async fn a_bad_tail_names_the_field_and_records_nothing() {
+    let home = Home::new();
+    let (mut client, session, seqs) =
+        overheard_twice(&home, &Script::new([Play::Says("在。")])).await;
+    let before = home.log(&session).len();
+    for (n, tail) in [json!(7), json!(["x"]), json!("x".repeat(2049))]
+        .into_iter()
+        .enumerate()
+    {
+        let mut params = respond(&session, json!([seqs[0]]));
+        params["tail"] = tail;
+        let reply = client
+            .call(&format!("b{n}"), "session.respond", params)
+            .await;
+        assert_eq!(reason(&reply), Some("bad_params"), "{n}：{reply}");
+        assert_eq!(reply["error"]["data"]["field"], "tail", "{n}：{reply}");
+    }
+    assert_eq!(home.log(&session).len(), before, "什么都没记");
+    let mut params = respond(&session, json!([seqs[0]]));
+    params["tail"] = json!("x".repeat(2048));
+    let reply = client.call("ok", "session.respond", params).await;
+    assert!(reply.get("error").is_none(), "正好 2 KiB 的收：{reply}");
+}

@@ -292,6 +292,7 @@ impl OneShot {
             described: Default::default(),
             output_cap: None,
             used: None,
+            tail: None,
         };
         let texts = listing_texts().map_err(|why| Unanswered::Failed(other(why)))?;
         let mut held: Option<Member> = None;

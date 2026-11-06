@@ -21,6 +21,7 @@ fn glance(n: u64, facts: &[&str]) -> Input {
                     after: false,
                 })
                 .collect(),
+            tail: None,
         },
     })
 }
@@ -46,6 +47,7 @@ fn facts_alone_open_a_turn_on_the_last_one() {
             triggers: Vec::new(),
             cwd: Some("~/src/miyu".to_string()),
             dirs: Vec::new(),
+            tail: None,
         }),
         "由最后一块开"
     );
@@ -83,7 +85,8 @@ fn facts_alone_join_a_running_turn_with_no_triggers() {
     assert_eq!(
         events[1].body,
         Body::TurnJoined(TurnJoined {
-            triggers: Vec::new()
+            triggers: Vec::new(),
+            tail: None,
         })
     );
     logged.handle(stored(logged.last()));

@@ -36,6 +36,7 @@ impl Session {
             triggers: Vec::new(),
             cwd: Some(self.environment.cwd.clone()),
             dirs: self.environment.dirs.clone(),
+            tail: None,
         });
         let started = self.record(at, By::Kernel, cause.clone(), body);
         // 这一轮当场就结束，只在这个函数里在进行。

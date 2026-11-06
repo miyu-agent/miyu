@@ -225,6 +225,7 @@ fn compact_rereading(log: &mut Vec<Event>, restored: Vec<RestoredFile>) {
             triggers: Vec::new(),
             cwd: None,
             dirs: Vec::new(),
+            tail: None,
         }),
     ));
     log.push(event(

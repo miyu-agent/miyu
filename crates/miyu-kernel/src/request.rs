@@ -47,6 +47,12 @@ pub struct Request {
     /// 不剔。不写进规范字节、不算进指纹。
     #[serde(skip)]
     pub used: Option<u64>,
+    /// 接在整份 messages 最末尾的一句（施工 RT-1，`session.respond` 的 `tail`，core1 11-07 照推荐定）：只在那一轮的请求里有，
+    /// 内核算完指纹才放进来，驱动编完消息以后接在最后（最后一条线上消息是 user 的并进去做最后一块，别的另起一条 user），
+    /// anthropic 最后那个缓存打点打在它前面那一块上，openai-chat 前缀续写的那一次不带。不算进指纹、不进有效历史：前面的字节一个
+    /// 都不动。写进规范字节（发出去的就有它）；没有的不写，平常的请求字节和哈希都不变。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tail: Option<String>,
 }
 
 /// 工具面上的一件工具：名字、说明、参数格式。存根也是这三样，只是说明短、参数宽松

@@ -33,6 +33,7 @@ fn cut(continuation: bool) -> Request {
         described: Default::default(),
         output_cap: None,
         used: None,
+        tail: None,
     }
 }
 

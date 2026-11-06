@@ -480,7 +480,7 @@ pub(super) fn command_id(n: u64) -> CommandId {
 }
 
 /// 一段话写成的内容块；空的就一块都没有。
-fn text(words: &str) -> Vec<Block> {
+pub(super) fn text(words: &str) -> Vec<Block> {
     match words.is_empty() {
         true => Vec::new(),
         false => vec![Block::Text(Text {

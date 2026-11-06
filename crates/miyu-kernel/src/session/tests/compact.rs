@@ -106,6 +106,7 @@ fn a_manual_compaction_opens_a_turn_of_its_own_and_answers_once_it_is_stored() {
             triggers: Vec::new(),
             cwd: Some("~/src/miyu".to_string()),
             dirs: Vec::new(),
+            tail: None,
         })
     );
     assert!(replies(&actions).is_empty(), "落了盘才回应");

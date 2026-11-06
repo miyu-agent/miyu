@@ -214,6 +214,7 @@ fn a_forced_read_stops_at_the_last_ended_turn() {
         triggers: Vec::new(),
         cwd: None,
         dirs: Vec::new(),
+        tail: None,
     });
     ended_only(&mut events);
     assert_eq!(
@@ -226,6 +227,7 @@ fn a_forced_read_stops_at_the_last_ended_turn() {
         triggers: Vec::new(),
         cwd: None,
         dirs: Vec::new(),
+        tail: None,
     });
     ended_only(&mut none);
     assert!(none.is_empty());

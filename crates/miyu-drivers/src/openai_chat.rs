@@ -206,6 +206,9 @@ pub fn fragments(
     texts: &DriverTexts,
     blobs: &dyn BlobBytes,
 ) -> Result<Encoded<Fragments>, EncodeError> {
+    // 接在最末尾的那一句（施工 RT-1，`tail.rs`）：前缀续写的那一次不带。
+    let (request, _) = crate::tail::tailed(request, continuing(compat, request).is_some());
+    let request = &*request;
     let continuing = continuing(compat, request);
     let messages = messages::write(
         request,
@@ -253,7 +256,8 @@ pub fn fragments_memo(
     blobs: &dyn BlobBytes,
     memo: &mut Memo,
 ) -> Result<Encoded<Fragments>, EncodeError> {
-    let encoded = kept::fragments(request, call, compat, texts, blobs, memo);
+    let (request, _) = crate::tail::tailed(request, continuing(compat, request).is_some());
+    let encoded = kept::fragments(&request, call, compat, texts, blobs, memo);
     if encoded.is_err() {
         memo.clear();
     }

@@ -171,6 +171,7 @@ pub(super) fn request(
         described,
         output_cap: None,
         used: None,
+        tail: None,
     }
 }
 

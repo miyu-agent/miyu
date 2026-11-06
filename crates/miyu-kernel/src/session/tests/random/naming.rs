@@ -142,6 +142,7 @@ pub(super) fn some_respond(seed: u64, overheard: u64, next_id: &mut u64) -> Inpu
         command: Command::Respond {
             to,
             facts: Vec::new(),
+            tail: None,
         },
     })
 }

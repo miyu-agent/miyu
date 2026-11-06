@@ -39,6 +39,7 @@ impl Assembler for Lines {
             described: Default::default(),
             output_cap: None,
             used: None,
+            tail: None,
         }
     }
 

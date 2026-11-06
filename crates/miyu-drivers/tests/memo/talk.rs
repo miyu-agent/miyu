@@ -148,6 +148,7 @@ impl Talk {
                 described: BTreeMap::new(),
                 output_cap: None,
                 used: None,
+                tail: None,
             },
             store: BTreeMap::new(),
             known: BTreeMap::new(),

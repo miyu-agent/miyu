@@ -35,7 +35,8 @@ fn a_join_while_running_is_recorded_and_opens_the_next_turn_if_unheard() {
     assert_eq!(
         events[1].body,
         Body::TurnJoined(TurnJoined {
-            triggers: seqs(&[2, 3])
+            triggers: seqs(&[2, 3]),
+            tail: None,
         })
     );
     assert_eq!(

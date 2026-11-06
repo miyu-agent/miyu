@@ -2,6 +2,8 @@
 //! 一轮，回应 `{"events": [...]}`（同 `session.send`）。`to` 是最多 64 条序号，内核照序号排好、去重；`facts` 可以不写，每块
 //! `{kind, text}`，`kind` 照事实类别的写法，`text` 最多 4 KiB，原样记成 `context.injected`。`to` 不写或是空的照 `facts` 开
 //! （施工 O-64），这时 `facts` 至少一块。写错的 `bad_params`，什么都不记。
+//! `tail` 可以不写（施工 RT-1，项目主人 11-07 要的，im 在群聊每一轮末尾带一句固定的提示）：字符串，最多 2 KiB，空的当没写；
+//! 开出来的这一轮每次请求都把它接在最末尾，不进历史；不是字符串、超长的 `bad_params`，`data.field` 是 `tail`。
 //! 记成谁同 `events.append`：核心拉起的扩展是那个包（模块），别的是主人。内核拒的照原因码回，`not_ambient`、
 //! `already_answered` 的 `data.messages` 是不合的那几条。
 //!
@@ -30,6 +32,8 @@ const TRIGGERS: usize = 64;
 const FACT: usize = 4 * 1024;
 /// `session.note` 一次最多几块。
 const NOTED: usize = 16;
+/// `tail` 最多几个字节（施工 RT-1）。
+const TAIL: usize = 2 * 1024;
 
 /// `session.respond` 的参数。
 #[derive(Debug, Deserialize)]
@@ -40,6 +44,9 @@ pub(crate) struct RespondParams {
     to: Vec<u64>,
     #[serde(default)]
     facts: Vec<FactParams>,
+    /// 先收成任意的值，自己查：写错了要报 `data.field`（施工 RT-1）。
+    #[serde(default)]
+    tail: Option<Value>,
 }
 
 /// `session.note` 的参数。
@@ -75,9 +82,10 @@ pub(crate) async fn respond(
         .map(|&seq| Seq::new(seq).ok_or(Refusal::BAD_PARAMS))
         .collect::<Result<Vec<_>, _>>()?;
     let facts = facts(params.facts)?;
+    let tail = tail(params.tail)?;
     let found = core.sessions.get(core, &session).await?;
     let by = recorder(caller)?;
-    let command = Command::Respond { to, facts };
+    let command = Command::Respond { to, facts, tail };
     let events = command_by(core, request, &session, &found.handle, by, command).await?;
     Ok(json!({ "events": events }))
 }
@@ -118,4 +126,14 @@ fn facts(facts: Vec<FactParams>) -> Result<Vec<ContextInjected>, Refusal> {
             })
         })
         .collect()
+}
+
+/// `tail` 查过的样子（施工 RT-1）：没写的、`null`、空串都是没有；不是字符串、超过 [`TAIL`] 的 `bad_params`，`data.field` 是 `tail`。
+pub(crate) fn tail(value: Option<Value>) -> Result<Option<String>, Refusal> {
+    match value {
+        None | Some(Value::Null) => Ok(None),
+        Some(Value::String(text)) if text.is_empty() => Ok(None),
+        Some(Value::String(text)) if text.len() <= TAIL => Ok(Some(text)),
+        Some(_) => Err(Refusal::bad_field("tail")),
+    }
 }

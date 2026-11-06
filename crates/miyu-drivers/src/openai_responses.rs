@@ -63,6 +63,9 @@ pub fn fragments(
     texts: &DriverTexts,
     blobs: &dyn BlobBytes,
 ) -> Result<Encoded<Fragments>, EncodeError> {
+    // 接在最末尾的那一句（施工 RT-1，`tail.rs`）。
+    let (request, _) = crate::tail::tailed(request, false);
+    let request = &*request;
     let items = input::write(request, call, texts, blobs)?;
     let mut body = head(call);
     if !request.system.is_empty() {
@@ -106,7 +109,8 @@ pub fn fragments_memo(
     blobs: &dyn BlobBytes,
     memo: &mut Memo,
 ) -> Result<Encoded<Fragments>, EncodeError> {
-    let encoded = kept::fragments(request, call, texts, blobs, memo);
+    let (request, _) = crate::tail::tailed(request, false);
+    let encoded = kept::fragments(&request, call, texts, blobs, memo);
     if encoded.is_err() {
         memo.clear();
     }

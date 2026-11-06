@@ -1412,6 +1412,7 @@ flowchart LR
 | VR-1 | 版本号改成 年.月.这个月第几版 | 项目主人 2026-11-06 定（照 Home Assistant）：设计 59 加第十节；新的 `cargo xtask version <年.月.序号>` 改工作区版本、刷 `Cargo.lock`、读回来查；`release.yml` 查写法，写错停下，演练前先定号（core1 定 A）；AUR 的 `pkgver` 写成 `2026.11.0rc1`；文档的「1.0 前、后」改成「首个正式版前、后」；加测试证明跨月、候选版比得对。施工单见 `VR-1-年月版本号.md` |
 | RL-5补2 | 旧版的过渡包 | 项目主人 2026-11-06 定：AUR 加过渡包 `miyu`（版本跟核心、只依赖 `miyu-agent`、装上和升级时说 `miyu migrate`），`miyu-core`、`miyu-agent-git` 只挡 `miyu<2026`、不再 provides `miyu`；`cargo xtask packaging` 一起填；`test-aur.sh` 加假的旧 0.7.4 经本机软件源 `pacman -Syu` 换成一整套。施工单见 `RL-5-系统源打包.md`「RL-5补2」 |
 | VR-2 | 工作区定号 2026.11.0 | core1 派，为 rc.6 演练 `v2026.11.0-rc.1`：`cargo xtask version 2026.11.0` 单独一个提交；核对 `miyu --version`、`release.yml` 两段 shell（本地照 YAML 跑）、压缩包名、`cargo xtask packaging` 填的版本；加不写死号的测试。施工单见 `VR-2-定号2026.11.0.md` |
+| RT-1 | session.respond 带接在最末尾的一句 | 项目主人 11-07 要的（im 群聊每一轮末尾的固定提示）：`tail` 最多 2 KiB，记在 `turn.started`、`turn.joined` 上；内核算完指纹才放进 `Request.tail`，三家驱动编完消息接在最后（最后是 user 的并进去，别的另起一条 user），anthropic 最后那个打点打在它前面，openai-chat 前缀续写那一次不带；并进来带了的换掉、没带的不动，由并进来的几条接着开的、重启接着干的那一轮照样带；探针证明前面零变化、下一步只丢那一句。施工单见 `RT-1-respond带尾巴.md` |
 
 **配置项的词汇**（PC 线，设计 53，2026-10-31 项目主人定：四档都做）
 

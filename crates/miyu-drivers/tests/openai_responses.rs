@@ -36,6 +36,7 @@ fn request(tools: bool, messages: Vec<Message>) -> Request {
         described: Default::default(),
         output_cap: None,
         used: None,
+        tail: None,
     }
 }
 

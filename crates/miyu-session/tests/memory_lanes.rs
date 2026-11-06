@@ -209,6 +209,7 @@ async fn heard_then_answered(home: &Home, handing: bool) -> miyu_kernel::id::Ses
     let respond = Command::Respond {
         to: vec![line],
         facts: Vec::new(),
+        tail: None,
     };
     ask(&branch, "r1", respond).await.expect("会话在跑");
     until_turn_ends(&mut pushes).await;

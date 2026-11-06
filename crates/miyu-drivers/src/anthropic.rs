@@ -77,9 +77,12 @@ pub fn fragments(
     texts: &DriverTexts,
     blobs: &dyn BlobBytes,
 ) -> Result<Encoded<Fragments>, EncodeError> {
+    // 接在最末尾的那一句（施工 RT-1，`tail.rs`）：最后那个缓存打点打在它前面那一块上。
+    let (request, tail) = crate::tail::tailed(request, false);
+    let request = &*request;
     let written = messages::write(request, call, texts, blobs)?;
     let tools = wire::tools(request);
-    let marks = marks::place(request, tools.as_ref().map(Vec::len), &written);
+    let marks = marks::place(request, tools.as_ref().map(Vec::len), &written, tail);
     let mut body = head(call);
     if !request.system.is_empty() {
         body.extend_from_slice(b",\"system\":[");
@@ -137,7 +140,8 @@ pub fn fragments_memo(
     blobs: &dyn BlobBytes,
     memo: &mut Memo,
 ) -> Result<Encoded<Fragments>, EncodeError> {
-    let encoded = kept::fragments(request, call, texts, blobs, memo);
+    let (request, tail) = crate::tail::tailed(request, false);
+    let encoded = kept::fragments(&request, call, texts, blobs, memo, tail);
     if encoded.is_err() {
         memo.clear();
     }

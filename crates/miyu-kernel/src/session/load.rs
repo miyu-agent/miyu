@@ -17,7 +17,9 @@ use super::meta::Meta;
 use super::policy::Policy;
 use super::recent::Recent;
 use super::turn::Stage;
-use crate::event::{Body, EndReason, Event, Permission, PolicyChanged, ShellReason, ToolStatus};
+use crate::event::{
+    Body, EndReason, Event, Permission, PolicyChanged, ShellReason, ToolStatus, TurnJoined,
+};
 use crate::facts::Environment;
 use crate::id::{CommandId, Seq, SessionId};
 use crate::ledger::LedgerError;
@@ -81,6 +83,8 @@ pub(super) struct Replay {
     deferred: Vec<Arrived>,
     /// 现在的标题、置顶（施工 3-8 三补）：撤掉的回合里改的也算，改名不是对话的一部分。
     meta: Meta,
+    /// 最后开的那个回合每次请求接在最末尾的一句（施工 RT-1）：`turn.started` 记的，被 `turn.joined` 带的换掉。
+    tail: Option<String>,
 }
 
 /// 结束了的一个回合。
@@ -95,6 +99,8 @@ struct Ended {
     queued: Vec<Seq>,
     /// 这一轮有没有触发：没有的（手动压缩那一轮）不接着干（施工 6-8）。
     triggered: bool,
+    /// 这一轮每次请求接在最末尾的一句（施工 RT-1）：接着干的那一轮照样带。
+    tail: Option<String>,
 }
 
 impl Session {
@@ -323,7 +329,7 @@ impl Session {
                     true => ended.cause,
                     false => replay.causes.get(&trigger).cloned().flatten(),
                 };
-                self.open_turn(at, trigger, cause)
+                self.open_turn_on(at, trigger, Vec::new(), cause, ended.tail)
             }
             // 被有计划的重启打断、不再接着干的那一轮也算跑完了：排着的人打的命令补 `aborted`（施工 SH-1 上），跑满了轮数的
             // 封存（施工 C-8 下）。
@@ -378,6 +384,7 @@ impl Replay {
                 }
                 self.opened = event.cause.clone();
                 self.triggered = started.trigger.is_some();
+                self.tail = started.tail.clone();
                 self.causes.clear();
                 self.open = true;
                 self.deferred.clear();
@@ -385,6 +392,10 @@ impl Replay {
             Body::MessageUser(_) => {
                 self.causes.insert(event.seq, event.cause.clone());
             }
+            // 并进来时带了的换掉这一轮的（施工 RT-1）；没带的不动。
+            Body::TurnJoined(TurnJoined {
+                tail: Some(tail), ..
+            }) => self.tail = Some(tail.clone()),
             Body::TurnEnded(ended) => {
                 self.open = false;
                 self.restarts = match ended.reason {
@@ -397,6 +408,7 @@ impl Replay {
                     cause: event.cause.clone(),
                     queued,
                     triggered: self.triggered,
+                    tail: self.tail.clone(),
                 });
             }
             // 撤销过的不接着干：人已经动过它了。

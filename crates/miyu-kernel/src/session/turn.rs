@@ -77,6 +77,8 @@ pub(super) struct Turn {
     pub(super) unseen: BTreeSet<ContentHash>,
     /// 她这时在回应的那一条的 `by`（施工 O-2 下，`asked.rs`）：派工具时带上。由触发开的回合才有。
     pub(super) asked: Option<By>,
+    /// 这一轮每次请求接在最末尾的一句（施工 RT-1，`session.respond` 的 `tail`）：组装、指纹以后才放进请求，下一轮没有。
+    pub(super) tail: Option<String>,
 }
 
 impl Turn {
@@ -185,6 +187,7 @@ impl Session {
             manual: None,
             unseen: BTreeSet::new(),
             asked: None,
+            tail: None,
         }
     }
 
@@ -197,22 +200,25 @@ impl Session {
         trigger: Seq,
         cause: Option<CommandId>,
     ) -> Vec<Event> {
-        self.open_turn_on(at, trigger, Vec::new(), cause)
+        self.open_turn_on(at, trigger, Vec::new(), cause, None)
     }
 
     /// 同 [`Session::open_turn`]，照记下的几条开（施工 O-14 上）：`triggers` 排好的序号，`trigger` 是最后一条；别的回合是空的。
+    /// `tail` 是这一轮每次请求接在最末尾的一句（施工 RT-1），记在 `turn.started` 上。
     pub(super) fn open_turn_on(
         &mut self,
         at: Timestamp,
         trigger: Seq,
         triggers: Vec<Seq>,
         cause: Option<CommandId>,
+        tail: Option<String>,
     ) -> Vec<Event> {
         let body = Body::TurnStarted(TurnStarted {
             trigger: Some(trigger),
             triggers,
             cwd: Some(self.environment.cwd.clone()),
             dirs: self.environment.dirs.clone(),
+            tail: tail.clone(),
         });
         let started = self.record(at, By::Kernel, cause.clone(), body);
         let opened = Stage::Opening {
@@ -221,6 +227,7 @@ impl Session {
         let mut turn = self.new_turn(started.seq, cause.clone(), opened);
         turn.asked = self.asker(trigger);
         turn.limit = self.policy.steps_for(turn.asked.as_ref());
+        turn.tail = tail;
         self.turn = Some(turn);
         self.effective = self.permission.clone();
         // 记在一边的回报这一轮就听到了（施工 7-2）：不再由它们另开一轮。
@@ -374,6 +381,8 @@ impl Session {
             .as_ref()
             .and_then(|before| fingerprint.first_difference(before));
         self.last_request = Some(fingerprint);
+        // respond 带的那一句（施工 RT-1）：算完指纹才放，驱动编完消息接在最末尾，前面一个字节都不动。
+        request.tail = self.turn.as_ref().and_then(|turn| turn.tail.clone());
         // 过了起压线的，在后台提前压（施工 6-11 上，`prepare.rs`）：排在主请求后面。
         let prepare = self.prepare_up(at, &request);
         let asked = self.newly_asked();

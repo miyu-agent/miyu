@@ -99,11 +99,11 @@ Venue sessions only accept messages with `as` (otherwise `venue_session`); `as` 
 
 Start a turn from messages recorded while listening (when it's decided she should answer in a group); without `to`, start a turn from a few facts (e.g. a timed look at a private chat).
 
-**Params**: `session`; `to`: optional, the numbers of those `message.user` events, at most 64; `facts`: optional facts `[{"kind", "text"}]` (`text` at most 4 KiB), placed before the trigger. At least one of `to` and `facts` must be non-empty. Without `to`, the facts are recorded first and the last one starts the turn; an extension calling it this way needs `act_for_external`.
+**Params**: `session`; `to`: optional, the numbers of those `message.user` events, at most 64; `facts`: optional facts `[{"kind", "text"}]` (`text` at most 4 KiB), placed before the trigger. At least one of `to` and `facts` must be non-empty. Without `to`, the facts are recorded first and the last one starts the turn; an extension calling it this way needs `act_for_external`. `tail`: optional, one piece of text (at most 2 KiB; empty counts as not given). Every model request of the turn this opens gets it at the very end (after the newest message or tool result); it doesn't go into the history, the view, exports or compaction, and the next turn doesn't have it. Use it for a fixed hint every turn should carry.
 
-**Response**: `{"events": [...]}`. If a turn is running, they join it and she hears them at the next step.
+**Response**: `{"events": [...]}`. If a turn is running, they join it and she hears them at the next step; a `tail` given here replaces that turn's, and leaving it out keeps the one it has.
 
-**Errors**: `not_ambient` (`to` has messages that weren't recorded while listening, `data.messages`); `already_answered` (already used as a trigger, `data.messages`); `bad_params`.
+**Errors**: `not_ambient` (`to` has messages that weren't recorded while listening, `data.messages`); `already_answered` (already used as a trigger, `data.messages`); `bad_params` (a `tail` that isn't a string or is over 2 KiB has `data.field` set to `tail`).
 
 ## `session.note`
 

@@ -84,6 +84,7 @@ pub(super) fn fragments(
     texts: &DriverTexts,
     blobs: &dyn BlobBytes,
     memo: &mut Memo,
+    tail: bool,
 ) -> Result<Encoded<Fragments>, EncodeError> {
     let messages = &request.messages[..];
     let setup = Setup {
@@ -156,7 +157,12 @@ pub(super) fn fragments(
         let tools = wire::tools(request).unwrap_or_default();
         kept.tools = Some((request.tools.clone(), tools.iter().map(piece).collect()));
     }
-    let marks = marks::place(request, listed.then_some(request.tools.len()), &layout);
+    let marks = marks::place(
+        request,
+        listed.then_some(request.tools.len()),
+        &layout,
+        tail,
+    );
 
     let mut body = head(call);
     body.reserve(

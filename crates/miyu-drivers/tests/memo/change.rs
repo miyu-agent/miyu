@@ -29,9 +29,10 @@ pub(super) enum Change {
     Lose,
     Restore,
     Replace,
+    Tail,
 }
 
-pub(super) const CHANGES: [Change; 19] = [
+pub(super) const CHANGES: [Change; 20] = [
     Change::Turn,
     Change::Again,
     Change::Undo,
@@ -51,6 +52,7 @@ pub(super) const CHANGES: [Change; 19] = [
     Change::Lose,
     Change::Restore,
     Change::Replace,
+    Change::Tail,
 ];
 
 impl Talk {
@@ -211,6 +213,13 @@ impl Talk {
                         bytes.push(b'!');
                     }
                 }
+            }
+            // 接在最末尾的那一句（施工 RT-1）：接上、换一句、拿掉；接着的几次请求照旧带着，和一轮里一样。
+            Change::Tail => {
+                self.request.tail = match self.rng.chance(70) {
+                    true => Some(self.words(2)),
+                    false => None,
+                };
             }
         }
         if self.request.stable > self.request.messages.len() {

@@ -57,6 +57,7 @@ fn respond(n: u64, to: &[u64]) -> Input {
                 refs: Vec::new(),
                 after: false,
             }],
+            tail: None,
         },
     })
 }
@@ -89,6 +90,7 @@ fn responding_opens_a_turn_on_what_was_overheard() {
             triggers: seqs(&[2, 3]),
             cwd: Some("~/src/miyu".to_string()),
             dirs: Vec::new(),
+            tail: None,
         }),
         "排好、去重，trigger 是最后一条"
     );

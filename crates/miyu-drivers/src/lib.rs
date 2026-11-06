@@ -28,6 +28,7 @@ mod memo;
 pub mod openai_chat;
 pub mod openai_responses;
 pub mod sse;
+mod tail;
 pub mod text_file;
 mod texts;
 

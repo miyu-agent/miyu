@@ -426,7 +426,7 @@ impl Session {
             }
             Command::Shell { text, urgent } => self.send_shell(id, by, at, text, urgent),
             Command::Append { event } => self.append(id, by, at, event),
-            Command::Respond { to, facts } => self.respond(id, by, at, to, facts),
+            Command::Respond { to, facts, tail } => self.respond(id, by, at, to, (facts, tail)),
             Command::Note { facts } => self.note(id, by, at, facts),
             Command::Interrupt { queued } => self.interrupt(id, by, at, queued),
             Command::Withdraw { message } => self.withdraw(id, by, at, message),

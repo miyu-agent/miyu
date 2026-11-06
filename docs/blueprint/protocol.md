@@ -167,7 +167,7 @@
 | `venue.session` | 找回或者造一个通讯平台场所的主线会话：收到一条消息时找它（施工 O-3，`venues.md`） |
 | `venue.sessions` | 列出桥接的平台的场所会话，一个场所一个：桥起来时照它订阅（施工 O-32 前，`venues.md`「列场所会话」） |
 | `venue.plugins` | `{venue, on}`：说这个场所开着哪些场所插件，整份替换，回应 `{}`；只管自己平台的场所（施工 O-60，`venues.md`「场所插件」） |
-| `session.respond` | 照已经旁听记下的几条开一轮，带几块事实（施工 O-14 上，`venues.md`「照记下的几条开一轮」）；不写 `to` 的照事实开（施工 O-64） |
+| `session.respond` | 照已经旁听记下的几条开一轮，带几块事实（施工 O-14 上，`venues.md`「照记下的几条开一轮」）；不写 `to` 的照事实开（施工 O-64）；`tail` 是这一轮每次请求接在最末尾的一句（施工 RT-1，`kernel/request.md`「组装」第 8 条） |
 | `session.fork` | 从一个主会话分叉出子会话：历史引用它到分叉点为止的有效历史，前缀和它逐字节一样（施工 C-8 上，`session/fork.md`） |
 | `session.note` | 只记几块事实，不开回合（施工 O-14 补，`venues.md`「记几块事实」） |
 | `system.append` | 声明了 `context.system` 的扩展往 system 尾部放一段（施工 X-20，`extensions.md`「放在 system 尾部的」）：`{content, session?}`，`content` 是原文（1 到 4000 个字）或 `null`（去掉这一层），不写 `session` 的管全部会话、写了的只管那一个、优先；回应 `{}`。不是核心拉起的扩展 `not_a_provider`，没声明的 `needs_approval`（`data.capabilities` 是 `["context.system"]`），写法不对的 `bad_params` |

@@ -182,6 +182,7 @@ fn a_decoded_reply_encodes_back_with_the_providers_ids() {
         described: Default::default(),
         output_cap: None,
         used: None,
+        tail: None,
     };
     let encoded = miyu_drivers::openai_chat::encode(
         &request,
@@ -218,6 +219,7 @@ fn the_driver_interface_goes_through_all_three() {
         described: Default::default(),
         output_cap: None,
         used: None,
+        tail: None,
     };
     let call = call(Inputs::default(), None);
     assert!(driver.blobs_needed(&request, &call).is_empty());

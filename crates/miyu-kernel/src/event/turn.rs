@@ -24,6 +24,10 @@ pub struct TurnStarted {
     /// 这一轮加进来的目录，照头报的原样（施工 5-10 上）：权限策略、沙盒照它放行。没有就不写：原来的日志一个字节不变。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub dirs: Vec<String>,
+    /// `session.respond` 带的那一句（施工 RT-1）：这一轮每次请求都接在整份 messages 的最末尾（[`crate::request::Request::tail`]）。
+    /// 只为重启以后接着跑的那一轮还带得上；渲染历史不读它，不进上下文、视图、压缩。没有的不写：原来的日志一个字节不变。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tail: Option<String>,
 }
 
 /// `turn.joined`：照记下的几条并进正在跑的这一轮（施工 O-14 下，`session.respond` 时有回合在进行）。带这个回合的编号；
@@ -32,6 +36,9 @@ pub struct TurnStarted {
 pub struct TurnJoined {
     /// 并进来的那几条旁听消息的序号，照序号排好。
     pub triggers: Vec<Seq>,
+    /// `session.respond` 带的那一句（施工 RT-1）：换掉这一轮原来的；没带的不写，这一轮照旧带原来的。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tail: Option<String>,
 }
 
 /// `turn.ended`：回合结束。

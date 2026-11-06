@@ -1,6 +1,9 @@
 //! 照记下的几条开一轮（施工 O-14 上，`docs/blueprint/chat.md` 第七条第 3 条第 1 项）：`Respond` 拿已经旁听记下的几条
 //! `message.user` 当触发开一轮，不新记消息；带来的几块事实接在内核的事实后面，都排在触发前面。没有 `to` 的照事实开一轮
 //! （施工 O-64，通讯平台到点看一眼私聊要的）：事实先记下，最后一块当触发。
+//!
+//! 带了 `tail` 的（施工 RT-1）：开出来的这一轮每次请求都把它接在最末尾，记在 `turn.started` 上；并进正在跑的一轮的换掉那一轮的、
+//! 记在 `turn.joined` 上，没带的不动原来的。
 
 use super::action::{Action, Reason};
 use super::jobs::{Arrived, Waker};
@@ -21,12 +24,12 @@ impl Session {
         by: By,
         at: Timestamp,
         mut to: Vec<Seq>,
-        facts: Vec<ContextInjected>,
+        (facts, tail): (Vec<ContextInjected>, Option<String>),
     ) -> Vec<Action> {
         to.sort_unstable();
         to.dedup();
         let Some(&trigger) = to.last() else {
-            return self.prompted(id, by, at, facts);
+            return self.prompted(id, by, at, facts, tail);
         };
         let not: Vec<Seq> = to
             .iter()
@@ -45,9 +48,9 @@ impl Session {
             return vec![rejected_about(id, Reason::AlreadyAnswered, answered)];
         }
         if self.turn.is_some() {
-            return self.join(id, by, at, to, facts);
+            return self.join(id, by, at, to, (facts, tail));
         }
-        let mut events = self.open_turn_on(at, trigger, to, Some(id.clone()));
+        let mut events = self.open_turn_on(at, trigger, to, Some(id.clone()), tail);
         for fact in facts {
             events.push(self.record(
                 at,
@@ -71,12 +74,13 @@ impl Session {
         by: By,
         at: Timestamp,
         facts: Vec<ContextInjected>,
+        tail: Option<String>,
     ) -> Vec<Action> {
         if facts.is_empty() {
             return vec![rejected(id, Reason::EmptyMessage)];
         }
         if self.turn.is_some() {
-            return self.join(id, by, at, Vec::new(), facts);
+            return self.join(id, by, at, Vec::new(), (facts, tail));
         }
         let mut events: Vec<Event> = facts
             .into_iter()
@@ -92,7 +96,7 @@ impl Session {
         let Some(trigger) = events.last().map(|fact| fact.seq) else {
             return vec![rejected(id, Reason::EmptyMessage)];
         };
-        events.extend(self.open_turn(at, trigger, Some(id.clone())));
+        events.extend(self.open_turn_on(at, trigger, Vec::new(), Some(id.clone()), tail));
         self.accept(id, events.iter().map(|event| event.seq).collect());
         vec![Action::Append(events)]
     }
@@ -106,7 +110,7 @@ impl Session {
         by: By,
         at: Timestamp,
         triggers: Vec<Seq>,
-        facts: Vec<ContextInjected>,
+        (facts, tail): (Vec<ContextInjected>, Option<String>),
     ) -> Vec<Action> {
         let cause = Some(id.clone());
         let mut events: Vec<Event> = facts
@@ -117,9 +121,16 @@ impl Session {
             at,
             By::Kernel,
             cause.clone(),
-            Body::TurnJoined(TurnJoined { triggers }),
+            Body::TurnJoined(TurnJoined {
+                triggers,
+                tail: tail.clone(),
+            }),
         );
         if let Some(turn) = self.turn.as_mut() {
+            // 带了的换掉这一轮的；没带的不动：并进同一轮的消息不该把提示抹掉（core1 11-07 定）。
+            if tail.is_some() {
+                turn.tail = tail;
+            }
             turn.reports.push(Arrived {
                 seq: joined.seq,
                 cause,

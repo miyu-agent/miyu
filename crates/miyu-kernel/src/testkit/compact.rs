@@ -45,6 +45,7 @@ impl Stage {
                 triggers: Vec::new(),
                 cwd: Some(self.environment.cwd.clone()),
                 dirs: Vec::new(),
+                tail: None,
             }),
         );
         let compacted = event(

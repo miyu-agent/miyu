@@ -60,6 +60,7 @@ fn a_clear_writes_an_empty_checkpoint_in_a_turn_of_its_own() {
             triggers: Vec::new(),
             cwd: Some("~/src/miyu".to_string()),
             dirs: Vec::new(),
+            tail: None,
         })
     );
     assert_eq!(

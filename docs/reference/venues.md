@@ -99,11 +99,11 @@
 
 照旁听记下的几条开一轮（群里判了要回的时候）；不写 `to` 的照几块事实开一轮（例如到点看一眼私聊）。
 
-**参数**：`session`；`to`：可不写，那几条 `message.user` 的序号，最多 64 条；`facts`：可不写，几块事实 `[{"kind", "text"}]`（`text` 最多 4 KiB），排在触发前面。`to`、`facts` 至少有一样不空。不写 `to` 的，事实先记下，由最后一块开这一轮；扩展这样调要 `act_for_external`。
+**参数**：`session`；`to`：可不写，那几条 `message.user` 的序号，最多 64 条；`facts`：可不写，几块事实 `[{"kind", "text"}]`（`text` 最多 4 KiB），排在触发前面。`to`、`facts` 至少有一样不空。不写 `to` 的，事实先记下，由最后一块开这一轮；扩展这样调要 `act_for_external`。`tail`：可不写，一句字（最多 2 KiB，空的当没写），开出来的这一轮每次请求模型都把它接在最末尾（在最新的消息、工具结果后面），不进历史、不进视图和导出、不进压缩，下一轮没有；适合每一轮都要带的一句固定提示。
 
-**回应**：`{"events": [...]}`。正在跑一轮的并进这一轮，下一步就听到。
+**回应**：`{"events": [...]}`。正在跑一轮的并进这一轮，下一步就听到；带了 `tail` 的换掉这一轮原来的那一句，没带的不动。
 
-**出错**：`not_ambient`（`to` 里有不是旁听记下的，`data.messages`）；`already_answered`（已经当过触发的，`data.messages`）；`bad_params`。
+**出错**：`not_ambient`（`to` 里有不是旁听记下的，`data.messages`）；`already_answered`（已经当过触发的，`data.messages`）；`bad_params`（`tail` 不是字符串、超过 2 KiB 的，`data.field` 是 `tail`）。
 
 ## `session.note`
 

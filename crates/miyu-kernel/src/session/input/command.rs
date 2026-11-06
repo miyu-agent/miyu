@@ -37,6 +37,9 @@ pub enum Command {
         to: Vec<Seq>,
         /// 几块事实，`by` 是发命令的一方。
         facts: Vec<ContextInjected>,
+        /// 这一轮每次请求接在最末尾的一句（施工 RT-1，[`crate::request::Request::tail`]）：并进正在跑的一轮的，换掉那一轮的；
+        /// 没有的不动。
+        tail: Option<String>,
     },
     /// `session.note`：记几块事实，不开回合（施工 O-14 补，`note.rs`）：`facts` 原样记成 `context.injected`，`by` 是发命令的
     /// 一方。正在跑一轮的带这一轮的回合编号，不打断、不叫醒；空闲的不带。

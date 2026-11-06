@@ -108,6 +108,7 @@
     - 写好以后最后一条是 assistant（半截那条）的，加上 `"prefix":true` 或 `"partial":true`；
     - `path` 是开关里的路径：只看开关和记号，最后几条的样子不对也发到那里。
     - 别的情形（开关是 `None`，或者没带记号）照原样发，`path` 是 `/chat/completions`。
+    - 请求带着 `tail`（施工 RT-1，`kernel/request.md`「组装」第 8 条）的，接着写的这一次不带它：续写要照着半截往下说。别的情形最后一条是 user 的并进它（全是字的接 `\n` 和它），是 tool 的后面另起一条 user。
 11. **要哪些 blob**（`blobs_needed`）：user 和 tool 消息里的图片（能看图时）、每一个文件（施工 3-9 三补：发不了的也要认是不是文本、要写有多大）。assistant 里的不算。其中要整份字节的（`blobs_whole`，施工 V-38）：照字放进消息的文件（不是能照原样发的 PDF 的那些）；别的只要大小。线上的中间结构（每条线上的消息）写完一条放一条。
 12. **`Encoded.messages`**：每条线上的消息 JSON 在 `body` 里的起止，照先后。
 
