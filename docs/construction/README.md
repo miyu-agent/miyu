@@ -1410,6 +1410,7 @@ flowchart LR
 | RL-4 | `miyu upgrade` | 程序旁边的 `install.toml` 认谁装的：`script` 自己升（GitHub Releases 挑新版、草稿预发布不算、`--prerelease` 才算、只升不降；`SHA256SUMS` 照编进来的发版公钥验签、对压缩包 SHA-256；解到安装目录里的暂存、查五个程序和 `resources/`、跑新的 `--version`；逐样对换，出错照反方向挪回），`aur`、`brew` 只印 `paru -Syu`、`brew upgrade`，没标记的只印下载地址；没写权限的说清楚不提权；连不上、限流分开说；核心重启那条路还没有，只提示 `miyu core stop`。发版公钥表 `sign::RELEASE`（RL-4补 填上主人生成的第一把）。施工单见 `RL-4-upgrade.md` |
 | VR-1 | 版本号改成 年.月.这个月第几版 | 项目主人 2026-11-06 定（照 Home Assistant）：设计 59 加第十节；新的 `cargo xtask version <年.月.序号>` 改工作区版本、刷 `Cargo.lock`、读回来查；`release.yml` 查写法，写错停下，演练前先定号（core1 定 A）；AUR 的 `pkgver` 写成 `2026.11.0rc1`；文档的「1.0 前、后」改成「首个正式版前、后」；加测试证明跨月、候选版比得对。施工单见 `VR-1-年月版本号.md` |
 | RL-5补2 | 旧版的过渡包 | 项目主人 2026-11-06 定：AUR 加过渡包 `miyu`（版本跟核心、只依赖 `miyu-agent`、装上和升级时说 `miyu migrate`），`miyu-core`、`miyu-agent-git` 只挡 `miyu<2026`、不再 provides `miyu`；`cargo xtask packaging` 一起填；`test-aur.sh` 加假的旧 0.7.4 经本机软件源 `pacman -Syu` 换成一整套。施工单见 `RL-5-系统源打包.md`「RL-5补2」 |
+| VR-2 | 工作区定号 2026.11.0 | core1 派，为 rc.6 演练 `v2026.11.0-rc.1`：`cargo xtask version 2026.11.0` 单独一个提交；核对 `miyu --version`、`release.yml` 两段 shell（本地照 YAML 跑）、压缩包名、`cargo xtask packaging` 填的版本；加不写死号的测试。施工单见 `VR-2-定号2026.11.0.md` |
 
 **配置项的词汇**（PC 线，设计 53，2026-10-31 项目主人定：四档都做）
 

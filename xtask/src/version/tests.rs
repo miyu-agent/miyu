@@ -79,6 +79,8 @@ fn this_workspace_s_version_reads_the_same_from_both_files() {
     let manifest = fs::read_to_string(root.join("Cargo.toml")).expect("读得到");
     let lock = fs::read_to_string(root.join("Cargo.lock")).expect("读得到");
     let version = workspace_version(&manifest).expect("读得出");
+    // 定了号以后（施工 VR-2）工作区的版本照规矩写：release.yml 打包前也照这个查。
+    assert_eq!(check(&version), Ok(()), "{version}");
     assert_eq!(locked_version(&lock, "miyu"), Some(version));
 }
 

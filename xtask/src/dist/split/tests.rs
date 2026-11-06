@@ -46,6 +46,10 @@ fn names_carry_their_own_versions() {
         "miyu-core-1.0.0-linux-x86_64"
     );
     assert_eq!(
+        core_name("2026.11.0-rc.1", "macos-aarch64"),
+        "miyu-core-2026.11.0-rc.1-macos-aarch64"
+    );
+    assert_eq!(
         head_name("miyu-tui", "0.1.0", "macos-aarch64"),
         "miyu-tui-0.1.0-macos-aarch64"
     );

@@ -155,6 +155,11 @@ fn the_archive_name_matches_dist() {
         archive_name(&v("1.0.0-rc.1"), "windows-x86_64"),
         "miyu-1.0.0-rc.1-windows-x86_64.zip"
     );
+    // 年.月.序号（施工 VR-2）：照版本原样拼，和 `cargo xtask dist` 打出来的同名。
+    assert_eq!(
+        archive_name(&v("2026.11.0-rc.1"), "linux-x86_64"),
+        "miyu-2026.11.0-rc.1-linux-x86_64.tar.gz"
+    );
 }
 
 #[test]

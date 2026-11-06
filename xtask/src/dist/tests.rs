@@ -130,6 +130,15 @@ fn windows_gets_a_zip_and_the_rest_tar_gz() {
         archive_name("1.0.0", "windows-x86_64"),
         "miyu-1.0.0-windows-x86_64.zip"
     );
+    // 年.月.序号、演练的候选版（施工 VR-2）：版本原样夹在中间。
+    assert_eq!(
+        archive_name("2026.11.0-rc.1", "linux-x86_64"),
+        "miyu-2026.11.0-rc.1-linux-x86_64.tar.gz"
+    );
+    assert_eq!(
+        archive_name("2026.11.0", "windows-x86_64"),
+        "miyu-2026.11.0-windows-x86_64.zip"
+    );
 }
 
 #[test]
