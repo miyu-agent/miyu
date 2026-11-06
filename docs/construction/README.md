@@ -1397,6 +1397,7 @@ flowchart LR
 | XG-1 补 | 扩展工具协议的几处小出入和一处措辞 | 开发包对照时发现、core1 定：`todo.written` 的 `done: null` 当没写（原来整条丢）；规格三格写 `null` 同不写（代码本来如此，参考、蓝图写明）；`file.read` 的 `lines` 参考写明「从 1 数起，从不大于到」；认「扩展进程的子孙」写清是防误用、不是安全边界，关口是 `tools.commands` 要人批（e0 复核提的）。见 `XG-1补-协议小处.md` |
 | LP-1 | 扩展替本机页面换登录票 | 项目主人 11-06 定 B（只给本机免密）：新能力 `login.page`（第十九项，出厂的也要人批，`Capability::needs_person`）；扩展调 `login.ticket {"via": "page"}` 批过的回 `{ticket, expires}`、没批的 `needs_approval`，别的 `via` 照旧 `local_only`；扩展要的票只在本机的连接上换，说过 `connection.remote` 的握手、`login.redeem` 都 `bad_ticket`、票作废；每张一行 `INFO`（包编号、`via`），不记票；参考写清扩展作者的义务；设计 66 的 `model.driver` 改第二十项。见 `LP-1-扩展替本机页面换票.md` |
 | XG-1补2 | 扩展跑命令的通道加固 | e0 复核 XG-1 下提的三点（core1 2026-11-06 派）：Windows 认子孙时父进程链每一层要父进程起得不比子进程晚（`miyu_pipe::process_created`、`kin::elder_parent`），认得出被重用的进程号；端点名另取随机串，不再用令牌的前 16 个字符（管道名全机可见）；令牌等时比较（`serve::same_token`）。施工单见 `XG-1补2-跑命令通道加固.md` |
+| XG-1补3 | Windows 照快照找的接线测上 | e0 复核 XG-1补2 提（core1 2026-11-06）：`descends_here` 里的闭包抽成 `kin::descends_in_snapshot`，用假的快照、假的时间测（重用了编号的不是子孙），去掉那一层测试红；建管道明写 `reject_remote_clients(true)`，`first_pipe_instance` 本来就有。施工单见 `XG-1补2-跑命令通道加固.md`「XG-1补3」 |
 
 **发版**（RL 线，设计 59，2026-11-04 项目主人定渠道、版本号、钥匙；施工 RL-3、RL-5 照设计 60 分包，排在 SD 之后）
 

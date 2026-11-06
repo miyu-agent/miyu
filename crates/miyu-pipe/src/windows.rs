@@ -54,6 +54,8 @@ fn create_with(name: &OsStr, first: bool, sddl: &str) -> io::Result<NamedPipeSer
     };
     let mut options = ServerOptions::new();
     options.first_pipe_instance(first);
+    // 只收本机的客户端（`PIPE_REJECT_REMOTE_CLIENTS`）：tokio 本来就默认开着，明写出来，免得默认值哪天变了跟着丢（施工 XG-1补3）。
+    options.reject_remote_clients(true);
     // SAFETY: `attributes` 是一份填好的 SECURITY_ATTRIBUTES，里面的安全描述符在 `descriptor` 丢掉之前一直
     // 有效；建管道时系统照它设好访问控制，建完就不再用这个指针。
     unsafe {

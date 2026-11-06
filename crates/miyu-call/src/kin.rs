@@ -190,17 +190,31 @@ fn descends_here(pid: u32, ancestor: u32) -> bool {
     descends(pid, ancestor, miyu_pipe::parent_process)
 }
 
-/// 照这台机器问父进程（Windows）：拍一张快照，照它找，每一层比创建时间（[`elder_parent`]）。
+/// Windows 上 `pid` 是不是 `ancestor` 的子孙（施工 XG-1补3）：照快照里的父进程表 `parents` 一层层找，每一层过
+/// [`elder_parent`]，创建时间照 `created` 问。抽出来是为了把这一层接线测上：系统的快照、创建时间在测试里换成假的。
+#[cfg_attr(
+    not(any(windows, test)),
+    expect(dead_code, reason = "只有 Windows 照快照找；测试到处跑")
+)]
+pub(crate) fn descends_in_snapshot(
+    pid: u32,
+    ancestor: u32,
+    parents: impl Fn(u32) -> Option<u32>,
+    created: impl Fn(u32) -> Option<u64>,
+) -> bool {
+    descends(pid, ancestor, |pid| elder_parent(pid, &parents, &created))
+}
+
+/// 照这台机器问父进程（Windows）：拍一张快照，照它找，每一层比创建时间（[`descends_in_snapshot`]）。
 #[cfg(windows)]
 fn descends_here(pid: u32, ancestor: u32) -> bool {
     match miyu_pipe::process_parents() {
-        Ok(parents) => descends(pid, ancestor, |pid| {
-            elder_parent(
-                pid,
-                |pid| parents.get(&pid).copied(),
-                miyu_pipe::process_created,
-            )
-        }),
+        Ok(parents) => descends_in_snapshot(
+            pid,
+            ancestor,
+            |pid| parents.get(&pid).copied(),
+            miyu_pipe::process_created,
+        ),
         Err(error) => {
             tracing::warn!(target: crate::TARGET, error = %error, "process snapshot not taken");
             false

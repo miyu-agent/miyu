@@ -162,7 +162,7 @@
 | `crates/miyu-endpoint/tests/provide_effects_log.rs`（施工 XG-1 上，单独一个测试程序） | 契约：报工作区别的文件、工作区外的私密文件、没改说改了、还在说删了、不收的种类、写法不对的各自丢、记 `WARN tool effect dropped`、结果照常；私密文件的路径不进日志、不进运行日志；没声明 `paths` 的一条文件效果不收 |
 | `crates/miyu-endpoint/src/provide/tests/declared_tests.rs` 的 `runs_commands_is_a_boolean_and_only_true_runs_commands`（施工 XG-1 下） | `runs_commands` 是布尔、不写是假，别的 `bad_tool`；只有真的跑命令，人跑命令不交给它（`serves_person` 是假）；登记缓存原样存 |
 | `crates/miyu-endpoint/tests/provide_commands.rs`（施工 XG-1 下） | 契约：扩展起的命令里经通道调 `probe` 成了，记一条 `tool.nested`、挂在那次调用下面；`tool.call` 带 `channel`（令牌 32 个字、有 `bin`）；核心进程（扩展的父进程，不是子孙）拿着令牌连上来退出码 2、那一次没调；答完端点关了、连不上；没批 `tools.commands` 的 `needs_approval`、不是布尔的 `bad_tool`；说明后面接 `miyu call` 那一段、不跑命令的照登记的；`!命令` 只有扩展的跑命令工具时 `shell_unavailable`；放行出沙盒的跑命令扩展工具 `miyu check` 报 `sandbox_shell` |
-| `crates/miyu-call/src/kin/tests.rs`、`unix/tests.rs`、`windows/tests.rs`（施工 XG-1 下） | 子孙照父进程链认：子、孙是，自己、别人家的、问不出的、绕回来的、太长的不是；`/proc/<pid>/stat` 的父进程照最后一个 `)` 往后数；Windows 上父进程起得比子进程晚的（重用了的编号）、问不出时间的链断，同一刻起的算数（`elder_parent`，施工 XG-1补2，到处跑）；真的子进程照这台机器问得出；扩展的端点答它父进程（测试进程是子孙）、拒另一个进程的子孙；交给扩展的那一格和设进命令的环境变量一样，端点名不带令牌的任何一段（施工 XG-1补2） |
+| `crates/miyu-call/src/kin/tests.rs`、`unix/tests.rs`、`windows/tests.rs`（施工 XG-1 下） | 子孙照父进程链认：子、孙是，自己、别人家的、问不出的、绕回来的、太长的不是；`/proc/<pid>/stat` 的父进程照最后一个 `)` 往后数；Windows 上父进程起得比子进程晚的（重用了的编号）、问不出时间的链断，同一刻起的算数（`elder_parent`，施工 XG-1补2，到处跑）；照快照找的那一层接线用假的快照、假的时间测（`descends_in_snapshot`，施工 XG-1补3：链上有重用了的编号不是子孙）；真的子进程照这台机器问得出；扩展的端点答它父进程（测试进程是子孙）、拒另一个进程的子孙；交给扩展的那一格和设进命令的环境变量一样，端点名不带令牌的任何一段（施工 XG-1补2） |
 | `crates/miyu-endpoint/tests/provide_later.rs` | 契约：先造的会话下一个回合有扩展的工具、调得通、记 `session.policy_changed`，缓存照登记的原样；关掉以后下一个回合拿掉；重启以后扩展没登记，照缓存在目录里，载入的第一个回合对上、调到的暂时不可用，新造的带上；关着的包不读缓存 |
 
 ### 还没有的

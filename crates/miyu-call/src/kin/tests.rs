@@ -78,6 +78,28 @@ fn a_parent_born_at_the_same_moment_counts_and_an_unknown_time_does_not() {
     assert_eq!(elder_parent(999, &parent, &same), None);
 }
 
+/// Windows 照快照找的那一层接线（施工 XG-1补3）：快照、创建时间换成假的，链上有一个编号被后起的进程重用了的，不是子孙；去掉
+/// 「比创建时间」那一层这里就红。
+#[test]
+fn a_snapshot_with_a_reused_parent_pid_is_not_a_descent() {
+    // 扩展 100 起在 10，shell 200 起在 20，`miyu call` 300 起在 30。
+    let parents = table(&[(100, 1), (200, 100), (300, 200)]);
+    let created = born(&[(1, 0), (100, 10), (200, 20), (300, 30)]);
+    assert!(descends_in_snapshot(300, 100, &parents, &created));
+    // shell 200 走了，编号给了一个 40 才起的进程：快照里 300 的父进程号还是 200，链在那里断。
+    let reused = born(&[(1, 0), (100, 10), (200, 40), (300, 30)]);
+    assert!(!descends_in_snapshot(300, 100, &parents, &reused));
+    // 扩展自己的编号被重用（起在 25）：也不是。
+    let reused = born(&[(1, 0), (100, 25), (200, 20), (300, 30)]);
+    assert!(!descends_in_snapshot(300, 100, &parents, &reused));
+    // 问不出时间的（打不开、不在了）：链断，不是。
+    let unknown = born(&[(1, 0), (100, 10), (300, 30)]);
+    assert!(!descends_in_snapshot(300, 100, &parents, &unknown));
+    // 同一刻起的父子：照样是。
+    let same = born(&[(1, 0), (100, 10), (200, 20), (300, 20)]);
+    assert!(descends_in_snapshot(300, 100, &parents, &same));
+}
+
 #[test]
 fn the_parent_in_proc_stat_comes_after_the_last_parenthesis() {
     assert_eq!(linux_parent("300 (miyu) S 200 300 200 0 -1"), Some(200));
