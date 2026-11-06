@@ -290,7 +290,8 @@ fn wanted(
                 let code = match &read {
                     _ if !item.layers.contains(&layer) => Some(Code::WrongLayer),
                     None => Some(Code::WrongType),
-                    Some(read) => item.kind.check(read).err(),
+                    // 扩展驱动不在选项里的照收（施工 MD-1，`driver_ref.rs`）：读回来记警告。
+                    Some(read) => miyu_config::driver_ref::check(item, read).err(),
                 };
                 // 私密目录多查一道（施工 5-15 下）：写错的那一个照原样说。
                 let code = match (code, &read) {

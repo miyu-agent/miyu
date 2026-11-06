@@ -27,6 +27,7 @@ use miyu_store::presets::{Checked as PresetChecked, Issue as PresetIssue};
 
 use crate::Core;
 
+mod drivers;
 mod embedding;
 mod known;
 mod left;
@@ -114,6 +115,7 @@ pub(crate) async fn check(core: &Core, peer: Peer, params: CheckParams) -> Resul
             }
             // 你放行出沙盒的（施工 X-36）：没有这件工具的、来处对不上的、放行了 shell 的。
             problems.extend(unsandboxed::unsandboxed(core, &words));
+            problems.extend(drivers::drivers(core, &words));
             // 装好的文件改了、少了（施工 F-8 中下）：本地库记了的才查，各一条警告。
             for (path, drift) in crate::packages::verify::drifted(core).await {
                 let file = shown(core, &path);

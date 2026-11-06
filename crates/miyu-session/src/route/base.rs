@@ -147,12 +147,14 @@ impl Routes {
             endpoint,
             // 占位工具（施工 8-14 补）：档案点名了哪几件，说明是资源目录里那一句。
             placeholders: speaking.placeholder_specs(self.data.placeholder_tool()),
-            driver: speaking.build(texts),
+            driver: speaking
+                .build(texts)
+                .ok_or_else(|| NoModel(super::unbuilt(&speaking)))?,
             idle: effort::idle(self.idle, effort.as_deref()),
             call: Call {
                 model,
                 max_output: max_output.or_else(|| {
-                    let driver = speaking.driver;
+                    let driver = &speaking.driver;
                     let written = facts
                         .max_output
                         .value

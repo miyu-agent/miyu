@@ -17,11 +17,12 @@ use crate::provider::Driver;
 /// 配置里模型默认的温度那一项（[`crate::settings::ModelSettings`] 的 `temperature`）。
 pub const ITEM: &str = "providers.<id>.models.<model>.temperature";
 
-/// 驱动收的温度的上限：Anthropic 的消息接口只收 0 到 1，别的两种收 0 到 2（清单本身的上限）。
-pub fn ceiling(driver: Driver) -> f64 {
+/// 驱动收的温度的上限：Anthropic 的消息接口只收 0 到 1，别的两种收 0 到 2（清单本身的上限）。扩展提供的不知道，照清单本身的上限
+/// （施工 MD-1）。
+pub fn ceiling(driver: &Driver) -> f64 {
     match driver {
         Driver::Anthropic => 1.0,
-        Driver::OpenAiChat | Driver::OpenAiResponses => 2.0,
+        Driver::OpenAiChat | Driver::OpenAiResponses | Driver::Extension(_) => 2.0,
     }
 }
 
@@ -46,7 +47,7 @@ pub fn usable(value: f64, takes: Option<bool>, driver: Driver) -> Result<f64, Un
     if takes == Some(false) {
         return Err(Unusable::Unsupported);
     }
-    let max = ceiling(driver);
+    let max = ceiling(&driver);
     if value > max {
         return Err(Unusable::TooHigh(max));
     }

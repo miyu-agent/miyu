@@ -72,6 +72,24 @@ pub fn resolved_with(source: &str, more: &str) -> Resolved {
     merge(&items(), &layers, &|_| None)
 }
 
+/// 同 [`configs`]，只放过写了扩展驱动、这时没装的那一条警告（`unknown_driver`，施工 MD-1）：别的问题照样当场报出来。
+pub fn configs_with_unknown_drivers(source: &str) -> Configs {
+    let parsed = parse(&items(), Layer::System, source).expect("写法对");
+    assert!(
+        parsed
+            .problems
+            .iter()
+            .all(|problem| problem.code == miyu_config::problem::Code::UnknownDriver),
+        "{:?}",
+        parsed.problems
+    );
+    let layers = Layers {
+        system: Some(&parsed),
+        ..Layers::default()
+    };
+    fixed_with(merge(&items(), &layers, &|_| None), Default::default())
+}
+
 /// 核心一份的：档案照 JSON 的 `profiles`，没有目录（读完了），空闲超时 `idle`。
 pub fn routes(profiles: serde_json::Value, idle: Duration) -> Routes {
     let data = ModelData::new(

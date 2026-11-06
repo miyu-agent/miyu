@@ -22,6 +22,7 @@
 //! 现在有选项、开关、密钥、整数、网址、名字、引用、模型、列表（[`Kind`]）：照「不为以后写代码」，别的类型哪一步用到哪一步加。
 
 pub mod dangling;
+pub mod driver_ref;
 pub mod edit;
 mod item;
 pub mod key;

@@ -161,6 +161,9 @@ pub(crate) fn included(preview: &Value, doing: Doing, language: &Language) -> Ve
     for name in strings(&preview["mcp"]) {
         carried(Carried::Mcp(name));
     }
+    for name in strings(&preview["drivers"]) {
+        carried(Carried::Driver(name));
+    }
     for name in strings(&preview["skills"]) {
         carried(Carried::Skill(name));
     }

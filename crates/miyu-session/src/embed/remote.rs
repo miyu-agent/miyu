@@ -26,6 +26,7 @@ use crate::config::TurnConfig;
 use crate::route::endpoint::reach;
 use crate::route::lists::listing_texts;
 use crate::route::shared::ModelData;
+use crate::route::unbuilt;
 
 use super::Unavailable;
 
@@ -86,9 +87,11 @@ impl Remote {
             .data
             .fetcher_for(&reached.base_url)
             .ok_or_else(|| Unavailable::Off("no client to send with".to_string()))?;
+        // 扩展提供的驱动（施工 MD-1）还接不上：这一家当用不了。
         let driver = reached
             .provider
-            .build(listing_texts().map_err(Unavailable::Off)?);
+            .build(listing_texts().map_err(Unavailable::Off)?)
+            .ok_or_else(|| Unavailable::Off(unbuilt(&reached.provider)))?;
         let mut headers = reached
             .key
             .as_ref()

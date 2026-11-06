@@ -14,6 +14,7 @@ mod command;
 mod content;
 mod credits;
 mod depend;
+mod driver;
 mod features;
 mod fields;
 pub mod groups;
@@ -39,6 +40,7 @@ pub use capability::Capability;
 pub use code::Code;
 pub use content::Content;
 pub use depend::Dependency;
+pub use driver::{DriverCache, DriverDecl, DriverKey, driver_name};
 pub use features::Feature;
 pub use guard::{ACCESS as GUARD_ACCESS, Guard};
 pub use links::{Connection, Worker};
@@ -120,6 +122,8 @@ pub struct Manifest {
     pub side: Vec<SideRequest>,
     /// 声明的搜索来源（施工 N-5，`[[search]]`）：照写的先后，没有的是空的。只有扩展包能写。
     pub search: Vec<SearchSource>,
+    /// 提供的模型驱动（施工 MD-1，`[[driver]]`）：照写的先后，没有的是空的。只有扩展包能写，要声明 `model.driver`。
+    pub drivers: Vec<DriverDecl>,
     /// 界面块（施工 X-15 上，`[[widget]]`）：照写的先后，没有的是空的。只有扩展包能写。
     pub widgets: Vec<Widget>,
     /// 守卫（施工 HK-1，`[guard]`）：工具调用前问它的那几种调用；没写的没有。只有扩展包能写，要声明 `tool.guard`。
@@ -323,7 +327,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         if !item.is_table_like()
             && !(matches!(
                 key,
-                "mcp" | "slash" | "search" | "widget" | "side" | "command"
+                "mcp" | "slash" | "search" | "driver" | "widget" | "side" | "command"
             ) && item.is_array_of_tables())
         {
             return Err(reader.problem(
@@ -433,6 +437,11 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         None => Vec::new(),
     };
     search::needs_capability(&search, capabilities)?;
+    let drivers = match root.get("driver") {
+        Some(node) => driver::read(&reader, node)?,
+        None => Vec::new(),
+    };
+    driver::check(&drivers, capabilities)?;
     let widgets = match root.get("widget") {
         Some(node) => widget::read(&reader, node)?,
         None => Vec::new(),
@@ -475,6 +484,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         slash,
         side,
         search,
+        drivers,
         widgets,
         guard,
         export,

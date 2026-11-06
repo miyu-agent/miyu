@@ -138,8 +138,8 @@ pub fn record(values: &Values, text: &str) -> Result<String, NoModel> {
 /// 一个引用这一轮指到哪（施工 8-8）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Resolved {
-    /// 一个模型：发给哪一家的哪个模型。
-    Model(Target),
+    /// 一个模型：发给哪一家的哪个模型。装在盒子里（施工 MD-1）：驱动能是扩展的以后它大了不少，和池差得太多。
+    Model(Box<Target>),
     /// 一个池：认得出的成员、怎么分。挑哪一个成员由执行器照指针、钉着的定。
     Pool(Pool),
 }
@@ -158,10 +158,10 @@ pub fn resolve(
         Reference::Model {
             provider: id,
             model,
-        } => Ok(Resolved::Model(Target {
+        } => Ok(Resolved::Model(Box::new(Target {
             provider: provider::provider(values, knowledge, &id)?,
             model,
-        })),
+        }))),
         Reference::Pool(name) => Ok(Resolved::Pool(pools::pool(values, &name)?)),
     }
 }

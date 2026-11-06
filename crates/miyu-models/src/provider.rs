@@ -37,8 +37,9 @@ use crate::matching::Recognized;
 use crate::profile::ImageTokens;
 use crate::settings::{ProviderSettings, UseSettings};
 
-/// 认得的驱动。8-6 有 OpenAI 兼容的对话接口，8-12 加 Anthropic 的消息接口，8-13 加 OpenAI 的 Responses 接口。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// 认得的驱动。8-6 有 OpenAI 兼容的对话接口，8-12 加 Anthropic 的消息接口，8-13 加 OpenAI 的 Responses 接口；MD-1 加扩展提供的
+/// （设计 66）。
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Driver {
     /// `openai-chat`。
     OpenAiChat,
@@ -46,41 +47,87 @@ pub enum Driver {
     Anthropic,
     /// `openai-responses`（施工 8-13）。
     OpenAiResponses,
+    /// 扩展提供的（施工 MD-1，设计 66 第四节）：配置里写 `<包编号>/<驱动名>`。只有手写的一格会指向它；MD-2 接上通道以前，调到它的
+    /// 当用不了（[`Driver::build`] 没有）。
+    Extension(DriverRef),
+}
+
+/// 扩展提供的一个驱动：哪个包的哪一个。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DriverRef {
+    /// 包编号。
+    pub package: String,
+    /// 清单 `[[driver]]` 的 `name`。
+    pub name: String,
+}
+
+impl std::fmt::Display for DriverRef {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}/{}", self.package, self.name)
+    }
 }
 
 impl Driver {
     /// 配置、档案里驱动的写法认成现在有的哪一种（施工 8-11 从 [`provider`] 里拿出来，`provider.catalog` 的 `supported` 也照
-    /// 它）；不认识的（档案里写了别的、目录的包名换出来的还没有的）是空的。
+    /// 它）；不认识的（档案里写了别的、目录的包名换出来的还没有的）是空的。`<包编号>/<驱动名>` 的是扩展的（施工 MD-1）：认的是写法，
+    /// 装没装、批没批由 `miyu check` 报、运行时当用不了。
     pub fn parse(name: &str) -> Option<Driver> {
         match name {
             "openai-chat" => Some(Driver::OpenAiChat),
             "anthropic" => Some(Driver::Anthropic),
             "openai-responses" => Some(Driver::OpenAiResponses),
+            _ if miyu_config::driver_ref::extension(name) => {
+                let (package, name) = name.split_once('/')?;
+                Some(Driver::Extension(DriverRef {
+                    package: package.to_string(),
+                    name: name.to_string(),
+                }))
+            }
             _ => None,
         }
     }
 
-    /// 配置、档案里的写法。
-    pub fn as_str(self) -> &'static str {
+    /// 内置的几种（施工 MD-1）：只有它们能从档案、npm 表、默认推出来。
+    pub fn builtin(name: &str) -> Option<Driver> {
+        Driver::parse(name).filter(|driver| !matches!(driver, Driver::Extension(_)))
+    }
+
+    /// 配置、档案里的写法：扩展的是 `<包编号>/<驱动名>`。
+    pub fn as_str(&self) -> std::borrow::Cow<'static, str> {
         match self {
-            Driver::OpenAiChat => "openai-chat",
-            Driver::Anthropic => "anthropic",
-            Driver::OpenAiResponses => "openai-responses",
+            Driver::OpenAiChat => "openai-chat".into(),
+            Driver::Anthropic => "anthropic".into(),
+            Driver::OpenAiResponses => "openai-responses".into(),
+            Driver::Extension(reference) => reference.to_string().into(),
         }
     }
 
-    /// 造这种驱动（施工 8-12）：`openai-chat` 照开关 `compat`，`anthropic`、`openai-responses` 没有开关；占位是 `texts`。
-    pub fn build(self, compat: Compat, texts: DriverTexts) -> Box<dyn miyu_drivers::Driver> {
+    /// 造这种驱动（施工 8-12）：`openai-chat` 照开关 `compat`，`anthropic`、`openai-responses` 没有开关；占位是 `texts`。扩展的
+    /// 没有（施工 MD-1）：它不是核心里的纯函数，MD-2 起走扩展的通道。
+    pub fn build(
+        &self,
+        compat: Compat,
+        texts: DriverTexts,
+    ) -> Option<Box<dyn miyu_drivers::Driver>> {
         match self {
-            Driver::OpenAiChat => Box::new(OpenAiChat::new(compat, texts)),
-            Driver::Anthropic => Box::new(Anthropic::new(texts)),
-            Driver::OpenAiResponses => Box::new(OpenAiResponses::new(texts)),
+            Driver::OpenAiChat => Some(Box::new(OpenAiChat::new(compat, texts))),
+            Driver::Anthropic => Some(Box::new(Anthropic::new(texts))),
+            Driver::OpenAiResponses => Some(Box::new(OpenAiResponses::new(texts))),
+            Driver::Extension(_) => None,
         }
     }
 
     /// 一定要写输出上限（`models.md`「驱动要守的约定」第 11 条，施工 8-12）：`anthropic` 是，路由替它照模型资料填。
-    pub fn needs_max_output(self) -> bool {
-        self == Driver::Anthropic
+    pub fn needs_max_output(&self) -> bool {
+        *self == Driver::Anthropic
+    }
+
+    /// 扩展提供的（施工 MD-1）。
+    pub fn extension(&self) -> Option<&DriverRef> {
+        match self {
+            Driver::Extension(reference) => Some(reference),
+            _ => None,
+        }
     }
 }
 
@@ -124,12 +171,12 @@ impl Provider {
         match self.driver {
             Driver::OpenAiChat => self.compat.toggle.is_some(),
             Driver::Anthropic => true,
-            Driver::OpenAiResponses => false,
+            Driver::OpenAiResponses | Driver::Extension(_) => false,
         }
     }
 
-    /// 照这一家的驱动和开关造一个驱动，占位是 `texts`（施工 8-12）。
-    pub fn build(&self, texts: DriverTexts) -> Box<dyn miyu_drivers::Driver> {
+    /// 照这一家的驱动和开关造一个驱动，占位是 `texts`（施工 8-12）。扩展提供的没有（施工 MD-1，[`Driver::build`]）。
+    pub fn build(&self, texts: DriverTexts) -> Option<Box<dyn miyu_drivers::Driver>> {
         self.driver.build(self.compat.clone(), texts)
     }
 
@@ -152,7 +199,8 @@ impl Provider {
         let mut speaking = self.clone();
         if let Some(package) = wire.npm.as_deref().filter(|_| !self.driver_written) {
             let name = npm.get(package).map_or(package, String::as_str);
-            speaking.driver = Driver::parse(name).ok_or_else(|| {
+            // 目录的包名换出来的只认内置的（施工 MD-1）。
+            speaking.driver = Driver::builtin(name).ok_or_else(|| {
                 NoModel(format!(
                     "model \"{}/{model}\" needs driver {name:?}, which is not available yet",
                     self.id
@@ -179,7 +227,7 @@ impl Provider {
     /// （发的时候当场 `no_model`）。
     pub fn driver_for(&self, model: &str, wire: &Wire, npm: &BTreeMap<String, String>) -> Driver {
         self.for_model(model, wire, npm)
-            .map_or(self.driver, |speaking| speaking.driver)
+            .map_or_else(|_| self.driver.clone(), |speaking| speaking.driver)
     }
 
     /// 另配的头，照种子 `seed` 换好模板（施工 8-14，[`crate::headers`]）：会话的是会话编号，一次性的是用途，`provider.test`
@@ -293,7 +341,13 @@ pub fn provider(values: &Values, knowledge: &Knowledge<'_>, id: &str) -> Result<
         .or(profile.driver.clone())
         .or(from_npm)
         .unwrap_or_else(|| DEFAULT_DRIVER.to_string());
-    let Some(driver_kind) = Driver::parse(&driver) else {
+    // 扩展提供的只认手写的那一格（施工 MD-1，设计 66 第四节第 2 条）：档案、npm 表、默认推出来的只认内置的几种，扩展装上了也接不走
+    // 主人原来配好的供应商。
+    let parsed = match driver_written {
+        true => Driver::parse(&driver),
+        false => Driver::builtin(&driver),
+    };
+    let Some(driver_kind) = parsed else {
         return Err(NoModel(format!(
             "driver {driver:?} of provider {id:?} is not available yet"
         )));

@@ -283,7 +283,7 @@ miyu_config::settings! {
 | `pools.lite.subagent`、`pools.normal.subagent`、`pools.flagship.subagent` | 开关 | `true`：三个固定池默认在派子代理的选项里 | 系统 | 不能写 | `new_session` | Q-1：写死的键，先于 `pools.<id>.subagent` 认；合配置时总有默认值，所以这三个池永远在（`models.md`「池」） |
 | `pools.<id>.description` | 给模型看的字，最多 60 个字符 | 没有：只列池名 | 系统 | 不能写 | `new_session` | 8-8 补 |
 | `providers.<id>.name` | 文字，最多 64 个字符 | 没有：照目录里那一家的名字，再没有的照编号 | 系统 | 不能写 | `now`（只给界面看，不进请求） | 8-21 |
-| `providers.<id>.driver` | 选项 `openai-chat`、`anthropic`、`openai-responses` | 没有：照档案推 | 系统 | 不能写 | `next_turn` | 8-6 |
+| `providers.<id>.driver` | 选项 `openai-chat`、`anthropic`、`openai-responses`，接上装着的包 `[[driver]]` 声明的 `<包>/<驱动名>`（施工 MD-1，`miyu_config::driver_ref`）；写成 `<包>/<驱动名>`、这时不在选项里的照原样留、记警告 `unknown_driver`，这一家用不了、不退回内置驱动（core1 11-07 定） | 没有：照档案推（档案、npm 表、默认只推得出内置的） | 系统 | 不能写 | `next_turn` | 8-6、MD-1 |
 | `providers.<id>.base_url` | 网址 | 没有：照档案推 | 系统 | 不能写 | `next_turn` | 8-6 |
 | `providers.<id>.key` | 密钥 | 没有：不带认证头 | 系统 | 不能写 | `next_turn` | 8-6（8-25 从 `keys` 列表改成一个，`15-模型与供应商.md` M10） |
 | `providers.<id>.catalog` | 名字 | 没有：照编号 | 系统 | 不能写 | `next_turn` | 8-6 |
@@ -372,6 +372,7 @@ miyu_config::settings! {
 | `bad_reference` | 错误 | 引用、模型的列表指的供应商、池在不算项目配置的最终值里没有（`name` 是指的那个）。读进来以后另查、只报不丢：值照样用，路由当场照它说 `no_model`；算进 `config_errors`。`config.check` 照「这段字换掉它那一层」合出来的查 | 8-8 |
 | `unknown_effort` | 错误 | 模型的 `effort` 不在这个模型这时的档位里（`name` 是写的那一档，档位照 `models.md`「模型的资料」的 `reasoning`）。照 `bad_reference` 的办法：读进来以后另查、只报不丢，请求照没写发；算进 `config_errors`；`config.check` 照「这段字换掉它那一层」合出来的查。档位要目录：目录读完以前不查。那一家用不了（推不出驱动、地址）的不查 | 8-18 |
 | `unknown_persona`、`unknown_knowledge`、`unknown_preset` | 警告 | 软件包配置项选的人格、知识库、预设这时没有（`name` 是写的编号，施工 PC-3、PC-3 补）。只在 `check` 里报（核心照这时有的查，列不出来的那一种不查），值照样用 |
+| `unknown_driver` | 警告 | `providers.<id>.driver` 写成 `<包编号>/<驱动名>`、这时不在选项里（没装那个包、驱动名写错了，施工 MD-1）：值照留，`name` 是写的那一个；运行时这家供应商用不了，绝不退回内置驱动。只对这一格、只对这个写法，别的不在选项里的照旧 `not_an_option` |
 | `unusable_temperature` | 错误 | 模型的 `temperature` 这个模型用不了：目录说它不收温度（`temperature: false`），或者超过它真走的驱动的上限（`anthropic` 是 1，`name` 是上限）。照 `unknown_effort` 的办法：读进来以后另查、只报不丢，请求照没写发；算进 `config_errors`；`config.check` 照「这段字换掉它那一层」合出来的查。目录读完以前、那一家用不了的不查（`models.md`「怎么走」第十四条） | 8-22 |
 | `wrong_layer` | 错误 | 这一项不能写在这一层 | 8-2 |
 | `not_tightening` | 错误 | 项目配置写得比下面几层宽 | 8-2 |

@@ -64,6 +64,7 @@ impl Language {
             (Language::Chinese, Carried::Connection(platform)) => format!("接入 {platform}"),
             (Language::Chinese, Carried::Settings(n)) => format!("{n} 项设置"),
             (Language::Chinese, Carried::Mcp(name)) => format!("MCP 服务 {name}"),
+            (Language::Chinese, Carried::Driver(name)) => format!("模型驱动 {name}"),
             (Language::Chinese, Carried::Skill(name)) => format!("技能 {name}"),
             (Language::Chinese, Carried::Script(name)) => format!("脚本 {name}"),
             (Language::Chinese, Carried::Slash(name)) => format!("斜杠命令 /{name}"),
@@ -77,6 +78,7 @@ impl Language {
             (Language::English, Carried::Settings(1)) => "1 setting".to_string(),
             (Language::English, Carried::Settings(n)) => format!("{n} settings"),
             (Language::English, Carried::Mcp(name)) => format!("MCP server {name}"),
+            (Language::English, Carried::Driver(name)) => format!("model driver {name}"),
             (Language::English, Carried::Skill(name)) => format!("skill {name}"),
             (Language::English, Carried::Script(name)) => format!("script {name}"),
             (Language::English, Carried::Slash(name)) => format!("slash command /{name}"),
@@ -256,6 +258,8 @@ pub(crate) enum Carried<'a> {
     Settings(u64),
     /// 带的 MCP 服务（施工 X-2）：装上以后会在这台机器上跑它的命令。
     Mcp(&'a str),
+    /// 提供的模型驱动（施工 MD-1）：用它的模型时发给模型的全部对话都经过它。
+    Driver(&'a str),
     /// 带的技能（施工 X-13 上）。
     Skill(&'a str),
     /// 带的脚本（施工 X-13 上）：装上以后是她的一件工具，在这台机器上跑。

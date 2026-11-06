@@ -68,6 +68,11 @@ impl Routes {
         seat: &Seat<'_>,
     ) -> Result<Vec<Choice>, NoModel> {
         let provider = &target.provider;
+        // 扩展提供的驱动（施工 MD-1）：这一家当用不了，不拿它的 key、地址去走内置的驱动。单个模型当场 `no_model`，池里的照现成的
+        // 规矩跳过、换下一个（`pool.rs`）。
+        if provider.driver.extension().is_some() {
+            return Err(NoModel(super::unbuilt(provider)));
+        }
         let base_url = provider::resolve_base_url(provider, &|reference| config.secret(reference))?;
         // 档案另配的头照谁在挑的种子换（施工 8-14）：会话是会话编号，一次性的是用途。
         let headers = provider.headers(seat.seed);

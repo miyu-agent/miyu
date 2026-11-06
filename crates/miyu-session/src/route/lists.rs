@@ -73,7 +73,9 @@ async fn fetch(
     let provider = data
         .with(|knowledge| provider::provider(values, knowledge, id))
         .map_err(|NoModel(why)| why)?;
-    let driver = provider.build(listing_texts()?);
+    let driver = provider
+        .build(listing_texts()?)
+        .ok_or_else(|| super::unbuilt(&provider))?;
     let headers = match &provider.key {
         None => Vec::new(),
         Some(reference) => {

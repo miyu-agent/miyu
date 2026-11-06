@@ -1,5 +1,5 @@
 //! 扩展能力（施工 9-4 下上，`docs/designs/05-内核接口.md` 第三节）：清单的 `[process] capabilities` 声明要哪些，主人
-//! 在开的那一下批（`extensions.md`）。只认这张表里的十九个名字（施工 X-15 上加了 `widgets`，施工 X-20 加了 `context.system`，施工 X-18 加了 `packages.call`，施工 N-5 加了 `search`，施工 X-30 加了 `memory.write`，施工 XG-1 下加了 `tools.commands`，施工 LP-1 加了 `login.page`），先后照这张表。
+//! 在开的那一下批（`extensions.md`）。只认这张表里的二十个名字（施工 X-15 上加了 `widgets`，施工 X-20 加了 `context.system`，施工 X-18 加了 `packages.call`，施工 N-5 加了 `search`，施工 X-30 加了 `memory.write`，施工 XG-1 下加了 `tools.commands`，施工 LP-1 加了 `login.page`，施工 MD-1 加了 `model.driver`），先后照这张表。
 //! 出厂的包算批过声明的全部，[`Capability::needs_person`] 的几项除外（施工 LP-1：`login.page` 出厂的也要人批）。
 
 /// 一种扩展能力。
@@ -32,6 +32,8 @@ pub enum Capability {
     PackagesCall,
     /// 当搜索来源（施工 N-5，清单 `[[search]]`）：人选了它，搜索词会交给它。
     Search,
+    /// 提供模型驱动（施工 MD-1，清单 `[[driver]]`，设计 66 第十节）：用它的模型时，发给模型的全部对话都经过它。不附带网络。
+    ModelDriver,
     /// 代表平台上的外部用户发命令：只给通讯平台的桥。
     ActForExternal,
     /// 替本机打开的页面换登录票（施工 LP-1，`login.ticket {via: "page"}`）：换到的票能换主人的设备令牌，出厂的也要人批。
@@ -48,7 +50,7 @@ pub enum Capability {
 
 impl Capability {
     /// 全部，照表的先后。
-    pub const ALL: [Capability; 19] = [
+    pub const ALL: [Capability; 20] = [
         Capability::Tools,
         Capability::ToolsCommands,
         Capability::Commands,
@@ -62,6 +64,7 @@ impl Capability {
         Capability::SessionsDrive,
         Capability::PackagesCall,
         Capability::Search,
+        Capability::ModelDriver,
         Capability::ActForExternal,
         Capability::LoginPage,
         Capability::Network,
@@ -86,6 +89,7 @@ impl Capability {
             Capability::SessionsDrive => "sessions.drive",
             Capability::PackagesCall => "packages.call",
             Capability::Search => "search",
+            Capability::ModelDriver => "model.driver",
             Capability::ActForExternal => "act_for_external",
             Capability::LoginPage => "login.page",
             Capability::Network => "network",

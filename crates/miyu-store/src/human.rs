@@ -268,6 +268,20 @@ impl Human {
                 let words = setting_words(setting, &key, &pick);
                 self.config.items.insert(key, words);
             }
+            // 扩展的模型驱动（施工 MD-1）：下拉里写「包的名字：驱动名」，没有名字的照 `<包>/<驱动名>`。
+            if let Some(words) = self
+                .config
+                .items
+                .get_mut(miyu_config::driver_ref::PROVIDER_DRIVER)
+            {
+                for driver in &manifest.drivers {
+                    let name = pick(&manifest.name).map_or_else(
+                        || driver.reference(id),
+                        |package| format!("{package}: {}", driver.name),
+                    );
+                    words.options.insert(driver.reference(id), name);
+                }
+            }
             // 扩展的搜索来源（施工 N-5）：下拉里的名字照清单。
             if let Some(words) = self
                 .config

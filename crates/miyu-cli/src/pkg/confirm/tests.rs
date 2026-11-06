@@ -44,6 +44,16 @@ fn an_upgrade_says_what_it_replaces_carries_needs_and_weighs() {
             "大小：9 B，1 个文件"
         ]
     );
+    // 提供模型驱动的（施工 MD-1）：列出每个驱动，用它的模型时对话都经过它。
+    let driver = json!({"package": "gravity", "program": "process", "drivers": ["ag"], "files": 1, "size": 9});
+    assert_eq!(
+        plan(&driver, Doing::Install, &Language::Chinese)[1],
+        "包含：扩展程序、模型驱动 ag"
+    );
+    assert_eq!(
+        plan(&driver, Doing::Install, &Language::English)[1],
+        "Includes: extension, model driver ag"
+    );
     let back = json!({"package": "net", "version": "1", "program": "builtin", "restores": true});
     assert_eq!(
         plan(&back, Doing::Restore, &Language::Chinese),

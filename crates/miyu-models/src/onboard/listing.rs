@@ -74,7 +74,7 @@ pub fn listed(knowledge: &Knowledge<'_>) -> Vec<Listed> {
                 .and_then(|profile| profile.base_url.clone())
                 .or_else(|| entry?.api.clone());
             let supported =
-                driver.as_deref().and_then(Driver::parse).is_some() && base_url.is_some();
+                driver.as_deref().and_then(Driver::builtin).is_some() && base_url.is_some();
             Listed {
                 id: id.to_string(),
                 name: profile

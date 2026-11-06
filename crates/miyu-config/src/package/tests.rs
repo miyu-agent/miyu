@@ -310,6 +310,7 @@ fn capabilities_are_read_in_the_table_order() {
             "sessions.drive",
             "packages.call",
             "search",
+            "model.driver",
             "act_for_external",
             "login.page",
             "network",

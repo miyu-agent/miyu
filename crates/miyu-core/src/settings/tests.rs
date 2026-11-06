@@ -314,3 +314,65 @@ fn an_extension_search_source_joins_the_dropdown() {
         Some("查找")
     );
 }
+
+/// 一个提供模型驱动的扩展包（施工 MD-1）。
+const GRAVITY: &str = "[package]\nprotocol = [1, 1]\nname = { en = \"Gravity\" }\n\n[command]\nname = \"gravity\"\nprogram = \"miyu-nothing\"\nabout = { en = \"G\" }\n\n[process]\ncapabilities = [\"model.driver\"]\n\n[[driver]]\nname = \"ag\"\n";
+
+/// 扩展提供的模型驱动进「一家供应商的驱动」的下拉（施工 MD-1）：值是 `<包>/<驱动名>`，接在内置的几种后面，配置里写它读得进、没有
+/// 警告；名字是「包的名字：驱动名」。
+#[test]
+fn an_extension_driver_joins_the_provider_dropdown() {
+    let scratch = Scratch::new();
+    let root = scratch.root();
+    let mut found = vec![Found {
+        id: "gravity".to_string(),
+        layer: miyu_store::packages::Layer::Home,
+        path: root.path().join("gravity").join("package.toml"),
+        read: Ok(miyu_config::package::read(GRAVITY).expect("合写法")),
+    }];
+    let packaged = Packaged::as_released(&mut found);
+    let all = packaged.all();
+    let driver = all
+        .iter()
+        .find(|item| item.key == miyu_config::driver_ref::PROVIDER_DRIVER)
+        .expect("有这一项");
+    let miyu_config::Kind::Option(options) = driver.kind else {
+        panic!("是选项：{:?}", driver.kind);
+    };
+    assert_eq!(
+        options,
+        ["openai-chat", "anthropic", "openai-responses", "gravity/ag"],
+        "内置的照旧在前"
+    );
+    std::fs::write(
+        root.path().join("etc/config.toml"),
+        "[providers.g]\ndriver = \"gravity/ag\"\n",
+    )
+    .expect("写得进");
+    let config = Config::load(
+        &root,
+        None,
+        all,
+        miyu_endpoint::config::Environment::of(&[]),
+    );
+    assert_eq!(
+        miyu_models::settings::ProviderSettings::at(&config.resolved().values(), &["g"]).driver,
+        Some("gravity/ag".to_string())
+    );
+    let words = miyu_store::human::Human::load(&resources(), "zh")
+        .expect("读得出")
+        .with_packages(
+            packaged
+                .manifests
+                .iter()
+                .map(|(id, manifest)| (id.as_str(), manifest)),
+            "zh",
+        );
+    let item = words
+        .item(miyu_config::driver_ref::PROVIDER_DRIVER)
+        .expect("有字");
+    assert_eq!(
+        item.options.get("gravity/ag").map(String::as_str),
+        Some("Gravity: ag")
+    );
+}

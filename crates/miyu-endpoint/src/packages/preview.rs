@@ -290,6 +290,15 @@ fn carries(
             .collect();
         answer.insert("mcp".into(), json!(names));
     }
+    // 提供的模型驱动（施工 MD-1，设计 66 第十节第 1 条）：用它的模型时发给模型的全部对话都经过它，装之前给人看它声明了哪几个。
+    if !manifest.drivers.is_empty() {
+        let names: Vec<&str> = manifest
+            .drivers
+            .iter()
+            .map(|driver| driver.name.as_str())
+            .collect();
+        answer.insert("drivers".into(), json!(names));
+    }
     // 第一个子命令照旧放在 `command`，几个都在 `commands`（施工 F-13）。
     if let Some(command) = manifest.command() {
         answer.insert("command".into(), json!(command.name));

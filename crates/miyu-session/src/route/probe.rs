@@ -151,7 +151,9 @@ async fn run(
         .cloned()
         .ok_or_else(|| unready("no client to send with".to_string()))?;
     let texts = listing_texts().map_err(unready)?;
-    let driver = provider.build(texts);
+    let driver = provider
+        .build(texts)
+        .ok_or_else(|| unready(super::unbuilt(&provider)))?;
     let headers = key
         .as_ref()
         .map(|key| driver.auth(key.expose()))
@@ -220,7 +222,9 @@ async fn run(
         (speaking, facts.temperature.value)
     });
     let speaking = speaking.map_err(config)?;
-    let asking = speaking.build(listing_texts().map_err(unready)?);
+    let asking = speaking
+        .build(listing_texts().map_err(unready)?)
+        .ok_or_else(|| unready(super::unbuilt(&speaking)))?;
     let endpoint = Reached {
         provider,
         base_url,

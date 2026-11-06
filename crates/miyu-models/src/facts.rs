@@ -193,9 +193,10 @@ pub fn facts(
     let switchable = speaking
         .as_ref()
         .map_or_else(|| provider.switchable(), Provider::switchable);
-    let driver = speaking
-        .as_ref()
-        .map_or(provider.driver, |speaking| speaking.driver);
+    let driver = speaking.as_ref().map_or_else(
+        || provider.driver.clone(),
+        |speaking| speaking.driver.clone(),
+    );
     let from_catalog =
         |pick: &dyn Fn(&CatalogModel) -> Option<u64>| Some((pick(model_data?)?, borrowed.clone()?));
     let learned = knowledge.learned.window(&provider.id, model);

@@ -37,8 +37,8 @@ pub async fn find_local(data: &ModelData, services: Vec<Listed>) -> Vec<Running>
         let (client, texts) = (client.clone(), texts.clone());
         probes.spawn(async move {
             // 照这一家的驱动列模型（施工 8-12）；开关不影响列模型。只探能用的几家，驱动都认得出。
-            let kind = listed.driver.as_deref().and_then(Driver::parse)?;
-            let driver = kind.build(Compat::default(), texts);
+            let kind = listed.driver.as_deref().and_then(Driver::builtin)?;
+            let driver = kind.build(Compat::default(), texts)?;
             let base_url = listed.base_url.clone().unwrap_or_default();
             let found = list_models(&client, driver.as_ref(), &base_url, &[], LOCAL_WAIT).await;
             found.ok().map(|models| {

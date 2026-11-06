@@ -159,13 +159,19 @@ impl Packaged {
             .flat_map(|(_, items)| items.iter().map(|item| item.key))
             .collect();
         let searched = self.search_sources();
+        // 扩展提供的模型驱动（施工 MD-1，清单 `[[driver]]`）加进「一家供应商的驱动」的选项：`<包>/<驱动名>`。
+        let drivers: Vec<String> = self
+            .manifests
+            .iter()
+            .flat_map(|(id, manifest)| manifest.drivers.iter().map(|driver| driver.reference(id)))
+            .collect();
         items()
             .into_iter()
             .map(|mut item| {
                 if hidden.contains(&item.key) {
                     item.ui.hidden = true;
                 }
-                searched(item)
+                miyu_config::driver_ref::with_installed(&searched(item), &drivers)
             })
             .chain(self.items.iter().cloned())
             .collect()

@@ -387,6 +387,15 @@ fn lock(pinned: &Mutex<Pinned>) -> MutexGuard<'_, Pinned> {
     pinned.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
+/// 扩展提供的驱动这时接不上（施工 MD-1，设计 66 第八节第 5 条）：这家供应商用不了，绝不退回内置驱动。MD-2 接上通道以前一律这样。
+pub(crate) fn unbuilt(provider: &miyu_models::provider::Provider) -> String {
+    format!(
+        "driver \"{}\" of provider {:?} is provided by an extension, which isn't connected yet",
+        provider.driver.as_str(),
+        provider.id
+    )
+}
+
 /// 没发出去就说完的：分类、原话，没有状态码。
 fn unsent(class: ErrorClass, message: String) -> CallError {
     CallError {

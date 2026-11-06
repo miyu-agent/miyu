@@ -16,9 +16,9 @@ fn file(_layer: Layer) -> String {
 
 #[test]
 fn anthropic_takes_up_to_one_and_the_others_up_to_two() {
-    assert_eq!(ceiling(Driver::Anthropic), 1.0);
-    assert_eq!(ceiling(Driver::OpenAiChat), 2.0);
-    assert_eq!(ceiling(Driver::OpenAiResponses), 2.0);
+    assert_eq!(ceiling(&Driver::Anthropic), 1.0);
+    assert_eq!(ceiling(&Driver::OpenAiChat), 2.0);
+    assert_eq!(ceiling(&Driver::OpenAiResponses), 2.0);
 }
 
 #[test]

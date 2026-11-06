@@ -102,7 +102,7 @@ Makes it an extension; needs `[command]`.
 | `start` | `manual`: started when switched on (default); `always`: started with the core |
 | `capabilities` | What it needs, see below |
 
-**Capabilities**: only these nineteen. The install screen lists each one your package asks for (name and one-line summary are Miyu's wording; a package can't supply its own), and answering yes approves them; after an upgrade the upgrade screen lists only the new ones, and approvals the manifest no longer asks for are dropped and must be approved again if they come back. Installing from a local folder or package file (including reinstalling while developing) doesn't keep earlier approvals: each install approves again. Community and local-file packages also get "not officially reviewed" on that screen, and those carrying programs, MCP servers or scripts one more line: "the programs it carries run as you on this machine, outside any sandbox". **Declare honestly**: calling a method whose capability isn't declared returns `needs_approval`.
+**Capabilities**: only these twenty. The install screen lists each one your package asks for (name and one-line summary are Miyu's wording; a package can't supply its own), and answering yes approves them; after an upgrade the upgrade screen lists only the new ones, and approvals the manifest no longer asks for are dropped and must be approved again if they come back. Installing from a local folder or package file (including reinstalling while developing) doesn't keep earlier approvals: each install approves again. Community and local-file packages also get "not officially reviewed" on that screen, and those carrying programs, MCP servers or scripts one more line: "the programs it carries run as you on this machine, outside any sandbox". **Declare honestly**: calling a method whose capability isn't declared returns `needs_approval`.
 
 | Capability | Allows |
 |---|---|
@@ -110,6 +110,7 @@ Makes it an extension; needs `[command]`.
 | `tools.commands` | Registered tools run commands (`runs_commands` in the spec): those commands can use `miyu call` to call her tools as the session, see [Writing an extension](extensions.en.md) |
 | `commands` | Providing slash commands (`[[slash]]`) |
 | `search` | Being a search provider (`[[search]]`) |
+| `model.driver` | Providing a model driver (`[[driver]]`): when its models are used, everything sent to the model goes through it. It doesn't include network access; declare `network` too if you need it |
 | `widgets` | Showing its own content in the UI (`[[widget]]`) |
 | `context.inject` | Adding a few lines to her context at the start of a turn |
 | `context.system` | Putting a section at the end of the system prompt |
@@ -269,6 +270,19 @@ access = ["execute"]
 ```
 
 You are asked when the call's tool name is in `tools` or its access class is in `access`; write at least one of the two, there is no "ask about everything". Tools you register yourself are not asked about. Being switched on but not running, timing out and errors all count as a deny. The core calls your program with `tool.guard`; see [Writing an extension](extensions.en.md).
+
+## `[[driver]]`
+
+Provides a model driver, one per entry; `capabilities` must include `model.driver`, and declaring `model.driver` needs at least one entry.
+
+| Field | Notes |
+|---|---|
+| `name` | Driver name, written like `[command] name`; unique within the package |
+| `cache` | Cache type: `contract` (hits while the prefix is unchanged), `best_effort` (default), `none` |
+| `key` | Whether Miyu hands over that provider's key: `none`, `optional` (default), `required` |
+| `images` | `true` if it can see images (default `false`) |
+
+It's used only when the owner writes `driver = "<package id>/<driver name>"` in a provider's settings; model profiles, the npm table and the default are always the built-in drivers, so installing your package can't take over a provider the owner already set up. If the package isn't installed, isn't approved or the driver name is wrong, `miyu check` reports it and that provider can't be used; it never falls back to a built-in driver. How it talks to the core is in design 66; the protocol is still being built and will go into [Writing an extension](extensions.en.md).
 
 ## `[[side]]`
 

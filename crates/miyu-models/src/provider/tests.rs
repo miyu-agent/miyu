@@ -9,6 +9,8 @@ use crate::matching::How;
 use crate::test_support::{Held, resolved};
 use miyu_drivers::openai_chat::{ReasoningField, ReasoningReplay};
 
+mod extension;
+
 fn values(source: &str) -> Values {
     resolved(source).values()
 }
@@ -253,7 +255,7 @@ fn anthropic_and_responses_are_drivers_now() {
         Driver::Anthropic,
         Driver::OpenAiResponses,
     ] {
-        assert_eq!(Driver::parse(driver.as_str()), Some(driver));
+        assert_eq!(Driver::parse(&driver.as_str()), Some(driver));
     }
     assert!(Driver::Anthropic.needs_max_output());
     assert!(!Driver::OpenAiChat.needs_max_output());
@@ -264,17 +266,17 @@ fn anthropic_and_responses_are_drivers_now() {
     let claude = provider(&values, &held.knowledge(), "claude").expect("认得了");
     assert_eq!(claude.driver, Driver::Anthropic);
     assert!(claude.switchable(), "开关是接口自带的");
-    assert_eq!(claude.build(texts()).family(), "anthropic");
+    assert_eq!(claude.build(texts()).unwrap().family(), "anthropic");
     let deepseek = provider(&values, &held.knowledge(), "deepseek").expect("档案推得出");
     assert!(!deepseek.switchable(), "这份档案没写开关");
-    assert_eq!(deepseek.build(texts()).family(), "openai-chat");
+    assert_eq!(deepseek.build(texts()).unwrap().family(), "openai-chat");
     let mut toggled = deepseek.clone();
     toggled.compat = Compat::deepseek();
     assert!(toggled.switchable());
     let mut gpt = toggled.clone();
     gpt.driver = Driver::OpenAiResponses;
     assert!(!gpt.switchable(), "这一家没有开关，档案写了也不算");
-    assert_eq!(gpt.build(texts()).family(), "openai-responses");
+    assert_eq!(gpt.build(texts()).unwrap().family(), "openai-responses");
 }
 
 /// 出厂的占位：测试里只要造得出驱动。

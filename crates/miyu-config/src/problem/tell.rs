@@ -176,12 +176,14 @@ pub fn tell(
         | Code::UnknownEffort
         | Code::UnknownPersona
         | Code::UnknownKnowledge
-        | Code::UnknownPreset => {
+        | Code::UnknownPreset
+        | Code::UnknownDriver => {
             let said = match problem.code {
                 Code::UnknownSecret => "config/unknown-secret",
                 Code::UnknownPersona => "config/unknown-persona",
                 Code::UnknownKnowledge => "config/unknown-knowledge",
                 Code::UnknownPreset => "config/unknown-preset",
+                Code::UnknownDriver => "config/unknown-driver",
                 Code::EnvNotSet => "config/env-not-set",
                 Code::NoProvider => "config/no-provider",
                 Code::UnknownEffort => "config/unknown-effort",

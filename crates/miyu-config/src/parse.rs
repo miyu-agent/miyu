@@ -192,11 +192,17 @@ impl Reader<'_> {
                 .push(Problem::item(Code::WrongLayer, self.layer, full, at, &raw));
         }
         let checked = value.ok_or(Code::WrongType).and_then(|value| {
-            item.kind.check(&value)?;
-            Ok(value)
+            let warned = crate::driver_ref::check(item, &value)?;
+            Ok((value, warned))
         });
         match checked {
-            Ok(value) => {
+            Ok((value, warned)) => {
+                // 扩展驱动这时不在选项里的（施工 MD-1，`driver_ref.rs`）：值照留，另记一条警告。
+                if let (Some(code), Value::Text(name)) = (warned, &value) {
+                    let mut problem = Problem::item(code, self.layer, full, at, &raw);
+                    problem.name = Some(name.to_string());
+                    self.parsed.problems.push(problem);
+                }
                 let entry = Entry {
                     item: item.key,
                     value,

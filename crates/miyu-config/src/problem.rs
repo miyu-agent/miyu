@@ -92,6 +92,9 @@ pub enum Code {
     UnknownKnowledge,
     /// 写的预设现在没有（施工 PC-3 补）：同 [`Code::UnknownPersona`]。
     UnknownPreset,
+    /// 供应商的驱动写的是 `<包编号>/<驱动名>`、这时不在选项里（没装那个包、驱动名写错了，施工 MD-1）：警告，值照留，`name` 是写的那一个。
+    /// 运行时这家供应商用不了，不退回内置驱动（`driver_ref.rs`）。
+    UnknownDriver,
     /// 列表里一项少写了必写的字段（没有默认值的，施工 PC-2）：`key` 是 `<键>[第几项].<字段>`。整项不收。
     MissingField,
     /// 列表里一项写了不认识的字段（施工 PC-2）：同 `unknown_key`，但这一项整个不收、算错误。
@@ -133,6 +136,7 @@ impl Code {
             Code::UnknownPersona => "unknown_persona",
             Code::UnknownKnowledge => "unknown_knowledge",
             Code::UnknownPreset => "unknown_preset",
+            Code::UnknownDriver => "unknown_driver",
             Code::UnknownField => "unknown_key",
         }
     }
@@ -146,7 +150,8 @@ impl Code {
             | Code::EnvNotSet
             | Code::UnknownPersona
             | Code::UnknownKnowledge
-            | Code::UnknownPreset => Severity::Warning,
+            | Code::UnknownPreset
+            | Code::UnknownDriver => Severity::Warning,
             _ => Severity::Error,
         }
     }
