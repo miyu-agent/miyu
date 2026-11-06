@@ -219,6 +219,9 @@ AUR、Homebrew 上的 Miyu 照设计 60 分包：`miyu-core`、`miyu-tui`、`miy
   - 过渡包编的时候合集刚卸掉，`makepkg` 报缺依赖：编它用 `-d`，依赖由 `pacman -Syu` 从软件源带；
   - pacman 平常就印「looking for conflicting packages」「checking for file conflicts」：查冲突只认真的那几句。
 - 整段 `test-aur.sh install` 要真的发布（rc.6 以后，托盘也发了），到时手动跑 `packaging-test` 写 `tag`、`applet_tag`。
+- **namcap 不许说明里带包名**（`packaging-test` 第一趟红在这里）：它照子串比，过渡包叫 `miyu`，说明里的 `Miyu`、`miyu-agent`、
+  `miyu migrate` 都算，改成一个 `miyu` 都不写（`the new agent packages`、`the migrate command`），怎么搬旧数据由装上时那两句说。
+  本机照 `packaging-test` 的造法填好、在 Arch 容器里跑 `test-aur.sh static`，七份都过。
 - 手写变异 7 个全抓住：`miyu-core` 写回 `conflicts=('miyu')`、加回 `provides=('miyu')`；`-git` 加回 `provides` 的 `miyu`、`conflicts` 写回 `miyu`；
   `miyu.install` 拷错地方；过渡包照终端的版本填；`post_upgrade` 写错名字。
 

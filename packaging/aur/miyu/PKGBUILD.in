@@ -8,7 +8,8 @@
 pkgname=miyu
 pkgver=@PKGVER@
 pkgrel=1
-pkgdesc='Transitional package: Miyu is now miyu-agent; run miyu migrate to bring your old data over'
+# namcap 不许说明里带包名（照子串比，连 miyu-agent 也算）：这里一个 miyu 都不写。
+pkgdesc='Transitional package for the old AI assistant: pulls in the new agent packages; run the migrate command to bring old data over'
 arch=('any')
 url='https://github.com/miyu-agent/miyu'
 license=('AGPL-3.0-or-later')
