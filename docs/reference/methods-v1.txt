@@ -182,6 +182,7 @@ sessions.changed
 skill.list
 skill.remove
 system.append
+tool.after
 tool.call
 tool.cancel
 tool.guard

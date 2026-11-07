@@ -405,6 +405,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `bad_search` | `[[search]]` 写错了：编号、名字，重了，没声明 `search` 能力（施工 N-5） |
 | `bad_guard` | `[guard]` 写错了：工具名、访问类别、时限（100 到 5000），`tools`、`access` 两样都没写，没声明 `tool.guard` 能力（施工 HK-1） |
 | `bad_driver` | `[[driver]]` 写错了：驱动名、缓存类型、要不要 key、看不看图，重了，和 `model.driver` 能力对不上（写了没声明、声明了没写，施工 MD-1） |
+| `bad_after` | `[after]` 写错了：工具名、访问类别，`tools`、`access` 两样都没写，没声明 `events.read` 能力（施工 HK-2）；写了 `timeout_ms` 的是 `unknown_key` |
 | `bad_side` | `[[side]]` 写错了（施工 Q-3）：编号不合写法、少了，档位不是 `lite`、`normal`、`flagship`，少了名字、说明，同一个包里重了；`detail` 是哪一格（`side.<编号>.<格>`） |
 | `bad_tray` | `[tray]` 写错了（施工 TR-2）：没写 `[page]`（`detail` 是 `tray`），写了 `name` 以外的格（`detail` 是 `tray.<格>`）；`name` 本身照「语言到一句话」那几个代码报 |
 | `bad_author` | `[package] author` 不是一行 1 到 100 个字（施工 F-12） |

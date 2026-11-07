@@ -23,6 +23,7 @@
 | `measure/startup.rs`、`sessions.rs`、`large.rs`、`stream.rs`（施工 V-22）、`append.rs`、`size.rs` | 每一项怎么量 |
 | `measure/tools.rs`、`tools/calls.rs`、`tools/split.rs`、`report/tools.rs` | 工具一步（施工 V-29，下面「工具一步」）：量、量哪几种调用、照日志拆段、写结果 |
 | `measure/tools/guard.rs` | 工具一步里挂着的守卫（施工 HK-1）：装进沙盒的扩展包、打开它、量尺自己带参数 `guard-extension` 起来当守卫 |
+| `measure/tools/after.rs` | 工具一步里挂着的慢的 `tool.after` 收件人（施工 HK-2）：装进沙盒的扩展包、打开、量完关掉，量尺自己带参数 `after-extension` 起来当收件人（握手以后每读一行睡 200 毫秒） |
 | `report.rs`、`report/raw.rs`、`report/rows.rs`、`report/load.rs` | 写原始数据、写表；从原始数据读回来（`--render`） |
 | `report/gate.rs` | 闸门：有预算的几行和表照同一份（`rows::checks`），时间超过预算的倍数、内存超过预算的报错（施工 V-3） |
 | `.github/workflows/ci.yml` 的 `perf` | CI 里每次都量一遍，表贴进那一次跑的摘要和日志，过不了闸门的这一项红（施工 V-3） |
@@ -102,7 +103,7 @@
 2. 核心照别的几场拉起，有 `systemd-run` 的放进自己的 scope（`systemd-run --user --scope`，进程号不变）：连子进程的 CPU 读得到。会话都关着记忆、不起标题，照出厂预设（`full`）的工具面，工作目录是工作区。
 3. 假模型照剧本回（`fake/script.rs`）：提到这一轮记号的请求，照请求体里已经有前几次调用的结果（照调用编号数，驱动交回结果用的是供应商给的编号），回下一次调用（正文一句 `Checking.`、一个调用、`tool_calls` 收尾带用量、`[DONE]`），都回完了回那一句收尾。一轮里同一种调用一次接一次。
 4. 每一步记：假模型把带调用的回答连同 `[DONE]` 写完的那一刻，到读全带着这次结果的下一个请求头；两头各读一次核心的 CPU（各线程的 `schedstat`；在 scope 里的再读 cgroup 的 `cpu.stat`，核心拉起的 `miyu-sandbox`、`bwrap`、命令本身都算，挪到子进程的活照算，2026-10-30 项目主人定）。每种的头一次不算（头一回拉起沙盒、文件还不在页缓存里），之后的报 p50、p95。
-5. 量哪几种（工具名、参数照 `resources/software/basesystem/tools/*.json`，`tools/calls.rs`）：`read` 小文件、8 MB 文件的末尾 200 行、列目录（`read` 读目录）；`write` 4 KB（同一个文件一次次盖）；`edit` 一处；`grep` 在树里搜（默认只列文件、带行两种）；`glob` 在树里找；`shell` 的 `true`、`echo`、`cat` 小文件，在工作区这一级（关进沙盒）和完全放开（沙盒关着）各一遍，两边一比是沙盒的开销。最后一种是挂着一个立即答的守卫的「read 小文件」（施工 HK-1，设计 65 第六节，目标多 1 毫秒以内）：核心起来以前往沙盒的数据根装一个扩展包 `perf-guard`（`[guard] tools = ["read"]`，开关关着，前面那几种不问它；程序是拷过去的量尺本身，带参数 `guard-extension` 起来只握手、每个 `tool.guard` 当场答 `allow`），别的几种量完打开它（`extension.enable` 带 `approve`）、等它在跑，再量这一种；和头一种一比就是守卫的开销。
+5. 量哪几种（工具名、参数照 `resources/software/basesystem/tools/*.json`，`tools/calls.rs`）：`read` 小文件、8 MB 文件的末尾 200 行、列目录（`read` 读目录）；`write` 4 KB（同一个文件一次次盖）；`edit` 一处；`grep` 在树里搜（默认只列文件、带行两种）；`glob` 在树里找；`shell` 的 `true`、`echo`、`cat` 小文件，在工作区这一级（关进沙盒）和完全放开（沙盒关着）各一遍，两边一比是沙盒的开销。最后一种是挂着一个立即答的守卫的「read 小文件」（施工 HK-1，设计 65 第六节，目标多 1 毫秒以内）：核心起来以前往沙盒的数据根装一个扩展包 `perf-guard`（`[guard] tools = ["read"]`，开关关着，前面那几种不问它；程序是拷过去的量尺本身，带参数 `guard-extension` 起来只握手、每个 `tool.guard` 当场答 `allow`），别的几种量完打开它（`extension.enable` 带 `approve`）、等它在跑，再量这一种；和头一种一比就是守卫的开销。守卫那一种前面还有一种：挂着一个慢的 `tool.after` 收件人的「read 小文件」（施工 HK-2，设计 65 第六节：慢的收件人不拖回合）：另装一个扩展包 `perf-after`（`[after] tools = ["read"]`，开关关着；程序同样是量尺本身，带参数 `after-extension` 起来只握手、之后每读一行睡 200 毫秒），量完前面那几种打开它（`approve` `events.read`），量完关掉再开守卫；和头一种一比看回合等不等它。
 6. 「什么都不做」的对照：同样一句回答不带调用，这一轮结束，量尺收到 `turn.ended` 当场再说一句；量回答写完到下一个请求头，拆成写完到收到 `turn.ended`、再说一句到核心落了盘回应、回应到请求头三段。这是核心收一轮、来回一趟、组装下一次请求的底子；工具一步减去它，大致是工具本身加上判权限、派、收回来的那几跳。
 7. 拆段（`tools/split.rs`，不改核心）：停了核心以后读会话日志、运行日志，每一处取它在一步里头一回出现的时刻减去回答写完的那一刻，几十步取平均。会话日志：带这次调用的 `message.assistant`（actor 收到「说完了」）、这次的 `tool.result`（结果交进内核）；运行日志：`running`（判过权限、派之前）、`ran`（actor 收到做完）、`request`（交给请求模型的端口），`--tools-log debug` 另有每条输入、每个动作一行。时刻只到毫秒。顺手查每次调用的结果都是 `ok`，不是的报出来不白量。
 8. 结果：`docs/perf/<日期>-tools-<系统>-<架构>[-<标签>].json`（每一步的毫秒和两种 CPU、对照、拆段）和同名的 `.md`。条件另记量之前、量完的 `/proc/loadavg`、握手回应里的 `sandbox`。没有 `--render`：表只照这一份数出。

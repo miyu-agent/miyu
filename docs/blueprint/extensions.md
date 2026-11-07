@@ -17,6 +17,7 @@
 | `crates/miyu-endpoint/src/appends.rs` | `system.append`：照包、照会话记下扩展放的，交给端口；`miyu-session` 的 `appended.rs` 照工具面挑、钉进快照 |
 | `crates/miyu-endpoint/src/hooks.rs` | 回合开始的挂接点（施工 X-16）：会话的 `HooksPort` 照清单、提供者挑要问的扩展，并行发 `user.append`、各自限时，照写法收；`miyu-session` 的 `actor/injects.rs` 拼问的话、换成注入 |
 | `crates/miyu-endpoint/src/extensions/guards.rs`、`guards/answer.rs`、`guards/texts.rs` | 工具调用前的守卫（施工 HK-1，下面「工具调用前的守卫」）：照清单的 `[guard]` 建表、查表，并行发 `tool.guard`、各自限时、照包的编号合；读答；拒绝的那一句套模板、转义；不等了发 `guard.cancel`。`miyu-session` 的 `actor/guarding.rs` 在权限策略之后问端口、合上策略的结论 |
+| `crates/miyu-endpoint/src/extensions/afters.rs`、`extensions/table.rs` | 工具调用后的通知（施工 HK-2，下面「工具调用后的通知」）：照清单的 `[after]` 建表（同守卫，`table.rs` 共用）、查表；挑收件人（开着、批了 `events.read`、碰得到这个会话、握过手），每个扩展一条 256 条的队列和发送任务。`miyu-session` 的 `actor/after.rs` 在结果落盘以后写好通知交给端口 |
 | `crates/miyu-endpoint/src/extensions/methods.rs` | `extension.enable`、`extension.disable`、`extension.restart`、`extension.status`；推送用的一项（`entry`，施工 9-4 补） |
 | `crates/miyu-endpoint/src/subscriptions/listed.rs` | 扩展的状态的订阅（施工 9-4 补；F-8 三补起和软件包列表的订阅共用这一份）：先写回应，收到哪个包变了照这一刻算那一项推 `extension.changed`，掉了队推 `resync` |
 | `crates/miyu-endpoint/src/connection.rs`、`hello.rs`、`login.rs` | 核心亲手给的连接：握手不看凭据（`Via::Spawned`） |
@@ -142,6 +143,16 @@
 8. **不等了**：在等的调用一有了结果（打断、急着插话、收紧成只读、重启时内核补的 `tool.result`、`tool.nested`，actor 追加之前看一眼），它的任务掐掉：端口的 future 丢掉，还没答的守卫收到通知 `guard.cancel {"session", "call_id"}`（同 `tool.cancel` 的写法），这次调用照打断收尾。超时的同样发。actor 退出时一起掐。核心没了（正在退出）的不放行：等会话跟着停时照重启收尾。
 9. **缓存前缀**：放行、问人都不进上下文；拒绝只在历史末尾追加一条 `denied` 的结果，理由落盘时定了，重放照日志。工具面、system 都不变（`tests/tool_guard.rs` 比过：挂着放行的守卫，第二次请求和没装守卫时逐字节一样）。
 
+**工具调用后的通知**（施工 HK-2，设计 `65-工具挂接点.md` 第四节、第十节第 4、5 条）：
+
+1. **谁收**：扩展包，清单 `[process] capabilities` 声明了 `events.read`、写了 `[after]`（`tools`、`access` 至少一样，写法同 `[guard]`，没有时限；两样都没写、没声明 `events.read` 的读不进，`bad_after`，`packages.md`）、主人批了 `events.read`、开关开着、握过手（`Provided::linked`）。不另加能力（第十节：内容和事件流一样，同等的读权限）。自己登记的工具也发给它。
+2. **表**：同守卫（`table.rs`），`Afters` 在扩展表里一份，核心起来时建一次，清单换了重建。会话那一头查表只拿一次锁、不读盘（`HooksPort::afters`），没有收件人的会话不记、不写通知。
+3. **什么时候发**（会话那一头，`miyu-session` 的 `actor/after.rs`）：一批事件追加之前，她的回复（`message.assistant`）里表里有收件人的调用记下工具名、参数原文；那一次的 `tool.result` 在这一批里的写好一条；`tool.nested`（脚本里调的）照它自己带的写。写进去了（`store.rs` 的 `append` 成功以后）才交给端口（`HooksPort::after`），写不进去的会话停下，不发。载入以前派的调用（重启时内核补的结果）没记，不发。
+4. **发给谁**（端口那一头，`afters::send`）：表对上了的，再读开关文件看开着、批了 `events.read`，看碰不碰得到这个会话（`sessions::reaches`，同 `reachable`，订事件流的那一道：不是平台桥的只收本机的会话、主人本人没关起来的私聊；平台桥只收自己平台的场所会话；core1 2026-11-07 定）。会话那一头交来场所编号和关没关着，端口不再读盘。
+5. **发什么**：通知 `tool.after`（不带 `id`）。直接调的 `{"session", "call_id", "tool", "access"?, "status", "duration_ms"?, "by", "args", "blocks"}`：`args` 是 `tool_call` 块里模型写的原文（一段字），`blocks`、`by`、`status`、`duration_ms` 同那条 `tool.result`。脚本里调的 `{"session", "call_id", "tool", "access"?, "status", "duration_ms"?, "by", "args", "result"?, "bytes"?}`：`call_id` 是嵌套调用的编号，`args`、`status`、`result`、`bytes` 同那条 `tool.nested`，不带 `blocks`。目录里没有的工具不写 `access`，只照 `tools` 认。
+6. **不等、不挡**：每个扩展一条队列（`QUEUE`，256 条）和一个发送任务；会话那一头只 `try_send`，满了丢新来的，一阵连着丢的头一条记 `WARN tool.after queue full, dropping new ones`（带累计的 `dropped`），有了空位记 `INFO tool.after queue has room again`。发送任务往连接的写队列送，等得起空位（`Peer::notify_waiting`）。连接断了、崩了，队列和任务一起丢掉，不补发；连接换了（重启过）的新开一条空的；没握手的不发。`tool.after` 不保证送达，要完整的订事件流。
+7. **缓存前缀**：不产生事件、不碰请求（`tests/tool_after.rs` 比过：收着通知时第二次请求和没装时逐字节一样）。
+
 **放在 system 尾部的**（施工 X-20，设计 `34-表情包.md` 第五节第 5 条）：
 
 1. **谁能放**：清单 `[process] capabilities` 写了 `context.system`、在跑的扩展（`appends.rs`），经 `system.append {content, session?}`。
@@ -195,6 +206,7 @@
 | `crates/miyu-endpoint/tests/packages_extensions.rs`（施工 F-5 下） | 真核心装上一个 `always` 的扩展当场拉起、它登记的工具进工具面、调得到；卸掉当场停下、`extension.status` 不列、用过它的会话照旧留着、调到报「已卸载」；升级了的停下再拉起；装别的包时清单没变的进程不换。卸包先停再删（停下时清单还在）；升级成撞了别的包的撤回、原来的重新拉起；换不成、删不成的（Unix 上目录只读）照原来的重新拉起（施工 F-5 补） |
 | `crates/miyu-endpoint/tests/turn_inject.rs`、`src/hooks/tests.rs`（施工 X-16） | 真核心拉起八个测试扩展：声明了、工具面上有的交的两块照包的编号进日志（`by` 是包）、进请求排在人说的话前面；没声明的、工具只在群里的不问；超时、回错误、写法不对、交了四块的当没交、这一轮照常走完；回应的写法（至多 3 块、1 到 4000 字、类别和包的编号合写法、一块不对整份不要） |
 | `crates/miyu-endpoint/tests/tool_guard.rs`、`tool_guard_more.rs`、`src/extensions/guards/tests.rs`、`crates/miyu-session/src/actor/guarding/tests.rs`、`crates/miyu-config/src/package/guard/tests.rs`（施工 HK-1） | 真核心拉起测试扩展：两个守卫一个拒一个放，拒绝、`by` 是拒的包、那一句和说法、工具没跑，两个都被问到、问的八格；两个都拒（一个答得不对）记编号在前的；要问人的记请求、`by` 是包、不提规则，人允许了才跑；放行的第二次请求和没装守卫时逐字节一样；理由里伪造的指令、工具结果、记录头、换行、引号只在那一行里、转义过，请求里找不到原样的；超时的拒绝、收到 `guard.cancel`；回错误的、崩了的、开着却没握手的拒绝（没握手的不问）；打断时不等守卫、照打断收尾、它收到 `guard.cancel`；关掉的不问；自己登记的工具、策略先拒了的不问；脚本里调的同样挡下、`call_id` 是嵌套调用的编号，父级被打断时它的守卫当场收到 `guard.cancel`。单元：答的读法、照编号合、没答的那几句、截到 300 字先截后转义、访问类别的写法和内核一样；合上策略只收紧；`[guard]` 的读法、两样都没写、范围外的时限、没声明能力、不是扩展包的报错 |
+| `crates/miyu-endpoint/tests/tool_after.rs`、`tool_after_more.rs`、`src/extensions/afters/tests.rs`、`crates/miyu-config/src/package/after/tests.rs`（施工 HK-2） | 真核心拉起测试扩展：结果落了盘以后收到一条，九格对得上日志里那一条、`args` 是模型写的原文，表里没有的工具不发；照访问类别收、被守卫拒了的也发、`by` 是拒的包；一个不读、一个握了手就崩，回合照常、四十条照收的那一个照落盘的先后全收到；没批 `events.read`、关掉的收不到；群会话只发给它平台的桥，本机的只发给别的扩展；收着通知时请求逐字节不变；脚本里调的带嵌套调用的编号、`result`、`bytes`，不带 `blocks`。单元：两种参数的形状；队列满了丢新的、照扩展累计、读走的照先后；没在跑的丢队列，重新握手的新开空队列；`[after]` 的读法和报错 |
 | `crates/miyu-endpoint/tests/bridge_venues.rs`、`crates/miyu-store/src/packages/tests.rs`（施工 O-4 下，SU-4 中改） | 平台桥开的群会话在主人名下、关在沙盒里、找回同一个；对应表里的主人的私聊不关、本机的头也开得了；群里主人说的记成外部身份带 `owner: true`；不是桥的扩展开群会话 `needs_approval` |
 
 ### 起草时定的
@@ -212,4 +224,4 @@
 ### 还没有的
 
 - 沙盒里跑：另做（`network`、`fs.*` 现在管的是经核心做的，扩展自己联网、读写文件不挡）。照能力挡方法、扩展说的话记成它自己：施工 X-30 做了（「谁能调」）。
-- 扩展提供工具、命令：O-2；回合开始的挂接点：X-16；放在 system 尾部的：X-20；工具调用前的守卫 `tool.guard`：HK-1。执行后的只读通知 `tool.after` 还没有（HK-2，设计 65 第四节）；改写结果 `tool.rewrite` 不做（第七节）。扩展的工具声明路径、交效果、声明后台参数：XG-1 上做了；声明跑命令（`runs_commands`、能力 `tools.commands`、`tool.call` 的 `channel`）：XG-1 下做了（`providers.md`「会跑命令的」）。
+- 扩展提供工具、命令：O-2；回合开始的挂接点：X-16；放在 system 尾部的：X-20；工具调用前的守卫 `tool.guard`：HK-1；执行后的只读通知 `tool.after`：HK-2。改写结果 `tool.rewrite` 不做（设计 65 第七节）。扩展的工具声明路径、交效果、声明后台参数：XG-1 上做了；声明跑命令（`runs_commands`、能力 `tools.commands`、`tool.call` 的 `channel`）：XG-1 下做了（`providers.md`「会跑命令的」）。

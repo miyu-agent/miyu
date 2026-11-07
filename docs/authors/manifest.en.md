@@ -118,7 +118,7 @@ Makes it an extension; needs `[command]`.
 | `act_for_external` | Speaking for people on a chat platform: for platform bridges only |
 | `login.page` | Getting sign-in tickets for pages opened on this machine (`login.ticket {"via": "page"}`); the ticket only turns into a device token over a connection from this machine. Shipped packages need approval for it too. Only ask for pages you have checked come from this machine; pages from elsewhere always sign in with the access password, see [the extensions reference](../reference/extensions.en.md), "Signing in pages on this machine" |
 | `sessions.drive` | Driving sessions: creating, sending, interrupting, reverting, compacting, forking, running slash commands |
-| `events.read` | Reading sessions: subscribing to events, reading history and background command output |
+| `events.read` | Reading sessions: subscribing to events, reading history and background command output; notices after tool calls (`[after]`) |
 | `events.write` | Recording your own events in a session |
 | `memory.write` | Writing memories and knowledge bases |
 | `fs.read`, `network` | Reading files and fetching links through the core |
@@ -283,6 +283,23 @@ Provides a model driver, one per entry; `capabilities` must include `model.drive
 | `images` | `true` if it can see images (default `false`) |
 
 It's used only when the owner writes `driver = "<package id>/<driver name>"` in a provider's settings; model profiles, the npm table and the default are always the built-in drivers, so installing your package can't take over a provider the owner already set up. If the package isn't installed, isn't approved or the driver name is wrong, `miyu check` reports it and that provider can't be used; it never falls back to a built-in driver. How it talks to the core is in design 66; the protocol is still being built and will go into [Writing an extension](extensions.en.md).
+
+## `[after]`
+
+Tells your program when one of the AI's tool calls has a result and it was written to the session (read-only, no answer expected); `capabilities` must include `events.read`.
+
+| Field | Notes |
+|---|---|
+| `tools` | Which tools: an array of tool names; built-in tools, other packages' tools, MCP tools and your own are all matched by name |
+| `access` | Which access classes: the same ones as `[guard]` |
+
+```toml
+[after]
+tools = ["shell"]
+access = ["write", "network"]
+```
+
+Write at least one of the two; there is no "everything". There's no timeout field (writing one doesn't load). The core sends your program `tool.after`; see [Writing an extension](extensions.en.md).
 
 ## `[[side]]`
 

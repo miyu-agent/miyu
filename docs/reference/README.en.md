@@ -28,7 +28,7 @@ For programs that talk to the core: "heads" such as the terminal and web UIs, an
 | [A head's own settings](prefs.en.md) | `prefs.*` |
 | [Schedules](schedules.en.md) | `schedule.*` |
 | [Packages and commands](packages.en.md) | `package.*`, `extension.*`, `mcp.*`, `command.*`, `check` |
-| [Extensions](extensions.en.md) | Launch, capabilities, `provide`, `tool.call`, `user.append`, `tool.guard`, `system.append`, widgets, `content.*`, `events.append` |
+| [Extensions](extensions.en.md) | Launch, capabilities, `provide`, `tool.call`, `user.append`, `tool.guard`, `tool.after`, `system.append`, widgets, `content.*`, `events.append` |
 | [Venues](venues.en.md) | `venue.*`, `session.respond`, `session.note`, speaking for people on a chat platform |
 | [Memory and knowledge bases](memory.en.md) | `memory.*`, `kb.*` |
 | [Other](misc.en.md) | `job.*`, `human.get`, `link.preview`, `mermaid.render` |

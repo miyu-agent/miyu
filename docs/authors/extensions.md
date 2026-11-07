@@ -288,6 +288,22 @@ core.close()
 - 人打断了、你超时了，核心发 `guard.cancel {"session", "call_id"}`，那一次你不用再答。
 - 几个守卫都问，有一个拒绝就拒绝；你只能收紧权限策略，放不开它。
 
+**工具调用以后记一笔**（`events.read`）：清单写 `[after]`，列出要收的工具名、访问类别（见 [清单](manifest.md)）。调用的结果记进会话以后，核心发通知 `tool.after`（不带 `id`，别回）。只读：改不了结果，也不进她的上下文。直接调的和脚本里调的（`miyu call`）形状不一样，照有没有 `blocks` 分：
+
+```python
+def on_tool_after(params):
+    if "blocks" in params:
+        # 直接调的：call_id 像 call_12_1，blocks 是 AI 看到的内容
+        log(params["session"], params["call_id"], params["tool"], params["status"], params["blocks"])
+    else:
+        # 脚本里调的：call_id 像 call_12_1#3，结果只给 blob 的引用（result、bytes），要内容自己 blob.get
+        log(params["session"], params["call_id"], params["tool"], params["status"], params.get("result"))
+    # args 两种都是一段 JSON 字（不是对象）：要看参数自己 json.loads(params["args"])
+```
+
+- 不等你：每个扩展一条至多 256 条的队列，你读得慢、满了丢新来的；你崩了、重启了，中间的不补。**`tool.after` 不保证送达**，要完整的审计订事件流（`subscribe` 的 `events`）。
+- 只收得到你碰得到的会话：不是平台桥的只收本机的会话和主人本人没关起来的私聊；平台桥只收自己平台的场所会话。
+
 **往系统提示词末尾放一段**（`context.system`）：调 `system.append {"content", "session"?}`。不写 `session` 管全部会话；`content` 写 `null` 去掉。改了下一轮整段重算一次，别频繁改；只想放固定几句的，起来时调一次就行。
 
 **按意思搜**：调 `model.embed {"texts": [...]}` 拿向量（用人在设置里选的语义模型）。没配的回 `embedding_off`，退回关键词搜就好。不用另批能力。

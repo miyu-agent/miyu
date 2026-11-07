@@ -13,6 +13,7 @@ An extension is a program a package brings. The core launches it from the manife
 | [`command.call`](#commandcall) | core → extension | A person typed a slash command it declared |
 | [`user.append`](#userappend) | core → extension | At the start of a turn, ask whether it wants to add a few lines to the context |
 | [`tool.guard`, `guard.cancel`](#toolguard-guardcancel) | core → extension | Ask it before a tool call runs: allow, deny or ask the person; stop waiting |
+| [`tool.after`](#toolafter) | core → extension | Tell it a tool call's result was written (read-only, no answer) |
 | [`system.append`](#systemappend) | extension → core | Put a section at the end of the system prompt |
 | [`widget.set`, `widget.clear`, `widget.watch`, `widget.unwatch`](#widgetset-widgetclear-widgetwatch-widgetunwatch) | both | Widget content |
 | [`extension.config`](#extensionconfig) | core → extension | Its own settings changed |
@@ -77,7 +78,7 @@ The manifest's `[process] capabilities` declares what it needs. Packages you ins
 | `act_for_external` | Speaking for people on a platform (`session.send` and `command.run` with `as`), `session.note`, `session.respond` without `to`, `venue.*`, recording `venue.*` events: for platform bridges only |
 | `login.page` | Getting sign-in tickets for pages opened on this machine (`login.ticket {"via": "page"}`, see "Signing in pages on this machine" below): shipped packages need approval for it too |
 | `sessions.drive` | Driving sessions: `session.create`, `send`, `interrupt`, `revert`, `unrevert`, `redo`, `compact`, `clear`, `configure`, `fork`, `set_meta`, `respond`, `command.run`, `job.stop` |
-| `events.read` | Reading sessions: subscribing to the `events`, `view` and `sessions` streams, `session.list`, `session.recap`, `view.page`, `view.detail`, `job.output` |
+| `events.read` | Reading sessions: subscribing to the `events`, `view` and `sessions` streams, `session.list`, `session.recap`, `view.page`, `view.detail`, `job.output`; receiving notices after tool calls (manifest `[after]`, `tool.after`) |
 | `events.write` | Recording your own events in a session (`events.append`) |
 | `memory.write` | Writing memories and knowledge bases: `memory.remember`, `import`, `update`, `forget`, `restore`, `dream`, `dream_stop`, `kb.add`, `create`, `update`, `mount`, `remove`, `delete`, `reindex` |
 | `fs.read` | Reading files through the core (`fs.*`) |
@@ -304,6 +305,47 @@ timeout_ms = 1000                    # how long to wait for you, optional
 Extensions the owner switched off are not asked. Aim for a p95 under 20 ms: the person waits on this step.
 
 **`guard.cancel`** (core → extension, notification): `{"session", "call_id"}`. The person interrupted, the turn was cancelled, or you timed out: the core no longer waits. The call ends as interrupted (or was already denied for the timeout), and an answer arriving later is ignored.
+
+## `tool.after`
+
+Tells you an AI tool call has a result and it was written to the session log (core → extension, notification: no `id`, no answer). For audits (recording every call in an outside log) and call statistics. Read-only: you get the written copy; you can't change the result, and nothing reaches the AI's context.
+
+**Who is told**: extensions whose manifest declares `events.read` in `[process] capabilities` and has an `[after]` table, approved by the owner, switched on and running (handshake done). No new capability: whoever can read a session's event stream sees this anyway; this just saves subscribing to the whole stream to watch tool calls. `[after]` is written like `[guard]`, without a timeout:
+
+```toml
+[after]
+tools = ["shell", "write"]   # tool names, optional
+access = ["network"]         # access classes, optional; at least one of the two
+```
+
+- You're told about a call whose tool name is in `tools` or whose access class is in `access`. A manifest with neither, an unknown access class, a malformed tool name, or no `events.read` declared doesn't load (`bad_after`, reported by `miyu check`). A tool missing from the catalog (the AI got the name wrong) has no access class and only matches `tools`.
+- Tools you `provide` yourself are included. Calls that were denied (by the permission policy, a guard, the kernel), skipped, cancelled or failed are all sent, with `status` as recorded.
+- **Sessions follow the event-stream rule** (core1, 2026-11-07): you're not told about sessions you can't reach. An extension that isn't a platform bridge only hears about local sessions and the owner's own unconfined private chats; a platform bridge only hears about venue sessions on its own platforms (manifest `[connection] platform`).
+- Tools called from scripts (`miyu call`) are sent too, in a different shape; see below.
+
+**Params**:
+
+| Field | Direct call (`tool.result`) | Called from a script (`tool.nested`) |
+|---|---|---|
+| `session` | Session id | Same |
+| `call_id` | Call id (`call_12_1`) | Nested call id (`call_12_1#3`) |
+| `tool` | Tool name | Same |
+| `access` | Access class; left out for a tool missing from the catalog | Same |
+| `status` | As in `tool.result`: `ok`, `error`, `denied`, `cancelled`, `skipped`… | As in `tool.nested`: `ok`, `error`, `denied`, `needs_approval`, `cancelled` |
+| `duration_ms` | How long it ran; left out when it never ran | Same |
+| `by` | The event's `by`, as in the event stream: the call itself when it ran, whoever denied it otherwise (`{"kind": "module", "id": "<package>"}`) | Same |
+| `args` | The arguments as the model wrote them (a JSON string, the `args` of the `tool_call` block in the event stream) | The corrected arguments (the `args` of `tool.nested`) |
+| `blocks` | The `blocks` of `tool.result`: what the AI sees; large blocks are references | Left out |
+| `result`, `bytes` | Left out | Hash and size of the blob holding the result handed to the script (as in `tool.nested`), left out when nothing was stored; read it with `blob.get` |
+
+`args` is a string, not an object (the `args` of `tool.guard` is a parsed object): you get it as the event stream records it. Tell the two shapes apart by whether `blocks` is there, or whether `call_id` has a `#`.
+
+**No waiting, no blocking**:
+
+- The core sends and moves on; the turn doesn't wait for you, and being slow or crashing doesn't hold up the session.
+- Each extension has one queue of **at most 256**; when it's full new ones are dropped and a `WARN` line is logged (only the first of a run of drops, with the running total dropped for you; another line once there's room again).
+- When the connection drops or you crash, the queue is thrown away and nothing is resent; after a restart you start from new calls. An extension switched on but not yet through the handshake isn't sent anything.
+- **`tool.after` is not guaranteed delivery**: for a complete audit, subscribe to the event stream (`subscribe` `events`, `events.read`), which replays from the log.
 
 ## `system.append`
 

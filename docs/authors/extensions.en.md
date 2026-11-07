@@ -288,6 +288,23 @@ Each needs the matching capability declared in the manifest (see [The manifest](
 - When the person interrupts or you time out, the core sends `guard.cancel {"session", "call_id"}`; you no longer need to answer that one.
 - All guards are asked and one deny denies; you can only tighten the permission policy, never loosen it.
 
+**Logging after tool calls** (`events.read`): write `[after]` in the manifest, listing the tool names and access classes you want (see [Manifest](manifest.en.md)). Once a call's result is written to the session, the core sends the notification `tool.after` (no `id`; don't answer). Read-only: you can't change the result and nothing reaches her context. Direct calls and calls from scripts (`miyu call`) come in different shapes; tell them apart by `blocks`:
+
+```python
+def on_tool_after(params):
+    if "blocks" in params:
+        # a direct call: call_id looks like call_12_1; blocks is what the AI sees
+        log(params["session"], params["call_id"], params["tool"], params["status"], params["blocks"])
+    else:
+        # called from a script: call_id looks like call_12_1#3; the result is only a blob reference
+        # (result, bytes); fetch it with blob.get if you need it
+        log(params["session"], params["call_id"], params["tool"], params["status"], params.get("result"))
+    # args is a JSON string in both (not an object): json.loads(params["args"]) to read it
+```
+
+- Nobody waits for you: each extension has one queue of at most 256; if you read slowly and it fills, new ones are dropped; what happens while you're crashed or restarting is not resent. **`tool.after` is not guaranteed delivery**: for a complete audit, subscribe to the event stream (`subscribe` `events`).
+- You only hear about sessions you can reach: an extension that isn't a platform bridge gets local sessions and the owner's own unconfined private chats; a platform bridge gets venue sessions on its own platforms.
+
 **A section at the end of the system prompt** (`context.system`): call `system.append {"content", "session"?}`. Without `session` it applies to all sessions; `content: null` removes it. A change recomputes the whole system prompt at the next turn, so don't change it often; for a few fixed lines, call it once at startup.
 
 **Searching by meaning**: call `model.embed {"texts": [...]}` for vectors (using the embedding model the person chose in settings). Without one configured you get `embedding_off`; fall back to keyword search. No extra capability needed.

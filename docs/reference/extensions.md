@@ -13,6 +13,7 @@
 | [`command.call`](#commandcall) | 核心 → 扩展 | 人打了它声明的斜杠命令 |
 | [`user.append`](#userappend) | 核心 → 扩展 | 回合开始时问它要不要往上下文里放几句 |
 | [`tool.guard`、`guard.cancel`](#toolguardguardcancel) | 核心 → 扩展 | 工具调用执行前问它放行、拒绝还是问人；不等了 |
+| [`tool.after`](#toolafter) | 核心 → 扩展 | 工具调用的结果落了盘以后告诉它（只读，不等回答） |
 | [`system.append`](#systemappend) | 扩展 → 核心 | 往系统提示词末尾放一段 |
 | [`widget.set`、`widget.clear`、`widget.watch`、`widget.unwatch`](#widgetsetwidgetclearwidgetwatchwidgetunwatch) | 两个方向 | 界面块的内容 |
 | [`extension.config`](#extensionconfig) | 核心 → 扩展 | 它自己的配置变了 |
@@ -77,7 +78,7 @@
 | `act_for_external` | 代表平台上的人说话（带 `as` 的 `session.send`、`command.run`）、`session.note`、不写 `to` 的 `session.respond`、`venue.*`、记 `venue.*` 事件：只给通讯平台的桥 |
 | `login.page` | 替本机打开的页面换登录票（`login.ticket {"via": "page"}`，下面「替本机页面换登录票」）：出厂的也要人批 |
 | `sessions.drive` | 驱动会话：`session.create`、`send`、`interrupt`、`revert`、`unrevert`、`redo`、`compact`、`clear`、`configure`、`fork`、`set_meta`、`respond`，`command.run`、`job.stop` |
-| `events.read` | 读会话：订阅 `events`、`view`、`sessions` 流，`session.list`、`session.recap`、`view.page`、`view.detail`、`job.output` |
+| `events.read` | 读会话：订阅 `events`、`view`、`sessions` 流，`session.list`、`session.recap`、`view.page`、`view.detail`、`job.output`；收工具调用后的通知（清单 `[after]`，`tool.after`） |
 | `events.write` | 往会话里记自己的事件（`events.append`） |
 | `memory.write` | 写记忆、知识库：`memory.remember`、`import`、`update`、`forget`、`restore`、`dream`、`dream_stop`，`kb.add`、`create`、`update`、`mount`、`remove`、`delete`、`reindex` |
 | `fs.read` | 经核心读文件（`fs.*`） |
@@ -304,6 +305,47 @@ timeout_ms = 1000                    # 等你多久，可以不写
 主人关掉的扩展不问。p95 最好在 20 毫秒以内：人一直等着这一步。
 
 **`guard.cancel`**（核心 → 扩展，通知）：`{"session", "call_id"}`。人打断、回合被取消、你超时了，核心不等了：这次调用照打断收尾（或者已经照超时拒了），你的回答到了也不理。
+
+## `tool.after`
+
+AI 的一次工具调用有了结果、记进会话日志以后告诉你（核心 → 扩展，通知：不带 `id`，不要回应）。审计（每次调用记到外面的日志里）、调用统计这类用法。只读：你收到的就是落了盘的那一份，改不了结果，不进 AI 的上下文。
+
+**谁收**：清单 `[process] capabilities` 声明了 `events.read`、写了 `[after]`、主人批了、开着、在跑（握过手）的扩展。不另加能力：能看会话事件流的本来就看得到，这只是省得为了看工具调用去订整条事件流。`[after]` 写法同 `[guard]`，没有时限：
+
+```toml
+[after]
+tools = ["shell", "write"]   # 工具名，可以不写
+access = ["network"]         # 访问类别，可以不写；两样至少一样
+```
+
+- 一次调用的工具名在 `tools` 里，或者它的访问类别在 `access` 里，才发给你；两样都没写、访问类别不认识、工具名不像样、没声明 `events.read` 的清单读不进（`bad_after`，`miyu check` 报）。目录里没有的工具（AI 叫错了名字）没有访问类别，只照 `tools` 认。
+- 你自己 `provide` 的工具也发给你。被拒了的（权限策略、守卫、内核）、跳过的、取消的、出错的都发，`status` 照实写。
+- **会话照订事件流的规矩**（core1 2026-11-07 定）：碰不到的会话不发。不是平台桥的扩展只收本机的会话和主人本人没关起来的私聊；平台桥只收自己平台（清单 `[connection] platform`）的场所会话。
+- 脚本里调的工具（`miyu call`）也发，形状不同，见下面。
+
+**参数**：
+
+| 格 | 直接调的（`tool.result`） | 脚本里调的（`tool.nested`） |
+|---|---|---|
+| `session` | 会话编号 | 同左 |
+| `call_id` | 调用编号（`call_12_1`） | 嵌套调用的编号（`call_12_1#3`） |
+| `tool` | 工具名 | 同左 |
+| `access` | 访问类别；目录里没有这件工具的不写 | 同左 |
+| `status` | 同 `tool.result`：`ok`、`error`、`denied`、`cancelled`、`skipped`…… | 同 `tool.nested`：`ok`、`error`、`denied`、`needs_approval`、`cancelled` |
+| `duration_ms` | 执行用了多少毫秒；没真执行过的不写 | 同左 |
+| `by` | 那条事件的 `by`，同事件流：照常跑完的是那次调用，被拒的是拒它的一方（`{"kind": "module", "id": "<包>"}`） | 同左 |
+| `args` | 模型写的参数原文（一段 JSON 字，同事件流里 `tool_call` 块的 `args`） | 修正过的参数原文（同 `tool.nested` 的 `args`） |
+| `blocks` | 同 `tool.result` 的 `blocks`：给 AI 看的内容，大的块只是引用 | 不写 |
+| `result`、`bytes` | 不写 | 交给脚本的那份结果存成的 blob 的哈希、字节数（同 `tool.nested`），没存下来的不写；要看内容用 `blob.get` |
+
+`args` 是一段字不是对象（`tool.guard` 的 `args` 是解析过的对象）：事件流里怎么记就怎么给。分辨两种看有没有 `blocks`，或者 `call_id` 里有没有 `#`。
+
+**不等、不挡**：
+
+- 核心发了就走，回合不等你；你慢、你崩了都不拖会话。
+- 每个扩展一条队列，**至多 256 条**；满了丢新来的，记一行 `WARN`（一阵连着丢的只记头一条，带你累计被丢了几条；有了空位再记一行）。
+- 连接断了、你崩了，队列整个丢掉，不补发；重启以后从新的调用开始。开着却还没握手的不发。
+- **`tool.after` 不保证送达**：要完整的审计请订事件流（`subscribe` 的 `events`，`events.read`），它照日志补发。
 
 ## `system.append`
 

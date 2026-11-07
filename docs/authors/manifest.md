@@ -118,7 +118,7 @@ place = "status"
 | `act_for_external` | 代表聊天平台上的人说话：只给平台的桥 |
 | `login.page` | 替这台电脑上打开的页面换登录票（`login.ticket {"via": "page"}`），换到的票只在本机的连接上换得成设备令牌。出厂的包也要人批。只给核过是本机来的页面要票，远处来的页面一律走访问密码，见 [扩展参考](../reference/extensions.md)「替本机页面换登录票」 |
 | `sessions.drive` | 驱动会话：开会话、说话、打断、撤销、压缩、分叉、发斜杠命令 |
-| `events.read` | 读会话：订阅事件、读历史、读后台命令的输出 |
+| `events.read` | 读会话：订阅事件、读历史、读后台命令的输出；收工具调用后的通知（`[after]`） |
 | `events.write` | 往会话里记自己的事件 |
 | `memory.write` | 写记忆、知识库 |
 | `fs.read`、`network` | 经核心读文件、抓链接 |
@@ -283,6 +283,23 @@ access = ["execute"]
 | `images` | 看得了图的写 `true`（默认 `false`） |
 
 主人在供应商的配置里写 `driver = "<包的编号>/<驱动名>"` 才用它；模型档案、npm 表、默认永远是内置的几种，装上你的包也接不走主人原来配好的供应商。包没装、没批、驱动名写错的，`miyu check` 报出来，那一家供应商当用不了，不会退回内置驱动。和核心怎么通话见设计 66；协议还在施工，会写进 [写扩展](extensions.md)。
+
+## `[after]`
+
+AI 的工具调用有了结果、记进会话以后告诉你的程序一声（只读，不等你答）；`capabilities` 里要有 `events.read`。
+
+| 格 | 说明 |
+|---|---|
+| `tools` | 哪几件工具的：工具名的数组，自带的、别的包的、MCP 服务的、你自己的都照名字认 |
+| `access` | 哪几类访问的：同 `[guard]` 的那几个 |
+
+```toml
+[after]
+tools = ["shell"]
+access = ["write", "network"]
+```
+
+两样至少写一样，不许什么都收；没有时限这一格（写了读不进）。核心发给你的程序 `tool.after`，见 [写扩展](extensions.md)。
 
 ## `[[side]]`
 
