@@ -3,7 +3,7 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/miyu-agent/miyu/main/packaging/install.sh | sh
 #   curl -fsSL …/install.sh | sh -s -- --prerelease      # 也算预发布
-#   curl -fsSL …/install.sh | sh -s -- --version 1.0.0   # 装指定的一版
+#   curl -fsSL …/install.sh | sh -s -- --version 2026.11.0   # 装指定的一版
 #   curl -fsSL …/install.sh | sh -s -- --uninstall       # 卸
 #
 # 从 GitHub Releases 下载这一种系统的压缩包，先用写在这里的发版公钥核 SHA256SUMS 的签名（openssl 认 Ed25519 的才核得了），

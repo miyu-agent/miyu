@@ -3,7 +3,7 @@ Miyu 的安装脚本，Windows 用（施工 RL-3，设计 59 第三节第 2 条�
 
   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/miyu-agent/miyu/main/packaging/install.ps1)))
   & ([scriptblock]::Create((irm …/install.ps1))) -Prerelease       # 也算预发布
-  & ([scriptblock]::Create((irm …/install.ps1))) -Version 1.0.0    # 装指定的一版
+  & ([scriptblock]::Create((irm …/install.ps1))) -Version 2026.11.0    # 装指定的一版
   & ([scriptblock]::Create((irm …/install.ps1))) -Uninstall        # 卸
 
 从 GitHub Releases 下载 Windows 的压缩包。先用写在这里的发版公钥核 SHA256SUMS 的签名：要 PATH 上有认 Ed25519 的 openssl（Git for
