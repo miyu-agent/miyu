@@ -21,6 +21,7 @@ pub mod check;
 mod fetch;
 mod layout;
 mod split;
+mod stamp;
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -110,6 +111,11 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Vec<Packed>, String
     let [tui, web] = checkouts.as_slice() else {
         return Err(format!("{} 里要正好两个头", heads::PATH));
     };
+    // 头的版本照核心的（施工 RL-6）：演练号的临时盖上，正式号的要一样。
+    for (pin, dir) in pins.iter().zip(&checkouts) {
+        say(&format!("对 {} 的版本", pin.id));
+        stamp::head(&pin.id, dir, &version)?;
+    }
 
     say("编核心");
     let mut core = Command::new(cargo);
