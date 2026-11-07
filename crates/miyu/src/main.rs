@@ -67,6 +67,8 @@ enum Command {
     Pkg(miyu_cli::Pkg),
     /// 管知识库：列、搜、读、建、改、加、删、挂、重建（施工 K-7 下）。
     Kb(miyu_cli::Kb),
+    /// 给写包的人用的：查模型驱动的编码稳不稳（施工 MD-3）。
+    Dev(miyu_cli::Dev),
     /// 管定时任务：列、建、删、停、续（施工 J-3 下）。
     Schedule(miyu_cli::Schedule),
     /// 导出、导入会话的原始包（施工 SE-1 中上）。
@@ -193,6 +195,11 @@ fn main() -> ExitCode {
                 pkg.mut_subcommand(name, |sub| sub.override_help(help))
             })
         })
+        .mut_subcommand("dev", |dev| {
+            let help = page(language, Page::Dev);
+            dev.override_help(help)
+                .mut_subcommand("driver-check", |sub| sub.override_help(help))
+        })
         .mut_subcommand("kb", |kb| {
             let help = page(language, Page::Kb);
             [
@@ -274,6 +281,7 @@ fn main() -> ExitCode {
         Some(Command::Memory(args)) => miyu_cli::memory(args, core),
         Some(Command::Pkg(args)) => miyu_cli::pkg(args, core),
         Some(Command::Kb(args)) => miyu_cli::kb(args, core),
+        Some(Command::Dev(args)) => miyu_cli::dev(args, core),
         Some(Command::Schedule(args)) => miyu_cli::schedule(args, core),
         Some(Command::Session(args)) => miyu_cli::session(args, core),
         Some(Command::Provider(args)) => miyu_cli::login(args.into(), core),

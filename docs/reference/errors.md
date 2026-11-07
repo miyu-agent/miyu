@@ -131,6 +131,8 @@
 | `program_missing`、`not_switchable` | 程序没找到；没有开关 | |
 | `not_restartable`、`package_off` | 没有能重启的；关着 | |
 | `extension_off` | 重启一个关着的扩展 | |
+| `no_drivers` | `driver.check` 的包没声明模型驱动 | |
+| `driver_busy` | `driver.check` 要重启扩展，这一刻有会话正经它的驱动调模型 | `running` |
 | `port_taken` | 扩展登记的端口别的扩展登记着（`port.claim`）；不说是谁 | |
 | `unknown_server` | 系统配置里没有这个 MCP 服务 | |
 | `not_a_ui_package`、`prefs_too_big` | `prefs.*`：装着的包不是界面包；并好的设置超过 64 KiB，什么都没改 | `size`、`limit` |

@@ -14,6 +14,7 @@
 | [`package.upgrades`、`package.upgrade`](#packageupgradespackageupgrade) | 盘点能升级的、升级 |
 | [`package.file`、`package.call`](#packagefilepackagecall) | 读后台页的文件、调包的程序登记的方法 |
 | [`extension.status`、`extension.enable`、`extension.disable`、`extension.restart`](#extensionstatusextensionenableextensiondisableextensionrestart) | 扩展进程的状态和开关 |
+| [`driver.check`](#drivercheck) | 查扩展提供的模型驱动编码稳不稳（会重启扩展） |
 | [`mcp.list`、`mcp.restart`、`mcp.set`、`mcp.remove`](#mcplistmcprestartmcpsetmcpremove) | 系统配置里的 MCP 服务：列、重启、加或换、删 |
 | [`mcp.login`](#mcplogin) | 网址的 MCP 服务要浏览器登录的：拿授权页 |
 | [`mcp.login_finish`、`mcp.logout`](#mcplogin_finishmcplogout) | 浏览器不在核心那台机器上时把跳到的地址贴回来；登出 |
@@ -205,6 +206,24 @@
 要一直跟着最新的，订阅 `extensions` 流。
 
 **出错**：`unknown_package`；`not_an_extension`（是界面包）；`extension_off`（重启一个关着的）；`needs_approval`。
+
+## `driver.check`
+
+查一个包提供的模型驱动编码稳不稳（作者用 `miyu dev driver-check <包编号>` 调它）。只给人。**会重启那个扩展**。
+
+核心照内置的一小套样本请求（纯文字、工具面、带私有数据的思考和工具调用、看不了图的转述、续写，各一份）调扩展的 `driver.encode`：每一份编两次；重启扩展、等它重新握手，再编一次；三次要逐字节相同。另有只在末尾加一条消息的一对：最后一条稳定区消息里放着记号字 `miyustableend7f3a`，两份编出来的字节都要找得到它，到它为止逐字节相同；找不到的照「没法查稳定区」算没通过。
+
+**参数**：`package`。**回应** `{"package", "drivers": [...]}`，一个驱动一项：
+
+| 名字 | 说明 |
+|---|---|
+| `driver` | `<包编号>/<驱动名>` |
+| `cache` | 清单写的缓存类型 |
+| `result` | `passed`、`failed`、`skipped` |
+| `samples` | `[{"sample", "ok", "why"?}]`：`plain`、`tools`、`private`、`image`、`continuation`、`pair`；没通过的 `why` 是英文的一句，写明哪里不对（第几个字节） |
+| `why` | 没实现 `driver.encode` 的：`driver.encode is not implemented`。`cache = "contract"` 的算 `failed`，别的算 `skipped` |
+
+**出错**：`unknown_package`；`no_drivers`（清单没有 `[[driver]]`）；`program_not_running`（没连上、重启以后等不到握手）；`driver_busy`（这一刻有会话正经它的驱动调模型，`data.running` 是没答完的几次：等它们说完再查，不重启）；`extension_off`、`needs_approval`（同 `extension.restart`）。
 
 ## `mcp.list`、`mcp.restart`、`mcp.set`、`mcp.remove`
 

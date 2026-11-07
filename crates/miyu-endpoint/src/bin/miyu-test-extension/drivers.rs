@@ -17,8 +17,12 @@ impl Held {
     }
 }
 
-/// 答这一行 `driver.call`（JSON-RPC 编号 `id`），照 `how`：交回要写的几行，照先后。
+/// 答这一行 `driver.call` 或 `driver.encode`（JSON-RPC 编号 `id`），照 `how`（`<怎么答 call>+<怎么编>`）：交回要写的几行，照先后。
 pub(crate) fn answered(id: &str, how: &str, line: &str, held: &mut Held) -> Vec<String> {
+    let (how, encode) = how.split_once('+').unwrap_or((how, ""));
+    if line.contains(r#""method":"driver.encode""#) {
+        return vec![encoded(id, encode, line)];
+    }
     let call = super::field(line, "call").unwrap_or_default();
     let said = format!("echo: {}", last_text(line));
     match how {
@@ -63,6 +67,39 @@ pub(crate) fn answered(id: &str, how: &str, line: &str, held: &mut Held) -> Vec<
         },
         _ => Vec::new(),
     }
+}
+
+/// 答 `driver.encode`（施工 MD-3）：`body` 是参数原文（编号固定，同样的参数同样的字），照 `how` 弄坏：
+///
+/// - `steady`：原样，怎么编都一样；
+/// - `stamped`：后面接上这一刻的纳秒（故意放时间戳：两次编得不一样）；
+/// - `pid`：后面接上进程号（同一个进程里一样，重启以后变了）；
+/// - `count`：前面写上有几条消息（末尾加一条消息，稳定区之前就变了）；
+/// - 别的：回「没有这个方法」。
+fn encoded(id: &str, how: &str, line: &str) -> String {
+    let params = line
+        .split_once(r#""params":"#)
+        .map_or("", |(_, rest)| rest.strip_suffix('}').unwrap_or(rest));
+    let body = match how {
+        "steady" => params.to_string(),
+        "stamped" => {
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_or(0, |since| since.as_nanos());
+            format!("{params}{now}")
+        }
+        "pid" => format!("{params}{}", std::process::id()),
+        "count" => format!("{}{params}", params.matches(r#""role":"#).count()),
+        _ => {
+            return format!(
+                r#"{{"jsonrpc":"2.0","id":"{id}","error":{{"code":-32601,"message":"no such method"}}}}"#
+            );
+        }
+    };
+    format!(
+        r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"body":"{}"}}}}"#,
+        super::quoted(&body)
+    )
 }
 
 /// 一块正文 `said`：开始、字、收尾，分两条 `driver.delta`。

@@ -326,6 +326,10 @@ pub(crate) fn call<'a>(
         "provider.rename" => answer(move || async move {
             providers::rename(core, peer, &request.id, params(request)?).await
         }),
+        // 查扩展驱动的编码稳不稳（施工 MD-3）：会重启那个扩展。
+        "driver.check" => {
+            answer(move || async move { models::check::check(core, peer, params(request)?).await })
+        }
         "provider.test" => {
             answer(move || async move { providers::test(core, peer, params(request)?).await })
         }

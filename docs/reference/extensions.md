@@ -15,6 +15,7 @@
 | [`tool.guard`、`guard.cancel`](#toolguardguardcancel) | 核心 → 扩展 | 工具调用执行前问它放行、拒绝还是问人；不等了 |
 | [`tool.after`](#toolafter) | 核心 → 扩展 | 工具调用的结果落了盘以后告诉它（只读，不等回答） |
 | [`driver.call`、`driver.delta`、`driver.cancel`](#drivercalldriverdeltadrivercancel) | 两个方向 | 它提供的模型驱动：接一次模型调用、交增量；不等了 |
+| [`driver.encode`](#driverencode) | 核心 → 扩展 | 编一次、不发：查编码稳不稳 |
 | [`system.append`](#systemappend) | 扩展 → 核心 | 往系统提示词末尾放一段 |
 | [`widget.set`、`widget.clear`、`widget.watch`、`widget.unwatch`](#widgetsetwidgetclearwidgetwatchwidgetunwatch) | 两个方向 | 界面块的内容 |
 | [`extension.config`](#extensionconfig) | 核心 → 扩展 | 它自己的配置变了 |
@@ -383,13 +384,21 @@ access = ["network"]         # 访问类别，可以不写；两样至少一样
 
 - `usage`：`{"uncached", "cache_read", "cache_write", "output", "reasoning"?}`；没报的记成没报，不估。
 - `error`：`{"class", "message", "retry_after_ms"?}`，`class` 是 `retryable`、`rate_limited`、`context_too_long`、`auth`、`quota`、`content_policy`、`unclassified` 之一，不认识的当 `unclassified`；`retry_after_ms` 只认 `rate_limited` 的；`message` 截到 500 个字，只给人看。交了一半的不要自己重试（回复会重），Miyu 照分类重试、冷却、换池。
-- `sent`：这一次真发出去的字节的 SHA-256，写成 `sha256:<64 位十六进制>`，记进 `model.called`。
+- `sent`：这一次真发出去的字节的 SHA-256，写成 `sha256:<64 位十六进制>`，记进 `model.called`。同样的请求再发一次（重试）报的 `sent` 不一样的，说明编码看了参数以外的东西、缓存前缀命中不了，Miyu 记一行 `WARN`（每个驱动每次运行一次）。
 
 多了格、写法不对的回应当 `unclassified`（`the driver sent a bad answer: …`）；回 JSON-RPC 错误的也是（`the driver refused the call: …`）。
 
 **时限**：同内置驱动：发出去到第一条增量、两条增量之间、最后一条到回应，都不能超过空闲时限（180 秒，照思考强度放大），整个不超过它的十倍；超了的当 `retryable`（`the driver went quiet`）。扩展崩了、连接断了，在等的当 `retryable`（`the driver went away`）。你正在退避、等着重新拉起的，这一次当 `retryable`，等多久照 `retry_in`；关着、没批、停下了的不调，这一家当用不了，池里换下一个。
 
 **`driver.cancel`**（核心 → 扩展，通知）：`{"call"}`。人打断、回合被取消、超时、增量不对，核心不等了：别再为这一次发请求，之后的增量、回应都不理。
+
+## `driver.encode`
+
+编一次、不发（核心 → 扩展，带 `id`，要回应）：参数同 `driver.call`，回应 `{"body"}`，`body` 是你照这份参数会发出去的字节（一段字）。`driver.check`（作者用 `miyu dev driver-check`）照它查你的编码稳不稳：同样的参数要编出同样的字节，重启以后也一样；只在末尾加一条消息，稳定区结束之前的字节不能变。
+
+- 编码只能看参数：不放时间、随机数，字段的先后固定；`call` 是这一次的编号，不要编进去。
+- 声明 `cache = "contract"` 的驱动必须实现它，没实现的 `driver.check` 算没通过；别的没实现照「跳过」报。没实现就回 JSON-RPC 的「没有这个方法」（`-32601`）。
+- 主人的 key 不交（`key`、`base_url` 都不写），也不交图。
 
 ## `system.append`
 

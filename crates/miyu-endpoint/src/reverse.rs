@@ -157,6 +157,15 @@ impl Peer {
             .insert(call.to_string(), deltas);
     }
 
+    /// 这一刻有几次扩展驱动的调用没答完（施工 MD-3）：`driver.check` 照它定能不能重启扩展。
+    pub(crate) fn streaming(&self) -> usize {
+        self.state
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .streams
+            .len()
+    }
+
     /// 调用 `call` 不要增量了：说完了、不等了。
     pub(crate) fn unstream(&self, call: &str) {
         self.state

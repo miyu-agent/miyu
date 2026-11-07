@@ -7,6 +7,19 @@ use miyu_store::packages::conflicts::Holder;
 use super::{REFUSED, Refusal};
 
 impl Refusal {
+    /// `driver.check` 查的包没声明 `[[driver]]`（施工 MD-3）。
+    pub(crate) const NO_DRIVERS: Refusal = Refusal {
+        code: REFUSED,
+        reason: "no_drivers",
+        data: None,
+    };
+
+    /// `driver.check` 要重启扩展，这一刻却有会话正经它的驱动调模型（施工 MD-3，core1 11-07 定）：`data.running` 是没答完的几次，等它们
+    /// 跑完再查。
+    pub(crate) fn driver_busy(running: usize) -> Refusal {
+        Refusal::with("driver_busy", "running", serde_json::json!(running))
+    }
+
     /// 关在沙盒里的会话（群、陌生人的私聊）经端口装、卸、升级软件包（施工 SU-2 上）。
     pub(crate) const NOT_PERMITTED: Refusal = Refusal {
         code: REFUSED,

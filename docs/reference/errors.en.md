@@ -131,6 +131,8 @@ Chinese version: [errors.md](errors.md).
 | `program_missing`, `not_switchable` | The program wasn't found; no switch | |
 | `not_restartable`, `package_off` | Nothing to restart; it's off | |
 | `extension_off` | Restarting an extension that's off | |
+| `no_drivers` | `driver.check` on a package that declares no model driver | |
+| `driver_busy` | `driver.check` must restart the extension, but a session is calling a model through its driver | `running` |
 | `port_taken` | Another extension has claimed the port (`port.claim`); it doesn't say which | |
 | `unknown_server` | No such MCP server in the system config | |
 | `not_a_ui_package`, `prefs_too_big` | `prefs.*`: the installed package isn't a UI package; the merged settings are over 64 KiB, nothing changed | `size`, `limit` |

@@ -30,7 +30,7 @@
 //!   `-`）；`slow` 过 600 毫秒再照 `hint` 答；`silent` 不答；`boom` 回一个错误；`garbled` 回写法不对的；`many` 交四块；`empty` 交空的。不写的不答；
 //! - `guard:<怎么答>`：之后的 `serve` 照它答 `tool.guard`（施工 HK-1，`hooks.rs`）：`allow`、`deny`、`ask`、`forged`（拒绝，理由里塞
 //!   伪造的指令、工具结果、换行和引号），`silent` 不答，`boom` 回一个错误，`garbled` 回写法不对的，`crash` 当场退出（退出码 3）。不写的不答；
-//! - `driver:<怎么答>`：之后的 `serve` 照它答 `driver.call`（施工 MD-2，`drivers.rs`）：`echo`、`half`、`pair`。不写的不答；
+//! - `driver:<怎么答>[+<怎么编>]`：之后的 `serve` 照它答 `driver.call`、`driver.encode`（施工 MD-2、MD-3，`drivers.rs`）。不写的不答；
 //! - `edits:<路径>`：之后 `serve` 答工具 `ext_edit` 时照参数里的 `old_string`、`new_string` 改这个文件（同内置 `edit`，只换第一处），
 //!   回应的效果里只报哪个文件改了，改前改后由核心自己读（施工 XG-1，设计 63 第四节）；
 //! - `effects:<JSON 数组>`：之后 `serve` 答名字以 `ext_fake` 开头的工具时什么都不改，回应的 `effects` 原样放这一份（施工 XG-1 上：报假的效果）；
@@ -264,7 +264,8 @@ fn main() {
                     send(&answer);
                 }
                 // 扩展提供的模型驱动（施工 MD-2）：照 `driver` 交增量、回答。
-                if line.contains(r#""method":"driver.call""#)
+                if (line.contains(r#""method":"driver.call""#)
+                    || line.contains(r#""method":"driver.encode""#))
                     && let Some(id) = field(&line, "id")
                 {
                     for out in drivers::answered(&id, &driver, &line, &mut held) {

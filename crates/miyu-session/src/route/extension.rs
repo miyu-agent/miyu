@@ -39,11 +39,16 @@ use super::base::Ready;
 use super::choice::Choice;
 use super::driver_port::{Broken, DriverPort, NotYet};
 use super::exchange::{Exchanged, capped, missing};
+use super::shared::ModelData;
 use crate::TARGET;
 use crate::blocking::blocking;
 use crate::config::TurnConfig;
 
+pub mod check;
 mod wire;
+mod wires;
+
+pub(super) use wires::Wires;
 
 use wire::{Outgoing, Picture, Said};
 
@@ -171,7 +176,7 @@ pub(super) async fn exchange(
         }
     };
     on(Progress::Sent {
-        request: hash,
+        request: hash.clone(),
         at: std::time::Instant::now(),
     });
     let idle = ready.idle;
@@ -203,7 +208,7 @@ pub(super) async fn exchange(
                         return bad(&name, "delta", &why);
                     }
                 }
-                return finish(answered, &name);
+                return finish(answered, &name, &hash, &ready.learn.data);
             }
             () = quiet => {
                 return said(wire::classified(ErrorClass::Retryable, "the driver went quiet", None));
@@ -229,7 +234,12 @@ fn take(
 }
 
 /// 等到了回答（或者等不到了）。
-fn finish(answered: Result<Value, Broken>, name: &str) -> Exchanged {
+fn finish(
+    answered: Result<Value, Broken>,
+    name: &str,
+    request: &ContentHash,
+    data: &ModelData,
+) -> Exchanged {
     match answered {
         Err(Broken::Gone) => said(wire::classified(
             ErrorClass::Retryable,
@@ -242,11 +252,20 @@ fn finish(answered: Result<Value, Broken>, name: &str) -> Exchanged {
             None,
         )),
         Ok(result) => match wire::answer(result) {
-            Ok(Said { usage, error, sent }) => Exchanged::Ended {
-                usage,
-                error,
-                wire: sent,
-            },
+            Ok(Said { usage, error, sent }) => {
+                // 同一个请求编出了不同的字节（施工 MD-3，设计 66 第七节第 3 条）：缓存前缀命中不了，每个驱动每次运行说一次。
+                let before = sent
+                    .as_ref()
+                    .and_then(|sent| data.wires().note(name, request, sent));
+                if let (Some(before), Some(sent)) = (before, &sent) {
+                    tracing::warn!(target: TARGET, driver = name, request = %request, before = %before, sent = %sent, "driver encoded the same request differently");
+                }
+                Exchanged::Ended {
+                    usage,
+                    error,
+                    wire: sent,
+                }
+            }
             Err(why) => bad(name, "answer", &why),
         },
     }

@@ -38,6 +38,8 @@ pub enum Page {
     Memory,
     /// `miyu pkg -h`，各个子命令的 `-h` 也印它（施工 T-3）。
     Pkg,
+    /// `miyu dev -h`，`miyu dev driver-check -h` 也印它（施工 MD-3）。
+    Dev,
     /// `miyu kb -h`，各个子命令的 `-h` 也印它（施工 K-7 下）。
     Kb,
     /// `miyu schedule -h`，各个子命令的 `-h` 也印它（施工 J-3 下）。
@@ -57,6 +59,7 @@ pub(crate) fn page_named(name: &str) -> Option<Page> {
     match name {
         "memory" => Some(Page::Memory),
         "kb" => Some(Page::Kb),
+        "dev" => Some(Page::Dev),
         "schedule" => Some(Page::Schedule),
         "pkg" => Some(Page::Pkg),
         "config" => Some(Page::Config),
@@ -102,6 +105,8 @@ pub fn page(language: Language, page: Page) -> &'static str {
         (Language::Chinese, Page::Memory) => include_str!("help/zh/memory.txt"),
         (Language::English, Page::Memory) => include_str!("help/en/memory.txt"),
         (Language::Chinese, Page::Kb) => include_str!("help/zh/kb.txt"),
+        (Language::Chinese, Page::Dev) => include_str!("help/zh/dev.txt"),
+        (Language::English, Page::Dev) => include_str!("help/en/dev.txt"),
         (Language::Chinese, Page::Schedule) => include_str!("help/zh/schedule.txt"),
         (Language::English, Page::Kb) => include_str!("help/en/kb.txt"),
         (Language::English, Page::Schedule) => include_str!("help/en/schedule.txt"),

@@ -278,7 +278,7 @@ Provides a model driver, one per entry; `capabilities` must include `model.drive
 | Field | Notes |
 |---|---|
 | `name` | Driver name, written like `[command] name`; unique within the package |
-| `cache` | Cache type: `contract` (hits while the prefix is unchanged), `best_effort` (default), `none` |
+| `cache` | Cache type: `contract` (hits while the prefix is unchanged; implement `driver.encode` and check with `miyu dev driver-check`), `best_effort` (default), `none` |
 | `key` | Whether Miyu hands over that provider's key: `none`, `optional` (default), `required` |
 | `images` | `true` if it can see images (default `false`) |
 

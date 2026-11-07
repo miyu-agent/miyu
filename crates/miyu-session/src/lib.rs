@@ -106,7 +106,7 @@ pub use route::{
     Answer, Ask, Broken, CatalogReader, Declared, DriverPending, DriverPort, Holding, IDLE,
     LISTING_CAP, LISTING_FILE, LOCAL_WAIT, Listed, Missing, ModelData, ModelDirs, NotYet, Observed,
     OneShot, Probe, Probed, RECALL_CAP, RECALL_FILE, REFETCH, Retirement, Routes, Running, STALE,
-    Stage, Unanswered, Watched, find_local, probe, read_observed, refresh_list,
+    Stage, Unanswered, Watched, driver_check, find_local, probe, read_observed, refresh_list,
 };
 pub use sandbox::SandboxCache;
 pub use shown::{Next, Shown};

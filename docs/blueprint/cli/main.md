@@ -30,6 +30,7 @@
 | `compact` | 把当前会话的上下文压缩成摘要，可以附上要求（施工 6-8，命令名 2026-09-29 项目主人定） | `cli/compact.md` |
 | `recap` | 一句话回顾当前会话：在做什么、做完了什么、卡在哪（施工 3-8 四补） | `cli/recap.md` |
 | `mcp login`、`mcp logout` | 登录、登出要浏览器授权的网址 MCP 服务（施工 X-42 上、下） | `cli/mcp.md` |
+| `dev driver-check` | 给写包的人用：查包提供的模型驱动编码稳不稳，会重启扩展（施工 MD-3） | `cli/dev.md` |
 | `rename` | 给当前会话起名（施工 3-8 五补） | `cli/rename.md` |
 | `session` | 导出、导入会话的原始包（施工 SE-1 中上） | `cli/session.md` |
 | `memory` | 看她记了你什么，搜、记、改、忘、清空（施工 R-3 再补） | `cli/memory.md` |
@@ -106,6 +107,7 @@
 软件包：
   pkg <命令>          管理软件包
   mcp <命令>          登录或登出 MCP 服务
+  dev <命令>          给写软件包的人用的工具
 
 设置：
   config <命令>       查看和修改设置
@@ -155,6 +157,7 @@ Content:
 Packages:
   pkg <command>       Manage packages
   mcp <command>       Log in to or out of MCP servers
+  dev <command>       Tools for package authors
 
 Settings:
   config <command>    View and change settings

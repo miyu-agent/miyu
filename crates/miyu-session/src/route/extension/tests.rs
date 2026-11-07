@@ -480,3 +480,4 @@ async fn private_deltas_are_owned_by_the_extension_family() {
     assert_eq!(private.data.get(), r#"{"sig":"s1"}"#);
     assert_eq!(deltas.last(), Some(&Delta::Truncated));
 }
+mod wired;

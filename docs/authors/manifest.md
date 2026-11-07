@@ -278,7 +278,7 @@ access = ["execute"]
 | 格 | 说明 |
 |---|---|
 | `name` | 驱动名，写法同 `[command] name`，一个包里不重 |
-| `cache` | 缓存类型：`contract`（前缀不变就命中）、`best_effort`（默认）、`none` |
+| `cache` | 缓存类型：`contract`（前缀不变就命中，要实现 `driver.encode`，用 `miyu dev driver-check` 查）、`best_effort`（默认）、`none` |
 | `key` | 要不要 Miyu 交这一家供应商的 key：`none`、`optional`（默认）、`required` |
 | `images` | 看得了图的写 `true`（默认 `false`） |
 

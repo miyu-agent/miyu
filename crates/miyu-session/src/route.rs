@@ -58,6 +58,8 @@ mod turn;
 
 pub use driver_port::{Broken, Declared, DriverPort, NotYet, Pending as DriverPending};
 pub use endpoint::Missing;
+/// `driver.check` 的样本和比法（施工 MD-3）。
+pub use extension::check as driver_check;
 pub use lists::{REFETCH, STALE, refresh_list};
 pub use local::{LOCAL_WAIT, Running, find_local};
 #[cfg(any(test, feature = "testkit"))]

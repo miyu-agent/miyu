@@ -131,7 +131,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "package.owns" | "persona.avatar" | "persona.background" | "persona.get"
         | "feature.offer" | "persona.list" | "persona.read" | "port.claim" | "port.release" | "preset.get"
         | "preset.list" | "provider.catalog"
-        | "provider.detect" | "provider.test" | "script.list" | "skill.list" | "usage.query" => {
+        | "provider.detect" | "provider.test" | "driver.check" | "script.list" | "skill.list" | "usage.query" => {
             Anyone
         }
         // 只给人：替人回答、改权限和工作目录、终端会话、访问密码和登录、叫核心停下（施工 DT-4 下）、改人格预设、装卸软件包、改配置和密钥、项目。
@@ -195,7 +195,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "user.append" | "tool.guard" | "guard.cancel" | "tool.after" | "widget.watch" | "widget.unwatch" | "view.add" | "view.append"
         | "view.update" | "view.remove" | "view.hidden" | "package.progress"
         // 扩展提供的模型驱动（施工 MD-2）：核心发的调用、不等了；扩展交的增量是通知，不进这张表。
-        | "driver.call" | "driver.cancel" => People,
+        | "driver.call" | "driver.encode" | "driver.cancel" => People,
         _ => People,
     }
 }

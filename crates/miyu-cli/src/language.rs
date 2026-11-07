@@ -9,6 +9,7 @@ mod agents;
 mod config;
 mod config_write;
 mod confirm;
+mod dev;
 mod embedding;
 mod harness;
 mod input;

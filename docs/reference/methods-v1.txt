@@ -24,7 +24,9 @@ content.read
 core.stop
 driver.call
 driver.cancel
+driver.check
 driver.delta
+driver.encode
 events.append
 extension.changed
 extension.config

@@ -102,6 +102,14 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "no_page" => ("没有后台页。", "No admin page."),
         "not_found" => ("文件不存在。", "File not found."),
         "program_not_running" => ("程序未运行。", "Program not running."),
+        "no_drivers" => (
+            "这个软件包没有模型驱动。",
+            "This package provides no model driver.",
+        ),
+        "driver_busy" => (
+            "有会话正在用它的模型驱动，等它们说完再查。",
+            "A session is using its model driver; check again when it is done.",
+        ),
         "method_timeout" => ("方法超时。", "Method timed out."),
         "unregistered" => ("方法未登记。", "Method not registered."),
         "method_failed" => ("方法执行失败。", "Method failed."),

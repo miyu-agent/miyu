@@ -82,6 +82,7 @@ mod extension_approval;
 mod extension_config;
 mod extension_driver;
 mod extension_driver_call;
+mod extension_driver_check;
 mod extension_long_line;
 mod extension_rights;
 mod extension_stream;

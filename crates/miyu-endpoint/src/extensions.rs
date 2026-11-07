@@ -20,7 +20,9 @@ mod table;
 
 pub(crate) use approval::{declared, described, forget as forget_switch, held, named};
 pub(crate) use instance::Instance;
-pub(crate) use methods::{disable, enable, entry, restart, status, write as write_switches};
+pub(crate) use methods::{
+    disable, enable, entry, restart, restart_process, status, write as write_switches,
+};
 pub(crate) use offers::offer;
 pub(crate) use ports::{claim as claim_port, list as list_ports, release as release_port};
 pub(crate) use state::{Cell, Reason, State, Status};

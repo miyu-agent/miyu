@@ -1,0 +1,11 @@
+Usage: miyu dev <command>
+
+Tools for package authors.
+
+Commands:
+  driver-check <package>  Check that the package's model drivers encode
+                          steadily (restarts the extension; refused while
+                          a session is using it)
+
+Options:
+  -h, --help  Print help

@@ -14,6 +14,7 @@ Manage packages, extension processes and the MCP servers in the system config; l
 | [`package.upgrades`, `package.upgrade`](#packageupgrades-packageupgrade) | What can be upgraded; upgrade |
 | [`package.file`, `package.call`](#packagefile-packagecall) | Read a file of a package's page; call a method its program registered |
 | [`extension.status`, `extension.enable`, `extension.disable`, `extension.restart`](#extensionstatus-extensionenable-extensiondisable-extensionrestart) | Extension process status and switches |
+| [`driver.check`](#drivercheck) | Check that an extension's model drivers encode steadily (restarts the extension) |
 | [`mcp.list`, `mcp.restart`, `mcp.set`, `mcp.remove`](#mcplist-mcprestart-mcpset-mcpremove) | MCP servers in the system config: list, restart, add or replace, remove |
 | [`mcp.login`](#mcplogin) | A URL MCP server that needs a browser login: get the authorization page |
 | [`mcp.login_finish`, `mcp.logout`](#mcplogin_finish-mcplogout) | Paste back the address the browser landed on when it isn't on the core's machine; log out |
@@ -205,6 +206,24 @@ Extensions can call `package.call` too: they must declare the `packages.call` ca
 To keep up to date, subscribe to the `extensions` stream.
 
 **Errors**: `unknown_package`; `not_an_extension` (a UI package); `extension_off` (restarting one that's off); `needs_approval`.
+
+## `driver.check`
+
+Checks that a package's model drivers encode steadily (authors call it with `miyu dev driver-check <package id>`). People only. **It restarts the extension.**
+
+The core calls the extension's `driver.encode` with a small built-in set of sample requests (plain text, a tool surface, reasoning and a tool call with private data, image descriptions for an endpoint that can't see images, a continuation): each is encoded twice, then once more after the extension is restarted and has shaken hands again; all three must be byte for byte the same. There is also a pair that differs only by one more message at the end: the last stable-region message carries the mark `miyustableend7f3a`, both encodings must contain it, and they must be the same up to it. If the mark can't be found the stable region can't be checked, which counts as a failure.
+
+**Params**: `package`. **Response** `{"package", "drivers": [...]}`, one entry per driver:
+
+| Name | Meaning |
+|---|---|
+| `driver` | `<package id>/<driver name>` |
+| `cache` | The cache type in the manifest |
+| `result` | `passed`, `failed`, `skipped` |
+| `samples` | `[{"sample", "ok", "why"?}]`: `plain`, `tools`, `private`, `image`, `continuation`, `pair`; a failed one has `why`, an English sentence saying what differs (at which byte) |
+| `why` | When `driver.encode` isn't implemented: `driver.encode is not implemented`. That fails a `cache = "contract"` driver and skips others |
+
+**Errors**: `unknown_package`; `no_drivers` (no `[[driver]]` in the manifest); `program_not_running` (not connected, or no handshake after the restart); `driver_busy` (a session is calling a model through its driver right now; `data.running` is how many calls are unanswered: check again when they are done, nothing is restarted); `extension_off`, `needs_approval` (as for `extension.restart`).
 
 ## `mcp.list`, `mcp.restart`, `mcp.set`, `mcp.remove`
 

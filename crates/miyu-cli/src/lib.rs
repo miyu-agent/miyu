@@ -33,6 +33,7 @@ mod call;
 mod compact;
 mod config;
 mod core_stop;
+mod dev;
 mod diagnostic;
 pub mod head;
 pub mod help;
@@ -69,6 +70,7 @@ pub use config::{
     Check, Config, ConfigCommand, ConfigPlan, Console, Terminal, check, config, config_on,
 };
 pub use core_stop::{core_stop, core_stop_on};
+pub use dev::{Dev, DevCommand, dev, dev_on};
 pub use kb::{Kb, KbCommand, KbPlan, kb, kb_on};
 pub use login::{
     KeyArgs, KeyCommand, Login, LoginPlan, Logout, Provider, ProviderCommand, ProviderList, login,

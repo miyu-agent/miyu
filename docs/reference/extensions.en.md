@@ -15,6 +15,7 @@ An extension is a program a package brings. The core launches it from the manife
 | [`tool.guard`, `guard.cancel`](#toolguard-guardcancel) | core → extension | Ask it before a tool call runs: allow, deny or ask the person; stop waiting |
 | [`tool.after`](#toolafter) | core → extension | Tell it a tool call's result was written (read-only, no answer) |
 | [`driver.call`, `driver.delta`, `driver.cancel`](#drivercall-driverdelta-drivercancel) | both ways | Its model driver: take one model call, stream deltas back; stop waiting |
+| [`driver.encode`](#driverencode) | core → extension | Encode once without sending: checks the encoding is steady |
 | [`system.append`](#systemappend) | extension → core | Put a section at the end of the system prompt |
 | [`widget.set`, `widget.clear`, `widget.watch`, `widget.unwatch`](#widgetset-widgetclear-widgetwatch-widgetunwatch) | both | Widget content |
 | [`extension.config`](#extensionconfig) | core → extension | Its own settings changed |
@@ -383,13 +384,21 @@ Text only after a block starts, nothing after it ends. A wrong delta ends the ca
 
 - `usage`: `{"uncached", "cache_read", "cache_write", "output", "reasoning"?}`. Left out means not reported; nothing is estimated.
 - `error`: `{"class", "message", "retry_after_ms"?}`. `class` is one of `retryable`, `rate_limited`, `context_too_long`, `auth`, `quota`, `content_policy`, `unclassified`; anything else counts as `unclassified`. `retry_after_ms` is read only for `rate_limited`. `message` is cut to 500 characters and only shown to people. Don't retry a call yourself once you have sent deltas (the reply would repeat); Miyu retries, cools down and fails over by class.
-- `sent`: the SHA-256 of the bytes you actually sent, as `sha256:<64 hex digits>`, recorded in `model.called`.
+- `sent`: the SHA-256 of the bytes you actually sent, as `sha256:<64 hex digits>`, recorded in `model.called`. If the same request is sent again (a retry) and your `sent` differs, your encoding looked at something besides the params and the cached prefix can't hit; Miyu logs a `WARN` (once per driver per run).
 
 A response with extra fields or in a wrong format counts as `unclassified` (`the driver sent a bad answer: …`); so does a JSON-RPC error (`the driver refused the call: …`).
 
 **Time limits**: the same as built-in drivers: from sending to the first delta, between deltas, and from the last delta to the response, no more than the idle limit (180 seconds, scaled by reasoning effort), and the whole call no more than ten times that. Past it the call is `retryable` (`the driver went quiet`). If the extension crashes or the connection drops, a waiting call is `retryable` (`the driver went away`). While you are backing off before a restart, a call is `retryable` with the wait from `retry_in`; a package that is off, not approved or stopped is not called, and the provider counts as unusable (a pool moves to its next member).
 
 **`driver.cancel`** (core → extension, notification): `{"call"}`. The person interrupted, the turn was cancelled, the call timed out, or a delta was wrong: Miyu stopped waiting. Don't send anything more for this call; later deltas and the response are ignored.
+
+## `driver.encode`
+
+Encode once without sending (core → extension, with an `id`, expects a response): the params are those of `driver.call`; the response is `{"body"}`, where `body` is the bytes you would send for those params (as a string). `driver.check` (authors run `miyu dev driver-check`) uses it to check that your encoding is steady: the same params must give the same bytes, also after a restart, and adding one message at the end must not change any byte before the end of the stable region.
+
+- Encode from the params only: no time, no random numbers, fields in a fixed order. `call` is this call's id; don't encode it.
+- A driver that declares `cache = "contract"` must implement it; without it `driver.check` fails it. Others are reported as skipped. If you don't implement it, answer with JSON-RPC "method not found" (`-32601`).
+- The owner's key isn't handed over (no `key`, no `base_url`), and no images.
 
 ## `system.append`
 

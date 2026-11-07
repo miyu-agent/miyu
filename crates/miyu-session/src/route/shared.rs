@@ -40,6 +40,7 @@ use miyu_store::usage::UsageIndex;
 use crate::TARGET;
 
 use super::driver_port::DriverPort;
+use super::extension::Wires;
 use super::retire::{Retirement, Retiring};
 
 mod listing;
@@ -80,6 +81,8 @@ pub struct ModelData {
     /// 扩展提供的模型驱动的通道（施工 MD-2，`route/driver_port.rs`）：核心起来时装上（[`ModelData::on_drivers`]）；没装的扩展驱动
     /// 当用不了。
     drivers: OnceLock<Arc<dyn DriverPort>>,
+    /// 扩展驱动最近几次报的 `sent`（施工 MD-3，`route/extension/wires.rs`）。
+    wires: Mutex<Wires>,
     /// 占位工具给模型看的说明（施工 8-14 补）：档案点名了占位工具的供应商，工具面里缺这几件时补上
     /// （`route/placeholder.rs`）。没读到的（测试、老数据根）是空的，空的不补。
     placeholder_tool: String,
@@ -126,6 +129,7 @@ impl ModelData {
             ledger: Mutex::new(None),
             retiring: Mutex::new(Retiring::default()),
             drivers: OnceLock::new(),
+            wires: Mutex::default(),
             placeholder_tool: String::new(),
             logos: RwLock::new(Arc::new(BTreeMap::new())),
             claimed: Mutex::new(BTreeMap::new()),
@@ -165,6 +169,11 @@ impl ModelData {
     /// 扩展驱动的通道；没装的没有。
     pub(super) fn drivers(&self) -> Option<Arc<dyn DriverPort>> {
         self.drivers.get().cloned()
+    }
+
+    /// 扩展驱动最近几次报的 `sent`（施工 MD-3）。
+    pub(super) fn wires(&self) -> MutexGuard<'_, Wires> {
+        self.wires.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
     /// 下架的模型那一份（`route/retire.rs`）。
