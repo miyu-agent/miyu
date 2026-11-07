@@ -223,6 +223,7 @@ fn the_window_goes_written_learned_listed_catalog() {
             models: vec![ListedModel {
                 id: "deepseek-flash".to_string(),
                 window: Some(500_000),
+                ..ListedModel::default()
             }],
         },
     );
@@ -256,6 +257,61 @@ fn the_window_goes_written_learned_listed_catalog() {
         facts.window.source,
         Source::Catalog { layer: 3, .. }
     ));
+}
+
+/// 扩展驱动的列表还报最大输出、能不能调工具、看不看得了图（施工 MD-4，core1 11-07 定）：没写的照列表，来源是这一份列表；手写的
+/// 照旧压过它；看不了图、没说的不改输入种类。
+#[test]
+fn a_list_can_tell_max_output_tools_and_vision() {
+    let mut held = held();
+    let fetched = at("2026-11-07T03:00:00.000Z");
+    held.lists.insert(
+        "deepseek".to_string(),
+        ProviderList {
+            fetched,
+            models: vec![
+                ListedModel {
+                    id: "deepseek-flash".to_string(),
+                    max_output: Some(9_000),
+                    tools: Some(false),
+                    vision: Some(true),
+                    ..ListedModel::default()
+                },
+                ListedModel {
+                    id: "deepseek-text".to_string(),
+                    vision: Some(false),
+                    ..ListedModel::default()
+                },
+            ],
+        },
+    );
+    let (facts, _) = facts_of(&held, DEEPSEEK, "deepseek", "deepseek-flash");
+    let listed = Source::Provider { fetched };
+    assert_eq!(
+        (facts.max_output.value, &facts.max_output.source),
+        (Some(9_000), &listed)
+    );
+    assert_eq!(
+        (facts.tools.value, &facts.tools.source),
+        (Some(false), &listed)
+    );
+    assert_eq!(facts.inputs.value, ["text", "image"]);
+    assert_eq!(facts.inputs.source, listed);
+    let (facts, _) = facts_of(&held, DEEPSEEK, "deepseek", "deepseek-text");
+    assert_ne!(facts.inputs.source, listed, "看不了图的不改");
+    let written = format!(
+        "{DEEPSEEK}\n[providers.deepseek.models.\"deepseek-flash\"]\nmax_output = 100\ntools = true\ninputs = [\"text\"]\n"
+    );
+    let (facts, _) = facts_of(&held, &written, "deepseek", "deepseek-flash");
+    assert_eq!(
+        (
+            facts.max_output.value,
+            facts.tools.value,
+            facts.inputs.value
+        ),
+        (Some(100), Some(true), vec!["text".to_string()]),
+        "手写的压过列表"
+    );
 }
 
 /// 价格是一整格：手写了一项就整份用手写的，币种不写是美元，写了照写的。

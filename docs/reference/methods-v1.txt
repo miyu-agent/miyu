@@ -27,6 +27,7 @@ driver.cancel
 driver.check
 driver.delta
 driver.encode
+driver.models
 events.append
 extension.changed
 extension.config

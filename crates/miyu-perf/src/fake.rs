@@ -53,11 +53,12 @@ pub struct Answered {
     pub cpu: Option<Cpu>,
 }
 
-/// 几个连接共用的设定（施工 V-29）：剧本、读谁的 CPU。
+/// 几个连接共用的设定（施工 V-29）：剧本、读谁的 CPU；回答的事件之间隔多久（施工 MD-4）。
 #[derive(Default)]
 struct Setup {
     script: Option<Script>,
     probe: Option<Probe>,
+    pace: Option<std::time::Duration>,
 }
 
 /// 跑着的假服务。
@@ -120,6 +121,14 @@ impl Fake {
             .script = script;
     }
 
+    /// 之后的回答一个事件一个事件地写、隔开 `gap`（施工 MD-4：像真模型那样匀着来，和扩展驱动匀着交的比 CPU）；`None` 一次写完。
+    pub fn pace(&self, gap: Option<std::time::Duration>) {
+        self.setup
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .pace = gap;
+    }
+
     /// 之后每个请求头读全、每个回答写完时读一次 `probe` 的 CPU（施工 V-29）；`None` 不读。
     pub fn probe(&self, probe: Option<Probe>) {
         self.setup
@@ -169,13 +178,13 @@ async fn serve(
     };
     let wall = SystemTime::now();
     // 剧本、读谁照这一刻的；读 CPU 放在记下时刻之后，读的那一点不算进核心的这一段。
-    let (scripted, probe) = {
+    let (scripted, probe, pace) = {
         let setup = setup.lock().unwrap_or_else(PoisonError::into_inner);
         let scripted = setup
             .script
             .as_ref()
             .and_then(|script| Some((script.clone(), script.answered(&body)?)));
-        (scripted, setup.probe.clone())
+        (scripted, setup.probe.clone(), setup.pace)
     };
     let cpu = probe.as_ref().map(Probe::sample);
     let response = if head.method == "POST" {
@@ -210,7 +219,11 @@ async fn serve(
     if arrivals.send(arrival).is_err() {
         return;
     }
-    if socket.write_all(&response).await.is_ok() {
+    let wrote = match pace {
+        Some(gap) => paced(&mut socket, &response, gap).await,
+        None => socket.write_all(&response).await.is_ok(),
+    };
+    if wrote {
         let at = Instant::now();
         let wall = SystemTime::now();
         let cpu = probe.as_ref().map(Probe::sample);
@@ -303,6 +316,30 @@ pub fn answer(body: &[u8], text: &str, pieces: usize) -> String {
 /// 字节数折成 token：四个字节一个，往上取整。
 fn tokens(bytes: usize) -> usize {
     bytes.div_ceil(4)
+}
+
+/// 匀着写一个回答（施工 MD-4）：响应头一次写完，之后一个事件（`\n\n` 收尾）一写，事件之间隔 `gap`。
+async fn paced(socket: &mut TcpStream, response: &[u8], gap: std::time::Duration) -> bool {
+    let text = String::from_utf8_lossy(response);
+    let Some((head, events)) = text.split_once("\r\n\r\n") else {
+        return socket.write_all(response).await.is_ok();
+    };
+    if socket
+        .write_all(format!("{head}\r\n\r\n").as_bytes())
+        .await
+        .is_err()
+    {
+        return false;
+    }
+    for (n, event) in events.split_inclusive("\n\n").enumerate() {
+        if n > 0 {
+            tokio::time::sleep(gap).await;
+        }
+        if socket.write_all(event.as_bytes()).await.is_err() {
+            return false;
+        }
+    }
+    true
 }
 
 /// 回答的事件流：正文照字切成 `pieces` 块（至少一块、不切开一个字；字比块少的一个字一块），一块一个事件，头一块带

@@ -16,6 +16,8 @@ const APPEND: &str = "追加一步的事件并同步";
 const IDLE: &str = "核心空闲、没有会话载入";
 const HEADED: &str = "核心空闲、连着一个头";
 const PER_SESSION: &str = "核心里每多一个活动会话";
+const DRIVER_FIRST: &str = "扩展提供的模型驱动比内置驱动多的首字时延（1 MB 的请求）";
+const DRIVER_CPU: &str = "扩展驱动流式时核心多用的 CPU（一秒 300 段增量）";
 
 /// 要和 23 第二节比的几项：名字照那张表的第一格。
 pub const ITEMS: &[&str] = &[
@@ -26,6 +28,8 @@ pub const ITEMS: &[&str] = &[
     IDLE,
     HEADED,
     PER_SESSION,
+    DRIVER_FIRST,
+    DRIVER_CPU,
 ];
 
 /// 对照预算的一行：说的是什么、量到的那一格、照预算的分位量到的数（没量的没有）、预算。
@@ -129,6 +133,26 @@ pub fn checks(results: &Results, budgets: &BTreeMap<String, Budget>) -> Result<V
             }
         })
         .collect();
+    // 扩展驱动（施工 MD-4）：两边的分位一减。以前的原始数据没有，不量。
+    let driven = results.driven.as_ref();
+    let first = driven.and_then(|driven| {
+        Some(percentile(&driven.extension_first, 95.0)? - percentile(&driven.builtin_first, 95.0)?)
+    });
+    checks.push(Check {
+        label: format!("{DRIVER_FIRST}：p95 扩展的减内置的"),
+        cell: first.map_or("—".to_string(), |extra| format!("多 {extra:.1} ms")),
+        measured: first,
+        budget: budget(DRIVER_FIRST)?,
+    });
+    let cpu = driven.and_then(|driven| {
+        Some(percentile(&driven.extension_cpu, 50.0)? - percentile(&driven.builtin_cpu, 50.0)?)
+    });
+    checks.push(Check {
+        label: format!("{DRIVER_CPU}：一轮核心花的 CPU，中位数扩展的减内置的"),
+        cell: cpu.map_or("—".to_string(), |extra| format!("多 {extra:.1} ms")),
+        measured: cpu,
+        budget: budget(DRIVER_CPU)?,
+    });
     checks.push(Check {
         label: IDLE.to_string(),
         cell: memory_cell(results.hot.idle.first()),

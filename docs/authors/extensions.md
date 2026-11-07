@@ -264,6 +264,49 @@ core.close()
 4. 这次调用一回应，通道就关了：命令里的 `miyu call` 要在你回应之前跑完。放到后台、回应以后还在跑的命令调不成（退出码 3）。
 5. 命令里调的工具照这个会话的权限、预设走，和 AI 直接调一样，会记在这次调用下面。人在会话里打的 `!命令` 不会交给你，只给内置的 `shell`。
 
+## 写一个模型驱动
+
+借订阅登录的、走 WebSocket 的、自己签名的模型服务，Miyu 内置的三种驱动接不上，可以由你的扩展来接：Miyu 交统一的请求，你编成线上的格式、登录、发出去、解响应，照增量交回来；重试、冷却、换池、计价都在 Miyu。
+
+清单声明能力 `model.driver`，写一段 `[[driver]]`：
+
+```toml
+[process]
+capabilities = ["model.driver", "network"]
+
+[[driver]]
+name = "relay"          # 驱动名
+cache = "contract"      # 前缀不变就命中缓存：要实现 driver.encode
+key = "required"        # 要 Miyu 交这一家的 key
+images = false          # 看得了图的写 true
+```
+
+主人在供应商的配置里写 `driver = "<你的包编号>/relay"` 才用它（地址可以不写）。用到它的模型时，Miyu 发 `driver.call`：
+
+```json
+{"jsonrpc":"2.0","id":"core-7","method":"driver.call","params":{"call":"d3","driver":"pi-relay/relay","request":{"tools":[],"system":"…","messages":[{"role":"user","blocks":[{"type":"text","text":"你好"}]}],"stable":0},"fingerprint":{"tools":"…","system":"…","messages":["…"]},"params":{"model":"relay-pro","max_output":4096},"key":"sk-…"}}
+```
+
+你照模型回来的一点点交 `driver.delta`（通知，不带 `id`），最后回答：
+
+```json
+{"jsonrpc":"2.0","method":"driver.delta","params":{"call":"d3","deltas":[{"start":{"index":0,"kind":"text"}},{"text":{"index":0,"text":"你好！"}}]}}
+{"jsonrpc":"2.0","method":"driver.delta","params":{"call":"d3","deltas":[{"end":{"index":0}}]}}
+{"jsonrpc":"2.0","id":"core-7","result":{"usage":{"uncached":12,"cache_read":0,"cache_write":0,"output":3},"sent":"sha256:…"}}
+```
+
+- **编码只看参数**：不放时间、随机数，字段的先后固定，`call` 不编进去。同样的请求编出同样的字节，前缀缓存才命中；`sent` 报真发出去的字节的哈希，同一个请求两次报得不一样的，Miyu 记一行警告。
+- **出错照类报**：`{"error": {"class", "message", "retry_after_ms"?}}`，`class` 是 `retryable`、`rate_limited`、`context_too_long`、`auth`、`quota`、`content_policy`、`unclassified` 之一。交了增量的别自己重试（回复会重），Miyu 照分类重试、换池；还没交增量时连不上、要刷新令牌，你自己处理。
+- **私有数据**（思考的签名、供应商自己的调用编号）照 `{"private": {"index", "data"}}` 交，以后的请求里原样交回给你，别的驱动看不到。
+- **时限**：两条增量之间、最后一条到回答都不能超过空闲时限（180 秒起，照思考强度放大）；超了、人打断了，Miyu 发 `driver.cancel {"call"}`，那一次别再发。
+- **key**：只有这一家配置里的那一把；`key = "none"` 的不交。自己登录拿的令牌存在你自己的数据目录里。
+
+**查编码稳不稳**：实现 `driver.encode`（参数同 `driver.call`，回 `{"body": "<你会发的字节>"}`，不真发），跑 `miyu dev driver-check <你的包编号>`：每份样本编两次、重启你再编一次，末尾加一条消息再编一次，有一处字节对不上就红。声明 `contract` 的必须过。
+
+**列模型**（可选）：实现 `driver.models`（参数 `{"driver", "key"?, "base_url"?}`），回 `{"models": [{"id", "window"?, "max_output"?, "tools"?, "vision"?}]}`，主人的模型列表里就有了，窗口、最大输出、能不能调工具、看不看得了图照你报的算（主人手写的压过你的）；不实现的，主人手写模型名。
+
+每个参数、增量、出错的细节见 [协议参考](../reference/extensions.md#drivercalldriverdeltadrivercancel)。
+
 ## 退出、崩了
 
 - 标准输入读到头就是「请退出」，三个平台一样；5 秒内不退会被杀掉。

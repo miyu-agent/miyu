@@ -23,6 +23,7 @@
 | `measure/startup.rs`、`sessions.rs`、`large.rs`、`stream.rs`（施工 V-22）、`append.rs`、`size.rs` | 每一项怎么量 |
 | `measure/tools.rs`、`tools/calls.rs`、`tools/split.rs`、`report/tools.rs` | 工具一步（施工 V-29，下面「工具一步」）：量、量哪几种调用、照日志拆段、写结果 |
 | `measure/tools/guard.rs` | 工具一步里挂着的守卫（施工 HK-1）：装进沙盒的扩展包、打开它、量尺自己带参数 `guard-extension` 起来当守卫 |
+| `measure/driver.rs`、`driver/extension.rs` | 扩展驱动比内置驱动多多少（施工 MD-4，设计 66 第六节）：装进沙盒的扩展包 `perf-driver`、两个窗口大的模型（`perf/big`、`perfx/big`），量尺自己带参数 `driver-extension` 起来当驱动；首字时延、流式的 CPU。`rpc.rs` 的 `first_delta` 等第一段正文的增量 |
 | `measure/tools/after.rs` | 工具一步里挂着的慢的 `tool.after` 收件人（施工 HK-2）：装进沙盒的扩展包、打开、量完关掉，量尺自己带参数 `after-extension` 起来当收件人（握手以后每读一行睡 200 毫秒） |
 | `report.rs`、`report/raw.rs`、`report/rows.rs`、`report/load.rs` | 写原始数据、写表；从原始数据读回来（`--render`） |
 | `report/gate.rs` | 闸门：有预算的几行和表照同一份（`rows::checks`），时间超过预算的倍数、内存超过预算的报错（施工 V-3） |
@@ -70,8 +71,9 @@
    2. **热启动、每多一个会话**：造 `--sessions` 个小会话各说一句，重启核心。歇两秒量核心空闲的内存。再一个个新连上、握手、订阅（订阅时核心才载入它），记这一段。都订阅着、各再说一句，歇两秒量内存。最后再重启一次核心，歇两秒，像头那样连上、握手，照先后问一遍头起来时问的六样（`config.get`、`human.get`、`model.list`、`persona.list`、`preset.list`、`package.list`，参数都空着），歇四秒（核心最后一个请求过去 2 秒还内存，`heap.md` 第 2 条），连着量内存（施工 V-5 下）。
    3. **大会话**：造一个会话，一句一句说，直到说之前的事件数到了 `--events`，再说 `--tail` 轮。每一轮记说出去到模型收到请求、到推来 `turn.ended`。歇两秒量载着它的内存。断开连接，等 `--idle-wait` 秒（会话 actor 空闲 180 秒退出）再量一次。然后重启核心 `--reloads` 次：每次连上、握手、订阅大会话（从头读日志、重放），记这一段；再说一句，记到模型收到请求。最后一次歇两秒量内存。
    4. **流式一轮**（施工 V-22，`measure/stream.rs`）：重启核心、订阅关着记忆的大会话，假模型的回答切成 `--pieces` 块（`Fake::split_into`，一块一个事件，接起来是原文），先说一句不量（载入以后头一次从头投影），再说 `--streams` 轮：每一轮记核心进程花的 CPU（各线程 `/proc/<进程号>/task/*/schedstat` 头一格加起来，只有 Linux 上有）、说出去到 `turn.ended`。量完假模型换回一块。别的几场假模型一次回一整块，核心每收一块要做的活量不出来。
-   5. **追加并同步**：在进程里，大会话日志里的事件从第一条起，一条一条追加进 `target/perf/append/` 下的一份新日志，每条写一次、同步一次，走会话 actor 落盘用的同一个函数。
-   6. **二进制**：`miyu`、`miyu-sandbox`、`miyu-extract`（施工 K-5，知识库抽字的小程序，随主程序放在旁边）的字节数；拷一份 `strip` 以后再量，没有 `strip` 的平台不写。
+   5. **扩展驱动**（施工 MD-4，`measure/driver.rs`，core1 11-07 照推荐定：进预算、CI 的 perf 那一项拦）：装上 `perf-driver`、配上 `perf/big`（同一个假服务）和 `perfx/big`（扩展驱动），重启核心、打开它（`extension.enable` 带 `approve`）；两个会话各垫四句、每句约 250 KB 的话（协议一行最长 1 MiB），之后每次请求约 1 MB。各说 `--streams` 轮，记说出去到推来第一段正文的 `model.delta`，比两边的 p95（23「扩展提供的模型驱动比内置驱动多的首字时延」）；再各说 `--streams` 轮，两边都在一秒里匀着交：内置的照假服务切成 `--pieces` 块、一个事件隔一下写（`Fake::pace`），扩展的照记号 `perf-pace` 交 300 段，记每一轮核心花的 CPU，比两边的中位数（23「扩展驱动流式时核心多用的 CPU」）。
+   6. **追加并同步**：在进程里，大会话日志里的事件从第一条起，一条一条追加进 `target/perf/append/` 下的一份新日志，每条写一次、同步一次，走会话 actor 落盘用的同一个函数。
+   7. **二进制**：`miyu`、`miyu-sandbox`、`miyu-extract`（施工 K-5，知识库抽字的小程序，随主程序放在旁边）的字节数；拷一份 `strip` 以后再量，没有 `strip` 的平台不写。
 8. 内存读 `/proc/<进程号>/smaps_rollup` 的 `Pss`、`Anonymous`、`Rss`，核心和它拉起的子进程各一行，子进程照 `/proc/<进程号>/task/*/children` 找。只有 Linux 上读得到，别的平台写「不量」。
 9. 对照预算的表：
    - 预算照 23 第二节的表读，第一格是名字。只写了一个数的照 p50 比，写了分位的照那个分位比；内存照核心进程的 PSS 比。

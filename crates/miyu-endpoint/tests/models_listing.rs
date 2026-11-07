@@ -144,6 +144,7 @@ fn observed() -> Observed {
                 .map(|id| ListedModel {
                     id: id.to_string(),
                     window: Some(64_000),
+                    ..ListedModel::default()
                 })
                 .to_vec(),
         },

@@ -264,6 +264,49 @@ To write your own tool that runs commands (replacing the built-in `shell`, or ru
 4. The channel closes as soon as you respond to the call: `miyu call` in a command must finish before you respond. Commands still running in the background after your response can't call (exit code 3).
 5. Tools called from those commands go through the session's permissions and preset like direct calls, and are recorded under this call. Commands people type in the session (`!`) are not handed to you, only to the built-in `shell`.
 
+## Writing a model driver
+
+Model services that sign in with a subscription, speak WebSocket or sign their own requests can't be reached by Miyu's three built-in drivers; your extension can reach them instead. Miyu hands over the unified request; you encode it in the wire format, sign in, send it, parse the response and stream deltas back. Retries, cooldowns, failover and pricing stay in Miyu.
+
+Declare the capability `model.driver` in the manifest and write a `[[driver]]` table:
+
+```toml
+[process]
+capabilities = ["model.driver", "network"]
+
+[[driver]]
+name = "relay"          # driver name
+cache = "contract"      # the cache hits while the prefix is unchanged: implement driver.encode
+key = "required"        # Miyu hands over this provider's key
+images = false          # true if it can see images
+```
+
+It's used only when the owner writes `driver = "<your package id>/relay"` in a provider's settings (the address can be left out). For that provider's models Miyu sends `driver.call`:
+
+```json
+{"jsonrpc":"2.0","id":"core-7","method":"driver.call","params":{"call":"d3","driver":"pi-relay/relay","request":{"tools":[],"system":"…","messages":[{"role":"user","blocks":[{"type":"text","text":"Hello"}]}],"stable":0},"fingerprint":{"tools":"…","system":"…","messages":["…"]},"params":{"model":"relay-pro","max_output":4096},"key":"sk-…"}}
+```
+
+Send `driver.delta` notifications (no `id`) as the model's reply comes in, then answer:
+
+```json
+{"jsonrpc":"2.0","method":"driver.delta","params":{"call":"d3","deltas":[{"start":{"index":0,"kind":"text"}},{"text":{"index":0,"text":"Hi!"}}]}}
+{"jsonrpc":"2.0","method":"driver.delta","params":{"call":"d3","deltas":[{"end":{"index":0}}]}}
+{"jsonrpc":"2.0","id":"core-7","result":{"usage":{"uncached":12,"cache_read":0,"cache_write":0,"output":3},"sent":"sha256:…"}}
+```
+
+- **Encode from the params only**: no time, no random numbers, fields in a fixed order, and don't encode `call`. The same request must give the same bytes for the prefix cache to hit. Report the hash of the bytes you actually sent in `sent`; if the same request gets a different `sent`, Miyu logs a warning.
+- **Report errors by class**: `{"error": {"class", "message", "retry_after_ms"?}}`, where `class` is one of `retryable`, `rate_limited`, `context_too_long`, `auth`, `quota`, `content_policy`, `unclassified`. Don't retry a call yourself after sending deltas (the reply would repeat); Miyu retries and fails over by class. Before any delta, handle reconnects and token refreshes yourself.
+- **Private data** (reasoning signatures, the provider's own call ids) goes in `{"private": {"index", "data"}}`; later requests hand it back to you as is, and other drivers never see it.
+- **Time limits**: between deltas, and from the last delta to the answer, no more than the idle limit (180 seconds and up, scaled by reasoning effort). Past it, or when the person interrupts, Miyu sends `driver.cancel {"call"}`; send nothing more for that call.
+- **Keys**: only the one in this provider's settings, and none if you declared `key = "none"`. Tokens you get by signing in yourself belong in your own data directory.
+
+**Check that your encoding is steady**: implement `driver.encode` (same params as `driver.call`, answer `{"body": "<the bytes you would send>"}`, without sending) and run `miyu dev driver-check <your package id>`: each sample is encoded twice, again after restarting you, and with one more message at the end; any byte that doesn't match is a failure. A `contract` driver must pass.
+
+**List models** (optional): implement `driver.models` (params `{"driver", "key"?, "base_url"?}`) and answer `{"models": [{"id", "window"?, "max_output"?, "tools"?, "vision"?}]}`. The models then show up in the owner's model list, with the window, maximum output, tool use and image support you report (what the owner writes wins). Without it, the owner writes model names by hand.
+
+Every param, delta and error is in the [protocol reference](../reference/extensions.en.md#drivercall-driverdelta-drivercancel).
+
 ## Exiting and crashing
 
 - Stdin reaching its end means "please exit", on all three platforms; if you haven't exited after 5 seconds you're killed.

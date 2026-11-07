@@ -22,7 +22,7 @@ use tokio::sync::mpsc;
 use tokio::time::Instant;
 
 use miyu_config::package::DriverKey;
-use miyu_config::secret::Secret;
+use miyu_config::secret::{Reference, Secret};
 use miyu_drivers::classify::Classified;
 use miyu_http::{Endpoint, Progress, TOTAL_FACTOR};
 use miyu_kernel::accumulate::Accumulator;
@@ -31,7 +31,7 @@ use miyu_kernel::id::{ContentHash, DriverFamily};
 use miyu_kernel::request::Request;
 use miyu_models::cooldown::Candidate;
 use miyu_models::pools::Member;
-use miyu_models::provider::{self, DriverRef, NoModel, Target};
+use miyu_models::provider::{self, DriverRef, NoModel, Provider, Target};
 use miyu_store::blob::Blobs;
 
 use super::Routes;
@@ -45,9 +45,11 @@ use crate::blocking::blocking;
 use crate::config::TurnConfig;
 
 pub mod check;
+mod listing;
 mod wire;
 mod wires;
 
+pub(super) use listing::listed;
 pub(super) use wires::Wires;
 
 use wire::{Outgoing, Picture, Said};
@@ -77,34 +79,46 @@ impl Routes {
         driver: &DriverRef,
     ) -> Result<Vec<Choice>, NoModel> {
         let provider = &target.provider;
-        let port = self
-            .data
-            .drivers()
-            .ok_or_else(|| NoModel(super::unbuilt(provider)))?;
-        let declared = port
-            .present(driver)
-            .map_err(|why| NoModel(format!("model driver \"{driver}\" is unavailable: {why}")))?;
-        let usable = || NoModel(format!("provider {:?} has no usable key", provider.id));
-        let key = match (declared.key, &provider.key) {
-            (DriverKey::None, _) | (DriverKey::Optional, None) => None,
-            (DriverKey::Required, None) => return Err(usable()),
-            (_, Some(reference)) => Some(config.secret(reference).ok_or_else(usable)?),
-        };
-        // 地址是这一家写的（第九节第 1 条）；扩展驱动的供应商可以不写（`provider()` 记成空的），不写的不交。
-        let base_url = provider::resolve_base_url(provider, &|reference| config.secret(reference))?;
-        let base_url = (!base_url.is_empty()).then_some(base_url);
+        let reach = reach(&self.data, provider, driver, &|reference| {
+            config.secret(reference)
+        })?;
         Ok(vec![Choice {
             who: Candidate::new(&provider.id, &target.model),
             target: target.clone(),
-            endpoint: Endpoint::keyless(base_url.clone().unwrap_or_default()),
+            endpoint: Endpoint::keyless(reach.base_url.clone().unwrap_or_default()),
             member: member.cloned(),
-            extension: Some(Reach {
-                images: declared.images,
-                key,
-                base_url,
-            }),
+            extension: Some(reach),
         }])
     }
+}
+
+/// 扩展驱动 `driver` 那一家（`provider`）要交给扩展的：问端口在不在、声明了什么（不在的当场 `no_model`）；key 照声明取（`none` 的
+/// 不取，`required` 的没写当 `no_model`，写了取不到的也是）；地址是这一家写的，扩展驱动的供应商可以不写（`provider()` 记成空的），
+/// 不写的不交（第九节第 1 条）。挑候选、拉模型列表都照它（施工 MD-4 抽出来）。
+pub(super) fn reach(
+    data: &ModelData,
+    provider: &Provider,
+    driver: &DriverRef,
+    secret: &dyn Fn(&Reference) -> Option<Secret>,
+) -> Result<Reach, NoModel> {
+    let port = data
+        .drivers()
+        .ok_or_else(|| NoModel(super::unbuilt(provider)))?;
+    let declared = port
+        .present(driver)
+        .map_err(|why| NoModel(format!("model driver \"{driver}\" is unavailable: {why}")))?;
+    let usable = || NoModel(format!("provider {:?} has no usable key", provider.id));
+    let key = match (declared.key, &provider.key) {
+        (DriverKey::None, _) | (DriverKey::Optional, None) => None,
+        (DriverKey::Required, None) => return Err(usable()),
+        (_, Some(reference)) => Some(secret(reference).ok_or_else(usable)?),
+    };
+    let base_url = provider::resolve_base_url(provider, secret)?;
+    Ok(Reach {
+        images: declared.images,
+        key,
+        base_url: (!base_url.is_empty()).then_some(base_url),
+    })
 }
 
 /// 这一次调用的编号：同一个核心里不重。

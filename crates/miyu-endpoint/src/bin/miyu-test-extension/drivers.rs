@@ -19,9 +19,17 @@ impl Held {
 
 /// 答这一行 `driver.call` 或 `driver.encode`（JSON-RPC 编号 `id`），照 `how`（`<怎么答 call>+<怎么编>`）：交回要写的几行，照先后。
 pub(crate) fn answered(id: &str, how: &str, line: &str, held: &mut Held) -> Vec<String> {
-    let (how, encode) = how.split_once('+').unwrap_or((how, ""));
+    let mut parts = how.split('+');
+    let (how, encode, list) = (
+        parts.next().unwrap_or_default(),
+        parts.next().unwrap_or_default(),
+        parts.next().unwrap_or_default(),
+    );
     if line.contains(r#""method":"driver.encode""#) {
         return vec![encoded(id, encode, line)];
+    }
+    if line.contains(r#""method":"driver.models""#) {
+        return vec![listed(id, list)];
     }
     let call = super::field(line, "call").unwrap_or_default();
     let said = format!("echo: {}", last_text(line));
@@ -100,6 +108,18 @@ fn encoded(id: &str, how: &str, line: &str) -> String {
         r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"body":"{}"}}}}"#,
         super::quoted(&body)
     )
+}
+
+/// 答 `driver.models`（施工 MD-4）：`list` 列两个模型（一个带窗口），别的回「没有这个方法」。
+fn listed(id: &str, how: &str) -> String {
+    match how {
+        "list" => format!(
+            r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"models":[{{"id":"ag-pro","window":200000}},{{"id":"ag-lite"}}]}}}}"#
+        ),
+        _ => format!(
+            r#"{{"jsonrpc":"2.0","id":"{id}","error":{{"code":-32601,"message":"no such method"}}}}"#
+        ),
+    }
 }
 
 /// 一块正文 `said`：开始、字、收尾，分两条 `driver.delta`。

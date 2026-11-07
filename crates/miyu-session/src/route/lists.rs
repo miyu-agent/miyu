@@ -73,6 +73,10 @@ async fn fetch(
     let provider = data
         .with(|knowledge| provider::provider(values, knowledge, id))
         .map_err(|NoModel(why)| why)?;
+    // 扩展提供的驱动（施工 MD-4）：经扩展的 `driver.models` 列，不走 HTTP。
+    if let Some(driver) = provider.driver.extension() {
+        return super::extension::listed(data, &provider, driver, secret, TIMEOUT).await;
+    }
     let driver = provider
         .build(listing_texts()?)
         .ok_or_else(|| super::unbuilt(&provider))?;
@@ -132,6 +136,7 @@ pub(crate) async fn list_models(
         .map(|listed| ListedModel {
             id: listed.id,
             window: listed.window,
+            ..ListedModel::default()
         })
         .collect())
 }

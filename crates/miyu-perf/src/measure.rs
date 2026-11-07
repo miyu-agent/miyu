@@ -2,6 +2,7 @@
 //! 在会话里说一句。
 
 pub mod append;
+pub mod driver;
 pub mod large;
 pub mod sessions;
 pub mod size;

@@ -32,6 +32,14 @@ fn budgets() -> BTreeMap<String, Budget> {
         ("一次请求的投影（增量，一万条事件的会话）", ms(95, 5.0)),
         ("同一个会话从头投影一次", ms(50, 100.0)),
         ("追加一步的事件并同步", ms(99, 20.0)),
+        (
+            "扩展提供的模型驱动比内置驱动多的首字时延（1 MB 的请求）",
+            ms(95, 5.0),
+        ),
+        (
+            "扩展驱动流式时核心多用的 CPU（一秒 300 段增量）",
+            ms(50, 10.0),
+        ),
         ("核心空闲、没有会话载入", mb(30.0)),
         ("核心空闲、连着一个头", mb(30.0)),
         ("核心里每多一个活动会话", mb(5.0)),
@@ -115,6 +123,13 @@ fn results(memory: bool) -> Results {
             cpu: vec![40.0, 50.0, 60.0],
             turn: vec![70.0, 80.0, 90.0],
         }),
+        driven: Some(crate::measure::driver::Driven {
+            pieces: 300,
+            builtin_first: vec![10.0, 11.0, 12.0],
+            extension_first: vec![13.0, 14.0, 15.0],
+            builtin_cpu: vec![40.0, 41.0, 42.0],
+            extension_cpu: vec![44.0, 45.0, 46.0],
+        }),
         appends: vec![1.0, 2.0, 30.0],
     }
 }
@@ -137,6 +152,17 @@ fn the_table_judges_against_the_budgets() {
         "{projection}"
     );
     assert!(projection.ends_with("| p95 5 ms | 过 |"), "{projection}");
+    // 扩展驱动（施工 MD-4）：首字每一轮都多 3，p95 一减是 3，没超 5；CPU 中位数 45 减 41 是 4，没超 10。
+    let first = row("扩展提供的模型驱动比内置驱动多的首字时延");
+    assert!(
+        first.contains("多 3.0 ms") && first.ends_with("| 过 |"),
+        "{first}"
+    );
+    let cpu = row("扩展驱动流式时核心多用的 CPU");
+    assert!(
+        cpu.contains("多 4.0 ms") && cpu.ends_with("| 过 |"),
+        "{cpu}"
+    );
     assert!(
         row("从头投影").ends_with("| 100 ms | 过 |"),
         "照落了盘的 60 比"

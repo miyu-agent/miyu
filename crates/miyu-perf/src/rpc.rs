@@ -100,6 +100,30 @@ impl Rpc {
         }
     }
 
+    /// 等 `session` 推来第一段正文的增量（施工 MD-4，`measure/driver.rs`）：交回读到它的那一刻。之前推来的别的留着，等
+    /// `turn.ended` 的照旧找得到。
+    ///
+    /// # Errors
+    ///
+    /// 读不到、等太久。
+    pub async fn first_delta(&mut self, session: &str) -> Result<std::time::Instant, String> {
+        if let Some(at) = self
+            .pushes
+            .iter()
+            .position(|push| crate::measure::driver::is_text_delta(push, session))
+        {
+            self.pushes.remove(at);
+            return Ok(std::time::Instant::now());
+        }
+        loop {
+            let push = self.line("model.delta").await?;
+            if crate::measure::driver::is_text_delta(&push, session) {
+                return Ok(std::time::Instant::now());
+            }
+            self.pushes.push_back(push);
+        }
+    }
+
     /// 读一行，读成 JSON。
     async fn line(&mut self, waiting: &str) -> Result<Value, String> {
         let mut line = String::new();

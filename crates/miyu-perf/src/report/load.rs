@@ -77,6 +77,16 @@ pub fn results(raw: &Value, mut args: Args) -> Result<Results, String> {
             None => None,
         },
         // 施工 V-22 以前的原始数据没有流式一轮。
+        driven: match raw.get("driver") {
+            Some(driver) => Some(crate::measure::driver::Driven {
+                pieces: count(&driver["pieces"], "driver.pieces")?,
+                builtin_first: times(&driver["builtin_first_ms"], "driver.builtin_first_ms")?,
+                extension_first: times(&driver["extension_first_ms"], "driver.extension_first_ms")?,
+                builtin_cpu: times(&driver["builtin_cpu_ms"], "driver.builtin_cpu_ms")?,
+                extension_cpu: times(&driver["extension_cpu_ms"], "driver.extension_cpu_ms")?,
+            }),
+            None => None,
+        },
         streamed: match raw.get("stream") {
             Some(stream) => Some(Streamed {
                 pieces: count(&stream["pieces"], "stream.pieces")?,

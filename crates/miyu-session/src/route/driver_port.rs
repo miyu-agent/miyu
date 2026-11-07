@@ -67,4 +67,15 @@ pub trait DriverPort: Send + Sync + std::fmt::Debug {
         params: String,
         deltas: mpsc::UnboundedSender<Value>,
     ) -> Result<Pending, NotYet>;
+
+    /// 往驱动 `driver` 所在的扩展发一条只要回答、不交增量的请求 `method`（施工 MD-4：`driver.models`），`params` 同上是写好的原文。
+    /// 丢掉交回的 [`Pending`] 就是不等了，不另发通知。不实现的端口（测试的假端口）当连不上。
+    ///
+    /// # Errors
+    ///
+    /// 驱动在，这一刻却连不上（[`NotYet`]）：没发出去。
+    fn ask(&self, driver: &DriverRef, method: &str, params: String) -> Result<Pending, NotYet> {
+        let _ = (driver, method, params);
+        Err(NotYet { retry_in_ms: None })
+    }
 }

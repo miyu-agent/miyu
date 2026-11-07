@@ -200,15 +200,16 @@ pub fn facts(
     let from_catalog =
         |pick: &dyn Fn(&CatalogModel) -> Option<u64>| Some((pick(model_data?)?, borrowed.clone()?));
     let learned = knowledge.learned.window(&provider.id, model);
-    let listed = knowledge.lists.get(&provider.id).and_then(|list| {
-        let window = list.find(model)?.window?;
-        Some((
-            window,
-            Source::Provider {
-                fetched: list.fetched,
-            },
-        ))
-    });
+    // 供应商的列表里的这一个（施工 MD-4 起扩展驱动的列表还带最大输出、能不能调工具、看不看得了图）：哪一格有的照它，来源是这一份列表。
+    let on_list = knowledge
+        .lists
+        .get(&provider.id)
+        .and_then(|list| Some((list.find(model)?, list.fetched)));
+    let from_list = |value: Option<u64>| {
+        let (_, fetched) = on_list?;
+        Some((value?, Source::Provider { fetched }))
+    };
+    let listed = from_list(on_list.and_then(|(found, _)| found.window));
     let reasoning = fact(
         written
             .texts(&["reasoning"])
@@ -239,18 +240,31 @@ pub fn facts(
         max_output: fact(
             written
                 .int(&["max_output"])
+                .or_else(|| from_list(on_list.and_then(|(found, _)| found.max_output)))
                 .or_else(|| from_catalog(&|entry| entry.max_output)),
         ),
         inputs: or_default(
-            written.texts(&["inputs"]).or_else(|| {
-                let inputs = model_data?.inputs?.names().map(str::to_string).collect();
-                Some((inputs, borrowed.clone()?))
-            }),
+            written
+                .texts(&["inputs"])
+                .or_else(|| {
+                    // 列表说看得了图的（施工 MD-4，core1 11-07 定）：文字加图；说不能的、没说的照目录。
+                    let (_, fetched) = on_list.filter(|(found, _)| found.vision == Some(true))?;
+                    let inputs = vec!["text".to_string(), "image".to_string()];
+                    Some((inputs, Source::Provider { fetched }))
+                })
+                .or_else(|| {
+                    let inputs = model_data?.inputs?.names().map(str::to_string).collect();
+                    Some((inputs, borrowed.clone()?))
+                }),
             vec!["text".to_string()],
         ),
         tools: fact(
             written
                 .bool(&["tools"])
+                .or_else(|| {
+                    let (found, fetched) = on_list?;
+                    Some((found.tools?, Source::Provider { fetched }))
+                })
                 .or_else(|| Some((model_data?.tools?, borrowed.clone()?))),
         ),
         reasoning,

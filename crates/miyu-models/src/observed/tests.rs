@@ -45,10 +45,12 @@ fn a_provider_list_reads_back_the_same() {
             ListedModel {
                 id: "deepseek-flash".to_string(),
                 window: Some(1_000_000),
+                ..ListedModel::default()
             },
             ListedModel {
                 id: "x".to_string(),
                 window: None,
+                ..ListedModel::default()
             },
         ],
     };

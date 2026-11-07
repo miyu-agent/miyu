@@ -22,6 +22,7 @@ fn list(ids: &[&str], at: i64) -> ProviderList {
             .map(|id| ListedModel {
                 id: (*id).to_string(),
                 window: None,
+                ..ListedModel::default()
             })
             .collect(),
     }

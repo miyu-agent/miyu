@@ -68,17 +68,7 @@ impl DriverPort for Drivers {
         params: String,
         deltas: mpsc::UnboundedSender<Value>,
     ) -> Result<DriverPending, NotYet> {
-        let core = self.0.upgrade().ok_or(NotYet { retry_in_ms: None })?;
-        let Some(peer) = core.provided.linked(&driver.package) else {
-            // 退避中的照它还要等多久；刚拉起、还没握手的不说。
-            let retry_in_ms = match core.extensions.status(&driver.package).state {
-                State::Waiting { until } => Some(millis(
-                    until.saturating_duration_since(tokio::time::Instant::now()),
-                )),
-                _ => None,
-            };
-            return Err(NotYet { retry_in_ms });
-        };
+        let peer = self.link(driver)?;
         peer.stream(call, deltas);
         let live = Live {
             peer,
@@ -90,18 +80,52 @@ impl DriverPort for Drivers {
             let mut live = live;
             let answered = live.peer.call_raw("driver.call", params).await;
             live.done = true;
-            match answered {
-                Ok(Ok(result)) => Ok(result),
-                Ok(Err(error)) => Err(Broken::Refused(
-                    error
-                        .get("message")
-                        .and_then(Value::as_str)
-                        .unwrap_or("no message")
-                        .to_string(),
-                )),
-                Err(Gone) => Err(Broken::Gone),
-            }
+            broken(answered)
         }))
+    }
+
+    fn ask(
+        &self,
+        driver: &DriverRef,
+        method: &str,
+        params: String,
+    ) -> Result<DriverPending, NotYet> {
+        let peer = self.link(driver)?;
+        let method = method.to_string();
+        Ok(Box::pin(async move {
+            broken(peer.call_raw(&method, params).await)
+        }))
+    }
+}
+
+impl Drivers {
+    /// 驱动 `driver` 所在的扩展握了手的连接；没有的（退避中、刚拉起）交 [`NotYet`]：退避中的照它还要等多久，刚拉起的不说。
+    fn link(&self, driver: &DriverRef) -> Result<Peer, NotYet> {
+        let core = self.0.upgrade().ok_or(NotYet { retry_in_ms: None })?;
+        core.provided.linked(&driver.package).ok_or_else(|| {
+            let retry_in_ms = match core.extensions.status(&driver.package).state {
+                State::Waiting { until } => Some(millis(
+                    until.saturating_duration_since(tokio::time::Instant::now()),
+                )),
+                _ => None,
+            };
+            NotYet { retry_in_ms }
+        })
+    }
+}
+
+/// 等到的回应照执行器认的分：回答原样、JSON-RPC 的错误交原话、连接断了。
+fn broken(answered: Result<Result<Value, Value>, Gone>) -> Result<Value, Broken> {
+    match answered {
+        Ok(Ok(result)) => Ok(result),
+        Ok(Err(error)) => Err(Broken::Refused(
+            error
+                .get("message")
+                .and_then(Value::as_str)
+                .unwrap_or("no message")
+                .to_string(),
+        )),
+        Err(Gone) => Err(Broken::Gone),
     }
 }
 

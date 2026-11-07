@@ -16,6 +16,7 @@
 | [`tool.after`](#toolafter) | 核心 → 扩展 | 工具调用的结果落了盘以后告诉它（只读，不等回答） |
 | [`driver.call`、`driver.delta`、`driver.cancel`](#drivercalldriverdeltadrivercancel) | 两个方向 | 它提供的模型驱动：接一次模型调用、交增量；不等了 |
 | [`driver.encode`](#driverencode) | 核心 → 扩展 | 编一次、不发：查编码稳不稳 |
+| [`driver.models`](#drivermodels) | 核心 → 扩展 | 列它能用的模型（可选） |
 | [`system.append`](#systemappend) | 扩展 → 核心 | 往系统提示词末尾放一段 |
 | [`widget.set`、`widget.clear`、`widget.watch`、`widget.unwatch`](#widgetsetwidgetclearwidgetwatchwidgetunwatch) | 两个方向 | 界面块的内容 |
 | [`extension.config`](#extensionconfig) | 核心 → 扩展 | 它自己的配置变了 |
@@ -400,6 +401,25 @@ access = ["network"]         # 访问类别，可以不写；两样至少一样
 - 编码只能看参数：不放时间、随机数，字段的先后固定；`call` 是这一次的编号，不要编进去。
 - 声明 `cache = "contract"` 的驱动必须实现它，没实现的 `driver.check` 算没通过；别的没实现照「跳过」报。没实现就回 JSON-RPC 的「没有这个方法」（`-32601`）。
 - 主人的 key 不交（`key`、`base_url` 都不写），也不交图。
+
+## `driver.models`
+
+列这个驱动能用的模型（核心 → 扩展，带 `id`，要回应），可选：主人拉模型列表（`model.list` 带 `refresh`、配置页打开、模型请求回了 404 以后）时调。不实现的回 JSON-RPC 的「没有这个方法」（`-32601`），主人手写模型名。
+
+**参数** `{"driver", "key"?, "base_url"?}`：`key`、`base_url` 同 `driver.call`（照你的 `key` 声明交，没写的不交）。
+
+**回应** `{"models": [...]}`，一个模型一项：
+
+| 格 | 说明 |
+|---|---|
+| `id` | 模型名，主人在配置里写成 `<供应商>/<id>` |
+| `window` | 上下文窗口，token |
+| `max_output` | 最大输出，token |
+| `tools` | 能不能调工具 |
+| `vision` | 看得了图：`true` 的照「输入有文字和图」算 |
+| `reasoning` | 认得，暂不用 |
+
+都照「手写的 > 你列的 > 目录」查，主人手写的压过你的。整个最多等 30 秒；多了格、写法不对的整份不要，列表照旧用上一份。
 
 ## `system.append`
 

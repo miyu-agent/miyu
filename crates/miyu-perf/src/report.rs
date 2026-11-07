@@ -43,6 +43,8 @@ pub struct Results {
     pub remembering: Option<Large>,
     /// 流式一轮（施工 V-22）：以前的原始数据没有。
     pub streamed: Option<Streamed>,
+    /// 扩展驱动比内置驱动多多少（施工 MD-4）：以前的原始数据没有。
+    pub driven: Option<crate::measure::driver::Driven>,
     /// 追加并同步，每一条的毫秒数。
     pub appends: Vec<f64>,
 }

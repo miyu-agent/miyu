@@ -36,6 +36,10 @@ async fn main() -> ExitCode {
     if words.first().map(String::as_str) == Some(measure::tools::after::ARG) {
         return measure::tools::after::serve();
     }
+    // 扩展驱动那两项里当驱动的扩展（施工 MD-4）：同样是量尺自己。
+    if words.first().map(String::as_str) == Some(measure::driver::ARG) {
+        return measure::driver::serve();
+    }
     let outcome = match args::parse(&words) {
         Ok(args) => run(args).await,
         Err(error) => Err(error),
@@ -101,6 +105,12 @@ async fn run(args: Args) -> Result<(), String> {
         .ok_or("大会话的目录没有名字")?;
     let streamed =
         measure::stream::streamed(&sandbox, &mut fake, &session, args.streams, args.pieces).await?;
+    eprintln!(
+        "扩展驱动：1 MB 的请求说 {} 轮比首字，{} 段的流比 CPU",
+        args.streams, args.pieces
+    );
+    measure::driver::install(&sandbox)?;
+    let driven = measure::driver::driven(&sandbox, &mut fake, args.streams, args.pieces).await?;
     eprintln!("大会话（开着记忆）：说到 {} 条事件", args.events);
     let remembering = Plan {
         memory: measure::REMEMBERING,
@@ -125,6 +135,7 @@ async fn run(args: Args) -> Result<(), String> {
         large,
         remembering: Some(remembering),
         streamed: Some(streamed),
+        driven: Some(driven),
         appends,
     };
     let written = report::write(&results, &budgets, &args.out)?;

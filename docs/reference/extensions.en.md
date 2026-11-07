@@ -16,6 +16,7 @@ An extension is a program a package brings. The core launches it from the manife
 | [`tool.after`](#toolafter) | core → extension | Tell it a tool call's result was written (read-only, no answer) |
 | [`driver.call`, `driver.delta`, `driver.cancel`](#drivercall-driverdelta-drivercancel) | both ways | Its model driver: take one model call, stream deltas back; stop waiting |
 | [`driver.encode`](#driverencode) | core → extension | Encode once without sending: checks the encoding is steady |
+| [`driver.models`](#drivermodels) | core → extension | List the models it can use (optional) |
 | [`system.append`](#systemappend) | extension → core | Put a section at the end of the system prompt |
 | [`widget.set`, `widget.clear`, `widget.watch`, `widget.unwatch`](#widgetset-widgetclear-widgetwatch-widgetunwatch) | both | Widget content |
 | [`extension.config`](#extensionconfig) | core → extension | Its own settings changed |
@@ -400,6 +401,25 @@ Encode once without sending (core → extension, with an `id`, expects a respons
 - Encode from the params only: no time, no random numbers, fields in a fixed order. `call` is this call's id; don't encode it.
 - A driver that declares `cache = "contract"` must implement it; without it `driver.check` fails it. Others are reported as skipped. If you don't implement it, answer with JSON-RPC "method not found" (`-32601`).
 - The owner's key isn't handed over (no `key`, no `base_url`), and no images.
+
+## `driver.models`
+
+List the models this driver can use (core → extension, with an `id`, expects a response). Optional: called when the owner's model list is refreshed (`model.list` with `refresh`, opening the settings page, after a model request answers 404). If you don't implement it, answer with JSON-RPC "method not found" (`-32601`); the owner then writes model names by hand.
+
+**Params** `{"driver", "key"?, "base_url"?}`: `key` and `base_url` as for `driver.call` (handed over according to your `key` declaration, left out when not written).
+
+**Response** `{"models": [...]}`, one entry per model:
+
+| Field | Meaning |
+|---|---|
+| `id` | Model name; the owner writes it as `<provider>/<id>` |
+| `window` | Context window, in tokens |
+| `max_output` | Maximum output, in tokens |
+| `tools` | Whether it can call tools |
+| `vision` | It can see images: `true` counts as "inputs are text and images" |
+| `reasoning` | Recognized, not used yet |
+
+Each is looked up as "written by the owner > listed by you > catalog", so what the owner writes wins. The whole call waits at most 30 seconds; extra fields or a wrong format reject the whole list, and the previous list stays in use.
 
 ## `system.append`
 

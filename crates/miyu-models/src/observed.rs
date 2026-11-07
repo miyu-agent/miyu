@@ -95,13 +95,22 @@ pub struct ProviderList {
 }
 
 /// 列表里的一个模型。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ListedModel {
     /// 模型名。
     pub id: String,
     /// 报了的窗口。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub window: Option<u64>,
+    /// 报了的最大输出（施工 MD-4：扩展驱动的 `driver.models` 报；内置驱动的列表没有）。以前的文件没有这一格。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_output: Option<u64>,
+    /// 能不能调工具（施工 MD-4，同上）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tools: Option<bool>,
+    /// 看得了图（施工 MD-4，同上）：真的照 `inputs = ["text", "image"]` 算。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vision: Option<bool>,
 }
 
 impl ProviderList {

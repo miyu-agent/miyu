@@ -195,7 +195,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "user.append" | "tool.guard" | "guard.cancel" | "tool.after" | "widget.watch" | "widget.unwatch" | "view.add" | "view.append"
         | "view.update" | "view.remove" | "view.hidden" | "package.progress"
         // 扩展提供的模型驱动（施工 MD-2）：核心发的调用、不等了；扩展交的增量是通知，不进这张表。
-        | "driver.call" | "driver.encode" | "driver.cancel" => People,
+        | "driver.call" | "driver.encode" | "driver.models" | "driver.cancel" => People,
         _ => People,
     }
 }

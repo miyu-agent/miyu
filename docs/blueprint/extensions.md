@@ -163,6 +163,7 @@
 5. **不进日志**：参数里有 key，不记；读坏了的增量、回答记一行 `WARN driver bad delta`、`driver bad answer`（`log.md`），只写驱动和原因。
 6. **查编码稳不稳**（施工 MD-3，设计 66 第七节第 2 条，core1 11-07 照推荐定；`models/check.rs`，样本和比法在 `miyu-session` 的 `route/extension/check.rs`）：`driver.check {"package"}` 只给人。样本在核心里用代码造（纯文字、工具面、带私有数据的思考和工具调用、看不了图的转述、续写），参数和 `driver.call` 一个写法、编号固定为 `check`、不交 key 和图；每份经 `driver.encode` 编两次，重启扩展（`extensions::restart_process`）、等新的连接握手（30 秒），再编一次，三次逐字节比；只在末尾加一条消息的一对，最后一条稳定区消息里放记号字 `miyustableend7f3a`（纯 ASCII 的字母数字，JSON 里不会被转义），到它为止逐字节比，找不到的报「没法查稳定区」、不当过。没实现 `driver.encode`（回 `-32601`）的：`contract` 的没通过，别的跳过。查之前、重启之前各看一次有没有没答完的扩展驱动调用（`Peer::streaming`），有的回 `driver_busy`（`data.running`），不重启（core1 11-07 定）。命令行是 `miyu dev driver-check`（`cli/dev.md`）。
 7. **`sent` 对不上**（施工 MD-3，设计 66 第七节第 3 条，`miyu-session` 的 `route/extension/wires.rs`）：模型资料里每个驱动留最近 64 次「请求的哈希、报的 `sent`」，同一个请求再来、`sent` 不一样的记一行 `WARN driver encoded the same request differently`，每个驱动每次核心运行一次。
+8. **列模型**（施工 MD-4，设计 66 第四节第 4 条，`models/drivers.rs` 的 `ask`、`miyu-session` 的 `route/extension/listing.rs`）：拉这一家的列表时发 `driver.models {"driver", "key"?, "base_url"?}`（只要回答、不交增量、不发 `driver.cancel`），读 `{"models": [{"id", "window"?, "max_output"?, "tools"?, "vision"?, "reasoning"?}]}`；多了格、写法不对的整份不要；`reasoning` 照收不用（core1 11-07 定）。
 
 **放在 system 尾部的**（施工 X-20，设计 `34-表情包.md` 第五节第 5 条）：
 

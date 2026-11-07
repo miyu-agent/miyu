@@ -40,6 +40,11 @@ pub fn json(results: &Results) -> Value {
     if let Some(remembering) = &results.remembering {
         raw["large_memory"] = large(remembering);
     }
+    if let Some(driven) = &results.driven {
+        raw["driver"] = json!({"pieces": driven.pieces,
+            "builtin_first_ms": times(&driven.builtin_first), "extension_first_ms": times(&driven.extension_first),
+            "builtin_cpu_ms": times(&driven.builtin_cpu), "extension_cpu_ms": times(&driven.extension_cpu)});
+    }
     if let Some(streamed) = &results.streamed {
         raw["stream"] = json!({"pieces": streamed.pieces, "cpu_ms": times(&streamed.cpu),
             "turn_ms": times(&streamed.turn)});
