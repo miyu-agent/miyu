@@ -704,6 +704,7 @@
     "package-problems/driver_unapproved": "供应商 {provider} 用的模型驱动 {driver}：那个包还没批「提供模型驱动」，这一家在批了以前用不了",
     "package-problems/driver_key_missing": "供应商 {provider} 用的模型驱动 {driver} 要 key，这一家没配",
     "package-problems/driver_key_unused": "供应商 {provider} 用的模型驱动 {driver} 不要 key：配了的不交给它",
+    "package-problems/bad_after": "工具调用后通知的写法不对：{detail}",
     "package-problems/bad_side": "旁路请求的写法不对：{detail}",
     "package-problems/bad_tray": "托盘入口的写法不对：{detail}",
     "package-problems/bad_author": "作者的写法不对：{detail}",

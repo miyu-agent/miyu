@@ -46,6 +46,15 @@ pub const GUARDED: Kind = Kind {
     args: read_small,
 };
 
+/// 挂着一个慢的 `tool.after` 收件人时的「read 小文件」（施工 HK-2，`after.rs`）：别的几种量完、打开收件人以后量，和 `KINDS`
+/// 的头一种比。
+pub const TOLD: Kind = Kind {
+    name: "read 小文件（挂着一个慢的 tool.after 收件人）",
+    tool: "read",
+    full: false,
+    args: read_small,
+};
+
 /// 量的几种，照这个先后量。
 pub const KINDS: [Kind; 14] = [
     Kind {

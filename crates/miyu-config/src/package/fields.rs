@@ -142,6 +142,9 @@ pub(super) const WIDGET: &[&str] = &["id", "place", "title", "scope", "command",
 /// `[guard]`（施工 HK-1）。
 pub(super) const GUARD: &[&str] = &["tools", "access", "timeout_ms"];
 
+/// `[after]`（施工 HK-2）。
+pub(super) const AFTER: &[&str] = &["tools", "access"];
+
 /// `[export]`。
 pub(super) const EXPORT: &[&str] = &["methods"];
 
@@ -149,7 +152,7 @@ pub(super) const EXPORT: &[&str] = &["methods"];
 pub(super) const CONTENT: &[&str] = &["dir"];
 
 /// 清单认得的表，照这个先后；哪种包能写哪几张见 `kinds::tables`。
-pub(super) const TABLES: [Table; 25] = [
+pub(super) const TABLES: [Table; 26] = [
     table("package", &[PACKAGE]),
     Table {
         name: "builtin",
@@ -196,6 +199,7 @@ pub(super) const TABLES: [Table; 25] = [
     table("driver", &[DRIVER]),
     table("widget", &[WIDGET]),
     table("guard", &[GUARD]),
+    table("after", &[AFTER]),
     table("export", &[EXPORT]),
     table("content", &[CONTENT]),
 ];

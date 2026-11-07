@@ -10,8 +10,10 @@
 //!
 //! 会话都关着记忆（`memory: off`）、不起标题（`titles: false`），照出厂预设（`full`）的工具面；`shell` 在工作区这一级
 //! 关进沙盒，另有几种在完全放开下跑（沙盒关着），两边一比就是沙盒的开销。最后打开一个立即答的守卫再量一遍「read 小文件」
-//! （施工 HK-1，`guard.rs`），两边一比就是守卫的开销。
+//! （施工 HK-1，`guard.rs`），两边一比就是守卫的开销；在它前面先打开一个慢的 `tool.after` 收件人量一遍（施工 HK-2，
+//! `after.rs`），一比看回合等不等它。
 
+pub mod after;
 pub mod calls;
 pub mod guard;
 pub mod split;
@@ -28,7 +30,7 @@ use crate::measure::subscribe;
 use crate::rpc::{PATIENCE, Rpc};
 use crate::sandbox::{Launch, Sandbox};
 use crate::stats::ms;
-use calls::{GUARDED, KINDS, Kind, Workspace};
+use calls::{GUARDED, KINDS, Kind, TOLD, Workspace};
 
 /// 怎么量。
 #[derive(Debug, Clone, Copy)]
@@ -118,6 +120,7 @@ pub async fn tool_steps(
     let workspace = Workspace::prepare(&sandbox.work.join("tools"), plan.tree)?;
     // 守卫先装上、关着（施工 HK-1）：核心起来时照清单建表，别的几种量完再打开。
     guard::install(&sandbox.root)?;
+    after::install(&sandbox.root)?;
     let scoped = has_systemd_run();
     let running = sandbox.start_with(Launch {
         scoped,
@@ -136,9 +139,14 @@ pub async fn tool_steps(
             eprintln!("  {}", kind.name);
             kinds.push(steps(&mut rpc, fake, &workspace, plan.samples, index, kind).await?);
         }
+        eprintln!("  {}", TOLD.name);
+        after::enable(&mut rpc).await?;
+        let index = KINDS.len();
+        kinds.push(steps(&mut rpc, fake, &workspace, plan.samples, index, &TOLD).await?);
+        after::disable(&mut rpc).await?;
         eprintln!("  {}", GUARDED.name);
         guard::enable(&mut rpc).await?;
-        let index = KINDS.len();
+        let index = KINDS.len() + 1;
         kinds.push(steps(&mut rpc, fake, &workspace, plan.samples, index, &GUARDED).await?);
         Ok::<_, String>((baseline, kinds))
     }

@@ -50,6 +50,11 @@ impl Callers {
 }
 
 impl super::Tools {
+    /// 会话的场所（施工 HK-2：发 `tool.after` 照它判谁碰得到这个会话）。
+    pub(crate) fn venue(&self) -> &VenueId {
+        &self.callers.venue
+    }
+
     /// 回合 `turn` 开始了，开口的是 `speakers`：记下这一轮开口的是不是主人。
     pub(crate) fn round_started(&mut self, turn: TurnId, speakers: &[Speaker]) {
         self.callers.start(turn, speakers);

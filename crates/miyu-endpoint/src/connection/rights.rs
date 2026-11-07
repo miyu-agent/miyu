@@ -189,7 +189,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "check" => People,
         // 核心发出去的（反向调用、推送），扩展调了没有意义；写明了门禁才认得全。
         "tool.call" | "tool.cancel" | "command.call" | "method.call" | "search.query" | "schedule.fired"
-        | "user.append" | "tool.guard" | "guard.cancel" | "widget.watch" | "widget.unwatch" | "view.add" | "view.append"
+        | "user.append" | "tool.guard" | "guard.cancel" | "tool.after" | "widget.watch" | "widget.unwatch" | "view.add" | "view.append"
         | "view.update" | "view.remove" | "view.hidden" | "package.progress" => People,
         _ => People,
     }

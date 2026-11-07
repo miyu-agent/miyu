@@ -5,7 +5,18 @@
 use toml_edit::{Item, TableLike};
 
 use super::reader::{Reader, relative_dir};
-use super::{Code, Problem, Theme, fields};
+use super::{Code, Problem, fields};
+
+/// 外观包的 `[theme]`（施工 F-16、TH-1，`packages.md`「外观包」）：终端主题、网页主题至少带一样。里面怎么写由终端、网页各自定，
+/// 核心只认它们在哪，同吉祥物。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Theme {
+    /// 终端主题文件（`[theme.tui] file`，以前的写法 `[theme] file` 也读进这里）：包目录里的相对路径，例如 `theme.json`；没带的没有。
+    pub tui: Option<String>,
+    /// 网页主题目录（`[theme.web] dir`）：包目录里的相对目录，里面是一个普通的网页包（`manifest.json`、`index.js` 等，可以带
+    /// 脚本，2026-11-02 项目主人定）；没带的没有。
+    pub web: Option<String>,
+}
 
 /// 读 `[theme]`：表是 `table`，表头在 `at`。
 pub(super) fn read(

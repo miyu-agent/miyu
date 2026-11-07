@@ -58,29 +58,7 @@ pub(super) fn read(
         return Err(bad(line, "guard", "guard must be a table".to_string()));
     };
     reader.only(table, "guard", super::fields::GUARD)?;
-    let tools = names(reader, table, "tools", line)?;
-    if let Some(tool) = tools.iter().find(|tool| !tool_name(tool)) {
-        return Err(bad(
-            line,
-            &format!("guard.tools {tool:?}"),
-            format!("guard.tools {tool:?} is not a tool name: 1 to 128 characters, no spaces"),
-        ));
-    }
-    let access = names(reader, table, "access", line)?;
-    if let Some(one) = access.iter().find(|one| !ACCESS.contains(&one.as_str())) {
-        return Err(bad(
-            line,
-            &format!("guard.access {one:?}"),
-            format!("guard.access {one:?} is not one of {}", ACCESS.join(", ")),
-        ));
-    }
-    if tools.is_empty() && access.is_empty() {
-        return Err(bad(
-            line,
-            "guard",
-            "[guard] needs tools or access: it can't ask about every call".to_string(),
-        ));
-    }
+    let (tools, access) = covering(reader, table, ("guard", Code::BadGuard), line)?;
     let timeout_ms = match table.get("timeout_ms") {
         Some(item) => item
             .as_integer()
@@ -112,17 +90,55 @@ pub(super) fn read(
     }))
 }
 
+/// 表 `name`（`guard`、`after`，写错的报 `code`）的 `tools`、`access`：工具名不像样、访问类别不认识、两样都没写的读不进
+/// （第十节第 1 条：不许「什么都问」；`[after]` 同写法，第四节第 2 条，施工 HK-2）。
+pub(super) fn covering(
+    reader: &Reader<'_>,
+    table: &dyn TableLike,
+    (name, code): (&str, Code),
+    line: Option<usize>,
+) -> Result<(Vec<String>, Vec<String>), Problem> {
+    let tools = names(reader, table, (name, code), "tools", line)?;
+    if let Some(tool) = tools.iter().find(|tool| !tool_name(tool)) {
+        return Err(bad_as(
+            code,
+            line,
+            &format!("{name}.tools {tool:?}"),
+            format!("{name}.tools {tool:?} is not a tool name: 1 to 128 characters, no spaces"),
+        ));
+    }
+    let access = names(reader, table, (name, code), "access", line)?;
+    if let Some(one) = access.iter().find(|one| !ACCESS.contains(&one.as_str())) {
+        return Err(bad_as(
+            code,
+            line,
+            &format!("{name}.access {one:?}"),
+            format!("{name}.access {one:?} is not one of {}", ACCESS.join(", ")),
+        ));
+    }
+    if tools.is_empty() && access.is_empty() {
+        return Err(bad_as(
+            code,
+            line,
+            name,
+            format!("[{name}] needs tools or access: it can't take every call"),
+        ));
+    }
+    Ok((tools, access))
+}
+
 /// 一格字的数组，去掉重复、照写的先后。
 fn names(
     reader: &Reader<'_>,
     table: &dyn TableLike,
+    (name, code): (&str, Code),
     key: &str,
     line: Option<usize>,
 ) -> Result<Vec<String>, Problem> {
     let mut names: Vec<String> = Vec::new();
     for name in reader
-        .texts(table, "guard", key)
-        .map_err(|problem| bad(line, &problem.detail, problem.message))?
+        .texts(table, name, key)
+        .map_err(|problem| bad_as(code, line, &problem.detail, problem.message))?
     {
         if !names.contains(&name) {
             names.push(name);
@@ -139,9 +155,14 @@ fn tool_name(name: &str) -> bool {
 
 /// 写错了的一处。
 fn bad(line: Option<usize>, key: &str, message: String) -> Problem {
+    bad_as(Code::BadGuard, line, key, message)
+}
+
+/// 写错了的一处，报 `code`。
+pub(super) fn bad_as(code: Code, line: Option<usize>, key: &str, message: String) -> Problem {
     Problem {
         line,
-        code: Code::BadGuard,
+        code,
         detail: key.to_string(),
         message,
     }

@@ -5,6 +5,7 @@
 //! 核心不算空闲。开、关、重启经协议（`methods.rs`），一件件办。看管一个包怎么拉起、退避、停下在 `supervise.rs`，标准错误的文件
 //! 在 `stderr.rs`。
 
+pub(crate) mod afters;
 mod approval;
 pub(crate) mod config;
 pub(crate) mod guards;
@@ -15,6 +16,7 @@ mod ports;
 mod state;
 pub(crate) mod stderr;
 mod supervise;
+mod table;
 
 pub(crate) use approval::{declared, described, forget as forget_switch, held, named};
 pub(crate) use instance::Instance;
@@ -71,6 +73,8 @@ pub(crate) struct Extensions {
     pub(crate) offers: offers::Offers,
     /// 工具调用前的守卫的表（施工 HK-1，`guards.rs`）。
     pub(crate) guards: guards::Guards,
+    /// 工具调用后的通知的表和每个扩展的队列（施工 HK-2，`afters.rs`）。
+    pub(crate) afters: afters::Afters,
 }
 
 impl Extensions {
@@ -88,6 +92,7 @@ impl Extensions {
             ports: ports::Ports::default(),
             offers: offers::Offers::default(),
             guards: guards::Guards::default(),
+            afters: afters::Afters::default(),
         }
     }
 
@@ -256,8 +261,9 @@ impl Core {
         for (id, manifest) in processes_of(&all) {
             self.start_one(id, manifest, &switches);
         }
-        // 守卫的表（施工 HK-1）：起来时照这一份清单建好，调用前查表。
+        // 守卫的表（施工 HK-1）、调用后通知的表（施工 HK-2）：起来时照这一份清单建好，调用前、结果落盘时查表。
         self.extensions.guards.build(self);
+        self.extensions.afters.build(self);
         // `bundle` 带的 MCP 服务同样照开关起（施工 X-3 上）；配置里的写了就起（施工 F-9 下）。
         self.start_mcp();
         self.start_home_mcp();

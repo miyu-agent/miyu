@@ -105,6 +105,8 @@ impl Actor {
         let reseen = effects::reverts(&events);
         // 在等扩展守卫的调用有了结果（打断、插话、重启时内核补的）：不等了，掐掉问它的任务（施工 HK-1，`guarding.rs`）。
         self.guarding.settled(&events);
+        // 结果落了盘要发 `tool.after` 的（施工 HK-2，`after.rs`）：先写好，写进去了再交给端口。
+        let afters = self.afters(&events);
         // 派出去的任务、回报记进名册（施工 7-4）：写不进去的，会话照样停下，记了也不要紧。
         self.jobs.note(&events);
         // 挂在刚报了开始的后台命令下面、等着的脚本调用，这时交进内核（施工 M-3，`tools/nested/port.rs`）。
@@ -164,6 +166,7 @@ impl Actor {
                     }
                 }
                 self.written(upto, sync, handle);
+                self.send_afters(afters);
                 match seen {
                     Some(Ok(seen)) => self.tools.see(seen),
                     Some(Err(error)) => {

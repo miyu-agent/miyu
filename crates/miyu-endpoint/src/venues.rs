@@ -23,7 +23,7 @@ mod message;
 mod plugins;
 mod records;
 mod sessions;
-pub(crate) use bridge::bridge;
+pub(crate) use bridge::{bridge, bridge_of};
 pub(crate) use sessions::platforms_of_package;
 
 pub(crate) use message::{VenueMessageParams, platform_id};

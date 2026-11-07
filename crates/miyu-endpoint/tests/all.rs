@@ -293,6 +293,8 @@ mod terminal_keys;
 mod terminal_session;
 mod title;
 mod todos;
+mod tool_after;
+mod tool_after_more;
 mod tool_detail;
 mod tool_guard;
 mod tool_guard_more;

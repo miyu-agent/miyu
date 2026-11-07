@@ -62,7 +62,10 @@ pub use checked::Unchecked;
 pub use goals::{
     BLOCKED_AFTER, GOAL, GoalAnswering, GoalAsk, GoalNow, GoalPort, GoalRefused, GoalSeen,
 };
-pub use hooks::{GuardAsk, Guarded, Guarding, HooksPort, Inject, Injecting, TurnAsk, Where};
+pub use hooks::{
+    AfterNote, AfterOutcome, GuardAsk, Guarded, Guarding, HooksPort, Inject, Injecting, TurnAsk,
+    Where,
+};
 pub use jobs::{
     Asking, BACKGROUND, Background, Exit, JobError, JobPort, Listed, Output, Process,
     RUN_IN_BACKGROUND, SHELL, Text,

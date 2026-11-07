@@ -27,15 +27,35 @@ pub const ARG: &str = "guard-extension";
 ///
 /// 写不进、找不到、拷不了量尺自己。
 pub fn install(root: &DataRoot) -> Result<(), String> {
-    let dir = root.packages().join(PACKAGE);
+    install_as(
+        root,
+        (PACKAGE, ARG),
+        "tool.guard",
+        "[guard]\ntools = [\"read\"]\n",
+    )
+}
+
+/// 往数据根 `root` 装一个量尺自己当程序的扩展包：编号、参数是 `package`、`arg`，声明 `capability`，清单末尾接上 `table`
+/// （施工 HK-2 起 `tool.after` 的收件人也照它装）。开关关着（`start = "manual"`）。
+///
+/// # Errors
+///
+/// 写不进、找不到、拷不了量尺自己。
+pub fn install_as(
+    root: &DataRoot,
+    (package, arg): (&str, &str),
+    capability: &str,
+    table: &str,
+) -> Result<(), String> {
+    let dir = root.packages().join(package);
     let bin = dir.join("bin");
     std::fs::create_dir_all(&bin).map_err(|e| format!("建不了 {}：{e}", bin.display()))?;
     let manifest = format!(
-        "[package]\nprotocol = [1, 1]\nname = {{ en = \"Perf guard\" }}\n\n[command]\nname = \"{PACKAGE}\"\nprogram = \"{PACKAGE}\"\nabout = {{ en = \"Answers tool.guard at once\" }}\n\n[process]\nargs = [\"{ARG}\"]\nstart = \"manual\"\ncapabilities = [\"tool.guard\"]\n\n[guard]\ntools = [\"read\"]\n"
+        "[package]\nprotocol = [1, 1]\nname = {{ en = \"Perf {package}\" }}\n\n[command]\nname = \"{package}\"\nprogram = \"{package}\"\nabout = {{ en = \"Perf helper\" }}\n\n[process]\nargs = [\"{arg}\"]\nstart = \"manual\"\ncapabilities = [\"{capability}\"]\n\n{table}"
     );
     std::fs::write(dir.join("package.toml"), manifest).map_err(|e| format!("清单写不进：{e}"))?;
     let me = std::env::current_exe().map_err(|e| format!("找不到量尺自己：{e}"))?;
-    let program = bin.join(format!("{PACKAGE}{}", std::env::consts::EXE_SUFFIX));
+    let program = bin.join(format!("{package}{}", std::env::consts::EXE_SUFFIX));
     std::fs::copy(&me, &program).map_err(|e| format!("拷不了量尺自己：{e}"))?;
     Ok(())
 }
@@ -46,9 +66,18 @@ pub fn install(root: &DataRoot) -> Result<(), String> {
 ///
 /// 核心拒了、等太久还没在跑。
 pub async fn enable(rpc: &mut Rpc) -> Result<(), String> {
+    enable_as(rpc, PACKAGE, "tool.guard").await
+}
+
+/// 打开扩展包 `package`、批它的能力 `capability`，等它在跑（施工 HK-2 起 `tool.after` 的收件人也照它开）。
+///
+/// # Errors
+///
+/// 核心拒了、等太久还没在跑。
+pub async fn enable_as(rpc: &mut Rpc, package: &str, capability: &str) -> Result<(), String> {
     rpc.call(
         "extension.enable",
-        json!({"package": PACKAGE, "approve": ["tool.guard"]}),
+        json!({"package": package, "approve": [capability]}),
     )
     .await?;
     let deadline = tokio::time::Instant::now() + PATIENCE;
@@ -56,13 +85,13 @@ pub async fn enable(rpc: &mut Rpc) -> Result<(), String> {
         let status = rpc.call("extension.status", json!({})).await?;
         let running = status["extensions"].as_array().is_some_and(|all| {
             all.iter()
-                .any(|one| one["package"] == json!(PACKAGE) && one["state"] == json!("running"))
+                .any(|one| one["package"] == json!(package) && one["state"] == json!("running"))
         });
         if running {
             return Ok(());
         }
         if tokio::time::Instant::now() > deadline {
-            return Err(format!("守卫一直没在跑：{status}"));
+            return Err(format!("{package} 一直没在跑：{status}"));
         }
         tokio::time::sleep(Duration::from_millis(20)).await;
     }

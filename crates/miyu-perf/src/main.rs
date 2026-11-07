@@ -32,6 +32,10 @@ async fn main() -> ExitCode {
     if words.first().map(String::as_str) == Some(measure::tools::guard::ARG) {
         return measure::tools::guard::serve();
     }
+    // 工具一步里慢的 `tool.after` 收件人（施工 HK-2）：同样是量尺自己。
+    if words.first().map(String::as_str) == Some(measure::tools::after::ARG) {
+        return measure::tools::after::serve();
+    }
     let outcome = match args::parse(&words) {
         Ok(args) => run(args).await,
         Err(error) => Err(error),

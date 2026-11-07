@@ -8,6 +8,7 @@ use toml_edit::{Document, Item};
 
 use crate::phrases::Phrases;
 
+mod after;
 mod capability;
 mod code;
 mod command;
@@ -36,6 +37,7 @@ mod upgrade;
 mod version;
 mod widget;
 
+pub use after::After;
 pub use capability::Capability;
 pub use code::Code;
 pub use content::Content;
@@ -56,6 +58,7 @@ pub use settings::{Choice, Setting, SettingKind};
 pub use side::{SIDE_TIERS, SideRequest};
 pub use slash::{Access, SlashCommand};
 pub use target::Target;
+pub use theme::Theme;
 pub use upgrade::without_kind;
 pub use widget::{MOST as WIDGETS_MOST, Place as WidgetPlace, Widget};
 
@@ -128,6 +131,8 @@ pub struct Manifest {
     pub widgets: Vec<Widget>,
     /// 守卫（施工 HK-1，`[guard]`）：工具调用前问它的那几种调用；没写的没有。只有扩展包能写，要声明 `tool.guard`。
     pub guard: Option<Guard>,
+    /// 工具调用后的通知（施工 HK-2，`[after]`）：收哪几种调用的 `tool.after`；没写的没有。只有扩展包能写，要声明 `events.read`。
+    pub after: Option<After>,
     /// 给别的软件调的方法（施工 X-18，`[export] methods`）：声明了 `packages.call` 的扩展经 `package.call` 只调得到这几个。只有
     /// 扩展包能写，没写的是空的。
     pub export: Vec<String>,
@@ -156,17 +161,6 @@ impl Manifest {
 pub struct Mascot {
     /// 模型文件：包目录里的相对路径，例如 `mascot.json`。
     pub model: String,
-}
-
-/// 外观包的 `[theme]`（施工 F-16、TH-1，`packages.md`「外观包」）：终端主题、网页主题至少带一样。里面怎么写由终端、网页各自定，
-/// 核心只认它们在哪，同吉祥物。
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Theme {
-    /// 终端主题文件（`[theme.tui] file`，以前的写法 `[theme] file` 也读进这里）：包目录里的相对路径，例如 `theme.json`；没带的没有。
-    pub tui: Option<String>,
-    /// 网页主题目录（`[theme.web] dir`）：包目录里的相对目录，里面是一个普通的网页包（`manifest.json`、`index.js` 等，可以带
-    /// 脚本，2026-11-02 项目主人定）；没带的没有。
-    pub web: Option<String>,
 }
 
 /// 包的种类：只说它跑在哪（设计 `30-插件框架.md` 第二节）；施工 F-8 上补起照带的表认（`kinds::of`），清单不写。
@@ -448,6 +442,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
     };
     widget::check(&widgets, capabilities, &slash)?;
     let guard = guard::read(&reader, root.get("guard"), capabilities)?;
+    let after = after::read(&reader, root.get("after"), capabilities)?;
     let export = match root.get("export").and_then(Item::as_table_like) {
         Some(table) => links::export(&reader, table)?,
         None => Vec::new(),
@@ -487,6 +482,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         drivers,
         widgets,
         guard,
+        after,
         export,
         content,
         needs: head.needs,

@@ -105,6 +105,8 @@ pub enum Code {
     BadGuard,
     /// `[[driver]]` 写错了（施工 MD-1）：驱动名、缓存类型、要不要 key、看不看图，同一个包里重了，和 `model.driver` 能力对不上。
     BadDriver,
+    /// `[after]` 写错了（施工 HK-2）：工具名、访问类别，两样都没写，没声明 `events.read` 能力。
+    BadAfter,
     /// `[[side]]` 写错了（施工 Q-3）：编号、档位、名字、说明，同一个包里重了。
     BadSide,
     /// `[tray]` 写错了（施工 TR-2）：没写 `[page]`，写了 `name` 以外的格（托盘入口只能打开这个包自己的后台页）。
@@ -188,6 +190,7 @@ impl Code {
             Code::BadSearch => "bad_search",
             Code::BadGuard => "bad_guard",
             Code::BadDriver => "bad_driver",
+            Code::BadAfter => "bad_after",
             Code::BadSide => "bad_side",
             Code::BadTray => "bad_tray",
             Code::BadAuthor => "bad_author",
@@ -205,7 +208,7 @@ impl Code {
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 62] = [
+    pub const ALL: [Code; 63] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -257,6 +260,7 @@ impl Code {
         Code::BadSearch,
         Code::BadGuard,
         Code::BadDriver,
+        Code::BadAfter,
         Code::BadSide,
         Code::BadTray,
         Code::BadAuthor,

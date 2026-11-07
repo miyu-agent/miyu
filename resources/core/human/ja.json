@@ -704,6 +704,7 @@
     "package-problems/driver_unapproved": "プロバイダー {provider} のモデルドライバー {driver}：そのパッケージは「モデルドライバーを提供する」がまだ承認されていません。承認するまでこのプロバイダーは使えません",
     "package-problems/driver_key_missing": "プロバイダー {provider} のモデルドライバー {driver} にはキーが要りますが、このプロバイダーには設定されていません",
     "package-problems/driver_key_unused": "プロバイダー {provider} のモデルドライバー {driver} はキーを使いません。設定されたキーは渡しません",
+    "package-problems/bad_after": "ツール実行後の通知の書き方が正しくありません: {detail}",
     "package-problems/bad_side": "サイドリクエストの書き方が正しくありません: {detail}",
     "package-problems/bad_tray": "トレイ項目の書き方が正しくありません: {detail}",
     "package-problems/bad_author": "作者の書き方が正しくありません: {detail}",

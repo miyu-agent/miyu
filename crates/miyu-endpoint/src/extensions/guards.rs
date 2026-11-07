@@ -12,7 +12,7 @@
 mod answer;
 mod texts;
 
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::Arc;
 use std::time::Duration;
 
 use serde_json::{Value, json};
@@ -38,28 +38,16 @@ struct Entry {
     guard: Guard,
 }
 
-/// 建好的表，连同照它建的那一份清单（`Arc` 认是不是同一份）。
-type Built = (Arc<Vec<Found>>, Arc<Vec<Entry>>);
-
-/// 守卫的表：核心一份。
+/// 守卫的表：核心一份（`table.rs`）。
 #[derive(Default)]
 pub(crate) struct Guards {
-    built: Mutex<Option<Built>>,
+    built: super::table::Table<Entry>,
 }
 
 impl Guards {
     /// 照核心这时的清单拿表：和上一次是同一份的照旧，换了的重建。
     fn table(&self, core: &Core) -> Arc<Vec<Entry>> {
-        let packages = core.system_packages();
-        let mut built = self.built.lock().unwrap_or_else(PoisonError::into_inner);
-        if let Some((seen, table)) = built.as_ref()
-            && Arc::ptr_eq(seen, &packages)
-        {
-            return Arc::clone(table);
-        }
-        let table = Arc::new(entries(&packages));
-        *built = Some((packages, Arc::clone(&table)));
-        table
+        self.built.get(core, entries)
     }
 
     /// 核心起来时建好表（设计 65 第三节第 2 条）。

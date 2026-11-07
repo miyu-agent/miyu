@@ -5,7 +5,8 @@
 //! （`extensions/approval.rs`），在跑就是批过的。没在跑的不为这一问拉起：
 //! 每一轮都问，不能让一轮等它起来。
 //!
-//! 工具调用前的守卫（施工 HK-1）也经这个端口，照 `extensions/guards.rs` 问：和这里不同，开着却没在跑的守卫算拒绝。
+//! 工具调用前的守卫（施工 HK-1）也经这个端口，照 `extensions/guards.rs` 问：和这里不同，开着却没在跑的守卫算拒绝。调用后的
+//! 通知（施工 HK-2）照 `extensions/afters.rs` 入队，不等。
 
 use std::collections::BTreeMap;
 use std::sync::{Arc, Weak};
@@ -15,7 +16,7 @@ use serde_json::{Value, json};
 
 use miyu_config::package::Capability;
 use miyu_kernel::id::{FactKind, ModuleId};
-use miyu_tool::{GuardAsk, Guarded, Guarding, HooksPort, Inject, Injecting, TurnAsk};
+use miyu_tool::{AfterNote, GuardAsk, Guarded, Guarding, HooksPort, Inject, Injecting, TurnAsk};
 
 use crate::Core;
 use crate::reverse::Peer;
@@ -63,6 +64,19 @@ impl HooksPort for Hooks {
                 None => std::future::pending::<Guarded>().await,
             }
         })
+    }
+
+    /// 调用后的通知（施工 HK-2，`extensions/afters.rs`）：核心没了的不发。
+    fn afters(&self, tool: &str, access: Option<&str>) -> bool {
+        self.0
+            .upgrade()
+            .is_some_and(|core| crate::extensions::afters::covered(&core, tool, access))
+    }
+
+    fn after(&self, note: AfterNote) {
+        if let Some(core) = self.0.upgrade() {
+            crate::extensions::afters::send(&core, &note);
+        }
     }
 
     fn turn_start(&self, ask: TurnAsk) -> Injecting<'_> {

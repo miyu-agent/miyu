@@ -5,8 +5,7 @@
 
 use std::collections::{BTreeMap, VecDeque};
 use std::io;
-use std::sync::atomic::AtomicBool;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, atomic::AtomicBool};
 use std::time::Instant;
 
 use tokio::sync::{broadcast, mpsc, oneshot};
@@ -33,6 +32,7 @@ use crate::store::Store;
 use crate::tools::{ToolKit, Tools};
 use durable::Syncing;
 
+mod after;
 mod back;
 mod durable;
 mod extract;
@@ -94,8 +94,9 @@ pub(crate) struct Actor {
     jobs: SessionJobs,
     /// 执行前的链：权限策略（施工 4-3 下）。在阻塞线程里判，所以放在 `Arc` 里交过去（施工 4-9 再补四下）。
     guard: Arc<Guard>,
-    /// 在等扩展守卫的调用（施工 HK-1，`guarding.rs`）。
+    /// 在等扩展守卫的调用（施工 HK-1，`guarding.rs`）；结果落盘后要发通知的直接调用（施工 HK-2，`after.rs`）。
     guarding: guarding::Guarding,
+    afters: after::Calls,
     /// 有没有在跑的回合，和 `Handle` 共用：每送完一批输入写一次；actor 退出了写成没有（施工 3-9 上）。
     busy: Arc<AtomicBool>,
     /// 在不在等人确认、回答（施工 SL-1），和 `Handle` 共用：照 `busy` 每送完一批写一次。
@@ -195,6 +196,7 @@ impl Actor {
             jobs,
             guard: Arc::new(guard),
             guarding: guarding::Guarding::default(),
+            afters: after::Calls::default(),
             busy,
             waiting: Arc::new(AtomicBool::new(false)),
             onlookers: Arc::default(),

@@ -166,6 +166,11 @@ impl Guard {
         Some(self.catalog.get(name)?.spec().access.clone())
     }
 
+    /// 会话关没关起来（施工 HK-2：发 `tool.after` 照它判谁碰得到这个会话）。
+    pub(crate) fn confined(&self) -> bool {
+        self.confined.is_some()
+    }
+
     /// 主人管得住的地方：回合开始照它和这一轮的放行表拼一份。
     pub(crate) fn confines(&self) -> &Confines {
         &self.confines

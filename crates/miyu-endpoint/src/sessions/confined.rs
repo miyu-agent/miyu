@@ -36,8 +36,14 @@ pub(crate) async fn reachable(core: &Core, caller: &Caller, id: &SessionId) -> b
     let Some((venue, confined)) = placed(core, id).await else {
         return true;
     };
-    match crate::venues::bridge(core, caller) {
-        Some(bridge) => bridge.platforms(core).holds(venue.as_str()),
-        None => venue.as_str() == LOCAL || !confined,
+    reaches(core, caller.package.as_deref(), venue.as_str(), confined)
+}
+
+/// 包 `package` 的连接（人的头没有包）碰不碰得到场所是 `venue`、关没关着是 `confined` 的会话：规矩同 [`reachable`]。发
+/// `tool.after` 照它挑收件的扩展（施工 HK-2，设计 65 第四节第 5 条：和订事件流一模一样）。
+pub(crate) fn reaches(core: &Core, package: Option<&str>, venue: &str, confined: bool) -> bool {
+    match package.and_then(|package| crate::venues::bridge_of(core, package)) {
+        Some(bridge) => bridge.platforms(core).holds(venue),
+        None => venue == LOCAL || !confined,
     }
 }

@@ -708,6 +708,7 @@
     "package-problems/driver_unapproved": "Provider {provider} uses model driver {driver}, but that package hasn't been approved to provide model drivers; this provider can't be used until it is",
     "package-problems/driver_key_missing": "Provider {provider} uses model driver {driver}, which needs a key, but this provider has none",
     "package-problems/driver_key_unused": "Provider {provider} uses model driver {driver}, which takes no key; the configured key isn't handed to it",
+    "package-problems/bad_after": "Badly written tool.after notice: {detail}",
     "package-problems/bad_side": "Badly written side request: {detail}",
     "package-problems/bad_tray": "Badly written tray entry: {detail}",
     "package-problems/bad_author": "Badly written author: {detail}",

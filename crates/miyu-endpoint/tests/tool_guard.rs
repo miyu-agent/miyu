@@ -276,8 +276,12 @@ async fn a_guard_that_asks_waits_for_the_person() {
     core.stop_extensions().await;
 }
 
-/// 照 `install` 装好的数据根上说一轮 `jot`，交回第二次请求（带着那次结果的）的规范 JSON，和守卫被问了几次。
-async fn second_request(install: impl Fn(&Home) -> Option<PathBuf>) -> (String, usize) {
+/// 照 `install` 装好的数据根上说一轮 `jot`，交回第二次请求（带着那次结果的）的规范 JSON，和装的扩展收到了几次 `method`
+/// （施工 HK-2 起 `tool.after` 也照它比）。
+pub(crate) async fn second_request(
+    install: impl Fn(&Home) -> Option<PathBuf>,
+    method: &str,
+) -> (String, usize) {
     let home = Home::new();
     let recorded = install(&home);
     let (core, jot, script) = started(&home, jot_once());
@@ -287,6 +291,9 @@ async fn second_request(install: impl Fn(&Home) -> Option<PathBuf>) -> (String, 
     let (_client, session) = talk(&core).await;
     home.until_turns(&session, 1).await;
     assert_eq!(jot.calls().len(), 1, "放行的照常跑");
+    if let Some(path) = &recorded {
+        until_seen(path, |text| text.contains(method)).await;
+    }
     core.stop_extensions().await;
     let request = serde_json::to_string(&script.requests()[1].1).expect("写得成 JSON");
     // 数据根、会话编号各次不同，换掉；时间照十分钟一档，两次正好跨了档的也换掉；别的逐字节比。
@@ -306,21 +313,24 @@ async fn second_request(install: impl Fn(&Home) -> Option<PathBuf>) -> (String, 
         }
         None => request,
     };
-    let asked = recorded.map_or(0, |path| asked(&path, "tool.guard").len());
+    let asked = recorded.map_or(0, |path| asked(&path, method).len());
     (request, asked)
 }
 
 #[tokio::test]
 async fn an_allowing_guard_leaves_the_request_byte_for_byte_the_same() {
     let program = Program::new();
-    let (without, _) = second_request(|_| None).await;
-    let (with, asked) = second_request(|home| {
-        Some(install_guard(
-            home,
-            &program,
-            &on_jot("acme-policy", "allow"),
-        ))
-    })
+    let (without, _) = second_request(|_| None, "tool.guard").await;
+    let (with, asked) = second_request(
+        |home| {
+            Some(install_guard(
+                home,
+                &program,
+                &on_jot("acme-policy", "allow"),
+            ))
+        },
+        "tool.guard",
+    )
     .await;
     assert_eq!(asked, 1, "问过");
     assert_eq!(with, without, "放行不进上下文，前缀零变化");

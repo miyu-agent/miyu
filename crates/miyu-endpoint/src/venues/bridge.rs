@@ -15,8 +15,12 @@ pub(crate) struct Bridge(String);
 
 /// 连接 `caller` 是不是平台桥：核心拉起的、清单写了平台的包。
 pub(crate) fn bridge(core: &Core, caller: &Caller) -> Option<Bridge> {
-    let package = caller.package.as_ref()?;
-    (!platforms_of_package(core, package).is_empty()).then(|| Bridge(package.clone()))
+    bridge_of(core, caller.package.as_ref()?)
+}
+
+/// 包 `package` 是不是平台桥：清单写了平台的（施工 HK-2：发 `tool.after` 时照包认，没有连接的来历）。
+pub(crate) fn bridge_of(core: &Core, package: &str) -> Option<Bridge> {
+    (!platforms_of_package(core, package).is_empty()).then(|| Bridge(package.to_string()))
 }
 
 /// 不是平台桥的连接办场所的事：照没批 `act_for_external` 拒（施工 SU-4 中）。

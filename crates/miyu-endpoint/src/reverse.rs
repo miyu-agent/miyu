@@ -92,6 +92,19 @@ impl Peer {
         out.try_send(line.to_string()).is_ok()
     }
 
+    /// 发一条通知，写队列满了等空位（施工 HK-2：`tool.after` 的发送任务，不在会话的路上）。连接断了的交回 `false`。
+    pub(crate) async fn notify_waiting(&self, method: &str, params: Value) -> bool {
+        let out = {
+            let state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
+            let Some(out) = state.out.clone() else {
+                return false;
+            };
+            out
+        };
+        let line = json!({"jsonrpc": "2.0", "method": method, "params": params});
+        out.send(line.to_string()).await.is_ok()
+    }
+
     /// 收到一条回应：交给等它的，对不上的不理。
     pub(crate) fn answer(&self, response: Response) {
         let tell = self
