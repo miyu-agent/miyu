@@ -34,7 +34,7 @@ miyu-recall = { path = "../miyu-recall" }
 miyu-tool = { path = "../miyu-tool" }
 # 权限策略：换成真实的位置、查边界（施工 4-3 下）。
 miyu-fs = { path = "../miyu-fs" }
-# 执行器给每次调用写沙盒的规格（施工 5-4 上）。
+# 执行器给每次调用写沙盒的规格（施工 5-4 上）。拉起的语义模型小程序跟着核心走（施工 XH-1，`lifeline::keep`）。
 miyu-sandbox = { path = "../miyu-sandbox" }
 # 回合开始时冻结的配置是它合出来的最终值（施工 8-4，`config.md` 第八条第 3 条）。
 miyu-config = { path = "../miyu-config" }

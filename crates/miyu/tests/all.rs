@@ -15,6 +15,7 @@ mod config;
 mod config_keys;
 mod core;
 mod crash;
+mod crash_kept;
 mod dev_home;
 mod heads;
 mod kb;

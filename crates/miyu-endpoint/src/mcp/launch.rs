@@ -1,6 +1,6 @@
 //! 怎么起一个服务（施工 X-3 上，`mcp.md`「怎么走」第二条第 2、5 条）：程序照命令第一项找，工作目录是状态目录里它的一格，
-//! 环境是核心的加上清单写的，标准错误接到日志目录里它的一份。不进沙盒。网址的服务（施工 X-32 上）不起进程：计划里是网址和
-//! 请求头，令牌换成 `Authorization`，连的时候认它出错写进同一份日志。
+//! 环境是核心的加上清单写的，标准错误接到日志目录里它的一份。不进沙盒。核心没了它跟着走（施工 XH-1，同扩展）。网址的服务
+//! （施工 X-32 上）不起进程：计划里是网址和请求头，令牌换成 `Authorization`，连的时候认它出错写进同一份日志。
 
 use std::io;
 use std::path::{Path, PathBuf};
@@ -10,6 +10,7 @@ use std::time::Duration;
 use tokio::process::{Child, Command};
 
 use miyu_config::package::{EnvValue, McpServer, Reach};
+use miyu_sandbox::lifeline::Kept;
 use miyu_store::packages::BIN;
 
 use super::TARGET;
@@ -191,8 +192,8 @@ fn find(first: &str, dir: &Path, path_dirs: &[PathBuf], suffixes: &[&str]) -> Pa
 }
 
 /// 起：程序正被开着写的等 [`BUSY_WAIT`] 再试，最多 [`BUSY_TRIES`] 次；别的错误照旧交回。网址的服务不起进程，交回出错（调的一方先照
-/// [`How`] 分开走，不会走到这里）。
-pub(super) async fn spawn(plan: &Plan) -> io::Result<Child> {
+/// [`How`] 分开走，不会走到这里）。交回的看门的拿到进程退出、收掉以后再丢（施工 XH-1）。
+pub(super) async fn spawn(plan: &Plan) -> io::Result<(Child, Kept)> {
     let mut tries = 1;
     loop {
         match spawn_once(plan) {
@@ -207,8 +208,9 @@ pub(super) async fn spawn(plan: &Plan) -> io::Result<Child> {
     }
 }
 
-/// 起一次：工作目录没有的建（只在数据根里建，施工 TMP-1），标准错误接到它的文件上，核心丢下它时杀掉。
-fn spawn_once(plan: &Plan) -> io::Result<Child> {
+/// 起一次：工作目录没有的建（只在数据根里建，施工 TMP-1），标准错误接到它的文件上，核心丢下它时杀掉。核心没了它跟着走（施工
+/// XH-1，[`miyu_sandbox::lifeline::keep`]，同扩展）：看门的起不来的记一行 `WARN`，照旧起。
+fn spawn_once(plan: &Plan) -> io::Result<(Child, Kept)> {
     let How::Spawn { program, args, env } = &plan.how else {
         return Err(io::Error::other("a URL server has no process"));
     };
@@ -234,9 +236,13 @@ fn spawn_once(plan: &Plan) -> io::Result<Child> {
         use std::os::windows::process::CommandExt;
         command.creation_flags(CREATE_NO_WINDOW);
     }
+    let kept = miyu_sandbox::lifeline::keep(&mut command).unwrap_or_else(|error| {
+        tracing::warn!(target: TARGET, service = plan.server.name.as_str(), error = %error, "mcp lifeline not started");
+        Kept::default()
+    });
     let mut command = Command::from(command);
     command.kill_on_drop(true);
-    command.spawn()
+    Ok((command.spawn()?, kept))
 }
 
 #[cfg(test)]

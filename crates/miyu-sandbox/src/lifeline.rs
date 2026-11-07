@@ -11,6 +11,9 @@
 //! - Windows：核心起来时把自己放进一个带 `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` 的作业对象（[`bind_children`]），之后起的
 //!   子进程、子进程再起的都在里面；核心没了，作业的最后一个句柄跟着关，里面的全部结束。
 //!
+//! 核心起的长住的子进程（扩展、命令型 MCP 服务、语义模型小程序，施工 XH-1）照同一个办法跟着核心走（[`keep`]）：Unix 上一个
+//! 一个看门的、自成一组，Windows 上照继承在核心的作业对象里。
+//!
 //! 没用 Linux 的 `PR_SET_PDEATHSIG`：它盯的是起子进程的那个线程，线程池的线程一退，命令就被误杀；也只管直接的子进程，组里
 //! 别的照样活。没用 macOS 的 kqueue：要另起一个进程盯着，和管道一样，却只有一个平台能用。
 
@@ -23,6 +26,36 @@ mod windows;
 pub use unix::{Lifeline, MODE, Watcher, use_helper, watcher};
 #[cfg(windows)]
 pub use windows::Job;
+
+/// 一个长住的子进程的看门的（[`keep`]）：拿到子进程退出、收掉以后再丢。丢掉时只收掉看门的，组里别的不杀（有计划地停照旧由
+/// 调的一方先请它退出、等、再杀）。看门的起不来的、不是 Unix 的是空的（[`Kept::default`]）。
+#[derive(Debug, Default)]
+pub struct Kept {
+    /// 看门的：只拿着，丢掉时收掉它。
+    #[cfg(unix)]
+    _watcher: Option<Watcher>,
+}
+
+/// 让核心起的长住的子进程跟着核心走（施工 XH-1）：Unix 上先在这个进程的生命线上起一个看门的（`watcher`，照 `shell` 的命令
+/// 那样），`command` 起在它的组里：核心怎么没的，看门的都把整组杀掉，子进程和它起的、还在组里的孙进程都在里面。Windows 上核心
+/// 起来时已经进了作业对象（[`bind_children`]），子进程照继承在里面，这里什么都不做。
+///
+/// # Errors
+///
+/// 看门的起不来（Unix）：`command` 照旧自成一组（同 `shell` 的命令），调的一方记一行 `WARN`、照旧起，交回的空 [`Kept`] 用
+/// [`Kept::default`]。
+#[cfg_attr(
+    not(unix),
+    expect(unused_variables, reason = "别的平台不用改起法：照继承在作业对象里")
+)]
+pub fn keep(command: &mut std::process::Command) -> std::io::Result<Kept> {
+    #[cfg(unix)]
+    return unix::keep(command).map(|watcher| Kept {
+        _watcher: Some(watcher),
+    });
+    #[cfg(not(unix))]
+    Ok(Kept::default())
+}
 
 /// 把核心自己放进一个作业对象，核心没了，它起的子进程都跟着结束（Windows）。核心起来时调一次。别的平台什么都不做：
 /// 那里靠每条命令组里看门的（`watcher`）。

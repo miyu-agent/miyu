@@ -158,14 +158,23 @@ fn settled(beat: &Path, limit: Duration) -> bool {
     false
 }
 
-/// 在连接上说 JSON-RPC：发一条，读到它的回应为止（推送跳过）。
-struct Rpc {
+/// 在连接上说 JSON-RPC：发一条，读到它的回应为止（推送跳过）。`crash_kept.rs` 也用（施工 XH-1）。
+pub(crate) struct Rpc {
     read: AsyncReader<tokio::io::ReadHalf<miyu_ipc::Connection>>,
     write: tokio::io::WriteHalf<miyu_ipc::Connection>,
 }
 
 impl Rpc {
-    async fn call(&mut self, id: &str, method: &str, params: Value) -> Value {
+    /// 在 `connection` 上说。
+    pub(crate) fn over(connection: miyu_ipc::Connection) -> Rpc {
+        let (read, write) = tokio::io::split(connection);
+        Rpc {
+            read: AsyncReader::new(read),
+            write,
+        }
+    }
+
+    pub(crate) async fn call(&mut self, id: &str, method: &str, params: Value) -> Value {
         let request = json!({"jsonrpc": "2.0", "id": id, "method": method, "params": params});
         self.write
             .write_all(format!("{request}\n").as_bytes())
@@ -226,11 +235,7 @@ async fn beating(home: &Home, beat: &Beat, how: How) -> Beating {
     let (connection, token) = within("连上", miyu_ipc::connect(&home.root))
         .await
         .expect("连得上");
-    let (read, write) = tokio::io::split(connection);
-    let mut rpc = Rpc {
-        read: AsyncReader::new(read),
-        write,
-    };
+    let mut rpc = Rpc::over(connection);
     let hello = json!({"protocol": [1, 1], "head": {"kind": "test", "version": "0.0.0"},
         "caps": {"input": false}, "token": token});
     rpc.call("hello-1", "hello", hello).await;

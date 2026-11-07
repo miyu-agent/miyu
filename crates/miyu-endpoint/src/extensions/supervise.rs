@@ -14,6 +14,8 @@ use tokio::process::{Child, Command};
 use tokio::sync::{oneshot, watch};
 use tokio::time::Instant;
 
+use miyu_sandbox::lifeline::Kept;
+
 use super::{Reason, Shared, State, TARGET, stderr};
 use crate::Core;
 use crate::connection::serve_spawned;
@@ -133,8 +135,9 @@ pub(super) async fn run(
         let Some(owner) = core.upgrade() else {
             return;
         };
-        let mut child = match spawn_settled(&plan).await {
-            Ok(child) => child,
+        // 看门的拿到这一次退出、收掉以后才丢（施工 XH-1）：核心没了它杀整组。
+        let (mut child, _kept) = match spawn_settled(&plan).await {
+            Ok(spawned) => spawned,
             Err(error) => {
                 tracing::warn!(target: TARGET, package = id, error = %error, "extension not started");
                 // 起不来的原话写进它的标准错误（施工 X-34）：停下的带最后几行照它说，例如 Windows 上解释器没装。
@@ -255,7 +258,7 @@ fn noted(plan: &Plan, error: &io::Error) {
 }
 
 /// 拉起（[`spawn`]）；程序正被开着写的等 [`BUSY_WAIT`] 再试，最多 [`BUSY_TRIES`] 次。别的错误照旧交回。
-async fn spawn_settled(plan: &Plan) -> io::Result<Child> {
+async fn spawn_settled(plan: &Plan) -> io::Result<(Child, Kept)> {
     let mut tries = 1;
     loop {
         match spawn(plan) {
@@ -271,8 +274,9 @@ async fn spawn_settled(plan: &Plan) -> io::Result<Child> {
 }
 
 /// 拉起：先清掉它上一回的短命暂存、建好给它的几处（设计 55 第四节，[`miyu_store::program::PackageDirs::ready`]，只在数据根
-/// 里建），标准错误接到它的文件上，核心丢下它时杀掉。
-fn spawn(plan: &Plan) -> io::Result<Child> {
+/// 里建），标准错误接到它的文件上，核心丢下它时杀掉。核心没了它跟着走（施工 XH-1，[`miyu_sandbox::lifeline::keep`]）：Unix 上
+/// 自成一组、组里有看门的，Windows 上在核心的作业对象里；看门的起不来的记一行 `WARN`，照旧拉起。
+fn spawn(plan: &Plan) -> io::Result<(Child, Kept)> {
     use miyu_store::program::{self, HOME, RESOURCES};
     let root = miyu_store::root::DataRoot::at(plan.home.clone());
     let dirs = program::PackageDirs::ready(&root, &plan.instance.package, plan.package.clone())?;
@@ -299,9 +303,13 @@ fn spawn(plan: &Plan) -> io::Result<Child> {
         use std::os::windows::process::CommandExt;
         command.creation_flags(CREATE_NO_WINDOW);
     }
+    let kept = miyu_sandbox::lifeline::keep(&mut command).unwrap_or_else(|error| {
+        tracing::warn!(target: TARGET, package = plan.id.as_str(), error = %error, "extension lifeline not started");
+        Kept::default()
+    });
     let mut command = Command::from(command);
     command.kill_on_drop(true);
-    command.spawn()
+    Ok((command.spawn()?, kept))
 }
 
 /// 连接丢下了（标准输入关了）：等它退出，最多等 `grace`，没退的杀掉。交回它怎么退出的（等不到的没有），和是不是核心杀掉的。

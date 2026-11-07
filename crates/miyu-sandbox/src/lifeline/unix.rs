@@ -107,6 +107,16 @@ pub fn watcher() -> io::Result<Watcher> {
     lifeline()?.watcher(HELPER.get().map(PathBuf::as_path))
 }
 
+/// 让 `command` 起在一个新看门的组里（施工 XH-1，`lifeline.rs` 的 `keep`）。看门的起不来的，`command` 照旧自成一组，交回
+/// 起不来的原话。
+pub(super) fn keep(command: &mut Command) -> io::Result<Watcher> {
+    command.process_group(0);
+    let watcher = watcher()?;
+    let group = i32::try_from(watcher.group()).map_err(io::Error::other)?;
+    command.process_group(group);
+    Ok(watcher)
+}
+
 /// 一个组里看门的。整组杀的时候它跟着没；丢掉它时杀掉它、收掉它，不留僵尸进程。
 #[derive(Debug)]
 pub struct Watcher {

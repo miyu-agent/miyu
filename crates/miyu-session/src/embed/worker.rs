@@ -124,10 +124,13 @@ impl<R: AsyncBufRead + Unpin, W: AsyncWrite + Unpin> Conversation<R, W> {
 }
 
 /// 一个拉起着的 `miyu-embed`。核心丢下它（[`Worker`] 被放下）时杀掉：`kill_on_drop`；核心整个没了，Windows 上作业对象收掉它，
-/// Unix 上它读到标准输入关了自己退出。
+/// Unix 上组里看门的杀掉整组（施工 XH-1，[`miyu_sandbox::lifeline::keep`]；原来靠它读到标准输入关了自己退出，卡住了、起了
+/// 子进程的收不掉）。
 pub(super) struct Worker {
     child: Child,
     talk: Conversation<BufReader<ChildStdout>, ChildStdin>,
+    /// 看门的：进程收掉以后才丢（放在 `child` 后面，丢下时先杀进程）。
+    _kept: miyu_sandbox::lifeline::Kept,
 }
 
 impl std::fmt::Debug for Worker {
@@ -160,6 +163,10 @@ impl Worker {
             use std::os::windows::process::CommandExt;
             command.creation_flags(CREATE_NO_WINDOW);
         }
+        let kept = miyu_sandbox::lifeline::keep(&mut command).unwrap_or_else(|error| {
+            tracing::warn!(target: crate::TARGET, error = %error, "embedder lifeline not started");
+            miyu_sandbox::lifeline::Kept::default()
+        });
         let mut command = Command::from(command);
         command.kill_on_drop(true);
         let mut child = command
@@ -170,7 +177,14 @@ impl Worker {
         };
         let mut talk = Conversation::new(BufReader::new(output), input);
         let model = talk.ready(READY).await?;
-        Ok((Worker { child, talk }, model))
+        Ok((
+            Worker {
+                child,
+                talk,
+                _kept: kept,
+            },
+            model,
+        ))
     }
 
     /// 问 `text` 的向量。
@@ -180,7 +194,12 @@ impl Worker {
 
     /// 关掉：关它的标准输入，它读完就退出；等 [`GRACE`]，没退的杀掉。
     pub(super) async fn stop(self) {
-        let Worker { mut child, talk } = self;
+        let Worker {
+            mut child,
+            talk,
+            // 看门的留到等完、杀完（施工 XH-1）：写成 `_` 就当场丢了，等它退的这几秒里核心没了收不掉。
+            _kept,
+        } = self;
         drop(talk);
         if tokio::time::timeout(GRACE, child.wait()).await.is_err()
             && let Err(error) = child.start_kill()

@@ -41,11 +41,11 @@
 //! - `pause:<路径>`：等到这个路径有了再往下走（施工 X-20：测试照会话说完了几轮放它走）；
 //! - `session:<路径>`：等到这个文件有了字，把它当之后 `{session}` 换成的会话编号（施工 TW-1：测试造了会话再告诉它）；
 //! - `hang`：不管标准输入，一直睡；
+//! - `child:<路径>`：起一个睡着的子进程，自己和它的进程号写进这个文件（施工 XH-1，`spawn.rs`）；
 //! - `exit:<数>`：以这个退出码退出。
 //!
-//! 照 `#!` 起的（包里的程序是一个脚本、第一行 `#!` 指着它，施工 X-34），第一个参数是脚本本身：是一个在的文件的跳过。
-//!
-//! 第一个参数是 `client` 的不当扩展，当 `miyu call`（施工 XG-1 下，`run.rs`）：第二个参数是工具名。
+//! 照 `#!` 起的（包里的程序是一个脚本、第一行 `#!` 指着它，施工 X-34），第一个参数是脚本本身：是一个在的文件的跳过。第一个
+//! 参数是 `client` 的不当扩展，当 `miyu call`（施工 XG-1 下，`run.rs`）：第二个参数是工具名。
 //!
 //! 做完了以退出码 0 退出。
 
@@ -59,13 +59,14 @@ mod drivers;
 mod hooks;
 #[path = "miyu-test-extension/run.rs"]
 mod run;
+#[path = "miyu-test-extension/spawn.rs"]
+mod spawn;
 
 fn main() {
     if std::env::args().nth(1).as_deref() == Some("client") {
         run::client(&std::env::args().nth(2).unwrap_or_default());
     }
-    let stdin = io::stdin();
-    let mut input = stdin.lock();
+    let mut input = io::stdin().lock();
     let mut record: Option<File> = None;
     // 最近一条带会话编号的回应里的那个编号：`ask` 的参数照它换。
     let mut session = String::new();
@@ -308,7 +309,7 @@ fn main() {
             }
         } else if let Some(code) = step.strip_prefix("exit:") {
             std::process::exit(code.parse().expect("退出码是数"));
-        } else {
+        } else if !spawn::step(&step) {
             panic!("不认识的一步：{step}");
         }
     }

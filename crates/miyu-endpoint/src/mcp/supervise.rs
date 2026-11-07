@@ -10,6 +10,7 @@ use tokio::sync::watch;
 use tokio::time::Instant;
 
 use miyu_mcp::{Client, Failed, Hello, Waits};
+use miyu_sandbox::lifeline::Kept;
 
 use super::launch::{self, How, Plan};
 use super::{Shared, Skipped, TARGET, cache, spec};
@@ -197,7 +198,11 @@ async fn once(
 /// 起来的那一头：进程，或者网址的服务（没有进程：丢下客户端，转接跟着停）。进程那一种装进盒子：Windows 上 `Child` 比过期的
 /// 旗大得多，clippy 的 `large_enum_variant` 只在 Windows 上报。
 enum Running {
-    Child(Box<Child>),
+    Child {
+        child: Box<Child>,
+        /// 看门的（施工 XH-1）：进程收掉以后才丢。
+        _kept: Kept,
+    },
     Remote(miyu_mcp::http::Expired, miyu_mcp::http::Challenged),
 }
 
@@ -205,7 +210,7 @@ impl Running {
     /// 收尾：进程照 [`finish`]；网址的没什么要等。交回怎么结束的，写成字。
     async fn finish(&mut self, grace: Duration, service: &str) -> String {
         match self {
-            Running::Child(child) => finish(child, grace, service).await,
+            Running::Child { child, .. } => finish(child, grace, service).await,
             Running::Remote(..) => "closed".to_string(),
         }
     }
@@ -219,7 +224,7 @@ impl Running {
     fn challenge(&self) -> Option<String> {
         match self {
             Running::Remote(_, challenged) => challenged.header(),
-            Running::Child(_) => None,
+            Running::Child { .. } => None,
         }
     }
 }
@@ -238,7 +243,7 @@ async fn start(
     let service = plan.server.name.as_str();
     match &plan.how {
         How::Spawn { .. } => {
-            let mut child = launch::spawn(plan).await.map_err(|error| {
+            let (mut child, kept) = launch::spawn(plan).await.map_err(|error| {
                 tracing::warn!(target: TARGET, service, error = ?error.kind(), "mcp not started");
                 Ended::Failed(None)
             })?;
@@ -248,7 +253,10 @@ async fn start(
                 return Err(Ended::Stop(Reason::CannotStart));
             };
             Ok((
-                Running::Child(Box::new(child)),
+                Running::Child {
+                    child: Box::new(child),
+                    _kept: kept,
+                },
                 pid,
                 Box::new(output),
                 Box::new(input),
