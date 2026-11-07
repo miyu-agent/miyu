@@ -19,10 +19,12 @@ use sha2::{Digest, Sha256};
 use crate::format_error::FormatError;
 
 mod call;
+mod family;
 mod job;
 mod nested;
 
 pub use call::CallId;
+use family::check_family;
 pub use job::JobId;
 pub use nested::{NestedId, Parent};
 
@@ -161,10 +163,11 @@ text_id!(
 );
 
 text_id!(
-    /// 驱动家族：驱动用它认领属于自己的私有数据（`05-内核接口.md` 第七节）。
+    /// 驱动家族：驱动用它认领属于自己的私有数据（`05-内核接口.md` 第七节）。内置的是一个名字（`openai-chat`）；扩展提供的驱动是
+    /// `<包编号>/<驱动名>`（施工 MD-2，设计 66 第四节第 3 条），和内置的撞不上。
     DriverFamily,
     "driver family",
-    check_name
+    check_family
 );
 
 text_id!(

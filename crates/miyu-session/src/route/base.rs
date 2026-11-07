@@ -30,6 +30,7 @@ use miyu_models::reference::{Resolved, resolve};
 use super::choice::{self, Choice, Unsent};
 use super::ended::Picked;
 use super::exchange::Learn;
+use super::extension::Reached;
 use super::{Routes, effort, model_of};
 use crate::clock::wall_now;
 use crate::config::TurnConfig;
@@ -54,8 +55,8 @@ pub(super) struct Ready {
     pub(super) model: Model,
     /// 地址和 key 的值。
     pub(super) endpoint: Endpoint,
-    /// 驱动：照真发的那个模型的驱动造（施工 8-12、8-14），开关照档案和目录，占位照交进来的。
-    pub(super) driver: Box<dyn Driver>,
+    /// 驱动：照真发的那个模型的驱动造（施工 8-12、8-14），开关照档案和目录，占位照交进来的；扩展提供的经端口发（施工 MD-2）。
+    pub(super) speaker: Speaker,
     /// 这一次的调用：模型名、输出上限、能收什么、思考强度。
     pub(super) call: Call,
     /// 空闲超时，照思考强度放大过。
@@ -66,6 +67,14 @@ pub(super) struct Ready {
     pub(super) tariff: Option<Tariff>,
     /// 占位工具（施工 8-14 补）：档案点名的名字 + 给模型看的说明。工具面里缺哪件补哪件（`placeholder.rs`）；空的不动。
     pub(super) placeholders: Vec<(String, String)>,
+}
+
+/// 这一次谁来编、谁来发（施工 MD-2）。
+pub(super) enum Speaker {
+    /// 内置的驱动：核心编码，`miyu-http` 发。
+    Builtin(Box<dyn Driver>),
+    /// 扩展提供的：经端口交给扩展（`route/extension.rs`）。
+    Extension(Box<Reached>),
 }
 
 impl Routes {
@@ -147,9 +156,21 @@ impl Routes {
             endpoint,
             // 占位工具（施工 8-14 补）：档案点名了哪几件，说明是资源目录里那一句。
             placeholders: speaking.placeholder_specs(self.data.placeholder_tool()),
-            driver: speaking
-                .build(texts)
-                .ok_or_else(|| NoModel(super::unbuilt(&speaking)))?,
+            speaker: match (&choice.extension, speaking.driver.extension()) {
+                (Some(reach), Some(driver)) => Speaker::Extension(Box::new(Reached {
+                    driver: driver.clone(),
+                    port: self
+                        .data
+                        .drivers()
+                        .ok_or_else(|| NoModel(super::unbuilt(&speaking)))?,
+                    reach: reach.clone(),
+                })),
+                _ => Speaker::Builtin(
+                    speaking
+                        .build(texts)
+                        .ok_or_else(|| NoModel(super::unbuilt(&speaking)))?,
+                ),
+            },
             idle: effort::idle(self.idle, effort.as_deref()),
             call: Call {
                 model,

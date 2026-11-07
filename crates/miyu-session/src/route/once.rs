@@ -356,7 +356,9 @@ impl OneShot {
                     return Err(Unanswered::Failed(error));
                 }
                 Exchanged::Cancelled => unreachable!("没有人叫停：std::future::pending 不会完成"),
-                Exchanged::Ended { usage, error: None } => {
+                Exchanged::Ended {
+                    usage, error: None, ..
+                } => {
                     picked.succeeded();
                     return reply.answer(&picked.choice.target, usage);
                 }

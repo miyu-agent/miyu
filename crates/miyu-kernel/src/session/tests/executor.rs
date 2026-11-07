@@ -64,6 +64,7 @@ pub(super) fn delta(seen: u64, second: u64, delta: Delta) -> Input {
 /// 请求 `seen` 在 07:00:45 说完了，报了用量。
 pub(super) fn ended(seen: u64) -> Input {
     Input::ModelEnded {
+        sent: None,
         at: at(45),
         seen: seq(seen),
         usage: Some(usage()),
@@ -78,6 +79,7 @@ pub(super) fn ended(seen: u64) -> Input {
 /// 请求 `seen` 在 07:00:45 出错了。
 pub(super) fn failed(seen: u64, class: ErrorClass, message: &str) -> Input {
     Input::ModelEnded {
+        sent: None,
         at: at(45),
         seen: seq(seen),
         usage: None,

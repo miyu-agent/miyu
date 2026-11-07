@@ -47,8 +47,8 @@ pub enum Driver {
     Anthropic,
     /// `openai-responses`（施工 8-13）。
     OpenAiResponses,
-    /// 扩展提供的（施工 MD-1，设计 66 第四节）：配置里写 `<包编号>/<驱动名>`。只有手写的一格会指向它；MD-2 接上通道以前，调到它的
-    /// 当用不了（[`Driver::build`] 没有）。
+    /// 扩展提供的（施工 MD-1，设计 66 第四节）：配置里写 `<包编号>/<驱动名>`。只有手写的一格会指向它；核心里造不出它（[`Driver::build`]
+    /// 没有），执行器经扩展的通道发（施工 MD-2，`miyu-session` 的 `route/extension.rs`）。
     Extension(DriverRef),
 }
 
@@ -103,7 +103,7 @@ impl Driver {
     }
 
     /// 造这种驱动（施工 8-12）：`openai-chat` 照开关 `compat`，`anthropic`、`openai-responses` 没有开关；占位是 `texts`。扩展的
-    /// 没有（施工 MD-1）：它不是核心里的纯函数，MD-2 起走扩展的通道。
+    /// 没有（施工 MD-1）：它不是核心里的纯函数，走扩展的通道（施工 MD-2）。
     pub fn build(
         &self,
         compat: Compat,
@@ -325,11 +325,21 @@ pub fn provider(values: &Values, knowledge: &Knowledge<'_>, id: &str) -> Result<
         (None, None, Some(_)) => DriverFrom::Catalog,
         (None, None, None) => DriverFrom::Default,
     };
-    let Some(base_url) = written_url.or_else(|| {
-        side.as_ref()
-            .and_then(|side| side.api.clone())
-            .map(Address::Literal)
-    }) else {
+    // 手写了扩展提供的驱动的（施工 MD-2，设计 66 第九节第 1 条）：地址可以不写（自己登录、走订阅的用不着），记成空的字，交给扩展时
+    // 不交（`miyu-session` 的 `route/extension.rs`）。内置驱动照旧要地址。
+    let extension = settings
+        .driver
+        .as_deref()
+        .and_then(Driver::parse)
+        .is_some_and(|driver| driver.extension().is_some());
+    let Some(base_url) = written_url
+        .or_else(|| {
+            side.as_ref()
+                .and_then(|side| side.api.clone())
+                .map(Address::Literal)
+        })
+        .or_else(|| extension.then(|| Address::Literal(String::new())))
+    else {
         return Err(NoModel(format!(
             "provider {id:?} needs base_url: it matches nothing in the catalog"
         )));

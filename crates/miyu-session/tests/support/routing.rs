@@ -72,8 +72,9 @@ pub fn resolved_with(source: &str, more: &str) -> Resolved {
     merge(&items(), &layers, &|_| None)
 }
 
-/// 同 [`configs`]，只放过写了扩展驱动、这时没装的那一条警告（`unknown_driver`，施工 MD-1）：别的问题照样当场报出来。
-pub fn configs_with_unknown_drivers(source: &str) -> Configs {
+/// 同 [`configs`]，只放过写了扩展驱动、这时没装的那一条警告（`unknown_driver`，施工 MD-1）：别的问题照样当场报出来。另带取得到的
+/// 几个密钥（施工 MD-2）。
+pub fn configs_with_unknown_drivers(source: &str, secrets: &[(Reference, &str)]) -> Configs {
     let parsed = parse(&items(), Layer::System, source).expect("写法对");
     assert!(
         parsed
@@ -87,7 +88,11 @@ pub fn configs_with_unknown_drivers(source: &str) -> Configs {
         system: Some(&parsed),
         ..Layers::default()
     };
-    fixed_with(merge(&items(), &layers, &|_| None), Default::default())
+    let secrets = secrets
+        .iter()
+        .map(|(reference, value)| (reference.clone(), Secret::new(value).expect("key 合写法")))
+        .collect();
+    fixed_with(merge(&items(), &layers, &|_| None), secrets)
 }
 
 /// 核心一份的：档案照 JSON 的 `profiles`，没有目录（读完了），空闲超时 `idle`。

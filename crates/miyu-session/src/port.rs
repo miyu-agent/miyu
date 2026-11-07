@@ -164,6 +164,8 @@ pub struct Reports {
     tariff: Option<Tariff>,
     /// 旁路请求退到了会话的模型（施工 Q-2，[`Reports::fell_back`]）：随发出去了报给内核。
     fell_back: bool,
+    /// 真发出去的字节的哈希（施工 MD-2，[`Reports::wired`]）：扩展驱动在结尾报的，随说完了交给内核。
+    wire: Option<ContentHash>,
     back: mpsc::UnboundedSender<Back>,
 }
 
@@ -174,6 +176,7 @@ impl Reports {
             purpose: None,
             tariff: None,
             fell_back: false,
+            wire: None,
             back,
         }
     }
@@ -185,6 +188,7 @@ impl Reports {
             purpose: Some(purpose),
             tariff: None,
             fell_back: false,
+            wire: None,
             back,
         }
     }
@@ -203,6 +207,12 @@ impl Reports {
     pub fn fell_back(mut self) -> Reports {
         self.fell_back = true;
         self
+    }
+
+    /// 真发出去的字节的哈希是 `wire`（施工 MD-2，设计 66 第七节第 3 条）：扩展驱动说完了报的，随说完了交给内核，记进
+    /// `model.called` 的 `sent`。内置驱动不交。
+    pub(crate) fn wired(&mut self, wire: Option<ContentHash>) {
+        self.wire = wire;
     }
 
     /// 是哪一种辅助请求；主请求没有（施工 3-8 五补）。端口照请求发，用不着它；测试的端口照它分剧本。
@@ -241,6 +251,7 @@ impl Reports {
             wait_ms,
             excess,
             failover: false,
+            sent: self.wire.clone(),
         });
     }
 
@@ -255,6 +266,7 @@ impl Reports {
             wait_ms,
             excess: None,
             failover: true,
+            sent: self.wire.clone(),
         });
     }
 
@@ -358,6 +370,8 @@ pub(crate) enum Report {
         wait_ms: Option<u64>,
         excess: Option<u64>,
         failover: bool,
+        /// 真发出去的字节的哈希（施工 MD-2）：扩展驱动报的。
+        sent: Option<ContentHash>,
     },
 }
 

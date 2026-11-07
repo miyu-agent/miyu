@@ -1,7 +1,7 @@
 //! 扩展驱动的那个窄口子（施工 MD-1，core1 11-07 定 A）：只对 `providers.<id>.driver`、只对 `<包编号>/<驱动名>`，不在选项里的照留、
 //! 记警告 `unknown_driver`；在选项里的照常；别的写法、别的格照旧 `not_an_option`。
 
-use super::{PROVIDER_DRIVER, extension};
+use super::{PROVIDER_DRIVER, extension, with_installed};
 use crate::Layer;
 use crate::Value;
 use crate::parse::parse;
@@ -79,4 +79,26 @@ fn an_extension_driver_not_listed_is_kept_with_a_warning() {
     let other = read("[ui]\nlanguage = \"pi/ag\"\n");
     assert!(!other.entries.contains_key("ui.language"));
     assert_eq!(other.problems[0].code, Code::NotAnOption);
+}
+
+/// 装卸来回接同样的列表：用的是同一份选项表，不再另留（施工 MD-2）；列表不同的才是另一份。
+#[test]
+fn the_same_list_reuses_the_kept_options() {
+    let driver = items()
+        .into_iter()
+        .find(|item| item.key == PROVIDER_DRIVER)
+        .expect("有这一格");
+    let options = |extra: &[&str]| {
+        let extra: Vec<String> = extra.iter().map(|one| one.to_string()).collect();
+        match with_installed(&driver, &extra).kind {
+            crate::Kind::Option(options) => options,
+            other => panic!("{other:?}"),
+        }
+    };
+    let (first, again) = (options(&["kept-a/ag"]), options(&["kept-a/ag"]));
+    assert!(std::ptr::eq(first, again), "同样的列表是同一份");
+    assert!(first.ends_with(&["kept-a/ag"]));
+    let other = options(&["kept-a/ag", "kept-b/ag"]);
+    assert!(!std::ptr::eq(first, other));
+    assert!(other.ends_with(&["kept-a/ag", "kept-b/ag"]));
 }

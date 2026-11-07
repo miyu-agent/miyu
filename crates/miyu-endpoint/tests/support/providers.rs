@@ -80,6 +80,11 @@ pub fn routed(home: &Home, env: &[(&str, &str)], data: Arc<ModelData>) -> Arc<Co
 
 /// 同 [`routed`]，装着的包照家目录读进来、拉起扩展（施工 Q-3：扩展经真的路由调模型）。
 pub fn routed_serving(home: &Home, data: Arc<ModelData>) -> Arc<Core> {
+    routed_serving_with(home, &[], data)
+}
+
+/// 同 [`routed_serving`]，核心的环境是 `env`（施工 MD-2：供应商的 key 照环境变量取）。
+pub fn routed_serving_with(home: &Home, env: &[(&str, &str)], data: Arc<ModelData>) -> Arc<Core> {
     let routes = Routes {
         client: client(Proxy::Off).expect("造得出客户端"),
         direct: client(Proxy::Off).expect("造得出客户端"),
@@ -89,7 +94,7 @@ pub fn routed_serving(home: &Home, data: Arc<ModelData>) -> Arc<Core> {
     let resources = ResourceRoot::at(default_resources());
     let found = miyu_endpoint::packages::load(&resources, &home.root, Vec::new());
     let core = Arc::new(
-        Arc::into_inner(assembled(home, &[], data, Arc::new(routes)))
+        Arc::into_inner(assembled(home, env, data, Arc::new(routes)))
             .expect("刚造的，只有这一份")
             .with_extension_timing(super::extensions::quick())
             .with_packages(found),

@@ -149,6 +149,7 @@ impl Stage {
     /// 辅助请求 `upto` 说完了：出错的带上分类和原话，说完了的带上用量。
     pub(super) fn aside_ended(&mut self, purpose: Purpose, upto: Seq, line: &Line) -> Input {
         Input::AsideEnded {
+            sent: None,
             at: self.tick(),
             purpose,
             upto,

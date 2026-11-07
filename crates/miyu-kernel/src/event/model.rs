@@ -22,6 +22,10 @@ pub struct ModelCalled {
     /// 驱动编码以后的请求字节的 SHA-256（`05-内核接口.md` 第七节）。没编码就失败了的，没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub request: Option<ContentHash>,
+    /// 真发出去的字节的 SHA-256（施工 MD-2，设计 66 第七节第 3 条）：扩展提供的驱动在回答里报的（线上的字节是它编的，核心看不见），
+    /// 挨着 `request` 记。内置驱动、没报的没有；以前的日志没有这一格。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sent: Option<ContentHash>,
     /// 统一的请求里有几条消息。
     pub messages: u64,
     /// 和这个会话上一次请求比，第一处不同在哪。只是接着加的、前面没有请求可比的，没有。装在盒子里（施工 3-8 四补）：多半

@@ -24,7 +24,7 @@ use miyu_kernel::id::ContentHash;
 use miyu_kernel::request::Request;
 use miyu_store::blob::{BlobError, Blobs};
 
-use super::base::Ready;
+use super::base::{Ready, Speaker};
 use crate::blocking::blocking;
 use crate::clock::wall_now;
 use crate::route::shared::ModelData;
@@ -58,16 +58,18 @@ pub(super) enum Exchanged {
     Missing(CallError),
     /// 被叫停了：之后什么都没报。
     Cancelled,
-    /// 说完了：用量，出错的分类、原话、要等多久（报了上限的已经记下了）。
+    /// 说完了：用量，出错的分类、原话、要等多久（报了上限的已经记下了），真发出去的字节的哈希（扩展驱动报的，施工 MD-2；
+    /// 内置驱动的没有）。
     Ended {
         usage: Option<Usage>,
         error: Option<Classified>,
+        wire: Option<ContentHash>,
     },
 }
 
 /// 输出上限照请求的 `output_cap` 压（施工 6-11 三补，`Request::output_cap`）：有的，和原来的取小的；原来没写的（供应商默认）
 /// 照它写，不然供应商默认的输出加上用量可能超窗口。没有的、原来就更小的交回 `None`，照原样发。
-fn capped(call: &Call, cap: Option<u64>) -> Option<Call> {
+pub(super) fn capped(call: &Call, cap: Option<u64>) -> Option<Call> {
     let cap = u32::try_from(cap?).unwrap_or(u32::MAX);
     if call.max_output.is_some_and(|max| max <= cap) {
         return None;
@@ -89,12 +91,19 @@ pub(super) async fn exchange(
     cancel: impl Future<Output = ()> + Send,
     on: impl FnMut(Progress) + Send,
 ) -> Exchanged {
-    let needed = ready.driver.blobs_needed(&request, &ready.call);
+    let driver = match &ready.speaker {
+        Speaker::Builtin(driver) => driver.as_ref(),
+        // 扩展提供的驱动（施工 MD-2）：不编码、不走 HTTP，经端口交给扩展。
+        Speaker::Extension(reached) => {
+            return super::extension::exchange(ready, reached, request, blobs, cancel, on).await;
+        }
+    };
+    let needed = driver.blobs_needed(&request, &ready.call);
     // 一个 blob 都不用的（多数请求）不跳阻塞线程：两核的机器上那一跳偶尔要等上一两毫秒，正落在投影里（施工 PERF-1）。
     let fetched = match needed.is_empty() {
         true => Fetched::default(),
         false => {
-            let whole = ready.driver.blobs_whole(&request, &ready.call);
+            let whole = driver.blobs_whole(&request, &ready.call);
             let blobs = blobs.clone();
             blocking(move || fetch(&blobs, needed, &whole)).await
         }
@@ -120,11 +129,9 @@ pub(super) async fn exchange(
                 memo.clear_poison();
                 kept
             });
-            ready
-                .driver
-                .fragments_memo(&request, call, &fetched, &mut kept)
+            driver.fragments_memo(&request, call, &fetched, &mut kept)
         }
-        None => ready.driver.fragments(&request, call, &fetched),
+        None => driver.fragments(&request, call, &fetched),
     };
     // 编完了：请求（交进来的那一份）、取来的字节放掉（施工 V-38）。
     drop(request);
@@ -136,7 +143,7 @@ pub(super) async fn exchange(
     let attempt = Attempt {
         client: &ready.client,
         endpoint: &ready.endpoint,
-        driver: ready.driver.as_ref(),
+        driver,
         body: Body::new(encoded.body, Arc::new(StoreBlobs(blobs.clone()))),
         path: &encoded.path,
         idle: ready.idle,
@@ -147,7 +154,11 @@ pub(super) async fn exchange(
             if let Some(limit) = error.as_ref().and_then(|classified| classified.limit) {
                 ready.learn.limit(limit).await;
             }
-            Exchanged::Ended { usage, error }
+            Exchanged::Ended {
+                usage,
+                error,
+                wire: None,
+            }
         }
     }
 }
@@ -209,7 +220,7 @@ impl BlobSource for StoreBlobs {
 }
 
 /// 编码要的 blob 取不出来（`05-内核接口.md` 第七节）：分类「其他」，重试也没用。
-fn missing(hash: &ContentHash) -> CallError {
+pub(super) fn missing(hash: &ContentHash) -> CallError {
     CallError {
         class: ErrorClass::Unclassified,
         message: format!("编码要用的 blob {hash} 取不出来"),

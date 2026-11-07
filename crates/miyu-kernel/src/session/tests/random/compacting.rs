@@ -74,6 +74,7 @@ pub(super) fn some_overflow(rng: &mut Rng, watch: &Watch) -> Option<Input> {
     }
     let excess = (rng.below(2) == 0).then(|| 5 * (1 + rng.below(20)));
     Some(Input::ModelEnded {
+        sent: None,
         at: at(45),
         seen,
         usage: None,

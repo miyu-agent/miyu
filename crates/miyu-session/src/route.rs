@@ -36,10 +36,12 @@
 
 mod base;
 mod choice;
+mod driver_port;
 mod effort;
 mod ended;
 pub(crate) mod endpoint;
 mod exchange;
+mod extension;
 mod identity;
 pub(crate) mod lists;
 mod local;
@@ -54,6 +56,7 @@ mod side;
 mod sight;
 mod turn;
 
+pub use driver_port::{Broken, Declared, DriverPort, NotYet, Pending as DriverPending};
 pub use endpoint::Missing;
 pub use lists::{REFETCH, STALE, refresh_list};
 pub use local::{LOCAL_WAIT, Running, find_local};
@@ -387,7 +390,8 @@ fn lock(pinned: &Mutex<Pinned>) -> MutexGuard<'_, Pinned> {
     pinned.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
-/// 扩展提供的驱动这时接不上（施工 MD-1，设计 66 第八节第 5 条）：这家供应商用不了，绝不退回内置驱动。MD-2 接上通道以前一律这样。
+/// 扩展提供的驱动这时接不上（施工 MD-1，设计 66 第八节第 5 条）：这家供应商用不了，绝不退回内置驱动。核心还没装扩展驱动的
+/// 通道（[`ModelData::on_drivers`]：测试、第一次接入）、通道在却造不出的都这样（施工 MD-2）。
 pub(crate) fn unbuilt(provider: &miyu_models::provider::Provider) -> String {
     format!(
         "driver \"{}\" of provider {:?} is provided by an extension, which isn't connected yet",

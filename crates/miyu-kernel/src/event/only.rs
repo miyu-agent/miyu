@@ -112,6 +112,7 @@ pub(super) fn seen<'de, D: serde::Deserializer<'de>>(
         error,
     } = Called::deserialize(d)?;
     Ok(Body::ModelCalled(ModelCalled {
+        sent: None,
         seen,
         endpoint: None,
         model: None,

@@ -25,6 +25,7 @@ fn cost(amount: f64) -> Cost {
 /// 请求 `seen` 说完了，带用量、金额 `cost`，出错的带 `error`。
 fn priced(seen: u64, cost: Option<Cost>, error: Option<ErrorClass>) -> Input {
     Input::ModelEnded {
+        sent: None,
         at: at(45),
         seen: seq(seen),
         usage: Some(usage()),

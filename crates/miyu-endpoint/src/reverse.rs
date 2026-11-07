@@ -1,6 +1,10 @@
 //! 反向调用（施工 O-2 上，`docs/blueprint/providers.md`「怎么走」第 1、2 条）：核心发给一个连接的请求，编号 `core-<n>`，照连接
 //! 从 1 数起；对上编号的回应交给等它的，对不上的不理。连接断了（[`Peer::close`]），在等的和以后发的都了结成 [`Gone`]。不等了的
 //! （等它的 future 被丢掉）从表里拿掉；通知（[`Peer::notify`]，`tool.cancel`）不带编号、不等回应（施工 O-2 下）。
+//!
+//! 扩展提供的模型驱动（施工 MD-2，设计 66 第五节）：`driver.call` 的参数原样拼进那一行（[`Peer::call_raw`]，1 MB 的请求不多解析
+//! 一遍）；扩展发来的 `driver.delta` 照 `call` 交给登记了这一次的那一头（[`Peer::stream`]、[`Peer::delta`]），对不上的丢掉。
+//! 读的那一头先交增量、再交回应，等回应的拿到回应时增量已经都交了。
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, PoisonError};
@@ -33,6 +37,8 @@ struct State {
     last: u64,
     /// 编号到等它的。
     waiting: HashMap<String, oneshot::Sender<Result<Value, Value>>>,
+    /// 扩展驱动的调用编号到交增量的那一头（施工 MD-2）：连接断了一起放掉。
+    streams: HashMap<String, mpsc::UnboundedSender<Value>>,
     /// 往连接写的一头；连接断了放掉，是 `None`（施工 O-2 再补：提供者表里存着这一头，留着它，写的那一头就一直不结束，
     /// 核心察觉不到扩展退出，崩了不重新拉起）。
     out: Option<mpsc::Sender<String>>,
@@ -59,6 +65,19 @@ impl Peer {
         method: &str,
         params: Value,
     ) -> Result<Result<Value, Value>, Gone> {
+        self.call_raw(method, params.to_string()).await
+    }
+
+    /// 同 [`Peer::call`]，参数是写好的原文（一个 JSON 对象，施工 MD-2）：原样拼进那一行，不再解析。
+    ///
+    /// # Errors
+    ///
+    /// 连接断了。
+    pub(crate) async fn call_raw(
+        &self,
+        method: &str,
+        params: String,
+    ) -> Result<Result<Value, Value>, Gone> {
         let (id, answer, out) = {
             let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
             let Some(out) = state.out.clone() else {
@@ -75,8 +94,10 @@ impl Peer {
             peer: self,
             id: &id,
         };
-        let line = json!({"jsonrpc": "2.0", "id": id, "method": method, "params": params});
-        if out.send(line.to_string()).await.is_err() {
+        let head = json!({"jsonrpc": "2.0", "id": id, "method": method}).to_string();
+        // `head` 是一个不空的对象：去掉最后的 `}`，接上 `"params":<原文>}`。
+        let line = format!("{},\"params\":{params}}}", &head[..head.len() - 1]);
+        if out.send(line).await.is_err() {
             return Err(Gone);
         }
         answer.await.map_err(|_| Gone)
@@ -118,11 +139,51 @@ impl Peer {
         }
     }
 
-    /// 连接断了：在等的都了结，以后发的直接了结；往连接写的那一头放掉，写的任务才结束得了（施工 O-2 再补）。
+    /// 连接断了：在等的都了结，以后发的直接了结；往连接写的那一头放掉，写的任务才结束得了（施工 O-2 再补）。交增量的那几头一起放掉
+    /// （施工 MD-2）。
     pub(crate) fn close(&self) {
         let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
         state.waiting.clear();
+        state.streams.clear();
         state.out = None;
+    }
+
+    /// 扩展驱动的调用 `call` 的增量交给 `deltas`（施工 MD-2）：登记到不要了为止（[`Peer::unstream`]）。
+    pub(crate) fn stream(&self, call: &str, deltas: mpsc::UnboundedSender<Value>) {
+        self.state
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .streams
+            .insert(call.to_string(), deltas);
+    }
+
+    /// 调用 `call` 不要增量了：说完了、不等了。
+    pub(crate) fn unstream(&self, call: &str) {
+        self.state
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .streams
+            .remove(call);
+    }
+
+    /// 收到一条 `driver.delta`（施工 MD-2）：照 `call` 把 `deltas` 原样交给登记了这一次的那一头；不认识的 `call`（说完了的、不等了的、
+    /// 别人的）、写法不对的丢掉，不报错（设计 66 第五节第 2 条）。
+    pub(crate) fn delta(&self, mut params: Value) {
+        let Some(call) = params
+            .get("call")
+            .and_then(Value::as_str)
+            .map(str::to_string)
+        else {
+            return;
+        };
+        let deltas = params
+            .get_mut("deltas")
+            .map(Value::take)
+            .unwrap_or(Value::Null);
+        let state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
+        if let Some(stream) = state.streams.get(&call) {
+            drop(stream.send(deltas));
+        }
     }
 
     /// 和 `other` 是同一个连接的一头（施工 IM-5：端口表照它认是谁登记的）。

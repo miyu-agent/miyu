@@ -18,12 +18,13 @@
 | `crates/miyu-endpoint/src/hooks.rs` | 回合开始的挂接点（施工 X-16）：会话的 `HooksPort` 照清单、提供者挑要问的扩展，并行发 `user.append`、各自限时，照写法收；`miyu-session` 的 `actor/injects.rs` 拼问的话、换成注入 |
 | `crates/miyu-endpoint/src/extensions/guards.rs`、`guards/answer.rs`、`guards/texts.rs` | 工具调用前的守卫（施工 HK-1，下面「工具调用前的守卫」）：照清单的 `[guard]` 建表、查表，并行发 `tool.guard`、各自限时、照包的编号合；读答；拒绝的那一句套模板、转义；不等了发 `guard.cancel`。`miyu-session` 的 `actor/guarding.rs` 在权限策略之后问端口、合上策略的结论 |
 | `crates/miyu-endpoint/src/extensions/afters.rs`、`extensions/table.rs` | 工具调用后的通知（施工 HK-2，下面「工具调用后的通知」）：照清单的 `[after]` 建表（同守卫，`table.rs` 共用）、查表；挑收件人（开着、批了 `events.read`、碰得到这个会话、握过手），每个扩展一条 256 条的队列和发送任务。`miyu-session` 的 `actor/after.rs` 在结果落盘以后写好通知交给端口 |
+| `crates/miyu-endpoint/src/models/drivers.rs`、`src/reverse.rs` | 扩展提供的模型驱动的通道（施工 MD-2，下面「扩展提供的模型驱动」）：实现执行器的 `DriverPort`，查在不在、交声明；照连接发 `driver.call`、照 `call` 分 `driver.delta`、不等了发 `driver.cancel`。执行器那一头在 `miyu-session` 的 `route/extension.rs` |
 | `crates/miyu-endpoint/src/extensions/methods.rs` | `extension.enable`、`extension.disable`、`extension.restart`、`extension.status`；推送用的一项（`entry`，施工 9-4 补） |
 | `crates/miyu-endpoint/src/subscriptions/listed.rs` | 扩展的状态的订阅（施工 9-4 补；F-8 三补起和软件包列表的订阅共用这一份）：先写回应，收到哪个包变了照这一刻算那一项推 `extension.changed`，掉了队推 `resync` |
 | `crates/miyu-endpoint/src/connection.rs`、`hello.rs`、`login.rs` | 核心亲手给的连接：握手不看凭据（`Via::Spawned`） |
 | `crates/miyu-endpoint/src/connection/rights.rs` | 扩展能调什么的表（施工 X-30，「谁能调」）：只给人、要哪项能力、都能调；连接起来时照清单算一次声明了哪些；门禁 `xtask/src/rights.rs` 查代码里分发的方法都在表里 |
 | `crates/miyu-core/src/lib.rs`、`serve.rs` | 写了 `ready` 以后照开关拉起，停的时候请扩展退出 |
-| `crates/miyu-endpoint/src/bin/miyu-test-extension.rs` | 测试用的扩展：照参数一步步做（握手、调方法、带参数调方法（参数里的 `{session}` 换成最近回应里的会话编号，施工 O-4 下）、等标准输入读到头、不理它、退出码、往标准错误写、记下一个环境变量（施工 O-18）），不随发行带出去；`inject:<怎么答>` 定 `serve` 怎么答 `user.append`（施工 X-16、X-16 补），`guard:<怎么答>` 定怎么答 `tool.guard`（施工 HK-1，答法在 `miyu-test-extension/hooks.rs`） |
+| `crates/miyu-endpoint/src/bin/miyu-test-extension.rs` | 测试用的扩展：照参数一步步做（握手、调方法、带参数调方法（参数里的 `{session}` 换成最近回应里的会话编号，施工 O-4 下）、等标准输入读到头、不理它、退出码、往标准错误写、记下一个环境变量（施工 O-18）），不随发行带出去；`inject:<怎么答>` 定 `serve` 怎么答 `user.append`（施工 X-16、X-16 补），`guard:<怎么答>` 定怎么答 `tool.guard`（施工 HK-1，答法在 `miyu-test-extension/hooks.rs`），`driver:<怎么答>` 定怎么答 `driver.call`（施工 MD-2，`miyu-test-extension/drivers.rs`） |
 
 ### 对外的样子
 
@@ -153,6 +154,14 @@
 6. **不等、不挡**：每个扩展一条队列（`QUEUE`，256 条）和一个发送任务；会话那一头只 `try_send`，满了丢新来的，一阵连着丢的头一条记 `WARN tool.after queue full, dropping new ones`（带累计的 `dropped`），有了空位记 `INFO tool.after queue has room again`。发送任务往连接的写队列送，等得起空位（`Peer::notify_waiting`）。连接断了、崩了，队列和任务一起丢掉，不补发；连接换了（重启过）的新开一条空的；没握手的不发。`tool.after` 不保证送达，要完整的订事件流。
 7. **缓存前缀**：不产生事件、不碰请求（`tests/tool_after.rs` 比过：收着通知时第二次请求和没装时逐字节一样）。
 
+**扩展提供的模型驱动**（施工 MD-2，设计 `66-扩展提供模型驱动.md` 第五、八、九、十节；`models.md` 第四条第 2 条；协议参考 `extensions.md`「`driver.call`、`driver.delta`、`driver.cancel`」）：
+
+1. **在不在**（`models/drivers.rs` 的 `present`）：装着、清单里有这个驱动名、批了 `model.driver`、开着、没停下的在，交它的声明（`key`、`images`）；不在的交一句英文的原因（`its package is not installed`、`its package declares no driver by that name`、`its package is not approved to provide model drivers`、`its package is turned off`、`its extension stopped: <原因>`），执行器当这家供应商用不了、池里跳过、不重试。退避中、刚拉起的算在。
+2. **发**：找这个包握了手的连接（`Provided::linked`）；没有的当 `retryable`，退避中的带上还要等多久（`retry_in`）。先登记这一次的 `call`，再发 `driver.call`（参数是执行器写好的原文，原样拼进那一行：`Peer::call_raw`，1 MB 的请求不多解析一遍）。
+3. **增量**：连接读到 `driver.delta` 照 `call` 交给登记了的那一次（`Peer::delta`），对不上的、写法不对的丢掉；读的那一头先交增量再交回应。连接断了，登记的、在等的一起了结（`Gone`）。
+4. **不等了**：执行器丢下这一次（叫停、超时、增量不对）就不再收它的增量，没等到回应的发 `driver.cancel {"call"}`。
+5. **不进日志**：参数里有 key，不记；读坏了的增量、回答记一行 `WARN driver bad delta`、`driver bad answer`（`log.md`），只写驱动和原因。
+
 **放在 system 尾部的**（施工 X-20，设计 `34-表情包.md` 第五节第 5 条）：
 
 1. **谁能放**：清单 `[process] capabilities` 写了 `context.system`、在跑的扩展（`appends.rs`），经 `system.append {content, session?}`。
@@ -207,6 +216,7 @@
 | `crates/miyu-endpoint/tests/turn_inject.rs`、`src/hooks/tests.rs`（施工 X-16） | 真核心拉起八个测试扩展：声明了、工具面上有的交的两块照包的编号进日志（`by` 是包）、进请求排在人说的话前面；没声明的、工具只在群里的不问；超时、回错误、写法不对、交了四块的当没交、这一轮照常走完；回应的写法（至多 3 块、1 到 4000 字、类别和包的编号合写法、一块不对整份不要） |
 | `crates/miyu-endpoint/tests/tool_guard.rs`、`tool_guard_more.rs`、`src/extensions/guards/tests.rs`、`crates/miyu-session/src/actor/guarding/tests.rs`、`crates/miyu-config/src/package/guard/tests.rs`（施工 HK-1） | 真核心拉起测试扩展：两个守卫一个拒一个放，拒绝、`by` 是拒的包、那一句和说法、工具没跑，两个都被问到、问的八格；两个都拒（一个答得不对）记编号在前的；要问人的记请求、`by` 是包、不提规则，人允许了才跑；放行的第二次请求和没装守卫时逐字节一样；理由里伪造的指令、工具结果、记录头、换行、引号只在那一行里、转义过，请求里找不到原样的；超时的拒绝、收到 `guard.cancel`；回错误的、崩了的、开着却没握手的拒绝（没握手的不问）；打断时不等守卫、照打断收尾、它收到 `guard.cancel`；关掉的不问；自己登记的工具、策略先拒了的不问；脚本里调的同样挡下、`call_id` 是嵌套调用的编号，父级被打断时它的守卫当场收到 `guard.cancel`。单元：答的读法、照编号合、没答的那几句、截到 300 字先截后转义、访问类别的写法和内核一样；合上策略只收紧；`[guard]` 的读法、两样都没写、范围外的时限、没声明能力、不是扩展包的报错 |
 | `crates/miyu-endpoint/tests/tool_after.rs`、`tool_after_more.rs`、`src/extensions/afters/tests.rs`、`crates/miyu-config/src/package/after/tests.rs`（施工 HK-2） | 真核心拉起测试扩展：结果落了盘以后收到一条，九格对得上日志里那一条、`args` 是模型写的原文，表里没有的工具不发；照访问类别收、被守卫拒了的也发、`by` 是拒的包；一个不读、一个握了手就崩，回合照常、四十条照收的那一个照落盘的先后全收到；没批 `events.read`、关掉的收不到；群会话只发给它平台的桥，本机的只发给别的扩展；收着通知时请求逐字节不变；脚本里调的带嵌套调用的编号、`result`、`bytes`，不带 `blocks`。单元：两种参数的形状；队列满了丢新的、照扩展累计、读走的照先后；没在跑的丢队列，重新握手的新开空队列；`[after]` 的读法和报错 |
+| `crates/miyu-endpoint/tests/extension_driver_call.rs`、`crates/miyu-session/src/route/extension/tests.rs`、`extension/wire/tests.rs`、`crates/miyu-session/tests/route_extension_driver.rs`（施工 MD-2） | 真核心拉起测试扩展（`driver:<怎么答>`，`miyu-test-extension/drivers.rs`）：回答是扩展交的字、只交这一家的 key、别家的 key 一次都不出现；两次同时在路上交错着交，各拿到自己的；交了一半崩了的出错不卡住；没批的不用、原因写明。假端口：增量照累加器查、不对的不要了；空闲时限、总时限、叫停都发 `driver.cancel`；连不上的带等多久；别家的私有数据不交、私有数据记成扩展的家族；回答的分类、截字、`sent` 进 `model.called` |
 | `crates/miyu-endpoint/tests/bridge_venues.rs`、`crates/miyu-store/src/packages/tests.rs`（施工 O-4 下，SU-4 中改） | 平台桥开的群会话在主人名下、关在沙盒里、找回同一个；对应表里的主人的私聊不关、本机的头也开得了；群里主人说的记成外部身份带 `owner: true`；不是桥的扩展开群会话 `needs_approval` |
 
 ### 起草时定的

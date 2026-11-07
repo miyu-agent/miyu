@@ -29,7 +29,7 @@ pub(super) enum Right {
 pub(super) fn right(method: &str, params: &Value) -> Right {
     use Capability::{
         ActForExternal, ContextSystem, EventsRead, EventsWrite, FsRead, LoginPage, MemoryWrite,
-        Network, PackagesCall, SessionsDrive, Tools, Widgets,
+        ModelDriver, Network, PackagesCall, SessionsDrive, Tools, Widgets,
     };
     use Right::{Anyone, Needs, People};
     let acting = params.get("as").is_some_and(|acting| !acting.is_null());
@@ -93,6 +93,9 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "view.detail"
         | "job.output" => Needs(EventsRead),
         "events.append" => Needs(EventsWrite),
+        // 扩展提供的模型驱动交的增量（施工 MD-2）：是通知，读循环照 `call` 交给核心发出去的那一次，不过这张表；没批 `model.driver`
+        // 的收不到 `driver.call`，交来的对不上，丢掉。
+        "driver.delta" => Needs(ModelDriver),
         // 代表平台上的人、场所的原语（`venue.delivered`、`venue.recalled` 是 `events.append` 里只给桥的两种事件）。
         "session.note" | "venue.binding" | "venue.delivered" | "venue.recalled"
         | "venue.records" | "venue.plugins" | "venue.session" | "venue.sessions" => {
@@ -190,7 +193,9 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         // 核心发出去的（反向调用、推送），扩展调了没有意义；写明了门禁才认得全。
         "tool.call" | "tool.cancel" | "command.call" | "method.call" | "search.query" | "schedule.fired"
         | "user.append" | "tool.guard" | "guard.cancel" | "tool.after" | "widget.watch" | "widget.unwatch" | "view.add" | "view.append"
-        | "view.update" | "view.remove" | "view.hidden" | "package.progress" => People,
+        | "view.update" | "view.remove" | "view.hidden" | "package.progress"
+        // 扩展提供的模型驱动（施工 MD-2）：核心发的调用、不等了；扩展交的增量是通知，不进这张表。
+        | "driver.call" | "driver.cancel" => People,
         _ => People,
     }
 }

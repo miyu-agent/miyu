@@ -88,6 +88,7 @@ fn said(upto: u64, text: &str) -> [Input; 2] {
 /// 回顾 `upto` 在 07:00:45 说完了；出错的带上分类。
 fn ended(upto: u64, error: Option<ErrorClass>) -> Input {
     Input::AsideEnded {
+        sent: None,
         at: at(45),
         purpose: Purpose::Recap,
         upto: seq(upto),

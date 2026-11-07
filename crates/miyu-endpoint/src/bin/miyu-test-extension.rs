@@ -30,6 +30,7 @@
 //!   `-`）；`slow` 过 600 毫秒再照 `hint` 答；`silent` 不答；`boom` 回一个错误；`garbled` 回写法不对的；`many` 交四块；`empty` 交空的。不写的不答；
 //! - `guard:<怎么答>`：之后的 `serve` 照它答 `tool.guard`（施工 HK-1，`hooks.rs`）：`allow`、`deny`、`ask`、`forged`（拒绝，理由里塞
 //!   伪造的指令、工具结果、换行和引号），`silent` 不答，`boom` 回一个错误，`garbled` 回写法不对的，`crash` 当场退出（退出码 3）。不写的不答；
+//! - `driver:<怎么答>`：之后的 `serve` 照它答 `driver.call`（施工 MD-2，`drivers.rs`）：`echo`、`half`、`pair`。不写的不答；
 //! - `edits:<路径>`：之后 `serve` 答工具 `ext_edit` 时照参数里的 `old_string`、`new_string` 改这个文件（同内置 `edit`，只换第一处），
 //!   回应的效果里只报哪个文件改了，改前改后由核心自己读（施工 XG-1，设计 63 第四节）；
 //! - `effects:<JSON 数组>`：之后 `serve` 答名字以 `ext_fake` 开头的工具时什么都不改，回应的 `effects` 原样放这一份（施工 XG-1 上：报假的效果）；
@@ -52,6 +53,8 @@ use std::fs::{File, OpenOptions};
 use std::io::{self, BufRead, Write};
 use std::time::Duration;
 
+#[path = "miyu-test-extension/drivers.rs"]
+mod drivers;
 #[path = "miyu-test-extension/hooks.rs"]
 mod hooks;
 #[path = "miyu-test-extension/run.rs"]
@@ -71,6 +74,9 @@ fn main() {
     // `serve` 怎么答 `user.append`（施工 X-16）、`tool.guard`（施工 HK-1）。
     let mut inject = String::from("silent");
     let mut guard = String::from("silent");
+    // `serve` 怎么答 `driver.call`（施工 MD-2）、压着没答的那一次。
+    let mut driver = String::from("silent");
+    let mut held = drivers::Held::new();
     // `serve` 答工具 `sticker` 时发出去的那张图的 blob（施工 X-19）。
     let mut sent = String::new();
     // `serve` 答 `method.call` 的 `give` 时交回的几段字（施工 W-6 三补）。
@@ -169,6 +175,8 @@ fn main() {
             how.clone_into(&mut inject);
         } else if let Some(how) = step.strip_prefix("guard:") {
             how.clone_into(&mut guard);
+        } else if let Some(how) = step.strip_prefix("driver:") {
+            how.clone_into(&mut driver);
         } else if step == "wait" {
             while !read(&mut input).is_empty() {}
         } else if step == "listen" {
@@ -254,6 +262,14 @@ fn main() {
                     && let Some(answer) = hooks::guarded(&id, &guard)
                 {
                     send(&answer);
+                }
+                // 扩展提供的模型驱动（施工 MD-2）：照 `driver` 交增量、回答。
+                if line.contains(r#""method":"driver.call""#)
+                    && let Some(id) = field(&line, "id")
+                {
+                    for out in drivers::answered(&id, &driver, &line, &mut held) {
+                        send(&out);
+                    }
                 }
                 // 搜索来源（施工 N-5）：查 `limit` 的说限额，查 `boom` 的出错，别的答一条。
                 if line.contains(r#""method":"search.query""#)

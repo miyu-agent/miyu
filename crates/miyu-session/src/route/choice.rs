@@ -17,6 +17,7 @@ use miyu_models::provider::{self, NoModel, Target};
 
 use super::Routes;
 use super::base::Seat;
+use super::extension::Reach;
 use super::shared::ModelData;
 use crate::config::TurnConfig;
 
@@ -31,6 +32,8 @@ pub(super) struct Choice {
     pub(super) endpoint: Endpoint,
     /// 是池里的哪一个成员；不是池的没有。
     pub(super) member: Option<Member>,
+    /// 驱动是扩展提供的（施工 MD-2，`route/extension.rs`）：挑的时候备下的；内置驱动的没有。
+    pub(super) extension: Option<Reach>,
 }
 
 impl Choice {
@@ -68,10 +71,10 @@ impl Routes {
         seat: &Seat<'_>,
     ) -> Result<Vec<Choice>, NoModel> {
         let provider = &target.provider;
-        // 扩展提供的驱动（施工 MD-1）：这一家当用不了，不拿它的 key、地址去走内置的驱动。单个模型当场 `no_model`，池里的照现成的
-        // 规矩跳过、换下一个（`pool.rs`）。
-        if provider.driver.extension().is_some() {
-            return Err(NoModel(super::unbuilt(provider)));
+        // 扩展提供的驱动（施工 MD-2）：照它的声明取 key、地址，驱动不在的当场 `no_model`（池里跳过、换下一个），绝不拿这一家的
+        // key、地址去走内置的驱动。
+        if let Some(driver) = provider.driver.extension() {
+            return self.extension_choices(config, target, member, driver);
         }
         let base_url = provider::resolve_base_url(provider, &|reference| config.secret(reference))?;
         // 档案另配的头照谁在挑的种子换（施工 8-14）：会话是会话编号，一次性的是用途。
@@ -92,6 +95,7 @@ impl Routes {
                 endpoint.with_header(name, value)
             }),
             member: member.cloned(),
+            extension: None,
         }])
     }
 }

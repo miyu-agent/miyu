@@ -332,7 +332,11 @@ impl Actor {
                 delta,
             },
             Report::Ended {
-                usage, cost, error, ..
+                usage,
+                cost,
+                error,
+                sent,
+                ..
             } => {
                 self.follow_limits();
                 self.aside_ended(&purpose, upto, usage.as_ref(), error.as_ref());
@@ -343,6 +347,7 @@ impl Actor {
                     usage,
                     cost: cost.map(|cost| *cost),
                     error,
+                    sent,
                 }
             }
         }

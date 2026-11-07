@@ -88,6 +88,7 @@ fn delta(upto: Seq, delta: Delta) -> Input {
 /// 回顾 `upto` 说完了：出错的带上分类和原话。
 fn ended(upto: Seq, error: Option<CallError>) -> Input {
     Input::AsideEnded {
+        sent: None,
         at: at(49),
         purpose: Purpose::Recap,
         upto,

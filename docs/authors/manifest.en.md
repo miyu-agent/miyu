@@ -282,7 +282,7 @@ Provides a model driver, one per entry; `capabilities` must include `model.drive
 | `key` | Whether Miyu hands over that provider's key: `none`, `optional` (default), `required` |
 | `images` | `true` if it can see images (default `false`) |
 
-It's used only when the owner writes `driver = "<package id>/<driver name>"` in a provider's settings; model profiles, the npm table and the default are always the built-in drivers, so installing your package can't take over a provider the owner already set up. If the package isn't installed, isn't approved or the driver name is wrong, `miyu check` reports it and that provider can't be used; it never falls back to a built-in driver. How it talks to the core is in design 66; the protocol is still being built and will go into [Writing an extension](extensions.en.md).
+It's used only when the owner writes `driver = "<package id>/<driver name>"` in a provider's settings; model profiles, the npm table and the default are always the built-in drivers, so installing your package can't take over a provider the owner already set up. If the package isn't installed, isn't approved or the driver name is wrong, `miyu check` reports it and that provider can't be used; it never falls back to a built-in driver. How Miyu calls your driver (`driver.call`, `driver.delta`, `driver.cancel`) is in the [protocol reference](../reference/extensions.en.md#drivercall-driverdelta-drivercancel).
 
 ## `[after]`
 

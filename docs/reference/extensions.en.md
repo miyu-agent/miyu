@@ -14,6 +14,7 @@ An extension is a program a package brings. The core launches it from the manife
 | [`user.append`](#userappend) | core → extension | At the start of a turn, ask whether it wants to add a few lines to the context |
 | [`tool.guard`, `guard.cancel`](#toolguard-guardcancel) | core → extension | Ask it before a tool call runs: allow, deny or ask the person; stop waiting |
 | [`tool.after`](#toolafter) | core → extension | Tell it a tool call's result was written (read-only, no answer) |
+| [`driver.call`, `driver.delta`, `driver.cancel`](#drivercall-driverdelta-drivercancel) | both ways | Its model driver: take one model call, stream deltas back; stop waiting |
 | [`system.append`](#systemappend) | extension → core | Put a section at the end of the system prompt |
 | [`widget.set`, `widget.clear`, `widget.watch`, `widget.unwatch`](#widgetset-widgetclear-widgetwatch-widgetunwatch) | both | Widget content |
 | [`extension.config`](#extensionconfig) | core → extension | Its own settings changed |
@@ -346,6 +347,49 @@ access = ["network"]         # access classes, optional; at least one of the two
 - Each extension has one queue of **at most 256**; when it's full new ones are dropped and a `WARN` line is logged (only the first of a run of drops, with the running total dropped for you; another line once there's room again).
 - When the connection drops or you crash, the queue is thrown away and nothing is resent; after a restart you start from new calls. An extension switched on but not yet through the handshake isn't sent anything.
 - **`tool.after` is not guaranteed delivery**: for a complete audit, subscribe to the event stream (`subscribe` `events`, `events.read`), which replays from the log.
+
+## `driver.call`, `driver.delta`, `driver.cancel`
+
+Your model driver takes one whole model call (core → extension, with an `id`, expects a response): Miyu hands over the unified request; you encode it in the wire format, sign in, send it, parse the response, classify errors, and stream deltas back. Retries, cooldowns, failover and pricing stay in Miyu.
+
+**Who is called**: extensions whose manifest declares `model.driver` in `[process] capabilities` and has a `[[driver]]` table, approved by the owner and switched on. It is used only by providers whose config says `driver = "<your package id>/<driver name>"` (see `[[driver]]` in the [manifest](../authors/manifest.en.md)).
+
+**Params** `{"call", "driver", "request", "fingerprint", "params", "key"?, "base_url"?, "blobs"?}`:
+
+| Field | Meaning |
+|---|---|
+| `call` | This call's id; `driver.delta` and `driver.cancel` refer to it |
+| `driver` | `<package id>/<driver name>`, to tell your drivers apart |
+| `request` | The unified request as is: `tools`, `system`, `messages`, `stable`, and when present `continuation`, `described` (what each image shows, for endpoints that can't see images), `output_cap`, `tail`. The same state gives the same bytes; other drivers' private data is removed |
+| `fingerprint` | `{"tools", "system", "messages": [...]}`: one hash (16 hex digits) for the tool surface, the system prompt and each message; the same content gives the same hash, so you can use it for your own cache |
+| `params` | `{"model", "max_output"?, "effort"?, "temperature"?}` |
+| `key` | The key this provider's config refers to; left out when you declared `key = "none"` or the provider has no key |
+| `base_url` | The address this provider wrote; left out when it wrote none |
+| `blobs` | Only if you declared `images = true`: the request's images as `{"<blob hash>": {"media_type", "data"}}`, `data` in base64. Otherwise left out, and the request carries `described` instead |
+
+**Deltas** `driver.delta` (extension → core, notification): `{"call", "deltas": [...]}`, any number per notification, in order:
+
+| Entry | Meaning |
+|---|---|
+| `{"start": {"index", "kind"}}` | Block `index` starts; `kind` is `"text"`, `"reasoning"` or `{"tool_call": {"name"}}`. Blocks start from 0, one after another |
+| `{"text": {"index", "text"}}` | A piece of that block's text: the reply, reasoning, or a piece of the tool call's arguments |
+| `{"private": {"index", "data"}}` | Private data for a reasoning or tool call block (a signature, the provider's own call id), any JSON, at most one per block. Later requests hand it back to you as is, never to another driver |
+| `{"end": {"index"}}` | That block is complete |
+| `"truncated"` | The output limit was hit before the reply was finished |
+
+Text only after a block starts, nothing after it ends. A wrong delta ends the call as `unclassified` (`the driver sent a bad delta: …`) and later ones are dropped. Deltas for an unknown `call` are dropped silently.
+
+**Response** `{"usage"?, "error"?, "sent"?}`, after all of the call's `driver.delta`:
+
+- `usage`: `{"uncached", "cache_read", "cache_write", "output", "reasoning"?}`. Left out means not reported; nothing is estimated.
+- `error`: `{"class", "message", "retry_after_ms"?}`. `class` is one of `retryable`, `rate_limited`, `context_too_long`, `auth`, `quota`, `content_policy`, `unclassified`; anything else counts as `unclassified`. `retry_after_ms` is read only for `rate_limited`. `message` is cut to 500 characters and only shown to people. Don't retry a call yourself once you have sent deltas (the reply would repeat); Miyu retries, cools down and fails over by class.
+- `sent`: the SHA-256 of the bytes you actually sent, as `sha256:<64 hex digits>`, recorded in `model.called`.
+
+A response with extra fields or in a wrong format counts as `unclassified` (`the driver sent a bad answer: …`); so does a JSON-RPC error (`the driver refused the call: …`).
+
+**Time limits**: the same as built-in drivers: from sending to the first delta, between deltas, and from the last delta to the response, no more than the idle limit (180 seconds, scaled by reasoning effort), and the whole call no more than ten times that. Past it the call is `retryable` (`the driver went quiet`). If the extension crashes or the connection drops, a waiting call is `retryable` (`the driver went away`). While you are backing off before a restart, a call is `retryable` with the wait from `retry_in`; a package that is off, not approved or stopped is not called, and the provider counts as unusable (a pool moves to its next member).
+
+**`driver.cancel`** (core → extension, notification): `{"call"}`. The person interrupted, the turn was cancelled, the call timed out, or a delta was wrong: Miyu stopped waiting. Don't send anything more for this call; later deltas and the response are ignored.
 
 ## `system.append`
 

@@ -95,6 +95,8 @@ pub enum Input {
         wait_ms: Option<u64>,
         /// 超长时超了多少 token，驱动从原话里解析的（施工 6-6 中）：摘要请求照它截短。解析不出来的、别的出错，没有。
         excess: Option<u64>,
+        /// 真发出去的字节的哈希（施工 MD-2）：扩展驱动报的，记进 `model.called` 的 `sent`。内置驱动的没有。
+        sent: Option<ContentHash>,
         /// 出错以后端口换了端点（施工 8-9，`models.md`「怎么走」第五条第 3 条）：不管分类当场再来，`wait_ms` 是别的候选
         /// 都在冷却时要等多久。不进日志。
         failover: bool,
@@ -260,6 +262,8 @@ pub enum Input {
         cost: Option<Cost>,
         /// 出错的分类和原话；正常说完的，没有。
         error: Option<CallError>,
+        /// 真发出去的字节的哈希（施工 MD-2）：同 [`Input::ModelEnded`] 的。
+        sent: Option<ContentHash>,
     },
     /// 订的「空了告诉我」等不到了（施工 C-6，`docs/blueprint/cross-session.md` 第六条第 8、9 款）：执行器交，到点了是
     /// `expired`，订的时候那个会话不在了是 `gone`。内核照账本还在等、`expired` 的确实到了点的，记一条 `peer.idle`，`by` 是

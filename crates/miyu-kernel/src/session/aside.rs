@@ -27,6 +27,8 @@ pub(super) struct Aside {
     messages: usize,
     /// 发出去了：什么时候、发给了谁、请求字节的哈希。
     sent: Option<(Timestamp, Model, ContentHash)>,
+    /// 真发出去的字节的哈希（施工 MD-2）：扩展驱动在结尾报的，说完时记进 `model.called`。
+    wire: Option<ContentHash>,
     /// 第一段增量到的时刻。
     first_token: Option<Timestamp>,
     /// 收到的增量。
@@ -54,6 +56,7 @@ impl Aside {
             upto,
             messages,
             sent: None,
+            wire: None,
             first_token: None,
             accumulator: Accumulator::default(),
             broken: None,
@@ -156,6 +159,7 @@ impl Aside {
             endpoint: sent.map(|(_, model, _)| model.endpoint.clone()),
             model: sent.map(|(_, model, _)| model.model.clone()),
             request: sent.map(|(_, _, request)| request.clone()),
+            sent: self.wire.clone(),
             messages: self.messages as u64,
             first_difference: None,
             usage,
@@ -240,7 +244,12 @@ impl Session {
         upto: Seq,
         spent: (Option<Usage>, Option<Cost>),
         error: Option<CallError>,
+        wire: Option<ContentHash>,
     ) -> Vec<Action> {
+        // 真发出去的字节的哈希先记到在路上的那一次身上（施工 MD-2）：回顾、起标题、提前压好的摘要收尾时照它写 `model.called`。
+        if let Some(aside) = self.aside(purpose, upto) {
+            aside.wire = wire;
+        }
         match purpose {
             Purpose::Recap => self.recap_ended(at, upto, spent, error),
             Purpose::Title => self.title_ended(at, upto, spent, error),

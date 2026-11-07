@@ -111,6 +111,7 @@ impl Actor {
                     wait_ms,
                     excess,
                     failover,
+                    sent,
                 } => {
                     self.ended(seen, usage.as_ref(), error.as_ref());
                     Input::ModelEnded {
@@ -122,6 +123,7 @@ impl Actor {
                         wait_ms,
                         excess,
                         failover,
+                        sent,
                     }
                 }
             },

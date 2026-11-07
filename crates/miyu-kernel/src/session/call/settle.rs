@@ -7,7 +7,7 @@ use crate::event::{
     Body, CallError, CallResult, Cost, ErrorClass, Event, FirstDifference, MessageAssistant,
     ModelCalled, Purpose, Usage,
 };
-use crate::id::{CommandId, Seq};
+use crate::id::{CommandId, ContentHash, Seq};
 use crate::origin::By;
 use crate::session::Session;
 use crate::session::aside::bad_stream;
@@ -23,6 +23,8 @@ pub(super) enum Ending {
         usage: Option<Usage>,
         cost: Option<Box<Cost>>,
         error: Option<CallError>,
+        /// 真发出去的字节的哈希（施工 MD-2）：扩展驱动报的。
+        wire: Option<ContentHash>,
     },
     /// 被人打断。
     CutOff,
@@ -96,10 +98,15 @@ impl Session {
             spans,
             compaction,
         } = call;
-        let (usage, cost, mut error, stopped) = match ending {
-            Ending::Said { usage, cost, error } => (usage, cost, error, None),
-            Ending::CutOff => (None, None, None, Some(CallResult::Interrupted)),
-            Ending::Superseded => (None, None, None, Some(CallResult::Superseded)),
+        let (usage, cost, mut error, stopped, wire) = match ending {
+            Ending::Said {
+                usage,
+                cost,
+                error,
+                wire,
+            } => (usage, cost, error, None, wire),
+            Ending::CutOff => (None, None, None, Some(CallResult::Interrupted), None),
+            Ending::Superseded => (None, None, None, Some(CallResult::Superseded), None),
         };
         let cut = stopped.is_some();
         let limited = accumulator.truncated();
@@ -202,6 +209,7 @@ impl Session {
             endpoint: sent.as_ref().map(|sent| sent.model.endpoint.clone()),
             model: sent.as_ref().map(|sent| sent.model.model.clone()),
             request: sent.as_ref().map(|sent| sent.request.clone()),
+            sent: wire,
             messages: messages as u64,
             first_difference: difference
                 .map(|difference| Box::new(FirstDifference::from(difference))),

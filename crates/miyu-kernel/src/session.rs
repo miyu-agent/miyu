@@ -279,23 +279,7 @@ impl Session {
                 request,
             } => self.request_sent(at, seen, model, request),
             Input::ModelDelta { at, seen, delta } => self.model_delta(at, seen, delta),
-            Input::ModelEnded {
-                at,
-                seen,
-                usage,
-                cost,
-                error,
-                wait_ms,
-                excess,
-                failover,
-            } => self.model_ended(
-                at,
-                seen,
-                (usage, cost),
-                error,
-                retry::Said { wait_ms, failover },
-                excess,
-            ),
+            ended @ Input::ModelEnded { .. } => self.model_ended_input(ended),
             Input::Woke { at, seen } => self.woke(at, seen),
             Input::ShellRan { at, ran } => self.shell_ran(at, ran),
             Input::ToolDone {
@@ -378,7 +362,8 @@ impl Session {
                 usage,
                 cost,
                 error,
-            } => self.aside_ended(at, &purpose, upto, (usage, cost), error),
+                sent,
+            } => self.aside_ended(at, &purpose, upto, (usage, cost), error, sent),
             Input::Watched { watched } => {
                 self.watched = watched;
                 Vec::new()

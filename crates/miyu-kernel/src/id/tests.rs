@@ -229,6 +229,12 @@ fn names_from_the_drawing_round_trip() {
 fn module_driver_and_fact_names_follow_the_id_rule() {
     rejected::<ModuleId>(r#""Memory""#, "start with a lowercase letter");
     rejected::<DriverFamily>(r#""openai.chat""#, "only lowercase letters");
+    // 扩展提供的驱动（施工 MD-2）：`<包编号>/<驱动名>`，只收一个 `/`、两段都照名字的规则。
+    round_trip::<DriverFamily>(r#""pi-antigravity/antigravity""#);
+    rejected::<DriverFamily>(r#""pi/ag/x""#, "around one /");
+    rejected::<DriverFamily>(r#""/ag""#, "each part must start");
+    rejected::<DriverFamily>(r#""pi/""#, "each part must start");
+    rejected::<DriverFamily>(r#""Pi/ag""#, "each part must start");
     rejected::<ModuleId>(r#""nul""#, "reserved name on Windows");
     rejected::<FactKind>(r#""Env""#, "start with a lowercase letter");
 }

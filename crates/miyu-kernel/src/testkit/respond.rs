@@ -192,6 +192,7 @@ impl Stage {
     /// 请求 `seen` 说完了：出错的带上分类和原话，说完了的带上用量。
     pub(super) fn ended(&mut self, seen: Seq, line: &Line) -> Input {
         Input::ModelEnded {
+            sent: None,
             at: self.tick(),
             seen,
             usage: line.error.is_none().then(|| {

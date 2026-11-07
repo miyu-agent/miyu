@@ -1414,6 +1414,7 @@ flowchart LR
 | VR-2 | 工作区定号 2026.11.0 | core1 派，为 rc.6 演练 `v2026.11.0-rc.1`：`cargo xtask version 2026.11.0` 单独一个提交；核对 `miyu --version`、`release.yml` 两段 shell（本地照 YAML 跑）、压缩包名、`cargo xtask packaging` 填的版本；加不写死号的测试。施工单见 `VR-2-定号2026.11.0.md` |
 | RT-1 | session.respond 带接在最末尾的一句 | 项目主人 11-07 要的（im 群聊每一轮末尾的固定提示）：`tail` 最多 2 KiB，记在 `turn.started`、`turn.joined` 上；内核算完指纹才放进 `Request.tail`，三家驱动编完消息接在最后（最后是 user 的并进去，别的另起一条 user），anthropic 最后那个打点打在它前面，openai-chat 前缀续写那一次不带；并进来带了的换掉、没带的不动，由并进来的几条接着开的、重启接着干的那一轮照样带；探针证明前面零变化、下一步只丢那一句。施工单见 `RT-1-respond带尾巴.md` |
 | MD-1 | 扩展提供的模型驱动：登记和选用 | 设计 66（首个正式版以前）：清单 `[[driver]]`、能力 `model.driver`（第二十项）、确认屏列驱动名；`Driver::Extension`，只认手写的 `<包>/<驱动名>`，档案、npm 表、默认只推内置的；配置那一格照 N-5 加长选项，`<包>/<驱动名>` 不在选项里的照留、警告 `unknown_driver`（core1 11-07 定 A）；MD-2 以前一律当用不了、绝不退回内置驱动（假端点零请求）；`miyu check` 报没批、key 对不上。施工单见 `MD-1-扩展驱动登记选用.md` |
+| MD-2 | 扩展提供的模型驱动：通道和执行器的分岔 | 设计 66：`driver.call`、`driver.delta`、`driver.cancel` 走扩展的标准输入输出连接；`route/exchange.rs` 分岔，交给内核的还是同一串增量和结尾；驱动不在的当场 `no_model`、池里跳过，退避中的可重试；key 照声明只交这一家的；增量照累加器查、时限同 HTTP、断了可重试；`model.called` 记 `sent`；扩展驱动的家族是 `<包>/<驱动名>`。施工单见 `MD-2-扩展驱动通道.md` |
 
 **配置项的词汇**（PC 线，设计 53，2026-10-31 项目主人定：四档都做）
 

@@ -6,6 +6,7 @@ use crate::id::Seq;
 /// 一次摘要请求的记录：`compaction` 是哪一种压缩，`result` 是结果。
 fn called(compaction: Option<CompactTrigger>, result: CallResult) -> ModelCalled {
     ModelCalled {
+        sent: None,
         seen: Seq::new(8).unwrap(),
         endpoint: None,
         model: None,

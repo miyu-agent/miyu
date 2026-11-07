@@ -435,6 +435,7 @@ async fn run(
     let _home_scripts = core.watch_scripts();
     // 池的成员下架了的，路由确认以后从池里拿掉（施工 8-23）。
     core.start_retirement();
+    core.start_drivers();
     // 唤醒表（施工 J-1 上）：开上已有的、跳过核心停着时错过的，睡到点、到点交进会话。
     let _schedules = core.start_schedules();
     // 自己记内存账（施工 V-4，23 F4）：采到核心没了；量不出来的平台不起。

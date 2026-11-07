@@ -50,6 +50,7 @@ fn aside_delta(purpose: Purpose, upto: u64, delta: Delta) -> Input {
 /// 说完了。
 fn aside_ended(purpose: Purpose, upto: u64) -> Input {
     Input::AsideEnded {
+        sent: None,
         at: at(45),
         purpose,
         upto: seq(upto),
@@ -219,6 +220,7 @@ fn the_title_request_keeps_its_cost() {
         above: None,
     };
     let done = session.handle(Input::AsideEnded {
+        sent: None,
         at: at(45),
         purpose: Purpose::Title,
         upto: seq(6),
@@ -234,6 +236,35 @@ fn the_title_request_keeps_its_cost() {
         })
         .expect("记了 model.called");
     assert_eq!(called.cost.as_deref(), Some(&cost));
+}
+
+/// 扩展提供的驱动报的真发出去的字节的哈希（施工 MD-2）：起标题这类旁路请求也记进 `model.called` 的 `sent`。
+#[test]
+fn the_title_request_keeps_what_the_driver_sent() {
+    let mut session = answered();
+    session.handle(stored(8));
+    session.handle(aside_sent(Purpose::Title, 6));
+    for input in aside_said(&Purpose::Title, 6, "打招呼") {
+        session.handle(input);
+    }
+    let sent = crate::id::ContentHash::of(b"wire");
+    let done = session.handle(Input::AsideEnded {
+        sent: Some(sent.clone()),
+        at: at(45),
+        purpose: Purpose::Title,
+        upto: seq(6),
+        usage: None,
+        cost: None,
+        error: None,
+    });
+    let called = appended_events(&done)
+        .into_iter()
+        .find_map(|event| match event.body {
+            Body::ModelCalled(called) => Some(called),
+            _ => None,
+        })
+        .expect("记了 model.called");
+    assert_eq!(called.sent, Some(sent));
 }
 
 /// 旁路请求在池里换了人、退到了会话的模型（施工 Q-2）：还没收到增量就报了两次发出去了，记后一次（真发给的那一个）和它退

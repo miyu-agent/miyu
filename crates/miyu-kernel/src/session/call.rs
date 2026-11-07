@@ -10,6 +10,7 @@ use super::Session;
 use super::action::Action;
 use super::aside::bad_stream;
 use super::compaction::Compacting;
+use super::input::Input;
 use super::spans::{Mark, Spans};
 use super::turn::Stage;
 use crate::accumulate::{Accumulator, Delta};
@@ -218,7 +219,7 @@ impl Session {
                 let mut actions = self.model_ended(
                     at,
                     seen,
-                    (None, None),
+                    (None, None, None),
                     Some(error),
                     Default::default(),
                     None,
@@ -229,6 +230,26 @@ impl Session {
         }
     }
 
+    /// 执行器报说完了（[`Input::ModelEnded`]，施工 MD-2 从 `session.rs` 挪来：那边到了行数上限）：拆开交给 [`Session::model_ended`]。
+    pub(super) fn model_ended_input(&mut self, input: Input) -> Vec<Action> {
+        let Input::ModelEnded {
+            at,
+            seen,
+            usage,
+            cost,
+            error,
+            wait_ms,
+            excess,
+            failover,
+            sent,
+        } = input
+        else {
+            return Vec::new();
+        };
+        let said = super::retry::Said { wait_ms, failover };
+        self.model_ended(at, seen, (usage, cost, sent), error, said, excess)
+    }
+
     /// 模型说完了：正常说完的写成回复；出错的，收到的半截也写成回复，只留思考和正文（施工 3-5 下）。
     /// 都记一条 `model.called`。出了可以重试的错（端口说换了端点的也算，施工 8-9），等着再来（`retry.rs`）；不能重试的，
     /// 结束回合；回复里没有工具调用的，结束回合；有工具调用的，接着调工具。
@@ -236,7 +257,7 @@ impl Session {
         &mut self,
         at: Timestamp,
         seen: Seq,
-        (usage, cost): (Option<Usage>, Option<Cost>),
+        (usage, cost, wire): (Option<Usage>, Option<Cost>, Option<ContentHash>),
         error: Option<CallError>,
         said: super::retry::Said,
         excess: Option<u64>,
@@ -248,7 +269,17 @@ impl Session {
         let cost = cost.map(Box::new);
         // 连着写到输出上限到了次数（施工 3-10）：这一次照出错收，不再接着。
         let error = error.or_else(|| self.output_limit(&call));
-        let settled = self.settle(at, call, cause.clone(), Ending::Said { usage, cost, error });
+        let settled = self.settle(
+            at,
+            call,
+            cause.clone(),
+            Ending::Said {
+                usage,
+                cost,
+                error,
+                wire,
+            },
+        );
         let mut events = settled.events;
         if let Some(error) = settled.error {
             // 摘要请求自己超长：截掉最老的几组，落了盘再发（施工 6-6 中，`shorten.rs`）。

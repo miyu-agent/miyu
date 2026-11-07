@@ -27,7 +27,7 @@ use miyu_models::matching::Vendors;
 use miyu_models::profile::Profiles;
 use miyu_store::blob::Blobs;
 
-use super::super::base::Ready;
+use super::super::base::{Ready, Speaker};
 use super::super::shared::ModelData;
 use super::samples::{Media, media, model, request, texts};
 use super::{Learn, exchange};
@@ -189,7 +189,7 @@ pub(super) fn ready(
             model: call.model.clone(),
         },
         endpoint: Endpoint::new(server.base_url.clone(), "sk-golden"),
-        driver,
+        speaker: Speaker::Builtin(driver),
         call,
         idle: Duration::from_secs(30),
         learn: Learn {
@@ -297,7 +297,10 @@ async fn the_bytes_on_the_wire_are_the_same_as_before() {
         // 每条消息的起止照驱动直接编一回：和发出去的是同一串字节。
         let mut filled = request.clone();
         super::super::placeholder::fill(&mut filled, &ready.placeholders);
-        let needed = ready.driver.blobs_needed(&filled, &ready.call);
+        let Speaker::Builtin(driver) = &ready.speaker else {
+            unreachable!("样本都是内置驱动")
+        };
+        let needed = driver.blobs_needed(&filled, &ready.call);
         let fetched: BTreeMap<ContentHash, Vec<u8>> = needed
             .into_iter()
             .map(|hash| {
@@ -305,8 +308,7 @@ async fn the_bytes_on_the_wire_are_the_same_as_before() {
                 (hash, bytes)
             })
             .collect();
-        let encoded = ready
-            .driver
+        let encoded = driver
             .encode(&filled, &ready.call, &fetched)
             .expect("编得了");
         assert!(

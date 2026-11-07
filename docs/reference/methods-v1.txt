@@ -22,6 +22,9 @@ content.changed
 content.list
 content.read
 core.stop
+driver.call
+driver.cancel
+driver.delta
 events.append
 extension.changed
 extension.config

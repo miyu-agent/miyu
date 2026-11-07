@@ -221,13 +221,13 @@ fn some_input(rng: &mut Rng, watch: &mut Watch, next_id: &mut u64) -> Input {
         20 | 21 => {
             let (error, wait_ms, failover) = some_ending(rng);
             let seen = watch.some_seen(rng);
-            // 金额照序号造，不多取随机数（原来那串输入不跟着错开）：说完了的带，出错的不带（施工 8-15）。
-            let cost = error.is_none().then(|| watch::model::priced(seen));
+            // 金额照序号造，不多取随机数（原来那串输入不跟着错开）：说完了的带，出错的不带（施工 8-15）。先算它再交出 `error`。
             Input::ModelEnded {
+                sent: None,
                 at: at(45),
                 seen,
                 usage: None,
-                cost,
+                cost: error.is_none().then(|| watch::model::priced(seen)),
                 error,
                 wait_ms,
                 excess: None,

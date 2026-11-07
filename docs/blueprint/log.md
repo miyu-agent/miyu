@@ -153,6 +153,7 @@
 | `session` | WARN | `provider out of quota` | `provider`、`model`、`until`（冷却到的时刻） | 额度、余额用完记了冷却（`models.md` 第五条第 2 条，施工 Q-4 中）：账号级的事，人一看就知道不是网断了是没钱了、几点恢复。带会话编号 |
 | `session` | INFO | `failover` | `from`、`to` 或 `key`、`class` | 出错换端点：从 `<供应商>/<模型>` 换到别的模型写 `to`，只换 key、模型没变的写换到第几个 `key`（`models.md` 第五条第 8 条，施工 8-9）。别的候选都在冷却、只剩等的不记。带会话编号；一次性入口记的不带（施工 8-20） |
 | `session` | INFO | `model fallback` | `from`、`to` | 回合开始重新解析，钉着的引用解析不出，退回这一轮的 `models.chat`：原来的、退回的（`models.md` 第六条第 4 条，施工 8-10）。带会话编号 |
+| `session` | WARN | `driver bad delta`、`driver bad answer` | `driver`（`<包>/<驱动名>`）、`error` | 扩展提供的模型驱动交的增量对不上（块的先后、写法），回答写坏了：这一次当 `unclassified` 结束，增量不对的发 `driver.cancel`（设计 66 第五节第 2 条，施工 MD-2）。参数、key 不进日志 |
 | `endpoint` | DEBUG | `unknown model` | `why` | `session.create`、`session.configure`、`model.call` 的 `model` 解析不出，回 `unknown_model`（施工 8-8、8-10、8-20） |
 | `session` | INFO | `provider tested` | `provider`、`model`（没有模型可试的是空的）、`ok` | `provider.test` 试了一次（`models.md` 第七条第 4 条第 7 款，施工 8-11）：不属于哪个会话，不带会话编号；候选的 `provider` 是它推的编号。key、地址不进这一行 |
 | `endpoint` | WARN | `probe text unreadable` | `error` | `provider.test` 读不了 `core/models/probe.txt`，回 `internal_error`（施工 8-11） |

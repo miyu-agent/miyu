@@ -19,7 +19,7 @@
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex, MutexGuard, PoisonError, RwLock};
+use std::sync::{Arc, Mutex, MutexGuard, OnceLock, PoisonError, RwLock};
 use std::time::{Duration, Instant};
 
 use tokio::sync::{broadcast, watch};
@@ -39,6 +39,7 @@ use miyu_store::usage::UsageIndex;
 
 use crate::TARGET;
 
+use super::driver_port::DriverPort;
 use super::retire::{Retirement, Retiring};
 
 mod listing;
@@ -76,6 +77,9 @@ pub struct ModelData {
     /// 下架的模型交给谁、正在确认的几个（施工 8-23，`route/retire.rs`）。核心起来时装上（[`ModelData::on_retirement`]）；没装的
     /// 不确认。
     retiring: Mutex<Retiring>,
+    /// 扩展提供的模型驱动的通道（施工 MD-2，`route/driver_port.rs`）：核心起来时装上（[`ModelData::on_drivers`]）；没装的扩展驱动
+    /// 当用不了。
+    drivers: OnceLock<Arc<dyn DriverPort>>,
     /// 占位工具给模型看的说明（施工 8-14 补）：档案点名了占位工具的供应商，工具面里缺这几件时补上
     /// （`route/placeholder.rs`）。没读到的（测试、老数据根）是空的，空的不补。
     placeholder_tool: String,
@@ -121,6 +125,7 @@ impl ModelData {
             local: None,
             ledger: Mutex::new(None),
             retiring: Mutex::new(Retiring::default()),
+            drivers: OnceLock::new(),
             placeholder_tool: String::new(),
             logos: RwLock::new(Arc::new(BTreeMap::new())),
             claimed: Mutex::new(BTreeMap::new()),
@@ -150,6 +155,16 @@ impl ModelData {
     /// 池的成员回了 404 以后确认完了交给 `port`（施工 8-23）：核心造家底时交进来。
     pub fn on_retirement(&self, port: Arc<dyn Retirement>) {
         self.retiring().port = Some(port);
+    }
+
+    /// 扩展提供的模型驱动经 `port` 发（施工 MD-2）：核心造家底时交进来，只装一次，再装的不理。
+    pub fn on_drivers(&self, port: Arc<dyn DriverPort>) {
+        drop(self.drivers.set(port));
+    }
+
+    /// 扩展驱动的通道；没装的没有。
+    pub(super) fn drivers(&self) -> Option<Arc<dyn DriverPort>> {
+        self.drivers.get().cloned()
     }
 
     /// 下架的模型那一份（`route/retire.rs`）。

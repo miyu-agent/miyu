@@ -282,7 +282,7 @@ access = ["execute"]
 | `key` | 要不要 Miyu 交这一家供应商的 key：`none`、`optional`（默认）、`required` |
 | `images` | 看得了图的写 `true`（默认 `false`） |
 
-主人在供应商的配置里写 `driver = "<包的编号>/<驱动名>"` 才用它；模型档案、npm 表、默认永远是内置的几种，装上你的包也接不走主人原来配好的供应商。包没装、没批、驱动名写错的，`miyu check` 报出来，那一家供应商当用不了，不会退回内置驱动。和核心怎么通话见设计 66；协议还在施工，会写进 [写扩展](extensions.md)。
+主人在供应商的配置里写 `driver = "<包的编号>/<驱动名>"` 才用它；模型档案、npm 表、默认永远是内置的几种，装上你的包也接不走主人原来配好的供应商。包没装、没批、驱动名写错的，`miyu check` 报出来，那一家供应商当用不了，不会退回内置驱动。Miyu 怎么调你的驱动（`driver.call`、`driver.delta`、`driver.cancel`）见 [协议参考](../reference/extensions.md#drivercalldriverdeltadrivercancel)。
 
 ## `[after]`
 

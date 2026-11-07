@@ -71,3 +71,18 @@ fn only_a_hand_written_driver_points_to_an_extension() {
     assert_eq!(Driver::builtin("pi/ag"), None);
     assert_eq!(Driver::builtin("anthropic"), Some(Driver::Anthropic));
 }
+
+/// 手写了扩展驱动的可以不写地址（施工 MD-2，设计 66 第九节第 1 条）：记成空的字；内置驱动照旧要地址。
+#[test]
+fn an_extension_driver_needs_no_base_url() {
+    let held = Held::new(json!({}), false);
+    let values = values_with_installed(
+        "[providers.mine]\ndriver = \"pi/ag\"\n\n[providers.plain]\ndriver = \"openai-chat\"\n",
+    );
+    let mine = provider(&values, &held.knowledge(), "mine").expect("扩展的不要地址");
+    assert_eq!(mine.base_url, Address::Literal(String::new()));
+    assert!(
+        provider(&values, &held.knowledge(), "plain").is_err(),
+        "内置的照旧要地址"
+    );
+}

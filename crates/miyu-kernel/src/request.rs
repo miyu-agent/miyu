@@ -181,6 +181,16 @@ pub enum Difference {
 }
 
 impl Fingerprint {
+    /// 工具面、system、每条消息的哈希，照先后（施工 MD-2，设计 66 第五节第 1 条）：交给扩展提供的驱动，它拿去做自己的缓存。
+    /// 哈希照结构算、不带随机的种子，同样的请求同样的数。
+    pub fn hashes(&self) -> (u64, u64, impl Iterator<Item = u64> + '_) {
+        (
+            self.tools,
+            self.system,
+            self.messages.iter().map(|(_, hash)| *hash),
+        )
+    }
+
     /// 和上一次请求的指纹比，第一处不同在哪。
     ///
     /// 这一次只是在上一次后面接着加的，就是 `None`：前缀一个字节没动，缓存照样命中。

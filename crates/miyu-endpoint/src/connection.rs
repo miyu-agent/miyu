@@ -184,7 +184,13 @@ async fn read_all<R: AsyncRead + Unpin>(
         let request = match wire::parse(&line) {
             Incoming::Request(request) => request,
             Incoming::Notification(notice) => {
-                reach.heard(&notice, shaken.is_some());
+                match notice.method.as_str() {
+                    // 扩展提供的模型驱动交的增量（施工 MD-2）：照 `call` 交给等它的那一次，对不上的丢掉。
+                    "driver.delta" => reverse.delta(notice.params),
+                    _ => {
+                        reach.heard(&notice, shaken.is_some());
+                    }
+                }
                 continue;
             }
             Incoming::Response(response) => {

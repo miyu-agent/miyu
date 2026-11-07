@@ -14,6 +14,7 @@
 | [`user.append`](#userappend) | 核心 → 扩展 | 回合开始时问它要不要往上下文里放几句 |
 | [`tool.guard`、`guard.cancel`](#toolguardguardcancel) | 核心 → 扩展 | 工具调用执行前问它放行、拒绝还是问人；不等了 |
 | [`tool.after`](#toolafter) | 核心 → 扩展 | 工具调用的结果落了盘以后告诉它（只读，不等回答） |
+| [`driver.call`、`driver.delta`、`driver.cancel`](#drivercalldriverdeltadrivercancel) | 两个方向 | 它提供的模型驱动：接一次模型调用、交增量；不等了 |
 | [`system.append`](#systemappend) | 扩展 → 核心 | 往系统提示词末尾放一段 |
 | [`widget.set`、`widget.clear`、`widget.watch`、`widget.unwatch`](#widgetsetwidgetclearwidgetwatchwidgetunwatch) | 两个方向 | 界面块的内容 |
 | [`extension.config`](#extensionconfig) | 核心 → 扩展 | 它自己的配置变了 |
@@ -346,6 +347,49 @@ access = ["network"]         # 访问类别，可以不写；两样至少一样
 - 每个扩展一条队列，**至多 256 条**；满了丢新来的，记一行 `WARN`（一阵连着丢的只记头一条，带你累计被丢了几条；有了空位再记一行）。
 - 连接断了、你崩了，队列整个丢掉，不补发；重启以后从新的调用开始。开着却还没握手的不发。
 - **`tool.after` 不保证送达**：要完整的审计请订事件流（`subscribe` 的 `events`，`events.read`），它照日志补发。
+
+## `driver.call`、`driver.delta`、`driver.cancel`
+
+你提供的模型驱动接一整次模型调用（核心 → 扩展，带 `id`，要回应）：Miyu 交统一的请求，你编成线上的格式、登录、发出去、解响应、归类出错，照增量交回来。重试、冷却、换池、计价都在 Miyu。
+
+**谁被调**：清单 `[process] capabilities` 声明了 `model.driver`、写了 `[[driver]]`、主人批了、开着的扩展；主人在供应商的配置里写了 `driver = "<你的包编号>/<驱动名>"` 的那一家才用它（见 [清单](../authors/manifest.md) 的 `[[driver]]`）。
+
+**参数** `{"call", "driver", "request", "fingerprint", "params", "key"?, "base_url"?, "blobs"?}`：
+
+| 格 | 说明 |
+|---|---|
+| `call` | 这一次调用的编号，`driver.delta`、`driver.cancel` 照它对 |
+| `driver` | `<包编号>/<驱动名>`，你声明了几个驱动的照它分 |
+| `request` | 统一的请求原样：`tools`、`system`、`messages`、`stable`，有的才写 `continuation`、`described`（看不了图时图的转述）、`output_cap`、`tail`。同样的状态一字不差；别家驱动的私有数据已经拿掉 |
+| `fingerprint` | `{"tools", "system", "messages": [...]}`：工具面、system、每条消息各一个哈希（16 位十六进制的字），同样的内容同样的数，可以拿来做你自己的缓存 |
+| `params` | `{"model", "max_output"?, "effort"?, "temperature"?}` |
+| `key` | 这一家供应商配置里引用的那一把 key；你声明 `key = "none"` 的、这一家没写 key 的不交 |
+| `base_url` | 这一家写的地址；没写的不交 |
+| `blobs` | 声明了 `images = true` 的：请求里的图，`{"<blob 哈希>": {"media_type", "data"}}`，`data` 是 base64；没声明的不交，请求里照 `described` 用转述 |
+
+**增量** `driver.delta`（扩展 → 核心，通知）：`{"call", "deltas": [...]}`，一份里可以有几条，照先后：
+
+| 一条 | 意思 |
+|---|---|
+| `{"start": {"index", "kind"}}` | 第 `index` 块开始，`kind` 是 `"text"`、`"reasoning"` 或 `{"tool_call": {"name"}}`；块从 0 起一块接一块地开 |
+| `{"text": {"index", "text"}}` | 这一块的一段字：正文、思考，或者工具调用参数原文的一段 |
+| `{"private": {"index", "data"}}` | 思考、工具调用这一块的私有数据（签名、供应商自己的调用编号），任意 JSON，一块至多一份；以后的请求里原样交回给你，不交给别的驱动 |
+| `{"end": {"index"}}` | 这一块收全了 |
+| `"truncated"` | 写到了输出上限，没写完 |
+
+开了才有字、收了不再写；不对的这一次当 `unclassified` 结束（`the driver sent a bad delta: …`），之后来的都丢掉。不认识的 `call` 丢掉，不报错。
+
+**回应** `{"usage"?, "error"?, "sent"?}`，在这一次所有的 `driver.delta` 之后：
+
+- `usage`：`{"uncached", "cache_read", "cache_write", "output", "reasoning"?}`；没报的记成没报，不估。
+- `error`：`{"class", "message", "retry_after_ms"?}`，`class` 是 `retryable`、`rate_limited`、`context_too_long`、`auth`、`quota`、`content_policy`、`unclassified` 之一，不认识的当 `unclassified`；`retry_after_ms` 只认 `rate_limited` 的；`message` 截到 500 个字，只给人看。交了一半的不要自己重试（回复会重），Miyu 照分类重试、冷却、换池。
+- `sent`：这一次真发出去的字节的 SHA-256，写成 `sha256:<64 位十六进制>`，记进 `model.called`。
+
+多了格、写法不对的回应当 `unclassified`（`the driver sent a bad answer: …`）；回 JSON-RPC 错误的也是（`the driver refused the call: …`）。
+
+**时限**：同内置驱动：发出去到第一条增量、两条增量之间、最后一条到回应，都不能超过空闲时限（180 秒，照思考强度放大），整个不超过它的十倍；超了的当 `retryable`（`the driver went quiet`）。扩展崩了、连接断了，在等的当 `retryable`（`the driver went away`）。你正在退避、等着重新拉起的，这一次当 `retryable`，等多久照 `retry_in`；关着、没批、停下了的不调，这一家当用不了，池里换下一个。
+
+**`driver.cancel`**（核心 → 扩展，通知）：`{"call"}`。人打断、回合被取消、超时、增量不对，核心不等了：别再为这一次发请求，之后的增量、回应都不理。
 
 ## `system.append`
 

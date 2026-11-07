@@ -130,9 +130,9 @@ pub(super) async fn attempt(
     retry: bool,
 ) -> Attempt {
     let ready = &chosen.ready;
-    let reports = reports.billed(ready.tariff.clone());
+    let mut reports = reports.billed(ready.tariff.clone());
     let mut received = false;
-    let exchanged = exchange(
+    let mut exchanged = exchange(
         ready,
         request,
         chosen.memo.as_deref(),
@@ -147,6 +147,10 @@ pub(super) async fn attempt(
         },
     )
     .await;
+    if let Exchanged::Ended { wire, .. } = &mut exchanged {
+        // 扩展驱动报的真发出去的字节的哈希（施工 MD-2）：随说完了交给内核，记进 `model.called`。
+        reports.wired(wire.take());
+    }
     let (usage, classified) = match exchanged {
         Exchanged::Missing(error) => {
             chosen.tried.failed(&error.class, None, false);
@@ -157,7 +161,9 @@ pub(super) async fn attempt(
             chosen.tried.cancelled();
             return Attempt::Reported;
         }
-        Exchanged::Ended { usage, error: None } => {
+        Exchanged::Ended {
+            usage, error: None, ..
+        } => {
             chosen.tried.succeeded();
             reports.ended(usage, None, None, None);
             return Attempt::Reported;
@@ -165,6 +171,7 @@ pub(super) async fn attempt(
         Exchanged::Ended {
             usage,
             error: Some(classified),
+            ..
         } => (usage, classified),
     };
     let class = &classified.error.class;

@@ -87,6 +87,7 @@ impl Session {
     ) -> Vec<Action> {
         let cause = self.turn.as_ref().and_then(|turn| turn.cause.clone());
         let called = ModelCalled {
+            sent: None,
             seen,
             endpoint: None,
             model: None,
