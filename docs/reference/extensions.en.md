@@ -33,6 +33,7 @@ Other methods go through one table: those for people only (answering for the per
 - **Stderr**: appended to `var/log/<id>/stderr`; over 1 MiB it is moved to `.old` first.
 - **Handshake**: send `hello` as usual, without credentials. The response's `config` holds the final values of its own settings (secrets as real values).
 - **Exit**: the core closing its stdin means "please exit"; it is killed if it hasn't exited after 5 seconds.
+- **When the core dies**: if the core crashes or is killed, you and the processes you started go with it (construction XH-1). On Unix you run in a process group of your own (you are not its leader) together with a process the core watches; when the core is gone, it kills the whole group. Processes that `setsid` or move to another group are not covered. On Windows you and your children are in the core's job object. A planned stop follows the previous item. You are not in the core's process group, so Ctrl+C in a terminal does not reach you.
 - **Crashes**: an exit with any code other than 1, being killed, or a failed handshake counts as a failure; it is restarted after 1, 2, 4, 8, 16 seconds, and stopped after 5 in a row (`failed_repeatedly`). **Exit code 1** means a problem a restart won't fix, like bad config or a taken port: it isn't restarted and stops at once (`config_error`). After 60 seconds of running, the failure count starts over.
 
 ## `feature.offer`

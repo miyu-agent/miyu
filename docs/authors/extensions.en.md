@@ -267,6 +267,7 @@ To write your own tool that runs commands (replacing the built-in `shell`, or ru
 ## Exiting and crashing
 
 - Stdin reaching its end means "please exit", on all three platforms; if you haven't exited after 5 seconds you're killed.
+- If the core crashes or is killed, you and the processes you started go with it: on Unix the whole process group ends (processes that `setsid` or move to another group are not covered), on Windows everything in the same job object ends. Don't count on cleaning up at that moment.
 - Exiting on your own (exit code 0 included), a failed handshake, or closed stdout counts as a failure; the core restarts you after 1, 2, 4, 8, 16 seconds and stops after 5 in a row.
 - **Exit code 1 is for problems a restart won't fix, like bad config or a taken port**: the core stops at once without retrying, and the person fixes it and turns you on again.
 - After 60 seconds of running, the failure count starts over.
