@@ -37,6 +37,7 @@
 | `files <编号>` | 一个包装了哪些文件，一个一行、绝对路径 | `package.files` |
 | `owns <路径>` | 一个文件归哪个包；相对的照现在的目录换成绝对的 | `package.owns` |
 | `check [<编号>]` | 装好的文件改了、少了、多出来的；不写是数据根里记了的全部 | `package.check` |
+| `page <编号>` | 用浏览器打开一个包的后台页，不用装网页（施工 BP-2，`package-pages.md`「不靠网页打开软件后台」第 1、2 条，2026-11-09 项目主人定）：`package.list` 里带 `page_server` 的问它的 `status` 拿 `web` 端口、要一张 `login.ticket`，开 `http://127.0.0.1:<端口>/#miyu=<base64url(JSON {v: 1, ticket, lang})>`（不带颜色、深浅）；程序没在跑、没写 `web` 的报「<编号> 没有在运行，启用它以后再打开」，退出码 1。别的发 `package.page`，开它交回的宿主页；没装、没有后台页的照核心的原话，退出码 1。网址总印一行，浏览器没开成的报「无法打开浏览器，请手动打开上面的地址」（同 `miyu mcp login`）照样退出码 0；`--print` 只印不开 | `package.list`、`package.call`、`login.ticket` 或 `package.page` |
 | `update` | 从软件源拿新的索引（施工 G-3 上）：不管本机那份新不新都去拿；一个软件源一行（施工 CL-2 补：官方的在前，配置里 `packages.sources` 另加的照名字），「已更新 <源>：N 个包（<索引的时刻>）」；官方的一处都没拿成、用的是本机那份的报「无法更新 official：<原因>」，退出码 1；另加的没拿成的警告「无法更新 <源>：<原因>」（本机也没有的原因说「无法连接」），不算失败；官方的本机也没有的照核心的原话，退出码 1。`--format json` 原样印回应，报错、警告照样印在标准错误上 | `package.sync`，带 `force: true` |
 | `upgrade` | 照软件源升级装着的包（施工 G-5）：先盘点，软件源里没了的、被拉黑的（另起一行提示怎么卸）、来源仓库变了的、`packages.hold` 跳过的在标准错误上各警告一句；没有要升的印「没有可升级的软件包」、退出码 0；有的一律先看一眼（`package.upgrade {"preview": true}`，写了 `--yes` 的也看：新多要的能力要照它批），印「将升级 <编号> <旧版本> → <新版本>」一个一行，下面一项一行「  新要：<能力>」（新版多要的，批过的不印，施工 PK-3 下）；一起装的新依赖「将安装 <编号> <版本>」，下面「  需要：<能力>」；「下载：<多大>」；空一行，核心给了 `notice` 的先一行「注意：…」，问「升级 '<编号>'？[Y/n]」（不止一个的「升级 <几> 个软件包？[Y/n]」；有新要的能力的「升级 '<编号>' 并批准新要的能力？[Y/n]」「升级 <几> 个软件包并批准新要的能力？[Y/n]」），升好了一个一行「已升级 <编号> <旧版本> → <新版本>」，再一个包一行「已批准 <编号> 的能力：<名字>、…」 | `package.upgrades`、`package.upgrade`（带 `approve`，见「怎么走」第 2¼ 步） |
 | `clean` | 清掉缓存里不是装着那一版的包文件（施工 G-4 下）：印「已清理 N 个包文件，释放 X」，一个都没有的印「没有可清理的包文件」。`--format json` 原样印回应 | `package.clean` |
@@ -68,7 +69,7 @@ pacman 的写法当别名（设计 `31-软件包.md` 第一节，定了的 A）�
 | `remove <编号>`、`-R` | `package {"remove"}`；写了 `--purge`（`-Rn`）的说 `pkg-unavailable.txt`（`{command}` 是 `remove --purge`），退出码 2：她的工具不收 `purge`，连配置一起删要人在终端里自己敲（施工 PK-5） |
 | `upgrade`、`-Su`、`-Syu` | `package {"upgrade": "all"}`（`-y` 在会话里不另拿索引） |
 | `pack` | 照旧在本机打 |
-| `files`、`owns`、`check`、`update`、`clean`、只有 `-y` 或 `-c` 的 `-S` | 说 `pkg-unavailable.txt`（「miyu pkg files does not work inside a Miyu session.」），退出码 2 |
+| `files`、`owns`、`check`、`page`（开浏览器是人的事，施工 BP-2）、`update`、`clean`、只有 `-y` 或 `-c` 的 `-S` | 说 `pkg-unavailable.txt`（「miyu pkg files does not work inside a Miyu session.」），退出码 2 |
 
 `--yes` 不认：问不问由权限策略判（工作区那一级每次问人，卡片照看一眼的那一份），她跳不过；`--format` 不管，印的就是工具的输出。几次调用挨着做，有一次不成的照它的退出码退出、后面的不做。`packages` 包关着、通道没开的会话里没有 `MIYU_CALL_SOCK`，`miyu pkg` 照旧走协议、借本人的身份：同设计 39 MC10、MC11 记着的那一条，设计 44 不加新口子。
 
@@ -365,6 +366,7 @@ pudding：多出 cache.db
 | `crates/miyu-cli/src/pkg/approve/tests.rs`、`summary/tests.rs`、`confirm/tests.rs`、`upgrade/tests.rs` 里施工 PK-3 下那几条 | 认不认 `approve` 的核心（有 `feed` 或 `source: "file"` 才认）；照看一眼拼表（批过的也带、没列能力的和推荐的不写、空的不带）；批了哪些只列没批过的；能力一项一行带说明、批过的标出来；「注意」照核心的句子原样接。设计 61 第三节三个确认屏中英逐字对；官方的没有「注意」、来源都一样的只写一行；问的那一句有、没有要批的两种（全批过的、没有能力的、旧的核心照旧）；推荐的另一段；升级只列新要的、一起装的新依赖列它要的 |
 | `crates/miyu-cli/tests/pkg_approve.rs`（施工 PK-3 下） | 在进程里起的核心：从包文件夹装要能力的扩展，确认屏照核心的字中英逐字对，答「是」的带上 `approve`、开关文件记下、输出列出批了哪些，答「否」的不装不批；`--noconfirm` 不问照样批；升级 2.0 新要联网的列在「将升级」下面、问「并批准」，答「否」不批，`-Su --yes` 批了、列出来；推荐的要能力的另印一段，答「是」另装另批 |
 | `crates/miyu-cli/src/pkg/progress/tests.rs`（施工 IN-3） | 一行进度条照终端宽度排（最后一格留着、越宽条越长）、百分比、窄终端不画条再截掉；终端里刷新同一行、管道里一个一行、没写阶段的当下载 |
+| `crates/miyu-cli/tests/pkg_page.rs`、`crates/miyu-cli/src/pkg/page/tests.rs`（施工 BP-2） | 在进程里起的核心：目录里的后台页印宿主页的地址；程序自己起服务、程序没在跑的说一句、退出码 1；没装的照核心的原话、退出码 1（都带 `--print`）；片段是 JSON 的 base64url、不带 `=` |
 | `crates/miyu-cli/tests/pkg_info_path.rs`（施工 IN-4） | 在进程里起的核心：`info ./包目录`、`info 包目录/` 照现在的目录换成绝对的，中英文的「键 : 值」逐字对、什么都不装，`--format json` 原样印、带绝对路径；写错的清单照真装那样报「无法安装 ./broken：package.toml:5: …」，退出码 1；`-Qi`、`-Si` 接路径的报用法错，退出码 2 |
 | `crates/miyu-cli/tests/pkg_stages.rs`（施工 IN-3） | 在进程里起的核心、假的软件源：管道里一整次安装逐字对（中文，推荐的答「是」主包装完再装）；`--yes` 不问、不装推荐的（英文逐字对）；推荐的答「否」照样装主包、不下推荐的 |
 | `crates/miyu/tests/pkg_progress.rs`（施工 IN-3，只在 Unix 上） | 真的核心、真的 `miyu pkg`：标准错误是伪终端的画进度条、照终端宽度、刷到 100%，`--yes` 不问推荐的、不装；接管道的只印行、没有 `\r` 和控制序列 |

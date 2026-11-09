@@ -204,7 +204,7 @@ fn state<'a>(listed: &'a Value, service: &str) -> Option<&'a str> {
 }
 
 /// 用系统的办法打开 `url`：打开得了的交回 `true`。不等浏览器退出。
-fn opened(url: &str) -> bool {
+pub(crate) fn opened(url: &str) -> bool {
     let (program, args) = opener(url);
     Command::new(program)
         .args(args)

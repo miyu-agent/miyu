@@ -12,6 +12,7 @@ mod info;
 mod install;
 mod open;
 mod pack;
+mod page;
 mod path;
 mod progress;
 mod query;
@@ -111,6 +112,14 @@ pub enum PkgCommand {
     Check {
         /// 只查哪一个。
         package: Option<String>,
+    },
+    /// 用浏览器打开一个包的后台页（施工 BP-2）：不用装网页。
+    Page {
+        /// 哪一个。
+        package: String,
+        /// 只印网址、不开浏览器（同 `miyu web --print`）。
+        #[arg(long)]
+        print: bool,
     },
     /// 从软件源拿新的索引（施工 G-3 上）。
     Update,
@@ -349,6 +358,9 @@ async fn act(
                 false => lines(out, rows),
             }
             if broken { Err(exit::ERROR) } else { Ok(()) }
+        }
+        PkgCommand::Page { package, print } => {
+            page::open(rpc, language, (&package, print), (out, err)).await
         }
         PkgCommand::Update => source::update(rpc, language, json, (out, err)).await,
         PkgCommand::Search { words } => {

@@ -246,6 +246,16 @@ impl Language {
         }
     }
 
+    /// `page`：包 `id` 的后台页是它的程序自己起的服务，程序没在跑、还没听上（施工 BP-2）。
+    pub(crate) fn page_not_running(&self, id: &str) -> Problem {
+        match self {
+            Language::Chinese => Problem::new(format!("{id} 没有在运行，启用它以后再打开")),
+            Language::English => Problem::new(format!(
+                "{id} is not running; enable it, then open it again"
+            )),
+        }
+    }
+
     /// `check` 的一行：包 `id` 的文件 `path` 怎么了（`modified`、`missing`、`extra`），都没问题的 `path` 是空的。
     pub(crate) fn checked(&self, id: &str, what: Checked, path: &str) -> String {
         let word = match (self, what) {

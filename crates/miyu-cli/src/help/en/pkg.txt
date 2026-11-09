@@ -12,6 +12,7 @@ Commands:
   files <id>         List the files of a package (alias: -Ql)
   owns <path>        Find the package that owns a file (alias: -Qo)
   check [<id>]       Check installed files for changes (alias: -Qk)
+  page <id>          Open a package's page in the browser
   pack <dir>         Pack a package folder into a .miyu file
   update             Update the package index (alias: -Sy)
   search [<words>…]  Search the package source (alias: -Ss)
@@ -33,4 +34,5 @@ Options:
   -n, --purge               Remove the config too
       --target <target>     Target system for pack
   -o, --out <dir>           Output directory for pack (default: current)
+      --print               page: print the address, don't open a browser
   -h, --help                Print help

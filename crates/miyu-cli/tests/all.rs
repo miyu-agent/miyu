@@ -19,6 +19,7 @@ mod memory;
 mod opening;
 mod pkg_approve;
 mod pkg_info_path;
+mod pkg_page;
 mod pkg_source;
 mod pkg_stages;
 mod recap;

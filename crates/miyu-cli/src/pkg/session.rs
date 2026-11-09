@@ -104,6 +104,8 @@ pub(super) fn calls(
         },
         PkgCommand::Files { .. } => Err("files".to_string()),
         PkgCommand::Owns { .. } => Err("owns".to_string()),
+        // 开浏览器是人的事（施工 BP-2）。
+        PkgCommand::Page { .. } => Err("page".to_string()),
         PkgCommand::Check { .. } => Err("check".to_string()),
         PkgCommand::Update => Err("update".to_string()),
         PkgCommand::Clean => Err("clean".to_string()),
