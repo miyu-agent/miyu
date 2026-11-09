@@ -1472,6 +1472,16 @@ flowchart LR
 | HK-2 | 工具调用后的通知 | 清单 `[after]`（写法同 `[guard]`、没有时限，写错 `bad_after`），能力用 `events.read`、不另加；核心起来时照清单建表（和守卫共用 `table.rs`）；结果落了盘以后发通知 `tool.after` 给开着、批了、握过手、碰得到这个会话的扩展（同订事件流的规矩），直接调的带模型写的 `args` 原文和 `blocks`，脚本里调的带嵌套调用的编号、`result`、`bytes`；每个扩展一条 256 条的队列，满了丢新的、`WARN` 不刷屏，断了丢队列不补发；不进上下文，请求逐字节不变。设计 65 写进 core1 11-07 定的六条。量尺工具一步多一种（慢的收件人）。施工单见 `HK-2-工具调用后的通知.md` |
 | XH-1 | 核心没了，它拉起的长住进程跟着走 | 派工单的第 2 件（第 1 件滤密钥环境变量暂缓，主人在重新看）：扩展、命令型 MCP 服务、语义模型小程序照 `shell` 的命令那样起在看门的组里（`miyu-sandbox` 的 `lifeline::keep`，同一根生命线、同一个助手），核心崩了、被 `SIGKILL` 时整组收掉，它们起的子进程也在里面；Windows 上本来就在核心的作业对象里，不另做；看门的起不来记 `WARN`、照旧拉起；正常停止的顺序、时刻不变（看门的丢掉时只收自己）。测试扩展加 `child:<路径>`（`spawn.rs`）；真核心硬杀三种都测（扩展三个平台）。施工单见 `XH-1-扩展小加固.md` |
 
+**用户态总线**（BUS 线，设计 67，core1 2026-11-09 拍板第九节；项目主人 2026-11-09 定首个正式版以前做，语音（设计 20）同样发版前做、BUS-2 合了开工）
+
+| 步 | 名字 | 做什么 |
+|---|---|---|
+| BUS-1 | 清单声明名字、装包查撞名 | `[export]` 加 `provides`、`plugs`（写法同方法名、点分几段，不重复）；`methods` 里照名字带前缀的全名，声明的名字要有方法；装包时一个名字 `provides` 只有一家、同一个名字只能是一种，撞了 `package_conflict`，冲突种类 `bus`（命令行的译名一起） |
+| BUS-2 | `bus.call`、`bus.list`、`bus` 流、`ready` | `bus.call {name, method, params?, package?}` 写短名、核心拼前缀，照名字找到包，余下照 `package.call`（能力、`[export]`、时限、blob、错误），`plugs` 的要写 `package`（`package_required`），没人提供 `no_provider`；在后台答；`bus.list {name?}` 列 `{name, kind, package, ready}`；`bus` 流推 `bus.changed`；`ready` 照程序在跑、名字底下导出的方法都登记了算；改掉 `backstage/calls.rs` 开头那句过期注释 |
+| BUS-3 | 命令行和文档 | `miyu bus list`（照 `busctl list`）；参考 `packages`、`extensions`、`errors`、`pushes`、`connection` 中英、`methods-v1.txt`；作者 `manifest`、`extensions` 中英；公认名字的清单（`render`、`chat`、`chat.hook`、`stt`、`tts`、`tts.engine`） |
+| BUS-4 | 各仓库迁过来 | 渲染包 `provides = ["render"]`、方法 `render.markdown`；im `provides = ["chat"]`、调 `render.markdown`，插件挂接 `plugs = ["chat.hook"]`、方法 `chat.hook.event` 等，照 `bus.list` 找；赞助记录、表情包调 `chat.venue`、`chat.media`。im、赞助记录归 im 的会话，渲染包、表情包 core1 改 |
+| BUS-5 | 收掉跨包的 `package.call` | 扩展经 `package.call` 只调得到自己，跨包一律 `bus.call`（设计 67 B5）；人的连接照旧；BUS-4 全合了以后做 |
+
 ### 四、施工单的格式
 
 每一张施工单只写这几节（2026-09-28 项目主人定：有了蓝图，施工单变薄）：
