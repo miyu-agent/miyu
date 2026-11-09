@@ -354,6 +354,7 @@ Run a slash command: the head passes along exactly what the person typed; the co
 | `/clear` (`/reset`) | Clear the context and the to-do list, like `session.clear` |
 | `/stop` | Interrupt this turn and stop the background commands and subagents this session spawned, and its organizing |
 | `/workspace <path>` | Change the working directory; without a path, say where it is |
+| `/context <tokens>`, `/context off`, `/context` | Set this session's context limit (`128000`, `128k` and `1m` all work), like `context` in `session.configure`; remove it; say the limit and compaction line right now |
 | `/todo`, `/todo clear` | Show the to-do list; clear it |
 | `/remember <words>` | Remember something |
 | `/dream`, `/dream stop` | Organize memory now (answered in the background); stop the organizing in progress, keeping what's merged |
@@ -372,7 +373,7 @@ The same `id` sent again counts once.
 
 | `data.reason` | When |
 |---|---|
-| `bad_params` (`-32602`) | Doesn't start with `/`; `cwd` not absolute; wrong words after the command |
+| `bad_params` (`-32602`) | Doesn't start with `/`; `cwd` not absolute; wrong words after the command; a `/context` limit too small (`data.field` is `context`, `data.min` the least accepted) |
 | `unknown_command` | No such command |
 | `command_not_allowed` | This person can't use it, or it's disabled or off in the preset; `data.why` is a sentence for people |
 | `owner_only` | Only the owner can use it |

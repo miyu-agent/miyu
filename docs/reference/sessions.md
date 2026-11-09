@@ -210,7 +210,7 @@
 
 **参数**：`session`（可以不写：不写的照新会话会拿到的算）；不写 `session` 时可带 `persona`（`null` 是无人格）、`preset`（`null` 是无工具），同 `session.create`。
 
-**回应**：`{"window"?, "line"?, "used"?, "basis", "anchor"?, "estimated_total", "parts": [...]}`。`window`、`line` 是上下文窗口和压缩线（没交过限额的不写）；`used` 是这时用了多少，口径同底栏；`basis` 是 `measured`（照最近一次请求供应商报的 `anchor` 起算）或 `estimated`（全是本地估的）。`parts` 每块 `{"part", "label", "tokens", "children"?}`，`part` 是稳定的编号，`label` 照连接的语言，是 0 的块不交。有 `used` 的各块已经照它摊好，加起来正好是 `used`（摊成 0 的不交）；`estimated_total` 是摊之前本地估的和。
+**回应**：`{"window"?, "line"?, "context"?, "used"?, "basis", "anchor"?, "estimated_total", "parts": [...]}`。`window`、`line` 是上下文窗口（设了上下文上限的是生效的窗口）和压缩线（没交过限额的不写）；`context` 是会话的上下文上限（没设的不写）；`used` 是这时用了多少，口径同底栏；`basis` 是 `measured`（照最近一次请求供应商报的 `anchor` 起算）或 `estimated`（全是本地估的）。`parts` 每块 `{"part", "label", "tokens", "children"?}`，`part` 是稳定的编号，`label` 照连接的语言，是 0 的块不交。有 `used` 的各块已经照它摊好，加起来正好是 `used`（摊成 0 的不交）；`estimated_total` 是摊之前本地估的和。
 
 块的编号：`system`（下面照拼的先后 `system.persona`、`system.venue`、`system.group`、`system.profile`、`system.project`、`system.core`、`system.clicall`、`system.show`、`system.skills`、`system.knowledge`、`system.style_lock`、`system.appended:<包>`；老会话里和这时的字对不上的那几截并成 `system.other`）、`tools`（下面 `tools.builtin`、`tools.package:<包>`、`tools.mcp:<服务>`、`tools.scripts`）、`demos`、`summary`、`messages`（下面 `messages.user`、`messages.assistant`、`messages.memory`（下面 `messages.memory.resident`、`messages.memory.recall`）、`messages.knowledge`、`messages.facts`、`messages.project_docs`（仓库里的 AGENTS.md）、`messages.reports`（子代理、后台命令的回报）、`messages.tool_results`）。包、服务的 `label` 是原名。
 
@@ -392,19 +392,20 @@
 
 ## `session.configure`
 
-换这个会话用的模型、人格、预设、思考强度，下一轮开始生效。
+换这个会话用的模型、人格、预设、思考强度，下一轮开始生效；上下文上限下一次请求起生效。
 
-**参数**：`session`；下面四格至少写一格：
+**参数**：`session`；下面五格至少写一格：
 - `model`：`<供应商>/<模型>` 或 `@<池>`；`null` 是不再钉着哪一个，回到跟着配置的 `models.chat`（每一轮照那时的配置，配置换了跟着换）。
 - `persona`：人格编号；`null` 是无人格。
 - `preset`：预设编号；`null` 是换成无工具（施工 P-16 下）。
 - `effort`：思考强度的一档（施工 SM-1），照这个会话这时的模型的档位查（`model.list` 的 `facts.reasoning`；同一条换了模型的照换成的）。用着池的会话不能设，写了回 `bad_params`（`data.field` 是 `effort`），池里每个成员照它自己的配置；`null` 是回到跟着配置。只管这个会话：配置里的 `providers.<id>.models.<model>.effort` 是新会话的默认。换到没有这一档的模型照配置，换回来又用上。
+- `context`：上下文上限，token 数；`null` 是去掉。生效的窗口取模型的窗口和它里小的（模型没报窗口的照它），压缩线照生效的窗口算；跟着会话，换模型、池换了成员都照用。太小、照它算不出压缩线的回 `bad_params`（`data.field` 是 `context`，`data.min` 是最少要多少），什么都不换。人打 `/context` 也是改它。
 
 换人格、预设时先压缩一轮：核心马上照旧人格把前面的对话压成摘要，下一轮换上新的，从摘要接着聊。跟着人格的记忆从这一轮起记在新人格那一间，以前的留在原来那一间。
 
-**回应**：`{}`。变了的推 `session.policy_changed`；换模型、思考强度生效的那一刻推 `model.changed`。之后 `subscribe` 回应、`model.changed` 的 `model.effort` 是 `{"level", "from"}`：`from` 是 `session` 的是会话记的这一档，`system` 的是配置。`session.list`、`subscribe` 回应里的 `persona`、`preset` 马上照换成的写（换成无工具的写 `preset: null`、`no_tools: true`）。
+**回应**：`{}`。变了的推 `session.policy_changed`；换模型、思考强度生效的那一刻推 `model.changed`；换了上下文上限，`subscribe` 回应、`view.status` 的 `limits` 当场换（`window` 是生效的窗口，`context` 是上限，没设的不写）。之后 `subscribe` 回应、`model.changed` 的 `model.effort` 是 `{"level", "from"}`：`from` 是 `session` 的是会话记的这一档，`system` 的是配置。`session.list`、`subscribe` 回应里的 `persona`、`preset` 马上照换成的写（换成无工具的写 `preset: null`、`no_tools: true`）。
 
-**出错**：`bad_params`（四格都没写、空字符串、类型不对；子代理换人格、预设，`data.field` 是那一格；`effort` 不在这时的模型的档位里，`data.field` 是 `effort`，什么都不换）；`unknown_model`；`unknown_persona`；`unknown_preset`；`turn_running`：换人格、预设时有回合在进行（等这一轮做完）。
+**出错**：`bad_params`（四格都没写、空字符串、类型不对；子代理换人格、预设，`data.field` 是那一格；`effort` 不在这时的模型的档位里，`data.field` 是 `effort`，什么都不换；`context` 不是非负整数；`context` 太小，`data.field` 是 `context`、`data.min` 是最少要多少，什么都不换）；`unknown_model`；`unknown_persona`；`unknown_preset`；`turn_running`：换人格、预设时有回合在进行（等这一轮做完）。
 
 ## `session.fork`
 

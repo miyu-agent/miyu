@@ -16,6 +16,7 @@
 
 mod call;
 pub(crate) mod check;
+pub(crate) mod context;
 mod drivers;
 pub(crate) mod effort;
 mod entry;
@@ -53,7 +54,8 @@ struct ListParams {
     models: Option<Vec<String>>,
 }
 
-/// `session.configure` 的参数：`session` 必写，`model`、`persona`（施工 P-13）、`preset`、`effort`（施工 SM-1）至少写一样，空字
+/// `session.configure` 的参数：`session` 必写，`model`、`persona`（施工 P-13）、`preset`、`effort`（施工 SM-1）、`context`（施工
+/// CTX-1）至少写一样，空字
 /// 当参数不对（「施工时定的」8-10）。`effort` 只收字和 `null`：施工 8-18 那种对象（`{"model":…,"level":…}`，旧头发的）读不成，
 /// `bad_params`。
 #[derive(Debug, Deserialize)]
@@ -72,19 +74,22 @@ pub(crate) struct ConfigureParams {
     /// 换成的思考强度（施工 SM-1，设计 51）：一档的名字，写 `null` 的回到跟着配置，不写的不换。
     #[serde(default, deserialize_with = "crate::personas::written")]
     effort: Option<Option<String>>,
+    /// 换成的上下文上限（施工 CTX-1，设计 68）：token 数，写 `null` 的去掉，不写的不换。不是非负整数的读不成，`bad_params`。
+    #[serde(default, deserialize_with = "crate::personas::written")]
+    context: Option<Option<u64>>,
 }
 
 impl ConfigureParams {
-    /// 换成的引用，原样：外层没有的是不换，写 `null` 的是里面没有（回到跟着 `models.chat`）。四样一样都没写、写了空字的
+    /// 换成的引用，原样：外层没有的是不换，写 `null` 的是里面没有（回到跟着 `models.chat`）。五样一样都没写、写了空字的
     /// 是参数不对。
     ///
     /// # Errors
     ///
-    /// 四样都没写、空字：`bad_params`。
+    /// 五样都没写、空字：`bad_params`。
     pub(crate) fn model(&self) -> Result<Option<Option<&str>>, Refusal> {
         let empty = |text: &Option<String>| text.as_deref() == Some("");
         let none = self.model.is_none() && self.persona.is_none() && self.preset.is_none();
-        if (none && self.effort.is_none())
+        if (none && self.effort.is_none() && self.context.is_none())
             || self.effort.as_ref().is_some_and(empty)
             || self.model.as_ref().is_some_and(empty)
             || self.persona.as_ref().is_some_and(empty)
@@ -99,6 +104,11 @@ impl ConfigureParams {
     /// 先查过。
     pub(crate) fn effort(&self) -> Option<Option<&str>> {
         self.effort.as_ref().map(Option::as_deref)
+    }
+
+    /// 换成的上下文上限（施工 CTX-1）：外层没有的是不换，写 `null` 的是里面没有（去掉）。太小的由 `models/context.rs` 查。
+    pub(crate) fn context(&self) -> Option<Option<u64>> {
+        self.context
     }
 
     /// 换成的人格、预设（施工 P-13）：同 [`ConfigureParams::model`] 先查过。

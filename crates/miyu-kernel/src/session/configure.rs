@@ -8,10 +8,13 @@
 //! 思考强度一样从日志算（施工 SM-1）：每条带 `effort` 的 `session.policy_changed` 换会话的那一档，`null` 是回到跟着配置；
 //! 撤掉的回合里的也算，换模型不清它。施工 8-18 那时记的每个模型一格（带 `model`）不认（`event/session.rs` 的
 //! `Effort::session`）。回合开始时执行器照 [`Session::effort`] 取，一次请求用不用它由执行器照真发的那个模型的档位定。
+//!
+//! 上下文上限照同一个办法从日志算（施工 CTX-1，设计 68 第四节）：每条带 `context` 的 `session.policy_changed` 换上限，`null`
+//! 是去掉；撤掉的回合里的也算，换模型不清它。执行器照 [`Session::context`] 交给路由，生效的窗口由路由取小的。
 
 use super::action::Action;
 use super::{Session, accepted};
-use crate::event::{Body, Effort, Event, PolicyChanged};
+use crate::event::{Body, ContextCap, Effort, Event, PolicyChanged};
 use crate::id::{CommandId, Seq};
 use crate::origin::By;
 use crate::time::Timestamp;
@@ -31,6 +34,8 @@ pub(super) struct Reference {
     changed: Option<Seq>,
     /// 会话记的思考强度（施工 SM-1）：没记的、回到跟着配置的没有。
     effort: Option<String>,
+    /// 会话的上下文上限，token 数（施工 CTX-1）：没设的、去掉了的没有。
+    context: Option<u64>,
     /// 换了预设、还没告诉她（施工 DM-8，`facts/preset.rs`）：换之前的那个预设（空的是不用预设）。内核注入了预设那一块就清掉；
     /// 换了几次还没开回合的，记最早的那个，换回它的也清掉。
     announce: Option<String>,
@@ -82,6 +87,10 @@ impl Reference {
             if let Some(level) = changed.effort.as_ref().and_then(Effort::session) {
                 self.effort = level.map(str::to_string);
             }
+            // 换上下文上限（施工 CTX-1）：同上，可以和别的一起。
+            if let Some(cap) = &changed.context {
+                self.context = cap.tokens;
+            }
         }
     }
 
@@ -103,6 +112,11 @@ impl Reference {
     /// 会话记的思考强度：没记的没有。
     pub(super) fn effort(&self) -> Option<&str> {
         self.effort.as_deref()
+    }
+
+    /// 会话的上下文上限：没设的没有。
+    pub(super) fn context(&self) -> Option<u64> {
+        self.context
     }
 
     /// 换了预设、还没告诉她的：换之前的那个预设（空的是不用预设）。没换过、告诉过的没有（施工 DM-8）。
@@ -168,6 +182,34 @@ impl Session {
         }
         let body = Body::PolicyChanged(PolicyChanged {
             effort: Some(Effort { model: None, level }),
+            ..PolicyChanged::default()
+        });
+        let event = self.record(at, by, Some(id.clone()), body);
+        self.accept(id, vec![event.seq]);
+        vec![Action::Append(vec![event])]
+    }
+
+    /// 会话的上下文上限，token 数（施工 CTX-1，设计 68）：带 `context` 的 `session.policy_changed` 里最后那一个，撤掉的回合里的
+    /// 也算；没设的、去掉了的没有（照模型的窗口）。只读：执行器载入时照它造路由，变了交给路由，生效的窗口由路由取小的。
+    pub fn context(&self) -> Option<u64> {
+        self.reference.context()
+    }
+
+    /// 换上下文上限（施工 CTX-1）：`tokens` 是 `None` 的去掉。和现在的一样的接受，什么都不记，编号照样记下；不一样的记一条
+    /// `session.policy_changed`，只写 `context`，`by` 是换的人，回合进行中的带上这个回合。太小的协议那一头拒过。
+    pub(super) fn set_context(
+        &mut self,
+        id: CommandId,
+        by: By,
+        at: Timestamp,
+        tokens: Option<u64>,
+    ) -> Vec<Action> {
+        if self.context() == tokens {
+            self.recent.insert(id.clone(), Vec::new());
+            return vec![accepted(id, Vec::new())];
+        }
+        let body = Body::PolicyChanged(PolicyChanged {
+            context: Some(ContextCap { tokens }),
             ..PolicyChanged::default()
         });
         let event = self.record(at, by, Some(id.clone()), body);

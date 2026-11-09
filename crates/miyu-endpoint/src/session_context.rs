@@ -352,6 +352,7 @@ pub(crate) fn shape(context: &Context, namer: &Namer) -> Value {
     let fields = [
         ("window", breakdown.limits.window),
         ("line", breakdown.limits.compaction_line),
+        ("context", breakdown.limits.context),
         ("used", breakdown.used),
         ("anchor", breakdown.anchor),
     ];

@@ -424,6 +424,7 @@ impl Session {
             Command::Ran { text, command } => self.ran(id, by, at, text, command),
             Command::Configure { model } => self.configure(id, by, at, model),
             Command::SetEffort { level } => self.set_effort(id, by, at, level),
+            Command::SetContext { tokens } => self.set_context(id, by, at, tokens),
             Command::Recast { persona, preset } => self.recast(id, by, at, (persona, preset)),
             Command::SetPermission { level, read_only } => {
                 self.set_permission(id, by, at, level, read_only)

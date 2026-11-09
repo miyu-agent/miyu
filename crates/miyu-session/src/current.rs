@@ -38,6 +38,9 @@ pub struct Current {
     pub model: Option<String>,
     /// 这一刻有没有能压的（施工 W-12）：`session.compact` 会不会回 `nothing_to_compact`，判法同内核。
     pub compactable: bool,
+    /// 会话的上下文上限至少要多少（施工 CTX-1，设计 68）：照这时的策略和端口交的最大输出，压缩线算得出的最小窗口
+    /// （`Session::least_context`）。策略里没有压缩的没有。`session.configure` 的 `context`、`/context` 照它拒太小的。
+    pub least_context: Option<u64>,
 }
 
 /// 这个会话累计的：用量、金额照用量汇总的口径，另数压缩、缓存断了几次。

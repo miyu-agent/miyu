@@ -91,6 +91,9 @@ pub struct Script {
     cancelled: Arc<Mutex<Vec<Seq>>>,
     /// 交给内核的窗口；没有的不主动压（施工 6-3 上）。
     window: Option<u64>,
+    /// 会话的上下文上限（施工 CTX-1）：造端口时照会话的，交来了换；交限额时同路由那样套上（[`Limits::capped`]）。每个造出来的
+    /// 端口各一份。
+    context: Arc<Mutex<Option<u64>>>,
     /// 起标题的请求另排的剧本，和交来的起标题的请求（施工 3-8 五补）：它在每一轮答完以后自己来，不占主剧本、不算在
     /// [`Script::requests`] 里；没排的只记下、不回（一直在路上），不管标题的测试不用替它排。
     titles: Arc<Mutex<VecDeque<Play>>>,
@@ -147,6 +150,7 @@ impl Script {
             configs: Arc::new(Mutex::new(Vec::new())),
             cancelled: Arc::new(Mutex::new(Vec::new())),
             window: None,
+            context: Arc::default(),
             titles: Arc::new(Mutex::new(VecDeque::new())),
             titled: Arc::new(Mutex::new(Vec::new())),
             retexted: Arc::default(),
@@ -238,6 +242,7 @@ impl Models for Script {
     fn port(&self, session: ForSession) -> Arc<dyn ModelPort> {
         let mut port = self.clone();
         port.reference = session.reference;
+        port.context = Arc::new(Mutex::new(session.context));
         Arc::new(port)
     }
 
@@ -278,6 +283,11 @@ impl ModelPort for Script {
             blind: false,
             identity: None,
         }
+        .capped(*lock(&self.context))
+    }
+
+    fn cap(&self, context: Option<u64>) {
+        *lock(&self.context) = context;
     }
 
     fn call(

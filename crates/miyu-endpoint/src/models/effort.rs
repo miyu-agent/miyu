@@ -5,10 +5,40 @@
 //! （`Handle::current` 的 `model`，SM-1 补），没记的照 `models.chat`。池一档都没有，设什么都 `bad_params`（SM-1 补，项目
 //! 主人 10-30：「池子不应该能设置思考强度」）：池里每个成员照它自己的配置。
 
+use miyu_kernel::session::Command;
 use miyu_models::effort;
+use miyu_session::Handle;
 
 use crate::Core;
 use crate::refusal::Refusal;
+
+/// `session.configure` 的 `effort` 要交给内核的命令：照会话这时的模型查要换成的一档 `level`。`model` 是这一条一起换成的引用
+/// （空的是回到跟着 `models.chat`），没换的没有。
+///
+/// 会话这时的模型：一起换了的是换成的，回到跟着配置的是这一刻的 `models.chat`（施工 SM-1）；没换的是内核记着的（SM-1 补：刚换
+/// 到池、还没开回合的，路由上还是上一轮的模型，照它查会放过池），没记的跟着 `models.chat`。
+///
+/// # Errors
+///
+/// 同 [`checked`]。
+pub(crate) async fn command(
+    core: &Core,
+    handle: &Handle,
+    model: Option<&str>,
+    level: Option<&str>,
+) -> Result<Command, Refusal> {
+    let chat = || miyu_models::provider::chat(&core.config().resolved().values());
+    let reference = match model {
+        Some("") => chat(),
+        Some(model) => Some(model.to_string()),
+        None => match handle.current().await {
+            Ok(current) => current.model.or_else(chat),
+            Err(_) => handle.next().reference,
+        },
+    };
+    let level = checked(core, reference.as_deref(), level).await?;
+    Ok(Command::SetEffort { level })
+}
 
 /// 查要换成的一档 `level`：`reference` 是会话这时的引用（模型或 `@池`），没有的一档都没有。交回规整过的名字（`none`、
 /// `disabled` 读成 `off`）；`level` 没有的交回没有。

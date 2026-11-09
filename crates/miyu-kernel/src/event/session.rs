@@ -124,7 +124,7 @@ pub struct Forked {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SessionSealed {}
 
-/// `session.policy_changed`：换了策略快照，或者换了权限，或者换了模型、思考强度，也可以一起换。
+/// `session.policy_changed`：换了策略快照，或者换了权限，或者换了模型、思考强度、上下文上限，也可以一起换。
 /// 谁换的看事件的 `by`：人改的是配置，内核换的是目录变了、钉着的模型没了。
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PolicyChanged {
@@ -150,9 +150,20 @@ pub struct PolicyChanged {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub preset: Option<String>,
     /// 会话的思考强度换了（施工 SM-1，设计 51，`models.md`「事件」）：人换的，`by` 是人，下一个回合开始时生效，撤掉的回合里
-    /// 的也算（照 `model`）。写在最后一格。内核只记不解读。
+    /// 的也算（照 `model`）。内核只记不解读。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub effort: Option<Effort>,
+    /// 会话的上下文上限换了（施工 CTX-1，设计 68 第四节）：人换的，`by` 是人，下一次请求起生效，撤掉的回合里的也算（照
+    /// `effort`）。写在最后一格，以前的日志没有这一格。内核只记，生效的窗口由执行器的路由取小的。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub context: Option<ContextCap>,
+}
+
+/// `session.policy_changed` 的 `context`（施工 CTX-1，设计 68）：会话的上下文上限换成 `tokens`，`null` 是去掉（照模型的窗口）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ContextCap {
+    /// 上限，token 数；`null` 是去掉。总是写。
+    pub tokens: Option<u64>,
 }
 
 /// `session.policy_changed` 的 `effort`（施工 SM-1）：会话的那一档换成 `level`，`null` 是回到跟着配置。

@@ -111,6 +111,7 @@ async fn the_handle_carries_the_window_and_the_line_the_kernel_uses() {
     let expected = ContextLimits {
         window: Some(21_157),
         compaction_line: Some(100),
+        context: None,
     };
     let handle = home.create(&script).await;
     assert_eq!(handle.limits(), expected, "造会话的");
@@ -128,6 +129,7 @@ async fn without_a_window_the_handle_carries_neither() {
     let nothing = ContextLimits {
         window: None,
         compaction_line: None,
+        context: None,
     };
     let handle = home.create(&script).await;
     assert_eq!(handle.limits(), nothing, "造会话的");

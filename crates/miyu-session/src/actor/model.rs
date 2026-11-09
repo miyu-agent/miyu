@@ -214,7 +214,7 @@ impl Actor {
     }
 
     /// 限额 `limits` 变了的交给内核；给头看的照内核算的限额、端口的引用和模型写一次。
-    fn hand(&mut self, mut limits: Limits) {
+    pub(super) fn hand(&mut self, mut limits: Limits) {
         // 预设路由不知道，这里补上（施工 E-M）：不用预设的 `none`。
         let pin = self
             .persona

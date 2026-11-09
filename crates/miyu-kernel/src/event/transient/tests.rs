@@ -125,6 +125,7 @@ fn model_changed_is_written_in_the_drawing_order() {
         limits: ContextLimits {
             window: Some(32_000),
             compaction_line: Some(12_000),
+            context: None,
         },
         why: ChangeWhy::Failover,
     }));
@@ -154,6 +155,7 @@ fn model_changed_is_written_in_the_drawing_order() {
         limits: ContextLimits {
             window: None,
             compaction_line: None,
+            context: None,
         },
         why: ChangeWhy::Failover,
     }));

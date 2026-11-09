@@ -21,6 +21,10 @@ pub struct ContextLimits {
     /// 策略里。没有窗口的、策略里没有压缩的、算不出正数的没有。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub compaction_line: Option<u64>,
+    /// 会话的上下文上限（施工 CTX-1，设计 68 第四节）：`window` 已经是套过它的生效的窗口，这一格让头写明是哪一格在起作用。
+    /// 没设的没有。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub context: Option<u64>,
 }
 
 impl Session {
@@ -29,7 +33,15 @@ impl Session {
         ContextLimits {
             window: self.limits.as_ref().and_then(|limits| limits.window),
             compaction_line: self.line(),
+            context: self.context(),
         }
+    }
+
+    /// 会话的上下文上限至少要多少（施工 CTX-1，设计 68 第二节第 5 条）：照这时的策略和交过的限额里的最大输出，压缩线算得出的
+    /// 最小窗口（[`super::Compaction::least_window`]）。策略里没有压缩的没有：不主动压，设多少都行。只读，不出动作。
+    pub fn least_context(&self) -> Option<u64> {
+        let max_output = self.limits.as_ref().and_then(|limits| limits.max_output);
+        self.policy.compaction.as_ref()?.least_window(max_output)
     }
 
     /// 这时的上下文用量（施工 8-15，`docs/blueprint/models.md`「怎么走」第九条第 7 条）：照有效历史组装这时的请求，用和压缩线

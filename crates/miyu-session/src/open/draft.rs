@@ -179,6 +179,7 @@ pub async fn preview_context(setup: Create<'_>) -> Result<Context, CreateError> 
         reference: reference.clone(),
         sent: None,
         effort: None,
+        context: None,
     });
     let created = miyu_kernel::event::SessionCreated {
         model: reference,

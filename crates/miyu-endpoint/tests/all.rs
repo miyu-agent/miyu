@@ -75,6 +75,7 @@ mod config_set_private;
 mod config_trust;
 mod config_unused;
 mod config_watch;
+mod context_cap;
 mod delete;
 mod delete_children;
 mod dirs;

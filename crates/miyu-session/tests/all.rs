@@ -123,6 +123,7 @@ mod retire;
 mod retire_sealed;
 mod route;
 mod route_anthropic;
+mod route_context;
 mod route_cost;
 mod route_effort;
 mod route_effort_session;

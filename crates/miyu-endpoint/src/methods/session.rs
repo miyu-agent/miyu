@@ -424,8 +424,8 @@ pub(super) async fn stop_job(core: &Arc<Core>, request: &Request) -> Result<Valu
 }
 
 /// `session.configure`：换模型；`model` 写 `null` 的回到跟着 `models.chat`（施工 8-10 再补）。换思考强度（施工 SM-1）照会话
-/// 这时的模型查（`models/effort.rs`）。换人格、预设（施工 P-13）在`recast.rs`：先查完，模型先换，再换思考强度，再换人格、
-/// 预设。
+/// 这时的模型查（`models/effort.rs`），上下文上限（施工 CTX-1）照压缩线查（`models/context.rs`）。换人格、预设（施工 P-13）
+/// 在`recast.rs`：先查完，模型先换，再换思考强度、上下文上限，再换人格、预设。
 pub(super) async fn configure(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
     let params: models::ConfigureParams = params(request)?;
     let text = params.model()?;
@@ -440,28 +440,23 @@ pub(super) async fn configure(core: &Arc<Core>, request: &Request) -> Result<Val
     };
     let effort = match params.effort() {
         Some(level) => {
-            // 照会话这时的模型查：一起换了的是换成的，回到跟着配置的是这一刻的 `models.chat`（施工 SM-1）；没换的是内核记着的
-            // （SM-1 补：刚换到池、还没开回合的，路由上还是上一轮的模型，照它查会放过池），没记的跟着 `models.chat`。
-            let chat = || miyu_models::provider::chat(&core.config().resolved().values());
-            let reference = match model.as_deref() {
-                Some("") => chat(),
-                Some(model) => Some(model.to_string()),
-                None => match found.handle.current().await {
-                    Ok(current) => current.model.or_else(chat),
-                    Err(_) => found.handle.next().reference,
-                },
-            };
-            let level = models::effort::checked(core, reference.as_deref(), level).await?;
-            Some(Command::SetEffort { level })
+            Some(models::effort::command(core, &found.handle, model.as_deref(), level).await?)
         }
+        None => None,
+    };
+    let context = match params.context() {
+        Some(tokens) => Some(models::context::command(&found.handle, tokens).await?),
         None => None,
     };
     if let Some(model) = model {
         let command = Command::Configure { model };
         command_to(core, request, &session, &found.handle, command).await?;
     }
-    if let Some(command) = effort {
-        recast::send_as(core, request, (&session, &found.handle), "effort", command).await?;
+    let to = (&session, &found.handle);
+    for (suffix, command) in [("effort", effort), ("context", context)] {
+        if let Some(command) = command {
+            recast::send_as(core, request, to, suffix, command).await?;
+        }
     }
     if let Some(command) = recast {
         recast::send(core, request, &session, &found.handle, command).await?;

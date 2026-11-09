@@ -9,7 +9,7 @@ use crate::id::ModuleId;
 use crate::session::{Breakdown, Compaction, ContextLimits, Said};
 
 /// 出厂的四个数；尾巴、图片的数这里用不上。
-const COMPACTION: Compaction = Compaction {
+pub(super) const COMPACTION: Compaction = Compaction {
     reserve_cap: 20_000,
     margin: 13_000,
     line_percent: 85,
@@ -27,14 +27,14 @@ const COMPACTION: Compaction = Compaction {
 };
 
 /// 策略里有压缩的会话。
-fn compacting() -> Session {
+pub(super) fn compacting() -> Session {
     let mut policy = policy();
     policy.compaction = Some(COMPACTION);
     session_with(policy)
 }
 
 /// 交一份限额：替身的模型，窗口、最大输出照给的。
-fn hand(session: &mut Session, window: Option<u64>, max_output: Option<u64>) {
+pub(super) fn hand(session: &mut Session, window: Option<u64>, max_output: Option<u64>) {
     let actions = session.handle(Input::Limits(Limits {
         model: crate::testkit::model(),
         window,
@@ -50,6 +50,7 @@ fn limits(window: Option<u64>, compaction_line: Option<u64>) -> ContextLimits {
     ContextLimits {
         window,
         compaction_line,
+        context: None,
     }
 }
 

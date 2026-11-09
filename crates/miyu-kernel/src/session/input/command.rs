@@ -79,6 +79,12 @@ pub enum Command {
         /// 换成的一档，规整过的名字，协议那一头照会话这时的模型的档位查过；`None` 是回到跟着配置。
         level: Option<String>,
     },
+    /// `session.configure` 的 `context`、`/context`：换会话的上下文上限（施工 CTX-1，设计 68），`configure.rs`。下一次请求起
+    /// 生效；和现在的一样的不记。
+    SetContext {
+        /// 上限，token 数，协议那一头照压缩线查过不太小；`None` 是去掉。
+        tokens: Option<u64>,
+    },
     /// `session.set_meta`：改标题、置顶，改哪样写哪样（施工 3-8 三补，`meta.rs`）。
     SetMeta {
         /// 新的标题，照 `session.meta_changed` 的写法：空的是去掉标题；不改就没有。去掉前后空白、量长短是协议端点的事

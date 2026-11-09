@@ -68,7 +68,7 @@ One object each, with the common fields `id`, `kind`, `turn` (which turn), `hidd
 | `waited_ms` | How long this turn has waited on a person (an approval, an answer) in finished stretches, in milliseconds, overlapping waits counted once; absent when it never waited. Waiting does not count as time spent |
 | `waiting_since` | When the current wait on a person began; absent when not waiting. Time spent is now − `since` − `waited_ms` − (now − `waiting_since`), so the clock stops while waiting; the `took_ms` of entries excludes waiting too |
 | `doing` | What's happening: `thinking`, `writing`, `tool` (with `entry`); `retrying` (`attempt`, `limit`, `at`, `class`, `message`); `compacting` (`trigger`, `written`, `expected`) |
-| `context` | `{window, compaction_line, used}`: context window, compaction line, latest usage (that request's input plus output; right after compaction, the compacted size) |
+| `context` | `{window, compaction_line, context, used}`: context window (with a session context limit, the window in effect: the smaller of the model's and the limit), compaction line, the session's context limit (absent when not set), latest usage (that request's input plus output; right after compaction, the compacted size) |
 | `speed` | `{output, ms}`: the latest output tokens and milliseconds |
 | `cooling_until` | When every candidate is cooling down, the earliest recovery time |
 | `preparing` | Compacting ahead in the background: `{seen, since}` |

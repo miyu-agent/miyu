@@ -73,6 +73,8 @@ pub struct ForSession {
     pub sent: Option<Model>,
     /// 会话记的思考强度（施工 SM-1，设计 51）：造会话的没有；载入的是内核从日志算的（`Session::effort()`）。
     pub effort: Option<String>,
+    /// 会话的上下文上限（施工 CTX-1，设计 68）：造会话、分叉的没有；载入的是内核从日志算的（`Session::context()`）。
+    pub context: Option<u64>,
 }
 
 impl ForSession {
@@ -107,6 +109,11 @@ pub trait ModelPort: Send + Sync {
     ) -> Option<Replaced> {
         None
     }
+
+    /// 会话的上下文上限换了（施工 CTX-1，设计 68 第四节）：以后交的限额的窗口取模型的和它里小的（[`Limits::capped`]），下一次
+    /// 请求起生效，不等下一轮。会话 actor 照内核从日志算的交，交完照 [`ModelPort::limits`] 再交给内核。不管上限的（测试的端口）
+    /// 什么都不做。
+    fn cap(&self, _context: Option<u64>) {}
 
     /// 接下来那个模型真用的思考强度（施工 8-18，`models.md`「怎么走」第十一条第 7 条）：给头看的，`subscribe`、
     /// `model.changed` 照它写，会话记的压着配置的（施工 SM-1）。轮换的池、什么都不带的、不知道的（测试的端口）没有。

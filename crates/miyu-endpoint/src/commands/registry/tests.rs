@@ -35,6 +35,7 @@ fn the_built_in_commands_are_registered_in_name_order() {
         [
             "clear",
             "clear-memory",
+            "context",
             "dream",
             "goal",
             "loop",

@@ -22,6 +22,7 @@ fn context(anchor: Option<u64>) -> Context {
             limits: ContextLimits {
                 window: Some(128_000),
                 compaction_line: Some(102_400),
+                context: Some(128_000),
             },
             used: Some(1118),
             anchor,
@@ -89,6 +90,7 @@ fn the_context_comes_in_named_parts() {
         json!({
             "window": 128_000,
             "line": 102_400,
+            "context": 128_000,
             "used": 1118,
             "anchor": 800,
             "basis": "measured",
@@ -128,13 +130,14 @@ fn without_an_anchor_it_is_estimated_and_empty_parts_are_left_out() {
     empty.breakdown.limits = ContextLimits {
         window: None,
         compaction_line: None,
+        context: None,
     };
     empty.breakdown.used = None;
     empty.breakdown.summary = 0;
     empty.breakdown.said.retain(|(said, _)| *said == Said::User);
     let shaped = namer_shape(&empty);
     assert_eq!(shaped["basis"], "estimated");
-    for absent in ["window", "line", "used", "anchor"] {
+    for absent in ["window", "line", "context", "used", "anchor"] {
         assert!(shaped.get(absent).is_none(), "{absent}: {shaped}");
     }
     let parts: Vec<&str> = shaped["parts"]

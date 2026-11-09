@@ -59,7 +59,7 @@ pub use peer::{IdleReason, PeerIdle};
 pub use question::{Choice, Question, QuestionAnswered, QuestionAsked, Response, fits};
 pub use restore::{FilesRestored, RestoreAction, RestoreOutcome, Restored};
 pub use session::{
-    CommandRan, Dream, Effort, Forked, Level, MetaChanged, Permission, PolicyChanged,
+    CommandRan, ContextCap, Dream, Effort, Forked, Level, MetaChanged, Permission, PolicyChanged,
     SessionCreated, SessionRecapped, SessionSealed, TodosCleared, WorkspaceChanged,
 };
 pub use shell::{ShellRan, ShellReason};

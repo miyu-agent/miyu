@@ -220,6 +220,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         reference: reference.clone(),
         sent: None,
         effort: None,
+        context: None,
     });
     let mut clock = Clock::default();
     let upstream = Upstream::of(

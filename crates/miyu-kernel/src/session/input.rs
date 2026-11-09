@@ -372,6 +372,20 @@ pub struct Limits {
     pub identity: Option<crate::facts::Identity>,
 }
 
+impl Limits {
+    /// 套上会话的上下文上限 `context`（施工 CTX-1，设计 68 第二节第 2 条）：生效的窗口取模型的窗口和它里小的，模型没报窗口的
+    /// 照它；没设的不动。路由交限额时套（换模型、池换了成员都照套），压缩线照套过的窗口算。
+    #[must_use]
+    pub fn capped(mut self, context: Option<u64>) -> Limits {
+        self.window = match (self.window, context) {
+            (Some(window), Some(context)) => Some(window.min(context)),
+            (window, None) => window,
+            (None, context) => context,
+        };
+        self
+    }
+}
+
 /// 图片的算法是驱动交的对象，打印时只说有没有。
 impl fmt::Debug for Limits {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

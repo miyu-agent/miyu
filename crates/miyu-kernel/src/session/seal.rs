@@ -98,6 +98,7 @@ pub(super) fn taken_when_sealed(command: &Command) -> bool {
         | Command::SetPermission { .. }
         | Command::Configure { .. }
         | Command::SetEffort { .. }
+        | Command::SetContext { .. }
         | Command::Recast { .. }
         | Command::SetWorkspace { .. }
         | Command::Ran { .. }

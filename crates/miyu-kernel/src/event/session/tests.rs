@@ -1,6 +1,7 @@
 //! 会话事件的测试：图纸上的写法读写一字不差、认得出种类；权限两格都要写；
 //! 不认识的级别原样留着；坏的报错说清是哪一种；子会话带着父会话和第几层（施工 7-1）；会话用哪个模型（施工 8-8）；
-//! 换模型的两格（施工 8-10）；换会话的思考强度（施工 SM-1），8-18 那时带 `model` 的一格照读得进、不算会话的。
+//! 换模型的两格（施工 8-10）；换会话的思考强度（施工 SM-1），8-18 那时带 `model` 的一格照读得进、不算会话的；换会话的上下文
+//! 上限（施工 CTX-1）。
 
 use super::*;
 use crate::event::{Body, Event};
@@ -216,6 +217,42 @@ fn a_policy_change_records_the_session_effort() {
         event_line("session.policy_changed", r#"{"model":"a/m"}"#)
     );
     for wrong in [r#"{"effort":{"level":3}}"#, r#"{"effort":"high"}"#] {
+        let line = event_line("session.policy_changed", wrong);
+        rejected::<Event>(&line, "body of session.policy_changed not readable");
+    }
+}
+
+/// 换会话的上下文上限（施工 CTX-1）：`context` 写在最后，`tokens` 总是写（去掉的写 `null`），读写一字不差；和别的能在同一条
+/// 里；`context` 写 `null` 当没有；`tokens` 不是非负整数的读不进来。
+#[test]
+fn a_policy_change_records_the_context_cap() {
+    for body in [
+        r#"{"context":{"tokens":128000}}"#,
+        r#"{"context":{"tokens":null}}"#,
+        r#"{"model":"a/m","effort":{"level":"high"},"context":{"tokens":1000000}}"#,
+    ] {
+        let line = event_line("session.policy_changed", body);
+        assert_eq!(Event::from_line(&line).unwrap().to_line(), line, "一字不差");
+    }
+    match read_body("session.policy_changed", r#"{"context":{"tokens":null}}"#) {
+        Body::PolicyChanged(changed) => {
+            assert_eq!(changed.context, Some(ContextCap { tokens: None }), "去掉");
+        }
+        other => panic!("{other:?}"),
+    }
+    let nulled = event_line(
+        "session.policy_changed",
+        r#"{"model":"a/m","context":null}"#,
+    );
+    assert_eq!(
+        Event::from_line(&nulled).unwrap().to_line(),
+        event_line("session.policy_changed", r#"{"model":"a/m"}"#)
+    );
+    for wrong in [
+        r#"{"context":{"tokens":-1}}"#,
+        r#"{"context":{"tokens":"128k"}}"#,
+        r#"{"context":128000}"#,
+    ] {
         let line = event_line("session.policy_changed", wrong);
         rejected::<Event>(&line, "body of session.policy_changed not readable");
     }

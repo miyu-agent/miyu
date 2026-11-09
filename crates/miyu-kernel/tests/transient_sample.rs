@@ -236,6 +236,7 @@ fn the_model_changed_sample_is_written_exactly() {
             limits: ContextLimits {
                 window: Some(1_000_000),
                 compaction_line: Some(850_000),
+                context: None,
             },
             why: ChangeWhy::Turn,
         })),
@@ -253,6 +254,7 @@ fn the_model_changed_sample_is_written_exactly() {
             limits: ContextLimits {
                 window: Some(200_000),
                 compaction_line: Some(170_000),
+                context: None,
             },
             why: ChangeWhy::Failover,
         })),

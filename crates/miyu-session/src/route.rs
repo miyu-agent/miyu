@@ -33,6 +33,7 @@
 //!   限额里那一块事实写的档位照限额里的模型算。
 //! - 看不看得了图（施工 8-17）：限额的 `blind` 照模型资料的 `inputs`，池里有一个成员看不了就算看不了；替它看图经一次性入口
 //!   发给 `models.vision`（`route/sight.rs`）。
+//! - 会话的上下文上限（施工 CTX-1，设计 68）：造端口时收下内核从日志算的，变了 actor 当场交；交限额时窗口取模型的和它里小的。
 
 mod base;
 mod choice;
@@ -157,6 +158,7 @@ impl Models for Routes {
                 limits,
                 sticky: None,
                 effort,
+                context: session.context,
                 config: session.config,
             })),
             memo: Arc::new(Mutex::new(Memo::new())),
@@ -230,6 +232,9 @@ struct Pinned {
     sticky: Option<Candidate>,
     /// 会话记的思考强度（施工 SM-1）：造端口时照内核从日志算的，回合开始换成内核交的。真发的那个模型有这一档才用它。
     effort: Option<String>,
+    /// 会话的上下文上限（施工 CTX-1）：造端口时照内核从日志算的，变了 actor 交（[`ModelPort::cap`]）。`limits` 存的是模型自己的，
+    /// 交出去时才套它，换模型、池换了成员都不用另记。
+    context: Option<u64>,
     /// 最近一次定下的配置：造端口时的、回合开始冻结的（施工 8-18）。给头看的那一档照它查配置的默认。
     config: TurnConfig,
 }
@@ -247,8 +252,14 @@ impl ModelPort for Route {
         self.lock().reference.clone()
     }
 
+    /// 生效的窗口取模型的和会话上限里小的（施工 CTX-1，设计 68）：压缩线照它算。
     fn limits(&self) -> Limits {
-        self.lock().limits.clone()
+        let pinned = self.lock();
+        pinned.limits.clone().capped(pinned.context)
+    }
+
+    fn cap(&self, context: Option<u64>) {
+        self.lock().context = context;
     }
 
     fn turn(

@@ -153,9 +153,10 @@ impl InputKind {
                 Command::Goal(_) => InputKind::Goal,
                 Command::Ran { .. } => InputKind::Ran,
                 Command::Append { .. } => InputKind::Appended,
-                Command::Configure { .. } | Command::Recast { .. } | Command::SetEffort { .. } => {
-                    InputKind::Configure
-                }
+                Command::Configure { .. }
+                | Command::Recast { .. }
+                | Command::SetEffort { .. }
+                | Command::SetContext { .. } => InputKind::Configure,
                 Command::Answer {
                     answer: Answer::Approval { .. },
                     ..

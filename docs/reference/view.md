@@ -68,7 +68,7 @@
 | `waited_ms` | 这一轮等人（确认、回答提问）等完了的一共多少毫秒，同时等几件只算一次；没等过的不写。等人的时间不算用时 |
 | `waiting_since` | 正在等人的这一段从什么时候起；没在等的不写。用时照「现在 − `since` − `waited_ms` − (现在 − `waiting_since`)」算，等人时停住；条目里的 `took_ms` 也刨掉了等人的时间 |
 | `doing` | 正在做什么：`thinking`、`writing`、`tool`（带 `entry`）；`retrying`（`attempt`、`limit`、`at`、`class`、`message`）；`compacting`（`trigger`、`written`、`expected`） |
-| `context` | `{window, compaction_line, used}`：上下文窗口、压缩线、最近一次用了多少（那次请求的输入加输出；刚压完的是压完的量） |
+| `context` | `{window, compaction_line, context, used}`：上下文窗口（设了会话的上下文上限的是生效的窗口，取模型的和上限里小的）、压缩线、会话的上下文上限（没设的不写）、最近一次用了多少（那次请求的输入加输出；刚压完的是压完的量） |
 | `speed` | `{output, ms}`：最近一次的输出 token 和毫秒 |
 | `cooling_until` | 候选都在冷却时最早恢复的时刻 |
 | `preparing` | 后台在提前压缩：`{seen, since}` |

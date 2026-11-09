@@ -191,6 +191,28 @@ impl Compaction {
             .map(|line| line.min(percent(window, self.line_percent)))
             .filter(|line| *line > 0)
     }
+
+    /// 窗口至少多大，照 [`Compaction::line`] 才算得出压缩线（施工 CTX-1，设计 68 第二节第 5 条）：会话的上下文上限比它小的拒，
+    /// 说最少要多少。`max_output` 同 `line`。`line_percent` 是 0 的怎么都算不出，没有。
+    ///
+    /// 直接照 `line` 找，不另抄一份公式：窗口大一，余量至多大一（`margin_percent` 不超过 100），压缩线的两头都不变小，算不算得
+    /// 出只会从不能变成能，二分找第一个能的。上界取输出预留加余量再加 100：减完至少剩 100，窗口的 `line_percent`% 也至少是 1。
+    pub fn least_window(&self, max_output: Option<u64>) -> Option<u64> {
+        let mut high = estimate::reserve(max_output, self.reserve_cap)
+            .saturating_add(self.margin)
+            .saturating_add(100);
+        self.line(Some(high), max_output)?;
+        // 窗口是 0 的算不出：`low` 总是算不出的，`high` 总是算得出的。
+        let mut low = 0;
+        while high - low > 1 {
+            let middle = low + (high - low) / 2;
+            match self.line(Some(middle), max_output) {
+                Some(_) => high = middle,
+                None => low = middle,
+            }
+        }
+        Some(high)
+    }
 }
 
 /// `window` 的 `percent`%，往下取整。

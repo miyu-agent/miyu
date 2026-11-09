@@ -104,7 +104,7 @@ async fn without_the_package_remember_is_refused_and_not_listed() {
         .await;
     assert_eq!(
         names(&reply),
-        ["clear", "stop", "todo", "workspace"],
+        ["clear", "context", "stop", "todo", "workspace"],
         "{reply}"
     );
     restore(&mut client).await;
@@ -116,6 +116,7 @@ async fn without_the_package_remember_is_refused_and_not_listed() {
         [
             "clear",
             "clear-memory",
+            "context",
             "dream",
             "remember",
             "stop",

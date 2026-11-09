@@ -64,16 +64,18 @@ pub(crate) async fn resolve(
 }
 
 /// 写了的（`null` 也算写了）交回 `Some`，不写的靠 `#[serde(default)]` 是 `None`（施工 P-4 上：`session.create`、
-/// `venue.session` 的 `"persona": null` 是明着无人格，不写才照默认人格）。
+/// `venue.session` 的 `"persona": null` 是明着无人格，不写才照默认人格）。值不限于字（施工 CTX-1：`session.configure` 的
+/// `context` 是整数）。
 ///
 /// # Errors
 ///
-/// 写的不是字、不是 `null`。
-pub(crate) fn written<'de, D>(deserializer: D) -> Result<Option<Option<String>>, D::Error>
+/// 写的不是 `T`、不是 `null`。
+pub(crate) fn written<'de, D, T>(deserializer: D) -> Result<Option<Option<T>>, D::Error>
 where
     D: serde::Deserializer<'de>,
+    T: Deserialize<'de>,
 {
-    Option::<String>::deserialize(deserializer).map(Some)
+    Option::<T>::deserialize(deserializer).map(Some)
 }
 
 /// 找人格出的错照协议说：编号不合写法的参数不对，哪一层都没有的 `unknown_persona`，写错了的 `persona_invalid`（`data.problem`

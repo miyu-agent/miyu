@@ -123,6 +123,7 @@ pub fn breakdown_in(frame: &Frame, history: &History, price: &dyn Price) -> Brea
         limits: ContextLimits {
             window: None,
             compaction_line: None,
+            context: None,
         },
         used: None,
         anchor: None,

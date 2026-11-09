@@ -51,6 +51,19 @@ impl Actor {
             preset: self.session.preset().map(str::to_string),
             model: self.session.reference().map(str::to_string),
             compactable: self.session.compactable(),
+            least_context: self.session.least_context(),
+        }
+    }
+
+    /// 这一批里换了会话的上下文上限的（施工 CTX-1，设计 68 第四节「下一次请求起生效」）：内核记下就已经是新的，当场交给端口，
+    /// 再把端口套过的限额交给内核：压缩线、给头看的限额马上换，不等下一轮。在写盘、回应之前做：回了的命令读得到新的限额。
+    fn follow_context(&mut self, events: &[Event]) {
+        let changed = events.iter().any(
+            |event| matches!(&event.body, Body::PolicyChanged(changed) if changed.context.is_some()),
+        );
+        if changed {
+            self.model.cap(self.session.context());
+            self.hand(self.model.limits());
         }
     }
 
@@ -124,6 +137,7 @@ impl Actor {
             counted.goals.add(&events);
         }
         self.goal_run.note(&events);
+        self.follow_context(&events);
         // 阻塞线程带着会话的 span：那边记的 `session index not updated` 也有会话编号（施工 3-8 七补）。
         let span = tracing::Span::current();
         let sync = must_sync(&events);
