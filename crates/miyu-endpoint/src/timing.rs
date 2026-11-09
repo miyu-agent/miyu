@@ -35,6 +35,13 @@ impl Core {
         self
     }
 
+    /// 同一份家底，核心按需起的后台页服务闲了 `idle` 就关（施工 BP-3）：测试里设短的，不用真等十分钟。
+    #[must_use]
+    pub fn with_page_idle(mut self, idle: Duration) -> Core {
+        self.backstage.host = crate::backstage::host::Host::with_idle(idle);
+        self
+    }
+
     /// 同一份家底，扩展进程、MCP 服务（施工 X-3 上）等多久、退避多久照 `timing`（施工 9-4 上）：测试里设短的，不用真等。
     #[must_use]
     pub fn with_extension_timing(mut self, timing: extensions::Timing) -> Core {

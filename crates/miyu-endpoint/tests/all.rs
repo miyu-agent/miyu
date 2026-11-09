@@ -12,6 +12,7 @@ mod model_embed;
 mod package_call_ext;
 mod package_events;
 mod page_extras;
+mod page_host;
 mod person_shell;
 mod profile;
 mod projects;

@@ -57,6 +57,10 @@ const PERSONA_TOML: &str = "persona.toml";
 
 const DATA_PACKAGES: [&str; 1] = ["mermaid"];
 
+/// `core/backstage/` 是核心按需起的后台页服务给浏览器的宿主页（施工 BP-3，`package-pages.md`「不靠网页打开软件后台」）：页面、
+/// 脚本、样式，不发给模型，不登记。
+const PAGE_HOST: &str = "backstage";
+
 /// `core/view.json` 是数据，不发给模型，不登记：视图投影照它认哪件工具算命令、编辑、子代理、留言（施工 9-8 上，`view.md`）。
 /// `core/memory/secrets.toml` 也是：抽取照它认常见的 key 写法、遮掉，不发给模型（施工 R-6 上，`memory.md` 第六条）。
 /// `core/memory/recall.toml` 也是：联想照它定每个模型的门槛，不发给模型（施工 R-8，第四条）；`core/memory/search.toml` 是她主动搜
@@ -135,6 +139,7 @@ fn walk(dir: &Path, prefix: &str, files: &mut BTreeMap<String, Vec<u8>>) -> Resu
             if name == HUMAN
                 || (prefix.is_empty() && (name == DATA || name == PRESETS))
                 || (prefix == SOFTWARE_DIR && DATA_PACKAGES.contains(&name.as_str()))
+                || (prefix == "core/" && name == PAGE_HOST)
             {
                 continue;
             }

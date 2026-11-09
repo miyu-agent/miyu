@@ -1,0 +1,14 @@
+<!doctype html>
+<!-- 核心按需起的后台页服务的宿主页（施工 BP-3，docs/blueprint/package-pages.md「不靠网页打开软件后台」）：后台页放在隔离的框里，host.js 照网页那一套交通道、转请求和推送。 -->
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Miyu</title>
+<link rel="stylesheet" href="host.css">
+<script type="module" src="host.js"></script>
+</head>
+<body>
+<iframe id="page" sandbox="allow-scripts allow-forms" allow="clipboard-write"></iframe>
+</body>
+</html>

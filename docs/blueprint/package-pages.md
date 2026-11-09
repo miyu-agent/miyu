@@ -201,6 +201,8 @@ name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
 |---|---|
 | `crates/miyu-config/src/package/look/tests.rs`（施工 F-6 上） | `icon`、`[page] dir` 读得出；写法不对的 `bad_icon`、`bad_page_dir`，报在那一行；`[page]` 只给扩展、内置包 |
 | `crates/miyu-config/src/package/look/tests.rs`（施工 BP-1） | `[page] server = true` 读成程序自己起服务，托盘照样能挂；两样都写、`server` 不是 `true`、内置包写的 `bad_page_source`；两样都不写的照旧要 `dir` |
+| `crates/miyu-endpoint/tests/page_host.rs`（施工 BP-3） | `package.page` 交回宿主页的地址；宿主页、后台页的文件和响应头（宿主页的内容安全策略、后台页的沙箱、`nosniff`、`no-referrer`、`Access-Control-Allow-Origin: *`、不设 cookie）；票只开它的包，别的包、跑出目录、不认识的票 404，别的域名 421，方法不对 405；宿主页替框调核心照票认包、只认四样（`context` 带要票的连接的语言，`settings.set` 写别的包的键 `forbidden`，`call` 照包转过去）；没有包目录里的后台页 `no_page`、没装 `unknown_package`；开着的服务照用、每次一张新票；闲够了就关、开着推送流的不算闲、关了再要重起 |
+| `crates/miyu-endpoint/src/backstage/host/events/tests.rs`、`bridge/tests.rs`（施工 BP-3） | 配置变了只推它自己的键；新密钥的名字照键起、最多 64 个字 |
 | `crates/miyu-endpoint/tests/backstage.rs`（施工 BP-1） | 程序自己起服务的 `package.list` 带 `page`、`page_server`，`package.file` 回 `no_page`；写目录的不带 `page_server` |
 | `crates/miyu-config/src/package/look/tests.rs`（施工 TR-2） | `[tray] name` 读成分语言的名字，扩展、内置包都能写；写了 `name` 以外的格（`page`、`url`、`command`、`package`）、没写 `[page]` 的报 `bad_tray`、`detail` 和行号对；少了名字、名字是空的、吉祥物包写了照各自的代码 |
 | `crates/miyu-endpoint/tests/package_switch.rs`（施工 F-6 上，托盘入口施工 TR-2） | `package.list` 的 `status`、`enabled`、`icon`、`page`（目录里没有 `index.html` 的不带）、`tray`（照连接的语言，没有后台页入口的不带）；开关开、关扩展，出厂内置包卸掉、装回来；必需的、界面、程序不在、没有的拒绝；程序不在的配置项不进 schema、功能不进预设，界面的照旧；`miyu check` 报 `page_missing` |

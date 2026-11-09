@@ -28,6 +28,8 @@ const TIMEOUT_RANGE: std::ops::RangeInclusive<u64> = 1000..=600_000;
 pub(crate) struct Methods {
     table: Mutex<HashMap<Instance, Registered>>,
     pub(crate) events: super::events::Events,
+    /// 核心按需起的后台页服务（施工 BP-3）。
+    pub(crate) host: super::host::Host,
 }
 
 /// 一个包登记的。

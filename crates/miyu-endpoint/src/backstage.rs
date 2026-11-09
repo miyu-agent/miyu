@@ -5,6 +5,7 @@
 mod calls;
 mod events;
 mod file;
+pub(crate) mod host;
 
 pub(crate) use calls::{Methods, call, register};
 pub(crate) use events::{emit, mine};

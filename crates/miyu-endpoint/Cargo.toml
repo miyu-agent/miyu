@@ -82,7 +82,13 @@ getrandom = { version = "0.4", features = ["std"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 # 连接是异步的字节流：一行一条消息。接不了连接时歇一会儿再接。拉起扩展、经它的标准输入输出说协议（施工 9-4 上）。
-tokio = { version = "1", features = ["io-util", "macros", "process", "rt", "sync", "time"] }
+tokio = { version = "1", features = ["io-util", "macros", "net", "process", "rt", "sync", "time"] }
+# 不靠网页打开软件后台（施工 BP-3）：核心按需起的本机后台页服务，只说 HTTP/1.1；几份都是工作区里本来就有的（reqwest 带进来的）。
+hyper = { version = "1", features = ["server", "http1"] }
+hyper-util = { version = "0.1", default-features = false, features = ["tokio"] }
+http-body = "1"
+http-body-util = "0.1"
+bytes = "1"
 # 运行日志的门面（施工 3-7 上）。
 tracing = { version = "0.1", default-features = false, features = ["std"] }
 # 撤销时之后又被改过的文件，算她改完的和现在的差异（施工 4-7 下）：Rust 里通用的那一个，只开文本。

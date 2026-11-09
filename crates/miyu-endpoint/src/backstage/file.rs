@@ -105,6 +105,23 @@ fn located(core: &Core, id: &str, path: &str) -> Result<Located, Refusal> {
     }
 }
 
+/// 包 `id` 目录里的后台页在哪（施工 BP-3：核心按需起的后台页服务照它给文件）。没有这个包、没装的 `unknown_package`；没写
+/// `[page] dir`、入口不在的 `no_page`。
+pub(crate) fn page_dir(core: &Core, id: &str) -> Result<PathBuf, Refusal> {
+    let packages = core.system_packages();
+    let found = packages
+        .iter()
+        .find(|found| found.id == id)
+        .ok_or(Refusal::UNKNOWN_PACKAGE)?;
+    let manifest = found.read.as_ref().map_err(|_| Refusal::UNKNOWN_PACKAGE)?;
+    match manifest.page.as_ref().and_then(Page::dir) {
+        Some(dir) if crate::packages::status::page(found, manifest) => {
+            Ok(found.files_dir().join(dir))
+        }
+        _ => Err(Refusal::NO_PAGE),
+    }
+}
+
 /// 相对路径拆成一段段：空的是 `index.html`；有空段、`.`、`..`、`\`、`:`、控制字符的不收。
 pub(crate) fn segments(path: &str) -> Option<Vec<String>> {
     if path.is_empty() {

@@ -12,7 +12,7 @@ Manage packages, extension processes and the MCP servers in the system config; l
 | [`package.search`](#packagesearch) | Search the package source |
 | [`package.clean`](#packageclean) | Delete downloaded package files |
 | [`package.upgrades`, `package.upgrade`](#packageupgrades-packageupgrade) | What can be upgraded; upgrade |
-| [`package.file`, `package.call`](#packagefile-packagecall) | Read a file of a package's page; call a method its program registered |
+| [`package.file`, `package.call`, `package.page`](#packagefile-packagecall-packagepage) | Read a file of a package's page; call a method its program registered; open a package page without the web UI |
 | [`extension.status`, `extension.enable`, `extension.disable`, `extension.restart`](#extensionstatus-extensionenable-extensiondisable-extensionrestart) | Extension process status and switches |
 | [`driver.check`](#drivercheck) | Check that an extension's model drivers encode steadily (restarts the extension) |
 | [`mcp.list`, `mcp.restart`, `mcp.set`, `mcp.remove`](#mcplist-mcprestart-mcpset-mcpremove) | MCP servers in the system config: list, restart, add or replace, remove |
@@ -26,7 +26,7 @@ Manage packages, extension processes and the MCP servers in the system config; l
 | [`command.catalog`](#commandcatalog) | List the slash commands that can be used |
 | [`check`](#check) | Check config, personas, presets and packages for mistakes |
 
-**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.sync`, `package.search`, `package.clean`, `package.upgrades`, `package.upgrade`, `package.file`, `extension.*`, `mcp.*`, `tool.set_loading` and `feature.set` are for people only; extensions get `local_only`. So is `package.info` with `path` (it looks at any folder on this machine, like `package.install`; step IN-4). Everything else is open to people and extensions; extensions calling `package.call` have extra rules (below).
+**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.sync`, `package.search`, `package.clean`, `package.upgrades`, `package.upgrade`, `package.file`, `package.page`, `extension.*`, `mcp.*`, `tool.set_loading` and `feature.set` are for people only; extensions get `local_only`. So is `package.info` with `path` (it looks at any folder on this machine, like `package.install`; step IN-4). Everything else is open to people and extensions; extensions calling `package.call` have extra rules (below).
 
 **Three layers**: built-in (installed with Miyu, `shipped`), system-installed (put there by the system package manager, `distro`: on Linux `miyu/packages/` under each entry of `$XDG_DATA_DIRS`, `/usr/local/share:/usr/share` when unset, and Linuxbrew users add its `share` to `XDG_DATA_DIRS`; on macOS `share/miyu/packages/` under the Homebrew prefix; none on Windows; when `MIYU_DISTRO_PACKAGES` is set only that folder), and installed (`opt/` in the data root, `home`). When several layers have the same id, installed covers system-installed and system-installed covers built-in; a covered copy is not loaded and is not an error. Installing the same id in the home layer upgrades and replaces it; removing a built-in or system-installed package records it in `etc/removed/` (an empty file named after the id) without touching its files, and it can be installed back.
 
@@ -51,6 +51,7 @@ Manage packages, extension processes and the MCP servers in the system config; l
 | `features` | Its features (presets switch these) |
 | `status`, `enabled` | With a process: running or not, on or not |
 | `page` | Has a package page, which heads list under package pages |
+| `page_server` | The package page is a web service its program runs (manifest `[page] server = true`): heads ask its `status` for the `web` port and go there with a `login.ticket`, instead of framing it |
 | `tray` | Has a package page and a `[tray]` table: `{"name"}`, the tray menu line's text in the connection's language; clicking it opens the package page. The tray lists only packages that are on |
 | `theme` | What a theme package carries: `{"tui"?: {"file"}, "web"?: {"dir"}}`, `tui` the terminal theme file, `web` the web theme directory (an ordinary web package), at least one of them; paths are relative to the package directory, files are read with `package.file` |
 | `mcp` | Its MCP servers: `name`, `command` (`url` for a URL server), `venues`, `state`, `failures`…; `on` and `skipped` as in `mcp.list`. An extension not acting for the owner (a platform bridge acting for outsiders in a venue) gets only `name` and `state` (`reason` when stopped) for each server, and none of `state`, `pages_dir`, `command`, `commands`, `process`, `worker`, `check`, `problem`, `line` |
@@ -168,11 +169,13 @@ Upgrade from the package source. Only packages installed from the source are tou
 | `package_depended` | Turning off one another package depends on |
 | `package_off`, `not_restartable` | `restart` on one that's off; nothing to restart |
 
-## `package.file`, `package.call`
+## `package.file`, `package.call`, `package.page`
 
 **`package.file`**: params `package`, `path`, `offset`. Response `{"data", "size", "eof"}`, at most 512 KiB at a time. The web UI's package pages, mascot model files and theme packages' themes are read this way. For a package page, `path` is relative to the page folder; for a mascot package it can only be the `model` file; for a theme package it is relative to the package directory and can only be the terminal theme `file`, or any regular file under the web theme directory (e.g. `web/index.js`). Paths are resolved to real paths: links leading out of the package directory or the web directory, the directory itself and any other path are `not_found`.
 
 **`package.call`**: params `package`, `method`, `params` (optional). The core forwards it to that package's program (`method.call`) and returns whatever it answers. Answered in the background. Widget buttons and saving page forms go through it.
+
+**`package.page`**: param `package`. Response `{"url"}`: this package's host page on the local package page service the core starts on demand (`http://127.0.0.1:<port>/h/<ticket>/`), for a browser to open without the web UI (`miyu pkg page` opens it). Only for pages inside the package directory (manifest `[page] dir`). The service starts the first time it is asked for and stops after ten idle minutes (no requests, no open push stream); its addresses stop working then, and asking again starts it anew. The host page frames the page in isolation the way the web UI does, answers `settings.get`, `settings.set` and `call` for it, and follows the system's light or dark.
 
 Extensions can call `package.call` too: they must declare the `packages.call` capability and can only call methods listed in the other package's `[export]`; the forwarded call carries `from` (the caller's package id). Blobs the answering package stored that appear in its response become readable by the caller (see [Attachments](blob.en.md#blobget)).
 
@@ -180,7 +183,7 @@ Extensions can call `package.call` too: they must declare the `packages.call` ca
 
 | `data.reason` | When |
 |---|---|
-| `no_page`, `not_found` | `package.file`: no package page; no such file, outside the folder, not a regular file |
+| `no_page`, `not_found` | `package.file`: no package page; no such file, outside the folder, not a regular file. `package.page`: no page inside the package directory (`no_page`) |
 | `program_not_running` | The program isn't connected |
 | `unregistered` | The program didn't register that method, `data.method` |
 | `method_failed` | The program answered with an error, `data.message`, `data.code` |

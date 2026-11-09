@@ -163,6 +163,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "package.upgrades"
         | "package.upgrade"
         | "package.file"
+        | "package.page"
         | "mcp.list"
         | "mcp.restart"
         | "mcp.login"

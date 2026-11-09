@@ -12,7 +12,7 @@
 | [`package.search`](#packagesearch) | 在软件源里搜 |
 | [`package.clean`](#packageclean) | 清下载过的包文件 |
 | [`package.upgrades`、`package.upgrade`](#packageupgradespackageupgrade) | 盘点能升级的、升级 |
-| [`package.file`、`package.call`](#packagefilepackagecall) | 读后台页的文件、调包的程序登记的方法 |
+| [`package.file`、`package.call`、`package.page`](#packagefilepackagecallpackagepage) | 读后台页的文件、调包的程序登记的方法、不靠网页打开后台页 |
 | [`extension.status`、`extension.enable`、`extension.disable`、`extension.restart`](#extensionstatusextensionenableextensiondisableextensionrestart) | 扩展进程的状态和开关 |
 | [`driver.check`](#drivercheck) | 查扩展提供的模型驱动编码稳不稳（会重启扩展） |
 | [`mcp.list`、`mcp.restart`、`mcp.set`、`mcp.remove`](#mcplistmcprestartmcpsetmcpremove) | 系统配置里的 MCP 服务：列、重启、加或换、删 |
@@ -26,7 +26,7 @@
 | [`command.catalog`](#commandcatalog) | 列能用的斜杠命令 |
 | [`check`](#check) | 查配置、人格、预设、软件包写没写错 |
 
-**谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.search`、`package.clean`、`package.upgrades`、`package.upgrade`、`package.file`、`extension.*`、`mcp.*`、`tool.set_loading`、`feature.set` 只给人，扩展调回 `local_only`；`package.info` 带 `path` 的也只给人（看的是本机任意一处的文件夹，同 `package.install`，施工 IN-4）。别的人、扩展都能调；扩展调 `package.call` 另有规矩（见下）。
+**谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.search`、`package.clean`、`package.upgrades`、`package.upgrade`、`package.file`、`package.page`、`extension.*`、`mcp.*`、`tool.set_loading`、`feature.set` 只给人，扩展调回 `local_only`；`package.info` 带 `path` 的也只给人（看的是本机任意一处的文件夹，同 `package.install`，施工 IN-4）。别的人、扩展都能调；扩展调 `package.call` 另有规矩（见下）。
 
 **三层**：出厂的（随 Miyu 装的，`shipped`）、系统加装的（系统的包管理器另外装的，`distro`：Linux 是 `$XDG_DATA_DIRS` 里每一处的 `miyu/packages/`，没设照 `/usr/local/share:/usr/share`，Linuxbrew 自己的 `share` 写进 `XDG_DATA_DIRS`；macOS 是 Homebrew 前缀的 `share/miyu/packages/`；Windows 没有；`MIYU_DISTRO_PACKAGES` 设了的只看它）、装上的（数据根的 `opt/`，`home`）。同一个编号几层都有的，装上的盖过系统加装的、系统加装的盖过出厂的，被盖住的不加载、不算错。装上那一层装了同编号的就是升级、换掉原来的；出厂的、系统加装的卸掉是在 `etc/removed/` 记一笔（空文件 `<编号>`），文件不动，能装回来。
 
@@ -51,6 +51,7 @@
 | `features` | 里面的功能（预设照它开关） |
 | `status`、`enabled` | 有进程的：在跑没有、开着没有 |
 | `page` | 有后台页的，头照它列「软件后台」 |
+| `page_server` | 后台页是它的程序自己起的网页服务（清单 `[page] server = true`）：头问它的 `status` 拿 `web` 端口，带一张 `login.ticket` 跳过去，不放进框里 |
 | `tray` | 有后台页、清单写了 `[tray]` 的：`{"name"}`，托盘菜单里那一行的字，照连接的语言；点了打开这个包的后台页。托盘只列开着的 |
 | `theme` | 外观包带了什么：`{"tui"?: {"file"}, "web"?: {"dir"}}`，`tui` 是终端主题文件，`web` 是网页主题目录（一个普通的网页包），至少有一样；路径都相对包目录，文件用 `package.file` 读 |
 | `mcp` | 带的 MCP 服务：`name`、`command`（网址的服务是 `url`）、`venues`、`state`、`failures`……；`on`、`skipped` 同 `mcp.list` 的一项。不替主人干活的扩展（场所里替外人的平台桥）拿到的每个服务只有 `name`、`state`（停下的带 `reason`），也没有 `state`、`pages_dir`、`command`、`commands`、`process`、`worker`、`check`、`problem`、`line` |
@@ -168,11 +169,13 @@
 | `package_depended` | 关一个别的包依赖的 |
 | `package_off`、`not_restartable` | `restart` 一个关着的；没有能重启的进程、服务 |
 
-## `package.file`、`package.call`
+## `package.file`、`package.call`、`package.page`
 
 **`package.file`**：参数 `package`、`path`、`offset`。回应 `{"data", "size", "eof"}`，一次最多 512 KiB。网页的后台页、吉祥物的模型文件、外观包的主题照它读。`path` 对后台页是后台页目录里的相对路径；对吉祥物包只能是 `model` 那一份；对外观包相对包目录写，只能是终端主题的 `file` 那一份，或者网页主题目录下的任何一份普通文件（例如 `web/index.js`）。照真实路径找，链接指出包目录、指出网页目录的，目录本身、别的路径，都回 `not_found`。
 
 **`package.call`**：参数 `package`、`method`、`params`（可不写）。核心把它转给那个包的程序（`method.call`），程序回什么交回什么。在后台答。界面块上的按钮、整页的表单保存都走它。
+
+**`package.page`**：参数 `package`。回应 `{"url"}`：核心按需起的本机后台页服务上这个包的宿主页（`http://127.0.0.1:<端口>/h/<票>/`），交给浏览器打开，不用装网页（`miyu pkg page` 就照它开）。只给后台页在包目录里的（清单写 `[page] dir`）；服务第一次要的时候起，闲了十分钟（没有请求、没有开着的推送流）就关，关了地址作废，再要一次就是。宿主页照网页的那一套把页面放进隔离的框、替它调 `settings.get`、`settings.set`、`call`，深浅照系统。
 
 扩展也能调 `package.call`：要在清单里声明能力 `packages.call`，只调得到对方清单 `[export]` 里列的方法；转过去带 `from`（调的包的编号）。对方回应里出现的、它自己存的 blob，调用方之后也读得到（见 [附件](blob.md#blobget)）。
 
@@ -180,7 +183,7 @@
 
 | `data.reason` | 什么时候 |
 |---|---|
-| `no_page`、`not_found` | `package.file`：没有后台页；没有这份文件、跑出目录、不是普通文件 |
+| `no_page`、`not_found` | `package.file`：没有后台页；没有这份文件、跑出目录、不是普通文件。`package.page`：没有包目录里的后台页（`no_page`） |
 | `program_not_running` | 程序没连着 |
 | `unregistered` | 程序没登记这个方法，`data.method` |
 | `method_failed` | 程序回了错，`data.message`、`data.code` |
