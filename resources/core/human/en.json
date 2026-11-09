@@ -505,7 +505,7 @@
     "commands/cleared-memory/one": "Cleared {count} memory this session made.",
     "commands/cleared-memory-none": "This session made no memories.",
     "commands/summary/clear": "Clear context",
-    "commands/summary/stop": "Stop everything",
+    "commands/summary/stop": "Stop this turn and all background commands and subagents",
     "commands/summary/workspace": "Change workspace",
     "commands/summary/remember": "Add a memory",
     "commands/summary/dream": "Organize memory",

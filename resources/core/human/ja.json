@@ -501,7 +501,7 @@
     "commands/cleared-memory": "この会話で覚えた記憶を {count} 件消しました。",
     "commands/cleared-memory-none": "この会話で覚えた記憶はありません。",
     "commands/summary/clear": "コンテキストを消去",
-    "commands/summary/stop": "すべて停止",
+    "commands/summary/stop": "このターンを止め、バックグラウンドのコマンドとサブエージェントもすべて止める",
     "commands/summary/workspace": "ワークスペースを変更",
     "commands/summary/remember": "記憶を追加",
     "commands/summary/dream": "記憶を整理",

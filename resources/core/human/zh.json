@@ -501,7 +501,7 @@
     "commands/cleared-memory": "清掉了这个会话记下的 {count} 条记忆。",
     "commands/cleared-memory-none": "这个会话没有记下的记忆。",
     "commands/summary/clear": "清空上下文",
-    "commands/summary/stop": "全部停止",
+    "commands/summary/stop": "停止这一轮，停掉所有后台命令和子代理",
     "commands/summary/workspace": "切换工作区",
     "commands/summary/remember": "添加记忆",
     "commands/summary/dream": "整理记忆",
