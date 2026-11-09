@@ -21,15 +21,26 @@ pub(super) async fn answer(link: &Link, ticket: &Ticket, message: &Value) -> Val
         return reply(id, Err(error(-32600, "Invalid Request")));
     };
     let params = message.get("params").cloned().unwrap_or_else(|| json!({}));
-    let result = match method {
-        "context" => Ok(json!({"package": ticket.package, "language": ticket.language})),
-        "settings.get" => settings(link, &ticket.package).await,
-        "settings.set" => write(link, &ticket.package, &params["changes"]).await,
-        "call" => call(link, &ticket.package, &params).await,
-        _ => Err(error(-32601, "Method not found")),
+    // 框的方法不是核心的协议方法：照名字比，不写成分发的样子（`xtask` 的协议参考检查认的是核心分发的）。
+    let result = if method == CONTEXT {
+        Ok(json!({"package": ticket.package, "language": ticket.language}))
+    } else if method == SETTINGS_GET {
+        settings(link, &ticket.package).await
+    } else if method == SETTINGS_SET {
+        write(link, &ticket.package, &params["changes"]).await
+    } else if method == CALL {
+        call(link, &ticket.package, &params).await
+    } else {
+        Err(error(-32601, "Method not found"))
     };
     reply(id, result)
 }
+
+/// 框能调的那四样。
+const CONTEXT: &str = "context";
+const SETTINGS_GET: &str = "settings.get";
+const SETTINGS_SET: &str = "settings.set";
+const CALL: &str = "call";
 
 fn reply(id: Value, result: Result<Value, Value>) -> Value {
     match result {

@@ -27,6 +27,14 @@ const HOST_HTML: &str = include_str!("../../../../../resources/core/backstage/ho
 const HOST_JS: &str = include_str!("../../../../../resources/core/backstage/host.js");
 const HOST_CSS: &str = include_str!("../../../../../resources/core/backstage/host.css");
 
+/// 宿主页的几份：内容、类型、路径（空的是 `index.html`）。
+const HOST_FILES: [(&str, &str, &str); 4] = [
+    (HOST_HTML, "text/html; charset=utf-8", ""),
+    (HOST_HTML, "text/html; charset=utf-8", "index.html"),
+    (HOST_JS, "text/javascript; charset=utf-8", "host.js"),
+    (HOST_CSS, "text/css; charset=utf-8", "host.css"),
+];
+
 /// 宿主页的内容安全策略：只取自己的脚本、样式，只连自己，只嵌同源的框，不许被别人嵌。
 const HOST_CSP: &str = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; frame-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
@@ -113,11 +121,8 @@ fn from_here(request: &Request<Incoming>, port: u16) -> bool {
 }
 
 fn host_file(file: &str) -> Response<Body> {
-    let (body, kind) = match file {
-        "" | "index.html" => (HOST_HTML, "text/html; charset=utf-8"),
-        "host.js" => (HOST_JS, "text/javascript; charset=utf-8"),
-        "host.css" => (HOST_CSS, "text/css; charset=utf-8"),
-        _ => return status(StatusCode::NOT_FOUND),
+    let Some((body, kind, _)) = HOST_FILES.iter().find(|(_, _, name)| *name == file) else {
+        return status(StatusCode::NOT_FOUND);
     };
     let mut response = full(Bytes::from_static(body.as_bytes()), kind);
     let headers = response.headers_mut();

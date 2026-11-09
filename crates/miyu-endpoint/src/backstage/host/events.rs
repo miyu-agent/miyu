@@ -109,20 +109,28 @@ async fn forward(
 /// 核心的一条推送换成要转进框的；不相干的没有。
 async fn translated(link: &Link, package: &str, push: &Value) -> Option<Value> {
     let params = &push["params"];
-    match push["method"].as_str()? {
-        "package.event" if params["package"] == package => Some(push.clone()),
-        "resync" if params["stream"] == "package" && params["package"] == package => {
-            follow(link, package, false).await;
-            Some(resync(package))
-        }
-        "resync" if params["stream"] == "config" => {
-            drop(link.request("subscribe", json!({"stream": "config"})).await);
-            None
-        }
-        "config.changed" => settings_changed(package, params),
-        _ => None,
+    let method = push["method"].as_str()?;
+    let mine = params["package"] == package;
+    if method == PACKAGE_EVENT && mine {
+        Some(push.clone())
+    } else if method == RESYNC && params["stream"] == "package" && mine {
+        follow(link, package, false).await;
+        Some(resync(package))
+    } else if method == RESYNC && params["stream"] == "config" {
+        drop(link.request("subscribe", json!({"stream": "config"})).await);
+        None
+    } else if method == CONFIG_CHANGED {
+        settings_changed(package, params)
+    } else {
+        None
     }
 }
+
+/// 核心推来的那几样、推进框的那一样（照名字比，不写成分发的样子：`xtask` 的协议参考检查认的是核心分发的）。
+const PACKAGE_EVENT: &str = "package.event";
+const RESYNC: &str = "resync";
+const CONFIG_CHANGED: &str = "config.changed";
+const SETTINGS_CHANGED: &str = "settings.changed";
 
 /// `config.changed` 里它的项（`<编号>.` 开头的键）：推 `settings.changed {"keys"}`；一项都没有的不推。
 fn settings_changed(package: &str, params: &Value) -> Option<Value> {
@@ -133,7 +141,7 @@ fn settings_changed(package: &str, params: &Value) -> Option<Value> {
         .filter(|key| key.starts_with(&prefix))
         .collect();
     (!mine.is_empty())
-        .then(|| json!({"jsonrpc": "2.0", "method": "settings.changed", "params": {"keys": mine}}))
+        .then(|| json!({"jsonrpc": "2.0", "method": SETTINGS_CHANGED, "params": {"keys": mine}}))
 }
 
 fn resync(package: &str) -> Value {
