@@ -82,7 +82,10 @@ impl Upstream {
     ) -> Option<Upstream> {
         let (port, parent) = (port?, parent?);
         let Some(job) = command.and_then(|command| job_in(parent, command)) else {
-            tracing::warn!(target: TARGET, parent = parent.as_str(), "subagent without a job id");
+            // 顾问会话（施工 ADV-1）不是任务，本来就不回报。
+            if !command.is_some_and(|command| crate::advice::is_advice(parent, command)) {
+                tracing::warn!(target: TARGET, parent = parent.as_str(), "subagent without a job id");
+            }
             return None;
         };
         Some(Upstream {

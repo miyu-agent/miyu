@@ -123,7 +123,7 @@ Sending the same `id` again returns the session created the first time.
 | `kind`, `dream` | Only on consolidation sessions (the sessions memory consolidation runs in): `kind` is `"dream"`, `dream` is `{"persona"?, "session"?, "manual"?, "from"?}`: whose memory (the persona; `session` only appears on older sessions), `manual: true` when a person asked for it, `from` the session it was asked from; a finished run adds `result`: `{"given", "revised", "retired", "summary", "stopped"?}`, how many memories it added, revised and retired, whether it wrote the summary, `stopped: true` when it was stopped; a run that did not finish has none. A main session list usually leaves them out (pass `dream: false`); a memory page lists those of its memory by `dream` |
 | `forked` | Only on forked subagent sessions: `true`. Heads show a fork icon for it. Ordinary subagents and main sessions don't have it |
 | `archived` | Only on imported read-only archives: `true`. Heads list them in their own section and replace the input box with a line saying it's an archive |
-| `origin` | Only on sessions the shell integration opened (`session.terminal`): `"terminal"`. Heads show "shell" for it in the session list. Older ones don't have it |
+| `origin` | Where it was opened: `"terminal"` on sessions the shell integration opened (`session.terminal`), which heads show as "shell" in the session list; `"advisor"` on advisor sessions she opened by asking the advisor (child sessions, with `parent`). Other and older ones don't have it |
 
 Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [Venues](venues.en.md)). To keep up to date, subscribe to the `sessions` stream ([Connection](connection.en.md)).
 

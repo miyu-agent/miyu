@@ -92,7 +92,9 @@ fn orphans(root: &DataRoot, parent: &SessionId, recorded: &BTreeSet<SessionId>) 
     let mut found = Vec::new();
     for id in ids.into_iter().filter(|id| !recorded.contains(id)) {
         let child_of_parent = first_event(&root.session_dir(&id)).is_ok_and(|event| {
-            matches!(&event.body, Body::SessionCreated(created) if created.parent.as_ref() == Some(parent))
+            // 顾问会话（施工 ADV-1）不是任务，本来就没有 `job.started`，不收。
+            matches!(&event.body, Body::SessionCreated(created)
+                if created.parent.as_ref() == Some(parent) && !miyu_session::advising(created.origin.as_deref()))
         });
         if child_of_parent {
             let below = descendants(root, &id, false).unwrap_or_default();
@@ -102,3 +104,6 @@ fn orphans(root: &DataRoot, parent: &SessionId, recorded: &BTreeSet<SessionId>) 
     }
     found
 }
+
+#[cfg(test)]
+mod tests;

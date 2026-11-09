@@ -1,0 +1,4 @@
+{
+  "description": "Ask a stronger model for advice when you are stuck. It sees only your question, so include the context it needs.",
+  "parameters": {"type":"object","properties":{"question":{"type":"string"},"continue":{"type":"boolean","description":"true: continue your last advisor conversation in this session."}},"required":["question"]}
+}

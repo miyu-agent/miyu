@@ -120,7 +120,7 @@
 | `context` | `{"used", "window"?}`：上下文用了多少 token（最近一次主请求的输入：没命中、缓存读、缓存写，同终端底栏、会话状态的上下文），压缩以后、还没说过话的不写；`window` 是那一次请求的模型照这时的配置查到的上下文窗口，查不到的不写 |
 | `project` | 在哪个项目，不在的不写 |
 | `kind`、`dream` | 整理会话（整理记忆跑在里面的会话）才有：`kind` 是 `"dream"`，`dream` 是 `{"persona"?, "session"?, "manual"?, "from"?}`：哪个人格的记忆（`session` 只在以前的会话里有），人叫的写 `manual: true`，在哪个会话里叫的写 `from`；这一趟跑完了的多 `result`：`{"given", "revised", "retired", "summary", "stopped"?}`，新记、改了、作废了几条，有没有写摘要，叫停的写 `stopped: true`，没跑完的没有。主列表一般不列它们（传 `dream: false`），记忆页照 `dream` 列那一份记忆的 |
-| `origin` | 终端集成开的会话（`session.terminal` 开的）才有，是 `"terminal"`：头的会话列表照它写「终端集成」。以前开的没有 |
+| `origin` | 从哪开的：终端集成开的会话（`session.terminal` 开的）是 `"terminal"`，头的会话列表照它写「终端集成」；她问顾问开的顾问会话（子会话，带 `parent`）是 `"advisor"`。别的、以前开的没有 |
 | `forked` | fork 子代理的会话才有，是 `true`：头照它换图标。普通子代理、主会话没有 |
 | `archived` | 导进来的只读存档才有，是 `true`：头把它排在单独一段，输入框换成一行「这是存档」 |
 | `default_workspace` | 这个会话的默认工作区，绝对路径：主会话是它自己的 `…/workspace/<会话编号>/`，子会话、分叉出来的是主会话的那一个。`cwd` 和它一样的可以写「默认工作区」 |

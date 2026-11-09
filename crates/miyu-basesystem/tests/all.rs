@@ -5,6 +5,7 @@
 
 mod support;
 
+mod advisor;
 mod ask_user;
 mod audit_data_root;
 mod background;

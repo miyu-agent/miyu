@@ -186,6 +186,11 @@ source = "https://miyu-agent.github.io/packages/"
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
+[packages.miyu-base-advisor]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
+# off =
+
 [packages.miyu-base-ask-user]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.

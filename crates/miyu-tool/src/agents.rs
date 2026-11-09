@@ -11,6 +11,7 @@ use std::pin::Pin;
 
 use miyu_kernel::id::{JobId, SessionId};
 
+use crate::advice::{Advising, NotAdvised};
 use crate::attachment::Attached;
 
 /// 派子代理的那件工具的名字（`agents.md` 第一条第 5、6 条）：场所会话、到了深度上限的会话，造会话时从工具面上拿掉它。
@@ -68,6 +69,14 @@ pub trait AgentPort: Send + Sync {
     /// 这个会话自己是 fork 出来的（施工 A-F 中）：它不能再 fork（工具照它拒）。
     fn forked(&self) -> bool {
         false
+    }
+
+    /// 问顾问（设计 `69-旗舰顾问.md`，施工 ADV-1）：`question` 作为父会话发来的话送进顾问会话，等它这一轮答完交回回答。
+    /// `continued` 的接着这个会话最近一次的顾问会话说，没有的照新开。旗舰池里没有可用模型的不发请求，交回
+    /// [`NotAdvised::NoModel`]。默认问不了（测试里的假端口）。
+    fn advise<'a>(&'a self, question: &'a str, continued: bool) -> Advising<'a> {
+        let _ = (question, continued);
+        Box::pin(async { Err(NotAdvised::Failed("no advisor here".to_string())) })
     }
 }
 

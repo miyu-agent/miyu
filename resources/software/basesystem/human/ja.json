@@ -57,6 +57,11 @@
       "subject": "description",
       "icon": "↗"
     },
+    "advisor": {
+      "name": "アドバイザー",
+      "subject": "question",
+      "icon": "?"
+    },
     "jobs": {
       "name": "タスク",
       "subject": "action",
@@ -184,6 +189,9 @@
     "agent/started": "起動しました：{job}",
     "agent/not-started": "起動できません",
     "agent/no-fork": "フォークからはフォークできません",
+    "advisor/answered": "回答しました",
+    "advisor/no-model": "フラッグシッププールにモデルがありません",
+    "advisor/failed": "回答できませんでした：{reason}",
     "jobs/listed": "{count} 件のタスク",
     "jobs/none": "タスクはありません",
     "jobs/output": "{job} の出力を読みました",

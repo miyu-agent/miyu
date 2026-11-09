@@ -4,18 +4,18 @@
 
 use std::sync::{Arc, Weak};
 
-use miyu_kernel::block::{Block, Text};
-use miyu_kernel::event::{Body, Dream, EndReason, Level, Permission, TransientBody};
-use miyu_kernel::id::{CommandId, ModuleId, SessionId, TurnId, VenueId};
+use miyu_kernel::event::{Dream, Level, Permission};
+use miyu_kernel::id::{CommandId, ModuleId, SessionId, VenueId};
 use miyu_kernel::origin::{By, Module};
 use miyu_kernel::session::{Command, Outcome, Queued};
 use miyu_policy::Profile;
 use miyu_policy::memory::MemoryScope;
 use miyu_session::{
-    Create, DreamBatch, DreamResult, DreamRoom, DreamSessions, DreamSpec, Pending, Pushed, Watched,
-    create, new_id,
+    Create, DreamBatch, DreamResult, DreamRoom, DreamSessions, DreamSpec, Pending, Watched, create,
+    new_id,
 };
 
+use super::asked::{self, Turned};
 use super::{Running, Sessions, environment, now};
 use crate::Core;
 use crate::{personas, spawn};
@@ -177,8 +177,6 @@ impl DreamSessions for Table {
                 .await
                 .map_err(|refusal| format!("session {session} not found: {refusal:?}"))?;
             let gone = || format!("session {session} stopped");
-            // 先订阅：这一批的事件一定先于发话的回应到（`04-核心协议.md` 第六节第 2 条）。
-            let mut pushes = found.handle.subscribe().await.map_err(|_| gone())?;
             let by = memory_module()?;
             // 批和批之间不带上下文（设计 41 DS2）：头一批前是空的，拒成「没有能清空的」不要紧。
             let clearing =
@@ -188,73 +186,16 @@ impl DreamSessions for Table {
                 .command(clearing, by.clone(), Command::Clear)
                 .await
                 .map_err(|_| gone())?;
-            let send = Command::Send {
-                blocks: vec![Block::Text(Text { text })],
-                urgent: false,
-                venue: None,
-            };
-            let outcome = found
-                .handle
-                .command(id, by, send)
-                .await
-                .map_err(|_| gone())?;
-            let Outcome::Accepted { events } = outcome else {
-                return Err(format!("session {session} refused the batch: {outcome:?}"));
-            };
-            let said = events
-                .first()
-                .copied()
-                .ok_or_else(|| "nothing was recorded".to_string())?;
-            let mut turn: Option<TurnId> = None;
-            let (mut answer, mut error) = (String::new(), None);
             let mut stream = Stream::default();
-            loop {
-                let pushed = pushes.next().await.map_err(|_| gone())?;
-                let events = match &*pushed {
-                    Pushed::Events(events) => events,
-                    Pushed::Transient(transient) => {
-                        if let TransientBody::ModelDelta(delta) = &transient.body
-                            && turn.is_some()
-                            && transient.turn == turn
-                        {
-                            stream.see(delta, watch);
-                        }
-                        continue;
-                    }
-                    Pushed::Goal { .. } => continue,
-                };
-                for event in events {
-                    match &event.body {
-                        Body::TurnStarted(started) if started.trigger == Some(said) => {
-                            turn = event.turn;
-                        }
-                        _ if turn.is_none() || event.turn != turn => {}
-                        Body::MessageAssistant(reply) => {
-                            for block in &reply.blocks {
-                                if let Block::Text(text) = block {
-                                    answer.push_str(&text.text);
-                                }
-                            }
-                        }
-                        Body::ModelCalled(called) => {
-                            if let Some(failed) = &called.error {
-                                error = Some(failed.message.clone());
-                            }
-                        }
-                        Body::TurnEnded(ended) => {
-                            return Ok(match &ended.reason {
-                                EndReason::Completed => DreamBatch::Answered(answer),
-                                EndReason::Interrupted => DreamBatch::Stopped,
-                                reason => DreamBatch::Failed(match error {
-                                    Some(error) => format!("{}: {error}", reason.as_str()),
-                                    None => reason.as_str().to_string(),
-                                }),
-                            });
-                        }
-                        _ => {}
-                    }
-                }
-            }
+            let turned = asked::ask((&found.handle, &session), id, by, text, &mut |delta| {
+                stream.see(delta, watch)
+            })
+            .await?;
+            Ok(match turned {
+                Turned::Answered(answer) => DreamBatch::Answered(answer),
+                Turned::Stopped => DreamBatch::Stopped,
+                Turned::Failed(why) => DreamBatch::Failed(why),
+            })
         })
     }
 

@@ -39,6 +39,7 @@ mod system_append;
 mod ticket_extension;
 mod turn_inject;
 
+mod advisor;
 mod answer;
 mod attach;
 mod attach_send;

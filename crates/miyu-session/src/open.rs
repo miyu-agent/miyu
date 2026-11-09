@@ -150,6 +150,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     // 没指定的照这时的 `models.chat`：记进 `session.created`，以后照它（施工 8-8）。
     let reference = model.or_else(|| chat(&config.current().resolved.values()));
     let (resources, name) = (resources.clone(), persona.map(str::to_string));
+    let advising = crate::advising(origin.as_deref());
     let shipped = resources.clone();
     let preset = preset.map(|chosen| chosen.id);
     let asks = Agents::asks(
@@ -184,6 +185,11 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     let (snapshot, policy, texts, run, (guard, place), log, (turns, calls)) = blocking(move || {
         let mut snapshot = build(&resources, parts).map_err(CreateError::Persona)?;
         snapshot.no_tools = no_tools;
+        // 顾问会话（施工 ADV-1，设计 69 第三节第 4 条）：裸的快照，system 是顾问那一份，进快照、之后照它发。
+        if advising {
+            let system = resources.advisor_system().map_err(CreateError::Shipped)?;
+            snapshot.system = system.trim_end().to_string();
+        }
         let policy = snapshot.policy().map_err(CreateError::Policy)?;
         let texts = snapshot.driver_texts().map_err(CreateError::Policy)?;
         let run = snapshot.run_texts().map_err(CreateError::Policy)?;

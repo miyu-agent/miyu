@@ -100,7 +100,8 @@ pub(super) async fn draft(
         profile: None,
         project: None,
         appended,
-        bare: setup.dream.is_some(),
+        // 顾问会话也是裸的（施工 ADV-1），system 造好以后换成顾问那一份（`open.rs`）。
+        bare: setup.dream.is_some() || crate::advising(setup.origin.as_deref()),
         plugin_tools: Vec::new(),
         // 子代理照出厂的，主会话照有没有人看着、预设写的（施工 AE-1）。
         steps: StepLimits::of(

@@ -57,6 +57,11 @@
       "subject": "description",
       "icon": "↗"
     },
+    "advisor": {
+      "name": "Advisor",
+      "subject": "question",
+      "icon": "?"
+    },
     "jobs": {
       "name": "Jobs",
       "subject": "action",
@@ -200,6 +205,9 @@
     "agent/started": "Started {job}",
     "agent/not-started": "Could not start",
     "agent/no-fork": "A fork cannot fork",
+    "advisor/answered": "Answered",
+    "advisor/no-model": "No model in the flagship pool",
+    "advisor/failed": "Could not answer: {reason}",
     "jobs/listed": "Listed {count} jobs",
     "jobs/listed/one": "Listed {count} job",
     "jobs/none": "No jobs",

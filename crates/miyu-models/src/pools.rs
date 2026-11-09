@@ -28,7 +28,10 @@ use crate::settings::{PoolSettings, ProviderSettings};
 
 /// 三个固定池（施工 Q-1，设计 43 第三节第 1 条）：照档位从低到高。永远在、不能删、不能改名，可以是空的；旁路请求照声明的
 /// 档位从这里取（Q-2）。在的道理见 [`crate::settings::FIXED_POOL_ITEMS`]。
-pub const FIXED: [&str; 3] = ["lite", "normal", "flagship"];
+pub const FIXED: [&str; 3] = ["lite", "normal", FLAGSHIP];
+
+/// 最强的那一档（施工 ADV-1）：`advisor` 问的顾问钉在它上面（设计 `69-旗舰顾问.md`）。
+pub const FLAGSHIP: &str = "flagship";
 
 /// 按次计费的缓存类别：成员全是它的池不写分法时轮换。
 const PER_REQUEST: &str = "per_request";

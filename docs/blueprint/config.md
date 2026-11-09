@@ -1160,6 +1160,11 @@ source = "https://miyu-agent.github.io/packages/"
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
+[packages.miyu-base-advisor]
+# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
+# 能写：true 或 false。只能写在系统配置里。下一轮生效。
+# off =
+
 [packages.miyu-base-ask-user]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。

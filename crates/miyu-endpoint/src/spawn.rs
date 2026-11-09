@@ -17,10 +17,10 @@ use miyu_kernel::id::{CommandId, Seq, SessionId};
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{Command, Outcome, Queued};
 use miyu_kernel::time::Timestamp;
-use miyu_session::{Child, ForkChild, NotWatched, Peek, Pending, SessionPort, peek};
+use miyu_session::{Advice, Child, ForkChild, NotWatched, Peek, Pending, SessionPort, peek};
 use miyu_store::index::Row;
 use miyu_store::log::{Flow, read_events, read_range, read_range_only, read_segments};
-use miyu_tool::{Log, MainSession, ReadLog, Stop};
+use miyu_tool::{Advised, Log, MainSession, NotAdvised, ReadLog, Stop};
 
 use crate::Core;
 use crate::list::scan;
@@ -73,6 +73,14 @@ impl SessionPort for Table {
         Box::pin(async move {
             let core = self.core()?;
             core.sessions.fork_child(&core, child).await
+        })
+    }
+
+    /// 问顾问（施工 ADV-1）：会话表照它找、造顾问会话，等它答完（`sessions/advisor.rs`）。
+    fn advise(&self, advice: Advice) -> Pending<'_, Result<Advised, NotAdvised>> {
+        Box::pin(async move {
+            let core = self.core().map_err(NotAdvised::Failed)?;
+            core.sessions.advise(&core, advice).await
         })
     }
 

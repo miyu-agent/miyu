@@ -122,6 +122,7 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
    3. 把交代作为父会话发来的话（`by` 是这个会话，命令编号 `<父会话>/<编号>/prompt`）经会话表发给子会话，原样一块字。回应不是接受（被拒、子会话停了、核心正在停）：记一行 `WARN` `subagent not given its task`（`job`、`child`、`error`，被拒的写 `the task was refused: <原因码>`），交回派不了；子会话留着，是空的。
    4. 记一行 `INFO` `subagent started`（`job`、`child`），交回编号和子会话的编号。
 5. 标题、交代的字一个都不进运行日志。
+6. 问顾问（施工 ADV-1，设计 69，`tools/advisor.md`）也经这一个端口：工具调它 `advise(question, continue)`，照这一份填好 `Advice`（父会话和第几层、命令编号 `<父会话>/advisor/<调用>`、场所、关不关起来、显示图片照这一份，工作目录、加进来的目录、权限照这一次调用的，只读开关打开），交给会话表的 `SessionPort::advise`，同步等它答完；不领任务编号、不报 `job.started`。问到了记一行 `INFO` `advisor answered`（`child`），没问到记一行 `WARN` `advisor did not answer`（`error`）；问题、回答的字不进运行日志。
 
 **1c. 发话**（`crates/miyu-session/src/messages.rs`，施工 7-7、C-5；`agents.md` 第六条、`cross-session.md` 第三条，`tools/send_message.md`）
 

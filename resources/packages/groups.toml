@@ -18,6 +18,7 @@ order = [
     "miyu-base-jobs",
     "miyu-base-clicall",
     "miyu-base-subagent",
+    "miyu-base-advisor",
     "miyu-base-ask-user",
     "miyu-base-show",
     "miyu-base-sessions",

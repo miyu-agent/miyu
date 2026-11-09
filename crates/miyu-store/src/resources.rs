@@ -471,6 +471,7 @@ impl ResourceRoot {
     }
 }
 
+mod advisor;
 mod fork;
 mod goal;
 mod mcp_tools;

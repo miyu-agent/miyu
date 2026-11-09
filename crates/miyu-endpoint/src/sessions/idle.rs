@@ -42,6 +42,7 @@ impl Sessions {
             idle,
             sweeping: AtomicBool::new(false),
             due: Arc::default(),
+            answering: std::sync::Mutex::default(),
         }
     }
 

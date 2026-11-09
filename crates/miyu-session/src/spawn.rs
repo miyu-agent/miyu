@@ -16,7 +16,7 @@ use miyu_kernel::id::{CallId, CommandId, SessionId, VenueId};
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{Command, Outcome};
 use miyu_kernel::time::Timestamp;
-use miyu_tool::{Log, MainSession, Stop};
+use miyu_tool::{Advised, Log, MainSession, NotAdvised, Stop};
 
 use crate::jobs::Peek;
 
@@ -41,6 +41,17 @@ pub trait SessionPort: Send + Sync {
     /// 分叉，头几条落了盘、会话表里有了它才交回编号。默认造不了。
     fn fork(&self, _child: ForkChild) -> Pending<'_, Result<SessionId, String>> {
         Box::pin(async { Err("this core cannot fork a subagent".to_string()) })
+    }
+
+    /// 照 `advice` 问顾问（设计 `69-旗舰顾问.md` 第三节，施工 ADV-1）：旗舰池里没有可用模型的不造会话、不发请求，交回
+    /// [`NotAdvised::NoModel`]；不然新开一个顾问会话（`continued` 的找父会话最近一次的那一个接着说），把问题作为父会话发来的
+    /// 话送进去，等这一轮答完才交回回答。默认问不了。
+    fn advise(&self, _advice: Advice) -> Pending<'_, Result<Advised, NotAdvised>> {
+        Box::pin(async {
+            Err(NotAdvised::Failed(
+                "this core cannot ask an advisor".to_string(),
+            ))
+        })
     }
 
     /// 叫起会话 `session`（施工 7-6）：没在跑的照会话表的规矩载入，在跑的什么都不做。父会话载入以后叫起还没回报的子会话：
@@ -171,4 +182,31 @@ pub struct ForkChild {
     pub placeholder: String,
     /// 只读（施工 SA-1）：子会话的只读开关打开。
     pub read_only: bool,
+}
+
+/// 问一次顾问要的（设计 69 第三节，施工 ADV-1）：执行器照父会话这一刻的样子填好，会话表照它找、造顾问会话。顾问会话没有工具、
+/// 没有人格、钉旗舰池，`session.created` 的 `origin` 是 [`crate::ADVISOR_ORIGIN`]。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Advice {
+    /// 父会话和第几层。
+    pub lineage: Lineage,
+    /// 这次调用的命令编号（`<父会话>/advisor/<调用>`，`advice::command`）：新开的是 `session.created` 的 `cause`；问的那
+    /// 一句另接 `/ask`。
+    pub command: CommandId,
+    /// 她的问题：原样作为父会话发来的话送进去，不加包装（设计 69 第一节第 4 条）。
+    pub question: String,
+    /// 接着这个会话最近一次的顾问会话说；没有的照新开。
+    pub continued: bool,
+    /// 场所：父会话的。
+    pub venue: VenueId,
+    /// 开始时的权限：父会话这一刻的，只读开关打开（顾问没有工具，只读是兜底）。
+    pub permission: Permission,
+    /// 工作目录、加进来的目录：父会话这一轮的。
+    pub cwd: String,
+    /// 加进来的目录。
+    pub dirs: Vec<String>,
+    /// 场所显示得了图片吗：父会话的。
+    pub images: bool,
+    /// 关起来的会话：父会话的。
+    pub confined: bool,
 }

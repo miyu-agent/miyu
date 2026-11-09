@@ -26,6 +26,8 @@ use crate::presets;
 use crate::refusal::Refusal;
 use crate::spawn;
 
+mod advisor;
+mod asked;
 mod confined;
 mod delete;
 mod dream;
@@ -60,6 +62,8 @@ pub(crate) struct Sessions {
     sweeping: std::sync::atomic::AtomicBool,
     /// 封存了、报了退得下了的会话（施工 V-51，`sessions/idle.rs`）：看空闲的任务醒来当场问它们。
     due: Arc<idle::Due>,
+    /// 正在答的顾问会话（施工 ADV-1，`sessions/advisor.rs`）：同一个顾问会话一次只答一个问题。
+    answering: std::sync::Mutex<BTreeSet<SessionId>>,
 }
 
 #[derive(Debug, Default)]

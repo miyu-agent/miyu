@@ -50,6 +50,7 @@
 | `tools/read.md`、`glob.md`、`grep.md`、`write.md`、`edit.md`、`trash.md`、`shell.md` | 每件工具一页 |
 | `tools/history.md` | 翻这个会话自己的日志：图纸，M6 施工（2026-09-29） |
 | `tools/subagent.md` | 派子代理（施工 7-5；7-5 再补从 `agent` 改名） |
+| `tools/advisor.md` | 问顾问：旗舰池里的模型出主意，同步等回答（施工 ADV-1、ADV-2，设计 69） |
 | `tools/jobs.md` | 看、读、停派出去的任务（施工 7-4） |
 | `tools/send_message.md` | 父子之间留言（施工 7-7） |
 | `tools/sessions.md` | 列你别的主会话（施工 C-3，跨会话） |

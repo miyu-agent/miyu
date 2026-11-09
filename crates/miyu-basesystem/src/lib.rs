@@ -8,9 +8,10 @@
 //! 改名），看、停派出去的任务的 `jobs`（施工 7-4），发话的 `send_message`（施工 7-7，施工 C-5 从 `message_agent` 改名，
 //! 多发得到别的会话），列你别的主会话的 `sessions`（施工 C-3），查这个会话的用量、金额、上下文的 `session_usage`（施工 8-15），
 //! 问人一组题、等回答的 `ask_user`（施工 D-2），维护这个会话的待办清单的 `todowrite`（施工 D-3），看软件包的 `packages`
-//! （施工 F-10 上）。
+//! （施工 F-10 上），问旗舰池里的模型拿主意的 `advisor`（施工 ADV-2，设计 69）。
 //! 名字、参数、输出照成熟 harness 的规范，以 Claude Code 为主（`10-自带软件.md` 第十节）。
 
+mod advisor;
 mod ask_user;
 mod attach;
 mod blocking;
@@ -79,6 +80,7 @@ pub fn tools(resources: &Path) -> Result<Vec<Arc<dyn Tool>>, LoadError> {
         Arc::new(shell::Shell::load(resources, common.clone())?),
         Arc::new(history::History::load(resources, common.clone())?),
         Arc::new(subagent::Subagent::load(resources, common.clone())?),
+        Arc::new(advisor::Advisor::load(resources, common.clone())?),
         Arc::new(jobs::Jobs::load(resources, common.clone())?),
         Arc::new(send_message::SendMessage::load(resources, common.clone())?),
         Arc::new(sessions::Sessions::load(resources, common.clone())?),
@@ -92,7 +94,7 @@ pub fn tools(resources: &Path) -> Result<Vec<Arc<dyn Tool>>, LoadError> {
 
 /// 基础系统拆成的内置包（施工 BS-1 上中，设计 44 第三节第 1 条）：编号照清单的先后，`miyu-base-project-docs`、`miyu-base-clicall`
 /// 没有工具。施工 PN-3 起是 `miyu-base-*`（设计 48 第一节第 2 条），和工具名不再相同，工具归哪个包照 [`TOOLS`]。
-pub const PACKAGES: [&str; 18] = [
+pub const PACKAGES: [&str; 19] = [
     "miyu-base-read",
     "miyu-base-write",
     "miyu-base-edit",
@@ -102,6 +104,7 @@ pub const PACKAGES: [&str; 18] = [
     "miyu-base-shell",
     "miyu-base-jobs",
     "miyu-base-subagent",
+    "miyu-base-advisor",
     "miyu-base-ask-user",
     "miyu-base-todowrite",
     "miyu-base-history",
@@ -118,7 +121,7 @@ pub const GROUP: &str = "basesystem";
 
 /// 基础系统的每件工具归哪个包（施工 PN-3）：`sessions`、`send_message` 一个包，`packages`、`package` 一个包，别的一件一个包。
 /// 和各包清单的 `[features] tools` 一致，出厂资源的测试守着。
-pub const TOOLS: [(&str, &str); 18] = [
+pub const TOOLS: [(&str, &str); 19] = [
     ("read", "miyu-base-read"),
     ("write", "miyu-base-write"),
     ("edit", "miyu-base-edit"),
@@ -128,6 +131,7 @@ pub const TOOLS: [(&str, &str); 18] = [
     ("shell", "miyu-base-shell"),
     ("jobs", "miyu-base-jobs"),
     ("subagent", "miyu-base-subagent"),
+    ("advisor", "miyu-base-advisor"),
     ("ask_user", "miyu-base-ask-user"),
     ("todowrite", "miyu-base-todowrite"),
     ("history", "miyu-base-history"),

@@ -22,6 +22,7 @@
 //!   这一次时照价格算（[`Reports::billed`]）。
 
 mod actor;
+mod advice;
 mod agents;
 mod appended;
 mod attached;
@@ -73,6 +74,7 @@ pub mod testkit;
 mod tools;
 mod usage;
 
+pub use advice::{ADVISOR_ORIGIN, advising};
 pub use agents::job_in;
 pub use appended::mcp_key;
 pub use backlog::Backlog;
@@ -108,7 +110,7 @@ pub use route::{
     Stage, Unanswered, Watched, driver_check, find_local, probe, read_observed, refresh_list,
 };
 pub use shown::{Next, Shown};
-pub use spawn::{Child, ForkChild, Lineage, NotWatched, Pending, SessionPort};
+pub use spawn::{Advice, Child, ForkChild, Lineage, NotWatched, Pending, SessionPort};
 
 /// 运行日志的来源：`session`（`28-运行日志.md` 第二节）。
 const TARGET: &str = "miyu::session";

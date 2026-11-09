@@ -1,4 +1,4 @@
-//! 核心起来时登记基础系统（施工 4-4 上）：工具目录里有读的三件（施工 4-4 下）、写的三件（施工 4-6）、`shell`（施工 4-8）、`history`（施工 6-4）、`subagent`（施工 7-5，7-5 再补改名）、`jobs`（施工 7-4）、`send_message`（施工 7-7，施工 C-5 从 `message_agent` 改名）、`sessions`（施工 C-3）、`session_usage`（施工 8-15）、`ask_user`（施工 D-2）和 `todowrite`（施工 D-3），记忆这个软件包的 `remember`、`forget`、`memory_search`（施工 R-3 中），长期目标这个软件包的 `goal`（施工 X-8 上），联网这个软件包的 `web_fetch`（施工 N-1）、`web_search`（施工 N-2 上）；资源目录坏了，
+//! 核心起来时登记基础系统（施工 4-4 上）：工具目录里有读的三件（施工 4-4 下）、写的三件（施工 4-6）、`shell`（施工 4-8）、`history`（施工 6-4）、`subagent`（施工 7-5，7-5 再补改名）、`advisor`（施工 ADV-2）、`jobs`（施工 7-4）、`send_message`（施工 7-7，施工 C-5 从 `message_agent` 改名）、`sessions`（施工 C-3）、`session_usage`（施工 8-15）、`ask_user`（施工 D-2）和 `todowrite`（施工 D-3），记忆这个软件包的 `remember`、`forget`、`memory_search`（施工 R-3 中），长期目标这个软件包的 `goal`（施工 X-8 上），联网这个软件包的 `web_fetch`（施工 N-1）、`web_search`（施工 N-2 上）；资源目录坏了，
 //! 说是哪一份。
 
 use std::path::Path;
@@ -46,6 +46,7 @@ fn the_catalog_has_the_base_system() {
     assert_eq!(
         names,
         [
+            "advisor",
             "ask_user",
             "cron_create",
             "cron_delete",

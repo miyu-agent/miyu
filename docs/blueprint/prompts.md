@@ -1693,6 +1693,28 @@ The subagent could not be started.
 A fork cannot fork again.
 ```
 
+#### `software/basesystem/advisor/no-model.txt`
+
+- 什么时候加进来：她调 `advisor`，旗舰池里没有可用的模型：不造会话、不发请求（施工 ADV-2，设计 69）
+- token：9（o200k 数，带行尾换行）
+- 为什么加：工具一直在工具面上（工具面会话内字节恒定），池里没模型时调了要有结果；照设计 69 第三节第 3 条的原文，说清是旗舰池没设模型，她好转告人去配
+- 指纹：`d9f9ab1a`
+
+```text
+No model is set in the flagship pool.
+```
+
+#### `software/basesystem/advisor/failed.txt`
+
+- 什么时候加进来：顾问没答成：没有端口、造不成会话、问不进去、这一轮出错、被打断（施工 ADV-2）
+- token：8（o200k 数，`reason` 照 `interrupted` 填、带行尾换行；原因多长另算）
+- 为什么加：每次调用都要有结果；原因照原样给她（设计 69 第三节第 3 条：照子代理失败的说法交回原因），她分得清是供应商出错还是被打断，好决定再问还是自己做
+- 指纹：`3533988f`
+
+```text
+The advisor could not answer: {reason}
+```
+
 #### `software/basesystem/jobs/listed.txt`
 
 - 什么时候加进来：`list`：一个任务一行
@@ -4365,6 +4387,19 @@ You are a fork of the agent above. It wrote the task below, not the person. Your
 </fork>
 ```
 
+### system，顾问会话
+
+#### `core/advisor/system.txt`
+
+- 什么时候加进来：她调 `advisor` 新开一个顾问会话：造会话时进它的快照（去掉末尾的空白），这个顾问会话每次请求都带（施工 ADV-1，设计 69）
+- token：45（o200k 数，去掉末尾的换行）
+- 为什么加：顾问会话是裸的（没有人格、工具、事实），不说它是谁它会当成在和人聊、照聊天答。四句：它是给另一个 AI 出主意的顾问；只看得到问题里写的，看不到那边的对话和文件；回答要具体、能照做；缺什么信息直说要什么（设计 69 第三节第 4 条）。不写「不替她做」：它没有工具，做不了。她的问题当用户消息、不进 system，前缀不随问题变，接着问时缓存照用（设计 69 第一节第 4 条）
+- 指纹：`1fbf12f9`
+
+```text
+You are an advisor to another AI agent. You see only the question it sends you, not its conversation or files. Give specific advice it can act on. If the question lacks something you need, say what is missing.
+```
+
 ### 人这边：子代理发来的留言（一块带标签的事实）
 
 #### `core/jobs/subagent-message-open.txt`
@@ -5040,6 +5075,20 @@ Placeholder for a tool this client is expected to send with the request. It is n
   "description": "Start a subagent in a new session to do one task in the background. Its report arrives as a message when it finishes. Without fork it sees only the prompt, not this conversation.",
   "parameters": {"type":"object","properties":{"description":{"type":"string","description":"Short title, 3 to 5 words."},"prompt":{"type":"string"},"attachments":{"type":"array","items":{"type":"string"},"description":"File paths, at most 8."},"pool":{"type":"string","description":"Default: your own model."},"persona":{"type":"string","description":"Default: none."},"fork":{"type":"boolean","description":"true: it continues from a copy of this conversation, with your model and persona."},"read_only":{"type":"boolean","description":"true: it can read but not change files."}},"required":["description","prompt"]},
   "scope": "spawn"
+}
+```
+
+#### `software/basesystem/tools/advisor.json`
+
+- 什么时候加进来：会话的工具面里有 `advisor`：哪种会话都有（没有声明范围），每次请求都带；不随旗舰池里有没有模型变（施工 ADV-2，设计 69）
+- token：74（o200k 数资源文件；照 `{type, function:{name, description, parameters}}` 紧凑包成 tools 数组的一项是 79）
+- 为什么加：问顾问的说明和参数（设计 69 第三节第 2 条的原文）：说明两句，卡住时请更强的模型出主意，它只看得到问题、上下文要写进去；参数 `question` 名字和类型说清了不写说明，`continue` 一句。工具面会话内字节恒定：池里没模型照样列着，调了照 `advisor/no-model.txt` 说（设计 69 第二节）。不加的话她卡住了只能自己硬做或者问人，用不上更贵的模型的判断
+- 指纹：`fa33e32c`
+
+```json
+{
+  "description": "Ask a stronger model for advice when you are stuck. It sees only your question, so include the context it needs.",
+  "parameters": {"type":"object","properties":{"question":{"type":"string"},"continue":{"type":"boolean","description":"true: continue your last advisor conversation in this session."}},"required":["question"]}
 }
 ```
 

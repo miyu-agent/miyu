@@ -37,6 +37,7 @@ const SHIPPED: [Shipped; 5] = [
             ("jobs", "后台运行"),
             ("clicall", "命令行调用工具"),
             ("subagent", "子代理"),
+            ("advisor", "顾问"),
             ("ask_user", "提问"),
             ("show", "展示给用户"),
             ("sessions", "跨会话消息"),
@@ -249,7 +250,7 @@ async fn shipped_presets_are_sectioned_like_the_table() {
 
     let full = get(&mut client, "full").await;
     let opened = matches_shipped(&full, |_, _| (true, "default"));
-    assert_eq!(opened.len(), 34 + 2, "全部功能：都开着");
+    assert_eq!(opened.len(), 35 + 2, "全部功能：都开着");
 
     let dev = get(&mut client, "dev").await;
     let opened = matches_shipped(&dev, |group, feature| match (group, feature) {

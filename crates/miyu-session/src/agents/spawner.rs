@@ -1,5 +1,6 @@
 //! 一次调用的派子代理的端口（施工 7-5；施工 C-9 从 `agents.rs` 挪出来）：领编号、造子会话、把交代连同附件送进去。fork 子代理
-//! （施工 A-F 中，`agents.md`「fork 子代理」）经会话表从这次调用那一步分叉，交代前面接上外壳。
+//! （施工 A-F 中，`agents.md`「fork 子代理」）经会话表从这次调用那一步分叉，交代前面接上外壳。问顾问（施工 ADV-1，设计 69）
+//! 也经这一个端口：填好交给会话表，同步等它答完。
 
 use std::sync::Arc;
 
@@ -8,13 +9,13 @@ use miyu_kernel::id::{CallId, JobId, SessionId};
 use miyu_kernel::origin::{By, Session};
 use miyu_kernel::session::{Command, Outcome};
 use miyu_store::blob::Blobs;
-use miyu_tool::{AgentPort, NotSpawned, Order, Spawned, Spawning};
+use miyu_tool::{Advising, AgentPort, NotSpawned, Order, Spawned, Spawning};
 
 use super::{Agents, Inherit, JOB_DEPTH, command_id};
 use crate::TARGET;
 use crate::attached::{blocks, kept_for};
 use crate::job_ids::JobIds;
-use crate::spawn::{Child, ForkChild, Lineage};
+use crate::spawn::{Advice, Child, ForkChild, Lineage};
 
 /// 一次调用的派子代理的端口。
 pub(super) struct Spawner {
@@ -150,6 +151,44 @@ impl AgentPort for Spawner {
 
     fn forked(&self) -> bool {
         self.agents.forked
+    }
+
+    /// 问顾问（施工 ADV-1，设计 69）：照父会话这一刻的样子填好交给会话表，等它答完。顾问会话的权限照父会话、只读开关打开（它
+    /// 没有工具，只读是兜底）；场所、工作目录、显示图片、关不关照父会话。原因照原样交回，也记一行运行日志。
+    fn advise<'a>(&'a self, question: &'a str, continued: bool) -> Advising<'a> {
+        let agents = &self.agents;
+        let parent = &agents.session;
+        let advice = Advice {
+            lineage: Lineage {
+                parent: parent.clone(),
+                depth: agents.depth + 1,
+                workspace_from: agents.workspace_from.clone(),
+            },
+            command: crate::advice::command(parent, self.call),
+            question: question.to_string(),
+            continued,
+            venue: agents.venue.clone(),
+            permission: Permission {
+                read_only: true,
+                ..self.permission.clone()
+            },
+            cwd: self.cwd.clone(),
+            dirs: self.dirs.clone(),
+            images: agents.images,
+            confined: agents.confined,
+        };
+        Box::pin(async move {
+            let advised = agents.port.advise(advice).await;
+            match &advised {
+                Ok(advised) => {
+                    tracing::info!(target: TARGET, child = advised.session.as_str(), "advisor answered");
+                }
+                Err(why) => {
+                    tracing::warn!(target: TARGET, error = %why, "advisor did not answer");
+                }
+            }
+            advised
+        })
     }
 }
 

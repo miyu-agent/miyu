@@ -9,7 +9,7 @@
 //!   [`Done`] 出，施工 4-2）；工具执行时经 [`Call::real`] 换路径，换出来的要是权限策略判过的（[`Unchecked`]，施工 5-18）；
 //! - [`Catalog`]：工具目录，登记时查重名、名字和参数格式的写法；
 //! - [`Log`]：这个会话日志的只读入口（施工 6-4），`history` 用；
-//! - [`AgentPort`]：派子代理的端口（施工 7-5），`subagent` 用；
+//! - [`AgentPort`]：派子代理的端口（施工 7-5），`subagent` 用；问顾问也经它（施工 ADV-1，[`AgentPort::advise`]），`advisor` 用；
 //! - [`MessagePort`]：发话的端口（施工 7-7、C-5），`send_message` 用；
 //! - [`JobPort`]：任务端口（施工 7-3），`shell` 把起好的后台命令交给它，`jobs` 经它查、停（施工 7-4）；
 //! - [`SessionsPort`]：列会话、只读地开别的会话的日志（施工 C-3、C-4），`sessions`、`history` 用；[`find_session`]
@@ -19,6 +19,7 @@
 //! - [`picture`]：什么算一张图（施工 4-13 定，3-9 三补挪来）：`read` 读到的、人附上的，都照它认。
 //! - [`attachment`]：一个附件是什么（施工 3-9 三补定，C-9 挪来）：人附上的、她带给别的会话的，都照它认。
 
+mod advice;
 mod agents;
 pub mod attachment;
 mod caller;
@@ -51,6 +52,7 @@ pub mod testkit;
 mod todos;
 mod usage;
 
+pub use advice::{ADVISOR, Advised, Advising, NotAdvised};
 pub use agents::{
     AgentPort, NotSpawned, Order, SUBAGENT, SUBAGENT_FORMERLY, Spawned, Spawning, is_subagent,
 };
