@@ -303,10 +303,7 @@ fn the_shipped_presets_read_cleanly() {
             ),
             (
                 Some("极简开发".into()),
-                Some(
-                    "只提供运行命令和读写文件的工具。"
-                        .into()
-                )
+                Some("只提供运行命令和读写文件的工具。".into())
             ),
         ]
     );
