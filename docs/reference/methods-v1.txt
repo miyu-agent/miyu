@@ -107,6 +107,7 @@ package.list
 package.logo
 package.methods
 package.owns
+package.page
 package.progress
 package.remove
 package.restart
