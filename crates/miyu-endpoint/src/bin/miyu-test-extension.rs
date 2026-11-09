@@ -54,6 +54,8 @@ use std::fs::{File, OpenOptions};
 use std::io::{self, BufRead, Write};
 use std::time::Duration;
 
+#[path = "miyu-test-extension/answers.rs"]
+mod answers;
 #[path = "miyu-test-extension/drivers.rs"]
 mod drivers;
 #[path = "miyu-test-extension/hooks.rs"]
@@ -245,7 +247,7 @@ fn main() {
                 if line.contains(r#""method":"method.call""#)
                     && let Some(id) = field(&line, "id")
                     && let Some(answer) =
-                        answered(&id, &inner_method(&line).unwrap_or_default(), &give)
+                        answers::answered(&id, &inner_method(&line).unwrap_or_default(), &give)
                 {
                     send(&answer);
                     if inner_method(&line).as_deref() == Some("quit") {
@@ -277,11 +279,14 @@ fn main() {
                 if line.contains(r#""method":"search.query""#)
                     && let Some(id) = field(&line, "id")
                 {
-                    send(&searched(&id, &field(&line, "query").unwrap_or_default()));
+                    send(&answers::searched(
+                        &id,
+                        &field(&line, "query").unwrap_or_default(),
+                    ));
                 }
                 if line.contains(r#""method":"command.call""#)
                     && let Some(id) = field(&line, "id")
-                    && let Some(answer) = commanded(
+                    && let Some(answer) = answers::commanded(
                         &id,
                         &field(&line, "command").unwrap_or_default(),
                         &field(&line, "argument").unwrap_or_default(),
@@ -429,58 +434,6 @@ fn served(id: &str, tool: &str, sent: &str) -> Option<String> {
 fn inner_method(line: &str) -> Option<String> {
     let (_, rest) = line.split_once(r#""params":{"#)?;
     field(rest, "method")
-}
-
-/// 答编号是 `id`、方法是 `method` 的那一次 `method.call`（施工 F-6 中）；`slow` 不答，等核心到时限；`give` 交回 `give` 那几段字
-/// （施工 W-6 三补）。
-fn answered(id: &str, method: &str, give: &str) -> Option<String> {
-    Some(match method {
-        "slow" => return None,
-        "give" => {
-            let given: Vec<String> = give.split(',').map(|one| format!("{one:?}")).collect();
-            format!(
-                r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"given":[{}]}}}}"#,
-                given.join(",")
-            )
-        }
-        "boom" => {
-            format!(r#"{{"jsonrpc":"2.0","id":"{id}","error":{{"code":-32001,"message":"boom"}}}}"#)
-        }
-        // 带字的码（施工 BUS-2）：照 JSON-RPC 的写法放在 `error.data.code`。
-        coded if coded.ends_with(".coded") => format!(
-            r#"{{"jsonrpc":"2.0","id":"{id}","error":{{"code":-32000,"message":"coded","data":{{"code":"bad_audio"}}}}}}"#
-        ),
-        _ => format!(r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"answered":"{method}"}}}}"#),
-    })
-}
-
-/// 答编号是 `id`、查的是 `query` 的那一次 `search.query`（施工 N-5）。
-fn searched(id: &str, query: &str) -> String {
-    match query {
-        "limit" => format!(
-            r#"{{"jsonrpc":"2.0","id":"{id}","error":{{"code":-32000,"message":"quota used up","data":{{"reason":"limited"}}}}}}"#
-        ),
-        "boom" => {
-            format!(r#"{{"jsonrpc":"2.0","id":"{id}","error":{{"code":-32000,"message":"boom"}}}}"#)
-        }
-        _ => format!(
-            r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"hits":[{{"title":"found {query}","url":"https://ext.example/{query}"}}]}}}}"#
-        ),
-    }
-}
-
-/// 答编号是 `id`、命令是 `command`、跟的字是 `argument` 的那一次 `command.call`（施工 X-14 下）。
-fn commanded(id: &str, command: &str, argument: &str) -> Option<String> {
-    Some(match argument {
-        "silent" => return None,
-        "boom" => {
-            format!(r#"{{"jsonrpc":"2.0","id":"{id}","error":{{"code":-32000,"message":"boom"}}}}"#)
-        }
-        "garbled" => format!(r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"nothing":1}}}}"#),
-        _ => format!(
-            r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"said":"{command} {argument}\nok"}}}}"#
-        ),
-    })
 }
 
 /// 推块 `widget` 的一段字（施工 X-15 中）：`<字> <块>`，跟着会话的后面接会话编号；`temp` 那一块只推字本身。
