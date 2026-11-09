@@ -1,0 +1,10 @@
+Usage: miyu bus <command> [<options>]
+
+Runs list when no command is given. Packages provide and plug into features on the bus by name, without naming each other.
+
+Commands:
+  list [<name>]  List who provides what on the bus
+
+Options:
+      --format <text|json>  Output format (default: text)
+  -h, --help                Print help

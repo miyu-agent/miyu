@@ -364,7 +364,7 @@ def on_tool_after(params):
 
 只有字：不认 Markdown、HTML、颜色码。整页（`place = "page"`）另能放可以改的表单（`sections`、`form`）。段、表单的每一格见 [协议参考：界面块](../reference/extensions.md#widgetsetwidgetclearwidgetwatchwidgetunwatch)。
 
-**让别的包调你、你调别的包**：给别人调的方法写进清单 `[export] methods`（照样要 `package.methods` 登记）；别人调到时 `method.call` 多一格 `from`（调的包的编号，冒充不了）。要调别人的，声明 `packages.call`，发 `package.call {"package", "method", "params"}`。
+**让别的包调你、你调别的包**：走总线，照名字，不写对方的包名（[总线](../reference/bus.md)）。给别人调的方法写进清单 `[export] methods`，再在 `[export]` 里声明名字：`provides = ["stt"]` 是你提供（一个名字只有一家），`plugs = ["tts.engine"]` 是你接进（可以多家，用的一方挑）；方法照名字带前缀（`stt.transcribe`），照样要 `package.methods` 登记，登记全了 `bus.list` 才报你 `ready`。别人调到时 `method.call` 多一格 `from`（调的包的编号，冒充不了）。要调别人的，声明 `packages.call`，发 `bus.call {"name", "method", "params"}`（`method` 写短名 `transcribe`；`plugs` 的名字另写 `package` 挑哪家）。公认的名字（`stt`、`tts` 这些）的形状在参考文档里，照它答、照它调；`miyu bus list` 看这台机器上谁提供了什么。
 
 **读别的包给你带的内容**：别的包在清单里写 `[content.<你的编号>] dir = "…"` 就是给你带了一个目录。调 `content.list {}` 看谁带了，`content.read {"package", "path", "offset"?}` 分块读；装、卸、升级以后核心推 `content.changed`。
 

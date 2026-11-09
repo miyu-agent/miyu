@@ -29,6 +29,7 @@
 //! - [`language`]：给人看的话跟着界面语言。
 
 mod ask;
+mod bus;
 mod call;
 mod compact;
 mod config;
@@ -64,6 +65,7 @@ mod upgrade;
 pub use ask::{
     Ask, Format, Opening, Output, Permission, PersonaChoice, Plan, Screen, Target, ask, exit, talk,
 };
+pub use bus::{Bus, BusCommand, bus, bus_on};
 pub use call::call;
 pub use compact::{Compact, CompactPlan, compact, compact_on};
 pub use config::{

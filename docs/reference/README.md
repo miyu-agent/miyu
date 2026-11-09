@@ -28,6 +28,7 @@
 | [头自己的设置](prefs.md) | `prefs.*` |
 | [定时任务](schedules.md) | `schedule.*` |
 | [软件包与命令](packages.md) | `package.*`、`extension.*`、`mcp.*`、`command.*`、`check` |
+| [总线](bus.md) | `bus.*`、公认的名字 |
 | [扩展](extensions.md) | 拉起、能力、`provide`、`tool.call`、`user.append`、`tool.guard`、`tool.after`、`system.append`、界面块、`content.*`、`events.append` |
 | [场所](venues.md) | `venue.*`、`session.respond`、`session.note`、代表平台上的人说话 |
 | [记忆与知识库](memory.md) | `memory.*`、`kb.*` |

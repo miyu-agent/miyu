@@ -127,7 +127,7 @@ Subscribe to a push stream: from now on its pushes go to this connection.
 | `extensions` | An extension's status changed | `{"extensions": […]}` |
 | `packages` | One item of the package list changed | `{"packages": […]}` |
 | `projects` | A project changed | `{"projects": […]}`, all of them |
-| `bus` | Names on the bus or their readiness changed ([`bus.list`](packages.en.md#buscall-buslist)) | `{"names": […]}`, all of them |
+| `bus` | Names on the bus or their readiness changed ([`bus.list`](bus.en.md#buscall-buslist)) | `{"names": […]}`, all of them |
 | `schedules` | A schedule changed or ran (construction J-1 lower) | `{"schedules": […]}`, all of them |
 | `notices` | Notices for people (construction J-3 middle): a new-session schedule's run has ended, the schedule table broke and was replaced by an empty one. Heads show system notifications from it | `{}`, plus `claimed: true` while a connection has claimed background notices ([`notices.claim`](#noticesclaim)); earlier ones are not replayed |
 | `prefs` | With `package`: another connection changed that UI package's settings (see [A head's own settings](prefs.en.md)). Not a UI package that is installed: `unknown_package`, `not_a_ui_package` | `{"values": {…}}`, the whole object at that moment |

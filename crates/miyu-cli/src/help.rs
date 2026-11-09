@@ -48,6 +48,8 @@ pub enum Page {
     Call,
     /// `miyu mcp -h`，`miyu mcp login -h` 也印它（施工 X-42 上）。
     Mcp,
+    /// `miyu bus -h`，`miyu bus list -h` 也印它（施工 BUS-3）。
+    Bus,
     /// `miyu session -h`，`export`、`import` 的 `-h` 也印它（施工 SE-1 中上）。
     Session,
     /// `miyu upgrade -h`（施工 RL-4）。
@@ -61,6 +63,7 @@ pub(crate) fn page_named(name: &str) -> Option<Page> {
         "kb" => Some(Page::Kb),
         "dev" => Some(Page::Dev),
         "schedule" => Some(Page::Schedule),
+        "bus" => Some(Page::Bus),
         "pkg" => Some(Page::Pkg),
         "config" => Some(Page::Config),
         "provider" => Some(Page::Provider),
@@ -108,8 +111,10 @@ pub fn page(language: Language, page: Page) -> &'static str {
         (Language::Chinese, Page::Dev) => include_str!("help/zh/dev.txt"),
         (Language::English, Page::Dev) => include_str!("help/en/dev.txt"),
         (Language::Chinese, Page::Schedule) => include_str!("help/zh/schedule.txt"),
+        (Language::Chinese, Page::Bus) => include_str!("help/zh/bus.txt"),
         (Language::English, Page::Kb) => include_str!("help/en/kb.txt"),
         (Language::English, Page::Schedule) => include_str!("help/en/schedule.txt"),
+        (Language::English, Page::Bus) => include_str!("help/en/bus.txt"),
         (Language::Chinese, Page::Pkg) => include_str!("help/zh/pkg.txt"),
         (Language::English, Page::Pkg) => include_str!("help/en/pkg.txt"),
         (Language::Chinese, Page::Call) => include_str!("help/zh/call.txt"),

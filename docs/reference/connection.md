@@ -127,7 +127,7 @@
 | `extensions` | 扩展的状态变了 | `{"extensions": […]}` |
 | `packages` | 软件包列表里一项变了 | `{"packages": […]}` |
 | `projects` | 一个项目变了 | `{"projects": […]}`，全部 |
-| `bus` | 总线上的名字、可不可用变了（[`bus.list`](packages.md#buscallbuslist)） | `{"names": […]}`，全部 |
+| `bus` | 总线上的名字、可不可用变了（[`bus.list`](bus.md#buscallbuslist)） | `{"names": […]}`，全部 |
 | `schedules` | 定时任务变了、跑了（施工 J-1 下） | `{"schedules": […]}`，全部 |
 | `notices` | 给人的通知（施工 J-3 中）：新开会话的定时任务那一次跑完了、定时任务表坏了换成了空的。头照它弹系统通知 | `{}`；这一刻有连接认领了后台通知（[`notices.claim`](#noticesclaim)）的是 `{"claimed": true}`。以前的不补 |
 | `package` | 带 `package`：那个软件包推给人的（施工 IM-1 中下 2），它的页面照它更新，不用轮询。没装的回 `unknown_package` | `{}`；以前的不补 |

@@ -20,6 +20,7 @@ Content:
 Packages:
   pkg <command>       Manage packages
   mcp <command>       Log in to or out of MCP servers
+  bus <command>       See what packages provide on the bus
   dev <command>       Tools for package authors
 
 Settings:

@@ -13,7 +13,6 @@
 | [`package.clean`](#packageclean) | 清下载过的包文件 |
 | [`package.upgrades`、`package.upgrade`](#packageupgradespackageupgrade) | 盘点能升级的、升级 |
 | [`package.file`、`package.call`、`package.page`](#packagefilepackagecallpackagepage) | 读后台页的文件、调包的程序登记的方法、不靠网页打开后台页 |
-| [`bus.call`、`bus.list`](#buscallbuslist) | 照名字调总线上的包、列出总线上的名字 |
 | [`extension.status`、`extension.enable`、`extension.disable`、`extension.restart`](#extensionstatusextensionenableextensiondisableextensionrestart) | 扩展进程的状态和开关 |
 | [`driver.check`](#drivercheck) | 查扩展提供的模型驱动编码稳不稳（会重启扩展） |
 | [`mcp.list`、`mcp.restart`、`mcp.set`、`mcp.remove`](#mcplistmcprestartmcpsetmcpremove) | 系统配置里的 MCP 服务：列、重启、加或换、删 |
@@ -190,16 +189,6 @@
 | `method_failed` | 程序回了错，`data.message`、`data.code`（扩展回的错带字的码放在 `error.data.code`，核心照它交回；没有的照 `error.code`） |
 | `method_timeout` | 到时限没回 |
 | `needs_approval`、`not_exported` | 扩展调的：没声明 `packages.call`；对方没导出这个方法（`data.method`） |
-
-## `bus.call`、`bus.list`
-
-用户态总线（设计 `67-总线.md`）：包在清单 `[export]` 里声明 `provides`（一个名字一家）、`plugs`（可以多家），头和别的包照名字找、照名字调，不写死包名。核心自己的方法（会话、工具、驱动这些）不上总线。
-
-**`bus.call`**：参数 `name`（名字）、`method`（短名，一段、不带点；核心拼成 `<名字>.<短名>`）、`params`（可不写）、`package`（`plugs` 的名字要写挑哪家；`provides` 的写了要正是提供它的那家）。照 `package.call` 转过去，回什么交回什么；在后台答。参数里的 blob 交给被调的一方（扩展只交得出它自己拿得到的），回应里的交给调的一方。扩展调要声明 `packages.call`。
-
-**`bus.list`**：参数 `name`（可不写）。回应 `{"names": [{"name", "kind", "package", "ready"}…]}`，照名字、包排：`kind` 是 `provides` 或 `plugs`，`ready` 是程序连着、这个名字底下导出的方法都登记了（头照它画入口）。写了 `name` 的只列这一个。要跟着变，订阅 `bus` 流（[连接](connection.md)），推 `bus.changed`（[推送](pushes.md)）。
-
-**出错**：`no_provider`（没有包提供这个名字，`data.name`）、`package_required`（`plugs` 的名字没写挑哪家，`data.name`）、`bad_params`（短名带点、是空的）、`not_exported`（拼出来的方法没写进那家的 `[export]`），别的同 `package.call`。
 
 ## `extension.status`、`extension.enable`、`extension.disable`、`extension.restart`
 

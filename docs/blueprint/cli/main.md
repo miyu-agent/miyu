@@ -9,11 +9,11 @@
 | 代码 | 管什么 |
 |---|---|
 | `crates/miyu/src/main.rs` | 子命令；换上帮助页；参数不对时交给 `misuse`；拉起核心用的命令 |
-| `crates/miyu-cli/src/help.rs`、`help/{zh,en}/{miyu,ask,undo,restore,redo,compact,recap,rename,memory,pkg,kb,schedule,sandbox,config,provider,setup}.txt` | 帮助页（施工 CL-7 起没有 `web` 那一页，网页包自己印）（`pkg` 那一页施工 T-3，`kb` 那一页施工 K-7 下，`schedule` 那一页施工 J-3 下），编进程序（施工 4-11；`web` 那一页施工 W-9，`setup` 那一页施工 8-11，`sandbox` 那一页施工 5-8，`compact` 那一页施工 6-8，`redo` 那一页施工 4-7 再补，`recap` 那一页施工 3-8 四补，`rename` 那一页施工 3-8 五补，`config` 那一页施工 8-2，`provider` 那一页施工 8-5，原来是 `login`、`logout` 两页，Y-13 上并成一页） |
+| `crates/miyu-cli/src/help.rs`、`help/{zh,en}/{miyu,ask,undo,restore,redo,compact,recap,rename,memory,pkg,kb,bus,schedule,sandbox,config,provider,setup}.txt` | 帮助页（施工 CL-7 起没有 `web` 那一页，网页包自己印）（`pkg` 那一页施工 T-3，`kb` 那一页施工 K-7 下，`schedule` 那一页施工 J-3 下），编进程序（施工 4-11；`web` 那一页施工 W-9，`setup` 那一页施工 8-11，`sandbox` 那一页施工 5-8，`compact` 那一页施工 6-8，`redo` 那一页施工 4-7 再补，`recap` 那一页施工 3-8 四补，`rename` 那一页施工 3-8 五补，`config` 那一页施工 8-2，`provider` 那一页施工 8-5，原来是 `login`、`logout` 两页，Y-13 上并成一页） |
 | `crates/miyu-cli/src/misuse.rs` | 参数写错时说的话，不认识的子命令也在这里（施工 4-11）；少了子命令、嵌着的子命令写错、成对的选项少了一个（施工 5-8） |
 | `crates/miyu-cli/src/diagnostic.rs` | 报错、警告、提示的写法（设计 47，施工 CL-2 上）：`miyu: ` 打头、警告多 `warning:`（「警告：」）、建议另起一行 `hint:`（「提示：」）；别处交来的原话去掉句末句号、开头大写词改小写；命令行往标准错误上报错都经它 |
 | `crates/miyu-cli/src/text_rules.rs` | 给人看的字的检查（施工 CL-3，设计 47 第三节第 10 条）：帮助页说明不带句号、中文命令总表不列「、」串、不写「她」「你」、报错不绕过 `diagnostic` |
-| `crates/miyu-cli/src/lib.rs` | 命令行的头对外的几样：`Ask`、`ask`、`talk`、`Format`、`Plan`、`Screen`、`Target`、`exit`，`Undo`、`undo`、`undo_on`、`Direction`、`UndoPlan`，`Compact`、`compact`（施工 6-8），`Recap`、`recap`、`recap_on`、`RecapPlan`（施工 3-8 四补），`Rename`、`rename`、`rename_on`、`RenamePlan`（施工 3-8 五补），`Memory`、`MemoryCommand`、`MemoryClear`、`memory`、`memory_on`、`MemoryPlan`（施工 R-3 再补），`Pkg`、`PkgCommand`、`PkgPlan`、`pkg`、`pkg_on`（施工 T-3），`Kb`、`KbCommand`、`KbPlan`、`kb`、`kb_on`（施工 K-7 下），`Schedule`、`ScheduleCommand`、`ScheduleAdd`、`SchedulePlan`、`schedule`、`schedule_on`、`interval`、`moment`（施工 J-3 下），`Redo`、`redo`、`redo_on`、`RedoPlan`（施工 4-7 再补），`Setup`、`setup`、`setup_on`、`SetupPlan`、`HeadEnv`、`model_ready_on`（施工 8-11），`Sandbox`、`sandbox`，`Web`、`web`、`web_on`（施工 W-9），`help`、`misuse`、`language` |
+| `crates/miyu-cli/src/lib.rs` | 命令行的头对外的几样：`Ask`、`ask`、`talk`、`Format`、`Plan`、`Screen`、`Target`、`exit`，`Undo`、`undo`、`undo_on`、`Direction`、`UndoPlan`，`Compact`、`compact`（施工 6-8），`Recap`、`recap`、`recap_on`、`RecapPlan`（施工 3-8 四补），`Rename`、`rename`、`rename_on`、`RenamePlan`（施工 3-8 五补），`Memory`、`MemoryCommand`、`MemoryClear`、`memory`、`memory_on`、`MemoryPlan`（施工 R-3 再补），`Pkg`、`PkgCommand`、`PkgPlan`、`pkg`、`pkg_on`（施工 T-3），`Kb`、`KbCommand`、`KbPlan`、`kb`、`kb_on`（施工 K-7 下），`Bus`、`BusCommand`、`bus`、`bus_on`（施工 BUS-3），`Schedule`、`ScheduleCommand`、`ScheduleAdd`、`SchedulePlan`、`schedule`、`schedule_on`、`interval`、`moment`（施工 J-3 下），`Redo`、`redo`、`redo_on`、`RedoPlan`（施工 4-7 再补），`Setup`、`setup`、`setup_on`、`SetupPlan`、`HeadEnv`、`model_ready_on`（施工 8-11），`Sandbox`、`sandbox`，`Web`、`web`、`web_on`（施工 W-9），`help`、`misuse`、`language` |
 | `crates/miyu-cli/src/language.rs` | 界面语言；这一页和 `miyu ask` 给人看的字 |
 | `crates/miyu-cli/src/language/undo.rs` | `miyu undo`、`miyu restore` 给人看的字（`cli/undo.md`） |
 | `crates/miyu-cli/src/sandbox.rs`、`sandbox/flow.rs`、`language/sandbox.rs` | `miyu sandbox setup`、`remove`（`sandbox/windows.md`，施工 5-8） |
@@ -37,6 +37,7 @@
 | `kb` | 管知识库：列、搜、读、建、改、加、删、挂、重建（施工 K-7 下） | `cli/kb.md` |
 | `schedule` | 管定时任务：列、建、删、停、续（施工 J-3 下） | `cli/schedule.md` |
 | `pkg` | 看装了哪些软件包，装、卸（施工 T-3） | `cli/pkg.md` |
+| `bus` | 看总线上谁提供了什么、可不可用（施工 BUS-3） | `cli/bus.md` |
 | `check` | 查手写的文件有没有写错：配置、密钥文件、人格（施工 8-30） | `cli/check.md` |
 | `config` | `get`、`explain`、`path`：看配置（施工 8-2，`check` 施工 8-30 挪成 `miyu check`）；`set`、`unset`、`edit`、`trust`：改配置、信任项目配置（施工 8-3） | `cli/config.md` |
 | `provider` | `login`、`list`、`logout`：存、列、删供应商的 key（施工 8-5，Y-13 上从 `login`、`logout` 挪来） | `cli/login.md` |
@@ -107,6 +108,7 @@
 软件包：
   pkg <命令>          管理软件包
   mcp <命令>          登录或登出 MCP 服务
+  bus <命令>          查看总线上软件包提供的功能
   dev <命令>          给写软件包的人用的工具
 
 设置：
@@ -157,6 +159,7 @@ Content:
 Packages:
   pkg <command>       Manage packages
   mcp <command>       Log in to or out of MCP servers
+  bus <command>       See what packages provide on the bus
   dev <command>       Tools for package authors
 
 Settings:

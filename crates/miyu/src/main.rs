@@ -53,6 +53,8 @@ enum Command {
     Sandbox(miyu_cli::Sandbox),
     /// 登录要浏览器授权的网址 MCP 服务（施工 X-42 上）。
     Mcp(miyu_cli::Mcp),
+    /// 看总线上谁提供了什么、可不可用（施工 BUS-3）。
+    Bus(miyu_cli::Bus),
     /// 让核心开机、登录就起：装、卸、看本人这一层的服务（施工 Z-1 下）。
     Service(miyu_cli::Service),
     /// 升级 Miyu 本身，或者说该用哪个包管理器（施工 RL-4）。
@@ -200,6 +202,11 @@ fn main() -> ExitCode {
             dev.override_help(help)
                 .mut_subcommand("driver-check", |sub| sub.override_help(help))
         })
+        .mut_subcommand("bus", |bus| {
+            let help = page(language, Page::Bus);
+            bus.override_help(help)
+                .mut_subcommand("list", |sub| sub.override_help(help))
+        })
         .mut_subcommand("kb", |kb| {
             let help = page(language, Page::Kb);
             [
@@ -267,6 +274,7 @@ fn main() -> ExitCode {
         Some(Command::Rename(args)) => miyu_cli::rename(args, core),
         Some(Command::Sandbox(args)) => miyu_cli::sandbox(args),
         Some(Command::Mcp(args)) => miyu_cli::mcp(args, core),
+        Some(Command::Bus(args)) => miyu_cli::bus(args, core),
         Some(Command::Service(args)) => miyu_cli::service(args),
         Some(Command::Upgrade(args)) => miyu_cli::upgrade(args),
         // 不带子命令、在终端里：打开界面的设置页（施工 9-3，原来的 8-24）；界面不认设置页的照旧印帮助。
