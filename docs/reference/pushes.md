@@ -12,6 +12,7 @@
 | `extension.changed` | `extensions` | `{"entry"}`：一个扩展的状态，同 `extension.status` 的一项 |
 | `package.changed` | `packages` | `{"package", "entry"}`：软件包列表的一项，没有了的 `entry` 是 `null` |
 | `package.progress` | 不用订阅：只推给发起 `package.install`（真装）的那个连接 | `{"package", "stage", "index", "count", "done"?, "total"?}`：`stage` 是 `download`（带 `done`、`total`，从软件源下包文件下了多少字节、一共多少，开始、结束各一次，中间最多 200 毫秒一次）、`verify`（核对之前）、`install`（装之前）；`index`、`count` 是第几个、一共几个。从包文件夹、包文件装的只有 `verify`、`install` 各一次。老的核心只推 `{"package", "done", "total"}`，没写 `stage` 的当 `download`（施工 IN-3） |
+| `bus.changed` | `bus` | `{"names": […]}`：总线上整份的名字（同 `bus.list` 的回应），装卸了包、扩展起停、登记了方法就推，照换 |
 | `projects.changed` | `projects` | `{"project": <一项>}`：一个项目整个换掉（同 `project.list` 的一项）；删了的 `{"project": <编号>, "deleted": true}` |
 | `prefs.changed` | `prefs` | `{"package", "values"}`：一个界面包的设置被别的连接改了，`values` 是改好的整份，照它整个换掉（见 [头自己的设置](prefs.md)）；改的那个连接不推，它的回应里就是整份。掉了队推 `resync {"stream": "prefs", "package"}` |
 | `schedules.changed` | `schedules` | `{"id", "entry": <一项>}`：一个定时任务整个换掉（同 `schedule.list` 的一项，到点交过的也推）；删了的、一次的跑完了的 `{"id", "removed": true}`（施工 J-1 下） |

@@ -168,6 +168,9 @@ pub(crate) fn call<'a>(
             answer(move || async move { personas::delete::delete(core, params(request)?).await })
         }
         "preset.list" => answer(move || async move { crate::presets::list(core, peer).await }),
+        "bus.list" => {
+            answer(move || async move { Ok(crate::backstage::bus::list(core, params(request)?)) })
+        }
         "preset.get" => {
             answer(move || async move { crate::presets::get(core, peer, params(request)?).await })
         }

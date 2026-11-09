@@ -30,8 +30,8 @@ impl Changes {
         self.0.subscribe()
     }
 
-    /// 广播包 `id` 变了。
-    fn notify(&self, id: &str) {
+    /// 广播包 `id` 变了（施工 BUS-2：扩展登记了方法也报，总线的 `ready` 跟着变）。
+    pub(crate) fn notify(&self, id: &str) {
         if self.0.send(id.to_string()).is_err() {
             // 没有订阅着的连接：不用说。
         }

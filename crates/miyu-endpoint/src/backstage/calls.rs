@@ -1,8 +1,7 @@
 //! `package.methods`、`package.call`、`method.call`（施工 F-6 中，`package-pages.md`「`package.methods`、`package.call`、
 //! `method.call`」）：扩展登记它的后台页要调的方法，头调，核心反向转给扩展、交回它回的。登记不缓存：连接断了，调到的回
-//! `not_running`。
-//!
-//! 没在跑的照用到时拉起，等它登记了方法再转，最多等 60 秒。
+//! `program_not_running`；没在跑、还没登记的也是，不替它拉起（施工 BUS-2 照实改了这一句，原来写的「用到时拉起、最多等
+//! 60 秒」代码里一直没有）。转发那一段（[`forward`]）总线的 `bus.call` 共用（施工 BUS-2，`bus.rs`）。
 
 use std::collections::{BTreeMap, HashMap};
 use std::sync::{Mutex, PoisonError};
@@ -100,6 +99,8 @@ pub(crate) fn register(
             },
         );
     tracing::info!(target: "miyu::endpoint", package = label, methods = count, "page methods registered");
+    // 总线上可不可用跟着变（施工 BUS-2）：订着 `bus`、`packages` 的照这一刻推。
+    core.package_changes.notify(package);
     Ok(json!({ "methods": count }))
 }
 
@@ -126,6 +127,24 @@ pub(crate) async fn call(
     if from.is_some() && !target.export.exports(&params.method) {
         return Err(Refusal::not_exported(&params.method));
     }
+    forward(core, from, &params.package, &params.method, params.params).await
+}
+
+/// 转给包 `package` 登记的方法 `method`，`from` 是调的扩展（人的连接没有）：查过能不能调的由调的一方做。参数里的 blob 先交给
+/// 被调的一方（施工 BUS-2：扩展只交得出它自己拿得到的，人的连接都交），回应里对方拿得到的再交给 `from`。扩展回的错带的码
+/// 照 `error.data.code`（字的，JSON-RPC 的 `code` 只能是整数，施工 BUS-2）、没有的照 `error.code` 放进 `data.code`。
+pub(crate) async fn forward(
+    core: &Core,
+    from: Option<&str>,
+    package: &str,
+    method: &str,
+    params: Option<Value>,
+) -> Result<Value, Refusal> {
+    let params = CallParams {
+        package: package.to_string(),
+        method: method.to_string(),
+        params,
+    };
     let instance = Instance::of(&params.package);
     let peer = core
         .backstage
@@ -139,8 +158,12 @@ pub(crate) async fn call(
         .get(&instance)
         .and_then(|registered| registered.methods.get(&params.method).copied())
         .ok_or_else(|| Refusal::unregistered(&params.method))?;
-    let mut request =
-        json!({"method": params.method, "params": params.params.unwrap_or_else(|| json!({}))});
+    let given = params.params.unwrap_or_else(|| json!({}));
+    match from {
+        Some(from) => core.blob_grants.pass(from, &params.package, &given),
+        None => core.blob_grants.hand(&params.package, &given),
+    }
+    let mut request = json!({"method": params.method, "params": given});
     if let Some(from) = from {
         request["from"] = Value::String(from.to_string());
     }
@@ -158,12 +181,24 @@ pub(crate) async fn call(
                 .get("message")
                 .and_then(Value::as_str)
                 .map_or_else(|| error.to_string(), str::to_string),
-            error.get("code").cloned(),
+            error
+                .pointer("/data/code")
+                .filter(|code| code.is_string())
+                .or_else(|| error.get("code"))
+                .cloned(),
         )),
     }
 }
 
 impl Methods {
+    /// 包 `package` 这时登记着、还连着的方法名（施工 BUS-2：`ready` 照它算）；没登记、断了的没有。
+    pub(crate) fn registered(&self, package: &str) -> Option<Vec<String>> {
+        let instance = Instance::of(package);
+        self.peer_of(&instance)?;
+        let table = self.table.lock().unwrap_or_else(PoisonError::into_inner);
+        Some(table.get(&instance)?.methods.keys().cloned().collect())
+    }
+
     /// `instance` 登记了方法、还连着的连接。
     fn peer_of(&self, instance: &Instance) -> Option<Peer> {
         self.table

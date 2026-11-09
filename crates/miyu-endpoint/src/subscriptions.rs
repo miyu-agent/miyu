@@ -28,6 +28,7 @@ mod lines;
 mod listed;
 mod memory;
 mod prefs;
+mod relay;
 mod sessions;
 mod view;
 mod widgets;
@@ -41,13 +42,13 @@ use tokio::task::JoinHandle;
 
 use miyu_kernel::event::Event;
 use miyu_kernel::id::SessionId;
-use miyu_session::{Ended, Pushed, Subscription};
+use miyu_session::Subscription;
 
 use crate::Core;
 use config::ConfigForwarder;
 use extension_config::ExtensionConfigForwarder;
 pub(crate) use later::Later;
-use lines::{lines, notification, resync};
+use lines::notification;
 use listed::ListedForwarder;
 pub(crate) use memory::MemoryAt;
 use memory::MemoryForwarder;
@@ -65,6 +66,8 @@ pub(crate) struct Subscriptions {
     packages: Option<ListedForwarder>,
     /// 项目的推送（施工 H-1）。
     projects: Option<ListedForwarder>,
+    /// 总线（施工 BUS-2）。
+    bus: Option<ListedForwarder>,
     schedules: Option<ListedForwarder>,
     /// 知识库建索引的进度（施工 W-15）。
     kb: Option<ListedForwarder>,
@@ -99,6 +102,8 @@ pub(crate) enum Target {
     Packages,
     /// 项目的订阅的回应：同上（施工 H-1）。
     Projects,
+    /// 总线的订阅的回应：同上（施工 BUS-2）。
+    Bus,
     /// 定时任务的订阅的回应：同上（施工 J-1 下）。
     Schedules,
     /// 知识库建索引的进度的订阅的回应：同上（施工 W-15）。
@@ -323,6 +328,7 @@ impl Subscriptions {
                 target @ (Target::Extensions
                 | Target::Packages
                 | Target::Projects
+                | Target::Bus
                 | Target::Schedules
                 | Target::Knowledge
                 | Target::Notices
@@ -331,6 +337,7 @@ impl Subscriptions {
                 let slot = match target {
                     Target::Packages => self.packages.as_mut(),
                     Target::Projects => self.projects.as_mut(),
+                    Target::Bus => self.bus.as_mut(),
                     Target::Schedules => self.schedules.as_mut(),
                     Target::Knowledge => self.kb.as_mut(),
                     Target::Notices => self.notices.as_mut(),
@@ -400,7 +407,7 @@ async fn forward(
     pushing: Arc<AtomicBool>,
 ) -> Subscription {
     if replay(backlog, &out).await {
-        relay(&core, &session, &mut subscription, &mut replies, &out).await;
+        relay::relay(&core, &session, &mut subscription, &mut replies, &out).await;
     }
     pushing.store(false, Ordering::Release);
     while let Some(reply) = replies.recv().await {
@@ -425,75 +432,4 @@ async fn replay(backlog: Vec<String>, out: &mpsc::Sender<String>) -> bool {
 /// 推过来的一样。读补发的那一截时一条条当场写好，事件写完就放掉。
 pub(crate) fn event_lines(session: SessionId) -> impl Fn(&Event) -> String + Send + Sync + 'static {
     move |event| notification(&session, &event.to_line())
-}
-
-/// 转发的主循环：交回来的时候，这个订阅不再推了（连接不要它了的，也交回来）。
-async fn relay(
-    core: &Core,
-    session: &SessionId,
-    subscription: &mut Subscription,
-    replies: &mut mpsc::UnboundedReceiver<String>,
-    out: &mpsc::Sender<String>,
-) {
-    loop {
-        tokio::select! {
-            biased;
-            reply = replies.recv() => {
-                let Some(reply) = reply else {
-                    return;
-                };
-                // 先放已经到了的推送；放着放着掉了队，这条回应也照样放出去再停。
-                let mut alive = true;
-                while let Some(next) = subscription.try_next() {
-                    if !deliver(core, session, next, out).await {
-                        alive = false;
-                        break;
-                    }
-                }
-                if out.send(reply).await.is_err() || !alive {
-                    return;
-                }
-            }
-            next = subscription.next() => {
-                if !deliver(core, session, next, out).await {
-                    return;
-                }
-            }
-        }
-    }
-}
-
-/// 交一份推送出去。这个订阅不再往下了（掉了队、会话停了、连接断了），交回 `false`；掉队的、会话停了的先推一条
-/// `resync`。
-async fn deliver(
-    core: &Core,
-    session: &SessionId,
-    next: Result<Arc<Pushed>, Ended>,
-    out: &mpsc::Sender<String>,
-) -> bool {
-    match next {
-        Ok(pushed) => {
-            for line in lines(core, session, &pushed) {
-                if out.send(line).await.is_err() {
-                    return false;
-                }
-            }
-            true
-        }
-        Err(Ended::Lagged) => {
-            tracing::warn!(target: "miyu::endpoint", session = session.as_str(), "lagged, resync");
-            if out.send(resync(session)).await.is_err() {
-                return false;
-            }
-            false
-        }
-        // 会话停了（施工 4-9 再补三上）：也推一条 `resync`，头知道这个订阅没了；重新订阅时，会话照会话表重新载入。
-        Err(Ended::Stopped) => {
-            tracing::info!(target: "miyu::endpoint", session = session.as_str(), "session stopped, resync");
-            if out.send(resync(session)).await.is_err() {
-                return false;
-            }
-            false
-        }
-    }
 }

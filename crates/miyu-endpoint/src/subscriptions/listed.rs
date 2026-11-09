@@ -32,6 +32,8 @@ pub(super) enum Listed {
     Notices,
     /// 包推给人的（施工 IM-1 中下二，`backstage/events.rs`）：推 `package.event`，别的包的不推。
     PackageEvents(String),
+    /// 总线（施工 BUS-2，设计 67 B9）：包装卸、扩展的状态变了、登记了方法，推一条 `bus.changed`，带整份名字（同 `bus.list`）。
+    Bus,
 }
 
 impl Listed {
@@ -45,6 +47,7 @@ impl Listed {
             Listed::Knowledge => "kb",
             Listed::Notices => "notices",
             Listed::PackageEvents(..) => "package",
+            Listed::Bus => "bus",
         }
     }
 
@@ -75,6 +78,10 @@ impl Listed {
             Listed::Knowledge => (core.kb_progress.subscribe(), None),
             Listed::Notices => (core.schedules().notices().subscribe(), None),
             Listed::PackageEvents(..) => (core.backstage.events.subscribe(), None),
+            Listed::Bus => (
+                core.package_changes.subscribe(),
+                Some(core.extensions.subscribe()),
+            ),
         }
     }
 
@@ -85,6 +92,11 @@ impl Listed {
             Listed::Knowledge | Listed::Notices => return Some(id.to_string()),
             Listed::PackageEvents(package) => {
                 return crate::backstage::mine(id, package).map(str::to_string);
+            }
+            // 推整份：卸掉的包占过哪些名字这时已经算不出来了，头拿到照换。
+            Listed::Bus => {
+                let names = crate::backstage::bus::listed(core, None);
+                json!({"jsonrpc": "2.0", "method": "bus.changed", "params": {"names": names}})
             }
             Listed::Projects => {
                 let params = crate::projects::item(core, id)?;
@@ -266,6 +278,27 @@ impl Subscriptions {
     /// 取消订阅项目的推送。
     pub(crate) fn remove_projects(&mut self) {
         self.projects = None;
+    }
+
+    /// 订阅总线（施工 BUS-2）：同 [`Subscriptions::add_projects`]，回应 `{"names": […]}`（同 `bus.list`）。
+    pub(crate) fn add_bus(
+        &mut self,
+        core: &Arc<Core>,
+        shaken: Shaken,
+        out: &mpsc::Sender<String>,
+    ) -> serde_json::Value {
+        self.bus = Some(ListedForwarder::start(
+            Arc::clone(core),
+            Listed::Bus,
+            shaken,
+            out.clone(),
+        ));
+        json!({"names": crate::backstage::bus::listed(core, None)})
+    }
+
+    /// 取消订阅总线的推送。
+    pub(crate) fn remove_bus(&mut self) {
+        self.bus = None;
     }
 
     /// 订阅定时任务（施工 J-1 下）：同 [`Subscriptions::add_projects`]，回应 `{"schedules": […]}`。

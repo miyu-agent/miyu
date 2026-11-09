@@ -10,6 +10,9 @@ blob.get
 blob.open
 blob.put
 blob.write
+bus.call
+bus.changed
+bus.list
 command.call
 command.catalog
 command.run

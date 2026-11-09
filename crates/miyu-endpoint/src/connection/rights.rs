@@ -109,7 +109,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         "link.preview" => Needs(Network),
         "widget.set" | "widget.clear" => Needs(Widgets),
         "system.append" => Needs(ContextSystem),
-        "package.call" => Needs(PackagesCall),
+        "package.call" | "bus.call" => Needs(PackagesCall),
         // 导出会话的原始包（施工 SE-1 上）：和事件流一个级别、还带着 blob，只给人的头。
         "session.export" => People,
         // 导入原始包（施工 SE-1 下）：外面来的包导进来就是这个人的会话，只给人的头。
@@ -122,7 +122,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         "package.info" if params.get("path").is_some_and(|path| !path.is_null()) => People,
         // 都能调：读配置和密钥的名字、附件、模型、给人看的字、装了什么、带来的内容、人格和预设、技能、脚本、记忆和知识库读的。
         "hello" | "unsubscribe" | "provide" | "human.get" | "blob.put" | "blob.get"
-        | "blob.open" | "blob.write" | "blob.close" | "command.catalog" | "config.check"
+        | "blob.open" | "blob.write" | "blob.close" | "bus.list" | "command.catalog" | "config.check"
         | "config.get" | "config.schema" | "config.set" | "secret.list" | "content.list"
         | "content.read" | "kb.documents" | "kb.list" | "kb.read" | "kb.search"
         | "login.redeem" | "memory.cards" | "memory.list" | "memory.search" | "memory.turns"

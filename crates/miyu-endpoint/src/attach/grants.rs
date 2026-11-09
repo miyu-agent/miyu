@@ -4,6 +4,8 @@
 //! - 它自己存的：`blob.put`、分块上传 `blob.close` 的回应（[`Grants::grant`]）；
 //! - 它经 `package.call` 调别的包拿回来的：回应里出现的哈希，答的那个包自己拿得到的才转给它（[`Grants::pass`]）。只认答的包
 //!   自己拿得到的：不然一个包把别处看来的哈希写进回应，就能替调它的包开门。
+//! - 别人调它时交过来的（施工 BUS-2，设计 67 第四节）：调的扩展参数里写的、它自己拿得到的哈希（[`Grants::pass`] 反过来用）；
+//!   人的连接交的都算（[`Grants::hand`]）。语音把录音交给识别、把音频交给播放靠这一条。
 //!
 //! 只记在内存里：核心重起以后从空的开始，扩展要读回以前存的，再存一次（同样的内容是同一个哈希）。包卸了，它的一份扔掉
 //! （[`Grants::forget`]），装回来从空的开始。
@@ -53,6 +55,17 @@ impl Grants {
             .filter(|hash| own.contains(hash))
             .collect();
         held.entry(to.to_string()).or_default().extend(passed);
+    }
+
+    /// 人的连接经总线、`package.call` 交给包 `to` 的参数 `given`（施工 BUS-2）：里面合哈希写法的都交给它。人本来什么都读得到，
+    /// 交出去的哈希存处没有的，读的时候照样读不到。
+    pub(crate) fn hand(&self, to: &str, given: &Value) {
+        let mut found = Vec::new();
+        hashes(given, &mut found);
+        if found.is_empty() {
+            return;
+        }
+        self.lock().entry(to.to_string()).or_default().extend(found);
     }
 
     /// 包 `package` 卸了：它的一份扔掉。

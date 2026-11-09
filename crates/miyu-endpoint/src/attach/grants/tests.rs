@@ -37,3 +37,16 @@ fn a_removed_package_starts_over() {
     grants.forget("a");
     assert!(!grants.holds("a", &hash("one")));
 }
+
+/// 人的连接交给包的参数（施工 BUS-2）：里面合哈希写法的都交过去，别的字不算。
+#[test]
+fn a_person_hands_over_every_hash_in_the_params() {
+    let grants = Grants::default();
+    grants.hand(
+        "stt",
+        &json!({"audio": hash("recording").as_str(), "language": "zh"}),
+    );
+    assert!(grants.holds("stt", &hash("recording")));
+    grants.hand("stt", &json!({"text": "not a hash"}));
+    assert!(!grants.holds("other", &hash("recording")));
+}

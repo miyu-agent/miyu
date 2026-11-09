@@ -2,6 +2,7 @@
 //! 经 `package.file` 拿（头不读核心的存储，远程的头也照样能用），页面要它的程序做的事经 `package.call` 转过去：程序先用
 //! `package.methods` 登记方法，核心反向发 `method.call`。页面能做的只有这几样，别的本事由它的程序用自己批过的能力做。
 
+pub(crate) mod bus;
 mod calls;
 mod events;
 mod file;

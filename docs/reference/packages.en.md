@@ -13,6 +13,7 @@ Manage packages, extension processes and the MCP servers in the system config; l
 | [`package.clean`](#packageclean) | Delete downloaded package files |
 | [`package.upgrades`, `package.upgrade`](#packageupgrades-packageupgrade) | What can be upgraded; upgrade |
 | [`package.file`, `package.call`, `package.page`](#packagefile-packagecall-packagepage) | Read a file of a package's page; call a method its program registered; open a package page without the web UI |
+| [`bus.call`, `bus.list`](#buscall-buslist) | Call a package on the bus by name; list the names on the bus |
 | [`extension.status`, `extension.enable`, `extension.disable`, `extension.restart`](#extensionstatus-extensionenable-extensiondisable-extensionrestart) | Extension process status and switches |
 | [`driver.check`](#drivercheck) | Check that an extension's model drivers encode steadily (restarts the extension) |
 | [`mcp.list`, `mcp.restart`, `mcp.set`, `mcp.remove`](#mcplist-mcprestart-mcpset-mcpremove) | MCP servers in the system config: list, restart, add or replace, remove |
@@ -186,9 +187,19 @@ Extensions can call `package.call` too: they must declare the `packages.call` ca
 | `no_page`, `not_found` | `package.file`: no package page; no such file, outside the folder, not a regular file. `package.page`: no page inside the package directory (`no_page`) |
 | `program_not_running` | The program isn't connected |
 | `unregistered` | The program didn't register that method, `data.method` |
-| `method_failed` | The program answered with an error, `data.message`, `data.code` |
+| `method_failed` | The program answered with an error, `data.message`, `data.code` (a coded error from an extension puts its string code in `error.data.code`, which the core passes on; otherwise `error.code`) |
 | `method_timeout` | No answer in time |
 | `needs_approval`, `not_exported` | Called by an extension: `packages.call` not declared; the method isn't exported (`data.method`) |
+
+## `bus.call`, `bus.list`
+
+The user-space bus (design `67-总线.md`): packages declare `provides` (one provider per name) and `plugs` (several allowed) under `[export]` in their manifest, and heads and other packages find and call them by name instead of by package id. The core's own methods (sessions, tools, drivers and so on) are not on the bus.
+
+**`bus.call`**: params `name`, `method` (the short name: one part, no dots; the core joins it as `<name>.<method>`), `params` (optional) and `package` (required for a `plugs` name to pick one; for a `provides` name it must be the provider if given). Forwarded like `package.call`, answered with whatever it returns; answered in the background. Blobs in `params` are passed to the called package (an extension can only pass ones it can read itself), blobs in the answer to the caller. Extensions must declare `packages.call`.
+
+**`bus.list`**: param `name` (optional). Response `{"names": [{"name", "kind", "package", "ready"}…]}`, by name then package: `kind` is `provides` or `plugs`; `ready` means the program is connected and has registered every exported method under that name (heads draw entries from it). With `name`, only that one. To follow changes, subscribe to the `bus` stream ([Connection](connection.en.md)), which pushes `bus.changed` ([Pushes](pushes.en.md)).
+
+**Errors**: `no_provider` (no package provides the name, `data.name`), `package_required` (a `plugs` name without `package`, `data.name`), `bad_params` (an empty short name or one with dots), `not_exported` (the joined method isn't in that package's `[export]`); the rest as `package.call`.
 
 ## `extension.status`, `extension.enable`, `extension.disable`, `extension.restart`
 

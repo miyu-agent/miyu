@@ -269,6 +269,22 @@ impl Refusal {
     }
 
     /// 扩展经 `package.call` 调了对方清单 `[export]` 里没有的方法（施工 X-18）：`data.method` 是哪一个。
+    /// 总线上没有包提供这个名字（施工 BUS-2）：`data.name`。
+    pub(crate) fn no_provider(name: &str) -> Refusal {
+        Refusal::with(
+            "no_provider",
+            "name",
+            serde_json::Value::String(name.to_string()),
+        )
+    }
+    /// 总线上这个名字是好几家接着的（`plugs`），要写挑哪家（施工 BUS-2）：`data.name`。
+    pub(crate) fn package_required(name: &str) -> Refusal {
+        Refusal::with(
+            "package_required",
+            "name",
+            serde_json::Value::String(name.to_string()),
+        )
+    }
     pub(crate) fn not_exported(method: &str) -> Refusal {
         Refusal::with(
             "not_exported",

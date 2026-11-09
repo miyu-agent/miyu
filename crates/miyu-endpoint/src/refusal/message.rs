@@ -112,6 +112,14 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         ),
         "method_timeout" => ("方法超时。", "Method timed out."),
         "unregistered" => ("方法未登记。", "Method not registered."),
+        "no_provider" => (
+            "总线上没有提供这个名字的软件包。",
+            "No package provides this name on the bus.",
+        ),
+        "package_required" => (
+            "这个名字有几个软件包接着，要写用哪一个。",
+            "Several packages plug into this name; say which one.",
+        ),
         "method_failed" => ("方法执行失败。", "Method failed."),
         "avatar_not_image" => (
             "头像只支持 PNG、JPEG、WebP。",

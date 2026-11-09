@@ -127,6 +127,7 @@
 | `extensions` | 扩展的状态变了 | `{"extensions": […]}` |
 | `packages` | 软件包列表里一项变了 | `{"packages": […]}` |
 | `projects` | 一个项目变了 | `{"projects": […]}`，全部 |
+| `bus` | 总线上的名字、可不可用变了（[`bus.list`](packages.md#buscallbuslist)） | `{"names": […]}`，全部 |
 | `schedules` | 定时任务变了、跑了（施工 J-1 下） | `{"schedules": […]}`，全部 |
 | `notices` | 给人的通知（施工 J-3 中）：新开会话的定时任务那一次跑完了、定时任务表坏了换成了空的。头照它弹系统通知 | `{}`；这一刻有连接认领了后台通知（[`notices.claim`](#noticesclaim)）的是 `{"claimed": true}`。以前的不补 |
 | `package` | 带 `package`：那个软件包推给人的（施工 IM-1 中下 2），它的页面照它更新，不用轮询。没装的回 `unknown_package` | `{}`；以前的不补 |
@@ -139,7 +140,7 @@
 
 每条流推的是什么见[推送](pushes.md)。
 
-1. 一个连接对一个会话只有一个订阅（`events`、`view` 算同一个），再订阅一次换掉原来的。`sessions`、`config`、`extensions`、`packages`、`projects`、`schedules`、`notices`、`kb`、`widgets` 每个连接各一个；`package`、`prefs` 每个软件包各一个。
+1. 一个连接对一个会话只有一个订阅（`events`、`view` 算同一个），再订阅一次换掉原来的。`sessions`、`config`、`extensions`、`packages`、`projects`、`bus`、`schedules`、`notices`、`kb`、`widgets` 每个连接各一个；`package`、`prefs` 每个软件包各一个。
 2. **补**：写了 `after` 的，订阅那一刻磁盘上序号比它大的事件先一条条推过来，然后是回应（带 `upto`），之后从 `upto + 1` 起照常推，不丢不重。这一刻正在流式回的模型请求，补完以后把到这时为止的增量（`model.delta`）再推一遍，接得上后面实时的。没有序号的临时事件不补。
 3. **掉队**：读得太慢的，会话给每个订阅最多攒 1024 条（配置 16 条，记忆 64 条），再多就推一条 `resync`，这个订阅停了。会话停了也推 `resync`。重新订阅，`after` 写你看到的最后一个序号，补上。
 4. 订阅着一个会话算有人在看：没人看着的会话里，子代理回报只记下、不叫醒她。

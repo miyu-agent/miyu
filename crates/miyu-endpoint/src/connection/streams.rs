@@ -47,6 +47,8 @@ pub(super) enum Stream {
     Packages,
     /// 项目（施工 H-1）。
     Projects,
+    /// 总线（施工 BUS-2）。
+    Bus,
     Schedules,
     /// 知识库建索引的进度（施工 W-15）。
     Knowledge,
@@ -113,6 +115,10 @@ pub(super) async fn subscribe(
             let listed = subscriptions.add_projects(core, shook, out).await;
             (listed, Some(Target::Projects))
         }
+        (Ok(Stream::Bus), Some(shook)) => {
+            let reply = subscriptions.add_bus(core, shook, out);
+            (Ok(reply), Some(Target::Bus))
+        }
         (Ok(Stream::Schedules), Some(shook)) => {
             let listed = subscriptions.add_schedules(core, shook, out);
             (listed, Some(Target::Schedules))
@@ -161,6 +167,7 @@ pub(super) async fn subscribe(
                 Stream::Extensions
                 | Stream::Packages
                 | Stream::Projects
+                | Stream::Bus
                 | Stream::Schedules
                 | Stream::Knowledge
                 | Stream::Notices
@@ -441,6 +448,7 @@ pub(super) fn stream_of(request: &Request) -> Result<Stream, Refusal> {
         ("extensions", None) if request.params.get("after").is_none() => Ok(Stream::Extensions),
         ("packages", None) if request.params.get("after").is_none() => Ok(Stream::Packages),
         ("projects", None) if request.params.get("after").is_none() => Ok(Stream::Projects),
+        ("bus", None) if request.params.get("after").is_none() => Ok(Stream::Bus),
         ("schedules", None) if request.params.get("after").is_none() => Ok(Stream::Schedules),
         ("kb", None) if request.params.get("after").is_none() => Ok(Stream::Knowledge),
         ("notices", None) if request.params.get("after").is_none() => Ok(Stream::Notices),

@@ -125,6 +125,7 @@ Chinese version: [errors.md](errors.md).
 |---|---|---|
 | `unknown_package` | No such package | |
 | `package_invalid` | The manifest is wrong | `problem`, `line` |
+| `no_provider`, `package_required` | `bus.call`: no package provides the name; a `plugs` name without `package` | |
 | `package_conflict`, `package_exists` | A name it brings clashes; same id as a built-in | |
 | `package_file_bad`, `wrong_target` | The package file can't be unpacked; the manifest lists `targets` and this system isn't one of them | |
 | `download_failed`, `source_unreachable` | Installing from a source: the package file couldn't be downloaded from anywhere; no source could be reached and there is no local index | `why` |

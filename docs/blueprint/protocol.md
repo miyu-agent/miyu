@@ -215,6 +215,7 @@
 | `tool.set_loading`、`feature.set` | 前一个退役（施工 FL-1，照旧收、什么都不改），后一个改全局开关（`features.<功能编号>`），`null` 删掉；只给人（施工 X-27，`presets.md`「全局开关」） |
 | `package.file`、`package.call` | 读一个包的后台页里的文件（吉祥物包读它的模型文件，施工 F-7）；调它的程序登记的方法，核心反向发 `method.call`，在后台答（施工 F-6 中，`package-pages.md`） |
 | `package.page` | 不靠网页打开后台页：核心按需起本机的后台页服务，回宿主页的 `{"url"}`；只给人（施工 BP-3，`package-pages.md`「不靠网页打开软件后台」第 3 条） |
+| `bus.call`、`bus.list` | 用户态总线（施工 BUS-2，设计 67）：照名字找到提供的包、拼上前缀转过去（同 `package.call`，在后台答，参数里的 blob 交给被调的一方）；列出总线上的名字和可不可用。`bus` 流推 `bus.changed`，带整份名字 |
 | `package.methods` | 核心拉起的扩展登记它的后台页要调的方法（施工 F-6 中，`package-pages.md`） |
 | `extension.status`、`extension.enable`、`extension.disable`、`extension.restart` | 核心拉起的扩展：列状态、开、关、重启（施工 9-4 上，`extensions.md`） |
 | `check` | 查人手写的文件：配置、密钥文件、人格，照磁盘上现在的字（施工 8-30，`cli/check.md`） |
