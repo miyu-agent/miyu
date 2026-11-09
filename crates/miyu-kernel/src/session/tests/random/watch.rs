@@ -269,16 +269,8 @@ impl Watch {
         if let Some(id) = &repeated {
             self.applied_once(id, &actions);
         }
-        // 回顾不记编号（施工 3-8 四补）：再来一次就是再要一次。
         let recapping = matches!(&input_kind, Some(Command::Recap));
-        if let Some(id) = command.filter(|_| !recapping) {
-            let rejected = actions.iter().any(|action| {
-                matches!(action, Action::Reply { id: replied, outcome: Outcome::Rejected { .. } } if *replied == id)
-            });
-            if !rejected {
-                self.accepted.insert(id);
-            }
-        }
+        self.note_accepted(command, recapping, &actions);
         if let Some(queued) = fresh_interrupt {
             self.interrupted(&actions, was_open, queued);
         }

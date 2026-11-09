@@ -6,7 +6,9 @@ use std::sync::Arc;
 
 use serde_json::{Value, json};
 
-use crate::support::{Asked, Home, plan, shipped_tools};
+#[cfg(unix)]
+use crate::support::shipped_tools;
+use crate::support::{Asked, Home, plan};
 use miyu_cli::{Output, Plan, Target};
 use miyu_session::testkit::{Play, Script};
 
@@ -127,6 +129,8 @@ async fn without_a_model_the_turn_has_the_error_and_done_says_why() {
 }
 
 /// 每一步开始、结束各一行：工具名、标题，做成了没有、结果那一句；要确认没做的最后是一句告警，退出码 4。
+#[cfg(unix)]
+// Windows 上 `shell` 是 PowerShell，高危命令第一版只认 bash、zsh 的写法（施工 5-17），`git reset --hard` 不会要确认：只在 Unix 上跑。
 #[tokio::test]
 async fn steps_start_and_finish_and_skipped_ones_warn() {
     // 高危的命令完全放开下也要确认（同 `steps.rs`，施工 5-17、LV-1）。

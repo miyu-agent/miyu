@@ -101,3 +101,32 @@ impl Watch {
         );
     }
 }
+
+impl Watch {
+    /// 记下这一批里接受了的命令编号（不变量 9 照它查重发）：送进来的这一条 `command` 没被拒就算；回顾不记编号（施工 3-8 四补：
+    /// 再来一次就是再要一次）。先读回日志的命令（重做这类），拒绝要等读完才到、在后面另一批里：照样不算接受过（施工 LV-1 补）。
+    pub(super) fn note_accepted(
+        &mut self,
+        command: Option<CommandId>,
+        recapping: bool,
+        actions: &[Action],
+    ) {
+        if let Some(id) = command.filter(|_| !recapping) {
+            let rejected = actions.iter().any(|action| {
+                matches!(action, Action::Reply { id: replied, outcome: Outcome::Rejected { .. } } if *replied == id)
+            });
+            if !rejected {
+                self.accepted.insert(id);
+            }
+        }
+        for action in actions {
+            if let Action::Reply {
+                id,
+                outcome: Outcome::Rejected { .. },
+            } = action
+            {
+                self.accepted.remove(id);
+            }
+        }
+    }
+}

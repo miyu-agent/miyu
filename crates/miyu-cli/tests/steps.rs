@@ -26,17 +26,21 @@ fn read(file_path: &str) -> Play {
 }
 
 /// 调一次 `write`，把 `file_path` 写成一行字（A16 起完全放开写哪儿都不问，施工 LV-1）。
+#[cfg(unix)]
 fn write(file_path: &str) -> Play {
     let args = json!({ "file_path": file_path, "content": "改了\n" });
     Play::calls(&[("write", &args.to_string())])
 }
 
 /// 调一次 `shell` 跑 `git reset --hard`：高危，完全放开下也要确认（施工 5-17、LV-1），`miyu ask` 没人能确认，不跑。
+#[cfg(unix)]
 fn reset() -> Play {
     let args = json!({ "command": "git reset --hard", "description": "Reset" });
     Play::calls(&[("shell", &args.to_string())])
 }
 
+#[cfg(unix)]
+// Windows 上 `shell` 是 PowerShell，高危命令第一版只认 bash、zsh 的写法（施工 5-17），`git reset --hard` 不会要确认：只在 Unix 上跑。
 #[tokio::test]
 async fn each_step_is_one_line_before_the_answer() {
     let work = Outside::new();
@@ -190,6 +194,8 @@ async fn json_prints_no_steps() {
 }
 
 /// 给脚本的：有一步因为要确认没做，只看退出码 4，标准错误上照旧只印出错（施工 4-9）。
+#[cfg(unix)]
+// Windows 上 `shell` 是 PowerShell，高危命令第一版只认 bash、zsh 的写法（施工 5-17），`git reset --hard` 不会要确认：只在 Unix 上跑。
 #[tokio::test]
 async fn json_says_a_step_needed_approval_only_by_the_exit_code() {
     let work = Outside::new();
