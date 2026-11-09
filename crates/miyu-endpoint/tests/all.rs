@@ -9,6 +9,7 @@ mod goal_command;
 mod goal_heads;
 mod list_bridge;
 mod model_embed;
+mod new_ids;
 mod package_call_ext;
 mod package_events;
 mod page_extras;

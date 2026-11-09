@@ -95,6 +95,7 @@
 | `unknown_secret` | 没有这个密钥 | |
 | `unknown_provider`、`unknown_model` | 不是配好了的供应商；模型解析不出 | |
 | `provider_exists` | 改供应商编号（`provider.rename`）：新编号已经有了 | |
+| `preset_exists`、`persona_exists` | `preset.set`、`persona.set` 带 `new: true` 新建：写的编号已经有了 | |
 | `no_model` | 没有能用的模型 | `message` |
 | `cooling` | 候选全在冷却 | `message`、`wait_ms` |
 | `model_failed` | 请求发了、出错了 | `class`、`status`、`message` |

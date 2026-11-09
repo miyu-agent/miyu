@@ -95,6 +95,7 @@ Chinese version: [errors.md](errors.md).
 | `unknown_secret` | No such secret | |
 | `unknown_provider`, `unknown_model` | Not a configured provider; the model can't be resolved | |
 | `provider_exists` | Renaming a provider (`provider.rename`): the new ID already exists | |
+| `preset_exists`, `persona_exists` | `preset.set`, `persona.set` creating with `new: true`: the ID written already exists | |
 | `no_model` | No usable model | `message` |
 | `cooling` | Every candidate is cooling down | `message`, `wait_ms` |
 | `model_failed` | The request was sent and failed | `class`, `status`, `message` |

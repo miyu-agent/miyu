@@ -47,6 +47,9 @@ fn prompt_file(name: &str) -> Option<&'static str> {
 pub(crate) struct SetParams {
     #[serde(default)]
     persona: Option<String>,
+    /// 新建、编号人自己写（施工 ID-1）：同 `preset.set` 的 `new`，已经有了的拒 `persona_exists`。
+    #[serde(default)]
+    new: bool,
     #[serde(default)]
     changes: Vec<ChangeParams>,
     #[serde(default)]
@@ -124,7 +127,10 @@ pub(crate) async fn set(core: &Core, peer: Peer, params: SetParams) -> Result<Js
         && params.background_opacity.is_none()
         && params.background_focus.is_none()
         && params.background_blur.is_none();
-    if empty || params.persona.as_deref().is_some_and(|id| !valid(id)) {
+    if empty
+        || params.persona.as_deref().is_some_and(|id| !valid(id))
+        || (params.new && params.persona.is_none())
+    {
         return Err(Refusal::BAD_PARAMS);
     }
     let said = words(core, peer.language).ok();
@@ -159,6 +165,7 @@ pub(crate) async fn set(core: &Core, peer: Peer, params: SetParams) -> Result<Js
     tokio::task::spawn_blocking(move || {
         let below = (packages.as_slice(), &personas);
         let found = match params.persona {
+            Some(id) if params.new && personas.ids().contains(&id) => Err(Refusal::PERSONA_EXISTS),
             Some(id) => write(&personas, &id, &wanted, &prompts, said.as_ref()),
             None => create(&personas, &wanted, &prompts, said.as_ref()),
         }?;

@@ -34,12 +34,19 @@ pub(crate) struct SetParams {
     #[serde(default)]
     preset: Option<String>,
     changes: Vec<ChangeParams>,
+    /// 新建、编号人自己写（施工 ID-1，发版前检查第 28 条）：这个编号已经有了的拒 `preset_exists`，不去改那一份。要和
+    /// `preset` 一起写。
+    #[serde(default)]
+    new: bool,
 }
 
 /// `preset.set`：照 `changes` 改你那一层，交回改完叠好的样子（同 `preset.get`）。不写 `preset` 的是新建（施工 P-3 补）：
 /// 编号由核心起，至少要写一项。
 pub(crate) async fn set(core: &Core, peer: Peer, params: SetParams) -> Result<Json, Refusal> {
-    if params.changes.is_empty() || params.preset.as_deref().is_some_and(|id| !valid(id)) {
+    if params.changes.is_empty()
+        || params.preset.as_deref().is_some_and(|id| !valid(id))
+        || (params.new && params.preset.is_none())
+    {
         return Err(Refusal::BAD_PARAMS);
     }
     let said = words(core, peer.language).ok();
@@ -55,7 +62,9 @@ pub(crate) async fn set(core: &Core, peer: Peer, params: SetParams) -> Result<Js
         return Err(Refusal::BAD_PARAMS);
     }
     let presets = presets(core);
+    let new = params.new;
     let found = tokio::task::spawn_blocking(move || match params.preset {
+        Some(id) if new && presets.ids().contains(&id) => Err(Refusal::PRESET_EXISTS),
         Some(id) => write(&presets, &id, &wanted, said.as_ref()),
         None => create(&presets, &wanted, said.as_ref()),
     })

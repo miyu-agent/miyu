@@ -60,4 +60,18 @@ impl Refusal {
             data: measured.as_object().cloned(),
         }
     }
+
+    /// 新建（`new: true`）时写的编号已经有了（施工 ID-1，发版前检查第 28 条）：出厂的、包带的、你那一层的都算。
+    pub(crate) const PRESET_EXISTS: Refusal = Refusal {
+        code: REFUSED,
+        reason: "preset_exists",
+        data: None,
+    };
+
+    /// 同 [`Refusal::PRESET_EXISTS`]，人格的。
+    pub(crate) const PERSONA_EXISTS: Refusal = Refusal {
+        code: REFUSED,
+        reason: "persona_exists",
+        data: None,
+    };
 }

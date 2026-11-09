@@ -61,6 +61,7 @@
 | 名字 | 类型 | 说明 |
 |---|---|---|
 | `persona` | 字符串 | 编号；不写是新建，核心起一个 `persona-<n>` |
+| `new` | 布尔 | 同 `preset.set` 的：编号已经有了拒 `persona_exists` |
 | `changes` | 数组 | 改 `persona.toml`，写法同 `config.set` 的 `changes`；键是 `persona.name`、`persona.summary`、`persona.subagent`、`appearance.seed` |
 | `prompts` | 对象 | 提示词名（`persona`、`examples`、`reminders`）→ `{"text": <整份>}` 或 `{"unset": true}`；示范对话另可写 `{"pairs": [{"user", "assistant"}…]}`；都可带 `"expect": <版本>` 或 `null`（还没有） |
 | `avatar`、`background` | 对象 | `{"blob": <哈希>}` 换成传上来的那一张，`{"unset": true}` 删掉你那一层的；可带 `expect` |
@@ -119,6 +120,7 @@
 | 名字 | 类型 | 说明 |
 |---|---|---|
 | `preset` | 字符串 | 编号；不写是新建，核心起一个 `preset-<n>` |
+| `new` | 布尔 | 新建、编号自己写（要和 `preset` 一起写）：这个编号已经有了（出厂的、包带的、你那一层的）拒 `preset_exists`，不去改那一份 |
 | `changes` | 数组，必写、不能是空的 | 每项 `{"key", "value" | "unset": true, "expect"?}`；键是 `preset.name`、`preset.summary`、`preset.unlisted`、`features.<功能>`、`tools.<工具>`、`limits.unattended_steps`（正整数） |
 
 **回应**：同 `preset.get`。说明写空的字就是没有说明（盖住出厂的那句），`unset` 才回到出厂的。

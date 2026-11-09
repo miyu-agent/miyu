@@ -61,6 +61,7 @@ Editors edit the text and send `version` back as `expect` in `persona.set`.
 | Name | Type | Notes |
 |---|---|---|
 | `persona` | string | Id; omitted creates a new one, and the core picks `persona-<n>` |
+| `new` | boolean | Create with the ID you wrote (needs `persona`): an ID that already exists (built-in, from a package or yours) is refused with `persona_exists` instead of editing that one |
 | `changes` | array | Changes to `persona.toml`, written like `config.set`'s `changes`; keys are `persona.name`, `persona.summary`, `persona.subagent`, `appearance.seed` |
 | `prompts` | object | Prompt name (`persona`, `examples`, `reminders`) → `{"text": <whole>}` or `{"unset": true}`; examples may also be `{"pairs": [{"user", "assistant"}…]}`; each may carry `"expect": <version>` or `null` (doesn't exist yet) |
 | `avatar`, `background` | object | `{"blob": <hash>}` uses the uploaded image, `{"unset": true}` removes yours; may carry `expect` |
@@ -119,6 +120,7 @@ Editors edit the text and send `version` back as `expect` in `persona.set`.
 | Name | Type | Notes |
 |---|---|---|
 | `preset` | string | Id; omitted creates a new one, and the core picks `preset-<n>` |
+| `new` | boolean | Create with the ID you wrote (needs `preset`): an ID that already exists (built-in, from a package or yours) is refused with `preset_exists` instead of editing that one |
 | `changes` | array, required, not empty | Each `{"key", "value" | "unset": true, "expect"?}`; keys are `preset.name`, `preset.summary`, `preset.unlisted`, `features.<feature>`, `tools.<tool>`, `limits.unattended_steps` (a positive whole number) |
 
 **Response**: as `preset.get`. An empty string as the summary means "no summary" (covering the built-in one); `unset` goes back to the built-in one.
