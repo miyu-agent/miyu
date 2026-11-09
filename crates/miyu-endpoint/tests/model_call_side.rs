@@ -122,6 +122,13 @@ async fn a_registered_side_request_takes_its_tier_pool_and_nothing_else_passes()
         (&json!("flagship"), &json!("session")),
         "flagship 池是空的"
     );
+    // 哪个包登记的（施工 SDP-1）：扩展的写包的编号，出厂的没有这一格。
+    assert_eq!(deep["package"], "bot", "{deep}");
+    let title = listed
+        .iter()
+        .find(|one| one["id"] == "core/title")
+        .expect("列出");
+    assert!(title.get("package").is_none(), "{title}");
     let bot = listed
         .iter()
         .find(|one| one["id"] == "bot/judge")
@@ -129,7 +136,7 @@ async fn a_registered_side_request_takes_its_tier_pool_and_nothing_else_passes()
     assert_eq!(
         bot,
         &json!({"id": "bot/judge", "tier": "lite", "name": "Reply judge",
-            "summary": "Decides whether to reply.", "resolved": "lite"})
+            "summary": "Decides whether to reply.", "resolved": "lite", "package": "bot"})
     );
     // 人的连接没有包：写了 `side` 的不认。
     let mut client = Client::connect(core);

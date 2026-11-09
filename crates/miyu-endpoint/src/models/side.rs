@@ -88,6 +88,8 @@ pub(crate) fn listed(
             "name": pick(&one.request.name),
             "summary": pick(&one.request.summary),
             "resolved": resolved(&side),
+            // 哪个包登记的（施工 SDP-1，发版前检查第 29 条）：出厂的两项没有这一格；编号都带斜杠，头照编号分不出来。
+            "package": one.package,
         }));
     }
     all.sort_by(|a, b| a["id"].as_str().cmp(&b["id"].as_str()));
