@@ -171,7 +171,7 @@ metadata:
 | `disable-model-invocation` | `true`: only a person can invoke it; the AI doesn't see it and won't pick it on its own (releases, deleting things, whatever she shouldn't start by herself) |
 | `user-invocable` | `false`: a person can't invoke it and it stays out of the command menu; only the AI uses it (background knowledge and the like) |
 
-The AI normally sees only the name, the description and the path of `SKILL.md`, and reads the body when it's useful. A person can also type `/skill-name what follows` in the input box to invoke a skill: its body and what follows go straight to her. A skill named like a command loses to the command, and `miyu check` says so. It can read other files in the folder (references, bundled scripts) but not change them; bundled scripts aren't tools, so the body says how to run them.
+The AI normally sees only the name, the description and the path of `SKILL.md`, and reads the body when it's useful. A person can also name skills with `$skill-name` in the input box, several in one message: their bodies go straight to her ahead of what was said. It can read other files in the folder (references, bundled scripts) but not change them; bundled scripts aren't tools, so the body says how to run them.
 
 ## Command templates
 

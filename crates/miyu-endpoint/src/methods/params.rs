@@ -89,6 +89,9 @@ pub(super) struct SendParams {
     /// 人用 `!` 打的一条命令（施工 SH-1 上，设计 57）：`text` 是命令行，原样跑。只收人在头里打的。
     #[serde(default)]
     pub(super) shell: bool,
+    /// 人用 `$` 点名的技能（施工 SN-1）：照先后，技能正文套好外壳排在这句话前面，时间线照人敲的原文。只收本机会话里人说的。
+    #[serde(default)]
+    pub(super) skills: Vec<String>,
 }
 
 /// `session.interrupt` 的参数。

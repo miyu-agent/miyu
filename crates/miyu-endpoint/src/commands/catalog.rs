@@ -3,8 +3,8 @@
 //! 只收本机的会话：场所会话的命令由桥代表外部的人说，桥自己知道。列表不推送，头换会话、打开菜单时问。
 //!
 //! 模板命令（施工 X-14 上，[`super::templates`]）、扩展声明的命令（施工 X-14 下，[`super::declared`]）、MCP 服务的提示词（施工
-//! X-39，[`super::prompts`]）、整页的命令（施工 X-15 下，[`super::pages`]，带 `opens`）、能点名用的技能（施工 PT-2 下，
-//! [`super::skills`]，带 `"skill": true`，和命令撞名的不列）一起列，照名字排进去：
+//! X-39，[`super::prompts`]）、整页的命令（施工 X-15 下，[`super::pages`]，带 `opens`）一起列，照名字排进去；能用 `$` 点名的
+//! 技能（[`super::skills`]，施工 SN-1）另列在 `skills`：
 //! 不写会话的照数据根、装了的包找全部，跟着包的核心命令照默认预设筛（施工 CC-1）；写了的只列会话的预设开着的。
 //! 自己放的模板盖住扩展声明的同名的。
 
@@ -41,8 +41,8 @@ pub(crate) struct CatalogParams {
     session: Option<String>,
 }
 
-/// `command.catalog`：交回 `{"commands": [{name, aliases, summary, argument?}]}`，照名字排；技能那一类另带 `"skill": true`
-/// （施工 PT-2 下）。
+/// `command.catalog`：交回 `{"commands": [{name, aliases, summary, argument?}], "skills": [{name, summary}]}`，照名字排；能用
+/// `$` 点名的技能另列在 `skills`（施工 SN-1，原来混在命令里带 `"skill": true`）。
 pub(crate) async fn catalog(
     core: &Arc<Core>,
     peer: &Peer,
@@ -176,20 +176,15 @@ pub(crate) async fn catalog(
             })
             .map(|page| pages::listed(page, peer.language)),
     );
-    // 能点名用的技能（施工 PT-2 下）：和命令撞名的不列（`/名字` 照命令跑）；写了会话的只列预设开着的。
+    // 能点名用的技能（施工 PT-2 下；SN-1 起另列在 `skills`，头照它做 `$` 菜单，和命令不再撞名）：写了会话的只列预设开着的。
+    let mut skills_listed = Vec::new();
     for skill in skills::found(core).await {
-        let name = skill.head.name.as_str();
-        if core.commands.find_present(core, name).is_some()
-            || commands.iter().any(|item| item["name"] == name)
-        {
-            continue;
-        }
         if let Some(handle) = &handle
             && skills::opened(core, peer, handle, &skill).await.is_err()
         {
             continue;
         }
-        commands.push(skills::listed(&skill, peer.language));
+        skills_listed.push(skills::listed(&skill, peer.language));
     }
     // 停用了的不列（施工 O-6 六补）：扩展的照清单写的出厂值算。
     let shipped = |name: &str| {
@@ -203,5 +198,5 @@ pub(crate) async fn catalog(
         access(core, name, shipped(name)) != Access::Off
     });
     commands.sort_by(|a, b| a["name"].as_str().cmp(&b["name"].as_str()));
-    Ok(json!({ "commands": commands }))
+    Ok(json!({ "commands": commands, "skills": skills_listed }))
 }

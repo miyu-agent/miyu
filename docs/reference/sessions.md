@@ -140,6 +140,7 @@
 | `attachments` | 数组 | 附件，每项是 `blob.put` 的回应里的 `blob`、`name`、`media_type`，可另带 `path`（原来在本机哪儿） |
 | `urgent` | 布尔，默认 `false` | 急着插话：她正忙的，下一步就看到 |
 | `shell` | 布尔，默认 `false` | 人在输入框里用 `!` 打的一条命令：`text` 是命令行，核心照会话的工作目录跑（下面第 4 条） |
+| `skills` | 字符串数组 | 人在输入框里用 `$` 点名的技能，照先后（名字从 [`command.catalog`](packages.md#commandcatalog) 的 `skills` 挑）：每个技能的正文套一层 `<skill name=… path=…>` 外壳，排在这句话前面发给她；时间线上照 `text` 原样显示。没有、不许人点名的 `unknown_skill`；会话的预设关着的 `command_not_allowed`（`data.why` 说哪个预设）；写了两遍、和 `shell` 一起写、场所会话、别人说的 `bad_params` |
 | `prefix` | `"keep"` 或 `"compact"` | 前缀要变时人选的：直接发送、压缩上下文并发送（下面「前缀要变」） |
 | `from` | 字符串 | 你是别的 agent 程序：写上你的名字，这句话记成你说的，不是本人 |
 | `cwd` | 字符串 | 先换到这个工作目录再说（终端无缝集成：每一轮的工作目录跟着 shell 走）：查法、太宽的 `wide` 同 [`session.set_workspace`](#sessionset_workspace)；和现在一样的什么都不记，换了的推 `session.workspace_changed`。场所会话不收 |

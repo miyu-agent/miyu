@@ -19,8 +19,8 @@ use miyu_store::scripts::HOME_PACKAGE;
 use miyu_store::slash::{self, Command as Template};
 
 use super::{
-    RunParams, Said, accepted, access, command, declared, pages, passes, skills, speaker,
-    turned_off, why, words,
+    RunParams, Said, accepted, access, command, declared, pages, passes, speaker, turned_off, why,
+    words,
 };
 use miyu_config::package::Access;
 
@@ -64,19 +64,9 @@ pub(super) async fn opened_by(
     handle: &Handle,
     (name, feature, package): (&str, &str, &str),
 ) -> Result<(), Refusal> {
-    let Some(preset) = why::listed(core, handle)
-        .await
-        .and_then(|listed| listed.preset)
-    else {
+    let Some(label) = closed_by(core, peer, handle, (feature, package)).await else {
         return Ok(());
     };
-    let Ok(found) = crate::presets::resolve(core, Some(&preset)).await else {
-        return Ok(());
-    };
-    if found.file.opens_in(feature, package) {
-        return Ok(());
-    }
-    let label = crate::personas::label(found.file.name.as_ref(), peer.language).unwrap_or(preset);
     let said = Said {
         key: "commands/unavailable/command-preset-off",
         fields: vec![("preset", label), ("command", name.to_string())],
@@ -85,9 +75,24 @@ pub(super) async fn opened_by(
     Err(Refusal::COMMAND_NOT_ALLOWED.because(words(core, peer, &said).await))
 }
 
+/// 会话的预设关着功能 `feature`（挂在 `package` 下）的，交回那个预设给人看的名字（照连接的语言挑）；开着的、读不出预设的没有。
+pub(super) async fn closed_by(
+    core: &Core,
+    peer: &Peer,
+    handle: &Handle,
+    (feature, package): (&str, &str),
+) -> Option<String> {
+    let preset = why::listed(core, handle).await?.preset?;
+    let found = crate::presets::resolve(core, Some(&preset)).await.ok()?;
+    if found.file.opens_in(feature, package) {
+        return None;
+    }
+    Some(crate::personas::label(found.file.name.as_ref(), peer.language).unwrap_or(preset))
+}
+
 /// `command.run` 打的不是登记表里的 `name`、后面跟 `rest`：找会话、认说话的人，再认是哪一种（自己放的模板先，再扩展声明的
-/// （施工 X-14 下，交给 [`declared::run`]），再包里的模板；包里的两种装包时查过、撞不上；都不是的再认技能，施工 PT-2 下，交给
-/// [`skills::run`]），判身份、看预设。模板展开发出去，交回
+/// （施工 X-14 下，交给 [`declared::run`]），再包里的模板；包里的两种装包时查过、撞不上），判身份、看预设。技能不认（施工
+/// SN-1：改用 `$` 点名）。模板展开发出去，交回
 /// `{"command", "events", "said": ""}`。都没有的 `unknown_command`；展开完是空的照内核拒 `empty_message`。
 pub(super) async fn run(
     core: &Arc<Core>,
@@ -120,18 +125,9 @@ pub(super) async fn run(
         Some(own) if own.package.is_none() => None,
         _ => declared::named(core, name).filter(|one| !off.contains(&one.package)),
     };
+    // 技能不再当命令认（施工 SN-1，发版前检查第 26 条）：改在输入框里用 `$` 点名，交 `session.send` 的 `skills`。
     if template.is_none() && declared.is_none() {
-        // 技能（施工 PT-2 下）：命令都没有这个名字的，照能点名用的技能认；停用、身份同模板命令（没有出厂值）。
-        let Some(skill) = skills::named(core, name).await else {
-            return Err(Refusal::UNKNOWN_COMMAND);
-        };
-        match access(core, name, None) {
-            Access::Off => return Err(turned_off(core, peer, name).await),
-            granted if !passes(granted, &by) => return Err(Refusal::COMMAND_NOT_ALLOWED),
-            _ => {}
-        }
-        let at = (&session, &handle, &by);
-        return skills::run(core, peer, id, params, at, (&skill, rest)).await;
+        return Err(Refusal::UNKNOWN_COMMAND);
     }
     // 谁能用（施工 O-6 六补）：扩展的照清单写的出厂值，模板没有出厂值。
     let shipped = declared

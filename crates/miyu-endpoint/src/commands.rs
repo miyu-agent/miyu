@@ -32,6 +32,7 @@ use crate::venues::{self, AsParams};
 use crate::wire::Request;
 
 pub(crate) use registry::{Call, Commands, Ran, Running, Slash};
+pub(crate) use skills::mentioned;
 
 /// `command.run` 的参数。
 #[derive(Debug, Deserialize)]

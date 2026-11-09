@@ -106,6 +106,7 @@ pub(super) async fn send(
         shell_allowed(&params, caller)?;
     }
     let shell = params.shell.then(|| params.text.clone());
+    let typed = params.text.clone();
     let mut blocks = said(params.text);
     let session = session(&params.session)?;
     // 场所的那几格（施工 O-13 上）：先查写法，只跟着 `as` 来。
@@ -127,12 +128,23 @@ pub(super) async fn send(
     // 没有本机路径的落成会话里的文件，她拿得到路径（施工 3-9 六补）。
     attach::keep(core, &session, &mut blocks).await?;
     let shell_sent = shell.is_some();
-    let command = match shell {
-        Some(text) => Command::Shell {
+    // 人用 `$` 点名的技能（施工 SN-1）：正文排在这句话前面，时间线照人敲的原文；场所会话、`!` 命令、别人说的不收。
+    let skills = (&params.skills[..], typed.as_str());
+    let others = shell_sent || params.as_external.is_some() || by != crate::sessions::person();
+    if !params.skills.is_empty() && others {
+        return Err(Refusal::BAD_PARAMS);
+    }
+    let named = crate::commands::mentioned(core, &peer, &found.handle, skills).await?;
+    let command = match (shell, named) {
+        (Some(text), _) => Command::Shell {
             text,
             urgent: params.urgent,
         },
-        None => Command::Send {
+        (None, Some((mut named, command))) => Command::Typed {
+            blocks: named.drain(..).chain(blocks).collect(),
+            command,
+        },
+        (None, None) => Command::Send {
             blocks,
             urgent: params.urgent,
             venue,

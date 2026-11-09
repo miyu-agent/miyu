@@ -36,15 +36,13 @@ impl ResourceRoot {
     }
 }
 
-/// 人点名用一个技能（`/名字`，施工 PT-2 下）时套在正文外面的字（[`ResourceRoot::invoked_texts`]），都在 `core/skills/` 下。
+/// 人点名用一个技能（施工 PT-2 下；SN-1 起用 `$名字`）时套在正文外面的字（[`ResourceRoot::invoked_texts`]），都在 `core/skills/` 下。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InvokedTexts {
     /// 外壳头（`invoked-open.txt`）：字段 `name`、`path`。
     pub open: String,
     /// 外壳尾（`invoked-close.txt`）。
     pub close: String,
-    /// 人跟在名字后面写的（`invoked-arguments.txt`）：字段 `arguments`；没写的不带这一行。
-    pub arguments: String,
 }
 
 impl ResourceRoot {
@@ -58,7 +56,6 @@ impl ResourceRoot {
         Ok(InvokedTexts {
             open: read("invoked-open.txt")?,
             close: read("invoked-close.txt")?,
-            arguments: read("invoked-arguments.txt")?,
         })
     }
 }

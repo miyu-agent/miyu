@@ -1,29 +1,26 @@
-//! 人点名用技能（施工 PT-2 下，`docs/blueprint/skills.md`「人点名用」）：`/技能名 参数`，登记表、模板、扩展声明的都没有这个
-//! 名字时，照找得到的技能认（找法同造会话，`miyu_store::skills::find`）。读那份 `SKILL.md`，去掉开头，套一层
-//! `<skill name=… path=…>` 外壳，人写了参数的再跟一行 `ARGUMENTS: …`，当这个人说的一句发出去（同模板命令，时间线上是人敲的
-//! 那一行）。外壳的字在资源目录的 `core/skills/invoked-*.txt`，名字、路径、参数照模板转义；正文原样，同她自己读那份文件。
+//! 人用 `$` 点名技能（施工 SN-1，发版前检查第 26 条，项目主人 2026-11-09 定：技能不在 `/` 命令里，在输入框里用 `$` 点名，一句话
+//! 里能点几个；原来的 `/技能名` 是施工 PT-2 下做的，去掉）：`session.send` 的 `skills` 照先后找能点名用的技能（找法同造会话，
+//! `miyu_store::skills::find`），读那份 `SKILL.md`，去掉开头，套一层 `<skill name=… path=…>` 外壳，一个技能一块，排在人说的那句
+//! 前面；时间线上是人敲的那一行（同模板命令）。外壳的字在资源目录的 `core/skills/invoked-*.txt`，名字、路径照模板转义；正文原样，
+//! 同她自己读那份文件。
 //!
-//! 谁能用：`user-invocable: false` 的认不出；会话的预设开着这个技能（功能 `skill-<名字>`）才行，同列进 system 的那一份；
-//! 停用、身份照模板命令（没有出厂值）。只许人点名用的（`disable-model-invocation`）照常能点名。
+//! 谁能用：`user-invocable: false` 的认不出；会话的预设开着这个技能（功能 `skill-<名字>`）才行，同列进 system 的那一份。只许人
+//! 点名用的（`disable-model-invocation`）照常能点名。`command.catalog` 的 `skills` 列出能点名的，头照它做 `$` 菜单。
 //!
 //! 碰磁盘的在阻塞线程里做。
 
 use std::collections::BTreeMap;
-use std::sync::Arc;
 
 use serde_json::{Value, json};
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::TypedCommand;
-use miyu_kernel::id::{CommandId, SessionId};
-use miyu_kernel::origin::By;
-use miyu_kernel::session::Command;
 use miyu_kernel::template::Template;
 use miyu_policy::skill::{body, feature_id};
 use miyu_session::Handle;
 use miyu_store::skills::Skill;
 
-use super::{RunParams, accepted, command, templates};
+use super::{Said, templates};
 use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
@@ -53,7 +50,7 @@ pub(super) fn package(skill: &Skill) -> &str {
     skill.package.as_deref().unwrap_or_default()
 }
 
-/// 会话的预设开没开技能 `skill`（功能 `skill-<名字>`）：同 [`templates::opened_by`]。
+/// 会话的预设开没开技能 `skill`（功能 `skill-<名字>`）：关着的拒 `command_not_allowed`，说「预设「…」未启用技能 $名字。」。
 pub(super) async fn opened(
     core: &Core,
     peer: &Peer,
@@ -61,78 +58,79 @@ pub(super) async fn opened(
     skill: &Skill,
 ) -> Result<(), Refusal> {
     let name = skill.head.name.as_str();
-    templates::opened_by(
-        core,
-        peer,
-        handle,
-        (name, &feature_id(name), package(skill)),
-    )
-    .await
+    let closed = (feature_id(name), package(skill));
+    let Some(label) = templates::closed_by(core, peer, handle, (&closed.0, closed.1)).await else {
+        return Ok(());
+    };
+    let said = Said {
+        key: "commands/unavailable/skill-preset-off",
+        fields: vec![("preset", label), ("skill", name.to_string())],
+        lists: Vec::new(),
+    };
+    Err(Refusal::COMMAND_NOT_ALLOWED.because(super::words(core, peer, &said).await))
 }
 
-/// 点名用技能 `skill`，后面跟 `rest`：会话、说话的人照模板命令认好了（`templates::run`）。预设关着的拒；读不出那份文件的
-/// 照内部出错。发出去，交回 `{"command", "events", "said": ""}`。
-pub(super) async fn run(
-    core: &Arc<Core>,
+/// 人用 `$` 点名的技能 `names`，`typed` 是人敲的原文：一个技能一块套好外壳的正文，和记在日志里的那一行（`name` 是 `$名字` 用空格
+/// 接起来，`text` 是人敲的原文，时间线照它）。没点名的没有。写了两遍的 `bad_params`；没有、不许人点名的 `unknown_skill`；预设
+/// 关着的 `command_not_allowed`，说清哪个预设；读不出那份文件的照内部出错。
+pub(crate) async fn mentioned(
+    core: &Core,
     peer: &Peer,
-    id: &CommandId,
-    params: &RunParams,
-    (session, handle, by): (&SessionId, &Handle, &By),
-    (skill, rest): (&Skill, &str),
-) -> Result<Value, Refusal> {
-    opened(core, peer, handle, skill).await?;
-    let file = skill.file.clone();
-    let text = tokio::task::spawn_blocking(move || std::fs::read_to_string(file))
-        .await
-        .map_err(|_| Refusal::INTERNAL)?
-        .map_err(|_| Refusal::INTERNAL)?;
-    let wrapped = wrapped(core, skill, body(&text), rest.trim())?;
-    let typed = TypedCommand {
-        name: skill.head.name.clone(),
-        text: params.text.trim().to_string(),
-    };
-    let sent = Command::Typed {
-        blocks: vec![Block::Text(Text { text: wrapped })],
-        command: typed,
-    };
-    // 文件改了、前缀要变的，开这一轮之前问人（施工 OV-1 下）。
-    crate::sessions::prefix::ask(core, (*peer, by), (handle, id), params.prefix).await?;
-    let events = accepted(command(core, session, handle, id, by, sent).await?)?;
-    Ok(json!({"command": skill.head.name, "events": events, "said": ""}))
+    handle: &Handle,
+    (names, typed): (&[String], &str),
+) -> Result<Option<(Vec<Block>, TypedCommand)>, Refusal> {
+    if names.is_empty() {
+        return Ok(None);
+    }
+    let mut blocks = Vec::with_capacity(names.len());
+    for (index, name) in names.iter().enumerate() {
+        if names[..index].contains(name) {
+            return Err(Refusal::BAD_PARAMS);
+        }
+        let skill = named(core, name)
+            .await
+            .ok_or_else(|| Refusal::unknown_skill(name))?;
+        opened(core, peer, handle, &skill).await?;
+        let file = skill.file.clone();
+        let text = tokio::task::spawn_blocking(move || std::fs::read_to_string(file))
+            .await
+            .map_err(|_| Refusal::INTERNAL)?
+            .map_err(|_| Refusal::INTERNAL)?;
+        let text = wrapped(core, &skill, body(&text))?;
+        blocks.push(Block::Text(Text { text }));
+    }
+    let name = names
+        .iter()
+        .map(|name| format!("${name}"))
+        .collect::<Vec<_>>()
+        .join(" ");
+    let text = typed.trim().to_string();
+    Ok(Some((blocks, TypedCommand { name, text })))
 }
 
-/// 套好外壳的一段：外壳头（名字、路径）、正文、外壳尾，写了参数的再跟一行。外壳的字读不出、写法不对照内部出错。
-fn wrapped(core: &Core, skill: &Skill, body: &str, arguments: &str) -> Result<String, Refusal> {
+/// 套好外壳的一段：外壳头（名字、路径）、正文、外壳尾。外壳的字读不出、写法不对照内部出错。
+fn wrapped(core: &Core, skill: &Skill, body: &str) -> Result<String, Refusal> {
     let texts = core
         .resources
         .invoked_texts()
         .map_err(|_| Refusal::INTERNAL)?;
-    let say = |source: &str, fields: &[(&str, &str)]| {
-        Template::parse(source)
-            .ok()
-            .and_then(|template| {
-                template
-                    .render(&fields.iter().copied().collect::<BTreeMap<_, _>>())
-                    .ok()
-            })
-            .ok_or(Refusal::INTERNAL)
-    };
     let path = miyu_session::path_text(&skill.file);
-    let mut text = say(&texts.open, &[("name", &skill.head.name), ("path", &path)])?;
+    let fields = BTreeMap::from([("name", skill.head.name.as_str()), ("path", path.as_str())]);
+    let mut text = Template::parse(&texts.open)
+        .ok()
+        .and_then(|template| template.render(&fields).ok())
+        .ok_or(Refusal::INTERNAL)?;
     text.push_str(body);
     if !text.ends_with('\n') {
         text.push('\n');
     }
     text.push_str(&texts.close);
-    if !arguments.is_empty() {
-        text.push_str(&say(&texts.arguments, &[("arguments", arguments)])?);
-    }
     Ok(text.trim_end().to_string())
 }
 
-/// `command.catalog` 里的一项：名字、没有别名、给人看的一句（照连接的语言挑，没写的照给模型的说明），标着是技能。
+/// `command.catalog` 的 `skills` 里的一项（施工 SN-1）：名字、给人看的一句（照连接的语言挑，没写的照给模型的说明）。
 pub(super) fn listed(skill: &Skill, language: &str) -> Value {
     let summary = crate::personas::pick(&skill.head.summary, language)
         .unwrap_or_else(|| skill.head.description.clone());
-    json!({"name": skill.head.name, "aliases": [], "summary": summary, "skill": true})
+    json!({"name": skill.head.name, "summary": summary})
 }

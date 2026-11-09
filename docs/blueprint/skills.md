@@ -36,7 +36,7 @@
 | `crates/miyu-endpoint/src/toggles.rs` | 三页上改的（施工 X-27）：`tool.set_loading` 施工 FL-1 起照旧收、什么都不改，`feature.set` 写 `features.<功能编号>`（只收 `skill-`、`script-`、`mcp-`），`null` 删掉；写法照 `config.set` 改一项；只给人 |
 | `crates/miyu-store/src/scripts.rs` 的 `state_dir`、`states`、`forget_states` | 脚本的状态目录（施工 X-44）：照场所、来处、工具名拼路径；列出全部的、卸包时删一个来处的 |
 | `crates/miyu-endpoint/src/commands/skills.rs` | 人点名用技能（施工 PT-2 下，「技能」第 6 条）：认、看预设、读正文、套外壳发出去；`command.catalog` 里一项；`tests/skill_invoke.rs` 守着 |
-| `crates/miyu-endpoint/src/check/skipped.rs` | `miyu check` 报跳过的脚本、技能（`script_skipped`、`skill_skipped`）、照收了但不合格式的技能（`skill_name_mismatch` 这六种，施工 PT-2 上）、能点名用却和命令同名的技能（`skill_command_clash`，施工 PT-2 下）和撞名没登记上的脚本（`script_clashed`）（施工 X-12 下）；没登记上的照核心上一次再找时记下的分清：造不成工具的 `script_not_made`（带为什么），核心还没读到的 `script_not_loaded`（施工 C-12，`tests/scripts/check.rs` 的 `unregistered_scripts_say_why` 守着），被盖住的报 `script_covered`、`skill_covered`（施工 X-13 中）：照这一刻装了的包和数据根再找一遍，各一条警告；斜杠命令模板同样报（施工 X-14 上补，`slash.md`）；链接指到数据根里不认的地方的报 `script_link_outside`、`skill_link_outside`、`slash_link_outside`，说指到了哪一片（施工 X-37，`tests/scripts.rs` 的 `check_reports_links_out_of_the_data_root` 守着） |
+| `crates/miyu-endpoint/src/check/skipped.rs` | `miyu check` 报跳过的脚本、技能（`script_skipped`、`skill_skipped`）、照收了但不合格式的技能（`skill_name_mismatch` 这六种，施工 PT-2 上）（能点名用却和命令同名的技能 `skill_command_clash` 施工 PT-2 下加、SN-1 去掉）和撞名没登记上的脚本（`script_clashed`）（施工 X-12 下）；没登记上的照核心上一次再找时记下的分清：造不成工具的 `script_not_made`（带为什么），核心还没读到的 `script_not_loaded`（施工 C-12，`tests/scripts/check.rs` 的 `unregistered_scripts_say_why` 守着），被盖住的报 `script_covered`、`skill_covered`（施工 X-13 中）：照这一刻装了的包和数据根再找一遍，各一条警告；斜杠命令模板同样报（施工 X-14 上补，`slash.md`）；链接指到数据根里不认的地方的报 `script_link_outside`、`skill_link_outside`、`slash_link_outside`，说指到了哪一片（施工 X-37，`tests/scripts.rs` 的 `check_reports_links_out_of_the_data_root` 守着） |
 | `crates/miyu-fs/src/boundary.rs`、`crates/miyu-session/src/guard.rs` | 边界表多一片 `Shelf`（数据根里单独放开只读的），权限策略照它放行读、拒绝写（`session/guard.md`） |
 
 做法上定的（施工 X-10 上，主会话照推荐定）：
@@ -54,7 +54,7 @@
 3. **读**：她用 `read` 读那个路径，读技能文件夹里别的文件（参考资料）也一样。技能文件夹在数据根里，文件工具平时碰不到（`11-权限与沙盒.md`），开着的技能文件夹单独放开只读（`session/guard.md` 加一条），不问人。技能里带的脚本照她跑命令的规矩跑（沙盒里能读这个文件夹）。
 4. **用过的技能**：她读了某个技能的 `SKILL.md`，执行器在效果里记上（`10-自带软件.md` 的 `file.read`），压缩以后照它重读回来（09 第四节）。
 5. **会话中途列表变了**（装了、卸了、她自己写了一个）：见「定了的」第 2 条。
-6. **人点名用**（施工 PT-2 下，agentskills.io 接入指南的「用户点名」）：人在输入框敲 `/技能名 参数`，`command.run` 登记表、模板命令、扩展声明的命令都没有这个名字时照技能认（找法同造会话；`user-invocable: false` 的认不出）。读那份 `SKILL.md`，去掉开头，套一层外壳当人说的那一句发出去：`<skill name="…" path="…">`、正文、`</skill>`，人写了参数的再跟一行 `ARGUMENTS: …`（`core/skills/invoked-*.txt`，名字、路径、参数照模板转义，正文原样，同她自己读那份文件）；时间线上是人敲的那一行（`message.user` 的 `command`）。会话的预设关着这个技能的拒 `command_not_allowed`（同模板命令，说是哪个预设）；停用、谁能用照模板命令。和命令同名的照命令跑，`miyu check` 报 `skill_command_clash`。`command.catalog` 列能点名用的技能，带 `"skill": true`，和命令撞名的不列。点名用的这一次压缩以后不重读回来（第 4 条只认她用 `read` 读的；要算进去得在日志里另记一笔，另做）。
+6. **人点名用**（施工 PT-2 下；SN-1 改，2026-11-09 项目主人定：技能不在 `/` 命令里，在输入框里用 `$` 点名，一句话里能点几个；时间线照人敲的字显示）：人在输入框敲 `$技能名`，头照 `command.catalog` 的 `skills` 做菜单，发 `session.send` 时把点名的写进 `skills`（找法同造会话；`user-invocable: false` 的认不出，`unknown_skill`）。核心照先后读那几份 `SKILL.md`，去掉开头，各套一层外壳：`<skill name="…" path="…">`、正文、`</skill>`（`core/skills/invoked-open.txt`、`invoked-close.txt`），一个技能一块，排在人说的那句前面；记成 `message.user` 带 `command`（`name` 是 `$名字` 用空格接起来，`text` 是人敲的原文），视图照 `text` 显示。会话的预设关着的拒 `command_not_allowed`，说「预设「…」未启用技能 $名字。」；写了两遍、和 `!` 命令一起、场所会话、别人说的 `bad_params`。原来的 `/技能名 参数`（跟一行 `ARGUMENTS: …`）、`miyu check` 的 `skill_command_clash` 去掉：`$` 和 `/` 是两个名字空间。
 
 ### 脚本
 
