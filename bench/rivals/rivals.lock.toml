@@ -1,0 +1,66 @@
+# 发版前对比（施工 BM-1）装的各家：版本冻结日 2026-11-05（当天 npm 的 latest）。`bm_install.py` 照这里装、装完逐个核对，
+# 对不上就停。中途哪家出新版也不换。sha512 是 npm 的 integrity（包的压缩包），sha256 是装出来那个实际跑的程序，
+# 2026-11-05 在 .91 上第一次装时实算后填进来。
+#
+# 装法（量法设计 1.1）：`npm install --prefix <out>/prefix/<家> --ignore-scripts --omit=dev`，npm 的缓存、配置都指进 <out>，
+# 家目录是隔离的；直接跑平台包里的原生程序，不走 npm 的 node 包装。node 也钉一个 nodejs.org 的官方包。
+
+frozen = "2026-11-05"
+
+[node]
+version = "v26.13.0"
+url = "https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-x64.tar.xz"
+# nodejs.org 的 SHASUMS256.txt 里这个文件的那一行。
+sha256 = "d28a96af6c38596f6d9d97c0ee531c13d238d757742387d1928de822d959e997"
+
+[pi]
+name = "pi"
+packages = [
+  { name = "@earendil-works/pi-coding-agent", version = "1.5.0", sha512 = "sha512-xNDZ5kqowO6Z03FS2gwAkPEGk1ssxVcYKQ6qZId84mFEvwACvvyc2l0vAMOS+c5zvxLRMLBE9r4y44IGYkMJaQ==" },
+]
+program = "node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js"
+sha256 = "e79626f2dd6f94aa45d30f3fa63cd84319a6eefcd150b353cfaf274366926774"
+runtime = "node"
+
+[opencode]
+name = "opencode"
+packages = [
+  { name = "opencode-ai", version = "1.19.5", sha512 = "sha512-tEqMvQahfhdDj8vceYpXtoIrvjPXm5XRfetWnPN5YISueU7adNx9JcUA3zZ+2GKuDVgDpGdQe1ZLtCZDjqodvA==" },
+  { name = "opencode-linux-x64", version = "1.19.5", sha512 = "sha512-i1qh7VooLGML9xX6ud93y0JA8j/1aPeDYRKjsmYXrJX1TjIWHgBBMkEbEJPZthpWbsJg//XfBgR6Kb7+NPaJiQ==" },
+]
+program = "node_modules/opencode-linux-x64/bin/opencode"
+sha256 = "7df4e4136301f16589b0f30bf91a61380fca5f8ef22dd36570f5ebe1d4ec802c"
+
+[codex]
+name = "codex"
+packages = [
+  { name = "@openai/codex", version = "0.166.0", sha512 = "sha512-2Szlp1l1cz5TX1ccpX4Zok3DZrot9xeZe0km+6/1v8JmqxADwyJxKBJah4dBymkwtS25j/u6dipJusTOI97Z8Q==" },
+  { name = "@openai/codex-linux-x64", version = "0.166.0-linux-x64", sha512 = "sha512-CxDm3+D1cpbGJeHrdzINoG+3wn9BVncP4qpZaaNYkxe8iPtRJOYyCJnnPoVjWRIBvI9vPKbRoifsMSA5xDaUpw==" },
+]
+program = "node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/bin/codex"
+sha256 = "b8a11fedf24b2dfb59a70c9e52b030f9a508dcd49cd2dd0d41956f4c785156b8"
+
+[claude]
+name = "Claude Code"
+packages = [
+  { name = "@anthropic-ai/claude-code", version = "2.1.318", sha512 = "sha512-OTJgLxcvWefv8IdTsq5n90Z2IxEhLwKqHUBhwZYE4odXzKA/Tb6p2Zb5Iy9Vq7JIVcNZzn9cPxW5sb42wLF95Q==" },
+  { name = "@anthropic-ai/claude-code-linux-x64", version = "2.1.318", sha512 = "sha512-GX+7CUng2R5f7SsA2w0LaXlH2f62fRCFD/Z2SUexoeH3B0KfulKQt5DtY9NeD2Yp3VEBz6/k/xWSbGPUi6NV2A==" },
+]
+program = "node_modules/@anthropic-ai/claude-code-linux-x64/claude"
+sha256 = "708c77b204db30086ff6f1ed34577bda03e1be74ced80557cbf7b54249ebf0bd"
+
+# dsh 没有官方终端界面（审定 Q1）：量第三方的 dsh-tui（ccch1mneyyy/dsh-TUI，不是 DeepSeek 官方的）。它的说明书的装法是
+# `npm i -g @deepseek-ai/dsh pnpm @deepseek-harness-tui/dsh-tui`：dsh-tui 只是个启动器，第一次跑用 `dsh plugin --profile dsh-tui add`
+# （转给 pnpm）把同版本的自己装进 $DSH_HOME/profiles/dsh-tui，以后起的是 `dsh --profile dsh-tui`。三个都钉住（direct = 直接装的）。
+[dsh]
+name = "dsh（第三方 dsh-tui）"
+packages = [
+  { name = "@deepseek-harness-tui/dsh-tui", version = "0.18.0", direct = true, sha512 = "sha512-3LMtBYYR3uyW1mx4CsqS13w7k7+YJ7u6/DefpxySbftnyzJOLSKM4I/OYwIK5hvom0P2n2OPsHt7HI42ENbrgg==" },
+  { name = "@deepseek-ai/dsh", version = "0.2.1-rc.5", direct = true, sha512 = "sha512-WkyJZv4zl9sCAxSzRctGm58m0rilGqwR6pniBiLOz5CPDfHfDuAUicg0AAazXI7oj/Cph6/cjNTncA/rpLTXpw==" },
+  { name = "pnpm", version = "12.16.1", direct = true, sha512 = "sha512-CR0d7nknV1Zhsl2rPCrjHK/BxU1rce1qZgDPDByxBDSkR+rhQBXxsj4ua+3u1535SpMuIWTSgyKA3OP7MvZW0Q==" },
+]
+program = "dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui/bin/dsh-tui.js"
+# dsh-tui 照 PATH 找 dsh、pnpm：这两个目录放进 PATH。
+path = ["dsh/node_modules/.bin", "pnpm/node_modules/.bin"]
+sha256 = "69f63d668803c7b048310742da36a287a2d5abbc142b65b7430479caf5592b88"
+runtime = "node"
