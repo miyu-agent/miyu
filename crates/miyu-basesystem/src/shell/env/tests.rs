@@ -166,6 +166,8 @@ fn caller(model: Option<(&str, &str)>, log: Option<&str>) -> Caller {
             effort: effort.to_owned(),
         }),
         log: log.map(std::path::PathBuf::from),
+        permission: None,
+        persona: None,
     }
 }
 

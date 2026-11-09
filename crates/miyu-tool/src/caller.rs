@@ -19,6 +19,10 @@ pub struct Caller {
     pub model: Option<InUse>,
     /// 会话日志的目录（施工 E-M）：只给没关起来的会话（关起来的场所会话看不到运行它的那台电脑）。
     pub log: Option<PathBuf>,
+    /// 派这次调用那一刻实际生效的权限（施工 TC-1）：交给扩展照它定能碰多大范围。还没派的没有。
+    pub permission: Option<miyu_kernel::event::Permission>,
+    /// 会话这时的人格编号（施工 TC-1）：无人格的没有。
+    pub persona: Option<String>,
 }
 
 /// 这一轮发给的模型（施工 E-M）：和尾巴上模型那一块同一份。

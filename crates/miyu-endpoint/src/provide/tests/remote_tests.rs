@@ -271,6 +271,11 @@ async fn sent_with_root(data: &std::path::Path, venue: Option<&str>) -> Value {
         owner: true,
         model: None,
         log: None,
+        permission: Some(miyu_kernel::event::Permission {
+            level: miyu_kernel::event::Level::Full,
+            read_only: true,
+        }),
+        persona: Some("miyu".to_string()),
     });
     let (remote, peer, mut lines) = remote(Duration::from_secs(60));
     let running = tokio::spawn(async move { remote.run(call, Progress::new(|_| {})).await });
@@ -311,4 +316,20 @@ async fn a_venue_session_s_call_carries_no_pictures() {
     assert!(group["params"].get("pictures").is_none(), "{group}");
     let unknown = sent_with_root(&data, None).await;
     assert!(unknown["params"].get("pictures").is_none(), "{unknown}");
+}
+
+/// 调扩展的工具时交派的那一刻实际生效的权限、会话这时的人格（施工 TC-1）；没有的（会话外面的调用）不写。
+#[tokio::test]
+async fn a_call_carries_the_permission_and_persona() {
+    let data = std::env::temp_dir();
+    let sent = sent_with_root(&data, Some("qq:group:1")).await;
+    assert_eq!(
+        sent["params"]["permission"],
+        json!({"level": "full", "read_only": true}),
+        "{sent}"
+    );
+    assert_eq!(sent["params"]["persona"], json!("miyu"), "{sent}");
+    let unknown = sent_with_root(&data, None).await;
+    assert!(unknown["params"].get("permission").is_none(), "{unknown}");
+    assert!(unknown["params"].get("persona").is_none(), "{unknown}");
 }

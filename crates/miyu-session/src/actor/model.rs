@@ -227,6 +227,8 @@ impl Actor {
                 model: identity.model.clone(),
                 effort: identity.effort.clone(),
             }));
+        // 扩展的工具调用带的人格照同一时刻的（施工 TC-1）。
+        self.tools.persona_in_use(self.session.persona());
         if limits != self.handed {
             self.session.handle(Input::Limits(limits.clone()));
             self.handed = limits;

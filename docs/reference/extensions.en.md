@@ -158,6 +158,8 @@ Register every tool this package provides now, replacing the previous registrati
 | `pictures` | The session owner's picture folder (the XDG-style `pictures/` in their home, step Y-11): put images you draw or generate here, where people find them in the terminal and web UI. A real path that may not exist yet; create it (with any missing parents) before writing. Calls outside a session have no such field; keep using the workspace there. Only local sessions get it: venue sessions (groups, private chats) are kept inside their own workspace and don't have it either (step Y-11 fix) |
 | `by` | Who asked her: the `by` of the message that triggered the turn; omitted for turns without a trigger |
 | `owner` | Whether the core recognizes `by` as the owner |
+| `permission` | The permission in effect when this call was dispatched, `{"level", "read_only"}` (step TC-1): `level` is `full`; with `read_only` on it is read-only. Use it to decide how far you may reach; for example, a fully open session may send any file. Outsiders' sessions are confined separately (`owner` is false); apply your own rules for outsiders |
+| `persona` | The session's persona for this turn (step TC-1); omitted when there is none. Use it to pick a voice or tone |
 | `checked` | Only for tools that declare `paths`: the real locations the permission check approved, in the order of the paths in the arguments (one per array item). Write to these: after resolving a path from the arguments yourself, don't touch it unless it is in this list (a link on the way may have been swapped after the check) |
 | `channel` | Only for tools that declare `runs_commands`, when this call opened a channel: `{"sock", "token", "bin"}`, see **Running commands** below |
 

@@ -24,7 +24,7 @@ use miyu_kernel::raw::RawJson;
 use miyu_kernel::session::{Input, Reread, Subagent};
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_store::blob::Blobs;
-use miyu_tool::{Call, CallIds, JobPort, Log, Progress, Seen, Shelf, Stop};
+use miyu_tool::{Call, CallIds, Caller, JobPort, Log, Progress, Seen, Shelf, Stop};
 
 use crate::TARGET;
 use crate::agents::{Agents, Inherit};
@@ -354,7 +354,11 @@ impl Tools {
             // 这一轮冻结的配置（施工 N-2 下）：工具读自己包的配置项，例如搜索来源。
             settings: Some(Arc::clone(&config) as Arc<dyn miyu_tool::SettingsPort>),
             checked: Some(self.take_checked(call_id)),
-            caller: Some(self.callers.of(turn)),
+            // 派的那一刻实际生效的权限一起交（施工 TC-1）。
+            caller: Some(Caller {
+                permission: Some(permission.clone()),
+                ..self.callers.of(turn)
+            }),
             previewed: self.checked.previews.remove(&call_id),
         };
         let call_text = call_id.to_string();

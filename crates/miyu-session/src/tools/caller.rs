@@ -11,12 +11,13 @@ use miyu_tool::{Caller, InUse};
 
 use crate::agents::LOCAL;
 
-/// 一个会话的：它的场所，最近开始的那一轮和那一轮开口的是不是主人，现在的模型，日志的目录。
+/// 一个会话的：它的场所，最近开始的那一轮和那一轮开口的是不是主人，现在的模型，日志的目录，这一轮的人格（施工 TC-1）。
 pub(crate) struct Callers {
     venue: VenueId,
     round: Option<(TurnId, bool)>,
     model: Option<InUse>,
     log: Option<PathBuf>,
+    persona: Option<String>,
 }
 
 impl Callers {
@@ -27,6 +28,7 @@ impl Callers {
             round: None,
             model: None,
             log,
+            persona: None,
         }
     }
 
@@ -45,6 +47,8 @@ impl Callers {
             owner,
             model: self.model.clone(),
             log: self.log.clone(),
+            permission: None,
+            persona: self.persona.clone(),
         }
     }
 }
@@ -68,6 +72,11 @@ impl super::Tools {
     /// 交给内核的限额换了模型（施工 E-M）：以后派的调用照它。
     pub(crate) fn model_in_use(&mut self, model: Option<InUse>) {
         self.callers.model = model;
+    }
+
+    /// 会话这时的人格（施工 TC-1）：交限额时一起换，以后派的调用照它。
+    pub(crate) fn persona_in_use(&mut self, persona: Option<&str>) {
+        self.callers.persona = persona.map(str::to_string);
     }
 }
 

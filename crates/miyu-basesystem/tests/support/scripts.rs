@@ -52,6 +52,8 @@ impl Site {
             owner: false,
             model: None,
             log: None,
+            permission: None,
+            persona: None,
         });
         let call = Call {
             caller,

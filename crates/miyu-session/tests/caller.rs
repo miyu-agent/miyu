@@ -32,6 +32,8 @@ fn owner_in_group() -> By {
 fn seen(caller: &Option<Caller>) -> Option<Caller> {
     caller.clone().map(|caller| Caller {
         log: None,
+        permission: None,
+        persona: None,
         ..caller
     })
 }
@@ -51,6 +53,8 @@ fn caller(venue: &str, owner: bool) -> Option<Caller> {
         owner,
         model: None,
         log: None,
+        permission: None,
+        persona: None,
     })
 }
 
@@ -99,6 +103,12 @@ async fn a_call_knows_where_it_is_and_whether_the_owner_spoke() {
         let calls = note.calls();
         assert_eq!(calls.len(), 1, "{venue}：{:?}", home.log(handle.id()));
         assert_eq!(seen(&calls[0].caller), caller(venue, owner), "{venue}");
+        // 派的那一刻的权限一起交（施工 TC-1）。
+        let given = calls[0]
+            .caller
+            .as_ref()
+            .and_then(|caller| caller.permission.clone());
+        assert_eq!(given.map(|given| given.read_only), Some(false), "{venue}");
         log_given(&calls[0].caller, handle.id());
     }
 }

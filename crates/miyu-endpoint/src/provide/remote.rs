@@ -343,6 +343,15 @@ impl Tool for RemoteTool {
             if let Some(by) = asked {
                 params["by"] = json!(by);
             }
+            // 派的那一刻实际生效的权限、会话这时的人格（施工 TC-1）：扩展照它定能碰多大范围、挑什么声音。
+            if let Some(caller) = &call.caller {
+                if let Some(permission) = &caller.permission {
+                    params["permission"] = json!(permission);
+                }
+                if let Some(persona) = &caller.persona {
+                    params["persona"] = json!(persona);
+                }
+            }
             // 链判过的真实位置（施工 XG-1 上）：只给声明了 `paths` 的，交给别的程序用的写法（去掉 Windows 的 `\\?\`）。
             let judged = effects::judged(&self.paths, &call);
             if !self.paths.is_empty() {

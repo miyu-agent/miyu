@@ -69,3 +69,14 @@ fn a_call_carries_the_model_in_use_and_the_log_dir() {
     callers.model = Some(in_use.clone());
     assert_eq!(callers.of(Some(turn(1))).model, Some(in_use));
 }
+
+/// 交限额时记下的人格交给以后派的调用（施工 TC-1）：换了人格的照新的。
+#[test]
+fn the_persona_in_use_goes_with_the_call() {
+    let mut local = callers("local");
+    assert_eq!(local.of(None).persona, None, "还没交过");
+    local.persona = Some("miyu".to_string());
+    assert_eq!(local.of(None).persona.as_deref(), Some("miyu"));
+    local.persona = None;
+    assert_eq!(local.of(None).persona, None, "换成无人格");
+}

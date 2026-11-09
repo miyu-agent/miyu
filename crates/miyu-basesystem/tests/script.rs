@@ -318,6 +318,8 @@ async fn a_script_gets_who_called_it_and_nothing_left_over() {
             owner,
             model: None,
             log: None,
+            permission: None,
+            persona: None,
         });
         let done = site.script_as("scripts/who.py", json!({}), caller).await;
         assert!(!done.error, "{}", text(&done));

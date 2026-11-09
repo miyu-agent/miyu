@@ -277,7 +277,11 @@ impl Tools {
             }),
             settings: Some(Arc::clone(&config) as Arc<dyn miyu_tool::SettingsPort>),
             checked: Some(checked),
-            caller: Some(self.callers.of(turn)), // 照派它的那一轮（施工 X-43）
+            // 照派它的那一轮（施工 X-43），连同派的那一刻实际生效的权限（施工 TC-1）。
+            caller: Some(miyu_tool::Caller {
+                permission: Some(permission.clone()),
+                ..self.callers.of(turn)
+            }),
             previewed,
         };
         let shown = id.to_string();

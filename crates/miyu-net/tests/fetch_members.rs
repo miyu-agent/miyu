@@ -43,6 +43,8 @@ fn asked(url: &str, owner: bool, internal: Vec<&'static str>) -> Call {
             owner,
             model: None,
             log: None,
+            permission: None,
+            persona: None,
         }),
         settings: Some(Arc::new(Internal(internal))),
         ..call(json!({ "url": url }))
