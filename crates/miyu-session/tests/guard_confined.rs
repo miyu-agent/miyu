@@ -64,14 +64,13 @@ async fn session(home: &Home, script: &Script, kit: &Kit, venue: &str, unconfine
     std::fs::create_dir_all(home.scratch.0.join("elsewhere")).expect("建得了别处");
     let opening = Opening {
         permission: Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only: false,
         },
         attended: false,
         cwd: at(home, "work"),
         dirs: Vec::new(),
         sandbox: None,
-        sandbox_cache: None,
     };
     let lines = Lines {
         venue: VenueId::parse(venue).expect("场所合写法"),
@@ -244,7 +243,7 @@ async fn a_branch_of_a_confined_session_is_confined_too() {
 }
 
 /// 关起来的会话装不了包（施工 SU-4 中：照关不关在闸上拒）：完全放开
-/// 的也一样，回出厂的那一句。不关的会话完全放开照常放行。
+/// 的也一样，回出厂的那一句。不关的会话完全放开照常问人（施工 LV-1 起装包每次问），这里没人能确认，拒的不是那一句。
 #[tokio::test]
 async fn a_confined_session_installs_no_package() {
     for (venue, confined) in [("qq:group:1", true), ("local", false)] {
@@ -261,7 +260,6 @@ async fn a_confined_session_installs_no_package() {
             cwd: at(&home, "work"),
             dirs: Vec::new(),
             sandbox: None,
-            sandbox_cache: None,
         };
         std::fs::create_dir_all(home.scratch.0.join("work")).expect("建得了工作区");
         let lines = Lines {
@@ -276,7 +274,15 @@ async fn a_confined_session_installs_no_package() {
                 assert!(package.calls().is_empty(), "关着的拒");
                 assert_eq!(text(&results(&log)[0]), shipped("no-commands.txt"));
             }
-            false => assert_eq!(package.calls().len(), 1, "不关的完全放开照常装"),
+            false => {
+                assert!(package.calls().is_empty(), "没人能确认，没装");
+                assert_eq!(results(&log)[0].status, ToolStatus::Denied);
+                assert_ne!(
+                    text(&results(&log)[0]),
+                    shipped("no-commands.txt"),
+                    "不关的不在闸上拒"
+                );
+            }
         }
     }
 }

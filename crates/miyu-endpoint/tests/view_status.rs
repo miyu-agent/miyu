@@ -110,20 +110,17 @@ async fn a_permission_change_is_pushed() {
     client.hello().await;
     let session = client.create("c1", "~").await;
     let reply = subscribe_view(&mut client, &session).await;
-    assert_eq!(
-        reply["result"]["status"]["permission"]["level"],
-        "workspace"
-    );
+    assert_eq!(reply["result"]["status"]["permission"]["level"], "full");
     let pushed = through(
         &mut client,
         "p1",
         "session.set_permission_level",
-        json!({"session": session, "level": "full"}),
+        json!({"session": session, "read_only": true}),
         |push| push["method"] == "view.status",
     )
     .await;
     let last = statuses(&pushed).pop().expect("推了状态");
-    assert_eq!(last["permission"]["level"], "full", "{last}");
+    assert_eq!(last["permission"]["read_only"], true, "{last}");
 }
 
 #[tokio::test]

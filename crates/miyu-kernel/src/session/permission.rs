@@ -107,13 +107,12 @@ impl Session {
     }
 }
 
-/// 一份权限有多宽：只读 0、工作区 1、完全放开 2。不认识的级别按最严的算。
+/// 一份权限有多宽：只读 0、完全放开 2（1 原来是工作区，A16 去掉了）。不认识的级别按最严的算。
 fn rank(permission: &Permission) -> u8 {
     if permission.read_only {
         return 0;
     }
     match permission.level {
-        Level::Workspace => 1,
         Level::Full => 2,
         Level::Other(_) => 0,
     }

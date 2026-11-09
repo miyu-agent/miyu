@@ -60,7 +60,7 @@ async fn the_totals_match_the_usage_query_and_survive_a_reload() {
     );
     assert_eq!(
         fresh["permission"],
-        json!({"level": "workspace", "read_only": false})
+        json!({"level": "full", "read_only": false})
     );
     assert_eq!(fresh["jobs"], json!([]));
     client.say("c2", &session, "hi").await;
@@ -103,7 +103,7 @@ async fn the_permission_is_what_the_person_set() {
     let now = subscribed(&mut client, "s1", &session, 0).await;
     assert_eq!(
         now["permission"],
-        json!({"level": "workspace", "read_only": true}),
+        json!({"level": "full", "read_only": true}),
         "{now}"
     );
     // 已经订阅着、再订阅一次不带 after 的：还是那一个，回应照样带。

@@ -158,10 +158,10 @@ async fn a_home_script_becomes_a_tool_that_runs_like_a_command() {
         })
         .expect("有结果");
     assert!(
-        result.contains("needs the user's approval, and no one here can give it"),
-        "访问类别是执行：没有沙盒、没人能确认的拒绝：{result}"
+        result.contains(r#"weather:{\"say\":\"晴\"}"#),
+        "访问类别是执行：完全放开不进沙盒，照常跑（A16，施工 LV-1）：{result}"
     );
-    // 时间线上写开头的显示名（施工 9-8 六补）：内核替它写的拒绝不记，照这一刻工具目录里的。
+    // 时间线上写开头的显示名（施工 9-8 六补）：照这一刻工具目录里的。
     let reply = client
         .call("p1", "view.page", json!({"session": session, "view": true}))
         .await;

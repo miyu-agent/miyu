@@ -63,7 +63,7 @@ async fn a_child_session_does_its_task_and_is_listed_under_its_parent() {
     assert_eq!(
         created.permission,
         Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only: false
         }
     );

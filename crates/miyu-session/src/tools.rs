@@ -113,8 +113,6 @@ pub(crate) struct Tools {
     callers: caller::Callers,
     /// 脚本里调的（施工 M-2，`nested.rs`）。
     nested: nested::Nesting,
-    /// 主人放行出沙盒的（施工 X-36）：回合开始照这一轮的配置换，放行了的不写沙盒的规格。
-    unsandboxed: crate::unsandboxed::Unsandboxed,
     /// 子目录的项目指令（施工 P-14 下，`docs.rs`）。
     docs: docs::Docs,
     /// 人用 `!` 打的、在跑的那一条（施工 SH-1 上，`person.rs`）。
@@ -137,8 +135,6 @@ pub(crate) struct Dispatch {
     pub(crate) dirs: Vec<String>,
     /// 派出去那一刻实际生效的那一级：沙盒照它写规格。
     pub(crate) permission: Permission,
-    /// 本会话放行过的规则（施工 5-15）：放行写的目录沙盒也放进能写的。
-    pub(crate) grants: Vec<RawJson>,
     /// 这次调用的任务端口（施工 7-3）：`shell` 把后台命令交给它。后台运行关着的会话没有（施工 T-1 上）。
     pub(crate) jobs: Option<Arc<dyn JobPort>>,
     /// 这个会话这一刻派出去的子代理（施工 7-7）：`send_message` 照它认 `to`。
@@ -205,7 +201,7 @@ impl Tools {
                     helper,
                     kit.home.clone(),
                     kit.data_root.clone(),
-                    (kit.sandbox_cache, kit.confined),
+                    kit.confined,
                 )
                 .with_shelves(kit.shelves.clone())
                 .with_attachments(kit.attachments.clone())
@@ -245,7 +241,6 @@ impl Tools {
             plugins: kit.plugins,
             callers: caller::Callers::new(kit.venue, kit.session_log),
             nested: nested::Nesting::default(),
-            unsandboxed: crate::unsandboxed::Unsandboxed::default(),
             docs: docs::Docs::default(),
             person: person::Person::default(),
             backs,
@@ -294,7 +289,6 @@ impl Tools {
             cwd,
             dirs,
             permission,
-            grants,
             jobs,
             subagents,
             inherit,
@@ -398,14 +392,10 @@ impl Tools {
             Progress::new(move |text| send(&backs, ToolBack::Progress { call_id, text }))
         };
         let span = tracing::Span::current();
-        // 工具报要在沙盒外跑的不写规格（施工 D-4）：权限策略照同一个报判过了，工作区一定问过人、人允许了才走到这里。主人放行了的也不写（施工 X-36）：权限策略照同一份放行表判过了。
-        let wrap = self.wrap(&name, &tool, &call);
-        let sandbox = self.sandbox.clone().filter(|_| wrap.needs_spec());
-        let unless = wrap.unless();
+        let sandbox = self.sandbox.clone();
         let inner = tokio::spawn(
             async move {
-                let call =
-                    confine(call, sandbox, (permission, dirs, grants), (call_id, unless)).await?;
+                let call = confine(call, sandbox, (permission, dirs), call_id).await?;
                 Some(tool.run(call, progress).await)
             }
             .instrument(span.clone()),

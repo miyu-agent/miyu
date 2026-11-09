@@ -19,7 +19,7 @@ impl Actor {
             cwd,
             dirs,
             permission,
-            grants,
+            grants: _,
             cause,
             asked,
         } = action
@@ -42,7 +42,6 @@ impl Actor {
                 cwd,
                 dirs,
                 permission,
-                grants,
                 jobs,
                 subagents: self.session.subagents(),
                 inherit: Inherit::of(&*self.model),

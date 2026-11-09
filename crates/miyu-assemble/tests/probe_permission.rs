@@ -1,11 +1,10 @@
 //! 请求形状探针：人切了权限级别的会话（施工 2-7 补，`docs/blueprint/kernel/request.md`「事实」第 2 条）。真内核照剧本跑：
-//! 第一轮在工作区；空闲时切到完全放开，第二轮开头用切换那一份告诉她；第三轮工具在跑时开了只读又关掉，不注入；第四轮工具在跑
-//! 时开只读，这一轮下一次请求之前告诉她。每一次请求和存档（`docs/designs/samples/probe/permission/`）逐字节比，查五条性质；
+//! 第一轮只读（A16 起只剩两级，施工 LV-1）；空闲时关掉只读切到完全放开，第二轮开头用切换那一份告诉她；第三轮工具在跑时开了
+//! 只读又关掉，不注入；第四轮工具在跑时开只读，这一轮下一次请求之前告诉她。每一次请求和存档（`docs/designs/samples/probe/permission/`）逐字节比，查五条性质；
 //! 和同一份剧本在以前造的快照（没有切换那一份）上跑的比，每一次请求只差切换那几块：换回平常那一份就一字不差。
 
 use crate::support::{check, files, matches_the_archive, policy, sent, stage, stage_with};
 use miyu_kernel::block::{Block, Text};
-use miyu_kernel::event::Level;
 use miyu_kernel::facts::FactTemplates;
 use miyu_kernel::request::{Message, Request};
 use miyu_kernel::session::Policy;
@@ -16,7 +15,7 @@ const PLAIN: &str = include_str!("../../../resources/core/facts/permission.txt")
 /// 切换那一份的原文。
 const CHANGED: &str = include_str!("../../../resources/core/facts/permission-changed.txt");
 /// 权限那一块写得出的几级。
-const LEVELS: [&str; 3] = ["read_only", "workspace", "full"];
+const LEVELS: [&str; 2] = ["read_only", "full"];
 
 /// 以前造的快照：出厂的模板少了切换那一份，别的和 [`policy`] 一样。
 fn older() -> Policy {
@@ -34,13 +33,14 @@ fn older() -> Policy {
 
 /// 剧本，在替身 `s` 上跑。
 fn script(mut s: Stage) -> Stage {
-    // 1. 第一轮在工作区：环境、权限、会话编号三块事实。
+    // 1. 开局先开只读（A16 起只剩两级，施工 LV-1），第一轮只读：环境、权限、会话编号三块事实。
+    s.set_permission(None, Some(true));
     s.model([Line::says("src 下有 lib.rs 和 main.rs。")]);
     s.say("看看 src 目录");
 
-    // 2. 空闲时切到完全放开，再说一句：第二轮开头告诉她切了。
+    // 2. 空闲时关掉只读、切到完全放开，再说一句：第二轮开头告诉她切了。
     s.advance(2);
-    s.set_permission(Some(Level::Full), None);
+    s.set_permission(None, Some(false));
     s.model([
         Line::calls("好，我写。", &[("write", r#"{"path":"NOTES.md"}"#)]),
         Line::says("写好了。"),
@@ -134,7 +134,7 @@ fn the_permission_session_keeps_the_properties() {
         blocks.as_slice(),
         [
             Block::Text(Text {
-                text: changed("full", "workspace")
+                text: changed("full", "read_only")
             }),
             Block::Text(Text {
                 text: "现在呢".to_string()

@@ -187,7 +187,7 @@ fn redo_puts_them_back_where_they_were() {
         None,
         ALICE,
         "session.policy_changed",
-        r#"{"permission":{"level":"workspace","read_only":true}}"#,
+        r#"{"permission":{"level":"full","read_only":true}}"#,
     ));
     events.push(reverted(11, &[7]));
     events.push(unreverted(12, &[7]));

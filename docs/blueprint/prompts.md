@@ -258,12 +258,12 @@ The summary misses entries {from}-{to}, cut to fit its request. history still fi
 #### `core/permission-rule.txt`
 
 - 什么时候加进来：有工具的会话的每次请求（施工 2-7 补起；以前造的快照没有，照旧不拼）。没有工具的会话用不上，不带
-- token：73
-- 为什么加：每一级能做什么、只有人能切（施工 2-7）。施工 5-4 下改成现在的样子：读整盘放开、网络不管以后，原来那句「出工作区、第一次访问网站要同意」不对了（原来 85）。2026-09-27 项目主人定先不拼；施工 5-4 下实测不拼也认得出沙盒、不绕（`11-权限与沙盒.md` 第四节）。施工 2-7 补主会话 A/B（2026-10-01，开发端点的 `deepseek-v4.1-flash`，终端界面演示在伪终端里按 Tab 切级别，施工单的四步剧本）：只有一行 `<permission level=…/>` 的 1 遍，她说那一行「只是一个声明」，不知道是谁、什么时候改的；有切换那一块、system 不带这一句的 4 遍，都说得出从工作区切到完全放开、是人切的，可 2 遍起了疑、有多余动作（一遍去试写家目录和 `/tmp` 探权限到哪，一遍问要不要把文件删掉）；再加上这一句进 system 的 4 遍，0 遍起疑、0 遍试探，都照常干活，有一遍用 `history` 翻到了切换那一条。切到只读那一步三组都是先试一次改文件，被拒以后说明是只读，没去绕。取加这一句的那一组，原文一字不改
-- 指纹：`c1e69995`
+- token：45
+- 为什么加：每一级能做什么、只有人能切（施工 2-7）。2026-11-10 施工 LV-1 去掉讲工作区的那一句（设计 11 的 A16 只剩只读、完全放开两级；原来 73）。施工 5-4 下改成现在的样子：读整盘放开、网络不管以后，原来那句「出工作区、第一次访问网站要同意」不对了（原来 85）。2026-09-27 项目主人定先不拼；施工 5-4 下实测不拼也认得出沙盒、不绕（`11-权限与沙盒.md` 第四节）。施工 2-7 补主会话 A/B（2026-10-01，开发端点的 `deepseek-v4.1-flash`，终端界面演示在伪终端里按 Tab 切级别，施工单的四步剧本）：只有一行 `<permission level=…/>` 的 1 遍，她说那一行「只是一个声明」，不知道是谁、什么时候改的；有切换那一块、system 不带这一句的 4 遍，都说得出从工作区切到完全放开、是人切的，可 2 遍起了疑、有多余动作（一遍去试写家目录和 `/tmp` 探权限到哪，一遍问要不要把文件删掉）；再加上这一句进 system 的 4 遍，0 遍起疑、0 遍试探，都照常干活，有一遍用 `history` 翻到了切换那一条。切到只读那一步三组都是先试一次改文件，被拒以后说明是只读，没去绕。取加这一句的那一组，原文一字不改
+- 指纹：`83842f94`
 
 ```text
-A <permission> block gives the permission level from that point on. In read_only, neither file tools nor commands can write anything. In workspace, commands can write only inside the workspace and the temp directory, and file tools need the user's approval to write outside the workspace. In full, there are no limits. Only the user can change the level.
+A <permission> block gives the permission level from that point on. In read_only, neither file tools nor commands can write anything. In full, there are no limits. Only the user can change the level.
 ```
 
 ### system，核心的几行的第二行（权限那一句后面，没有的接在人设、场所说明后面）

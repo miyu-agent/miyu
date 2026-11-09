@@ -262,12 +262,11 @@ fn some_input(rng: &mut Rng, watch: &mut Watch, next_id: &mut u64) -> Input {
     }
 }
 
-/// 常用的那一级：多半是认识的，偶尔是不认识的，要被拒绝。
+/// 常用的那一级（A16 起只有完全放开，施工 LV-1）：多半是认识的，偶尔是不认识的，要被拒绝。
 fn some_level(rng: &mut Rng) -> Level {
     match rng.below(5) {
         0 => Level::Other("root".to_string()),
-        1 | 2 => Level::Full,
-        _ => Level::Workspace,
+        _ => Level::Full,
     }
 }
 
@@ -475,16 +474,16 @@ fn drive(seed: u64) -> Watch {
     watch
 }
 
-/// 平时跑的三百例。还查自己走到了没有：每条路至少走到一次，清单上的每一种输入至少喂过一次
+/// 平时跑的八百例（A16 起切常用的那一级多半不变，「人允许了脚本里调的」变少，三百、五百例走不全，施工 LV-1）。还查自己走到了没有：每条路至少走到一次，清单上的每一种输入至少喂过一次
 /// （`random/kinds.rs`），不然查的是空话。
 #[test]
 fn random_inputs_keep_the_rules() {
-    let (paths, fed) = run(0..300);
+    let (paths, fed) = run(0..800);
     for path in EXPECTED_PATHS {
-        assert!(paths.contains(path), "三百例里一次都没走到「{path}」");
+        assert!(paths.contains(path), "八百例里一次都没走到「{path}」");
     }
     for kind in InputKind::ALL {
-        assert!(fed.contains(kind), "三百例里一次都没喂过「{kind:?}」");
+        assert!(fed.contains(kind), "八百例里一次都没喂过「{kind:?}」");
     }
 }
 

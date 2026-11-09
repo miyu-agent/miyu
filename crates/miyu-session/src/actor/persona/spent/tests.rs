@@ -64,7 +64,7 @@ fn log() -> Vec<Event> {
             PERSON,
             "session.created",
             &format!(
-                r#"{{"venue":"local","policy":"{ONE}","permission":{{"level":"workspace","read_only":false}}}}"#
+                r#"{{"venue":"local","policy":"{ONE}","permission":{{"level":"full","read_only":false}}}}"#
             ),
         ),
         event(2, KERNEL, "turn.started", "{}"),

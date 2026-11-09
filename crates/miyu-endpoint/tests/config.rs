@@ -152,7 +152,7 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
     assert!(switch.get("options").is_none());
     let level = &all["result"]["items"][5];
     assert_eq!(level["control"], "select", "{level}");
-    assert_eq!(level["default"], "workspace", "{level}");
+    assert_eq!(level["default"], "full", "{level}");
     assert_eq!(
         all["result"]["items"][8]["control"], "textarea",
         "更多描述是几行的框（施工 P-9 三补）"
@@ -221,7 +221,7 @@ async fn get_says_every_value_and_where_it_came_from() {
         json!({
             "log.level": {"origin": {"file": "etc/config.toml", "layer": "system", "line": 4}, "value": "debug"},
             "permission.start_read_only": {"origin": {"layer": "default"}, "value": false},
-            "permission.level": {"origin": {"layer": "default"}, "value": "workspace"},
+            "permission.level": {"origin": {"layer": "default"}, "value": "full"},
             "ui.language": {"origin": {"file": "etc/config.toml", "layer": "system", "line": 7}, "value": "zh"},
             "ui.startup": {"origin": {"layer": "default"}, "value": "new"},
             "ui.head": {"origin": {"layer": "default"}, "value": "miyu-tui"},
@@ -444,7 +444,7 @@ async fn a_session_opens_at_the_configured_level() {
         Body::SessionCreated(created) => created.permission.level.clone(),
         other => panic!("第一条是 session.created：{other:?}"),
     };
-    assert_eq!(level(&plain), Level::Workspace, "默认是工作区");
+    assert_eq!(level(&plain), Level::Full, "默认是工作区");
     assert_eq!(level(&open), Level::Full, "系统配置写了 full");
 }
 

@@ -11,8 +11,8 @@
       --persona <人格>      使用指定的人格（仅新会话）
       --no-persona          不使用人格（仅新会话）
       --preset <预设>       使用指定的预设（仅新会话）
-      --permission <read-only|workspace|full>
-                            权限级别：只读、工作区或完全放开（仅新会话）
+      --permission <read-only|full>
+                            权限级别：只读或完全放开（仅新会话）
       --format <text|json|jsonl>
                             输出格式（默认 text），jsonl 每行一个事件
       --add-dir <目录>      允许读写另一个目录，可重复

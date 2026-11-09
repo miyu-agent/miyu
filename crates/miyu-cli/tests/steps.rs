@@ -25,10 +25,16 @@ fn read(file_path: &str) -> Play {
     Play::calls(&[("read", &json!({ "file_path": file_path }).to_string())])
 }
 
-/// 调一次 `write`，把 `file_path` 写成一行字：写到工作区外面要确认（施工 5-4 上起，读哪儿都不用）。
+/// 调一次 `write`，把 `file_path` 写成一行字（A16 起完全放开写哪儿都不问，施工 LV-1）。
 fn write(file_path: &str) -> Play {
     let args = json!({ "file_path": file_path, "content": "改了\n" });
     Play::calls(&[("write", &args.to_string())])
+}
+
+/// 调一次 `shell` 跑 `git reset --hard`：高危，完全放开下也要确认（施工 5-17、LV-1），`miyu ask` 没人能确认，不跑。
+fn reset() -> Play {
+    let args = json!({ "command": "git reset --hard", "description": "Reset" });
+    Play::calls(&[("shell", &args.to_string())])
 }
 
 #[tokio::test]
@@ -41,6 +47,7 @@ async fn each_step_is_one_line_before_the_answer() {
         read(&notes.to_string_lossy()),
         read("missing.md"),
         write(&plan_md.to_string_lossy()),
+        reset(),
         Play::Says("读完了。"),
     ]);
     let asked = home
@@ -67,7 +74,7 @@ async fn each_step_is_one_line_before_the_answer() {
     assert_eq!(
         screen,
         format!(
-            "→ 读取 notes.md · 3 行\n→ 读取 missing.md · 出错：没有这个文件\n← 写入 {outside} · 没做：需要确认，无人确认\n\n读完了。\n· 输入 400 · 命中缓存 160（40%）· 输出 40\nmiyu: 警告：1 步需要确认，已跳过\n提示：在终端界面中运行可以确认\n"
+            "→ 读取 notes.md · 3 行\n→ 读取 missing.md · 出错：没有这个文件\n← 写入 {outside} · 覆盖，1 行\n$ git reset --hard · 没做：需要确认，无人确认\n\n读完了。\n· 输入 500 · 命中缓存 200（40%）· 输出 50\nmiyu: 警告：1 步需要确认，已跳过\n提示：在终端界面中运行可以确认\n"
         ),
         "工作区里的写相对的，外面的照原样；最后说有几步因为要确认没做（施工 4-9）"
     );
@@ -186,9 +193,7 @@ async fn json_prints_no_steps() {
 #[tokio::test]
 async fn json_says_a_step_needed_approval_only_by_the_exit_code() {
     let work = Outside::new();
-    let elsewhere = Outside::new();
-    let plan_md = elsewhere.file("plan.md", "别处\n");
-    let home = home([write(&plan_md.to_string_lossy()), Play::Says("写不了。")]);
+    let home = home([reset(), Play::Says("跑不了。")]);
     let Asked { code, out, err, .. } = home
         .ask(&Plan {
             cwd: work.text(),
@@ -199,12 +204,7 @@ async fn json_says_a_step_needed_approval_only_by_the_exit_code() {
     assert_eq!(code, 4, "{err}");
     assert_eq!(err, "");
     let printed: Value = serde_json::from_str(out.trim_end()).expect("一行 JSON");
-    assert_eq!(printed["turns"][0]["text"], "写不了。");
-    assert_eq!(
-        std::fs::read_to_string(&plan_md).expect("在"),
-        "别处\n",
-        "没写"
-    );
+    assert_eq!(printed["turns"][0]["text"], "跑不了。");
 }
 
 /// 假的核心：接一个连接，照协议允许的最晚的先后说话：一轮的推送都推完了，才回应说话的那一条（`04-核心协议.md`

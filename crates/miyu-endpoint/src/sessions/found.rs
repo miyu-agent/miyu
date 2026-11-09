@@ -60,7 +60,6 @@ impl Open {
             tools: core.tools.clone(),
             home: core.home.as_deref(),
             sandbox: core.sandbox.helper(),
-            sandbox_cache: core.sandbox_cache_of(),
             sessions: Some(spawn::port(core)),
             packages: Some(crate::packages::port::port(core, confined)),
             schedules: Some(crate::schedules::port::port(core)),

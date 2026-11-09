@@ -71,7 +71,6 @@ pub mod switches;
 #[cfg(feature = "testkit")]
 pub mod testkit;
 mod tools;
-pub mod unsandboxed;
 mod usage;
 
 pub use agents::job_in;
@@ -108,7 +107,6 @@ pub use route::{
     OneShot, Probe, Probed, RECALL_CAP, RECALL_FILE, REFETCH, Retirement, Routes, Running, STALE,
     Stage, Unanswered, Watched, driver_check, find_local, probe, read_observed, refresh_list,
 };
-pub use sandbox::SandboxCache;
 pub use shown::{Next, Shown};
 pub use spawn::{Child, ForkChild, Lineage, NotWatched, Pending, SessionPort};
 

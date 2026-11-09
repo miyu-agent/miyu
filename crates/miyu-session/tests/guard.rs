@@ -1,5 +1,5 @@
 //! 权限策略（施工 4-3 下）：工具报出要碰的路径，会话照边界和级别判放行、问人还是拒绝。施工 5-4 上起读哪儿都放行
-//! （数据根除外），执行命令照沙盒能不能用。
+//! （数据根除外）。A16 起本人的会话只剩完全放开、只读两级（施工 LV-1）：完全放开读写都不问，只读执行命令照沙盒能不能用。
 //!
 //! 场地不在系统的临时目录里（[`Home::outside_temp`]）：数据根 `data/`、假的家 `home/`、工作区 `work/`、
 //! 边界以外的 `other/`。
@@ -9,7 +9,6 @@ use std::sync::Arc;
 
 use miyu_kernel::event::{Body, Event, Level, Permission, Said, ToolResult, ToolStatus};
 use miyu_kernel::origin::By;
-use miyu_kernel::session::{Command, Queued};
 use miyu_kernel::tool::Access;
 use miyu_session::Handle;
 use miyu_session::testkit::{Play, Script};
@@ -71,7 +70,6 @@ async fn session(
         cwd: at(home, "work"),
         dirs: Vec::new(),
         sandbox: None,
-        sandbox_cache: None,
     };
     home.create_as(script, &kit.catalog(), opening).await
 }
@@ -80,14 +78,13 @@ async fn session(
 async fn sandboxed(home: &Home, script: &Script, kit: &Kit, read_only: bool) -> Handle {
     let opening = Opening {
         permission: Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only,
         },
         attended: false,
         cwd: at(home, "work"),
         dirs: Vec::new(),
         sandbox: Some(PathBuf::from("miyu-sandbox")),
-        sandbox_cache: None,
     };
     home.create_as(script, &kit.catalog(), opening).await
 }
@@ -143,7 +140,7 @@ async fn reads_and_writes_inside_the_workspace_run() {
         one("edit", "new.txt"),
         Play::Says("好。"),
     ]);
-    let handle = session(&home, &script, &kit, Level::Workspace, false, false).await;
+    let handle = session(&home, &script, &kit, Level::Full, false, false).await;
     turn(&handle).await;
     assert_eq!(
         kit.read.calls().len(),
@@ -163,7 +160,7 @@ async fn a_read_outside_runs_at_every_level() {
     for read_only in [false, true] {
         let kit = Kit::new();
         let script = Script::new([one("read", &at(&home, "other/b.txt")), Play::Says("好。")]);
-        let handle = session(&home, &script, &kit, Level::Workspace, read_only, false).await;
+        let handle = session(&home, &script, &kit, Level::Full, read_only, false).await;
         turn(&handle).await;
         assert_eq!(
             kit.read.calls().len(),
@@ -174,84 +171,18 @@ async fn a_read_outside_runs_at_every_level() {
 }
 
 #[tokio::test]
-async fn a_write_outside_asks_and_the_request_says_where() {
-    let home = Home::outside_temp();
-    file(&home, "other/b.txt", "b");
-    let kit = Kit::new();
-    let outside = at(&home, "other/b.txt");
-    let script = Script::new([one("edit", &outside)]);
-    let handle = session(&home, &script, &kit, Level::Workspace, false, true).await;
-    let mut pushes = watch(&handle).await;
-    ask(&handle, "cmd-1", say("hi")).await.expect("会话在跑");
-    // 等到请求落了盘：她在等人确认。
-    let session_id = handle.id().clone();
-    until_logged(&home, &session_id, |log| {
-        kinds(log).contains(&"tool.approval_requested")
-    })
-    .await;
-    assert!(kit.edit.calls().is_empty(), "没跑");
-    let log = home.log(&session_id);
-    let (request, by) = log
-        .iter()
-        .find_map(|event| match &event.body {
-            Body::ApprovalRequested(request) => Some((request.clone(), event.by.clone())),
-            _ => None,
-        })
-        .expect("有一条确认请求");
-    assert!(by_permissions(&by), "{by:?}");
-    assert_eq!(request.access, Access::Write);
-    let dir = std::fs::canonicalize(home.scratch.0.join("other")).expect("在");
-    let rule: serde_json::Value =
-        serde_json::from_str(request.rule.expect("提了规则").get()).expect("是 JSON");
-    assert_eq!(
-        rule,
-        serde_json::json!({"tool": "edit", "write": [dir.to_string_lossy()]})
-    );
-    let detail: serde_json::Value =
-        serde_json::from_str(request.detail.expect("有说明").get()).expect("是 JSON");
-    let real = std::fs::canonicalize(&outside).expect("在");
-    assert_eq!(
-        detail,
-        serde_json::json!({"tool": "edit", "paths": [{"path": real.to_string_lossy(), "write": true, "zone": "outside"}]})
-    );
-    ask(
-        &handle,
-        "cmd-2",
-        Command::Interrupt {
-            queued: Queued::Return,
-        },
-    )
-    .await
-    .expect("会话在跑");
-    until_turn_ends(&mut pushes).await;
-}
-
-#[tokio::test]
-async fn nobody_to_ask_means_no() {
-    let home = Home::outside_temp();
-    file(&home, "other/b.txt", "b");
-    let kit = Kit::new();
-    let script = Script::new([one("edit", &at(&home, "other/b.txt")), Play::Says("好。")]);
-    let handle = session(&home, &script, &kit, Level::Workspace, false, false).await;
-    turn(&handle).await;
-    let (result, _) = first_result(&home.log(handle.id()));
-    assert_eq!(result.status, ToolStatus::Denied);
-    assert!(kit.edit.calls().is_empty());
-}
-
-#[tokio::test]
 async fn the_data_root_is_refused_at_every_level() {
     let home = Home::outside_temp();
     let token = home.root.run().join("token-for-test");
     std::fs::write(&token, "secret").expect("写得进");
     let token = token.to_string_lossy().into_owned();
-    for level in [Level::Workspace, Level::Full] {
+    for read_only in [false, true] {
         let kit = Kit::new();
         let script = Script::new([one("read", &token), Play::Says("好。")]);
-        let handle = session(&home, &script, &kit, level.clone(), false, true).await;
+        let handle = session(&home, &script, &kit, Level::Full, read_only, true).await;
         turn(&handle).await;
         let (result, by) = first_result(&home.log(handle.id()));
-        assert_eq!(result.status, ToolStatus::Denied, "{level:?}");
+        assert_eq!(result.status, ToolStatus::Denied, "只读 {read_only}");
         assert!(by_permissions(&by), "{by:?}");
         assert!(
             text(&result).contains("inside Miyu's own data"),
@@ -263,7 +194,7 @@ async fn the_data_root_is_refused_at_every_level() {
             result.human,
             Some(Said::new("core/permissions/forbidden").with("path", token.as_str()))
         );
-        assert!(kit.read.calls().is_empty(), "{level:?}");
+        assert!(kit.read.calls().is_empty(), "只读 {read_only}");
     }
 }
 
@@ -278,46 +209,36 @@ async fn full_access_writes_outside_without_asking() {
     assert_eq!(kit.edit.calls().len(), 1);
 }
 
+/// 执行命令（A16，施工 LV-1）：完全放开不进沙盒，沙盒能不能用都照跑；只读沙盒能用就在沙盒里跑、不问，用不了的每条都问人，
+/// 这个会话没人能确认，就拒绝。
 #[tokio::test]
 async fn commands_go_by_whether_the_sandbox_can_be_used() {
     let home = Home::outside_temp();
     for read_only in [false, true] {
-        // 沙盒能用：工作区、只读都不问，没人能确认也跑（施工 5-4 上）。
+        // 沙盒能用：两级都不问，没人能确认也跑（施工 5-4 上）。
         let kit = Kit::new();
         let script = Script::new([Play::calls(&[("run", "{}")]), Play::Says("好。")]);
         let handle = sandboxed(&home, &script, &kit, read_only).await;
         turn(&handle).await;
         assert_eq!(kit.run.calls().len(), 1, "只读 {read_only}：沙盒能用");
-        // 用不了：每条命令都问人；这个会话没人能确认，就拒绝。
+        // 用不了：完全放开照跑，只读问人、没人能确认就拒绝。
         let kit = Kit::new();
         let script = Script::new([Play::calls(&[("run", "{}")]), Play::Says("好。")]);
-        let handle = session(&home, &script, &kit, Level::Workspace, read_only, false).await;
+        let handle = session(&home, &script, &kit, Level::Full, read_only, false).await;
         turn(&handle).await;
         let (result, _) = first_result(&home.log(handle.id()));
+        let expected = if read_only {
+            ToolStatus::Denied
+        } else {
+            ToolStatus::Ok
+        };
+        assert_eq!(result.status, expected, "只读 {read_only}：沙盒用不了");
         assert_eq!(
-            result.status,
-            ToolStatus::Denied,
+            kit.run.calls().len(),
+            usize::from(!read_only),
             "只读 {read_only}：沙盒用不了"
         );
-        assert!(kit.run.calls().is_empty());
     }
-}
-
-#[tokio::test]
-async fn a_git_hook_is_read_only_in_the_workspace() {
-    let home = Home::outside_temp();
-    file(&home, "work/.git/hooks/pre-commit", "#!/bin/sh");
-    let kit = Kit::new();
-    let script = Script::new([one("edit", ".git/hooks/pre-commit"), Play::Says("好。")]);
-    let handle = session(&home, &script, &kit, Level::Workspace, false, false).await;
-    turn(&handle).await;
-    let (result, _) = first_result(&home.log(handle.id()));
-    assert_eq!(
-        result.status,
-        ToolStatus::Denied,
-        "要问人，这个会话没人能确认"
-    );
-    assert!(kit.edit.calls().is_empty());
 }
 
 #[tokio::test]
@@ -330,7 +251,7 @@ async fn several_paths_go_by_the_strictest() {
     let kit = Kit::new();
     let args = serde_json::json!({ "paths": [at(&home, "work/a.txt"), token.to_string_lossy(), at(&home, "other/b.txt")] }).to_string();
     let script = Script::new([Play::calls(&[("read", &args)]), Play::Says("好。")]);
-    let handle = session(&home, &script, &kit, Level::Workspace, false, true).await;
+    let handle = session(&home, &script, &kit, Level::Full, false, true).await;
     turn(&handle).await;
     let (result, by) = first_result(&home.log(handle.id()));
     assert_eq!(
@@ -352,7 +273,7 @@ async fn a_link_to_nowhere_is_refused_and_says_why() {
     .expect("造得了链接");
     let kit = Kit::new();
     let script = Script::new([one("read", "dead/x.txt"), Play::Says("好。")]);
-    let handle = session(&home, &script, &kit, Level::Workspace, false, true).await;
+    let handle = session(&home, &script, &kit, Level::Full, false, true).await;
     turn(&handle).await;
     let (result, by) = first_result(&home.log(handle.id()));
     assert_eq!(result.status, ToolStatus::Denied);
@@ -371,63 +292,21 @@ async fn a_link_to_nowhere_is_refused_and_says_why() {
     );
 }
 
-#[tokio::test]
-async fn a_write_to_a_git_hook_asks_and_says_it_is_read_only() {
-    let home = Home::outside_temp();
-    file(&home, "work/.git/hooks/pre-commit", "#!/bin/sh");
-    let kit = Kit::new();
-    let script = Script::new([one("edit", ".git/hooks/pre-commit")]);
-    let handle = session(&home, &script, &kit, Level::Workspace, false, true).await;
-    let mut pushes = watch(&handle).await;
-    ask(&handle, "cmd-1", say("hi")).await.expect("会话在跑");
-    let session_id = handle.id().clone();
-    let log = until_logged(&home, &session_id, |log| {
-        kinds(log).contains(&"tool.approval_requested")
-    })
-    .await;
-    let request = log
-        .iter()
-        .find_map(|event| match &event.body {
-            Body::ApprovalRequested(request) => Some(request.clone()),
-            _ => None,
-        })
-        .expect("有一条确认请求");
-    assert_eq!(request.access, Access::Write);
-    let detail: serde_json::Value =
-        serde_json::from_str(request.detail.expect("有说明").get()).expect("是 JSON");
-    assert_eq!(detail["paths"][0]["zone"], "read_only");
-    assert_eq!(detail["paths"][0]["write"], true);
-    let rule: serde_json::Value =
-        serde_json::from_str(request.rule.expect("提了规则").get()).expect("是 JSON");
-    assert!(
-        rule.get("write").is_some() && rule.get("read").is_none(),
-        "{rule}"
-    );
-    ask(
-        &handle,
-        "cmd-2",
-        Command::Interrupt {
-            queued: Queued::Return,
-        },
-    )
-    .await
-    .expect("会话在跑");
-    until_turn_ends(&mut pushes).await;
-}
-
+/// `~` 开头的照会话的家目录换（场地的假家目录 `home/`）：换得成真实的位置，完全放开照写，工具拿到的判过的位置就是家目录下
+/// 那一个。说不清在哪的才是权限策略拒的。
 #[tokio::test]
 async fn a_tilde_path_follows_the_home() {
     let home = Home::outside_temp();
     file(&home, "home/notes.txt", "notes");
     let kit = Kit::new();
     let script = Script::new([one("edit", "~/notes.txt"), Play::Says("好。")]);
-    let handle = session(&home, &script, &kit, Level::Workspace, false, false).await;
+    let handle = session(&home, &script, &kit, Level::Full, false, false).await;
     turn(&handle).await;
-    let (result, by) = first_result(&home.log(handle.id()));
-    // 换得成真实的位置（家目录下），写到边界以外，要问人；没人能确认，内核拒了。说不清在哪的才是权限策略拒的。
-    assert_eq!(result.status, ToolStatus::Denied);
-    assert!(!by_permissions(&by), "{by:?}：{}", text(&result));
-    assert!(!text(&result).contains("Can't tell"), "{}", text(&result));
+    let (result, _) = first_result(&home.log(handle.id()));
+    assert_eq!(result.status, ToolStatus::Ok, "{}", text(&result));
+    let [call] = kit.edit.calls().try_into().expect("跑了一次");
+    let notes = std::fs::canonicalize(home.home.join("notes.txt")).expect("在");
+    assert_eq!(call.checked.as_deref(), Some(&[notes][..]));
 }
 
 /// `trash` 删的是链接本身，权限策略判的也是链接本身（施工 4-9 再补二）：工作区里的链接，指向不存在处的、指进数据根的、
@@ -459,14 +338,13 @@ async fn trash_is_judged_on_the_link_itself() {
     ]);
     let opening = Opening {
         permission: Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only: false,
         },
         attended: false,
         cwd: work.to_string_lossy().into_owned(),
         dirs: Vec::new(),
         sandbox: None,
-        sandbox_cache: None,
     };
     let handle = home.create_as(&script, &tools, opening).await;
     turn(&handle).await;

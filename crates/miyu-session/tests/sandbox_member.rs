@@ -1,7 +1,7 @@
 //! 关起来的场所会话的沙盒（施工 MB-1；群、陌生人的私聊这些外部身份的会话）：真的经助手跑 `shell`。
 //! 读得到自己的工作区和程序跑起来要的系统文件（证书、域名解析、`/etc/hosts`、`git`）；读不到别的工作区、数据根、
-//! 跑核心的那个用户的家目录、机器上别处的文件、`/etc` 里名单外的、`/opt`；要出沙盒的拒、不问人，拒的话里没有核心那边的绝对
-//! 路径。关不住读的平台（Windows）上不跑，回 `no-commands`。没有收紧手段的机器到此为止。
+//! 跑核心的那个用户的家目录、机器上别处的文件、`/etc` 里名单外的、`/opt`；参数里写了在沙盒外跑的（A16 起守卫不看它，施工
+//! LV-1）照样关着。关不住读的平台（Windows）上不跑，回 `no-commands`。没有收紧手段的机器到此为止。
 
 use std::path::{Path, PathBuf};
 
@@ -39,18 +39,13 @@ async fn shell_as(
     let script = Script::new([Play::calls(&[("shell", args.as_str())]), Play::Says("好。")]);
     let opening = Opening {
         permission: Permission {
-            level: if by.is_some() {
-                Level::Full
-            } else {
-                Level::Workspace
-            },
+            level: Level::Full,
             read_only: false,
         },
         attended: false,
         cwd: cwd.to_string_lossy().into_owned(),
         dirs: Vec::new(),
         sandbox: Some(miyu_sandbox::testkit::built_helper()),
-        sandbox_cache: None,
     };
     let lines = Lines {
         venue: match kind {
@@ -186,40 +181,8 @@ async fn a_confined_command_reads_only_its_own_places_and_what_programs_need() {
     }
 }
 
-#[tokio::test]
-async fn going_outside_the_sandbox_is_refused_without_asking_or_naming_core_paths() {
-    for kind in [Kind::Group] {
-        let home = Home::outside_temp();
-        let (cwd, _) = site(&home, kind);
-        let result = shell(
-            &home,
-            kind,
-            &cwd,
-            serde_json::json!({ "command": "true", "description": "Test", "outside_sandbox": true }),
-        )
-        .await;
-        assert_eq!(
-            result.human.as_ref().map(|said| said.key.as_str()),
-            Some("core/permissions/no-commands"),
-            "{kind:?}"
-        );
-        let said = text(&result);
-        for core_path in [
-            home.root.path(),
-            home.home.as_path(),
-            home.scratch.0.as_path(),
-        ] {
-            assert!(
-                !said.contains(&core_path.display().to_string()),
-                "{kind:?}：拒的话里没有 {}：{said}",
-                core_path.display()
-            );
-        }
-    }
-}
-
 /// 群里对应表认出的主人开口（施工 MB-1，2026-10-24 项目主人问到）：群会话照样关在群的工作区里，完全放开也一样；
-/// 读不到别处，要出沙盒的照样拒、不问。群会话照 `confined` 关着，谁开口都一样。
+/// 读不到别处，参数里写了在沙盒外跑也一样。群会话照 `confined` 关着，谁开口都一样。
 #[tokio::test]
 async fn the_owner_speaking_in_a_group_is_confined_like_everyone() {
     use miyu_kernel::id::ExternalId;
@@ -234,21 +197,19 @@ async fn the_owner_speaking_in_a_group_is_confined_like_everyone() {
     };
     let home = Home::outside_temp();
     let (cwd, hidden) = site(&home, Kind::Group);
-    let outside =
-        serde_json::json!({ "command": "true", "description": "Test", "outside_sandbox": true });
-    let result = shell_as(&home, Kind::Group, &cwd, outside, owner()).await;
-    assert_eq!(
-        result.human.as_ref().map(|said| said.key.as_str()),
-        Some("core/permissions/no-commands"),
-        "要出沙盒的拒"
-    );
-    if !miyu_sandbox::CONFINES_READS {
-        return;
-    }
     let elsewhere = hidden.last().expect("有别处的").display().to_string();
     let command = format!("cat '{elsewhere}' >/dev/null 2>&1 && echo READABLE; cat own.txt");
-    let read = serde_json::json!({ "command": command, "description": "Test" });
+    let read =
+        serde_json::json!({ "command": command, "description": "Test", "outside_sandbox": true });
     let result = shell_as(&home, Kind::Group, &cwd, read, owner()).await;
+    if !miyu_sandbox::CONFINES_READS {
+        assert_eq!(
+            result.human.as_ref().map(|said| said.key.as_str()),
+            Some("core/permissions/no-commands"),
+            "关不住读的平台上不跑"
+        );
+        return;
+    }
     let said = text(&result);
     assert!(
         !said.contains("READABLE") && said.contains("mine"),

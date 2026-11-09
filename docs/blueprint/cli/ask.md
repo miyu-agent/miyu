@@ -464,8 +464,8 @@ C 也查完了。
       --persona <人格>      使用指定的人格（仅新会话）
       --no-persona          不使用人格（仅新会话）
       --preset <预设>       使用指定的预设（仅新会话）
-      --permission <read-only|workspace|full>
-                            权限级别：只读、工作区或完全放开（仅新会话）
+      --permission <read-only|full>
+                            权限级别：只读或完全放开（仅新会话）
       --format <text|json|jsonl>
                             输出格式（默认 text），jsonl 每行一个事件
       --add-dir <目录>      允许读写另一个目录，可重复
@@ -508,7 +508,7 @@ Options:
       --persona <persona>   Use the given persona (new sessions only)
       --no-persona          Don't use a persona (new sessions only)
       --preset <preset>     Use the given preset (new sessions only)
-      --permission <read-only|workspace|full>
+      --permission <read-only|full>
                             Permission level (new sessions only)
       --format <text|json|jsonl>
                             Output format (default: text); jsonl prints one

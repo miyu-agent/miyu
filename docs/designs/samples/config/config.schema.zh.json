@@ -543,11 +543,11 @@
     "permission": {
       "properties": {
         "level": {
-          "default": "workspace",
-          "description": "调整新会话开启时的默认权限模式，修改后开新会话生效。能写：workspace 或 full。只能写在系统配置里。新会话生效。",
+          "default": "full",
+          "description": "新会话都从完全放开开局，写 workspace 的也照完全放开算。要开局只读，打开「新会话开局只读」。能写：full 或 workspace。只能写在系统配置里。新会话生效。",
           "enum": [
-            "workspace",
-            "full"
+            "full",
+            "workspace"
           ],
           "title": "新会话的权限级别",
           "type": "string"
@@ -944,16 +944,6 @@
           ],
           "title": "沙盒强度",
           "type": "string"
-        },
-        "tools": {
-          "additionalProperties": {
-            "description": "放行这件工具在沙盒外跑（碰硬件、要 root 的脚本这类）：值写这件工具的来处，自己放的脚本是 ~home，装的包写包的编号，出厂的 shell 是 shell；对不上的不算。放行了的在你自己的会话里不问、直接在沙盒外跑，群聊、陌生人的私聊照旧拒绝，只读的时候也拒绝。能写：最多 200 个字的文字。只能写在系统配置里。下一轮生效。",
-            "maxLength": 200,
-            "minLength": 1,
-            "title": "不套沙盒：这件工具",
-            "type": "string"
-          },
-          "type": "object"
         }
       },
       "type": "object"

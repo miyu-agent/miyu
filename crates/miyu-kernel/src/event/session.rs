@@ -5,7 +5,6 @@ use std::num::NonZeroU32;
 use serde::{Deserialize, Serialize};
 
 use crate::id::{ContentHash, Seq, SessionId, TurnId, VenueId};
-use crate::text_enum::text_enum;
 
 /// `session.created`：会话创建。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -232,21 +231,48 @@ pub struct SessionRecapped {
 /// 权限：常用的那一级，加上叠在上面的只读开关（`11-权限与沙盒.md` 第二节）。两格都写。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Permission {
-    /// 常用的那一级：工作区，或者完全放开。
+    /// 常用的那一级：完全放开（A16 起只有这一级）。
     pub level: Level,
     /// 只读开关。开着的时候实际的级别就是只读，关掉回到常用的那一级。
     pub read_only: bool,
 }
 
-text_enum!(
-    /// 常用的那一级。不认识的级别当什么，由用到它的地方决定：按最严的算。
-    Level {
-        /// 工作区：工作区里能读能写，边界以外要问人（`11-权限与沙盒.md` 第二节）。命令进沙盒随 M5。
-        Workspace = "workspace",
-        /// 完全放开：边界以内以外都放行，只挡数据根（`11-权限与沙盒.md` 第二节）。
-        Full = "full",
+/// 常用的那一级（`11-权限与沙盒.md` A16，施工 LV-1）：只有完全放开，只读是叠在上面的开关。不认识的级别当什么，由用到它的
+/// 地方决定：按最严的算。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Level {
+    /// 完全放开：不进沙盒，只挡数据根和高危命令（`11-权限与沙盒.md` 第二节、A16）。
+    Full,
+    /// 不认识的取值，原样留着。
+    Other(String),
+}
+
+impl Level {
+    /// 在 JSON 里的写法。
+    pub fn as_str(&self) -> &str {
+        match self {
+            Level::Full => "full",
+            Level::Other(text) => text,
+        }
     }
-);
+}
+
+impl serde::Serialize for Level {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Level {
+    /// A16 以前的「工作区」（`workspace`）读成完全放开：旧会话、旧配置照完全放开接着用，不当成不认识的按只读算。
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let text = <String as serde::Deserialize>::deserialize(d)?;
+        Ok(match text.as_str() {
+            "full" | "workspace" => Level::Full,
+            _ => Level::Other(text),
+        })
+    }
+}
 
 #[cfg(test)]
 mod tests;

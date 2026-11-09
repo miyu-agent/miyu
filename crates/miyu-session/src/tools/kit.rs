@@ -11,7 +11,6 @@ use miyu_tool::{Log, Seen, Shelf};
 use crate::agents::Agents;
 use crate::job_ids::JobIds;
 use crate::lettering::Lettering;
-use crate::sandbox::SandboxCache;
 use crate::usage::Ledger;
 
 /// 执行工具要的：工具目录、替工具写的两句、系统的家目录（施工 4-4 上，交给每次调用）。
@@ -40,8 +39,6 @@ pub(crate) struct ToolKit {
     pub(crate) seen: Seen,
     /// 沙盒的助手：这台机器上的沙盒能用才有（核心起来时探的，施工 5-4 上）。
     pub(crate) sandbox: Option<PathBuf>,
-    /// 沙盒的缓存：工具链的缓存用沙盒自己的一份（施工 5-4 下）。核心算不出缓存目录的没有。
-    pub(crate) sandbox_cache: Option<SandboxCache>,
     /// 这个会话日志的只读入口：交给每次调用，`history` 用（施工 6-4）。
     pub(crate) log: Log,
     /// 会话的时区：开会话时的环境里的（施工 6-4）。

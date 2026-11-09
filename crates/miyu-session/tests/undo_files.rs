@@ -20,14 +20,13 @@ fn base_system() -> Catalog {
 fn opening(home: &Home) -> Opening {
     Opening {
         permission: Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only: false,
         },
         attended: false,
         cwd: home.scratch.0.join("work").to_string_lossy().into_owned(),
         dirs: Vec::new(),
         sandbox: None,
-        sandbox_cache: None,
     }
 }
 

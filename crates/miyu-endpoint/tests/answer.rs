@@ -2,8 +2,8 @@
 //! 同一个目录下一次写不再问；拒绝带的理由她看得到，这一轮接着走；参数不对的几种 `bad_params`；没在等的 `not_asking`，
 //! 允许却带了理由的 `unexpected_reason`。
 //!
-//! 假工具 `edit` 只报要写的路径、不真写：报一条根目录下不存在的路径，它不在工作区、临时目录这些能写的地方，一定要问人
-//! （测试的工作区都在系统的临时目录里，临时目录能写，写在那里不问）。
+//! 会话开局只读，工作区里的 `secret/` 加成私密目录（配置的 `sandbox.private.add`）：假工具 `peek` 只报要读的路径、不真读，
+//! 读 `secret/` 里的一定要问人。A16 起（施工 LV-1）写越界不再问人，只读时读私密目录是还会问、还能「此目录不再询问」的那一种。
 
 use std::sync::Arc;
 
@@ -17,27 +17,50 @@ use miyu_tool::{Catalog, Tool};
 
 use crate::support::*;
 
-/// 根目录下一个不存在的目录里的文件，写成她会给的样子。
-fn nowhere(name: &str) -> String {
-    let root = if cfg!(windows) { "C:\\" } else { "/" };
-    let dir = format!("miyu-nowhere-{}", std::process::id());
-    std::path::Path::new(root)
-        .join(dir)
-        .join(name)
-        .to_string_lossy()
-        .into_owned()
+/// 加成私密目录的那一个：工作区里的 `secret/`。
+fn secret_dir(home: &Home) -> std::path::PathBuf {
+    home.work.join("secret")
 }
 
-/// 她调一次 `edit`，写 `path`。
+/// 私密目录里的文件，写成她会给的样子。
+fn nowhere(home: &Home, name: &str) -> String {
+    secret_dir(home).join(name).to_string_lossy().into_owned()
+}
+
+/// 她调一次 `peek`，读 `path`。
 fn edit(path: &str) -> Play {
-    Play::calls(&[("edit", &json!({ "path": path }).to_string())])
+    Play::calls(&[("peek", &json!({ "path": path }).to_string())])
 }
 
 /// 起核心、握手、在工作区里造会话、说一句：交回连接、会话编号、假工具。
 async fn started(home: &Home, plays: Vec<Play>) -> (Client, String, Arc<Fake>) {
-    let fake = Fake::new("edit", Access::Write, Act::Echo);
+    let fake = Fake::new("peek", Access::Read, Act::Echo);
+    std::fs::create_dir_all(secret_dir(home)).expect("建得了目录");
+    let dir = serde_json::to_string(&secret_dir(home).to_string_lossy()).expect("写得出");
+    home.write(
+        "etc/config.toml",
+        &format!("[permission]\nstart_read_only = true\n\n[sandbox]\nprivate.add = [{dir}]\n"),
+    );
     let tools = Catalog::new([Arc::clone(&fake) as Arc<dyn Tool>]).expect("合写法");
-    let mut client = Client::connect(home.core_with_tools(&Script::new(plays), tools, TOKEN));
+    let items = [
+        miyu_endpoint::settings::PermissionSettings::ITEMS,
+        miyu_tool::private::ITEMS,
+    ]
+    .concat();
+    let config = miyu_endpoint::config::Config::load(
+        &home.root,
+        None,
+        items,
+        miyu_endpoint::config::Environment::of(&[]),
+    );
+    // 私密目录照系统的家目录拼（没有家目录的不设），给一个假的：工作区里的 `home/`。
+    let system_home = home.work.join("home");
+    std::fs::create_dir_all(&system_home).expect("建得了目录");
+    let core = home
+        .core_full(&Script::new(plays), tools, Some(system_home), TOKEN)
+        .with_config(config)
+        .with_sandbox(miyu_sandbox::Availability::Usable("miyu-sandbox".into()));
+    let mut client = Client::connect(Arc::new(core));
     client.hello().await;
     let cwd = home.work.to_string_lossy().into_owned();
     let created = client
@@ -82,7 +105,7 @@ fn reason_of(reply: &Value) -> &Value {
 #[tokio::test]
 async fn allowing_once_runs_it_and_the_reply_lists_the_events() {
     let home = Home::new();
-    let plays = vec![edit(&nowhere("a.txt")), Play::Says("好。")];
+    let plays = vec![edit(&nowhere(&home, "a.txt")), Play::Says("好。")];
     let (mut client, session, fake) = started(&home, plays).await;
     let call = nth_request(&home, &session, 1).await;
     assert!(fake.calls().is_empty(), "还没回答，没跑");
@@ -107,8 +130,8 @@ async fn allowing_once_runs_it_and_the_reply_lists_the_events() {
 async fn allowing_for_the_session_stops_asking_about_that_directory() {
     let home = Home::new();
     let plays = vec![
-        edit(&nowhere("a.txt")),
-        edit(&nowhere("b.txt")),
+        edit(&nowhere(&home, "a.txt")),
+        edit(&nowhere(&home, "b.txt")),
         Play::Says("好。"),
     ];
     let (mut client, session, fake) = started(&home, plays).await;
@@ -124,7 +147,7 @@ async fn allowing_for_the_session_stops_asking_about_that_directory() {
 #[tokio::test]
 async fn a_denial_carries_the_reason_to_her_and_the_turn_goes_on() {
     let home = Home::new();
-    let plays = vec![edit(&nowhere("a.txt")), Play::Says("那换个地方。")];
+    let plays = vec![edit(&nowhere(&home, "a.txt")), Play::Says("那换个地方。")];
     let (mut client, session, fake) = started(&home, plays).await;
     let call = nth_request(&home, &session, 1).await;
     let params =
@@ -153,7 +176,7 @@ async fn a_denial_carries_the_reason_to_her_and_the_turn_goes_on() {
 #[tokio::test]
 async fn params_that_do_not_fit_are_bad_params() {
     let home = Home::new();
-    let plays = vec![edit(&nowhere("a.txt")), Play::Says("好。")];
+    let plays = vec![edit(&nowhere(&home, "a.txt")), Play::Says("好。")];
     let (mut client, session, _) = started(&home, plays).await;
     let call = nth_request(&home, &session, 1).await;
     let cases = [
@@ -190,7 +213,7 @@ async fn params_that_do_not_fit_are_bad_params() {
 #[tokio::test]
 async fn the_kernel_refusals_come_back_with_their_reasons() {
     let home = Home::new();
-    let plays = vec![edit(&nowhere("a.txt")), Play::Says("好。")];
+    let plays = vec![edit(&nowhere(&home, "a.txt")), Play::Says("好。")];
     let (mut client, session, _) = started(&home, plays).await;
     let call = nth_request(&home, &session, 1).await;
     let params = json!({"session": session, "call": call, "decision": "once", "reason": "为什么"});
@@ -215,7 +238,7 @@ async fn the_kernel_refusals_come_back_with_their_reasons() {
 #[tokio::test]
 async fn a_denial_can_carry_pictures() {
     let home = Home::new();
-    let plays = vec![edit(&nowhere("a.txt")), Play::Says("看到图了。")];
+    let plays = vec![edit(&nowhere(&home, "a.txt")), Play::Says("看到图了。")];
     let (mut client, session, _) = started(&home, plays).await;
     let call = nth_request(&home, &session, 1).await;
 

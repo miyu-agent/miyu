@@ -38,14 +38,13 @@ async fn a_line_from_the_thread_that_stores_effects_carries_the_session() {
     let script = Script::new([Play::calls(&[("write", args.as_str())]), Play::Says("好。")]);
     let opening = Opening {
         permission: Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only: false,
         },
         attended: false,
         cwd: home.scratch.0.join("work").to_string_lossy().into_owned(),
         dirs: Vec::new(),
         sandbox: None,
-        sandbox_cache: None,
     };
     let handle = home.create_as(&script, &base_system(), opening).await;
     // 放 blob 的目录换成一个文件：改后的内容存不进去（哈希照样算出来交回，这一轮照常走完）。

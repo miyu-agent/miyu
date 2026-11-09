@@ -8,8 +8,6 @@ use miyu_kernel::event::{Level, Permission};
 pub(crate) enum Effective {
     /// 完全放开。
     Full,
-    /// 工作区。
-    Workspace,
     /// 只读：开着只读开关，或者常用的那一级不认识（按最严的算）。
     ReadOnly,
 }
@@ -34,22 +32,18 @@ pub(crate) fn effective(permission: &Permission) -> Effective {
     }
     match permission.level {
         Level::Full => Effective::Full,
-        Level::Workspace => Effective::Workspace,
         Level::Other(_) => Effective::ReadOnly,
     }
 }
 
-/// 一条路径照级别判（11 第二节的判法表）：读哪儿都放行，数据根除外（施工 5-4 上，原来边界以外的读要问人）；别的程序的私密
-/// 目录读写都问人，完全放开不问，只读时写照拒（施工 5-13）。
+/// 一条路径照级别判（11 第二节的判法表，A16 起只剩完全放开、只读两列）：数据根谁都碰不到；完全放开别的都放行；只读读哪儿都
+/// 放行（别的程序的私密目录问人，施工 5-13），写一律拒。
 pub(super) fn mark(level: Effective, zone: Zone, write: bool) -> Mark {
     match (zone, level, write) {
         (Zone::Forbidden, _, _) | (Zone::Shelf, _, true) => Mark::Forbidden,
         (_, Effective::Full, _) => Mark::Allow,
-        (Zone::Private, Effective::ReadOnly, true) => Mark::ReadOnly,
-        (Zone::Private, _, _) => Mark::Ask,
-        (_, _, false) => Mark::Allow,
         (_, Effective::ReadOnly, true) => Mark::ReadOnly,
-        (Zone::Writable, Effective::Workspace, true) => Mark::Allow,
-        (Zone::Readable | Zone::Outside, Effective::Workspace, true) => Mark::Ask,
+        (Zone::Private, Effective::ReadOnly, false) => Mark::Ask,
+        (_, Effective::ReadOnly, false) => Mark::Allow,
     }
 }

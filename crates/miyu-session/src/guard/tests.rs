@@ -6,37 +6,28 @@ use super::*;
 
 #[test]
 fn every_cell_of_the_table() {
-    let (full, work, read_only) = (Effective::Full, Effective::Workspace, Effective::ReadOnly);
+    let (full, read_only) = (Effective::Full, Effective::ReadOnly);
     let cases = [
         // 数据根：哪一级都拒绝。
         (Zone::Forbidden, full, false, Mark::Forbidden),
         (Zone::Forbidden, full, true, Mark::Forbidden),
-        (Zone::Forbidden, work, false, Mark::Forbidden),
         (Zone::Forbidden, read_only, false, Mark::Forbidden),
         // 能读能写的那几片。
         (Zone::Writable, full, true, Mark::Allow),
-        (Zone::Writable, work, false, Mark::Allow),
-        (Zone::Writable, work, true, Mark::Allow),
         (Zone::Writable, read_only, false, Mark::Allow),
         (Zone::Writable, read_only, true, Mark::ReadOnly),
         // 只能读的那几片。
         (Zone::Readable, full, true, Mark::Allow),
-        (Zone::Readable, work, false, Mark::Allow),
-        (Zone::Readable, work, true, Mark::Ask),
         (Zone::Readable, read_only, false, Mark::Allow),
         (Zone::Readable, read_only, true, Mark::ReadOnly),
         // 边界以外：读哪一级都放行（施工 5-4 上）。
         (Zone::Outside, full, false, Mark::Allow),
         (Zone::Outside, full, true, Mark::Allow),
-        (Zone::Outside, work, false, Mark::Allow),
-        (Zone::Outside, work, true, Mark::Ask),
         (Zone::Outside, read_only, false, Mark::Allow),
         (Zone::Outside, read_only, true, Mark::ReadOnly),
-        // 别的程序的私密目录：读写都问人，完全放开不问，只读的写照拒（施工 5-13）。
+        // 别的程序的私密目录：完全放开不问；只读的读问人、写照拒（施工 5-13）。
         (Zone::Private, full, false, Mark::Allow),
         (Zone::Private, full, true, Mark::Allow),
-        (Zone::Private, work, false, Mark::Ask),
-        (Zone::Private, work, true, Mark::Ask),
         (Zone::Private, read_only, false, Mark::Ask),
         (Zone::Private, read_only, true, Mark::ReadOnly),
     ];
@@ -54,13 +45,12 @@ fn the_level_in_effect() {
     let permission = |level: Level, read_only: bool| Permission { level, read_only };
     assert_eq!(effective(&permission(Level::Full, false)), Effective::Full);
     assert_eq!(
-        effective(&permission(Level::Workspace, false)),
-        Effective::Workspace
-    );
-    assert_eq!(
         effective(&permission(Level::Full, true)),
         Effective::ReadOnly
     );
+    // A16 以前的工作区读成完全放开（施工 LV-1）。
+    let legacy: Level = serde_json::from_str(r#""workspace""#).expect("读得出");
+    assert_eq!(effective(&permission(legacy, false)), Effective::Full);
     // 不认识的级别按最严的算。
     assert_eq!(
         effective(&permission(Level::Other("root".to_string()), false)),
@@ -70,55 +60,53 @@ fn the_level_in_effect() {
 
 #[test]
 fn a_command_goes_by_whether_the_sandbox_can_be_used() {
-    let (full, work, read_only) = (Effective::Full, Effective::Workspace, Effective::ReadOnly);
-    // 沙盒能用：哪一级都放行，工作区、只读在沙盒里跑（施工 5-4 上）。
-    for level in [full, work, read_only] {
+    let (full, read_only) = (Effective::Full, Effective::ReadOnly);
+    // 沙盒能用：两级都放行，只读在沙盒里跑（施工 5-4 上）。
+    for level in [full, read_only] {
         assert_eq!(
             untargeted(level, "shell", Access::Execute, true, &[]),
             Verdict::Allow,
             "{level:?}"
         );
     }
-    // 用不了：完全放开照样放行，别的两级问人，问的时候不提规则。
+    // 用不了：完全放开照样放行，只读问人，问的时候不提规则。
     assert_eq!(
         untargeted(full, "shell", Access::Execute, false, &[]),
         Verdict::Allow
     );
-    for level in [work, read_only] {
-        let Verdict::Ask {
-            module: asker,
-            access,
-            rule,
-            detail,
-        } = untargeted(level, "shell", Access::Execute, false, &[])
-        else {
-            panic!("沙盒用不了，{level:?} 执行命令要问人");
-        };
-        assert_eq!(asker, module());
-        assert_eq!(access, Access::Execute);
-        assert_eq!(rule, None);
-        assert_eq!(
-            detail.map(|detail| detail.get().to_string()).as_deref(),
-            Some(r#"{"sandbox":false,"tool":"shell"}"#)
-        );
-    }
+    let Verdict::Ask {
+        module: asker,
+        access,
+        rule,
+        detail,
+    } = untargeted(read_only, "shell", Access::Execute, false, &[])
+    else {
+        panic!("沙盒用不了，只读时执行命令要问人");
+    };
+    assert_eq!(asker, module());
+    assert_eq!(access, Access::Execute);
+    assert_eq!(rule, None);
+    assert_eq!(
+        detail.map(|detail| detail.get().to_string()).as_deref(),
+        Some(r#"{"sandbox":false,"tool":"shell"}"#)
+    );
 }
 
 #[test]
 fn a_call_without_paths_goes_by_what_it_does() {
-    // 读写不报路径的放行；联网这些还没有的，除了完全放开都问人，沙盒能用也问。
+    // 读写不报路径的放行；联网这些，只读问人、完全放开放行，沙盒能用也一样。
     for sandboxed in [false, true] {
         assert_eq!(
             untargeted(Effective::ReadOnly, "x", Access::Read, sandboxed, &[]),
             Verdict::Allow
         );
         assert_eq!(
-            untargeted(Effective::Workspace, "x", Access::Write, sandboxed, &[]),
+            untargeted(Effective::ReadOnly, "x", Access::Write, sandboxed, &[]),
             Verdict::Allow
         );
         assert!(matches!(
             untargeted(
-                Effective::Workspace,
+                Effective::ReadOnly,
                 "fetch",
                 Access::Network,
                 sandboxed,
@@ -152,7 +140,7 @@ fn the_detail_takes_what_the_tool_says() {
     );
     // 沙盒用不了时每条命令都问：说明照样带标题和命令（D-1 补）。
     let Verdict::Ask { detail, .. } = untargeted(
-        Effective::Workspace,
+        Effective::ReadOnly,
         "shell",
         Access::Execute,
         false,

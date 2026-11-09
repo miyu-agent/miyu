@@ -323,10 +323,8 @@ pub(super) async fn set_permission_level(
     if params.level.is_none() && params.read_only.is_none() {
         return Err(Refusal::BAD_PARAMS);
     }
-    let level = params.level.map(|level| match level {
-        LevelParam::Workspace => Level::Workspace,
-        LevelParam::Full => Level::Full,
-    });
+    // A16 起只有完全放开（施工 LV-1）：还没跟上的头切到 `workspace` 的，照完全放开。
+    let level = params.level.map(|_: LevelParam| Level::Full);
     let session = session(&params.session)?;
     let found = core.sessions.get(core, &session).await?;
     let command = Command::SetPermission {

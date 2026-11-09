@@ -67,7 +67,7 @@ use crate::time::UtcOffset;
 use crate::tool::{Access, ToolRule, ToolTextSources, ToolTexts};
 use listing::*;
 
-const CREATED: &str = r#"{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#;
+const CREATED: &str = r#"{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"full","read_only":false}}"#;
 
 fn id(n: u64) -> CommandId {
     CommandId::parse(&format!("cmd-{n}")).unwrap()

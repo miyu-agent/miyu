@@ -159,10 +159,10 @@
       },
       "permission.level": {
         "name": "Permission level for new sessions",
-        "description": "The default permission mode new sessions start in. Changes apply to sessions opened afterwards.",
+        "description": "New sessions always start with full access; workspace is read as full. To start read-only, turn on read-only for new sessions.",
         "options": {
-          "workspace": "Workspace (sandbox)",
-          "full": "Full access (no sandbox)"
+          "workspace": "Full access (old name)",
+          "full": "Full access"
         }
       },
       "permission.start_read_only": {
@@ -176,10 +176,6 @@
       "clicall.mcp.<id>": {
         "name": "Callable from scripts: this MCP server's tools",
         "description": "When on, all of this server's tools can be called with miyu call; when off, only directly. A tool with its own setting follows that one."
-      },
-      "sandbox.tools.<name>": {
-        "name": "No sandbox: this tool",
-        "description": "Lets this tool run outside the sandbox (scripts that touch hardware or need root). The value is where the tool comes from: ~home for your own scripts, the package's id for installed packages, shell for the built-in shell; a mismatch doesn't count. A granted tool runs outside the sandbox without asking in your own sessions; group chats and strangers' private chats are still refused, and so is read-only."
       },
       "packages.<id>.off": {
         "name": "Turn this package off for me",
@@ -754,10 +750,6 @@
     "package-problems/script_not_made": "This script was not registered: {detail}",
     "package-problems/script_not_loaded": "The core has not picked up script {detail} yet; check again shortly, or restart the core if it stays",
     "package-problems/mcp_tool_skipped": "Some tools or prompts listed by an MCP server were not registered: {detail} (prompts are written /name). name_taken: the name is taken (it clashed after shortening or cleaning, or another tool already has it); name: the name is not allowed; parameters: the parameters are malformed",
-    "package-problems/sandbox_tool_missing": "sandbox.tools.{name} grants a tool that doesn't exist now; not granted",
-    "package-problems/sandbox_tool_moved": "sandbox.tools.{name} says it comes from {wrote}, but the tool now comes from {now}; not granted. If that's right, change it to {now}",
-    "package-problems/sandbox_tool_linked": "sandbox.tools.{name} grants a tool whose file is outside the places Miyu controls (it really is at {real}); not granted: a link, or a folder that is a link, can point somewhere she can change. To grant it, put the real file back in scripts/ in your home folder, or install it as a package",
-    "package-problems/sandbox_shell": "sandbox.tools.shell grants shell: every command the AI runs goes outside the sandbox without asking",
     "package-problems/skill_skipped": "This skill was skipped: {detail}",
     "package-problems/skill_link_outside": "This skill folder is a link to {detail} inside the data root, outside the folders you keep things in; skipped",
     "package-problems/skill_name_mismatch": "The name does not match the folder; the skill goes by the written name {detail}",

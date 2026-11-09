@@ -110,7 +110,7 @@ fn the_session_is_created_with_the_snapshot_hash() {
     let created = snapshot.session_created(
         VenueId::parse("local").unwrap(),
         Permission {
-            level: miyu_kernel::event::Level::Workspace,
+            level: miyu_kernel::event::Level::Full,
             read_only: false,
         },
     );
@@ -421,7 +421,7 @@ fn job_report_texts_go_in_and_older_snapshots_lack_them() {
     use miyu_kernel::event::Event;
     use miyu_kernel::history::History;
     let lines = [
-        r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"kernel"},"body":{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}}"#,
+        r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"kernel"},"body":{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"full","read_only":false}}}"#,
         r#"{"seq":2,"at":"2026-09-25T07:00:00.000Z","kind":"message.user","by":{"kind":"person"},"body":{"blocks":[]}}"#,
         r#"{"seq":3,"at":"2026-09-25T07:00:00.000Z","kind":"turn.started","turn":3,"by":{"kind":"kernel"},"body":{"trigger":2}}"#,
         r#"{"seq":4,"at":"2026-09-25T07:00:00.000Z","kind":"message.assistant","turn":3,"by":{"kind":"kernel"},"body":{"blocks":[{"type":"tool_call","call_id":"call_4_1","name":"shell","args":"{}"}],"seen":3}}"#,

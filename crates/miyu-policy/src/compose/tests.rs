@@ -238,7 +238,7 @@ fn without_a_persona_the_snapshot_names_none_and_says_no_character() {
     let created = nobody.session_created(
         miyu_kernel::id::VenueId::parse("local").unwrap(),
         miyu_kernel::event::Permission {
-            level: miyu_kernel::event::Level::Workspace,
+            level: miyu_kernel::event::Level::Full,
             read_only: false,
         },
     );

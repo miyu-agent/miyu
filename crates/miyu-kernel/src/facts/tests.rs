@@ -17,7 +17,7 @@ use crate::template::escape;
 const KERNEL: &str = r#"{"kind":"kernel"}"#;
 const ALICE: &str = r#"{"kind":"person"}"#;
 const MEMORY: &str = r#"{"kind":"module","id":"memory"}"#;
-const CREATED: &str = r#"{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#;
+const CREATED: &str = r#"{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"full","read_only":false}}"#;
 
 /// 替身的模板：短，一眼认得出是哪个字段。测的是换法，和出厂的措辞无关。
 fn templates() -> FactTemplates {
@@ -230,7 +230,7 @@ fn a_boundary_checks_the_env_the_permission_and_the_session_in_that_order() {
         &History::default(),
         now(),
         &environment("~/src/miyu"),
-        &permission(Level::Workspace, false),
+        &permission(Level::Full, false),
         (&session(), None),
     );
     let kinds: Vec<&str> = facts.iter().map(|fact| fact.kind.as_str()).collect();
@@ -246,7 +246,7 @@ fn quiet_templates_inject_nothing_at_a_boundary() {
         &History::default(),
         now(),
         &environment("~/src/miyu"),
-        &permission(Level::Workspace, false),
+        &permission(Level::Full, false),
         (&session(), None),
     );
     assert!(facts.is_empty(), "{facts:?}");
@@ -268,7 +268,7 @@ fn older_templates_without_the_session_one_have_no_session_block() {
         &History::default(),
         now(),
         &environment("~/src/miyu"),
-        &permission(Level::Workspace, false),
+        &permission(Level::Full, false),
         (&session(), None),
     );
     let kinds: Vec<&str> = facts.iter().map(|fact| fact.kind.as_str()).collect();
@@ -302,9 +302,7 @@ fn the_directory_is_escaped() {
 #[test]
 fn the_permission_block_names_the_level_in_effect() {
     for (permission, level) in [
-        (permission(Level::Workspace, false), "workspace"),
         (permission(Level::Full, false), "full"),
-        (permission(Level::Workspace, true), "read_only"),
         (permission(Level::Full, true), "read_only"),
         (
             permission(Level::Other("sudo".to_string()), false),

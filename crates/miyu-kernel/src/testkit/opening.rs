@@ -20,13 +20,15 @@ pub const SESSION: &str = "01a0f233-cfec-7023-8ed5-2a037a1d5ec8";
 /// 替身造的子会话自己的编号，和父会话的不一样：子会话的事实 `session` 写它（施工 1-13 再补）。
 pub const CHILD_SESSION: &str = "01a0f234-0a1b-7c2d-8e3f-4a5b6c7d8e9f";
 
-/// 造会话时的样子：alice 的会话，在本机，工作区的权限，只读关着。
-const CREATED: &str = r#"{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#;
+/// 造会话时的样子：alice 的会话，在本机，完全放开，只读关着。
+const CREATED: &str = r#"{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"full","read_only":false}}"#;
 
 /// 造的是哪一种会话。
 enum Opening {
     /// 人开的会话。
     Main,
+    /// 人开的会话，只读开着（施工 LV-1：A16 起只剩两级，切换的场景从只读切到完全放开）。
+    ReadOnly,
     /// `miyu ask` 开的一次性会话（施工 7-2）。
     Oneshot,
     /// 这个会话派出来的子会话（施工 7-5）。
@@ -47,6 +49,19 @@ impl Stage {
         now: Timestamp,
     ) -> Stage {
         Stage::created(policy, environment, now, Opening::Main)
+    }
+
+    /// 同上，只读开着（施工 LV-1）。
+    ///
+    /// # Panics
+    ///
+    /// 同上。
+    pub fn read_only(
+        policy: impl Fn() -> Policy + 'static,
+        environment: Environment,
+        now: Timestamp,
+    ) -> Stage {
+        Stage::created(policy, environment, now, Opening::ReadOnly)
     }
 
     /// 同上，造的是一次性的会话：`miyu ask` 开的那种（施工 7-2）。
@@ -124,6 +139,7 @@ impl Stage {
         let mut base = None;
         match opening {
             Opening::Main => {}
+            Opening::ReadOnly => created.permission.read_only = true,
             Opening::Oneshot => created.oneshot = true,
             Opening::Child(parent) => {
                 created.parent = Some(parent.clone());

@@ -146,11 +146,10 @@ impl Watch {
     }
 }
 
-/// 一份权限有多宽：只读 0、工作区 1、完全放开 2。
+/// 一份权限有多宽：只读 0、完全放开 2（A16 起没有工作区那一级）。
 fn rank(permission: &Permission) -> u8 {
     match (permission.read_only, &permission.level) {
         (true, _) | (false, Level::Other(_)) => 0,
-        (false, Level::Workspace) => 1,
         (false, Level::Full) => 2,
     }
 }

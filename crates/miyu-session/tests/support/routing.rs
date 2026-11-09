@@ -36,7 +36,6 @@ pub fn items() -> Vec<Item> {
         miyu_session::settings::ShowSettings::ITEMS,
         miyu_tool::private::ITEMS,
         miyu_tool::readonly::ITEMS,
-        miyu_session::unsandboxed::ITEMS,
     ]
     .concat()
 }

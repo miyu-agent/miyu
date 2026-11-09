@@ -44,7 +44,6 @@ async fn session(home: &Home, script: &Script, catalog: &Catalog) -> Handle {
         cwd: work.to_string_lossy().into_owned(),
         dirs: Vec::new(),
         sandbox: None,
-        sandbox_cache: None,
     };
     home.create_full(script, catalog, opening, Lines::default())
         .await

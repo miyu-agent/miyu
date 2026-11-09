@@ -101,7 +101,7 @@ fn the_permission_rule_is_one_plain_line() {
         !rule.contains(';'),
         "给模型看的机械文字不用分号串起来：{rule}"
     );
-    for level in ["read_only", "workspace", "full"] {
+    for level in ["read_only", "full"] {
         assert!(rule.contains(level), "规则里要说到 {level}");
     }
 }

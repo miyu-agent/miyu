@@ -2,19 +2,16 @@
 //! 模块编号 `permissions`。工具报出这次调用要碰的路径，换成真实的位置、查边界表，每一条照实际生效的那一级判，
 //! 合起来照最严的：有一条拒绝就拒绝，有一条要问人就问人。
 //!
-//! 施工 5-4 上起：读哪儿都放行，数据根除外（沙盒整盘能读，文件工具跟它一样）；执行命令，这台机器的沙盒能用就放行、
-//! 在沙盒里跑（执行器写规格，`crate::sandbox`），用不了的问人。
+//! 施工 5-4 上起：读哪儿都放行，数据根除外（沙盒整盘能读，文件工具跟它一样）。A16 起（施工 LV-1）只剩完全放开、只读两级：
+//! 完全放开执行命令不进沙盒；只读时这台机器的沙盒能用就放行、在沙盒里跑（执行器写规格，`crate::sandbox`），用不了的问人。
+//! 高危命令、装包卸包在完全放开下也问人。
 //!
 //! 施工 D-1：要问人的那几条，落在本会话放行过的范围里的（人选过「本会话都允许」，内核把那几条规则交来），不问；放行的范围
 //! 照 `11-权限与沙盒.md` 第二节「放行规则管多大」，提规则时就算好。
 //!
-//! 施工 D-4：工具报「这一次要在沙盒外跑」的（`Tool::outside_sandbox`），完全放开照判的，只读拒绝，工作区问人、不提规则；
-//! 执行器照同一个报不写沙盒的规格。问人时的说明并进工具交的几格（`Tool::asking`），执行类的写明 `sandbox: false`。
+//! 问人时的说明并进工具交的几格（`Tool::asking`），执行类的写明 `sandbox: false`。
 //!
 //! 施工 O-31 前：在场所里做的事（访问类别 `venue`）只看会话在不在场所里（[`Place`]）：在的放行、不问，不在的拒绝。
-//!
-//! 施工 X-36：主人在配置里放行了的工具（[`Unsandboxed`]，`11-权限与沙盒.md` A15），只碰得到自己工作区的会话照拒，只读
-//! 拒，别的放行、不问；高危的照问。执行器照同一份放行表不写沙盒的规格。
 
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
@@ -33,22 +30,20 @@ use miyu_tool::{Call, Shelf, Stop, Target, Tool};
 
 use crate::default_workspace::DefaultWorkspace;
 use crate::lettering::Lettering;
-use crate::unsandboxed::{Confines, Unsandboxed};
 
 mod asking;
 mod bounds;
 mod confined;
 mod levels;
-mod unsandboxed;
 mod untargeted;
 
 use bounds::Bounds;
 pub(crate) use levels::{Effective, effective};
 use levels::{Mark, mark};
 
-use asking::{Asked, ask, granted, hazardous, real_dir};
+use asking::{Asked, ask, granted, hazardous};
 pub(crate) use confined::Confined;
-use untargeted::{beyond, described, in_venue, untargeted};
+use untargeted::{described, in_venue, untargeted};
 
 /// 权限策略：一个会话一份。
 pub(crate) struct Guard {
@@ -81,10 +76,6 @@ pub(crate) struct Guard {
     private: RwLock<Vec<PathBuf>>,
     /// 只禁写的名单（施工 5-17 下）：同私密目录，造的时候是出厂的，回合开始照这一轮的配置换。
     readonly: RwLock<Readonly>,
-    /// 主人放行出沙盒的（施工 X-36）：回合开始照这一轮的配置换，和在跑的调用共用，所以上锁。
-    unsandboxed: RwLock<Unsandboxed>,
-    /// 主人管得住的地方（施工 X-37 补）：会话开的时候定下，回合开始随放行表交出去。
-    confines: Confines,
 }
 
 /// 会话在哪（施工 O-31 前，`session/guard.md` 第四条）：在场所里做的事（访问类别 `venue`）只在场所会话里放行。
@@ -140,22 +131,13 @@ impl Guard {
             shelves: RwLock::default(),
             attachments: None,
             workplace: None,
-            unsandboxed: RwLock::default(),
-            confines: Confines::default(),
         }
     }
 
-    /// 会话自己的几处（施工 X-37 补，造会话、载入共用）：附件目录（[`Guard::with_attachments`]），主人管得住的地方（[`Confines`]：
-    /// 资源目录 `resources`，没关起来的会话加数据根 `root` 里自己放东西的几处、装上的包；关起来的只有资源目录，施工
-    /// SU-4 上照 [`Guard::new`] 交的关不关算，不另传），照 XDG 的那几处（施工 Y-11 上，边界表的 `own`）。
+    /// 会话自己的几处（造会话、载入共用）：附件目录（[`Guard::with_attachments`]），照 XDG 的那几处（施工 Y-11 上，边界表的
+    /// `own`）。
     #[must_use]
-    pub(crate) fn for_session(
-        mut self,
-        root: &DataRoot,
-        id: &SessionId,
-        resources: &Path,
-    ) -> Guard {
-        self.confines = Confines::of(root, self.confined.is_none(), resources);
+    pub(crate) fn for_session(mut self, root: &DataRoot, id: &SessionId) -> Guard {
         // 数据根里照 XDG 的几处（施工 Y-11 上，pictures 这些）：边界表照工作区算，只给文件工具。
         self.places.own = root.user_dirs().into_iter().map(|(_, dir)| dir).collect();
         self.with_attachments(miyu_store::attachments::dir(root, id))
@@ -169,11 +151,6 @@ impl Guard {
     /// 会话关没关起来（施工 HK-2：发 `tool.after` 照它判谁碰得到这个会话）。
     pub(crate) fn confined(&self) -> bool {
         self.confined.is_some()
-    }
-
-    /// 主人管得住的地方：回合开始照它和这一轮的放行表拼一份。
-    pub(crate) fn confines(&self) -> &Confines {
-        &self.confines
     }
 
     /// 这个会话的附件目录（施工 3-9 六补）：能读，写一律拒；别的会话的附件目录照数据根，谁都不能碰。
@@ -322,48 +299,31 @@ impl Guard {
             &asking,
             checked,
         );
-        // 主人放行了的（施工 X-36）：照名字和来处认，工具自己报不报都一样。
-        let granted = self.owner_granted(name, &call.cwd, dirs, grants);
-        // 要在沙盒外跑的：只碰得到自己工作区的会话一律拒，没人能放行（施工 5-12 下）；主人放行了的也一样（施工 X-36）；装包、
-        // 卸包也一样（施工 SU-4 中）。
+        // 装包、卸包（施工 SU-4 中）：只碰得到自己工作区的会话一律拒，没人能放行（施工 5-12 下）。
         if let Some(confined) = &self.confined
-            && (tool.outside_sandbox(&call) || granted || access == Access::Install)
+            && access == Access::Install
         {
             return deny(confined.no_commands());
         }
-        // 改装了什么的（施工 F-10 下）照沙盒外跑的同一张表：报的路径照判，再照级别：工作区每次问人、只读拒绝。
-        // 高危的（施工 5-17）：灭顶的拒、别的问人，先于别的放行；只读本来就拒一切写。完全放开只拦灭顶的，别的照常放行（施工
-        // 5-17 再补，2026-10-22 项目主人定）。
+        // 高危的（施工 5-17）：灭顶的拒、别的问人，先于别的放行；只读本来就拒一切写。A16 起完全放开也照问（施工 LV-1，
+        // 2026-11-09 项目主人定：不做沙盒不等于不做保护），改掉 5-17 再补的「完全放开只拦灭顶的」。
         if level != Effective::ReadOnly
             && let Some(hazard) = tool.hazard(&call)
-            && (level == Effective::Workspace || hazard.refused.is_some())
         {
             return hazardous(verdict, (name, access), hazard, &asking);
         }
-        // 主人放行了的：只读拒，别的不问；报的路径判了拒绝的照拒（施工 X-36）。
-        if granted {
-            return match (verdict, level) {
-                (denied @ Verdict::Deny { .. }, _) => denied,
-                (_, Effective::ReadOnly) => deny(self.lettering.guard().read_only()),
-                _ => Verdict::Allow,
-            };
-        }
-        if tool.outside_sandbox(&call) || access == Access::Install {
-            // 命令越过沙盒的另报前缀（施工 SB-3）：放行过同一前缀、这个目录的不再问，问人时规则带上它。
-            let prefix = (access == Access::Execute)
-                .then(|| tool.prefix(&call))
-                .flatten();
-            let real = real_dir(&cwd, self.home.as_deref());
-            let texts = self.lettering.guard();
-            beyond(
-                verdict,
-                level,
-                (name, access, prefix, &real),
-                (grants, &asking),
-                &texts,
-            )
-        } else {
-            verdict
+        // 装包、卸包照报的路径判（施工 F-10 下）：只读拒；完全放开也每次问人，不提规则（施工 LV-1，2026-11-09 定：装扩展等于在
+        // 这台机器上跑别人的程序，同 `curl | sh` 归高危）。没人能确认的地方，内核照问人拒。
+        match (verdict, access, level) {
+            (denied @ Verdict::Deny { .. }, _, _) => denied,
+            (_, Access::Install, Effective::ReadOnly) => deny(self.lettering.guard().read_only()),
+            (_, Access::Install, Effective::Full) => Verdict::Ask {
+                module: module(),
+                access: Access::Install,
+                rule: None,
+                detail: Some(described(name, &Access::Install, &asking)),
+            },
+            (verdict, _, _) => verdict,
         }
     }
 

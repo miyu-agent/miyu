@@ -73,16 +73,15 @@ async fn an_unknown_persona_is_refused_and_nothing_is_said() {
     assert!(home.sessions().is_empty(), "没造会话");
 }
 
-/// `--permission`：开好以后、说话之前切到那一级，日志里换了的那一条在人说的话前面。`read-only` 只开只读开关，另两种关上只读、
-/// 换常用的那一级。
+/// `--permission`：开好以后、说话之前切到那一级，日志里换了的那一条在人说的话前面。`read-only` 只开只读开关，`full` 关上只读
+/// （A16，施工 LV-1：只剩这两级）。
 #[tokio::test]
 async fn permission_is_set_before_the_first_words() {
     for (permission, level, read_only) in [
-        (Permission::ReadOnly, Level::Workspace, true),
-        (Permission::Workspace, Level::Workspace, false),
+        (Permission::ReadOnly, Level::Full, true),
         (Permission::Full, Level::Full, false),
     ] {
-        // `workspace`、`full` 在配置里开局只读的会话上切：明写的放宽，关上只读；`read-only` 在不只读的会话上切。
+        // `full` 在配置里开局只读的会话上切：明写的放宽，关上只读；`read-only` 在不只读的会话上切。
         let config = match permission {
             Permission::ReadOnly => "",
             _ => "[permission]\nstart_read_only = true\n",

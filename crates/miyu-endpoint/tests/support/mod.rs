@@ -194,22 +194,17 @@ impl Home {
         Arc::new(self.core_full(script, tools, None, TOKEN))
     }
 
-    /// 一份核心，工具目录是 `tools`，这台机器上的沙盒照 `sandbox`，沙盒的缓存放在 `cache` 下面、你的 cargo 目录是
-    /// `cargo_home`（施工 5-4 下）。
+    /// 一份核心，工具目录是 `tools`，这台机器上的沙盒照 `sandbox`（施工 5-4 上）。
     pub fn core_sandboxed(
         &self,
         script: &Script,
         tools: Catalog,
         sandbox: miyu_sandbox::Availability,
-        cache: Option<(PathBuf, Option<PathBuf>)>,
     ) -> Arc<Core> {
-        let core = self
-            .core_full(script, tools, None, TOKEN)
-            .with_sandbox(sandbox);
-        Arc::new(match cache {
-            Some((root, cargo_home)) => core.with_sandbox_cache(root, cargo_home),
-            None => core,
-        })
+        Arc::new(
+            self.core_full(script, tools, None, TOKEN)
+                .with_sandbox(sandbox),
+        )
     }
 
     /// 一份核心，系统的家目录是 `home`（施工 4-3 下）。

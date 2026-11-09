@@ -44,7 +44,7 @@ fn a_message_to_an_idle_session_opens_a_turn_in_the_same_batch() {
     );
     let permission = fact_of(&events[3]);
     assert_eq!(permission.kind.as_str(), "permission");
-    assert_eq!(permission.text, r#"<p l="workspace"/>"#);
+    assert_eq!(permission.text, r#"<p l="full"/>"#);
 }
 
 #[test]

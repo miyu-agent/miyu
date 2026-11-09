@@ -67,22 +67,23 @@ async fn switching_over_the_protocol_records_it_and_pushes_it() {
     client.hello().await;
     let session = client.create("c1", "~").await;
     client.subscribe("s1", &session).await;
-    // 切到完全放开、开只读、两样一起换回来：每一次记一条，推给订阅着的头，推送在回应前面。
+    // 开只读、关只读、写旧的 `workspace` 再开只读（A16 起读成完全放开，施工 LV-1）：每一次记一条，推给订阅着的头，推送在
+    // 回应前面。
     let steps = [
         (
             "c2",
-            json!({"level": "full"}),
-            json!({"level": "full", "read_only": false}),
-        ),
-        (
-            "c3",
             json!({"read_only": true}),
             json!({"level": "full", "read_only": true}),
         ),
         (
+            "c3",
+            json!({"read_only": false}),
+            json!({"level": "full", "read_only": false}),
+        ),
+        (
             "c4",
-            json!({"level": "workspace", "read_only": false}),
-            json!({"level": "workspace", "read_only": false}),
+            json!({"level": "workspace", "read_only": true}),
+            json!({"level": "full", "read_only": true}),
         ),
     ];
     for (id, mut params, permission) in steps {
@@ -107,9 +108,9 @@ async fn switching_over_the_protocol_records_it_and_pushes_it() {
     assert_eq!(
         switched,
         [
+            &permission(Level::Full, true),
             &permission(Level::Full, false),
             &permission(Level::Full, true),
-            &permission(Level::Workspace, false),
         ]
     );
     assert_eq!(log.len(), 4, "造会话一条，切了三次");
@@ -278,7 +279,7 @@ async fn tightening_mid_turn_denies_the_waiting_write_on_the_spot() {
     assert_eq!(
         switched_to(changed),
         Some(&Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only: true
         })
     );
@@ -303,7 +304,7 @@ async fn tightening_mid_turn_denies_the_waiting_write_on_the_spot() {
     // 她看到过工作区那一块，切到只读用切换那一份写，带上一级（施工 2-7 补）。
     let injected = log.iter().any(|event| {
         matches!(&event.body, Body::ContextInjected(fact)
-            if fact.text.starts_with(r#"<permission level="read_only" previous="workspace">"#))
+            if fact.text.starts_with(r#"<permission level="read_only" previous="full">"#))
     });
     assert!(injected, "请求之前注入了只读那一块");
     assert_eq!(script.requests().len(), 2);

@@ -4,7 +4,7 @@
 
 use super::prepare::{compactions, done, preparing, two_turns, words};
 use super::*;
-use crate::event::{CompactTrigger, Level, Purpose, TransientBody};
+use crate::event::{CompactTrigger, Purpose, TransientBody};
 use crate::session::Queued;
 
 /// 推过的进度：哪一次请求、写了多少字。
@@ -227,7 +227,7 @@ fn a_permission_switched_while_waiting_is_told_before_the_next_request() {
         two_turns(&mut stage, 330, 400);
         stage.model([Line::says("S1"), Line::says("好")]);
         stage.say(&words(10));
-        stage.set_permission(Some(Level::Full), None);
+        stage.set_permission(None, Some(true));
         stage.release_prepare();
         // 切级别那一条以后、下一次主请求以前，注入过一块新的权限事实。
         let log = listed(&stage);

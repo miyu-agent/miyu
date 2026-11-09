@@ -26,7 +26,7 @@ fn write(name: &str, injected: &str, said: &str) -> PathBuf {
         line(
             1,
             "session.created",
-            r#"{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#,
+            r#"{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"full","read_only":false}}"#,
         ),
         line(
             2,

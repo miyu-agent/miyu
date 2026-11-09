@@ -35,7 +35,6 @@ mod mcp;
 mod run;
 mod schedules;
 mod skipped;
-mod unsandboxed;
 use crate::config::checking::{Known, check_leaving};
 use crate::config::methods::{said_at, words};
 use crate::hello::Peer;
@@ -113,8 +112,6 @@ pub(crate) async fn check(core: &Core, peer: Peer, params: CheckParams) -> Resul
                 let message = crate::packages::sentence(&words, "prompt_override_bad", &why);
                 problems.push(json!({"kind": "override", "file": shown(core, &path), "code": "prompt_override_bad", "level": "warning", "message": message.unwrap_or_default()}));
             }
-            // 你放行出沙盒的（施工 X-36）：没有这件工具的、来处对不上的、放行了 shell 的。
-            problems.extend(unsandboxed::unsandboxed(core, &words));
             problems.extend(drivers::drivers(core, &words));
             // 装好的文件改了、少了（施工 F-8 中下）：本地库记了的才查，各一条警告。
             for (path, drift) in crate::packages::verify::drifted(core).await {

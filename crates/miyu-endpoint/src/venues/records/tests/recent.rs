@@ -355,7 +355,7 @@ fn a_window_quote_whose_hash_collides_is_not_used() {
             "message.user"
         };
         let body = if seq == 1 {
-            r#"{"venue":"qq:group:1","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#.to_string()
+            r#"{"venue":"qq:group:1","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"full","read_only":false}}"#.to_string()
         } else {
             format!(
                 r#"{{"blocks":[{{"type":"text","text":"早"}}],"venue":{{"msg":"{msg}"{reply_to}}}}}"#

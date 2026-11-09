@@ -30,18 +30,22 @@ fn file(home: &Home, path: &str) {
     std::fs::write(path, "x").expect("写得进");
 }
 
-/// 在工作区 `work/` 里造一个会话：工作区一级，有人能确认，工具是 `tools`。
-async fn session(home: &Home, script: &Script, tools: &Catalog) -> miyu_session::Handle {
+/// 在工作区 `work/` 里造一个会话：完全放开、只读 `read_only`，有人能确认，工具是 `tools`。
+async fn session(
+    home: &Home,
+    script: &Script,
+    tools: &Catalog,
+    read_only: bool,
+) -> miyu_session::Handle {
     let opening = Opening {
         permission: Permission {
-            level: Level::Workspace,
-            read_only: false,
+            level: Level::Full,
+            read_only,
         },
         attended: true,
         cwd: at(home, "work"),
         dirs: Vec::new(),
         sandbox: None,
-        sandbox_cache: None,
     };
     home.create_as(script, tools, opening).await
 }
@@ -69,7 +73,7 @@ async fn the_tool_gets_the_positions_the_guard_judged() {
         Play::calls(&[("look", &paths.to_string()), ("run", "{}")]),
         Play::Says("好了。"),
     ]);
-    let handle = session(&home, &script, &catalog(&[&look, &run])).await;
+    let handle = session(&home, &script, &catalog(&[&look, &run]), false).await;
     turn(&handle).await;
     let [call] = look.calls().try_into().expect("跑了一次");
     let expected = vec![
@@ -101,7 +105,7 @@ async fn a_nested_call_gets_the_positions_the_guard_judged() {
         Play::calls(&[("shell", r#"{"command":"python3 x.py"}"#)]),
         Play::Says("好了。"),
     ]);
-    let handle = session(&home, &script, &catalog(&[&shell, &look])).await;
+    let handle = session(&home, &script, &catalog(&[&shell, &look]), false).await;
     turn(&handle).await;
     let [call] = look.calls().try_into().expect("脚本里调了一次");
     assert_eq!(
@@ -110,9 +114,9 @@ async fn a_nested_call_gets_the_positions_the_guard_judged() {
     );
 }
 
-/// 审计复现（漏洞排查 2026-10-22）：`write` 写工作区里的链接 `link/` 下面，链接指到边界以外，权限策略照外面判、问人；人还没点，
-/// 链接被换成指进数据根（沙盒里的命令就换得了工作区里的链接）。人点了允许，`write` 换出来的落在数据根里，不是判过的那一个：
-/// 不写，说路径在判过以后变了。修之前写进了数据根。
+/// 审计复现（漏洞排查 2026-10-22，原来是工作区一级写到外面问人；A16 起只剩只读读私密目录问人，施工 LV-1）：只读时 `read`
+/// 读工作区里的链接 `link/` 下面，链接指进私密目录 `~/.ssh`，权限策略问人；人还没点，链接被换成指进数据根。人点了允许，
+/// `read` 换出来的落在数据根里，不是判过的那一个：不读，说路径在判过以后变了。
 #[cfg(unix)]
 #[tokio::test]
 async fn a_link_swapped_while_asking_is_not_followed_into_the_data_root() {
@@ -121,17 +125,23 @@ async fn a_link_swapped_while_asking_is_not_followed_into_the_data_root() {
     use std::os::unix::fs::symlink;
 
     let home = Home::outside_temp();
+    file(&home, "home/.ssh/planted.txt");
+    std::fs::write(
+        home.scratch.0.join("data/planted.txt"),
+        "secret-in-data-root",
+    )
+    .expect("写得进");
     let link = home.scratch.0.join("work/link");
-    symlink(home.scratch.0.join("other"), &link).expect("造得了链接");
+    symlink(home.home.join(".ssh"), &link).expect("造得了链接");
     let resources = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
     let tools = Catalog::new(miyu_basesystem::tools(&resources).expect("出厂的资源读得出来"))
         .expect("合写法");
-    let args = serde_json::json!({"file_path": "link/planted.txt", "content": "x"});
+    let args = serde_json::json!({"file_path": "link/planted.txt"});
     let script = Script::new([
-        Play::calls(&[("write", &args.to_string())]),
+        Play::calls(&[("read", &args.to_string())]),
         Play::Says("好了。"),
     ]);
-    let handle = session(&home, &script, &tools).await;
+    let handle = session(&home, &script, &tools, true).await;
     let mut pushes = watch(&handle).await;
     ask(&handle, "cmd-1", say("hi")).await.expect("会话在跑");
     let session_id = handle.id().clone();
@@ -181,8 +191,7 @@ async fn a_link_swapped_while_asking_is_not_followed_into_the_data_root() {
         "{text}"
     );
     assert!(
-        !home.scratch.0.join("data/planted.txt").exists(),
-        "写进了数据根"
+        !text.contains("secret-in-data-root"),
+        "读到了数据根：{text}"
     );
-    assert!(!home.scratch.0.join("other/planted.txt").exists());
 }

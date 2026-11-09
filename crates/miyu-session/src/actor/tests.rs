@@ -105,7 +105,7 @@ async fn a_write_that_fails_stops_the_session() {
     let created = snapshot.session_created(
         VenueId::parse("local").expect("场所合写法"),
         Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only: false,
         },
     );
@@ -160,7 +160,6 @@ async fn a_write_that_fails_stops_the_session() {
             blobs: miyu_store::blob::Blobs::new(std::path::PathBuf::new()),
             seen: miyu_tool::Seen::new(),
             sandbox: None,
-            sandbox_cache: None,
             // 这个测试不跑工具：日志不会被读。
             log: miyu_tool::Log::new(crate::store::LogDir(std::path::PathBuf::new())),
             offset: miyu_kernel::time::UtcOffset::UTC,

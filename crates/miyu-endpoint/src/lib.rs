@@ -105,7 +105,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
 use miyu_sandbox::{Availability, Unusable};
-use miyu_session::{Jobs, Memory, ModelData, Models, SandboxCache, SummaryTexts};
+use miyu_session::{Jobs, Memory, ModelData, Models, SummaryTexts};
 use miyu_store::index::SessionIndex;
 use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
@@ -139,9 +139,6 @@ pub struct Core {
     /// 这台机器上的沙盒能不能用（核心起来时探的）：握手时报给头（施工 5-4 下）；能用的，造会话、载入时把助手交给会话
     /// （施工 5-4 上）。
     sandbox: Availability,
-    /// 沙盒的缓存放在哪：`<缓存目录>/sandbox`；你的 cargo 目录在哪（施工 5-4 下）。算不出缓存目录的
-    /// 没有。
-    sandbox_cache: Option<(PathBuf, Option<PathBuf>)>,
     /// 本机令牌：本机连接握手时要出示（`04-核心协议.md` 第四节）。
     token: String,
     /// 会话表。
@@ -294,7 +291,6 @@ impl Core {
             backstage: backstage::Methods::default(),
             home,
             sandbox: Availability::Unusable(Unusable::HelperMissing),
-            sandbox_cache: None,
             token,
             sessions: Sessions::default(),
             jobs: Arc::new(Jobs::new()),
@@ -403,29 +399,12 @@ impl Core {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
-    /// 同一份家底，这台机器上的沙盒照 `sandbox`（施工 5-4 上、下）。用不了的，会话里工作区、只读两级执行命令都要问人；
+    /// 同一份家底，这台机器上的沙盒照 `sandbox`（施工 5-4 上、下）。用不了的，只读时执行命令要问人；
     /// 没设的当找不到助手。
     #[must_use]
     pub fn with_sandbox(mut self, sandbox: Availability) -> Core {
         self.sandbox = sandbox;
         self
-    }
-
-    /// 同一份家底，沙盒的缓存放在 `root` 下面，你的 cargo 目录是 `cargo_home`（施工 5-4 下）。
-    #[must_use]
-    pub fn with_sandbox_cache(mut self, root: PathBuf, cargo_home: Option<PathBuf>) -> Core {
-        self.sandbox_cache = Some((root, cargo_home));
-        self
-    }
-
-    /// 沙盒的缓存。
-    pub(crate) fn sandbox_cache_of(&self) -> Option<SandboxCache> {
-        self.sandbox_cache
-            .as_ref()
-            .map(|(root, cargo_home)| SandboxCache {
-                dir: root.clone(),
-                cargo_home: cargo_home.clone(),
-            })
     }
 
     /// 会话列表的索引，交给造的、载入的会话、列会话时读（施工 3-8 七补）：还没开的这时开。

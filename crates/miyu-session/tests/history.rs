@@ -34,14 +34,13 @@ async fn after_a_compaction_she_finds_what_was_said_before_it() {
     let cwd = home.scratch.0.join("work").to_string_lossy().into_owned();
     let opening = Opening {
         permission: Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only: false,
         },
         attended: false,
         cwd: cwd.clone(),
         dirs: Vec::new(),
         sandbox: None,
-        sandbox_cache: None,
     };
     let handle = home.create_as(&script, &base_system(), opening).await;
     let mut pushes = watch(&handle).await;

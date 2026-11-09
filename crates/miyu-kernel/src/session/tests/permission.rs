@@ -61,7 +61,7 @@ fn switching_while_idle_is_recorded_and_injected_when_the_next_turn_opens() {
     assert_eq!(appended(&actions), seqs(&[9]));
     assert_eq!(
         switched_to(&events[0]),
-        &permission(Level::Workspace, true),
+        &permission(Level::Full, true),
         "两格都写"
     );
     assert_eq!(
@@ -91,7 +91,7 @@ fn switching_to_the_same_level_is_accepted_and_records_nothing() {
         [accepted_reply(1, &[])]
     );
     assert_eq!(
-        allowing(&mut session, switch(2, Some(Level::Workspace), None)),
+        allowing(&mut session, switch(2, Some(Level::Full), None)),
         [accepted_reply(2, &[])]
     );
     assert_eq!(
@@ -124,12 +124,12 @@ fn an_unknown_level_is_rejected() {
         }]
     );
     assert_eq!(Reason::UnknownLevel.code(), "unknown_level");
-    // 只读那一格也没改：开回合时还是工作区。
+    // 只读那一格也没改：开回合时还是完全放开。
     let actions = allowing(&mut session, send(2, "hi"));
     assert_eq!(appended(&actions), seqs(&[2, 3, 4, 5]));
     assert_eq!(
         fact_of(&appended_events(&actions)[3]).text,
-        level_fact("workspace")
+        level_fact("full")
     );
 }
 
@@ -231,12 +231,12 @@ fn loosening_while_asking_takes_effect_at_the_next_request() {
         appended(&allowing(&mut session, read_only(3, false))),
         seqs(&[7])
     );
-    // 这次回复里写文件的还是拦下；这一步齐了，换回工作区，注入一块。
+    // 这次回复里写文件的还是拦下；这一步齐了，换回完全放开，注入一块。
     let actions = call_tools(&mut session, 6, &[("write", "{}")]);
     let events = appended_events(&actions);
     assert_eq!(appended(&actions), seqs(&[8, 9, 10, 11]));
     assert_eq!(result_of(&events[2]).1, ToolStatus::Denied);
-    assert_eq!(fact_of(&events[3]).text, level_fact("workspace"));
+    assert_eq!(fact_of(&events[3]).text, level_fact("full"));
     assert!(asks(&allowing(&mut session, stored(11)), 11));
     // 之后写文件照常派。
     call_tools(&mut session, 11, &[("write", "{}")]);
@@ -301,77 +301,6 @@ fn a_switch_after_the_hooks_is_checked_on_the_spot() {
 }
 
 #[test]
-fn tightening_to_workspace_denies_nothing_and_leaves_running_calls_alone() {
-    let mut session = session();
-    allowing(&mut session, switch(1, Some(Level::Full), None));
-    allowing(&mut session, send(2, "hi"));
-    allowing(&mut session, stored(6));
-    allowing(&mut session, hooks_done(TurnId::new(seq(4)), Vec::new()));
-    call_tools(&mut session, 6, &[("read", "{}"), ("write", "{}")]);
-    assert_eq!(ran(&allowing(&mut session, stored(8))), [call(7, 1)]);
-    // 完全放开收紧成工作区：只读才拦写文件的。
-    assert_eq!(
-        appended(&allowing(
-            &mut session,
-            switch(3, Some(Level::Workspace), None)
-        )),
-        seqs(&[9])
-    );
-    assert_eq!(
-        ran(&allowing(&mut session, done(call(7, 1), "a"))),
-        [call(7, 2)]
-    );
-    // 写文件的已经在跑了，开只读也不动它。
-    assert_eq!(
-        appended(&allowing(&mut session, read_only(4, true))),
-        seqs(&[11])
-    );
-    // 这一步齐了：事实写请求那一刻生效的那一级，中间的工作区不写。
-    let actions = allowing(&mut session, done(call(7, 2), "ok"));
-    let events = appended_events(&actions);
-    assert_eq!(appended(&actions), seqs(&[12, 13]));
-    assert_eq!(fact_of(&events[1]).text, level_fact("read_only"));
-}
-
-#[test]
-fn changing_the_usual_level_under_read_only_injects_nothing() {
-    let mut session = session();
-    allowing(&mut session, read_only(1, true));
-    let actions = allowing(&mut session, switch(2, Some(Level::Full), None));
-    assert_eq!(
-        switched_to(&appended_events(&actions)[0]),
-        &permission(Level::Full, true),
-        "只改常用的那一级，只读照旧"
-    );
-    let actions = allowing(&mut session, send(3, "hi"));
-    assert_eq!(
-        fact_of(&appended_events(&actions)[3]).text,
-        level_fact("read_only")
-    );
-    allowing(&mut session, stored(7));
-    allowing(&mut session, hooks_done(TurnId::new(seq(5)), Vec::new()));
-    call_tools(&mut session, 7, &[("read", "{}")]);
-    allowing(&mut session, stored(9));
-    allowing(&mut session, switch(4, Some(Level::Workspace), None));
-    let actions = allowing(&mut session, done(call(8, 1), "a"));
-    assert_eq!(appended(&actions), seqs(&[11]), "实际生效的还是只读");
-    assert!(asks(&allowing(&mut session, stored(11)), 11));
-    // 关掉只读，回到常用的那一级：下一个回合开始时注入。
-    allowing(&mut session, read_only(5, false));
-    answer(&mut session, 11, "好");
-    allowing(&mut session, stored(15));
-    let actions = allowing(&mut session, send(6, "再来"));
-    let events = appended_events(&actions);
-    assert_eq!(appended(&actions), seqs(&[16, 17, 18]));
-    assert_eq!(fact_of(&events[2]).text, level_fact("workspace"));
-    // 这一轮里写文件照常派。
-    allowing(&mut session, stored(18));
-    allowing(&mut session, hooks_done(TurnId::new(seq(17)), Vec::new()));
-    call_tools(&mut session, 18, &[("write", "{}")]);
-    assert_eq!(ran(&allowing(&mut session, stored(20))), [call(19, 1)]);
-}
-
-#[test]
 fn the_facts_after_a_switch_keep_the_directory_of_the_turn() {
     let mut session = asking();
     allowing(&mut session, Input::Environment(environment("~/elsewhere")));
@@ -401,7 +330,7 @@ fn a_call_is_sent_to_run_with_the_level_in_effect() {
     let actions = usual.handle(guarded(call(6, 1), Verdict::Allow));
     assert_eq!(
         run_permission(&actions),
-        Some(permission(Level::Workspace, false))
+        Some(permission(Level::Full, false))
     );
     let mut session = session();
     session.handle(read_only(1, true));
@@ -416,7 +345,7 @@ fn a_call_is_sent_to_run_with_the_level_in_effect() {
     let actions = session.handle(guarded(guarding[0], Verdict::Allow));
     assert_eq!(
         run_permission(&actions),
-        Some(permission(Level::Workspace, true))
+        Some(permission(Level::Full, true))
     );
 }
 
@@ -434,7 +363,7 @@ fn an_approved_call_runs_with_the_level_in_effect() {
     let actions = session.handle(stored(11));
     assert_eq!(
         run_permission(&actions),
-        Some(permission(Level::Workspace, true))
+        Some(permission(Level::Full, true))
     );
 }
 

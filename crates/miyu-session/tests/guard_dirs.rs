@@ -1,6 +1,5 @@
-//! 加进来的目录（施工 5-10 上，`docs/blueprint/session/guard.md` 边界表第 3 条）：权限策略照工作区算，里面的
-//! `.git/hooks` 只能读，只读照旧拒绝。场地和 `guard.rs` 一样不在系统的临时目录里：工作区 `work/`、加进来的
-//! `other/`。
+//! 加进来的目录（施工 5-10 上，`docs/blueprint/session/guard.md` 边界表第 3 条）：权限策略照工作区算，只读照旧拒绝。
+//! 场地和 `guard.rs` 一样不在系统的临时目录里：工作区 `work/`、加进来的 `other/`。
 
 use std::sync::Arc;
 
@@ -46,7 +45,7 @@ fn file(home: &Home, path: &str, text: &str) {
     std::fs::write(path, text).expect("写得进");
 }
 
-/// 在工作区 `work/` 里造一个会话，加进来的目录是场地里的 `dirs`：工作区这一级、只读 `read_only`，没人能确认，沙盒
+/// 在工作区 `work/` 里造一个会话，加进来的目录是场地里的 `dirs`：完全放开、只读 `read_only`，没人能确认，沙盒
 /// 用不了（施工 5-10 上）。
 async fn with_dirs(
     home: &Home,
@@ -57,14 +56,13 @@ async fn with_dirs(
 ) -> Handle {
     let opening = Opening {
         permission: Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only,
         },
         attended: false,
         cwd: at(home, "work"),
         dirs: dirs.iter().map(|dir| at(home, dir)).collect(),
         sandbox: None,
-        sandbox_cache: None,
     };
     home.create_as(script, &kit.catalog(), opening).await
 }
@@ -98,7 +96,7 @@ fn text(result: &ToolResult) -> String {
         .collect()
 }
 
-/// 加进来的目录（施工 5-10 上）：工作区这一级和工作区一样能写，不用问人。
+/// 加进来的目录（施工 5-10 上）：和工作区一样能写，不用问人。
 #[tokio::test]
 async fn a_write_into_an_added_dir_runs_without_asking() {
     let home = Home::outside_temp();
@@ -110,24 +108,6 @@ async fn a_write_into_an_added_dir_runs_without_asking() {
     let (result, _) = first_result(&home.log(handle.id()));
     assert_eq!(result.status, ToolStatus::Ok, "{}", text(&result));
     assert_eq!(kit.edit.calls().len(), 1);
-}
-
-#[tokio::test]
-async fn a_git_hook_in_an_added_dir_is_read_only() {
-    let home = Home::outside_temp();
-    file(&home, "other/.git/hooks/pre-commit", "#!/bin/sh");
-    let kit = Kit::new();
-    let hook = at(&home, "other/.git/hooks/pre-commit");
-    let script = Script::new([one("edit", &hook), Play::Says("好。")]);
-    let handle = with_dirs(&home, &script, &kit, false, &["other"]).await;
-    turn(&handle).await;
-    let (result, _) = first_result(&home.log(handle.id()));
-    assert_eq!(
-        result.status,
-        ToolStatus::Denied,
-        "要问人，这个会话没人能确认"
-    );
-    assert!(kit.edit.calls().is_empty());
 }
 
 #[tokio::test]

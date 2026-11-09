@@ -289,7 +289,6 @@ impl Sessions {
             personas: personas::personas(core),
             memory_scope: MemoryScope::Off,
             venue: child.venue,
-            sandbox_cache: core.sandbox_cache_of(),
             index: Some(core.index()),
             usage: core.ledger(),
             knowledge: Some(Arc::clone(&core.knowledge)),

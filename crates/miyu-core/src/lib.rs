@@ -365,7 +365,6 @@ async fn run(
         Some(config.resolved().clone()),
     );
     let sandbox = sandbox::probe(env.exe.as_deref(), Some(&root.sandbox_probe_dir()));
-    let sandbox_cache = sandbox::cache(&env, std::env::var_os("CARGO_HOME"));
     let embedder = embed::setup(&env, &live.found);
     let kit = Kit::new(&resources);
     let tools = match tools_in(&resources, &live.found, &kit) {
@@ -397,9 +396,6 @@ async fn run(
     .with_builtins(builtins)
     .with_model_data(Arc::clone(&model_data))
     .with_queries(queries);
-    if let Some((cache, cargo_home)) = sandbox_cache {
-        core = core.with_sandbox_cache(cache, cargo_home);
-    }
     core = core.with_vectors(embedder);
     let core = Arc::new(core);
     // 金额换算要的汇率（施工 UC-1）：照环境的代理上网取，同拉目录。造不出客户端的不换算，照分币种显示。

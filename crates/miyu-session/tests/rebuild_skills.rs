@@ -65,14 +65,13 @@ async fn a_used_skill_comes_back_after_the_files_fill_their_slots() {
     .window(32_000);
     let opening = Opening {
         permission: Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only: false,
         },
         attended: false,
         cwd: work.to_string_lossy().into_owned(),
         dirs: Vec::new(),
         sandbox: None,
-        sandbox_cache: None,
     };
     let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
     let tools = Catalog::new(miyu_basesystem::tools(&resources).expect("出厂的资源读得出来"))

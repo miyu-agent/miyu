@@ -1,6 +1,6 @@
 //! 登记成 `venue` 的工具（施工 O-31 前，`providers.md`「`provide`」第 2 条、`session/guard.md` 第四条）：`provide` 收；
-//! `venues` 里有 `local` 的，本机的会话调到它照对外发消息判（施工 O-31 补）：工作区问人，问的是 `outbound`，人点头以前扩展
-//! 收不到 `tool.call`。场所会话里放行、没写 `venues` 的本机拒绝见 `miyu-session` 的 `guard_venue.rs`。
+//! `venues` 里有 `local` 的，本机的会话调到它照对外发消息判（施工 O-31 补）：只读时问人（A16 起完全放开直接发，施工 LV-1），
+//! 问的是 `outbound`，人点头以前扩展收不到 `tool.call`。场所会话里放行、没写 `venues` 的本机拒绝见 `miyu-session` 的 `guard_venue.rs`。
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -58,8 +58,13 @@ async fn a_venue_tool_is_provided_and_refused_in_a_local_session() {
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
     let session = client.create("c1", "~").await;
+    let params = json!({"session": session, "read_only": true});
+    let reply = client
+        .call("p1", "session.set_permission_level", params)
+        .await;
+    assert_eq!(reply["result"], json!({}), "{reply}");
     client.say("s1", &session, "发一条").await;
-    // 本机的会话里照对外发消息判（施工 O-31 补）：工作区问人，问的是 `outbound`；人点头以前扩展收不到。
+    // 本机的会话里照对外发消息判（施工 O-31 补）：只读时问人，问的是 `outbound`；人点头以前扩展收不到。
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     let asked = loop {
         if let Some(asked) = home

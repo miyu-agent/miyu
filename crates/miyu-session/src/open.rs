@@ -121,7 +121,6 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         tools,
         home,
         sandbox,
-        sandbox_cache,
         lineage,
         sessions,
         packages,
@@ -304,7 +303,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         (sandbox.is_some(), place.0, place.1),
     )
     .with_shelves(shelves_open.clone())
-    .for_session(root, &id, shipped.path())
+    .for_session(root, &id)
     .with_workplace(workplace.clone());
     let who = Who {
         venue: venue.clone(),
@@ -334,7 +333,6 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
             blobs: kept,
             seen: Seen::new(),
             sandbox: sandbox.map(Path::to_path_buf),
-            sandbox_cache,
             log: Log::new(log_dir),
             offset,
             job_ids,

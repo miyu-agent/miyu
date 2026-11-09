@@ -4,7 +4,7 @@
 
 use std::sync::Arc;
 
-use miyu_kernel::event::{ApprovalRequested, Body, Decision, Event, ToolResult};
+use miyu_kernel::event::{ApprovalRequested, Body, Decision, Event, Level, Permission, ToolResult};
 use miyu_kernel::session::{Answer, Command};
 use miyu_kernel::tool::Access;
 use miyu_session::testkit::{Play, Script};
@@ -13,7 +13,7 @@ use miyu_tool::{Catalog, Tool};
 
 use crate::support::*;
 
-/// 一个脚本：经端口调一次要联网的 `fetch`。工作区这一级联网要问人。
+/// 一个脚本：经端口调一次要联网的 `fetch`。只读时联网要问人（A16 起完全放开不问，施工 LV-1）。
 async fn scripted(home: &Home, attended: bool) -> miyu_session::Handle {
     let shell = Fake::commanding(
         "shell",
@@ -28,6 +28,10 @@ async fn scripted(home: &Home, attended: bool) -> miyu_session::Handle {
     ]);
     let catalog = Catalog::new([shell, fetch].map(|tool| tool as Arc<dyn Tool>)).expect("都合写法");
     let opening = Opening {
+        permission: Permission {
+            level: Level::Full,
+            read_only: true,
+        },
         attended,
         ..Opening::default()
     };

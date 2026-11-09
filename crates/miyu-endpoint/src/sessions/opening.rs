@@ -5,7 +5,6 @@ use miyu_kernel::id::VenueId;
 use miyu_policy::Profile;
 use miyu_policy::memory::MemoryScope;
 
-use crate::settings::PermissionSettings;
 use miyu_session::settings::ProfileSettings;
 
 /// 造会话时要记下的几样：有没有人能确认，是不是一次性的，用哪个模型。
@@ -39,12 +38,10 @@ pub(crate) struct Opening {
     pub(crate) confined: bool,
 }
 
-/// 新会话开局的级别（施工 8-32）：本机开的照 `permission.level`，场所会话照旧从工作区开局（外部身份另有限制）。
-pub(super) fn opening_level(permission: &PermissionSettings, venue: Option<&VenueId>) -> Level {
-    match (permission.level.as_str(), venue) {
-        ("full", None) => Level::Full,
-        _ => Level::Workspace,
-    }
+/// 新会话开局的级别（施工 8-32）：A16 起本机、场所的都是完全放开（施工 LV-1），`permission.level` 写什么都一样；外部身份
+/// 另关进自己的工作区（`confined`），不看级别。
+pub(super) fn opening_level() -> Level {
+    Level::Full
 }
 
 /// 「关于你」（施工 P-9）：没关起来的会话（`for_owner`，施工 SU-4 中）、又是本机开的或者桥说要的（`asked`，

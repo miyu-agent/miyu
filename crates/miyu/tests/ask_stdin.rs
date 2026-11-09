@@ -216,7 +216,7 @@ fn new_session_options_with_a_continued_session_are_exit_code_2() {
         ),
         (
             &["--permission", "root", "在吗"],
-            "miyu: '--permission' 的值无效：'root'\n提示：可选的值：read-only、workspace 或 full\n",
+            "miyu: '--permission' 的值无效：'root'\n提示：可选的值：read-only 或 full\n",
         ),
     ];
     for (args, expected) in cases {

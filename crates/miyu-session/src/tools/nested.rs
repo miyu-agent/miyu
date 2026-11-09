@@ -283,18 +283,10 @@ impl Tools {
         let shown = id.to_string();
         tracing::info!(target: TARGET, nested = shown.as_str(), tool = name.as_str(), "running nested");
         let span = tracing::Span::current();
-        let wrap = self.wrap(&name, &tool, &call);
-        let sandbox = self.sandbox.clone().filter(|_| wrap.needs_spec());
-        let unless = wrap.unless();
+        let sandbox = self.sandbox.clone();
         let inner = tokio::spawn(
             async move {
-                let call = confine(
-                    call,
-                    sandbox,
-                    (permission, dirs, Vec::new()),
-                    (origin, unless),
-                )
-                .await?;
+                let call = confine(call, sandbox, (permission, dirs), origin).await?;
                 Some(tool.run(call, Progress::new(|_| {})).await)
             }
             .instrument(span.clone()),

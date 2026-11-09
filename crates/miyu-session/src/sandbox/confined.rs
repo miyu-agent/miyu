@@ -129,7 +129,7 @@ impl Sandbox {
         read.extend(self.shelves.iter().map(|dir| real(dir)));
         let write = match effective(permission) {
             Effective::ReadOnly => Vec::new(),
-            Effective::Workspace | Effective::Full => own,
+            Effective::Full => own,
         };
         Ok(Sandboxed {
             helper: self.helper.clone(),

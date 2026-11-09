@@ -15,14 +15,14 @@ fn a_data_root_that_is_also_a_private_dir_is_hidden_once() {
         PathBuf::from("miyu-sandbox"),
         Some(home.clone()),
         home.join(".miyu"),
-        (None, false),
+        false,
     );
     let read_only = Permission {
-        level: Level::Workspace,
+        level: Level::Full,
         read_only: true,
     };
     let sandboxed = sandbox
-        .for_call(&read_only, &scratch.to_string_lossy(), &[], &[])
+        .for_call(&read_only, &scratch.to_string_lossy(), &[])
         .expect("写得成")
         .expect("进沙盒");
     let real = |dir: &str| std::fs::canonicalize(home.join(dir)).expect("在");
@@ -43,7 +43,7 @@ fn a_private_dir_inside_a_writable_place_is_hidden_only_with_mounts() {
         PathBuf::from("miyu-sandbox"),
         Some(home.clone()),
         home.join(".miyu"),
-        (None, false),
+        false,
     );
     let real = |dir: &str| std::fs::canonicalize(home.join(dir)).expect("在");
     let write = [std::fs::canonicalize(&home).expect("在")];
@@ -85,7 +85,7 @@ fn the_turn_private_dirs_are_what_gets_hidden() {
         PathBuf::from("miyu-sandbox"),
         Some(home.clone()),
         home.join(".miyu"),
-        (None, false),
+        false,
     );
     sandbox.set_private(vec![home.join("diary")]);
     let real = |dir: &str| std::fs::canonicalize(home.join(dir)).expect("在");
@@ -104,7 +104,7 @@ fn weak_strength_turns_mounts_off() {
         PathBuf::from("miyu-sandbox"),
         None,
         PathBuf::from("data"),
-        (None, false),
+        false,
     );
     assert!(sandbox.mount(true));
     assert!(!sandbox.mount(false));
@@ -123,17 +123,17 @@ fn a_weak_turn_writes_no_mount_into_the_spec() {
         PathBuf::from("miyu-sandbox"),
         Some(home.clone()),
         home.join(".miyu"),
-        (None, false),
+        false,
     );
-    let workspace = Permission {
-        level: Level::Workspace,
-        read_only: false,
+    let read_only = Permission {
+        level: Level::Full,
+        read_only: true,
     };
     let cwd = scratch.to_string_lossy().into_owned();
     miyu_sandbox::set_mounts(true);
     let spec = |sandbox: &Sandbox| {
         sandbox
-            .for_call(&workspace, &cwd, &[], &[])
+            .for_call(&read_only, &cwd, &[])
             .expect("写得成")
             .expect("进沙盒")
             .spec
@@ -161,7 +161,7 @@ fn a_hidden_dir_inside_another_is_left_to_the_outer_one() {
         PathBuf::from("miyu-sandbox"),
         Some(home.clone()),
         home.join(".cache/miyu"),
-        (None, false),
+        false,
     );
     sandbox.set_private(
         [".config/gh", ".ssh", ".cache", ".config", ".ssh"]
@@ -200,19 +200,14 @@ fn a_command_runs_when_a_private_dir_holds_the_data_root() {
         std::fs::create_dir_all(dir).expect("建得了目录");
     }
     std::fs::write(home.join(".cache/miyu/token"), "secret").expect("写得进");
-    let mut sandbox = Sandbox::new(
-        helper,
-        Some(home.clone()),
-        home.join(".cache/miyu"),
-        (None, false),
-    );
+    let mut sandbox = Sandbox::new(helper, Some(home.clone()), home.join(".cache/miyu"), false);
     sandbox.set_private(vec![home.join(".cache")]);
-    let workspace = Permission {
-        level: Level::Workspace,
-        read_only: false,
+    let read_only = Permission {
+        level: Level::Full,
+        read_only: true,
     };
     let mut sandboxed = sandbox
-        .for_call(&workspace, &work.to_string_lossy(), &[], &[])
+        .for_call(&read_only, &work.to_string_lossy(), &[])
         .expect("写得成")
         .expect("进沙盒");
     sandboxed.spec.mount = true;
@@ -257,14 +252,14 @@ fn the_run_directory_is_back_before_a_command_starts() {
         PathBuf::from("miyu-sandbox"),
         Some(scratch.clone()),
         data.clone(),
-        (None, false),
+        false,
     );
     let read_only = Permission {
-        level: Level::Workspace,
+        level: Level::Full,
         read_only: true,
     };
     sandbox
-        .for_call(&read_only, &scratch.to_string_lossy(), &[], &[])
+        .for_call(&read_only, &scratch.to_string_lossy(), &[])
         .expect("写得成")
         .expect("进沙盒");
     let made = data.join("run").is_dir();
@@ -289,15 +284,15 @@ fn the_jobs_directory_is_made_before_a_command_starts() {
         PathBuf::from("miyu-sandbox"),
         Some(scratch.clone()),
         data.clone(),
-        (None, false),
+        false,
     )
     .with_jobs(jobs.clone());
     let read_only = Permission {
-        level: Level::Workspace,
+        level: Level::Full,
         read_only: true,
     };
     sandbox
-        .for_call(&read_only, &scratch.to_string_lossy(), &[], &[])
+        .for_call(&read_only, &scratch.to_string_lossy(), &[])
         .expect("写得成")
         .expect("进沙盒");
     let made = jobs.is_dir();

@@ -37,7 +37,7 @@ const KERNEL: &str = r#"{"kind":"kernel"}"#;
 const MODEL: &str = r#"{"kind":"model","endpoint":"deepseek","model":"deepseek-v4"}"#;
 const TOOL: &str = r#"{"kind":"tool","call_id":"call_5_1"}"#;
 const PEER: &str = r#"{"kind":"session","id":"01a0cf12-7e40-7d1b-8c3a-51d49f03b21c"}"#;
-const POLICY: &str = r#""policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}"#;
+const POLICY: &str = r#""policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"full","read_only":false}"#;
 
 /// 开过的一轮：编号，开它的人话（序号、命令编号）。
 type Turn = (u64, Option<(u64, u64)>);

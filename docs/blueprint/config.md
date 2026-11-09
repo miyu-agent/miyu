@@ -311,7 +311,7 @@ miyu_config::settings! {
 - 项目配置能写的，M8 里只有 `permission.start_read_only` 这一项（2026-10-01 项目主人定）。
 - `profile.name`、`profile.about`（施工 P-9，2026-10-13 项目主人定：「AI 怎么认识你」两项，称呼和更多描述）、`profile.preferred_reply_language`（施工 P-9 补，2026-10-16 项目主人定：回复语言，默认用它、对话里明说换就换）：写在系统配置里，可以不写（不写就没有，没有默认值），最多 64、2000、64 个字，新会话生效；更多描述是几行字（`lines`，控件 `textarea`，P-9 三补），能分行，拼进 `<user>` 块时照原样。回复语言的控件是 `combo`，建议值在字表里，照这种界面语言的人最常用的排在前面，都写语言自己的名字（简体中文、English、日本語……），十五个；「其他」的那一行字头自己写。造会话时照 `core/profile.txt` 拼进 system（`prompts.md`「关于你」）；抽取、合并照这一次的配置读称呼写人（`memory.md` 第六条第 4 款、第七条第 2 款，施工 R-6 再修；声明从端点挪到 `miyu-session/src/settings.rs`，同记忆那几项）；设置页单独一页「用户」（`user`，施工 P-9 再补，2026-10-16 项目主人定：关于人自己的不放在「通用」里）里一组「关于你」（`profile`），两个头的第一次引导各有一步写它们。三项的说明不再写「新会话生效」：生效时机头另有一行写（P-9 再补，原来重复了）。
 - `commands.<id>.access`（施工 O-6 六补，2026-10-17 接入QQ 的会话要的、项目主人定）：一条斜杠命令谁能用，`<id>` 是命令名。`admin`（本人、对应表里认得的、场所里管理的人，照旧）、`anyone`（谁都行，命令自己的限制照旧）、`off`（谁都不行，回 `command_not_allowed`，`data.why`「/<名字> 已停用。」，菜单里不列）。不写的照命令的出厂值（扩展清单 `[[slash]]` 的 `access`），也没有的是 `admin`。只写在系统配置里，立即生效。设置页不画（`hidden`）：带名字的这一段两个头还没有画法（`slash.md`「谁能用」）。
-- `permission.level`（施工 8-32，2026-10-13 项目主人定）：新会话开局的权限级别，`workspace`（默认，执行命令在沙盒里跑）或 `full`（完全放开）。头的第一次引导里「沙盒」那一步写它，默认开（`workspace`）。只写在系统配置里：项目配置要收紧的照旧用 `permission.start_read_only`。只管本机开的会话（造会话时没带场所的）；场所会话照旧从工作区开局，外部身份另有限制（`session/guard.md` 第四条末）。会话里人切级别照旧，不改它。设置页挪到「隐私与安全」（`privacy` 页的 `permission` 组，施工 5-15 下），完全放开的选项名写上「不启用沙盒」。
+- `permission.level`（施工 8-32，2026-10-13 项目主人定；施工 LV-1 改）：A16 起（`11-权限与沙盒.md`）只有 `full`，默认 `full`，写 `workspace` 的照 `full` 收（旧配置、还没跟上的头的引导写它不报错）；设置页不列（`hidden`）。新会话都从完全放开开局，本机、场所的一样，外部身份另有限制（`session/guard.md` 第四条末）。要开局只读的用 `permission.start_read_only`。
 - `sandbox.private.add`、`sandbox.private.remove`（施工 5-15 下，`designs/11-权限与沙盒.md` 第四节）：人加的私密目录（`~/…` 或绝对路径，家目录和它的上级 `config.set` 拒 `private_too_broad`，手改文件写了的照不写算）、去掉的出厂项（只收这台机器的出厂清单 `miyu_fs::SHIPPED_PRIVATE`，照系统不同；清单里登记成文字的列表，生成的 Schema、参考文件哪个系统都一样，`config.schema` 另把出厂清单交成 `options`、名字同值，`config.set` 写了别的拒 `not_an_option`，5-15 下补）。记两份不记整份：以后的版本加了出厂项照样生效，人去掉的不随升级回来。下一轮生效：权限策略、沙盒、往下走目录的工具照这一轮的配置拼（`miyu_tool::private::dirs`）。`privacy` 页的 `private` 组，列表。两项手写登记。
 - `sandbox.readonly.add`、`sandbox.readonly.remove`（施工 5-17 下，`designs/11-权限与沙盒.md` 第四节「只禁写」）：受保护的路径，读照常、写要问人，同私密目录记两份不记整份。一项写成 `~/…`、绝对路径，或者工作区里的相对路径（每个工作区、加进来的目录里任一层的那一处；带 `..` 的、什么都没写的 `config.set` 拒 `bad_format`，单给一句），家目录本身和它的上级拒 `readonly_too_broad`；去掉的只收这台机器的出厂清单 `miyu_fs::SHIPPED_READONLY`（`config.schema` 交成 `options`，带 `ticks: "unlisted"`，写了别的拒 `not_an_option`）。手改文件写了的照不写算。下一轮生效：权限策略照这一轮的配置拼（`miyu_tool::readonly::list`）。`privacy` 页的 `readonly` 组，列表，排在 `private` 组后面，没有总开关。两项手写登记（`miyu-tool` 的 `readonly.rs`）。
 - `ui.startup`：打开一个头（终端界面、网页）时开一个新会话（`new`），还是接着最近的那一个（`recent`）。头自己用 `config.get` 读，核心不管它（2026-10-01 主会话和终端界面定）。界面提示：`general` 页（通用）的 `display` 组（显示），下拉。施工 8-28 从 `tui.startup` 改名（2026-10-07 项目主人定：同一个人在同一台机器上，每个头的体验一样，几个头都有的行为是一个共用的项，只有一个头才有的才用 `tui.*`、`web.*`）；不留旧名字：还没发布，文件里写着旧名字的照不认识的键报警告、不算。
@@ -1315,9 +1315,9 @@ source = "https://miyu-agent.github.io/packages/"
 # url =
 
 [permission]
-# 新会话的权限级别：调整新会话开启时的默认权限模式，修改后开新会话生效。
-# 能写：workspace 或 full。只能写在系统配置里。新会话生效。
-level = "workspace"
+# 新会话的权限级别：新会话都从完全放开开局，写 workspace 的也照完全放开算。要开局只读，打开「新会话开局只读」。
+# 能写：full 或 workspace。只能写在系统配置里。新会话生效。
+level = "full"
 
 # 新会话开局只读：打开以后，新会话一开始就是只读。AI 只能查、写计划，要改文件时你再关掉只读。项目配置里只能把它打开。
 # 能写：true 或 false。只能写在系统配置或项目配置里。新会话生效。
@@ -1499,11 +1499,6 @@ enabled = true
 # 默认受保护路径：出厂就受保护的：工作区里的 .git/hooks、编辑器和 agent 的配置，家目录下的 shell 启动文件这些。留着的照旧，去掉的文件工具不再问。恢复默认就全部回来。
 # 能写：最多 4096 个字的文字 的列表。只能写在系统配置里。下一轮生效。
 # remove =
-
-[sandbox.tools]
-# 不套沙盒：这件工具：放行这件工具在沙盒外跑（碰硬件、要 root 的脚本这类）：值写这件工具的来处，自己放的脚本是 ~home，装的包写包的编号，出厂的 shell 是 shell；对不上的不算。放行了的在你自己的会话里不问、直接在沙盒外跑，群聊、陌生人的私聊照旧拒绝，只读的时候也拒绝。
-# 能写：最多 200 个字的文字。只能写在系统配置里。下一轮生效。
-# "<name>" =
 
 [show]
 # 提醒 AI 用展示：让 AI 把做出来或拿到的图片、网页、文档、音视频用「展示」直接给你看，而不只是给一个路径。

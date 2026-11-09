@@ -16,8 +16,6 @@ pub struct Opening {
     /// 沙盒的助手：有的当这台机器上的沙盒能用（施工 5-4 上）。假工具不起它，随便一条路径就行；真的起命令的用
     /// [`miyu_sandbox::testkit::built_helper`]。
     pub sandbox: Option<PathBuf>,
-    /// 沙盒的缓存（施工 5-4 下）：没有的沙盒里不设工具链的变量。
-    pub sandbox_cache: Option<SandboxCache>,
 }
 
 /// 造会话时另外可以换的几样：派子代理用的三样（施工 7-5），一次性的（施工 7-9）。
@@ -85,14 +83,13 @@ impl Default for Opening {
     fn default() -> Opening {
         Opening {
             permission: Permission {
-                level: Level::Workspace,
+                level: Level::Full,
                 read_only: false,
             },
             attended: true,
             cwd: environment().cwd,
             dirs: Vec::new(),
             sandbox: None,
-            sandbox_cache: None,
         }
     }
 }

@@ -543,11 +543,11 @@
     "permission": {
       "properties": {
         "level": {
-          "default": "workspace",
-          "description": "The default permission mode new sessions start in. Changes apply to sessions opened afterwards. Allowed: workspace or full. Only in the system config. Applies to new sessions.",
+          "default": "full",
+          "description": "New sessions always start with full access; workspace is read as full. To start read-only, turn on read-only for new sessions. Allowed: full or workspace. Only in the system config. Applies to new sessions.",
           "enum": [
-            "workspace",
-            "full"
+            "full",
+            "workspace"
           ],
           "title": "Permission level for new sessions",
           "type": "string"
@@ -944,16 +944,6 @@
           ],
           "title": "Sandbox strength",
           "type": "string"
-        },
-        "tools": {
-          "additionalProperties": {
-            "description": "Lets this tool run outside the sandbox (scripts that touch hardware or need root). The value is where the tool comes from: ~home for your own scripts, the package's id for installed packages, shell for the built-in shell; a mismatch doesn't count. A granted tool runs outside the sandbox without asking in your own sessions; group chats and strangers' private chats are still refused, and so is read-only. Allowed: text of at most 200 characters. Only in the system config. Takes effect next turn.",
-            "maxLength": 200,
-            "minLength": 1,
-            "title": "No sandbox: this tool",
-            "type": "string"
-          },
-          "type": "object"
         }
       },
       "type": "object"

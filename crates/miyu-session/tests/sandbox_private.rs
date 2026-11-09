@@ -1,7 +1,6 @@
 //! 沙盒藏起别的程序的私密目录（施工 5-13，`docs/blueprint/sandbox.md` 的 `hidden`）：这台机器上有的才写，排在数据根后面，
-//! 照清单的先后；落在能写的里面的不藏（工作区装着它、加进来的目录装着它；工作目录太宽（根目录）的，能写的退回会话的
-//! 默认工作区，施工 5-14，照藏；家目录施工 5-14 改起不再太宽，macOS 上照藏、Linux 上有挂载才藏）。Unix 上有收紧手段的，真的经助手跑
-//! `shell`：私密目录里的读不到，家目录别处照读。场地的假家目录是 `home/`。
+//! 照清单的先后。A16 起本人的会话只读时才进沙盒（施工 LV-1），哪儿都不能写，也就没有落在能写的里面不藏的（原来工作区一级的
+//! 那几条随它删了）。Unix 上有收紧手段的，真的经助手跑 `shell`：私密目录里的读不到，家目录别处照读。场地的假家目录是 `home/`。
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -20,22 +19,20 @@ fn real(path: &Path) -> PathBuf {
     std::fs::canonicalize(path).expect("在")
 }
 
-/// 在 `cwd` 里造一个会话（工作区这一级，`read_only` 时只读，加进来的目录 `dirs`），沙盒能用（假的助手，假工具不起它）：
-/// 执行命令的假工具 `run` 跑一次，交回它拿到的沙盒。
-async fn attached(home: &Home, cwd: &Path, read_only: bool, dirs: Vec<String>) -> Arc<Sandboxed> {
+/// 在 `cwd` 里造一个只读的会话，沙盒能用（假的助手，假工具不起它）：执行命令的假工具 `run` 跑一次，交回它拿到的沙盒。
+async fn attached(home: &Home, cwd: &Path) -> Arc<Sandboxed> {
     let run = Fake::new("run", Access::Execute, Act::Echo);
     let tools = Catalog::new([Arc::clone(&run) as Arc<dyn Tool>]).expect("合写法");
     let script = Script::new([Play::calls(&[("run", "{}")]), Play::Says("好。")]);
     let opening = Opening {
         permission: Permission {
-            level: Level::Workspace,
-            read_only,
+            level: Level::Full,
+            read_only: true,
         },
         attended: false,
         cwd: cwd.to_string_lossy().into_owned(),
-        dirs,
+        dirs: Vec::new(),
         sandbox: Some(PathBuf::from("miyu-sandbox")),
-        sandbox_cache: None,
     };
     let handle = home.create_as(&script, &tools, opening).await;
     let mut pushes = watch(&handle).await;
@@ -59,72 +56,14 @@ async fn the_private_dirs_on_this_machine_are_hidden_after_the_data_root() {
         real(&home.home.join(".claude")),
         real(&home.home.join(".config/gh")),
     ];
-    for read_only in [false, true] {
-        let sandboxed = attached(&home, &work, read_only, Vec::new()).await;
-        assert_eq!(
-            sandboxed.spec.hidden, expected,
-            "只读 {read_only}：有的才写，照清单的先后，没有的（.gnupg）不写"
-        );
-    }
-}
-
-#[tokio::test]
-async fn a_private_dir_inside_a_writable_place_is_not_hidden() {
-    let home = Home::outside_temp();
-    for dir in [".ssh", ".claude"] {
-        std::fs::create_dir_all(home.home.join(dir)).expect("建得了目录");
-    }
-    // 工作目录太宽（根目录）：能写的是这个会话的默认工作区（施工 5-14），私密目录不在里面，照藏。
-    let root = PathBuf::from(if cfg!(windows) { "C:\\" } else { "/" });
-    let sandboxed = attached(&home, &root, false, Vec::new()).await;
-    let ssh_claude = [
-        real(home.root.path()),
-        real(&home.home.join(".ssh")),
-        real(&home.home.join(".claude")),
-    ];
-    assert_eq!(sandboxed.spec.hidden, ssh_claude, "根目录太宽：照藏");
-    let workspace = home.root.workspace();
-    assert!(
-        sandboxed.spec.write[0].starts_with(real(&workspace)),
-        "能写的是会话的默认工作区：{:?}",
-        sandboxed.spec.write
-    );
-    // 工作目录是家目录（施工 5-14 改：Linux、macOS 上不再太宽，家目录就是工作区）：落在里面的私密目录 macOS 上照藏（Seatbelt
-    // 藏得住），Linux 上没有挂载的不藏（这个测试的进程里没设挂载）。Windows 上照旧退回，照藏。
-    let sandboxed = attached(&home, &home.home, false, Vec::new()).await;
-    if cfg!(windows) || cfg!(target_os = "macos") {
-        assert_eq!(sandboxed.spec.hidden, ssh_claude, "家目录：照藏");
-    } else {
-        assert_eq!(
-            sandboxed.spec.hidden,
-            [real(home.root.path())],
-            "家目录就是工作区，没有挂载：落在里面的私密目录不藏"
-        );
-        assert_eq!(sandboxed.spec.write[0], real(&home.home));
-    }
-    // 工作区开在 `~/.config`：里面的 `gh` 藏得住的照藏（macOS，最深的那一片算，施工 5-14 改），Linux 没有挂载的不藏。
-    std::fs::create_dir_all(home.home.join(".config/gh")).expect("建得了目录");
-    let sandboxed = attached(&home, &home.home.join(".config"), false, Vec::new()).await;
-    let gh = real(&home.home.join(".config/gh"));
-    let mut config = ssh_claude.to_vec();
-    if cfg!(target_os = "macos") {
-        config.push(gh.clone());
-    }
+    let sandboxed = attached(&home, &work).await;
     assert_eq!(
-        sandboxed.spec.hidden, config,
-        "工作区装着它：藏得住的照藏，藏不住的照人给的算"
-    );
-    let work = home.scratch.0.join("work");
-    let claude = home.home.join(".claude").to_string_lossy().into_owned();
-    let sandboxed = attached(&home, &work, false, vec![claude]).await;
-    assert_eq!(
-        sandboxed.spec.hidden,
-        [real(home.root.path()), real(&home.home.join(".ssh")), gh],
-        "加进来的目录就是它：不藏（macOS 上也一样，人给的优先）"
+        sandboxed.spec.hidden, expected,
+        "有的才写，照清单的先后，没有的（.gnupg）不写"
     );
 }
 
-/// 真的经助手跑 `shell`（Unix 上有收紧手段的）：私密目录里的读不到，家目录别处照读。
+/// 真的经助手跑 `shell`（Unix 上有收紧手段的，只读）：私密目录里的读不到，家目录别处照读。
 #[cfg(unix)]
 #[tokio::test]
 async fn a_sandboxed_command_cannot_read_a_private_dir() {
@@ -152,14 +91,13 @@ async fn a_sandboxed_command_cannot_read_a_private_dir() {
     let script = Script::new([Play::calls(&[("shell", args.as_str())]), Play::Says("好。")]);
     let opening = Opening {
         permission: Permission {
-            level: Level::Workspace,
-            read_only: false,
+            level: Level::Full,
+            read_only: true,
         },
         attended: false,
         cwd: work.to_string_lossy().into_owned(),
         dirs: Vec::new(),
         sandbox: Some(helper),
-        sandbox_cache: None,
     };
     let handle = home.create_as(&script, &tools, opening).await;
     let mut pushes = watch(&handle).await;

@@ -15,7 +15,6 @@ use miyu_tool::Catalog;
 use super::opening::{opening_level, profile_for};
 use super::{Opening, local};
 use crate::Core;
-use crate::settings::PermissionSettings;
 use crate::test_support::{resources, temp_root};
 use miyu_session::settings::ProfileSettings;
 
@@ -42,7 +41,7 @@ async fn a_child_is_not_created_for_a_parent_gone_from_the_table() {
         persona: Some("engineer".to_string()),
         venue: local(),
         permission: Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only: false,
         },
         attended: false,
@@ -113,25 +112,10 @@ async fn a_session_someone_holds_a_handle_to_stays_in_the_table() {
     }
 }
 
-/// 开局的级别（施工 8-32）：本机开的照 `permission.level`，认不出的、场所会话一律从工作区开局。
+/// 开局的级别（施工 8-32）：A16 起本机、场所的都从完全放开开局（施工 LV-1），`permission.level` 写什么都一样。
 #[test]
-fn new_sessions_open_at_the_configured_level_only_on_this_machine() {
-    let settings = |level: &str| PermissionSettings {
-        start_read_only: false,
-        level: level.to_string(),
-    };
-    assert_eq!(opening_level(&settings("full"), None), Level::Full);
-    assert_eq!(
-        opening_level(&settings("workspace"), None),
-        Level::Workspace
-    );
-    assert_eq!(opening_level(&settings("other"), None), Level::Workspace);
-    let venue = local();
-    assert_eq!(
-        opening_level(&settings("full"), Some(&venue)),
-        Level::Workspace,
-        "场所会话照旧"
-    );
+fn new_sessions_open_at_full() {
+    assert_eq!(opening_level(), Level::Full);
 }
 
 /// 「关于你」（施工 P-9、P-9 补）：没关起来、又是本机开的或者桥说要的才带，别的都是空的；回复语言跟着一起带。

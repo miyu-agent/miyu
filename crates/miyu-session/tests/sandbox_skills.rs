@@ -33,7 +33,7 @@ fn put(home: &Home) -> PathBuf {
 }
 
 /// 工作区 `work/` 的会话，沙盒能用、助手是 `helper`，场所 `venue`、`unconfined` 是假的关起来：调一次 `tools` 里的
-/// `call`，交回会话。
+/// `call`，交回会话。没关起来的开只读：A16 起本人的会话只读时才进沙盒（施工 LV-1）；关起来的不看级别。
 async fn session(
     home: &Home,
     (tools, call): (&Catalog, Play),
@@ -45,14 +45,13 @@ async fn session(
     let script = Script::new([call, Play::Says("好。")]);
     let opening = Opening {
         permission: Permission {
-            level: Level::Workspace,
-            read_only: false,
+            level: Level::Full,
+            read_only: unconfined,
         },
         attended: false,
         cwd: work.to_string_lossy().into_owned(),
         dirs: Vec::new(),
         sandbox: Some(helper.to_path_buf()),
-        sandbox_cache: None,
     };
     let lines = Lines {
         venue: VenueId::parse(venue).expect("场所合写法"),

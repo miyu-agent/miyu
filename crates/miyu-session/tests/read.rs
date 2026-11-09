@@ -75,14 +75,13 @@ async fn she_reads_a_file_in_the_workspace_and_hears_it() {
     ]);
     let opening = Opening {
         permission: Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only: false,
         },
         attended: false,
         cwd: home.scratch.0.join("work").to_string_lossy().into_owned(),
         dirs: Vec::new(),
         sandbox: None,
-        sandbox_cache: None,
     };
     let handle = home.create_as(&script, &base_system(), opening).await;
     let mut pushes = watch(&handle).await;

@@ -12,7 +12,7 @@ Options:
       --persona <persona>   Use the given persona (new sessions only)
       --no-persona          Don't use a persona (new sessions only)
       --preset <preset>     Use the given preset (new sessions only)
-      --permission <read-only|workspace|full>
+      --permission <read-only|full>
                             Permission level (new sessions only)
       --format <text|json|jsonl>
                             Output format (default: text); jsonl prints one

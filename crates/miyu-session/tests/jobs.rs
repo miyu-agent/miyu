@@ -225,7 +225,8 @@ async fn a_session_that_stops_without_a_record_gets_aborted_on_load() {
     drop(handle);
 }
 
-/// 真的经助手把命令放到后台（Unix 上有收紧手段的）：和前台一样关在沙盒里，工作区里写得进，外面写不进。
+/// 真的经助手把命令放到后台（Unix 上有收紧手段的）：和前台一样关在沙盒里。A16 起本人的会话只读时才进沙盒（施工 LV-1）：
+/// 工作区里、外面都写不进。
 #[cfg(unix)]
 #[tokio::test]
 async fn a_background_command_stays_in_the_sandbox() {
@@ -238,7 +239,7 @@ async fn a_background_command_stays_in_the_sandbox() {
     let work = home.scratch.0.join("work");
     let outside = home.scratch.0.join("other").join("outside.txt");
     let command = format!(
-        "echo in > inside.txt && echo wrote-inside; \
+        "(echo in > inside.txt) 2>/dev/null && echo wrote-inside || echo blocked-inside; \
          (echo out > '{}') 2>/dev/null && echo wrote-outside || echo blocked-outside",
         outside.display()
     );
@@ -252,8 +253,8 @@ async fn a_background_command_stays_in_the_sandbox() {
     ]);
     let opening = Opening {
         permission: Permission {
-            level: Level::Workspace,
-            read_only: false,
+            level: Level::Full,
+            read_only: true,
         },
         attended: false,
         cwd: work.to_string_lossy().into_owned(),
@@ -272,9 +273,9 @@ async fn a_background_command_stays_in_the_sandbox() {
         .expect("blob 在");
     assert_eq!(
         String::from_utf8(output).expect("是 UTF-8"),
-        "wrote-inside\nblocked-outside\n"
+        "blocked-inside\nblocked-outside\n"
     );
-    assert!(work.join("inside.txt").exists());
+    assert!(!work.join("inside.txt").exists());
     assert!(!outside.exists());
     until_idle(&home).await;
 }

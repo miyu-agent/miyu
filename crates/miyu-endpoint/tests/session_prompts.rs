@@ -248,7 +248,7 @@ fn text(words: &str) -> String {
 
 const PERSON: &str = r#"{"kind":"person"}"#;
 const VIA: &str = r#"{"kind":"person","via":"qq:10001"}"#;
-const CREATED: &str = r#"{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#;
+const CREATED: &str = r#"{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"full","read_only":false}}"#;
 
 /// 一份什么都有的日志：主人本人说的三句（闲着时说的一句、回合里排着的一句、桥代主人在私聊里转进来的一句），别的来路各一句。
 fn mixed() -> Vec<String> {

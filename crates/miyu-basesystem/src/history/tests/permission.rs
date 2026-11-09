@@ -81,7 +81,7 @@ async fn found_and_read_switches_are_by_the_user() {
     assert_eq!(
         text(&done),
         concat!(
-            "#63 2026-09-25 16:32 user: Changed the permission level to workspace\n",
+            "#63 2026-09-25 16:32 user: Changed the permission level to full\n",
             "#52 2026-09-25 16:05 user: Changed the permission level to read_only\n",
         )
     );

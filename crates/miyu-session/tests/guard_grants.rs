@@ -1,7 +1,8 @@
-//! 本会话放行过的（施工 D-1，`docs/blueprint/session/guard.md`「判一次调用」第 7 条）：人选了「本会话都允许」，以后写进那个目录
-//! 和它下面的不再问；名字只是开头一样的旁边的目录照旧问；家目录里的一个文件只放它本身。
+//! 本会话放行过的（施工 D-1，`docs/blueprint/session/guard.md`「判一次调用」第 7 条）：人选了「本会话都允许」，以后读那个目录
+//! 和它下面的不再问；名字只是开头一样的旁边的目录照旧问；家目录里的一个文件只放它本身。A16 起文件工具问人的只剩只读时读别的
+//! 程序的私密目录（施工 LV-1），这里照它测：只读开局，私密目录照这一轮的配置加。
 //!
-//! 场地照 `guard.rs`：数据根 `data/`、假的家 `home/`、工作区 `work/`、边界以外的 `other/`。
+//! 场地照 `guard.rs`：数据根 `data/`、假的家 `home/`、工作区 `work/`。
 
 use std::sync::Arc;
 
@@ -27,25 +28,34 @@ fn file(home: &Home, path: &str) {
     std::fs::write(path, "x").expect("写得进");
 }
 
-/// 调一次写文件的假工具 `edit`，参数里是一条路径。
-fn edit(path: &str) -> Play {
-    Play::calls(&[("edit", &serde_json::json!({ "path": path }).to_string())])
+/// 调一次读文件的假工具 `read`，参数里是一条路径。
+fn read(path: &str) -> Play {
+    Play::calls(&[("read", &serde_json::json!({ "path": path }).to_string())])
 }
 
-/// 在工作区 `work/` 里造一个有人能确认的会话，只有一件 `edit`。
-async fn session(home: &Home, script: &Script, edit: &Arc<Fake>) -> Handle {
+/// 私密目录加上家目录下的 `private`（写成 `~/…`）：读它们要问人。
+fn private(home: &mut Home, private: &[&str]) {
+    let listed: Vec<String> = private.iter().map(|dir| format!("\"~/{dir}\"")).collect();
+    home.configs = crate::support::routing::configs_with(
+        "",
+        &format!("[sandbox.private]\nadd = [{}]\n", listed.join(", ")),
+        &[],
+    );
+}
+
+/// 在工作区 `work/` 里造一个只读、有人能确认的会话，只有一件 `read`。
+async fn session(home: &Home, script: &Script, read: &Arc<Fake>) -> Handle {
     let opening = Opening {
         permission: Permission {
-            level: Level::Workspace,
-            read_only: false,
+            level: Level::Full,
+            read_only: true,
         },
         attended: true,
         cwd: at(home, "work"),
         dirs: Vec::new(),
         sandbox: None,
-        sandbox_cache: None,
     };
-    let catalog = Catalog::new([Arc::clone(edit) as Arc<dyn Tool>]).expect("合写法");
+    let catalog = Catalog::new([Arc::clone(read) as Arc<dyn Tool>]).expect("合写法");
     home.create_as(script, &catalog, opening).await
 }
 
@@ -103,16 +113,21 @@ fn real(home: &Home, path: &str) -> String {
 }
 
 #[tokio::test]
-async fn allowing_for_the_session_lets_later_writes_under_that_directory_through() {
-    let home = Home::outside_temp();
-    for path in ["other/a.txt", "other/sub/b.txt", "otherx/c.txt"] {
+async fn allowing_for_the_session_lets_later_reads_under_that_directory_through() {
+    let mut home = Home::outside_temp();
+    for path in [
+        "home/vault/a.txt",
+        "home/vault/sub/b.txt",
+        "home/vaultx/c.txt",
+    ] {
         file(&home, path);
     }
-    let fake = Fake::new("edit", Access::Write, Act::Echo);
+    private(&mut home, &["vault", "vaultx"]);
+    let fake = Fake::new("read", Access::Read, Act::Echo);
     let script = Script::new([
-        edit(&at(&home, "other/a.txt")),
-        edit(&at(&home, "other/sub/b.txt")),
-        edit(&at(&home, "otherx/c.txt")),
+        read(&at(&home, "home/vault/a.txt")),
+        read(&at(&home, "home/vault/sub/b.txt")),
+        read(&at(&home, "home/vaultx/c.txt")),
     ]);
     let handle = session(&home, &script, &fake).await;
     let mut pushes = watch(&handle).await;
@@ -120,30 +135,32 @@ async fn allowing_for_the_session_lets_later_writes_under_that_directory_through
     let (call_id, rule) = nth_request(&home, &handle, 1).await;
     assert_eq!(
         rule,
-        serde_json::json!({"tool": "edit", "write": [real(&home, "other")]})
+        serde_json::json!({"tool": "read", "read": [real(&home, "home/vault")]})
     );
     allow_for_the_session(&handle, "cmd-2", call_id).await;
-    // 下面的子目录不问，直接跑；名字只是开头一样的 `otherx/` 照旧问。
+    // 下面的子目录不问，直接跑；名字只是开头一样的 `vaultx/` 照旧问。
     let (_, rule) = nth_request(&home, &handle, 2).await;
     assert_eq!(
         rule,
-        serde_json::json!({"tool": "edit", "write": [real(&home, "otherx")]})
+        serde_json::json!({"tool": "read", "read": [real(&home, "home/vaultx")]})
     );
     assert_eq!(fake.calls().len(), 2, "a.txt、sub/b.txt 都跑了");
     interrupt(&handle).await;
     until_turn_ends(&mut pushes).await;
 }
 
+/// 私密的是家目录里的一个文件（出厂的 `~/.netrc` 这种）。
 #[tokio::test]
 async fn a_file_right_in_the_home_is_allowed_by_itself() {
-    let home = Home::outside_temp();
+    let mut home = Home::outside_temp();
     file(&home, "home/a.txt");
     file(&home, "home/b.txt");
-    let fake = Fake::new("edit", Access::Write, Act::Echo);
+    private(&mut home, &["a.txt", "b.txt"]);
+    let fake = Fake::new("read", Access::Read, Act::Echo);
     let script = Script::new([
-        edit(&at(&home, "home/a.txt")),
-        edit(&at(&home, "home/a.txt")),
-        edit(&at(&home, "home/b.txt")),
+        read(&at(&home, "home/a.txt")),
+        read(&at(&home, "home/a.txt")),
+        read(&at(&home, "home/b.txt")),
     ]);
     let handle = session(&home, &script, &fake).await;
     let mut pushes = watch(&handle).await;
@@ -152,14 +169,14 @@ async fn a_file_right_in_the_home_is_allowed_by_itself() {
     let (call_id, rule) = nth_request(&home, &handle, 1).await;
     assert_eq!(
         rule,
-        serde_json::json!({"tool": "edit", "write": [real(&home, "home/a.txt")]})
+        serde_json::json!({"tool": "read", "read": [real(&home, "home/a.txt")]})
     );
     allow_for_the_session(&handle, "cmd-2", call_id).await;
-    // 同一个文件再写不问；家目录里别的文件照旧问。
+    // 同一个文件再读不问；家目录里别的文件照旧问。
     let (_, rule) = nth_request(&home, &handle, 2).await;
     assert_eq!(
         rule,
-        serde_json::json!({"tool": "edit", "write": [real(&home, "home/b.txt")]})
+        serde_json::json!({"tool": "read", "read": [real(&home, "home/b.txt")]})
     );
     assert_eq!(fake.calls().len(), 2);
     interrupt(&handle).await;
@@ -171,21 +188,22 @@ async fn a_file_right_in_the_home_is_allowed_by_itself() {
 #[cfg(unix)]
 #[tokio::test]
 async fn a_home_behind_a_link_is_compared_by_its_real_place() {
-    let home = Home::outside_temp();
+    let mut home = Home::outside_temp();
     let link = home.scratch.0.join("home");
     std::fs::remove_dir_all(&link).expect("假的家是空目录，删得掉");
     std::fs::create_dir_all(home.scratch.0.join("real-home")).expect("建得了");
     std::os::unix::fs::symlink(home.scratch.0.join("real-home"), &link).expect("建得了链接");
     file(&home, "home/a.txt");
-    let fake = Fake::new("edit", Access::Write, Act::Echo);
-    let script = Script::new([edit(&at(&home, "home/a.txt"))]);
+    private(&mut home, &["a.txt"]);
+    let fake = Fake::new("read", Access::Read, Act::Echo);
+    let script = Script::new([read(&at(&home, "home/a.txt"))]);
     let handle = session(&home, &script, &fake).await;
     let mut pushes = watch(&handle).await;
     ask(&handle, "cmd-1", say("hi")).await.expect("会话在跑");
     let (_, rule) = nth_request(&home, &handle, 1).await;
     assert_eq!(
         rule,
-        serde_json::json!({"tool": "edit", "write": [real(&home, "home/a.txt")]})
+        serde_json::json!({"tool": "read", "read": [real(&home, "home/a.txt")]})
     );
     interrupt(&handle).await;
     until_turn_ends(&mut pushes).await;

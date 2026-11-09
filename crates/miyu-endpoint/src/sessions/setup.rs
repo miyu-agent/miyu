@@ -46,7 +46,7 @@ impl Setup {
     ) -> Result<Setup, Refusal> {
         let (resolved, _) = core.config().with_project(&workspace);
         let permission = PermissionSettings::from(&resolved.values());
-        let level = opening_level(&permission, who.venue.as_ref());
+        let level = opening_level();
         let profile = profile_for(
             ProfileSettings::from(&resolved.values()),
             who.venue.as_ref(),
@@ -101,7 +101,6 @@ impl Setup {
             tools: core.tools.clone(),
             home: core.home.as_deref(),
             sandbox: core.sandbox.helper(),
-            sandbox_cache: core.sandbox_cache_of(),
             lineage: None,
             sessions: Some(spawn::port(core)),
             packages: Some(crate::packages::port::port(core, who.confined)),

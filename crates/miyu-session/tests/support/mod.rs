@@ -47,8 +47,8 @@ use miyu_kernel::session::{Command, Outcome};
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_policy::memory::MemoryScope;
 use miyu_session::{
-    Configs, Create, Handle, Jobs, Lineage, Load, Models, SandboxCache, SessionPort, Stopped,
-    Subscription, create, load_placed, new_id,
+    Configs, Create, Handle, Jobs, Lineage, Load, Models, SessionPort, Stopped, Subscription,
+    create, load_placed, new_id,
 };
 use miyu_session::{Memory, Placed, SummaryTexts, Workplace};
 use miyu_store::env::{Env, Platform};
@@ -201,7 +201,6 @@ impl Home {
             tools: tools.clone(),
             home: Some(&self.home),
             sandbox: opening.sandbox.as_deref(),
-            sandbox_cache: opening.sandbox_cache,
             lineage: lines.lineage,
             sessions: lines.sessions,
             packages: None,
@@ -370,7 +369,6 @@ impl Home {
             home: Some(&self.home),
             // 载入以后的测试不执行命令：沙盒用不了。
             sandbox: None,
-            sandbox_cache: None,
             sessions,
             packages: None,
             schedules: None,

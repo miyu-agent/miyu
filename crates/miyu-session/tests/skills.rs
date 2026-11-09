@@ -85,7 +85,6 @@ async fn session(
         cwd: work.to_string_lossy().into_owned(),
         dirs: Vec::new(),
         sandbox: None,
-        sandbox_cache: None,
     };
     let lines = Lines {
         venue: VenueId::parse(venue).expect("场所合写法"),
@@ -116,7 +115,7 @@ fn statuses(log: &[Event]) -> Vec<ToolStatus> {
 
 #[tokio::test]
 async fn her_skills_are_listed_and_their_folder_is_read_only() {
-    for level in [Level::Workspace, Level::Full] {
+    for level in [Level::Full] {
         let home = Home::new();
         let kit = Kit::new();
         let skill = put(&home);
@@ -156,14 +155,7 @@ async fn a_confined_group_session_reads_skills_too() {
         one("write", &skill),
         Play::Says("好。"),
     ]);
-    let handle = session(
-        &home,
-        &script,
-        &kit,
-        Level::Workspace,
-        ("qq:group:1", false),
-    )
-    .await;
+    let handle = session(&home, &script, &kit, Level::Full, ("qq:group:1", false)).await;
     let log = turn(&home, &handle, "cmd-1").await;
     assert_eq!(kit.read.calls().len(), 1, "读放行：{log:#?}");
     assert_eq!(statuses(&log), [ToolStatus::Ok, ToolStatus::Denied]);
@@ -175,7 +167,7 @@ async fn a_loaded_session_keeps_its_list_and_still_reads_skills() {
     let kit = Kit::new();
     let skill = put(&home);
     let script = Script::new([Play::Says("好。")]);
-    let handle = session(&home, &script, &kit, Level::Workspace, ("local", true)).await;
+    let handle = session(&home, &script, &kit, Level::Full, ("local", true)).await;
     turn(&home, &handle, "cmd-1").await;
     stop(&handle).await;
     let again = Script::new([one("read", &skill), Play::Says("嗯。")]);

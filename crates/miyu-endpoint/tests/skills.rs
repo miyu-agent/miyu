@@ -53,6 +53,12 @@ async fn skills_in_the_home_are_listed_and_read_before_and_after_a_restart() {
     let mut client = Client::connect(home.core_with_tools(&first, tools(), TOKEN));
     client.hello_without_input().await;
     let session = client.create("c1", &work).await;
+    // 只读时命令才进沙盒（A16，施工 LV-1），看得到规格里放开的技能文件夹。
+    let params = json!({"session": session, "read_only": true});
+    let reply = client
+        .call("p1", "session.set_permission_level", params)
+        .await;
+    assert_eq!(reply["result"], json!({}), "{reply}");
     client.say("c2", &session, "hi").await;
     home.until_turns(&session, 1).await;
     assert_eq!(read.calls().len(), 1, "造的会话读得到技能");

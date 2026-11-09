@@ -99,7 +99,7 @@ impl Log {
         };
         log.push(|seq, at| {
             format!(
-                r#"{{"seq":{seq},"at":"{at}","kind":"session.created","by":{{"kind":"person"}},"cause":"c-1","body":{{"venue":"qq:group:5550","policy":"sha256:{}","permission":{{"level":"workspace","read_only":false}},"model":"fake/model"}}}}"#,
+                r#"{{"seq":{seq},"at":"{at}","kind":"session.created","by":{{"kind":"person"}},"cause":"c-1","body":{{"venue":"qq:group:5550","policy":"sha256:{}","permission":{{"level":"full","read_only":false}},"model":"fake/model"}}}}"#,
                 "0".repeat(64)
             )
         });

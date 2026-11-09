@@ -1,8 +1,8 @@
 //! 她装、卸软件包（施工 F-10 下，`docs/blueprint/tools/package.md`，设计 `31-软件包.md` 第六节）：真核心的会话调 `package`；
 //! 施工 BS-1 中起它不上工具面，她跑的命令里的 `miyu pkg` 经通道调（`support::pkg`），确认请求带着那一次的序号。
-//! 工作区那一级每次问人，确认请求的说明里带着看一眼的那一份（装的同 `package.install` 带 `preview`，卸的同 `package.remove`
-//! 带 `preview`）；允许了才装、卸。完全放开直接做、不问。清单写错的不问，当场照拒绝交回她。装进你装的那一层，
-//! 装回出厂的、整组的照常装回来。
+//! 每次都问人（A16 起完全放开也问，施工 LV-1：装扩展等于跑别人的程序，归高危），确认请求的说明里带着看一眼的那一份（装的同
+//! `package.install` 带 `preview`，卸的同 `package.remove` 带 `preview`）；允许了才装、卸。清单写错的不问，当场照拒绝交回她。
+//! 装进你装的那一层，装回出厂的、整组的照常装回来。
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -32,9 +32,9 @@ fn kit(home: &Home, id: &str) -> PathBuf {
     folder
 }
 
-/// 真核心，工具目录是基础系统；在工作区里造会话，`full` 的切到完全放开，说一句。她跑一条命令，里面的 `miyu pkg` 照先后调
+/// 真核心，工具目录是基础系统；在工作区里造会话（完全放开），说一句。她跑一条命令，里面的 `miyu pkg` 照先后调
 /// `commands`（`package` 的参数原文），然后说「好了」。
-async fn started(home: &Home, commands: Vec<String>, full: bool) -> (Client, String) {
+async fn started(home: &Home, commands: Vec<String>) -> (Client, String) {
     let commands: Vec<(&str, &str)> = commands
         .iter()
         .map(|args| ("package", args.as_str()))
@@ -48,13 +48,6 @@ async fn started(home: &Home, commands: Vec<String>, full: bool) -> (Client, Str
     client.hello().await;
     let cwd = home.work.to_string_lossy().into_owned();
     let session = client.create("c1", &cwd).await;
-    if full {
-        let params = json!({"session": session, "level": "full"});
-        let reply = client
-            .call("p1", "session.set_permission_level", params)
-            .await;
-        assert_eq!(reply["result"], json!({}), "{reply}");
-    }
     client.say("s1", &session, "装上它").await;
     (client, session)
 }
@@ -94,14 +87,14 @@ fn installed(home: &Home, id: &str) -> bool {
 }
 
 #[tokio::test]
-async fn at_the_workspace_level_each_change_asks_with_the_preview() {
+async fn each_change_asks_with_the_preview() {
     let home = Home::new();
     let folder = kit(&home, "kit");
     let commands = vec![
         json!({"install": folder}).to_string(),
         r#"{"remove":"kit"}"#.to_string(),
     ];
-    let (mut client, session) = started(&home, commands, false).await;
+    let (mut client, session) = started(&home, commands).await;
     until("装的确认请求", || {
         requests(&home, &session).len() == 1
     })
@@ -155,17 +148,6 @@ async fn at_the_workspace_level_each_change_asks_with_the_preview() {
     );
 }
 
-#[tokio::test]
-async fn full_access_installs_without_asking() {
-    let home = Home::new();
-    let folder = kit(&home, "kit");
-    let commands = vec![json!({"install": folder}).to_string()];
-    let (_client, session) = started(&home, commands, true).await;
-    home.until_turns(&session, 1).await;
-    assert!(requests(&home, &session).is_empty(), "不问");
-    assert!(installed(&home, "kit"));
-}
-
 /// 工作目录里放一个要 `capabilities` 这几样能力的扩展包 `id`（程序不在，手动开），交回它的文件夹。
 fn extension(home: &Home, id: &str, capabilities: &[&str]) -> PathBuf {
     let folder = home.work.join(id);
@@ -188,14 +170,13 @@ fn approved(home: &Home, id: &str) -> Value {
     serde_json::from_str::<Value>(&text).unwrap_or(Value::Null)["approved"][id].clone()
 }
 
-/// 她装的时候照问人的卡片上那一份批（施工 PK-3 上）：卡片出来以后包文件夹多要了一样，人答应的只是卡片上的那几样；完全放开的
-/// 不问人，照当场看的那一份批。
+/// 她装的时候照问人的卡片上那一份批（施工 PK-3 上）：卡片出来以后包文件夹多要了一样，人答应的只是卡片上的那几样。
 #[tokio::test]
 async fn she_approves_what_the_card_showed() {
     let home = Home::new();
     let folder = extension(&home, "ext", &["network"]);
     let commands = vec![json!({"install": folder}).to_string()];
-    let (mut client, session) = started(&home, commands, false).await;
+    let (mut client, session) = started(&home, commands).await;
     until("装的确认请求", || {
         requests(&home, &session).len() == 1
     })
@@ -220,17 +201,6 @@ async fn she_approves_what_the_card_showed() {
         json!(["network"]),
         "卡片上没有的不批"
     );
-
-    let home = Home::new();
-    let folder = extension(&home, "ext", &["tools", "network"]);
-    let commands = vec![json!({"install": folder}).to_string()];
-    let (_client, session) = started(&home, commands, true).await;
-    home.until_turns(&session, 1).await;
-    assert_eq!(
-        approved(&home, "ext"),
-        json!(["network", "tools"]),
-        "完全放开照看的那一份批"
-    );
 }
 
 #[tokio::test]
@@ -240,7 +210,7 @@ async fn a_folder_that_is_not_a_package_is_refused_without_asking() {
     std::fs::create_dir_all(&folder).expect("建得了");
     std::fs::write(folder.join("package.toml"), "[package\n").expect("写得进");
     let commands = vec![json!({"install": folder}).to_string()];
-    let (_client, session) = started(&home, commands, false).await;
+    let (_client, session) = started(&home, commands).await;
     home.until_turns(&session, 1).await;
     assert!(requests(&home, &session).is_empty(), "看不了的不问");
     let said = results(&home, &session);
@@ -266,7 +236,7 @@ async fn a_name_clash_tells_her_what_and_where() {
     );
     let folder = kit(&home, "akit");
     let commands = vec![json!({"install": folder}).to_string()];
-    let (_client, session) = started(&home, commands, true).await;
+    let (_client, session) = started(&home, commands).await;
     home.until_turns(&session, 1).await;
     let said = results(&home, &session);
     assert_eq!(said.len(), 1, "{said:?}");
@@ -280,7 +250,7 @@ async fn a_name_clash_tells_her_what_and_where() {
 }
 
 /// 她装回卸掉的出厂包、整组（施工 BS-1 中下修，网页报的）：命令里的 `miyu pkg install mermaid` 不走软件源；
-/// 完全放开的照常装回来。
+/// 人答应了照常装回来。
 #[tokio::test]
 async fn bringing_back_a_shipped_package_or_a_group_works() {
     let home = Home::new();
@@ -303,14 +273,25 @@ async fn bringing_back_a_shipped_package_or_a_group_works() {
     }
     let cwd = home.work.to_string_lossy().into_owned();
     let session = client.create("c1", &cwd).await;
-    let params = json!({"session": session, "level": "full"});
-    let reply = client
-        .call("p1", "session.set_permission_level", params)
-        .await;
-    assert_eq!(reply["result"], json!({}), "{reply}");
     client.say("s1", &session, "把 mermaid 装回来").await;
+    // 每装一个问一次：命令里调了两次，出一张答一张。
+    for n in 1..=2 {
+        until("装的确认请求", || {
+            requests(&home, &session).len() == n
+        })
+        .await;
+        let asked = requests(&home, &session).remove(n - 1);
+        let call = asked["call_id"].as_str().expect("有编号").to_string();
+        let nested = asked["nested"].clone();
+        let params =
+            json!({"session": session, "call": call, "decision": "once", "nested": nested});
+        let reply = client
+            .call(&format!("a{n}"), "session.answer", params)
+            .await;
+        assert!(reply["result"].is_object(), "{reply}");
+    }
     home.until_turns(&session, 1).await;
-    assert!(requests(&home, &session).is_empty(), "完全放开的不问");
+    assert_eq!(requests(&home, &session).len(), 2, "一次一张");
     let listed = client.call("l", "package.list", json!({})).await;
     let removed: Vec<&str> = listed["result"]["packages"]
         .as_array()

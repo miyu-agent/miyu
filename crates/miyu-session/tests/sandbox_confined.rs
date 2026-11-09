@@ -37,7 +37,6 @@ async fn confined(level: Level) -> (Home, PathBuf, Vec<Option<Arc<Sandboxed>>>) 
         cwd: work.to_string_lossy().into_owned(),
         dirs: Vec::new(),
         sandbox: Some(PathBuf::from(HELPER)),
-        sandbox_cache: None,
     };
     let lines = Lines {
         venue: VenueId::parse("qq:group:1").expect("场所合写法"),
@@ -55,7 +54,7 @@ async fn confined(level: Level) -> (Home, PathBuf, Vec<Option<Arc<Sandboxed>>>) 
 
 #[tokio::test]
 async fn a_confined_command_reads_and_writes_only_its_workspace() {
-    for level in [Level::Workspace, Level::Full] {
+    for level in [Level::Full] {
         let (home, work, sandboxes) = confined(level.clone()).await;
         if !miyu_sandbox::CONFINES_READS {
             assert!(sandboxes.is_empty(), "关不住读的平台上不跑");

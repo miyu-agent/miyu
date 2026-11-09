@@ -39,11 +39,7 @@ fn switched(level: &str, previous: &str) -> String {
     format!(r#"<p l="{level}" was="{previous}"/>"#)
 }
 
-/// 工作区、完全放开、只读开着（常用的那一级是完全放开）。
-fn workspace() -> Permission {
-    permission(Level::Workspace, false)
-}
-
+/// 完全放开、只读开着（A16 起只剩这两级，施工 LV-1）。
 fn full() -> Permission {
     permission(Level::Full, false)
 }
@@ -95,11 +91,11 @@ fn the_changed_template_is_checked_when_made() {
 #[test]
 fn the_changed_block_names_the_level_in_effect_and_the_one_before() {
     let block = switching()
-        .permission_changed(&read_only(), "workspace")
+        .permission_changed(&read_only(), "full")
         .unwrap();
     assert_eq!(block.kind.as_str(), "permission");
-    assert_eq!(block.text, switched("read_only", "workspace"));
-    assert_eq!(older().permission_changed(&full(), "workspace"), None);
+    assert_eq!(block.text, switched("read_only", "full"));
+    assert_eq!(older().permission_changed(&full(), "read_only"), None);
 }
 
 #[test]
@@ -112,13 +108,26 @@ fn with_no_block_before_it_the_plain_one_is_told() {
 #[test]
 fn the_same_level_is_not_told_again() {
     let mut log = Log::new();
-    saw(&mut log, &plain("workspace"));
+    saw(&mut log, &plain("full"));
     log.start();
-    assert_eq!(told(&switching(), &log, &workspace()), None);
+    assert_eq!(told(&switching(), &log, &full()), None);
 }
 
 #[test]
 fn another_level_is_told_with_the_one_before() {
+    let mut log = Log::new();
+    saw(&mut log, &plain("full"));
+    log.start();
+    assert_eq!(
+        told(&switching(), &log, &read_only()),
+        Some(switched("read_only", "full")),
+        "只读开着，实际生效的是只读"
+    );
+}
+
+/// A16 以前的会话（施工 LV-1）：她上一块看到的是工作区，现在读成完全放开，照切换那一份说一次。
+#[test]
+fn an_old_workspace_block_is_followed_by_the_switch_to_full() {
     let mut log = Log::new();
     saw(&mut log, &plain("workspace"));
     log.start();
@@ -126,27 +135,18 @@ fn another_level_is_told_with_the_one_before() {
         told(&switching(), &log, &full()),
         Some(switched("full", "workspace"))
     );
-    assert_eq!(
-        told(&switching(), &log, &read_only()),
-        Some(switched("read_only", "workspace")),
-        "只读开着，实际生效的是只读"
-    );
 }
 
 #[test]
 fn a_changed_block_counts_as_its_new_level() {
     let mut log = Log::new();
-    saw(&mut log, &plain("workspace"));
-    saw(&mut log, &switched("full", "workspace"));
+    saw(&mut log, &plain("read_only"));
+    saw(&mut log, &switched("full", "read_only"));
     log.start();
     assert_eq!(told(&switching(), &log, &full()), None);
     assert_eq!(
         told(&switching(), &log, &read_only()),
-        Some(switched("read_only", "full"))
-    );
-    assert_eq!(
-        told(&switching(), &log, &workspace()),
-        Some(switched("workspace", "full")),
+        Some(switched("read_only", "full")),
         "切回去也照最近那一块比"
     );
 }
@@ -154,10 +154,10 @@ fn a_changed_block_counts_as_its_new_level() {
 #[test]
 fn older_templates_tell_the_plain_block_as_before() {
     let mut log = Log::new();
-    saw(&mut log, &plain("workspace"));
+    saw(&mut log, &plain("read_only"));
     log.start();
     assert_eq!(told(&older(), &log, &full()), Some(plain("full")));
-    assert_eq!(told(&older(), &log, &workspace()), None);
+    assert_eq!(told(&older(), &log, &read_only()), None);
 }
 
 #[test]
@@ -165,24 +165,21 @@ fn a_block_it_cannot_read_is_compared_by_its_text() {
     let mut log = Log::new();
     saw(&mut log, "<p>odd</p>");
     log.start();
-    assert_eq!(
-        told(&switching(), &log, &workspace()),
-        Some(plain("workspace"))
-    );
+    assert_eq!(told(&switching(), &log, &full()), Some(plain("full")));
 }
 
 #[test]
 fn blocks_from_modules_do_not_count() {
     let mut log = Log::new();
     log.start();
-    log.inject(MEMORY, "permission", &plain("workspace"));
+    log.inject(MEMORY, "permission", &plain("read_only"));
     assert_eq!(told(&switching(), &log, &full()), Some(plain("full")));
 }
 
 #[test]
 fn after_a_compaction_the_plain_block_is_told() {
     let mut log = Log::new();
-    saw(&mut log, &plain("workspace"));
+    saw(&mut log, &plain("read_only"));
     log.start();
     log.compact();
     assert_eq!(told(&switching(), &log, &full()), Some(plain("full")));
@@ -191,20 +188,20 @@ fn after_a_compaction_the_plain_block_is_told() {
 #[test]
 fn after_undoing_the_turns_that_told_it_the_block_before_counts() {
     let mut log = Log::new();
-    saw(&mut log, &plain("workspace"));
+    saw(&mut log, &plain("read_only"));
     let second = log.start();
-    log.inject(KERNEL, "permission", &switched("full", "workspace"));
+    log.inject(KERNEL, "permission", &switched("full", "read_only"));
     log.end();
     log.revert(second);
     log.start();
     assert_eq!(
-        told(&switching(), &log, &read_only()),
-        Some(switched("read_only", "workspace"))
+        told(&switching(), &log, &full()),
+        Some(switched("full", "read_only"))
     );
     // 连第一块也撤掉了：没有上一块。
     let mut log = Log::new();
     let first = log.start();
-    log.inject(KERNEL, "permission", &plain("workspace"));
+    log.inject(KERNEL, "permission", &plain("read_only"));
     log.end();
     log.revert(first);
     log.start();
@@ -213,17 +210,13 @@ fn after_undoing_the_turns_that_told_it_the_block_before_counts() {
 
 #[test]
 fn every_level_can_be_the_one_before() {
-    for (before, now, previous) in [
-        (read_only(), workspace(), "read_only"),
-        (workspace(), read_only(), "workspace"),
-        (full(), workspace(), "full"),
+    for (before, now, previous, other) in [
+        (read_only(), full(), "read_only", "full"),
+        (full(), read_only(), "full", "read_only"),
     ] {
         for seen in [
             switching().permission(&before).text,
-            switching()
-                .permission_changed(&before, "workspace")
-                .unwrap()
-                .text,
+            switching().permission_changed(&before, other).unwrap().text,
         ] {
             let mut log = Log::new();
             saw(&mut log, &seen);

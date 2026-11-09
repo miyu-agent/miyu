@@ -32,7 +32,7 @@ fn first(templates: &FactTemplates) -> Vec<(String, String)> {
             &Log::new().history,
             now(),
             &environment("~/src/miyu"),
-            &permission(Level::Workspace, false),
+            &permission(Level::Full, false),
             (&session(), Some(&identity())),
         )
         .into_iter()

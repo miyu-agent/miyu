@@ -1,6 +1,6 @@
-//! 别的程序的私密目录（施工 5-13，`docs/blueprint/session/guard.md` 判法表）：文件工具读、写都问人，完全放开不问，只读时写
-//! 照拒；问人的说明里这一片写 `private`，提的规则放行整个目录。工作区、加进来的目录落在里面的照人给的算。场地的假家目录
-//! 是 `home/`。人在配置里加的、去掉的出厂项照这一轮的配置算（施工 5-15 下）；受保护的路径（只禁写）也是（施工 5-17 下）。
+//! 别的程序的私密目录（施工 5-13，`docs/blueprint/session/guard.md` 判法表）：完全放开读写都不问；只读时读问人、写照拒（A16
+//! 起只剩这两级，施工 LV-1）；问人的说明里这一片写 `private`，提的规则放行整个目录。工作区、加进来的目录落在里面的照人给的算。
+//! 场地的假家目录是 `home/`。人在配置里加的、去掉的出厂项照这一轮的配置算（施工 5-15 下）。
 
 use std::sync::Arc;
 
@@ -61,7 +61,6 @@ async fn called(
         cwd: at(home, cwd),
         dirs,
         sandbox: None,
-        sandbox_cache: None,
     };
     let handle = home.create_as(&script, &kit.catalog(), opening).await;
     ask(&handle, "cmd-1", say("hi")).await.expect("会话在跑");
@@ -99,37 +98,32 @@ async fn a_read_in_a_private_dir_asks_and_says_it_is_private() {
     let home = Home::outside_temp();
     file(&home, "home/.ssh/id_ed25519");
     let key = at(&home, "home/.ssh/id_ed25519");
-    for read_only in [false, true] {
-        let kit = Kit::new();
-        let handle = called(
-            &home,
-            &kit,
-            ("work", Vec::new()),
-            (Level::Workspace, read_only, true),
-            ("read", &key),
-        )
-        .await;
-        assert!(
-            kit.read.calls().is_empty(),
-            "只读 {read_only}：还没回答，没跑"
-        );
-        let request = request(&home, &handle).expect("问了人");
-        let real = std::fs::canonicalize(&key).expect("在");
-        let dir = std::fs::canonicalize(home.home.join(".ssh")).expect("在");
-        let rule: serde_json::Value =
-            serde_json::from_str(request.rule.expect("提了规则").get()).expect("是 JSON");
-        assert_eq!(
-            rule,
-            serde_json::json!({"tool": "read", "read": [dir.to_string_lossy()]}),
-            "放行整个目录"
-        );
-        let detail: serde_json::Value =
-            serde_json::from_str(request.detail.expect("有说明").get()).expect("是 JSON");
-        assert_eq!(
-            detail,
-            serde_json::json!({"tool": "read", "paths": [{"path": real.to_string_lossy(), "write": false, "zone": "private"}]})
-        );
-    }
+    let kit = Kit::new();
+    let handle = called(
+        &home,
+        &kit,
+        ("work", Vec::new()),
+        (Level::Full, true, true),
+        ("read", &key),
+    )
+    .await;
+    assert!(kit.read.calls().is_empty(), "还没回答，没跑");
+    let request = request(&home, &handle).expect("问了人");
+    let real = std::fs::canonicalize(&key).expect("在");
+    let dir = std::fs::canonicalize(home.home.join(".ssh")).expect("在");
+    let rule: serde_json::Value =
+        serde_json::from_str(request.rule.expect("提了规则").get()).expect("是 JSON");
+    assert_eq!(
+        rule,
+        serde_json::json!({"tool": "read", "read": [dir.to_string_lossy()]}),
+        "放行整个目录"
+    );
+    let detail: serde_json::Value =
+        serde_json::from_str(request.detail.expect("有说明").get()).expect("是 JSON");
+    assert_eq!(
+        detail,
+        serde_json::json!({"tool": "read", "paths": [{"path": real.to_string_lossy(), "write": false, "zone": "private"}]})
+    );
 }
 
 #[tokio::test]
@@ -141,7 +135,7 @@ async fn nobody_to_ask_means_a_private_read_does_not_run() {
         &home,
         &kit,
         ("work", Vec::new()),
-        (Level::Workspace, false, false),
+        (Level::Full, true, false),
         ("read", &at(&home, "home/.claude/settings.json")),
     )
     .await;
@@ -158,7 +152,7 @@ async fn read_only_refuses_a_private_write_without_asking() {
         &home,
         &kit,
         ("work", Vec::new()),
-        (Level::Workspace, true, true),
+        (Level::Full, true, true),
         ("edit", &at(&home, "home/.gnupg/pubring.kbx")),
     )
     .await;
@@ -186,6 +180,7 @@ async fn full_access_reads_and_writes_private_dirs_without_asking() {
     }
 }
 
+/// 工作区、加进来的目录落在私密目录里的照人给的算：只读时读里面的不问（A16 起完全放开本来就不问，只读才看得出来）。
 #[tokio::test]
 async fn a_workspace_or_added_dir_inside_a_private_dir_goes_as_given() {
     let home = Home::outside_temp();
@@ -196,8 +191,8 @@ async fn a_workspace_or_added_dir_inside_a_private_dir_goes_as_given() {
         &home,
         &kit,
         ("home/.claude/proj", Vec::new()),
-        (Level::Workspace, false, false),
-        ("edit", &at(&home, "home/.claude/proj/a.md")),
+        (Level::Full, true, false),
+        ("read", &at(&home, "home/.claude/proj/a.md")),
     )
     .await;
     assert_eq!(
@@ -210,8 +205,8 @@ async fn a_workspace_or_added_dir_inside_a_private_dir_goes_as_given() {
         &home,
         &kit,
         ("work", vec![at(&home, "home/.config/gh")]),
-        (Level::Workspace, false, false),
-        ("edit", &at(&home, "home/.config/gh/notes.md")),
+        (Level::Full, true, false),
+        ("read", &at(&home, "home/.config/gh/notes.md")),
     )
     .await;
     assert_eq!(
@@ -237,7 +232,7 @@ async fn the_private_dirs_follow_the_settings() {
         &home,
         &kit,
         ("work", Vec::new()),
-        (Level::Workspace, false, true),
+        (Level::Full, true, true),
         ("read", &diary),
     )
     .await;
@@ -253,83 +248,10 @@ async fn the_private_dirs_follow_the_settings() {
         &home,
         &kit,
         ("work", Vec::new()),
-        (Level::Workspace, false, true),
+        (Level::Full, true, true),
         ("read", &key),
     )
     .await;
     assert!(request(&home, &handle).is_none(), "去掉的出厂项：不问");
     assert_eq!(kit.read.calls().len(), 1, "照常读");
-}
-
-/// 受保护的路径（只禁写，施工 5-17 下）照这一轮的配置：人加的（工作区里的相对路径）写要问人、说是只读的，读照常不问；去掉的出厂项
-/// 写不问；留着的出厂项照旧问。
-#[tokio::test]
-async fn the_readonly_list_follows_the_settings() {
-    let mut home = Home::outside_temp();
-    file(&home, "work/Makefile");
-    file(&home, "work/.vscode/settings.json");
-    file(&home, "work/.idea/workspace.xml");
-    home.configs = crate::support::routing::configs_with(
-        "",
-        "[sandbox.readonly]\nadd = [\"Makefile\"]\nremove = [\".vscode\"]\n",
-        &[],
-    );
-    for (path, asks) in [
-        ("work/Makefile", true),
-        ("work/.idea/workspace.xml", true),
-        ("work/.vscode/settings.json", false),
-    ] {
-        let kit = Kit::new();
-        let target = at(&home, path);
-        let handle = called(
-            &home,
-            &kit,
-            ("work", Vec::new()),
-            (Level::Workspace, false, true),
-            ("edit", &target),
-        )
-        .await;
-        match request(&home, &handle) {
-            Some(asked) if asks => {
-                let detail: serde_json::Value =
-                    serde_json::from_str(asked.detail.expect("有说明").get()).expect("是 JSON");
-                assert_eq!(detail["paths"][0]["zone"], "read_only", "{path}");
-                assert!(kit.edit.calls().is_empty(), "{path}：还没回答，没跑");
-            }
-            None if !asks => assert_eq!(kit.edit.calls().len(), 1, "{path}：照常写"),
-            other => panic!("{path}：该问 {asks}，{other:?}"),
-        }
-    }
-    let kit = Kit::new();
-    let makefile = at(&home, "work/Makefile");
-    let handle = called(
-        &home,
-        &kit,
-        ("work", Vec::new()),
-        (Level::Workspace, false, true),
-        ("read", &makefile),
-    )
-    .await;
-    assert!(request(&home, &handle).is_none(), "读照常");
-    assert_eq!(kit.read.calls().len(), 1);
-    // 受保护的文件、上级不受保护的：提的规则只放这一个文件，放它的上级盖不住它。
-    file(&home, "work/.mcp.json");
-    let kit = Kit::new();
-    let mcp = at(&home, "work/.mcp.json");
-    let handle = called(
-        &home,
-        &kit,
-        ("work", Vec::new()),
-        (Level::Workspace, false, true),
-        ("edit", &mcp),
-    )
-    .await;
-    let asked = request(&home, &handle).expect("问了人");
-    let rule: serde_json::Value =
-        serde_json::from_str(asked.rule.expect("提了规则").get()).expect("是 JSON");
-    let real = std::fs::canonicalize(&mcp).expect("在");
-    assert_eq!(
-        rule,
-        serde_json::json!({"tool": "edit", "write": [real.to_string_lossy()]})
-    );
 }

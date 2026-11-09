@@ -172,11 +172,6 @@ impl Actor {
         let docs = self.project_docs_turn(&present);
         // 子目录的项目指令照同一个口径（施工 P-14 下）：这一轮读、改工作目录下面的文件时补。
         self.project_docs_look();
-        // 主人放行出沙盒的照这一轮的配置换（施工 X-36）：权限策略、执行器各拿一份。
-        let unsandboxed =
-            crate::unsandboxed::Unsandboxed::of(&values).within(self.guard.confines().clone());
-        self.guard.set_unsandboxed(unsandboxed.clone());
-        self.tools.set_unsandboxed(unsandboxed);
         let config = Arc::clone(self.config.current());
         let knowledge = self.recalling();
         // 扩展和记忆、知识库一起问：各有各的限时，这一轮只等慢的那一个（施工 X-16）。

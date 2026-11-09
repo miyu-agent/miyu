@@ -35,7 +35,6 @@ pub fn configured_core(home: &Home, script: &Script, tools: Catalog) -> Arc<Core
         miyu_session::loading::ITEMS,
         miyu_session::switches::ITEMS,
         miyu_session::packages_off::ITEMS,
-        miyu_session::unsandboxed::ITEMS,
     ]
     .concat();
     let config = miyu_endpoint::config::Config::load(

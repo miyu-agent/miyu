@@ -114,13 +114,13 @@ miyu_config::settings! {
             applies: new_session,
             ui: { page: "general", group: "new_session", control: toggle },
         },
-        /// 新会话开局的权限级别（施工 8-32；设置页挪到「隐私与安全」，施工 5-15 下）：`workspace` 是工作区（执行命令在沙盒里跑），`full` 是完全放开。头的第一次
-        /// 引导里「沙盒」那一步写它，开是 `workspace`（2026-10-13 项目主人定：默认开）。只管本机的会话：场所会话照旧从工作区开局。
-        level: String = "workspace" {
-            kind: option ["workspace", "full"],
+        /// 新会话开局的权限级别（施工 8-32）：A16 起只有 `full`（完全放开，施工 LV-1），只读另由 `start_read_only` 管。`workspace`
+        /// 照收、读成 `full`：旧的配置、还没跟上的头的引导写它不报错。设置页不列（`hidden`）。
+        level: String = "full" {
+            kind: option ["full", "workspace"],
             layers: [System],
             applies: new_session,
-            ui: { page: "privacy", group: "permission", control: select },
+            ui: { page: "privacy", group: "permission", control: select, hidden: true },
         },
     }
 }
@@ -253,7 +253,6 @@ pub(crate) fn core_items() -> Vec<miyu_config::Item> {
         miyu_session::loading::ITEMS,
         miyu_session::switches::ITEMS,
         miyu_session::packages_off::ITEMS,
-        miyu_session::unsandboxed::ITEMS,
         miyu_session::settings::ProfileSettings::ITEMS,
         EXTERNAL_BINDINGS,
     ]

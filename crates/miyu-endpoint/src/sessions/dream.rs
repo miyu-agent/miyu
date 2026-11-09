@@ -57,7 +57,6 @@ impl Sessions {
             personas: personas::personas(core),
             memory_scope: MemoryScope::Off,
             venue: VenueId::parse(crate::list::LOCAL).map_err(|error| error.to_string())?,
-            sandbox_cache: core.sandbox_cache_of(),
             index: Some(core.index()),
             usage: core.ledger(),
             knowledge: None,
@@ -68,7 +67,7 @@ impl Sessions {
             configs: core.configs_of(),
             confined: false,
             permission: Permission {
-                level: Level::Workspace,
+                level: Level::Full,
                 read_only: true,
             },
             attended: false,

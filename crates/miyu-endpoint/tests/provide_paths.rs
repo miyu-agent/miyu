@@ -1,7 +1,7 @@
 //! 扩展的工具在规格里的两样声明（施工 XG-1 上，设计 `63-扩展工具的效果和声明.md` 第二、三、六节）：真核心走一遍。
 //!
-//! - `paths`：工作区一级下，写工作区外的文件要问人，人点头以前扩展收不到 `tool.call`；`tool.call` 带 `checked`，是链判过的真实
-//!   位置。写在工作区里的不问。和内置 `edit` 走同一张判法表（以前扩展的工具不报路径，照「不报路径的调用」放行）；
+//! - `paths`：和内置 `edit` 走同一张判法表（以前扩展的工具不报路径，照「不报路径的调用」放行）：写进数据根的当场拒，扩展收不到
+//!   `tool.call`；放行的 `tool.call` 带 `checked`，是链判过的真实位置（A16 起完全放开下写工作区外不再问人，施工 LV-1）；
 //! - `background_parameters`：后台运行关着的会话，工具面上去掉那几个参数；开着的照旧。不写这几格的工具，参数格式逐字节照登记的。
 
 use std::path::Path;
@@ -31,17 +31,6 @@ async fn lines(path: &Path, n: usize) {
     }
 }
 
-/// 根目录下一个不存在的目录里的文件：不在工作区、临时目录这些能写的地方，写它一定要问人。
-fn nowhere(name: &str) -> String {
-    let root = if cfg!(windows) { "C:\\" } else { "/" };
-    let dir = format!("miyu-nowhere-{}", std::process::id());
-    Path::new(root)
-        .join(dir)
-        .join(name)
-        .to_string_lossy()
-        .into_owned()
-}
-
 /// 扩展收到的 `tool.call`，照先后。
 fn calls(path: &Path) -> Vec<Value> {
     read(path)
@@ -60,7 +49,7 @@ fn asked(home: &Home, session: &str) -> usize {
 }
 
 #[tokio::test]
-async fn a_declared_write_outside_the_workspace_is_asked_before_the_extension_hears_of_it() {
+async fn a_declared_write_into_the_data_root_is_refused_before_the_extension_hears_of_it() {
     let home = Home::new();
     let program = Program::new();
     let (path, keep) = record(&home, "writer");
@@ -78,7 +67,12 @@ async fn a_declared_write_outside_the_workspace_is_asked_before_the_extension_he
         "always",
         &steps(&[&keep, "hello", &format!("ask:provide:{offered}"), "serve"]),
     );
-    let outside = nowhere("x.txt");
+    let outside = home
+        .root
+        .path()
+        .join("x.txt")
+        .to_string_lossy()
+        .into_owned();
     let script = Script::new([
         Play::calls(&[("ext_write", r#"{"file_path":"inside.txt"}"#)]),
         Play::calls(&[("ext_write", &json!({ "file_path": outside }).to_string())]),
@@ -100,39 +94,23 @@ async fn a_declared_write_outside_the_workspace_is_asked_before_the_extension_he
     client.hello().await;
     let session = client.create("c1", &home.work.to_string_lossy()).await;
     client.say("c2", &session, "写一下").await;
-    until("确认请求", || asked(&home, &session) == 1).await;
-    let before = calls(&path);
+    home.until_turns(&session, 1).await;
+    assert_eq!(asked(&home, &session), 0, "数据根不问人，直接拒");
+    let sent = calls(&path);
     assert_eq!(
-        before.len(),
+        sent.len(),
         1,
-        "工作区里的不问、照常发；外面的人点头以前不发：{before:?}"
+        "工作区里的照常发；数据根里的扩展收不到：{sent:?}"
     );
     let inside = std::fs::canonicalize(&home.work)
         .expect("在")
         .join("inside.txt");
     assert_eq!(
-        before[0]["params"]["checked"],
+        sent[0]["params"]["checked"],
         json!([miyu_fs::plain(&inside)]),
         "带着链判过的真实位置"
     );
-    let request = logged(&home, &session)
-        .into_iter()
-        .find(|event| event["kind"] == json!("tool.approval_requested"))
-        .expect("有");
-    let call = request["body"]["call_id"].as_str().expect("有编号");
-    let answer = json!({"session": session, "call": call, "decision": "once"});
-    let reply = client.call("c3", "session.answer", answer).await;
-    assert!(reply.get("error").is_none(), "{reply}");
-    home.until_turns(&session, 1).await;
-    let after = calls(&path);
-    assert_eq!(after.len(), 2, "点了头才发：{after:?}");
-    assert_eq!(after[1]["params"]["args"]["file_path"], json!(outside));
-    assert_eq!(
-        after[1]["params"]["checked"],
-        json!([outside]),
-        "{}",
-        after[1]
-    );
+    assert!(!Path::new(&outside).exists());
 }
 
 /// 第一次请求里 `name` 那件工具的参数格式，原文。

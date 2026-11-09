@@ -58,7 +58,6 @@ mod blob_session;
 mod bridge_venues;
 mod check;
 mod check_embedding;
-mod check_unsandboxed;
 mod clear;
 mod clear_memory_command;
 mod command_access;

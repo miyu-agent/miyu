@@ -70,14 +70,13 @@ async fn compacted(more: Vec<Play>) -> (Home, Script, Handle, TurnId) {
     let script = Script::new(plays).window(32_000);
     let opening = Opening {
         permission: Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only: false,
         },
         attended: false,
         cwd: work.to_string_lossy().into_owned(),
         dirs: Vec::new(),
         sandbox: None,
-        sandbox_cache: None,
     };
     let handle = home.create_as(&script, &base_system(), opening).await;
     let mut pushes = watch(&handle).await;

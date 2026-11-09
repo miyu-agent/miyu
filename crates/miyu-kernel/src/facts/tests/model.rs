@@ -28,7 +28,7 @@ fn told(templates: &FactTemplates, log: &Log, identity: &Identity) -> Option<Str
             &log.history,
             now(),
             &environment("~/src/miyu"),
-            &permission(Level::Workspace, false),
+            &permission(Level::Full, false),
             (&session(), Some(identity)),
         )
         .into_iter()
@@ -87,7 +87,7 @@ fn it_comes_after_the_session_block_at_a_boundary() {
         &History::default(),
         now(),
         &environment("~/src/miyu"),
-        &permission(Level::Workspace, false),
+        &permission(Level::Full, false),
         (&session(), Some(&identity("m", "default", "none"))),
     );
     let kinds: Vec<&str> = facts.iter().map(|fact| fact.kind.as_str()).collect();
@@ -119,7 +119,7 @@ fn without_an_identity_or_a_template_there_is_no_model_block() {
         &History::default(),
         now(),
         &environment("~/src/miyu"),
-        &permission(Level::Workspace, false),
+        &permission(Level::Full, false),
         (&session(), None),
     );
     assert!(quiet.iter().all(|fact| fact.kind.as_str() != "model"));

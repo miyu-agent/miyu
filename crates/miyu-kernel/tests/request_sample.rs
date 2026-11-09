@@ -15,7 +15,7 @@ const READ_PARAMETERS: &str = r#"{"type":"object","properties":{"path":{"type":"
 /// 43、44 号注入的两块，照模板，行尾都有一个换行。
 const ENV: &str =
     "<env time=\"Fri 2026-09-25 16:00–16:10\" timezone=\"UTC+09:00\" cwd=\"~/src/miyu\"/>\n";
-const PERMISSION: &str = "<permission level=\"workspace\"/>\n";
+const PERMISSION: &str = "<permission level=\"full\"/>\n";
 
 fn text(text: &str) -> Block {
     Block::Text(Text {

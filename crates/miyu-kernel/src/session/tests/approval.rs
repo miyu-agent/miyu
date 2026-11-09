@@ -98,7 +98,7 @@ fn every_call_goes_through_the_chain_before_it_runs() {
             cwd: "~/src/miyu".to_string(),
             dirs: Vec::new(),
             permission: Permission {
-                level: Level::Workspace,
+                level: Level::Full,
                 read_only: false,
             },
             grants: Vec::new(),

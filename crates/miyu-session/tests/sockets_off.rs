@@ -26,14 +26,13 @@ async fn once(venue: &str, unconfined: bool) -> (usize, Option<String>) {
     std::fs::create_dir_all(&cwd).expect("建得了工作目录");
     let opening = Opening {
         permission: Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only: false,
         },
         attended: false,
         cwd: cwd.to_string_lossy().into_owned(),
         dirs: Vec::new(),
         sandbox: Some(PathBuf::from("miyu-sandbox")),
-        sandbox_cache: None,
     };
     let lines = Lines {
         venue: VenueId::parse(venue).expect("场所合写法"),

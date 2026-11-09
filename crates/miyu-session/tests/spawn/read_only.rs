@@ -17,7 +17,7 @@ async fn child_of_writable(extra: serde_json::Value) -> Child {
     ]);
     let opening = Opening {
         permission: Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only: false,
         },
         ..Opening::default()
@@ -40,7 +40,7 @@ async fn a_read_only_child_gets_the_parents_level_with_read_only_on() {
     assert_eq!(
         plain.permission,
         Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only: false
         },
         "没写的照抄父会话"
@@ -49,7 +49,7 @@ async fn a_read_only_child_gets_the_parents_level_with_read_only_on() {
     assert_eq!(
         read_only.permission,
         Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only: true
         },
         "写了只读的打开只读开关，常用的那一级照抄"

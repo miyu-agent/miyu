@@ -27,7 +27,7 @@ fn created(oneshot: bool, parent: Option<&str>) -> String {
         format!(r#","parent":"{parent}","depth":1"#)
     });
     format!(
-        r#"{{"seq":1,"at":"{}","kind":"session.created","by":{{"kind":"person"}},"cause":"c1","body":{{"venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{{"level":"workspace","read_only":false}},"oneshot":{oneshot},"cwd":"~/a"{parent}}}}}"#,
+        r#"{{"seq":1,"at":"{}","kind":"session.created","by":{{"kind":"person"}},"cause":"c1","body":{{"venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{{"level":"full","read_only":false}},"oneshot":{oneshot},"cwd":"~/a"{parent}}}}}"#,
         at(0)
     )
 }
@@ -237,7 +237,7 @@ fn a_log_shorter_than_the_row_or_off_the_line_is_read_whole() {
         ]),
     );
     // 换成更长的一份，记的位置落在一行中间。
-    let a = r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"person"},"cause":"c1","body":{"venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{"level":"workspace","read_only":false},"cwd":"~/rewritten"}}"#;
+    let a = r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"person"},"cause":"c1","body":{"venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{"level":"full","read_only":false},"cwd":"~/rewritten"}}"#;
     write(
         &site,
         A,

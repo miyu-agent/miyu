@@ -292,7 +292,6 @@ async fn a_person_s_command_is_not_handed_to_an_extension() {
         &runner(json!(true)),
         &["serve"],
     );
-    home.write("etc/config.toml", "[sandbox.tools]\next_run = \"runner\"\n");
     let core = configured_core(&home, &Script::new([]), probe());
     core.start_extensions();
     lines(&path, 3).await;
@@ -311,14 +310,4 @@ async fn a_person_s_command_is_not_handed_to_an_extension() {
         json!("shell_unavailable"),
         "只认内置 shell：{reply}"
     );
-    // 放行出沙盒的跑命令工具：照声明认，照旧提醒（`sandbox_shell`）。
-    let checked = client.call("c3", "check", json!({})).await;
-    let codes: Vec<&str> = checked["result"]["problems"]
-        .as_array()
-        .unwrap_or_else(|| panic!("{checked}"))
-        .iter()
-        .filter_map(|problem| problem["code"].as_str())
-        .filter(|code| code.starts_with("sandbox_"))
-        .collect();
-    assert_eq!(codes, ["sandbox_shell"], "{checked}");
 }

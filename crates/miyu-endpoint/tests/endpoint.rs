@@ -394,8 +394,7 @@ async fn hello_says_whether_the_sandbox_can_be_used() {
     let home = Home::new();
     let script = Script::new([]);
     let usable = Availability::Usable(std::path::PathBuf::from("miyu-sandbox"));
-    let mut client =
-        Client::connect(home.core_sandboxed(&script, Catalog::default(), usable, None));
+    let mut client = Client::connect(home.core_sandboxed(&script, Catalog::default(), usable));
     let reply = client.hello().await;
     assert_eq!(
         reply["result"]["sandbox"],
@@ -407,12 +406,7 @@ async fn hello_says_whether_the_sandbox_can_be_used() {
         (Unusable::HelperFailed, "helper_failed"),
         (Unusable::NoMechanism, "no_mechanism"),
     ] {
-        let core = home.core_sandboxed(
-            &script,
-            Catalog::default(),
-            Availability::Unusable(reason),
-            None,
-        );
+        let core = home.core_sandboxed(&script, Catalog::default(), Availability::Unusable(reason));
         let mut client = Client::connect(core);
         let reply = client.hello().await;
         assert_eq!(

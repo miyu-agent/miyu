@@ -6,7 +6,6 @@ use std::sync::Arc;
 
 use serde_json::{Value, json};
 
-use crate::support::outside::Outside;
 use crate::support::{Asked, Home, plan, shipped_tools};
 use miyu_cli::{Output, Plan, Target};
 use miyu_session::testkit::{Play, Script};
@@ -130,14 +129,12 @@ async fn without_a_model_the_turn_has_the_error_and_done_says_why() {
 /// 每一步开始、结束各一行：工具名、标题，做成了没有、结果那一句；要确认没做的最后是一句告警，退出码 4。
 #[tokio::test]
 async fn steps_start_and_finish_and_skipped_ones_warn() {
-    // 写到工作区外面要确认（同 `steps.rs`）：放在系统的临时目录里不算外面。
-    let elsewhere = Outside::new();
-    let outside = elsewhere.0.join("plan.md");
-    let write = json!({"file_path": outside.to_string_lossy(), "content": "x"}).to_string();
+    // 高危的命令完全放开下也要确认（同 `steps.rs`，施工 5-17、LV-1）。
+    let reset = json!({"command": "git reset --hard", "description": "Reset"}).to_string();
     let home = Home::with_tools(
         Arc::new(Script::new([
-            Play::calls(&[("write", &write)]),
-            Play::Says("没写成。"),
+            Play::calls(&[("shell", &reset)]),
+            Play::Says("没跑成。"),
         ])),
         shipped_tools(),
     );
@@ -159,11 +156,11 @@ async fn steps_start_and_finish_and_skipped_ones_warn() {
             "done"
         ]
     );
-    assert_eq!(lines[2]["tool"], "write");
-    let title = lines[2]["title"].as_str().expect("有标题");
-    assert!(
-        title.starts_with("写入 ") && title.ends_with("plan.md"),
-        "{title}"
+    assert_eq!(lines[2]["tool"], "shell");
+    assert_eq!(
+        lines[2]["title"], "执行命令 git reset --hard",
+        "{}",
+        lines[2]
     );
     assert_eq!(lines[3]["id"], lines[2]["id"]);
     assert_eq!(lines[3]["ok"], false);
@@ -174,7 +171,6 @@ async fn steps_start_and_finish_and_skipped_ones_warn() {
         json!({"hints": ["在终端界面中运行可以确认"], "message": "1 步需要确认，已跳过", "type": "warning"})
     );
     assert_eq!(lines[n - 1]["reason"], "unattended");
-    assert!(!outside.exists(), "没写");
 }
 
 /// 开好会话以前就失败的（施工 AP-3 补）：标准输出的最后一行照样是 `done`，没有 `session`，`reason` 是 `failed`；原因只在标准

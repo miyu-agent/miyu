@@ -44,14 +44,13 @@ async fn she_finds_and_searches_in_the_workspace_and_outside() {
     ]);
     let opening = Opening {
         permission: Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only: false,
         },
         attended: false,
         cwd: home.scratch.0.join("work").to_string_lossy().into_owned(),
         dirs: Vec::new(),
         sandbox: None,
-        sandbox_cache: None,
     };
     let handle = home.create_as(&script, &base_system(), opening).await;
     let mut pushes = watch(&handle).await;
@@ -112,7 +111,6 @@ async fn searching_from_above_never_goes_into_miyus_own_data() {
         cwd: home.scratch.0.join("work").to_string_lossy().into_owned(),
         dirs: Vec::new(),
         sandbox: None,
-        sandbox_cache: None,
     };
     let handle = home.create_as(&script, &base_system(), opening).await;
     let mut pushes = watch(&handle).await;

@@ -67,14 +67,13 @@ async fn a_small_file_read_before_the_cut_comes_back_and_survives_a_reload() {
     let cwd = work.to_string_lossy().into_owned();
     let opening = Opening {
         permission: Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only: false,
         },
         attended: false,
         cwd: cwd.clone(),
         dirs: Vec::new(),
         sandbox: None,
-        sandbox_cache: None,
     };
     let handle = home.create_as(&script, &base_system(), opening).await;
     let mut pushes = watch(&handle).await;

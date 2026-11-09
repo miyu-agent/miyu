@@ -24,7 +24,6 @@ use miyu_tool::Shelf;
 use crate::config::Configs;
 use crate::jobs::Jobs;
 use crate::port::Models;
-use crate::sandbox::SandboxCache;
 use crate::spawn::{Lineage, SessionPort};
 
 /// 预设的几层和这台机器上装了的功能（施工 P-2 下；施工 F-3 上起是功能）：回合开始时照它看预设的文件改了没有。
@@ -159,9 +158,6 @@ pub struct Create<'a> {
     /// 沙盒的助手：这台机器上的沙盒能用才有（核心起来时探的，施工 5-4 上）。权限策略照它判执行命令，执行器照它
     /// 给每次调用写沙盒。
     pub sandbox: Option<&'a Path>,
-    /// 沙盒的缓存：缓存目录在哪、你的 cargo 目录在哪（施工 5-4 下）。核心算不出缓存目录的没有，沙盒里不设工具链的
-    /// 变量。
-    pub sandbox_cache: Option<SandboxCache>,
     /// 父会话和第几层（施工 7-5）：子会话才有，写进 `session.created`；system 接上子会话的场所说明；到了深度上限的，
     /// 工具面里不给 `agent`。
     pub lineage: Option<Lineage>,
@@ -264,9 +260,6 @@ pub struct Load<'a> {
     /// 沙盒的助手：这台机器上的沙盒能用才有（核心起来时探的，施工 5-4 上）。权限策略照它判执行命令，执行器照它
     /// 给每次调用写沙盒。
     pub sandbox: Option<&'a Path>,
-    /// 沙盒的缓存：缓存目录在哪、你的 cargo 目录在哪（施工 5-4 下）。核心算不出缓存目录的没有，沙盒里不设工具链的
-    /// 变量。
-    pub sandbox_cache: Option<SandboxCache>,
     /// 造子会话、给别的会话发命令的端口（施工 7-5）：同 [`Create::sessions`]。
     pub sessions: Option<Arc<dyn SessionPort>>,
     /// 看软件包的端口（施工 F-10 上）：同 [`Create::packages`]。

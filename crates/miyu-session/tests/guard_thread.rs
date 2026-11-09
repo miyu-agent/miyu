@@ -1,7 +1,7 @@
 //! 权限策略在阻塞线程里判（施工 4-9 再补四下）：判的时候跑异步任务的线程空着；问人时写出的 `rule`、`detail` 和
 //! 样本 `docs/designs/samples/events/tool.approval_requested.jsonl` 是同一个样子。
 //!
-//! 场地不在系统的临时目录里（[`Home::outside_temp`]）：工作区 `work/`、边界以外的 `other/`。
+//! 场地不在系统的临时目录里（[`Home::outside_temp`]）：工作区 `work/`、假的家 `home/`。
 
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -53,23 +53,22 @@ impl Tool for Slow {
     }
 }
 
-/// 在工作区 `work/` 里、工作区这一级造一个会话。
+/// 在工作区 `work/` 里造一个会话：完全放开，只读 `read_only`。
 async fn session(
     home: &Home,
     script: &Script,
     catalog: &Catalog,
-    attended: bool,
+    (attended, read_only): (bool, bool),
 ) -> miyu_session::Handle {
     let opening = Opening {
         permission: Permission {
-            level: Level::Workspace,
-            read_only: false,
+            level: Level::Full,
+            read_only,
         },
         attended,
         cwd: home.scratch.0.join("work").to_string_lossy().into_owned(),
         dirs: Vec::new(),
         sandbox: None,
-        sandbox_cache: None,
     };
     home.create_as(script, catalog, opening).await
 }
@@ -98,7 +97,7 @@ async fn the_async_thread_is_free_while_the_guard_judges() {
     });
     let catalog = Catalog::new([slow as Arc<dyn Tool>]).expect("合写法");
     let script = Script::new([Play::calls(&[("slow", "{}")]), Play::Says("好。")]);
-    let handle = session(&home, &script, &catalog, false).await;
+    let handle = session(&home, &script, &catalog, (false, false)).await;
     let mut pushes = watch(&handle).await;
     ask(&handle, "cmd-1", say("hi")).await.expect("会话在跑");
     // 工具在报路径：权限策略正在判。测试这边跑得到这里、放得了它，是因为判的时候异步线程空着。原来当场在 actor 里
@@ -136,16 +135,18 @@ fn rule_and_detail(event: &Event) -> (Value, Value) {
     (read(&request.rule), read(&request.detail))
 }
 
+/// A16 起报路径的调用问人的只剩只读时读别的程序的私密目录（施工 LV-1）：照它问。
 #[tokio::test]
 async fn asking_writes_what_the_sample_shows() {
     let home = Home::outside_temp();
-    let outside = home.scratch.0.join("other/.editorconfig");
-    std::fs::create_dir_all(outside.parent().expect("有上级目录")).expect("建得了目录");
-    let write = Fake::new("write", Access::Write, Act::Echo);
-    let catalog = Catalog::new([write as Arc<dyn Tool>]).expect("合写法");
-    let args = serde_json::json!({ "path": outside.to_string_lossy() }).to_string();
-    let script = Script::new([Play::calls(&[("write", &args)])]);
-    let handle = session(&home, &script, &catalog, true).await;
+    let private = home.home.join(".ssh/config");
+    std::fs::create_dir_all(private.parent().expect("有上级目录")).expect("建得了目录");
+    std::fs::write(&private, "Host *\n").expect("写得进");
+    let read = Fake::new("read", Access::Read, Act::Echo);
+    let catalog = Catalog::new([read as Arc<dyn Tool>]).expect("合写法");
+    let args = serde_json::json!({ "path": private.to_string_lossy() }).to_string();
+    let script = Script::new([Play::calls(&[("read", &args)])]);
+    let handle = session(&home, &script, &catalog, (true, true)).await;
     let mut pushes = watch(&handle).await;
     ask(&handle, "cmd-1", say("hi")).await.expect("会话在跑");
     let id = handle.id().clone();
@@ -164,7 +165,7 @@ async fn asking_writes_what_the_sample_shows() {
     let drawn = Event::from_line(line.trim_end()).expect("样本读得进来");
     let (rule, detail) = rule_and_detail(&asked);
     let (drawn_rule, drawn_detail) = rule_and_detail(&drawn);
-    // 键、值的种类和样本一样；写的、边界以外的也一样（施工 4-9 再补四下：样本原来是另一种写法，只比来回没拦住）。
+    // 键、值的种类和样本一样；读的、私密目录里的也一样（施工 4-9 再补四下：样本原来是另一种写法，只比来回没拦住）。
     assert_eq!(shape(&rule), shape(&drawn_rule), "{rule}");
     assert_eq!(shape(&detail), shape(&drawn_detail), "{detail}");
     assert_eq!(

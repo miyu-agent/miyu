@@ -33,14 +33,13 @@ fn results(home: &Home, handle: &miyu_session::Handle) -> Vec<ToolResult> {
 fn opening(home: &Home) -> Opening {
     Opening {
         permission: Permission {
-            level: Level::Workspace,
+            level: Level::Full,
             read_only: false,
         },
         attended: false,
         cwd: work(home),
         dirs: Vec::new(),
         sandbox: None,
-        sandbox_cache: None,
     }
 }
 

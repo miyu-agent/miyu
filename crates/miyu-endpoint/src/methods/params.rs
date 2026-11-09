@@ -271,7 +271,7 @@ pub(super) struct DeleteParams {
     pub(super) session: String,
 }
 
-/// 协议上能切到的常用的那一级。只认这两种，别的是参数不对：内核的 `unknown_level` 从协议上碰不到，和 `queued`、`stream`
+/// 协议上能切到的常用的那一级。只认这两种（A16 起 `workspace` 照 `full` 算，施工 LV-1），别的是参数不对：内核的 `unknown_level` 从协议上碰不到，和 `queued`、`stream`
 /// 一样，值不在表里的算参数读不成（`protocol.md` 的 `session.set_permission_level`）。
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]

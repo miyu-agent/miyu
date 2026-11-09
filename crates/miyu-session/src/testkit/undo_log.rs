@@ -47,7 +47,7 @@ const OTHERS: [&str; 5] = [
 ];
 const KERNEL: &str = r#"{"kind":"kernel"}"#;
 const MODEL: &str = r#"{"kind":"model","endpoint":"deepseek","model":"deepseek-v4"}"#;
-const POLICY: &str = r#""policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}"#;
+const POLICY: &str = r#""policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"full","read_only":false}"#;
 const PARENT: &str = "01a0cf12-7e40-7d1b-8c3a-51d49f03b21c";
 /// 文件：几个常用的，看过的、改过的会撞上。
 const PATHS: [&str; 6] = [

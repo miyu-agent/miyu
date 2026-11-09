@@ -7,8 +7,7 @@ mod remembered;
 use std::path::{Path, PathBuf};
 
 use miyu_sandbox::{Availability, Unusable};
-use miyu_store::env::Env;
-use miyu_store::root::{RootError, cache_root};
+use miyu_store::root::RootError;
 use std::time::Duration;
 
 use crate::TARGET;
@@ -100,27 +99,6 @@ fn availability(helper: PathBuf, probe: &miyu_sandbox::Probe) -> Availability {
     } else {
         Availability::Usable(helper)
     }
-}
-
-/// 沙盒的缓存放在哪（施工 5-4 下）：缓存目录（`store.md` 第 3 条）下的 `sandbox`，只有一份；再带上你的 cargo
-/// 目录：`cargo_home` 是核心的环境里的 `CARGO_HOME`，设了、不是空的照它，不然 `~/.cargo`。算不出缓存目录的，记一行
-/// `WARN sandbox cache unavailable`，交回空的：沙盒里不设工具链的变量。
-pub(crate) fn cache(
-    env: &Env,
-    cargo_home: Option<std::ffi::OsString>,
-) -> Option<(PathBuf, Option<PathBuf>)> {
-    let root = match cache_root(env) {
-        Ok(root) => root.join("sandbox"),
-        Err(error) => {
-            tracing::warn!(target: TARGET, reason = why(&error), "sandbox cache unavailable");
-            return None;
-        }
-    };
-    let cargo_home = cargo_home
-        .filter(|dir| !dir.is_empty())
-        .map(PathBuf::from)
-        .or_else(|| env.home.as_ref().map(|home| home.join(".cargo")));
-    Some((root, cargo_home))
 }
 
 /// 算不出缓存目录的原因，运行日志里一律英文。

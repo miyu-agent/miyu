@@ -77,7 +77,6 @@ fn the_registered_list_is_well_formed() {
             "permission.start_read_only",
             "permission.level",
             "sandbox.strength",
-            "sandbox.tools.<name>",
             "sandbox.private.enabled",
             "sandbox.private.add",
             "sandbox.private.remove",

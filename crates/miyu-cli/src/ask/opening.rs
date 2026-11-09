@@ -32,15 +32,14 @@ pub enum PersonaChoice {
     Without,
 }
 
-/// 开局的权限级别：命令行上的写法是 `read-only`、`workspace`、`full`。协议上是常用的那一级 `level`（`workspace`、`full`）加
-/// 只读开关 `read_only`：只读开着的时候实际的级别就是只读。
+/// 开局的权限级别：命令行上的写法是 `read-only`、`full`（A16，施工 LV-1；以前的 `workspace` 照 `full` 收）。协议上是常用的
+/// 那一级 `level`（只有 `full`）加只读开关 `read_only`：只读开着的时候实际的级别就是只读。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub enum Permission {
-    /// 只读：只开只读开关，常用的那一级照配置。
+    /// 只读：只开只读开关。
     ReadOnly,
-    /// 工作区：执行命令在沙盒里。只读开关关上。
-    Workspace,
     /// 完全放开：不启用沙盒。只读开关关上。
+    #[value(alias = "workspace")]
     Full,
 }
 
@@ -49,9 +48,6 @@ impl Permission {
     fn params(self, session: &str) -> Value {
         match self {
             Permission::ReadOnly => json!({"session": session, "read_only": true}),
-            Permission::Workspace => {
-                json!({"session": session, "level": "workspace", "read_only": false})
-            }
             Permission::Full => json!({"session": session, "level": "full", "read_only": false}),
         }
     }

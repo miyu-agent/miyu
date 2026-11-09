@@ -77,7 +77,6 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
         tools,
         home,
         sandbox,
-        sandbox_cache,
         sessions,
         packages,
         schedules,
@@ -365,7 +364,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
         (sandbox.is_some(), place.0, place.1),
     )
     .with_shelves(shelves_open.clone())
-    .for_session(root, &id, shipped.path())
+    .for_session(root, &id)
     .with_workplace(default_workspace.clone());
     let ledger = crate::usage::Ledger::of(usage.as_ref(), &id);
     // 知识库照快照里的人格查（施工 K-1 下）；工具面照快照，第一个回合照现在的目录再判。
@@ -408,7 +407,6 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
             blobs: kept,
             seen,
             sandbox: sandbox.map(Path::to_path_buf),
-            sandbox_cache,
             log: Log::new(log_dir),
             offset,
             job_ids,

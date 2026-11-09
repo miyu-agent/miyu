@@ -16,7 +16,7 @@ fn created(level: &str) -> String {
 
 #[test]
 fn session_events_from_the_drawing_round_trip() {
-    match read_body("session.created", &created("workspace")) {
+    match read_body("session.created", &created("full")) {
         Body::SessionCreated(created) => assert_eq!(created.venue.as_str(), "local"),
         other => panic!("{other:?}"),
     }
@@ -26,7 +26,7 @@ fn session_events_from_the_drawing_round_trip() {
     );
     read_body(
         "session.policy_changed",
-        r#"{"permission":{"level":"workspace","read_only":true}}"#,
+        r#"{"permission":{"level":"full","read_only":true}}"#,
     );
     read_body(
         "session.policy_changed",
@@ -48,13 +48,13 @@ fn session_events_from_the_drawing_round_trip() {
 #[test]
 fn a_oneshot_session_says_so_and_others_do_not() {
     let oneshot = format!(
-        r#"{{"venue":"local","policy":"{HASH}","permission":{{"level":"workspace","read_only":false}},"oneshot":true}}"#
+        r#"{{"venue":"local","policy":"{HASH}","permission":{{"level":"full","read_only":false}},"oneshot":true}}"#
     );
     match read_body("session.created", &oneshot) {
         Body::SessionCreated(created) => assert!(created.oneshot),
         other => panic!("{other:?}"),
     }
-    match read_body("session.created", &created("workspace")) {
+    match read_body("session.created", &created("full")) {
         Body::SessionCreated(created) => assert!(!created.oneshot, "不写就不是"),
         other => panic!("{other:?}"),
     }
@@ -65,7 +65,7 @@ fn a_oneshot_session_says_so_and_others_do_not() {
 fn a_child_session_names_its_parent_and_depth() {
     let parent = "01a0d75d-2180-7a3c-9e41-5b7d2c8f6a10";
     let child = format!(
-        r#"{{"venue":"local","policy":"{HASH}","permission":{{"level":"workspace","read_only":false}},"cwd":"~/src/miyu","parent":"{parent}","depth":1}}"#
+        r#"{{"venue":"local","policy":"{HASH}","permission":{{"level":"full","read_only":false}},"cwd":"~/src/miyu","parent":"{parent}","depth":1}}"#
     );
     match read_body("session.created", &child) {
         Body::SessionCreated(created) => {
@@ -77,17 +77,17 @@ fn a_child_session_names_its_parent_and_depth() {
         }
         other => panic!("{other:?}"),
     }
-    match read_body("session.created", &created("workspace")) {
+    match read_body("session.created", &created("full")) {
         Body::SessionCreated(created) => assert_eq!((created.parent, created.depth), (None, None)),
         other => panic!("{other:?}"),
     }
     // 写成 null 的当没有。
-    let nulls = created("workspace").replace("}}", r#"},"parent":null,"depth":null}"#);
+    let nulls = created("full").replace("}}", r#"},"parent":null,"depth":null}"#);
     let line = event_line("session.created", &nulls);
     let event = Event::from_line(&line).unwrap();
     assert_eq!(
         event.to_line(),
-        event_line("session.created", &created("workspace"))
+        event_line("session.created", &created("full"))
     );
     // 父会话不合写法、层数不是整数的，读不进来。
     for (bad, why) in [
@@ -101,7 +101,7 @@ fn a_child_session_names_its_parent_and_depth() {
             "invalid type",
         ),
     ] {
-        let body = created("workspace").replace("}}", &format!("}},{bad}}}"));
+        let body = created("full").replace("}}", &format!("}},{bad}}}"));
         rejected::<Event>(&event_line("session.created", &body), why);
     }
 }
@@ -115,27 +115,27 @@ fn a_session_records_its_model_and_old_logs_read_without_it() {
         "@free",
         "openrouter/deepseek/deepseek-v4",
     ] {
-        let body = created("workspace").replace("}}", &format!(r#"}},"model":"{model}"}}"#));
+        let body = created("full").replace("}}", &format!(r#"}},"model":"{model}"}}"#));
         match read_body("session.created", &body) {
             Body::SessionCreated(created) => assert_eq!(created.model.as_deref(), Some(model)),
             other => panic!("{other:?}"),
         }
     }
     let child = format!(
-        r#"{{"venue":"local","policy":"{HASH}","permission":{{"level":"workspace","read_only":false}},"cwd":"~/src/miyu","parent":"{parent}","depth":1,"model":"@free"}}"#
+        r#"{{"venue":"local","policy":"{HASH}","permission":{{"level":"full","read_only":false}},"cwd":"~/src/miyu","parent":"{parent}","depth":1,"model":"@free"}}"#
     );
     read_body("session.created", &child);
-    match read_body("session.created", &created("workspace")) {
+    match read_body("session.created", &created("full")) {
         Body::SessionCreated(created) => assert_eq!(created.model, None, "以前的日志没有"),
         other => panic!("{other:?}"),
     }
-    let nulled = created("workspace").replace("}}", r#"},"model":null}"#);
+    let nulled = created("full").replace("}}", r#"},"model":null}"#);
     let event = Event::from_line(&event_line("session.created", &nulled)).unwrap();
     assert_eq!(
         event.to_line(),
-        event_line("session.created", &created("workspace"))
+        event_line("session.created", &created("full"))
     );
-    let wrong = created("workspace").replace("}}", r#"},"model":3}"#);
+    let wrong = created("full").replace("}}", r#"},"model":3}"#);
     rejected::<Event>(&event_line("session.created", &wrong), "invalid type");
 }
 
@@ -146,7 +146,7 @@ fn a_policy_change_records_the_model_and_what_it_replaced() {
     for body in [
         r#"{"model":"@free"}"#,
         r#"{"model":"deepseek/deepseek-flash","replaced":"claude/opus"}"#,
-        r#"{"permission":{"level":"workspace","read_only":true},"model":"a/m"}"#,
+        r#"{"permission":{"level":"full","read_only":true},"model":"a/m"}"#,
     ] {
         let line = event_line("session.policy_changed", body);
         let event = Event::from_line(&line).unwrap();
@@ -244,12 +244,18 @@ fn an_8_18_effort_cell_round_trips_and_is_not_the_session_s() {
 
 #[test]
 fn each_level_reads_into_its_own_variant() {
-    for (text, level) in [("workspace", Level::Workspace), ("full", Level::Full)] {
-        match read_body("session.created", &created(text)) {
-            Body::SessionCreated(created) => assert_eq!(created.permission.level, level),
-            other => panic!("{other:?}"),
-        }
+    match read_body("session.created", &created("full")) {
+        Body::SessionCreated(created) => assert_eq!(created.permission.level, Level::Full),
+        other => panic!("{other:?}"),
     }
+}
+
+/// A16 以前的工作区（施工 LV-1）：旧日志里的 `workspace` 读成完全放开，再写出来是 `full`，不当成不认识的按只读算。
+#[test]
+fn the_old_workspace_level_reads_as_full() {
+    let level: Level = serde_json::from_str(r#""workspace""#).expect("读得出");
+    assert_eq!(level, Level::Full);
+    assert_eq!(serde_json::to_string(&level).expect("写得出"), r#""full""#);
 }
 
 #[test]
@@ -269,7 +275,7 @@ fn an_unknown_level_is_kept_as_it_is() {
 fn permission_needs_both_fields() {
     let line = event_line(
         "session.policy_changed",
-        r#"{"permission":{"level":"workspace"}}"#,
+        r#"{"permission":{"level":"full"}}"#,
     );
     rejected::<Event>(&line, "read_only");
 }
@@ -278,7 +284,7 @@ fn permission_needs_both_fields() {
 fn broken_session_bodies_say_which_kind() {
     let line = event_line(
         "session.created",
-        &created("workspace").replace("\"local\"", "7"),
+        &created("full").replace("\"local\"", "7"),
     );
     rejected::<Event>(&line, "body of session.created not readable");
     let line = event_line("session.meta_changed", r#"{"pinned":"yes"}"#);

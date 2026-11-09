@@ -3,7 +3,6 @@
 //! 组装的事，在 `miyu-assemble` 测。
 
 use super::*;
-use crate::event::Level;
 use crate::facts::REMINDER;
 
 /// 替身的策略加上角色扮演提示。
@@ -65,7 +64,7 @@ fn a_switch_mid_turn_does_not_bring_it() {
     stage.tools([Play::done("A").held()]);
     stage.say("读 a");
     let reading = stage.ran()[0].0;
-    stage.set_permission(Some(Level::Full), None);
+    stage.set_permission(None, Some(true));
     stage.release_tool(reading);
     assert_eq!(reminded(&stage), [0], "{:?}", story(&stage));
     let permissions = stage
