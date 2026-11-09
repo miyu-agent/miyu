@@ -24,7 +24,7 @@ pub(crate) fn own(config: &Config, package: &str) -> BTreeMap<String, Value> {
 }
 
 /// 交出去的一个值：密钥引用解成真值的字（取不到的没有）；一组字段的列表（施工 PC-2）每一项是对象，密钥字段解成真值、取不到的
-/// 那个字段不放，没写的字段照默认值，没有默认值的不放。
+/// 那个字段不放，没写的字段照默认值，没有默认值的不放；别的列表每一项照它的类型交，取不到的密钥那一项是 `null`（施工 SL-1）。
 fn handed(config: &Config, kind: miyu_config::Kind, value: &miyu_config::Value) -> Option<Value> {
     match (kind, value) {
         (_, miyu_config::Value::Secret(reference)) => Some(Value::String(
@@ -51,6 +51,14 @@ fn handed(config: &Config, kind: miyu_config::Kind, value: &miyu_config::Value) 
                             .collect(),
                     )
                 })
+                .collect(),
+        )),
+        // 别的列表（施工 SL-1，im 报的：一列密钥交的是引用本身）：每一项照它的类型交，密钥解成真值；取不到的那一项交 `null`、
+        // 不删，第几项照旧对第几项。
+        (miyu_config::Kind::List(element), miyu_config::Value::List(items)) => Some(Value::Array(
+            items
+                .iter()
+                .map(|item| handed(config, *element, item).unwrap_or(Value::Null))
                 .collect(),
         )),
         (_, other) => Some(other.json()),

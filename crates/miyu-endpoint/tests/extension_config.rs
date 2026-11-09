@@ -290,3 +290,44 @@ async fn settings_follow_the_prefix_not_the_package_id() {
     assert!(read(&home.root.config_file()).contains("[echo]"));
     core.stop_extensions().await;
 }
+
+/// 一列密钥（施工 SL-1，im 报的：`element = "secret"` 的列表交的是引用本身，多连接的 QQ 一律 401）：每一项解成真值的字；取不到的那一项
+/// 交 `null`、不删，第几项照旧对第几项。
+#[tokio::test]
+async fn a_list_of_secrets_is_handed_over_as_values_in_place() {
+    let home = Home::new();
+    let program = Program::new();
+    let (path, keep) = record(&home, "echo");
+    let manifest = manifest(&program.name(), &steps(&[&keep, "hello", "listen"]));
+    home.write(
+        "opt/echo/package.toml",
+        &format!("{manifest}\n[settings.tokens]\ntype = \"list\"\nelement = \"secret\"\nlayers = [\"system\"]\nname = {{ en = \"Tokens\" }}\n"),
+    );
+    home.write(
+        "etc/config.toml",
+        "[echo]\ntokens = [{ secret = \"one\" }, { secret = \"gone\" }, { secret = \"two\" }]\n",
+    );
+    home.write("etc/private/secrets.toml", "one = \"s1\"\ntwo = \"s2\"\n");
+    let core = core_with_settings(&home, quick());
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    call(&mut client, "extension.enable", "echo").await;
+    until_state(&mut client, "echo", |one| one["state"] == "running").await;
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(60);
+    let hello = loop {
+        if let Some(hello) = recorded(&path)
+            .into_iter()
+            .find(|line| line.get("result").is_some())
+        {
+            break hello;
+        }
+        assert!(tokio::time::Instant::now() < deadline, "{}", read(&path));
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+    };
+    assert_eq!(
+        hello["result"]["config"]["echo.tokens"],
+        json!(["s1", null, "s2"]),
+        "{hello}"
+    );
+    core.stop_extensions().await;
+}

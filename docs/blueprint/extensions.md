@@ -120,7 +120,7 @@
 **配置**（施工 9-4 下下；项目主人 2026-10-08 照推荐定，形状和通讯平台的会话对过）：核心拉起的扩展不自己读系统配置、密钥文件，要的值由核心交给它。只在核心亲手拉起、走标准输入输出的连接上，只给这个包自己的键：`config.md` 第九条「密钥不进协议的回应」的例外。
 
 1. **哪些键**：「包的编号加点」开头的配置项（核心替它声明的、它清单里 `[settings]` 声明的都算；带 `<…>` 的模板键不算）。
-2. **握手**：`hello` 的回应多 `config`：`{"onebot.listen": 8301, "onebot.token": "<真值>", …}`。值是最终值（没写的照默认值，不看项目配置），密钥引用（`{ secret }`、`{ env }`）解成真值的字；没设、没默认值、引用取不到的那一键不放。头的连接没有这一格。
+2. **握手**：`hello` 的回应多 `config`：`{"onebot.listen": 8301, "onebot.token": "<真值>", …}`。值是最终值（没写的照默认值，不看项目配置），密钥引用（`{ secret }`、`{ env }`）解成真值的字；没设、没默认值、引用取不到的那一键不放。列表里的也解（施工 SL-1，im 报的：一列密钥原来交的是引用本身，多连接的 QQ 一律 401）：一组字段的列表照字段解、取不到的字段不放；一列密钥每一项解成真值，取不到的那一项是 `null`、不删，第几项照旧对第几项。头的连接没有这一格。
 3. **变了推** `extension.config`：`{"keys": {"onebot.token": "<新真值>"}}`。握手的回应写出去以后，核心盯着配置服务交给核心的那一份（配置文件改了、`secret.set` 换了值、手改了密钥文件，都会换上新的一份），把这个包自己的那份重算一遍，跟上一次交给它的比，变了推，只放变了的键；变成没设、取不到的写 `null`。不用订阅。不叫 `config.changed`：那是头订阅的推送，形状带 `origin`、`applies`（通讯平台的会话提的，主会话定）。
 4. **不留痕**：值不进运行日志、不进事件；运行日志只记 `DEBUG extension config handed package=… keys=<几个>`、`extension config pushed`，不带值。
 
@@ -214,7 +214,7 @@
 | `crates/miyu-endpoint/tests/extension_stream.rs`（施工 9-4 补） | 订阅回整份、名字照语言；开了推到在跑、关了推到关着；带 `after` 和会话的参数不对；取消了不推 |
 | `crates/miyu-endpoint/tests/extension_rights.rs`、`src/connection/tests.rs`、`xtask/src/rights/tests.rs`（施工 X-30） | 真核心拉起只声明 `tools` 的测试扩展：只给人的、表里没有的回 `local_only`，缺能力的回 `needs_approval`、`data.capabilities` 是缺的那一项（参数都不看），读模型目录照常；声明了 `sessions.drive`、`events.read` 的造会话、说话、订阅照常，说的话 `by` 是 `harness`、名字是包编号，带 `from` 回 `bad_params`。表：原来只给人的照旧、新挡的几类、照参数分的（`as`、`venue.*` 事件、空的 `provide`、订阅的流）。门禁只认方法样子的字面量 |
 | `crates/miyu-endpoint/tests/extension_approval.rs`、`crates/miyu-config/src/package/tests.rs`、`crates/miyu-store/src/extensions/tests.rs`（施工 9-4 下上） | 清单的能力照表的先后、不认识的和重复的报 `bad_capability`；开关文件的 `approved` 读写、以前的文件当没批过、没批的不写这一格；装上的：不带 `approve` 拒绝 `needs_approval`、只批一部分说剩下的、不是声明的名字 `bad_params`、批了开起来、记下、关了不清；`always` 的没批不拉起、不拦空闲、`restart` 拒绝、批了拉起；升级多了的只问多的；出厂的扩展不用批（施工 S-6 下起照测试自己放的出厂扩展 `courier`）；名字照连接的语言 |
-| `crates/miyu-endpoint/tests/extension_config.rs`、`src/extensions/config/tests.rs`（施工 9-4 下下） | 握手交自己的键（默认值、密钥真值、没设的不放），头的连接没有；改了自己的项推、`secret.set` 换了值推新真值、去掉了推 `null`、别的项变了不推；只放变了的键 |
+| `crates/miyu-endpoint/tests/extension_config.rs`、`src/extensions/config/tests.rs`（施工 9-4 下下） | 握手交自己的键（默认值、密钥真值、没设的不放；一列密钥每一项解成真值、取不到的是 `null` 不删，施工 SL-1），头的连接没有；改了自己的项推、`secret.set` 换了值推新真值、去掉了推 `null`、别的项变了不推；只放变了的键 |
 | `crates/miyu-endpoint/tests/audit_extension_core_key.rs`（施工 5-19） | 包编号和核心模块同名（`ui`）、没声明配置项的扩展改 `ui.language` 回 `local_only`，系统配置里什么都没写 |
 | `crates/miyu-endpoint/tests/packages_extensions.rs`（施工 F-5 下） | 真核心装上一个 `always` 的扩展当场拉起、它登记的工具进工具面、调得到；卸掉当场停下、`extension.status` 不列、用过它的会话照旧留着、调到报「已卸载」；升级了的停下再拉起；装别的包时清单没变的进程不换。卸包先停再删（停下时清单还在）；升级成撞了别的包的撤回、原来的重新拉起；换不成、删不成的（Unix 上目录只读）照原来的重新拉起（施工 F-5 补） |
 | `crates/miyu-endpoint/tests/turn_inject.rs`、`src/hooks/tests.rs`（施工 X-16） | 真核心拉起八个测试扩展：声明了、工具面上有的交的两块照包的编号进日志（`by` 是包）、进请求排在人说的话前面；没声明的、工具只在群里的不问；超时、回错误、写法不对、交了四块的当没交、这一轮照常走完；回应的写法（至多 3 块、1 到 4000 字、类别和包的编号合写法、一块不对整份不要） |
