@@ -206,7 +206,7 @@ program = "miyu-embed"
 | `connection` | 写了的（施工 F-1） | `{"platform"}`；接几个平台的 `platform` 是第一个，另带 `platforms`（全部，照写的先后，施工 IM-3） |
 | `depends`、`recommends` | 写了、不空的（施工 F-1） | `{"packages": [...]}`，照写的先后（施工 F-11；以前是 `{"workers": [...]}`） |
 | `missing` | 依赖的包缺了的（施工 F-11） | 缺的那几个，照写的先后；这时 `status` 是 `depends_missing` |
-| `export` | 写了 `[export]` 的（施工 F-11） | `{"methods": [...]}`，照写的先后：别的软件经 `package.call` 调得到的方法 |
+| `export` | 写了 `[export]` 的（施工 F-11） | `{"methods": [...], "provides"?: [...], "plugs"?: [...]}`，照写的先后：别的软件调得到的方法；总线上提供的、接进的名字（施工 BUS-1，设计 67），写了才带 |
 | `worker` | `worker` 包（施工 F-1） | `{"program", "args"}` |
 | `mcp` | 带 MCP 服务的（施工 X-2） | `[{"name", "command", "venues"}]`，照写的先后；环境变量不列（可能引用密钥） |
 | `command` | 有 `[command]` 的 | `{"name", "program", "about"}`，`about` 照语言挑；加了几个的是第一个 |
@@ -364,7 +364,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 1. **查什么**：一个包占的名字（`miyu_store::packages::conflicts`）：`[command]` 的子命令名（加了几个的每个都算，施工 F-13）；功能（`Manifest::features_of`）的编号，MCP 服务的那一个算服务名；功能下列的工具名、`scripts/` 里脚本的工具名；`skills/` 里的技能名；`kb/` 里库的编号；`commands/` 里斜杠命令模板的名字（施工 X-14 上补，`slash.md`）、清单 `[[slash]]` 声明的命令名（施工 X-14 下，和模板一个名字空间）、`[[widget]]` 整页的命令名（施工 X-15 上，同一个名字空间）；`personas/` 里人格的编号、`presets/` 里预设的编号（施工 P-11 下）；前缀（`Manifest::prefix_of`，没写的照包编号，施工 PN-1）。十样各算各的：技能 `notes` 和库 `notes` 不算撞。
    人格、预设还和出厂、你那一层有的比（施工 P-11 下，设计 31 第十节第 4 条）：撞了的写 `layer` 不写 `package`；这个包以前卸掉时留下的改动（`var/lib/packages/leftovers.json`）、升级时装着的这一份已经带着的不算。卸包时它带的人格、预设在你那一层有改动的记进 `.leftovers.json`，重装它划掉；`miyu check` 对包没装着、改动还在的报 `persona_left`、`preset_left` 警告（`file` 是那一份改动）。
 2. **跟谁比**：两层里清单读成了的、编号不是它的包；斜杠命令模板另和核心内置的命令名、别名比（`Commands::reserved`，记在拥有它的包上：记忆的 `miyu-base-memory`，长期目标的 `miyu-base-goal`，待办的 `miyu-base-todowrite`，循环的 `miyu-base-loop`；`/clear`、`/stop`、`/workspace` 是核心自带的，撞了写 `core: true`，施工 BS-1 下下；拥有它的包自己不算，装回人格记忆不和 `/remember` 撞；包没装的命令不比，名字空出来）。升级同一个包不和自己比；读坏了的、卸掉的出厂的不比；你自己放的技能、脚本、MCP 服务不比（自己的赢，设计 31 第五节第 3 条）。
-3. **什么时候**：`package.install` 从路径装、装回出厂的，在读清单、比编号以后，动文件以前；`preview: true` 一样查。撞了的报 `package_conflict`，`data.conflicts` 一处一条 `{"kind", "name", "package"}`（`kind` 是 `command`、`feature`、`tool`、`skill`、`mcp`、`knowledge`、`slash`（斜杠命令模板，施工 X-14 上补）、`persona`、`preset`、`prefix`（施工 PN-1）），照哪一样、名字、包排（`protocol.md`）。查要读包文件夹里的技能、脚本、库，放在阻塞线程里。
+3. **什么时候**：`package.install` 从路径装、装回出厂的，在读清单、比编号以后，动文件以前；`preview: true` 一样查。撞了的报 `package_conflict`，`data.conflicts` 一处一条 `{"kind", "name", "package"}`（`kind` 是 `command`、`feature`、`tool`、`skill`、`mcp`、`knowledge`、`slash`（斜杠命令模板，施工 X-14 上补）、`persona`、`preset`、`prefix`（施工 PN-1）、`bus`（施工 BUS-1，设计 67：两家都 `provides` 同一个名字，或者一家 `provides`、一家 `plugs` 同一个名字；几家都 `plugs` 不算）），照哪一样、名字、包排（`protocol.md`）。查要读包文件夹里的技能、脚本、库，放在阻塞线程里。
 4. **以前**：装完重读清单才认，谁先到照编号算：编号排在前的新包装得上，被判撞了的是装着的那个，悄悄失效。现在新来的让。
 5. **读的时候**：撞得上的只剩核心升级后出厂的新带了同名的（定了的 J）：出厂的先于装上的，同一层照编号。子命令、功能、前缀撞了的装上的那一份整份不收（`command_taken`、`feature_taken`、`prefix_taken`）；技能、脚本、知识库跳过装上的那一份，技能、脚本 `miyu check` 报被谁盖住（`skills.md`）。
 

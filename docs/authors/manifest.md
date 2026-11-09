@@ -341,7 +341,9 @@ summary = { en = "Decides whether to reply in a group.", zh = "群里有人说�
 
 ## `[export]`
 
-`methods`：别的包能经 `package.call` 调到你的哪几个方法（照样要经 `package.methods` 登记）。
+`methods`：别的包能调到你的哪几个方法（照样要经 `package.methods` 登记）。
+
+`provides`：你在总线上提供的名字（例如 `["stt"]`），一个名字装着的包里只有一家，装第二家报冲突。`plugs`：你接进的名字（例如 `["tts.engine"]`），可以多家并存，用它的一方挑。名字是点分的几段，每段小写字母开头、只有小写字母、数字和 `-`；一个名字不能两样都写。名字底下的方法写进 `methods`，照名字带前缀、短名只有一段：`stt` 的 `stt.transcribe`、`tts.engine` 的 `tts.engine.synthesize`；声明的每个名字至少要有一个方法。别人照名字调你，不写你的包名（设计 `67-总线.md`）。
 
 ## `[content.<包的编号>]`
 

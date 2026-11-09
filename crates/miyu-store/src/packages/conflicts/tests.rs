@@ -315,3 +315,68 @@ fn a_prefix_conflicts_with_an_installed_id_or_prefix() {
     let other = package(dir.path(), "other", BUNDLE, &[]);
     assert!(check(&long, &[other]).is_empty(), "不撞的不报");
 }
+
+/// 总线上的名字（施工 BUS-1，设计 67 B3、B6）：两家都 `provides` 撞；一家 `provides`、一家 `plugs` 撞（两个方向）；几家都 `plugs`
+/// 不撞；名字不一样的不撞。
+#[test]
+fn a_bus_name_has_one_provider_and_one_kind() {
+    let dir = Scratch::new();
+    let voice = |id: &str, export: &str| {
+        package(
+            dir.path(),
+            id,
+            &format!(
+                "[package]\nprotocol = [1, 1]\nname = {{ en = \"V\" }}\n\n[command]\nname = \"{id}\"\nprogram = \"{id}\"\nabout = {{ en = \"V\" }}\n\n[process]\nstart = \"manual\"\n\n[export]\n{export}\n"
+            ),
+            &[],
+        )
+    };
+    let stt = voice(
+        "stt-a",
+        "provides = [\"stt\"]\nmethods = [\"stt.transcribe\"]",
+    );
+    let other = voice(
+        "stt-b",
+        "provides = [\"stt\"]\nmethods = [\"stt.transcribe\"]",
+    );
+    let plug = voice("stt-c", "plugs = [\"stt\"]\nmethods = [\"stt.transcribe\"]");
+    let engine = voice(
+        "engine-a",
+        "plugs = [\"stt.engine\"]\nmethods = [\"stt.engine.transcribe\"]",
+    );
+    let engine2 = voice(
+        "engine-b",
+        "plugs = [\"stt.engine\"]\nmethods = [\"stt.engine.transcribe\"]",
+    );
+    let bus = |found: Vec<(&'static str, String, String)>| -> Vec<(String, String)> {
+        found
+            .into_iter()
+            .filter(|(kind, ..)| *kind == "bus")
+            .map(|(_, name, holder)| (name, holder))
+            .collect()
+    };
+    let named = |name: &str, holder: &str| vec![(name.to_string(), holder.to_string())];
+    assert_eq!(
+        bus(check(&other, std::slice::from_ref(&stt))),
+        named("stt", "stt-a"),
+        "两家都提供"
+    );
+    assert_eq!(
+        bus(check(&plug, std::slice::from_ref(&stt))),
+        named("stt", "stt-a"),
+        "提供了的不能接"
+    );
+    assert_eq!(
+        bus(check(&stt, std::slice::from_ref(&plug))),
+        named("stt", "stt-c"),
+        "接了的不能提供"
+    );
+    assert!(
+        bus(check(&engine2, std::slice::from_ref(&engine))).is_empty(),
+        "几家都接不撞"
+    );
+    assert!(
+        bus(check(&engine, std::slice::from_ref(&stt))).is_empty(),
+        "名字不一样不撞"
+    );
+}

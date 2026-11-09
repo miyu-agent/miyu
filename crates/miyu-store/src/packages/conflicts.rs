@@ -2,7 +2,8 @@
 //! 「冲突的文件」，要装的包带的东西和装着的别的包重了名，就不装。每个包只往自己的文件夹里放，文件撞不上，撞的是几块共用的
 //! 名字：子命令、功能的编号、工具名（功能下列的、脚本）、技能、MCP 服务、知识库、斜杠命令模板（施工 X-14 上补，也不能和核心
 //! 内置的斜杠命令撞，内置的由调的一方交进来）、人格、预设（施工 P-11 下，设计 31 第十节第 4 条：还不能和出厂的、
-//! 数据根里的撞，那几层有没有由调的一方交进来）、前缀（施工 PN-1，设计 48 第二节第 3 条：没写的照包编号）。
+//! 数据根里的撞，那几层有没有由调的一方交进来）、前缀（施工 PN-1，设计 48 第二节第 3 条：没写的照包编号）、总线上的名字
+//! （施工 BUS-1，设计 67：`provides` 一家，一个名字只能是一种）。
 //!
 //! 以前装完重读清单才认撞没撞，谁先到照编号算：编号排在前的新包装得上，被判撞了的是装着的那个，悄悄失效。现在动文件以前
 //! 比，新来的让。同一个编号（升级）不跟自己比；家目录里自己放的技能、脚本不算（自己的赢，设计 31 第五节第 3 条）。
@@ -12,7 +13,7 @@
 use std::collections::BTreeSet;
 use std::path::Path;
 
-use miyu_config::package::Manifest;
+use miyu_config::package::{Export, Manifest};
 
 use super::Found;
 use crate::layers::Layer;
@@ -40,6 +41,9 @@ pub enum Kind {
     Preset,
     /// 前缀（施工 PN-1）：配置键、扩展记的事件种类用的，没写的照包编号。
     Prefix,
+    /// 总线上的名字（施工 BUS-1，设计 67 B3、B6）：`provides` 一个名字只有一家；一个名字只能是一种，一家 `provides` 了别家不能
+    /// `plugs`，反过来也一样。几家都 `plugs` 不算撞。
+    Bus,
 }
 
 impl Kind {
@@ -56,6 +60,7 @@ impl Kind {
             Kind::Persona => "persona",
             Kind::Preset => "preset",
             Kind::Prefix => "prefix",
+            Kind::Bus => "bus",
         }
     }
 }
@@ -123,6 +128,13 @@ pub fn conflicts(
         let Ok(theirs) = &other.read else {
             continue;
         };
+        for name in bus_clashes(&manifest.export, &theirs.export) {
+            found.insert(Conflict {
+                kind: Kind::Bus,
+                name,
+                holder: Holder::Package(other.id.clone()),
+            });
+        }
         let theirs = names(&other.id, theirs, &other.files_dir());
         for (kind, name) in mine.intersection(&theirs) {
             found.insert(Conflict {
@@ -133,6 +145,21 @@ pub fn conflicts(
         }
     }
     found.into_iter().collect()
+}
+
+/// 总线上撞了的名字（施工 BUS-1）：两家都 `provides` 的，一家 `provides`、一家 `plugs` 的。照名字排、不重复。
+fn bus_clashes(mine: &Export, theirs: &Export) -> BTreeSet<String> {
+    let held = |names: &[String], name: &String| names.contains(name);
+    mine.provides
+        .iter()
+        .filter(|name| held(&theirs.provides, name) || held(&theirs.plugs, name))
+        .chain(
+            mine.plugs
+                .iter()
+                .filter(|name| held(&theirs.provides, name)),
+        )
+        .cloned()
+        .collect()
 }
 
 /// 一个包占的名字。

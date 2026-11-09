@@ -263,7 +263,7 @@ fn an_extension_exports_methods_by_name() {
         "{BRIDGE}\n[export]\nmethods = [\"add\", \"search.by-meaning\"]\n"
     ))
     .unwrap();
-    assert_eq!(manifest.export, ["add", "search.by-meaning"]);
+    assert_eq!(manifest.export.methods, ["add", "search.by-meaning"]);
     assert!(read(BRIDGE).unwrap().export.is_empty(), "没写的是空的");
     for bad in ["[\"Add\"]", "[\"add\", \"add\"]", "[\"\"]"] {
         let (code, _) = wrong(&format!("{BRIDGE}\n[export]\nmethods = {bad}\n"));

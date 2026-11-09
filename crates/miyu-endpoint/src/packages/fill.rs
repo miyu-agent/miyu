@@ -112,7 +112,15 @@ fn links(item: &mut Value, id: &str, manifest: &Manifest, language: &str) {
     }
     // 给别的软件调的方法（施工 F-11，接入QQ 照它找挂在自己身上的包）。
     if !manifest.export.is_empty() {
-        item["export"] = json!({"methods": manifest.export});
+        let export = &manifest.export;
+        item["export"] = json!({"methods": export.methods});
+        // 总线上的名字（施工 BUS-1）：写了才带。
+        if !export.provides.is_empty() {
+            item["export"]["provides"] = json!(export.provides);
+        }
+        if !export.plugs.is_empty() {
+            item["export"]["plugs"] = json!(export.plugs);
+        }
     }
     if let Some(worker) = &manifest.worker {
         item["worker"] = json!({"program": worker.program, "args": worker.args});

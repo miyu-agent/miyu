@@ -341,7 +341,9 @@ Your program pushes the content; see [Writing an extension](extensions.en.md).
 
 ## `[export]`
 
-`methods`: which of your methods other packages can call with `package.call` (they still have to be registered with `package.methods`).
+`methods`: which of your methods other packages can call (they still have to be registered with `package.methods`).
+
+`provides`: the names you provide on the bus (e.g. `["stt"]`); a name has only one provider among installed packages, and installing a second is a conflict. `plugs`: the names you plug into (e.g. `["tts.engine"]`); several packages can, and whoever uses the name picks one. A name is dot-separated parts, each starting with a lowercase letter and holding only lowercase letters, digits and `-`; a name can't be in both. The methods under a name go in `methods`, prefixed with the name and with a one-part short name: `stt.transcribe` for `stt`, `tts.engine.synthesize` for `tts.engine`; every name you declare needs at least one. Others call you by the name, never by your package id (design `67-总线.md`).
 
 ## `[content.<package id>]`
 

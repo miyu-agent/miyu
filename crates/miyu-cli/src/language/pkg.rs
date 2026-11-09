@@ -169,9 +169,11 @@ impl Language {
             (Language::Chinese, "persona") => "人格",
             (Language::Chinese, "preset") => "预设",
             (Language::Chinese, "prefix") => "前缀",
+            (Language::Chinese, "bus") => "总线名字",
             (Language::English, "mcp") => "MCP server",
             (Language::English, "knowledge") => "knowledge base",
             (Language::English, "slash") => "slash command",
+            (Language::English, "bus") => "bus name",
             _ => kind,
         }
     }

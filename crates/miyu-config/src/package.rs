@@ -16,6 +16,7 @@ mod content;
 mod credits;
 mod depend;
 mod driver;
+mod export;
 mod features;
 mod fields;
 pub mod groups;
@@ -43,6 +44,7 @@ pub use code::Code;
 pub use content::Content;
 pub use depend::Dependency;
 pub use driver::{DriverCache, DriverDecl, DriverKey, driver_name};
+pub use export::{Export, under};
 pub use features::Feature;
 pub use guard::{ACCESS as GUARD_ACCESS, Guard};
 pub use links::{Connection, Worker};
@@ -133,9 +135,8 @@ pub struct Manifest {
     pub guard: Option<Guard>,
     /// 工具调用后的通知（施工 HK-2，`[after]`）：收哪几种调用的 `tool.after`；没写的没有。只有扩展包能写，要声明 `events.read`。
     pub after: Option<After>,
-    /// 给别的软件调的方法（施工 X-18，`[export] methods`）：声明了 `packages.call` 的扩展经 `package.call` 只调得到这几个。只有
-    /// 扩展包能写，没写的是空的。
-    pub export: Vec<String>,
+    /// 对外给什么（施工 X-18，`[export]`；BUS-1 加总线的 `provides`、`plugs`）：只有扩展包能写，没写的是空的。
+    pub export: Export,
     /// 给别的包带的内容（施工 X-22，`[content.<包>] dir`）：照包的编号排；只有 `bundle`、扩展包能写，没写的是空的。
     pub content: Vec<Content>,
     /// 要这个地方有什么才有用（施工 X-25，`[package] needs`）：照 [`Need`] 的先后，没写的是空的。
@@ -444,8 +445,8 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
     let guard = guard::read(&reader, root.get("guard"), capabilities)?;
     let after = after::read(&reader, root.get("after"), capabilities)?;
     let export = match root.get("export").and_then(Item::as_table_like) {
-        Some(table) => links::export(&reader, table)?,
-        None => Vec::new(),
+        Some(table) => export::export(&reader, table)?,
+        None => Export::default(),
     };
     let content = match root.get("content") {
         Some(node) => content::read(&reader, node)?,

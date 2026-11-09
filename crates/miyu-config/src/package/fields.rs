@@ -146,7 +146,7 @@ pub(super) const GUARD: &[&str] = &["tools", "access", "timeout_ms"];
 pub(super) const AFTER: &[&str] = &["tools", "access"];
 
 /// `[export]`。
-pub(super) const EXPORT: &[&str] = &["methods"];
+pub(super) const EXPORT: &[&str] = &["methods", "provides", "plugs"];
 
 /// `[content.<包的编号>]`。
 pub(super) const CONTENT: &[&str] = &["dir"];

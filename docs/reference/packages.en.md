@@ -105,7 +105,7 @@ Install and remove take effect at once: processes start or stop per their switch
 | `bad_params` (`-32602`) | Both given; a path that isn't absolute |
 | `path_unreadable` | The folder can't be read |
 | `package_invalid` | The manifest is wrong, `data.problem`, `data.line`; for a package that needs a newer Miyu, `data.problem` is `needs_newer_miyu` |
-| `package_conflict` | A name it brings clashes with an installed package: subcommand, feature, tool, skill, MCP server, knowledge base, slash command, persona, preset, prefix |
+| `package_conflict` | A name it brings clashes with an installed package: subcommand, feature, tool, skill, MCP server, knowledge base, slash command, persona, preset, prefix, bus name (`bus`: a name has one provider, and can't be provided by one package and plugged by another) |
 | `not_permitted` | The `package` tool in a session that isn't the owner's (one acting for outsiders in a venue) installing, upgrading, removing or restoring a package, or enabling an extension; listing, looking and searching still work |
 | `package_exists` | Same id as a built-in package |
 | `package_file_bad` | The package file can't be unpacked; or, installing from a source, the package inside isn't the one the index entry names |

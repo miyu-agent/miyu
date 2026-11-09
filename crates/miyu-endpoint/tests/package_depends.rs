@@ -115,7 +115,18 @@ async fn an_installed_package_missing_its_depends_says_so_and_old_workers_still_
         "opt/relay/package.toml",
         "[package]\nprotocol = [1, 1]\nname = { en = \"Relay\" }\n\n[command]\nname = \"relay\"\nprogram = \"miyu-relay\"\nabout = { en = \"R\" }\n\n[process]\n\n[export]\nmethods = [\"qq.inbound\", \"qq.groups\"]\n",
     );
+    home.write(
+        "opt/speaker/package.toml",
+        "[package]\nprotocol = [1, 1]\nname = { en = \"Speaker\" }\n\n[command]\nname = \"speaker\"\nprogram = \"miyu-speaker\"\nabout = { en = \"S\" }\n\n[process]\n\n[export]\nprovides = [\"tts\"]\nplugs = [\"chat.hook\"]\nmethods = [\"tts.play\", \"chat.hook.event\"]\n",
+    );
     let mut client = connected(&home).await;
+    // 总线上的名字（施工 BUS-1）：写了才带。
+    let speaker = listed(&mut client, "speaker").await;
+    assert_eq!(
+        speaker["export"],
+        json!({"methods": ["tts.play", "chat.hook.event"], "provides": ["tts"], "plugs": ["chat.hook"]}),
+        "{speaker}"
+    );
     let addon = listed(&mut client, "addon").await;
     assert_eq!(
         addon["depends"],

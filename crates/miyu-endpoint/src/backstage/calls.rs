@@ -123,7 +123,7 @@ pub(crate) async fn call(
         return Err(Refusal::UNKNOWN_PACKAGE);
     };
     // 扩展调的：声明了 `packages.call` 没有，连接那一头照表查过了（施工 X-30，`connection/rights.rs`）；这里只看对方给没给出来。
-    if from.is_some() && !target.export.contains(&params.method) {
+    if from.is_some() && !target.export.exports(&params.method) {
         return Err(Refusal::not_exported(&params.method));
     }
     let instance = Instance::of(&params.package);
