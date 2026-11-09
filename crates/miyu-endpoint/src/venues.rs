@@ -97,6 +97,18 @@ pub(crate) fn bound(core: &Core, id: &ExternalId) -> bool {
     owners_ids(core).iter().any(|one| one == id.as_str())
 }
 
+/// 语音助手那头说话的主人（施工 VA-1，设计 `20-语音.md` 第九节）：平台 `voice` 上的 `owner`，不用写进对应表。
+const VOICE_OWNER: &str = "voice:owner";
+
+/// 平台身份 `id` 在场所 `venue` 里是不是主人：对应表里的，加上语音助手的 [`VOICE_OWNER`]。后者只在 `voice` 的场所里算：
+/// 别的平台的桥报这个号（场所不是 `voice:` 开头的）不算，照外人。
+fn owner_in(core: &Core, id: &ExternalId, venue: &str) -> bool {
+    if id.as_str() == VOICE_OWNER {
+        return venue.starts_with("voice:");
+    }
+    bound(core, id)
+}
+
 /// 主人对应表里是主人的平台身份（施工 SU-1 补：写了非空的字就是；SU-3 改成只列平台身份）。
 /// 值不是字的、空的不算。
 fn owners_ids(core: &Core) -> Vec<String> {
@@ -134,9 +146,14 @@ pub(crate) fn binding(
     caller: &Caller,
     params: BindingParams,
 ) -> Result<Value, Refusal> {
-    bridge(core, caller).ok_or_else(bridge::refused)?;
+    let bridge = bridge(core, caller).ok_or_else(bridge::refused)?;
     let id = ExternalId::parse(&params.id).map_err(|_| Refusal::BAD_PARAMS)?;
-    Ok(json!({"owner": bound(core, &id)}))
+    // 语音助手的主人只对 `voice` 平台的桥算（施工 VA-1）。
+    let owner = match id.as_str() == VOICE_OWNER {
+        true => bridge.platforms(core).holds(VOICE_OWNER),
+        false => bound(core, &id),
+    };
+    Ok(json!({"owner": owner}))
 }
 
 /// `venue.session`：找回或者造场所 `venue` 的主线会话（`venues.md`「对外的样子」，施工 SU-4 中）：
@@ -162,7 +179,9 @@ pub(crate) async fn session(
         (Kind::Group, Some(recent @ 1..=RECENT_MOST)) => Some(recent),
         _ => return Err(Refusal::bad_field("recent")),
     };
-    let confined = !peer.as_ref().is_some_and(|peer| bound(core, peer));
+    let confined = !peer
+        .as_ref()
+        .is_some_and(|peer| owner_in(core, peer, venue.as_str()));
     // 主人本人的私聊（对应表认出来的）主人这边的连接也开得了（同原来）；群、陌生人的私聊只有平台桥开。
     if confined {
         bridge(core, caller).ok_or_else(bridge::refused)?;
@@ -262,7 +281,7 @@ pub(crate) fn speaker(
 ) -> Result<By, Refusal> {
     let venue = handle.venue();
     let id = ExternalId::parse(&params.external).map_err(|_| Refusal::BAD_PARAMS)?;
-    let owner = bound(core, &id);
+    let owner = owner_in(core, &id, venue.as_str());
     if !handle.confined() && owner {
         return Ok(By::Person(Person { via: Some(id) }));
     }

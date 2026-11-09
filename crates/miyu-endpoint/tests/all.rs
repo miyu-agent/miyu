@@ -333,6 +333,7 @@ mod view_status;
 mod view_stream;
 mod view_tool_names;
 mod view_tree;
+mod voice_owner;
 mod watch;
 mod welcomed;
 mod widget_commands;

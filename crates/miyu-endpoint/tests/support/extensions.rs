@@ -250,12 +250,22 @@ pub fn install_serving(
     start: &str,
     bridge: bool,
 ) {
+    install_bridge_on(home, id, program, args, start, bridge.then_some("qq"));
+}
+
+/// 同 [`install_serving`]，桥的平台是 `platform`（施工 VA-1：语音助手是 `voice`）；`None` 的不是桥。
+pub fn install_bridge_on(
+    home: &Home,
+    id: &str,
+    program: &str,
+    args: &[String],
+    start: &str,
+    platform: Option<&str>,
+) {
     let args: Vec<String> = args.iter().map(|arg| format!("{arg:?}")).collect();
-    let connection = if bridge {
-        "\n[connection]\nplatform = \"qq\"\n"
-    } else {
-        ""
-    };
+    let connection = platform.map_or_else(String::new, |platform| {
+        format!("\n[connection]\nplatform = \"{platform}\"\n")
+    });
     home.write(
         &format!("opt/{id}/package.toml"),
         &format!(

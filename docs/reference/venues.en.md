@@ -27,6 +27,8 @@ A venue is where a session happens: this machine (`local`), or a private chat or
 
 In a private chat this identity is the owner in person; in a group it's the owner.
 
+The voice assistant's `voice:owner` is the owner without being written into the bindings (step VA-1): only in venues whose platform is `voice`; a bridge for another platform giving this identity is treated as an outsider.
+
 ## `venue.session`
 
 **Params**
