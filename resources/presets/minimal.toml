@@ -4,7 +4,7 @@
 [preset]
 name = { zh = "极简开发", en = "Minimal", ja = "ミニマル開発" }
 # 说明：给人看的，不发给模型。
-summary = { zh = "只提供Shell和读写文件的工具，最小化工具集以最大程度发挥 AI 原有的能力。", en = "Only the shell and the file read and write tools: the smallest tool set, so the AI works the way it already knows.", ja = "シェルとファイルの読み書きだけ。道具を最小にして、AI 本来の力をそのまま生かします。" }
+summary = { zh = "只提供运行命令和读写文件的工具。", en = "Only the tools to run commands and read and write files.", ja = "コマンドの実行とファイルの読み書きの道具だけ。" }
 # 图标（施工 P-5 的写法）：一个终端窗口，和常规开发、全部功能的 box、boxes 一组。
 icon = "square-terminal"
 unlisted = "off"
