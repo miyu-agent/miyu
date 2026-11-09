@@ -1,3 +1,10 @@
 [alias]
 # cargo xtask check：跑完全部门禁，见 xtask/src/main.rs。
 xtask = "run --quiet --package xtask --"
+
+[env]
+# 经 cargo 起的进程（测试、`cargo run`、`cargo xtask`）不看这台机器上系统包管理装的 Miyu 包（施工 DM-T）：系统加装那一层照
+# MIYU_DISTRO_PACKAGES 只看它，这里指到 target 下一个不存在的目录。装了 AUR、Homebrew 的 miyu-tui、miyu-webui 的机器上，
+# 拉起真核心的测试原来会认到 /usr/share/miyu/packages/ 里的，帮助页、默认的头都跟着变，还会真拉起装着的终端。外面已经设了的
+# 照外面的（不 force），演练、dist-check 指到自己的临时目录照旧。
+MIYU_DISTRO_PACKAGES = { value = "target/no-distro-packages", relative = true }
