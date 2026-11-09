@@ -237,6 +237,7 @@ fn policy() -> Policy {
             None,
             None,
         )
+        .and_then(|facts| facts.with_preset_changed(Some(r#"<s i="{id}" p="{previous}"/>"#)))
         .unwrap(),
         tools: BTreeMap::from([
             (

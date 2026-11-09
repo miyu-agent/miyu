@@ -39,6 +39,10 @@ pub struct FactTexts {
     /// 环境那一块只有工作目录的写法（`env-cwd.txt`，施工 C-11）：预设关了时间时用。同上。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub env_cwd: Option<String>,
+    /// 换了预设那一块（`preset-changed.txt`，施工 DM-8）。以前造的快照里没有，读成没有：那些会话换了预设不加这一块；没有的
+    /// 不写，旧快照的字节不变。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preset_changed: Option<String>,
 }
 
 impl FactTexts {
@@ -57,6 +61,7 @@ impl FactTexts {
         )
         .and_then(|templates| templates.with_output_limit(self.output_limit.as_deref()))
         .and_then(|templates| templates.with_model(self.model.as_deref()))
+        .and_then(|templates| templates.with_preset_changed(self.preset_changed.as_deref()))
         .and_then(|templates| {
             templates.with_gates(gates, self.env_time.as_deref(), self.env_cwd.as_deref())
         })

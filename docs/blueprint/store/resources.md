@@ -55,7 +55,7 @@
 │   ├── permission-rule.txt、local-paths-rule.txt、machine.txt  核心的几行，拼进 system（施工 2-7 补、再补）
 │   ├── style-lock.txt                    风格锁，带角色扮演提示的人格拼在 system 最后（施工 P-1 补）
 │   ├── turn-ended/<原因>.txt             5 份
-│   ├── facts/env.txt、permission.txt、reply-cut.txt、session.txt、permission-changed.txt
+│   ├── facts/env.txt、permission.txt、reply-cut.txt、session.txt、permission-changed.txt、preset-changed.txt
 │   ├── facts/reminder-open.txt、reminder-close.txt  角色扮演提示的包装（施工 P-1 补）
 │   ├── tool-results/<哪一句>.txt         15 份
 │   ├── permissions/forbidden.txt、unresolvable.txt
@@ -122,7 +122,7 @@
 |---|---|
 | `core/checkpoint-open.txt`、`core/checkpoint-close.txt`、`core/checkpoint-end.txt` | 检查点包装的开头、摘要的收尾、包装的结尾 |
 | `core/turn-ended/interrupted.txt`、`error.txt`、`step_limit.txt`、`aborted.txt`、`restarted.txt` | 回合没走完的几句 |
-| `core/facts/env.txt`、`permission.txt`、`reply-cut.txt`、`session.txt`、`permission-changed.txt` | 事实的模板（`session.txt` 施工 1-13 再补，`permission-changed.txt` 施工 2-7 补） |
+| `core/facts/env.txt`、`permission.txt`、`reply-cut.txt`、`session.txt`、`permission-changed.txt`、`preset-changed.txt` | 事实的模板（`session.txt` 施工 1-13 再补，`permission-changed.txt` 施工 2-7 补，`preset-changed.txt` 施工 DM-8） |
 | `core/tool-results/unknown.txt`、`not-an-object.txt`、`cancelled-before.txt`、`cancelled-running.txt`、`skipped.txt`、`read-only.txt`、`denied.txt`、`denied-with-reason.txt`、`unattended.txt`、`question-interrupted.txt`、`question-voided.txt`、`question-unattended.txt`、`restarted.txt`、`unavailable.txt`、`crashed.txt` | 替工具写的结果 |
 | `core/permissions/forbidden.txt`、`unresolvable.txt` | 权限策略拒绝时的话（`session/guard.md`） |
 | `core/drivers/image-omitted.txt`、`file-omitted.txt`、`no-output.txt`、`tool-attachments.txt`、`tool-attachments-only.txt`、`file-open.txt`、`file-cut.txt`、`file-close.txt`、`image-open.txt`、`image-close.txt`、`image-omitted-named.txt`、`image-description-open.txt`、`image-description-open-named.txt`、`image-description-close.txt` | 驱动的占位，文本文件照字放进消息的三句（施工 3-9 三补），带名字的图片的三句（施工 3-9 四补），替它看的图的三句标签（施工 8-17，`drivers/openai-chat.md` 第 9 条） |

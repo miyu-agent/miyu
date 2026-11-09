@@ -22,8 +22,11 @@ use std::collections::BTreeMap;
 
 mod gates;
 mod model;
+mod preset;
+
 pub use gates::Gates;
 pub use model::Identity;
+pub use preset::PRESET;
 
 use crate::event::{Body, ContextInjected, Level, Permission};
 use crate::history::History;
@@ -57,6 +60,8 @@ pub struct FactTemplates {
     output_limit: Option<Template>,
     /// 模型那一块，字段是 `provider`、`name`、`effort`、`preset`（施工 E-M，`facts/model.rs`）。以前造的快照里没有，没有这一块。
     model: Option<Template>,
+    /// 换了预设那一块，字段是 `id`、`previous`（施工 DM-8，`facts/preset.rs`）。以前造的快照里没有，没有这一块。
+    preset_changed: Option<Template>,
     /// 安静（施工 D-1 上，设计 41：整理会话的请求和原来的一次性请求逐字节一样）：回合开始的环境、权限、会话编号、角色扮演提示
     /// 一块都不注入。
     quiet: bool,
@@ -109,6 +114,7 @@ impl FactTemplates {
             reminder: None,
             output_limit: None,
             model: None,
+            preset_changed: None,
             quiet: false,
             gated: gates::Gated::default(),
         };

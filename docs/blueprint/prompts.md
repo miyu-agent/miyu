@@ -407,6 +407,17 @@ preferred_reply_language: {preferred_reply_language}
 <permission level="{level}" previous="{previous}">The user changed the permission level.</permission>
 ```
 
+#### `core/facts/preset-changed.txt`
+
+- 什么时候加进来：人换了预设以后的下一个回合开始，一次（换了几次还没开回合的只说一次，换回原来的不说）；告诉过的不再说；以前造的快照没有
+- token：约 18（`id` 按 `minimal`、`previous` 按 `dev` 算，2026-11-09 照 tiktoken `o200k_base` 量，带行尾换行）
+- 为什么加：说清是人换的、从哪个换过来（施工 DM-8）。项目主人 2026-11-09 发版前检查第 8 条：换了预设只在界面上打一行，她那边不像切权限级别那样有一句；换预设会先压缩，压缩以后模型那一块里的 `preset` 是头一回出现，看不出换过。写法照 `permission-changed.txt`
+- 指纹：`5e328e87`
+
+```text
+<preset id="{id}" previous="{previous}">The user changed the preset.</preset>
+```
+
 #### `core/facts/session.txt`
 
 - 什么时候加进来：会话的第一轮；压缩以后、撤掉了带着它的那一轮以后的下一个边界

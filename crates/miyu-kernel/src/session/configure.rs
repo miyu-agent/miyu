@@ -31,6 +31,9 @@ pub(super) struct Reference {
     changed: Option<Seq>,
     /// 会话记的思考强度（施工 SM-1）：没记的、回到跟着配置的没有。
     effort: Option<String>,
+    /// 换了预设、还没告诉她（施工 DM-8，`facts/preset.rs`）：换之前的那个预设（空的是不用预设）。内核注入了预设那一块就清掉；
+    /// 换了几次还没开回合的，记最早的那个，换回它的也清掉。
+    announce: Option<String>,
 }
 
 impl Reference {
@@ -45,6 +48,13 @@ impl Reference {
                     true => Some(String::new()),
                     false => created.preset.clone(),
                 };
+                self.announce = None;
+            }
+            // 内核告诉过她换了预设（施工 DM-8）。
+            Body::ContextInjected(fact)
+                if event.by == By::Kernel && fact.kind.as_str() == crate::facts::PRESET =>
+            {
+                self.announce = None;
             }
             // 空的是回到跟着 `models.chat`（施工 8-10 再补）。
             Body::PolicyChanged(PolicyChanged {
@@ -61,7 +71,12 @@ impl Reference {
                 self.persona = Some(persona.clone()).filter(|persona| !persona.is_empty());
             }
             if let Some(preset) = &changed.preset {
-                self.preset = Some(preset.clone());
+                let before = self.preset.replace(preset.clone()).unwrap_or_default();
+                self.announce = match self.announce.take() {
+                    Some(first) if first == *preset => None,
+                    Some(first) => Some(first),
+                    None => Some(before),
+                };
             }
             // 换思考强度（施工 SM-1）：和换模型可以在同一条里，8-18 那时的不认。
             if let Some(level) = changed.effort.as_ref().and_then(Effort::session) {
@@ -88,6 +103,11 @@ impl Reference {
     /// 会话记的思考强度：没记的没有。
     pub(super) fn effort(&self) -> Option<&str> {
         self.effort.as_deref()
+    }
+
+    /// 换了预设、还没告诉她的：换之前的那个预设（空的是不用预设）。没换过、告诉过的没有（施工 DM-8）。
+    pub(super) fn announce(&self) -> Option<&str> {
+        self.announce.as_deref()
     }
 
     /// 第 `seq` 条写在最近一次换模型后面；没换过的都算。熔断照它只看换过去以后的暂停、失败。

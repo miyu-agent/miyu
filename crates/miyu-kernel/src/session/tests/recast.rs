@@ -111,3 +111,64 @@ fn a_loaded_session_remembers_what_it_was_switched_to() {
         (Some("miyu"), Some("chat"))
     );
 }
+
+/// 预设那一块写的字。
+fn told(actions: &[Action]) -> Vec<String> {
+    appended_events(actions)
+        .into_iter()
+        .filter_map(|event| match event.body {
+            Body::ContextInjected(fact) if fact.kind.as_str() == "preset" => Some(fact.text),
+            _ => None,
+        })
+        .collect()
+}
+
+/// 换了预设的下一个回合告诉她一次（施工 DM-8）：写换成的和换之前的（造会话时没写预设的写 `none`），再下一轮不重复；换了两次还没开
+/// 回合的记最早的那个，换回它的不说；载入照日志算还欠不欠。
+#[test]
+fn the_next_turn_after_a_preset_switch_says_so_once() {
+    let mut session = loaded(one_turn_log(), Some(compaction(1000)), Some(100_000));
+    let mut log = one_turn_log();
+    log.extend(appended_events(&session.handle(recast(
+        3,
+        None,
+        Some("dev"),
+    ))));
+    session.handle(stored(9));
+    log.extend(appended_events(&session.handle(recast(
+        4,
+        None,
+        Some("minimal"),
+    ))));
+    session.handle(stored(10));
+    let pending = loaded(log.clone(), Some(compaction(1000)), Some(100_000));
+    assert_eq!(pending.reference.announce(), Some(""), "载入以后照样欠");
+    let actions = session.handle(send(5, "hi"));
+    assert_eq!(
+        told(&actions),
+        [r#"<s i="minimal" p="none"/>"#],
+        "记最早的那个"
+    );
+    assert_eq!(session.reference.announce(), None, "告诉过了");
+    log.extend(appended_events(&actions));
+    // 回合没走完，载入会补动作，只看它算的欠不欠。
+    let (again, _) = Session::load(
+        session_id(),
+        log,
+        at(55),
+        policy(),
+        environment("~/src/miyu"),
+    )
+    .unwrap();
+    assert_eq!(again.reference.announce(), None, "告诉过的载入以后不再欠");
+
+    let mut back = loaded(one_turn_log(), Some(compaction(1000)), Some(100_000));
+    back.handle(recast(3, None, Some("dev")));
+    back.handle(stored(9));
+    back.handle(recast(4, None, Some("")));
+    back.handle(stored(10));
+    assert!(
+        told(&back.handle(send(5, "hi"))).is_empty(),
+        "换回原来的不说"
+    );
+}

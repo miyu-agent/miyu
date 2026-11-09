@@ -240,6 +240,11 @@ impl Session {
             (&self.id, self.identity()),
         );
         facts.extend(self.policy.facts.reminder(&self.history));
+        // 换了预设、还没告诉她的，这一轮告诉一次（施工 DM-8）。
+        if let (Some(previous), Some(preset)) = (self.reference.announce(), self.reference.preset())
+        {
+            facts.extend(self.policy.facts.preset_changed(preset, previous));
+        }
         let mut events = vec![started];
         for fact in facts {
             events.push(self.record(at, By::Kernel, cause.clone(), Body::ContextInjected(fact)));

@@ -5,6 +5,7 @@
 mod gates;
 mod model;
 mod permission;
+mod preset;
 mod reminder;
 mod speakers;
 
