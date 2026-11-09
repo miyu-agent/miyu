@@ -80,7 +80,7 @@ pub(super) const LINKS: &[&str] = &["packages", "workers"];
 pub(super) const WORKER: &[&str] = &["program", "args"];
 
 /// `[page]`。
-pub(super) const PAGE: &[&str] = &["dir"];
+pub(super) const PAGE: &[&str] = &["dir", "server"];
 
 /// `[tray]`（施工 TR-2）：只有名字，打开的总是这个包自己的后台页。
 pub(super) const TRAY: &[&str] = &["name"];

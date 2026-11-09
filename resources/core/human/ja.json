@@ -692,6 +692,7 @@
     "package-problems/bad_icon": "{detail} は Lucide のアイコン名で書きます：小文字で始まり、小文字・数字・- だけ",
     "package-problems/bad_logo": "{detail} はパッケージディレクトリ内の .png か .webp への相対パスで書きます",
     "package-problems/bad_page_dir": "{detail} はパッケージディレクトリ内の相対ディレクトリで、.. や先頭の / は使えません",
+    "package-problems/bad_page_source": "{detail}：dir か server のどちらか一つだけ。server は true だけで、拡張だけが書けます",
     "package-problems/bad_mascot_model": "{detail} はパッケージディレクトリ内の相対パスで、.. や先頭の / は使えません",
     "package-problems/bad_theme_file": "{detail} はパッケージディレクトリ内の相対パスで、.. や先頭の / は使えません",
     "package-problems/bad_theme_dir": "{detail} はパッケージディレクトリ内の相対ディレクトリで、.. や先頭の / は使えません",

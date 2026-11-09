@@ -15,6 +15,7 @@ logo = "art/logo.png"     # 可以不写：包自带的图标，一张 PNG 或 W
 
 [page]                    # 软件后台页，可以不写；只有扩展（process）、内置包（builtin）能写
 dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入口是里面的 index.html
+# server = true           # 或者：后台页由程序自己起的网页服务给（施工 BP-1），和 dir 只写一样，只有扩展能写
 
 [tray]                    # 托盘菜单里的一行，可以不写；要先有 [page]（施工 TR-2）
 name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
@@ -27,6 +28,7 @@ name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
    - 核心只查、不解码不缩（看开头的字节认格式、只看文件头量宽高，同人格的头像，`packages/logo.rs`）：不在（照真实路径，出了包目录的也算不在）、不是 PNG / WebP、超了上限的当没有图标，包照装，`miyu check` 报警告 `logo_missing`、`logo_not_image`、`logo_too_big`。本地开发目录同一个上限。
    - 图用 `package.logo` 读（下面「`package.logo`」）；软件源里的包的图标随索引走（施工 F-18 下，下面「软件源里的图标」）。
 2. `[page] dir`：相对包目录的路径，写法同 `pages_dir` 的规矩（不能是绝对路径，不带 `..`、`\`、`:`），不合的 `bad_page_dir`。别的种类写了 `wrong_kind`。目录里没有 `index.html` 的不报错，`package.list` 不带 `page`，`miyu check` 报一条警告 `page_missing`。
+   - `[page] server = true`（施工 BP-1，2026-11-09 项目主人定：不装网页也能看软件后台）：后台页是程序自己起的网页服务（im 的页面服务就是），和 `dir` 只写一样。程序登记的 `status` 方法回应里写 `web`：服务实际听的端口，还没听上的不写（im 和网页 10-19 定的写法，这里写成规矩）。两样都写、`server` 不是 `true`、不是扩展（内置包没有程序）写的 `bad_page_source`，报在 `server` 那一行。`package.file` 回 `no_page`：没有目录可读。
 3. 包目录照 `miyu_store::packages::Found::files_dir` 算：出厂的是资源目录的 `packages/<编号>/`，装上的是数据根的 `opt/<编号>/`（装包时清单旁边的同名目录一起拷，F-5 上）。
 4. `[tray] name`（施工 TR-2，托盘 `miyu-applet` 的蓝图 `app.md` 第 4 条「软件包挂的入口」，2026-11-03 项目主人定）：托盘菜单里挂一行，写法同 `[package] name`，点了用浏览器打开这个包自己的后台页（`miyu web --package <编号>`）。一个包至多一行，只能是「打开它的后台页」：不写目标，也就没法指到命令、网址、别的包。没写 `[page]` 的、写了 `name` 以外的格的 `bad_tray`；别的种类写了 `wrong_kind`。
 
@@ -36,7 +38,8 @@ name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
 |---|---|---|
 | `icon` | 清单写了 | 照原样 |
 | `logo` | 清单写了、合规矩 | 图标的版本：内容的 SHA-256 前 16 位十六进制，头照它换缓存；图用 `package.logo` 读（施工 F-18 上） |
-| `page` | 有后台页 | `true`：清单写了 `[page]`，`index.html` 在 |
+| `page` | 有后台页 | `true`：清单写了 `[page]`，`index.html` 在；写 `server = true` 的写了就算（施工 BP-1） |
+| `page_server` | 后台页由程序自己的服务给 | `true`（施工 BP-1）：头照下面「不靠网页打开软件后台」第 2 条跳过去，不放进框里 |
 | `tray` | 有后台页、清单写了 `[tray]` | `{"name"}`：托盘菜单里那一行的字，照连接的语言挑（施工 TR-2）。托盘只列开着的（`enabled` 不是 `false`） |
 | `status` | 读成了的 | `running`、`starting`、`stopped`、`off`、`ready`、`program_missing` 之一，见下 |
 | `enabled` | 有开关的 | 开关现在是开是关，见「开关」 |
@@ -162,6 +165,20 @@ name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
 4. 推送：`settings.changed {"keys"}`（`config.changed` 里有它的项时）、`theme.changed {"theme", "colors"?}`。
 5. 别的方法回 `-32601`；写法不对的回 `-32600`。网页认的一律照它给框的那个包，框说自己是谁不算数。
 
+### 不靠网页打开软件后台（施工 BP-1～BP-3，2026-11-09 项目主人定）
+
+发版前检查第 14 条：`miyu web --package <编号>` 要装了网页才有，不装网页也该看得了软件后台。项目主人定：核心加一个命令，静态后台页由核心按需起服务给（开着才起，闲了就关，常驻不多占）。
+
+1. **命令** `miyu pkg page <编号>`（施工 BP-2，`cli/pkg.md`）：照 `package.list` 找；没装 `unknown_package`，没有后台页的说一句、退出码 1。打开的网址印出来，浏览器没开成的照样能复制。托盘那一行改调它（托盘的会话做）。
+2. **程序自己起服务的**（`page_server`）：`package.call {"package", "method": "status"}`，回应里的 `web` 是端口；程序没在跑、没有这个方法、没写 `web` 的说一句「没在运行」、退出码 1。再要一张 `login.ticket`，开 `http://127.0.0.1:<端口>/#miyu=<base64url(JSON {v: 1, scheme, ticket, lang})>`（网页 `external.js` 的写法；命令行不知道网页的颜色，不带 `colors`，`scheme` 照系统的深浅、读不到的写 `light`，`lang` 照界面语言）。网页碰到 `page_server` 的照这一条直接跳过去，不再开框（网页的会话做）。
+3. **目录里的**（施工 BP-3）：`package.page {"package"}`，核心按需起本机的后台页服务，回 `{"url"}`，命令行交给浏览器。
+   - 服务：只听 `127.0.0.1` 上系统给的端口；第一次要的时候起，十分钟没有请求、也没有开着的推送流就关，关了票全作废。
+   - 票：每要一次发一张，32 个随机字节，认一个包；服务开着就一直有效（页面会反复取文件、调方法）。只给出示本机令牌、登录令牌的连接（扩展调回 `local_only`）。
+   - `GET /h/<票>/`：核心自己的宿主页，照网页「框和网页之间怎么说」那一套给框交通道、答 `context`、`settings.get`、`settings.set`、`call`，推 `settings.changed`、`theme.changed`、`package.event`、`resync`。深浅照系统，不带 `colors`。
+   - `GET /p/<票>/<编号>/<路径>`：后台页的文件，照 `package.file` 的路径规矩，响应头照网页的那一套（沙箱只许脚本、表单，`connect-src 'none'`，只许嵌在同源的宿主页里，`nosniff`、`no-referrer`、`no-cache`）。
+   - `POST /r/<票>`：宿主页替框调核心，一次一个 JSON-RPC 请求，只认上面四样，包照票认；`GET /e/<票>`：推送流（`text/event-stream`）。
+   - 宿主页经核心进程里的一条连接调核心：同一套握手、同一套权限（本机令牌），不另开口子。
+
 ### 平台接入的软件：我的平台账号（2026-10-10 项目主人定）
 
 1. 平台接入那个软件（`package.list` 里带 `connection` 的）的信息页上多一项：你在这个平台上的号，名字照平台写（接入QQ 的是 QQ 号），只填号码。
@@ -183,6 +200,8 @@ name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu-config/src/package/look/tests.rs`（施工 F-6 上） | `icon`、`[page] dir` 读得出；写法不对的 `bad_icon`、`bad_page_dir`，报在那一行；`[page]` 只给扩展、内置包 |
+| `crates/miyu-config/src/package/look/tests.rs`（施工 BP-1） | `[page] server = true` 读成程序自己起服务，托盘照样能挂；两样都写、`server` 不是 `true`、内置包写的 `bad_page_source`；两样都不写的照旧要 `dir` |
+| `crates/miyu-endpoint/tests/backstage.rs`（施工 BP-1） | 程序自己起服务的 `package.list` 带 `page`、`page_server`，`package.file` 回 `no_page`；写目录的不带 `page_server` |
 | `crates/miyu-config/src/package/look/tests.rs`（施工 TR-2） | `[tray] name` 读成分语言的名字，扩展、内置包都能写；写了 `name` 以外的格（`page`、`url`、`command`、`package`）、没写 `[page]` 的报 `bad_tray`、`detail` 和行号对；少了名字、名字是空的、吉祥物包写了照各自的代码 |
 | `crates/miyu-endpoint/tests/package_switch.rs`（施工 F-6 上，托盘入口施工 TR-2） | `package.list` 的 `status`、`enabled`、`icon`、`page`（目录里没有 `index.html` 的不带）、`tray`（照连接的语言，没有后台页入口的不带）；开关开、关扩展，出厂内置包卸掉、装回来；必需的、界面、程序不在、没有的拒绝；程序不在的配置项不进 schema、功能不进预设，界面的照旧；`miyu check` 报 `page_missing` |
 | `crates/miyu-endpoint/tests/package_settings.rs`（施工 F-6 上改） | 包的配置项带 `package`，核心自己的不带；平台接入的在「软件包」页，没有 `connections` 页 |

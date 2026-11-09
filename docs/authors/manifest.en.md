@@ -197,6 +197,8 @@ Feature ids are global; prefixing them with the package id helps.
 
 `dir`: the package page folder, which needs `index.html`; opened from the web UI's Packages page. The page calls methods you registered through a channel the web app provides (`package.methods`, `method.call`; see [Writing an extension](extensions.en.md)).
 
+`server`: `true` means your program serves its own web page, and that is the package page. Write either this or `dir`; only extensions can write it. Your registered `status` method replies with `web`: the port the service actually listens on (leave it out until it does). Heads and `miyu pkg page` open `http://127.0.0.1:<port>/#miyu=<…>`, and the fragment carries a login ticket your page trades for a device token before it connects to the core.
+
 ## `[tray]`
 
 Adds a line to the tray menu (Miyu's tray icon; the menu bar icon on macOS) that opens your package page (`[page]`, the section above) in the browser. One line per package; it only opens your own package page, never a command, a URL or another package.

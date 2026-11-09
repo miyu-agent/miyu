@@ -87,6 +87,8 @@ pub enum Code {
     BadLogo,
     /// `[page] dir` 不是包目录里的相对目录（施工 F-6 上）。
     BadPageDir,
+    /// `[page]` 两样都写了 `dir`、`server`，`server` 不是 `true`，不是扩展写了 `server`（施工 BP-1）。
+    BadPageSource,
     /// `[mascot] model` 不是包目录里的相对路径（施工 F-7）。
     BadMascotModel,
     /// 终端主题文件（`[theme.tui] file`，老写法 `[theme] file`）不是包目录里的相对路径（施工 F-16、TH-1）。
@@ -181,6 +183,7 @@ impl Code {
             Code::BadIcon => "bad_icon",
             Code::BadLogo => "bad_logo",
             Code::BadPageDir => "bad_page_dir",
+            Code::BadPageSource => "bad_page_source",
             Code::BadMascotModel => "bad_mascot_model",
             Code::BadThemeFile => "bad_theme_file",
             Code::BadThemeDir => "bad_theme_dir",
@@ -208,7 +211,7 @@ impl Code {
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 63] = [
+    pub const ALL: [Code; 64] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -251,6 +254,7 @@ impl Code {
         Code::BadIcon,
         Code::BadLogo,
         Code::BadPageDir,
+        Code::BadPageSource,
         Code::BadMascotModel,
         Code::BadThemeFile,
         Code::BadThemeDir,

@@ -1,6 +1,6 @@
 //! 清单的图标、后台页（施工 F-6 上，`package-pages.md`「清单多的几格」）。
 
-use crate::package::{Code, PackageKind, read};
+use crate::package::{Code, PackageKind, Page, read};
 
 /// 一份扩展的清单，`extra` 接在 `[package]` 后面（`[package]` 里的几格）、`tables` 接在最后（别的表）。
 fn process(extra: &str, tables: &str) -> String {
@@ -17,13 +17,13 @@ fn icon_and_page_are_read() {
     ))
     .unwrap();
     assert_eq!(manifest.icon.as_deref(), Some("message-circle"));
-    assert_eq!(manifest.page.as_deref(), Some("page"));
+    assert_eq!(manifest.page, Some(Page::Dir("page".to_string())));
     let manifest = read(&process("", "")).unwrap();
     assert_eq!((manifest.icon, manifest.page), (None, None));
     let builtin = "[package]\nprotocol = [1, 1]\nname = { en = \"Memory\" }\nicon = \"brain\"\n\n[page]\ndir = \"web/page\"\n\n[builtin]\n";
     let manifest = read(builtin).unwrap();
     assert_eq!(manifest.kind, PackageKind::Builtin);
-    assert_eq!(manifest.page.as_deref(), Some("web/page"));
+    assert_eq!(manifest.page, Some(Page::Dir("web/page".to_string())));
 }
 
 #[test]
@@ -161,4 +161,37 @@ fn a_tray_entry_only_opens_its_own_page() {
     let mascot = "[package]\nname = { en = \"Cat\" }\n\n[mascot]\nmodel = \"cat.glb\"\n\n[tray]\nname = { en = \"Cat\" }\n";
     let problem = read(mascot).unwrap_err();
     assert_eq!(problem.code, Code::WrongKind, "{problem:?}");
+}
+
+/// 程序自己起的页面服务（施工 BP-1）：`server = true` 读成 `Server`，托盘照样能挂；`dir`、`server` 两样都写、`server` 不是 `true`、
+/// 内置包写 `server` 的 `bad_page`，报在 `server` 那一行；两样都不写的照旧要 `dir`。
+#[test]
+fn a_page_served_by_the_program_is_read() {
+    let manifest = read(&process(
+        "",
+        "\n[page]\nserver = true\n\n[tray]\nname = { en = \"Open\" }\n",
+    ))
+    .unwrap();
+    assert_eq!(manifest.page, Some(Page::Server));
+    assert!(manifest.tray.is_some(), "托盘照样能挂");
+    for page in [
+        "dir = \"page\"\nserver = true",
+        "server = false",
+        "server = \"yes\"",
+    ] {
+        let problem = read(&process("", &format!("\n[page]\n{page}\n"))).unwrap_err();
+        assert_eq!(problem.code, Code::BadPageSource, "{page}");
+        assert!(problem.line.is_some(), "{page}");
+    }
+    let builtin = "[package]\nprotocol = [1, 1]\nname = { en = \"Memory\" }\n\n[page]\nserver = true\n\n[builtin]\n";
+    assert_eq!(
+        read(builtin).unwrap_err().code,
+        Code::BadPageSource,
+        "内置包没有程序"
+    );
+    assert_eq!(
+        read(&process("", "\n[page]\n")).unwrap_err().code,
+        Code::MissingKey,
+        "两样都不写的照旧要 dir"
+    );
 }

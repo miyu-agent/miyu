@@ -304,6 +304,7 @@ async fn check_packages(
                 if let Some(dir) = manifest
                     .page
                     .as_ref()
+                    .and_then(miyu_config::package::Page::dir)
                     .filter(|_| !crate::packages::status::page(one, manifest))
                 {
                     let message = crate::packages::sentence(words, "page_missing", dir);

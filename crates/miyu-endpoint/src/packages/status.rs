@@ -3,7 +3,7 @@
 
 use std::path::{Path, PathBuf};
 
-use miyu_config::package::{Manifest, Mascot, PackageKind, Theme};
+use miyu_config::package::{Manifest, Mascot, PackageKind, Page, Theme};
 use miyu_store::packages::{Found, locate};
 
 use crate::Core;
@@ -61,10 +61,12 @@ pub fn absent(found: &Found) -> bool {
 
 /// 有没有后台页：清单写了 `[page]`，包目录里那个子目录下有 `index.html`。
 pub(crate) fn page(found: &Found, manifest: &Manifest) -> bool {
-    manifest
-        .page
-        .as_ref()
-        .is_some_and(|dir| found.files_dir().join(dir).join("index.html").is_file())
+    match &manifest.page {
+        Some(Page::Dir(dir)) => found.files_dir().join(dir).join("index.html").is_file(),
+        // 程序自己起服务的（施工 BP-1）：页面在不在问程序，清单写了就算有。
+        Some(Page::Server) => true,
+        None => false,
+    }
 }
 
 /// 吉祥物包的模型文件、主题包的主题文件最大几个字节（施工 F-7、F-16）。

@@ -4,6 +4,7 @@
 use serde_json::{Value, json};
 
 use miyu_config::Words;
+use miyu_config::package::Page;
 use miyu_store::human::Human;
 use miyu_store::packages::{Found, Issue, Packages};
 
@@ -46,6 +47,10 @@ pub(super) fn listed(
             }
             if status::page(found, manifest) {
                 item["page"] = json!(true);
+                // 后台页由程序自己起的服务给（施工 BP-1）：头照它跳过去，不放进框里。
+                if manifest.page == Some(Page::Server) {
+                    item["page_server"] = json!(true);
+                }
                 // 托盘入口（施工 TR-2）：跟着后台页，入口不在的不带；名字照连接的语言挑。
                 if let Some(name) = manifest
                     .tray

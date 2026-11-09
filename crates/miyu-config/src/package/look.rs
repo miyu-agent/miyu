@@ -55,25 +55,67 @@ fn image_name(path: &str) -> bool {
     lower.ends_with(".png") || lower.ends_with(".webp")
 }
 
-/// `[page]`：只有 `dir`，必写，包目录里的相对目录（写法同 `[ui] pages_dir`）。
+/// 软件后台页从哪来（`[page]`）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Page {
+    /// 包目录里的子目录（`dir`，施工 F-6 上），入口是里面的 `index.html`：头放在框里显示，没装网页的由核心按需起服务给
+    /// （施工 BP-3）。扩展、内置包能写。
+    Dir(String),
+    /// 包的程序自己起的页面服务（`server = true`，施工 BP-1）：它登记的 `status` 方法回应里的 `web` 是听的端口，头拿登录票拼网址
+    /// 开过去。只有扩展能写：要有程序在跑。
+    Server,
+}
+
+impl Page {
+    /// 包目录里的子目录；程序自己起服务的没有。
+    pub fn dir(&self) -> Option<&str> {
+        match self {
+            Page::Dir(dir) => Some(dir),
+            Page::Server => None,
+        }
+    }
+}
+
+/// `[page]`：`dir`（包目录里的相对目录，写法同 `[ui] pages_dir`）、`server = true`（施工 BP-1）两样写一样。
 pub(super) fn page(
     reader: &Reader<'_>,
     table: &dyn TableLike,
     at: &Item,
-) -> Result<String, Problem> {
+    kind: PackageKind,
+) -> Result<Page, Problem> {
     reader.only(table, "page", super::fields::PAGE)?;
-    let item = reader.required(table, at, "page", "dir")?;
-    item.as_str()
-        .filter(|dir| relative_dir(dir))
-        .map(str::to_string)
-        .ok_or_else(|| {
-            reader.problem(
-                Some(item),
-                Code::BadPageDir,
-                "page.dir",
-                "page.dir must be a relative directory inside the package directory".to_string(),
-            )
-        })
+    let bad = |item: Option<&Item>, why: &str| {
+        reader.problem(item, Code::BadPageSource, "page", why.to_string())
+    };
+    match (table.get("dir"), table.get("server")) {
+        (Some(_), Some(server)) => Err(bad(
+            Some(server),
+            "[page] takes either dir or server, not both",
+        )),
+        (None, Some(server)) if server.as_bool() != Some(true) => {
+            Err(bad(Some(server), "page.server can only be true"))
+        }
+        (None, Some(server)) if kind != PackageKind::Process => Err(bad(
+            Some(server),
+            "page.server needs a program that serves the page: only extensions can write it",
+        )),
+        (None, Some(_)) => Ok(Page::Server),
+        _ => {
+            let item = reader.required(table, at, "page", "dir")?;
+            item.as_str()
+                .filter(|dir| relative_dir(dir))
+                .map(|dir| Page::Dir(dir.to_string()))
+                .ok_or_else(|| {
+                    reader.problem(
+                        Some(item),
+                        Code::BadPageDir,
+                        "page.dir",
+                        "page.dir must be a relative directory inside the package directory"
+                            .to_string(),
+                    )
+                })
+        }
+    }
 }
 
 /// `[tray]`（施工 TR-2，托盘 `miyu-applet` 的蓝图 `app.md` 第 4 条「软件包挂的入口」）：只有 `name`，必写，分语言。点了打开的总是

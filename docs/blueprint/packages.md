@@ -391,6 +391,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `feature_taken` | 功能的编号被先读到的包占了（施工 F-1） |
 | `not_built_in` | 清单是内置包，这一份核心没编进它的代码（施工 F-2，核心起来时标；`miyu check` 不查） |
 | `bad_icon`、`bad_page_dir` | `[package] icon` 不是 Lucide 图标名的写法，`[page] dir` 不是包目录里的相对目录（施工 F-6 上） |
+| `bad_page_source` | `[page]` 两样都写了 `dir`、`server`，`server` 不是 `true`，不是扩展写了 `server`（施工 BP-1） |
 | `bad_theme_file`、`bad_theme_dir` | 终端主题文件（`[theme.tui] file`、老写法 `[theme] file`）不是包目录里的相对路径（施工 F-16），`[theme.web] dir` 不是包目录里的相对目录（施工 TH-1）；`tui`、`web` 没写成表的也算 |
 | `bad_logo` | `[package] logo` 不是包目录里一个 `.png`、`.webp` 的相对路径（施工 F-18 上，`package-pages.md`「清单多的几格」）；图本身不合规矩的在 `miyu check` 报警告 `logo_missing`、`logo_not_image`、`logo_too_big`，包照装 |
 | `bad_export` | `[export] methods` 里有不是方法名的、重复的（施工 X-18） |

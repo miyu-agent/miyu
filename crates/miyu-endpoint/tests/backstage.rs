@@ -272,3 +272,43 @@ async fn only_extensions_register_methods_and_extensions_need_approval_to_call()
     );
     core.stop_extensions().await;
 }
+
+/// 后台页由程序自己起的服务给（施工 BP-1）：`package.list` 带 `page` 和 `page_server`；没有目录可读，`package.file` 回 `no_page`。写目录的
+/// 不带 `page_server`。
+#[tokio::test]
+async fn a_page_served_by_the_program_is_listed_as_such() {
+    let home = Home::new();
+    let program = Program::new();
+    install(&home, "site", &program.name(), "manual", &[]);
+    let path = home.root.path().join("opt/site/package.toml");
+    let text = std::fs::read_to_string(&path).expect("装好了");
+    std::fs::write(&path, format!("{text}\n[page]\nserver = true\n")).expect("写得进");
+    install(&home, "relay", &program.name(), "manual", &[]);
+    with_page(&home, "relay");
+    home.write("opt/relay/page/index.html", "<p>relay</p>");
+    let core = core(&home, quick());
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+
+    let listed = client.call("l", "package.list", json!({})).await;
+    let item = |id: &str| {
+        listed["result"]["packages"]
+            .as_array()
+            .and_then(|all| all.iter().find(|one| one["package"] == id))
+            .cloned()
+            .unwrap_or_else(|| panic!("有 {id}：{listed}"))
+    };
+    assert_eq!(
+        (
+            item("site")["page"].clone(),
+            item("site")["page_server"].clone()
+        ),
+        (json!(true), json!(true)),
+        "{listed}"
+    );
+    assert_eq!(item("relay")["page"], true);
+    assert!(item("relay").get("page_server").is_none(), "{listed}");
+    let reply = file(&mut client, "site", "", 0).await;
+    assert_eq!(reply["error"]["data"]["reason"], "no_page", "{reply}");
+    core.stop_extensions().await;
+}

@@ -10,6 +10,8 @@ use base64::engine::general_purpose::STANDARD;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+use miyu_config::package::Page;
+
 use crate::Core;
 use crate::refusal::Refusal;
 
@@ -95,7 +97,7 @@ fn located(core: &Core, id: &str, path: &str) -> Result<Located, Refusal> {
             within: Some(found.files_dir().join(web)),
         });
     }
-    match &manifest.page {
+    match manifest.page.as_ref().and_then(Page::dir) {
         Some(dir) if crate::packages::status::page(found, manifest) => {
             Ok(Located::under(found.files_dir().join(dir), segments))
         }
