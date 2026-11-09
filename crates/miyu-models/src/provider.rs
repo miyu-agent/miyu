@@ -297,23 +297,38 @@ pub fn provider(values: &Values, knowledge: &Knowledge<'_>, id: &str) -> Result<
         return Err(NoModel(format!("no provider {id:?}")));
     }
     let settings = ProviderSettings::at(values, &[id]);
-    let catalog = settings.catalog.clone().unwrap_or_else(|| id.to_string());
-    let profile = knowledge
-        .profiles
-        .providers
-        .get(&catalog)
-        .cloned()
-        .unwrap_or_default();
-    let written_url = settings
-        .base_url
-        .clone()
-        .or_else(|| profile.base_url.clone().map(Address::Literal));
+    let mut catalog = settings.catalog.clone().unwrap_or_else(|| id.to_string());
+    let by_id = knowledge.profiles.providers.get(&catalog).cloned();
+    let written_url = settings.base_url.clone().or_else(|| {
+        by_id
+            .as_ref()
+            .and_then(|profile| profile.base_url.clone())
+            .map(Address::Literal)
+    });
     // 对目录只认得出字面地址：是环境变量的引用时查不出来，当没有这一格（第四条第 2 条第 2 层）。
     let written_text = written_url.as_ref().and_then(literal);
     // 认目录里的哪一家、取那一家的包名和地址，只经查目录的接口（施工 V-25 上，`catalog/lookup.rs`）。
     let side = knowledge
         .lookup
         .and_then(|lookup| lookup.provider_side(id, written_text, settings.catalog.as_deref()));
+    // 没写 `catalog`、编号也对不上档案的，照认出来的那一家的档案（施工 DM-1）：编号写法不同（`opencodego` 认成 `opencode-go`）、
+    // 照地址认出来的，原来驱动、地址照目录推了，档案另配的头（`x-opencode-session`）、占位工具却没带上，请求被那一家拒掉。
+    let recognized_profile = match (&settings.catalog, &by_id, &side) {
+        (None, None, Some(side)) => knowledge
+            .profiles
+            .providers
+            .get(&side.recognized.provider)
+            .map(|profile| (side.recognized.provider.clone(), profile.clone())),
+        _ => None,
+    };
+    let profile = match recognized_profile {
+        Some((recognized, profile)) => {
+            catalog = recognized;
+            profile
+        }
+        None => by_id.unwrap_or_default(),
+    };
+    let written_url = written_url.or_else(|| profile.base_url.clone().map(Address::Literal));
     let from_npm = side
         .as_ref()
         .and_then(|side| side.npm.as_ref())
