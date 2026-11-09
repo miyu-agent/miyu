@@ -155,7 +155,8 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
    - 记忆不跟着换：开不开记忆在开会话时定（L3），新预设里 `memory` 改了也照开会话时的。
    - 角色扮演、装了没开的那一行照新的重新算。
    - 找不着、写错了的照旧用原来的，记一行运行日志；P-2（中）造的快照没有指纹，不换。撤掉换快照那一轮不换回去。
-7. **`preset.list`**：几层里所有的编号，照编号排，一个一个找；名字、说明照这个连接的语言挑（挑法同 `persona.list`）；写错了的只带 `problem`（照这个连接的语言说）和知道第几行的 `line`（施工 P-3 再补）。
+7. **`preset.list`**：几层里所有的编号，照编号排，一个一个找；名字、说明照这个连接的语言挑（挑法同 `persona.list`）；写错了的只带 `problem`（照这个连接的语言说）和知道第几行的 `line`（施工 P-3 再补）。读得出的带 `tokens`（施工 DM-4，2026-11-09 发版前检查第 4 条：新建会话时头在右下角写选的预设占多少）：照不写会话、无人格的 `session.context` 那一份备、估，只备不造；数的是 system 里人设、场所说明、群聊格式以外的几块，加上工具的说明和参数格式，即各块估了加起来（同那一份的 `estimated_total`，不照整份估摊）。每次列都现算、不存：release 下一个预设 1～2 ms（2026-11-09 量），存了要管配置、装的包、工具架子换代以后作废。备不出来的不带。
+   - 预览只备不造（施工 DM-4 顺手修）：`session.tools`、`session.context` 不写会话的、`preset.list` 备的新会话照这个会话自己的默认工作区写工作目录、不建。原来照 `workspace/` 本身挑、建好，每预览一次在 `workspace/` 下留一个空目录（主人的数据根里一天攒了 50 个）。
 8. **`preset.get {preset}`**：叠好的各格（施工 P-3 补：只给人要看的）；`sections` 是分好组的同一些功能（施工 FG-1，上面「功能分组」）；名字、说明一句字；`unlisted` 是叠好以后的（几层都没写的是 `on`）；`unattended_steps` 是叠好以后 `[limits]` 写的数，几层都没写的是 `null`（照出厂的 500，施工 AE-1）；`features` 是一个个功能（施工 F-3 下，原来的 `software`、`tools` 换成它）：装了的照清单读的先后，各带开不开和归它的工具（每件的显示名、开不开）；接着是登记上的脚本，一个脚本一个功能 `script-<工具名>`（施工 X-12 中）：名字、说明照脚本开头给人看的几格（`显示名称`、`Display name`、`描述`）挑这个连接的语言，没写名字的照工具名，`tools` 是它那一件；再接着是用得上的技能，一个技能一个功能 `skill-<名字>`（施工 X-11 上，`skills.md`）：名字、说明照技能写在 `metadata` 里给人看的 `display_name`、`summary`，没写名字的照技能的名字，`tools` 是空的；再接着是用得上的命令模板，一条一个功能 `command-<名字>`（施工 X-14 上，`slash.md`「找、盖住、开关」第 3 条）：名字是 `/<名字>`，说明照模板的、照连接的语言挑，`tools` 是空的；写了没装的接在后面（`installed: false`，界面写「没安装」，16 第五节）；每个功能带 `by`：`preset`（预设里写了）、`global`（照全局开关）、`default`（都没写，照 `unlisted`）（施工 X-27），格子见 `protocol.md`「`preset.get`」；`remove` 是删了会怎样（`restore`、`delete`、`null`）。来自哪几层不给。头照它一个功能一个开关画，展开能逐件关（2026-10-09 项目主人定：一个开关下面还能逐件关工具）。
 9. **`miyu check`**（`cli/check.md`）：每一层里每一份预设各查各的，上面一层盖住了照样报，种类 `preset`；给人看的那一句照 `preset-problems/<code>`。写了文件的，某一层 `presets/` 下的 `<编号>.toml` 认作预设（两边换成真的路径比），还没有的报读不了。
 
@@ -203,6 +204,7 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 | `crates/miyu-kernel/src/facts/tests/gates.rs`、`crates/miyu-policy/src/shown/tests.rs`、`crates/miyu-policy/src/compose/tests.rs` 的 `a_preset_can_leave_out_each_core_line`（施工 C-11） | 环境那几块：都开着的逐字节一样；只关时间、只关工作目录照拆开的写法，都关了不注入；权限、编号、模型各自关得掉；拆开的写法要不了另一半；照预设没开的功能编号读；system 那几行跟着开关 |
 | `crates/miyu-endpoint/tests/env_package.rs`、`crates/miyu-policy/src/shown/tests.rs` 的 `absent_*`（施工 ENV-1） | 真核心：全部功能的快照 system 有「关于你」；只关「用户身份」的快照没有「关于你」、别的一字不变；八个都关的连环境那几行也不拼；`package.disable miyu-base-env` 以后新会话的 system 和开关（`Shown`）跟八个都关的一字不差；没装的功能和关了的一样算关，记成 `absent` |
 | `crates/miyu-endpoint/tests/presets.rs` | 不写预设照默认、指定的压着默认；找人格的先后；没有的、编号不对的、写错的拒绝、什么都不造，默认预设指着没有的也拒；会话列表、`subscribe` 写 `preset`，以前的日志不写；`venue.session` 带预设造、找回时不看；`preset.list`、`preset.get`；`check` 查预设 |
+| `crates/miyu-endpoint/tests/preset_tokens.rs`（施工 DM-4） | 读得出的预设带 `tokens`，同无人格的新会话预览的 `estimated_total`，工具多的多，写错的不带；列预设、预览上下文、预览工具面都不在 `workspace/` 下留会话目录 |
 | `crates/miyu-session/tests/spawn.rs` | 子会话照父会话的预设，父会话载入以后也照 |
 | `crates/miyu-endpoint/tests/preset_face.rs`（施工 P-2 中） | 功能全开的工具面全有、没有那一行；开发预设没有记忆三件、范围 `off`（要了也没用）、那一行只写 `memory`；单件关掉的没有、不写那一行；整包关掉的工具全没、写进那一行；角色扮演开着的有提示和风格锁、那一行在风格锁前面，关着的都没有；`preset.get` 的 `software`：装了的、写了没装的，内置的照固定的先后（施工 P-3 补）；没有工具的 `process` 包关着：快照记它、那一行不列，有工具的照列（施工 O-18） |
 | `crates/miyu-tool/src/catalog/tests.rs` | 按包登记、以前的名字照现在的包、老写法算基础系统、两个包里同名的照样拒 |

@@ -19,7 +19,7 @@ use crate::Core;
 use crate::hello::Peer;
 use crate::personas::pick;
 use crate::refusal::Refusal;
-use crate::sessions::{Opening, Setup, now, opening_cwd, roots};
+use crate::sessions::{Opening, Setup, now};
 
 /// `session.tools` 的参数。
 #[derive(Deserialize)]
@@ -92,8 +92,12 @@ pub(crate) async fn new_session(
         confined: false,
     };
     let id = new_id(now());
-    let (_, own) = roots(core);
-    let (workspace, _) = opening_cwd(core, &who, &own.to_string_lossy(), &id);
+    // 这个会话自己的默认工作区，不建（施工 DM-4）：预览只备不造，原来照 `workspace/` 本身挑、建好，每预览一次留一个空目录。
+    let workspace = core
+        .root
+        .session_workspace(&id)
+        .to_string_lossy()
+        .into_owned();
     let command = miyu_kernel::id::CommandId::parse("session-tools-preview")
         .map_err(|_| Refusal::INTERNAL)?;
     Setup::resolve(

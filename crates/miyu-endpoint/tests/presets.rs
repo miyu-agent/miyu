@@ -312,7 +312,15 @@ async fn presets_are_listed_and_read_by_layer() {
     );
     mine(&home, "broken", "[colors]\n");
     let mut client = connected(configured(&home, &Script::new([]))).await;
-    let listed = client.call("p1", "preset.list", json!({})).await;
+    let mut listed = client.call("p1", "preset.list", json!({})).await;
+    // 各带的 token 数在 `preset_tokens` 里查（施工 DM-4）。
+    for one in listed["result"]["presets"]
+        .as_array_mut()
+        .into_iter()
+        .flatten()
+    {
+        one.as_object_mut().map(|one| one.remove("tokens"));
+    }
     assert_eq!(
         listed["result"]["presets"],
         json!([

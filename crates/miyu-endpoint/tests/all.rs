@@ -240,6 +240,7 @@ mod preset_sections_more;
 mod preset_set;
 mod preset_skills;
 mod preset_swap;
+mod preset_tokens;
 mod presets;
 mod provider_rename;
 mod providers;

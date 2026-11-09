@@ -1,6 +1,8 @@
 //! 预设（施工 P-2 上，`docs/blueprint/presets.md`）：造会话时照「开会话时指定、配置」找预设、几层叠好；
 //! `preset.list`、`preset.get`。找哪几层、怎么叠在 `miyu_store::presets`。
 
+use std::sync::Arc;
+
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -24,6 +26,7 @@ mod entry;
 mod features;
 pub(crate) mod overrides;
 mod sections;
+mod tokens;
 pub(crate) mod write;
 
 const TARGET: &str = "miyu::endpoint";
@@ -173,8 +176,9 @@ fn listed_problem(id: &str, error: &PresetError, words: Option<&Human>) -> Value
 }
 
 /// `preset.list`：几层里所有的预设，照编号排。每个带名字、说明（照这个连接的语言挑）；写错了的带 `problem`（照这个连接的
-/// 语言说，知道第几行的带 `line`，施工 P-3 再补）、不带名字和说明。来自哪几层不往外给（施工 P-3 补）。
-pub(crate) async fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
+/// 语言说，知道第几行的带 `line`，施工 P-3 再补）、不带名字和说明。来自哪几层不往外给（施工 P-3 补）。读得出的带 `tokens`
+/// （施工 DM-4，[`tokens`]），备不出来的不带。
+pub(crate) async fn list(core: &Arc<Core>, peer: Peer) -> Result<Value, Refusal> {
     let said = words(core, peer.language).ok();
     let presets = presets(core);
     let read = tokio::task::spawn_blocking(move || {
@@ -189,18 +193,24 @@ pub(crate) async fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
     })
     .await
     .map_err(|_| Refusal::INTERNAL)?;
-    let listed: Vec<Value> = read
-        .into_iter()
-        .map(|(id, found)| match found {
-            Ok(found) => json!({
-                "preset": id,
-                "name": label(found.file.name.as_ref(), peer.language),
-                "summary": label(found.file.summary.as_ref(), peer.language),
-                "icon": found.file.icon,
-            }),
+    let mut listed = Vec::with_capacity(read.len());
+    for (id, found) in read {
+        listed.push(match found {
+            Ok(found) => {
+                let mut item = json!({
+                    "preset": id,
+                    "name": label(found.file.name.as_ref(), peer.language),
+                    "summary": label(found.file.summary.as_ref(), peer.language),
+                    "icon": found.file.icon,
+                });
+                if let Some(tokens) = tokens::of(core, peer, &id).await {
+                    item["tokens"] = json!(tokens);
+                }
+                item
+            }
             Err(error) => listed_problem(&id, &error, said.as_ref()),
-        })
-        .collect();
+        });
+    }
     Ok(json!({"presets": listed}))
 }
 

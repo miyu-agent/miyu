@@ -95,7 +95,7 @@ Editors edit the text and send `version` back as `expect` in `persona.set`.
 
 ## `preset.list`, `preset.get`
 
-**`preset.list`**: no params. Response `{"presets": [...]}`, by id: `preset`, `icon` (a Lucide icon name, `null` when none), `name`, `summary`. Broken ones have only `preset`, `problem`, `line`. The shipped "Nothing" preset (`none`, step P-17) is an ordinary preset with every switch off, and it can be edited. The old fixed last item, no tools (`preset: null`), is no longer listed; `preset: null` when opening or switching still works as the old way to say it.
+**`preset.list`**: no params. Response `{"presets": [...]}`, by id: `preset`, `icon` (a Lucide icon name, `null` when none), `name`, `summary`, `tokens` (how many tokens the system prompt and tool definitions take in a new session opened with it, persona not counted, estimated locally; absent when it cannot be worked out). Broken ones have only `preset`, `problem`, `line`. The shipped "Nothing" preset (`none`, step P-17) is an ordinary preset with every switch off, and it can be edited. The old fixed last item, no tools (`preset: null`), is no longer listed; `preset: null` when opening or switching still works as the old way to say it.
 
 **`preset.get`**: param `preset`. Response:
 

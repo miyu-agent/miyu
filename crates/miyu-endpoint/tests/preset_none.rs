@@ -57,7 +57,7 @@ async fn the_list_has_nothing_on_instead_of_a_null_item() {
     assert_eq!(
         all.last(),
         Some(
-            &json!({"preset": "none", "name": "无功能", "summary": "不开启任何功能。", "icon": "circle-off"})
+            &json!({"preset": "none", "name": "无功能", "summary": "不开启任何功能。", "icon": "circle-off", "tokens": 0})
         )
     );
 }
