@@ -1482,6 +1482,15 @@ flowchart LR
 | BUS-4 | 各仓库迁过来 | 渲染包 `provides = ["render"]`、方法 `render.markdown`；im `provides = ["chat"]`、调 `render.markdown`，插件挂接 `plugs = ["chat.hook"]`、方法 `chat.hook.event` 等，照 `bus.list` 找；赞助记录、表情包调 `chat.venue`、`chat.media`。im、赞助记录归 im 的会话，渲染包、表情包 core1 改 |
 | BUS-5 | 收掉跨包的 `package.call` | 扩展经 `package.call` 只调得到自己，跨包一律 `bus.call`（设计 67 B5）；人的连接照旧；BUS-4 全合了以后做 |
 
+**权限只留两级**（PL 线，设计 11 的 A16，项目主人 2026-11-09 定，首个正式版以前做）
+
+| 步 | 名字 | 做什么 |
+|---|---|---|
+| PL-1 | 核心只剩只读、完全放开 | 级别照 A16：`workspace` 在配置、预设、协议参数、旧日志里一律读成 `full`，核心不再写出它；`permission.level` 默认 `full`，写了 `workspace` 的 `miyu check` 报警告；权限策略的判法表去掉工作区那一列；高危命令问人那一类在完全放开下也问（删工作目录、临时目录里面的不算高危，没有确认界面的场所拒），灭顶的照旧拒；命令只在只读时进沙盒（规格只剩全盘只读），完全放开不进；外部身份的关押不动；整理记忆这种后台会话改成完全放开加只读；给她看的 `permission-rule.txt` 去掉工作区那一句（登记簿、量 token）；探针证明只变该变的那几段 |
+| PL-2 | 删掉随工作区去掉的 | `shell` 和脚本的 `outside_sandbox`（工具面变一次，量 token）、命令被挡下的「此目录不再询问」（5-15）、`sandbox.tools`（X-36、X-37，`miyu check` 对留着的值报「已不用」）、Windows 的沙盒用户和单独桌面（`miyu-sandbox` 的 `install`、`miyu sandbox` 和帮助页）；蓝图、参考文档跟着改；删之前列清单交项目主人 |
+| PL-3 | 头跟着改 | 终端、网页：级别只剩只读开关，`/level` 和设置页的「新会话的权限级别」去掉工作区，切回完全放开不确认；引导去掉「沙盒」那一步；照核心 PL-1 换钉。归 UI 的会话 |
+| PL-4 | im 核对 | 场所会话、预设里写了 `workspace` 的照 PL-1 读成完全放开，外部身份照旧关押；查 im 自己有没有写死 `workspace`。归 im 的会话 |
+
 ### 四、施工单的格式
 
 每一张施工单只写这几节（2026-09-28 项目主人定：有了蓝图，施工单变薄）：
