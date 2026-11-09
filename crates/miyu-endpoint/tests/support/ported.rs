@@ -52,17 +52,22 @@ impl Builtins for Port {
 
 /// 照磁盘上的系统配置起来、装了端口的核心。
 pub fn served(home: &Home) -> Arc<Core> {
+    served_with(home, |core| core)
+}
+
+/// 同 [`served`]，交出去之前再照 `more` 改一下（施工 BP-3：后台页服务的闲置期设短的）。
+pub fn served_with(home: &Home, more: impl FnOnce(Core) -> Core) -> Arc<Core> {
     let config = miyu_endpoint::config::Config::load(
         &home.root,
         None,
         core_items(),
         miyu_endpoint::config::Environment::of(&[]),
     );
-    Arc::new(
+    Arc::new(more(
         home.core_full(&Script::new([]), Catalog::default(), None, TOKEN)
             .with_config(config)
             .with_builtins(Arc::new(Port)),
-    )
+    ))
 }
 
 /// 照 `miyu-core` 起来时那样造的核心（施工 PK-5补）：资源目录是 `resources`，清单读一次，已卸的包留下的设置项的前缀照

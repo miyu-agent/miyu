@@ -9,8 +9,6 @@ use serde_json::{Value, json};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use miyu_endpoint::Core;
-use miyu_session::testkit::Script;
-use miyu_tool::Catalog;
 
 use crate::support::extensions::{Program, install};
 use crate::support::*;
@@ -95,11 +93,9 @@ fn with_page(home: &Home, id: &str, program: &Program) {
     home.write(&format!("opt/{id}/secret.txt"), "not for the page");
 }
 
+/// 照磁盘上的系统配置起来、装了端口的核心（包的设置项照它认），后台页服务闲了 `idle` 就关。
 fn page_core(home: &Home, idle: Duration) -> Arc<Core> {
-    Arc::new(
-        home.core_full(&Script::new([]), Catalog::default(), None, TOKEN)
-            .with_page_idle(idle),
-    )
+    crate::support::ported::served_with(home, |core| core.with_page_idle(idle))
 }
 
 async fn open(client: &mut Client, package: &str) -> Value {
@@ -236,7 +232,7 @@ async fn the_host_serves_the_page_and_answers_for_it() {
     assert_eq!(
         settings["result"],
         json!({"items": [], "values": {}}),
-        "{settings}"
+        "没有设置项：{settings}"
     );
 
     for (package, reason) in [("bare", "no_page"), ("nothing", "unknown_package")] {
@@ -321,5 +317,68 @@ async fn an_idle_host_closes_and_starts_again_when_asked() {
         (page.status, page.text().as_str()),
         (200, "<p>relay</p>"),
         "再要重起"
+    );
+}
+
+/// 宿主页替框读写它自己的设置项（施工 BP-3）：只给它自己的、没写的照默认；写进系统配置，再读是新的值。包经 `package.install` 装上，
+/// 设置项才进配置清单。
+#[tokio::test]
+async fn the_host_reads_and_writes_only_the_page_s_own_settings() {
+    let home = Home::new();
+    let program = Program::new();
+    let folder = home.work.join("tuned");
+    std::fs::create_dir_all(folder.join("page")).expect("建得了");
+    std::fs::write(folder.join("page/index.html"), "<p>tuned</p>").expect("写得进");
+    std::fs::write(
+        folder.join("package.toml"),
+        format!("[package]\nprotocol = [1, 1]\nname = {{ en = \"Tuned\" }}\n\n[command]\nname = \"tuned\"\nprogram = \"{}\"\nabout = {{ en = \"T\" }}\n\n[process]\nstart = \"manual\"\n\n[page]\ndir = \"page\"\n\n[settings.port]\ntype = \"int\"\ndefault = 8400\nlayers = [\"system\"]\nname = {{ en = \"Port\" }}\n", program.name()),
+    )
+    .expect("写得进");
+    let mut client = Client::connect(page_core(&home, Duration::from_secs(600)));
+    client.hello().await;
+    let installed = client
+        .call("i", "package.install", json!({"path": folder}))
+        .await;
+    assert_eq!(installed["result"]["package"], "tuned", "{installed}");
+    let opened = open(&mut client, "tuned").await;
+    let (port, ticket) = parsed(
+        opened["result"]["url"]
+            .as_str()
+            .unwrap_or_else(|| panic!("{opened}")),
+    );
+
+    let settings = rpc(
+        port,
+        &ticket,
+        json!({"jsonrpc": "2.0", "id": 1, "method": "settings.get"}),
+    )
+    .await;
+    let keys: Vec<&Value> = settings["result"]["items"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{settings}"))
+        .iter()
+        .map(|item| &item["key"])
+        .collect();
+    // 同网页 `frame.js`：照配置清单的 `package` 认，核心替每个包加的「只对我关掉」也算它的。
+    assert_eq!(
+        keys,
+        [&json!("packages.tuned.off"), &json!("tuned.port")],
+        "只有它自己的项：{settings}"
+    );
+    assert_eq!(
+        settings["result"]["values"]["tuned.port"], 8400,
+        "没写的照默认"
+    );
+    let set = rpc(port, &ticket, json!({"jsonrpc": "2.0", "id": 2, "method": "settings.set", "params": {"changes": [{"key": "tuned.port", "value": 9}]}})).await;
+    assert!(set.get("error").is_none(), "{set}");
+    let again = rpc(
+        port,
+        &ticket,
+        json!({"jsonrpc": "2.0", "id": 3, "method": "settings.get"}),
+    )
+    .await;
+    assert_eq!(
+        again["result"]["values"]["tuned.port"], 9,
+        "写进系统配置：{again}"
     );
 }
