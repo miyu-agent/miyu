@@ -88,6 +88,8 @@ The manifest's `[process] capabilities` declares what it needs. Packages you ins
 | `fs.read` | Reading files through the core (`fs.*`) |
 | `network` | Fetching links through the core (`link.preview`) |
 | `fs.write` | Writing given paths: granted once extensions run in a sandbox |
+| `audio.record` | Recording from this computer's microphone: the extension opens the device itself, the core isn't involved; once extensions run in a sandbox, it opens the recording side of the sound card (design 62) |
+| `audio.play` | Playing sound through this computer's speakers or headphones: the extension opens the device itself; once extensions run in a sandbox, it opens the playback side of the sound card |
 | `tool.guard` | Allowing, denying or asking the person before a tool call runs (manifest `[guard]`, `tool.guard`) |
 | `tool.rewrite` | Rewriting a tool's result after it runs: not available yet |
 

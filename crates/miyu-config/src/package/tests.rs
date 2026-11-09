@@ -316,6 +316,8 @@ fn capabilities_are_read_in_the_table_order() {
             "network",
             "fs.read",
             "fs.write",
+            "audio.record",
+            "audio.play",
             "memory.write",
         ]
     );

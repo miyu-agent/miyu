@@ -70,7 +70,7 @@ pages_dir = "pages"              # 页面文件的目录，相对包文件夹（
 [process]                        # 有它的是核心拉起的扩展，要有 [command]
 args = ["serve"]                 # 拉起时带的参数，没写的是空的
 start = "manual"                 # manual：开关打开才拉起（默认）；always：核心起来就拉起
-capabilities = ["network"]       # 要的扩展能力（施工 9-4 下上，extensions.md「能力」）：只认 extensions.md「能力」那二十个名字，可以不写
+capabilities = ["network"]       # 要的扩展能力（施工 9-4 下上，extensions.md「能力」）：只认 extensions.md「能力」那二十二个名字，可以不写
 
 [check]                          # 要有 [command]
 args = ["check"]                 # miyu check 跑 <program> <args…>（9-2）

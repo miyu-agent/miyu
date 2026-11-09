@@ -1,5 +1,5 @@
 //! 扩展能力（施工 9-4 下上，`docs/designs/05-内核接口.md` 第三节）：清单的 `[process] capabilities` 声明要哪些，主人
-//! 在开的那一下批（`extensions.md`）。只认这张表里的二十个名字（施工 X-15 上加了 `widgets`，施工 X-20 加了 `context.system`，施工 X-18 加了 `packages.call`，施工 N-5 加了 `search`，施工 X-30 加了 `memory.write`，施工 XG-1 下加了 `tools.commands`，施工 LP-1 加了 `login.page`，施工 MD-1 加了 `model.driver`），先后照这张表。
+//! 在开的那一下批（`extensions.md`）。只认这张表里的二十二个名字（施工 X-15 上加了 `widgets`，施工 X-20 加了 `context.system`，施工 X-18 加了 `packages.call`，施工 N-5 加了 `search`，施工 X-30 加了 `memory.write`，施工 XG-1 下加了 `tools.commands`，施工 LP-1 加了 `login.page`，施工 MD-1 加了 `model.driver`，施工 VC-1 加了 `audio.record`、`audio.play`），先后照这张表。
 //! 出厂的包算批过声明的全部，[`Capability::needs_person`] 的几项除外（施工 LP-1：`login.page` 出厂的也要人批）。
 
 /// 一种扩展能力。
@@ -44,13 +44,17 @@ pub enum Capability {
     FsRead,
     /// 写指定的路径。
     FsWrite,
+    /// 录本机麦克风的声音（施工 VC-1，设计 `20-语音.md` 第十节）：语音识别、语音助手要。
+    AudioRecord,
+    /// 从本机的音箱、耳机放声音（施工 VC-1，设计 `20-语音.md` 第十节）：朗读、语音助手要。
+    AudioPlay,
     /// 写记忆、知识库：记住、改、忘、恢复记忆，往知识库加、改、删（施工 X-30，2026-10-20 项目主人定一项管两样）。
     MemoryWrite,
 }
 
 impl Capability {
     /// 全部，照表的先后。
-    pub const ALL: [Capability; 20] = [
+    pub const ALL: [Capability; 22] = [
         Capability::Tools,
         Capability::ToolsCommands,
         Capability::Commands,
@@ -70,6 +74,8 @@ impl Capability {
         Capability::Network,
         Capability::FsRead,
         Capability::FsWrite,
+        Capability::AudioRecord,
+        Capability::AudioPlay,
         Capability::MemoryWrite,
     ];
 
@@ -95,6 +101,8 @@ impl Capability {
             Capability::Network => "network",
             Capability::FsRead => "fs.read",
             Capability::FsWrite => "fs.write",
+            Capability::AudioRecord => "audio.record",
+            Capability::AudioPlay => "audio.play",
             Capability::MemoryWrite => "memory.write",
         }
     }
