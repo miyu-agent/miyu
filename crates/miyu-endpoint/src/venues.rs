@@ -219,7 +219,8 @@ async fn find(
 }
 
 /// 主会话（不是子会话）里合 `pick` 的，从新到旧，最多 `limit` 个：照会话列表的索引找，和 `session.list` 同一个
-/// 读法。
+/// 读法。导进来的只读存档不算（施工 DM-2）：迁移来的会话编号比什么都新，原来场所会话一律找回到存档上，说话、打 `/new` 都被
+/// `archived` 拒掉；跳过以后找不到的照常造新的，存档照旧在存档区可翻可搜。
 async fn mains(
     core: &Arc<Core>,
     pick: impl Fn(&Row) -> bool + Send + 'static,
@@ -228,7 +229,9 @@ async fn mains(
     let root = core.root.clone();
     let index = core.index();
     let found = tokio::task::spawn_blocking(move || {
-        let pick = |row: &Row| row.parent.is_none() && pick(row);
+        let pick = |row: &Row| {
+            row.parent.is_none() && pick(row) && !crate::import::archived(&root, &row.id)
+        };
         scan(
             &root,
             Some(&*index),

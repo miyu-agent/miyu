@@ -140,6 +140,50 @@ fn listed(pairs: &[(&str, &str)]) -> Value {
     json!({"sessions": sessions})
 }
 
+/// 导进来的只读存档不当场所会话（施工 DM-2）：迁移把旧会话导成存档，编号比什么都新，原来 `venue.session` 找回到它、`venue.sessions`
+/// 列它，群里说话、打 `/new` 都被 `archived` 拒掉。现在找不到别的就另造一个，列的是新造的；存档照旧在、照旧是存档。
+#[tokio::test]
+async fn an_archive_is_never_taken_as_the_venue_session() {
+    let home = Home::new();
+    let program = Program::new();
+    let got = phase(
+        &home,
+        &program,
+        "first",
+        BINDINGS,
+        &[&open("qq:group:1")],
+        2,
+    )
+    .await;
+    let archived = made(&got[1]);
+    let dir = home
+        .root
+        .session_dir(&miyu_kernel::id::SessionId::parse(&archived).expect("合写法"));
+    std::fs::write(
+        dir.join(miyu_store::bundle::MARKER),
+        r#"{"archive":true,"miyu":"0.7.4","exported":"2026-11-08T00:00:00Z"}"#,
+    )
+    .expect("写得进");
+    let got = phase(
+        &home,
+        &program,
+        "second",
+        BINDINGS,
+        &[&open("qq:group:1"), "call:venue.sessions"],
+        3,
+    )
+    .await;
+    assert_eq!(got[1]["result"]["created"], true, "存档不算，另造：{got:?}");
+    let fresh = made(&got[1]);
+    assert_ne!(fresh, archived);
+    assert_eq!(
+        got[2]["result"],
+        listed(&[(&fresh, "qq:group:1")]),
+        "列的是新造的，不列存档：{got:?}"
+    );
+    assert!(miyu_store::bundle::archived(&dir), "存档照旧是存档");
+}
+
 #[tokio::test]
 async fn a_bridge_lists_the_venue_sessions_of_its_platform() {
     let home = Home::new();
