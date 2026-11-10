@@ -40,6 +40,15 @@ const ERROR_BODY_LIMIT: usize = 64 * 1024;
 /// 整次请求最多是空闲超时的几倍（施工 AE-2）：180 秒的是 30 分钟，`max` 那一档放大到 2 小时。
 pub const TOTAL_FACTOR: u32 = 10;
 
+/// 收到 `finish_reason`、只差 `[DONE]` 以后最多再等多久（施工 YC-8，压测 O12）：用量那一条一般紧跟着来，不再等满空闲超时
+/// （原来 180 秒，回复早显示完了，会话还「忙」3 分钟）。
+pub const FINISHED_GRACE: Duration = Duration::from_secs(10);
+
+/// 说完以后再等的那一截：[`FINISHED_GRACE`]，空闲超时短的（测试里）取它的十分之一。
+fn grace(idle: Duration) -> Duration {
+    FINISHED_GRACE.min(idle / 10)
+}
+
 /// 发一次请求要的。
 pub struct Attempt<'a> {
     /// HTTP 客户端，连接跨请求复用。
@@ -243,7 +252,13 @@ async fn exchange(
         let next = tokio::select! {
             biased;
             () = &mut cancel => return Outcome::Cancelled,
-            next = timeout_at(until(quiet_since), response.chunk()) => next,
+            next = timeout_at(
+                match decoder.finished() {
+                    true => (quiet_since + grace(idle_for)).min(until(quiet_since)),
+                    false => until(quiet_since),
+                },
+                response.chunk(),
+            ) => next,
         };
         match next {
             Ok(Ok(Some(bytes))) => {
@@ -260,7 +275,7 @@ async fn exchange(
                 broken = Some(chain(&error.without_url()));
                 break;
             }
-            // `finish_reason` 到了、只差 `[DONE]` 时停住：模型说完了，当说完了收尾（施工 4-9 再补三下）。
+            // `finish_reason` 到了、只差 `[DONE]` 时停住：模型说完了，当说完了收尾（施工 4-9 再补三下）；只再等一小截（施工 YC-8）。
             Err(_) if decoder.finished() => break,
             Err(_) if tokio::time::Instant::now() >= deadline => return too_long(total),
             Err(_) => return idle(idle_for),
