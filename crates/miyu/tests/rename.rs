@@ -1,5 +1,6 @@
 //! 真跑 `miyu rename`（施工 3-8 五补，`docs/blueprint/cli/rename.md`）：说明跟着界面语言；核心在跑的，给上一次 `miyu ask`
-//! 开的那个会话起名，什么都不印、退出码 0，几个词用空格连起来；`-s` 和 `--session` 起名的是写的那个；没写标题的是参数错误。
+//! 开的那个会话起名，什么都不印、退出码 0，几个词用空格连起来；`-s` 和 `--session` 起名的是写的那个；没写标题的是让模型重起一个
+//! （施工 TT-1），没东西可起的照核心说的。
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -53,9 +54,6 @@ fn the_help_is_the_page_in_the_language() {
             );
         }
     }
-    // 没写标题：参数不对，退出码 2。
-    let output = miyu(home.root.path(), "C", &["rename"]);
-    assert_eq!(output.status.code(), Some(2), "{output:?}");
 }
 
 #[tokio::test]
@@ -89,6 +87,13 @@ async fn the_last_ask_or_the_given_session_is_the_one_renamed() {
     assert!(
         log.contains(r#""kind":"session.meta_changed""#) && log.contains(r#""title":"问 在不在""#),
         "{log}"
+    );
+    // 没写标题的是让模型重起一个（施工 TT-1）：这个会话她一句都没答出来，没东西可起，照核心说的。
+    let retitled = run(&root, vec!["rename".into()]).await;
+    assert_eq!(retitled.status.code(), Some(1), "{retitled:?}");
+    assert_eq!(
+        String::from_utf8_lossy(&retitled.stderr),
+        "miyu: 参数错误\n"
     );
     // `-s`、`--session` 起名的是写的那个：写一个不在的，照核心说的。
     let missing = "0192f3a0-1111-7abc-8def-001122334455";

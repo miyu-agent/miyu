@@ -11,13 +11,16 @@
 //! - 不属于哪一轮：两条事件都不带回合编号，没有 `cause`（没有谁要它），撤哪一轮都不跟着拿走，不进她的上下文。
 //! - 说完了：正文取第一行、去掉前后空白，超过上限的截掉（不加省略号）。出错、没有正文的只记那一条 `model.called`；在路上
 //!   时人改了名的，也只记那一条，不盖掉人起的。
+//! - 人要求重起（`session.retitle`，施工 TT-1）：走同一条路、同一份指令，喂的换成最近几轮（`Assembler::retitle`），不看「标题动过」「说了不自动起」「一次性的会话」
+//!   「试过几次」；起好了盖掉现在的标题，人起的也盖。有一次在路上的并进去，不再发；这时还组装不出来、回合正在进行的，等
+//!   这一轮的 `turn.ended` 落了盘再起；空闲着也组装不出来的拒绝，`nothing_to_title`。
 
 use super::Session;
-use super::action::Action;
+use super::action::{Action, Reason, accepted, rejected};
 use super::aside::{Aside, Finished};
 use crate::block::Block;
 use crate::event::{Body, CallError, Cost, Event, MetaChanged, Purpose, Usage};
-use crate::id::{Seq, TurnId};
+use crate::id::{CommandId, Seq, TurnId};
 use crate::origin::By;
 use crate::time::Timestamp;
 
@@ -38,6 +41,8 @@ pub(super) struct Naming {
     goal: Option<String>,
     /// 有过不是模块发的话（人、场所里的人、别的会话、别的 harness）。
     spoke: bool,
+    /// 人要求重起、还没起成（施工 TT-1）：只在内存里，载入以后没有。标题一动（起好了、人又改了）就放下；没起成的也放下。
+    asked: bool,
 }
 
 impl Naming {
@@ -48,7 +53,10 @@ impl Naming {
                 self.child = created.parent.is_some();
                 self.quiet = !created.titles;
             }
-            Body::MetaChanged(changed) if changed.title.is_some() => self.named = true,
+            Body::MetaChanged(changed) if changed.title.is_some() => {
+                self.named = true;
+                self.asked = false;
+            }
             Body::ModelCalled(called) if called.purpose == Some(Purpose::Title) => self.tries += 1,
             Body::MessageAssistant(reply) if said(&reply.blocks) => self.answered = event.turn,
             Body::GoalSet(set) => self.goal = Some(set.text.clone()),
@@ -82,17 +90,49 @@ impl Session {
     ///
     /// 只有续轮的会话（施工 X-8 补：人在空会话里直接 `/goal`，她自己设了目标以后人还没说话的不算，那时已经有人的话）：不请求
     /// 模型，拿目标原文当标题，`session.meta_changed`（`by` 内核）当场追加。有效历史里只有续轮消息，模型会照它的标签起名。
+    ///
+    /// 人要求重起、等着这一轮完的（施工 TT-1）：随便哪一轮的 `turn.ended` 落了盘就起，别的几条不看。
     pub(super) fn title_up(&mut self, at: Timestamp, closed: &[TurnId]) -> Option<Action> {
         let titles = self.policy.titles?;
         let answered = self.naming.answered?;
-        if self.titling.is_some()
-            || self.restarting
-            || self.oneshot
-            || !self.naming.wanted(titles.tries)
-            || !closed.contains(&answered)
-        {
+        let due = match self.naming.asked {
+            true => !closed.is_empty(),
+            false => {
+                !self.oneshot && self.naming.wanted(titles.tries) && closed.contains(&answered)
+            }
+        };
+        if self.titling.is_some() || self.restarting || !due {
             return None;
         }
+        self.title_now(at, titles)
+    }
+
+    /// 人要求重起标题（`session.retitle`，施工 TT-1）：收下就回，不等模型；标题经 `session.meta_changed` 到。
+    ///
+    /// 有一次在路上的并进去；没有的当场照 [`Session::title_now`] 起；这时组装不出来、回合正在进行的等这一轮完
+    /// （[`Session::title_up`]）；空闲着也组装不出来、策略里没有起标题的数的，拒绝，`nothing_to_title`。
+    pub(super) fn retitle(&mut self, id: CommandId, at: Timestamp) -> Vec<Action> {
+        let Some(titles) = self.policy.titles else {
+            return vec![rejected(id, Reason::NothingToTitle)];
+        };
+        self.naming.asked = true;
+        let started = match self.titling.is_some() {
+            true => None,
+            false => self.title_now(at, titles),
+        };
+        if started.is_none() && self.titling.is_none() && self.turn.is_none() {
+            self.naming.asked = false;
+            return vec![rejected(id, Reason::NothingToTitle)];
+        }
+        self.recent.insert(id.clone(), Vec::new());
+        let mut actions = vec![accepted(id, Vec::new())];
+        actions.extend(started);
+        actions
+    }
+
+    /// 照这一刻落了盘的有效历史起一次：只有续轮的拿目标原文当场记下，别的组装请求发出去（人要求重起的喂最近几轮，自动起的
+    /// 只喂第一轮）；组装不出来的没有。
+    fn title_now(&mut self, at: Timestamp, titles: super::Titles) -> Option<Action> {
         if let Some(goal) = self.naming.goal_only().map(str::to_string) {
             let changed = MetaChanged {
                 title: Some(shorten(goal.trim(), titles.chars)),
@@ -104,7 +144,11 @@ impl Session {
             return Some(Action::Append(vec![event]));
         }
         let history = self.history.until(self.stored?);
-        let (request, upto) = self.policy.assembler.title(&history)?;
+        // 人要求重起的喂最近几轮，自动起的只喂第一轮（施工 TT-1）：指令、上限是同一份。
+        let (request, upto) = match self.naming.asked {
+            true => self.policy.assembler.retitle(&history)?,
+            false => self.policy.assembler.title(&history)?,
+        };
         self.titling = Some(Aside::new(upto, request.messages.len()));
         Some(Action::Aside {
             purpose: Purpose::Title,
@@ -113,8 +157,8 @@ impl Session {
         })
     }
 
-    /// 起标题的请求说完了：记 `model.called`；写成了、标题这时还没人动过的，接着记 `session.meta_changed`（`by` 是内核），
-    /// 同一批。两条都不带回合编号、没有 `cause`。
+    /// 起标题的请求说完了：记 `model.called`；写成了、标题这时还没人动过的（人要求重起的不看动没动过），接着记
+    /// `session.meta_changed`（`by` 是内核），同一批。两条都不带回合编号、没有 `cause`。
     pub(super) fn title_ended(
         &mut self,
         at: Timestamp,
@@ -136,8 +180,10 @@ impl Session {
         );
         let mut events = vec![self.record_aside(at, None, Body::ModelCalled(called))];
         let chars = self.policy.titles.map_or(0, |titles| titles.chars);
+        // 人要求重起的那一次盖得掉动过的标题（施工 TT-1）；没起成的也放下，不留到下一轮。
+        let asked = std::mem::take(&mut self.naming.asked);
         if let Ok(text) = text
-            && !self.naming.named
+            && (asked || !self.naming.named)
         {
             let changed = MetaChanged {
                 title: Some(shorten(&text, chars)),

@@ -81,7 +81,7 @@
 | `model.driver` | 提供模型驱动（清单 `[[driver]]`）：用它的模型时，发给模型的全部对话都经过它。不附带网络 |
 | `act_for_external` | 代表平台上的人说话（带 `as` 的 `session.send`、`command.run`）、`session.note`、不写 `to` 的 `session.respond`、`venue.*`、记 `venue.*` 事件：只给通讯平台的桥 |
 | `login.page` | 替本机打开的页面换登录票（`login.ticket {"via": "page"}`，下面「替本机页面换登录票」）：出厂的也要人批 |
-| `sessions.drive` | 驱动会话：`session.create`、`send`、`interrupt`、`revert`、`unrevert`、`redo`、`compact`、`clear`、`configure`、`fork`、`set_meta`、`respond`，`command.run`、`job.stop` |
+| `sessions.drive` | 驱动会话：`session.create`、`send`、`interrupt`、`revert`、`unrevert`、`redo`、`compact`、`clear`、`configure`、`fork`、`set_meta`、`retitle`、`respond`，`command.run`、`job.stop` |
 | `events.read` | 读会话：订阅 `events`、`view`、`sessions` 流，`session.list`、`session.recap`、`view.page`、`view.detail`、`job.output`；收工具调用后的通知（清单 `[after]`，`tool.after`） |
 | `events.write` | 往会话里记自己的事件（`events.append`） |
 | `memory.write` | 写记忆、知识库：`memory.remember`、`import`、`update`、`forget`、`restore`、`dream`、`dream_stop`，`kb.add`、`create`、`update`、`mount`、`remove`、`delete`、`reindex` |

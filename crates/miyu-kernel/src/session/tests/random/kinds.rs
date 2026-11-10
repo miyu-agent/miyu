@@ -148,7 +148,9 @@ impl InputKind {
                 Command::Respond { .. } => InputKind::Respond,
                 Command::Note { .. } => InputKind::Note,
                 Command::SetPermission { .. } => InputKind::SetPermission,
-                Command::SetMeta { .. } => InputKind::SetMeta,
+                // 人要求重起标题（施工 TT-1）不单列一种：随机测试的策略不起标题，它只会被拒，整轮怎么走在
+                // `scenario/retitle.rs`。
+                Command::SetMeta { .. } | Command::Retitle => InputKind::SetMeta,
                 Command::SetWorkspace { .. } => InputKind::SetWorkspace,
                 Command::Goal(_) => InputKind::Goal,
                 Command::Ran { .. } => InputKind::Ran,

@@ -97,7 +97,7 @@
   redo [<消息>]       重做上一轮，可换成新消息
   compact [<要点>]    压缩上下文
   recap               总结当前会话
-  rename <标题>       重命名会话
+  rename [<标题>]     重命名会话
   session <命令>      导入导出会话
 
 内容：
@@ -148,7 +148,7 @@ Conversation:
   redo [<message>]    Redo the last turn, optionally with a new message
   compact [<focus>]   Compact the context
   recap               Summarize the session
-  rename <title>      Rename the session
+  rename [<title>]    Rename the session
   session <command>   Export and import sessions
 
 Content:
@@ -252,7 +252,7 @@ Run 'miyu help <command>' for more on a command.
 | `crates/miyu/tests/redo.rs` | `miyu redo --help`、`miyu help redo` 跟着界面语言，`redo` 印的是重做那一页、不是恢复那一页；没有 key、核心没在跑的不拉起（施工 4-7 再补） |
 | `crates/miyu/tests/compact.rs` | `miyu compact --help` 跟着界面语言；没有 key、核心没在跑的不拉起（施工 6-8） |
 | `crates/miyu/tests/recap.rs` | `miyu recap --help` 跟着界面语言；没有 key、核心没在跑的不拉起（施工 3-8 四补） |
-| `crates/miyu/tests/rename.rs` | `miyu rename --help` 跟着界面语言；没写标题是参数不对；没有 key、核心没在跑的不拉起（施工 3-8 五补） |
+| `crates/miyu/tests/rename.rs` | `miyu rename --help` 跟着界面语言；没写标题的是让模型重起一个（施工 TT-1）；没有 key、核心没在跑的不拉起（施工 3-8 五补） |
 | `crates/miyu/tests/config.rs` | `miyu config -h`、`miyu config get --help`、`miyu help config` 跟着界面语言；参数不对退出码 2；没有 key、核心没在跑的不拉起；握手以后照 `ui.language` 说，`miyu ask` 也是（施工 8-2，`cli/config.md`） |
 | `crates/miyu/tests/login.rs` | `miyu provider -h`、`miyu provider login -h`、`miyu provider logout --help` 跟着界面语言；名字写错、不写名字又不在终端里、`--format` 不在 `list` 上、老写法 `miyu login` 退出码 2；没有 key、核心没在跑的不拉起（施工 8-5，`cli/login.md`） |
 | `crates/miyu-cli/src/link/tests.rs` | 握手以后照回应的 `language`，`ja` 的照英文、没回的照旧；握手以前照系统的语言挑（施工 8-2） |

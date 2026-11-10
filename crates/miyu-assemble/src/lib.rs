@@ -154,6 +154,11 @@ impl Assembler for DefaultAssembler {
         title::request(history, &self.texts)
     }
 
+    /// 人要求重起标题的请求（`title.rs`，施工 TT-1）：同一份指令，喂最近几轮。
+    fn retitle(&self, history: &History) -> Option<(Request, Seq)> {
+        title::recent(history, &self.texts)
+    }
+
     /// 转述一张图的请求（`vision.rs`，施工 8-17）：一条 user，指令、人的话、这张图。快照里没有转述的字的，没有。
     fn describe(&self, image: &Image, said: Option<&str>) -> Option<Request> {
         Some(vision::request(image, said, self.texts.vision.as_ref()?))

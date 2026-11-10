@@ -81,6 +81,16 @@ pub trait Assembler {
         None
     }
 
+    /// 人要求重起标题的请求（施工 TT-1，`docs/blueprint/kernel/request.md`「起标题的请求」第 7 条）：和 [`Assembler::title`]
+    /// 同一份指令、同样的上限，只是喂 `history` 里最近答过的几轮，不喂第一轮；最新那一轮还没答的不带。交回请求，和它照到的
+    /// 那一条：喂进去的最新那个回答的序号。同样是纯函数。
+    ///
+    /// 她一个带正文的回复都没有的是 `None`。默认的是 `None`：不做这一种组装。
+    fn retitle(&self, history: &History) -> Option<(Request, Seq)> {
+        let _ = history;
+        None
+    }
+
     /// `history` 里第 `after` 条以后的几段话（施工 R-6 上）：人这边的话照主请求里的写法渲染，她每一轮只取最后一条有正文的
     /// 回答，只要字；照投影的先后，撤掉的回合不算。`history` 可以是留着一切的那一份（[`History::whole`]）：压缩替代掉的也在。
     /// 同样是纯函数。默认的是空的：不做这一种渲染。

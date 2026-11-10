@@ -1,12 +1,19 @@
 //! 改标题、置顶、项目的参数（施工 3-8 三补、H-2，`docs/blueprint/protocol.md` 的 `session.set_meta`）：标题去掉前后空白，1 到
 //! 200 个字；写 `null` 是去掉标题，记成空的标题（`kernel/events-bodies.md` 的 `session.meta_changed`）；项目写 `null` 是移出来，
 //! 同样记成空的；三格都不写的是参数不对。
+//!
+//! 人要求重起标题的 `session.retitle`（施工 TT-1）也在这里：不带标题，交给内核照自动起标题的那一条路再起一次。
+
+use std::sync::Arc;
 
 use serde::{Deserialize, Deserializer};
 
-use miyu_kernel::session::Command;
+use miyu_kernel::id::SessionId;
+use miyu_kernel::session::{Command, Reason};
 
+use crate::Core;
 use crate::refusal::Refusal;
+use crate::wire::Request;
 
 /// 标题最多几个字（Unicode 字符），去掉前后空白以后数。
 const TITLE_CHARS: usize = 200;
@@ -75,4 +82,36 @@ fn trimmed(title: &str) -> Result<String, Refusal> {
         1..=TITLE_CHARS => Ok(title.to_string()),
         _ => Err(Refusal::BAD_PARAMS),
     }
+}
+
+/// `session.retitle` 的参数（施工 TT-1）。
+#[derive(Debug, Deserialize)]
+struct RetitleParams {
+    /// 哪个会话。
+    session: String,
+}
+
+/// `session.retitle`：照现在的对话重起一次标题（施工 TT-1，`docs/blueprint/protocol.md` 的 `session.retitle`）。请求发出去
+/// 就回 `{}`，不等模型：起好了的标题经 `session.meta_changed` 推来，`by` 是内核，不算人起的。
+///
+/// # Errors
+///
+/// 参数读不成、会话编号不合写法、没东西可起（她一个带正文的回复都没有、这时也没有回合在进行）的是参数不对；没有这个会话、
+/// 会话停了的照 `session.set_meta`。
+pub(crate) async fn retitle(
+    core: &Arc<Core>,
+    request: &Request,
+) -> Result<serde_json::Value, Refusal> {
+    let params: RetitleParams = crate::methods::params(request)?;
+    let session = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
+    let found = core.sessions.get(core, &session).await?;
+    crate::methods::command_to(core, request, &session, &found.handle, Command::Retitle)
+        .await
+        .map_err(
+            |refusal| match refusal.reason == Reason::NothingToTitle.code() {
+                true => Refusal::BAD_PARAMS,
+                false => refusal,
+            },
+        )?;
+    Ok(serde_json::json!({}))
 }

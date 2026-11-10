@@ -53,6 +53,11 @@ impl Stage {
         })
     }
 
+    /// alice 要求重起标题（施工 TT-1）。返回这个命令的编号。
+    pub fn retitle(&mut self) -> CommandId {
+        self.command(Command::Retitle)
+    }
+
     /// 起标题的请求接下来几次，照先后这样回（施工 3-8 五补）。没排的只记下、不回。
     pub fn title_model(&mut self, lines: impl IntoIterator<Item = Line>) {
         self.title_lines.extend(lines);

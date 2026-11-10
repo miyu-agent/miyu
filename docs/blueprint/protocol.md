@@ -21,7 +21,7 @@
 | `crates/miyu-endpoint/src/hello.rs` | 握手 |
 | `crates/miyu-endpoint/src/methods.rs` | 握手以后的方法 |
 | `crates/miyu-endpoint/src/job_output.rs` | `job.output`：取最后几行、量上限（施工 7-4 补） |
-| `crates/miyu-endpoint/src/meta.rs` | `session.set_meta` 的参数：标题去掉前后空白、量长短，`null` 是去掉标题（施工 3-8 三补） |
+| `crates/miyu-endpoint/src/meta.rs` | `session.set_meta` 的参数：标题去掉前后空白、量长短，`null` 是去掉标题（施工 3-8 三补）；`session.retitle`（施工 TT-1） |
 | `crates/miyu-endpoint/src/sessions.rs` | 会话表：造会话、找会话；工作目录照人走、太宽的标上（施工 5-14）；造子会话（施工 7-5） |
 | `crates/miyu-endpoint/src/sessions/found.rs` | 找会话、载入（施工 7-8 从 `sessions.rs` 挪出来：表的锁在调的一方手里）：在跑的直接交回，没在跑的照 `DataRoot::session_dir` 从磁盘载入；载入交回要认的（施工 V-37 上），在后台收掉派到一半的空子会话 |
 | `crates/miyu-endpoint/src/sessions/opening.rs` | 造会话时定下的几样（施工 P-9 从 `sessions.rs` 挪出来）：`Opening`，开局的级别（施工 8-32），带不带「关于你」（施工 P-9） |
@@ -246,6 +246,7 @@
 | `fs.realpath` | 一个路径换成真实的位置：不查边界，落在数据根里的照样换（施工 W-3） |
 | `fs.read` | 分块读本机的一份文件：数据根只有默认工作区能读（施工 W-6） |
 | `session.set_meta` | 改标题、置顶（施工 3-8 三补） |
+| `session.retitle` | 让模型照现在的对话重起一个标题（施工 TT-1） |
 | `session.viewing` | 头告诉核心自己开着哪个会话（`null` 是没开），核心照连接记、断了就忘；会话列表那一项照它写 `viewed`（施工 HV-1，`docs/reference/sessions.md`） |
 | `notices.claim` | 头认领发后台通知（`{}`，只给人的头）：核心照连接记、断了就放；`notices` 流的订阅回应有人认领时写 `claimed: true`，有没有人认领变了推 `notices.claimed`（施工 TR-1，托盘 `miyu-applet` 用，`docs/reference/connection.md`「`notices.claim`」） |
 | `prefs.get`、`prefs.set` | 界面包自己的设置（皮肤、配色这些），存在数据根里、跟着人走：读整份；照顶层的键并、`null` 删，交回整份，推给别的连接（施工 HP-1，下面「头自己的设置」） |
@@ -1102,6 +1103,23 @@
 5. 先找会话，找不到的回的是找不到；没在跑的照「会话表」载入。
 6. **内核自己起的标题**（施工 3-8 五补，`kernel/session.md`「起标题」）：没起名的会话一轮答完，核心单独发一次起标题的请求，起好了也记成 `session.meta_changed`（只写 `title`），推给订阅着这个会话的头，前面紧跟着那一次请求的 `model.called`（`purpose` 是 `title`）；两条都是 `by` 内核，没有 `cause`、不带 `turn`。和人改的一样出现在 `session.list` 里。人起过名、去掉过的会话不起，子会话、一次性的会话不起。头分得出是谁起的：看 `by`。协议的形状没变，只是 `session.meta_changed` 多了由内核起的这一种。
 
+**`session.retitle`**（施工 TT-1，`kernel/session.md`「起标题」第 9 条；2026-11-11 项目主人定：`miyu rename` 不带标题时用一次模型请求更新标题，不是清掉标题，用的模型同自动起标题的那一个）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+
+回应：`{}`。新的标题看推送里的 `session.meta_changed`。
+
+1. 换成内核的 `Retitle`，`by` 取自连接。走的是 `session.set_meta` 第 6 条那一条路：同一份指令、同样的上限（没有新的给模型看的字），喂的对话换成最近答过的至多三轮，不喂第一轮（`kernel/request.md`「起标题的请求」第 7 条；只答过一轮的和自动起的那一次逐字节一样）、同一个用途 `title`、同一个模型（`models.md` 里起标题用的那一个）、用量照样记。
+2. 内核收下就回应 `{}`，不等模型、不等落盘；起好了推那一次请求的 `model.called`（`purpose` 是 `title`）和 `session.meta_changed`（只写 `title`），两条都是 `by` 内核，没有 `cause`、不带 `turn`。`session.list` 那一项照最后一条写标题的 `by` 算，不再写 `named`。
+3. 不看自动起的那几条：人起过名的、去掉过的也换掉；造的时候写了 `titles: false` 的、一次性的会话、子会话、场所会话照样起（改不改得了标题照 `session.set_meta` 的，都没有限制）；不看试过几次。
+4. 有一次起标题的请求在路上的（自动起的、上一次要的）：不再发，并进去，照样回 `{}`。
+5. 回合正在进行不碍事：照已经走完的几轮起，正在进行的这一轮不带、不打断。一轮都还没走完的（第一轮正在进行）：收下，等这一轮的 `turn.ended` 落了盘再起。
+6. 没东西可起：她一个带正文的回复都没有、这时也没有回合在进行，或者快照里没有起标题的字和数（以前造的、整理会话的）：`bad_params`，不带 `data`（内核的原因码是 `nothing_to_title`，端点换成它）。`session` 没写、写法不对：`bad_params`。先找会话，找不到的回的是找不到；没在跑的照「会话表」载入。
+7. 模型出错、回复里没有正文：标题不变，只有那一条出错的 `model.called`，不自己再试。要了以后、起好之前人又改了标题的：留人改的。
+8. 权限同 `session.set_meta`：扩展要 `sessions.drive`。封存了的会话照收。
+
 **`session.configure`**（施工 8-10，`models.md`「协议」「怎么走」第六条，`kernel/session.md`「换模型」；`effort` 施工 SM-1，设计 51）
 
 | 参数 | 类型 | 说明 |
@@ -1826,6 +1844,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/redo.rs` | 协议上重做（施工 4-7 再补）：回应带撤销的几样和重发的那一句、推送里是一批撤销、原话、新的一轮，新的一轮的请求和撤掉的那一轮的一字不差；换了话的推送里是新的话、`said` 是原来的；改过文件的照样同一批重发、文件不动、回应没有 `files`（施工 U-1）；重做以后恢复不了；最后一轮是清空、没说过话的，有回合在进行、换成空的拒绝，中文、英文；`text` 不是字符串、会话编号不对的参数不对，写 `null` 当没写；附件照带、换掉、不要，没有的 blob `unknown_attachment` 什么都不写 |
 | `crates/miyu-endpoint/tests/compact.rs` | 协议上手动压缩（施工 6-8）：回应是那一轮的开头、推送里压好了；要求原样到了摘要请求里；撤掉那一轮的回应里没有 `said`；有回合在进行、没有能压的两种拒绝，中文、英文；`instructions` 不是字符串的参数不对 |
 | `crates/miyu-endpoint/tests/recap.rs`（施工 3-8 四补） | 协议上要回顾：回应是那一句、照到的、不是交回的；推送里先有回顾的 `model.called`、`session.recapped`，都不带回合编号、`cause` 是这一条，再是回应，别的头也收到；请求是一条 user、没有 system 和工具面；没有新内容再要一次交回上一句、不请求；有回合在进行时照收、照到的是这一轮那句话；没有能回顾的、没写成的两种拒绝，中文、英文，没写成的不再来；会话编号不对、没写、不是字符串的参数不对，没有的会话找不到 |
+| `crates/miyu-endpoint/tests/retitle.rs`（施工 TT-1） | `session.retitle`：四轮的会话，模型收到的是同一份指令接最近三轮、没有第一轮（自动起的那一次照旧只有第一轮），推来 `model.called`（`purpose: "title"`）和内核记的 `session.meta_changed`，列表里不算人起的；人起过名的换掉；没说过话的、没写 `session` 的 `bad_params`；一次在路上时再要的只发一次；`titles: false` 的照样起 |
 | `crates/miyu-endpoint/tests/title.rs`（施工 3-8 五补） | 自动起标题：第一轮答完，订阅着的头收到起标题的 `model.called`（`purpose: "title"`）和 `session.meta_changed`，`by` 是内核、不带回合编号和 `cause`；请求是一条 user、没有 system 和工具面，只喂第一轮；`session.list` 带上标题，核心重启以后照样；第二轮不再起；人先起过名的不起 |
 | `crates/miyu-endpoint/tests/person_shell.rs`（施工 SH-1 上） | `session.send` 的 `shell`：真核心、真的基础系统，本人发的不问权限就跑、记 `shell.ran`、她的请求里是那条命令和输出；带 `from` 的 `shell_not_allowed`，带附件的 `bad_params`，空的 `empty_message`，工具目录里没有跑命令的工具的 `shell_unavailable`，都什么都不记；场所会话带不带 `as` 都 `shell_not_allowed`（`venues.rs`） |
 | `crates/miyu-endpoint/tests/commands.rs`（施工 O-6） | `command.run`：`/clear`、别名 `/reset`（开头空白、后面跟的字照认）清空并记 `command.ran`，回执是中文那一句；`/stop` 打断、排着的留在日志里不接着开、子代理停了，没有回合也照样记；认不出的、`/` 后面是空白的 `unknown_command`，不以 `/` 开头的、多写格的参数不对，都什么都不写；内核拒的照原因回；同一个编号再发、重启以后再发回应一样、只记一次；场所里主人、管理的人能用，别人 `command_not_allowed`，不带 `as` 的 `venue_session`，本机的会话带 `as` 参数不对；`session.interrupt` 收 `keep` |

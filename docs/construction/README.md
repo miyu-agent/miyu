@@ -1505,6 +1505,7 @@ flowchart LR
 | ADV-1 到 ADV-3 | 旗舰顾问 | 见设计 `69-旗舰顾问.md` 第四节 |
 | SG-1 | 软件包设置分组 | 项目主人经语音会话要的：清单的组 `[settings.<组>]` 能写 `name`、`shown_when`（照这个包自己的一个选项的值显示，值可以是几个），写错的报 `bad_shown_when`；`config.schema` 里组里的项带 `section`、包那一组带 `sections`，没分组的包不变；不画的只是不画，值照旧存、读、查。改协议，合了告诉 UI 和 im。施工单见 `SG-1-软件包设置分组.md` |
 | SG-2 | 运行时给选项 | 项目主人验收语音助手设置页时提的：清单的文字项能写 `choices_from = "<方法名>"`（这个包自己登记的方法，写错的报 `bad_choices_from`），`config.schema` 那一项带 `choices_from: {package, method}`，头调它画下拉，值照旧当普通文字、核心不照列表查；平台 `voice` 的包 `package.list` 的 `connection` 带 `owner_builtin: true`，头不画填主人号那一块。没写的项、别的平台字节不变。改协议，合了告诉 UI 和 im。施工单见 `SG-2-运行时给选项.md`，提交见 `git log --grep SG-2` |
+| TT-1 | 重起标题 | 项目主人 2026-11-11 定：`miyu rename` 不带标题时用一次模型请求更新标题，不是清掉标题，用的模型同自动起标题的那一个。协议多 `session.retitle {session}`：走自动起标题的那一条路（同一句指令、用途、模型、照样记用量，没有新的给模型看的字），喂的对话换成最近答过的至多三轮、不喂第一轮（自动起的一个字节不变），请求发出去就回 `{}`，标题经 `session.meta_changed` 到（`by` 内核，不算人起的）；人起过名的、`titles: false` 的、一次性的会话照样起，有一次在路上的不再发，第一轮没答完的等这一轮完，没东西可起的 `bad_params`；`miyu rename` 的标题改成可以不写。改协议，合了告诉 UI 和 im。施工单见 `TT-1-重起标题.md` |
 
 **压测修的**（YC 线，项目主人 2026-11-10 交的压测报告 `miyu-压测报告-2026-11-09.md`：测的是核心 d6fa14a37、终端 eacce1b2、网页 2b7a24e1、im 938b6b7；core1 排，括号里是报告的编号）
 

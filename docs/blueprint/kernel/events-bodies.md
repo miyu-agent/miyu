@@ -99,7 +99,7 @@
 
 - 标题的写法由协议端点管（`protocol.md` 的 `session.set_meta`）：头写的去掉前后空白再量，空的、超过 200 个字的不收；头写 `null` 去掉标题，这里记成空的 `""`，事件里从不写 `null`（上面「可以没有」的格写成 `null` 当没有）。读的时候不查长短：以后放宽了，老的照样读得进来（施工 3-8 三补）。
 - 现在的标题、置顶是日志里的这些一条条盖上去的结果：没写的格照旧；撤掉的回合里的也算（`kernel/session.md`「改标题、置顶」）。
-- 谁改的看 `by`：人改的（`session.set_meta`）`by` 是人、`cause` 是那个命令；内核自己起的标题（施工 3-8 五补，`kernel/session.md`「起标题」）`by` 是内核，只写 `title`，没有 `cause`、不带 `turn`，前面紧跟着那一次起标题请求的 `model.called`（`purpose` 是 `title`），同一批追加。内核起的标题取回复的第一行，超过 50 个字的截掉，所以也在 1 到 200 个字里。
+- 谁改的看 `by`：人改的（`session.set_meta`）`by` 是人、`cause` 是那个命令；内核自己起的标题（施工 3-8 五补，`kernel/session.md`「起标题」；人用 `session.retitle` 要求重起的也是这一种，施工 TT-1）`by` 是内核，只写 `title`，没有 `cause`、不带 `turn`，前面紧跟着那一次起标题请求的 `model.called`（`purpose` 是 `title`），同一批追加。内核起的标题取回复的第一行，超过 50 个字的截掉，所以也在 1 到 200 个字里。
 
 **`session.workspace_changed`**：换了会话在哪个目录干活（施工 9-7 上，`kernel/session.md`「换工作区」）。
 

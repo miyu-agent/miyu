@@ -265,6 +265,7 @@ mod reports;
 mod respond;
 mod restart;
 mod retire;
+mod retitle;
 mod reused_ids;
 mod revert;
 mod schedule_limits;

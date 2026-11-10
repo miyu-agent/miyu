@@ -21,6 +21,7 @@
 | [`session.set_permission_level`](#sessionset_permission_level) | 切权限级别、只读开关 |
 | [`session.set_workspace`](#sessionset_workspace) | 换工作目录 |
 | [`session.set_meta`](#sessionset_meta) | 改标题、置顶 |
+| [`session.retitle`](#sessionretitle) | 让模型重起一个标题 |
 | [`session.viewing`](#sessionviewing) | 头告诉核心自己开着哪个会话 |
 | [`session.terminal`、`session.set_terminal`](#sessionterminalsessionset_terminal) | 终端会话：拿到它、指到别的会话 |
 | [`session.configure`](#sessionconfigure) | 换模型、人格、预设、思考强度 |
@@ -37,7 +38,7 @@
 ## 通用
 
 - **会话编号**是 UUIDv7 字符串，照造的先后排。
-- **谁能调**：下面的方法人都能调。扩展照它看得到的会话调（平台桥只看得到它的平台的场所会话，别的扩展看得到本机的、你自己的私聊），另要能力：读的（`session.list`、`session.recap`、`session.tools`、`session.context`、`session.usage_parts`、`session.prompts`、`view.page`、`view.detail`）要 `events.read`；造会话、说话、打断、撤销、恢复、重做、压缩、清空、换配置、分叉、改标题要 `sessions.drive`；`session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`、`session.delete`、`session.export`、`session.import` 只给人（`local_only`）。扩展不带 `as` 说的话记成它自己（`harness`，名字是包的编号），它不能写 `from`。
+- **谁能调**：下面的方法人都能调。扩展照它看得到的会话调（平台桥只看得到它的平台的场所会话，别的扩展看得到本机的、你自己的私聊），另要能力：读的（`session.list`、`session.recap`、`session.tools`、`session.context`、`session.usage_parts`、`session.prompts`、`view.page`、`view.detail`）要 `events.read`；造会话、说话、打断、撤销、恢复、重做、压缩、清空、换配置、分叉、改标题、重起标题要 `sessions.drive`；`session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`、`session.delete`、`session.export`、`session.import` 只给人（`local_only`）。扩展不带 `as` 说的话记成它自己（`harness`，名字是包的编号），它不能写 `from`。
 - **会话没在跑的先载入**：核心重启过、闲够了退下的会话，第一次用到时自动载入，不用头操心。
 - **改了什么看推送**：多数方法只回 `{}` 或几条事件的序号，变化本身照事件推给订阅着这个会话的头（[推送](pushes.md)）。
 - **找会话的出错**，每个带 `session` 的方法都可能回：
@@ -381,6 +382,16 @@
 **回应**：`{}`。变了的推 `session.meta_changed`。没起名的会话，核心在第一轮答完以后自己起一个标题，同样推 `session.meta_changed`（`by` 是内核）。
 
 **出错**：`bad_params`：一样都没写；标题空的、超过 200 个字；`project` 写空字符串、这个会话不能进项目（`data.field` 是 `project`）。`unknown_project`：没有这个项目。
+
+## `session.retitle`
+
+让模型照最近的对话重起一个标题：和核心自动起标题用同一句指令、同一个模型，同样记用量（`model.called` 的 `purpose` 是 `title`），只是看的是最近答完的至多三轮（自动起的只看第一轮）。每轮只带人说的话和她最后的正文回答，工具调用、思考不带；还没答完的那一轮不带。人起过名的也换掉；造会话时写了 `titles: false` 的、一次性的会话、子会话、场所会话照样起。
+
+**参数**：`session`。
+
+**回应**：`{}`：请求发出去就回，不等模型。起好了推 `session.meta_changed`（`by` 是内核），会话列表那一项不再写 `named`。已经有一次起标题的请求在路上的，不再发，照样回 `{}`。正在进行的那一轮不带、不打断；第一轮还没答完的，等这一轮结束再起。模型出错、没写出标题的，标题不变，只有那一条出错的 `model.called`；要了以后、起好之前人又用 `session.set_meta` 改了标题的，留人改的。
+
+**出错**：`bad_params`：没写 `session`；没东西可起（她一句带正文的回复都还没有，这时也没有回合在进行）。没有这个会话 `session_not_found`。
 
 ## `session.viewing`
 

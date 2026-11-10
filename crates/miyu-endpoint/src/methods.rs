@@ -374,6 +374,7 @@ pub(crate) fn call<'a>(
             )
         }
         "session.set_meta" => answer(move || session::set_meta(core, request)),
+        "session.retitle" => answer(move || crate::meta::retitle(core, request)),
         "session.terminal" => answer(move || async move {
             crate::terminal::get(core, peer, request, params(request)?).await
         }),

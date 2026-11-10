@@ -111,6 +111,7 @@
 | `Interrupt { queued }` | `session.interrupt` | `Queued::Send` 排着的接着发，`Queued::Return` 退回，`Queued::Keep` 留着（施工 O-6） | 「打断」 |
 | `SetPermission { level, read_only }` | `session.set_permission_level` | 常用的那一级、只读开关，不改的是 `None` | 「切权限级别」 |
 | `SetMeta { title, pinned }` | `session.set_meta` | 新的标题（空的是去掉标题）、置顶，不改的是 `None`（施工 3-8 三补） | 「改标题、置顶」 |
+| `Retitle` | `session.retitle` | 没有（施工 TT-1） | 「起标题」第 9 条 |
 | `Configure { model }` | `session.configure` | 换成的引用：模型或 `@池`（施工 8-10），协议那一头已经查过 | 「换模型」 |
 | `Recast { persona, preset }` | `session.configure` | 换成的人格（外层没有是不换，`Some(None)` 是无人格）、预设（施工 P-13），协议那一头已经查过 | 「换人格、预设」 |
 | `Answer { call_id, answer }` | `session.answer` | `Answer::Approval { decision, reason }` 或 `Answer::Questions(回答)` | `asking.md` |
@@ -177,13 +178,14 @@
 | `unknown_job` | `UnknownJob` | 子会话交来的回报对不上一个还会报的子代理（「回报」第 4 条，施工 7-2） |
 | `not_redoable` | `NotRedoable` | 重做时最后一轮不是人说的话开的，或者一轮都没有（`history.md`「重做」，施工 4-7 再补） |
 | `nothing_to_recap` | `NothingToRecap` | 回顾时她一个带正文的回复都没有；快照里没有回顾的字（「回顾」第 2 条，施工 3-8 四补） |
+| `nothing_to_title` | `NothingToTitle` | 人要求重起标题时没东西可起：她一个带正文的回复都没有、这时也没有回合在进行；策略里没有 `titles`（「起标题」第 9 条，施工 TT-1）。协议端点说成 `bad_params` |
 | `recap_failed` | `RecapFailed` | 回顾没写成：请求出了错、回复里没有正文（「回顾」第 7 条，施工 3-8 四补） |
 | `too_many_messages` | `TooManyMessages` | 别的会话发来的话：这个发话方在窗口里已经记下了够数的几句（「别的会话发来的话」第 2 条，施工 C-2）。只回给核心里别的会话，不经协议给头，下同 |
 | `duplicate_message` | `DuplicateMessage` | 别的会话发来的话：这个发话方在窗口里发过一字不差的一句（施工 C-2） |
 | `inbox_full` | `InboxFull` | 别的会话发来的话：还没听到的别的会话的话已经够数了（施工 C-2） |
 | `not_ambient` | `NotAmbient` | `Respond` 的 `to` 里有不是这个会话里旁听的 `message.user` 的；拒绝的 `about` 是那几条（施工 O-14 上） |
 | `already_answered` | `AlreadyAnswered` | `Respond` 的 `to` 里有已经当过触发的（撤掉的回合当过的也算）；拒绝的 `about` 是那几条（施工 O-14 上） |
-| `session_sealed` | `Sealed` | 会话封存了（施工 C-8 下，`seal.rs`）：改对话的命令不收；改标题置顶、打断、回答、回顾、回报、空了的通知照收 |
+| `session_sealed` | `Sealed` | 会话封存了（施工 C-8 下，`seal.rs`）：改对话的命令不收；改标题置顶、重起标题、打断、回答、回顾、回报、空了的通知照收 |
 | `goal_exists`、`no_goal`、`goal_paused`、`goal_running` | `GoalExists`、`NoGoal`、`GoalPaused`、`GoalRunning` | 改长期目标的命令 `Goal`（施工 X-7，`goal.rs`）：已经有一个没完成的（跑着、停着、卡住）再设；没有的改、停、接着跑、结束；停着、卡住的再停；跑着的接着跑。原文空白的照 `empty_message`。卡住的照停着办，接着跑、改、结束都收（施工 X-8 下：账本的 `GoalStage::Blocked`，人答了 `/goal resume`）；账本只放宽：卡住以后再设一个照收（X-8 上的日志里她这么做过），命令那一层拒 |
 | `shell_not_allowed` | `ShellNotAllowed` | 人打的命令（`Shell`）不是人发的（`by` 不是 `person`，施工 SH-1 上）；协议那一层先挡 |
 | `id_reused` | `IdReused` | 接受过的编号换了参数再来（「命令和回应」第 4 条，施工 YC-7）：指纹不一样；载入时认回来的编号没有指纹，不拒 |
@@ -540,6 +542,12 @@
    - 在路上时人改了名（标题动过了）：只记那一条 `model.called`，不盖掉人起的。
    - 没起成（执行器报了错；还没报发出去就说完了、增量对不上，`bad_stream`；回复里没有正文，`empty_reply`，原话 `the title reply has no text`）：只记那一条 `model.called`，算试过一次，不马上再来，下一轮答完再试；两次都没起成就不再试。每一次执行器记一行 `title failed`（`session/actor.md` 第 7 条），第二行就是不再试的那一行。
 8. 起标题不进她的上下文：两条都不带回合编号，撤哪一轮都不会跟着拿走；渲染时不出，也不挡接着写（`kernel/request.md`「组装」「接着写」）；账本、用量的锚、压缩的边界照带 `purpose` 的规矩不看它。
+9. **人要求重起**（`Retitle`，`session.retitle`，施工 TT-1；2026-11-11 项目主人定）：走上面同一条路，指令、上限是同一份，喂的换成最近答过的至多三轮（`Assembler::retitle`，`kernel/request.md`「起标题的请求」第 7 条；照到的是最新那个回答），记的还是那两条（`by` 内核，没有 `cause`、不带回合编号）。和自动起的不一样的只有这几处：
+   - 不看第 1 条里的「标题从没动过」「不是子会话」「不是一次性的会话」「造的时候没说不起」「试过的次数」；策略里要有 `titles`。只有续轮的会话照第 2 条拿目标原文。
+   - 收下就回应 `Accepted`，不附事件，不等落盘、不等模型；编号照样记下。
+   - 有一次在路上的（自动起的也算）：并进去，不再出 `Aside`；并进自动起的那一次的，那一次喂的是第一轮。
+   - 没有在路上的、组装得出来的：当场出 `Aside`，回合进行中也一样（照落了盘的有效历史里走完了的几轮，正在进行的这一轮不带、不碰）。组装不出来、回合正在进行的：记下「人要了」，随便哪一轮的 `turn.ended` 落了盘时照第 3 条起（「落了盘」里和自动起的同一处）。组装不出来、空闲着的，策略里没有 `titles` 的：拒绝，`nothing_to_title`，什么都不记。
+   - 说完了：起成了的盖掉现在的标题，人起的也盖。「人要了」只在内存里，标题一动就放下（起好了、要了以后人又改了：后改的那一次算数，不盖掉它），没起成的也放下：只记那一条 `model.called`（照样算试过一次），不留到下一轮再试。跟着重启、会话停了丢掉的不补。
 
 **替它看图**（施工 8-17，`sight.rs`，`models.md`「怎么走」第十三条，`kernel/request.md`「替它看的图」）：主对话的模型看不了图时，`models.vision` 替它看，转述记成 `image.described`，以后每次请求照它把图换成字。
 
@@ -730,6 +738,7 @@
 | `crates/miyu-kernel/src/session/tests/tools.rs` | 一步跑完再请求；非只读的一个一个来；没有的工具、坏参数当场回；修正只用在执行上；步数上限在最后一步跑完后结束；推工具的输出；对不上的结果不理；回合带着开始时的工作目录 |
 | `crates/miyu-kernel/src/session/tests/redo.rs`、`scenario/redo.rs` | 重做（施工 4-7 再补，`history.md`「守着它的」） |
 | `crates/miyu-kernel/src/session/tests/recap.rs`、`scenario/recap.rs`（施工 3-8 四补） | 回顾：单独一次请求，两条不带回合编号、不开回合，回应那一句（去掉前后空白、思考不要），`model.called` 带 `purpose`、`seen` 是照到的、没有第一处不同和块的起止；没有新内容的交回上一句、不请求，说了新的一句再请求；一个回复都没有（说了、没回复的也算）拒绝；出错、只有思考、只有工具调用的没写成、不再来；在路上又要的一起回、只请求一次；照落了盘的算、那一句落了盘才回；对不上的回报不理、发出去了报两次认第一次；还没发出去就来增量、没发出去就说完、增量对不上的没写成；同一个编号再来就是再要一次；有回合在进行时照收，这一轮照常、之后的主请求照旧接着上一次主请求往后长；排着的那句照样撤得回；只记下的那句回顾照到了、手动压缩照样留着它；撤掉后来的一轮照撤完的再请求，前两句留在日志里 |
+| `crates/miyu-kernel/src/session/tests/scenario/retitle.rs`（施工 TT-1） | 人要求重起标题：五轮的会话要的是 `Assembler::retitle` 的那一份（最近三个回答，名字是最新那个），自动起的照旧是第一轮的，收下就回，两条照自动起的记，人起的也盖掉，起过了下一轮不再起；人起过名的、一次性的会话要了照起；空闲着没东西可起的、策略里没有 `titles` 的拒绝 `nothing_to_title`，拒了的不留着；有一次在路上的不再发；第一轮还没答完时要的等这一轮完、不打断；要了以后人又改的不盖掉，没起成的不留到下一轮 |
 | `crates/miyu-kernel/src/session/tests/title.rs`、`scenario/title.rs`（施工 3-8 五补） | 起标题：`turn.ended` 落了盘才起、照落了盘的有效历史组装、回合结束的挂接点照跑；第一轮答完起一次，两条都是内核记的、不带回合编号和 `cause`，标题取第一行，`model.called` 带 `purpose`、`seen` 是第一个回答、没有第一处不同和块的起止，起过的不再起，会话上的标题跟着换；超过 50 个字截到 50、去掉末尾空白、不加省略号，按字数不按字节；人起过名、去掉过的不起，只置顶的照起；子会话、一次性的会话不起；没答出正文的那一轮不起，下一轮答了照第一轮的算；出错、只有思考的算没起成，两次就不再起；试过几次载入以后照日志数，在路上丢了的不算；在路上时人改了名的只记请求、不盖掉；一次只有一个在路上；撤掉那一轮标题照样在；要重启了不起；名字、用途对不上的回报不理，说完了再报一次不理，没有命令等着它 |
 | `crates/miyu-kernel/src/session/tests/clear.rs`、`scenario/clear.rs` | 清空（施工 6-8 补）：一批三条、不请求模型、不跑回合开始的挂接点、跑回合结束的，落了盘才回应；有回合在进行、本来就空（没说过话、刚清过）的拒绝，清完又说了一句的收；只有一份摘要、只有一条回报也清；记在一边的回报跟着清掉；同一个编号再来；下一轮只看到清空以后的、事实照常注入；撤掉回到清空以前、恢复又清空；暂停着也收、清完到线照常自动压；载入以后一样；`compacted_upto()` 没清过的没有、清完是清空替代到的那一条（施工 R-13 补） |
 | `crates/miyu-kernel/src/session/tests/compact.rs`、`scenario/manual.rs` | 手动压缩（施工 6-8）：空闲时收、开的那一轮没有触发、不注入、不跑挂接点，落了盘才回应；有回合在进行时拒绝（改回文件时拒绝在 `restore.rs`）；没有能压的四种；摘要请求带着要求；成了同一批结束、排着的接着开；失败不数不暂停；重试同一个 N；打断、重启；暂停着也收、成了以后到线照常自动压 |

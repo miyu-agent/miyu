@@ -9,7 +9,7 @@ Conversation:
   redo [<message>]    Redo the last turn, optionally with a new message
   compact [<focus>]   Compact the context
   recap               Summarize the session
-  rename <title>      Rename the session
+  rename [<title>]    Rename the session
   session <command>   Export and import sessions
 
 Content:

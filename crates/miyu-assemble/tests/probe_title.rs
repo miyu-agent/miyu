@@ -74,3 +74,86 @@ fn a_title_is_its_own_request_and_leaves_the_main_ones_alone() {
     });
     assert!(titled, "标题记在日志里");
 }
+
+/// 一次起标题的请求里那一条 user 的字。
+fn asked(request: &miyu_kernel::request::Request) -> &str {
+    assert!(request.tools.is_empty() && request.system.is_empty());
+    let [Message::User { blocks }] = request.messages.as_slice() else {
+        panic!("一条 user：{:?}", request.messages);
+    };
+    let [Block::Text(text)] = blocks.as_slice() else {
+        panic!("一块字：{blocks:?}");
+    };
+    &text.text
+}
+
+/// 说一句，她答一句就完。
+fn one_turn(session: &mut Stage, said: &str, answer: &str) {
+    session.model([Line::says(answer)]);
+    session.say(said);
+}
+
+/// 人要求重起（施工 TT-1），真内核、出厂的字：五轮的会话，同一份指令接最后三轮，没有第一轮；带工具调用的那一轮只有人的话
+/// 和她最后的正文，工具的输出、中间一步说的不在里面；自动起的那一次没有跟着变。
+#[test]
+fn asking_again_feeds_the_last_three_turns_under_the_same_instruction() {
+    let mut session = script();
+    let auto = session.titles()[0].1.clone();
+    one_turn(&mut session, "改完跑一下测试", "跑过了，三个平台都是绿的。");
+    session.model([
+        Line::calls("我看一下提交。", &[("read", r#"{"path":"CHANGELOG.md"}"#)]),
+        Line::says("写进了更新记录。"),
+    ]);
+    session.tools([Play::done("## 未发布")]);
+    session.say("记进更新记录了吗？");
+    one_turn(&mut session, "那发版吧", "好，打标签。");
+    session.title_model([Line::says("修 macOS 上的临时目录")]);
+    session.retitle();
+    let [(_, first), (_, again)] = session.titles() else {
+        panic!("两次起标题的请求：{:?}", session.titles().len());
+    };
+    assert_eq!(*first, auto, "自动起的那一次照旧");
+    let instruction = title().instruction;
+    assert_eq!(
+        asked(again),
+        format!(
+            "{instruction}User: 改完跑一下测试\n\nAssistant: 跑过了，三个平台都是绿的。\n\nUser: 记进更新记录了吗？\n\nAssistant: 写进了更新记录。\n\nUser: 那发版吧\n\nAssistant: 好，打标签。"
+        )
+    );
+}
+
+/// 只答过一轮的会话重起：和自动起的那一次是同一份请求，逐字节。
+#[test]
+fn with_one_turn_asking_again_sends_the_request_the_first_title_used() {
+    let mut session = titled_stage();
+    session.title_model([Line::says("打个招呼"), Line::says("问好")]);
+    one_turn(&mut session, "在吗", "在。");
+    session.retitle();
+    let [(first, auto), (second, again)] = session.titles() else {
+        panic!("两次起标题的请求：{:?}", session.titles().len());
+    };
+    assert_eq!((first, auto), (second, again));
+}
+
+/// 三轮合起来超过上限（出厂连指令 1024 个 token，4096 字节）：整轮去掉最老的，最前写一行省略了；剩下的照原样。
+#[test]
+fn over_the_limit_asking_again_drops_the_oldest_turn() {
+    let mut session = titled_stage();
+    session.title_model([Line::says("打个招呼"), Line::says("长对话")]);
+    let (old, middle, new) = ("甲".repeat(500), "乙".repeat(400), "丙".repeat(400));
+    one_turn(&mut session, "一", &old);
+    one_turn(&mut session, "二", &middle);
+    one_turn(&mut session, "三", &new);
+    session.retitle();
+    let [_, (_, again)] = session.titles() else {
+        panic!("两次起标题的请求：{:?}", session.titles().len());
+    };
+    let instruction = title().instruction;
+    assert_eq!(
+        asked(again),
+        format!(
+            "{instruction}[Earlier exchanges omitted]\n\nUser: 二\n\nAssistant: {middle}\n\nUser: 三\n\nAssistant: {new}"
+        )
+    );
+    assert!(asked(again).len() <= 4096);
+}

@@ -21,6 +21,7 @@ A session is one conversation: an append-only event log, from which the core wor
 | [`session.set_permission_level`](#sessionset_permission_level) | Change the permission level, the read-only switch |
 | [`session.set_workspace`](#sessionset_workspace) | Change the working directory |
 | [`session.set_meta`](#sessionset_meta) | Rename, pin |
+| [`session.retitle`](#sessionretitle) | Have the model write a new title |
 | [`session.viewing`](#sessionviewing) | A head tells the core which session it has open |
 | [`session.terminal`, `session.set_terminal`](#sessionterminal-sessionset_terminal) | The terminal session: get it, point it elsewhere |
 | [`session.configure`](#sessionconfigure) | Change the model, persona, preset or reasoning effort |
@@ -37,7 +38,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 ## Common
 
 - **Session ids** are UUIDv7 strings, ordered by creation.
-- **Who can call**: people can call all of these. Extensions call them on sessions they can see (a bridge sees the venue sessions of its platforms; other extensions see local sessions and your own private chats) and need a capability: reading (`session.list`, `session.recap`, `session.tools`, `session.context`, `session.usage_parts`, `session.prompts`, `view.page`, `view.detail`) needs `events.read`; creating, sending, interrupting, reverting, unreverting, redoing, compacting, clearing, configuring, forking and renaming need `sessions.drive`; `session.answer`, `session.set_permission_level`, `session.set_workspace`, `session.terminal`, `session.set_terminal`, `session.delete`, `session.export` and `session.import` are for people only (`local_only`). What an extension says without `as` is recorded as itself (`harness`, named after the package); it can't set `from`.
+- **Who can call**: people can call all of these. Extensions call them on sessions they can see (a bridge sees the venue sessions of its platforms; other extensions see local sessions and your own private chats) and need a capability: reading (`session.list`, `session.recap`, `session.tools`, `session.context`, `session.usage_parts`, `session.prompts`, `view.page`, `view.detail`) needs `events.read`; creating, sending, interrupting, reverting, unreverting, redoing, compacting, clearing, configuring, forking, renaming and retitling need `sessions.drive`; `session.answer`, `session.set_permission_level`, `session.set_workspace`, `session.terminal`, `session.set_terminal`, `session.delete`, `session.export` and `session.import` are for people only (`local_only`). What an extension says without `as` is recorded as itself (`harness`, named after the package); it can't set `from`.
 - **Sessions that aren't running are loaded**: a session the core restarted past or that retired after idling is loaded on first use; heads don't have to care.
 - **Watch pushes for changes**: most methods return `{}` or a few event numbers; the change itself arrives as events to heads subscribed to the session ([Pushes](pushes.en.md)).
 - **Finding the session** can fail on every method with a `session`:
@@ -380,6 +381,16 @@ A new one uses `terminal.persona` and `terminal.preset` (unset follows `persona.
 **Response**: `{}`. A change is pushed as `session.meta_changed`. Sessions without a name get a title from the core after the first turn, also pushed as `session.meta_changed` (`by` is the kernel).
 
 **Errors**: `bad_params`: nothing given; an empty title or one over 200 characters; an empty `project` string, or a session that cannot join (`data.field` is `project`). `unknown_project`: no such project.
+
+## `session.retitle`
+
+Have the model write a new title from the latest part of the conversation. It uses the same instruction and model as the title the core writes by itself, and usage is recorded the same way (`model.called` with `purpose` `title`), but it reads the last three answered turns at most (the automatic title reads only the first turn). Each turn carries what the person said and her final text answer; tool calls and reasoning are left out, and a turn she has not finished answering is not included. A title a person gave is replaced too; sessions created with `titles: false`, one-shot sessions, subagent sessions and venue sessions are titled all the same.
+
+**Params**: `session`.
+
+**Response**: `{}`, as soon as the request is sent; it does not wait for the model. The new title is pushed as `session.meta_changed` (`by` is the kernel), and the session-list item no longer carries `named`. If a title request is already on its way, nothing more is sent and the response is still `{}`. A turn in progress is left out and not interrupted; if her first turn has not finished, the title is written when that turn ends. If the model fails or writes no title, the title stays and only the failed `model.called` is recorded; if a person sets a title with `session.set_meta` after asking and before it arrives, theirs is kept.
+
+**Errors**: `bad_params`: no `session`; nothing to title (she has no reply with text yet and no turn is running). `session_not_found` when there is no such session.
 
 ## `session.viewing`
 

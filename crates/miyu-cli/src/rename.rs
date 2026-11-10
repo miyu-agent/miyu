@@ -1,8 +1,9 @@
 //! `miyu rename`（`docs/blueprint/cli/rename.md`，施工 3-8 五补）：连上核心（照 `miyu undo` 的规矩：没设 key 的不拉起），找
-//! 当前会话（最新的那个一次性会话；`--session` 指定别的），发 `session.set_meta` 给它起名。
+//! 当前会话（最新的那个一次性会话；`--session` 指定别的），发 `session.set_meta` 给它起名。没写标题的发 `session.retitle`
+//! （施工 TT-1）：让核心照自动起标题的办法重起一个，请求发出去就回，不等模型。
 //!
-//! 起好了什么都不印，退出码 0（照 `mv`）；被拒绝（标题空的、太长的、没有这个会话……）照核心的原话印在标准错误上，退出码 1；
-//! 核心没在跑、又没设 key 的 5。
+//! 起好了什么都不印，退出码 0（照 `mv`）；被拒绝（标题全是空白的、太长的、没有这个会话、没东西可起……）照核心的原话印在
+//! 标准错误上，退出码 1；核心没在跑、又没设 key 的 5。
 
 use std::io::{self, Write};
 use std::process::{Command, ExitCode};
@@ -23,8 +24,8 @@ use crate::rpc::Rpc;
 /// `miyu rename` 的参数。给人看的说明在帮助页里（[`crate::help`]），这里的注释只给读代码的人看。
 #[derive(Debug, Clone, Args)]
 pub struct Rename {
-    /// 新的标题：几个词用一个空格连起来，至少一个。
-    #[arg(required = true, num_args = 1..)]
+    /// 新的标题：几个词用一个空格连起来。一个都不写的是让模型重起一个（施工 TT-1）。
+    #[arg(num_args = 0..)]
     pub words: Vec<String>,
     /// 哪个会话；不写的是上一次 `miyu ask` 开的那个。
     #[arg(short = 's', long)]
@@ -36,8 +37,9 @@ pub struct Rename {
 pub struct RenamePlan {
     /// 哪个会话；没有的是最新的那个一次性会话。
     pub session: Option<String>,
-    /// 新的标题，原样交给核心：去掉前后空白、量长短是核心的事（`protocol.md` 的 `session.set_meta`）。
-    pub title: String,
+    /// 新的标题，原样交给核心：去掉前后空白、量长短是核心的事（`protocol.md` 的 `session.set_meta`）。没有的是让模型
+    /// 重起一个（`session.retitle`，施工 TT-1）。
+    pub title: Option<String>,
     /// 界面语言。
     pub language: Language,
 }
@@ -74,13 +76,13 @@ async fn run(args: Rename, start: impl FnOnce() -> Command) -> u8 {
     };
     let plan = RenamePlan {
         session: args.session,
-        title: args.words.join(" "),
+        title: (!args.words.is_empty()).then(|| args.words.join(" ")),
         language,
     };
     rename_on(connection, &token, &plan, &mut io::stderr()).await
 }
 
-/// 在一条连上了的连接上起一次名：握手、找会话、发 `session.set_meta`，交回退出码；出错的话写在 `err` 上。测试照它在进程里
+/// 在一条连上了的连接上起一次名：握手、找会话、发 `session.set_meta`（没写标题的发 `session.retitle`），交回退出码；出错的话写在 `err` 上。测试照它在进程里
 /// 走一遍。
 pub async fn rename_on(
     connection: Connection,
@@ -100,8 +102,14 @@ pub async fn rename_on(
             Err(code) => return code,
         },
     };
-    let params = json!({"session": session, "title": plan.title});
-    match link::request(&mut rpc, "session.set_meta", params, language, err).await {
+    let (method, params) = match &plan.title {
+        Some(title) => (
+            "session.set_meta",
+            json!({"session": session, "title": title}),
+        ),
+        None => ("session.retitle", json!({"session": session})),
+    };
+    match link::request(&mut rpc, method, params, language, err).await {
         Ok(_) => exit::OK,
         Err(code) => code,
     }

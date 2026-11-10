@@ -95,6 +95,9 @@ pub enum Command {
         /// 移进哪个项目，空的是移出来；不改就没有（施工 H-2）。项目在不在、这个会话能不能进项目是协议端点的事。
         project: Option<String>,
     },
+    /// `session.retitle`：照现在的对话重起一次标题（施工 TT-1，`title.rs`）：走自动起标题的那一条路，人起过名的也盖掉。
+    /// 收下就回，不等模型。
+    Retitle,
     /// `session.set_workspace`：换会话在哪个目录干活（施工 9-7 上，`workspace.rs`）。协议那一头判过太不太宽、换成了实际用的；
     /// 和现在一样的不记。
     SetWorkspace {

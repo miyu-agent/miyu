@@ -180,6 +180,36 @@ impl Assembler for Listing {
         Some((request, events[answer].seq))
     }
 
+    /// 人要求重起标题（施工 TT-1）：有效历史里最近至多三条有正文的回复的清单，最后一条写着「retitle」；照到的是最新那条
+    /// 回复。一条有正文的回复都没有的，没有。
+    fn retitle(&self, history: &History) -> Option<(Request, Seq)> {
+        let answers: Vec<&Event> = history
+            .events()
+            .iter()
+            .filter(|event| match &event.body {
+                Body::MessageAssistant(reply) => reply.blocks.iter().any(
+                    |block| matches!(block, Block::Text(text) if !text.text.trim().is_empty()),
+                ),
+                _ => false,
+            })
+            .collect();
+        let upto = answers.last()?.seq;
+        let recent = &answers[answers.len().saturating_sub(3)..];
+        let lines = recent
+            .iter()
+            .map(|event| format!("{} {}", event.seq, event.body.kind()))
+            .chain(["retitle".to_string()]);
+        let request = Request {
+            messages: lines
+                .map(|text| Message::User {
+                    blocks: vec![Block::Text(Text { text })],
+                })
+                .collect(),
+            ..self.title(history)?.0
+        };
+        Some((request, upto))
+    }
+
     /// 转述一张图（施工 8-17）：一条 user，写着「describe」和人的话，接着这张图。
     fn describe(&self, image: &crate::block::Image, said: Option<&str>) -> Option<Request> {
         let text = format!("describe {}", said.unwrap_or_default());

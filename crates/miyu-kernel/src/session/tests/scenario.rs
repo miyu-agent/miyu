@@ -41,6 +41,7 @@ mod reminder;
 mod reports;
 mod reports_undo;
 mod respond_tail;
+mod retitle;
 mod retrying;
 mod said;
 mod seal;

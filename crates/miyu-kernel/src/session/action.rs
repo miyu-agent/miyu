@@ -295,6 +295,9 @@ pub enum Reason {
     /// 没有能回顾的（施工 3-8 四补，`recap.rs`）：有效历史里她一个带正文的回复都没有；以前造的快照没有回顾的字的也是它，只在
     /// 开发时的旧会话里有，不另开原因码（照 `NothingToCompact` 的先例）。
     NothingToRecap,
+    /// 人要求重起标题，没东西可起（施工 TT-1，`title.rs`）：有效历史里她一个带正文的回复都没有、这时也没有回合在进行；
+    /// 策略里没有起标题的字和数的也是它。协议那一头说成参数不对（`bad_params`）。
+    NothingToTitle,
     /// 回顾没写成（施工 3-8 四补）：请求出了错，或者回复里没有正文。原因记在那一次的 `model.called` 里；不再来，头要再要一次
     /// 就是。
     RecapFailed,
@@ -355,6 +358,7 @@ impl Reason {
             Reason::UnknownJob => "unknown_job",
             Reason::NotRedoable => "not_redoable",
             Reason::NothingToRecap => "nothing_to_recap",
+            Reason::NothingToTitle => "nothing_to_title",
             Reason::RecapFailed => "recap_failed",
             Reason::TooManyMessages => "too_many_messages",
             Reason::DuplicateMessage => "duplicate_message",

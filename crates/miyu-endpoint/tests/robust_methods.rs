@@ -130,6 +130,7 @@ const METHODS: &[&str] = &[
     "session.recap",
     "session.redo",
     "session.respond",
+    "session.retitle",
     "session.revert",
     "session.send",
     "session.set_meta",

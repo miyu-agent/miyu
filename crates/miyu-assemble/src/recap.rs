@@ -76,7 +76,11 @@ impl Exchange {
 /// 回答也是；数到答过的 `turns` 轮为止，最新那一轮没答的也带上。最老那一轮只有回答、没有人这边的话的也留（codex 丢掉它：压缩
 /// 以后留着的尾巴可以从她的回答开头）。她一个带正文的回复都没有的，没有。
 fn exchanges(history: &History, texts: &Texts, turns: usize) -> Option<Vec<Exchange>> {
-    let entries = entries(history, texts);
+    exchanges_of(&entries(history, texts), turns)
+}
+
+/// 同 [`exchanges`]，照交进来的几段数（施工 TT-1：重起标题的请求先去掉没走完的那一轮的回答，`title.rs`）。
+pub(crate) fn exchanges_of(entries: &[Entry], turns: usize) -> Option<Vec<Exchange>> {
     if !entries.iter().any(|entry| entry.assistant) {
         return None;
     }

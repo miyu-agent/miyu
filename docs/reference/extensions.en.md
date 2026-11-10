@@ -81,7 +81,7 @@ The manifest's `[process] capabilities` declares what it needs. Packages you ins
 | `model.driver` | Providing a model driver (manifest `[[driver]]`): when its models are used, everything sent to the model goes through it. Doesn't include network access |
 | `act_for_external` | Speaking for people on a platform (`session.send` and `command.run` with `as`), `session.note`, `session.respond` without `to`, `venue.*`, recording `venue.*` events: for platform bridges only |
 | `login.page` | Getting sign-in tickets for pages opened on this machine (`login.ticket {"via": "page"}`, see "Signing in pages on this machine" below): shipped packages need approval for it too |
-| `sessions.drive` | Driving sessions: `session.create`, `send`, `interrupt`, `revert`, `unrevert`, `redo`, `compact`, `clear`, `configure`, `fork`, `set_meta`, `respond`, `command.run`, `job.stop` |
+| `sessions.drive` | Driving sessions: `session.create`, `send`, `interrupt`, `revert`, `unrevert`, `redo`, `compact`, `clear`, `configure`, `fork`, `set_meta`, `retitle`, `respond`, `command.run`, `job.stop` |
 | `events.read` | Reading sessions: subscribing to the `events`, `view` and `sessions` streams, `session.list`, `session.recap`, `view.page`, `view.detail`, `job.output`; receiving notices after tool calls (manifest `[after]`, `tool.after`) |
 | `events.write` | Recording your own events in a session (`events.append`) |
 | `memory.write` | Writing memories and knowledge bases: `memory.remember`, `import`, `update`, `forget`, `restore`, `dream`, `dream_stop`, `kb.add`, `create`, `update`, `mount`, `remove`, `delete`, `reindex` |

@@ -1,6 +1,7 @@
 //! `miyu rename`（施工 3-8 五补，`docs/blueprint/cli/rename.md`）：在进程里起一个核心，给上一次 `miyu ask` 开的会话起名，
 //! 几个词用一个空格连起来，什么都不印，退出码 0，日志里记一条人改的 `session.meta_changed`；`--session` 起名的是指定的那个；
-//! 核心不收的（全是空白的）照核心的话说、退出码 1；一个会话都没有的说清楚、退出码 1。
+//! 核心不收的（全是空白的）照核心的话说、退出码 1；一个会话都没有的说清楚、退出码 1。没写标题的走 `session.retitle`
+//! （施工 TT-1）：模型收到一次起标题的请求，日志里记一条内核起的。
 
 use std::sync::Arc;
 
@@ -16,7 +17,7 @@ use miyu_session::testkit::{Play, Script};
 fn renaming(session: Option<&SessionId>, title: &str) -> RenamePlan {
     RenamePlan {
         session: session.map(|session| session.as_str().to_string()),
-        title: title.to_string(),
+        title: Some(title.to_string()),
         language: Language::Chinese,
     }
 }
@@ -94,4 +95,36 @@ async fn a_refused_title_or_no_session_says_so() {
     assert_eq!((renamed.code, renamed.out.as_str()), (1, ""));
     assert!(!renamed.err.is_empty(), "照核心的话说");
     assert!(titles(&home, &home.sessions()[0]).is_empty(), "什么都没记");
+}
+
+/// 没写标题的让模型重起一个：一次性的会话自己不起，要了才起；命令行不等模型，什么都不印。
+#[tokio::test]
+async fn without_a_title_the_model_is_asked_for_one() {
+    let script = Arc::new(Script::new([Play::Says("好。")]).titles([Play::Says("打个招呼")]));
+    let home = Home::new(script.clone());
+    assert_eq!(home.ask(&plan("hi")).await.code, 0);
+    assert!(script.titled().is_empty(), "一次性的会话自己不起");
+    let plan = RenamePlan {
+        session: None,
+        title: None,
+        language: Language::Chinese,
+    };
+    let renamed = rename(&home, &plan).await;
+    assert_eq!(
+        (renamed.code, renamed.screen.as_str()),
+        (0, ""),
+        "什么都不印"
+    );
+    let session = home.sessions()[0].clone();
+    let (by, title) = within("起好标题", async {
+        loop {
+            if let Some(titled) = titles(&home, &session).pop() {
+                return titled;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+        }
+    })
+    .await;
+    assert_eq!((by, title.as_deref()), (By::Kernel, Some("打个招呼")));
+    assert_eq!(script.titled().len(), 1, "一次起标题的请求");
 }

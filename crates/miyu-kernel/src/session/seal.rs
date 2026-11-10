@@ -82,6 +82,7 @@ impl Session {
 pub(super) fn taken_when_sealed(command: &Command) -> bool {
     match command {
         Command::SetMeta { .. }
+        | Command::Retitle
         | Command::Interrupt { .. }
         | Command::Withdraw { .. }
         | Command::Answer { .. }

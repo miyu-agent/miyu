@@ -2,7 +2,7 @@
 
 ### 是什么
 
-在 shell 里给当前会话起名，会话列表里一眼认得出（施工 3-8 五补）。连上核心（没在跑就拉起来，施工 8-6 起一律拉起），找会话，发 `session.set_meta`。没起名的会话核心会自己起一个（`kernel/session.md`「起标题」）；人起过名的，核心不再动。
+在 shell 里给当前会话起名，会话列表里一眼认得出（施工 3-8 五补）。连上核心（没在跑就拉起来，施工 8-6 起一律拉起），找会话，发 `session.set_meta`。没起名的会话核心会自己起一个（`kernel/session.md`「起标题」）；人起过名的，核心不再动。不写标题的是让模型重起一个（施工 TT-1，2026-11-11 项目主人定）：发 `session.retitle`，人起过名的也换掉。
 
 ### 在哪
 
@@ -17,10 +17,10 @@
 
 | 参数 | 做什么 |
 |---|---|
-| `<标题>` | 新的标题，必写；写好几个词的，用一个空格连起来（照 `miyu compact` 的要求）。以 `-` 开头的写在 `--` 后面 |
+| `<标题>` | 新的标题；写好几个词的，用一个空格连起来（照 `miyu compact` 的要求）。以 `-` 开头的写在 `--` 后面。不写的是让模型重起一个（施工 TT-1） |
 | `-s`、`--session <编号>` | 给这个会话起名；不写的是上一次 `miyu ask` 开的那个，就是最新的那个一次性会话 |
 
-- 只起名，不去掉标题、不置顶：那些随终端界面、会话管理的命令（`cli/main.md`「还没有的」）。
+- 只起名、重起，不去掉标题、不置顶：那些随终端界面、会话管理的命令（`cli/main.md`「还没有的」）。
 - 界面语言照 `cli/main.md`，帮助页也照它。
 - 用到的环境变量：`MIYU_HOME`（数据根，不设是 `~/.miyu`）；拉起的核心照它自己的一套（`core.md`）。
 
@@ -30,9 +30,9 @@
 2. **连核心**，照 `miyu undo`（`cli/undo.md`）：没在跑就拉起来（施工 8-6 起一律拉起）。连不上、拉不起：原因写在标准错误上，退出码 1。
 3. **握手** `hello`：和 `miyu ask` 一样（`cli/ask.md` 第 3 步），`caps.input` 是 `false`。
 4. **找会话**，照 `miyu undo`：写了 `--session` 的照写的，头这边不查写法；没写的 `session.list`，带 `oneshot: true`、`limit: 1`，取第一个，一个都没有：说「还没有 miyu ask 开过的会话」，退出码 1。
-5. **发** `session.set_meta`：`{"session": …, "title": <几个词用空格连起来>}`。去掉前后空白、量长短是核心的事（`protocol.md` 的 `session.set_meta`）。请求的编号是 `rename-<16 位十六进制>-<序号>`，写法照 `miyu ask`。不订阅。
-6. **起好了**：什么都不印，退出码 0（照 `mv`，施工时定）。和现在的一样的也是。
-7. **被拒绝**（全是空白的、超过 200 个字的、没有这个会话……）：核心照握手时的语言写的原因，照原样印在标准错误上，退出码 1。
+5. **发**：写了标题的发 `session.set_meta`：`{"session": …, "title": <几个词用空格连起来>}`。去掉前后空白、量长短是核心的事（`protocol.md` 的 `session.set_meta`）。一个词都没写的发 `session.retitle`：`{"session": …}`（施工 TT-1）；写了、全是空白的（`miyu rename "  "`）照旧发 `session.set_meta`，由核心拒。请求的编号是 `rename-<16 位十六进制>-<序号>`，写法照 `miyu ask`。不订阅。
+6. **起好了**：什么都不印，退出码 0（照 `mv`，施工时定）。和现在的一样的也是。重起的也一样：核心把请求发出去就回，命令行不等模型，新的标题过一会儿出现在会话列表里；模型没写成的标题不变，命令行不知道。
+7. **被拒绝**（全是空白的、超过 200 个字的、没有这个会话、重起时她一句都还没答出来……）：核心照握手时的语言写的原因，照原样印在标准错误上，退出码 1。
 8. **核心断开**：说「核心断开了」，退出码 1。请求写不出去：系统的原话写在标准错误上，退出码 1。
 
 ### 样子
@@ -45,7 +45,7 @@
 |---|---|
 | 0 | 起好了 |
 | 1 | 找不到数据根、建不了骨架；连不上、拉不起核心；被拒绝；核心断开；请求写不出去；一个一次性会话都没有 |
-| 2 | 参数不对，没写标题也是（`cli/main.md`） |
+| 2 | 参数不对（`cli/main.md`） |
 
 ### 给人看的字
 
@@ -56,9 +56,9 @@
 样本 `crates/miyu-cli/src/help/zh/rename.txt`（中文）：
 
 ```text
-用法：miyu rename [<选项>] <标题>
+用法：miyu rename [<选项>] [<标题>]
 
-重命名会话。标题中的多个词以空格连接。
+重命名会话。标题中的多个词以空格连接；不写标题则由 AI 重新生成。
 
 选项：
   -s, --session <编号>  指定会话（默认为上一次 miyu ask 的会话）
@@ -68,9 +68,9 @@
 样本 `crates/miyu-cli/src/help/en/rename.txt`（英文）：
 
 ```text
-Usage: miyu rename [<options>] <title>
+Usage: miyu rename [<options>] [<title>]
 
-Rename the session. Words of the title are joined with spaces.
+Rename the session. Words of the title are joined with spaces; with no title, AI generates a new one.
 
 Options:
   -s, --session <id>  Session to use (default: the last miyu ask session)
@@ -81,14 +81,14 @@ Options:
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-cli/tests/rename.rs` | 真的核心：给上一次 `miyu ask` 的会话起名，什么都不印、退出码 0，日志里一条人改的 `session.meta_changed`；`--session` 起名的是指定的那个，最新的那个没动；一个会话都没有的说清楚、退出码 1；全是空白的照核心的话说、退出码 1、什么都没记 |
-| `crates/miyu/tests/rename.rs` | 真跑主程序：`rename -h`、`--help`、`help rename` 印帮助页，跟着界面语言；没写标题退出码 2；核心在跑的给上一次 `miyu ask` 开的起名，几个词用空格连起来、记进日志，什么都不印；`-s` 和 `--session` 起名的是写的那个（不在的照核心说没有这个会话） |
+| `crates/miyu-cli/tests/rename.rs` | 真的核心：给上一次 `miyu ask` 的会话起名，什么都不印、退出码 0，日志里一条人改的 `session.meta_changed`；`--session` 起名的是指定的那个，最新的那个没动；一个会话都没有的说清楚、退出码 1；全是空白的照核心的话说、退出码 1、什么都没记；没写标题的走 `session.retitle`：模型收到一次起标题的请求，什么都不印、退出码 0，日志里一条内核起的（施工 TT-1） |
+| `crates/miyu/tests/rename.rs` | 真跑主程序：`rename -h`、`--help`、`help rename` 印帮助页，跟着界面语言；核心在跑的给上一次 `miyu ask` 开的起名，几个词用空格连起来、记进日志，什么都不印；没写标题的是重起，没东西可起的照核心说「参数错误」、退出码 1；`-s` 和 `--session` 起名的是写的那个（不在的照核心说没有这个会话） |
 | `crates/miyu-cli/src/help/tests.rs` | 这一页列的选项和程序真有的对得上 |
 
 ### 出处
 
 - `22-命令行.md` 第二节（输出的规矩、退出码）。
-- `04-核心协议.md` 第九节：`session.set_meta`。施工单 3-8 五补：`miyu rename [-s <会话>] <标题>`，走 `session.set_meta`（2026-10-01 项目主人定，照 Claude Code 的 `/rename`）。
+- `04-核心协议.md` 第九节：`session.set_meta`。施工单 3-8 五补：`miyu rename [-s <会话>] <标题>`，走 `session.set_meta`（2026-10-01 项目主人定，照 Claude Code 的 `/rename`）。施工单 TT-1：不带标题的走 `session.retitle`（2026-11-11 项目主人定）。
 
 ### 还没有的
 
