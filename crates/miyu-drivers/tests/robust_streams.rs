@@ -3,9 +3,11 @@
 //! （`miyu-http` 的 `send.rs`），不停地发就永远不超时。
 //!
 //! 期望：攒到一个上限（这里按 64 MiB 算，具体多少由修的人定）就不再攒，解码器当这一次出错收尾（`done()` 为真，`finish()`
-//! 带错）。修之前这条是红的。
+//! 带错）。修之前这条是红的。错是不再重试的那一类（施工 YC-4，压测 F4）：同样的请求再发，供应商照样回这么大的一条，原来当可重试
+//! 白发 5 次、每次都计费。
 
 use miyu_drivers::{anthropic, openai_chat, openai_responses};
+use miyu_kernel::event::ErrorClass;
 
 /// 喂多少还没停就算没上限。
 const MOST: usize = 128 * 1024 * 1024;
@@ -16,6 +18,7 @@ const PIECE: usize = 1024 * 1024;
 trait Fed {
     fn feed_bytes(&mut self, bytes: &[u8]);
     fn stopped(&self) -> bool;
+    /// 收尾带了错，而且是不再重试的那一类（施工 YC-4）。
     fn errored(self: Box<Self>) -> bool;
 }
 
@@ -29,7 +32,9 @@ macro_rules! fed {
                 self.done()
             }
             fn errored(self: Box<Self>) -> bool {
-                self.finish().error.is_some()
+                self.finish()
+                    .error
+                    .is_some_and(|error| error.class == ErrorClass::Unclassified)
             }
         }
     };

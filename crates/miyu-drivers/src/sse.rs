@@ -6,7 +6,7 @@
 //! - `data:` 后面的一个空格去掉，几行 `data` 用换行接起来；`event:` 记下名字；`:` 开头的是注释；
 //!   `id:`、`retry:` 和不认识的字段不理。空行结束一条，有 `data` 的才交出来。
 //! - 流断在半条上：[`Sse::finish`] 把最后一条照样交出来。
-//! - 一条事件连同还没收全的那一行攒过上限（64 MiB）：不再往下收，[`Sse::overflowed`] 为真，解码器照可重试的出错收尾（鲁棒性 B-3）。
+//! - 一条事件连同还没收全的那一行攒过上限（64 MiB）：不再往下收，[`Sse::overflowed`] 为真，解码器照不再重试的出错收尾（鲁棒性 B-3，施工 YC-4）。
 
 use std::mem;
 
@@ -120,10 +120,11 @@ impl Sse {
     }
 }
 
-/// 攒过了 [`MOST`] 的出错：可重试，断开这一次（鲁棒性 B-3）。三家的解码器喂完一片看 [`Sse::overflowed`]，照它收尾。
+/// 攒过了 [`MOST`] 的出错：断开这一次（鲁棒性 B-3）。三家的解码器喂完一片看 [`Sse::overflowed`]，照它收尾。不再重试（施工 YC-4，
+/// 压测 F4）：同样的请求再发，供应商照样回这么大的一条；原来当可重试，白发 5 次、每次都计费。
 pub(crate) fn overflow_error() -> CallError {
     CallError {
-        class: ErrorClass::Retryable,
+        class: ErrorClass::Unclassified,
         message: format!("流里一条事件超过 {} MiB，不再往下读", MOST >> 20),
         status: None,
         retry_after_ms: None,
