@@ -159,6 +159,8 @@ pub struct Core {
     jobs: Arc<Jobs>,
     /// 斜杠命令的登记表（施工 O-6 三补，`commands/registry.rs`）：起来时登记好内置的。
     commands: commands::Commands,
+    /// 最近执行了的 `command.run`（施工 YC-7补，`commands/resent.rs`）：同一个编号重发不再跑第二遍。
+    resent: commands::Resent,
     /// 连着几个连接：`serve` 开始时加一，走的时候减一（施工 3-9 上）。
     connections: AtomicUsize,
     /// 来请求了的信号（施工 V-5 中，`activity.rs`）：核心照它在安静下来以后还内存。
@@ -295,6 +297,7 @@ impl Core {
             sessions: Sessions::default(),
             jobs: Arc::new(Jobs::new()),
             commands: commands::builtin(),
+            resent: commands::Resent::default(),
             connections: AtomicUsize::new(0),
             activity: Arc::default(),
             hello_wait: HELLO_WAIT,

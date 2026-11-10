@@ -367,7 +367,7 @@ A name of the form `<server>:<prompt>` (exactly one `:`) is an MCP server's prom
 
 **Who can use them**: anyone in local sessions; in venue sessions, the owner and managers. The system setting `commands.<name>.access` can change that to `anyone` or `off` (disabled). `/workspace` is for the owner only.
 
-The same `id` sent again counts once.
+The same `id` sent again counts once: with the same parameters you get the first reply back (the `events` and `said` from then) and the command isn't run again; with different parameters it is refused with `id_reused` and the command isn't run. The core remembers the last 1024 and forgets them on restart, after which the command runs again. Refused ones are not remembered; sending again is judged again.
 
 **Errors**
 

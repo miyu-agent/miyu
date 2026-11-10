@@ -146,3 +146,67 @@ async fn without_the_loop_package_there_is_no_such_command() {
     );
     assert!(rows(&core).is_empty());
 }
+
+/// 敲一条命令，请求编号照给的写。
+async fn typed_as(client: &mut Client, id: &str, session: &str, text: &str) -> Value {
+    let params = json!({"session": session, "text": text});
+    client.call(id, "command.run", params).await
+}
+
+/// 同一个编号原样重发（施工 YC-7补）：不再跑第二遍，回应和头一次一样。动态循环交过第一次以后停着，再跑一遍的话会被
+/// 换成一行新的、又马上交一次。
+#[tokio::test]
+async fn a_resent_loop_command_does_not_run_twice() {
+    let home = Home::new();
+    let script = Script::new([Play::Says("看过了。"), Play::Says("不该有第二轮。")]);
+    let hand = Hand::at(START);
+    let core = core_with_tools(&home, &script, &hand, looping());
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let session = client.create("c1", "~").await;
+    core.start_schedules();
+    let first = typed_as(&mut client, "again-1", &session, "/loop 盯着部署").await;
+    assert!(first["result"]["events"].is_array(), "{first}");
+    home.until_turns(&session, 1).await;
+    let before = rows(&core);
+    assert_eq!(before.len(), 1, "{before:?}");
+    assert_eq!(before[0].next, None, "交过第一次，停着等她定");
+    let again = typed_as(&mut client, "again-1", &session, "/loop 盯着部署").await;
+    assert_eq!(again["result"], first["result"], "{again}");
+    let after = rows(&core);
+    assert_eq!(after.len(), 1, "{after:?}");
+    assert_eq!(after[0].id, before[0].id, "还是原来那一行");
+    assert_eq!(after[0].next, None, "没有再交一次");
+    // 新的编号照旧：换掉原来的。
+    let fresh = typed_as(&mut client, "again-2", &session, "/loop 盯着部署").await;
+    assert!(fresh["result"]["events"].is_array(), "{fresh}");
+    home.until_turns(&session, 2).await;
+    let replaced = rows(&core);
+    assert_eq!(replaced.len(), 1, "{replaced:?}");
+    assert_ne!(replaced[0].id, before[0].id, "新编号照旧执行");
+}
+
+/// 同一个编号换了一句重发（施工 YC-7补）：`id_reused`，命令没有跑，循环还在。
+#[tokio::test]
+async fn a_resent_id_with_another_command_is_refused_before_it_runs() {
+    let home = Home::new();
+    let script = Script::new([Play::Says("看过了。")]);
+    let hand = Hand::at(START);
+    let core = core_with_tools(&home, &script, &hand, looping());
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let session = client.create("c1", "~").await;
+    core.start_schedules();
+    let first = typed_as(&mut client, "reuse-1", &session, "/loop 5m x").await;
+    assert!(first["result"]["events"].is_array(), "{first}");
+    home.until_turns(&session, 1).await;
+    let off = typed_as(&mut client, "reuse-1", &session, "/loop off").await;
+    assert_eq!(reason(&off), Some("id_reused"), "{off}");
+    let now = rows(&core);
+    assert_eq!(now.len(), 1, "循环还在：{now:?}");
+    assert_eq!(now[0].prompt, "x");
+    // 被拒的不记，新的编号照旧执行。
+    let off = typed_as(&mut client, "reuse-2", &session, "/loop off").await;
+    assert_eq!(off["result"]["said"], "已停止此会话的循环。", "{off}");
+    assert!(rows(&core).is_empty());
+}

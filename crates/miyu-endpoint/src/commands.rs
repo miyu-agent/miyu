@@ -7,10 +7,13 @@
 //! 在不在后台答、谁能用、怎么执行；这里只认、判身份、记下、写回执，不再写死名字。
 //!
 //! 命令本身照请求的编号交给内核，内核照编号只生效一次；`command.ran` 用派生的编号 `<编号>/ran` 记，执行了的才记。
+//! 执行之前先查这个编号执行过没有（施工 YC-7补，[`resent`]）：命令先做事、再交内核记，只靠内核去重的话重发的已经又做了一遍。
 //!
 //! 登记表里没有的名字照模板命令认（施工 X-14 上，[`templates`]）：数据根、装了的包里的 `commands/<名字>.md`，展开成一段话
 //! 发出去。扩展整页的命令（施工 X-15 下，[`pages`]）也在那里认：只叫头打开那一页。
 
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
 use serde::Deserialize;
@@ -33,6 +36,7 @@ use crate::venues::{self, AsParams};
 use crate::wire::Request;
 
 pub(crate) use registry::{Call, Commands, Ran, Running, Slash};
+pub(crate) use resent::Resent;
 pub(crate) use skills::mentioned;
 
 /// `command.run` 的参数。
@@ -111,9 +115,26 @@ impl Said {
     }
 }
 
-/// `command.run`：认命令、判谁能用、执行、记下，交回 `{"command", "events", "said"}`。登记表里没有的照模板命令
-/// （[`templates::run`]）。
+/// `command.run`：先查这个编号执行过没有（施工 YC-7补，[`resent`]），没有的才执行（[`fresh`]）。命令是先做事、再交内核
+/// 记的，等内核照编号去重就晚了：执行过、参数一样的交回当时的回应，参数换了的 `id_reused`，都不再执行。
 pub(crate) async fn run(
+    core: &Arc<Core>,
+    peer: &Peer,
+    id: &CommandId,
+    params: RunParams,
+) -> Result<Value, Refusal> {
+    let session = params.session.clone();
+    // 指纹照参数的 `Debug` 写法算，同内核（`session/recent.rs`）：只在这个进程里比，不落盘。
+    let mut hasher = DefaultHasher::new();
+    format!("{params:?}").hash(&mut hasher);
+    let digest = hasher.finish();
+    let fresh = fresh(core, peer, id, params);
+    core.resent.once(&session, id, digest, fresh).await
+}
+
+/// 执行一条没执行过的：认命令、判谁能用、执行、记下，交回 `{"command", "events", "said"}`。登记表里没有的照模板命令
+/// （[`templates::run`]）。
+async fn fresh(
     core: &Arc<Core>,
     peer: &Peer,
     id: &CommandId,
@@ -312,6 +333,7 @@ mod looping;
 mod pages;
 mod prompts;
 mod registry;
+mod resent;
 mod skills;
 mod templates;
 #[cfg(test)]
