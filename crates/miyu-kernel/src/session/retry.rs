@@ -1,7 +1,7 @@
 //! 出错以后再来（`docs/designs/02-内核.md` 第六节「回复怎么收」第 4 条，施工 3-5 下）。
 //!
-//! 可以重试的几类（可重试、限速、增量对不上、回复里一个块都没有），这一步连着不到 5 次，就等一会儿
-//! 再来：什么都没收到的，再组装一次就是原样的请求（`model.called` 不进上下文）；收到了一半的，半截
+//! 可以重试的几类（可重试、卡住、限速、增量对不上、回复里一个块都没有），这一步连着不到 5 次，就等一会儿
+//! 再来（卡住的连着两次就不再来，施工 YC-3）：什么都没收到的，再组装一次就是原样的请求（`model.called` 不进上下文）；收到了一半的，半截
 //! 已经写成回复（`call.rs`），后面追加一条被打断的事实，她看到自己说了一半，接着往下说。
 //!
 //! 等多久：供应商说了的照它，最多 2 分钟，说得更久的不等；没说的 1、2、4、8、16 秒。内核是纯逻辑，
@@ -49,6 +49,10 @@ impl Session {
         if !(said.failover || retryable(&error.class)) || turn.retries >= RETRY_LIMIT {
             return None;
         }
+        // 同一步连着两次卡住（施工 YC-3）：再等一回多半还是卡住，不再来。换了端点的照来。
+        if error.class == ErrorClass::Stalled && turn.stalled && !said.failover {
+            return None;
+        }
         let wait = match (said.wait_ms, said.failover) {
             (Some(wait), _) => wait,
             (None, true) => 0,
@@ -84,6 +88,7 @@ impl Session {
             return vec![Action::Append(events)];
         };
         turn.retries += 1;
+        turn.stalled = error.class == ErrorClass::Stalled;
         turn.stage = Stage::Waiting { after: seen };
         let status = Transient {
             at,
@@ -148,6 +153,7 @@ fn retryable(class: &ErrorClass) -> bool {
     matches!(
         class,
         ErrorClass::Retryable
+            | ErrorClass::Stalled
             | ErrorClass::RateLimited
             | ErrorClass::BadStream
             | ErrorClass::EmptyReply

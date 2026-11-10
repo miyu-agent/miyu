@@ -432,6 +432,7 @@ C 也查完了。
 | 分类 | 中文 | 英文 |
 |---|---|---|
 | `retryable` | 临时错误 | temporary error |
+| `stalled` | 模型没有响应 | the model stopped responding |
 | `rate_limited` | 请求受限 | rate limited |
 | `context_too_long` | 上下文太长 | context too long |
 | `auth` | 认证失败 | authentication failed |

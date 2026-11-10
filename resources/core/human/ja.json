@@ -900,6 +900,7 @@
     "view/summary/messaged-sessions": "セッション {count} 件にメッセージ",
     "view/error/with": "{head}：{message}",
     "view/error/class/retryable": "一時的なエラー",
+    "view/error/class/stalled": "モデルが応答しません",
     "view/error/class/rate_limited": "レート制限",
     "view/error/class/context_too_long": "コンテキストが長すぎます",
     "view/error/class/auth": "認証エラー",

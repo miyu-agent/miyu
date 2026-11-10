@@ -291,7 +291,11 @@ async fn a_stalled_reply_times_out_by_the_idle_limit() {
     let calls = called(&log);
     assert_eq!(calls.len(), 2);
     let error = calls[0].error.as_ref().expect("第一次断了");
-    assert_eq!(error.class, ErrorClass::Retryable);
+    assert_eq!(
+        error.class,
+        ErrorClass::Stalled,
+        "空闲超时是卡住（施工 YC-3）"
+    );
     assert!(error.message.contains("空闲超时"), "{}", error.message);
     assert_eq!(replied(&log), hello());
 }

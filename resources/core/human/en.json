@@ -917,6 +917,7 @@
     "view/summary/messaged-sessions": "Messaged {count} sessions",
     "view/error/with": "{head}: {message}",
     "view/error/class/retryable": "Temporary error",
+    "view/error/class/stalled": "The model stopped responding",
     "view/error/class/rate_limited": "Rate limited",
     "view/error/class/context_too_long": "Context too long",
     "view/error/class/auth": "Authentication failed",

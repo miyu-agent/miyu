@@ -360,13 +360,13 @@ fn too_long(total: Duration) -> Outcome {
     }
 }
 
-/// 空闲超时：多久没解出新的内容，算可重试的错。
+/// 空闲超时：多久没解出新的内容，算卡住（施工 YC-3：内核照可重试再来，连着两次卡住就不再来）。
 fn idle(idle: Duration) -> Outcome {
     Outcome::Ended {
         usage: None,
         error: Some(Classified {
             error: CallError {
-                class: ErrorClass::Retryable,
+                class: ErrorClass::Stalled,
                 message: format!("空闲超时：{} 秒没有收到新的内容", idle.as_secs_f64()),
                 status: None,
                 retry_after_ms: None,

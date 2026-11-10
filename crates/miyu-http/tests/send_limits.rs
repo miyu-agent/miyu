@@ -33,8 +33,8 @@ fn event(stream: &[u8], n: usize) -> std::ops::Range<usize> {
     unreachable!()
 }
 
-/// 照剧本 `body` 回，等它收场，交回出错的原话；`PATIENCE` 内没收场的、没出错的照失败。
-async fn failure(body: Vec<Piece>) -> String {
+/// 照剧本 `body` 回，等它收场，交回出错的分类和原话；`PATIENCE` 内没收场的、没出错的照失败。
+async fn failure(body: Vec<Piece>) -> (ErrorClass, String) {
     let server = Server::start(vec![Reply::stream(body)]).await;
     let endpoint = Endpoint::new(&server.base_url, "sk-test");
     let client = client(Proxy::Off).expect("造得出客户端");
@@ -60,8 +60,7 @@ async fn failure(body: Vec<Piece>) -> String {
     else {
         panic!("应该出错：{outcome:?}");
     };
-    assert_eq!(error.error.class, ErrorClass::Retryable);
-    error.error.message
+    (error.error.class, error.error.message)
 }
 
 #[tokio::test]
@@ -73,8 +72,13 @@ async fn keep_alives_without_content_still_time_out() {
         body.push(Piece::Wait(BEAT));
         body.push(Piece::Bytes(b": keep-alive\r\n\r\n".to_vec()));
     }
-    let message = failure(body).await;
+    let (class, message) = failure(body).await;
     assert!(message.contains("空闲超时"), "{message}");
+    assert_eq!(
+        class,
+        ErrorClass::Stalled,
+        "只有保活、没有内容的算卡住（施工 YC-3）"
+    );
 }
 
 #[tokio::test]
@@ -88,8 +92,9 @@ async fn a_reply_that_never_ends_stops_at_the_total() {
         body.push(Piece::Bytes(said.clone()));
     }
     let started = std::time::Instant::now();
-    let message = failure(body).await;
+    let (class, message) = failure(body).await;
     assert!(message.contains("总超时"), "{message}");
+    assert_eq!(class, ErrorClass::Retryable, "内容一直在来的不算卡住");
     assert!(
         started.elapsed() >= IDLE * TOTAL_FACTOR,
         "到了总时限才停：{:?}",

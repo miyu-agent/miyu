@@ -230,6 +230,45 @@ fn an_error_that_cannot_help_is_not_retried() {
     assert!(statuses(&stage).is_empty());
 }
 
+/// 卡住的（施工 YC-3，压测 F3）：连上了却一直不出字，等满空闲超时。再来一次，又卡住就不再来：原来照可重试来 5 次，一轮挂
+/// 18 分钟才报错。
+#[test]
+fn two_stalls_in_a_row_end_the_turn() {
+    let mut stage = stage();
+    stage.model([
+        Line::fails(ErrorClass::Stalled, "空闲超时：180 秒没有收到新的内容"),
+        Line::fails(ErrorClass::Stalled, "空闲超时：180 秒没有收到新的内容"),
+        Line::says("好。"),
+    ]);
+    stage.say("hi");
+    assert_eq!(stage.requests().len(), 2, "卡住一次再来一次，再卡住不来了");
+    assert_eq!(statuses(&stage).len(), 1);
+    assert!(
+        story(&stage).ends_with(&["8 turn.ended:error kernel t3".to_string()]),
+        "{:?}",
+        story(&stage)
+    );
+}
+
+/// 卡住、别的错、再卡住：不是连着两次卡住，照常再来（施工 YC-3）；说完了一次也从头算。
+#[test]
+fn a_stall_after_another_error_is_still_retried() {
+    let mut stage = stage();
+    stage.model([
+        Line::fails(ErrorClass::Stalled, "空闲超时"),
+        Line::fails(ErrorClass::Retryable, "503"),
+        Line::fails(ErrorClass::Stalled, "空闲超时"),
+        Line::says("好。"),
+    ]);
+    stage.say("hi");
+    assert_eq!(stage.requests().len(), 4);
+    assert!(
+        story(&stage).ends_with(&["11 turn.ended:completed kernel t3".to_string()]),
+        "{:?}",
+        story(&stage)
+    );
+}
+
 #[test]
 fn an_interrupt_while_waiting_ends_the_turn() {
     let mut stage = stage();

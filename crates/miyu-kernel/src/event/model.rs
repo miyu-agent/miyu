@@ -250,6 +250,9 @@ text_enum!(
     ErrorClass {
         /// 可重试。
         Retryable = "retryable",
+        /// 卡住了（施工 YC-3，压测 F3）：连上了却一直不出新的内容，等满空闲超时；驱动扩展长时间没动静也是。照可重试再来，可同一步
+        /// 连着两次卡住就不再来（`session/retry.rs`）：原来照可重试再来 5 次，一轮要挂 18 分钟。
+        Stalled = "stalled",
         /// 限速。
         RateLimited = "rate_limited",
         /// 上下文超长。

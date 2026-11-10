@@ -206,7 +206,8 @@ async fn a_stall_times_out() {
     else {
         panic!("应该超时：{outcome:?}");
     };
-    assert_eq!(error.error.class, ErrorClass::Retryable);
+    // 卡住单独一类（施工 YC-3）：内核连着两次卡住就不再来。
+    assert_eq!(error.error.class, ErrorClass::Stalled);
     assert!(
         error.error.message.contains("空闲超时"),
         "{}",

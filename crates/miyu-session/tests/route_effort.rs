@@ -246,8 +246,8 @@ async fn the_idle_timeout_grows_with_the_level() {
             true => assert_eq!(first.result, CallResult::Ok, "放大了，等得到"),
             false => assert_eq!(
                 first.error.map(|error| error.class),
-                Some(ErrorClass::Retryable),
-                "照基数，超时"
+                Some(ErrorClass::Stalled),
+                "照基数，超时（卡住，施工 YC-3）"
             ),
         }
     }

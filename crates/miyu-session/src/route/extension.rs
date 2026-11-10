@@ -225,7 +225,12 @@ pub(super) async fn exchange(
                 return finish(answered, &name, &hash, &ready.learn.data);
             }
             () = quiet => {
-                return said(wire::classified(ErrorClass::Retryable, "the driver went quiet", None));
+                // 多久没动静的是卡住（施工 YC-3）；增量一直在来、过了总时限的不算，照旧可重试。
+                let class = match Instant::now() >= deadline {
+                    true => ErrorClass::Retryable,
+                    false => ErrorClass::Stalled,
+                };
+                return said(wire::classified(class, "the driver went quiet", None));
             }
         }
     }

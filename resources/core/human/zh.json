@@ -900,6 +900,7 @@
     "view/summary/messaged-sessions": "给 {count} 个会话留言",
     "view/error/with": "{head}：{message}",
     "view/error/class/retryable": "临时错误",
+    "view/error/class/stalled": "模型没有响应",
     "view/error/class/rate_limited": "请求受限",
     "view/error/class/context_too_long": "上下文太长",
     "view/error/class/auth": "认证失败",

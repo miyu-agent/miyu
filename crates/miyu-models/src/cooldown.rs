@@ -76,7 +76,7 @@ impl Rules {
     fn of(&self, class: &ErrorClass) -> Option<Rule> {
         match class {
             ErrorClass::RateLimited => Some(self.rate_limited),
-            ErrorClass::Retryable => Some(self.retryable),
+            ErrorClass::Retryable | ErrorClass::Stalled => Some(self.retryable),
             ErrorClass::Auth => Some(self.auth),
             ErrorClass::Quota => Some(self.quota),
             _ => None,

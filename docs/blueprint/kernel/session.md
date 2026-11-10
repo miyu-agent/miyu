@@ -321,7 +321,7 @@
 
 **出错再来**：
 
-1. 可以再来的分类：`retryable`、`rate_limited`、`bad_stream`、`empty_reply`，和 `cooling`（端口没发出去就说完的：候选不止一个、全在冷却，施工 8-9，`models.md`「怎么走」第五条第 6 条）。`context_too_long`、`auth`、`content_policy`、`other`、`no_model`（端口没发出去就说完的：没有能用的模型，施工 8-6，`models.md`「怎么走」第一条第 7 条）、不认识的，不再来。端口说换了端点（`failover` 是真，施工 8-9，`models.md`「怎么走」第五条第 3 条）的，不管分类都再来。
+1. 可以再来的分类：`retryable`、`stalled`（同一步连着两次卡住的不再来，施工 YC-3：`Turn.stalled` 记上一次再来是不是因为卡住，说完一次、出了别的错都清掉；换了端点的照来）、`rate_limited`、`bad_stream`、`empty_reply`，和 `cooling`（端口没发出去就说完的：候选不止一个、全在冷却，施工 8-9，`models.md`「怎么走」第五条第 6 条）。`context_too_long`、`auth`、`content_policy`、`other`、`no_model`（端口没发出去就说完的：没有能用的模型，施工 8-6，`models.md`「怎么走」第一条第 7 条）、不认识的，不再来。端口说换了端点（`failover` 是真，施工 8-9，`models.md`「怎么走」第五条第 3 条）的，不管分类都再来。
 2. 这一步已经连着再来的不到 5 次（`RETRY_LIMIT`）才再来：最多再来 5 次，第 6 次出错结束回合。
 3. 等多久：带着 `wait_ms` 的照它；没带的，换了端点的等 0 毫秒（当场再来，照样走下面的第 5、6 条：推 `status`、交 `Wake`，施工 8-9），别的第 1 到第 5 次各等 1、2、4、8、16 秒（`backoff`）。要等的超过 120000 毫秒（`WAIT_LIMIT_MS`），不再来，结束回合，`error`。换端点也算一次再来，数进第 2 条的 5 次。
 4. 收到了半截、写成了回复的，后面追加一条事实 `reply_cut`（`by` 是内核，`cause` 是回合的），每次都追加，不和以前的比。

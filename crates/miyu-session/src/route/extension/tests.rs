@@ -356,7 +356,8 @@ async fn a_quiet_driver_times_out_but_a_trickling_one_does_not() {
         run(Arc::clone(&fake), Duration::from_millis(150), request(None)).await;
     assert_eq!(
         error(&ended),
-        Some((ErrorClass::Retryable, "the driver went quiet".to_string()))
+        Some((ErrorClass::Stalled, "the driver went quiet".to_string())),
+        "多久没动静的是卡住（施工 YC-3）"
     );
     assert_eq!(deltas.len(), 2, "超时以前交的照交");
     assert_eq!(

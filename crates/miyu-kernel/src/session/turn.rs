@@ -42,6 +42,8 @@ pub(super) struct Turn {
     pub(super) limit: Option<u32>,
     /// 这一步连着出了几次可以重试的错：说完了一次就清零（`retry.rs`）。
     pub(super) retries: u32,
+    /// 上一次再来是因为卡住（施工 YC-3）：再卡一次就不再来。说完了一次、出了别的错都清掉。
+    pub(super) stalled: bool,
     /// 下一次请求是重试：不算步数。
     pub(super) retrying: bool,
     /// 连着几次回复写到了输出上限（施工 3-10，`truncated.rs`）：照常说完、没写到上限的一次就清零。
@@ -85,6 +87,7 @@ impl Turn {
     /// 主请求照常说完了一次：这一步连着出错的次数清零，被动压过的记号拿掉（写到输出上限的也算，施工 3-10）。
     pub(super) fn answered(&mut self) {
         self.retries = 0;
+        self.stalled = false;
         self.overflowed = false;
     }
 
@@ -171,6 +174,7 @@ impl Session {
             requests: 0,
             limit: self.policy.step_limit,
             retries: 0,
+            stalled: false,
             retrying: false,
             truncations: 0,
             interjected: None,

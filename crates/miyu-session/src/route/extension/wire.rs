@@ -280,10 +280,11 @@ pub(super) fn answer(result: Value) -> Result<Said, String> {
     })
 }
 
-/// 分类：七种照名字认，不认识的当 `unclassified`（内核里的字面是 `other`）。
+/// 分类：八种照名字认，不认识的当 `unclassified`（内核里的字面是 `other`）。
 fn class(text: &str) -> ErrorClass {
     match text {
         "retryable" => ErrorClass::Retryable,
+        "stalled" => ErrorClass::Stalled,
         "rate_limited" => ErrorClass::RateLimited,
         "context_too_long" => ErrorClass::ContextTooLong,
         "auth" => ErrorClass::Auth,

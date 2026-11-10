@@ -86,7 +86,11 @@ fn falls_back(unanswered: &Unanswered) -> bool {
         Unanswered::Cooling { .. } | Unanswered::NoModel(_) => true,
         Unanswered::Failed(error) => matches!(
             error.class,
-            ErrorClass::RateLimited | ErrorClass::Retryable | ErrorClass::Auth | ErrorClass::Quota
+            ErrorClass::RateLimited
+                | ErrorClass::Retryable
+                | ErrorClass::Stalled
+                | ErrorClass::Auth
+                | ErrorClass::Quota
         ),
         Unanswered::UnknownModel(_) => false,
     }
