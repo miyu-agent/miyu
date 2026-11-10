@@ -189,6 +189,10 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "会话已损坏，无法载入。",
             "Session is corrupted and cannot be loaded.",
         ),
+        "session_unavailable" => (
+            "会话暂时无法读取，请稍后重试。",
+            "Session can't be read right now. Try again later.",
+        ),
         "empty_message" => ("消息为空。", "Empty message."),
         "dir_too_wide" => ("目录范围过大。", "Directory too broad."),
         "attachment_unreadable" => ("无法读取文件。", "Cannot read file."),

@@ -247,13 +247,14 @@ fn paged(slice: &Slice, view: Option<(Arc<Texts>, Blobs)>) -> (Value, Option<Pro
     (reply, projector)
 }
 
-/// 读不了日志：没有这个会话的 `session_not_found`，别的记一行日志、回 `session_broken`。
+/// 读不了日志：没有这个会话的 `session_not_found`，别的记一行日志、照 [`Refusal::of_log`] 回（施工 YC-2：读写出错的
+/// `session_unavailable`，读不懂的 `session_broken`）。
 pub(crate) fn unread(session: &SessionId, error: OpenError) -> Refusal {
     match error {
         OpenError::Missing(_) => Refusal::NOT_FOUND,
         error => {
             tracing::warn!(target: "miyu::endpoint", session = session.as_str(), error = %error, "log not read");
-            Refusal::BROKEN
+            Refusal::of_log(&error)
         }
     }
 }

@@ -149,6 +149,37 @@ async fn the_two_come_with_the_first_base_and_go_with_the_last() {
     assert!(!shelved(&requests[2].1), "删光了，下一个回合没了");
 }
 
+/// 库的目录这一刻读不了（施工 YC-2，压测里打开文件数用光的时候）：工具面、system 照快照里的不动，不当一个库都没有。原来两件
+/// 工具跟着没了、缓存全断，读得了又换回来再断一次。只在 Unix 上（照权限挡读）。
+#[cfg(unix)]
+#[tokio::test]
+async fn bases_that_cannot_be_read_right_now_leave_the_face_as_it_was() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let home = Home::new();
+    put(&home, "notes", "cat.md", "# 猫\n\n团子是橘猫。\n");
+    let script = Script::new([Play::Says("好。"), Play::Says("嗯。")]);
+    let handle = session(&home, &script, Lines::default()).await;
+    chat(&home, &handle, 1, "在吗").await;
+    let dir = home.root.knowledge();
+    let mode = |mode| std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(mode));
+    mode(0o000).expect("改得了权限");
+    let log = chat(&home, &handle, 2, "还在吗").await;
+    mode(0o700).expect("改得回来");
+    let requests = script.requests();
+    assert!(shelved(&requests[0].1), "有库的给");
+    assert!(shelved(&requests[1].1), "读不了的照快照里的，两件还在");
+    assert_eq!(
+        requests[0].1.tools, requests[1].1.tools,
+        "工具面一个字节不变"
+    );
+    assert_eq!(
+        requests[0].1.system, requests[1].1.system,
+        "system 一个字节不变"
+    );
+    assert_eq!(swaps(&log), 0, "没换快照");
+}
+
 #[tokio::test]
 async fn she_finds_and_reads_only_what_her_persona_lists() {
     let home = Home::new();

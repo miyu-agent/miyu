@@ -16,6 +16,7 @@ mod prefs;
 mod project;
 mod schedule;
 mod shell;
+mod unread;
 mod widgets;
 
 /// 一次拒绝：JSON-RPC 的错误码，和原因码。
@@ -165,7 +166,7 @@ impl Refusal {
         reason: "session_stopped",
         data: None,
     };
-    /// 会话载入不了：日志或者策略快照坏了、读不了。
+    /// 会话载入不了：日志或者策略快照坏了、读不懂（这一刻读写出错的是 `session_unavailable`，施工 YC-2）。
     pub(crate) const BROKEN: Refusal = Refusal {
         code: REFUSED,
         reason: "session_broken",

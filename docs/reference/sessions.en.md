@@ -45,7 +45,8 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 | `data.reason` | When |
 |---|---|
 | `session_not_found` | No such session; deleted ones too |
-| `session_broken` | The session can't be loaded: its log is broken or unreadable |
+| `session_broken` | The session can't be loaded: its log is broken or doesn't parse |
+| `session_unavailable` | The session can't be read right now: an I/O error while reading its log. The log is intact; try again later |
 | `session_stopped` | The session stopped (couldn't write, a bug); sending again reloads it |
 | `session_sealed` | A forked session ran its turns and was sealed; commands that change the conversation are refused |
 | `restoring` | A command arrived while an undo is still finishing (normally unreachable) |

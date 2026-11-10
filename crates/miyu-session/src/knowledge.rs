@@ -153,9 +153,22 @@ impl Shelves {
     }
 
     /// 她这一刻查得到的库，带着名字、说明（施工 K-1 补），先后同 [`Shelves::bases`]。工具面上给不给两件工具照它是不是空的
-    /// （施工 K-1 下）。读不了的当一个都没有、记一行：下一个回合再判。
+    /// （施工 K-1 下）。读不了的当一个都没有、记一行：造会话时用，回合开始换快照前再判（[`Shelves::read_listed`]）。
     pub(crate) fn listed(&self) -> Vec<Listed> {
-        let listed = self.bases().and_then(|bases| {
+        self.read_listed().unwrap_or_else(|error| {
+            tracing::warn!(target: TARGET, error = error.as_str(), "knowledge unreadable");
+            Vec::new()
+        })
+    }
+
+    /// 同 [`Shelves::listed`]，读不了的交回原话（施工 YC-2）：回合开始换快照照它，读不了的照快照里的不动。原来当一个都没有，
+    /// 工具面上两件知识库工具跟着没了、缓存全断，下一轮读得了又换回来。
+    ///
+    /// # Errors
+    ///
+    /// 库的目录、人格的收窄、哪个库的名字读不了。
+    pub(crate) fn read_listed(&self) -> Result<Vec<Listed>, String> {
+        self.bases().and_then(|bases| {
             bases
                 .into_iter()
                 .map(|id| {
@@ -170,10 +183,6 @@ impl Shelves {
                     })
                 })
                 .collect::<Result<Vec<Listed>, String>>()
-        });
-        listed.unwrap_or_else(|error| {
-            tracing::warn!(target: TARGET, error = error.as_str(), "knowledge unreadable");
-            Vec::new()
         })
     }
 }

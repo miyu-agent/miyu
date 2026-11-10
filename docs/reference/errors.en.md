@@ -36,7 +36,8 @@ Chinese version: [errors.md](errors.md).
 | `reason` | When | `data` |
 |---|---|---|
 | `session_not_found` | No such session; deleted ones too | |
-| `session_broken` | The session can't be loaded: its log is broken or unreadable | |
+| `session_broken` | The session can't be loaded: its log is broken or doesn't parse | |
+| `session_unavailable` | The session can't be read right now: an I/O error while reading its log (permissions, too many open files, a disk error). The log is intact; try again later | |
 | `export_exists` | The export file is already there; not overwritten | |
 | `export_in_data_root` | An export won't be written inside the data root | |
 | `export_unwritable` | The export folder isn't there or can't be written | |

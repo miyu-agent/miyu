@@ -281,6 +281,8 @@ mod session_export_presets;
 mod session_import;
 mod session_prompts;
 mod session_tools;
+#[cfg(unix)]
+mod session_unavailable;
 mod session_viewing;
 mod session_waiting;
 mod sessions;

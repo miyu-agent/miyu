@@ -251,7 +251,7 @@ async fn view(
         .map_err(|_| Refusal::INTERNAL)?
         .map_err(|error| {
             tracing::warn!(target: "miyu::endpoint", session = session.as_str(), error = %error, "view not read");
-            Refusal::BROKEN
+            Refusal::of_log(&error)
         })?;
     let current = subscription.current().cloned();
     let language = shaken.now(core).language;
@@ -385,6 +385,7 @@ async fn subscribe_after(
     let lines = crate::subscriptions::event_lines(session.clone());
     let backlog = backlog.lines(lines).await.map_err(|error| {
         tracing::warn!(target: "miyu::endpoint", session = session.as_str(), error = %error, "replay not read");
+        // 原话是一句字，分不出读不懂还是读写出错（施工 YC-2）：载入着的会话日志也可能被弄坏，照旧说损坏。
         Refusal::BROKEN
     })?;
     let current = subscription.current().cloned();

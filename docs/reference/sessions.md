@@ -45,7 +45,8 @@
 | `data.reason` | 什么时候 |
 |---|---|
 | `session_not_found` | 没有这个会话，删了的也是 |
-| `session_broken` | 会话载入不了：日志坏了、读不了 |
+| `session_broken` | 会话载入不了：日志坏了、读不懂 |
+| `session_unavailable` | 会话这一刻读不了：读日志时读写出错，日志没坏，过一会儿再试（施工 YC-2） |
 | `session_stopped` | 会话停了（写不进去、出了 bug）；再发一次会重新载入 |
 | `session_sealed` | 会话封存了（分叉时写了 `seal_after`、跑满了），改对话的命令不收 |
 | `restoring` | 撤销还没做完时来的命令（照常碰不到） |

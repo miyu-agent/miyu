@@ -223,7 +223,7 @@ fn refused(error: OpenError) -> Refusal {
         OpenError::Missing(_) => Refusal::NOT_FOUND,
         error => {
             tracing::warn!(target: "miyu::endpoint", error = %error, "venue records not read");
-            Refusal::BROKEN
+            Refusal::of_log(&error)
         }
     }
 }

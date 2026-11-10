@@ -1158,7 +1158,7 @@
 5. `last` 是这一页最后一条：最新一页的 `last` 就是读的那一刻落了盘的最后一条，头接着 `subscribe {"after": last}`，只接新的。压缩、撤销照原样在页里，头照有效历史自己画：先拿到的总是更新的页，撤销总比被撤的那几轮先到。
 6. 只读地读会话目录里的日志，不为翻历史载入会话；读的时候会话照常跑，正在写的那半行不算。只读要的那一截（施工 V-41 上，`view.md`「怎么走」第 2 条）：先数一遍 `before` 以前的行、不解，记下每一轮从哪一行起、派出了结任务的那几行；再只解最后几轮，切点前要的触发消息、派任务那次调用所在的回复照位置读回那一行。读、解了的行照旧自检；数过去的行只查段末半行、段名接不上，别的坏了不报（同补发定位跳过的那一截，`store.md` 第 7 条 `read_range`）：日志被外人改坏、坏的地方不在这一页要读的那几行里的，原来回 `session_broken`，现在照没坏的交这一页；下次打开这个会话照样整份自检、报出来。视图流订阅时的最新一页同样（第 9 条）。
 7. 写了 `view: true` 的（施工 9-8 中）：`events` 换成 `entries`，这一页的条目，照显示的先后、读的那一刻的状态，写法见 `view.md`「条目」；字照这个连接的语言。别的格（`first`、`last`、`more`、`capped`、`jobs`）照旧，切法同第 1 到 3 条。切点前派出去、在这一页报完的任务，条目里照样有标题和命令：核心先照切点前的日志学一遍派出去的任务。投影要的字读不成的：`internal_error`，记一行 `WARN view words not read`。
-8. 会话编号不合写法、`before` 是 0 或不是正整数、`turns` 不在 1 到 50、写了别的格：`bad_params`。没有这个会话（删了的也是）：`session_not_found`。日志读不了：`session_broken`，记一行 `WARN log not read`。
+8. 会话编号不合写法、`before` 是 0 或不是正整数、`turns` 不在 1 到 50、写了别的格：`bad_params`。没有这个会话（删了的也是）：`session_not_found`。日志读不懂：`session_broken`；读的时候读写出错（权限、打开文件数用光）：`session_unavailable`（施工 YC-2）；都记一行 `WARN log not read`。
 
 
 
@@ -1176,7 +1176,7 @@
 4. `text` 同 `session.list` 的 `preview` 的取法（`miyu_store::index::said`，一处代码）：斜杠命令模板展开的照人敲的那一行（`command.text`），别的照头一块文字；第一个不是空白的那一行，去掉前后空白，只是最多 100 个字（`preview` 是 50 个）。
 5. 分叉出来的会话（`session.fork`、fork 子代理）只列它自己日志里的：底子里那一段的话在父会话的日志里，`view.page` 在这个会话上也翻不到；父会话照列它自己的。
 6. 只读地读会话目录里的日志，不载入会话；读的时候会话照常跑，正在写的那半行不算，一整行都还没写完的是空的（同 `view.page`）。读法同判官（`venues.md`「判官看的群聊记录」施工 V-39 上、上补）：一遍读下来，只全解 `message.user` 和有效历史照种类认的那几种，别的种类只认外壳；事件照先后交给真的有效历史，谁都碰不到的那一截收下问话就放掉（`sweep.rs`）；撤销、撤回比放掉的还早的，照骨架算的下界再读一遍；骨架认不得的整份读到头一遍读到的那一条。不落缓存、不常驻。不要的种类正文合 JSON、不合那一种写法的不报坏了（同判官，2026-11-03 项目主人拍板接受）。
-7. 出错同 `view.page`：会话编号不合写法、写了别的格：`bad_params`。没有这个会话（删了的也是）：`session_not_found`。日志读不了：`session_broken`，记一行 `WARN log not read`。扩展要 `events.read`（同 `view.page`），照它看得到的会话。
+7. 出错同 `view.page`：会话编号不合写法、写了别的格：`bad_params`。没有这个会话（删了的也是）：`session_not_found`。日志读不懂：`session_broken`；读的时候读写出错（权限、打开文件数用光）：`session_unavailable`（施工 YC-2）；都记一行 `WARN log not read`。扩展要 `events.read`（同 `view.page`），照它看得到的会话。
 
 **`session.export`**（施工 SE-1 上，设计 `58-会话导出和导入.md` 第一节；Markdown 施工 SE-1 中下上、中下中、中下下）
 
@@ -1252,7 +1252,7 @@ Markdown 的回应 `{"path" | "text", "bytes", "tokens", "upto", "redacted", "ch
 1. 只读地读会话的日志（和 `view.page` 一样，不为它载入会话），找这次调用的工具结果；改前、改后先用效果里写着的原文（`before_text`、`after_text`，施工 V-18：它的哈希要和 `before`、`after` 对得上，对不上的当没写），没写的从存处的 blob 取，不读磁盘：之后又被改过的照样是那一次的。视图条目 `diff` 的真数（`view.md`）照同一个办法取两边。改前是 `null`（新建的文件）的当空的算：`diff` 只有 `+` 行，头一行 `@@ -0,0 +1,N @@`。
 2. 读文件、派任务这些效果不算；这次调用没改文件的，`files` 是空的。同一次调用的结果不会变，头照 `call` 记着、问一次就够。
 3. 压缩的回应 `{"summary"}`：替代到这个序号的检查点的摘要原文（`context.compacted` 的 `summary`；清空上下文的是空的）。
-4. 会话编号、调用编号写错、`call` 和 `compaction` 都写或都不写、写了别的格：`bad_params`。没有这个会话：`session_not_found`。日志里没有这次调用的结果（编号对不上、还没回）、没有替代到这个序号的压缩：`unknown_call`。日志读不了：`session_broken`，记一行 `WARN log not read`。
+4. 会话编号、调用编号写错、`call` 和 `compaction` 都写或都不写、写了别的格：`bad_params`。没有这个会话：`session_not_found`。日志里没有这次调用的结果（编号对不上、还没回）、没有替代到这个序号的压缩：`unknown_call`。日志读不懂：`session_broken`；读的时候读写出错（权限、打开文件数用光）：`session_unavailable`（施工 YC-2）；都记一行 `WARN log not read`。
 5. 字段只加不改。
 
 **`subscribe`、`unsubscribe`**

@@ -243,11 +243,12 @@ fn look(
         && !matches!(preset, Preset::Unknown);
     let catalog = &now.catalog;
     // 知识库的两件照这一刻查不查得到、照现在的目录和预设该有哪几件（施工 K-1 下）；和快照里的不一样才算改了。预设找不回来的
-    // 照旧。
-    let listed = shelves
-        .as_ref()
-        .map(|shelves| shelves.listed())
-        .unwrap_or_default();
+    // 照旧。读不了的照快照里的不动（施工 YC-2）：不当一个都没有，免得工具面一来一回、缓存断两次。
+    let listed = match shelves.as_ref().map(|shelves| shelves.read_listed()) {
+        Some(Ok(listed)) => listed,
+        Some(Err(error)) => return Seen::Kept(format!("knowledge unreadable: {error}")),
+        None => Vec::new(),
+    };
     let reach = shelves
         .as_ref()
         .map_or(Reach::Save, |shelves| shelves.reach(&listed));

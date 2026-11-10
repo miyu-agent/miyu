@@ -82,7 +82,8 @@ impl Open {
             Err(LoadError::Log(OpenError::Missing(_))) => return Err(Refusal::NOT_FOUND),
             Err(error) => {
                 tracing::warn!(target: "miyu::endpoint", session = id.as_str(), error = %error, "load failed");
-                return Err(Refusal::BROKEN);
+                // 读写出错的（打开文件数用光这类）不说成损坏（施工 YC-2）。
+                return Err(Refusal::of_load(&error));
             }
         };
         // 表里记的照载入挑定的：载入交回来，不拿着表的锁去问 actor（它头一批要做的事可能也要表的锁）。

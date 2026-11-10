@@ -71,7 +71,7 @@ pub(crate) async fn prompts(core: &Core, params: PromptsParams) -> Result<Value,
         Err(OpenError::Missing(_)) => Err(Refusal::NOT_FOUND),
         Err(error) => {
             tracing::warn!(target: "miyu::endpoint", session = session.as_str(), error = %error, "log not read");
-            Err(Refusal::BROKEN)
+            Err(Refusal::of_log(&error))
         }
     }
 }

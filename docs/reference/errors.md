@@ -36,7 +36,8 @@
 | `reason` | 什么时候 | `data` |
 |---|---|---|
 | `session_not_found` | 没有这个会话，删了的也是 | |
-| `session_broken` | 会话载入不了：日志坏了、读不了 | |
+| `session_broken` | 会话载入不了：日志坏了、读不懂 | |
+| `session_unavailable` | 会话这一刻读不了：读日志时读写出错（权限、打开文件数用光、磁盘出错），日志没坏，过一会儿再试 | |
 | `export_exists` | 导出写的那个文件已经有了，不覆盖 | |
 | `export_in_data_root` | 导出不往数据目录里写 | |
 | `export_unwritable` | 导出的目录不在、写不进 | |
