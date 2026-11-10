@@ -136,6 +136,7 @@ One table per setting; the key is `<prefix>.<name>` (see `prefix` above; without
 |---|---|
 | `type` | Required: `bool`, `int` (`min`, `max`), `number` (a decimal, `min` and `max` required), `option` (`choices`, at least two), `text` (`max`, default 200 characters; `lines`), `name`, `model` (pick a model: `<provider>/<model>` or a pool `@<pool>`), `persona` (pick a persona by id), `knowledge` (pick a knowledge base by id), `preset` (pick a preset by id), `url`, `secret` (only as a `{ secret = … }` reference), `list` (`element` is the element type; `record` makes each entry a set of fields, see below) |
 | `choices` | The options of an `option`: an array of texts (`["auto", "opaque"]`), or an array of tables, each with a required `value` and an optional `name` and `description` written like the setting's own (the settings screen shows `name` in the dropdown and `description` dimmed below it). Don't mix the two; the config stores `value` |
+| `choices_from` | Only on a `text` (not one with `lines`, not a list element, not a field of a record): the name of a method your program registers; the settings screen asks it for the choices and draws a dropdown, see "Choices from your program" below |
 | `lines` | `lines = true` on a `text`: a box of several lines (for prompt templates and the like), at most 2000 characters without `max` |
 | `min`, `max` | The range of an `int`, the whole integer range when left out; required for `number` and integers only (like `0` to `2`), use `step` for finer values |
 | `step` | How much one step is for `int` and `number` (for the settings screen): positive, a whole number for `int` |
@@ -195,6 +196,25 @@ shown_when = { engine = ["mimo", "openai"] }
 type = "text"
 name = { en = "Voice" }
 ```
+
+### Choices from your program
+
+When the choices are only known at run time (the microphones on this machine, the voices an engine has right now), write a `text` and add `choices_from = "<method>"`. The method is one your program registers with `package.methods` once connected (see [Writing an extension](extensions.en.md)); its name is written like a registered one: starts with a lowercase letter, only lowercase letters, digits, `_`, `.`, `-`, at most 64 characters. A wrong name, or `choices_from` in one of the places listed above, keeps the package from installing (`bad_choices_from`); other types don't know the key (`unknown_key`).
+
+```toml
+[settings.mic]
+type = "text"
+name = { zh = "麦克风", en = "Microphone" }
+choices_from = "devices.list"
+```
+
+When the settings screen draws the setting it calls your method without params, and you answer:
+
+```json
+{"choices": [{"value": "hw:1,0", "name": "USB microphone", "description": "48 kHz"}]}
+```
+
+`value` is required and is the text stored in the config; `name` is shown to people, `value` is shown without it; `description` is optional and drawn dimmed below. Pick the language of names and descriptions yourself before answering. When the call fails (your program isn't connected, the method isn't registered, it times out) or the answer is empty, the settings screen falls back to a text box; a stored value that isn't in your list (the device was unplugged) is still shown. The core never checks values against your list: the setting stays a plain `text`, you get the text as written, and handling a value that no longer works is up to you.
 
 ## `[features.<id>]`
 

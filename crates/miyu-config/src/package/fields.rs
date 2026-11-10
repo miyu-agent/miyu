@@ -62,7 +62,7 @@ pub(super) const SETTING_NUMBER: &[&str] = &["min", "max", "step", "slider"];
 pub(super) const SETTING_OPTION: &[&str] = &["choices"];
 
 /// `type = "text"` 多的几格。
-pub(super) const SETTING_TEXT: &[&str] = &["max", "lines"];
+pub(super) const SETTING_TEXT: &[&str] = &["max", "lines", "choices_from"];
 
 /// `type = "list"` 多的几格。
 pub(super) const SETTING_LIST: &[&str] = &["element"];

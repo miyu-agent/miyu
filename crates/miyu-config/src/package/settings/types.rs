@@ -200,6 +200,36 @@ fn choices(
     Ok(choices)
 }
 
+/// `choices_from`（施工 SG-2，`docs/blueprint/packages.md`「配置项」的表）：选项由这个包自己登记的方法在运行时给，交回方法名；
+/// 没写的没有。只有普通的文字项能写：几行字、列表的元素（`kind` 是列表）、一组字段的字段（`field`）不行；名字写法同
+/// `package.methods` 登记的。别的类型不认这一格，读类型时就照不认识的键拒了，到不了这里。核心不查这个方法登记了没有
+/// （运行时才登记），也不拿它的回应查值。
+pub(super) fn choices_from(
+    reader: &Reader<'_>,
+    at: &str,
+    fields: &dyn TableLike,
+    kind: &SettingKind,
+    field: bool,
+) -> Result<Option<String>, Problem> {
+    let Some(item) = fields.get("choices_from") else {
+        return Ok(None);
+    };
+    let plain = !field && matches!(kind, SettingKind::Text { .. });
+    match item.as_str() {
+        Some(name) if plain && super::super::export::method_name(name) => {
+            Ok(Some(name.to_string()))
+        }
+        _ => Err(reader.problem(
+            Some(item),
+            Code::BadChoicesFrom,
+            &format!("{at}.choices_from"),
+            format!(
+                "{at}.choices_from must name a method this package registers, on a plain text setting"
+            ),
+        )),
+    }
+}
+
 /// 滑块（施工 PC-1）：`int`、`number` 写了 `slider = true` 的，交回一格多少；要两头都写了。`step` 写了的要是正数，`int` 的是整数
 /// （不画滑块的也查，头照它画数字框的步长）；不写的 `int` 是 1、`number` 是范围的百分之一，`number` 两头一样又不写 `step` 的照
 /// 范围写错拒掉。

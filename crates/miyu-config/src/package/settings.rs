@@ -48,6 +48,8 @@ pub struct Setting {
     pub hidden: bool,
     /// 画成滑块（施工 PC-1，`int`、`number` 写了 `slider = true`）：一格多少；不是滑块的没有。
     pub slider: Option<Number>,
+    /// 选项由哪个方法在运行时给（施工 SG-2，只有 `text` 能写）：这个包自己登记的方法名；没写的没有。
+    pub choices_from: Option<String>,
 }
 
 impl Setting {
@@ -275,6 +277,7 @@ pub(super) fn one(
 ) -> Result<Setting, Problem> {
     let kind = kind(reader, at, fields, node, field)?;
     let slider = slider(reader, at, fields, &kind)?;
+    let choices_from = choices_from(reader, at, fields, &kind, field)?;
     let default = match fields.get("default") {
         None => None,
         Some(item) => Some(default(reader, at, &kind, item)?),
@@ -329,6 +332,7 @@ pub(super) fn one(
         description,
         hidden,
         slider,
+        choices_from,
     })
 }
 
@@ -489,7 +493,7 @@ mod types;
 
 pub use build::items;
 pub use section::{Section, ShownWhen};
-use types::{scalar, slider};
+use types::{choices_from, scalar, slider};
 
 #[cfg(test)]
 mod tests;

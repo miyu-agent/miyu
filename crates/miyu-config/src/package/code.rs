@@ -58,6 +58,9 @@ pub enum Code {
     /// 组的 `shown_when` 写错了（施工 SG-1）：不是一项对一个值或者几个值；指的不是这个包自己的一项、不是选项、在这一组里面；
     /// 值不是那一项的选项。
     BadShownWhen,
+    /// 项的 `choices_from` 写错了（施工 SG-2）：不是普通的 `text`（几行字、列表的元素、一组字段的字段）；方法名不是字、
+    /// 写法不对。
+    BadChoicesFrom,
     /// 一组字段的 `title` 不是它的 `text`、`name`、`option` 字段（施工 PC-2）。
     BadTitle,
     /// `min`、`max` 不是整数、最小大于最大。
@@ -171,6 +174,7 @@ impl Code {
             Code::BadDefault => "bad_default",
             Code::BadChoices => "bad_choices",
             Code::BadShownWhen => "bad_shown_when",
+            Code::BadChoicesFrom => "bad_choices_from",
             Code::BadTitle => "bad_title",
             Code::BadRange => "bad_range",
             Code::BadLayers => "bad_layers",
@@ -215,7 +219,7 @@ impl Code {
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 65] = [
+    pub const ALL: [Code; 66] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -243,6 +247,7 @@ impl Code {
         Code::BadDefault,
         Code::BadChoices,
         Code::BadShownWhen,
+        Code::BadChoicesFrom,
         Code::BadTitle,
         Code::BadRange,
         Code::BadLayers,

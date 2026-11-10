@@ -75,6 +75,8 @@ pub(crate) fn schema(core: &Core, peer: Peer, params: SchemaParams) -> Result<Va
     let heads = super::unused::heads(&core.system_packages());
     // 包的分节（施工 SG-1）：组里的项带 `section`，这个包那一组带 `sections`，没分组的包都不写。
     let sections = super::sections::Sections::new(core, peer.language);
+    // 选项由包在运行时给的项（施工 SG-2）：带 `choices_from`，没写的不带。
+    let choices = super::choices::Choices::new(core);
     for item in items {
         let said = words
             .item(item.key)
@@ -88,6 +90,9 @@ pub(crate) fn schema(core: &Core, peer: Peer, params: SchemaParams) -> Result<Va
         }
         if let Some(section) = sections.item(item.key) {
             one["section"] = json!(section);
+        }
+        if let Some(from) = choices.item(item.key) {
+            one["choices_from"] = from.clone();
         }
         listed.push(one);
         let page = item.ui.page;

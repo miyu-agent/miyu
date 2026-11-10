@@ -136,6 +136,7 @@ place = "status"
 |---|---|
 | `type` | 必写：`bool`、`int`（`min`、`max`）、`number`（小数，`min`、`max` 必写）、`option`（`choices`，至少两个）、`text`（`max`，默认 200 个字；`lines`）、`name`、`model`（选模型：`<供应商>/<模型>` 或池 `@<池>`）、`persona`（选人格，写人格的编号）、`knowledge`（选知识库，写库的编号）、`preset`（选预设，写预设的编号）、`url`、`secret`（只能写成 `{ secret = … }` 那种引用）、`list`（`element` 是元素的类型，`record` 是每一项一组字段，见下面） |
 | `choices` | `option` 的几个选项：字的数组（`["auto", "opaque"]`），或者表的数组，每张 `value` 必写，`name`、`description` 可以不写，写法同项的 `name`、`description`（设置页照 `name` 画下拉，`description` 暗色写在下面）。两种不能混着写；存进配置的是 `value` |
+| `choices_from` | `text` 才能写（不是 `lines` 的那种，也不能是列表的元素、一组字段里的字段）：你的程序登记的一个方法的名字，设置页问它要选项、画成下拉，见下面「选项由你的程序给」 |
 | `lines` | `text` 写 `lines = true`：几行的框（放提示词模板这类），不写 `max` 时最多 2000 个字 |
 | `min`、`max` | `int` 的范围，不写是整数的全部范围；`number` 必写，只收整数（`0` 到 `2` 这样），精度用 `step` |
 | `step` | `int`、`number` 一格多少（设置页用）：正数，`int` 的是整数 |
@@ -195,6 +196,25 @@ shown_when = { engine = ["mimo", "openai"] }
 type = "text"
 name = { zh = "音色" }
 ```
+
+### 选项由你的程序给
+
+选项要到运行时才知道的（这台机器上的麦克风、引擎现有的音色），写成 `text`，多写一格 `choices_from = "<方法名>"`。方法是你的程序连上以后用 `package.methods` 登记的（见 [写扩展](extensions.md)），名字写法同登记的：小写字母开头，只有小写字母、数字、`_`、`.`、`-`，最多 64 个；写错的、写在上面说的不能写的地方的装不上（`bad_choices_from`），别的类型不认这一格（`unknown_key`）。
+
+```toml
+[settings.mic]
+type = "text"
+name = { zh = "麦克风", en = "Microphone" }
+choices_from = "devices.list"
+```
+
+设置页画这一项时不带参数调你这个方法，你回：
+
+```json
+{"choices": [{"value": "hw:1,0", "name": "USB 麦克风", "description": "48 kHz"}]}
+```
+
+`value` 必写，是存进配置的字；`name` 是给人看的名字，不写的照 `value` 画；`description` 可以不写，暗色写在下面。名字、说明你自己照人的语言挑好再回。调不到（程序没连着、没登记这个方法、超时）或者回的是空的，设置页退回文字框让人手填；存着的值不在你回的列表里的（设备拔了）照样显示。核心不拿你的列表查值：这一项照旧是普通的 `text`，交给你的也是原样的字，用不了的值你自己处理。
 
 ## `[features.<编号>]`
 

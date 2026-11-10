@@ -160,6 +160,7 @@ program = "miyu-embed"
 |---|---|
 | `type` | 必写：`bool`、`int`（可以带 `min`、`max`，不写是整数的全部范围）、`number`（小数，施工 PC-1：`min`、`max` 必写、只收整数，进配置清单是 `float`）、`option`（带 `choices`，至少两个不重复的）、`text`（可以带 `max`，最多几个字符，不写是 200；`lines = true` 是几行字，进配置清单是 `lines`、控件 `textarea`，不写 `max` 是 2000，施工 PC-1）、`name`、`model`（模型 `<供应商>/<模型>` 或池 `@<池>`，进配置清单是「引用」，施工 PC-3）、`persona`、`knowledge`、`preset`（人格、知识库、预设的编号，写法同名字，没有的 `check` 报警告，施工 PC-3、PC-3 补）、`url`、`secret`（`{ secret = … }` 那种引用）、`list`（带 `element`，施工 9-1 补） |
 | `choices` | 字的数组；或者表的数组（施工 PC-1，设计 53 第一节）：`value` 必写（字），`name`、`description` 照项的写法、可以不写，别的格不收；两种不能混着写，`bad_choices`。存的是 `value`；名字、说明并进字表（`ItemWords` 的 `options`、`option_descriptions`），`config.schema` 的 `options` 每一个照连接的语言带 `name`（没写的是值）、`description`（没写的不带） |
+| `choices_from` | 只有 `text` 写（施工 SG-2，2026-11-10 项目主人验收语音助手设置页时提的）：这个包自己用 `package.methods` 登记的一个方法的名字，写法同登记的（小写字母开头，小写字母、数字、`_`、`.`、`-`，1 到 64 个，`export::method_name`），读成 `Setting::choices_from`。几行字（`lines = true`）、列表的元素、一组字段的字段不能写，名字写法不对、不是字的，都报 `bad_choices_from`；别的类型不认这一格（`unknown_key`）。核心不查这个方法登记了没有（运行时才登记），值照旧当普通文字存、读、查，不照列表查；只原样交 `config.schema`（`config.md`「协议」），选项由头调 `package.call` 向包要 |
 | `step`、`slider` | `int`、`number` 才有（施工 PC-1）：`step` 正数、`int` 的是整数，核心不拿它查值；`slider = true` 要写了 `min`、`max`，控件 `slider`（`miyu_config::Control::Slider`）带一格多少，`step` 不写的 `int` 是 1、`number` 是范围的百分之一（两头先转成小数再减，写到 `i64` 两端也不溢出；`number` 两头一样又不写 `step` 的一格会是 0，照 `BadRange` 拒掉，审计 R3E-1）；`config.schema` 带 `step`。不画滑块的不带 |
 | `element` | 只有列表写，必写：元素的类型，上面除 `list` 以外的一种，或者 `record`（施工 PC-2：每一项一组字段，下一行）；元素带的 `min`、`max`、`choices`、`max` 写在同一张表里，管每一个元素 |
 | `fields`、`title` | `element = "record"` 才有（施工 PC-2，设计 53 第二节）：`fields` 下每个字段一张 `[settings.<名字>.fields.<字段>]`，照一项的写法读（`one()` 带「是字段」的标记），不收 `layers`、`applies`，不能是 `list`；字段名同项的名字的写法、不能叫 `fields`，至少一个（`missing_key`）。`title` 要是其中一个 `text`、`name`、`option` 字段，不然 `bad_title`。整条不能写默认值（`bad_default`）。拼成配置项是 `Kind::List(Kind::Record(…))`，字段各是一个 `Item`（键是字段名，挂在同一组）；字段的名字、说明、选项名并进字表的 `ItemWords.fields`；`config.schema` 带 `element: "record"`、`title`、`fields`（每个字段格同普通项） |
@@ -203,7 +204,7 @@ program = "miyu-embed"
 | `kind`、`protocol`、`name`、`state` | 读成了的 | `ui`、`process`、`builtin`、`worker`、`mascot`、`bundle`（施工 X-2），照带的表推出来（施工 F-8 上补）；`[最低, 最高]`；照连接的语言挑的名字（挑法同 `persona.list`：这种语言、`en`、`zh`、`ja`）；放状态的目录的真路径 |
 | `version`、`summary` | 写了的 | 原样；照语言挑 |
 | `features` | `builtin`、`process` 包（施工 F-1） | `[{"id", "name", "summary"}]`：照包算的那一个也列；名字、说明照语言挑，没说明的没有 `summary`；不列工具 |
-| `connection` | 写了的（施工 F-1） | `{"platform"}`；接几个平台的 `platform` 是第一个，另带 `platforms`（全部，照写的先后，施工 IM-3） |
+| `connection` | 写了的（施工 F-1） | `{"platform"}`；接几个平台的 `platform` 是第一个，另带 `platforms`（全部，照写的先后，施工 IM-3）；`platform` 是 `voice` 的另带 `owner_builtin: true`（施工 SG-2：语音助手的主人天然是 `voice:owner`，不用写进对应表，`venues.md`；头照它不画填号那一块，平台名取 `venues::VOICE`），别的平台不带这一格 |
 | `depends`、`recommends` | 写了、不空的（施工 F-1） | `{"packages": [...]}`，照写的先后（施工 F-11；以前是 `{"workers": [...]}`） |
 | `missing` | 依赖的包缺了的（施工 F-11） | 缺的那几个，照写的先后；这时 `status` 是 `depends_missing` |
 | `export` | 写了 `[export]` 的（施工 F-11） | `{"methods": [...], "provides"?: [...], "plugs"?: [...]}`，照写的先后：别的软件调得到的方法；总线上提供的、接进的名字（施工 BUS-1，设计 67），写了才带 |
@@ -385,6 +386,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `command_taken` | 子命令名被先读到的占了（照盖的先后，施工 SD-1）；原来的 `duplicate`（两层同编号）施工 SD-1 去掉了，同编号改成上面一层盖住下面的，不算错（上面「三层怎么认」） |
 | `bad_setting_name`、`bad_type`、`bad_element`、`bad_default`、`bad_choices`、`bad_range`、`bad_layers`、`bad_applies`、`not_bool` | 配置项写错：名字、类型、列表的元素（写错、写成 `list`、不是字，施工 9-1 补）、默认值、选项、范围、几层、什么时候生效、`hidden`（施工 9-1 下） |
 | `bad_shown_when` | 组的 `shown_when` 写错了：不是一项对一个值或者几个值；指的不是这个包自己的选项，或者在这一节里面；值不是它的选项（施工 SG-1） |
+| `bad_choices_from` | 项的 `choices_from` 写错了：不是普通的 `text`（几行字、列表的元素、一组字段的字段）；方法名不是字、写法不对（施工 SG-2） |
 | `settings_taken` | 包的前缀和核心自己的配置撞了、又声明了配置项（施工 9-1 下；PN-1 起照前缀） |
 | `bad_prefix`、`prefix_taken` | `[package] prefix` 写法不像包编号；前缀被先读到的包占了（出厂的先于装上的，同一层照编号；没写的照包编号算）（施工 PN-1） |
 | `bad_capability` | `[process] capabilities` 里有不认识的、重复的名字（施工 9-4 下上） |
@@ -429,6 +431,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `crates/miyu-config/src/package/side/tests.rs`（施工 Q-3） | `[[side]]` 读成编号、档位、名字、说明，全编号是 `<包>/<编号>`，三档都认；编号写错、少了、重了，档位不认识、少了，少了名字、说明报 `bad_side`、`detail` 对；不认识的格、写成一张表的、不是扩展包的照各自的代码 |
 | `crates/miyu-config/src/package/settings/tests.rs` | 每一种类型、默认值、几层、什么时候生效、隐藏；每一种写错；拼成配置项的键、类型、界面提示（施工 9-1 下）；列表的每一种元素、默认值一个个查、写错（施工 9-1 补） |
 | `crates/miyu-config/src/package/settings/tests/section.rs`、`crates/miyu-endpoint/tests/package_sections.rs`（施工 SG-1） | 组的名字、`shown_when` 读对（一个值的也是列表），每一种写错报 `bad_shown_when`、报在那一行；`config.schema` 里组里的项带 `section`、包那一组带 `sections`（名字照语言、没写的照编号、键写全），没分组的包和原来一样；不画的节照旧写得进、读得到 |
+| `crates/miyu-config/src/package/settings/tests/choices_from.rs`、`crates/miyu-endpoint/tests/package_choices_from.rs`（施工 SG-2） | `choices_from` 读对（组里的也行、最长 64 个、默认值不照列表查），写在几行字、列表、字段上和每一种写错的方法名报 `bad_choices_from`、报在那一行，别的类型报 `unknown_key`；`config.schema` 里那一项带 `{"package", "method"}`、别的项都不带，不在列表里的值照样写得进；平台 `voice` 的包 `connection` 带 `owner_builtin`，别的平台不带 |
 | `crates/miyu-endpoint/tests/package_settings.rs` | 包的配置项进 `config.schema`（「软件包」那一页、这个包那一组、名字说明照语言、隐藏的带标记）；最终值；写错的、写错层的 `check` 报；撞了核心的模块整份不收（施工 9-1 下）；列表进 Schema、读得到、写错 `check` 报（施工 9-1 补） |
 | `crates/miyu-cli/src/packages/tests.rs`（施工 9-2） | 只有包的子命令转交（内置的、选项、`help`、不认识的不转）；没装的程序说哪份清单；帮助页多的那一节、接在「命令」后面、照语言；跑包的程序时环境多它在各层的那几格（施工 S-6 上、F-15、FH-3下，新名字、旧名字都给） |
 | `crates/miyu/tests/packages.rs` 的 `a_package_command_is_told_its_package_folder`（施工 S-6 上，只在 Unix 上） | 真二进制转交：包带的程序（指向 `printenv` 的链接）看到的 `MIYU_PACKAGE_DIR`、`MIYU_APP_DIR` 是 `opt/` 里这个包的文件夹；`MIYU_PACKAGE_STATE`、`MIYU_STATE_DIR` 是建好了的状态目录的真实位置（施工 F-15） |

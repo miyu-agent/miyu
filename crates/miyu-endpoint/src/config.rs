@@ -22,6 +22,7 @@
 //! 核心起来时交进来（`Core::with_model_data`）。
 
 pub(crate) mod checking;
+mod choices;
 mod effort;
 mod environment;
 pub(crate) mod file;

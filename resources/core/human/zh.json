@@ -689,6 +689,7 @@
     "package-problems/bad_element": "{detail} 只能是 bool、int、number、option、text、name、model、persona、knowledge、url、secret 或 record；列表的元素不能再是列表",
     "package-problems/bad_title": "{detail} 要写这一组里一个 text、name 或 option 字段的名字",
     "package-problems/bad_shown_when": "{detail} 要写这个包自己的一个选项（不在这一组里）和它的一个或几个选项值",
+    "package-problems/bad_choices_from": "{detail} 要写这个包自己登记的一个方法的名字，只能写在普通的 text 项上（不是几行字、列表、一组字段里的字段）",
     "package-problems/bad_default": "{detail} 不合这一项的类型，或者不在选项里；密钥、密钥的列表不能写默认值",
     "package-problems/bad_choices": "{detail} 要列至少两个不重复的字",
     "package-problems/bad_range": "{detail} 要写整数，最小不大于最大",

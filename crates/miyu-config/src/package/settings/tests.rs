@@ -6,6 +6,7 @@ use crate::item::Item;
 use crate::package::{Code, read};
 use crate::value::Number;
 
+mod choices_from;
 mod choose;
 mod record;
 mod section;

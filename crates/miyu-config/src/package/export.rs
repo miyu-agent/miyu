@@ -99,7 +99,7 @@ pub fn under(method: &str, name: &str) -> bool {
 }
 
 /// 方法名的写法：小写字母开头，小写字母、数字、`_`、`.`、`-`，1 到 64 个（同 `package.methods` 登记的）。
-fn method_name(name: &str) -> bool {
+pub(super) fn method_name(name: &str) -> bool {
     name.len() <= NAME_MAX
         && name.starts_with(|c: char| c.is_ascii_lowercase())
         && name

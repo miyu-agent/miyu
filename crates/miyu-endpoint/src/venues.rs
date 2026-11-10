@@ -101,14 +101,22 @@ pub(crate) fn bound(core: &Core, id: &ExternalId) -> bool {
     owners_ids(core).iter().any(|one| one == id.as_str())
 }
 
-/// 语音助手那头说话的主人（施工 VA-1，设计 `20-语音.md` 第九节）：平台 `voice` 上的 `owner`，不用写进对应表。
-const VOICE_OWNER: &str = "voice:owner";
+/// 语音助手的平台（施工 VA-1，设计 `20-语音.md` 第九节）：它的主人不用写进对应表（[`voice_owner`]），`package.list` 照它给
+/// 平台接入的包标 `owner_builtin`（施工 SG-2）。认这个平台的各处都用这一个。
+pub(crate) const VOICE: &str = "voice";
 
-/// 平台身份 `id` 在场所 `venue` 里是不是主人：对应表里的，加上语音助手的 [`VOICE_OWNER`]。后者只在 `voice` 的场所里算：
+/// 平台身份 `id` 是不是语音助手那头说话的主人（施工 VA-1）：平台 [`VOICE`] 上的 `owner`，不用写进对应表。
+fn voice_owner(id: &ExternalId) -> bool {
+    id.as_str().split_once(':') == Some((VOICE, "owner"))
+}
+
+/// 平台身份 `id` 在场所 `venue` 里是不是主人：对应表里的，加上语音助手的（[`voice_owner`]）。后者只在 `voice` 的场所里算：
 /// 别的平台的桥报这个号（场所不是 `voice:` 开头的）不算，照外人。
 fn owner_in(core: &Core, id: &ExternalId, venue: &str) -> bool {
-    if id.as_str() == VOICE_OWNER {
-        return venue.starts_with("voice:");
+    if voice_owner(id) {
+        return venue
+            .split_once(':')
+            .is_some_and(|(platform, _)| platform == VOICE);
     }
     bound(core, id)
 }
@@ -153,8 +161,8 @@ pub(crate) fn binding(
     let bridge = bridge(core, caller).ok_or_else(bridge::refused)?;
     let id = ExternalId::parse(&params.id).map_err(|_| Refusal::BAD_PARAMS)?;
     // 语音助手的主人只对 `voice` 平台的桥算（施工 VA-1）。
-    let owner = match id.as_str() == VOICE_OWNER {
-        true => bridge.platforms(core).holds(VOICE_OWNER),
+    let owner = match voice_owner(&id) {
+        true => bridge.platforms(core).holds(id.as_str()),
         false => bound(core, &id),
     };
     Ok(json!({"owner": owner}))

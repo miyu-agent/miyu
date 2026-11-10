@@ -169,6 +169,7 @@ mod note;
 mod notices_claim;
 mod orphans;
 mod package_check;
+mod package_choices_from;
 mod package_choose;
 mod package_depends;
 mod package_depends_floor;

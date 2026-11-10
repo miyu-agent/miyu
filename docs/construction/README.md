@@ -1501,6 +1501,7 @@ flowchart LR
 | CTX-1 到 CTX-3 | 会话的上下文上限 | 见设计 `68-会话的上下文上限.md` 第五节 |
 | ADV-1 到 ADV-3 | 旗舰顾问 | 见设计 `69-旗舰顾问.md` 第四节 |
 | SG-1 | 软件包设置分组 | 项目主人经语音会话要的：清单的组 `[settings.<组>]` 能写 `name`、`shown_when`（照这个包自己的一个选项的值显示，值可以是几个），写错的报 `bad_shown_when`；`config.schema` 里组里的项带 `section`、包那一组带 `sections`，没分组的包不变；不画的只是不画，值照旧存、读、查。改协议，合了告诉 UI 和 im。施工单见 `SG-1-软件包设置分组.md` |
+| SG-2 | 运行时给选项 | 项目主人验收语音助手设置页时提的：清单的文字项能写 `choices_from = "<方法名>"`（这个包自己登记的方法，写错的报 `bad_choices_from`），`config.schema` 那一项带 `choices_from: {package, method}`，头调它画下拉，值照旧当普通文字、核心不照列表查；平台 `voice` 的包 `package.list` 的 `connection` 带 `owner_builtin: true`，头不画填主人号那一块。没写的项、别的平台字节不变。改协议，合了告诉 UI 和 im。施工单见 `SG-2-运行时给选项.md`，提交见 `git log --grep SG-2` |
 
 **压测修的**（YC 线，项目主人 2026-11-10 交的压测报告 `miyu-压测报告-2026-11-09.md`：测的是核心 d6fa14a37、终端 eacce1b2、网页 2b7a24e1、im 938b6b7；core1 排，括号里是报告的编号）
 

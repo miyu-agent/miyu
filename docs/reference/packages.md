@@ -50,6 +50,7 @@
 | `groups` | 在哪几个组里（只有出厂的内置包有，`basesystem` 是基础系统）；不在组里的没有 |
 | `features` | 里面的功能（预设照它开关） |
 | `status`、`enabled` | 有进程的：在跑没有、开着没有 |
+| `connection` | 平台接入的包（清单写了 `[connection]`）：`{"platform", "platforms"?, "owner_builtin"?}`。`platform` 是接的平台，接几个的是第一个，另带 `platforms`（全部，照写的先后）。头照 `platform` 在这个包的信息页上画「你在这个平台上的号」，写进主人对应表 `external.bindings`。带 `owner_builtin: true` 的平台（现在只有 `voice`）主人不用在对应表里填号，头不画填号那一块；别的平台不带这一格 |
 | `page` | 有后台页的，头照它列「软件后台」 |
 | `page_server` | 后台页是它的程序自己起的网页服务（清单 `[page] server = true`）：头问它的 `status` 拿 `web` 端口，带一张 `login.ticket` 跳过去，不放进框里 |
 | `tray` | 有后台页、清单写了 `[tray]` 的：`{"name"}`，托盘菜单里那一行的字，照连接的语言；点了打开这个包的后台页。托盘只列开着的 |

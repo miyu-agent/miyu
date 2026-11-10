@@ -97,6 +97,10 @@ fn links(item: &mut Value, id: &str, manifest: &Manifest, language: &str) {
     if let Some(connection) = &manifest.connection {
         // 施工 IM-3 起能写几个：`platform` 照旧是第一个；接几个的另带 `platforms`，是全部。
         item["connection"] = json!({"platform": connection.platforms.first()});
+        // 语音助手的主人不用在对应表里填号（施工 SG-2）：头照这一格不画填号那一块；别的平台不带。
+        if connection.platforms.first().map(String::as_str) == Some(crate::venues::VOICE) {
+            item["connection"]["owner_builtin"] = json!(true);
+        }
         if connection.platforms.len() > 1 {
             item["connection"]["platforms"] = json!(connection.platforms);
         }

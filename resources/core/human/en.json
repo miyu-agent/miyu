@@ -693,6 +693,7 @@
     "package-problems/bad_element": "{detail} must be bool, int, number, option, text, name, model, persona, knowledge, url, secret or record; a list's element cannot be a list",
     "package-problems/bad_title": "{detail} must name one of its text, name or option fields",
     "package-problems/bad_shown_when": "{detail} must map one option setting of this same package, outside this group, to one or more of its choices",
+    "package-problems/bad_choices_from": "{detail} must name a method this package registers, and only on a plain text setting (not one with lines, a list, or a field of a record)",
     "package-problems/bad_default": "{detail} does not fit the setting's type or is not one of its choices; a secret, or a list of secrets, has no default",
     "package-problems/bad_choices": "{detail} must list at least two different texts",
     "package-problems/bad_range": "{detail} must be integers, the lowest not above the highest",

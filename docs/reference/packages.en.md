@@ -50,6 +50,7 @@ Manage packages, extension processes and the MCP servers in the system config; l
 | `groups` | The groups it is in (only shipped built-in packages have them; `basesystem` is the base system); absent when none |
 | `features` | Its features (presets switch these) |
 | `status`, `enabled` | With a process: running or not, on or not |
+| `connection` | A platform bridge (its manifest has `[connection]`): `{"platform", "platforms"?, "owner_builtin"?}`. `platform` is the platform it connects, the first one when there are several, which also come in `platforms` (all of them, in manifest order). Use `platform` to draw "your account on this platform" on the package's info page, written into the owner bindings `external.bindings`. A platform with `owner_builtin: true` (only `voice` today) needs no account in the bindings, so don't draw that block; other platforms don't carry the key |
 | `page` | Has a package page, which heads list under package pages |
 | `page_server` | The package page is a web service its program runs (manifest `[page] server = true`): heads ask its `status` for the `web` port and go there with a `login.ticket`, instead of framing it |
 | `tray` | Has a package page and a `[tray]` table: `{"name"}`, the tray menu line's text in the connection's language; clicking it opens the package page. The tray lists only packages that are on |

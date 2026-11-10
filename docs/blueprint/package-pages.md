@@ -181,7 +181,7 @@ name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
 
 ### 平台接入的软件：我的平台账号（2026-10-10 项目主人定）
 
-1. 平台接入那个软件（`package.list` 里带 `connection` 的）的信息页上多一项：你在这个平台上的号，名字照平台写（接入QQ 的是 QQ 号），只填号码。
+1. 平台接入那个软件（`package.list` 里带 `connection` 的）的信息页上多一项：你在这个平台上的号，名字照平台写（接入QQ 的是 QQ 号），只填号码。`connection` 带 `owner_builtin: true` 的（平台 `voice`，施工 SG-2）不画这一项：语音只在本机用，主人不用填号。
 2. 头替人写成配置 `external.bindings.<平台>:<号>`，值写 `owner`（`config.set`，`config.md` 的 `external.bindings`）。平台照这一项的 `connection.platform`，不写死 QQ。
 3. 删掉一个号是 `unset` 那一键。配置里手写的、别的平台的照样认，信息页只列这个平台的。
 
