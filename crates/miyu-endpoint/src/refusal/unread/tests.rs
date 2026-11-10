@@ -7,6 +7,7 @@ use miyu_kernel::id::ContentHash;
 use miyu_session::LoadError;
 use miyu_store::blob::BlobError;
 use miyu_store::log::OpenError;
+use serde_json::json;
 
 use crate::refusal::Refusal;
 
@@ -51,7 +52,21 @@ fn loading_tells_a_passing_error_from_a_broken_session() {
         Refusal::of_load(&LoadError::Blob(BlobError::Io(too_many_files()))),
         Refusal::UNAVAILABLE
     );
-    assert_eq!(Refusal::of_load(&LoadError::Log(broken())), Refusal::BROKEN);
+    let read_only = Refusal::of_load(&LoadError::Log(broken()));
+    assert_eq!(read_only.reason, "session_read_only");
+    assert_eq!(
+        read_only.data,
+        json!({"segment": "000000000001.jsonl", "line": 93})
+            .as_object()
+            .cloned()
+    );
+    // 坏在第一条的：什么都看不到，照旧 `session_broken`（施工 YC-6）。
+    let first = OpenError::Broken {
+        segment: PathBuf::from("000000000001.jsonl"),
+        line: 1,
+        why: "not JSON".to_string(),
+    };
+    assert_eq!(Refusal::of_load(&LoadError::Log(first)), Refusal::BROKEN);
     assert_eq!(Refusal::of_load(&LoadError::NotCreated), Refusal::BROKEN);
     assert_eq!(
         Refusal::of_load(&LoadError::Blob(BlobError::Missing(hash()))),

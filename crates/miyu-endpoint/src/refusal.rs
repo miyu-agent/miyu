@@ -446,9 +446,9 @@ impl Refusal {
         }
     }
 
-    /// 给人看的话，照头的语言。
-    pub(crate) fn message(&self, locale: Locale) -> &'static str {
-        let (zh, en) = message::of(self.reason);
+    /// 给人看的话，照头的语言。带着 `data` 里的数说的照 [`message::said`]（施工 YC-6：坏在第几行）。
+    pub(crate) fn message(&self, locale: Locale) -> std::borrow::Cow<'static, str> {
+        let (zh, en) = message::said(self.reason, self.data.as_ref());
         match locale {
             Locale::Zh => zh,
             Locale::En => en,

@@ -174,6 +174,34 @@ fn a_broken_log_says_where_in_english() {
 }
 
 #[test]
+fn a_broken_log_says_which_event_broke() {
+    // 施工 YC-6：坏的那一行照段名、行号算出是第几条，头照它说坏在哪；段只写文件名。
+    let at = |segment: &str, line| {
+        OpenError::Broken {
+            segment: PathBuf::from("s").join(segment),
+            line,
+            why: String::new(),
+        }
+        .broken_at()
+    };
+    assert_eq!(
+        at("000000000001.jsonl", 3),
+        Some(BrokenAt {
+            segment: "000000000001.jsonl".to_string(),
+            line: 3,
+            seq: Seq::new(3).unwrap(),
+        })
+    );
+    assert_eq!(
+        at("000000000101.jsonl", 2).map(|at| at.seq.get()),
+        Some(102)
+    );
+    assert_eq!(at("notes.jsonl", 2), None);
+    assert_eq!(at("000000000001.jsonl", 0), None);
+    assert_eq!(OpenError::Missing(PathBuf::new()).broken_at(), None);
+}
+
+#[test]
 fn an_empty_last_segment_is_written_into() {
     let scratch = Scratch::new();
     let dir = dir(&scratch);

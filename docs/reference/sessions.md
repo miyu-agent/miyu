@@ -46,6 +46,7 @@
 |---|---|
 | `session_not_found` | 没有这个会话，删了的也是 |
 | `session_broken` | 会话载入不了：日志坏了、读不懂 |
+| `session_read_only` | 会话日志中间坏了一行：坏行以前的用 `view.page` 照样看得到，会话载入不了、不能接着聊，要继续新开一个会话；`data.segment` 是哪一段（只是文件名），`data.line` 是第几行 |
 | `session_unavailable` | 会话这一刻读不了：读日志时读写出错，日志没坏，过一会儿再试（施工 YC-2） |
 | `session_stopped` | 会话停了（写不进去、出了 bug）；再发一次会重新载入 |
 | `session_sealed` | 会话封存了（分叉时写了 `seal_after`、跑满了），改对话的命令不收 |
@@ -517,11 +518,13 @@
 | `turns` | 1 到 50，默认 20 | 最多几轮 |
 | `view` | 布尔，默认 `false` | `true` 交给界面直接画的条目（视图投影），不交原始事件 |
 
-**回应**：`events`（或者 `entries`）、`more`（前面还有没有），有内容的另带 `first`、`last`；超过 1 MiB 少给了轮数的带 `capped: true`；这一页里报完、更早派出的任务带 `jobs`。
+**回应**：`events`（或者 `entries`）、`more`（前面还有没有），有内容的另带 `first`、`last`；超过 1 MiB 少给了轮数的带 `capped: true`；这一页里报完、更早派出的任务带 `jobs`；日志中间坏了一行、这一页只给到坏行以前的带 `broken`。
 
 最新一页的 `last` 就是这一刻的最后一条：接着 `subscribe {"after": last}` 只接新的。
 
-**出错**：`bad_params`；`session_not_found`；`session_broken`。
+`broken` 是 `{"segment", "line"}`：哪一段日志（只是文件名，例如 `000000000001.jsonl`）、这一段的第几行坏了。要读的行里碰到坏行的，这一页好像日志到坏行前一条为止；坏行不在这一页要读的行里的，照常给、不带它。这样的会话载入不了，说话、订阅回 `session_read_only`：界面照 `view.page` 只读地显示，说一句坏在哪，要继续新开一个会话。日志不改、不修。
+
+**出错**：`bad_params`；`session_not_found`；`session_broken`（日志读不懂，连第一条都读不成的这一类，没有能看的）。
 
 ## `view.detail`
 

@@ -161,7 +161,7 @@
 | `needs_approval` | 扩展订阅 `events`、`view`、`sessions`，清单没声明 `events.read`；`data.capabilities` 是缺的那一项 |
 | `unknown_package` | `package`、`prefs` 流：那个软件包没装 |
 | `not_a_ui_package` | `prefs` 流：那个软件包装着，但不是界面包 |
-| `session_not_found`、`session_broken`、`session_unavailable`、`session_stopped` | 会话没有、日志读不懂、这一刻读不了（过一会儿再试）、停了（再订阅一次会重新载入） |
+| `session_not_found`、`session_broken`、`session_unavailable`、`session_read_only`、`session_stopped` | 会话没有、日志读不懂、这一刻读不了（过一会儿再试）、日志中间坏了一行（坏行以前的用 `view.page` 只读地看，见 [`errors`](errors.md)）、停了（再订阅一次会重新载入） |
 | `memory_not_installed`、`memory_unavailable` | `memory` 流：没装记忆，或者那个地方没有记忆 |
 
 ## `account.setup_code`、`account.setup`、`account.logout`

@@ -1,6 +1,37 @@
 //! 拒绝时给人看的话（`docs/designs/04-核心协议.md` 第六节第 4 条）：一个原因码一句中文、一句英文。施工 W-8 从
 //! `refusal.rs` 挪出来（那一份过了 500 行）。
 
+use std::borrow::Cow;
+
+use serde_json::{Map, Value};
+
+/// 一句拒绝的中文、英文：照 [`of`]，只是带着 `data` 里的数说的几种照它填（施工 YC-6：`session_read_only` 照 `data.line` 说坏在
+/// 第几行；`data` 里没有那个数的照 [`of`]）。
+pub(super) fn said(
+    reason: &str,
+    data: Option<&Map<String, Value>>,
+) -> (Cow<'static, str>, Cow<'static, str>) {
+    let line = data
+        .and_then(|data| data.get("line"))
+        .and_then(Value::as_u64);
+    match (reason, line) {
+        ("session_read_only", Some(line)) => (
+            format!(
+                "会话日志第 {line} 行坏了，只能看到这一行以前的内容，不能接着聊。要继续请新开一个会话。"
+            )
+            .into(),
+            format!(
+                "The session log is broken at line {line}; only the part before it can be viewed and the session can't continue. Start a new session to go on."
+            )
+            .into(),
+        ),
+        _ => {
+            let (zh, en) = of(reason);
+            (zh.into(), en.into())
+        }
+    }
+}
+
 /// 原因码 `reason` 的中文、英文。不认识的说「已拒绝」。
 pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
     match reason {
@@ -201,6 +232,11 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "session_unavailable" => (
             "会话暂时无法读取，请稍后重试。",
             "Session can't be read right now. Try again later.",
+        ),
+        // 施工 YC-6：带着行号说的在 [`said`]，这一句是 `data` 里没有行号时的。
+        "session_read_only" => (
+            "会话日志坏了，只能看到坏的地方以前的内容，不能接着聊。要继续请新开一个会话。",
+            "The session log is broken; only the part before it can be viewed and the session can't continue. Start a new session to go on.",
         ),
         "empty_message" => ("消息为空。", "Empty message."),
         "dir_too_wide" => ("目录范围过大。", "Directory too broad."),

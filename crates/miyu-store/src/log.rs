@@ -7,9 +7,9 @@
 mod open;
 
 pub use open::{
-    Flow, Line, OpenError, ParseLine, first_event, read_between, read_events, read_line_near,
-    read_marked, read_marked_with, read_one, read_range, read_range_only, read_range_with,
-    read_segments, scan_lines,
+    BrokenAt, Flow, Line, OpenError, ParseLine, first_event, read_between, read_events,
+    read_line_near, read_marked, read_marked_with, read_one, read_range, read_range_only,
+    read_range_with, read_segments, scan_lines,
 };
 
 use std::fs::{self, File, OpenOptions};

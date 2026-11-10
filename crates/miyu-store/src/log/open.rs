@@ -57,6 +57,40 @@ impl fmt::Display for OpenError {
 
 impl std::error::Error for OpenError {}
 
+/// 日志坏在哪（施工 YC-6，`docs/construction/YC-6-日志坏一行只读打开.md`）：给头看的那几样。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BrokenAt {
+    /// 哪一段：只是文件名，不带目录（目录里带着会话编号，同 [`OpenError`] 写进运行日志的那一句）。
+    pub segment: String,
+    /// 第几行，从这一段的开头数起（从 1 数）。
+    pub line: usize,
+    /// 坏的那一行该是第几条：照段名（这一段第一条的序号）和行号算，没解过。从头整份读的（[`SessionLog::open`]），它以前的都查过、
+    /// 是好的；只读一截的（[`read_between`] 这些）只查过读了的那几行。
+    pub seq: Seq,
+}
+
+impl OpenError {
+    /// 坏在哪（施工 YC-6）：不是坏了的、段名不是序号的没有。段名接不上的报在那一段第 1 行，算出来的是段名说的那一条，不一定是
+    /// 真接不上的那一条：拿它当上界再读一遍的，要防着它不比这一回的上界小，不然读来读去还是这一处（`miyu-endpoint` 的
+    /// `view/broken.rs`）。
+    #[must_use]
+    pub fn broken_at(&self) -> Option<BrokenAt> {
+        let OpenError::Broken { segment, line, .. } = self else {
+            return None;
+        };
+        let name = segment.file_name()?.to_str()?;
+        let first = name.strip_suffix(".jsonl")?.parse::<u64>().ok()?;
+        let seq = first
+            .checked_add(u64::try_from(*line).ok()?)?
+            .checked_sub(1)?;
+        Some(BrokenAt {
+            segment: name.to_string(),
+            line: *line,
+            seq: Seq::new(seq)?,
+        })
+    }
+}
+
 impl From<io::Error> for OpenError {
     fn from(error: io::Error) -> OpenError {
         OpenError::Io(error)

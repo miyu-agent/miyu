@@ -46,6 +46,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 |---|---|
 | `session_not_found` | No such session; deleted ones too |
 | `session_broken` | The session can't be loaded: its log is broken or doesn't parse |
+| `session_read_only` | A line in the middle of the session log is broken: what came before it can still be read with `view.page`, but the session can't be loaded or continued; start a new session to go on. `data.segment` is which segment (file name only), `data.line` which line |
 | `session_unavailable` | The session can't be read right now: an I/O error while reading its log. The log is intact; try again later |
 | `session_stopped` | The session stopped (couldn't write, a bug); sending again reloads it |
 | `session_sealed` | A forked session ran its turns and was sealed; commands that change the conversation are refused |
@@ -516,11 +517,13 @@ Read history page by page, from the newest back; page edges fall between turns.
 | `turns` | 1 to 50, default 20 | At most this many turns |
 | `view` | boolean, default `false` | `true` returns entries ready to draw (the view projection) instead of raw events |
 
-**Response**: `events` (or `entries`) and `more` (whether there's more before), plus `first` and `last` when not empty; `capped: true` when fewer turns came back to stay under 1 MiB; `jobs` for jobs that finished on this page but were started earlier.
+**Response**: `events` (or `entries`) and `more` (whether there's more before), plus `first` and `last` when not empty; `capped: true` when fewer turns came back to stay under 1 MiB; `jobs` for jobs that finished on this page but were started earlier; `broken` when a line in the middle of the log is broken and this page stops before it.
 
 The newest page's `last` is the last event right now: then `subscribe {"after": last}` gets only what's new.
 
-**Errors**: `bad_params`; `session_not_found`; `session_broken`.
+`broken` is `{"segment", "line"}`: which log segment (file name only, such as `000000000001.jsonl`) and which line of it is broken. When the lines a page needs reach a broken line, the page reads as if the log ended just before it; a broken line outside the lines this page reads doesn't change the page and adds no `broken`. Such a session can't be loaded: sending and subscribing return `session_read_only`. Show it read-only through `view.page`, say where it broke, and start a new session to go on. The log is left as it is, not repaired.
+
+**Errors**: `bad_params`; `session_not_found`; `session_broken` (the log doesn't parse and nothing can be shown, e.g. even the first line is broken).
 
 ## `view.detail`
 

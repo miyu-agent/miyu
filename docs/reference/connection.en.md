@@ -161,7 +161,7 @@ What each stream pushes is in [Pushes](pushes.en.md).
 | `needs_approval` | An extension subscribed to `events`, `view` or `sessions` without declaring `events.read`; `data.capabilities` names it |
 | `unknown_package` | `package` and `prefs` streams: that package isn't installed |
 | `not_a_ui_package` | `prefs` stream: that package is installed but isn't a UI package |
-| `session_not_found`, `session_broken`, `session_unavailable`, `session_stopped` | The session doesn't exist, its log doesn't parse, it can't be read right now (try again later), or it stopped (subscribing again reloads it) |
+| `session_not_found`, `session_broken`, `session_unavailable`, `session_read_only`, `session_stopped` | The session doesn't exist, its log doesn't parse, it can't be read right now (try again later), a line in the middle of its log is broken (read what came before through `view.page`, see [`errors`](errors.en.md)), or it stopped (subscribing again reloads it) |
 | `memory_not_installed`, `memory_unavailable` | `memory` stream: memory isn't installed, or that place has no memory |
 
 ## `account.setup_code`, `account.setup`, `account.logout`

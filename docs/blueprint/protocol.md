@@ -1149,16 +1149,16 @@
 | `turns` | 整数 1 到 50，可以不写 | 最多几轮，不写是 20 |
 | `view` | 布尔，可以不写 | 写 `true` 的交条目、不交事件（施工 9-8 中，`view.md`）。不写是 `false` |
 
-回应 `{"events", "more"}`，有事件的再带 `first`、`last`，因为字节少给了轮数的带 `capped: true`，这一页里报完了、在更早派出去的任务带 `jobs`。`events` 是原始事件，写法同补发（`event` 推送里的那一个），照序号；核心不做视图投影。
+回应 `{"events", "more"}`，有事件的再带 `first`、`last`，因为字节少给了轮数的带 `capped: true`，这一页里报完了、在更早派出去的任务带 `jobs`，日志中间坏了一行、这一页照它以前的读的带 `broken`（第 6 条，施工 YC-6）。`events` 是原始事件，写法同补发（`event` 推送里的那一个），照序号；核心不做视图投影。
 
 1. 页的边界落在回合之间：从 `before` 往前数 `turn.started`，每一轮从它的 `turn.started` 起，到下一轮的 `turn.started` 之前；不在回合里的事件（改标题、回顾、斜杠命令、撤销）跟着它们所在的位置走。数到第一轮的，连它前面的（`session.created` 这些）一起给，`more` 是假。
 2. 数够 `turns` 轮，或者再加一轮就超过 1 MiB（照事件写成一行的字节数），停；至少给一整轮，一轮自己超了也整轮给。因为字节停的带 `capped: true`。
 3. 这一页里每一轮的触发消息（`turn.started` 的 `trigger`）在切点前的，也带上，排在最前面：可能和更早的一页重复，头照序号去重。`first` 照切点算，不算带进来的这几条。
 4. 这一页里报完了的任务（`job.reported`、`child.reported`，带进来的触发消息也算：后台命令跑完常引起下一轮），派它的 `job.started` 在切点前的，带在 `jobs` 里：照派出的先后，每一个照 `job.started` 的写法（`job`、`what`、`title`，子代理带 `session`），没有的不写这一格。头照它写「后台命令跑完了」那一行，不用为找标题往前翻（施工 9-6 再补）。
 5. `last` 是这一页最后一条：最新一页的 `last` 就是读的那一刻落了盘的最后一条，头接着 `subscribe {"after": last}`，只接新的。压缩、撤销照原样在页里，头照有效历史自己画：先拿到的总是更新的页，撤销总比被撤的那几轮先到。
-6. 只读地读会话目录里的日志，不为翻历史载入会话；读的时候会话照常跑，正在写的那半行不算。只读要的那一截（施工 V-41 上，`view.md`「怎么走」第 2 条）：先数一遍 `before` 以前的行、不解，记下每一轮从哪一行起、派出了结任务的那几行；再只解最后几轮，切点前要的触发消息、派任务那次调用所在的回复照位置读回那一行。读、解了的行照旧自检；数过去的行只查段末半行、段名接不上，别的坏了不报（同补发定位跳过的那一截，`store.md` 第 7 条 `read_range`）：日志被外人改坏、坏的地方不在这一页要读的那几行里的，原来回 `session_broken`，现在照没坏的交这一页；下次打开这个会话照样整份自检、报出来。视图流订阅时的最新一页同样（第 9 条）。
+6. 只读地读会话目录里的日志，不为翻历史载入会话；读的时候会话照常跑，正在写的那半行不算。只读要的那一截（施工 V-41 上，`view.md`「怎么走」第 2 条）：先数一遍 `before` 以前的行、不解，记下每一轮从哪一行起、派出了结任务的那几行；再只解最后几轮，切点前要的触发消息、派任务那次调用所在的回复照位置读回那一行。读、解了的行照旧自检；数过去的行只查段末半行、段名接不上，别的坏了不报（同补发定位跳过的那一截，`store.md` 第 7 条 `read_range`）：日志被外人改坏、坏的地方不在这一页要读的那几行里的，原来回 `session_broken`，现在照没坏的交这一页；下次打开这个会话照样整份自检、报出来。要读的行里碰到坏行的（施工 YC-6，压测报告 F6；2026-11-10 项目主人定只读打开、不给修）：照坏行以前的交这一页，好像日志到坏行前一条为止，带上 `broken: {"segment", "line"}`：哪一段（只写文件名，例如 `000000000001.jsonl`）、第几行（从这一段的开头数），头照它说坏在哪；坏行是第几条照段名加行号算，拿它当 `before` 再读，那一截里又碰到更早的坏行的再往前收。坏在第一条的（连 `session.created` 都读不成）、算不出更早的（段名接不上这一类）照旧 `session_broken`。日志一个字节都不动（不截、不修）；没坏的、坏行不在要读的行里的，回应一个字节都不变、不带 `broken`。所以坏行以后的轮次，最新一页没碰到坏行时照样看得到，往前翻到碰上坏行的那一页起只给坏行以前的。视图流订阅时的最新一页同样（第 9 条；要载入会话，载入时日志就坏了的订阅不上，回 `session_read_only`，见「会话表」第 2 条）。
 7. 写了 `view: true` 的（施工 9-8 中）：`events` 换成 `entries`，这一页的条目，照显示的先后、读的那一刻的状态，写法见 `view.md`「条目」；字照这个连接的语言。别的格（`first`、`last`、`more`、`capped`、`jobs`）照旧，切法同第 1 到 3 条。切点前派出去、在这一页报完的任务，条目里照样有标题和命令：核心先照切点前的日志学一遍派出去的任务。投影要的字读不成的：`internal_error`，记一行 `WARN view words not read`。
-8. 会话编号不合写法、`before` 是 0 或不是正整数、`turns` 不在 1 到 50、写了别的格：`bad_params`。没有这个会话（删了的也是）：`session_not_found`。日志读不懂：`session_broken`；读的时候读写出错（权限、打开文件数用光）：`session_unavailable`（施工 YC-2）；都记一行 `WARN log not read`。
+8. 会话编号不合写法、`before` 是 0 或不是正整数、`turns` 不在 1 到 50、写了别的格：`bad_params`。没有这个会话（删了的也是）：`session_not_found`。日志读不懂、照第 6 条也没有能看的：`session_broken`；读的时候读写出错（权限、打开文件数用光）：`session_unavailable`（施工 YC-2）；都记一行 `WARN log not read`。
 
 
 
@@ -1176,7 +1176,7 @@
 4. `text` 同 `session.list` 的 `preview` 的取法（`miyu_store::index::said`，一处代码）：斜杠命令模板展开的照人敲的那一行（`command.text`），别的照头一块文字；第一个不是空白的那一行，去掉前后空白，只是最多 100 个字（`preview` 是 50 个）。
 5. 分叉出来的会话（`session.fork`、fork 子代理）只列它自己日志里的：底子里那一段的话在父会话的日志里，`view.page` 在这个会话上也翻不到；父会话照列它自己的。
 6. 只读地读会话目录里的日志，不载入会话；读的时候会话照常跑，正在写的那半行不算，一整行都还没写完的是空的（同 `view.page`）。读法同判官（`venues.md`「判官看的群聊记录」施工 V-39 上、上补）：一遍读下来，只全解 `message.user` 和有效历史照种类认的那几种，别的种类只认外壳；事件照先后交给真的有效历史，谁都碰不到的那一截收下问话就放掉（`sweep.rs`）；撤销、撤回比放掉的还早的，照骨架算的下界再读一遍；骨架认不得的整份读到头一遍读到的那一条。不落缓存、不常驻。不要的种类正文合 JSON、不合那一种写法的不报坏了（同判官，2026-11-03 项目主人拍板接受）。
-7. 出错同 `view.page`：会话编号不合写法、写了别的格：`bad_params`。没有这个会话（删了的也是）：`session_not_found`。日志读不懂：`session_broken`；读的时候读写出错（权限、打开文件数用光）：`session_unavailable`（施工 YC-2）；都记一行 `WARN log not read`。扩展要 `events.read`（同 `view.page`），照它看得到的会话。
+7. 出错同 `view.page`：会话编号不合写法、写了别的格：`bad_params`。没有这个会话（删了的也是）：`session_not_found`。日志读不懂：`session_broken`（日志中间坏了一行的也是：`view.page` 照坏行以前的交一页，这里照旧拒，施工 YC-6）；读的时候读写出错（权限、打开文件数用光）：`session_unavailable`（施工 YC-2）；都记一行 `WARN log not read`。扩展要 `events.read`（同 `view.page`），照它看得到的会话。
 
 **`session.export`**（施工 SE-1 上，设计 `58-会话导出和导入.md` 第一节；Markdown 施工 SE-1 中下上、中下中、中下下）
 
@@ -1427,7 +1427,7 @@ Markdown 的回应 `{"path" | "text", "bytes", "tokens", "upto", "redacted", "ch
 **会话表**
 
 1. 在跑的会话直接用；没在跑的从磁盘载入。载入时整张表锁着：两个连接同时说给同一个没在跑的会话，只载入一次、只起一个。
-2. 没有这个会话的日志：`session_not_found`。别的载入不了（日志、策略快照坏了、读不了）：`session_broken`，原因记进运行日志。
+2. 没有这个会话的日志：`session_not_found`。日志中间坏了一行、坏行以前还有的（施工 YC-6）：`session_read_only`，`data.segment` 是哪一段（只写文件名），`data.line` 是第几行；坏行以前的照 `view.page` 看得到，会话不载入、不能接着聊，要继续新开一个会话；日志不截、不修（2026-11-10 项目主人定）。别的载入不了（日志坏在第一条、策略快照坏了、读不了）：`session_broken`。都把原因记进运行日志（`WARN load failed`）。
 3. 发命令、订阅时会话已经停了（写不进去、出了 bug）：从表里拿掉，回 `session_stopped`；下一次用到再载入。
 4. `session.send` 带着 `cwd`、`dirs`，和这个会话上一次报的不一样：照「工作目录太宽」重新定实际干活的目录，送进会话，到下一个边界才注入（`kernel/request.md`）；会话这时停了的，回 `session_stopped`。不带的、一样的，照旧。
 5. 载入时没有报来的 `cwd`（`session.interrupt`、`session.revert`、`session.unrevert`、`session.redo`、`session.compact`、`session.set_permission_level`、`session.clear`、`session.recap`、`session.set_meta`、`subscribe` 载入的）：照日志里最后一条带 `cwd` 的 `turn.started`（加进来的目录照最后一条 `turn.started` 的 `dirs`，没有就是没有（施工 5-10 上）），没有就照 `session.created` 的，都没有（之前的日志）才当报来的是 `~`，退回默认工作区（施工 4-9 再补三上）。施工 V-2 三补起由载入读日志时顺手认（`Workplace::Remembered`，`session/actor.md` 第 2 条），会话表只交挑法，不另读一遍日志。核心重启以后撤销，路径照会话真正的目录写短。
@@ -1511,6 +1511,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `owner_only` | -32010 | `command.run`：这个命令只有主人本人能用，管理的人也不行（`/workspace`，施工 9-7 下） |
 | `session_stopped` | -32010 | 会话停了：写不进去、出了 bug |
 | `session_broken` | -32010 | 会话载入不了：日志、策略快照坏了、读不了 |
+| `session_read_only` | -32010 | 会话日志中间坏了一行，坏行以前的只能看（`view.page`），载入不了、不能接着聊；`data.segment` 是哪一段（只写文件名），`data.line` 是第几行（施工 YC-6） |
 | `empty_message` | -32010 | `session.send` 的 `text` 是空的、又没有附件、也没带场所的东西（施工 O-13 补）；`session.redo` 换过的那一句一块都不剩 |
 | `dir_too_wide` | -32010 | 加进来的目录太宽（「加进来的目录」（施工 5-10 上）） |
 | `attachment_unreadable` | -32010 | `blob.put` 读不了 `path`：换不成真实的位置、没有、不是普通文件、没有权限（施工 3-9 三补） |
@@ -1707,6 +1708,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `owner_only` | 仅主人可用。 | Owner only. |
 | `session_stopped` | 会话已停止，重新发送即可载入。 | Session stopped. Send again to reload. |
 | `session_broken` | 会话已损坏，无法载入。 | Session is corrupted and cannot be loaded. |
+| `session_read_only` | 会话日志第 N 行坏了，只能看到这一行以前的内容，不能接着聊。要继续请新开一个会话。（N 是 `data.line`；没有的说「会话日志坏了，只能看到坏的地方以前的内容，不能接着聊。要继续请新开一个会话。」） | The session log is broken at line N; only the part before it can be viewed and the session can't continue. Start a new session to go on. (N is `data.line`; without it: "The session log is broken; only the part before it can be viewed and the session can't continue. Start a new session to go on.") |
 | `empty_message` | 消息为空。 | Empty message. |
 | `dir_too_wide` | 目录范围过大。 | Directory too broad. |
 | `attachment_unreadable` | 无法读取文件。 | Cannot read file. |
@@ -1788,6 +1790,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/replay.rs`（施工 3-8 六补） | 补发推出去的行逐字节和原来的写法（推的时候一条条 `event.to_line()` 写成通知）一样，`after` 落在头、中间、最后一条前面（施工 V-37 下）；补发：`after` 是 0 补整份日志、一字不差、都在回应前面、回应带 `upto`、没有瞬时的，补完接着推下一条；中间的序号补之后的；最后一条、比最后一条大的什么都不补、照常推、一条不重；不写、写 `null` 的照旧、回应没有 `upto`；写错的八种 `bad_params`、先查参数不找会话、一个都没订阅上；核心重启以后要载入的照样补；订阅着、推送堵着时带 `after` 再订阅，旧的手里的回应照样到、补的中间不夹旧的、之后只有新的在推；日志坏了的 `session_broken`、没订阅上，没有要补的不读日志 |
 | `crates/miyu-endpoint/tests/replay_race.rs`（施工 3-8 六补） | 掉了队的头带上最后看到的序号重新订阅，看到的和补的合起来就是日志；真核心：另一个头一句接一句地说、会话一直在追加，中途几个头先后从头订阅，每个头补的和推的合起来都和日志一字不差 |
 | `crates/miyu-endpoint/tests/restart.rs` | 核心重启以后：不带 `cwd` 载入的会话照最后一轮的工作目录、没开过回合的照造会话时的；重发的造会话交回原来那一个、重启以后也认得 |
+| `crates/miyu-endpoint/tests/session_read_only.rs`（施工 YC-6） | 日志中间坏了一行（换成别的、写到一半、序号重了、末尾多了一整行）：`view.page`（事件、条目）交坏行以前的、带 `broken`，不碰坏行的一页不带；说话、订阅拒 `session_read_only`，带哪一段、第几行，给人看的话说第几行；照样列得出来；日志一个字节都不动。坏在第一行的照旧 `session_broken` |
 | `crates/miyu-endpoint/tests/reused_ids.rs`（施工 YC-7） | 同一个编号换了参数再来：造会话只换 `cwd` 的交回原来那一个、`cwd` 照这一次，换了 `memory` 的 `id_reused`、只造了一个；说话原样再来照上一次回应，换了一句的 `id_reused`、只记了第一句；重启以后补回来的造会话编号照旧交回 |
 | `crates/miyu-endpoint/tests/check.rs`（施工 8-30） | `check`：不写文件的照磁盘上现在的字查配置、照核心手里的查密钥、人格每一层各查各的，先后、代码、级别、行对，给人看的那一句照连接的语言；写了文件的照位置认、只查那一份，项目配置照 `.miyu/config.toml` 认、相对的照 `cwd` 接，还没有的人格文件读不了，认不出的 `unknown_file`，多写格的参数不对 |
 | `crates/miyu-endpoint/tests/personas.rs`（施工 P-1 上） | 你那一层的人格进 system、示范对话排在前面；不写人格照默认、都没设的无人格；没有的、编号不对的、写错的拒绝，默认人格指着没有的当没设（施工 P-4 上）；`null` 明着无人格、不写进会话列表和订阅回应；`venue.session` 带人格造、找回时不看；`persona.list`、`persona.get` |

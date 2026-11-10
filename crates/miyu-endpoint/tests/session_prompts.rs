@@ -361,8 +361,12 @@ async fn bad_lines_missing_sessions_and_bad_params_are_refused_like_view_page() 
             .call(&format!("p{n}"), "session.prompts", params.clone())
             .await;
         assert_eq!(ours["error"]["data"]["reason"], reason, "{params}：{ours}");
-        // 同样的会话、同样的错，`view.page` 也这么回（多写的格各报各的）。
-        if n < 3 {
+        // 同样的会话、同样的错，`view.page` 也这么回（多写的格各报各的）；日志中间坏了一行的，`view.page` 照坏行以前的交、
+        // 带上坏在哪（施工 YC-6），这里照旧拒。
+        if n == 0 {
+            let page = client.call("v0", "view.page", params.clone()).await;
+            assert_eq!(page["result"]["broken"]["line"], json!(4), "{page}");
+        } else if n < 3 {
             let page = client
                 .call(&format!("v{n}"), "view.page", params.clone())
                 .await;

@@ -22,7 +22,9 @@ use memchr::memmem::Finder;
 
 use miyu_kernel::event::{Body, Effect, Event};
 use miyu_kernel::id::Seq;
-use miyu_store::log::{Flow, Line, Mark, OpenError, read_between, read_line_near, scan_lines};
+use miyu_store::log::{
+    BrokenAt, Flow, Line, Mark, OpenError, read_between, read_line_near, scan_lines,
+};
 
 use super::page;
 
@@ -52,6 +54,8 @@ pub(crate) struct Slice {
     outside: Vec<Event>,
     /// 切点前派出、了结任务的那几条和派任务那几次调用所在的回复，照序号：投影照它学，`jobs` 照它找。
     learned: Vec<Event>,
+    /// 要读的行里坏了一行，这一页照它以前的读的：坏在哪（施工 YC-6，`view/broken.rs`）。没坏的没有。
+    pub(super) broken: Option<BrokenAt>,
 }
 
 impl Slice {
@@ -64,6 +68,7 @@ impl Slice {
             more: false,
             outside: Vec::new(),
             learned: Vec::new(),
+            broken: None,
         }
     }
 
@@ -161,6 +166,7 @@ pub(crate) fn read(
         more,
         outside,
         learned,
+        broken: None,
     })
 }
 

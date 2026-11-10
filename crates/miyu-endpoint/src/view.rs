@@ -7,6 +7,7 @@
 //! 只读地读会话目录里的日志，不为翻历史载入会话：读的时候会话照常跑，正在写的那半行不算。只读一页要的那一截（施工 V-41
 //! 上，`view/read.rs`）：先数一遍行、不解，再只解最后几轮和切点前要的那几行；原来每一页都整份读（`read_events`）。
 
+mod broken;
 mod detail;
 mod page;
 mod project;
@@ -89,7 +90,7 @@ pub(crate) async fn page(core: &Core, peer: Peer, params: PageParams) -> Result<
     let before = params.before;
     // 读日志、切页、算条目都在阻塞线程里：先读（读不了的先报），再读投影要的字；投影是一条条喂的纯计算。
     tokio::task::spawn_blocking(move || {
-        let slice = read::read(&dir, before, (turns, CAP), view.is_some(), &size)
+        let slice = broken::read(&dir, before, (turns, CAP), view.is_some(), &size)
             .map_err(|error| unread(&session, error))?;
         let view = match view {
             Some(((resources, skills), language, blobs)) => {
@@ -113,7 +114,7 @@ pub(crate) fn newest_of(dir: &Path, upto: u64) -> Result<Slice, OpenError> {
     if upto == 0 {
         return Ok(Slice::empty());
     }
-    read::read(dir, upto.checked_add(1), (TURNS, CAP), true, &size)
+    broken::read(dir, upto.checked_add(1), (TURNS, CAP), true, &size)
 }
 
 /// 最新一页写成视图流订阅的回应的那几格（施工 9-8 下）：交回回应和喂过这一页的投影，之后的推送接着喂它。
@@ -243,6 +244,10 @@ fn paged(slice: &Slice, view: Option<(Arc<Texts>, Blobs)>) -> (Value, Option<Pro
     // 这一页里报完了、在切点前派出去的任务（施工 9-6 再补）：没有的不写。
     if !cut.jobs.is_empty() {
         reply["jobs"] = json!(cut.jobs);
+    }
+    // 日志中间坏了一行、这一页照它以前的读的（施工 YC-6）：坏在哪一段（只写文件名）第几行。没坏的不写。
+    if let Some(broken) = &slice.broken {
+        reply["broken"] = json!({"segment": broken.segment, "line": broken.line});
     }
     (reply, projector)
 }

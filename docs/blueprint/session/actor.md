@@ -376,7 +376,7 @@ actor 退出以后：等着回应的命令、要订阅的、要停下的，都�
 | | `Policy` | `policy not built: <原因>` | `internal_error` |
 | | `Disk` | `session not created on disk: <原因>` | `internal_error` |
 | | `Stopped` | `session.created not stored; the session stopped` | `internal_error` |
-| `LoadError` | `Log` | `session log not opened: <原因>` | 没有这个会话的 `session_not_found`，别的 `session_broken` |
+| `LoadError` | `Log` | `session log not opened: <原因>` | 没有这个会话的 `session_not_found`；坏了一行、坏行以前还有的 `session_read_only`（带哪一段、第几行，施工 YC-6）；读写出错的 `session_unavailable`（施工 YC-2）；别的 `session_broken` |
 | | `NotCreated` | `the session log has no session.created` | `session_broken` |
 | | `Blob` | `policy snapshot not fetched: <原因>` | `session_broken` |
 | | `Snapshot` | `policy snapshot not understood: <原因>` | `session_broken` |

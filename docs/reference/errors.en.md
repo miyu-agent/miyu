@@ -38,6 +38,7 @@ Chinese version: [errors.md](errors.md).
 |---|---|---|
 | `session_not_found` | No such session; deleted ones too | |
 | `session_broken` | The session can't be loaded: its log is broken or doesn't parse | |
+| `session_read_only` | A line in the middle of the session log is broken: what came before it can still be read with `view.page`, but the session can't be loaded or continued (sending and subscribing are refused); start a new session to go on. The log is left as it is, not repaired | `segment` (which segment, file name only), `line` (line number within that segment) |
 | `session_unavailable` | The session can't be read right now: an I/O error while reading its log (permissions, too many open files, a disk error). The log is intact; try again later | |
 | `export_exists` | The export file is already there; not overwritten | |
 | `export_in_data_root` | An export won't be written inside the data root | |
