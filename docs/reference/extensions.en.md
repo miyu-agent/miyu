@@ -154,7 +154,7 @@ Register every tool this package provides now, replacing the previous registrati
 | `call_id` | This call's id |
 | `tool` | Tool name |
 | `args` | Arguments |
-| `cwd` | This turn's working directory |
+| `cwd` | This turn's working directory: a real absolute path with `~` already expanded (as the session recorded it when the home directory is unknown) |
 | `pictures` | The session owner's picture folder (the XDG-style `pictures/` in their home, step Y-11): put images you draw or generate here, where people find them in the terminal and web UI. A real path that may not exist yet; create it (with any missing parents) before writing. Calls outside a session have no such field; keep using the workspace there. Only local sessions get it: venue sessions (groups, private chats) are kept inside their own workspace and don't have it either (step Y-11 fix) |
 | `by` | Who asked her: the `by` of the message that triggered the turn; omitted for turns without a trigger |
 | `owner` | Whether the core recognizes `by` as the owner |
@@ -293,7 +293,7 @@ timeout_ms = 1000                    # how long to wait for you, optional
 - The permission policy decides first: calls it denies never reach you; allowed and ask-the-person calls do. Several guards are asked in parallel and the strictest wins: one deny denies; with no deny, one ask asks the person; when the policy asks, your allow still asks. You can only tighten, never loosen, and you don't change the sandbox.
 - Tools called from scripts (`miyu call`) are asked about too; `call_id` is the nested call's id (like `call_12_1#3`).
 
-**Params**: `{"session", "call_id", "tool", "args", "access", "cwd", "owner", "venue"}`: the session, this call's id, the tool name, the repaired arguments (exactly what will run), the access class, the turn's working directory, whether the speaker is the owner (as `owner` in `tool.call`), and where it was said (`local`, `private`, `group`).
+**Params**: `{"session", "call_id", "tool", "args", "access", "cwd", "owner", "venue"}`: the session, this call's id, the tool name, the repaired arguments (exactly what will run), the access class, the turn's working directory (a real path, as `cwd` in `tool.call`), whether the speaker is the owner (as `owner` in `tool.call`), and where it was said (`local`, `private`, `group`).
 
 **Response** `{"verdict": "allow" | "deny" | "ask", "reason"?}`:
 

@@ -127,7 +127,7 @@ pub(crate) async fn ask(core: Arc<Core>, ask: GuardAsk) -> Guarded {
         "tool": ask.tool,
         "args": args,
         "access": ask.access,
-        "cwd": ask.cwd,
+        "cwd": miyu_fs::handed(&ask.cwd, core.home.as_deref()),
         "owner": ask.owner,
         "venue": ask.venue.as_str(),
     });

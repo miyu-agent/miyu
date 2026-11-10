@@ -333,3 +333,27 @@ async fn a_call_carries_the_permission_and_persona() {
     assert!(unknown["params"].get("permission").is_none(), "{unknown}");
     assert!(unknown["params"].get("persona").is_none(), "{unknown}");
 }
+
+/// 交给扩展的工作目录是真实路径（施工 XW-1）：从旧版导入的会话记的是 `~`，原来照字面交出去，im 换不成真实位置，发什么文件
+/// 都被拒。
+#[tokio::test]
+async fn a_call_carries_the_working_directory_as_a_real_path() {
+    let home = std::env::temp_dir();
+    let mut call = call_by(None);
+    call.cwd = "~".to_string();
+    call.home = Some(home.clone());
+    let (remote, peer, mut lines) = remote(Duration::from_secs(60));
+    let running = tokio::spawn(async move { remote.run(call, Progress::new(|_| {})).await });
+    let sent = next(&mut lines).await;
+    peer.answer(Response {
+        id: sent["id"].as_str().unwrap().to_string(),
+        outcome: Ok(json!({"blocks": [{"type": "text", "text": "done"}]})),
+    });
+    running.await.unwrap();
+    let real = miyu_fs::usable(&std::fs::canonicalize(&home).expect("在"));
+    assert_eq!(
+        sent["params"]["cwd"],
+        json!(real.to_string_lossy()),
+        "{sent}"
+    );
+}

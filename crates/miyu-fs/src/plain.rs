@@ -48,5 +48,15 @@ pub fn usable(real: &Path) -> PathBuf {
     PathBuf::from(short)
 }
 
+/// 会话的工作目录 `cwd` 交给扩展用的写法（施工 XW-1）：会话里记的是人写的样子（`~`、`~/src/miyu`），扩展拿字面的 `~` 去换真实
+/// 位置必然失败。`~` 照 `home` 接上、换成真实位置、写成 [`usable`] 的样子；换不成的（家目录不知道、读不了）照原样。
+#[must_use]
+pub fn handed(cwd: &str, home: Option<&Path>) -> String {
+    match crate::resolve(Path::new(""), home, cwd) {
+        Ok(real) => usable(&real).to_string_lossy().into_owned(),
+        Err(_) => cwd.to_string(),
+    }
+}
+
 #[cfg(test)]
 mod tests;

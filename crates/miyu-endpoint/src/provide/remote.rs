@@ -337,7 +337,8 @@ impl Tool for RemoteTool {
                 "call_id": call_id,
                 "tool": self.spec.name,
                 "args": args,
-                "cwd": call.cwd,
+                // 真实位置（施工 XW-1）：会话记的可能是 `~`，扩展照字面换不成。
+                "cwd": miyu_fs::handed(&call.cwd, call.home.as_deref()),
                 "owner": asked.is_some_and(|by| by.is_owner()),
             });
             if let Some(by) = asked {
