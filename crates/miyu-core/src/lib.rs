@@ -108,6 +108,10 @@ pub fn main(options: Options) -> ExitCode {
         mmap_from = miyu_heap::MMAP_FROM,
         "heap tuned"
     );
+    // 打开文件数的软上限调高（施工 YC-1，压测 F1）：系统给的 1024 几百个会话就用光。调不上去照旧起来。
+    if let Err(error) = miyu_ipc::open_files::raise() {
+        tracing::warn!(target: TARGET, error = %error, "open files not raised");
+    }
     // 核心没了，它起的子进程跟着结束（施工 7-8，`core.md`「起来的先后」第 4 条）：Windows 上核心进作业对象，别的平台什么都
     // 不做（Unix 上每条命令的组里有看门的）。进不去照样起来。
     if let Err(error) = miyu_sandbox::lifeline::bind_children() {

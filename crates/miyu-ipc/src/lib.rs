@@ -21,6 +21,7 @@ mod error;
 mod files;
 mod listener;
 mod lock;
+pub mod open_files;
 mod place;
 mod ready;
 mod start;

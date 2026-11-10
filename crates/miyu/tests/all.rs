@@ -27,6 +27,8 @@ mod login_tty;
 mod memory;
 mod mermaid_fonts;
 mod no_proxy;
+#[cfg(unix)]
+mod open_files;
 mod packages;
 mod packages_live;
 mod pkg;
