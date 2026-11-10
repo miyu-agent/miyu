@@ -318,3 +318,37 @@ async fn her_sessions_tool_does_not_list_venue_sessions() {
         .to_string();
     assert!(!listed.contains(&short), "场所会话不列：{listed}");
 }
+
+/// `fresh: true` 不找已有的，另造一个新的（施工 YC-6补）：最新的场所会话日志坏了（`session_read_only`），桥照它另开一个；之后照常
+/// 找回的是新的，旧的照旧在。
+#[tokio::test]
+async fn a_fresh_venue_session_replaces_the_one_found_from_then_on() {
+    let home = Home::new();
+    let script = Script::new([]);
+    let mut client = connected(&home, &script).await;
+    let old = venue(&mut client, "v1", private("qq:10001")).await;
+    let old = old["result"]["session"]
+        .as_str()
+        .expect("有编号")
+        .to_string();
+    let mut fresh = private("qq:10001");
+    fresh["fresh"] = json!(true);
+    let made = venue(&mut client, "v2", fresh).await;
+    assert_eq!(made["result"]["created"], true, "{made}");
+    let new = made["result"]["session"]
+        .as_str()
+        .expect("有编号")
+        .to_string();
+    assert_ne!(new, old, "另造了一个");
+    let found = venue(&mut client, "v3", private("qq:10001")).await;
+    assert_eq!(
+        found["result"]["session"],
+        json!(new),
+        "之后找回的是新的：{found}"
+    );
+    assert_eq!(found["result"]["created"], false, "{found}");
+    assert!(
+        home.root.sessions().expect("列得出").len() >= 2,
+        "旧的照旧在"
+    );
+}

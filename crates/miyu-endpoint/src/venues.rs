@@ -65,6 +65,10 @@ pub(crate) struct VenueParams {
     /// 群聊近况最多带几条（施工 O-13 再补，接入通讯平台要的）：只给群，1 到 [`RECENT_MOST`]；不写的只照字节预算。
     #[serde(default)]
     recent: Option<u64>,
+    /// 不找已有的，直接造一个新的（施工 YC-6补）：最新的那个会话日志坏了（`session_read_only`），找回来的还是它，桥照这个另开一个；
+    /// 新的就是最新的，以后照常找回它，旧的照旧在列表里、看得到。不写的照常找。
+    #[serde(default)]
+    fresh: bool,
 }
 
 /// 群聊近况最多能写几条。
@@ -188,7 +192,9 @@ pub(crate) async fn session(
     }
     // 同一个场所同时来两次：一个找、一个造，排着来，免得造出两个主线会话。
     let _one_at_a_time = core.venues.lock().await;
-    if let Some(found) = find(core, &venue, confined).await? {
+    if !params.fresh
+        && let Some(found) = find(core, &venue, confined).await?
+    {
         return Ok(json!({"session": found.as_str(), "created": false}));
     }
     let who = Opening {

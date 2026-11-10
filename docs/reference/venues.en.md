@@ -45,6 +45,7 @@ The voice assistant's `voice:owner` is the owner without being written into the 
 | `titles` | boolean, default `true` | Whether this session gets automatic titles: with `false` it never does; renaming by hand still works. Ignored when an existing session is found |
 | `cwd` | string | Working directory when creating; the owner's default workspace when omitted |
 | `recent` | integer, 1 to 1000 | Groups only: at most this many recent group messages (newest first) go in front of a turn; the byte budget still caps it, the smaller wins; omitted means only the byte budget. Fixed when created |
+| `fresh` | boolean, default `false` | Don't look for an existing one, always create a new one: when the newest session's log is broken (`session_read_only`) the bridge opens another this way; from then on the new one is found, the old one stays viewable |
 
 The creation fields are ignored when an existing session is found.
 
