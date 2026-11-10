@@ -172,6 +172,10 @@ name = "spawn_log"
 path = "tests/spawn_log.rs"
 
 [[test]]
+name = "timing_log"
+path = "tests/timing_log.rs"
+
+[[test]]
 name = "title_log"
 path = "tests/title_log.rs"
 

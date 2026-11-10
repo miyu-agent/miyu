@@ -218,8 +218,9 @@ impl Session {
         })
     }
 
-    /// 这份请求算出的用量（`compaction.md` 第一条）。
-    pub(super) fn used(&self, request: &Request) -> Option<u64> {
+    /// 这份请求算出的用量（`compaction.md` 第一条）：`request` 是照这时的有效历史组装的。策略里没有压缩、没交过限额的
+    /// 算不了，没有。执行器开着 `DEBUG` 时也照它重估一遍，量用多久（施工 YC-14）。只读，不出动作。
+    pub fn used(&self, request: &Request) -> Option<u64> {
         self.used_in(&self.history, request)
     }
 

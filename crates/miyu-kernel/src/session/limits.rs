@@ -48,8 +48,13 @@ impl Session {
     /// 同一个算法估（`compaction.md` 第一条：锚加上锚以后的本地估算）。她自己查用量的工具（`session_usage`）派出去时，执行器
     /// 向内核要一份。策略里没有压缩、没交过限额的算不了，没有。只读，不出动作。
     pub fn context_used(&self) -> Option<u64> {
-        let request = self.policy.assembler.assemble(&self.history);
-        self.used(&request)
+        self.used(&self.assembled())
+    }
+
+    /// 照有效历史组装这时的请求（施工 YC-14）：和发主请求时组装的是同一步，还没放转述、没写输出上限。执行器开着 `DEBUG`
+    /// 时重跑一遍，量它用多久（内核自己不读时钟，`session/actor.md`「运行日志」的 `request timed`）。只读，不出动作。
+    pub fn assembled(&self) -> crate::request::Request {
+        self.policy.assembler.assemble(&self.history)
     }
 
     /// 在跑的回合和它的 `cause`（施工 8-9）：会话 actor 推 `model.changed` 时照它写（`by` 是内核，`cause` 是回合的，

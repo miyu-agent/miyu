@@ -71,6 +71,7 @@ mod store;
 pub mod switches;
 #[cfg(feature = "testkit")]
 pub mod testkit;
+mod timing;
 mod tools;
 mod usage;
 

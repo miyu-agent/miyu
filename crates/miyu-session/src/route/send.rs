@@ -137,6 +137,7 @@ pub(super) async fn attempt(
         request,
         chosen.memo.as_deref(),
         &chosen.blobs,
+        reports.lead(),
         stop,
         |progress| match progress {
             Progress::Sent { request, .. } => reports.sent(ready.model.clone(), request),

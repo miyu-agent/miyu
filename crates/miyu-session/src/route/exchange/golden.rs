@@ -220,6 +220,7 @@ async fn send(
         request,
         memo,
         blobs,
+        crate::timing::Lead::default(),
         std::future::pending(),
         |progress| {
             if let Progress::Sent { request, .. } = progress {

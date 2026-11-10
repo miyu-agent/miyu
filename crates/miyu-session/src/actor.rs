@@ -82,8 +82,9 @@ pub(crate) struct Actor {
     synced: mpsc::UnboundedReceiver<Synced>,
     /// 交给后台同步、往 `synced` 里送的那一头。
     syncs: mpsc::UnboundedSender<Synced>,
-    /// 还没说完的请求：叫停它的那一头，和交给端口的那一刻（算用时）。
+    /// 还没说完的请求：叫停它的那一头、交给端口的那一刻（算用时）。出下一次主请求的那一步内核的用时（施工 YC-14，`timing.rs`）。
     calls: BTreeMap<Seq, (oneshot::Sender<()>, Instant)>,
+    asked: Option<crate::timing::Kernel>,
     /// 还没说完的辅助请求（施工 3-8 四补的回顾、五补的起标题，`model.rs`）：用途、照到第几条、叫停它的那一头（拿着不用：
     /// actor 停了放下它，请求跟着停）、交给端口的那一刻。一种用途至多一个。
     asides: Vec<(Purpose, Seq, oneshot::Sender<()>, Instant)>,
@@ -109,8 +110,7 @@ pub(crate) struct Actor {
     config: Turning,
     /// 拿着订阅的头有几个（施工 7-9）：从没有到有、从有到没有时交内核 `Watched`。造会话、载入时是 0，和内核一样当没人看着。
     watchers: usize,
-    /// 这时有没有至少一个头订阅着，和 `Handle` 共用（施工 C-5，照 `busy` 的做法）：`watchers` 从 0 到有、从有到 0 时写一次。
-    /// `send_message` 发给这个会话的时候，别的会话照它和这个会话是不是一次性的，决定说 `sent` 还是 `held`。
+    /// 有没有头订阅着，和 `Handle` 共用（施工 C-5，照 `busy`）：`send_message` 照它和是不是一次性的说 `sent` 还是 `held`。
     watched: Arc<AtomicBool>,
     /// 「空了告诉我」等的这一边订过的（施工 C-6，`crate::peers`）。
     watches: Watches,
@@ -145,8 +145,7 @@ pub(crate) struct Stop;
 pub(crate) use crate::jobs::Kit as JobKit;
 
 impl Actor {
-    /// 一个 actor：会话的状态机、写盘的地方、请求模型的端口、工具目录和替工具写的两句、任务表、权限策略、收件箱、时钟、
-    /// 配置。
+    /// 一个 actor：状态机、写盘的地方、请求模型的端口、工具目录和替工具写的两句、任务表、权限策略、收件箱、时钟、配置。
     #[expect(
         clippy::too_many_arguments,
         reason = "造 actor 的几样各不相干，拼成一个结构体也只是换个地方列"
@@ -189,6 +188,7 @@ impl Actor {
             synced,
             syncs,
             calls: BTreeMap::new(),
+            asked: None,
             asides: Vec::new(),
             clock,
             bell: crate::handle::Bell::new(tools.agents()),
@@ -306,7 +306,7 @@ impl Actor {
                 true => tracing::trace!(target: TARGET, kind, "input"),
                 false => tracing::debug!(target: TARGET, kind, "input"),
             }
-            let actions = self.session.handle(input);
+            let actions = crate::timing::handle(&mut self.session, input, &mut self.asked);
             // 内核一收下就写「有没有在跑的回合」：回应在批中间就发出去了，回合开头慢的那一阵不能算闲着（`tests/busy.rs`）。
             self.settle_busy();
             for action in actions {

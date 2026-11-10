@@ -302,6 +302,7 @@ actor 退出以后：等着回应的命令、要订阅的、要停下的，都�
 | — | （载入以后、会话停了以后） | — | 载入交回把手、actor 的任务结束它占的放掉以后，在阻塞线程里把堆里空着的还给系统（施工 V-2 再补，`heap.md`） |
 | INFO | `loaded` | `events`（几条）；`read_ms`、`snapshot_ms`、`memory_ms`、`scan_ms`、`replay_ms`、`total_ms`：读、解日志，读快照，接上记忆，几样从日志重建的（看过的文件、任务、发给谁、累计用量），内核重放，各用了多少毫秒，和载入一共用了多少（含等模型目录读完；施工 V-2 中、下） | 载入，起 actor 之前 |
 | INFO | `request` | `seen`、`endpoint`、`model`、`changed`（变了的才有） | 第 7 条 |
+| DEBUG | `request timed` | `seen`；`kernel_us`、`assemble_us`、`estimate_us`、`fingerprint_us`、`messages`（主请求才有）；`wait_us`、`blobs_us`、`encode_us`、`drop_us`、`bytes` | 请求体编好、交给 HTTP 执行器之前，紧挨着 `http` 的 `sent`（施工 YC-14，`timing.rs`）。用时是微秒的整数，键名带 `_us`。`kernel_us`：出 `CallModel` 的那一次 `Session::handle` 整个用了多久（组装、看图、判线、算指纹）；后三格是出了动作以后照同一份历史、同一份请求各重跑一遍量的（内核不读时钟），不在 `kernel_us` 里：再组装一遍、再估一遍用量（一次 `handle` 里估三四遍）、再算一遍指纹；`messages` 是请求里几条消息。`wait_us`：从交给端口到发的任务开始（记 `request` 那一行、挑端点、排到任务）；`blobs_us`：列出、取好编码要的 blob；`encode_us`：补占位工具、压输出上限、编成片段清单；`drop_us`：放掉请求和取来的字节；`bytes`：请求体多大。请求体的哈希不在这以前算，跟着送出去的字节一路算（`http.md`）。辅助请求（回顾、起标题、摘要）也记，没有内核那几格；扩展驱动的、一次性入口的不带 `seen`，扩展驱动的不记。只在 `DEBUG` 开着时量：重跑的那三样只读、结果扔掉，发出去的请求一个字节不变 |
 | WARN | `no model` | `why`：`no_model` 的原话 | 路由挑不出端点，当场说完（第 8 条第 3 条，施工 8-6） |
 | INFO | `failed` | `seen`、`took_ms`、`class` | 请求出错收场 |
 | INFO | `ended` | `seen`、`took_ms`、`in`、`hit`、`write`、`out` | 请求说完 |
@@ -428,6 +429,7 @@ actor 退出以后：等着回应的命令、要订阅的、要停下的，都�
 | `crates/miyu-session/tests/prepare_log.rs`、`tests/prepare.rs`（施工 6-11 上） | 配置开着（默认）的过了起压线旁路发一次摘要请求、到线换上不再请求，`compacted` 那一行带 `prepared=yes`、有 `compaction request`；出错的记 `WARN compaction failed`；`compaction.prepare = false` 的照当场压 |
 | `crates/miyu-session/tests/title_log.rs`（施工 3-8 五补） | 起标题的请求记 `title request`、`title ended`、`title failed`，`seen` 是照到的那一条；两次都没起成，第三轮不再试；没有对话的字 |
 | `crates/miyu-session/tests/http_log.rs` | HTTP 的两行带会话编号，key 不在日志里 |
+| `crates/miyu-session/tests/timing_log.rs`（施工 YC-14） | `request timed`：`INFO` 时不记；调到 `DEBUG` 以后每次主请求一行、照先后、`seen` 对得上、十格都在，`bytes` 和 `http` 的 `sent` 一样 |
 | `crates/miyu-session/tests/index_log.rs`（施工 3-8 七补） | 每落一批，索引里那一行照到日志的末尾；表没了，更新失败只记一行带会话编号的 `session index not updated`，会话照常说完下一轮（`store/index.md`「守着它的」） |
 
 ### 出处

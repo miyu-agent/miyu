@@ -28,6 +28,7 @@ use super::base::{Ready, Speaker};
 use crate::blocking::blocking;
 use crate::clock::wall_now;
 use crate::route::shared::ModelData;
+use crate::timing::{Lead, Watch};
 
 /// 用出来的窗口记到哪：这一家、这个模型，和发的时候手头的窗口。
 pub(super) struct Learn {
@@ -82,15 +83,17 @@ pub(super) fn capped(call: &Call, cap: Option<u64>) -> Option<Call> {
 
 /// 发一次：取 blob、编码、发、读回来，「发出去了」和增量一有就交给 `on`；`cancel` 一完成就停。`request` 是交进来的那一份
 /// （主请求）的，编码完就放；借来的（旁路请求、一次性的，换人还要再发）照旧借着。`memo` 是会话留着的编好的历史（主请求
-/// 有，施工 V-42）：有的照它接着编，没有的整份编。
+/// 有，施工 V-42）：有的照它接着编，没有的整份编。`lead` 是分段量用时带来的那一半（施工 YC-14）：不经会话发的是空的。
 pub(super) async fn exchange(
     ready: &Ready,
     request: Cow<'_, Request>,
     memo: Option<&Mutex<Memo>>,
     blobs: &Blobs,
+    lead: Lead,
     cancel: impl Future<Output = ()> + Send,
     on: impl FnMut(Progress) + Send,
 ) -> Exchanged {
+    let mut watch = Watch::start(lead);
     let driver = match &ready.speaker {
         Speaker::Builtin(driver) => driver.as_ref(),
         // 扩展提供的驱动（施工 MD-2）：不编码、不走 HTTP，经端口交给扩展。
@@ -108,6 +111,7 @@ pub(super) async fn exchange(
             blocking(move || fetch(&blobs, needed, &whole)).await
         }
     };
+    watch.fetched();
     // 占位工具（施工 8-14 补）：档案点名了哪几件、工具面里缺的才拷一份补上；不缺的、没点名的原样编码，一个字节不动。
     let request = match super::placeholder::missing(&request, &ready.placeholders) {
         false => request,
@@ -133,18 +137,23 @@ pub(super) async fn exchange(
         }
         None => driver.fragments(&request, call, &fetched),
     };
+    watch.encoded();
     // 编完了：请求（交进来的那一份）、取来的字节放掉（施工 V-38）。
     drop(request);
     drop(fetched);
+    watch.dropped();
     let encoded = match encoded {
         Ok(encoded) => encoded,
         Err(EncodeError::MissingBlob(hash)) => return Exchanged::Missing(missing(&hash)),
     };
+    let body = Body::new(encoded.body, Arc::new(StoreBlobs(blobs.clone())));
+    // 每一段用了多久记一行（施工 YC-14，`timing.rs`）：只在 `DEBUG` 记。
+    watch.sent(body.len());
     let attempt = Attempt {
         client: &ready.client,
         endpoint: &ready.endpoint,
         driver,
-        body: Body::new(encoded.body, Arc::new(StoreBlobs(blobs.clone()))),
+        body,
         path: &encoded.path,
         idle: ready.idle,
     };

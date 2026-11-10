@@ -49,7 +49,7 @@ impl Actor {
         );
         let (stop, cancel) = oneshot::channel();
         self.calls.insert(seen, (stop, Instant::now()));
-        let reports = Reports::new(seen, self.backs.clone());
+        let reports = Reports::new(seen, self.backs.clone()).timed(self.asked.take());
         let config = self.config.current();
         self.model
             .call(seen, request, config, reports, Cancel::new(cancel));

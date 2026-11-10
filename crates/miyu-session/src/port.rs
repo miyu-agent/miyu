@@ -20,6 +20,7 @@ use miyu_store::blob::Blobs;
 
 use crate::config::TurnConfig;
 use crate::route::OneShot;
+use crate::timing::{Kernel, Lead};
 
 /// 给一个会话造请求模型的端口（施工 3-7 下）。造会话、载入时，拿到了这个会话的策略快照再造：驱动的
 /// 占位冻结在快照里，核心升级改了字，老会话照样逐字节重现当时的请求（施工 3-6 上）。
@@ -173,6 +174,8 @@ pub struct Reports {
     fell_back: bool,
     /// 真发出去的字节的哈希（施工 MD-2，[`Reports::wired`]）：扩展驱动在结尾报的，随说完了交给内核。
     wire: Option<ContentHash>,
+    /// 分段量用时带着走的那一半（施工 YC-14，`timing.rs`）：`DEBUG` 关着的是空的。
+    lead: Lead,
     back: mpsc::UnboundedSender<Back>,
 }
 
@@ -184,6 +187,7 @@ impl Reports {
             tariff: None,
             fell_back: false,
             wire: None,
+            lead: Lead::start(seen),
             back,
         }
     }
@@ -196,8 +200,21 @@ impl Reports {
             tariff: None,
             fell_back: false,
             wire: None,
+            lead: Lead::start(upto),
             back,
         }
+    }
+
+    /// 带上内核那一头量的用时（施工 YC-14）：主请求交给端口之前交。
+    #[must_use]
+    pub(crate) fn timed(mut self, kernel: Option<Kernel>) -> Reports {
+        self.lead = self.lead.with(kernel);
+        self
+    }
+
+    /// 分段量用时带着走的那一半（施工 YC-14）：发的任务照它接着量。
+    pub(crate) fn lead(&self) -> Lead {
+        self.lead
     }
 
     /// 这一次照 `tariff` 算金额（施工 8-15，`docs/blueprint/models.md`「怎么走」第九条第 3 条）：端口挑定了真发给的模型以后

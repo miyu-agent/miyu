@@ -77,6 +77,7 @@ async fn a_blob_that_cannot_be_read_is_reported_and_nothing_is_sent() {
                 Cow::Borrowed(&request),
                 None,
                 &blobs,
+                crate::timing::Lead::default(),
                 std::future::pending(),
                 |_| sent = true,
             )

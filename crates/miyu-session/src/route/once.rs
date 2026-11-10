@@ -322,6 +322,7 @@ impl OneShot {
                 Cow::Borrowed(&request),
                 None,
                 blobs,
+                crate::timing::Lead::default(),
                 std::future::pending(),
                 |progress| {
                     if let Progress::Delta(delta) = &progress {
