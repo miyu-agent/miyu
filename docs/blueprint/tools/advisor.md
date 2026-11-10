@@ -97,7 +97,7 @@ You are an advisor to another AI agent. You see only the question it sends you, 
 
 ### 给人看的字
 
-显示名：顾问（Advisor、アドバイザー），后面跟 `question` 的值；符号 `?`。
+显示名：求助旗舰模型（Ask the flagship model、フラッグシップモデルに相談；项目主人 11-10 验收时从「顾问」改的），后面跟 `question` 的值；符号 `?`。
 
 | 说法 | 中文 | 英文 | 日文 |
 |---|---|---|---|

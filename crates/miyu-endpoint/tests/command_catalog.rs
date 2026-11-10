@@ -64,7 +64,7 @@ async fn without_a_session_every_command_is_listed_in_the_connections_language()
                 {"form": "/loop off", "summary": "停止此会话的循环"},
             ]},
             {"name": "remember", "aliases": [], "summary": "添加记忆", "argument": "<内容>"},
-            {"name": "stop", "aliases": [], "summary": "停止会话中所有正在运行的东西"},
+            {"name": "stop", "aliases": [], "summary": "停止此会话所有处理中的东西"},
             {"name": "todo", "aliases": [], "summary": "待办", "argument": "[clear]", "usage": [
                 {"form": "/todo", "summary": "看待办"},
                 {"form": "/todo clear", "summary": "清空"},

@@ -360,7 +360,7 @@ async fn presets_are_listed_and_read_by_layer() {
         features,
         [
             // 施工 BS-1 上中起基础系统一件一个包，照清单读的先后（包的编号排）；常规开发照组 basesystem 全开，组名不另列。
-            ("advisor", "顾问", true, true),
+            ("advisor", "求助旗舰模型", true, true),
             ("ask_user", "提问", true, true),
             ("clicall", "命令行调用工具", true, true),
             ("edit", "编辑文件", true, true),

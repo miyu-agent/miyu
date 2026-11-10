@@ -248,11 +248,15 @@ async fn every_outcome_says_something_people_can_read() {
     readable(&checked, &["advisor"]);
 }
 
-/// 显示名三种语言里都有（设计 69 施工 ADV-2）：顾问、Advisor、アドバイザー。
+/// 显示名三种语言里都有（设计 69 施工 ADV-2）：求助旗舰模型、Ask the flagship model、フラッグシップモデルに相談（主人 11-10 验收时改的）。
 #[test]
 fn it_is_shown_as_the_advisor() {
     let root = ResourceRoot::at(resources());
-    for (language, name) in [("zh", "顾问"), ("en", "Advisor"), ("ja", "アドバイザー")] {
+    for (language, name) in [
+        ("zh", "求助旗舰模型"),
+        ("en", "Ask the flagship model"),
+        ("ja", "フラッグシップモデルに相談"),
+    ] {
         let words = Human::load(&root, language).expect("给人看的字读得出来");
         let shown = words.tool("advisor").expect("有 advisor 的显示名");
         assert_eq!(shown.name, name, "{language}");

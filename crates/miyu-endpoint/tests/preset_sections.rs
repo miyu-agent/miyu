@@ -37,7 +37,7 @@ const SHIPPED: [Shipped; 5] = [
             ("jobs", "后台运行"),
             ("clicall", "命令行调用工具"),
             ("subagent", "子代理"),
-            ("advisor", "顾问"),
+            ("advisor", "求助旗舰模型"),
             ("ask_user", "提问"),
             ("show", "展示给用户"),
             ("sessions", "跨会话消息"),

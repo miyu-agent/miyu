@@ -6,12 +6,12 @@ upstream = "https://github.com/miyu-agent/miyu"
 prefix = "advisor"
 protocol = [1, 1]
 groups = ["basesystem"]
-name = { en = "Advisor", zh = "顾问", ja = "アドバイザー" }
+name = { en = "Ask the flagship model", zh = "求助旗舰模型", ja = "フラッグシップモデルに相談" }
 summary = { en = "Ask a model in the flagship pool for advice when stuck", zh = "卡住时请旗舰池里的模型出主意", ja = "行き詰まったときにフラッグシッププールのモデルに助言を求めます" }
 
 # 一个功能，编号同包（施工 BS-1 上中）：写明带的工具，装别的包时照它查工具撞名（`miyu_store::packages::conflicts`）。
 [features.advisor]
-name = { en = "Advisor", zh = "顾问", ja = "アドバイザー" }
+name = { en = "Ask the flagship model", zh = "求助旗舰模型", ja = "フラッグシップモデルに相談" }
 summary = { en = "Ask a model in the flagship pool for advice when stuck", zh = "卡住时请旗舰池里的模型出主意", ja = "行き詰まったときにフラッグシッププールのモデルに助言を求めます" }
 tools = ["advisor"]
 
