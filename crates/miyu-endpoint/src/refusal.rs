@@ -9,6 +9,7 @@ mod edits;
 mod export;
 mod goal;
 mod knowledge;
+mod line;
 mod memory;
 mod message;
 mod package;

@@ -165,13 +165,15 @@ async fn read_all<R: AsyncRead + Unpin>(
         };
         let line = match read {
             Ok(Read::Line(line)) => line,
-            Ok(Read::TooLong) => {
+            Ok(Read::TooLong(id)) => {
                 let locale = shaken
                     .as_ref()
                     .map_or(Locale::En, |shaken| shaken.now(&core).locale);
-                // 超长的这一行已经跳到换行（施工 FX-1）：只拒这一条、回一句读不懂，连接照旧，扩展不至于当成断线退出。
+                // 超长的这一行已经跳到换行（施工 FX-1）：只拒这一条，连接照旧，扩展不至于当成断线退出。照实说太长、带上开头里
+                // 认得出的 `id`（施工 YC-5）：原来回「读不懂」、`id` 是空的，头对不上是哪一条，一直等。
                 tracing::warn!(target: "miyu::endpoint", "line too long, refused");
-                if !send(&out, wire::error(Value::Null, Refusal::PARSE, locale)).await {
+                let id = id.unwrap_or(Value::Null);
+                if !send(&out, wire::error(id, Refusal::line_too_long(), locale)).await {
                     break;
                 }
                 continue;

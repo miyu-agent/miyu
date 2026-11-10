@@ -5,6 +5,10 @@
 pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
     match reason {
         "parse_error" => ("消息格式错误。", "Malformed message."),
+        "line_too_long" => (
+            "消息超过 1 MiB，没有收。大的内容请用附件发。",
+            "Message over 1 MiB, not accepted. Send large content as an attachment.",
+        ),
         "invalid_request" => ("无效的请求。", "Invalid request."),
         "unknown_method" => ("方法不存在。", "Method not found."),
         "bad_params" => ("参数错误。", "Invalid parameters."),

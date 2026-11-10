@@ -10,7 +10,9 @@ use miyu_kernel::id::CommandId;
 
 use crate::refusal::{Locale, Refusal};
 
-/// 一行最长多少字节：附件走 `blob.put`，一条消息用不着更长。超长的当读不懂，不在内存里攒。
+mod head;
+
+/// 一行最长多少字节：附件走 `blob.put`，一条消息用不着更长。超长的照实拒成 `line_too_long`（施工 YC-5），不在内存里攒。
 pub(crate) const LINE_LIMIT: usize = 1024 * 1024;
 
 /// 收到的一条请求。
@@ -62,8 +64,8 @@ pub(crate) enum Read {
     Line(Vec<u8>),
     /// 对方关了。
     Closed,
-    /// 太长：这一行剩下的已经跳过了（施工 FX-1），下一次读的是下一行。
-    TooLong,
+    /// 太长：这一行剩下的已经跳过了（施工 FX-1），下一次读的是下一行。带着开头里认得出的 `id`（施工 YC-5），认不出的是空的。
+    TooLong(Option<Value>),
 }
 
 /// 读一行，最多 [`LINE_LIMIT`] 字节。行尾的 `\n`（和它前面的 `\r`）去掉。
@@ -85,9 +87,10 @@ pub(crate) async fn read_line<R: AsyncBufRead + Unpin>(reader: &mut R) -> std::i
             line.pop();
         }
     } else if line.len() > LINE_LIMIT {
+        let id = head::id_in(&line[..head::HEAD]);
         drop(line);
         skip_line(reader).await?;
-        return Ok(Read::TooLong);
+        return Ok(Read::TooLong(id));
     }
     Ok(Read::Line(line))
 }

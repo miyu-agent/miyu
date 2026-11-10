@@ -259,8 +259,11 @@ async fn a_line_too_long_is_refused_and_the_next_still_works() {
     // 超长的一行放到另一个任务里写：核心读到上限就不读了，写的一头不能挡着读的一头。
     let mut writer = client.detach_writer();
     let written = tokio::spawn(async move {
-        let mut line = vec![b'x'; LINE_LIMIT + 10];
-        line.push(b'\n');
+        // 是一条真的请求，开头带着 `id`（施工 YC-5）：拒绝照它回。
+        let mut line =
+            br#"{"jsonrpc":"2.0","id":"c-long","method":"session.fly","params":{"text":""#.to_vec();
+        line.extend(std::iter::repeat_n(b'x', LINE_LIMIT + 10));
+        line.extend_from_slice(b"\"}}\n");
         writer
             .write_all(&line)
             .await
@@ -268,7 +271,18 @@ async fn a_line_too_long_is_refused_and_the_next_still_works() {
         writer
     });
     let reply = client.next().await.expect("有回应");
-    assert_eq!(reply["error"]["code"], json!(-32700), "{reply}");
+    // 照实说太长、带上限和认得出的 `id`（施工 YC-5，压测 F5、O11）：原来是 `parse_error`、`id` 为空，头对不上是哪一条。
+    assert_eq!(reply["id"], json!("c-long"), "{reply}");
+    assert_eq!(
+        reply["error"]["data"]["reason"],
+        json!("line_too_long"),
+        "{reply}"
+    );
+    assert_eq!(
+        reply["error"]["data"]["limit"],
+        json!(LINE_LIMIT),
+        "{reply}"
+    );
     // 只拒这一条（施工 FX-1）：连接还在，下一条照常回。
     client.attach_writer(written.await.expect("写的任务没 panic"));
     let reply = client.call("c3", "session.fly", json!({})).await;

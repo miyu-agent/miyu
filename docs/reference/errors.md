@@ -16,7 +16,8 @@
 
 | `reason` | `code` | 什么时候 |
 |---|---|---|
-| `parse_error` | -32700 | 不是 JSON；一行太长（之后断开） |
+| `parse_error` | -32700 | 不是 JSON |
+| `line_too_long` | -32010 | 一行超过 1 MiB：只拒这一行，连接照旧；`data.limit` 是上限，`id` 照这一行开头认得出的 |
 | `invalid_request` | -32600 | 是 JSON，不是请求 |
 | `unknown_method` | -32601 | 没有这个方法（可选的包没编进来的方法也是） |
 | `bad_params` | -32602 | 参数读不成、类型不对、写法不对；各方法的具体情形写在各自的「出错」里 |

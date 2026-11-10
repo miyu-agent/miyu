@@ -16,7 +16,8 @@ Chinese version: [errors.md](errors.md).
 
 | `reason` | `code` | When |
 |---|---|---|
-| `parse_error` | -32700 | Not JSON; a line too long (then closes) |
+| `parse_error` | -32700 | Not JSON |
+| `line_too_long` | -32010 | A line over 1 MiB: only that line is refused, the connection stays open; `data.limit` is the limit, `id` is the one found at the start of the line |
 | `invalid_request` | -32600 | JSON but not a request |
 | `unknown_method` | -32601 | No such method (also methods of optional packages not compiled in) |
 | `bad_params` | -32602 | Params can't be read, have the wrong type or form; each method's "Errors" lists its cases |

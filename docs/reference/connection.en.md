@@ -20,7 +20,7 @@ Chinese version: [connection.md](connection.md).
 
 ## One message per line
 
-- Each message is one line of JSON, UTF-8, ending in `\n` (`\r\n` is accepted when reading). At most 1 MiB per line; a longer line gets `parse_error` (with `id` null) and is skipped; the connection stays open.
+- Each message is one line of JSON, UTF-8, ending in `\n` (`\r\n` is accepted when reading). At most 1 MiB per line; a longer line gets `line_too_long` (`data.limit` is the limit; `id` is the one found at the start of the line, `null` when none is found) and is skipped; the connection stays open. Check the limit before sending and put large content in an attachment (`blob.put`).
 - The core writes compact JSON with object fields sorted by name.
 
 **Requests** are JSON-RPC 2.0: `jsonrpc` is `"2.0"`, `method` the method name, `params` an object (omitted means `{}`, an array gets `bad_params`), `id` a string of 1 to 128 bytes with no control characters. A message without `id` is a notification and the core ignores it, except `connection.remote` before the hello (see **Web** above). Unknown params are ignored; `null` means omitted.

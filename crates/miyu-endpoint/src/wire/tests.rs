@@ -130,7 +130,7 @@ async fn lines_lose_their_ends_and_long_ones_are_refused() {
     let mut reader = tokio::io::BufReader::new(&long[..]);
     assert!(matches!(
         read_line(&mut reader).await.expect("读得了"),
-        Read::TooLong
+        Read::TooLong(None)
     ));
     assert!(matches!(
         read_line(&mut reader).await.expect("读得了"),
@@ -148,7 +148,7 @@ async fn after_a_long_line_the_next_one_is_read() {
         let mut reader = tokio::io::BufReader::with_capacity(4096, &data[..]);
         assert!(matches!(
             read_line(&mut reader).await.expect("读得了"),
-            Read::TooLong
+            Read::TooLong(None)
         ));
         for want in ["next", "after"] {
             match read_line(&mut reader).await.expect("读得了") {
@@ -156,5 +156,19 @@ async fn after_a_long_line_the_next_one_is_read() {
                 other => panic!("应该是一行：{other:?}"),
             }
         }
+    }
+}
+
+/// 太长的一行带着开头里认得出的 `id`（施工 YC-5，压测 F5、O11）：拒绝照它回，头对得上是哪一条。
+#[tokio::test]
+async fn a_long_request_keeps_its_id() {
+    let mut data =
+        br#"{"jsonrpc":"2.0","id":"send-9","method":"session.send","params":{"text":""#.to_vec();
+    data.extend(std::iter::repeat_n(b'a', LINE_LIMIT));
+    data.extend_from_slice(b"\"}}\n");
+    let mut reader = tokio::io::BufReader::new(&data[..]);
+    match read_line(&mut reader).await.expect("读得了") {
+        Read::TooLong(id) => assert_eq!(id, Some(serde_json::json!("send-9"))),
+        other => panic!("应该太长：{other:?}"),
     }
 }
