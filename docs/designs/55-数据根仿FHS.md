@@ -56,6 +56,7 @@
 │   │   ├── models/               学到的上下文窗口 learned.json、池的指针 pools.json、供应商改名 renamed.json
 │   │   ├── packages/<编号>/      本地库：desc、files（照 pacman 的 local/）；leftovers.json 卸包留下的改动
 │   │   ├── mcp/<服务>/           MCP 服务（命令型）的工作目录
+│   │   ├── blob-grants/<编号>    这个包自己存过哪些 blob（施工 BG-1），一行一个哈希
 │   │   └── <编号>/               每个包自己的数据
 │   ├── cache/                    能删（先停核心）：核心会重建或重新下载
 │   │   ├── index/                sessions.db、recall/、kb/（向量要重算，删了慢一阵）
@@ -90,7 +91,7 @@
 
 1. **备份** `etc/`、`root/`、`var/lib/`；**能删** `var/cache/`、`var/log/`、`var/tmp/`、`tmp/`（删 `var/cache/` 先停核心，第五节第 2 条）；`opt/` 能重装；`run/` 核心在跑时别动。
 2. **归谁**：你产生的、你写的放 `root/`；机器和软件包的放 `etc/`、`opt/`、`var/`。以后多用户时，每人一个 `home/<用户名>/`，排法同 `root/`，`root/` 不挪；以后只是多出一份个人版的（个人设置、个人密钥），现在放机器级，到时候在家里加一层盖过它，现在的不挪。
-3. **核心的和包的**：照 Linux 的 `/etc/passwd` 和 `/etc/<软件>/` 并存：核心自己的放在 `etc/`、`var/lib/`、`var/cache/`、`var/log/`、`tmp/`、`run/` 这一层，每个软件包各占一个 `<编号>/`。核心在这几层用到的名字保留，软件包不能用作编号：`private`、`removed`、`leftover`（施工 PK-5补）、`models`、`packages`、`mcp`、`index`、`config`、`provide`、`scripts`、`personas`、`mermaid`、`sandbox`、`perf`、`unpack`、`token`、`socket`、`log-salt`。保留表由测试照各层的常量推出来、和这份对；装包时拒，`miyu check` 报，软件源收录时拒。包编号不带点，和 `config.toml` 这类文件名撞不上。
+3. **核心的和包的**：照 Linux 的 `/etc/passwd` 和 `/etc/<软件>/` 并存：核心自己的放在 `etc/`、`var/lib/`、`var/cache/`、`var/log/`、`tmp/`、`run/` 这一层，每个软件包各占一个 `<编号>/`。核心在这几层用到的名字保留，软件包不能用作编号：`private`、`removed`、`leftover`（施工 PK-5补）、`models`、`packages`、`mcp`、`index`、`config`、`provide`、`scripts`、`personas`、`mermaid`、`sandbox`、`perf`、`unpack`、`token`、`socket`、`log-salt`、`blob-grants`（施工 BG-1）。保留表由测试照各层的常量推出来、和这份对；装包时拒，`miyu check` 报，软件源收录时拒。包编号不带点，和 `config.toml` 这类文件名撞不上。
 4. **一个软件包的东西**：`opt/<编号>/`、`etc/<编号>/`、`var/lib/<编号>/`、`var/cache/<编号>/`、`var/log/<编号>/`、`tmp/<编号>/`、`run/<编号>/`；`var/lib/packages/<编号>/` 本地库、`etc/removed/<编号>`、`etc/leftover/<编号>.toml`（施工 PK-5补）；`etc/extensions.json`、`etc/config.toml`、`etc/kb.toml` 里它的那几项；它带的脚本的状态和缓存 `root/state/scripts/<编号>/`、`var/cache/scripts/<编号>/`（还有各 `@场所` 下的）；它带的 MCP 服务的 `var/lib/mcp/<服务>/`、`var/cache/mcp/<服务>.json`、`var/log/mcp/<服务>.stderr`；`var/cache/provide/<编号>.json`、`var/cache/index/kb/packages/<编号>/`。卸包就是清这些（照现在「卸就是清干净」）。
 5. **两个 tmp**：`tmp/` 短命，像 `/tmp`：核心起来只清自己的 `tmp/unpack/`；`tmp/<编号>/` 在核心拉起这个包的扩展之前清，包自己拉起的常驻程序（例如 `miyu web` 分离起的服务）自己管。`var/tmp/` 跨重启留着，像 `/var/tmp`，按时限清（初值 7 天没碰），现在没有住户。沙盒里命令和脚本用的临时目录照旧用系统的，不放进数据根。blob 的临时文件留在 `root/blobs/tmp/`：要和 blob 在同一个目录树里才能改名换上，`tmp/` 可能被人单独挂成 tmpfs。
 6. **人格和记忆**：人格三层（出厂的、包带的、你的 `root/personas/`），记忆照人格编号只有一份，不管用的是哪一层（`personas.md`「怎么走」第 5 条），放 `root/memory/<人格>/`，不放进人格目录：出厂的、包带的人格在只读的地方；在 `root/personas/` 下为出厂人格建一个目录会被当成你那一层的覆盖；没选人格的 `_none` 没有人格目录。

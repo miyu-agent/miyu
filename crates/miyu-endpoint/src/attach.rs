@@ -131,7 +131,7 @@ pub(crate) async fn put(
     place.own = package.and_then(|package| own_folder(core, package));
     let (blob, reply) = blocking(move || put_blocking(&place, source, given)).await?;
     if let Some(package) = package {
-        core.blob_grants.grant(package, &blob);
+        core.blob_grants.grant(package, &blob).await;
     }
     Ok(reply)
 }

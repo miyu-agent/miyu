@@ -150,8 +150,8 @@ pub(crate) async fn remove_package(
     for service in &services {
         crate::mcp::forget(core, service);
     }
-    // 它拿得到的 blob（施工 W-6 三补）：装回来从空的开始。
-    core.blob_grants.forget(&removed);
+    // 它拿得到的 blob（施工 W-6 三补）、自己存过哪些落盘的那一份（施工 BG-1）：装回来从空的开始。
+    core.blob_grants.forget(&removed).await;
     tracing::info!(target: TARGET, package = removed.as_str(), "package removed");
     // 系统加装的说一声：文件还在，要删用系统的包管理器（施工 SD-1，命令行照 `layer` 说）。
     Ok(json!({"package": removed, "removed": true, "layer": layer.as_str()}))

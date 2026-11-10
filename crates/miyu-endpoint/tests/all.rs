@@ -54,6 +54,7 @@ mod backstage;
 mod blind_venue;
 mod blob_bridge;
 mod blob_grants;
+mod blob_grants_restart;
 mod blob_own_package;
 mod blob_session;
 mod bridge_venues;

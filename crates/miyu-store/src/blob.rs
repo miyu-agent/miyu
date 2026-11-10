@@ -32,6 +32,8 @@ use miyu_kernel::id::{ContentHash, Hasher};
 
 use crate::durable::{create_dir, create_temp, discard, sync_dir};
 
+pub mod grants;
+
 /// 放临时文件的目录。和前两位的目录（两位十六进制）撞不上。
 const TMP: &str = "tmp";
 

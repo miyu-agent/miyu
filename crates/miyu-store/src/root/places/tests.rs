@@ -51,6 +51,7 @@ fn reserved_ids_are_exactly_the_names_the_core_uses_beside_packages() {
                 root.local_packages().join(x),
                 root.leftovers_dir().join(crate::packages::leftovers::FILE),
                 root.mcp_workdir(x),
+                root.blob_grants(x),
             ],
         ),
         (

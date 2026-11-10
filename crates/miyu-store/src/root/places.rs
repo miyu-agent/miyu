@@ -202,6 +202,16 @@ impl DataRoot {
         self.var_lib().join("mcp").join(service)
     }
 
+    /// 各个包自己存过哪些 blob 的目录：`var/lib/blob-grants/`（施工 BG-1，[`crate::blob::grants`]）。
+    pub fn blob_grants_dir(&self) -> PathBuf {
+        self.var_lib().join("blob-grants")
+    }
+
+    /// 包 `package` 自己存过哪些 blob 的那一份：`var/lib/blob-grants/<包>`，一行一个哈希。
+    pub fn blob_grants(&self, package: &str) -> PathBuf {
+        self.blob_grants_dir().join(package)
+    }
+
     // ---- 能删的缓存（设计 55：`var/cache/`） ----
 
     /// 用量汇总：`var/cache/usage.db`（[`crate::usage`]）。

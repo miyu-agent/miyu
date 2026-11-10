@@ -25,6 +25,7 @@
 | `crates/miyu-store/src/log/open.rs`、`log/open/walk.rs`、`log/open/parse.rs`、`log/open/parse/stream.rs`、`log/open/range.rs`、`log/open/lines.rs` | 打开时自检、截半行；只读地读；从记下的位置读起（施工 3-8 七补）；只读第一条；一段里行多的分块一起读成事件（施工 V-2 下补），解好一块照先后交一块（施工 V-15）；一段照定长的窗口一窗窗读，原文不整段进内存（施工 V-37 中）；照序号读一截（`read_range`，施工 V-37 中）；只解要的种类的那一份（`read_range_only`，施工 V-39 上补）；只数行、不解，照位置读一截、读一行（`scan_lines`、`read_between`、`read_line_near`，施工 V-41 上）；每一行照调的一方给的解（`read_marked_with`、`read_range_with`，施工 V-43） |
 | `crates/miyu-store/src/bundle.rs`、`bundle/manifest.rs` | 会话的原始包（施工 SE-1 上，设计 58）：几个会话的段原文、引用到的 blob、清单，打成一个 ZIP；写法见下面「原始包」 |
 | `crates/miyu-store/src/blob.rs` | blob：存、取、核对哈希；分块暂存、改名进位置、扔掉、核心起来时清（施工 W-5）；读一段（施工 W-6）；只核对、量大小，打开了从某处读（施工 V-38） |
+| `crates/miyu-store/src/blob/grants.rs` | 包自己存过哪些 blob 落盘的那一份 `var/lib/blob-grants/<编号>`（施工 BG-1，`protocol.md` 的 `blob.get` 第 1 条）：一行一个哈希，照 `journal.jsonl` 的办法追加、同步，一把锁一行一行来；读的时候坏行跳过、数出来，一份读不了的不拦别的；卸包时删 |
 | `crates/miyu-store/src/jobs.rs` | 会话目录下后台命令的输出：`jobs/<编号>.out`（施工 7-3） |
 | `crates/miyu-store/src/attachments.rs` | 会话的附件落成文件：清名字、照字节截、补扩展名、撞名接序号、临时文件改名（施工 3-9 六补，「怎么走」第 13 条） |
 | `crates/miyu-store/src/trash.rs` | 回收处：删掉的会话挪进来、满了时限的真删（施工 3-8 三补）；真删之前往日志留用量的底（施工 8-15） |
@@ -119,7 +120,7 @@
 │   ├── workspace/<会话编号>/    每个会话的默认工作区
 │   └── pictures/ videos/ documents/ downloads/   照 XDG 给你的几处，用到才建
 ├── var/
-│   ├── lib/                    journal.jsonl、log-salt（0600）、models/、packages/<编号>/（本地库）和 leftovers.json、mcp/<服务>/、<编号>/（包的数据；界面包的里面另有核心写的 prefs.json，头自己的设置）
+│   ├── lib/                    journal.jsonl、log-salt（0600）、models/、packages/<编号>/（本地库）和 leftovers.json、mcp/<服务>/、blob-grants/<编号>（包自己存过的 blob，一行一个哈希）、<编号>/（包的数据；界面包的里面另有核心写的 prefs.json，头自己的设置）
 │   ├── cache/                  能删（先停核心）：index/、usage.db、rates.db、config/、models/、packages/、mcp/<服务>.json、provide/<包>.json、scripts/、personas/、mermaid/、sandbox-probe.json、perf/、<编号>/
 │   ├── log/                    core.log（和轮换的 .1…）、memory.jsonl、mcp/<服务>.stderr、sandbox/windows-error.json、<编号>/（包的日志；stderr、stderr.old 是核心记的）
 │   └── tmp/                    跨重启留着的暂存，核心起来时清放了满 7 天没碰的
@@ -127,7 +128,7 @@
 └── run/                        core.lock、spawn.lock、token、socket（core.sock）；写数据根里配置、密钥时的临时文件；<编号>/ 包自己的锁、地址（网页的 miyu-webui/lock、address、open/）
 ```
 
-- 包的编号不能是核心在这几层自己用的名字（`root::RESERVED`：private removed leftover models packages mcp index config provide scripts personas mermaid sandbox perf unpack token socket log-salt）：读清单时报 `reserved_id`，装的时候拒（施工 FH-3）。
+- 包的编号不能是核心在这几层自己用的名字（`root::RESERVED`：private removed leftover models packages mcp index config provide scripts personas mermaid sandbox perf unpack token socket log-salt blob-grants）：读清单时报 `reserved_id`，装的时候拒（施工 FH-3）。
 - 这一页的代码新建的目录，Unix 上权限都是 0700；已经有的不改。Windows 上照系统默认的，靠用户目录本身的访问控制。
 - 这一页的代码新建的文件（标记、段、blob、临时文件、配置文件、日志）照系统默认的权限建，靠上面 0700 的目录挡住别人。替换已经有的配置文件时带上它原来的权限位（施工 8-3）。
 - 核心起来时建好设计 55 第五节第 2 条那张表（`DataRoot::prepare_private`，施工 R3-1 补、FH-3，`core.md`「起来的先后」第 5 条），沙盒里每条命令起来前再补一遍：Windows 的沙盒只禁命令起来那一刻已有的，命令跑着时第一次建的整棵读得到。别的照旧用到时再建。

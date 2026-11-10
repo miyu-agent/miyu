@@ -4,9 +4,26 @@ use super::{Code, Problem};
 
 /// 核心自己在数据根的 `etc/`、`var/lib/`、`var/cache/`、`var/log/`、`tmp/`、`run/` 这几层用到的名字（设计 55 第三节第 3 条）：包
 /// 各占一个 `<编号>/`，这些不能用作包的编号。`miyu-store` 的测试照各层的方法推一遍，和这张表对。
-pub const RESERVED: [&str; 18] = [
-    "private", "removed", "leftover", "models", "packages", "mcp", "index", "config", "provide",
-    "scripts", "personas", "mermaid", "sandbox", "perf", "unpack", "token", "socket", "log-salt",
+pub const RESERVED: [&str; 19] = [
+    "private",
+    "removed",
+    "leftover",
+    "models",
+    "packages",
+    "mcp",
+    "index",
+    "config",
+    "provide",
+    "scripts",
+    "personas",
+    "mermaid",
+    "sandbox",
+    "perf",
+    "unpack",
+    "token",
+    "socket",
+    "log-salt",
+    "blob-grants",
 ];
 
 /// 编号 `id` 是保留的名字的话，那一条问题（核心读清单、装包时查，软件源收录时查）；不是的没有。

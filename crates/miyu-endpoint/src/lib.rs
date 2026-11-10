@@ -187,7 +187,7 @@ pub struct Core {
     listing: listing::Listing,
     /// 哪个头开着哪个会话（施工 HV-1）：会话列表那一项的 `viewed` 照它写。
     viewing: viewing::Viewing,
-    /// 扩展不带 `session` 读得到哪些 blob（施工 W-6 三补，`attach/grants.rs`）。
+    /// 扩展不带 `session` 读得到哪些 blob（施工 W-6 三补，`attach/grants.rs`）；它自己存的起来时从盘上读回（施工 BG-1）。
     blob_grants: attach::Grants,
     /// 找回、造场所会话排着来（施工 O-3）：同一个场所同时来两次，不造出两个主线会话。
     venues: tokio::sync::Mutex<()>,
@@ -275,6 +275,7 @@ impl Core {
             memory.give_extraction(extraction);
         }
         let (knowledge, kb_progress) = knowledge::of_core(&root, home.clone(), &resources, &found);
+        let blob_grants = attach::Grants::load(&root);
         Core {
             schedules: schedules::Schedules::system(root.clone()),
             knowledge,
@@ -309,7 +310,7 @@ impl Core {
             identity: login::Identity::new(login::CODE_TTL),
             listing: listing::Listing::default(),
             viewing: viewing::Viewing::default(),
-            blob_grants: attach::Grants::default(),
+            blob_grants,
             venues: tokio::sync::Mutex::new(()),
             plugins: miyu_session::VenuePlugins::default(),
             packages: std::sync::RwLock::new(Arc::new(found)),

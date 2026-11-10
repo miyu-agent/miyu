@@ -275,7 +275,7 @@ pub(crate) async fn close(
             })
             .await?;
             if let Some(package) = package {
-                core.blob_grants.grant(package, &stored);
+                core.blob_grants.grant(package, &stored).await;
             }
             Ok(reply)
         }
