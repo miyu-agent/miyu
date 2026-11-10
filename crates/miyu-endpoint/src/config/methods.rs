@@ -73,6 +73,8 @@ pub(crate) fn schema(core: &Core, peer: Peer, params: SchemaParams) -> Result<Va
     let values = config.resolved().values();
     // 这台机器装了哪些界面（施工 UH-1）：只对装了某个界面才有用的项（终端集成会话那几项、默认界面）照它标不画。
     let heads = super::unused::heads(&core.system_packages());
+    // 包的分节（施工 SG-1）：组里的项带 `section`，这个包那一组带 `sections`，没分组的包都不写。
+    let sections = super::sections::Sections::new(core, peer.language);
     for item in items {
         let said = words
             .item(item.key)
@@ -84,6 +86,9 @@ pub(crate) fn schema(core: &Core, peer: Peer, params: SchemaParams) -> Result<Va
         if super::unused::unused(item.key, &heads) {
             one["hidden"] = json!(true);
         }
+        if let Some(section) = sections.item(item.key) {
+            one["section"] = json!(section);
+        }
         listed.push(one);
         let page = item.ui.page;
         if !pages.iter().any(|seen| seen["id"] == page) {
@@ -93,7 +98,15 @@ pub(crate) fn schema(core: &Core, peer: Peer, params: SchemaParams) -> Result<Va
         let group = item.ui.group;
         if !groups.iter().any(|seen| seen["id"] == group) {
             let name = config_name(&words, english.as_ref(), "groups", group);
-            groups.push(json!({"id": group, "name": name, "page": page}));
+            let mut entry = json!({"id": group, "name": name, "page": page});
+            if let Some(listed) = item
+                .ui
+                .package
+                .and_then(|package| sections.package(package))
+            {
+                entry["sections"] = listed.clone();
+            }
+            groups.push(entry);
         }
     }
     Ok(json!({"groups": groups, "items": listed, "pages": pages}))

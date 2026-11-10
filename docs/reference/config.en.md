@@ -49,6 +49,9 @@ Settings stack from the bottom up: built-in defaults → system config (`config.
 | `suggestions` | `combo` controls: suggested values |
 | `hidden` | Not drawn on the settings screen |
 | `package` | A package's setting: which package |
+| `section` | A package setting declared in a group: which section of that package it is in (the group id, see `sections` under `groups` below); omitted outside groups |
+
+A group: `id`, `name` (in the connection's language), `page`. When a package groups its settings (its manifest writes `[settings.<group>.<name>]`), that package's group also has `sections`: one `{"id", "name", "shown_when"?}` per section, in manifest order. `name` is in the connection's language, or the group id when the manifest gives no name. `shown_when` is `{"key": "<full key>", "is": ["<value>", …]}`: draw the section only while that setting's current value is one of `is`, which is always an array; without it, always draw it. A section that isn't drawn is only not drawn: its settings are still written, read and checked as usual. Packages without groups have no `sections`.
 
 **Errors**: `unknown_config_key`: `keys` has keys not in the list; `data.problems` has one item each, with the nearest key as `suggest`.
 

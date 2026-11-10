@@ -169,7 +169,7 @@ program = "miyu-embed"
 | `name`、`description` | 语言到一句话，`name` 必写 |
 | `hidden` | `true` 的设置页不画：照样能写、能查、进 Schema |
 
-1. 名字：小写字母开头，只有小写字母、数字、`_`，最多 64 个。键是 `<前缀>.<名字>`，例如 `web.port`；前缀是 `[package] prefix`，没写的是包的编号（施工 PN-1，设计 48 第二节）。可以多一层组（施工 9-1 再补，接入通讯平台要的）：`[settings.<组>.<名字>]`，键是 `<前缀>.<组>.<名字>`，例如 `im.qq.listen`；组名照名字的写法，只多一层。一张表里有 `type` 或 `name` 的（空的也算）是一项，别的是一组，所以组里的项不能叫 `type`、`name`。设置页照旧在这个包那一组。
+1. 名字：小写字母开头，只有小写字母、数字、`_`，最多 64 个。键是 `<前缀>.<名字>`，例如 `web.port`；前缀是 `[package] prefix`，没写的是包的编号（施工 PN-1，设计 48 第二节）。可以多一层组（施工 9-1 再补，接入通讯平台要的）：`[settings.<组>.<名字>]`，键是 `<前缀>.<组>.<名字>`，例如 `im.qq.listen`；组名照名字的写法，只多一层。一张表是一项还是一组（施工 SG-1 起组也能写名字）：有 `type` 的、空的是一项；没有 `name` 的是一组；写了 `name` 的，底下还有别的子表（`description`、`shown_when` 不算）是一组，不然是一项（报缺 `type`）。组里的项不能叫 `type`、`name`、`shown_when`。设置页照旧在这个包那一组，组分成节（施工 SG-1，2026-11-10 项目主人经语音会话要的：miyu-say 选了一个引擎，别家的几项还摊着）：组那张表 `[settings.<组>]` 可写 `name`（语言表，写法同项的 `name`，没写的照组名画）、`shown_when`（`{ "<这个包的一项>" = "<值>" }`，值也可以是几个的列表，读成 `Section`、`ShownWhen`，`crates/miyu-config/src/package/settings/section.rs`）。`shown_when` 的键写这个包自己清单里的名字（组里的写 `<组>.<名字>`），不写前缀，`config.schema` 交出去时才接上前缀；它只能指一个 `option`、不在这一节里，值都要是它的选项：指的不在这个包里（别的包的键、写全了前缀的也是）、不是选项、在这一节里、值不是它的选项、不是一项对一个值或者不空的列表的，清单读不成，报 `bad_shown_when`（读完全部的项再查，指后面写的项也行）。只限选项：头比的是那一项的值和 `is` 里的字，开关、整数比字说不清（2026-11-10 SG-1 按推荐定）。核心只读、只查、原样交 `config.schema`（`config.md`「协议」），值照旧存、读、查，不看 `shown_when`。
 2. 核心起来时读清单那一次，读成了的清单的配置项接在核心自己的配置项后面，进配置清单：读配置、`miyu check`、`config.schema`、`config.get`、`config.set`、生成的 Schema 和参考文件都照它。经 `package.install`、`package.remove` 装卸以后照新的清单再拼一次（`Builtins::settings`，`miyu-core` 装上），配置服务换上（`Config::refit`）：配置照手里的字重新认，认得的项、问题变了的推 `config.changed`（`via: package`）；生成的三份照新的清单重写（施工 F-5 补）。卸掉的包，配置里它的项一并删掉（「装卸」第 7 条）；项目目录里还写着的照旧报不认识。
 3. 包的前缀是核心自己某一段配置的第一段（`ui`、`persona`、`permission`、`models`、`providers`、`log`、`usage`、`external` 这些，照核心起来时的配置清单认）、又声明了配置项的，这一份报 `settings_taken`，当写错了的列出，配置项一项都不收。
 4. 设置页：都在一页 `packages`（「软件包」），一个包一组，组的编号是包的编号、名字是包的名字；每一项的名字、说明用清单里的，照连接的语言挑（这种语言、`en`、`zh`、`ja`），不进 `core/human`。控件照类型：开关 `toggle`、整数 `number`、选项 `select`、列表 `list`，别的 `text`。`config.schema` 里列表照核心自己的列表写：多 `element`，元素是选项的多 `options`。 平台接入的包也在这一页（施工 F-6 上：「接入」页去掉了，设计 30 第十三节）。`config.schema` 里这一页的项多一格 `package`，就是组的编号，头照它把项画在那个软件的信息页上。程序不在 `miyu` 旁边的扩展、小程序当没装，配置项不进（`package-pages.md`「程序不在就当没装」）；界面不算。核心替内置包声明的配置项（现在是人格记忆的几项、联网的几组、基础系统的 `show.system_hint`）也挂在这一页、这个包那一组；包没装的照样认、照样有最终值，设置页不画（`hidden`，施工 F-4，设计 30 第七节）。
@@ -384,6 +384,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `bad_command_name`、`bad_program`、`bad_page`、`bad_pages_dir` | 子命令名、程序名、页名、页面目录的写法不对（`pages_dir` 不能是绝对路径、带 `..`、`\`、`:`） |
 | `command_taken` | 子命令名被先读到的占了（照盖的先后，施工 SD-1）；原来的 `duplicate`（两层同编号）施工 SD-1 去掉了，同编号改成上面一层盖住下面的，不算错（上面「三层怎么认」） |
 | `bad_setting_name`、`bad_type`、`bad_element`、`bad_default`、`bad_choices`、`bad_range`、`bad_layers`、`bad_applies`、`not_bool` | 配置项写错：名字、类型、列表的元素（写错、写成 `list`、不是字，施工 9-1 补）、默认值、选项、范围、几层、什么时候生效、`hidden`（施工 9-1 下） |
+| `bad_shown_when` | 组的 `shown_when` 写错了：不是一项对一个值或者几个值；指的不是这个包自己的选项，或者在这一节里面；值不是它的选项（施工 SG-1） |
 | `settings_taken` | 包的前缀和核心自己的配置撞了、又声明了配置项（施工 9-1 下；PN-1 起照前缀） |
 | `bad_prefix`、`prefix_taken` | `[package] prefix` 写法不像包编号；前缀被先读到的包占了（出厂的先于装上的，同一层照编号；没写的照包编号算）（施工 PN-1） |
 | `bad_capability` | `[process] capabilities` 里有不认识的、重复的名字（施工 9-4 下上） |
@@ -427,6 +428,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `crates/miyu-config/src/package/links/tests.rs`（施工 F-1） | 小程序的程序和参数；依赖、推荐；平台接入；组只给内置包、写法不对和重复的报 `bad_group`、`required` 不认了（施工 BS-1 上中）；每种包只能写自己的表；种类四选一 |
 | `crates/miyu-config/src/package/side/tests.rs`（施工 Q-3） | `[[side]]` 读成编号、档位、名字、说明，全编号是 `<包>/<编号>`，三档都认；编号写错、少了、重了，档位不认识、少了，少了名字、说明报 `bad_side`、`detail` 对；不认识的格、写成一张表的、不是扩展包的照各自的代码 |
 | `crates/miyu-config/src/package/settings/tests.rs` | 每一种类型、默认值、几层、什么时候生效、隐藏；每一种写错；拼成配置项的键、类型、界面提示（施工 9-1 下）；列表的每一种元素、默认值一个个查、写错（施工 9-1 补） |
+| `crates/miyu-config/src/package/settings/tests/section.rs`、`crates/miyu-endpoint/tests/package_sections.rs`（施工 SG-1） | 组的名字、`shown_when` 读对（一个值的也是列表），每一种写错报 `bad_shown_when`、报在那一行；`config.schema` 里组里的项带 `section`、包那一组带 `sections`（名字照语言、没写的照编号、键写全），没分组的包和原来一样；不画的节照旧写得进、读得到 |
 | `crates/miyu-endpoint/tests/package_settings.rs` | 包的配置项进 `config.schema`（「软件包」那一页、这个包那一组、名字说明照语言、隐藏的带标记）；最终值；写错的、写错层的 `check` 报；撞了核心的模块整份不收（施工 9-1 下）；列表进 Schema、读得到、写错 `check` 报（施工 9-1 补） |
 | `crates/miyu-cli/src/packages/tests.rs`（施工 9-2） | 只有包的子命令转交（内置的、选项、`help`、不认识的不转）；没装的程序说哪份清单；帮助页多的那一节、接在「命令」后面、照语言；跑包的程序时环境多它在各层的那几格（施工 S-6 上、F-15、FH-3下，新名字、旧名字都给） |
 | `crates/miyu/tests/packages.rs` 的 `a_package_command_is_told_its_package_folder`（施工 S-6 上，只在 Unix 上） | 真二进制转交：包带的程序（指向 `printenv` 的链接）看到的 `MIYU_PACKAGE_DIR`、`MIYU_APP_DIR` 是 `opt/` 里这个包的文件夹；`MIYU_PACKAGE_STATE`、`MIYU_STATE_DIR` 是建好了的状态目录的真实位置（施工 F-15） |

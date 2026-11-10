@@ -688,6 +688,7 @@
     "package-problems/bad_type": "{detail} は bool、int、number、option、text、name、model、persona、knowledge、url、secret、list のどれかです",
     "package-problems/bad_element": "{detail} は bool、int、number、option、text、name、model、persona、knowledge、url、secret、record のどれかです。リストの要素をリストにはできません",
     "package-problems/bad_title": "{detail} にはこの組の text、name、option フィールドの名前を書きます",
+    "package-problems/bad_shown_when": "{detail} には、このパッケージ自身の選択肢の設定（このグループの外）と、その選択肢の値を一つ以上書きます",
     "package-problems/bad_default": "{detail} が型に合わないか、選択肢にありません。シークレットとシークレットのリストには既定値を書けません",
     "package-problems/bad_choices": "{detail} は重複しない文字列を二つ以上並べてください",
     "package-problems/bad_range": "{detail} は整数で、最小が最大を超えないように書いてください",

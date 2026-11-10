@@ -130,7 +130,7 @@ place = "status"
 
 ## `[settings.<名字>]`
 
-一项配置一张表，键是 `<前缀>.<名字>`（前缀见上面的 `prefix`，不写就是包的编号）。项多了可以分组，多写一层 `[settings.<组>.<名字>]`，键就是 `<前缀>.<组>.<名字>`（例如 `im.qq.listen`），只能多这一层；组里的项不能叫 `type`、`name`。设置页的「软件包」那一页有你一组。**不要自己读配置文件**：扩展的值在握手时交给你，改了推给你（见 [写扩展](extensions.md)）；只带脚本的包，脚本从环境变量 `MIYU_SETTINGS_JSON` 读（见 [脚本和技能](scripts-skills.md)）。人写在配置里的值照 pacman 卸包默认留着（不生效，`miyu check` 只提一句是你的包留下的），重装照原样生效；`miyu pkg remove --purge` 才删。
+一项配置一张表，键是 `<前缀>.<名字>`（前缀见上面的 `prefix`，不写就是包的编号）。项多了可以分组，多写一层 `[settings.<组>.<名字>]`，键就是 `<前缀>.<组>.<名字>`（例如 `im.qq.listen`），只能多这一层；组里的项不能叫 `type`、`name`、`shown_when`，分节见下面。设置页的「软件包」那一页有你一组。**不要自己读配置文件**：扩展的值在握手时交给你，改了推给你（见 [写扩展](extensions.md)）；只带脚本的包，脚本从环境变量 `MIYU_SETTINGS_JSON` 读（见 [脚本和技能](scripts-skills.md)）。人写在配置里的值照 pacman 卸包默认留着（不生效，`miyu check` 只提一句是你的包留下的），重装照原样生效；`miyu pkg remove --purge` 才删。
 
 | 格 | 说明 |
 |---|---|
@@ -171,6 +171,30 @@ name = { zh = "Key" }
 ```
 
 人在设置页一张张卡片填，配置文件里写成表的数组 `[[<前缀>.accounts]]`；`secret` 字段照旧只写引用，Key 本身另存在密钥文件里。交给你的值是对象的数组：`[{"name": "家里", "base_url": "https://api.example.com/v1", "key": "sk-…"}]`，Key 是真值，没写的字段照默认值，没有默认值的不放。
+
+组自己那张表 `[settings.<组>]` 可以写两格，设置页照它把你这一组分成几节：`name` 是这一节给人看的名字（写法同项的 `name`，不写的照组名画）；`shown_when` 是这一节什么时候画：`{ "<这个包的一项>" = "<值>" }`，值也可以是几个的列表（`["mimo", "openai"]`），那一项现在的值是其中一个才画。`shown_when` 只能指你自己清单里的一个 `option`，写名字（`engine`，组里的写 `<组>.<名字>`），不写前缀；不能指这一节里面的项，值要是它的选项，不然装不上（`bad_shown_when`）。不画的节只是不画，里面的值照旧存着、交给你、照样查。
+
+```toml
+[settings.engine]
+type = "option"
+choices = ["minimax", "mimo", "openai"]
+name = { zh = "引擎", en = "Engine" }
+
+[settings.minimax]
+name = { zh = "MiniMax", en = "MiniMax" }
+shown_when = { engine = "minimax" }
+
+[settings.minimax.key]
+type = "secret"
+name = { zh = "Key" }
+
+[settings.cloud]
+shown_when = { engine = ["mimo", "openai"] }
+
+[settings.cloud.voice]
+type = "text"
+name = { zh = "音色" }
+```
 
 ## `[features.<编号>]`
 

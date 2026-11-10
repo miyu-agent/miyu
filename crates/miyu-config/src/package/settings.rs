@@ -1,5 +1,5 @@
 //! 清单里的 `[settings]`（施工 9-1 下，`docs/blueprint/packages.md`「配置项」，`05-内核接口.md` 第二节）：一项一张表
-//! `[settings.<名字>]`，或者多一层组 `[settings.<组>.<名字>]`（施工 9-1 再补），读成 [`Setting`]；核心起来时照它们拼成配置项（[`items`]），键是 `<包的编号>.<名字>`，挂在设置页的
+//! `[settings.<名字>]`，或者多一层组 `[settings.<组>.<名字>]`（施工 9-1 再补；组的名字、什么时候画见 `section`，施工 SG-1），读成 [`Setting`]；核心起来时照它们拼成配置项（[`items`]），键是 `<包的编号>.<名字>`，挂在设置页的
 //! 「软件包」那一页、这个包那一组。
 //!
 //! 读的时候不留 `'static` 的字：`miyu check` 每次都照磁盘读。只有核心起来时拼配置项那一次把字留在进程里，一直用到退出
@@ -48,6 +48,13 @@ pub struct Setting {
     pub hidden: bool,
     /// 画成滑块（施工 PC-1，`int`、`number` 写了 `slider = true`）：一格多少；不是滑块的没有。
     pub slider: Option<Number>,
+}
+
+impl Setting {
+    /// 在哪一组（施工 SG-1）：名字的头一段，不在组里的没有。
+    pub fn section(&self) -> Option<&str> {
+        self.name.split_once('.').map(|(section, _)| section)
+    }
 }
 
 /// 选项里的一个（施工 PC-1，设计 53 第一节）：存的值，给人看的名字、说明（没写的是空的：名字照值画）。
@@ -181,20 +188,28 @@ impl SettingKind {
     }
 }
 
-/// 读 `[settings]`：照写的先后。一张表里有 `type` 或 `name` 的（空的也算）是一项，别的是一组（施工 9-1 再补）：`[settings.<组>.<名字>]`，
-/// 名字读成 `<组>.<名字>`，只多一层。
-pub(super) fn read(reader: &Reader<'_>, node: &Node) -> Result<Vec<Setting>, Problem> {
+/// 读 `[settings]`：交回项和组（[`Section`]，施工 SG-1），都照写的先后。一张表是一项还是一组见 [`grouped`]；组里的项
+/// `[settings.<组>.<名字>]` 名字读成 `<组>.<名字>`，只多一层（施工 9-1 再补）。
+pub(super) fn read(
+    reader: &Reader<'_>,
+    node: &Node,
+) -> Result<(Vec<Setting>, Vec<Section>), Problem> {
     let Some(table) = node.as_table_like() else {
-        return Ok(Vec::new());
+        return Ok((Vec::new(), Vec::new()));
     };
     let mut settings = Vec::new();
+    let mut sections = Vec::new();
     for (name, item) in table.iter() {
         let (at, fields) = entry(reader, "settings", name, item)?;
-        if fields.is_empty() || fields.contains_key("type") || fields.contains_key("name") {
+        if !grouped(fields) {
             settings.push(one(reader, name, &at, fields, item, false)?);
             continue;
         }
+        sections.push(section::read(reader, name, &at, fields)?);
         for (inner, item) in fields.iter() {
+            if super::fields::SETTING_GROUP.contains(&inner) {
+                continue;
+            }
             let (at, fields) = entry(reader, &at, inner, item)?;
             settings.push(one(
                 reader,
@@ -206,7 +221,20 @@ pub(super) fn read(reader: &Reader<'_>, node: &Node) -> Result<Vec<Setting>, Pro
             )?);
         }
     }
-    Ok(settings)
+    section::check(reader, table, &sections, &settings)?;
+    Ok((settings, sections))
+}
+
+/// 一张表是不是一组：有 `type` 的、空的是一项；没有 `name` 的是一组（施工 9-1 再补的写法）；写了 `name` 的，底下还有别的子表
+/// （`description`、`shown_when` 不算）才是一组（施工 SG-1：组也能写名字），不然是一项（报缺 `type`）。
+fn grouped(fields: &dyn TableLike) -> bool {
+    if fields.is_empty() || fields.contains_key("type") {
+        return false;
+    }
+    !fields.contains_key("name")
+        || fields.iter().any(|(key, item)| {
+            !matches!(key, "name" | "description" | "shown_when") && item.is_table_like()
+        })
 }
 
 /// `<上一层>.<名字>` 那一张表：名字合写法、是一张表。
@@ -456,9 +484,11 @@ fn setting_name(name: &str) -> bool {
 }
 
 mod build;
+mod section;
 mod types;
 
 pub use build::items;
+pub use section::{Section, ShownWhen};
 use types::{scalar, slider};
 
 #[cfg(test)]

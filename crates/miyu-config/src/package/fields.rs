@@ -38,6 +38,9 @@ pub(super) const UI: &[&str] = &["opens", "pages_dir"];
 /// `[check]`。
 pub(super) const CHECK: &[&str] = &["args"];
 
+/// `[settings.<组>]` 自己认的几格（施工 SG-1）：组里别的格都是项。
+pub(super) const SETTING_GROUP: &[&str] = &["name", "shown_when"];
+
 /// `[settings.<名字>]` 每一项都认的几格。
 pub(super) const SETTING: &[&str] = &[
     "type",
@@ -177,6 +180,7 @@ pub(super) const TABLES: [Table; 26] = [
             SETTING_TEXT,
             SETTING_LIST,
             SETTING_RECORD,
+            SETTING_GROUP,
         ],
     ),
     table("features", &[FEATURE]),

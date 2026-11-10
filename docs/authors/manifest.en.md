@@ -130,7 +130,7 @@ Makes it an extension; needs `[command]`.
 
 ## `[settings.<name>]`
 
-One table per setting; the key is `<prefix>.<name>` (see `prefix` above; without it, the package id). To group many settings, add one level: `[settings.<group>.<name>]` gives `<prefix>.<group>.<name>` (for example `im.qq.listen`); only one extra level, and a setting in a group can't be called `type` or `name`. The settings screen's Packages page has a group for you. **Don't read config files yourself**: an extension gets the values in the handshake and changes are pushed (see [Writing an extension](extensions.en.md)); a package with only scripts reads them from the environment variable `MIYU_SETTINGS_JSON` (see [Scripts and skills](scripts-skills.en.md)). Values people wrote in the config are kept on removal, as pacman does (they take no effect, and `miyu check` only notes your package left them); a reinstall uses them as they were, and only `miyu pkg remove --purge` deletes them.
+One table per setting; the key is `<prefix>.<name>` (see `prefix` above; without it, the package id). To group many settings, add one level: `[settings.<group>.<name>]` gives `<prefix>.<group>.<name>` (for example `im.qq.listen`); only one extra level, and a setting in a group can't be called `type`, `name` or `shown_when`; for sections see below. The settings screen's Packages page has a group for you. **Don't read config files yourself**: an extension gets the values in the handshake and changes are pushed (see [Writing an extension](extensions.en.md)); a package with only scripts reads them from the environment variable `MIYU_SETTINGS_JSON` (see [Scripts and skills](scripts-skills.en.md)). Values people wrote in the config are kept on removal, as pacman does (they take no effect, and `miyu check` only notes your package left them); a reinstall uses them as they were, and only `miyu pkg remove --purge` deletes them.
 
 | Field | Notes |
 |---|---|
@@ -171,6 +171,30 @@ name = { en = "Key" }
 ```
 
 People fill it in as cards on the settings screen, and the config file holds an array of tables, `[[<prefix>.accounts]]`; a `secret` field is still only a reference, with the key itself in the secrets file. You get an array of objects: `[{"name": "Home", "base_url": "https://api.example.com/v1", "key": "sk-…"}]`, the key being the real value, unwritten fields taking their default, and fields without one left out.
+
+The group's own table `[settings.<group>]` may hold two keys, and the settings screen splits your group into sections by them: `name` is the section's display name (written like a setting's `name`; without it, the group id is shown); `shown_when` says when the section is drawn: `{ "<a setting of this package>" = "<value>" }`, where the value may also be a list (`["mimo", "openai"]`), drawn only while that setting's current value is one of them. `shown_when` can only point at an `option` in your own manifest, by its name (`engine`, or `<group>.<name>` for one in a group), without the prefix; it can't point inside its own section, and the values must be its choices, or the package won't install (`bad_shown_when`). A section that isn't drawn is only not drawn: its values are still stored, handed to you and checked.
+
+```toml
+[settings.engine]
+type = "option"
+choices = ["minimax", "mimo", "openai"]
+name = { en = "Engine", zh = "引擎" }
+
+[settings.minimax]
+name = { en = "MiniMax" }
+shown_when = { engine = "minimax" }
+
+[settings.minimax.key]
+type = "secret"
+name = { en = "Key" }
+
+[settings.cloud]
+shown_when = { engine = ["mimo", "openai"] }
+
+[settings.cloud.voice]
+type = "text"
+name = { en = "Voice" }
+```
 
 ## `[features.<id>]`
 

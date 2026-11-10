@@ -30,12 +30,17 @@ impl Label {
     pub fn pick(&self, language: &str) -> Option<&str> {
         match self {
             Label::One(text) => Some(text.as_str()).filter(|text| !text.is_empty()),
-            Label::Each(phrases) => [language, "en", "zh", "ja"]
-                .iter()
-                .find_map(|language| phrases.get(*language))
-                .map(String::as_str),
+            Label::Each(phrases) => pick(phrases, language),
         }
     }
+}
+
+/// 照语言 `language` 挑一句：这种语言、`en`、`zh`、`ja` 的先后，都没写的没有（包清单的名字、说明，施工 SG-1 起分节的名字也用）。
+pub fn pick<'a>(phrases: &'a Phrases, language: &str) -> Option<&'a str> {
+    [language, "en", "zh", "ja"]
+        .iter()
+        .find_map(|language| phrases.get(*language))
+        .map(String::as_str)
 }
 
 /// 读一格名字、说明：是字的去掉前后空白、不能是空的；是表的照 [`read`]。

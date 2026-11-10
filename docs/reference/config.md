@@ -49,6 +49,9 @@
 | `suggestions` | 控件是 `combo` 的：建议值 |
 | `hidden` | 设置页不画 |
 | `package` | 软件包的配置项：归哪个包 |
+| `section` | 软件包分了组的配置项：在这个包的哪一节（组名，见下面 `groups` 的 `sections`）；不在组里的不写 |
+
+一组：`id`、`name`（照连接的语言）、`page`。软件包分了组的（清单写了 `[settings.<组>.<名字>]`），那个包那一组多一格 `sections`：每一节一个 `{"id", "name", "shown_when"?}`，照清单写的先后。`name` 照连接的语言，清单没写名字的是组名。`shown_when` 是 `{"key": "<完整的键>", "is": ["<值>", …]}`：那一项现在的值是 `is` 里的一个才画这一节，`is` 总是列表；没有的总是画。不画的节只是不画，里面的项照旧能写、能读、照样查。没分组的包没有 `sections`。
 
 **出错**：`unknown_config_key`：`keys` 里有清单里没有的，`data.problems` 每个一条，带最近的键名 `suggest`。
 

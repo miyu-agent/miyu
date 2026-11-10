@@ -56,7 +56,7 @@ pub use mcp::{
 pub use need::Need;
 pub use reserved::{RESERVED, reserved_id};
 pub use search::{SEARCH_SOURCE, SearchSource};
-pub use settings::{Choice, Setting, SettingKind};
+pub use settings::{Choice, Section, Setting, SettingKind, ShownWhen};
 pub use side::{SIDE_TIERS, SideRequest};
 pub use slash::{Access, SlashCommand};
 pub use target::Target;
@@ -93,6 +93,8 @@ pub struct Manifest {
     pub prefix: Option<String>,
     /// 配置项（施工 9-1 下）：照写的先后；没有的是空的。
     pub settings: Vec<Setting>,
+    /// 配置项的组（施工 SG-1，设置页上分节画）：照写的先后；没分组的是空的。
+    pub sections: Vec<Section>,
     /// 在哪几个组里（施工 BS-1 上中，设计 44 第三节第 2 条）：只有内置包能写，照写的先后；没写的是空的。原来的 `required`
     /// （必需的包）项目主人 2026-10-26 定删掉：出厂带什么是打包时挑的事。
     pub groups: Vec<String>,
@@ -369,9 +371,9 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         }
         None => None,
     };
-    let settings = match root.get("settings") {
+    let (settings, sections) = match root.get("settings") {
         Some(node) => settings::read(&reader, node)?,
-        None => Vec::new(),
+        None => (Vec::new(), Vec::new()),
     };
     let features = match root.get("features") {
         Some(node) => Some(features::read(&reader, node)?),
@@ -464,6 +466,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         check,
         prefix: head.prefix,
         settings,
+        sections,
         groups: head.groups,
         features,
         connection,

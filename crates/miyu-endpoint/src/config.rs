@@ -39,6 +39,7 @@ pub(crate) mod project;
 pub(crate) mod push;
 pub(crate) mod refit;
 pub(crate) mod rewrite;
+mod sections;
 pub(crate) mod set;
 mod trust;
 pub(crate) mod trusting;

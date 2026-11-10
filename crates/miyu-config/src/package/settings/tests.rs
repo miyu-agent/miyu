@@ -8,6 +8,7 @@ use crate::value::Number;
 
 mod choose;
 mod record;
+mod section;
 mod vocabulary;
 
 /// 一份带配置项的网页清单。
