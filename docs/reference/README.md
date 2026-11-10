@@ -22,7 +22,7 @@
 | [推送](pushes.md) | 各条流推什么 |
 | [附件与文件内容](blob.md) | `blob.*` |
 | [文件](fs.md) | `fs.*` |
-| [配置、密钥、模型](config.md) | `config.*`、`secret.*`、`provider.*`、`model.*`、`usage.query` |
+| [配置、密钥、模型](config.md) | `config.*`、`secret.*`、`provider.*`、`model.*`、`usage.*` |
 | [人格与预设](personas.md) | `persona.*`、`preset.*` |
 | [项目](projects.md) | `project.*` |
 | [头自己的设置](prefs.md) | `prefs.*` |

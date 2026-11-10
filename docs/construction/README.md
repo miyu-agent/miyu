@@ -991,6 +991,7 @@ flowchart LR
 | J-3 下 | 定时的命令行 | `miyu schedule list\|add\|rm\|pause\|resume`：`--cron`（交本机的时区，`--zone` 覆盖，`--once`）、`--at`（不带偏移的照本机时区）、`--every`（`10m` 这类）；跑在已有会话或者每次新开；参数错的照 `problem` 说清是哪一样 | `J-3-定时的时区上限和通知.md` |
 | PG-1 | 预设页照软件包分组 | 组表多 `order`；`package.list` 的组多 `packages`（照用途的先后）、每项多 `installed_at`（出厂的不写）；`session_usage` 改名「用量查询」、`show` 改名「展示给用户」 | `PG-1-预设页照软件包分组.md` |
 | UC-2 | 旁路请求的用量记场所 | `model.call` 写了 `session` 的，`usage.oneshot` 和汇总那一行挂上那个会话的场所；`usage.query` 照场所、用途分得出群的判官用量 | `UC-2-旁路请求的用量记场所.md` |
+| UC-3 | 替扩展换算金额 | 协议多 `usage.convert`：扩展交自己按 UTC 日子、币种记的金额（一组合成一个数，最多 1000 组、20000 笔），核心照 `usage.query` 的汇率和等法换成 `usage.currency`，一组一项、写法同 `converted`，没换成的是 `null`；人、扩展都能调 | `UC-3-替扩展换算金额.md` |
 | J-4 | 扩展建定时 | `schedule.*` 开放给批过 `sessions.drive` 的扩展，只看改自己建的；`target` 多 `package`，到点推 `schedule.fired` 给它自己，带错过的次数 | `J-4-扩展建定时.md` |
 | FL-1 | 工具一律全量 | 工具的参数格式一开始就发完整的，没有外壳、没有 `load_tools`；下一步拆掉整套懒加载 | `FL-1-工具一律全量.md` |
 | FL-7 | settle 测试用硬链接放出睡着的那一份 | LP-2 分支 CI 42182867724 的 check ubuntu 红在 `dist::check::settle::tests::a_running_program_inside_is_waited_for_then_removed`：起 sleeper 报 Text file busy。根因在测试：`fs::copy` 把测试程序拷进临时目录马上起，拷的时候开着写的句柄，同一个测试程序里别的线程这时 fork，子进程 exec 以前也带着它，接着 exec 刚拷好的文件，Linux 回 ETXTBSY；生产代码没有拷完马上起。改测试：Unix 上硬链接、连不成才拷，临时目录挪到测试程序旁边（同一个文件系统才连得成），Windows 照旧拷。本机 12 并发加 12 个死循环：改前 120 遍红 6 遍（都是 Text file busy），改后 180 遍 0 遍；ubuntu CI 4 并发加 4 个死循环：改前 80 遍红 1 遍，改后 80 遍 0 遍 |

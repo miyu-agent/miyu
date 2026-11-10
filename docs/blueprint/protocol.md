@@ -52,6 +52,7 @@
 | `crates/miyu-endpoint/src/secrets.rs`、`secrets/` | `secret.set`、`secret.delete`、`secret.list`：只能写、删、列名字，从不交出值；手改密钥文件被看到的、留痕（施工 8-5，`config.md` 第九条） |
 | `crates/miyu-endpoint/src/models.rs`、`models/` | `model.list`：配好的供应商、模型、每一格资料的值和来源（施工 8-7，`models.md`「协议」），池、用途（施工 8-8；挡位 8-8 补去掉了），模型和 key 的冷却（施工 8-9），`facts.effort` 多 `key`（8-18（补））；`session.create`、`session.configure` 的 `model` 怎么解析（`record`，施工 8-8、8-10）；`session.configure` 的参数（`ConfigureParams`）、`subscribe` 回应的 `model`（施工 8-10）；`subscribe` 的 `model` 多 `effort`（施工 8-18，`from` 是配置的哪一层，8-18（补）起；会话的 `session`，施工 SM-1）；`session.configure` 的 `effort` 照会话这时的模型的档位查（`models/effort.rs`，施工 SM-1）；`model.call`（`models/call.rs`，施工 8-20）：读参数、认图、调一次性入口（`miyu_session::OneShot`）、出错写成拒绝；8-15 起一次性调用记成用量 |
 | `crates/miyu-endpoint/src/usage.rs` | `usage.query`（施工 8-15，`models.md`「协议」）：读参数（`usage/tests.rs` 守着）、先补再查用量汇总、照 `usage.currency` 排金额、写成 `rows`；核心起来时开 `var/cache/usage.db`（`open`） |
+| `crates/miyu-endpoint/src/usage/convert.rs` | `usage.convert`（施工 UC-3，`models.md`「协议」）：读参数（日子、币种、上限）、几组一起换算、照 `usage.query` 的 `converted` 写 |
 | `crates/miyu-endpoint/src/providers.rs`、`providers/trial.rs` | 第一次接入的 `provider.detect`、`provider.catalog`、`provider.test`（施工 8-11，`models.md`「协议」、「怎么走」第七条）；探本机、试一次在会话那一层（`miyu_session::find_local`、`probe`） |
 | `crates/miyu-endpoint/src/providers/rename.rs`（施工 8-34） | `provider.rename`：照 `config.set` 的规矩改写（`config/rewrite.rs`），再叫模型资料换编号、记改名 |
 | `crates/miyu-endpoint/src/queries.rs` | 可选软件包登记的查询：方法名到怎么答的一张表，`QueryError`；`mermaid.render` 经它接进来（施工 W-4，`mermaid.md`）；在后台答的一种登记 `register_background`，`link.preview` 照它接进来（施工 W-7，`net.md`） |
@@ -267,6 +268,7 @@
 | `model.call` | 经一次性入口叫一次模型或池，拿整段回答和用量；不进任何会话；会花额度（施工 8-20，`models.md`「协议」、「怎么走」第十二条）。8-15 起每发出去一次记一笔账：`journal.jsonl`、用量汇总 |
 | `model.embed` | 照配置的 `models.embedding`（本机的内置模型、远程那一家）算一批字的向量（施工 X-17，给扩展按意思搜）：`{texts}`，1 到 64 条、每条 1 到 8000 个字；回应 `{model, vectors}`，`model` 是模型编号（`local:<id>`、`<供应商>/<模型>`，换了模型的向量不能和以前的比），`vectors` 照先后、归一化过的。一条一条算，每条至多等 30 秒，有一条算不出整批不交。远程的用量照记。不另设能力（同 `model.call`）。拒绝：写法不对的 `bad_params`；关着、要本机的却没装的 `embedding_off`；算不出、等不到的 `embedding_failed` |
 | `usage.query` | 查用量和金额：照人、场所、模型、天、会话、用途分组，金额照币种各加各的；先补再查（施工 8-15，`models.md`「协议」、「怎么走」第九条） |
+| `usage.convert` | 替扩展换算金额：扩展自己照日子、币种记的金额，一组换成 `usage.currency` 的一个数，写法同 `usage.query` 的 `converted`（施工 UC-3，`models.md`「协议」`usage.convert`） |
 | `human.get` | 给人看的字：工具的样子、说法的模板原文，照这个连接的语言；不带 `config`（施工 W-1） |
 | `mermaid.render` | mermaid 源码画成 SVG。编进了 `miyu-base-mermaid` 包才有，没编进来回 `unknown_method`（施工 W-4，`mermaid.md`） |
 | `link.preview` | 一个链接的卡片：标题、简介、图（存成 blob）。编进了 `miyu-base-net` 包才有，没编进来回 `unknown_method`；在后台答（施工 W-7，`net.md`） |

@@ -1,4 +1,4 @@
-# 配置、密钥、模型：`config.*`、`secret.*`、`provider.*`、`model.*`、`usage.query`
+# 配置、密钥、模型：`config.*`、`secret.*`、`provider.*`、`model.*`、`usage.*`
 
 英文版：[config.en.md](config.en.md)。
 
@@ -18,6 +18,7 @@
 | [`model.call`](#modelcall) | 叫一次模型，不进任何会话 |
 | [`model.embed`](#modelembed) | 算一批字的向量 |
 | [`usage.query`](#usagequery) | 查用量和金额 |
+| [`usage.convert`](#usageconvert) | 把自己记的金额换算成 `usage.currency` |
 
 ## 配置的三层
 
@@ -25,7 +26,7 @@
 
 **问题**：读、查、改配置时发现的每一处写成一条：`level`（`error` 或 `warning`）、`code`（原因码）、`file`、`line`、`column`、`key`、`expected`、`got`、`suggest`（拼错的键最近的那个）、`using`（现在照什么用着）、`message`（整句给人看的话，照连接的语言）。没有的格不写。`got` 照抄收到的原文，最多 80 个字符；类型是密钥的项（和列表里的密钥字段）、不认识的键和字段、一组键写成的一个值不照抄，`got` 和 `message` 里只说写的是什么样的，例如「24 个字符的字」，原值不会出现在回应里。
 
-**谁能调**：读的（`config.schema`、`config.get`、`config.check`、`secret.list`、`model.list`、`provider.*`、`model.call`、`model.embed`、`usage.query`）人、扩展都能调。改的（`config.trust`、`secret.set`、`secret.delete`）只给人，扩展调回 `local_only`。`config.set` 扩展只能逐项改系统配置里自己清单声明的、不是密钥、不写成引用的项。
+**谁能调**：读的（`config.schema`、`config.get`、`config.check`、`secret.list`、`model.list`、`provider.*`、`model.call`、`model.embed`、`usage.query`、`usage.convert`）人、扩展都能调。改的（`config.trust`、`secret.set`、`secret.delete`）只给人，扩展调回 `local_only`。`config.set` 扩展只能逐项改系统配置里自己清单声明的、不是密钥、不写成引用的项。
 
 ## `config.schema`
 
@@ -262,3 +263,33 @@
 这一行写缓存的价格不知道，可它的用量是 0，`cache_write` 照样是 0；四种加起来就是 `converted.amount`。
 
 **出错**：`bad_params`。
+
+## `usage.convert`
+
+把自己照日子、币种记的金额交给核心换算成 `usage.currency`。扩展自己记账（例如照人记）时用：汇率由核心取、缓存，换法和 `usage.query` 的 `converted` 一样。
+
+**参数**
+
+| 名字 | 类型 | 说明 |
+|---|---|---|
+| `groups` | 数组的数组 | 一组是要合成一个数的那几笔，可以是空的。最多 1000 组，合计最多 20000 笔 |
+
+一笔：
+
+| 名字 | 类型 | 说明 |
+|---|---|---|
+| `day` | 字符串 | 这一笔是哪个 UTC 日子，`2026-11-10` 这样写；照这一天的汇率换 |
+| `currency` | 字符串 | 币种代码，三个字母，例如 `USD` |
+| `amount` | 数 | 金额 |
+
+**回应**：`{"currency", "converted"}`。`currency` 是这一刻的 `usage.currency`；`converted` 照 `groups` 的先后一组一项，写法同 `usage.query` 一行里的 `converted`（`{"currency","amount"}`，取不到汇率的那几笔在 `rest` 里，用到了 open.er-api.com 的汇率的带 `rates`，界面要注明来源）；一笔都没换成的组（连同空的组）是 `null`。缺的汇率当场去取，最多等两秒。
+
+```json
+{"groups":[[{"day":"2026-11-09","currency":"USD","amount":0.12},{"day":"2026-11-10","currency":"CNY","amount":0.5}],[]]}
+```
+
+```json
+{"currency":"CNY","converted":[{"currency":"CNY","amount":1.3544},null]}
+```
+
+**出错**：`bad_params`（日子、币种写法不对，金额不是数，超了上限）。

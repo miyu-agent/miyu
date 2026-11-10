@@ -1,4 +1,4 @@
-# Config, secrets, models: `config.*`, `secret.*`, `provider.*`, `model.*`, `usage.query`
+# Config, secrets, models: `config.*`, `secret.*`, `provider.*`, `model.*`, `usage.*`
 
 Chinese version: [config.md](config.md).
 
@@ -18,6 +18,7 @@ Chinese version: [config.md](config.md).
 | [`model.call`](#modelcall) | Call a model once, outside any session |
 | [`model.embed`](#modelembed) | Compute embeddings for some texts |
 | [`usage.query`](#usagequery) | Query usage and cost |
+| [`usage.convert`](#usageconvert) | Convert amounts you recorded yourself to `usage.currency` |
 
 ## The layers
 
@@ -25,7 +26,7 @@ Settings stack from the bottom up: built-in defaults → system config (`config.
 
 **Problems**: every issue found while reading, checking or changing config is one item: `level` (`error` or `warning`), `code`, `file`, `line`, `column`, `key`, `expected`, `got`, `suggest` (the nearest key for a misspelled one), `using` (what's in use instead), `message` (a full sentence for people, in the connection's language). Fields that don't apply are omitted. `got` quotes what was received, up to 80 characters; for items of type secret (and secret fields inside a list), and for unknown keys and fields or a single value written where a group of keys belongs, it is never quoted: `got` and `message` only describe what was given, e.g. "a string of 24 characters", so the value never appears in a response.
 
-**Who can call**: the read methods (`config.schema`, `config.get`, `config.check`, `secret.list`, `model.list`, `provider.*`, `model.call`, `model.embed`, `usage.query`) are open to people and extensions. The write methods (`config.trust`, `secret.set`, `secret.delete`) are for people only; extensions get `local_only`. `config.set` lets an extension change, one key at a time, only system settings its own manifest declares, that aren't secrets and aren't written as references.
+**Who can call**: the read methods (`config.schema`, `config.get`, `config.check`, `secret.list`, `model.list`, `provider.*`, `model.call`, `model.embed`, `usage.query`, `usage.convert`) are open to people and extensions. The write methods (`config.trust`, `secret.set`, `secret.delete`) are for people only; extensions get `local_only`. `config.set` lets an extension change, one key at a time, only system settings its own manifest declares, that aren't secrets and aren't written as references.
 
 ## `config.schema`
 
@@ -262,3 +263,33 @@ Call a model once and get the whole answer and usage. Not part of any session an
 The cache-write price of this row is unknown, but its usage is zero, so `cache_write` is still 0; the four add up to `converted.amount`.
 
 **Errors**: `bad_params`.
+
+## `usage.convert`
+
+Hands amounts you recorded yourself, by day and currency, to the core to convert to `usage.currency`. For extensions that keep their own books (per person, for example): the core fetches and caches the rates, and converts the same way as `converted` in `usage.query`.
+
+**Params**
+
+| Name | Type | Notes |
+|---|---|---|
+| `groups` | array of arrays | A group holds the charges to add up into one amount; it may be empty. At most 1000 groups and 20000 charges in total |
+
+A charge:
+
+| Name | Type | Notes |
+|---|---|---|
+| `day` | string | The UTC day of this charge, written `2026-11-10`; converted at that day's rate |
+| `currency` | string | Currency code, three letters, e.g. `USD` |
+| `amount` | number | The amount |
+
+**Response**: `{"currency", "converted"}`. `currency` is `usage.currency` at this moment; `converted` has one entry per group, in the order of `groups`, written like `converted` in a `usage.query` row (`{"currency","amount"}`; charges without a rate go in `rest`; `rates` is present when rates from open.er-api.com were used, and the UI must credit it); a group where nothing could be converted (an empty group included) is `null`. Missing rates are fetched on the spot, waiting at most two seconds.
+
+```json
+{"groups":[[{"day":"2026-11-09","currency":"USD","amount":0.12},{"day":"2026-11-10","currency":"CNY","amount":0.5}],[]]}
+```
+
+```json
+{"currency":"CNY","converted":[{"currency":"CNY","amount":1.3544},null]}
+```
+
+**Errors**: `bad_params` (a malformed day or currency, an amount that is not a number, over the limits).

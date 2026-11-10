@@ -469,6 +469,23 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 - 例子：头看「这个会话（连子代理）× 用途」写 `{"session":"<编号>","tree":true,"group":["use"]}`，回 `{"rows":[{"use":"compaction",…},{"use":"main",…},{"use":"subagent",…}]}`，每行的四项用量、金额照旧。
 - 例子：`{"group":["purpose","model"]}` 回 `{"rows":[{"purpose":"vision","model":"deepseek/deepseek-flash","requests":2,"usage":{"uncached":1624,"cache_read":0,"cache_write":0,"output":18},"amounts":[{"currency":"USD","amount":0.0002544}],"unpriced":0}]}`。
 
+**`usage.convert`**（查询，施工 UC-3）
+
+扩展自己照日子、币种记的金额（接入通讯平台的扩展照人记账）交给核心换算：汇率只有核心取、存，换法就是「怎么走」第九条第 8 条那一套。
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `groups` | 数组的数组 | 一组是要合成一个数的那几笔，可以是空的。最多 1000 组、合计最多 20000 笔 |
+
+一笔 `{"day","currency","amount"}`：`day` 是 UTC 日子（`2026-11-10`），`currency` 是三个英文字母的币种代码（会原样拼进问汇率源的网址，别的字不收），`amount` 是数。
+
+回应 `{"currency": <这一刻的 usage.currency>, "converted": [...]}`：照 `groups` 的先后一组一项，写法同 `usage.query` 一行里的 `converted`（`{"currency","amount"}`，没换成的在 `rest`，用到兜底源的带 `rates`；同一个函数写的），一笔都没换成的（连同空的组）是 `null`。扩展没有分四种的账，不给 `converted_parts`。
+
+- 几组的汇率只找一次，缺的当场取、最多等两秒（同 `usage.query`）。不读、不写用量汇总。
+- 参数不对（类型不对、日子或币种写法不对、超了上限）回 `bad_params`。不认识的格不理。
+- 谁能调同 `usage.query`：人、扩展都能调。
+- 例子：`{"groups":[[{"day":"2026-11-09","currency":"USD","amount":0.12},{"day":"2026-11-10","currency":"CNY","amount":0.5}],[]]}` 回 `{"currency":"CNY","converted":[{"currency":"CNY","amount":1.3544},null]}`。
+
 **原因码**多这几个：
 
 | 原因码 | 什么时候 |
@@ -827,6 +844,7 @@ opencode 有两个端点：Zen（`https://opencode.ai/zen/v1`，按量付费）�
    - 缓存 `var/cache/rates.db`（派生的，坏了、版本不对删掉重建）：一行一天一币种。正好那一天、那一天已经过完的定了，不再取；当天的、兜底源的、交回的日子比要的早的暂定，过 6 小时或者那一天过完以后再查到时重取（照用旧的，不等）。
    - 什么时候取：查询时先读缓存，缺的当场取，最多等两秒；同时缺的并成一次，同一个缺口在取的跟着等。等不到、离线的这一次照分币种，取回来照样记下。会话状态这些常推的几处不等，只用缓存，缺的在后面取。不做定时预取。
    - 取不到汇率的那几笔照币种接在 `rest` 里；一笔都没换成的不写 `converted`，头照 `amounts` 显示。
+   - 扩展自己记的金额也照这一套换（施工 UC-3，`usage.convert`）：扩展交按 UTC 日子、币种分开的金额，核心照同样的汇率、同样的等法换好交回；汇率不写进事件，扩展不自己取。
    - **分四种**（施工 UP-1，2026-11-02 核心主会话定形状，网页头点开花费时要看）：每一次请求的金额照它自己记下的价格（`cost.price`、`cost.multiplier`，和金额同一份）分成没命中的输入、读缓存、写缓存、输出四种，一种 = 那一种的用量 × 那一种的价 ÷ 1000000 × 倍率，用量是 0 的那一种不管价格记没记都是准的 0（核心主会话 2026-11-02 定：不违反「算不准的钱不显示」）；写汇总那一行时算好、跟着那一行存（`spent` 的 `parted` 和四格），不照现在的价格重算。重建照日志里记下的价格算出一样的；删掉的会话照 `usage.purged` 里写的。
      - 换算照金额同样的汇率，只算换成了的那几笔：有的四种加起来就是 `converted.amount`（差在浮点的舍入里）。
      - 这一行有一笔（换没换成都算）没记四种的（以前写的 `usage.purged`），整行不给 `converted_parts`，不拼半截；有一笔哪一种用量不是 0、价格又没记的，那一种不给。没有价格的那几次照旧只算在 `unpriced` 里。
@@ -1221,6 +1239,7 @@ mimo = ["xiaomi"]
 | `crates/miyu-core/src/models/tests.rs`、`crates/miyu-core/tests/serve.rs` | 出厂的档案读得进来、DeepSeek 那一套和请求形状探针用的一样、TOML 读成 JSON、写坏的说是档案；真核心没配模型的每次请求 `no_model`、没发出去 | 8-6 |
 | `crates/miyu/tests/dev_home.rs` | `xtask dev-home` 的三个变量怎么读、哪些不收；造的配置照清单读一处错都没有；已经有配置的不盖、别人的目录不动；真核心在这个数据根上照配置连上假服务器，带着 `MIYU_DEV_API_KEY` 的值、发给写的那个模型，`miyu ask` 答得上来 | 8-6 |
 | `crates/miyu-store/tests/usage.rs`、`usage_purged.rs`、`crates/miyu-endpoint/tests/usage.rs`、`crates/miyu-endpoint/src/usage/tests.rs` | 一次一行、没发出去的不算、重复不出两行、补多出来的（连同换了段的、从没写过的）、重建（版本不对、乱写的文件、用着用着坏了）、回收处、撤掉的回合也算、分组（`null` 在前）、`tree`、左闭右开；`usage.purged` 按小时按用途的合计一字不差、写进去了才删、写不进去的留着、写两遍只算一次、重建照日志读回来、整点时区一分不差、半点时区照小时开头；一次性调用记进日志、照用途分组、重建以后还在；协议上照分组、币种各加各的、照 `usage.currency` 排、参数不对的 `bad_params` | 8-15 |
+| `crates/miyu-endpoint/tests/usage_convert_method.rs`（施工 UC-3） | `usage.convert`：两组照各自那天的汇率换成一个数、同币种的不用汇率、空的组和一笔都没换成的是 `null`、取不到汇率的在 `rest`、`currency` 跟着配置、再问不再取；日子、币种、金额写错和超上限的 `bad_params`，正好在上限上的照办 |
 | `crates/miyu-store/src/usage/convert/tests.rs`、`crates/miyu-store/tests/usage_convert.rs`、`crates/miyu-endpoint/tests/usage_convert.rs`、`crates/miyu-endpoint/tests/usage.rs`（施工 UP-1） | 分四种：照同样的汇率换、加起来就是 `converted.amount`，没换成的不进四种；有一笔没记四种的整行不给，有一笔哪一种用了、价格不知道的那一种不给（没换成的那一笔也算），用量是 0 的照准的 0 给（只写了输入、输出价的模型缓存两种照给 0）；照每一次记下的价格算好记进汇总，重建一样，删掉的会话的合计带着，老的合计算进来的那一组不给、别的组照给；`usage.query` 的行（会话的请求、一次性调用）和订阅回应的累计都带 `converted_parts`，写缓存的价格不知道、用量是 0 的照 0 写 | UP-1 |
 | `crates/miyu-basesystem/tests/subagent.rs` | `pool` 只认端口列着的、交给端口，不写的、`null` 交没有，不在列表里的、大小写不对的、带 `@` 的、不是字的照参数不对、端口不派、原话列出能写的几个，一个都没列的照样拒；`tier` 不报错、不理它；资源里 `pool` 没有 `enum`（8-8 补） | 8-8、8-8 补 |
 | `crates/miyu-session/tests/spawn/pool.rs` | 子会话的引用：写了 `pool` 的记 `@池`，没写的、写 `tier` 的抄父会话钉着的；工具面照造会话时的配置拼，开着开关、有成员的才列，配置改了这个会话（连同载入以后）一字不变、新会话变，拿新会话才列的池在老会话里照参数不对；一个都没有的不出现 `pool`（8-8 补，取代 8-8 的 `tier.rs`） | 8-8 补 |

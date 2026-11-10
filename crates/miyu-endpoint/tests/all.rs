@@ -320,6 +320,7 @@ mod undo_jobs;
 mod uploads;
 mod usage;
 mod usage_convert;
+mod usage_convert_method;
 mod venue_backfill;
 mod venue_binding;
 mod venue_forward_index;

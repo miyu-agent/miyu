@@ -22,7 +22,7 @@ For programs that talk to the core: "heads" such as the terminal and web UIs, an
 | [Pushes](pushes.en.md) | What each stream pushes |
 | [Attachments and file contents](blob.en.md) | `blob.*` |
 | [Files](fs.en.md) | `fs.*` |
-| [Config, secrets, models](config.en.md) | `config.*`, `secret.*`, `provider.*`, `model.*`, `usage.query` |
+| [Config, secrets, models](config.en.md) | `config.*`, `secret.*`, `provider.*`, `model.*`, `usage.*` |
 | [Personas and presets](personas.en.md) | `persona.*`, `preset.*` |
 | [Projects](projects.en.md) | `project.*` |
 | [A head's own settings](prefs.en.md) | `prefs.*` |
