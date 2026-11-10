@@ -207,6 +207,12 @@ impl DataRoot {
         self.var_lib().join("blob-grants")
     }
 
+    /// 补登记时暂存 [`DataRoot::blob_grants_dir`] 的地方：`var/lib/.blob-grants.new/`（施工 BG-1补，写好了一次改名换进去；点
+    /// 开头的不合包编号的写法，不用进保留表，同装包的 `.<编号>.new`）。
+    pub fn blob_grants_staging(&self) -> PathBuf {
+        self.var_lib().join(".blob-grants.new")
+    }
+
     /// 包 `package` 自己存过哪些 blob 的那一份：`var/lib/blob-grants/<包>`，一行一个哈希。
     pub fn blob_grants(&self, package: &str) -> PathBuf {
         self.blob_grants_dir().join(package)

@@ -7,10 +7,14 @@
 //! `journal.jsonl`，每追加一行都重新打开、追加、同步，新建的文件另同步目录；一个核心里照一把锁一行一行来。存没存过由调的
 //! 一方记着（端点的 `attach/grants.rs`），这里不查重。上一次写到一半断了电、最后没有换行的，下一次追加先补一个换行：那半行
 //! 读的时候当坏行跳过，不和新的一行粘在一起。
+//!
+//! 这一份落盘以前存的，升级后第一次起来另补一次（施工 BG-1补）：目录还没有（[`opened`]）时照 [`scan`] 在各个包的状态目录里
+//! 找，补到的照 [`seed`] 一下子换进去。
 
 use std::collections::{BTreeSet, HashMap};
 use std::fs::{self, OpenOptions};
 use std::io::{self, Read as _, Seek as _, SeekFrom, Write as _};
+use std::path::Path;
 use std::sync::{Mutex, PoisonError};
 
 use miyu_kernel::id::ContentHash;
@@ -18,6 +22,7 @@ use miyu_kernel::id::ContentHash;
 use crate::durable::{create_dir, sync_dir};
 use crate::root::DataRoot;
 
+pub mod scan;
 #[cfg(test)]
 mod tests;
 
@@ -112,6 +117,67 @@ pub fn append(root: &DataRoot, package: &str, hash: &ContentHash) -> io::Result<
     line.push('\n');
     file.write_all(line.as_bytes())?;
     file.sync_data()
+}
+
+/// 数据根 `root` 里放这些份的目录在不在（施工 BG-1补）：不在的是升级后第一次起来、或者全新的数据根，核心照 [`scan`] 补登记
+/// 一次，照 [`seed`] 一下子换进去；在了就是补完了。
+///
+/// # Errors
+///
+/// 看不了在不在。
+pub fn opened(root: &DataRoot) -> io::Result<bool> {
+    match fs::symlink_metadata(root.blob_grants_dir()) {
+        Ok(_) => Ok(true),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(error),
+    }
+}
+
+/// 补登记的结果一下子换进去（施工 BG-1补）：`granted` 是各个包补到的哈希，哪怕是空的也把目录建出来。「目录在不在」就是
+/// 「补没补完」：先在旁边的暂存目录 `var/lib/.blob-grants.new`（[`DataRoot::blob_grants_staging`]，同装包的 `.<编号>.new`）
+/// 里一个包写一份、同步，再一次改名成 `var/lib/blob-grants/`、同步上一层。中途被杀的只剩暂存目录，下一次调先删掉它、整个
+/// 重做。只在目录还没有（[`opened`]）、没有别人在追加时调：核心起来、拉起扩展之前。
+///
+/// # Errors
+///
+/// 数据根不在了；上次剩下的暂存目录删不掉；建不了、写不进、同步不了、改不了名（目录已经在了的也是）。出了错的不留暂存。
+pub fn seed(root: &DataRoot, granted: &[(String, BTreeSet<ContentHash>)]) -> io::Result<()> {
+    let _writing = WRITING.lock().unwrap_or_else(PoisonError::into_inner);
+    let (dir, staged) = (root.blob_grants_dir(), root.blob_grants_staging());
+    match fs::remove_dir_all(&staged) {
+        Err(error) if error.kind() != io::ErrorKind::NotFound => return Err(error),
+        _ => {}
+    }
+    let placed = stage(&staged, granted).and_then(|()| {
+        // 目录在了的不盖：Unix 上改名会换掉一个空目录。
+        if fs::symlink_metadata(&dir).is_ok() {
+            return Err(io::Error::from(io::ErrorKind::AlreadyExists));
+        }
+        fs::rename(&staged, &dir)
+    });
+    if let Err(error) = placed {
+        drop(fs::remove_dir_all(&staged));
+        return Err(error);
+    }
+    dir.parent().map_or(Ok(()), sync_dir)
+}
+
+/// 在暂存目录 `staged` 里写好各个包的那一份：一行一个哈希，每份同步，最后同步目录。
+fn stage(staged: &Path, granted: &[(String, BTreeSet<ContentHash>)]) -> io::Result<()> {
+    create_dir(staged)?;
+    for (package, hashes) in granted {
+        let lines: String = hashes
+            .iter()
+            .flat_map(|hash| [hash.as_str(), "\n"])
+            .collect();
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(staged.join(package))?;
+        file.write_all(lines.as_bytes())?;
+        file.sync_data()?;
+    }
+    sync_dir(staged)
 }
 
 /// 这份文件不空、最后一个字节不是换行：上一次写到一半断了。

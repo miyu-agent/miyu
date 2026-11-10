@@ -10,6 +10,8 @@
 //! 它自己存的另落盘（施工 BG-1，`miyu_store::blob::grants`：`var/lib/blob-grants/<包>`，一行一个哈希），核心起来时读回
 //! （[`Grants::load`]）：表情包这样的包把图只存在 blob 里、自己只记哈希，重起以后手里没有内容，没法再存一次。后两种只记在内存
 //! 里，核心重起就没了：那是一次调用里临时给的。包卸了，它的一份扔掉、文件删掉（[`Grants::forget`]），装回来从空的开始。
+//!
+//! 落盘以前存的另补一次（施工 BG-1补，`grants/backfill.rs`）：升级后第一次起来，照各个包状态目录里记着的哈希补登记。
 
 use std::collections::{BTreeSet, HashMap};
 use std::sync::{Mutex, MutexGuard, PoisonError};
@@ -18,6 +20,8 @@ use miyu_kernel::id::ContentHash;
 use miyu_store::blob::grants as saved;
 use miyu_store::root::DataRoot;
 use serde_json::Value;
+
+mod backfill;
 
 const TARGET: &str = "miyu::endpoint";
 

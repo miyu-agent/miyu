@@ -25,7 +25,8 @@
 | `crates/miyu-store/src/log/open.rs`、`log/open/walk.rs`、`log/open/parse.rs`、`log/open/parse/stream.rs`、`log/open/range.rs`、`log/open/lines.rs` | 打开时自检、截半行；只读地读；从记下的位置读起（施工 3-8 七补）；只读第一条；一段里行多的分块一起读成事件（施工 V-2 下补），解好一块照先后交一块（施工 V-15）；一段照定长的窗口一窗窗读，原文不整段进内存（施工 V-37 中）；照序号读一截（`read_range`，施工 V-37 中）；只解要的种类的那一份（`read_range_only`，施工 V-39 上补）；只数行、不解，照位置读一截、读一行（`scan_lines`、`read_between`、`read_line_near`，施工 V-41 上）；每一行照调的一方给的解（`read_marked_with`、`read_range_with`，施工 V-43） |
 | `crates/miyu-store/src/bundle.rs`、`bundle/manifest.rs` | 会话的原始包（施工 SE-1 上，设计 58）：几个会话的段原文、引用到的 blob、清单，打成一个 ZIP；写法见下面「原始包」 |
 | `crates/miyu-store/src/blob.rs` | blob：存、取、核对哈希；分块暂存、改名进位置、扔掉、核心起来时清（施工 W-5）；读一段（施工 W-6）；只核对、量大小，打开了从某处读（施工 V-38） |
-| `crates/miyu-store/src/blob/grants.rs` | 包自己存过哪些 blob 落盘的那一份 `var/lib/blob-grants/<编号>`（施工 BG-1，`protocol.md` 的 `blob.get` 第 1 条）：一行一个哈希，照 `journal.jsonl` 的办法追加、同步，一把锁一行一行来；读的时候坏行跳过、数出来，一份读不了的不拦别的；卸包时删 |
+| `crates/miyu-store/src/blob/grants.rs` | 包自己存过哪些 blob 落盘的那一份 `var/lib/blob-grants/<编号>`（施工 BG-1，`protocol.md` 的 `blob.get` 第 1 条）：一行一个哈希，照 `journal.jsonl` 的办法追加、同步，一把锁一行一行来；读的时候坏行跳过、数出来，一份读不了的不拦别的；卸包时删。补登记用的（施工 BG-1补）：目录在不在（`opened`），补到的一下子换进去（`seed`：先写进暂存目录 `var/lib/.blob-grants.new/`、同步，再一次改名成 `var/lib/blob-grants/`、同步上一层；上次剩下的暂存目录先删掉） |
+| `crates/miyu-store/src/blob/grants/scan.rs` | 在一个包自己的状态目录 `var/lib/<编号>/` 里找它记着的 blob 哈希（施工 BG-1补，`protocol.md` 的 `blob.get` 第 1 条）：普通文件照字节找 `sha256:` 加 64 位小写十六进制（二进制的也找）；不跟链接、不出目录（上一层换成真实的位置，文件照 `miyu_fs::open_file` 开）；一份文件 64 MiB、一个包 20000 份、16 层子目录为限（`Limits`），跳过的、没进去的、读不了的数在 `Scanned` 里。只在升级后第一次起来用一次，存处有没有它不查 |
 | `crates/miyu-store/src/jobs.rs` | 会话目录下后台命令的输出：`jobs/<编号>.out`（施工 7-3） |
 | `crates/miyu-store/src/attachments.rs` | 会话的附件落成文件：清名字、照字节截、补扩展名、撞名接序号、临时文件改名（施工 3-9 六补，「怎么走」第 13 条） |
 | `crates/miyu-store/src/trash.rs` | 回收处：删掉的会话挪进来、满了时限的真删（施工 3-8 三补）；真删之前往日志留用量的底（施工 8-15） |

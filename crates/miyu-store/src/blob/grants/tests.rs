@@ -110,3 +110,37 @@ fn nothing_is_written_outside_a_data_root() {
     assert!(append(&root, "memes", &hash("one")).is_err());
     assert!(!scratch.path().exists(), "数据根不在了的不建回来");
 }
+
+#[test]
+fn seeding_swaps_the_whole_directory_in_at_once() {
+    let scratch = Scratch::new();
+    let root = root(&scratch);
+    assert!(!opened(&root).unwrap());
+    // 上一次剩下的暂存目录：先删掉，里面的不带进来。
+    fs::create_dir_all(root.blob_grants_staging()).unwrap();
+    fs::write(root.blob_grants_staging().join("gone"), "sha256:01").unwrap();
+    let granted = vec![(
+        "memes".to_string(),
+        BTreeSet::from([hash("one"), hash("two")]),
+    )];
+    seed(&root, &granted).unwrap();
+    assert!(opened(&root).unwrap() && !root.blob_grants_staging().exists());
+    let loaded = load(&root).unwrap();
+    assert_eq!(loaded.held.len(), 1);
+    assert_eq!(loaded.held["memes"], granted[0].1);
+    assert!(loaded.bad.is_empty());
+    // 之后照旧追加；目录在了的不再换，原来的不动、不留暂存。
+    append(&root, "memes", &hash("three")).unwrap();
+    assert!(seed(&root, &[]).is_err());
+    assert_eq!(load(&root).unwrap().held["memes"].len(), 3);
+    assert!(!root.blob_grants_staging().exists());
+}
+
+#[test]
+fn seeding_nothing_still_makes_the_directory() {
+    let scratch = Scratch::new();
+    let root = root(&scratch);
+    seed(&root, &[]).unwrap();
+    assert!(root.blob_grants_dir().is_dir());
+    assert!(load(&root).unwrap().held.is_empty());
+}

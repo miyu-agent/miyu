@@ -428,6 +428,8 @@ async fn run(
     // 监视配置文件（第七条）：拿着它一直到停，丢掉就不看了。
     let _watching = core.watch_config();
     say(&Ready::Ready);
+    // 包以前存的 blob 补登记给它（施工 BG-1补，只在还没有 `var/lib/blob-grants/` 时做）：要先于拉起扩展，它们起来就读图。
+    core.backfill_blob_grants().await;
     // 照开关拉起开着的扩展（施工 9-4 上）：写了 `ready` 以后，拉起它的头不等它们。
     core.start_extensions();
     // 配置里的 MCP 服务跟着配置换（施工 F-9 下）：手改了配置，当场起停。
