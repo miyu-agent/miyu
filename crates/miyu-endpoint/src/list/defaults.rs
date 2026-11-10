@@ -5,39 +5,43 @@
 use std::collections::BTreeMap;
 
 use miyu_kernel::id::SessionId;
-use miyu_store::index::SessionIndex;
+use miyu_store::index::Link;
 use miyu_store::root::DataRoot;
 
 use super::Listed;
 
-/// 一路追到主会话：`parents` 是会话到父会话。父会话不在索引里的（删了）停在它这一层；绕回来的不会有，照走过的挡一下。
+/// 一路追到主会话：`parent_of` 交回一个会话的父会话，不认识它的交回空的。父会话不认识的（删了）停在它这一层；绕回来的
+/// 不会有，照走过的挡一下。
 pub(crate) fn main_of(
-    parents: &BTreeMap<SessionId, Option<SessionId>>,
+    parent_of: impl Fn(&SessionId) -> Option<Option<SessionId>>,
     id: &SessionId,
 ) -> SessionId {
     let mut at = id.clone();
     let mut seen = vec![at.clone()];
-    while let Some(Some(parent)) = parents.get(&at) {
-        if seen.contains(parent) {
+    while let Some(Some(parent)) = parent_of(&at) {
+        if seen.contains(&parent) {
             break;
         }
-        at = parent.clone();
-        seen.push(at.clone());
+        seen.push(parent.clone());
+        at = parent;
     }
     at
 }
 
-/// 列出来的每一项填上默认工作区：照索引这一刻的行认父会话，列出来的父会话也算。
-pub(crate) fn fill(listed: &mut [Listed], index: &SessionIndex, root: &DataRoot) {
-    let mut parents: BTreeMap<SessionId, Option<SessionId>> = index
-        .rows()
-        .map(|rows| rows.into_values().map(|row| (row.id, row.parent)).collect())
-        .unwrap_or_default();
-    for one in listed.iter() {
-        parents.insert(one.id.clone(), one.parent.clone());
-    }
+/// 列出来的每一项填上默认工作区：照索引这一刻的行认父会话，列出来的父会话也算（先照列出来的）。只顺着列出来的往上追，
+/// 不把整张表抄一份（施工 YC-13）。
+pub(crate) fn fill(listed: &mut [Listed], links: &BTreeMap<SessionId, Link>, root: &DataRoot) {
+    let own: BTreeMap<SessionId, Option<SessionId>> = listed
+        .iter()
+        .map(|one| (one.id.clone(), one.parent.clone()))
+        .collect();
+    let parent_of = |id: &SessionId| {
+        own.get(id)
+            .cloned()
+            .or_else(|| links.get(id).map(|link| link.parent.clone()))
+    };
     for one in listed {
-        let main = main_of(&parents, &one.id);
+        let main = main_of(parent_of, &one.id);
         one.default_workspace = Some(root.session_workspace(&main).to_string_lossy().into_owned());
     }
 }

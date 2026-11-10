@@ -11,7 +11,7 @@
 
 mod row;
 
-pub use row::{Row, cwd, said};
+pub use row::{Link, Row, cwd, said};
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -108,12 +108,59 @@ impl SessionIndex {
     ///
     /// 读不了；有一行读不懂。
     pub fn rows(&self) -> Result<BTreeMap<SessionId, Row>, IndexError> {
+        self.select("", [])
+    }
+
+    /// 编号在 `oldest` 到 `newest` 之间（两头都算）的行，照会话编号（施工 YC-13）：带上限的列会话一批批读，只读列得到的
+    /// 那一截，不把整张表解出来。编号照字节比，和放会话的目录排的先后一样。
+    ///
+    /// # Errors
+    ///
+    /// 读不了；这一截里有一行读不懂。
+    pub fn rows_between(
+        &self,
+        oldest: &SessionId,
+        newest: &SessionId,
+    ) -> Result<BTreeMap<SessionId, Row>, IndexError> {
+        self.select(
+            " WHERE id >= ?1 AND id <= ?2",
+            [oldest.as_str(), newest.as_str()],
+        )
+    }
+
+    /// 每个会话的父会话、它自己用了多少 token（施工 YC-13）：列会话照它算连同子孙的 token、追默认工作区。只读这三格，
+    /// 不解整行，表多大都只是扫一遍。
+    ///
+    /// # Errors
+    ///
+    /// 读不了；有一行的这三格读不懂。
+    pub fn links(&self) -> Result<BTreeMap<SessionId, Link>, IndexError> {
         let db = self.lock();
         let Some(db) = db.as_ref() else {
             return Ok(BTreeMap::new());
         };
-        let mut select = db.prepare(&format!("SELECT {COLUMNS} FROM sessions"))?;
+        let mut select = db.prepare("SELECT id, parent, tokens FROM sessions")?;
         let mut rows = select.query([])?;
+        let mut found = BTreeMap::new();
+        while let Some(row) = rows.next()? {
+            let (id, link) = Link::from_sql(row)?;
+            found.insert(id, link);
+        }
+        Ok(found)
+    }
+
+    /// 照 `filter`（接在 `SELECT … FROM sessions` 后面）读出来的行。
+    fn select<const N: usize>(
+        &self,
+        filter: &str,
+        values: [&str; N],
+    ) -> Result<BTreeMap<SessionId, Row>, IndexError> {
+        let db = self.lock();
+        let Some(db) = db.as_ref() else {
+            return Ok(BTreeMap::new());
+        };
+        let mut select = db.prepare(&format!("SELECT {COLUMNS} FROM sessions{filter}"))?;
+        let mut rows = select.query(params_from_iter(values))?;
         let mut found = BTreeMap::new();
         while let Some(row) = rows.next()? {
             let row = Row::from_sql(row)?;

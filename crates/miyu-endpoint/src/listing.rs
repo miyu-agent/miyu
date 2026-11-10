@@ -176,9 +176,8 @@ async fn entry(core: &Core, session: &SessionId) -> Option<Value> {
     tokio::task::spawn_blocking(move || {
         let mut listed = one(&root, &index, &session, busy)
             .filter(|listed| listed.venue == crate::list::LOCAL)?;
-        crate::list::tokens::fill(std::slice::from_mut(&mut listed), &index);
+        crate::list::kin(std::slice::from_mut(&mut listed), &index, &root);
         crate::list::context::fill(std::slice::from_mut(&mut listed), &window);
-        crate::list::defaults::fill(std::slice::from_mut(&mut listed), &index, &root);
         listed.waiting = waiting;
         listed.viewed = viewed;
         Some(listed.to_json())

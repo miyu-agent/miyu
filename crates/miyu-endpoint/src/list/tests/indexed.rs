@@ -18,11 +18,11 @@ const H: &str = "0192f3a0-8888-7abc-8def-001122334455";
 /// D 的末尾有第 3 条的前这么多个字节：半行。
 const HALF: usize = 10;
 
-fn at(minute: u64) -> String {
+pub(super) fn at(minute: u64) -> String {
     format!("2026-09-25T07:{minute:02}:00.000Z")
 }
 
-fn created(oneshot: bool, parent: Option<&str>) -> String {
+pub(super) fn created(oneshot: bool, parent: Option<&str>) -> String {
     let parent = parent.map_or(String::new(), |parent| {
         format!(r#","parent":"{parent}","depth":1"#)
     });
@@ -32,7 +32,7 @@ fn created(oneshot: bool, parent: Option<&str>) -> String {
     )
 }
 
-fn meta(seq: u64, title: Option<&str>, pinned: Option<bool>) -> String {
+pub(super) fn meta(seq: u64, title: Option<&str>, pinned: Option<bool>) -> String {
     let mut body = serde_json::Map::new();
     if let Some(title) = title {
         body.insert("title".into(), json!(title));
@@ -43,23 +43,23 @@ fn meta(seq: u64, title: Option<&str>, pinned: Option<bool>) -> String {
     json!({"seq": seq, "at": at(seq), "kind": "session.meta_changed", "by": {"kind": "person"}, "body": body}).to_string()
 }
 
-fn turn(seq: u64, cwd: Option<&str>) -> String {
+pub(super) fn turn(seq: u64, cwd: Option<&str>) -> String {
     let body = cwd.map_or_else(|| json!({}), |cwd| json!({"cwd": cwd}));
     json!({"seq": seq, "at": at(seq), "kind": "turn.started", "turn": seq, "by": {"kind": "kernel"}, "cause": format!("c{seq}"), "body": body}).to_string()
 }
 
-fn said(seq: u64) -> String {
+pub(super) fn said(seq: u64) -> String {
     json!({"seq": seq, "at": at(seq), "kind": "message.user", "by": {"kind": "person"}, "body": {"blocks": [{"type": "text", "text": format!("第 {seq} 句")}]}}).to_string()
 }
 
 /// 这些行拼成一段：一行一个 `\n`。
-fn lines(lines: &[String]) -> String {
+pub(super) fn lines(lines: &[String]) -> String {
     lines.iter().map(|line| format!("{line}\n")).collect()
 }
 
 /// 一批各种各样的会话：没记过工作目录的、改过名置顶又去掉标题的、两段的、末尾有半行的、日志坏了的、第一条不是
 /// `session.created` 的、空目录、一次性的子会话。
-fn varied() -> Site {
+pub(super) fn varied() -> Site {
     let site = Site::new(&[(A, &[OLD])]);
     let b = [
         created(false, None),
@@ -101,11 +101,11 @@ fn varied() -> Site {
     site
 }
 
-fn dir(site: &Site, id: &str) -> PathBuf {
+pub(super) fn dir(site: &Site, id: &str) -> PathBuf {
     site.1.session_dir(&SessionId::parse(id).expect("合写法"))
 }
 
-fn write(site: &Site, id: &str, segment: &str, text: &str) {
+pub(super) fn write(site: &Site, id: &str, segment: &str, text: &str) {
     let dir = dir(site, id);
     fs::create_dir_all(&dir).expect("建得了");
     fs::write(dir.join(segment), text).expect("写得进");
@@ -118,7 +118,7 @@ fn append(site: &Site, id: &str, segment: &str, text: &str) {
     fs::write(path, old).expect("写得进");
 }
 
-fn index_path(site: &Site) -> PathBuf {
+pub(super) fn index_path(site: &Site) -> PathBuf {
     site.1.index().join(FILE)
 }
 

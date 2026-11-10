@@ -4,6 +4,7 @@
 //! 照日志算的几样读会话列表的索引（施工 3-8 七补，`docs/blueprint/store/index.md`）：一个会话一行，记着照到日志的哪里。
 //! 照到的就是日志现在的末尾的，直接用；日志比它长的只读多出来的那一截，补好写回去；没有这一行、对不上的（日志比记的
 //! 短了、段对不上），这一个会话整份读一遍，和没有索引时一样。所以结果和每次整份读的一字不差，只是快。
+//! 带上限的只读走得到的那一截行（施工 YC-13，`list/pages.rs`）：做的事跟着上限走，不跟着会话总数走。
 //!
 //! 她用 `sessions` 列会话也是这一个函数（[`scan`]，`cross-session.md` 第一条第 2 款），经会话表交给会话的端口
 //! （`crate::spawn`）：头和她看到的是同一份。
@@ -55,10 +56,8 @@ pub(crate) async fn list(
             && dream.is_none_or(|dream| dream == row.dream.is_some())
     };
     let scanned = tokio::task::spawn_blocking(move || {
-        let mut listed = scan(&root, Some(&index), &busy, pick, limit, &Stop::default())?;
-        tokens::fill(&mut listed, &index);
+        let mut listed = gather(&root, &index, &busy, pick, limit)?;
         context::fill(&mut listed, &window);
-        defaults::fill(&mut listed, &index, &root);
         for one in &mut listed {
             one.waiting = waiting.contains(&one.id);
             one.viewed = viewed.contains(&one.id);
@@ -234,8 +233,34 @@ impl Listed {
     }
 }
 
+/// `session.list` 照磁盘、照索引算的那一段：[`scan`] 列出来，再填连同子孙的 token、默认工作区。
+///
+/// # Errors
+///
+/// 同 [`scan`]。
+pub(crate) fn gather(
+    root: &DataRoot,
+    index: &SessionIndex,
+    busy: &BTreeSet<SessionId>,
+    pick: impl Fn(&Row) -> bool,
+    limit: Option<usize>,
+) -> std::io::Result<Vec<Listed>> {
+    let mut listed = scan(root, Some(index), busy, pick, limit, &Stop::default())?;
+    kin(&mut listed, index, root);
+    Ok(listed)
+}
+
+/// 列出来的每一项填上要认父子的两样：连同子孙的 token（[`tokens::fill`]）、默认工作区（[`defaults::fill`]）。认父子的
+/// 两格一次读出来（施工 YC-13，[`SessionIndex::links`]），两样共用；读不了的照各自的 token，默认工作区只认列出来的父会话。
+pub(crate) fn kin(listed: &mut [Listed], index: &SessionIndex, root: &DataRoot) {
+    let links = index.links().unwrap_or_default();
+    tokens::fill(listed, &links);
+    defaults::fill(listed, &links, root);
+}
+
 /// 在阻塞线程里一个个读：会话从新到旧，合 `pick` 的列进去，最多 `limit` 个；`busy` 里的是忙的。读下一个
-/// 会话之前看一眼 `stop`，举起来了交回已经读到的。`index` 是会话列表的索引，没有的每个都整份读。
+/// 会话之前看一眼 `stop`，举起来了交回已经读到的。`index` 是会话列表的索引，没有的每个都整份读；带 `limit` 的，索引的
+/// 行一批批读、够数就停（施工 YC-13），列出来的就是不带 `limit` 的头几个。
 ///
 /// # Errors
 ///
@@ -248,25 +273,15 @@ pub(crate) fn scan(
     limit: Option<usize>,
     stop: &Stop,
 ) -> std::io::Result<Vec<Listed>> {
-    let mut rows = match index.map(SessionIndex::rows) {
-        Some(Ok(rows)) => rows,
-        Some(Err(error)) => {
-            // 用着用着坏了的：删掉重建，这一次整份读，读完的照样写进新的里。
-            tracing::warn!(target: "miyu::endpoint", error = %error, "session index not read");
-            if let Some(Err(error)) = index.map(SessionIndex::reset) {
-                tracing::warn!(target: "miyu::endpoint", error = %error, "session index unusable");
-            }
-            Default::default()
-        }
-        None => Default::default(),
-    };
+    let ids = root.sessions()?;
+    let mut rows = pages::Pages::new(index, &ids, limit);
     let mut found = Vec::new();
-    for id in root.sessions()? {
+    for (at, id) in ids.iter().enumerate() {
         if stop.stopped() || limit.is_some_and(|limit| found.len() >= limit) {
             break;
         }
-        let dir = root.session_dir(&id);
-        let row = match rows.remove(&id) {
+        let dir = root.session_dir(id);
+        let row = match rows.take(at) {
             // 父会话、是不是一次性的只在 `session.created` 里，不会变：照旧的那一行挑。
             Some(row) if !pick(&row) => continue,
             Some(row) => match caught_up(&dir, &row, index) {
@@ -276,7 +291,7 @@ pub(crate) fn scan(
             None => whole(&dir, id.clone(), None, index, &pick),
         };
         if let Some(row) = row {
-            found.push(Listed::new(row, busy.contains(&id), &dir));
+            found.push(Listed::new(row, busy.contains(id), &dir));
         }
     }
     Ok(found)
@@ -295,7 +310,11 @@ pub(crate) fn one(
         return None;
     }
     let all = |_: &Row| true;
-    let row = match index.rows().ok().and_then(|mut rows| rows.remove(id)) {
+    let row = match index
+        .rows_between(id, id)
+        .ok()
+        .and_then(|mut rows| rows.remove(id))
+    {
         Some(row) => caught_up(&dir, &row, Some(index))
             .or_else(|| whole(&dir, id.clone(), Some(&row.mark), Some(index), &all)),
         None => whole(&dir, id.clone(), None, Some(index), &all),
@@ -406,6 +425,7 @@ pub(crate) fn windows(core: &Core) -> impl Fn(&str, &str) -> Option<u64> + Send 
 
 pub(crate) mod context;
 pub(crate) mod defaults;
+mod pages;
 pub(crate) mod tokens;
 
 #[cfg(test)]

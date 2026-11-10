@@ -2,11 +2,22 @@
 //! 读索引的和整份读的一字不差（施工 3-8 七补，`indexed.rs`）。
 
 mod indexed;
+mod limited;
 mod speed;
 
 use miyu_kernel::event::{Body, Event};
 
 use super::*;
+
+thread_local! {
+    /// 这个线程列会话时从索引里读了几整行（施工 YC-13）：带上限的不该跟着会话总数走。
+    pub(super) static LOADED: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// 记一笔：又从索引里读了 `rows` 整行。
+pub(super) fn loaded(rows: usize) {
+    LOADED.set(LOADED.get() + rows);
+}
 
 fn event(line: &str) -> Event {
     Event::from_line(line).expect("合写法")
@@ -130,14 +141,15 @@ fn a_raised_flag_stops_before_the_next_session() {
 /// 成环（一行的父会话是它自己；索引、日志坏了才会有），就一直转下去，`session.list` 永远不回。期望：几秒内算完。修之前这条是红的。
 #[test]
 fn a_parent_cycle_in_the_index_does_not_spin_forever() {
-    let mut row = read(&[]);
-    row.parent = Some(row.id.clone());
-    row.tokens = 1;
-    let id = row.id.clone();
-    let rows = std::collections::BTreeMap::from([(id.clone(), row)]);
+    let id = SessionId::parse(A).expect("合写法");
+    let link = miyu_store::index::Link {
+        parent: Some(id.clone()),
+        tokens: 1,
+    };
+    let links = std::collections::BTreeMap::from([(id.clone(), link)]);
     let (done, finished) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
-        let total = tokens::family(&rows, &id);
+        let total = tokens::Families::new(&links).total(&id);
         done.send(total).unwrap_or(());
     });
     assert!(

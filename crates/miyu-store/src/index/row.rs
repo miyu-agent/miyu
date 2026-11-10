@@ -13,6 +13,30 @@ use miyu_kernel::time::Timestamp;
 use super::IndexError;
 use crate::log::Mark;
 
+/// 一行里认父子的两格（施工 YC-13，[`super::SessionIndex::links`]）：列会话算连同子孙的 token、追默认工作区只要它们。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Link {
+    /// 父会话：子会话才有。
+    pub parent: Option<SessionId>,
+    /// 这个会话自己用了多少 token（[`Row::tokens`]）。
+    pub tokens: u64,
+}
+
+impl Link {
+    /// 从表里读出来：`id, parent, tokens` 三格。读不懂的说法同 [`Row::from_sql`]。
+    pub(super) fn from_sql(row: &SqlRow<'_>) -> Result<(SessionId, Link), IndexError> {
+        let id: String = row.get(0)?;
+        let bad = |what: &str| IndexError::Bad(format!("row {id}: {what}"));
+        let parent = row
+            .get::<_, Option<String>>(1)?
+            .map(|parent| SessionId::parse(&parent).map_err(|_| bad("parent")))
+            .transpose()?;
+        let tokens = u64::try_from(row.get::<_, i64>(2)?).map_err(|_| bad("tokens"))?;
+        let id = SessionId::parse(&id).map_err(|_| bad("id"))?;
+        Ok((id, Link { parent, tokens }))
+    }
+}
+
 /// 一个会话在索引里的一行。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Row {

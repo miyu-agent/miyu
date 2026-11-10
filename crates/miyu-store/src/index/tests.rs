@@ -487,3 +487,5 @@ fn nested_calls_are_not_activity() {
 mod dream;
 /// fork 子代理那一行（施工 A-F 补）：拆出去守 500 行上限。
 mod forked;
+/// 只读一截、只读认父子的两格（施工 YC-13）。
+mod slices;
