@@ -343,7 +343,8 @@ fn a_secret_item_reads_both_forms_and_rejects_the_rest() {
     );
     assert_eq!(
         told.message,
-        r#"providers.demo 要写 { secret = "…" } 或 { env = "…" }，写的是 "sk-FAKE-plain"。"#
+        r#"providers.demo 要写 { secret = "…" } 或 { env = "…" }，写的是 13 个字符的字。"#,
+        "明文不回显（施工 SEC-1）"
     );
     let resolved = merge(
         &items,

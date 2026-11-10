@@ -152,7 +152,8 @@ impl Reader<'_> {
                 None => {
                     let at = self.value_at(node, key_at);
                     let raw = self.raw(node, key);
-                    let problem = Problem::item(Code::WrongType, self.layer, &full, at, &raw);
+                    // 一组键写成一个值也没有类型，值可能就是密钥：不抄原文（施工 SEC-1）。
+                    let problem = Problem::untyped(Code::WrongType, self.layer, &full, at, &raw);
                     self.parsed.problems.push(problem);
                 }
             }
@@ -170,7 +171,8 @@ impl Reader<'_> {
             // 退役的键（施工 FL-1）：以前写的照旧读得进，不进最终值，也不报。
         } else {
             let raw = self.raw(node, key);
-            let mut problem = Problem::item(Code::UnknownKey, self.layer, &full, key_at, &raw);
+            // 不认识的键没有类型，可能就是拼错的密钥项：不抄原文（施工 SEC-1）。
+            let mut problem = Problem::untyped(Code::UnknownKey, self.layer, &full, key_at, &raw);
             problem.suggest = nearest(self.items.iter().map(|item| item.key), &full);
             self.parsed.problems.push(problem);
         }
@@ -186,10 +188,11 @@ impl Reader<'_> {
         let raw = self.slice(node.span()).unwrap_or_default().to_string();
         let value = node_value(item.kind, node);
         let counts = item.layers.contains(&self.layer);
+        // 带密钥的一格不抄原文（施工 SEC-1）：照这一项的类型记。
+        let layer = self.layer;
+        let problem = |code| Problem::typed(code, layer, full, at, &raw, item.kind);
         if !counts {
-            self.parsed
-                .problems
-                .push(Problem::item(Code::WrongLayer, self.layer, full, at, &raw));
+            self.parsed.problems.push(problem(Code::WrongLayer));
         }
         let checked = value.ok_or(Code::WrongType).and_then(|value| {
             let warned = crate::driver_ref::check(item, &value)?;
@@ -199,9 +202,9 @@ impl Reader<'_> {
             Ok((value, warned)) => {
                 // 扩展驱动这时不在选项里的（施工 MD-1，`driver_ref.rs`）：值照留，另记一条警告。
                 if let (Some(code), Value::Text(name)) = (warned, &value) {
-                    let mut problem = Problem::item(code, self.layer, full, at, &raw);
-                    problem.name = Some(name.to_string());
-                    self.parsed.problems.push(problem);
+                    let mut warning = problem(code);
+                    warning.name = Some(name.to_string());
+                    self.parsed.problems.push(warning);
                 }
                 let entry = Entry {
                     item: item.key,
@@ -214,10 +217,7 @@ impl Reader<'_> {
                 self.parsed.entries.insert(full.to_string(), entry);
             }
             Err(_) if !counts => {}
-            Err(code) => self
-                .parsed
-                .problems
-                .push(Problem::item(code, self.layer, full, at, &raw)),
+            Err(code) => self.parsed.problems.push(problem(code)),
         }
     }
 
@@ -228,10 +228,10 @@ impl Reader<'_> {
         let raw = self.slice(node.span()).unwrap_or_default().to_string();
         let counts = item.layers.contains(&self.layer);
         let at = self.value_at(node, key_at);
+        let layer = self.layer;
+        let whole = |code| Problem::typed(code, layer, full, at, &raw, item.kind);
         if !counts {
-            self.parsed
-                .problems
-                .push(Problem::item(Code::WrongLayer, self.layer, full, at, &raw));
+            self.parsed.problems.push(whole(Code::WrongLayer));
         }
         // 每一项和它在哪：表的数组照表头，行内的照那张行内表。
         let tables: Option<Vec<(&dyn toml_edit::TableLike, At)>> = match node {
@@ -254,9 +254,9 @@ impl Reader<'_> {
         let mut problems = Vec::new();
         let mut values = Vec::new();
         match tables {
-            None => problems.push(Problem::item(Code::WrongType, self.layer, full, at, &raw)),
+            None => problems.push(whole(Code::WrongType)),
             Some(tables) if tables.len() > crate::RECORDS_MOST => {
-                problems.push(Problem::item(Code::OutOfRange, self.layer, full, at, &raw));
+                problems.push(whole(Code::OutOfRange));
             }
             Some(tables) => {
                 for (n, (table, table_at)) in tables.into_iter().enumerate() {
@@ -270,7 +270,7 @@ impl Reader<'_> {
                             .to_string();
                         let Some(field) = record.fields.iter().find(|field| field.key == name)
                         else {
-                            problems.push(Problem::item(
+                            problems.push(Problem::untyped(
                                 Code::UnknownField,
                                 self.layer,
                                 &path,
@@ -289,8 +289,9 @@ impl Reader<'_> {
                             Ok(value) => {
                                 fields.insert(name.to_string(), value);
                             }
-                            Err(code) => problems
-                                .push(Problem::item(code, self.layer, &path, field_at, &field_raw)),
+                            Err(code) => problems.push(Problem::typed(
+                                code, self.layer, &path, field_at, &field_raw, field.kind,
+                            )),
                         }
                     }
                     for field in record.fields {

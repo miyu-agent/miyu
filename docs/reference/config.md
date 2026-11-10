@@ -23,7 +23,7 @@
 
 配置从下往上叠：出厂默认值 → 系统配置（`config.toml`，你的设置都写在这里）→ 项目配置（仓库里的 `.miyu/config.toml`，要信任过才算、只能收紧）。每一项能写在哪几层写在清单里（`layers`）。密钥另放 `secrets.toml`，配置里写 `{ secret = "<名字>" }` 引用它，或者写 `{ env = "<环境变量>" }`。
 
-**问题**：读、查、改配置时发现的每一处写成一条：`level`（`error` 或 `warning`）、`code`（原因码）、`file`、`line`、`column`、`key`、`expected`、`got`、`suggest`（拼错的键最近的那个）、`using`（现在照什么用着）、`message`（整句给人看的话，照连接的语言）。没有的格不写。
+**问题**：读、查、改配置时发现的每一处写成一条：`level`（`error` 或 `warning`）、`code`（原因码）、`file`、`line`、`column`、`key`、`expected`、`got`、`suggest`（拼错的键最近的那个）、`using`（现在照什么用着）、`message`（整句给人看的话，照连接的语言）。没有的格不写。`got` 照抄收到的原文，最多 80 个字符；类型是密钥的项（和列表里的密钥字段）、不认识的键和字段、一组键写成的一个值不照抄，`got` 和 `message` 里只说写的是什么样的，例如「24 个字符的字」，原值不会出现在回应里。
 
 **谁能调**：读的（`config.schema`、`config.get`、`config.check`、`secret.list`、`model.list`、`provider.*`、`model.call`、`model.embed`、`usage.query`）人、扩展都能调。改的（`config.trust`、`secret.set`、`secret.delete`）只给人，扩展调回 `local_only`。`config.set` 扩展只能逐项改系统配置里自己清单声明的、不是密钥、不写成引用的项。
 

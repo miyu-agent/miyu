@@ -4,11 +4,13 @@
 //! 这里的问题还没说成话：说成哪种语言由连接定，同一条问题要照几种语言说（[`tell()`]）。文件在哪也不在
 //! 这里：解析只拿到字，文件的路径由拿着文件的一方（配置服务）接上。
 
+mod hidden;
 mod tell;
 
+pub use hidden::{Shape, holds_secret, secret_at};
 pub use tell::{Told, Using, tell};
 
-use crate::item::Layer;
+use crate::item::{Kind, Layer};
 use crate::value::Value;
 
 /// 收到的原文最多照抄几个字符，多了截掉加 `…`（「报错」的 `got`）。
@@ -216,8 +218,12 @@ pub struct Problem {
     pub at: Option<At>,
     /// 哪一项的键：写错的那个键原样。整份文件的问题没有。
     pub key: Option<String>,
-    /// 收到了什么：原文照抄，最多 80 个字符（[`got`]）。
+    /// 收到了什么：原文照抄，最多 80 个字符（[`got`]）。类型带密钥的一格、没有类型的一格（不认识的键、字段）不记原文，这里是空的、记在
+    /// `shape`（施工 SEC-1）；
+    /// 给人看、上协议的一律照 [`Told::got`]，别直接拿这一格。
     pub got: Option<String>,
+    /// 类型带密钥的一格收到的是什么样的（施工 SEC-1，[`Shape`]）：有它就没有 `got`。
+    pub shape: Option<Shape>,
     /// 为什么：读不了的系统原话、TOML 写法不对时 `toml_edit` 说的那一行。
     pub why: Option<String>,
     /// 键名拼错了：离得最近的那一个。
@@ -239,6 +245,7 @@ impl Problem {
             at: None,
             key: None,
             got: None,
+            shape: None,
             why,
             suggest: None,
             current: None,
@@ -254,11 +261,35 @@ impl Problem {
             at: Some(at),
             key: Some(key.to_string()),
             got: Some(got(raw)),
+            shape: None,
             why: None,
             suggest: None,
             current: None,
             name: None,
         }
+    }
+
+    /// 同 [`Problem::item`]，这一格的类型是 `kind`：带密钥的（[`holds_secret`]）不记原文，只记它是什么样的（施工 SEC-1）。
+    pub fn typed(code: Code, layer: Layer, key: &str, at: At, raw: &str, kind: Kind) -> Problem {
+        let mut problem = Problem::item(code, layer, key, at, "");
+        problem.record_got(holds_secret(kind), raw);
+        problem
+    }
+
+    /// 同 [`Problem::item`]，这一格没有类型（不认识的键、列表里不认识的字段）：值可能就是拼错了键的密钥，同密钥一样不记原文
+    /// （施工 SEC-1）。
+    pub fn untyped(code: Code, layer: Layer, key: &str, at: At, raw: &str) -> Problem {
+        let mut problem = Problem::item(code, layer, key, at, "");
+        problem.record_got(true, raw);
+        problem
+    }
+
+    /// 收到的原文 `raw` 记进来：`secret` 的只记什么样的（[`Shape`]），别的照抄（[`got`]）。
+    pub fn record_got(&mut self, secret: bool, raw: &str) {
+        (self.got, self.shape) = match secret {
+            true => (None, Some(Shape::of(raw))),
+            false => (Some(got(raw)), None),
+        };
     }
 
     /// 错误还是警告。

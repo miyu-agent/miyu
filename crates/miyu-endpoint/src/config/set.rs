@@ -19,7 +19,7 @@ use serde_json::{Map, Value as Json, json};
 
 use miyu_config::edit::{self, Change};
 use miyu_config::parse::parse;
-use miyu_config::problem::{Code, Problem, Severity, got};
+use miyu_config::problem::{Code, Problem, Severity, secret_at};
 use miyu_config::{Layer, Value};
 use miyu_kernel::id::CommandId;
 use miyu_kernel::origin::{By, Person};
@@ -332,17 +332,20 @@ fn request_problem(
     raw: &str,
     words: &Human,
 ) -> Result<Json, Refusal> {
-    let problem = Problem {
+    let mut problem = Problem {
         code,
         layer,
         at: None,
         key: Some(key.to_string()),
-        got: Some(got(raw)),
+        got: None,
+        shape: None,
         why: None,
         suggest: None,
         current: None,
         name: None,
     };
+    // 密钥项、列表里的密钥字段写错的不抄原文（施工 SEC-1）：只记它是什么样的。
+    problem.record_got(secret_at(config.items(), key), raw);
     let told = told(&problem, config.items(), None, words)?;
     Ok(wire::problem(&problem, None, &told, None))
 }

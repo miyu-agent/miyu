@@ -437,6 +437,7 @@ pub(super) fn selected<'a>(
                     at: None,
                     key: Some(key.clone()),
                     got: None,
+                    shape: None,
                     why: None,
                     suggest: nearest(items.iter().map(|item| item.key), key),
                     current: None,

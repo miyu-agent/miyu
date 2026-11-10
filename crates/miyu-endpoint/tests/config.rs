@@ -302,7 +302,7 @@ async fn a_broken_item_is_dropped_and_reported_with_what_is_used() {
             {"code":"not_an_option","column":9,"expected":"error、warn、info、debug、trace 或 off","file":"etc/config.toml","got":"\"verbose\"","key":"log.level","level":"error","line":2,
              "message":"log.level 只能是 error、warn、info、debug、trace 或 off，写的是 \"verbose\"。改成其中一个，例如 log.level = \"info\"。暂用 \"info\"（默认值）。",
              "using":{"from":"default","value":"info"}},
-            {"code":"unknown_key","column":1,"file":"etc/config.toml","got":"\"zh\"","key":"ui.langauge","level":"warning","line":7,
+            {"code":"unknown_key","column":1,"file":"etc/config.toml","got":"2 个字符的字","key":"ui.langauge","level":"warning","line":7,
              "message":"没有 ui.langauge 这一项。是不是想写 ui.language？已忽略此行。","suggest":"ui.language"},
             {"code":"wrong_type","column":19,"expected":"true 或 false","file":"etc/config.toml","got":"\"yes\"","key":"permission.start_read_only","level":"error","line":9,
              "message":"permission.start_read_only 要写 true 或 false，写的是 \"yes\"。改成 permission.start_read_only = true。暂用 false（默认值）。",

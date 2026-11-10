@@ -351,7 +351,7 @@ miyu_config::settings! {
 | `file`、`line`、`column` | 在哪。行、列从 1 数，列照 Unicode 字符数。整份文件的问题（读不了、太大）没有行列 |
 | `key` | 哪一项。整份文件的问题没有 |
 | `expected` | 期望什么，给人看的，照连接的语言 |
-| `got` | 收到了什么：原文照抄，最多 80 个字符，多了截掉加 `…`。密钥文件里的问题不带这一格 |
+| `got` | 收到了什么：原文照抄，最多 80 个字符，多了截掉加 `…`。密钥文件里的问题不带这一格。类型是密钥的一格（密钥、密钥的列表、带密钥字段的列表，和列表里的密钥字段）不照抄：问题里不记原文，`got` 和整句的话里只说写的是什么样的，照连接的语言（`config/got/…`：几个字符的字、几项的列表、一张表、几个字符的值），不管是 `config.set`、配置文件还是 `config.check` 查出来的。不认识的键、列表里不认识的字段、一组键写成的一个值（`providers.dev = "sk-…"`）没有类型，值可能就是拼错了键的密钥（`say.mimo.kye = "sk-…"`），也照这样只说什么样的（施工 SEC-1，2026-11-10 主会话定） |
 | `suggest` | 拼错了的键名，离得最近的那一个。没有不写 |
 | `using` | 现在照什么用着。一项的问题（`wrong_type`、`not_an_option`、`wrong_layer`、`not_tightening`）写 `{"value": …, "from": "default" 或 "system"}`：丢掉这一项以后，它那一层下面几层合出来的。整份文件的问题写 `{"from": "last_good"}` 或 `{"from": "nothing"}`：起来时就读不好的是 `nothing`，重读时读不好、照上一次读好的用的是 `last_good`（8-4）。不认识的键、一组键写成值的没有。`config.check` 查的是一段字：一项的问题照核心手里另外几层算，整份的问题不写 |
 | `message` | 整句给人看的话，照连接的语言，把上面几样说成一句：错在哪、期望、收到、改法、现在照什么用（第四条）。在哪不在句子里：头照 `file`、`line`、`column` 自己写在前面 |
@@ -1796,6 +1796,8 @@ currency = "USD"
 | `config/expected/english`（8-8 补，日文 `{max} 文字までの英語一行`） | `max` | 最多 {max} 个字的一行英文 | one line of English, at most {max} characters |
 | `config/expected/duration`（8-7，范围写成 `1h`、`720h` 这样） | `min`、`max` | {min} 到 {max} 之间的时长，写成 30s、10m、1h 这样 | a length of time from {min} to {max}, written like 30s, 10m or 1h |
 | `config/expected/id`、`model-name`（8-6，键里名字那一段） | | 小写字母开头，只有小写字母、数字、-、_，最长 32 个字符、1 到 128 个字节，没有控制字符 | start with a lowercase letter and use only lowercase letters, digits, - and _, up to 32 characters、1 to 128 bytes without control characters |
+| `config/got/text`、`list`、`value`（SEC-1，密钥项的 `got`） | `count` | {count} 个字符的字、{count} 项的列表、{count} 个字符的值 | a string of {count} characters、a list of {count} items、a value of {count} characters |
+| `config/got/table`（SEC-1） | | 一张表 | a table |
 
 一句由几段接成时（第四条第 7 条）：不是以 `config/stops` 里的字结尾的段照 `config/sentence` 补上句号，段和段照 `config/then` 接。中文、日文补「。」、段和段直接接，英文补「.」、段和段之间空一格。
 
@@ -1971,6 +1973,7 @@ Options:
 | `crates/miyu-endpoint/src/settings/tests.rs`、`crates/miyu-log/src/settings/tests.rs` | 界面语言：`auto` 照系统的语言（`zh`、`ja` 开头的，别的、没有的是 `en`），定了的照定的。`log.level` 的每个选项 `MIYU_LOG` 都读得懂，默认值和没设一样 | 8-1 |
 | `crates/miyu-config/src/parse/tests.rs` | 解析的每一种原因码各一例（不认识的键、类型不对、一组键写成值、一项写成表、不在选项里、层不对、写法不对），行、列（中文算一列、点号连着的键指到开头）、`got` 截到 80 个字符。BOM。`\r\n`。`toml_edit` 的报错只取为什么那一行。不认识的表往里报整个键，拼错的一组键也找得到最近的 | 8-2 |
 | `crates/miyu-config/src/problem/tests.rs` | 键名拼错给最近的、太远的不给、一样近的取前面的、换位算一次；`got` 截到 80 个字符；每一种原因码说成一句（假的中文字），英文段和段怎么接；缺字报是哪一句 | 8-2 |
+| `crates/miyu-config/src/problem/hidden/tests.rs` | 密钥项写错不抄原文：原文是什么样的照 JSON、TOML、人敲的几种认（转义去掉再数、多出一行的不当一个值）；哪些类型、键算密钥（列表里的密钥字段算，旁边的备注不算）；配置文件里密钥项、密钥字段写成明文的，问题里没有原文、说成话也没有，超过 80 个字的也不留截出来的那段；拼错的键、不认识的字段、一组键写成的值也不留；不是密钥的照旧照抄 | SEC-1 |
 | `crates/miyu-core/tests/config_words.rs` | 照源码树的资源：图纸「样子」里的几句，中文、英文一字不差；每一种原因码中文、英文、日文都说得出来 | 8-2 |
 | `crates/miyu-config/src/merge/tests.rs` | 四层的先后和来源。环境变量压过（不分大小写）、读不懂的当没设、空的不算。一项写错只丢这一项、照下面几层或默认值，别的照常。项目配置收紧的收、宽的不算、一样的收、不能写的不算、没信任的不算（不信任的不再提醒）。每一层写的从上往下列、哪个生效、不算的原因 | 8-2 |
 | `crates/miyu-config/src/item/tests.rs`、`list/tests.rs`、`schema/tests.rs` | 开关、`tighten`、`new_session`、`toggle` 照宏生成；开关只认 `true`、`false`；只有关掉算宽；环境变量的读法。收紧写没写、写对没有。开关的 Schema 是 `boolean`、没有 `enum` | 8-2 |
@@ -1984,6 +1987,7 @@ Options:
 | `crates/miyu-store/src/config_file/tests.rs` | 写（8-3）：顺着链接写、链接不动、绕圈报错、指向没有的新建。临时文件在本体旁边、数据根这一层的在 `run/` 里（没有的建上，施工 R3-1）、崩在改名前原文件不变、改名前一瞬间有人手改了就放弃、不留临时文件。权限位留着，临时文件建出来就不比原来的宽（Unix，施工 SEC-3）。Windows 上开着的文件重试。BOM 记下、照样加回 | 8-3 |
 | `crates/miyu-store/src/journal/tests.rs`、`crates/miyu-endpoint/src/config/journal/tests.rs` | 截半行、`seq` 从 1 数起、接着别人的数、一行一条照事件的外壳（没有 `turn`，内核照不认识的种类留着）、最后一行坏了不往后写；`config.changed`、`trust.changed` 和样本逐字节一样，没有的 `old`、`new` 不写 | 8-3 |
 | `crates/miyu-endpoint/tests/config_set.rs` | `config.set` 每一种拒绝（参数不对、不认识的键、值不对、层不对、文件读不进来）。`expect` 对不上、没写的是 `{}`、整份换的版本对不上、新的字有错误、只有警告的照存。写之前发现手改过先重读，BOM、换行照新的字。一次几项全收或者全不收。没变的不写、不记，删一项不新建文件。回应的样子、之后握手照新的语言。日志记了一条，系统配置的进系统日志。写不成什么都没变。先见推送、后见回应在 `config_watch.rs` | 8-3 |
+| `crates/miyu-endpoint/tests/config_secret_got.rs` | 出厂的密钥项 `providers.<id>.key` 写明文：`config.set` 照 `value`、`input`（120 个字的）写，写成数组、对象，配置文件里手写的、拼错了键的、一组键写成值的经 `config.get`、`check`、`config.check` 报出来，整条回应里都没有那串字，`got` 和话里说几个字符的字、几项的列表、一张表；不是密钥的项照旧照抄。`package_records.rs` 另查列表里的密钥字段 | SEC-1 |
 | `crates/miyu-store/src/watch/tests.rs` | 先写新文件再改名的存法认得出、删掉的认得出。合并：连着的几下交一次、静够了才交，隔开的另一次。别的文件名、别的目录里同名的、只读的动静不理，事件丢了的每一份都交一次。链接指向的目录也看，经链接给的目录交的是给的那个路径。照真实的位置比（macOS 的临时目录在 `/var` 下）。系统的监视起不来退回轮询（Linux 上拿还没有的目录让 inotify 拒绝），轮询也看得到。往下递归看的：哪一层的文件都交、点开头的不算、还在的目录变了不算；新建、挪进来的目录交里面已经有的文件（OV-1 补） | 8-4、OV-1 |
 | `crates/miyu-endpoint/tests/config_watch.rs` | 手改推 `config.changed`（`via: file`，不带 `by`，样子逐格比）、记日志（`by` 是内核、没有 `cause`）、换上。`config.set` 先见推送、后见回应，推的和回应的一样，核心自己写的不重推、不重记。改坏了推问题（`using` 是 `last_good`，项照上一次的）、改好了推空的。只动注释的不推（换上），字节一样的什么都不做（不换），删了这一层变空（`version` 是 `null`）。订阅不带会话、`after`，别的流、`events` 不带会话的 `bad_params`；取消订阅以后不推，再订阅照推。掉队推 `resync`、之后不推、回应一条不丢。改了 `ui.language`，连接下一句的拒绝、`config.schema` 照新的语言。手改 `trust.toml` 记 `trust.changed`（`via: file`）、`config.get` 照新的信任、不推。每一轮照那一刻的配置：项目配置改了内容不算、回合之间 `config.set` 的下一轮用上 | 8-4 |
 | `crates/miyu-endpoint/tests/config_watch_log.rs` | 运行日志：手改被看到的记 `INFO config changed layer=… via=file keys=…`；监视起不来记 `WARN config watch unavailable`、退回轮询照样推（Linux） | 8-4 |

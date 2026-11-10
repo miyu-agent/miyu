@@ -37,11 +37,8 @@ chat = "flagship"
                 Some("shops.dev.base_url".to_string()),
                 Some(r#""ftp://x.invalid""#.to_string())
             ),
-            (
-                Code::WrongType,
-                Some("shops.dev.keys".to_string()),
-                Some(r#"[{ secret = "Bad" }]"#.to_string())
-            ),
+            // 密钥的列表不抄原文（施工 SEC-1）：只记是几项的列表。
+            (Code::WrongType, Some("shops.dev.keys".to_string()), None),
             (
                 Code::BadFormat,
                 Some("shops.dev.catalog".to_string()),

@@ -174,10 +174,19 @@ fn a_wrong_type_drops_only_that_item() {
 
 #[test]
 fn a_value_where_a_table_belongs_is_a_wrong_type() {
+    // 一组键没有类型，写成的值不抄（施工 SEC-1）：`got` 是空的，只记什么样的。
+    let parsed = parse(&items(), Layer::System, "ui = \"zh\"\n").expect("写法对");
+    let problem = &parsed.problems[0];
     assert_eq!(
-        problems("ui = \"zh\"\n"),
-        [one(Code::WrongType, "ui", at(1, 6), "\"zh\"")]
+        (
+            problem.code,
+            problem.key.as_deref(),
+            problem.at,
+            problem.got.as_deref()
+        ),
+        (Code::WrongType, Some("ui"), Some(at(1, 6)), None)
     );
+    assert_eq!(problem.shape, Some(crate::problem::Shape::Text(2)));
 }
 
 #[test]

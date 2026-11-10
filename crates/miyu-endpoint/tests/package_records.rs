@@ -196,6 +196,10 @@ async fn wrong_records_are_refused_at_their_field_and_plain_keys_never_land() {
         [("draw.accounts[1].key".to_string(), "wrong_type".to_string())],
         "密钥字段只收引用，明文整条拒"
     );
+    // 密钥字段写错不回显原值（施工 SEC-1）：只说是几个字符的字；别的字段照旧照抄。
+    let leaked = plain["error"]["data"]["problems"][0].clone();
+    assert_eq!(leaked["got"], "13 个字符的字", "{plain}");
+    assert!(!plain.to_string().contains("sk-plain"), "{plain}");
     let written = std::fs::read(home.root.config_file()).expect("在");
     assert_eq!(written, before, "配置文件一个字节都不动");
     let secrets = std::fs::read_to_string(home.root.secrets_file()).unwrap_or_default();
@@ -229,6 +233,10 @@ async fn wrong_records_are_refused_at_their_field_and_plain_keys_never_land() {
                 "missing_field".to_string()
             ),
         ]
+    );
+    assert_eq!(
+        wrong["error"]["data"]["problems"][0]["got"], "\"not a url\"",
+        "不是密钥的字段照旧照抄"
     );
     let many: Vec<Value> = (0..101)
         .map(|n| json!({"name": format!("A{n}"), "key": {"secret": "k"}}))
@@ -267,6 +275,7 @@ async fn wrong_records_are_refused_at_their_field_and_plain_keys_never_land() {
                 && problem["code"] == "wrong_type"),
         "{checked}"
     );
+    assert!(!checked.to_string().contains("sk-plain"), "{checked}");
 }
 
 #[test]

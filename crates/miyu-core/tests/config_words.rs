@@ -177,3 +177,40 @@ fn every_code_is_said_in_every_language() {
         }
     }
 }
+
+/// 密钥项写错时说的样子（施工 SEC-1）：四种在三种语言里都说得出，中文、英文照图纸。
+#[test]
+fn a_hidden_value_is_said_in_every_language() {
+    use miyu_config::problem::Shape;
+    let shapes = [
+        Shape::Text(24),
+        Shape::List(2),
+        Shape::Table,
+        Shape::Value(5),
+    ];
+    let said = |language: &str| -> Vec<String> {
+        let words = words(language);
+        shapes
+            .iter()
+            .map(|shape| {
+                shape
+                    .said(&words)
+                    .unwrap_or_else(|missing| panic!("{language}：{missing}"))
+            })
+            .collect()
+    };
+    assert_eq!(
+        said("zh"),
+        ["24 个字符的字", "2 项的列表", "一张表", "5 个字符的值"]
+    );
+    assert_eq!(
+        said("en"),
+        [
+            "a string of 24 characters",
+            "a list of 2 items",
+            "a table",
+            "a value of 5 characters"
+        ]
+    );
+    assert!(said("ja").iter().all(|text| !text.is_empty()));
+}

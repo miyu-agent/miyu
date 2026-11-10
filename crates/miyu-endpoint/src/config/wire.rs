@@ -48,7 +48,8 @@ pub(super) fn problem(
         "expected",
         told.expected.as_ref().map(|expected| json!(expected)),
     );
-    put("got", problem.got.as_ref().map(|got| json!(got)));
+    // 照说成话的那一份：密钥项是它是什么样的（施工 SEC-1），不是 `problem.got`。
+    put("got", told.got.as_ref().map(|got| json!(got)));
     put("suggest", problem.suggest.map(|suggest| json!(suggest)));
     put("using", using.map(using_json));
     Value::Object(map)

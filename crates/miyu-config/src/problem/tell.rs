@@ -22,11 +22,14 @@ pub enum Using {
     Nothing,
 }
 
-/// 说成话的一条问题：`expected` 期望什么（有的才有），`message` 整句。
+/// 说成话的一条问题：`expected` 期望什么（有的才有），`got` 收到了什么，`message` 整句。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Told {
     /// 期望什么，给人看的。
     pub expected: Option<String>,
+    /// 收到了什么，协议上的 `got`：原文照 [`Problem::got`]；类型带密钥的说它是什么样的（[`Problem::shape`]，施工 SEC-1），
+    /// 和整句里的是同一句。
+    pub got: Option<String>,
     /// 整句给人看的话。
     pub message: String,
 }
@@ -43,7 +46,11 @@ pub fn tell(
     words: &dyn Words,
 ) -> Result<Told, Missing> {
     let key = problem.key.as_deref().unwrap_or_default();
-    let got = problem.got.as_deref().unwrap_or_default();
+    let shown = match problem.shape {
+        Some(shape) => Some(shape.said(words)?),
+        None => problem.got.clone(),
+    };
+    let got = shown.as_deref().unwrap_or_default();
     let why = problem.why.as_deref().unwrap_or_default();
     let item = crate::key::described_by(items, key);
     let mut expected = None;
@@ -224,6 +231,7 @@ pub fn tell(
     }
     Ok(Told {
         expected,
+        got: shown,
         message: joined(&parts, words)?,
     })
 }

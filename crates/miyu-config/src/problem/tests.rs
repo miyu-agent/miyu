@@ -140,6 +140,7 @@ fn a_bad_option_lists_the_options_and_says_what_is_used() {
         said(&problem, Some(&using)),
         Told {
             expected: Some("error、warn、info、debug、trace 或 off".to_string()),
+            got: Some("\"verbose\"".to_string()),
             message: "log.level 只能是 error、warn、info、debug、trace 或 off，写的是 \"verbose\"。改成其中一个，\
                       例如 log.level = \"info\"。暂用 \"info\"（默认值）。"
                 .to_string(),
@@ -177,6 +178,7 @@ fn a_bad_switch_expects_true_or_false_and_offers_the_other_one() {
         said(&problem, Some(&using)),
         Told {
             expected: Some("true 或 false".to_string()),
+            got: Some("\"yes\"".to_string()),
             message: "permission.start_read_only 要写 true 或 false，写的是 \"yes\"。\
                       改成 permission.start_read_only = true。暂用 true（系统配置）。"
                 .to_string(),
@@ -186,13 +188,14 @@ fn a_bad_switch_expects_true_or_false_and_offers_the_other_one() {
 
 #[test]
 fn a_group_written_as_a_value_expects_a_table() {
-    let problem = Problem::item(Code::WrongType, Layer::System, "ui", at(1, 6), "\"zh\"");
+    let problem = Problem::untyped(Code::WrongType, Layer::System, "ui", at(1, 6), "\"zh\"");
     let told = said(&problem, Some(&Using::Nothing));
     assert_eq!(told.expected.as_deref(), Some("一张表"));
     assert_eq!(
-        told.message, "ui 要写 一张表，写的是 \"zh\"。",
-        "不说照什么用"
+        told.message, "ui 要写 一张表，写的是 2 个字符的字。",
+        "不说照什么用，写成的值不抄（施工 SEC-1）"
     );
+    assert_eq!(told.got.as_deref(), Some("2 个字符的字"));
 }
 
 #[test]
