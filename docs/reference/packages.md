@@ -354,7 +354,7 @@
 | `/clear`（`/reset`） | 清空上下文和待办，同 `session.clear` |
 | `/stop` | 打断这一轮，停掉这个会话派出去的后台命令和子代理，和正在跑的整理 |
 | `/workspace <路径>` | 换工作目录；不带路径的说现在在哪 |
-| `/context <数值>`、`/context off`、`/context` | 设这个会话的上下文上限（`128000`、`128k`、`1m` 都行），同 `session.configure` 的 `context`；去掉；说这时的上限和压缩线 |
+| `/context <数值>`、`/context unset`（`off` 也行）、`/context` | 设这个会话的上下文上限（`128000`、`128k`、`1m` 都行），同 `session.configure` 的 `context`；去掉；说这时的上限和压缩线 |
 | `/todo`、`/todo clear` | 看待办、清空待办 |
 | `/remember <话>` | 记一条记忆 |
 | `/dream`、`/dream stop` | 现在就整理记忆（在后台答）；停下正在跑的整理，合完的留着 |

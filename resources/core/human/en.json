@@ -555,7 +555,7 @@
     "commands/usage/loop/dynamic": "Let the AI pick when to run next",
     "commands/usage/loop/off": "Stop this session's loops",
     "commands/summary/context": "Context limit",
-    "commands/argument/context": "[<tokens> | off]",
+    "commands/argument/context": "[<tokens> | unset]",
     "commands/placeholder/context": "<tokens>",
     "commands/usage/context/show": "Show the context limit and the compaction line",
     "commands/usage/context/set": "Set the context limit, such as 128k or 1m",

@@ -551,7 +551,7 @@
     "commands/usage/loop/dynamic": "由 AI 自己定下一次什么时候",
     "commands/usage/loop/off": "停止此会话的循环",
     "commands/summary/context": "上下文上限",
-    "commands/argument/context": "[<数值> | off]",
+    "commands/argument/context": "[<数值> | unset]",
     "commands/placeholder/context": "<数值>",
     "commands/usage/context/show": "看上下文上限和压缩线",
     "commands/usage/context/set": "设上下文上限，例如 128k、1m",

@@ -1,4 +1,4 @@
-//! `/context` 的参数和约数（施工 CTX-2）：纯数字、`k`、`m`（大小写都行）、`off`；别的写法、装不下的 `bad_params`；约数往下取。
+//! `/context` 的参数和约数（施工 CTX-2）：纯数字、`k`、`m`（大小写都行）、`unset`、`off`；别的写法、装不下的 `bad_params`；约数往下取。
 
 use super::{about, parsed};
 use crate::refusal::Refusal;
@@ -17,6 +17,8 @@ fn numbers_with_k_and_m_and_off_are_read() {
     );
     assert_eq!(parsed("off").ok(), Some(None));
     assert_eq!(parsed("OFF").ok(), Some(None));
+    assert_eq!(parsed("unset").ok(), Some(None));
+    assert_eq!(parsed("UNSET").ok(), Some(None));
 }
 
 #[test]

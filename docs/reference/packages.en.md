@@ -354,7 +354,7 @@ Run a slash command: the head passes along exactly what the person typed; the co
 | `/clear` (`/reset`) | Clear the context and the to-do list, like `session.clear` |
 | `/stop` | Interrupt this turn and stop the background commands and subagents this session spawned, and its organizing |
 | `/workspace <path>` | Change the working directory; without a path, say where it is |
-| `/context <tokens>`, `/context off`, `/context` | Set this session's context limit (`128000`, `128k` and `1m` all work), like `context` in `session.configure`; remove it; say the limit and compaction line right now |
+| `/context <tokens>`, `/context unset` (or `off`), `/context` | Set this session's context limit (`128000`, `128k` and `1m` all work), like `context` in `session.configure`; remove it; say the limit and compaction line right now |
 | `/todo`, `/todo clear` | Show the to-do list; clear it |
 | `/remember <words>` | Remember something |
 | `/dream`, `/dream stop` | Organize memory now (answered in the background); stop the organizing in progress, keeping what's merged |

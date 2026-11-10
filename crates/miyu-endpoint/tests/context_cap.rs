@@ -175,7 +175,7 @@ async fn the_context_command_sets_shows_and_takes_off() {
         "上下文上限设为约 1m，压缩线约 850k。"
     );
     assert_eq!(
-        said(&run(&mut client, &session, "k6", "/context off").await),
+        said(&run(&mut client, &session, "k6", "/context unset").await),
         "已去掉上下文上限，压缩线约 850k。"
     );
     for (id, wrong) in [

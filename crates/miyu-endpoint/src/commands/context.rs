@@ -2,7 +2,7 @@
 //!
 //! - `/context <数值>`：设上限。数值收纯数字，也收 `128k`、`1m`（`k` 是千、`m` 是百万，大小写都行）；同 `session.configure`
 //!   的 `context` 照压缩线查过（`models/context.rs`），太小的拒 `bad_params`，`data.min` 是最少要多少。
-//! - `/context off`：去掉，照模型的窗口。
+//! - `/context unset`（`off` 也认）：去掉，照模型的窗口。
 //! - `/context`：不改，说这一刻的上限和压缩线。终端、网页拦下不带参数的照旧开自己的明细（设计 68 第二节第 4 条），这里是
 //!   通讯平台这些没有明细的头用的。
 //!
@@ -43,7 +43,7 @@ impl Slash for ContextCommand {
         &[
             ("", "commands/usage/context/show"),
             ("commands/placeholder/context", "commands/usage/context/set"),
-            ("off", "commands/usage/context/off"),
+            ("unset", "commands/usage/context/off"),
         ]
     }
 
@@ -67,14 +67,14 @@ impl Slash for ContextCommand {
     }
 }
 
-/// 命令后面跟的字：`off` 是去掉（`None`），别的是数值。大小写都行。
+/// 命令后面跟的字：`unset`、`off` 是去掉（`None`，`unset` 是项目主人 11-10 加的），别的是数值。大小写都行。
 ///
 /// # Errors
 ///
-/// 不是 `off`、纯数字、数字接 `k`、`m` 的，或者大得装不下：`bad_params`。
+/// 不是 `unset`、`off`、纯数字、数字接 `k`、`m` 的，或者大得装不下：`bad_params`。
 pub(super) fn parsed(rest: &str) -> Result<Option<u64>, Refusal> {
     let rest = rest.to_ascii_lowercase();
-    if rest == "off" {
+    if rest == "unset" || rest == "off" {
         return Ok(None);
     }
     let (digits, unit) = match rest.strip_suffix('k') {

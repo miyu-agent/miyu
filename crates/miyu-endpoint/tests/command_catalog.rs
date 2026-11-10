@@ -42,10 +42,10 @@ async fn without_a_session_every_command_is_listed_in_the_connections_language()
         json!([
             {"name": "clear", "aliases": ["reset"], "summary": "清空上下文"},
             {"name": "clear-memory", "aliases": ["reset-memory"], "summary": "清掉这个会话的记忆"},
-            {"name": "context", "aliases": [], "summary": "上下文上限", "argument": "[<数值> | off]", "usage": [
+            {"name": "context", "aliases": [], "summary": "上下文上限", "argument": "[<数值> | unset]", "usage": [
                 {"form": "/context", "summary": "看上下文上限和压缩线"},
                 {"form": "/context <数值>", "summary": "设上下文上限，例如 128k、1m"},
-                {"form": "/context off", "summary": "去掉上下文上限"},
+                {"form": "/context unset", "summary": "去掉上下文上限"},
             ]},
             {"name": "dream", "aliases": [], "summary": "整理记忆", "argument": "[stop]", "usage": [
                 {"form": "/dream", "summary": "现在就整理"},
