@@ -71,7 +71,9 @@ pub(super) async fn create(
             .await?,
         );
     }
-    let mut reply = json!({"session": created.id.as_str(), "events": events, "cwd": created.cwd});
+    // 给头看的路径去掉 Windows 的 `\\?\`（施工 WP-1；YC-7 的 Windows 测试查出造会话的回应漏了这一步）。
+    let cwd = miyu_fs::plain(std::path::Path::new(&created.cwd));
+    let mut reply = json!({"session": created.id.as_str(), "events": events, "cwd": cwd});
     if let Some(file) = created.untrusted {
         reply["untrusted_project"] = json!(file);
     }
