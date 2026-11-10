@@ -67,7 +67,7 @@ impl Sessions {
         }
         // 重发的造会话不再交回删了的会话。
         open.created
-            .retain(|(_, session)| session != id && !family.contains(session));
+            .retain(|(_, session, _)| session != id && !family.contains(session));
         let (root, at) = (core.root.clone(), now());
         let index = core.index();
         let (memory, recall) = (Arc::clone(&core.memory), Arc::clone(&core.memory.turns));

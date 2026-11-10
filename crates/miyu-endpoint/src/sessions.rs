@@ -70,8 +70,9 @@ pub(crate) struct Sessions {
 struct Open {
     /// 在跑的会话，和它现在的工作目录。
     running: BTreeMap<SessionId, Running>,
-    /// 最近造会话的命令编号，和它造出的会话，照从旧到新。
-    created: VecDeque<(CommandId, SessionId)>,
+    /// 最近造会话的命令编号，和它造出的会话、造它的参数的指纹（[`Opening::digest`]，施工 YC-7；重启以后补回来的没有），
+    /// 照从旧到新。
+    created: VecDeque<(CommandId, SessionId, Option<u64>)>,
     /// 这次运行里补回过去重的编号没有：第一次造会话时补一次。
     recalled: bool,
 }
@@ -141,20 +142,22 @@ impl Sessions {
         if !open.recalled {
             open.recalled = true;
             let earlier = recall(core).await;
-            for pair in earlier.into_iter().rev() {
-                open.created.push_front(pair);
+            for (made, session) in earlier.into_iter().rev() {
+                open.created.push_front((made, session, None));
             }
             while open.created.len() > REMEMBERED {
                 open.created.pop_front();
             }
         }
-        // 同一个命令编号重发的，交回上一次造的那一个；工作目录照它的默认工作区挑（施工 5-14）。
+        // 同一个命令编号重发的，交回上一次造的那一个；工作目录照它的默认工作区挑（施工 5-14）。除了 `cwd`、`dirs` 别的参数换了的
+        // 拒（施工 YC-7）：没有指纹的（重启以后补回来的）照旧交回。
         let made = command.clone();
-        let earlier = open
-            .created
-            .iter()
-            .find(|(seen, _)| *seen == made)
-            .map(|(_, session)| session.clone());
+        let digest = who.digest(persona);
+        let earlier = match open.created.iter().find(|(seen, ..)| *seen == made) {
+            Some((_, _, Some(seen))) if *seen != digest => return Err(Refusal::ID_REUSED),
+            Some((_, session, _)) => Some(session.clone()),
+            None => None,
+        };
         let id = earlier.clone().unwrap_or_else(|| new_id(now()));
         let (workspace, wide) = opening_cwd(core, &who, &cwd, &id);
         // 开局只读照这个会话实际干活的目录算，带上信任着的项目配置（`config.md` 第二条第 9 条）。
@@ -193,7 +196,7 @@ impl Sessions {
                 dirs,
             },
         );
-        open.created.push_back((made, id.clone()));
+        open.created.push_back((made, id.clone(), Some(digest)));
         if open.created.len() > REMEMBERED {
             open.created.pop_front();
         }

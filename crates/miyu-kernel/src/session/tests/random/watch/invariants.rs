@@ -119,11 +119,13 @@ impl Watch {
                 self.accepted.insert(id);
             }
         }
+        // 接受过的编号换了参数再来，拒的是这一次，编号照旧接受过（施工 YC-7）。
         for action in actions {
             if let Action::Reply {
                 id,
-                outcome: Outcome::Rejected { .. },
+                outcome: Outcome::Rejected { reason, .. },
             } = action
+                && *reason != Reason::IdReused
             {
                 self.accepted.remove(id);
             }

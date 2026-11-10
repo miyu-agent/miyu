@@ -60,7 +60,7 @@ impl Open {
             }
         }
         self.created
-            .retain(|(_, session)| !orphans.contains(session));
+            .retain(|(_, session, _)| !orphans.contains(session));
         let (root, at, parent) = (core.root.clone(), now(), parent.clone());
         let index = core.index();
         let moved = tokio::task::spawn_blocking(move || {

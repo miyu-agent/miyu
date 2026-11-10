@@ -85,11 +85,15 @@ async fn respond_opens_a_turn_on_what_was_overheard() {
         "{fact:?}"
     );
     assert_eq!(fact.by, owner(), "本机的连接记成主人");
-    // 同一个请求编号再发只算一次，回应一样。
+    // 同一个请求编号原样再发只算一次，回应一样；换了参数的拒（施工 YC-7）。
     let again = client
-        .call("r1", "session.respond", respond(&session, json!([b, a])))
+        .call("r1", "session.respond", respond(&session, json!([b, a, b])))
         .await;
     assert_eq!(again["result"], reply["result"]);
+    let changed = client
+        .call("r1", "session.respond", respond(&session, json!([b, a])))
+        .await;
+    assert_eq!(reason(&changed), Some("id_reused"), "{changed}");
 }
 
 /// 不写 `to`（施工 O-64，通讯平台到点看一眼私聊）：事实先记下，由它开一轮。

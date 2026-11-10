@@ -378,8 +378,8 @@ impl Session {
         }
     }
 
-    /// 收到一个命令。接受过的编号照上一次回应；新的照命令判。回顾不记编号（施工 3-8 四补）：再来一次就是再要一次，没有新内容
-    /// 的照样交回上一句。
+    /// 收到一个命令。接受过的编号照上一次回应，换了参数的拒绝，`id_reused`（施工 YC-7，`recent.rs`）；新的照命令判。回顾不记
+    /// 编号（施工 3-8 四补）：再来一次就是再要一次，没有新内容的照样交回上一句。
     fn receive(&mut self, received: Received) -> Vec<Action> {
         let Received {
             id,
@@ -387,9 +387,13 @@ impl Session {
             at,
             command,
         } = received;
+        let digest = recent::digest(&command);
         if !matches!(command, Command::Recap)
             && let Some(events) = self.recent.get(&id)
         {
+            if self.recent.reused(&id, digest) {
+                return vec![rejected(id, Reason::IdReused)];
+            }
             let events = events.to_vec();
             return self.reply_when_stored(id, events);
         }
@@ -400,6 +404,7 @@ impl Session {
         if self.ledger.sealed() && !seal::taken_when_sealed(&command) {
             return vec![rejected(id, Reason::Sealed)];
         }
+        self.recent.expect(&id, digest);
         match command {
             Command::Send {
                 blocks,

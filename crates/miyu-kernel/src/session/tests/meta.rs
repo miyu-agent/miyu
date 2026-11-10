@@ -83,10 +83,14 @@ fn only_what_changes_is_written() {
     let actions = session.handle(set_meta(9, Some(""), None));
     assert_eq!(appended_events(&actions)[0].body, meta(Some(""), None));
     nothing(&session.handle(set_meta(10, Some(""), None)), 10);
-    // 一样的也记下编号：再来照上一次回应。
+    // 一样的也记下编号：再来照上一次回应，换了参数的拒（施工 YC-7）。
+    assert_eq!(
+        session.handle(set_meta(6, Some("发版"), Some(true))),
+        [accepted_reply(6, &[])]
+    );
     assert_eq!(
         session.handle(set_meta(6, Some("别的"), None)),
-        [accepted_reply(6, &[])]
+        [rejected(id(6), Reason::IdReused)]
     );
 }
 

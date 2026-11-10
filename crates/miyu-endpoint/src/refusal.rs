@@ -15,6 +15,7 @@ mod message;
 mod package;
 mod prefs;
 mod project;
+mod reused;
 mod schedule;
 mod shell;
 mod unread;

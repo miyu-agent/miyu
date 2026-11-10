@@ -1,4 +1,5 @@
-//! 同一个编号的命令再来：落盘前后再来；拒绝过的再来；落盘到一半；落盘超出追加过的；只记最近 1024 个。
+//! 同一个编号的命令再来：落盘前后再来；拒绝过的再来；落盘到一半；落盘超出追加过的；只记最近 1024 个；换了参数再来（施工
+//! YC-7）。
 
 use super::super::recent::CAPACITY;
 use super::*;
@@ -92,4 +93,64 @@ fn only_the_latest_commands_are_remembered() {
     // 第 2 个还记得，照上一次回应；第 1 个已经忘了，当新命令。
     assert_eq!(session.handle(send(2, "hi")), [accepted_reply(2, &[6])]);
     assert_eq!(appended(&session.handle(send(1, "hi"))), seqs(&[last + 1]));
+}
+
+/// 换了参数再来的拒绝要能认出来：原因码对、什么都不记。
+fn reused(actions: &[Action]) -> bool {
+    matches!(
+        actions,
+        [Action::Reply {
+            outcome: Outcome::Rejected {
+                reason: Reason::IdReused,
+                ..
+            },
+            ..
+        }]
+    )
+}
+
+#[test]
+fn the_same_command_sent_again_is_answered_as_before() {
+    let mut session = session();
+    session.handle(send(1, "hi"));
+    session.handle(stored(5));
+    let again = session.handle(send(1, "hi"));
+    assert_eq!(again, [accepted_reply(1, &[2])], "照上一次回应");
+    assert!(appended(&again).is_empty(), "不再记");
+}
+
+#[test]
+fn the_same_id_with_other_words_is_refused() {
+    let mut session = session();
+    session.handle(send(1, "hi"));
+    // 落盘前、落盘后再来都一样拒。
+    let early = session.handle(send(1, "换了一句"));
+    assert!(reused(&early), "落盘前：{early:?}");
+    session.handle(stored(5));
+    let late = session.handle(send(1, "换了一句"));
+    assert!(reused(&late), "落盘后：{late:?}");
+    // 什么都没记：下一个新编号的消息紧接着上一轮的几条。
+    assert_eq!(appended(&session.handle(send(2, "two"))), seqs(&[6]));
+    // 原样的照旧去重。
+    assert_eq!(session.handle(send(1, "hi")), [accepted_reply(1, &[2])]);
+}
+
+#[test]
+fn the_same_id_as_another_kind_of_command_is_refused() {
+    let mut session = session();
+    session.handle(send(1, "hi"));
+    session.handle(stored(5));
+    assert!(reused(&session.handle(interrupt(1))));
+}
+
+#[test]
+fn an_id_seen_in_the_log_keeps_the_old_reply_whatever_comes() {
+    let mut logged = super::load::Logged::new();
+    let seen = logged.ask(1, "hi");
+    logged.say(seen, "好");
+    let (mut loaded, _) = super::load::load(logged.log.clone());
+    // 指纹只在内存里：日志里认回来的编号不比参数，照上一次回应（重启以后的老规矩）。
+    let again = loaded.handle(send(1, "换了一句"));
+    assert_eq!(again, [accepted_reply(1, &[2])]);
+    assert!(appended(&again).is_empty());
 }

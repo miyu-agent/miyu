@@ -12,6 +12,11 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "invalid_request" => ("无效的请求。", "Invalid request."),
         "unknown_method" => ("方法不存在。", "Method not found."),
         "bad_params" => ("参数错误。", "Invalid parameters."),
+        // 施工 YC-7（`protocol.md`「同一个命令编号」）。
+        "id_reused" => (
+            "同一个请求编号换了参数，没有收。请换一个新的编号。",
+            "This request id was already used with different parameters. Use a new id.",
+        ),
         "internal_error" => (
             "内部错误，详见运行日志。",
             "Internal error. See the runtime log.",

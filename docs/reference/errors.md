@@ -59,6 +59,7 @@
 | `not_running` | 打断时没有回合在进行 | |
 | `nothing_queued`、`already_heard` | 退回排着的（`session.withdraw`）：没有排着的；写的那一条请求已经带上了 | |
 | `turn_running` | 撤销、重做、压缩、清空、删会话、换人格预设时有回合在进行 | |
+| `id_reused` | 同一个请求编号换了参数再来（`session.create` 只比 `cwd`、`dirs` 以外的）；参数一样的照上一次回应。核心重启以后不比参数 | |
 | `unknown_turn` | 要撤的那一轮不在现在的历史里 | |
 | `nothing_to_revert`、`nothing_to_unrevert` | 没有能撤销、能恢复的 | |
 | `not_redoable` | 最后一轮不是人说话开的 | |

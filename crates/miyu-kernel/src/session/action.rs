@@ -328,6 +328,9 @@ pub enum Reason {
     AlreadyHeard,
     /// 人打的命令（`session.send {shell: true}`，施工 SH-1 上）不是人说的：别的 agent、扩展、场所会话。
     ShellNotAllowed,
+    /// 同一个命令编号换了参数再来（施工 YC-7，`recent.rs`）：不交回上一次的结果，什么都不记。核心重启以后从日志认回来的
+    /// 编号不比参数，照旧照上一次回应。
+    IdReused,
 }
 
 impl Reason {
@@ -367,6 +370,7 @@ impl Reason {
             Reason::NothingQueued => "nothing_queued",
             Reason::AlreadyHeard => "already_heard",
             Reason::ShellNotAllowed => "shell_not_allowed",
+            Reason::IdReused => "id_reused",
         }
     }
 }

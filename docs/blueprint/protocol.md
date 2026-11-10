@@ -299,7 +299,7 @@
 1. 编号是 UUIDv7：前 48 位是造的这一刻（毫秒），同一个核心造的照先后排。
 2. 场所是 `local`，权限从「工作区」开始，只读照 `permission.start_read_only` 的最终值：照实际干活的目录算，带上信任着的项目配置（施工 8-2，`config.md` 第二条第 9 条），没写的是不只读；有没有人能确认，照这个连接握手时的 `caps.input`；环境是核心所在机器此刻的时区偏移（到分钟）和实际干活的目录。
 3. `session.created` 落了盘才回应。
-4. 同一个命令编号再发：记着最近 1024 个造会话的编号，是其中之一的，交回上一次造的那一个，不再造；`cwd` 照这一次报的算。核心重启以后，第一次造会话时，从最新的 1024 个会话的 `session.created` 里把编号补回来（`cause` 就是造会话的命令编号，施工 4-9 再补三上），在阻塞线程里读。去重不分连接：头每个连接的编号要和以前的都不一样（随机前缀），不然新连接的造会话、说话都被当成重发（`docs/reference/connection.md`「先后」第 3 条）。
+4. 同一个命令编号再发：记着最近 1024 个造会话的编号，是其中之一的，交回上一次造的那一个，不再造；`cwd` 照这一次报的算。除了 `cwd`、`dirs`，别的参数（人格、预设、模型、`memory` 这些）和上一次不一样的：拒绝，`id_reused`，什么都不造（施工 YC-7）；比的是这次运行里记在内存里的指纹，重启以后补回来的编号没有指纹，照旧交回上一次那一个。核心重启以后，第一次造会话时，从最新的 1024 个会话的 `session.created` 里把编号补回来（`cause` 就是造会话的命令编号，施工 4-9 再补三上），在阻塞线程里读。去重不分连接：头每个连接的编号要和以前的都不一样（随机前缀），不然新连接的造会话、说话都被当成重发（`docs/reference/connection.md`「先后」第 3 条）。
 5. `memory` 不是这三种字符串之一（大小写也算）：`bad_params`，什么都不造（施工 R-3 下）。`model` 不是字符串：`bad_params`。解析不出（写法不对、没有这家供应商、没有这个池、池里一个成员都认不出）：`unknown_model`，什么都不造（施工 8-8，`models.md`「协议」）。先解析再找同一个命令编号造过的。
 6. 人格的编号不合写法（小写英文字母开头，只有小写字母、数字、`-`、`_`，最长 64 字节）：`bad_params`。三层（出厂、包带的、你的，`personas.md`）都没有这个人格：`unknown_persona`，默认人格指着没有的也一样，不悄悄换。人格的文件写错了：`persona_invalid`，`data.problem` 写明哪一层、哪个文件第几行（施工 P-1 上）。预设照同样的规矩，先于人格找（施工 P-2 上，`presets.md`）：编号不合写法 `bad_params`，三层都没有（默认预设指着没有的也一样，Y12）`unknown_preset`，文件写错 `preset_invalid`（`data.problem` 写明哪一层、哪个文件第几行），都不造。人格的文件、随核心附带的 `core/` 下的字读不了（安装坏了）：`internal_error`（施工 4-9 再补三上）。别的造不成（策略造不出来、磁盘上建不成、`session.created` 没落盘）：`internal_error`，原因记进运行日志。
 
@@ -1420,8 +1420,9 @@ Markdown 的回应 `{"path" | "text", "bytes", "tokens", "upto", "redacted", "ch
 **同一个命令编号**
 
 1. 会话接受过的编号再来（每个会话记最近 1024 个）：照上一次回应，不再产生事件；那几条事件还没落盘的，落了盘再回。载入时从日志里认回来：`cause` 是这个编号的那几条就是回应的 `events`，和当时的回应不一定一样。
-2. 被拒绝的编号不记：再发，重新判。
-3. `session.create` 另记，见上。
+2. 同一个编号换了参数再来（换了一句话、换成了别的命令）：拒绝，`id_reused`，不交回上一次的结果，什么都不记（施工 YC-7）。比的是收下时记的指纹，只在内存里：核心重启以后从日志认回来的编号没有指纹，再来照第 1 条回（老规矩）。回顾不记编号，也不比。
+3. 被拒绝的编号不记：再发，重新判。
+4. `session.create` 另记，见上。
 
 **会话表**
 
@@ -1529,6 +1530,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `unknown_blob` | -32010 | `blob.get` 的 blob 存处里没有（施工 W-6） |
 | `not_running` | -32010 | 打断时没有回合在进行 |
 | `turn_running` | -32010 | 撤销、重做、手动压缩、清空、删会话时有回合在进行 |
+| `id_reused` | -32010 | 同一个命令编号换了参数再来：会话里的命令（「同一个命令编号」第 2 条），`session.create` 除了 `cwd`、`dirs` 的参数（施工 YC-7） |
 | `unknown_turn` | -32010 | 要撤的那一轮不在有效历史里：没有，或者已经撤掉了 |
 | `nothing_to_unrevert` | -32010 | 没有能恢复的撤销：没撤过，或者撤了以后开过回合、压缩过 |
 | `nothing_to_revert` | -32010 | 不写 `turn` 的撤销，一轮都没有 |
@@ -1654,6 +1656,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `invalid_request` | 无效的请求。 | Invalid request. |
 | `unknown_method` | 方法不存在。 | Method not found. |
 | `bad_params` | 参数错误。 | Invalid parameters. |
+| `id_reused` | 同一个请求编号换了参数，没有收。请换一个新的编号。 | This request id was already used with different parameters. Use a new id. |
 | `internal_error` | 内部错误，详见运行日志。 | Internal error. See the runtime log. |
 | `hello_first` | 请先握手（hello）。 | Send hello first. |
 | `protocol_mismatch` | 协议版本不兼容，请升级到同一版本。 | Protocol version mismatch. Upgrade to the same release. |
@@ -1785,6 +1788,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/replay.rs`（施工 3-8 六补） | 补发推出去的行逐字节和原来的写法（推的时候一条条 `event.to_line()` 写成通知）一样，`after` 落在头、中间、最后一条前面（施工 V-37 下）；补发：`after` 是 0 补整份日志、一字不差、都在回应前面、回应带 `upto`、没有瞬时的，补完接着推下一条；中间的序号补之后的；最后一条、比最后一条大的什么都不补、照常推、一条不重；不写、写 `null` 的照旧、回应没有 `upto`；写错的八种 `bad_params`、先查参数不找会话、一个都没订阅上；核心重启以后要载入的照样补；订阅着、推送堵着时带 `after` 再订阅，旧的手里的回应照样到、补的中间不夹旧的、之后只有新的在推；日志坏了的 `session_broken`、没订阅上，没有要补的不读日志 |
 | `crates/miyu-endpoint/tests/replay_race.rs`（施工 3-8 六补） | 掉了队的头带上最后看到的序号重新订阅，看到的和补的合起来就是日志；真核心：另一个头一句接一句地说、会话一直在追加，中途几个头先后从头订阅，每个头补的和推的合起来都和日志一字不差 |
 | `crates/miyu-endpoint/tests/restart.rs` | 核心重启以后：不带 `cwd` 载入的会话照最后一轮的工作目录、没开过回合的照造会话时的；重发的造会话交回原来那一个、重启以后也认得 |
+| `crates/miyu-endpoint/tests/reused_ids.rs`（施工 YC-7） | 同一个编号换了参数再来：造会话只换 `cwd` 的交回原来那一个、`cwd` 照这一次，换了 `memory` 的 `id_reused`、只造了一个；说话原样再来照上一次回应，换了一句的 `id_reused`、只记了第一句；重启以后补回来的造会话编号照旧交回 |
 | `crates/miyu-endpoint/tests/check.rs`（施工 8-30） | `check`：不写文件的照磁盘上现在的字查配置、照核心手里的查密钥、人格每一层各查各的，先后、代码、级别、行对，给人看的那一句照连接的语言；写了文件的照位置认、只查那一份，项目配置照 `.miyu/config.toml` 认、相对的照 `cwd` 接，还没有的人格文件读不了，认不出的 `unknown_file`，多写格的参数不对 |
 | `crates/miyu-endpoint/tests/personas.rs`（施工 P-1 上） | 你那一层的人格进 system、示范对话排在前面；不写人格照默认、都没设的无人格；没有的、编号不对的、写错的拒绝，默认人格指着没有的当没设（施工 P-4 上）；`null` 明着无人格、不写进会话列表和订阅回应；`venue.session` 带人格造、找回时不看；`persona.list`、`persona.get` |
 | `crates/miyu-endpoint/tests/persona_set.rs`（施工 P-3 下、补） | 不写编号新建、核心起 `persona-1`、`persona-2`，一次带名字、人设、一对一对的示范对话、角色扮演提示，写成文件的写法、空行去掉，开会话用得上，一样的字不再写，只删不写的新建参数不对；读原文和版本、不给来处，出厂的没改过 `remove` 是空的、改过是 `restore`，旧版本存撞上什么都不写，空的字是这一段空的；删提示词回到下面的、删没有的不出错；写错的示范对话、`memory.scope`、写不回原样的 `pairs` 什么都不写、带照连接语言的 `message` 和行；参数不对的十种、读的两种、没有的人格；删了挪进回收处、整个目录、读不到了，盖在出厂上的回到出厂、本来没有的、编号不对的 |

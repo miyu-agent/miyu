@@ -59,6 +59,7 @@ Chinese version: [errors.md](errors.md).
 | `not_running` | Interrupting with no turn running | |
 | `nothing_queued`, `already_heard` | Taking back a queued message (`session.withdraw`): nothing queued; a request already took the named one | |
 | `turn_running` | Undo, redo, compact, clear, delete, or change persona or preset while a turn is running | |
+| `id_reused` | A request id came again with different parameters (for `session.create`, anything but `cwd` and `dirs`); the same parameters get the earlier reply. After a core restart parameters aren't compared | |
 | `unknown_turn` | The turn to undo isn't in the current history | |
 | `nothing_to_revert`, `nothing_to_unrevert` | Nothing to undo; nothing to restore | |
 | `not_redoable` | The last turn wasn't started by a person | |

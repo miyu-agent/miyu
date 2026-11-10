@@ -57,10 +57,14 @@ fn a_change_is_recorded_and_answered_once_stored() {
         [&accepted_reply(2, &[2])]
     );
     assert_eq!(session.reference(), Some("@free"));
-    // 同一个编号再来：照上一次回应，不再记，换成别的也一样。
+    // 同一个编号再来：照上一次回应，不再记；换成别的拒（施工 YC-7）。
+    assert_eq!(
+        session.handle(configure(2, "@free")),
+        [accepted_reply(2, &[2])]
+    );
     assert_eq!(
         session.handle(configure(2, "b/n")),
-        [accepted_reply(2, &[2])]
+        [rejected(id(2), Reason::IdReused)]
     );
     // 和现在一样的：当场回应，什么都不记，编号照样记下。
     assert_eq!(
@@ -68,8 +72,12 @@ fn a_change_is_recorded_and_answered_once_stored() {
         [accepted_reply(3, &[])]
     );
     assert_eq!(
-        session.handle(configure(3, "b/n")),
+        session.handle(configure(3, "@free")),
         [accepted_reply(3, &[])]
+    );
+    assert_eq!(
+        session.handle(configure(3, "b/n")),
+        [rejected(id(3), Reason::IdReused)]
     );
     assert_eq!(session.reference(), Some("@free"));
 }

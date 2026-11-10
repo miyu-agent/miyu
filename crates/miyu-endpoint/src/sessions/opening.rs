@@ -38,6 +38,17 @@ pub(crate) struct Opening {
     pub(crate) confined: bool,
 }
 
+impl Opening {
+    /// 造会话的参数的指纹（施工 YC-7）：人格加这几样，照 `Debug` 写法算的哈希；`cwd`、`dirs` 不在里面（重发的照这一次报的
+    /// 算，`protocol.md`「`session.create`」第 4 条）。只在这个进程里比，不落盘。
+    pub(super) fn digest(&self, persona: Option<Option<&str>>) -> u64 {
+        use std::hash::{Hash, Hasher};
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        format!("{persona:?}{self:?}").hash(&mut hasher);
+        hasher.finish()
+    }
+}
+
 /// 新会话开局的级别（施工 8-32）：A16 起本机、场所的都是完全放开（施工 LV-1），`permission.level` 写什么都一样；外部身份
 /// 另关进自己的工作区（`confined`），不看级别。
 pub(super) fn opening_level() -> Level {

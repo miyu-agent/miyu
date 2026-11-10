@@ -23,11 +23,16 @@ fn looping() -> Catalog {
     Catalog::in_packages([(miyu_schedule::LOOP, tools)]).expect("合写法")
 }
 
-/// 起好唤醒表的核心、开好的会话，敲一条命令，交回回执。
+/// 起好唤醒表的核心、开好的会话，敲一条命令，交回回执。每次一个新的请求编号：同一个编号换了一句是 `id_reused`（施工 YC-7）。
 async fn typed(client: &mut Client, session: &str, text: &str) -> Value {
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let id = format!(
+        "k{}",
+        NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    );
     client
         .call(
-            "k",
+            &id,
             "command.run",
             json!({"session": session, "text": text}),
         )
