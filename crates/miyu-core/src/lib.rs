@@ -68,7 +68,7 @@ pub struct Options {
 
 /// 跑核心进程，交回退出码。
 pub fn main(options: Options) -> ExitCode {
-    // 堆先调好（23 F3，施工 V-2 再补）：arena 的个数要在起别的线程之前限。
+    // 堆先调好（23 F3，施工 V-2 再补；Linux 上顺带关掉透明大页，施工 YC-12）：arena 的个数要在起别的线程之前限。
     let heap = miyu_heap::tune();
     let env = Env::current();
     let root = match DataRoot::locate(&env) {
@@ -106,6 +106,7 @@ pub fn main(options: Options) -> ExitCode {
         tuned = heap,
         arenas = miyu_heap::ARENAS,
         mmap_from = miyu_heap::MMAP_FROM,
+        huge_pages_off = miyu_heap::huge_pages_off(),
         "heap tuned"
     );
     // 打开文件数的软上限调高（施工 YC-1，压测 F1）：系统给的 1024 几百个会话就用光。调不上去照旧起来。

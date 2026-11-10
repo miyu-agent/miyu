@@ -10,7 +10,7 @@ mod support;
 use std::path::Path;
 
 use miyu_sandbox::Spec;
-use support::linux::{denied, landlock, refused_without_landlock, run, spec, text};
+use support::linux::{denied, landlock, refused_without_landlock, run, run_fresh, spec, text};
 use support::{Dir, serial};
 
 #[test]
@@ -248,6 +248,42 @@ fn the_command_runs_with_no_new_privs() {
         text(&out.stdout).split_whitespace().collect::<Vec<_>>(),
         ["NoNewPrivs:", "1"]
     );
+}
+
+/// 核心给自己关了透明大页（施工 YC-12，`miyu-heap` 的 `tune`），标记跟着 `fork`、`exec` 传下来：经助手跑的命令照系统的默认，
+/// 缓存的规则集、从头建的都一样。这里给测试进程自己关上，充当核心。
+#[test]
+fn the_command_gets_transparent_huge_pages_back() {
+    let _serial = serial();
+    let status = std::fs::read_to_string("/proc/self/status").expect("读得了");
+    if !status.contains("THP_enabled:") {
+        eprintln!("skipped: no THP_enabled in /proc/self/status (Linux 5.0+)");
+        return;
+    }
+    let work = Dir::new();
+    // 有藏起来的，[`run`] 才带缓存的规则集（`--ruleset`）。
+    let data = Dir::new();
+    let spec = spec(&[work.path()], &[data.path()]);
+    if refused_without_landlock(&spec) {
+        return;
+    }
+    rustix::thread::disable_transparent_huge_pages(true).expect("关得上");
+    let script = "grep THP_enabled /proc/self/status";
+    let out = std::process::Command::new("/bin/sh")
+        .args(["-c", script])
+        .output()
+        .expect("起得来");
+    let field = |out: &std::process::Output| {
+        text(&out.stdout)
+            .split_whitespace()
+            .map(str::to_owned)
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(field(&out), ["THP_enabled:", "0"], "不经助手的传下去了");
+    for out in [run(&spec, script), run_fresh(&spec, script)] {
+        assert_eq!(out.status.code(), Some(0), "{out:?}");
+        assert_eq!(field(&out), ["THP_enabled:", "1"], "{out:?}");
+    }
 }
 
 /// CI 上一定要真跑 Landlock：没有的话，上面几条只测了拒绝执行，Linux 的沙盒等于没测到。GitHub 的机器设了 `CI`。

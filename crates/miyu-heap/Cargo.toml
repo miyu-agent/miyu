@@ -21,6 +21,11 @@ unwrap_used = "deny"
 missing_errors_doc = "warn"
 missing_panics_doc = "warn"
 
+# Linux 上关掉这个进程的透明大页（施工 YC-12，`lib.rs` 的 `tune`）：`prctl` 的安全封装，不用自己写 unsafe。MIT OR Apache-2.0，
+# 工作区里本来就有。
+[target.'cfg(target_os = "linux")'.dependencies]
+rustix = { version = "1", features = ["thread"] }
+
 # macOS 上问内核自己占了多少内存（施工 V-4 补，`usage.rs`）：`proc_pid_rusage`。
 [target.'cfg(target_os = "macos")'.dependencies]
 libc = "0.2"

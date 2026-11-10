@@ -25,7 +25,7 @@
 | `crates/miyu-sandbox/src/availability.rs` | 这台机器上的沙盒能不能用、为什么（施工 5-4 下） |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/main.rs` | 助手里各平台共用的：读参数、读规格、`probe`、出错时说的几句 |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux.rs`、`macos.rs`、`windows.rs`、`other.rs` | 各平台收紧、再换成命令（`run`），探测时报的手段（`mechanisms`）；`other.rs` 是别的 Unix |
-| `crates/miyu-sandbox/src/bin/miyu-sandbox/unix.rs` | Unix 上换成命令（`exec`） |
+| `crates/miyu-sandbox/src/bin/miyu-sandbox/unix.rs` | Unix 上换成命令（`exec`）；Linux 上换之前恢复透明大页（施工 YC-12） |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/lifeline.rs` | Unix 上看门（`lifeline`，施工 V-48） |
 | `crates/miyu-tool/src/run.rs` | 一次调用带的 `sandbox` |
 | `crates/miyu-basesystem/src/shell.rs` | 带了规格的经助手起命令 |
@@ -107,7 +107,7 @@
    1. 读参数：不是 `run --spec <JSON> -- <程序> …` 的样子，印 `miyu-sandbox: usage: miyu-sandbox run --spec <json> -- <program> [args...]`，退出 125。
    2. 读规格：读不懂的，印 `miyu-sandbox: bad spec: <原话>`，退出 125。
    3. 收紧：交给这个平台的文件（`linux.rs`、`macos.rs`、`windows.rs`，别的 Unix 是 `other.rs`），怎么收紧写在各平台那一页；别的 Unix 还什么都不做。收紧不成的，一律印 `miyu-sandbox: cannot confine: <原话>`，退出 125，不跑命令。
-   4. 换成命令。Unix 上 `exec`，找不到的印 `miyu-sandbox: cannot run <程序>: <原话>`、退出 127，别的原因执行不了的一样印、退出 126。Windows 上先认程序（找不到 127、不是程序 126），再交 MXC 在基础容器里起，等它，照它的退出码退出（`sandbox/windows-run.md`）。
+   4. 换成命令。Linux 上换之前恢复透明大页（`PR_SET_THP_DISABLE` 设回 0，施工 YC-12）：核心给自己关了（`heap.md`「怎么走」第 4 条），标记跟着传下来，命令照系统的默认用大页；恢复不了的照旧换。Unix 上 `exec`，找不到的印 `miyu-sandbox: cannot run <程序>: <原话>`、退出 127，别的原因执行不了的一样印、退出 126。Windows 上先认程序（找不到 127、不是程序 126），再交 MXC 在基础容器里起，等它，照它的退出码退出（`sandbox/windows-run.md`）。
 5. **助手的 `probe`**：印那一行 JSON，退出 0。手段（`mechanisms`）由这个平台的文件报，各平台自己定写什么，写进它那一页。
 6. 助手的字一律英文：它印在命令的输出里，她看得到（`26-提示词.md` 第三节：给模型看的机械文字用英文）。这几句只在出错时出现，不常驻，不进登记簿。
 

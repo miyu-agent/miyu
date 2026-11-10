@@ -8,7 +8,7 @@
 
 | 代码 | 管什么 |
 |---|---|
-| `crates/miyu-heap/src/lib.rs` | `tune`、`trim`、`stats`；glibc 上声明、调 `mallopt`、`malloc_trim`、`mallinfo2`，别的平台是空的 |
+| `crates/miyu-heap/src/lib.rs` | `tune`、`trim`、`stats`、`huge_pages_off`；glibc 上声明、调 `mallopt`、`malloc_trim`、`mallinfo2`，Linux 上关透明大页（施工 YC-12），别的平台是空的 |
 | `crates/miyu-heap/src/usage.rs` | 进程这时占了多少内存：Linux 上读 `/proc/self/smaps_rollup`、`/proc/self/status`，两份的读法是纯的（施工 V-4）；macOS 上问内核 `proc_pid_rusage`（施工 V-4 补） |
 | `crates/miyu-core/src/memlog.rs` | 核心自己记账：什么时候采、一行的样子、采样的任务（施工 V-4） |
 | `crates/miyu-core/src/lib.rs` | 起来时最先调好（`core.md`「起来的先后」第 0 步） |
@@ -21,7 +21,8 @@
 
 - `ARENAS`：8。glibc 默认是核数的 8 倍，多开的只多攒碎片；读日志分块在几个线程里一起解（`store.md` 第 6 条，最多 8 块），少于它就抢锁（限到 2 个时重开一万条事件的会话，读日志从约 10 ms 慢到 16 ms）。
 - `MMAP_FROM`：128 KiB，多大的一块直接向系统要、放掉当场还。写明了 glibc 就不再自己往上调：默认放掉一块大的以后把门槛抬到它那么大（最多 32 MB），之后每一轮拼的请求（几百 KB）都落进堆里，和长住的穿插着放，空出来的碎成小片、`malloc_trim` 也还不回去。
-- `tune() -> bool`：起别的线程之前调一次，glibc 上照 `M_ARENA_MAX`、`M_MMAP_THRESHOLD` 设成这两个，交回都设成了没有；别的平台交回假。
+- `tune() -> bool`：起别的线程之前调一次，glibc 上照 `M_ARENA_MAX`、`M_MMAP_THRESHOLD` 设成这两个，交回都设成了没有；别的平台交回假。Linux 上（不管是不是 glibc）还给这个进程关掉透明大页（`PR_SET_THP_DISABLE`，施工 YC-12，下面「怎么走」第 4 条），关没关上不在交回的里面。
+- `huge_pages_off() -> bool`（施工 YC-12）：这个进程的透明大页关着没有（`PR_GET_THP_DISABLE`），核心记进 `DEBUG heap tuned` 的 `huge_pages_off`；别的平台交回假。
 - `trim() -> bool`：`malloc_trim(0)`，交回还了没有；别的平台交回假。要走一遍堆，在阻塞线程里调。
 - `stats() -> Option<Stats>`（施工 V-4）：glibc 的 `mallinfo2`，各个 arena 加起来：`arenas`（各 arena 从系统要来的）、`mmapped`（单独 mmap 的大块）、`used`（arena 里在用的）、`free`（arena 里空着的），字节；别的平台没有。
 - `usage::usage() -> Option<Usage>`、`usage::resident() -> Option<u64>`（施工 V-4）：字节。`rss` 哪个平台都有，别的几样只有量得出的平台有。Linux 上前者读 `smaps_rollup`，多 `pss`、`private`（`Private_Clean` 加 `Private_Dirty`）、`anon`、`swap`；后者只读 `status` 的 `VmRSS`，便宜，看涨没涨用。macOS 上两个都问内核 `proc_pid_rusage`（`RUSAGE_INFO_V2`，一次系统调用），前者多 `footprint`（`phys_footprint`：算在这个进程头上的，活动监视器「内存」那一列，压缩了的也算；施工 V-4 补）。Windows 没有（`23` 第五节「后续再定」）。
@@ -32,6 +33,8 @@
 2. 什么时候 trim：读完模型目录（原文、解析的半成品放掉了）；载入一个会话以后（读、解的整份日志只留最近一次压缩以后的，`session/actor.md` 第 2 条）；一个会话的 actor 结束以后（它的状态机、事件放掉了：停下、删掉、闲够了退下都算）；一阵请求过去、安静 2 秒以后（施工 V-5 中，下一条；trim 之前先放掉这一阵里读好放着的给人看的字，施工 V-30，`store/resources.md` 第 3 节第 8 条）。都在阻塞线程里、不挡着谁。不定时 trim：空着的时候没有新的可还。
    - **安静下来还一次**（施工 V-5 中，`settle.rs`）：头一连上就是一阵请求（读配置、列模型、读人），几百 KB 的回应拼完就放掉，放掉的留在 glibc 手里。施工 V-5 中量过：连上终端以后核心匿名内存多 3.3 MB，活着的数据只多 40 KB。所以连接每读到一个请求叫一声（`Activity::touch`，没人等的记下一次）；盯着的任务等到叫声，再等到 2 秒（`QUIET`）里没有新的叫声，trim 一次，再回去等。没有请求的时候它一直睡着，不定时醒。trim 在阻塞线程里做：崩了的记 `ERROR heap settle panicked`、接着等；停核心时运行时在收尾、阻塞任务被取消的记一行 `DEBUG heap settle cancelled`、不再等（施工 BUG-1：以前不分取消和崩溃，停核心时总打一行误报的 `ERROR`）。
 3. 量到的（施工 V-2 再补，`docs/perf/2026-10-10-linux-x86_64-v2再补.md`）：只 trim 的时候，大会话退下以后堆里还有 16 MB 空着的碎片、核心匿名内存比空闲时多 8.8 MB；写明大块的门槛以后只多 3.9 MB，重开大会话、说一句以后 92 MB 降到 49 MB。
+
+4. **透明大页**（施工 YC-12，`23` F3）：系统设成 `always` 时，`khugepaged` 把还有一页在用的 2 MB 一段合成大页，trim 还掉的空洞又被填回去（2026-11-10 压测量过：高压过后 trim 以后 PSS 569 MB 降到 82 MB，五分钟里每分钟涨约 90 MB，回到约 476 MB，在用的堆只有 13 MB，`AnonHugePages` 约等于整个匿名内存）。所以 `tune` 照 `prctl(PR_SET_THP_DISABLE, 1)` 关掉，用 `rustix` 的安全封装，不写 `unsafe`；关不上（3.15 以前的内核）照旧起来，`huge_pages_off` 如实交回假。这个标记 `fork`、`exec` 都传下去：经助手跑的命令由助手换成命令之前恢复（`sandbox.md`「助手的命令行」第 4 步）；扩展、MCP 服务、不经助手的命令跟着关着，只是用不上大页，不碍事。
 
 ### 自己记账（施工 V-4，23 F4）
 
@@ -51,7 +54,7 @@
 
 | 测试 | 守什么 |
 |---|---|
-| `crates/miyu-heap/src/tests.rs` | glibc 上调得成；放掉一堆小块以后还得回去；别的平台都交回假；glibc 上有堆的统计、分出去的算在用的里（施工 V-4） |
+| `crates/miyu-heap/src/tests.rs` | glibc 上调得成；放掉一堆小块以后还得回去；别的平台都交回假；glibc 上有堆的统计、分出去的算在用的里（施工 V-4）；Linux 上 `tune` 以后透明大页关着（施工 YC-12） |
 | `crates/miyu-heap/src/usage/tests.rs`（施工 V-4） | 真机的 `smaps_rollup` 读成字节；不是它的读不出来；`VmRSS`；Linux 上量得到自己、有 PSS 这几样，macOS 上量得到自己、有 `footprint`、没有 Linux 那几样（施工 V-4 补，CI 的 macOS 上跑），Windows 没有 |
 | `crates/miyu-core/src/memlog/tests.rs`、`crates/miyu-core/tests/memlog.rs`（施工 V-4） | 涨够了才算涨得快，落了的、没涨够的不算，不溢出；一行的格和先后，没有堆的不写 `heap`；真核心：起来记 `start`、到点记 `tick`、行里有 RSS、PSS、会话数、glibc 上有堆；安静下来时没涨够的不采、涨了 64 MiB 的记 `grew`，不安静下来不看（施工 V-6 下）；量不出来的平台不起、不写。`tests/memlog.rs` 自己一个测试程序：记的是整个进程，和别的测试并在一起，它们分配的也算进涨幅（V-6 下修） |
 | `crates/miyu-log/src/rotate/tests.rs` 的 `a_file_named_as_given_rotates_under_its_own_name`（施工 V-4） | 照原样的文件名换下成 `<文件名>.1`、只留一份 |

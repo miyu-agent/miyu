@@ -2147,6 +2147,7 @@ name = "miyu-heap"
 version = "2026.11.0"
 dependencies = [
  "libc",
+ "rustix",
 ]
 
 [[package]]

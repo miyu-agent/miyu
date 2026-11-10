@@ -16,8 +16,20 @@ pub const MMAP_FROM: i32 = 128 * 1024;
 
 /// 起来时、还没起别的线程时调一次：glibc 上 arena 限到 [`ARENAS`] 个，大块的门槛定在 [`MMAP_FROM`]。交回两样都设成了没有；
 /// 别的平台什么都不做，交回假。
+///
+/// Linux 上（不管是不是 glibc）还给这个进程关掉透明大页（`PR_SET_THP_DISABLE`，施工 YC-12）：系统设成 `always` 时，
+/// `khugepaged` 把还有一页在用的 2 MB 一段合成大页，[`trim`] 还掉的空洞又被填回去（2026-11-10 压测量过：高压过后会话退下、
+/// `trim` 以后 PSS 569 MB 降到 82 MB，接下来五分钟每分钟涨约 90 MB，回到约 476 MB 不再落，在用的堆只有 13 MB，
+/// `AnonHugePages` 约等于整个匿名内存）。关没关上不在交回的里面，照 [`huge_pages_off`] 问。这个标记 `fork`、`exec` 都传下去：
+/// 经助手跑的命令由助手换成命令之前恢复（`miyu-sandbox`），扩展、MCP 服务和不经助手的命令跟着关着，只是用不上大页。
 pub fn tune() -> bool {
+    huge::disable();
     imp::tune(ARENAS, MMAP_FROM)
+}
+
+/// 这个进程的透明大页关着没有（`PR_GET_THP_DISABLE`，施工 YC-12）：给核心记一笔 [`tune`] 关上没有。别的平台交回假。
+pub fn huge_pages_off() -> bool {
+    huge::off()
 }
 
 /// 把堆里空着的还给系统：glibc 上调 `malloc_trim(0)`。交回还了没有；别的平台什么都不做，交回假。要走一遍堆，在阻塞线程里调。
@@ -44,6 +56,27 @@ pub fn stats() -> Option<Stats> {
 }
 
 pub mod usage;
+
+#[cfg(target_os = "linux")]
+mod huge {
+    /// 关掉这个进程的透明大页。关不上（3.15 以前的内核没有这一项）照旧起来，只是还用大页：[`off`] 如实交回假，核心记进日志。
+    pub(super) fn disable() {
+        rustix::thread::disable_transparent_huge_pages(true).unwrap_or_default();
+    }
+
+    pub(super) fn off() -> bool {
+        rustix::thread::transparent_huge_pages_are_disabled().unwrap_or(false)
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+mod huge {
+    pub(super) fn disable() {}
+
+    pub(super) fn off() -> bool {
+        false
+    }
+}
 
 #[cfg(all(target_os = "linux", target_env = "gnu"))]
 mod imp {

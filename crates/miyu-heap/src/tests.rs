@@ -1,4 +1,4 @@
-//! glibc 上真的改得成、还得回去；别的平台什么都不做。
+//! glibc 上真的改得成、还得回去；Linux 上透明大页关得上（施工 YC-12）；别的平台什么都不做。
 
 #[test]
 fn the_allocator_can_be_tuned_where_glibc_is() {
@@ -6,6 +6,12 @@ fn the_allocator_can_be_tuned_where_glibc_is() {
         super::tune(),
         cfg!(all(target_os = "linux", target_env = "gnu"))
     );
+}
+
+#[test]
+fn huge_pages_are_off_after_tuning_on_linux() {
+    super::tune();
+    assert_eq!(super::huge_pages_off(), cfg!(target_os = "linux"));
 }
 
 #[test]
