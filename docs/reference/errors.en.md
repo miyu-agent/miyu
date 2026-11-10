@@ -151,7 +151,7 @@ Chinese version: [errors.md](errors.md).
 | `skill_from_package` | `skill.remove`: a skill that comes with a package cannot be deleted | `name` |
 | `skill_shared` | `skill.remove`: a skill in another folder (`skills.external.dirs`, `from` is `agents`) is not deleted through Miyu, other clients use it too | `name` |
 | `no_page`, `not_found` | No package page; no such file | |
-| `program_not_running`, `unregistered`, `method_failed`, `method_timeout` | `package.call`: the program isn't connected; not registered; it answered with an error; no answer | `method`, `message`, `code` |
+| `program_not_running`, `unregistered`, `method_failed`, `method_timeout` | `package.call`: the program isn't connected; not registered; it answered with an error (an answer line over 1 MiB counts too, with `code` set to `line_too_long`); no answer | `method`, `message`, `code` |
 | `not_exported` | An extension called a method the other package doesn't export | `method` |
 | `bad_tool` | A tool in `provide` is wrong | `tool`, `problem` |
 | `unknown_widget`, `bad_widget_content` | The widget isn't in the manifest; the content is malformed | `widget`; `path`, `problem` |

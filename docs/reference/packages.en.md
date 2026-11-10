@@ -187,7 +187,7 @@ Extensions can call `package.call` too: they must declare the `packages.call` ca
 | `no_page`, `not_found` | `package.file`: no package page; no such file, outside the folder, not a regular file. `package.page`: no page inside the package directory (`no_page`) |
 | `program_not_running` | The program isn't connected |
 | `unregistered` | The program didn't register that method, `data.method` |
-| `method_failed` | The program answered with an error, `data.message`, `data.code` (a coded error from an extension puts its string code in `error.data.code`, which the core passes on; otherwise `error.code`) |
+| `method_failed` | The program answered with an error, `data.message`, `data.code` (a coded error from an extension puts its string code in `error.data.code`, which the core passes on; otherwise `error.code`). When the program's answer is a line over 1 MiB the core doesn't read it, and `data.code` is `line_too_long` |
 | `method_timeout` | No answer in time |
 | `needs_approval`, `not_exported` | Called by an extension: `packages.call` not declared; the method isn't exported (`data.method`) |
 

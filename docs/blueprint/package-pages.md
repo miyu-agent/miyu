@@ -125,7 +125,7 @@ name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
 2. **调**：头发 `package.call {"package", "method", "params"?}`：出示本机令牌、登录令牌的连接（人）调得到登记的全部。施工 X-18 起扩展也能调别的软件（「软件之间互相调」）：要声明 `packages.call`、人批过（没声明的 `needs_approval`），只调得到对方清单 `[export] methods` 里的（别的 `not_exported`，`data.method` 是哪一个）。
    - 没有这个包 `unknown_package`；它的程序没连着、还没登记方法 `program_not_running`；没登记这个方法 `unregistered`，`data.method` 是哪一个。
    - 核心发反向请求 `{"jsonrpc":"2.0","id":"core-<n>","method":"method.call","params":{"method","params","from"?}}` 给扩展，等它回，回什么交回什么（`result` 原样）。扩展调的带 `from`：调的那个包的编号，核心照连接填、调的一方写不了；人调的不带（施工 X-18）。
-   - 扩展回了错：`method_failed`，`data.message` 是它说的那一句，`data.code` 是它的错误码（没有的不写）。到了 `timeout_ms` 没回：`method_timeout`，核心不再等，扩展晚回的扔掉。等着时连接断了：`program_not_running`。
+   - 扩展回了错：`method_failed`，`data.message` 是它说的那一句，`data.code` 是它的错误码（没有的不写）。扩展回的那一行超过 1 MiB 的核心没读（`protocol.md`「一行最长」，施工 YC-5补）：也是 `method_failed`，`data.code` 是 `line_too_long`，当场回、不等时限。到了 `timeout_ms` 没回：`method_timeout`，核心不再等，扩展晚回的扔掉。等着时连接断了：`program_not_running`。
    - 在后台答：这个连接后面的请求不等它（同 `link.preview`，`methods::answered_later`）。
 3. 扩展这边：收到 `method.call` 照自己的方法表办；不认识的回 JSON-RPC 的 `-32601`（核心交回 `method_failed`）。
 4. **推给页面**（施工 IM-1 中下二，im 设计 07 第 4.6 节第 3 样，形状 2026-10-27 主会话定）：扩展的状态变了，不让页面轮询，推过去。

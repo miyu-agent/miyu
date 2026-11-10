@@ -242,7 +242,7 @@ A package's state in one session (design 46): what you draw in widgets, what you
 
 **`package.methods`** (extension → core): `{"methods": [{"name", "timeout_ms"?}…]}` registers the methods its page and widgets call, replacing the previous set. Response `{"methods": <count>}`. Other connections get `not_an_extension`.
 
-**`method.call`** (core → extension): `{"method", "params", "from"?}`: a person's head or another package called it through `package.call`; `from` is the calling package's id (absent when a person called). Whatever it answers is what `package.call` returns; a JSON-RPC error becomes `method_failed` on the other side.
+**`method.call`** (core → extension): `{"method", "params", "from"?}`: a person's head or another package called it through `package.call`; `from` is the calling package's id (absent when a person called). Whatever it answers is what `package.call` returns; a JSON-RPC error becomes `method_failed` on the other side. An answer is one line of at most 1 MiB too: the core doesn't read a longer one, sends you `line_too_long` (with the `id` of that `method.call`), and the other side gets `method_failed` at once with `data.code` set to `line_too_long`; store large content as a blob (`blob.put`) and put only its hash in the answer.
 
 To let other extensions call a method, list it in the manifest's `[export] methods`.
 

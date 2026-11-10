@@ -173,6 +173,8 @@ async fn read_all<R: AsyncRead + Unpin>(
                 // 认得出的 `id`（施工 YC-5）：原来回「读不懂」、`id` 是空的，头对不上是哪一条，一直等。
                 tracing::warn!(target: "miyu::endpoint", "line too long, refused");
                 let id = id.unwrap_or(Value::Null);
+                // 是对方答核心的一条回应的（施工 YC-5补）：等它的当场了结，不一直等到时限。
+                reverse.too_long(&id, Refusal::line_too_long().answered());
                 if !send(&out, wire::error(id, Refusal::line_too_long(), locale)).await {
                     break;
                 }

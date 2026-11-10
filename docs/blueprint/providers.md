@@ -11,7 +11,7 @@
 | 代码 | 管什么 |
 |---|---|
 | `crates/miyu-endpoint/src/wire.rs` | 读进来的一行多一种：对核心发出去的请求的回应 |
-| `crates/miyu-endpoint/src/reverse.rs` | 反向调用：核心发给一个连接的请求（编号 `core-<n>`），等它的回应；连接断了，在等的都了结（施工 O-2 上） |
+| `crates/miyu-endpoint/src/reverse.rs` | 反向调用：核心发给一个连接的请求（编号 `core-<n>`），等它的回应；连接断了，在等的都了结（施工 O-2 上）；对方答的那一行太长、没读的，等它的当场了结成一条错误（施工 YC-5补） |
 | `crates/miyu-endpoint/src/provide.rs` | `provide`：查规格、登记进目录；提供者表：哪个包现在由哪个连接提供（施工 O-2 上） |
 | `crates/miyu-endpoint/src/provide/remote.rs` | 提供者的一件工具（`Tool` 的实现）：执行时经提供者表找到那个连接、反向调用 `tool.call`（施工 O-2 上）；照 `paths` 报路径、带 `checked`，照 `background_parameters` 交后台参数（施工 XG-1 上） |
 | `crates/miyu-endpoint/src/provide/declared.rs` | 规格里的 `paths`、`background_parameters` 照 `input_schema` 查；照 `paths` 从参数取要碰的路径（施工 XG-1 上，设计 63 第二、三节） |
@@ -140,7 +140,7 @@
 |---|---|
 | `crates/miyu-endpoint/src/wire/tests.rs` | 对核心发出去的请求的回应认得出来：`result`、`error` 原样交出，`id` 要是字符串、要是 2.0 |
 | `crates/miyu-endpoint/tests/provide_exit.rs`（施工 O-2 再补） | 登记过工具的扩展一直退出：每次都察觉、照退避重新拉起，五次停下；端口被占退出的记成 `config_error` |
-| `crates/miyu-endpoint/src/reverse/tests.rs` | 反向调用发出去的一行带 `core-<n>`、方法、参数；对上编号的回应交给等它的，对不上的不理；连接断了，在等的和以后发的都了结 |
+| `crates/miyu-endpoint/src/reverse/tests.rs` | 反向调用发出去的一行带 `core-<n>`、方法、参数；对上编号的回应交给等它的，对不上的不理；连接断了，在等的和以后发的都了结；对方答的一行太长的，对得上编号的当场了结成一条错误、对不上的不理（施工 YC-5补；真核心拉起真进程的那一层在 `tests/extension_long_line.rs`） |
 | `crates/miyu-endpoint/src/provide/tests.rs` | 访问类别（施工 O-31 前起认 `venue`）、给哪种会话不认识的、空的拒；提供者表照包记，重新登记的换掉旧的；没有连接的、发不出去的暂时不可用，说法同执行器的 |
 | `crates/miyu-tool/src/catalog/tests.rs` 的 `replacing_a_package_keeps_the_others_and_checks_the_new_ones` | 换掉一个包的工具：别的包的照留，原来那份不动，撞名、写法不对的整个不收 |
 | `crates/miyu-session/src/agents/tests.rs` | 工具面照会话在哪挑提供者的工具：本机的、私聊、群 |

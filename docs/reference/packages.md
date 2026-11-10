@@ -187,7 +187,7 @@
 | `no_page`、`not_found` | `package.file`：没有后台页；没有这份文件、跑出目录、不是普通文件。`package.page`：没有包目录里的后台页（`no_page`） |
 | `program_not_running` | 程序没连着 |
 | `unregistered` | 程序没登记这个方法，`data.method` |
-| `method_failed` | 程序回了错，`data.message`、`data.code`（扩展回的错带字的码放在 `error.data.code`，核心照它交回；没有的照 `error.code`） |
+| `method_failed` | 程序回了错，`data.message`、`data.code`（扩展回的错带字的码放在 `error.data.code`，核心照它交回；没有的照 `error.code`）。程序回的那一行超过 1 MiB 的核心不读，`data.code` 是 `line_too_long` |
 | `method_timeout` | 到时限没回 |
 | `needs_approval`、`not_exported` | 扩展调的：没声明 `packages.call`；对方没导出这个方法（`data.method`） |
 

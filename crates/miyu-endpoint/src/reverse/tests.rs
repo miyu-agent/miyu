@@ -106,3 +106,22 @@ async fn a_dropped_connection_counts_as_closed() {
     drop(lines);
     assert!(peer.closed());
 }
+
+/// 对方答的那一行太长、核心没读（施工 YC-5补）：对得上编号的，等它的当场了结成一条错误；对不上的、不是字的编号不理。
+#[tokio::test]
+async fn an_answer_too_long_ends_the_call_waiting_for_it() {
+    let (out, mut lines) = mpsc::channel(8);
+    let peer = Peer::new(out);
+    let waiting = {
+        let peer = peer.clone();
+        tokio::spawn(async move { peer.call("method.call", json!({})).await })
+    };
+    lines.recv().await.expect("发出去了");
+    let error = json!({"code": -32010, "message": "too long", "data": {"code": "line_too_long"}});
+    assert!(!peer.too_long(&json!("core-9"), error.clone()), "别人的");
+    assert!(!peer.too_long(&Value::Null, error.clone()), "没认出编号");
+    assert!(!peer.too_long(&json!(1), error.clone()), "不是核心发的编号");
+    assert!(peer.too_long(&json!("core-1"), error.clone()));
+    assert_eq!(waiting.await.unwrap(), Ok(Err(error.clone())));
+    assert!(!peer.too_long(&json!("core-1"), error), "了结过了");
+}

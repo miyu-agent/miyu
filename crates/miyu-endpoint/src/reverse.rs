@@ -1,6 +1,7 @@
 //! 反向调用（施工 O-2 上，`docs/blueprint/providers.md`「怎么走」第 1、2 条）：核心发给一个连接的请求，编号 `core-<n>`，照连接
 //! 从 1 数起；对上编号的回应交给等它的，对不上的不理。连接断了（[`Peer::close`]），在等的和以后发的都了结成 [`Gone`]。不等了的
-//! （等它的 future 被丢掉）从表里拿掉；通知（[`Peer::notify`]，`tool.cancel`）不带编号、不等回应（施工 O-2 下）。
+//! （等它的 future 被丢掉）从表里拿掉；通知（[`Peer::notify`]，`tool.cancel`）不带编号、不等回应（施工 O-2 下）。对方答的那一行
+//! 太长、核心没读的，等它的当场了结成一条错误（[`Peer::too_long`]，施工 YC-5补）。
 //!
 //! 扩展提供的模型驱动（施工 MD-2，设计 66 第五节）：`driver.call` 的参数原样拼进那一行（[`Peer::call_raw`]，1 MB 的请求不多解析
 //! 一遍）；扩展发来的 `driver.delta` 照 `call` 交给登记了这一次的那一头（[`Peer::stream`]、[`Peer::delta`]），对不上的丢掉。
@@ -137,6 +138,21 @@ impl Peer {
         if let Some(tell) = tell {
             drop(tell.send(response.outcome));
         }
+    }
+
+    /// 对方答的那一行太长、核心没读（施工 YC-5补，`protocol.md`「一行最长」）：开头认出来的 `id` 对得上一条在等的，等它的当场
+    /// 了结成对方回了错误 `error`，不一直等到各自的时限；交回对上了没有。对不上的（不是回应、等的已经不等了）不理。
+    pub(crate) fn too_long(&self, id: &Value, error: Value) -> bool {
+        let Some(id) = id.as_str() else {
+            return false;
+        };
+        let tell = self
+            .state
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .waiting
+            .remove(id);
+        tell.is_some_and(|tell| tell.send(Err(error)).is_ok())
     }
 
     /// 连接断了：在等的都了结，以后发的直接了结；往连接写的那一头放掉，写的任务才结束得了（施工 O-2 再补）。交增量的那几头一起放掉

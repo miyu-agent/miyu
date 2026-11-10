@@ -151,7 +151,7 @@
 | `skill_from_package` | `skill.remove`：随包来的技能不能删 | `name` |
 | `skill_shared` | `skill.remove`：别的目录里的技能（`skills.external.dirs`，`from` 是 `agents`）不经 Miyu 删，别的客户端也在用 | `name` |
 | `no_page`、`not_found` | 没有后台页；没有这份文件 | |
-| `program_not_running`、`unregistered`、`method_failed`、`method_timeout` | `package.call`：程序没连着；没登记；回了错；没回 | `method`、`message`、`code` |
+| `program_not_running`、`unregistered`、`method_failed`、`method_timeout` | `package.call`：程序没连着；没登记；回了错（它回的一行超过 1 MiB 的也算，`code` 是 `line_too_long`）；没回 | `method`、`message`、`code` |
 | `not_exported` | 扩展调了对方没导出的方法 | `method` |
 | `bad_tool` | `provide` 的一件工具不对 | `tool`、`problem` |
 | `unknown_widget`、`bad_widget_content` | 界面块不在清单里；内容写法不对 | `widget`；`path`、`problem` |

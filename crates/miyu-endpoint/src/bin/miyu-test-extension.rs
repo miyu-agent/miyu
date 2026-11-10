@@ -21,7 +21,7 @@
 //! - `listen`：读标准输入直到读到头，读到的每一行都记下（施工 9-4 下下：核心推来的 `extension.config`）；
 //! - `serve`：读标准输入直到读到头，每一行都记下；是核心发来的 `tool.call` 的，照工具名答（施工 O-2 上）：`boom` 回一个错误，
 //!   `garbled` 回写法不对的结果，`oops` 回一段字、说出了错，别的回一段字 `served <工具名>`；是 `method.call` 的照方法名答
-//!   （施工 F-6 中）：`boom` 回一个错误，`slow` 不答，以 `.coded` 结尾的回一个码写在 `error.data.code` 的错误（施工 BUS-2），
+//!   （施工 F-6 中）：`boom` 回一个错误，`slow` 不答，`huge` 回超过一行上限的结果（施工 YC-5补），以 `.coded` 结尾的回一个码写在 `error.data.code` 的错误（施工 BUS-2），
 //!   别的回 `{"answered": <方法名>}`；是 `command.call` 的照 `argument` 答
 //!   （施工 X-14 下）：`boom` 回一个错误，`garbled` 回写法不对的结果，`silent` 不答，别的回两行 `{"said": "<命令> <argument>\nok"}`；
 //!   是 `widget.watch` 的推一块 `widget.set`：一段字 `watching <块>`，跟着会话的后面接会话编号（施工 X-15 中）；`method.call` 的
