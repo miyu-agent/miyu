@@ -15,6 +15,7 @@ use crate::{
     log::{LevelFilter, install},
     manifest::{Value, read},
     open::{Browser, Core, SystemBrowser},
+    open_files::{Raised, raise},
     places::{
         DataRoot, Env, Issue, Packages, Platform, ResourceRoot, cache_root, config_file, locale,
         write,

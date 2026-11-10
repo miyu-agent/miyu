@@ -45,6 +45,11 @@ pub mod connect {
     };
 }
 
+/// 打开文件数的软上限（施工 YC-1）：常驻的头、扩展（网页、通讯平台的桥）起来时调一次 [`open_files::raise`]。
+pub mod open_files {
+    pub use miyu_ipc::open_files::{Raised, raise};
+}
+
 /// 数据根、资源目录、环境、语言、缓存目录在哪；生成的文件怎么写、配置文件怎么读、两层的软件包清单（施工 S-6 上）。
 pub mod places {
     pub use miyu_store::config_file;

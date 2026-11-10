@@ -15,6 +15,7 @@
 | 一组 | 转出什么 | 原来在 |
 |---|---|---|
 | `connect` | `connect`、`connect_or_start`、`connect_or_start_bare`、`spawn_detached`、`Connection`、`Ready`、`ConnectError`、`StartError` | `miyu-ipc` |
+| `open_files` | `raise`、`Raised`：常驻的头、扩展起来时把打开文件数的软上限调高（施工 YC-1） | `miyu-ipc` |
 | `open` | `Core`、`Browser`、`SystemBrowser`、`locale` | 本 crate |
 | `places` | `DataRoot`、`ResourceRoot`、`Env`、`Platform`、`locale`、`cache_root`；施工 S-6 上补 `write`（生成的文件，`generated`）、`config_file`（读配置文件那一层）、`Packages`、`Issue`（两层的软件包清单） | `miyu-store` |
 | `texts` | `Human`、`Face`、`clean`；施工 S-6 上补 `HumanError` | `miyu-store` 的 `human` |
