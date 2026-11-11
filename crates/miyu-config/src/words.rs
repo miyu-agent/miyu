@@ -34,6 +34,10 @@ pub struct ConfigWords {
     /// 设置页每一组的名字：编号到名字。
     #[serde(default)]
     pub groups: BTreeMap<String, String>,
+    /// 设置页组的说明（施工 HZ-1）：编号到一句或几句，带句末的标点；`config.schema` 里那一组带 `description`，头写在组名
+    /// 下面。哪一组都能写，没写的不在里面。
+    #[serde(default)]
+    pub group_descriptions: BTreeMap<String, String>,
 }
 
 /// 一项给人看的字。
@@ -73,7 +77,7 @@ impl fmt::Display for Missing {
 impl std::error::Error for Missing {}
 
 /// 查资源里的字和清单对不对得上（G10、`14-配置.md` 第十节），交回每一处不对，一处一句：每一项都有名字、说明，
-/// 选项都有名字，用到的页和组都有名字；资源里没有多出来的项、选项、页、组。
+/// 选项都有名字，用到的页和组都有名字；资源里没有多出来的项、选项、页、组；组的说明写了的不是空的、那一组用到了（施工 HZ-1）。
 pub fn check(items: &[Item], words: &ConfigWords) -> Vec<String> {
     let mut problems = Vec::new();
     for item in items {
@@ -131,6 +135,14 @@ pub fn check(items: &[Item], words: &ConfigWords) -> Vec<String> {
     let groups: BTreeSet<&str> = items.iter().map(|item| item.ui.group).collect();
     problems.extend(named("页", &pages, &words.pages));
     problems.extend(named("组", &groups, &words.groups));
+    // 组的说明（施工 HZ-1）可以不写；写了的不是空的，写给的组清单里用到了。
+    for (id, said) in &words.group_descriptions {
+        if !groups.contains(id.as_str()) {
+            problems.push(format!("组 {id}：资源里多了说明，清单里没有用到这一组"));
+        } else if said.trim().is_empty() {
+            problems.push(format!("组 {id}：说明是空的"));
+        }
+    }
     problems
 }
 

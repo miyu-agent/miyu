@@ -42,6 +42,7 @@ fn good() -> ConfigWords {
             .into_iter()
             .map(|(id, name)| (id.to_string(), name.to_string()))
             .collect(),
+        group_descriptions: Default::default(),
     }
 }
 
@@ -109,6 +110,30 @@ fn every_page_and_group_in_use_needs_a_name() {
     assert_eq!(
         check(&items(), &words),
         vec!["页 advanced：没有名字", "组 display：没有名字"]
+    );
+}
+
+/// 组的说明（施工 HZ-1）：哪一组都能写，不写也行；写成空的、写给清单里没用到的组的报。
+#[test]
+fn a_group_description_is_optional_but_must_belong_to_a_group_in_use() {
+    let mut words = good();
+    assert!(words.group_descriptions.is_empty(), "不写也行");
+    words
+        .group_descriptions
+        .insert("display".to_string(), "这一组管显示。".to_string());
+    assert_eq!(check(&items(), &words), Vec::<String>::new());
+    words
+        .group_descriptions
+        .insert("log".to_string(), " ".to_string());
+    words
+        .group_descriptions
+        .insert("sessions".to_string(), "说明。".to_string());
+    assert_eq!(
+        check(&items(), &words),
+        vec![
+            "组 log：说明是空的",
+            "组 sessions：资源里多了说明，清单里没有用到这一组"
+        ]
     );
 }
 

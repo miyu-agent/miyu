@@ -3,6 +3,7 @@
 use super::*;
 
 mod audit;
+mod groups;
 
 const PLACES: Places<'static> = Places {
     cwd: "/home/me/proj",
@@ -11,8 +12,16 @@ const PLACES: Places<'static> = Places {
     workspaces: "/home/me/.miyu/workspace",
 };
 
+/// 判下来要管的那一种：拒的是那一种，问的是最先认出的。
+fn first(command: &str, places: &Places<'_>) -> Option<Kind> {
+    match assess(command, places)? {
+        Assessed::Refused(kind) => Some(kind),
+        Assessed::Asks(kinds) => kinds.first().copied(),
+    }
+}
+
 fn kind(command: &str) -> Option<&'static str> {
-    assess(command, &PLACES).map(Kind::code)
+    first(command, &PLACES).map(Kind::code)
 }
 
 #[test]
@@ -37,7 +46,7 @@ fn deleting_the_big_places_is_refused() {
     ] {
         assert_eq!(kind(command), Some(expected), "{command}");
         assert!(
-            assess(command, &PLACES).is_some_and(Kind::refused),
+            first(command, &PLACES).is_some_and(Kind::refused),
             "{command}"
         );
     }
@@ -53,7 +62,7 @@ fn deleting_the_working_directory_or_an_unknown_tree_asks() {
     ] {
         assert_eq!(kind(command), Some(expected), "{command}");
         assert!(
-            !assess(command, &PLACES).is_some_and(Kind::refused),
+            !first(command, &PLACES).is_some_and(Kind::refused),
             "{command}"
         );
     }
@@ -92,7 +101,7 @@ fn destructive_git_asks_through_global_options() {
     ] {
         assert_eq!(kind(command), Some(expected), "{command}");
         assert!(
-            !assess(command, &PLACES).is_some_and(Kind::refused),
+            !first(command, &PLACES).is_some_and(Kind::refused),
             "{command}"
         );
     }
@@ -129,7 +138,7 @@ fn disks_power_and_piping_downloads_into_a_shell() {
     ] {
         assert_eq!(kind(command), Some(expected), "{command}");
         assert_eq!(
-            assess(command, &PLACES).is_some_and(Kind::refused),
+            first(command, &PLACES).is_some_and(Kind::refused),
             refused,
             "{command}"
         );
@@ -193,7 +202,7 @@ fn the_corners_of_reading_a_command() {
         ..PLACES
     };
     assert_eq!(
-        assess("rm -rf /srv/miyu", &places).map(Kind::code),
+        first("rm -rf /srv/miyu", &places).map(Kind::code),
         Some("delete_data_root")
     );
     // 放工作区的目录照给的认（施工 FH-2：调的一方照数据根的布局给），不照数据根下面的 `workspace/` 猜。
@@ -202,11 +211,11 @@ fn the_corners_of_reading_a_command() {
         ..PLACES
     };
     assert_eq!(
-        assess("rm -rf ~/.miyu/root/workspace/s1/build", &moved).map(Kind::code),
+        first("rm -rf ~/.miyu/root/workspace/s1/build", &moved).map(Kind::code),
         None
     );
     assert_eq!(
-        assess("rm -rf ~/.miyu/workspace/s1/build", &moved).map(Kind::code),
+        first("rm -rf ~/.miyu/workspace/s1/build", &moved).map(Kind::code),
         Some("delete_data_root")
     );
 }

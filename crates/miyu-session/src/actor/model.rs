@@ -154,6 +154,9 @@ impl Actor {
             self.guard.set_private(private.clone());
             self.tools.set_private(private);
         }
+        // 受保护的命令哪几类不问也照这一轮的配置（施工 HZ-1）。
+        let confirm = crate::settings::ConfirmSettings::from(&values);
+        self.guard.set_waived(confirm.waived());
         let prepare = CompactionSettings::from(&values).prepare;
         // 技能照这一刻的快照先找起来，和刷新人格并着等（施工 PERF-2）：两样都在阻塞线程里读盘，原来技能排在人格后面干等。
         // 人格、预设真换了的（交回新快照的哈希，很少见），工具面跟着变，照新的再找一次。

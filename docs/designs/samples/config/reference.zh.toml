@@ -354,6 +354,27 @@ level = "full"
 # 能写：true 或 false。只能写在系统配置或项目配置里。新会话生效。
 start_read_only = false
 
+[permission.confirm]
+# 容器使用宿主设备：容器要宿主的设备、进程或网络命名空间前先问。
+# 能写：true 或 false。只能写在系统配置里。下一轮生效。
+container = true
+
+# 递归删除：删工作目录或它的上级、删运行时才知道目标的整个目录前先问。
+# 能写：true 或 false。只能写在系统配置里。下一轮生效。
+delete = true
+
+# 破坏性 git 操作：强制推送、reset --hard、clean -f、丢弃改动、删除 stash 前先问。
+# 能写：true 或 false。只能写在系统配置里。下一轮生效。
+git = true
+
+# 下载后直接执行：curl … | sh 这类前先问。
+# 能写：true 或 false。只能写在系统配置里。下一轮生效。
+pipe_to_shell = true
+
+# 关机和重启：关机、重启前先问。
+# 能写：true 或 false。只能写在系统配置里。下一轮生效。
+power = true
+
 [persona]
 # 默认人格：新会话默认用哪个人格。不设的话，新会话不使用人格，记忆单独一份。
 # 能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置里。新会话生效。

@@ -354,6 +354,27 @@ level = "full"
 # Allowed: true or false. Only in the system config or a project config. Applies to new sessions.
 start_read_only = false
 
+[permission.confirm]
+# Containers using host devices: Ask before a container takes the host's devices, process or network namespace.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
+container = true
+
+# Recursive deletes: Ask before deleting the working directory or a parent of it, or a whole directory whose target is only known at run time.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
+delete = true
+
+# Destructive git operations: Ask before a force push, reset --hard, clean -f, discarding changes or dropping a stash.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
+git = true
+
+# Running a download directly: Ask before commands like curl … | sh.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
+pipe_to_shell = true
+
+# Shutdown and restart: Ask before shutting down or restarting.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
+power = true
+
 [persona]
 # Default persona: The persona new sessions use. When unset, new sessions have no persona: no character prompt, and a memory of their own.
 # Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Applies to new sessions.

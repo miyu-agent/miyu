@@ -25,7 +25,7 @@ use miyu_models::settings::{
     QuotaCooldown, RateLimitedCooldown, RetryableCooldown, UsageSettings, UseSettings,
 };
 use miyu_session::settings::{
-    CompactionSettings, JobSettings, MemorySettings, ProfileSettings, ShowSettings,
+    CompactionSettings, ConfirmSettings, JobSettings, MemorySettings, ProfileSettings, ShowSettings,
 };
 use miyu_store::generated;
 use miyu_store::human::Human;
@@ -41,7 +41,7 @@ const TARGET: &str = "miyu::config";
 /// 后面（施工 8-8；「挡位」8-8 补去掉了），「冷却」排在「目录」后面（施工 8-9）；高级那一页先「压缩」再「运行日志」（施工
 /// 6-11 上）。施工 O-8 到 O-20 最后还有通讯平台的桥的几项（`OnebotSettings`）：O-20 挪进桥自己的清单 `[settings]`
 /// （`docs/blueprint/onebot.md` 第一条「软件包清单」），在「软件包」那一页。
-const MODULES: [&[Item]; 40] = [
+const MODULES: [&[Item]; 41] = [
     UiSettings::ITEMS,
     PersonaSettings::ITEMS,
     PresetSettings::ITEMS,
@@ -52,8 +52,9 @@ const MODULES: [&[Item]; 40] = [
     miyu_session::packages_off::ITEMS,
     CommandSettings::ITEMS,
     ProfileSettings::ITEMS,
-    // 「隐私与安全」那一页排在「用户」下面（施工 5-15 下，项目主人定）：页照先出现的项排；组照先出现的项排：权限、沙盒、
-    // 私密目录（施工 5-15 再补，2026-10-21 项目主人验收时定）、只禁写（施工 5-17 下）。
+    // 「隐私与安全」那一页排在「用户」下面（施工 5-15 下，项目主人定）：页照先出现的项排；组照先出现的项排：受保护的命令
+    // （施工 HZ-1，2026-11-11 项目主人定排最上面）、权限、私密目录（施工 5-15 再补，2026-10-21 项目主人验收时定）。
+    ConfirmSettings::ITEMS,
     PermissionSettings::ITEMS,
     miyu_tool::private::ITEMS,
     EXTERNAL_BINDINGS,

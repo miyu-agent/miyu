@@ -76,28 +76,34 @@ fn scope(asked: &Asked, home: Option<&Path>) -> PathBuf {
 }
 
 /// 认出了高危的（施工 5-17）：原来就拒的照拒；灭顶的拒，写给她工具交的那一句；别的问人，不提规则（高危的不该一劳永逸），说明
-/// 照不报路径的那种（第五条第 4 款）再多 `hazard`。
+/// 照不报路径的那种（第五条第 4 款）再多 `hazard`。问人的那几种里，归 `waived` 里哪一类的不问（施工 HZ-1，设置页「受保护的
+/// 命令」关掉的那几类）：还有要问的照最先认出的那一种问；都不用问的交回空的，照没认出高危接着判。
 pub(super) fn hazardous(
-    verdict: Verdict,
+    verdict: &Verdict,
     (name, access): (&str, Access),
     hazard: miyu_tool::Hazard,
+    waived: &[&str],
     asking: &[(&'static str, String)],
-) -> Verdict {
+) -> Option<Verdict> {
     if matches!(verdict, Verdict::Deny { .. }) {
-        return verdict;
+        return Some(verdict.clone());
     }
-    if let Some(worded) = hazard.refused {
-        return super::deny(worded);
-    }
+    let asks = match hazard {
+        miyu_tool::Hazard::Refused(worded) => return Some(super::deny(worded)),
+        miyu_tool::Hazard::Asks(asks) => asks,
+    };
+    let standing = asks
+        .iter()
+        .find(|ask| ask.class.is_none_or(|class| !waived.contains(&class)))?;
     let mut detail: Value = serde_json::from_str(super::described(name, &access, asking).get())
         .unwrap_or_else(|_| json!({ "tool": name }));
-    detail["hazard"] = json!(hazard.code);
-    Verdict::Ask {
+    detail["hazard"] = json!(standing.code);
+    Some(Verdict::Ask {
         module: module(),
         access,
         rule: None,
         detail: Some(raw(&detail)),
-    }
+    })
 }
 
 /// 要问人的一条落在放行过的规则里没有（施工 D-1）：规则里照是读是写（`read`、`write`）列着放行的范围，这一条是其中一个

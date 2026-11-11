@@ -146,7 +146,7 @@
 2. 再照名字的先后读 `software/` 下的每个目录（链接不算），每个读 `human/<语言>.json`，同样退到英文。`software/` 读不了的，当没有软件包。
 3. 读得到却读不懂的，报错，写明是哪一份：不是 JSON、写法不对（有不认识的格、工具少了 `name`、类型不对）、哪一句的模板坏了（写明是哪一句）。
 4. `said` 里每一句的编号，前面加上这一份在资源目录里的位置：内核的加 `core/`，软件包的加 `software/<软件包>/`。例如 `core/human/zh.json` 里的 `tool-results/unattended`，就是说法 `core/tool-results/unattended`。
-5. `tools` 合成一张表：后读的盖掉先读的同名工具。`config` 的项、页、组也各合成一张表，后读的盖掉先读的（现在只有内核那一份写它）。
+5. `tools` 合成一张表：后读的盖掉先读的同名工具。`config` 的项、页、组、组的说明（施工 HZ-1）也各合成一张表，后读的盖掉先读的（现在只有内核那一份写它）。
 6. 语言的编号由头交进来：`miyu ask` 交 `zh` 或 `en`（`cli/ask.md`）。
 7. **一个的时候说单数**（施工 4-5 再补）：一句说法管着的数是 1 时，编号多接一段 `/one`，例如 `read/lines/one`；发说法的那一处自己挑，是 1 就发 `X/one`，别的数照旧发 `X`，模板本身不挑单复数（「模板只做字段替换」，`05-内核接口.md`）。读完一种语言的全部文件以后，凡是有 `X` 没有 `X/one` 的，拿 `X` 的内容原样补一份 `X/one`：英文那种需要单数的字段后面紧跟着可数名词的（`{count}`、`{total}` 这类），自己写了 `X/one` 那一句，照它；中文、日文不挑单复数，没写，退到这条规矩补出来，和 `X` 一个字不差。软件包自己写了 `X/one` 的，不补（已经有了）。
 
@@ -202,7 +202,7 @@
 - 这一份在 `software/basesystem/human/zh.json` 里，`read/lines` 就是说法 `software/basesystem/read/lines`：字段 `count` 是 `37` 时，换成「37 行」。
 - 中文不挑单复数，这一份不用写 `read/lines/one`；`software/basesystem/human/en.json` 里那一句是 `"{count} lines"`，另写了一句 `"read/lines/one": "{count} line"`（上面「怎么走」第 3 条第 7 款）。
 - 每件工具的显示名、结果那一句，见 `tools/*.md` 和 `cli/ask.md`。
-- `config` 里只许有 `items`、`pages`、`groups`；一项只许有 `name`、`description`（必填）、`options`（可以不写）。写了什么、和配置清单怎么对上，见 `config.md`「给人看的字」「怎么走」第一条第 5 条。内核那一份的 `said` 里还有生成文件要的几句、报错的话和接句子的三句 `config/…`（施工 8-1、8-2，`config.md`「给人看的字」），`trust.toml` 开头那一行注释 `config/trust-header`、生效时机 `config/applies/head_start`（施工 8-3）；8-6 加的类型、生效时机、报错要的 `config/applies/next_turn`、`config/expected/int`、`url`、`name`、`reference`、`list`、`id`、`model-name`、`config/bad-format`、`config/out-of-range`、`config/bad-segment`，`config` 那一格多了模型那一块的六项、页 `models`、组 `uses`、`providers`；8-7 加的类型要的 `config/expected/float`、`text`、`duration`，`config` 那一格多了模型资料、目录更新的十六项、组 `catalog`。
+- `config` 里只许有 `items`、`pages`、`groups`、`group_descriptions`（施工 HZ-1：设置页组的说明，编号到一句或几句，可以不写，哪一组都能写，`config.schema` 里那一组带 `description`）；一项只许有 `name`、`description`（必填）、`options`（可以不写）。写了什么、和配置清单怎么对上，见 `config.md`「给人看的字」「怎么走」第一条第 5 条。内核那一份的 `said` 里还有生成文件要的几句、报错的话和接句子的三句 `config/…`（施工 8-1、8-2，`config.md`「给人看的字」），`trust.toml` 开头那一行注释 `config/trust-header`、生效时机 `config/applies/head_start`（施工 8-3）；8-6 加的类型、生效时机、报错要的 `config/applies/next_turn`、`config/expected/int`、`url`、`name`、`reference`、`list`、`id`、`model-name`、`config/bad-format`、`config/out-of-range`、`config/bad-segment`，`config` 那一格多了模型那一块的六项、页 `models`、组 `uses`、`providers`；8-7 加的类型要的 `config/expected/float`、`text`、`duration`，`config` 那一格多了模型资料、目录更新的十六项、组 `catalog`。
 
 ### 出错
 

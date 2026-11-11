@@ -4,7 +4,7 @@
 //!
 //! 施工 5-4 上起：读哪儿都放行，数据根除外（沙盒整盘能读，文件工具跟它一样）。A16 起（施工 LV-1）只剩完全放开、只读两级：
 //! 完全放开执行命令不进沙盒；只读时这台机器的沙盒能用就放行、在沙盒里跑（执行器写规格，`crate::sandbox`），用不了的问人。
-//! 高危命令、装包卸包在完全放开下也问人。
+//! 高危命令、装包卸包在完全放开下也问人；高危的里面，本人的会话在设置页「受保护的命令」关掉的那几类不问（施工 HZ-1，A18）。
 //!
 //! 施工 D-1：要问人的那几条，落在本会话放行过的范围里的（人选过「本会话都允许」，内核把那几条规则交来），不问；放行的范围
 //! 照 `11-权限与沙盒.md` 第二节「放行规则管多大」，提规则时就算好。
@@ -74,6 +74,9 @@ pub(crate) struct Guard {
     workplace: Option<DefaultWorkspace>,
     /// 别的程序的私密目录（施工 5-15 下）：造的时候是出厂的，回合开始照这一轮的配置换（人加的、去掉的），同技能文件夹上锁。
     private: RwLock<Vec<PathBuf>>,
+    /// 受保护的命令里关掉的那几类（施工 HZ-1，`permission.confirm.*`）：造的时候是空的（都问），回合开始照这一轮的配置换。
+    /// 只有本人的会话看它，外部身份的会话照旧都问。
+    waived: RwLock<Vec<&'static str>>,
 }
 
 /// 会话在哪（施工 O-31 前，`session/guard.md` 第四条）：在场所里做的事（访问类别 `venue`）只在场所会话里放行。
@@ -128,6 +131,7 @@ impl Guard {
             shelves: RwLock::default(),
             attachments: None,
             workplace: None,
+            waived: RwLock::default(),
         }
     }
 
@@ -191,6 +195,15 @@ impl Guard {
             .private
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner) = private;
+    }
+
+    /// 换上这一轮关掉的那几类受保护的命令（施工 HZ-1，[`crate::settings::ConfirmSettings::waived`]）：回合开始照配置换，下
+    /// 一次判照新的。
+    pub(crate) fn set_waived(&self, waived: Vec<&'static str>) {
+        *self
+            .waived
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = waived;
     }
 
     /// 判一次调用：工具名 `name`，修正过的参数 `args`，这一轮的工作目录 `cwd`，实际生效的级别 `permission`，本会话放行过的
@@ -290,11 +303,23 @@ impl Guard {
             return deny(confined.no_commands());
         }
         // 高危的（施工 5-17）：灭顶的拒、别的问人，先于别的放行；只读本来就拒一切写。A16 起完全放开也照问（施工 LV-1，
-        // 2026-11-09 项目主人定：不做沙盒不等于不做保护），改掉 5-17 再补的「完全放开只拦灭顶的」。
+        // 2026-11-09 项目主人定：不做沙盒不等于不做保护），改掉 5-17 再补的「完全放开只拦灭顶的」。本人的会话里设置页关掉的那
+        // 几类不问（施工 HZ-1，A18）；外部身份的会话不看开关。
         if level != Effective::ReadOnly
             && let Some(hazard) = tool.hazard(&call)
         {
-            return hazardous(verdict, (name, access), hazard, &asking);
+            let waived = match self.confined {
+                Some(_) => Vec::new(),
+                None => self
+                    .waived
+                    .read()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .clone(),
+            };
+            let tool = (name, access.clone());
+            if let Some(verdict) = hazardous(&verdict, tool, hazard, &waived, &asking) {
+                return verdict;
+            }
         }
         // 装包、卸包照报的路径判（施工 F-10 下）：只读拒；完全放开也每次问人，不提规则（施工 LV-1，2026-11-09 定：装扩展等于在
         // 这台机器上跑别人的程序，同 `curl | sh` 归高危）。没人能确认的地方，内核照问人拒。

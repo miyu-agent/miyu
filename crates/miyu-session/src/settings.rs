@@ -10,8 +10,12 @@
 //! 核心替人格记忆这个内置包声明（施工 F-4，设计 `30-插件框架.md` 第七节）：挂在「软件包」那一页、`miyu-base-memory` 那一组（组的编号是包编号，施工 PN-3）；包没装的照样
 //! 认，设置页不画（`miyu-core` 的 `settings::Packaged`）。
 //! 展示的一项（施工 D-5 补二）：system 里带不带 show 的那一句，同样核心替基础系统声明，造会话时读。
+//! 受保护的命令的五项（施工 HZ-1，设计 `11-权限与沙盒.md` 的 A18）：完全放开下也先问的高危命令，一类一个开关。回合开始照这一
+//! 轮的配置换进权限策略（`guard.rs`），下一轮生效。
 
 use std::time::Duration;
+
+use miyu_policy::hazard::Group;
 
 miyu_config::settings! {
     /// 展示（施工 D-5 补二，项目主人 2026-10-24 定）：核心替包 `miyu-base-show` 声明，挂在「软件包」那一页、那个包的一组（施工 PN-3）。造会话时
@@ -129,6 +133,66 @@ miyu_config::settings! {
             applies: new_session,
             ui: { page: "user", group: "profile", control: textarea },
         },
+    }
+}
+
+miyu_config::settings! {
+    /// 受保护的命令（施工 HZ-1，设计 `11-权限与沙盒.md` 的 A18，2026-11-11 项目主人定）：完全放开下也先问人的高危命令，一类
+    /// 一个开关，出厂都开；关掉的那一类在本人的会话里不再问、直接跑。外部身份的会话不看这几项；直接拒的那几种没有开关。设置页
+    /// 「隐私与安全」那一页最上面一组。哪一种归哪一类照 [`miyu_policy::hazard::Group`]。
+    pub struct ConfirmSettings in "permission.confirm" {
+        /// 破坏性的 git 先问：强制推送、`reset --hard`、`clean -f`、丢掉改动、删 stash。
+        git: bool = true {
+            kind: bool,
+            layers: [System],
+            applies: next_turn,
+            ui: { page: "privacy", group: "protected", control: toggle },
+        },
+        /// 递归删除先问：删工作目录或它的上级，删运行时才知道目标的整个目录。
+        delete: bool = true {
+            kind: bool,
+            layers: [System],
+            applies: next_turn,
+            ui: { page: "privacy", group: "protected", control: toggle },
+        },
+        /// 关机、重启先问。
+        power: bool = true {
+            kind: bool,
+            layers: [System],
+            applies: next_turn,
+            ui: { page: "privacy", group: "protected", control: toggle },
+        },
+        /// 下载下来直接执行（`curl … | sh`）先问。
+        pipe_to_shell: bool = true {
+            kind: bool,
+            layers: [System],
+            applies: next_turn,
+            ui: { page: "privacy", group: "protected", control: toggle },
+        },
+        /// 容器要宿主的设备、进程或网络命名空间先问。
+        container: bool = true {
+            kind: bool,
+            layers: [System],
+            applies: next_turn,
+            ui: { page: "privacy", group: "protected", control: toggle },
+        },
+    }
+}
+
+impl ConfirmSettings {
+    /// 关掉的那几类（不再问的），写成 [`Group::code`]：权限策略拿它和工具报的高危归的类比（`miyu_tool::HazardAsk::class`）。
+    pub(crate) fn waived(&self) -> Vec<&'static str> {
+        [
+            (Group::Git, self.git),
+            (Group::Delete, self.delete),
+            (Group::Power, self.power),
+            (Group::PipeToShell, self.pipe_to_shell),
+            (Group::Container, self.container),
+        ]
+        .into_iter()
+        .filter(|(_, asks)| !asks)
+        .map(|(group, _)| group.code())
+        .collect()
     }
 }
 

@@ -208,6 +208,9 @@ impl Human {
         self.config.items.extend(parsed.config.items);
         self.config.pages.extend(parsed.config.pages);
         self.config.groups.extend(parsed.config.groups);
+        self.config
+            .group_descriptions
+            .extend(parsed.config.group_descriptions);
         Ok(())
     }
 
@@ -305,6 +308,11 @@ impl Human {
     /// 设置页编号 `id` 那一组的名字；没有的是空的（施工 8-2，`config.schema`）。
     pub fn group(&self, id: &str) -> Option<&str> {
         self.config.groups.get(id).map(String::as_str)
+    }
+
+    /// 设置页编号 `id` 那一组的说明（施工 HZ-1，`config.schema` 那一组的 `description`）；没写的是空的。
+    pub fn group_description(&self, id: &str) -> Option<&str> {
+        self.config.group_descriptions.get(id).map(String::as_str)
     }
 
     /// 说法 `key` 这一句要哪些字段；没有这一句的是空的。

@@ -542,6 +542,41 @@
     },
     "permission": {
       "properties": {
+        "confirm": {
+          "properties": {
+            "container": {
+              "default": true,
+              "description": "Ask before a container takes the host's devices, process or network namespace. Allowed: true or false. Only in the system config. Takes effect next turn.",
+              "title": "Containers using host devices",
+              "type": "boolean"
+            },
+            "delete": {
+              "default": true,
+              "description": "Ask before deleting the working directory or a parent of it, or a whole directory whose target is only known at run time. Allowed: true or false. Only in the system config. Takes effect next turn.",
+              "title": "Recursive deletes",
+              "type": "boolean"
+            },
+            "git": {
+              "default": true,
+              "description": "Ask before a force push, reset --hard, clean -f, discarding changes or dropping a stash. Allowed: true or false. Only in the system config. Takes effect next turn.",
+              "title": "Destructive git operations",
+              "type": "boolean"
+            },
+            "pipe_to_shell": {
+              "default": true,
+              "description": "Ask before commands like curl … | sh. Allowed: true or false. Only in the system config. Takes effect next turn.",
+              "title": "Running a download directly",
+              "type": "boolean"
+            },
+            "power": {
+              "default": true,
+              "description": "Ask before shutting down or restarting. Allowed: true or false. Only in the system config. Takes effect next turn.",
+              "title": "Shutdown and restart",
+              "type": "boolean"
+            }
+          },
+          "type": "object"
+        },
         "level": {
           "default": "full",
           "description": "New sessions always start with full access; workspace is read as full. To start read-only, turn on read-only for new sessions. Allowed: full or workspace. Only in the system config. Applies to new sessions.",

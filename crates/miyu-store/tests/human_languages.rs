@@ -97,7 +97,7 @@ fn tools(value: &Value) -> BTreeMap<String, Value> {
         .unwrap_or_default()
 }
 
-/// 配置那一格的样子：每一项的选项，页和组的编号；名字、说明都不是空的。
+/// 配置那一格的样子：每一项的选项，页和组的编号（写了说明的组另记一条「<编号> 的说明」，施工 HZ-1）；名字、说明都不是空的。
 fn config(
     value: &Value,
 ) -> (
@@ -128,13 +128,18 @@ fn config(
             .pages
             .values()
             .chain(words.groups.values())
+            .chain(words.group_descriptions.values())
             .all(|name| filled(name)),
-        "页、组的名字"
+        "页、组的名字，组的说明"
     );
+    let described = words
+        .group_descriptions
+        .keys()
+        .map(|id| format!("{id} 的说明"));
     (
         items,
         words.pages.keys().cloned().collect(),
-        words.groups.keys().cloned().collect(),
+        words.groups.keys().cloned().chain(described).collect(),
     )
 }
 
@@ -159,7 +164,7 @@ fn every_language_has_the_same_sentences_and_tools_as_english() {
             assert_eq!(
                 config(&words),
                 config(&english),
-                "{} 的 {language}：配置的项、选项、页、组和英文的不一样",
+                "{} 的 {language}：配置的项、选项、页、组、组的说明和英文的不一样",
                 place.display()
             );
         }

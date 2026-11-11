@@ -10,6 +10,7 @@ mod background;
 mod channel;
 mod clixml;
 mod env;
+mod hazard;
 mod moved;
 mod output;
 mod person;
@@ -32,8 +33,8 @@ use serde::Deserialize;
 use miyu_fs::tilde;
 use miyu_kernel::event::{JobKind, JobStarted};
 use miyu_kernel::template::Template;
-use miyu_kernel::tool::{Access, Worded};
-use miyu_policy::hazard::{Kind, Places, assess};
+use miyu_kernel::tool::Access;
+use miyu_policy::hazard::Kind;
 use miyu_tool::{
     Background, Call, Done, Effect, Halt, Hazard, PersonCommand, PersonRunning, Process as _,
     Progress, Running, Spec, Tool,
@@ -309,60 +310,9 @@ impl Tool for Shell {
         vec![miyu_tool::RUN_IN_BACKGROUND, WATCH]
     }
 
-    /// 照命令的字面认高危（施工 5-17，`miyu_policy::hazard`）：家目录、数据根照这次调用带的，工作目录照家目录换成绝对路径。
-    /// 只认 bash、zsh 的命令。
+    /// 照命令的字面认高危（施工 5-17，`shell/hazard.rs`）。
     fn hazard(&self, call: &Call) -> Option<Hazard> {
-        // PowerShell 的写法（反引号转义、`Remove-Item`、`C:\` 路径）另排，第一版不认。
-        if !self.program.kind.posix() {
-            return None;
-        }
-        let args = serde_json::from_str::<Args>(&call.args).ok()?;
-        let home = call
-            .home
-            .as_deref()
-            .map(|home| home.to_string_lossy().into_owned());
-        let cwd = miyu_fs::resolve(Path::new("/"), call.home.as_deref(), &call.cwd).map_or_else(
-            |_| call.cwd.clone(),
-            |cwd| cwd.to_string_lossy().into_owned(),
-        );
-        let data_root = call
-            .data_root
-            .as_deref()
-            .map(|root| root.to_string_lossy().into_owned())
-            .unwrap_or_default();
-        let workspaces = call
-            .data_root
-            .as_deref()
-            .map(|root| {
-                miyu_store::root::DataRoot::at(root.to_path_buf())
-                    .workspace()
-                    .to_string_lossy()
-                    .into_owned()
-            })
-            .unwrap_or_default();
-        let places = Places {
-            cwd: &cwd,
-            home: home.as_deref(),
-            data_root: &data_root,
-            workspaces: &workspaces,
-        };
-        let kind = assess(&args.command, &places)?;
-        let refused = self
-            .texts
-            .reasons
-            .iter()
-            .find(|(known, _)| *known == kind)
-            .map(|(_, reason)| Worded {
-                text: say(
-                    &self.texts.hazard,
-                    &[("reason", say(reason, &[]).trim_end())],
-                ),
-                said: Some(said(&format!("shell/hazard-{}", kind.code()))),
-            });
-        Some(Hazard {
-            code: kind.code(),
-            refused,
-        })
+        self.assessed(call)
     }
 
     fn asking(&self, call: &Call) -> Vec<(&'static str, String)> {

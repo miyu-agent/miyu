@@ -117,6 +117,26 @@
           "off": "無効"
         }
       },
+      "permission.confirm.git": {
+        "name": "破壊的な git 操作",
+        "description": "強制プッシュ、reset --hard、clean -f、変更の破棄、stash の削除の前に確認します。"
+      },
+      "permission.confirm.delete": {
+        "name": "再帰的な削除",
+        "description": "作業ディレクトリやその上位、実行時まで対象が分からないディレクトリ全体を削除する前に確認します。"
+      },
+      "permission.confirm.power": {
+        "name": "シャットダウンと再起動",
+        "description": "シャットダウン、再起動の前に確認します。"
+      },
+      "permission.confirm.pipe_to_shell": {
+        "name": "ダウンロードして直接実行",
+        "description": "curl … | sh のようなコマンドの前に確認します。"
+      },
+      "permission.confirm.container": {
+        "name": "コンテナによるホストデバイスの使用",
+        "description": "コンテナがホストのデバイス、プロセスやネットワークの名前空間を使う前に確認します。"
+      },
       "sandbox.private.enabled": {
         "name": "非公開フォルダ",
         "description": "読み取り専用のときだけ働き、コマンドは非公開フォルダを読めず、ファイルツールは読む前に確認します。フルアクセスでは止めません。オフにすると読み取り専用でも隠さず、確認もしません。Miyu 自身のデータには影響しません。"
@@ -394,6 +414,7 @@
       "models": "モデル"
     },
     "groups": {
+      "protected": "保護されたコマンド",
       "permission": "権限",
       "private": "非公開フォルダ",
       "commands": "コマンド",
@@ -418,6 +439,9 @@
       "miyu-base-net": "ウェブ検索",
       "net_keys": "API キーとアドレス",
       "source": "ソフトウェアソース"
+    },
+    "group_descriptions": {
+      "protected": "次の種類のコマンドは、フルアクセスでも実行前に確認します。オフにすると確認しません。常に拒否され、オフにできないものもあります：ルート、ホーム、システムディレクトリ、Miyu のデータの削除、ディスクのフォーマット、raw デバイスへの書き込み、コンテナへのホスト全体の引き渡し。"
     }
   },
   "said": {

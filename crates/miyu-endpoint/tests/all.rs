@@ -73,6 +73,7 @@ mod config;
 mod config_lines;
 mod config_one_layer;
 mod config_option_state;
+mod config_protected;
 mod config_secret_got;
 mod config_set;
 mod config_set_private;

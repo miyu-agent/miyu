@@ -56,3 +56,39 @@ fn a_busy_session_is_extracted_after_twenty_turns_or_an_hour() {
         assert_eq!(item.applies, Applies::NextTurn);
     }
 }
+
+/// 受保护的命令（施工 HZ-1，设计 11 的 A18）：一类一项 `permission.confirm.<类>`，照 [`Group::ALL`] 的先后；出厂都开（照旧问），
+/// 只有系统一层，下一轮生效，设置页「隐私与安全」那一页「受保护的命令」一组的开关。关掉的那几类照类的写法交出去。
+#[test]
+fn each_protected_group_has_a_switch_that_is_on_by_default() {
+    let keys: Vec<&str> = ConfirmSettings::ITEMS.iter().map(|item| item.key).collect();
+    let expected: Vec<String> = Group::ALL
+        .iter()
+        .map(|group| format!("permission.confirm.{}", group.code()))
+        .collect();
+    assert_eq!(keys, expected);
+    for item in ConfirmSettings::ITEMS {
+        assert_eq!(item.default, Some(miyu_config::Value::Bool(true)));
+        assert_eq!(item.layers, &[Layer::System], "{}", item.key);
+        assert_eq!(item.applies, Applies::NextTurn, "{}", item.key);
+        assert_eq!((item.ui.page, item.ui.group), ("privacy", "protected"));
+        assert_eq!(item.ui.control, miyu_config::Control::Toggle);
+    }
+    let defaults = ConfirmSettings::from(&Values::defaults(ConfirmSettings::ITEMS));
+    assert!(defaults.waived().is_empty(), "出厂都问");
+    let some = ConfirmSettings {
+        git: false,
+        container: false,
+        ..defaults.clone()
+    };
+    assert_eq!(some.waived(), ["git", "container"]);
+    let none = ConfirmSettings {
+        git: false,
+        delete: false,
+        power: false,
+        pipe_to_shell: false,
+        container: false,
+    };
+    let all: Vec<&str> = Group::ALL.iter().map(|group| group.code()).collect();
+    assert_eq!(none.waived(), all);
+}

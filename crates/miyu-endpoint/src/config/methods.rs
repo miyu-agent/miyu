@@ -104,6 +104,11 @@ pub(crate) fn schema(core: &Core, peer: Peer, params: SchemaParams) -> Result<Va
         if !groups.iter().any(|seen| seen["id"] == group) {
             let name = config_name(&words, english.as_ref(), "groups", group);
             let mut entry = json!({"id": group, "name": name, "page": page});
+            // 组的说明（施工 HZ-1）：资源里写了的才带；这种语言没有的照英文，同组名。
+            let described = |human: &Human| human.group_description(group).map(str::to_string);
+            if let Some(said) = described(&words).or_else(|| english.as_ref().and_then(described)) {
+                entry["description"] = json!(said);
+            }
             if let Some(listed) = item
                 .ui
                 .package

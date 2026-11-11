@@ -4,6 +4,10 @@ use miyu_kernel::event::Level;
 
 use super::*;
 
+// 高危的规则只认 bash、zsh 的写法（施工 5-17），Windows 上的 PowerShell 不认。
+#[cfg(not(windows))]
+mod protected;
+
 #[test]
 fn every_cell_of_the_table() {
     let (full, read_only) = (Effective::Full, Effective::ReadOnly);
@@ -179,26 +183,35 @@ fn a_hazard_never_softens_a_refusal() {
         text: text.to_string(),
         said: None,
     };
-    let ask = |refused| miyu_tool::Hazard {
-        code: "git_force_push",
-        refused,
+    let asks = || {
+        miyu_tool::Hazard::Asks(vec![miyu_tool::HazardAsk {
+            code: "git_force_push",
+            class: Some("git"),
+        }])
     };
+    let shell = ("shell", Access::Execute);
     let refused = deny(worded("forbidden"));
     assert_eq!(
-        hazardous(refused.clone(), ("shell", Access::Execute), ask(None), &[]),
-        refused
+        hazardous(&refused, shell.clone(), asks(), &[], &[]),
+        Some(refused.clone())
+    );
+    // 路径拒了的，这一类关掉了也照拒。
+    assert_eq!(
+        hazardous(&refused, shell.clone(), asks(), &["git"], &[]),
+        Some(refused)
     );
     assert_eq!(
         hazardous(
-            Verdict::Allow,
-            ("shell", Access::Execute),
-            ask(Some(worded("never"))),
+            &Verdict::Allow,
+            shell.clone(),
+            miyu_tool::Hazard::Refused(worded("never")),
+            &[],
             &[]
         ),
-        deny(worded("never"))
+        Some(deny(worded("never")))
     );
-    let Verdict::Ask { rule, detail, .. } =
-        hazardous(Verdict::Allow, ("shell", Access::Execute), ask(None), &[])
+    let Some(Verdict::Ask { rule, detail, .. }) =
+        hazardous(&Verdict::Allow, shell, asks(), &[], &[])
     else {
         panic!("该问人");
     };

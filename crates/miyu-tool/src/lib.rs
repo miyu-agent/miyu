@@ -88,8 +88,8 @@ pub use packages::{Looking, PACKAGE, PACKAGES, PackageConflict, PackageRefusal, 
 pub use person::{Halt, PersonCommand, PersonEnd, PersonRun, PersonRunning};
 pub use questions::{ASK_USER, Answering, QuestionPort};
 pub use run::{
-    Call, CallIds, Done, Effect, Hazard, Picture, Previewing, Progress, Running, Seen, ShownFile,
-    Target,
+    Call, CallIds, Done, Effect, Hazard, HazardAsk, Picture, Previewing, Progress, Running, Seen,
+    ShownFile, Target,
 };
 pub use schedules::{
     CRON_CREATE, CRON_DELETE, CRON_LIST, IN_ALL, PER_SESSION, SCHEDULE_WAKEUP, ScheduleAnswer,
@@ -209,8 +209,8 @@ pub trait Tool: Send + Sync {
         None
     }
 
-    /// 这次调用认出来的高危（施工 5-17）：照参数算，不碰磁盘。权限策略照它在工作区、完全放开两级问人（说明多 `hazard`，不提
-    /// 规则），灭顶的直接拒；只读不看它。默认没有。
+    /// 这次调用认出来的高危（施工 5-17）：照参数算，不碰磁盘。权限策略照它在完全放开下问人（说明多 `hazard`，不提规则；本人
+    /// 的会话里关掉的那几类不问，施工 HZ-1），灭顶的直接拒；只读不看它。默认没有。
     fn hazard(&self, _call: &Call) -> Option<Hazard> {
         None
     }

@@ -4,6 +4,10 @@
 //! 照 Codex、Claude Code、opencode、dsh、Gemini CLI 的现成做法（调研 2026-10-20）：先拆成一个个简单命令（`lex.rs`），看穿
 //! `sudo`、`env`、`sh -c` 这类外壳；删什么照解析出的目标判（家目录、根目录、根下那几个系统目录、数据根），不照有没有 `-f`；
 //! git 跳过 `-C`、`-c` 这类全局选项再认子命令。纯逻辑：路径只照字面换（`~`、`$HOME`、相对的接工作目录、`..`），不碰磁盘。
+//!
+//! 问人的那几种分成五类（[`Group`]，施工 HZ-1，设计 11 的 A18）：设置页「受保护的命令」一类一个开关，本人的会话里关掉的那一类
+//! 不再问。这一层只说哪一种归哪一类（[`Kind::group`]）、一条命令里认出了哪几种（[`Assessed`]）；开关的值由权限策略照这一轮的
+//! 配置拿。
 
 mod container;
 mod lex;
@@ -11,7 +15,7 @@ mod paths;
 mod rules;
 mod vars;
 
-pub use rules::assess;
+pub use rules::{Assessed, assess};
 
 /// 认出来的是哪一种。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -50,11 +54,52 @@ pub enum Kind {
     ContainerHost,
     /// 容器拿到宿主的一部分（施工 5-17 三补）：`--device`、`--pid`/`--net`/`--ipc` 写 `host`、挂 `/dev`、`/sys` 下面的。
     ContainerShare,
+    /// 命令替换、`eval` 套得太深，看不透里面是什么（施工 HZ-1）：照问人，不归哪一类，哪个开关都关不掉。它说的是「读不懂这条
+    /// 命令」，不是删什么；对外的写法照旧是 `delete_unresolved`（原来就记在那一种名下，头照那一句说明）。
+    TooDeep,
+}
+
+/// 问人的那几种归的类（施工 HZ-1，设计 11 的 A18）：设置页「受保护的命令」一类一个开关（`permission.confirm.<类>`）。直接拒的
+/// 那几种不归类，没有开关。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Group {
+    /// 破坏性的 git：强制推送、`reset --hard`、`clean -f`、丢掉改动、删 stash。
+    Git,
+    /// 递归删除：删工作目录或它的上级，删运行时才知道目标的整个目录。
+    Delete,
+    /// 关机、重启。
+    Power,
+    /// 下载下来直接执行。
+    PipeToShell,
+    /// 容器拿到宿主的一部分。
+    Container,
+}
+
+impl Group {
+    /// 每一类，照设置页上的先后。
+    pub const ALL: [Group; 5] = [
+        Group::Git,
+        Group::Delete,
+        Group::Power,
+        Group::PipeToShell,
+        Group::Container,
+    ];
+
+    /// 配置键里的写法：`permission.confirm.<这个>`。
+    pub const fn code(self) -> &'static str {
+        match self {
+            Group::Git => "git",
+            Group::Delete => "delete",
+            Group::Power => "power",
+            Group::PipeToShell => "pipe_to_shell",
+            Group::Container => "container",
+        }
+    }
 }
 
 impl Kind {
     /// 每一种：直接拒的那几种各有一句说它做了什么，基础系统照这张表读。
-    pub const ALL: [Kind; 17] = [
+    pub const ALL: [Kind; 18] = [
         Kind::DeleteRoot,
         Kind::DeleteHome,
         Kind::DeleteSystem,
@@ -72,6 +117,7 @@ impl Kind {
         Kind::PipeToShell,
         Kind::ContainerHost,
         Kind::ContainerShare,
+        Kind::TooDeep,
     ];
 
     /// 协议、日志里的写法（问人时说明里的 `hazard`）。
@@ -82,7 +128,7 @@ impl Kind {
             Kind::DeleteSystem => "delete_system",
             Kind::DeleteDataRoot => "delete_data_root",
             Kind::DeleteWorkingDir => "delete_working_dir",
-            Kind::DeleteUnresolved => "delete_unresolved",
+            Kind::DeleteUnresolved | Kind::TooDeep => "delete_unresolved",
             Kind::GitForcePush => "git_force_push",
             Kind::GitResetHard => "git_reset_hard",
             Kind::GitClean => "git_clean",
@@ -110,6 +156,29 @@ impl Kind {
                 | Kind::DiskWrite
                 | Kind::ContainerHost
         )
+    }
+
+    /// 归哪一类（施工 HZ-1）：问人的那几种各归一类；直接拒的不归类，看不透的（[`Kind::TooDeep`]）也不归，哪个开关都管不到。
+    pub const fn group(self) -> Option<Group> {
+        match self {
+            Kind::GitForcePush
+            | Kind::GitResetHard
+            | Kind::GitClean
+            | Kind::GitDiscard
+            | Kind::GitStashDrop => Some(Group::Git),
+            Kind::DeleteWorkingDir | Kind::DeleteUnresolved => Some(Group::Delete),
+            Kind::Power => Some(Group::Power),
+            Kind::PipeToShell => Some(Group::PipeToShell),
+            Kind::ContainerShare => Some(Group::Container),
+            Kind::DeleteRoot
+            | Kind::DeleteHome
+            | Kind::DeleteSystem
+            | Kind::DeleteDataRoot
+            | Kind::DiskFormat
+            | Kind::DiskWrite
+            | Kind::ContainerHost
+            | Kind::TooDeep => None,
+        }
     }
 }
 

@@ -53,7 +53,7 @@
 | `section` | 软件包分了组的配置项：在这个包的哪一节（组名，见下面 `groups` 的 `sections`）；不在组里的不写 |
 | `choices_from` | 软件包的文字项，选项由包在运行时给：`{"package", "method"}`，哪个包的哪个方法；清单没写的不带，见下面 |
 
-一组：`id`、`name`（照连接的语言）、`page`。软件包分了组的（清单写了 `[settings.<组>.<名字>]`），那个包那一组多一格 `sections`：每一节一个 `{"id", "name", "shown_when"?}`，照清单写的先后。`name` 照连接的语言，清单没写名字的是组名。`shown_when` 是 `{"key": "<完整的键>", "is": ["<值>", …]}`：那一项现在的值是 `is` 里的一个才画这一节，`is` 总是列表；没有的总是画。不画的节只是不画，里面的项照旧能写、能读、照样查。没分组的包没有 `sections`。
+一组：`id`、`name`（照连接的语言）、`page`；写了说明的组多一格 `description`（一句或几句，照连接的语言，写在组名下面），没写的组不带这一格。软件包分了组的（清单写了 `[settings.<组>.<名字>]`），那个包那一组多一格 `sections`：每一节一个 `{"id", "name", "shown_when"?}`，照清单写的先后。`name` 照连接的语言，清单没写名字的是组名。`shown_when` 是 `{"key": "<完整的键>", "is": ["<值>", …]}`：那一项现在的值是 `is` 里的一个才画这一节，`is` 总是列表；没有的总是画。不画的节只是不画，里面的项照旧能写、能读、照样查。没分组的包没有 `sections`。
 
 带 `choices_from` 的项：类型照旧是 `text`，头把它画成下拉，选项调 `package.call`（参数 `{"package", "method"}`，照这一格原样填，不带 `params`）取，包回 `{"choices": [{"value", "name"?, "description"?}]}`：`value` 是存进配置的字，`name` 没写的照 `value` 画，`description` 暗色写在下面。调不到（`program_not_running`、`unregistered`、`method_failed`、`method_timeout`）、回的 `choices` 是空的或者不是这个样子的，退回文字框；存着的值不在列表里的照样显示。核心不照列表查值，写什么存什么。
 

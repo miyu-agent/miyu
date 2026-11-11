@@ -1,28 +1,42 @@
-//! 照拆出来的简单命令认（施工 5-17）：外壳剥掉、删的目标照字面换成绝对路径、git 跳过全局选项。几处都认出来的，交回拒的那一种，
-//! 都是问的交回最先认出的。
+//! 照拆出来的简单命令认（施工 5-17）：外壳剥掉、删的目标照字面换成绝对路径、git 跳过全局选项。几处都认出来的，有拒的交回
+//! 拒的那一种，都是问的全交回（施工 HZ-1：一类一个开关，要知道每一种）。
 
 use super::lex::{Simple, Word, parse};
 use super::paths::{absolute, target};
 use super::vars::{Vars, after_keywords};
 use super::{Kind, Places};
 
-/// 替换套替换最多看这么多层：再深的照问人。
+/// 替换套替换最多看这么多层：再深的照问人（[`Kind::TooDeep`]）。
 const DEPTH: usize = 8;
 
-/// 认 `command`：认出来的那一种；没有的是空的。
-pub fn assess(command: &str, places: &Places<'_>) -> Option<Kind> {
+/// 一条命令判下来的。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Assessed {
+    /// 有灭顶的：直接拒，是这一种（最先认出的），别的不用看。
+    Refused(Kind),
+    /// 都是问人的：认出来的每一种，照先后，同一种只留一次；不会是空的。
+    Asks(Vec<Kind>),
+}
+
+/// 认 `command`：判下来的；什么都没认出来的是空的。
+pub fn assess(command: &str, places: &Places<'_>) -> Option<Assessed> {
     let mut found = Vec::new();
     look(command, places, 0, &mut found);
-    found
-        .iter()
-        .find(|kind| kind.refused())
-        .or_else(|| found.first())
-        .copied()
+    if let Some(refused) = found.iter().find(|kind| kind.refused()) {
+        return Some(Assessed::Refused(*refused));
+    }
+    let mut asks: Vec<Kind> = Vec::new();
+    for kind in found {
+        if !asks.contains(&kind) {
+            asks.push(kind);
+        }
+    }
+    (!asks.is_empty()).then_some(Assessed::Asks(asks))
 }
 
 fn look(text: &str, places: &Places<'_>, depth: usize, found: &mut Vec<Kind>) {
     if depth > DEPTH {
-        found.push(Kind::DeleteUnresolved);
+        found.push(Kind::TooDeep);
         return;
     }
     let parsed = parse(text);

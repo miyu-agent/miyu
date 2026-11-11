@@ -17,7 +17,8 @@
 | `crates/miyu-session/src/guard/untargeted.rs` | 不报路径的调用（第四条）：照访问类别、在场所里做的事、要在沙盒外跑的（施工 5-18 从 `guard.rs` 挪出来：那边到了 500 行） |
 | `crates/miyu-session/src/guard/asking.rs` | 要问人的那几条：提的放行规则、给头看的说明、放行过的管不管得到（施工 X-10 上从 `guard.rs` 挪出来） |
 | `crates/miyu-session/src/guard/confined.rs`、`resources/core/permissions/outside-workspace.txt`、`no-commands.txt`（施工 5-12） | 只碰得到自己工作区的会话（第四条末）：判在不在工作区、拒绝时的两句；两句同样不进策略快照，这种会话造、载入时读 |
-| `crates/miyu-policy/src/hazard.rs`、`hazard/lex.rs`、`hazard/rules.rs`（施工 5-17）、`hazard/vars.rs`（施工 5-17 再补：同一条命令里赋过值的变量） | 高危命令照规则认（第四条末）：纯的判法，拆命令、剥外壳、照字面判目标；工具经 `Tool::hazard` 报给这里 |
+| `crates/miyu-policy/src/hazard.rs`、`hazard/lex.rs`、`hazard/rules.rs`（施工 5-17）、`hazard/vars.rs`（施工 5-17 再补：同一条命令里赋过值的变量） | 高危命令照规则认（第四条末）：纯的判法，拆命令、剥外壳、照字面判目标；工具经 `Tool::hazard` 报给这里。哪一种归哪一类（`Group`、`Kind::group`）、一条命令里认出的每一种（`Assessed`）也在这里（施工 HZ-1） |
+| `crates/miyu-session/src/settings.rs` 的 `ConfirmSettings`（施工 HZ-1） | 受保护的命令的五项配置 `permission.confirm.*`，和关掉的那几类（`waived`） |
 | `crates/miyu-session/src/default_workspace.rs`（施工 5-14） | 工作目录对应的工作区：太宽的退回这个会话的默认工作区（`miyu_fs::workspace_of`），权限策略、沙盒共用 |
 | `crates/miyu-session/src/actor.rs` | 动作「过执行前的链」交给它，当场判（`session/actor.md`） |
 
@@ -130,7 +131,7 @@
 |---|---|---|---|
 | `read`、`write` | 放行 | 放行 | 放行 |
 | `execute` | 放行 | 沙盒能用：放行（在沙盒里跑）；用不了：问人 | 沙盒能用：放行（在只读沙盒里跑）；用不了：问人 |
-| `execute`，工具报高危（施工 5-17） | 不问，照上面两行；灭顶的拒绝（施工 5-17 再补） | 问人，不提规则；灭顶的拒绝 | 不看：照上面两行 |
+| `execute`，工具报高危（施工 5-17） | 问人，不提规则（A16，施工 LV-1）；本人的会话里设置页「受保护的命令」关掉的那几类不问、照上面两行（A18，施工 HZ-1）；灭顶的拒绝 | A16 起没有这一级 | 不看：照上面两行 |
 | `network`、`outbound`、不认识的 | 放行 | 问人 | 问人 |
 | `venue`（施工 O-31 前） | 场所会话：放行；本机的会话：拒绝（`venues` 有 `local` 的照 `outbound`，施工 O-31 补） | 同左 | 同左 |
 
@@ -140,7 +141,23 @@
 - 只碰得到自己工作区的会话（施工 5-12，`11-权限与沙盒.md` 第三节「外部身份」，2026-10-11 项目主人定）：关在沙盒里的场所会话（群会话、陌生人的私聊；记在 `session.created` 的 `confined`，载入照它）。不看级别：文件类工具报的每一条路径换成真实的位置以后，要在这一轮的工作区或者加进来的目录里，外面的（连读）一律拒（放开只读的技能文件夹里的读除外，施工 X-10 上），`by` 是 `permissions`，写给她出厂的那一句（`core/permissions/outside-workspace.txt`，字段 `path`），说法 `core/permissions/outside-workspace`；访问类别是执行命令的：沙盒能用、又关得住读、系统服务的 Unix 套接字也管得住（`miyu_sandbox::confines_others`：读要 Linux、macOS，套接字在 Linux 上要 Landlock 第 9 版或 seccomp，施工 MB-1）的放行，在只准读名单里的沙盒里跑（施工 5-12 下，`session/tools.md` 第 1a 条）；别的一律拒（`no-commands.txt`，说法 `core/permissions/no-commands`）；要在沙盒外跑的、装包卸包的（访问类别 `install`）一律拒。主人本人的场所会话、本机的会话照旧。
 - 问人时不提规则，只能选允许这一次或者拒绝；说明照第五条第 4 款。
 - 越过沙盒问人（`shell` 的 `outside_sandbox`、「此目录不再询问」和它带的命令前缀，施工 D-4、5-15、SB-3）、你在配置里事先放行的工具（`sandbox.tools`，施工 X-36、X-37）随「工作区」一级去掉了（`11-权限与沙盒.md` A16，施工 LV-1、LV-2）：命令只在只读时进沙盒，完全放开不进，没有「这一次到沙盒外跑」这回事。
-- 高危命令（工具报 `Tool::hazard`，`shell` 照命令的字面认，施工 5-17，`11-权限与沙盒.md` 第四节）：工作区、完全放开两级都管（完全放开只拦灭顶的、问人的那几种照常放行，施工 5-17 再补，2026-10-22 项目主人定），判在报的路径之后、要在沙盒外跑之前，先于别的放行（放行过的规则也管不到它）；只读不看，命令本来就在只读沙盒里跑。报的路径已经判了拒绝的照拒，不改成问人。灭顶的（删根、家目录、根下的系统目录、数据根，格式化、写裸磁盘）拒绝，人点了也不跑：`by` 是 `permissions`，写给她工具交的那一句（`shell` 的 `hazard.txt` 填上 `hazard/<种类>.txt`），说法是工具交的（`shell/hazard-<种类>`）。别的在工作区问人，不提规则（只能允许这一次或者拒绝），说明照第五条第 4 款再多 `hazard`：种类的写法，例如 `{"command":"git push --force","hazard":"git_force_push","sandbox":true,"title":"Push","tool":"shell"}`。种类：`delete_root`、`delete_home`、`delete_system`、`delete_data_root`、`disk_format`、`disk_write`、`container_host`（施工 5-17 三补）拒绝；`delete_working_dir`、`delete_unresolved`、`git_force_push`、`git_reset_hard`、`git_clean`、`git_discard`、`git_stash_drop`、`power`、`pipe_to_shell`、`container_share`（施工 5-17 三补）问人。
+- 高危命令（工具报 `Tool::hazard`，`shell` 照命令的字面认，施工 5-17，`11-权限与沙盒.md` 第四节）：完全放开下管（A16，施工 LV-1，2026-11-09 项目主人定：不做沙盒不等于不做保护；改掉 5-17 再补的「完全放开只拦灭顶的」），判在报的路径之后，先于别的放行（放行过的规则也管不到它）；只读不看，命令本来就在只读沙盒里跑。报的路径已经判了拒绝的照拒，不改成问人。
+  - 灭顶的（删根、家目录、根下的系统目录、数据根，格式化、写裸磁盘，容器把整个宿主交出去）拒绝，人点了也不跑：`by` 是 `permissions`，写给她工具交的那一句（`shell` 的 `hazard.txt` 填上 `hazard/<种类>.txt`），说法是工具交的（`shell/hazard-<种类>`）。
+  - 别的问人，不提规则（只能允许这一次或者拒绝），没人能确认的拒；说明照第五条第 4 款再多 `hazard`：种类的写法，例如 `{"command":"git push --force","hazard":"git_force_push","sandbox":false,"title":"Push","tool":"shell"}`。
+  - 种类：`delete_root`、`delete_home`、`delete_system`、`delete_data_root`、`disk_format`、`disk_write`、`container_host`（施工 5-17 三补）拒绝；`delete_working_dir`、`delete_unresolved`、`git_force_push`、`git_reset_hard`、`git_clean`、`git_discard`、`git_stash_drop`、`power`、`pipe_to_shell`、`container_share`（施工 5-17 三补）问人。
+  - 受保护的命令按类给开关（A18，施工 HZ-1，2026-11-11 项目主人定）：问人的十种分五类（`miyu_policy::hazard::Group`），一类一项配置 `permission.confirm.<类>`（`config.md`），出厂都开。工具把一条命令里认出的每一种问人的连同归的类全报上来（`Hazard::Asks`，一种一个 `HazardAsk`：`code`、`class`），权限策略去掉归关掉的那几类的：还有剩的照剩下的最先认出的那一种问（`hazard` 写它）；一种都不剩的照没认出高危接着判（完全放开就是放行，直接跑）。所以一条命令命中几类的，有一类还开着就照旧问。
+
+    | 类（`permission.confirm.<类>`） | 管哪几种 |
+    |---|---|
+    | `git` | `git_force_push`、`git_reset_hard`、`git_clean`、`git_discard`、`git_stash_drop` |
+    | `delete` | `delete_working_dir`、`delete_unresolved` |
+    | `power` | `power` |
+    | `pipe_to_shell` | `pipe_to_shell` |
+    | `container` | `container_share` |
+
+  - 开关管不到的：灭顶的那七种（没有归的类，照拒）；看不透的命令（命令替换、`eval` 套了 8 层以上，`Kind::TooDeep`）不归哪一类（`class` 是空的），五个开关全关也照旧问，对外的写法照旧是 `delete_unresolved`；报的路径已经拒了的；只读（不看高危）；装包卸包（访问类别 `install`，不走高危这条路，完全放开每次问，这一步没给开关）。
+  - 只有本人的会话看开关（本机的头、主人自己在场所里的会话）。只碰得到自己工作区的会话（`confined`）不看，照旧都问（这些会话没人能确认，问了等于拒）。
+  - 开关的值照回合开始时的配置（同私密目录）：`actor/model.rs` 的 `turn_start` 读 `ConfirmSettings`，把关掉的那几类换进权限策略（`Guard::set_waived`），判的时候不读配置；改了下一轮生效。会话刚造好、还没开过回合时是空的（都问）。
 - 访问类别是 `write` 或者不认识的，内核当成写入：只读时在交给链之前就拦下了，走不到这里（`kernel/session.md`）。
 
 **5. 问人时提的规则和说明**
@@ -204,9 +221,12 @@
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu-session/src/guard/tests.rs` | 判法表的每一格（边界以外的读哪一级都放行）；实际生效的那一级，不认识的按只读；不报路径的：执行命令沙盒能用时工作区、只读都放行，用不了时都问人、不提规则、说明是 `{"sandbox":false,"tool":"shell"}`（施工 D-4 起），读写放行，联网除了完全放开都问人（施工 5-4 上）；说明并进工具交的几格、工具名盖不过、执行类才写 `sandbox`，沙盒用不了时也带标题和命令（施工 D-4） |
-| `crates/miyu-session/tests/hazard.rs`（施工 5-17） | 真的 `shell`：工作区、完全放开两级删家目录都拒、不问，结果是拒绝、带那一句；`git push --force` 两级都问、不提规则、说明带 `hazard`、`command`；只读不看；平常的命令完全放开照旧不问 |
-| `crates/miyu-session/src/guard/tests.rs` 的 `a_hazard_never_softens_a_refusal`（施工 5-17） | 报的路径已经拒了的照拒；灭顶的拒、拿工具交的那一句；别的问人、不提规则、说明带种类 |
+| `crates/miyu-session/tests/hazard.rs`（施工 5-17） | 真的 `shell`：完全放开删家目录拒、不问，结果是拒绝、带那一句；`git push --force`、`git stash drop` 问、不提规则、说明带 `hazard`、`command`，没人能确认的拒；只读不看；平常的命令完全放开照旧不问。`permission.confirm.git` 关着的那一轮 `git reset --hard` 不问就跑，改回开着下一轮又问（施工 HZ-1） |
+| `crates/miyu-session/src/guard/tests.rs` 的 `a_hazard_never_softens_a_refusal`（施工 5-17） | 报的路径已经拒了的照拒（那一类关掉了也照拒）；灭顶的拒、拿工具交的那一句；别的问人、不提规则、说明带种类 |
+| `crates/miyu-session/src/guard/tests/protected.rs`（施工 HZ-1） | 真的 `shell` 报高危，直接调权限策略：没关的每一种都问；关一类，这一类的放行、别的类照旧问；直接拒的七种五类全关也照拒、和没关时一样；命中两类的只关一类照旧问、问的是还开着的那一种，两类都关才放行；九层命令替换里的删除、十层 `eval` 五类全关也照旧问、说明是 `delete_unresolved`；外部身份的会话五类全关每一条判下来的和没关时一样、没有一条放行；只读五类全关和没关时一样 |
+| `crates/miyu-session/src/settings/tests.rs` 的 `each_protected_group_has_a_switch_that_is_on_by_default`（施工 HZ-1） | 五项的键照 `Group::ALL` 一类一项，出厂开、只有系统一层、下一轮生效、在「隐私与安全」页「受保护的命令」组；关掉的那几类照类的写法交出去 |
 | `crates/miyu-policy/src/hazard/tests.rs`、`hazard/lex/tests.rs`（施工 5-17） | 三类各几条认得出、拒的和问的分对；连写、外壳、`sh -c`、`eval`、替换里的认得出；平常的删、git 不误报；拆命令的边界、引号、反斜杠、注释、替换、重定向（读进来的、文件描述符不是参数） |
+| `crates/miyu-policy/src/hazard/tests/groups.rs`（施工 HZ-1） | 问人的十种正好分进五类，直接拒的七种和看不透的不归类；套得太深的单列一种、对外的写法是 `delete_unresolved`，八层还看得透，目标运行时才知道的删除照旧归「递归删除」；一条命令里认出几种问人的全交回、照先后、不重复，有拒的只交回拒的那一种 |
 | `crates/miyu-session/tests/guard.rs` | 相对路径照工作目录接、工作区里还不存在的也能写；越界的读放行（施工 5-4 上）；越界的写问人，规则和说明写对了、`by` 是 `permissions`；没人能确认的拒绝；数据根哪一级都拒、写对了那一句和说法；完全放开越界的写不问；执行命令照沙盒能不能用：能用时工作区、只读都放行，用不了时问人（没人能确认就拒）；几条路径照最严的，有一条在数据根里就拒、不问；指向不存在处的链接拒绝、写对了那一句和说法；`~` 照家目录换，写到边界以外要问人（没人能确认，是内核拒的，不是权限策略）；`trash` 判的是链接本身：工作区里指向不存在处的、指进数据根的、指到外面的链接都放行 |
 | `crates/miyu-session/src/guard/tests.rs` 的 `a_venue_action_runs_only_in_a_venue`、`crates/miyu-session/tests/guard_venue.rs`（施工 O-31 前） | 在场所里做的事：场所会话（群、私聊）里放行、不问人，只读开着、没人能确认也一样；本机的会话拒绝，`by` 是 `permissions`，写给她出厂的那一句、说法对，工具没跑；载入以后照样；`venues` 有 `local` 的在本机的会话里照 `outbound`：完全放开跑，工作区没人能确认的拒、说的不是「不在场所里」（施工 O-31 补） |
 | `crates/miyu-endpoint/tests/provide_venue.rs`（施工 O-31 前，O-31 补改） | 契约：扩展登记 `venue` 的工具收；`venues` 有 `local` 的本机的会话调到它照 `outbound` 问人，人点头以前扩展收不到 `tool.call`。扩展登记的工具 `venues` 没有 `local` 的本来就不在本机会话的工具面上，「不在场所里」那一句只剩给没写 `venues` 的工具兜底（`guard_venue.rs`） |

@@ -113,14 +113,24 @@ pub struct CallIds {
 /// 内容哈希。读过的（读了哪一段都算）、自己写过的都算。
 pub type Seen = BTreeMap<PathBuf, ContentHash>;
 
-/// 这次调用认出来的高危（施工 5-17，`docs/designs/11-权限与沙盒.md` 第四节「高危命令照规则拦」）：权限策略照它在工作区、完全放开
-/// 两级问人，灭顶的直接拒。
+/// 这次调用认出来的高危（施工 5-17，`docs/designs/11-权限与沙盒.md` 第四节「高危命令照规则拦」）：灭顶的直接拒；别的问人，本人的
+/// 会话里设置页「受保护的命令」关掉的那几类不问（施工 HZ-1，设计 11 的 A18，权限策略判）。
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Hazard {
-    /// 哪一种：协议、日志里的写法（例如 `delete_home`），问人时放进说明的 `hazard`。
+pub enum Hazard {
+    /// 灭顶的直接拒：拒的时候写给她的一句（连同给人看的说法）。
+    Refused(miyu_kernel::tool::Worded),
+    /// 问人的每一种，照认出的先后；不是空的。
+    Asks(Vec<HazardAsk>),
+}
+
+/// 问人的一种高危（施工 HZ-1）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct HazardAsk {
+    /// 哪一种：协议、日志里的写法（例如 `git_force_push`），问人时放进说明的 `hazard`。
     pub code: &'static str,
-    /// 灭顶的直接拒，拒的时候写给她的一句（连同给人看的说法）；没有的问人。
-    pub refused: Option<miyu_kernel::tool::Worded>,
+    /// 归设置页「受保护的命令」的哪一类：配置键 `permission.confirm.<类>` 的最后一段（例如 `git`）。没有的哪个开关都关不掉，
+    /// 永远问。
+    pub class: Option<&'static str>,
 }
 
 /// 一次调用要碰的一条路径（施工 4-3 下）：她给的原样，是读是写，碰的是不是这一条本身。

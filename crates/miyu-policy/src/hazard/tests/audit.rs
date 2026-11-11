@@ -38,7 +38,7 @@ fn audit_deleting_everything_after_cd_follows_the_cd() {
     ] {
         assert_eq!(kind(command), Some(expected), "{command}");
         assert!(
-            assess(command, &PLACES).is_some_and(Kind::refused),
+            first(command, &PLACES).is_some_and(Kind::refused),
             "{command}"
         );
     }
@@ -85,7 +85,7 @@ fn audit_whole_disk_writes_are_seen() {
         "dd if=/dev/zero of=/dev/mapper/root bs=1M",
         "sudo blkdiscard /dev/nvme0n1",
     ] {
-        let found = assess(command, &PLACES);
+        let found = first(command, &PLACES);
         assert!(found.is_some_and(Kind::refused), "{command}: {found:?}");
     }
 }

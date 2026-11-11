@@ -117,6 +117,26 @@
           "off": "Off"
         }
       },
+      "permission.confirm.git": {
+        "name": "Destructive git operations",
+        "description": "Ask before a force push, reset --hard, clean -f, discarding changes or dropping a stash."
+      },
+      "permission.confirm.delete": {
+        "name": "Recursive deletes",
+        "description": "Ask before deleting the working directory or a parent of it, or a whole directory whose target is only known at run time."
+      },
+      "permission.confirm.power": {
+        "name": "Shutdown and restart",
+        "description": "Ask before shutting down or restarting."
+      },
+      "permission.confirm.pipe_to_shell": {
+        "name": "Running a download directly",
+        "description": "Ask before commands like curl … | sh."
+      },
+      "permission.confirm.container": {
+        "name": "Containers using host devices",
+        "description": "Ask before a container takes the host's devices, process or network namespace."
+      },
       "sandbox.private.enabled": {
         "name": "Private folders",
         "description": "Applies only in read-only, where commands can't read private folders and file tools ask before reading them; with full access nothing is blocked. When off, read-only stops hiding and asking too; Miyu's own data is unaffected."
@@ -394,6 +414,7 @@
       "models": "Models"
     },
     "groups": {
+      "protected": "Protected commands",
       "permission": "Permissions",
       "private": "Private folders",
       "commands": "Commands",
@@ -418,6 +439,9 @@
       "miyu-base-net": "Web search",
       "net_keys": "API keys and addresses",
       "source": "Package source"
+    },
+    "group_descriptions": {
+      "protected": "These kinds of commands ask you first even with full access. Turn one off to stop asking. Some are always refused and can't be turned off: deleting the root, home or system directories or Miyu's data, formatting a disk or writing to a raw device, and giving a container the whole host."
     }
   },
   "said": {

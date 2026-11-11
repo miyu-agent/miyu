@@ -542,6 +542,41 @@
     },
     "permission": {
       "properties": {
+        "confirm": {
+          "properties": {
+            "container": {
+              "default": true,
+              "description": "容器要宿主的设备、进程或网络命名空间前先问。能写：true 或 false。只能写在系统配置里。下一轮生效。",
+              "title": "容器使用宿主设备",
+              "type": "boolean"
+            },
+            "delete": {
+              "default": true,
+              "description": "删工作目录或它的上级、删运行时才知道目标的整个目录前先问。能写：true 或 false。只能写在系统配置里。下一轮生效。",
+              "title": "递归删除",
+              "type": "boolean"
+            },
+            "git": {
+              "default": true,
+              "description": "强制推送、reset --hard、clean -f、丢弃改动、删除 stash 前先问。能写：true 或 false。只能写在系统配置里。下一轮生效。",
+              "title": "破坏性 git 操作",
+              "type": "boolean"
+            },
+            "pipe_to_shell": {
+              "default": true,
+              "description": "curl … | sh 这类前先问。能写：true 或 false。只能写在系统配置里。下一轮生效。",
+              "title": "下载后直接执行",
+              "type": "boolean"
+            },
+            "power": {
+              "default": true,
+              "description": "关机、重启前先问。能写：true 或 false。只能写在系统配置里。下一轮生效。",
+              "title": "关机和重启",
+              "type": "boolean"
+            }
+          },
+          "type": "object"
+        },
         "level": {
           "default": "full",
           "description": "新会话都从完全放开开局，写 workspace 的也照完全放开算。要开局只读，打开「新会话开局只读」。能写：full 或 workspace。只能写在系统配置里。新会话生效。",
