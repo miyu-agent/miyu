@@ -1484,7 +1484,7 @@ flowchart LR
 | BUS-3 | 命令行和文档 | `miyu bus list`（照 `busctl list`）；参考 `packages`、`extensions`、`errors`、`pushes`、`connection` 中英、`methods-v1.txt`；作者 `manifest`、`extensions` 中英；公认名字的清单（`render`、`chat`、`chat.hook`、`stt`、`tts`、`tts.engine`） |
 | BUS-3补 | `bus.list` 的行带 `methods` | 每一行多 `methods`：这一家在这个名字底下导出了、这时也登记上了的方法的短名，照字母排，程序没连着的是空的；`bus.changed` 推的同一份。接进同一个名字的几家（im 的 `chat.hook`、语音的 `tts.engine`）各实现了哪几处，调的一方照它认，不用再去读 `package.list` 的清单（im BUS-4 第二步提的，2026-11-11）。只加一格，老的头不受影响 |
 | BUS-4 | 各仓库迁过来 | 渲染包 `provides = ["render"]`、方法 `render.markdown`；im `provides = ["chat"]`、调 `render.markdown`，插件挂接 `plugs = ["chat.hook"]`、方法 `chat.hook.event` 等，照 `bus.list` 找；赞助记录、表情包调 `chat.venue`、`chat.media`。im、赞助记录归 im 的会话，渲染包、表情包 core1 改 |
-| BUS-5 | 收掉跨包的 `package.call` | 扩展经 `package.call` 只调得到自己，跨包一律 `bus.call`（设计 67 B5）；人的连接照旧；BUS-4 全合了以后做 |
+| BUS-5 | 收掉跨包的 `package.call` | 扩展（核心拉起的连接）的 `package.call` 写了别的包的编号回 `own_package_only`（`data.package`；先于找包，那个包在不在、方法导没导出都是这一句），跨包一律 `bus.call`（设计 67 B5）；调自己照旧（要 `packages.call`、只调得到自己 `[export]` 里的）；人的连接（各个头、宿主页、命令行、人在终端起的程序）照旧照包编号调得到登记的全部。清单 `[export] methods` 里的每一个都要在这个包自己 `provides`、`plugs` 的某个名字底下，没声明名字却写了 `methods` 的也算，写错 `bad_export`（三种语言的那一句跟着改）。不留过渡（2026-11-11 项目主人定：没发版，不做旧兼容）。出厂的包没有写 `[export]` 的，不用改。施工单见 `BUS-5-收掉跨包的package.call.md` |
 
 **权限只留两级**（LV 线，编号原叫 PL，和模型供应商的 PL-1 撞了，2026-11-10 改；PL-0 那一步的提交说明照旧写 PL-0，设计 11 的 A16，项目主人 2026-11-09 定，首个正式版以前做）
 

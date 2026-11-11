@@ -4,8 +4,9 @@
 //! - `provides`：这个包在总线上提供的名字，一个名字装着的包里只有一家；`plugs`：这个包接进的名字，可以多家。名字是点分的几段，
 //!   每段小写字母开头、小写字母、数字、`-`，整个不超过 64 个；同一张表里不重复，一个名字不能两样都写。
 //! - 名字底下的方法照名字带前缀写进 `methods`（`stt` 的 `stt.transcribe`，短名只有一段，B10）：声明的每个名字至少要有一个，不然
-//!   总线上什么都调不到。不在任何名字底下的方法照收（还没迁到总线的包在用），BUS-5
-//!   收掉旧路时起拒。
+//!   总线上什么都调不到。
+//! - `methods` 里的每一个都要在这个包自己声明的某个名字底下（施工 BUS-5，B5）：别的包只能经总线照名字调，不在名字底下的它们
+//!   调不到，写了就是写错了。所以没声明名字的包写不了 `methods`。只给人的后台页调的方法不用写进来，登记了就行。
 //!
 //! 没写的都是空的；只有扩展包能写（`kinds.rs`）。
 
@@ -81,6 +82,22 @@ pub(super) fn export(reader: &Reader<'_>, table: &dyn TableLike) -> Result<Expor
             };
             return Err(bad(key, name, format!("export.{key}: {name:?} {why}")));
         }
+    }
+    // 名字都查过了再查方法归不归得进去（施工 BUS-5）：名字写错的先报名字。
+    let named = |method: &str| {
+        provides
+            .iter()
+            .chain(&plugs)
+            .any(|name| under(method, name))
+    };
+    if let Some(method) = methods.iter().find(|method| !named(method)) {
+        return Err(bad(
+            "methods",
+            method,
+            format!(
+                "export.methods: {method:?} is not under a name this package declares in provides or plugs: write it as \"<name>.<method>\", <method> without dots"
+            ),
+        ));
     }
     Ok(Export {
         methods,

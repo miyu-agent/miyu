@@ -1,12 +1,13 @@
 //! 照名字答的几种请求（施工 F-6 中、N-5、X-14 下、BUS-2）：`serve` 读到 `method.call`、`search.query`、`command.call` 时照方法名、
 //! 查的字、命令跟的字定怎么答，一行 JSON-RPC 回应；不答的交 `None`。
 
-/// 答编号是 `id`、方法是 `method` 的那一次 `method.call`（施工 F-6 中）；`slow` 不答，等核心到时限；`give` 交回 `give` 那几段字
+/// 答编号是 `id`、方法是 `method` 的那一次 `method.call`（施工 F-6 中）；`slow` 不答，等核心到时限；`give`、以 `.give` 结尾的交回 `give` 那几段字
 /// （施工 W-6 三补）；`huge` 回一行超过核心一行上限（1 MiB）的结果（施工 YC-5补）。
 pub(crate) fn answered(id: &str, method: &str, give: &str) -> Option<String> {
     Some(match method {
         "slow" => return None,
-        "give" => {
+        // 总线上的名字底下的（施工 BUS-5：`pics.give`）照短名认。
+        give_one if give_one == "give" || give_one.ends_with(".give") => {
             let given: Vec<String> = give.split(',').map(|one| format!("{one:?}")).collect();
             format!(
                 r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"given":[{}]}}}}"#,

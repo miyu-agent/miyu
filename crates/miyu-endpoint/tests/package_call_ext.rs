@@ -1,6 +1,7 @@
-//! 软件之间互相调（施工 X-18，`package.call` 给扩展开）：声明了 `packages.call` 的扩展只调得到对方清单 `[export]` 里的方法，
-//! 转过去的 `method.call` 带 `from`；没导出的 `not_exported`，没声明的 `needs_approval`，没有这个包的 `unknown_package`；人的
-//! 连接照旧调得到后台页登记的全部，不带 `from`。
+//! 扩展照包编号只调得到自己（施工 BUS-5，设计 `67-总线.md` B5；原来的施工 X-18 让声明了 `packages.call` 的扩展照包编号调
+//! 别的包导出的方法）：扩展的 `package.call` 写了别的包的编号 `own_package_only`，那个包在不在都一样；跨包走 `bus.call`，转过去
+//! 的 `method.call` 带 `from`。调自己照旧：要声明了 `packages.call`，只调得到自己 `[export]` 里的。没声明的 `needs_approval`。人
+//! 的连接照旧照包编号调得到登记了的全部（导出的、没导出的），不带 `from`。
 
 use std::path::Path;
 use std::sync::Arc;
@@ -14,34 +15,52 @@ use miyu_tool::Catalog;
 use crate::support::extensions::*;
 use crate::support::*;
 
-/// 等到 `path` 里记下的有 `n` 行。
-async fn lines(path: &Path, n: usize) {
+/// 记下的回应（`cwd:` 那一行、核心发来的请求不算）。
+fn replies(path: &Path) -> Vec<Value> {
+    read(path)
+        .lines()
+        .filter_map(|line| serde_json::from_str::<Value>(line).ok())
+        .filter(|line| line.get("method").is_none())
+        .collect()
+}
+
+/// 等到 `path` 里记下了 `n` 条回应。
+async fn answered(path: &Path, n: usize) -> Vec<Value> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
-    while read(path).lines().count() < n {
+    loop {
+        let got = replies(path);
+        if got.len() >= n {
+            return got;
+        }
         assert!(
             tokio::time::Instant::now() < deadline,
-            "等不到 {n} 行：{}",
+            "等不到 {n} 条：{}",
             read(path)
         );
         tokio::time::sleep(Duration::from_millis(20)).await;
     }
 }
 
-/// 记下的回应（`cwd:` 那一行不算）。
-fn replies(path: &Path) -> Vec<Value> {
-    read(path)
-        .lines()
-        .filter_map(|line| serde_json::from_str(line).ok())
-        .collect()
-}
-
-/// 调 `package` 的 `method`。
+/// 照包编号调 `package` 的 `method`。
 fn ask(package: &str, method: &str) -> String {
     format!(r#"ask:package.call:{{"package":"{package}","method":"{method}","params":{{"x":1}}}}"#)
 }
 
+/// 往包 `id` 的清单后面接 `[export]`。
+fn export(home: &Home, id: &str, lines: &str) {
+    let manifest = home.root.packages().join(format!("{id}/package.toml"));
+    let written = read(&manifest);
+    std::fs::write(&manifest, format!("{written}\n[export]\n{lines}\n")).expect("写得进");
+}
+
+fn reason(reply: &Value) -> &str {
+    reply["error"]["data"]["reason"]
+        .as_str()
+        .unwrap_or_default()
+}
+
 #[tokio::test]
-async fn an_extension_calls_only_what_another_exports() {
+async fn an_extension_calls_only_itself_by_package_id() {
     let home = Home::new();
     let gate = home.root.path().join("go");
     let pause = format!("pause:{}", gate.display());
@@ -55,18 +74,16 @@ async fn an_extension_calls_only_what_another_exports() {
         &steps(&[
             &step,
             "hello",
-            r#"ask:package.methods:{"methods":[{"name":"add"},{"name":"secret"}]}"#,
+            r#"ask:package.methods:{"methods":[{"name":"pics.add"},{"name":"secret"}]}"#,
             "serve",
         ]),
         &[],
     );
-    let manifest = home.root.packages().join("memes/package.toml");
-    let written = read(&manifest);
-    std::fs::write(
-        &manifest,
-        format!("{written}\n[export]\nmethods = [\"add\"]\n"),
-    )
-    .expect("写得进");
+    export(
+        &home,
+        "memes",
+        "provides = [\"pics\"]\nmethods = [\"pics.add\"]",
+    );
     let (bridge_log, step) = record(&home, "bridge");
     install_asking(
         &home,
@@ -76,13 +93,22 @@ async fn an_extension_calls_only_what_another_exports() {
         &steps(&[
             &step,
             "hello",
+            r#"ask:package.methods:{"methods":[{"name":"relay.echo"},{"name":"hidden"}]}"#,
             &pause,
-            &ask("memes", "add"),
+            &ask("memes", "pics.add"),
+            r#"ask:bus.call:{"name":"pics","method":"add","params":{"x":1}}"#,
+            &ask("bridge", "relay.echo"),
+            &ask("bridge", "hidden"),
             &ask("memes", "secret"),
             &ask("nosuch", "add"),
             "wait",
         ]),
         &["packages.call"],
+    );
+    export(
+        &home,
+        "bridge",
+        "provides = [\"relay\"]\nmethods = [\"relay.echo\"]",
     );
     let (plain_log, step) = record(&home, "plain");
     install_asking(
@@ -90,7 +116,14 @@ async fn an_extension_calls_only_what_another_exports() {
         "plain",
         &plain.name(),
         "always",
-        &steps(&[&step, "hello", &pause, &ask("memes", "add"), "wait"]),
+        &steps(&[
+            &step,
+            "hello",
+            &pause,
+            &ask("memes", "pics.add"),
+            &ask("plain", "x"),
+            "wait",
+        ]),
         &[],
     );
     approve(&home, "bridge", &["packages.call"]);
@@ -99,60 +132,94 @@ async fn an_extension_calls_only_what_another_exports() {
             .with_extension_timing(quick()),
     );
     core.start_extensions();
-    lines(&memes_log, 3).await;
+    answered(&memes_log, 2).await;
+    answered(&bridge_log, 2).await;
     std::fs::write(&gate, "").expect("写得进");
-    lines(&bridge_log, 5).await;
-    lines(&plain_log, 3).await;
+    let got = answered(&bridge_log, 8).await;
+    let plain = answered(&plain_log, 3).await;
 
-    let got = replies(&bridge_log);
     assert_eq!(
-        got[1]["result"],
-        json!({"answered": "add"}),
-        "导出的调得到：{got:?}"
+        reason(&got[2]),
+        "own_package_only",
+        "照包编号调别的包导出的方法：拒，改用 bus.call：{got:?}"
     );
-    assert_eq!(got[2]["error"]["data"]["reason"], "not_exported", "{got:?}");
-    assert_eq!(got[2]["error"]["data"]["method"], "secret");
+    assert_eq!(got[2]["error"]["data"]["package"], "memes", "{got:?}");
     assert_eq!(
-        got[3]["error"]["data"]["reason"], "unknown_package",
-        "{got:?}"
+        got[3]["result"],
+        json!({"answered": "pics.add"}),
+        "同一个方法照名字调得到：{got:?}"
     );
-    let plain = replies(&plain_log);
     assert_eq!(
-        plain[1]["error"]["data"]["reason"], "needs_approval",
-        "没声明的：{plain:?}"
+        got[4]["result"],
+        json!({"answered": "relay.echo"}),
+        "照包编号调自己导出的照旧：{got:?}"
     );
+    assert_eq!(
+        (reason(&got[5]), &got[5]["error"]["data"]["method"]),
+        ("not_exported", &json!("hidden")),
+        "调自己没导出的照旧拒：{got:?}"
+    );
+    assert_eq!(
+        reason(&got[6]),
+        "own_package_only",
+        "别的包没导出的也是这一句，不说它导没导出：{got:?}"
+    );
+    assert_eq!(
+        reason(&got[7]),
+        "own_package_only",
+        "没有的包也是这一句，不说它在不在：{got:?}"
+    );
+    assert_eq!(got[7]["error"]["data"]["package"], "nosuch", "{got:?}");
+    assert_eq!(reason(&plain[1]), "needs_approval", "没声明的：{plain:?}");
     assert_eq!(
         plain[1]["error"]["data"]["capabilities"],
         json!(["packages.call"])
     );
+    assert_eq!(
+        reason(&plain[2]),
+        "needs_approval",
+        "没声明的调自己也要批：{plain:?}"
+    );
     let asked = read(&memes_log);
+    assert_eq!(
+        asked.matches(r#""method":"method.call""#).count(),
+        1,
+        "被拒的那几次没有转过去：{asked}"
+    );
     assert!(
         asked.contains(r#""from":"bridge""#),
-        "转过去带 from：{asked}"
+        "经总线转过去带 from：{asked}"
+    );
+    let own = read(&bridge_log);
+    assert!(
+        own.contains(r#""from":"bridge""#) && own.contains("relay.echo"),
+        "调自己的转回来也带 from：{own}"
     );
 
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
-    let person = client
-        .call(
-            "p1",
-            "package.call",
-            json!({"package": "memes", "method": "secret"}),
-        )
-        .await;
-    assert_eq!(
-        person["result"],
-        json!({"answered": "secret"}),
-        "人照旧调得到全部：{person}"
-    );
-    let last = read(&memes_log)
-        .lines()
-        .last()
-        .unwrap_or_default()
-        .to_string();
-    assert!(
-        last.contains("secret") && !last.contains("\"from\""),
-        "人的不带 from：{last}"
-    );
+    for (id, method) in [("p1", "secret"), ("p2", "pics.add")] {
+        let person = client
+            .call(
+                id,
+                "package.call",
+                json!({"package": "memes", "method": method}),
+            )
+            .await;
+        assert_eq!(
+            person["result"],
+            json!({"answered": method}),
+            "人照旧照包编号调得到登记了的全部：{person}"
+        );
+        let last = read(&memes_log)
+            .lines()
+            .last()
+            .unwrap_or_default()
+            .to_string();
+        assert!(
+            last.contains(method) && !last.contains("\"from\""),
+            "人的不带 from：{last}"
+        );
+    }
     core.stop_extensions().await;
 }

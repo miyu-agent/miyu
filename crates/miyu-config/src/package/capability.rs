@@ -28,7 +28,8 @@ pub enum Capability {
     EventsWrite,
     /// 用命令驱动会话。
     SessionsDrive,
-    /// 调别的软件包给出来的方法（施工 X-18，`package.call`，对方清单 `[export]` 里的）。
+    /// 调别的软件包给出来的方法（施工 X-18）：经总线照名字调（`bus.call`，对方清单 `[export]` 里的）；照包编号（`package.call`）
+    /// 只调得到自己（施工 BUS-5）。
     PackagesCall,
     /// 当搜索来源（施工 N-5，清单 `[[search]]`）：人选了它，搜索词会交给它。
     Search,

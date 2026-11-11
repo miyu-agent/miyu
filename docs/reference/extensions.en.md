@@ -76,7 +76,7 @@ The manifest's `[process] capabilities` declares what it needs. Packages you ins
 | `widgets` | Showing its own content in the UI (widgets) |
 | `context.inject` | Adding a few lines to the context at the start of a turn (`user.append`) |
 | `context.system` | Putting a section at the end of the system prompt (`system.append`) |
-| `packages.call` | Calling methods other packages export (`package.call`) |
+| `packages.call` | Calling methods other packages export on the bus (`bus.call`); calling itself by package id (`package.call`) |
 | `search` | Being a search provider (manifest `[[search]]`, `search.query`) |
 | `model.driver` | Providing a model driver (manifest `[[driver]]`): when its models are used, everything sent to the model goes through it. Doesn't include network access |
 | `act_for_external` | Speaking for people on a platform (`session.send` and `command.run` with `as`), `session.note`, `session.respond` without `to`, `venue.*`, recording `venue.*` events: for platform bridges only |
@@ -242,9 +242,9 @@ A package's state in one session (design 46): what you draw in widgets, what you
 
 **`package.methods`** (extension → core): `{"methods": [{"name", "timeout_ms"?}…]}` registers the methods its page and widgets call, replacing the previous set. Response `{"methods": <count>}`. Other connections get `not_an_extension`.
 
-**`method.call`** (core → extension): `{"method", "params", "from"?}`: a person's head or another package called it through `package.call`; `from` is the calling package's id (absent when a person called). Whatever it answers is what `package.call` returns; a JSON-RPC error becomes `method_failed` on the other side. An answer is one line of at most 1 MiB too: the core doesn't read a longer one, sends you `line_too_long` (with the `id` of that `method.call`), and the other side gets `method_failed` at once with `data.code` set to `line_too_long`; store large content as a blob (`blob.put`) and put only its hash in the answer.
+**`method.call`** (core → extension): `{"method", "params", "from"?}`: a person's head called it through `package.call` or `bus.call`, or another package through `bus.call`; `from` is the calling package's id (absent when a person called). Whatever it answers is what the caller gets; a JSON-RPC error becomes `method_failed` on the other side. An answer is one line of at most 1 MiB too: the core doesn't read a longer one, sends you `line_too_long` (with the `id` of that `method.call`), and the other side gets `method_failed` at once with `data.code` set to `line_too_long`; store large content as a blob (`blob.put`) and put only its hash in the answer.
 
-To let other extensions call a method, list it in the manifest's `[export] methods`.
+To let other extensions call a method, declare a bus name under `[export]` (`provides` or `plugs`) and list the method in `methods` as `<name>.<method>` ([The bus](bus.en.md)). Other extensions can only call you by name; by package id they get `own_package_only`.
 
 ## `package.emit`
 

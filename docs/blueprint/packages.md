@@ -207,7 +207,7 @@ program = "miyu-embed"
 | `connection` | 写了的（施工 F-1） | `{"platform"}`；接几个平台的 `platform` 是第一个，另带 `platforms`（全部，照写的先后，施工 IM-3）；`platform` 是 `voice` 的另带 `owner_builtin: true`（施工 SG-2：语音助手的主人天然是 `voice:owner`，不用写进对应表，`venues.md`；头照它不画填号那一块，平台名取 `venues::VOICE`），别的平台不带这一格 |
 | `depends`、`recommends` | 写了、不空的（施工 F-1） | `{"packages": [...]}`，照写的先后（施工 F-11；以前是 `{"workers": [...]}`） |
 | `missing` | 依赖的包缺了的（施工 F-11） | 缺的那几个，照写的先后；这时 `status` 是 `depends_missing` |
-| `export` | 写了 `[export]` 的（施工 F-11） | `{"methods": [...], "provides"?: [...], "plugs"?: [...]}`，照写的先后：别的软件调得到的方法；总线上提供的、接进的名字（施工 BUS-1，设计 67），写了才带 |
+| `export` | 写了 `[export]` 的（施工 F-11） | `{"methods": [...], "provides"?: [...], "plugs"?: [...]}`，照写的先后：别的软件经总线调得到的方法（全名，都在这个包声明的某个名字底下，施工 BUS-5）；总线上提供的、接进的名字（施工 BUS-1，设计 67），写了才带 |
 | `worker` | `worker` 包（施工 F-1） | `{"program", "args"}` |
 | `mcp` | 带 MCP 服务的（施工 X-2） | `[{"name", "command", "venues"}]`，照写的先后；环境变量不列（可能引用密钥） |
 | `command` | 有 `[command]` 的 | `{"name", "program", "about"}`，`about` 照语言挑；加了几个的是第一个 |
@@ -321,7 +321,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 2. **装**：`[depends]` 里有没装的、装着的版本不够的（读成了的才算装了，升级时它自己那一份不算）拒绝 `depends_missing`，`data.missing` 是缺的那几个、照写的原样（带下限的是 `onebot>=1.2.0`，施工 PK-2），什么都不留；看一眼（`preview`）、装回卸掉的出厂的、`package.info` 带 `path` 看的同样查。从软件源装的自动补依赖（施工 G-4 上，下面第 7 条）。`[recommends]` 缺了、版本不够的照装。
 3. **卸**：别的装着的包依赖它的拒绝 `package_depended`，`data.by` 是依赖它的那几个，照编号（照 pacman）；`package.disable` 关出厂的内置包也走这里。
 4. **装着的缺了依赖**（手删了文件、出厂的被卸了、升级以后多依赖了一个；施工 PK-2 起还有依赖的那一个降级了、换成了不够下限的版本）：扩展不拉起（核心起来时、装卸以后照新的清单拉起的那一批都不算它）；`package.list` 的 `status` 是 `depends_missing`、多一格 `missing`；`miyu check` 报 `depends_missing`（错误，说缺谁，带下限的照写的原样：「缺少依赖的软件包：onebot>=1.2.0」）。
-5. `package.list` 的每一项另带 `export`（写了 `[export]` 的方法名）：接入QQ 这类扩展照它找挂在自己身上的附加包，不用另外登记。
+5. `package.list` 的每一项另带 `export`（写了 `[export]` 的方法名、总线上的名字）。找挂在自己身上的附加包照 `bus.list`（接进同一个名字的几家，施工 BUS-3补），不用另外登记。
 6. **软件源索引里的四格**（施工 IN-1，设计 `49-装包照pacman.md` 第三节第 1 条）：软件源 `index.json` 的每个包多 `recommends`（清单 `[recommends]` 的编号，照写的先后）、`author`、`upstream`（清单 `[package]` 的原样）、`installed`（包文件解开以后所有普通文件的字节数之和；分系统有几份文件的取最大的那份）。收录（`miyu-index`）读清单、解包时算出；没有的不写（`recommends` 空、其余三格 `None` 都不出现在 JSON 里）。以前生成的索引没有这四格，照旧读得进来，读成空；旧的头读新索引时不认识的格子照略过。签名、`index.json` 的写法不变。`depends`、`recommends` 照清单写的原样，带版本下限的照带（`"onebot>=1.2.0"`，施工 PK-2）；读索引时这两格照清单的写法查（编号另合拼文件名的那一份写法），不合的整条丢掉，所以旧的核心读新索引时带下限的那几条看不到（它们本来也读不了那份清单）。`index.json` 的 `version` 照旧是 1、别的格子不变。收录时编号是数据根里保留的名字的（`miyu_config::package::RESERVED`，设计 55 第三节第 3 条）跳过、记一笔「`<文件名>: package id <编号> is reserved in the data root`」、不占编号：官方来源、自建的文件夹都一样（施工 FH-5下）。
 7. **从软件源装时的依赖**（施工 G-4 上，PK-2 起照下限挑，端点的 `packages/source/fetch.rs`）：深度优先排，依赖在前。依赖装着、版本够的不动；没装的、装着的不够下限的，照先后（挑中的源、再官方的）找第一个索引里那一版够的，一起装：装着的就是一起升，排在要装的那个前面；哪个源都没有够的、前面已经排进去的那一份不够这一条下限的，拒绝 `depends_missing`（照写的原样）。索引里每个源只列最新的一版，挑不了更早的。看一眼的 `with` 里一起升的照列（编号、要装的版本）；`recommends` 里装着、版本够的不列，索引里那一版不够的也不列。施工 PK-3 上起 `with`、`recommends` 每一项另带从哪来（`source`）、哪个源（`feed`）、要的能力（`capabilities`，照索引，带 `held`）：依赖可以来自不同的源，各写各的（下面「装卸」第 8 条「说清来源和能力」）。
 8. **软件源索引里的 `tools`**（施工 PV-1）：每个包另有可选的 `tools`，装上以后模型会多的工具 `[{"name", "title"?, "from"}]`，收录时照 `miyu_source::tools::of` 算：包文件夹 `scripts/` 那一层的普通文件照开头读（`miyu_policy::script::read`，核心登记脚本用的同一份；点开头的、子目录、链接、读不成的不算），`title` 取「显示名称」「Display name」；清单里各功能写明的工具名算 `extension`，没有 `title`；MCP 的、要跑起来才知道的不列；照名字排、同名的留一个。没有的不写，索引照旧是 `version` 1，以前的索引读成空的，旧客户端照略过。`package.info` 三条路都带这一格（`protocol.md`）。
@@ -397,7 +397,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `bad_page_source` | `[page]` 两样都写了 `dir`、`server`，`server` 不是 `true`，不是扩展写了 `server`（施工 BP-1） |
 | `bad_theme_file`、`bad_theme_dir` | 终端主题文件（`[theme.tui] file`、老写法 `[theme] file`）不是包目录里的相对路径（施工 F-16），`[theme.web] dir` 不是包目录里的相对目录（施工 TH-1）；`tui`、`web` 没写成表的也算 |
 | `bad_logo` | `[package] logo` 不是包目录里一个 `.png`、`.webp` 的相对路径（施工 F-18 上，`package-pages.md`「清单多的几格」）；图本身不合规矩的在 `miyu check` 报警告 `logo_missing`、`logo_not_image`、`logo_too_big`，包照装 |
-| `bad_export` | `[export] methods` 里有不是方法名的、重复的（施工 X-18） |
+| `bad_export` | `[export]` 写错了：`methods` 里有不是方法名的、重复的（施工 X-18）；`provides`、`plugs` 的名字写法不对、重复、两样都写了、名字底下没有方法（施工 BUS-1，设计 67 B4、B6、B10）；`methods` 里有不在这个包自己声明的任何名字底下的，没声明名字却写了 `methods` 的也算（施工 BUS-5，B5：别的包只能经总线照名字调，不在名字底下的它们调不到）。`detail` 是哪一个方法、名字，报在那一格 |
 | `bad_mcp` | `[[mcp]]` 写错了（施工 X-2）：服务名、命令、环境变量、给哪种会话、时限，同一个包里服务名重了；`detail` 是哪一格（`mcp.<服务名>.<格>`）、报在那一段 |
 | `bad_slash` | `[[slash]]` 写错了（施工 X-14 下，`slash.md`「扩展的命令」）：命令名、说明、提示，同一个包里重了；声明了却没在 `[process] capabilities` 写 `commands`（`detail` 是 `slash`，报在第一段）；`detail` 是哪一格（`slash.<名字>.<格>`）、报在那一段 |
 | `bad_widget` | `[[widget]]` 写错了（施工 X-15 上，`widgets.md`「清单」）：`detail` 是哪一格、报在那一段 |
@@ -427,6 +427,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `crates/miyu-config/src/phrases.rs` 的测试 | 语言到一句话的读法、第一处错 |
 | `crates/miyu-store/src/packages/tests.rs` | 两层照编号排、不是 `.toml` 的和编号不合写法的不算；空的；同编号认出厂的；子命令名先到先得、报在那一行；写错的照样列出；状态目录；功能的编号先到先得、照包算的那一个也算（施工 F-1） |
 | `crates/miyu-config/src/package/features/tests.rs`（施工 F-1） | 功能照写的先后读对、编号在第几行；没写的照包算一个；空表一个都没有；界面、小程序没有；编号、表、名字、工具的每一种写错；只有内置包、扩展包能写 |
+| `crates/miyu-config/src/package/export/tests.rs`（施工 BUS-1、BUS-5） | `[export]` 的 `provides`、`plugs` 和名字底下的方法读对；名字写法不对、重复、两样都写、名字底下没有方法的报 `bad_export`；`methods` 里不在声明的名字底下的（一段的、前缀没声明的、短名带点的）、没声明名字却写了 `methods` 的报 `bad_export`，`detail` 是那个方法；短名只有一段 |
 | `crates/miyu-config/src/package/links/tests.rs`（施工 F-1） | 小程序的程序和参数；依赖、推荐；平台接入；组只给内置包、写法不对和重复的报 `bad_group`、`required` 不认了（施工 BS-1 上中）；每种包只能写自己的表；种类四选一 |
 | `crates/miyu-config/src/package/side/tests.rs`（施工 Q-3） | `[[side]]` 读成编号、档位、名字、说明，全编号是 `<包>/<编号>`，三档都认；编号写错、少了、重了，档位不认识、少了，少了名字、说明报 `bad_side`、`detail` 对；不认识的格、写成一张表的、不是扩展包的照各自的代码 |
 | `crates/miyu-config/src/package/settings/tests.rs` | 每一种类型、默认值、几层、什么时候生效、隐藏；每一种写错；拼成配置项的键、类型、界面提示（施工 9-1 下）；列表的每一种元素、默认值一个个查、写错（施工 9-1 补） |

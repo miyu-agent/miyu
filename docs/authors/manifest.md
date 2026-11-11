@@ -53,7 +53,8 @@ dir = "page"                                        # 后台页：目录里要�
 name = { en = "Open Hello", zh = "打开打招呼" }      # 托盘菜单里一行，点了打开上面的后台页
 
 [export]
-methods = ["greet"]                                 # 别的包能经 package.call 调的方法
+provides = ["hello"]                                # 总线上提供的名字：别的包照它调你，不写你的包名
+methods = ["hello.greet"]                           # 名字底下给别的包调的方法：<名字>.<方法>
 
 [[slash]]
 name = "hi"
@@ -114,7 +115,7 @@ place = "status"
 | `widgets` | 在界面上显示自己的内容（`[[widget]]`） |
 | `context.inject` | 回合开始时往她的上下文里加几句 |
 | `context.system` | 往系统提示词末尾放一段 |
-| `packages.call` | 调别的包导出的方法 |
+| `packages.call` | 经总线调别的包导出的方法（`bus.call`） |
 | `act_for_external` | 代表聊天平台上的人说话：只给平台的桥 |
 | `login.page` | 替这台电脑上打开的页面换登录票（`login.ticket {"via": "page"}`），换到的票只在本机的连接上换得成设备令牌。出厂的包也要人批。只给核过是本机来的页面要票，远处来的页面一律走访问密码，见 [扩展参考](../reference/extensions.md)「替本机页面换登录票」 |
 | `sessions.drive` | 驱动会话：开会话、说话、打断、撤销、压缩、分叉、发斜杠命令 |
@@ -387,9 +388,9 @@ summary = { en = "Decides whether to reply in a group.", zh = "群里有人说�
 
 ## `[export]`
 
-`methods`：别的包能调到你的哪几个方法（照样要经 `package.methods` 登记）。
+别的包只能经总线照名字调你（`bus.call`），照包编号调不到。所以要先声明名字，再把名字底下的方法列出来；只给你自己的后台页、界面块调的方法不用写进来，`package.methods` 登记了就行。
 
-`provides`：你在总线上提供的名字（例如 `["stt"]`），一个名字装着的包里只有一家，装第二家报冲突。`plugs`：你接进的名字（例如 `["tts.engine"]`），可以多家并存，用它的一方挑。名字是点分的几段，每段小写字母开头、只有小写字母、数字和 `-`；一个名字不能两样都写。名字底下的方法写进 `methods`，照名字带前缀、短名只有一段：`stt` 的 `stt.transcribe`、`tts.engine` 的 `tts.engine.synthesize`；声明的每个名字至少要有一个方法。别人照名字调你，不写你的包名（设计 `67-总线.md`）。
+`provides`：你在总线上提供的名字（例如 `["stt"]`），一个名字装着的包里只有一家，装第二家报冲突。`plugs`：你接进的名字（例如 `["tts.engine"]`），可以多家并存，用它的一方挑。名字是点分的几段，每段小写字母开头、只有小写字母、数字和 `-`；一个名字不能两样都写。`methods`：名字底下给别的包调的方法（照样要经 `package.methods` 登记），照名字带前缀、短名只有一段：`stt` 的 `stt.transcribe`、`tts.engine` 的 `tts.engine.synthesize`。声明的每个名字至少要有一个方法；`methods` 里的每一个都要在你声明的某个名字底下，没声明名字就不能写 `methods`。写错的清单读不成（`bad_export`）。
 
 ## `[content.<包的编号>]`
 

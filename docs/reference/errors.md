@@ -152,7 +152,8 @@
 | `skill_shared` | `skill.remove`：别的目录里的技能（`skills.external.dirs`，`from` 是 `agents`）不经 Miyu 删，别的客户端也在用 | `name` |
 | `no_page`、`not_found` | 没有后台页；没有这份文件 | |
 | `program_not_running`、`unregistered`、`method_failed`、`method_timeout` | `package.call`：程序没连着；没登记；回了错（它回的一行超过 1 MiB 的也算，`code` 是 `line_too_long`）；没回 | `method`、`message`、`code` |
-| `not_exported` | 扩展调了对方没导出的方法 | `method` |
+| `not_exported` | 扩展调了清单 `[export]` 里没有的方法：`bus.call` 找到的那一家的，`package.call` 调自己的 | `method` |
+| `own_package_only` | 扩展的 `package.call` 写了别的包的编号：照包编号它只调得到自己，跨包用 `bus.call` | `package` |
 | `bad_tool` | `provide` 的一件工具不对 | `tool`、`problem` |
 | `unknown_widget`、`bad_widget_content` | 界面块不在清单里；内容写法不对 | `widget`；`path`、`problem` |
 | `unknown_command`、`command_not_allowed`、`owner_only` | 没有这个命令；这个人不能用；只给主人本人 | `why` |

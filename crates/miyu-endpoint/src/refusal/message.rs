@@ -160,6 +160,10 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "这个名字有几个软件包接着，要写用哪一个。",
             "Several packages plug into this name; say which one.",
         ),
+        "own_package_only" => (
+            "扩展照包编号只能调自己，调别的软件包请用 bus.call。",
+            "An extension can call only itself by package id; use bus.call for other packages.",
+        ),
         "method_failed" => ("方法执行失败。", "Method failed."),
         "avatar_not_image" => (
             "头像只支持 PNG、JPEG、WebP。",

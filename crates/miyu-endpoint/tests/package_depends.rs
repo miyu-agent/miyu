@@ -113,7 +113,7 @@ async fn an_installed_package_missing_its_depends_says_so_and_old_workers_still_
     );
     home.write(
         "opt/relay/package.toml",
-        "[package]\nprotocol = [1, 1]\nname = { en = \"Relay\" }\n\n[command]\nname = \"relay\"\nprogram = \"miyu-relay\"\nabout = { en = \"R\" }\n\n[process]\n\n[export]\nmethods = [\"qq.inbound\", \"qq.groups\"]\n",
+        "[package]\nprotocol = [1, 1]\nname = { en = \"Relay\" }\n\n[command]\nname = \"relay\"\nprogram = \"miyu-relay\"\nabout = { en = \"R\" }\n\n[process]\n\n[export]\nprovides = [\"qq\"]\nmethods = [\"qq.inbound\", \"qq.groups\"]\n",
     );
     home.write(
         "opt/speaker/package.toml",
@@ -139,8 +139,8 @@ async fn an_installed_package_missing_its_depends_says_so_and_old_workers_still_
     let relay = listed(&mut client, "relay").await;
     assert_eq!(
         relay["export"],
-        json!({"methods": ["qq.inbound", "qq.groups"]}),
-        "{relay}"
+        json!({"methods": ["qq.inbound", "qq.groups"], "provides": ["qq"]}),
+        "两样里只写了一样的只带那一样：{relay}"
     );
 
     let reply = client.call("k", "check", json!({})).await;

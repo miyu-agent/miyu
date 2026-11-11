@@ -122,9 +122,9 @@ name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
    - 换掉这一份上一次登记的；不用另批能力：只有人的头在这个软件自己的页上调得到。
    - 不缓存：连接断了、扩展停了就没有了，调到的回 `program_not_running`。
    - 不是核心拉起的扩展的连接调它，`not_an_extension`。名字写法不对、重复、时限不在范围里的 `bad_params`，什么都不换。回应 `{"methods": 个数}`。
-2. **调**：头发 `package.call {"package", "method", "params"?}`：出示本机令牌、登录令牌的连接（人）调得到登记的全部。施工 X-18 起扩展也能调别的软件（「软件之间互相调」）：要声明 `packages.call`、人批过（没声明的 `needs_approval`），只调得到对方清单 `[export] methods` 里的（别的 `not_exported`，`data.method` 是哪一个）。
+2. **调**：头发 `package.call {"package", "method", "params"?}`：出示本机令牌、登录令牌的连接（人：各个头、宿主页、命令行、人在终端起的程序）调得到哪个包登记的全部。扩展（核心拉起的那条连接）照包编号只调得到自己（施工 BUS-5，设计 67 B5）：`package` 写了别的包的回 `own_package_only`（`data.package`），先于找包，那个包在不在都是这一句；调自己要声明 `packages.call`、人批过（没声明的 `needs_approval`），只调得到自己清单 `[export] methods` 里的（别的 `not_exported`，`data.method` 是哪一个）。调别的软件走总线（「软件之间互相调」）。
    - 没有这个包 `unknown_package`；它的程序没连着、还没登记方法 `program_not_running`；没登记这个方法 `unregistered`，`data.method` 是哪一个。
-   - 核心发反向请求 `{"jsonrpc":"2.0","id":"core-<n>","method":"method.call","params":{"method","params","from"?}}` 给扩展，等它回，回什么交回什么（`result` 原样）。扩展调的带 `from`：调的那个包的编号，核心照连接填、调的一方写不了；人调的不带（施工 X-18）。
+   - 核心发反向请求 `{"jsonrpc":"2.0","id":"core-<n>","method":"method.call","params":{"method","params","from"?}}` 给扩展，等它回，回什么交回什么（`result` 原样）。扩展调的（调自己的、经 `bus.call` 调别的包的）带 `from`：调的那个包的编号，核心照连接填、调的一方写不了；人调的不带（施工 X-18）。
    - 扩展回了错：`method_failed`，`data.message` 是它说的那一句，`data.code` 是它的错误码（没有的不写）。扩展回的那一行超过 1 MiB 的核心没读（`protocol.md`「一行最长」，施工 YC-5补）：也是 `method_failed`，`data.code` 是 `line_too_long`，当场回、不等时限。到了 `timeout_ms` 没回：`method_timeout`，核心不再等，扩展晚回的扔掉。等着时连接断了：`program_not_running`。
    - 在后台答：这个连接后面的请求不等它（同 `link.preview`，`methods::answered_later`）。
 3. 扩展这边：收到 `method.call` 照自己的方法表办；不认识的回 JSON-RPC 的 `-32601`（核心交回 `method_failed`）。
@@ -134,10 +134,10 @@ name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
    - 推 `package.event {"package", "event", "data"}`。广播一条是「包、换行、那一行」（`backstage/events.rs`），订阅的转发任务只挑自己订的包的（`subscriptions/listed.rs` 的 `Listed::PackageEvents`）。掉了队推 `resync {"stream": "package", "package"}`，这个订阅停下，页面重新订、重新拉一遍。
    - 不存盘：没订着的收不到。
 
-**软件之间互相调**（施工 X-18，设计 `34-表情包.md` 第五节第 3 条）：
+**软件之间互相调**（施工 X-18，设计 `34-表情包.md` 第五节第 3 条；施工 BUS-1 到 BUS-5 改成只走总线，设计 `67-总线.md`）：
 
-1. **给出来**：被调的包在清单里写 `[export] methods = ["add", "search"]`（只有扩展包能写；方法名写法同登记的，不重复，写错 `bad_export`），照旧经 `package.methods` 登记；没写进 `[export]` 的只有人的后台页调得到。
-2. **调**：调的扩展声明 `packages.call`、人批过，发 `package.call`；核心照上面第 2 条转过去，多带 `from`。被调的照 `from` 认是谁（例如表情包记下「接入QQ 放进来的」）。
+1. **给出来**：被调的包在清单 `[export]` 里声明总线上的名字（`provides`、`plugs`），名字底下的方法照 `<名字>.<方法>` 写进 `methods`：`provides = ["pics"]`、`methods = ["pics.add", "pics.search"]`（只有扩展包能写；`methods` 里的每一个都要在声明的某个名字底下，写错 `bad_export`，`packages.md`），照旧经 `package.methods` 登记；没写进 `[export]` 的只有人的连接调得到。
+2. **调**：调的扩展声明 `packages.call`、人批过，发 `bus.call {"name", "method", "params"?, "package"?}`（`protocol.md`）：照名字，不写对方的包编号；核心找到提供的那一家，照上面第 2 条转过去，多带 `from`。被调的照 `from` 认是谁（例如表情包记下「接入QQ 放进来的」）。扩展发 `package.call` 写别的包的编号的 `own_package_only`（施工 BUS-5：留着这条路，作者照旧会把对方的包名写死，总线就白做了）。
 3. **不做的**：不限调用频率、不记账；被调的一方自己挡（看 `from`）。
 
 ### 网页软件怎么给后台页（网页的会话做，`web-ui.md` 跟着写）
@@ -210,6 +210,7 @@ name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
 | `crates/miyu-endpoint/tests/extensions.rs`（施工 F-6 上改） | 程序不在的 `extension.enable` 回 `program_missing` |
 | `crates/miyu-endpoint/src/backstage/file/tests.rs`、`calls/tests.rs`（施工 F-6 中） | 后台页里的路径怎么拆、哪些不收；方法名的写法 |
 | `crates/miyu-endpoint/tests/backstage.rs`（施工 F-6 中） | `package.file` 读入口、子目录、从中间读、超过 512 KiB 分两块；出目录的、目录、没有的、没有后台页的、没有的包；链接指出去的（Unix）；测试用的扩展登记三个方法，调得到、回错、超时、没登记、包没有、关掉以后没连着；扩展登记不了写法不对的名字、调不了 `package.call`、`package.file`，人登记不了方法 |
+| `crates/miyu-endpoint/tests/package_call_ext.rs`（施工 X-18，BUS-5 改） | 扩展照包编号调别的包：导出的、没导出的、没有的包都是 `own_package_only`，没有转过去；同一个方法经 `bus.call` 调得到、带 `from`；照包编号调自己导出的调得到、没导出的 `not_exported`；没声明 `packages.call` 的 `needs_approval`；人照包编号调得到登记的全部（导出的、没导出的），不带 `from` |
 
 ### 还没有的
 

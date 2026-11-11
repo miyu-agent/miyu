@@ -53,7 +53,8 @@ dir = "page"                                        # package page: the folder n
 name = { en = "Open Hello", zh = "打开打招呼" }      # a line in the tray menu; opens the page above
 
 [export]
-methods = ["greet"]                                 # methods other packages can call with package.call
+provides = ["hello"]                                # a name you provide on the bus: others call you by it, not by package id
+methods = ["hello.greet"]                           # methods other packages can call under that name: <name>.<method>
 
 [[slash]]
 name = "hi"
@@ -114,7 +115,7 @@ Makes it an extension; needs `[command]`.
 | `widgets` | Showing its own content in the UI (`[[widget]]`) |
 | `context.inject` | Adding a few lines to her context at the start of a turn |
 | `context.system` | Putting a section at the end of the system prompt |
-| `packages.call` | Calling methods other packages export |
+| `packages.call` | Calling methods other packages export, over the bus (`bus.call`) |
 | `act_for_external` | Speaking for people on a chat platform: for platform bridges only |
 | `login.page` | Getting sign-in tickets for pages opened on this machine (`login.ticket {"via": "page"}`); the ticket only turns into a device token over a connection from this machine. Shipped packages need approval for it too. Only ask for pages you have checked come from this machine; pages from elsewhere always sign in with the access password, see [the extensions reference](../reference/extensions.en.md), "Signing in pages on this machine" |
 | `sessions.drive` | Driving sessions: creating, sending, interrupting, reverting, compacting, forking, running slash commands |
@@ -387,9 +388,9 @@ Your program pushes the content; see [Writing an extension](extensions.en.md).
 
 ## `[export]`
 
-`methods`: which of your methods other packages can call (they still have to be registered with `package.methods`).
+Other packages can only call you by name over the bus (`bus.call`), never by your package id. So declare a name first, then list the methods under it; methods only your own page or widgets call don't belong here, registering them with `package.methods` is enough.
 
-`provides`: the names you provide on the bus (e.g. `["stt"]`); a name has only one provider among installed packages, and installing a second is a conflict. `plugs`: the names you plug into (e.g. `["tts.engine"]`); several packages can, and whoever uses the name picks one. A name is dot-separated parts, each starting with a lowercase letter and holding only lowercase letters, digits and `-`; a name can't be in both. The methods under a name go in `methods`, prefixed with the name and with a one-part short name: `stt.transcribe` for `stt`, `tts.engine.synthesize` for `tts.engine`; every name you declare needs at least one. Others call you by the name, never by your package id (design `67-总线.md`).
+`provides`: the names you provide on the bus (e.g. `["stt"]`); a name has only one provider among installed packages, and installing a second is a conflict. `plugs`: the names you plug into (e.g. `["tts.engine"]`); several packages can, and whoever uses the name picks one. A name is dot-separated parts, each starting with a lowercase letter and holding only lowercase letters, digits and `-`; a name can't be in both. `methods`: the methods other packages can call under a name (they still have to be registered with `package.methods`), prefixed with the name and with a one-part short name: `stt.transcribe` for `stt`, `tts.engine.synthesize` for `tts.engine`. Every name you declare needs at least one method, and every entry in `methods` has to be under a name you declare; without a name you can't write `methods`. A manifest that gets this wrong can't be read (`bad_export`).
 
 ## `[content.<package id>]`
 

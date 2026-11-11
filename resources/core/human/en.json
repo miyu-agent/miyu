@@ -717,7 +717,7 @@
     "package-problems/bad_mascot_model": "{detail} must be a relative path inside the package directory, without .. or a leading /",
     "package-problems/bad_theme_file": "{detail} must be a relative path inside the package directory, without .. or a leading /",
     "package-problems/bad_theme_dir": "{detail} must be a relative directory inside the package directory, without .. or a leading /",
-    "package-problems/bad_export": "{detail} must be a method name (starting with a lowercase letter; lowercase letters, digits, _, . and -), listed once",
+    "package-problems/bad_export": "{detail} in [export] is badly written: declare names in provides or plugs and write methods as <name>.<method>; each starts with a lowercase letter and is listed once",
     "package-problems/bad_mcp": "Badly written MCP server: {detail}",
     "package-problems/bad_slash": "Badly written slash command: {detail}",
     "package-problems/bad_search": "Badly written search source: {detail}",

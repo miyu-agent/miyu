@@ -26,7 +26,7 @@ Manage packages, extension processes and the MCP servers in the system config; l
 | [`command.catalog`](#commandcatalog) | List the slash commands that can be used |
 | [`check`](#check) | Check config, personas, presets and packages for mistakes |
 
-**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.sync`, `package.search`, `package.clean`, `package.upgrades`, `package.upgrade`, `package.file`, `package.page`, `extension.*`, `mcp.*`, `tool.set_loading` and `feature.set` are for people only; extensions get `local_only`. So is `package.info` with `path` (it looks at any folder on this machine, like `package.install`; step IN-4). Everything else is open to people and extensions; extensions calling `package.call` have extra rules (below).
+**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.sync`, `package.search`, `package.clean`, `package.upgrades`, `package.upgrade`, `package.file`, `package.page`, `extension.*`, `mcp.*`, `tool.set_loading` and `feature.set` are for people only; extensions get `local_only`. So is `package.info` with `path` (it looks at any folder on this machine, like `package.install`; step IN-4). Everything else is open to people and extensions; an extension calling `package.call` reaches only itself (below).
 
 **Three layers**: built-in (installed with Miyu, `shipped`), system-installed (put there by the system package manager, `distro`: on Linux `miyu/packages/` under each entry of `$XDG_DATA_DIRS`, `/usr/local/share:/usr/share` when unset, and Linuxbrew users add its `share` to `XDG_DATA_DIRS`; on macOS `share/miyu/packages/` under the Homebrew prefix; none on Windows; when `MIYU_DISTRO_PACKAGES` is set only that folder), and installed (`opt/` in the data root, `home`). When several layers have the same id, installed covers system-installed and system-installed covers built-in; a covered copy is not loaded and is not an error. Installing the same id in the home layer upgrades and replaces it; removing a built-in or system-installed package records it in `etc/removed/` (an empty file named after the id) without touching its files, and it can be installed back.
 
@@ -178,7 +178,7 @@ Upgrade from the package source. Only packages installed from the source are tou
 
 **`package.page`**: param `package`. Response `{"url"}`: this package's host page on the local package page service the core starts on demand (`http://127.0.0.1:<port>/h/<ticket>/`), for a browser to open without the web UI (`miyu pkg page` opens it). Only for pages inside the package directory (manifest `[page] dir`). The service starts the first time it is asked for and stops after ten idle minutes (no requests, no open push stream); its addresses stop working then, and asking again starts it anew. The host page frames the page in isolation the way the web UI does, answers `settings.get`, `settings.set` and `call` for it, and follows the system's light or dark.
 
-Extensions can call `package.call` too: they must declare the `packages.call` capability and can only call methods listed in the other package's `[export]`; the forwarded call carries `from` (the caller's package id). Blobs the answering package stored that appear in its response become readable by the caller (see [Attachments](blob.en.md#blobget)).
+`package.call` is for people's connections (heads, the command line, programs a person starts in a terminal): they reach every method any package registered, whether or not it is in `[export]`, and the forwarded call carries no `from`. An extension (a package's program the core started) reaches only itself by package id: with another package's id in `package` it gets `own_package_only`, whether or not that package exists or exports the method; to call itself it must declare the `packages.call` capability and can only call methods listed in its own `[export]`, and the forwarded call carries `from` (its own id). To call another package, an extension goes by name through [`bus.call`](bus.en.md).
 
 **Errors**
 
@@ -189,7 +189,8 @@ Extensions can call `package.call` too: they must declare the `packages.call` ca
 | `unregistered` | The program didn't register that method, `data.method` |
 | `method_failed` | The program answered with an error, `data.message`, `data.code` (a coded error from an extension puts its string code in `error.data.code`, which the core passes on; otherwise `error.code`). When the program's answer is a line over 1 MiB the core doesn't read it, and `data.code` is `line_too_long` |
 | `method_timeout` | No answer in time |
-| `needs_approval`, `not_exported` | Called by an extension: `packages.call` not declared; the method isn't exported (`data.method`) |
+| `own_package_only` | Called by an extension: `package` isn't its own id; `data.package` is the id it wrote. Use `bus.call` across packages |
+| `needs_approval`, `not_exported` | An extension calling itself: `packages.call` not declared; the method isn't in its `[export]` (`data.method`) |
 
 ## `extension.status`, `extension.enable`, `extension.disable`, `extension.restart`
 

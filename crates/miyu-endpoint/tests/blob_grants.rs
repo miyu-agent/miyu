@@ -1,5 +1,5 @@
-//! 扩展读 blob（施工 W-6 三补，`protocol.md` 的 `blob.get` 第 1 条）：不写 `session` 的只读得到它自己存的、经 `package.call`
-//! 拿回来的（答的包自己拿得到的那几个）；写了 `session` 的，那个会话要引用过这个 blob。不这样管的话，扩展知道哈希
+//! 扩展读 blob（施工 W-6 三补，`protocol.md` 的 `blob.get` 第 1 条）：不写 `session` 的只读得到它自己存的、经总线（`bus.call`，
+//! 施工 BUS-5 起扩展跨包只走它）调别的包拿回来的（答的包自己拿得到的那几个）；写了 `session` 的，那个会话要引用过这个 blob。不这样管的话，扩展知道哈希
 //! 就读得走存处里任何一个 blob。人的连接照旧。
 
 use std::path::Path;
@@ -97,7 +97,7 @@ async fn an_extension_reads_only_blobs_it_stored_or_was_handed() {
             &get(&own_hash),
             &get(&secret_hash),
             &format!("give:{own_hash},{secret_hash}"),
-            r#"ask:package.methods:{"methods":[{"name":"give"}]}"#,
+            r#"ask:package.methods:{"methods":[{"name":"pics.give"}]}"#,
             "serve",
         ]),
         &[],
@@ -106,7 +106,7 @@ async fn an_extension_reads_only_blobs_it_stored_or_was_handed() {
     let written = read(&manifest);
     std::fs::write(
         &manifest,
-        format!("{written}\n[export]\nmethods = [\"give\"]\n"),
+        format!("{written}\n[export]\nprovides = [\"pics\"]\nmethods = [\"pics.give\"]\n"),
     )
     .expect("写得进");
     let ready = home.root.path().join("registered");
@@ -121,7 +121,7 @@ async fn an_extension_reads_only_blobs_it_stored_or_was_handed() {
             "hello",
             &format!("pause:{}", ready.display()),
             &get(&own_hash),
-            r#"ask:package.call:{"package":"memes","method":"give"}"#,
+            r#"ask:bus.call:{"name":"pics","method":"give"}"#,
             &get(&own_hash),
             &get(&secret_hash),
             "wait",
@@ -164,7 +164,7 @@ async fn an_extension_reads_only_blobs_it_stored_or_was_handed() {
     assert_eq!(
         got(&read_bridge[3]),
         Ok(own.to_vec()),
-        "经 package.call 拿回来、答的包拿得到的读得到"
+        "经总线拿回来、答的包拿得到的读得到"
     );
     assert_eq!(
         got(&read_bridge[4]),

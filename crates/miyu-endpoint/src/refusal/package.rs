@@ -268,7 +268,6 @@ impl Refusal {
         )
     }
 
-    /// 扩展经 `package.call` 调了对方清单 `[export]` 里没有的方法（施工 X-18）：`data.method` 是哪一个。
     /// 总线上没有包提供这个名字（施工 BUS-2）：`data.name`。
     pub(crate) fn no_provider(name: &str) -> Refusal {
         Refusal::with(
@@ -285,11 +284,22 @@ impl Refusal {
             serde_json::Value::String(name.to_string()),
         )
     }
+    /// 扩展调了清单 `[export]` 里没有的方法（施工 X-18；`bus.call` 照名字找到的那一家、`package.call` 调自己）：`data.method`
+    /// 是哪一个。
     pub(crate) fn not_exported(method: &str) -> Refusal {
         Refusal::with(
             "not_exported",
             "method",
             serde_json::Value::String(method.to_string()),
+        )
+    }
+    /// 扩展的 `package.call` 写了别的包的编号（施工 BUS-5，设计 67 B5）：照包编号它只调得到自己，跨包走 `bus.call`。
+    /// `data.package` 是它写的那个编号。
+    pub(crate) fn own_package_only(package: &str) -> Refusal {
+        Refusal::with(
+            "own_package_only",
+            "package",
+            serde_json::Value::String(package.to_string()),
         )
     }
 

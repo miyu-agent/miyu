@@ -2,6 +2,9 @@
 //! `method.call`」）：扩展登记它的后台页要调的方法，头调，核心反向转给扩展、交回它回的。登记不缓存：连接断了，调到的回
 //! `program_not_running`；没在跑、还没登记的也是，不替它拉起（施工 BUS-2 照实改了这一句，原来写的「用到时拉起、最多等
 //! 60 秒」代码里一直没有）。转发那一段（[`forward`]）总线的 `bus.call` 共用（施工 BUS-2，`bus.rs`）。
+//!
+//! 照包编号调（`package.call`）是给人的连接的：后台页、界面块、命令行、人在终端起的程序都带着包编号。扩展照包编号只调得到
+//! 自己，跨包一律走总线（施工 BUS-5，设计 `67-总线.md` B5）：留着这条路，作者照旧会把对方的包名写死。
 
 use std::collections::{BTreeMap, HashMap};
 use std::sync::{Mutex, PoisonError};
@@ -104,15 +107,20 @@ pub(crate) fn register(
     Ok(json!({ "methods": count }))
 }
 
-/// `package.call`：照登记的转给扩展，回什么交回什么。`from` 是调的扩展的包（施工 X-18）：它要声明了 `packages.call`（连接那一头照
-/// `connection/rights.rs` 的表查，施工 X-30），只调得到对方清单 `[export]` 里的方法，转过去时带上 `from`；人的连接没有 `from`，后台页登记的都调得到。回应里对方拿得到的 blob，
-/// `from` 也拿得到（施工 W-6 三补，[`crate::attach::Grants::pass`]）。转给 `caller` 替的那个人那一份（施工 IM-1 中下）。
+/// `package.call`：照登记的转给扩展，回什么交回什么。人的连接没有 `from`，哪个包登记了的方法都调得到。`from` 是调的扩展的包
+/// （核心拉起的那条连接）：它要声明了 `packages.call`（连接那一头照 `connection/rights.rs` 的表查，施工 X-30），`package` 只能是
+/// 它自己（施工 BUS-5：写了别的包的回 `own_package_only`，那个包在不在、方法导没导出都是这一句，跨包走 `bus.call`），只调得到
+/// 自己清单 `[export]` 里的方法，转过去时带上 `from`。blob 怎么交见 [`forward`]。
 pub(crate) async fn call(
     core: &Core,
     caller: &Caller,
     params: CallParams,
 ) -> Result<Value, Refusal> {
     let from = caller.package.as_deref();
+    // 先于找包：扩展问别的包，不告诉它那个包在不在。
+    if from.is_some_and(|from| from != params.package) {
+        return Err(Refusal::own_package_only(&params.package));
+    }
     let packages = core.system_packages();
     let manifest = |id: &str| {
         packages
@@ -123,7 +131,7 @@ pub(crate) async fn call(
     let Some(target) = manifest(&params.package) else {
         return Err(Refusal::UNKNOWN_PACKAGE);
     };
-    // 扩展调的：声明了 `packages.call` 没有，连接那一头照表查过了（施工 X-30，`connection/rights.rs`）；这里只看对方给没给出来。
+    // 扩展调的：声明了 `packages.call` 没有，连接那一头照表查过了（施工 X-30，`connection/rights.rs`）；这里只看给没给出来。
     if from.is_some() && !target.export.exports(&params.method) {
         return Err(Refusal::not_exported(&params.method));
     }

@@ -16,12 +16,13 @@
 //! - `ask:<方法>:<JSON 参数>`：发一条带参数的请求，读一行回应记下；参数里的 `{session}` 换成最近一条带 `"session"` 的回应里
 //!   的会话编号（施工 O-4 下：造了场所会话接着对它说话），`{upload}` 换成最近一条带 `"upload"` 的回应里的上传编号（施工 Y-2中下：
 //!   分块上传接着写）。等回应时先来的 `widget.watch` 照 `serve` 答、接着等，`widget.set`
-//!   的回应记下接着等（施工 X-15 中：握了手核心就会说谁在看）；
+//!   的回应记下接着等（施工 X-15 中：握了手核心就会说谁在看）；先来的 `method.call` 也照 `serve` 答、接着等（施工 BUS-5：
+//!   照包编号调自己）；
 //! - `wait`：读标准输入直到读到头；
 //! - `listen`：读标准输入直到读到头，读到的每一行都记下（施工 9-4 下下：核心推来的 `extension.config`）；
 //! - `serve`：读标准输入直到读到头，每一行都记下；是核心发来的 `tool.call` 的，照工具名答（施工 O-2 上）：`boom` 回一个错误，
 //!   `garbled` 回写法不对的结果，`oops` 回一段字、说出了错，别的回一段字 `served <工具名>`；是 `method.call` 的照方法名答
-//!   （施工 F-6 中）：`boom` 回一个错误，`slow` 不答，`huge` 回超过一行上限的结果（施工 YC-5补），以 `.coded` 结尾的回一个码写在 `error.data.code` 的错误（施工 BUS-2），
+//!   （施工 F-6 中）：`boom` 回一个错误，`slow` 不答，`huge` 回超过一行上限的结果（施工 YC-5补），`give`、以 `.give` 结尾的照 `give:` 交（施工 BUS-5），以 `.coded` 结尾的回一个码写在 `error.data.code` 的错误（施工 BUS-2），
 //!   别的回 `{"answered": <方法名>}`；是 `command.call` 的照 `argument` 答
 //!   （施工 X-14 下）：`boom` 回一个错误，`garbled` 回写法不对的结果，`silent` 不答，别的回两行 `{"said": "<命令> <argument>\nok"}`；
 //!   是 `widget.watch` 的推一块 `widget.set`：一段字 `watching <块>`，跟着会话的后面接会话编号（施工 X-15 中）；`method.call` 的
@@ -145,7 +146,11 @@ fn main() {
                 r#"{{"jsonrpc":"2.0","id":"{ids}{n}","method":"{method}","params":{params}}}"#
             ));
             let mut reply = read(&mut input);
-            while reply.contains(r#""method":"widget.watch""#) || reply.contains(r#""id":"w-"#) {
+            let called = r#""method":"method.call""#;
+            while reply.contains(r#""method":"widget.watch""#)
+                || reply.contains(r#""id":"w-"#)
+                || reply.contains(called)
+            {
                 keep(&mut record, &reply);
                 if let Some(widget) =
                     field(&reply, "widget").filter(|_| reply.contains("widget.watch"))
@@ -155,6 +160,14 @@ fn main() {
                         field(&reply, "session").as_deref(),
                         "watching",
                     ));
+                }
+                // 照包编号调自己的（施工 BUS-5）：核心先把 `method.call` 转回来，答了它才等得到这一问的回应。
+                if reply.contains(called)
+                    && let Some(id) = field(&reply, "id")
+                    && let Some(answer) =
+                        answers::answered(&id, &inner_method(&reply).unwrap_or_default(), &give)
+                {
+                    send(&answer);
                 }
                 reply = read(&mut input);
             }

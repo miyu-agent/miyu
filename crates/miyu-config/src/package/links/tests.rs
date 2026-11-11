@@ -256,19 +256,28 @@ fn a_package_carries_one_program() {
     assert_eq!((problem.code, problem.line), (Code::UnknownKey, Some(2)));
 }
 
-/// 给别的软件调的方法（施工 X-18）：`[export] methods` 照写的先后读；不是方法名的、重复的 `bad_export`；只给扩展包。
+/// 给别的软件调的方法（施工 X-18）：`[export] methods` 照写的先后读；不是方法名的、重复的 `bad_export`；只给扩展包。方法都在
+/// 声明的名字底下（施工 BUS-5，细的在 `export/tests.rs`）。
 #[test]
 fn an_extension_exports_methods_by_name() {
     let manifest = read(&format!(
-        "{BRIDGE}\n[export]\nmethods = [\"add\", \"search.by-meaning\"]\n"
+        "{BRIDGE}\n[export]\nprovides = [\"pics\"]\nmethods = [\"pics.add\", \"pics.by-meaning\"]\n"
     ))
     .unwrap();
-    assert_eq!(manifest.export.methods, ["add", "search.by-meaning"]);
+    assert_eq!(manifest.export.methods, ["pics.add", "pics.by-meaning"]);
     assert!(read(BRIDGE).unwrap().export.is_empty(), "没写的是空的");
-    for bad in ["[\"Add\"]", "[\"add\", \"add\"]", "[\"\"]"] {
-        let (code, _) = wrong(&format!("{BRIDGE}\n[export]\nmethods = {bad}\n"));
+    for bad in [
+        "[\"pics.Add\"]",
+        "[\"pics.add\", \"pics.add\"]",
+        "[\"pics.add\", \"\"]",
+    ] {
+        let (code, _) = wrong(&format!(
+            "{BRIDGE}\n[export]\nprovides = [\"pics\"]\nmethods = {bad}\n"
+        ));
         assert_eq!(code, Code::BadExport, "{bad}");
     }
-    let (code, _) = wrong(&format!("{MEMORY}\n[export]\nmethods = [\"add\"]\n"));
+    let (code, _) = wrong(&format!(
+        "{MEMORY}\n[export]\nprovides = [\"pics\"]\nmethods = [\"pics.add\"]\n"
+    ));
     assert_eq!(code, Code::WrongKind, "内置包不能写");
 }

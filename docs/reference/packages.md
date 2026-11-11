@@ -26,7 +26,7 @@
 | [`command.catalog`](#commandcatalog) | 列能用的斜杠命令 |
 | [`check`](#check) | 查配置、人格、预设、软件包写没写错 |
 
-**谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.search`、`package.clean`、`package.upgrades`、`package.upgrade`、`package.file`、`package.page`、`extension.*`、`mcp.*`、`tool.set_loading`、`feature.set` 只给人，扩展调回 `local_only`；`package.info` 带 `path` 的也只给人（看的是本机任意一处的文件夹，同 `package.install`，施工 IN-4）。别的人、扩展都能调；扩展调 `package.call` 另有规矩（见下）。
+**谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.search`、`package.clean`、`package.upgrades`、`package.upgrade`、`package.file`、`package.page`、`extension.*`、`mcp.*`、`tool.set_loading`、`feature.set` 只给人，扩展调回 `local_only`；`package.info` 带 `path` 的也只给人（看的是本机任意一处的文件夹，同 `package.install`，施工 IN-4）。别的人、扩展都能调；扩展调 `package.call` 只调得到自己（见下）。
 
 **三层**：出厂的（随 Miyu 装的，`shipped`）、系统加装的（系统的包管理器另外装的，`distro`：Linux 是 `$XDG_DATA_DIRS` 里每一处的 `miyu/packages/`，没设照 `/usr/local/share:/usr/share`，Linuxbrew 自己的 `share` 写进 `XDG_DATA_DIRS`；macOS 是 Homebrew 前缀的 `share/miyu/packages/`；Windows 没有；`MIYU_DISTRO_PACKAGES` 设了的只看它）、装上的（数据根的 `opt/`，`home`）。同一个编号几层都有的，装上的盖过系统加装的、系统加装的盖过出厂的，被盖住的不加载、不算错。装上那一层装了同编号的就是升级、换掉原来的；出厂的、系统加装的卸掉是在 `etc/removed/` 记一笔（空文件 `<编号>`），文件不动，能装回来。
 
@@ -178,7 +178,7 @@
 
 **`package.page`**：参数 `package`。回应 `{"url"}`：核心按需起的本机后台页服务上这个包的宿主页（`http://127.0.0.1:<端口>/h/<票>/`），交给浏览器打开，不用装网页（`miyu pkg page` 就照它开）。只给后台页在包目录里的（清单写 `[page] dir`）；服务第一次要的时候起，闲了十分钟（没有请求、没有开着的推送流）就关，关了地址作废，再要一次就是。宿主页照网页的那一套把页面放进隔离的框、替它调 `settings.get`、`settings.set`、`call`，深浅照系统。
 
-扩展也能调 `package.call`：要在清单里声明能力 `packages.call`，只调得到对方清单 `[export]` 里列的方法；转过去带 `from`（调的包的编号）。对方回应里出现的、它自己存的 blob，调用方之后也读得到（见 [附件](blob.md#blobget)）。
+`package.call` 是给人的连接用的（各个头、命令行、人在终端起的程序）：哪个包登记了的方法都调得到，写没写进 `[export]` 都行，转过去不带 `from`。扩展（核心拉起的包的程序）照包编号只调得到自己：`package` 写了别的包的编号回 `own_package_only`，那个包在不在、方法导没导出都是这一句；调自己要声明能力 `packages.call`，只调得到自己清单 `[export]` 里列的方法，转过去带 `from`（自己的编号）。扩展要调别的包，照名字走 [`bus.call`](bus.md)。
 
 **出错**
 
@@ -189,7 +189,8 @@
 | `unregistered` | 程序没登记这个方法，`data.method` |
 | `method_failed` | 程序回了错，`data.message`、`data.code`（扩展回的错带字的码放在 `error.data.code`，核心照它交回；没有的照 `error.code`）。程序回的那一行超过 1 MiB 的核心不读，`data.code` 是 `line_too_long` |
 | `method_timeout` | 到时限没回 |
-| `needs_approval`、`not_exported` | 扩展调的：没声明 `packages.call`；对方没导出这个方法（`data.method`） |
+| `own_package_only` | 扩展调的：`package` 不是它自己，`data.package` 是它写的那个编号。跨包用 `bus.call` |
+| `needs_approval`、`not_exported` | 扩展调自己的：没声明 `packages.call`；清单 `[export]` 里没有这个方法（`data.method`） |
 
 ## `extension.status`、`extension.enable`、`extension.disable`、`extension.restart`
 

@@ -83,7 +83,7 @@ async fn what_a_package_stored_itself_survives_a_restart() {
     assert_eq!(saved_lines(&root, "memes").len(), 2);
 }
 
-/// 经 `package.call` 转来的、人交来的只在内存里（施工 BG-1）：那是一次调用里临时给的，重起就没了。后来自己又存了的照样落盘。
+/// 经总线转来的、人交来的只在内存里（施工 BG-1）：那是一次调用里临时给的，重起就没了。后来自己又存了的照样落盘。
 #[tokio::test]
 async fn what_was_passed_or_handed_is_not_saved() {
     let (root, _dir) = temp_root("grants-passed");

@@ -76,7 +76,7 @@
 | `widgets` | 在界面上显示自己的内容（界面块） |
 | `context.inject` | 回合开始时往上下文里放几句（`user.append`） |
 | `context.system` | 往系统提示词末尾放一段（`system.append`） |
-| `packages.call` | 调别的包导出的方法（`package.call`） |
+| `packages.call` | 调别的包在总线上导出的方法（`bus.call`）；照包编号调自己（`package.call`） |
 | `search` | 当搜索服务供应商（清单 `[[search]]`，`search.query`） |
 | `model.driver` | 提供模型驱动（清单 `[[driver]]`）：用它的模型时，发给模型的全部对话都经过它。不附带网络 |
 | `act_for_external` | 代表平台上的人说话（带 `as` 的 `session.send`、`command.run`）、`session.note`、不写 `to` 的 `session.respond`、`venue.*`、记 `venue.*` 事件：只给通讯平台的桥 |
@@ -242,9 +242,9 @@
 
 **`package.methods`**（扩展 → 核心）：`{"methods": [{"name", "timeout_ms"?}…]}`，登记它的后台页、界面块要调的方法，换掉上一次的。回应 `{"methods": <个数>}`。别的连接回 `not_an_extension`。
 
-**`method.call`**（核心 → 扩展）：`{"method", "params", "from"?}`：人的头、别的包经 `package.call` 调到它；`from` 是调的包的编号（人调的没有）。回什么，`package.call` 就交回什么；回 JSON-RPC 错误的，对方收到 `method_failed`。回应也是一行最长 1 MiB：太长的核心不读，回你一条 `line_too_long`（`id` 是那条 `method.call` 的），对方当场收到 `method_failed`、`data.code` 是 `line_too_long`；大的内容存成 blob（`blob.put`）、回应里只写哈希。
+**`method.call`**（核心 → 扩展）：`{"method", "params", "from"?}`：人的头经 `package.call`、`bus.call`，别的包经 `bus.call` 调到它；`from` 是调的包的编号（人调的没有）。回什么，调的一方就收到什么；回 JSON-RPC 错误的，对方收到 `method_failed`。回应也是一行最长 1 MiB：太长的核心不读，回你一条 `line_too_long`（`id` 是那条 `method.call` 的），对方当场收到 `method_failed`、`data.code` 是 `line_too_long`；大的内容存成 blob（`blob.put`）、回应里只写哈希。
 
-想让别的扩展调到：在清单 `[export] methods` 里列出来。
+想让别的扩展调到：在清单 `[export]` 里声明总线上的名字（`provides` 或 `plugs`），方法照 `<名字>.<方法>` 列进 `methods`（[总线](bus.md)）。别的扩展只能照名字调，照包编号调不到你（`own_package_only`）。
 
 ## `package.emit`
 

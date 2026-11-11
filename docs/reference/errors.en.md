@@ -152,7 +152,8 @@ Chinese version: [errors.md](errors.md).
 | `skill_shared` | `skill.remove`: a skill in another folder (`skills.external.dirs`, `from` is `agents`) is not deleted through Miyu, other clients use it too | `name` |
 | `no_page`, `not_found` | No package page; no such file | |
 | `program_not_running`, `unregistered`, `method_failed`, `method_timeout` | `package.call`: the program isn't connected; not registered; it answered with an error (an answer line over 1 MiB counts too, with `code` set to `line_too_long`); no answer | `method`, `message`, `code` |
-| `not_exported` | An extension called a method the other package doesn't export | `method` |
+| `not_exported` | An extension called a method that isn't in the manifest's `[export]`: the provider's for `bus.call`, its own for `package.call` | `method` |
+| `own_package_only` | An extension's `package.call` named another package: by package id it reaches only itself; use `bus.call` across packages | `package` |
 | `bad_tool` | A tool in `provide` is wrong | `tool`, `problem` |
 | `unknown_widget`, `bad_widget_content` | The widget isn't in the manifest; the content is malformed | `widget`; `path`, `problem` |
 | `unknown_command`, `command_not_allowed`, `owner_only` | No such command; this person can't use it; owner only | `why` |

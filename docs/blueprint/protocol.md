@@ -486,7 +486,7 @@
 {"id":"g1","jsonrpc":"2.0","result":{"data":"MzQ1Ng==","size":10}}
 ```
 
-1. 不写 `session` 的照存处给：没有这个 blob，`unknown_blob`。扩展的连接（核心拉起的包）不写 `session` 的只读得到它拿得到的（施工 W-6 三补）：它自己 `blob.put`、分块上传存的，它经 `package.call` 调别的包、回应里出现的哈希里答的那个包自己拿得到的（只转答的包拿得到的：不然一个包把别处看来的哈希写进回应，就替调它的包开了门）；别的一律 `unknown_blob`。它自己存的那一种另落盘（施工 BG-1：表情包这样的包把图只存在 blob 里、自己只记哈希，核心重起以后手里没有内容，没法再存一次）：`var/lib/blob-grants/<包的编号>`，纯文本、一行一个哈希、只追加（`miyu_store::blob::grants`：同 `journal.jsonl` 每追加一行都重新打开、追加、同步；同一个哈希只写一次；写不进的记一行 `WARN`，存照算成、这一次起来照旧读得到），核心起来时读回（读不懂的行跳过、记一行 `WARN`）。落盘以前（施工 BG-1 之前）存的另补一次（施工 BG-1补，端点的 `attach/grants/backfill.rs`）：数据根里还没有 `var/lib/blob-grants/` 这个目录的那一次起来（升级后第一次、全新的数据根），拉起扩展之前，照装着的每个包扫它自己的状态目录 `var/lib/<编号>/`（`miyu_store::blob::grants::scan`：照字节找哈希，不跟链接、不出目录，一份文件 64 MiB、一个包 20000 份、16 层为限，没扫完的记一行 `WARN`），找到的里面存处确实有的登记给它、落盘，记一行 `INFO`（`blob grants backfilled`，哪个包、找到几个、登记几个），各包的那一份先写进暂存目录 `var/lib/.blob-grants.new/`、再一次改名成 `var/lib/blob-grants/`（`blob::grants::seed`；中途被杀的只剩暂存目录，下次起来先删掉、整个重做），哪怕一个都没补到；目录在了不再做：包以前能把哈希记进自己的状态，说明它当时拿得到，以后的许可都落盘了，要是每次起来都扫，包往自己目录里写别处看来的哈希就给自己开了门。一个包扫不了的记一行、接着扫别的，补登记失败不拦核心起来。经 `package.call` 拿回来的、别人交来的只记在核心的内存里，核心重起就没了：那是一次调用里临时给的。包卸了它那一份扔掉、文件删掉，装回来从空的开始。人的连接照旧。
+1. 不写 `session` 的照存处给：没有这个 blob，`unknown_blob`。扩展的连接（核心拉起的包）不写 `session` 的只读得到它拿得到的（施工 W-6 三补）：它自己 `blob.put`、分块上传存的，它经 `bus.call` 调别的包（施工 BUS-5 以前也能经 `package.call`）、回应里出现的哈希里答的那个包自己拿得到的（只转答的包拿得到的：不然一个包把别处看来的哈希写进回应，就替调它的包开了门）；别的一律 `unknown_blob`。它自己存的那一种另落盘（施工 BG-1：表情包这样的包把图只存在 blob 里、自己只记哈希，核心重起以后手里没有内容，没法再存一次）：`var/lib/blob-grants/<包的编号>`，纯文本、一行一个哈希、只追加（`miyu_store::blob::grants`：同 `journal.jsonl` 每追加一行都重新打开、追加、同步；同一个哈希只写一次；写不进的记一行 `WARN`，存照算成、这一次起来照旧读得到），核心起来时读回（读不懂的行跳过、记一行 `WARN`）。落盘以前（施工 BG-1 之前）存的另补一次（施工 BG-1补，端点的 `attach/grants/backfill.rs`）：数据根里还没有 `var/lib/blob-grants/` 这个目录的那一次起来（升级后第一次、全新的数据根），拉起扩展之前，照装着的每个包扫它自己的状态目录 `var/lib/<编号>/`（`miyu_store::blob::grants::scan`：照字节找哈希，不跟链接、不出目录，一份文件 64 MiB、一个包 20000 份、16 层为限，没扫完的记一行 `WARN`），找到的里面存处确实有的登记给它、落盘，记一行 `INFO`（`blob grants backfilled`，哪个包、找到几个、登记几个），各包的那一份先写进暂存目录 `var/lib/.blob-grants.new/`、再一次改名成 `var/lib/blob-grants/`（`blob::grants::seed`；中途被杀的只剩暂存目录，下次起来先删掉、整个重做），哪怕一个都没补到；目录在了不再做：包以前能把哈希记进自己的状态，说明它当时拿得到，以后的许可都落盘了，要是每次起来都扫，包往自己目录里写别处看来的哈希就给自己开了门。一个包扫不了的记一行、接着扫别的，补登记失败不拦核心起来。经 `package.call` 拿回来的、别人交来的只记在核心的内存里，核心重起就没了：那是一次调用里临时给的。包卸了它那一份扔掉、文件删掉，装回来从空的开始。人的连接照旧。
    写了 `session` 的照那个会话给（施工 W-6 补，2026-10-17 接入QQ 的会话要的）：会话编号不合写法 `bad_params`。谁读得到：人的连接读得到本机会话、不关沙盒的场所会话（主人本人的私聊）的；平台桥只读得到它的平台的场所会话（同 `venue.sessions` 列给它的，照场所编号的平台前缀）里引用过的 blob，引用照结构认：消息、工具结果的图片块、文件块，工具结果效果 `file.shown` 的 `blob`，她经工具发出去的图（`tool.result` 的 `sent`，施工 W-6 再补，接入QQ 发表情包要读主人私聊里的），不在正文里搜（桥能以外部身份往主人的私聊里发字，照原文搜就能写一句带哈希的话读走主人别的 blob）。不合的一律 `unknown_blob`，不说是哪一样不对。扩展的连接也一样（施工 W-6 三补）：它要的 blob 得是那个会话结构里引用过的，写上随便一个会话读不到存处里别的 blob。
 2. 从 `offset` 起读 `length` 个字节，读到结尾就停；`offset` 过了结尾的，`data` 是空的。`size` 是打开那一刻的大小。`length` 写 0 只回 `size`，`data` 是空的。`length` 超过 512 KiB：`bad_params`。
 3. 不重新核对整份内容的哈希：核对在核心自己用整份内容的时候（`store.md` 第十条）。
@@ -867,7 +867,7 @@
 
 - `package.file {"package", "path", "offset"?}`：回应 `{"data", "size", "eof"}`，一次最多 512 KiB。拒绝：路径写法不对 `bad_params`；没有的包 `unknown_package`；没有后台页 `no_page`；没有、跑出目录、不是普通文件 `not_found`。扩展调回 `local_only`。
 - `package.methods {"methods": [{"name", "timeout_ms"?}]}`：只给核心拉起的扩展，别的连接 `not_an_extension`；换掉这个包上一次登记的，回应 `{"methods": 个数}`；写法不对的 `bad_params`。
-- `package.call {"package", "method", "params"?}`：核心发 `method.call {"method", "params", "from"?}` 给那个扩展，回什么交回什么；在后台答。扩展也能调（施工 X-18）：要声明 `packages.call`，只调得到对方清单 `[export]` 里的，转过去带 `from`（调的包的编号）。拒绝：`unknown_package`、`program_not_running`、`unregistered`（`data.method`）、`method_failed`；扩展调的另有 `needs_approval`（`data.capabilities` 是 `["packages.call"]`）、`not_exported`（`data.method`）（`data.message`、`data.code`）、`method_timeout`。扩展调回 `local_only`。
+- `package.call {"package", "method", "params"?}`：核心发 `method.call {"method", "params", "from"?}` 给那个扩展，回什么交回什么；在后台答。人的连接哪个包登记了的都调得到，不带 `from`。扩展照包编号只调得到自己（施工 BUS-5，设计 67 B5；原来施工 X-18 让它调别的包导出的）：`package` 不是它自己的回 `own_package_only`（`data.package` 是它写的编号；先于找包，那个包在不在、方法导没导出都是这一句），跨包走 `bus.call`；调自己要声明 `packages.call`，只调得到自己清单 `[export]` 里的，转过去带 `from`（它自己的编号）。拒绝：`unknown_package`、`program_not_running`、`unregistered`（`data.method`）、`method_failed`（`data.message`、`data.code`）、`method_timeout`；扩展调的另有 `own_package_only`、`needs_approval`（`data.capabilities` 是 `["packages.call"]`）、`not_exported`（`data.method`）。
 
 **`extension.status`、`extension.enable`、`extension.disable`、`extension.restart`**（施工 9-4 上，`extensions.md`「对外的样子」）
 
@@ -1567,7 +1567,8 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `not_redoable` | -32010 | 重做时最后一轮不是人说的话开的，或者一轮都没有（施工 4-7 再补） |
 | `nothing_to_recap` | -32010 | 回顾时她一个带正文的回复都还没有；以前造的快照里没有回顾的字（施工 3-8 四补） |
 | `not_asking` | -32010 | `session.answer` 回答的调用没在等回答：答过了、了结了、等的不是这一种（施工 D-1） |
-| `not_exported` | -32010 | 扩展经 `package.call` 调了对方清单 `[export]` 里没有的方法；`data.method` 是哪一个（施工 X-18） |
+| `not_exported` | -32010 | 扩展调了清单 `[export]` 里没有的方法：`bus.call` 照名字找到的那一家的，`package.call` 调自己的；`data.method` 是哪一个（施工 X-18、BUS-2） |
+| `own_package_only` | -32010 | 扩展的 `package.call` 写了别的包的编号：照包编号它只调得到自己，跨包走 `bus.call`；`data.package` 是它写的那个编号（施工 BUS-5，设计 67 B5） |
 | `not_a_provider` | -32010 | `provide` 不是核心拉起的扩展发的（施工 O-2 上） |
 | `bad_tool` | -32010 | `provide` 的一件工具规格不对、撞名；`data.tool` 是哪一件，`data.problem` 是 `duplicate`、`name`、`parameters`、`access`、`venues`、`timeout`（施工 O-2 下）、`clicall`（施工 M-2）、`result`（施工 M-4：不是字、空白的）、`display_name`、`subject`、`feature`、`plugin`、`role`、`scope`、`paths`、`background_parameters`（施工 XG-1 上，`providers.md`）、`runs_commands`（施工 XG-1 下：写了真假、`null` 以外的）之一（施工 O-2 上） |
 | `not_ambient` | -32010 | `session.respond` 的 `to` 里有不是这个会话里旁听的 `message.user` 的；`data.messages` 是那几条（施工 O-14 上） |
@@ -1766,6 +1767,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `not_asking` | 不在等待回答。 | Not waiting for an answer. |
 | `not_ambient` | 不是旁听消息。 | Not an overheard message. |
 | `not_exported` | 对方软件没有开放这个方法。 | The other package does not offer this method. |
+| `own_package_only` | 扩展照包编号只能调自己，调别的软件包请用 bus.call。 | An extension can call only itself by package id; use bus.call for other packages. |
 | `not_a_provider` | 仅扩展可提供工具。 | Only extensions can provide tools. |
 | `bad_tool` | 工具规格有误。 | Invalid tool spec. |
 | `already_answered` | 已回复。 | Already answered. |
@@ -1874,7 +1876,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/reads.rs`（施工 W-6） | `blob.get`：读一段、读到结尾就停、`offset` 过了结尾是空的、不写 `offset`、`length` 的默认值、`length` 写 0 只问大小；没有这个 blob `unknown_blob`。`fs.read`：数据根拒、工作区能读、相对的 `bad_params`、`~` 接系统的家目录；没有、目录、（Unix）套接字 `path_unreadable`。两个方法 `length` 超过 512 KiB 都是 `bad_params`；拒绝的中英文 |
 | `crates/miyu-endpoint/tests/blob_grants_restart.rs`、`src/attach/grants/tests.rs`、`crates/miyu-store/src/blob/grants/tests.rs`（施工 BG-1） | 扩展自己存的 blob 核心重起以后还读得到、别的包照旧读不到；自己存的落盘、读得回，同一个哈希只写一行，经 `package.call` 转来的、人交来的不落盘，卸了文件删掉；坏行跳过数得出，写到一半的最后一行不和下一行粘在一起 |
 | `crates/miyu-endpoint/tests/blob_grants_backfill.rs`、`src/attach/grants/backfill/tests.rs`、`crates/miyu-store/src/blob/grants/scan/tests.rs`（施工 BG-1补） | 删掉 `var/lib/blob-grants/` 以后再起：包状态目录里记着、存处有的补登记给它，没记的、别的包照旧读不到，目录建出来；目录在了以后再写进状态目录的不补；存处没有的不登记，一个包扫不了不拦别的，留着半截的暂存目录照样完整补上、暂存目录没了；扫描找得到文本里、二进制里、跨着两块的，写法不对的不认，不跟链接，太大、太多、太深的数得出 |
-| `crates/miyu-endpoint/tests/blob_grants.rs`、`src/attach/grants/tests.rs`（施工 W-6 三补） | 扩展不写 `session`：自己存的读得到、主人存的读不到、别的包存的没拿到过读不到；经 `package.call` 拿回来、答的包拿得到的读得到，答的包写进回应、自己拿不到的读不到；包卸了从空的开始。扩展写了 `session`：会话引用过的读得到、没引用过的读不到。人的连接照旧 |
+| `crates/miyu-endpoint/tests/blob_grants.rs`、`src/attach/grants/tests.rs`（施工 W-6 三补） | 扩展不写 `session`：自己存的读得到、主人存的读不到、别的包存的没拿到过读不到；经 `bus.call` 拿回来、答的包拿得到的读得到，答的包写进回应、自己拿不到的读不到；包卸了从空的开始。扩展写了 `session`：会话引用过的读得到、没引用过的读不到。人的连接照旧 |
 | `crates/miyu-endpoint/tests/blob_bridge.rs`、`sent_media.rs`、`crates/miyu-core/tests/packages.rs`（施工 Y-2 中下，SU-4 中改） | 桥一次传、分块传的都在同一个存处，发出去以后主人那边读得到；替主人干活的扩展 `blob.put` 存的，`model.call` 带这张图找得到（施工 BUG-2）；包工具交回的图在存处里；核心起来时留下的分块暂存清掉 |
 | `crates/miyu-endpoint/tests/list_bridge.rs`、`src/subscriptions/sessions/tests.rs`（施工 Y-12 上） | 桥和主人列出来的本机会话一样；新造的会话推给订阅着的连接 |
 | `crates/miyu-endpoint/tests/from.rs`、`src/from/tests.rs` | `session.send` 带 `from`（施工 7-10）：记成 `harness`、带着名字，不带的、`null` 照旧记成本人；闲着开一轮、`cause` 是这一条，正忙排进这一轮；附件照收；控制字符去掉、截到 128 字节不截断一个字；空的、只有控制字符的、不是字符串的参数不对，什么都没写；`session.create`、`session.redo` 写了不理 |

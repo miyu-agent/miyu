@@ -94,7 +94,7 @@
 | 要 `memory.write` | 同上 | `memory.remember`、`import`（施工 MI-1）、`update`、`forget`、`restore`、`dream`、`dream_stop`、`card_update`、`card_forget`（施工 E-1 下），`kb.add`、`create`、`update`、`mount`、`remove`、`delete`、`reindex` |
 | 要 `fs.read`、`network` | 同上 | `fs.*`；`link.preview` |
 | 要 `login.page`（施工 LP-1） | 同上 | `via` 是 `page` 的 `login.ticket`：替本机打开的页面换登录票（下面「替本机页面换票」） |
-| 要 `tools`、`widgets`、`context.system`、`packages.call` | 同上 | 有工具的 `provide`（空的照收：斜杠命令、搜索要先 `provide` 一次）；`widget.set`、`widget.clear`；`system.append`；`package.call`（照旧另查对方的 `[export]`） |
+| 要 `tools`、`widgets`、`context.system`、`packages.call` | 同上 | 有工具的 `provide`（空的照收：斜杠命令、搜索要先 `provide` 一次）；`widget.set`、`widget.clear`；`system.append`；`package.call`、`bus.call`（另查 `[export]`；`package.call` 照包编号只调得到自己，施工 BUS-5，`package-pages.md`「软件之间互相调」） |
 | 都能调 | 照常 | 别的：读配置和密钥的名字、`blob.*`、`model.*`、`human.get`、读软件包的、`content.*`、人格和预设读的、技能、脚本、记忆和知识库读的、`subscribe` 的别的流、`login.redeem` |
 
 1. 缺能力的 `data.capabilities` 是缺的那一项，同开扩展时没批的那一种回法；`system.append`、`package.call` 原来各自查声明的那几行去掉了，统一在这里查。
