@@ -50,7 +50,7 @@
 | `crates/miyu-endpoint/src/settings.rs` | 端点的配置项：界面语言 `ui.language`，`auto` 照系统的语言算出 `zh`、`en`、`ja`（施工 8-1 声明，8-2 握手时用）；新会话开局只读 `permission.start_read_only`（施工 8-2） |
 | `crates/miyu-endpoint/src/config.rs`、`config/` | 配置服务：起来时读的几份配置、最终值，照目录找项目配置、认信不信任；`config.schema`、`config.get`、`config.check`（施工 8-2，`config.md`）；`config.set`、`config.trust`，住在核心家底的一把锁里（施工 8-3）；监视配置文件、推 `config.changed`（施工 8-4）；密钥文件也住在这里（施工 8-5） |
 | `crates/miyu-endpoint/src/secrets.rs`、`secrets/` | `secret.set`、`secret.delete`、`secret.list`：只能写、删、列名字，从不交出值；手改密钥文件被看到的、留痕（施工 8-5，`config.md` 第九条） |
-| `crates/miyu-endpoint/src/models.rs`、`models/` | `model.list`：配好的供应商、模型、每一格资料的值和来源（施工 8-7，`models.md`「协议」），池、用途（施工 8-8；挡位 8-8 补去掉了），模型和 key 的冷却（施工 8-9），`facts.effort` 多 `key`（8-18（补））；`session.create`、`session.configure` 的 `model` 怎么解析（`record`，施工 8-8、8-10）；`session.configure` 的参数（`ConfigureParams`）、`subscribe` 回应的 `model`（施工 8-10）；`subscribe` 的 `model` 多 `effort`（施工 8-18，`from` 是配置的哪一层，8-18（补）起；会话的 `session`，施工 SM-1）；`session.configure` 的 `effort` 照会话这时的模型的档位查（`models/effort.rs`，施工 SM-1）；`model.call`（`models/call.rs`，施工 8-20）：读参数、认图、调一次性入口（`miyu_session::OneShot`）、出错写成拒绝；8-15 起一次性调用记成用量 |
+| `crates/miyu-endpoint/src/models.rs`、`models/` | `model.list`：配好的供应商、模型、每一格资料的值和来源（施工 8-7，`models.md`「协议」），池、用途（施工 8-8；挡位 8-8 补去掉了），模型和 key 的冷却（施工 8-9），`facts.effort` 多 `key`（8-18（补））；`session.create`、`session.configure` 的 `model` 怎么解析（`record`，施工 8-8、8-10）；`session.configure` 的参数（`ConfigureParams`）、`subscribe` 回应的 `model`（施工 8-10）；`subscribe` 的 `model` 多 `effort`（施工 8-18，`from` 是配置的哪一层，8-18（补）起；会话的 `session`，施工 SM-1）；`session.configure` 的 `effort` 照会话这时的模型的档位查（`models/effort.rs`，施工 SM-1）；`session.configure`、`session.create` 的 `vision` 同 `model` 解析、造好的会话另发一条（`models/vision.rs`，施工 VM-1）；`model.call`（`models/call.rs`，施工 8-20）：读参数、认图、调一次性入口（`miyu_session::OneShot`）、出错写成拒绝；8-15 起一次性调用记成用量 |
 | `crates/miyu-endpoint/src/usage.rs` | `usage.query`（施工 8-15，`models.md`「协议」）：读参数（`usage/tests.rs` 守着）、先补再查用量汇总、照 `usage.currency` 排金额、写成 `rows`；核心起来时开 `var/cache/usage.db`（`open`） |
 | `crates/miyu-endpoint/src/usage/convert.rs` | `usage.convert`（施工 UC-3，`models.md`「协议」）：读参数（日子、币种、上限）、几组一起换算、照 `usage.query` 的 `converted` 写 |
 | `crates/miyu-endpoint/src/providers.rs`、`providers/trial.rs` | 第一次接入的 `provider.detect`、`provider.catalog`、`provider.test`（施工 8-11，`models.md`「协议」、「怎么走」第七条）；探本机、试一次在会话那一层（`miyu_session::find_local`、`probe`） |
@@ -251,7 +251,7 @@
 | `notices.claim` | 头认领发后台通知（`{}`，只给人的头）：核心照连接记、断了就放；`notices` 流的订阅回应有人认领时写 `claimed: true`，有没有人认领变了推 `notices.claimed`（施工 TR-1，托盘 `miyu-applet` 用，`docs/reference/connection.md`「`notices.claim`」） |
 | `prefs.get`、`prefs.set` | 界面包自己的设置（皮肤、配色这些），存在数据根里、跟着人走：读整份；照顶层的键并、`null` 删，交回整份，推给别的连接（施工 HP-1，下面「头自己的设置」） |
 | `session.set_workspace` | 换会话在哪个目录干活（施工 9-7 上） |
-| `session.configure` | 换模型、人格、预设、思考强度，下一个回合开始生效（施工 8-10，`models.md`「协议」；人格、预设施工 P-13；思考强度施工 SM-1）；会话的上下文上限，当场生效（施工 CTX-1） |
+| `session.configure` | 换模型、人格、预设、思考强度、钉的看图模型，下一个回合开始生效（施工 8-10，`models.md`「协议」；人格、预设施工 P-13；思考强度施工 SM-1；看图模型施工 VM-1）；会话的上下文上限，当场生效（施工 CTX-1） |
 | `session.delete` | 删除会话：挪进回收处，留 7 天（施工 3-8 三补） |
 | `config.schema` | 配置清单，名字和说明照这个连接的语言（施工 8-2，`config.md`「协议」）；选项可以带 `note`：只有核心查得出的才有，头接在名字后面暗色写（施工 R-5 再补）；可以带 `available: false`：核心查得出用不了的才有，头画成灰的、选不了（施工 R-5 三补）；列表带选项的可以带 `ticks: "unlisted"`：勾着的是不在值里的，头照它反着画（施工 5-15 再补） |
 | `config.get` | 最终值和来源，每一份文件在哪、版本，现在的全部问题；带 `cwd` 的算上那个目录的项目配置（施工 8-2）。`files` 多 `secrets`，只有 `file`；问题里有密钥文件的、引用取不到的（施工 8-5） |
@@ -295,6 +295,7 @@
 | `titles` | 布尔，不写是 `true` | 这个会话自动起标题吗（施工 O-43，同 `venue.session` 的 `titles`，`venues.md`）：`false` 的记进 `session.created`，从此不自动起 |
 | `dirs` | 字符串的数组，可以不写 | 加进来的目录：和工作区一样能读能写（「加进来的目录」（施工 5-10 上））。不写是没有 |
 | `model` | 字符串，可以不写 | 用哪个模型：模型 `<供应商>/<模型>` 或池 `@<池>`（施工 8-8，`models.md`「两种写法」；挡位 8-8 补去掉了）。照这时的配置查过，记进 `session.created` 的 `model`；不写、写 `null` 的照这时的 `models.chat` 原样记（写的是池就记池），以后改 `models.chat` 这个会话照旧（施工 SM-1，设计 51 第一节），那也没配的不写（照旧跟着以后的 `models.chat`） |
+| `vision` | 字符串，可以不写 | 钉哪个看图模型（施工 VM-1，`models.md`「协议」）：写法、解析同 `model`，解析不出的 `unknown_model`、什么都不造；不写、写 `null` 的跟着 `models.vision`。造好以后照 `session.configure` 的 `vision` 记一条 `session.policy_changed`（命令编号接 `/vision`），回应的 `events` 多它，排在 `project` 那一条后面 |
 | `memory` | 字符串，可以不写 | 记忆的范围（施工 R-3 下，`memory.md`「范围」）：`persona`（跟着人格）、`off`（不召回也不记）。记进策略快照，以后不改。不写、写 `null` 的是 `persona`。别的值 `bad_params`：原来的 `session`（只在这个会话里）施工 FH-1 去掉了，旧头再发它也回 `bad_params`，什么都不造 |
 
 回应：`session` 新会话的编号；`events` 是 `[1]`，就是 `session.created` 那一条；`cwd` 是会话实际在哪个目录里干活（「工作目录太宽」）；`wide`：太宽、照人选的用着的才有，是 `true`（施工 9-7 补）；`untrusted_project`：这个目录找得到项目配置、又还没问过信不信任（`trust.toml` 里没有这个仓库，或者记的内容和现在的不一样），写它在哪，写法同配置来源的 `file`（家目录下的写成 `~/…`）。信任着的、选了不信任的、没有项目配置的不写（施工 8-2，`config.md` 第三条第 2 条）。
@@ -1132,14 +1133,15 @@
 | `persona` | 字符串或 `null` | 换成的人格；`null` 是无人格（施工 P-13） |
 | `preset` | 字符串 | 换成的预设（施工 P-13） |
 | `effort` | 字符串或 `null` | 换会话的思考强度（施工 SM-1）：一档的名字，照会话这时的模型的档位查；`null` 是回到跟着配置（`models.md`「怎么走」第十一条） |
+| `vision` | 字符串或 `null` | 钉会话的看图模型（施工 VM-1）：写法、解析、校验同 `model`；`null` 是去掉、回到跟着 `models.vision`。替看图发给它（`models.md`「怎么走」第十三条第 4 条），钉的后来解析不出照转述没成办、不退回 `models.vision`。`view.status` 钉了带 `vision`，没钉的不写 |
 | `context` | 整数或 `null` | 会话的上下文上限（施工 CTX-1，设计 68）：token 数；`null` 去掉。生效的窗口取模型的窗口和它里小的，压缩线照生效的窗口算；记下当场交给路由，不等下一轮。设得太小、照它和这时的模型的最大输出算不出压缩线的，`bad_params`，`data.field` 是 `context`，`data.min` 是最少要多少 |
 
-五格至少写一格。施工 8-18 收过的 `effort` 是对象（`{"model":…,"level":…}`，会话给一个模型记的一档），8-18（补）去掉了；SM-1 加回来的是字或 `null`，那种对象照旧读不成，`bad_params`。
+六格至少写一格。施工 8-18 收过的 `effort` 是对象（`{"model":…,"level":…}`，会话给一个模型记的一档），8-18（补）去掉了；SM-1 加回来的是字或 `null`，那种对象照旧读不成，`bad_params`。
 
 回应：`{}`。换了没有，看推送里的 `session.policy_changed`。
 
-1. 四格都没写、写了空字（`""`）、类型不对的：`bad_params`，不找会话；`session` 不合写法的也是。
-2. 先找会话，找不到的回的是找不到；没在跑的照「会话表」载入。再照这时不算项目配置的最终值解析（和 `session.create` 的 `model` 一样）：解析不出的 `unknown_model`，什么都不记，原话记一行 `DEBUG unknown model`。
+1. 一格都没写、写了空字（`""`）、类型不对的：`bad_params`，不找会话；`session` 不合写法的也是。
+2. 先找会话，找不到的回的是找不到；没在跑的照「会话表」载入。再照这时不算项目配置的最终值解析（和 `session.create` 的 `model` 一样；`vision` 同样，施工 VM-1）：解析不出的 `unknown_model`，什么都不记（一起写的别的格也不换），原话记一行 `DEBUG unknown model`。
 3. 和会话现在记着的一样的：什么都不记，照样回 `{}`。别的记一条 `session.policy_changed`，只写 `model`，`by` 取自连接，`cause` 是这一条的 `id`，回合进行中换的带上这个回合；落了盘才回应。
 4. 下一个回合开始时生效，一轮里前后一致；撤掉的回合里换的也算。生效的那一刻，订阅着的头收到 `model.changed`（`why` 是 `turn`），之后的 `subscribe` 带新的 `model`、限额。
 5. 以后别的临时开关（`04-核心协议.md` 第九节）加进来也是这个方法，参数至少写一个。

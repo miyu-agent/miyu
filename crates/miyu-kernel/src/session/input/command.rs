@@ -85,6 +85,13 @@ pub enum Command {
         /// 上限，token 数，协议那一头照压缩线查过不太小；`None` 是去掉。
         tokens: Option<u64>,
     },
+    /// `session.configure`、`session.create` 的 `vision`：钉会话的看图模型（施工 VM-1，`models.md`「怎么走」第十三条第 4 条），
+    /// `configure.rs`。下一个回合开始时生效；和现在的一样的不记。
+    SetVision {
+        /// 钉成的引用：模型或 `@池`，协议那一头已经照这时的配置查过。内核只存字，不解读。`None` 是去掉，回到跟着
+        /// `models.vision`。
+        vision: Option<String>,
+    },
     /// `session.set_meta`：改标题、置顶，改哪样写哪样（施工 3-8 三补，`meta.rs`）。
     SetMeta {
         /// 新的标题，照 `session.meta_changed` 的写法：空的是去掉标题；不改就没有。去掉前后空白、量长短是协议端点的事

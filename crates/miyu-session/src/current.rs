@@ -41,6 +41,9 @@ pub struct Current {
     /// 会话的上下文上限至少要多少（施工 CTX-1，设计 68）：照这时的策略和端口交的最大输出，压缩线算得出的最小窗口
     /// （`Session::least_context`）。策略里没有压缩的没有。`session.configure` 的 `context`、`/context` 照它拒太小的。
     pub least_context: Option<u64>,
+    /// 会话钉的看图模型（施工 VM-1）：内核照日志算的，刚钉了、还没开回合的也是钉的；没钉的（跟着 `models.vision`）没有。
+    /// `view.status` 的 `vision` 照它写。
+    pub vision: Option<String>,
 }
 
 /// 这个会话累计的：用量、金额照用量汇总的口径，另数压缩、缓存断了几次。

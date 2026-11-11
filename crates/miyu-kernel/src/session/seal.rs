@@ -100,6 +100,7 @@ pub(super) fn taken_when_sealed(command: &Command) -> bool {
         | Command::Configure { .. }
         | Command::SetEffort { .. }
         | Command::SetContext { .. }
+        | Command::SetVision { .. }
         | Command::Recast { .. }
         | Command::SetWorkspace { .. }
         | Command::Ran { .. }

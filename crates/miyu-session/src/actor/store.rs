@@ -54,6 +54,7 @@ impl Actor {
             model: self.session.reference().map(str::to_string),
             compactable: self.session.compactable(),
             least_context: self.session.least_context(),
+            vision: self.session.vision().map(str::to_string),
         }
     }
 

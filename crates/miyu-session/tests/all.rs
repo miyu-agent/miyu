@@ -140,6 +140,7 @@ mod route_side;
 mod route_temperature;
 mod route_turn;
 mod route_vision;
+mod route_vision_pin;
 mod route_zen;
 mod sandbox;
 mod sandbox_confined;

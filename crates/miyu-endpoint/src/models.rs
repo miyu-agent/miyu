@@ -3,7 +3,7 @@
 //! （施工 8-8）：池写的成员和怎么分，派子代理能不能选、给模型看的说明（施工 8-8 补），两种用途各配的引用，没配的是
 //! `null`。8-8 的 `tiers` 8-8 补去掉了。模型、key 的冷却（施工 8-9）照核心一份的冷却表，照这一刻说。`session.create` 的
 //! `model` 怎么解析也在这里（[`record`]，施工 8-8）。`session.configure` 的参数（[`ConfigureParams`]，施工 8-10；`effort`
-//! 施工 SM-1 加回来，照会话这时的模型的档位查在 `models/effort.rs`）、
+//! 施工 SM-1 加回来，照会话这时的模型的档位查在 `models/effort.rs`；钉的看图模型 `vision` 施工 VM-1，`models/vision.rs`）、
 //! `subscribe` 回应的 `model`（[`next`]，施工 8-10；8-18 多 `effort`，从哪来是会话或者配置的哪一层，8-18（补）、SM-1）也在这里。
 //! `model.call` 经一次性入口叫一次模型（`models/call.rs`，施工 8-20）。能出向量的模型多一格 `embedding`（施工 R-5 再补，照资源
 //! 目录的 `models/embedding.toml` 认，[`embedding_names`]）。
@@ -22,6 +22,7 @@ pub(crate) mod effort;
 mod entry;
 mod retire;
 mod side;
+pub(crate) mod vision;
 
 pub(crate) use call::call;
 
@@ -55,8 +56,7 @@ struct ListParams {
 }
 
 /// `session.configure` 的参数：`session` 必写，`model`、`persona`（施工 P-13）、`preset`、`effort`（施工 SM-1）、`context`（施工
-/// CTX-1）至少写一样，空字
-/// 当参数不对（「施工时定的」8-10）。`effort` 只收字和 `null`：施工 8-18 那种对象（`{"model":…,"level":…}`，旧头发的）读不成，
+/// CTX-1）、`vision`（施工 VM-1）至少写一样，空字当参数不对（「施工时定的」8-10）。`effort` 只收字和 `null`：施工 8-18 那种对象（`{"model":…,"level":…}`，旧头发的）读不成，
 /// `bad_params`。
 #[derive(Debug, Deserialize)]
 pub(crate) struct ConfigureParams {
@@ -77,20 +77,25 @@ pub(crate) struct ConfigureParams {
     /// 换成的上下文上限（施工 CTX-1，设计 68）：token 数，写 `null` 的去掉，不写的不换。不是非负整数的读不成，`bad_params`。
     #[serde(default, deserialize_with = "crate::personas::written")]
     context: Option<Option<u64>>,
+    /// 钉的看图模型（施工 VM-1），还没解析：写法同 `model`，写 `null` 的去掉、回到跟着 `models.vision`，不写的不换。
+    #[serde(default, deserialize_with = "crate::personas::written")]
+    vision: Option<Option<String>>,
 }
 
 impl ConfigureParams {
-    /// 换成的引用，原样：外层没有的是不换，写 `null` 的是里面没有（回到跟着 `models.chat`）。五样一样都没写、写了空字的
+    /// 换成的引用，原样：外层没有的是不换，写 `null` 的是里面没有（回到跟着 `models.chat`）。六样一样都没写、写了空字的
     /// 是参数不对。
     ///
     /// # Errors
     ///
-    /// 五样都没写、空字：`bad_params`。
+    /// 六样都没写、空字：`bad_params`。
     pub(crate) fn model(&self) -> Result<Option<Option<&str>>, Refusal> {
         let empty = |text: &Option<String>| text.as_deref() == Some("");
         let none = self.model.is_none() && self.persona.is_none() && self.preset.is_none();
-        if (none && self.effort.is_none() && self.context.is_none())
+        let none = none && self.effort.is_none() && self.vision.is_none();
+        if (none && self.context.is_none())
             || self.effort.as_ref().is_some_and(empty)
+            || self.vision.as_ref().is_some_and(empty)
             || self.model.as_ref().is_some_and(empty)
             || self.persona.as_ref().is_some_and(empty)
             || self.preset.as_ref().is_some_and(empty)
@@ -109,6 +114,11 @@ impl ConfigureParams {
     /// 换成的上下文上限（施工 CTX-1）：外层没有的是不换，写 `null` 的是里面没有（去掉）。太小的由 `models/context.rs` 查。
     pub(crate) fn context(&self) -> Option<Option<u64>> {
         self.context
+    }
+
+    /// 钉的看图模型（施工 VM-1）：外层没有的是不换，写 `null` 的是里面没有（去掉）。同 [`ConfigureParams::model`] 先查过。
+    pub(crate) fn vision(&self) -> Option<Option<&str>> {
+        self.vision.as_ref().map(Option::as_deref)
     }
 
     /// 换成的人格、预设（施工 P-13）：同 [`ConfigureParams::model`] 先查过。

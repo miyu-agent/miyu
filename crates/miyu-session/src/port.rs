@@ -76,6 +76,9 @@ pub struct ForSession {
     pub effort: Option<String>,
     /// 会话的上下文上限（施工 CTX-1，设计 68）：造会话、分叉的没有；载入的是内核从日志算的（`Session::context()`）。
     pub context: Option<u64>,
+    /// 会话钉的看图模型（施工 VM-1）：造会话、分叉的没有（`session.create` 带的造好以后才记，第一轮开始交）；载入的是内核
+    /// 从日志算的（`Session::vision()`）。
+    pub vision: Option<String>,
 }
 
 impl ForSession {
@@ -100,13 +103,14 @@ pub trait ModelPort: Send + Sync {
 
     /// 回合开始（施工 8-10，`models.md`「怎么走」第六条第 3 条）：照这一轮的配置 `config` 重新解析会话的引用 `reference`
     /// （内核交的，以前的会话没有的照端口自己记着的）；端点、限额跟着换。钉着的没了、退回了这一轮的 `models.chat` 的，
-    /// 交回原来的和退回的，内核记下。会话记的思考强度换成内核交的 `effort`（施工 SM-1）。不重新解析的（测试的端口）什么都
-    /// 不做。
+    /// 交回原来的和退回的，内核记下。会话记的思考强度换成内核交的 `effort`（施工 SM-1），钉的看图模型换成 `vision`（施工
+    /// VM-1：这一轮的转述照它发）。不重新解析的（测试的端口）什么都不做。
     fn turn(
         &self,
         _config: &TurnConfig,
         _reference: Option<&str>,
         _effort: Option<&str>,
+        _vision: Option<&str>,
     ) -> Option<Replaced> {
         None
     }
@@ -139,7 +143,7 @@ pub trait ModelPort: Send + Sync {
     fn retext(&self, _texts: DriverTexts) {}
 
     /// 替看不了图的模型看图（施工 8-17，`docs/blueprint/models.md`「怎么走」第十三条第 4 条）：照这一轮的配置 `config` 把
-    /// `request` 经一次性入口发给 `models.vision`，说完了交给 `sight`。马上返回，在别的任务里发，带上当前的 span。没有一次性
+    /// `request` 经一次性入口发给会话钉的看图模型（施工 VM-1，回合开始交的），没钉的发给 `models.vision`，说完了交给 `sight`。马上返回，在别的任务里发，带上当前的 span。没有一次性
     /// 入口的（测试的端口）当场交没成。
     fn describe(&self, request: Request, config: &TurnConfig, sight: Sight) {
         let _ = (request, config);

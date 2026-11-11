@@ -25,7 +25,7 @@
 | `kind` | 是什么 |
 |---|---|
 | `session.created` | 会话创建（第 1 条）：场所、工作目录、人格、预设、模型…… |
-| `session.policy_changed` | 换了权限、模型、思考强度（`effort: {"level"}`，`null` 是回到跟着配置）、上下文上限（`context: {"tokens"}`，`null` 是去掉），或者整份策略 |
+| `session.policy_changed` | 换了权限、模型、思考强度（`effort: {"level"}`，`null` 是回到跟着配置）、上下文上限（`context: {"tokens"}`，`null` 是去掉）、看图模型（`vision`，空的是去掉），或者整份策略 |
 | `session.workspace_changed` | 换了工作目录 |
 | `session.meta_changed` | 改了标题、置顶、项目（`project`：编号，空的是移出来）；没起名的会话由内核自己起标题，也是它 |
 | `session.recapped` | 一句回顾（不进她的上下文） |

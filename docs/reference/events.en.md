@@ -25,7 +25,7 @@ The exact shape of each kind is in the repository's `docs/designs/samples/events
 | `kind` | Meaning |
 |---|---|
 | `session.created` | The session was created (event 1): venue, working directory, persona, preset, model… |
-| `session.policy_changed` | Permissions, model, reasoning effort (`effort: {"level"}`, `null` goes back to the config), context limit (`context: {"tokens"}`, `null` removes it) or the whole policy changed |
+| `session.policy_changed` | Permissions, model, reasoning effort (`effort: {"level"}`, `null` goes back to the config), context limit (`context: {"tokens"}`, `null` removes it), vision model (`vision`, empty when removed) or the whole policy changed |
 | `session.workspace_changed` | The working directory changed |
 | `session.meta_changed` | Title, pin or project changed (`project`: an id, empty when moved out); titles the kernel gives unnamed sessions too |
 | `session.recapped` | A recap (not in her context) |

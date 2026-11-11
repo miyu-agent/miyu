@@ -158,7 +158,8 @@ impl InputKind {
                 Command::Configure { .. }
                 | Command::Recast { .. }
                 | Command::SetEffort { .. }
-                | Command::SetContext { .. } => InputKind::Configure,
+                | Command::SetContext { .. }
+                | Command::SetVision { .. } => InputKind::Configure,
                 Command::Answer {
                     answer: Answer::Approval { .. },
                     ..

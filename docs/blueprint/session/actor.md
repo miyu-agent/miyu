@@ -29,7 +29,7 @@
 | `crates/miyu-session/src/port.rs` | 请求模型的端口：`Models`、`ModelPort`、`Reports`（辅助请求的回报另走一路，`Reports::aside`，施工 3-8 四补；五补起回顾、起标题共用，`purpose()` 交回用途）、`Cancel`；`Models::one_shot()` 交回模型调用口的一次性入口（施工 8-20，测试照剧本回的端口没有） |
 | `crates/miyu-session/src/route.rs`、`route/send.rs`、`route/pool.rs`、`route/choice.rs`、`route/ended.rs` | 端口的真实现：每个会话的路由，照配置挑供应商、钉 key，经驱动和 HTTP 执行器请求（施工 8-6 取代 `http.rs`）；池里挑成员、池的限额（`route/pool.rs`，施工 8-8）；排候选、挑没在冷却的（`route/choice.rs`），说完了记冷却、换端点、成了才钉（`route/ended.rs`，施工 8-9）。施工 8-20 起它是模型调用口的会话入口（`models.md`「怎么走」第十二条）：挑、发、记冷却调底子（`route/base.rs`、`route/choice.rs`、`route/pool.rs`、`route/exchange.rs`、`route/ended.rs` 的 `Attempt`），会话自己的（退回 `models.chat`、钉 key、钉成员、说到一半断了、限额）在 `route.rs`、`route/send.rs` 的 `Tried` |
 | `crates/miyu-session/src/route/once.rs`、`once/reply.rs` | 模型调用口的一次性入口 `OneShot`（施工 8-20）：不属于哪个会话，和会话的路由共用底子；协议的 `model.call` 调它 |
-| `crates/miyu-session/src/route/sight.rs` | 会话入口替看不了图的模型看图（施工 8-17）：取 `models.vision`，经一次性入口发，结果交给 `Sight`（第 8 条第 6 款） |
+| `crates/miyu-session/src/route/sight.rs` | 会话入口替看不了图的模型看图（施工 8-17）：取会话钉的看图模型（施工 VM-1），没钉的取 `models.vision`，经一次性入口发，结果交给 `Sight`（第 8 条第 6 款） |
 | `crates/miyu-session/src/clock.rs` | 会话的时钟、新的会话编号 |
 | `crates/miyu-session/src/store.rs` | 写盘的端口：平时是会话日志，每落一批顺手更新会话列表的索引（`Indexed`，施工 3-8 七补）、回合索引（施工 R-2 上），测试里换成写不进去的；也从这里读回日志（施工 6-9；读回第几条起的照序号定位着读，施工 V-37 下）；撤销、恢复以后边读边重算她看过的（`seen`，施工 V-41 中） |
 | `crates/miyu-session/src/memory.rs` | 回合索引的接线：接上（载入时铺回、补上）、每落一批交给 `TurnFeed`、写回合库、恢复时读回（施工 R-2 上，`memory.md` 第一条） |
@@ -54,7 +54,7 @@
 | `Handle` | 一个会话的收件箱，可以复制，几个头一起拿着 |
 | `Pushed`、`Subscription`、`Ended`、`Stopped` | 推送、订阅、订阅断了、会话停了 |
 | `Backlog` | 订阅时要补发的那一截（施工 3-8 六补）：`upto()` 补到哪一条，`read()` 在阻塞线程里读出来，`lines(写法)` 读的时候一条条写成要推的行（施工 V-37 下，第 6 条） |
-| `Models`、`ForSession`、`ModelPort`、`Reports`、`Cancel`、`Sight` | 请求模型的端口。`ModelPort::describe(请求, 配置, Sight)` 替看不了图的模型看图（施工 8-17，第 7 条第 9 款）：马上返回，在别的任务里发，`Sight` 有 `seen(模型, 转述)`、`unseen(为什么)`；测试的端口当场 `unseen`。`ForSession` 带会话编号、造会话或载入时取的那一份配置（施工 8-6）、驱动的占位、blob 存处，会话记着的引用、最近一次发给了谁（施工 8-8）；`ModelPort::model()` 交回的是一份（路由的会变，施工 8-6），`reference()` 交回会话这时生效的引用（施工 8-8，测试的端口交造它的会话记着的），`effort()` 交回接下来那个模型真用的思考强度（施工 8-18；会话记的一档这个模型有的照它、`from` 是 `session`，不然照配置的默认，施工 SM-1；测试的端口没有），`turn()` 照这一轮的配置重新解析，连同内核记着的会话的一档（施工 SM-1：`ForSession.effort` 造端口时交、`turn(配置, 引用, 一档)` 回合开始交，actor 照 `Session::effort()` 取） |
+| `Models`、`ForSession`、`ModelPort`、`Reports`、`Cancel`、`Sight` | 请求模型的端口。`ModelPort::describe(请求, 配置, Sight)` 替看不了图的模型看图（施工 8-17，第 7 条第 9 款）：马上返回，在别的任务里发，`Sight` 有 `seen(模型, 转述)`、`unseen(为什么)`；测试的端口当场 `unseen`。`ForSession` 带会话编号、造会话或载入时取的那一份配置（施工 8-6）、驱动的占位、blob 存处，会话记着的引用、最近一次发给了谁（施工 8-8）；`ModelPort::model()` 交回的是一份（路由的会变，施工 8-6），`reference()` 交回会话这时生效的引用（施工 8-8，测试的端口交造它的会话记着的），`effort()` 交回接下来那个模型真用的思考强度（施工 8-18；会话记的一档这个模型有的照它、`from` 是 `session`，不然照配置的默认，施工 SM-1；测试的端口没有），`turn()` 照这一轮的配置重新解析，连同内核记着的会话的一档（施工 SM-1：`ForSession.effort` 造端口时交、`turn(配置, 引用, 一档, 看图模型)` 回合开始交，actor 照 `Session::effort()` 取）和钉的看图模型（施工 VM-1：`ForSession.vision`，actor 照 `Session::vision()` 取） |
 | `SessionPort`、`Child`、`Lineage`、`Pending` | 造子会话、给别的会话发命令的端口（施工 7-5）：会话表实现，造会话、载入时交进来。`create(子会话)`、`command(会话, 编号, 谁, 命令)`，`open(会话)` 叫起一个会话：没在跑的照会话表的规矩载入（施工 7-6） |
 | `Routes`、`IDLE` | 端口的真实现：每个会话的路由，照配置挑供应商、钉 key（施工 8-6，第 8 条）；空闲超时 180 秒，每次请求照它的思考强度放大（施工 8-18） |
 | `OneShot`、`Ask`、`Answer`、`Unanswered` | 模型调用口的一次性入口（施工 8-20，`models.md`「怎么走」第十二条）：`Models::one_shot()` 拿到，`call(配置, blob 存处, Ask)` 发一次、交回整段回答或四种出错 |
@@ -263,7 +263,7 @@
    3. 经 HTTP 执行器发出去、流式读回来，认证头照驱动（`http.md`）：图片、PDF 的 base64 发的时候才从 blob 一小块一小块地读出来编；发出去了，报发出去了（这一家的编号、模型名）；每一段增量，报增量。
    4. 说完、出错：先交给路由记（施工 8-9，`route/ended.rs`：出错的照分类记冷却，还有别的候选的说换了端点；成了的清零、钉住的池钉到它、会话的 key 换成它），再报说完了，带用量，出错的分类和原话，要等多久（供应商说的，换了端点的是别的候选都在冷却时要等多久），换了端点的带 `failover`。
    5. 被叫停：什么都不再报。
-6. **替它看图**（施工 8-17，`route/sight.rs`，`models.md`「怎么走」第十三条）：限额的 `blind` 照模型资料的 `inputs`（`Facts::driver_inputs`），池里有一个认得出的成员看不了图就算看不了（钉住的、轮换的一样；钉住的池出错换了成员、限额跟着换成那个成员的，这一轮剩下的照它，下一轮开始照整个池重算）。`describe` 照这一轮的配置取 `models.vision`：没配的当场 `unseen`（`no vision model configured: set models.vision`）；配了的派一个任务，带着会话的 span，经一次性入口（`OneShot`，用这个路由的 `Routes`、blob 存处）发，用途 `vision`，`max_tokens` 不写。一次性入口没答成的 `unseen`，原话照它的（模型出错的前面带分类）；答成了的正文去掉前后空白，空的 `unseen`（`the vision reply has no text`），不空的 `seen`（真发给的供应商、模型，转述）。
+6. **替它看图**（施工 8-17，`route/sight.rs`，`models.md`「怎么走」第十三条）：限额的 `blind` 照模型资料的 `inputs`（`Facts::driver_inputs`），池里有一个认得出的成员看不了图就算看不了（钉住的、轮换的一样；钉住的池出错换了成员、限额跟着换成那个成员的，这一轮剩下的照它，下一轮开始照整个池重算）。`describe` 取会话钉的看图模型（施工 VM-1：`ForSession.vision` 造端口时收下，回合开始 `ModelPort::turn` 换成内核这时的 `Session::vision()`），没钉的照这一轮的配置取 `models.vision`：都没有的当场 `unseen`（`no vision model configured: set models.vision`）；配了的派一个任务，带着会话的 span，经一次性入口（`OneShot`，用这个路由的 `Routes`、blob 存处）发，用途 `vision`，`max_tokens` 不写。一次性入口没答成的 `unseen`，原话照它的（模型出错的前面带分类）；答成了的正文去掉前后空白，空的 `unseen`（`the vision reply has no text`），不空的 `seen`（真发给的供应商、模型，转述）。
 
 **9. 停下**
 

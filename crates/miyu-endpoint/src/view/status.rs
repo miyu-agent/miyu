@@ -1,5 +1,5 @@
 //! 会话状态（施工 9-8 补上，`docs/blueprint/view.md`「会话状态」）：投影算得出的那一半（在跑没跑、在等什么、正在做什么、
-//! 上下文用了多少、速度、冷却、任务表），拼上向会话要的（用量、模型、权限、待办、工作区、长期目标）和订阅时定下的（人格、预设）。
+//! 上下文用了多少、速度、冷却、任务表），拼上向会话要的（用量、模型、钉的看图模型、权限、待办、工作区、长期目标）和订阅时定下的（人格、预设）。
 //! 视图流订阅的回应带一份，之后变了推整份 `view.status`。
 
 use serde_json::{Value, json};
@@ -49,6 +49,10 @@ pub(crate) fn whole(
         status["todos_done"] = json!(done);
     }
     if let Some(current) = current {
+        // 钉的看图模型（施工 VM-1）：没钉的不写。
+        if let Some(vision) = &current.vision {
+            status["vision"] = json!(vision);
+        }
         status["usage"] = crate::usage::tallied(core, &current.tally);
         status["permission"] = json!(current.permission);
         status["workspace"] = json!({"cwd": current.cwd, "dirs": current.dirs});

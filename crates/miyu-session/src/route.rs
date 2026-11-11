@@ -32,7 +32,8 @@
 //!   收下；每次请求照真发的那个模型挑，它有会话那一档的照会话的，不然照配置的默认，空闲超时跟着放大；给头看的那一档、
 //!   限额里那一块事实写的档位照限额里的模型算。
 //! - 看不看得了图（施工 8-17）：限额的 `blind` 照模型资料的 `inputs`，池里有一个成员看不了就算看不了；替它看图经一次性入口
-//!   发给 `models.vision`（`route/sight.rs`）。
+//!   发给会话钉的看图模型（施工 VM-1：造端口时照内核从日志算的，回合开始换成内核交的），没钉的发给 `models.vision`
+//!   （`route/sight.rs`）。
 //! - 会话的上下文上限（施工 CTX-1，设计 68）：造端口时收下内核从日志算的，变了 actor 当场交；交限额时窗口取模型的和它里小的。
 
 mod base;
@@ -159,6 +160,7 @@ impl Models for Routes {
                 sticky: None,
                 effort,
                 context: session.context,
+                vision: session.vision,
                 config: session.config,
             })),
             memo: Arc::new(Mutex::new(Memo::new())),
@@ -235,6 +237,8 @@ struct Pinned {
     /// 会话的上下文上限（施工 CTX-1）：造端口时照内核从日志算的，变了 actor 交（[`ModelPort::cap`]）。`limits` 存的是模型自己的，
     /// 交出去时才套它，换模型、池换了成员都不用另记。
     context: Option<u64>,
+    /// 会话钉的看图模型（施工 VM-1）：造端口时照内核从日志算的，回合开始换成内核交的；一轮里换了的这一轮剩下的转述照旧。
+    vision: Option<String>,
     /// 最近一次定下的配置：造端口时的、回合开始冻结的（施工 8-18）。给头看的那一档照它查配置的默认。
     config: TurnConfig,
 }
@@ -267,7 +271,9 @@ impl ModelPort for Route {
         config: &TurnConfig,
         reference: Option<&str>,
         effort: Option<&str>,
+        vision: Option<&str>,
     ) -> Option<Replaced> {
+        self.lock().vision = vision.map(str::to_string);
         self.begin(config, reference, effort)
     }
 
@@ -275,15 +281,12 @@ impl ModelPort for Route {
         self.shown_effort()
     }
 
-    /// 替看不了图的模型看图（施工 8-17，`route/sight.rs`）：经一次性入口发给这一轮的 `models.vision`。
+    /// 替看不了图的模型看图（施工 8-17，`route/sight.rs`）：经一次性入口发给会话钉的看图模型（施工 VM-1），没钉的发给这一轮的
+    /// `models.vision`。
     fn describe(&self, request: Request, config: &TurnConfig, sight: Sight) {
-        sight::spawn(
-            self.shared.clone(),
-            self.blobs.clone(),
-            request,
-            config,
-            sight,
-        );
+        let pinned = self.lock().vision.clone();
+        let shared = (self.shared.clone(), self.blobs.clone());
+        sight::spawn(shared, request, config, pinned, sight);
     }
 
     fn call(

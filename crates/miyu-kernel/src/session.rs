@@ -433,6 +433,7 @@ impl Session {
             Command::Configure { model } => self.configure(id, by, at, model),
             Command::SetEffort { level } => self.set_effort(id, by, at, level),
             Command::SetContext { tokens } => self.set_context(id, by, at, tokens),
+            Command::SetVision { vision } => self.set_vision(id, by, at, vision),
             Command::Recast { persona, preset } => self.recast(id, by, at, (persona, preset)),
             Command::SetPermission { level, read_only } => {
                 self.set_permission(id, by, at, level, read_only)

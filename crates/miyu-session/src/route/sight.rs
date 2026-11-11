@@ -1,9 +1,10 @@
 //! 会话入口替看不了图的模型看图（施工 8-17，`docs/blueprint/models.md`「怎么走」第十三条第 4 条）：内核交来的转述请求经一次性
-//! 入口（`route/once.rs`）发给这一轮的 `models.vision`，用途 `vision`，图从 blob 取。在派出去的任务里走完，带着会话
-//! 的 span：一次性入口那一行 `model call` 也带着会话编号。
+//! 入口（`route/once.rs`）发给会话钉的看图模型（施工 VM-1），没钉的发给这一轮的 `models.vision`，用途 `vision`，图从 blob
+//! 取。在派出去的任务里走完，带着会话的 span：一次性入口那一行 `model call` 也带着会话编号。
 //!
-//! - 没配 `models.vision` 的不发，当场没成。
-//! - 一次性入口没答成的（四种），没成，原话照它的。
+//! - 没钉、也没配 `models.vision` 的不发，当场没成。
+//! - 一次性入口没答成的（四种），没成，原话照它的。钉的解析不出也在这里（`unknown_model`），不退回 `models.vision`：和
+//!   `models.vision` 写了解析不出的走同一条路。
 //! - 答成了：正文去掉前后空白，是空的没成；真发给的供应商、模型写不成编号的（照理不会有）也没成。
 
 use tracing::Instrument;
@@ -28,16 +29,17 @@ const NO_VISION: &str = "no vision model configured: set models.vision";
 /// 回答是空的时的原话。
 const EMPTY: &str = "the vision reply has no text";
 
-/// 发一次转述：照这一轮的配置 `config`，结果交给 `sight`。马上返回。用量记进用量汇总（施工 8-15）。
+/// 发一次转述：发给会话钉的 `pinned`，没钉的照这一轮的配置 `config` 的 `models.vision`，结果交给 `sight`。马上返回。用量记进
+/// 用量汇总（施工 8-15）。
 pub(super) fn spawn(
-    routes: Routes,
-    blobs: Blobs,
+    (routes, blobs): (Routes, Blobs),
     request: Request,
     config: &TurnConfig,
+    pinned: Option<String>,
     sight: Sight,
 ) {
     let values = config.resolved.values();
-    let Some(vision) = UseSettings::from(&values).vision else {
+    let Some(vision) = pinned.or_else(|| UseSettings::from(&values).vision) else {
         sight.unseen(NO_VISION.to_string());
         return;
     };

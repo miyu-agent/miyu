@@ -54,6 +54,7 @@ mod tools;
 mod turn;
 mod typed;
 mod venue;
+mod vision_pin;
 mod workspace;
 
 use std::collections::BTreeMap;

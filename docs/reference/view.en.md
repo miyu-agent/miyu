@@ -74,6 +74,7 @@ One object each, with the common fields `id`, `kind`, `turn` (which turn), `hidd
 | `preparing` | Compacting ahead in the background: `{seen, since}` |
 | `usage` | This session's total usage, written like a `usage.query` row (including `converted` and `converted_parts`) |
 | `model`, `permission`, `todos`, `workspace`, `persona`, `preset` | As in the subscription response; a persona or preset changed mid-session is pushed. A no-tools session has `preset: null` plus `no_tools: true`, as in the session list (step P-16) |
+| `vision` | The session's pinned vision model (`vision` in `session.configure`): a model or `@pool`, as written; pushed as soon as it's pinned, absent when not pinned (following `models.vision`) |
 | `todos_done` | When the to-do list was cleared because everything was done, the list before clearing (heads tick everything, pause, then collapse) |
 | `goal` | The standing goal: `{text, limit, state, reason, round, since, usage}`, `state` being `running`, `paused`, `completed`, `blocked`, `waiting` |
 | `jobs` | Jobs this session started directly (running ones and the last 20 finished): `{job, what, title, state, started, ended, session, command, exit_code, signal, why, nested, fork}` (`nested` as on `tool`, only for a command whose script called tools; `fork` is `true` only on forked subagents, so heads can show a fork icon), `state` being `running`, `done`, `failed`, `stopped`, `aborted` |

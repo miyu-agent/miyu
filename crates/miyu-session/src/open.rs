@@ -221,6 +221,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         sent: None,
         effort: None,
         context: None,
+        vision: None,
     });
     let mut clock = Clock::default();
     let upstream = Upstream::of(

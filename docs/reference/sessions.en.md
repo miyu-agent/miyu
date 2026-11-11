@@ -24,7 +24,7 @@ A session is one conversation: an append-only event log, from which the core wor
 | [`session.retitle`](#sessionretitle) | Have the model write a new title |
 | [`session.viewing`](#sessionviewing) | A head tells the core which session it has open |
 | [`session.terminal`, `session.set_terminal`](#sessionterminal-sessionset_terminal) | The terminal session: get it, point it elsewhere |
-| [`session.configure`](#sessionconfigure) | Change the model, persona, preset or reasoning effort |
+| [`session.configure`](#sessionconfigure) | Change the model, vision model, persona, preset or reasoning effort |
 | [`session.fork`](#sessionfork) | Fork a child session |
 | [`session.delete`](#sessiondelete) | Delete a session |
 | [`session.prompts`](#sessionprompts) | List what was asked in a session |
@@ -63,6 +63,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 | `persona` | string or `null` | Which persona; `null` means none; omitted follows the `persona.default` setting |
 | `preset` | string or `null` | Which preset; omitted follows `preset.default`, else `full`; `null` means no tools: the session gets none (step P-16; the old way to say it, still accepted. New sessions pick "Nothing", `none`, step P-17) |
 | `model` | string | `<provider>/<model>` or `@<pool>`; omitted records `models.chat` as it is right now (a pool stays a pool), and later changes to `models.chat` leave this session alone |
+| `vision` | string | Which model describes images for this session, written like `model`; omitted follows the configured `models.vision`. Recorded as a `session.policy_changed` right after creation, like `vision` in `session.configure` |
 | `memory` | `persona`, `off` | Memory follows the persona, or is off; omitted follows the persona. Anything else (the old `session` included) is `bad_params` |
 | `dirs` | array of strings | Extra directories, readable and writable like the working directory |
 | `chosen` | boolean, default `false` | Accepted and ignored (it used to mark a choice by the person): a too-wide `cwd` (root; on Windows also home) is always used and the response has `wide`; what the session may freely write is then its own default workspace |
@@ -77,7 +78,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 | Name | Notes |
 |---|---|
 | `session` | The new session's id |
-| `events` | `[1]`: the `session.created` event; `[1, 2]` with `project` |
+| `events` | `[1]`: the `session.created` event; `[1, 2]` with `project`; one more with `vision` (after the project's) |
 | `cwd` | Where the session actually works, as people write it (`~/…` under the home directory, same as `session.list`) |
 | `wide` | `true`: the directory is too wide (root; on Windows also home or a folder holding the data directory) and is used because the person chose it; the session may freely write only its own default workspace |
 | `untrusted_project` | The directory has a project config not yet trusted or rejected: where it is |
@@ -93,10 +94,10 @@ Sending the same `id` again returns the session created the first time.
 
 | `data.reason` | When |
 |---|---|
-| `bad_params` (`-32602`) | Malformed persona or preset id; `memory` not one of the three; `model` not a string |
+| `bad_params` (`-32602`) | Malformed persona or preset id; `memory` not one of the three; `model` or `vision` not a string |
 | `unknown_persona`, `persona_invalid` | No such persona; its files are wrong (`data.problem` says which layer, file and line) |
 | `unknown_preset`, `preset_invalid` | The same, for presets |
-| `unknown_model` | `model` can't be resolved: malformed, unknown provider, unknown pool |
+| `unknown_model` | `model` or `vision` can't be resolved: malformed, unknown provider, unknown pool |
 | `dir_too_wide` | A `dirs` entry is too wide (home, root, contains the data directory) |
 | `internal_error` (`-32603`) | The core couldn't create it |
 
@@ -415,10 +416,11 @@ A head tells the core which session it has open: send it on switching, on openin
 
 ## `session.configure`
 
-Change the session's model, persona, preset or reasoning effort, which applies from the next turn, or its context limit, which applies from the next request.
+Change the session's model, vision model, persona, preset or reasoning effort, which applies from the next turn, or its context limit, which applies from the next request.
 
 **Params**: `session`; at least one of:
 - `model`: `<provider>/<model>` or `@<pool>`; `null` stops pinning a model and follows the configured `models.chat` again (read every turn, so a config change follows).
+- `vision`: the model that describes images, written like `model`: `<provider>/<model>` or `@<pool>`; `null` stops pinning one and follows the configured `models.vision` again. When the session's model can't view images, the core has this one turn each image into text (without a pin, `models.vision`). If the pin later stops resolving (its provider or pool removed), that image counts as not described; the core does not fall back to `models.vision`.
 - `persona`: a persona id; `null` means no persona.
 - `preset`: a preset id; `null` switches to no tools (step P-16).
 - `effort`: a reasoning effort level (step SM-1), checked against the levels of the session's model right now (`facts.reasoning` in `model.list`; when the same call changes the model, the new one's). A session on a pool cannot set one: you get `bad_params` (`data.field` is `effort`), and each member of the pool follows its own config; `null` goes back to following the config. It affects only this session: `providers.<id>.models.<model>.effort` in the config is the default for new sessions. A model without that level uses the config; switching back uses the level again.
@@ -426,9 +428,9 @@ Change the session's model, persona, preset or reasoning effort, which applies f
 
 Changing the persona or preset compacts first: the core summarizes the conversation so far under the old persona right away, and the next turn switches over and continues from the summary. Memory that follows the persona is kept in the new persona's room from then on; earlier memories stay where they were.
 
-**Response**: `{}`. A change is pushed as `session.policy_changed`; when a model or effort change takes effect, `model.changed`. A context limit change shows at once in `limits` of the `subscribe` response and `view.status` (`window` is the window in effect, `context` the limit, absent when not set). From then on `model.effort` in the `subscribe` response and in `model.changed` is `{"level", "from"}`: `from` is `session` for the session's own level, `system` for the config. `persona` and `preset` in `session.list` and the `subscribe` response show the new values right away.
+**Response**: `{}`. A change is pushed as `session.policy_changed`; when a model or effort change takes effect, `model.changed`. A context limit change shows at once in `limits` of the `subscribe` response and `view.status` (`window` is the window in effect, `context` the limit, absent when not set). From then on `model.effort` in the `subscribe` response and in `model.changed` is `{"level", "from"}`: `from` is `session` for the session's own level, `system` for the config. `persona` and `preset` in `session.list` and the `subscribe` response show the new values right away. A pinned vision model shows at once as `vision` in `view.status`; once removed it is absent.
 
-**Errors**: `bad_params` (nothing given, an empty string, a wrong type; a subagent changing persona or preset, with `data.field` naming it; an `effort` the session's model doesn't have, with `data.field` `effort`, and nothing changes; a `context` that isn't a non-negative integer; a `context` too small, with `data.field` `context` and `data.min` the least accepted, and nothing changes); `unknown_model`; `unknown_persona`; `unknown_preset`; `turn_running`: a turn is running while changing persona or preset (wait for it to finish).
+**Errors**: `bad_params` (nothing given, an empty string, a wrong type; a subagent changing persona or preset, with `data.field` naming it; an `effort` the session's model doesn't have, with `data.field` `effort`, and nothing changes; a `context` that isn't a non-negative integer; a `context` too small, with `data.field` `context` and `data.min` the least accepted, and nothing changes); `unknown_model`: `model` or `vision` can't be resolved, and nothing changes; `unknown_persona`; `unknown_preset`; `turn_running`: a turn is running while changing persona or preset (wait for it to finish).
 
 ## `session.fork`
 

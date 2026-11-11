@@ -349,6 +349,7 @@ mod view_status;
 mod view_stream;
 mod view_tool_names;
 mod view_tree;
+mod vision_pin;
 mod voice_owner;
 mod watch;
 mod welcomed;

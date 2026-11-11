@@ -38,7 +38,7 @@
 | `crates/miyu-kernel/src/session/report.rs` | 向上回报：子会话欠不欠着父会话一份回报、什么时候报、报什么、正文怎么截（施工 7-6，`agents.md` 第二条、第八条） |
 | `crates/miyu-kernel/src/session/permission.rs` | 切权限级别、请求之前查事实 |
 | `crates/miyu-kernel/src/session/meta.rs` | 改标题、置顶；现在的标题、置顶（施工 3-8 三补） |
-| `crates/miyu-kernel/src/session/configure.rs` | 换模型：会话的引用和最近一次换模型写在第几条（`Reference`，施工 P-13 起也记要用的人格、预设），收命令，回合开始退回默认的记下（施工 8-10，`models.md`「怎么走」第六条）。换思考强度：会话的一档从日志算、收 `SetEffort`（施工 SM-1；8-18 那时每个模型一格，8-18（补）去掉了） |
+| `crates/miyu-kernel/src/session/configure.rs` | 换模型：会话的引用和最近一次换模型写在第几条（`Reference`，施工 P-13 起也记要用的人格、预设），收命令，回合开始退回默认的记下（施工 8-10，`models.md`「怎么走」第六条）。换思考强度：会话的一档从日志算、收 `SetEffort`（施工 SM-1；8-18 那时每个模型一格，8-18（补）去掉了）。钉看图模型：会话钉的那一个从日志算、收 `SetVision`（施工 VM-1） |
 | `crates/miyu-kernel/src/session/recast.rs` | 中途换人格、预设（施工 P-13）：收命令、记下要换成的、马上单开一轮压缩（「换人格、预设」） |
 | `crates/miyu-kernel/src/session/send.rs` | 发一条消息（施工 8-10 从 `session.rs` 挪出来，那边放不下了） |
 | `crates/miyu-kernel/src/session/restart.rs`、`load.rs` | 有计划的重启；从日志载入（认出哪次压缩还算数，`history.md`「载入」）、崩了的收尾、重启后接着干 |
@@ -641,6 +641,12 @@
 1. 会话的一档从日志算：带 `effort` 的 `session.policy_changed` 里最后那一档（`null` 是回到跟着配置），撤掉的回合里换的也算（照换模型）。换模型不清它。8-18 那时带 `model` 的一格不认（`Effort::session`）。`Session::effort()` 只读交给执行器：载入时照它造路由，回合开始时 actor 照它交给路由（不加进 `RunTurnStartHooks`）。
 2. 和现在的一样的：接受，什么都不记，编号照样记下。不一样的：追加一条 `session.policy_changed`，只写 `effort`（`{"level": …}`），`by` 是换的人，回合进行中的带上这个回合；落了盘才回应。档位协议那一头照会话这时的模型查过，内核只存字。封存了的拒（同换模型）。
 3. 这个模型有没有这一档、一次请求用哪一档，由执行器照真发的那个模型定（`models.md`「怎么走」第十一条第 3 条）。
+
+**钉看图模型**（`SetVision`，施工 VM-1，`configure.rs`，`models.md`「怎么走」第十三条第 4 条）：
+
+1. 会话钉的看图模型从日志算：带 `vision` 的 `session.policy_changed` 里最后那一个（空的是去掉，回到跟着 `models.vision`），撤掉的回合里换的也算（照换模型）。换模型不清它。`Session::vision()` 只读交给执行器：载入时照它造路由，回合开始时 actor 照它交给路由（同思考强度，不加进 `RunTurnStartHooks`），给头看的会话状态也照它写。
+2. 和现在的一样的：接受，什么都不记，编号照样记下。不一样的：追加一条 `session.policy_changed`，只写 `vision`（去掉的写空的），`by` 是换的人，回合进行中的带上这个回合；落了盘才回应。引用协议那一头照这时的配置查过，内核只存字。封存了的拒（同换模型）。
+3. 钉的解析不出由执行器照转述没成办，内核不退回、不记 `replaced`。
 
 **换人格、预设**（`Recast`，施工 P-13，`recast.rs`，`16-人格与预设.md` Y5）：
 

@@ -124,7 +124,7 @@ pub struct Forked {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SessionSealed {}
 
-/// `session.policy_changed`：换了策略快照，或者换了权限，或者换了模型、思考强度、上下文上限，也可以一起换。
+/// `session.policy_changed`：换了策略快照，或者换了权限，或者换了模型、思考强度、上下文上限、看图模型，也可以一起换。
 /// 谁换的看事件的 `by`：人改的是配置，内核换的是目录变了、钉着的模型没了。
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PolicyChanged {
@@ -157,6 +157,11 @@ pub struct PolicyChanged {
     /// `effort`）。写在最后一格，以前的日志没有这一格。内核只记，生效的窗口由执行器的路由取小的。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub context: Option<ContextCap>,
+    /// 会话钉的看图模型换了（施工 VM-1，`models.md`「事件」）：写法同 `model`，模型 `<供应商>/<模型>` 或池 `@<池>`；空的是
+    /// 去掉，回到跟着 `models.vision`。人换的，`by` 是人，下一个回合开始时生效，撤掉的回合里的也算（照 `model`）。写在最后
+    /// 一格，以前的日志没有这一格。内核只记不解读，钉的解析不出由执行器照没转述成办，不退回、不记 `replaced`。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vision: Option<String>,
 }
 
 /// `session.policy_changed` 的 `context`（施工 CTX-1，设计 68）：会话的上下文上限换成 `tokens`，`null` 是去掉（照模型的窗口）。

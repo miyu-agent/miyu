@@ -11,6 +11,10 @@
 //!
 //! 上下文上限照同一个办法从日志算（施工 CTX-1，设计 68 第四节）：每条带 `context` 的 `session.policy_changed` 换上限，`null`
 //! 是去掉；撤掉的回合里的也算，换模型不清它。执行器照 [`Session::context`] 交给路由，生效的窗口由路由取小的。
+//!
+//! 钉的看图模型也从日志算（施工 VM-1，`models.md`「怎么走」第十三条第 4 条）：每条带 `vision` 的 `session.policy_changed`
+//! 换会话钉的那一个，空的是回到跟着 `models.vision`；撤掉的回合里的也算，换模型不清它。回合开始时执行器照
+//! [`Session::vision`] 交给路由，替看图照它发。
 
 use super::action::Action;
 use super::{Session, accepted};
@@ -36,6 +40,8 @@ pub(super) struct Reference {
     effort: Option<String>,
     /// 会话的上下文上限，token 数（施工 CTX-1）：没设的、去掉了的没有。
     context: Option<u64>,
+    /// 会话钉的看图模型（施工 VM-1）：模型或 `@池`；没钉的、去掉了的没有（跟着 `models.vision`）。
+    vision: Option<String>,
     /// 换了预设、还没告诉她（施工 DM-8，`facts/preset.rs`）：换之前的那个预设（空的是不用预设）。内核注入了预设那一块就清掉；
     /// 换了几次还没开回合的，记最早的那个，换回它的也清掉。
     announce: Option<String>,
@@ -91,6 +97,10 @@ impl Reference {
             if let Some(cap) = &changed.context {
                 self.context = cap.tokens;
             }
+            // 钉看图模型（施工 VM-1）：空的是去掉，同换模型。
+            if let Some(vision) = &changed.vision {
+                self.vision = Some(vision.clone()).filter(|vision| !vision.is_empty());
+            }
         }
     }
 
@@ -117,6 +127,11 @@ impl Reference {
     /// 会话的上下文上限：没设的没有。
     pub(super) fn context(&self) -> Option<u64> {
         self.context
+    }
+
+    /// 会话钉的看图模型：没钉的没有。
+    pub(super) fn vision(&self) -> Option<&str> {
+        self.vision.as_deref()
     }
 
     /// 换了预设、还没告诉她的：换之前的那个预设（空的是不用预设）。没换过、告诉过的没有（施工 DM-8）。
@@ -210,6 +225,36 @@ impl Session {
         }
         let body = Body::PolicyChanged(PolicyChanged {
             context: Some(ContextCap { tokens }),
+            ..PolicyChanged::default()
+        });
+        let event = self.record(at, by, Some(id.clone()), body);
+        self.accept(id, vec![event.seq]);
+        vec![Action::Append(vec![event])]
+    }
+
+    /// 会话钉的看图模型（施工 VM-1）：带 `vision` 的 `session.policy_changed` 里最后那一个，撤掉的回合里的也算；没钉的、去掉
+    /// 了的没有（照 `models.vision`）。只读：执行器载入时照它造路由，回合开始时交给路由，替看图照它发；也写进给头看的会话
+    /// 状态。
+    pub fn vision(&self) -> Option<&str> {
+        self.reference.vision()
+    }
+
+    /// 钉看图模型（施工 VM-1）：`vision` 是 `None` 的去掉。和现在的一样的接受，什么都不记，编号照样记下；不一样的记一条
+    /// `session.policy_changed`，只写 `vision`（去掉的写空的，同换模型），`by` 是换的人，回合进行中的带上这个回合。引用协议
+    /// 那一头查过。
+    pub(super) fn set_vision(
+        &mut self,
+        id: CommandId,
+        by: By,
+        at: Timestamp,
+        vision: Option<String>,
+    ) -> Vec<Action> {
+        if self.vision() == vision.as_deref() {
+            self.recent.insert(id.clone(), Vec::new());
+            return vec![accepted(id, Vec::new())];
+        }
+        let body = Body::PolicyChanged(PolicyChanged {
+            vision: Some(vision.unwrap_or_default()),
             ..PolicyChanged::default()
         });
         let event = self.record(at, by, Some(id.clone()), body);

@@ -21,11 +21,12 @@ pub(super) async fn create(
         params.persona = params.persona.or_else(|| project.persona.clone());
         params.preset = params.preset.or_else(|| project.preset.clone().map(Some));
     }
-    // 解析不出的什么都不造（施工 8-8）。
+    // 解析不出的什么都不造（施工 8-8；看图模型施工 VM-1）。
     let model = params
         .model
         .map(|text| models::record(core, &text))
         .transpose()?;
+    let vision = models::vision::command(core, params.vision.as_deref().map(Some))?;
     let memory = params
         .memory
         .map(|text| MemoryScope::parse(&text).ok_or(Refusal::BAD_PARAMS))
@@ -71,6 +72,7 @@ pub(super) async fn create(
             .await?,
         );
     }
+    events.extend(models::vision::pin(core, request, &created.id, vision).await?);
     // 给头看的路径去掉 Windows 的 `\\?\`（施工 WP-1；YC-7 的 Windows 测试查出造会话的回应漏了这一步）。
     let cwd = miyu_fs::plain(std::path::Path::new(&created.cwd));
     let mut reply = json!({"session": created.id.as_str(), "events": events, "cwd": cwd});
@@ -427,9 +429,9 @@ pub(super) async fn stop_job(core: &Arc<Core>, request: &Request) -> Result<Valu
     }
 }
 
-/// `session.configure`：换模型；`model` 写 `null` 的回到跟着 `models.chat`（施工 8-10 再补）。换思考强度（施工 SM-1）照会话
-/// 这时的模型查（`models/effort.rs`），上下文上限（施工 CTX-1）照压缩线查（`models/context.rs`）。换人格、预设（施工 P-13）
-/// 在`recast.rs`：先查完，模型先换，再换思考强度、上下文上限，再换人格、预设。
+/// `session.configure`：换模型、看图模型（施工 VM-1，`models/vision.rs`）；写 `null` 的回到跟着配置。换思考强度（施工 SM-1）
+/// 照会话这时的模型查（`models/effort.rs`），上下文上限（施工 CTX-1）照压缩线查（`models/context.rs`）。换人格、预设（施工 P-13）
+/// 在`recast.rs`：先查完，模型先换，再换思考强度、上下文上限、看图模型，再换人格、预设。
 pub(super) async fn configure(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
     let params: models::ConfigureParams = params(request)?;
     let text = params.model()?;
@@ -452,12 +454,13 @@ pub(super) async fn configure(core: &Arc<Core>, request: &Request) -> Result<Val
         Some(tokens) => Some(models::context::command(&found.handle, tokens).await?),
         None => None,
     };
+    let vision = models::vision::command(core, params.vision())?;
     if let Some(model) = model {
         let command = Command::Configure { model };
         command_to(core, request, &session, &found.handle, command).await?;
     }
     let to = (&session, &found.handle);
-    for (suffix, command) in [("effort", effort), ("context", context)] {
+    for (suffix, command) in [("effort", effort), ("context", context), ("vision", vision)] {
         if let Some(command) = command {
             recast::send_as(core, request, to, suffix, command).await?;
         }

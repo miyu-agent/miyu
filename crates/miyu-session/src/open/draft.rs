@@ -180,6 +180,7 @@ pub async fn preview_context(setup: Create<'_>) -> Result<Context, CreateError> 
         sent: None,
         effort: None,
         context: None,
+        vision: None,
     });
     let created = miyu_kernel::event::SessionCreated {
         model: reference,
