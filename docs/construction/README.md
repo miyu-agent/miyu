@@ -1481,6 +1481,7 @@ flowchart LR
 | BUS-1 | 清单声明名字、装包查撞名 | `[export]` 加 `provides`、`plugs`（写法同方法名、点分几段，不重复）；`methods` 里照名字带前缀的全名，声明的名字要有方法；装包时一个名字 `provides` 只有一家、同一个名字只能是一种，撞了 `package_conflict`，冲突种类 `bus`（命令行的译名一起） |
 | BUS-2 | `bus.call`、`bus.list`、`bus` 流、`ready` | `bus.call {name, method, params?, package?}` 写短名、核心拼前缀，照名字找到包，余下照 `package.call`（能力、`[export]`、时限、blob、错误），`plugs` 的要写 `package`（`package_required`），没人提供 `no_provider`；在后台答；`bus.list {name?}` 列 `{name, kind, package, ready}`；`bus` 流推 `bus.changed`；`ready` 照程序在跑、名字底下导出的方法都登记了算；改掉 `backstage/calls.rs` 开头那句过期注释 |
 | BUS-3 | 命令行和文档 | `miyu bus list`（照 `busctl list`）；参考 `packages`、`extensions`、`errors`、`pushes`、`connection` 中英、`methods-v1.txt`；作者 `manifest`、`extensions` 中英；公认名字的清单（`render`、`chat`、`chat.hook`、`stt`、`tts`、`tts.engine`） |
+| BUS-3补 | `bus.list` 的行带 `methods` | 每一行多 `methods`：这一家在这个名字底下导出了、这时也登记上了的方法的短名，照字母排，程序没连着的是空的；`bus.changed` 推的同一份。接进同一个名字的几家（im 的 `chat.hook`、语音的 `tts.engine`）各实现了哪几处，调的一方照它认，不用再去读 `package.list` 的清单（im BUS-4 第二步提的，2026-11-11）。只加一格，老的头不受影响 |
 | BUS-4 | 各仓库迁过来 | 渲染包 `provides = ["render"]`、方法 `render.markdown`；im `provides = ["chat"]`、调 `render.markdown`，插件挂接 `plugs = ["chat.hook"]`、方法 `chat.hook.event` 等，照 `bus.list` 找；赞助记录、表情包调 `chat.venue`、`chat.media`。im、赞助记录归 im 的会话，渲染包、表情包 core1 改 |
 | BUS-5 | 收掉跨包的 `package.call` | 扩展经 `package.call` 只调得到自己，跨包一律 `bus.call`（设计 67 B5）；人的连接照旧；BUS-4 全合了以后做 |
 

@@ -94,8 +94,8 @@ async fn names_are_listed_and_called_without_package_ids() {
     assert_eq!(
         before["result"]["names"],
         json!([
-            {"name": "stt", "kind": "provides", "package": "voice-in", "ready": false},
-            {"name": "stt.engine", "kind": "plugs", "package": "engine-a", "ready": false},
+            {"name": "stt", "kind": "provides", "package": "voice-in", "ready": false, "methods": []},
+            {"name": "stt.engine", "kind": "plugs", "package": "engine-a", "ready": false, "methods": []},
         ]),
         "还没起来的不算可用：{before}"
     );
@@ -106,13 +106,19 @@ async fn names_are_listed_and_called_without_package_ids() {
         .await;
     assert_eq!(
         after["result"]["names"],
-        json!([{"name": "stt.engine", "kind": "plugs", "package": "engine-a", "ready": true}]),
+        json!([{"name": "stt.engine", "kind": "plugs", "package": "engine-a", "ready": true, "methods": ["transcribe"]}]),
         "{after}"
     );
     let stt_ready = client.call("l2", "bus.list", json!({"name": "stt"})).await;
     assert_eq!(
         stt_ready["result"]["names"][0]["ready"], false,
         "导出了 stt.record 却没登记，不算可用：{stt_ready}"
+    );
+    // 登记上了哪几个照短名列出来（施工 BUS-3补）：接进同一个名字的几家各实现了哪几处，调的一方照它认，不用另外去读清单。
+    assert_eq!(
+        stt_ready["result"]["names"][0]["methods"],
+        json!(["coded", "transcribe"]),
+        "只列登记上的、照字母排，没登记的 stt.record 不在：{stt_ready}"
     );
 
     let said = bus(
@@ -197,7 +203,7 @@ async fn the_bus_stream_pushes_the_whole_list_when_readiness_changes() {
         .await;
     assert_eq!(
         subscribed["result"]["names"],
-        json!([{"name": "stt", "kind": "provides", "package": "voice-in", "ready": false}]),
+        json!([{"name": "stt", "kind": "provides", "package": "voice-in", "ready": false, "methods": []}]),
         "{subscribed}"
     );
     let on = json!({"jsonrpc": "2.0", "id": "e", "method": "package.enable", "params": {"package": "voice-in"}});

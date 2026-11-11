@@ -11,7 +11,7 @@
 
 **`bus.call`**：参数 `name`（名字）、`method`（短名，一段、不带点；核心拼成 `<名字>.<短名>`）、`params`（可不写）、`package`（`plugs` 的名字要写挑哪家；`provides` 的写了要正是提供它的那家）。照 `package.call` 转过去，回什么交回什么；在后台答。参数里的 blob 交给被调的一方（扩展只交得出它自己拿得到的），回应里的交给调的一方。扩展调要声明 `packages.call`。
 
-**`bus.list`**：参数 `name`（可不写）。回应 `{"names": [{"name", "kind", "package", "ready"}…]}`，照名字、包排：`kind` 是 `provides` 或 `plugs`，`ready` 是程序连着、这个名字底下导出的方法都登记了（头照它画入口）。写了 `name` 的只列这一个。要跟着变，订阅 `bus` 流（[连接](connection.md)），推 `bus.changed`（[推送](pushes.md)）。
+**`bus.list`**：参数 `name`（可不写）。回应 `{"names": [{"name", "kind", "package", "ready", "methods"}…]}`，照名字、包排：`kind` 是 `provides` 或 `plugs`，`ready` 是程序连着、这个名字底下导出的方法都登记了（头照它画入口），`methods` 是这一家在这个名字底下导出了、这时也登记上了的方法的短名（`bus.call` 的 `method` 写的那一段），照字母排，程序没连着的是空的：接进同一个名字的几家各实现了哪几处照它认。写了 `name` 的只列这一个。要跟着变，订阅 `bus` 流（[连接](connection.md)），推 `bus.changed`（[推送](pushes.md)）。
 
 **出错**：`no_provider`（没有包提供这个名字，`data.name`）、`package_required`（`plugs` 的名字没写挑哪家，`data.name`）、`bad_params`（短名带点、是空的）、`not_exported`（拼出来的方法没写进那家的 `[export]`），别的同 `package.call`。
 
