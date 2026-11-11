@@ -3,6 +3,7 @@
 mod support;
 
 mod denied;
+mod forged;
 mod lines;
 mod markdown;
 mod markdown_attached;

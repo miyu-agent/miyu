@@ -17,7 +17,7 @@
 | `crates/miyu-kernel/src/event/effect.rs` | 效果 `Effect`：`file.read`、`file.changed`、`file.trashed`、`job.started`（`JobStarted`、`JobKind`，施工 7-1）、`job.messaged`（`JobMessaged`，施工 7-7）、`peer.watch`（`PeerWatch`，施工 C-1）、`todo.written`（`TodoWritten`、`Todo`、`TodoStatus`，施工 D-3）、`file.shown`（`FileShown`，施工 D-5） |
 | `crates/miyu-kernel/src/event/question.rs` | `question.asked`、`question.answered`；回答对不对得上 `fits` |
 | `crates/miyu-kernel/src/event/context.rs` | `context.injected`、`context.compacted`、`context.compaction_paused`（`PauseReason`） |
-| `crates/miyu-kernel/src/event/model.rs` | `model.called`（`FirstDifference`、`Usage`、`BlockSpan`、`CallResult`、`CallError`、`ErrorClass`，辅助请求的用途 `Purpose`、是不是辅助请求 `aside()`，施工 3-8 四补） |
+| `crates/miyu-kernel/src/event/model.rs` | `model.called`（`FirstDifference`、`Usage`、`BlockSpan`、`CallResult`、`CallError`、`ErrorClass`，截掉的一段 `ForgedCut`、`ForgedRole`（施工 FT-1），辅助请求的用途 `Purpose`、是不是辅助请求 `aside()`，施工 3-8 四补） |
 | `crates/miyu-kernel/src/event/nested.rs` | `tool.nested`（`NestedStatus`）（施工 M-1） |
 | `crates/miyu-kernel/src/event/shell.rs` | `shell.ran`（`ShellReason`）（施工 SH-1 上） |
 | `crates/miyu-kernel/src/event/job.rs` | `job.reported`（`JobReason`）、`child.reported`（`ChildReason`）（施工 7-1）、`job.lines`（施工 MN-1 上） |
@@ -450,6 +450,7 @@
 | `purpose` | `recap`、`title`、`compaction`、`memory` | 可以没有 | 辅助请求的用途（施工 3-8 四补，`26-提示词.md` J6）：回顾，起标题（施工 3-8 五补），提前压好的摘要（施工 6-11 上，`compaction.md` 第十五条：不带 `compaction` 那一格，不数进熔断）；`memory` 是整理会话的主请求（施工 D-1 上），不算辅助请求，照会话记用量时用途记成记忆。主请求、摘要请求没有；以前的日志没有这一格。不认识的原样留着，也算辅助请求 |
 | `truncated` | `true` | 可以没有 | 回复写到了输出上限、没写完（施工 3-10）：驱动报的照写，出错收的那一次（连着到了次数）也写；没有的不写，以前的日志没有这一格 |
 | `fell_back` | `true` | 可以没有 | 旁路请求退到了会话的模型（施工 Q-2，设计 43 第三节第 3 条）：登记的档位池全在冷却、试过都出了会换人的错，这一次发给了会话的模型；没退的不写，以前的日志没有这一格 |
+| `cut` | 截掉的一段的数组 | 可以没有 | 回复里截掉的「模型编的下一轮」（施工 FT-1，`kernel/session.md`「截掉模型编的下一轮」）：一块字截了一处记一项，照块的先后，每项 `{block, at, bytes, role}`：`block` 流里的第几块（同 `model.delta` 的 `index`，整块都是编的回复里就没有这一块）、`at` 从这一块原文的第几个字节起（角色词那一行的行首）、`bytes` 截掉多少字节（到原文末尾；截完又去掉的末尾空白不算）、`role` 那个角色词的小写（`user`、`assistant`、`system`、`human`、`tool`，不认识的原样留着）。截掉的原文不记。没截的不写，以前的日志没有这一格 |
 
 - 带 `purpose` 的是辅助请求（`ModelCalled::aside()`；`memory` 除外，那是整理会话的主请求）：它和主对话无关，她没在这次请求里听到什么，它报的用量也不是主对话的大小。所以用量的锚（`compaction.md` 第一条）、排着的话她听到没有（`kernel/history.md`）、压缩的边界（`compaction.md` 第三条第 2 条）、渲染时回合开始的那几块（`kernel/request.md`「组装」）都不看它。它不带 `turn`、没有回复，`seen` 是它照到的那一条，`first_difference`、`blocks` 没有。回顾的 `cause` 是要它的命令；起标题、提前压好的没有 `cause`（内核自己要的）。
 - `first_difference` 在代码里装在盒子里（施工 3-8 四补）：它多半没有；`purpose` 加进来以后 `model.called` 比别的种类大出两百字节，clippy 的 `large_enum_variant` 拦下了。JSON 的写法不变。`cost` 照样装在盒子里（施工 8-15）。
@@ -663,7 +664,7 @@
 | `crates/miyu-kernel/src/event/peer/tests.rs`（施工 C-1） | `peer.idle`：图纸上的两行读写一字不差、每种 `reason` 读成自己那一种、不认识的原样留着、`status` 写成 `null` 的不写、坏的说是哪一种 |
 | `crates/miyu-kernel/src/event/question/tests.rs` | 提问的两种：图纸上的写法、没写的格子不写、第 4 条对不对得上题目、坏的说是哪一种 |
 | `crates/miyu-kernel/src/event/context/tests.rs` | 上下文的几种：图纸上的写法、手动压缩带着要求（施工 6-8）、清空的空摘要照样写出 `summary`（施工 6-8 补）、坏的说是哪一种 |
-| `crates/miyu-kernel/src/event/model/tests.rs` | `model.called` 图纸上的写法；没发出去就失败的只有知道的几格；每种出错的分类；出错带着 HTTP 状态码、没有这一格的旧日志照读（施工 3-5 三补）；出错带着还要等多久、十几个小时也照记、没有这一格的旧日志照读（施工 3-5 四补）；块的起止读写一字不差、没有这一格的旧日志照读（施工 2-3 补）；第一处不同的写法；`purpose` 读写一字不差、不认识的原样留着、带了的才是辅助请求（施工 3-8 四补） |
+| `crates/miyu-kernel/src/event/model/tests.rs` | `model.called` 图纸上的写法；没发出去就失败的只有知道的几格；每种出错的分类；出错带着 HTTP 状态码、没有这一格的旧日志照读（施工 3-5 三补）；出错带着还要等多久、十几个小时也照记、没有这一格的旧日志照读（施工 3-5 四补）；块的起止读写一字不差、没有这一格的旧日志照读（施工 2-3 补）；截掉的那一段读写一字不差、不认识的角色词原样留着、没有这一格的旧日志照读（施工 FT-1）；第一处不同的写法；`purpose` 读写一字不差、不认识的原样留着、带了的才是辅助请求（施工 3-8 四补） |
 | `crates/miyu-kernel/tests/samples.rs` | 每一种的样本读写一字不差；换模型的几条一条接一条：退回的带着回合、原来的正是前面换成的（施工 8-10） |
 | `crates/miyu-kernel/tests/resources.rs` 的 `the_sample_denial_is_the_sentence_with_the_reason` | 样本里 71 号被人拒绝的结果，就是资源里带理由的那一句 |
 

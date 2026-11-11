@@ -32,6 +32,7 @@ impl Session {
             effective: created.permission.clone(),
             turn: None,
             last_request: None,
+            facing: Default::default(),
             closing: Vec::new(),
             reading: None,
             limits: None,

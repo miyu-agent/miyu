@@ -14,6 +14,7 @@ mod compaction_progress;
 mod done;
 mod flood;
 mod foreground;
+mod forged;
 mod harness;
 mod isolate;
 mod manual;

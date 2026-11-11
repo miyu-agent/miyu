@@ -20,7 +20,7 @@
 | `crates/miyu-assemble/src/jobs.rs` | 两种回报渲染成带标签的事实（施工 7-2）；子代理发来的留言包一层标签（施工 7-7） |
 | `crates/miyu-assemble/src/harness.rs` | 别的 harness 发来的话包一层带名字的标签（施工 7-10） |
 | `crates/miyu-assemble/src/peers.rs` | 别的会话发来的话包一层带短编号的标签（施工 C-2）；空了的通知那一块（施工 C-6）；人这边的一条照谁发的包哪种外壳在 `render.rs` 的 `said`；群会话里群里的人说的先走 `group.rs`（`spoken`，主请求和回顾的请求共用） |
-| `crates/miyu-assemble/src/group.rs` | 群会话里群里的人说的一条渲染成一行（施工 O-13 中，下面「群里的一行」）；`group/recent.rs` 开一轮的那条前面的群聊近况（施工 O-13 下，下面「群聊近况」）；`group/forward.rs` 合并转发那几行（施工 O-34，下面「合并转发」） |
+| `crates/miyu-assemble/src/group.rs` | 群会话里群里的人说的一条渲染成一行（施工 O-13 中，下面「群里的一行」）；`group/head.rs` 一行的行首，拼的和认的共用（施工 FT-1）；`group/recent.rs` 开一轮的那条前面的群聊近况（施工 O-13 下，下面「群聊近况」）；`group/forward.rs` 合并转发那几行（施工 O-34，下面「合并转发」） |
 | `crates/miyu-assemble/src/private.rs`（施工 O-35） | O-35 起造的会话，私聊里带了东西的那条，正文后面单独一块的 `[msg=…]` 和记号（下面「群里的一行」私聊那一条） |
 | `crates/miyu-assemble/src/recap.rs` | 回顾的请求：取最近几轮的对话正文、截到上限、接在回顾的指令后面（施工 3-8 四补，下面「回顾的请求」） |
 | `crates/miyu-assemble/src/title.rs` | 起标题的请求：取第一轮的对话正文，照回顾的写法截到上限、接在起标题的指令后面（施工 3-8 五补，下面「起标题的请求」） |
@@ -79,6 +79,7 @@
 | `title(&History) -> Option<(Request, Seq)>` | 起标题的请求，和它照到的那一条：第一个回答的序号（施工 3-8 五补，下面「起标题的请求」）。内核交进来的是这一刻落了盘的有效历史。她一个带正文的回复都没有的是 `None`；默认的实现是 `None`：不起标题 |
 | `retitle(&History) -> Option<(Request, Seq)>` | 人要求重起标题的请求，和它照到的那一条：喂进去的最新那个回答的序号（施工 TT-1，下面「起标题的请求」第 7 条）：同一份指令，喂最近答过的几轮。她一个带正文的回复都没有的是 `None`；默认的实现是 `None` |
 | `describe(&Image, said) -> Option<Request>` | 转述一张图的请求（施工 8-17，下面「替它看的图」）：`said` 是人这一轮最近说的那一句，内核找好交进来，没有的是 `None`。快照里没有转述的字的是 `None`：不转述；默认的实现是 `None` |
+| `record_head(&str) -> bool` | 这段字的开头是不是这个组装器写「别人说的一条话」时的行首（施工 FT-1，`kernel/session.md`「截掉模型编的下一轮」）：内核收回复时，回答里一个角色词后面紧跟着它的，照模型编的下一轮截掉。写法是组装器的，认法和它是一对，都归组装。默认的组装器认群里一行的行首（下面「群里的一行」）；默认的实现是不认 |
 
 **默认的组装器** `DefaultAssembler::new(Stable, Texts)`：
 
@@ -582,6 +583,7 @@ Carry on from where the summary leaves off, without redoing work it records as d
   @mentions: @all, [you], qq:20017
 ```
 
+- 行首 `[时:分] 发的人 [msg=编号]: ` 在 `group/head.rs`（施工 FT-1）：拼这一行的（`head`，别的线替她发的 `[you]` 那一行也用它）和认它的（`starts`，`Assembler::record_head`）用同一份字。认：头一行以 `[两位:两位] ` 开头，后面有 ` [msg=`，编号的 `]` 后面紧跟冒号；发的人写没写 `(id=…)`、身份都认，编号后面带撤回记号的不认（模型编下一轮不会编一条撤回了的）。
 - 钟点照快照钉下的时区（`Timestamp::local_clock`），换了时区的机器上载入也不变。名字照 `venue.name`，没有的写平台身份；括号里 `id=` 只在这一条的 `show_ids` 是真、又有名字时写，身份只写 `owner`（`as` 认出的主人）、`manager`（桥报的），都没有的不写括号。
 - 内容：字去掉前后空白、截到 4096 字节（截在字的边界上），带的东西空一格接在后面（`[image]`、`[file: 名字]`、`[sticker: 字]`、`[voice]`、`[video]`）；都没有的写 `no_text`。图片、文件块接在这一行后面交给驱动。
 - 带的东西的记号（施工 O-33，2026-10-11 主会话、核心定）：`[种类 #第几个: 名字, 大小]`，没有的部分不写，名字、大小都没有的不写冒号。
@@ -692,6 +694,7 @@ Carry on from where the summary leaves off, without redoing work it records as d
 | `crates/miyu-assemble/tests/probe_title.rs` 后三条（施工 TT-1） | 真内核、出厂的字：五轮的会话重起，同一份指令接最后三轮、没有第一轮，带工具调用的那一轮只有人的话和最后的正文，自动起的那一次照旧；只答过一轮的重起和自动起的是同一份请求；三轮超过 4096 字节的整轮去掉最老的、最前一行 `[Earlier exchanges omitted]` |
 | `crates/miyu-assemble/tests/probe_title.rs`（施工 3-8 五补） | 起标题这张脸：真内核照剧本跑，起标题的请求（`titles/`）和主请求一样和存档（`docs/designs/samples/probe/title/`）逐字节比；它是单独的一次，一条 user，指令接第一轮的话和回答，工具的输出、中间一步说的不在里面；只起一次；主请求照查五条性质，第二轮接着第一轮往后长 |
 | `crates/miyu-assemble/src/group/tests.rs`（施工 O-13 中） | 群里的一行：钟点照会话的时区、名字、`id=` 跟着这一条的 `show_ids`、只写 `owner` 和 `manager`、没名字的写身份；带的东西、图片块接在后面、空的写那一句；引用和 @ 两行（`@all`、`[you]`、看得到身份的列身份）；转义成一行；4096 字节截在字的边界；旁听的不进、私聊的照原样；回顾里也是这一行。施工 O-33：带大小、不止一样的标 `#n`、只有一样的不标、语音接那一句；以前造的快照（没有 `voice`）同一条一字不差；私聊只多大小 |
+| `crates/miyu-assemble/src/group/head/tests.rs`、`tests/forged.rs`（施工 FT-1） | 行首：拼出来的每一种（写没写平台身份、主人、管理的人、没名字的、`[you]`、名字里带 `[msg=` 的）都认得，线上模型编的那一行认得，冒号后面空着的认得；没有编号、没有冒号、钟点不是两位、不在行首、换了行、全角方括号、私聊的记号行、带撤回记号的不认。真内核、真组装器照线上的样子跑的在 `kernel/session.md`「守着它的」 |
 | `crates/miyu-assemble/src/group/forward/tests.rs`（施工 O-34） | 合并转发：一个的接在那一行、引用和 @ 两行下面；几个的标 `#n`、套的再缩进一层、`more` 写一行、转发里带的东西不标第几个、语音不接那一句；名字、正文里的换行、伪造的记录行、`forward:` 字样转义成一行、每一行都缩进；O-34 以前造的会话（快照没有 `forward`）群里、私聊里带转发和不带的一字不差、只看得到占位，新会话里没有转发的和以前一字不差；私聊接在正文后面、不缩进，没有字只带了东西的接在记号后面；判官看的记录、回顾也是这几行；`more` 写 0 的不写那一行 |
 | `crates/miyu-assemble/src/private/tests.rs`（施工 O-35） | 私聊的记号那一块：正文后面单独一块写 `[msg=…]`、大小，不止一样的标 `#n`、语音接那一句，只有东西的这一块在最前；交了原图的不写、编号连着数，全交了原图的整块不写，记号在图片块前面；合并转发接在记号后面；没带东西的（带转发、有引用来的图片块）和以前造的一字不差、`show_ids` 不管 `[msg=…]`；名字转义成一行，回顾的记录也是这一块；以前造的会话照原样、只有东西的照 O-13 补写记号 |
 | `crates/miyu-session/tests/private_media.rs`（施工 O-35） | 真会话、出厂的资源：O-35 起造的会话快照钉下语音那一句；私聊带图（交了原图的不写、编号连着数）、带文件、带语音、只有东西没有字、带东西又带转发、只有交了原图的图，请求里人那一条的字节一字不差 |

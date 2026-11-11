@@ -86,6 +86,22 @@ pub(super) fn texts() -> Texts {
     }
 }
 
+/// 群会话的字（施工 FT-1，`forged.rs` 用）：同 [`texts`]，带着群会话那一格：时区东八区，空的那一条照出厂的字，不出群聊近况。
+/// 群里的人说的话渲染成一行一条。
+pub fn group_texts() -> Texts {
+    Texts {
+        group: Some(miyu_assemble::GroupChat {
+            offset: miyu_kernel::time::UtcOffset::from_minutes(480).expect("东八区在范围里"),
+            no_text: include_str!("../../../../resources/core/venues/no-text.txt")
+                .trim_end()
+                .to_string(),
+            recent: None,
+            voice: None,
+        }),
+        ..texts()
+    }
+}
+
 /// 出厂的转述一张图的两份（施工 8-17），资源目录里的真文件。
 pub fn vision() -> Vision {
     Vision {

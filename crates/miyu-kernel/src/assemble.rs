@@ -107,4 +107,14 @@ pub trait Assembler {
         let _ = (image, said);
         None
     }
+
+    /// `text` 的开头是不是这个组装器写「别人说的一条话」时的行首（施工 FT-1，`docs/blueprint/kernel/session.md`「截掉模型编的
+    /// 下一轮」）：默认的组装器是群里的一行，`[时:分] 发的人 [msg=编号]:`。模型在回答后面写出一个角色词、接着照这个样子编的，
+    /// 内核照它认出来截掉（[`crate::forged::find`]）。写法是组装器的，认法和它是一对，所以归组装。同样是纯函数。
+    ///
+    /// 默认的是不认：没有这种写法的组装。
+    fn record_head(&self, text: &str) -> bool {
+        let _ = text;
+        false
+    }
 }

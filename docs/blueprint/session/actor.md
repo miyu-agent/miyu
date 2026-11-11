@@ -316,6 +316,7 @@ actor 退出以后：等着回应的命令、要订阅的、要停下的，都�
 | INFO | `title ended` | `seen`、`took_ms`、`in`、`hit`、`write`、`out` | 起标题的请求说完 |
 | INFO | `image not described` | `blob`、`why` | 替它看图没成（第 7 条第 9 款，施工 8-17）：没配 `models.vision` 的、一次性入口没答成的（原话照它的）、回答是空的。成了的不另记：一次性入口那一行 `model call purpose=vision` 带着会话编号 |
 | WARN | `retrying` | `seen`、`attempt`、`limit`、`wait_ms`、`class` | 等着重试 |
+| WARN | `forged turn cut` | `seen`、`endpoint`、`model`、`block`（流里的第几块）、`role`（角色词）、`bytes`（截掉多少字节） | 内核截掉了回答后面模型编的下一轮（施工 FT-1，`kernel/session.md`「截掉模型编的下一轮」）：这一批落盘的 `model.called` 带着 `cut` 的，一处一行（`actor/store/forged.rs`）。截掉的原文不记 |
 | INFO | `compacted` | `seen`、`trigger`、`before`、`after`、`summary_in`、`summary_cached`、`summary_out`、`took_ms`、`prepared` | 压好了（`compaction.md` 第十三条）：摘要请求的输入、命中、输出、用时照它的 `model.called`，没有的不写；换上的是提前压好的写 `prepared=yes`（施工 6-11 上） |
 | WARN | `compaction failed` | `seen`、`took_ms`、`class` | 提前压好的摘要请求出错（第 7 条，施工 6-11 上） |
 | INFO | `running` | `call`、`tool` | 开始跑一次调用（`session/tools.md`） |
@@ -426,6 +427,7 @@ actor 退出以后：等着回应的命令、要订阅的、要停下的，都�
 | `crates/miyu-session/tests/route_pools.rs`（施工 8-8） | 池：钉住的一个会话一直发给一个成员、新会话照指针分开、认不出的成员跳过；载入照日志认回钉着的、指针写进 `pools.json` 重启读回；轮换的一次一个；这时用不了的跳过、钉到下一个；池没了退回 `chat`；限额照钉着的、轮换的取小的；`session.created` 记下会话的引用（`models.md`「守着它的」） |
 | `crates/miyu-session/tests/log.rs` | 会话造、请求、出错、重试、收场、停下、载入、没人拿着、端口 panic 的几行；手动压缩的 `compacted` 写 `trigger=manual`（施工 6-8）；撤销以后 `changed=message:0:user`；`DEBUG` 的输入和动作、增量在 `TRACE`；没有对话的字 |
 | `crates/miyu-session/tests/recap_log.rs`（施工 3-8 四补） | 回顾的请求记 `recap request`、`recap ended`、`recap failed`，`seen` 是照到的那一条，格和主请求的一样；没有对话的字 |
+| `crates/miyu-session/tests/forged_log.rs`（施工 FT-1） | 真的会话、出厂的字：模型在回答后面写 `user`、接着照环境那块事实的标签编一句，落盘的回复只有她真说的，`model.called` 的 `cut` 对得上，运行日志一行 `WARN forged turn cut` 带会话、模型、第几块、角色词、字节数，整份运行日志里没有截掉的原文 |
 | `crates/miyu-session/tests/prepare_log.rs`、`tests/prepare.rs`（施工 6-11 上） | 配置开着（默认）的过了起压线旁路发一次摘要请求、到线换上不再请求，`compacted` 那一行带 `prepared=yes`、有 `compaction request`；出错的记 `WARN compaction failed`；`compaction.prepare = false` 的照当场压 |
 | `crates/miyu-session/tests/title_log.rs`（施工 3-8 五补） | 起标题的请求记 `title request`、`title ended`、`title failed`，`seen` 是照到的那一条；两次都没起成，第三轮不再试；没有对话的字 |
 | `crates/miyu-session/tests/http_log.rs` | HTTP 的两行带会话编号，key 不在日志里 |

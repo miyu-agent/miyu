@@ -269,3 +269,27 @@ fn a_cost_round_trips_after_the_usage_and_old_logs_without_it_still_read() {
     assert_eq!(old.cost, None);
     assert_eq!(serde_json::to_string(&old).unwrap(), CALLED);
 }
+
+/// 截掉的那一段排在最后（施工 FT-1）：读写一字不差；不认识的角色词原样留着；以前的日志没有这一格，照读，写出去还是没有。
+#[test]
+fn a_cut_round_trips_at_the_end_and_old_logs_without_it_still_read() {
+    let body = CALLED.replace(
+        r#""result":"ok"}"#,
+        r#""result":"ok","cut":[{"block":1,"at":40,"bytes":386,"role":"user"},{"block":3,"at":0,"bytes":12,"role":"narrator"}]}"#,
+    );
+    let cut = called(&body);
+    assert_eq!(
+        cut.cut[0],
+        ForgedCut {
+            block: 1,
+            at: 40,
+            bytes: 386,
+            role: ForgedRole::User,
+        }
+    );
+    assert_eq!(cut.cut[1].role, ForgedRole::Other("narrator".to_string()));
+    assert_eq!(serde_json::to_string(&cut).unwrap(), body);
+    let old = called(CALLED);
+    assert!(old.cut.is_empty());
+    assert_eq!(serde_json::to_string(&old).unwrap(), CALLED);
+}

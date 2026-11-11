@@ -178,6 +178,7 @@ impl Aside {
             purpose: Some(purpose),
             truncated: false,
             fell_back: self.fell_back,
+            cut: Vec::new(),
         };
         let blocks = match error {
             Some(error) => Err(error),

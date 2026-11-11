@@ -16,7 +16,7 @@ mod titled;
 pub use anchor::anchored;
 pub use archive::{face_files, files, matches_the_archive, matches_the_archive_with_faces};
 pub use sent::{Sent, sent};
-pub use texts::{LINES, SUMMARIZE, VENUE, recap, title, vision};
+pub use texts::{LINES, SUMMARIZE, VENUE, group_texts, recap, title, vision};
 use texts::{driver_texts, texts};
 pub use titled::titled_stage;
 

@@ -2,8 +2,10 @@
 //! 第六节「回复怎么收、回合怎么结束」）。
 //!
 //! 三种回报都带着这次请求的 `seen`，对不上的是过时的，不理。每次请求都记一条
-//! `model.called`，出错的也记（`03-事件模型.md` 第三节「模型调用怎么写」）。结局怎么写在 [`settle`]。
+//! `model.called`，出错的也记（`03-事件模型.md` 第三节「模型调用怎么写」）。结局怎么写在 [`settle`]；回答后面模型编的下一轮
+//! 怎么截在 [`forged`]（施工 FT-1）。
 
+mod forged;
 mod settle;
 
 use super::Session;
@@ -18,6 +20,7 @@ use crate::event::{
     CallError, CompactionProgress, Cost, EndReason, ErrorClass, ModelDelta, Piece, Transient,
     TransientBody, Usage,
 };
+use crate::forged::Shells;
 use crate::id::{CommandId, ContentHash, Seq};
 use crate::origin::{By, Model};
 use crate::request::Difference;
@@ -44,6 +47,8 @@ pub(super) struct Call {
     spans: Spans,
     /// 这是压缩的摘要请求：替代到哪、进度（施工 6-2 上）。主请求没有。
     pub(super) compaction: Option<Box<Compacting>>,
+    /// 这一次请求里人这一边出现过的外壳（施工 FT-1）：收回复时照它认模型编的下一轮。摘要请求不写回复，是空的。
+    shells: Shells,
 }
 
 /// 请求发出去时，执行器报来的。
@@ -69,7 +74,14 @@ impl Call {
             accumulator: Accumulator::default(),
             spans: Spans::default(),
             compaction: None,
+            shells: Shells::default(),
         }
+    }
+
+    /// 这一次请求里人这一边出现过的外壳（施工 FT-1）：主请求交出去之前照请求算好带上。
+    pub(super) fn facing(mut self, shells: Shells) -> Call {
+        self.shells = shells;
+        self
     }
 
     /// 一段增量都还没到，连思考都没有（施工 4-15 撤掉重发看它）。

@@ -105,6 +105,7 @@ impl Session {
             purpose: None,
             truncated: false,
             fell_back: false,
+            cut: Vec::new(),
         };
         let mut events =
             vec![self.record(at, By::Kernel, cause.clone(), Body::ModelCalled(called))];

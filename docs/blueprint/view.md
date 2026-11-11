@@ -24,6 +24,7 @@
 | `crates/miyu-view/src/summary.rs`、`title.rs`、`estimate.rs`、`explain.rs`、`words.rs` | 收起那一行、标题那一句、照参数估的行数、出错说明；给人看的字的接口（`Words`、`Texts`）和工具分类（`Kinds`） |
 | `crates/miyu-view/tests/` | 照内核的替身跑真会话，每个测试都对照视图流和翻页最后一样（`support/mod.rs` 的 `same`）；`random.rs` 三百份随机剧本；`notices.rs` 另有切在派任务之后的一页（9-8 中）、回报的退出码和用时（9-8 三补）；`lines.rs` 另有改了文件的一步带 `files`（9-8 三补）、工具的名字照记下的、照这一刻工具目录里的、照工具名（9-8 六补）；`outputs.rs` 一步带结果原文的前面一段，切在 100 行、8 KiB、字的边界上（9-8 十四补） |
 | `crates/miyu-endpoint/tests/view_entries.rs`、`view_page.rs`、`view_detail.rs` | 真核心走一遍（9-8 中）：握手报版本；交条目的页、边界照旧、字照连接的语言；更早派出的任务照样有标题；调用的结果原文、压缩的摘要 |
+| `crates/miyu-view/tests/forged.rs`（施工 FT-1） | 内核截掉了回答后面模型编的下一轮（`kernel/session.md`「截掉模型编的下一轮」）：流式时照增量画、看得到编的那一段，回复落了盘那一条正文换成截过的；整块都是编的那一条拿掉；视图流和翻页最后一样 |
 | `crates/miyu-view/tests/status.rs`（9-8 补上） | 闲着、在跑、在等人（确认、提问到了结）；正在写、在调工具；重试和都在冷却出现又消失；上下文用了多少；任务从派出到了结、停了的为什么 |
 | `crates/miyu-endpoint/src/diffs/tests.rs`（施工 V-18） | `view.detail` 的差异和条目 `diff` 的真数共用的两边：效果里写着、哈希对得上的原文先用，一个 blob 都没有也算得出；新建的改前当空的；原文和哈希对不上的当没写、照哈希取 blob；以前的日志没写原文的照旧取 blob；不是 UTF-8、太大、取不出来各说原因 |
 | `crates/miyu-endpoint/tests/view_tree.rs`（9-8 补下） | 派出去的子代理在跑一轮：那一项带 `busy`、`spawned`、`running_deep`、`usage`，整份带 `running_deep`、`usage_tree`；子代理派了孙代理也数进来；连子代理一起的用量（等「子代理那一次算进树里」，不等树上恰好是哪个数：中间数可能并进一次推送，施工 BUG-4） |

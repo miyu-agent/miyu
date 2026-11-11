@@ -163,6 +163,12 @@ impl Assembler for DefaultAssembler {
     fn describe(&self, image: &Image, said: Option<&str>) -> Option<Request> {
         Some(vision::request(image, said, self.texts.vision.as_ref()?))
     }
+
+    /// 群里一行的行首（`group/head.rs`，施工 FT-1）：和拼那一行的同一份字。不看是不是群会话：别的会话的请求里没有这样的行，
+    /// 回答里一个角色词后面紧跟着它，一样是编的。
+    fn record_head(&self, text: &str) -> bool {
+        group::starts_record(text)
+    }
 }
 
 #[cfg(test)]

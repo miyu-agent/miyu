@@ -389,9 +389,11 @@ impl Session {
             .last_request
             .as_ref()
             .and_then(|before| fingerprint.first_difference(before));
-        self.last_request = Some(fingerprint);
         // respond 带的那一句（施工 RT-1）：算完指纹才放，驱动编完消息接在最末尾，前面一个字节都不动。
         request.tail = self.turn.as_ref().and_then(|turn| turn.tail.clone());
+        // 请求里人这一边的外壳记在这一次请求上（施工 FT-1，`forged.rs`）：回答到了照它认模型编的下一轮。
+        let shells = self.facing.face(&request, &fingerprint);
+        self.last_request = Some(fingerprint);
         // 过了起压线的，在后台提前压（施工 6-11 上，`prepare.rs`）：排在主请求后面。
         let prepare = self.prepare_up(at, &request);
         let asked = self.newly_asked();
@@ -411,7 +413,8 @@ impl Session {
         turn.compacted = false;
         turn.interjected = None;
         turn.reports.clear();
-        turn.stage = Stage::Asking(Call::new(seen, request.messages.len(), difference));
+        turn.stage =
+            Stage::Asking(Call::new(seen, request.messages.len(), difference).facing(shells));
         let mut actions = vec![Action::CallModel {
             seen,
             request,

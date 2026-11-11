@@ -19,6 +19,7 @@
 //! - [`estimate`]：用量和压缩线，锚加本地估算（施工 6-1）；
 //! - [`session`]：会话的状态机，送进一条输入，出来一串动作；
 //! - [`accumulate`]：流式累积器，模型输出的增量拼成完整的内容块；
+//! - [`forged`]：模型在回答后面编出下一轮的，认出从哪儿起是编的（施工 FT-1）；
 //! - [`raw`]：原样的 JSON，驱动私有数据和不认识的种类都用它；
 //! - [`template`]：模板与转义，给模型看的字怎么拼，不可信的字段怎么转；
 //! - [`tool`]：内核眼里的工具，访问类别、参数格式和参数修正；
@@ -30,6 +31,7 @@ pub mod block;
 pub mod estimate;
 pub mod event;
 pub mod facts;
+pub mod forged;
 mod format_error;
 pub mod history;
 pub mod id;

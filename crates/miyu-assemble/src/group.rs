@@ -14,6 +14,8 @@
 //! 不写，只看得到正文里桥写的占位。
 //!
 //! 开一轮的那条前面的群聊近况在 `recent.rs`（施工 O-13 下）：两次触发之间的旁听、别的线替她发的话，一行一条。
+//!
+//! 行首那一段（钟点、发的人、编号、冒号）在 `head.rs`（施工 FT-1）：拼的和认的共用，内核照它认模型在回答后面编的一条。
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Event, Media, MediaKind, VenueDelivered, VenueMessage};
@@ -58,13 +60,13 @@ fn record(
     (texts, forward): (&GroupChat, Option<&ForwardTexts>),
     (mark, quote): (&str, &str),
 ) -> String {
-    let mut line = format!(
-        "[{}] {} [msg={}]{mark}: {}",
-        at.local_clock(texts.offset),
-        sender(by, venue),
-        escape(&venue.msg),
-        content(words, &venue.media, texts),
+    let mut line = head::head(
+        &at.local_clock(texts.offset),
+        &sender(by, venue),
+        &escape(&venue.msg),
+        mark,
     );
+    line.push_str(&content(words, &venue.media, texts));
     if let Some(reply_to) = &venue.reply_to {
         line.push_str("\n  reply-to: msg=");
         line.push_str(&escape(reply_to));
@@ -227,12 +229,8 @@ fn recall_mark(sender: &By, by: &ExternalId, show_ids: bool) -> String {
 /// 别的线替她发进群里的一条：`[时刻] [you] [msg=编号]: 正文`，带的图每张一个 `[image]`。群聊近况、抽取的那一段（施工 E-8，
 /// `recap.rs` 的 [`crate::recap::spoken`]）同一份写法。
 pub(crate) fn you(event: &Event, delivered: &VenueDelivered, texts: &GroupChat) -> String {
-    format!(
-        "[{}] [you] [msg={}]: {}",
-        event.at.local_clock(texts.offset),
-        escape(&delivered.msg),
-        you_said(delivered, texts),
-    )
+    let clock = event.at.local_clock(texts.offset);
+    head::head(&clock, "[you]", &escape(&delivered.msg), "") + &you_said(delivered, texts)
 }
 
 /// 她发进群里的一条的内容：正文，带的图每张一个 `[image]`；都没有的写 `no_text`。
@@ -251,10 +249,12 @@ fn you_said(delivered: &VenueDelivered, texts: &GroupChat) -> String {
 }
 
 mod forward;
+mod head;
 mod recent;
 mod records;
 
 pub(crate) use forward::block as forwarded;
+pub(crate) use head::starts as starts_record;
 
 pub(crate) use recent::recent;
 pub use records::{

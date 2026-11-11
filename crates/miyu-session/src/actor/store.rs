@@ -15,6 +15,8 @@ use tokio::sync::mpsc;
 
 use tokio::sync::oneshot;
 
+mod forged;
+
 use super::Synced;
 use super::durable::Syncing;
 use super::{Actor, Stop, answer, durable};
@@ -138,6 +140,8 @@ impl Actor {
         }
         self.goal_run.note(&events);
         self.follow_context(&events);
+        // 内核截了模型编的下一轮的，记一行（施工 FT-1）。
+        forged::note(&events);
         // 阻塞线程带着会话的 span：那边记的 `session index not updated` 也有会话编号（施工 3-8 七补）。
         let span = tracing::Span::current();
         let sync = must_sync(&events);

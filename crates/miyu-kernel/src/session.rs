@@ -130,6 +130,8 @@ pub struct Session {
     turn: Option<Turn>,
     /// 这个会话上一次请求的指纹，比出下一次的第一处不同。只在内存里。
     last_request: Option<Fingerprint>,
+    /// 上一次主请求里人这一边的外壳，下一次接着算（施工 FT-1，`forged.rs`）。只在内存里。
+    facing: crate::forged::Facing,
     /// 结束了、`turn.ended` 还没落盘的回合，和那一条的序号：落了盘才跑回合结束的挂接点。
     closing: Vec<(TurnId, Seq)>,
     /// 撤掉压缩的撤销正在读回日志（施工 6-9）：交出去了，读回的还没来。

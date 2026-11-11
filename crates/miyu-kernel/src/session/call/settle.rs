@@ -97,6 +97,7 @@ impl Session {
             accumulator,
             spans,
             compaction,
+            shells,
         } = call;
         let (usage, cost, mut error, stopped, wire) = match ending {
             Ending::Said {
@@ -117,6 +118,7 @@ impl Session {
         let mut summary = None;
         let mut isolating = false;
         let mut times = None;
+        let mut forged = Vec::new();
         match &sent {
             None if !cut && error.is_none() => {
                 error = Some(bad_stream("请求还没发出去就说完了"));
@@ -146,6 +148,8 @@ impl Session {
                 // 前半。
                 let short = limited && !cut && !failed;
                 let mut numbered = accumulator.numbered(seq, !cut && !failed);
+                // 回答后面模型编的下一轮截掉，整块都是编的不留（施工 FT-1，`forged.rs`）：下面照截过的算。
+                forged = self.cut_forged(&shells, &mut numbered);
                 let calling = numbered
                     .iter()
                     .any(|(_, block)| matches!(block, Block::ToolCall(_)));
@@ -230,6 +234,7 @@ impl Session {
             purpose: self.dream.then_some(Purpose::Memory),
             truncated: limited,
             fell_back: false,
+            cut: forged,
         };
         let summary = summary
             .zip(compaction.as_ref())

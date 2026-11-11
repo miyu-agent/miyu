@@ -24,6 +24,7 @@ fn called(compaction: Option<CompactTrigger>, result: CallResult) -> ModelCalled
         purpose: None,
         truncated: false,
         fell_back: false,
+        cut: Vec::new(),
     }
 }
 

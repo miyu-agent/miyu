@@ -72,7 +72,40 @@ pub struct ModelCalled {
     /// 没退的不写，以前的日志没有这一格。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub fell_back: bool,
+    /// 回复里截掉的「模型编的下一轮」（施工 FT-1，`kernel/session.md`「截掉模型编的下一轮」）：一块字截了一处记一项，照块的
+    /// 先后。截掉的原文不记，日志里那条 `message.assistant` 只有截剩下的。没截的不写，以前的日志没有这一格。
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub cut: Vec<ForgedCut>,
 }
+
+/// 回复的一块字里截掉的那一段（施工 FT-1）：模型在回答后面写出一个角色词，接着照这一次请求里人这一边的样子编了一条别人说的话。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ForgedCut {
+    /// 流里的第几块（同 `model.delta` 的 `index`、`message.assistant` 的 `indexes`）：整块都是编的，回复里就没有这一块了。
+    pub block: u64,
+    /// 从这一块原文的第几个字节起截掉：角色词那一行的行首。
+    pub at: u64,
+    /// 截掉了多少字节：从 `at` 到这一块原文的末尾。截完以后末尾的空白另去掉，不算在里面。
+    pub bytes: u64,
+    /// 那个角色词，写成小写。
+    pub role: ForgedRole,
+}
+
+text_enum!(
+    /// 模型编下一轮时写的角色词（施工 FT-1）。
+    ForgedRole {
+        /// `user`。
+        User = "user",
+        /// `assistant`。
+        Assistant = "assistant",
+        /// `system`。
+        System = "system",
+        /// `human`。
+        Human = "human",
+        /// `tool`。
+        Tool = "tool",
+    }
+);
 
 impl ModelCalled {
     /// 是一次辅助请求（施工 3-8 四补）：带着用途的，不认识的用途也算；整理会话的主请求（`memory`，施工 D-1 上）不算。它和主

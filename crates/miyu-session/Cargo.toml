@@ -108,6 +108,10 @@ name = "prepare_log"
 path = "tests/prepare_log.rs"
 
 [[test]]
+name = "forged_log"
+path = "tests/forged_log.rs"
+
+[[test]]
 name = "failover_log"
 path = "tests/failover_log.rs"
 

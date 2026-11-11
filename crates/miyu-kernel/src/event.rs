@@ -50,8 +50,8 @@ pub use image::ImageDescribed;
 pub use job::{ChildReason, ChildReported, JobLines, JobReason, JobReported};
 pub use message::{MessageAssistant, MessageUser, MessageWithdrawn, TypedCommand};
 pub use model::{
-    BlockSpan, CallError, CallResult, ErrorClass, FirstDifference, MessageRole, ModelCalled, Part,
-    Purpose, Usage,
+    BlockSpan, CallError, CallResult, ErrorClass, FirstDifference, ForgedCut, ForgedRole,
+    MessageRole, ModelCalled, Part, Purpose, Usage,
 };
 pub use nested::{NestedStatus, ToolNested};
 pub use package::{PackageState, State};

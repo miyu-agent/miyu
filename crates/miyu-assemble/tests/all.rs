@@ -5,6 +5,7 @@
 
 mod support;
 
+mod forged;
 mod probe;
 mod probe_harness;
 mod probe_nested;

@@ -130,6 +130,7 @@ pub(super) fn seen<'de, D: serde::Deserializer<'de>>(
         purpose: None,
         truncated: false,
         fell_back: false,
+        cut: Vec::new(),
     }))
 }
 
