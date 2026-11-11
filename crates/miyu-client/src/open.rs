@@ -32,12 +32,39 @@ impl Browser for SystemBrowser {
         } else {
             Command::new("xdg-open")
         };
-        command
-            .arg(url)
-            .stdin(std::process::Stdio::null())
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null());
-        command.status().is_ok_and(|status| status.success())
+        command.arg(url);
+        handed(command, HAND_OVER)
+    }
+}
+
+/// 交给系统以后最多等多久看它是不是当场失败（施工 WB-1）。
+const HAND_OVER: Duration = Duration::from_secs(3);
+
+/// 把 `command` 拉起来，等它最多 `wait`：这段时间里退了的照退出码算（没有这个程序、非零是没交出去）；还没退的当交出去了，
+/// 不再等。
+///
+/// 不能一直等到它退出（施工 WB-1，项目主人 2026-11-11 报托盘弹「打开网页失败」）：Linux 上浏览器没在跑时 `xdg-open` 直接换成
+/// 浏览器本身，要到浏览器整个关掉才退，`miyu web` 就一直挂着，托盘等满 90 秒当成没打开。浏览器已经开着的那种是转交、马上退，
+/// 所以平时看不出来。标准流都接空、另起一个进程组：调的一方退了、终端里按了中断，开起来的浏览器不跟着没。
+pub(crate) fn handed(mut command: Command, wait: Duration) -> bool {
+    command
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null());
+    #[cfg(unix)]
+    std::os::unix::process::CommandExt::process_group(&mut command, 0);
+    let Ok(mut child) = command.spawn() else {
+        return false;
+    };
+    // 另一个线程等它退（也免得留下收不走的子进程），这边只等 `wait`。
+    let (done, exited) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        // 这边等够了不再听的，交不出去也没事。
+        drop(done.send(child.wait()));
+    });
+    match exited.recv_timeout(wait) {
+        Ok(status) => status.is_ok_and(|status| status.success()),
+        Err(_) => true,
     }
 }
 
@@ -276,3 +303,6 @@ pub fn locale() -> String {
         .find(|value| !value.is_empty())
         .unwrap_or_default()
 }
+
+#[cfg(test)]
+mod tests;
