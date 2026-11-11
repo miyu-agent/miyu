@@ -68,7 +68,7 @@ sudo systemctl enable --now miyu-web
 网页软件默认空闲 600 秒就退、退出码 0（`miyu web` 用的时候才起它，退了下次再起），当服务跑时服务管理器不会再起它。所以要先在系统配置里写 `idle_seconds = 0`（`[web]` 那一节，不退，网页软件 W-349 起认）再起 `miyu-web`。`miyu-web.service` 跑的是网页软件自己的 `miyu-web serve`，不在 `/usr/bin` 的把 `ExecStart` 换成它的位置。
 
 - systemd 照 `StateDirectory=miyu`、`CacheDirectory=miyu` 建好 `/var/lib/miyu`、`/var/cache/miyu`，都属于 `miyu`。别的初始化系统（`init/` 下）先自己建好这两个目录、`chown miyu:miyu`、数据根 `chmod 0700`。
-- **沙盒**：命令的沙盒要用户命名空间，systemd 的加固项不要写 `RestrictNamespaces=`，会拦了 bubblewrap，沙盒起不来。别的加固项（`PrivateUsers=`、`ProtectHome=` 这些）没在这里写，要加的先在自己的机器上试过沙盒还起得来。
+- **沙盒**：命令的沙盒在 Linux 上用 Landlock，不要用户命名空间。systemd 的加固项（`PrivateUsers=`、`ProtectHome=` 这些）没在这里写，要加的先在自己的机器上试过沙盒还起得来。
 - **本机的命令行**：在第二个本机入口（`run/public.sock`，施工 Y-1 下）做好以前，核心只认 `miyu` 这个用户自己连，本机要用命令行的 `sudo -u miyu env MIYU_HOME=/var/lib/miyu miyu …`。
 - **网页软件**现在只听 `127.0.0.1`：从别的机器进来等「开网络」那一段（局域网、TLS），之前用 ssh 的端口转发。
 - 日志：`journalctl -u miyu`，核心自己的运行日志在 `/var/lib/miyu/state/logs/`。备份、搬家照数据根 `/var/lib/miyu`。

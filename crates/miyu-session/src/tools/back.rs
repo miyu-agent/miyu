@@ -84,13 +84,6 @@ impl Tools {
         }
     }
 
-    /// 换上这一轮的沙盒强度（施工 5-16 下）。
-    pub(crate) fn set_weak(&mut self, weak: bool) {
-        if let Some(sandbox) = self.sandbox.as_mut() {
-            sandbox.set_weak(weak);
-        }
-    }
-
     /// 跑工具的任务送回来的，写成内核的输入。不在跑的（已经叫停了的）不理，派出去的子代理停掉（施工 7-5 补）。
     pub(crate) fn back(&mut self, at: Timestamp, back: ToolBack) -> Option<Input> {
         match back {

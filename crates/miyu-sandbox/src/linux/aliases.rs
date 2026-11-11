@@ -1,6 +1,6 @@
 //! 藏起来的另有挂载别名（施工 SEC-3，外部审计 M-1，`docs/blueprint/sandbox/linux.md`「怎么走」第 1 条）：同一片文件挂在了
 //! 两处（bind mount、btrfs 的顶层子卷另挂一处），Landlock 的规则跟着目录本身走、不认路径，一级级放行把别名那一处整个放了，
-//! 藏起来的从原路径也读得到；bubblewrap 的 tmpfs 只盖原路径，别名那一处照样看得到。照 `/proc/self/mountinfo` 找出每一条
+//! 藏起来的从原路径也读得到。照 `/proc/self/mountinfo` 找出每一条
 //! 藏起来的在别的挂载里的位置，和它是同一个文件（设备号、inode 号都对上）的一起藏。
 
 use std::ffi::OsString;

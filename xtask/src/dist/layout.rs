@@ -53,16 +53,6 @@ pub(super) fn readme(version: &str, target: &str) -> String {
     } else {
         "Add this folder to PATH, or link miyu into ~/.local/bin"
     };
-    let sandbox_zh = if target.starts_with("linux") {
-        "\nLinux 上装了 bubblewrap（bwrap）的，命令的沙盒用它；没有的只用 Landlock。\n"
-    } else {
-        ""
-    };
-    let sandbox_en = if target.starts_with("linux") {
-        "\nOn Linux, the command sandbox uses bubblewrap (bwrap) when it is installed, and Landlock alone otherwise.\n"
-    } else {
-        ""
-    };
     format!(
         "Miyu {version} ({target})\n\
          \n\
@@ -76,7 +66,6 @@ pub(super) fn readme(version: &str, target: &str) -> String {
          \n\
          程序照旁边的 resources/ 找资源，{program} 和 resources/ 要放在一起。终端界面、网页界面的程序也在这个目录里。\n\
          数据放在家目录的 .miyu 里（设了 MIYU_HOME 的放在它指的地方）。要开机就起的跑 miyu service enable。\n\
-         {sandbox_zh}\
          卸载：先 miyu service disable（开过的话），再删掉这个目录。数据在 .miyu 里，不要了自己删。\n\
          \n\
          许可证：Miyu 用 AGPL-3.0-or-later，见 LICENSE；编进程序的第三方包见 THIRD-PARTY-LICENSES.txt。\n\
@@ -92,7 +81,6 @@ pub(super) fn readme(version: &str, target: &str) -> String {
          The program finds its resources in resources/ next to it, so keep {program} and resources/ together. The terminal and\n\
          web interfaces live in this folder too. Data goes to .miyu in your home folder (or wherever MIYU_HOME points). To\n\
          start Miyu at login, run miyu service enable.\n\
-         {sandbox_en}\
          To uninstall: run miyu service disable (if you enabled it), then delete this folder. Your data stays in .miyu; delete\n\
          it yourself if you no longer want it.\n\
          \n\

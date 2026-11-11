@@ -1,4 +1,4 @@
-//! Linux 上真跑助手的几份测试共用的（`linux.rs`、`linux_mounts.rs`）：规格、经助手跑一段脚本、问助手有什么手段。
+//! Linux 上真跑助手的几份测试共用的（`linux.rs`、`linux_sockets.rs` 这几份）：规格、经助手跑一段脚本、问助手有什么手段。
 
 use std::path::Path;
 use std::process::{Command, Output, Stdio};
@@ -14,7 +14,6 @@ pub fn spec(write: &[&Path], hidden: &[&Path]) -> Spec {
         hidden: hidden.iter().map(|path| path.to_path_buf()).collect(),
         read: None,
         reveal: Vec::new(),
-        mount: false,
         sockets: Vec::new(),
     }
 }
@@ -112,11 +111,4 @@ pub fn denied(spec: &Spec, script: &str) {
         text(&out.stderr).contains("Permission denied"),
         "{script}: {out:?}"
     );
-}
-
-/// 这台机器的助手报不报 `bwrap`（施工 5-16）。
-pub fn bwrap() -> bool {
-    let out = Command::new(HELPER).arg("probe").output().expect("起得来");
-    let probe: Probe = serde_json::from_slice(&out.stdout).expect("读得懂");
-    probe.mechanisms.iter().any(|name| name == "bwrap")
 }

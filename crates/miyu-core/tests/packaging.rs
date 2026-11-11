@@ -1,6 +1,5 @@
 //! 让核心一直开着的几份托管写法（施工 Z-1 上，`docs/designs/12-进程形态与分发.md` 第二节）：`packaging/` 里每一份读得成，
-//! 跑的是 `miyu core`（网页软件那一份是 `miyu web serve`）；服务器的样例用专门的用户 `miyu`、数据根 `/var/lib/miyu`，不写拦了
-//! bubblewrap 的 `RestrictNamespaces=`。
+//! 跑的是 `miyu core`（网页软件那一份是 `miyu web serve`）；服务器的样例用专门的用户 `miyu`、数据根 `/var/lib/miyu`。
 
 use std::path::{Path, PathBuf};
 
@@ -45,7 +44,7 @@ fn the_user_service_runs_the_core_and_restarts_it_on_failure() {
 }
 
 #[test]
-fn the_server_samples_run_as_their_own_user_and_keep_the_sandbox_working() {
+fn the_server_samples_run_as_their_own_user() {
     for (file, command) in [
         ("systemd/system/miyu.service", "/miyu core"),
         ("systemd/system/miyu-web.service", "/miyu-web serve"),
@@ -56,10 +55,6 @@ fn the_server_samples_run_as_their_own_user_and_keep_the_sandbox_working() {
         assert!(
             values(&lines, "Environment").contains(&"MIYU_HOME=/var/lib/miyu"),
             "{file}"
-        );
-        assert!(
-            values(&lines, "RestrictNamespaces").is_empty(),
-            "{file}：会拦 bubblewrap"
         );
         assert_eq!(values(&lines, "WantedBy"), ["multi-user.target"], "{file}");
     }
@@ -124,7 +119,6 @@ fn the_other_init_samples_run_the_core_as_its_own_user() {
         );
         assert!(text.contains("MIYU_HOME=/var/lib/miyu"), "{file}");
     }
-    assert!(packaged("README.md").contains("RestrictNamespaces"));
     // 网页软件默认空闲 600 秒就退、退出码 0（W-349 起写 0 是不退）：服务器上要写 0，不然退了服务管理器不再起它。
     assert!(packaged("README.md").contains("idle_seconds = 0"));
 }

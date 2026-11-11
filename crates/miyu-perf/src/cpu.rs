@@ -4,7 +4,7 @@
 //! - 进程自己：各线程 `/proc/<进程号>/task/<线程号>/schedstat` 头一格（在 CPU 上的纳秒）加起来。一段时间里退了的线程算不进
 //!   （阻塞线程空闲 10 秒才退，量的那一段里退不了），拉起的子进程不算。
 //! - 连子进程（施工 V-29）：核心放进自己的 systemd scope 跑（`Sandbox::start` 的 `scoped`），读那个 cgroup 的
-//!   `cpu.stat` 的 `usage_usec`：核心、它拉起的 `miyu-sandbox`、`bwrap`、命令本身，退出了的也算。挪到子进程里的活照样
+//!   `cpu.stat` 的 `usage_usec`：核心、它拉起的 `miyu-sandbox`、命令本身，退出了的也算。挪到子进程里的活照样
 //!   算进来（2026-10-30 项目主人定：挪到子进程要算总账）。
 
 use std::path::{Path, PathBuf};

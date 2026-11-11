@@ -126,18 +126,14 @@ fn only_landlock_only_specs_with_hidden_paths_get_a_cached_ruleset() {
     }
     // 标了不缓存的（施工 V-52）：能缓存的规格也和从头建的拼法一样。
     assert_eq!(args_marked(&cached, true), plain(&cached));
-    // 挂载那一路、关起来的会话、没有藏起来的、相对路径的：和从头建的拼法一样。
-    let mounted = Spec {
-        mount: true,
-        ..world.spec()
-    };
+    // 关起来的会话、没有藏起来的、相对路径的：和从头建的拼法一样。
     let confined = Spec {
         read: Some(vec![world.work.path().to_path_buf()]),
         ..world.spec()
     };
     let open = spec(&[world.work.path()], &[]);
     let relative = spec(&[world.work.path()], &[Path::new("data")]);
-    for other in [mounted, confined, open, relative] {
+    for other in [confined, open, relative] {
         assert_eq!(args_of(&other), plain(&other), "{other:?}");
     }
 }

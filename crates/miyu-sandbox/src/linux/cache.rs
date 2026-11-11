@@ -3,8 +3,7 @@
 //! 规则集交给助手（助手只收紧自己，`pass.rs`），不一样就当场重建。指纹不靠时间戳：每次都把一级级走进的目录重新列一遍、
 //! 每条规则的路径重新查一遍是什么文件。
 //!
-//! - 只缓存能缓存的规格（[`cacheable`]）：没写 `mount`（那一路换成 bubblewrap）、没写 `read`（关起来的会话，规则少，照旧
-//!   从头建）、有藏起来的（没有的从头建本来就只有几条）、`hidden`、`write`、`reveal` 都是绝对路径（相对的照助手的工作目录
+//! - 只缓存能缓存的规格（[`cacheable`]）：没写 `read`（关起来的会话，规则少，照旧从头建）、有藏起来的（没有的从头建本来就只有几条）、`hidden`、`write`、`reveal` 都是绝对路径（相对的照助手的工作目录
 //!   算，核心这里算不准）。
 //! - 键是规格里会进这一层的几格（`hidden`、`write`、`reveal`，先后也算）；`sockets` 每条命令都不一样，不进这一层，助手
 //!   每条命令另叠一小层（`rules.rs` 的 `Layer::Unix`）。有效用户、组记在指纹里。只在这个进程的内存里，不落盘。
@@ -36,8 +35,7 @@ const SWEEP: Duration = Duration::from_secs(60);
 
 /// 规格能不能缓存（见模块说明）。
 pub(crate) fn cacheable(spec: &Spec) -> bool {
-    !spec.mount
-        && spec.read.is_none()
+    spec.read.is_none()
         && !spec.hidden.is_empty()
         && spec
             .hidden

@@ -18,7 +18,6 @@ arch=('x86_64' 'aarch64')
 url='https://github.com/miyu-agent/miyu'
 license=('AGPL-3.0-or-later')
 depends=('glibc' 'gcc-libs')
-optdepends=('bubblewrap: sandbox commands with mounts (Landlock alone otherwise)')
 conflicts=('miyu<2026')
 options=('!strip' '!debug')
 source_x86_64=("miyu-core-${_version}-linux-x86_64.tar.gz::${url}/releases/download/v${_version}/miyu-core-${_version}-linux-x86_64.tar.gz")

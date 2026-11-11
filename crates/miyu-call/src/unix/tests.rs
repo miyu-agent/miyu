@@ -211,7 +211,6 @@ async fn the_sandbox_lets_the_command_reach_this_socket_only() {
             hidden: Vec::new(),
             read: Some(vec!["/usr".into()]),
             reveal: Vec::new(),
-            mount: false,
             sockets: Vec::new(),
         },
         env: Vec::new(),
@@ -252,7 +251,6 @@ async fn the_core_s_own_program_under_a_hidden_place_is_let_through_read_only() 
         hidden: vec![place.clone()],
         read: None,
         reveal: Vec::new(),
-        mount: true,
         sockets: Vec::new(),
     };
     let base = |write| Sandboxed {

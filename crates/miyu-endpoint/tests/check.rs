@@ -118,13 +118,14 @@ async fn everything_is_checked_from_disk_layer_by_layer() {
     );
 }
 
-/// 拆掉的配置项，老配置里还留着的（施工 LV-2：`sandbox.tools.<名字>`）：照不在清单里的键报，只是警告，核心照常起、别的项照常读。
+/// 拆掉的配置项，老配置里还留着的（施工 LV-2：`sandbox.tools.<名字>`；施工 LV-5：`sandbox.strength`、`sandbox.readonly.*`）：
+/// 照不在清单里的键报，只是警告，核心照常起、别的项照常读。
 #[tokio::test]
 async fn keys_removed_with_the_workspace_level_only_warn() {
     let home = Home::new();
     home.write(
         "etc/config.toml",
-        "[sandbox.tools]\nweather = \"~home\"\nshell = \"basesystem\"\n",
+        "[sandbox.tools]\nweather = \"~home\"\nshell = \"basesystem\"\n[sandbox]\nstrength = \"weak\"\n[sandbox.readonly]\nenabled = false\nadd = [\"Makefile\"]\nremove = [\".git/hooks\"]\n",
     );
     let mut client = connected(&home).await;
     let reply = client.call("k1", "check", json!({})).await;
@@ -150,7 +151,11 @@ async fn keys_removed_with_the_workspace_level_only_warn() {
         seen,
         [
             warned(2, "sandbox.tools.weather"),
-            warned(3, "sandbox.tools.shell")
+            warned(3, "sandbox.tools.shell"),
+            warned(5, "sandbox.strength"),
+            warned(7, "sandbox.readonly.enabled"),
+            warned(8, "sandbox.readonly.add"),
+            warned(9, "sandbox.readonly.remove")
         ],
         "{reply}"
     );

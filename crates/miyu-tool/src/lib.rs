@@ -40,7 +40,6 @@ mod person;
 pub mod picture;
 pub mod private;
 mod questions;
-pub mod readonly;
 mod run;
 mod schedules;
 mod sessions;

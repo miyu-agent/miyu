@@ -146,27 +146,6 @@ pub fn tell(
                 &[("got", got)],
             )?);
         }
-        Code::ReadonlyNotShipped => {
-            parts.push(sentence(
-                words,
-                "config/readonly-not-shipped",
-                &[("got", got)],
-            )?);
-        }
-        Code::ReadonlyPath => {
-            parts.push(sentence(
-                words,
-                "config/readonly-bad-path",
-                &[("got", got)],
-            )?);
-        }
-        Code::ReadonlyTooBroad => {
-            parts.push(sentence(
-                words,
-                "config/readonly-too-broad",
-                &[("got", got)],
-            )?);
-        }
         Code::SourceReserved | Code::SourceIncomplete | Code::SourceKey => {
             let said = match problem.code {
                 Code::SourceReserved => "config/source-reserved",

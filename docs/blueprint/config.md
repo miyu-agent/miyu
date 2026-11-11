@@ -246,10 +246,6 @@ miyu_config::settings! {
 | `permission.start_read_only` | 开关 | `false` | 系统、项目 | `true_only` | `new_session` | 8-2。设置页在「通用」那一页的「新会话」一组（2026-10-23 从「会话」组挪来） |
 | `sandbox.private.add` | 文字的列表，一个最多 4096 个字符：`~/…` 或绝对路径 | 空的 | 系统 | 不能写 | `next_turn` | 5-15 下：人加的私密目录，家目录和它的上级不收（`private_too_broad`）。设置页「隐私与安全」那一页的「私密目录」一组 |
 | `sandbox.private.remove` | 文字的列表，只收这台机器的出厂私密目录（`config.schema` 交成 `options`，5-15 下补：登记成选项的话生成的文件照系统不同） | 空的 | 系统 | 不能写 | `next_turn` | 5-15 下：去掉的出厂项，同上一组 |
-| `sandbox.readonly.enabled` | 真假 | 真 | 系统 | 不能写 | `next_turn` | 5-17 下上补（项目主人 2026-10-22 验收网页时定）：受保护的路径整个开不开，关了出厂的、人加的都不生效，文件工具改之前不再因为它们问；数据根照旧。「受保护的路径」一组的最上面一行 |
-| `sandbox.readonly.add` | 文字的列表，一个最多 4096 个字符：`~/…`、绝对路径，或者工作区里不带 `..` 的相对路径 | 空的 | 系统 | 不能写 | `next_turn` | 5-17 下：人加的受保护路径（只禁写），家目录和它的上级不收（`readonly_too_broad`）。设置页「隐私与安全」那一页的「受保护的路径」一组，排在私密目录后面 |
-| `sandbox.readonly.remove` | 文字的列表，只收这台机器的出厂只禁写清单（`config.schema` 交成 `options`） | 空的 | 系统 | 不能写 | `next_turn` | 5-17 下：去掉的出厂项，同上一组 |
-| `sandbox.strength` | 选项 `auto`、`weak` | `auto` | 系统 | 不能写 | `next_turn` | 5-16 下：沙盒强度。`auto` 有能用的 bubblewrap 就用它，`weak` 只用 Landlock（有挂载也不用）。回合开始照这一轮的配置读。只在 Linux 上起作用：三个系统都登记（生成的文件哪个系统都一样），别的系统上 `config.schema` 标 `hidden`。「隐私与安全」那一页的「沙盒」一组，下拉 |
 | `external.bindings.<external>` | 名字（写什么都算主人，im 写 `owner`） | 没有 | 系统 | 不能写 | `now` | O-3：主人的平台账号（`venues.md`），一个号一行；值是空的当没写。头在平台接入那个软件的信息页上画成「我的平台账号」，只填号码（2026-10-10 项目主人定，`package-pages.md`「平台接入的软件」） |
 | `ui.startup` | 选项 `new`、`recent` | `new`，开一个新会话 | 系统 | 不能写 | `head_start` | 8-3（8-28 从 `tui.startup` 改名） |
 | `ui.head` | 名字（软件包的编号） | `miyu-tui` | 系统 | 不能写 | `head_start` | 9-3（`cli/main.md`「怎么走」第 3 条）：直接敲 `miyu`、`miyu config` 时打开哪个界面；主程序每次敲的时候经 `config.get` 读，照清单找这个包的程序。界面提示：通用页的「显示」组，文字 |
@@ -313,7 +309,7 @@ miyu_config::settings! {
 - `commands.<id>.access`（施工 O-6 六补，2026-10-17 接入QQ 的会话要的、项目主人定）：一条斜杠命令谁能用，`<id>` 是命令名。`admin`（本人、对应表里认得的、场所里管理的人，照旧）、`anyone`（谁都行，命令自己的限制照旧）、`off`（谁都不行，回 `command_not_allowed`，`data.why`「/<名字> 已停用。」，菜单里不列）。不写的照命令的出厂值（扩展清单 `[[slash]]` 的 `access`），也没有的是 `admin`。只写在系统配置里，立即生效。设置页不画（`hidden`）：带名字的这一段两个头还没有画法（`slash.md`「谁能用」）。
 - `permission.level`（施工 8-32，2026-10-13 项目主人定；施工 LV-1 改）：A16 起（`11-权限与沙盒.md`）只有 `full`，默认 `full`，写 `workspace` 的照 `full` 收（旧配置、还没跟上的头的引导写它不报错）；设置页不列（`hidden`）。新会话都从完全放开开局，本机、场所的一样，外部身份另有限制（`session/guard.md` 第四条末）。要开局只读的用 `permission.start_read_only`。
 - `sandbox.private.add`、`sandbox.private.remove`（施工 5-15 下，`designs/11-权限与沙盒.md` 第四节）：人加的私密目录（`~/…` 或绝对路径，家目录和它的上级 `config.set` 拒 `private_too_broad`，手改文件写了的照不写算）、去掉的出厂项（只收这台机器的出厂清单 `miyu_fs::SHIPPED_PRIVATE`，照系统不同；清单里登记成文字的列表，生成的 Schema、参考文件哪个系统都一样，`config.schema` 另把出厂清单交成 `options`、名字同值，`config.set` 写了别的拒 `not_an_option`，5-15 下补）。记两份不记整份：以后的版本加了出厂项照样生效，人去掉的不随升级回来。下一轮生效：权限策略、沙盒、往下走目录的工具照这一轮的配置拼（`miyu_tool::private::dirs`）。`privacy` 页的 `private` 组，列表。两项手写登记。
-- `sandbox.readonly.add`、`sandbox.readonly.remove`（施工 5-17 下，`designs/11-权限与沙盒.md` 第四节「只禁写」）：受保护的路径，读照常、写要问人，同私密目录记两份不记整份。一项写成 `~/…`、绝对路径，或者工作区里的相对路径（每个工作区、加进来的目录里任一层的那一处；带 `..` 的、什么都没写的 `config.set` 拒 `bad_format`，单给一句），家目录本身和它的上级拒 `readonly_too_broad`；去掉的只收这台机器的出厂清单 `miyu_fs::SHIPPED_READONLY`（`config.schema` 交成 `options`，带 `ticks: "unlisted"`，写了别的拒 `not_an_option`）。手改文件写了的照不写算。下一轮生效：权限策略照这一轮的配置拼（`miyu_tool::readonly::list`）。`privacy` 页的 `readonly` 组，列表，排在 `private` 组后面，没有总开关。两项手写登记（`miyu-tool` 的 `readonly.rs`）。
+- 去掉的（施工 LV-5，2026-11-11 项目主人定，`designs/11-权限与沙盒.md` A17）：`sandbox.strength`（沙盒强度，施工 5-16 下）和 `sandbox.readonly.enabled`、`.add`、`.remove`（受保护的路径，施工 5-17 下）。老配置里留着的照不在清单里的键报 `unknown_key`（警告），原样留在文件里，不进最终值。私密目录那三项照留，只在只读时起作用：命令读不到，文件工具读之前先问；完全放开时不拦。
 - `ui.startup`：打开一个头（终端界面、网页）时开一个新会话（`new`），还是接着最近的那一个（`recent`）。头自己用 `config.get` 读，核心不管它（2026-10-01 主会话和终端界面定）。界面提示：`general` 页（通用）的 `display` 组（显示），下拉。施工 8-28 从 `tui.startup` 改名（2026-10-07 项目主人定：同一个人在同一台机器上，每个头的体验一样，几个头都有的行为是一个共用的项，只有一个头才有的才用 `tui.*`、`web.*`）；不留旧名字：还没发布，文件里写着旧名字的照不认识的键报警告、不算。
 - `log.level` 只能放在系统配置里：运行日志是整个核心的，项目配置不能写它。
 - 蓝图里写着「配置那一步能改」的几个数（压缩的几个数、`jobs.*`、回收处留几天、空闲多久退出）这次不挪：只挪真要调的（2026-10-01 主会话定）。有人要改哪一个，再为它开一张小单。
@@ -366,9 +362,8 @@ miyu_config::settings! {
 | `wrong_type` | 错误 | 类型不对，例如开关写成了 `"yes"`，还有一组键下面写成了一个值，例如 `ui = "zh"` | 8-2 |
 | `not_an_option` | 错误 | 选项不在列出的几个里 | 8-2 |
 | `private_too_broad` | 错误 | `sandbox.private.add` 写了家目录本身（`~`、`~/` 都算）或它的上级（`got` 是那一个）：藏了它什么命令都跑不了。只在 `config.set` 改几项时查，手改文件写了的照不写算 | 5-15 下 |
-| `readonly_too_broad` | 错误 | `sandbox.readonly.add` 写了家目录本身或它的上级（`got` 是那一个）：家目录里改什么都要先问。只在 `config.set` 改几项时查，手改文件写了的照不写算 | 5-17 下 |
 | `out_of_range` | 错误 | 数不在范围里，字太长 | 8-6（整数） |
-| `bad_format` | 错误 | 时长、路径、网址、名字、引用写法不对；键里人起的名字那一段写法不对；`sandbox.private.add` 的一个目录不是 `~/…`、不是绝对路径（单给一句，说该怎么写，5-15 下补）；`sandbox.readonly.add` 的一项不是 `~/…`、绝对路径、不带 `..` 的相对路径（单给一句，5-17 下）；`skills.external.dirs` 的一项不是 `~`、`~/…`、绝对路径（同私密目录那一句，PT-2 外）：和别的项不同，手改的文件 `miyu check`、`config.check` 也报，不只 `config.set` 时查（2026-10-29 主会话定：读的时候认不了的静默跳过，人看不出来少了） | 8-6（网址、名字、引用、键里的名字） |
+| `bad_format` | 错误 | 时长、路径、网址、名字、引用写法不对；键里人起的名字那一段写法不对；`sandbox.private.add` 的一个目录不是 `~/…`、不是绝对路径（单给一句，说该怎么写，5-15 下补）；`skills.external.dirs` 的一项不是 `~`、`~/…`、绝对路径（同私密目录那一句，PT-2 外）：和别的项不同，手改的文件 `miyu check`、`config.check` 也报，不只 `config.set` 时查（2026-10-29 主会话定：读的时候认不了的静默跳过，人看不出来少了） | 8-6（网址、名字、引用、键里的名字） |
 | `bad_reference` | 错误 | 引用、模型的列表指的供应商、池在不算项目配置的最终值里没有（`name` 是指的那个）。读进来以后另查、只报不丢：值照样用，路由当场照它说 `no_model`；算进 `config_errors`。`config.check` 照「这段字换掉它那一层」合出来的查 | 8-8 |
 | `unknown_effort` | 错误 | 模型的 `effort` 不在这个模型这时的档位里（`name` 是写的那一档，档位照 `models.md`「模型的资料」的 `reasoning`）。照 `bad_reference` 的办法：读进来以后另查、只报不丢，请求照没写发；算进 `config_errors`；`config.check` 照「这段字换掉它那一层」合出来的查。档位要目录：目录读完以前不查。那一家用不了（推不出驱动、地址）的不查 | 8-18 |
 | `unknown_persona`、`unknown_knowledge`、`unknown_preset` | 警告 | 软件包配置项选的人格、知识库、预设这时没有（`name` 是写的编号，施工 PC-3、PC-3 补）。只在 `check` 里报（核心照这时有的查，列不出来的那一种不查），值照样用 |
@@ -406,7 +401,7 @@ miyu_config::settings! {
 - 每一项的格：`key`、`type`，照类型带 `options`（选项：`value` 和给人看的 `name`，软件包清单里写了说明的另带 `description`（施工 PC-1）；核心查得出的再带 `note`，头接在名字后面暗色写，施工 R-5 再补：`models.embedding` 的 `local` 写内置模型的名字，照核心手里的本机清单的 `id`，本机的那一路用不上的没有，不进给人看的字；`net.search.source` 冷却着的那一家写「冷却到 15:30」（施工 N-2 下：内置包的端口 `Builtins::option_state` 说冷却到什么时候，照连接的语言 `core/config/option-cooling`、核心这台机器的时区拼，只写时、分）；核心查得出用不了的再带 `available: false`，只写 `false`，头照样列着、画成灰的、选不了，为什么用不了的那一句头自己写，施工 R-5 三补：现在只有 `local`，本机的那一路没有时，就是没装内置语义模型的包）、`min`、`max`、`max_chars`、`element`，再是 `default`、`layers`、`tighten`（没有不写）、`env`（没有不写）、`applies`、`name`、`description`、`page`、`group`、`common`、`control`，控件是 `combo` 的再带 `suggestions`（字表里这种语言的建议值，照先后，施工 P-9 补），设置页不画的再带 `hidden: true`（施工 9-1 下：网页的空闲、票据那几项）。包的配置项（页是 `packages`）再带 `package`：归哪个包，就是组的编号（施工 F-6 上，`package-pages.md`）。
 - 包的分节（施工 SG-1，2026-11-10 项目主人经语音会话要的：一个包的设置一股脑全摊开，选了一个引擎还看得到别家的几项）：清单在组里声明的项（`[settings.<组>.<名字>]`，`packages.md`「配置项」第 1 条）再带 `section`：组名；不在组里的不写。这个包那一组（`groups` 里编号是包的编号的那一个）再带 `sections`：每一节 `{"id", "name", "shown_when"?}`，照清单写的先后；`name` 照连接的语言挑，同一项的名字（这种语言、`en`、`zh`、`ja`），清单没写的是组名；`shown_when` 是 `{"key": "<完整的键>", "is": ["<值>", …]}`，键是包的前缀接清单里写的名字，`is` 清单写一个值的也是列表。头照它分节画、照那一项的当前值决定画不画；不画的只是不画，值照旧存、读、查，核心哪里都不看 `shown_when`。没分组的包两格都不写，回应和原来逐字节一样。拼法在 `crates/miyu-endpoint/src/config/sections.rs`，照核心手里装着的包的清单现拼。
 - 选项由包在运行时给（施工 SG-2，2026-11-10 项目主人验收语音助手设置页时提的：麦克风不该让人手填设备名）：清单写了 `choices_from` 的文字项（`packages.md`「配置项」的表）再带 `choices_from`：`{"package": "<包的编号>", "method": "<方法名>"}`，`type` 照旧是 `text`；没写的项不带这一格，回应和原来逐字节一样。头画成下拉，选项调 `package.call {package, method}` 取，包回 `{"choices": [{"value", "name"?, "description"?}]}`；调不到、回空的退回文字框，存着的值不在列表里的照样显示。核心只交出这一格，不调那个方法、不照列表查值（设备拔了不算错）。拼法在 `crates/miyu-endpoint/src/config/choices.rs`，照核心手里装着的包的清单现拼。
-- 列表带选项的项怎么画勾（施工 5-15 再补，2026-10-21 项目主人验收时定）：`sandbox.private.remove`、`sandbox.readonly.remove`（施工 5-17 下）带 `ticks: "unlisted"`，勾着的是不在值里的（照旧私密、照旧受保护），取消勾选＝加进值里，存的值照旧是去掉的那几个；头照这一格反着画，不认键名。别的没有这一格，勾着的是值里的。
+- 列表带选项的项怎么画勾（施工 5-15 再补，2026-10-21 项目主人验收时定）：`sandbox.private.remove` 带 `ticks: "unlisted"`，勾着的是不在值里的（照旧私密），取消勾选＝加进值里，存的值照旧是去掉的那几个；头照这一格反着画，不认键名。别的没有这一格，勾着的是值里的。
 - 写了清单里没有的键：`unknown_config_key`，`data.problems` 里每个不认识的一条：`code` 是 `unknown_key`，`level` 是 `error`（请求写错了，不是文件里的警告），`key`、`message`，有最近的键名的带 `suggest`，没有行列。
 - 名字、说明这种语言里没有的，照英文（`store/resources.md` 第 3 条的退法），英文也没有的名字照键、说明是空的；页、组的名字同样，都没有的照编号。
 
@@ -1476,34 +1471,16 @@ default = "full"
 # 能写：0 到 1000000 之间的数。只能写在系统配置里。下一轮生效。
 # output =
 
-[sandbox]
-# 沙盒强度：自动挡位默认使用 BubbleWrap，未安装或不可用时回退至 Landlock。
-# 能写：auto 或 weak。只能写在系统配置里。下一轮生效。
-strength = "auto"
-
 [sandbox.private]
-# 加的私密目录：命令读写不到、文件工具要先问的目录。
+# 加的私密目录：只读时命令读不到、文件工具读之前先问的目录。完全放开时不拦。
 # 能写：最多 4096 个字的文字 的列表。只能写在系统配置里。下一轮生效。
 # add =
 
-# 私密目录：关掉以后出厂的和加的私密目录都不藏，文件工具也不再问；Miyu 自己的数据照旧藏着。
+# 私密目录：只在只读时起作用，命令读不到私密目录，文件工具读之前先问；完全放开时不拦。关掉以后只读时也不藏、不问；Miyu 自己的数据不受这个开关影响。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 enabled = true
 
-# 默认私密目录：出厂就藏起来的目录。留着的照旧私密；去掉的命令读得到、文件工具不再问。恢复默认就全部回来。
-# 能写：最多 4096 个字的文字 的列表。只能写在系统配置里。下一轮生效。
-# remove =
-
-[sandbox.readonly]
-# 加的受保护路径：文件工具改之前要先问的文件和目录，读照常。写成 ~/…、绝对路径，或者工作区里的相对路径，例如 .vscode（每一层都算）。
-# 能写：最多 4096 个字的文字 的列表。只能写在系统配置里。下一轮生效。
-# add =
-
-# 受保护的路径：关掉以后出厂的和加的受保护路径都不生效，文件工具改之前不再因为它们问；Miyu 自己的数据照旧护着。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-enabled = true
-
-# 默认受保护路径：出厂就受保护的：工作区里的 .git/hooks、编辑器和 agent 的配置，家目录下的 shell 启动文件这些。留着的照旧，去掉的文件工具不再问。恢复默认就全部回来。
+# 默认私密目录：出厂的私密目录，只在只读时起作用。留着的照旧私密；去掉的命令读得到、文件工具不再问。恢复默认就全部回来。
 # 能写：最多 4096 个字的文字 的列表。只能写在系统配置里。下一轮生效。
 # remove =
 
@@ -1630,14 +1607,9 @@ currency = "USD"
 | `sandbox.private.add` 名字（5-15 下） | 加的私密目录 | Added private folders | 追加した非公開フォルダ |
 | `sandbox.private.remove` 名字（5-15 下，5-15 再补改名） | 默认私密目录 | Default private folders | 既定の非公開フォルダ |
 | `net.internal_domains` 名字（MB-2） | 内部域名 | Internal domains | 内部ドメイン |
-| `sandbox.readonly.enabled` 名字（5-17 下上补） | 受保护的路径 | Protected paths | 保護パス |
-| `sandbox.readonly.add` 名字（5-17 下） | 加的受保护路径 | Added protected paths | 追加した保護パス |
-| `sandbox.readonly.remove` 名字（5-17 下） | 默认受保护路径 | Default protected paths | 既定の保護パス |
 | `skills.external.enabled` 名字（PT-2 外） | 读取其他目录的 Skills | Read skills from other folders | ほかのフォルダのスキルを読む |
 | `skills.external.dirs` 名字（PT-2 外） | 其他技能目录 | Other skill folders | ほかのスキルフォルダ |
 | 组 `skills`（PT-2 外） | 技能 | Skills | スキル |
-| `sandbox.strength` 名字（5-16 下） | 沙盒强度 | Sandbox strength | サンドボックスの強さ |
-| 选项 | `auto` 自动、`weak` 弱沙盒 | Automatic、Weak | 自動、弱い |
 | `ui.startup` 名字（8-3，8-28 改名） | 启动时打开 | On start, open | 起動時に開く |
 | 说明（8-28 改成不点名哪个头） | 打开终端界面或网页时，开一个新会话，还是接着最近的那一个。 | Whether a terminal interface or the web page opens a new session or picks up the most recent one. | 端末画面やウェブを開いたときに、新しいセッションを始めるか、最近のセッションを続けるかです。 |
 | 选项 | `new` 新会话、`recent` 最近的会话 | A new session、The most recent session | 新しいセッション、最近のセッション |

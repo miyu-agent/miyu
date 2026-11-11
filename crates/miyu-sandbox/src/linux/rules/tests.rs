@@ -20,7 +20,6 @@ fn the_two_layers_grant_exactly_what_the_whole_one_grants() {
         hidden: vec![PathBuf::from("/h")],
         read: None,
         reveal: vec![PathBuf::from("/h/skill")],
-        mount: false,
         sockets: vec![
             PathBuf::from("/run/call.sock"),
             PathBuf::from("/run/b.sock"),

@@ -3,7 +3,7 @@
 //! - [`confine`]：助手每条命令从头建、收紧自己（和施工 V-47 以前一样）；
 //! - [`confine_cached`]：助手照核心交来的规则集收紧自己，再叠一小层管连 Unix 套接字的；
 //! - 核心按规格缓存规则集（`cache.rs`，指纹 `print.rs`），经 [`crate::command`] 交给助手（`pass.rs`）；
-//! - [`available`]、[`confines_sockets`]：探测；[`with_aliases`]：藏起来的另挂在别处的（bubblewrap 那一路也用）。
+//! - [`available`]、[`confines_sockets`]：探测；[`with_aliases`]：藏起来的另挂在别处的。
 //!
 //! 只给助手用，不算对外的接口。
 

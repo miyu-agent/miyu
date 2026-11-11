@@ -1494,6 +1494,7 @@ flowchart LR
 | LV-2 | 删掉随工作区去掉的 | 做了（2026-11-11）：`shell` 和脚本的 `outside_sandbox`（工具面变一次，`shell.json` 照 o200k 少 28）、命令的「此目录不再询问」带的命令前缀和交给执行器的放行规则（5-15、SB-3）、Windows 的沙盒用户（`miyu-sandbox` 的 `install`、`miyu sandbox` 和帮助页）；`sandbox.tools` 的键 LV-1 已删，老配置里留着的照不在清单里的键报警告；文件工具的放行规则还走得到，照留；蓝图、参考文档跟着改。施工单 `LV-2-删掉随工作区去掉的.md` |
 | LV-3 | 头跟着改 | 终端、网页：级别只剩只读开关，`/level` 和设置页的「新会话的权限级别」去掉工作区，切回完全放开不确认；引导去掉「沙盒」那一步；照核心 LV-1 换钉。归 UI 的会话 |
 | LV-4 | im 核对 | 场所会话、预设里写了 `workspace` 的照 PL-1 读成完全放开，外部身份照旧关押；查 im 自己有没有写死 `workspace`。归 im 的会话 |
+| LV-5 | 去掉 bubblewrap 和两组设置 | 做了（2026-11-11，项目主人同一天定，设计 11 的 A17）：Linux 上只用 Landlock，助手里 bubblewrap 一路、规格的 `mount`、探测的 `bwrap` 删掉；配置 `sandbox.strength`（沙盒强度）、`sandbox.readonly.enabled`、`.add`、`.remove`（受保护的路径）连同只禁写的名单删掉，老配置里留着的照不在清单里的键报警告；私密目录照留，说明写清只在只读时起作用；打包不再提 bubblewrap、用户命名空间。少掉的三样写进蓝图 `sandbox/linux.md`「已知的限制」。施工单 `LV-5-去掉bubblewrap和两组设置.md` |
 
 **发版前追加的几件**（2026-11-10，core1 排）
 

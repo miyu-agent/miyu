@@ -9,11 +9,9 @@ fn linux_needs_landlock_sockets_or_seccomp_to_confine_sockets() {
         "landlock",
         "landlock-sockets"
     ])));
-    assert!(sockets_confined_by(&names(&[
-        "landlock", "bwrap", "seccomp"
-    ])));
+    assert!(sockets_confined_by(&names(&["landlock", "seccomp"])));
     assert_eq!(
-        sockets_confined_by(&names(&["landlock", "bwrap"])),
+        sockets_confined_by(&names(&["landlock"])),
         !cfg!(target_os = "linux"),
         "只有 Landlock 的 Linux 管不住"
     );

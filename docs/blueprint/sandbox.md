@@ -41,13 +41,12 @@
 |---|---|
 | `write` | 能写的目录、文件 |
 | `hidden` | 读写都不行的，例如数据根：里面有本机令牌，读到就能冒充本人；别的程序的私密目录（施工 5-13：钥匙、登录、浏览器配置、旧版 Miyu 的数据，清单见 `11-权限与沙盒.md` 第四节，这台机器上有的才写） |
-| `mount` | 用挂载收紧（施工 5-16）：执行器在这台机器报了 `bwrap` 时写上，落在能写的里面的私密目录也写进 `hidden`；Linux 的助手换成 bubblewrap（`sandbox/linux.md`）。没有的不写，规格的字节和以前一样 |
 | `sockets` | 这条命令要连的 Unix 套接字（施工 M-3，脚本调工具的端点，`tools/shell.md`「脚本调工具」）：别的套接字照旧连不上，这几个放行，只读一级也放行；Linux 上 Landlock 只放行连它（`ResolveUnix`），落在藏起来的里面的用挂载时挂回来；macOS 上每个一条照字面的放行，写在最后。没有的不写，规格的字节和以前一样 |
 | `reveal` | 藏起来的里面单独放开只读的（施工 X-10 中）：开着的技能文件夹（`skills.md`「技能」第 3 条）、这个会话的附件目录（施工 3-9 六补，还没建的不写：Landlock 认不得不在的路径），读得到、列得出、执行得了，写不了；没有的不写，规格的字节和以前一样 |
 
 - 规格以外的都能读，不能写；`/dev/null` 总能写（2026-09-29 项目主人定，照 DeepSeek 的 dsh：整盘能读，只管写）。平常的命令要用的几样设备，各平台另放行，写在各自那一页（macOS 上还有 `/dev/zero`、`/dev/fd`、终端，`sandbox/macos.md`）。
 - 规格里一条能写的都没有，就是全盘只读：只读这一级（`11-权限与沙盒.md` A12）。
-- 几条重叠的时候，越深的越算数：能写的落在藏起来的里面，照样能写（工作区在数据根里）；放开只读的落在藏起来的里面，照样读得到（施工 X-10 中）；藏起来的落在能写的里面：有挂载的（bubblewrap）、macOS、Windows 照样藏；Linux 只有 Landlock 的不挖洞，会话那边不写进 `hidden`（施工 5-14 改，照 dsh；施工 5-15 到 5-14 改之间写也一级级绕开，`sandbox/linux.md`；更早拒绝执行）。
+- 几条重叠的时候，越深的越算数：能写的落在藏起来的里面，照样能写（工作区在数据根里）；放开只读的落在藏起来的里面，照样读得到（施工 X-10 中）；藏起来的落在能写的里面：macOS、Windows 照样藏；Linux 的 Landlock 不挖洞，会话那边不写进 `hidden`（施工 5-14 改，照 dsh；施工 5-15 到 5-14 改之间写也一级级绕开，`sandbox/linux.md`；更早拒绝执行）。
 - 规格里没有网络：沙盒只管读写权限（2026-09-29 项目主人定）。
 
 样本 `docs/designs/samples/sandbox/spec.json`（例子）：
@@ -56,7 +55,7 @@
 {"write":["/home/me/project","/tmp/miyu-sandbox"],"hidden":["/home/me/.miyu"]}
 ```
 
-读的时候，认不得的格（包括原来的 `readonly`、`network`）、类型不对的，都当规格写坏了：助手不懂的限制，不能悄悄跳过。两格不写都是空的。
+读的时候，认不得的格（包括原来的 `readonly`、`network`，施工 LV-5 去掉的 `mount`）、类型不对的，都当规格写坏了：助手不懂的限制，不能悄悄跳过。两格不写都是空的。
 
 **只准读名单里的**（`read`，施工 5-12 下，外部身份的会话，`11-权限与沙盒.md` 第三节）：写了的，除了它列的和 `write` 的，别处都读不到、列不出、执行不了，`hidden` 不再另算；不写的照旧整盘能读。Linux 照它收紧（Landlock：根目录不再整个放列目录、执行，名单里的每一条放读、列目录、执行）；macOS 也照它收紧（施工 5-12 再补，Seatbelt：底子后面不再接整盘能读的那一段，名单里的每一条放读、列目录、执行，元数据整盘看得到，同 Landlock 不管 `stat`；`sandbox/macos.md`）。Windows 的沙盒还没有（5-9 停着，`miyu_sandbox::CONFINES_READS` 是假的）：助手收到写了它的规格说 `cannot confine: reads cannot be confined on this platform`、退出 125、不跑，宁可不跑也不漏读；外部身份的会话在 Windows 上照旧没有命令。
 
@@ -68,7 +67,7 @@
   - 成了什么都不印：它的标准错误就是命令的标准错误，印了会混进给她看的输出。
 - `miyu-sandbox run --spec <规格的 JSON> --ruleset <号码> -- <程序> [参数…]`（施工 V-47，只有 Linux）：核心交来按规格缓存的 Landlock 规则集，
   描述符号码写在这里（不小于 3），助手照它收紧、关掉它，再叠一小层，再换成命令（`sandbox/linux.md`「核心按规格缓存规则集」）。只有只用
-  Landlock、没写 `mount`、`read` 的规格才这样交；写了的说 `bad spec: --ruleset with mount or read`、退出 125。别的平台给了算参数不对。
+  Landlock、没写 `read` 的规格才这样交；写了的说 `bad spec: --ruleset with read`、退出 125。别的平台给了算参数不对。
   `shell`、脚本工具经 `miyu_sandbox::command` 起，用不上缓存的（别的平台、别的规格、建不成）参数和上一条一样。
 - `miyu-sandbox lifeline`（施工 V-48，Unix）：看门。核心给每条命令的进程组先起一个它（`core.md`「子进程随核心退出」第 1 条），标准输入是核心那根生命线的读端：读到结尾（核心没了）就杀掉自己所在的整个组（`kill(0, SIGKILL)`），读到的东西不管，读不了也当结尾。不读规格、不收紧、什么都不印。只认光秃秃的这一个参数，后面多了的照参数不对退出 125。
 - `miyu-sandbox probe`：标准输出上一行 JSON，说这台机器能收紧到什么程度，例如 `{"version":1,"platform":"linux","mechanisms":[],"build":"3f0c…"}`。`platform` 是 `linux`、`macos`、`windows`、`other` 之一；`mechanisms` 是这台机器上能用上的收紧手段，各平台自己报（Linux 上是 `landlock`，`sandbox/linux.md`；macOS 上是 `seatbelt`，`sandbox/macos.md`），空的就是收紧不了；`build` 是编它的构建 id（施工 5-16 再补）：照 `miyu-sandbox` 这个包的源码（`src/` 下的文件、`Cargo.toml`、`build.rs`）算的 64 位 FNV-1a 摘要，十六位十六进制，核心链进来的这个包和助手是同一份源码编的才一样。核心只认 `version` 是 1、`build` 和自己的一样的（旧版的助手不报 `build`，读成空的，也对不上）；多出来的格不管。

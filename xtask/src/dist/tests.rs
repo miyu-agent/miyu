@@ -171,13 +171,10 @@ fn the_readme_has_both_languages_and_fits_the_system() {
     let linux = readme("1.0.0", "linux-x86_64");
     assert!(linux.starts_with("Miyu 1.0.0 (linux-x86_64)\n"));
     assert!(linux.contains("\n中文\n") && linux.contains("\nEnglish\n"));
-    assert!(linux.contains("bubblewrap"));
     assert!(linux.contains("miyu service disable"));
     assert!(!linux.contains("miyu.exe"));
     let windows = readme("1.0.0", "windows-x86_64");
     assert!(windows.contains("miyu.exe"));
-    assert!(!windows.contains("bubblewrap"));
-    assert!(!readme("1.0.0", "macos-aarch64").contains("bubblewrap"));
 }
 
 /// 一份搭目录要的东西：两个程序、两份登记了的资源（另有一份没登记的不带）、终端两样、网页一个带 `bin/` 的文件夹。

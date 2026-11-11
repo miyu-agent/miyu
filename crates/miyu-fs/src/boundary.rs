@@ -2,19 +2,16 @@
 //!
 //! 几片重叠时最深的那一片算（施工 5-14 改）：数据根里单独放开只读的几个目录（开着的技能文件夹，施工 X-10 上）、数据根、别的
 //! 程序的私密目录（施工 5-13）包在工作区、加进来的目录（照工作区算，施工 5-10 上）里面的照它们自己那一片；工作区落在数据根里、
-//! 工作区和加进来的目录落在私密目录里的照工作区。再往后是临时目录、系统和工具链目录、边界以外。能写的
-//! 那几片（工作区、加进来的目录、临时目录）里落在只禁写名单上的只能读（施工 5-17 下，[`Readonly`]）。
+//! 工作区和加进来的目录落在私密目录里的照工作区。再往后是临时目录、系统和工具链目录、边界以外。
 
 use std::path::{Component, Path, PathBuf};
-
-use crate::Readonly;
 
 /// 一个真实的位置落在哪一片。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Zone {
     /// 能读能写：工作区、加进来的目录、临时目录。
     Writable,
-    /// 只能读：系统目录、工具链目录，能写的那几片里落在只禁写名单上的（工作区里的 `.git/hooks`、`.git/config` 这些）。
+    /// 只能读：系统目录、工具链目录。
     Readable,
     /// 谁都不能碰：Miyu 的数据根。
     Forbidden,
@@ -46,8 +43,6 @@ pub struct Places {
     pub shelves: Vec<PathBuf>,
     /// 别的程序的私密目录（施工 5-13，[`crate::private_dirs`]）。
     pub private: Vec<PathBuf>,
-    /// 只禁写的名单（施工 5-17 下）。
-    pub readonly: Readonly,
     /// 这个人自己的几处（施工 Y-11 上：家目录里照 XDG 的 pictures、videos、documents、downloads）：照工作区算，落在数据根里也是；
     /// 还没建的也算。只给文件工具，不进沙盒的写名单（那是调的一方拼的）。
     pub own: Vec<PathBuf>,
@@ -80,8 +75,8 @@ const SYSTEM: &[&str] = &[];
 const TOOLCHAINS: &[&str] = &[".cargo", ".rustup", ".npm", ".gitconfig"];
 
 impl Places {
-    /// 照这台机器：临时目录、系统目录、家目录下的工具链目录，`CARGO_HOME`、`RUSTUP_HOME` 指到的地方，出厂的私密目录、只禁写
-    /// 名单。家目录读不出来的，工具链目录只算环境变量指到的。
+    /// 照这台机器：临时目录、系统目录、家目录下的工具链目录，`CARGO_HOME`、`RUSTUP_HOME` 指到的地方，出厂的私密目录。
+    /// 家目录读不出来的，工具链目录只算环境变量指到的。
     pub fn here(
         workspace: PathBuf,
         (data_root, knowledge): (PathBuf, PathBuf),
@@ -105,7 +100,6 @@ impl Places {
             readable,
             shelves: Vec::new(),
             private: home.map(crate::private_dirs).unwrap_or_default(),
-            readonly: Readonly::shipped(home),
             own: Vec::new(),
         }
     }
@@ -139,11 +133,7 @@ pub struct Boundary {
     readable: Vec<PathBuf>,
     shelves: Vec<PathBuf>,
     private: Vec<PathBuf>,
-    /// 只禁写名单里相对的那几项，每一段照 [`fold`] 写。
-    inside: Vec<Vec<String>>,
-    /// 只禁写名单里家目录下的、绝对路径的，换成真实的位置：还不存在的照最近的、已经存在的上级换（[`crate::resolve()`]）。
-    readonly: Vec<PathBuf>,
-    /// 这个人自己的几处（施工 Y-11 上），换法同 `readonly`：还没建的照最近的、已经存在的上级换。
+    /// 这个人自己的几处（施工 Y-11 上）：还没建的照最近的、已经存在的上级换（[`crate::resolve()`]）。
     own: Vec<PathBuf>,
 }
 
@@ -159,19 +149,6 @@ impl Boundary {
             readable: places.readable.iter().filter_map(|dir| real(dir)).collect(),
             shelves: places.shelves.iter().filter_map(|dir| real(dir)).collect(),
             private: places.private.iter().filter_map(|dir| real(dir)).collect(),
-            inside: places
-                .readonly
-                .inside
-                .iter()
-                .filter(|names| !names.is_empty())
-                .map(|names| names.iter().map(|name| fold(name)).collect())
-                .collect(),
-            readonly: places
-                .readonly
-                .paths
-                .iter()
-                .filter_map(|path| crate::resolve(path, None, &path.to_string_lossy()).ok())
-                .collect(),
             own: places
                 .own
                 .iter()
@@ -181,22 +158,10 @@ impl Boundary {
     }
 
     /// 真实的位置 `path` 落在哪一片：先经 [`crate::resolve()`] 换过再交进来。
-    pub fn zone(&self, path: &Path) -> Zone {
-        self.zone_with(path, true)
-    }
-
-    /// 真实的位置 `path` 是不是受保护的路径（施工 5-17 下）：本来能写，落在只禁写名单上才只能读。放行规则照它挑：受保护的只认
-    /// 放在受保护的路径里面的规则（`session/guard.md`，同私密目录）。
-    pub fn protected(&self, path: &Path) -> bool {
-        self.zone_with(path, true) == Zone::Readable
-            && self.zone_with(path, false) == Zone::Writable
-    }
-
-    /// 同 [`Boundary::zone`]；`listed` 是假的不看只禁写名单。
     ///
     /// 最深的那一片算（施工 5-14 改）：工作区可以是 `~` 这种包住数据根、私密目录的，它们照旧是自己那一片；工作区、加进来的目录
     /// 落在它们里面的（会话的默认工作区在数据根里、人把工作区开在 `~/.config` 里）才照工作区算。
-    fn zone_with(&self, path: &Path, listed: bool) -> Zone {
+    pub fn zone(&self, path: &Path) -> Zone {
         if self.shelves.iter().any(|dir| within(path, dir)) {
             return Zone::Shelf;
         }
@@ -231,15 +196,15 @@ impl Boundary {
         {
             return Zone::Private;
         }
-        if let Some((_, inside)) = held {
-            return self.writable(path, Some(inside), listed);
+        if held.is_some() {
+            return Zone::Writable;
         }
         if self
             .temp
             .as_ref()
             .is_some_and(|temp| path.starts_with(temp))
         {
-            return self.writable(path, None, listed);
+            return Zone::Writable;
         }
         if self.readable.iter().any(|dir| path.starts_with(dir)) {
             return Zone::Readable;
@@ -298,44 +263,6 @@ fn real_below(path: &Path) -> Option<PathBuf> {
         }
         missing.push(at.file_name()?);
         at = at.parent()?;
-    }
-}
-
-impl Boundary {
-    /// 能写的那几片里的 `path`（在工作区、加进来的目录里的，那一段是 `inside`）：落在只禁写名单上的只能读（施工 5-17 下）；
-    /// `listed` 是假的不看名单。
-    fn writable(&self, path: &Path, inside: Option<&Path>, listed: bool) -> Zone {
-        let protected = listed
-            && (self.readonly.iter().any(|item| within(path, item))
-                || inside.is_some_and(|inside| self.listed_inside(path, inside)));
-        if protected {
-            Zone::Readable
-        } else {
-            Zone::Writable
-        }
-    }
-
-    /// 工作区、加进来的目录里的这一段 `inside` 在不在名单上：哪一层接得上相对的那一项都算（子仓库里的 `.git/hooks` 也算）。大小写
-    /// 不分的文件系统上，`.GIT/HOOKS` 也是同一处，照不分大小写比。`.git/config` 在名单上的，作为文件的 `.git`（worktree、子模块）
-    /// 也算：它说仓库在哪，钩子、配置就在哪。
-    fn listed_inside(&self, path: &Path, inside: &Path) -> bool {
-        let names: Vec<String> = inside
-            .components()
-            .filter_map(|component| match component {
-                Component::Normal(name) => Some(fold(&name.to_string_lossy())),
-                _ => None,
-            })
-            .collect();
-        if self.inside.iter().any(|item| {
-            names
-                .windows(item.len())
-                .any(|window| window == item.as_slice())
-        }) {
-            return true;
-        }
-        names.last().is_some_and(|last| last == ".git")
-            && self.inside.iter().any(|item| *item == [".git", "config"])
-            && !path.is_dir()
     }
 }
 

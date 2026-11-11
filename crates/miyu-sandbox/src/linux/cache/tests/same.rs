@@ -75,7 +75,6 @@ impl Case {
                 hidden: Vec::new(),
                 read: None,
                 reveal: Vec::new(),
-                mount: false,
                 sockets: Vec::new(),
             },
             rng,

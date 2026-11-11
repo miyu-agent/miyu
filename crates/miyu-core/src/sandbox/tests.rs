@@ -295,6 +295,29 @@ fn a_remembered_probe_is_used_without_waiting_and_refreshed_behind() {
     assert!(file.is_file(), "后台再探一遍，重新记下");
 }
 
+/// 记下的那一份里还写着 `bwrap`（施工 LV-5 去掉了 bubblewrap 一路）：记的是手段的名字，多一个不认识的不碍事，照常认、照常用。
+#[cfg(unix)]
+#[test]
+fn a_remembered_probe_that_still_names_bwrap_is_used() {
+    let dir = Dir::new();
+    let state = dir.0.join("state");
+    slow_helper(&dir, &said(&["landlock", "landlock-sockets"]), "1");
+    let key = remembered::key(&dir.0.join(miyu_sandbox::HELPER)).expect("认得出");
+    let old = ["landlock", "bwrap", "landlock-sockets"].map(str::to_string);
+    remembered::remember(&state, &key, &miyu_sandbox::Probe::new(old.to_vec()));
+    let (found, lines) = probed_in(&dir.exe(), &state);
+    assert_eq!(
+        found,
+        Availability::Usable(dir.0.join(miyu_sandbox::HELPER))
+    );
+    assert!(
+        lines.len() == 1
+            && lines[0].contains(" remembered=true")
+            && lines[0].contains(" mechanisms=landlock,bwrap,landlock-sockets"),
+        "{lines:?}"
+    );
+}
+
 #[cfg(unix)]
 #[test]
 fn a_changed_helper_is_probed_again_and_a_failed_probe_is_not_remembered() {

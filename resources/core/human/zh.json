@@ -117,37 +117,17 @@
           "off": "停用"
         }
       },
-      "sandbox.strength": {
-        "name": "沙盒强度",
-        "description": "自动挡位默认使用 BubbleWrap，未安装或不可用时回退至 Landlock。",
-        "options": {
-          "auto": "自动",
-          "weak": "弱沙盒"
-        }
-      },
       "sandbox.private.enabled": {
         "name": "私密目录",
-        "description": "关掉以后出厂的和加的私密目录都不藏，文件工具也不再问；Miyu 自己的数据照旧藏着。"
+        "description": "只在只读时起作用，命令读不到私密目录，文件工具读之前先问；完全放开时不拦。关掉以后只读时也不藏、不问；Miyu 自己的数据不受这个开关影响。"
       },
       "sandbox.private.add": {
         "name": "加的私密目录",
-        "description": "命令读写不到、文件工具要先问的目录。"
+        "description": "只读时命令读不到、文件工具读之前先问的目录。完全放开时不拦。"
       },
       "sandbox.private.remove": {
         "name": "默认私密目录",
-        "description": "出厂就藏起来的目录。留着的照旧私密；去掉的命令读得到、文件工具不再问。恢复默认就全部回来。"
-      },
-      "sandbox.readonly.enabled": {
-        "name": "受保护的路径",
-        "description": "关掉以后出厂的和加的受保护路径都不生效，文件工具改之前不再因为它们问；Miyu 自己的数据照旧护着。"
-      },
-      "sandbox.readonly.add": {
-        "name": "加的受保护路径",
-        "description": "文件工具改之前要先问的文件和目录，读照常。写成 ~/…、绝对路径，或者工作区里的相对路径，例如 .vscode（每一层都算）。"
-      },
-      "sandbox.readonly.remove": {
-        "name": "默认受保护路径",
-        "description": "出厂就受保护的：工作区里的 .git/hooks、编辑器和 agent 的配置，家目录下的 shell 启动文件这些。留着的照旧，去掉的文件工具不再问。恢复默认就全部回来。"
+        "description": "出厂的私密目录，只在只读时起作用。留着的照旧私密；去掉的命令读得到、文件工具不再问。恢复默认就全部回来。"
       },
       "skills.external.enabled": {
         "name": "读取其他目录的 Skills",
@@ -414,10 +394,8 @@
       "models": "模型"
     },
     "groups": {
-      "sandbox": "沙盒",
       "permission": "权限",
       "private": "私密目录",
-      "readonly": "受保护的路径",
       "commands": "命令",
       "display": "显示",
       "new_session": "新会话",
@@ -823,9 +801,6 @@
     "config/private-not-shipped": "{got} 不是出厂的私密目录：只能去掉出厂清单里的",
     "config/private-bad-path": "{got} 写法不对：要写成 ~/… 或绝对路径",
     "config/private-too-broad": "{got} 是家目录或它的上级，不能设为私密目录：藏起来以后命令读不到工具和配置，什么都跑不了",
-    "config/readonly-not-shipped": "{got} 不是出厂的受保护路径：只能去掉出厂清单里的",
-    "config/readonly-bad-path": "{got} 写法不对：要写成 ~/…、绝对路径，或者工作区里的相对路径（不能有 ..）",
-    "config/readonly-too-broad": "{got} 是家目录或它的上级，不能整个保护：家目录里改什么都要先问",
     "config/source-reserved": "official 是官方软件源的名字，别的源不能用",
     "config/source-incomplete": "软件源 {name} 要同时写 url 和 key 才能用",
     "config/source-key": "软件源 {name} 的 key 读不成：要写 base64 的 Ed25519 公钥",

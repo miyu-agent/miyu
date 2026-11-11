@@ -24,10 +24,6 @@ pub struct Spec {
     /// 规格的字节和以前一样。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub reveal: Vec<PathBuf>,
-    /// 用挂载收紧（施工 5-16，Linux 上有能用的 bubblewrap 时执行器写上）：能写的里面藏着的用挂载盖住，连名字都看不到，路上
-    /// 那几层也不冻住。没写的照旧只用 Landlock，规格的字节和以前一样。
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    pub mount: bool,
     /// 这条命令要连的 Unix 套接字（施工 M-3，脚本调工具的通道，设计 `39-脚本调工具.md` 第五节第 5 条）：别的套接字照旧连不上，
     /// 这几个放行，只读一级也放行。没有的不写，规格的字节和以前一样。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]

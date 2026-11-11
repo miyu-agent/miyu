@@ -45,11 +45,6 @@ impl Guard {
                 .read()
                 .unwrap_or_else(PoisonError::into_inner)
                 .clone(),
-            readonly: self
-                .readonly
-                .read()
-                .unwrap_or_else(PoisonError::into_inner)
-                .clone(),
             ..self.places.clone()
         };
         let boundary = Boundary::new(&places);

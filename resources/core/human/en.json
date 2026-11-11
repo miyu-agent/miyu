@@ -117,37 +117,17 @@
           "off": "Off"
         }
       },
-      "sandbox.strength": {
-        "name": "Sandbox strength",
-        "description": "Auto uses BubbleWrap by default and falls back to Landlock when it isn't installed or can't run.",
-        "options": {
-          "auto": "Automatic",
-          "weak": "Weak"
-        }
-      },
       "sandbox.private.enabled": {
         "name": "Private folders",
-        "description": "When off, neither the default nor the added private folders are hidden and file tools stop asking; Miyu's own data stays hidden."
+        "description": "Applies only in read-only, where commands can't read private folders and file tools ask before reading them; with full access nothing is blocked. When off, read-only stops hiding and asking too; Miyu's own data is unaffected."
       },
       "sandbox.private.add": {
         "name": "Added private folders",
-        "description": "Folders commands can't read or write and file tools ask about first."
+        "description": "Folders that, in read-only, commands can't read and file tools ask about before reading. With full access nothing is blocked."
       },
       "sandbox.private.remove": {
         "name": "Default private folders",
-        "description": "Folders hidden out of the box. The ones kept stay private; for the ones taken out, commands can read them and file tools stop asking. Restoring the default brings them all back."
-      },
-      "sandbox.readonly.enabled": {
-        "name": "Protected paths",
-        "description": "When off, neither the default nor the added protected paths apply, and file tools stop asking before changing them; Miyu's own data stays protected."
-      },
-      "sandbox.readonly.add": {
-        "name": "Added protected paths",
-        "description": "Files and folders file tools ask about before changing; reading is unaffected. Write ~/…, an absolute path, or a path inside the workspace such as .vscode (any level counts)."
-      },
-      "sandbox.readonly.remove": {
-        "name": "Default protected paths",
-        "description": "Protected out of the box: .git/hooks, editor and agent settings in the workspace, shell startup files in your home folder, and so on. The ones kept stay protected; for the ones taken out, file tools stop asking. Restoring the default brings them all back."
+        "description": "The built-in private folders; they apply only in read-only. The ones kept stay private; for the ones taken out, commands can read them and file tools stop asking. Restoring the default brings them all back."
       },
       "skills.external.enabled": {
         "name": "Read skills from other folders",
@@ -414,10 +394,8 @@
       "models": "Models"
     },
     "groups": {
-      "sandbox": "Sandbox",
       "permission": "Permissions",
       "private": "Private folders",
-      "readonly": "Protected paths",
       "commands": "Commands",
       "display": "Display",
       "new_session": "New sessions",
@@ -828,9 +806,6 @@
     "config/private-not-shipped": "{got} isn't a built-in private folder: only built-in ones can be removed",
     "config/private-bad-path": "{got} isn't written right: use ~/… or an absolute path",
     "config/private-too-broad": "{got} is your home folder or above it, so it can't be private: hidden, it would keep every command from reading its tools and settings",
-    "config/readonly-not-shipped": "{got} isn't a built-in protected path: only built-in ones can be removed",
-    "config/readonly-bad-path": "{got} isn't written right: use ~/…, an absolute path, or a path inside the workspace (without ..)",
-    "config/readonly-too-broad": "{got} is your home folder or above it, so it can't be protected as a whole: every change in your home folder would need asking first",
     "config/source-reserved": "official is the name of the official package source; other sources can't use it",
     "config/source-incomplete": "package source {name} needs both url and key",
     "config/source-key": "the key of package source {name} isn't readable: write a base64 Ed25519 public key",

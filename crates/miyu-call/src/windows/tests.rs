@@ -286,7 +286,6 @@ async fn a_command_in_the_sandbox_reaches_the_pipe() {
         hidden: Vec::new(),
         read: None,
         reveal: Vec::new(),
-        mount: false,
         sockets: Vec::new(),
     };
     let sandboxed = channel.sandboxed(&Sandboxed {

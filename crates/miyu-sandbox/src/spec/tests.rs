@@ -24,7 +24,6 @@ fn the_sample_reads_and_writes_back_byte_for_byte() {
             hidden: paths(&["/home/me/.miyu"]),
             read: None,
             reveal: Vec::new(),
-            mount: false,
             sockets: Vec::new(),
         }
     );
@@ -51,6 +50,8 @@ fn unknown_fields_and_wrong_kinds_are_refused() {
         (r#"{"deny":["/"]}"#, "deny"),
         (r#"{"readonly":["/w/.git"]}"#, "readonly"),
         (r#"{"network":"off"}"#, "network"),
+        // 施工 LV-5 去掉的（bubblewrap 的挂载那一路）：旧核心写了它的规格不跑。
+        (r#"{"mount":true}"#, "mount"),
     ] {
         let error = Spec::from_json(bad).expect_err("多了一格");
         assert!(error.to_string().contains(named), "{error}");
@@ -85,7 +86,6 @@ fn a_path_under_a_hidden_one_is_hidden_unless_a_writable_one_brings_it_back() {
         hidden: paths(&["/home/a/Documents", "/home/a/work/.secret"]),
         read: None,
         reveal: Vec::new(),
-        mount: true,
         sockets: Vec::new(),
     };
     // 私密目录包住了装的位置：看不到。

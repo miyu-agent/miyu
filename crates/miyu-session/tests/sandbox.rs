@@ -83,7 +83,6 @@ async fn each_level_gets_its_own_spec() {
             hidden: vec![data],
             read: None,
             reveal: Vec::new(),
-            mount: false,
             sockets: Vec::new(),
         },
         env: Vec::new(),
@@ -136,6 +135,37 @@ async fn commands_really_run_in_the_sandbox() {
     );
     assert!(!work.join("inside.txt").exists());
     assert!(!outside.exists());
+}
+
+/// 本人只读下私密目录里面的读不到（施工 LV-5：去掉 bubblewrap 一路以前、以后都一样，Linux 上靠 Landlock）；旁边不私密的照常读。
+#[cfg(unix)]
+#[tokio::test]
+async fn a_read_only_command_cannot_read_inside_a_private_dir() {
+    let helper = miyu_sandbox::testkit::built_helper();
+    if !can_confine(&helper) {
+        return;
+    }
+    let home = Home::outside_temp();
+    let work = home.scratch.0.join("work");
+    let key = home.scratch.0.join("home/.ssh/id_ed25519");
+    let notes = home.scratch.0.join("home/notes.txt");
+    std::fs::create_dir_all(key.parent().expect("有上级目录")).expect("建得了目录");
+    std::fs::write(&key, "key\n").expect("写得进");
+    std::fs::write(&notes, "notes\n").expect("写得进");
+    let command = format!(
+        "cat '{}' 2>/dev/null || echo blocked-private; \
+         (echo x >> '{}') 2>/dev/null && echo wrote-private || echo blocked-write; \
+         cat '{}'",
+        key.display(),
+        key.display(),
+        notes.display()
+    );
+    let output = shell(&home, &helper, &work, &command).await;
+    assert_eq!(
+        output, "blocked-private\nblocked-write\nnotes\n",
+        "只读：私密目录里面读不到、写不进，旁边的照常读"
+    );
+    assert_eq!(std::fs::read_to_string(&key).expect("还在"), "key\n");
 }
 
 /// 这台机器上助手有没有收紧的手段：没有的（例如没有 Landlock 的内核），这个测试到此为止。

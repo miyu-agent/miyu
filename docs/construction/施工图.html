@@ -1515,6 +1515,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sTX1"><span class="n">TX-1</span>提示词瘦身<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sTX2"><span class="n">TX-2</span>常驻引导句<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLV2"><span class="n">LV-2</span>删掉随工作区去掉的<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sLV5"><span class="n">LV-5</span>去掉 bubblewrap 和两组设置<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -58303,6 +58304,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LV-2-删掉随工作区去掉的.md</code>；蓝图 <code>tools/shell.md</code>、<code>skills.md</code>、<code>session/guard.md</code>、<code>cli/main.md</code>、<code>sandbox/windows.md</code>；设计 <code>26-提示词.md</code> 登记簿。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sLV5" aria-labelledby="h-sLV5">
+  <div class="sheet-head"><h2 id="h-sLV5"><span class="no">LV-5</span>去掉 bubblewrap 和两组设置</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">只留只读、完全放开两级以后，bubblewrap 只在只读时用得到，比 Landlock 只多三样边角；沙盒强度只管用不用它，受保护的路径在判法里已经不产生差别。这一步把它们删掉。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-sandbox · 助手 linux、规格　miyu-session · sandbox、guard　miyu-fs · boundary　miyu-tool　miyu-endpoint · config　resources · human　packaging</span><span class="dir-note">LV-5</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>Linux 上只用 Landlock，bubblewrap 一路、规格的 mount 去掉</li>
+              <li>设置「沙盒强度」「受保护的路径」和只禁写的名单去掉</li>
+              <li>私密目录照留，说明写清只在只读时起作用</li>
+              <li>打包不再提 bubblewrap 和用户命名空间</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">只读下藏起来的目录看得到名字、读不到里面</span><span class="rl">设计 11 A17，项目主人 11-11 定</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LV-5</dd></div>
+        <div><dt>名称</dt><dd>去掉 bubblewrap 和两组设置</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-11</dd></div>
+        <div><dt>提交</dt><dd class="mono">LV-5</dd></div>
+        <div><dt>验收</dt><dd>整个工作区的测试、两个目标的 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>只读下数据根、私密目录里面读不到，哪儿都写不进</span></li>
+        <li><span class="ok">✓</span><span>外部身份那一路的测试断言一个没改，全过</span></li>
+        <li><span class="ok">✓</span><span>以前受保护的路径和旁边的文件判的一样；老配置里的四个键只报警告</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LV-5-去掉bubblewrap和两组设置.md</code>；设计 <code>11-权限与沙盒.md</code> A17；蓝图 <code>sandbox/linux.md</code>「已知的限制」、<code>sandbox.md</code>、<code>fs.md</code>、<code>session/guard.md</code>、<code>config.md</code>。</li>
       </ul>
     </div>
   </div>

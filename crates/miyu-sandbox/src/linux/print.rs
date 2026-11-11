@@ -35,7 +35,7 @@ pub(crate) struct Print {
     pub(crate) idents: Vec<Ident>,
 }
 
-/// 照规格 `spec` 记一份指纹。规格要能缓存（没写 `mount`、`read`，路径都是绝对的），调的一方先查。
+/// 照规格 `spec` 记一份指纹。规格要能缓存（没写 `read`，路径都是绝对的），调的一方先查。
 ///
 /// # Errors
 ///

@@ -134,7 +134,6 @@ fn a_revealed_path_inside_a_hidden_one_is_read_only() {
     std::fs::write(&file, b"steps\n").expect("写得进");
     let spec = Spec {
         reveal: vec![skill.clone()],
-        mount: false,
         sockets: Vec::new(),
         ..spec(&[work.path()], &[data.path()])
     };
@@ -318,7 +317,6 @@ fn a_read_list_keeps_everything_else_unreadable() {
         hidden: Vec::new(),
         read: Some(read),
         reveal: Vec::new(),
-        mount: false,
         sockets: Vec::new(),
     };
     if refused_without_landlock(&spec) {

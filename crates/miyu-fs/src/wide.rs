@@ -8,7 +8,7 @@
 use std::path::{Path, PathBuf};
 
 /// 家目录本身、包住数据根的也算太宽的平台（施工 5-14 改，2026-10-22 项目主人定）：只有 Windows（MXC 量完再定，5-9 改下）。
-/// Linux（有 bubblewrap 的挂载盖住，只有 Landlock 的照 dsh）、macOS（Seatbelt 的拒绝规则）上不算。
+/// Linux（Landlock，照 dsh）、macOS（Seatbelt 的拒绝规则）上不算。
 const HOME_IS_WIDE: bool = cfg!(windows);
 
 /// 真实的位置 `dir` 太不太宽，不能拿它当工作区（施工 5-14 改）：根目录，落在数据根 `data_root` 里而不在数据根的工作区 `own`

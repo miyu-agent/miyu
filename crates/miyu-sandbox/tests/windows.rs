@@ -25,7 +25,6 @@ fn spec(write: &[&PathBuf], hidden: &[&PathBuf]) -> String {
         hidden: hidden.iter().map(|path| (*path).clone()).collect(),
         read: None,
         reveal: Vec::new(),
-        mount: false,
         sockets: Vec::new(),
     }
     .to_json()

@@ -107,7 +107,6 @@ fn world() -> (Tree, Spec) {
         hidden: vec![tree.at("deep/x/y/z"), tree.at("data")],
         read: None,
         reveal: Vec::new(),
-        mount: false,
         sockets: Vec::new(),
     };
     (tree, spec)
@@ -355,10 +354,6 @@ fn only_cacheable_specs_are_cached_and_the_oldest_goes_first() {
     let (tree, spec) = world();
     let cache = Cache::new();
     for other in [
-        Spec {
-            mount: true,
-            ..spec.clone()
-        },
         Spec {
             read: Some(Vec::new()),
             ..spec.clone()

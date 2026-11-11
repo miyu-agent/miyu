@@ -12,7 +12,6 @@ fn the_command_goes_after_the_spec_and_the_dashes() {
             hidden: Vec::new(),
             read: None,
             reveal: Vec::new(),
-            mount: false,
             sockets: Vec::new(),
         },
         env: Vec::new(),

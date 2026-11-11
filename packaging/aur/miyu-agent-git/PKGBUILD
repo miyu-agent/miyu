@@ -17,7 +17,6 @@ url='https://github.com/miyu-agent/miyu'
 license=('AGPL-3.0-or-later')
 depends=('glibc' 'gcc-libs')
 makedepends=('git' 'rustup' 'python')
-optdepends=('bubblewrap: sandbox commands with mounts (Landlock alone otherwise)')
 provides=('miyu-core' 'miyu-tui' 'miyu-webui' 'miyu-agent')
 conflicts=('miyu<2026' 'miyu-core' 'miyu-tui' 'miyu-webui' 'miyu-agent')
 options=('!strip' '!debug' '!lto')

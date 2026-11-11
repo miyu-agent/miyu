@@ -7,7 +7,7 @@
 mod support;
 
 use miyu_sandbox::Spec;
-use support::linux::{bwrap, mechanisms, refused_without_landlock, run, run_with, spec, text};
+use support::linux::{mechanisms, refused_without_landlock, run, run_with, spec, text};
 use support::{Dir, serial};
 
 /// 这台机器的内核版本：`7.2.3-zen1` 这样的写法取前两段。
@@ -89,24 +89,6 @@ fn system_service_sockets_outside_the_spec_cannot_be_connected() {
         Some(version < (6, 12)),
         "沙盒外建的抽象套接字，内核 {version:?}"
     );
-    // 用挂载收紧的照样拦（施工 5-16：挂好以后里面那一次照旧是 Landlock）。
-    if bwrap() {
-        let mounted = Spec {
-            mount: true,
-            sockets: Vec::new(),
-            ..spec.clone()
-        };
-        assert_eq!(
-            connects(&mounted, &outside.to_string_lossy()),
-            Some(version < (7, 1)),
-            "挂载时规格外路径上的套接字"
-        );
-        assert_eq!(
-            connects(&mounted, &format!("@{name}")),
-            Some(version < (6, 12)),
-            "挂载时沙盒外建的抽象套接字"
-        );
-    }
 }
 
 /// 脚本调工具的通道（施工 M-3）：规格的 `sockets` 写了的那一个，不在能写的地方、落在藏起来的里面，照样连得上；旁边别的照旧
@@ -145,18 +127,6 @@ fn a_socket_named_in_the_spec_can_be_connected() {
         Some(true),
         "藏起来的里面写了的也连得上"
     );
-    if bwrap() {
-        let mounted = Spec {
-            mount: true,
-            ..spec.clone()
-        };
-        assert_eq!(connects(&mounted, &named.to_string_lossy()), Some(true));
-        assert_eq!(
-            connects(&mounted, &secret.to_string_lossy()),
-            Some(true),
-            "挂回来了"
-        );
-    }
 }
 
 /// 关起来的会话（规格写了 `read`，施工 MB-1）：路径上的、抽象的 Unix 套接字在哪种内核上都连不上。Landlock 管得住的（第 9 版的

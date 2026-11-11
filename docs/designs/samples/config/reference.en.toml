@@ -500,34 +500,16 @@ default = "full"
 # Allowed: a number from 0 to 1000000. Only in the system config. Takes effect next turn.
 # output =
 
-[sandbox]
-# Sandbox strength: Auto uses BubbleWrap by default and falls back to Landlock when it isn't installed or can't run.
-# Allowed: auto or weak. Only in the system config. Takes effect next turn.
-strength = "auto"
-
 [sandbox.private]
-# Added private folders: Folders commands can't read or write and file tools ask about first.
+# Added private folders: Folders that, in read-only, commands can't read and file tools ask about before reading. With full access nothing is blocked.
 # Allowed: a list of text of at most 4096 characters. Only in the system config. Takes effect next turn.
 # add =
 
-# Private folders: When off, neither the default nor the added private folders are hidden and file tools stop asking; Miyu's own data stays hidden.
+# Private folders: Applies only in read-only, where commands can't read private folders and file tools ask before reading them; with full access nothing is blocked. When off, read-only stops hiding and asking too; Miyu's own data is unaffected.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 enabled = true
 
-# Default private folders: Folders hidden out of the box. The ones kept stay private; for the ones taken out, commands can read them and file tools stop asking. Restoring the default brings them all back.
-# Allowed: a list of text of at most 4096 characters. Only in the system config. Takes effect next turn.
-# remove =
-
-[sandbox.readonly]
-# Added protected paths: Files and folders file tools ask about before changing; reading is unaffected. Write ~/…, an absolute path, or a path inside the workspace such as .vscode (any level counts).
-# Allowed: a list of text of at most 4096 characters. Only in the system config. Takes effect next turn.
-# add =
-
-# Protected paths: When off, neither the default nor the added protected paths apply, and file tools stop asking before changing them; Miyu's own data stays protected.
-# Allowed: true or false. Only in the system config. Takes effect next turn.
-enabled = true
-
-# Default protected paths: Protected out of the box: .git/hooks, editor and agent settings in the workspace, shell startup files in your home folder, and so on. The ones kept stay protected; for the ones taken out, file tools stop asking. Restoring the default brings them all back.
+# Default private folders: The built-in private folders; they apply only in read-only. The ones kept stay private; for the ones taken out, commands can read them and file tools stop asking. Restoring the default brings them all back.
 # Allowed: a list of text of at most 4096 characters. Only in the system config. Takes effect next turn.
 # remove =
 

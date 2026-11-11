@@ -138,7 +138,6 @@ impl Sandbox {
                 hidden: vec![real(&self.data_root)],
                 read: Some(read),
                 reveal: Vec::new(),
-                mount: false,
                 sockets: Vec::new(),
             },
             env: vec![

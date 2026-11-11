@@ -1,6 +1,6 @@
 //! Unix 上的生命线（施工 7-8，看门的换成助手是施工 V-48）：看门的照助手的 `lifeline` 起、退回 `/bin/sh`（没给助手、助手
 //! 不在）都一样——生命线还在，组里的照常跑；写端一关（核心没了的样子），看门的把整个组杀掉，命令和它起的孙进程都在里面；
-//! 经沙盒的助手起的命令（只有 Landlock、bwrap、macOS 的 Seatbelt）也一样。`setsid` 出去的、自己换了进程组的，改前改后
+//! 经沙盒的助手起的命令（Landlock、macOS 的 Seatbelt）也一样。`setsid` 出去的、自己换了进程组的，改前改后
 //! 都收不掉。看门的被杀了，那一条命令没人看着，照常跑，别的组不受影响；命令 `kill 0` 连看门的一起打到（看门的在组里）。
 //! 两根生命线（两个核心）各管各的。Linux 上再看看门的手里：环境变量是空的、工作目录是 `/`、只有 0、1、2 三个文件描述符。
 
@@ -120,9 +120,6 @@ fn sandboxed_commands_die_with_the_lifeline_on_every_path() {
     {
         if support::linux::landlock() {
             specs.push(serde_json::json!({ "write": [work.path()] }));
-        }
-        if support::linux::bwrap() {
-            specs.push(serde_json::json!({ "write": [work.path()], "mount": true }));
         }
     }
     #[cfg(target_os = "macos")]

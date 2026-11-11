@@ -154,11 +154,6 @@ impl Actor {
             self.guard.set_private(private.clone());
             self.tools.set_private(private);
         }
-        // 只禁写的名单照这一轮的配置（施工 5-17 下）：权限策略换上，文件工具写名单上的问人。
-        self.guard.set_readonly(self.guard.readonly_of(&values));
-        // 沙盒强度照这一轮的配置（施工 5-16 下）。
-        let strength = crate::settings::SandboxSettings::from(&values).strength;
-        self.tools.set_weak(strength == crate::settings::WEAK);
         let prepare = CompactionSettings::from(&values).prepare;
         // 技能照这一刻的快照先找起来，和刷新人格并着等（施工 PERF-2）：两样都在阻塞线程里读盘，原来技能排在人格后面干等。
         // 人格、预设真换了的（交回新快照的哈希，很少见），工具面跟着变，照新的再找一次。
