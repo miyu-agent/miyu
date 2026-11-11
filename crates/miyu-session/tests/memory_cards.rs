@@ -210,6 +210,12 @@ async fn a_card_s_names_are_the_ones_used_and_its_text_has_no_ids() {
         asked.contains("at most 400 characters"),
         "最多 400 字：{asked}"
     );
+    // 施工 E-10（2026-11-10、11-11 项目主人定）：卡里她自己用第一人称，不再自称「你」。
+    assert!(
+        asked.contains("Rewrite an older card this way. Call yourself \"I\".")
+            && !asked.contains("Call yourself \"you\""),
+        "卡里她自己用第一人称：{asked}"
+    );
     assert!(
         asked.contains("never repeats their own id") && !asked.contains("never writes an id"),
         "只不重复他自己的编号，别的联系方式照写：{asked}"
@@ -234,7 +240,13 @@ async fn a_batch_without_people_has_no_card_part() {
     organizer(&mut home, &server, "");
     save(&home, "用户养了一只猫");
     dream(&home).await.expect("整理了");
-    assert!(!asked(&server, 0).contains(PEOPLE));
+    let asked = asked(&server, 0);
+    assert!(!asked.contains(PEOPLE));
+    // 施工 E-10（2026-11-11 项目主人定）：摘要里她自己也用第一人称，没有认识的人的一批也带这一句。
+    assert!(
+        asked.contains("what is going on in their lives. Call yourself \"I\"."),
+        "摘要里她自己用第一人称：{asked}"
+    );
     assert!(cards(&home).is_empty());
 }
 

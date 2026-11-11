@@ -49,6 +49,75 @@ fn every_name_of_the_persona_counts_folded() {
     assert!(!is_her(&BTreeSet::new(), ""), "没有名字的谁都不是她");
 }
 
+/// 施工 E-10：她用第一人称写自己，`who`、涉及谁里的「我」「自己」、`I`、`me`、`myself` 是她，不用知道她叫什么；只是带着这几个字
+/// 的名字不是。
+#[test]
+fn a_first_person_word_is_her() {
+    for who in ["I", " i ", "Me", "myself", "我", " 自己 "] {
+        assert!(is_her(&BTreeSet::new(), who), "{who} 是她");
+        assert!(is_her(&me(), who), "{who} 是她");
+    }
+    for who in ["我们", "我妈", "Ian", "men", "my", "you", "小林"] {
+        assert!(!is_her(&me(), who), "{who} 不是她");
+    }
+}
+
+/// 施工 E-10：一句话照第一人称起头的说的是她自己；「我们」、只是 `I`、`My` 开头的词、别人的名字起头的不算。
+#[test]
+fn a_sentence_led_by_the_first_person_is_about_her() {
+    for text in [
+        "我没有禁言权",
+        " 我的主人是 shorin",
+        "I have no mute permission",
+        "i'm a bot",
+        "I've been muted once",
+        "I'd rather not ping people",
+        "I’ll check the logs tomorrow",
+        "My owner is shorin",
+    ] {
+        assert!(in_first_person(text), "{text}");
+    }
+    for text in [
+        "我们群周五开会",
+        "我們群週五開會",
+        "小林说我很可爱",
+        "Ian likes cats",
+        "It rained",
+        "Myth busting is fun",
+        "Miyu 没有禁言权",
+        "",
+    ] {
+        assert!(!in_first_person(text), "{text}");
+    }
+}
+
+/// 施工 E-10：有个群友的群名片就叫「我」。模型写出 `who` 是「我」的认识的人是她的事（同群友和她同名的），不记到这个群友头上；
+/// 模型写的是他的平台编号的照旧是他，他的卡不丢。
+#[test]
+fn a_member_named_like_the_first_person_is_not_her_by_id() {
+    let events = [said(1, "qq:2", "小林"), said(2, "qq:4242", "我")];
+    let names = Voices::of(&events, Some(4096)).names;
+    assert_eq!(names.get("我"), Some(&Some("qq:4242".to_string())));
+    let mut found = vec![
+        one("person", Some("我")),
+        one("person", Some("qq:4242")),
+        one("person", Some("小林")),
+    ];
+    place_people(&mut found, &names, &me());
+    let placed: Vec<(&str, Option<&str>)> = found
+        .iter()
+        .map(|one| (one.class.as_str(), one.who.as_deref()))
+        .collect();
+    assert_eq!(
+        placed,
+        [
+            ("episode", None),
+            ("person", Some("qq:4242")),
+            ("person", Some("qq:2")),
+        ]
+    );
+}
+
 #[test]
 fn a_person_who_is_her_becomes_an_episode() {
     let mut her = one("person", Some("miyu"));

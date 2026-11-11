@@ -144,8 +144,9 @@ fn a_user_memory_about_her_becomes_an_episode() {
     let classes: Vec<&str> = found.iter().map(|one| one.class.as_str()).collect();
     assert_eq!(classes, ["episode", "episode", "episode", "user", "user"]);
     assert_eq!(found[0].people, ["qq:2"], "改记成发生过的事的照样认涉及谁");
+    // 照名字起头的要知道她叫什么才认；照第一人称起头的不用（施工 E-10，下一条）。
     let mut nameless = vec![Candidate {
-        text: "我是 Miyu".into(),
+        text: "Miyu 没有群里的禁言权".into(),
         ..one("user", None)
     }];
     place_people(&mut nameless, &names, &BTreeSet::new());
@@ -200,6 +201,55 @@ fn cleaning_does_not_spoil_a_plain_name() {
             ("person", Some("qq:4")),
             ("person", Some("qq:6")),
             ("person", Some("狗（备注）")),
+        ]
+    );
+}
+
+/// 施工 E-10（她用第一人称写自己）：关于主人、关于认识的人的一条正文照第一人称起头的是她自己的事，改记成 `episode`，不用知道
+/// 她叫什么；认识的人那一条写的是谁挪进涉及谁（她自己、主人去掉）。「我们」起头的、别人的名字起头的不动；`feedback` 不动。
+#[test]
+fn a_memory_led_by_the_first_person_becomes_an_episode() {
+    let names = names(&[("小林", Some("qq:2")), ("Owner", None)]);
+    let with = |class: &str, who: Option<&str>, text: &str| Candidate {
+        text: text.into(),
+        ..one(class, who)
+    };
+    let mut found = vec![
+        with("user", None, "我没有群里的禁言权"),
+        with("user", None, "I'm not allowed to mute people"),
+        with("user", None, "我们群每周五开会"),
+        with("user", None, "阿楠喜欢 Arch"),
+        with("person", Some("小林"), "我帮小林修过服务器"),
+        with("person", Some("I"), "My English is poor"),
+        with("person", Some("Owner"), "我答应主人周五提醒他"),
+        with("person", Some("小林"), "小林说我很可爱"),
+        with("feedback", None, "我应该少发表情"),
+        with("reference", None, "I/O 密集的活放后台"),
+    ];
+    place_people(&mut found, &names, &BTreeSet::new());
+    let got: Vec<(&str, Option<&str>, Vec<&str>)> = found
+        .iter()
+        .map(|one| {
+            (
+                one.class.as_str(),
+                one.who.as_deref(),
+                one.people.iter().map(String::as_str).collect(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        got,
+        [
+            ("episode", None, vec![]),
+            ("episode", None, vec![]),
+            ("user", None, vec![]),
+            ("user", None, vec![]),
+            ("episode", None, vec!["qq:2"]),
+            ("episode", None, vec![]),
+            ("episode", None, vec![]),
+            ("person", Some("qq:2"), vec![]),
+            ("feedback", None, vec![]),
+            ("reference", None, vec![]),
         ]
     );
 }

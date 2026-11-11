@@ -16,6 +16,12 @@ use miyu_recall::{EPISODE, PERSON};
 /// - 发生过的事（`episode`）涉及谁照同一个认法换成平台编号：她自己、主人不算，对不上的照名字留；别的类没有。
 /// - 关于主人（`user`）的一条说的是她自己的（照名字起头，`her::about_her`）改记成 `episode`。
 ///
+/// 施工 E-10（她用第一人称写自己）：
+/// - 关于主人（`user`）的一条正文照第一人称起头的（`her::in_first_person`，「我没有禁言权」）改记成 `episode`，不用知道她叫什么。
+/// - 认识的人（`person`）的一条正文照第一人称起头的（「我帮小林修过服务器」）也是她的事：改记成 `episode`，写的是谁挪进涉及谁
+///   （照发生过的事认，她自己、主人去掉），合卡时照 `episode with <是谁>` 进他的卡。
+/// - `who`、涉及谁里写的「我」、`I` 是她（`her::is_her`）。`feedback` 不动：说的本来就是她该怎么做。
+///
 /// 施工 E-1 修五：认之前先清洗（[`clean`]）——看不见的控制字符、双向格式字符去掉，模型在名字后面加的括号注释（「（QQ 群昵称）」）
 /// 去掉；群名片同样清洗后比。清洗后对不上的照原样认、照名字留（只去看不见的那几个字）。
 pub(crate) fn place_people(
@@ -24,8 +30,14 @@ pub(crate) fn place_people(
     me: &BTreeSet<String>,
 ) {
     for candidate in found {
-        if candidate.class == USER && crate::memory::her::about_her(&candidate.text, me) {
+        let first = crate::memory::her::in_first_person(&candidate.text);
+        if candidate.class == USER && (first || crate::memory::her::about_her(&candidate.text, me))
+        {
             candidate.class = crate::memory::her::SELF_CLASS.to_string();
+        }
+        if candidate.class == PERSON && first {
+            candidate.class = crate::memory::her::SELF_CLASS.to_string();
+            candidate.people.extend(candidate.who.take());
         }
         candidate.people = match candidate.class == EPISODE {
             true => involved(&candidate.people, names, me),

@@ -1010,6 +1010,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sE-8"><span class="n">E-8</span>支线替她回的话也抽<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sE-8b"><span class="n">E-8 补</span>讲的常识不算<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sE-9"><span class="n">E-9</span>自动整理只看时间<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sE-10"><span class="n">E-10</span>记忆里她自己用第一人称<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sMI-1"><span class="n">MI-1</span>记忆导入<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sR-6"><span class="n">R-6</span>抽取（上）<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">R-6</span>抽取（下，暂不做）</span></li>
@@ -34625,6 +34626,61 @@ section class="sheet" id="sR-23" aria-labelledby="h-sR23">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/MI-1-记忆导入.md</code>；设计 <code>17-记忆.md</code> L19；蓝图 <code>memory.md</code>「协议」、<code>protocol.md</code> 第 11 条；参考 <code>memory.md</code>、<code>memory.en.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sE-10" aria-labelledby="h-sE10">
+  <div class="sheet-head"><h2 id="h-sE10"><span class="no">E-10</span>记忆里她自己用第一人称</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">记忆里她写自己都用第一人称：人卡、摘要、一条条记忆给人看、带进她的提示词当她自己的笔记，都读得通。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">resources · memory/merge/people.txt、instruction.txt、extract/instruction.txt　miyu-session · memory/her.rs、extract/place.rs</span><span class="dir-note">E-10</span></div>
+            <ol class="pipe" aria-label="合卡那一段换一句">
+              <li>卡上写什么照 E-2 的印象写法</li>
+              <li>卡里她自己写成「我」，不再写成「你」（改）</li>
+              <li>摘要里她自己也写成「我」（新，原来没规定）</li>
+              <li>抽取的指令：她自己写成「我」，「我」只指她，别人说自己的事照名字写（新）</li>
+              <li>核心跟着认：是谁、涉及谁里的「我」是她；关于主人、认识的人的一条照「我」起头的改记成她自己的事</li>
+              <li>旧卡下次合到、旧摘要下次整理时重写；旧的单条不重写</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">「你」 → 「我」</span><span class="rl">Call yourself "you". 换成 Call yourself "I".</span></div>
+          <div class="tile new"><span class="nm">+0、+5、+22 token</span><span class="rl">people.txt 329 → 329，merge/instruction.txt 440 → 445，extract/instruction.txt 541 → 563（本机 o200k 量）</span></div>
+          <div class="tile new"><span class="nm">feedback 不动</span><span class="rl">说的本来就是她该怎么做；「我们」起头的不算她</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">E-10</dd></div>
+        <div><dt>名称</dt><dd>记忆里她自己用第一人称</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-11</dd></div>
+        <div><dt>提交</dt><dd class="mono">E-10</dd></div>
+        <div><dt>验收</dt><dd>合卡请求的测试，变异，真模型验收主会话做</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>合卡那一段、讲摘要的那一段里各有第一人称那一句，没有原来那句；换回去、去掉都被测试逮住</span></li>
+        <li><span class="ok">✓</span><span>第一人称的是谁、起头各有正反例；群名片叫「我」的群友照编号写的照旧是他；假模型照第一人称交回的端到端</span></li>
+        <li><span class="ok">✓</span><span>过渡期新旧混着、别人的「我」被写成她的，记在施工单的风险里</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li><code>docs/construction/E-10-记忆里她自己用第一人称.md</code>；蓝图 <code>memory.md</code> 第六条第 6 款、第七条第 2 款、第 15 款；设计 <code>26-提示词.md</code> 登记簿。</li>
       </ul>
     </div>
   </div>

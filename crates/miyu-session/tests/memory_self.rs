@@ -242,3 +242,63 @@ async fn extraction_keeps_what_is_about_her_as_an_episode() {
     }
     stop(&handle).await;
 }
+
+/// 抽取（施工 E-10，她用第一人称写自己）：模型照第一人称交回的几条里，标成关于主人的「我没有禁言权」、`who` 写成 `I` 的认识的人
+/// 都是她自己的事，记成 `episode`、不写是谁；别人的事照名字写的不动。这一间没交过她叫什么也认得出。
+#[tokio::test]
+async fn extraction_keeps_what_she_wrote_in_the_first_person_as_an_episode() {
+    let memories: Vec<serde_json::Value> = (1..=TURNS)
+        .flat_map(|turn| {
+            [
+                serde_json::json!({"class": "user", "text": "我没有禁言权", "turn": turn}),
+                serde_json::json!({"class": "person", "text": "My English is poor", "turn": turn, "who": "I"}),
+                serde_json::json!({"class": "person", "text": "小林喜欢拍照", "turn": turn, "who": "小林"}),
+                serde_json::json!({"class": "user", "text": "用户养了一只猫", "turn": turn}),
+            ]
+        })
+        .collect();
+    let server = Server::start(vec![stream(
+        &serde_json::json!({ "memories": memories }).to_string(),
+    )])
+    .await;
+    let mut home = Home::new();
+    organizer(&mut home, &server, "");
+    let script = Script::new((0..2).map(|_| Play::Says("好。")));
+    let handle = home
+        .create_full(
+            &script,
+            &catalog(&home),
+            Opening::default(),
+            Lines::default(),
+        )
+        .await;
+    chat(&home, &handle, 1, "你有禁言权吗").await;
+    chat(&home, &handle, 2, "小林喜欢拍照").await;
+    requested(&server, 1).await;
+    for _ in 0..100 {
+        if mark(&home, handle.id()).is_some() {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+    let found = extracted(&home);
+    assert!(!found.is_empty());
+    for entry in &found {
+        let got = (entry.class.as_str(), entry.who.as_deref());
+        match entry.text.as_str() {
+            "我没有禁言权" | "My English is poor" => assert_eq!(got, ("episode", None)),
+            "小林喜欢拍照" => assert_eq!(got, ("person", Some("小林"))),
+            _ => assert_eq!(got, ("user", None)),
+        }
+    }
+    let texts: Vec<&str> = found.iter().map(|entry| entry.text.as_str()).collect();
+    for text in [
+        "我没有禁言权",
+        "My English is poor",
+        "小林喜欢拍照",
+        "用户养了一只猫",
+    ] {
+        assert!(texts.contains(&text), "记下了：{text}");
+    }
+    stop(&handle).await;
+}

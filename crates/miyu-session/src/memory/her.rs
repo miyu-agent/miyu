@@ -9,6 +9,10 @@
 //! 她在场所里叫什么（施工 E-1 修三）：群里大家叫她的未必是人格的名字（人格叫「美羽」、群名片是「Miyu」），桥每条场所消息带
 //! `venue.my_name`（群名片，空的用昵称）。和人格的名字一起算她：抽取照这一段里出现过的（[`called_in`]），她当场记照这个会话
 //! 最近一条的（[`last_called`]，`Keeper` 拿着），整理认人照出处那几轮的会话日志里的。
+//!
+//! 她用第一人称写自己（施工 E-10，2026-11-11 项目主人定）：抽取的指令要她把自己写成「我」，所以 `who`、涉及谁里的「我」
+//! 「自己」、`I`、`me`、`myself` 也是她（[`is_her`]，不用知道她叫什么）；关于主人、关于认识的人的一条正文照第一人称起头的是她
+//! 自己的事（[`in_first_person`]）。群友的群名片恰好是这几个字的，同和她同名的：照名字写的认成她，照平台编号写的照旧是他。
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Mutex;
@@ -102,9 +106,27 @@ pub(crate) fn fold(name: &str) -> String {
     name.trim().to_lowercase()
 }
 
-/// `who` 是不是她（`me` 是照 [`fold`] 过的她的名字）。
+/// 第一人称的自称，照 [`fold`] 过的（施工 E-10）：写在 `who`、涉及谁里的就是她。
+const FIRST_PERSON: [&str; 5] = ["i", "me", "myself", "我", "自己"];
+
+/// `who` 是不是她（`me` 是照 [`fold`] 过的她的名字）：她的名字，或者第一人称的自称（[`FIRST_PERSON`]，不用知道她叫什么）。
 pub(crate) fn is_her(me: &BTreeSet<String>, who: &str) -> bool {
-    !me.is_empty() && me.contains(&fold(who))
+    let who = fold(who);
+    FIRST_PERSON.contains(&who.as_str()) || me.contains(&who)
+}
+
+/// 一句话是不是照第一人称起头的（施工 E-10）：「我」（「我们」不算，多半是照抄了说话的人）、`I`（后面是空格或撇号：
+/// `I'm`、`I've`、`I'd`、`I'll`）、`My`。指令要她只把自己写成「我」，主人照称呼、别人照名字，所以这样起头的说的是她自己。
+pub(crate) fn in_first_person(text: &str) -> bool {
+    let text = fold(text);
+    if let Some(rest) = text.strip_prefix('我') {
+        return !rest.starts_with(['们', '們']);
+    }
+    if let Some(rest) = text.strip_prefix("my") {
+        return rest.starts_with(' ');
+    }
+    text.strip_prefix('i')
+        .is_some_and(|rest| rest.starts_with([' ', '\'', '’']))
 }
 
 /// 一句话说的是不是她自己（施工 E-1 修四）：照她的名字起头（「Miyu 没有禁言权」），或者「我是她的名字」「I am …」起头（模型
