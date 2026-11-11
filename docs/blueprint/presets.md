@@ -125,6 +125,7 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 3. 最后是技能、脚本、MCP 服务各一组，没有的也列。包带的技能、脚本、MCP 服务也归这三组，不归它的包所在的组。模板命令、扩展声明的命令跟技能一组（设计 52 没写，施工 FG-1 先这样）；写了没装的不进哪一组，只在 `features` 里。
 4. 一项是一个功能，`by` 多分一种 `group`（预设写的是它所在的包或组）。带几件工具的列出工具，照清单 `[features.<编号>] tools` 写的先后（人格记忆、知识库施工 FG-1 写明了），一件的不列。同一组里名字一样的，后面括号带包名。名字照连接的语言；末尾三组和「扩展」的名字是给人看的字 `preset-sections/<kind>`。
 5. 原来的格一个不动，`sections` 是多出来的；`preset.set` 的回应同 `preset.get`，也带它。
+6. 接平台的包（清单写了 `[connection]`，施工 PS-2，2026-11-11 项目主人定，im 设计 13 第二节第 1 条）：预设只管本机的会话（它在自己平台的场所里整包不过预设），所以它 `[features]` 里的功能只列本机会话拿得到的工具：登记的 `venues` 带 `local` 的，没登记 `venues` 的（核心自带的、没写 `Venues` 的脚本）算拿得到；一件都没有的功能不列，`sections`、`features` 都不列（`crates/miyu-endpoint/src/presets/features.rs`）。拿工具目录这时的工具判：扩展还没登记过工具（没有登记缓存）、关着的，它的这些功能都不列。包带的 MCP 服务那几项（归 MCP 一组）、扩展经 `feature.offer` 交的不在此列；没写 `[connection]` 的包照旧。只管列什么：会话里给不给照旧照 `venues` 和场所的开关；预设里写着的、对藏掉的功能和工具的开关照旧读、照旧算，只是不画。
 
 **协议**（`protocol.md`）：
 
@@ -220,6 +221,7 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 | `crates/miyu-endpoint/tests/preset_background.rs`、`crates/miyu-session/src/actor/persona/preset_tests.rs`、`crates/miyu-policy/src/snapshot/tests.rs`（施工 T-1 上） | 关了后台运行的预设：工具面上 `shell` 没有 `run_in_background`、`watch`（施工 MN-1 上），别的参数不动，没有 `jobs`，快照记 `foreground`；硬写放到后台的回「这里不能放到后台」、不派任务；开着的照旧；换成关着的预设记下、以前就有的 `shell` 原样，改回来不记；`foreground` 写在快照最后、读得回来，开着的不写 |
 | `crates/miyu-policy/src/preset/switches/tests.rs`、`crates/miyu-session/src/switches/tests.rs`（施工 X-27） | 预设明写的（`[features]`、`[software]` 的包）先，全局开关其次，`unlisted` 最后；`unlisted = "off"` 的预设不照全局开关；只认三类功能；不进指纹；配置项只读三类；写了功能编号的是 `preset`、写了包或组的是 `group`，原来那一格照旧算 `preset`（施工 FG-1） |
 | `crates/miyu-endpoint/tests/preset_sections.rs`、`preset_sections_more.rs`（施工 FG-1） | 出厂四个预设的 `sections`：组的先后、组里的功能和中文名（照设计 52 第一节的表）、开不开、`by`，开着的功能和改前一样；带几件工具的列工具（照清单的先后、`[tools]` 关的关着、功能关着的都关着），一件的不列；带几个功能的扩展自己一组、单功能的合进「扩展」，排在出厂组后面、技能前面，没有单功能扩展不列「扩展」；重名的带包名；组名、功能名、工具名照连接的语言 |
+| `crates/miyu-endpoint/tests/preset_platform.rs`（施工 PS-2） | 接平台的包：全是私聊、群的功能不列，混着的只列带 `local` 的工具，全是本机的照列，`sections`、`features` 一样；不接平台的包工具只给私聊的也全列；预设里写着藏掉的功能、工具的开关不报错，不另列成没装的，别的项照自己写的 |
 | `crates/miyu-endpoint/tests/script_pages.rs` 的 `a_global_switch_leaves_an_off_preset_alone`（施工 X-27） | 真核心：全局开关打开的在 `unlisted = "off"` 的预设里照旧没有、`by` 是 `default`；默认开的预设里全局关掉的没有 |
 | `crates/miyu-endpoint/tests/script_pages.rs` 的 `a_global_switch_rules_where_the_preset_says_nothing`（施工 X-27） | 真核心：`feature.set` 关掉以后 `preset.get` 的 `by` 从 `default` 变 `global`、明写的照旧 `preset`；开着的会话下一个回合没有那件，新会话没有、明写开的预设照样有；删掉以后回到默认；`skill.list`、`script.list` 的 `on` 跟着变 |
 | `crates/miyu-session/src/agents/tests.rs`、`crates/miyu-session/src/actor/persona/preset_tests.rs`（施工 M-6） | 「脚本调工具」：没有预设的、整个基础系统开着的、`unlisted` 开着的能调，极简开发那样没写的、明着关的一件都不能调、工具照旧在；关了的工具面和一件都不能调的目录拼出来的一字不差、没有 system 那一句；换成关着的预设以前就有的说明原样、一件都不能调，改回来又能调 |

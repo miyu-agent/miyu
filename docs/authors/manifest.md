@@ -236,6 +236,8 @@ tools = ["hello_greet"]
 
 功能的编号全局不重，建议带包的编号做前缀。
 
+接平台的包（写了 `[connection]`）：预设只管本机的会话，预设菜单里只列登记时 `venues` 带 `local` 的工具，一件都没有的功能整项不列。只在群、私聊里用的工具照你自己的场所开关管。
+
 ## `[check]`
 
 `args`：`miyu check` 时跑 `<程序> <args…>`。你在标准输出上一行一个 JSON 报问题（`kind`、`file`、`level`、`message` 必有；`line`、`column` 是正整数，`code`、`key`、`rule`、`source` 是字，可以有；别的格不收），只有警告时退出码 0，有错误 1。最多跑 30 秒。要有 `[command]`。

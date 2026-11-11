@@ -246,6 +246,7 @@ mod preset_memory;
 mod preset_minimal;
 mod preset_none;
 mod preset_nothing;
+mod preset_platform;
 mod preset_sections;
 mod preset_sections_more;
 mod preset_set;

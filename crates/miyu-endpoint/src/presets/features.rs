@@ -25,7 +25,8 @@ use crate::personas::pick;
 ///   全局开关，`default` 都没写、照 `unlisted`；`tools` 是归它的、工具目录里现在有的工具，照名字排，每件
 ///   `{"name", "label", "on"}`：`label` 照给人看的字里这件工具的显示名，没有的照工具名；功能关着的都是关着，开着的照
 ///   `[tools]` 关没关。`package` 是它归哪个包（施工 ENV-1：头照它按包分组，包名照 `package.list` 查），同预设 `[software]`
-///   认的那个编号：你自己放的脚本、MCP 服务、模板命令是 `~home`；不归包的技能没有这一格。
+///   认的那个编号：你自己放的脚本、MCP 服务、模板命令是 `~home`；不归包的技能没有这一格。接平台的包（清单写了 `[connection]`，
+///   施工 PS-2）的功能只带本机会话拿得到的工具（[`local`]），一件都没有的不列；它带的 MCP 服务照旧。
 /// - 预设的 `[features]`、`[software]` 里写了、这台机器上没装的：`{"id", "name", "on", "by", "installed": false, "tools": []}`，
 ///   照编号排；名字照给人看的字 `software/<编号>`（以前内置的几样），没有的是编号。写的是装了的包的编号的不另列（它的功能
 ///   已经列了）。
@@ -52,6 +53,7 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
         .filter_map(|one| Some((one.id.as_str(), one.read.as_ref().ok()?)))
     {
         packages.insert(package);
+        let platform = manifest.connection.is_some();
         // 被配置里同名的服务盖住的不列：那个功能列在配置的那一个上（施工 F-9 下）。
         for feature in manifest.features_of(package).into_iter().filter(|feature| {
             feature
@@ -60,7 +62,15 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
                 .is_none_or(|service| !core.home_mcp.covers(service))
         }) {
             let decided = file.decided(&feature.id, package);
-            let tools = tools_of(&catalog, &table, (package, &feature.id), row(decided.0));
+            let mut tools = tools_of(&catalog, &table, (package, &feature.id), row(decided.0));
+            // 接平台的包（施工 PS-2）：预设只管得到本机会话，`[features]` 里只列本机会话拿得到的工具，一件都没有的功能不列。
+            // 只管列什么：会话里给不给照旧照 `venues` 和场所的开关。
+            if platform && feature.service.is_none() {
+                tools.retain(|tool| local(&catalog, &tool.name));
+                if tools.is_empty() {
+                    continue;
+                }
+            }
             // 包带的 MCP 服务归 MCP 那一组（设计 52 第一节第 3 条：这三类一定各自独立）。
             let kind = match feature.service {
                 Some(_) => Kind::Mcp,
@@ -215,6 +225,15 @@ fn tools_of(
         })
         .map(row)
         .collect()
+}
+
+/// 工具 `name` 本机会话拿不拿得到（施工 PS-2）：登记了 `venues` 的看带没带 `local`；没登记的（核心自带的、没写 `Venues` 的脚本）
+/// 照工具面自己的规矩，算拿得到。扩展登记时 `venues` 必写；包带的 MCP 服务没写 `venues` 的只给本机。
+fn local(catalog: &miyu_tool::Catalog, name: &str) -> bool {
+    catalog
+        .get(name)
+        .and_then(|tool| tool.venues())
+        .is_none_or(|venues| venues.local)
 }
 
 /// 工具 `name` 给人看的显示名：给人看的字里有的照它；工具自己登记了的（MCP 服务给的 `title`、扩展、脚本写的）照连接的语言

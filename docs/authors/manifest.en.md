@@ -236,6 +236,8 @@ tools = ["hello_greet"]
 
 Feature ids are global; prefixing them with the package id helps.
 
+Packages that connect a platform (with `[connection]`): presets only govern local sessions, so the preset menu lists only tools registered with `local` in `venues`, and leaves out a feature that has none. Tools used only in groups and private chats are governed by your own venue switches.
+
 ## `[check]`
 
 `args`: `miyu check` runs `<program> <args…>`. Report problems on stdout, one JSON per line (`kind`, `file`, `level`, `message` required; optional `line` and `column` as positive integers and `code`, `key`, `rule`, `source` as strings; other fields are dropped); exit 0 with only warnings, 1 with errors. At most 30 seconds. Needs `[command]`.
