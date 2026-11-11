@@ -778,10 +778,10 @@
                   "type": "string"
                 },
                 "effort": {
-                  "description": "这个模型默认的思考强度，写它的一档，例如 high；能关思考的写 off。不写的照供应商的默认。能写：最多 32 个字的文字。只能写在系统配置里。下一轮生效。",
+                  "description": "这个模型默认的思考程度，写它的一档，例如 high；能关思考的写 off。不写的照供应商的默认。能写：最多 32 个字的文字。只能写在系统配置里。下一轮生效。",
                   "maxLength": 32,
                   "minLength": 1,
-                  "title": "默认的思考强度",
+                  "title": "思考程度",
                   "type": "string"
                 },
                 "inputs": {
@@ -854,13 +854,13 @@
                   "type": "number"
                 },
                 "reasoning": {
-                  "description": "这个模型的思考强度有哪几级。能写：最多 32 个字的文字 的列表。只能写在系统配置里。下一轮生效。",
+                  "description": "这个模型的思考程度有哪几级。能写：最多 32 个字的文字 的列表。只能写在系统配置里。下一轮生效。",
                   "items": {
                     "maxLength": 32,
                     "minLength": 1,
                     "type": "string"
                   },
-                  "title": "思考强度",
+                  "title": "可选的思考程度",
                   "type": "array"
                 },
                 "temperature": {

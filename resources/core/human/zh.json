@@ -316,12 +316,12 @@
         "description": "这个模型能不能调工具。"
       },
       "providers.<id>.models.<model>.reasoning": {
-        "name": "思考强度",
-        "description": "这个模型的思考强度有哪几级。"
+        "name": "可选的思考程度",
+        "description": "这个模型的思考程度有哪几级。"
       },
       "providers.<id>.models.<model>.effort": {
-        "name": "默认的思考强度",
-        "description": "这个模型默认的思考强度，写它的一档，例如 high；能关思考的写 off。不写的照供应商的默认。"
+        "name": "思考程度",
+        "description": "这个模型默认的思考程度，写它的一档，例如 high；能关思考的写 off。不写的照供应商的默认。"
       },
       "providers.<id>.models.<model>.temperature": {
         "name": "默认的温度",

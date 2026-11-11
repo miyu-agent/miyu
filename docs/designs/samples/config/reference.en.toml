@@ -468,7 +468,7 @@ default = "full"
 # Allowed: text of at most 256 characters. Only in the system config. Takes effect next turn.
 # catalog =
 
-# Default reasoning effort: The reasoning effort this model uses by default: one of its levels, for example high, or off where thinking can be turned off. Left out, the provider decides.
+# Thinking effort: The thinking effort this model uses by default: one of its levels, for example high, or off where thinking can be turned off. Left out, the provider decides.
 # Allowed: text of at most 32 characters. Only in the system config. Takes effect next turn.
 # effort =
 
@@ -484,7 +484,7 @@ default = "full"
 # Allowed: a number from 0 to 1000. Only in the system config. Takes effect next turn.
 # price_multiplier =
 
-# Reasoning levels: Which reasoning levels this model offers.
+# Thinking effort levels: Which thinking effort levels this model offers.
 # Allowed: a list of text of at most 32 characters. Only in the system config. Takes effect next turn.
 # reasoning =
 

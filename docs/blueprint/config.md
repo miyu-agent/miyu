@@ -1442,7 +1442,7 @@ default = "full"
 # 能写：最多 256 个字的文字。只能写在系统配置里。下一轮生效。
 # catalog =
 
-# 默认的思考强度：这个模型默认的思考强度，写它的一档，例如 high；能关思考的写 off。不写的照供应商的默认。
+# 思考程度：这个模型默认的思考程度，写它的一档，例如 high；能关思考的写 off。不写的照供应商的默认。
 # 能写：最多 32 个字的文字。只能写在系统配置里。下一轮生效。
 # effort =
 
@@ -1458,7 +1458,7 @@ default = "full"
 # 能写：0 到 1000 之间的数。只能写在系统配置里。下一轮生效。
 # price_multiplier =
 
-# 思考强度：这个模型的思考强度有哪几级。
+# 可选的思考程度：这个模型的思考程度有哪几级。
 # 能写：最多 32 个字的文字 的列表。只能写在系统配置里。下一轮生效。
 # reasoning =
 
@@ -1710,7 +1710,7 @@ currency = "USD"
 | `providers.<id>.cache` 名字（8-8） | 缓存类别 | Cache class | キャッシュの種類 |
 | 说明 | 这家的缓存怎么算钱。现在只用来定池不写分法时怎么分。不写照驱动的默认。 | How this provider bills its cache. For now it only decides how a pool without a strategy splits. Left out, it follows the driver. | このプロバイダーのキャッシュの課金のしかた。いまは分け方を書いていないプールの分け方を決めるだけです。書かなければドライバーの既定に従います。 |
 | 选项 | `contract` 照前缀计费、`best_effort` 尽量命中、`per_request` 按次计费 | Billed by prefix、Best effort、Per request | 前置きで課金、できるだけ当てる、リクエストごと |
-| `providers.<id>.models.<model>.effort` 名字（8-18） | 默认的思考强度 | Default reasoning effort | 既定の思考の強さ |
+| `providers.<id>.models.<model>.effort` 名字（8-18） | 思考程度 | Thinking effort | 思考の程度 |
 | 说明 | 这个模型默认的思考强度，写它的一档，例如 high；能关思考的写 off。不写的照供应商的默认。 | The reasoning effort this model uses by default: one of its levels, for example high, or off where thinking can be turned off. Left out, the provider decides. | このモデルが既定で使う思考の強さ。段階のひとつを書きます（例：high）。思考を切れるモデルは off。書かなければプロバイダーの既定に従います。 |
 | `providers.<id>.models.<model>.temperature` 名字（8-22） | 默认的温度 | Default temperature | 既定の温度 |
 | 说明 | 这个模型默认的温度，0 到 2，越高回答越随意。不写的照供应商的默认；这个模型不收温度的不发。 | The temperature this model uses by default, from 0 to 2; higher gives looser answers. Left out, the provider decides. Not sent to models that do not take one. | このモデルが既定で使う温度。0 から 2 で、高いほど答えが自由になります。書かなければプロバイダーの既定に従います。温度を受け付けないモデルには送りません。 |

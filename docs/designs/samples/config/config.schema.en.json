@@ -778,10 +778,10 @@
                   "type": "string"
                 },
                 "effort": {
-                  "description": "The reasoning effort this model uses by default: one of its levels, for example high, or off where thinking can be turned off. Left out, the provider decides. Allowed: text of at most 32 characters. Only in the system config. Takes effect next turn.",
+                  "description": "The thinking effort this model uses by default: one of its levels, for example high, or off where thinking can be turned off. Left out, the provider decides. Allowed: text of at most 32 characters. Only in the system config. Takes effect next turn.",
                   "maxLength": 32,
                   "minLength": 1,
-                  "title": "Default reasoning effort",
+                  "title": "Thinking effort",
                   "type": "string"
                 },
                 "inputs": {
@@ -854,13 +854,13 @@
                   "type": "number"
                 },
                 "reasoning": {
-                  "description": "Which reasoning levels this model offers. Allowed: a list of text of at most 32 characters. Only in the system config. Takes effect next turn.",
+                  "description": "Which thinking effort levels this model offers. Allowed: a list of text of at most 32 characters. Only in the system config. Takes effect next turn.",
                   "items": {
                     "maxLength": 32,
                     "minLength": 1,
                     "type": "string"
                   },
-                  "title": "Reasoning levels",
+                  "title": "Thinking effort levels",
                   "type": "array"
                 },
                 "temperature": {

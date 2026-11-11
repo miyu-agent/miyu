@@ -316,12 +316,12 @@
         "description": "Whether this model can call tools."
       },
       "providers.<id>.models.<model>.reasoning": {
-        "name": "Reasoning levels",
-        "description": "Which reasoning levels this model offers."
+        "name": "Thinking effort levels",
+        "description": "Which thinking effort levels this model offers."
       },
       "providers.<id>.models.<model>.effort": {
-        "name": "Default reasoning effort",
-        "description": "The reasoning effort this model uses by default: one of its levels, for example high, or off where thinking can be turned off. Left out, the provider decides."
+        "name": "Thinking effort",
+        "description": "The thinking effort this model uses by default: one of its levels, for example high, or off where thinking can be turned off. Left out, the provider decides."
       },
       "providers.<id>.models.<model>.temperature": {
         "name": "Default temperature",

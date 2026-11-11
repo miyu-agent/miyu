@@ -316,12 +316,12 @@
         "description": "このモデルがツールを呼べるかどうか。"
       },
       "providers.<id>.models.<model>.reasoning": {
-        "name": "思考の強さ",
-        "description": "このモデルの思考の強さの段階。"
+        "name": "思考の程度の段階",
+        "description": "このモデルの思考の程度の段階。"
       },
       "providers.<id>.models.<model>.effort": {
-        "name": "既定の思考の強さ",
-        "description": "このモデルが既定で使う思考の強さ。段階のひとつを書きます（例：high）。思考を切れるモデルは off。書かなければプロバイダーの既定に従います。"
+        "name": "思考の程度",
+        "description": "このモデルが既定で使う思考の程度。段階のひとつを書きます（例：high）。思考を切れるモデルは off。書かなければプロバイダーの既定に従います。"
       },
       "providers.<id>.models.<model>.temperature": {
         "name": "既定の温度",
