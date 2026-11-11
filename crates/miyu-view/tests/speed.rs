@@ -206,3 +206,61 @@ fn end_speed(projector: &Projector) -> Option<(u64, u64)> {
         end["speed"]["ms"].as_u64()?,
     ))
 }
+
+#[test]
+fn a_reply_that_arrived_in_one_burst_has_no_speed() {
+    // 施工 SP-3（项目主人 2026-11-11：magpie 上 haiku 5.5 写出 1249500 tok/s）：网关把整段攒齐了一次发过来，首字和结束只差几毫秒，
+    // 算出来的不是出字的速度。首字到结束不到 100 毫秒的、算出来每秒超过 5000 个的，这一次不算，别的照算。
+    let stage = two_calls();
+    let burst = project(
+        &stage,
+        &[
+            (Some(100), Some(500), Some(2_000)),
+            (Some(2_184), Some(34_862), Some(34_871)),
+        ],
+        |_| {},
+    );
+    assert_eq!(
+        end_speed(&burst),
+        Some((100, 1_500)),
+        "攒齐了才到的那一次不算"
+    );
+    assert_eq!(
+        burst.status().speed,
+        Some(Speed {
+            output: 100,
+            ms: 1_500
+        }),
+        "会话状态照旧是最近一次有速度的：攒齐了才到的那一次不换掉它"
+    );
+    // 首字到结束 300 毫秒、出了 2703 个：每秒九千个，也是攒的。
+    let fast = project(
+        &stage,
+        &[
+            (Some(100), Some(500), Some(2_000)),
+            (Some(2_703), Some(0), Some(313)),
+        ],
+        |_| {},
+    );
+    assert_eq!(end_speed(&fast), Some((100, 1_500)));
+    // 快、但确实是流过来的（每秒 3000 个，一秒多）：照算。
+    let quick = project(
+        &stage,
+        &[
+            (Some(100), Some(500), Some(2_000)),
+            (Some(3_000), Some(200), Some(1_200)),
+        ],
+        |_| {},
+    );
+    assert_eq!(end_speed(&quick), Some((3_100, 2_500)));
+    // 两次都是攒的：这一轮不写速度。
+    let none = project(
+        &stage,
+        &[
+            (Some(100), Some(500), Some(505)),
+            (Some(50), Some(0), Some(6)),
+        ],
+        |_| {},
+    );
+    assert_eq!(end_speed(&none), None);
+}

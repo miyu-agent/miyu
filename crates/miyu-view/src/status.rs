@@ -154,15 +154,24 @@ pub struct Speed {
     pub ms: u64,
 }
 
+/// 首字到结束短于它的不算出字的速度（施工 SP-3）：整段几乎同时到。
+pub const BURST_MS: u64 = 100;
+
+/// 算出来每秒超过这么多个 token 的不算（施工 SP-3）：不是在一个字一个字地出，是攒齐了一口气到的。
+pub const BURST_RATE: u64 = 5_000;
+
 impl Speed {
     /// 一次请求的速度：用量、用时都记下了才有（会话状态的 `speed`、一轮收尾的 `speed` 都照它，施工 SP-1）。
+    ///
+    /// 攒齐了一口气到的不算（施工 SP-3，项目主人 2026-11-11：magpie 转 Anthropic 的模型时网关把整段攒齐了才发，首字和结束只差
+    /// 几毫秒，写出了 1249500 tok/s）：首字到结束不到 [`BURST_MS`] 的、算出来每秒超过 [`BURST_RATE`] 个的没有速度。阈值照
+    /// 主人本机的日志定：真流式的几家 p95 在每秒 260 到 3400 个之间，攒齐的那几次首字到结束是 5 到 20 毫秒。
     pub(crate) fn of(called: &ModelCalled) -> Option<Self> {
         let output = called.usage.as_ref()?.output;
         let duration = called.duration_ms?;
-        Some(Self {
-            output,
-            ms: duration.saturating_sub(called.first_token_ms.unwrap_or(0)),
-        })
+        let ms = duration.saturating_sub(called.first_token_ms.unwrap_or(0));
+        let burst = ms < BURST_MS || output.saturating_mul(1000) > BURST_RATE.saturating_mul(ms);
+        (!burst).then_some(Self { output, ms })
     }
 
     /// 两份加起来，封顶不溢出。

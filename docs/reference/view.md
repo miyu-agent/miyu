@@ -32,7 +32,7 @@
 | `group` | 时间线的一段（几步思考和工具）：`steps`、`open`、`summary`、`summary_en`（收起那一行）、`took_ms`、`failed` |
 | `thought` | 一步思考：`group`、`text`、`open`、`took_ms` |
 | `tool` | 一步工具：`group`、`call`、`name`、`title`、`state`、`args`、`diff`（`{added, removed}`）、`images`、`job`、`approval`、`took_ms`、`files`（`[{path, action}]`，`action` 是 `created`、`changed`、`trashed`）、`skill`、`detail`（工具交的结构化详情，例如搜到的几条；带 `kind` 的是三种通用形状 `links`、`table`、`images`，见 [扩展](extensions.md#toolcalltoolcancel)）、`output`（结果原文的前面一段：最多 100 行、8 KiB；切了的带 `output_cut: true`，整份用 `view.detail` 取）、`questions`（提问那一步问的那一组，问的时候就有）、`nested`（脚本里调过工具的 `shell`：`{count, last}`，`last` 是序号最大的那一个 `{n, name, title, state, started?}`；头在那一行后面写 `· #n 显示名`，整份用 `view.detail` 取）、`progress`（在跑时最新的一行进度：工具输出里 `miyu-progress: ` 开头的那一行，去了前缀，最长 200 个字；同一步最多每 0.5 秒推一次；结果到了去掉，翻页、重新订阅没有） |
-| `end` | 一轮的收尾：`reason`、`model`、`endpoint`、`took_ms`、`usage`、`speed`（`{output, ms}`：这一轮每次主请求的输出 token、首字到结束的毫秒加起来，不算调工具、等人、旁路请求；没记下用时的不写），出错的 `error`、`explain` |
+| `end` | 一轮的收尾：`reason`、`model`、`endpoint`、`took_ms`、`usage`、`speed`（`{output, ms}`：这一轮每次主请求的输出 token、首字到结束的毫秒加起来，不算调工具、等人、旁路请求；没记下用时的不写；整段攒齐了一口气到的那一次不算——首字到结束不到 100 毫秒、或者算出来每秒超过 5000 个，施工 SP-3），出错的 `error`、`explain` |
 | `notice` | 旁白：`what` 见下 |
 
 **`tool` 的 `state`**：`preparing`（还在写参数）、`running`、`ok`、`error`、`denied`、`cancelled`、`skipped`。
@@ -69,7 +69,7 @@
 | `waiting_since` | 正在等人的这一段从什么时候起；没在等的不写。用时照「现在 − `since` − `waited_ms` − (现在 − `waiting_since`)」算，等人时停住；条目里的 `took_ms` 也刨掉了等人的时间 |
 | `doing` | 正在做什么：`thinking`、`writing`、`tool`（带 `entry`）；`retrying`（`attempt`、`limit`、`at`、`class`、`message`）；`compacting`（`trigger`、`written`、`expected`） |
 | `context` | `{window, compaction_line, context, used}`：上下文窗口（设了会话的上下文上限的是生效的窗口，取模型的和上限里小的）、压缩线、会话的上下文上限（没设的不写）、最近一次用了多少（那次请求的输入加输出；刚压完的是压完的量） |
-| `speed` | `{output, ms}`：最近一次的输出 token 和毫秒 |
+| `speed` | `{output, ms}`：最近一次有速度的输出 token 和毫秒（攒齐了一口气到的那一次不算、不换掉它，口径同 `end` 的 `speed`，施工 SP-3） |
 | `cooling_until` | 候选都在冷却时最早恢复的时刻 |
 | `preparing` | 后台在提前压缩：`{seen, since}` |
 | `usage` | 本会话累计用量，写法同 `usage.query` 的一行（连同 `converted`、`converted_parts`） |
