@@ -2,21 +2,20 @@
 
 ### 是什么
 
-一个程序，像 busybox 那样按子命令分发：`ask`、`undo`（别名 `rewind`）、`restore`、`redo`、`compact`、`recap`、`rename`、`config`、`provider`、`sandbox` 是命令行的头，`core` 是核心进程。装了的软件包加的子命令照清单转交给包里的程序（施工 9-2，`packages.md`「转交」）。不认识的子命令就报错，绝不当成对话发给核心。给人看的话跟着界面语言。
+一个程序，像 busybox 那样按子命令分发：`ask`、`undo`（别名 `rewind`）、`restore`、`redo`、`compact`、`recap`、`rename`、`config`、`provider` 是命令行的头，`core` 是核心进程。装了的软件包加的子命令照清单转交给包里的程序（施工 9-2，`packages.md`「转交」）。不认识的子命令就报错，绝不当成对话发给核心。给人看的话跟着界面语言。
 
 ### 在哪
 
 | 代码 | 管什么 |
 |---|---|
 | `crates/miyu/src/main.rs` | 子命令；换上帮助页；参数不对时交给 `misuse`；拉起核心用的命令 |
-| `crates/miyu-cli/src/help.rs`、`help/{zh,en}/{miyu,ask,undo,restore,redo,compact,recap,rename,memory,pkg,kb,bus,schedule,sandbox,config,provider,setup}.txt` | 帮助页（施工 CL-7 起没有 `web` 那一页，网页包自己印）（`pkg` 那一页施工 T-3，`kb` 那一页施工 K-7 下，`schedule` 那一页施工 J-3 下），编进程序（施工 4-11；`web` 那一页施工 W-9，`setup` 那一页施工 8-11，`sandbox` 那一页施工 5-8，`compact` 那一页施工 6-8，`redo` 那一页施工 4-7 再补，`recap` 那一页施工 3-8 四补，`rename` 那一页施工 3-8 五补，`config` 那一页施工 8-2，`provider` 那一页施工 8-5，原来是 `login`、`logout` 两页，Y-13 上并成一页） |
-| `crates/miyu-cli/src/misuse.rs` | 参数写错时说的话，不认识的子命令也在这里（施工 4-11）；少了子命令、嵌着的子命令写错、成对的选项少了一个（施工 5-8） |
+| `crates/miyu-cli/src/help.rs`、`help/{zh,en}/{miyu,ask,undo,restore,redo,compact,recap,rename,memory,pkg,kb,bus,schedule,config,provider,setup}.txt` | 帮助页（施工 CL-7 起没有 `web` 那一页，网页包自己印）（`pkg` 那一页施工 T-3，`kb` 那一页施工 K-7 下，`schedule` 那一页施工 J-3 下），编进程序（施工 4-11；`web` 那一页施工 W-9，`setup` 那一页施工 8-11，`sandbox` 那一页施工 5-8，`compact` 那一页施工 6-8，`redo` 那一页施工 4-7 再补，`recap` 那一页施工 3-8 四补，`rename` 那一页施工 3-8 五补，`config` 那一页施工 8-2，`provider` 那一页施工 8-5，原来是 `login`、`logout` 两页，Y-13 上并成一页） |
+| `crates/miyu-cli/src/misuse.rs` | 参数写错时说的话，不认识的子命令也在这里（施工 4-11）；嵌着的子命令写错、要一起写的选项少了一个（施工 5-8） |
 | `crates/miyu-cli/src/diagnostic.rs` | 报错、警告、提示的写法（设计 47，施工 CL-2 上）：`miyu: ` 打头、警告多 `warning:`（「警告：」）、建议另起一行 `hint:`（「提示：」）；别处交来的原话去掉句末句号、开头大写词改小写；命令行往标准错误上报错都经它 |
 | `crates/miyu-cli/src/text_rules.rs` | 给人看的字的检查（施工 CL-3，设计 47 第三节第 10 条）：帮助页说明不带句号、中文命令总表不列「、」串、不写「她」「你」、报错不绕过 `diagnostic` |
 | `crates/miyu-cli/src/lib.rs` | 命令行的头对外的几样：`Ask`、`ask`、`talk`、`Format`、`Plan`、`Screen`、`Target`、`exit`，`Undo`、`undo`、`undo_on`、`Direction`、`UndoPlan`，`Compact`、`compact`（施工 6-8），`Recap`、`recap`、`recap_on`、`RecapPlan`（施工 3-8 四补），`Rename`、`rename`、`rename_on`、`RenamePlan`（施工 3-8 五补），`Memory`、`MemoryCommand`、`MemoryClear`、`memory`、`memory_on`、`MemoryPlan`（施工 R-3 再补），`Pkg`、`PkgCommand`、`PkgPlan`、`pkg`、`pkg_on`（施工 T-3），`Kb`、`KbCommand`、`KbPlan`、`kb`、`kb_on`（施工 K-7 下），`Bus`、`BusCommand`、`bus`、`bus_on`（施工 BUS-3），`Schedule`、`ScheduleCommand`、`ScheduleAdd`、`SchedulePlan`、`schedule`、`schedule_on`、`interval`、`moment`（施工 J-3 下），`Redo`、`redo`、`redo_on`、`RedoPlan`（施工 4-7 再补），`Setup`、`setup`、`setup_on`、`SetupPlan`、`HeadEnv`、`model_ready_on`（施工 8-11），`Sandbox`、`sandbox`，`Web`、`web`、`web_on`（施工 W-9），`help`、`misuse`、`language` |
 | `crates/miyu-cli/src/language.rs` | 界面语言；这一页和 `miyu ask` 给人看的字 |
 | `crates/miyu-cli/src/language/undo.rs` | `miyu undo`、`miyu restore` 给人看的字（`cli/undo.md`） |
-| `crates/miyu-cli/src/sandbox.rs`、`sandbox/flow.rs`、`language/sandbox.rs` | `miyu sandbox setup`、`remove`（`sandbox/windows.md`，施工 5-8） |
 | `crates/miyu-cli/src/ask.rs` 的 `exit` | 退出码 0、1、3、4、5；2 在 `main.rs` |
 
 ### 对外的样子
@@ -44,7 +43,6 @@
 | `setup` | 接上第一个模型：找现成的 key 和本机的服务，或者搜目录、贴 key，试通了写进系统配置（施工 8-11） | `cli/setup.md` |
 | `service` | `enable`、`disable`、`status`：让核心开机、登录就起，替本人装、卸、看本人这一层的服务（施工 Z-1 下） | `cli/service.md` |
 | `upgrade` | 升级 Miyu 本身：安装脚本装的自己下载、核对、替换，包管理器装的说用哪条命令（施工 RL-4） | `cli/upgrade.md` |
-| `sandbox` | `setup`、`remove`：Windows 上装好、撤掉沙盒用户，要管理员权限；别的平台上说一句不用装 | `sandbox/windows.md` |
 | `call` | 在 AI 跑的命令里调这个会话的工具（施工 M-3，设计 39）：不读清单、不经 clap，`main.rs` 当场交给 `miyu_cli::call`；不写进总帮助，`miyu call -h` 印它自己的那一页 | `cli/call.md` |
 | `core` | 核心进程：由头拉起，平时不用人敲；不写进帮助 | `core.md` |
 | `help` | clap 自带：印帮助，`miyu help <子命令>` 印那一条的 | |
@@ -77,9 +75,8 @@
 4. `ask`、`undo`（`rewind`）、`restore`、`redo`、`compact`、`recap`、`rename`、`session`、`memory`、`pkg`、`kb`、`schedule`、`config`、`provider`、`setup`、`mcp`：交给命令行的头（`cli/ask.md`、`cli/undo.md`、`cli/redo.md`、`cli/compact.md`、`cli/recap.md`、`cli/rename.md`、`cli/session.md`、`cli/memory.md`、`cli/pkg.md`、`cli/kb.md`、`cli/schedule.md`、`cli/config.md`、`cli/login.md`、`cli/setup.md`、`cli/mcp.md`），连同拉起核心用的命令。
 5. 拉起核心用的命令：自己这个程序（`std::env::current_exe`，拿不到的用 `miyu`，照 `PATH` 找），加上 `core`。别的参数、环境变量不加；工作目录、标准输入输出、跟终端脱开，由拉起的那一边接（`ipc.md`）。
 6. `core`：跑核心进程，`--idle-seconds <秒>` 是空闲多少秒退出，不写的照系统配置 `core.idle_exit`，默认不退（施工 Z-1 上，`core.md`）。
-7. `sandbox setup`、`sandbox remove`：交给命令行的头（`sandbox/windows.md`）。
 
-**帮助页**：自己写的，一种语言十三页（`miyu`、`ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename`、`sandbox`、`config`、`provider`、`setup`），编进程序，资源目录找不到也印得出；每页以一个换行结尾，最宽 80 列（中文字算两列）。`ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename` 的七页见 `cli/ask.md`、`cli/undo.md`、`cli/redo.md`、`cli/compact.md`、`cli/recap.md`、`cli/rename.md`，`sandbox` 那一页见 `sandbox/windows.md`，`provider` 那一页见 `cli/login.md`；`miyu sandbox setup -h`、`miyu sandbox remove -h` 印的也是它。`help` 子命令、`core` 不列；`miyu core --help` 照样印得出，是 clap 照代码注释生成的。
+**帮助页**：自己写的，一种语言十二页（`miyu`、`ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename`、`config`、`provider`、`setup`），编进程序，资源目录找不到也印得出；每页以一个换行结尾，最宽 80 列（中文字算两列）。`ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename` 的七页见 `cli/ask.md`、`cli/undo.md`、`cli/redo.md`、`cli/compact.md`、`cli/recap.md`、`cli/rename.md`，`provider` 那一页见 `cli/login.md`。`help` 子命令、`core` 不列；`miyu core --help` 照样印得出，是 clap 照代码注释生成的。
 
 总表（`miyu`）照用途分组（对话、内容、软件包、设置、系统，软件包加的命令另一组，施工 AP-1），只列命令和全局选项 `-h`、`-V`，`ask` 和会话那几条命令的选项写在各自的页上；用法写 `miyu [<命令>] [<选项>]`，可以不写的整段用方括号，要填的写 `<名字>`，几个选一的写 `<text|json>`；命令那几组的说明从第 22 列开始，同一节里的选项、子命令说明也各自从同一列开始。末尾一句指向 `miyu help <命令>`。`ask` 的页多一节「退出状态」，列 0 到 5（`cli/ask.md`「退出码」）。
 
@@ -120,7 +117,6 @@
 系统：
   service <命令>      管理后台服务
   upgrade             升级 Miyu
-  sandbox <命令>      配置或移除沙盒用户（Windows）
 
 选项：
   -h, --help     显示帮助
@@ -171,7 +167,6 @@ Settings:
 System:
   service <command>   Manage the background service
   upgrade             Upgrade Miyu
-  sandbox <command>   Set up or remove the sandbox user (Windows)
 
 Options:
   -h, --help     Print help
@@ -191,9 +186,8 @@ Run 'miyu help <command>' for more on a command.
 |---|---|---|
 | 缺了必写的：最外面那一层只有 `ask` 的要说的话是必写的 | `miyu: 缺少消息`，`提示：用法：miyu ask "<消息>"` | `miyu: missing message`，`hint: usage: miyu ask "<message>"` |
 | 嵌着的子命令缺了必写的（`miyu kb read notes`、`miyu memory edit m5`，施工 K-7 修） | `miyu: 缺少参数`，`提示：用法：miyu <命令> <帮助页上这个子命令那一行的写法>`，例如 `miyu kb read <库> <文档>`；帮助页上没有那一行的说到命令为止 | `miyu: missing arguments`，`hint: usage: miyu kb read <kb> <document>` |
-| 成对的选项少了一个：只给提升过的自己用的 `--owner-home`、`--owner-sid`（`sandbox/windows.md`） | `miyu: 缺少选项 '<选项>'` | `miyu: missing option '<选项>'` |
-| 少了子命令：`miyu sandbox` 后面没写 | `miyu: '<命令>' 需要子命令`，`提示：可用的有：<子命令> 或 <子命令>` | `miyu: '<命令>' requires a subcommand`，`hint: one of: <子命令> or <子命令>` |
-| 嵌着的子命令写错：`miyu sandbox frob` | `miyu: '<命令>' 没有子命令 '<名字>'`，`提示：运行 '<命令> --help' 查看可用命令` | `miyu: unknown command '<名字>' for '<命令>'`，`hint: see '<命令> --help'` |
+| 要和别的选项一起写的少了那一个：`miyu session export --for read` 少了 `--md` | `miyu: 缺少选项 '<选项>'` | `miyu: missing option '<选项>'` |
+| 嵌着的子命令写错：`miyu service frob` | `miyu: '<命令>' 没有子命令 '<名字>'`，`提示：运行 '<命令> --help' 查看可用命令` | `miyu: unknown command '<名字>' for '<命令>'`，`hint: see '<命令> --help'` |
 | 不认识的参数，`-` 开头 | `miyu: 无法识别的选项 '<参数>'` | `miyu: unrecognized option '<参数>'` |
 | 不认识的参数，别的 | `miyu: 多余的参数 '<参数>'` | `miyu: unexpected argument '<参数>'` |
 | 两个选项不能一起写 | `miyu: '<选项>' 不能和 '<选项>' 同时使用` | `miyu: '<选项>' cannot be used with '<选项>'` |
@@ -205,8 +199,7 @@ Run 'miyu help <command>' for more on a command.
 | 别的 | `miyu: 参数错误：<clap 的原话>` | `miyu: <clap 的原话>` |
 
 - `<参数>` 照敲的原样；`<选项>` 照 clap 报的，是长的写法，去掉后面的值名（`--session <SESSION>` 写成 `--session`）。
-- 少了子命令时，`<命令>` 是 clap 报的那一层的全名（`miyu sandbox`），`<子命令>` 是它报的能写的几个，不列 `help`（`sandbox` 关掉了 `help` 子命令）。
-- 子命令写错时，看 clap 报的用法那一行（`Usage: miyu sandbox <COMMAND>`）：第一个 `<`、`[` 之前的几个词就是 `<命令>`。只有 `miyu` 一个词的，是最外面那一层写错，照「怎么走」第 2 条说。
+- 子命令写错时，看 clap 报的用法那一行（`Usage: miyu service <COMMAND>`）：第一个 `<`、`[` 之前的几个词就是 `<命令>`。只有 `miyu` 一个词的，是最外面那一层写错，照「怎么走」第 2 条说。
 - 能写的值两个的用「或」（`or`）连，三个以上的前面用顿号（逗号）隔开，最后一个前面用「或」（`or`）。
 - clap 的原话取它报错的第一行，去掉开头的 `error: `。
 - 控制字符换成 `�`：敲的参数可能混着终端的控制序列。
@@ -246,7 +239,7 @@ Run 'miyu help <command>' for more on a command.
 |---|---|
 | `crates/miyu/tests/commands.rs` | 不认识的子命令：中文、英文的那一句，退出码 2，不拉起核心、核心没起来过；只敲 `miyu`：退出码 2、说用 `miyu ask`；`-h`、`--help`、`help` 印那一页，中文、英文各和样本一样，退出码 0；`--version` 印 `miyu ` 开头；参数写错的几种，中文、英文各说那一句，退出码 2；主程序换了文件名，说的还是 `miyu`（施工 5-8） |
 | `crates/miyu-cli/src/help/tests.rs` | 每一页列的选项和程序真有的一一对得上（长短写法、值名），最宽 80 列，以一个换行结尾；值名照表换成页里的写法（`<编号>`、`<目录>`）（施工 5-10 上）、`<时长>`（施工 7-9） |
-| `crates/miyu-cli/src/misuse/tests.rs` | 七种错各说哪一句、两种语言；值的连法；控制字符换掉；全部子命令里必写的只有 `ask` 的要说的话；成对的少了一个、少了子命令、嵌着的子命令写错（施工 5-8）；`--add-dir` 后面不是已经有的目录（施工 5-10 上）；`--timeout` 后面不是时长（施工 7-9）；`--from` 后面是空的、只有空白（施工 7-10）；嵌着的子命令少了必写的照帮助页说怎么写，有必写的子命令在帮助页上都有那一行（施工 K-7 修） |
+| `crates/miyu-cli/src/misuse/tests.rs` | 七种错各说哪一句、两种语言；值的连法；控制字符换掉；全部子命令里必写的只有 `ask` 的要说的话；要一起写的选项少了一个、嵌着的子命令写错（施工 5-8）；`--add-dir` 后面不是已经有的目录（施工 5-10 上）；`--timeout` 后面不是时长（施工 7-9）；`--from` 后面是空的、只有空白（施工 7-10）；嵌着的子命令少了必写的照帮助页说怎么写，有必写的子命令在帮助页上都有那一行（施工 K-7 修） |
 | `crates/miyu/tests/ask.rs` | 参数不对退出码 2（什么都不写、`--session` 和 `--continue` 一起写）；`miyu ask --help` 跟着界面语言；没有 key、核心没在跑的不拉起 |
 | `crates/miyu/tests/undo.rs` | `miyu undo --help`、`miyu rewind -h`、`miyu restore --help` 跟着界面语言；`undo`、`restore` 各接各的 |
 | `crates/miyu/tests/redo.rs` | `miyu redo --help`、`miyu help redo` 跟着界面语言，`redo` 印的是重做那一页、不是恢复那一页；没有 key、核心没在跑的不拉起（施工 4-7 再补） |

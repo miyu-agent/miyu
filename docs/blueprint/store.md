@@ -103,7 +103,7 @@
 <数据根>/
 ├── .miyu-layout                标记：This directory is a Miyu data root (layout 3).
 ├── etc/                        配置：config.toml、trust.toml、extensions.json、kb.toml
-│   ├── private/                凭据：secrets.toml、access.json、logins.json、sandbox-windows.json（Unix 上 0600）
+│   ├── private/                凭据：secrets.toml、access.json、logins.json（Unix 上 0600）
 │   ├── removed/<编号>          卸掉的出厂包的记号（空文件）
 │   ├── leftover/<编号>.toml    你装的包卸了、配置里还留着它的设置项：它的前缀（施工 PK-5补）
 │   └── <编号>/                 包自己的配置
@@ -123,7 +123,7 @@
 ├── var/
 │   ├── lib/                    journal.jsonl、log-salt（0600）、models/、packages/<编号>/（本地库）和 leftovers.json、mcp/<服务>/、blob-grants/<编号>（包自己存过的 blob，一行一个哈希）、<编号>/（包的数据；界面包的里面另有核心写的 prefs.json，头自己的设置）
 │   ├── cache/                  能删（先停核心）：index/、usage.db、rates.db、config/、models/、packages/、mcp/<服务>.json、provide/<包>.json、scripts/、personas/、mermaid/、sandbox-probe.json、perf/、<编号>/
-│   ├── log/                    core.log（和轮换的 .1…）、memory.jsonl、mcp/<服务>.stderr、sandbox/windows-error.json、<编号>/（包的日志；stderr、stderr.old 是核心记的）
+│   ├── log/                    core.log（和轮换的 .1…）、memory.jsonl、mcp/<服务>.stderr、<编号>/（包的日志；stderr、stderr.old 是核心记的）
 │   └── tmp/                    跨重启留着的暂存，核心起来时清放了满 7 天没碰的
 ├── tmp/                        短命的暂存：unpack/（核心起来清空）、<编号>/（拉起这个包的扩展之前清）
 └── run/                        core.lock、spawn.lock、token、socket（core.sock）；写数据根里配置、密钥时的临时文件；<编号>/ 包自己的锁、地址（网页的 miyu-webui/lock、address、open/）

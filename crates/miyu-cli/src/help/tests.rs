@@ -7,7 +7,7 @@ use clap::{Args, Command};
 
 use super::{Page, page};
 use crate::language::Language;
-use crate::{Ask, Compact, Config, Provider, Recap, Redo, Rename, Sandbox, Setup, Undo};
+use crate::{Ask, Compact, Config, Provider, Recap, Redo, Rename, Setup, Undo};
 
 /// 一个选项：几种写法（`-c`、`--continue`），和后面写的值（没有的是空的）。
 type Listed = BTreeSet<(Vec<String>, String)>;
@@ -38,7 +38,7 @@ fn listed(page: &str) -> Listed {
 /// 程序真有的选项：`command` 里有名字的参数，加上 clap 给每条命令都加的 `-h`、`--help`。要写值的，值写成能写的几样
 /// 用 `|` 连起来、外面套 `<>`（`<text|json>`，施工 AP-1）；不限的照 clap 的值名在 `values` 里查页里写成什么（`SESSION` 是 `<编号>`，`DIR` 是 `<目录>`，施工 5-10
 /// 上；`FILE` 是 `<文件>`，施工 3-9 三补；`TIME` 是 `<时长>`，施工 7-9；`NAME` 是 `<名字>`，施工 7-10；`MODEL` 是 `<模型>`，施工
-/// 8-10；`ID` 是 `<编号>`、`VAR` 是 `<变量>`，施工 8-11），查不到的写成 `<值名>`。藏起来的不算：它们不给人用（`sandbox` 那两个，施工 5-8）。
+/// 8-10；`ID` 是 `<编号>`、`VAR` 是 `<变量>`，施工 8-11），查不到的写成 `<值名>`。藏起来的不算：它们不给人用。
 fn real(command: &Command, values: &[(&str, &str)]) -> Listed {
     let mut options = Listed::new();
     for arg in command.get_arguments().filter(|arg| !arg.is_hide_set()) {
@@ -251,19 +251,6 @@ fn each_page_lists_exactly_the_options_there_are() {
             real(&setup, id),
             "{language:?} setup"
         );
-        // `sandbox` 那一页：`sandbox`、`sandbox setup`、`sandbox remove` 印的都是它。
-        let sandbox = Sandbox::augment_args(Command::new("sandbox"));
-        let mut commands = vec![sandbox.clone()];
-        commands.extend(sandbox.get_subcommands().cloned());
-        assert_eq!(commands.len(), 3, "setup、remove 两个子命令");
-        for command in commands {
-            assert_eq!(
-                listed(page(language, Page::Sandbox)),
-                real(&command, id),
-                "{language:?} {}",
-                command.get_name()
-            );
-        }
     }
 }
 
@@ -281,7 +268,6 @@ fn each_page_is_its_own_file() {
             (Page::Compact, "compact"),
             (Page::Recap, "recap"),
             (Page::Rename, "rename"),
-            (Page::Sandbox, "sandbox"),
             (Page::Config, "config"),
             (Page::Check, "check"),
             (Page::Provider, "provider"),
@@ -326,7 +312,6 @@ fn pages_fit_in_eighty_columns_and_end_with_one_newline() {
             Page::Redo,
             Page::Compact,
             Page::Recap,
-            Page::Sandbox,
             Page::Config,
             Page::Check,
             Page::Provider,

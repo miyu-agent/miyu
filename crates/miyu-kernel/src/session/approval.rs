@@ -56,7 +56,7 @@ impl Session {
                     &call.name,
                     &call.args,
                     &round,
-                    (&self.effective, self.grants.granted()),
+                    &self.effective,
                 )];
             }
             Verdict::Deny {

@@ -127,20 +127,10 @@ print("Grabbed 1 frame.")
 - Anything that doesn't fit is not handed over and the AI doesn't learn of it; the run log has a `script image dropped` line saying which script and why (not the file name).
 - A call stopped at its timeout hands over no images; a non-zero exit code still does.
 
-**Scripts that must run outside the sandbox**
+**When a script runs in the sandbox**
 
-Scripts that touch hardware or need root (`sudo`) don't work in the sandbox. A script can't ask for this itself, whatever its header says: you grant it in the config `config.toml`, and the value is where the tool comes from.
-
-```toml
-[sandbox.tools]
-ceiling-light = "~home"   # a script you put in scripts/
-lights = "smart-home"     # from a package: the package's id
-```
-
-- A granted tool runs outside the sandbox without asking in your own sessions (terminal, web, your QQ private chat, desktop voice). Group chats and strangers' private chats still refuse it, and so does read-only; dangerous commands still ask.
-- A grant whose source doesn't match doesn't count: delete the script, or let another package bring a tool with the same name, and the grant lapses. `miyu check` warns about each grant whose tool is gone or whose source doesn't match, printing the current source for the latter, and also flags a grant for `shell`.
-- A granted tool has all of your own permissions: only grant scripts whose code you have read and whose arguments are safe.
-- A grant only counts for a real file kept in `scripts/` in your home folder (or installed as a package): if the file is a link, if `scripts/` itself is a link, or if the file sits somewhere the AI can write this time (such as the workspace), it isn't granted and still runs in the sandbox (the AI could change those). `miyu check` reminds you and prints where the file really is.
+- In your own sessions (terminal, web, your QQ private chat, desktop voice) scripts normally run outside the sandbox, with your own permissions.
+- With read-only on, and in group chats and strangers' private chats, scripts run in the sandbox. Scripts that touch hardware or need root (`sudo`) don't work there, and there is no way to exempt a single script.
 
 ## Skills
 

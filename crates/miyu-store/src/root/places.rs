@@ -46,16 +46,6 @@ impl DataRoot {
         self.private().join(crate::logins::FILE)
     }
 
-    /// Windows 沙盒用户的安装记录（含 DPAPI 加密的密码，施工 5-8）：`etc/private/sandbox-windows.json`。
-    pub fn sandbox_record_file(&self) -> PathBuf {
-        self.private().join("sandbox-windows.json")
-    }
-
-    /// Windows 沙盒安装失败的原因：`var/log/sandbox/windows-error.json`。
-    pub fn sandbox_report_file(&self) -> PathBuf {
-        self.var_log().join("sandbox").join("windows-error.json")
-    }
-
     /// 卸掉的出厂包的记号放在哪：`etc/removed/`，一个包一个空文件 `<编号>`（施工 F-5 上，像 systemd 的 mask）。
     pub fn removed_markers(&self) -> PathBuf {
         self.etc().join(super::REMOVED)

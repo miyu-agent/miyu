@@ -5,14 +5,15 @@ use clap::{Args, Command};
 use super::{listed, misuse, misuse_offering, synopsis};
 use crate::help::Page;
 use crate::language::Language;
-use crate::{Ask, Config, Kb, Memory, Pkg, Sandbox, Undo};
+use crate::{Ask, Config, Kb, Memory, Pkg, Service, Session, Undo};
 
 /// 和主程序一样的几条子命令。
 fn miyu() -> Command {
     Command::new("miyu")
         .subcommand(Ask::augment_args(Command::new("ask")))
         .subcommand(Undo::augment_args(Command::new("undo")))
-        .subcommand(Sandbox::augment_args(Command::new("sandbox")))
+        .subcommand(Service::augment_args(Command::new("service")))
+        .subcommand(Session::augment_args(Command::new("session")))
         .subcommand(Memory::augment_args(Command::new("memory")))
         .subcommand(Kb::augment_args(Command::new("kb")))
 }
@@ -133,25 +134,20 @@ fn nothing_is_required_at_the_top() {
 
 #[test]
 fn nested_commands_have_their_own_sentences() {
-    // `miyu sandbox` 是第一条嵌着子命令的（施工 5-8）：少了、写错了，说的是它那一层，不提 `miyu ask`。
-    let cases: [(&[&str], &str, &str); 4] = [
+    // 嵌着子命令的（`miyu service`）：写错了，说的是它那一层，不提 `miyu ask`。
+    let cases: [(&[&str], &str, &str); 3] = [
         (
-            &["sandbox"],
-            "miyu: 'miyu sandbox' 需要子命令\n提示：可用的有：setup 或 remove",
-            "miyu: 'miyu sandbox' requires a subcommand\nhint: one of: setup or remove",
+            &["service", "frob"],
+            "miyu: 'miyu service' 没有子命令 'frob'\n提示：运行 'miyu service --help' 查看可用命令",
+            "miyu: unknown command 'frob' for 'miyu service'\nhint: see 'miyu service --help'",
         ),
         (
-            &["sandbox", "frob"],
-            "miyu: 'miyu sandbox' 没有子命令 'frob'\n提示：运行 'miyu sandbox --help' 查看可用命令",
-            "miyu: unknown command 'frob' for 'miyu sandbox'\nhint: see 'miyu sandbox --help'",
+            &["session", "export", "--for", "read"],
+            "miyu: 缺少选项 '--md'",
+            "miyu: missing option '--md'",
         ),
         (
-            &["sandbox", "setup", "--owner-home", "/x"],
-            "miyu: 缺少选项 '--owner-sid'",
-            "miyu: missing option '--owner-sid'",
-        ),
-        (
-            &["sandbox", "remove", "extra"],
+            &["service", "disable", "extra"],
             "miyu: 多余的参数 'extra'",
             "miyu: unexpected argument 'extra'",
         ),
@@ -162,8 +158,8 @@ fn nested_commands_have_their_own_sentences() {
     }
     // 最外面那一层写错的，照旧那一句。
     assert_eq!(
-        said(&["sandboxx"], Language::English),
-        "miyu: unknown command 'sandboxx'\nhint: see 'miyu --help'"
+        said(&["servicee"], Language::English),
+        "miyu: unknown command 'servicee'\nhint: see 'miyu --help'"
     );
 }
 

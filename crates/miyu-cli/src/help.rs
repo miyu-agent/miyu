@@ -26,8 +26,6 @@ pub enum Page {
     Config,
     /// `miyu provider -h`，三个子命令的 `-h` 也印它（施工 8-5，Y-13 上从 `login`、`logout` 两页并成一页）。
     Provider,
-    /// `miyu sandbox -h`，`miyu sandbox setup -h`、`miyu sandbox remove -h` 也印它（施工 5-8）。
-    Sandbox,
     /// `miyu service -h`，三个命令的 `-h` 也印它（施工 Z-1 下）。
     Service,
     /// `miyu setup -h`（施工 8-11）。
@@ -67,7 +65,6 @@ pub(crate) fn page_named(name: &str) -> Option<Page> {
         "pkg" => Some(Page::Pkg),
         "config" => Some(Page::Config),
         "provider" => Some(Page::Provider),
-        "sandbox" => Some(Page::Sandbox),
         "service" => Some(Page::Service),
         "session" => Some(Page::Session),
         _ => None,
@@ -99,10 +96,8 @@ pub fn page(language: Language, page: Page) -> &'static str {
         (Language::English, Page::Check) => include_str!("help/en/check.txt"),
         (Language::Chinese, Page::Provider) => include_str!("help/zh/provider.txt"),
         (Language::English, Page::Provider) => include_str!("help/en/provider.txt"),
-        (Language::Chinese, Page::Sandbox) => include_str!("help/zh/sandbox.txt"),
         (Language::Chinese, Page::Service) => include_str!("help/zh/service.txt"),
         (Language::English, Page::Service) => include_str!("help/en/service.txt"),
-        (Language::English, Page::Sandbox) => include_str!("help/en/sandbox.txt"),
         (Language::Chinese, Page::Setup) => include_str!("help/zh/setup.txt"),
         (Language::English, Page::Setup) => include_str!("help/en/setup.txt"),
         (Language::Chinese, Page::Memory) => include_str!("help/zh/memory.txt"),

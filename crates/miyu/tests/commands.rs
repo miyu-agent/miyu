@@ -42,6 +42,22 @@ fn an_unknown_command_is_refused_and_never_sent() {
     );
 }
 
+/// `miyu sandbox` 去掉了（施工 LV-2，Windows 的沙盒用户撤了）：照不认识的命令说，不拉起核心。
+#[test]
+fn the_sandbox_command_is_gone() {
+    let home = Home::new();
+    for args in [&["sandbox", "setup"][..], &["sandbox", "remove"]] {
+        let output = miyu(&home, "C", args);
+        assert_eq!(output.status.code(), Some(2), "{args:?}：{output:?}");
+        assert_eq!(
+            String::from_utf8_lossy(&output.stderr).trim_end(),
+            "miyu: unknown command 'sandbox'\nhint: see 'miyu --help'"
+        );
+        assert!(output.stdout.is_empty(), "{output:?}");
+    }
+    assert!(home.core_log().is_empty(), "核心没起来过");
+}
+
 #[test]
 fn plain_miyu_off_a_terminal_prints_the_help() {
     // 不在终端里（这里标准输入、输出都接着管道）：不拉起界面，印帮助、退出码 2（施工 9-3）。
@@ -127,63 +143,19 @@ fn a_mistake_is_one_error_with_hints_and_exit_code_2() {
     }
 }
 
-/// 数据根里有什么：每个文件、目录的相对路径，排好序。
-#[cfg(not(windows))]
-fn listing(root: &std::path::Path) -> Vec<std::path::PathBuf> {
-    let mut found = Vec::new();
-    let mut pending = vec![root.to_path_buf()];
-    while let Some(dir) = pending.pop() {
-        for entry in std::fs::read_dir(&dir).expect("读得了目录") {
-            let path = entry.expect("读得了").path();
-            if path.is_dir() {
-                pending.push(path.clone());
-            }
-            found.push(path.strip_prefix(root).expect("在数据根里").to_path_buf());
-        }
-    }
-    found.sort();
-    found
-}
-
-/// 别的平台上不用装：`setup`、`remove` 说一句、退出 0，数据根一样东西都没多（施工 5-8）。Windows 上这两条会真装，
-/// 在虚拟机上验（`docs/blueprint/sandbox/windows.md`「守着它的」）。
-#[cfg(not(windows))]
 #[test]
-fn elsewhere_the_sandbox_needs_no_setup() {
+fn a_nested_command_mistake_is_one_error_with_hints_and_exit_code_2() {
     let home = Home::new();
-    let before = listing(home.root.path());
-    for action in ["setup", "remove"] {
-        for (lang, said) in [
-            ("zh_CN.UTF-8", "此平台无需配置沙盒"),
-            ("C", "nothing to set up on this platform"),
-        ] {
-            let output = miyu(&home, lang, &["sandbox", action]);
-            assert_eq!(output.status.code(), Some(0), "{action}：{output:?}");
-            assert_eq!(String::from_utf8_lossy(&output.stdout), format!("{said}\n"));
-            assert!(output.stderr.is_empty(), "{output:?}");
-        }
-    }
-    assert_eq!(listing(home.root.path()), before, "数据根一样东西都没多");
-}
-
-#[test]
-fn a_sandbox_mistake_is_one_error_with_hints_and_exit_code_2() {
-    let home = Home::new();
-    let cases: [(&[&str], &str, &str); 3] = [
+    let cases: [(&[&str], &str, &str); 2] = [
         (
-            &["sandbox"],
-            "zh_CN.UTF-8",
-            "miyu: 'miyu sandbox' 需要子命令\n提示：可用的有：setup 或 remove",
+            &["service", "frob"],
+            "C",
+            "miyu: unknown command 'frob' for 'miyu service'\nhint: see 'miyu service --help'",
         ),
         (
-            &["sandbox", "frob"],
+            &["session", "export", "--for", "read"],
             "C",
-            "miyu: unknown command 'frob' for 'miyu sandbox'\nhint: see 'miyu sandbox --help'",
-        ),
-        (
-            &["sandbox", "setup", "--owner-sid", "S-1-5-21-1-2"],
-            "C",
-            "miyu: missing option '--owner-home'",
+            "miyu: missing option '--md'",
         ),
     ];
     for (args, lang, said) in cases {
@@ -199,30 +171,8 @@ fn a_sandbox_mistake_is_one_error_with_hints_and_exit_code_2() {
 }
 
 #[test]
-fn the_sandbox_help_is_its_page() {
-    let home = Home::new();
-    for (lang, language) in [("zh_CN.UTF-8", Language::Chinese), ("C", Language::English)] {
-        for args in [
-            &["sandbox", "-h"][..],
-            &["sandbox", "--help"],
-            &["sandbox", "setup", "-h"],
-            &["sandbox", "remove", "--help"],
-            &["help", "sandbox"],
-        ] {
-            let output = miyu(&home, lang, args);
-            assert!(output.status.success(), "{args:?}：{output:?}");
-            assert_eq!(
-                String::from_utf8_lossy(&output.stdout),
-                page(language, Page::Sandbox),
-                "{lang} {args:?}"
-            );
-        }
-    }
-}
-
-#[test]
 fn the_program_calls_itself_miyu_whatever_its_file_is_called() {
-    // Windows 上可执行文件叫 `miyu.exe`，clap 默认照文件名说话，会说成「miyu.exe sandbox …」（施工 5-8 在 CI 上查出来的）。
+    // Windows 上可执行文件叫 `miyu.exe`，clap 默认照文件名说话，会说成「miyu.exe service …」（施工 5-8 在 CI 上查出来的）。
     // 换个名字跑，这台机器上也照得出来。换名字用硬链接，放在主程序旁边（test-ext 补）：拷的时候开着写的句柄，别的测试这时
     // 拉起的子进程在 exec 以前也开着它，接着跑刚拷好的这个，Linux 回 `ETXTBSY`。临时目录可能和主程序不在一个文件系统上
     // （tmpfs），连不成，所以放主程序旁边；连不成的才拷。
@@ -237,7 +187,7 @@ fn the_program_calls_itself_miyu_whatever_its_file_is_called() {
         std::fs::copy(MIYU, renamed).expect("拷得了主程序");
     }
     let output = Command::new(renamed)
-        .arg("sandbox")
+        .args(["service", "frob"])
         .env("MIYU_HOME", home.root.path())
         .envs(crate::support::offline(home.root.path()))
         .env("LANG", "C")
@@ -248,7 +198,7 @@ fn the_program_calls_itself_miyu_whatever_its_file_is_called() {
     assert_eq!(output.status.code(), Some(2), "{output:?}");
     assert_eq!(
         String::from_utf8_lossy(&output.stderr),
-        "miyu: 'miyu sandbox' requires a subcommand\nhint: one of: setup or remove\n"
+        "miyu: unknown command 'frob' for 'miyu service'\nhint: see 'miyu service --help'\n"
     );
 }
 

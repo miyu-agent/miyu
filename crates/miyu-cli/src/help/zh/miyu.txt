@@ -32,7 +32,6 @@
 系统：
   service <命令>      管理后台服务
   upgrade             升级 Miyu
-  sandbox <命令>      配置或移除沙盒用户（Windows）
 
 选项：
   -h, --help     显示帮助

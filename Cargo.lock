@@ -2339,13 +2339,8 @@ dependencies = [
 name = "miyu-sandbox"
 version = "2026.11.0"
 dependencies = [
- "base64 0.22.1",
- "getrandom 0.4.3",
  "landlock",
  "libc",
- "miyu-kernel",
- "miyu-pipe",
- "miyu-store",
  "mxc-sdk",
  "rustix",
  "serde",

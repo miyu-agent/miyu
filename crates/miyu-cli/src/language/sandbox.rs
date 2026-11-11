@@ -1,52 +1,12 @@
-//! `miyu sandbox setup`、`miyu sandbox remove` 给人看的字（`docs/blueprint/sandbox/windows.md`「给人看的字」，施工 5-8；CL-2 下
-//! 照设计 47 第三节改：结果行动词打头、不带句号，没成的写成报错加提示）。系统的原话、路径里的控制字符换成 `�`：它们可能
-//! 混着终端的控制序列。
+//! 沙盒用不了时给人看的字（施工 5-4 下，设计 47）。原因里的控制字符换成 `�`：它们可能混着终端的控制序列。
 
-use miyu_sandbox::install::{InstallError, USER};
 use miyu_sandbox::{Platform, Unusable};
 use miyu_store::human::clean;
 
 use super::Language;
-use crate::diagnostic::{Level, Problem};
-use crate::sandbox::{Said, Which};
+use crate::diagnostic::Problem;
 
 impl Language {
-    /// 走完了要说的几行：成了的一行结果，没成的照报错写（`miyu: ` 打头、提示另起一行）。
-    pub(crate) fn sandbox(&self, said: &Said) -> Vec<String> {
-        let chinese = *self == Language::Chinese;
-        let done = match said {
-            Said::Done(Which::Setup) => match chinese {
-                true => "已创建沙盒用户",
-                false => "created the sandbox user",
-            },
-            Said::Done(Which::Remove) => match chinese {
-                true => "已移除沙盒用户",
-                false => "removed the sandbox user",
-            },
-            Said::NotNeeded => match chinese {
-                true => "此平台无需配置沙盒",
-                false => "nothing to set up on this platform",
-            },
-            Said::NeedsAdmin(which) => {
-                let run = format!("miyu sandbox {}", which.name());
-                let problem = match chinese {
-                    true => {
-                        Problem::new("需要管理员权限").hint(format!("以管理员身份运行 '{run}'"))
-                    }
-                    false => Problem::new("administrator rights required")
-                        .hint(format!("run '{run}' as administrator")),
-                };
-                return problem.lines(*self, Level::Error);
-            }
-            Said::Failed(which, error) => {
-                return self
-                    .sandbox_failed(*which, error)
-                    .lines(*self, Level::Error);
-            }
-        };
-        vec![done.to_string()]
-    }
-
     /// `miyu ask` 开头，沙盒用不了的告警（施工 5-4 下，设计 47）：原因 `reason` 是协议上的写法，照这台机器的系统 `platform`
     /// 写成人话，能修的另起一行提示；不认得的原因照原样写。
     pub(crate) fn unsandboxed(&self, reason: &str, platform: Platform) -> Problem {
@@ -110,31 +70,5 @@ impl Language {
             }
         };
         (why.to_string(), fix)
-    }
-
-    /// 没成的那一件。
-    fn sandbox_failed(&self, which: Which, error: &InstallError) -> Problem {
-        let chinese = *self == Language::Chinese;
-        Problem::new(match error {
-            InstallError::Administrator => match chinese {
-                true => format!("已存在名为 {USER} 的管理员账号，未做改动"),
-                false => {
-                    format!("an administrator account named {USER} already exists; left unchanged")
-                }
-            },
-            InstallError::NotDataRoot { path } => match chinese {
-                true => format!("{} 不是 Miyu 的数据根", clean(path)),
-                false => format!("{} is not a Miyu data root", clean(path)),
-            },
-            InstallError::Failed { step, detail } => {
-                let (step, detail) = (clean(step), clean(detail));
-                match (chinese, which) {
-                    (true, Which::Setup) => format!("配置沙盒失败：{step}：{detail}"),
-                    (true, Which::Remove) => format!("移除沙盒失败：{step}：{detail}"),
-                    (false, Which::Setup) => format!("sandbox setup failed: {step}: {detail}"),
-                    (false, Which::Remove) => format!("sandbox removal failed: {step}: {detail}"),
-                }
-            }
-        })
     }
 }

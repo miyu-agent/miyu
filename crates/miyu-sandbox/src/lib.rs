@@ -10,7 +10,6 @@
 //!   （[`BUILD`]，施工 5-16 再补）；
 //! - [`Availability`]：这台机器上的沙盒能不能用、为什么（[`Unusable`]，施工 5-4 下）；
 //! - [`lifeline`]：核心没了，它起的命令跟着没（施工 7-8）：Unix 上每个组一个看门的，Windows 上核心进作业对象；
-//! - [`install`]：装沙盒要管理员权限的那一次，Windows 上建、撤专用的沙盒用户（施工 5-8，`docs/blueprint/sandbox/windows.md`）；
 //! - `testkit`：测试用的，cargo 编出来的助手在哪（施工 5-4 上）；
 //! - [`deniable`]：交给 MXC 的禁止路径先去掉被别的进程独占着的文件（施工 SW-1，Windows 上照 `busy` 问）；
 //! - [`carve()`]：藏起来的里面有要透出来的，改禁它旁边的（施工 SW-6，Windows 上 MXC 的禁止压过嵌在里面的放开）；
@@ -24,7 +23,6 @@ mod availability;
 mod busy;
 mod carve;
 mod cmdline;
-pub mod install;
 pub mod lifeline;
 #[cfg(target_os = "linux")]
 #[doc(hidden)]

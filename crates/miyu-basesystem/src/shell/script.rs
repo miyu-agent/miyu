@@ -29,16 +29,12 @@
 //!   [`miyu_sandbox::Sandboxed::uncached`]），照施工 V-47 以前让助手从头建。
 //! - 等开头写的秒数，到时整组杀掉；退出码不是 0 的算出错。访问类别是执行：照跑命令的规矩进沙盒、问人；进沙盒的，规格里
 //!   单独放开脚本这一个文件只读（施工 X-12 下：自己放的、自己装的包带的在数据根里，沙盒藏着）。
-//! - 这一次在沙盒外跑（施工 5-14 改下，同 `shell`）：登记时参数里多一格布尔 `outside_sandbox`（说明是
-//!   `software/basesystem/script/outside-sandbox.txt`），写了 `true` 的照越过沙盒问人；交给脚本之前去掉这一格。脚本自己的参数里
-//!   本来就有这一格的不加、不覆盖，照原样交给它，这个脚本就只能在沙盒里跑。
 
 use std::collections::BTreeMap;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use miyu_kernel::raw::RawJson;
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
 use miyu_policy::script::ScriptHead;
@@ -77,9 +73,6 @@ const ARGS: &str = "MIYU_ARGS_JSON";
 /// 32767 还有两千多（32 KiB 的 ASCII 参数正好超）。长的只在标准输入里。
 const ARGS_IN_ENV: usize = 30 * 1024;
 
-/// 这一次在沙盒外跑的那一格（施工 5-14 改下，同 `shell`）。
-const OUTSIDE: &str = "outside_sandbox";
-
 /// 调用的场所交给脚本的环境变量（施工 X-43）。
 const CALLER_VENUE: &str = "MIYU_CALLER_VENUE";
 
@@ -98,8 +91,6 @@ pub(crate) struct Script {
     venues: Option<Venues>,
     /// 来处：包的编号，数据根里自己放的是 `~home`（施工 X-44：状态目录照它分）。
     source: String,
-    /// 参数里那一格 `outside_sandbox` 是不是登记时加的（施工 5-14 改下）：脚本自己声明了的不算。
-    outside: bool,
     file: PathBuf,
     timeout: u64,
     results: Results,
@@ -120,18 +111,10 @@ impl Script {
         file: PathBuf,
         source: &str,
     ) -> Result<Script, LoadError> {
-        let unreadable = |why: String| LoadError {
+        let parameters = serde_json::from_str(&head.parameters).map_err(|error| LoadError {
             file: file.clone(),
-            why,
-        };
-        let mut parameters: serde_json::Value = serde_json::from_str(&head.parameters)
-            .map_err(|error| unreadable(error.to_string()))?;
-        let outside = offer_outside(
-            &mut parameters,
-            load::raw(resources, "script", "outside-sandbox")?,
-        );
-        let parameters = RawJson::of(&parameters)
-            .ok_or_else(|| unreadable("parameters are not JSON".to_string()))?;
+            why: error.to_string(),
+        })?;
         let text = |name: &str, fields: &[&str]| load::text(resources, "script", name, fields);
         Ok(Script {
             spec: Spec {
@@ -148,7 +131,6 @@ impl Script {
             display_name: head.display_name.clone(),
             venues: head.venues.as_deref().map(Venues::of),
             source: source.to_string(),
-            outside,
             timeout: head.timeout,
             results: Results::load(resources)?,
             timed_out: text("timed-out", &["seconds"])?,
@@ -361,44 +343,6 @@ impl Script {
     }
 }
 
-impl Script {
-    /// 交给脚本的参数（施工 5-14 改下）：登记时加了 `outside_sandbox` 的去掉这一格，脚本只拿到自己声明的；读不懂的、没写这一格的
-    /// 照原样。
-    fn passed(&self, call: &Call) -> String {
-        if !self.outside {
-            return call.args.clone();
-        }
-        match serde_json::from_str::<serde_json::Value>(&call.args) {
-            Ok(serde_json::Value::Object(mut args)) => match args.remove(OUTSIDE) {
-                Some(_) => serde_json::Value::Object(args).to_string(),
-                None => call.args.clone(),
-            },
-            _ => call.args.clone(),
-        }
-    }
-}
-
-/// 参数 `parameters` 里加上 `outside_sandbox`（说明是 `description`）：是对象、自己没声明这一格的才加（`properties` 没有的建上），
-/// 交回加了没有。
-fn offer_outside(parameters: &mut serde_json::Value, description: String) -> bool {
-    let Some(object) = parameters.as_object_mut() else {
-        return false;
-    };
-    let properties = object
-        .entry("properties")
-        .or_insert_with(|| serde_json::json!({}));
-    match properties.as_object_mut() {
-        Some(properties) if !properties.contains_key(OUTSIDE) => {
-            properties.insert(
-                OUTSIDE.to_string(),
-                serde_json::json!({"type": "boolean", "description": description}),
-            );
-            true
-        }
-        _ => false,
-    }
-}
-
 impl Tool for Script {
     fn spec(&self) -> &Spec {
         &self.spec
@@ -421,21 +365,14 @@ impl Tool for Script {
     fn asking(&self, call: &Call) -> Vec<(&'static str, String)> {
         vec![
             ("script", self.spec.name.clone()),
-            ("args", self.passed(call)),
+            ("args", call.args.clone()),
         ]
-    }
-
-    /// 这次调用要在沙盒外跑（施工 5-14 改下）：登记时加了那一格、参数里写了 `true` 的。
-    fn outside_sandbox(&self, call: &Call) -> bool {
-        self.outside
-            && serde_json::from_str::<serde_json::Value>(&call.args)
-                .is_ok_and(|args| args.get(OUTSIDE) == Some(&serde_json::Value::Bool(true)))
     }
 
     fn run(&self, call: Call, progress: Progress) -> Running<'_> {
         Box::pin(async move {
             let cache = self.cache(&call);
-            let args_json = self.passed(&call);
+            let args_json = call.args.clone();
             let made = match std::fs::create_dir_all(&cache).map(|()| Folder::create(&cache)) {
                 Ok(folder) => {
                     let state = self.state(&call);

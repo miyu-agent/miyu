@@ -37,7 +37,6 @@ fn reserved_ids_are_exactly_the_names_the_core_uses_beside_packages() {
                 root.secrets_file(),
                 root.access_file(),
                 root.logins_file(),
-                root.sandbox_record_file(),
                 root.removed_markers().join(x),
                 root.leftover_settings(x),
             ],
@@ -80,7 +79,6 @@ fn reserved_ids_are_exactly_the_names_the_core_uses_beside_packages() {
                 root.logs().join("core.log"),
                 root.logs().join("memory.jsonl"),
                 root.mcp_stderr(x),
-                root.sandbox_report_file(),
             ],
         ),
         (top.join("tmp"), vec![root.unpack_staging().join(x)]),
@@ -99,6 +97,9 @@ fn reserved_ids_are_exactly_the_names_the_core_uses_beside_packages() {
             }
         }
     }
+    // `var/log/sandbox/`：Windows 上装沙盒用户没成的原因以前放这里（施工 5-8；LV-2 删了）。装过的机器上这个目录还在，
+    // 名字照旧保留，不让给包。
+    used.insert("sandbox".to_string());
     let reserved: BTreeSet<String> = RESERVED.iter().map(|name| (*name).to_string()).collect();
     assert_eq!(used, reserved);
 }

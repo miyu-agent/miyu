@@ -2,7 +2,7 @@
 
 ### 是什么
 
-Windows 上每条命令怎么关进沙盒（施工 5-9 改上，`11-权限与沙盒.md` A3 的 2026-10-20 改：用微软的 MXC）。助手（`miyu-sandbox.exe`）照规格拼一个 MXC 的请求（`mxc-sdk` 1.0.1，ProcessContainer），把命令关进基础容器（BaseContainer）里起、等它，标准输入、输出、错误原样转，照它的退出码退出。不用沙盒用户、不要管理员（5-8 的沙盒用户撤不撤在 5-9 改下）。
+Windows 上每条命令怎么关进沙盒（施工 5-9 改上，`11-权限与沙盒.md` A3 的 2026-10-20 改：用微软的 MXC）。助手（`miyu-sandbox.exe`）照规格拼一个 MXC 的请求（`mxc-sdk` 1.0.1，ProcessContainer），把命令关进基础容器（BaseContainer）里起、等它，标准输入、输出、错误原样转，照它的退出码退出。不用沙盒用户、不要管理员（5-8 的沙盒用户在施工 LV-2 撤了，`sandbox/windows.md`）。
 
 和 Linux、macOS 一样：整盘能读（A4）、只能写规格给的、数据根和私密目录读写都不行、网络不管（A5）。
 
@@ -59,5 +59,5 @@ CI 的 Windows 机器上收不住（GitHub 的 Windows 机器有桌面会话，M
 
 ### 还没有的
 
-- 外部身份的会话的 `read`、撤不撤 5-8 的沙盒用户、git 的 `safe.directory`：5-9 改下。
+- 外部身份的会话的 `read`、git 的 `safe.directory`：5-9 改下。
 - 用着用着基础容器没了（系统更新）：那一条照实拒绝，不重探；要重探得重开核心。

@@ -32,7 +32,6 @@ Settings:
 System:
   service <command>   Manage the background service
   upgrade             Upgrade Miyu
-  sandbox <command>   Set up or remove the sandbox user (Windows)
 
 Options:
   -h, --help     Print help

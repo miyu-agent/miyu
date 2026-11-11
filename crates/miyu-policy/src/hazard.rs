@@ -8,11 +8,9 @@
 mod container;
 mod lex;
 mod paths;
-mod prefix;
 mod rules;
 mod vars;
 
-pub use prefix::prefix;
 pub use rules::assess;
 
 /// 认出来的是哪一种。

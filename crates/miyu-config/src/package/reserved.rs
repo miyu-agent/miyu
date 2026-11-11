@@ -4,6 +4,7 @@ use super::{Code, Problem};
 
 /// 核心自己在数据根的 `etc/`、`var/lib/`、`var/cache/`、`var/log/`、`tmp/`、`run/` 这几层用到的名字（设计 55 第三节第 3 条）：包
 /// 各占一个 `<编号>/`，这些不能用作包的编号。`miyu-store` 的测试照各层的方法推一遍，和这张表对。
+/// `sandbox` 是以前用过的（`var/log/sandbox/`，施工 5-8 的 Windows 沙盒用户，LV-2 删了）：装过的机器上目录还在，照旧保留。
 pub const RESERVED: [&str; 19] = [
     "private",
     "removed",

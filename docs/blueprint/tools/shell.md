@@ -34,7 +34,7 @@
 ```json
 {
   "description": "Execute a command with {shell} and return its output. Every call starts in the working directory, so cd does not carry over to the next call.",
-  "parameters": {"type":"object","properties":{"command":{"type":"string"},"description":{"type":"string","description":"Short title, a few words."},"timeout":{"type":"integer","description":"Milliseconds, up to 600000. Default 120000."},"run_in_background":{"type":"boolean","description":"No timeout. Returns a job id at once."},"watch":{"type":"boolean","description":"Implies run_in_background. Each stdout line wakes you."},"outside_sandbox":{"type":"boolean","description":"Rerun a command the sandbox blocked. Setting it asks the user for approval."}},"required":["command","description"]}
+  "parameters": {"type":"object","properties":{"command":{"type":"string"},"description":{"type":"string","description":"Short title, a few words."},"timeout":{"type":"integer","description":"Milliseconds, up to 600000. Default 120000."},"run_in_background":{"type":"boolean","description":"No timeout. Returns a job id at once."},"watch":{"type":"boolean","description":"Implies run_in_background. Each stdout line wakes you."}},"required":["command","description"]}
 }
 ```
 
@@ -48,11 +48,9 @@
 | `timeout` | 否 | 毫秒。没给、给了 0，是 120000；大过 600000 的照 600000。要是不小于 0 的整数，负数参数不对。后台的不看它，照样查写法 |
 | `run_in_background` | 否 | 布尔，没写是假。真的放到后台（施工 7-3，下面「后台」）。写成字符串的（`"true"`）内核照参数格式修正成布尔。预设关了「后台运行」的会话工具面上没有这一项（施工 T-1 上，`presets.md`「怎么走」；施工 BS-1 上起照 `Tool::background_parameters` 去掉，不看名字） |
 | `watch` | 否 | 布尔，没写是假。真的：监视，照放到后台走（和 `run_in_background` 一起写、只写它都一样），标准输出每出一批行记一条 `job.lines`、叫醒她（施工 MN-1 上，设计 56，下面「后台」第 9 条）。说明一句 `Implies run_in_background. Each stdout line wakes you.`。和 `run_in_background` 一样只在有后台时给，预设关了「后台运行」的会话工具面上没有 |
-| `outside_sandbox` | 否 | 布尔，没写是假。真的：这一次要在沙盒外跑，先问人（施工 D-4，2026-10-07 项目主人定，照 Claude Code 的 `dangerouslyDisableSandbox`）。说明写明它重跑沙盒挡下的命令、带上它就是在向人要许可（施工 D-4 补；原来还写「被挡下就直接重跑、别先在聊天里问」，施工 TX-1 照 `26-提示词.md` J13 去掉这句引导，2026-10-30 项目主人照推荐定）。工具自己不看它决定套不套沙盒，只报给权限策略和执行器（`Tool::outside_sandbox`）；写成字符串的照参数格式修正成布尔 |
 
-- 别的参数不认，也不报错。
+- 别的参数不认，也不报错。施工 D-4 加过一格 `outside_sandbox`（这一次在沙盒外跑、先问人），随「工作区」一级去掉了（`11-权限与沙盒.md` A16，施工 LV-2）：旧会话里带着它的调用照常跑。
 - 不报要碰的路径。权限策略照访问类别判：完全放开放行；工作区、只读两级，沙盒能用就放行、在沙盒里跑，用不了的问人（施工 5-4 上，`session/guard.md`）。
-- 写了 `outside_sandbox` 的（施工 D-4）：报「这一次要在沙盒外跑」（`Tool::outside_sandbox`）。权限策略：完全放开放行，工作区问人、不提规则，只读拒绝（`session/guard.md` 第四节）。执行器照它不写沙盒的规格（`Call.sandbox` 是空的），所以只有问过人、人允许了，命令才在沙盒外跑。
 - 问人时交给说明的几格（`Tool::asking`，施工 D-4）：`title` 是 `description`，`command` 原样。
 
 ### 怎么走
@@ -246,17 +244,6 @@ Exit code 2
 5. 认：`rm`、`rmdir`、`unlink`、`shred`、`find … -delete`（`-exec rm`）的目标照字面换成绝对路径；通配的照它删得到的最大的那一个（施工 AS-9，通配只看最后一段）：整段都是通配的（`*`、`.*`、`?*`、`{*,.*}`）照删它所在的目录，`前缀*` 照删同一层里名字合前缀的家目录、数据根、工作目录（或通往它们的那一级），根下面的照根下那一级，有尾巴的（`*.log`）照原样；是根、家目录或它上面的、根下一层、数据根或装着它的（默认工作区 `workspace/` 里面除外）、工作目录或它上面的；带变量、命令替换又是整个往下删的照删不清，经 `xargs` 喂目标、整个往下删的也照删不清（施工 AS-9）；git 跳过 `-C`、`-c`、`--git-dir`、`--work-tree`、`--namespace` 和别的选项再认子命令：`push` 带 `-f`、`--force*`、`+分支`，`reset --hard`，`clean -f`，`checkout .`（不是 `-b`），`restore .`（只带 `--staged`/`-S` 的不算，带了 `--worktree`/`-W` 的照算，施工 AS-9），`stash drop`、`stash clear`；`mkfs*`、`wipefs`、`mke2fs`、`blkdiscard`、`mkswap`、`sgdisk -Z`/`--zap-all`，`dd of=`、`>`、`tee`、`shred`、`cp`（最后一个参数）写 `/dev/sd*` 这类裸设备（施工 AS-9 加上 LVM、LUKS 的 `/dev/mapper/…`、`/dev/dm-…`，软 RAID `/dev/md…`，`/dev/loop…`、`/dev/nbd…`）；`shutdown`、`reboot`、`halt`、`poweroff`、`init 0`、`init 6`、`systemctl poweroff` 这类；`curl`、`wget` 接到读标准输入的 shell 或解释器，`bash <(curl …)`、`sh -c "$(curl …)"`，在这个 shell 里执行的 `source <(curl …)`、`. <(wget …)`、`eval "$(curl …)"`（施工 AS-9）；容器（施工 5-17 三补，`docker`、`podman`、`nerdctl` 的 `run`、`create`、`container run`）：`--privileged`、`--cap-add` 加 `ALL`/`SYS_ADMIN`、把宿主的 `/`、`/dev`、`/sys` 整个挂进去（`-v`、`--volume`、`--mount` 的 `source`）是 `container_host`（拒），`--device`、`--device-cgroup-rule`、`--pid`/`--net`/`--network`/`--ipc` 写 `host`、挂 `/dev`、`/sys` 下面的某一个是 `container_share`（问人）；入口是 systemd 本身不拦（不带特权的 `podman --systemd=always` 是测 systemd 单元该用的）。
 6. 几处都认出来的，交回拒的那一种，都是问的交回最先认出的；灭顶的那几种带写给她的一句和说法（上面的表）。
 
-### 命令前缀（施工 SB-3）
-
-报给权限策略（`Tool::prefix`，`session/guard.md` 第四条）：越过沙盒问人时「此目录不再询问」的规则带上它，选了的这个会话在这个目录下同一前缀的命令越过沙盒不再问。前缀是规则能放开多大，取得宁可窄，取不清的不报（照旧每次问）。只认 bash、zsh 的写法，同高危；照 `miyu_policy::hazard::prefix`，用高危那一套拆命令：
-
-1. 第一个词照写的原样，不去路径：`./docker`、`/tmp/x/docker` 和 `docker` 是三个前缀（放行过 `docker` 不放行本地叫 docker 的脚本）。
-2. 「程序 + 子命令」那几个（`git`、`npm`、`pnpm`、`yarn`、`bun`、`npx`、`cargo`、`rustup`、`docker`、`podman`、`kubectl`、`helm`、`go`、`pip`、`pip3`、`uv`、`poetry`、`systemctl`、`brew`、`gh`）带上紧跟着的子命令：`docker ps`、`npm run`。紧跟着的是选项（`git -C dir status`、`docker --version`）的不报：选项后面哪个词是子命令要照每个程序的写法认，认错了规则就放大了。
-3. 不报：开头有变量赋值的（`PATH=…`、`LD_PRELOAD=…` 能把同一个前缀换成别的程序）；第一个词是包一层的（`env`、`sudo`、`doas`、`xargs`、`nohup`、`timeout`、`time`、`nice`、`exec`、`eval`、`command`、`builtin`、`source`、`.`、`sh`、`bash`、`zsh`、`fish`、`dash`：放行一次 `timeout` 就等于放行一切）；引号外有子 shell、花括号（`${名字}` 不算）、命令替换（`$( )`、反引号、`<( )`，双引号里的也算）的；前缀的词里有变量的。
-4. `|`、`&&`、`||`、`;`、`&`、换行连起来的：每一段的前缀都一样才报这一个，有一段不同就不报。只有重定向的空段不算一段。
-
-只认字面，挡不住刻意绕的，防幻觉够用（2026-10-20 项目主人定）。
-
 ### 出错
 
 | 什么时候 | 给她的字 | 说法 |
@@ -332,8 +319,7 @@ Exit code 2
 | `crates/miyu-basesystem/tests/human.rs` | 每一种结果的说法，两种语言都换得出字 |
 | `crates/miyu-session/tests/write.rs` | 会话里真的跑：结果进日志，给她的是输出加退出码，说法里有退出码，没有效果 |
 | `crates/miyu-session/tests/guard.rs` | 工作区这一级执行命令不问、只读时问（没人能确认就拒绝） |
-| `crates/miyu-basesystem/tests/shell.rs` 的 `shell_says_when_it_wants_out_and_what_to_show`（施工 D-4） | 写了 `outside_sandbox` 的报要在沙盒外跑，没写的、写了假的、参数不对的不报；问人时交 `command`、`title`，参数不对的交空的 |
-| `crates/miyu-session/tests/outside_sandbox.rs`（施工 D-4） | 工作区问人、允许一次的那一次不套沙盒；只读拒绝；完全放开不问；真经助手跑：允许以后写得进工作区以外 |
+| `crates/miyu-basesystem/tests/shell.rs` 的 `shell_says_what_to_show_when_asking`（施工 D-4）、`a_call_with_the_retired_outside_sandbox_parameter_still_runs`（施工 LV-2） | 问人时交 `command`、`title`，参数不对的交空的；旧会话里带着 `outside_sandbox`（施工 LV-2 去掉的参数）的调用照常跑 |
 | `crates/miyu-call/src/leftovers/tests.rs`（施工 WC-1） | 留下的目录：名字对得上、是目录、进程不在了的整个删，名字差一点的、文件、进程还在的、不是自己的不动；进程号只认全是数字、放得进 `u32` 的 |
 | `crates/miyu-pipe/src/process/tests.rs`（施工 WC-1，只在 Windows 上） | 自己在跑；等它退了的子进程不在，句柄关了也不在；没有的进程号不在 |
 | `crates/miyu-call/src/reply/tests.rs`（施工 M-3） | 结局写成退出码和字：一行 JSON、中文不转义；丢了图的说一句；出错、被拒、要问人、被打断、父级不在了各自的码和话；写错名字的指出对的；调不了的列出能调的；参数不对的跟上格式；`--schema` 的样子 |

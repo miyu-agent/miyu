@@ -102,9 +102,6 @@ struct Args {
     /// 监视（施工 MN-1 上）：照放到后台走，标准输出、标准错误分开读，标准输出每出一批行记 `job.lines`、叫醒她。
     #[serde(default)]
     watch: bool,
-    /// 这一次要在沙盒外跑（施工 D-4）：只报给权限策略和执行器，套不套沙盒照 `Call::sandbox`。
-    #[serde(default)]
-    outside_sandbox: bool,
 }
 
 impl Shell {
@@ -312,10 +309,6 @@ impl Tool for Shell {
         vec![miyu_tool::RUN_IN_BACKGROUND, WATCH]
     }
 
-    fn outside_sandbox(&self, call: &Call) -> bool {
-        serde_json::from_str::<Args>(&call.args).is_ok_and(|args| args.outside_sandbox)
-    }
-
     /// 照命令的字面认高危（施工 5-17，`miyu_policy::hazard`）：家目录、数据根照这次调用带的，工作目录照家目录换成绝对路径。
     /// 只认 bash、zsh 的命令。
     fn hazard(&self, call: &Call) -> Option<Hazard> {
@@ -370,15 +363,6 @@ impl Tool for Shell {
             code: kind.code(),
             refused,
         })
-    }
-
-    /// 命令前缀（施工 SB-3，`miyu_policy::hazard::prefix`）：只认 bash、zsh 的命令，同高危。
-    fn prefix(&self, call: &Call) -> Option<String> {
-        if !self.program.kind.posix() {
-            return None;
-        }
-        let args = serde_json::from_str::<Args>(&call.args).ok()?;
-        miyu_policy::hazard::prefix(&args.command)
     }
 
     fn asking(&self, call: &Call) -> Vec<(&'static str, String)> {

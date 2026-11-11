@@ -28,7 +28,7 @@ miyu-store = { path = "../miyu-store" }
 miyu-source = { path = "../miyu-source" }
 # `miyu pkg pack` 认、量、缩包自带的图标（施工 F-18 上）：同一份认图、缩图。
 miyu-tool = { path = "../miyu-tool" }
-# `miyu sandbox setup`、`remove`：Windows 上装好、撤掉沙盒用户（施工 5-8）。
+# `miyu ask` 说沙盒用不上时照平台说怎么办（`ask/steps.rs`）。
 miyu-sandbox = { path = "../miyu-sandbox" }
 # `miyu provider login`、`miyu setup` 贴 key 时自己管终端的设置（施工 8-5 补，`config.md` 第十一条第 4 条）：Unix 上关
 # ECHO、ISIG、ICANON 读 termios；工作区里本来就有（`miyu-basesystem`、`miyu-fs`、`miyu-ipc` 用过别的功能）。
@@ -49,7 +49,7 @@ tracing = { version = "0.1", default-features = false, features = ["std"] }
 tokio = { version = "1", features = ["io-std", "io-util", "macros", "rt", "signal", "sync", "time"] }
 
 [target.'cfg(windows)'.dependencies]
-# `miyu sandbox setup` 替谁装：当前用户的 SID（施工 5-8）。
+# `miyu call` 连核心的命名管道：只要连上、读写的权限（`call.rs`）。
 miyu-pipe = { path = "../miyu-pipe" }
 # 贴 key 时关控制台的回显、行输入、`Ctrl+C` 的处理（施工 8-5 补）：工作区里本来就有（`miyu-ipc`、`miyu-pipe`、
 # `miyu-sandbox` 用别的功能）。

@@ -10,7 +10,7 @@
 
 现在 Linux（Landlock，施工 5-2、5-3）、macOS（Seatbelt，施工 5-7）、Windows（MXC 的基础容器，施工 5-9 改上，`sandbox/windows-run.md`）上照规格收紧；Windows 上起不了基础容器的机器探测报的手段是空的，核心照沙盒用不了办（施工 5-4 上）。
 
-这一页管各平台共用的：规格、助手的命令行和退出码、探测、找助手、`shell` 怎么经助手起。各平台怎么收紧各有一页，随那一步的施工写：Linux `sandbox/linux.md`（5-2 起），macOS `sandbox/macos.md`（5-7），Windows `sandbox/windows.md`（装，5-8）、`sandbox/windows-run.md`（跑，5-9 改上）。沙盒只管读写权限，不管网络（2026-09-29 项目主人定）。助手里收紧的代码也是各平台一个文件，几条线可以同时施工，各改各的（2026-09-28 项目主人同意分线并行）。
+这一页管各平台共用的：规格、助手的命令行和退出码、探测、找助手、`shell` 怎么经助手起。各平台怎么收紧各有一页，随那一步的施工写：Linux `sandbox/linux.md`（5-2 起），macOS `sandbox/macos.md`（5-7），Windows `sandbox/windows-run.md`（跑，5-9 改上；不用装，`sandbox/windows.md`）。沙盒只管读写权限，不管网络（2026-09-29 项目主人定）。助手里收紧的代码也是各平台一个文件，几条线可以同时施工，各改各的（2026-09-28 项目主人同意分线并行）。
 
 ### 在哪
 

@@ -118,6 +118,44 @@ async fn everything_is_checked_from_disk_layer_by_layer() {
     );
 }
 
+/// 拆掉的配置项，老配置里还留着的（施工 LV-2：`sandbox.tools.<名字>`）：照不在清单里的键报，只是警告，核心照常起、别的项照常读。
+#[tokio::test]
+async fn keys_removed_with_the_workspace_level_only_warn() {
+    let home = Home::new();
+    home.write(
+        "etc/config.toml",
+        "[sandbox.tools]\nweather = \"~home\"\nshell = \"basesystem\"\n",
+    );
+    let mut client = connected(&home).await;
+    let reply = client.call("k1", "check", json!({})).await;
+    let seen: Vec<_> = reply["result"]["problems"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{reply}"))
+        .iter()
+        .map(|problem| (brief(problem), problem["key"].as_str().map(str::to_string)))
+        .collect();
+    let warned = |line: u64, key: &str| {
+        (
+            (
+                "config".to_string(),
+                "etc/config.toml".to_string(),
+                "unknown_key".to_string(),
+                "warning".to_string(),
+                Some(line),
+            ),
+            Some(key.to_string()),
+        )
+    };
+    assert_eq!(
+        seen,
+        [
+            warned(2, "sandbox.tools.weather"),
+            warned(3, "sandbox.tools.shell")
+        ],
+        "{reply}"
+    );
+}
+
 #[tokio::test]
 async fn one_file_is_checked_by_where_it_is() {
     let home = Home::new();

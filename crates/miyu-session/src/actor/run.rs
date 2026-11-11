@@ -19,7 +19,6 @@ impl Actor {
             cwd,
             dirs,
             permission,
-            grants: _,
             cause,
             asked,
         } = action

@@ -16,10 +16,8 @@
 //! - [`Rename`]：`miyu rename` 的参数；[`rename()`]：给会话起名，交回退出码；[`rename_on`]：在连上了的连接上起一次名，
 //!   测试照它在进程里走一遍（施工 3-8 五补）；
 //! - [`Session`]：`miyu session export`、`import` 的参数；[`session()`]：导出、导入会话的原始包，交回退出码；[`session_on`]：在连上了的连接上办一次，测试照它在进程里走一遍（施工 SE-1 中上）；
-//! - [`Sandbox`]：`miyu sandbox setup`、`remove` 的参数；[`sandbox()`]：Windows 上装好、撤掉沙盒用户，交回退出码
 //! - [`Service`]：`miyu service enable`、`disable`、`status` 的参数；[`service()`]：替本人装、卸、看开机或登录就起核心的服务，交回退出码（施工 Z-1 下）
-//! - [`Upgrade`]：`miyu upgrade` 的参数；[`upgrade()`]：升级 Miyu 本身，或者说该用哪个包管理器，交回退出码（施工 RL-4）
-//!   （施工 5-8）；
+//! - [`Upgrade`]：`miyu upgrade` 的参数；[`upgrade()`]：升级 Miyu 本身，或者说该用哪个包管理器，交回退出码（施工 RL-4）；
 //! - [`Config`]：`miyu config` 的参数；[`config()`]：看配置一次，交回退出码；[`config_on`]：在连上了的连接上办一次，
 //!   测试照它在进程里走一遍（施工 8-2）；
 //! - [`Provider`]（子命令 [`Login`]、[`ProviderList`]、[`Logout`]）：`miyu provider login`、`list`、`logout` 的参数；[`login()`]：存、列、删一次 key，交回退出码；[`login_on`]：
@@ -51,7 +49,6 @@ mod recap;
 mod redo;
 mod rename;
 mod rpc;
-mod sandbox;
 mod schedule;
 mod service;
 mod session;
@@ -85,7 +82,6 @@ pub use pkg::{Pkg, PkgCommand, PkgPlan, pkg, pkg_on};
 pub use recap::{Recap, RecapPlan, recap, recap_on};
 pub use redo::{Redo, RedoPlan, redo, redo_on};
 pub use rename::{Rename, RenamePlan, rename, rename_on};
-pub use sandbox::{Action as SandboxAction, OwnerArgs, Sandbox, sandbox};
 pub use schedule::{
     Add as ScheduleAdd, Schedule, ScheduleCommand, SchedulePlan, interval, moment, schedule,
     schedule_on,

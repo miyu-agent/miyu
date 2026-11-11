@@ -309,24 +309,6 @@ impl Tool for Fake {
             .collect()
     }
 
-    /// 参数里 `outside_sandbox` 是真的，就报要在沙盒外跑（施工 D-4）。
-    fn outside_sandbox(&self, call: &Call) -> bool {
-        serde_json::from_str::<serde_json::Value>(&call.args).is_ok_and(|args| {
-            args.get("outside_sandbox")
-                .and_then(serde_json::Value::as_bool)
-                .unwrap_or(false)
-        })
-    }
-
-    /// 参数里的 `prefix`（施工 SB-3）：假工具不拆命令，测试自己写。
-    fn prefix(&self, call: &Call) -> Option<String> {
-        serde_json::from_str::<serde_json::Value>(&call.args)
-            .ok()?
-            .get("prefix")?
-            .as_str()
-            .map(str::to_string)
-    }
-
     fn file(&self) -> Option<&Path> {
         self.file.as_deref()
     }

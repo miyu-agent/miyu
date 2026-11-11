@@ -48,18 +48,7 @@ fn problem(
                 },
             }
         }
-        // 嵌着子命令的那一层（`miyu sandbox`，施工 5-8）后面没写：clap 报的是那一层的全名和能写的几个。
-        ErrorKind::MissingSubcommand => {
-            let command = clean(&first(error, ContextKind::InvalidSubcommand));
-            let valid = all(error, ContextKind::ValidSubcommand);
-            match chinese {
-                true => Problem::new(format!("'{command}' 需要子命令"))
-                    .hint(format!("可用的有：{}", listed(&valid, "、", " 或 "))),
-                false => Problem::new(format!("'{command}' requires a subcommand"))
-                    .hint(format!("one of: {}", listed(&valid, ", ", " or "))),
-            }
-        }
-        // 成对的选项少了一个（`--owner-home`、`--owner-sid`，只给提升过的自己用）：照它的名字说。
+        // 要和别的选项一起写的少了那一个（`miyu session export --for read` 少了 `--md`）：照它的名字说。
         ErrorKind::MissingRequiredArgument if arg.starts_with('-') => match chinese {
             true => Problem::new(format!("缺少选项 '{}'", option(&arg))),
             false => Problem::new(format!("missing option '{}'", option(&arg))),
@@ -156,7 +145,7 @@ pub(crate) fn synopsis(language: Language, page: Page, sub: &str) -> Option<Stri
         })
 }
 
-/// 写错的子命令是不是嵌着的那一层的：看 clap 报的用法那一行（`Usage: miyu sandbox <COMMAND>`），第一个 `<`、`[`
+/// 写错的子命令是不是嵌着的那一层的：看 clap 报的用法那一行（`Usage: miyu service <COMMAND>`），第一个 `<`、`[`
 /// 之前不止一个词的是。交回那几个词；最外面那一层（只有 `miyu`）的是空的。
 fn nested(error: &clap::Error) -> Option<String> {
     let usage = match error.get(ContextKind::Usage) {
