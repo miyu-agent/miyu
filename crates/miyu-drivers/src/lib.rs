@@ -38,7 +38,7 @@ pub use image_tokens::{DeepSeekImages, deepseek_image_tokens};
 pub use memo::Memo;
 pub use texts::{
     AttachedPathSources, DriverTextSources, DriverTexts, ImageDescriptionSources, ImageNameSources,
-    OpenPathSources, TextFileSources,
+    OpenPathSources, PathOnlySources, TextFileSources,
 };
 
 use std::collections::BTreeMap;

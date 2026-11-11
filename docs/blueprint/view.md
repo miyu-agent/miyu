@@ -40,6 +40,7 @@
 | `crates/miyu-view/tests/markdown.rs`（施工 SE-1 中下上） | `read` 预设一整轮逐字对；撤掉的、撤回的、撤销说明不进（另照真会话撤一轮）；真会话压缩一次，旁白照时间线、摘要折在下面；长输出折起来、切过的照日志取全文；正文里没合上的代码块、反引号、mermaid、思考里的 `</details>`；子代理的交代和回报；附件占位；家目录只换整段路径；密钥精确匹配、同一处取长的、太短的不换 |
 | `crates/miyu-view/tests/markdown_presets.rs`、`markdown_ranges.rs`、`markdown_extras.rs`（施工 SE-1 中下中） | `agent`、`chat` 各一整段逐字对，结果截头尾、`full` 不截，开关盖过预设；`context` 照真会话从检查点起、压缩撤掉了回到更早、`{"turns": N}`；要人确认的那一次、提问、脚本里调的工具（真会话）三种写法，`full` 取 blob |
 | `crates/miyu-view/tests/markdown_attached.rs`（施工 SE-1 中下下） | `agent` 连接是中文时旁白、占位整段英文逐字对，`read` 照旧跟语言；`assets: files` 人附的、结果里的、她发的图写成链接，取不到的照占位、记下；`children: append` 的子会话照任务编号、撤掉的那一步派的不带，小标题和开头列表三种写法，密钥、token 估算照整份 |
+| `crates/miyu-view/tests/markdown_attached.rs` 的 `a_path_only_attachment_is_written_as_its_path_and_never_copied`（施工 AT-1） | 只有路径的附件：条目没有 `blob`、`media_type` 照样读写；占位写路径；`assets: files` 不拷、不算取不到 |
 | `resources/core/human/<语言>.json` | `said` 的 `view/…`：收起那一行的字（照网页演示 `timeline.summary` 搬来，两个头一字不差）、准备中的显示名、「会话 短编号」「父会话」、出错说明（照终端的 `error_classes`、`status_hints`） |
 
 ### 对外的样子
@@ -81,7 +82,7 @@
 
 | `kind` | 格 |
 |---|---|
-| `user` | `text`（命令模板展开成的是人敲的那一行，施工 X-14 上，`slash.md`）；`attachments`（照 `message.user` 的附件块：`kind`（`image`、`file`）、`name`、`media_type`、`blob`，图有 `width`、`height`，带了路径的有 `path`；大小头照 `blob` 取）；`from`（别处来的话的来处：别的会话、子代理、父会话、别的 harness、场所里的人，和 `by` 一个写法）；`level`（发出去那一刻的权限级别）；`queued: true`（排着、她还没听到，听到了换成不写）；`withdrawn: true`（排着的被退回了：`message.withdrawn`，打断时没听到的那几条；不画，视图流里推到的那一刻头把字放回输入框，翻页、重新订阅看到的不放回）；`round`（长期目标的续轮是第几轮，施工 X-8 补：`from` 是模块 `goal` 的，照那条消息的 `cause` 读，`protocol.md` 的 `command.run` 第 10 条；网页画成一行「目标 · 第 N 轮」，不把续轮的原文给人看，2026-10-12 项目主人定）；`shell`（施工 SH-1 下，设计 57 第四节第 4 条：人用 `!` 打的命令，`text` 是那一行；还没跑完的是 `{"running": true}`，排着的也是，头照 `queued` 分；收到 `shell.ran` 换成 `exit` 或 `signal`、`text`、`omitted`、`duration_ms`，异常结束的另有 `reason`；对不上一条画着的话的 `shell.ran` 不理；别的话没有这一格） |
+| `user` | `text`（命令模板展开成的是人敲的那一行，施工 X-14 上，`slash.md`）；`attachments`（照 `message.user` 的附件块：`kind`（`image`、`file`）、`name`、`media_type`、`blob`，图有 `width`、`height`，带了路径的有 `path`；大小头照 `blob` 取。只有路径的附件（施工 AT-1，`path` 块）照样出一件：`kind` 是 `file`，没有 `media_type`、`blob`，有 `name`、`path`，另带 `path_only: true`，头写了大小的有 `size`；头照 `path_only` 认，不去 `blob.get`）；`from`（别处来的话的来处：别的会话、子代理、父会话、别的 harness、场所里的人，和 `by` 一个写法）；`level`（发出去那一刻的权限级别）；`queued: true`（排着、她还没听到，听到了换成不写）；`withdrawn: true`（排着的被退回了：`message.withdrawn`，打断时没听到的那几条；不画，视图流里推到的那一刻头把字放回输入框，翻页、重新订阅看到的不放回）；`round`（长期目标的续轮是第几轮，施工 X-8 补：`from` 是模块 `goal` 的，照那条消息的 `cause` 读，`protocol.md` 的 `command.run` 第 10 条；网页画成一行「目标 · 第 N 轮」，不把续轮的原文给人看，2026-10-12 项目主人定）；`shell`（施工 SH-1 下，设计 57 第四节第 4 条：人用 `!` 打的命令，`text` 是那一行；还没跑完的是 `{"running": true}`，排着的也是，头照 `queued` 分；收到 `shell.ran` 换成 `exit` 或 `signal`、`text`、`omitted`、`duration_ms`，异常结束的另有 `reason`；对不上一条画着的话的 `shell.ran` 不理；别的话没有这一格） |
 | `reply` | `text`（Markdown 原文）；`open: true`（还在写，写完不写）；`persona`（施工 9-8 十三补，网页要的）：这一轮是哪个人格回的，无人格的是 `null`。投影照 `session.created` 的人格起头，带 `persona` 的 `session.policy_changed` 先记着，下一条带 `policy` 的（快照真换上了）起算新的：同内核、会话那一层（`kernel/session.md`「换人格、预设」） |
 | `media` | 她发出去的一张图（施工 X-19，`tool.result.sent`）：`image`（同 `user` 的附件那一格，宽高一定有）、`alt`?、`sticker`?。一张一条，排在那一步工具后面，和 `reply` 一样把前面那段 `group` 收起（那一步照旧在 `group` 里） |
 | `group` | 时间线的一段：`steps`（几步的编号，照先后；多了一步，这一段跟着 `view.update`，`steps` 和收起那一行一起变）；`open: true`（还在进行：她没开口、这一轮没结束）；`summary`、`summary_en`（收起那一行，下面「收起那一行」）；`took_ms`（从第一步开始到最后一步结束，刨掉中间等人的，见「会话状态」的 `waited_ms`） |
@@ -209,7 +210,7 @@
 1. 角色的小标题一律英文：消息 `## User`（别处来的写来处：`User (<平台身份>)`、`Session (<短编号>)`、`Module (<模块>)`、`Harness (<名字>)`、`Schedule`、`Kernel`）；她开口 `## Assistant`，接着说的不再起，旁白、回报以后再开口重起；一步工具 `### Tool: …`（一行的写成列表里的 `- Tool: …`，连着的几步一个列表）；子代理的回报 `## Subagent: <标题>`。
 2. 正文原样（消息、回复、思考、回报、回顾、摘要）：没合上的代码块在末尾替它合上；放进折叠块的，代码块外面的 `</details` 写成 `&lt;/details`。mermaid 留源码代码块。
 3. 思考（带的时候）折在 `<details>` 里，那一行是「思考了 3s」（没记下用时的写「思考」）。
-4. 图片、附件写占位：`[图片：<名字>, <宽>×<高>]`、`[文件：<名字>]`，什么都没有的只写是什么；不内联 base64。`assets: files` 的写成相对链接（下面「附件文件夹」）。
+4. 图片、附件写占位：`[图片：<名字>, <宽>×<高>]`、`[文件：<名字>]`，什么都没有的只写是什么；不内联 base64。只有路径的附件（施工 AT-1）写 `[文件：<路径>]`：没有内容可拷，`assets: files` 也照占位写、不算取不到的。`assets: files` 的写成相对链接（下面「附件文件夹」）。
 5. 旁白一行一个引用块（`> 上下文压缩了`）：压缩好了的摘要折在下面，在压的、被打断的不写；清空、暂停自动压缩、后台命令了结（下面脚本里调的工具照各自的写法；`tools: full` 再接 blob 里的输出全文）、监视的命令出的一批行（行折在下面）、答了提问（一题一行；`chat` 一行写完）、回顾（正文跟在下面）、换模型、换人格和预设、换工作目录、等的会话怎么了。一轮出错、被打断、步数到顶、核心停了没走完的写一行；走完的不写。`read`、`chat` 的显示名、旁白照 `locale`；`agent` 的旁白、占位一律英文（第 8 条）。
 6. 不进的：撤掉的轮（`hidden`）、撤回的排队消息（`withdrawn`）、撤销说明（撤了就当没发生过，调研第五节第 2 条）；注入的上下文、策略、系统提示词本来就不是条目。
 7. 最后过一遍：配了的密钥（`secrets.toml` 的值，不到 8 个字的不换）原样出现的换成 `[redacted: <名字>]`，几个值重叠的从左往右取、同一处起头的取最长的，报每个名字几处；再把家目录写成 `~`，只换整段路径（前后不是路径里的字）。

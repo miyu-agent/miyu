@@ -139,6 +139,7 @@ impl Writer<'_> {
                     pieces.part(self.file_part(file)?);
                 }
                 Block::File(file) => pieces.text(&self.media.file_text(file)?),
+                Block::Path(attached) => pieces.text(&self.media.path_only(attached)),
                 Block::Reasoning(_) | Block::ToolCall(_) | Block::Unknown(_) => {}
             }
         }
@@ -162,7 +163,7 @@ impl Writer<'_> {
                         arguments: arguments(&call.args),
                     },
                 }),
-                Block::Image(_) | Block::File(_) | Block::Unknown(_) => {}
+                Block::Image(_) | Block::File(_) | Block::Path(_) | Block::Unknown(_) => {}
             }
         }
         let content = (!content.is_empty() || tool_calls.is_empty()).then_some(content);
@@ -214,6 +215,7 @@ impl Writer<'_> {
                     attachments.push(self.file_part(file)?);
                 }
                 Block::File(file) => join(&mut content, &self.media.file_text(file)?),
+                Block::Path(attached) => join(&mut content, &self.media.path_only(attached)),
                 Block::Reasoning(_) | Block::ToolCall(_) | Block::Unknown(_) => {}
             }
         }

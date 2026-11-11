@@ -111,6 +111,7 @@ pub(super) fn other_texts() -> DriverTexts {
         image_description: None,
         attached_path: None,
         open_path: None,
+        path_only: None,
     })
     .expect("这一套占位用得了")
 }

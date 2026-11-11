@@ -26,7 +26,7 @@
 
 | `kind` | 格 |
 |---|---|
-| `user` | `text`；`attachments`（`kind`、`name`、`media_type`、`blob`，图有 `width`、`height`）；`from`（别处来的话的来处）；`level`；`queued: true`（排着、她还没听到）；`withdrawn: true`（排着的被退回了：头把字放回输入框）；`round`（长期目标的续轮是第几轮）；`shell`（人用 `!` 打的命令，`text` 是那一行：还没跑完的是 `{"running": true}`，跑完了是 `exit` 或 `signal`、`text`（输出）、`omitted`、`duration_ms`，异常结束的另有 `reason`：`timed_out`、`interrupted`、`aborted`） |
+| `user` | `text`；`attachments`（`kind`、`name`、`media_type`、`blob`，图有 `width`、`height`，带了路径的有 `path`；只给路径的附件 `kind` 是 `file`，没有 `media_type`、`blob`，有 `name`、`path`、`path_only: true`，头写了大小的有 `size`）；`from`（别处来的话的来处）；`level`；`queued: true`（排着、她还没听到）；`withdrawn: true`（排着的被退回了：头把字放回输入框）；`round`（长期目标的续轮是第几轮）；`shell`（人用 `!` 打的命令，`text` 是那一行：还没跑完的是 `{"running": true}`，跑完了是 `exit` 或 `signal`、`text`（输出）、`omitted`、`duration_ms`，异常结束的另有 `reason`：`timed_out`、`interrupted`、`aborted`） |
 | `reply` | `text`（Markdown 原文，解析和渲染是头的事）；`open: true`（还在写）；`persona`：这一轮是哪个人格回的（编号，无人格的是 `null`）。会话中途换了人格的，以前的回复照旧是旧人格：人换的那一下先记着，真换上（下一个回合开始）以后的回复才是新的 |
 | `media` | 她发出去的一张图：`image`、`alt`、`sticker` |
 | `group` | 时间线的一段（几步思考和工具）：`steps`、`open`、`summary`、`summary_en`（收起那一行）、`took_ms`、`failed` |

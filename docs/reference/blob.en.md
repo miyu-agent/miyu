@@ -8,7 +8,7 @@ A blob is a piece of file content the core stores, named by its content hash (`s
 | [`blob.open`, `blob.write`, `blob.close`](#blobopen-blobwrite-blobclose) | Upload a large file in chunks |
 | [`blob.get`](#blobget) | Read a blob in chunks |
 
-An attachment is at most 20 MiB (20,971,520 bytes).
+An attachment is at most 20 MiB (20,971,520 bytes). A larger file isn't uploaded: hand over only its path on the core's machine in the `attachments` of [`session.send`](sessions.en.md#sessionsend) (`{"path", "name", "size"?}`, item 3 there).
 
 ## `blob.put`
 

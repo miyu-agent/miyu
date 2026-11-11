@@ -190,6 +190,7 @@ pub(super) fn driver_texts() -> DriverTexts {
         }),
         attached_path: None,
         open_path: None,
+        path_only: None,
     })
     .expect("出厂的占位用得了")
 }

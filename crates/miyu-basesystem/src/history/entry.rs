@@ -159,12 +159,12 @@ pub(super) fn switched(event: &Event, placeholders: &Placeholders) -> Option<Ent
     })
 }
 
-/// 几块写成原文，一块一段：正文照原样；工具调用写成 `→ <工具名> <参数原文>`，工具名是 `own` 的不写；图片、文件写
-/// 占位；思考不给。直接写进一份字里，不先一块块拷出来再接（施工 V-45）。
+/// 几块写成原文，一块一段：正文照原样；工具调用写成 `→ <工具名> <参数原文>`，工具名是 `own` 的不写；图片、文件、只有
+/// 路径的附件（照文件的）写占位；思考不给。直接写进一份字里，不先一块块拷出来再接（施工 V-45）。
 fn blocks(blocks: &[Block], placeholders: &Placeholders, own: &str) -> String {
     let mut text = String::new();
     let shown = blocks.iter().filter(|block| match block {
-        Block::Text(_) | Block::Image(_) | Block::File(_) => true,
+        Block::Text(_) | Block::Image(_) | Block::File(_) | Block::Path(_) => true,
         Block::ToolCall(call) => call.name != own,
         Block::Reasoning(_) | Block::Unknown(_) => false,
     });
@@ -184,6 +184,11 @@ fn blocks(blocks: &[Block], placeholders: &Placeholders, own: &str) -> String {
             Block::File(file) => text.push_str(&inline(say(
                 &placeholders.file,
                 &[("name", file.name.as_str())],
+            ))),
+            // 只有路径的附件（施工 AT-1）照文件的占位写，带名字：不为它多一句字。
+            Block::Path(attached) => text.push_str(&inline(say(
+                &placeholders.file,
+                &[("name", attached.name.as_str())],
             ))),
             Block::Reasoning(_) | Block::Unknown(_) => {}
         }

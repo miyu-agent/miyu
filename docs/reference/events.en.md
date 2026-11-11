@@ -34,7 +34,7 @@ The exact shape of each kind is in the repository's `docs/designs/samples/events
 | `turn.started`, `turn.ended` | A turn began or ended; `turn.ended`'s `reason` is `completed`, `interrupted`, `error`, `restarted` and so on |
 | `turn.joined` | Recorded messages joined the running turn |
 | `turn.reverted`, `turn.unreverted` | Turns were undone; the last undo was restored |
-| `message.user` | A message from a person (or another session, another agent, someone on a platform); a command the person typed with `!` has `shell: true`, its `blocks` being the command line |
+| `message.user` | A message from a person (or another session, another agent, someone on a platform); a command the person typed with `!` has `shell: true`, its `blocks` being the command line. A path-only attachment (`session.send`, item 3) is a `{"type": "path", "name", "path", "size"?}` block: no blob, `size` being the byte count the head gave |
 | `message.withdrawn` | Queued messages she hadn't heard yet were handed back |
 | `message.assistant` | One complete model response: text, thinking, tool calls |
 | `model.called` | One model request: which model, usage, cost, `error` on failure |

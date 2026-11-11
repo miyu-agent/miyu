@@ -160,7 +160,7 @@ pub fn reserve(max_output: Option<u64>, reserve_cap: u64) -> u64 {
     max_output.map_or(reserve_cap, |max| max.min(reserve_cap))
 }
 
-/// 一条消息的本地估算：文字、思考、工具调用的名字和参数、驱动的私有数据、认不出的块，UTF-8 字节加起来除以 4，
+/// 一条消息的本地估算：文字、思考、工具调用的名字和参数、驱动的私有数据、认不出的块、只有路径的附件，UTF-8 字节加起来除以 4，
 /// 向上取整；图片、文件照 `price`。不另加每块、每条的结构开销。
 pub fn message(message: &Message, price: &dyn Price) -> u64 {
     let blocks = match message {
@@ -221,6 +221,9 @@ fn blocks_of(blocks: &[Block], price: &dyn Price) -> u64 {
                 media = media.saturating_add(price.image(image.width, image.height))
             }
             Block::File(_) => media = media.saturating_add(price.file()),
+            // 只有路径的附件（施工 AT-1）：请求里是一句带名字、路径、大小的话，照这一块规范的 JSON 算，和那一句差不多长；
+            // 旧版本把它当认不出的块，也是这么算。
+            Block::Path(_) => bytes = bytes.saturating_add(json(block).len()),
         }
     }
     tokens(bytes).saturating_add(media)

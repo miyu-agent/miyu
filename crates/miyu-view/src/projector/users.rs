@@ -139,7 +139,7 @@ impl Projector {
     }
 }
 
-/// 几块文字照先后接起来；图、文件成附件。
+/// 几块文字照先后接起来；图、文件、只有路径的附件成附件。
 fn content(blocks: &[Block]) -> (String, Vec<Attachment>) {
     let mut text = String::new();
     let mut attachments = Vec::new();
@@ -149,20 +149,36 @@ fn content(blocks: &[Block]) -> (String, Vec<Attachment>) {
             Block::Image(image) => attachments.push(Attachment {
                 kind: "image".to_string(),
                 name: image.name.as_ref().map(|n| n.as_str().to_string()),
-                media_type: image.media_type.as_str().to_string(),
-                blob: image.blob.clone(),
+                media_type: Some(image.media_type.as_str().to_string()),
+                blob: Some(image.blob.clone()),
                 width: Some(image.width),
                 height: Some(image.height),
                 path: image.path.as_ref().map(|p| p.as_str().to_string()),
+                size: None,
+                path_only: false,
             }),
             Block::File(file) => attachments.push(Attachment {
                 kind: "file".to_string(),
                 name: Some(file.name.as_str().to_string()),
-                media_type: file.media_type.as_str().to_string(),
-                blob: file.blob.clone(),
+                media_type: Some(file.media_type.as_str().to_string()),
+                blob: Some(file.blob.clone()),
                 width: None,
                 height: None,
                 path: file.path.as_ref().map(|p| p.as_str().to_string()),
+                size: None,
+                path_only: false,
+            }),
+            // 只有路径的附件（施工 AT-1）：照样是一件附件，没有内容可取。
+            Block::Path(attached) => attachments.push(Attachment {
+                kind: "file".to_string(),
+                name: Some(attached.name.as_str().to_string()),
+                media_type: None,
+                blob: None,
+                width: None,
+                height: None,
+                path: Some(attached.path.as_str().to_string()),
+                size: attached.size,
+                path_only: true,
             }),
             _ => {}
         }

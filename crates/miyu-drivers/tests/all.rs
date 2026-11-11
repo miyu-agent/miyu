@@ -23,6 +23,7 @@ mod openai_responses;
 mod openai_responses_media;
 mod openai_responses_reasoning;
 mod openai_responses_streams;
+mod path_only;
 mod robust_streams;
 mod tail;
 mod temperature;

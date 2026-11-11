@@ -42,6 +42,7 @@ mod turn_inject;
 mod advisor;
 mod answer;
 mod attach;
+mod attach_path_only;
 mod attach_send;
 mod audit_ext_commands;
 mod audit_extension_core_key;

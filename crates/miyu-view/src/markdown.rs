@@ -255,7 +255,11 @@ fn write_user(out: &mut Out, user: &User, doc: &Document<'_>, say: &Say<'_>) {
         .attachments
         .iter()
         .map(|attachment| {
-            let name = attachment.name.as_deref().or(attachment.path.as_deref());
+            // 只有路径的附件（施工 AT-1）写它的路径：没有内容可拷，路径是唯一找得到它的。
+            let name = match attachment.path_only {
+                true => attachment.path.as_deref(),
+                false => attachment.name.as_deref().or(attachment.path.as_deref()),
+            };
             format!("- {}", asset(attachment, name, doc, say))
         })
         .collect();
@@ -292,15 +296,18 @@ fn asset(
     let image = attachment.kind == "image";
     let size = attachment.width.zip(attachment.height);
     let name = attachment.name.as_deref().or(attachment.path.as_deref());
-    let link = doc.files.and_then(|files| {
-        let about = described(about, size);
-        files.link(
-            &attachment.blob,
-            image,
-            about,
-            (name, &attachment.media_type),
-        )
-    });
+    // 没有 blob 的（只有路径的附件，施工 AT-1）没有可拷的：照占位写。
+    let stored = attachment
+        .blob
+        .as_ref()
+        .zip(attachment.media_type.as_deref());
+    let link = doc
+        .files
+        .zip(stored)
+        .and_then(|(files, (blob, media_type))| {
+            let about = described(about, size);
+            files.link(blob, image, about, (name, media_type))
+        });
     link.unwrap_or_else(|| placeholder(image, described(about, size), say))
 }
 

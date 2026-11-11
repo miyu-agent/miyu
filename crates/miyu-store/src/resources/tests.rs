@@ -325,6 +325,11 @@ fn the_core_texts_are_read_and_the_persona_texts_are_as_given() {
         driver!("image-omitted-path.txt")
     );
     assert_eq!(attached.file_omitted_path, driver!("file-omitted-path.txt"));
+    // 只有路径的附件的两句（施工 AT-1）：同上。
+    let path_only = drivers.path_only.expect("出厂的有只有路径的附件的两句");
+    assert_eq!(path_only.file_path_only, driver!("file-path-only.txt"));
+    let sized = driver!("file-path-only-sized.txt");
+    assert_eq!(path_only.file_path_only_sized, sized);
 }
 
 /// 资源目录里缺了一份核心的字：说是哪一份，英文，写进运行日志（施工 4-9 再补四中）。

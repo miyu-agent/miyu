@@ -141,6 +141,7 @@ fn an_older_snapshot_writes_the_placeholder() {
         image_description: None,
         attached_path: None,
         open_path: None,
+        path_only: None,
     })
     .expect("用得了");
     let described = body(&attached(&[(PNG, SUNSET)]), Inputs::default(), &old);

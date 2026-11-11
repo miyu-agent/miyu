@@ -104,18 +104,21 @@ pub struct User {
     pub shell: Option<Shell>,
 }
 
-/// 一件附件。
+/// 一件附件。只有路径的（施工 AT-1，`docs/blueprint/view.md`「条目」的 `user`）没有 `media_type`、`blob`，带着 `path`、
+/// `path_only`，头写了大小的有 `size`；别的两格都有。
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Attachment {
-    /// `image` 或 `file`。
+    /// `image` 或 `file`；只有路径的是 `file`。
     pub kind: String,
     /// 名字；图可以没有。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    /// 类型。
-    pub media_type: String,
-    /// 内容的哈希：头照 `blob.get` 取。
-    pub blob: ContentHash,
+    /// 类型；只有路径的没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub media_type: Option<String>,
+    /// 内容的哈希：头照 `blob.get` 取；只有路径的没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub blob: Option<ContentHash>,
     /// 图的宽。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub width: Option<u32>,
@@ -125,6 +128,12 @@ pub struct Attachment {
     /// 带了路径的附件的路径。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
+    /// 只有路径的附件，头写的字节数（施工 AT-1）；别的附件的大小头照 `blob` 取。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub size: Option<u64>,
+    /// 只有路径的附件（施工 AT-1）：内容没存进核心，取不到，只有名字和路径。
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub path_only: bool,
 }
 
 /// 她发出去的一张图（施工 X-19）：表情包这类，画在正文里，和她的字一样把前面那段时间线收起。

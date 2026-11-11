@@ -59,7 +59,7 @@
 4. **user** 的块，一块一块写，不拼：
    - 字：`{"type":"text","text":…}`，原样，不补换行（事实块自己带着换行）。空的一块不写：这一家不收空字。
    - 图片：`Call.inputs.images` 是真的、媒体类型是 `image/jpeg`、`image/png`、`image/gif`、`image/webp` 之一的，写 `{"type":"image","source":{"type":"base64","media_type":…,"data":…}}`；别的照 openai-chat 第 9 条换成字（占位、替它看的图的转述、带名字的占位），一段字写成一块 `text`。带名字的图片前后的标签各是一块 `text`。
-   - 文件：照 openai-chat 第 9 条的先后。能读 PDF 的写 `{"type":"document","source":{"type":"base64","media_type":"application/pdf","data":…},"title":<文件名>}`；文本文件照字（开头、内容、收尾三段接成一块 `text`）；别的写占位。
+   - 文件：照 openai-chat 第 9 条的先后。能读 PDF 的写 `{"type":"document","source":{"type":"base64","media_type":"application/pdf","data":…},"title":<文件名>}`；文本文件照字（开头、内容、收尾三段接成一块 `text`）；别的写占位。只有路径的附件（施工 AT-1）照 openai-chat 第 9 条写成一句，一块 `text`。
    - 思考、工具调用、不认识的块不写。
 5. **assistant** 的块，照原来的先后：
    - 正文：一块一块写 `text`，空的不写。

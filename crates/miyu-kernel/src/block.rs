@@ -7,7 +7,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use crate::id::{CallId, ContentHash, DriverFamily, FileName, MediaType, SourcePath};
 use crate::raw::{self, RawJson};
 
-/// 一块内容。JSON 里用 `type` 分开五种；读到不认识的，整块原样留着，投影跳过它。
+/// 一块内容。JSON 里用 `type` 分开六种；读到不认识的，整块原样留着，投影跳过它。
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Block {
@@ -19,6 +19,8 @@ pub enum Block {
     Image(Image),
     /// 文件，例如 PDF。
     File(File),
+    /// 只有路径的附件（施工 AT-1）：内容没存进来，只记着它在核心那台机器上的哪儿。
+    Path(PathOnly),
     /// 模型发起的一次工具调用。
     ToolCall(ToolCall),
     /// 不认识的种类，新版本才有的：整块原样留着，写出去还是原样。
@@ -93,6 +95,23 @@ pub struct File {
     pub path: Option<SourcePath>,
 }
 
+/// 只有路径的附件（施工 AT-1，`docs/blueprint/kernel/blocks.md` 第 14 条）：超过上传上限的文件，头只把它在核心那台
+/// 机器上的路径交上来，核心不读它、不查它在不在。请求里它写成一句（名字、路径、大小，内容没带上），她要看，照路径用
+/// 工具去读。
+///
+/// 另成一种块，不借 [`File`]：文件块的 `blob`、`media_type` 必有，到处照它取内容、认类型；这一种旧版本读到的当不认识
+/// 的块原样留着。
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct PathOnly {
+    /// 文件名，例如 `disk.iso`。只是名字，不带路径。
+    pub name: FileName,
+    /// 它在核心那台机器上的哪儿（[`SourcePath`]）：头交上来的，只查过写法。
+    pub path: SourcePath,
+    /// 头写的字节数；没写的没有，没有的不写。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub size: Option<u64>,
+}
+
 /// 一次工具调用。工具名和参数不检查：模型说了什么就记什么，
 /// 名字不对、参数坏了，是执行时报给模型的错。
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -129,6 +148,7 @@ impl<'de> Deserialize<'de> for Block {
                     "reasoning" => raw::parse(json).map(Block::Reasoning),
                     "image" => raw::parse(json).map(Block::Image),
                     "file" => raw::parse(json).map(Block::File),
+                    "path" => raw::parse(json).map(Block::Path),
                     "tool_call" => raw::parse(json).map(Block::ToolCall),
                     _ => return None,
                 })

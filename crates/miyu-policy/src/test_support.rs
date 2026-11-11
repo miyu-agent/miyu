@@ -153,6 +153,14 @@ pub(crate) fn core() -> CoreTexts {
                 file_open_path: include_str!("../../../resources/core/drivers/file-open-path.txt")
                     .to_string(),
             }),
+            path_only: Some(crate::PathOnlyTexts {
+                file_path_only: include_str!("../../../resources/core/drivers/file-path-only.txt")
+                    .to_string(),
+                file_path_only_sized: include_str!(
+                    "../../../resources/core/drivers/file-path-only-sized.txt"
+                )
+                .to_string(),
+            }),
         },
         compaction: Some(CompactionTexts {
             summarize_task: include_str!("../../../resources/core/compaction/summarize-task.txt")

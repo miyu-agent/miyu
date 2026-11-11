@@ -34,7 +34,7 @@
 | `turn.started`、`turn.ended` | 一轮开始、结束；`turn.ended` 的 `reason` 是 `completed`、`interrupted`、`error`、`restarted` 等 |
 | `turn.joined` | 照记下的几条并进了正在跑的这一轮 |
 | `turn.reverted`、`turn.unreverted` | 撤销了几轮、恢复了最近一次撤销 |
-| `message.user` | 人（或别的会话、别的 agent、平台上的人）说的一句；人用 `!` 打的命令多 `shell: true`，`blocks` 是那一行命令 |
+| `message.user` | 人（或别的会话、别的 agent、平台上的人）说的一句；人用 `!` 打的命令多 `shell: true`，`blocks` 是那一行命令。只给路径的附件（`session.send` 第 3 条）在 `blocks` 里是 `{"type": "path", "name", "path", "size"?}`：没有 blob，`size` 是头写的字节数 |
 | `message.withdrawn` | 排着队、她还没听到的话被退回了 |
 | `message.assistant` | 模型一次响应的完整内容：正文、思考、工具调用 |
 | `model.called` | 一次模型请求的记录：用了谁、用量、花了多少、出错的 `error` |

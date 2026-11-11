@@ -5,13 +5,14 @@
 //! - 能看图的、带名字的图片前后各一段标签（施工 3-9 四补）；
 //! - 发不了的文件：内容是文本的照字放进来，带着文件名（施工 3-9 三补，[`crate::text_file`]）；别的写一句占位，带文件名、
 //!   媒体类型、大小。
+//! - 只有路径的附件（施工 AT-1）：没有内容可发，哪个模型都写同一句，带名字、路径，头写了大小的带大小；不要 blob。
 //!
 //! 字节由执行器先取好交进来（[`BlobBytes`]），没交进来的报缺了哪一个；要哪些照 [`blobs_needed`]，其中要整份字节的照
 //! [`blobs_whole`]（施工 V-38：照原样发的图片、PDF 只要大小）。
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use miyu_kernel::block::{Block, File, Image};
+use miyu_kernel::block::{Block, File, Image, PathOnly};
 use miyu_kernel::id::{ContentHash, SourcePath};
 use miyu_kernel::request::{Message, Request};
 
@@ -59,6 +60,15 @@ impl Media<'_> {
             self.texts
                 .file_omitted(name, file.media_type.as_str(), bytes.len(), path)
         }))
+    }
+
+    /// 只有路径的附件（施工 AT-1）写成的那一句：名字、路径，头写了大小的带大小。和模型能收什么无关。
+    pub(crate) fn path_only(&self, attached: &PathOnly) -> String {
+        self.texts.path_only(
+            attached.name.as_str(),
+            attached.path.as_str(),
+            attached.size,
+        )
     }
 
     /// 执行器先取好的字节；没交进来的报缺了哪一个。

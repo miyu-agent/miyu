@@ -143,6 +143,11 @@ fn blocks(blocks: &[Block], placeholders: &Placeholders, own: &str) -> String {
                 &placeholders.file,
                 &[("name", file.name.as_str())],
             ))),
+            // 施工 AT-1 新加的块：两种读法一样写，照文件的占位。
+            Block::Path(attached) => Some(inline(say(
+                &placeholders.file,
+                &[("name", attached.name.as_str())],
+            ))),
             Block::Reasoning(_) | Block::Unknown(_) => None,
         })
         .collect();

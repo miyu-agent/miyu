@@ -127,6 +127,7 @@ impl Writer<'_> {
                     parts.push(self.document(file)?);
                 }
                 Block::File(file) => push_text(&mut parts, &self.media.file_text(file)?),
+                Block::Path(attached) => push_text(&mut parts, &self.media.path_only(attached)),
                 Block::Reasoning(_) | Block::ToolCall(_) | Block::Unknown(_) => {}
             }
         }
@@ -145,7 +146,7 @@ impl Writer<'_> {
                     name: call.name.clone(),
                     input: input(&call.args),
                 }),
-                Block::Image(_) | Block::File(_) | Block::Unknown(_) => {}
+                Block::Image(_) | Block::File(_) | Block::Path(_) | Block::Unknown(_) => {}
             }
         }
         parts

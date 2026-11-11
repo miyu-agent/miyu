@@ -473,6 +473,7 @@ fn blocks_shape(blocks: &[Block]) -> String {
             Block::Reasoning(_) => "[reasoning]".to_string(),
             Block::Image(_) => "[image]".to_string(),
             Block::File(_) => "[file]".to_string(),
+            Block::Path(_) => "[path]".to_string(),
             Block::ToolCall(call) => format!("[call {}]", call.name),
             Block::Unknown(_) => "[unknown]".to_string(),
         })

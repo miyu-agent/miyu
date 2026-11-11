@@ -55,7 +55,7 @@
 2. **system**：写进 `instructions`，一整段；空的不发这一格。
 3. **user**：`{"role":"user","content":…}`。
    - 全是文字的，`content` 是一个字符串，照 openai-chat 的拼法（相邻两块之间补一个换行，前一块已经以换行结尾的不补）。
-   - 有能发的图片、文件的，`content` 是几段：`{"type":"input_text","text":…}`、`{"type":"input_image","image_url":<data URL>}`、`{"type":"input_file","filename":…,"file_data":<data URL>}`；连着的字照上面拼成一段。图片、文件怎么挑、发不了的换成什么字、替它看的图、带名字的图片的标签、文本文件，全照 openai-chat 第 9 条。
+   - 有能发的图片、文件的，`content` 是几段：`{"type":"input_text","text":…}`、`{"type":"input_image","image_url":<data URL>}`、`{"type":"input_file","filename":…,"file_data":<data URL>}`；连着的字照上面拼成一段。图片、文件怎么挑、发不了的换成什么字、替它看的图、带名字的图片的标签、文本文件、只有路径的附件写成的那一句（施工 AT-1），全照 openai-chat 第 9 条。
    - 思考、工具调用、不认识的块不写。一个字都没有的，`content` 是空串。
 4. **assistant**：照块的先后，写成几项，相邻的同种块合成一项：
    - 正文：连着的几块直接接上，写一项 `{"role":"assistant","content":<字>}`。空的不写。

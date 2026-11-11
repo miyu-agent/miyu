@@ -125,7 +125,8 @@ pub(super) async fn send(
     }
     // 附件先查，再找会话：不对的，会话里什么都不送（施工 3-9 三补）。头报的 `cwd`、`dirs` 不再换工作区（施工 9-7 上）。
     let attachments = params.attachments.unwrap_or_default();
-    blocks.extend(attach::blocks(core, attachments).await?);
+    blocks.extend(attach::sent(core, attachments).await?);
+    attach::local_only(&blocks, params.as_external.is_none())?;
     let mut found = core.sessions.get(core, &session).await?;
     // 没有本机路径的落成会话里的文件，她拿得到路径（施工 3-9 六补）。
     attach::keep(core, &session, &mut blocks).await?;
@@ -280,11 +281,12 @@ pub(super) async fn redo(
     let session = session(&params.session)?;
     // 附件照 `session.send` 先查，再找会话。
     let mut attachments = match params.attachments {
-        Some(attachments) => Some(attach::blocks(core, attachments).await?),
+        Some(attachments) => Some(attach::sent(core, attachments).await?),
         None => None,
     };
     let found = core.sessions.get(core, &session).await?;
     if let Some(blocks) = &mut attachments {
+        attach::local_only(blocks, found.handle.venue().as_str() == list::LOCAL)?;
         attach::keep(core, &session, blocks).await?;
     }
     // 文件改了、前缀要变的，重发之前问人（施工 OV-1 下）。

@@ -4,7 +4,7 @@ use serde::Deserialize;
 
 use miyu_kernel::event::{Decision, Response};
 
-use crate::attach::Attachment;
+use crate::attach::{Attachment, Sent};
 use crate::refusal::Refusal;
 
 /// `session.create` 的参数。
@@ -71,9 +71,10 @@ pub(super) struct SendParams {
     pub(super) text: String,
     #[serde(default)]
     pub(super) urgent: bool,
-    /// 附件（施工 3-9 三补）：`blob.put` 的回应，照先后接在文字后面；不写、写 `null` 的是没有。
+    /// 附件（施工 3-9 三补）：`blob.put` 的回应，照先后接在文字后面；不写、写 `null` 的是没有。也收只有路径的一项（施工
+    /// AT-1，[`Sent`]）。
     #[serde(default)]
-    pub(super) attachments: Option<Vec<Attachment>>,
+    pub(super) attachments: Option<Vec<Sent>>,
     /// 别的 harness 报的名字（施工 7-10）：写了的，这一句是它说的；不写、写 `null` 的是本人。
     #[serde(default)]
     pub(super) from: Option<String>,
@@ -132,7 +133,7 @@ pub(super) struct RedoParams {
     #[serde(default)]
     pub(super) text: Option<String>,
     #[serde(default)]
-    pub(super) attachments: Option<Vec<Attachment>>,
+    pub(super) attachments: Option<Vec<Sent>>,
     /// 前缀要变了时人选的（施工 OV-1 下）。
     #[serde(default)]
     pub(super) prefix: Option<crate::sessions::prefix::Choice>,

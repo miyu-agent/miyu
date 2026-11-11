@@ -263,6 +263,37 @@ fn assets_become_relative_links_into_the_folder_and_missing_ones_stay_placeholde
     assert_eq!(files.missing(), [blob('b')].into());
 }
 
+/// 只有路径的附件（施工 AT-1）：没有 blob、类型，条目照样读得进；占位写它的路径，`assets: files` 不拷它、不算取不到的。
+#[test]
+fn a_path_only_attachment_is_written_as_its_path_and_never_copied() {
+    let entries = vec![entry(
+        json!({"id": "m2", "kind": "user", "text": "看看", "attachments": [
+            {"kind": "file", "name": "disk.iso", "path": "/data/disk.iso", "size": 31457280, "path_only": true},
+            {"kind": "file", "name": "a.pdf", "media_type": "application/pdf", "blob": hash('b')},
+        ]}),
+    )];
+    assert_eq!(assets(&entries), [blob('b')].into(), "只有路径的没有可拷的");
+    let mut files = Files::new("talk_files");
+    files.have([blob('b')]);
+    for files in [None, Some(&files)] {
+        let text = drafted(&entries, &sources(), Options::READ, None, files).text;
+        assert!(
+            text.contains("看看\n\n- [文件：/data/disk.iso]\n- "),
+            "{text}"
+        );
+    }
+    assert!(files.missing().is_empty(), "不算取不到的");
+    // 条目写出去：只有路径的那一件没有 `blob`、`media_type`，别的一格不多。
+    let written = serde_json::to_value(&entries[0]).expect("写得成");
+    assert_eq!(
+        written["attachments"],
+        json!([
+            {"kind": "file", "name": "disk.iso", "path": "/data/disk.iso", "size": 31457280, "path_only": true},
+            {"kind": "file", "name": "a.pdf", "media_type": "application/pdf", "blob": hash('b')},
+        ])
+    );
+}
+
 /// 主会话：派了两个子代理（先 j2 再 j1），一个撤掉了的派了 j3。
 fn parent() -> (Vec<Entry>, Sources) {
     let tool = |id: &str, job: &str, hidden: bool| {

@@ -3,8 +3,9 @@
 //!
 //! - [`put`]：`blob.put`，本机的头传路径、核心自己读，远程的头传内容；认是什么（[`miyu_tool::attachment`]），存成
 //!   blob，回应给头看的几样。
-//! - [`blocks`]：`session.send` 的 `attachments` 变成内容块：blob 要在，照内容再认一遍，块里的宽高、媒体类型都是核心
-//!   自己量的；图片块、文件块都带着头交回来的名字（图片的施工 3-9 四补）。
+//! - [`sent`]：`session.send`、`session.redo` 的 `attachments` 变成内容块：blob 要在，照内容再认一遍，块里的宽高、媒体类型
+//!   都是核心自己量的；图片块、文件块都带着头交回来的名字（图片的施工 3-9 四补）。只有路径的一项（施工 AT-1，
+//!   `path_only.rs`）不读、不查，记成一块 `path`。[`blocks`] 是回答提问、拒绝时附的：每一项都要 `blob`。
 //! - [`images`]：`model.call` 的图照哈希变成图片块（施工 8-20）：blob 要在，照内容认，不是图的参数不对；不带
 //!   名字。
 //! - [`keep()`]：没有本机路径的附件落成会话目录里的文件，路径填回块里（施工 3-9 六补，`keep.rs`）。
@@ -37,10 +38,12 @@ use miyu_tool::attachment::{Kind, fit, kind};
 mod grants;
 mod keep;
 mod look;
+mod path_only;
 mod reach;
 pub(crate) use grants::Grants;
 pub(crate) use keep::keep;
 pub(crate) use look::{images, picture};
+pub(crate) use path_only::{Sent, local_only};
 
 /// 一个附件最多几个字节：20 MiB。`blob.open` 的 `size` 也照这个数（施工 W-5，`uploads.rs`）。
 pub(crate) use miyu_tool::attachment::LIMIT;
@@ -136,13 +139,32 @@ pub(crate) async fn put(
     Ok(reply)
 }
 
-/// `session.send`、`session.redo`（施工 4-7 再补）的附件变成内容块，照先后。
+/// `session.answer` 的附件（施工 Q-A）变成内容块，照先后：每一项都是 `blob.put` 的回应。
 pub(crate) async fn blocks(
     core: &Core,
     attachments: Vec<Attachment>,
 ) -> Result<Vec<Block>, Refusal> {
+    sent(core, attachments.into_iter().map(Sent::Stored).collect()).await
+}
+
+/// 查过写法的一项：存进了 blob 的还要去读、去认；只有路径的已经是一块。
+enum Wanted {
+    Stored(ContentHash, FileName, MediaType, Option<SourcePath>),
+    Ready(Block),
+}
+
+/// `session.send`、`session.redo`（施工 4-7 再补）的附件变成内容块，照先后；有 `blob` 的、只有路径的（施工 AT-1）混着
+/// 也照写的先后。先把每一项的写法都查完，再读 blob；只有路径的不读、不查在不在。
+pub(crate) async fn sent(core: &Core, attachments: Vec<Sent>) -> Result<Vec<Block>, Refusal> {
     let mut wanted = Vec::with_capacity(attachments.len());
     for attachment in attachments {
+        let attachment = match attachment {
+            Sent::Stored(attachment) => attachment,
+            Sent::PathOnly(pointed) => {
+                wanted.push(Wanted::Ready(pointed.block()?));
+                continue;
+            }
+        };
         let blob = ContentHash::parse(&attachment.blob).map_err(|_| Refusal::BAD_PARAMS)?;
         let path = attachment
             .path
@@ -150,7 +172,7 @@ pub(crate) async fn blocks(
             .map(SourcePath::parse)
             .transpose()
             .map_err(|_| Refusal::BAD_PARAMS)?;
-        wanted.push((
+        wanted.push(Wanted::Stored(
             blob,
             file_name(&attachment.name)?,
             media_type(&attachment.media_type)?,
@@ -165,7 +187,10 @@ pub(crate) async fn blocks(
         let blobs = Blobs::new(place.root.blobs());
         wanted
             .into_iter()
-            .map(|(blob, name, given, path)| block(&blobs, blob, name, given, path))
+            .map(|one| match one {
+                Wanted::Stored(blob, name, given, path) => block(&blobs, blob, name, given, path),
+                Wanted::Ready(block) => Ok(block),
+            })
             .collect()
     })
     .await

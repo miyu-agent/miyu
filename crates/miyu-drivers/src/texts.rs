@@ -16,6 +16,8 @@
 //!   `path`。以前造的快照里没有这两句，照旧不带路径。
 //! - 看得了的附件带上路径（施工 3-9 六补）：能看图的图片开头、照字放进消息的文本文件开头，各一份带路径的，字段是 `name`、
 //!   `path`；附件都落成了文件，路径是那个文件的。以前造的快照里没有这两句，照旧只带名字。
+//! - 只有路径的附件（施工 AT-1，`path_only.rs`）：写成一句，字段是 `name`、`path`，头写了大小的另一份多 `size`。以前造的
+//!   快照里没有这两句，只写路径本身。
 //!
 //! 字段照模板的规矩转义（`08-上下文投影.md` 第五节「模板与转义怎么写」）。由执行器从资源目录读好
 //! 交进来，造会话时读一次，冻结在会话上。
@@ -25,6 +27,9 @@ use std::collections::BTreeMap;
 use miyu_kernel::template::{Template, TemplateError};
 
 use crate::text_file;
+
+mod path_only;
+pub use path_only::PathOnlySources;
 
 /// 那几句，各是一份读好的模板。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -49,6 +54,8 @@ pub struct DriverTexts {
     attached_path: Option<AttachedPath>,
     /// 看得了的附件开头带路径的两句（施工 3-9 六补）；以前造的快照里没有。
     open_path: Option<OpenPath>,
+    /// 只有路径的附件的两句（施工 AT-1）；以前造的快照里没有。
+    path_only: Option<path_only::PathOnly>,
 }
 
 /// 看得了的附件开头带路径的两句（施工 3-9 六补）。
@@ -125,6 +132,8 @@ pub struct DriverTextSources<'a> {
     pub attached_path: Option<AttachedPathSources<'a>>,
     /// 看得了的附件开头带路径的两句（施工 3-9 六补）；以前造的快照里没有的是 `None`。
     pub open_path: Option<OpenPathSources<'a>>,
+    /// 只有路径的附件的两句（施工 AT-1）；以前造的快照里没有的是 `None`。
+    pub path_only: Option<PathOnlySources<'a>>,
 }
 
 /// 看得了的附件开头带路径的两句的原文（施工 3-9 六补）。
@@ -244,6 +253,10 @@ impl DriverTexts {
             image_description,
             attached_path,
             open_path,
+            path_only: sources
+                .path_only
+                .map(path_only::PathOnly::new)
+                .transpose()?,
         };
         texts.file_omitted.render(&file("", "", ""))?;
         if let Some(path) = &texts.open_path {

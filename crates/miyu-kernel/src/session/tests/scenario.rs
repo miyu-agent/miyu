@@ -24,6 +24,7 @@ mod nested;
 mod nested_asking;
 mod nested_command;
 mod overflow;
+mod path_only;
 mod peers;
 mod permission_changed;
 mod prepare;

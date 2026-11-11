@@ -132,10 +132,10 @@ pub fn wanted(entries: &[Entry]) -> BTreeSet<ContentHash> {
     for entry in entries.iter().filter(|entry| !entry.hidden) {
         match &entry.body {
             Body::User(user) if !user.withdrawn => {
-                wanted.extend(user.attachments.iter().map(|a| a.blob.clone()));
+                wanted.extend(user.attachments.iter().filter_map(|a| a.blob.clone()));
             }
             Body::Media(media) => {
-                wanted.insert(media.image.blob.clone());
+                wanted.extend(media.image.blob.clone());
             }
             Body::Tool(tool) => wanted.extend(tool.images.iter().map(|p| p.blob.clone())),
             _ => {}

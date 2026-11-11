@@ -1,0 +1,1 @@
+A file was attached here ({name}, at {path}). Its content is not included. Tools can read it.

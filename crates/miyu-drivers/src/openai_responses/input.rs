@@ -105,6 +105,7 @@ impl Writer<'_> {
                     pieces.part(self.file(file)?);
                 }
                 Block::File(file) => pieces.text(&self.media.file_text(file)?),
+                Block::Path(attached) => pieces.text(&self.media.path_only(attached)),
                 Block::Reasoning(_) | Block::ToolCall(_) | Block::Unknown(_) => {}
             }
         }
@@ -129,7 +130,7 @@ impl Writer<'_> {
                     name: call.name.clone(),
                     arguments: arguments(&call.args),
                 },
-                Block::Image(_) | Block::File(_) | Block::Unknown(_) => continue,
+                Block::Image(_) | Block::File(_) | Block::Path(_) | Block::Unknown(_) => continue,
             };
             flush(&mut text, items);
             items.push(Item::Typed(item));

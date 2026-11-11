@@ -547,6 +547,28 @@ A file was attached here ({name}, {media_type}, {size} bytes), but this model ca
 A file was attached here ({name}, {media_type}, {size} bytes, from {path}), but this model cannot read it.
 ```
 
+#### `core/drivers/file-path-only.txt`
+
+- 什么时候加进来：人附了只有路径的附件、头没写大小的（施工 AT-1：超过上传上限的文件，头只交了它在核心那台机器上的路径，`path` 块）；和模型能看什么无关，哪个模型都写这一句；以前造的快照没有，只写路径本身
+- token：27（o200k 本机数，名字 `报告.pdf`、路径 `~/Documents/报告.pdf`，带行尾换行；真端点的数待主会话补）
+- 为什么加：上传上限 20 MiB 不动，超限的文件只把路径交给她、不拷内容（2026-11-11 项目主人定）。请求里没有内容可发：不写这一句，她不知道这里附过东西，也不知道去哪读。没复用 `file-omitted-path.txt`：那一句要媒体类型和大小（这种附件没有类型，大小可以不写），说的是「this model cannot read it」，这里和模型读不读得了无关，是内容没带上。照 J13 只写事实：附了什么、在哪、内容没带上、工具读得到
+- 指纹：`a056d3df`
+
+```text
+A file was attached here ({name}, at {path}). Its content is not included. Tools can read it.
+```
+
+#### `core/drivers/file-path-only-sized.txt`
+
+- 什么时候加进来：同 `file-path-only.txt`，头写了大小的
+- token：32（同样的值加大小 `48213`，o200k 本机数；真端点的数待主会话补）
+- 为什么加：同 `file-path-only.txt`；另成一份：模板没有能不填的字段。比没写大小的多 5 个（大小那一截）
+- 指纹：`5f363890`
+
+```text
+A file was attached here ({name}, {size} bytes, at {path}). Its content is not included. Tools can read it.
+```
+
 ### 工具结果
 
 #### `core/drivers/no-output.txt`

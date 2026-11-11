@@ -21,6 +21,7 @@
 | `crates/miyu-drivers/src/sse.rs` | SSE 分帧 |
 | `crates/miyu-drivers/src/classify.rs` | 出错分类、要等多久、原话 |
 | `crates/miyu-drivers/src/texts.rs` | 给模型看的几句：五句占位，文本文件的三句（施工 3-9 三补），带名字的图片的三句（施工 3-9 四补），替它看的图的三句标签（施工 8-17） |
+| `crates/miyu-drivers/src/texts/path_only.rs` | 只有路径的附件写成的两句（施工 AT-1）：`DriverTexts::path_only` |
 | `crates/miyu-drivers/src/text_file.rs` | 什么算文本文件、最多给多少（施工 3-9 三补） |
 | `crates/miyu-drivers/src/base64.rs` | data URL 用的 base64：`base64` 这个库的标准写法（施工 V-38）；发请求体时一块 48 KiB |
 | `crates/miyu-drivers/src/fragments.rs` | 片段清单（施工 V-38）：编码时代替整份的字节，线上的结构里内嵌 blob 的那一格（`Inline`）拆成单独的一段 |
@@ -101,6 +102,7 @@
      1. `Call.inputs.pdf` 是真的、媒体类型正好是 `application/pdf` 的：写成 data URL 放进 `file`，`filename` 是文件名。
      2. 内容是文本文件（整份是合法的 UTF-8，又没有 NUL 字节；媒体类型、扩展名不看，`crates/miyu-drivers/src/text_file.rs`），快照里有文本文件的三句的（施工 3-9 三补）：照文字接上，`file-open.txt`（带文件名）、内容、`file-close.txt`。内容原样，不转义（和检查点里重读的文件一样，`kernel/request.md`）；末尾没有换行的补一个，空的只有开头收尾。最多给 64 KiB（65,536 字节），多的截在字的边界上，开头那一行后面先写 `file-cut.txt`：给了多少、一共多少字节。原文整份留在 blob 里。
      3. 别的：换成 `file-omitted.txt` 那一句，带文件名、媒体类型、大小（字节数），照文字接上。
+   - 只有路径的附件（施工 AT-1，`kernel/blocks.md` 的 `path` 块：超过上传上限的文件，头只交了它在核心那台机器上的路径）：没有内容可发，哪个模型都写同一句，和 `Call.inputs` 无关，照文字接上。块里有 `size` 的写 `file-path-only-sized.txt`（名字、大小、路径），没有的写 `file-path-only.txt`（名字、路径）。user 消息、工具结果里都这样写；assistant 消息里的不写。不要 blob。快照里没有这两句的（以前造的会话）只写路径本身，照模板的规矩转义：等于人在话里写了一个路径，不多出没登记的字。三个驱动一样（`media.rs` 的 `Media::path_only`）。
    - 为什么文本文件照字给（施工 3-9 三补，2026-09-30 项目主人定附件现在就排）：哪个模型都读得了字，不用另有本事；64 KiB 的上限是一个附件不占掉大半个上下文，它每次请求都跟着。以前造的快照里没有那三句，文本文件照第 3 小条写占位（`file-omitted.txt` 那时也没有大小）。
    - data URL：`data:<媒体类型>;base64,<内容>`，base64 用 RFC 4648 的标准字母表，末尾补 `=`，不换行（施工 V-38 起用 `base64` 这个库，写出来逐字一样）。驱动不碰文件：编码时只要大小，`<内容>` 那一段记成片段清单里的一段 `Fragment::Base64`（开头的引号和前缀照 JSON 转义写在前一段字里），HTTP 执行器发的时候才从 blob 一小块一小块地读出来编（`http.md`「发一次」第 3 条）。拼起来和整份写的一个字节不差：base64 的字母表里没有要转义的字。
 10. **接着写**：开关是 `Prefix`、统一的请求带着 `continuation` 的：
@@ -268,8 +270,10 @@
 | `image-omitted-named.txt` | `An image was attached here ({name}), but this model cannot view images.` | `name`，照模板的规矩转义（施工 3-9 四补） |
 | `image-omitted-path.txt` | `An image was attached here ({name}, from {path}), but this model cannot view images.` | `name`、`path`，照模板的规矩转义（施工 3-9 五补：带名字又带原来的路径的图） |
 | `file-omitted-path.txt` | `A file was attached here ({name}, {media_type}, {size} bytes, from {path}), but this model cannot read it.` | 同 `file-omitted`，另加 `path`（施工 3-9 五补：带原来的路径的文件） |
+| `file-path-only.txt` | `A file was attached here ({name}, at {path}). Its content is not included. Tools can read it.` | `name`、`path`，照模板的规矩转义（施工 AT-1：只有路径的附件，头没写大小的） |
+| `file-path-only-sized.txt` | `A file was attached here ({name}, {size} bytes, at {path}). Its content is not included. Tools can read it.` | `name`、`size`（头写的字节数）、`path`（施工 AT-1：只有路径的附件，头写了大小的） |
 
-几份在 `DriverTexts::new` 时读成模板，拿字段试换一次：`file-omitted` 只能要 `name`、`media_type`、`size`，`file-omitted-path` 另加 `path`，`image-omitted-path` 只能要 `name`、`path`，`file-open`、`image-open`、`image-omitted-named` 只能要 `name`，`file-cut` 只能要 `shown`、`total`，别的不能要字段。原文随会话的策略快照（`policy.md`）；文本文件的三句、带名字的图片的三句、带路径的两句（施工 3-9 五补）以前造的快照里没有。看不了的附件带着原来的路径（`kernel/blocks.md` 的 `path`）、快照里有带路径的两句的，占位写带路径的那一句：她照路径用工具去读；没有的照旧（施工 3-9 五补）。看得了的照旧发，路径不进请求。
+几份在 `DriverTexts::new` 时读成模板，拿字段试换一次：`file-omitted` 只能要 `name`、`media_type`、`size`，`file-omitted-path` 另加 `path`，`image-omitted-path` 只能要 `name`、`path`，`file-path-only` 只能要 `name`、`path`，`file-path-only-sized` 另加 `size`（施工 AT-1，这两句以前造的快照里也没有），`file-open`、`image-open`、`image-omitted-named` 只能要 `name`，`file-cut` 只能要 `shown`、`total`，别的不能要字段。原文随会话的策略快照（`policy.md`）；文本文件的三句、带名字的图片的三句、带路径的两句（施工 3-9 五补）以前造的快照里没有。看不了的附件带着原来的路径（`kernel/blocks.md` 的 `path`）、快照里有带路径的两句的，占位写带路径的那一句：她照路径用工具去读；没有的照旧（施工 3-9 五补）。看得了的照旧发，路径不进请求。
 
 `text-files.json` 这份样本里那条 user 的 `content`，写开来是：
 
@@ -309,6 +313,7 @@ A file was attached here (报告.pdf, application/pdf, 15 bytes), but this model
 | `crates/miyu-drivers/tests/openai_chat_media.rs` | 图片、PDF 写成 data URL；不能收的占位；工具结果里的附件挪到后面、或者就地占位；思考的三种回传；缺 blob 报错；要哪些 blob（文件每一个都要） |
 | `crates/miyu-drivers/tests/openai_chat_files.rs` | 文本文件（施工 3-9 三补）：照字放进消息、带文件名，空的，二进制的、不是 UTF-8 的、读不了的 PDF 写占位带大小（样本）；能读 PDF 的照旧发 `file`；超过 64 KiB 的截掉、写明给了多少；工具结果里的照字进 `content`；以前造的快照没有那三句的写占位；缺 blob 报错 |
 | `crates/miyu-drivers/tests/openai_chat_image_names.rs` | 带名字的图片（施工 3-9 四补）：能看图的前后各一段标签，和挨着的字拼成一段；不能看图的占位写名字（两份样本）；工具结果里带名字的连同标签一起挪、就地的占位写名字；以前造的快照没有那三句的，带名字的和不带名字的一字不差，不带名字的出厂这一份也照旧 |
+| `crates/miyu-drivers/tests/path_only.rs`（施工 AT-1） | 只有路径的附件：三个驱动写同一句（写了大小的、没写的），模型能收什么都一样，不要 blob；名字、路径转义；工具结果里的就地写、assistant 里的不写；以前造的快照没有那两句的只写路径本身 |
 | `crates/miyu-drivers/tests/openai_chat_described.rs`（施工 8-17） | 替它看的图：不能看图的换成带名字的标签和转述（样本 `image-descriptions.json`），转述原样、尖括号引号不转义，没转述的照旧占位；能看图的有没有转述一个字节不差；工具结果里不带名字的就地换、末尾有换行的不再补；以前造的快照没有标签的照旧写占位 |
 | `crates/miyu-drivers/src/text_file/tests.rs` | 什么算文本：空的、UTF-8、BOM 算，NUL（在后面的也算）、Latin-1、PDF 不算；截到 64 KiB、截在字的边界上 |
 | `crates/miyu-drivers/tests/openai_chat_effort.rs` | 思考强度（施工 8-18）：没写的不加；档位发 `reasoning_effort`、接在最后；`off`、`on` 照开关；没有开关的 `off` 发 `none`、`on` 不加；前面的字节一个不动 |

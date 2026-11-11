@@ -33,6 +33,7 @@ pub fn driver() -> OpenAiChat {
         image_description: None,
         attached_path: None,
         open_path: None,
+        path_only: None,
     })
     .expect("占位用得了");
     OpenAiChat::new(Compat::default(), texts)

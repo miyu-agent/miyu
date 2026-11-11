@@ -2,13 +2,13 @@
 
 ### 是什么
 
-消息和工具结果的内容由内容块组成：文字、思考、图片、文件、工具调用，一共五种。两样零件跟着它们，也用在事件的别处：原样的 JSON，一个字节都不改的一段 JSON；用字符串写的取值，认识的读成对应的一种，不认识的原样留着。新版本加了种类、加了取值，旧版本照样读得进来，写出去也不抹掉。
+消息和工具结果的内容由内容块组成：文字、思考、图片、文件、工具调用，加上只有路径的附件（施工 AT-1），一共六种。两样零件跟着它们，也用在事件的别处：原样的 JSON，一个字节都不改的一段 JSON；用字符串写的取值，认识的读成对应的一种，不认识的原样留着。新版本加了种类、加了取值，旧版本照样读得进来，写出去也不抹掉。
 
 ### 在哪
 
 | 代码 | 管什么 |
 |---|---|
-| `crates/miyu-kernel/src/block.rs` | 五种块 `Block`、驱动私有数据 `Private`、不认识的块 |
+| `crates/miyu-kernel/src/block.rs` | 六种块 `Block`、驱动私有数据 `Private`、不认识的块 |
 | `crates/miyu-kernel/src/raw.rs` | 原样的 JSON `RawJson`；照 `type` 或 `kind` 分派的读法 `read_tagged`，块、`by`、效果都用它 |
 | `crates/miyu-kernel/src/text_enum.rs` | 生成字符串取值的宏 `text_enum!`，内核里的十一种取值都由它生成 |
 
@@ -22,10 +22,11 @@
 | `reasoning` | `text`：思考的文字；`private`：驱动私有数据，可以没有 | `{"type":"reasoning","text":"先看目录","private":{"driver":"anthropic","data":{"signature":"sig"}}}` |
 | `image` | `blob`：图片存成的 blob 的内容哈希；`name`：文件名，只是名字，不带路径，可以没有（施工 3-9 四补）；`media_type`：媒体类型；`width`、`height`：宽、高，像素；`path`：原来在本机的哪儿，可以没有（施工 3-9 五补，`SourcePath`）；剪贴板贴的、远程传的，核心落成会话附件目录里的文件后记那个路径（施工 3-9 六补） | `{"type":"image","blob":"sha256:…","name":"晚霞.png","media_type":"image/png","width":800,"height":600}` |
 | `file` | `blob`：文件存成的 blob 的内容哈希；`name`：文件名，只是名字，不带路径；`media_type`：媒体类型；`path`：原来在本机的哪儿，可以没有（施工 3-9 五补）；同图片，贴的落成文件后记那个路径（施工 3-9 六补） | `{"type":"file","blob":"sha256:…","name":"报告.pdf","media_type":"application/pdf"}` |
+| `path` | 只有路径的附件（施工 AT-1）。`name`：文件名，只是名字，不带路径；`path`：它在核心那台机器上的哪儿（`SourcePath`）；`size`：头写的字节数，可以没有。没有 blob：内容没存进来 | `{"type":"path","name":"disk.iso","path":"/home/alice/Downloads/disk.iso","size":31457280}` |
 | `tool_call` | `call_id`：内核分的调用编号；`name`：模型说要调用的工具名；`args`：模型给的参数原文，一个字符串；`private`：驱动私有数据，可以没有 | `{"type":"tool_call","call_id":"call_44_1","name":"read","args":"{\"path\":\"src\"}"}` |
 
 - 除了标着「可以没有」的，每一格都必有。
-- 写法照 `kernel/ids.md`：`blob` 是内容哈希，`media_type` 是媒体类型，`name`（`image`、`file` 的）是文件名，`call_id` 是调用编号。`width`、`height` 是 0 到 4294967295 的整数（`u32`）。`text`、`args`、`tool_call` 的 `name` 是任意字符串。
+- 写法照 `kernel/ids.md`：`blob` 是内容哈希，`media_type` 是媒体类型，`name`（`image`、`file`、`path` 的）是文件名，`path` 是附件的路径，`size` 是 0 到 18446744073709551615 的整数（`u64`），`call_id` 是调用编号。`width`、`height` 是 0 到 4294967295 的整数（`u32`）。`text`、`args`、`tool_call` 的 `name` 是任意字符串。
 
 **驱动私有数据** `Private`：供应商要原样传回的东西，例如思考块的签名、供应商自己的调用编号。
 
@@ -79,14 +80,14 @@
 2. 不是 JSON 对象的，报 serde_json 的原话（`expected a map`）。
 3. 没有 `type` 的，报「missing field `type`」。
 4. `type` 不是字符串的，报 serde_json 的原话（`invalid type`）。
-5. 认识的五种，照那一种读整块。缺了格、某一格不合写法的，报那一格的错，例如「missing field `width`」「bad content hash: …」「bad call id: …」「bad driver family: …」。
+5. 认识的六种，照那一种读整块。缺了格、某一格不合写法的，报那一格的错，例如「missing field `width`」「bad content hash: …」「bad call id: …」「bad driver family: …」。
 6. 认识的种类多出来的格不管：读进内存时丢掉，写出去不再有。
 7. 不认识的种类：整块原样留着（`Block::Unknown`），写出去一字不差，空格、数字的写法都不变。
 
 **写一块**：
 
 8. `type` 在最前，其余几格照上表的先后。
-9. `private`、图片块的 `name`、图片块和文件块的 `path`（施工 3-9 五补，排在最后）没有就不写这一格。
+9. `private`、图片块的 `name`、图片块和文件块的 `path`（施工 3-9 五补，排在最后）、`path` 块的 `size` 没有就不写这一格。
 10. 不认识的块照原文写。
 
 **块里的规矩**：
@@ -95,8 +96,9 @@
 12. 参数存模型给出的原文，不解析以后重新写：重新写会改变字节，前缀缓存随之失效。执行用的是修正过的另一份，日志里的不动（`kernel/tools.md`）。
 13. 调用编号由内核分，照这条回复的序号写成 `call_<序号>_<第几个>`（`kernel/request.md` 的流式累积器）；供应商自己的编号放在 `private` 里。中途换模型、换供应商，编号照样一致。
 14. 图片、文件本身不进事件：块里只放 blob 的内容哈希，内容存成 blob（`store.md`）。图片块的宽、高必有：量得出尺寸才当图片。造它们的：`read` 读图片造图片块（施工 4-13，`tools/read.md`），人附的附件造图片块、文件块（施工 3-9 三补，`protocol.md` 的 `blob.put`、`session.send`），都是进来时量好。图片块的名字（施工 3-9 四补）：人附的图片带，是 `blob.put` 回应里的那个名字，她分得清一句话里的几张图哪张是哪个文件；`read` 读出来的不带，那一次调用本来写着路径。以前的日志里图片块没有这一格，照读，写出去也没有。
+    只有路径的附件（施工 AT-1，2026-11-11 项目主人定：上传上限不动，超限的文件只把路径交给她）另成一种块 `path`，不借文件块：文件块的 `blob`、`media_type` 必有，执行器、驱动、导出、视图到处照它取内容、取大小、认类型；把那两格改成可以没有，旧版本读到没有 `blob` 的文件块整条事件读不进（缺格），新加一种块旧版本照第 7 条原样留着、投影跳过。造它的只有 `session.send`、`session.redo`（`protocol.md`）：核心不读那个文件，`name`、`path`、`size` 照头写的记。请求里它写成一句（`drivers/openai-chat.md` 第 9 条）；本地估算照这一块规范的 JSON 的字节数（`compaction.md` 第二条第 2 条）。
 15. 格式上哪一种块放在哪里都读得进来。谁放什么，见各种事件的 `blocks`（`kernel/events-bodies.md`）。
-16. 投影跳过不认识的块：给模型看的只有认识的五种（`crates/miyu-assemble/src/render.rs` 的 `known`，`kernel/request.md`）。
+16. 投影跳过不认识的块：给模型看的只有认识的六种（`crates/miyu-assemble/src/render.rs` 的 `known`，`kernel/request.md`）。
 
 **字符串取值**：
 
@@ -123,7 +125,7 @@
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-kernel/src/block/tests.rs` | 五种读写一字不差、认得出种类，图片块带名字、不带名字的都一字不差（`every_block_from_the_drawing_round_trips`）；驱动私有数据一字不差（`private_data_is_kept_byte_for_byte`）；第 11、12 条工具名和参数照原文（`tool_call_keeps_name_and_args_as_the_model_wrote_them`）；第 7 条（`unknown_block_is_kept_byte_for_byte`）；第 3、5 条的坏写法，图片块的名字带路径的也算（`broken_blocks_are_errors`） |
+| `crates/miyu-kernel/src/block/tests.rs` | 只有路径的附件读写一字不差、认得出种类、没写大小的不写、坏的报错（`a_path_only_attachment_is_known_and_round_trips`，施工 AT-1）；五种读写一字不差、认得出种类，图片块带名字、不带名字的都一字不差（`every_block_from_the_drawing_round_trips`）；驱动私有数据一字不差（`private_data_is_kept_byte_for_byte`）；第 11、12 条工具名和参数照原文（`tool_call_keeps_name_and_args_as_the_model_wrote_them`）；第 7 条（`unknown_block_is_kept_byte_for_byte`）；第 3、5 条的坏写法，图片块的名字带路径的也算（`broken_blocks_are_errors`） |
 | `crates/miyu-kernel/src/text_enum/tests.rs` | 第 17、18 条：认识的读成对应的一种、不认识的原样留着、只收字符串 |
 | `crates/miyu-kernel/src/event/*/tests.rs`、`crates/miyu-kernel/src/tool/tests.rs` | `Level`、`EndReason`、`ToolStatus`、`Decision`、`ErrorClass`、`Access` 每个认识的值读成自己那一种，不认识的原样留着（`each_…_reads_into_its_own_variant`、`an_unknown_…_is_kept_as_it_is`、`access_is_written_as_text_and_unknown_kinds_are_kept`）；`RestoreAction`、`RestoreOutcome` 读几个认识的、不认识的原样留着（`every_field_reads_back_as_written`、`a_new_action_or_outcome_is_kept_as_it_is`）；`Part`、`MessageRole`、`CallResult` 只查了几个值的写法，没有不认识的值的测试 |
 | `crates/miyu-kernel/src/tool/tests.rs` 的 `writing_files_and_unknown_kinds_count_as_writing`；`crates/miyu-kernel/src/session/tests/permission.rs` 的 `an_unknown_level_is_rejected`；`crates/miyu-kernel/src/facts/tests.rs` 的 `the_permission_block_names_the_level_in_effect`；`crates/miyu-session/src/guard/tests.rs`；`crates/miyu-kernel/src/session/tests/approval.rs` 的 `answers_that_do_not_fit_are_rejected` | 第 19 条表里的 `Access`、`Level`、`Decision` 几行 |

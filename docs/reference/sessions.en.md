@@ -140,7 +140,7 @@ Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [
 |---|---|---|
 | `session` | string, required | Which session |
 | `text` | string, required | What to say |
-| `attachments` | array | Attachments, each the `blob`, `name`, `media_type` from a `blob.put` response, optionally `path` (where it was on this machine) |
+| `attachments` | array | Attachments, in order. Each is the `blob`, `name`, `media_type` from a `blob.put` response, optionally `path` (where it was on this machine); or a path-only item `{"path", "name", "size"?}` with no `blob` (item 3 below) |
 | `urgent` | boolean, default `false` | Cut in: if she's busy, she sees it at the next step |
 | `shell` | boolean, default `false` | A command the person typed with `!` in the input box: `text` is the command line, run by the core in the session's working directory (item 4 below) |
 | `skills` | array of strings | Skills the person named with `$` in the input box, in order (pick names from [`command.catalog`](packages.en.md#commandcatalog)'s `skills`): each skill's body goes before what was said, wrapped in `<skill name=… path=…>`; the timeline shows `text` as typed. Unknown skills or ones people can't name: `unknown_skill`; turned off by the session's preset: `command_not_allowed` (`data.why` names the preset); listed twice, with `shell`, in a venue session or said by someone else: `bad_params` |
@@ -154,6 +154,10 @@ Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [
 1. If she's idle, the message starts a turn; if busy, it's queued (`urgent` ones cut in at the next step). The turn's `turn.started` has this request's `id` as `cause`, so you can tell it's yours.
 2. It returns once the message is on disk, without waiting for her answer; watch the pushes for that.
 3. Attachments are checked before the session is looked up: the blob must exist and is recognized again from its content (see [Attachments](blob.en.md)).
+   - **Path-only items**: a file over the upload limit (20 MiB) is not uploaded; you hand over only its path on the core's machine. `path`: an absolute path (starting with `/`, `~/`, a Windows drive letter or `\\`), no control characters, at most 4096 bytes; `name`: the file name (no path, at most 255 bytes); `size`: bytes, a non-negative integer, optional. Malformed ones get `bad_params`.
+   - The core doesn't read it or check that it exists: she sees one line with the name, path and size, the content isn't included, and she reads it from that path with her tools when she needs it (permissions apply then). They can be mixed with `blob` items; order is kept.
+   - It is recorded as a `{"type": "path", "name", "path", "size"?}` block in `message.user` (see [Events](events.en.md)); in the view it is still an attachment, without `blob` and `media_type`, with `path_only: true` (see [View](view.en.md)).
+   - Only `session.send` and `session.redo` take them: venue sessions (messages with `as`) and the attachments of [`session.answer`](#sessionanswer) don't, `bad_params`. `path` is a path on the core's machine, so a remote connection sending one still gets `local_machine_only` (see [Connection](connection.en.md)).
 4. `shell: true`: only from a person typing in a head; no permission check, no sandbox, no confirmation. It is recorded as a `message.user` with `shell`, and the reply comes once that is on disk. It runs when she hears it (first thing in a turn it starts when she's idle, or before the next model request when she's busy), in the session's working directory at that moment; the result is recorded as `shell.ran` (see [Events](events.en.md)) and she answers. Queued ones can be handed back like any message, and those never run. It is killed with its whole process group after 120 seconds; interrupting (`session.interrupt`) while it runs kills it and she doesn't answer. With `attachments` or `venue` it is `bad_params`. In the view stream the `user` entry gets a `shell` field (see [View](view.en.md)).
 
 **Prefix changing** (only for heads that sent `caps.prefix_ask: true` in the hello): when files in your tool description and prompt overrides, personas or presets change (skills don't count: a mid-session skill change goes into the end of the messages and leaves the prefix alone), the next request's prefix changes and the cache is lost. This is judged per session: a change to another persona, to pictures such as avatars and backgrounds, or to overrides the session doesn't use leaves its prefix untouched and isn't asked about. Starting a new turn in an idle session (`session.send`, `session.redo`, or a `command.run` that starts a turn) without `prefix` is refused with `prefix_changing`; `data.files` lists the changed files that go into its prefix (paths relative to the data root, at most 20) and `data.more` counts the rest. A session that just switched persona or preset was compacted then and isn't asked again. Offer the person "Send", "Compact and send" and "Cancel", then send again with `"prefix": "keep"` or `"compact"`. `compact` compacts first; if it can't, you get the compaction's refusal (for example `nothing_to_compact`) and the message is not sent. A batch that was let through is not asked again.
@@ -163,11 +167,18 @@ Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [
 ← {"id":"m1","jsonrpc":"2.0","result":{"cwd":"~/src/miyu","events":[42]}}
 ```
 
+Path only:
+
+```json
+→ {"jsonrpc":"2.0","id":"m2","method":"session.send","params":{"session":"01a14aca-…","text":"Have a look at this image file","attachments":[{"path":"/home/alice/Downloads/disk.iso","name":"disk.iso","size":31457280}]}}
+← {"id":"m2","jsonrpc":"2.0","result":{"cwd":"~/src/miyu","events":[47]}}
+```
+
 **Errors**
 
 | `data.reason` | When |
 |---|---|
-| `bad_params` (`-32602`) | An attachment is missing fields or malformed; `from` not a string or empty after removing control characters |
+| `bad_params` (`-32602`) | An attachment is missing fields or malformed; a path-only attachment sent to a venue session; `from` not a string or empty after removing control characters |
 | `empty_message` | No text and no attachments |
 | `unknown_attachment` | An attachment's blob isn't in the core |
 | `attachment_too_big` | An attachment is an image over the limits |

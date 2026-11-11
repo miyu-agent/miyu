@@ -8,7 +8,7 @@ blob 是核心存的一份文件内容，用内容哈希（`sha256:` 加 64 位�
 | [`blob.open`、`blob.write`、`blob.close`](#blobopenblobwriteblobclose) | 分块传一个大文件 |
 | [`blob.get`](#blobget) | 分块读一个 blob |
 
-一个附件最多 20 MiB（20,971,520 字节）。
+一个附件最多 20 MiB（20,971,520 字节）。更大的文件不传内容：在 [`session.send`](sessions.md#sessionsend) 的 `attachments` 里只交它在核心那台机器上的路径（`{"path", "name", "size"?}`，那一节第 3 条）。
 
 ## `blob.put`
 

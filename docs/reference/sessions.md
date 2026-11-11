@@ -140,7 +140,7 @@
 |---|---|---|
 | `session` | 字符串，必写 | 哪个会话 |
 | `text` | 字符串，必写 | 要说的话 |
-| `attachments` | 数组 | 附件，每项是 `blob.put` 的回应里的 `blob`、`name`、`media_type`，可另带 `path`（原来在本机哪儿） |
+| `attachments` | 数组 | 附件，照先后。每项是 `blob.put` 的回应里的 `blob`、`name`、`media_type`，可另带 `path`（原来在本机哪儿）；或者是只给路径的一项 `{"path", "name", "size"?}`，没有 `blob`（下面第 3 条） |
 | `urgent` | 布尔，默认 `false` | 急着插话：她正忙的，下一步就看到 |
 | `shell` | 布尔，默认 `false` | 人在输入框里用 `!` 打的一条命令：`text` 是命令行，核心照会话的工作目录跑（下面第 4 条） |
 | `skills` | 字符串数组 | 人在输入框里用 `$` 点名的技能，照先后（名字从 [`command.catalog`](packages.md#commandcatalog) 的 `skills` 挑）：每个技能的正文套一层 `<skill name=… path=…>` 外壳，排在这句话前面发给她；时间线上照 `text` 原样显示。没有、不许人点名的 `unknown_skill`；会话的预设关着的 `command_not_allowed`（`data.why` 说哪个预设）；写了两遍、和 `shell` 一起写、场所会话、别人说的 `bad_params` |
@@ -154,6 +154,10 @@
 1. 她闲着，这一句开一轮；正忙，排队（`urgent` 的插进下一步）。开的那一轮 `turn.started` 的 `cause` 是这一条的 `id`，照它认出是你开的。
 2. 这一句落了盘就回，不等她答完：她怎么答看推送。
 3. 附件先查再找会话：附件的 blob 要在、照内容再认一遍（见 [附件](blob.md)）。
+   - **只给路径的一项**：超过上传上限（20 MiB）的文件不用传内容，只交它在核心那台机器上的路径。`path`：绝对路径（`/`、`~/`、Windows 的盘符或 `\\` 开头），没有控制字符，最多 4096 字节；`name`：文件名（不带路径，最多 255 字节）；`size`：字节数，非负整数，可不写。写法不对的 `bad_params`。
+   - 核心不读它、不查它在不在：她看到一句写着名字、路径、大小的说明，内容没有附上，要看自己照路径用工具读（读的时候照权限判）。能和有 `blob` 的混着发，先后照写的。
+   - 记成 `message.user` 里的一块 `{"type": "path", "name", "path", "size"?}`（见 [事件](events.md)）；视图里照样是一件附件，没有 `blob`、`media_type`，多 `path_only: true`（见 [视图](view.md)）。
+   - 只有 `session.send`、`session.redo` 收：场所会话（带 `as` 的）、[`session.answer`](#sessionanswer) 的附件不收，`bad_params`。`path` 是核心那台机器上的路径，远程的连接带了的照旧 `local_machine_only`（见 [连接](connection.md)）。
 4. `shell: true`：只收人在头里打的，不判权限、不进沙盒、不弹确认。记成一句写了 `shell` 的 `message.user`，落了盘就回；在她听到它的那一刻（闲着时开一轮的第一件，正忙时下一步问模型以前）照那时会话的工作目录跑，结果记一条 `shell.ran`（见 [事件](events.md)），她接着回。排着的照普通消息退回，退回的不跑。跑满 120 秒整组杀掉；跑着时打断（`session.interrupt`）整组杀掉、她不回。和 `attachments`、`venue` 一起写的 `bad_params`。视图流里那条 `user` 下面多一格 `shell`（见 [视图](view.md)）。
 
 **前缀要变**（握手 `caps.prefix_ask: true` 的头才有）：你的工具说明、提示词覆盖、人格、预设目录里的文件改了（技能不算：会话中途技能变了走消息尾巴，前缀不变），下一轮的请求前缀会变、缓存失效。只照这个会话自己判：改的是别的人格、头像背景这些图片、它用不到的覆盖，它的前缀一个字没变，不问。会话空着时开新一轮（`session.send`、`session.redo`、开轮的 `command.run`）不带 `prefix` 的，回 `prefix_changing`，`data.files` 是改了的、真进它前缀的文件（照数据根写的相对路径，最多 20 个），多的在 `data.more`。换了人格、预设的会话已经先压缩过，不再问。给人弹「直接发送」「压缩上下文并发送」「取消」，选了再带 `"prefix": "keep"` 或 `"compact"` 发一次。`compact` 先压缩再说，压不了的回压缩的拒绝（例如 `nothing_to_compact`），这句没发。放行过的这一批不再问。
@@ -163,11 +167,18 @@
 ← {"id":"m1","jsonrpc":"2.0","result":{"cwd":"~/src/miyu","events":[42]}}
 ```
 
+只给路径的：
+
+```json
+→ {"jsonrpc":"2.0","id":"m2","method":"session.send","params":{"session":"01a14aca-…","text":"看看这个镜像","attachments":[{"path":"/home/alice/Downloads/disk.iso","name":"disk.iso","size":31457280}]}}
+← {"id":"m2","jsonrpc":"2.0","result":{"cwd":"~/src/miyu","events":[47]}}
+```
+
 **出错**
 
 | `data.reason` | 什么时候 |
 |---|---|
-| `bad_params`（`-32602`） | 附件缺了格、写法不对；`from` 不是字符串或去掉控制字符以后是空的 |
+| `bad_params`（`-32602`） | 附件缺了格、写法不对；只给路径的附件发给了场所会话；`from` 不是字符串或去掉控制字符以后是空的 |
 | `empty_message` | 没有字、没有附件 |
 | `unknown_attachment` | 附件的 blob 核心里没有 |
 | `attachment_too_big` | 附件里有超了上限的图 |

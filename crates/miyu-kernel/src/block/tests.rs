@@ -1,5 +1,5 @@
 //! 内容块的测试：图纸上的五种读写一字不差；驱动私有数据、工具名和参数、不认识的块，
-//! 都一字不差；附件原来的路径（施工 3-9 五补）；坏的报错。
+//! 都一字不差；附件原来的路径（施工 3-9 五补）；只有路径的附件（施工 AT-1）；坏的报错。
 
 use super::*;
 use crate::test_support::{rejected, round_trip};
@@ -86,6 +86,32 @@ fn an_attachment_carries_where_it_came_from_only_when_it_has_one() {
     };
     assert_eq!(file.path, None);
     assert_eq!(serde_json::to_string(&Block::File(file)).unwrap(), old);
+}
+
+/// 只有路径的附件（施工 AT-1）：认得出种类，读写一字不差；没写大小的读成没有，写出去也没有这一格。名字、路径照
+/// 各自的写法查。
+#[test]
+fn a_path_only_attachment_is_known_and_round_trips() {
+    let sized = r#"{"type":"path","name":"大.iso","path":"/data/大.iso","size":31457280}"#;
+    let bare = r#"{"type":"path","name":"notes.md","path":"~/notes.md"}"#;
+    for json in [sized, bare] {
+        round_trip::<Block>(json);
+        let block: Block = serde_json::from_str(json).unwrap();
+        assert!(!matches!(block, Block::Unknown(_)), "{json} 应该认得出种类");
+    }
+    rejected::<Block>(
+        r#"{"type":"path","name":"a/b.iso","path":"/data/b.iso"}"#,
+        "bad file name",
+    );
+    rejected::<Block>(
+        r#"{"type":"path","name":"b.iso","path":"data/b.iso"}"#,
+        "bad source path",
+    );
+    rejected::<Block>(
+        r#"{"type":"path","name":"b.iso","path":"/data/b.iso","size":-1}"#,
+        "expected u64",
+    );
+    rejected::<Block>(r#"{"type":"path","name":"b.iso"}"#, "path");
 }
 
 #[test]

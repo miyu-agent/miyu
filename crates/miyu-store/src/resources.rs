@@ -14,9 +14,10 @@ use std::path::{Path, PathBuf};
 
 use miyu_policy::{
     AttachedPathTexts, CompactionTexts, CoreLines, CoreTexts, DriverPlaceholders, FactTexts,
-    HarnessTexts, ImageDescriptionTexts, ImageNameTexts, JobTexts, OpenPathTexts, PeerIdleTexts,
-    PeerTexts, PermissionTexts, PersonaTexts, RebuildTexts, RecapTexts, ShortenTexts, Sources,
-    TextFileTexts, TitleTexts, ToolResultTexts, TurnEndedTexts, VisionTexts, Wrap,
+    HarnessTexts, ImageDescriptionTexts, ImageNameTexts, JobTexts, OpenPathTexts, PathOnlyTexts,
+    PeerIdleTexts, PeerTexts, PermissionTexts, PersonaTexts, RebuildTexts, RecapTexts,
+    ShortenTexts, Sources, TextFileTexts, TitleTexts, ToolResultTexts, TurnEndedTexts, VisionTexts,
+    Wrap,
 };
 
 use crate::env::Env;
@@ -314,6 +315,10 @@ impl ResourceRoot {
                 open_path: Some(OpenPathTexts {
                     image_open_path: driver("image-open-path.txt")?,
                     file_open_path: driver("file-open-path.txt")?,
+                }),
+                path_only: Some(PathOnlyTexts {
+                    file_path_only: driver("file-path-only.txt")?,
+                    file_path_only_sized: driver("file-path-only-sized.txt")?,
                 }),
             },
             compaction: Some(CompactionTexts {
