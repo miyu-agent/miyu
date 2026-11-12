@@ -60,7 +60,8 @@ pub struct Snapshot {
     pub auto_step_limit: Option<u32>,
     /// 有没有人能确认：有确认界面的头有；`miyu ask` 一律没有（`22-命令行.md` 第三节，`02-内核.md` 第六节「确认怎么走」）。
     pub attended: bool,
-    /// 有计划的重启打断了一轮，再起来时连着接着干几次（`02-内核.md` 第六节「载入、崩溃、重启」）。
+    /// 有计划的重启打断了一轮，再起来时接着干：从人最后说的那句话起最多接几次（`02-内核.md` 第六节「载入、崩溃、重启」，
+    /// 施工 RS-1）。
     pub resumes: u32,
     /// 压缩用的数（施工 6-2 上）。以前造的快照里没有，读成没有：那些会话不主动压。没有的不写，旧快照的字节不变。
     #[serde(default, skip_serializing_if = "Option::is_none")]

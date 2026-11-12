@@ -477,6 +477,7 @@ impl Watch {
                     self.one_turn();
                     self.note_started(started.trigger);
                 }
+                Body::MessageUser(_) if event.by.is_person() => self.note_spoke(),
                 _ => {}
             }
             self.queue_check(&events, k);

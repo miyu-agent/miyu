@@ -2,8 +2,8 @@
 //!
 //! - 有计划的重启：正在进行的回合以 `restarted` 结束，排着队的不接着开；
 //! - 崩了再载入：日志停在没结束的回合里的，没结果的调用都补上，以 `aborted` 结束，不接着开；
-//! - 再起来：最后一轮以 `restarted` 结束、连着被打断的没超过上限，接着开一轮，由排着队的最后一条
-//!   触发，没有就由那条结束触发；超过了上限，什么都不补；
+//! - 再起来：最后一轮以 `restarted` 结束、从人最后说的那句话起接着干过的还没到上限，接着开一轮，由排着队的最后一条
+//!   触发，没有就由那条结束触发；到了上限，什么都不补（施工 RS-1：只有人开口清零）；
 //! - 还没结束的后台命令，照编号各补一条 `aborted`（`by` 是内核），排在最前（施工 7-3）。
 //!
 //! 只在全都落了盘的时候崩：没落盘的丢了，对内核来说就是在更早那一刻崩的。
@@ -12,11 +12,11 @@ use super::*;
 use crate::event::JobReason;
 use crate::id::JobId;
 
-/// 看守记着的重启：连着几轮被有计划的重启打断，最后那一轮结束时排着队的消息。
+/// 看守记着的重启：从人最后说的那句话起接着干过几轮，最后那一轮结束时排着队的消息。
 #[derive(Default)]
 pub(in super::super) struct Restarts {
-    /// 连着几轮以 `restarted` 结束。
-    streak: u32,
+    /// 从人最后说的那句话起，接着干开过几轮（施工 RS-1）。
+    resumed: u32,
     /// 最后以 `restarted` 结束的那一轮：那条结束的序号，和结束时排着队的消息。
     last: Option<(Seq, Vec<Seq>)>,
 }
@@ -34,27 +34,30 @@ impl Watch {
     /// 回合结束：记下是不是被有计划的重启打断的，和那时排着队的消息。
     pub(super) fn note_ended(&mut self, event: &Event, reason: &EndReason, resumable: bool) {
         if *reason == EndReason::Restarted {
-            self.restarts.streak += 1;
             self.restarts.last = resumable.then(|| (event.seq, self.queue.queued.clone()));
             if !resumable {
                 self.seen_paths.insert("重启打断的手动压缩不接着压");
             }
         } else {
-            self.restarts.streak = 0;
             self.restarts.last = None;
         }
     }
 
-    /// 回合开始：不是接着干的那一轮（由被打断时排着的最后一条、或者那条结束触发），从头数；被重启
+    /// 回合开始：是接着干的那一轮（由被打断时排着的最后一条、或者那条结束触发）的，记一次；被重启
     /// 打断的那一轮不再是最后一轮。
     pub(super) fn note_started(&mut self, trigger: Option<Seq>) {
         let resumed = self.restarts.last.as_ref().is_some_and(|(ended, queued)| {
             Some(queued.last().copied().unwrap_or(*ended)) == trigger
         });
-        if !resumed {
-            self.restarts.streak = 0;
+        if resumed {
+            self.restarts.resumed += 1;
         }
         self.restarts.last = None;
+    }
+
+    /// 人说了一句（回合中途插进来的也算）：接着干的次数从 0 数（施工 RS-1）。
+    pub(super) fn note_spoke(&mut self) {
+        self.restarts.resumed = 0;
     }
 
     /// 撤销过：被重启打断的那一轮，再起来也不接了。
@@ -90,7 +93,7 @@ impl Watch {
         }
         let crashed = self.turn_open().then(|| self.open_turn());
         let resume = match (&self.restarts.last, crashed) {
-            (Some((ended, queued)), None) if self.restarts.streak <= policy.resumes => {
+            (Some((ended, queued)), None) if self.restarts.resumed < policy.resumes => {
                 Some(queued.last().copied().unwrap_or(*ended))
             }
             _ => None,

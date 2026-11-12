@@ -63,8 +63,11 @@ pub(super) struct Replay {
     triggered: bool,
     /// 最后结束的那个回合。
     ended: Option<Ended>,
-    /// 连着几轮是被有计划的重启打断的：数的是被打断、接着干、又被打断的那一串，别的回合开了就从头数。
-    restarts: u32,
+    /// 从人最后说的那句话起，重启以后接着干开过几轮（施工 RS-1，`docs/blueprint/kernel/session.md`「载入和崩溃」第 6 条）：
+    /// 只有人（[`By::is_person`]）说一句话从 0 数，回合中途插进来的也是；回报、留言、别的会话、定时任务、长期目标的续轮叫醒
+    /// 的回合都不清零。原来是别的回合一开就清零：接着干的那一轮放一条后台命令去重启、自己结束，命令的回报叫醒的下一轮把它
+    /// 清掉，次数就永远数不满。
+    resumed: u32,
     /// 每个命令编号，和它的回应附的那几条，照编号第一次出现的先后（施工 2-1 补：和没重启时一样，「命令和回应」第 3 条）：
     /// `cause` 是它的那几条，在它开的头一个 `turn.started` 前面截住；头一条就是 `turn.started` 的（手动压缩、清空）只留它。
     /// 第三格是截住了没有。
@@ -110,7 +113,7 @@ impl Session {
     ///
     /// 日志停在一个没结束的回合里，就是崩了：还没有结果的调用各补一条「已取消：Miyu 重启了，没跑完」，
     /// 再结束这一轮，原因 `aborted`，等人开口。最后一轮是被有计划的重启打断的（`restarted`），自动
-    /// 开一轮接着干；连着被打断的轮数超过了策略里的上限，就不接。补的、开的事件在返回的动作里，
+    /// 开一轮接着干；从人最后说的那句话起已经接着干过策略里的上限那么多轮，就不接（施工 RS-1）。补的、开的事件在返回的动作里，
     /// 时刻是 `at`，`by` 是内核。有 `job.started`、还没报过结束的后台命令，先各补一条 `job.reported`（`aborted`，施工
     /// 7-3）。没听到的回报不因为载入开轮：记在一边的照日志算回来，恢复了撤销再说；有没有头订阅着
     /// 当没有，头订阅了再交（施工 7-2）。子会话最后报过的那一份再交一次，排在 `Recall` 后面；崩了的那一轮该报的，补的
@@ -323,7 +326,7 @@ impl Session {
             Some(ended)
                 if ended.reason == EndReason::Restarted
                     && ended.triggered
-                    && replay.restarts <= self.policy.resumes =>
+                    && replay.resumed < self.policy.resumes =>
             {
                 let trigger = ended.queued.last().copied().unwrap_or(ended.seq);
                 let cause = match trigger == ended.seq {
@@ -380,8 +383,8 @@ impl Replay {
                 ..
             }) => self.permission = Some(permission.clone()),
             Body::TurnStarted(started) => {
-                if !self.resumes(started.trigger) {
-                    self.restarts = 0;
+                if self.resumes(started.trigger) {
+                    self.resumed = self.resumed.saturating_add(1);
                 }
                 self.opened = event.cause.clone();
                 self.triggered = started.trigger.is_some();
@@ -392,6 +395,9 @@ impl Replay {
             }
             Body::MessageUser(_) => {
                 self.causes.insert(event.seq, event.cause.clone());
+                if event.by.is_person() {
+                    self.resumed = 0;
+                }
             }
             // 并进来时带了的换掉这一轮的（施工 RT-1）；没带的不动。
             Body::TurnJoined(TurnJoined {
@@ -399,10 +405,6 @@ impl Replay {
             }) => self.tail = Some(tail.clone()),
             Body::TurnEnded(ended) => {
                 self.open = false;
-                self.restarts = match ended.reason {
-                    EndReason::Restarted => self.restarts + 1,
-                    _ => 0,
-                };
                 self.ended = Some(Ended {
                     seq: event.seq,
                     reason: ended.reason.clone(),
