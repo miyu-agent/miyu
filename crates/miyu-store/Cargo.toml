@@ -61,3 +61,8 @@ workspace = true
 [[test]]
 name = "all"
 path = "tests/all.rs"
+
+# 量照意思检索在 661 到 50 万条时各要多久（施工 VQ-1）：量的是整个进程的峰值常驻内存、从盘上读了多少，自己一个程序。
+[[test]]
+name = "recall_vectors_measure"
+path = "tests/recall_vectors_measure.rs"
