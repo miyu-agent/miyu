@@ -98,20 +98,22 @@ pub struct FileTrashed {
     pub trash: String,
 }
 
-/// `file.shown`：`show` 给人看了一个文件（施工 D-5，设计 `35-展示.md`）。内容存成了 blob；头照这几格选怎么显示，同一个
-/// `path` 再来一条换掉那一张。内核不读它。
+/// `file.shown`：`show` 给人看了一个文件（施工 D-5，设计 `35-展示.md`）。施工 SW-1 起不存内容：只记真实路径、大小、修改时间，
+/// 本机的头照路径读，远程的头经 `session.shown` 读、核心读之前照大小和修改时间核对。头照这几格选怎么显示，同一个 `path` 再来
+/// 一条换掉那一张。内核不读它。以前记的多一格 `blob`：不认（不拒多的格），读得进，写出去没有。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FileShown {
     /// 换成真实位置以后的绝对路径。
     pub path: String,
-    /// 内容。
-    pub blob: ContentHash,
     /// 文件名：真实位置的最后一段。
     pub name: String,
     /// 认出来的媒体类型。
     pub media_type: String,
-    /// 字节数。
+    /// 展示那一刻的字节数。
     pub size: u64,
+    /// 展示那一刻的修改时间，精确到毫秒（施工 SW-1）。施工 SW-1 起都有；以前记的没有，核对不了。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub modified: Option<crate::time::Timestamp>,
     /// 她写的标题；没写的没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,

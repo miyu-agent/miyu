@@ -7,7 +7,7 @@
 //!    （`session_not_found`，看不到的不露）。本机的会话给主人这边的连接，平台桥碰不到；场所会话只给接这个平台的桥（2026-10-23
 //!    项目主人定场所会话只读、不从头上交互），主人本人的私聊（没关起来的）另外主人这边的连接也碰得到。`blob.get` 不走这一道：它照
 //!    会话找 blob 有自己更细的一套（`attach/reach.rs`），而且拒的一律 `unknown_blob`，免得拿「会话不存在」和「不是你的」的不同
-//!    说法探编号。
+//!    说法探编号。`session.shown` 同样不走（施工 SW-1）：照同一套判，拒的一律 `unknown_shown`。
 
 use std::sync::Arc;
 
@@ -47,7 +47,7 @@ pub(super) async fn refuse(core: &Arc<Core>, who: &Who<'_>, request: &Request) -
 
 /// 第 4 道：参数里的 `session` 是碰不到的会话。没写、写法不对、没有这个会话的不在这里拒：方法照它原来的说法答。
 async fn others_session(core: &Arc<Core>, caller: &Caller, request: &Request) -> Option<Refusal> {
-    if request.method == "blob.get" {
+    if matches!(request.method.as_str(), "blob.get" | "session.shown") {
         return None;
     }
     let id = request.params.get("session")?.as_str()?;

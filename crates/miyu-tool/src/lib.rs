@@ -45,6 +45,7 @@ mod schedules;
 mod sessions;
 mod settings;
 mod shelf;
+mod stamp;
 mod stop;
 #[cfg(feature = "testkit")]
 pub mod testkit;
@@ -100,6 +101,7 @@ pub use sessions::{
 };
 pub use settings::SettingsPort;
 pub use shelf::{Edition, Shelf};
+pub use stamp::modified_at;
 pub use stop::Stop;
 pub use todos::TODOWRITE;
 pub use usage::{ContextUse, SESSION_USAGE, Spending, Spent, UsagePort};

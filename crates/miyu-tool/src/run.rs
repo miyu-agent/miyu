@@ -236,27 +236,30 @@ pub enum Effect {
     TodoWritten(TodoWritten),
     /// 包的会话状态（施工 TW-1，设计 46）：扩展的工具结果带的，协议端点查过写法，执行器原样换成内核的 `package.state`。
     PackageState(miyu_kernel::event::PackageState),
-    /// 给人看了一个文件（施工 D-5）：带着内容，执行器存成 blob，换成内核的 `file.shown`。
+    /// 给人看了一个文件（施工 D-5）：执行器换成内核的 `file.shown`。施工 SW-1 起不带内容，只带路径、大小、修改时间。
     Shown(ShownFile),
 }
 
-/// `show` 给人看的一个文件（施工 D-5）：内容和认出来的几样。
+/// `show` 给人看的一个文件（施工 D-5）：在哪、多大、什么时候改的，和认出来的几样。施工 SW-1 起不带内容（不拷进核心、不限
+/// 大小）：头照路径读，远程的经 `session.shown` 读，读之前照大小、修改时间核对。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ShownFile {
     /// 真实的位置。
     pub path: PathBuf,
-    /// 内容。
-    pub content: Vec<u8>,
     /// 文件名。
     pub name: String,
     /// 媒体类型。
     pub media_type: String,
+    /// 展示那一刻的字节数：照打开的那个句柄取。
+    pub size: u64,
+    /// 展示那一刻的修改时间（[`crate::modified_at`]）：照打开的那个句柄取。
+    pub modified: miyu_kernel::time::Timestamp,
     /// 她写的标题。
     pub title: Option<String>,
     /// 代码、文本的语言。
     pub language: Option<String>,
     /// 图片的宽、高。
-    pub size: Option<(u32, u32)>,
+    pub pixels: Option<(u32, u32)>,
 }
 
 impl Done {

@@ -46,6 +46,7 @@
 | `crates/miyu-endpoint/src/undo.rs` | 撤销、恢复、重做的回应里给人看的几样（`protocol/undo.md`） |
 | `crates/miyu-endpoint/src/attach.rs` | 附件（施工 3-9 三补）：`blob.put` 读、存；`session.send`、`session.redo` 的附件变成内容块；认是什么、文件名和媒体类型怎么查、存好了怎么拼回应，和分块上传共用（施工 W-5）；`model.call` 的图照哈希变成图片块（`attach/look.rs` 的 `images`，施工 8-20；人格头像的 `picture` 也在那里）：照存处找 |
 | `crates/miyu-tool/src/attachment.rs` | 认一个附件是什么：图片、PDF、别的文件，媒体类型（施工 C-9 从 `miyu-endpoint/src/attach/kind.rs` 挪来，她发话、派子代理带的附件共用） |
+| `crates/miyu-endpoint/src/shown.rs`（施工 SW-1） | `session.shown`：照会话加调用编号找那次 `file.shown`（从调用编号里的助手消息读起，只解 `tool.result`）、照打开的句柄核对大小和修改时间、读一段；谁读得到照 `attach/reach.rs` 的 `reachable`（同带 `session` 的 `blob.get`） |
 | `crates/miyu-endpoint/src/uploads.rs` | `blob.open`、`blob.write`、`blob.close`：跟着连接走的上传表，60 秒不写、连接断了都作废（施工 W-5） |
 | `crates/miyu-endpoint/src/refusal.rs`、`refusal/` | 拒绝：错误码、原因码、中英文的话；改人格、预设的两种在 `refusal/edits.rs`，人碰记忆的几种在 `refusal/memory.rs`（施工 R-3 补；R-7 补多了整理的两种），知识库的两种在 `refusal/knowledge.rs`（施工 K-1 上） |
 | `crates/miyu-endpoint/src/settings.rs` | 端点的配置项：界面语言 `ui.language`，`auto` 照系统的语言算出 `zh`、`en`、`ja`（施工 8-1 声明，8-2 握手时用）；新会话开局只读 `permission.start_read_only`（施工 8-2） |
@@ -242,6 +243,7 @@
 | `account.set_avatar`、`account.avatar` | 你的头像（施工 AV-1，`login/avatar.rs`）：放在数据根 `avatar.<扩展名>`，查法、写法、上限同人格头像（`personas/picture.rs` 的 `check`、`replace`、`encoded`）；握手回应带版本 |
 | `blob.open`、`blob.write`、`blob.close` | 分块传一个附件，最后存成 blob，回应和 `blob.put` 一样；跟着连接走，60 秒不写、连接断了都作废（施工 W-5） |
 | `blob.get` | 分块读一个 blob：照存处给；写了 `session` 的照那个会话引用过的（施工 W-6、W-6 补）；扩展只读得到它拿得到的（施工 W-6 三补）。它不走「关着的场所会话只给桥」那一道，拒的一律 `unknown_blob`，免得拿两种拒绝的说法探编号 |
+| `session.shown` | 分段读她展示过的一个文件（施工 SW-1）：照会话加调用编号找那次 `show` 记下的路径，大小、修改时间对上了才读；谁读得到同带 `session` 的 `blob.get`，也不走「关着的场所会话只给桥」那一道，拒的一律 `unknown_shown` |
 | `fs.list` | 列一层目录：数据根只有默认工作区能列（施工 W-2） |
 | `fs.find` | 在一个目录里模糊找文件：数据根只有默认工作区能找（施工 W-2）；带 `wait` 等清单建完再答（施工 V-6 上） |
 | `fs.realpath` | 一个路径换成真实的位置：不查边界，落在数据根里的照样换（施工 W-3） |
@@ -490,7 +492,7 @@
 ```
 
 1. 不写 `session` 的照存处给：没有这个 blob，`unknown_blob`。扩展的连接（核心拉起的包）不写 `session` 的只读得到它拿得到的（施工 W-6 三补）：它自己 `blob.put`、分块上传存的，它经 `bus.call` 调别的包（施工 BUS-5 以前也能经 `package.call`）、回应里出现的哈希里答的那个包自己拿得到的（只转答的包拿得到的：不然一个包把别处看来的哈希写进回应，就替调它的包开了门）；别的一律 `unknown_blob`。它自己存的那一种另落盘（施工 BG-1：表情包这样的包把图只存在 blob 里、自己只记哈希，核心重起以后手里没有内容，没法再存一次）：`var/lib/blob-grants/<包的编号>`，纯文本、一行一个哈希、只追加（`miyu_store::blob::grants`：同 `journal.jsonl` 每追加一行都重新打开、追加、同步；同一个哈希只写一次；写不进的记一行 `WARN`，存照算成、这一次起来照旧读得到），核心起来时读回（读不懂的行跳过、记一行 `WARN`）。落盘以前（施工 BG-1 之前）存的另补一次（施工 BG-1补，端点的 `attach/grants/backfill.rs`）：数据根里还没有 `var/lib/blob-grants/` 这个目录的那一次起来（升级后第一次、全新的数据根），拉起扩展之前，照装着的每个包扫它自己的状态目录 `var/lib/<编号>/`（`miyu_store::blob::grants::scan`：照字节找哈希，不跟链接、不出目录，一份文件 64 MiB、一个包 20000 份、16 层为限，没扫完的记一行 `WARN`），找到的里面存处确实有的登记给它、落盘，记一行 `INFO`（`blob grants backfilled`，哪个包、找到几个、登记几个），各包的那一份先写进暂存目录 `var/lib/.blob-grants.new/`、再一次改名成 `var/lib/blob-grants/`（`blob::grants::seed`；中途被杀的只剩暂存目录，下次起来先删掉、整个重做），哪怕一个都没补到；目录在了不再做：包以前能把哈希记进自己的状态，说明它当时拿得到，以后的许可都落盘了，要是每次起来都扫，包往自己目录里写别处看来的哈希就给自己开了门。一个包扫不了的记一行、接着扫别的，补登记失败不拦核心起来。经 `package.call` 拿回来的、别人交来的只记在核心的内存里，核心重起就没了：那是一次调用里临时给的。包卸了它那一份扔掉、文件删掉，装回来从空的开始。人的连接照旧。
-   写了 `session` 的照那个会话给（施工 W-6 补，2026-10-17 接入QQ 的会话要的）：会话编号不合写法 `bad_params`。谁读得到：人的连接读得到本机会话、不关沙盒的场所会话（主人本人的私聊）的；平台桥只读得到它的平台的场所会话（同 `venue.sessions` 列给它的，照场所编号的平台前缀）里引用过的 blob，引用照结构认：消息、工具结果的图片块、文件块，工具结果效果 `file.shown` 的 `blob`，她经工具发出去的图（`tool.result` 的 `sent`，施工 W-6 再补，接入QQ 发表情包要读主人私聊里的），不在正文里搜（桥能以外部身份往主人的私聊里发字，照原文搜就能写一句带哈希的话读走主人别的 blob）。不合的一律 `unknown_blob`，不说是哪一样不对。扩展的连接也一样（施工 W-6 三补）：它要的 blob 得是那个会话结构里引用过的，写上随便一个会话读不到存处里别的 blob。
+   写了 `session` 的照那个会话给（施工 W-6 补，2026-10-17 接入QQ 的会话要的）：会话编号不合写法 `bad_params`。谁读得到：人的连接读得到本机会话、不关沙盒的场所会话（主人本人的私聊）的；平台桥只读得到它的平台的场所会话（同 `venue.sessions` 列给它的，照场所编号的平台前缀）里引用过的 blob，引用照结构认：消息、工具结果的图片块、文件块，她经工具发出去的图（`tool.result` 的 `sent`，施工 W-6 再补，接入QQ 发表情包要读主人私聊里的），不在正文里搜（桥能以外部身份往主人的私聊里发字，照原文搜就能写一句带哈希的话读走主人别的 blob）。不合的一律 `unknown_blob`，不说是哪一样不对。扩展的连接也一样（施工 W-6 三补）：它要的 blob 得是那个会话结构里引用过的，写上随便一个会话读不到存处里别的 blob。
 2. 从 `offset` 起读 `length` 个字节，读到结尾就停；`offset` 过了结尾的，`data` 是空的。`size` 是打开那一刻的大小。`length` 写 0 只回 `size`，`data` 是空的。`length` 超过 512 KiB：`bad_params`。
 3. 不重新核对整份内容的哈希：核对在核心自己用整份内容的时候（`store.md` 第十条）。
 4. 在阻塞线程里读。
@@ -508,6 +510,23 @@
 1. `path` 照 `fs.md` 换成真实的位置，`~` 照家目录接；相对的（没有 `cwd` 可接）：`bad_params`。落在数据根里、又不在默认工作区里：`path_forbidden`。
 2. 照 `fs.md` 第四节安全地打开，路上一层链接都不跟；换不成真实的位置、没有、不是普通文件、没有权限：`path_unreadable`。
 3. 读法同 `blob.get` 第 2、3、4 条。
+
+**`session.shown`**（施工 SW-1，2026-11-12 项目主人定：展示的文件不拷进核心、不限大小，局域网的头经核心边读边传）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 会话编号 |
+| `call` | 字符串，必写 | 展示的那一次调用的编号：视图工具卡的 `call`、`tool.result` 的 `call_id` |
+| `offset` | 非负整数，不写是 0 | 同 `blob.get` |
+| `length` | 非负整数，不写是 512 KiB（524288） | 同 `blob.get` |
+
+回应同 `blob.get`：`{"data": <这一段的 base64>, "size": <一共几个字节>}`。
+
+1. 别的格不认：写了的（例如 `path`）`bad_params`。核心不收路径，只读这次展示在日志里记下的那一个。`session`、`call` 写法不对的 `bad_params`。
+2. 谁读得到：同带 `session` 的 `blob.get` 第 1 条的会话那一半（`attach/reach.rs` 的 `reachable`）：人的连接读得到本机会话、不关沙盒的场所会话；平台桥只读得到它的平台的场所会话；扩展要那个会话是它看得到的。文件就是那个会话展示过的，不另查引用。会话没有、读不到、日志里找不到这次调用的结果、结果里没有 `file.shown` 的一律 `unknown_shown`，不说是哪一样（同 `unknown_blob`）。不走「关着的场所会话只给桥」那一道（「怎么走」第 4 条）。
+3. 找法：调用编号里带着发起它的助手消息的序号，从那一条读起（`miyu_store::log::read_range_only`，只解 `tool.result`），找到这次调用的结果就停，取它的第一个 `file.shown`。不整份翻日志：视频拖进度一段段来读，每次只读那一小截。撤掉的那一轮里展示过的照样读得到（同 `blob.get` 照会话找 blob 不看撤没撤）。
+4. 核对：照记下的 `path` 安全地打开（`miyu_fs::open_file`，不跟最后一层链接），照打开的那个句柄取大小和修改时间（`miyu_tool::modified_at`），和记的 `size`、`modified` 都对上才读；对不上的 `file_changed`（以前记的没有 `modified`，也是这一句）；没有、不是普通文件了 `file_gone`；别的打不开、读不了的 `internal_error`，记一行 `WARN`。
+5. 读法同 `blob.get` 第 2、4 条，`size` 就是核对过的那个数。本机的头（握手回应带 `host`）不用它，照 `path` 直接读硬盘；核心不替头截，预览多少、怎么边传边放是头的事。
 
 **`session.interrupt`**
 
@@ -1437,7 +1456,7 @@ Markdown 的回应 `{"path" | "text", "bytes", "tokens", "upto", "redacted", "ch
 1. 凭据决定的闸（施工 W-8、Y-1 上）：一次性码连上的只能设密码（`setup_first`）。
 2. 本机才能用的（施工 Y-1 下）：远程连上的当场拒。
 3. 扩展照它声明的能力挡（施工 X-30，`extensions.md`「谁能调」）。
-4. **关着的场所会话只给桥**（施工 Y-2 上，SU-4 中改）：参数里写了 `session` 的，那个会话关在沙盒里（群、陌生人的私聊）、这个连接又不是接这个平台的桥的，一律 `session_not_found`，参数都不看（看不到的不露，不回「没有权限」）；没写、写法不对、没有这个会话的照方法自己的说法。参数里别处写着会话的照同一套判（`sessions::reachable`）：`schedule.add` 的 `target.session` 碰不到的回 `bad_params`、`data.problem` 是 `session`，和没有这个会话一个说法（施工 AS-3）。人的头碰不到它们（2026-10-23 项目主人定场所会话只读、只在平台的后台看）；主人本人的私聊不关（`venues.md`「不在本机的头上」）。`blob.get` 不走这一道，它照会话找 blob 另有规矩、拒的一律 `unknown_blob`。
+4. **关着的场所会话只给桥**（施工 Y-2 上，SU-4 中改）：参数里写了 `session` 的，那个会话关在沙盒里（群、陌生人的私聊）、这个连接又不是接这个平台的桥的，一律 `session_not_found`，参数都不看（看不到的不露，不回「没有权限」）；没写、写法不对、没有这个会话的照方法自己的说法。参数里别处写着会话的照同一套判（`sessions::reachable`）：`schedule.add` 的 `target.session` 碰不到的回 `bad_params`、`data.problem` 是 `session`，和没有这个会话一个说法（施工 AS-3）。人的头碰不到它们（2026-10-23 项目主人定场所会话只读、只在平台的后台看）；主人本人的私聊不关（`venues.md`「不在本机的头上」）。`blob.get` 不走这一道，它照会话找 blob 另有规矩、拒的一律 `unknown_blob`；`session.shown` 同样不走（施工 SW-1），拒的一律 `unknown_shown`。
 5. 连接从接上起就算连着，握没握手都算，断开才不算；没握手的最多连 10 秒（握手第 7 条）。
 
 **先见结果，后见回应**
@@ -1569,6 +1588,9 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `upload_offset` | -32010 | `blob.write` 的 `offset` 和已经收到的对不上；`data.received` 是实际收到的几个（施工 W-5） |
 | `upload_incomplete` | -32010 | `blob.close` 时没收齐；`data.received` 是实际收到的几个（施工 W-5） |
 | `unknown_blob` | -32010 | `blob.get` 的 blob 存处里没有（施工 W-6） |
+| `unknown_shown` | -32010 | `session.shown`：没有这次展示，或者这个连接读不到那个会话（施工 SW-1） |
+| `file_changed` | -32010 | `session.shown`：展示的文件大小或修改时间和记的对不上（施工 SW-1） |
+| `file_gone` | -32010 | `session.shown`：展示的文件没了，或者不是普通文件了（施工 SW-1） |
 | `not_running` | -32010 | 打断时没有回合在进行 |
 | `turn_running` | -32010 | 撤销、重做、手动压缩、清空、删会话时有回合在进行 |
 | `id_reused` | -32010 | 同一个命令编号换了参数再来：会话里的命令（「同一个命令编号」第 2 条），`session.create` 除了 `cwd`、`dirs` 的参数（施工 YC-7），`command.run`（命令不执行，施工 YC-7补） |
@@ -1768,6 +1790,9 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `upload_offset` | 上传位置不一致。 | Upload offset mismatch. |
 | `upload_incomplete` | 上传未完成。 | Upload incomplete. |
 | `unknown_blob` | 内容不存在。 | Content not found. |
+| `unknown_shown` | 没有这个展示。 | Shown file not found. |
+| `file_changed` | 文件已变。 | The file has changed. |
+| `file_gone` | 文件已不在。 | The file is gone. |
 | `not_running` | 没有进行中的回合。 | No turn in progress. |
 | `turn_running` | 回合进行中。 | A turn is in progress. |
 | `unknown_turn` | 回合不存在。 | Turn not found. |
@@ -1891,6 +1916,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/login_ticket.rs`（施工 LT-1） | 握手交 `ticket`：连上来、回应带新的登录令牌、换出的认得、同一张只能用一次（再交、再 `login.redeem` 都是 `bad_ticket`，断开）；不认得的票 `bad_ticket`；和本机令牌、密码、登录令牌一起写的 `bad_params`，票没被用掉；人要的 `page` 票本机握手、本机 `login.redeem` 换得到，局域网、`127.0.0.1` 的远程握手、远程登录着的 `login.redeem` 都 `bad_ticket`、票作废，`open`、不写 `via` 的远程照旧换得到（LP-2） |
 | `crates/miyu-endpoint/tests/ticket_extension.rs`、`src/login/ticket/tests.rs`、`crates/miyu/tests/login_ticket.rs`（施工 W-8 补、LP-1） | 扩展没批 `login.page` 要 `page` 的票回 `needs_approval`，不写、别的 `via` 回 `local_only`；批过的要得到，本机握手、本机 `login.redeem` 换得到设备令牌，局域网、回环地址（同机反向代理）的远程握手、远程登录着的 `login.redeem` 都 `bad_ticket`、票作废，人要的 `open` 票远程照旧换得到（LP-1）；`page` 的票记成只在本机换、别的哪儿都能换（LP-2）；一张只换一次、过期的不认、最多 16 张；真核心、真套接字上照登录令牌连（`connect_login`）、要票、换票，登录令牌不认的连不上 |
 | `crates/miyu-endpoint/tests/reads.rs`（施工 W-6） | `blob.get`：读一段、读到结尾就停、`offset` 过了结尾是空的、不写 `offset`、`length` 的默认值、`length` 写 0 只问大小；没有这个 blob `unknown_blob`。`fs.read`：数据根拒、工作区能读、相对的 `bad_params`、`~` 接系统的家目录；没有、目录、（Unix）套接字 `path_unreadable`。两个方法 `length` 超过 512 KiB 都是 `bad_params`；拒绝的中英文 |
+| `crates/miyu-endpoint/tests/session_shown.rs`（施工 SW-1） | `session.shown`：`show` 过了 20 MiB 的文件照常成、日志里的 `file.shown` 没有 `blob`、存处没多东西；远程的连接读开头、读到结尾就停、过了结尾是空的、写 0 只问大小、不写读 512 KiB、超过 512 KiB `bad_params`，本机的也读得到；读的调用、没有的调用、没有的会话 `unknown_shown`，写法不对、多写 `path` 的 `bad_params`；只改修改时间、只改大小 `file_changed`，改回去又读得到，删了 `file_gone` |
 | `crates/miyu-endpoint/tests/blob_grants_restart.rs`、`src/attach/grants/tests.rs`、`crates/miyu-store/src/blob/grants/tests.rs`（施工 BG-1） | 扩展自己存的 blob 核心重起以后还读得到、别的包照旧读不到；自己存的落盘、读得回，同一个哈希只写一行，经 `package.call` 转来的、人交来的不落盘，卸了文件删掉；坏行跳过数得出，写到一半的最后一行不和下一行粘在一起 |
 | `crates/miyu-endpoint/tests/blob_grants_backfill.rs`、`src/attach/grants/backfill/tests.rs`、`crates/miyu-store/src/blob/grants/scan/tests.rs`（施工 BG-1补） | 删掉 `var/lib/blob-grants/` 以后再起：包状态目录里记着、存处有的补登记给它，没记的、别的包照旧读不到，目录建出来；目录在了以后再写进状态目录的不补；存处没有的不登记，一个包扫不了不拦别的，留着半截的暂存目录照样完整补上、暂存目录没了；扫描找得到文本里、二进制里、跨着两块的，写法不对的不认，不跟链接，太大、太多、太深的数得出 |
 | `crates/miyu-endpoint/tests/blob_grants.rs`、`src/attach/grants/tests.rs`（施工 W-6 三补） | 扩展不写 `session`：自己存的读得到、主人存的读不到、别的包存的没拿到过读不到；经 `bus.call` 拿回来、答的包拿得到的读得到，答的包写进回应、自己拿不到的读不到；包卸了从空的开始。扩展写了 `session`：会话引用过的读得到、没引用过的读不到。人的连接照旧 |

@@ -74,6 +74,7 @@ mod session_context;
 mod session_tools;
 mod sessions;
 pub mod settings;
+mod shown;
 mod skills;
 mod spawn;
 mod subscriptions;

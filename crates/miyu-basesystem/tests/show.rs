@@ -1,12 +1,12 @@
-//! `show`（施工 D-5，`docs/blueprint/tools/show.md`）：读、认种类、报 `file.shown` 的每一格，她只收到一句；标题去空白；
-//! 太大、目录、没有的照共用的几句；链接照真实的位置。
+//! `show`（施工 D-5，`docs/blueprint/tools/show.md`）：认种类、报 `file.shown` 的每一格，她只收到一句；标题去空白；过了 20 MiB
+//! 照常展示（施工 SW-1）；目录、没有的照共用的几句；链接照真实的位置。
 
 use serde_json::json;
 
 use miyu_kernel::block::Block;
 use miyu_kernel::event::Said;
 use miyu_kernel::tool::Access;
-use miyu_tool::{Done, Effect, ShownFile};
+use miyu_tool::{Done, Effect, ShownFile, modified_at};
 
 use crate::support::{Site, tool};
 
@@ -62,16 +62,18 @@ async fn a_picture_is_shown_with_every_field_and_she_gets_one_line() {
         done.human,
         Some(Said::new("software/basesystem/show/shown"))
     );
+    let metadata = std::fs::metadata(site.real("work/pic.png")).expect("在");
     assert_eq!(
         shown(&done),
         &ShownFile {
             path: site.real("work/pic.png"),
-            content: png(),
             name: "pic.png".to_string(),
             media_type: "image/png".to_string(),
+            size: png().len() as u64,
+            modified: modified_at(&metadata).expect("有修改时间"),
             title: Some("A chart".to_string()),
             language: None,
-            size: Some((1, 2)),
+            pixels: Some((1, 2)),
         }
     );
 }
@@ -98,18 +100,32 @@ async fn code_and_markdown_are_named_by_their_extension() {
     assert_eq!(shown(&notes).media_type, "text/markdown");
 }
 
+/// 不限大小（施工 SW-1）：过了以前的 20 MiB 也照常展示，记的是整份的大小、修改时间，不带内容。稀疏文件，不真占盘。
 #[tokio::test]
-async fn too_big_a_directory_or_nothing_is_not_shown() {
+async fn a_file_over_twenty_mib_is_shown() {
     let site = Site::new();
-    site.file("work/big.bin", &vec![0u8; 20 * 1024 * 1024 + 1]);
-    site.file("work/dir/a.txt", b"a");
-    let big = site.done("show", json!({"path": "big.bin"})).await;
-    assert!(big.error);
+    site.file("work/big.mp4", b"\0\0\0\x18ftypisom");
+    let big = 20 * 1024 * 1024 + 1;
+    std::fs::File::options()
+        .write(true)
+        .open(site.real("work/big.mp4"))
+        .and_then(|file| file.set_len(big))
+        .expect("造得出稀疏文件");
+    let done = site.done("show", json!({"path": "big.mp4"})).await;
+    assert!(!done.error, "{}", text(&done));
+    let metadata = std::fs::metadata(site.real("work/big.mp4")).expect("在");
+    let shown = shown(&done);
     assert_eq!(
-        text(&big),
-        "big.bin is larger than 20 MiB and cannot be shown.\n"
+        (shown.size, Some(shown.modified), shown.path.clone()),
+        (big, modified_at(&metadata), site.real("work/big.mp4"))
     );
-    assert!(big.effects.is_empty(), "什么都不报");
+    assert_eq!(shown.media_type, "video/mp4", "照开头的文件头认");
+}
+
+#[tokio::test]
+async fn a_directory_or_nothing_is_not_shown() {
+    let site = Site::new();
+    site.file("work/dir/a.txt", b"a");
     for path in ["dir", "missing.png"] {
         let done = site.done("show", json!({"path": path})).await;
         assert!(done.error, "{path}");

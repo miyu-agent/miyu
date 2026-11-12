@@ -182,6 +182,7 @@ session.set_permission_level
 session.set_state
 session.set_terminal
 session.set_workspace
+session.shown
 session.state
 session.terminal
 session.tools

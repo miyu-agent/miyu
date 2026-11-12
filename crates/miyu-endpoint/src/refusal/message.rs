@@ -375,6 +375,10 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "Set a username and password first.",
         ),
         "local_only" => ("仅限本机。", "Local only."),
+        // 施工 SW-1（`session.shown`）。
+        "unknown_shown" => ("没有这个展示。", "Shown file not found."),
+        "file_changed" => ("文件已变。", "The file has changed."),
+        "file_gone" => ("文件已不在。", "The file is gone."),
         "local_machine_only" => (
             "只能在核心所在的机器上用。",
             "Only available on the machine running the core.",

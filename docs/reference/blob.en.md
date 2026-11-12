@@ -7,6 +7,7 @@ A blob is a piece of file content the core stores, named by its content hash (`s
 | [`blob.put`](#blobput) | Upload a file in one go (a path for local heads, the content for remote ones) |
 | [`blob.open`, `blob.write`, `blob.close`](#blobopen-blobwrite-blobclose) | Upload a large file in chunks |
 | [`blob.get`](#blobget) | Read a blob in chunks |
+| [`session.shown`](#sessionshown) | Read a file she showed, in chunks |
 
 An attachment is at most 20 MiB (20,971,520 bytes). A larger file isn't uploaded: hand over only its path on the core's machine in the `attachments` of [`session.send`](sessions.en.md#sessionsend) (`{"path", "name", "size"?}`, item 3 there).
 
@@ -105,7 +106,7 @@ Read part of a blob.
 
 - **People**: without `session`, any blob; with it, the session must be local or your own private chat (confined group chats and strangers' private chats are out of reach, as the sessions themselves are).
 - **Extensions, without `session`**: only blobs it stored itself (`blob.put`, chunked upload), and hashes in responses it got back from calling another package (`bus.call`) that the answering package can read itself. What it stored itself stays readable after the core restarts; what it got back from another package lasts only until the core restarts, so get it again after that. Removing and reinstalling the package starts over.
-- **Extensions, with `session`**: the session must be one it can see, and the blob must be referenced in that session (images and files in messages and tool results, shown files, images she sent); a hash merely written in some text doesn't count.
+- **Extensions, with `session`**: the session must be one it can see, and the blob must be referenced in that session (images and files in messages and tool results, images she sent); a hash merely written in some text doesn't count.
 
 **Params**
 
@@ -130,3 +131,44 @@ Read part of a blob.
 | `bad_params` (`-32602`) | `blob` isn't a content hash; malformed `session`; `length` over 512 KiB |
 | `unknown_blob` | No such blob, or this connection can't read it. The two aren't told apart, so it can't be used to probe whether a blob exists |
 | `internal_error` (`-32603`) | The core couldn't read it |
+
+## `session.shown`
+
+Files she shows with `show` aren't stored as blobs: the core only records the file's real path on its machine, its size and its modification time (the `shown` of the tool entry, see [View](view.en.md)).
+
+- **Local heads** (the hello response has `host`): read `shown.path` straight from disk; you don't need this method.
+- **Remote heads** (on the LAN, through the web app): they can't reach that computer's disk, so read through this method by "session + the step's call id", in chunks. Stream video and audio as they play: when seeking, compute `offset` and `length` for the part you need (like HTTP Range). Preview only the start of a very large text. The core doesn't cut anything for you; you decide how much to fetch.
+
+**Who can call**: people and extensions, with the same reach as `blob.get` with `session`: people reach local sessions and your own private chat; extensions need a session they can see.
+
+**Params**
+
+| Name | Type | Notes |
+|---|---|---|
+| `session` | string, required | Session id |
+| `call` | string, required | Call id of the step that showed it: the tool entry's `call` |
+| `offset` | integer, default 0 | Byte to start at |
+| `length` | integer, default 524288 (512 KiB) | At most this many bytes, at most 512 KiB; 0 asks for the size only |
+
+There is no path parameter: it reads only the file recorded when that step showed it. Any other field is `bad_params`.
+
+**Response**: as `blob.get`: `data` (this part, base64) and `size` (total bytes). Reading stops at the end; an `offset` past the end gives empty `data`.
+
+```json
+→ {"jsonrpc":"2.0","id":"s1","method":"session.shown","params":{"session":"0193…","call":"call_12_1","offset":1048576,"length":524288}}
+← {"jsonrpc":"2.0","id":"s1","result":{"data":"AAAAIGZ0eXBpc29t…","size":734003200}}
+```
+
+Before every read the core checks the file's size and modification time: if they differ from what was recorded when it was shown (edited, replaced), it refuses; if the file is gone, it refuses too.
+
+**Errors**
+
+| `data.reason` | When |
+|---|---|
+| `bad_params` (`-32602`) | Malformed `session` or `call`; `length` over 512 KiB; any other field |
+| `unknown_shown` | No such shown file: the session doesn't exist, this connection can't read it, or the step didn't show anything. They aren't told apart |
+| `file_changed` | The file's size or modification time changed. Heads show "The file has changed" |
+| `file_gone` | The file is gone, or is no longer a regular file. Heads show "The file is gone" |
+| `internal_error` (`-32603`) | The core couldn't read it |
+
+Reasons without a code are `-32010`.

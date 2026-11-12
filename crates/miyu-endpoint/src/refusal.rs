@@ -18,6 +18,7 @@ mod project;
 mod reused;
 mod schedule;
 mod shell;
+mod shown;
 mod unread;
 mod widgets;
 

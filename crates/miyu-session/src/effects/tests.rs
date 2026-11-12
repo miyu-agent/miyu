@@ -399,38 +399,39 @@ fn a_marked_skill_read_keeps_its_display_names() {
     );
 }
 
-/// 给人看的文件（施工 D-5）：内容存成 blob，`file.shown` 记它的哈希、字节数和认出来的几样。
+/// 给人看的文件（施工 D-5）：`file.shown` 记路径、字节数、修改时间和认出来的几样；施工 SW-1 起不存内容，存处里什么都不多。
 #[test]
-fn a_shown_file_becomes_a_blob() {
+fn a_shown_file_is_recorded_without_a_blob() {
     let scratch = Scratch::new();
     let blobs = Blobs::new(scratch.0.join("blobs"));
     let path = scratch.0.join("pic.png");
+    let modified = Timestamp::parse("2026-11-12T03:04:05.678Z").unwrap();
     let effects = store(
         &blobs,
         vec![miyu_tool::Effect::Shown(miyu_tool::ShownFile {
             path: path.clone(),
-            content: b"picture".to_vec(),
             name: "pic.png".to_string(),
             media_type: "image/png".to_string(),
+            size: 30 * 1024 * 1024,
+            modified,
             title: Some("A chart".to_string()),
             language: None,
-            size: Some((3, 4)),
+            pixels: Some((3, 4)),
         })],
     );
-    let hash = ContentHash::of(b"picture");
     assert_eq!(
         effects,
         [Effect::FileShown(FileShown {
             path: text(&path),
-            blob: hash.clone(),
             name: "pic.png".to_string(),
             media_type: "image/png".to_string(),
-            size: 7,
+            size: 30 * 1024 * 1024,
+            modified: Some(modified),
             title: Some("A chart".to_string()),
             language: None,
             width: Some(3),
             height: Some(4),
         })]
     );
-    assert_eq!(std::fs::read(blobs.path(&hash)).unwrap(), b"picture");
+    assert!(!scratch.0.join("blobs").exists(), "不存 blob");
 }

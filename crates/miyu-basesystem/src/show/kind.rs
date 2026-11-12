@@ -24,8 +24,8 @@ impl Kind {
     }
 }
 
-/// 认 `path`（真实的位置）的内容 `bytes`。
-pub(crate) fn kind(path: &Path, bytes: &[u8]) -> Kind {
+/// 认 `path`（真实的位置）的内容 `bytes`：施工 SW-1 起只是开头一截，`cut` 是文件比它长（后面还有没读的）。
+pub(crate) fn kind(path: &Path, bytes: &[u8], cut: bool) -> Kind {
     let head = &bytes[..bytes.len().min(picture::HEAD)];
     if let Some(media_type) = picture::kind(head)
         && let Some(size) = picture::measure(bytes)
@@ -50,7 +50,12 @@ pub(crate) fn kind(path: &Path, bytes: &[u8]) -> Kind {
         Some("md" | "markdown") => return Kind::of("text/markdown"),
         _ => {}
     }
-    if std::str::from_utf8(bytes).is_err() {
+    let text = match std::str::from_utf8(bytes) {
+        Ok(_) => true,
+        // 只读了开头的，截断处半个字不算坏（施工 SW-1）；别处坏了的照旧不是文本。
+        Err(error) => cut && error.error_len().is_none(),
+    };
+    if !text {
         return Kind::of(
             media::by_extension(extension.as_deref()).unwrap_or("application/octet-stream"),
         );

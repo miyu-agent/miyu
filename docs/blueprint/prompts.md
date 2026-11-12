@@ -1286,17 +1286,6 @@ Moved "{path}" to the trash.
 Shown to the user.
 ```
 
-#### `software/basesystem/show/too-big.txt`
-
-- 什么时候加进来：文件超过 20 MiB（字段按 `/w/a.png` 填）
-- token：15（o200k）
-- 为什么加：说清为什么没展示，和附件同一个上限（施工 D-5）
-- 指纹：`760aa251`
-
-```text
-{path} is larger than 20 MiB and cannot be shown.
-```
-
 #### `software/basesystem/trash/unavailable.txt`
 
 - 什么时候加进来：那块盘上没有能放的回收站，没删

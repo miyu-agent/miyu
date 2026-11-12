@@ -82,6 +82,8 @@
 | `attachment_too_big` | 超过上限 | |
 | `unknown_attachment` | 附件的 blob 不在 | |
 | `unknown_blob` | 没有这个 blob，或者这个连接读不到 | |
+| `unknown_shown` | `session.shown`：没有这一步的展示，或者这个连接读不到那个会话 | |
+| `file_changed`、`file_gone` | `session.shown`：展示的文件大小或修改时间变了；文件没了、不是普通文件了 | |
 | `too_many_uploads`、`upload_unknown` | 分块上传开多了；编号不认识 | |
 | `upload_offset`、`upload_incomplete` | 块的位置不对；还没收齐 | `received` |
 | `path_unreadable`、`path_forbidden`、`not_a_directory` | 路径不在、读不了；在数据目录里；是文件不是目录 | |

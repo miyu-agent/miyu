@@ -1516,6 +1516,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sTX2"><span class="n">TX-2</span>常驻引导句<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLV2"><span class="n">LV-2</span>删掉随工作区去掉的<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLV5"><span class="n">LV-5</span>去掉 bubblewrap 和两组设置<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sSW1"><span class="n">SW-1</span>展示不拷进核心、不限大小<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -58355,6 +58356,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LV-5-去掉bubblewrap和两组设置.md</code>；设计 <code>11-权限与沙盒.md</code> A17；蓝图 <code>sandbox/linux.md</code>「已知的限制」、<code>sandbox.md</code>、<code>fs.md</code>、<code>session/guard.md</code>、<code>config.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sSW1" aria-labelledby="h-sSW1">
+  <div class="sheet-head"><h2 id="h-sSW1"><span class="no">SW-1</span>展示不拷进核心、不限大小</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">她展示录好的视频被 20 MiB 挡住。这一步起 <code>show</code> 不再把文件存成 blob，只记路径、大小、修改时间；本机的头照路径读，远程的头经核心分段读。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-basesystem · show　miyu-tool · stamp　miyu-kernel · file.shown　miyu-session · effects　miyu-endpoint · shown、attach/reach</span><span class="dir-note">SW-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>show 只打开、取大小和修改时间、读开头 1 MiB 认种类，不存 blob、不限大小</li>
+              <li>file.shown 去掉 blob，多 modified</li>
+              <li>新方法 session.shown：照会话加调用编号分段读，先核对大小和修改时间</li>
+              <li>错误码 unknown_shown、file_changed、file_gone</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">展示的文件不拷、不限大小，变了、没了就拒</span><span class="rl">设计 35 H，项目主人 11-12 定</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">SW-1</dd></div>
+        <div><dt>名称</dt><dd>展示不拷进核心、不限大小</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-12</dd></div>
+        <div><dt>提交</dt><dd class="mono">SW-1</dd></div>
+        <div><dt>验收</dt><dd>改到的 crate 的测试、两个目标的 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>过了 20 MiB 的稀疏文件照常展示，日志里没有 blob</span></li>
+        <li><span class="ok">✓</span><span>远程的连接分段读：偏移、长度、读到结尾、只问大小</span></li>
+        <li><span class="ok">✓</span><span>没展示过的拒，改了时间、改了大小、删了都拒</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/SW-1-展示不拷不限大小.md</code>；设计 <code>35-展示.md</code>；蓝图 <code>tools/show.md</code>、<code>protocol.md</code>、<code>view.md</code>、<code>kernel/events-bodies.md</code>。</li>
       </ul>
     </div>
   </div>

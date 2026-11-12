@@ -55,17 +55,17 @@ pub(crate) fn store(blobs: &Blobs, effects: Vec<miyu_tool::Effect>) -> Vec<Effec
             miyu_tool::Effect::TodoWritten(written) => Effect::TodoWritten(written),
             // 包的会话状态（施工 TW-1）照原样：协议端点查过写法。
             miyu_tool::Effect::PackageState(state) => Effect::PackageState(state),
-            // 给人看的文件（施工 D-5）：内容存成 blob。
+            // 给人看的文件（施工 D-5）：施工 SW-1 起不存内容，照原样记路径、大小、修改时间。
             miyu_tool::Effect::Shown(shown) => Effect::FileShown(FileShown {
                 path: text(&shown.path),
-                blob: put(blobs, &shown.content),
                 name: shown.name,
                 media_type: shown.media_type,
-                size: shown.content.len() as u64,
+                size: shown.size,
+                modified: Some(shown.modified),
                 title: shown.title,
                 language: shown.language,
-                width: shown.size.map(|(width, _)| width),
-                height: shown.size.map(|(_, height)| height),
+                width: shown.pixels.map(|(width, _)| width),
+                height: shown.pixels.map(|(_, height)| height),
             }),
         })
         .collect()

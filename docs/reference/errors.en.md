@@ -82,6 +82,8 @@ Chinese version: [errors.md](errors.md).
 | `attachment_too_big` | Over the limit | |
 | `unknown_attachment` | An attachment's blob doesn't exist | |
 | `unknown_blob` | No such blob, or this connection can't read it | |
+| `unknown_shown` | `session.shown`: no such shown file, or this connection can't read that session | |
+| `file_changed`, `file_gone` | `session.shown`: the shown file's size or modification time changed; the file is gone or no longer a regular file | |
 | `too_many_uploads`, `upload_unknown` | Too many chunked uploads open; unknown upload id | |
 | `upload_offset`, `upload_incomplete` | Wrong chunk offset; not everything arrived | `received` |
 | `path_unreadable`, `path_forbidden`, `not_a_directory` | A path doesn't exist or can't be read; it's in the data directory; it's a file, not a directory | |

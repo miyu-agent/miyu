@@ -120,8 +120,8 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         "notices.claim" => People,
         // 看本机任意一处的包文件夹、包文件（施工 IN-4）：同装，只给人。
         "package.info" if params.get("path").is_some_and(|path| !path.is_null()) => People,
-        // 都能调：读配置和密钥的名字、附件、模型、给人看的字、装了什么、带来的内容、人格和预设、技能、脚本、记忆和知识库读的。
-        "hello" | "unsubscribe" | "provide" | "human.get" | "blob.put" | "blob.get"
+        // 都能调：读配置和密钥的名字、附件、展示的文件（谁读得到照会话判，施工 SW-1）、模型、给人看的字、装了什么、带来的内容、人格和预设、技能、脚本、记忆和知识库读的。
+        "hello" | "unsubscribe" | "provide" | "human.get" | "blob.put" | "blob.get" | "session.shown"
         | "blob.open" | "blob.write" | "blob.close" | "bus.list" | "command.catalog" | "config.check"
         | "config.get" | "config.schema" | "config.set" | "secret.list" | "content.list"
         | "content.read" | "kb.documents" | "kb.list" | "kb.read" | "kb.search"

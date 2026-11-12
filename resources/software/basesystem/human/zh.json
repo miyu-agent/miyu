@@ -160,7 +160,6 @@
     "trash/lost": "删了，可回收站里找不到",
     "trash/failed": "删不了：{error}",
     "show/shown": "展示给了用户",
-    "show/too-big": "超过 20 MiB，展示不了",
     "shell/done": "{count} 行",
     "shell/quiet": "没有输出",
     "shell/exited": "退出码 {code}",

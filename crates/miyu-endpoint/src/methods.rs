@@ -361,6 +361,9 @@ pub(crate) fn call<'a>(
         "blob.get" => {
             answer(move || async move { attach::get(core, caller, params(request)?).await })
         }
+        "session.shown" => {
+            answer(move || async move { crate::shown::read(core, caller, params(request)?).await })
+        }
         "session.configure" => answer(move || session::configure(core, request)),
         "fs.list" => answer(move || async move { files::list(core, params(request)?).await }),
         "fs.find" => answer(move || async move { files::find(core, params(request)?).await }),

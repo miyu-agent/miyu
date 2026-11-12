@@ -3,7 +3,25 @@
 use super::*;
 
 fn of(name: &str, bytes: &[u8]) -> Kind {
-    kind(Path::new("/w").join(name).as_path(), bytes)
+    kind(Path::new("/w").join(name).as_path(), bytes, false)
+}
+
+/// 只读了开头的（施工 SW-1）：截断处半个字照文本认；整份读完的半个字、中间坏了的照旧不是文本。
+#[test]
+fn a_cut_head_may_end_in_half_a_character() {
+    let half = "日志".as_bytes()[..4].to_vec();
+    let path = Path::new("/w/a.log");
+    assert_eq!(kind(path, &half, true).media_type, "text/plain");
+    assert_eq!(
+        kind(path, &half, false).media_type,
+        "application/octet-stream"
+    );
+    let mut broken = b"\xff".to_vec();
+    broken.extend_from_slice(b"ok");
+    assert_eq!(
+        kind(path, &broken, true).media_type,
+        "application/octet-stream"
+    );
 }
 
 /// 一张 1×2 的 PNG 的头（量宽高只看头）。

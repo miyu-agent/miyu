@@ -334,7 +334,7 @@
 | `peer.watch` | `session`，必有 | 订了别的会话的「空了告诉我」（施工 C-1，`cross-session.md`「效果 peer.watch」）：被等的会话的整个编号。`send_message` 写 `notify_when_idle` 的那次调用报一条（施工 C-6），这就是订的记录，账本照它算在等哪几个会话、从这条结果的时刻算起；不是这个会话自己，由账本查 |
 | `todo.written` | `todos`，必有：照先后的每一项 `{"content": 一句话, "status": "pending"、"in_progress"、"completed"}`，不认识的状态原样留着 | `todowrite` 换上的整份待办（施工 D-3，`tools/todowrite.md`）：全部做完、清空的是空列表。`done`，可以没有（施工 D-3 补）：因为全部做完而清空的，清空前那一份，写法同 `todos`；空的不写。有效历史另记一张表，当前的清单是最近一份没撤掉的（`kernel/session.md`「待办」）；不发给模型 |
 | `package.state` | `package`，必有；`state`，可以没有（没有的当 `{}`） | 扩展的工具结果带的包的会话状态（施工 TW-1）：写法同事件 `package.state` 的 `body`。有效历史照每个包最近一份没撤掉的算（`history/states.rs`），交给头、压缩时把 `note` 写进检查点 |
-| `file.shown` | `path`、`blob`、`name`、`media_type`、`size`，必有；`title`、`language`、`width`、`height`，可以没有 | `show` 给人看了一个文件（施工 D-5，`tools/show.md`）：内容存成了 blob，头照这几格选怎么显示，同一个 `path` 再来一条换掉那一张；不发给模型，内核不读 |
+| `file.shown` | `path`、`name`、`media_type`、`size`，必有；`modified`、`title`、`language`、`width`、`height`，可以没有（`modified` 施工 SW-1 起都写，以前记的没有） | `show` 给人看了一个文件（施工 D-5，`tools/show.md`）：施工 SW-1 起不存内容，只记真实路径、展示那一刻的大小和修改时间，头照这几格选怎么显示、照 `path` 或 `session.shown` 读，同一个 `path` 再来一条换掉那一张；以前记的多一格 `blob`，照样读得进（不认、不写出去）；不发给模型，内核不读 |
 
 - 改前改后的内容：小的由执行器照原文写进 `before_text`、`after_text`，别的存成 blob；效果里都有它们的哈希（`session/tools.md` 第 2 条）。
 - 缺了 `kind`、认识的种类缺了必有的格、哈希或者任务编号不合写法的，读不进来。

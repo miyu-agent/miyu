@@ -44,6 +44,7 @@ pub(crate) use grants::Grants;
 pub(crate) use keep::keep;
 pub(crate) use look::{images, picture};
 pub(crate) use path_only::{Sent, local_only};
+pub(crate) use reach::reachable;
 
 /// 一个附件最多几个字节：20 MiB。`blob.open` 的 `size` 也照这个数（施工 W-5，`uploads.rs`）。
 pub(crate) use miyu_tool::attachment::LIMIT;

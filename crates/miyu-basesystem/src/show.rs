@@ -1,6 +1,6 @@
-//! `show`（施工 D-5，`docs/blueprint/tools/show.md`，设计 `35-展示.md`）：把一个文件给人看。照 `read` 的规矩读（一层链接都
-//! 不跟、最多 20 MiB），认种类（[`kind`]），报 `file.shown`：内容由执行器存成 blob，头照它画。她只收到一句「已展示给用户」，
-//! 内容不进上下文。
+//! `show`（施工 D-5，`docs/blueprint/tools/show.md`，设计 `35-展示.md`）：把一个文件给人看。照 `read` 的规矩打开（一层链接都
+//! 不跟），照打开的句柄取大小和修改时间，读开头一截认种类（[`kind`]），报 `file.shown`。施工 SW-1 起不拷内容、不限大小：头照
+//! 路径读，远程的头经 `session.shown` 读。她只收到一句「已展示给用户」，内容不进上下文。
 
 mod kind;
 
@@ -12,12 +12,17 @@ use serde::Deserialize;
 use miyu_fs::{Kind as FileKind, OpenError, open_file};
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
-use miyu_tool::attachment::LIMIT;
-use miyu_tool::{Call, Done, Effect, Progress, Running, ShownFile, Spec, Stop, Target, Tool};
+use miyu_tool::{
+    Call, Done, Effect, Progress, Running, ShownFile, Spec, Stop, Target, Tool, modified_at,
+};
 
 use crate::blocking::blocking;
 use crate::common::{Common, Shown, said};
 use crate::load::{self, LoadError, say};
+
+/// 认种类读开头多少（施工 SW-1）：图片、PDF、音视频只看文件头，「是不是 UTF-8」看这一截。以前整份读、最多 20 MiB；1 MiB 以内的
+/// 文件整份都看，结果和以前一样，再大的文本、视频也只读这么多。
+const KIND_HEAD: u64 = 1024 * 1024;
 
 /// `show`。
 pub(crate) struct Show {
@@ -30,7 +35,6 @@ pub(crate) struct Show {
 struct Texts {
     common: Common,
     shown: Template,
-    too_big: Template,
 }
 
 /// 她给的参数：`path` 写成 `file_path`、`filePath` 的也认。
@@ -51,7 +55,6 @@ impl Show {
             texts: Texts {
                 common,
                 shown: text("shown", &[])?,
-                too_big: text("too-big", &["path"])?,
             },
         })
     }
@@ -90,7 +93,7 @@ impl Tool for Show {
     }
 }
 
-/// 读、认、报。读之前看一眼旗：叫停了就不读，交回 `stopped`。
+/// 打开、取大小和修改时间、读开头认、报。读之前看一眼旗：叫停了就不读，交回 `stopped`。
 fn show(texts: &Texts, call: &Call, args: &Args, stop: &Stop) -> Done {
     let path = args.path.as_str();
     let common = &texts.common;
@@ -108,15 +111,20 @@ fn show(texts: &Texts, call: &Call, args: &Args, stop: &Stop) -> Done {
         Err(OpenError::NotAFile(_)) => return common.not_regular(path),
         Err(OpenError::Io(error)) => return common.failed(path, &error),
     };
-    let mut content = Vec::new();
-    if let Err(error) = file.take(LIMIT + 1).read_to_end(&mut content) {
+    // 大小、修改时间照打开的这个句柄取，不另 stat 路径：中间被换掉的也是同一份。
+    let metadata = match file.metadata() {
+        Ok(metadata) => metadata,
+        Err(error) => return common.failed(path, &error),
+    };
+    let Some(modified) = modified_at(&metadata) else {
+        let error = std::io::Error::other("no usable modification time");
+        return common.failed(path, &error);
+    };
+    let mut head = Vec::new();
+    if let Err(error) = file.take(KIND_HEAD).read_to_end(&mut head) {
         return common.failed(path, &error);
     }
-    if content.len() as u64 > LIMIT {
-        return Done::error(say(&texts.too_big, &[("path", path)]))
-            .said(said("show/too-big").with("path", path));
-    }
-    let found = kind::kind(&real, &content);
+    let found = kind::kind(&real, &head, metadata.len() > head.len() as u64);
     let name = real
         .file_name()
         .unwrap_or(real.as_os_str())
@@ -132,11 +140,12 @@ fn show(texts: &Texts, call: &Call, args: &Args, stop: &Stop) -> Done {
         .said(said("show/shown"))
         .effect(Effect::Shown(ShownFile {
             path: real,
-            content,
             name,
             media_type: found.media_type.to_string(),
+            size: metadata.len(),
+            modified,
             title,
             language: found.language.map(str::to_string),
-            size: found.size,
+            pixels: found.size,
         }))
 }
