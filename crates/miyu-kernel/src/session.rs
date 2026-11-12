@@ -283,6 +283,7 @@ impl Session {
             Input::ModelDelta { at, seen, delta } => self.model_delta(at, seen, delta),
             ended @ Input::ModelEnded { .. } => self.model_ended_input(ended),
             Input::Woke { at, seen } => self.woke(at, seen),
+            expired @ Input::ApprovalExpired { .. } => self.approval_expired(expired),
             Input::ShellRan { at, ran } => self.shell_ran(at, ran),
             Input::ToolDone {
                 at,

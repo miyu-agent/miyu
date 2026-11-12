@@ -57,6 +57,9 @@ pub enum Input {
         /// 这一轮开着提前压好（施工 6-11 上，配置 `compaction.prepare`）：执行器冻结这一轮的配置时照它交。不开回合的手动
         /// 压缩照上一轮的。
         prepare: bool,
+        /// 这一轮等人确认最多等多少毫秒（施工 CD-1，配置 `permission.confirm.timeout`）：执行器冻结这一轮的配置时照它交，问人时
+        /// 内核照它算截止的时刻、交出 [`super::Action::ExpireApproval`]。没有的一直等。
+        confirm_ms: Option<u64>,
     },
     /// 请求发出去了（`02-内核.md` 第六节「回复怎么收、回合怎么结束」）。
     RequestSent {
@@ -302,6 +305,20 @@ pub enum Input {
         call_id: CallId,
         /// 链的结论。
         verdict: Verdict,
+    },
+    /// 等人确认等到了截止的时刻（施工 CD-1，`docs/blueprint/kernel/asking.md`「到时没人确认」）：[`super::Action::ExpireApproval`]
+    /// 到时候了。这件还在等确认的，内核替人拒绝，`by` 是内核；人已经定了、有了结果、不在等的，不理。
+    ApprovalExpired {
+        /// 到的时刻，取自执行器的时钟。
+        at: Timestamp,
+        /// 哪一次调用：脚本里调的是父级那次调用。
+        call_id: CallId,
+        /// 脚本里调的那一件的序号；直接调用的没有。
+        nested: Option<u32>,
+        /// 写给模型的那一句：出厂的 `core/tool-results/approval-timed-out.txt`，执行器编进程序交来（不进策略快照）。
+        text: String,
+        /// 给人看的说法，同那一句的位置。
+        human: Option<Said>,
     },
 }
 

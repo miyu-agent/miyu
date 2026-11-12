@@ -252,7 +252,7 @@ How much this session has used so far, split into the same parts as `session.con
 
 ## `session.answer`
 
-When she does something that needs approval she stops and asks (pushed as `tool.approval_requested`); when she asks with `ask_user` she waits too (pushed as `question.asked`). This answers both.
+When she does something that needs approval she stops and asks (pushed as `tool.approval_requested`); when she asks with `ask_user` she waits too (pushed as `question.asked`). This answers both. An approval request with `expires_at` is denied automatically if no one answers by then (the config `permission.confirm.timeout`, 5 minutes by default); questions wait forever.
 
 **Params**
 
@@ -279,7 +279,7 @@ Give exactly one of `decision` and `answers`. **Response**: `{"events": [numbers
 | `data.reason` | When |
 |---|---|
 | `bad_params` (`-32602`) | Both or neither given; `reason` with questions; `decision` not one of the three |
-| `not_asking` | The call isn't waiting: already answered, finished, or waiting for the other kind |
+| `not_asking` | The call isn't waiting: already answered, finished, waiting for the other kind, or past the request's `expires_at` and already denied automatically |
 | `no_rule` | `session` chosen, but this approval has no scope that can be remembered |
 | `unexpected_reason` | Allowed, but with a reason |
 | `bad_answer` | The answers don't match the questions: wrong count, unknown option, several picks on a single-choice question |

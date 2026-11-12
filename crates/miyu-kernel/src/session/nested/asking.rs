@@ -6,14 +6,15 @@
 
 use super::super::action::{Action, Reason};
 use super::super::approval::Reply;
+use super::super::retry::later;
 use super::super::{Session, rejected};
 use super::{Outcome, Phase};
-use crate::event::{ApprovalDecided, ApprovalRequested, Body, NestedStatus};
+use crate::event::{ApprovalDecided, ApprovalRequested, Body, Decision, NestedStatus};
 use crate::id::{CallId, CommandId, ModuleId, NestedId, Parent};
 use crate::origin::{By, Module};
 use crate::raw::RawJson;
 use crate::time::Timestamp;
-use crate::tool::Access;
+use crate::tool::{Access, Worded};
 
 impl Session {
     /// 挂在 `parent` 下面的要问人时停不停下来问：父级是前台那次调用，有人能确认，是主会话（`session.created` 没有 `parent`；
@@ -26,7 +27,8 @@ impl Session {
     ///
     /// - 不停下来问的（[`Self::asks_from_scripts`]）当场了结成 `needs_approval`；只读时要写入的了结成 `denied`。
     /// - 同一个父级已经有一件在问的，退回排队：那件答了、了结了再过链，那时「本会话都允许」可能已经放行了它。
-    /// - 别的记一条请求，`call_id` 是父级那次调用、`nested` 是序号，`cause` 是回合的；这件停下来等人，不派、不推开始。
+    /// - 别的记一条请求，`call_id` 是父级那次调用、`nested` 是序号，`cause` 是回合的；这件停下来等人，不派、不推开始。这一轮配了
+    ///   等多久的，请求带截止的时刻，交出到时叫醒（施工 CD-1）。
     ///
     /// 不是在过链的不理。
     pub(super) fn nested_ask(
@@ -65,17 +67,58 @@ impl Session {
         }
         call.phase = Phase::Asking;
         call.rule = rule.is_some();
+        let turn = self.turn.as_ref();
+        let expires_at = turn
+            .and_then(|turn| turn.confirm_ms)
+            .map(|ms| later(at, ms));
         let request = ApprovalRequested {
             call_id,
             access,
             rule,
             detail,
             nested: Some(id.n()),
+            expires_at,
         };
-        let cause = self.turn.as_ref().and_then(|turn| turn.cause.clone());
+        let cause = turn.and_then(|turn| turn.cause.clone());
         let by = By::Module(Module { id: module });
         let event = self.record(at, by, cause, Body::ApprovalRequested(request));
-        vec![Action::Append(vec![event])]
+        let expiry = expires_at.map(|at| Action::ExpireApproval {
+            at,
+            call_id,
+            nested: Some(id.n()),
+        });
+        let mut actions = vec![Action::Append(vec![event])];
+        actions.extend(expiry);
+        actions
+    }
+
+    /// 父级 `call_id` 下面第 `n` 件等确认等到了截止的时刻（施工 CD-1）：还在问的，内核替人拒绝，记一条带序号的拒绝的决定，那件
+    /// 了结成 `denied`，那一句是执行器交的 `worded`，交给脚本、退出码 1；`by` 都是内核，`cause` 是回合的。不在问的不理。
+    pub(in crate::session) fn expire_nested(
+        &mut self,
+        at: Timestamp,
+        (call_id, n): (CallId, u32),
+        worded: Worded,
+    ) -> Vec<Action> {
+        let parent = Parent::Call(call_id);
+        let Some(k) = self.nested.calls.iter().position(|call| {
+            call.phase == Phase::Asking && *call.id.parent() == parent && call.id.n() == n
+        }) else {
+            return Vec::new();
+        };
+        let call = self.nested.calls.remove(k);
+        let cause = self.turn.as_ref().and_then(|turn| turn.cause.clone());
+        let body = ApprovalDecided {
+            call_id,
+            decision: Decision::Deny,
+            reason: None,
+            attachments: Vec::new(),
+            nested: Some(n),
+        };
+        let decided = self.record(at, By::Kernel, cause, Body::ApprovalDecided(body));
+        let outcome = Outcome::denied(worded.text);
+        let settled = self.nested_event(at, call.id, call.name, call.args, outcome);
+        vec![Action::Append(vec![decided, settled])]
     }
 
     /// 不问人，把过着链的 `id` 了结成 `outcome`。

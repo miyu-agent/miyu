@@ -589,6 +589,14 @@
               "description": "Ask before shutting down or restarting. Allowed: true or false. Only in the system config. Takes effect next turn.",
               "title": "Shutdown and restart",
               "type": "boolean"
+            },
+            "timeout": {
+              "default": 300,
+              "description": "Anything waiting for your confirmation is denied after this many seconds. 0 waits forever. Allowed: a whole number from 0 to 86400. Only in the system config. Takes effect next turn.",
+              "maximum": 86400,
+              "minimum": 0,
+              "title": "Confirmation timeout",
+              "type": "integer"
             }
           },
           "type": "object"

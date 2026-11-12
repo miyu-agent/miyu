@@ -416,6 +416,11 @@ pub(crate) enum Back {
     },
     /// 为请求 `seen` 等的时刻到了。
     Woke { seen: Seq },
+    /// 第 `call_id` 次调用（脚本里调的带序号 `nested`）等确认等到了截止的时刻（施工 CD-1，`actor/expiry.rs`）。
+    ApprovalExpired {
+        call_id: miyu_kernel::id::CallId,
+        nested: Option<u32>,
+    },
     /// 跑工具的任务送回来的（施工 4-2）。
     Tool(crate::tools::ToolBack),
     /// 扩展的守卫答了（施工 HK-1，`actor/guarding.rs`）：哪一次调用，合上策略以后的结论。

@@ -145,6 +145,10 @@
         "name": "コンテナによるホストデバイスの使用",
         "description": "コンテナがホストのデバイス、プロセスやネットワークの名前空間を使う前に確認します。"
       },
+      "permission.confirm.timeout": {
+        "name": "確認のタイムアウト",
+        "description": "確認待ちがこの秒数を過ぎると自動で拒否します。0 はずっと待ちます。"
+      },
       "sandbox.private.enabled": {
         "name": "非公開フォルダ",
         "description": "読み取り専用のときだけ働き、コマンドは非公開フォルダを読めず、ファイルツールは読む前に確認します。フルアクセスでは止めません。オフにすると読み取り専用でも隠さず、確認もしません。Miyu 自身のデータには影響しません。"
@@ -465,6 +469,7 @@
     "tool-results/denied": "拒否しました",
     "tool-results/denied-with-reason": "拒否しました：{reason}",
     "tool-results/unattended": "確認が必要ですが、確認できる人がいません",
+    "tool-results/approval-timed-out": "確認がなかったため、自動で拒否しました",
     "tool-results/question-interrupted": "中断しました。未回答です",
     "tool-results/question-voided": "無効になりました",
     "tool-results/question-unattended": "回答できる人がいません",

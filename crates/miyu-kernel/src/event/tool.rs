@@ -10,6 +10,7 @@ use crate::event::Effect;
 use crate::id::CallId;
 use crate::raw::RawJson;
 use crate::text_enum::text_enum;
+use crate::time::Timestamp;
 use crate::tool::Access;
 
 /// 她发出去的一张图（施工 X-19）：图本身同图片块；`alt` 给看不了图的地方的一句（表情包的描述），`sticker` 是表情包（通讯平台
@@ -130,9 +131,13 @@ pub struct ApprovalRequested {
     /// 脚本里调的（施工 M-7 上）：`call_id` 是父级那次调用，这是嵌套调用的序号。直接调用的、以前的日志没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub nested: Option<u32>,
+    /// 到这一刻还没人确认就自动拒（施工 CD-1，配置 `permission.confirm.timeout`）：内核照记请求的时刻加这一轮的等多久算，头照它
+    /// 画倒计时。一直等的（配置是 0）没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expires_at: Option<Timestamp>,
 }
 
-/// `tool.approval_decided`：人对一个请求的决定。`by` 是回答的人。
+/// `tool.approval_decided`：人对一个请求的决定。`by` 是回答的人；到时没人确认、内核替人拒的（施工 CD-1）是内核。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ApprovalDecided {
     /// 决定的是哪一次调用的请求。

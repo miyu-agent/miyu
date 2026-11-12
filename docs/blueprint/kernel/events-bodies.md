@@ -352,10 +352,11 @@
 | `rule` | 原样的 JSON | 可以没有 | 提的放行规则：选本会话都允许、这个工作区以后都允许时，放行的就是它。没提的，只能选允许这一次或者拒绝 |
 | `detail` | 原样的 JSON | 可以没有 | 给头看的：为什么要问 |
 | `nested` | 正整数 | 可以没有 | 脚本里调的（施工 M-7 上）：`call_id` 是父级那次调用，这是嵌套调用的序号，拼起来是 `tool.nested` 的编号；直接调用的没有，以前的日志没有 |
+| `expires_at` | 时刻 | 可以没有 | 到这一刻还没人确认就自动拒（施工 CD-1，`kernel/asking.md`「到时没人确认」）：记请求的时刻加这一轮配的等多久；头照它画倒计时。配了一直等的没有 |
 
 `rule`、`detail` 的写法由提问的模块定，内核原样记，不看里面（权限策略写的样子见 `session/guard.md` 第五条）。例如越过沙盒跑一条命令（施工 D-4）：`{"call_id":"…","access":"execute","detail":{"command":"touch ~/Downloads/x.txt","sandbox":false,"title":"Create a file","tool":"shell"}}`，没有 `rule`：只能选允许这一次或者拒绝。装包（施工 F-10 下，`tools/package.md`）：`{"call_id":"…","access":"install","detail":{"install":"/home/me/work/notes","preview":{"package":"notes","skills":["take-notes"],"scripts":["dice"],"files":3,"size":713},"tool":"package"}}`：`preview` 是装之前看一眼的那一份（同 `package.install` 带 `preview` 的回应；卸的是 `package.remove` 带 `preview` 的），头照命令行 `miyu pkg install` 那样列；也没有 `rule`。
 
-**`tool.approval_decided`**：人对一个请求的决定。
+**`tool.approval_decided`**：人对一个请求的决定。到时没人确认的（施工 CD-1），内核替人拒绝：`by` 是内核，`decision` 是 `deny`，没有 `reason`。
 
 | 格 | 写法 | 有没有 | 是什么 |
 |---|---|---|---|

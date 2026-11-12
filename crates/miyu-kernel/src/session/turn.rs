@@ -81,6 +81,9 @@ pub(super) struct Turn {
     pub(super) asked: Option<By>,
     /// 这一轮每次请求接在最末尾的一句（施工 RT-1，`session.respond` 的 `tail`）：组装、指纹以后才放进请求，下一轮没有。
     pub(super) tail: Option<String>,
+    /// 这一轮等人确认最多等多少毫秒（施工 CD-1）：回合开始的挂接点跑完时照执行器交的记（[`Input::TurnStartHooksDone`] 的
+    /// `confirm_ms`）。没有的一直等。
+    pub(super) confirm_ms: Option<u64>,
 }
 
 impl Turn {
@@ -192,6 +195,7 @@ impl Session {
             unseen: BTreeSet::new(),
             asked: None,
             tail: None,
+            confirm_ms: None,
         }
     }
 
@@ -271,6 +275,7 @@ impl Session {
             replaced,
             policy,
             prepare,
+            confirm_ms,
         } = hooked
         else {
             return Vec::new();
@@ -282,6 +287,7 @@ impl Session {
             return Vec::new();
         }
         self.prepare.on = prepare;
+        current.confirm_ms = confirm_ms;
         current.stage = Stage::Ready;
         let cause = current.cause.clone();
         let mut events: Vec<Event> = self

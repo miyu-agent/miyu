@@ -119,6 +119,8 @@ kinds! {
     Recalled,
     /// 到点了：重试前等的那一会儿到了（施工 3-5 下）。
     Woke,
+    /// 等确认到时了（施工 CD-1）。
+    Expired,
     /// 脚本里的 `miyu call`：来了、链判完了、跑完了（施工 M-1）。
     Nested,
 }
@@ -199,6 +201,7 @@ impl InputKind {
             Input::Reread { .. } => InputKind::Reread,
             Input::Recalled { .. } => InputKind::Recalled,
             Input::Woke { .. } => InputKind::Woke,
+            Input::ApprovalExpired { .. } => InputKind::Expired,
             Input::JobEnded { .. } | Input::JobLines { .. } => InputKind::JobEnded,
             Input::Watched { .. } => InputKind::Watched,
             Input::WatchEnded { .. } => InputKind::WatchEnded,

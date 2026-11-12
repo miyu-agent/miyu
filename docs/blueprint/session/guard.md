@@ -18,7 +18,7 @@
 | `crates/miyu-session/src/guard/asking.rs` | 要问人的那几条：提的放行规则、给头看的说明、放行过的管不管得到（施工 X-10 上从 `guard.rs` 挪出来） |
 | `crates/miyu-session/src/guard/confined.rs`、`resources/core/permissions/outside-workspace.txt`、`no-commands.txt`（施工 5-12） | 只碰得到自己工作区的会话（第四条末）：判在不在工作区、拒绝时的两句；两句同样不进策略快照，这种会话造、载入时读 |
 | `crates/miyu-policy/src/hazard.rs`、`hazard/lex.rs`、`hazard/rules.rs`（施工 5-17）、`hazard/vars.rs`（施工 5-17 再补：同一条命令里赋过值的变量）、`hazard/fresh.rs`（施工 HZ-2：同一条命令里 `mktemp` 刚建的临时路径） | 高危命令照规则认（第四条末）：纯的判法，拆命令、剥外壳、照字面判目标；工具经 `Tool::hazard` 报给这里。哪一种归哪一类（`Group`、`Kind::group`）、一条命令里认出的每一种（`Assessed`）也在这里（施工 HZ-1） |
-| `crates/miyu-session/src/settings.rs` 的 `ConfirmSettings`（施工 HZ-1） | 受保护的命令的五项配置 `permission.confirm.*`，和关掉的那几类（`waived`） |
+| `crates/miyu-session/src/settings.rs` 的 `ConfirmSettings`（施工 HZ-1） | 受保护的命令的五项配置 `permission.confirm.*`，和关掉的那几类（`waived`）；等人确认等多久 `permission.confirm.timeout`（施工 CD-1，交给内核，不进权限策略） |
 | `crates/miyu-session/src/default_workspace.rs`（施工 5-14） | 工作目录对应的工作区：太宽的退回这个会话的默认工作区（`miyu_fs::workspace_of`），权限策略、沙盒共用 |
 | `crates/miyu-session/src/actor.rs` | 动作「过执行前的链」交给它，当场判（`session/actor.md`） |
 
@@ -201,7 +201,7 @@
 | 拒绝 | 记一条被拒绝的结果（`denied`），`by` 是模块 `permissions`，带着写给她的一句和说法；这一步照常往下走，她接着干 |
 | 要问人，会话里没人能确认（例如 `miyu ask`） | 当场拒绝，`by` 是内核，写给她的是 `Not run: it needs the user's approval, and no one here can give it.`，说法 `core/tool-results/unattended` |
 | 要问人，只读时访问类别要写入 | 当场拒绝，`by` 是内核，写给她的是只读那一句 |
-| 要问人，别的 | 记一条 `tool.approval_requested`，`by` 是模块 `permissions`，照写 `access`、`rule`、`detail`，这次调用停下来等人 |
+| 要问人，别的 | 记一条 `tool.approval_requested`，`by` 是模块 `permissions`，照写 `access`、`rule`、`detail`，这次调用停下来等人；等到配置的时限（`permission.confirm.timeout`，出厂 5 分钟）还没人确认，内核替人拒绝，写给她的是 `Not run: no one answered the approval request in time.`（施工 CD-1，`kernel/asking.md`「到时没人确认」） |
 
 ### 给人看的字
 

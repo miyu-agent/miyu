@@ -156,7 +156,7 @@ impl Actor {
             self.guard.set_private(private.clone());
             self.tools.set_private(private);
         }
-        // 受保护的命令哪几类不问也照这一轮的配置（施工 HZ-1）。
+        // 受保护的命令哪几类不问、等确认等多久也照这一轮的配置（施工 HZ-1、CD-1）。
         let confirm = crate::settings::ConfirmSettings::from(&values);
         self.guard.set_waived(confirm.waived());
         let prepare = CompactionSettings::from(&values).prepare;
@@ -196,6 +196,7 @@ impl Actor {
         Input::TurnStartHooksDone {
             policy,
             prepare,
+            confirm_ms: confirm.wait_ms(),
             at: self.clock.now(),
             turn,
             injected,

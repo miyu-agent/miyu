@@ -167,7 +167,7 @@ fn backoff(attempt: u32) -> u64 {
 }
 
 /// `at` 再过 `wait` 毫秒。超出了能写的范围的，就是 `at`：到了就马上叫醒。
-fn later(at: Timestamp, wait: u64) -> Timestamp {
+pub(super) fn later(at: Timestamp, wait: u64) -> Timestamp {
     i64::try_from(wait)
         .ok()
         .and_then(|wait| at.unix_millis().checked_add(wait))

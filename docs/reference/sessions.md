@@ -252,7 +252,7 @@
 
 ## `session.answer`
 
-她做要确认的事时会停下来问（推送 `tool.approval_requested`），她用 `ask_user` 提问时也会等（推送 `question.asked`）。用它回答。
+她做要确认的事时会停下来问（推送 `tool.approval_requested`），她用 `ask_user` 提问时也会等（推送 `question.asked`）。用它回答。确认请求带 `expires_at` 的，到那一刻还没人回答就自动拒绝（配置 `permission.confirm.timeout`，出厂 5 分钟）；提问一直等。
 
 **参数**
 
@@ -280,7 +280,7 @@
 |---|---|
 | `bad_params`（`-32602`） | 两样都写或都不写；提问带了 `reason` 或外面的 `attachments`；`decision` 不是那三种；附件缺格、写法不对 |
 | `unknown_attachment`、`attachment_too_big` | 同 `session.send`：附件的 blob 没有、太大 |
-| `not_asking` | 这个调用没在等回答：答过了、结束了、等的不是这一种 |
+| `not_asking` | 这个调用没在等回答：答过了、结束了、等的不是这一种，过了请求的 `expires_at` 已经自动拒了 |
 | `no_rule` | 选了 `session`，这次确认却没有能记住的范围 |
 | `unexpected_reason` | 允许却带了理由、附件 |
 | `bad_answer` | 回答和题目对不上：条数不对、选了没有的、单选选了几项 |

@@ -383,6 +383,10 @@ pipe_to_shell = true
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 power = true
 
+# Confirmation timeout: Anything waiting for your confirmation is denied after this many seconds. 0 waits forever.
+# Allowed: a whole number from 0 to 86400. Only in the system config. Takes effect next turn.
+timeout = 300
+
 [persona]
 # Default persona: The persona new sessions use. When unset, new sessions have no persona: no character prompt, and a memory of their own.
 # Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Applies to new sessions.

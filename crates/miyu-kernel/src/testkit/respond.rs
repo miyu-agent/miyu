@@ -56,6 +56,7 @@ impl Stage {
                     replaced,
                     policy,
                     prepare: self.prepare.on,
+                    confirm_ms: self.expiries.wait,
                 }]
             }
             Action::CallModel { seen, request, .. } => self.call(seen, request),
@@ -72,6 +73,15 @@ impl Stage {
                 Vec::new()
             }
             Action::Wake { at, seen } => self.wake(at, seen),
+            // 等确认的截止时刻（施工 CD-1，`expiry.rs`）：替身只记下、不计时，到时由测试自己交。
+            Action::ExpireApproval {
+                at,
+                call_id,
+                nested,
+            } => {
+                self.expiries.asked.push((at, call_id, nested));
+                Vec::new()
+            }
             Action::CancelModel { seen } => {
                 self.held_model.take_if(|(held, _)| *held == seen);
                 Vec::new()

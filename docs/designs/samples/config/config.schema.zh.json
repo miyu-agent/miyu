@@ -589,6 +589,14 @@
               "description": "关机、重启前先问。能写：true 或 false。只能写在系统配置里。下一轮生效。",
               "title": "关机和重启",
               "type": "boolean"
+            },
+            "timeout": {
+              "default": 300,
+              "description": "等你确认超过这么多秒就自动拒绝。0 为一直等。能写：0 到 86400 之间的整数。只能写在系统配置里。下一轮生效。",
+              "maximum": 86400,
+              "minimum": 0,
+              "title": "确认超时",
+              "type": "integer"
             }
           },
           "type": "object"

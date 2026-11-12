@@ -145,6 +145,10 @@
         "name": "Containers using host devices",
         "description": "Ask before a container takes the host's devices, process or network namespace."
       },
+      "permission.confirm.timeout": {
+        "name": "Confirmation timeout",
+        "description": "Anything waiting for your confirmation is denied after this many seconds. 0 waits forever."
+      },
       "sandbox.private.enabled": {
         "name": "Private folders",
         "description": "Applies only in read-only, where commands can't read private folders and file tools ask before reading them; with full access nothing is blocked. When off, read-only stops hiding and asking too; Miyu's own data is unaffected."
@@ -465,6 +469,7 @@
     "tool-results/denied": "Denied",
     "tool-results/denied-with-reason": "Denied: {reason}",
     "tool-results/unattended": "Needs confirmation, no one to confirm",
+    "tool-results/approval-timed-out": "No one confirmed in time, denied automatically",
     "tool-results/question-interrupted": "Interrupted, not answered",
     "tool-results/question-voided": "Voided",
     "tool-results/question-unattended": "No one to answer",

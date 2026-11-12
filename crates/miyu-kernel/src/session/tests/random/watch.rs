@@ -342,6 +342,9 @@ impl Watch {
             Action::Aside { upto, request, .. } => self.recap_issued(upto, &request),
             Action::Describe { blob, request } => self.describe_issued(blob, &request),
             Action::Wake { seen, .. } => self.wake_asked(seen),
+            Action::ExpireApproval {
+                call_id, nested, ..
+            } => self.expiry_asked(call_id, nested),
             Action::PushTransient(transient) => self.transient(&transient),
             Action::CancelModel { seen } => {
                 self.seen_paths.insert("叫执行器别再发");

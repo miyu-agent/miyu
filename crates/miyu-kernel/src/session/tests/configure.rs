@@ -165,6 +165,7 @@ fn a_fallback_that_does_not_match_the_reference_is_ignored() {
     let actions = session.handle(Input::TurnStartHooksDone {
         policy: None,
         prepare: false,
+        confirm_ms: None,
         at: at(30),
         turn: TurnId::new(seq(4)),
         injected: Vec::new(),

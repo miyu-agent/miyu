@@ -36,6 +36,7 @@ fn asked(n: u64, rule: Option<&str>) -> Event {
             rule: rule.map(raw),
             detail: None,
             nested: None,
+            expires_at: None,
         }),
     )
 }

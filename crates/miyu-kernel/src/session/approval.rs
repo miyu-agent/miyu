@@ -2,9 +2,11 @@
 //!
 //! 链放行的派；拒绝的当场记下；要问人的记一条请求，这个调用停下来等人。人允许的，决定落了盘
 //! 再派；拒绝的，记一条被拒绝的结果，这一步照常往下走，她接着干（`11-权限与沙盒.md` A13）。
+//! 这一轮配了等多久的，请求带上截止的时刻，到时还没人确认，内核替人拒绝（施工 CD-1）。
 
 use super::action::{Action, Reason};
-use super::input::{Answer, Verdict};
+use super::input::{Answer, Input, Verdict};
+use super::retry::later;
 use super::step::{Asked, State};
 use super::tools::run_tool;
 use super::turn::Stage;
@@ -41,6 +43,8 @@ impl Session {
         };
         let cause = turn.cause.clone();
         let round = turn.round();
+        // 等确认的截止时刻（施工 CD-1）：记请求的这一刻加这一轮的等多久；一直等的没有。
+        let expires_at = turn.confirm_ms.map(|ms| later(at, ms));
         let Stage::Tools(step) = &mut turn.stage else {
             return Vec::new();
         };
@@ -87,6 +91,7 @@ impl Session {
                     rule,
                     detail,
                     nested: None,
+                    expires_at,
                 };
                 Settled::Asked(By::Module(Module { id: module }), request)
             }
@@ -96,6 +101,14 @@ impl Session {
             Settled::Asked(..) => State::Asking,
         };
         let finished = step.finished();
+        let expiry = match settled {
+            Settled::Asked(..) => expires_at.map(|at| Action::ExpireApproval {
+                at,
+                call_id,
+                nested: None,
+            }),
+            Settled::Denied(..) => None,
+        };
         let mut events = match settled {
             Settled::Denied(by, worded) => {
                 vec![self.written_result(
@@ -114,6 +127,44 @@ impl Session {
         if finished {
             events.extend(self.finish_step(at, cause));
         }
+        let mut actions = vec![Action::Append(events)];
+        actions.extend(expiry);
+        actions.extend(self.dispatch());
+        actions
+    }
+
+    /// 等确认等到了截止的时刻（施工 CD-1，`kernel/asking.md`「到时没人确认」）：这件还在等确认的，内核替人拒绝，记一条拒绝的
+    /// 决定、一条被拒绝的结果，`by` 都是内核，`cause` 是回合的，那一句和说法是执行器交的；这一步照常往下走，她看到结果换别的办法。
+    /// 脚本里调的照 [`Session::expire_nested`]。不在等的不理：人先定了、有了结果、作废了、被打断了。
+    pub(super) fn approval_expired(&mut self, expired: Input) -> Vec<Action> {
+        let Input::ApprovalExpired {
+            at,
+            call_id,
+            nested,
+            text,
+            human,
+        } = expired
+        else {
+            return Vec::new();
+        };
+        let worded = Worded { text, said: human };
+        if let Some(n) = nested {
+            return self.expire_nested(at, (call_id, n), worded);
+        }
+        if self.asking(call_id).is_none() {
+            return Vec::new();
+        }
+        let cause = self.turn.as_ref().and_then(|turn| turn.cause.clone());
+        let body = ApprovalDecided {
+            call_id,
+            decision: Decision::Deny,
+            reason: None,
+            attachments: Vec::new(),
+            nested: None,
+        };
+        let decided = self.record(at, By::Kernel, cause.clone(), Body::ApprovalDecided(body));
+        let mut events = vec![decided];
+        events.extend(self.denied_by(at, (By::Kernel, cause), call_id, (worded, Vec::new())));
         let mut actions = vec![Action::Append(events)];
         actions.extend(self.dispatch());
         actions
@@ -176,7 +227,9 @@ impl Session {
         let seq = decided.seq;
         let mut events = vec![decided];
         if deny {
-            events.extend(self.denied_by(at, by, &id, call_id, (reason.as_deref(), attachments)));
+            let text = self.policy.tool_texts.denied(reason.as_deref());
+            let cause = Some(id.clone());
+            events.extend(self.denied_by(at, (by, cause), call_id, (text, attachments)));
         } else {
             self.set_state(call_id, State::Approved { decided: seq });
         }
@@ -186,20 +239,17 @@ impl Session {
         actions
     }
 
-    /// 人拒绝了：这个调用有了结果，记一条被拒绝的结果，`by` 是拒绝的人，`cause` 是回答的命令。
-    /// 这一步因此齐了的，往下走。
+    /// 拒绝了：这个调用有了结果，记一条被拒绝的结果，写的是 `worded`，附件接在后面。人拒的 `by` 是拒绝的人、`cause` 是回答的
+    /// 命令；到时没人确认的（施工 CD-1）`by` 是内核、`cause` 是回合的。这一步因此齐了的，往下走。
     fn denied_by(
         &mut self,
         at: Timestamp,
-        by: By,
-        id: &CommandId,
+        (by, cause): (By, Option<CommandId>),
         call_id: CallId,
-        (reason, attachments): (Option<&str>, Vec<Block>),
+        (worded, attachments): (Worded, Vec<Block>),
     ) -> Vec<Event> {
         let finished = self.set_state(call_id, State::Done);
-        let text = self.policy.tool_texts.denied(reason);
-        let mut event =
-            self.written_result(at, by, Some(id.clone()), call_id, ToolStatus::Denied, text);
+        let mut event = self.written_result(at, by, cause, call_id, ToolStatus::Denied, worded);
         if let Body::ToolResult(result) = &mut event.body {
             result.blocks.extend(attachments);
         }

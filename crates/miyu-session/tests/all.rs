@@ -17,6 +17,7 @@ mod busy;
 mod caller;
 mod catalog_recall;
 mod catch_up;
+mod confirm_timeout;
 mod delete;
 mod display_name;
 mod embed;

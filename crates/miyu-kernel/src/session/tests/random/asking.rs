@@ -48,6 +48,10 @@ pub(super) fn some_verdict(rng: &mut Rng, watch: &Watch) -> Input {
 /// 一个回答：多半回答在等的那几个，偶尔是对不上的；选项多半认识，拒绝的有时带理由，也有空的理由。脚本里调的在等的（施工
 /// M-7 上）照父级那次调用答，一半写上序号、偶尔写错。
 pub(super) fn some_answer(rng: &mut Rng, watch: &Watch, next_id: &mut u64) -> Input {
+    // 交出过截止时刻的（施工 CD-1）：三回里一回改送到时了。只在交出过的种子里多取随机数。
+    if !watch.approvals.expiries.is_empty() && rng.below(3) == 0 {
+        return some_expiry(rng, watch);
+    }
     let mut asking: Vec<(CallId, Option<u32>)> = watch
         .approvals
         .asking
@@ -85,6 +89,25 @@ pub(super) fn some_answer(rng: &mut Rng, watch: &Watch, next_id: &mut u64) -> In
         _ => None,
     };
     answer_nested(next_command(next_id), asked, decision, reason)
+}
+
+/// 到时了（施工 CD-1）：多半是交出过截止时刻的那几件里随便一件（人先定了的、作废了的也在里面，该不理），偶尔是对不上的。
+fn some_expiry(rng: &mut Rng, watch: &Watch) -> Input {
+    let expiries = &watch.approvals.expiries;
+    let (call_id, nested) = match rng.below(8) {
+        0 => (
+            CallId::new(seq(1 + rng.below(watch.last())), 1).unwrap(),
+            None,
+        ),
+        _ => expiries[rng.below(expiries.len() as u64) as usize],
+    };
+    Input::ApprovalExpired {
+        at: at(58),
+        call_id,
+        nested,
+        text: "timed out".to_string(),
+        human: None,
+    }
 }
 
 /// 在跑的一个调用问人：一两道题，每道两个选项，一半能多选。

@@ -145,6 +145,10 @@
         "name": "容器使用宿主设备",
         "description": "容器要宿主的设备、进程或网络命名空间前先问。"
       },
+      "permission.confirm.timeout": {
+        "name": "确认超时",
+        "description": "等你确认超过这么多秒就自动拒绝。0 为一直等。"
+      },
       "sandbox.private.enabled": {
         "name": "私密目录",
         "description": "只在只读时起作用，命令读不到私密目录，文件工具读之前先问；完全放开时不拦。关掉以后只读时也不藏、不问；Miyu 自己的数据不受这个开关影响。"
@@ -465,6 +469,7 @@
     "tool-results/denied": "已拒绝",
     "tool-results/denied-with-reason": "已拒绝：{reason}",
     "tool-results/unattended": "需要确认，无人确认",
+    "tool-results/approval-timed-out": "无人确认，已自动拒绝",
     "tool-results/question-interrupted": "已中断，未回答",
     "tool-results/question-voided": "已作废",
     "tool-results/question-unattended": "无人回答",

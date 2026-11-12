@@ -780,6 +780,17 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
 The tool "{name}" did not answer within {seconds} seconds. It may have been partly done.
 ```
 
+#### `core/tool-results/approval-timed-out.txt`
+
+- 什么时候加进来：等人确认到了配置的时限（`permission.confirm.timeout`，出厂 5 分钟）还没人确认，内核替人拒绝（施工 CD-1）
+- token：12（tiktoken `o200k_base`，带行尾换行）
+- 为什么加：每次调用都要有结果；告诉她是没人确认、不是人拒绝的，好换别的办法往下走，自己跑的时候不卡住（项目主人 2026-11-12 定）。不进快照的核心字：执行器编进程序，随到时的输入交给内核（进了快照，以前造的会话的快照缺这一格载入不了）
+- 指纹：`11b70ec3`
+
+```text
+Not run: no one answered the approval request in time.
+```
+
 #### `core/mcp/not-shown.txt`
 
 - 什么时候加进来：MCP 服务回了声音、二进制的资源、收不了的图（不是那四种、解不开、超上限），一样一行（施工 X-3 上）

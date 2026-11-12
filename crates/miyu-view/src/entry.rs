@@ -411,6 +411,10 @@ pub struct Approval {
     /// 脚本里调的那一件的序号（施工 M-7 上）：记在父 `shell` 那一步上，`detail` 的 `tool` 是那件工具的名字。直接调用的没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub nested: Option<u32>,
+    /// 到这一刻还没人确认就自动拒（施工 CD-1）：照 `tool.approval_requested` 的 `expires_at` 原样，头照它画倒计时；定了以后照旧
+    /// 留着。一直等的没有。到时被拒的 `decision` 是 `deny`、`by` 是内核。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expires_at: Option<Timestamp>,
 }
 
 /// 一轮的收尾。

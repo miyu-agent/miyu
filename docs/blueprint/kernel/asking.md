@@ -2,24 +2,25 @@
 
 ### 是什么
 
-派一个调用之前，内核先把它交给执行前的链（权限策略和各扩展的守卫）判：放行、拒绝，或者要问人。要问人的，这个调用停下来，等人确认。在跑的调用也能问人一组题，等人回答，回答落了盘交给它。
+派一个调用之前，内核先把它交给执行前的链（权限策略和各扩展的守卫）判：放行、拒绝，或者要问人。要问人的，这个调用停下来，等人确认；等到配置的时限还没人确认，内核替人拒绝（施工 CD-1）。在跑的调用也能问人一组题，等人回答，回答落了盘交给它。
 
-这一页写链的结论、确认、提问，和在等的调用遇上来了一句话、打断、收紧成只读、重启、崩了时怎么了结。会话别的部分在 `session.md`，账本怎么查这几种事件在 `history.md`。
+这一页写链的结论、确认、到时没人确认、提问，和在等的调用遇上来了一句话、打断、收紧成只读、重启、崩了时怎么了结。会话别的部分在 `session.md`，账本怎么查这几种事件在 `history.md`。
 
 ### 在哪
 
 | 代码 | 管什么 |
 |---|---|
-| `crates/miyu-kernel/src/session/approval.rs` | 链的结论；人的确认 |
-| `crates/miyu-kernel/src/session/nested/asking.rs` | 脚本里调的要人确认：问不问、一父一问、人的回答（施工 M-7 上） |
+| `crates/miyu-kernel/src/session/approval.rs` | 链的结论；人的确认；到时没人确认（施工 CD-1） |
+| `crates/miyu-kernel/src/session/nested/asking.rs` | 脚本里调的要人确认：问不问、一父一问、人的回答（施工 M-7 上）；到时没人确认（施工 CD-1） |
+| `crates/miyu-session/src/actor/back.rs`、`actor/model.rs`、`settings.rs` 的 `ConfirmSettings`（施工 CD-1） | 执行器那一半：回合开始照配置 `permission.confirm.timeout` 交等多久；照内核交出的截止时刻起定时的任务，到时交回，带上编进程序的那一句 |
 | `crates/miyu-kernel/src/session/grants.rs` | 本会话放行过的规则：每追加一条记一次，交给链（施工 D-1） |
 | `crates/miyu-kernel/src/session/question.rs` | 在跑的调用问人；人的回答；来了一句话，在等人的作废 |
 | `crates/miyu-kernel/src/session/step.rs` | 每个调用走到了哪 |
 | `crates/miyu-kernel/src/session/tools.rs` | 交给链、允许了派、答完了交回答；打断、插话、收紧成只读时补结果 |
 | `crates/miyu-kernel/src/session/input.rs` | `Verdict`、`Answer` |
 | `crates/miyu-kernel/src/event/tool.rs`、`event/question.rs` | 请求、决定、题目、回答；回答对不对得上题目（`fits`） |
-| `resources/core/tool-results/` | 给模型看的六句 |
-| `resources/core/human/{zh,en}.json` | 这六句给人看的说法 |
+| `resources/core/tool-results/` | 给模型看的七句 |
+| `resources/core/human/{zh,en,ja}.json` | 这七句给人看的说法 |
 
 ### 对外的样子
 
@@ -40,14 +41,16 @@
 
 **题目**（`Input::ToolAsks { at, call_id, questions }`）：一组题，照先后，几道都行。一道题 `Question { header, question, options, multiple }`：顶上标签里的短名字（可以不写）、问的话、几个选项（`Choice { label, description, preview }`，一行标题、一行说明、一段文字画，后两样可以不写；选项可以一个都没有）、能不能多选。施工 D-2 起会问的工具是 `ask_user`（`tools/ask_user.md`）。
 
-**动作**：`GuardTool { call_id, name, args, cwd, permission }` 交给链；`RunTool { call_id, name, args, cwd, permission, asked }` 派去跑，带着派出去那一刻实际生效的那一级（施工 5-4 上）；`AnswerTool { call_id, answers }` 把回答交给在等的调用；`CancelTool { call_id }` 叫停（`session.md`）。
+**动作**：`GuardTool { call_id, name, args, cwd, permission }` 交给链；`RunTool { call_id, name, args, cwd, permission, asked }` 派去跑，带着派出去那一刻实际生效的那一级（施工 5-4 上）；`AnswerTool { call_id, answers }` 把回答交给在等的调用；`CancelTool { call_id }` 叫停（`session.md`）；`ExpireApproval { at, call_id, nested }` 到 `at` 这一刻还没人确认就交回到时了（施工 CD-1）。
+
+**等多久、到时了**（施工 CD-1）：`Input::TurnStartHooksDone` 多一格 `confirm_ms`，这一轮等人确认最多等多少毫秒，没有的一直等；`Input::ApprovalExpired { at, call_id, nested, text, human }`，到时了：哪一次调用（脚本里调的带序号），写给模型的那一句和给人看的说法，执行器交。
 
 **事件**：
 
 | 事件 | `body` | `by` | `cause` |
 |---|---|---|---|
-| `tool.approval_requested` | `call_id`、`access`、`rule`、`detail`（后两样没有就不写） | 问的模块 | 回合的 |
-| `tool.approval_decided` | `call_id`、`decision`、`reason`（拒绝时写了才有） | 回答的人 | 回答的命令 |
+| `tool.approval_requested` | `call_id`、`access`、`rule`、`detail`（后两样没有就不写）；`expires_at`，到这一刻没人确认就自动拒（这一轮配了等多久才有，施工 CD-1） | 问的模块 | 回合的 |
+| `tool.approval_decided` | `call_id`、`decision`、`reason`（拒绝时写了才有） | 回答的人；到时没人确认的是内核（`deny`，施工 CD-1） | 回答的命令；到时没人确认的是回合的 |
 | `question.asked` | `call_id`、`questions` | 那次调用 | 回合的 |
 | `question.answered` | `call_id`、`answers` | 回答的人 | 回答的命令 |
 
@@ -77,7 +80,7 @@
 5. `Ask`，照这个先后判：
    1. 策略里没人能确认（`attended` 是假的）：不记请求，记一条 `denied` 的结果，`by` 是内核，那一句是 `unattended`。
    2. 实际生效的是只读，要的是写入（`write`，或者不认识的）：不记请求，记一条 `denied`，`by` 是内核，`read-only`。
-   3. 别的：记一条 `tool.approval_requested`，调用到 `Asking`，停下来等人。
+   3. 别的：记一条 `tool.approval_requested`，调用到 `Asking`，停下来等人。这一轮配了等多久的（`confirm_ms`），请求写上截止的时刻 `expires_at`（记请求的时刻加等多久），接着出 `ExpireApproval`（施工 CD-1，下面「到时没人确认」）。
 6. 记了结果的，这一步因此齐了就往下走（`session.md`「调工具」第 7 条）；然后派后面轮到的。
 7. 内核只记放行规则，不判：选了 `session`、`workspace` 以后怎么放行，是链照日志去用的事。规则里有哪几格（`tool`、`read`、`write`）也是链的事，内核原样记（`session/guard.md` 第五条）。
 
@@ -93,7 +96,16 @@
 4. 允许（`once`、`session`、`workspace`）：调用到 `Approved`，那条决定落了盘才出 `RunTool`。
 5. 拒绝（`deny`）：再记一条 `denied` 的结果，`by` 是拒绝的人，`cause` 是这个命令；写了理由的用 `denied-with-reason`，理由照模板转义换进去，没写的用 `denied`。这一步照常往下走，她看到结果接着干；这一步因此齐了的，往下走。
 6. 回应附上这一次追加的全部；然后派后面轮到的。
-7. 不设超时：人不回就一直等，打断随时进得来。
+7. 等多久照这一轮的配置（施工 CD-1）：配了的到时内核替人拒绝（下面「到时没人确认」）；配 `0` 的一直等，打断随时进得来。
+
+**到时没人确认**（施工 CD-1，2026-11-12 项目主人定：自己跑的时候不会因为一个确认卡住）：
+
+1. 等多久是配置 `permission.confirm.timeout`（秒，出厂 300，`0` 一直等，`config.md`）：执行器回合开始冻结这一轮的配置时读，换成毫秒跟着 `TurnStartHooksDone` 交给内核（`confirm_ms`），下一轮生效。内核不读时钟：截止的时刻照记请求那一条的时刻（执行器交进来的 `at`）加等多久算，写进 `tool.approval_requested` 的 `expires_at`，出 `ExpireApproval { at: 截止的时刻, call_id, nested }`。
+2. 执行器照它起一个定时的任务（同到点叫醒 `Wake`），到时交回 `Input::ApprovalExpired`，带上写给模型的那一句：出厂的 `core/tool-results/approval-timed-out.txt` 编进程序，不进策略快照（进了快照，以前造的会话的快照就缺这一格），说法 `core/tool-results/approval-timed-out`。不收回：人先定了、作废了的，到时照样交回，内核不理。
+3. 这一步里这个调用还在 `Asking`（脚本里调的：父级下面第 `nested` 件还在问）的，内核替人拒绝：记一条 `tool.approval_decided`，`decision` 是 `deny`，`by` 是内核，`cause` 是回合的；直接调用的再记一条 `denied` 的结果，`by` 是内核，`cause` 是回合的，内容是那一句，这一步因此齐了的往下走；脚本里调的那件了结成 `denied`，交给脚本、退出码 1，排在它后面的接着过链。她看到的是「没人确认」，不是人拒绝的，换别的办法往下走。
+4. 不在等的不理：人先定了的、有了结果的（作废、打断、收紧、重启）、没问过的、对不上的。不需要跨重启接着计：重启、崩了以后在等的照下面的表了结。
+5. 用时照旧刨掉等人的那一段：到时了也是等完了（`miyu_kernel::waits`，`view.md` 的 `waited_ms`）。
+6. 谁能确认照旧：没人能确认的（`attended` 是假的）当场拒，不问、不计时；场所会话、子代理里问了人的，同样到时拒。她的提问（`question.asked`）不计时，照旧一直等。
 
 **脚本里调的要人确认**（施工 M-7 上，设计 `39-脚本调工具.md` MC4，`session.md`「嵌套调用」第 4 条）：请求记在父级那次调用上，多一格 `nested`（序号）；一个父级同时只问一件。
 
@@ -130,11 +142,12 @@
 | 有计划的重启 | `cancelled`，`restarted` | 同左 | 同左 | 同左，叫停 | 同左，叫停 |
 | 崩了，载入时 | `cancelled`，`restarted` | 同左 | 同左 | 同左 | 同左 |
 | 交回了结果（`ToolDone`） | 不理 | 不理 | 不理 | 照收，题目了结 | 照收，回答不再交给它 |
+| 到时没人确认（`ApprovalExpired`，施工 CD-1） | 不理 | 先记内核替人拒的决定，再 `denied`，`approval-timed-out` | 不理 | 不理 | 不理 |
 
 - 格里写的是补的结果的状态和那一句；「照常」是不动它；「叫停」是出 `CancelTool`。
 - 来了一句话、急着插话：`by` 是说话的人，`cause` 是这句话的命令。急着插话时，先作废等人的，再跳过还没跑的。
 - 打断：`by` 是打断的人，`cause` 是打断的命令。
-- 收紧成只读、重启、崩了：`by` 是内核，`cause` 是回合的。
+- 收紧成只读、重启、崩了、到时没人确认：`by` 是内核，`cause` 是回合的。
 - 这一步因此齐了的，往下走。
 
 ### 样子：给模型看的
@@ -149,6 +162,9 @@
 | `question-interrupted` | 问着人的时候被打断 | `cancelled` | `The user interrupted the turn before answering.` |
 | `question-voided` | 问着人的时候来了一句话 | `skipped` | `The user sent a new message instead of answering.` |
 | `question-unattended` | 要问人，没人能回答 | `skipped` | `No one can answer questions here.` |
+| `approval-timed-out` | 等确认到时，没人确认（施工 CD-1） | `denied` | `Not run: no one answered the approval request in time.` |
+
+`approval-timed-out` 不在策略快照里：执行器编进程序，到时随 `ApprovalExpired` 交给内核（「到时没人确认」第 2 条）。
 
 请求、决定、题目、回答都不进请求：她看到的只有那次调用的结果（默认的组装不渲染它们，`crates/miyu-assemble/src/render.rs`）。
 
@@ -164,6 +180,7 @@
 | `question-interrupted` | 已中断，未回答 | Interrupted, not answered |
 | `question-voided` | 已作废 | Voided |
 | `question-unattended` | 无人回答 | No one to answer |
+| `approval-timed-out` | 无人确认，已自动拒绝 | No one confirmed in time, denied automatically |
 
 链拒绝的，说法是模块交的，没交就没有。`not_asking`、`unknown_decision`、`no_rule`、`unexpected_reason`、`bad_answer` 这几个原因码，核心现在还没配专门的话，照「已拒绝。」「Refused.」说（`crates/miyu-endpoint/src/refusal.rs`）。
 
@@ -176,7 +193,9 @@
 | `crates/miyu-kernel/src/session/tests/question.rs` | 在跑的调用问人、等人；回答落了盘才交给工具；答完了还能再问；对不上的回答、答错了种类、先答者胜；没人能回答跳过、叫停；打断时问着人的、答完了的；来了一句话作废提问、跳过确认；工具先交回结果了结题目；不是在跑的调用问的不理 |
 | `crates/miyu-kernel/src/session/tests/load.rs` | 崩在等确认、等回答的时候，载入时补结果，之后的回答拒绝 |
 | `crates/miyu-kernel/src/session/tests/scenario/asking.rs` | 执行器替身跑整轮：她问、工具拿到回答；允许、拒绝两种决定以后她都接着干 |
-| `crates/miyu-kernel/src/session/tests/random/asking.rs`、`random/watch/approval.rs`、`random/watch/question.rs` | 随机输入里的结论、题目、回答；每一步查请求只在链要问人时记、没人能确认和只读的当场拒绝、回答照规矩接受或拒绝、`by` 写对 |
+| `crates/miyu-kernel/src/session/tests/random/asking.rs`、`random/watch/approval.rs`、`random/watch/question.rs` | 随机输入里的结论、题目、回答、到时了；每一步查请求只在链要问人时记、没人能确认和只读的当场拒绝、回答照规矩接受或拒绝、到时了还在等的才记内核替人拒的决定、`by` 写对 |
+| `crates/miyu-kernel/src/session/tests/approval/expiring.rs`、`tests/scenario/approval_expiry.rs`（施工 CD-1） | 请求带截止的时刻、出到时叫醒；没配的一直等；到时内核替人拒、她接着干、之后的回答 `not_asking`；人先定了的、来了一句话作废了的、对不上的不理；脚本里调的到时拒、交给脚本、后面的接着过链 |
+| `crates/miyu-session/tests/confirm_timeout.rs`、`crates/miyu-session/src/settings/tests.rs`（施工 CD-1） | 真的 actor：配 1 秒不理，到时 `denied`、`by` 是内核、她拿到那一句接着说话；到时前允许的照常跑、到时不理；配 0 不带截止、一直等；没配的 5 分钟；配置项的默认、范围、生效时机 |
 | `crates/miyu-kernel/src/event/question/tests.rs` | 回答对不对得上题目 |
 | `crates/miyu-kernel/src/tool/texts/tests.rs`、`crates/miyu-kernel/tests/resources.rs` | 拒绝的理由照模板转义、只收 `reason` 一个字段；样本里被拒绝的那一条就是资源里带理由的那一句 |
 
@@ -194,6 +213,7 @@
 - `03-事件模型.md` 第三节「确认的事件怎么写」「提问的事件怎么写」。
 - `05-内核接口.md` 第五节：执行前的链最严者胜，守卫超时按拒绝。
 - `11-权限与沙盒.md` 第二节（四个选项）、A11（没有确认界面的场所）、A13（拒绝以后她接着干）。
+- 到时没人确认：项目主人 2026-11-12 定（施工 CD-1）。
 - `08-上下文投影.md` 第四节：请求和决定、题目和回答都不进上下文。
 
 ### 还没有的

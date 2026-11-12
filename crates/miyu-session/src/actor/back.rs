@@ -1,22 +1,41 @@
 //! 执行器送回 actor 的（`docs/blueprint/session/actor.md` 第 3 条第 3 点）：请求的回报、到点了、工具和后台命令的结果、辅助请求的
 //! 回报、等不到的「空了告诉我」（施工 C-6）、替它看图的转述（施工 8-17），照 actor 的时钟记下到的时刻，写成内核的输入。施工 C-6 从 `actor.rs` 挪出来
-//! （那个文件到了行数上限）；到点叫醒的定时任务施工 T-1 上也挪过来（同样的原因）。
+//! （那个文件到了行数上限）；到点叫醒的定时任务施工 T-1 上也挪过来（同样的原因）。等人确认的截止时刻（施工 CD-1）同一种定时任务。
 
 use std::time::Duration;
 
 use tokio::sync::mpsc;
 
-use miyu_kernel::id::Seq;
-use miyu_kernel::session::Input;
+use miyu_kernel::event::Said;
+use miyu_kernel::id::CallId;
+use miyu_kernel::session::{Action, Input};
 use miyu_kernel::time::Timestamp;
 
 use super::Actor;
 use crate::TARGET;
 use crate::port::{Back, Report};
 
+/// 等确认到时没人确认、内核替人拒绝时写给她的那一句（施工 CD-1）：编进程序，不进策略快照（同 `miyu-endpoint` 守卫的
+/// `core/guard/*.txt`）：进了快照，以前造的会话的快照就缺这一格。登记在 `26-提示词.md` 第十节。
+const EXPIRED: &str =
+    include_str!("../../../../resources/core/tool-results/approval-timed-out.txt");
+
+/// 那一句给人看的说法。
+const EXPIRED_SAID: &str = "core/tool-results/approval-timed-out";
+
 impl Actor {
-    /// 到点叫醒：起一个定时的任务，到 `at` 这一刻送回「到点了」。
-    pub(super) fn wake(&mut self, at: Timestamp, seen: Seq) {
+    /// 到点叫醒（[`Action::Wake`]）、等人确认的截止时刻（[`Action::ExpireApproval`]，施工 CD-1）：起一个定时的任务，到 `at`
+    /// 这一刻送回「到点了」「到时了」。别的动作不会交到这里。人先定了的不收回：到时送回来内核不理。
+    pub(super) fn wake(&mut self, alarm: Action) {
+        let (at, back) = match alarm {
+            Action::Wake { at, seen } => (at, Back::Woke { seen }),
+            Action::ExpireApproval {
+                at,
+                call_id,
+                nested,
+            } => (at, Back::ApprovalExpired { call_id, nested }),
+            _ => return,
+        };
         let wait = at
             .unix_millis()
             .saturating_sub(self.clock.now().unix_millis());
@@ -24,7 +43,7 @@ impl Actor {
         let backs = self.backs.clone();
         tokio::spawn(async move {
             tokio::time::sleep(wait).await;
-            answer_back(&backs, Back::Woke { seen });
+            answer_back(&backs, back);
         });
     }
 
@@ -38,6 +57,7 @@ impl Actor {
         let at = self.clock.now();
         Some(match back {
             Back::Woke { seen } => Input::Woke { at, seen },
+            Back::ApprovalExpired { call_id, nested } => expired(at, call_id, nested),
             Back::Tool(back) => return self.tools.back(at, back),
             Back::Guarded { waiting, verdict } => self.guards_answered(at, waiting, verdict),
             Back::Nested(back) => return self.tools.nested_back(at, back),
@@ -128,6 +148,17 @@ impl Actor {
                 }
             },
         })
+    }
+}
+
+/// 第 `call_id` 次调用（脚本里调的第 `nested` 件）等确认到时了：交给内核的那一条，带上编进程序的那一句。
+fn expired(at: Timestamp, call_id: CallId, nested: Option<u32>) -> Input {
+    Input::ApprovalExpired {
+        at,
+        call_id,
+        nested,
+        text: EXPIRED.trim_end_matches(['\n', '\r']).to_string(),
+        human: Some(Said::new(EXPIRED_SAID)),
     }
 }
 

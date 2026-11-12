@@ -45,10 +45,18 @@ pub(super) fn some_prepare(rng: &mut Rng, watch: &Watch) -> Option<Input> {
     }
 }
 
-/// 挂接点的结果带上这一轮开不开：开着的种子里第 5、10……个序号开的回合关着，别的开着；不开的种子一律关着。
+/// 挂接点的结果带上这一轮开不开：开着的种子里第 5、10……个序号开的回合关着，别的开着；不开的种子一律关着。也带上等确认
+/// 等多久（施工 CD-1）：三个种子里一个等一分钟，别的一直等，不多取随机数（别的种子的那一串输入不跟着错开）。
 pub(super) fn with_prepare(watch: &Watch, mut input: Input) -> Input {
-    if let Input::TurnStartHooksDone { turn, prepare, .. } = &mut input {
+    if let Input::TurnStartHooksDone {
+        turn,
+        prepare,
+        confirm_ms,
+        ..
+    } = &mut input
+    {
         *prepare = watch.prepares.seeded && turn.started().get() % 5 != 0;
+        *confirm_ms = (watch.seed % 3 == 1).then_some(60_000);
     }
     input
 }

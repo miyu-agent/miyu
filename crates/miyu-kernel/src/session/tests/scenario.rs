@@ -2,6 +2,7 @@
 //! 查整份日志：一条一行，序号、种类（结果写上状态，结束写上原因，事实写上类别，模型调用写上
 //! 结果）、谁、第几轮。组装用的是替身的 [`Listing`]：请求里一条事件一行。
 
+mod approval_expiry;
 mod asking;
 mod breaker;
 mod busy;

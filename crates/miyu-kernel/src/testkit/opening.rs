@@ -234,6 +234,7 @@ impl Stage {
             sight: super::sight::Sight::default(),
             swap: None,
             shells: Default::default(),
+            expiries: super::expiry::Expiries::default(),
         };
         stage.settle(actions);
         stage

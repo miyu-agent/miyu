@@ -372,8 +372,8 @@ impl Actor {
                 self.call(seen, request, changed);
                 None
             }
-            Action::Wake { at, seen } => {
-                self.wake(at, seen);
+            alarm @ (Action::Wake { .. } | Action::ExpireApproval { .. }) => {
+                self.wake(alarm);
                 None
             }
             Action::Aside {

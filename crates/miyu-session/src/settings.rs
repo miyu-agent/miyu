@@ -12,7 +12,7 @@
 //! 认，设置页不画（`miyu-core` 的 `settings::Packaged`）。
 //! 展示的一项（施工 D-5 补二）：system 里带不带 show 的那一句，同样核心替基础系统声明，造会话时读。
 //! 受保护的命令的五项（施工 HZ-1，设计 `11-权限与沙盒.md` 的 A18）：完全放开下也先问的高危命令，一类一个开关。回合开始照这一
-//! 轮的配置换进权限策略（`guard.rs`），下一轮生效。
+//! 轮的配置换进权限策略（`guard.rs`），下一轮生效。等人确认等多久（施工 CD-1）：回合开始照这一轮的配置交给内核，下一轮生效。
 
 use std::time::Duration;
 
@@ -149,7 +149,8 @@ miyu_config::settings! {
 miyu_config::settings! {
     /// 受保护的命令（施工 HZ-1，设计 `11-权限与沙盒.md` 的 A18，2026-11-11 项目主人定）：完全放开下也先问人的高危命令，一类
     /// 一个开关，出厂都开；关掉的那一类在本人的会话里不再问、直接跑。外部身份的会话不看这几项；直接拒的那几种没有开关。设置页
-    /// 「隐私与安全」那一页最上面一组。哪一种归哪一类照 [`miyu_policy::hazard::Group`]。
+    /// 「隐私与安全」那一页最上面一组。哪一种归哪一类照 [`miyu_policy::hazard::Group`]。末了一项是确认等多久（施工 CD-1），在
+    /// 「权限」那一组。
     pub struct ConfirmSettings in "permission.confirm" {
         /// 破坏性的 git 先问：强制推送、`reset --hard`、`clean -f`、丢掉改动、删 stash。
         git: bool = true {
@@ -186,6 +187,15 @@ miyu_config::settings! {
             applies: next_turn,
             ui: { page: "privacy", group: "protected", control: toggle },
         },
+        /// 等人确认等多久，秒（施工 CD-1，2026-11-12 项目主人定）：所有「允许/拒绝」的确认（权限策略、扩展守卫问的）到时没人
+        /// 确认，内核替人拒绝，她换别的办法往下走，自己跑的时候不会卡住；她的提问（`ask_user`）不算。`0` 是一直等。回合开始照它
+        /// 交给内核（`TurnStartHooksDone` 的 `confirm_ms`）。
+        timeout: i64 = 300 {
+            kind: int [0, 86400],
+            layers: [System],
+            applies: next_turn,
+            ui: { page: "privacy", group: "permission", control: number },
+        },
     }
 }
 
@@ -215,6 +225,14 @@ impl CompactionSettings {
 }
 
 impl ConfirmSettings {
+    /// 这一轮等人确认最多等多少毫秒（施工 CD-1）：`0` 是一直等，没有。
+    pub(crate) fn wait_ms(&self) -> Option<u64> {
+        u64::try_from(self.timeout)
+            .ok()
+            .filter(|seconds| *seconds > 0)
+            .map(|seconds| seconds.saturating_mul(1000))
+    }
+
     /// 关掉的那几类（不再问的），写成 [`Group::code`]：权限策略拿它和工具报的高危归的类比（`miyu_tool::HazardAsk::class`）。
     pub(crate) fn waived(&self) -> Vec<&'static str> {
         [

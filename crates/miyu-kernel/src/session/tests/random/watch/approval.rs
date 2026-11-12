@@ -6,6 +6,7 @@
 //! - 请求只在链说要问人时记，`by` 是提问的模块，写的就是链交回的；没人能确认的、只读时要写入的，
 //!   不记，当场拒绝；
 //! - 回答：看守自己照规矩判该接受还是拒绝；接受的记一条决定，`by` 是回答的人；
+//! - 到时了（施工 CD-1）：还在等的记一条内核替人拒的决定，不在等的什么都不记；
 //! - 被拒绝的结果，谁拒的写成 `by`：链拒的是那个模块，人拒的是回答的人，没人能确认的是内核。
 
 use super::*;
@@ -25,6 +26,10 @@ pub(in super::super) struct Approvals {
     approved: BTreeMap<CallId, Seq>,
     /// 人拒绝了的调用，和拒绝的人：它的结果要是这个人拒的。
     denied: BTreeMap<CallId, By>,
+    /// 内核交出过的截止时刻（施工 CD-1）：哪一次调用、脚本里调的序号。人先定了的也留着，送了该不理。
+    pub(in super::super) expiries: Vec<(CallId, Option<u32>)>,
+    /// 正在送的到时了：哪一件、送的时候它还在不在等。
+    pub(super) expiring: Option<(CallId, Option<u32>, bool)>,
 }
 
 impl Approvals {
@@ -36,6 +41,8 @@ impl Approvals {
             asking: BTreeSet::new(),
             approved: BTreeMap::new(),
             denied: BTreeMap::new(),
+            expiries: Vec::new(),
+            expiring: None,
         }
     }
 }
@@ -43,11 +50,22 @@ impl Approvals {
 impl Watch {
     /// 送进一条输入之前：送回链的结论的，记下它；新的回答，照规矩判出该接受还是拒绝。
     pub(super) fn before_approval(&mut self, input: &Input) -> Option<Result<(), Reason>> {
+        self.approvals.expiring = None;
         match input {
             Input::ToolGuarded {
                 call_id, verdict, ..
             } if self.approvals.guarding.remove(call_id) => {
                 self.approvals.verdicts.insert(*call_id, verdict.clone());
+                None
+            }
+            Input::ApprovalExpired {
+                call_id, nested, ..
+            } => {
+                let asking = match nested {
+                    None => self.approvals.asking.contains(call_id),
+                    Some(n) => self.nested_asking(*call_id, Some(*n)).is_some(),
+                };
+                self.approvals.expiring = Some((*call_id, *nested, asking));
                 None
             }
             Input::Command(received) if self.fresh(&received.id) => match &received.command {
@@ -102,6 +120,18 @@ impl Watch {
         judged: Option<Result<(), Reason>>,
     ) {
         let seed = self.seed;
+        // 不拿走：这一批的事件随后才照规矩查（`watch.rs` 的 `check`），内核替人拒的决定要对得上它；下一条输入送进去之前清掉。
+        if let Some((call_id, nested, asking)) = self.approvals.expiring {
+            let decided = actions.iter().any(|action| {
+                matches!(action, Action::Append(events)
+                if events.iter().any(|event| matches!(&event.body, Body::ApprovalDecided(decided)
+                    if decided.call_id == call_id && decided.nested == nested)))
+            });
+            assert_eq!(
+                decided, asking,
+                "种子 {seed}：{call_id} {nested:?} 到时了，还在等的才记决定：{actions:?}"
+            );
+        }
         match judged {
             None => {}
             Some(Err(reason)) => {
@@ -256,8 +286,8 @@ impl Watch {
                     "种子 {seed}：{call_id} 不在等人，却有了决定"
                 );
                 assert!(
-                    matches!(event.by, By::Person(_)),
-                    "种子 {seed}：决定是人做的"
+                    matches!(event.by, By::Person(_)) || self.expired_by_kernel(event, decided),
+                    "种子 {seed}：决定是人做的，到时了的是内核替人拒的"
                 );
                 if decided.decision == Decision::Deny {
                     self.approvals.denied.insert(call_id, event.by.clone());
@@ -275,6 +305,27 @@ impl Watch {
             }
             _ => {}
         }
+    }
+
+    /// 内核交出了截止时刻（施工 CD-1）：记下，之后照它送到时了。
+    pub(super) fn expiry_asked(&mut self, call_id: CallId, nested: Option<u32>) {
+        self.seen_paths.insert("交出了截止时刻");
+        self.approvals.expiries.push((call_id, nested));
+    }
+
+    /// 这条决定是到时了、内核替人拒的（施工 CD-1）：正在送的到时了就是这一件，它还在等，决定是拒绝。
+    pub(super) fn expired_by_kernel(
+        &mut self,
+        event: &Event,
+        decided: &crate::event::ApprovalDecided,
+    ) -> bool {
+        let expired = event.by == By::Kernel
+            && decided.decision == Decision::Deny
+            && self.approvals.expiring == Some((decided.call_id, decided.nested, true));
+        if expired {
+            self.seen_paths.insert("到时没人确认被拒");
+        }
+        expired
     }
 
     /// 一条被拒绝的结果：谁拒的写成 `by`。只读拦下的由看守的权限那一份查。

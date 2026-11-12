@@ -344,8 +344,8 @@ impl Watch {
             "种子 {seed}：{id} 不在等人，却有了决定"
         );
         assert!(
-            matches!(event.by, By::Person(_)),
-            "种子 {seed}：决定是人做的"
+            matches!(event.by, By::Person(_)) || self.expired_by_kernel(event, decided),
+            "种子 {seed}：决定是人做的，到时了的是内核替人拒的"
         );
         if decided.decision == crate::event::Decision::Deny {
             self.seen_paths.insert("人拒绝了脚本里调的");

@@ -246,6 +246,7 @@ miyu_config::settings! {
 | `log.level` | 选项 `error`、`warn`、`info`、`debug`、`trace`、`off` | `info` | 系统 | 不能写 | `now`，`MIYU_LOG` 压过 | 8-1 声明，8-2 读，8-4 当场换 |
 | `permission.start_read_only` | 开关 | `false` | 系统、项目 | `true_only` | `new_session` | 8-2。设置页在「通用」那一页的「新会话」一组（2026-10-23 从「会话」组挪来） |
 | `permission.confirm.git`、`.delete`、`.power`、`.pipe_to_shell`、`.container` | 开关 | `true` | 系统 | 不能写 | `next_turn` | HZ-1：受保护的命令，完全放开下也先问的高危命令一类一个开关，关掉的那一类在本人的会话里不再问（`session/guard.md` 第四条末）。设置页「隐私与安全」那一页最上面的「受保护的命令」一组 |
+| `permission.confirm.timeout` | 整数，0 到 86400 | `300` | 系统 | 不能写 | `next_turn` | CD-1：等人确认等多少秒，到时没人确认内核替人拒绝，`0` 是一直等（`kernel/asking.md`「到时没人确认」）。设置页「隐私与安全」那一页「权限」一组的数字框 |
 | `sandbox.private.add` | 文字的列表，一个最多 4096 个字符：`~/…` 或绝对路径 | 空的 | 系统 | 不能写 | `next_turn` | 5-15 下：人加的私密目录，家目录和它的上级不收（`private_too_broad`）。设置页「隐私与安全」那一页的「私密目录」一组 |
 | `sandbox.private.remove` | 文字的列表，只收这台机器的出厂私密目录（`config.schema` 交成 `options`，5-15 下补：登记成选项的话生成的文件照系统不同） | 空的 | 系统 | 不能写 | `next_turn` | 5-15 下：去掉的出厂项，同上一组 |
 | `external.bindings.<external>` | 名字（写什么都算主人，im 写 `owner`） | 没有 | 系统 | 不能写 | `now` | O-3：主人的平台账号（`venues.md`），一个号一行；值是空的当没写。头在平台接入那个软件的信息页上画成「我的平台账号」，只填号码（2026-10-10 项目主人定，`package-pages.md`「平台接入的软件」） |
@@ -311,6 +312,7 @@ miyu_config::settings! {
 - `commands.<id>.access`（施工 O-6 六补，2026-10-17 接入QQ 的会话要的、项目主人定）：一条斜杠命令谁能用，`<id>` 是命令名。`admin`（本人、对应表里认得的、场所里管理的人，照旧）、`anyone`（谁都行，命令自己的限制照旧）、`off`（谁都不行，回 `command_not_allowed`，`data.why`「/<名字> 已停用。」，菜单里不列）。不写的照命令的出厂值（扩展清单 `[[slash]]` 的 `access`），也没有的是 `admin`。只写在系统配置里，立即生效。设置页不画（`hidden`）：带名字的这一段两个头还没有画法（`slash.md`「谁能用」）。
 - `permission.level`（施工 8-32，2026-10-13 项目主人定；施工 LV-1 改）：A16 起（`11-权限与沙盒.md`）只有 `full`，默认 `full`，写 `workspace` 的照 `full` 收（旧配置、还没跟上的头的引导写它不报错）；设置页不列（`hidden`）。新会话都从完全放开开局，本机、场所的一样，外部身份另有限制（`session/guard.md` 第四条末）。要开局只读的用 `permission.start_read_only`。
 - `permission.confirm.git`、`.delete`、`.power`、`.pipe_to_shell`、`.container`（施工 HZ-1，2026-11-11 项目主人定，`designs/11-权限与沙盒.md` A18）：受保护的命令。完全放开下也先问人的高危命令分五类（破坏性 git、递归删除、关机和重启、下载后直接执行、容器使用宿主设备），一类一个开关，出厂都开；关掉的那一类在本人的会话里不再问、直接跑，外部身份的会话不看。只有系统一层，下一轮生效（回合开始照这一轮的配置换进权限策略）。直接拒的那七种没有开关，列在这一组的说明里。在 `crates/miyu-session/src/settings.rs` 的 `ConfirmSettings` 声明；核心登记时排在 `PermissionSettings` 前面，所以「隐私与安全」那一页先出现的组是它，排在私密目录上面。哪一种归哪一类、怎么判见 `session/guard.md` 第四条末。
+- `permission.confirm.timeout`（施工 CD-1，2026-11-12 项目主人定）：等人确认等多少秒，出厂 300（5 分钟），`0` 是一直等，最多 86400（一天）。所有「允许/拒绝」的确认都算（权限策略问的高危命令、装包这些，扩展守卫问的）；她的提问（`ask_user`）不算，照旧一直等。到时没人确认的，内核替人拒绝，她拿到「没人确认」的那一句，换别的办法往下走：自己跑的时候不会因为一个确认卡住。只有系统一层，下一轮生效：回合开始照这一轮的配置交给内核（`TurnStartHooksDone` 的 `confirm_ms`），计时从记请求那一刻起，截止的时刻写在请求里（`expires_at`）。同在 `ConfirmSettings` 声明，设置页在「权限」那一组（那一组别的项不显示，这一项是它唯一显示的一项）。
 - `sandbox.private.add`、`sandbox.private.remove`（施工 5-15 下，`designs/11-权限与沙盒.md` 第四节）：人加的私密目录（`~/…` 或绝对路径，家目录和它的上级 `config.set` 拒 `private_too_broad`，手改文件写了的照不写算）、去掉的出厂项（只收这台机器的出厂清单 `miyu_fs::SHIPPED_PRIVATE`，照系统不同；清单里登记成文字的列表，生成的 Schema、参考文件哪个系统都一样，`config.schema` 另把出厂清单交成 `options`、名字同值，`config.set` 写了别的拒 `not_an_option`，5-15 下补）。记两份不记整份：以后的版本加了出厂项照样生效，人去掉的不随升级回来。下一轮生效：权限策略、沙盒、往下走目录的工具照这一轮的配置拼（`miyu_tool::private::dirs`）。`privacy` 页的 `private` 组，列表。两项手写登记。
 - 去掉的（施工 LV-5，2026-11-11 项目主人定，`designs/11-权限与沙盒.md` A17）：`sandbox.strength`（沙盒强度，施工 5-16 下）和 `sandbox.readonly.enabled`、`.add`、`.remove`（受保护的路径，施工 5-17 下）。老配置里留着的照不在清单里的键报 `unknown_key`（警告），原样留在文件里，不进最终值。私密目录那三项照留，只在只读时起作用：命令读不到，文件工具读之前先问；完全放开时不拦。
 - `ui.startup`：打开一个头（终端界面、网页）时开一个新会话（`new`），还是接着最近的那一个（`recent`）。头自己用 `config.get` 读，核心不管它（2026-10-01 主会话和终端界面定）。界面提示：`general` 页（通用）的 `display` 组（显示），下拉。施工 8-28 从 `tui.startup` 改名（2026-10-07 项目主人定：同一个人在同一台机器上，每个头的体验一样，几个头都有的行为是一个共用的项，只有一个头才有的才用 `tui.*`、`web.*`）；不留旧名字：还没发布，文件里写着旧名字的照不认识的键报警告、不算。
@@ -1358,6 +1360,10 @@ pipe_to_shell = true
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 power = true
 
+# 确认超时：等你确认超过这么多秒就自动拒绝。0 为一直等。
+# 能写：0 到 86400 之间的整数。只能写在系统配置里。下一轮生效。
+timeout = 300
+
 [persona]
 # 默认人格：新会话默认用哪个人格。不设的话，新会话不使用人格，记忆单独一份。
 # 能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置里。新会话生效。
@@ -1646,6 +1652,8 @@ currency = "USD"
 | 说明 | curl … \| sh 这类前先问。 | Ask before commands like curl … \| sh. | curl … \| sh のようなコマンドの前に確認します。 |
 | `permission.confirm.container` 名字（HZ-1） | 容器使用宿主设备 | Containers using host devices | コンテナによるホストデバイスの使用 |
 | 说明 | 容器要宿主的设备、进程或网络命名空间前先问。 | Ask before a container takes the host's devices, process or network namespace. | コンテナがホストのデバイス、プロセスやネットワークの名前空間を使う前に確認します。 |
+| `permission.confirm.timeout` 名字（CD-1） | 确认超时 | Confirmation timeout | 確認のタイムアウト |
+| 说明 | 等你确认超过这么多秒就自动拒绝。0 为一直等。 | Anything waiting for your confirmation is denied after this many seconds. 0 waits forever. | 確認待ちがこの秒数を過ぎると自動で拒否します。0 はずっと待ちます。 |
 | 组 `protected`（`privacy`，HZ-1） | 受保护的命令 | Protected commands | 保護されたコマンド |
 | 组 `protected` 的说明（`config.group_descriptions`，HZ-1） | 下面几类命令在完全放开时也会先问你，关掉就不再问。另有几类永远拒绝、不能关：删根目录、家目录、系统目录、Miyu 的数据，格式化磁盘、往裸设备写，容器拿走整个宿主。 | These kinds of commands ask you first even with full access. Turn one off to stop asking. Some are always refused and can't be turned off: deleting the root, home or system directories or Miyu's data, formatting a disk or writing to a raw device, and giving a container the whole host. | 次の種類のコマンドは、フルアクセスでも実行前に確認します。オフにすると確認しません。常に拒否され、オフにできないものもあります：ルート、ホーム、システムディレクトリ、Miyu のデータの削除、ディスクのフォーマット、raw デバイスへの書き込み、コンテナへのホスト全体の引き渡し。 |
 | `sandbox.private.enabled` 名字（5-17 上） | 私密目录 | Private folders | 非公開フォルダ |

@@ -79,6 +79,7 @@ fn the_registered_list_is_well_formed() {
             "permission.confirm.power",
             "permission.confirm.pipe_to_shell",
             "permission.confirm.container",
+            "permission.confirm.timeout",
             "permission.start_read_only",
             "permission.level",
             "sandbox.private.enabled",

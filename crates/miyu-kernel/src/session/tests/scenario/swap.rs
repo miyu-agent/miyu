@@ -129,6 +129,7 @@ fn a_staged_policy_without_a_hash_is_dropped() {
         replaced: None,
         policy: None,
         prepare: false,
+        confirm_ms: None,
     });
     assert!(appended_events(&actions).is_empty(), "{actions:?}");
     let systems: Vec<&str> = actions

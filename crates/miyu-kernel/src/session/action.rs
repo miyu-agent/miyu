@@ -78,6 +78,16 @@ pub enum Action {
         /// 为哪一次请求等的：出错的那一次，「到点了」照它对上。
         seen: Seq,
     },
+    /// 等人确认的截止时刻（施工 CD-1）：到了 `at` 这一刻送一条 [`super::Input::ApprovalExpired`] 回来。人先定了的不用收回，到时
+    /// 送回来内核不理；重启以后不接着计（在等的确认载入时照「崩了」了结）。
+    ExpireApproval {
+        /// 什么时候到时。
+        at: Timestamp,
+        /// 哪一次调用：脚本里调的是父级那次调用。
+        call_id: CallId,
+        /// 脚本里调的那一件的序号；直接调用的没有。
+        nested: Option<u32>,
+    },
     /// 跑回合结束的挂接点：广播给各模块，不等结果（`05-内核接口.md` 第五节）。
     RunTurnEndHooks {
         /// 哪个回合。

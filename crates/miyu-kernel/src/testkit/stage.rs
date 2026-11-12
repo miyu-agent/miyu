@@ -99,6 +99,8 @@ pub struct Stage {
     pub(super) swap: Option<(ContentHash, Box<dyn Fn() -> Policy>)>,
     /// 人打的命令（施工 SH-1 上，`shell.rs`）。
     pub(super) shells: super::shell::Bench,
+    /// 等确认到时：等多久、交出的截止时刻（施工 CD-1，`expiry.rs`）。
+    pub(super) expiries: super::expiry::Expiries,
 }
 
 impl Stage {

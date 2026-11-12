@@ -40,7 +40,7 @@
 | `model.called` | 一次模型请求的记录：用了谁、用量、花了多少、出错的 `error`。回复被截过的带 `cut`，一块字一项：`[{"block", "at", "bytes", "role"}]`（`block` 是第几块，同 `model.delta` 的 `index`；`at` 从那一块原文的第几个字节起；`bytes` 截掉多少字节；`role` 是那个角色词：`user`、`assistant`、`system`、`human`、`tool`），截掉的原文不记；没截的不写 |
 | `tool.result` | 一次工具调用的结果：`status` 是 `ok`、`error`、`denied`、`cancelled`、`skipped` |
 | `tool.nested` | 脚本里的一次 `miyu call` 了结了：`id`（前台调用下面的写成 `call_12_1#3`，后台任务下面的写成 `j7#3`）、`name`、`args`、`status`（`ok`、`error`、`denied`、`needs_approval`、`cancelled`），有的另带 `duration_ms`、`result`（blob）、`bytes`、`reason`。不进她的上下文；任务下面的不带 `turn` |
-| `tool.approval_requested`、`tool.approval_decided` | 请人确认一次调用、人的决定 |
+| `tool.approval_requested`、`tool.approval_decided` | 请人确认一次调用、人的决定。请求带 `expires_at`（时刻）的，到那一刻还没人确认就自动拒绝：记一条 `decision` 是 `deny`、`by` 是 `kernel` 的决定，她拿到「没人确认」的结果接着干；头照它画倒计时。配置 `permission.confirm.timeout` 是 `0` 的一直等，不带 |
 | `question.asked`、`question.answered` | 她问了一组题、人的回答 |
 | `context.injected` | 注入进上下文的一块事实（记忆、扩展交的……） |
 | `context.compacted` | 压缩的检查点；清空上下文也是它（`trigger` 是 `clear`）。摘要请求太长、截掉了最老的几组才写成的带 `truncated`（几组：最早的那一段没进摘要），没截过的不写 |
