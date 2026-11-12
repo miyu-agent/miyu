@@ -6,11 +6,15 @@ use std::borrow::Cow;
 use serde_json::{Map, Value};
 
 /// 一句拒绝的中文、英文：照 [`of`]，只是带着 `data` 里的数说的几种照它填（施工 YC-6：`session_read_only` 照 `data.line` 说坏在
-/// 第几行；`data` 里没有那个数的照 [`of`]）。
+/// 第几行；施工 MEM-1：`low_memory` 照剩多少说；`data` 里没有那个数的照 [`of`]）。
 pub(super) fn said(
     reason: &str,
     data: Option<&Map<String, Value>>,
 ) -> (Cow<'static, str>, Cow<'static, str>) {
+    // 内存不够的照剩多少说（施工 MEM-1）。
+    if let Some(said) = super::room::said(reason, data) {
+        return said;
+    }
     let line = data
         .and_then(|data| data.get("line"))
         .and_then(Value::as_u64);
@@ -193,6 +197,10 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         ),
         "needs_approval" => ("扩展权限未批准。", "Extension permissions not approved."),
         "session_not_found" => ("会话不存在。", "Session not found."),
+        "low_memory" => (
+            "可用内存不足，暂时不能打开会话。",
+            "Not enough memory to open a session.",
+        ),
         "unknown_call" => ("调用不存在。", "Call not found."),
         "shell_not_allowed" => (
             "只有你自己能在这里跑命令。",

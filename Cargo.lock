@@ -2077,6 +2077,7 @@ dependencies = [
  "miyu-endpoint",
  "miyu-fs",
  "miyu-goal",
+ "miyu-heap",
  "miyu-http",
  "miyu-ipc",
  "miyu-kernel",
@@ -2148,6 +2149,7 @@ version = "2026.11.0"
 dependencies = [
  "libc",
  "rustix",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

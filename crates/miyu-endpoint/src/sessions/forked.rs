@@ -33,6 +33,8 @@ impl Sessions {
             if !open.running.contains_key(&lineage.parent) {
                 return Err("the parent session is gone".to_string());
             }
+            // 先看内存够不够（施工 MEM-1）：写下第一条以后载入才拒的，会在磁盘上留下一个开不了的子会话。
+            self.room_for_child().await?;
             let by = By::Session(Session {
                 id: lineage.parent.clone(),
             });

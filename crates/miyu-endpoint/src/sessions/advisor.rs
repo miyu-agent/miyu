@@ -109,6 +109,7 @@ impl Sessions {
         if !open.running.contains_key(&advice.lineage.parent) {
             return Err("the parent session is gone".to_string());
         }
+        self.room_for_child().await?;
         let id = new_id(now());
         let by = By::Session(Session {
             id: advice.lineage.parent.clone(),

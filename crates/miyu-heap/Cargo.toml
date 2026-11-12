@@ -26,6 +26,11 @@ missing_panics_doc = "warn"
 [target.'cfg(target_os = "linux")'.dependencies]
 rustix = { version = "1", features = ["thread"] }
 
-# macOS 上问内核自己占了多少内存（施工 V-4 补，`usage.rs`）：`proc_pid_rusage`。
+# macOS 上问内核自己占了多少内存（施工 V-4 补，`usage.rs`）：`proc_pid_rusage`；还剩多少可用内存（施工 MEM-1，`room/macos.rs`）：
+# `sysctlbyname`。
 [target.'cfg(target_os = "macos")'.dependencies]
 libc = "0.2"
+
+# Windows 上还剩多少可用内存（施工 MEM-1，`room/windows.rs`）：`GlobalMemoryStatusEx`。MIT OR Apache-2.0，工作区里本来就有。
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_System_SystemInformation"] }

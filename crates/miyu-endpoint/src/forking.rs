@@ -45,6 +45,8 @@ pub(crate) async fn fork(
 ) -> Result<Value, Refusal> {
     let parent = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
     core.sessions.get(core, &parent).await?;
+    // 支线写下第一条就当场载入：内存不够的先拒（施工 MEM-1），不在磁盘上留下一条开不了的支线。
+    core.sessions.room().await?;
     let by = recorder(caller)?;
     let cause = request.id.clone();
     let at = now();

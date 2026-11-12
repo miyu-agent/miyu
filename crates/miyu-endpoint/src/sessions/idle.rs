@@ -43,6 +43,7 @@ impl Sessions {
             sweeping: AtomicBool::new(false),
             due: Arc::default(),
             answering: std::sync::Mutex::default(),
+            gate: super::room::Gate::default(),
         }
     }
 
@@ -147,7 +148,8 @@ impl Core {
     /// 同一份家底，会话闲 `idle` 退下（施工 V-2 再补）：测试里设短的，不用真等三分钟。
     #[must_use]
     pub fn with_session_idle(mut self, idle: Duration) -> Core {
-        self.sessions = Sessions::new(idle);
+        // 只换时长：别的（测试换上的内存读法，施工 MEM-1）照留。
+        self.sessions.idle = idle;
         self
     }
 

@@ -28,6 +28,7 @@
 | `crates/miyu-endpoint/src/sessions/orphans.rs` | 载入时收掉派到一半的空子会话（施工 7-8，「会话表」第 8 条） |
 | `crates/miyu-endpoint/src/sessions/idle.rs` | 闲够了的会话退下：看空闲的任务、问退不退、从表里拿掉（施工 V-2 再补，「会话表」第 9 条）；封存了的报了退得下，任务当场醒来只问报了的那几个（`retirable`、`retire_due`，施工 V-51）；`Core::with_session_idle`（测试里设短的）、`Core::loaded`（这时载入着几个会话） |
 | `crates/miyu-endpoint/src/sessions/delete.rs` | 会话表删会话：认出它派的子会话、停下、挪进回收处（施工 3-8 三补）；删子会话照人停掉它、父会话记回报，都在表的锁里（施工 7-8） |
+| `crates/miyu-endpoint/src/sessions/room.rs`（施工 MEM-1） | 开会话之前看一眼还剩多少内存：低于 `LOW_PERCENT`（5）的拒 `low_memory`，读数留 1 秒（「会话表」第 10 条）；`Core::with_memory_probe`（测试里换读法） |
 | `crates/miyu-endpoint/src/from.rs` | `session.send` 的 `from`：去掉控制字符、截到 128 字节，记成 `harness`（施工 7-10） |
 | `crates/miyu-endpoint/src/spawn.rs` | 会话表交给会话的端口：造子会话、给会话发命令（施工 7-5，`session/tools.md`「派子代理」）；停下子会话、照日志看它（施工 7-4）；列主会话（施工 C-3） |
 | `crates/miyu-endpoint/src/list.rs` | `session.list`：标题、置顶照日志算（施工 3-8 三补）；工作目录、最近一次动静、忙不忙（施工 C-3）；读会话列表的索引、照日志补，起来时打开它，删会话删行（施工 3-8 七补，`store/index.md`）。她用 `sessions` 列会话也是这一个 `scan`（`tools/sessions.md`） |
@@ -306,6 +307,7 @@
 4. 同一个命令编号再发：记着最近 1024 个造会话的编号，是其中之一的，交回上一次造的那一个，不再造；`cwd` 照这一次报的算。除了 `cwd`、`dirs`，别的参数（人格、预设、模型、`memory` 这些）和上一次不一样的：拒绝，`id_reused`，什么都不造（施工 YC-7）；比的是这次运行里记在内存里的指纹，重启以后补回来的编号没有指纹，照旧交回上一次那一个。核心重启以后，第一次造会话时，从最新的 1024 个会话的 `session.created` 里把编号补回来（`cause` 就是造会话的命令编号，施工 4-9 再补三上），在阻塞线程里读。去重不分连接：头每个连接的编号要和以前的都不一样（随机前缀），不然新连接的造会话、说话都被当成重发（`docs/reference/connection.md`「先后」第 3 条）。
 5. `memory` 不是这三种字符串之一（大小写也算）：`bad_params`，什么都不造（施工 R-3 下）。`model` 不是字符串：`bad_params`。解析不出（写法不对、没有这家供应商、没有这个池、池里一个成员都认不出）：`unknown_model`，什么都不造（施工 8-8，`models.md`「协议」）。先解析再找同一个命令编号造过的。
 6. 人格的编号不合写法（小写英文字母开头，只有小写字母、数字、`-`、`_`，最长 64 字节）：`bad_params`。三层（出厂、包带的、你的，`personas.md`）都没有这个人格：`unknown_persona`，默认人格指着没有的也一样，不悄悄换。人格的文件写错了：`persona_invalid`，`data.problem` 写明哪一层、哪个文件第几行（施工 P-1 上）。预设照同样的规矩，先于人格找（施工 P-2 上，`presets.md`）：编号不合写法 `bad_params`，三层都没有（默认预设指着没有的也一样，Y12）`unknown_preset`，文件写错 `preset_invalid`（`data.problem` 写明哪一层、哪个文件第几行），都不造。人格的文件、随核心附带的 `core/` 下的字读不了（安装坏了）：`internal_error`（施工 4-9 再补三上）。别的造不成（策略造不出来、磁盘上建不成、`session.created` 没落盘）：`internal_error`，原因记进运行日志。
+7. 可用内存不到 5%（「会话表」第 10 条，施工 MEM-1）：`low_memory`，什么都不造。先过第 5 条和第 4 条（参数的写法、同一个命令编号再发：重发的交回原来那一个，不看内存），再看内存，再照第 6 条找预设、人格。
 
 **`session.fork`**（施工 C-8 上，`session/fork.md`）
 
@@ -313,7 +315,7 @@
 - 分叉点由核心定：父会话在跑一轮的，是这一轮 `turn.started` 之前那一条；闲着的是最后一条。子会话的场所、工作目录、权限、策略快照、钉住的模型照父会话那一刻的；它的日志从 `upto + 1` 起，第一条 `session.created` 带 `forked: {from, upto, seal_after?}`、`parent`、`depth`。
 - 封存（施工 C-8 下）：跑满 `seal_after` 轮、这一轮结束、没有接着开的，记一条 `session.sealed`，订阅着的照常收到。跑的时候发来的、并进来的、被有计划的重启打断以后接着干的，算同一轮。封存以后 `session.send`、`session.respond`、`session.note`、`events.append`、`session.redo`、`session.compact`、`session.clear`、`session.revert`、`session.unrevert`、`session.configure`、`session.set_permission`、`session.set_workspace`、斜杠命令拒 `session_sealed`；改标题置顶、打断、回答、回顾照常。封存了的没人订阅、没事了就从内存里卸下，日志留在磁盘上。
 - 子会话照普通会话用：`session.send`、`session.respond`（`to` 可以是分叉点以前在父会话里旁听记下、还没当过触发的序号）、订阅。记成谁同 `events.append`。
-- 拒绝：没有的 `session_not_found`；父会话是子代理、分叉出来的，编号写法不对、`seal_after` 不是 1 起的整数的 `bad_params`。
+- 拒绝：没有的 `session_not_found`；父会话是子代理、分叉出来的，编号写法不对、`seal_after` 不是 1 起的整数的 `bad_params`；可用内存不到 5% 的 `low_memory`，写下支线之前就拒，磁盘上不留（「会话表」第 10 条，施工 MEM-1）。
 
 **`session.list`**
 
@@ -1462,6 +1464,7 @@ Markdown 的回应 `{"path" | "text", "bytes", "tokens", "upto", "redacted", "ch
 7. 造会话、载入时，交给会话一份造子会话的端口（施工 7-5，`session/tools.md`「派子代理」）：会话里派出去的子会话由会话表造，放进表里，和头造的一样照编号找得到、只起一个；子会话也算进「有没有会话忙着」，停下全部会话时一起停。父会话已经不在表里的（删了、停了）不再造，派不了（施工 3-8 三补：不留下没有父会话的子会话）。
 8. 载入一个会话、放进表以后，在后台收掉它派到一半的空子会话（施工 7-8，`agents.md` 第一条第 8 条；施工 V-2 三补起不挡着载入：认在阻塞线程里、不拿表的锁，认出来有的才拿锁收）：它的日志里有没派成的 `subagent` 调用（以前造的会话里叫 `agent`，也算；结果里没有 `job.started`，或者还没有结果）才去认，认的是放会话的目录里 `session.created` 的 `parent` 是它、它的日志里又没有这个子会话的 `job.started` 的，连同它们派的。有没有没派成的、记下了哪些，是载入读日志时顺手记下交回的（施工 V-37 上），认的时候不另读它的日志；照的是载入读完日志的那一刻，比原来后台读完日志的那一刻早，不晚：载入以后才记下的 `job.started` 不在里面（原来后台那一读以前记下的在里面）。这只在要认的时候有差别：载入以后才派出去的子会话正赶上这一趟认，会被当成空子会话收掉；原来是还没记下 `job.started` 就赶上的才会。这条缝原来就有，一样窄（要恢复的那一轮在认完以前就派了子代理），另记（施工 V-37 上施工单「不做什么」）。在跑的停下（`Handle::discard`），目录挪进回收处，最深的在前，照 `session.delete` 第 7 条。一个记一行 `INFO orphan subagent removed`；挪不走的记一行 `WARN`，不耽误载入。
 9. 闲够了退下（施工 V-2 再补，`07-存储.md` 第七节第 3 条，`sessions/idle.rs`）：表里第一次放进会话时起一个任务，隔一阵拿着表的锁问一遍。没有回合在跑、没人订阅、除了表里那一个没有别的把手（正在办的请求、订阅着的头都拿着一个）的，问它闲够 3 分钟了没有（`Handle::retire`，会话照自己的账答，`session/actor.md` 第 9 条）；退下了的、已经停了的从表里拿掉，下次用到照第 1 条载入。拿着锁问：这时谁也拿不到新的把手，退下和再载入不会同时有两个写者。下一次隔多久问：答了还差多久的，取最少的那个；都没得问的，过 3 分钟（两次之间至少 10 毫秒）。退下的会话 actor 放掉的内存还给系统（`heap.md`）。封存了的会话（支线）没事了自己报一声（施工 V-51，`SessionPort::retirable`，`session/actor.md` 第 9 条）：记下、叫醒这个任务，它当场拿着表的锁只问报了的那几个，问法同上（有回合、有人订阅、有别的把手的不问，问了照会话的账答）；没问成、答了还有事的不再记着，等会话下一次报；不在表里的不管。报可能是在表的锁里放下把手时来的，只记下、不拿表的锁。隔一阵问的那一遍照旧按原来的点。
+10. **内存不够不开会话**（施工 MEM-1，`sessions/room.rs`）：新造会话（`session.create` 真要造的时候，`venue.session` 造场所会话也走它）、从磁盘载入（第 1 条，说话、订阅这些都算）、`session.fork` 写下支线之前、造子代理、fork 子代理、顾问会话之前，看一眼还剩多少可用内存（`miyu_heap::room`，`heap.md`「还剩多少内存」）：低于总量的 5%（`LOW_PERCENT`，常量，不做配置项；2026-11-12 项目主人定）的当场拒 `low_memory`，`data.available_mib` 还剩多少 MiB、`data.available_percent` 占总量的百分之几（都往下取整），给人看的那一句照这两个数说，记一行 `WARN low memory, session not opened`；子会话那几处派不成，原因是英文的一句、只进运行日志。正好 5% 的不拒；读不到的（平台不支持、文件不在、读的那一下崩了）当作不知道，照常开。已经在表里的会话照常用，不卸载（卸载空闲会话另做）。读数留 1 秒：连着开一串的不每次都读；读在阻塞线程里。一直开新会话的时候，原来核心会撑到系统的上限被杀掉、所有会话一起没（2026-11-11 基准测试 M3，约 1.75 MB 一个会话）。
 
 **工作目录太宽**
 
@@ -1821,6 +1824,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/restart.rs` | 核心重启以后：不带 `cwd` 载入的会话照最后一轮的工作目录、没开过回合的照造会话时的；重发的造会话交回原来那一个、重启以后也认得 |
 | `crates/miyu-endpoint/tests/session_read_only.rs`（施工 YC-6） | 日志中间坏了一行（换成别的、写到一半、序号重了、末尾多了一整行）：`view.page`（事件、条目）交坏行以前的、带 `broken`，不碰坏行的一页不带；说话、订阅拒 `session_read_only`，带哪一段、第几行，给人看的话说第几行；照样列得出来；日志一个字节都不动。坏在第一行的照旧 `session_broken` |
 | `crates/miyu-endpoint/tests/reused_ids.rs`（施工 YC-7） | 同一个编号换了参数再来：造会话只换 `cwd` 的交回原来那一个、`cwd` 照这一次，换了 `memory` 的 `id_reused`、只造了一个；说话原样再来照上一次回应，换了一句的 `id_reused`、只记了第一句；重启以后补回来的造会话编号照旧交回 |
+| `crates/miyu-endpoint/tests/low_memory.rs`（施工 MEM-1） | 读数照测试给的（`Core::with_memory_probe`）：只剩 3% 时 `session.create` 拒 `low_memory`、带剩多少、给人看的那一句照剩多少说、什么都不造，重发造过的编号照旧交回，开着的会话照常说话；重启的核心载入磁盘上的会话拒、日志不多一条，不知道的照常载入；`session.fork` 拒、不留支线；不知道的照常开 |
 | `crates/miyu-endpoint/tests/loop_command.rs`、`src/commands/resent.rs`（施工 YC-7补） | `command.run` 同一个编号重发：`/loop <话>` 原样再来回应和头一次一样、还是原来那一行循环、没有再交一次，新编号照旧换掉；`/loop 5m x` 的编号换成 `/loop off` 的 `id_reused`、循环还在；被拒的不记、换了参数再来照样跑，别的会话的同一个编号是另一条，只留最新的 1024 条 |
 | `crates/miyu-endpoint/tests/check.rs`（施工 8-30） | `check`：不写文件的照磁盘上现在的字查配置、照核心手里的查密钥、人格每一层各查各的，先后、代码、级别、行对，给人看的那一句照连接的语言；写了文件的照位置认、只查那一份，项目配置照 `.miyu/config.toml` 认、相对的照 `cwd` 接，还没有的人格文件读不了，认不出的 `unknown_file`，多写格的参数不对 |
 | `crates/miyu-endpoint/tests/personas.rs`（施工 P-1 上） | 你那一层的人格进 system、示范对话排在前面；不写人格照默认、都没设的无人格；没有的、编号不对的、写错的拒绝，默认人格指着没有的当没设（施工 P-4 上）；`null` 明着无人格、不写进会话列表和订阅回应；`venue.session` 带人格造、找回时不看；`persona.list`、`persona.get` |

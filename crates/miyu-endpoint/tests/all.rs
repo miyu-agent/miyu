@@ -122,6 +122,7 @@ mod login;
 mod login_device;
 mod login_ticket;
 mod loop_command;
+mod low_memory;
 mod mcp;
 mod mcp_cache;
 mod mcp_edit;

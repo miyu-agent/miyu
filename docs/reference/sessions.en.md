@@ -99,6 +99,7 @@ Sending the same `id` again returns the session created the first time.
 | `unknown_preset`, `preset_invalid` | The same, for presets |
 | `unknown_model` | `model` or `vision` can't be resolved: malformed, unknown provider, unknown pool |
 | `dir_too_wide` | A `dirs` entry is too wide (home, root, contains the data directory) |
+| `low_memory` | Less than 5% of memory is available, so no new session is made (`data.available_mib`, `data.available_percent`); a resend still gets the earlier one. See [errors](errors.en.md) |
 | `internal_error` (`-32603`) | The core couldn't create it |
 
 ## `session.list`
@@ -440,7 +441,7 @@ Fork a child session from a main session: the child carries on from its history 
 
 **Response**: `{"session": <child id>, "upto": <fork point number>}`. If the parent is in the middle of a turn, the fork point is just before that turn.
 
-**Errors**: `bad_params`: the parent is a subagent or a fork; `seal_after` isn't an integer from 1.
+**Errors**: `bad_params`: the parent is a subagent or a fork; `seal_after` isn't an integer from 1. `low_memory`: less than 5% of memory is available, so nothing is forked.
 
 ## `session.delete`
 
