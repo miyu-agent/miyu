@@ -3,16 +3,30 @@
 //! 认得出边界、拿到每个词的原样。
 //!
 //! 一个词里有没在单引号里的 `$`、反引号的，记成「说不清」（[`Word::unresolved`]）：值要到运行时才知道。
+//!
+//! 施工 HZ-2 多记两样，认 `x=$(mktemp …)` 用（`fresh.rs`）：每个词里的替换各是什么（[`Word::substitutions`]），每条管道是不是
+//! 一定在这个 shell 里跑到（[`Parsed::plain`]）。
 
 mod heredoc;
 
 /// 一个词：引号、反斜杠去掉以后的样子。
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct Word {
-    /// 去掉引号以后的字。
+    /// 去掉引号以后的字。替换在这里只留一个 `$`，所以 `$(echo /)x` 和 `$x` 拆出来字一样，要看 [`Word::substitutions`] 分开。
     pub(crate) text: String,
     /// 里面有变量、命令替换，值要到运行时才知道。
     pub(crate) unresolved: bool,
+    /// 词里的每一段替换，照先后（施工 HZ-2）。
+    pub(crate) substitutions: Vec<Substitution>,
+}
+
+/// 词里的一段替换（施工 HZ-2）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct Substitution {
+    /// 是命令替换（`$( )`、反引号），值是里面那条命令印出来的；不是的是进程替换（`<( )`、`>( )`），值是一个管道的路径。
+    pub(crate) command: bool,
+    /// 里面的原文。
+    pub(crate) inner: String,
 }
 
 /// 一个简单命令：几个词，加上它往哪里写（`>`、`>>` 后面的那个）。
@@ -28,6 +42,9 @@ pub(crate) struct Parsed {
     pub(crate) pipelines: Vec<Vec<Simple>>,
     /// `$( )`、反引号、`<( )`、`>( )` 里面的原文：另拆一遍。
     pub(crate) inner: Vec<String>,
+    /// 和 `pipelines` 一一对上（施工 HZ-2）：这条管道一定在这个 shell 里跑到，就是不在括号、花括号里，前面不是 `&&`、`||`，
+    /// 后面不是放到后台的 `&`。`if`、循环这类关键字不在这里看（`fresh.rs` 看）。
+    pub(crate) plain: Vec<bool>,
 }
 
 /// 拆 `text`。
@@ -48,6 +65,12 @@ struct Lexer {
     redirect: Option<Redirect>,
     /// 这一行完了要读正文的 heredoc（施工 AS-9）。
     heredocs: Vec<heredoc::Heredoc>,
+    /// 套在几层括号、花括号里（施工 HZ-2）。`case` 的模式 `a)` 会让它少算，`fresh.rs` 见了 `case` 整层不认。
+    depth: usize,
+    /// 刚过了 `&&`、`||`：下一条管道不一定跑（施工 HZ-2）。
+    joined: bool,
+    /// 这条管道以 `&` 结尾，放到后台、在子 shell 里跑（施工 HZ-2）。
+    background: bool,
 }
 
 /// 重定向往哪边。
@@ -70,6 +93,9 @@ impl Lexer {
             word: None,
             redirect: None,
             heredocs: Vec::new(),
+            depth: 0,
+            joined: false,
+            background: false,
         }
     }
 
@@ -89,12 +115,12 @@ impl Lexer {
                 '"' => self.double(),
                 '`' => {
                     let inner = self.until_backtick();
-                    self.substitution(inner);
+                    self.substitution(inner, true);
                 }
                 '$' if self.peek(1) == Some('(') => {
                     self.at += 2;
                     let inner = self.until_close();
-                    self.substitution(inner);
+                    self.substitution(inner, true);
                 }
                 '$' => {
                     self.at += 1;
@@ -103,7 +129,7 @@ impl Lexer {
                 '<' | '>' if self.peek(1) == Some('(') => {
                     self.at += 2;
                     let inner = self.until_close();
-                    self.substitution(inner);
+                    self.substitution(inner, false);
                 }
                 '>' => {
                     self.descriptor();
@@ -132,6 +158,7 @@ impl Lexer {
                     if self.peek(0) == Some('|') {
                         self.at += 1;
                         self.end_pipeline();
+                        self.joined = true;
                     } else {
                         if self.peek(0) == Some('&') {
                             self.at += 1;
@@ -139,18 +166,27 @@ impl Lexer {
                         self.end_simple();
                     }
                 }
-                // `&&` 是两个 `&`：第二个收的是空的。
+                '&' if self.peek(1) == Some('&') => {
+                    self.at += 2;
+                    self.end_pipeline();
+                    self.joined = true;
+                }
                 '&' => {
                     self.at += 1;
+                    self.background = true;
                     self.end_pipeline();
+                    self.background = false;
                 }
                 ';' | '\n' | '(' | ')' | '{' | '}'
                     if self.word.is_none() || matches!(c, ';' | '\n' | '(' | ')') =>
                 {
                     self.at += 1;
                     self.end_pipeline();
-                    if c == '\n' {
-                        self.heredoc_bodies();
+                    match c {
+                        '\n' => self.heredoc_bodies(),
+                        '(' | '{' => self.depth += 1,
+                        ')' | '}' => self.depth = self.depth.saturating_sub(1),
+                        _ => {}
                     }
                 }
                 '#' if self.word.is_none() => self.skip_comment(),
@@ -172,13 +208,7 @@ impl Lexer {
     }
 
     fn push(&mut self, c: char) {
-        self.word
-            .get_or_insert_with(|| Word {
-                text: String::new(),
-                unresolved: false,
-            })
-            .text
-            .push(c);
+        self.word.get_or_insert_with(Word::default).text.push(c);
     }
 
     /// 记一个要到运行时才知道的字：原样留着，词记成说不清。
@@ -191,10 +221,7 @@ impl Lexer {
 
     fn single(&mut self) {
         self.at += 1;
-        self.word.get_or_insert_with(|| Word {
-            text: String::new(),
-            unresolved: false,
-        });
+        self.word.get_or_insert_with(Word::default);
         loop {
             match self.peek(0) {
                 None => return,
@@ -212,10 +239,7 @@ impl Lexer {
 
     fn double(&mut self) {
         self.at += 1;
-        self.word.get_or_insert_with(|| Word {
-            text: String::new(),
-            unresolved: false,
-        });
+        self.word.get_or_insert_with(Word::default);
         loop {
             match self.peek(0) {
                 None => return,
@@ -232,12 +256,12 @@ impl Lexer {
                 }
                 Some('`') => {
                     let inner = self.until_backtick();
-                    self.substitution(inner);
+                    self.substitution(inner, true);
                 }
                 Some('$') if self.peek(1) == Some('(') => {
                     self.at += 2;
                     let inner = self.until_close();
-                    self.substitution(inner);
+                    self.substitution(inner, true);
                 }
                 Some('$') => {
                     self.at += 1;
@@ -294,10 +318,13 @@ impl Lexer {
         self.chars[start..].iter().collect()
     }
 
-    /// 一段替换：里面的另拆，词记成说不清。
-    fn substitution(&mut self, inner: String) {
-        self.parsed.inner.push(inner);
+    /// 一段替换：里面的另拆，词记成说不清，再记在词上（`command` 见 [`Substitution::command`]）。
+    fn substitution(&mut self, inner: String, command: bool) {
+        self.parsed.inner.push(inner.clone());
         self.mark('$');
+        if let Some(word) = &mut self.word {
+            word.substitutions.push(Substitution { command, inner });
+        }
     }
 
     fn skip_comment(&mut self) {
@@ -344,6 +371,11 @@ impl Lexer {
         let pipeline = std::mem::take(&mut self.pipeline);
         if !pipeline.is_empty() {
             self.parsed.pipelines.push(pipeline);
+            // `&&` 后面换行接着写的照样是接着的：空的不清 `joined`。
+            self.parsed
+                .plain
+                .push(self.depth == 0 && !self.joined && !self.background);
+            self.joined = false;
         }
     }
 }

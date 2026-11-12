@@ -68,7 +68,7 @@ impl<'a> Vars<'a> {
             };
             let value = self.expand(&Word {
                 text: value,
-                unresolved: word.unresolved,
+                ..word.clone()
             });
             if value.unresolved {
                 self.known.remove(name);
@@ -79,9 +79,9 @@ impl<'a> Vars<'a> {
     }
 
     /// 把词里的 `$名字`、`${名字}` 换成记下的（`${名字:?}` 这类带修饰的照名字换）：全换得掉的交回换好的（不再说不清），有一个
-    /// 换不掉的交回原样。
+    /// 换不掉的交回原样。带命令替换的交回原样（施工 HZ-2）：替换拆出来只留一个 `$`，`$(echo /)T` 看着和 `$T` 一样。
     pub(super) fn expand(&self, word: &Word) -> Word {
-        if !word.unresolved {
+        if !word.unresolved || !word.substitutions.is_empty() {
             return word.clone();
         }
         let mut text = String::new();
@@ -122,7 +122,7 @@ impl<'a> Vars<'a> {
         text.push_str(rest);
         Word {
             text,
-            unresolved: false,
+            ..Word::default()
         }
     }
 }
@@ -142,12 +142,12 @@ pub(super) fn after_keywords(words: &[Word]) -> &[Word] {
 }
 
 /// `名字=值`：交回名字和值。
-fn name_of(text: &str) -> Option<(&str, &str)> {
+pub(super) fn name_of(text: &str) -> Option<(&str, &str)> {
     text.split_once('=').filter(|(name, _)| valid(name))
 }
 
 /// 变量名：字母、数字、下划线，不以数字开头。
-fn valid(name: &str) -> bool {
+pub(super) fn valid(name: &str) -> bool {
     name.chars()
         .next()
         .is_some_and(|c| c == '_' || c.is_ascii_alphabetic())

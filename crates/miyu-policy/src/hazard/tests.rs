@@ -3,6 +3,7 @@
 use super::*;
 
 mod audit;
+mod fresh;
 mod groups;
 
 const PLACES: Places<'static> = Places {
@@ -260,11 +261,10 @@ fn variables_assigned_in_the_same_command_are_followed() {
         ("T=.; rm -rf $T", Some("delete_working_dir")),
         // 用在赋值之前的、赋的值说不清的、被循环和 read 改过的：照说不清。
         ("rm -rf $T; T=/tmp/zt", Some("delete_unresolved")),
-        ("T=$(mktemp -d); rm -rf $T", Some("delete_unresolved")),
-        (
-            "T=/tmp/zt; T=$(mktemp -d); rm -rf $T",
-            Some("delete_unresolved"),
-        ),
+        ("T=$(pwd); rm -rf $T", Some("delete_unresolved")),
+        // `mktemp` 刚建的不问（施工 HZ-2，边界在 `tests/fresh.rs`）。
+        ("T=$(mktemp -d); rm -rf $T", None),
+        ("T=/tmp/zt; T=$(mktemp -d); rm -rf $T", None),
         (
             "T=/tmp/zt; for T in a b; do rm -rf $T; done",
             Some("delete_unresolved"),

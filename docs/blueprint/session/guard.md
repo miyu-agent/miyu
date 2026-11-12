@@ -17,7 +17,7 @@
 | `crates/miyu-session/src/guard/untargeted.rs` | 不报路径的调用（第四条）：照访问类别、在场所里做的事、要在沙盒外跑的（施工 5-18 从 `guard.rs` 挪出来：那边到了 500 行） |
 | `crates/miyu-session/src/guard/asking.rs` | 要问人的那几条：提的放行规则、给头看的说明、放行过的管不管得到（施工 X-10 上从 `guard.rs` 挪出来） |
 | `crates/miyu-session/src/guard/confined.rs`、`resources/core/permissions/outside-workspace.txt`、`no-commands.txt`（施工 5-12） | 只碰得到自己工作区的会话（第四条末）：判在不在工作区、拒绝时的两句；两句同样不进策略快照，这种会话造、载入时读 |
-| `crates/miyu-policy/src/hazard.rs`、`hazard/lex.rs`、`hazard/rules.rs`（施工 5-17）、`hazard/vars.rs`（施工 5-17 再补：同一条命令里赋过值的变量） | 高危命令照规则认（第四条末）：纯的判法，拆命令、剥外壳、照字面判目标；工具经 `Tool::hazard` 报给这里。哪一种归哪一类（`Group`、`Kind::group`）、一条命令里认出的每一种（`Assessed`）也在这里（施工 HZ-1） |
+| `crates/miyu-policy/src/hazard.rs`、`hazard/lex.rs`、`hazard/rules.rs`（施工 5-17）、`hazard/vars.rs`（施工 5-17 再补：同一条命令里赋过值的变量）、`hazard/fresh.rs`（施工 HZ-2：同一条命令里 `mktemp` 刚建的临时路径） | 高危命令照规则认（第四条末）：纯的判法，拆命令、剥外壳、照字面判目标；工具经 `Tool::hazard` 报给这里。哪一种归哪一类（`Group`、`Kind::group`）、一条命令里认出的每一种（`Assessed`）也在这里（施工 HZ-1） |
 | `crates/miyu-session/src/settings.rs` 的 `ConfirmSettings`（施工 HZ-1） | 受保护的命令的五项配置 `permission.confirm.*`，和关掉的那几类（`waived`） |
 | `crates/miyu-session/src/default_workspace.rs`（施工 5-14） | 工作目录对应的工作区：太宽的退回这个会话的默认工作区（`miyu_fs::workspace_of`），权限策略、沙盒共用 |
 | `crates/miyu-session/src/actor.rs` | 动作「过执行前的链」交给它，当场判（`session/actor.md`） |
@@ -226,6 +226,7 @@
 | `crates/miyu-session/src/guard/tests/protected.rs`（施工 HZ-1） | 真的 `shell` 报高危，直接调权限策略：没关的每一种都问；关一类，这一类的放行、别的类照旧问；直接拒的七种五类全关也照拒、和没关时一样；命中两类的只关一类照旧问、问的是还开着的那一种，两类都关才放行；九层命令替换里的删除、十层 `eval` 五类全关也照旧问、说明是 `delete_unresolved`；外部身份的会话五类全关每一条判下来的和没关时一样、没有一条放行；只读五类全关和没关时一样 |
 | `crates/miyu-session/src/settings/tests.rs` 的 `each_protected_group_has_a_switch_that_is_on_by_default`（施工 HZ-1） | 五项的键照 `Group::ALL` 一类一项，出厂开、只有系统一层、下一轮生效、在「隐私与安全」页「受保护的命令」组；关掉的那几类照类的写法交出去 |
 | `crates/miyu-policy/src/hazard/tests.rs`、`hazard/lex/tests.rs`（施工 5-17） | 三类各几条认得出、拒的和问的分对；连写、外壳、`sh -c`、`eval`、替换里的认得出；平常的删、git 不误报；拆命令的边界、引号、反斜杠、注释、替换、重定向（读进来的、文件描述符不是参数） |
+| `crates/miyu-policy/src/hazard/tests/fresh.rs`（施工 HZ-2） | `x=$(mktemp …)` 以后删 `$x`、`"$x"`、`${x}`、`"${x}"` 不问，几种 `mktemp` 写法、反引号、`-u` 都认；带后缀的、赋值前后拼了字或里面不止一条 `mktemp`、参数带变量的、中间改过的（赋值、`read`、`for`、`printf -v`、`declare -n`、`${x:=…}`、算术）、赋值不一定跑到的（分支、`&&`、`\|\|`、括号、花括号、`&`、`case`、管道）、循环和函数里改的、有 `eval`、`source`、`trap`、`IFS` 的、跨命令的、`sh -c` 和替换里的、`find`、别的命令替换照旧判；同一个 `rm` 里别的目标照原规矩、最严者胜；`$(echo /)x` 不当 `$x` |
 | `crates/miyu-policy/src/hazard/tests/groups.rs`（施工 HZ-1） | 问人的十种正好分进五类，直接拒的七种和看不透的不归类；套得太深的单列一种、对外的写法是 `delete_unresolved`，八层还看得透，目标运行时才知道的删除照旧归「递归删除」；一条命令里认出几种问人的全交回、照先后、不重复，有拒的只交回拒的那一种 |
 | `crates/miyu-session/tests/guard.rs` | 相对路径照工作目录接、工作区里还不存在的也能写；越界的读放行（施工 5-4 上）；越界的写问人，规则和说明写对了、`by` 是 `permissions`；没人能确认的拒绝；数据根哪一级都拒、写对了那一句和说法；完全放开越界的写不问；执行命令照沙盒能不能用：能用时工作区、只读都放行，用不了时问人（没人能确认就拒）；几条路径照最严的，有一条在数据根里就拒、不问；指向不存在处的链接拒绝、写对了那一句和说法；`~` 照家目录换，写到边界以外要问人（没人能确认，是内核拒的，不是权限策略）；`trash` 判的是链接本身：工作区里指向不存在处的、指进数据根的、指到外面的链接都放行 |
 | `crates/miyu-session/src/guard/tests.rs` 的 `a_venue_action_runs_only_in_a_venue`、`crates/miyu-session/tests/guard_venue.rs`（施工 O-31 前） | 在场所里做的事：场所会话（群、私聊）里放行、不问人，只读开着、没人能确认也一样；本机的会话拒绝，`by` 是 `permissions`，写给她出厂的那一句、说法对，工具没跑；载入以后照样；`venues` 有 `local` 的在本机的会话里照 `outbound`：完全放开跑，工作区没人能确认的拒、说的不是「不在场所里」（施工 O-31 补） |

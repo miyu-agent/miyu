@@ -1,6 +1,7 @@
 //! 照拆出来的简单命令认（施工 5-17）：外壳剥掉、删的目标照字面换成绝对路径、git 跳过全局选项。几处都认出来的，有拒的交回
 //! 拒的那一种，都是问的全交回（施工 HZ-1：一类一个开关，要知道每一种）。
 
+use super::fresh::Fresh;
 use super::lex::{Simple, Word, parse};
 use super::paths::{absolute, target};
 use super::vars::{Vars, after_keywords};
@@ -41,16 +42,25 @@ fn look(text: &str, places: &Places<'_>, depth: usize, found: &mut Vec<Kind>) {
     }
     let parsed = parse(text);
     let mut vars = Vars::new(places.home);
+    // `mktemp` 刚建的临时路径（施工 HZ-2）。
+    let mut fresh = Fresh::new(text, &parsed);
     // 这时的当前目录（施工 AS-9）：单独成句的 `cd` 照它换，`cd` 到说不清的地方以后是空的。
     let mut cwd = Some(places.cwd.to_string());
-    for pipeline in &parsed.pipelines {
+    for (at, pipeline) in parsed.pipelines.iter().enumerate() {
         if fetch_into_shell(pipeline) {
             found.push(Kind::PipeToShell);
         }
         for simple in pipeline {
-            one(simple, places, (&vars, cwd.as_deref()), depth, found);
+            one(
+                simple,
+                places,
+                (&vars, &fresh, cwd.as_deref()),
+                depth,
+                found,
+            );
         }
         vars.assign(pipeline);
+        fresh.step(at, pipeline);
         if let Some(next) = moved(pipeline, places, &vars, cwd.as_deref()) {
             cwd = next;
         }
@@ -89,11 +99,11 @@ fn moved(
     })
 }
 
-/// 一个简单命令：先看它往哪里写，再剥外壳认命令。`here` 是记下的变量和这时的当前目录。
+/// 一个简单命令：先看它往哪里写，再剥外壳认命令。`here` 是记下的变量、`mktemp` 刚建的临时路径和这时的当前目录。
 fn one(
     simple: &Simple,
     places: &Places<'_>,
-    here: (&Vars<'_>, Option<&str>),
+    here: (&Vars<'_>, &Fresh, Option<&str>),
     depth: usize,
     found: &mut Vec<Kind>,
 ) {
@@ -142,7 +152,7 @@ fn one(
                 found.push(Kind::DeleteUnresolved);
             }
         }
-        "find" => finding(rest, places, here, found),
+        "find" => finding(rest, places, (here.0, here.2), found),
         "git" => git(rest, found),
 
         "dd" if rest
@@ -185,7 +195,7 @@ fn one(
 
 /// 剥掉外壳：`sudo`、`doas`、`env`、`nice`、`nohup`、`timeout`、`time`、`stdbuf`、`command`、`exec`、`xargs`，连同它们的选项、
 /// `env` 的 `名字=值`、`timeout` 的时长。
-fn unwrap(words: &[Word]) -> &[Word] {
+pub(super) fn unwrap(words: &[Word]) -> &[Word] {
     let words = after_keywords(words);
     let mut at = 0;
     // 开头的 `名字=值`（`FOO=1 rm …`）。
@@ -250,7 +260,7 @@ fn assignment(text: &str) -> bool {
 }
 
 /// 程序名：路径的最后一段（`/bin/rm` 是 `rm`）。
-fn base(text: &str) -> &str {
+pub(super) fn base(text: &str) -> &str {
     text.rsplit('/').next().unwrap_or(text)
 }
 
@@ -273,11 +283,11 @@ fn recursive(rest: &[Word]) -> bool {
     })
 }
 
-/// `rm` 这类：每个目标照字面换成绝对路径再判。
+/// `rm` 这类：每个目标照字面换成绝对路径再判；正好是 `mktemp` 刚建的 `$x` 的不判（施工 HZ-2，`fresh.rs`）。
 fn deleting(
     rest: &[Word],
     places: &Places<'_>,
-    (vars, cwd): (&Vars<'_>, Option<&str>),
+    (vars, fresh, cwd): (&Vars<'_>, &Fresh, Option<&str>),
     recursive: bool,
     found: &mut Vec<Kind>,
 ) {
@@ -287,7 +297,7 @@ fn deleting(
             options = false;
             continue;
         }
-        if options && word.text.starts_with('-') && word.text.len() > 1 {
+        if (options && word.text.starts_with('-') && word.text.len() > 1) || fresh.covers(word) {
             continue;
         }
         if let Some(kind) = target(&vars.expand(word), places, cwd, recursive) {
