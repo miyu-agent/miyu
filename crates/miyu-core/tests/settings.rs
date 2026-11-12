@@ -150,6 +150,7 @@ fn the_registered_list_is_well_formed() {
             "packages.sources.<id>.url",
             "packages.sources.<id>.key",
             "core.idle_exit",
+            "core.workers",
             "log.level",
             "skills.external.enabled",
             "skills.external.dirs"

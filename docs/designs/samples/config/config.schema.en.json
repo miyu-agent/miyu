@@ -60,6 +60,14 @@
           "minimum": 0,
           "title": "Core idle exit",
           "type": "integer"
+        },
+        "workers": {
+          "default": 0,
+          "description": "How many threads the core uses for connections, sessions and requests. 0 follows the CPU core count (the default); 1 counts as 2. Allowed: a whole number from 0 to 64. Only in the system config. Takes effect after the core restarts.",
+          "maximum": 64,
+          "minimum": 0,
+          "title": "Core worker threads",
+          "type": "integer"
         }
       },
       "type": "object"

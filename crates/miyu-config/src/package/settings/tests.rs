@@ -196,6 +196,7 @@ fn layers_applies_and_hidden_read() {
         ("new_session", Applies::NewSession),
         ("next_turn", Applies::NextTurn),
         ("program_start", Applies::HeadStart),
+        ("restart", Applies::Restart),
     ] {
         let one = setting(&format!(
             "[settings.x]\ntype = \"bool\"\napplies = \"{applies}\"\nname = {{ en = \"X\" }}\n"

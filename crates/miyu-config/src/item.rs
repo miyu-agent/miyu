@@ -90,7 +90,7 @@ impl Tighten {
     }
 }
 
-/// 什么时候生效（G7）。重启核心，随第一项用到它的那一步。
+/// 什么时候生效（G7）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Applies {
     /// 当场。
@@ -101,16 +101,19 @@ pub enum Applies {
     NextTurn,
     /// 头下次启动（施工 8-3，`ui.startup`，8-28 以前叫 `tui.startup`）：头自己读、启动时读一次的项，核心不管它，改了要等头再起来。
     HeadStart,
+    /// 重启核心（施工 CPU-1，`core.workers`）：核心起来时读一次的项，改了要等核心再起来。核心空闲时自己重启另起一步（未排）。
+    Restart,
 }
 
 impl Applies {
-    /// 协议上、资源里的写法：`now`、`new_session`、`next_turn`、`head_start`。
+    /// 协议上、资源里的写法：`now`、`new_session`、`next_turn`、`head_start`、`restart`。
     pub fn as_str(self) -> &'static str {
         match self {
             Applies::Now => "now",
             Applies::NewSession => "new_session",
             Applies::NextTurn => "next_turn",
             Applies::HeadStart => "head_start",
+            Applies::Restart => "restart",
         }
     }
 }

@@ -11,7 +11,7 @@
 | 文件 | 管什么 |
 |---|---|
 | `crates/miyu-config/src/package.rs`、`package/reader.rs` | 一份清单读成样子：每一格的写法，写错的报第一处，带代码、第几行（纯逻辑）；`reader.rs` 一张表一张表地读 |
-| `crates/miyu-config/src/package/settings.rs` | `[settings]` 的读法；拼成配置清单的项（施工 9-1 下） |
+| `crates/miyu-config/src/package/settings.rs` | `[settings]` 的读法；拼成配置清单的项（施工 9-1 下）。`layers`、`applies` 两格在 `settings/scope.rs`（施工 CPU-1 分出来） |
 | `crates/miyu-config/src/package/features.rs` | `[features]` 的读法；没写的照包算一个（`Manifest::features_of`，施工 F-1） |
 | `crates/miyu-config/src/package/fields.rs` | 清单格式的真相源（施工 Y-5 末上，冻结）：认的 22 张表、每张表认的格；读的各处照它挡，`fields/tests.rs` 拿中英作者文档 `docs/authors/manifest*` 对它。以后只加不改不删，新格写进这里和两份作者文档，用到的包写 `[package] miyu` |
 | `crates/miyu-config/src/package/links.rs` | `[connection]`、`[depends]`、`[recommends]`、`[worker]` 的读法（施工 F-1） |
@@ -166,7 +166,7 @@ program = "miyu-embed"
 | `fields`、`title` | `element = "record"` 才有（施工 PC-2，设计 53 第二节）：`fields` 下每个字段一张 `[settings.<名字>.fields.<字段>]`，照一项的写法读（`one()` 带「是字段」的标记），不收 `layers`、`applies`，不能是 `list`；字段名同项的名字的写法、不能叫 `fields`，至少一个（`missing_key`）。`title` 要是其中一个 `text`、`name`、`option` 字段，不然 `bad_title`。整条不能写默认值（`bad_default`）。拼成配置项是 `Kind::List(Kind::Record(…))`，字段各是一个 `Item`（键是字段名，挂在同一组）；字段的名字、说明、选项名并进字表的 `ItemWords.fields`；`config.schema` 带 `element: "record"`、`title`、`fields`（每个字段格同普通项） |
 | `default` | 合这个类型的值；选项要在 `choices` 里；列表写数组、每一个照元素查，空数组也算；`secret`、元素是 `secret` 的列表不能写。没写的没有默认值 |
 | `layers` | 只能写 `system`，不写也是它。项目配置不给包用 |
-| `applies` | `now`、`new_session`、`next_turn`、`program_start`（这个程序下次启动时，协议上写 `head_start`）；不写是 `program_start` |
+| `applies` | `now`、`new_session`、`next_turn`、`restart`（重启核心，施工 CPU-1）、`program_start`（这个程序下次启动时，协议上写 `head_start`）；不写是 `program_start` |
 | `name`、`description` | 语言到一句话，`name` 必写 |
 | `hidden` | `true` 的设置页不画：照样能写、能查、进 Schema |
 

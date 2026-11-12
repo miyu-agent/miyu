@@ -45,7 +45,8 @@
 | `crates/miyu-core/src/settings.rs` | 登记各模块的清单（`items`）；8-3 到 8-28 替终端界面声明过 `tui.startup`（`TuiSettings`），8-28 改成各个头共用的 `ui.startup`，挪进端点的 `UiSettings`。起来时读配置（`read`，8-2；连同密钥文件，环境照进程的 `Environment::process`，8-5）、照 `log.level` 换运行日志的级别（`log_level`，8-2）、写 Schema 和参考文件（`generate`，8-1）；运行中跟着配置换（`follow`，8-4）；开始监视由核心的 `lib.rs` 调端点的 `Core::watch_config`（8-4） | 8-1 起 |
 | `crates/miyu-session/src/config.rs`、`actor/` | 会话从哪取配置（`ConfigSource`、`Configs`），回合开始时取一份快照（`TurnConfig`），这一轮的每一次请求都交给端口（`ModelPort::call` 多一格） | 8-4 |
 | `crates/miyu-endpoint/src/subscriptions/config.rs` | 配置的订阅：一个连接至多一个转发任务，照连接这一刻的语言写 `config.changed`，掉队推 `resync`；`config.set` 的回应经它，排在推送后面 | 8-4 |
-| `crates/miyu-core/src/serve.rs` | `core.idle_exit`（`CoreSettings`，分钟，`0` 是不退，当场生效：空闲的那一圈每次看都读这一刻的配置） | Z-1 上 |
+| `crates/miyu-core/src/serve.rs` | `core.idle_exit`（`CoreSettings`，分钟，`0` 是不退，当场生效：空闲的那一圈每次看都读这一刻的配置）；`core.workers`（运行时开几个工作线程，`0` 到 `64`，`0` 照 CPU 核数、写 1 的照 2，重启核心生效） | Z-1 上、CPU-1 |
+| `crates/miyu-core/src/workers.rs` | 建运行时以前同步读一次系统配置里的 `core.workers`（只认这一项：读不到、写坏了、超范围的照核数、不报，后面正式读配置时照旧报），和核数一起定工作线程数，夹到 2 到 64 | CPU-1 |
 | `crates/miyu-core/src/settings/follow.rs` | 运行中配置换了：`log.level` 当场换级别，`ui.language` 变了重写生成的两份 | 8-4 |
 | `crates/miyu-cli/src/config.rs`、`config/` | `miyu config` 的子命令：`get`、`check`、`explain`、`path`（8-2，`config/check.rs`、`render.rs` 印的样子、`paths.rs` 文件在哪），`set`、`unset`（`config/set.rs`）、`edit`（`config/edit.rs`）、`trust`（`config/trust.rs`），人那一头的接口 `Console`（`config/console.rs`：是不是终端、读一行、开编辑器，8-3）。给人看的字在 `language/config.rs`、`language/config_write.rs`（8-3） | 8-2、8-3 |
 | `crates/miyu-cli/src/login.rs`、`login/pick.rs` | `miyu provider login`、`list`、`logout`：选、贴 key 不回显、列出、删（8-5，`cli/login.md`）。读 key 经 `config/console.rs` 的 `Console`（关掉回显读一行用 `rpassword`）；给人看的字在 `language/login.rs` | 8-5 |
@@ -166,7 +167,7 @@ trusted = true
 | `now` | 当场（8-1） | `ui.language`、`log.level` |
 | `new_session` | 以后开的会话。已经开着的会话不跟着变 | `permission.start_read_only`、`models.chat`（`models.md`） |
 | `next_turn` | 下一个回合开始时（第八条，8-6） | 供应商的驱动、地址、key、`catalog`（`models.md`） |
-| `restart` | 重启核心 | M8 没有 |
+| `restart` | 重启核心：核心起来时读一次的项（CPU-1 加） | `core.workers` |
 | `head_start` | 头下次启动。头自己读、启动时读一次的项，核心不管它（8-3） | `ui.startup` |
 
 `new_session`、`head_start` 是这一页加的（`head_start` 8-3 施工时照 `tui.startup` 加，8-28 改名 `ui.startup`）：G7 那张表只有三种，可「新会话默认用什么」这类项，改了以后已经开着的会话本来就不该跟着变，说成「下一个回合」会让人以为当前会话也换了（「要跟着改的别的页」`14-配置.md`）。
@@ -760,7 +761,7 @@ miyu_config::settings! {
    - `now`：用它的地方当场换。`log.level` 经运行日志的重载把手换级别（`MIYU_LOG` 设了的不换，`log.md`）。`ui.language` 下一句话就照新的说（第二条第 8 条），头收到推送自己换。两份生成的文件照新语言重写（第一条第 12 条）。
    - `new_session`：造会话时读，已经开着的会话不变。
    - `next_turn`：第 3 条。
-   - `restart`：M8 没有。有了以后，推送里写着 `restart`，界面上写「重启核心后生效」。
+   - `restart`（CPU-1 加）：核心不跟着换，推送里写着 `restart`，界面上写「重启核心后生效」，等核心重启才用上。核心空闲时自己重启另起一步（「还没有的」）。
 2. 正在进行的回合不受影响。
 3. 回合开始时冻结一份快照：会话 actor 在记下 `turn.started` 以后、跑回合开始的挂接点那一刻（`RunTurnStartHooks`），从 `watch` 取当前的一份，照会话这时的目录（`Session::cwd`）读一次项目配置、合上（在阻塞线程里），得到这一轮的配置，这一轮的每一次请求（出错再来、压缩的摘要请求也算）都照它，经 `ModelPort::call` 交给端口。回合之间改的，下一轮才用上。不开回合的请求（手动压缩、清空单开的那一轮、回顾、起标题）照上一轮的；造会话、载入时先取一份。M8 里用它的是供应商、模型那一块（8-6 起，`models.md`）：8-4 的端口还用不上它。
 4. 进策略快照的项（例如以后压缩的几个数）变了：下一个回合开始时换一份快照，记 `session.policy_changed`（`02-内核.md` K3）。M8 没有这样的项，这条路随第一项进快照的配置做（「还没有的」）。
@@ -903,7 +904,7 @@ ui.startup = "new"
 | 删掉了 | `已删除 ui.language，现在是 "auto"（默认值）` | `removed ui.language, now "auto" (default)` |
 | 本来就没写 | `系统配置中没有 ui.language，未修改` | `ui.language is not in the system config, nothing changed` |
 
-「立即生效」按 `applies` 换：`立即生效`、`新会话生效`、`重启后生效`、`下一轮生效`、`重启核心后生效`（`takes effect immediately`、`applies to new sessions`、`takes effect after restart`、`takes effect next turn`、`takes effect after the core restarts`）。M8 用得上前四种（`head_start` 8-3 加，`next_turn` 8-6 起）。认不出的（核心比命令行新）不说什么时候生效：`已设置 providers.dev.models.m-1.window = 4096`（施工 8-3 补）。
+「立即生效」按 `applies` 换：`立即生效`、`新会话生效`、`重启后生效`、`下一轮生效`、`重启核心后生效`（`takes effect immediately`、`applies to new sessions`、`takes effect after restart`、`takes effect next turn`、`takes effect after the core restarts`）。五种都用得上（`head_start` 8-3 加，`next_turn` 8-6 起，`restart` CPU-1 起）。认不出的（核心比命令行新）不说什么时候生效：`已设置 providers.dev.models.m-1.window = 4096`（施工 8-3 补）。
 
 - 只写系统配置（施工 SU-3 上），结果行不再说写进了哪一层。上面一层压着的（环境变量），告警照句子里的叫法：环境变量（`the environment`）。
 - 删掉了以后括号里是现在那个值从哪一层来：默认值、系统配置（`default`、`system config`），和 `explain` 的层名一样。
@@ -999,6 +1000,10 @@ prepare = true
 # 核心空闲多久退出：没有连接、也没有在跑的回合，连续这么多分钟以后核心退出。0 表示一直开着（默认）；头连不上核心时会自己拉起。
 # 能写：0 到 525600 之间的整数。只能写在系统配置里。立即生效。
 idle_exit = 0
+
+# 核心的工作线程数：核心用几个线程处理连接、会话和请求。0 表示照 CPU 的核数（默认）；写 1 的照 2 个。
+# 能写：0 到 64 之间的整数。只能写在系统配置里。重启核心后生效。
+workers = 0
 
 [external.bindings]
 # 我的平台账号：通讯平台上哪几个号是你本人。键写平台上的身份（例如 qq:10001），值写 owner。私聊里，这个号就是你。
@@ -1810,7 +1815,7 @@ currency = "USD"
 
 一句由几段接成时（第四条第 7 条）：不是以 `config/stops` 里的字结尾的段照 `config/sentence` 补上句号，段和段照 `config/then` 接。中文、日文补「。」、段和段直接接，英文补「.」、段和段之间空一格。
 
-8-2 加进资源的是用得上的几句：上表里除了 `config/out-of-range`、`config/unknown-secret`、`config/env-not-set`、`config/untrusted`、`config/secrets-header`、`config/trust-header`，`config/expected/` 只有 `bool`、`table`，`config/applies/` 只有 `new_session`；别的随用到它的那一步（8-3、8-5、第一项有范围的那一步）。日文的一份照中文写（施工 8-2）。8-3 加了 `config/trust-header`、`config/applies/head_start`（日文照中文写：「Miyu が記録しているプロジェクト設定の信頼：どのリポジトリの、どの内容を、信頼するかどうか。」「再起動後に反映」）。8-5 加了 `config/secrets-header`、`config/unknown-secret`、`config/env-not-set`、`config/bad-secret-name`、`config/bad-secret-value`（后两句 2026-10-01 主会话定；日文照中文写）。类型是密钥的一项写错了（`wrong_type`）：期望照 `config/or-values` 把两种写法连起来（`{ secret = "…" } 或 { env = "…" }`），不另说改法，不加新的字。8-6 加了 `config/applies/next_turn`、`config/out-of-range`、`config/bad-format`、`config/bad-segment`、`config/expected/` 的 `int`、`url`、`name`、`reference`、`list`、`id`、`model-name`（施工员照推荐写、日文照中文写）：`int` 带上范围、`list` 带上元素，期望说得出能写什么（参考文件、Schema 的说明里「能写：…」也照它）。8-7 加了 `config/expected/` 的 `float`、`text`、`duration`（施工员照推荐写、日文照中文写）：小数、时长带上范围（时长的范围写成 `1h`、`720h` 这样），文字带上最多几个字。
+8-2 加进资源的是用得上的几句：上表里除了 `config/out-of-range`、`config/unknown-secret`、`config/env-not-set`、`config/untrusted`、`config/secrets-header`、`config/trust-header`，`config/expected/` 只有 `bool`、`table`，`config/applies/` 只有 `new_session`；别的随用到它的那一步（8-3、8-5、第一项有范围的那一步）。日文的一份照中文写（施工 8-2）。8-3 加了 `config/trust-header`、`config/applies/head_start`（日文照中文写：「Miyu が記録しているプロジェクト設定の信頼：どのリポジトリの、どの内容を、信頼するかどうか。」「再起動後に反映」）。8-5 加了 `config/secrets-header`、`config/unknown-secret`、`config/env-not-set`、`config/bad-secret-name`、`config/bad-secret-value`（后两句 2026-10-01 主会话定；日文照中文写）。类型是密钥的一项写错了（`wrong_type`）：期望照 `config/or-values` 把两种写法连起来（`{ secret = "…" } 或 { env = "…" }`），不另说改法，不加新的字。8-6 加了 `config/applies/next_turn`、`config/out-of-range`、`config/bad-format`、`config/bad-segment`、`config/expected/` 的 `int`、`url`、`name`、`reference`、`list`、`id`、`model-name`（施工员照推荐写、日文照中文写）：`int` 带上范围、`list` 带上元素，期望说得出能写什么（参考文件、Schema 的说明里「能写：…」也照它）。8-7 加了 `config/expected/` 的 `float`、`text`、`duration`（施工员照推荐写、日文照中文写）：小数、时长带上范围（时长的范围写成 `1h`、`720h` 这样），文字带上最多几个字。CPU-1 加了 `config/applies/restart`（字照上表，日文「コア再起動後に反映」，core1 2026-11-12 定）。
 
 **协议拒绝时的话**（`protocol.md`「给人看的字」多的几行）：
 
@@ -2048,7 +2053,7 @@ Options:
 - 改了名的键：旧名字继续有效、提示新名字（`14-配置.md` 第六节）：第一次改名时加。
 - 扩展的配置项：扩展清单的 `[settings]`、`ext.<扩展>` 下的键、握手时交给扩展它那一块、推送给它（`05-内核接口.md` 第二节）：随扩展。
 - 进策略快照的项和 `session.policy_changed`（第八条第 4 条）：随第一项进快照的配置。
-- `restart` 的项，核心空闲时自己重启：随第一项这样的配置。
+- `restart` 的项，核心空闲时自己重启：另起一步（未排）。CPU-1 加了第一项（`core.workers`），只说「重启核心后生效」，等人自己重启（core1 2026-11-12 定）。
 - 终端界面里第一次遇到项目配置当场问信不信任：随 M9。M8 里靠 `miyu ask` 提醒、`miyu config trust` 答。
 - 项目配置能写的别的项（例如「最高到工作区」）：有人要的时候一项一张小单。
 - 项目配置的 Schema：发布到网上的地址，或者照编辑器的 Taplo 配置按路径认。

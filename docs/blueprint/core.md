@@ -13,6 +13,7 @@
 | `crates/miyu-core/src/start.rs`、`owner.rs` | 起来的后半段：开套接字、找主人，没有的当场照系统用户名建一个（施工 SU-1），照他读清单和配置 |
 | `crates/miyu-core/src/models.rs`、`models/` | 读资源目录里的供应商档案（TOML 读成 JSON 交给 `miyu-models`）和模型资料，造会话的路由（施工 8-6，`models.md`） |
 | `crates/miyu-core/src/serve.rs` | 接连接，空闲退出（配置项 `core.idle_exit`，施工 Z-1 上），停的信号，头叫停（施工 DT-4 下，`core.stop`），数据根没了就走（施工 TMP-2）；停下以后放锁之前的收尾（`serve_then`，施工 TMP-1 补2） |
+| `crates/miyu-core/src/workers.rs` | 运行时开几个工作线程：照核数和系统配置的 `core.workers`，建运行时以前单独读这一项（「起来的先后」第 7 条，施工 CPU-1） |
 | `crates/miyu-endpoint/src/lib.rs` 的 `Core::finish_writes` | 等记忆在后台还没做完的：回合开始没等完的读、回合索引的后台、补齐旧会话（施工 TMP-1 补3，下面「停下」第 6 条；`memory.md` 第三条第 4 款）；停会话（`stop_sessions`）时也等 |
 | `crates/miyu-core/src/pending.rs` | 另起线程写盘的登记下来，核心放锁之前等它们写完（施工 TMP-1 补2，下面「停下」第 6 条）；还在读目录、还在写盘的照计数等（施工 TMP-3）；登记的也带一个记号，等完才放（施工 TMP-3 补） |
 | `crates/miyu-core/src/sandbox.rs` | 起来时找沙盒的助手、探一次，记日志（施工 5-1）；探到了手段的，交回助手（施工 5-4 上） |
@@ -82,7 +83,7 @@
 4. 装运行日志 `var/log/core.log`，级别照 `MIYU_LOG`，带上第 1 步的家目录（`log.md`）。记一条 `INFO starting version=<版本> pid=<进程号> root=<数据根> tz=<和 UTC 差多少>`，数据根里的家目录写成 `~`，例如 `root=~/.miyu tz=+09:00`。接着让它起的子进程随它结束（下面「子进程随核心退出」，施工 7-8）：Windows 上进作业对象，进不去记一条 `WARN children not bound error=…`，照样起来；别的平台这一步什么都不做。
 5. 找资源目录、开始读目录（同下面第 6、9 条）；起运行时（第 7 条），算出套接字放哪、换本机令牌、在套接字上等连接（第 8 条）。接着建默认工作区 `workspace/` 和敏感的几处顶层目录 `trash/`、`blobs/`、`modules/`、`index/`、`kb/`（没有就建，Unix 上 0700；后几个施工 R3-1 补：布局不变，只是不再用到才建，Windows 的沙盒只禁命令起来那一刻顶层已有的，命令跑着时第一次建的整棵读得到），建不了的起不来（`stage=home`）。接着收拾上一次崩了留下的（`leftovers.rs`）：`packages/` 里升级到一半的包放回去（施工 AE-7，`packages.md`「装卸」第 1 条）；数据根里写配置、密钥时剩下的临时文件删掉（施工 AS-11，`store.md`「在哪」的 `config_file.rs`；施工 R3-1 起看 `run/` 和数据根这一层）。访问密码不在这里设：要从局域网连时用 `account.setup` 设（`protocol.md`）。
 6. 找资源目录（`store.md`）。接着读两层清单、读配置（施工 8-2，`config.md`「怎么走」第二条）：配置、信任的记录、密钥文件（施工 8-5），读不进来的照空的，有问题的每份记一条 `WARN config problems`（密钥文件组、别人读得到的记一条 `WARN secrets readable by others`）；照 `log.level` 的最终值换运行日志的级别，记一条 `INFO log level`。再照配置清单生成两份 JSON Schema 和参考文件，放在 `var/cache/config`（施工 8-1，`config.md`「怎么走」第一条第 6 到 8 条）：字照 `ui.language` 的最终值，`auto` 的照系统的语言挑，一样的不重写；读好的配置交给协议端点（`Core::with_config`）；写不成的、字缺了的，一份记一条 `WARN config schema not written`（目标 `miyu::config`），不影响起不起得来。说「好了」之前开始监视配置文件（`Core::watch_config`，施工 8-4，`config.md` 第七条），起一个任务跟着配置换：`log.level` 变了换级别，`ui.language` 变了重写那三份（第八条）；监视起不来的记一条 `WARN config watch unavailable`，照样起来。
-7. 起运行时：多线程，两个工作线程，接连接、会话、请求都在上面。
+7. 起运行时：多线程，接连接、会话、请求都在上面。工作线程数照 CPU 核数（`available_parallelism`，取不到的照 2），系统配置写了 `core.workers`（1 到 64）的照它；都夹到 2 到 64（施工 CPU-1：原来写死两个，整机被挤满时 Linux 大体按线程分 CPU，两个线程大半时间在排队）。运行时要先建、配置在它里面读，所以这一项在建运行时以前单独读一次系统配置（`workers.rs`）：读不到、写坏了、超范围的照核数，不报，第 6 条正式读配置时照旧报；改了重启核心生效（`config.md` 的 `restart`）。运行日志在 `DEBUG` 记一条 `runtime workers=<个数>`。tokio 的阻塞线程池、自己开的线程不跟着变；glibc 的 arena 照旧 8 个（`heap.md`）。
 8. 算出套接字放哪、换本机令牌、在套接字上等连接、记下实际的位置（`ipc.md`）。
 9. 读供应商的档案、认原厂的表，造会话的路由和核心一份的模型资料（下面「模型」，施工 8-6、8-7）。目录这时还不读。
 10. 找沙盒的助手、探一次（`sandbox.md`「怎么走」第 1、2 条）：记一行 `INFO` `sandbox` 或者 `WARN` `sandbox unavailable`（施工 5-1）。探到的结果（能不能用、为什么，`Availability`）交给协议端点：握手时报给头（施工 5-4 下）；能用的，造会话、载入时把助手交给会话，权限策略照它判执行命令，执行器照它带沙盒（施工 5-4 上）；用不了的，会话里当沙盒用不了。

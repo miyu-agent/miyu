@@ -45,6 +45,10 @@
         "name": "核心空闲多久退出",
         "description": "没有连接、也没有在跑的回合，连续这么多分钟以后核心退出。0 表示一直开着（默认）；头连不上核心时会自己拉起。"
       },
+      "core.workers": {
+        "name": "核心的工作线程数",
+        "description": "核心用几个线程处理连接、会话和请求。0 表示照 CPU 的核数（默认）；写 1 的照 2 个。"
+      },
       "log.level": {
         "name": "运行日志的级别",
         "description": "运行日志记到哪一级。排查问题时调成 debug。设了环境变量 MIYU_LOG 的，那一次启动照它。",
@@ -799,6 +803,7 @@
     "config/layer/env": "环境变量",
     "config/applies/new_session": "新会话生效",
     "config/applies/head_start": "重启后生效",
+    "config/applies/restart": "重启核心后生效",
     "config/secrets-header": "Miyu 的密钥：只经 Miyu 写入、替换、删除。不要把这份文件贴给别人。",
     "config/unknown-secret": "{key} 引用的密钥 {name} 还没设",
     "config/env-not-set": "{key} 引用的环境变量 {name} 核心起来时没有设",

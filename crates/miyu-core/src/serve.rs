@@ -11,13 +11,21 @@ use miyu_ipc::Listener;
 use crate::TARGET;
 
 miyu_config::settings! {
-    /// 核心进程的配置（施工 Z-1 上）。
+    /// 核心进程的配置（施工 Z-1 上；`workers` 施工 CPU-1）。
     pub struct CoreSettings in "core" {
         /// 空闲多少分钟以后退出：没有连接、也没有在跑的回合，连续这么久。0 是不退（默认）。只在系统配置里。
         idle_exit: i64 = 0 {
             kind: int [0, 525600],
             layers: [System],
             applies: now,
+            ui: { page: "advanced", group: "core", control: number },
+        },
+        /// 运行时开几个工作线程（施工 CPU-1）：0 是照 CPU 核数（默认），写了的最少 2 个；超过 64 的照写坏了报、照核数。
+        /// 只在系统配置里，建运行时以前读一次（`workers.rs`），改了重启核心生效。
+        workers: i64 = 0 {
+            kind: int [0, 64],
+            layers: [System],
+            applies: restart,
             ui: { page: "advanced", group: "core", control: number },
         },
     }

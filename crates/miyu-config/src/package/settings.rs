@@ -288,20 +288,7 @@ pub(super) fn one(
     };
     let applies = match fields.get("applies") {
         None => Applies::HeadStart,
-        Some(item) => match item.as_str() {
-            Some("now") => Applies::Now,
-            Some("new_session") => Applies::NewSession,
-            Some("next_turn") => Applies::NextTurn,
-            Some("program_start") => Applies::HeadStart,
-            _ => {
-                return Err(reader.problem(
-                    Some(item),
-                    Code::BadApplies,
-                    &format!("{at}.applies"),
-                    format!("{at}.applies must be now, new_session, next_turn or program_start"),
-                ));
-            }
-        },
+        Some(item) => applies(reader, at, item)?,
     };
     let hidden = match fields.get("hidden") {
         None => false,
@@ -450,35 +437,6 @@ fn fits(kind: &SettingKind, value: &toml_edit::Value) -> Option<Value> {
     }
 }
 
-/// `layers`：只认 `system`。
-fn layers(reader: &Reader<'_>, at: &str, item: &Node) -> Result<Vec<Layer>, Problem> {
-    let bad = || {
-        reader.problem(
-            Some(item),
-            Code::BadLayers,
-            &format!("{at}.layers"),
-            format!("{at}.layers must list system"),
-        )
-    };
-    let array = item.as_array().ok_or_else(bad)?;
-    let mut layers = Vec::new();
-    for value in array {
-        let layer = match value.as_str() {
-            Some("system") => Layer::System,
-            _ => return Err(bad()),
-        };
-        if layers.contains(&layer) {
-            return Err(bad());
-        }
-        layers.push(layer);
-    }
-    if layers.is_empty() {
-        return Err(bad());
-    }
-    layers.sort();
-    Ok(layers)
-}
-
 /// 名字：小写字母开头，只有小写字母、数字、`_`，最多 64 个。
 fn setting_name(name: &str) -> bool {
     let mut chars = name.chars();
@@ -488,10 +446,12 @@ fn setting_name(name: &str) -> bool {
 }
 
 mod build;
+mod scope;
 mod section;
 mod types;
 
 pub use build::items;
+use scope::{applies, layers};
 pub use section::{Section, ShownWhen};
 use types::{choices_from, scalar, slider};
 

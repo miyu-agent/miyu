@@ -17,3 +17,4 @@ mod serve;
 mod settings;
 mod settings_protected;
 mod tools;
+mod workers;

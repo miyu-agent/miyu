@@ -26,6 +26,10 @@ prepare = true
 # Allowed: a whole number from 0 to 525600. Only in the system config. Takes effect immediately.
 idle_exit = 0
 
+# Core worker threads: How many threads the core uses for connections, sessions and requests. 0 follows the CPU core count (the default); 1 counts as 2.
+# Allowed: a whole number from 0 to 64. Only in the system config. Takes effect after the core restarts.
+workers = 0
+
 [external.bindings]
 # My platform accounts: Which platform identities are you. The key is the platform identity (for example qq:10001), the value is owner. In private chats that identity is you.
 # Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Takes effect immediately.

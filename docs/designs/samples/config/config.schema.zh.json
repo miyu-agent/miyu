@@ -60,6 +60,14 @@
           "minimum": 0,
           "title": "核心空闲多久退出",
           "type": "integer"
+        },
+        "workers": {
+          "default": 0,
+          "description": "核心用几个线程处理连接、会话和请求。0 表示照 CPU 的核数（默认）；写 1 的照 2 个。能写：0 到 64 之间的整数。只能写在系统配置里。重启核心后生效。",
+          "maximum": 64,
+          "minimum": 0,
+          "title": "核心的工作线程数",
+          "type": "integer"
         }
       },
       "type": "object"

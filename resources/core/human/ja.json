@@ -45,6 +45,10 @@
         "name": "コアのアイドル終了",
         "description": "接続も実行中のターンもない状態がこの分数続くとコアが終了します。0 は常に起動したまま（既定）。ヘッドはコアに接続できないとき自分で起動します。"
       },
+      "core.workers": {
+        "name": "コアのワーカースレッド数",
+        "description": "コアが接続、セッション、リクエストの処理に使うスレッドの数です。0 は CPU のコア数に合わせます（既定）。1 は 2 として扱います。"
+      },
       "log.level": {
         "name": "実行ログのレベル",
         "description": "実行ログにどこまで記録するかです。問題を調べるときは debug にします。環境変数 MIYU_LOG があれば、その起動ではそちらが優先されます。",
@@ -799,6 +803,7 @@
     "config/layer/env": "環境変数",
     "config/applies/new_session": "新しいセッションに反映",
     "config/applies/head_start": "再起動後に反映",
+    "config/applies/restart": "コア再起動後に反映",
     "config/secrets-header": "Miyu のシークレット：Miyu を通してだけ書き込み、置き換え、削除します。このファイルを他人に渡さないでください。",
     "config/unknown-secret": "{key} が参照しているシークレット {name} はまだ設定されていません",
     "config/env-not-set": "{key} が参照している環境変数 {name} はコア起動時に設定されていませんでした",

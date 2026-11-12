@@ -145,7 +145,7 @@ One table per setting; the key is `<prefix>.<name>` (see `prefix` above; without
 | `default` | Default value of that type; not allowed for `secret` |
 | `layers` | Only `system` (the system config), which is also the default |
 | `fields`, `title` | Only for a list with `element = "record"`: under `fields`, one table per field, `[settings.<name>.fields.<field>]`, written like a setting (`type`, `default`, `name`, `description`, `hidden`, and the PC-1 additions), without `layers` or `applies`, and not a `list`; a field can't be called `fields`, and a field without `default` must be written in every entry. `title` names the `text`, `name` or `option` field used as each entry's title. The whole list can't have a default; at most 100 entries |
-| `applies` | When it takes effect: `now`, `new_session`, `next_turn`, `program_start` (your program's next start, default) |
+| `applies` | When it takes effect: `now`, `new_session`, `next_turn`, `restart` (the core's next start), `program_start` (your program's next start, default) |
 | `name`, `description` | Shown to people |
 | `hidden` | `true`: not drawn on the settings screen, still writable and readable |
 

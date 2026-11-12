@@ -45,6 +45,10 @@
         "name": "Core idle exit",
         "description": "Minutes with no connection and no running turn before the core exits. 0 keeps it running (the default); a head starts the core again when it can't reach it."
       },
+      "core.workers": {
+        "name": "Core worker threads",
+        "description": "How many threads the core uses for connections, sessions and requests. 0 follows the CPU core count (the default); 1 counts as 2."
+      },
       "log.level": {
         "name": "Runtime log level",
         "description": "How much the runtime log records. Set debug when chasing a problem. MIYU_LOG, when set, wins for that launch.",
@@ -803,6 +807,7 @@
     "config/layer/env": "the environment",
     "config/applies/new_session": "Applies to new sessions",
     "config/applies/head_start": "Takes effect after restart",
+    "config/applies/restart": "Takes effect after the core restarts",
     "config/secrets-header": "Miyu's secrets: written, replaced and deleted only through Miyu. Do not share this file.",
     "config/unknown-secret": "{key} refers to the secret {name}, which is not set",
     "config/env-not-set": "{key} refers to {name}, which was not set when the core started",

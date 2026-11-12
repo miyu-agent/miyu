@@ -145,7 +145,7 @@ place = "status"
 | `default` | 默认值，合这个类型；`secret` 不能写 |
 | `layers` | 只能写 `system`（系统配置），不写也是它 |
 | `fields`、`title` | `element = "record"` 的列表才有：`fields` 下面每个字段一张表 `[settings.<名字>.fields.<字段>]`，写法同一项（`type`、`default`、`name`、`description`、`hidden`，PC-1 那几种也能用），不写 `layers`、`applies`，不能再是 `list`；字段名不能叫 `fields`，没有 `default` 的字段每一项都要写。`title` 是拿哪个 `text`、`name`、`option` 字段当每一项的标题。整条列表不能写默认值，最多 100 项 |
-| `applies` | 什么时候生效：`now`、`new_session`、`next_turn`、`program_start`（你的程序下次启动，默认） |
+| `applies` | 什么时候生效：`now`、`new_session`、`next_turn`、`restart`（重启核心）、`program_start`（你的程序下次启动，默认） |
 | `name`、`description` | 给人看的名字、说明 |
 | `hidden` | `true` 的设置页不画，照样能写、能查 |
 

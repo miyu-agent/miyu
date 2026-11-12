@@ -372,6 +372,9 @@ macro_rules! __settings_applies {
     (head_start) => {
         $crate::Applies::HeadStart
     };
+    (restart) => {
+        $crate::Applies::Restart
+    };
 }
 
 /// [`settings!`](crate::settings) 里 `control` 那一格：照协议上的写法。

@@ -35,6 +35,7 @@ mod settle;
 mod start;
 mod trash;
 mod wal;
+mod workers;
 
 pub use kit::Kit;
 pub use serve::{Stopped, idle_limit, serve, serve_then};
@@ -55,9 +56,6 @@ use miyu_tool::Catalog;
 
 /// 运行日志的目标。
 const TARGET: &str = "miyu::core";
-
-/// 核心的运行时开几个线程：接连接、会话、请求都是等 I/O，两个够用，占用也低。
-const WORKERS: usize = 2;
 
 /// `miyu core` 的参数。
 #[derive(Debug, Clone)]
@@ -134,8 +132,11 @@ pub fn main(options: Options) -> ExitCode {
         env.exe.clone(),
         Some(models::dirs(&root)),
     );
+    // 工作线程数照核数、系统配置的 `core.workers`（施工 CPU-1）：运行时要先建，这一项在这里单独读一次。
+    let workers = workers::count(&root);
+    tracing::debug!(target: TARGET, workers, "runtime");
     let runtime = match tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(WORKERS)
+        .worker_threads(workers)
         .enable_all()
         .build()
     {
