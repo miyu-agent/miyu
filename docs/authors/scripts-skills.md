@@ -1,12 +1,14 @@
-# 脚本、技能、命令模板
+# 放文件就能用的：脚本、技能、命令模板、知识库、人格
 
-三样都不用写常驻的程序，放一个文件就能用。英文版：[scripts-skills.en.md](scripts-skills.en.md)。
+这几样都不用写常驻的程序，放文件就能用。英文版：[scripts-skills.en.md](scripts-skills.en.md)。
 
 | | 是什么 | AI 怎么用 |
 |---|---|---|
 | **脚本** | 一个可执行文件，一件工具 | 和别的工具一样直接调 |
 | **技能** | 一份 `SKILL.md`，一套做事的办法 | 平时只看到名字和一句说明，用得上时自己读正文 |
 | **命令模板** | 一份 `<名字>.md`，一条斜杠命令 | 人敲 `/<名字>` 时把正文当这个人说的一句发给 AI |
+| **知识库** | `kb/<编号>/`：一份 `kb.toml` 和一些文档 | 用知识库的工具查；开了自动想起的，相关的段落每一轮自己带上 |
+| **人格、预设** | `personas/<编号>/`、`presets/<编号>.toml` | 人在列表里挑 |
 
 放在哪：做成包的放在包文件夹的 `scripts/`、`skills/`、`commands/` 下面，清单只写一张 `[package]`；只给自己用的直接放进 `~/.miyu/root/scripts/`、`skills/`、`commands/`（同名的这里赢）。放进去下一个会话就看得到；每个脚本、技能、命令模板在预设里各自开关。写错了的、和别的工具重名的脚本不登记，`miyu check` 说哪一个、为什么；刚放进去就查、说核心还没读到的，过一会儿再查。
 
@@ -26,6 +28,7 @@ dice/
 
 ```toml
 [package]
+version = "0.1.0"           # 装可以不写，打包、发到软件源必写
 name = { en = "Dice and notes", zh = "骰子和笔记" }
 ```
 
@@ -64,13 +67,13 @@ Linux、macOS 上 `chmod +x dice.py`。
 | `Display name`、`显示名称` | 给人看的名字（英文、中文），时间线上照它写 |
 | `Parameters` | 参数的 JSON Schema，从下一行起，可以写几行；不写是没有参数 |
 | `Timeout` | 秒，默认 60 |
-| `Need load` | 不写是先加载：AI 平时只看到名字和一行说明，要用时先加载完整的参数，省钱。`no`：一直给完整的参数，常用的写上 |
+| `Need load` | 以前的写法，照认、不起作用：工具一律一开始就给完整的参数 |
 | `Clicall` | `yes`：AI 在命令里写脚本时也能用 `miyu call` 调它，结果交给脚本。不写是不能，只能直接调。要读、要查，并且 AI 在命令里自己不方便做到的脚本，都该写上：AI 能在脚本里批量调，省下一轮轮来回；会改东西、发东西、花额度的别写 |
 | `Venues` | 给哪种会话：`local`（本机的终端、网页这些）、`private`（通讯平台的私聊）、`group`（群）里的几个，逗号隔开，例如 `Venues: local, private`。不写是哪种会话都有；写错的整个脚本不登记，`miyu check` 报出来 |
 | `Role` | 职能，写法同扩展的 `role`：`read_file` 表示这件是读文本文件的。写错的整个不收：值写错的，键名写成 `role`、`Rloe` 这样像它的（大小写不对、差一个字）也算 |
 | `Scope` | 给哪种会话，写法同扩展的 `scope`（`local`、`local_main`、`local_main_attended`、`spawn`），在 `Venues` 之内再收窄；不写是 `any`，写错的整个不收（键名写成 `scope`、`Scpoe` 这样像它的也算） |
 
-开头是文件开头连着的那一段注释，遇到第一行不是注释的就完。开头写完空一行再写别的注释，不然说明里一句「Timeout: …」也会被当成开头读。
+开头是文件开头连着的那一段注释（`#` 或 `//` 开头的行），遇到第一行不是注释的就完。开头写完空一行再写别的注释，不然说明里一句「Timeout: …」也会被当成开头读。
 
 **怎么跑**
 
@@ -100,7 +103,7 @@ Linux、macOS 上 `chmod +x dice.py`。
       print("Read-only here: only the owner can change the title.")
   ```
 
-- 脚本包的配置项（施工 PS-1）：做成包的，清单里可以写 `[settings.<名字>]`，规矩同扩展包（类型、`default`、`applies`、`name`、`description`、`hidden`，`secret` 不能写默认值），人在设置的「软件包」页这个包那一组里填。包里 `scripts/` 下的脚本跑的时候，环境变量 `MIYU_SETTINGS_JSON` 里是这几项现在的值，一个 JSON 对象：键去掉这个包的配置前缀（清单 `[package] prefix`，没写就是包编号），有组的写 `组.名字`；`secret` 是解出来的真值；每一项一组字段的列表（`element = "record"`）是对象的数组，字段里的 `secret` 同样是真值，没写的字段照默认值；没填、也没默认值的键不放，所以用之前先看在不在。每次调用都现读，人改了下一次调用就是新的。只给这个包自己的脚本：别的包的、`scripts/` 里自己放的、AI 跑的命令都没有。
+- 脚本包的配置项：做成包的，清单里可以写 `[settings.<名字>]`，规矩同扩展包（类型、`default`、`applies`、`name`、`description`、`hidden`，`secret` 不能写默认值），人在设置的「软件包」页这个包那一组里填。包里 `scripts/` 下的脚本跑的时候，环境变量 `MIYU_SETTINGS_JSON` 里是这几项现在的值，一个 JSON 对象：键去掉这个包的配置前缀（清单 `[package] prefix`，没写就是包编号），有组的写 `组.名字`；`secret` 是解出来的真值；每一项一组字段的列表（`element = "record"`）是对象的数组，字段里的 `secret` 同样是真值，没写的字段照默认值；没填、也没默认值的键不放，所以用之前先看在不在。每次调用都现读，人改了下一次调用就是新的。只给这个包自己的脚本：别的包的、`scripts/` 里自己放的、AI 跑的命令都没有。
 
   ```python
   import json, os
@@ -110,7 +113,7 @@ Linux、macOS 上 `chmod +x dice.py`。
       print("Set the API key in Settings → Packages first.")
   ```
 
-- 跑的规矩同 AI 跑命令：在沙盒里跑（只写得了工作区，Miyu 的数据目录读不到，脚本自己那个文件单独放开只读）；沙盒用不了的要人确认。
+- 跑的规矩同 AI 跑命令：进不进沙盒见下面「什么时候在沙盒里跑」；进了沙盒的，Miyu 的数据目录读不到，脚本自己那个文件单独放开只读。
 
 **交图**
 
@@ -129,8 +132,8 @@ print("Grabbed 1 frame.")
 
 **什么时候在沙盒里跑**
 
-- 你自己的会话（终端、网页、你的 QQ 私聊、桌面语音）平时不进沙盒，脚本以你本人的权限跑。
-- 打开只读以后，还有群聊、陌生人的私聊里，脚本在沙盒里跑。碰硬件、要 root（`sudo`）的脚本在那里跑不通，没有办法单独放行某个脚本。
+- 你自己的会话（终端、网页、你的 QQ 私聊、桌面语音）在完全放开（默认）下不进沙盒，脚本以你本人的权限跑。
+- 打开只读以后，脚本在只读的沙盒里跑：哪里都写不了；群聊、陌生人的私聊里，脚本在沙盒里跑，只写得了那个场所自己的工作区。碰硬件、要 root（`sudo`）的脚本在那里跑不通，没有办法单独放行某个脚本。
 
 ## 技能
 
@@ -184,3 +187,38 @@ Review the uncommitted changes in this repository. Focus on: $ARGUMENTS
 - 时间线上显示人敲的那一行。谁能用和 Miyu 自带的命令一样。
 
 要程序来办的斜杠命令（查东西、改状态、回一段话），用扩展的 `[[slash]]`，见 [写扩展](extensions.md)。
+
+## 知识库
+
+一套给她查的资料（设定集、产品手册、笔记）。包文件夹里 `kb/<编号>/` 是一个知识库，清单里不写；编号写法同包的编号。
+
+```text
+lighthouse/
+├── package.toml          # 只有 [package]
+└── kb/
+    └── lighthouse/
+        ├── kb.toml
+        └── people.md
+```
+
+```toml
+# kb/lighthouse/kb.toml，可以没有
+name = "Lighthouse lore"                               # 名字，没写的照编号
+description = "People, places and rules of the lighthouse story"   # 一句话说这个库是什么
+auto = true                                            # 自动想起，不写是关
+```
+
+- 名字、说明会列进她的系统提示词，让她知道有这个库、什么时候去查：写短。`kb.toml` 只认这三格，写错的照没写用，`miyu kb list` 里这个库带着错。
+- `auto = true`：每一轮照人说的话从这个库里带上相关的段落，不用她自己去查。人在知识库页里能改开关，改的记在人那边。
+- 文档：`.md`、`.markdown`、`.txt`、`.pdf`、`.html`、`.htm`，子目录里的照样算；点开头的、链接不算。文字的不超过 4 MiB、要是 UTF-8；PDF、网页的不超过 64 MiB。读不成的跳过，运行日志里有一行。
+- 关键词：Markdown 一节标题下面的头一行写 `关键词：守灯人、灯塔的姑娘、Eileen`（`keys:` 也认，`、`、`，`、`,` 都能分），开了自动想起的库里，人提到其中哪一个就带上这一节。
+- 只读：她写不进包里的库，人也改不了名字、说明、文档（重建索引照做）。卸包时库和它的索引一起没了。
+- 人自己有同编号的库，人的那一个赢；和别的包带的同编号的装不上（`package_conflict`）。
+- 装上以后 `miyu kb list` 看得到（写着「来自 <包名>」），`miyu kb search <词>` 试搜。
+
+## 人格和预设
+
+- **人格**：`personas/<编号>/`，和人在 Miyu 里建的人格一个样：`persona.toml`（`[persona]` 的 `name`、`summary` 这些）、`prompts/persona.md`（人设）、`prompts/examples.md`（示范对话）、`prompts/reminders.md`（角色扮演提示），都可以没有。最省事的做法：先在终端或网页里把人格建好、调好，再把数据根里的 `root/personas/<编号>/` 整个拷进包的 `personas/`。人设、示范对话是人格自己的字，用什么语言都行。
+- **预设**：`presets/<编号>.toml`，同样先在 Miyu 里建好，从 `root/presets/` 拷过来。
+- 只读：人改了写进人自己那一层、盖在包的上面；卸包时包里的没了，人改过的留着，`miyu check` 提一句。
+- 编号和出厂的、别的包带的、人自己已有的撞了的装不上（`package_conflict`）。

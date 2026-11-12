@@ -1,12 +1,14 @@
-# Scripts, skills, command templates
+# Things that work as files: scripts, skills, command templates, knowledge bases, personas
 
-None of these need a long-running program; one file is enough. Chinese version: [scripts-skills.md](scripts-skills.md).
+None of these need a long-running program; files are enough. Chinese version: [scripts-skills.md](scripts-skills.md).
 
 | | What it is | How the AI uses it |
 |---|---|---|
 | **Script** | An executable file; one tool | Called like any other tool |
 | **Skill** | A `SKILL.md`; a way of doing something | Normally sees only its name and one line; reads the body when it needs it |
 | **Command template** | A `<name>.md`; a slash command | When a person types `/<name>`, the body is sent to the AI as that person's message |
+| **Knowledge base** | `kb/<id>/`: a `kb.toml` and documents | Searched with the knowledge base tools; with recall on, related passages come along every turn |
+| **Persona, preset** | `personas/<id>/`, `presets/<id>.toml` | People pick them from the list |
 
 Where: in a package, under the package folder's `scripts/`, `skills/`, `commands/`, with a manifest of just `[package]`; just for you, straight into `~/.miyu/root/scripts/`, `skills/`, `commands/` (same names there win). The next session sees them; each script, skill and template is switched separately in presets. Broken ones, and scripts with the same name as another tool, aren't registered, and `miyu check` says which and why; if it says the core hasn't picked a new one up yet, check again shortly.
 
@@ -26,6 +28,7 @@ dice/
 
 ```toml
 [package]
+version = "0.1.0"           # optional for installing, required to pack and publish
 name = { en = "Dice and notes", zh = "骰子和笔记" }
 ```
 
@@ -64,13 +67,13 @@ On Linux and macOS, `chmod +x dice.py`.
 | `Display name`, `显示名称` | The name for people (English, Chinese); the timeline shows it |
 | `Parameters` | The parameters' JSON Schema, from the next line on, may span lines; none when omitted |
 | `Timeout` | Seconds, default 60 |
-| `Need load` | Loaded on demand unless you write it: the AI normally sees only the name and one line and loads the full parameters when needed, which saves money. `no`: always send the full parameters; write it for ones used often |
+| `Need load` | An old key, still accepted, with no effect: every tool gets its full parameters from the start |
 | `Clicall` | `yes`: the AI can also call it with `miyu call` from a script it runs, and the result goes to the script. Unset means it cannot, and it can only be called directly. Scripts that read or look things up, and that the AI can't easily do from a command on its own, should set it: the AI can call them in bulk from a script and skip many round trips. Don't set it on scripts that change or send things or spend quota |
 | `Venues` | Which sessions get it: some of `local` (this machine: the terminal, the web page and so on), `private` (private chats on a messaging platform), `group` (groups), comma separated, e.g. `Venues: local, private`. Unset means every kind of session; if it is wrong the whole script is not registered and `miyu check` reports it |
 | `Role` | What the tool is for, as an extension's `role`: `read_file` means it reads a text file. A wrong value rejects the script, and so does a key that looks like it but is misspelled (`role`, `Rloe`: wrong case or one letter off) |
 | `Scope` | Which sessions get it, as an extension's `scope` (`local`, `local_main`, `local_main_attended`, `spawn`), narrowing further within `Venues`; unset means `any`, and a wrong value rejects the script, as does a misspelled key such as `scope` or `Scpoe` |
 
-The header is the run of comment lines at the very top of the file; it ends at the first line that is not a comment. Leave a blank line after the header before any other comment, or a sentence like "Timeout: …" in your notes is read as part of the header.
+The header is the run of comment lines (starting with `#` or `//`) at the very top of the file; it ends at the first line that is not a comment. Leave a blank line after the header before any other comment, or a sentence like "Timeout: …" in your notes is read as part of the header.
 
 **How it runs**
 
@@ -100,7 +103,7 @@ The header is the run of comment lines at the very top of the file; it ends at t
       print("Read-only here: only the owner can change the title.")
   ```
 
-- Settings of a script package (PS-1): a package can declare `[settings.<name>]` in its manifest, with the same rules as an extension package (type, `default`, `applies`, `name`, `description`, `hidden`; a `secret` cannot have a default). People fill them in under Settings → Packages, in this package's group. When a script under the package's `scripts/` runs, the environment variable `MIYU_SETTINGS_JSON` holds their current values as one JSON object: keys without the package's settings prefix (`[package] prefix` in the manifest, the package id when not written), `group.name` for grouped ones; a `secret` is the real value; a list of field sets (`element = "record"`) is an array of objects, with secret fields as real values and unwritten fields taking their default; keys that are neither set nor defaulted are left out, so check before use. It is read on every call, so a change applies from the next call. Only the package's own scripts get it: other packages' scripts, scripts you put in `scripts/` yourself and the commands the AI runs do not.
+- Settings of a script package: a package can declare `[settings.<name>]` in its manifest, with the same rules as an extension package (type, `default`, `applies`, `name`, `description`, `hidden`; a `secret` cannot have a default). People fill them in under Settings → Packages, in this package's group. When a script under the package's `scripts/` runs, the environment variable `MIYU_SETTINGS_JSON` holds their current values as one JSON object: keys without the package's settings prefix (`[package] prefix` in the manifest, the package id when not written), `group.name` for grouped ones; a `secret` is the real value; a list of field sets (`element = "record"`) is an array of objects, with secret fields as real values and unwritten fields taking their default; keys that are neither set nor defaulted are left out, so check before use. It is read on every call, so a change applies from the next call. Only the package's own scripts get it: other packages' scripts, scripts you put in `scripts/` yourself and the commands the AI runs do not.
 
   ```python
   import json, os
@@ -110,7 +113,7 @@ The header is the run of comment lines at the very top of the file; it ends at t
       print("Set the API key in Settings → Packages first.")
   ```
 
-- It runs under the same rules as commands the AI runs: in the sandbox (can only write the workspace, can't read Miyu's data directory, the script file itself is readable); without a sandbox, a person must approve.
+- It runs under the same rules as commands the AI runs: whether it is sandboxed is under "When a script runs in the sandbox" below; in the sandbox it can't read Miyu's data directory, and the script file itself is readable.
 
 **Handing over images**
 
@@ -129,8 +132,8 @@ print("Grabbed 1 frame.")
 
 **When a script runs in the sandbox**
 
-- In your own sessions (terminal, web, your QQ private chat, desktop voice) scripts normally run outside the sandbox, with your own permissions.
-- With read-only on, and in group chats and strangers' private chats, scripts run in the sandbox. Scripts that touch hardware or need root (`sudo`) don't work there, and there is no way to exempt a single script.
+- In your own sessions (terminal, web, your QQ private chat, desktop voice), under full access (the default), scripts run outside the sandbox with your own permissions.
+- With read-only on, scripts run in a read-only sandbox and can't write anywhere; in group chats and strangers' private chats they run in the sandbox and can write only that venue's own workspace. Scripts that touch hardware or need root (`sudo`) don't work there, and there is no way to exempt a single script.
 
 ## Skills
 
@@ -184,3 +187,38 @@ Review the uncommitted changes in this repository. Focus on: $ARGUMENTS
 - The timeline shows the line the person typed. Who can use it is the same as for built-in commands.
 
 For slash commands handled by a program (looking something up, changing state, replying with text), use an extension's `[[slash]]`; see [Writing an extension](extensions.en.md).
+
+## Knowledge bases
+
+Material for her to look things up in (lore, a product manual, notes). `kb/<id>/` in the package folder is a knowledge base; nothing goes in the manifest. The id is written like a package id.
+
+```text
+lighthouse/
+├── package.toml          # only [package]
+└── kb/
+    └── lighthouse/
+        ├── kb.toml
+        └── people.md
+```
+
+```toml
+# kb/lighthouse/kb.toml, optional
+name = "Lighthouse lore"                               # name; the id when not written
+description = "People, places and rules of the lighthouse story"   # one sentence on what this base is
+auto = true                                            # recall on its own; off when not written
+```
+
+- The name and description are listed in her system prompt so she knows the base exists and when to search it: keep them short. `kb.toml` knows only these three fields; a broken one is used as if absent, and `miyu kb list` shows the error on that base.
+- `auto = true`: every turn, related passages from this base come along with what the person said, without her searching. People can switch it on the knowledge base page; their choice is kept on their side.
+- Documents: `.md`, `.markdown`, `.txt`, `.pdf`, `.html`, `.htm`, subfolders included; files starting with a dot and links don't count. Text files up to 4 MiB, in UTF-8; PDF and web files up to 64 MiB. Unreadable ones are skipped with a line in the log.
+- Keywords: in Markdown, the first line under a heading can be `keys: keeper, the lighthouse girl, Eileen` (`关键词：` works too; `,`, `，`, `、` all separate), and in a base with recall on, mentioning any of them brings that section along.
+- Read-only: she can't write into a package's base, and people can't change its name, description or documents (rebuilding the index works). Removing the package removes the base and its index.
+- If the person has a base with the same id, theirs wins; a package bringing an id another package already brings won't install (`package_conflict`).
+- Once installed, `miyu kb list` shows it (saying which package it comes from); try `miyu kb search <word>`.
+
+## Personas and presets
+
+- **Personas**: `personas/<id>/`, the same shape as a persona made in Miyu: `persona.toml` (`name`, `summary` and the like under `[persona]`), `prompts/persona.md` (the character), `prompts/examples.md` (example dialogue), `prompts/reminders.md` (role-play reminders), each optional. The easy way: make and tune the persona in the terminal or web UI, then copy `root/personas/<id>/` from the data root into the package's `personas/`. The character and example dialogue are the persona's own text, in any language.
+- **Presets**: `presets/<id>.toml`, likewise made in Miyu first and copied from `root/presets/`.
+- Read-only: what people change goes into their own layer on top of the package; removing the package removes its copy and keeps their changes, and `miyu check` mentions them.
+- An id already used by a shipped one, another package or the person's own won't install (`package_conflict`).

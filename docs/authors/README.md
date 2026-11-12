@@ -9,13 +9,15 @@
 | 想做的 | 带什么 | 看哪一篇 |
 |---|---|---|
 | 接一个现成的 MCP 服务 | `[[mcp]]` | [接 MCP 服务](mcp.md) |
-| 给 AI 一件小工具，几十行脚本就够 | `scripts/` 下一个脚本 | [脚本、技能、命令模板](scripts-skills.md) |
+| 给 AI 一件小工具，几十行脚本就够 | `scripts/` 下一个脚本 | [放文件就能用的](scripts-skills.md) |
 | 教 AI 一套做事的办法 | `skills/` 下一个技能 | 同上 |
 | 一条斜杠命令，展开成一句话发给 AI | `commands/` 下一个模板 | 同上 |
+| 一套给她查的资料（设定集、手册、笔记） | `kb/` 下一个知识库 | 同上 |
+| 一个人格、一个预设 | `personas/`、`presets/` 下 | 同上 |
 | 常驻的程序：一组工具、接一个聊天平台、往界面上放东西、自己的斜杠命令 | 扩展（`[process]`） | [写扩展](extensions.md) |
 | 网页里的一个设置页 | 后台页（`[page]`） | [写扩展](extensions.md) |
 
-清单里每一格怎么写见 [清单](manifest.md)。用 Python、Rust 写扩展的，有现成的开发包（[用开发包写](extensions.md#用开发包写)）。
+`scripts/`、`skills/`、`commands/`、`kb/`、`personas/`、`presets/` 照约定放，清单里不用写；清单里每一格怎么写见 [清单](manifest.md)。用 Python、Rust 写扩展的，有现成的开发包（[用开发包写](extensions.md#用开发包写)）。
 
 **不想做成包的**：技能、脚本、命令模板直接放进 `~/.miyu/root/skills/`、`scripts/`、`commands/`，MCP 服务写进配置，一样能用，只是不归包管理。
 
@@ -31,11 +33,13 @@ hello/
 ├── skills/
 │   └── take-notes/
 │       └── SKILL.md      # 技能
+├── kb/
+│   └── hello-docs/       # 知识库：kb.toml 和文档
 └── page/
     └── index.html        # 后台页
 ```
 
-1. **编号**（文件夹名）：小写字母开头，只用小写字母、数字、`-`、`_`，最多 64 个。起个短的、说得出它是什么的名字就行，不用带 `miyu-`，也不用带包的种类（`scripts-`、`skills-` 这些）。不能和随 Miyu 出厂的包撞（出厂的都叫 `base-<名字>`，例如 `base-read`、`base-memory`，所以别用 `base-` 打头），也别和官方的包（`tui`、`webui`、`embed`、`im` 这些）、别人的扩展撞（同一个编号再装是升级，会换掉人家装着的那一个）。
+1. **编号**（文件夹名）：小写字母开头，只用小写字母、数字、`-`、`_`，最多 64 个。起个短的、说得出它是什么的名字就行，不用带 `miyu-`，也不用带包的种类（`scripts-`、`skills-` 这些）。不能和随 Miyu 出厂的包撞（出厂的都叫 `base-<名字>`，例如 `base-read`、`base-memory`，所以别用 `base-` 打头），也别和官方的包（`tui`、`webui`、`embed`、`im` 这些）、别人的扩展撞（同一个编号再装是升级，会换掉人家装着的那一个）。要发到软件源的，起名前先 `miyu pkg search <词>` 看占没占：软件源的编号先到先得（下面「发到软件源」）；这几篇里的 `hello`、`dice` 只是例子，`dice` 官方源里已经有了。
 2. **带的名字也别撞**：工具名、技能、MCP 服务、斜杠命令和装着的别的包撞了的，装不上。名字建议带上包的编号做前缀。
 3. **包文件夹装好以后别往里写**：装的时候每个文件都记了哈希，后来写进去的会被 `miyu pkg check` 报出来。运行时的状态写进 `MIYU_STATE_DIR` 指的状态目录，给人改的配置放 `MIYU_CONFIG_DIR` 指的配置目录（其余几格见扩展那一页）。
 4. **人的数据别放状态目录**：卸包时状态目录整个删掉，卸之前那一屏会写「会删掉 <路径>（<大小>）」。人自己的东西（导出的记录、迁移过来的资料、生成给人看的文件）放 `MIYU_DOCUMENTS_DIR`（`root/documents/`）、`MIYU_PICTURES_DIR` 这类人看得见的地方，卸包不动它们；状态目录只放你这个包自己用的（数据库、登录态），卸了就跟着包一起走。
@@ -43,19 +47,53 @@ hello/
 
 ## 装、试、查
 
-1. **装**：`miyu pkg install ./hello`。先印一份要做什么（带了什么程序、加什么命令、要什么能力和每一样的说明、从哪来、多大），问一句 `[Y/n]`：答是就装上、同时批了它要的能力；`--yes` 不问，同样算批。装好当场生效，不用重启核心；开着就跑的（`start = "always"`）装上就跑。
-2. **打开**：手动开的装好以后问一句「现在打开？」，答是就打开，能力装的时候已经批过，不再问；答不的，以后在终端或网页的「软件包」页里打开。只带技能、脚本的包没有开关，每个技能、脚本在预设里各自开关。
-3. **改了再装**：开发时改完再 `miyu pkg install ./hello` 一次就换上了（就是升级）。想在一份单独的数据里试，不碰自己平常用的：`MIYU_HOME=/tmp/miyu-try miyu …`。
-4. **看**：`miyu pkg info hello`（名称、版本、大小、装的时间）、`miyu pkg files hello`（装了哪些文件）、`miyu pkg check hello`（装好的文件改没改）、`miyu check`（清单、脚本、技能写没写错）。「软件包」页上看得到扩展在跑、在等着重启、还是停下了（停下的写原因、标准错误的最后几行）。
-5. **日志**：扩展的标准错误在 `~/.miyu/var/log/<编号>/stderr`；核心的运行日志在 `~/.miyu/var/log/core.log`。
-   - **让核心一直开着**：核心起来了就不因为空闲退出（施工 Z-1 上），扩展跟着它一直在，通讯平台的桥、定时的活不用等人打开 `miyu`。要开机、登录就起的，照仓库里 `packaging/README.md` 装一份服务（Linux 的 systemd 用户服务、macOS 的 launchd、Windows 的任务计划）；设计见 `docs/designs/12-进程形态与分发.md` 第二节。
-6. **卸**：`miyu pkg remove hello`。包文件夹、它放状态的目录、设置里它的项一起删；密钥文件里的条目不删（别处可能也在用）。
+1. **先看一眼**：`miyu pkg info ./hello` 照装的那一套查清单，列出带了什么（脚本、技能、人格、命令、设置项、要的能力），什么都不装；清单写错的在这里就报，说第几行。
+2. **装**：`miyu pkg install ./hello`。先印一份要做什么（带了什么程序、加什么命令、要什么能力和每一样的说明、从哪来、多大），问一句 `[Y/n]`：答是就装上、同时批了它要的能力；`--yes` 不问，同样算批。装好当场生效，不用重启核心；开着就跑的（`start = "always"`）装上就跑。
+3. **打开**：手动开的装好以后问一句「现在打开？」，答是就打开，能力装的时候已经批过，不再问；答不的，以后在终端或网页的「软件包」页里打开。只带技能、脚本、知识库、人格的包没有开关，每个技能、脚本在预设里各自开关。
+4. **改了再装**：开发时改完再 `miyu pkg install ./hello` 一次就换上了（就是升级）。想在一份单独的数据里试，不碰自己平常用的：命令前面都加上 `MIYU_HOME=/tmp/miyu-try`，试完 `MIYU_HOME=/tmp/miyu-try miyu core stop` 停掉那一份的核心再删目录。
+5. **看**：`miyu pkg list`（装了哪些）、`miyu pkg info hello`（名称、版本、带了什么、大小、装的时间）、`miyu pkg files hello`（装了哪些文件）、`miyu pkg check hello`（装好的文件改没改）、`miyu check`（清单、脚本、技能写没写错）、`miyu kb list`（知识库，包带的写「来自 <包名>」）。「软件包」页上看得到扩展在跑、在等着重启、还是停下了（停下的写原因、标准错误的最后几行）。
+6. **日志**：扩展的标准错误在 `~/.miyu/var/log/<编号>/stderr`；核心的运行日志在 `~/.miyu/var/log/core.log`。
+   - **让核心一直开着**：核心起来了就不因为空闲退出，扩展跟着它一直在，通讯平台的桥、定时的活不用等人打开 `miyu`。要开机、登录就起的，跑 `miyu service enable`（Linux 的 systemd 用户服务、macOS 的 launchd、Windows 的任务计划）。
+7. **卸**：`miyu pkg remove hello`。包文件夹、它放状态的目录一起删；配置目录和设置里它的项默认留着（上面第 5 条），`miyu pkg remove --purge hello` 才一起删；密钥文件里的条目不删（别处可能也在用）。
+
+## 常见报错
+
+| 看到的 | 怎么办 |
+|---|---|
+| 无法打包：清单没有写版本 | `[package]` 里写 `version = "0.1.0"` |
+| 需要指定目标系统 | 清单写了 `targets`：`miyu pkg pack --target <系统>`，一种一个 |
+| `[[slash]] needs the commands capability`（`bad_slash`）这类「要某项能力」 | 带了 `[[slash]]`、`[[search]]`、`[guard]`、`[after]`、`[[driver]]` 的，`[process] capabilities` 要写对应的能力（见 [清单](manifest.md) 各节） |
+| `package_conflict` | 带的名字（命令、工具、技能、知识库、MCP 服务、前缀……）和装着的别的包撞了，一处一行写着是谁；改名再装 |
+| `depends_missing` | `[depends]` 里的包没装、版本不够，先装它 |
+| `needs_newer_miyu` | 清单的 `[package] miyu` 比正在跑的 Miyu 新，更新 Miyu |
+| 调方法回 `needs_approval` | 清单没声明那项能力，或者人还没批：加进 `capabilities` 再装一次 |
+| 扩展停下了 | 「软件包」页看原因，再看 `var/log/<编号>/stderr`；退出码 1 是「重启也没用」，核心不再拉起 |
+| 脚本、技能没出现 | `miyu check`：开头写错的、重名的都在这里说为什么跳过 |
 
 ## 发到软件源
 
-1. **打包**：`miyu pkg pack ./hello` 照装的那一套查清单，打成 `hello-<版本>.miyu`，印 SHA-256 和大小。清单写了 `targets` 的，一种系统打一个：`--target linux-x86_64`。版本库和缓存不打进去：`.git`、`.github`、`.hg`、`.svn`、`__pycache__`、`.DS_Store`、`*.pyc`，在哪一层都一样；别的都进，要留在包外面的打包前挪走。
-2. **发**：包放在自己的 GitHub 仓库里，用官方的打包模板 `miyu-agent/packages/.github/workflows/pack.yml`：打 tag（`v` 加上清单的 `version`）就打包、传进这个 tag 的 Release。怎么写见 [miyu-agent/packages](https://github.com/miyu-agent/packages)。
-3. **收录**：给仓库打上话题（topic）`miyu-package`，软件源每天收一次各仓库最新的 Release，签名后发出去，下一次收录就在里面，标「社区」。编号先到先得：第一个发出这个编号的仓库一直占着它，别的仓库再用这个编号的不收。分叉出来的仓库、存档了的仓库不收。
+1. **写版本**：清单的 `[package] version` 照 semver 写（`0.1.0`）。不写的装得上，但打不了包、进不了软件源。每发一次加一次版本：软件源只认版本，同一个版本重发不算更新。
+2. **打包**：`miyu pkg pack ./hello` 照装的那一套查清单，打成 `hello-<版本>.miyu`，印 SHA-256 和大小；`-o <目录>` 换输出的地方。清单写了 `targets` 的，一种系统打一个：`--target linux-x86_64`，文件名多一段系统。版本库和缓存不打进去：`.git`、`.github`、`.hg`、`.svn`、`__pycache__`、`.DS_Store`、`*.pyc`，在哪一层都一样；别的都进，要留在包外面的打包前挪走。打出来的文件可以先在一份单独的数据里试装：`miyu pkg install ./hello-0.1.0.miyu`。
+3. **发**：包放在自己的 GitHub 仓库里，加一份 `.github/workflows/release.yml`，用官方的打包模板：
+
+   ```yaml
+   name: release
+   on:
+     push:
+       tags: ["v*"]
+   jobs:
+     pack:
+       uses: miyu-agent/packages/.github/workflows/pack.yml@main
+       permissions:
+         contents: write
+       with:
+         package: hello
+   ```
+
+   打 tag（`v` 加上清单的 `version`，`v0.1.0`）推上去，模板照 Miyu 装包的那一套查清单、打成 `.miyu`、传进这个 tag 的 Release；tag 和 `version` 对不上的当场报错。包文件夹不在仓库根目录的写 `folder`，打包前要先编程序的写 `build`（一段 bash），写了 `targets` 的用 `strategy.matrix` 一种系统跑一趟（`runs-on`、`target`）。细节见 [miyu-agent/packages](https://github.com/miyu-agent/packages)。也可以不用模板，自己 `miyu pkg pack`、把 `.miyu` 传进 Release：文件名别改，收录照文件名核对编号、版本、系统。
+4. **进社区收录**：给仓库打上话题（topic）`miyu-package`。软件源每天收一次（UTC 03:17 前后），每个仓库只看最新的那个正式 Release（草稿、预发布的不算），收里面的 `.miyu`，签名后发出去，标「社区」：所以发了以后最多等一天。一个 Release 里能放几个包，同一个包的几份文件版本要一样。分叉出来的仓库、存档了的仓库不收；Release 里有一个 `.miyu` 读不成的，这个仓库这一趟整个不收。
+5. **编号先到先得**：第一个收录了这个编号的仓库一直占着它（记在软件源的 `names.toml`），别的仓库再用这个编号的不收；同一趟两个仓库头一回抢同一个编号的，建得早的那个得。改名就是换一个新编号。
+6. **查收没收进来**：`miyu pkg update` 再 `miyu pkg search <编号>`。没有的，看软件源仓库 Actions 里最近一趟 collect 的摘要，每个没收的仓库一行原因（`skipped, a fork`、`no package file in the latest release`、`hello-0.1.0.miyu should be …` 这类）。作恶的包和仓库会被拉黑（`blocked.toml`）；进官方列表要项目主人点头。
 
 ## 经系统源发
 

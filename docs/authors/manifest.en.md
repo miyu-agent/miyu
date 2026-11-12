@@ -4,13 +4,13 @@ Every table and field of a package manifest. Only these are accepted; unknown ta
 
 **Text for people** (`name`, `summary`, `about`, a setting's `name` and `description`…) is written as "language to sentence": `{ en = "Hello", zh = "打招呼" }`. Only `zh`, `en`, `ja` are recognized; the UI picks the person's language and falls back to `en`, `zh`, `ja`.
 
-**The kind of package** isn't written; it follows from the tables present: `[process]` makes an extension; no program but `[[mcp]]` makes an MCP server package; `[mascot]` makes a mascot package and `[theme]` a theme package (both at the end of this page); only `[package]` makes a package of skills, scripts and command templates. The UI, built-in and worker kinds are for Miyu's own use and aren't covered here.
+**The kind of package** isn't written; it follows from the tables present: `[process]` makes an extension; no program but `[[mcp]]` makes an MCP server package; `[mascot]` makes a mascot package and `[theme]` a theme package (both at the end of this page); only `[package]` makes a package of skills, scripts, command templates, knowledge bases, personas and presets: those sit by convention in the package folder's `skills/`, `scripts/`, `commands/`, `kb/`, `personas/` and `presets/` and aren't written in the manifest (see [Things that work as files](scripts-skills.en.md)). The UI, built-in and worker kinds are for Miyu's own use and aren't covered here.
 
 ## A complete extension manifest
 
 ```toml
 [package]
-version = "0.1.0"                                   # optional, for people; also what other packages' version floors compare (semver)
+version = "0.1.0"                                   # semver; optional for installing, required to pack and publish; other packages' version floors compare it
 protocol = [1, 1]                                   # required for extensions: protocol major versions [lowest, highest]; only 1 exists
 name = { en = "Hello", zh = "打招呼" }
 summary = { en = "Greets people by name", zh = "照名字打招呼" }   # optional
@@ -29,7 +29,7 @@ about = { en = "Hello extension", zh = "打招呼扩展" }
 [process]                                           # this makes it an extension
 args = ["serve"]                                    # arguments the core starts it with
 start = "manual"                                    # manual: started when switched on (default); always: started with the core
-capabilities = ["tools", "widgets"]                 # what it needs, see "Capabilities"
+capabilities = ["tools", "widgets", "commands"]     # what it needs, see "Capabilities"; [[widget]] needs widgets, [[slash]] needs commands
 
 [check]
 args = ["check"]                                    # `miyu check` runs <program> check
@@ -75,11 +75,11 @@ The tables and fields on this page are stable (frozen on 2026-10-23): from now o
 |---|---|
 | `name` | Required, the name shown to people |
 | `protocol` | Required for packages with a program: `[lowest, highest]`; only `1` exists |
-| `version` | Version, for people only |
+| `version` | Version, in semver (`1.2.0`, `1.2.0-rc.1`). Optional for installing; `miyu pkg pack` and the package source need it, so a package without one can't be packed. Other packages' version floors on yours compare it, and the package source uses it to tell a new release |
 | `summary` | A one-line summary |
 | `prefix` | The prefix of your settings keys and recorded event kinds, written like a package id; without it, the package id. A prefix that clashes with another package's (its id when it has none) won't install. Use it to keep keys short for a long id: id `qq-bridge` with `prefix = "qq"` has settings `qq.*` and records `ext.qq.*` |
 | `author` | Author: a person or organization, may include an email, one line, at most 100 characters. Shown on the package info page |
-| `upstream` | Upstream: the package's source repository, starting with `https://`. Shown on the package info page |
+| `upstream` | Upstream: the package's source repository, starting with `https://`, no whitespace, at most 300 characters. Shown on the package info page |
 | `icon` | A Lucide icon name. Not every head knows every Lucide name: the terminal only knows the names in its mapping table and draws the generic tool icon (a wrench) for the rest |
 | `logo` | A picture shipped in the package: a relative path inside the package folder, `.png` or `.webp`. At most 256 KiB and 512 pixels a side; `miyu pkg pack` shrinks a bigger one in its own format while packing (the original in the folder stays). A missing, broken or oversized one counts as no logo: the package still installs and `miyu check` warns. Heads draw it first and fall back to `icon` |
 | `needs` | What a place must have for it to be useful: only `images` for now (the whole package is off in sessions that can't show images) |
@@ -89,7 +89,7 @@ The tables and fields on this page are stable (frozen on 2026-10-23): from now o
 
 ## `[command]`
 
-For extensions and UIs. `name`: when a person types `miyu <name> …` in a terminal, the core hands the rest of the arguments to your program as-is and uses your exit code (`miyu help <name>` becomes `--help`); it starts with a lowercase letter, uses only lowercase letters, digits and `-`, at most 32 characters; built-in subcommands (`ask`, `config`, `pkg`, `web`…) win a clash. `program`: the program name under `bin/`; on Windows the core looks for `<name>.exe`. `about`: a one-line description. `args`: optional, put before what the person typed when the arguments are handed over.
+For extensions and UIs. `name`: when a person types `miyu <name> …` in a terminal, the core hands the rest of the arguments to your program as-is and uses your exit code (`miyu help <name>` becomes `--help`); it starts with a lowercase letter, uses only lowercase letters, digits and `-`, at most 32 characters; built-in subcommands (`ask`, `config`, `pkg`, `web`…) win a clash. `program`: the program name under `bin/`; on Windows the core looks for `<name>.exe`. `about`: a one-line description. `args`: optional, put before what the person typed when the arguments are handed over. A package that adds several subcommands writes several `[[command]]` sections, each as above; the first one's `program` is the package's program (the one an extension starts).
 
 So besides arguments meant for the core, like `serve`, your program should handle what people type.
 
@@ -123,7 +123,7 @@ Makes it an extension; needs `[command]`.
 | `events.write` | Recording your own events in a session |
 | `memory.write` | Writing memories and knowledge bases |
 | `fs.read`, `network` | Reading files and fetching links through the core |
-| `fs.write` | Writing given paths: granted once extensions run in a sandbox |
+| `fs.write` | Writing given paths. Extensions don't run in a sandbox now, so your program writing files itself doesn't go through this; it will be what lets writes through once extensions are sandboxed |
 | `audio.record` | Recording from this computer's microphone (speech recognition, voice assistant) |
 | `audio.play` | Playing sound through this computer's speakers or headphones (reading aloud, voice assistant) |
 | `tool.guard` | Allowing, denying or asking the person before a tool call runs (`[guard]`) |
@@ -269,15 +269,15 @@ MCP servers it brings, one per entry; see [MCP servers](mcp.en.md).
 
 | Field | Notes |
 |---|---|
-| `name` | Server name (the table name in the configuration): lowercase letters, digits, `-`, 1 to 32 characters; globally unique |
+| `name` | Server name (the table name in the configuration): starts with a lowercase letter, then only lowercase letters, digits, `-`, 1 to 32 characters; globally unique |
 | `command` | Command and arguments. The first item is looked up in the package's `bin/`, then next to `miyu`, then on `PATH` (`npx`, `uvx`, `docker` and the like). Write this or `url` |
 | `url` | The server's address: starts with `https://`; `http://` only for servers on this machine (`localhost`, `127.0.0.1`), others aren't connected so the token isn't sent in the clear. Write this or `command` |
 | `bearer` | With `url`: the token, sent as `Authorization: Bearer <value>`; written like an `env` value, please as `{ secret = … }` |
 | `headers` | With `url`: other request headers, like `{ X-Api-Key = { secret = "key" } }`, written like `env` |
 | `env` | Environment variables for the server. Write secrets as `{ secret = "<name>" }` (stored with `miyu provider login` or the settings screen); don't put values in the manifest |
-| `venues` | One or more of `local`, `private`, `group`: local sessions, private chats and groups on chat platforms |
-| `timeout_ms` | How long one call may take |
-| `need_load` | Loaded on demand unless written: the AI normally sees only each tool's name and one line, and loads the full parameters when it needs them, which saves money for servers with many tools. `false`: always send the full parameters; write it for small servers used every day |
+| `venues` | One or more of `local`, `private`, `group`: local sessions, private chats and groups on chat platforms; local sessions only when not written |
+| `timeout_ms` | How long one call may take, in milliseconds: 1000 to 3600000, 600000 when not written |
+| `need_load` | An old field, still accepted, with no effect: every tool gets its full parameters from the start |
 | `clicall` | Whether the AI can call this server's tools with `miyu call` from a script it runs; unset means it can. Write `false` for servers that write or send things |
 
 ## `[[slash]]`

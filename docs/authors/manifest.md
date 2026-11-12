@@ -4,13 +4,13 @@
 
 **给人看的字**（`name`、`summary`、`about`、配置项的 `name`、`description`……）写成「语言到一句话」：`{ en = "Hello", zh = "打招呼" }`，只认 `zh`、`en`、`ja`，界面照人的语言挑，没有的退到 `en`、`zh`、`ja`。
 
-**包是什么种类**不用写，照带了哪几张表认：有 `[process]` 的是扩展；没有程序、带了 `[[mcp]]` 的是 MCP 服务包；有 `[mascot]` 的是吉祥物包，有 `[theme]` 的是外观包（这两种见文末）；只有 `[package]` 的是只带技能、脚本、命令模板的包。还有界面、内置、小程序几种是 Miyu 自己用的，这里不写。
+**包是什么种类**不用写，照带了哪几张表认：有 `[process]` 的是扩展；没有程序、带了 `[[mcp]]` 的是 MCP 服务包；有 `[mascot]` 的是吉祥物包，有 `[theme]` 的是外观包（这两种见文末）；只有 `[package]` 的是只带技能、脚本、命令模板、知识库、人格、预设的包：这几样照约定放在包文件夹的 `skills/`、`scripts/`、`commands/`、`kb/`、`personas/`、`presets/` 里，清单里不写（见 [放文件就能用的](scripts-skills.md)）。还有界面、内置、小程序几种是 Miyu 自己用的，这里不写。
 
 ## 一份完整的扩展清单
 
 ```toml
 [package]
-version = "0.1.0"                                   # 可以不写，给人看；别的包写了版本下限的照它比（semver）
+version = "0.1.0"                                   # semver；装可以不写，打包、发到软件源必写；别的包写了版本下限的照它比
 protocol = [1, 1]                                   # 扩展必写：说得了的协议主版本 [最低, 最高]，现在只有 1
 name = { en = "Hello", zh = "打招呼" }
 summary = { en = "Greets people by name", zh = "照名字打招呼" }   # 可以不写
@@ -29,7 +29,7 @@ about = { en = "Hello extension", zh = "打招呼扩展" }
 [process]                                           # 有它的就是扩展
 args = ["serve"]                                    # 核心拉起时带的参数
 start = "manual"                                    # manual：开关打开才拉起（默认）；always：核心起来就拉起
-capabilities = ["tools", "widgets"]                 # 要的能力，见下面「能力」
+capabilities = ["tools", "widgets", "commands"]     # 要的能力，见下面「能力」；[[widget]] 要 widgets，[[slash]] 要 commands
 
 [check]
 args = ["check"]                                    # miyu check 时跑 <程序> check
@@ -75,11 +75,11 @@ place = "status"
 |---|---|
 | `name` | 必写，给人看的名字 |
 | `protocol` | 带程序的包必写：`[最低, 最高]`，现在只有 `1` |
-| `version` | 版本，只给人看 |
+| `version` | 版本，照 semver 写（`1.2.0`、`1.2.0-rc.1`）。装可以不写；`miyu pkg pack`、软件源收录都要它，没写的打不了包。别的包依赖你时写的版本下限照它比，软件源照它认有没有新版 |
 | `summary` | 一句说明 |
 | `prefix` | 配置键、记的事件种类用的前缀，写法同包的编号；不写就是包的编号。和别的包的前缀（没写的照编号）撞了装不上。编号长的包用它让键短一点：编号 `qq-bridge` 写 `prefix = "qq"`，配置键是 `qq.*`，记的事件是 `ext.qq.*` |
 | `author` | 作者：人名、组织名，可以带邮箱，一行，至多 100 个字。软件包信息页上露出来 |
-| `upstream` | 上游：这个包的源码仓库，`https://` 开头。软件包信息页上露出来 |
+| `upstream` | 上游：这个包的源码仓库，`https://` 开头，不带空白，至多 300 个字。软件包信息页上露出来 |
 | `icon` | Lucide 的图标名。界面不一定认得 Lucide 的全部名字：终端界面只认它对照表里的那些，认不出的画通用的工具图标（扳手） |
 | `logo` | 包里自带的一张图标：包目录里的相对路径，`.png` 或 `.webp`。不超过 256 KiB、每边不超过 512；`miyu pkg pack` 打包时超了的照原格式缩到以内（目录里的原图不动）。不在、不是图、超了的当没有图标，包照装，`miyu check` 报警告。界面有它先画它，没有画 `icon` |
 | `needs` | 要这个地方有什么才有用：现在只认 `images`（显示不了图片的会话里整包当没开） |
@@ -89,7 +89,7 @@ place = "status"
 
 ## `[command]`
 
-扩展、界面要写。`name`：人在终端敲 `miyu <name> …` 时，核心把后面的参数原样交给你的程序，退出码照你的（`miyu help <name>` 转成 `--help`）：小写字母开头，只用小写字母、数字、`-`，最多 32 个；和内置子命令（`ask`、`config`、`pkg`、`web` 这些）撞了的内置的赢。`program`：`bin/` 下的程序名，Windows 上核心找 `<名字>.exe`。`about`：一句说明。`args`：可以不写，转交时加在人敲的参数前面。
+扩展、界面要写。`name`：人在终端敲 `miyu <name> …` 时，核心把后面的参数原样交给你的程序，退出码照你的（`miyu help <name>` 转成 `--help`）：小写字母开头，只用小写字母、数字、`-`，最多 32 个；和内置子命令（`ask`、`config`、`pkg`、`web` 这些）撞了的内置的赢。`program`：`bin/` 下的程序名，Windows 上核心找 `<名字>.exe`。`about`：一句说明。`args`：可以不写，转交时加在人敲的参数前面。一个包要加几个子命令的，写成几段 `[[command]]`，每段同上；第一段的 `program` 是这个包的程序（扩展拉起的就是它）。
 
 所以你的程序除了 `serve` 这类给核心用的参数，也该认人敲的那些。
 
@@ -123,7 +123,7 @@ place = "status"
 | `events.write` | 往会话里记自己的事件 |
 | `memory.write` | 写记忆、知识库 |
 | `fs.read`、`network` | 经核心读文件、抓链接 |
-| `fs.write` | 写指定的路径：扩展进沙盒以后照它放行 |
+| `fs.write` | 写指定的路径。扩展现在不在沙盒里，你的程序自己写文件不经这一项；以后扩展关进沙盒时照它放行 |
 | `audio.record` | 录本机麦克风的声音（语音识别、语音助手） |
 | `audio.play` | 从本机的音箱、耳机放声音（朗读、语音助手） |
 | `tool.guard` | 工具调用执行前放行、拒绝或者要问人（`[guard]`） |
@@ -269,15 +269,15 @@ name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
 
 | 格 | 说明 |
 |---|---|
-| `name` | 服务名（配置里是表名），小写字母、数字、`-`，1 到 32 个；全局不重 |
+| `name` | 服务名（配置里是表名），小写字母开头，只有小写字母、数字、`-`，1 到 32 个；全局不重 |
 | `command` | 命令和参数。第一项先在包的 `bin/` 里找，再在 `miyu` 旁边找，最后找 `PATH`（`npx`、`uvx`、`docker` 这类）。和 `url` 写一个 |
 | `url` | 服务的网址：`https://` 开头；`http://` 只给本机的服务（`localhost`、`127.0.0.1`），别的机器的不连，免得令牌明文发出去。和 `command` 写一个 |
 | `bearer` | 跟着 `url`：令牌，发成 `Authorization: Bearer <值>`；写法同 `env` 的值，令牌请写成 `{ secret = … }` |
 | `headers` | 跟着 `url`：别的请求头，`{ X-Api-Key = { secret = "key" } }` 这样，写法同 `env` |
 | `env` | 给服务的环境变量。密钥写成 `{ secret = "<名字>" }`（用 `miyu provider login` 或设置页存进去），别把值写在清单里 |
-| `venues` | `local`、`private`、`group` 里的一个或几个：本机的会话、聊天平台的私聊、群 |
-| `timeout_ms` | 一次调用最多等多久 |
-| `need_load` | 不写是先加载：AI 平时只看到工具的名字和一行说明，要用时先加载完整的参数，工具多的服务省钱。`false`：一直给完整的参数，工具少、天天用的服务写上 |
+| `venues` | `local`、`private`、`group` 里的一个或几个：本机的会话、聊天平台的私聊、群；不写是只给本机的会话 |
+| `timeout_ms` | 一次调用最多等多久，毫秒：1000 到 3600000，不写是 600000 |
+| `need_load` | 以前的写法，照认、不起作用：工具一律一开始就给完整的参数 |
 | `clicall` | AI 在命令里写脚本时能不能用 `miyu call` 调这个服务的工具，不写是能。服务会写东西、发东西的，写 `false` |
 
 ## `[[slash]]`
