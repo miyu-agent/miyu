@@ -154,7 +154,7 @@ async fn scripts_mcp_services_and_knowledge_bases_count_too() {
     );
     assert_eq!(
         conflicts(&install(&mut client, &reader).await),
-        vec![json!({"kind": "tool", "name": "read", "package": "miyu-base-read"})]
+        vec![json!({"kind": "tool", "name": "read", "package": "base-read"})]
     );
     let mcp =
         "[package]\nname = { en = \"M\" }\n\n[[mcp]]\nname = \"lone\"\ncommand = [\"server\"]\n";
@@ -206,11 +206,7 @@ async fn bringing_a_shipped_package_back_checks_too() {
     let home = Home::new();
     let mut client = connected(&home).await;
     let removed = client
-        .call(
-            "r",
-            "package.remove",
-            json!({"package": "miyu-base-authoring"}),
-        )
+        .call("r", "package.remove", json!({"package": "base-authoring"}))
         .await;
     assert!(removed["result"].is_object(), "{removed}");
     let mine = source(
@@ -221,11 +217,7 @@ async fn bringing_a_shipped_package_back_checks_too() {
     );
     installed(&install(&mut client, &mine).await);
     let back = client
-        .call(
-            "b",
-            "package.install",
-            json!({"package": "miyu-base-authoring"}),
-        )
+        .call("b", "package.install", json!({"package": "base-authoring"}))
         .await;
     assert_eq!(
         conflicts(&back),
@@ -235,7 +227,7 @@ async fn bringing_a_shipped_package_back_checks_too() {
         .call(
             "bp",
             "package.install",
-            json!({"package": "miyu-base-authoring", "preview": true}),
+            json!({"package": "base-authoring", "preview": true}),
         )
         .await;
     assert_eq!(reason(&peek), Some("package_conflict"), "{peek}");
@@ -267,7 +259,7 @@ async fn slash_command_templates_count_and_the_builtins_too() {
     assert_eq!(
         conflicts(&install(&mut client, &second).await),
         vec![
-            json!({"kind": "slash", "name": "remember", "package": "miyu-base-memory"}),
+            json!({"kind": "slash", "name": "remember", "package": "base-memory"}),
             // 核心自带的（施工 BS-1 下下）写 `core: true`。
             json!({"kind": "slash", "name": "reset", "core": true}),
             json!({"kind": "slash", "name": "review", "package": "zkit"}),

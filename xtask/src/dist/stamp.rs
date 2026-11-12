@@ -20,27 +20,27 @@ pub(super) struct Place {
 /// 每个头写着版本的几处：终端的 `[package]`、网页工作区的 `[workspace.package]`，加上各自包清单的 `[package]`。
 pub(super) const PLACES: [(&str, &[Place]); 2] = [
     (
-        "miyu-tui",
+        "tui",
         &[
             Place {
                 file: "Cargo.toml",
                 section: "package",
             },
             Place {
-                file: "miyu-tui/package.toml",
+                file: "tui/package.toml",
                 section: "package",
             },
         ],
     ),
     (
-        "miyu-webui",
+        "webui",
         &[
             Place {
                 file: "Cargo.toml",
                 section: "workspace.package",
             },
             Place {
-                file: "miyu-webui/package.toml",
+                file: "webui/package.toml",
                 section: "package",
             },
         ],

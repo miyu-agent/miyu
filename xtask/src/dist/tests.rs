@@ -40,7 +40,7 @@ fn words(args: &[&str]) -> Vec<String> {
 fn pin(id: &str, rev: &str) -> Pin {
     Pin {
         id: id.to_string(),
-        repo: format!("https://github.com/miyu-agent/{id}"),
+        repo: format!("https://github.com/miyu-agent/miyu-{id}"),
         rev: rev.to_string(),
     }
 }
@@ -146,10 +146,10 @@ fn the_notices_join_core_then_the_two_heads_and_say_which_revision() {
     let text = notices(
         "CORE LIST\n\n",
         (
-            &pin("miyu-tui", "46f2699c6ea326489e819292da64426ea90c858f"),
+            &pin("tui", "46f2699c6ea326489e819292da64426ea90c858f"),
             "TUI LIST\n",
         ),
-        (&pin("miyu-webui", "v0.1.0"), "WEB LIST"),
+        (&pin("webui", "v0.1.0"), "WEB LIST"),
     );
     let core = text.find("CORE LIST").unwrap();
     let tui = text.find("TUI LIST").unwrap();
@@ -182,9 +182,9 @@ fn sources(scratch: &Scratch) -> Sources {
     let miyu = scratch.put("build/miyu", "core program");
     let tui = scratch.put("build/miyu-tui", "tui program");
     scratch.put("res/core/a.md", "a");
-    scratch.put("res/packages/miyu-base-x/package.toml", "x");
+    scratch.put("res/packages/base-x/package.toml", "x");
     scratch.put("res/stray.txt", "not tracked");
-    let manifest = scratch.put("tui/miyu-tui/package.toml", "tui manifest");
+    let manifest = scratch.put("tui/tui/package.toml", "tui manifest");
     let tui_license = scratch.put("tui/LICENSE", "tui license");
     scratch.put("web/package.toml", "web manifest");
     scratch.put("web/pages/index.html", "<html>");
@@ -194,7 +194,7 @@ fn sources(scratch: &Scratch) -> Sources {
         resources: scratch.0.join("res"),
         resource_files: vec![
             PathBuf::from("core/a.md"),
-            PathBuf::from("packages/miyu-base-x/package.toml"),
+            PathBuf::from("packages/base-x/package.toml"),
         ],
         tui_package: vec![
             (manifest, PathBuf::from("package.toml")),
@@ -217,23 +217,17 @@ fn staging_lays_out_programs_resources_heads_and_licenses() {
     assert_eq!(text("miyu"), "core program");
     assert_eq!(text("miyu-tui"), "tui program");
     assert_eq!(text("resources/core/a.md"), "a");
-    assert_eq!(text("resources/packages/miyu-base-x/package.toml"), "x");
+    assert_eq!(text("resources/packages/base-x/package.toml"), "x");
     assert!(!dir.join("resources/stray.txt").exists(), "没登记的不带");
+    assert_eq!(text("resources/packages/tui/package.toml"), "tui manifest");
+    assert_eq!(text("resources/packages/tui/LICENSE"), "tui license");
     assert_eq!(
-        text("resources/packages/miyu-tui/package.toml"),
-        "tui manifest"
-    );
-    assert_eq!(text("resources/packages/miyu-tui/LICENSE"), "tui license");
-    assert_eq!(
-        text("resources/packages/miyu-webui/package.toml"),
+        text("resources/packages/webui/package.toml"),
         "web manifest"
     );
-    assert_eq!(
-        text("resources/packages/miyu-webui/pages/index.html"),
-        "<html>"
-    );
+    assert_eq!(text("resources/packages/webui/pages/index.html"), "<html>");
     assert!(
-        !dir.join("resources/packages/miyu-webui/bin").exists(),
+        !dir.join("resources/packages/webui/bin").exists(),
         "网页的程序放在 miyu 旁边"
     );
     assert_eq!(text("LICENSE"), "agpl");
@@ -256,12 +250,12 @@ fn staging_lays_out_programs_resources_heads_and_licenses() {
 fn a_head_folder_already_in_the_core_resources_is_refused() {
     let scratch = Scratch::new("clash");
     let mut sources = sources(&scratch);
-    scratch.put("res/packages/miyu-webui/package.toml", "old web");
+    scratch.put("res/packages/webui/package.toml", "old web");
     sources
         .resource_files
-        .push(PathBuf::from("packages/miyu-webui/package.toml"));
+        .push(PathBuf::from("packages/webui/package.toml"));
     let said = stage(&sources, &scratch.0.join("out/x")).unwrap_err();
-    assert!(said.contains("miyu-webui"), "{said}");
+    assert!(said.contains("webui"), "{said}");
 }
 
 /// 搭一个小目录：一个能跑的、一个普通文件、一层子目录。
@@ -430,47 +424,47 @@ fn fetching_checks_out_the_pin_cleans_strays_and_keeps_target() {
     let upstream = scratch.0.join("upstream");
     fs::create_dir_all(&upstream).unwrap();
     git_in(&upstream, &["init", "--quiet", "-b", "main"]);
-    scratch.put("upstream/miyu-tui/package.toml", "one");
+    scratch.put("upstream/tui/package.toml", "one");
     git_in(&upstream, &["add", "-A"]);
     git_in(&upstream, &["commit", "--quiet", "-m", "one"]);
     let first = git_in(&upstream, &["rev-parse", "HEAD"]);
     git_in(&upstream, &["tag", "v0.1.0"]);
-    let dir = scratch.0.join("heads/miyu-tui");
+    let dir = scratch.0.join("heads/tui");
     let pinned = |rev: &str| Pin {
-        id: "miyu-tui".to_string(),
+        id: "tui".to_string(),
         repo: upstream.to_string_lossy().into_owned(),
         rev: rev.to_string(),
     };
     fetch(&dir, &pinned(&first)).unwrap();
     assert_eq!(git_in(&dir, &["rev-parse", "HEAD"]), first);
     assert_eq!(
-        fs::read_to_string(dir.join("miyu-tui/package.toml")).unwrap(),
+        fs::read_to_string(dir.join("tui/package.toml")).unwrap(),
         "one"
     );
     assert_eq!(
-        tracked(&dir, "miyu-tui").unwrap(),
-        vec![PathBuf::from("miyu-tui/package.toml")]
+        tracked(&dir, "tui").unwrap(),
+        vec![PathBuf::from("tui/package.toml")]
     );
 
     // 上游在克隆以后又提交了一份：要先拉才检得出来。
-    scratch.put("upstream/miyu-tui/package.toml", "two");
-    scratch.put("upstream/miyu-tui/extra.json", "{}");
+    scratch.put("upstream/tui/package.toml", "two");
+    scratch.put("upstream/tui/extra.json", "{}");
     git_in(&upstream, &["add", "-A"]);
     git_in(&upstream, &["commit", "--quiet", "-m", "two"]);
     let second = git_in(&upstream, &["rev-parse", "HEAD"]);
 
     // 再取一次换成第二份：拉、检出、清掉多余的，target/ 留着。
-    scratch.put("heads/miyu-tui/stray.txt", "left over");
-    scratch.put("heads/miyu-tui/target/release/keep", "built");
+    scratch.put("heads/tui/stray.txt", "left over");
+    scratch.put("heads/tui/target/release/keep", "built");
     fetch(&dir, &pinned(&second)).unwrap();
     assert_eq!(git_in(&dir, &["rev-parse", "HEAD"]), second);
     assert!(!dir.join("stray.txt").exists(), "多余的清掉");
     assert!(dir.join("target/release/keep").exists(), "target/ 留着");
     assert_eq!(
-        tracked(&dir, "miyu-tui").unwrap(),
+        tracked(&dir, "tui").unwrap(),
         vec![
-            PathBuf::from("miyu-tui/extra.json"),
-            PathBuf::from("miyu-tui/package.toml")
+            PathBuf::from("tui/extra.json"),
+            PathBuf::from("tui/package.toml")
         ]
     );
 

@@ -44,7 +44,7 @@ async fn subscribers_get_the_list_then_each_package_that_changed() {
         .as_array()
         .unwrap_or_else(|| panic!("{subscribed}"));
     assert!(
-        listed.iter().any(|one| one["package"] == "miyu-base-shell"),
+        listed.iter().any(|one| one["package"] == "base-shell"),
         "回应是整份列表"
     );
 
@@ -71,19 +71,19 @@ async fn subscribers_get_the_list_then_each_package_that_changed() {
         "卸没了的推 null"
     );
     let removed = acting
-        .call("r", "package.remove", json!({"package": "miyu-base-net"}))
+        .call("r", "package.remove", json!({"package": "base-net"}))
         .await;
     assert_eq!(removed["result"]["removed"], true, "{removed}");
     assert_eq!(
-        changed(&mut watching, "miyu-base-net").await["removed"],
+        changed(&mut watching, "base-net").await["removed"],
         true,
         "出厂的照样列着，标卸掉了"
     );
     acting
-        .call("i", "package.install", json!({"package": "miyu-base-net"}))
+        .call("i", "package.install", json!({"package": "base-net"}))
         .await;
     assert!(
-        changed(&mut watching, "miyu-base-net")
+        changed(&mut watching, "base-net")
             .await
             .get("removed")
             .is_none(),
@@ -95,7 +95,7 @@ async fn subscribers_get_the_list_then_each_package_that_changed() {
         .await;
     assert_eq!(off["result"], json!({}), "{off}");
     acting
-        .call("r", "package.remove", json!({"package": "miyu-base-net"}))
+        .call("r", "package.remove", json!({"package": "base-net"}))
         .await;
     while let Some(message) = watching.next_within(Duration::from_millis(200)).await {
         assert_ne!(

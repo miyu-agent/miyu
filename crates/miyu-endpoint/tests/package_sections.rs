@@ -73,7 +73,7 @@ fn find<'a>(schema: &'a Value, what: &str, id: &str) -> &'a Value {
 #[tokio::test]
 async fn grouped_settings_carry_their_section_and_the_group_lists_sections() {
     let home = Home::new();
-    home.write("opt/miyu-say/package.toml", SAY);
+    home.write("opt/say/package.toml", SAY);
     let (_client, schema) = schema(&home).await;
     assert_eq!(
         find(&schema, "items", "say.minimax.voice")["section"],
@@ -94,9 +94,9 @@ async fn grouped_settings_carry_their_section_and_the_group_lists_sections() {
         "不在组里的不写"
     );
     assert_eq!(
-        find(&schema, "groups", "miyu-say"),
+        find(&schema, "groups", "say"),
         &json!({
-            "id": "miyu-say",
+            "id": "say",
             "name": "说话",
             "page": "packages",
             "sections": [
@@ -135,7 +135,7 @@ async fn a_package_without_groups_keeps_its_old_shape() {
 #[tokio::test]
 async fn a_hidden_section_still_stores_and_reads_its_values() {
     let home = Home::new();
-    home.write("opt/miyu-say/package.toml", SAY);
+    home.write("opt/say/package.toml", SAY);
     let (mut client, _) = schema(&home).await;
     let set = client
         .call(

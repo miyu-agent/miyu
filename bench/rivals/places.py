@@ -21,8 +21,8 @@ BASE_URL = "OPENAI_BASE_URL"
 KEY = "OPENAI_API_KEY"
 MODEL = "MIYU_BENCH_MODEL"
 
-# 终端仓库里装成软件包的那个目录：和包的编号同名（核心设计 48、施工 PN-4 起；以前叫 `tui/`），`heads.toml` 开头写着。
-TUI_PACKAGE = "miyu-tui"
+# 终端仓库里装成软件包的那个目录：和包的编号同名（核心设计 48；2026-11-12 以前叫 `miyu-tui/`），`heads.toml` 开头写着。
+TUI_PACKAGE = "tui"
 
 # 用转发时交给各家的假 key：转发换成真的。
 FAKE_KEY = "rivals-relay-placeholder"
@@ -131,7 +131,7 @@ def load(args):
         if not path.is_file():
             fail(f"没有 {path}：先{how}")
     if not (tui_repo / TUI_PACKAGE / "package.toml").is_file():
-        fail(f"{tui_repo} 里没有 {TUI_PACKAGE}/package.toml，不是终端界面的仓库（施工 PN-4 以前的叫 tui/，太旧了）")
+        fail(f"{tui_repo} 里没有 {TUI_PACKAGE}/package.toml，不是终端界面的仓库（2026-11-12 以前的叫 miyu-tui/，太旧了）")
     programs = {"miyu": miyu, "tui": tui}
     for name in ("jcode", "codex"):
         programs[name] = program(getattr(args, name), name)

@@ -98,23 +98,20 @@ fn catalog() -> Catalog {
     let fake = |name: &str| -> Arc<dyn Tool> { Fake::new(name, Access::Read, Act::Echo) };
     let all = |names: &[&str]| names.iter().map(|name| fake(name)).collect::<Vec<_>>();
     Catalog::in_packages([
-        ("miyu-base-read", all(&["read"])),
-        ("miyu-base-write", all(&["write"])),
-        ("miyu-base-sessions", all(&["sessions", "send_message"])),
-        ("miyu-base-packages", all(&["packages", "package"])),
-        ("miyu-base-todowrite", all(&["todowrite"])),
+        ("base-read", all(&["read"])),
+        ("base-write", all(&["write"])),
+        ("base-sessions", all(&["sessions", "send_message"])),
+        ("base-packages", all(&["packages", "package"])),
+        ("base-todowrite", all(&["todowrite"])),
         (
-            "miyu-base-schedule",
+            "base-schedule",
             all(&["cron_create", "cron_delete", "cron_list"]),
         ),
-        ("miyu-base-loop", all(&["schedule_wakeup"])),
+        ("base-loop", all(&["schedule_wakeup"])),
+        ("base-memory", all(&["remember", "forget", "memory_search"])),
+        ("base-net", all(&["web_search", "web_fetch"])),
         (
-            "miyu-base-memory",
-            all(&["remember", "forget", "memory_search"]),
-        ),
-        ("miyu-base-net", all(&["web_search", "web_fetch"])),
-        (
-            "miyu-base-knowledge",
+            "base-knowledge",
             all(&["kb_search", "kb_read", "kb_save", "kb_edit", "kb_delete"]),
         ),
     ])

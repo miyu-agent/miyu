@@ -132,7 +132,7 @@ async fn preset_get_says_which_package_each_feature_is_in() {
     }
     assert_eq!(
         package_of(&got, "read"),
-        Some("miyu-base-read"),
+        Some("base-read"),
         "施工 BS-1 上中起一件一个包"
     );
 

@@ -23,12 +23,12 @@ fn sums() -> String {
     for (index, (target, _)) in TARGETS.iter().enumerate() {
         for (part, version, digit) in [
             ("miyu-core", "2026.11.0-rc.1", 'a'),
-            ("miyu-tui", "0.1.0", 'b'),
-            ("miyu-webui", "0.2.0", 'c'),
+            ("tui", "0.1.0", 'b'),
+            ("webui", "0.2.0", 'c'),
         ] {
             let digit = char::from_digit(digit.to_digit(16).unwrap() + index as u32, 16).unwrap();
             // 二进制模式的写法（`*` 打头）也认：macOS 的终端那一行这样写。
-            let star = if part == "miyu-tui" && *target == "macos-aarch64" {
+            let star = if part == "tui" && *target == "macos-aarch64" {
                 "*"
             } else {
                 ""
@@ -137,7 +137,7 @@ fn every_template_is_filled_with_its_own_version_and_hashes() {
 
     let formula = out(&scratch, "homebrew/Formula/miyu-tui.rb");
     assert!(
-        formula.contains("/download/v2026.11.0-rc.1/miyu-tui-0.1.0-macos-aarch64.tar.gz"),
+        formula.contains("/download/v2026.11.0-rc.1/tui-0.1.0-macos-aarch64.tar.gz"),
         "{formula}"
     );
     assert!(formula.contains(&format!("sha256 \"{}\"", hash('d'))));
@@ -162,18 +162,15 @@ fn every_template_is_filled_with_its_own_version_and_hashes() {
 #[test]
 fn a_missing_or_mismatched_archive_stops_everything() {
     let scratch = Scratch::new("missing");
-    let missing = sums().replace("miyu-webui-0.2.0-macos-aarch64", "other");
+    let missing = sums().replace("webui-0.2.0-macos-aarch64", "other");
     let error = filled(&scratch, &missing).expect_err("缺了一份");
     assert!(
-        error.contains("miyu-webui-<版本>-macos-aarch64.tar.gz"),
+        error.contains("webui-<版本>-macos-aarch64.tar.gz"),
         "{error}"
     );
     assert!(!scratch.0.join("out").exists(), "哪一份都不写");
 
-    let mismatched = sums().replace(
-        "miyu-tui-0.1.0-linux-aarch64",
-        "miyu-tui-0.1.1-linux-aarch64",
-    );
+    let mismatched = sums().replace("tui-0.1.0-linux-aarch64", "tui-0.1.1-linux-aarch64");
     let error = filled(&scratch, &mismatched).expect_err("版本对不上");
     assert!(error.contains("三种系统写的版本不一样"), "{error}");
 

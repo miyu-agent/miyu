@@ -40,7 +40,7 @@ fn good(scratch: &Scratch) -> Vec<PathBuf> {
     scratch.put("repo/LICENSE", "agpl");
     scratch.put("repo/THIRD-PARTY-LICENSES.txt", "core notices\n\n");
     scratch.put("repo/resources/core/a.md", "a");
-    scratch.put("repo/resources/packages/miyu-base-x/package.toml", "x");
+    scratch.put("repo/resources/packages/base-x/package.toml", "x");
     for program in [
         "miyu",
         "miyu-sandbox",
@@ -58,22 +58,22 @@ fn good(scratch: &Scratch) -> Vec<PathBuf> {
     );
     scratch.put("pkg/README.txt", "Miyu 1.0.0 (linux-x86_64)\n\n中文\n");
     scratch.put("pkg/resources/core/a.md", "a");
-    scratch.put("pkg/resources/packages/miyu-base-x/package.toml", "x");
+    scratch.put("pkg/resources/packages/base-x/package.toml", "x");
     for file in [
-        "miyu-tui/package.toml",
-        "miyu-tui/LICENSE",
-        "miyu-tui/THIRD-PARTY-LICENSES.txt",
-        "miyu-webui/package.toml",
-        "miyu-webui/LICENSE",
-        "miyu-webui/THIRD-PARTY-LICENSES.txt",
-        "miyu-webui/pages/index.html",
-        "miyu-webui/pages/src/app.js",
+        "tui/package.toml",
+        "tui/LICENSE",
+        "tui/THIRD-PARTY-LICENSES.txt",
+        "webui/package.toml",
+        "webui/LICENSE",
+        "webui/THIRD-PARTY-LICENSES.txt",
+        "webui/pages/index.html",
+        "webui/pages/src/app.js",
     ] {
         scratch.put(&format!("pkg/resources/packages/{file}"), "head");
     }
     vec![
         PathBuf::from("resources/core/a.md"),
-        PathBuf::from("resources/packages/miyu-base-x/package.toml"),
+        PathBuf::from("resources/packages/base-x/package.toml"),
     ]
 }
 
@@ -138,20 +138,17 @@ fn every_mistake_is_named() {
         ),
         (
             "tui",
-            |s| fs::remove_file(s.0.join("pkg/resources/packages/miyu-tui/package.toml")).unwrap(),
-            "少了 resources/packages/miyu-tui/package.toml",
+            |s| fs::remove_file(s.0.join("pkg/resources/packages/tui/package.toml")).unwrap(),
+            "少了 resources/packages/tui/package.toml",
         ),
         (
             "web",
-            |s| {
-                fs::remove_file(s.0.join("pkg/resources/packages/miyu-webui/pages/index.html"))
-                    .unwrap()
-            },
+            |s| fs::remove_file(s.0.join("pkg/resources/packages/webui/pages/index.html")).unwrap(),
             "pages/index.html",
         ),
         (
             "bin",
-            |s| drop(s.put("pkg/resources/packages/miyu-webui/bin/miyu-web", "x")),
+            |s| drop(s.put("pkg/resources/packages/webui/bin/miyu-web", "x")),
             "bin/ 不该有",
         ),
     ];

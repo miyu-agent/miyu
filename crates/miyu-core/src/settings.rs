@@ -99,7 +99,7 @@ const NET: [&[Item]; 7] = [&[]; 7];
 /// 的也照样认，写了不报不认识），包没装的设置页不画（[`Packaged::all`]）。
 const OWNED: [(&str, &[Item]); 9] = [
     (miyu_memory::PACKAGE, MemorySettings::ITEMS),
-    ("miyu-base-show", ShowSettings::ITEMS),
+    ("base-show", ShowSettings::ITEMS),
     (crate::packages::NET, NET[0]),
     (crate::packages::NET, NET[1]),
     (crate::packages::NET, NET[2]),

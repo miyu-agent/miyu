@@ -6,7 +6,7 @@
 # static：brew style 四个 formula，填了托盘的加上 cask（RL-5补）。
 # install：照真的发布建一个本地 tap（local/miyu-test，不是 miyu-agent/homebrew-miyu），brew install miyu-agent，查：
 #   - miyu --version 报这一版，install.toml 写 brew，miyu upgrade 说用 brew 升级；
-#   - 隔离的数据根里 miyu pkg list：miyu-tui、miyu-webui 是系统加装那一层、程序找得到；brew test 四个都过；
+#   - 隔离的数据根里 miyu pkg list：包 tui、webui 是系统加装那一层、程序找得到；brew test 四个都过；
 #   - 填了托盘的：brew install --cask 托盘，/Applications/Miyu.app 在，卸掉以后没了；
 #   - brew uninstall 以后 share/miyu 没了，tap 删掉。
 set -eu
@@ -62,7 +62,7 @@ MIYU_HOME="${home}" "${prefix}/bin/miyu" core stop || true
 printf '%s' "${listed}" | python3 -c '
 import json, sys
 items = {item["package"]: item for item in json.load(sys.stdin)}
-for id in ("miyu-tui", "miyu-webui"):
+for id in ("tui", "webui"):
     item = items.get(id)
     assert item, f"{id} not listed"
     # f 串的花括号里不写引号：外面是 sh 的单引号，里面写 \" 是 Python 看到的反斜杠，语法错（同 test-aur.sh，RL-5补3）。
@@ -85,6 +85,6 @@ if [ -n "${casks}" ]; then
   [ ! -e /Applications/Miyu.app ] || fail "Miyu.app 还在"
 fi
 brew uninstall miyu-agent miyu-webui miyu-tui miyu-core
-[ ! -e "${prefix}/share/miyu/packages/miyu-tui" ] || fail "share/miyu 还在"
+[ ! -e "${prefix}/share/miyu/packages/tui" ] || fail "share/miyu 还在"
 brew untap "${TAP}"
 echo "brew: all install checks passed"

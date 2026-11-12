@@ -10,7 +10,7 @@ use crate::language::Language;
 const EMBED: u64 = 10_590_618;
 
 fn full(columns: usize) -> String {
-    bar(("miyu-embed-0.3.0", 21), (EMBED, EMBED), columns)
+    bar(("embed-0.3.0", 21), (EMBED, EMBED), columns)
 }
 
 #[test]
@@ -19,8 +19,8 @@ fn a_bar_fills_the_terminal_width_but_the_last_column() {
     assert_eq!(
         line,
         format!(
-            " miyu-embed-0.3.0{}10.1 MiB  [{}] 100%",
-            " ".repeat(8),
+            " embed-0.3.0{}10.1 MiB  [{}] 100%",
+            " ".repeat(13),
             "#".repeat(37)
         )
     );
@@ -51,11 +51,11 @@ fn the_bar_and_the_percent_follow_what_is_done() {
 fn a_narrow_terminal_drops_the_bar_then_cuts_the_line() {
     assert_eq!(
         full(40),
-        format!(" miyu-embed-0.3.0{}10.1 MiB 100%", " ".repeat(8)),
+        format!(" embed-0.3.0{}10.1 MiB 100%", " ".repeat(13)),
         "放不下十格的条就不画"
     );
     let cut = full(20);
-    assert_eq!(cut, " miyu-embed-0.3.0  ", "再窄的从后面截掉");
+    assert_eq!(cut, " embed-0.3.0       ", "再窄的从后面截掉");
     assert_eq!(full(0), "");
 }
 

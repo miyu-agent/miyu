@@ -224,7 +224,7 @@ async fn get_says_every_value_and_where_it_came_from() {
             "permission.level": {"origin": {"layer": "default"}, "value": "full"},
             "ui.language": {"origin": {"file": "etc/config.toml", "layer": "system", "line": 7}, "value": "zh"},
             "ui.startup": {"origin": {"layer": "default"}, "value": "new"},
-            "ui.head": {"origin": {"layer": "default"}, "value": "miyu-tui"},
+            "ui.head": {"origin": {"layer": "default"}, "value": "tui"},
             "ui.welcomed": {"origin": {"layer": "default"}, "value": false},
         })
     );

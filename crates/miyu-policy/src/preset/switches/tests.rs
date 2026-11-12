@@ -82,26 +82,23 @@ fn a_package_or_group_is_told_apart_from_the_feature_itself() {
     let mut preset = file(
         Unlisted::Off,
         &[("todowrite", false)],
-        &[("tasks", true), ("goal", true), ("miyu-base-net", true)],
+        &[("tasks", true), ("goal", true), ("base-net", true)],
         &[],
     );
     preset.groups = BTreeMap::from([
-        ("miyu-base-todowrite".to_string(), vec!["tasks".to_string()]),
-        ("miyu-base-loop".to_string(), vec!["tasks".to_string()]),
-        ("miyu-base-goal".to_string(), vec!["tasks".to_string()]),
+        ("base-todowrite".to_string(), vec!["tasks".to_string()]),
+        ("base-loop".to_string(), vec!["tasks".to_string()]),
+        ("base-goal".to_string(), vec!["tasks".to_string()]),
     ]);
     assert_eq!(
-        preset.decided("todowrite", "miyu-base-todowrite"),
+        preset.decided("todowrite", "base-todowrite"),
         (false, By::Preset)
     );
-    assert_eq!(preset.decided("loop", "miyu-base-loop"), (true, By::Group));
-    assert_eq!(preset.decided("goal", "miyu-base-goal"), (true, By::Preset));
+    assert_eq!(preset.decided("loop", "base-loop"), (true, By::Group));
+    assert_eq!(preset.decided("goal", "base-goal"), (true, By::Preset));
+    assert_eq!(preset.decided("web-fetch", "base-net"), (true, By::Group));
     assert_eq!(
-        preset.decided("web-fetch", "miyu-base-net"),
-        (true, By::Group)
-    );
-    assert_eq!(
-        preset.decided("web-fetch", "miyu-base-env"),
+        preset.decided("web-fetch", "base-env"),
         (false, By::Default)
     );
     assert_eq!(By::Group.as_str(), "group");

@@ -72,10 +72,10 @@ async fn shipped_and_home_packages_are_listed_in_the_connections_language() {
     // 照数据根的方法拼：Windows 上 `join("var/lib/term")` 会留着 `/`，和核心交的 `\` 比字符串对不上。
     let state = home.root.package_state("term");
     assert_eq!(
-        only(&packages, &["miyu-base-mermaid", "term"]),
+        only(&packages, &["base-mermaid", "term"]),
         [
             json!({
-                "package": "miyu-base-mermaid",
+                "package": "base-mermaid",
                 "layer": "shipped",
                 "from": "shipped",
                 "source": "shipped",
@@ -85,7 +85,7 @@ async fn shipped_and_home_packages_are_listed_in_the_connections_language() {
                 "protocol": [1, 1],
                 "name": "画 mermaid 图",
                 "features": [],
-                "state": home.root.package_state("miyu-base-mermaid").to_string_lossy(),
+                "state": home.root.package_state("base-mermaid").to_string_lossy(),
                 "status": "ready",
                 "enabled": true,
             }),
@@ -239,11 +239,11 @@ fn a_builtin_the_core_lacks_is_not_built_in() {
     miyu_endpoint::packages::compiled(
         &mut found,
         &[
-            "miyu-base-shell",
-            "miyu-base-memory",
-            "miyu-base-mermaid",
-            "miyu-base-net",
-            "miyu-base-roleplay",
+            "base-shell",
+            "base-memory",
+            "base-mermaid",
+            "base-net",
+            "base-roleplay",
         ],
     );
     let codes: Vec<(&str, Option<&str>)> = found
@@ -263,9 +263,9 @@ fn a_builtin_the_core_lacks_is_not_built_in() {
         "{codes:?}"
     );
     assert!(codes.contains(&("term", None)), "不是内置的不管");
-    assert!(codes.contains(&("miyu-base-shell", None)), "编进来了的照常");
+    assert!(codes.contains(&("base-shell", None)), "编进来了的照常");
     assert!(
-        miyu_endpoint::packages::is_installed(&found, "miyu-base-memory"),
+        miyu_endpoint::packages::is_installed(&found, "base-memory"),
         "读成了的内置包算装了"
     );
     assert!(!miyu_endpoint::packages::is_installed(&found, "xghost"));
@@ -279,7 +279,7 @@ fn a_builtin_the_core_lacks_is_not_built_in() {
 async fn broken_taken_and_mismatched_ones_carry_a_code_and_a_sentence() {
     let home = Home::new();
     mine(&home, "bad", "[package]\n\n[ui]\n\n[process]\n");
-    mine(&home, "miyu-base-mermaid", TERM);
+    mine(&home, "base-mermaid", TERM);
     // 子命令撞了先读到的那一份（施工 S-6 下：出厂的包都不带命令了，撞的是家目录里编号排在前面的那一份；施工 SD-1 起照盖的
     // 先后，装上的先于出厂的，由 miyu-store 的单元测试守着）。
     mine(&home, "term", TERM);
@@ -314,7 +314,7 @@ async fn broken_taken_and_mismatched_ones_carry_a_code_and_a_sentence() {
             "problem": "一个包只带一个程序：[ui], [process] 只能留一张",
         })]
     );
-    let mermaid = by_id("miyu-base-mermaid");
+    let mermaid = by_id("base-mermaid");
     assert_eq!(
         mermaid.len(),
         2,
@@ -352,7 +352,7 @@ async fn manifests_are_read_once_when_the_core_starts() {
         .iter()
         .filter_map(|package| package["package"].as_str())
         .collect();
-    assert!(ids.contains(&"miyu-base-mermaid"), "{reply}");
+    assert!(ids.contains(&"base-mermaid"), "{reply}");
     assert!(!ids.contains(&"term"), "起来以后才放的，重启才认：{reply}");
     assert_eq!(only(&listed(&home).await, &["term"]).len(), 1);
 }

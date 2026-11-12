@@ -21,8 +21,9 @@ Linux 两种和 macOS 上 `cargo xtask dist` 另打三份给系统源（AUR、Ho
 
 - `miyu-core-<版本>-<系统>.tar.gz`：一层同名目录，`miyu`、`miyu-sandbox`、`miyu-extract`、只有核心的 `resources/`（不带两个头）、`LICENSE`、
   核心的 `THIRD-PARTY-LICENSES.txt`。整层放进 `/usr/lib/miyu/`（Homebrew 是 `libexec/`），`miyu` 链进 `bin/`。
-- `miyu-tui-<终端版本>-<系统>.tar.gz`、`miyu-webui-<网页版本>-<系统>.tar.gz`：里面直接是包文件夹，程序在它的 `bin/`。原样拷进
-  `share/miyu/packages/`（`/usr/share/miyu/packages/miyu-tui/`），核心照系统加装那一层认它。版本照头自己的清单。
+- `tui-<终端版本>-<系统>.tar.gz`、`webui-<网页版本>-<系统>.tar.gz`（名字照包编号，设计 48）：里面直接是包文件夹，程序在它的 `bin/`。
+  原样拷进 `share/miyu/packages/`（`/usr/share/miyu/packages/tui/`），核心照系统加装那一层认它。版本照头自己的清单。系统源里的包名
+  照旧是 `miyu-tui`、`miyu-webui`。
 
 `dist-check` 也认这三种：头那一份要同一目录里有核心那一份，照系统加装层放好问核心认不认得出。
 

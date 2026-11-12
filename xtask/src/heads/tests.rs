@@ -3,11 +3,11 @@
 use super::*;
 
 const GOOD: &str = r#"
-[miyu-tui]
+[tui]
 repo = "https://github.com/miyu-agent/miyu-tui"
 rev = "960362426789aaea2d34242711cfc6d301e45ca9"
 
-[miyu-webui]
+[webui]
 repo = "https://github.com/miyu-agent/miyu-web"
 rev = "v0.0.1"
 "#;
@@ -39,7 +39,7 @@ fn each_mistake_is_named() {
     assert_eq!(problems(&elsewhere).len(), 1);
     let branch = GOOD.replace("v0.0.1", "main");
     assert_eq!(problems(&branch).len(), 1);
-    let missing = GOOD.replace("[miyu-webui]", "[gui]");
+    let missing = GOOD.replace("[webui]", "[gui]");
     assert_eq!(
         problems(&missing).len(),
         2,
@@ -58,12 +58,12 @@ fn pins_come_out_in_order() {
         pinned,
         vec![
             Pin {
-                id: "miyu-tui".to_string(),
+                id: "tui".to_string(),
                 repo: "https://github.com/miyu-agent/miyu-tui".to_string(),
                 rev: "960362426789aaea2d34242711cfc6d301e45ca9".to_string(),
             },
             Pin {
-                id: "miyu-webui".to_string(),
+                id: "webui".to_string(),
                 repo: "https://github.com/miyu-agent/miyu-web".to_string(),
                 rev: "v0.0.1".to_string(),
             },

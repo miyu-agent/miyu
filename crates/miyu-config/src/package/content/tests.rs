@@ -6,7 +6,7 @@ use crate::package::{Code, Content, PackageKind, read};
 const PACK: &str = r#"[package]
 name = { en = "Stickers", zh = "表情包合集" }
 
-[content.miyu-memes]
+[content.memes]
 dir = "memes"
 
 [content.another]
@@ -25,7 +25,7 @@ fn a_bundle_carries_content_for_other_packages_sorted_by_package() {
                 dir: "cards/v1".into()
             },
             Content {
-                target: "miyu-memes".into(),
+                target: "memes".into(),
                 dir: "memes".into()
             },
         ]

@@ -196,7 +196,7 @@ fn a_feature_id_is_taken_by_whoever_is_read_first() {
 fn a_prefix_is_taken_by_whoever_is_read_first() {
     let places = Places::new();
     let short = "[package]\nname = { en = \"T\" }\nprefix = \"tui\"\n";
-    places.write(Layer::Shipped, "miyu-tui/package.toml", short);
+    places.write(Layer::Shipped, "my-tui/package.toml", short);
     places.write(
         Layer::Home,
         "tui/package.toml",
@@ -212,7 +212,7 @@ fn a_prefix_is_taken_by_whoever_is_read_first() {
         brief(&found),
         [
             (
-                "miyu-tui".to_string(),
+                "my-tui".to_string(),
                 Layer::Shipped,
                 Some(Code::PrefixTaken)
             ),

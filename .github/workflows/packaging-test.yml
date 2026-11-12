@@ -63,7 +63,7 @@ jobs:
           else
             # 造一份：核心 2026.11.0-rc.1、终端 0.1.0、网页 0.2.0，三种系统，哈希随便写。
             for target in linux-x86_64 linux-aarch64 macos-aarch64; do
-              for part in miyu-core-2026.11.0-rc.1 miyu-tui-0.1.0 miyu-webui-0.2.0; do
+              for part in miyu-core-2026.11.0-rc.1 tui-0.1.0 webui-0.2.0; do
                 printf '%064d  %s-%s.tar.gz\n' 0 "${part}" "${target}" >> sums/SHA256SUMS
               done
             done

@@ -38,6 +38,6 @@
 | `local_only` | 扩展、平台桥调的 |
 
 ```json
-→ {"jsonrpc":"2.0","id":"1","method":"prefs.set","params":{"package":"miyu-webui","values":{"skin":"paper","mascot":null}}}
+→ {"jsonrpc":"2.0","id":"1","method":"prefs.set","params":{"package":"webui","values":{"skin":"paper","mascot":null}}}
 ← {"jsonrpc":"2.0","id":"1","result":{"values":{"scheme":"dark","skin":"paper"}}}
 ```

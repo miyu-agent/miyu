@@ -36,25 +36,21 @@ impl Drop for Scratch {
 fn head_archives_are_named_by_id_version_and_system() {
     let t = "linux-x86_64";
     assert_eq!(
-        head_of("miyu-tui-0.1.0-linux-x86_64.tar.gz", t),
-        Some(("miyu-tui", "0.1.0".to_string()))
+        head_of("tui-0.1.0-linux-x86_64.tar.gz", t),
+        Some(("tui", "0.1.0".to_string()))
     );
     assert_eq!(
-        head_of("miyu-webui-0.2.0-rc.1-linux-x86_64.tar.gz", t),
-        Some(("miyu-webui", "0.2.0-rc.1".to_string()))
+        head_of("webui-0.2.0-rc.1-linux-x86_64.tar.gz", t),
+        Some(("webui", "0.2.0-rc.1".to_string()))
     );
+    assert_eq!(head_of("tui--linux-x86_64.tar.gz", t), None, "没有版本");
     assert_eq!(
-        head_of("miyu-tui--linux-x86_64.tar.gz", t),
-        None,
-        "没有版本"
-    );
-    assert_eq!(
-        head_of("miyu-tui-0.1.0-macos-aarch64.tar.gz", t),
+        head_of("tui-0.1.0-macos-aarch64.tar.gz", t),
         None,
         "别的系统"
     );
     assert_eq!(head_of("miyu-core-0.0.0-linux-x86_64.tar.gz", t), None);
-    assert_eq!(head_of("miyu-tui-0.1.0-linux-x86_64.zip", t), None);
+    assert_eq!(head_of("tui-0.1.0-linux-x86_64.zip", t), None);
 }
 
 /// 一个仓库（`repo/`）和照它搭的核心那一份（`pkg/`）。
@@ -114,8 +110,8 @@ fn every_core_part_mistake_is_named() {
         ),
         (
             "head-folder",
-            |s| drop(s.put("pkg/resources/packages/miyu-webui/package.toml", "x")),
-            "不该有 miyu-webui",
+            |s| drop(s.put("pkg/resources/packages/webui/package.toml", "x")),
+            "不该有 webui",
         ),
         (
             "notices",
@@ -160,15 +156,12 @@ fn head(scratch: &Scratch, id: &str, program: &str, version: &str) -> PathBuf {
 #[test]
 fn a_head_part_needs_its_manifest_version_licenses_and_program() {
     let scratch = Scratch::new("head");
-    let tui = head(&scratch, "miyu-tui", "miyu-tui", "0.1.0");
-    assert_eq!(
-        head_contents(&tui, "miyu-tui", "0.1.0"),
-        Vec::<String>::new()
-    );
-    assert!(head_contents(&tui, "miyu-tui", "0.2.0")[0].contains("版本是 0.1.0"));
+    let tui = head(&scratch, "tui", "miyu-tui", "0.1.0");
+    assert_eq!(head_contents(&tui, "tui", "0.1.0"), Vec::<String>::new());
+    assert!(head_contents(&tui, "tui", "0.2.0")[0].contains("版本是 0.1.0"));
     fs::remove_file(tui.join(format!("bin/miyu-tui{}", std::env::consts::EXE_SUFFIX))).unwrap();
     fs::remove_file(tui.join("LICENSE")).unwrap();
-    let found = head_contents(&tui, "miyu-tui", "0.1.0");
+    let found = head_contents(&tui, "tui", "0.1.0");
     assert!(
         found
             .iter()
@@ -179,17 +172,14 @@ fn a_head_part_needs_its_manifest_version_licenses_and_program() {
         found.iter().any(|one| one.contains("少了 LICENSE")),
         "{found:?}"
     );
-    let web = head(&scratch, "miyu-webui", "miyu-web", "0.1.0");
+    let web = head(&scratch, "webui", "miyu-web", "0.1.0");
     assert!(
-        head_contents(&web, "miyu-webui", "0.1.0")
+        head_contents(&web, "webui", "0.1.0")
             .iter()
             .any(|one| one.contains("pages/index.html"))
     );
-    scratch.put("miyu-webui/pages/index.html", "<html>");
-    assert_eq!(
-        head_contents(&web, "miyu-webui", "0.1.0"),
-        Vec::<String>::new()
-    );
+    scratch.put("webui/pages/index.html", "<html>");
+    assert_eq!(head_contents(&web, "webui", "0.1.0"), Vec::<String>::new());
 }
 
 #[test]
@@ -199,7 +189,7 @@ fn without_the_core_part_beside_it_the_distro_check_says_so() {
         &scratch.0.join("miyu-core-0.0.0-t.tar.gz"),
         &scratch.0,
         &scratch.0,
-        "miyu-tui",
+        "tui",
     )
     .unwrap();
     assert!(found[0].contains("旁边没有核心那一份"), "{found:?}");

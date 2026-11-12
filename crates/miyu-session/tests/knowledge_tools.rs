@@ -108,7 +108,7 @@ fn narrow(home: &Home, bases: &str) {
 }
 
 /// 预设 `quiet` 关了知识库这个功能（`[features]`），放进数据根；会话照装着的功能认工具归哪个功能：功能 `knowledge` 在包
-/// `miyu-base-knowledge` 里（施工 PN-3 起两个编号不同，和核心里一样）。
+/// `base-knowledge` 里（施工 PN-3 起两个编号不同，和核心里一样）。
 fn knowledge_off(home: &Home) -> Lines {
     let text = "[features]\nknowledge = false\n";
     let dir = home.root.presets();
@@ -374,7 +374,7 @@ async fn the_list_sits_before_the_preset_line_and_needs_the_two_tools() {
     // 预设关了记忆：system 末尾是那一行，列出来的那一块在它前面（26 第四节第 4、5 块）。
     let features = miyu_policy::features::Features::new(
         [
-            (miyu_policy::preset::MEMORY, "miyu-base-memory"),
+            (miyu_policy::preset::MEMORY, "base-memory"),
             (miyu_policy::preset::KNOWLEDGE, miyu_knowledge::PACKAGE),
         ]
         .into_iter()

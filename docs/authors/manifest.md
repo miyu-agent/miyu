@@ -77,7 +77,7 @@ place = "status"
 | `protocol` | 带程序的包必写：`[最低, 最高]`，现在只有 `1` |
 | `version` | 版本，只给人看 |
 | `summary` | 一句说明 |
-| `prefix` | 配置键、记的事件种类用的前缀，写法同包的编号；不写就是包的编号。和别的包的前缀（没写的照编号）撞了装不上。编号长的包用它让键短一点：编号 `miyu-im` 写 `prefix = "im"`，配置键是 `im.*`，记的事件是 `ext.im.*` |
+| `prefix` | 配置键、记的事件种类用的前缀，写法同包的编号；不写就是包的编号。和别的包的前缀（没写的照编号）撞了装不上。编号长的包用它让键短一点：编号 `qq-bridge` 写 `prefix = "qq"`，配置键是 `qq.*`，记的事件是 `ext.qq.*` |
 | `author` | 作者：人名、组织名，可以带邮箱，一行，至多 100 个字。软件包信息页上露出来 |
 | `upstream` | 上游：这个包的源码仓库，`https://` 开头。软件包信息页上露出来 |
 | `icon` | Lucide 的图标名。界面不一定认得 Lucide 的全部名字：终端界面只认它对照表里的那些，认不出的画通用的工具图标（扳手） |
@@ -412,7 +412,7 @@ summary = { en = "Decides whether to reply in a group.", zh = "群里有人说�
 
 ```toml
 [depends]
-packages = ["onebot>=1.2.0", "miyu-embed"]
+packages = ["onebot>=1.2.0", "embed"]
 ```
 
 - 只认 `>=`，不加空格；版本照 semver 写（`1.2.0`、`1.2.0-rc.1`），两段的 `1.2`、带 `v` 的、`=`、`<` 这些都报 `bad_dependency`。`workers` 里只写编号。

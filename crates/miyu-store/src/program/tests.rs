@@ -46,14 +46,14 @@ fn each_user_dir_has_its_own_name() {
 #[test]
 fn a_package_gets_one_folder_in_each_layer() {
     let root = DataRoot::at(PathBuf::from("/data"));
-    let dirs = PackageDirs::of(&root, "miyu-im", PathBuf::from("/data/opt/miyu-im"));
-    assert_eq!(dirs.app, PathBuf::from("/data/opt/miyu-im"));
-    assert_eq!(dirs.config, root.package_config("miyu-im"));
-    assert_eq!(dirs.state, root.package_state("miyu-im"));
-    assert_eq!(dirs.cache, root.package_cache("miyu-im"));
-    assert_eq!(dirs.log, root.package_logs("miyu-im"));
-    assert_eq!(dirs.tmp, root.package_tmp("miyu-im"));
-    assert_eq!(dirs.runtime, root.package_runtime("miyu-im"));
+    let dirs = PackageDirs::of(&root, "im", PathBuf::from("/data/opt/im"));
+    assert_eq!(dirs.app, PathBuf::from("/data/opt/im"));
+    assert_eq!(dirs.config, root.package_config("im"));
+    assert_eq!(dirs.state, root.package_state("im"));
+    assert_eq!(dirs.cache, root.package_cache("im"));
+    assert_eq!(dirs.log, root.package_logs("im"));
+    assert_eq!(dirs.tmp, root.package_tmp("im"));
+    assert_eq!(dirs.runtime, root.package_runtime("im"));
     let env = dirs.env();
     let expect = [
         (&dirs.app, ["MIYU_APP_DIR", "MIYU_PACKAGE_DIR"].as_slice()),

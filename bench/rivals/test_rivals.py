@@ -129,33 +129,33 @@ class Missing(unittest.TestCase):
 
 
 class Layout(unittest.TestCase):
-    """跟着核心和终端现在的样子（施工 V-27）：终端包在 `miyu-tui/`、会话在数据根的 `sessions/<编号>/`。"""
+    """跟着核心和终端现在的样子（施工 V-27）：终端包在 `tui/`、会话在数据根的 `sessions/<编号>/`。"""
 
     def test_the_tui_package_is_the_folder_named_after_its_id(self):
-        # 施工 PN-4 起终端仓库里的包叫 `miyu-tui/`（以前 `tui/`）：`miyu pkg install` 装的是它。
+        # 终端仓库里的包叫 `tui/`（2026-11-12 以前 `miyu-tui/`）：`miyu pkg install` 装的是它。
         with tempfile.TemporaryDirectory() as tmp:
             where = fake_places(Path(tmp))
-            self.assertEqual(where.words()["tui_package"], str(where.tui_repo / "miyu-tui"))
+            self.assertEqual(where.words()["tui_package"], str(where.tui_repo / "tui"))
 
-    def test_load_takes_a_tui_repo_with_miyu_tui_and_refuses_the_old_layout(self):
+    def test_load_takes_a_tui_repo_with_a_tui_folder_and_refuses_the_old_layout(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "core/target/release").mkdir(parents=True)
             (root / "core/target/release/miyu").write_text("")
             (root / "tui/target/release").mkdir(parents=True)
             (root / "tui/target/release/miyu-tui").write_text("")
-            (root / "tui/tui").mkdir()
-            (root / "tui/tui/package.toml").write_text("")
+            (root / "tui/miyu-tui").mkdir()
+            (root / "tui/miyu-tui/package.toml").write_text("")
             args = argparse.Namespace(core=str(root / "core"), tui=str(root / "tui"), jcode=None, codex=None,
                                       out=str(root / "out"), cpus=None)
             env = {places.BASE_URL: "https://example.invalid/v1", places.KEY: "k", places.MODEL: "m"}
             with mock.patch.dict(os.environ, env), mock.patch("sys.stderr", io.StringIO()) as err:
                 with self.assertRaises(SystemExit):
                     places.load(args)
-                self.assertIn("miyu-tui/package.toml", err.getvalue())
-                (root / "tui/miyu-tui").mkdir()
-                (root / "tui/miyu-tui/package.toml").write_text("")
-                self.assertEqual(places.load(args).words()["tui_package"], str(root / "tui/miyu-tui"))
+                self.assertIn("tui/package.toml", err.getvalue())
+                (root / "tui/tui").mkdir()
+                (root / "tui/tui/package.toml").write_text("")
+                self.assertEqual(places.load(args).words()["tui_package"], str(root / "tui/tui"))
 
     def test_miyu_finds_the_newest_session_under_the_data_root(self):
         # 单人的：会话在数据根（MIYU_HOME）的 `sessions/<编号>/`，不再在 `home/admin/sessions/` 下（`store.md`）。

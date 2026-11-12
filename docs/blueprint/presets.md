@@ -63,7 +63,7 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 2. 没有 `default_persona`（施工 P-4 上撤了，2026-10-08 项目主人：「人格、记忆、预设相互之间耦合了」，只去掉预设的默认人格）：以前写了的认出来当没写，指纹照没写算，下一次 `preset.set` 写这份文件时去掉；`preset.set` 写这个键是 `bad_params`。
 3. `unlisted`：几层都没写的照 `on`。功能全开是默认，`[tools]` 里只关一两件的写法也是建在「其余都开」上的。
 4. `[features]`（施工 F-3 上）的键是功能的编号（设计 30 第三节第 6 条那十五个，加上装了的包自己声明的），写法同包的编号，值是开关。一个功能开不开的先后：`[features]` 写了的；没写的照 `[software]`，先认功能的编号、再认它所在的包的编号、再认包所在的组（施工 BS-1 上中：`basesystem = true` 开组里没单独写的包；组照出厂清单的 `groups`，找预设时放进 `PresetFile::groups`，不进指纹）；都没写的照全局开关（下面「全局开关」，只管技能、脚本、MCP 服务，只在 `unlisted` 开着的预设里算，施工 X-27）；再没有的照 `unlisted`（`PresetFile::opens_in`、`decided`）。`decided` 同时说是谁定的（`By`）：写了功能编号的是 `Preset`，写了它所在的包或组的是 `Group`（施工 FG-1 拆出来，`preset.get` 的 `sections` 照它分；原来那一格 `features[].by` 照旧把组算 `preset`，`By::as_flat_str`），全局开关的 `Global`，`unlisted` 的 `Default`。只知道功能编号的地方（`PresetFile::opens`：记忆、后台运行、脚本调工具、长期目标）先照 `PresetFile::homes` 找功能所在的包（施工 PN-2：功能编号到包编号，照装着的清单，找预设时放进来、不进指纹；包改名以后功能编号不变），找不到的照功能编号算。写了没装的不报错。关掉的包（施工 U23 末上，配置 `packages.<编号>.off`，`switched_off`）整包不开，同场所扣下的包；不同的是它的功能算进没开的那几个，快照记的跟着变，开着的会话下一个回合换上工具面、技能（施工 BS-1 上中起没有必需的包）。
-   以前的 `[software]`（施工 F-3 上起照认，新写的用 `[features]`）：键是软件的编号，写法同包的编号。现在装了的：基础系统组 `basesystem`（施工 BS-1 上中起是组，写它就是写组里没单独写的包；施工 FG-1 起组里十六个包，待办、定时、循环挪进组 `tasks`，项目文档挪进组 `environment`，记忆、人设遵循提醒是组 `persona`，联网、知识库是组 `research`，`packages.md` 文件表 `groups.toml` 那一行）、记忆 `miyu-base-memory`（三件工具和回合开始的召回）、知识库 `miyu-base-knowledge`（两件工具，施工 K-1 下）、角色扮演 `miyu-base-roleplay`（人格的角色扮演提示和风格锁）、联网 `miyu-base-net`、长期目标 `miyu-base-goal`，和清单装的 `process` 包（桥）。出厂的包施工 PN-3 起叫 `miyu-base-*`（设计 48），功能编号还是改名前的短名，`[software]` 里写短名的照「先认功能的编号」认得：`memory = false` 关的是功能 `memory`；功能编号和短名不同的包（联网的 `web-search`、`web-fetch`，注入环境信息的 `env-*`，写技能和包的两个技能），写短名（`net`、`env`、`authoring`）哪个都认不上，要写包编号或者功能编号。写了没装的不报错（这台机器上以后可能装），`preset.get` 的 `software` 里标 `installed: false`（施工 P-3 补）。
+   以前的 `[software]`（施工 F-3 上起照认，新写的用 `[features]`）：键是软件的编号，写法同包的编号。现在装了的：基础系统组 `basesystem`（施工 BS-1 上中起是组，写它就是写组里没单独写的包；施工 FG-1 起组里十六个包，待办、定时、循环挪进组 `tasks`，项目文档挪进组 `environment`，记忆、人设遵循提醒是组 `persona`，联网、知识库是组 `research`，`packages.md` 文件表 `groups.toml` 那一行）、记忆 `base-memory`（三件工具和回合开始的召回）、知识库 `base-knowledge`（两件工具，施工 K-1 下）、角色扮演 `base-roleplay`（人格的角色扮演提示和风格锁）、联网 `base-net`、长期目标 `base-goal`，和清单装的 `process` 包（桥）。出厂的包施工 PN-3 起叫 `base-*`（设计 48），功能编号还是改名前的短名，`[software]` 里写短名的照「先认功能的编号」认得：`memory = false` 关的是功能 `memory`；功能编号和短名不同的包（联网的 `web-search`、`web-fetch`，注入环境信息的 `env-*`，写技能和包的两个技能），写短名（`net`、`env`、`authoring`）哪个都认不上，要写包编号或者功能编号。写了没装的不报错（这台机器上以后可能装），`preset.get` 的 `software` 里标 `installed: false`（施工 P-3 补）。
 5. `[tools]` 的键是工具名：字母、数字、`-`、`_`，最多 64 个。单件打开某个包里的一件先不做（走查 C1），写 `true` 报错。
 6. 权限级别、压缩模板、强调色这些配置值随 P-2（下）（D1、C3）。
 7. `[limits]`（施工 AE-1，2026-10-30 项目主人定）只有 `unattended_steps`：没人看着时一个回合最多请求几次模型，正整数（0、负数、小数、字报 `bad_limit`，别的键报 `unknown_key`，写明第几行）。上一层写了的盖住下面的；几层都没写的照出厂的 500。管没人看着的主会话的每一轮、有人看着的会话里不是人开的回合（定时任务、长期目标续轮、重启接着干、回报叫醒……），回报叫醒的连着几轮合起来也照它（审计 R3E-2，`policy.md`「步数上限」第 8 条）；有人看着的会话里人开的回合不限，子代理照自己的出厂数（800、fork 500），都不看它（`policy.md`「步数上限」）。写了才进叠好的文件的指纹，没写的指纹和以前一字不差：以前造的快照照旧对得上；改了它，开着的会话下一个回合换上新的数（下面「改了文件」）。出厂的四份不写它。
@@ -73,8 +73,8 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 | 编号 | 名字 | 内容 |
 |---|---|---|
 | `full` | 全部功能 | `unlisted = "on"`：装了的全开，以后新装的也开。`preset.default` 出厂是它 |
-| `dev` | 常规开发 | `unlisted = "off"`，开组 `basesystem`、组 `environment`（注入环境信息和自动注入 AGENTS 文档，施工 ENV-1、FG-1）、`miyu-base-net`、组 `tasks`（待办、长期目标、定时任务、循环任务：施工 FG-1 起不在基础系统组里，另写上，开的功能和改前一样；定时、循环是施工 J-2）、`miyu-base-memory`（人格记忆，2026-10-20 项目主人定，施工 P-15）、`miyu-base-authoring`（写技能、写包的两个技能，施工 P-8，2026-10-12 项目主人照推荐定：不开她要写技能时看不到，只能在本机目录里翻） |
-| `minimal` | 极简开发 | `unlisted = "off"`，`[software]` 只开 `miyu-base-read`、`miyu-base-write`、`miyu-base-edit`、`miyu-base-shell` 四个包（施工 BS-1 上中起一件一个包，不用再一件件关）。基础系统组以后新加的包照 `unlisted` 关着（「命令行调用工具」`miyu-base-clicall` 就是，施工 M-6）。环境那七个（施工 C-11，下面「环境那几块」）和「用户身份」（施工 ENV-1）照旧开着，`[features]` 写明了 |
+| `dev` | 常规开发 | `unlisted = "off"`，开组 `basesystem`、组 `environment`（注入环境信息和自动注入 AGENTS 文档，施工 ENV-1、FG-1）、`base-net`、组 `tasks`（待办、长期目标、定时任务、循环任务：施工 FG-1 起不在基础系统组里，另写上，开的功能和改前一样；定时、循环是施工 J-2）、`base-memory`（人格记忆，2026-10-20 项目主人定，施工 P-15）、`base-authoring`（写技能、写包的两个技能，施工 P-8，2026-10-12 项目主人照推荐定：不开她要写技能时看不到，只能在本机目录里翻） |
+| `minimal` | 极简开发 | `unlisted = "off"`，`[software]` 只开 `base-read`、`base-write`、`base-edit`、`base-shell` 四个包（施工 BS-1 上中起一件一个包，不用再一件件关）。基础系统组以后新加的包照 `unlisted` 关着（「命令行调用工具」`base-clicall` 就是，施工 M-6）。环境那七个（施工 C-11，下面「环境那几块」）和「用户身份」（施工 ENV-1）照旧开着，`[features]` 写明了 |
 | `none` | 无功能 | `unlisted = "off"`，什么都不写：菜单里能开关的全关，以后新装的也关（施工 P-17，下面「无功能」） |
 
 - 名字三种语言：全部功能、Everything、すべての機能；常规开发、Development、開発（2026-10-20 项目主人改名，原来是基础功能、Basics、基本機能，施工 P-15）；极简开发、Minimal、ミニマル開発；无功能、Nothing、機能なし（施工 P-17）。图标 `boxes`、`box`、`square-terminal`、`circle-off`。编号照旧 `full`、`dev`、`minimal`，加 `none`，只在核心和配置 `preset.default` 里用，界面上不露。
@@ -93,7 +93,7 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 | `env-machine` 本机系统 | | 本机是什么系统 |
 | `env-profile` 用户身份 | | 「关于你」那一块（称呼、更多描述、回复语言，造会话时钉下） |
 
-- 包（施工 ENV-1，2026-10-26 项目主人定）：这八个是内置包「注入环境信息」（`miyu-base-env`；Injected environment、注入する環境情報，施工 FG-1 照组名改，原来是 Environment info、環境情報）的功能，前七个原来在基础系统里，编号不改，预设、配置里写的 `env-*` 照认。这个包不是必需的：整包关掉（`package.disable miyu-base-env`、配置 `packages.miyu-base-env.off`）就是一点环境信息都不注入，请求和八个都关一字不差。
+- 包（施工 ENV-1，2026-10-26 项目主人定）：这八个是内置包「注入环境信息」（`base-env`；Injected environment、注入する環境情報，施工 FG-1 照组名改，原来是 Environment info、環境情報）的功能，前七个原来在基础系统里，编号不改，预设、配置里写的 `env-*` 照认。这个包不是必需的：整包关掉（`package.disable base-env`、配置 `packages.base-env.off`）就是一点环境信息都不注入，请求和八个都关一字不差。
 - 开不开照「装着、并且没被关」：快照记两样，预设没开的（`off`）和没装的（`absent`，只记这八个里没装的，空的不写）；两样里都没有才算开。
 - 自己写的预设（施工 ENV-1）：`unlisted = "off"`、`[software]` 只写了 `basesystem = true` 的，环境那几块原来跟着基础系统开，挪包以后要另写 `env = true` 才开。没发版，不做迁移。
 - 「用户身份」只在造会话时看：关着的快照里就没有「关于你」，会话中途改预设不补、不撤（同改称呼）。
@@ -203,7 +203,7 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 | `crates/miyu-config/src/plain/tests.rs`（施工 P-3 中） | 表、行内表、点号连着的键里读一项，没写的、是表的、读不懂的是空的；只有字、开关、数换得成要写的值 |
 | `crates/miyu-endpoint/src/connection/tests.rs`（施工 P-3 中） | 扩展进程调了回 `local_only` 的名单 |
 | `crates/miyu-kernel/src/facts/tests/gates.rs`、`crates/miyu-policy/src/shown/tests.rs`、`crates/miyu-policy/src/compose/tests.rs` 的 `a_preset_can_leave_out_each_core_line`（施工 C-11） | 环境那几块：都开着的逐字节一样；只关时间、只关工作目录照拆开的写法，都关了不注入；权限、编号、模型各自关得掉；拆开的写法要不了另一半；照预设没开的功能编号读；system 那几行跟着开关 |
-| `crates/miyu-endpoint/tests/env_package.rs`、`crates/miyu-policy/src/shown/tests.rs` 的 `absent_*`（施工 ENV-1） | 真核心：全部功能的快照 system 有「关于你」；只关「用户身份」的快照没有「关于你」、别的一字不变；八个都关的连环境那几行也不拼；`package.disable miyu-base-env` 以后新会话的 system 和开关（`Shown`）跟八个都关的一字不差；没装的功能和关了的一样算关，记成 `absent` |
+| `crates/miyu-endpoint/tests/env_package.rs`、`crates/miyu-policy/src/shown/tests.rs` 的 `absent_*`（施工 ENV-1） | 真核心：全部功能的快照 system 有「关于你」；只关「用户身份」的快照没有「关于你」、别的一字不变；八个都关的连环境那几行也不拼；`package.disable base-env` 以后新会话的 system 和开关（`Shown`）跟八个都关的一字不差；没装的功能和关了的一样算关，记成 `absent` |
 | `crates/miyu-endpoint/tests/presets.rs` | 不写预设照默认、指定的压着默认；找人格的先后；没有的、编号不对的、写错的拒绝、什么都不造，默认预设指着没有的也拒；会话列表、`subscribe` 写 `preset`，以前的日志不写；`venue.session` 带预设造、找回时不看；`preset.list`、`preset.get`；`check` 查预设 |
 | `crates/miyu-endpoint/tests/preset_tokens.rs`（施工 DM-4） | 读得出的预设带 `tokens`，同无人格的新会话预览的 `estimated_total`，工具多的多，写错的不带；列预设、预览上下文、预览工具面都不在 `workspace/` 下留会话目录 |
 | `crates/miyu-session/tests/spawn.rs` | 子会话照父会话的预设，父会话载入以后也照 |

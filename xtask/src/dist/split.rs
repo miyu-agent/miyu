@@ -4,7 +4,7 @@
 //! - `miyu-core-<核心版本>-<系统>.tar.gz`：一层同名目录，`miyu`、`miyu-sandbox`、`miyu-extract`，`resources/`（只有核心自己登记的，
 //!   不带两个头的包文件夹，免得出厂、系统加装两层各有一份），`LICENSE`，`THIRD-PARTY-LICENSES.txt`（只有核心那一段）。AUR 整层放到
 //!   `/usr/lib/miyu/`，Homebrew 放 `libexec/`；
-//! - `miyu-tui-<终端版本>-<系统>.tar.gz`、`miyu-webui-<网页版本>-<系统>.tar.gz`：里面直接是包文件夹（`miyu-tui/`、`miyu-webui/`），
+//! - `tui-<终端版本>-<系统>.tar.gz`、`webui-<网页版本>-<系统>.tar.gz`：里面直接是包文件夹（`tui/`、`webui/`），
 //!   清单照原样，程序在包文件夹的 `bin/`（系统加装那一层照它找程序），带各自的 `LICENSE`、第三方清单；包管理器原样拷到
 //!   `share/miyu/packages/<编号>/`。版本照头自己清单写的。
 //!

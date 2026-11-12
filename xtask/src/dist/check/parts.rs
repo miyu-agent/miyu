@@ -13,8 +13,7 @@ use super::super::{CORE, TUI_PROGRAM, WEB_PROGRAM, read};
 use super::{isolated, relative, runnable, unpack};
 
 /// 头的包文件夹编号和它的程序。
-pub(super) const HEADS: [(&str, &str); 2] =
-    [("miyu-tui", TUI_PROGRAM), ("miyu-webui", WEB_PROGRAM)];
+pub(super) const HEADS: [(&str, &str); 2] = [("tui", TUI_PROGRAM), ("webui", WEB_PROGRAM)];
 
 /// 照文件名认是哪个头的、什么版本：`<编号>-<版本>-<系统>.tar.gz`。不是的没有。
 pub(super) fn head_of(name: &str, target: &str) -> Option<(&'static str, String)> {
@@ -119,7 +118,7 @@ pub(super) fn head_contents(dir: &Path, id: &str, version: &str) -> Vec<String> 
     } else if !runnable(&file) {
         problems.push(format!("bin/{program}{exe} 不能跑（没有执行位）"));
     }
-    if id == "miyu-webui" && !dir.join("pages/index.html").is_file() {
+    if id == "webui" && !dir.join("pages/index.html").is_file() {
         problems.push("少了 pages/index.html".to_string());
     }
     problems

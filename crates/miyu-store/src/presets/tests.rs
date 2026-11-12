@@ -207,13 +207,14 @@ fn the_shipped_presets_read_cleanly() {
             .keys()
             .map(String::as_str)
             .collect::<Vec<_>>(),
-        // 施工 FG-1：待办、长期目标、定时、循环写组 `tasks`，环境和项目文档写组 `environment`。
+        // 施工 FG-1：待办、长期目标、定时、循环写组 `tasks`，环境和项目文档写组 `environment`。照编号排，施工 PN-5 起
+        // `base-*` 排在 `basesystem` 前面。
         [
+            "base-authoring",
+            "base-memory",
+            "base-net",
             "basesystem",
             "environment",
-            "miyu-base-authoring",
-            "miyu-base-memory",
-            "miyu-base-net",
             "tasks"
         ]
     );
@@ -227,12 +228,7 @@ fn the_shipped_presets_read_cleanly() {
             .keys()
             .map(String::as_str)
             .collect::<Vec<_>>(),
-        [
-            "miyu-base-edit",
-            "miyu-base-read",
-            "miyu-base-shell",
-            "miyu-base-write"
-        ]
+        ["base-edit", "base-read", "base-shell", "base-write"]
     );
     assert_eq!(
         minimal

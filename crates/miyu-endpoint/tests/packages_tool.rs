@@ -48,7 +48,7 @@ async fn a_session_looks_at_packages_through_the_core() {
         Play::calls(&[("shell", &pkg::run(&[("packages", "{}")]))]),
         Play::calls(&[(
             "shell",
-            &pkg::run(&[("packages", r#"{"package":"miyu-base-shell"}"#)]),
+            &pkg::run(&[("packages", r#"{"package":"base-shell"}"#)]),
         )]),
         Play::calls(&[("shell", &pkg::run(&[("packages", &path)]))]),
         Play::Says("看完了。"),
@@ -67,7 +67,7 @@ async fn a_session_looks_at_packages_through_the_core() {
     assert!(
         results[0]
             .lines()
-            .any(|line| line.starts_with("miyu-base-shell: Commands.")),
+            .any(|line| line.starts_with("base-shell: Commands.")),
         "列出来一个一行，名字照英文：{}",
         results[0]
     );
@@ -79,11 +79,7 @@ async fn a_session_looks_at_packages_through_the_core() {
             info["name"].clone(),
             info["layer"].clone()
         ),
-        (
-            json!("miyu-base-shell"),
-            json!("Commands"),
-            json!("shipped")
-        ),
+        (json!("base-shell"), json!("Commands"), json!("shipped")),
         "{info}"
     );
     let (lead, preview) = results[2].split_once('\n').unwrap_or_default();
@@ -111,7 +107,7 @@ async fn a_session_looks_at_packages_through_the_core() {
     let again = Script::new([
         Play::calls(&[(
             "shell",
-            &pkg::run(&[("packages", r#"{"package":"miyu-base-net"}"#)]),
+            &pkg::run(&[("packages", r#"{"package":"base-net"}"#)]),
         )]),
         Play::Says("嗯。"),
     ]);
@@ -127,7 +123,7 @@ async fn a_session_looks_at_packages_through_the_core() {
     let last = home_results(&home, &session);
     assert!(
         last.last()
-            .is_some_and(|text| text.contains(r#""package":"miyu-base-net""#)),
+            .is_some_and(|text| text.contains(r#""package":"base-net""#)),
         "{last:?}"
     );
 }
@@ -167,12 +163,12 @@ async fn miyu_pkg_works_where_scripts_cannot_call_tools() {
     let home = Home::new();
     home.write(
         "root/presets/pkg.toml",
-        "[preset]\nname = { en = \"Pkg\" }\nunlisted = \"off\"\n\n[software]\nmiyu-base-shell = true\nmiyu-base-packages = true\n",
+        "[preset]\nname = { en = \"Pkg\" }\nunlisted = \"off\"\n\n[software]\nbase-shell = true\nbase-packages = true\n",
     );
     let script = Script::new([
         Play::calls(&[(
             "shell",
-            &pkg::run(&[("packages", r#"{"package":"miyu-base-shell"}"#)]),
+            &pkg::run(&[("packages", r#"{"package":"base-shell"}"#)]),
         )]),
         Play::Says("看完了。"),
     ]);
@@ -187,7 +183,7 @@ async fn miyu_pkg_works_where_scripts_cannot_call_tools() {
     let results = home_results(&home, &session);
     assert_eq!(results.len(), 1, "{results:?}");
     assert!(
-        pkg::text(&results[0]).contains(r#""package":"miyu-base-shell""#),
+        pkg::text(&results[0]).contains(r#""package":"base-shell""#),
         "{results:?}"
     );
 }

@@ -6,7 +6,7 @@
 # static：每份 PKGBUILD 语法对、makepkg --printsrcinfo 出得来、namcap 只报已知的那一种（source_x86_64 里写 x86_64 的误报）。
 # install：照真的发布装 miyu-core、miyu-tui、miyu-webui；填了托盘的（RL-5补）另装 miyu-applet、miyu-agent（合集依赖托盘），查：
 #   - /usr/bin/miyu --version 报这一版，install.toml 写 aur，miyu upgrade 说用包管理器升级；
-#   - 隔离的数据根里 miyu pkg list：miyu-tui、miyu-webui 是系统加装那一层（distro）、程序找得到；
+#   - 隔离的数据根里 miyu pkg list：包 tui、webui 是系统加装那一层（distro）、程序找得到；
 #   - 托盘：/usr/bin/miyu-applet 能跑、桌面文件和图标在；
 #   - pacman -R 卸掉以后 /usr/lib/miyu、/usr/share/miyu、/usr/bin/miyu-applet 都没了；
 #   - 旧版升级（RL-5补2，填了托盘的才做：合集依赖托盘）：先装一个假的旧 miyu 0.7.4（自己有 /usr/bin/miyu），再把这几份放进一个
@@ -84,7 +84,7 @@ MIYU_HOME="${home}" /usr/bin/miyu core stop || true
 printf '%s' "${listed}" | python3 -c '
 import json, sys
 items = {item["package"]: item for item in json.load(sys.stdin)}
-for id in ("miyu-tui", "miyu-webui"):
+for id in ("tui", "webui"):
     item = items.get(id)
     assert item, f"{id} not listed"
     # f 串的花括号里不写引号：外面是 sh 的单引号，里面写 \" 是 Python 看到的反斜杠，语法错（rc.6 真装红在这里）。

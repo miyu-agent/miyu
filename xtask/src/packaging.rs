@@ -35,15 +35,11 @@ const FILES: [(&str, &str, &str); 11] = [
         "aur/miyu-core/PKGBUILD",
         "miyu-core",
     ),
-    (
-        "aur/miyu-tui/PKGBUILD.in",
-        "aur/miyu-tui/PKGBUILD",
-        "miyu-tui",
-    ),
+    ("aur/miyu-tui/PKGBUILD.in", "aur/miyu-tui/PKGBUILD", "tui"),
     (
         "aur/miyu-webui/PKGBUILD.in",
         "aur/miyu-webui/PKGBUILD",
-        "miyu-webui",
+        "webui",
     ),
     (
         "aur/miyu-agent/PKGBUILD.in",
@@ -60,12 +56,12 @@ const FILES: [(&str, &str, &str); 11] = [
     (
         "homebrew/miyu-tui.rb.in",
         "homebrew/Formula/miyu-tui.rb",
-        "miyu-tui",
+        "tui",
     ),
     (
         "homebrew/miyu-webui.rb.in",
         "homebrew/Formula/miyu-webui.rb",
-        "miyu-webui",
+        "webui",
     ),
     (
         "homebrew/miyu-agent.rb.in",

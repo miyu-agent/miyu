@@ -8,7 +8,7 @@ use miyu_config::package::PackageKind;
 use miyu_store::packages::Found;
 
 /// 终端界面的包。
-const TUI: &str = "miyu-tui";
+const TUI: &str = "tui";
 
 /// 装着的界面包的编号（种类是界面的，读不成的不算）。
 pub(super) fn heads(found: &[Found]) -> Vec<String> {

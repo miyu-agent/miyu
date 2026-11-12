@@ -28,8 +28,8 @@
 一行一个：名字、种类、包、可不可用，名字、包照最长的对齐，行尾不留空格；种类、可不可用照语言（中文「提供」「接进」「可用」「不可用」，英文 `provides`、`plugs`、`ready`、`not ready`）。一个都没有的印一句「总线上还没有名字」。
 
 ```
-stt         提供  miyu-voice-input  可用
-tts.engine  接进  gptsovits         不可用
+stt         提供  voice-input  可用
+tts.engine  接进  gptsovits    不可用
 ```
 
 ### 退出码

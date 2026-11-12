@@ -81,7 +81,7 @@ fn world(home: &Home, toml: &str, people: &str) {
 const PEOPLE: &str = "# 人物\n\n## 艾琳\n\n守灯人，十九岁。\n\n## 巴德\n\n老船长，缺了一根小指。\n";
 
 /// 预设 `quiet` 关了知识库这个功能（`[features]`），放进数据根；会话照装着的功能认工具归哪个功能：功能 `knowledge` 在包
-/// `miyu-base-knowledge` 里（施工 PN-3 起两个编号不同，和核心里一样）。
+/// `base-knowledge` 里（施工 PN-3 起两个编号不同，和核心里一样）。
 fn knowledge_off(home: &Home) -> Lines {
     let text = "[features]\nknowledge = false\n";
     let dir = home.root.presets();

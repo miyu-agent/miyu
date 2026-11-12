@@ -18,11 +18,11 @@ fn the_first_index_offering_the_command_names_the_package() {
     );
     write(
         ".sync/index.json",
-        json!({"packages": [{"id": "miyu-tui", "provides": {"command": ["tui"]}}, {"id": "theme"}]}),
+        json!({"packages": [{"id": "tui", "provides": {"command": ["tui"]}}, {"id": "theme"}]}),
     );
     write(
         ".sources/a-local/index.json",
-        json!({"packages": [{"id": "miyu-webui", "provides": {"command": ["web"]}}]}),
+        json!({"packages": [{"id": "webui", "provides": {"command": ["web"]}}]}),
     );
     write(
         ".sources/b-other/index.json",
@@ -32,12 +32,12 @@ fn the_first_index_offering_the_command_names_the_package() {
     std::fs::write(dir.join(".sources/0-broken/index.json"), "{").expect("写得进");
     assert_eq!(
         offering_under((&dir.join(".sync"), &dir.join(".sources")), "tui").as_deref(),
-        Some("miyu-tui"),
+        Some("tui"),
         "官方的先找"
     );
     assert_eq!(
         offering_under((&dir.join(".sync"), &dir.join(".sources")), "web").as_deref(),
-        Some("miyu-webui"),
+        Some("webui"),
         "另加的照名字"
     );
     assert_eq!(

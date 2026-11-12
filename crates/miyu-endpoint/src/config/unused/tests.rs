@@ -6,16 +6,16 @@ fn heads(ids: &[&str]) -> Vec<String> {
 
 #[test]
 fn terminal_items_need_the_terminal_head() {
-    assert!(unused("terminal.persona", &heads(&["miyu-webui"])));
+    assert!(unused("terminal.persona", &heads(&["webui"])));
     assert!(unused("terminal.idle_new_after", &heads(&[])));
-    assert!(!unused("terminal.preset", &heads(&["miyu-tui"])));
+    assert!(!unused("terminal.preset", &heads(&["tui"])));
 }
 
 #[test]
 fn the_default_head_needs_a_choice() {
-    assert!(unused("ui.head", &heads(&["miyu-webui"])));
+    assert!(unused("ui.head", &heads(&["webui"])));
     assert!(unused("ui.head", &heads(&[])));
-    assert!(!unused("ui.head", &heads(&["miyu-tui", "miyu-webui"])));
+    assert!(!unused("ui.head", &heads(&["tui", "webui"])));
 }
 
 #[test]

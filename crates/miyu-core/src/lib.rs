@@ -177,9 +177,9 @@ pub fn built_in() -> Vec<&'static str> {
         .collect()
 }
 
-/// 人设遵循提醒这个内置包的编号（施工 F-2，施工 PN-3 起是 `miyu-base-*`）：代码在策略、会话两层，核心这里只认编号。功能编号另是
+/// 人设遵循提醒这个内置包的编号（施工 F-2，施工 PN-5 起是 `base-*`）：代码在策略、会话两层，核心这里只认编号。功能编号另是
 /// `miyu_policy::preset::ROLEPLAY`。
-const ROLEPLAY: &str = "miyu-base-roleplay";
+const ROLEPLAY: &str = "base-roleplay";
 
 /// 工具目录：核心起来时登记一次，登记完就冻结（`05-内核接口.md` 第八节）。施工 4-4 起登记基础系统，施工 R-3 中起登记记忆
 /// 这个软件包，工具的字从资源目录 `resources` 读。施工 F-2 起照清单 `found`：没装的内置包（没有读成了的清单）不登记。

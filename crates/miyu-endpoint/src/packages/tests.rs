@@ -25,7 +25,7 @@ fn homes_map_each_feature_to_its_package() {
     let written = "[package]\nprotocol = [1, 1]\nname = { en = \"M\" }\n\n[features.memory]\nname = { en = \"M\" }\n\n[builtin]\n";
     let plain = "[package]\nprotocol = [1, 1]\nname = { en = \"G\" }\n\n[builtin]\n";
     let homes = homes(&[
-        package("miyu-base-memory", written),
+        package("base-memory", written),
         package("goal", plain),
         package("broken", ""),
     ]);
@@ -33,7 +33,7 @@ fn homes_map_each_feature_to_its_package() {
         homes.into_iter().collect::<Vec<_>>(),
         [
             ("goal".to_string(), "goal".to_string()),
-            ("memory".to_string(), "miyu-base-memory".to_string()),
+            ("memory".to_string(), "base-memory".to_string()),
         ]
     );
 }

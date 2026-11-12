@@ -86,7 +86,7 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
-          found=(target/dist/miyu-*-"${{ matrix.target }}".tar.gz target/dist/miyu-*-"${{ matrix.target }}".zip)
+          found=(target/dist/{miyu,tui,webui}-*-"${{ matrix.target }}".tar.gz target/dist/miyu-*-"${{ matrix.target }}".zip)
           case "${{ matrix.target }}" in windows-*) want=1 ;; *) want=4 ;; esac
           [ "${#found[@]}" -eq "${want}" ] || { echo "::error::target/dist/ 里该有 ${want} 个压缩包，有 ${#found[@]} 个：${found[*]}"; exit 1; }
           for archive in "${found[@]}"; do
@@ -97,6 +97,8 @@ jobs:
           name: dist-${{ matrix.target }}
           path: |
             target/dist/miyu-*-${{ matrix.target }}.tar.gz
+            target/dist/tui-*-${{ matrix.target }}.tar.gz
+            target/dist/webui-*-${{ matrix.target }}.tar.gz
             target/dist/miyu-*-${{ matrix.target }}.zip
           if-no-files-found: error
           retention-days: 7
@@ -120,7 +122,7 @@ jobs:
         working-directory: dist
         run: |
           set -euo pipefail
-          ls -1 miyu-*.tar.gz miyu-*.zip | sort > files
+          ls -1 miyu-*.tar.gz tui-*.tar.gz webui-*.tar.gz miyu-*.zip | sort > files
           [ "$(wc -l < files)" -eq 13 ] || { echo "::error::要十三个压缩包（四个一体的，三种系统各三份分包），拿到的是：$(tr '\n' ' ' < files)"; exit 1; }
           xargs sha256sum < files > SHA256SUMS
           rm files
@@ -149,6 +151,8 @@ jobs:
         with:
           subject-path: |
             dist/miyu-*.tar.gz
+            dist/tui-*.tar.gz
+            dist/webui-*.tar.gz
             dist/miyu-*.zip
             dist/SHA256SUMS
       - name: 草稿 Release
@@ -157,7 +161,7 @@ jobs:
         run: |
           set -euo pipefail
           tag="$GITHUB_REF_NAME"
-          files=(dist/miyu-*.tar.gz dist/miyu-*.zip dist/SHA256SUMS dist/SHA256SUMS.sig)
+          files=(dist/miyu-*.tar.gz dist/tui-*.tar.gz dist/webui-*.tar.gz dist/miyu-*.zip dist/SHA256SUMS dist/SHA256SUMS.sig)
           prerelease=()
           case "$tag" in *-rc.*) prerelease=(--prerelease);; esac
           {
@@ -165,7 +169,7 @@ jobs:
             echo
             echo "核对：\`sha256sum -c SHA256SUMS\`；SHA256SUMS 的签名在 SHA256SUMS.sig（Ed25519，发版钥匙）；"
             echo "构建出处：\`gh attestation verify <文件> -R $GITHUB_REPOSITORY\`。"
-            echo "装用 \`miyu-<版本>-<系统>\`（一体的）；\`miyu-core-*\`、\`miyu-tui-*\`、\`miyu-webui-*\` 是给系统源（AUR、Homebrew）打包用的分包。"
+            echo "装用 \`miyu-<版本>-<系统>\`（一体的）；\`miyu-core-*\`、\`tui-*\`、\`webui-*\` 是给系统源（AUR、Homebrew）打包用的分包。"
             echo
             echo '```'
             cat dist/SHA256SUMS

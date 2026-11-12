@@ -45,24 +45,23 @@ async fn the_base_system_goes_and_comes_back_as_a_group() {
     let group = ids(&looked["result"]["packages"]);
     assert_eq!(looked["result"]["group"], "basesystem", "{looked}");
     assert!(
-        group.contains(&"miyu-base-shell".to_string())
-            && group.contains(&"miyu-base-read".to_string()),
+        group.contains(&"base-shell".to_string()) && group.contains(&"base-read".to_string()),
         "{looked}"
     );
     assert!(
-        !group.contains(&"miyu-base-memory".to_string()),
+        !group.contains(&"base-memory".to_string()),
         "组外的不动：{looked}"
     );
     assert!(
         installed(&mut owner)
             .await
-            .contains(&"miyu-base-shell".to_string()),
+            .contains(&"base-shell".to_string()),
         "看一眼不卸"
     );
 
     // 组里各包的配置目录照单个卸的留下（施工 PK-5）。
-    let kept = home.root.package_config("miyu-base-shell").join("x.toml");
-    home.write("etc/miyu-base-shell/x.toml", "a = 1\n");
+    let kept = home.root.package_config("base-shell").join("x.toml");
+    home.write("etc/base-shell/x.toml", "a = 1\n");
     let removed = owner
         .call("r", "package.remove", json!({"package": "basesystem"}))
         .await;
@@ -74,7 +73,7 @@ async fn the_base_system_goes_and_comes_back_as_a_group() {
     assert_eq!(gone, expected, "{removed}");
     let now = installed(&mut owner).await;
     assert!(group.iter().all(|id| !now.contains(id)), "全卸了：{now:?}");
-    assert!(now.contains(&"miyu-base-memory".to_string()), "组外的留着");
+    assert!(now.contains(&"base-memory".to_string()), "组外的留着");
 
     let back = owner
         .call(
@@ -123,7 +122,7 @@ async fn a_package_outside_needing_the_group_stops_its_removal() {
     let home = Home::new();
     home.write(
         "opt/kit/package.toml",
-        "[package]\nname = { en = \"Kit\" }\n\n[depends]\npackages = [\"miyu-base-shell\"]\n",
+        "[package]\nname = { en = \"Kit\" }\n\n[depends]\npackages = [\"base-shell\"]\n",
     );
     home.write(
         "opt/kit/skills/notes/SKILL.md",
@@ -141,7 +140,7 @@ async fn a_package_outside_needing_the_group_stops_its_removal() {
     assert_eq!(refused["error"]["data"]["by"], json!(["kit"]), "{refused}");
     let now = installed(&mut owner).await;
     assert!(
-        now.contains(&"miyu-base-shell".to_string()) && now.contains(&"miyu-base-read".to_string()),
+        now.contains(&"base-shell".to_string()) && now.contains(&"base-read".to_string()),
         "整个拒，组里一个都没卸：{now:?}"
     );
 }
@@ -153,7 +152,7 @@ async fn restoring_the_group_brings_back_only_what_was_removed() {
     let core = packaged::core(&home);
     let mut owner = local(&core).await;
     let removed = owner
-        .call("r", "package.remove", json!({"package": "miyu-base-trash"}))
+        .call("r", "package.remove", json!({"package": "base-trash"}))
         .await;
     assert!(removed.get("result").is_some(), "{removed}");
     let looked = owner
@@ -165,15 +164,11 @@ async fn restoring_the_group_brings_back_only_what_was_removed() {
         .await;
     assert_eq!(
         looked["result"]["packages"],
-        json!(["miyu-base-trash"]),
+        json!(["base-trash"]),
         "{looked}"
     );
     let back = owner
         .call("i", "package.install", json!({"package": "basesystem"}))
         .await;
-    assert_eq!(
-        ids(&back["result"]["packages"]),
-        ["miyu-base-trash"],
-        "{back}"
-    );
+    assert_eq!(ids(&back["result"]["packages"]), ["base-trash"], "{back}");
 }

@@ -7,15 +7,15 @@ use serde_json::{Value, json};
 use super::{from_source, plan, question, recommended_question, recommends};
 use crate::language::Language;
 
-/// 设计 49 第二节那个样子：装 miyu-im，一起装 miyu-embed，推荐 miyu-im-sponsor；都是官方的。
+/// 设计 49 第二节那个样子：装 im，一起装 embed，推荐 im-sponsor；都是官方的。
 fn preview() -> Value {
     json!({
-        "package": "miyu-im", "version": "0.2.1", "official": true, "source": "official", "feed": "official",
+        "package": "im", "version": "0.2.1", "official": true, "source": "official", "feed": "official",
         "origin": "github.com/miyu-agent/miyu-im",
         "capabilities": [{"id": "network", "name": "联网"}, {"id": "act_for_external", "name": "替主人说话"}],
         "download": 12_897_485, "installed": 31_562_138,
-        "with": [{"package": "miyu-embed", "version": "0.3.0", "source": "official", "feed": "official"}],
-        "recommends": [{"package": "miyu-im-sponsor", "version": "0.1.0", "download": 104_858,
+        "with": [{"package": "embed", "version": "0.3.0", "source": "official", "feed": "official"}],
+        "recommends": [{"package": "im-sponsor", "version": "0.1.0", "download": 104_858,
                         "source": "official", "feed": "official"}],
     })
 }
@@ -158,14 +158,14 @@ fn official_packages_have_no_notice_and_one_origin_line() {
     assert_eq!(
         plan(&preview(), &Language::Chinese),
         [
-            "软件包 (2)  miyu-embed-0.3.0  miyu-im-0.2.1",
-            "推荐 (1)    miyu-im-sponsor-0.1.0",
+            "软件包 (2)  embed-0.3.0  im-0.2.1",
+            "推荐 (1)    im-sponsor-0.1.0",
             "",
             "下载大小    : 12.3 MiB",
             "安装后大小  : 30.1 MiB",
             "来源        : 官方，签名已验证",
-            "需要的能力  : miyu-im     联网",
-            "              miyu-im     替主人说话",
+            "需要的能力  : im     联网",
+            "              im     替主人说话",
         ]
     );
     assert_eq!(
@@ -174,8 +174,8 @@ fn official_packages_have_no_notice_and_one_origin_line() {
             "Download Size   : 12.3 MiB",
             "Installed Size  : 30.1 MiB",
             "Origin          : official, signature verified",
-            "Capabilities    : miyu-im     联网",
-            "                  miyu-im     替主人说话",
+            "Capabilities    : im     联网",
+            "                  im     替主人说话",
         ]
     );
     assert_eq!(
@@ -231,7 +231,7 @@ fn an_older_core_is_printed_and_asked_as_before() {
     assert_eq!(
         plan(&other, &Language::Chinese),
         [
-            "软件包 (1)  miyu-im-0.2.1",
+            "软件包 (1)  im-0.2.1",
             "",
             "下载大小    : 12.3 MiB",
             "来源        : friend，签名已验证，没人审过",
@@ -245,7 +245,7 @@ fn an_older_core_is_printed_and_asked_as_before() {
     );
     assert_eq!(
         question(&other, &Language::Chinese),
-        "安装 'miyu-im'？[Y/n] ",
+        "安装 'im'？[Y/n] ",
         "不认 approve 的核心不问批准"
     );
     let mut friend = weather(&Language::Chinese);
@@ -282,10 +282,7 @@ fn recommended_packages_that_need_capabilities_get_their_own_part() {
 #[test]
 fn the_recommended_question_is_asked_only_when_there_are_some() {
     let listed = recommends(&preview());
-    assert_eq!(
-        listed,
-        [("miyu-im-sponsor".to_string(), "0.1.0".to_string())]
-    );
+    assert_eq!(listed, [("im-sponsor".to_string(), "0.1.0".to_string())]);
     assert_eq!(
         recommended_question(&preview(), &Language::Chinese),
         "同时安装推荐的 1 个软件包？[Y/n] ",

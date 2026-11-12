@@ -95,7 +95,7 @@ async fn installing_shows_what_comes_and_changes_nothing() {
         refused["error"]["data"]["reason"], "package_invalid",
         "和真装一样拒：{refused}"
     );
-    let shipped = folder(&home, "miyu-base-mermaid", &pane("1"));
+    let shipped = folder(&home, "base-mermaid", &pane("1"));
     let refused = preview(&mut client, &shipped).await;
     assert_eq!(
         refused["error"]["data"]["reason"], "package_exists",
@@ -169,7 +169,7 @@ async fn removing_shows_what_goes_with_it_and_changes_nothing() {
     let shipped = call(
         &mut client,
         "package.remove",
-        json!({"package": "miyu-base-net", "preview": true}),
+        json!({"package": "base-net", "preview": true}),
     )
     .await;
     assert!(
@@ -181,11 +181,11 @@ async fn removing_shows_what_goes_with_it_and_changes_nothing() {
         "没有状态目录的不写这一格：{shipped}"
     );
     // 状态目录那个位置上是普通文件的：不是目录，卸的时候也删不掉，不写这一格。
-    std::fs::write(home.root.package_state("miyu-base-mermaid"), "x").expect("写得进");
+    std::fs::write(home.root.package_state("base-mermaid"), "x").expect("写得进");
     let file = call(
         &mut client,
         "package.remove",
-        json!({"package": "miyu-base-mermaid", "preview": true}),
+        json!({"package": "base-mermaid", "preview": true}),
     )
     .await;
     assert!(
@@ -311,13 +311,13 @@ async fn a_linked_state_directory_counts_as_nothing() {
 #[tokio::test]
 async fn restoring_a_shipped_package_shows_it() {
     let home = Home::new();
-    home.write("etc/removed/miyu-base-net", "");
+    home.write("etc/removed/base-net", "");
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
     let shown = call(
         &mut client,
         "package.install",
-        json!({"package": "miyu-base-net", "preview": true}),
+        json!({"package": "base-net", "preview": true}),
     )
     .await;
     assert_eq!(
@@ -328,12 +328,12 @@ async fn restoring_a_shipped_package_shows_it() {
         (json!(true), json!("builtin")),
         "{shown}"
     );
-    let removed = home.root.removed_markers().join("miyu-base-net");
+    let removed = home.root.removed_markers().join("base-net");
     assert!(removed.exists(), "什么都不动");
     let unknown = call(
         &mut client,
         "package.install",
-        json!({"package": "miyu-base-memory", "preview": true}),
+        json!({"package": "base-memory", "preview": true}),
     )
     .await;
     assert_eq!(

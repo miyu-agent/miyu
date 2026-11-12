@@ -269,7 +269,7 @@ async fn only_installed_ui_packages_have_prefs() {
     for (package, wanted) in [
         ("nowhere", "unknown_package"),
         ("../pane", "unknown_package"),
-        ("miyu-base-shell", "not_a_ui_package"),
+        ("base-shell", "not_a_ui_package"),
     ] {
         let get = head
             .call("g", "prefs.get", json!({"package": package}))
@@ -295,7 +295,7 @@ async fn only_installed_ui_packages_have_prefs() {
     assert!(
         !home
             .root
-            .package_state("miyu-base-shell")
+            .package_state("base-shell")
             .join("prefs.json")
             .exists(),
         "不是界面包的什么都不写"

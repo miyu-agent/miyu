@@ -21,12 +21,12 @@
 
 | 名字 | 种类 | 方法 | 官方的提供方 |
 |---|---|---|---|
-| `stt` | provides | `transcribe`、`record`、`stop` | `miyu-voice-input` |
-| `tts` | provides | `synthesize`、`play`、`stop` | `miyu-say` |
+| `stt` | provides | `transcribe`、`record`、`stop` | `voice-input` |
+| `tts` | provides | `synthesize`、`play`、`stop` | `say` |
 | `stt.engine` | plugs | `transcribe` | 社区的识别引擎 |
 | `tts.engine` | plugs | `synthesize`、`voices`（可选） | 社区的合成引擎 |
 
-`ready`（`bus.list`）照登记算：`miyu-voice-input` 模型下好、校验过才登记 `stt` 的三个方法；`miyu-say` 选的引擎配好了才登记 `tts` 的三个方法。头查到 `ready` 再画麦克风、朗读按钮。整句进、整句出，不做流式：要首音快，调的一方自己按句切开、一句一句调。
+`ready`（`bus.list`）照登记算：`voice-input` 模型下好、校验过才登记 `stt` 的三个方法；`say` 选的引擎配好了才登记 `tts` 的三个方法。头查到 `ready` 再画麦克风、朗读按钮。整句进、整句出，不做流式：要首音快，调的一方自己按句切开、一句一句调。
 
 ### `stt.transcribe`
 

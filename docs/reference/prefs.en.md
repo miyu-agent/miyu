@@ -38,6 +38,6 @@ Settings of a UI package (one whose manifest has `[ui]`: heads such as the termi
 | `local_only` | Called by an extension or a platform bridge |
 
 ```json
-→ {"jsonrpc":"2.0","id":"1","method":"prefs.set","params":{"package":"miyu-webui","values":{"skin":"paper","mascot":null}}}
+→ {"jsonrpc":"2.0","id":"1","method":"prefs.set","params":{"package":"webui","values":{"skin":"paper","mascot":null}}}
 ← {"jsonrpc":"2.0","id":"1","result":{"values":{"scheme":"dark","skin":"paper"}}}
 ```

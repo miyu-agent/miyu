@@ -99,13 +99,13 @@ async fn the_list_says_status_switch_icon_and_page() {
         "{bare}"
     );
     // 施工 BS-1 上中起没有必需的包：原来基础系统的 shell 也是个能关的出厂内置包。
-    let shell = entry(&mut client, "miyu-base-shell").await;
+    let shell = entry(&mut client, "base-shell").await;
     assert_eq!(
         (shell["status"].clone(), shell["enabled"].clone()),
         (json!("ready"), json!(true)),
         "{shell}"
     );
-    let memory = entry(&mut client, "miyu-base-memory").await;
+    let memory = entry(&mut client, "base-memory").await;
     assert_eq!(
         (memory["status"].clone(), memory["enabled"].clone()),
         (json!("ready"), json!(true))
@@ -155,7 +155,7 @@ async fn a_shipped_built_in_package_is_switched_off_by_removing_it() {
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
 
-    let off = switch(&mut client, "package.disable", "miyu-base-memory").await;
+    let off = switch(&mut client, "package.disable", "base-memory").await;
     assert_eq!(
         (
             off["result"]["enabled"].clone(),
@@ -165,15 +165,12 @@ async fn a_shipped_built_in_package_is_switched_off_by_removing_it() {
         (json!(false), json!("off"), json!(true)),
         "{off}"
     );
-    assert_eq!(
-        entry(&mut client, "miyu-base-memory").await["removed"],
-        true
-    );
+    assert_eq!(entry(&mut client, "base-memory").await["removed"], true);
     // 关着的再关一次什么都不动。
-    let again = switch(&mut client, "package.disable", "miyu-base-memory").await;
+    let again = switch(&mut client, "package.disable", "base-memory").await;
     assert_eq!(again["result"]["enabled"], false, "{again}");
 
-    let on = switch(&mut client, "package.enable", "miyu-base-memory").await;
+    let on = switch(&mut client, "package.enable", "base-memory").await;
     assert_eq!(on["result"]["enabled"], true, "{on}");
     assert!(on["result"].get("removed").is_none(), "{on}");
 }

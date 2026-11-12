@@ -100,21 +100,21 @@ pacman 的写法当别名（设计 `31-软件包.md` 第一节，定了的 A）�
 ### 样子
 
 ```text
-miyu-base-memory   人格记忆
-miyu-base-mermaid  画 mermaid 图（已卸载）
-miyu-base-net      联网搜索
+base-memory   人格记忆
+base-mermaid  画 mermaid 图（已卸载）
+base-net      联网搜索
 ```
 
-`miyu pkg info miyu-im`（没装的，施工 IN-2，照设计 49 第一节；「提供」照索引里有的说）：
+`miyu pkg info im`（没装的，施工 IN-2，照设计 49 第一节；「提供」照索引里有的说）：
 
 ```text
 软件源      : official
-编号        : miyu-im
+编号        : im
 名称        : 接入 QQ
 版本        : 0.2.1
 描述        : 让她在 QQ 群和私聊里说话
 依赖        : 无
-推荐        : miyu-im-sponsor  miyu-memes
+推荐        : im-sponsor  memes
 提供        : 命令 miyu im、技能 sticker
 需要的能力  : 联网、替主人说话
 来源        : github.com/miyu-agent/miyu-im（官方）
@@ -160,13 +160,13 @@ pudding：多出 cache.db
 安装后大小  : 305 B
 ```
 
-`miyu pkg install miyu-im`（从软件源装，施工 IN-3，照设计 49 第二节；答了两个「是」，标准错误不是终端，下载那一段只印行）：
+`miyu pkg install im`（从软件源装，施工 IN-3，照设计 49 第二节；答了两个「是」，标准错误不是终端，下载那一段只印行）：
 
 ```text
 正在解析依赖…
 正在检查冲突…
-软件包 (2)  miyu-embed-0.3.0  miyu-im-0.2.1
-推荐 (1)    miyu-im-sponsor-0.1.0
+软件包 (2)  embed-0.3.0  im-0.2.1
+推荐 (1)    im-sponsor-0.1.0
 
 下载大小    : 12.3 MiB
 安装后大小  : 30.1 MiB
@@ -176,27 +176,27 @@ pudding：多出 cache.db
 安装 2 个软件包？[Y/n]
 同时安装推荐的 1 个软件包？[Y/n]
 正在下载…
-已下载 miyu-embed-0.3.0 10.1 MiB
-已下载 miyu-im-0.2.1 2.2 MiB
+已下载 embed-0.3.0 10.1 MiB
+已下载 im-0.2.1 2.2 MiB
 (1/2) 正在核对完整性
 (2/2) 正在核对完整性
-(1/2) 正在安装 miyu-embed
-(2/2) 正在安装 miyu-im
-已安装 miyu-embed
-已安装 miyu-im 0.2.1
+(1/2) 正在安装 embed
+(2/2) 正在安装 im
+已安装 embed
+已安装 im 0.2.1
 正在下载…
-已下载 miyu-im-sponsor-0.1.0 0.1 MiB
+已下载 im-sponsor-0.1.0 0.1 MiB
 (1/1) 正在核对完整性
-(1/1) 正在安装 miyu-im-sponsor
-已安装 miyu-im-sponsor 0.1.0
+(1/1) 正在安装 im-sponsor
+已安装 im-sponsor 0.1.0
 ```
 
 终端里下载那一段是进度条（80 列）：
 
 ```text
 正在下载…
- miyu-embed-0.3.0   10.1 MiB  [##########################################] 100%
- miyu-im-0.2.1       2.2 MiB  [##########################################] 100%
+ embed-0.3.0        10.1 MiB  [##########################################] 100%
+ im-0.2.1            2.2 MiB  [##########################################] 100%
 (2/2) 正在核对完整性
 ```
 

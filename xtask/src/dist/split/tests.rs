@@ -50,8 +50,8 @@ fn names_carry_their_own_versions() {
         "miyu-core-2026.11.0-rc.1-macos-aarch64"
     );
     assert_eq!(
-        head_name("miyu-tui", "0.1.0", "macos-aarch64"),
-        "miyu-tui-0.1.0-macos-aarch64"
+        head_name("tui", "0.1.0", "macos-aarch64"),
+        "tui-0.1.0-macos-aarch64"
     );
     assert_eq!(
         version_of("[package]\nversion = \"0.1.0\"\nname = { en = \"T\" }\n"),
@@ -73,10 +73,10 @@ fn the_core_one_has_three_programs_and_only_the_core_resources() {
         .map(|name| scratch.put(&format!("build/{name}"), name))
         .collect();
     scratch.put("res/core/a.md", "a");
-    scratch.put("res/packages/miyu-base-x/package.toml", "x");
+    scratch.put("res/packages/base-x/package.toml", "x");
     let files = vec![
         PathBuf::from("core/a.md"),
-        PathBuf::from("packages/miyu-base-x/package.toml"),
+        PathBuf::from("packages/base-x/package.toml"),
     ];
     let license = scratch.put("LICENSE", "agpl");
     let dir = scratch.0.join("out/miyu-core-1.0.0-t");
@@ -96,10 +96,7 @@ fn the_core_one_has_three_programs_and_only_the_core_resources() {
         fs::read_to_string(dir.join("resources/core/a.md")).unwrap(),
         "a"
     );
-    assert!(
-        dir.join("resources/packages/miyu-base-x/package.toml")
-            .is_file()
-    );
+    assert!(dir.join("resources/packages/base-x/package.toml").is_file());
     assert_eq!(
         fs::read_to_string(dir.join("THIRD-PARTY-LICENSES.txt")).unwrap(),
         "core notices\n"
@@ -129,10 +126,10 @@ fn the_core_one_has_three_programs_and_only_the_core_resources() {
 #[test]
 fn a_head_folder_keeps_its_manifest_and_puts_the_program_in_bin() {
     let scratch = Scratch::new("head");
-    let manifest = scratch.put("tui/miyu-tui/package.toml", "[package]\nprefix = \"tui\"\n");
+    let manifest = scratch.put("tui/tui/package.toml", "[package]\nprefix = \"tui\"\n");
     let license = scratch.put("tui/LICENSE", "agpl");
     let program = scratch.put("build/miyu-tui", "program");
-    let dir = scratch.0.join("split/miyu-tui/miyu-tui");
+    let dir = scratch.0.join("split/tui/tui");
     let files = vec![
         (manifest, PathBuf::from("package.toml")),
         (license, PathBuf::from("LICENSE")),

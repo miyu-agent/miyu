@@ -46,14 +46,14 @@ package() {
   rm -rf unpacked
   mkdir unpacked
   tar -xzf "miyu-core-${version}-${target}.tar.gz" -C unpacked
-  tar -xzf miyu-tui-*-"${target}".tar.gz -C unpacked
-  tar -xzf miyu-webui-*-"${target}".tar.gz -C unpacked
+  tar -xzf tui-*-"${target}".tar.gz -C unpacked
+  tar -xzf webui-*-"${target}".tar.gz -C unpacked
 
   install -d "${pkgdir}/usr/lib/miyu" "${pkgdir}/usr/bin" "${pkgdir}/usr/share/miyu/packages"
   cp -a "unpacked/miyu-core-${version}-${target}/." "${pkgdir}/usr/lib/miyu/"
   printf '# AUR 的 miyu-agent-git 装的：miyu upgrade 说用包管理器升级。\nchannel = "aur"\n' > "${pkgdir}/usr/lib/miyu/install.toml"
   ln -s /usr/lib/miyu/miyu "${pkgdir}/usr/bin/miyu"
-  cp -a unpacked/miyu-tui unpacked/miyu-webui "${pkgdir}/usr/share/miyu/packages/"
+  cp -a unpacked/tui unpacked/webui "${pkgdir}/usr/share/miyu/packages/"
   install -Dm644 "unpacked/miyu-core-${version}-${target}/LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
   install -Dm644 "${srcdir}/miyu/packaging/mime/miyu.xml" "${pkgdir}/usr/share/mime/packages/miyu.xml"
 }

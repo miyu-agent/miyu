@@ -42,7 +42,7 @@ async fn pkg_lists_installs_and_removes_through_a_real_core() {
     assert_eq!(listed.status.code(), Some(0), "{listed:?}");
     let text = stdout(&listed);
     assert!(
-        line(&text, "miyu-base-shell").is_some_and(|line| line.ends_with("运行命令")),
+        line(&text, "base-shell").is_some_and(|line| line.ends_with("运行命令")),
         "{text}"
     );
 
@@ -58,29 +58,14 @@ async fn pkg_lists_installs_and_removes_through_a_real_core() {
     assert!(line(&stdout(&run(&root, &cwd, zh, &["pkg"]).await), "xpkg").is_none());
 
     // 出厂的：卸掉的照样列、标「已卸载」，照编号装回来。
-    run(
-        &root,
-        &cwd,
-        zh,
-        &["pkg", "remove", "miyu-base-net", "--yes"],
-    )
-    .await;
+    run(&root, &cwd, zh, &["pkg", "remove", "base-net", "--yes"]).await;
     let text = stdout(&run(&root, &cwd, zh, &["pkg"]).await);
     assert!(
-        line(&text, "miyu-base-net").is_some_and(|line| line.ends_with("（已卸载）")),
+        line(&text, "base-net").is_some_and(|line| line.ends_with("（已卸载）")),
         "{text}"
     );
-    let back = run(
-        &root,
-        &cwd,
-        zh,
-        &["pkg", "install", "miyu-base-net", "--yes"],
-    )
-    .await;
-    assert!(
-        stdout(&back).starts_with("已安装 miyu-base-net"),
-        "{back:?}"
-    );
+    let back = run(&root, &cwd, zh, &["pkg", "install", "base-net", "--yes"]).await;
+    assert!(stdout(&back).starts_with("已安装 base-net"), "{back:?}");
 
     // 施工 BS-1 上中起没有必需的包；卸没有的照旧拒。
     let unknown = run(&root, &cwd, zh, &["pkg", "remove", "nope", "--yes"]).await;
@@ -99,7 +84,7 @@ async fn pkg_lists_installs_and_removes_through_a_real_core() {
     assert!(
         packages
             .as_array()
-            .is_some_and(|all| all.iter().any(|one| one["package"] == "miyu-base-shell")),
+            .is_some_and(|all| all.iter().any(|one| one["package"] == "base-shell")),
         "{packages}"
     );
     drop(held);

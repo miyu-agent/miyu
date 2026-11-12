@@ -4004,10 +4004,10 @@ in a {platform} private chat
 on {platform}
 ```
 
-#### `packages/miyu-base-authoring/skills/package-creator/SKILL.md`
+#### `packages/base-authoring/skills/package-creator/SKILL.md`
 
 - 什么时候加进来：同上，`skill-package-creator`
-- token：那一行 68（施工 PN-3 路径同上多 10 个字符，没重量）；正文 741（2026-10-12 量；施工 BS-1 中下检查和装两步改写成 `miyu pkg`，约多 10；施工 SK-1 同上，+2；施工 FH-4 沙盒那一句能写的地方换成新的变量名 `MIYU_CACHE_DIR`、`MIYU_STATE_DIR`，约 +6，没重量）
+- token：那一行 68（施工 PN-3 路径同上多 10 个字符，PN-5 去掉 `miyu-` 少 5 个，没重量）；正文 741（2026-10-12 量；施工 BS-1 中下检查和装两步改写成 `miyu pkg`，约多 10；施工 SK-1 同上，+2；施工 FH-4 沙盒那一句能写的地方换成新的变量名 `MIYU_CACHE_DIR`、`MIYU_STATE_DIR`，约 +6，没重量）
 - 为什么加：同上：脚本的开头怎么写、参数和输出、沙盒，MCP 服务的写法，检查和装
 - 指纹：`5f77ebf3`
 
@@ -6272,10 +6272,10 @@ No skills are available now.
 
 ### 说明列进 system 第 4 块技能那一段（一行）；正文是她读的工具结果
 
-#### `packages/miyu-base-authoring/skills/skill-creator/SKILL.md`
+#### `packages/base-authoring/skills/skill-creator/SKILL.md`
 
-- 什么时候加进来：出厂包 `miyu-base-authoring`（施工 PN-3 以前叫 `authoring`）装着、预设开着 `skill-skill-creator`、工具面上有读文件的工具（施工 XG-2 上起照职能 `read_file` 认，老快照照名字 `read`） 的会话（施工 X-13 下；那一行每次请求都带，正文用到才读）
-- token：那一行 56（路径按 `/usr/share/miyu/packages/…` 算；施工 PN-3 包目录改名 `miyu-base-authoring`，路径多 10 个字符，估计多 3 左右，没重量）；正文 667（2026-10-12 量；施工 BS-1 中下检查和装两步改写成 `miyu pkg`，约少 5；施工 SK-1 两步的目录写成 `./<folder>`，+2）
+- 什么时候加进来：出厂包 `base-authoring`（施工 PN-3 以前叫 `authoring`，PN-3 起是 `miyu-base-authoring`，PN-5 起去掉 `miyu-`）装着、预设开着 `skill-skill-creator`、工具面上有读文件的工具（施工 XG-2 上起照职能 `read_file` 认，老快照照名字 `read`） 的会话（施工 X-13 下；那一行每次请求都带，正文用到才读）
+- token：那一行 56（路径按 `/usr/share/miyu/packages/…` 算；施工 PN-3 包目录改名 `miyu-base-authoring`，路径多 10 个字符，估计多 3 左右；PN-5 改成 `base-authoring`，少 5 个，没重量）；正文 667（2026-10-12 量；施工 BS-1 中下检查和装两步改写成 `miyu pkg`，约少 5；施工 SK-1 两步的目录写成 `./<folder>`，+2）
 - 为什么加：出厂带两个技能（`skills.md`「定了的」第 5 条）：她自己写技能照包的样子写在工作区、`packages` 检查、`package` 装（设计 31 第六节第 2 条）；说明加引号那一条是 F-10 下上真模型写技能时撞上的
 - 指纹：`ba5c9c94`
 
@@ -6348,9 +6348,9 @@ metadata:
 
 ### system 第一块（人设，第四节第 1 块）
 
-#### `packages/miyu-base-persona-engineer/personas/software-engineer/prompts/persona.md`
+#### `packages/base-persona-engineer/personas/software-engineer/prompts/persona.md`
 
-- 什么时候加进来：用软件工程师这个人格（`software-engineer`）的会话的每次请求，派子代理挑了它的子会话也带（施工 PE-1）；出厂包 `miyu-base-persona-engineer` 装着才有，你那一层改了人设的照你那一份；没用这个人格的会话一个字节不变
+- 什么时候加进来：用软件工程师这个人格（`software-engineer`）的会话的每次请求，派子代理挑了它的子会话也带（施工 PE-1）；出厂包 `base-persona-engineer` 装着才有，你那一层改了人设的照你那一份；没用这个人格的会话一个字节不变
 - token：335（2026-10-31 照 tiktoken `o200k_base` 量，带行尾换行）
 - 为什么加：项目主人 2026-10-31 定出厂带一个软件工程师人格（设计 16 Y11 改定）：写代码先用最简单的办法、用独立的依据验证、做完验过就收工、说话简洁。人格侧的字，原文照基准测试仓库 `runs/2026-10-31/effort/persona-v9.md` 一字不改；`persona.toml` 是给人看的名字、说明，不登记（同最上一层的人格目录）
 - 指纹：`23e9877e`

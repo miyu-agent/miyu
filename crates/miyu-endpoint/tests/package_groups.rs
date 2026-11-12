@@ -98,17 +98,17 @@ async fn the_list_says_which_group_each_package_is_in() {
     assert_eq!(
         packages[..7],
         [
-            "miyu-base-read",
-            "miyu-base-write",
-            "miyu-base-edit",
-            "miyu-base-glob",
-            "miyu-base-grep",
-            "miyu-base-trash",
-            "miyu-base-shell"
+            "base-read",
+            "base-write",
+            "base-edit",
+            "base-glob",
+            "base-grep",
+            "base-trash",
+            "base-shell"
         ],
         "照用途的先后：{packages:?}"
     );
-    assert!(!packages.contains(&"miyu-base-memory"), "别的组里的不列");
+    assert!(!packages.contains(&"base-memory"), "别的组里的不列");
     let order: Vec<&Value> = result["groups"]
         .as_array()
         .expect("一串")
@@ -127,13 +127,9 @@ async fn the_list_says_which_group_each_package_is_in() {
             .map(|item| item["groups"].clone())
             .unwrap_or_else(|| panic!("有 {id}：{listed}"))
     };
-    assert_eq!(groups_of("miyu-base-shell"), json!(["basesystem"]));
-    assert_eq!(groups_of("miyu-base-memory"), json!(["persona"]));
-    assert_eq!(
-        groups_of("miyu-base-authoring"),
-        Value::Null,
-        "不在组里的不写"
-    );
+    assert_eq!(groups_of("base-shell"), json!(["basesystem"]));
+    assert_eq!(groups_of("base-memory"), json!(["persona"]));
+    assert_eq!(groups_of("base-authoring"), Value::Null, "不在组里的不写");
 }
 
 /// 装的时刻（施工 PG-1，预设页照装的先后排）：装上的包带 `installed_at`，出厂的不写。
@@ -170,9 +166,7 @@ async fn installed_packages_say_when_they_were_installed() {
         "装上的带时刻：{listed}"
     );
     assert!(
-        item(&listed, "miyu-base-shell")
-            .get("installed_at")
-            .is_none(),
+        item(&listed, "base-shell").get("installed_at").is_none(),
         "出厂的不写"
     );
 }

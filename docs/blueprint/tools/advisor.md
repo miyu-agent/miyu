@@ -23,7 +23,7 @@
 | `resources/software/basesystem/advisor/*.txt` | 输出里给她看的两句 |
 | `resources/core/advisor/system.txt` | 顾问会话的 system |
 | `resources/software/basesystem/human/{zh,en,ja}.json` | 显示名、三种说法 |
-| `resources/packages/miyu-base-advisor/package.toml` | 出厂包 `miyu-base-advisor`（基础系统组，排在 `miyu-base-subagent` 后面） |
+| `resources/packages/base-advisor/package.toml` | 出厂包 `base-advisor`（基础系统组，排在 `base-subagent` 后面） |
 
 ### 对外的样子
 

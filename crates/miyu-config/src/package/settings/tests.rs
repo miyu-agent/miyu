@@ -333,13 +333,13 @@ fn a_group_adds_one_level_to_the_name() {
         .collect();
     assert_eq!(names, ["qq.listen", "qq.token", "mode"], "照写的先后");
     // 键照前缀起，组和包照编号（施工 PN-1）。
-    let items = items("miyu-im", "im", &manifest.settings);
+    let items = items("im-bridge", "im", &manifest.settings);
     let keys: Vec<&str> = items.iter().map(|item| item.key).collect();
     assert_eq!(keys, ["im.qq.listen", "im.qq.token", "im.mode"]);
     assert!(
         items
             .iter()
-            .all(|item| (item.ui.group, item.ui.package) == ("miyu-im", Some("miyu-im")))
+            .all(|item| (item.ui.group, item.ui.package) == ("im-bridge", Some("im-bridge")))
     );
     assert_eq!(
         wrong("[settings.qq.Bad]\ntype = \"bool\"\nname = { en = \"X\" }\n"),

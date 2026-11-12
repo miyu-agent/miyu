@@ -126,7 +126,7 @@
 │   ├── log/                    core.log（和轮换的 .1…）、memory.jsonl、mcp/<服务>.stderr、<编号>/（包的日志；stderr、stderr.old 是核心记的）
 │   └── tmp/                    跨重启留着的暂存，核心起来时清放了满 7 天没碰的
 ├── tmp/                        短命的暂存：unpack/（核心起来清空）、<编号>/（拉起这个包的扩展之前清）
-└── run/                        core.lock、spawn.lock、token、socket（core.sock）；写数据根里配置、密钥时的临时文件；<编号>/ 包自己的锁、地址（网页的 miyu-webui/lock、address、open/）
+└── run/                        core.lock、spawn.lock、token、socket（core.sock）；写数据根里配置、密钥时的临时文件；<编号>/ 包自己的锁、地址（网页的 webui/lock、address、open/）
 ```
 
 - 包的编号不能是核心在这几层自己用的名字（`root::RESERVED`：private removed leftover models packages mcp index config provide scripts personas mermaid sandbox perf unpack token socket log-salt blob-grants）：读清单时报 `reserved_id`，装的时候拒（施工 FH-3）。

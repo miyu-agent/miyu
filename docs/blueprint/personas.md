@@ -4,7 +4,7 @@
 
 人格管「她是谁」：人设、示范对话、角色扮演提示，以后还有声音、记忆的默认范围、能查的知识库（`16-人格与预设.md`）。一个人格是一个目录，三层叠起来：出厂的、装着的软件包带的（施工 P-11 上，设计 `31-软件包.md` 第十节）、你的（数据根的 `root/personas/`，协议里写 `home`）。造会话时照这一刻的文件拼进策略快照，之后钉在会话上（Y5）。
 
-- 出厂带一个软件工程师 `software-engineer`（施工 PE-1，2026-10-31 项目主人定，16 Y11 改定）：住在出厂包 `miyu-base-persona-engineer` 里（「软件包带的」），能改、能删；不算进第一次引导，`persona.default` 出厂照旧不设。Miyu 是项目主人自己的人格，放在他的数据根里，不进仓库（Y10）。
+- 出厂带一个软件工程师 `software-engineer`（施工 PE-1，2026-10-31 项目主人定，16 Y11 改定）：住在出厂包 `base-persona-engineer` 里（「软件包带的」），能改、能删；不算进第一次引导，`persona.default` 出厂照旧不设。Miyu 是项目主人自己的人格，放在他的数据根里，不进仓库（Y10）。
 - 核心不读场所规则：场所会话用哪个人格，由通讯平台的桥照场所规则算好，经 `venue.session` 交来（`18-通讯平台.md` Q1、第四节）。
 
 状态：图纸，施工 P-1（上）做了（2026-10-07 主会话；方向照人格与预设走查，项目主人同一天定；场所会话的人格由桥交来和通讯平台的会话对过）。空人格、会话带上人格施工 P-1（下）做了（2026-10-07）。角色扮演提示和风格锁施工 P-1（补）做了（2026-10-07；方向是 J10 和项目主人 2026-10-07 定的「风格锁只给有角色扮演提示的人格」，技术细节主会话定）。改了文件下一个回合换上施工 P-1（再补）做了（2026-10-07，K3、走查 B8）；预设随 P-2；新建、改、删随 P-3（`base` 施工 P-3 上做了、P-3 补撤了：2026-10-08 项目主人看了界面定的，不要以谁为底）。
@@ -18,7 +18,7 @@
 | `crates/miyu-store/src/personas.rs` | 三层在哪、怎么叠、列出编号、包里被盖住的（施工 P-11 上） |
 | `crates/miyu-endpoint/src/personas.rs` | 造会话时照默认找人格、`persona.list`、`persona.get` |
 | `crates/miyu-endpoint/src/personas/delete.rs`（施工 PE-1 从 `write.rs` 挪出来） | `persona.delete`：删你那一层；只住在一个只带它的出厂包里的，连包卸掉（「软件包带的」第 3 条） |
-| `resources/packages/miyu-base-persona-engineer/`（施工 PE-1） | 出厂带的软件工程师 `software-engineer`：只带这一个人格的出厂包 |
+| `resources/packages/base-persona-engineer/`（施工 PE-1） | 出厂带的软件工程师 `software-engineer`：只带这一个人格的出厂包 |
 | `crates/miyu-endpoint/src/personas/glance.rs`（施工 V-16） | 图的版本、头像的候选主色记在 `var/cache/personas/pictures.json`：照位置、大小、修改时刻认，对得上的不读图，换了图重算；坏了、删了照空的算 |
 | `crates/miyu-endpoint/src/settings.rs` | 配置项 `persona.default`（`config.md`） |
 
@@ -41,7 +41,7 @@ personas/<编号>/                 你的（数据根下）
 2. 同名的后面的叠在前面的上面：`persona.toml` 逐项盖（同一格里逐种语言盖），`prompts/` 里的文件同名替换、没写的沿用。只有一个空目录也算有这一层。
 3. 每样都可以没有：测试用的样本（软件工程师，`docs/designs/samples/personas/engineer/`）只有 `persona.toml` 的名字和 `prompts/persona.md`。
 4. `prompts/reminders.md`（施工 P-1 补）：整份是一条提示，照原样（例如旧版 Miyu 的 `miyu.hint.md`）；去掉末尾空白是空的，算没有。有它的人格每 3 轮在触发的那句后面多一块提示，system 最后多一句风格锁（`26-提示词.md` J10、第四节第 7 块）。
-5. 资源目录里没有 `personas/`（施工 P-4 下，2026-10-08 项目主人：「软件默认不自带任何人格，人格允许为空」，`16-人格与预设.md` Y11 改了）：原来出厂的软件工程师 `engineer`、空人格 `none` 撤掉了。施工 PE-1（2026-10-31 项目主人定，Y11 再改）起出厂带一个软件工程师 `software-engineer`，住在出厂包 `miyu-base-persona-engineer` 里（「软件包带的」第 3 条），人设见登记簿（`26-提示词.md` 第十节）；它不算进第一次引导，引导照常带人建自己的人格，`persona.default` 出厂照旧不设。软件工程师挪成测试用的样本 `docs/designs/samples/personas/engineer/`：要人格的测试把它装进临时数据根的 `root/personas/`（`miyu_session::testkit::install_sample_persona`），照旧用编号 `engineer`。以前造的、钉着 `engineer`、`none` 的会话照快照里冻结的接着用（「怎么走」第 6 条）。
+5. 资源目录里没有 `personas/`（施工 P-4 下，2026-10-08 项目主人：「软件默认不自带任何人格，人格允许为空」，`16-人格与预设.md` Y11 改了）：原来出厂的软件工程师 `engineer`、空人格 `none` 撤掉了。施工 PE-1（2026-10-31 项目主人定，Y11 再改）起出厂带一个软件工程师 `software-engineer`，住在出厂包 `base-persona-engineer` 里（「软件包带的」第 3 条），人设见登记簿（`26-提示词.md` 第十节）；它不算进第一次引导，引导照常带人建自己的人格，`persona.default` 出厂照旧不设。软件工程师挪成测试用的样本 `docs/designs/samples/personas/engineer/`：要人格的测试把它装进临时数据根的 `root/personas/`（`miyu_session::testkit::install_sample_persona`），照旧用编号 `engineer`。以前造的、钉着 `engineer`、`none` 的会话照快照里冻结的接着用（「怎么走」第 6 条）。
 
 **`persona.toml`**：
 

@@ -92,28 +92,28 @@ pub fn tools(resources: &Path) -> Result<Vec<Arc<dyn Tool>>, LoadError> {
     ])
 }
 
-/// 基础系统拆成的内置包（施工 BS-1 上中，设计 44 第三节第 1 条）：编号照清单的先后，`miyu-base-project-docs`、`miyu-base-clicall`
-/// 没有工具。施工 PN-3 起是 `miyu-base-*`（设计 48 第一节第 2 条），和工具名不再相同，工具归哪个包照 [`TOOLS`]。
+/// 基础系统拆成的内置包（施工 BS-1 上中，设计 44 第三节第 1 条）：编号照清单的先后，`base-project-docs`、`base-clicall`
+/// 没有工具。施工 PN-5 起是 `base-*`（设计 48 第一节第 2 条），和工具名不再相同，工具归哪个包照 [`TOOLS`]。
 pub const PACKAGES: [&str; 19] = [
-    "miyu-base-read",
-    "miyu-base-write",
-    "miyu-base-edit",
-    "miyu-base-glob",
-    "miyu-base-grep",
-    "miyu-base-trash",
-    "miyu-base-shell",
-    "miyu-base-jobs",
-    "miyu-base-subagent",
-    "miyu-base-advisor",
-    "miyu-base-ask-user",
-    "miyu-base-todowrite",
-    "miyu-base-history",
-    "miyu-base-session-usage",
-    "miyu-base-sessions",
-    "miyu-base-packages",
-    "miyu-base-show",
-    "miyu-base-project-docs",
-    "miyu-base-clicall",
+    "base-read",
+    "base-write",
+    "base-edit",
+    "base-glob",
+    "base-grep",
+    "base-trash",
+    "base-shell",
+    "base-jobs",
+    "base-subagent",
+    "base-advisor",
+    "base-ask-user",
+    "base-todowrite",
+    "base-history",
+    "base-session-usage",
+    "base-sessions",
+    "base-packages",
+    "base-show",
+    "base-project-docs",
+    "base-clicall",
 ];
 
 /// 基础系统的组名（施工 BS-1 上中）：上面这些包的清单都写着它，出厂的组表 `resources/packages/groups.toml` 里有它。
@@ -122,25 +122,25 @@ pub const GROUP: &str = "basesystem";
 /// 基础系统的每件工具归哪个包（施工 PN-3）：`sessions`、`send_message` 一个包，`packages`、`package` 一个包，别的一件一个包。
 /// 和各包清单的 `[features] tools` 一致，出厂资源的测试守着。
 pub const TOOLS: [(&str, &str); 19] = [
-    ("read", "miyu-base-read"),
-    ("write", "miyu-base-write"),
-    ("edit", "miyu-base-edit"),
-    ("glob", "miyu-base-glob"),
-    ("grep", "miyu-base-grep"),
-    ("trash", "miyu-base-trash"),
-    ("shell", "miyu-base-shell"),
-    ("jobs", "miyu-base-jobs"),
-    ("subagent", "miyu-base-subagent"),
-    ("advisor", "miyu-base-advisor"),
-    ("ask_user", "miyu-base-ask-user"),
-    ("todowrite", "miyu-base-todowrite"),
-    ("history", "miyu-base-history"),
-    ("session_usage", "miyu-base-session-usage"),
-    ("sessions", "miyu-base-sessions"),
-    ("send_message", "miyu-base-sessions"),
-    ("packages", "miyu-base-packages"),
-    ("package", "miyu-base-packages"),
-    ("show", "miyu-base-show"),
+    ("read", "base-read"),
+    ("write", "base-write"),
+    ("edit", "base-edit"),
+    ("glob", "base-glob"),
+    ("grep", "base-grep"),
+    ("trash", "base-trash"),
+    ("shell", "base-shell"),
+    ("jobs", "base-jobs"),
+    ("subagent", "base-subagent"),
+    ("advisor", "base-advisor"),
+    ("ask_user", "base-ask-user"),
+    ("todowrite", "base-todowrite"),
+    ("history", "base-history"),
+    ("session_usage", "base-session-usage"),
+    ("sessions", "base-sessions"),
+    ("send_message", "base-sessions"),
+    ("packages", "base-packages"),
+    ("package", "base-packages"),
+    ("show", "base-show"),
 ];
 
 /// 一件工具归哪个包（施工 BS-1 上中，施工 PN-3 起照 [`TOOLS`]）。不是基础系统的工具照 `basesystem` 算（[`grouped`] 给测试的假

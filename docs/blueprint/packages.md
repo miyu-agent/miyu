@@ -28,10 +28,10 @@
 | `crates/miyu-core/src/settings.rs` | 起来时照清单拼好包的配置项（`Packaged`），读配置、生成 Schema 和参考文件时并进去（施工 9-1 下） |
 | `crates/miyu-store/src/human.rs` | 给人看的字并进包的配置项的名字、说明和组名（`Human::with_packages`，施工 9-1 下） |
 | `crates/miyu-endpoint/src/check.rs` | `miyu check` 照磁盘查清单 |
-| `heads.toml` | 两个界面（终端 `tui`、网页 `web`）的清单不在核心仓库里，在各自的仓库（`miyu-agent/miyu-tui`、`miyu-agent/miyu-web`）里和编号同名的文件夹 `tui/`、`web/` 下（2026-10-13 起，以前叫 `package/`）；核心仓库只记发版时取哪一份（施工 S-5，设计 `32-仓库拆分.md` 第六节）。发版时清单放进资源目录的 `packages/tui/`、`packages/web/`，程序放在 `miyu` 旁边；核心仓库自己编出来的没带它们 |
+| `heads.toml` | 两个界面（终端 `tui`、网页 `webui`，设计 48）的清单不在核心仓库里，在各自的仓库（`miyu-agent/miyu-tui`、`miyu-agent/miyu-web`）里和编号同名的文件夹 `tui/`、`webui/` 下（2026-10-13 以前叫 `package/`）；核心仓库只记发版时取哪一份（施工 S-5，设计 `32-仓库拆分.md` 第六节）。发版时清单放进资源目录的 `packages/tui/`、`packages/webui/`，程序放在 `miyu` 旁边；核心仓库自己编出来的没带它们 |
 | `resources/packages/onebot/`（搬走了） | 接入QQ 的清单原来在这里（施工 O-18 起）；施工 S-6 下随桥搬进 `miyu-agent/miyu-onebot` 仓库，单独发、自己装，核心的发布包不带它，也不进 `heads.toml`（设计 `32-仓库拆分.md` 第九节） |
-| `resources/packages/<编号>/package.toml`、`resources/packages/groups.toml` | 出厂的内置包的清单（施工 F-2）。基础系统（施工 BS-1 上中起，设计 44）拆成十九个包：`miyu-base-read`、`miyu-base-write`、`miyu-base-edit`、`miyu-base-glob`、`miyu-base-grep`、`miyu-base-trash`、`miyu-base-shell`、`miyu-base-jobs`、`miyu-base-subagent`、`miyu-base-advisor`（施工 ADV-2，设计 69）、`miyu-base-ask-user`、`miyu-base-todowrite`、`miyu-base-history`、`miyu-base-session-usage`、`miyu-base-sessions`（带 `send_message`）、`miyu-base-packages`（带 `package`）、`miyu-base-show`、`miyu-base-project-docs`、`miyu-base-clicall`，每个一个功能、写明带的工具，功能编号是改名前的短名（`read`、`ask_user`、`session_usage`……）。出厂五个组（施工 FG-1，设计 52 第一节），组表 `groups.toml` 的先后就是预设页上组的先后（`preset.get` 的 `sections`，`presets.md`「功能分组」）：基础系统 `basesystem`（读、写、改、找文件、搜内容、回收站、运行命令、后台、命令行调用工具、子代理、顾问、提问、展示、跨会话消息、翻查本会话、用量、软件包十七个包）、任务和定时 `tasks`（`miyu-base-todowrite`、`miyu-base-goal`、`miyu-base-schedule`、`miyu-base-loop`；待办、定时、循环施工 FG-1 从基础系统挪来）、注入环境信息 `environment`（`miyu-base-env`、`miyu-base-project-docs`）、人格 `persona`（`miyu-base-memory`、`miyu-base-roleplay`）、查资料 `research`（`miyu-base-net`、`miyu-base-knowledge`）。包在哪个组照清单的 `groups` 写；组表给名字、说明（中英日）和 `order`：组里的包照用途的先后（施工 PG-1，`package.list` 顶上的 `groups` 照它给 `packages`，`sections` 照它排组里的功能）。写技能和包（`miyu-base-authoring`，只带技能）、画 mermaid（没有功能）、软件工程师人格（`miyu-base-persona-engineer`，只带人格 `software-engineer`，没有功能；施工 PE-1：删这个人格就是卸这个包，`personas.md`「软件包带的」第 3 条）不进组。组名也是预设 `[software]` 里能写的词，定了不轻易改；出厂资源的测试守着清单写的组都在组表里、`order` 不多不漏、组名不和包编号撞（`tests/package_groups.rs`）。没有哪个包是必需的。注入环境信息（`miyu-base-env`，施工 ENV-1）不是必需的，八个功能：环境那七块加「用户身份」（`presets.md`「环境那几块」）；人格记忆、知识库（施工 K-1 下）、人设遵循提醒各算一个功能；画 mermaid 不带功能，联网两个功能「网络搜索」「抓取网页」（施工 N-2 上、N-1）；人格记忆推荐小程序 `embed`（施工 R-5 三补）。出厂的包施工 PN-3 起都叫 `miyu-base-<名字>`（设计 48），清单写 `prefix = "<改名前的编号>"`，配置键、功能编号、资源目录照旧是短名；基础系统的工具归哪个包照 `miyu_basesystem::TOOLS` 对照，不再靠工具名等于包编号 |
-| `miyu-agent/miyu-embed` 仓库的 `package/embed/` | 「内置语义模型」这个小程序包（施工 R-5 三补，`recall.md` 第四条；S-7 下拆进自己的仓库）：出厂不装，从软件源装（`miyu pkg install miyu-embed`，施工 PN-4 起的编号） |
+| `resources/packages/<编号>/package.toml`、`resources/packages/groups.toml` | 出厂的内置包的清单（施工 F-2）。基础系统（施工 BS-1 上中起，设计 44）拆成十九个包：`base-read`、`base-write`、`base-edit`、`base-glob`、`base-grep`、`base-trash`、`base-shell`、`base-jobs`、`base-subagent`、`base-advisor`（施工 ADV-2，设计 69）、`base-ask-user`、`base-todowrite`、`base-history`、`base-session-usage`、`base-sessions`（带 `send_message`）、`base-packages`（带 `package`）、`base-show`、`base-project-docs`、`base-clicall`，每个一个功能、写明带的工具，功能编号是改名前的短名（`read`、`ask_user`、`session_usage`……）。出厂五个组（施工 FG-1，设计 52 第一节），组表 `groups.toml` 的先后就是预设页上组的先后（`preset.get` 的 `sections`，`presets.md`「功能分组」）：基础系统 `basesystem`（读、写、改、找文件、搜内容、回收站、运行命令、后台、命令行调用工具、子代理、顾问、提问、展示、跨会话消息、翻查本会话、用量、软件包十七个包）、任务和定时 `tasks`（`base-todowrite`、`base-goal`、`base-schedule`、`base-loop`；待办、定时、循环施工 FG-1 从基础系统挪来）、注入环境信息 `environment`（`base-env`、`base-project-docs`）、人格 `persona`（`base-memory`、`base-roleplay`）、查资料 `research`（`base-net`、`base-knowledge`）。包在哪个组照清单的 `groups` 写；组表给名字、说明（中英日）和 `order`：组里的包照用途的先后（施工 PG-1，`package.list` 顶上的 `groups` 照它给 `packages`，`sections` 照它排组里的功能）。写技能和包（`base-authoring`，只带技能）、画 mermaid（没有功能）、软件工程师人格（`base-persona-engineer`，只带人格 `software-engineer`，没有功能；施工 PE-1：删这个人格就是卸这个包，`personas.md`「软件包带的」第 3 条）不进组。组名也是预设 `[software]` 里能写的词，定了不轻易改；出厂资源的测试守着清单写的组都在组表里、`order` 不多不漏、组名不和包编号撞（`tests/package_groups.rs`）。没有哪个包是必需的。注入环境信息（`base-env`，施工 ENV-1）不是必需的，八个功能：环境那七块加「用户身份」（`presets.md`「环境那几块」）；人格记忆、知识库（施工 K-1 下）、人设遵循提醒各算一个功能；画 mermaid 不带功能，联网两个功能「网络搜索」「抓取网页」（施工 N-2 上、N-1）；人格记忆推荐小程序 `embed`（施工 R-5 三补）。出厂的包施工 PN-3 起都叫 `base-<名字>`（设计 48），清单写 `prefix = "<改名前的编号>"`，配置键、功能编号、资源目录照旧是短名；基础系统的工具归哪个包照 `miyu_basesystem::TOOLS` 对照，不再靠工具名等于包编号 |
+| `miyu-agent/miyu-embed` 仓库的 `package/embed/` | 「内置语义模型」这个小程序包（施工 R-5 三补，`recall.md` 第四条；S-7 下拆进自己的仓库）：出厂不装，从软件源装（`miyu pkg install embed`，编号照设计 48；小程序照旧叫 `miyu-embed`） |
 | `crates/miyu-core/src/lib.rs`、`packages.rs` | 编进来的内置包那张表（`built_in`）；起来时照清单登记工具（`tools`）、查询（`packages::register`）（施工 F-2） |
 
 ### 对外的样子
@@ -110,17 +110,17 @@ summary = { en = "Decides whether to reply in a group.", zh = "群里有人说�
 packages = ["onebot>=1.2.0"]     # 可以带版本下限（施工 PK-2）：只认 >=，版本照 semver；以前只写小程序，叫 workers，照样认（只写编号）
 
 [recommends]                     # 推荐的包：缺了照装、照起，少一部分本事
-packages = ["miyu-embed"]
+packages = ["embed"]
 
 [worker]                         # 小程序必写，别的种类不能写
 program = "miyu-embed"           # 程序名，不带路径分隔符
 args = ["serve"]                 # 可以不写
 ```
 
-一个小程序包的样子：内置语义模型（施工 R-5 三补，`recall.md` 第四条；2026-10-09 项目主人定做成可选的包、只放一个模型、出厂不装；放的模型 2026-10-18 换成 granite-embedding-97m-multilingual-r2，施工 R-5 七补）。人格记忆的清单写 `[recommends] workers = ["miyu-embed"]`，核心照它拉：
+一个小程序包的样子：内置语义模型（施工 R-5 三补，`recall.md` 第四条；2026-10-09 项目主人定做成可选的包、只放一个模型、出厂不装；放的模型 2026-10-18 换成 granite-embedding-97m-multilingual-r2，施工 R-5 七补）。人格记忆的清单写 `[recommends] workers = ["embed"]`，核心照它拉：
 
 ```toml
-# packages/miyu-embed/package.toml
+# packages/embed/package.toml
 [package]
 protocol = [1, 1]
 name = { zh = "内置语义模型", en = "Built-in semantic model", ja = "内蔵の意味モデル" }
@@ -129,7 +129,7 @@ name = { zh = "内置语义模型", en = "Built-in semantic model", ja = "内蔵
 program = "miyu-embed"
 ```
 
-模型清单、模型文件放在包目录 `packages/miyu-embed/` 里：`model.toml`（这个小程序认的名字，小程序清单里不另写）、`model_quantized.onnx`、`vocab.txt`。
+模型清单、模型文件放在包目录 `packages/embed/` 里：`model.toml`（这个小程序认的名字，小程序清单里不另写）、`model_quantized.onnx`、`vocab.txt`。
 
 每种包能写的表（别的写了报 `wrong_kind`）：
 
@@ -170,7 +170,7 @@ program = "miyu-embed"
 | `name`、`description` | 语言到一句话，`name` 必写 |
 | `hidden` | `true` 的设置页不画：照样能写、能查、进 Schema |
 
-1. 名字：小写字母开头，只有小写字母、数字、`_`，最多 64 个。键是 `<前缀>.<名字>`，例如 `web.port`；前缀是 `[package] prefix`，没写的是包的编号（施工 PN-1，设计 48 第二节）。可以多一层组（施工 9-1 再补，接入通讯平台要的）：`[settings.<组>.<名字>]`，键是 `<前缀>.<组>.<名字>`，例如 `im.qq.listen`；组名照名字的写法，只多一层。一张表是一项还是一组（施工 SG-1 起组也能写名字）：有 `type` 的、空的是一项；没有 `name` 的是一组；写了 `name` 的，底下还有别的子表（`description`、`shown_when` 不算）是一组，不然是一项（报缺 `type`）。组里的项不能叫 `type`、`name`、`shown_when`。设置页照旧在这个包那一组，组分成节（施工 SG-1，2026-11-10 项目主人经语音会话要的：miyu-say 选了一个引擎，别家的几项还摊着）：组那张表 `[settings.<组>]` 可写 `name`（语言表，写法同项的 `name`，没写的照组名画）、`shown_when`（`{ "<这个包的一项>" = "<值>" }`，值也可以是几个的列表，读成 `Section`、`ShownWhen`，`crates/miyu-config/src/package/settings/section.rs`）。`shown_when` 的键写这个包自己清单里的名字（组里的写 `<组>.<名字>`），不写前缀，`config.schema` 交出去时才接上前缀；它只能指一个 `option`、不在这一节里，值都要是它的选项：指的不在这个包里（别的包的键、写全了前缀的也是）、不是选项、在这一节里、值不是它的选项、不是一项对一个值或者不空的列表的，清单读不成，报 `bad_shown_when`（读完全部的项再查，指后面写的项也行）。只限选项：头比的是那一项的值和 `is` 里的字，开关、整数比字说不清（2026-11-10 SG-1 按推荐定）。核心只读、只查、原样交 `config.schema`（`config.md`「协议」），值照旧存、读、查，不看 `shown_when`。
+1. 名字：小写字母开头，只有小写字母、数字、`_`，最多 64 个。键是 `<前缀>.<名字>`，例如 `web.port`；前缀是 `[package] prefix`，没写的是包的编号（施工 PN-1，设计 48 第二节）。可以多一层组（施工 9-1 再补，接入通讯平台要的）：`[settings.<组>.<名字>]`，键是 `<前缀>.<组>.<名字>`，例如 `im.qq.listen`；组名照名字的写法，只多一层。一张表是一项还是一组（施工 SG-1 起组也能写名字）：有 `type` 的、空的是一项；没有 `name` 的是一组；写了 `name` 的，底下还有别的子表（`description`、`shown_when` 不算）是一组，不然是一项（报缺 `type`）。组里的项不能叫 `type`、`name`、`shown_when`。设置页照旧在这个包那一组，组分成节（施工 SG-1，2026-11-10 项目主人经语音会话要的：say 选了一个引擎，别家的几项还摊着）：组那张表 `[settings.<组>]` 可写 `name`（语言表，写法同项的 `name`，没写的照组名画）、`shown_when`（`{ "<这个包的一项>" = "<值>" }`，值也可以是几个的列表，读成 `Section`、`ShownWhen`，`crates/miyu-config/src/package/settings/section.rs`）。`shown_when` 的键写这个包自己清单里的名字（组里的写 `<组>.<名字>`），不写前缀，`config.schema` 交出去时才接上前缀；它只能指一个 `option`、不在这一节里，值都要是它的选项：指的不在这个包里（别的包的键、写全了前缀的也是）、不是选项、在这一节里、值不是它的选项、不是一项对一个值或者不空的列表的，清单读不成，报 `bad_shown_when`（读完全部的项再查，指后面写的项也行）。只限选项：头比的是那一项的值和 `is` 里的字，开关、整数比字说不清（2026-11-10 SG-1 按推荐定）。核心只读、只查、原样交 `config.schema`（`config.md`「协议」），值照旧存、读、查，不看 `shown_when`。
 2. 核心起来时读清单那一次，读成了的清单的配置项接在核心自己的配置项后面，进配置清单：读配置、`miyu check`、`config.schema`、`config.get`、`config.set`、生成的 Schema 和参考文件都照它。经 `package.install`、`package.remove` 装卸以后照新的清单再拼一次（`Builtins::settings`，`miyu-core` 装上），配置服务换上（`Config::refit`）：配置照手里的字重新认，认得的项、问题变了的推 `config.changed`（`via: package`）；生成的三份照新的清单重写（施工 F-5 补）。卸掉的包，配置里它的项一并删掉（「装卸」第 7 条）；项目目录里还写着的照旧报不认识。
 3. 包的前缀是核心自己某一段配置的第一段（`ui`、`persona`、`permission`、`models`、`providers`、`log`、`usage`、`external` 这些，照核心起来时的配置清单认）、又声明了配置项的，这一份报 `settings_taken`，当写错了的列出，配置项一项都不收。
 4. 设置页：都在一页 `packages`（「软件包」），一个包一组，组的编号是包的编号、名字是包的名字；每一项的名字、说明用清单里的，照连接的语言挑（这种语言、`en`、`zh`、`ja`），不进 `core/human`。控件照类型：开关 `toggle`、整数 `number`、选项 `select`、列表 `list`，别的 `text`。`config.schema` 里列表照核心自己的列表写：多 `element`，元素是选项的多 `options`。 平台接入的包也在这一页（施工 F-6 上：「接入」页去掉了，设计 30 第十三节）。`config.schema` 里这一页的项多一格 `package`，就是组的编号，头照它把项画在那个软件的信息页上。程序不在 `miyu` 旁边的扩展、小程序当没装，配置项不进（`package-pages.md`「程序不在就当没装」）；界面不算。核心替内置包声明的配置项（现在是人格记忆的几项、联网的几组、基础系统的 `show.system_hint`）也挂在这一页、这个包那一组；包没装的照样认、照样有最终值，设置页不画（`hidden`，施工 F-4，设计 30 第七节）。
@@ -275,10 +275,10 @@ model = "mascot.json"   # 包目录 packages/pudding/ 里的相对路径
 
 ### 外观包（施工 F-16，2026-10-21 项目主人定，终端界面的会话转来；TH-1 起能带网页主题，2026-11-02 项目主人定）
 
-终端界面照网页的「皮肤」做一层变量化，叫「主题」：框线、记号、修饰、留白、动效一张表，做成专门的一种包，默认主题也是一个包（终端的图纸 `tui.md`「主题」）。施工 TH-1 起同一种包也能带网页的主题，界面上统称「外观」：一个外观包带终端主题、网页主题，或者两样都带。种类照旧是 `theme`，已有的 `miyu-tui-theme-*` 不用改。格式由终端、网页各自定，核心只认它们在哪，同吉祥物包。
+终端界面照网页的「皮肤」做一层变量化，叫「主题」：框线、记号、修饰、留白、动效一张表，做成专门的一种包，默认主题也是一个包（终端的图纸 `tui.md`「主题」）。施工 TH-1 起同一种包也能带网页的主题，界面上统称「外观」：一个外观包带终端主题、网页主题，或者两样都带。种类照旧是 `theme`，已有的 `tui-theme-*` 不用改。格式由终端、网页各自定，核心只认它们在哪，同吉祥物包。
 
 ```toml
-# packages/miyu-tui-theme-ascii/package.toml
+# packages/tui-theme-ascii/package.toml
 [package]
 name = { zh = "纯字符", en = "ASCII" }
 
@@ -304,7 +304,7 @@ dir = "web"           # 网页主题：包目录里的相对目录，里面是�
 一个包给另一个包带一个目录的东西（表情包合集、人设卡、主题）：核心不认里面是什么，只管谁给谁带了哪个目录、让被带的那个读得到。
 
 ```toml
-[content.miyu-memes]      # 给哪个包带：键是它的编号
+[content.memes]      # 给哪个包带：键是它的编号
 dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 ```
 
@@ -364,7 +364,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 
 1. **查什么**：一个包占的名字（`miyu_store::packages::conflicts`）：`[command]` 的子命令名（加了几个的每个都算，施工 F-13）；功能（`Manifest::features_of`）的编号，MCP 服务的那一个算服务名；功能下列的工具名、`scripts/` 里脚本的工具名；`skills/` 里的技能名；`kb/` 里库的编号；`commands/` 里斜杠命令模板的名字（施工 X-14 上补，`slash.md`）、清单 `[[slash]]` 声明的命令名（施工 X-14 下，和模板一个名字空间）、`[[widget]]` 整页的命令名（施工 X-15 上，同一个名字空间）；`personas/` 里人格的编号、`presets/` 里预设的编号（施工 P-11 下）；前缀（`Manifest::prefix_of`，没写的照包编号，施工 PN-1）。十样各算各的：技能 `notes` 和库 `notes` 不算撞。
    人格、预设还和出厂、你那一层有的比（施工 P-11 下，设计 31 第十节第 4 条）：撞了的写 `layer` 不写 `package`；这个包以前卸掉时留下的改动（`var/lib/packages/leftovers.json`）、升级时装着的这一份已经带着的不算。卸包时它带的人格、预设在你那一层有改动的记进 `.leftovers.json`，重装它划掉；`miyu check` 对包没装着、改动还在的报 `persona_left`、`preset_left` 警告（`file` 是那一份改动）。
-2. **跟谁比**：两层里清单读成了的、编号不是它的包；斜杠命令模板另和核心内置的命令名、别名比（`Commands::reserved`，记在拥有它的包上：记忆的 `miyu-base-memory`，长期目标的 `miyu-base-goal`，待办的 `miyu-base-todowrite`，循环的 `miyu-base-loop`；`/clear`、`/stop`、`/workspace` 是核心自带的，撞了写 `core: true`，施工 BS-1 下下；拥有它的包自己不算，装回人格记忆不和 `/remember` 撞；包没装的命令不比，名字空出来）。升级同一个包不和自己比；读坏了的、卸掉的出厂的不比；你自己放的技能、脚本、MCP 服务不比（自己的赢，设计 31 第五节第 3 条）。
+2. **跟谁比**：两层里清单读成了的、编号不是它的包；斜杠命令模板另和核心内置的命令名、别名比（`Commands::reserved`，记在拥有它的包上：记忆的 `base-memory`，长期目标的 `base-goal`，待办的 `base-todowrite`，循环的 `base-loop`；`/clear`、`/stop`、`/workspace` 是核心自带的，撞了写 `core: true`，施工 BS-1 下下；拥有它的包自己不算，装回人格记忆不和 `/remember` 撞；包没装的命令不比，名字空出来）。升级同一个包不和自己比；读坏了的、卸掉的出厂的不比；你自己放的技能、脚本、MCP 服务不比（自己的赢，设计 31 第五节第 3 条）。
 3. **什么时候**：`package.install` 从路径装、装回出厂的，在读清单、比编号以后，动文件以前；`preview: true` 一样查。撞了的报 `package_conflict`，`data.conflicts` 一处一条 `{"kind", "name", "package"}`（`kind` 是 `command`、`feature`、`tool`、`skill`、`mcp`、`knowledge`、`slash`（斜杠命令模板，施工 X-14 上补）、`persona`、`preset`、`prefix`（施工 PN-1）、`bus`（施工 BUS-1，设计 67：两家都 `provides` 同一个名字，或者一家 `provides`、一家 `plugs` 同一个名字；几家都 `plugs` 不算）），照哪一样、名字、包排（`protocol.md`）。查要读包文件夹里的技能、脚本、库，放在阻塞线程里。
 4. **以前**：装完重读清单才认，谁先到照编号算：编号排在前的新包装得上，被判撞了的是装着的那个，悄悄失效。现在新来的让。
 5. **读的时候**：撞得上的只剩核心升级后出厂的新带了同名的（定了的 J）：出厂的先于装上的，同一层照编号。子命令、功能、前缀撞了的装上的那一份整份不收（`command_taken`、`feature_taken`、`prefix_taken`）；技能、脚本、知识库跳过装上的那一份，技能、脚本 `miyu check` 报被谁盖住（`skills.md`）。
@@ -440,7 +440,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `crates/miyu-endpoint/src/check/run/tests.rs`、`tests/package_check.rs`（施工 9-2） | 一行输出收哪几格、哪些不收；0、1 以外的退出码、信号、到时、跑不起来；真的跑 `sh`、到时杀掉；真核心：包报的接在后面，看不懂的行、跑坏了的、程序没找到的各一条警告 |
 | `crates/miyu-cli/src/head/tests.rs`、`crates/miyu/tests/heads.rs`（施工 9-3） | 照清单定怎么开（不带参数、带 `--page config`、不认这一页、没装、不是界面、有清单程序不在）、没装的列出装了的（只算程序在旁边的，9-3 补）；真二进制在伪终端里：`miyu`、`miyu config` 拉起清单里的界面、退出码照它的，不认设置页的印帮助，`ui.head` 指着没装的退出码 1；出厂的终端只有清单的说程序不在旁边（9-3 补） |
 | `crates/miyu-core/tests/embed_package.rs`、`src/embed/tests.rs`（施工 R-5 三补） | 仓库里的内置语义模型的清单读得成小程序包；出厂的人格记忆推荐它、不依赖它，出厂的资源里没有它；照装了的包拼本机 embedding（`recall.md` 第四条第 1 款） |
-| `crates/miyu-core/tests/tools.rs`、`tests/packages.rs`（施工 F-2） | 没装记忆、基础系统组的包的工具目录里没有它们的工具（卸掉 `miyu-base-shell` 只少它，`miyu-base-sessions` 带着 `send_message`）；读坏了的清单不算装了；出厂的内置包清单和编进来的一一对得上；没装画 mermaid、联网的查询是 `unknown_method` |
+| `crates/miyu-core/tests/tools.rs`、`tests/packages.rs`（施工 F-2） | 没装记忆、基础系统组的包的工具目录里没有它们的工具（卸掉 `base-shell` 只少它，`base-sessions` 带着 `send_message`）；读坏了的清单不算装了；出厂的内置包清单和编进来的一一对得上；没装画 mermaid、联网的查询是 `unknown_method` |
 | `crates/miyu-endpoint/tests/packages_embed.rs`、`crates/miyu-core/src/embed/tests.rs`、`crates/miyu-core/tests/embed_log.rs`（施工 F-5 再补） | 真核心装上内置语义模型的包，`config.schema` 里「内置模型」当场写它的模型名，升级成另一个模型的换成新的，卸掉又没了；装卸时拼的和起来时一样、说得出缺的是哪一样，只有起来时记「没装」那一行 |
 | `crates/miyu-endpoint/tests/packages_config.rs`、`crates/miyu/tests/packages_live.rs`、`crates/miyu-core/tests/tools.rs`、`crates/miyu-tool/src/catalog/tests.rs`（施工 F-5 补） | 装卸以后配置项当场换（见 `config.md`「守着它的」）；端口交的整份配置清单和起来时读配置用的一样、没装的人格记忆的几项不画；卸掉的提供者装回来登记了不再算卸掉 |
 | `crates/miyu-endpoint/tests/packages_extensions.rs`（施工 F-5 下） | 真核心装上的扩展当场拉起、卸掉的当场停下、旧会话调到它的工具报「已卸载」、升级了的重起、没变的不动 |

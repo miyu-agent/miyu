@@ -9,15 +9,15 @@ fn one_release_may_carry_several_packages_each_claimed_on_its_own() {
     let more = "targets = [\"linux-x86_64\", \"macos-aarch64\"]\n";
     let im_linux = package(
         scratch.path(),
-        "miyu-im",
+        "im",
         "0.1.0",
         more,
         Some(Target::LinuxX86_64),
     );
-    let sponsor = package(scratch.path(), "miyu-im-sponsor", "0.1.0", "", None);
+    let sponsor = package(scratch.path(), "im-sponsor", "0.1.0", "", None);
     let im_mac = package(
         scratch.path(),
-        "miyu-im",
+        "im",
         "0.1.0",
         more,
         Some(Target::MacosAarch64),
@@ -42,13 +42,8 @@ fn one_release_may_carry_several_packages_each_claimed_on_its_own() {
         .iter()
         .map(|entry| (entry.id.as_str(), entry.files.len()))
         .collect();
-    assert_eq!(
-        ids,
-        [("miyu-im", 2), ("miyu-im-sponsor", 1)],
-        "{:?}",
-        got.notes
-    );
-    for id in ["miyu-im", "miyu-im-sponsor"] {
+    assert_eq!(ids, [("im", 2), ("im-sponsor", 1)], "{:?}", got.notes);
+    for id in ["im", "im-sponsor"] {
         assert_eq!(
             got.names.get(id).map(String::as_str),
             Some("github.com/miyu-agent/miyu-im"),

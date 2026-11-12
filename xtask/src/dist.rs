@@ -7,8 +7,8 @@
 //!    检出里照各自的工具链编：外面这个 cargo 给的 `RUSTUP_TOOLCHAIN`、`CARGO_TARGET_DIR` 这些不带过去。
 //! 4. 搭目录 `<dist>/miyu-<版本>-<系统>/`：
 //!    - 五个程序放一起（头的程序放在 `miyu` 旁边，`heads.toml` 开头那段）；
-//!    - `resources/`：仓库里登记了的资源（`git ls-files`，不带没登记的），加上两个头的包文件夹：`packages/miyu-tui/` 是终端仓库的
-//!      `miyu-tui/` 加它的 `LICENSE`、`THIRD-PARTY-LICENSES.txt`（同它的发版模板），`packages/miyu-webui/` 是网页仓库
+//!    - `resources/`：仓库里登记了的资源（`git ls-files`，不带没登记的），加上两个头的包文件夹：`packages/tui/` 是终端仓库的
+//!      `tui/` 加它的 `LICENSE`、`THIRD-PARTY-LICENSES.txt`（同它的发版模板），`packages/webui/` 是网页仓库
 //!      `tools/pack-web.py --stage` 搭的、去掉 `bin/`；
 //!    - `LICENSE`；`THIRD-PARTY-LICENSES.txt` 合核心、终端、网页三份（`packaging/README.md`：带了头的，头的那一份也放进去）；
 //!    - `README.txt`：中英两段，怎么用、装在哪、怎么卸。
@@ -130,7 +130,7 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Vec<Packed>, String
     let web_binary = web
         .join("target/release")
         .join(format!("{WEB_PROGRAM}{exe}"));
-    let web_stage = work.join("heads").join("miyu-webui-stage");
+    let web_stage = work.join("heads").join("webui-stage");
     remove(&web_stage)?;
     say("搭网页的包文件夹");
     status(
@@ -157,10 +157,10 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Vec<Packed>, String
     programs.push(web_binary);
     let core_programs: Vec<PathBuf> = programs[..CORE.len()].to_vec();
     let tui_program = programs[CORE.len()].clone();
-    let mut tui_package: Vec<(PathBuf, PathBuf)> = tracked(tui, "miyu-tui")?
+    let mut tui_package: Vec<(PathBuf, PathBuf)> = tracked(tui, "tui")?
         .into_iter()
         .map(|file| {
-            let inside = file.strip_prefix("miyu-tui").unwrap_or(&file).to_path_buf();
+            let inside = file.strip_prefix("tui").unwrap_or(&file).to_path_buf();
             (tui.join(&file), inside)
         })
         .collect();
@@ -226,16 +226,16 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Vec<Packed>, String
     pack(&core_dir, &core, &core_archive)?;
     all.push(packed(core_archive)?);
 
-    let tui_version = split::version_of(&read(&tui.join("miyu-tui/package.toml"))?)?;
+    let tui_version = split::version_of(&read(&tui.join("tui/package.toml"))?)?;
     let web_version = split::version_of(&read(&web_stage.join("package.toml"))?)?;
-    for (id, head_version) in [("miyu-tui", &tui_version), ("miyu-webui", &web_version)] {
+    for (id, head_version) in [("tui", &tui_version), ("webui", &web_version)] {
         // 包文件夹叫编号，放在一个单独的目录下面：压缩包里那一层就是它。
         let holder = work.join("split").join(id);
         remove(&holder)?;
         let folder = holder.join(id);
         say(&format!("搭 {}", folder.display()));
         match id {
-            "miyu-tui" => split::stage_head(&tui_package, &tui_program, &folder)?,
+            "tui" => split::stage_head(&tui_package, &tui_program, &folder)?,
             _ => copy_tree(&web_stage, &folder, &[])?,
         }
         let name = split::head_name(id, head_version, &options.target);

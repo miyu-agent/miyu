@@ -20,7 +20,7 @@ fn plugged(name: &str, plugin: &str) -> Arc<dyn Tool> {
 }
 
 /// 基础系统一件 `read`；桥 `onebot` 登记的 `qq_mute`（插件 `qq-admin`）、`qq_send`（不带标记）；包 `sponsor` 登记的
-/// `sponsor_list`（插件 `miyu-im-sponsor`）。
+/// `sponsor_list`（插件 `im-sponsor`）。
 fn catalog() -> Catalog {
     let fake = |name: &str| -> Arc<dyn Tool> { Fake::new(name, Access::Read, Act::Echo) };
     Catalog::in_packages([("basesystem", vec![fake("read")])])
@@ -30,7 +30,7 @@ fn catalog() -> Catalog {
             vec![plugged("qq_mute", "qq-admin"), fake("qq_send")],
         )
         .expect("合写法")
-        .replacing("sponsor", vec![plugged("sponsor_list", "miyu-im-sponsor")])
+        .replacing("sponsor", vec![plugged("sponsor_list", "im-sponsor")])
         .expect("合写法")
 }
 
@@ -100,7 +100,7 @@ fn the_face_is_sifted_and_replugged() {
     assert!(sift(&mut face, &catalog, (&plugins, &group)).is_empty());
     let names: Vec<&str> = face.iter().map(|entry| entry.name.as_str()).collect();
     assert_eq!(names, ["qq_send", "read"]);
-    plugins.set(group.clone(), on(&["miyu-im-sponsor"]));
+    plugins.set(group.clone(), on(&["im-sponsor"]));
     let fresh = entries(&["qq_mute", "qq_send", "read", "sponsor_list"]);
     let face = replug(face, &fresh, &catalog, (&plugins, &group));
     assert_eq!(present(&face, &catalog), ["sponsor_list"], "开了的补上");

@@ -138,11 +138,7 @@ async fn what_cannot_be_restored_is_refused() {
         assert_eq!(reason(&reply), Some("bad_params"), "{params}：{reply}");
     }
     let removed = client
-        .call(
-            "p1",
-            "package.remove",
-            json!({"package": "miyu-base-memory"}),
-        )
+        .call("p1", "package.remove", json!({"package": "base-memory"}))
         .await;
     assert_eq!(removed["result"]["removed"], true, "{removed}");
     let reply = restore(&mut client, "r5", "m2").await;

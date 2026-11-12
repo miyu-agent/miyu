@@ -67,24 +67,24 @@ fn only_rc_versions_are_rehearsals() {
 #[test]
 fn a_formal_version_must_match_every_place() {
     let dir = std::env::temp_dir().join(format!("miyu-stamp-{}", std::process::id()));
-    std::fs::create_dir_all(dir.join("miyu-tui")).expect("建得了");
+    std::fs::create_dir_all(dir.join("tui")).expect("建得了");
     std::fs::write(dir.join("Cargo.toml"), TUI.replace("0.1.0", "2026.11.0")).expect("写得进");
     std::fs::write(
-        dir.join("miyu-tui/package.toml"),
-        "[package]\nid = \"miyu-tui\"\nversion = \"0.1.0\"\n",
+        dir.join("tui/package.toml"),
+        "[package]\nid = \"tui\"\nversion = \"0.1.0\"\n",
     )
     .expect("写得进");
-    let refused = head("miyu-tui", &dir, "2026.11.0").expect_err("包清单还是 0.1.0");
+    let refused = head("tui", &dir, "2026.11.0").expect_err("包清单还是 0.1.0");
     assert!(
-        refused.contains("miyu-tui/package.toml") && refused.contains("0.1.0"),
+        refused.contains("tui/package.toml") && refused.contains("0.1.0"),
         "{refused}"
     );
     std::fs::write(
-        dir.join("miyu-tui/package.toml"),
-        "[package]\nid = \"miyu-tui\"\nversion = \"2026.11.0\"\n",
+        dir.join("tui/package.toml"),
+        "[package]\nid = \"tui\"\nversion = \"2026.11.0\"\n",
     )
     .expect("写得进");
-    assert_eq!(head("miyu-tui", &dir, "2026.11.0"), Ok(()));
+    assert_eq!(head("tui", &dir, "2026.11.0"), Ok(()));
     assert!(head("nobody", &dir, "2026.11.0").is_err(), "不认识的头");
     std::fs::remove_dir_all(&dir).expect("删得了");
 }

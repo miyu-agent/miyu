@@ -18,7 +18,7 @@ use crate::refusal::Refusal;
 const GOAL_FEATURE: &str = "goal";
 
 /// 长期目标这个包的编号（同 `miyu_goal::PACKAGE`；端点不依赖软件包的 crate）：`/goal` 跟着它装没装。
-pub(super) const GOAL_PACKAGE: &str = "miyu-base-goal";
+pub(super) const GOAL_PACKAGE: &str = "base-goal";
 
 /// 提示词缺了必填的参数：几个名字照这门语言的 `commands/joiner` 连起来。
 pub(super) fn missing_arguments(missing: Vec<String>) -> Said {

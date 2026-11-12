@@ -14,9 +14,9 @@ fn east_eight() -> UtcOffset {
 #[test]
 fn a_package_from_the_source_is_keyed_rows_aligned_by_display_width() {
     let info = json!({
-        "from": "source", "source": "official", "package": "miyu-im", "version": "0.2.1",
+        "from": "source", "source": "official", "package": "im", "version": "0.2.1",
         "name": "接入 QQ", "summary": "让她在 QQ 群和私聊里说话",
-        "depends": [], "recommends": ["miyu-im-sponsor", "miyu-memes"],
+        "depends": [], "recommends": ["im-sponsor", "memes"],
         "provides": {"command": ["im"], "features": ["im"], "skills": ["sticker"]},
         "capabilities": [{"id": "network", "name": "联网"}, {"id": "act_for_external", "name": "替主人说话"}],
         "origin": "github.com/miyu-agent/miyu-im", "official": true, "author": "miyu-agent",
@@ -27,12 +27,12 @@ fn a_package_from_the_source_is_keyed_rows_aligned_by_display_width() {
         rows(&info, east_eight(), &Language::Chinese),
         [
             "软件源      : official",
-            "编号        : miyu-im",
+            "编号        : im",
             "名称        : 接入 QQ",
             "版本        : 0.2.1",
             "描述        : 让她在 QQ 群和私聊里说话",
             "依赖        : 无",
-            "推荐        : miyu-im-sponsor  miyu-memes",
+            "推荐        : im-sponsor  memes",
             "提供        : 命令 miyu im、技能 sticker",
             "需要的能力  : 联网、替主人说话",
             "来源        : github.com/miyu-agent/miyu-im（官方）",

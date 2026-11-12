@@ -165,7 +165,7 @@ MIYU_BENCH_MODEL=… uv run bench/rivals/main.py --tui <终端仓库> --upstream
 ```
 
 1. 端点、key、模型名只从环境变量来，三家用同一个。key 留在环境变量里交给各家：Miyu 的配置写成 `{ env = "OPENAI_API_KEY" }`，codex、jcode 照它们自己认的变量名去读，不写进任何文件、不打印；结果里只记模型名，不记地址。用转发的（`--upstream`）：真 key 只在 `--upstream-key-env` 那个变量里，测具只把它交给转发进程，各家的环境里去掉这个变量，`OPENAI_BASE_URL` 换成转发上这一家的路径、`OPENAI_API_KEY` 换成假的；这时不用设 `OPENAI_BASE_URL`、`OPENAI_API_KEY`。
-2. 核心照 `--core`（默认这个仓库），终端界面照 `--tui`（终端界面的仓库，里面有装成软件包的 `miyu-tui/` 和编好的 `target/release/miyu-tui`；包的目录和编号同名，施工 PN-4 起，以前叫 `tui/`，旧的仓库一开始就报），都要先 `cargo build --release`。jcode、codex 照 `--jcode`、`--codex`，不写的照 `PATH` 找。`--only` 只量几家，`--cpus` 绑到几个核上。
+2. 核心照 `--core`（默认这个仓库），终端界面照 `--tui`（终端界面的仓库，里面有装成软件包的 `tui/` 和编好的 `target/release/miyu-tui`；包的目录和编号同名，设计 48，2026-11-12 以前叫 `miyu-tui/`，旧的仓库一开始就报），都要先 `cargo build --release`。jcode、codex 照 `--jcode`、`--codex`，不写的照 `PATH` 找。`--only` 只量几家，`--cpus` 绑到几个核上。
 3. 子命令可以分开跑：`homes`（做模板）、`screen`、`task`、`long gen`、`long open`、`disk`、`summary`；`all` 照这个先后全跑。`--runs`（默认 5）、`--settle`（默认 13 秒）、`--idle`（默认 60 秒）。
 4. 家目录、模板、工作目录、原始结果都在 `--out`（默认 `target/rivals/`）下。`summary --into docs/perf --tag <名>` 再写一份 `docs/perf/<日期>-rivals-<名>.md`、同名 `.json`（汇总的数，加每一轮的原始结果 `runs`；命令输出的最后几行带着本机路径，不入库）。
 5. 只在 Linux 上量：CPU、内存照 cgroup v2 和 `/proc` 读，要 systemd 的用户会话。别的系统上一开始就说清楚、退出码 2。
@@ -211,7 +211,7 @@ MIYU_BENCH_MODEL=… uv run bench/rivals/main.py --tui <终端仓库> --upstream
 | `machine/tests.rs` | `/proc/cpuinfo`、`/proc/meminfo` 的读法 |
 | `args/tests.rs` | 默认、写了的、写错的；`--render` 只要 `--design`、`--out`；`--gate` 要正数（施工 V-3） |
 | `report/tests.rs` | 日期；一份造出来的结果写成表：照预算判、没量的「不量」、缺预算报错；原始数据；写出去再读回来一字不差、表一样，坏了说是哪一格；闸门只报超了倍数的那几行、内存照预算拦、没量的不算、没写倍数的不拦（施工 V-3） |
-| `bench/rivals/test_rivals.py`（施工 V-7） | 三家对比：`rivals.toml` 每家都有场景要读的键、占位都认识、程序都是测具找得到的、key 只经 `OPENAI_API_KEY` 交出去；各家的缓存都在沙箱里（Miyu 的跟 `XDG_CACHE_HOME` 走，V-7 修）；占位怎么换；没装的一家不挡量别的几家（V-7 修）；汇表时没量的写「—」；跟着现在的样子（施工 V-27）：存模板不拷套接字，终端包是 `miyu-tui/`、旧的 `tui/` 一开始就报，Miyu 在数据根的 `root/sessions/` 下找最新的会话，jcode 照 `.jcode/sessions/<编号>.json` 找，首屏字换占位、Miyu 等模型名；转发：同一段对话会话头不变、换场换家就换，换上真 key、补会话头、记用量，流里捡用量，用转发时各家只拿自己的路径和假 key、环境里没有真 key；硬盘把缓存和数据分开、数据按文件列；汇表的硬盘新行、用量一节；好好退出：先跑自己的退出命令、SIGTERM 收尾的等它做完，不走的过了时限才硬杀；「直接杀掉」那一份照相对路径分缓存，两种口径各一列 |
+| `bench/rivals/test_rivals.py`（施工 V-7） | 三家对比：`rivals.toml` 每家都有场景要读的键、占位都认识、程序都是测具找得到的、key 只经 `OPENAI_API_KEY` 交出去；各家的缓存都在沙箱里（Miyu 的跟 `XDG_CACHE_HOME` 走，V-7 修）；占位怎么换；没装的一家不挡量别的几家（V-7 修）；汇表时没量的写「—」；跟着现在的样子（施工 V-27）：存模板不拷套接字，终端包是 `tui/`、2026-11-12 以前的 `miyu-tui/` 一开始就报，Miyu 在数据根的 `root/sessions/` 下找最新的会话，jcode 照 `.jcode/sessions/<编号>.json` 找，首屏字换占位、Miyu 等模型名；转发：同一段对话会话头不变、换场换家就换，换上真 key、补会话头、记用量，流里捡用量，用转发时各家只拿自己的路径和假 key、环境里没有真 key；硬盘把缓存和数据分开、数据按文件列；汇表的硬盘新行、用量一节；好好退出：先跑自己的退出命令、SIGTERM 收尾的等它做完，不走的过了时限才硬杀；「直接杀掉」那一份照相对路径分缓存，两种口径各一列 |
 
 真跑要 release 构建和几分钟，不进 `cargo test`；CI 里另一项跑（施工 V-3）。三家对比的测具不跑别家的那几条在 CI 的量尺那一项里先跑（`python3 -m unittest`，施工 V-7）。
 

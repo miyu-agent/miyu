@@ -97,7 +97,7 @@ pub(super) struct Sources {
     pub(super) resources: PathBuf,
     /// 里面要带的文件，相对 `resources`。
     pub(super) resource_files: Vec<PathBuf>,
-    /// 终端的包文件夹：源文件、在 `packages/miyu-tui/` 里的位置。
+    /// 终端的包文件夹：源文件、在 `packages/tui/` 里的位置。
     pub(super) tui_package: Vec<(PathBuf, PathBuf)>,
     /// 网页 `pack-web.py --stage` 搭好的包文件夹，`bin/` 不带。
     pub(super) web_package: PathBuf,
@@ -128,7 +128,7 @@ pub(super) fn stage(sources: &Sources, dir: &Path) -> Result<(), String> {
         copy(&sources.resources.join(file), &resources.join(file))?;
     }
     let packages = resources.join("packages");
-    for id in ["miyu-tui", "miyu-webui"] {
+    for id in ["tui", "webui"] {
         if packages.join(id).exists() {
             return Err(format!(
                 "核心的 resources/packages/ 里已经有 {id}，和头的包文件夹撞了"
@@ -136,9 +136,9 @@ pub(super) fn stage(sources: &Sources, dir: &Path) -> Result<(), String> {
         }
     }
     for (from, inside) in &sources.tui_package {
-        copy(from, &packages.join("miyu-tui").join(inside))?;
+        copy(from, &packages.join("tui").join(inside))?;
     }
-    copy_tree(&sources.web_package, &packages.join("miyu-webui"), &["bin"])?;
+    copy_tree(&sources.web_package, &packages.join("webui"), &["bin"])?;
     copy(&sources.license, &dir.join("LICENSE"))?;
     write(&dir.join("THIRD-PARTY-LICENSES.txt"), &sources.notices)?;
     write(&dir.join("README.txt"), &sources.readme)?;

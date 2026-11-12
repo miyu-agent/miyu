@@ -21,12 +21,12 @@ The shapes of these names are fixed: packages that provide them answer this way,
 
 | Name | Kind | Methods | Official provider |
 |---|---|---|---|
-| `stt` | provides | `transcribe`, `record`, `stop` | `miyu-voice-input` |
-| `tts` | provides | `synthesize`, `play`, `stop` | `miyu-say` |
+| `stt` | provides | `transcribe`, `record`, `stop` | `voice-input` |
+| `tts` | provides | `synthesize`, `play`, `stop` | `say` |
 | `stt.engine` | plugs | `transcribe` | Community speech-recognition engines |
 | `tts.engine` | plugs | `synthesize`, `voices` (optional) | Community speech-synthesis engines |
 
-`ready` (`bus.list`) follows registration: `miyu-voice-input` registers the three `stt` methods only once its model is downloaded and verified; `miyu-say` registers the three `tts` methods only once the chosen engine is configured. Heads draw the microphone and read-aloud buttons only when the name is `ready`. One whole sentence in, one whole sentence out, no streaming: for a fast first sound, the caller splits text into sentences and calls once per sentence.
+`ready` (`bus.list`) follows registration: `voice-input` registers the three `stt` methods only once its model is downloaded and verified; `say` registers the three `tts` methods only once the chosen engine is configured. Heads draw the microphone and read-aloud buttons only when the name is `ready`. One whole sentence in, one whole sentence out, no streaming: for a fast first sound, the caller splits text into sentences and calls once per sentence.
 
 ### `stt.transcribe`
 

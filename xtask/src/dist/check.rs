@@ -68,8 +68,8 @@ fn check(root: &Path, archive: &Path) -> Result<Vec<String>, String> {
     }
     if name != expected {
         return Ok(vec![format!(
-            "压缩包叫 {name}，这一版、这一种该叫 {expected}（或者分包的 {core}、miyu-tui-<版本>-{target}.tar.gz、\
-             miyu-webui-<版本>-{target}.tar.gz）"
+            "压缩包叫 {name}，这一版、这一种该叫 {expected}（或者分包的 {core}、tui-<版本>-{target}.tar.gz、\
+             webui-<版本>-{target}.tar.gz）"
         )]);
     }
     let stem = format!("miyu-{version}-{target}");
@@ -222,7 +222,7 @@ pub(super) fn contents(
     if shipped.is_dir() {
         walk(&shipped, Path::new(""), &mut entries)?;
     }
-    let heads = ["packages/miyu-tui/", "packages/miyu-webui/"];
+    let heads = ["packages/tui/", "packages/webui/"];
     for (inside, source) in &entries {
         let inside = relative(inside);
         let extra = source.is_some()
@@ -233,23 +233,21 @@ pub(super) fn contents(
         }
     }
     let needed = [
-        "packages/miyu-tui/package.toml",
-        "packages/miyu-tui/LICENSE",
-        "packages/miyu-tui/THIRD-PARTY-LICENSES.txt",
-        "packages/miyu-webui/package.toml",
-        "packages/miyu-webui/LICENSE",
-        "packages/miyu-webui/THIRD-PARTY-LICENSES.txt",
-        "packages/miyu-webui/pages/index.html",
+        "packages/tui/package.toml",
+        "packages/tui/LICENSE",
+        "packages/tui/THIRD-PARTY-LICENSES.txt",
+        "packages/webui/package.toml",
+        "packages/webui/LICENSE",
+        "packages/webui/THIRD-PARTY-LICENSES.txt",
+        "packages/webui/pages/index.html",
     ];
     for file in needed {
         if !shipped.join(file).is_file() {
             problems.push(format!("少了 resources/{file}"));
         }
     }
-    if shipped.join("packages/miyu-webui/bin").exists() {
-        problems.push(
-            "resources/packages/miyu-webui/bin/ 不该有：网页的程序放在 miyu 旁边".to_string(),
-        );
+    if shipped.join("packages/webui/bin").exists() {
+        problems.push("resources/packages/webui/bin/ 不该有：网页的程序放在 miyu 旁边".to_string());
     }
     Ok(problems)
 }

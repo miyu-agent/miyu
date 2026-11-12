@@ -194,152 +194,152 @@ source = "https://miyu-agent.github.io/packages/"
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-advisor]
+[packages.base-advisor]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-ask-user]
+[packages.base-ask-user]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-authoring]
+[packages.base-authoring]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-clicall]
+[packages.base-clicall]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-edit]
+[packages.base-edit]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-env]
+[packages.base-env]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-glob]
+[packages.base-glob]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-goal]
+[packages.base-goal]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-grep]
+[packages.base-grep]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-history]
+[packages.base-history]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-jobs]
+[packages.base-jobs]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-knowledge]
+[packages.base-knowledge]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-loop]
+[packages.base-loop]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-memory]
+[packages.base-memory]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-mermaid]
+[packages.base-mermaid]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-net]
+[packages.base-net]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-packages]
+[packages.base-packages]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-persona-engineer]
+[packages.base-persona-engineer]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-project-docs]
+[packages.base-project-docs]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-read]
+[packages.base-read]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-roleplay]
+[packages.base-roleplay]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-schedule]
+[packages.base-schedule]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-session-usage]
+[packages.base-session-usage]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-sessions]
+[packages.base-sessions]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-shell]
+[packages.base-shell]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-show]
+[packages.base-show]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-subagent]
+[packages.base-subagent]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-todowrite]
+[packages.base-todowrite]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-trash]
+[packages.base-trash]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
-[packages.miyu-base-write]
+[packages.base-write]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
@@ -572,7 +572,7 @@ idle_new_after = 180
 [ui]
 # Default interface: The interface plain miyu opens.
 # Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Takes effect after restart.
-head = "miyu-tui"
+head = "tui"
 
 # Interface language: The language terminals, the web page and the command line use for you. auto follows the terminal or browser.
 # Allowed: auto, zh, en or ja. Only in the system config. Takes effect immediately.

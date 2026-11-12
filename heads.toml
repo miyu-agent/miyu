@@ -1,14 +1,14 @@
 # 两个界面（设计 `32-仓库拆分.md` 第六节，施工 S-5）：它们的代码和清单在各自的仓库里，核心仓库只记取哪一份。
-# 发版时照这里取：程序（三个平台各一份）放在 `miyu` 旁边，仓库里和编号同名的文件夹（`miyu-tui/`、`miyu-webui/`，施工 PN-4
-# 起，设计 48；以前是 `tui/`、`web/`、`package/`）放进资源目录的 `packages/<编号>/`。
+# 发版时照这里取：程序（三个平台各一份）放在 `miyu` 旁边，仓库里和编号同名的文件夹（`tui/`、`webui/`，设计 48；
+# 2026-11-12 以前叫 `miyu-tui/`、`miyu-webui/`）放进资源目录的 `packages/<编号>/`。
 # 网页另有页面：仓库 `web-demo/` 里的 index.html、distro.json、src、styles、packages、resources、vendor 七样放进
-# `packages/miyu-webui/pages/`（清单写的 `pages_dir = "pages"`），搭法照网页仓库 `tools/pack-web.py`。
+# `packages/webui/pages/`（清单写的 `pages_dir = "pages"`），搭法照网页仓库 `tools/pack-web.py`。
 # 升级就是改 `rev`：界面那边打了标签以后写标签，没有的写完整的提交号。
 
-[miyu-tui]
+[tui]
 repo = "https://github.com/miyu-agent/miyu-tui"
 rev = "9233b3321e5e061bdeed4761c52421383af49a41"
 
-[miyu-webui]
+[webui]
 repo = "https://github.com/miyu-agent/miyu-web"
 rev = "b261de591fed815b2f651b81f6fb06a43aef6b73"

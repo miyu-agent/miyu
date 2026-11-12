@@ -12,7 +12,7 @@ use crate::support::*;
 const ENGINEER: &str = "software-engineer";
 
 /// 带它的出厂包。
-const PACKAGE: &str = "miyu-base-persona-engineer";
+const PACKAGE: &str = "base-persona-engineer";
 
 /// 连上一份核心，握手时说 `locale` 这种语言。
 async fn connected(home: &Home, locale: &str) -> Client {

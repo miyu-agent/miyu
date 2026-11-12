@@ -77,7 +77,7 @@ The tables and fields on this page are stable (frozen on 2026-10-23): from now o
 | `protocol` | Required for packages with a program: `[lowest, highest]`; only `1` exists |
 | `version` | Version, for people only |
 | `summary` | A one-line summary |
-| `prefix` | The prefix of your settings keys and recorded event kinds, written like a package id; without it, the package id. A prefix that clashes with another package's (its id when it has none) won't install. Use it to keep keys short for a long id: id `miyu-im` with `prefix = "im"` has settings `im.*` and records `ext.im.*` |
+| `prefix` | The prefix of your settings keys and recorded event kinds, written like a package id; without it, the package id. A prefix that clashes with another package's (its id when it has none) won't install. Use it to keep keys short for a long id: id `qq-bridge` with `prefix = "qq"` has settings `qq.*` and records `ext.qq.*` |
 | `author` | Author: a person or organization, may include an email, one line, at most 100 characters. Shown on the package info page |
 | `upstream` | Upstream: the package's source repository, starting with `https://`. Shown on the package info page |
 | `icon` | A Lucide icon name. Not every head knows every Lucide name: the terminal only knows the names in its mapping table and draws the generic tool icon (a wrench) for the rest |
@@ -412,7 +412,7 @@ To need at least some version of another package, write `<id>>=<version>`:
 
 ```toml
 [depends]
-packages = ["onebot>=1.2.0", "miyu-embed"]
+packages = ["onebot>=1.2.0", "embed"]
 ```
 
 - Only `>=`, with no spaces; the version is semver (`1.2.0`, `1.2.0-rc.1`). Two-part `1.2`, a leading `v`, `=`, `<` and the like are `bad_dependency`. `workers` takes ids only.

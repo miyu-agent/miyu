@@ -406,12 +406,12 @@ fn targets_are_read_in_order_and_unknown_ones_are_refused() {
 fn the_prefix_defaults_to_the_package_id() {
     let bridge = read(BRIDGE).unwrap();
     assert_eq!(bridge.prefix, None);
-    assert_eq!(bridge.prefix_of("miyu-im"), "miyu-im", "没写的照包编号");
+    assert_eq!(bridge.prefix_of("im-bridge"), "im-bridge", "没写的照包编号");
     let short = BRIDGE.replace(
         "name = { en = \"QQ bridge\" }\n",
         "name = { en = \"QQ bridge\" }\nprefix = \"im\"\n",
     );
-    assert_eq!(read(&short).unwrap().prefix_of("miyu-im"), "im");
+    assert_eq!(read(&short).unwrap().prefix_of("im-bridge"), "im");
     for bad in ["\"Im\"", "\"im.qq\"", "\"\"", "1"] {
         let text = short.replace("\"im\"", bad);
         let code = if bad == "1" {

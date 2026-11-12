@@ -122,13 +122,13 @@ fn a_builtin_without_its_manifest_brings_no_tools() {
         ["forget", "goal", "memory_search", "remember"],
         "没装基础系统组、知识库、联网，只有记忆的三件和长期目标的一件"
     );
-    let without_shell = names_without(&["miyu-base-shell"]);
+    let without_shell = names_without(&["base-shell"]);
     assert!(
         !without_shell.contains(&"shell".to_string()),
         "没装 shell 包，没有 shell"
     );
     assert!(without_shell.contains(&"read".to_string()), "别的包照旧");
-    let without_sessions = names_without(&["miyu-base-sessions"]);
+    let without_sessions = names_without(&["base-sessions"]);
     assert!(
         !without_sessions.contains(&"send_message".to_string())
             && !without_sessions.contains(&"sessions".to_string()),
@@ -229,7 +229,7 @@ fn every_shipped_tool_belongs_to_a_feature() {
     assert_eq!(owner("remember"), Some("memory"));
 }
 
-/// 基础系统「工具 → 包」的对照（施工 PN-3：包改名成 `miyu-base-*` 以后不再是工具名等于包编号）：每件工具归的包，就是出厂清单里
+/// 基础系统「工具 → 包」的对照（施工 PN-3、PN-5：包改名成 `base-*` 以后不再是工具名等于包编号）：每件工具归的包，就是出厂清单里
 /// `[features] tools` 列着它的那一个；不是基础系统的照组名。联网包的编号核心另记的一份和 `miyu-net` 的一样。
 #[test]
 fn base_system_tools_go_to_the_package_whose_manifest_lists_them() {
@@ -307,11 +307,11 @@ fn the_builtin_port_gives_the_settings_startup_reads() {
         "没装的照样认"
     );
     assert!(
-        off(&all).contains(&"packages.miyu-base-memory.off"),
+        off(&all).contains(&"packages.base-memory.off"),
         "装着的有它那一项开关"
     );
     assert!(
-        !off(&without).contains(&"packages.miyu-base-memory.off"),
+        !off(&without).contains(&"packages.base-memory.off"),
         "没装的没有"
     );
     assert!(
@@ -331,9 +331,9 @@ fn the_builtin_port_sets_up_the_local_model_from_the_list() {
     let read =
         |text: &str| miyu_config::package::read(text).map_err(miyu_store::packages::Issue::Wrong);
     let embed = Found {
-        id: "miyu-embed".to_string(),
+        id: "embed".to_string(),
         layer: miyu_store::packages::Layer::Home,
-        path: std::env::temp_dir().join("miyu-embed").join("package.toml"),
+        path: std::env::temp_dir().join("embed").join("package.toml"),
         read: read(
             "[package]\nprotocol = [1, 1]\nname = { en = \"Model\" }\n\n[worker]\nprogram = \"miyu-embed\"\n",
         ),

@@ -194,152 +194,152 @@ source = "https://miyu-agent.github.io/packages/"
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-advisor]
+[packages.base-advisor]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-ask-user]
+[packages.base-ask-user]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-authoring]
+[packages.base-authoring]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-clicall]
+[packages.base-clicall]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-edit]
+[packages.base-edit]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-env]
+[packages.base-env]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-glob]
+[packages.base-glob]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-goal]
+[packages.base-goal]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-grep]
+[packages.base-grep]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-history]
+[packages.base-history]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-jobs]
+[packages.base-jobs]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-knowledge]
+[packages.base-knowledge]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-loop]
+[packages.base-loop]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-memory]
+[packages.base-memory]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-mermaid]
+[packages.base-mermaid]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-net]
+[packages.base-net]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-packages]
+[packages.base-packages]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-persona-engineer]
+[packages.base-persona-engineer]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-project-docs]
+[packages.base-project-docs]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-read]
+[packages.base-read]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-roleplay]
+[packages.base-roleplay]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-schedule]
+[packages.base-schedule]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-session-usage]
+[packages.base-session-usage]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-sessions]
+[packages.base-sessions]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-shell]
+[packages.base-shell]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-show]
+[packages.base-show]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-subagent]
+[packages.base-subagent]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-todowrite]
+[packages.base-todowrite]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-trash]
+[packages.base-trash]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.miyu-base-write]
+[packages.base-write]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
@@ -572,7 +572,7 @@ idle_new_after = 180
 [ui]
 # 默认界面：直接敲 miyu 时打开哪个界面。
 # 能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置里。重启后生效。
-head = "miyu-tui"
+head = "tui"
 
 # 界面语言：终端、网页、命令行给你看的字用哪种话。auto 跟着终端或浏览器的语言。
 # 能写：auto、zh、en 或 ja。只能写在系统配置里。立即生效。

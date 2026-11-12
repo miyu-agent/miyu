@@ -429,7 +429,7 @@
       "display": "Display",
       "new_session": "New sessions",
       "compaction": "Compaction",
-      "miyu-base-memory": "Memory",
+      "base-memory": "Memory",
       "core": "Core",
       "log": "Runtime log",
       "skills": "Skills",
@@ -444,7 +444,7 @@
       "catalog": "Model catalog",
       "cooldown": "Cooldown",
       "external": "Platform accounts",
-      "miyu-base-net": "Web search",
+      "base-net": "Web search",
       "net_keys": "API keys and addresses",
       "source": "Package source"
     },

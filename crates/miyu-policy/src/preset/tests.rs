@@ -472,22 +472,21 @@ fn a_group_switches_its_packages_unless_one_is_written() {
 /// 都照它所在的包算；找不到包的照功能的编号算。
 #[test]
 fn a_feature_is_switched_by_the_package_it_lives_in() {
-    let mut file = read(
-        "[preset]\nunlisted = \"off\"\n[software]\nbasesystem = true\nmiyu-base-memory = true\n",
-    )
-    .unwrap();
+    let mut file =
+        read("[preset]\nunlisted = \"off\"\n[software]\nbasesystem = true\nbase-memory = true\n")
+            .unwrap();
     file.homes = [
-        ("jobs".to_string(), "miyu-base-jobs".to_string()),
-        ("memory".to_string(), "miyu-base-memory".to_string()),
+        ("jobs".to_string(), "base-jobs".to_string()),
+        ("memory".to_string(), "base-memory".to_string()),
     ]
     .into_iter()
     .collect();
-    file.groups = [("miyu-base-jobs".to_string(), vec!["basesystem".to_string()])]
+    file.groups = [("base-jobs".to_string(), vec!["basesystem".to_string()])]
         .into_iter()
         .collect();
     assert!(file.opens("jobs"), "照它所在的包的组开");
     assert!(file.opens("memory"), "[software] 写的是包编号");
     assert!(!file.opens("goal"), "找不到包的照功能编号算，这里没写");
-    let off = file.switching_off(["miyu-base-memory".to_string()]);
+    let off = file.switching_off(["base-memory".to_string()]);
     assert!(!off.opens("memory"), "关了它所在的包");
 }

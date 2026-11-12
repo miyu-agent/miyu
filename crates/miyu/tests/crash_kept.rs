@@ -195,7 +195,7 @@ async fn an_mcp_server_and_its_child_die_with_a_killed_core() {
     kill_and_check(core, &pids, "MCP 服务");
 }
 
-/// 语义模型小程序：装一个 `miyu-embed` 小程序包（人格记忆出厂推荐它），程序是包 `bin/` 里的一段 `sh`，模型照会话的测试用的
+/// 语义模型小程序：装一个 `embed` 小程序包（人格记忆出厂推荐它），程序是包 `bin/` 里的一段 `sh`，模型照会话的测试用的
 /// 手造小模型。往无人格那一间记一条记忆，核心在后台补向量时拉起它。
 #[cfg(unix)]
 #[tokio::test]
@@ -209,7 +209,7 @@ async fn an_embedder_and_its_child_die_with_a_killed_core() {
 
     let home = Home::new();
     let record = home.dir.join("embed.pids");
-    let package = home.root.packages().join("miyu-embed");
+    let package = home.root.packages().join("embed");
     let bin = package.join("bin");
     std::fs::create_dir_all(&bin).expect("建得了");
     std::fs::write(
