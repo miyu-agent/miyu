@@ -208,3 +208,49 @@ fn a_package_folder_reads_like_an_installed_one_and_says_what_cannot_be_read() {
         "Unreadable      : skills/bad/SKILL.md (missing front matter), scripts/x.sh (not text)"
     );
 }
+
+/// 知识库、许可证（施工 PV-3）：「提供」里有知识库（装着的照 `contains`、软件源的照 `provides`），写了许可证的在「上游」下面印
+/// 「许可证」一行，没写的不印。
+#[test]
+fn knowledge_bases_are_provided_and_a_written_license_gets_a_row() {
+    let installed = json!({
+        "package": "lore", "layer": "home", "from": "file", "source": "file", "files": 3, "size": 2048,
+        "upstream": "https://github.com/ann/lore", "license": "CC-BY-SA-4.0",
+        "contains": {"knowledge": ["atlas", "lighthouse"]},
+    });
+    assert_eq!(
+        rows(&installed, east_eight(), &Language::Chinese),
+        [
+            "编号        : lore",
+            "依赖        : 无",
+            "推荐        : 无",
+            "提供        : 知识库 atlas、知识库 lighthouse",
+            "来源        : 本地",
+            "上游        : https://github.com/ann/lore",
+            "许可证      : CC-BY-SA-4.0",
+            "安装后大小  : 2.0 KiB",
+        ]
+    );
+    let remote = json!({
+        "from": "source", "source": "official", "package": "lore", "version": "1.0",
+        "provides": {"knowledge": ["atlas"]}, "origin": "github.com/ann/lore", "official": false,
+        "license": "MIT OR Apache-2.0",
+    });
+    let shown = rows(&remote, east_eight(), &Language::English);
+    assert!(
+        shown.contains(&"Provides    : knowledge base atlas".to_string()),
+        "{shown:?}"
+    );
+    assert!(
+        shown.contains(&"License     : MIT OR Apache-2.0".to_string()),
+        "{shown:?}"
+    );
+    let mut unlicensed = remote.clone();
+    unlicensed.as_object_mut().expect("是表").remove("license");
+    assert!(
+        !rows(&unlicensed, east_eight(), &Language::English)
+            .iter()
+            .any(|row| row.starts_with("License")),
+        "没写的不印"
+    );
+}

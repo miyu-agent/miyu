@@ -81,6 +81,7 @@
 - 自动想起的开关先照包里 `kb.toml` 的 `auto`；人改了的（`kb.update` 只收 `auto`）记在数据根的 `kb.toml`：`[auto]` 下一行 `"<包>/<编号>" = true/false`，照 `miyu_config::edit` 改，注释和别的照原样。
 - 索引在 `index/kb/packages/<包>/<编号>.db`，照包目录补（同挂进来的）。
 - 装卸（「怎么走」第十条）：核心起来时照读成的清单找；装、卸以后当场跟上，卸掉的包它的索引、开关一起删。
+- 包带了哪几个库（施工 PV-3）：`package.list`、软件源索引的 `provides`、装之前看一眼和 `package.info` 的 `contains` 里列作 `knowledge`，照编号排；认法同这里（`kb/` 下编号写法对的目录，`kb.toml` 可以没有），`miyu_source::provides::of` 照写一份（它不依赖 `miyu-store`）。
 
 **索引**（K-1 上）：`index/kb/<编号>.db`，检索库（`recall.md`「库的结构」），派生的。
 

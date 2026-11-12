@@ -740,6 +740,7 @@
     "package-problems/bad_tray": "トレイ項目の書き方が正しくありません: {detail}",
     "package-problems/bad_author": "作者の書き方が正しくありません: {detail}",
     "package-problems/bad_upstream": "上流リポジトリのアドレスが正しくありません: {detail}",
+    "package-problems/bad_license": "ライセンスの書き方が正しくありません: {detail}",
     "package-problems/bad_widget": "ウィジェットの書き方が正しくありません: {detail}",
     "package-problems/bad_content": "他のパッケージ向けの内容の書き方が正しくありません: {detail}",
     "package-problems/bad_needs": "要件の書き方が正しくありません。使えるのは images だけです: {detail}",

@@ -123,6 +123,8 @@ pub enum Code {
     BadAuthor,
     /// `[package] upstream` 不是 `https://` 开头的网址（施工 F-12）。
     BadUpstream,
+    /// `[package] license` 不是一行 1 到 100 个字（施工 PV-3）。
+    BadLicense,
     /// `[[widget]]` 写错了（施工 X-15 上）：编号、位置、标题、范围、命令名，同一个包里重了、太多，没声明 `widgets` 能力。
     BadWidget,
     /// `[content.<包>]` 写错了（施工 X-22）：不是包的编号、不是表、`dir` 不是包目录里的相对目录。
@@ -206,6 +208,7 @@ impl Code {
             Code::BadTray => "bad_tray",
             Code::BadAuthor => "bad_author",
             Code::BadUpstream => "bad_upstream",
+            Code::BadLicense => "bad_license",
             Code::BadWidget => "bad_widget",
             Code::BadContent => "bad_content",
             Code::BadNeeds => "bad_needs",
@@ -219,7 +222,7 @@ impl Code {
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 66] = [
+    pub const ALL: [Code; 67] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -279,6 +282,7 @@ impl Code {
         Code::BadTray,
         Code::BadAuthor,
         Code::BadUpstream,
+        Code::BadLicense,
         Code::BadWidget,
         Code::BadContent,
         Code::BadNeeds,

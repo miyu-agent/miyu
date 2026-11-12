@@ -16,6 +16,7 @@ name = { en = "Hello", zh = "打招呼" }
 summary = { en = "Greets people by name", zh = "照名字打招呼" }   # 可以不写
 author = "Alice <alice@example.com>"               # 作者，可以不写
 upstream = "https://github.com/alice/hello"         # 源码仓库，可以不写
+license = "MIT"                                     # 许可证，建议写 SPDX 表达式，可以不写
 icon = "hand"                                       # Lucide 的图标名，可以不写
 logo = "art/logo.png"                               # 包里自带的一张图标，可以不写
 needs = ["images"]                                  # 可以不写：显示不了图片的地方（语音）整包当没开
@@ -80,6 +81,7 @@ place = "status"
 | `prefix` | 配置键、记的事件种类用的前缀，写法同包的编号；不写就是包的编号。和别的包的前缀（没写的照编号）撞了装不上。编号长的包用它让键短一点：编号 `qq-bridge` 写 `prefix = "qq"`，配置键是 `qq.*`，记的事件是 `ext.qq.*` |
 | `author` | 作者：人名、组织名，可以带邮箱，一行，至多 100 个字。软件包信息页上露出来 |
 | `upstream` | 上游：这个包的源码仓库，`https://` 开头，不带空白，至多 300 个字。软件包信息页上露出来 |
+| `license` | 许可证，建议写：照 [SPDX](https://spdx.org/licenses/) 的写法，例如 `MIT`、`CC-BY-SA-4.0`、`MIT OR Apache-2.0`。一行，至多 100 个字；核心不查是不是合法的 SPDX，照原样给人看（软件包信息页、`miyu pkg info` 的「许可证」一行、软件源）。不写也能装、能发，只是看的人不知道能怎么用 |
 | `icon` | Lucide 的图标名。界面不一定认得 Lucide 的全部名字：终端界面只认它对照表里的那些，认不出的画通用的工具图标（扳手） |
 | `logo` | 包里自带的一张图标：包目录里的相对路径，`.png` 或 `.webp`。不超过 256 KiB、每边不超过 512；`miyu pkg pack` 打包时超了的照原格式缩到以内（目录里的原图不动）。不在、不是图、超了的当没有图标，包照装，`miyu check` 报警告。界面有它先画它，没有画 `icon` |
 | `needs` | 要这个地方有什么才有用：现在只认 `images`（显示不了图片的会话里整包当没开） |

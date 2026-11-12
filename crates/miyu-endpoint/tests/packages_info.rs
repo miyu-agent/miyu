@@ -24,6 +24,7 @@ fn index(secret: &str) -> (Vec<u8>, Vec<u8>) {
     memes["capabilities"] = json!(["network"]);
     memes["author"] = json!("miyu-agent");
     memes["upstream"] = json!("https://github.com/miyu-agent/memes");
+    memes["license"] = json!("MIT");
     memes["installed"] = json!(6_800_000);
     memes["files"] =
         json!([{"url": "https://example.invalid/memes.miyu", "sha256": "ab", "size": 2_200_000}]);
@@ -79,6 +80,7 @@ async fn a_package_not_installed_is_answered_from_the_source() {
     assert_eq!(got["official"], true);
     assert_eq!(got["author"], "miyu-agent");
     assert_eq!(got["upstream"], "https://github.com/miyu-agent/memes");
+    assert_eq!(got["license"], "MIT", "许可证照索引（施工 PV-3）");
     assert_eq!(got["download"], 2_200_000, "本机那份文件多大");
     assert_eq!(got["installed_size"], 6_800_000);
     assert!(got.get("stale").is_none(), "拿到了新的：{got}");
@@ -88,7 +90,7 @@ async fn a_package_not_installed_is_answered_from_the_source() {
     let plain = info(&mut client, json!({"package": "plain", "source": true})).await;
     let plain = &plain["result"];
     assert_eq!(plain["from"], "source", "{plain}");
-    for key in ["author", "upstream", "installed_size", "summary"] {
+    for key in ["author", "upstream", "license", "installed_size", "summary"] {
         assert!(plain.get(key).is_none(), "{key}：{plain}");
     }
     assert_eq!(plain["recommends"], json!([]));

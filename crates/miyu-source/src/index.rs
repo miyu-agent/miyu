@@ -78,6 +78,9 @@ pub struct Entry {
     /// 上游（施工 IN-1）：清单 `[package] upstream` 的原样；没写的、以前生成的索引没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub upstream: Option<String>,
+    /// 许可证（施工 PV-3）：清单 `[package] license` 的原样；没写的、以前生成的索引没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub license: Option<String>,
     /// 这一版第一次进这个软件源的时刻（施工 DL-1，设计 54 第一节），RFC 3339：生成索引时照上一份沿用，编号、版本变了的写这一次
     /// 生成的时刻。以前生成的没有；写法不对的读成没有（`time_or_none`），这一条照收。
     #[serde(
@@ -147,8 +150,8 @@ fn linked(written: &str) -> bool {
 }
 
 /// 包编号的写法：小写字母开头，小写字母、数字、`-`、`_`，最多 64 个（同 `miyu_store::personas::valid`，这个 crate 不依赖
-/// `miyu-store`，照写一份）。
-fn plain_id(id: &str) -> bool {
+/// `miyu-store`，照写一份）。包里知识库的编号也是这个写法（施工 PV-3，[`crate::provides::of`]）。
+pub(crate) fn plain_id(id: &str) -> bool {
     let mut chars = id.chars();
     chars.next().is_some_and(|first| first.is_ascii_lowercase())
         && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '_')

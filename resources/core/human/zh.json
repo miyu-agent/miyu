@@ -740,6 +740,7 @@
     "package-problems/bad_tray": "托盘入口的写法不对：{detail}",
     "package-problems/bad_author": "作者的写法不对：{detail}",
     "package-problems/bad_upstream": "上游仓库的网址不对：{detail}",
+    "package-problems/bad_license": "许可证的写法不对：{detail}",
     "package-problems/bad_widget": "界面块的写法不对：{detail}",
     "package-problems/bad_content": "给别的包带的内容写法不对：{detail}",
     "package-problems/bad_needs": "要求的写法不对，现在只认 images：{detail}",

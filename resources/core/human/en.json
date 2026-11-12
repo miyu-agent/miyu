@@ -744,6 +744,7 @@
     "package-problems/bad_tray": "Badly written tray entry: {detail}",
     "package-problems/bad_author": "Badly written author: {detail}",
     "package-problems/bad_upstream": "Bad upstream address: {detail}",
+    "package-problems/bad_license": "Badly written license: {detail}",
     "package-problems/bad_widget": "Badly written widget: {detail}",
     "package-problems/bad_content": "Badly written content for another package: {detail}",
     "package-problems/bad_needs": "Unknown or repeated need, only images is known: {detail}",

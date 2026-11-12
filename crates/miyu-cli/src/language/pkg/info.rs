@@ -23,6 +23,8 @@ pub(crate) enum InfoKey {
     Origin,
     Author,
     Upstream,
+    /// 清单写的许可证（施工 PV-3）。
+    License,
     DownloadSize,
     InstalledSize,
     RequiredBy,
@@ -62,6 +64,7 @@ impl Language {
             InfoKey::Origin => ("来源", "Origin"),
             InfoKey::Author => ("作者", "Author"),
             InfoKey::Upstream => ("上游", "Upstream"),
+            InfoKey::License => ("许可证", "License"),
             InfoKey::DownloadSize => ("下载大小", "Download Size"),
             InfoKey::InstalledSize => ("安装后大小", "Installed Size"),
             InfoKey::RequiredBy => ("被依赖", "Required By"),

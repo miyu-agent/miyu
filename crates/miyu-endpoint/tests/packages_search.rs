@@ -34,6 +34,8 @@ async fn the_index_is_searched_by_id_name_and_summary() {
     memes["depends"] = json!(["im"]);
     // 包的种类（施工 G-11）：新生成的索引带着。
     memes["kind"] = json!("bundle");
+    // 许可证（施工 PV-3）：清单写了的，索引原样带着。
+    memes["license"] = json!("CC-BY-4.0");
     let index = serde_json::to_vec(&json!({
         "version": 1,
         "generated": "2026-10-19T03:00:00Z",
@@ -94,6 +96,8 @@ async fn the_index_is_searched_by_id_name_and_summary() {
         rows[0].get("kind").is_none(),
         "以前生成的索引没有的不写：{all}"
     );
+    assert_eq!(rows[1]["license"], "CC-BY-4.0", "许可证照索引（施工 PV-3）");
+    assert!(rows[0].get("license").is_none(), "没写的不写：{all}");
     // 装着的那一份照它自己的清单（施工 G-9）。
     let listed = client.call("l", "package.list", json!({})).await;
     let packages = listed["result"]["packages"].as_array().expect("有");

@@ -27,7 +27,7 @@ pub(super) async fn file(core: &Arc<Core>, peer: Peer, path: &str) -> Result<Val
 }
 
 /// 包文件夹 `folder` 的那一份：看一眼的那几格里编号、版本、几个文件多大、要的能力、读不成的、换下哪一份照搬，带了什么
-/// （程序、子命令、技能、脚本……）收进 `contains`；另照清单补名字、说明（照连接的语言）、作者、上游、依赖、推荐，照包里的脚本、
+/// （程序、子命令、技能、脚本……）收进 `contains`；另照清单补名字、说明（照连接的语言）、作者、上游、许可证、依赖、推荐，照包里的脚本、
 /// 功能补模型会多的工具（`tools`，施工 PV-1）。没有的不写。
 pub(super) async fn described(
     core: &Arc<Core>,
@@ -55,6 +55,7 @@ pub(super) async fn described(
         ("summary", pick(&manifest.summary, peer.language)),
         ("author", manifest.author.clone()),
         ("upstream", manifest.upstream.clone()),
+        ("license", manifest.license.clone()),
     ] {
         if let Some(value) = value {
             answer.insert(key.into(), json!(value));

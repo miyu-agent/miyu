@@ -224,6 +224,8 @@ struct Content {
     /// 带的人格、预设的编号（施工 P-11 下）。
     personas: Vec<String>,
     presets: Vec<String>,
+    /// 带的知识库的编号（施工 PV-3）：同核心认包里的库（`kb/` 下编号写法对的目录）。
+    knowledge: Vec<String>,
     skipped: Vec<Value>,
 }
 
@@ -252,13 +254,14 @@ impl Content {
             slash,
             personas: miyu_store::personas::carried(dir),
             presets: miyu_store::presets::carried(dir),
+            knowledge: miyu_store::knowledge::carried(dir),
             skipped,
         }
     }
 }
 
 /// 一份清单带了什么：编号、版本（写了的）、程序（`ui`、`process`、`worker`、`builtin`，只带吉祥物的没有）、子命令名、后台页、
-/// 吉祥物、接哪个平台、几个配置项、技能、脚本、读不成的技能和脚本（`content`）、声明的能力（照连接的语言说，`extension.status` 那一格的
+/// 吉祥物、接哪个平台、几个配置项、技能、脚本、人格、预设、知识库、读不成的技能和脚本（`content`）、声明的能力（照连接的语言说，`extension.status` 那一格的
 /// 样子）。没有的不写。
 fn carries(
     core: &Core,
@@ -347,6 +350,9 @@ fn carries(
     }
     if !content.presets.is_empty() {
         answer.insert("presets".into(), json!(content.presets));
+    }
+    if !content.knowledge.is_empty() {
+        answer.insert("knowledge".into(), json!(content.knowledge));
     }
     if !content.skipped.is_empty() {
         answer.insert("skipped".into(), json!(content.skipped));

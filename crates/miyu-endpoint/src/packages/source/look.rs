@@ -43,6 +43,7 @@ pub(crate) async fn look(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value
         ("summary", pick(&entry.summary, language)),
         ("author", entry.author.clone()),
         ("upstream", entry.upstream.clone()),
+        ("license", entry.license.clone()),
     ] {
         if let Some(value) = value {
             answer[key] = json!(value);

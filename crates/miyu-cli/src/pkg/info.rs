@@ -101,6 +101,7 @@ pub(crate) fn rows(info: &Value, offset: UtcOffset, language: &Language) -> Vec<
     rows.extend([
         (InfoKey::Author, text("author")),
         (InfoKey::Upstream, text("upstream")),
+        (InfoKey::License, text("license")),
     ]);
     let bytes = |key: &str| info[key].as_u64().map(size);
     if remote {

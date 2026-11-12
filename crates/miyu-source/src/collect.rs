@@ -372,6 +372,7 @@ fn entry_of(
             .collect(),
         author: manifest.author.clone(),
         upstream: manifest.upstream.clone(),
+        license: manifest.license.clone(),
         installed: None,
         // 上线的时刻、下载次数（施工 DL-1）：收录时还没有，生成索引的那一步照上一份、GitHub 填（施工 DL-2）。
         published: None,

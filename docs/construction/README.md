@@ -1453,6 +1453,7 @@ flowchart LR
 | FH-4 | 文档跟上新布局 | 蓝图、参考、作者文档里的旧位置（`state/…`、`modules/memory`、顶层的 `config.toml`、`packages/` 这些）和旧环境变量名换成设计 55 的；设计 07 第二节改成指向设计 55，留归属规则和「存相对路径」（附件、工作区的例外写明）；内置技能 package-creator 的说明换新名字。另：清暂存的路上只认普通的一层名字。施工单见 `FH-数据根仿FHS.md` |
 | PV-1 | 下载软件详情页的「提供」 | 软件源索引的每一条、`package.info` 的回应多一格可选的 `tools`：装上以后模型会多的工具 `[{"name", "title"?, "from"}]`。脚本照包里 `scripts/` 的开头读（`miyu_policy::script::read`，和核心登记的同一份；链接、子目录不看），显示名取「显示名称」「Display name」；扩展照清单里各功能写明的工具名；MCP 的不列。索引版本照旧是 1。`miyu_source::tools` 共用：收录、装着的、本机包文件夹都照它算，没装的照索引那一格。 |
 | PV-2 | 已安装的包带提供什么 | `package.list` 的每一项（`package.changed` 推的、回应「同 `package.list` 的一项」的同样）多一格 `provides`，写法同软件源索引：种类（`command`、`features`、`mcp`、`content`、`slash`、`skills`、`scripts`、`personas`、`presets`）到名字，空的种类不写，没带的是 `{}`；出厂的、卸掉了的出厂包也带。收录那份规则挪成 `miyu_source::provides::of`，收录、核心共用。终端、网页的「已安装」照它标「技能」「脚本」（2026-11-12 项目主人定）。施工单见 `PV-2-已安装的包带提供什么.md` |
+| PV-3 | 提供列出知识库，清单可以写许可证 | AD-1 第四节 A、产品取舍 1 接着做。`miyu_source::provides::of` 多一种 `knowledge`：包文件夹 `kb/` 下编号写法对的目录（`kb.toml` 可以没有、不跟链接，同核心认包里的库，K-8），照编号排；索引、`package.list`、`package.changed` 同一个函数自然都有，装之前看一眼和 `package.info` 的 `contains` 也列，`miyu pkg info`、装前「包含」印「知识库 <编号>」。项目主人 2026-11-12 定清单 `[package]` 加可选的 `license`：建议写 SPDX 表达式，只查是字、去掉前后空白 1 到 100 个字、一行，不查合不合法，写错的报 `bad_license`；`package.info`（装着的、带 `path` 的、软件源的）、`package.search`、软件源索引原样带，`miyu pkg info` 在「上游」下面印「许可证 : …」，没写的都不出；`package.list`、她的软件包工具不带。索引照旧 `version` 1，软件源要换 `miyu-rev` 才收得到这两格。施工单见 `PV-3-提供列出知识库和许可证.md` |
 
 **提示词**（TX 线，不占里程碑的号；设计 26 J13，2026-10-30 项目主人定：系统的字只客观描述功能和注意点，不引导行为，减 token 是重点）
 

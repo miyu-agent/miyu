@@ -129,3 +129,65 @@ async fn a_package_that_provides_nothing_has_an_empty_table() {
         "同索引：什么都没带的是空表：{installed}"
     );
 }
+
+/// 知识库（施工 PV-3）：包里 `kb/` 下编号写法对的目录是一个库（`kb.toml` 可以没有，同核心认包里的库），`package.list` 的
+/// `provides`、`package.info` 的 `contains` 都列 `knowledge`；写法不对的目录、`kb/` 下的文件不列。许可证照清单原样交出去，
+/// 装着的、带 `path` 的都有，没写的没有。
+#[tokio::test]
+async fn knowledge_bases_are_provided_and_the_license_is_handed_over() {
+    let home = Home::new();
+    let core = home.core(&Script::new([]));
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let lore = folder(
+        &home,
+        "lore",
+        "license = \"CC-BY-SA-4.0\"\n",
+        &[
+            ("kb/lighthouse/kb.toml", "name = \"Lighthouse\"\n"),
+            ("kb/lighthouse/keeper.md", "# Keeper\n"),
+            ("kb/atlas/map.md", "# Map\n"),
+            ("kb/Bad Name/kb.toml", ""),
+            ("kb/readme.md", "not a library\n"),
+        ],
+    );
+    let looked = client
+        .call("f", "package.info", json!({"path": lore}))
+        .await;
+    assert_eq!(
+        looked["result"]["contains"]["knowledge"],
+        json!(["atlas", "lighthouse"]),
+        "装之前看一眼：{looked}"
+    );
+    assert_eq!(looked["result"]["license"], "CC-BY-SA-4.0", "{looked}");
+    let installed = client
+        .call("i", "package.install", json!({"path": lore}))
+        .await;
+    assert_eq!(
+        installed["result"]["provides"],
+        json!({"knowledge": ["atlas", "lighthouse"]}),
+        "{installed}"
+    );
+    let listed = client.call("l", "package.list", json!({})).await;
+    assert_eq!(
+        item(&listed, "lore")["provides"]["knowledge"],
+        json!(["atlas", "lighthouse"])
+    );
+    let info = client
+        .call("q", "package.info", json!({"package": "lore"}))
+        .await;
+    assert_eq!(
+        info["result"]["contains"]["knowledge"],
+        json!(["atlas", "lighthouse"]),
+        "{info}"
+    );
+    assert_eq!(info["result"]["license"], "CC-BY-SA-4.0", "{info}");
+
+    let plain = folder(&home, "plain", "", &[]);
+    let looked = client
+        .call("g", "package.info", json!({"path": plain}))
+        .await;
+    assert!(looked["result"].is_object(), "{looked}");
+    assert!(looked["result"].get("license").is_none(), "{looked}");
+    assert!(looked["result"].get("contains").is_none(), "{looked}");
+}

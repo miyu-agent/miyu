@@ -65,7 +65,7 @@ async fn by_id(
     }
 }
 
-/// 装着的那一份：[`super::local::info`] 的几格，另有清单写的名字、说明、依赖、推荐，带了什么（`contains`，同装之前看一眼的
+/// 装着的那一份：[`super::local::info`] 的几格，另有清单写的名字、说明、许可证、依赖、推荐，带了什么（`contains`，同装之前看一眼的
 /// 「包含」；施工 CM-1 起不叫 `provides`：那是软件源索引的另一种形状）、要的能力（`capabilities`），模型会多的工具（`tools`，
 /// 施工 PV-1），装着的包里依赖它的（`required_by`，照编号），从软件源装的来源仓库（`origin`）。没有的不写。
 async fn installed(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value, Refusal> {
@@ -74,9 +74,11 @@ async fn installed(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value, Refu
     if let Some(found) = now.iter().find(|one| one.id == id)
         && let Ok(manifest) = &found.read
     {
+        // 许可证（施工 PV-3）只在这里加，不放进 `local::info`：她的软件包工具用那一份，不多给她这一格。
         for (key, value) in [
             ("name", pick(&manifest.name, peer.language)),
             ("summary", pick(&manifest.summary, peer.language)),
+            ("license", manifest.license.clone()),
         ] {
             if let Some(value) = value {
                 answer[key] = json!(value);

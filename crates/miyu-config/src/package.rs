@@ -79,8 +79,7 @@ pub struct Manifest {
     pub name: Phrases,
     /// 一句说明；没写的是空的。
     pub summary: Phrases,
-    /// 给 `miyu` 加的子命令（9-2 转交）：照写的先后，没写的是空的；一个包可以加几个（施工 F-13，`[[command]]`），第一个的程序
-    /// 是这个包的程序（[`Manifest::command`]）。
+    /// 给 `miyu` 加的子命令（9-2 转交，施工 F-13 起能加几个）：照写的先后，第一个的程序是包的程序（[`Manifest::command`]）。
     pub commands: Vec<Command>,
     /// 核心怎么拉起它（`kind = "process"`，9-4）。
     pub process: Option<Process>,
@@ -88,15 +87,13 @@ pub struct Manifest {
     pub ui: Option<Pages>,
     /// `miyu check` 怎么查它自己的文件（9-2 跑）。
     pub check: Option<Check>,
-    /// 配置键、扩展记的事件种类的前缀（施工 PN-1，设计 48 第二节，`[package] prefix`）：没写的没有，照包编号算
-    /// （[`Manifest::prefix_of`]）。
+    /// 配置键、扩展记的事件种类的前缀（施工 PN-1，设计 48 第二节）：没写的没有，照包编号算（[`Manifest::prefix_of`]）。
     pub prefix: Option<String>,
     /// 配置项（施工 9-1 下）：照写的先后；没有的是空的。
     pub settings: Vec<Setting>,
     /// 配置项的组（施工 SG-1，设置页上分节画）：照写的先后；没分组的是空的。
     pub sections: Vec<Section>,
-    /// 在哪几个组里（施工 BS-1 上中，设计 44 第三节第 2 条）：只有内置包能写，照写的先后；没写的是空的。原来的 `required`
-    /// （必需的包）项目主人 2026-10-26 定删掉：出厂带什么是打包时挑的事。
+    /// 在哪几个组里（施工 BS-1 上中，设计 44 第三节第 2 条）：只有内置包能写，照写的先后；没写的是空的。
     pub groups: Vec<String>,
     /// 写了的功能（施工 F-1）：没写 `[features]` 的没有，写了空表的是空的；算上照包算的那一个用 [`Manifest::features_of`]。
     pub features: Option<Vec<Feature>>,
@@ -149,6 +146,8 @@ pub struct Manifest {
     pub author: Option<String>,
     /// 上游：这个包的源码仓库，`https://` 开头（施工 F-12，`[package] upstream`）：没写的没有。
     pub upstream: Option<String>,
+    /// 许可证（施工 PV-3，`[package] license`）：作者写的原样（建议 SPDX 表达式，不查），去掉前后空白；没写的没有。
+    pub license: Option<String>,
 }
 
 impl Manifest {
@@ -493,6 +492,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         targets: head.targets,
         author: head.credits.author,
         upstream: head.credits.upstream,
+        license: head.credits.license,
     })
 }
 

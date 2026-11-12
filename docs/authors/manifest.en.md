@@ -16,6 +16,7 @@ name = { en = "Hello", zh = "打招呼" }
 summary = { en = "Greets people by name", zh = "照名字打招呼" }   # optional
 author = "Alice <alice@example.com>"               # optional
 upstream = "https://github.com/alice/hello"         # source repository, optional
+license = "MIT"                                     # license, an SPDX expression is recommended, optional
 icon = "hand"                                       # a Lucide icon name, optional
 logo = "art/logo.png"                               # a picture shipped in the package, optional
 needs = ["images"]                                  # optional: off where images can't be shown (voice)
@@ -80,6 +81,7 @@ The tables and fields on this page are stable (frozen on 2026-10-23): from now o
 | `prefix` | The prefix of your settings keys and recorded event kinds, written like a package id; without it, the package id. A prefix that clashes with another package's (its id when it has none) won't install. Use it to keep keys short for a long id: id `qq-bridge` with `prefix = "qq"` has settings `qq.*` and records `ext.qq.*` |
 | `author` | Author: a person or organization, may include an email, one line, at most 100 characters. Shown on the package info page |
 | `upstream` | Upstream: the package's source repository, starting with `https://`, no whitespace, at most 300 characters. Shown on the package info page |
+| `license` | License, recommended: written the [SPDX](https://spdx.org/licenses/) way, for example `MIT`, `CC-BY-SA-4.0`, `MIT OR Apache-2.0`. One line, at most 100 characters; the core does not check that it is valid SPDX and shows it as written (the package info page, the "License" line of `miyu pkg info`, package sources). Packages without it install and publish all the same; readers just can't tell how they may use it |
 | `icon` | A Lucide icon name. Not every head knows every Lucide name: the terminal only knows the names in its mapping table and draws the generic tool icon (a wrench) for the rest |
 | `logo` | A picture shipped in the package: a relative path inside the package folder, `.png` or `.webp`. At most 256 KiB and 512 pixels a side; `miyu pkg pack` shrinks a bigger one in its own format while packing (the original in the folder stays). A missing, broken or oversized one counts as no logo: the package still installs and `miyu check` warns. Heads draw it first and fall back to `icon` |
 | `needs` | What a place must have for it to be useful: only `images` for now (the whole package is off in sessions that can't show images) |

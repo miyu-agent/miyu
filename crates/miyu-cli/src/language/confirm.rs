@@ -54,7 +54,7 @@ impl Language {
     }
 
     /// 带的另几样：子命令、后台页、吉祥物、接的平台、几个配置项、MCP 服务（施工 X-2）、技能、脚本（施工 X-13 上）、
-    /// 斜杠命令模板（施工 X-14 上补）。
+    /// 斜杠命令模板（施工 X-14 上补）、人格、预设、知识库（施工 PV-3）。
     pub(crate) fn carried(&self, what: Carried<'_>) -> String {
         match (self, what) {
             (Language::Chinese, Carried::Command(name)) => format!("命令 miyu {name}"),
@@ -70,6 +70,7 @@ impl Language {
             (Language::Chinese, Carried::Slash(name)) => format!("斜杠命令 /{name}"),
             (Language::Chinese, Carried::Persona(name)) => format!("人格 {name}"),
             (Language::Chinese, Carried::Preset(name)) => format!("预设 {name}"),
+            (Language::Chinese, Carried::Knowledge(name)) => format!("知识库 {name}"),
             (Language::English, Carried::Command(name)) => format!("command miyu {name}"),
             (Language::English, Carried::Page) => "admin page".to_string(),
             (Language::English, Carried::Mascot) => "mascot".to_string(),
@@ -84,6 +85,7 @@ impl Language {
             (Language::English, Carried::Slash(name)) => format!("slash command /{name}"),
             (Language::English, Carried::Persona(name)) => format!("persona {name}"),
             (Language::English, Carried::Preset(name)) => format!("preset {name}"),
+            (Language::English, Carried::Knowledge(name)) => format!("knowledge base {name}"),
         }
     }
 
@@ -270,6 +272,8 @@ pub(crate) enum Carried<'a> {
     Persona(&'a str),
     /// 带的预设（施工 P-11 下）。
     Preset(&'a str),
+    /// 带的知识库（施工 PV-3）。
+    Knowledge(&'a str),
 }
 
 /// 一行开头的词。
