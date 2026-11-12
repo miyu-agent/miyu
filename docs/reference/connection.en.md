@@ -120,7 +120,7 @@ Subscribe to a push stream: from now on its pushes go to this connection.
 
 | `stream` | Pushes | `subscribe` response |
 |---|---|---|
-| `events` | A session's events, as-is | The session's state right now: `model`, `limits`, `permission`, `usage`, `jobs`, `workspace`, `default_workspace` (the session's default workspace), `compactable` (whether there is anything to compact right now, that is, whether `session.compact` would answer `nothing_to_compact`; changes are pushed as `compactable.changed`), and when present `persona`, `preset`, `todos`, `goal`, `nested` (running `miyu call`s: `[{id, name, args, at}]`, `at` being when each started); with `after` also `upto` |
+| `events` | A session's events, as-is | The session's state right now: `model`, `limits`, `permission`, `usage`, `jobs`, `workspace`, `default_workspace` (the session's default workspace), `compactable` (whether there is anything to compact right now, that is, whether `session.compact` would answer `nothing_to_compact`; changes are pushed as `compactable.changed`), and when present `compaction_line` (the session's pinned compaction trigger), `persona`, `preset`, `todos`, `goal`, `vision` (the session's pinned vision model), `nested` (running `miyu call`s: `[{id, name, args, at}]`, `at` being when each started); with `after` also `upto` |
 | `view` | A session's view projection (entries ready to draw) | The above, plus the latest page of entries and the full session `status` |
 | `config` | Config changes | `{}` |
 | `sessions` | One item of the session list changed | `{"sessions": [<item>…]}`, all of them |
@@ -138,6 +138,8 @@ Subscribe to a push stream: from now on its pushes go to this connection.
 
 `model` in the `events` response is what the session asks next: `ref` (its model or `@pool`), `endpoint` and `model` (who gets the next request; a rotating pool has neither), and `effort` `{"level", "from"}`: the reasoning effort that model uses, `from` being `session` (set with `session.configure`, step SM-1) or `system` (the config). A rotating pool, or a request that carries no effort, has no `effort`.
 
+Top-level `compaction_line` in the `events` response is the compaction trigger pinned on the session, as a percentage of the window (set with `session.configure`), and `vision` is the session's pinned vision model (a model or `@pool`). They match the same fields in `view.status`: absent when nothing is pinned (the config applies), and they change with the pushed `session.policy_changed`. `limits.compaction_line` shares the name but means something else: the compaction line in effect, in tokens, which follows a new pin only when the next turn starts.
+
 What each stream pushes is in [Pushes](pushes.en.md).
 
 1. A connection has one subscription per session (`events` and `view` count as the same); subscribing again replaces it. `sessions`, `config`, `extensions`, `packages`, `projects`, `bus`, `schedules`, `notices`, `kb` and `widgets` are one each per connection; `package` and `prefs` are one per package.
@@ -149,7 +151,7 @@ What each stream pushes is in [Pushes](pushes.en.md).
 ```json
 → {"jsonrpc":"2.0","id":"s1","method":"subscribe","params":{"session":"01a14aca-…","stream":"events","after":30}}
 ← (events 31 to 42 are pushed first)
-← {"id":"s1","jsonrpc":"2.0","result":{"limits":{"compaction_line":850000,"window":1000000},"model":{"endpoint":"deepseek","model":"deepseek-v4","ref":"deepseek/deepseek-v4"},"upto":42,…}}
+← {"id":"s1","jsonrpc":"2.0","result":{"compaction_line":50,"limits":{"compaction_line":850000,"window":1000000},"model":{"endpoint":"deepseek","model":"deepseek-v4","ref":"deepseek/deepseek-v4"},"upto":42,"vision":"c/w",…}}
 ```
 
 **Errors**

@@ -1276,7 +1276,7 @@ mimo = ["xiaomi"]
 | `crates/miyu-drivers/tests/openai_chat_described.rs`、`src/texts/tests.rs` 的标签那几条（8-17） | 驱动把图的位置换成带标签的转述、能看图的一字不差、老快照照旧占位（`drivers/openai-chat.md`「守着它的」） | 8-17 |
 | `crates/miyu-session/tests/route_vision.rs`、`vision_log.rs`（8-17） | 路由照资料认看不看得了图、经一次性入口问 `models.vision`、没配的照旧占位、运行日志（`session/actor.md`「守着它的」） | 8-17 |
 | `crates/miyu-session/tests/route_vision_pin.rs`（VM-1） | 会话钉的看图模型压过 `models.vision`、重启以后照日志算的、去掉了回到配置的；钉的池没了写占位、主请求照发、不退回配置的 | VM-1 |
-| `crates/miyu-endpoint/tests/vision_pin.rs`（VM-1） | `session.configure` 的 `vision`：没钉的照 `models.vision`、钉了下一轮发给它、`null` 回到配置的，一样的不记、日志里记的写法，`view.status` 钉了带 `vision`、没钉的不写；解析不出的 `unknown_model`、空字和不是字符串的 `bad_params`、和 `model` 一起写的也不换；`session.create` 带 `vision` 的 `events` 是 `[1, 2]`、第一轮就照钉的、解析不出的什么都不造 | VM-1 |
+| `crates/miyu-endpoint/tests/vision_pin.rs`（VM-1） | `session.configure` 的 `vision`：没钉的照 `models.vision`、钉了下一轮发给它、`null` 回到配置的，一样的不记、日志里记的写法，`view.status` 钉了带 `vision`、没钉的不写，`subscribe` 的回应同样、重启以后照日志（CT-1补）；解析不出的 `unknown_model`、空字和不是字符串的 `bad_params`、和 `model` 一起写的也不换；`session.create` 带 `vision` 的 `events` 是 `[1, 2]`、第一轮就照钉的、解析不出的什么都不造 | VM-1 |
 | `crates/miyu-kernel/src/session/tests/vision_pin.rs`、`event/session/tests.rs` 的 `vision`（VM-1） | 内核：钉了记一条只写 `vision`、一样的不记、去掉记成空的、换模型不清它、撤掉的回合里的也算、载入照日志算回来；事件读写一字不差 | VM-1 |
 | `crates/miyu-policy/src/snapshot/tests/vision.rs`、`crates/miyu-store/src/resources/tests.rs`（8-17） | 快照带着两份字和三句标签、老快照没有的不转述；资源目录读得出五份 | 8-17 |
 | `crates/miyu-endpoint/tests/model_call.rs`、`model_call_log.rs` | `model.call` 的回应形状；参数校验（`purpose` 的写法、`messages` 的样子、`max_tokens`、`model` 是空字）、blob 不在存处里的 `unknown_attachment`、不是图的 `bad_params`、`unknown_model`；出错的 `data`；不造会话、不进会话日志；测试的端口没有一次性入口的答 `no_model`；运行日志成了、没成各一行，不带 key（`model_call_log.rs`） | 8-20 |

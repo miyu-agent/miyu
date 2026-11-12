@@ -14,7 +14,7 @@
 | `crates/miyu-endpoint/src/timing.rs` | `Core` 等多久的几样（握手、文件清单、分块上传、一次性码、扩展进程和 MCP 服务）：测试里设短的（施工 X-16 从 `lib.rs` 挪出来） |
 | `crates/miyu-endpoint/src/listen.rs` | `run`：在监听器上一个个接连接 |
 | `crates/miyu-endpoint/src/activity.rs` | 数着几个连接（`Connected`）；来请求了的信号 `Activity`：连接每读到一个请求叫一声，核心照它安静下来以后还内存（施工 V-5 中，`heap.md` 第 2 条） |
-| `crates/miyu-endpoint/src/connection.rs` | `serve`：一个连接，读写分开；握手以前拦住；登记成在后台答的查询交给这个连接的一组后台任务，连接断了一起停（施工 W-7）；`subscribe`（回应带会话的限额、接下来请求的模型（施工 8-10）；带 `after` 的先补发，施工 3-8 六补）、`unsubscribe`；订阅哪一个流、订阅会话的事件流在 `connection/streams.rs`（施工 9-4 补挪出来） |
+| `crates/miyu-endpoint/src/connection.rs` | `serve`：一个连接，读写分开；握手以前拦住；登记成在后台答的查询交给这个连接的一组后台任务，连接断了一起停（施工 W-7）；`subscribe`（回应带会话的限额、接下来请求的模型（施工 8-10）、钉的压缩触发线和看图模型（施工 CT-1补）；带 `after` 的先补发，施工 3-8 六补）、`unsubscribe`；订阅哪一个流、订阅会话的事件流在 `connection/streams.rs`（施工 9-4 补挪出来） |
 | `crates/miyu-endpoint/src/connection/outbox.rs`（施工 V-22） | 写的一头：写队列里排着的几行一起写、只冲一次，字节和先后同一行行写的一样（「一个连接」第 2 条） |
 | `crates/miyu-endpoint/src/connection/reach.rs` | 连接从哪来（`Reach`：本机、远程）、握手之前的 `connection.remote`、本机才能用的方法（`local_machine_only`）、远程的握手回应不给 `host`（施工 Y-1 下） |
 | `crates/miyu-endpoint/src/wire.rs` | 读一行、认成请求、回应写成一行 |
@@ -1136,9 +1136,9 @@
 | `persona` | 字符串或 `null` | 换成的人格；`null` 是无人格（施工 P-13） |
 | `preset` | 字符串 | 换成的预设（施工 P-13） |
 | `effort` | 字符串或 `null` | 换会话的思考强度（施工 SM-1）：一档的名字，照会话这时的模型的档位查；`null` 是回到跟着配置（`models.md`「怎么走」第十一条） |
-| `vision` | 字符串或 `null` | 钉会话的看图模型（施工 VM-1）：写法、解析、校验同 `model`；`null` 是去掉、回到跟着 `models.vision`。替看图发给它（`models.md`「怎么走」第十三条第 4 条），钉的后来解析不出照转述没成办、不退回 `models.vision`。`view.status` 钉了带 `vision`，没钉的不写 |
+| `vision` | 字符串或 `null` | 钉会话的看图模型（施工 VM-1）：写法、解析、校验同 `model`；`null` 是去掉、回到跟着 `models.vision`。替看图发给它（`models.md`「怎么走」第十三条第 4 条），钉的后来解析不出照转述没成办、不退回 `models.vision`。`view.status`、`subscribe` 的回应钉了带 `vision`（`subscribe` 的施工 CT-1补），没钉的不写 |
 | `context` | 整数或 `null` | 会话的上下文上限（施工 CTX-1，设计 68）：token 数；`null` 去掉。生效的窗口取模型的窗口和它里小的，压缩线照生效的窗口算；记下当场交给路由，不等下一轮。设得太小、照它和这时的模型的最大输出算不出压缩线的，`bad_params`，`data.field` 是 `context`，`data.min` 是最少要多少 |
-| `compaction_line` | 整数或 `null` | 钉会话的压缩触发线（施工 CT-1，`compaction.md` 第二条第 2 条）：窗口的百分之几，20 到 95（照配置项 `compaction.line` 的范围）；`null` 是去掉、回到跟着 `compaction.line`。不在范围里的 `bad_params`，`data.field` 是 `compaction_line`；不是整数的 `bad_params`。什么都不换。下一个回合开始时换上，`limits.compaction_line` 跟着换；`view.status` 钉了带 `compaction_line`，没钉的不写 |
+| `compaction_line` | 整数或 `null` | 钉会话的压缩触发线（施工 CT-1，`compaction.md` 第二条第 2 条）：窗口的百分之几，20 到 95（照配置项 `compaction.line` 的范围）；`null` 是去掉、回到跟着 `compaction.line`。不在范围里的 `bad_params`，`data.field` 是 `compaction_line`；不是整数的 `bad_params`。什么都不换。下一个回合开始时换上，`limits.compaction_line` 跟着换；`view.status`、`subscribe` 的回应钉了带 `compaction_line`（`subscribe` 的施工 CT-1补），没钉的不写 |
 
 七格至少写一格。施工 8-18 收过的 `effort` 是对象（`{"model":…,"level":…}`，会话给一个模型记的一档），8-18（补）去掉了；SM-1 加回来的是字或 `null`，那种对象照旧读不成，`bad_params`。
 
@@ -1294,7 +1294,7 @@ Markdown 的回应 `{"path" | "text", "bytes", "tokens", "upto", "redacted", "ch
 | `stream` | 字符串，必写 | `events` 会话的事件流；`view` 会话的视图流（施工 9-8 下，下面第 9 条、`view.md`「视图流」）；`config` 配置的推送（施工 8-4，`config.md`「订阅配置的推送」）；`sessions` 会话列表的推送（施工 9-5，下面「会话列表的推送」）；`extensions` 扩展的状态的推送（施工 9-4 补，`extensions.md`「推送」）；`packages` 软件包列表的推送（施工 F-8 三补，下面「软件包列表的推送」）；`memory` 一间的记忆日志（施工 R-12 上，下面「记忆日志的推送」）；`widgets` 界面块（施工 X-15 中，`widgets.md`「头」：带 `session`、`showing`、`page`）；`prefs` 一个界面包的设置（施工 HP-1，带 `package`，下面「头自己的设置」）。别的 `bad_params` |
 | `after` | 非负整数，可以不写 | 只有 `subscribe` 的 `events`、`memory` 认（施工 3-8 六补、R-12 上，`view`、`config`、`sessions`、`extensions` 写了 `bad_params`）：先补发日志里序号大于它、落了盘的事件，`0` 是从头。见下面「补发」、「记忆日志的推送」 |
 
-回应：`config` 的都是 `{}`；`sessions` 的 `subscribe` 是 `{"sessions": [<一项>, …]}`，`unsubscribe` 是 `{}`（施工 9-5）；`extensions` 的 `subscribe` 是 `{"extensions": [<一个>, …]}`，`unsubscribe` 是 `{}`（施工 9-4 补）；`memory` 的 `subscribe` 是 `{"upto": <序号>}`，`unsubscribe` 是 `{}`（施工 R-12 上）。`subscribe` 的是 `{"limits": <限额>, "model": <模型>}`，写了 `after` 的多一格 `upto`（补到哪一条）：`{"limits": <限额>, "model": <模型>, "upto": <序号>}`。当前的待办不空的多一格 `todos`（施工 D-3，照 `todo.written` 的写法）；会话用哪个人格写在 `persona`（施工 P-1 下）、哪个预设写在 `preset`（施工 P-2 上），都照日志第一条 `session.created` 读，以前的日志没有的不写；之后变了照推送的瞬时事件 `todos.changed`，头只认这两样，不自己翻效果。施工 9-6 上起再多三格「当前的」，和订阅在会话 actor 的同一步里拿，头之后照推过来的事件往上加、不重不漏：`usage` 这个会话（不带子会话）累计的，写法、口径同 `usage.query {"session": <它>}` 那一行（`requests`、`usage`、`amounts`、`unpriced`），另加 `main`（只算主请求的四项用量：`purpose` 是空的，压缩的摘要请求也算，回顾、起标题这些辅助请求不算；头照它算命中率、上下文，施工 9-6 上补）、`compactions`（压缩的检查点有几个）、`cache_breaks`（意外断了缓存的主请求有几次：带 `first_difference`、`purpose` 是空的；压缩的摘要请求（带 `compaction`，或者看到的比之前的主请求少）不算；压缩、撤销以后的头一个主请求本来就会断，也不算；口径同终端，施工 9-6 再补）；`permission` 人这一刻设的权限 `{"level", "read_only"}`；`jobs` 还在跑的后台命令和子代理，照编号，每一个照 `job.started` 的写法（`job`、`what`、`title`，子代理带 `session`）。施工 9-7 上起再多 `workspace`：`{"cwd", "dirs"}`，会话在哪个目录干活，之后照推过来的 `session.workspace_changed` 换。施工 M-1 起再多 `nested`：在跑的嵌套调用（脚本里的 `miyu call`），照编号，每一个 `{id, name}`（施工 M-5 上起 `{id, name, args, at}`：参数原文、派去跑的时刻，头重连以后照它接着计时），没有的不写；之后照推过来的瞬时事件 `tool.nested_started`、事件 `tool.nested` 增减（`kernel/session.md`「嵌套调用」）。施工 X-8 补起再多 `goal`：这个会话的长期目标，写法同视图流会话状态的 `goal`（`view.md`「会话状态」），没有目标的不写；之后变了照推过来的瞬时事件 `goal.changed` 换（`kernel/events.md`），头不自己照 `goal.*` 和回合算第几轮、在不在等人。已经订阅着、再订阅一次不带 `after` 的（「还是那一个」），这几格另要一份这一刻的。`unsubscribe` 的是空对象 `{}`。
+回应：`config` 的都是 `{}`；`sessions` 的 `subscribe` 是 `{"sessions": [<一项>, …]}`，`unsubscribe` 是 `{}`（施工 9-5）；`extensions` 的 `subscribe` 是 `{"extensions": [<一个>, …]}`，`unsubscribe` 是 `{}`（施工 9-4 补）；`memory` 的 `subscribe` 是 `{"upto": <序号>}`，`unsubscribe` 是 `{}`（施工 R-12 上）。`subscribe` 的是 `{"limits": <限额>, "model": <模型>}`，写了 `after` 的多一格 `upto`（补到哪一条）：`{"limits": <限额>, "model": <模型>, "upto": <序号>}`。当前的待办不空的多一格 `todos`（施工 D-3，照 `todo.written` 的写法）；会话用哪个人格写在 `persona`（施工 P-1 下）、哪个预设写在 `preset`（施工 P-2 上），都照日志第一条 `session.created` 读，以前的日志没有的不写；之后变了照推送的瞬时事件 `todos.changed`，头只认这两样，不自己翻效果。施工 9-6 上起再多三格「当前的」，和订阅在会话 actor 的同一步里拿，头之后照推过来的事件往上加、不重不漏：`usage` 这个会话（不带子会话）累计的，写法、口径同 `usage.query {"session": <它>}` 那一行（`requests`、`usage`、`amounts`、`unpriced`），另加 `main`（只算主请求的四项用量：`purpose` 是空的，压缩的摘要请求也算，回顾、起标题这些辅助请求不算；头照它算命中率、上下文，施工 9-6 上补）、`compactions`（压缩的检查点有几个）、`cache_breaks`（意外断了缓存的主请求有几次：带 `first_difference`、`purpose` 是空的；压缩的摘要请求（带 `compaction`，或者看到的比之前的主请求少）不算；压缩、撤销以后的头一个主请求本来就会断，也不算；口径同终端，施工 9-6 再补）；`permission` 人这一刻设的权限 `{"level", "read_only"}`；`jobs` 还在跑的后台命令和子代理，照编号，每一个照 `job.started` 的写法（`job`、`what`、`title`，子代理带 `session`）。施工 9-7 上起再多 `workspace`：`{"cwd", "dirs"}`，会话在哪个目录干活，之后照推过来的 `session.workspace_changed` 换。施工 M-1 起再多 `nested`：在跑的嵌套调用（脚本里的 `miyu call`），照编号，每一个 `{id, name}`（施工 M-5 上起 `{id, name, args, at}`：参数原文、派去跑的时刻，头重连以后照它接着计时），没有的不写；之后照推过来的瞬时事件 `tool.nested_started`、事件 `tool.nested` 增减（`kernel/session.md`「嵌套调用」）。施工 X-8 补起再多 `goal`：这个会话的长期目标，写法同视图流会话状态的 `goal`（`view.md`「会话状态」），没有目标的不写；之后变了照推过来的瞬时事件 `goal.changed` 换（`kernel/events.md`），头不自己照 `goal.*` 和回合算第几轮、在不在等人。施工 CT-1补起再多 `compaction_line`、`vision`：会话钉的压缩触发线、看图模型，没钉的不写（下面）。已经订阅着、再订阅一次不带 `after` 的（「还是那一个」），这几格另要一份这一刻的。`unsubscribe` 的是空对象 `{}`。
 
 **模型** `model`（施工 8-10，`models.md`「协议」）：会话接下来请求的。`ref` 是会话的引用（模型或 `@池`），`endpoint`、`model` 是接下来发给哪一家的哪个模型；轮换的池（每次都换）、解析不出的没有 `endpoint`、`model`，没配 `models.chat` 的会话没有 `ref`。一个都没有的不写这一格。回合开始重新解析过的、出错换了成员的是换了以后的。施工 8-18 多一格 `effort`：`{"level": <一档>, "from": …}`，接下来那个模型真用的思考强度和从哪来：`session` 是会话记的那一档（`session.configure` 的 `effort`，这个模型有它，施工 SM-1），`system` 是配置；请求里什么都不带的、轮换的池不写。
 
@@ -1309,6 +1309,10 @@ Markdown 的回应 `{"path" | "text", "bytes", "tokens", "upto", "redacted", "ch
 
 **有没有能压的** `compactable`（施工 W-12）：`session.compact` 这一刻会不会回 `nothing_to_compact`，判法同内核；之后照视图流的会话状态（`view.md`）换；事件流上变了推瞬时的 `compactable.changed`（施工 W-12 补，`kernel/events.md`）。
 
+**钉的压缩触发线** `compaction_line`（施工 CT-1补）：会话钉的百分数（`session.configure`、`session.create` 的 `compaction_line`），同 `view.status` 顶层的那一格，内核这一刻的：刚钉了、还没开回合的也是钉的；没钉的（跟着 `compaction.line`）不写。和 `limits.compaction_line` 同名、不同层：那一格是生效的压缩线，token 数，钉了以后下一个回合开始才跟着换；这一格是钉的百分数。之后变了照推过来的 `session.policy_changed` 的 `compaction_line` 换。头照它画会话设置：以前只能从最近一页事件里找 `session.policy_changed`，很早以前钉的找不到（终端的 `/compact-line` 报的，2026-11-12）。
+
+**钉的看图模型** `vision`（施工 CT-1补）：会话钉的看图模型的引用（`session.configure`、`session.create` 的 `vision`，施工 VM-1），同 `view.status` 的那一格；没钉的（跟着 `models.vision`）不写。之后变了照推过来的 `session.policy_changed` 的 `vision` 换（空的是去掉）。
+
 例子：会话照 `models.chat` 记下 `deepseek/deepseek-v4`，核心照 DeepSeek 的资料，窗口 1000000、最大输出 393216，压缩线 = 1000000 − min(393216, 20000) − 13000；没设默认人格，会话无人格，没有 `persona` 这一格（施工 P-4 上）（键照字母先后排）：
 
 ```json
@@ -1318,6 +1322,8 @@ Markdown 的回应 `{"path" | "text", "bytes", "tokens", "upto", "redacted", "ch
 （`<工作区>` 是在 `~` 里造的会话退回的默认工作区，照真实的那个写，施工 9-7 上。）
 
 模型的资料没报窗口的：`{"id":"c2","jsonrpc":"2.0","result":{"limits":{},"model":{…}}}`。
+
+上面那个会话钉了压缩触发线 50、看图模型 `c/w`，还没开回合的（只列变了的几格，键照字母先后排）：`{"id":"c2","jsonrpc":"2.0","result":{"compactable":false,"compaction_line":50,…,"limits":{"compaction_line":850000,"window":1000000},…,"vision":"c/w","workspace":{…}}}`；开过一个回合以后 `limits.compaction_line` 是 500000。
 
 1. 订阅：从这一刻起的推送都转给这个连接。不写 `after` 的，以前的不补。没在跑的会话先载入。
 2. 不写 `after` 的：这个连接已经订阅着这个会话、还在推的，还是那一个，回应照样带限额；停了推的（掉了队、会话停了），换一个新的。写了 `after` 的总是换一个新的（「补发」第 6 条）。

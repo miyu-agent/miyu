@@ -209,3 +209,28 @@ async fn session_create_takes_vision_as_well() {
         "解析不出的什么都不造"
     );
 }
+
+/// 事件流订阅的回应也带钉的看图模型（施工 CT-1补，终端照它画会话设置）：没钉的不写；钉了以后、核心重启照日志载入以后都是
+/// `c/w`。带不带 `after` 都一样。
+#[tokio::test]
+async fn the_events_subscription_carries_the_pinned_vision_model() {
+    let home = Home::new();
+    let (first, _servers) = three(&home, 0).await;
+    let mut client = client(&first).await;
+    let session = client.create("c1", "~").await;
+    let reply = client.subscribe("c2", &session).await;
+    assert!(reply["result"].get("vision").is_none(), "{reply}");
+    let reply = pin(&mut client, "c3", &session, json!("c/w")).await;
+    assert_eq!(reply["result"], json!({}), "{reply}");
+    let reply = client.subscribe("c4", &session).await;
+    assert_eq!(reply["result"]["vision"], "c/w", "{reply}");
+    first.stop_sessions().await;
+    drop(client);
+    let again = routed(&home, &[], data(profiles(json!({}))));
+    let mut restarted = Client::connect(again);
+    restarted.hello().await;
+    let reply = restarted.subscribe("c5", &session).await;
+    assert_eq!(reply["result"]["vision"], "c/w", "重启以后照日志：{reply}");
+    let (_, reply) = restarted.subscribe_after("c6", &session, json!(0)).await;
+    assert_eq!(reply["result"]["vision"], "c/w", "带 after 的：{reply}");
+}

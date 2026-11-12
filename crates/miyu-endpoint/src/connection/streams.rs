@@ -326,7 +326,7 @@ async fn head(core: &Core, handle: &Handle, session: &SessionId) -> Value {
     reply
 }
 
-/// 回应里「当前的」三格（施工 9-6 上）：这个会话累计的用量和计数（`usage`，写法同 `usage.query` 的一行），人设的权限
+/// 回应里「当前的」几格（施工 9-6 上起；钉的看图模型、压缩触发线，施工 CT-1补）：这个会话累计的用量和计数（`usage`，写法同 `usage.query` 的一行），人设的权限
 /// （`permission`），还在跑的后台命令和子代理（`jobs`，照 `job.started` 的写法）。和订阅在会话 actor 的同一步里拿；会话停了、
 /// 拿不到的不写。
 fn now(core: &Core, reply: &mut Value, current: Option<&miyu_session::Current>) {
@@ -361,6 +361,14 @@ fn now(core: &Core, reply: &mut Value, current: Option<&miyu_session::Current>) 
     }
     // 有没有能压的（施工 W-12）：同会话状态的 `compactable`。
     reply["compactable"] = json!(current.compactable);
+    // 会话钉的看图模型、压缩触发线（施工 CT-1补）：同会话状态的 `vision`、顶层的 `compaction_line`，没钉的不写。头照回应画
+    // 会话设置，很早以前钉的不用再翻事件。顶层的 `compaction_line` 是钉的百分数，`limits.compaction_line` 是生效的 token 数。
+    if let Some(vision) = &current.vision {
+        reply["vision"] = json!(vision);
+    }
+    if let Some(line) = current.compaction_line {
+        reply["compaction_line"] = json!(line);
+    }
 }
 
 /// 带 `after` 订阅（施工 3-8 六补）：总是换一个新的。原来有一个的，先等它把交给它的推送、回应都放完、拿回它的订阅，补的

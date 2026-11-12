@@ -173,3 +173,35 @@ async fn session_create_takes_a_line_as_well() {
         "不在范围里的什么都不造"
     );
 }
+
+/// 事件流订阅的回应顶层也带钉的百分数（施工 CT-1补，终端照它画会话设置）：没钉的不写；钉了以后、核心重启照日志载入以后
+/// 都是 50；`limits.compaction_line` 照旧是生效的 token 数，两格同名不同层。带不带 `after` 都一样。
+#[tokio::test]
+async fn the_events_subscription_carries_the_pinned_line() {
+    let home = Home::new();
+    let first = home.core(&script(0));
+    let mut client = Client::connect(Arc::clone(&first));
+    client.hello().await;
+    let session = client.create("c1", "~").await;
+    let reply = client.subscribe("c2", &session).await;
+    assert!(reply["result"].get("compaction_line").is_none(), "{reply}");
+    let reply = pin(&mut client, "c3", &session, json!(50)).await;
+    assert_eq!(reply["result"], json!({}), "{reply}");
+    let reply = client.subscribe("c4", &session).await;
+    assert_eq!(reply["result"]["compaction_line"], 50, "{reply}");
+    assert_eq!(reply["result"]["limits"]["compaction_line"], 850_000);
+    first.stop_sessions().await;
+    drop(client);
+    let mut client = Client::connect(home.core(&script(0)));
+    client.hello().await;
+    let reply = client.subscribe("c5", &session).await;
+    assert_eq!(
+        reply["result"]["compaction_line"], 50,
+        "重启以后照日志：{reply}"
+    );
+    let (_, reply) = client.subscribe_after("c6", &session, json!(0)).await;
+    assert_eq!(
+        reply["result"]["compaction_line"], 50,
+        "带 after 的：{reply}"
+    );
+}

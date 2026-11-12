@@ -45,7 +45,7 @@
 
 - 不改输出预留、余量、尾巴这些别的数，不加 token 数写法。
 - 不改给模型看的字：`cargo xtask prompts` 无差异。
-- `subscribe` 回应、`session.list` 不加这一格：生效的线看 `limits.compaction_line`，钉的看 `view.status`。
+- `session.list` 不加这一格：生效的线看 `limits.compaction_line`，钉的看 `view.status`、`subscribe` 的回应（`subscribe` 的是下面「补」加的）。
 
 ### 验收
 
@@ -61,3 +61,17 @@
 - 钉的数在协议那一头照这时的范围查过；以后改范围，日志里旧的数照记的用，不再查。
 - 回合开始多比一个数；不一样时多存一份快照（只差一个数）。
 - 换快照那一条挡住锚（`estimate::anchor` 不跨带 `policy` 的 `session.policy_changed`）：换线的那一轮用量照整份本地估算（中文多估约两成半、英文少估约一成半，`compaction.md` 第一条第 2 款），下一次请求起照锚。只在改线的那一轮，少估的落在余量里，真超了有被动压缩兜底。没为它改锚的规矩：内核分不出哪次换快照没动请求的字节。
+
+### 补：订阅会话的回应带上钉的数
+
+状态：做完，等合。
+
+为什么：终端做 `/compact-line` 时报的（2026-11-12）。上面「不做什么」原来写着 `subscribe` 回应不加钉的数，可终端照 `subscribe` 的回应画会话设置：钉的数只能从最近一页事件里找 `session.policy_changed`，很早以前钉的翻不到，就显示成「跟着设置」。顺手查了 VM-1 钉的看图模型 `vision`，缺口一样，一起补。
+
+蓝图改哪几节：`protocol.md` 的 `subscribe`（回应那一段、`compaction_line` 和 `vision` 两段、例子），`session.configure` 参数表里 `vision`、`compaction_line` 两行，代码表 `connection.rs` 那一行。参考文档 `connection` 中英两份的 `subscribe`。
+
+改了什么：`subscribe` 事件流（带不带 `after` 都一样，视图流的回应照旧带「上面几格」）的回应顶层多两格，照会话 actor 同一步里拿的「当前的」（`miyu_session::Current`）写，同 `view.status`：`compaction_line` 是钉的百分数，`vision` 是钉的看图模型的引用，没钉的都不写。`limits.compaction_line` 名字一样、层级不同：那是生效的压缩线，token 数，钉了以后下一个回合开始才换。只加格，以前没钉的会话回应字节不变。
+
+验收：`cargo test -p miyu-endpoint --test all the_events_subscription_carries`：钉了 50 的会话回应顶层 `compaction_line` 是 50、`limits.compaction_line` 照旧 850000，核心重启照日志载入以后、带 `after: 0` 的也是 50，没钉的没有这一格；看图模型同样（`c/w`）。改之前两条都红。
+
+风险：没有。头不认得的格照不理。

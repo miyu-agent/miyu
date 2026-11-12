@@ -120,7 +120,7 @@
 
 | `stream` | 推什么 | `subscribe` 的回应 |
 |---|---|---|
-| `events` | 一个会话的事件，原样 | 会话这时的状态：`model`、`limits`、`permission`、`usage`、`jobs`、`workspace`、`default_workspace`（会话的默认工作区）、`compactable`（这时有没有可压缩的，也就是 `session.compact` 会不会回 `nothing_to_compact`；变了推 `compactable.changed`），有的话还有 `persona`、`preset`、`todos`、`goal`、`nested`（在跑的 `miyu call`：`[{id, name, args, at}]`，`at` 是各自开始的时刻）；写了 `after` 的还有 `upto` |
+| `events` | 一个会话的事件，原样 | 会话这时的状态：`model`、`limits`、`permission`、`usage`、`jobs`、`workspace`、`default_workspace`（会话的默认工作区）、`compactable`（这时有没有可压缩的，也就是 `session.compact` 会不会回 `nothing_to_compact`；变了推 `compactable.changed`），有的话还有 `compaction_line`（会话钉的压缩触发线）、`persona`、`preset`、`todos`、`goal`、`vision`（会话钉的看图模型）、`nested`（在跑的 `miyu call`：`[{id, name, args, at}]`，`at` 是各自开始的时刻）；写了 `after` 的还有 `upto` |
 | `view` | 一个会话的视图投影（画好就能显示的条目） | 同上，再加最新一页条目和完整的会话 `status` |
 | `config` | 配置的变化 | `{}` |
 | `sessions` | 会话列表里一项变了 | `{"sessions": [<项>…]}`，全部 |
@@ -138,6 +138,8 @@
 
 `events` 回应里的 `model` 是会话下一次问谁：`ref`（它的模型或 `@池`）、`endpoint` 和 `model`（下一次请求发给谁；轮换的池两样都没有），还有 `effort` `{"level", "from"}`：那个模型用的思考深度，`from` 是 `session`（`session.configure` 设的，施工 SM-1）或 `system`（配置）。轮换的池、请求不带思考深度的，没有 `effort`。
 
+`events` 回应顶层的 `compaction_line` 是会话钉的压缩触发线，窗口的百分之几（`session.configure` 设的），`vision` 是会话钉的看图模型（模型或 `@池`）；同 `view.status` 的那两格，没钉的（跟着配置）不写，之后照推过来的 `session.policy_changed` 换。`limits.compaction_line` 名字一样、意思不同：那是生效的压缩线，token 数，钉了以后下一个回合开始才换。
+
 每条流推的是什么见[推送](pushes.md)。
 
 1. 一个连接对一个会话只有一个订阅（`events`、`view` 算同一个），再订阅一次换掉原来的。`sessions`、`config`、`extensions`、`packages`、`projects`、`bus`、`schedules`、`notices`、`kb`、`widgets` 每个连接各一个；`package`、`prefs` 每个软件包各一个。
@@ -149,7 +151,7 @@
 ```json
 → {"jsonrpc":"2.0","id":"s1","method":"subscribe","params":{"session":"01a14aca-…","stream":"events","after":30}}
 ← （先推 31 到 42 号事件）
-← {"id":"s1","jsonrpc":"2.0","result":{"limits":{"compaction_line":850000,"window":1000000},"model":{"endpoint":"deepseek","model":"deepseek-v4","ref":"deepseek/deepseek-v4"},"upto":42,…}}
+← {"id":"s1","jsonrpc":"2.0","result":{"compaction_line":50,"limits":{"compaction_line":850000,"window":1000000},"model":{"endpoint":"deepseek","model":"deepseek-v4","ref":"deepseek/deepseek-v4"},"upto":42,"vision":"c/w",…}}
 ```
 
 **出错**

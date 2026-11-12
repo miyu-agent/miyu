@@ -34,7 +34,7 @@
 - 不加给模型看的字，请求的字节不变（替看图那一次请求本来就不进会话的前缀）。
 - 不改 `models.vision` 的写法、不给池加「看图用」的标记。
 - `model.call` 的 `use: "vision"` 照旧照 `models.vision`：它不属于哪个会话。
-- `subscribe` 回应、`session.list` 不加这一格：im 卡片照 `view.status` 或者自己记的。
+- `session.list` 不加这一格：im 卡片照 `view.status` 或者自己记的。`subscribe` 回应的是 CT-1补 加的（`CT-1-压缩触发线可配.md`「补」）。
 - 钉的解析不出时不退回 `models.vision`、内核也不记退回（`model` 那种 `replaced`）：配置的看图模型和钉的不是一回事，悄悄换成别的看图模型人看不出来。
 
 ### 验收
