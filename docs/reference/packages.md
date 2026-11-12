@@ -59,6 +59,7 @@
 | `widgets` | 声明的界面块：`id`、`place`、`title`、`scope`、`command` |
 | `command`、`commands` | 给 `miyu` 加的子命令：`command` 是第一个 `{"name", "program", "about"}`，`commands` 是全部，照写的先后（一个包可以加几个） |
 | `contents` | 给哪几个包带了内容（清单里 `[content.<包>]` 的编号）；没带的没有这一格 |
+| `provides` | 带了哪几样，写法同 `package.search` 每一行的 `provides`：种类到名字，种类有 `command`（子命令）、`features`（清单写明的功能）、`mcp`（MCP 服务）、`slash`（斜杠命令）、`content`（带了内容的包）、`skills`、`scripts`（脚本的文件名）、`personas`、`presets`，每一种照名字排，没带的种类不写，什么都没带的是 `{}`。出厂的、系统加装的、装上的、卸掉了的出厂包都有，照包文件夹现算；头照它在「已安装」里标「技能」「脚本」 |
 | `removed` | 卸掉了的出厂包 |
 
 写错的、撞了的、读不了的只有 `package`、`layer`、`code`、`problem`（照连接的语言说）和 `line`。要一直跟着最新的，订阅 `packages` 流。

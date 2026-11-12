@@ -358,7 +358,7 @@ fn entry_of(
         kind: Some(manifest.kind.as_str().to_string()),
         icon: manifest.icon.clone(),
         logo: None,
-        provides: provides(manifest, folder),
+        provides: crate::provides::of(manifest, folder),
         capabilities: manifest
             .process
             .iter()
@@ -380,84 +380,6 @@ fn entry_of(
         tools: crate::tools::of(manifest, folder),
         files: Vec::new(),
     }
-}
-
-/// 带了哪几样：清单里写的（子命令、功能、MCP 服务、斜杠命令、给哪几个包带了内容），文件夹里放的（技能、脚本、人格、预设）。空的
-/// 种类不写。带的内容照被带的包的编号列在 `content` 下（施工 G-9：`package.search` 交 `contents`，im 的商城照它挑）。
-fn provides(manifest: &Manifest, folder: &Path) -> BTreeMap<String, Vec<String>> {
-    let mut provides = BTreeMap::new();
-    let mut put = |kind: &str, mut names: Vec<String>| {
-        names.sort();
-        names.dedup();
-        if !names.is_empty() {
-            provides.insert(kind.to_string(), names);
-        }
-    };
-    put(
-        "command",
-        manifest.commands.iter().map(|c| c.name.clone()).collect(),
-    );
-    put(
-        "features",
-        manifest
-            .features
-            .iter()
-            .flatten()
-            .map(|feature| feature.id.clone())
-            .collect(),
-    );
-    put(
-        "mcp",
-        manifest
-            .mcp
-            .iter()
-            .map(|server| server.name.clone())
-            .collect(),
-    );
-    put(
-        "content",
-        manifest
-            .content
-            .iter()
-            .map(|content| content.target.clone())
-            .collect(),
-    );
-    put(
-        "slash",
-        manifest
-            .slash
-            .iter()
-            .map(|slash| slash.name.clone())
-            .collect(),
-    );
-    put(
-        "skills",
-        listed(&folder.join("skills"), |path| {
-            path.join("SKILL.md").is_file()
-        }),
-    );
-    put("scripts", listed(&folder.join("scripts"), Path::is_file));
-    put("personas", listed(&folder.join("personas"), Path::is_dir));
-    put(
-        "presets",
-        listed(&folder.join("presets"), Path::is_file)
-            .into_iter()
-            .filter_map(|name| name.strip_suffix(".toml").map(str::to_string))
-            .collect(),
-    );
-    provides
-}
-
-/// 目录 `dir` 里照 `keep` 留下的名字；没有这个目录的是空的。
-fn listed(dir: &Path, keep: impl Fn(&Path) -> bool) -> Vec<String> {
-    let Ok(entries) = std::fs::read_dir(dir) else {
-        return Vec::new();
-    };
-    entries
-        .flatten()
-        .filter(|entry| keep(&entry.path()))
-        .filter_map(|entry| entry.file_name().to_str().map(str::to_string))
-        .collect()
 }
 
 fn hex(bytes: &[u8]) -> String {

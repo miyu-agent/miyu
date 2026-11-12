@@ -14,21 +14,6 @@ use crate::support::*;
 const PANE: &str =
     "[package]\nprotocol = [1, 1]\nname = { en = \"Pane\", zh = \"面板\" }\n\n[ui]\n";
 
-/// 读到一条 `package.changed`、编号是 `id` 为止，交回它的 `entry`：别的消息跳过，最多 60 秒。
-async fn changed(client: &mut Client, id: &str) -> Value {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
-    loop {
-        let left = deadline.saturating_duration_since(tokio::time::Instant::now());
-        let message = client
-            .next_within(left)
-            .await
-            .unwrap_or_else(|| panic!("等不到 {id} 的推送"));
-        if message["method"] == "package.changed" && message["params"]["package"] == id {
-            return message["params"]["entry"].clone();
-        }
-    }
-}
-
 #[tokio::test]
 async fn subscribers_get_the_list_then_each_package_that_changed() {
     let home = Home::new();
@@ -55,7 +40,7 @@ async fn subscribers_get_the_list_then_each_package_that_changed() {
         .call("i", "package.install", json!({"path": folder}))
         .await;
     assert_eq!(installed["result"]["package"], "pane", "{installed}");
-    let entry = changed(&mut watching, "pane").await;
+    let entry = package_changed(&mut watching, "pane").await;
     assert_eq!(
         (entry["name"].clone(), entry["layer"].clone()),
         (json!("面板"), json!("home")),
@@ -66,7 +51,7 @@ async fn subscribers_get_the_list_then_each_package_that_changed() {
         .call("r", "package.remove", json!({"package": "pane"}))
         .await;
     assert_eq!(
-        changed(&mut watching, "pane").await,
+        package_changed(&mut watching, "pane").await,
         Value::Null,
         "卸没了的推 null"
     );
@@ -75,7 +60,7 @@ async fn subscribers_get_the_list_then_each_package_that_changed() {
         .await;
     assert_eq!(removed["result"]["removed"], true, "{removed}");
     assert_eq!(
-        changed(&mut watching, "base-net").await["removed"],
+        package_changed(&mut watching, "base-net").await["removed"],
         true,
         "出厂的照样列着，标卸掉了"
     );
@@ -83,7 +68,7 @@ async fn subscribers_get_the_list_then_each_package_that_changed() {
         .call("i", "package.install", json!({"package": "base-net"}))
         .await;
     assert!(
-        changed(&mut watching, "base-net")
+        package_changed(&mut watching, "base-net")
             .await
             .get("removed")
             .is_none(),

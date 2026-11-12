@@ -1,5 +1,5 @@
 //! 软件包列表里的一项（`package.list`、`package.changed` 的 `entry`、装卸开关的回应共用，施工 U23 下上从 `packages.rs` 挪出来：
-//! 那一份到了 500 行）。
+//! 那一份到了 500 行）。每一项带了哪几样（`provides`，施工 PV-2）照 [`miyu_source::provides::of`] 算，同软件源索引。
 
 use serde_json::{Value, json};
 
@@ -29,6 +29,8 @@ pub(super) fn listed(
             fill::fill(&mut item, &found.id, manifest, language);
             fill::origin(&mut item, found, places);
             services::fill(core, &found.id, manifest, &mut item);
+            // 带了哪几样（施工 PV-2）：同软件源索引那一格、同一个函数，照包文件夹现算；什么都没带的也写 `{}`，同索引。
+            item["provides"] = json!(miyu_source::provides::of(manifest, &found.files_dir()));
             // 施工 F-6 上（`package-pages.md`）：状态、开关、后台页。
             item["status"] = json!(status::status(core, found, manifest, removed));
             // 依赖的包缺了（施工 F-11）：不起，写明缺谁。

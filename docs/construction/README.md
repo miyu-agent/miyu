@@ -1452,6 +1452,7 @@ flowchart LR
 | FH-3下 | 交给程序的目录照新名字给 | 设计 55 第四节那一张表：`MIYU_APP_DIR`、`MIYU_CONFIG_DIR`、`MIYU_STATE_DIR`、`MIYU_CACHE_DIR`、`MIYU_LOG_DIR`、`MIYU_TMP_DIR`、`MIYU_RUNTIME_DIR`、`MIYU_IMAGES_DIR` 和照 XDG 的四个，旧名字过渡期间一起给（FH-6 删）；扩展、`miyu <包的命令>` 拉起前建好每一处、清掉 `tmp/<编号>/`；脚本另给包文件夹；MCP 服务给状态目录；清暂存路上是链接的不清；旧布局上跑包命令报「旧版的数据根」。施工单见 `FH-数据根仿FHS.md` |
 | FH-4 | 文档跟上新布局 | 蓝图、参考、作者文档里的旧位置（`state/…`、`modules/memory`、顶层的 `config.toml`、`packages/` 这些）和旧环境变量名换成设计 55 的；设计 07 第二节改成指向设计 55，留归属规则和「存相对路径」（附件、工作区的例外写明）；内置技能 package-creator 的说明换新名字。另：清暂存的路上只认普通的一层名字。施工单见 `FH-数据根仿FHS.md` |
 | PV-1 | 下载软件详情页的「提供」 | 软件源索引的每一条、`package.info` 的回应多一格可选的 `tools`：装上以后模型会多的工具 `[{"name", "title"?, "from"}]`。脚本照包里 `scripts/` 的开头读（`miyu_policy::script::read`，和核心登记的同一份；链接、子目录不看），显示名取「显示名称」「Display name」；扩展照清单里各功能写明的工具名；MCP 的不列。索引版本照旧是 1。`miyu_source::tools` 共用：收录、装着的、本机包文件夹都照它算，没装的照索引那一格。 |
+| PV-2 | 已安装的包带提供什么 | `package.list` 的每一项（`package.changed` 推的、回应「同 `package.list` 的一项」的同样）多一格 `provides`，写法同软件源索引：种类（`command`、`features`、`mcp`、`content`、`slash`、`skills`、`scripts`、`personas`、`presets`）到名字，空的种类不写，没带的是 `{}`；出厂的、卸掉了的出厂包也带。收录那份规则挪成 `miyu_source::provides::of`，收录、核心共用。终端、网页的「已安装」照它标「技能」「脚本」（2026-11-12 项目主人定）。施工单见 `PV-2-已安装的包带提供什么.md` |
 
 **提示词**（TX 线，不占里程碑的号；设计 26 J13，2026-10-30 项目主人定：系统的字只客观描述功能和注意点，不引导行为，减 token 是重点）
 

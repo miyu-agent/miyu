@@ -59,7 +59,7 @@ pub struct Entry {
     /// 包自带的图标（施工 F-18 下）：放在软件源的哪、哈希、大小；没写、不合规矩的、以前生成的索引没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub logo: Option<Logo>,
-    /// 带了哪几样：种类（`features`、`skills`、`personas` 这些）到名字。
+    /// 带了哪几样：种类（`features`、`skills`、`personas` 这些）到名字，照 [`crate::provides::of`] 算。
     #[serde(default)]
     pub provides: BTreeMap<String, Vec<String>>,
     /// 扩展要的能力。

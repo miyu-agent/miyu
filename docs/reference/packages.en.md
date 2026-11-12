@@ -59,6 +59,7 @@ Manage packages, extension processes and the MCP servers in the system config; l
 | `widgets` | Its declared widgets: `id`, `place`, `title`, `scope`, `command` |
 | `command`, `commands` | Subcommands it adds to `miyu`: `command` is the first `{"name", "program", "about"}`, `commands` all of them in the order written (a package can add several) |
 | `contents` | Which packages it carries content for (the ids under `[content.<package>]` in its manifest); absent when none |
+| `provides` | What it carries, written as the `provides` of each `package.search` row: kind to names, the kinds being `command` (subcommands), `features` (features its manifest writes out), `mcp` (MCP servers), `slash` (slash commands), `content` (packages it carries content for), `skills`, `scripts` (script file names), `personas`, `presets`, each sorted by name, with empty kinds left out and `{}` when it carries none of them. Shipped, distro, installed and removed shipped packages all have it, worked out from the package folder; heads mark skills and scripts under "Installed" with it |
 | `removed` | A removed built-in package |
 
 Broken, conflicting or unreadable ones have only `package`, `layer`, `code`, `problem` (in the connection's language) and `line`. To keep up to date, subscribe to the `packages` stream.
