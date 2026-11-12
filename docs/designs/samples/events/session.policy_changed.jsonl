@@ -1,5 +1,6 @@
 {"seq":52,"at":"2026-09-25T07:05:00.000Z","kind":"session.policy_changed","by":{"kind":"person"},"cause":"cmd-9e30","body":{"permission":{"level":"full","read_only":true}}}
 {"seq":63,"at":"2026-09-25T07:32:00.000Z","kind":"session.policy_changed","by":{"kind":"person"},"cause":"cmd-f906","body":{"permission":{"level":"full","read_only":false}}}
+{"seq":137,"at":"2026-09-25T20:15:00.000Z","kind":"session.policy_changed","by":{"kind":"person"},"cause":"cmd-4f18/compaction_line","body":{"compaction_line":{"percent":60}}}
 {"seq":139,"at":"2026-09-25T20:30:00.000Z","kind":"session.policy_changed","by":{"kind":"person"},"cause":"cmd-0c1e","body":{"model":"@free"}}
 {"seq":140,"at":"2026-09-25T20:35:00.000Z","kind":"session.policy_changed","by":{"kind":"person"},"cause":"cmd-5b17/effort","body":{"effort":{"level":"high"}}}
 {"seq":141,"at":"2026-09-25T20:40:00.000Z","kind":"session.policy_changed","by":{"kind":"person"},"cause":"cmd-7c42/context","body":{"context":{"tokens":128000}}}

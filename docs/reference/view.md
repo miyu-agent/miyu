@@ -75,6 +75,7 @@
 | `usage` | 本会话累计用量，写法同 `usage.query` 的一行（连同 `converted`、`converted_parts`） |
 | `model`、`permission`、`todos`、`workspace`、`persona`、`preset` | 同订阅回应的那几格；中途换了人格、预设的跟着推。无工具的会话 `preset` 是 `null`、另带 `no_tools: true`，同会话列表（施工 P-16 下补） |
 | `vision` | 会话钉着的看图模型（`session.configure` 的 `vision`）：模型或 `@池`，原样；钉了马上推，没钉的（跟着 `models.vision`）不写 |
+| `compaction_line` | 会话钉着的压缩触发线（`session.configure` 的 `compaction_line`）：窗口的百分之几；钉了马上推，没钉的（跟着 `compaction.line`）不写。生效的压缩线看 `context.compaction_line` |
 | `todos_done` | 待办全部做完而清空时，清空前那一份（头打勾停一下再收） |
 | `goal` | 长期目标：`{text, limit, state, reason, round, since, usage}`，`state` 是 `running`、`paused`、`completed`、`blocked`、`waiting` |
 | `jobs` | 这个会话直接派出去的任务（在跑的和最近做完的 20 个）：`{job, what, title, state, started, ended, session, command, exit_code, signal, why, nested, fork}`（`nested` 同 `tool` 的，脚本调过工具的后台命令才有；`fork` 只有 fork 子代理才有，是 `true`，头照它换图标），`state` 是 `running`、`done`、`failed`、`stopped`、`aborted` |

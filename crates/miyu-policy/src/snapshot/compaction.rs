@@ -3,6 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
+use super::Snapshot;
 use crate::pause::PauseNumbers;
 use crate::rebuild::RebuildNumbers;
 use crate::shorten::ShortenNumbers;
@@ -39,6 +40,23 @@ pub struct CompactionNumbers {
     /// 截短重试的数（施工 6-6 中）。以前造的快照里没有，读成没有：摘要请求超长照失败算。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub shorten: Option<ShortenNumbers>,
+}
+
+impl Snapshot {
+    /// 压缩线至多是窗口的百分之几（施工 CT-1，`compaction.md` 第二条第 2 条）：快照里没有压缩的数的没有。
+    pub fn line_percent(&self) -> Option<u64> {
+        self.compaction.map(|numbers| numbers.line_percent)
+    }
+
+    /// 压缩线的百分数换成 `percent`（施工 CT-1）：会话那一层回合开始照会话钉的、配置 `compaction.line` 换，换人格、预设重拼
+    /// 的照旧快照的。`percent` 是 `None` 的、快照里没有压缩的数的照旧。别的一个字节不动：这个数不进请求，前缀不变。
+    #[must_use]
+    pub fn with_line(mut self, percent: Option<u64>) -> Snapshot {
+        if let (Some(numbers), Some(percent)) = (self.compaction.as_mut(), percent) {
+            numbers.line_percent = percent;
+        }
+        self
+    }
 }
 
 /// 尾巴的预算上限的出厂值（`compaction.md` 第三条第 2 条，2026-09-29 项目主人定）。

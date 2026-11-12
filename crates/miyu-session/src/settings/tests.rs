@@ -1,4 +1,4 @@
-//! `compaction.prepare`：默认开，配置能写，项目配置不能，下一轮生效。
+//! `compaction.prepare`：默认开，配置能写，项目配置不能，下一轮生效。`compaction.line`（施工 CT-1）同样只在系统层。
 
 use super::*;
 use miyu_config::{Applies, Layer, Values};
@@ -7,10 +7,33 @@ use miyu_config::{Applies, Layer, Values};
 fn preparing_is_on_by_default_and_applies_next_turn() {
     let defaults = CompactionSettings::from(&Values::defaults(CompactionSettings::ITEMS));
     assert!(defaults.prepare);
-    let item = &CompactionSettings::ITEMS[0];
+    let item = &CompactionSettings::ITEMS[1];
     assert_eq!(item.key, "compaction.prepare");
     assert_eq!(item.layers, &[Layer::System]);
     assert_eq!(item.applies, Applies::NextTurn);
+}
+
+/// `compaction.line`（施工 CT-1，2026-11-12 项目主人定）：出厂 85，20 到 95 的整数，19、96 超范围；只在系统层，下一轮生效；
+/// 会话钉的压过配置的；协议查的范围就是声明的这一段。
+#[test]
+fn the_compaction_line_is_85_percent_between_20_and_95() {
+    let defaults = CompactionSettings::from(&Values::defaults(CompactionSettings::ITEMS));
+    assert_eq!(defaults.line, 85);
+    let item = &CompactionSettings::ITEMS[0];
+    assert_eq!(item.key, "compaction.line");
+    assert_eq!(item.layers, &[Layer::System]);
+    assert_eq!(item.applies, Applies::NextTurn);
+    assert_eq!(item.kind, miyu_config::Kind::Int { min: 20, max: 95 });
+    for (percent, fits) in [(19, false), (20, true), (95, true), (96, false)] {
+        assert_eq!(
+            item.kind.check(&miyu_config::Value::Int(percent)).is_ok(),
+            fits,
+            "{percent}"
+        );
+    }
+    assert_eq!(CompactionSettings::line_range(), 20..=95);
+    assert_eq!(defaults.line_for(None), 85, "没钉的照配置");
+    assert_eq!(defaults.line_for(Some(50)), 50, "钉的压过配置");
 }
 
 /// `jobs.max_running`（施工 7-12 下，照 Claude Code）：默认 30 分钟，最多 2 小时，下一轮生效。

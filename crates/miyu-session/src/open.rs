@@ -82,6 +82,8 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     let mut opened = face::open(&setup, &values).await;
     // 别的目录里的技能照这时的配置（施工 PT-2 外）：关着的不碰。
     let external = miyu_store::skills::external::of(&values, setup.home);
+    // 压缩触发线照这时的配置（施工 CT-1）：`session.create` 钉的造好以后才记，第一个回合开始换。
+    let line = crate::settings::CompactionSettings::from(&values).line_for(None);
     let taken = (
         std::mem::take(&mut opened.face),
         std::mem::take(&mut opened.listed),
@@ -183,7 +185,9 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     // 那一间里她叫什么照人格的名字记（施工 E-1 修）。
     let persona_book = personas.clone();
     let (snapshot, policy, texts, run, (guard, place), log, (turns, calls)) = blocking(move || {
-        let mut snapshot = build(&resources, parts).map_err(CreateError::Persona)?;
+        let mut snapshot = build(&resources, parts)
+            .map_err(CreateError::Persona)?
+            .with_line(Some(line));
         snapshot.no_tools = no_tools;
         // 顾问会话（施工 ADV-1，设计 69 第三节第 4 条）：裸的快照，system 是顾问那一份，进快照、之后照它发。
         if advising {

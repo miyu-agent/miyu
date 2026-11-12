@@ -3,7 +3,10 @@
 
 use super::*;
 
+mod configure;
 mod recast;
+
+pub(super) use configure::configure;
 
 /// `session.create`：造会话。
 pub(super) async fn create(
@@ -21,12 +24,13 @@ pub(super) async fn create(
         params.persona = params.persona.or_else(|| project.persona.clone());
         params.preset = params.preset.or_else(|| project.preset.clone().map(Some));
     }
-    // 解析不出的什么都不造（施工 8-8；看图模型施工 VM-1）。
+    // 解析不出、不在范围里的什么都不造（施工 8-8；看图模型施工 VM-1，压缩触发线施工 CT-1）。
     let model = params
         .model
         .map(|text| models::record(core, &text))
         .transpose()?;
     let vision = models::vision::command(core, params.vision.as_deref().map(Some))?;
+    let line = models::line::command(params.compaction_line.map(Some))?;
     let memory = params
         .memory
         .map(|text| MemoryScope::parse(&text).ok_or(Refusal::BAD_PARAMS))
@@ -72,7 +76,8 @@ pub(super) async fn create(
             .await?,
         );
     }
-    events.extend(models::vision::pin(core, request, &created.id, vision).await?);
+    let pins = [("vision", vision), ("compaction_line", line)];
+    events.extend(models::pin::pin(core, request, &created.id, pins).await?);
     // 给头看的路径去掉 Windows 的 `\\?\`（施工 WP-1；YC-7 的 Windows 测试查出造会话的回应漏了这一步）。
     let cwd = miyu_fs::plain(std::path::Path::new(&created.cwd));
     let mut reply = json!({"session": created.id.as_str(), "events": events, "cwd": cwd});
@@ -427,51 +432,6 @@ pub(super) async fn stop_job(core: &Arc<Core>, request: &Request) -> Result<Valu
             Err(Refusal::STOPPED)
         }
     }
-}
-
-/// `session.configure`：换模型、看图模型（施工 VM-1，`models/vision.rs`）；写 `null` 的回到跟着配置。换思考强度（施工 SM-1）
-/// 照会话这时的模型查（`models/effort.rs`），上下文上限（施工 CTX-1）照压缩线查（`models/context.rs`）。换人格、预设（施工 P-13）
-/// 在`recast.rs`：先查完，模型先换，再换思考强度、上下文上限、看图模型，再换人格、预设。
-pub(super) async fn configure(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
-    let params: models::ConfigureParams = params(request)?;
-    let text = params.model()?;
-    let session = session(&params.session)?;
-    let recast = recast::checked(core, &session, params.recast()).await?;
-    let found = core.sessions.get(core, &session).await?;
-    // 写 `null` 的回到跟着 `models.chat`：内核记空的（施工 8-10 再补）。
-    let model = match text {
-        Some(Some(text)) => Some(models::record(core, text)?),
-        Some(None) => Some(String::new()),
-        None => None,
-    };
-    let effort = match params.effort() {
-        Some(level) => {
-            Some(models::effort::command(core, &found.handle, model.as_deref(), level).await?)
-        }
-        None => None,
-    };
-    let context = match params.context() {
-        Some(tokens) => Some(models::context::command(&found.handle, tokens).await?),
-        None => None,
-    };
-    let vision = models::vision::command(core, params.vision())?;
-    if let Some(model) = model {
-        let command = Command::Configure { model };
-        command_to(core, request, &session, &found.handle, command).await?;
-    }
-    let to = (&session, &found.handle);
-    for (suffix, command) in [("effort", effort), ("context", context), ("vision", vision)] {
-        if let Some(command) = command {
-            recast::send_as(core, request, to, suffix, command).await?;
-        }
-    }
-    if let Some(command) = recast {
-        recast::send(core, request, &session, &found.handle, command).await?;
-        // 换人格、换预设已经先压缩过（施工 PX-1）：这一刻以前的改动不再问第二次。记成放行、不记成看过：回合开始照旧照现在的
-        // 文件重拼，改过的覆盖照样换上。快照等下一个回合才换，会话照这一刻的文件记下那一份当基准（施工 PX-1补）。
-        found.handle.settle_prefix(core.edits.version());
-    }
-    Ok(json!({}))
 }
 
 /// `session.set_meta`：改标题、置顶、项目（施工 H-2：移进的项目要在，会话要是本机的主会话）。

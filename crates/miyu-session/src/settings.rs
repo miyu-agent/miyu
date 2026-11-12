@@ -1,6 +1,7 @@
-//! 会话这一块的配置项（`docs/blueprint/compaction.md` 第十五条第 7 条，施工 6-11 上）：提前压好 `compaction.prepare`。
+//! 会话这一块的配置项（`docs/blueprint/compaction.md` 第十五条第 7 条，施工 6-11 上）：提前压好 `compaction.prepare`；压缩
+//! 触发线 `compaction.line`（施工 CT-1，第二条第 2 条）。
 //!
-//! 会话 actor 在回合开始冻结这一轮的配置时读它（`actor/model.rs` 的 `turn_start`），跟着 `TurnStartHooksDone` 交给内核：
+//! 会话 actor 在回合开始冻结这一轮的配置时读它们（`actor/model.rs` 的 `turn_start`），跟着 `TurnStartHooksDone` 交给内核：
 //! 下一轮生效。不开回合的手动压缩照上一轮的。
 //!
 //! 抽取的三项（施工 R-6 上，`memory.md` 第六条）：闲多久、攒几轮、照哪个模型。会话 actor 从忙到闲起闹钟时照这一轮的配置读。
@@ -35,6 +36,15 @@ miyu_config::settings! {
 miyu_config::settings! {
     /// 压缩的配置。
     pub struct CompactionSettings in "compaction" {
+        /// 压缩触发线（施工 CT-1，2026-11-12 项目主人定）：上下文用到窗口的百分之几时自动压缩。压缩线照旧和「窗口 − 输出预留
+        /// − 余量」取小的（`compaction.md` 第二条第 2 条）：20 万窗口调到 85 以上不起作用，百万窗口才到得了 95。回合开始照它换
+        /// 策略快照里的数，会话钉了的照会话的。
+        line: i64 = 85 {
+            kind: int [20, 95],
+            layers: [System],
+            applies: next_turn,
+            ui: { page: "advanced", group: "compaction", control: number },
+        },
         /// 提前压好：用量快到压缩线时在后台先把旧的那一段压好，到线直接换上，不用停下来等摘要。关了照到线再压。
         prepare: bool = true {
             kind: bool,
@@ -176,6 +186,31 @@ miyu_config::settings! {
             applies: next_turn,
             ui: { page: "privacy", group: "protected", control: toggle },
         },
+    }
+}
+
+impl CompactionSettings {
+    /// 这一轮该用的压缩触发线，窗口的百分之几（施工 CT-1）：会话钉的 `pinned`，没钉的照配置的。
+    pub(crate) fn line_for(&self, pinned: Option<u64>) -> u64 {
+        pinned.unwrap_or_else(|| u64::try_from(self.line).unwrap_or(miyu_policy::LINE_PERCENT))
+    }
+
+    /// `compaction.line` 能写的范围（施工 CT-1）：照这一项声明的，协议上钉会话的 `compaction_line` 照它查，不另抄一份。
+    ///
+    /// # Panics
+    ///
+    /// 实际不会：这一项照声明是整数。
+    pub fn line_range() -> std::ops::RangeInclusive<u64> {
+        let item = Self::ITEMS
+            .iter()
+            .find(|item| item.key == "compaction.line")
+            .expect("声明里有这一项");
+        match item.kind {
+            miyu_config::Kind::Int { min, max } => {
+                u64::try_from(min).unwrap_or(0)..=u64::try_from(max).unwrap_or(0)
+            }
+            _ => panic!("compaction.line 是整数"),
+        }
     }
 }
 

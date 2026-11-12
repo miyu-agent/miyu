@@ -56,6 +56,7 @@ mod knowledge_recall;
 mod knowledge_tools;
 mod knowledge_write;
 mod limits;
+mod line_pin;
 mod memory;
 mod memory_archived;
 mod memory_backfill;

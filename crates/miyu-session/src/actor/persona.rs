@@ -374,6 +374,7 @@ fn look(
         Err(error) => return Seen::Kept(error.to_string()),
     };
     new.no_tools = matches!(preset, Preset::NoTools { .. });
+    new = new.with_line(old.line_percent()); // 压缩线照旧快照的（施工 CT-1）。
     // 目录换了代、这个会话的工具面没变的（只给群的、预设关着的），什么都不记。直接比两份快照（施工 V-24补）：快照没有跳过不写的
     // 字段、没有浮点、没有 JSON 值，一样就是字节一样；以前两份各写一遍 JSON、各算一遍 SHA-256 再比。步数照预设重算的
     // （`steps::restepped`）也在比的里面。

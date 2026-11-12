@@ -44,6 +44,9 @@ pub struct Current {
     /// 会话钉的看图模型（施工 VM-1）：内核照日志算的，刚钉了、还没开回合的也是钉的；没钉的（跟着 `models.vision`）没有。
     /// `view.status` 的 `vision` 照它写。
     pub vision: Option<String>,
+    /// 会话钉的压缩触发线，窗口的百分之几（施工 CT-1）：内核照日志算的，刚钉了、还没开回合的也是钉的；没钉的（跟着
+    /// `compaction.line`）没有。`view.status` 的 `compaction_line` 照它写。
+    pub compaction_line: Option<u64>,
 }
 
 /// 这个会话累计的：用量、金额照用量汇总的口径，另数压缩、缓存断了几次。

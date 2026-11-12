@@ -92,6 +92,12 @@ pub enum Command {
         /// `models.vision`。
         vision: Option<String>,
     },
+    /// `session.configure`、`session.create` 的 `compaction_line`：钉会话的压缩触发线（施工 CT-1，`compaction.md` 第二条第 2 条），
+    /// `configure.rs`。下一个回合开始时会话那一层照它换策略快照里的数；和现在的一样的不记。
+    SetCompactionLine {
+        /// 窗口的百分之几，协议那一头照 `compaction.line` 的范围查过。`None` 是去掉，回到跟着 `compaction.line`。
+        percent: Option<u64>,
+    },
     /// `session.set_meta`：改标题、置顶，改哪样写哪样（施工 3-8 三补，`meta.rs`）。
     SetMeta {
         /// 新的标题，照 `session.meta_changed` 的写法：空的是去掉标题；不改就没有。去掉前后空白、量长短是协议端点的事

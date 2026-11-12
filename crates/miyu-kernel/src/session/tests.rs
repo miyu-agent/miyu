@@ -27,6 +27,7 @@ mod idle;
 mod interrupt;
 mod landed;
 mod limits;
+mod line_pin;
 mod listing;
 mod load;
 mod meta;

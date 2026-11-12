@@ -15,10 +15,14 @@
 //! 钉的看图模型也从日志算（施工 VM-1，`models.md`「怎么走」第十三条第 4 条）：每条带 `vision` 的 `session.policy_changed`
 //! 换会话钉的那一个，空的是回到跟着 `models.vision`；撤掉的回合里的也算，换模型不清它。回合开始时执行器照
 //! [`Session::vision`] 交给路由，替看图照它发。
+//!
+//! 钉的压缩触发线照同一个办法从日志算（施工 CT-1，`compaction.md` 第二条第 2 条）：每条带 `compaction_line` 的
+//! `session.policy_changed` 换会话钉的百分数，`null` 是回到跟着 `compaction.line`；撤掉的回合里的也算，换模型不清它。回合开始
+//! 时会话那一层照 [`Session::pinned_line`]（没钉的照配置）换策略快照里的数，换了的记成换快照。
 
 use super::action::Action;
 use super::{Session, accepted};
-use crate::event::{Body, ContextCap, Effort, Event, PolicyChanged};
+use crate::event::{Body, ContextCap, Effort, Event, LinePin, PolicyChanged};
 use crate::id::{CommandId, Seq};
 use crate::origin::By;
 use crate::time::Timestamp;
@@ -42,6 +46,8 @@ pub(super) struct Reference {
     context: Option<u64>,
     /// 会话钉的看图模型（施工 VM-1）：模型或 `@池`；没钉的、去掉了的没有（跟着 `models.vision`）。
     vision: Option<String>,
+    /// 会话钉的压缩触发线，窗口的百分之几（施工 CT-1）：没钉的、去掉了的没有（跟着 `compaction.line`）。
+    line: Option<u64>,
     /// 换了预设、还没告诉她（施工 DM-8，`facts/preset.rs`）：换之前的那个预设（空的是不用预设）。内核注入了预设那一块就清掉；
     /// 换了几次还没开回合的，记最早的那个，换回它的也清掉。
     announce: Option<String>,
@@ -101,6 +107,10 @@ impl Reference {
             if let Some(vision) = &changed.vision {
                 self.vision = Some(vision.clone()).filter(|vision| !vision.is_empty());
             }
+            // 钉压缩触发线（施工 CT-1）：同换上下文上限。
+            if let Some(pin) = &changed.compaction_line {
+                self.line = pin.percent;
+            }
         }
     }
 
@@ -132,6 +142,11 @@ impl Reference {
     /// 会话钉的看图模型：没钉的没有。
     pub(super) fn vision(&self) -> Option<&str> {
         self.vision.as_deref()
+    }
+
+    /// 会话钉的压缩触发线：没钉的没有。
+    pub(super) fn line(&self) -> Option<u64> {
+        self.line
     }
 
     /// 换了预设、还没告诉她的：换之前的那个预设（空的是不用预设）。没换过、告诉过的没有（施工 DM-8）。
@@ -255,6 +270,34 @@ impl Session {
         }
         let body = Body::PolicyChanged(PolicyChanged {
             vision: Some(vision.unwrap_or_default()),
+            ..PolicyChanged::default()
+        });
+        let event = self.record(at, by, Some(id.clone()), body);
+        self.accept(id, vec![event.seq]);
+        vec![Action::Append(vec![event])]
+    }
+
+    /// 会话钉的压缩触发线，窗口的百分之几（施工 CT-1）：带 `compaction_line` 的 `session.policy_changed` 里最后那一个，撤掉的回合里的也算；
+    /// 没钉的、去掉了的没有（照 `compaction.line`）。只读：回合开始时会话那一层照它换策略快照里的数；也写进给头看的会话状态。
+    pub fn pinned_line(&self) -> Option<u64> {
+        self.reference.line()
+    }
+
+    /// 钉压缩触发线（施工 CT-1）：`percent` 是 `None` 的去掉。和现在的一样的接受，什么都不记，编号照样记下；不一样的记一条
+    /// `session.policy_changed`，只写 `compaction_line`，`by` 是换的人，回合进行中的带上这个回合。范围协议那一头查过。
+    pub(super) fn set_line(
+        &mut self,
+        id: CommandId,
+        by: By,
+        at: Timestamp,
+        percent: Option<u64>,
+    ) -> Vec<Action> {
+        if self.pinned_line() == percent {
+            self.recent.insert(id.clone(), Vec::new());
+            return vec![accepted(id, Vec::new())];
+        }
+        let body = Body::PolicyChanged(PolicyChanged {
+            compaction_line: Some(LinePin { percent }),
             ..PolicyChanged::default()
         });
         let event = self.record(at, by, Some(id.clone()), body);

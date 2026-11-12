@@ -31,6 +31,8 @@ use crate::route::NONE;
 use crate::settings::CompactionSettings;
 use crate::shown::{Next, Shown};
 
+mod line;
+
 /// 回合开始问挂接点最多等多久（施工 R-4 上定的起点）：过了当这一轮没交。读的是本机的小库，平常几毫秒。
 const HOOKS: Duration = Duration::from_millis(300);
 
@@ -166,6 +168,8 @@ impl Actor {
             Some(_) => self.skills_turn(&present, &values).await,
             None => skills,
         };
+        // 压缩触发线照会话钉的、这一轮的配置（施工 CT-1，`model/line.rs`）：只换快照里的数，不重找技能。
+        let policy = self.reline(&values, policy).await;
         // 项目指令在阻塞线程里读盘，和挂接点、扩展一起等，不排在前面干等（施工 PERF-1）。
         let docs = self.project_docs_turn(&present);
         // 子目录的项目指令照同一个口径（施工 P-14 下）：这一轮读、改工作目录下面的文件时补。

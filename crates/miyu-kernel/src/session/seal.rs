@@ -101,6 +101,7 @@ pub(super) fn taken_when_sealed(command: &Command) -> bool {
         | Command::SetEffort { .. }
         | Command::SetContext { .. }
         | Command::SetVision { .. }
+        | Command::SetCompactionLine { .. }
         | Command::Recast { .. }
         | Command::SetWorkspace { .. }
         | Command::Ran { .. }

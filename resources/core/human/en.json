@@ -6,6 +6,10 @@
         "description": "A command the AI runs in the background is stopped after this long, and the AI is told. At most 2 hours."
       },
       "show.system_hint": {"name": "Remind the AI to use Show", "description": "Has the AI hand over images, web pages, documents, video and audio it makes or fetches with Show, so you see them right away instead of just a path."},
+      "compaction.line": {
+        "name": "Compaction line",
+        "description": "Compact automatically once the context fills this percent of the window. Small windows keep room for the reply, so compaction may start earlier. With a 200K window, values above 85 have no effect. A 1M window can reach 95."
+      },
       "compaction.prepare": {
         "name": "Prepare compaction early",
         "description": "When the context is nearly full, the older part is summarized in the background, so the switch happens without a wait when compaction is due. Off means compacting only once the limit is reached, as before."

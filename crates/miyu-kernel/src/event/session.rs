@@ -124,7 +124,7 @@ pub struct Forked {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SessionSealed {}
 
-/// `session.policy_changed`：换了策略快照，或者换了权限，或者换了模型、思考强度、上下文上限、看图模型，也可以一起换。
+/// `session.policy_changed`：换了策略快照，或者换了权限，或者换了模型、思考强度、上下文上限、看图模型、压缩触发线，也可以一起换。
 /// 谁换的看事件的 `by`：人改的是配置，内核换的是目录变了、钉着的模型没了。
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PolicyChanged {
@@ -162,6 +162,18 @@ pub struct PolicyChanged {
     /// 一格，以前的日志没有这一格。内核只记不解读，钉的解析不出由执行器照没转述成办，不退回、不记 `replaced`。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub vision: Option<String>,
+    /// 会话钉的压缩触发线换了（施工 CT-1，`compaction.md` 第二条第 2 条）：窗口的百分之几，`null` 是去掉、回到跟着
+    /// `compaction.line`。人换的，`by` 是人，下一个回合开始时会话那一层照它换策略快照里的数，撤掉的回合里的也算（照
+    /// `context`）。写在最后一格，以前的日志没有这一格。内核只记不解读，范围协议那一头查过。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub compaction_line: Option<LinePin>,
+}
+
+/// `session.policy_changed` 的 `compaction_line`（施工 CT-1）：会话钉的压缩触发线换成窗口的 `percent`%，`null` 是去掉（跟着配置）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LinePin {
+    /// 窗口的百分之几；`null` 是去掉。总是写。
+    pub percent: Option<u64>,
 }
 
 /// `session.policy_changed` 的 `context`（施工 CTX-1，设计 68）：会话的上下文上限换成 `tokens`，`null` 是去掉（照模型的窗口）。

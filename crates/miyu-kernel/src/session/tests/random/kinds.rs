@@ -159,7 +159,8 @@ impl InputKind {
                 | Command::Recast { .. }
                 | Command::SetEffort { .. }
                 | Command::SetContext { .. }
-                | Command::SetVision { .. } => InputKind::Configure,
+                | Command::SetVision { .. }
+                | Command::SetCompactionLine { .. } => InputKind::Configure,
                 Command::Answer {
                     answer: Answer::Approval { .. },
                     ..

@@ -1,7 +1,7 @@
 //! 会话事件的测试：图纸上的写法读写一字不差、认得出种类；权限两格都要写；
 //! 不认识的级别原样留着；坏的报错说清是哪一种；子会话带着父会话和第几层（施工 7-1）；会话用哪个模型（施工 8-8）；
 //! 换模型的两格（施工 8-10）；换会话的思考强度（施工 SM-1），8-18 那时带 `model` 的一格照读得进、不算会话的；换会话的上下文
-//! 上限（施工 CTX-1）；钉会话的看图模型（施工 VM-1）。
+//! 上限（施工 CTX-1）；钉会话的看图模型（施工 VM-1）；钉会话的压缩触发线（施工 CT-1）。
 
 use super::*;
 use crate::event::{Body, Event};
@@ -276,6 +276,33 @@ fn a_policy_change_records_the_vision_pin() {
         event_line("session.policy_changed", r#"{"model":"a/m"}"#)
     );
     let line = event_line("session.policy_changed", r#"{"vision":3}"#);
+    rejected::<Event>(&line, "body of session.policy_changed not readable");
+}
+
+/// 钉会话的压缩触发线（施工 CT-1）：`compaction_line` 写在最后，`percent` 总是写、`null` 是去掉，读写一字不差；和别的能在同一条里；
+/// 外层写 `null` 当没有；不是整数的读不进来。
+#[test]
+fn a_policy_change_records_the_line_pin() {
+    for body in [
+        r#"{"compaction_line":{"percent":50}}"#,
+        r#"{"compaction_line":{"percent":null}}"#,
+        r#"{"model":"a/m","vision":"@eyes","compaction_line":{"percent":95}}"#,
+    ] {
+        let line = event_line("session.policy_changed", body);
+        assert_eq!(Event::from_line(&line).unwrap().to_line(), line, "一字不差");
+    }
+    let nulled = event_line(
+        "session.policy_changed",
+        r#"{"model":"a/m","compaction_line":null}"#,
+    );
+    assert_eq!(
+        Event::from_line(&nulled).unwrap().to_line(),
+        event_line("session.policy_changed", r#"{"model":"a/m"}"#)
+    );
+    let line = event_line(
+        "session.policy_changed",
+        r#"{"compaction_line":{"percent":"50"}}"#,
+    );
     rejected::<Event>(&line, "body of session.policy_changed not readable");
 }
 

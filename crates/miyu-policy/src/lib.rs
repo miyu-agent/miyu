@@ -76,8 +76,8 @@ pub use recap::{RECAP, RecapNumbers, RecapTexts};
 pub use schedule::ScheduleTexts;
 pub use shorten::{SHORTEN, ShortenNumbers, ShortenTexts};
 pub use snapshot::{
-    BuildError, CompactionNumbers, CompactionTexts, CoreTexts, PermissionTexts, Snapshot,
-    SnapshotError, ToolResultTexts, TurnEndedTexts,
+    BuildError, CompactionNumbers, CompactionTexts, CoreTexts, LINE_PERCENT, PermissionTexts,
+    Snapshot, SnapshotError, ToolResultTexts, TurnEndedTexts,
 };
 pub use text_file::TextFileTexts;
 pub use title::{TITLE, TitleNumbers, TitleTexts};

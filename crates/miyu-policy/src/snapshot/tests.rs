@@ -5,6 +5,7 @@ mod compare;
 mod drivers;
 mod facts;
 mod jobs;
+mod line;
 mod recap;
 mod title;
 mod vision;

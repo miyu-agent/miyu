@@ -42,6 +42,14 @@
     },
     "compaction": {
       "properties": {
+        "line": {
+          "default": 85,
+          "description": "Compact automatically once the context fills this percent of the window. Small windows keep room for the reply, so compaction may start earlier. With a 200K window, values above 85 have no effect. A 1M window can reach 95. Allowed: a whole number from 20 to 95. Only in the system config. Takes effect next turn.",
+          "maximum": 95,
+          "minimum": 20,
+          "title": "Compaction line",
+          "type": "integer"
+        },
         "prepare": {
           "default": true,
           "description": "When the context is nearly full, the older part is summarized in the background, so the switch happens without a wait when compaction is due. Off means compacting only once the limit is reached, as before. Allowed: true or false. Only in the system config. Takes effect next turn.",

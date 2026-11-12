@@ -3,7 +3,9 @@
 //! 从磁盘重新载入最清楚（`07-存储.md` 第四节「写不进去」）。
 
 use miyu_kernel::block::Block;
-use miyu_kernel::event::{Body, CompactableChanged, Event, Transient, TransientBody};
+use miyu_kernel::event::{
+    Body, CompactableChanged, Event, PolicyChanged, Transient, TransientBody,
+};
 use miyu_kernel::id::{CommandId, Seq};
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{Input, Outcome};
@@ -55,18 +57,25 @@ impl Actor {
             compactable: self.session.compactable(),
             least_context: self.session.least_context(),
             vision: self.session.vision().map(str::to_string),
+            compaction_line: self.session.pinned_line(),
         }
     }
 
     /// 这一批里换了会话的上下文上限的（施工 CTX-1，设计 68 第四节「下一次请求起生效」）：内核记下就已经是新的，当场交给端口，
     /// 再把端口套过的限额交给内核：压缩线、给头看的限额马上换，不等下一轮。在写盘、回应之前做：回了的命令读得到新的限额。
+    /// 换了策略快照的（施工 CT-1：压缩触发线在快照里），给头看的限额照新的重写（`model/line.rs`）。
     fn follow_context(&mut self, events: &[Event]) {
-        let changed = events.iter().any(
-            |event| matches!(&event.body, Body::PolicyChanged(changed) if changed.context.is_some()),
-        );
-        if changed {
+        let changed = |pick: fn(&PolicyChanged) -> bool| {
+            events
+                .iter()
+                .any(|event| matches!(&event.body, Body::PolicyChanged(changed) if pick(changed)))
+        };
+        if changed(|changed| changed.context.is_some()) {
             self.model.cap(self.session.context());
             self.hand(self.model.limits());
+        }
+        if changed(|changed| changed.policy.is_some()) {
+            self.follow_policy();
         }
     }
 

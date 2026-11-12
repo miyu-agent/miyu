@@ -20,6 +20,8 @@ pub(crate) mod context;
 mod drivers;
 pub(crate) mod effort;
 mod entry;
+pub(crate) mod line;
+pub(crate) mod pin;
 mod retire;
 mod side;
 pub(crate) mod vision;
@@ -56,7 +58,7 @@ struct ListParams {
 }
 
 /// `session.configure` 的参数：`session` 必写，`model`、`persona`（施工 P-13）、`preset`、`effort`（施工 SM-1）、`context`（施工
-/// CTX-1）、`vision`（施工 VM-1）至少写一样，空字当参数不对（「施工时定的」8-10）。`effort` 只收字和 `null`：施工 8-18 那种对象（`{"model":…,"level":…}`，旧头发的）读不成，
+/// CTX-1）、`vision`（施工 VM-1）、`compaction_line`（施工 CT-1）至少写一样，空字当参数不对（「施工时定的」8-10）。`effort` 只收字和 `null`：施工 8-18 那种对象（`{"model":…,"level":…}`，旧头发的）读不成，
 /// `bad_params`。
 #[derive(Debug, Deserialize)]
 pub(crate) struct ConfigureParams {
@@ -80,20 +82,24 @@ pub(crate) struct ConfigureParams {
     /// 钉的看图模型（施工 VM-1），还没解析：写法同 `model`，写 `null` 的去掉、回到跟着 `models.vision`，不写的不换。
     #[serde(default, deserialize_with = "crate::personas::written")]
     vision: Option<Option<String>>,
+    /// 钉的压缩触发线（施工 CT-1）：窗口的百分之几，写 `null` 的去掉、回到跟着 `compaction.line`，不写的不换。不是非负整数的
+    /// 读不成，`bad_params`；范围由 `models/line.rs` 查。
+    #[serde(default, deserialize_with = "crate::personas::written")]
+    compaction_line: Option<Option<u64>>,
 }
 
 impl ConfigureParams {
-    /// 换成的引用，原样：外层没有的是不换，写 `null` 的是里面没有（回到跟着 `models.chat`）。六样一样都没写、写了空字的
+    /// 换成的引用，原样：外层没有的是不换，写 `null` 的是里面没有（回到跟着 `models.chat`）。七样一样都没写、写了空字的
     /// 是参数不对。
     ///
     /// # Errors
     ///
-    /// 六样都没写、空字：`bad_params`。
+    /// 七样都没写、空字：`bad_params`。
     pub(crate) fn model(&self) -> Result<Option<Option<&str>>, Refusal> {
         let empty = |text: &Option<String>| text.as_deref() == Some("");
         let none = self.model.is_none() && self.persona.is_none() && self.preset.is_none();
         let none = none && self.effort.is_none() && self.vision.is_none();
-        if (none && self.context.is_none())
+        if (none && self.context.is_none() && self.compaction_line.is_none())
             || self.effort.as_ref().is_some_and(empty)
             || self.vision.as_ref().is_some_and(empty)
             || self.model.as_ref().is_some_and(empty)
@@ -119,6 +125,11 @@ impl ConfigureParams {
     /// 钉的看图模型（施工 VM-1）：外层没有的是不换，写 `null` 的是里面没有（去掉）。同 [`ConfigureParams::model`] 先查过。
     pub(crate) fn vision(&self) -> Option<Option<&str>> {
         self.vision.as_ref().map(Option::as_deref)
+    }
+
+    /// 钉的压缩触发线（施工 CT-1）：外层没有的是不换，写 `null` 的是里面没有（去掉）。范围由 `models/line.rs` 查。
+    pub(crate) fn compaction_line(&self) -> Option<Option<u64>> {
+        self.compaction_line
     }
 
     /// 换成的人格、预设（施工 P-13）：同 [`ConfigureParams::model`] 先查过。

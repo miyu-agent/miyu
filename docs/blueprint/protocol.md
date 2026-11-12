@@ -252,7 +252,7 @@
 | `notices.claim` | 头认领发后台通知（`{}`，只给人的头）：核心照连接记、断了就放；`notices` 流的订阅回应有人认领时写 `claimed: true`，有没有人认领变了推 `notices.claimed`（施工 TR-1，托盘 `miyu-applet` 用，`docs/reference/connection.md`「`notices.claim`」） |
 | `prefs.get`、`prefs.set` | 界面包自己的设置（皮肤、配色这些），存在数据根里、跟着人走：读整份；照顶层的键并、`null` 删，交回整份，推给别的连接（施工 HP-1，下面「头自己的设置」） |
 | `session.set_workspace` | 换会话在哪个目录干活（施工 9-7 上） |
-| `session.configure` | 换模型、人格、预设、思考强度、钉的看图模型，下一个回合开始生效（施工 8-10，`models.md`「协议」；人格、预设施工 P-13；思考强度施工 SM-1；看图模型施工 VM-1）；会话的上下文上限，当场生效（施工 CTX-1） |
+| `session.configure` | 换模型、人格、预设、思考强度、钉的看图模型、钉的压缩触发线，下一个回合开始生效（施工 8-10，`models.md`「协议」；人格、预设施工 P-13；思考强度施工 SM-1；看图模型施工 VM-1；压缩触发线施工 CT-1）；会话的上下文上限，当场生效（施工 CTX-1） |
 | `session.delete` | 删除会话：挪进回收处，留 7 天（施工 3-8 三补） |
 | `config.schema` | 配置清单，名字和说明照这个连接的语言（施工 8-2，`config.md`「协议」）；选项可以带 `note`：只有核心查得出的才有，头接在名字后面暗色写（施工 R-5 再补）；可以带 `available: false`：核心查得出用不了的才有，头画成灰的、选不了（施工 R-5 三补）；列表带选项的可以带 `ticks: "unlisted"`：勾着的是不在值里的，头照它反着画（施工 5-15 再补） |
 | `config.get` | 最终值和来源，每一份文件在哪、版本，现在的全部问题；带 `cwd` 的算上那个目录的项目配置（施工 8-2）。`files` 多 `secrets`，只有 `file`；问题里有密钥文件的、引用取不到的（施工 8-5） |
@@ -297,6 +297,7 @@
 | `dirs` | 字符串的数组，可以不写 | 加进来的目录：和工作区一样能读能写（「加进来的目录」（施工 5-10 上））。不写是没有 |
 | `model` | 字符串，可以不写 | 用哪个模型：模型 `<供应商>/<模型>` 或池 `@<池>`（施工 8-8，`models.md`「两种写法」；挡位 8-8 补去掉了）。照这时的配置查过，记进 `session.created` 的 `model`；不写、写 `null` 的照这时的 `models.chat` 原样记（写的是池就记池），以后改 `models.chat` 这个会话照旧（施工 SM-1，设计 51 第一节），那也没配的不写（照旧跟着以后的 `models.chat`） |
 | `vision` | 字符串，可以不写 | 钉哪个看图模型（施工 VM-1，`models.md`「协议」）：写法、解析同 `model`，解析不出的 `unknown_model`、什么都不造；不写、写 `null` 的跟着 `models.vision`。造好以后照 `session.configure` 的 `vision` 记一条 `session.policy_changed`（命令编号接 `/vision`），回应的 `events` 多它，排在 `project` 那一条后面 |
+| `compaction_line` | 整数，可以不写 | 钉会话的压缩触发线（施工 CT-1，`compaction.md` 第二条第 2 条）：窗口的百分之几，20 到 95（照配置项 `compaction.line` 的范围），不在范围里、不是整数的 `bad_params`（`data.field` 是 `compaction_line`）、什么都不造；不写、写 `null` 的跟着 `compaction.line`。造好以后照 `session.configure` 的 `compaction_line` 记一条 `session.policy_changed`（命令编号接 `/compaction_line`），回应的 `events` 多它，排在 `vision` 那一条后面；第一个回合开始换上 |
 | `memory` | 字符串，可以不写 | 记忆的范围（施工 R-3 下，`memory.md`「范围」）：`persona`（跟着人格）、`off`（不召回也不记）。记进策略快照，以后不改。不写、写 `null` 的是 `persona`。别的值 `bad_params`：原来的 `session`（只在这个会话里）施工 FH-1 去掉了，旧头再发它也回 `bad_params`，什么都不造 |
 
 回应：`session` 新会话的编号；`events` 是 `[1]`，就是 `session.created` 那一条；`cwd` 是会话实际在哪个目录里干活（「工作目录太宽」）；`wide`：太宽、照人选的用着的才有，是 `true`（施工 9-7 补）；`untrusted_project`：这个目录找得到项目配置、又还没问过信不信任（`trust.toml` 里没有这个仓库，或者记的内容和现在的不一样），写它在哪，写法同配置来源的 `file`（家目录下的写成 `~/…`）。信任着的、选了不信任的、没有项目配置的不写（施工 8-2，`config.md` 第三条第 2 条）。
@@ -1137,8 +1138,9 @@
 | `effort` | 字符串或 `null` | 换会话的思考强度（施工 SM-1）：一档的名字，照会话这时的模型的档位查；`null` 是回到跟着配置（`models.md`「怎么走」第十一条） |
 | `vision` | 字符串或 `null` | 钉会话的看图模型（施工 VM-1）：写法、解析、校验同 `model`；`null` 是去掉、回到跟着 `models.vision`。替看图发给它（`models.md`「怎么走」第十三条第 4 条），钉的后来解析不出照转述没成办、不退回 `models.vision`。`view.status` 钉了带 `vision`，没钉的不写 |
 | `context` | 整数或 `null` | 会话的上下文上限（施工 CTX-1，设计 68）：token 数；`null` 去掉。生效的窗口取模型的窗口和它里小的，压缩线照生效的窗口算；记下当场交给路由，不等下一轮。设得太小、照它和这时的模型的最大输出算不出压缩线的，`bad_params`，`data.field` 是 `context`，`data.min` 是最少要多少 |
+| `compaction_line` | 整数或 `null` | 钉会话的压缩触发线（施工 CT-1，`compaction.md` 第二条第 2 条）：窗口的百分之几，20 到 95（照配置项 `compaction.line` 的范围）；`null` 是去掉、回到跟着 `compaction.line`。不在范围里的 `bad_params`，`data.field` 是 `compaction_line`；不是整数的 `bad_params`。什么都不换。下一个回合开始时换上，`limits.compaction_line` 跟着换；`view.status` 钉了带 `compaction_line`，没钉的不写 |
 
-六格至少写一格。施工 8-18 收过的 `effort` 是对象（`{"model":…,"level":…}`，会话给一个模型记的一档），8-18（补）去掉了；SM-1 加回来的是字或 `null`，那种对象照旧读不成，`bad_params`。
+七格至少写一格。施工 8-18 收过的 `effort` 是对象（`{"model":…,"level":…}`，会话给一个模型记的一档），8-18（补）去掉了；SM-1 加回来的是字或 `null`，那种对象照旧读不成，`bad_params`。
 
 回应：`{}`。换了没有，看推送里的 `session.policy_changed`。
 

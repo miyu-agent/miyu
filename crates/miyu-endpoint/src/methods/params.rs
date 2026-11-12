@@ -35,6 +35,10 @@ pub(super) struct CreateParams {
     /// 钉哪个看图模型（施工 VM-1）：写法同 `model`；不写、写 `null` 的跟着 `models.vision`。造好以后另记一条。
     #[serde(default)]
     pub(super) vision: Option<String>,
+    /// 钉的压缩触发线（施工 CT-1）：窗口的百分之几，范围同 `compaction.line`；不写、写 `null` 的跟着 `compaction.line`。造好
+    /// 以后另记一条。
+    #[serde(default)]
+    pub(super) compaction_line: Option<u64>,
     /// 记忆的范围（施工 R-3 下）：`persona`、`session`、`off`；不写、写 `null` 的照人格的 `persona.toml`。
     #[serde(default)]
     pub(super) memory: Option<String>,

@@ -115,6 +115,7 @@ mod knowledge_package;
 mod knowledge_progress;
 mod knowledge_remove;
 mod limits;
+mod line_pin;
 mod list;
 mod list_tokens;
 mod local_machine;

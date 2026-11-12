@@ -24,7 +24,7 @@
 | [`session.retitle`](#sessionretitle) | 让模型重起一个标题 |
 | [`session.viewing`](#sessionviewing) | 头告诉核心自己开着哪个会话 |
 | [`session.terminal`、`session.set_terminal`](#sessionterminalsessionset_terminal) | 终端会话：拿到它、指到别的会话 |
-| [`session.configure`](#sessionconfigure) | 换模型、看图模型、人格、预设、思考强度 |
+| [`session.configure`](#sessionconfigure) | 换模型、看图模型、人格、预设、思考强度、压缩触发线 |
 | [`session.fork`](#sessionfork) | 从一个会话分叉出子会话 |
 | [`session.delete`](#sessiondelete) | 删除会话 |
 | [`session.prompts`](#sessionprompts) | 列出会话里问过的话 |
@@ -64,6 +64,7 @@
 | `preset` | 字符串或 `null` | 用哪个预设；不写照 `preset.default`，都没有是 `full`；`null` 是无工具：一件工具都不给（施工 P-16 下；以前的写法，照旧认。新开的选「无功能」写 `none`，施工 P-17） |
 | `model` | 字符串 | `<供应商>/<模型>` 或 `@<池>`；不写的照这一刻的 `models.chat` 记下（写的是池就记池），以后改 `models.chat` 这个会话照旧 |
 | `vision` | 字符串 | 这个会话替看图用哪个模型：写法同 `model`；不写的跟着配置的 `models.vision`。造好以后记一条 `session.policy_changed`，同 `session.configure` 的 `vision` |
+| `compaction_line` | 整数 | 这个会话的压缩触发线：窗口的百分之几，20 到 95；不写的跟着配置的 `compaction.line`。造好以后记一条 `session.policy_changed`，同 `session.configure` 的 `compaction_line` |
 | `memory` | `persona`、`off` | 记忆跟着人格、不用；不写是跟着人格。别的值（以前的 `session` 也算）回 `bad_params` |
 | `dirs` | 字符串的数组 | 另外加进来的目录，和工作目录一样能读能写 |
 | `chosen` | 布尔，默认 `false` | 照收不看（以前用来区分人选的）：太宽的 `cwd`（根目录；Windows 上还有家目录）一律照用、回应带 `wide`，能随便写的范围是这个会话自己的默认工作区 |
@@ -77,7 +78,7 @@
 | 名字 | 说明 |
 |---|---|
 | `session` | 新会话的编号 |
-| `events` | `[1]`：`session.created` 那一条；带了 `project` 的是 `[1, 2]`，带了 `vision` 的再多一条（排在项目那一条后面） |
+| `events` | `[1]`：`session.created` 那一条；带了 `project` 的是 `[1, 2]`，带了 `vision`、`compaction_line` 的各再多一条（照这个先后，排在项目那一条后面） |
 | `cwd` | 会话实际在哪个目录干活，人看到的写法（家目录下的写成 `~/…`，同 `session.list`） |
 | `wide` | `true`：目录太宽（根目录；Windows 上还有家目录、包含数据目录的）、照人选的用着，能随便写的是这个会话的默认工作区 |
 | `untrusted_project` | 这个目录有项目配置、还没决定信不信任的，写它在哪 |
@@ -93,7 +94,7 @@
 
 | `data.reason` | 什么时候 |
 |---|---|
-| `bad_params`（`-32602`） | 人格、预设编号写法不对；`memory` 不是那三种；`model`、`vision` 不是字符串 |
+| `bad_params`（`-32602`） | 人格、预设编号写法不对；`memory` 不是那三种；`model`、`vision` 不是字符串；`compaction_line` 不是 20 到 95 的整数 |
 | `unknown_persona`、`persona_invalid` | 没有这个人格；人格的文件写错了（`data.problem` 说哪一层、哪个文件第几行） |
 | `unknown_preset`、`preset_invalid` | 同上，预设的 |
 | `unknown_model` | `model`、`vision` 解析不出：写法不对、没有这家供应商、没有这个池 |
@@ -418,21 +419,22 @@
 
 ## `session.configure`
 
-换这个会话用的模型、看图模型、人格、预设、思考强度，下一轮开始生效；上下文上限下一次请求起生效。
+换这个会话用的模型、看图模型、人格、预设、思考强度、压缩触发线，下一轮开始生效；上下文上限下一次请求起生效。
 
-**参数**：`session`；下面六格至少写一格：
+**参数**：`session`；下面七格至少写一格：
 - `model`：`<供应商>/<模型>` 或 `@<池>`；`null` 是不再钉着哪一个，回到跟着配置的 `models.chat`（每一轮照那时的配置，配置换了跟着换）。
 - `vision`：替看图用的模型，写法同 `model`：`<供应商>/<模型>` 或 `@<池>`；`null` 是不再钉着，回到跟着配置的 `models.vision`。会话的模型看不了图时，核心照它把图转成文字（没钉的照 `models.vision`）；钉的后来解析不出（供应商、池删了），那张图照没转成办，不退回 `models.vision`。
 - `persona`：人格编号；`null` 是无人格。
 - `preset`：预设编号；`null` 是换成无工具（施工 P-16 下）。
 - `effort`：思考强度的一档（施工 SM-1），照这个会话这时的模型的档位查（`model.list` 的 `facts.reasoning`；同一条换了模型的照换成的）。用着池的会话不能设，写了回 `bad_params`（`data.field` 是 `effort`），池里每个成员照它自己的配置；`null` 是回到跟着配置。只管这个会话：配置里的 `providers.<id>.models.<model>.effort` 是新会话的默认。换到没有这一档的模型照配置，换回来又用上。
 - `context`：上下文上限，token 数；`null` 是去掉。生效的窗口取模型的窗口和它里小的（模型没报窗口的照它），压缩线照生效的窗口算；跟着会话，换模型、池换了成员都照用。太小、照它算不出压缩线的回 `bad_params`（`data.field` 是 `context`，`data.min` 是最少要多少），什么都不换。人打 `/context` 也是改它。
+- `compaction_line`：压缩触发线，窗口的百分之几，20 到 95 的整数；`null` 是不再钉着，回到跟着配置的 `compaction.line`。上下文用到这条线就自动压缩。压缩线照旧不超过「窗口 − 输出预留 − 余量」：20 万的窗口调到 85 以上不起作用，百万的窗口才到得了 95。
 
 换人格、预设时先压缩一轮：核心马上照旧人格把前面的对话压成摘要，下一轮换上新的，从摘要接着聊。跟着人格的记忆从这一轮起记在新人格那一间，以前的留在原来那一间。
 
-**回应**：`{}`。变了的推 `session.policy_changed`；换模型、思考强度生效的那一刻推 `model.changed`；换了上下文上限，`subscribe` 回应、`view.status` 的 `limits` 当场换（`window` 是生效的窗口，`context` 是上限，没设的不写）。之后 `subscribe` 回应、`model.changed` 的 `model.effort` 是 `{"level", "from"}`：`from` 是 `session` 的是会话记的这一档，`system` 的是配置。`session.list`、`subscribe` 回应里的 `persona`、`preset` 马上照换成的写（换成无工具的写 `preset: null`、`no_tools: true`）。钉了看图模型的，`view.status` 马上带 `vision`，去掉了的不写。
+**回应**：`{}`。变了的推 `session.policy_changed`；换模型、思考强度生效的那一刻推 `model.changed`；换了上下文上限，`subscribe` 回应、`view.status` 的 `limits` 当场换（`window` 是生效的窗口，`context` 是上限，没设的不写）。之后 `subscribe` 回应、`model.changed` 的 `model.effort` 是 `{"level", "from"}`：`from` 是 `session` 的是会话记的这一档，`system` 的是配置。`session.list`、`subscribe` 回应里的 `persona`、`preset` 马上照换成的写（换成无工具的写 `preset: null`、`no_tools: true`）。钉了看图模型的，`view.status` 马上带 `vision`，去掉了的不写；钉了压缩触发线的同样马上带 `compaction_line`，下一轮开始 `limits.compaction_line` 照它换。
 
-**出错**：`bad_params`（一格都没写、空字符串、类型不对；子代理换人格、预设，`data.field` 是那一格；`effort` 不在这时的模型的档位里，`data.field` 是 `effort`，什么都不换；`context` 不是非负整数；`context` 太小，`data.field` 是 `context`、`data.min` 是最少要多少，什么都不换）；`unknown_model`：`model`、`vision` 解析不出，什么都不换；`unknown_persona`；`unknown_preset`；`turn_running`：换人格、预设时有回合在进行（等这一轮做完）。
+**出错**：`bad_params`（一格都没写、空字符串、类型不对；子代理换人格、预设，`data.field` 是那一格；`effort` 不在这时的模型的档位里，`data.field` 是 `effort`，什么都不换；`context` 不是非负整数；`context` 太小，`data.field` 是 `context`、`data.min` 是最少要多少，什么都不换；`compaction_line` 不是整数，或者不在 20 到 95 里，`data.field` 是 `compaction_line`，什么都不换）；`unknown_model`：`model`、`vision` 解析不出，什么都不换；`unknown_persona`；`unknown_preset`；`turn_running`：换人格、预设时有回合在进行（等这一轮做完）。
 
 ## `session.fork`
 

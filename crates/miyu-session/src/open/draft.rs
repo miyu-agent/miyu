@@ -159,9 +159,11 @@ pub async fn preview_context(setup: Create<'_>) -> Result<Context, CreateError> 
     let drafted = draft(&setup, &opened, taken, external).await?;
     let resources = setup.resources.clone();
     let no_tools = setup.no_tools;
+    // 压缩线照造会话时的配置（施工 CT-1，同 `open.rs`）。
+    let line = crate::settings::CompactionSettings::from(&values).line_for(None);
     let (snapshot, layout, policy, texts) = blocking(move || {
-        let (mut snapshot, layout) =
-            laid(&resources, drafted.parts).map_err(CreateError::Persona)?;
+        let (snapshot, layout) = laid(&resources, drafted.parts).map_err(CreateError::Persona)?;
+        let mut snapshot = snapshot.with_line(Some(line));
         snapshot.no_tools = no_tools;
         let policy = snapshot.policy().map_err(CreateError::Policy)?;
         let texts = snapshot.driver_texts().map_err(CreateError::Policy)?;

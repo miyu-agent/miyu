@@ -168,6 +168,7 @@
 | `compactable` | 这一刻有没有能压的（施工 W-12，网页要的：换人格、预设之前问不问「切换前会压缩」）：`session.compact` 会不会回 `nothing_to_compact`，判法同内核（`Session::compactable`）。向会话要，每落一批盘重取，变了跟着推；不由投影算 |
 | `model` | 同订阅回应的 `model`（带思考强度 `effort`） |
 | `vision` | 会话钉的看图模型（施工 VM-1，`session.configure` 的 `vision`）：模型或 `@池`，原样；向会话要（内核照日志算的，刚钉了、还没开回合的也是钉的），每落一批盘重取，变了跟着推。没钉的（跟着 `models.vision`）不写 |
+| `compaction_line` | 会话钉的压缩触发线（施工 CT-1，`session.configure` 的 `compaction_line`）：窗口的百分之几；向会话要（内核照日志算的，刚钉了、还没开回合的也是钉的），每落一批盘重取，变了跟着推。没钉的（跟着 `compaction.line`）不写。生效的压缩线看 `context.compaction_line` |
 | `permission`、`todos`、`workspace` | 同订阅回应的那几格 |
 | `todos_done` | 因为全部做完而清空了待办（`todos` 是空的）时，清空前那一份，同事件流 `todos.changed` 的 `done`；头照它全打勾停一下再收（施工 9-8 九补，网页的会话要的）。别的时候不写，再写一份没做完的就没了 |
 | `persona`、`preset` | 同订阅回应的那几格；中途换了的（P-13）照会话这一刻的跟着推（施工 9-8 十四补对齐蓝图，代码 P-13 起就是这样） |
