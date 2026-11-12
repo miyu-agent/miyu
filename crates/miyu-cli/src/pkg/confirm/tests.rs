@@ -207,17 +207,13 @@ fn a_local_folder_says_it_is_a_local_file_and_asks_to_approve() {
             Language::Chinese => (
                 ("联网", "访问网络、开端口"),
                 ("提供工具", "给 AI 加能调用的工具"),
-                [
-                    "这个包没经过官方审核。",
-                    "它带的程序会以你的身份在这台机器上跑，不在沙盒里。",
-                ],
+                ["这个包来自本机文件，没有经过官方审核，可能存在风险。"],
             ),
             Language::English => (
                 ("Network", "Access the network and open ports"),
                 ("Provide tools", "Add tools the AI can call"),
                 [
-                    "This package has not been officially reviewed.",
-                    "The programs it carries run as you on this machine, outside any sandbox.",
+                    "This package comes from a local file. It has not been reviewed and may be risky.",
                 ],
             ),
         };
@@ -241,7 +237,7 @@ fn a_local_folder_says_it_is_a_local_file_and_asks_to_approve() {
     );
     assert_eq!(
         question(&zh, Doing::Install, "weather", &Language::Chinese),
-        "注意：这个包没经过官方审核。它带的程序会以你的身份在这台机器上跑，不在沙盒里。\n\
+        "注意：这个包来自本机文件，没有经过官方审核，可能存在风险。\n\
          安装 'weather' 并批准它要的能力？[Y/n] "
     );
     let en = shown(Language::English);
@@ -258,14 +254,14 @@ fn a_local_folder_says_it_is_a_local_file_and_asks_to_approve() {
     );
     assert_eq!(
         question(&en, Doing::Install, "weather", &Language::English),
-        "Note: This package has not been officially reviewed. The programs it carries run as you on \
-         this machine, outside any sandbox.\nInstall 'weather' and approve the capabilities it needs? [Y/n] "
+        "Note: This package comes from a local file. It has not been reviewed and may be risky.\n\
+         Install 'weather' and approve the capabilities it needs? [Y/n] "
     );
     let mut nothing = zh.clone();
     nothing["capabilities"] = json!([]);
     assert_eq!(
         question(&nothing, Doing::Install, "weather", &Language::Chinese),
-        "注意：这个包没经过官方审核。它带的程序会以你的身份在这台机器上跑，不在沙盒里。\n\
+        "注意：这个包来自本机文件，没有经过官方审核，可能存在风险。\n\
          安装 'weather'？[Y/n] ",
         "没有要批的照旧那一句"
     );

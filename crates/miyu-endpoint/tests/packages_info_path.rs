@@ -76,7 +76,7 @@ async fn a_folder_is_described_like_an_installed_package_and_nothing_moves() {
         (json!("Does things"), json!("Ann")),
         "{shown}"
     );
-    assert_eq!(result["provides"], json!({"skills": ["notes"]}), "{shown}");
+    assert_eq!(result["contains"], json!({"skills": ["notes"]}), "{shown}");
     assert_eq!(
         result["skipped"][0]["file"], "skills/bad/SKILL.md",
         "{shown}"
@@ -117,7 +117,7 @@ async fn a_package_file_is_unpacked_described_and_cleaned_up() {
         (json!("file"), json!("kit"), json!(file)),
         "写的是包文件的路径，不是解开的暂存处：{shown}"
     );
-    assert_eq!(result["provides"]["skills"], json!(["notes"]), "{shown}");
+    assert_eq!(result["contains"]["skills"], json!(["notes"]), "{shown}");
     assert!(!placed(&home, "kit"), "什么都不装");
     let unpacked = std::fs::read_dir(home.root.path().join("tmp/unpack"))
         .map(|dir| dir.count())

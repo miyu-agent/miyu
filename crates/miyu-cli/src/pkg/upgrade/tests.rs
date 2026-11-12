@@ -27,7 +27,7 @@ fn preview() -> Value {
                   "capabilities": [{"id": "search", "name": "当搜索服务供应商", "summary": "在搜索服务供应商里列出来"},
                                    {"id": "network", "name": "联网", "summary": "访问网络、开端口"}]}],
         "download": 2048,
-        "notice": ["lib 没经过官方审核。"],
+        "notice": ["lib 是社区包，没有经过官方审核，可能存在风险。"],
     })
 }
 
@@ -54,11 +54,11 @@ fn an_upgrade_lists_only_the_new_capabilities_under_each_package() {
     );
     assert_eq!(
         question(&survey(), &preview(), &Language::Chinese),
-        "注意：lib 没经过官方审核。\n升级 2 个软件包并批准新要的能力？[Y/n] "
+        "注意：lib 是社区包，没有经过官方审核，可能存在风险。\n升级 2 个软件包并批准新要的能力？[Y/n] "
     );
     assert_eq!(
         question(&survey()[..1], &preview(), &Language::English),
-        "Note: lib 没经过官方审核。\nUpgrade 'app' and approve the new capabilities? [Y/n] "
+        "Note: lib 是社区包，没有经过官方审核，可能存在风险。\nUpgrade 'app' and approve the new capabilities? [Y/n] "
     );
 }
 

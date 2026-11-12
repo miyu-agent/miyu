@@ -136,17 +136,12 @@ async fn the_preview_says_where_each_package_comes_from_and_holds_only_on_the_sa
     assert_eq!(held(&rec_item["capabilities"]), ["network"]);
     assert_eq!(
         preview["notice"],
-        json!([
-            "lib 没经过官方审核。",
-            "lib 带的程序会以你的身份在这台机器上跑，不在沙盒里。"
-        ])
+        json!(["lib 是社区包，没有经过官方审核，可能存在风险。"]),
+        "几个包的写出是哪几个，不再说沙盒"
     );
     assert_eq!(
         preview["recommends_notice"],
-        json!([
-            "rec 没经过官方审核。",
-            "rec 带的程序会以你的身份在这台机器上跑，不在沙盒里。"
-        ])
+        json!(["rec 是社区包，没有经过官方审核，可能存在风险。"])
     );
 
     let (reply, _) = call_collecting(
@@ -280,10 +275,7 @@ async fn an_upgrade_keeps_what_is_still_wanted_and_asks_again_for_what_comes_bac
     assert_eq!(held(&preview["with"][0]["capabilities"]), ["search"]);
     assert_eq!(
         preview["notice"],
-        json!([
-            "lib 没经过官方审核。",
-            "lib 带的程序会以你的身份在这台机器上跑，不在沙盒里。"
-        ])
+        json!(["lib 是社区包，没有经过官方审核，可能存在风险。"])
     );
     let (upgraded, _) = call_collecting(
         &mut client,

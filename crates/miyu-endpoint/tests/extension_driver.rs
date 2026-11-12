@@ -161,7 +161,7 @@ async fn the_install_screen_names_the_drivers_and_the_capability() {
         .call("i", "package.info", json!({"package": "gravity"}))
         .await;
     let info = &reply["result"];
-    assert_eq!(info["provides"]["drivers"], json!(["ag"]), "{reply}");
+    assert_eq!(info["contains"]["drivers"], json!(["ag"]), "{reply}");
     let capabilities: Vec<&str> = info["capabilities"]
         .as_array()
         .unwrap_or_else(|| panic!("{reply}"))

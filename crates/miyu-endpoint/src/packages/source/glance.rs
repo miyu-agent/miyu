@@ -65,14 +65,13 @@ impl<'a> Looking<'a> {
         one
     }
 
-    /// 几个包要说的「注意」：社区的写出来，带会跑的东西的再说一句；`alone` 的是这一次只有一个包。
+    /// 几个包要说的「注意」：社区的写出来；`alone` 的是这一次只有一个包。
     pub(super) fn notice(&self, items: &[(&Feed, &Entry)], alone: bool) -> Option<Value> {
         let items: Vec<Item<'_>> = items
             .iter()
             .map(|(feed, entry)| Item {
                 id: &entry.id,
                 source: source(feed, entry),
-                runs: notice::entry_runs(entry),
             })
             .collect();
         notice::notice(self.core, self.language, &items, alone)

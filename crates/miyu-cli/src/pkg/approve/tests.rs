@@ -20,7 +20,7 @@ fn preview() -> Value {
                  {"package": "bare", "version": "1.0", "source": "official", "feed": "official"}],
         "recommends": [{"package": "rec", "version": "1.0",
                         "capabilities": [{"id": "network", "name": "联网"}]}],
-        "notice": ["这个包没经过官方审核。", "它带的程序会以你的身份在这台机器上跑，不在沙盒里。"],
+        "notice": ["app 是社区包，没有经过官方审核，可能存在风险。", "kit 来自本机文件，没有经过官方审核，可能存在风险。"],
     })
 }
 
@@ -118,12 +118,14 @@ fn the_notice_is_the_core_words_as_they_are() {
     let shown = preview();
     assert_eq!(
         notice(&shown["notice"], &Language::Chinese).as_deref(),
-        Some("注意：这个包没经过官方审核。它带的程序会以你的身份在这台机器上跑，不在沙盒里。")
+        Some(
+            "注意：app 是社区包，没有经过官方审核，可能存在风险。kit 来自本机文件，没有经过官方审核，可能存在风险。"
+        )
     );
-    let english = json!(["This package has not been officially reviewed.", "Outside."]);
+    let english = json!(["This is a community package.", "Outside."]);
     assert_eq!(
         notice(&english, &Language::English).as_deref(),
-        Some("Note: This package has not been officially reviewed. Outside.")
+        Some("Note: This is a community package. Outside.")
     );
     assert_eq!(
         notice(&json!("一句。"), &Language::Chinese).as_deref(),

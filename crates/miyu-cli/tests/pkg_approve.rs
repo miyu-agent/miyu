@@ -55,7 +55,7 @@ async fn the_screen_says_where_and_what_and_yes_approves_it() {
         format!(
             "将安装 kit\n包含：扩展程序、命令 miyu kit\n需要：提供工具：给 AI 加能调用的工具\n      联网：访问网络、开端口\n\
              来源：本机文件\n大小：{bytes} B，1 个文件\n\n\
-             注意：这个包没经过官方审核。它带的程序会以你的身份在这台机器上跑，不在沙盒里。\n\
+             注意：这个包来自本机文件，没有经过官方审核，可能存在风险。\n\
              安装 'kit' 并批准它要的能力？[Y/n] 已安装 kit\n已批准 kit 的能力：提供工具、联网\n"
         )
     );
@@ -74,8 +74,8 @@ async fn the_screen_reads_the_same_in_english_and_no_approves_nothing() {
         format!(
             "Will install kit\nIncludes: extension, command miyu kit\nNeeds: Provide tools: Add tools the AI can call\n       \
              Network: Access the network and open ports\nFrom: local file\nSize: {bytes} B, 1 file\n\n\
-             Note: This package has not been officially reviewed. The programs it carries run as you on this machine, \
-             outside any sandbox.\nInstall 'kit' and approve the capabilities it needs? [Y/n] "
+             Note: This package comes from a local file. It has not been reviewed and may be risky.\n\
+             Install 'kit' and approve the capabilities it needs? [Y/n] "
         )
     );
     assert!(!home.root.packages().join("kit").exists(), "答「否」的不装");

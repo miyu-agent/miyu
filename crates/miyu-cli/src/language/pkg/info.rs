@@ -81,19 +81,20 @@ impl Language {
         }
     }
 
-    /// 「来源」：出厂、官方、社区、本地；有来源仓库的写在仓库后面的括号里。
+    /// 「来源」：出厂、官方、社区、本地；有来源仓库的写在仓库后面的括号里。社区的接一句没有经过官方审核（施工 CM-1：一眼分得出
+    /// 不是官方的包）。
     pub(crate) fn came_from(&self, from: CameFrom, origin: Option<&str>) -> String {
         let word = match (self, from) {
             (Language::Chinese, CameFrom::Shipped) => "出厂",
             (Language::Chinese, CameFrom::Official) => "官方",
-            (Language::Chinese, CameFrom::Community) => "社区",
+            (Language::Chinese, CameFrom::Community) => "社区，没有经过官方审核",
             (Language::Chinese, CameFrom::Source) => "软件源",
             (Language::Chinese, CameFrom::Local) => "本地",
             (Language::Chinese, CameFrom::Distro) => "系统装的",
             (Language::Chinese, CameFrom::Unknown) => "不知道",
             (Language::English, CameFrom::Shipped) => "shipped",
             (Language::English, CameFrom::Official) => "official",
-            (Language::English, CameFrom::Community) => "community",
+            (Language::English, CameFrom::Community) => "community, not officially reviewed",
             (Language::English, CameFrom::Source) => "repository",
             (Language::English, CameFrom::Local) => "local",
             (Language::English, CameFrom::Distro) => "system",

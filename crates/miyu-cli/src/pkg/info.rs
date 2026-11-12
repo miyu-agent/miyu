@@ -70,14 +70,16 @@ pub(super) async fn show(
 }
 
 /// `package.info` 的回应印成几行：先后照设计 49 第一节第 3、4 条，键照最宽的那个补齐，冒号前后各空一格。没装的
-/// （`from: "source"`）多「软件源」「下载大小」，装着的多「被依赖」「安装时间」。包目录、包文件的（`from: "file"`，施工 IN-4）
-/// 照装着的，核心不给来源、被依赖、安装时间，「提供」后面多「无法读取」。
+/// （`from: "source"`）多「软件源」「下载大小」，「来源」紧跟在「软件源」下面（施工 CM-1：「软件源」写的是源的名字，官方源里
+/// 社区收录的包也写 `official`，下一行就说清是官方的还是社区的），装着的多「被依赖」「安装时间」。包目录、包文件的
+/// （`from: "file"`，施工 IN-4）照装着的，核心不给来源、被依赖、安装时间，「提供」后面多「无法读取」。
 pub(crate) fn rows(info: &Value, offset: UtcOffset, language: &Language) -> Vec<String> {
     let remote = info["from"] == "source";
     let text = |key: &str| info[key].as_str().map(str::to_string);
     let mut rows: Vec<(InfoKey, Option<String>)> = Vec::new();
     if remote {
         rows.push((InfoKey::Repository, text("source")));
+        rows.push((InfoKey::Origin, came(info, language)));
     }
     rows.extend([
         (InfoKey::Name, text("package")),
@@ -92,7 +94,11 @@ pub(crate) fn rows(info: &Value, offset: UtcOffset, language: &Language) -> Vec<
         (InfoKey::Provides, provides(info, remote, language)),
         (InfoKey::Skipped, skipped(info, language)),
         (InfoKey::Capabilities, capabilities(info, language)),
-        (InfoKey::Origin, came(info, language)),
+    ]);
+    if !remote {
+        rows.push((InfoKey::Origin, came(info, language)));
+    }
+    rows.extend([
         (InfoKey::Author, text("author")),
         (InfoKey::Upstream, text("upstream")),
     ]);
@@ -146,15 +152,14 @@ fn ids(value: &Value, language: &Language) -> String {
     }
 }
 
-/// 「提供」：照装之前那一份「包含」的写法（[`included`]）。软件源索引里的（种类到名字）先照从软件源装看一眼的那样摊开：子命令
-/// 取第一个，功能、带给别的包的内容不列。
+/// 「提供」：照装之前那一份「包含」的写法（[`included`]）。装着的、包目录和包文件的照回应的 `contains`（同看一眼的「包含」）；
+/// 软件源的照索引的 `provides`（种类到名字），先照从软件源装看一眼的那样摊开：子命令取第一个，功能、带给别的包的内容不列。
 fn provides(info: &Value, remote: bool, language: &Language) -> Option<String> {
-    let provides = &info["provides"];
     let items = match remote {
-        false => included(provides, Doing::Install, language),
+        false => included(&info["contains"], Doing::Install, language),
         true => {
             let mut shaped = Map::new();
-            for (kind, names) in provides.as_object().into_iter().flatten() {
+            for (kind, names) in info["provides"].as_object().into_iter().flatten() {
                 match kind.as_str() {
                     "command" => {
                         shaped.insert(kind.clone(), names[0].clone());

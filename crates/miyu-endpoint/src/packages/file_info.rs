@@ -1,6 +1,6 @@
 //! `package.info` 带 `path` 的（施工 IN-4，照 pacman 的 `-Qip`；项目主人 2026-10-31 定）：看本机一个包文件夹、包文件 `.miyu`，
 //! 什么都不装。查照真装之前的那一套（[`super::preview::looked`]：写错的、撞了名的、缺依赖的照样拒），交回的照 `package.info`
-//! 装着的那一份的样子：`from` 是 `file`，带了什么收在 `provides`，另带写的那个路径。
+//! 装着的那一份的样子：`from` 是 `file`，带了什么收在 `contains`，另带写的那个路径。
 
 use std::path::Path;
 use std::sync::Arc;
@@ -27,7 +27,7 @@ pub(super) async fn file(core: &Arc<Core>, peer: Peer, path: &str) -> Result<Val
 }
 
 /// 包文件夹 `folder` 的那一份：看一眼的那几格里编号、版本、几个文件多大、要的能力、读不成的、换下哪一份照搬，带了什么
-/// （程序、子命令、技能、脚本……）收进 `provides`；另照清单补名字、说明（照连接的语言）、作者、上游、依赖、推荐，照包里的脚本、
+/// （程序、子命令、技能、脚本……）收进 `contains`；另照清单补名字、说明（照连接的语言）、作者、上游、依赖、推荐，照包里的脚本、
 /// 功能补模型会多的工具（`tools`，施工 PV-1）。没有的不写。
 pub(super) async fn described(
     core: &Arc<Core>,
@@ -69,7 +69,7 @@ pub(super) async fn described(
         }
     }
     if !carried.is_empty() {
-        answer.insert("provides".into(), Value::Object(carried));
+        answer.insert("contains".into(), Value::Object(carried));
     }
     // 装上以后模型会多的工具（施工 PV-1）：照包里的脚本开头、清单的功能读，同装着的那一份。
     let tools = miyu_source::tools::of(&manifest, folder);

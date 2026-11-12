@@ -35,14 +35,10 @@ fn capability(id: &str, language: &Language) -> Value {
 /// 设计 61 第三节的第一个样子：社区的 weather，一个包，要联网、提供工具，带程序。
 fn weather(language: &Language) -> Value {
     let notice = match language {
-        Language::Chinese => json!([
-            "这个包没经过官方审核。",
-            "它带的程序会以你的身份在这台机器上跑，不在沙盒里。"
-        ]),
-        Language::English => json!([
-            "This package has not been officially reviewed.",
-            "The programs it carries run as you on this machine, outside any sandbox."
-        ]),
+        Language::Chinese => json!(["这是个社区包，没有经过官方审核，可能存在风险。"]),
+        Language::English => {
+            json!(["This is a community package. It has not been reviewed and may be risky."])
+        }
     };
     json!({
         "package": "weather", "version": "0.3.0", "official": false, "source": "community", "feed": "official",
@@ -61,14 +57,10 @@ fn weather_with_onebot(language: &Language) -> Value {
     shown["download"] = json!(1_992_295);
     shown["installed"] = json!(5_242_880);
     shown["notice"] = match language {
-        Language::Chinese => json!([
-            "weather 没经过官方审核。",
-            "weather 带的程序会以你的身份在这台机器上跑，不在沙盒里。"
-        ]),
-        Language::English => json!([
-            "Not officially reviewed: weather.",
-            "The programs carried by weather run as you on this machine, outside any sandbox."
-        ]),
+        Language::Chinese => json!(["weather 是社区包，没有经过官方审核，可能存在风险。"]),
+        Language::English => {
+            json!(["Community packages that have not been reviewed and may be risky: weather."])
+        }
     };
     shown
 }
@@ -90,7 +82,7 @@ fn a_community_package_says_where_it_comes_from_what_it_needs_and_asks_to_approv
     );
     assert_eq!(
         question(&zh, &Language::Chinese),
-        "注意：这个包没经过官方审核。它带的程序会以你的身份在这台机器上跑，不在沙盒里。\n\
+        "注意：这是个社区包，没有经过官方审核，可能存在风险。\n\
          安装 'weather' 并批准它要的能力？[Y/n] "
     );
     let en = weather(&Language::English);
@@ -108,8 +100,8 @@ fn a_community_package_says_where_it_comes_from_what_it_needs_and_asks_to_approv
     );
     assert_eq!(
         question(&en, &Language::English),
-        "Note: This package has not been officially reviewed. The programs it carries run as you on \
-         this machine, outside any sandbox.\nInstall 'weather' and approve the capabilities it needs? [Y/n] "
+        "Note: This is a community package. It has not been reviewed and may be risky.\n\
+         Install 'weather' and approve the capabilities it needs? [Y/n] "
     );
 }
 
@@ -132,7 +124,7 @@ fn several_packages_from_different_places_are_named_on_each_line() {
     );
     assert_eq!(
         question(&zh, &Language::Chinese),
-        "注意：weather 没经过官方审核。weather 带的程序会以你的身份在这台机器上跑，不在沙盒里。\n\
+        "注意：weather 是社区包，没有经过官方审核，可能存在风险。\n\
          安装 2 个软件包并批准它们要的能力？[Y/n] "
     );
     let en = weather_with_onebot(&Language::English);
@@ -148,8 +140,8 @@ fn several_packages_from_different_places_are_named_on_each_line() {
     );
     assert_eq!(
         question(&en, &Language::English),
-        "Note: Not officially reviewed: weather. The programs carried by weather run as you on this \
-         machine, outside any sandbox.\nInstall 2 packages and approve the capabilities they need? [Y/n] "
+        "Note: Community packages that have not been reviewed and may be risky: weather.\n\
+         Install 2 packages and approve the capabilities they need? [Y/n] "
     );
 }
 
@@ -263,10 +255,10 @@ fn recommended_packages_that_need_capabilities_get_their_own_part() {
     shown["recommends"] = json!([{"package": "rec", "version": "1.0", "source": "community",
                                   "feed": "official", "capabilities": [capability("network", &Language::Chinese)]},
                                  {"package": "plain", "version": "1.0", "source": "official", "feed": "official"}]);
-    shown["recommends_notice"] = json!(["rec 没经过官方审核。"]);
+    shown["recommends_notice"] = json!(["rec 是社区包，没有经过官方审核，可能存在风险。"]);
     assert_eq!(
         recommended_question(&shown, &Language::Chinese),
-        "\n推荐的包要的能力  : rec    联网：访问网络、开端口\n注意：rec 没经过官方审核。\n\
+        "\n推荐的包要的能力  : rec    联网：访问网络、开端口\n注意：rec 是社区包，没有经过官方审核，可能存在风险。\n\
          同时安装推荐的 2 个软件包并批准它们要的能力？[Y/n] "
     );
     let mut english = weather(&Language::English);

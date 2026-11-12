@@ -29,12 +29,9 @@ pub(crate) async fn installing(
     let (mut answer, _) = looked(core, peer, path).await?;
     answer.insert("source".into(), json!("file"));
     let id = answer["package"].as_str().unwrap_or_default().to_string();
-    let program = answer.get("program").and_then(Value::as_str);
-    let runs = super::notice::runs(program, |kind| answer.contains_key(kind));
     let item = super::notice::Item {
         id: &id,
         source: "file",
-        runs,
     };
     if let Some(said) = super::notice::notice(core, peer.language, &[item], true) {
         answer.insert("notice".into(), said);

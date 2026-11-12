@@ -65,9 +65,9 @@ async fn by_id(
     }
 }
 
-/// 装着的那一份：[`super::local::info`] 的几格，另有清单写的名字、说明、依赖、推荐，带了什么（`provides`，同装之前看一眼的
-/// 「包含」）、要的能力（`capabilities`），模型会多的工具（`tools`，施工 PV-1），装着的包里依赖它的（`required_by`，照编号），
-/// 从软件源装的来源仓库（`origin`）。没有的不写。
+/// 装着的那一份：[`super::local::info`] 的几格，另有清单写的名字、说明、依赖、推荐，带了什么（`contains`，同装之前看一眼的
+/// 「包含」；施工 CM-1 起不叫 `provides`：那是软件源索引的另一种形状）、要的能力（`capabilities`），模型会多的工具（`tools`，
+/// 施工 PV-1），装着的包里依赖它的（`required_by`，照编号），从软件源装的来源仓库（`origin`）。没有的不写。
 async fn installed(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value, Refusal> {
     let mut answer = super::local::info(core, peer.for_owner, id).await?;
     let now = core.system_packages();
@@ -90,10 +90,10 @@ async fn installed(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value, Refu
                 answer[key] = json!(ids);
             }
         }
-        let (provides, capabilities) =
+        let (contains, capabilities) =
             super::preview::provided(core, peer, (id, manifest), &found.files_dir());
-        if provides.as_object().is_some_and(|map| !map.is_empty()) {
-            answer["provides"] = provides;
+        if contains.as_object().is_some_and(|map| !map.is_empty()) {
+            answer["contains"] = contains;
         }
         if let Some(capabilities) = capabilities {
             answer["capabilities"] = capabilities;

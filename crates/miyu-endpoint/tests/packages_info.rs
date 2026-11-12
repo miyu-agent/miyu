@@ -176,9 +176,13 @@ async fn an_installed_package_carries_its_manifest_and_who_needs_it() {
     assert!(got.get("depends").is_none(), "没写依赖的不写：{got}");
     assert_eq!(got["required_by"], json!(["addon"]), "装着的包里依赖它的");
     assert_eq!(
-        got["provides"]["skills"],
+        got["contains"]["skills"],
         json!(["draw"]),
         "同装之前的「包含」"
+    );
+    assert!(
+        got.get("provides").is_none(),
+        "provides 只有软件源索引那一种形状：{got}"
     );
     assert!(got.get("origin").is_none(), "不是从软件源装的没有来源仓库");
 

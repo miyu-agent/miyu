@@ -135,7 +135,7 @@ pub(crate) async fn upgrade(
             .filter_map(fetch::pick)
             .map(|file| file.size)
             .sum();
-        let mut answer = looked(core, peer, (&indexes, &feeds), rows).await;
+        let mut answer = looked(core, peer, &feeds, rows).await;
         answer["download"] = json!(download);
         return Ok(answer);
     }
@@ -156,7 +156,7 @@ pub(crate) async fn upgrade(
 async fn looked(
     core: &Arc<Core>,
     peer: Peer,
-    (indexes, feeds): (&Indexes, &BTreeMap<String, Option<String>>),
+    feeds: &BTreeMap<String, Option<String>>,
     mut rows: Vec<Value>,
 ) -> Value {
     let upgrading: Vec<String> = rows
@@ -194,13 +194,9 @@ async fn looked(
         .iter()
         .chain(&with)
         .filter_map(|one| {
-            let id = one["package"].as_str()?;
-            let feed = one["feed"].as_str().unwrap_or(OFFICIAL);
-            let entry = indexes.get(feed)?.entry(id)?;
             Some(Item {
-                id,
+                id: one["package"].as_str()?,
                 source: one["source"].as_str()?,
-                runs: notice::entry_runs(entry),
             })
         })
         .collect();
