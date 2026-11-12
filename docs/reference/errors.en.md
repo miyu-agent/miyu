@@ -40,7 +40,6 @@ Chinese version: [errors.md](errors.md).
 | `session_broken` | The session can't be loaded: its log is broken or doesn't parse | |
 | `session_read_only` | A line in the middle of the session log is broken: what came before it can still be read with `view.page`, but the session can't be loaded or continued (sending and subscribing are refused); start a new session to go on. The log is left as it is, not repaired | `segment` (which segment, file name only), `line` (line number within that segment) |
 | `session_unavailable` | The session can't be read right now: an I/O error while reading its log (permissions, too many open files, a disk error). The log is intact; try again later | |
-| `low_memory` | Less than 5% of memory is available on this machine (or in the core's cgroup): no new session is made and no session that isn't open is opened (`session.create`, `session.fork`, and sending, subscribing and the like when they would load one); open sessions go on as usual. Free some memory and try again | `available_mib` (MiB left), `available_percent` (percent of the total), both rounded down |
 | `export_exists` | The export file is already there; not overwritten | |
 | `export_in_data_root` | An export won't be written inside the data root | |
 | `export_unwritable` | The export folder isn't there or can't be written | |

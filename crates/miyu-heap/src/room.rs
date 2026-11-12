@@ -1,13 +1,14 @@
-//! 还剩多少可用内存（施工 MEM-1，`docs/blueprint/heap.md`「还剩多少内存」）：核心新开、载入会话之前看一眼，剩得太少的不开，
-//! 不撑到整个核心被系统杀掉。这里只管读，门槛和拒不拒是核心的事（`miyu-endpoint` 的会话表）。
+//! 还剩多少可用内存（施工 MEM-1 起，`docs/blueprint/heap.md`「还剩多少内存」）：核心隔一阵看一眼，内存紧、核心自己又是大头时
+//! 把闲着的会话卸出内存（施工 MEM-2），不撑到整个核心被系统杀掉。这里只管读，判紧不紧、卸哪些是核心的事（`miyu-endpoint` 的
+//! 会话表）。整台机器的和核心所在 cgroup 的分开交：两种紧判法不一样。
 //!
-//! - Linux：系统的 `/proc/meminfo`（`MemAvailable`、`MemTotal`），再加核心所在的 cgroup v2：从 `/proc/self/cgroup` 写的那一层
+//! - Linux：系统的 `/proc/meminfo`（`MemAvailable`、`MemTotal`）；核心所在的 cgroup v2：从 `/proc/self/cgroup` 写的那一层
 //!   一路往上走到根，每层有 `memory.max`（不是 `max`）的算一份，可用的是上限减去在用的（在用的扣掉回收得了的
-//!   `inactive_file`）。几份里照比例最低的那一份。
-//! - macOS：内核给的可用百分比 `kern.memorystatus_level`，总量 `hw.memsize`。
-//! - Windows：`GlobalMemoryStatusEx` 的 `ullAvailPhys`、`ullTotalPhys`。
+//!   `inactive_file`），几层里照比例最低的那一份。
+//! - macOS：内核给的可用百分比 `kern.memorystatus_level`，总量 `hw.memsize`。没有 cgroup。
+//! - Windows：`GlobalMemoryStatusEx` 的 `ullAvailPhys`、`ullTotalPhys`。没有 cgroup。
 //!
-//! 哪一样读不到的不算进来；一样都读不到的交回没有，调的一方当作「不知道」，不拒。
+//! 哪一样读不到的是没有，调的一方当作「不知道」，不当紧。
 
 use std::path::Path;
 
@@ -49,6 +50,17 @@ impl Room {
     }
 }
 
+/// 这一刻的两份读数（施工 MEM-2）：整台机器的，和核心所在 cgroup 一路往上有上限的几层里最紧的那一层。读不到的、没有上限的
+/// 是没有。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct Rooms {
+    /// 整台机器的：总量是物理内存。
+    pub system: Option<Room>,
+    /// 核心所在 cgroup（只认 v2）从自己那一层往上到根，有 `memory.max` 的几层里照比例最紧的那一层：总量是那一层的上限。
+    /// 一层都没有上限的、只有 v1 的、不是 Linux 的没有。
+    pub cgroup: Option<Room>,
+}
+
 /// 几份里照比例最紧的那一份；一份都没有的没有。
 pub fn tightest(rooms: impl IntoIterator<Item = Room>) -> Option<Room> {
     rooms
@@ -60,7 +72,7 @@ pub fn tightest(rooms: impl IntoIterator<Item = Room>) -> Option<Room> {
 }
 
 /// 这一刻还剩多少：见模块的说明。Linux 上读几个小文件（`/proc`、`/sys` 下，不碰磁盘），macOS、Windows 上问系统一次。
-pub fn room() -> Option<Room> {
+pub fn room() -> Rooms {
     imp::room()
 }
 
@@ -114,16 +126,15 @@ fn inactive_file(stat: &str) -> Option<u64> {
     })
 }
 
-/// Linux 上的读法，读文件照 `read`（给绝对路径，读不到的交回没有）：`/proc/meminfo` 一份，`/proc/self/cgroup` 写的那一层
-/// 起往上每层一份（`/sys/fs/cgroup/<路径>/memory.max` 这几样，见 [`cgroup_level`]），照比例最紧的那一份。测试照它喂假文件，
-/// 不靠本机。
-pub fn linux_with(read: &dyn Fn(&Path) -> Option<String>) -> Option<Room> {
+/// Linux 上的读法，读文件照 `read`（给绝对路径，读不到的交回没有）：系统的是 `/proc/meminfo`；cgroup 的是
+/// `/proc/self/cgroup` 写的那一层起往上每层一份（`/sys/fs/cgroup/<路径>/memory.max` 这几样，见 [`cgroup_level`]）里照比例
+/// 最紧的那一份。测试照它喂假文件，不靠本机。
+pub fn linux_with(read: &dyn Fn(&Path) -> Option<String>) -> Rooms {
     let system = read(Path::new("/proc/meminfo")).and_then(|text| parse_meminfo(&text));
-    let cgroups = read(Path::new("/proc/self/cgroup"))
+    let cgroup = read(Path::new("/proc/self/cgroup"))
         .and_then(|text| cgroup_path(&text).map(str::to_owned))
-        .map(|path| cgroups(read, &path))
-        .unwrap_or_default();
-    tightest(system.into_iter().chain(cgroups))
+        .and_then(|path| tightest(cgroups(read, &path)));
+    Rooms { system, cgroup }
 }
 
 /// 从 cgroup 的 `path` 那一层往上到根，每层读得出上限的一份。根那一层没有 `memory.max`，自然跳过。
@@ -161,7 +172,7 @@ pub fn macos_of(level: u64, total: u64) -> Option<Room> {
 
 #[cfg(target_os = "linux")]
 mod imp {
-    pub(super) fn room() -> Option<super::Room> {
+    pub(super) fn room() -> super::Rooms {
         super::linux_with(&|path| std::fs::read_to_string(path).ok())
     }
 }
@@ -169,17 +180,33 @@ mod imp {
 #[cfg(target_os = "macos")]
 mod macos;
 #[cfg(target_os = "macos")]
-use macos as imp;
+mod imp {
+    /// macOS 没有 cgroup：只有整台机器的。
+    pub(super) fn room() -> super::Rooms {
+        super::Rooms {
+            system: super::macos::room(),
+            cgroup: None,
+        }
+    }
+}
 
 #[cfg(windows)]
 mod windows;
 #[cfg(windows)]
-use windows as imp;
+mod imp {
+    /// Windows 没有 cgroup：只有整台机器的。
+    pub(super) fn room() -> super::Rooms {
+        super::Rooms {
+            system: super::windows::room(),
+            cgroup: None,
+        }
+    }
+}
 
 #[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
 mod imp {
-    pub(super) fn room() -> Option<super::Room> {
-        None
+    pub(super) fn room() -> super::Rooms {
+        super::Rooms::default()
     }
 }
 

@@ -1,4 +1,5 @@
-//! 还剩多少内存：几种文件的读法、cgroup 一层层取最紧的、比例和门槛的算法；真机上读得到。读文件的都喂假的，不靠本机。
+//! 还剩多少内存：几种文件的读法、cgroup 一层层取最紧的、系统的和 cgroup 的分开交、比例和门槛的算法；真机上读得到。读文件的都
+//! 喂假的，不靠本机。
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -24,7 +25,7 @@ fn files(entries: &[(&str, &str)]) -> BTreeMap<PathBuf, String> {
         .collect()
 }
 
-fn linux(entries: &[(&str, &str)]) -> Option<Room> {
+fn linux(entries: &[(&str, &str)]) -> Rooms {
     let files = files(entries);
     linux_with(&|path: &Path| files.get(path).cloned())
 }
@@ -97,22 +98,26 @@ fn the_tightest_level_up_the_tree_wins() {
         ("/sys/fs/cgroup/user.slice/memory.max", "10000\n"),
         ("/sys/fs/cgroup/user.slice/memory.current", "9600\n"),
     ];
-    assert_eq!(linux(&tree), Some(room(400, 10_000)));
+    let found = linux(&tree);
+    assert_eq!(found.cgroup, Some(room(400, 10_000)));
+    assert_eq!(found.system, parse_meminfo(MEMINFO), "系统的另交");
 }
 
 #[test]
-fn an_unlimited_cgroup_leaves_the_system_figure() {
+fn an_unlimited_cgroup_has_no_figure() {
     let tree = [
         ("/proc/meminfo", MEMINFO),
         ("/proc/self/cgroup", "0::/user.slice\n"),
         ("/sys/fs/cgroup/user.slice/memory.max", "max\n"),
         ("/sys/fs/cgroup/user.slice/memory.current", "9600\n"),
     ];
-    assert_eq!(linux(&tree), parse_meminfo(MEMINFO));
+    let found = linux(&tree);
+    assert_eq!(found.cgroup, None);
+    assert_eq!(found.system, parse_meminfo(MEMINFO));
 }
 
 #[test]
-fn a_cgroup_tighter_than_the_system_wins() {
+fn the_cgroup_is_handed_apart_from_the_system() {
     // bm 的样子：cgroup 限 18 GiB、用掉 17.5 GiB，系统还剩六成。
     let max = (18 * GIB).to_string();
     let current = (18 * GIB - GIB / 2).to_string();
@@ -122,10 +127,12 @@ fn a_cgroup_tighter_than_the_system_wins() {
         ("/sys/fs/cgroup/bm.scope/memory.max", max.as_str()),
         ("/sys/fs/cgroup/bm.scope/memory.current", current.as_str()),
     ];
-    let found = linux(&tree).expect("读得到");
-    assert_eq!(found, room(GIB / 2, 18 * GIB));
-    assert_eq!(found.percent(), 2);
-    assert!(found.below(5));
+    let found = linux(&tree);
+    assert_eq!(found.system, parse_meminfo(MEMINFO), "系统的照旧宽裕");
+    let cgroup = found.cgroup.expect("读得到");
+    assert_eq!(cgroup, room(GIB / 2, 18 * GIB));
+    assert_eq!(cgroup.percent(), 2);
+    assert!(cgroup.below(5));
 }
 
 #[test]
@@ -135,16 +142,28 @@ fn without_meminfo_the_cgroup_still_counts() {
         ("/sys/fs/cgroup/a/memory.max", "100\n"),
         ("/sys/fs/cgroup/a/memory.current", "10\n"),
     ];
-    assert_eq!(linux(&tree), Some(room(90, 100)));
+    assert_eq!(
+        linux(&tree),
+        Rooms {
+            system: None,
+            cgroup: Some(room(90, 100)),
+        }
+    );
 }
 
 #[test]
 fn nothing_readable_is_unknown() {
-    assert_eq!(linux(&[]), None);
-    assert_eq!(linux(&[("/proc/meminfo", "garbage")]), None);
-    // 只有 v1 的 cgroup、根那一层：只看系统的。
+    assert_eq!(linux(&[]), Rooms::default());
+    assert_eq!(linux(&[("/proc/meminfo", "garbage")]), Rooms::default());
+    // 只有 v1 的 cgroup、根那一层：只有系统的。
     let v1 = [("/proc/meminfo", MEMINFO), ("/proc/self/cgroup", "0::/\n")];
-    assert_eq!(linux(&v1), parse_meminfo(MEMINFO));
+    assert_eq!(
+        linux(&v1),
+        Rooms {
+            system: parse_meminfo(MEMINFO),
+            cgroup: None,
+        }
+    );
 }
 
 #[test]
@@ -189,15 +208,21 @@ fn the_macos_level_is_a_share_of_the_total() {
     assert_eq!(macos_of(50, 0), None);
 }
 
-/// 真机上：三个平台都读得到、可用的不比总量多。
+/// 真机上：三个平台都读得到整台机器的、可用的不比总量多；读得到 cgroup 的也一样。不是 Linux 的没有 cgroup。
 #[test]
 fn this_machine_has_a_figure() {
     let found = super::room();
     if cfg!(any(target_os = "linux", target_os = "macos", windows)) {
-        let found = found.expect("读得到");
-        assert!(found.total > 0, "{found:?}");
-        assert!(found.available <= found.total, "{found:?}");
+        let system = found.system.expect("读得到");
+        assert!(system.total > 0, "{found:?}");
+        assert!(system.available <= system.total, "{found:?}");
     } else {
-        assert_eq!(found, None);
+        assert_eq!(found.system, None);
+    }
+    if let Some(cgroup) = found.cgroup {
+        assert!(cgroup.available <= cgroup.total, "{found:?}");
+    }
+    if !cfg!(target_os = "linux") {
+        assert_eq!(found.cgroup, None);
     }
 }

@@ -2,7 +2,7 @@
 
 ### 是什么
 
-核心用系统的分配器（`23-性能预算.md` F3）。glibc 释放的内存多半留在自己手里、不还给系统：读完模型目录剩下的、关掉的大会话放下的，核心的内存一直不回落（施工 V-2 中量过：一万条事件的会话关掉以后核心还占 48 MB，空闲时 27 MB）。这个 crate 做两件：glibc 上调两个参数（arena 的个数、大块的门槛），把堆里空着的还给系统。别的平台（macOS、Windows、musl）的分配器自己会还，两件都什么都不做。另交出堆的统计、进程这时占了多少内存，核心照它自己记账（F4，施工 V-4，下面「自己记账」）；还交出这台机器还剩多少可用内存，核心照它决定开不开会话（施工 MEM-1，下面「还剩多少内存」）。
+核心用系统的分配器（`23-性能预算.md` F3）。glibc 释放的内存多半留在自己手里、不还给系统：读完模型目录剩下的、关掉的大会话放下的，核心的内存一直不回落（施工 V-2 中量过：一万条事件的会话关掉以后核心还占 48 MB，空闲时 27 MB）。这个 crate 做两件：glibc 上调两个参数（arena 的个数、大块的门槛），把堆里空着的还给系统。别的平台（macOS、Windows、musl）的分配器自己会还，两件都什么都不做。另交出堆的统计、进程这时占了多少内存，核心照它自己记账（F4，施工 V-4，下面「自己记账」）；还交出这台机器、核心所在 cgroup 还剩多少可用内存，核心照它和自己的常驻判内存紧不紧，紧的把闲着的会话卸出内存（施工 MEM-1 读法、MEM-2 卸会话，下面「还剩多少内存」）。
 
 ### 在哪
 
@@ -10,8 +10,8 @@
 |---|---|
 | `crates/miyu-heap/src/lib.rs` | `tune`、`trim`、`stats`、`huge_pages_off`；glibc 上声明、调 `mallopt`、`malloc_trim`、`mallinfo2`，Linux 上关透明大页（施工 YC-12），别的平台是空的 |
 | `crates/miyu-heap/src/usage.rs` | 进程这时占了多少内存：Linux 上读 `/proc/self/smaps_rollup`、`/proc/self/status`，两份的读法是纯的（施工 V-4）；macOS 上问内核 `proc_pid_rusage`（施工 V-4 补） |
-| `crates/miyu-heap/src/room.rs`、`room/macos.rs`、`room/windows.rs`（施工 MEM-1） | 还剩多少可用内存：Linux 上读 `/proc/meminfo` 和 cgroup v2 一路往上的几层，读法是纯的、读文件的照传进来的函数；macOS 上问 sysctl，Windows 上问 `GlobalMemoryStatusEx` |
-| `crates/miyu-endpoint/src/sessions/room.rs`（施工 MEM-1） | 开会话之前照它看一眼，低于 5% 的不开（`protocol.md`「会话表」第 10 条） |
+| `crates/miyu-heap/src/room.rs`、`room/macos.rs`、`room/windows.rs`（施工 MEM-1，MEM-2 分开交） | 还剩多少可用内存：Linux 上读 `/proc/meminfo` 和 cgroup v2 一路往上的几层，读法是纯的、读文件的照传进来的函数；macOS 上问 sysctl，Windows 上问 `GlobalMemoryStatusEx` |
+| `crates/miyu-endpoint/src/sessions/pressure.rs`（施工 MEM-2） | 隔 10 秒、开会话时照它和 `usage::resident` 判紧不紧，紧的把闲着的会话卸出内存（`protocol.md`「会话表」第 10 条） |
 | `crates/miyu-core/src/memlog.rs` | 核心自己记账：什么时候采、一行的样子、采样的任务（施工 V-4） |
 | `crates/miyu-core/src/lib.rs` | 起来时最先调好（`core.md`「起来的先后」第 0 步） |
 | `crates/miyu-core/src/models.rs` | 读完模型目录 trim 一次 |
@@ -52,14 +52,14 @@
 4. **哪些平台记**：Linux（`/proc/self/status` 读得到的）、macOS（施工 V-4 补）。Windows 怎么量还没定（23「后续再定」），不起，记一条 `DEBUG memory samples unsupported`、不建文件。
 5. **开销**：见施工单 `V-4-核心自己记内存账.md`「量到的」。
 
-### 还剩多少内存（施工 MEM-1）
+### 还剩多少内存（施工 MEM-1，MEM-2 改）
 
-一直开新会话时，核心的内存约 1.75 MB 一个会话照直线涨，撞到上限被系统杀掉，所有会话一起没（2026-11-11 基准测试 M3）。核心开会话之前照这里看一眼（`protocol.md`「会话表」第 10 条：低于 5% 的拒 `low_memory`）。这里只管读，门槛在核心。
+一直开新会话时，核心的内存约 1.75 MB 一个会话照直线涨，撞到上限被系统杀掉，所有会话一起没（2026-11-11 基准测试 M3）。核心隔一阵、开会话时照这里看一眼，紧的把闲着的会话卸出内存（`protocol.md`「会话表」第 10 条，施工 MEM-2；MEM-1 原来低于 5% 拒开会话，2026-11-12 撤了）。这里只管读，判紧不紧在核心：整台机器紧的还要看核心自己占多少（`usage::resident`），cgroup 紧的不看，所以两份分开交。
 
-1. **对外的样子**：`room::room() -> Option<Room>`；`Room { available, total }`，字节，`total` 不是 0。`percent()` 往下取整的百分比；`below(p)` 照整数乘开比、正好等于的不算少；`mib()` 往下取整的 MiB。读不到的是没有，调的一方当作不知道。
-2. **Linux**：`/proc/meminfo` 的 `MemAvailable`、`MemTotal`（`kB`，少了哪一行、总量是 0 的不算）一份；`/proc/self/cgroup` 里 `0::<路径>` 那一行（只有 v1 的没有这一行，只看系统的）起，从这一层往上到根，每层 `/sys/fs/cgroup/<路径>/memory.max` 不是 `max` 的一份：可用的是上限减在用的（`memory.current`），在用的扣掉 `memory.stat` 的 `inactive_file`（回收得了的文件缓存：读过的日志都算在 cgroup 头上，不扣的话上限还远就当作满了），超过上限的是 0、扣多了的照上限。几份里照比例最低的那一份（`tightest`，一样低的取先来的）：上一层比自己那一层紧的，照上一层。一次读两个文件加每层三个，都在 `/proc`、`/sys` 里，不碰磁盘。读法照传进来的读文件函数（`linux_with`），测试喂假文件。
-3. **macOS**（Apple 芯片）：`kern.memorystatus_level`（内核给的可用百分比）乘 `hw.memsize`；哪一个问不出、百分比超过 100 的没有。
-4. **Windows**：`GlobalMemoryStatusEx` 的 `ullAvailPhys`、`ullTotalPhys`（`windows-sys` 的 `Win32_System_SystemInformation`）；问不出的没有。
+1. **对外的样子**：`room::room() -> Rooms`；`Rooms { system, cgroup }`，都是 `Option<Room>`：`system` 整台机器的，`cgroup` 核心所在 cgroup 有上限的几层里最紧的那一层（没有上限的、只有 v1 的、不是 Linux 的没有）。`Room { available, total }`，字节，`total` 不是 0。`percent()` 往下取整的百分比；`below(p)` 照整数乘开比、正好等于的不算少；`mib()` 往下取整的 MiB。读不到的是没有，调的一方当作不知道。
+2. **Linux**：`system` 是 `/proc/meminfo` 的 `MemAvailable`、`MemTotal`（`kB`，少了哪一行、总量是 0 的不算）；`cgroup` 从 `/proc/self/cgroup` 里 `0::<路径>` 那一行（只有 v1 的没有这一行，没有 `cgroup`）起，从这一层往上到根，每层 `/sys/fs/cgroup/<路径>/memory.max` 不是 `max` 的一份：可用的是上限减在用的（`memory.current`），在用的扣掉 `memory.stat` 的 `inactive_file`（回收得了的文件缓存：读过的日志都算在 cgroup 头上，不扣的话上限还远就当作满了），超过上限的是 0、扣多了的照上限。几层里照比例最低的那一份（`tightest`，一样低的取先来的）：上一层比自己那一层紧的，照上一层。一次读两个文件加每层三个，都在 `/proc`、`/sys` 里，不碰磁盘。读法照传进来的读文件函数（`linux_with`），测试喂假文件。
+3. **macOS**（Apple 芯片）：`system` 是 `kern.memorystatus_level`（内核给的可用百分比）乘 `hw.memsize`；哪一个问不出、百分比超过 100 的没有。没有 `cgroup`。
+4. **Windows**：`system` 是 `GlobalMemoryStatusEx` 的 `ullAvailPhys`、`ullTotalPhys`（`windows-sys` 的 `Win32_System_SystemInformation`）；问不出的没有。没有 `cgroup`。
 5. 别的平台没有。两处 `unsafe`（sysctl、`GlobalMemoryStatusEx`）照「怎么走」第 1 条单独放开、写明为什么安全。
 
 ### 守着它的
@@ -68,7 +68,7 @@
 |---|---|
 | `crates/miyu-heap/src/tests.rs` | glibc 上调得成；放掉一堆小块以后还得回去；别的平台都交回假；glibc 上有堆的统计、分出去的算在用的里（施工 V-4）；Linux 上 `tune` 以后透明大页关着（施工 YC-12） |
 | `crates/miyu-heap/src/usage/tests.rs`（施工 V-4） | 真机的 `smaps_rollup` 读成字节；不是它的读不出来；`VmRSS`；Linux 上量得到自己、有 PSS 这几样，macOS 上量得到自己、有 `footprint`、没有 Linux 那几样（施工 V-4 补，CI 的 macOS 上跑），Windows 没有 |
-| `crates/miyu-heap/src/room/tests.rs`（施工 MEM-1） | `meminfo` 读成字节，少了一行、总量是 0 的没有；只认 v2 那一行；一层是 `max`、读不懂的不算，上限减在用的、扣 `inactive_file`、超了的是 0；往上走取比例最紧的那一层，比系统紧的照 cgroup；什么都读不到的没有；百分比往下取整、总量 0 不除；正好 5% 不算低于；macOS 的算法；三个平台的真机上读得到、可用的不比总量多 |
+| `crates/miyu-heap/src/room/tests.rs`（施工 MEM-1，MEM-2 改） | `meminfo` 读成字节，少了一行、总量是 0 的没有；只认 v2 那一行；一层是 `max`、读不懂的不算，上限减在用的、扣 `inactive_file`、超了的是 0；往上走取比例最紧的那一层，系统的另交；没有上限的没有 `cgroup`；什么都读不到的两份都没有；百分比往下取整、总量 0 不除；正好 5% 不算低于；macOS 的算法；三个平台的真机上读得到整台机器的、可用的不比总量多，不是 Linux 的没有 `cgroup` |
 | `crates/miyu-core/src/memlog/tests.rs`、`crates/miyu-core/tests/memlog.rs`（施工 V-4） | 涨够了才算涨得快，落了的、没涨够的不算，不溢出；一行的格和先后，没有堆的不写 `heap`；真核心：起来记 `start`、到点记 `tick`、行里有 RSS、PSS、会话数、glibc 上有堆；安静下来时没涨够的不采、涨了 64 MiB 的记 `grew`，不安静下来不看（施工 V-6 下）；量不出来的平台不起、不写。`tests/memlog.rs` 自己一个测试程序：记的是整个进程，和别的测试并在一起，它们分配的也算进涨幅（V-6 下修） |
 | `crates/miyu-log/src/rotate/tests.rs` 的 `a_file_named_as_given_rotates_under_its_own_name`（施工 V-4） | 照原样的文件名换下成 `<文件名>.1`、只留一份 |
 | 量尺（`perf.md`） | 大会话没人订阅、闲够了退下以后核心的内存回落 |

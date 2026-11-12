@@ -38,7 +38,7 @@ mod opening;
 mod orphans;
 mod places;
 pub(crate) mod prefix;
-mod room;
+mod pressure;
 mod setup;
 pub(crate) mod state;
 
@@ -65,8 +65,8 @@ pub(crate) struct Sessions {
     due: Arc<idle::Due>,
     /// 正在答的顾问会话（施工 ADV-1，`sessions/advisor.rs`）：同一个顾问会话一次只答一个问题。
     answering: std::sync::Mutex<BTreeSet<SessionId>>,
-    /// 开会话之前看一眼还剩多少内存（施工 MEM-1，`sessions/room.rs`）。
-    gate: room::Gate,
+    /// 内存紧时把闲着的会话卸出内存（施工 MEM-2，`sessions/pressure.rs`）：怎么读、隔多久看一眼、开了会话叫一声。
+    pressure: pressure::Pressure,
 }
 
 #[derive(Debug, Default)]
@@ -174,8 +174,6 @@ impl Sessions {
                 untrusted,
             });
         }
-        // 重发的照上面交回原来那一个；真要造新的，先看内存够不够（施工 MEM-1）。
-        self.room().await?;
         let mut setup = Setup::resolve(
             core,
             (id.clone(), command.clone()),
@@ -205,6 +203,8 @@ impl Sessions {
         if open.created.len() > REMEMBERED {
             open.created.pop_front();
         }
+        // 内存紧的话先腾地方（施工 MEM-2）：只叫一声，不等、不拒。
+        self.opened();
         self.sweep(core);
         Ok(Created {
             id,
@@ -268,7 +268,6 @@ impl Sessions {
         if !open.running.contains_key(&child.lineage.parent) {
             return Err("the parent session is gone".to_string());
         }
-        self.room_for_child().await?;
         let id = new_id(now());
         let parent = By::Session(Session {
             id: child.lineage.parent.clone(),
@@ -346,6 +345,7 @@ impl Sessions {
             dirs: child.dirs,
         };
         open.running.insert(id.clone(), running);
+        self.opened();
         Ok(id)
     }
 

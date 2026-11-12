@@ -7,6 +7,8 @@
 //!
 //! 封存了的会话退得下了自己报一声（施工 V-51，`SessionPort::retirable`）：任务当场醒来，只问报了的那几个，问法同上（没有回合、
 //! 没人订阅、没有别的把手的才问，actor 照账答）；隔一阵问一遍的照旧按原来的点。
+//!
+//! 内存紧时（施工 MEM-2，`sessions/pressure.rs`）照同一个问法当场问一遍，只是不等闲够：闲着就退。
 
 use std::collections::BTreeSet;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -43,7 +45,7 @@ impl Sessions {
             sweeping: AtomicBool::new(false),
             due: Arc::default(),
             answering: std::sync::Mutex::default(),
-            gate: super::room::Gate::default(),
+            pressure: super::pressure::Pressure::default(),
         }
     }
 
@@ -62,6 +64,8 @@ impl Sessions {
         if self.sweeping.swap(true, Ordering::AcqRel) {
             return;
         }
+        // 内存紧时卸闲着的会话（施工 MEM-2）：和看空闲的一起起。
+        self.watch_pressure(core);
         let (core, idle, due) = (Arc::downgrade(core), self.idle, Arc::clone(&self.due));
         tokio::spawn(async move {
             let mut at = Instant::now() + idle;
@@ -84,20 +88,29 @@ impl Sessions {
 
     /// 问一遍：退下了的、停了的拿掉。交回下一次隔多久再问。
     async fn retire_idle(&self) -> Duration {
+        self.retire_all(self.idle).await.next
+    }
+
+    /// 拿着表的锁问表里每一个闲够 `idle` 了没有（[`ask`]）：退下了的、停了的拿掉。内存紧时（施工 MEM-2）照 0 问：闲着就退。
+    pub(super) async fn retire_all(&self, idle: Duration) -> Swept {
         let mut open = self.open.lock().await;
         let mut next = self.idle;
         let mut gone = Vec::new();
         for (id, running) in &open.running {
-            match ask(&running.handle, self.idle).await {
+            match ask(&running.handle, idle).await {
                 Some(Ok(Retire::Retired) | Err(_)) => gone.push(id.clone()),
                 Some(Ok(Retire::Later(left))) => next = next.min(left),
                 Some(Ok(Retire::Kept)) | None => {}
             }
         }
-        for id in gone {
-            open.running.remove(&id);
+        for id in &gone {
+            open.running.remove(id);
         }
-        next
+        Swept {
+            next,
+            gone: gone.len(),
+            left: open.running.len(),
+        }
     }
 
     /// 只问报了退得下的那几个（施工 V-51）：退下了的、停了的拿掉；不在表里的（已经退下、停了）不管。没问成的（有回合、有人
@@ -129,6 +142,16 @@ impl Sessions {
     }
 }
 
+/// 问了一遍以后（[`Sessions::retire_all`]）。
+pub(super) struct Swept {
+    /// 下一次隔多久再问：答了还差多久的取最少的，都没得问的是会话表的闲置时长。
+    pub(super) next: Duration,
+    /// 拿掉了几个（退下了的、已经停了的）。
+    pub(super) gone: usize,
+    /// 表里还剩几个。
+    pub(super) left: usize,
+}
+
 /// 报了退得下的会话（施工 V-51）：哪几个，和叫醒看空闲的任务的那一声（醒之前报了几次都只醒一次，醒着的时候报的留到下一次）。
 #[derive(Debug, Default)]
 pub(super) struct Due {
@@ -148,7 +171,7 @@ impl Core {
     /// 同一份家底，会话闲 `idle` 退下（施工 V-2 再补）：测试里设短的，不用真等三分钟。
     #[must_use]
     pub fn with_session_idle(mut self, idle: Duration) -> Core {
-        // 只换时长：别的（测试换上的内存读法，施工 MEM-1）照留。
+        // 只换时长：别的（测试换上的内存读法，施工 MEM-2）照留。
         self.sessions.idle = idle;
         self
     }

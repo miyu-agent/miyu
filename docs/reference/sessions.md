@@ -99,7 +99,6 @@
 | `unknown_preset`、`preset_invalid` | 同上，预设的 |
 | `unknown_model` | `model`、`vision` 解析不出：写法不对、没有这家供应商、没有这个池 |
 | `dir_too_wide` | `dirs` 里有一条太宽（家目录、根目录、包含数据目录的） |
-| `low_memory` | 可用内存不到 5%，不造新会话（`data.available_mib`、`data.available_percent`）；重发的照旧交回。见 [出错](errors.md) |
 | `internal_error`（`-32603`） | 核心造不出来 |
 
 ## `session.list`
@@ -444,7 +443,7 @@
 
 **回应**：`{"session": <子会话编号>, "upto": <分叉点的序号>}`。父会话正在跑一轮的，分叉点是这一轮开始之前。
 
-**出错**：`bad_params`：父会话是子代理、分叉出来的；`seal_after` 不是 1 起的整数。`low_memory`：可用内存不到 5%，不分叉。
+**出错**：`bad_params`：父会话是子代理、分叉出来的；`seal_after` 不是 1 起的整数。
 
 ## `session.delete`
 

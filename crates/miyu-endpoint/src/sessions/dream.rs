@@ -109,6 +109,7 @@ impl Sessions {
             dirs: Vec::new(),
         };
         open.running.insert(id.clone(), running);
+        self.opened();
         Ok(id)
     }
 }

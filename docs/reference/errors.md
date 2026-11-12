@@ -40,7 +40,6 @@
 | `session_broken` | 会话载入不了：日志坏了、读不懂 | |
 | `session_read_only` | 会话日志中间坏了一行：坏行以前的用 `view.page` 照样看得到，会话载入不了、不能接着聊（说话、订阅都拒），要继续新开一个会话。日志不改、不修 | `segment`（哪一段，只是文件名）、`line`（这一段的第几行） |
 | `session_unavailable` | 会话这一刻读不了：读日志时读写出错（权限、打开文件数用光、磁盘出错），日志没坏，过一会儿再试 | |
-| `low_memory` | 这台机器（或者核心所在的 cgroup）可用内存不到 5%：不新造会话、不把没开着的会话打开（`session.create`、`session.fork`，说话、订阅这些要载入的）；已经开着的照常。腾出内存后再试 | `available_mib`（还剩多少 MiB）、`available_percent`（占总量的百分之几），都往下取整 |
 | `export_exists` | 导出写的那个文件已经有了，不覆盖 | |
 | `export_in_data_root` | 导出不往数据目录里写 | |
 | `export_unwritable` | 导出的目录不在、写不进 | |

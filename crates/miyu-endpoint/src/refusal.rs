@@ -16,7 +16,6 @@ mod package;
 mod prefs;
 mod project;
 mod reused;
-mod room;
 mod schedule;
 mod shell;
 mod unread;
