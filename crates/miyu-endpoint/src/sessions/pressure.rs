@@ -223,7 +223,7 @@ impl Sessions {
     }
 
     /// 看一眼：表里有会话、内存紧的，闲着的当场退下（[`Sessions::retire_all`] 照 [`Retiring::Tight`] 问），记一行 `INFO memory
-    /// tight`：卸了几个、问了几个、没卸的照原因各几个、表里还剩几个、卸之前读到还剩多少、那一份的门槛。`said` 是这一段紧着
+    /// tight`：卸了几个、问了几个、没卸的照原因各几个、表里还剩几个、卸之前读到还剩多少、那一份的门槛、卸这一批花了多久。`said` 是这一段紧着
     /// 以来上次记的时刻，不紧的、表空着的放下：卸了的、一段紧刚开始的当场记，一个都没卸的隔 [`REPEAT`] 才再记。表空着的不读。
     /// 交回隔多久再看（[`Pressure::wait`]）；表里没有会话了的交回没有。
     async fn relieve(&self, said: &mut Option<Instant>) -> Option<Duration> {
@@ -243,7 +243,7 @@ impl Sessions {
             miyu_session::trim_soon();
         }
         if swept.gone > 0 || said.is_none_or(|at| at.elapsed() >= REPEAT) {
-            tracing::info!(target: "miyu::endpoint", retired = swept.gone, asked = swept.asked, held = %swept.held, loaded = swept.left, available_mib = room.mib(), percent = room.percent(), threshold_mib = threshold(room.total) / MIB, "memory tight");
+            tracing::info!(target: "miyu::endpoint", retired = swept.gone, asked = swept.asked, held = %swept.held, loaded = swept.left, available_mib = room.mib(), percent = room.percent(), threshold_mib = threshold(room.total) / MIB, took_ms = u64::try_from(swept.took.as_millis()).unwrap_or(u64::MAX), "memory tight");
             *said = Some(Instant::now());
         }
         (swept.left > 0).then_some(wait)

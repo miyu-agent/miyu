@@ -75,4 +75,4 @@
 | `crates/miyu-core/src/memlog/tests.rs`、`crates/miyu-core/tests/memlog.rs`（施工 V-4） | 涨够了才算涨得快，落了的、没涨够的不算，不溢出；一行的格和先后，没有堆的不写 `heap`；真核心：起来记 `start`、到点记 `tick`、行里有 RSS、PSS、会话数、glibc 上有堆；安静下来时没涨够的不采、涨了 64 MiB 的记 `grew`，不安静下来不看（施工 V-6 下）；量不出来的平台不起、不写。`tests/memlog.rs` 自己一个测试程序：记的是整个进程，和别的测试并在一起，它们分配的也算进涨幅（V-6 下修） |
 | `crates/miyu-log/src/rotate/tests.rs` 的 `a_file_named_as_given_rotates_under_its_own_name`（施工 V-4） | 照原样的文件名换下成 `<文件名>.1`、只留一份 |
 | 量尺（`perf.md`） | 大会话没人订阅、闲够了退下以后核心的内存回落 |
-| 量尺 `crates/miyu-endpoint/tests/memory_pressure_rss.rs`（施工 MEM-3，`#[ignore]`，自己一个测试程序） | 照核心调好分配器、多线程的运行时，载入 N 个会话（`MIYU_RSS_SESSIONS`，默认 1000）、判成紧全卸：卸那一批拿着表的锁多久，卸完 1、2、5、12 秒和再 trim 一次的常驻、匿名、堆里在用的和空着的、线程数 |
+| 量尺 `crates/miyu-endpoint/tests/memory_pressure_rss.rs`（施工 MEM-3，`#[ignore]`，自己一个测试程序） | 照核心调好分配器、多线程的运行时，载入 N 个会话（`MIYU_RSS_SESSIONS`，默认 1000）、判成紧全卸：卸那一批花了多久、卸的期间另一个连接每 10 毫秒列一次会话（`session.list`）最久等了多久（施工 MEM-5），卸完 1、2、5、12 秒和再 trim 一次的常驻、匿名、堆里在用的和空着的、线程数 |

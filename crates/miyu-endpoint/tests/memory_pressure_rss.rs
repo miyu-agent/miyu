@@ -1,6 +1,10 @@
 //! 量尺（施工 MEM-3）：内存紧时卸掉一批闲着的会话，核心的常驻降多少、卸那一批花多久。量的是整个进程的内存，和别的测试并在
 //! 一起会把它们分配的也算进来，所以单独一个测试程序（`AGENTS.md`「测试」）。标 `#[ignore]`：只打印数，不断言多少。
 //!
+//! 卸的期间另一个连接每 10 毫秒列一次会话（`session.list`，要拿会话表的锁），记它最久等了多久（施工 MEM-5）。挤核的量法：
+//! 整个测试套 `taskset -c 0`，同一个核上另起烧 CPU 的进程。运行队列挤满的量法：`MIYU_RSS_CROWD` 个任务在卸的期间轮流占着
+//! 工作线程（每个占 1 毫秒再排回队尾，像一批回合同时在跑）。
+//!
 //! 照核心的样子先调好分配器（`miyu_heap::tune`，`miyu-core` 起来时最先调），运行时是多线程的（4 个工作线程）。
 //!
 //! 跑法：`cargo test -p miyu-endpoint --test memory_pressure_rss -- --ignored --nocapture`；会话数照 `MIYU_RSS_SESSIONS`
@@ -8,6 +12,7 @@
 
 mod support;
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
@@ -60,10 +65,7 @@ fn retiring_a_batch_gives_memory_back() {
 }
 
 async fn retire_a_batch() {
-    let count: usize = std::env::var("MIYU_RSS_SESSIONS")
-        .ok()
-        .and_then(|count| count.parse().ok())
-        .unwrap_or(1000);
+    let count = env_count("MIYU_RSS_SESSIONS", 1000);
     let home = Home::new();
     let tight = Arc::new(Mutex::new(false));
     let reading = Arc::clone(&tight);
@@ -109,12 +111,66 @@ async fn retire_a_batch() {
         .await
         .expect("还得了");
     let loaded = measure(&format!("载入着 {} 个", core.loaded().await));
+    let mut lister = Client::connect(core.clone());
+    lister.hello().await;
+    // 不卸的时候列一次会话多久：卸的期间等得比它久的才是等锁、等堆。
+    let mut quiet = Duration::ZERO;
+    for n in 0..5 {
+        let asked = Instant::now();
+        lister
+            .call(
+                &format!("q{n}"),
+                "session.list",
+                serde_json::json!({"limit": 1}),
+            )
+            .await;
+        quiet = quiet.max(asked.elapsed());
+    }
+    println!("不卸的时候列一次会话最久 {quiet:?}");
+    let done = Arc::new(AtomicBool::new(false));
+    let listing = tokio::spawn({
+        let done = Arc::clone(&done);
+        async move {
+            let (mut longest, mut listed) = (Duration::ZERO, 0_usize);
+            while !done.load(Ordering::Acquire) {
+                let asked = Instant::now();
+                let reply = lister
+                    .call(
+                        &format!("l{listed}"),
+                        "session.list",
+                        serde_json::json!({"limit": 1}),
+                    )
+                    .await;
+                assert!(reply.get("result").is_some(), "{reply}");
+                longest = longest.max(asked.elapsed());
+                listed += 1;
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+            (longest, listed)
+        }
+    });
+    let crowd: Vec<_> = (0..env_count("MIYU_RSS_CROWD", 0))
+        .map(|_| {
+            tokio::spawn(async {
+                loop {
+                    std::thread::sleep(Duration::from_millis(1));
+                    queue_again().await;
+                }
+            })
+        })
+        .collect();
     let started = Instant::now();
     *tight.lock().unwrap_or_else(PoisonError::into_inner) = true;
     while core.loaded().await > 0 {
         tokio::time::sleep(Duration::from_millis(5)).await;
     }
-    println!("卸完 {count} 个用了 {:?}", started.elapsed());
+    let took = started.elapsed();
+    for hog in crowd {
+        hog.abort();
+    }
+    done.store(true, Ordering::Release);
+    let (longest, listed) = listing.await.expect("列得完");
+    println!("卸完 {count} 个用了 {took:?}；期间列了 {listed} 次会话，最久等了 {longest:?}");
     for after in [1, 2, 5, 12] {
         let since = started.elapsed();
         tokio::time::sleep(Duration::from_secs(after).saturating_sub(since)).await;
@@ -132,4 +188,27 @@ async fn retire_a_batch() {
         retired.saturating_sub(empty) / MIB,
         trimmed.saturating_sub(empty) / MIB,
     );
+}
+
+/// 环境变量 `name` 写的数，没写、写错的是 `default`。
+fn env_count(name: &str, default: usize) -> usize {
+    std::env::var(name)
+        .ok()
+        .and_then(|count| count.parse().ok())
+        .unwrap_or(default)
+}
+
+/// 让出线程、排回运行队列的末尾（`tokio::task::yield_now` 让出的要等队列空了才再跑，占不住别人的队）。
+async fn queue_again() {
+    let mut queued = false;
+    std::future::poll_fn(|cx| {
+        if queued {
+            std::task::Poll::Ready(())
+        } else {
+            queued = true;
+            cx.waker().wake_by_ref();
+            std::task::Poll::Pending
+        }
+    })
+    .await;
 }

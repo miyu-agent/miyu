@@ -280,3 +280,70 @@ async fn released_sessions_with_memory_retire_when_tight() {
 fn remembering() -> serde_json::Value {
     serde_json::json!({"cwd": "~", "persona": "engineer", "preset": "full"})
 }
+
+/// 卸一大批的时候别的请求插得进来（施工 MEM-5）：200 个闲着的会话判成紧全卸，运行时被几个任务轮流占着（测试的运行时只有
+/// 一个线程，每个任务占 1 毫秒再让出来，像 bm 复测里 939 个回合同时在跑：问一个会话要排一圈队）。卸的期间每 10 毫秒拿一次
+/// 表的锁（`Core::loaded`），最久等不过 1 秒。改之前卸完整批才放锁（一个个问，一个约两圈队），要等好几秒。
+#[tokio::test]
+async fn others_get_the_table_while_a_large_batch_retires() {
+    const MANY: usize = 200;
+    let home = Home::new();
+    let probe = Probe::new(PLENTY, None, SMALL);
+    let core = core(&home, &Script::new([]), &probe, QUICK);
+    let mut client = Client::connect(core.clone());
+    client.hello().await;
+    for n in 0..MANY {
+        client.create(&format!("c{n}"), "~").await;
+    }
+    drop(client);
+    assert_eq!(core.loaded().await, MANY);
+    let crowd: Vec<_> = (0..8)
+        .map(|_| {
+            tokio::spawn(async {
+                loop {
+                    std::thread::sleep(Duration::from_millis(1));
+                    queue_again().await;
+                }
+            })
+        })
+        .collect();
+    probe.set(SYSTEM_LOW, None, BIG);
+    let (started, mut longest) = (std::time::Instant::now(), Duration::ZERO);
+    loop {
+        let asked = std::time::Instant::now();
+        let loaded = core.loaded().await;
+        longest = longest.max(asked.elapsed());
+        if loaded == 0 {
+            break;
+        }
+        assert!(
+            started.elapsed() < Duration::from_secs(60),
+            "六十秒内没卸完：还载入着 {loaded} 个"
+        );
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    for hog in crowd {
+        hog.abort();
+    }
+    assert!(
+        longest <= Duration::from_secs(1),
+        "卸的时候拿表的锁最久等了 {longest:?}（卸完用了 {:?}）",
+        started.elapsed()
+    );
+}
+
+/// 让出线程、排回运行队列的末尾（像被 I/O 叫醒的回合）。`tokio::task::yield_now` 不行：它让出的任务要等队列空了、查过一遍
+/// I/O 才再跑，占不住别人的队。
+async fn queue_again() {
+    let mut queued = false;
+    std::future::poll_fn(|cx| {
+        if queued {
+            std::task::Poll::Ready(())
+        } else {
+            queued = true;
+            cx.waker().wake_by_ref();
+            std::task::Poll::Pending
+        }
+    })
+    .await;
+}

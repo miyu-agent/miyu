@@ -289,3 +289,27 @@ async fn a_sealed_branch_with_memory_does_not_wait_for_the_alarm() {
     assert_eq!(settled(&branch).await, Retire::Retired, "不等闲 {LONG:?}");
     assert!(server.received().is_empty(), "一轮不够抽");
 }
+
+/// 一批一起问（施工 MEM-5）：答的照交进去的先后，一个一份；闲着的退下，有头看着的答还有事，已经停了的是 `Stopped`。
+#[tokio::test]
+async fn a_batch_is_answered_in_order() {
+    let home = Home::new();
+    let quiet = home.create(&script([Play::Says("在。")])).await;
+    talk(&quiet, "m1", "在吗").await;
+    assert!(matches!(settled(&quiet).await, Retire::Later(_)));
+    let watched = home.create(&script([Play::Says("在。")])).await;
+    talk(&watched, "m2", "在吗").await;
+    assert!(matches!(settled(&watched).await, Retire::Later(_)));
+    let _pushes = watch(&watched).await;
+    let gone = home.create(&script([])).await;
+    assert_eq!(gone.retire(Retiring::Tight).await, Ok(Retire::Retired));
+    let answers = Handle::retire_each(&[&quiet, &watched, &gone], Retiring::Tight).await;
+    assert_eq!(
+        answers,
+        vec![
+            Ok(Retire::Retired),
+            Ok(Retire::Kept(Hold::Watched)),
+            Err(Stopped)
+        ]
+    );
+}

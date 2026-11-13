@@ -11,6 +11,9 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
+use tokio::sync::oneshot;
+use tokio::time::Instant;
+
 use miyu_kernel::id::SessionId;
 
 use super::{Handle, Message, Stopped};
@@ -106,7 +109,8 @@ impl Hold {
     }
 }
 
-/// 最多等 actor 答多久：它手里那一封办得慢的，这一次当它还有事，会话表不一直拿着锁等。
+/// 最多等 actor 答多久：它手里那一封办得慢的，这一次当它还有事，会话表不一直拿着锁等。一批一起问的（[`Handle::retire_each`]）
+/// 整批共用这一个时限。
 const ANSWER_WAIT: Duration = Duration::from_secs(1);
 
 impl Handle {
@@ -123,17 +127,46 @@ impl Handle {
     ///
     /// 会话已经停了。
     pub async fn retire(&self, ask: impl Into<Retiring>) -> Result<Retire, Stopped> {
-        let (reply, mut answer) = tokio::sync::oneshot::channel();
-        self.send(Message::Retire {
-            ask: ask.into(),
-            reply,
-        })?;
-        match tokio::time::timeout(ANSWER_WAIT, &mut answer).await {
-            Ok(answered) => answered.map_err(|_| Stopped),
-            Err(_) => {
-                answer.close();
-                Ok(answer.try_recv().unwrap_or(Retire::Kept(Hold::Slow)))
-            }
+        let asked = self.ask_retire(ask.into());
+        answered(asked, Instant::now() + ANSWER_WAIT).await
+    }
+
+    /// 一批会话一起问（施工 MEM-5）：先把问话都送进各自的收件箱，再一个个收回答，一批里的 actor 同时答，不是问一个等一个；
+    /// 整批共用一个时限（1 秒），到了还没答的当 [`Hold::Slow`]（同 [`Handle::retire`]）。交回的照 `handles` 的先后，一个一份：
+    /// 已经停了的是 `Err(Stopped)`。会话表拿着表的锁一批批问：机器被挤满时一个个问，每问一个都要排一圈队（施工单
+    /// `MEM-5-卸会话不长拿锁.md`）。
+    pub async fn retire_each(handles: &[&Handle], ask: Retiring) -> Vec<Result<Retire, Stopped>> {
+        let asked: Vec<_> = handles
+            .iter()
+            .map(|handle| handle.ask_retire(ask))
+            .collect();
+        let until = Instant::now() + ANSWER_WAIT;
+        let mut answers = Vec::with_capacity(asked.len());
+        for asked in asked {
+            answers.push(answered(asked, until).await);
+        }
+        answers
+    }
+
+    /// 把问话送进收件箱，交回收回答的那一头。
+    fn ask_retire(&self, ask: Retiring) -> Result<oneshot::Receiver<Retire>, Stopped> {
+        let (reply, answer) = oneshot::channel();
+        self.send(Message::Retire { ask, reply }).map(|()| answer)
+    }
+}
+
+/// 收一个回答，最多等到 `until`：到了还没答的叫它别答了（actor 那头交不出回答就不退），当 [`Hold::Slow`]；那一刻已经答了的
+/// 照答的算。先看回答、再看时限：时限已过的，已经答了的照样收得到。
+async fn answered(
+    asked: Result<oneshot::Receiver<Retire>, Stopped>,
+    until: Instant,
+) -> Result<Retire, Stopped> {
+    let mut answer = asked?;
+    match tokio::time::timeout_at(until, &mut answer).await {
+        Ok(answered) => answered.map_err(|_| Stopped),
+        Err(_) => {
+            answer.close();
+            Ok(answer.try_recv().unwrap_or(Retire::Kept(Hold::Slow)))
         }
     }
 }
