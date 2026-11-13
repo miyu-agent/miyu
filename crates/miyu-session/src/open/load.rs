@@ -60,8 +60,8 @@ pub async fn load(setup: Load<'_>) -> Result<Handle, LoadError> {
 /// 同 [`load`]。
 pub async fn load_placed(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
     let loaded = open(setup).await?;
-    // 载入读、解的整份日志只留最近一次压缩以后的（23 F3，施工 V-2 再补）：别的放掉了，还给系统，不等会话退下。
-    drop(tokio::task::spawn_blocking(miyu_heap::trim));
+    // 载入读、解的整份日志只留最近一次压缩以后的（23 F3，施工 V-2 再补）：别的放掉了，还给系统，不等会话退下；攒一阵还一次（MEM-3）。
+    crate::heap::trim_soon();
     Ok(loaded)
 }
 

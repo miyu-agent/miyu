@@ -14,7 +14,7 @@ use miyu_kernel::session::{Command, GoalChange};
 use miyu_kernel::time::Timestamp;
 use miyu_kernel::tool::Access;
 use miyu_session::testkit::{Play, Script};
-use miyu_session::{Goal, GoalState, Handle, Retire};
+use miyu_session::{Goal, GoalState, Handle, Hold, Retire};
 use miyu_tool::testkit::{Act, Fake, Held};
 use miyu_tool::{Catalog, Exit, Tool};
 
@@ -120,7 +120,7 @@ async fn rounds_run_while_idle_and_wait_after_one_without_tools() {
     );
     assert_eq!(
         handle.retire(Duration::ZERO).await,
-        Ok(Retire::Kept),
+        Ok(Retire::Kept(Hold::Goal)),
         "跑着的不闲够了退下"
     );
     // 人说一句：不等了，她回完以后接着开续轮，这一轮又没调工具，又等。

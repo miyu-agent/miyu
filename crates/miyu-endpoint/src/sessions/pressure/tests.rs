@@ -120,6 +120,6 @@ async fn an_empty_table_is_not_read() {
         counted.fetch_add(1, Ordering::SeqCst);
         rooms(Some(SYSTEM_LOW), None)
     });
-    assert!(!sessions.relieve().await, "表空着");
+    assert!(!sessions.relieve(&mut None).await, "表空着");
     assert_eq!(reads.load(Ordering::SeqCst), 0, "空着的不读");
 }

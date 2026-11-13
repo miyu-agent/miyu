@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use miyu_endpoint::Core;
 use miyu_heap::room::{Room, Rooms};
-use miyu_session::testkit::{Play, Script};
+use miyu_session::testkit::{Once, Play, Script};
 use miyu_tool::Catalog;
 
 use crate::support::*;
@@ -207,4 +207,53 @@ async fn opening_a_session_looks_at_once() {
     client.create("c2", "~").await;
     until_loaded(&core, 0).await;
     assert_eq!(home.root.sessions().expect("列得出").len(), 2, "卸的不是删");
+}
+
+/// bm 复测的样子（施工 MEM-3）：开着记忆的会话一个个订阅、说一轮、断开，每一个都上着 30 分钟的抽取闹钟。判成紧以后都卸掉，
+/// 有回合在跑的、还订阅着的留着；卸了的再说话照常载入回来。改之前闹钟挡着，一个都卸不动。
+#[tokio::test]
+async fn released_sessions_with_memory_retire_when_tight() {
+    let home = Home::new();
+    let probe = Probe::new(PLENTY, None, SMALL);
+    let mut plays = vec![Play::Says("好。"); 4];
+    plays.push(Play::Holds);
+    plays.push(Play::Says("又好。"));
+    let script = Script::new(plays)
+        .titles(vec![Play::Says("测试"); 6])
+        .once(Vec::<Once>::new());
+    let core = core(&home, &script, &probe, QUICK);
+    let mut released = Vec::new();
+    for n in 0..3 {
+        let mut client = Client::connect(core.clone());
+        client.hello().await;
+        let session = client.create_with(&format!("c{n}"), remembering()).await;
+        client.subscribe(&format!("w{n}"), &session).await;
+        client.say(&format!("s{n}"), &session, "你好").await;
+        home.until_turns(&session, 1).await;
+        drop(client);
+        released.push(session);
+    }
+    let mut watching = Client::connect(core.clone());
+    watching.hello().await;
+    let watched = watching.create_with("c3", remembering()).await;
+    watching.subscribe("w3", &watched).await;
+    watching.say("s3", &watched, "你好").await;
+    home.until_turns(&watched, 1).await;
+    let busy = watching.create_with("c4", remembering()).await;
+    let held = watching.say("s4", &busy, "慢慢来").await;
+    assert!(held.get("result").is_some(), "{held}");
+    probe.until_looked(2).await;
+    assert_eq!(core.loaded().await, 5, "宽裕的不卸");
+    probe.set(SYSTEM_LOW, None, BIG);
+    until_loaded(&core, 2).await;
+    probe.until_looked(3).await;
+    assert_eq!(core.loaded().await, 2, "有回合的、还订阅着的不动");
+    let said = watching.say("s5", &released[0], "还在吗").await;
+    assert!(said.get("error").is_none(), "{said}");
+    home.until_turns(&released[0], 2).await;
+}
+
+/// 开着记忆的会话：工程师人格、全套预设（剧本有一次性入口，核心交得出抽取要的几样）。
+fn remembering() -> serde_json::Value {
+    serde_json::json!({"cwd": "~", "persona": "engineer", "preset": "full"})
 }

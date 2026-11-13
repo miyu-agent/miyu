@@ -76,6 +76,12 @@ impl Extractor {
         state.armed || state.running || state.forcing
     }
 
+    /// 有一次在路上、一次不等闲的在等着（不算还没响的闹钟）：内存紧时会话照它不退下（施工 MEM-3）。
+    pub(crate) fn working(&self) -> bool {
+        let state = self.state();
+        state.running || state.forcing
+    }
+
     fn marks(&self) -> std::sync::MutexGuard<'_, Marks> {
         self.marks.lock().unwrap_or_else(PoisonError::into_inner)
     }

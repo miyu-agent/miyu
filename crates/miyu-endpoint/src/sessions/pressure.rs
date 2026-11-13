@@ -1,7 +1,9 @@
 //! 内存紧时把闲着的会话卸出内存（施工 MEM-2，`docs/blueprint/protocol.md`「会话表」第 10 条）：隔 [`EVERY`] 看一眼还剩多少
 //! 内存（`miyu_heap::room`），开会话、载入会话时也叫它当场看一眼；紧的（[`tight`]），表里闲着的会话当场退下，不等闲够
-//! （退下照「会话表」第 9 条的问法：有回合在跑、有人订阅、有别的把手的不问，问了 actor 照自己的账答）。日志都在盘上，
-//! 下次用到照常载入。不拒开会话：机器卡死的时候人也得开得了会话救场。
+//! （退下照「会话表」第 9 条的问法：有回合在跑、有人订阅、有别的把手的不问，问了 actor 照自己的账答；记忆抽取的闹钟上着、
+//! 还没响的不算还有事，施工 MEM-3）。日志都在盘上，下次用到照常载入。不拒开会话：机器卡死的时候人也得开得了会话救场。
+//!
+//! 每次判成紧记一行（施工 MEM-3）：卸了几个、问了几个、没卸的照原因各几个；同一段紧着又没卸掉的，至少隔 [`REPEAT`] 才再记。
 //!
 //! 为什么是隔一阵看、不等系统通知：Linux 上的 PSI、cgroup 的 `memory.events` 报的是「卡了多久」「撞没撞 `memory.high`」，
 //! 不是这里要的「剩不到 5%、核心自己是大头」，醒了也还得读一遍数；macOS、Windows 各有各的通知，三套接下来都只是换个时机
@@ -13,8 +15,11 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::sync::Notify;
+use tokio::time::Instant;
 
 use miyu_heap::room::{Room, Rooms};
+
+use miyu_session::Retiring;
 
 use super::Sessions;
 use crate::Core;
@@ -32,6 +37,10 @@ const EVERY: Duration = Duration::from_secs(10);
 
 /// 两次看之间至少隔多久：1 秒。一阵开几百个会话时叫的那几百声并成一次，读数一秒里变不了多少。
 const GAP: Duration = Duration::from_secs(1);
+
+/// 同一段紧期间（中间一直判成紧），一个都没卸掉的那一行至少隔多久再记：一分钟（施工 MEM-3）。卸了会话的、一段紧刚开始的
+/// 当场记；隔 10 秒看一次，不限的话一直紧着、没得卸的时候每 10 秒刷一行一样的。
+const REPEAT: Duration = Duration::from_secs(60);
 
 /// 怎么读还剩多少：出厂是 [`miyu_heap::room::room`]。
 type ReadRooms = Arc<dyn Fn() -> Rooms + Send + Sync>;
@@ -122,7 +131,7 @@ impl Sessions {
         let (core, rung) = (Arc::downgrade(core), Arc::clone(&self.pressure.rung));
         let (every, gap, idle) = (self.pressure.every, self.pressure.gap, self.idle);
         tokio::spawn(async move {
-            let mut loaded = true;
+            let (mut loaded, mut said) = (true, None);
             loop {
                 let wait = if loaded { every } else { idle };
                 tokio::select! {
@@ -132,25 +141,33 @@ impl Sessions {
                 let Some(core) = core.upgrade() else {
                     return;
                 };
-                loaded = core.sessions.relieve().await;
+                loaded = core.sessions.relieve(&mut said).await;
                 drop(core);
                 tokio::time::sleep(gap).await;
             }
         });
     }
 
-    /// 看一眼：表里有会话、内存紧的，闲着的当场退下（[`Sessions::retire_all`] 照 0 问），卸了的记一行 `INFO`（卸了几个、表里
-    /// 还剩几个、卸之前读到还剩多少）。表空着的不读。交回表里还有没有会话。
-    async fn relieve(&self) -> bool {
+    /// 看一眼：表里有会话、内存紧的，闲着的当场退下（[`Sessions::retire_all`] 照 [`Retiring::Tight`] 问），记一行 `INFO memory
+    /// tight`：卸了几个、问了几个、没卸的照原因各几个、表里还剩几个、卸之前读到还剩多少。`said` 是这一段紧着以来上次记的时刻，
+    /// 不紧的、表空着的放下：卸了的、一段紧刚开始的当场记，一个都没卸的隔 [`REPEAT`] 才再记。表空着的不读。交回表里还有没有会话。
+    async fn relieve(&self, said: &mut Option<Instant>) -> bool {
         if self.open.lock().await.running.is_empty() {
+            *said = None;
             return false;
         }
         let Some(room) = self.pressure.tight().await else {
+            *said = None;
             return true;
         };
-        let swept = self.retire_all(Duration::ZERO).await;
+        let swept = self.retire_all(Retiring::Tight).await;
         if swept.gone > 0 {
-            tracing::info!(target: "miyu::endpoint", retired = swept.gone, loaded = swept.left, available_mib = room.mib(), percent = room.percent(), "memory tight, idle sessions retired");
+            // 表里拿掉的那几份（把手、表里记的）是会话退下以后才放的：卸完这一批再攒一次还给系统（施工 MEM-3）。
+            miyu_session::trim_soon();
+        }
+        if swept.gone > 0 || said.is_none_or(|at| at.elapsed() >= REPEAT) {
+            tracing::info!(target: "miyu::endpoint", retired = swept.gone, asked = swept.asked, held = %swept.held, loaded = swept.left, available_mib = room.mib(), percent = room.percent(), "memory tight");
+            *said = Some(Instant::now());
         }
         swept.left > 0
     }

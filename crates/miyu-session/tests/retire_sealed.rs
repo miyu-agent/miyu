@@ -11,7 +11,7 @@ use miyu_http::testkit::{Piece, Reply, Server};
 use miyu_kernel::event::Body;
 use miyu_kernel::id::{CommandId, SessionId};
 use miyu_session::testkit::{Play, Script};
-use miyu_session::{Fork, Handle, Retire, SessionPort, Stopped, new_id};
+use miyu_session::{Fork, Handle, Hold, Retire, SessionPort, Stopped, new_id};
 use tokio::sync::Barrier;
 
 use crate::support::extracting::{mark, organizer_after, stream};
@@ -199,7 +199,11 @@ async fn a_lane_extracting_rings_once_the_extraction_is_done() {
         }
     })
     .await;
-    assert_eq!(lane.retire(LONG).await, Ok(Retire::Kept), "抽取在路上");
+    assert_eq!(
+        lane.retire(LONG).await,
+        Ok(Retire::Kept(Hold::Memory)),
+        "抽取在路上"
+    );
     lane.current().await.expect("会话在跑");
     let other = fork_lane(&home, &parent, &models, &table, 1).await;
     talk(&other, "m4", "另一个人").await;

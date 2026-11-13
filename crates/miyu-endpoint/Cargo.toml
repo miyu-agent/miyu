@@ -130,7 +130,7 @@ miyu-knowledge = { path = "../miyu-knowledge" }
 # 测试里她照剧本调定时、循环的工具（施工 J-2）。
 miyu-schedule = { path = "../miyu-schedule" }
 # 测试里的等待有时限。
-tokio = { version = "1", features = ["io-util", "macros", "rt", "sync", "time"] }
+tokio = { version = "1", features = ["io-util", "macros", "rt", "rt-multi-thread", "sync", "time"] }
 
 [lints]
 workspace = true
@@ -182,3 +182,13 @@ path = "tests/secrets_log.rs"
 [[test]]
 name = "oauth_log"
 path = "tests/oauth_log.rs"
+
+# 内存紧时记的那一行（施工 MEM-3）：同 secrets_log，全局订阅者一个程序只装一次。
+[[test]]
+name = "memory_pressure_log"
+path = "tests/memory_pressure_log.rs"
+
+# 量尺：卸一批会话前后核心的内存（施工 MEM-3）。量的是整个进程，单独一个程序。
+[[test]]
+name = "memory_pressure_rss"
+path = "tests/memory_pressure_rss.rs"

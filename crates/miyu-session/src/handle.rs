@@ -29,8 +29,8 @@ mod subscription;
 use crate::jobs::Unreadable;
 use crate::shown::{Next, Shown};
 pub(crate) use dream::Dream;
-pub use retire::Retire;
 pub(crate) use retire::{Bell, Leaving};
+pub use retire::{Hold, Retire, Retiring};
 use subscription::Watching;
 pub use subscription::{Ended, Subscription};
 
@@ -122,9 +122,9 @@ pub(crate) enum Message {
         watcher: SessionId,
         since: Timestamp,
     },
-    /// 会话表问闲够 `idle` 了没有（施工 V-2 再补，`retire.rs`）：够了、什么事都没有的答了就退出。它不算一次动静。
+    /// 会话表问退不退（施工 V-2 再补、MEM-3，`retire.rs`）：够了、什么事都没有的答了就退出。它不算一次动静。
     Retire {
-        idle: std::time::Duration,
+        ask: Retiring,
         reply: oneshot::Sender<Retire>,
     },
 }

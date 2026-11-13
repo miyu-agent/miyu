@@ -8,7 +8,8 @@
 //! 封存了的会话退得下了自己报一声（施工 V-51，`SessionPort::retirable`）：任务当场醒来，只问报了的那几个，问法同上（没有回合、
 //! 没人订阅、没有别的把手的才问，actor 照账答）；隔一阵问一遍的照旧按原来的点。
 //!
-//! 内存紧时（施工 MEM-2，`sessions/pressure.rs`）照同一个问法当场问一遍，只是不等闲够：闲着就退。
+//! 内存紧时（施工 MEM-2，`sessions/pressure.rs`）照同一个问法当场问一遍，只是不等闲够：闲着就退（[`Retiring::Tight`]：记忆抽取
+//! 的闹钟上着、还没响的也退，施工 MEM-3）。没退下的照原因各记几个（[`Held`]），内存紧时记进日志。
 
 use std::collections::BTreeSet;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -19,8 +20,9 @@ use tokio::sync::{Mutex, Notify};
 use tokio::time::Instant;
 
 use miyu_kernel::id::SessionId;
-use miyu_session::{Handle, Retire, Stopped};
+use miyu_session::{Handle, Hold, Retire, Retiring};
 
+use super::held::Held;
 use super::{Open, Sessions};
 use crate::Core;
 
@@ -88,19 +90,26 @@ impl Sessions {
 
     /// 问一遍：退下了的、停了的拿掉。交回下一次隔多久再问。
     async fn retire_idle(&self) -> Duration {
-        self.retire_all(self.idle).await.next
+        self.retire_all(Retiring::Idle(self.idle)).await.next
     }
 
-    /// 拿着表的锁问表里每一个闲够 `idle` 了没有（[`ask`]）：退下了的、停了的拿掉。内存紧时（施工 MEM-2）照 0 问：闲着就退。
-    pub(super) async fn retire_all(&self, idle: Duration) -> Swept {
+    /// 拿着表的锁照 `asking` 问表里每一个（会话表这一头看得出不退的不问，[`skip`]）：退下了的、停了的拿掉，没退下的照原因
+    /// 计数。闲够了退下的那一路问闲够会话表的闲置时长没有；内存紧时（施工 MEM-2、MEM-3）照 [`Retiring::Tight`] 问：没事就退。
+    pub(super) async fn retire_all(&self, asking: Retiring) -> Swept {
         let mut open = self.open.lock().await;
         let mut next = self.idle;
         let mut gone = Vec::new();
+        let (mut asked, mut held) = (0, Held::default());
         for (id, running) in &open.running {
-            match ask(&running.handle, idle).await {
-                Some(Ok(Retire::Retired) | Err(_)) => gone.push(id.clone()),
-                Some(Ok(Retire::Later(left))) => next = next.min(left),
-                Some(Ok(Retire::Kept)) | None => {}
+            if let Some(hold) = skip(&running.handle) {
+                held.add(hold);
+                continue;
+            }
+            asked += 1;
+            match running.handle.retire(asking).await {
+                Ok(Retire::Retired) | Err(_) => gone.push(id.clone()),
+                Ok(Retire::Later(left)) => next = next.min(left),
+                Ok(Retire::Kept(hold)) => held.add(hold),
             }
         }
         for id in &gone {
@@ -109,6 +118,8 @@ impl Sessions {
         Swept {
             next,
             gone: gone.len(),
+            asked,
+            held,
             left: open.running.len(),
         }
     }
@@ -127,12 +138,13 @@ impl Sessions {
             let Some(running) = open.running.get(&id) else {
                 continue;
             };
-            match ask(&running.handle, self.idle).await {
-                Some(Ok(Retire::Retired) | Err(_)) => gone.push(id),
-                Some(Ok(Retire::Later(left))) => {
-                    next = Some(next.map_or(left, |next| next.min(left)))
-                }
-                Some(Ok(Retire::Kept)) | None => {}
+            if skip(&running.handle).is_some() {
+                continue;
+            }
+            match running.handle.retire(self.idle).await {
+                Ok(Retire::Retired) | Err(_) => gone.push(id),
+                Ok(Retire::Later(left)) => next = Some(next.map_or(left, |next| next.min(left))),
+                Ok(Retire::Kept(_)) => {}
             }
         }
         for id in gone {
@@ -148,6 +160,10 @@ pub(super) struct Swept {
     pub(super) next: Duration,
     /// 拿掉了几个（退下了的、已经停了的）。
     pub(super) gone: usize,
+    /// 问了 actor 的几个（会话表这一头就看得出不退的不问，见 [`skip`]）。
+    pub(super) asked: usize,
+    /// 没退下的照原因各几个：会话表这一头看出来的、actor 答的都算。
+    pub(super) held: Held,
     /// 表里还剩几个。
     pub(super) left: usize,
 }
@@ -159,12 +175,17 @@ pub(super) struct Due {
     rung: Notify,
 }
 
-/// 问一个会话退不退：有回合在跑、有人订阅、除了表里这一个还有别的把手的不问（`None`）。
-async fn ask(handle: &Handle, idle: Duration) -> Option<Result<Retire, Stopped>> {
-    if handle.busy() || handle.watched() || !handle.alone() {
-        return None;
+/// 会话表这一头就看得出不退、不用问 actor 的：有回合在跑、有人订阅、除了表里这一个还有别的把手，交回是哪一样。
+fn skip(handle: &Handle) -> Option<Hold> {
+    if handle.busy() {
+        Some(Hold::Turn)
+    } else if handle.watched() {
+        Some(Hold::Watched)
+    } else if !handle.alone() {
+        Some(Hold::Handles)
+    } else {
+        None
     }
-    Some(handle.retire(idle).await)
 }
 
 impl Core {

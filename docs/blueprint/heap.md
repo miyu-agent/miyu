@@ -15,8 +15,10 @@
 | `crates/miyu-core/src/memlog.rs` | 核心自己记账：什么时候采、一行的样子、采样的任务（施工 V-4） |
 | `crates/miyu-core/src/lib.rs` | 起来时最先调好（`core.md`「起来的先后」第 0 步） |
 | `crates/miyu-core/src/models.rs` | 读完模型目录 trim 一次 |
-| `crates/miyu-session/src/open/load.rs` | 载入一个会话以后 trim 一次（`session/actor.md` 第 2 条） |
-| `crates/miyu-session/src/actor/life.rs` | 会话的 actor 结束、它占的放掉以后 trim 一次（`session/actor.md`）：停下、删掉、闲够了退下（`protocol.md`「会话表」第 9 条）都算 |
+| `crates/miyu-session/src/heap.rs`（施工 MEM-3） | `trim_soon`：会话这一层要 trim 的几处攒一阵还一次（下面「怎么走」第 2 条） |
+| `crates/miyu-session/src/open/load.rs` | 载入一个会话以后 trim 一次（`session/actor.md` 第 2 条；经 `trim_soon`） |
+| `crates/miyu-session/src/actor/life.rs` | 会话的 actor 结束、它占的放掉以后 trim 一次（`session/actor.md`；经 `trim_soon`）：停下、删掉、闲够了退下（`protocol.md`「会话表」第 9 条）、内存紧时退下（第 10 条）都算 |
+| `crates/miyu-endpoint/src/sessions/pressure.rs`（施工 MEM-3） | 内存紧时卸完一批、从表里拿掉以后 trim 一次（经 `trim_soon`） |
 | `crates/miyu-core/src/settle.rs` | 一阵请求过去、安静 2 秒以后 trim 一次（施工 V-5 中），再看内存涨得快不快（施工 V-6 下）；连接每读到一个请求、连上、断开都叫一声，信号是 `miyu-endpoint` 的 `Activity`（`activity.rs`，几处各拿一份都叫得醒） |
 
 ### 对外的样子
@@ -32,7 +34,8 @@
 ### 怎么走
 
 1. 工作区不许 `unsafe`（`forbid`）；这个 crate 照 `miyu-sandbox` 的办法改成 `deny`，只在声明、调用 glibc 的三处单独放开，每处写明为什么安全：`mallopt` 只改分配器自己的参数，`malloc_trim` 只把分配器手里空着的页还回去，已经分出去的不动、glibc 自己加锁。
-2. 什么时候 trim：读完模型目录（原文、解析的半成品放掉了）；载入一个会话以后（读、解的整份日志只留最近一次压缩以后的，`session/actor.md` 第 2 条）；一个会话的 actor 结束以后（它的状态机、事件放掉了：停下、删掉、闲够了退下都算）；一阵请求过去、安静 2 秒以后（施工 V-5 中，下一条；trim 之前先放掉这一阵里读好放着的给人看的字，施工 V-30，`store/resources.md` 第 3 节第 8 条）。都在阻塞线程里、不挡着谁。不定时 trim：空着的时候没有新的可还。
+2. 什么时候 trim：读完模型目录（原文、解析的半成品放掉了）；载入一个会话以后（读、解的整份日志只留最近一次压缩以后的，`session/actor.md` 第 2 条）；一个会话的 actor 结束以后（它的状态机、事件放掉了：停下、删掉、闲够了退下、内存紧时退下都算）；内存紧时卸完一批、从会话表拿掉以后（表里那几份在会话退下以后才放，施工 MEM-3）；一阵请求过去、安静 2 秒以后（施工 V-5 中，下一条；trim 之前先放掉这一阵里读好放着的给人看的字，施工 V-30，`store/resources.md` 第 3 节第 8 条）。都在阻塞线程里、不挡着谁。不定时 trim：空着的时候没有新的可还。
+   - **会话这一层攒一阵还一次**（施工 MEM-3，`miyu_session::trim_soon`）：载入、actor 结束、内存紧时卸完一批这三处不当场 trim，头一次要的时候等 1 秒（`QUIET`）再 trim 一次，这一秒里又要的都算在这一次里；开始 trim 的那一刻放下记号，之后要的另攒一次（任何一刻最多一次在等、一次在走；等的时候运行时停了的也放下记号）。原来每一处当场排一个：内存紧时一下子退下上千个会话就是上千次 trim 一个接一个，trim 走堆时拿着 arena 的锁，工作线程上的分配、释放都等它，会话表一个个问退不退跟着慢（2026-11-13 量过，量尺 `crates/miyu-endpoint/tests/memory_pressure_rss.rs`，见施工单 `MEM-3-卸会话卸得少.md`）。
    - **安静下来还一次**（施工 V-5 中，`settle.rs`）：头一连上就是一阵请求（读配置、列模型、读人），几百 KB 的回应拼完就放掉，放掉的留在 glibc 手里。施工 V-5 中量过：连上终端以后核心匿名内存多 3.3 MB，活着的数据只多 40 KB。所以连接每读到一个请求叫一声（`Activity::touch`，没人等的记下一次）；盯着的任务等到叫声，再等到 2 秒（`QUIET`）里没有新的叫声，trim 一次，再回去等。没有请求的时候它一直睡着，不定时醒。trim 在阻塞线程里做：崩了的记 `ERROR heap settle panicked`、接着等；停核心时运行时在收尾、阻塞任务被取消的记一行 `DEBUG heap settle cancelled`、不再等（施工 BUG-1：以前不分取消和崩溃，停核心时总打一行误报的 `ERROR`）。
 3. 量到的（施工 V-2 再补，`docs/perf/2026-10-10-linux-x86_64-v2再补.md`）：只 trim 的时候，大会话退下以后堆里还有 16 MB 空着的碎片、核心匿名内存比空闲时多 8.8 MB；写明大块的门槛以后只多 3.9 MB，重开大会话、说一句以后 92 MB 降到 49 MB。
 
@@ -72,3 +75,4 @@
 | `crates/miyu-core/src/memlog/tests.rs`、`crates/miyu-core/tests/memlog.rs`（施工 V-4） | 涨够了才算涨得快，落了的、没涨够的不算，不溢出；一行的格和先后，没有堆的不写 `heap`；真核心：起来记 `start`、到点记 `tick`、行里有 RSS、PSS、会话数、glibc 上有堆；安静下来时没涨够的不采、涨了 64 MiB 的记 `grew`，不安静下来不看（施工 V-6 下）；量不出来的平台不起、不写。`tests/memlog.rs` 自己一个测试程序：记的是整个进程，和别的测试并在一起，它们分配的也算进涨幅（V-6 下修） |
 | `crates/miyu-log/src/rotate/tests.rs` 的 `a_file_named_as_given_rotates_under_its_own_name`（施工 V-4） | 照原样的文件名换下成 `<文件名>.1`、只留一份 |
 | 量尺（`perf.md`） | 大会话没人订阅、闲够了退下以后核心的内存回落 |
+| 量尺 `crates/miyu-endpoint/tests/memory_pressure_rss.rs`（施工 MEM-3，`#[ignore]`，自己一个测试程序） | 照核心调好分配器、多线程的运行时，载入 N 个会话（`MIYU_RSS_SESSIONS`，默认 1000）、判成紧全卸：卸那一批拿着表的锁多久，卸完 1、2、5、12 秒和再 trim 一次的常驻、匿名、堆里在用的和空着的、线程数 |

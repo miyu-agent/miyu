@@ -121,7 +121,7 @@ impl Actor {
                 answer(reply, self.hush_dreams());
                 Mail::Done
             }
-            Message::Retire { idle, reply } => self.retire(idle, reply),
+            Message::Retire { ask, reply } => self.retire(ask, reply),
         }
     }
 

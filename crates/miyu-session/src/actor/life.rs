@@ -3,11 +3,11 @@
 //!
 //! 退不退由 actor 自己照账答：最后一次有动静以后过了多久，内核空不空（没有回合、没在重启、没有在等的子代理），还有没有头看着、
 //! 等着回应的命令、在路上的请求、派出去还没回报或者结束了还没落盘的任务、记忆的闹钟、它在等的和等它空下来的会话，收件箱、
-//! 回报的路里还有没有没办的。都没有、闲够了的答「退下了」就退出；回答交不出去的（会话表不等了）不退。
+//! 回报的路里还有没有没办的。都没有、闲够了的答「退下了」就退出；回答交不出去的（会话表不等了）不退。还有事的答是哪一样
+//! （施工 MEM-3，`Hold`）。内存紧时（`Retiring::Tight`）不看闲多久，记忆抽取的闹钟上着、还没响的不算还有事。
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 
 use tokio::sync::oneshot;
 use tracing::Instrument;
@@ -18,7 +18,7 @@ use miyu_kernel::session::Action;
 use super::Actor;
 use super::mail::Mail;
 use crate::TARGET;
-use crate::handle::{Leaving, Retire};
+use crate::handle::{Hold, Leaving, Retire, Retiring};
 use crate::shown::Shown;
 
 /// 会话的 span：开在 `ERROR` 级。span 也照级别筛，开在 `INFO` 的话，调到 `WARN` 它就被筛掉了，底下的
@@ -41,8 +41,9 @@ pub(crate) fn spawn(actor: Actor, first: Vec<Action>, span: tracing::Span) {
             }
             // 停了的会话不算在跑：核心不为它不肯空闲退出。
             busy.store(false, Ordering::Release);
-            // 会话放下的还给系统（23 F3，施工 V-2 再补）：大会话关掉以后 glibc 不还，核心的内存一直不回落。
-            drop(tokio::task::spawn_blocking(miyu_heap::trim));
+            // 会话放下的还给系统（23 F3，施工 V-2 再补）：大会话关掉以后 glibc 不还，核心的内存一直不回落。攒一阵还一次（施工 MEM-3，
+            // `heap.rs`）：内存紧时一下子退下几千个，不走几千遍堆。
+            crate::heap::trim_soon();
         }
         .instrument(span),
     );
@@ -74,18 +75,19 @@ impl Actor {
     /// 没封存的不看：闲够了才退，照会话表隔一阵问。
     pub(super) fn offer_retire(&self) {
         if self.session.sealed() {
-            self.bell.offer(!self.occupied());
+            self.bell.offer(self.hold(false).is_none());
         }
     }
 
-    /// 会话表问闲够 `idle` 了没有：照自己的账答，答了「退下了」的交回 [`Mail::Retired`]，actor 退出。封存了的（施工 C-8 下）
-    /// 没事了就退，不等闲够：不会再开轮。问过就放下旗（施工 V-51）：没退的，下一次看时照账再立起来。
-    pub(super) fn retire(&mut self, idle: Duration, reply: oneshot::Sender<Retire>) -> Mail {
+    /// 会话表问退不退：照自己的账答，答了「退下了」的交回 [`Mail::Retired`]，actor 退出。封存了的（施工 C-8 下）没事了就退，
+    /// 不等闲够：不会再开轮；内存紧时问的（施工 MEM-3）也是。问过就放下旗（施工 V-51）：没退的，下一次看时照账再立起来。
+    pub(super) fn retire(&mut self, ask: Retiring, reply: oneshot::Sender<Retire>) -> Mail {
         self.bell.lower();
-        let answer = match self.occupied() {
-            true => Retire::Kept,
-            false if self.session.sealed() => Retire::Retired,
-            false => match idle.checked_sub(self.quiet.elapsed()) {
+        let answer = match (self.hold(ask == Retiring::Tight), ask) {
+            (Some(hold), _) => Retire::Kept(hold),
+            (None, _) if self.session.sealed() => Retire::Retired,
+            (None, Retiring::Tight) => Retire::Retired,
+            (None, Retiring::Idle(idle)) => match idle.checked_sub(self.quiet.elapsed()) {
                 Some(left) if !left.is_zero() => Retire::Later(left),
                 _ => Retire::Retired,
             },
@@ -99,19 +101,29 @@ impl Actor {
         }
     }
 
-    /// 还有事：退下了会丢掉、或者要等它办完的。
-    fn occupied(&self) -> bool {
-        !self.session.vacant()
-            || self.watchers > 0
-            || !self.replies.is_empty()
-            || !self.calls.is_empty()
-            || !self.asides.is_empty()
-            || !self.jobs.settled()
-            || self.extracting()
-            || !self.waiters.is_empty()
-            || !self.watches.is_empty()
-            || !self.inbox.is_empty()
-            || !self.back.is_empty()
-            || super::goal::GoalRun::keeps(self.counted().goals.now())
+    /// 还有事的是哪一样（[`Hold::ALL`] 的先后，交头一个碰上的）：退下了会丢掉、或者要等它办完的。`tight`（内存紧）的不算
+    /// 记忆抽取上着、还没响的闹钟（[`Retiring::Tight`]）。一样样往下查，碰上就停：后面几样（任务表、长期目标）要拿锁、要算。
+    fn hold(&self, tight: bool) -> Option<Hold> {
+        if !self.session.vacant() {
+            Some(Hold::Turn)
+        } else if self.watchers > 0 {
+            Some(Hold::Watched)
+        } else if !self.replies.is_empty() {
+            Some(Hold::Replies)
+        } else if !self.calls.is_empty() || !self.asides.is_empty() {
+            Some(Hold::Requests)
+        } else if !self.jobs.settled() {
+            Some(Hold::Jobs)
+        } else if self.extracting(tight) {
+            Some(Hold::Memory)
+        } else if !self.waiters.is_empty() || !self.watches.is_empty() {
+            Some(Hold::Peers)
+        } else if !self.inbox.is_empty() || !self.back.is_empty() {
+            Some(Hold::Mail)
+        } else if super::goal::GoalRun::keeps(self.counted().goals.now()) {
+            Some(Hold::Goal)
+        } else {
+            None
+        }
     }
 }

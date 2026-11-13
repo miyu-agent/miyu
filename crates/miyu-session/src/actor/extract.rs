@@ -119,11 +119,16 @@ impl Actor {
         );
     }
 
-    /// 记忆的闹钟上着、或者有一次抽取在路上（施工 V-2 再补，`life.rs`）：这时不退下。
-    pub(super) fn extracting(&self) -> bool {
-        self.tools
-            .memory()
-            .is_some_and(|(calls, _)| calls.extracting().2.pending())
+    /// 记忆的闹钟上着、或者有一次抽取在路上（施工 V-2 再补，`life.rs`）：这时不退下。内存紧时问的（`tight`，施工 MEM-3）只算
+    /// 在路上的、不等闲的那一次在等着的：闹钟还没响，退下就和核心退出一样，这一段等下次闲下来再抽。
+    pub(super) fn extracting(&self, tight: bool) -> bool {
+        self.tools.memory().is_some_and(|(calls, _)| {
+            let extractor = calls.extracting().2;
+            match tight {
+                true => extractor.working(),
+                false => extractor.pending(),
+            }
+        })
     }
 
     /// 叫停这个会话叫的整理（施工 R-22，`/dream stop`、`/stop`）：交回有没有在跑的。

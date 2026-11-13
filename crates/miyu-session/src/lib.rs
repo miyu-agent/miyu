@@ -37,6 +37,7 @@ mod embed;
 mod goal;
 mod guard;
 mod handle;
+mod heap;
 mod job_ids;
 mod jobs;
 mod kinds;
@@ -87,7 +88,8 @@ pub use embed::{
 };
 pub use goal::{Goal, GoalState, Goals};
 pub use handle::context::{Charged, Context, Spent, SystemPart};
-pub use handle::{Ended, Handle, Pushed, Retire, Stopped, Subscription};
+pub use handle::{Ended, Handle, Hold, Pushed, Retire, Retiring, Stopped, Subscription};
+pub use heap::trim_soon;
 pub use jobs::{Jobs, Peek, Unreadable, peek};
 pub use memory::{
     CardRefused, DreamBatch, DreamFeed, DreamResult, DreamRoom, DreamSessions, DreamSpec, Dreamed,

@@ -1,7 +1,7 @@
 //! 闲够了的会话退下（施工 V-2 再补，`docs/blueprint/session/actor.md`「退下」）：会话表问，actor 照自己的账答。别的都空着、
 //! 闲得不够的答还差多久；有头看着、有派出去还没回报的、有会话等它空下来、它在等别的会话、记忆的闹钟上着的答还有事；什么都
 //! 没有、闲够了的退下，之后再交命令是「会话停了」，载入回来接着用。封存了的支线（施工 C-8 下）没事了就退，不等闲够；开着
-//! 记忆的也不等抽取的闹钟（施工 V-23）。
+//! 记忆的也不等抽取的闹钟（施工 V-23）。还有事的答是哪一样；内存紧时问的不等闲够，抽取的闹钟上着也退（施工 MEM-3）。
 
 use std::num::NonZeroU32;
 use std::sync::Arc;
@@ -12,7 +12,7 @@ use miyu_kernel::event::Body;
 use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::tool::Access;
 use miyu_session::testkit::{Play, Script};
-use miyu_session::{Fork, Handle, Retire, Stopped, new_id};
+use miyu_session::{Fork, Handle, Hold, Retire, Retiring, Stopped, new_id};
 use miyu_tool::testkit::{Act, Fake, Held};
 use miyu_tool::{Catalog, Exit, Tool};
 
@@ -41,7 +41,7 @@ async fn settled(handle: &Handle) -> Retire {
     within("不再答还有事", async {
         loop {
             match handle.retire(LONG).await.expect("会话在跑") {
-                Retire::Kept => tokio::time::sleep(Duration::from_millis(5)).await,
+                Retire::Kept(_) => tokio::time::sleep(Duration::from_millis(5)).await,
                 answer => return answer,
             }
         }
@@ -49,10 +49,10 @@ async fn settled(handle: &Handle) -> Retire {
     .await
 }
 
-/// 问 `times` 次、每次隔一会儿，闲多久都算够，一次都没退下。
-async fn kept(handle: &Handle, times: usize) {
+/// 问 `times` 次、每次隔一会儿，闲多久都算够，一次都没退下，答的都是 `hold`（施工 MEM-3）。
+async fn kept(handle: &Handle, times: usize, hold: Hold) {
     for _ in 0..times {
-        assert_eq!(handle.retire(Duration::ZERO).await, Ok(Retire::Kept));
+        assert_eq!(handle.retire(Duration::ZERO).await, Ok(Retire::Kept(hold)));
         tokio::time::sleep(Duration::from_millis(20)).await;
     }
 }
@@ -97,7 +97,7 @@ async fn a_watched_session_is_kept_until_the_head_goes() {
     talk(&handle, "m1", "在吗").await;
     assert!(matches!(settled(&handle).await, Retire::Later(_)));
     let pushes = watch(&handle).await;
-    kept(&handle, 3).await;
+    kept(&handle, 3, Hold::Watched).await;
     drop(pushes);
     assert_eq!(handle.retire(Duration::ZERO).await, Ok(Retire::Retired));
 }
@@ -115,7 +115,7 @@ async fn a_running_background_command_keeps_it_until_reported() {
     ]);
     let handle = home.create_with(&plays, &tools).await;
     talk(&handle, "m1", "放一个").await;
-    kept(&handle, 10).await;
+    kept(&handle, 10, Hold::Jobs).await;
     held.end(Exit::Code(0));
     until_logged(&home, handle.id(), |log| {
         log.iter()
@@ -138,7 +138,7 @@ async fn a_session_another_waits_on_is_kept() {
     // 起算时刻晚于它忙完的那一刻：同一毫秒的当「带话又订」，当场发、不留在名单上。
     tokio::time::sleep(Duration::from_millis(20)).await;
     handle.watch(sid(WAITER), now()).expect("会话在跑");
-    kept(&handle, 3).await;
+    kept(&handle, 3, Hold::Peers).await;
     assert!(table.notices().is_empty(), "空着订进来的，等它下一次忙完");
 }
 
@@ -154,7 +154,7 @@ async fn a_session_waiting_on_another_is_kept() {
     let handle = session(&home, &plays, &table).await;
     talk(&handle, "m1", "它空了告诉我").await;
     until_logged(&home, handle.id(), |_| !table.placed().is_empty()).await;
-    kept(&handle, 10).await;
+    kept(&handle, 10, Hold::Peers).await;
 }
 
 #[tokio::test]
@@ -172,8 +172,21 @@ async fn an_armed_memory_alarm_keeps_it() {
         .await;
     chat(&home, &handle, 1, "我养了一只猫").await;
     chat(&home, &handle, 2, "它叫团子").await;
-    kept(&handle, 10).await;
+    kept(&handle, 10, Hold::Memory).await;
     assert!(server.received().is_empty(), "闹钟还没响");
+    // 内存紧时问的（施工 MEM-3）：闹钟还没响不算还有事，退下；这一段等下次闲下来再抽，不当场抽。
+    assert_eq!(handle.retire(Retiring::Tight).await, Ok(Retire::Retired));
+    assert!(server.received().is_empty(), "退下不抽");
+}
+
+/// 内存紧时问的（施工 MEM-3）不等闲够：别的都空着就退。
+#[tokio::test]
+async fn asked_while_memory_is_tight_retires_without_waiting_to_be_idle() {
+    let home = Home::new();
+    let handle = home.create(&script([Play::Says("在。")])).await;
+    talk(&handle, "m1", "在吗").await;
+    assert!(matches!(settled(&handle).await, Retire::Later(_)));
+    assert_eq!(handle.retire(Retiring::Tight).await, Ok(Retire::Retired));
 }
 
 #[tokio::test]
@@ -197,7 +210,7 @@ async fn a_request_still_on_its_way_keeps_it() {
     // 起标题的请求没排回答：假模型不回它，一直在路上。
     let handle = home.create(&Script::new([Play::Says("在。")])).await;
     talk(&handle, "m1", "在吗").await;
-    kept(&handle, 10).await;
+    kept(&handle, 10, Hold::Requests).await;
 }
 
 #[tokio::test]
