@@ -45,8 +45,8 @@ testkit = ["tokio/io-util", "tokio/net", "tokio/rt", "tokio/sync"]
 miyu-http = { path = ".", features = ["testkit"] }
 # 测试里接住发出来的日志，查写了什么、没写什么。
 miyu-log = { path = "../miyu-log" }
-# 测试跑在 tokio 上。
-tokio = { version = "1", features = ["macros", "rt"] }
+# 测试跑在 tokio 上；请求体的量尺（施工 PF-1）照核心用多线程的运行时。
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
 
 [lints]
 workspace = true

@@ -10,6 +10,8 @@ use miyu_drivers::{Encoded, Fragment};
 
 use super::*;
 
+mod measure;
+
 /// 内存里的 blob：`short` 里的读出来少一个字节。
 #[derive(Default)]
 struct Memory {
@@ -32,15 +34,18 @@ impl BlobSource for Memory {
     }
 }
 
+/// `sample` 里那张大图多少个字节：编出来比四块 1 MiB 少一点，加上前后的字，一条流正好交 5 块。
+const BIG: usize = 3_000_000;
+
 fn picture(len: usize, seed: u32) -> Vec<u8> {
     (0..len)
         .map(|i| ((i as u32).wrapping_mul(2_654_435_761).wrapping_add(seed) >> 13) as u8)
         .collect()
 }
 
-/// 字、一张 200 KB 的图（编出来好几块）、字、一张 4 个字节的图、字。
+/// 字、一张 3 MB 的图（编出来 4 MB，攒成好几块，施工 PF-1）、字、一张 4 个字节的图、字。
 fn sample() -> (Fragments, Memory) {
-    let big = picture(200_000, 1);
+    let big = picture(BIG, 1);
     let small = picture(4, 2);
     let (big_hash, small_hash) = (ContentHash::of(&big), ContentHash::of(&small));
     let mut memory = Memory::default();
@@ -51,7 +56,7 @@ fn sample() -> (Fragments, Memory) {
         text("{\"a\":\"data:image/png;base64,"),
         Fragment::Base64 {
             blob: big_hash,
-            size: 200_000,
+            size: u64::try_from(BIG).unwrap(),
         },
         text("\",\"b\":\""),
         Fragment::Base64 {
@@ -175,4 +180,54 @@ async fn whole_bytes_are_one_piece() {
     let replay = Arc::new(Replay::new(Body::from(b"{}".to_vec())));
     assert_eq!(drain(&mut replay.stream()).await.unwrap(), b"{}");
     assert_eq!(replay.hash().await, ContentHash::of(b"{}"));
+}
+
+/// 夹着很多小图的请求体（施工 PF-1）：交给 HTTP 客户端的块数照请求体多大算，不照有几张图算。原来一张图一个阻塞任务、48 KiB
+/// 一块，2 MB 的请求体要交七八十块，CPU 被抢时每一块都要等阻塞线程、再排一次队，压测里收一个请求体从 4 ms 涨到秒级。
+#[tokio::test]
+async fn many_small_pictures_go_out_in_a_few_big_chunks() {
+    let (fragments, memory) = measure::bench_body();
+    let expected = whole(&fragments, &memory);
+    let replay = Arc::new(Replay::new(Body::new(fragments, Arc::new(memory))));
+    let mut stream = replay.stream();
+    let (mut out, mut frames) = (Vec::new(), 0usize);
+    while let Some(chunk) = next(&mut stream).await {
+        out.extend_from_slice(&chunk.unwrap());
+        frames += 1;
+    }
+    assert!(out == expected, "和整份编的一个字节都不差");
+    assert_eq!(replay.hash().await, ContentHash::of(&expected));
+    // 第一张图前面的两段字照原样交，从第一张图起攒成 1 MiB 一块。
+    let most = expected.len().div_ceil(batch::BATCH) + 2;
+    assert!(frames <= most, "交了 {frames} 块，最多该是 {most} 块");
+}
+
+/// 图后面跟着比一块还长的一段字（施工 PF-1）：那一段不拷、照原样交，先交攒着的；字节、哈希和整份编的一样。
+#[tokio::test]
+async fn a_text_longer_than_a_batch_after_a_picture_goes_out_as_is() {
+    let small = picture(10, 3);
+    let hash = ContentHash::of(&small);
+    let mut memory = Memory::default();
+    memory.blobs.insert(hash.clone(), small);
+    let long = vec![b'y'; batch::BATCH + 7];
+    let parts = vec![
+        Fragment::Base64 {
+            blob: hash,
+            size: 10,
+        },
+        Fragment::Text(long.clone()),
+        Fragment::Text(b"}".to_vec()),
+    ];
+    let fragments: Fragments = parts.into_iter().collect();
+    let expected = whole(&fragments, &memory);
+    let replay = Arc::new(Replay::new(Body::new(fragments, Arc::new(memory))));
+    let mut stream = replay.stream();
+    let mut chunks = Vec::new();
+    while let Some(chunk) = next(&mut stream).await {
+        chunks.push(chunk.unwrap());
+    }
+    let lengths: Vec<usize> = chunks.iter().map(Bytes::len).collect();
+    assert_eq!(lengths, [16, long.len(), 1], "图、长的那段、结尾各一块");
+    assert!(chunks.concat() == expected);
+    assert_eq!(replay.hash().await, ContentHash::of(&expected));
 }

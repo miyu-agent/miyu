@@ -1518,6 +1518,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sLV5"><span class="n">LV-5</span>去掉 bubblewrap 和两组设置<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sSW1"><span class="n">SW-1</span>展示不拷进核心、不限大小<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sRC1"><span class="n">RC-1</span>miyu rescue 拉起 LiteMiyu 的应急模式<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sPF1"><span class="n">PF-1</span>CPU 被抢时请求体一口气发<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -58459,6 +58460,55 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/RC-1-miyu-rescue.md</code>；蓝图 <code>cli/rescue.md</code>、<code>cli/main.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sPF1" aria-labelledby="h-sPF1">
+  <div class="sheet-head"><h2 id="h-sPF1"><span class="no">PF-1</span>CPU 被抢时请求体一口气发</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">压测里 CPU 被抢时，长会话每一步收请求体要 0.3～3 秒（不压 4 ms）。请求体里八成是二十来张小图，一段 blob 一个阻塞任务、64 KiB 交一块，每一块两个线程互相叫醒一次。这一步把从第一段 blob 起剩下的攒成 1 MiB 一块交。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-http · body、body/batch</span><span class="dir-note">PF-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>开头那几段字照原样交，共享不拷</li>
+              <li>碰到第一段 blob：剩下的全交给一个阻塞任务，blob 照读照编、字照拷，攒满 1 MiB 交一块，最多压一块</li>
+              <li>比 1 MiB 还长的一段字不拷、照原样交；哈希照旧在交出去时算</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">有 blob 的那一截 1 MiB 一块</span><span class="rl">技术细节按推荐定</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">PF-1</dd></div>
+        <div><dt>名称</dt><dd>CPU 被抢时请求体一口气发</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-13</dd></div>
+        <div><dt>提交</dt><dd class="mono">PF-1</dd></div>
+        <div><dt>验收</dt><dd>miyu-http 的测试、两个目标的 clippy 全过；量尺前后数在施工单里</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>夹 24 张小图的 2 MB 请求体交 98 块改成 5 块，字节、哈希和整份编的一样</span></li>
+        <li><span class="ok">✓</span><span>两核挤满的量尺：中位降到原来的三分之一上下</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/PF-1-被抢CPU时每一步偏长.md</code>；蓝图 <code>http.md</code>。</li>
       </ul>
     </div>
   </div>

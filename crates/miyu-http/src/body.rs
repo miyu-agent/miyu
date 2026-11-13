@@ -1,6 +1,8 @@
-//! 请求体边编边发（施工 V-38）：驱动编好的片段清单（[`Fragments`]）照先后一块一块地送出去。编好的字照原样送，多处共享不拷；
-//! blob 那几段在阻塞线程里一小块一小块地读（[`base64::CHUNK`]，48 KiB）、编成 base64 送出去，送完就扔，一张图的原图和
-//! base64 都不在内存里整份出现。
+//! 请求体边编边发（施工 V-38）：驱动编好的片段清单（[`Fragments`]）照先后一块一块地送出去。开头那几段编好的字照原样送，
+//! 多处共享不拷；碰到第一段 blob，从它起剩下的交给一个阻塞任务生成（[`batch`]，施工 PF-1）：blob 一小块一小块地读
+//! （[`base64::CHUNK`]，48 KiB）、编成 base64，和字一起攒满 1 MiB 送一块，送完就扔，一张大图的原图和 base64 都不在内存里
+//! 整份出现。为什么攒：一段 blob 一个任务、64 KiB 一块的时候，夹着二十来张小图的请求体要送近百块，CPU 被抢时每一块都要
+//! 等阻塞线程、再排一次队（见 [`batch`]）。
 //!
 //! - 重放：片段清单只有字和 blob 的引用，同一份可以从头再造一条流（跳转、对方没处理的重发，`resend.rs`），字节一样。
 //! - 哈希：请求体的 SHA-256 跟着送出去的字节一路算，几条流共用一份：哪一条先送到哪，就算到哪，重放的那一条从算过的地方
@@ -17,6 +19,8 @@ use http_body::{Frame, SizeHint};
 use miyu_drivers::{Fragment, Fragments, base64};
 use miyu_kernel::id::{ContentHash, Hasher};
 use tokio::sync::mpsc;
+
+mod batch;
 
 /// 发请求体时从哪里读 blob（施工 V-38）：核心照数据根里的 blob 读，核对的规矩照存储那边的。
 pub trait BlobSource: Send + Sync {
@@ -131,8 +135,7 @@ impl Replay {
             replay: Arc::clone(self),
             next: 0,
             at: 0,
-            piece_from: 0,
-            blob: None,
+            batches: None,
         }
     }
 
@@ -295,10 +298,8 @@ pub(crate) struct Stream {
     next: usize,
     /// 交出去了多少个字节。
     at: u64,
-    /// 正在读的那一段从第几个字节起。
-    piece_from: u64,
-    /// 正在读的 blob：阻塞线程编好一块交过来一块。
-    blob: Option<mpsc::Receiver<io::Result<Bytes>>>,
+    /// 从第一段 blob 起剩下的那一截：阻塞线程攒好一块交过来一块（[`batch`]）。
+    batches: Option<mpsc::Receiver<io::Result<Bytes>>>,
 }
 
 impl Stream {
@@ -313,30 +314,18 @@ impl Stream {
 
     /// 出错了：这条流不再往下走。
     fn fail(&mut self, error: io::Error) -> Poll<Option<Result<Frame<Bytes>, io::Error>>> {
-        self.blob = None;
+        self.batches = None;
         self.next = self.replay.body.pieces.len();
         Poll::Ready(Some(Err(error)))
     }
 
-    /// 在阻塞线程里读第 `next` 段的 blob，编好一块交过来一块；这边收得慢，那边就等着（最多压一块）。
-    fn start(
-        &mut self,
-        blob: &ContentHash,
-        size: u64,
-    ) -> io::Result<mpsc::Receiver<io::Result<Bytes>>> {
+    /// 在一个阻塞线程里把第 `next` 段起剩下的全部生成出来，攒好一块交过来一块；这边收得慢，那边就等着（最多压一块）。
+    fn start(&mut self) -> io::Result<mpsc::Receiver<io::Result<Bytes>>> {
         let runtime = tokio::runtime::Handle::try_current().map_err(io::Error::other)?;
         let (sender, receiver) = mpsc::channel(1);
         let replay = Arc::clone(&self.replay);
-        let blob = blob.clone();
-        runtime.spawn_blocking(move || {
-            let read = replay.read_blob(&blob, size, 0, |_, chunk| {
-                sender.blocking_send(Ok(chunk)).is_ok()
-            });
-            if let Err(error) = read {
-                // 这边已经不收了的不用再说。
-                drop(sender.blocking_send(Err(error)));
-            }
-        });
+        let from = self.next;
+        runtime.spawn_blocking(move || batch::produce(&replay, from, &sender));
         Ok(receiver)
     }
 }
@@ -351,18 +340,18 @@ impl http_body::Body for Stream {
     ) -> Poll<Option<Result<Frame<Bytes>, io::Error>>> {
         let this = &mut *self;
         loop {
-            if let Some(receiver) = this.blob.as_mut() {
+            if let Some(receiver) = this.batches.as_mut() {
                 match receiver.poll_recv(cx) {
                     Poll::Pending => return Poll::Pending,
                     Poll::Ready(Some(Ok(chunk))) => return this.give(chunk),
                     Poll::Ready(Some(Err(error))) => return this.fail(error),
                     Poll::Ready(None) => {
-                        this.blob = None;
-                        let expected = this.replay.body.pieces.get(this.next).map_or(0, Piece::len);
-                        if this.at - this.piece_from != expected {
+                        this.batches = None;
+                        // 剩下的那一截都归它：没交够就停了的算出错。
+                        if this.at != this.replay.body.len {
                             return this.fail(io::Error::other("读 blob 的线程没读完就停了"));
                         }
-                        this.next += 1;
+                        this.next = this.replay.body.pieces.len();
                         continue;
                     }
                 }
@@ -371,7 +360,6 @@ impl http_body::Body for Stream {
             let Some(piece) = replay.body.pieces.get(this.next) else {
                 return Poll::Ready(None);
             };
-            this.piece_from = this.at;
             match piece {
                 Piece::Text(text) => {
                     this.next += 1;
@@ -380,8 +368,8 @@ impl http_body::Body for Stream {
                     }
                 }
                 Piece::Base64 { size: 0, .. } => this.next += 1,
-                Piece::Base64 { blob, size } => match this.start(blob, *size) {
-                    Ok(receiver) => this.blob = Some(receiver),
+                Piece::Base64 { .. } => match this.start() {
+                    Ok(receiver) => this.batches = Some(receiver),
                     Err(error) => return this.fail(error),
                 },
             }
