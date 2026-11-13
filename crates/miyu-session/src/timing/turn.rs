@@ -1,7 +1,7 @@
 //! 回合开始的挂接点每一段等了多久（施工 PF-3，`docs/blueprint/session/actor.md`「运行日志」的 `turn start timed`）：CPU 被抢
 //! 时回合开始 93 毫秒到 5.5 秒（施工 PF-2 第 4 条），日志里分不出慢在哪一跳。`actor/model.rs` 的 `turn_start` 串着冻结配置
-//! → 刷新人格和找技能（并着）→ 压缩线 → 记忆、知识库、扩展、项目指令一起等最慢的那一个，每一段用 [`Lap::run`] 套着量，
-//! 回合开始的输入交给内核之前记一行（[`TurnStart::log`]）。
+//! → 刷新人格和找技能（并着）→ 压缩线 → 她现在在干嘛（施工 LF-7）→ 记忆、知识库、扩展、项目指令一起等最慢的那一个，每一段用
+//! [`Lap::run`] 套着量，回合开始的输入交给内核之前记一行（[`TurnStart::log`]）。
 //!
 //! 每一段还量它里面 `crate::blocking::blocking` 来回等的：交给阻塞线程到那边开始做，加上那边做完到这一头接着跑，不算那边
 //! 做活的时间（[`Waited`]）。被抢 CPU 时一跳排队多久就看这一格。只算这一段自己等的 `blocking`：派到别的任务里的不算。
@@ -108,6 +108,8 @@ pub(crate) struct TurnStart {
     pub(crate) skills: Lap,
     /// 压缩触发线。
     pub(crate) line: Lap,
+    /// 同一个人格的人生里她现在在干嘛（施工 LF-7，`actor/model/doing.rs`）：只查内存。
+    pub(crate) doing: Lap,
     /// 记忆、知识库两个挂接点。
     pub(crate) hooks: Hooks,
     /// 问扩展。
@@ -146,6 +148,7 @@ impl TurnStart {
             skills_wait_us = self.skills.wait_us,
             line_us = self.line.us,
             line_wait_us = self.line.wait_us,
+            doing_us = self.doing.us,
             memory_us = memory.us,
             summary_us = remember.summary.us,
             summary_wait_us = remember.summary.wait_us,

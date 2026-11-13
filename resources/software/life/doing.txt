@@ -1,0 +1,1 @@
+<life-doing since="{since}" until="{until}">{text}</life-doing>

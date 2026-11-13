@@ -26,8 +26,11 @@ All of them take one parameter: `persona` (string, required), the persona's id. 
 | `state` | `none` (the persona has no life session), `running`, `paused`, or `ended` (the latest one has ended and no new one was started) |
 | `session` | The life session's id; absent for `none` |
 | `next` | When she wakes next; only for `running` |
+| `doing` | What she is doing now, as she wrote it the last time she set her next wakeup in the life session: `{"text", "at"}`, where `text` is that line (line breaks turned into spaces, at most 200 characters) and `at` is when she wrote it. Absent if she never wrote one or left it out the last time. Present while paused too |
 
 If the schedule row is gone (for instance the table was broken and replaced by an empty one), the state is `paused`: `life.resume` rebuilds the row from the session log.
+
+What she is doing now is also handed to her other sessions of the same persona (local ones, groups and private chats, forked branches; not subagents) at the start of their next turn, only while the life is running and only once per line.
 
 ## `life.start`
 

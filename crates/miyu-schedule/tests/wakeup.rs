@@ -36,7 +36,8 @@ async fn the_delay_is_kept_within_bounds() {
                 session(),
                 ScheduleAsk::Wakeup {
                     delay: kept,
-                    prompt: None
+                    prompt: None,
+                    reason: Some("x".to_string())
                 }
             )],
             "{given} 秒"
@@ -60,6 +61,7 @@ async fn a_wakeup_says_when_and_shows_the_reason() {
         ScheduleAsk::Wakeup {
             delay: 1_200,
             prompt: Some("盯 CI".to_string()),
+            reason: Some("CI 大约二十分钟".to_string()),
         }
     );
     assert_eq!(
@@ -87,9 +89,32 @@ async fn a_blank_prompt_keeps_the_old_one() {
         port.asked()[0].1,
         ScheduleAsk::Wakeup {
             delay: 60,
-            prompt: None
+            prompt: None,
+            reason: None
         }
     );
+}
+
+#[tokio::test]
+async fn a_blank_reason_is_not_handed_on() {
+    for reason in [json!(" \n "), json!("")] {
+        let port = Fake::answering(Ok(woken()));
+        run(
+            "schedule_wakeup",
+            Some(&port),
+            json!({"delay_seconds": 60, "reason": reason}),
+        )
+        .await;
+        assert_eq!(
+            port.asked()[0].1,
+            ScheduleAsk::Wakeup {
+                delay: 60,
+                prompt: None,
+                reason: None
+            },
+            "{reason}"
+        );
+    }
 }
 
 #[tokio::test]

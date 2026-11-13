@@ -14,6 +14,8 @@ impl Core {
     /// 起唤醒表（施工 J-1 上）：开上已有的表、跳过错过的，然后在后台睡到点、到点交进会话。核心没了，它下一次醒来就收手。
     pub fn start_schedules(self: &Arc<Self>) -> tokio::task::JoinHandle<()> {
         self.schedules.recall();
+        // 人生那几行、她写的「现在在干嘛」照表铺回（施工 LF-7）。
+        super::doing::boot(self);
         tokio::spawn(run(Arc::downgrade(self)))
     }
 }

@@ -2,7 +2,8 @@
 //! 结束调它定下一次多久以后醒。访问类别是读。
 //!
 //! - 间隔短于 [`WAKEUP_MIN`] 的照它，不报错，没有上限（施工 WK-1）；`prompt` 覆盖醒来交进来的话，不写的照旧（照 Claude Code，
-//!   她每次把同一句原话传回来）；`reason` 只给人看。成了说下一次几点，照会话的时区写。
+//!   她每次把同一句原话传回来）；`reason` 给人看，也交给端口：落在人生那一行上的记下，给同一个人格别的会话看（施工 LF-7），
+//!   空白的当没写。成了说下一次几点，照会话的时区写。
 //! - `stop: true` 停掉这个会话的动态循环，别的参数不看；人生循环不收，答一句（施工 LF-1）。
 //! - 这个会话没开过循环的，端口拒，说没有在跑的循环。
 
@@ -113,6 +114,10 @@ impl Tool for Wakeup {
                 (false, Some(delay)) => ScheduleAsk::Wakeup {
                     delay: clamp(delay),
                     prompt: args.prompt.filter(|prompt| !prompt.trim().is_empty()),
+                    reason: args
+                        .reason
+                        .clone()
+                        .filter(|reason| !reason.trim().is_empty()),
                 },
                 (false, None) => return PACKAGE.error(&self.no_delay, "wakeup/no-delay", &[]),
             };

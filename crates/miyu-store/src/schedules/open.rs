@@ -86,6 +86,8 @@ pub(super) fn open(path: &Path) -> (Option<Connection>, Opened) {
 /// 照共用的规矩开、建，再把写盘换成 `FULL`。
 fn connected(path: &Path) -> Result<(Connection, bool), DbError> {
     let (db, created) = sqlite::connect(path, SCHEMA, VERSION)?;
+    // 以后加的表（施工 LF-7 的 `doing`）：新建的、以前建的都照它补上，不升版本。
+    db.execute_batch(super::doing::ADD)?;
     db.pragma_update(None, "synchronous", "FULL")?;
     // 锁住了不等：这个进程只有一个连接，别的进程开不了这个数据根（核心只有一个）；真锁住了（别人开着写）当场报错，
     // 由到点的那一边退避再试（端点 `schedules/hold.rs`），不在这里卡住后台任务。

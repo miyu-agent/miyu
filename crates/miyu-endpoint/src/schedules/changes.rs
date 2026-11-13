@@ -14,8 +14,9 @@ impl Schedules {
         self.changes.subscribe()
     }
 
-    /// 广播任务 `id` 变了。
+    /// 广播任务 `id` 变了；人生那几行在内存里的一份照表重读（施工 LF-7，`doing.rs`）：表一变都经这里，不另开口。
     pub(super) fn notify(&self, id: &str) {
+        self.relive(id);
         if self.changes.send(id.to_string()).is_err() {
             // 没有订阅着的连接：不用说。
         }

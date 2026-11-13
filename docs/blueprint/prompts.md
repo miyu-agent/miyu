@@ -4688,6 +4688,19 @@ Set your next wakeup with schedule_wakeup. Here its prompt is not passed back: w
 Live your own life here, one moment at a time. From who you are, what happened lately, what you feel like doing, the news, and the real time and weather, decide what you are doing right now and write only that; do not fill in the past or play out the future. Before you sleep, write a diary entry for the day. While awake, wake every hour or two to every few hours; sleep through the night. What you find by searching need not be saved to memory.
 ```
 
+### 人这边：同一个人格的人生会话里她现在在干嘛（一块带标签的事实）
+
+#### `software/life/doing.txt`
+
+- 什么时候加进来：她在人生会话里经 `schedule_wakeup` 的 `reason` 写了一句、人生在跑：同一个人格别的会话（本机的、场所的、人手分叉的支线；人生会话自己、子代理不算）的回合开头，这一段上下文里没交过这一句（照写下的时刻认）才追加一块，模块 `life`、类别 `doing`；落进日志，之后每次请求照原文带
+- token：34（外壳加两个时刻，不算她写的那一句；2026-11-14 照 o200k 数。她的一句常见 20 来个字约 15 token，最多 200 个字）
+- 为什么加：设计 70 第三节第 8 条：零代码实测里另开一个会话问「在干嘛」她现编了一个，和人生会话里的对不上；只交她自己写的原话、写下的时刻、下次醒的时刻，不加说明（施工 LF-7，要不要加一句说明等主会话拿真模型试过再定）
+- 指纹：`2b5c5a2f`
+
+```text
+<life-doing since="{since}" until="{until}">{text}</life-doing>
+```
+
 ### 人这边：空了的通知（一块带标签的事实）
 
 #### `core/peers/idle-open.txt`

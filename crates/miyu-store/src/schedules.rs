@@ -8,6 +8,7 @@
 //! - 什么时候、跑在哪、谁建的照 JSON 存成一格：形状在 [`When`]、[`Target`]、[`Creator`]，加种类不改表。
 //! - 到点怎么算、怎么交进会话不在这里（端点的 `schedules`）：这里只存取。
 
+mod doing;
 mod open;
 mod row;
 #[cfg(test)]
@@ -25,6 +26,7 @@ use miyu_kernel::time::Timestamp;
 use crate::root::DataRoot;
 use crate::sqlite::{DbError, idle};
 
+pub use doing::Doing;
 pub use open::Opened;
 
 /// 一个任务。
@@ -314,8 +316,33 @@ impl Schedules {
     ///
     /// 写不了库。
     pub fn remove(&self, id: &str) -> Result<bool, DbError> {
+        let mut db = self.lock();
+        let tx = db.transaction()?;
+        let removed = tx.execute("DELETE FROM schedules WHERE id = ?1", params![id])? > 0;
+        // 她在这一行上写的「现在在干嘛」跟着删（施工 LF-7）。
+        doing::write(&tx, id, None)?;
+        tx.commit()?;
+        Ok(removed)
+    }
+
+    /// 任务 `id` 上她写的「现在在干嘛」（施工 LF-7，只有人生那一行有）；没写过的、清掉了的没有。
+    ///
+    /// # Errors
+    ///
+    /// 读不了库。
+    pub fn doing(&self, id: &str) -> Result<Option<Doing>, DbError> {
         let db = self.lock();
-        Ok(db.execute("DELETE FROM schedules WHERE id = ?1", params![id])? > 0)
+        doing::read(&db, id)
+    }
+
+    /// 任务 `id` 上她写的「现在在干嘛」换成 `doing`，没有的清掉（施工 LF-7）。不看有没有这个任务：调的一方刚改过那一行。
+    ///
+    /// # Errors
+    ///
+    /// 写不了库。
+    pub fn set_doing(&self, id: &str, doing: Option<&Doing>) -> Result<(), DbError> {
+        let db = self.lock();
+        doing::write(&db, id, doing)
     }
 
     /// 最早的下一次（停着的不算）；一个都没有的没有。

@@ -56,6 +56,9 @@ pub enum ScheduleAsk {
         delay: u64,
         /// 醒来交进来的话，覆盖原来的；不写的照旧。
         prompt: Option<String>,
+        /// 现在在干嘛（她写的 `reason`，空白的当没写）：落在人生那一行上的记下，给同一个人格别的会话看（施工 LF-7）；她自己定
+        /// 节奏的循环不看。
+        reason: Option<String>,
     },
     /// 停掉这个会话的动态循环；人生循环不收（[`ScheduleRefused::Unstoppable`]）。
     StopLoop,

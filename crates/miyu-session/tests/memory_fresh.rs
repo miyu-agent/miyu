@@ -261,6 +261,9 @@ async fn the_first_wake_and_after_compaction_the_summary_goes_first_and_is_not_r
     let home = Home::new();
     let other = elsewhere(&home).await;
     let first = save(&home, "第一件事", &[&other], alice(), None);
+    // 这一条断言的是会话的头一轮：判出处活不活要开回合库，头一次开是冷的（建库），慢的机器上会超过回合开始的时限、这一轮
+    // 不交（Windows 的 CI 上碰到过一次）。先开好，这里不测冷开。
+    let _ = home.recall.turns(&persona());
     let script = Script::new([
         Play::Says("好。"),
         Play::Says("嗯。"),

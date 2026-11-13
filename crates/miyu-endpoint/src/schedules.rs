@@ -9,6 +9,7 @@
 
 pub(crate) mod changes;
 mod clock;
+mod doing;
 mod fire;
 mod hold;
 mod life;
@@ -32,6 +33,9 @@ use miyu_store::sqlite::DbError;
 use miyu_tool::IN_ALL;
 
 pub use clock::{Clock, Sleep, SystemClock};
+pub use doing::MOST as DOING_MOST;
+pub(crate) use doing::{line as doing_line, shown as doing_shown};
+pub use miyu_store::schedules::Doing;
 pub use miyu_store::schedules::{Creator, Last, Loop, Schedule, Target, When};
 pub use next::{MIN_EVERY, parse as parse_cron};
 
@@ -91,6 +95,8 @@ pub struct Schedules {
     changes: tokio::sync::broadcast::Sender<String>,
     /// 给人的通知（`notices.rs`，施工 J-3 下）。
     notices: notices::Notices,
+    /// 人生那几行和她写的「现在在干嘛」，内存里的一份（`doing.rs`，施工 LF-7）：只在 [`Schedules::notify`] 跟着表变。
+    lives: doing::Lives,
 }
 
 impl crate::Core {
@@ -118,6 +124,7 @@ impl Schedules {
             holds: hold::Holds::default(),
             changes: tokio::sync::broadcast::channel(changes::CHANGES).0,
             notices: notices::Notices::default(),
+            lives: doing::Lives::default(),
         }
     }
 

@@ -6,6 +6,7 @@
 //! - 动态循环是跑在这个会话上、`loop` 是 `dynamic` 或 `life` 的那一行（一个会话至多一行）：`schedule_wakeup` 改它下一次醒的
 //!   时刻和那句话，停的删掉它；人生循环（施工 LF-1）停不了，那一行不动。
 //! - 人生循环那一行 `cron_list` 不列、`cron_delete` 照没有回：只有人生自己的入口动得了。
+//! - `schedule_wakeup` 落在人生那一行上的，连同她写的 `reason` 记下她这时在干嘛（施工 LF-7，`doing.rs`）。
 
 use std::sync::{Arc, Weak};
 
@@ -93,7 +94,11 @@ impl Port {
                     .map(|one| shown(one))
                     .collect(),
             )),
-            ScheduleAsk::Wakeup { delay, prompt } => {
+            ScheduleAsk::Wakeup {
+                delay,
+                prompt,
+                reason,
+            } => {
                 let looping = dynamic(&here, session).ok_or(ScheduleRefused::NoLoop)?;
                 let millis = i64::try_from(delay.saturating_mul(1000)).unwrap_or(i64::MAX);
                 // 没有上限（施工 WK-1）：写不下的照最晚的时刻。
@@ -104,6 +109,12 @@ impl Port {
                 let woken = schedules
                     .set_next(&looping.id, Some(next), prompt)
                     .map_err(refused)?;
+                // 人生那一行记下她这时在干嘛（施工 LF-7）；她自己定节奏的不记。记不下的不碍她定好的下一次。
+                if life(looping)
+                    && let Err(error) = schedules.set_doing(&looping.id, reason.as_deref(), next)
+                {
+                    tracing::warn!(target: "miyu::endpoint", schedule = %looping.id, error = %error, "life doing not saved");
+                }
                 Ok(ScheduleAnswer::Woken(shown(&woken)))
             }
             ScheduleAsk::StopLoop => {

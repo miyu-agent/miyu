@@ -1,7 +1,8 @@
 //! 到点交进来的话的标签（施工 J-1 上，`docs/blueprint/schedules.md` 第六节）：`software/schedule/common/`、`software/loop/common/`
 //! 下各一对 `message-open.txt`、`message-close.txt`（施工 J-2 写），`software/life/common/` 下人生的一对（施工 LF-2）。造会话时
 //! 冻结进快照的 `core.schedule`；前四份缺一份的当没有，那种话照人的话原样渲染；人生那一对缺一份的只当人生的没有。出厂的推演
-//! 方法 `software/life/method.txt`（施工 LF-2）不进快照：到点那一刻读（`schedules.md` 第三节第 4 条）。
+//! 方法 `software/life/method.txt`（施工 LF-2）不进快照：到点那一刻读（`schedules.md` 第三节第 4 条）。「现在在干嘛」那一行
+//! `software/life/doing.txt`（施工 LF-7）也不进快照：核心第一次用到时读一次。
 
 use miyu_policy::ScheduleTexts;
 
@@ -32,6 +33,16 @@ impl ResourceRoot {
     /// 读不了这份文件。
     pub fn life_method(&self) -> Result<String, SourceError> {
         self.read(&["software", "life", "method.txt"])
+    }
+
+    /// 「现在在干嘛」那一行（施工 LF-7，`docs/blueprint/life.md`「现在在干嘛」）：同一个人格别的会话的回合开头交，字段
+    /// `since`、`until`、`text`。原文，行尾的换行也算。
+    ///
+    /// # Errors
+    ///
+    /// 读不了这份文件。
+    pub fn life_doing(&self) -> Result<String, SourceError> {
+        self.read(&["software", "life", "doing.txt"])
     }
 }
 

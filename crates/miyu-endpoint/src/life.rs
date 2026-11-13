@@ -162,6 +162,7 @@ async fn start(core: &Arc<Core>, request: &Request, persona: &str) -> Result<Val
         )
         .await?;
     let session = created.id;
+    core.schedules().named(&session, persona);
     if let Err(refusal) = mark(core, request, &session).await {
         // 还不是人生会话的空会话：删掉，不留半截。
         if let Err(left) = core.sessions.delete(core, &session).await {
@@ -289,5 +290,6 @@ fn state(core: &Core, found: Option<&(SessionId, Life)>) -> Result<Value, Refusa
             reply["next"] = json!(next);
         }
     }
+    crate::schedules::doing_shown(core, session, &mut reply);
     Ok(reply)
 }

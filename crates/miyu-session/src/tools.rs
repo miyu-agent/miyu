@@ -187,6 +187,11 @@ impl Tools {
         }
     }
 
+    /// 会话的时区（施工 LF-7：「现在在干嘛」那一行照它写时刻）。
+    pub(crate) fn offset(&self) -> UtcOffset {
+        self.offset
+    }
+
     /// 回合开始问扩展的端口和这个会话的编号（施工 X-16）：没交端口的没有。
     pub(crate) fn hooks(&self) -> Option<(Arc<dyn miyu_tool::HooksPort>, SessionId)> {
         Some((self.hooks.clone()?, self.session.clone()))

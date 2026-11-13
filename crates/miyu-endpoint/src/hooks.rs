@@ -6,7 +6,8 @@
 //! 每一轮都问，不能让一轮等它起来。
 //!
 //! 工具调用前的守卫（施工 HK-1）也经这个端口，照 `extensions/guards.rs` 问：和这里不同，开着却没在跑的守卫算拒绝。调用后的
-//! 通知（施工 HK-2）照 `extensions/afters.rs` 入队，不等。
+//! 通知（施工 HK-2）照 `extensions/afters.rs` 入队，不等。同一个人格的人生里她这时在干嘛（施工 LF-7）也经这个端口，照
+//! `schedules/doing.rs` 查内存。
 
 use std::collections::BTreeMap;
 use std::sync::{Arc, Weak};
@@ -15,8 +16,11 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use miyu_config::package::Capability;
-use miyu_kernel::id::{FactKind, ModuleId};
-use miyu_tool::{AfterNote, GuardAsk, Guarded, Guarding, HooksPort, Inject, Injecting, TurnAsk};
+use miyu_kernel::id::{FactKind, ModuleId, SessionId};
+use miyu_kernel::time::UtcOffset;
+use miyu_tool::{
+    AfterNote, DoingLine, GuardAsk, Guarded, Guarding, HooksPort, Inject, Injecting, TurnAsk,
+};
 
 use crate::Core;
 use crate::reverse::Peer;
@@ -110,6 +114,13 @@ impl HooksPort for Hooks {
             }
             injects
         })
+    }
+
+    /// 同一个人格的人生里她这时在干嘛（施工 LF-7，`schedules/doing.rs`）：只查内存；核心没了的没有。
+    fn doing(&self, persona: &str, session: &str, offset: UtcOffset) -> Option<DoingLine> {
+        let core = self.0.upgrade()?;
+        let session = SessionId::parse(session).ok()?;
+        crate::schedules::doing_line(&core, persona, &session, offset)
     }
 }
 

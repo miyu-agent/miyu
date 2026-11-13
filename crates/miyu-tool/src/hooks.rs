@@ -8,6 +8,9 @@
 //! 工具调用后的通知（施工 HK-2，设计 65 第四节）也经这个端口：结果落了盘，会话先查表（[`HooksPort::afters`]），有收它的扩展
 //! 才写好一条（[`AfterNote`]）交给端口（[`HooksPort::after`]）。端口只入队、当场交回，不等、不挡：发给谁、队列满了怎么办都由
 //! 端口管。
+//!
+//! 同一个人格的人生会话里她写的「现在在干嘛」（施工 LF-7，`docs/blueprint/life.md`「现在在干嘛」）也经这个端口：回合开始会话
+//! 照自己的人格问一次（[`HooksPort::doing`]），端口只查内存，交回写好的那一行；交不交、交过没有由会话照上下文判。
 
 use std::collections::BTreeMap;
 use std::future::Future;
@@ -15,7 +18,17 @@ use std::pin::Pin;
 
 use miyu_kernel::id::ModuleId;
 use miyu_kernel::raw::RawJson;
+use miyu_kernel::time::UtcOffset;
 use miyu_kernel::tool::Worded;
+
+/// 同一个人格的人生会话里她写的「现在在干嘛」，写好的一行（施工 LF-7）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DoingLine {
+    /// 给模型看的那一行：外壳、写下的时刻、下次醒的时刻、她写的那一句，以换行结尾。
+    pub text: String,
+    /// 认它的记号：写下的时刻（毫秒）。这一段上下文里最近交过的那一块记号一样的，不再交。
+    pub key: String,
+}
 
 /// 这一轮是在哪说的。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -188,4 +201,8 @@ pub trait HooksPort: Send + Sync {
     fn after(&self, note: AfterNote) {
         let _ = note;
     }
+
+    /// 人格 `persona` 的人生会话里她写的「现在在干嘛」，照会话的时区 `offset` 写好（施工 LF-7）：问的会话 `session` 就是人生
+    /// 会话的、人生停着的、没了的、她还没写过的没有。只查内存，不读盘：每个会话每一轮都问。
+    fn doing(&self, persona: &str, session: &str, offset: UtcOffset) -> Option<DoingLine>;
 }
