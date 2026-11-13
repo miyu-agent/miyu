@@ -11,7 +11,7 @@
 | `crates/miyu-heap/src/lib.rs` | `tune`、`trim`、`stats`、`huge_pages_off`；glibc 上声明、调 `mallopt`、`malloc_trim`、`mallinfo2`，Linux 上关透明大页（施工 YC-12），别的平台是空的 |
 | `crates/miyu-heap/src/usage.rs` | 进程这时占了多少内存：Linux 上读 `/proc/self/smaps_rollup`、`/proc/self/status`，两份的读法是纯的（施工 V-4）；macOS 上问内核 `proc_pid_rusage`（施工 V-4 补） |
 | `crates/miyu-heap/src/room.rs`、`room/macos.rs`、`room/windows.rs`（施工 MEM-1，MEM-2 分开交） | 还剩多少可用内存：Linux 上读 `/proc/meminfo` 和 cgroup v2 一路往上的几层，读法是纯的、读文件的照传进来的函数；macOS 上问 sysctl，Windows 上问 `GlobalMemoryStatusEx` |
-| `crates/miyu-endpoint/src/sessions/pressure.rs`（施工 MEM-2） | 隔 10 秒、开会话时照它和 `usage::resident` 判紧不紧，紧的把闲着的会话卸出内存（`protocol.md`「会话表」第 10 条） |
+| `crates/miyu-endpoint/src/sessions/pressure.rs`（施工 MEM-2，MEM-4 改门槛、近线快查） | 隔 10 秒（近线时隔 1 秒）、开会话时照它和 `usage::resident` 判紧不紧（门槛离总量还有 10%、最多 2 GiB、不低于 5%），紧的把闲着的会话卸出内存（`protocol.md`「会话表」第 10 条） |
 | `crates/miyu-core/src/memlog.rs` | 核心自己记账：什么时候采、一行的样子、采样的任务（施工 V-4） |
 | `crates/miyu-core/src/lib.rs` | 起来时最先调好（`core.md`「起来的先后」第 0 步） |
 | `crates/miyu-core/src/models.rs` | 读完模型目录 trim 一次 |
@@ -57,7 +57,7 @@
 
 ### 还剩多少内存（施工 MEM-1，MEM-2 改）
 
-一直开新会话时，核心的内存约 1.75 MB 一个会话照直线涨，撞到上限被系统杀掉，所有会话一起没（2026-11-11 基准测试 M3）。核心隔一阵、开会话时照这里看一眼，紧的把闲着的会话卸出内存（`protocol.md`「会话表」第 10 条，施工 MEM-2；MEM-1 原来低于 5% 拒开会话，2026-11-12 撤了）。这里只管读，判紧不紧在核心：整台机器紧的还要看核心自己占多少（`usage::resident`），cgroup 紧的不看，所以两份分开交。
+一直开新会话时，核心的内存约 1.75 MB 一个会话照直线涨，撞到上限被系统杀掉，所有会话一起没（2026-11-11 基准测试 M3）。核心隔一阵、开会话时照这里看一眼，紧的把闲着的会话卸出内存（`protocol.md`「会话表」第 10 条，施工 MEM-2；MEM-1 原来低于 5% 拒开会话，2026-11-12 撤了）。这里只管读，判紧不紧在核心（门槛、隔多久看都在 `pressure.rs`，施工 MEM-4 起是 max(5%, min(10%, 2 GiB))）：整台机器紧的还要看核心自己占多少（`usage::resident`），cgroup 紧的不看，所以两份分开交。
 
 1. **对外的样子**：`room::room() -> Rooms`；`Rooms { system, cgroup }`，都是 `Option<Room>`：`system` 整台机器的，`cgroup` 核心所在 cgroup 有上限的几层里最紧的那一层（没有上限的、只有 v1 的、不是 Linux 的没有）。`Room { available, total }`，字节，`total` 不是 0。`percent()` 往下取整的百分比；`below(p)` 照整数乘开比、正好等于的不算少；`mib()` 往下取整的 MiB。读不到的是没有，调的一方当作不知道。
 2. **Linux**：`system` 是 `/proc/meminfo` 的 `MemAvailable`、`MemTotal`（`kB`，少了哪一行、总量是 0 的不算）；`cgroup` 从 `/proc/self/cgroup` 里 `0::<路径>` 那一行（只有 v1 的没有这一行，没有 `cgroup`）起，从这一层往上到根，每层 `/sys/fs/cgroup/<路径>/memory.max` 不是 `max` 的一份：可用的是上限减在用的（`memory.current`），在用的扣掉 `memory.stat` 的 `inactive_file`（回收得了的文件缓存：读过的日志都算在 cgroup 头上，不扣的话上限还远就当作满了），超过上限的是 0、扣多了的照上限。几层里照比例最低的那一份（`tightest`，一样低的取先来的）：上一层比自己那一层紧的，照上一层。一次读两个文件加每层三个，都在 `/proc`、`/sys` 里，不碰磁盘。读法照传进来的读文件函数（`linux_with`），测试喂假文件。

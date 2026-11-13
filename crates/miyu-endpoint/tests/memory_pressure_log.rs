@@ -1,5 +1,5 @@
 //! 内存紧时记的那一行（施工 MEM-3，`docs/blueprint/protocol.md`「会话表」第 10 条「记什么」）：判成紧、一个都卸不动的也记一行
-//! `INFO memory tight`，写着卸了几个、问了几个、没卸的照原因各几个；同一段紧着、还是没得卸的不每次都记；又卸了会话的当场再记。
+//! `INFO memory tight`，写着卸了几个、问了几个、没卸的照原因各几个、照什么门槛判的（施工 MEM-4）；同一段紧着、还是没得卸的不每次都记；又卸了会话的当场再记。
 //!
 //! 全局装一个写进内存的订阅者：看的任务在别的线程上。全局的一个进程只能装一次，所以这个文件单独一个测试程序，只有一个测试。
 
@@ -89,7 +89,7 @@ async fn tight_with_nothing_to_retire_is_logged_once_and_again_when_some_retire(
     let first = lines();
     assert_eq!(first.len(), 1, "{first:?}");
     assert!(
-        first[0].contains("INFO  endpoint memory tight retired=0 asked=0 held=\"turn=1 watched=1\" loaded=2 available_mib=512 percent=2"),
+        first[0].contains("INFO  endpoint memory tight retired=0 asked=0 held=\"turn=1 watched=1\" loaded=2 available_mib=512 percent=2 threshold_mib=1843"),
         "{first:?}"
     );
 

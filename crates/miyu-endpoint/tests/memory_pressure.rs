@@ -1,7 +1,7 @@
 //! 内存紧时把闲着的会话卸出内存（施工 MEM-2，`docs/blueprint/protocol.md`「会话表」第 10 条）：读数照测试给的
 //! （`Core::with_memory_probe`），不真把内存吃满。别的程序吃满（整台机器紧、核心占得少）的照常开会话、一个都不卸；核心是大头、
-//! 剩不到 5% 的，闲着的会话退下，有回合在跑的、有人订阅的不动，退下的再说话照常载入回来；cgroup 快撞上限的一样卸；开会话时
-//! 叫一声就看一眼，不等隔一阵的那一次。
+//! 剩得少的，闲着的会话退下，有回合在跑的、有人订阅的不动，退下的再说话照常载入回来；cgroup 快撞上限的一样卸，大容器里还剩
+//! 10% 就卸（施工 MEM-4）；开会话时叫一声就看一眼，不等隔一阵的那一次。
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
@@ -189,6 +189,29 @@ async fn a_cgroup_near_its_limit_retires_idle_sessions() {
         total: 18 * GIB,
     };
     probe.set(PLENTY, Some(near), SMALL);
+    until_loaded(&core, 0).await;
+}
+
+/// 大容器（施工 MEM-4）：限 18 GiB 还剩 1.7 GiB（9%），照 5% 不算紧，照「10%、最多 2 GiB」算紧，闲着的卸掉。bm 复测
+/// （限 18 GiB）照 5% 判，判成紧时只剩 876 MiB、卸那一批卸了 43 秒。
+#[tokio::test]
+async fn a_large_cgroup_is_tight_with_a_tenth_left() {
+    let home = Home::new();
+    let probe = Probe::new(PLENTY, None, SMALL);
+    let script = Script::new([Play::Says("好。")]).titles([Play::Says("测试")]);
+    let core = core(&home, &script, &probe, QUICK);
+    let mut client = Client::connect(core.clone());
+    client.hello().await;
+    let session = client.create("c1", "~").await;
+    client.say("s1", &session, "你好").await;
+    home.until_turns(&session, 1).await;
+    probe.until_looked(2).await;
+    assert_eq!(core.loaded().await, 1);
+    let tenth = Room {
+        available: 17 * GIB / 10,
+        total: 18 * GIB,
+    };
+    probe.set(PLENTY, Some(tenth), SMALL);
     until_loaded(&core, 0).await;
 }
 
