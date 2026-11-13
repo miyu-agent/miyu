@@ -60,7 +60,7 @@
 | `get(id)` | 一个；没有的是 `Unknown` |
 | `cancel(id)` | 删掉 |
 | `pause(id)` | 停：清掉下一次 |
-| `resume(id)` | 续：照现在重算下一次，错过的不补；一次的已经过了的报 `NoNext` |
+| `resume(id)` | 续：照现在重算下一次，错过的不补；一次的已经过了的报 `NoNext`。人生那一行（施工 LF-5 中，`life.resume` 用）的下一次写成现在：它的 `when` 是建的那一刻，早就过了，照它算不出；续上马上醒一次，同核心起来时补醒那一次，她的留言不动。她自己定节奏的、固定间隔的照旧 |
 | `update(id, when, prompt)` | 改（施工 J-5）：`when` 写了的照 `add` 一样查、换掉，没停的照现在重算下一次，停着的还停着；循环换不了种类（她自己定节奏的、人生的只认 `At`，固定间隔的只认 `Every`，别的报 `LoopKind`）；`prompt` 写了的换掉。编号、建的时刻、`by`、`target`、上一次都不动，记 `INFO schedule updated` |
 | `set_next(id, next, prompt)` | 改下一次，`prompt` 写了的换掉那句话（她自己定节奏的循环、人生每轮定一次，施工 J-2）；`next` 没有的停着等。落在人生那一行上（施工 LF-2），`prompt` 是她留给下次自己的话：没写的把留言清成空的，不把旧的再念一遍；她自己定节奏的没写的不动。人生那一行的 `prompt` 可以是空的（`add`、`set_next` 都不拒空的，拒空的只在协议 `schedule.add`、`update`，它们碰不到人生那一行） |
 
@@ -80,7 +80,7 @@
 5. 推送：`subscribe {"stream":"schedules"}` 回 `{"schedules":[…]}`；之后推 `schedules.changed {"id","entry"}`，删了的 `{"id","removed":true}`；掉队推 `resync {"stream":"schedules"}`。建、停、续、删、改、改下一次、到点交过都推（`schedules/changes.rs`，一条是任务编号，同项目的）；订着的连接都推。
 6. 谁能调：人；扩展要批过 `sessions.drive`（施工 J-4，`connection/rights.rs`），建的 `by` 记成包，只看得到、改得了自己建的（`methods.rs` 的 `mine`、`own`，`schedule.update` 同样），别的编号一样 `unknown_schedule`。`schedules` 流只给人，扩展回 `local_only`。
 7. 推给扩展（施工 J-4，形状主会话 2026-10-27 和 onebot 定）：`target` 多一种 `{"package": {}}`，只有扩展能写（人写回 `bad_params`），不带 `loop`。到点不进会话：`fire.rs` 的 `pushed` 照 `by` 的包找那个包连着的连接（`Provided::linked`，不替它拉起），推通知 `schedule.fired {"id","at","prompt","missed"?}`，结果记 `sent`，推不到的记 `skipped:package_unavailable`。`missed` 是核心停着时错过的次数：起来跳过时（`run::skip`、`next::missed`，最多数到 1000）累加进表里 `target` 那一格，推过就清零。扩展握手成了另记一份连着的（`Provided` 的 `linked`），推通知照它找，不登记工具的扩展也推得到；工具调用照旧只认登记了工具的。
-8. **人生那一行通用的入口碰不到**（施工 LF-1，核心主会话 2026-11-14 审定）：只有以后人生自己的入口（`life.*`）动得了，不然删一行定时就绕开了「只有有意的结束」。协议 `schedule.list`、`schedules` 流的回应和推送不列 `loop` 是 `life` 的行；`schedule.cancel`、`pause`、`resume`、`update` 落在它上面照没有这个编号回 `unknown_schedule`，人和扩展一样（`methods.rs` 的 `mine`、`own`）。她的定时工具（`schedules/port.rs`）：`cron_list` 不列，`cron_delete` 照没有回；`schedule_wakeup` 照旧找得到跑在这个会话上的那一行、改得了下一次和那句话（那句话是她的留言：这一轮没写 `prompt` 的清成空的，施工 LF-2，第四节 `set_next`；工具说明和 `/loop` 共用，一个字不改），`stop: true` 不收，答 `software/loop/wakeup/unstoppable.txt`，那一行不动。
+8. **人生那一行通用的入口碰不到**（施工 LF-1，核心主会话 2026-11-14 审定）：只有人生自己的入口（`life.*`，施工 LF-5 中，`life.md`）动得了，不然删一行定时就绕开了「只有有意的结束」。协议 `schedule.list`、`schedules` 流的回应和推送不列 `loop` 是 `life` 的行；`schedule.cancel`、`pause`、`resume`、`update` 落在它上面照没有这个编号回 `unknown_schedule`，人和扩展一样（`methods.rs` 的 `mine`、`own`）。她的定时工具（`schedules/port.rs`）：`cron_list` 不列，`cron_delete` 照没有回；`schedule_wakeup` 照旧找得到跑在这个会话上的那一行、改得了下一次和那句话（那句话是她的留言：这一轮没写 `prompt` 的清成空的，施工 LF-2，第四节 `set_next`；工具说明和 `/loop` 共用，一个字不改），`stop: true` 不收，答 `software/loop/wakeup/unstoppable.txt`，那一行不动。
 
 ### 六、标签
 
@@ -117,6 +117,7 @@
 | `crates/miyu-endpoint/tests/schedule_life.rs`（施工 LF-1） | 人生：交过以后下一次是现在加默认间隔；她在被叫醒的那一轮里定了 10 分钟的，回合结束、上一次记完以后照她的；核心停了三天再起来只补交一次、之后照默认间隔，同样情形的 `dynamic` 照旧停着等；`stop` 不收、`cron_delete` 删不了、`cron_list` 不列，那一行不动；`schedule.*` 列不出、改不了（`unknown_schedule`），流的回应不列、改了不推 |
 | `crates/miyu-endpoint/tests/schedule_update.rs`（施工 J-5） | 改时间照现在重算下一次、列表和推送是改过的、写进了表、睡着的照新的下一次醒；改话编号和上一次留着、下一次不动；停着的改完还停着，续上照新的时间算；循环换不了种类、话能改；写错的照 `problem` 拒、什么都不改，都不写的、没有的编号照拒。扩展改不了别人建的、改得了自己的在 `schedule_package.rs` |
 | `crates/miyu-endpoint/tests/schedule_life_wake.rs`（施工 LF-2） | 人生醒来那段话：人格有 `prompts/life.md` 的正文是它的原文、空一行、留言，改了文件下一次醒来用新的；没有这个文件、文件是空的、会话不带人格的用出厂的；留言空的只有推演方法、末尾没有空行；她这一轮 `schedule_wakeup` 带了 `prompt` 的下一次留言是它，没带的清成空的；`dynamic` 没带的不动、原话原样 |
+| `crates/miyu-endpoint/tests/life.rs` 的 `resume_puts_a_life_row_at_now_and_leaves_other_loops_alone`（施工 LF-5 中） | 停着的人生那一行续上，下一次是现在、她的留言不动；`dynamic` 的照旧照那一刻算、过了的报 `NoNext` |
 | `crates/miyu-assemble/src/schedule/tests.rs` | 三种标签照 `loop` 挑、带任务编号，人生用它自己的一对（施工 LF-2）；没有字的原样，快照里没有人生那一对的人生的那句原样、别的两种照旧；`by` 的 JSON 写法（`"loop":"life"`）、读得回 |
 | `crates/miyu-policy/src/schedule/tests.rs`（施工 LF-2） | 人生那一对两格都有才交给组装器，标签坏了写明；以前的快照没有这两格，字节和加之前一样、读得回、写回去一个字节不变、指纹不变；新的快照带上、读得回 |
 | `crates/miyu-store/src/resources/schedules/tests.rs` 的 `schedule_texts_need_all_four_files`、`the_life_pair_needs_both_files_and_the_method_reads_as_shipped` | 四份都在才读得出；人生那一对两份都在才有（施工 LF-2），出厂的两份、推演方法读得出原文 |

@@ -162,6 +162,27 @@ async fn heads_own_prefs_are_people_only() {
     }
 }
 
+/// 人生会话的四个方法（施工 LF-5 中）只给人：批了驱动会话、读写事件的扩展照样调不了。
+#[tokio::test]
+async fn life_methods_are_people_only() {
+    let home = Home::new();
+    let program = Program::new();
+    let asks = [
+        r#"ask:life.start:{"persona":"engineer"}"#,
+        r#"ask:life.status:{"persona":"engineer"}"#,
+        r#"ask:life.pause:{"persona":"engineer"}"#,
+        r#"ask:life.resume:{"persona":"engineer"}"#,
+    ];
+    let all = ["events.read", "events.write", "sessions.drive"];
+    let path = install(&home, &program, "plain", &all, &asks);
+    let _core = core(&home, &Script::new([]), json!({"plain": all}));
+    let replies = lines(&path, 2 + asks.len()).await;
+    for (n, ask) in asks.iter().enumerate() {
+        let reply = &replies[1 + n];
+        assert_eq!(reason(reply), "local_only", "{ask}：{reply}");
+    }
+}
+
 #[tokio::test]
 async fn an_extension_speaks_as_itself() {
     let home = Home::new();

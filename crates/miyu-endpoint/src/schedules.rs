@@ -224,15 +224,18 @@ impl Schedules {
         })
     }
 
-    /// 续上一个：照现在算下一次（错过的不补）。没停的照旧重算。
+    /// 续上一个：照现在算下一次（错过的不补）。没停的照旧重算。人生那一行（施工 LF-5 中，`life.resume`）的下一次就是现在：
+    /// 它的「什么时候」是建的那一刻、早就过了，照它算不出；续上马上醒，同核心起来时补醒那一次。
     ///
     /// # Errors
     ///
     /// 没有，算不出下一次（某个时刻一次的已经过了），表用不了、写不了。
     pub fn resume(&self, id: &str) -> Result<Schedule, ScheduleError> {
         self.edit(id, |schedule, now| {
-            schedule.next =
-                Some(next::first(&schedule.when, now, &zone()).ok_or(ScheduleError::NoNext)?);
+            schedule.next = match schedule.looping {
+                Some(Loop::Life) => Some(now),
+                _ => Some(next::first(&schedule.when, now, &zone()).ok_or(ScheduleError::NoNext)?),
+            };
             schedule.paused = false;
             Ok(())
         })

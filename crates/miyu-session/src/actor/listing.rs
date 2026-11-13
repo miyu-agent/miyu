@@ -38,7 +38,9 @@ impl Actor {
                 | Body::TurnStarted(_)
                 | Body::TurnEnded(_)
                 // 整理会话这一趟的结果（施工 DR-1）：列表那一项照它写 `dream.result`。
-                | Body::DreamEnded(_) => true,
+                | Body::DreamEnded(_)
+                // 人生会话（施工 LF-5 中）：列表那一项照它写 `life`。
+                | Body::LifeStarted(_) => true,
                 // 中途换人格、预设（施工 P-16 下补）：列表那一项照索引写着它们，人换了就报，不等下一轮。
                 Body::PolicyChanged(changed) => {
                     changed.persona.is_some() || changed.preset.is_some()

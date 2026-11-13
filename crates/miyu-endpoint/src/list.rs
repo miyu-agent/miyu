@@ -17,7 +17,7 @@ use serde_json::{Value, json};
 use miyu_kernel::event::{Dream, DreamEnded};
 use miyu_kernel::id::SessionId;
 use miyu_kernel::time::Timestamp;
-use miyu_store::index::{FILE, Opened, Row, SessionIndex};
+use miyu_store::index::{FILE, Life, Opened, Row, SessionIndex};
 use miyu_store::log::{Mark, OpenError, first_event, read_marked};
 use miyu_store::root::DataRoot;
 use miyu_tool::Stop;
@@ -128,6 +128,8 @@ pub(crate) struct Listed {
     pub(crate) forked: bool,
     /// 导进来的只读存档（施工 SE-1 下）：头把它排在单独一段，写 `archived: true`；别的不写。
     pub(crate) archived: bool,
+    /// 人生会话（施工 LF-5 中）：是的写 `life: true`，别的不写。
+    pub(crate) life: Life,
 }
 
 impl Listed {
@@ -160,6 +162,7 @@ impl Listed {
             dream_result: row.dream_result,
             origin: row.origin,
             forked: row.forked,
+            life: row.life,
         }
     }
 
@@ -227,6 +230,10 @@ impl Listed {
         }
         if self.archived {
             item["archived"] = json!(true);
+        }
+        // 人生会话（施工 LF-5 中）：头照它认出来。别的不写，字节不变。
+        if self.life == Life::Started {
+            item["life"] = json!(true);
         }
         context::write(&mut item, self);
         item

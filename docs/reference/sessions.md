@@ -127,6 +127,7 @@
 | `origin` | 从哪开的：终端集成开的会话（`session.terminal` 开的）是 `"terminal"`，头的会话列表照它写「终端集成」；她问顾问开的顾问会话（子会话，带 `parent`）是 `"advisor"`。别的、以前开的没有 |
 | `forked` | fork 子代理的会话才有，是 `true`：头照它换图标。普通子代理、主会话没有 |
 | `archived` | 导进来的只读存档才有，是 `true`：头把它排在单独一段，输入框换成一行「这是存档」 |
+| `life` | 人生会话才有，是 `true`（见[人生会话](life.md)）：日志里记着 `life.started`。别的会话没有 |
 | `default_workspace` | 这个会话的默认工作区，绝对路径：主会话是它自己的 `…/workspace/<会话编号>/`，子会话、分叉出来的是主会话的那一个。`cwd` 和它一样的可以写「默认工作区」 |
 
 只列本机的会话；场所会话不在里面（见 [场所](venues.md) 的 `venue.sessions`）。要一直跟着最新的，订阅 `sessions` 流（[连接](connection.md)）。

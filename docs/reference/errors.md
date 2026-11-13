@@ -123,6 +123,7 @@
 |---|---|---|
 | `unknown_schedule` | 没有这个定时任务：`schedule.cancel`、`schedule.pause`、`schedule.resume`、`schedule.update`（施工 J-1 下） | |
 | `too_many_schedules` | 定时任务已经有 200 个（人建、她建、包建合计，熔断性质的安全上限）：`schedule.add`（施工 J-3 上）。先删几个，已有的照跑 | |
+| `life_exists`、`no_life` | 人生会话：这个人格已经有一个（`life.start`）；这个人格没有（`life.pause`、`life.resume`），见[人生会话](life.md) | `life_exists` 的带 `session` |
 | `unknown_project` | 没有这个项目：项目的方法，`session.create`、`session.set_meta` 写的 `project` | |
 
 ## 软件包、扩展、命令

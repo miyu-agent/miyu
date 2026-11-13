@@ -1525,6 +1525,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sLF5a"><span class="n">LF-5 上</span>预设多认 hidden<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF2"><span class="n">LF-2</span>人生循环醒来那段话分三层<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF3"><span class="n">LF-3</span>人生循环叫醒的回合进回合索引<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sLF5b"><span class="n">LF-5 中</span>开一条人生会话，暂停、继续、问状态<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -58819,6 +58820,60 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LF-3-人生的回合进记忆.md</code>；设计 <code>70-推演人生.md</code>；蓝图 <code>memory.md</code>、<code>kernel/ids.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sLF5b" aria-labelledby="h-sLF5b">
+  <div class="sheet-head"><h2 id="h-sLF5b"><span class="no">LF-5 中</span>开一条人生会话，暂停、继续、问状态</h2><span class="pill done">做完</span></div>
+  <p class="purpose">前几步有了不会悄悄断的循环、醒来那段话、进记忆的门，但只有测试建得出人生循环。这一步让人能真的给一个人格开一条：核心替它新开一个会话、记下身份、起上循环。到这里功能第一次能从头跑起来。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint · life.rs　miyu-kernel · event/life.rs　miyu-store · index</span><span class="dir-note">LF-5 中</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>life.start</code>：查这个人格有没有 → 新开会话（预设 <code>life</code>）→ 设上下文上限 32000 → 记 <code>life.started</code> → 建定时表那一行，马上醒</li>
+              <li><code>life.status</code>、<code>life.pause</code>、<code>life.resume</code>；那一行没了的 <code>resume</code> 照日志重建</li>
+              <li>会话索引多一格（版本 15），会话列表的一项带 <code>life</code></li>
+              <li>出厂预设「推演人生」：<code>hidden</code>，没有 shell 和文件；不另设步数上限</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">身份是内核的事件，不是包自己的事件</span><span class="rl">外面记不了、假冒不了</span></div>
+          <div class="tile new"><span class="nm">一个人格一条：核心上一把锁</span><span class="rl">core1 审时要的</span></div>
+          <div class="tile new"><span class="nm">索引那一格存状态，不存是或否</span><span class="rl">结束时只加一种取值</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LF-5 中</dd></div>
+        <div><dt>名称</dt><dd>开一条人生会话，暂停、继续、问状态</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">LF-5中</dd></div>
+        <div><dt>验收</dt><dd>门禁十一项、Windows 版 clippy 全过；三个手写变异都被逮住</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>开出来的会话人格、预设、上下文上限都对，马上醒第一次，正文是出厂的推演方法</span></li>
+        <li><span class="ok">✓</span><span>两个连接同时开同一个人格只开出一条；别的人格互不相干</span></li>
+        <li><span class="ok">✓</span><span>停了到点不醒，续了照现在接着醒；删掉定时表那一行再续，照日志重建</span></li>
+        <li><span class="ok">✓</span><span>索引那一格：增量写的和删了索引照日志重建的一样</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LF-5中-开启暂停继续.md</code>；设计 <code>70-推演人生.md</code>；蓝图 <code>life.md</code>、<code>store/index.md</code>、<code>presets.md</code>；协议参考 <code>life.md</code>。</li>
       </ul>
     </div>
   </div>

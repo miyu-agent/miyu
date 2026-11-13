@@ -46,6 +46,7 @@ mod human;
 mod import;
 mod job_output;
 mod knowledge;
+mod life;
 mod list;
 mod listen;
 mod listing;
@@ -192,6 +193,8 @@ pub struct Core {
     blob_grants: attach::Grants,
     /// 找回、造场所会话排着来（施工 O-3）：同一个场所同时来两次，不造出两个主线会话。
     venues: tokio::sync::Mutex<()>,
+    /// 改人生会话排着来（施工 LF-5 中，`life.rs`）：两个头同时开同一个人格的，开不出两条。
+    life: tokio::sync::Mutex<()>,
     /// 每个场所开着的场所插件（施工 O-60，`venue.plugins`）：只在内存里，交给每个会话。
     plugins: miyu_session::VenuePlugins,
     /// 软件包清单（施工 9-1 上，`packages.rs`）：起来时读一次；装、卸以后当场换成重读的一份（施工 F-5 上）。
@@ -313,6 +316,7 @@ impl Core {
             viewing: viewing::Viewing::default(),
             blob_grants,
             venues: tokio::sync::Mutex::new(()),
+            life: tokio::sync::Mutex::new(()),
             plugins: miyu_session::VenuePlugins::default(),
             packages: std::sync::RwLock::new(Arc::new(found)),
             visible_packages: packages::own::Visible::default(),

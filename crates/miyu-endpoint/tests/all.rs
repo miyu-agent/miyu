@@ -114,6 +114,8 @@ mod knowledge_manage;
 mod knowledge_package;
 mod knowledge_progress;
 mod knowledge_remove;
+mod life;
+mod life_preset;
 mod limits;
 mod line_pin;
 mod list;

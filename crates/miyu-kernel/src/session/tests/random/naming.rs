@@ -3,7 +3,7 @@
 //! 喂得到。什么时候来都收，回合进行中的带上回合；照看守的规矩，一样查每个命令恰好回应一次。
 
 use super::*;
-use crate::event::{VenueMessage, VenueRecalled};
+use crate::event::{LifeStarted, VenueMessage, VenueRecalled};
 use crate::id::ExternalId;
 use crate::session::{Appended, ExtEvent, GoalChange};
 
@@ -105,10 +105,12 @@ pub(super) fn some_overheard(next_id: &mut u64) -> Input {
     })
 }
 
-/// 桥记的一条（施工 O-13 上）：照改标题的办法，每一例最后另送一次；扩展自己的、撤回，随便挑。什么时候来都收，不带回合。
+/// 桥记的一条（施工 O-13 上）：照改标题的办法，每一例最后另送一次；扩展自己的、撤回、核心记的人生身份（施工 LF-5 中），随便挑。
+/// 什么时候来都收，不带回合。
 pub(super) fn some_appended(seed: u64, next_id: &mut u64) -> Input {
     let mut rng = Rng(seed ^ 0x0A13_0000);
-    let event = match rng.below(2) {
+    let event = match rng.below(3) {
+        2 => Appended::Life(LifeStarted {}),
         0 => Appended::Ext(
             ExtEvent::new("ext.onebot.chat.decided", serde_json::json!({"to": [1]}))
                 .expect("ext. 开头的"),

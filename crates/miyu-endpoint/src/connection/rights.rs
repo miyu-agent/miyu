@@ -186,6 +186,11 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "project.create"
         | "project.update"
         | "project.delete"
+        // 人生会话（施工 LF-5 中）：开、停、续一个人格的人生，同人格设置里的开关，只给人。
+        | "life.start"
+        | "life.status"
+        | "life.pause"
+        | "life.resume"
         // 头自己的设置（施工 HP-1）：只给头，扩展、平台桥都不行。
         | "prefs.get"
         | "prefs.set"

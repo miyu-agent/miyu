@@ -67,8 +67,8 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
    以前的 `[software]`（施工 F-3 上起照认，新写的用 `[features]`）：键是软件的编号，写法同包的编号。现在装了的：基础系统组 `basesystem`（施工 BS-1 上中起是组，写它就是写组里没单独写的包；施工 FG-1 起组里十六个包，待办、定时、循环挪进组 `tasks`，项目文档挪进组 `environment`，记忆、人设遵循提醒是组 `persona`，联网、知识库是组 `research`，`packages.md` 文件表 `groups.toml` 那一行）、记忆 `base-memory`（三件工具和回合开始的召回）、知识库 `base-knowledge`（两件工具，施工 K-1 下）、角色扮演 `base-roleplay`（人格的角色扮演提示和风格锁）、联网 `base-net`、长期目标 `base-goal`，和清单装的 `process` 包（桥）。出厂的包施工 PN-3 起叫 `base-*`（设计 48），功能编号还是改名前的短名，`[software]` 里写短名的照「先认功能的编号」认得：`memory = false` 关的是功能 `memory`；功能编号和短名不同的包（联网的 `web-search`、`web-fetch`，注入环境信息的 `env-*`，写技能和包的两个技能），写短名（`net`、`env`、`authoring`）哪个都认不上，要写包编号或者功能编号。写了没装的不报错（这台机器上以后可能装），`preset.get` 的 `software` 里标 `installed: false`（施工 P-3 补）。
 5. `[tools]` 的键是工具名：字母、数字、`-`、`_`，最多 64 个。单件打开某个包里的一件先不做（走查 C1），写 `true` 报错。
 6. 权限级别、压缩模板、强调色这些配置值随 P-2（下）（D1、C3）。
-7. `[limits]`（施工 AE-1，2026-10-30 项目主人定）只有 `unattended_steps`：没人看着时一个回合最多请求几次模型，正整数（0、负数、小数、字报 `bad_limit`，别的键报 `unknown_key`，写明第几行）。上一层写了的盖住下面的；几层都没写的照出厂的 500。管没人看着的主会话的每一轮、有人看着的会话里不是人开的回合（定时任务、长期目标续轮、重启接着干、回报叫醒……），回报叫醒的连着几轮合起来也照它（审计 R3E-2，`policy.md`「步数上限」第 8 条）；有人看着的会话里人开的回合不限，子代理照自己的出厂数（800、fork 500），都不看它（`policy.md`「步数上限」）。写了才进叠好的文件的指纹，没写的指纹和以前一字不差：以前造的快照照旧对得上；改了它，开着的会话下一个回合换上新的数（下面「改了文件」）。出厂的四份不写它。
-8. `hidden`（施工 LF-5 上，设计 `70-推演人生.md` 第三节第 7 条）：只收 `true`、`false`，别的（字、数……）报 `not_bool`，写明第几行。上一层写了的盖住下面的（同 `icon`），几层都没写的是 `false`。是 `true` 的，头在「新建会话选哪个预设」里不列，预设管理页照列、照改；核心不拦拿它开会话，`preset.list` 照旧列出它、只带上这一格（不列是头的事）。它不影响会话：不进叠好的文件的指纹（`PresetFile::digest`）、不进快照，改了它开着的会话不换快照、不断缓存（同 `icon`；以前造的快照照旧对得上）。出厂的四份不写它。
+7. `[limits]`（施工 AE-1，2026-10-30 项目主人定）只有 `unattended_steps`：没人看着时一个回合最多请求几次模型，正整数（0、负数、小数、字报 `bad_limit`，别的键报 `unknown_key`，写明第几行）。上一层写了的盖住下面的；几层都没写的照出厂的 500。管没人看着的主会话的每一轮、有人看着的会话里不是人开的回合（定时任务、长期目标续轮、重启接着干、回报叫醒……），回报叫醒的连着几轮合起来也照它（审计 R3E-2，`policy.md`「步数上限」第 8 条）；有人看着的会话里人开的回合不限，子代理照自己的出厂数（800、fork 500），都不看它（`policy.md`「步数上限」）。写了才进叠好的文件的指纹，没写的指纹和以前一字不差：以前造的快照照旧对得上；改了它，开着的会话下一个回合换上新的数（下面「改了文件」）。出厂的只有推演人生写它（15，施工 LF-5 中），别的四份不写。
+8. `hidden`（施工 LF-5 上，设计 `70-推演人生.md` 第三节第 7 条）：只收 `true`、`false`，别的（字、数……）报 `not_bool`，写明第几行。上一层写了的盖住下面的（同 `icon`），几层都没写的是 `false`。是 `true` 的，头在「新建会话选哪个预设」里不列，预设管理页照列、照改；核心不拦拿它开会话，`preset.list` 照旧列出它、只带上这一格（不列是头的事）。它不影响会话：不进叠好的文件的指纹（`PresetFile::digest`）、不进快照，改了它开着的会话不换快照、不断缓存（同 `icon`；以前造的快照照旧对得上）。出厂的只有推演人生写 `true`（施工 LF-5 中），别的四份不写。
 
 **出厂的三个**（Y6、Y7，`10-自带软件.md` 第四节；极简开发是施工 P-16 上加的）：
 
@@ -77,10 +77,11 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 | `full` | 全部功能 | `unlisted = "on"`：装了的全开，以后新装的也开。`preset.default` 出厂是它 |
 | `dev` | 常规开发 | `unlisted = "off"`，开组 `basesystem`、组 `environment`（注入环境信息和自动注入 AGENTS 文档，施工 ENV-1、FG-1）、`base-net`、组 `tasks`（待办、长期目标、定时任务、循环任务：施工 FG-1 起不在基础系统组里，另写上，开的功能和改前一样；定时、循环是施工 J-2）、`base-memory`（人格记忆，2026-10-20 项目主人定，施工 P-15）、`base-authoring`（写技能、写包的两个技能，施工 P-8，2026-10-12 项目主人照推荐定：不开她要写技能时看不到，只能在本机目录里翻） |
 | `minimal` | 极简开发 | `unlisted = "off"`，`[software]` 只开 `base-read`、`base-write`、`base-edit`、`base-shell` 四个包（施工 BS-1 上中起一件一个包，不用再一件件关）。基础系统组以后新加的包照 `unlisted` 关着（「命令行调用工具」`base-clicall` 就是，施工 M-6）。环境那七个（施工 C-11，下面「环境那几块」）和「用户身份」（施工 ENV-1）照旧开着，`[features]` 写明了 |
+| `life` | 推演人生 | `life.start` 开的人生会话用（施工 LF-5 中，设计 `70-推演人生.md` 第三节第 7 条，`life.md`）。`hidden = true`（不列进新建会话的选择，核心不拦拿它开别的会话），`unlisted = "off"`，`[software]` 开 `base-env`（环境那八块，不带项目文档）、`base-net`（搜索、取网页）、`base-memory`（人格记忆三件）、`base-loop`（`schedule_wakeup`）、`base-roleplay`（角色扮演提示）、`base-history`（`history`）；没有命令行、读写文件、定时任务。不写 `[limits]`（2026-11-14 项目主人定不另设步数上限，照出厂的 500） |
 | `none` | 无功能 | `unlisted = "off"`，什么都不写：菜单里能开关的全关，以后新装的也关（施工 P-17，下面「无功能」） |
 
-- 名字三种语言：全部功能、Everything、すべての機能；常规开发、Development、開発（2026-10-20 项目主人改名，原来是基础功能、Basics、基本機能，施工 P-15）；极简开发、Minimal、ミニマル開発；无功能、Nothing、機能なし（施工 P-17）。图标 `boxes`、`box`、`square-terminal`、`circle-off`。编号照旧 `full`、`dev`、`minimal`，加 `none`，只在核心和配置 `preset.default` 里用，界面上不露。
-- 说明三种语言（施工 P-16 上，2026-10-23 项目主人定；原来出厂的不写说明，施工 P-4 下）：全部功能「开放全部工具。」，常规开发「在极简开发的基础上增加记忆、网络搜索、子代理、Agent间交流等开发常用工具。」，极简开发「只提供运行命令和读写文件的工具。」（2026-11-09 项目主人改），无功能「不开启任何功能。」（施工 P-17）。给人看的，不发给模型。
+- 名字三种语言：全部功能、Everything、すべての機能；常规开发、Development、開発（2026-10-20 项目主人改名，原来是基础功能、Basics、基本機能，施工 P-15）；极简开发、Minimal、ミニマル開発；无功能、Nothing、機能なし（施工 P-17）；推演人生、Life Simulation、人生シミュレーション（施工 LF-5 中）。图标 `boxes`、`box`、`square-terminal`、`circle-off`、`sprout`（推演人生）。编号照旧 `full`、`dev`、`minimal`，加 `none`、`life`，只在核心和配置 `preset.default` 里用，界面上不露。
+- 说明三种语言（施工 P-16 上，2026-10-23 项目主人定；原来出厂的不写说明，施工 P-4 下）：全部功能「开放全部工具。」，常规开发「在极简开发的基础上增加记忆、网络搜索、子代理、Agent间交流等开发常用工具。」，极简开发「只提供运行命令和读写文件的工具。」（2026-11-09 项目主人改），无功能「不开启任何功能。」（施工 P-17），推演人生「人生会话用：联网、人格记忆、循环、角色扮演，没有命令行和文件。」（施工 LF-5 中）。给人看的，不发给模型。
 
 **环境那几块**（施工 C-11，2026-10-23 项目主人定：拆成能开关的功能，群聊里用不上的能关掉；设计 30 第三节第 6 条）：七个功能，都没有工具，照功能的规矩开关（`unlisted = "off"`、又没写它们的预设里是关的）。关了的回合开始不再注入那一块事实，system 里跟着它的那一行不拼（`miyu_policy::shown`）：
 
@@ -208,6 +209,7 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 | `crates/miyu-endpoint/src/connection/tests.rs`（施工 P-3 中） | 扩展进程调了回 `local_only` 的名单 |
 | `crates/miyu-kernel/src/facts/tests/gates.rs`、`crates/miyu-policy/src/shown/tests.rs`、`crates/miyu-policy/src/compose/tests.rs` 的 `a_preset_can_leave_out_each_core_line`（施工 C-11） | 环境那几块：都开着的逐字节一样；只关时间、只关工作目录照拆开的写法，都关了不注入；权限、编号、模型各自关得掉；拆开的写法要不了另一半；照预设没开的功能编号读；system 那几行跟着开关 |
 | `crates/miyu-endpoint/tests/env_package.rs`、`crates/miyu-policy/src/shown/tests.rs` 的 `absent_*`（施工 ENV-1） | 真核心：全部功能的快照 system 有「关于你」；只关「用户身份」的快照没有「关于你」、别的一字不变；八个都关的连环境那几行也不拼；`package.disable base-env` 以后新会话的 system 和开关（`Shown`）跟八个都关的一字不差；没装的功能和关了的一样算关，记成 `absent` |
+| `crates/miyu-endpoint/tests/life_preset.rs`（施工 LF-5 中） | 出厂的推演人生：`preset.list` 列它、`hidden` 是 `true`、图标 `sprout`，`unattended_steps` 没写；`life.start` 开的会话工具面正好是搜索、取网页、记忆三件、`schedule_wakeup`、`history`，没有命令行、读写文件、定时任务 |
 | `crates/miyu-endpoint/tests/presets.rs` | 不写预设照默认、指定的压着默认；找人格的先后；没有的、编号不对的、写错的拒绝、什么都不造，默认预设指着没有的也拒；会话列表、`subscribe` 写 `preset`，以前的日志不写；`venue.session` 带预设造、找回时不看；`preset.list`、`preset.get`；`check` 查预设 |
 | `crates/miyu-endpoint/tests/preset_tokens.rs`（施工 DM-4） | 读得出的预设带 `tokens`，同无人格的新会话预览的 `estimated_total`，工具多的多，写错的不带；列预设、预览上下文、预览工具面都不在 `workspace/` 下留会话目录 |
 | `crates/miyu-session/tests/spawn.rs` | 子会话照父会话的预设，父会话载入以后也照 |

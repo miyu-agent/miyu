@@ -18,6 +18,7 @@ mod effect;
 mod goal;
 mod image;
 mod job;
+mod life;
 mod message;
 mod model;
 mod nested;
@@ -47,6 +48,7 @@ pub use goal::{
 };
 pub use image::ImageDescribed;
 pub use job::{ChildReason, ChildReported, JobLines, JobReason, JobReported};
+pub use life::LifeStarted;
 pub use message::{MessageAssistant, MessageUser, MessageWithdrawn, TypedCommand};
 pub use model::{
     BlockSpan, CallError, CallResult, ErrorClass, FirstDifference, ForgedCut, ForgedRole,
@@ -240,6 +242,8 @@ bodies! {
     GoalEnded = "goal.ended",
     /// 整理会话跑完了一趟（施工 DR-1）。
     DreamEnded = "dream.ended",
+    /// 这个会话是它的人格的人生会话（施工 LF-5 中）。
+    LifeStarted = "life.started",
 }
 
 impl Event {

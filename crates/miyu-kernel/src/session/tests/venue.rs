@@ -124,6 +124,24 @@ fn appended_events_carry_no_turn_and_open_nothing() {
     assert_eq!(events[0].body.kind(), "venue.recalled");
 }
 
+/// 核心记的人生身份（施工 LF-5 中）：同桥记的一样不带回合、不开回合，记成 `life.started`，`by` 照发的。
+#[test]
+fn the_life_identity_is_appended_like_the_rest() {
+    let mut session = session();
+    let actions = session.handle(append(1, Appended::Life(crate::event::LifeStarted {})));
+    let events = appended_events(&actions);
+    assert_eq!(appended(&actions), seqs(&[2]));
+    assert_eq!(events[0].turn, None);
+    assert_eq!(events[0].by, person());
+    assert_eq!(
+        events[0].body,
+        Body::LifeStarted(crate::event::LifeStarted {})
+    );
+    let actions = session.handle(stored(2));
+    assert!(actions.contains(&accepted_reply(1, &[2])), "{actions:?}");
+    assert!(hooks(&actions).is_empty(), "不开回合");
+}
+
 #[test]
 fn only_ext_kinds_are_free_form() {
     assert!(ExtEvent::new("ext.onebot.venues.queued", serde_json::json!({})).is_some());

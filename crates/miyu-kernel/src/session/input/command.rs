@@ -2,8 +2,8 @@
 
 use crate::block::Block;
 use crate::event::{
-    Body, ChildReported, ContextInjected, Decision, DreamEnded, Level, Response, TypedCommand,
-    VenueDelivered, VenueMessage, VenueRecalled,
+    Body, ChildReported, ContextInjected, Decision, DreamEnded, Level, LifeStarted, Response,
+    TypedCommand, VenueDelivered, VenueMessage, VenueRecalled,
 };
 use crate::id::EventKind;
 use crate::id::{CallId, Seq, TurnId};
@@ -262,7 +262,8 @@ pub enum Queued {
 }
 
 /// `events.append` 记的一条（施工 O-13 上，`docs/blueprint/chat.md` 第七条第 3 条）：扩展自己命名空间的，或者核心认得的两种场所
-/// 的事件。别的种类经不了这条路：内核自己的事件只由内核记。
+/// 的事件；还有核心自己在 `life.start` 里记的人生身份（施工 LF-5 中，`life.md`）。别的种类经不了这条路：内核自己的事件只由内核
+/// 记；`events.append` 只放前三种进来，人生身份外面记不了。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Appended {
     /// `ext.` 开头的：原样留着，不渲染。
@@ -271,6 +272,8 @@ pub enum Appended {
     Recalled(VenueRecalled),
     /// `venue.delivered`。
     Delivered(VenueDelivered),
+    /// `life.started`（施工 LF-5 中）：只有核心的 `life.start` 发。
+    Life(LifeStarted),
 }
 
 impl Appended {
@@ -283,6 +286,7 @@ impl Appended {
             },
             Appended::Recalled(recalled) => Body::VenueRecalled(recalled),
             Appended::Delivered(delivered) => Body::VenueDelivered(delivered),
+            Appended::Life(started) => Body::LifeStarted(started),
         }
     }
 }

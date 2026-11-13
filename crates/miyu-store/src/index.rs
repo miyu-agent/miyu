@@ -11,7 +11,7 @@
 
 mod row;
 
-pub use row::{Link, Row, cwd, said};
+pub use row::{Life, Link, Row, cwd, said};
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -31,14 +31,14 @@ pub use crate::sqlite::{DbError as IndexError, Opened};
 pub const FILE: &str = "sessions.db";
 
 /// 表的结构的版本，记在 SQLite 的 `user_version` 里：结构一变就加一，对不上的删掉重建。施工 9-5 多了 `preview`，是 2；施工 O-3 多了 `venue`，是 3；
-/// 施工 P-1 下多了 `persona`，是 4；施工 P-2 上多了 `preset`，是 5；施工 3-8 八补 多了 `named`，是 6；施工 H-2 多了 `project`，是 7；终端要的会话列表 tokens 一列多了 `tokens`，是 8；网页要的上下文用量（施工 9-5 再补）多了 `context`、`context_model`，是 9；整理会话（施工 D-1 下）多了 `dream`，是 10；终端集成开的（施工 8-33 四补）多了 `origin`，是 11；fork 子代理（施工 A-F 补）多了 `forked`，是 12；整理会话的结果（施工 DR-1）多了 `dream_result`，是 13；施工 SU-6 上去掉 `owner`（只有主人一个），是 14。
-const VERSION: i64 = 14;
+/// 施工 P-1 下多了 `persona`，是 4；施工 P-2 上多了 `preset`，是 5；施工 3-8 八补 多了 `named`，是 6；施工 H-2 多了 `project`，是 7；终端要的会话列表 tokens 一列多了 `tokens`，是 8；网页要的上下文用量（施工 9-5 再补）多了 `context`、`context_model`，是 9；整理会话（施工 D-1 下）多了 `dream`，是 10；终端集成开的（施工 8-33 四补）多了 `origin`，是 11；fork 子代理（施工 A-F 补）多了 `forked`，是 12；整理会话的结果（施工 DR-1）多了 `dream_result`，是 13；施工 SU-6 上去掉 `owner`（只有主人一个），是 14；人生会话（施工 LF-5 中）多了 `life`，是 15。
+const VERSION: i64 = 15;
 
 /// 表里的列，照这个先后读写（[`Row::from_sql`]、[`Row::to_sql`]）。
-const COLUMNS: &str = "id, parent, oneshot, title, pinned, cwd, created, last_active, segment, bytes, next, preview, venue, persona, preset, named, project, tokens, context, context_model, dream, origin, forked, dream_result";
+const COLUMNS: &str = "id, parent, oneshot, title, pinned, cwd, created, last_active, segment, bytes, next, preview, venue, persona, preset, named, project, tokens, context, context_model, dream, origin, forked, dream_result, life";
 
 /// 写一行时的占位，个数照 [`COLUMNS`]。
-const VALUES: &str = "?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24";
+const VALUES: &str = "?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25";
 
 /// 建表。`segment`、`bytes`、`next` 是这一行照到日志的哪里（[`Mark`]）；时刻存成毫秒。
 const SCHEMA: &str = "CREATE TABLE sessions (
@@ -65,7 +65,8 @@ const SCHEMA: &str = "CREATE TABLE sessions (
     dream TEXT,
     origin TEXT,
     forked INTEGER NOT NULL,
-    dream_result TEXT
+    dream_result TEXT,
+    life INTEGER NOT NULL
 ) WITHOUT ROWID";
 
 /// 会话列表的索引。

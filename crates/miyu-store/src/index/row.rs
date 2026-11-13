@@ -88,6 +88,41 @@ pub struct Row {
     pub forked: bool,
     /// 整理会话这一趟做了什么（施工 DR-1）：最后一条 `dream.ended`。没跑完、崩了没记上的、别的会话没有。表里存成它的 JSON。
     pub dream_result: Option<DreamEnded>,
+    /// 是不是人生会话（施工 LF-5 中，设计 `70-推演人生.md` 第三节第 1 条）：照日志里的 `life.started`。`life.start` 照它找一个人格
+    /// 的人生会话，会话列表照它写 `life`。
+    pub life: Life,
+}
+
+/// 一个会话是不是人生会话（施工 LF-5 中）：表里存成整数（[`Life::number`]）。做成几种取值而不是布尔：以后结束了的人生会话
+/// 只加一种，不改表的形状。
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Life {
+    /// 不是人生会话：表里是 0。
+    #[default]
+    Not,
+    /// 开着的人生会话：日志里记了 `life.started`。表里是 1。
+    Started,
+}
+
+impl Life {
+    /// 存进表里的数。
+    #[must_use]
+    pub fn number(self) -> i64 {
+        match self {
+            Life::Not => 0,
+            Life::Started => 1,
+        }
+    }
+
+    /// 从表里的数读回来；认不得的没有。
+    #[must_use]
+    pub fn from_number(number: i64) -> Option<Life> {
+        match number {
+            0 => Some(Life::Not),
+            1 => Some(Life::Started),
+            _ => None,
+        }
+    }
 }
 
 /// `preview` 最多几个字（按 Unicode 的字数）。
@@ -134,12 +169,13 @@ impl Row {
                 .as_ref()
                 .is_some_and(|forked| forked.within.is_some()),
             dream_result: None,
+            life: Life::Not,
         })
     }
 
     /// 照先后看一条（`protocol.md` 的 `session.list` 第 3、4 条）：它的时刻是最近一次动静；带 `cwd` 的盖上工作目录；
     /// `session.meta_changed` 写了 `title` 的换成它（空的是去掉），`by` 是人、又不是去掉的算人起的；写了 `pinned` 的换成它；写了 `project` 的换成它（空的是移出来，施工 H-2）。
-    /// 撤掉的回合里改的也算：改名不是对话的一部分。`policy.changed` 写了 `persona`、`preset` 的换成它（中途换人格、预设，施工
+    /// 撤掉的回合里改的也算：改名不是对话的一部分。`life.started` 的记成人生会话（施工 LF-5 中）。`policy.changed` 写了 `persona`、`preset` 的换成它（中途换人格、预设，施工
     /// P-13；空的人格是无人格）：人换了就算，不等下一个回合真换上。
     pub fn see(&mut self, event: &Event) {
         // 脚本里调的工具（施工 M-1）不算动静：不是人和她的对话，后台任务的会在回合外落盘，会把终端会话的闲置往后推。
@@ -174,6 +210,9 @@ impl Row {
         }
         if let Body::DreamEnded(ended) = &event.body {
             self.dream_result = Some(*ended);
+        }
+        if let Body::LifeStarted(_) = &event.body {
+            self.life = Life::Started;
         }
         if let Body::ContextCompacted(_) = &event.body {
             self.context = None;
@@ -246,11 +285,12 @@ impl Row {
                 .get::<_, Option<String>>(23)?
                 .map(|text| serde_json::from_str(&text).map_err(|_| bad("dream_result")))
                 .transpose()?,
+            life: Life::from_number(row.get(24)?).ok_or_else(|| bad("life"))?,
         })
     }
 
     /// 写进表里的几格，先后照 [`super::COLUMNS`]。数字超过 SQLite 的整数（`i64`）的报错：一段不会有那么长。
-    pub(super) fn to_sql(&self) -> Result<[rusqlite::types::Value; 24], IndexError> {
+    pub(super) fn to_sql(&self) -> Result<[rusqlite::types::Value; 25], IndexError> {
         use rusqlite::types::Value;
         let number = |n: u64| {
             i64::try_from(n)
@@ -294,6 +334,7 @@ impl Row {
                 })?),
                 None => Value::Null,
             },
+            Value::Integer(self.life.number()),
         ])
     }
 }

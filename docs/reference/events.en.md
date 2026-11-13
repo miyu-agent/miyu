@@ -54,6 +54,7 @@ The exact shape of each kind is in the repository's `docs/designs/samples/events
 | `todos.cleared` | The to-do list was cleared |
 | `package.state` | A package's program set its state in this session (`{"package", "state"}`, see [Extensions](extensions.en.md)) |
 | `goal.set`, `goal.changed`, `goal.paused`, `goal.resumed`, `goal.ended` | A standing goal was set, changed, paused, resumed, ended |
+| `life.started` | This is a persona's life session (opened by `life.start`, see [Life sessions](life.en.md)) |
 | `dream.ended` | A memory consolidation run finished: how many memories it added, revised and retired, whether it wrote the summary, whether it was stopped |
 | `venue.recalled`, `venue.delivered` | Someone recalled a message on the platform; her message reached the platform |
 | `ext.<prefix>.<name>` | Recorded by an extension (`events.append`; the prefix is the manifest's `prefix`, or the package id without it) |

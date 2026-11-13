@@ -32,7 +32,9 @@ async fn listed(client: &mut Client) -> Vec<(String, Value)> {
 async fn presets_carry_hidden_and_it_can_be_set_and_taken_away() {
     let home = Home::new();
     let mut client = connected(&home).await;
-    let factory = ["dev", "full", "minimal", "none"].map(|id| (id.to_string(), json!(false)));
+    // 出厂的推演人生（施工 LF-5 中）是 true，别的四个都是 false。
+    let factory =
+        ["dev", "full", "life", "minimal", "none"].map(|id| (id.to_string(), json!(id == "life")));
     assert_eq!(listed(&mut client).await, factory, "出厂四个都是 false");
     for id in ["dev", "full", "minimal", "none"] {
         let got = client.call("g", "preset.get", json!({"preset": id})).await;

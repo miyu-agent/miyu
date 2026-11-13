@@ -27,6 +27,7 @@
 | [项目](projects.md) | `project.*` |
 | [头自己的设置](prefs.md) | `prefs.*` |
 | [定时任务](schedules.md) | `schedule.*` |
+| [人生会话](life.md) | `life.*` |
 | [软件包与命令](packages.md) | `package.*`、`extension.*`、`mcp.*`、`command.*`、`check` |
 | [总线](bus.md) | `bus.*`、公认的名字 |
 | [扩展](extensions.md) | 拉起、能力、`provide`、`tool.call`、`user.append`、`tool.guard`、`tool.after`、`system.append`、界面块、`content.*`、`events.append` |

@@ -61,6 +61,10 @@ kb.reindex
 kb.remove
 kb.search
 kb.update
+life.pause
+life.resume
+life.start
+life.status
 link.preview
 login.redeem
 login.ticket

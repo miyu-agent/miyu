@@ -357,7 +357,7 @@ fn usable(core: &Core, cwd: &str) -> bool {
 }
 
 /// 建、改出的错照协议说。
-fn refusal(error: ScheduleError) -> Refusal {
+pub(crate) fn refusal(error: ScheduleError) -> Refusal {
     match error {
         ScheduleError::Cron(_) => Refusal::bad_schedule("cron"),
         ScheduleError::NoNext => Refusal::bad_schedule("past"),
