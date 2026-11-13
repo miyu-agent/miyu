@@ -26,6 +26,9 @@ miyu-config = { path = "../miyu-config" }
 # 数据根、环境快照；给人看的字。
 miyu-store = { path = "../miyu-store" }
 miyu-source = { path = "../miyu-source" }
+# `miyu rescue` 交给 LiteMiyu 的模型、驱动的写法（施工 RC-1）：算哪个模型由主程序交进来，这里只照它填环境变量。测试里核心的
+# 模型资料也照它（施工 8-11）。
+miyu-models = { path = "../miyu-models" }
 # `miyu pkg pack` 认、量、缩包自带的图标（施工 F-18 上）：同一份认图、缩图。
 miyu-tool = { path = "../miyu-tool" }
 # `miyu ask` 说沙盒用不上时照平台说怎么办（`ask/steps.rs`）。
@@ -71,8 +74,6 @@ miyu-session = { path = "../miyu-session", features = ["testkit"] }
 # 测试里 `miyu setup` 的供应商、本机的服务是假服务器（施工 8-11）。
 miyu-http = { path = "../miyu-http", features = ["testkit"] }
 sha2 = { version = "0.11", default-features = false }
-# 测试里核心的模型资料：真目录裁出来的一份、档案（施工 8-11）。
-miyu-models = { path = "../miyu-models" }
 # 测试里在进程里起核心：真的工具经 cargo 编出来的助手执行命令（施工 5-4 上）。
 miyu-sandbox = { path = "../miyu-sandbox", features = ["testkit"] }
 tokio = { version = "1", features = ["io-util", "macros", "rt", "signal", "sync", "time"] }

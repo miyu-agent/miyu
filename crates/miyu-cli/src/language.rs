@@ -20,6 +20,7 @@ mod mcp;
 mod memory;
 pub use memory::Organized;
 mod pkg;
+mod rescue;
 mod sandbox;
 mod schedule;
 mod service;

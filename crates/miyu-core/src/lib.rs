@@ -28,6 +28,7 @@ pub mod models;
 pub mod packages;
 use packages::{distro_dirs, load_packages};
 mod pending;
+pub mod rescue;
 mod sandbox;
 mod serve;
 pub mod settings;

@@ -32,6 +32,7 @@ Settings:
 System:
   service <command>   Manage the background service
   upgrade             Upgrade Miyu
+  rescue [<args>...]  Fix Miyu with LiteMiyu's rescue mode
 
 Options:
   -h, --help     Print help

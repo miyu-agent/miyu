@@ -32,6 +32,7 @@
 系统：
   service <命令>      管理后台服务
   upgrade             升级 Miyu
+  rescue [<参数>...]  用 LiteMiyu 的应急模式修复
 
 选项：
   -h, --help     显示帮助

@@ -1,0 +1,12 @@
+Usage: miyu rescue [<args>...]
+
+Fix Miyu with LiteMiyu's rescue mode when the core is broken. Without
+contacting the core, set the LITEMIYU_RESCUE_* variables from Miyu's chat
+model (models.chat) and run 'litemiyu --rescue' with the arguments as given.
+Variables that are already set are kept.
+
+litemiyu is looked for next to miyu as typed, next to the real miyu, and in
+PATH.
+
+Options:
+  -h, --help  Print help

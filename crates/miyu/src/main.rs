@@ -1,7 +1,7 @@
 //! 主程序 `miyu`（`docs/designs/12-进程形态与分发.md` 第三节，施工 3-9）：一个程序，像 busybox 那样按子命令
 //! 分发。`miyu ask` 是最薄的头（施工 3-9 下）；`miyu undo`（`miyu rewind`）、`miyu restore` 撤掉最后一轮、恢复（施工 4-7 下，改名施工 4-7 补）；
 //! `miyu redo` 重做最后一轮（施工 4-7 再补）；
-//! `miyu compact` 手动压缩（施工 6-8）；`miyu recap` 一句话回顾（施工 3-8 四补）；`miyu rename` 给会话起名（施工 3-8 五补）；`miyu config` 看配置（施工 8-2）；`miyu provider` 管供应商的 key（施工 8-5）；`miyu setup` 接上第一个模型（施工 8-11）；`miyu core` 是核心进程，由头拉起，
+//! `miyu compact` 手动压缩（施工 6-8）；`miyu recap` 一句话回顾（施工 3-8 四补）；`miyu rename` 给会话起名（施工 3-8 五补）；`miyu config` 看配置（施工 8-2）；`miyu provider` 管供应商的 key（施工 8-5）；`miyu setup` 接上第一个模型（施工 8-11）；`miyu rescue` 拉起 LiteMiyu 的应急模式（施工 RC-1）；`miyu core` 是核心进程，由头拉起，
 //! 不写进帮助。
 //!
 //! 不认识的子命令就报错，退出码 2，绝不当成对话发给核心（R4，`22-命令行.md` 第二节）。帮助页、参数写错时说的
@@ -57,6 +57,8 @@ enum Command {
     Service(miyu_cli::Service),
     /// 升级 Miyu 本身，或者说该用哪个包管理器（施工 RL-4）。
     Upgrade(miyu_cli::Upgrade),
+    /// 核心坏了时进 LiteMiyu 的应急模式修：不经过核心，照 Miyu 的对话模型填好环境变量，拉起 `litemiyu --rescue`（施工 RC-1）。
+    Rescue(miyu_cli::Rescue),
     /// 看配置、改配置、信任项目配置（施工 8-2、8-3）。
     Config(miyu_cli::Config),
     /// 查手写的文件有没有写错：配置、密钥文件、人格（施工 8-30）。
@@ -247,6 +249,9 @@ fn main() -> ExitCode {
         })
         .mut_subcommand("upgrade", |upgrade| {
             upgrade.override_help(page(language, Page::Upgrade))
+        })
+        .mut_subcommand("rescue", |rescue| {
+            rescue.override_help(page(language, Page::Rescue))
         });
     let cli = match command
         .try_get_matches()
@@ -267,6 +272,8 @@ fn main() -> ExitCode {
         Some(Command::Bus(args)) => miyu_cli::bus(args, core),
         Some(Command::Service(args)) => miyu_cli::service(args),
         Some(Command::Upgrade(args)) => miyu_cli::upgrade(args),
+        // 不连核心、不拉起核心（施工 RC-1）：对话模型照磁盘读，`miyu_core::rescue` 只借读模型的那一套。
+        Some(Command::Rescue(args)) => miyu_cli::rescue(args, miyu_core::rescue::model),
         // 不带子命令、在终端里：打开界面的设置页（施工 9-3，原来的 8-24）；界面不认设置页的照旧印帮助。
         Some(Command::Config(args)) if args.command.is_none() && terminal() => {
             match miyu_cli::head::open(Some("config"), core) {

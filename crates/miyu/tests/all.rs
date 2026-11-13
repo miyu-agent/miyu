@@ -39,6 +39,7 @@ mod pkg_session;
 mod recap;
 mod redo;
 mod rename;
+mod rescue;
 mod settings;
 mod setup;
 mod undo;

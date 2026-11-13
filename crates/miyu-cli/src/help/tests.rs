@@ -7,7 +7,7 @@ use clap::{Args, Command};
 
 use super::{Page, page};
 use crate::language::Language;
-use crate::{Ask, Compact, Config, Provider, Recap, Redo, Rename, Setup, Undo};
+use crate::{Ask, Compact, Config, Provider, Recap, Redo, Rename, Rescue, Setup, Undo};
 
 /// 一个选项：几种写法（`-c`、`--continue`），和后面写的值（没有的是空的）。
 type Listed = BTreeSet<(Vec<String>, String)>;
@@ -178,6 +178,13 @@ fn each_page_lists_exactly_the_options_there_are() {
             real(&rename, id),
             "{language:?} rename"
         );
+        // `rescue` 那一页（施工 RC-1）：只有 `-h`，交给 litemiyu 的参数是位置参数。
+        let rescue = Rescue::augment_args(Command::new("rescue"));
+        assert_eq!(
+            listed(page(language, Page::Rescue)),
+            real(&rescue, id),
+            "{language:?} rescue"
+        );
         // 主程序那一页（设计 50 第五节）：只列全局选项 `-h`、`-V`，`ask` 和会话那几条命令的选项在各自的页上。
         let all: Listed = [
             (vec!["--help".to_string(), "-h".to_string()], String::new()),
@@ -277,6 +284,7 @@ fn each_page_is_its_own_file() {
             (Page::Kb, "kb"),
             (Page::Schedule, "schedule"),
             (Page::Session, "session"),
+            (Page::Rescue, "rescue"),
         ] {
             let file = dir.join(code).join(format!("{name}.txt"));
             let on_disk = std::fs::read_to_string(&file).expect("有这一页");
@@ -320,6 +328,7 @@ fn pages_fit_in_eighty_columns_and_end_with_one_newline() {
             Page::Pkg,
             Page::Kb,
             Page::Schedule,
+            Page::Rescue,
         ] {
             let text = page(language, which);
             assert!(

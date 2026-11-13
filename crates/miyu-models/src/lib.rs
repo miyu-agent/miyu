@@ -15,12 +15,14 @@
 //! - [`Knowledge`]：查资料时手头的几份；
 //! - [`onboard`]：第一次接入（施工 8-11）：每一家合起来、找哪些环境变量、探本机的哪几家、搜目录、推荐模型、还没写进配置的
 //!   一家。
+//! - [`direct`]：不经核心、照配置直接连的那一个模型：`miyu rescue` 交给 LiteMiyu 的应急模式（施工 RC-1）。
 //!
 //! 用它的：会话的路由（`miyu-session` 的 `route.rs`）每次请求照它挑端点、查资料，核心起来时读档案、目录交给路由，
 //! 协议的 `model.list` 照它列模型。
 
 pub mod catalog;
 pub mod cooldown;
+pub mod direct;
 pub mod effort;
 pub mod embedding;
 pub mod facts;

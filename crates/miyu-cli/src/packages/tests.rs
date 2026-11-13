@@ -116,13 +116,13 @@ fn the_help_page_gets_a_section_after_the_commands() {
     let english = help_section(Language::English, &list[..1]);
     let shown = with_section(page(Language::English, Page::Miyu), &english);
     assert!(
-        shown.contains("Upgrade Miyu\n\nCommands from packages:\n  tui")
+        shown.contains("rescue mode\n\nCommands from packages:\n  tui")
             && shown.contains("interface\n\nOptions:\n  -h, --help"),
         "{shown}"
     );
     let shown = with_section(table, &section);
     assert!(
-        shown.contains("升级 Miyu\n\n软件包加的命令：\n  tui")
+        shown.contains("应急模式修复\n\n软件包加的命令：\n  tui")
             && shown.contains("打开终端界面\n  onebot")
             && shown.contains("打开终端界面\n\n选项：\n  -h, --help"),
         "{shown}"

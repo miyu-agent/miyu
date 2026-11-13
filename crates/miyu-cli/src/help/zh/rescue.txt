@@ -1,0 +1,10 @@
+用法：miyu rescue [<参数>...]
+
+核心出问题时，用 LiteMiyu 的应急模式修复。不连接核心，按 Miyu 的对话模型
+（models.chat）设好 LITEMIYU_RESCUE_* 环境变量后运行 'litemiyu --rescue'，
+参数原样交给它。已经设置的变量保持不变。
+
+依次在 miyu 所在的目录、miyu 实际所在的目录和 PATH 中查找 litemiyu。
+
+选项：
+  -h, --help  显示帮助
