@@ -1,9 +1,9 @@
 //! 「空了告诉我」，等的这一边的执行器（施工 C-6，`docs/blueprint/cross-session.md` 第六条第 3、8、9 款，
 //! `docs/blueprint/session/tools.md`「订、计时、再订」）：工具只报效果 `peer.watch`，订是这里的事。
 //!
-//! 每送完一批，照内核这时在等的（[`Session::watching`]）和这里订过的比：新多出来的、起算时刻变了的（撤掉又订、又订了
-//! 一次），经会话表交给那个会话的 actor 一个「订」，同时按 `peers.watch_hours` 起一个计时；不在等了的（收到了通知、订它的
-//! 那一轮撤掉了、作废了），计时撤掉。落了盘才订：一批送完的时候，这一批追加的都已经落了盘（`actor.rs` 的 `drain`），通知
+//! 每送完一批，照内核这时在等的（[`Session::watching`]）和这里订过的比：新多出来的、换了一次订的（撤掉又订、又订了
+//! 一次；一次订照订的那条工具结果的序号认，施工 FX-3：时钟停住时两次订的起算时刻一样），经会话表交给那个会话的 actor
+//! 一个「订」，同时按 `peers.watch_hours` 起一个计时；不在等了的（收到了通知、订它的那一轮撤掉了、作废了），计时撤掉。落了盘才订：一批送完的时候，这一批追加的都已经落了盘（`actor.rs` 的 `drain`），通知
 //! 不会赶在这边记下在等以前到。载入、恢复撤销以后，账本里在等的都算新多出来的，走的是同一条路；已经到点的不订，当场交
 //! 作废。
 //!
@@ -22,6 +22,7 @@ use tracing::Instrument;
 
 use miyu_kernel::event::IdleReason;
 use miyu_kernel::id::SessionId;
+use miyu_kernel::ledger::PeerWatching;
 use miyu_kernel::session::Session;
 use miyu_kernel::time::Timestamp;
 
@@ -33,10 +34,10 @@ use crate::spawn::NotWatched;
 /// 一小时多少毫秒。
 const HOUR_MS: i64 = 3_600_000;
 
-/// 订过的：每个在等的会话，从哪一刻算起，和它的计时。
+/// 订过的：每个在等的会话，是哪一次订，和它的计时。
 #[derive(Default)]
 pub(crate) struct Watches {
-    placed: BTreeMap<SessionId, (Timestamp, AbortHandle)>,
+    placed: BTreeMap<SessionId, (PeerWatching, AbortHandle)>,
 }
 
 impl Watches {
@@ -54,30 +55,31 @@ impl Watches {
         agents: Option<&Arc<Agents>>,
         backs: &mpsc::UnboundedSender<Back>,
     ) {
-        let watching: BTreeMap<SessionId, Timestamp> = session.watching().into_iter().collect();
-        self.placed.retain(|peer, (since, timer)| {
-            let still = watching.get(peer) == Some(since);
+        let watching: BTreeMap<SessionId, PeerWatching> = session.watching().into_iter().collect();
+        self.placed.retain(|peer, (placed, timer)| {
+            let still = watching.get(peer) == Some(placed);
             if !still {
                 timer.abort();
             }
             still
         });
         let hours = i64::try_from(session.watch_hours()).unwrap_or(i64::MAX);
-        for (peer, since) in watching {
+        for (peer, this) in watching {
             if self.placed.contains_key(&peer) {
                 continue;
             }
-            let due = since
+            let due = this
+                .since
                 .unix_millis()
                 .saturating_add(hours.saturating_mul(HOUR_MS));
             let wait = due.saturating_sub(now.unix_millis());
             if wait > 0
                 && let Some(agents) = agents
             {
-                place(agents, peer.clone(), since, backs.clone());
+                place(agents, peer.clone(), this, backs.clone());
             }
             let timer = expire_after(wait, peer.clone(), backs.clone());
-            self.placed.insert(peer, (since, timer));
+            self.placed.insert(peer, (this, timer));
         }
     }
 }
@@ -95,14 +97,14 @@ impl Drop for Watches {
 fn place(
     agents: &Arc<Agents>,
     peer: SessionId,
-    since: Timestamp,
+    watching: PeerWatching,
     backs: mpsc::UnboundedSender<Back>,
 ) {
     let port = Arc::clone(&agents.port);
     let watcher = agents.session.clone();
     tokio::spawn(
         async move {
-            match port.watch(peer.clone(), watcher, since).await {
+            match port.watch(peer.clone(), watcher, watching).await {
                 Ok(()) => {}
                 Err(NotWatched::Gone) => send(&backs, peer, IdleReason::Gone),
                 Err(NotWatched::Failed(error)) => {

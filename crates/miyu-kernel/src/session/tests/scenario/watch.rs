@@ -191,7 +191,10 @@ fn watching_again_restarts_the_clock() {
     s.advance(60);
     s.say("再订一次");
     let [(_, again)] = s.watching().try_into().unwrap();
-    assert!(again.unix_millis() > first + 59 * 60_000, "从新的时刻算");
+    assert!(
+        again.since.unix_millis() > first + 59 * 60_000,
+        "从新的时刻算"
+    );
     s.watch_ends_at(PEER, IdleReason::Expired, ms(first + 12 * HOUR));
     assert!(
         !s.log()
@@ -202,7 +205,7 @@ fn watching_again_restarts_the_clock() {
     s.watch_ends_at(
         PEER,
         IdleReason::Expired,
-        ms(again.unix_millis() + 12 * HOUR),
+        ms(again.since.unix_millis() + 12 * HOUR),
     );
     assert!(s.watching().is_empty(), "新的到了点才作废");
 }

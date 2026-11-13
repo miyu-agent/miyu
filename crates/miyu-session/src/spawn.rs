@@ -13,9 +13,9 @@ use std::pin::Pin;
 
 use miyu_kernel::event::Permission;
 use miyu_kernel::id::{CallId, CommandId, SessionId, VenueId};
+use miyu_kernel::ledger::PeerWatching;
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{Command, Outcome};
-use miyu_kernel::time::Timestamp;
 use miyu_tool::{Advised, Log, MainSession, NotAdvised, Stop};
 
 use crate::jobs::Peek;
@@ -91,8 +91,9 @@ pub trait SessionPort: Send + Sync {
     fn held(&self, session: SessionId) -> Pending<'_, bool>;
 
     /// 会话 `watcher` 在等会话 `session` 空下来（施工 C-6，`cross-session.md` 第六条第 3 款）：交给 `session` 的 actor 记进
-    /// 名单，不经内核、不进它的日志；它没载入的先载入。`since` 是等的那一边这次订从哪一刻算起，通知的命令编号带着它：同一次
-    /// 订再交一遍，通知还是同一个编号，那边认得出是重的。交到了就回，不等它空下来。
+    /// 名单，不经内核、不进它的日志；它没载入的先载入。`watching` 是等的那一边这次订：记下它的那条工具结果的序号、从哪一刻
+    /// 算起；通知的命令编号带着那个序号（施工 FX-3）：同一次订再交一遍，通知还是同一个编号，那边认得出是重的。交到了就回，
+    /// 不等它空下来。
     ///
     /// # Errors
     ///
@@ -102,7 +103,7 @@ pub trait SessionPort: Send + Sync {
         &self,
         session: SessionId,
         watcher: SessionId,
-        since: Timestamp,
+        watching: PeerWatching,
     ) -> Pending<'_, Result<(), NotWatched>>;
 }
 

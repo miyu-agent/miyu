@@ -605,7 +605,7 @@
 
 - 不认识的原样留着：新版本才有的，也算等到了头，账本不查它的 `by`（`kernel/history.md`）。
 - `by` 由账本查：这时在等 `session`，`idle` 的是那个会话、`expired`、`gone` 的是内核（`kernel/history.md`）。
-- `cause`：`idle` 的是交来通知的那个命令，`<被等的会话>/idle/<等的会话>/<等的那一边这次订的起算时刻，Unix 毫秒>`；`expired`、`gone` 的是订它的那一轮的 `cause`（施工 C-6，`cross-session.md`「起草时定的」第 53 条）。
+- `cause`：`idle` 的是交来通知的那个命令，`<被等的会话>/idle/<等的会话>/<等的那一边记下这次订的那条工具结果的序号>`；`expired`、`gone` 的是订它的那一轮的 `cause`（施工 C-6、FX-3，`cross-session.md`「起草时定的」第 53、67 条）。
 - 不带回合编号：它是别处来的，撤哪一轮都不拿走（`cross-session.md` 第七条第 2 款）。账本照「带 `turn` 的是正在进行的那个回合」查，不另立规矩，和两种回报一样。
 - 名字不叫 `session.*`：渲染表里 `session.*` 一律不进上下文（`kernel/request.md`「组装」第 3 条）。渲染成带标签的一块（施工 C-6，`kernel/request.md`「空了的通知」）。
 

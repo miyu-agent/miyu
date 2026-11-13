@@ -12,9 +12,9 @@ use tokio::sync::{broadcast, mpsc, oneshot, watch};
 
 use miyu_kernel::event::{Event, Transient};
 use miyu_kernel::id::{CommandId, JobId, SessionId, VenueId};
+use miyu_kernel::ledger::PeerWatching;
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{Command, ContextLimits, Outcome, Reason};
-use miyu_kernel::time::Timestamp;
 use miyu_store::recall::Room;
 use miyu_tool::{JobError, Log, Output};
 
@@ -117,10 +117,10 @@ pub(crate) enum Message {
     Changes(oneshot::Sender<watch::Receiver<u64>>),
     /// 现在就整理记忆（施工 R-7 补）、叫停这个会话叫的（施工 R-22）：`dream.rs`。
     Dream(Dream),
-    /// 会话 `watcher` 等这个会话空下来（施工 C-6）：记进名单，不进内核、不写盘；`since` 是那一边这次订的起算时刻。
+    /// 会话 `watcher` 等这个会话空下来（施工 C-6）：记进名单，不进内核、不写盘；`watching` 是那一边这次订（施工 FX-3）。
     Watch {
         watcher: SessionId,
-        since: Timestamp,
+        watching: PeerWatching,
     },
     /// 会话表问退不退（施工 V-2 再补、MEM-3，`retire.rs`）：够了、什么事都没有的答了就退出。它不算一次动静。
     Retire {
@@ -450,14 +450,14 @@ impl Handle {
     }
 
     /// 会话 `watcher` 等这个会话空下来（施工 C-6，`cross-session.md` 第六条第 3 款，2026-10-01 改）：记进它 actor 的
-    /// 名单，同一个会话只记一个（后订的替掉先订的）；这时正忙着、或者 `since` 不晚于它上一次忙完的时刻才当场发通知，
-    /// 不然等它下一次忙完。`since` 是那一边这次订的起算时刻。交进收件箱就回，不等。
+    /// 名单，同一个会话只记一个（后订的替掉先订的）；这时正忙着、或者订的起算时刻不晚于它上一次忙完的时刻才当场发通知，
+    /// 不然等它下一次忙完。`watching` 是那一边这次订（订的那条结果的序号、起算时刻，施工 FX-3）。交进收件箱就回，不等。
     ///
     /// # Errors
     ///
     /// 会话停了。
-    pub fn watch(&self, watcher: SessionId, since: Timestamp) -> Result<(), Stopped> {
-        self.send(Message::Watch { watcher, since })
+    pub fn watch(&self, watcher: SessionId, watching: PeerWatching) -> Result<(), Stopped> {
+        self.send(Message::Watch { watcher, watching })
     }
 
     fn send(&self, message: Message) -> Result<(), Stopped> {

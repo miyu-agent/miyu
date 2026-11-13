@@ -152,7 +152,7 @@ impl SessionPort for Forks {
         &self,
         _session: SessionId,
         _watcher: SessionId,
-        _since: miyu_kernel::time::Timestamp,
+        _watching: miyu_kernel::ledger::PeerWatching,
     ) -> Pending<'_, Result<(), miyu_session::NotWatched>> {
         Box::pin(async {
             Err(miyu_session::NotWatched::Failed(

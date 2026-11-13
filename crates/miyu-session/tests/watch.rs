@@ -3,17 +3,19 @@
 //! 记下每一次订、每一个命令。
 //!
 //! - 被等的这边：订进来时已经空着的不当场发，等它下一次忙完才发；起算时刻不晚于上一次忙完的时刻的（带话又订）
-//!   照样当场发；正忙时订了，忙完就发；子代理没报完不发，报完、被叫醒的那一轮也做完了才发；同一个会话只记一个。
-//! - 等的这边：效果落了盘才订（订的时刻就是那条结果的时刻）；那个会话不在了记 `gone`；载入再订；已经到点的载入时不订、当场
+//!   照样当场发；正忙时订了，忙完就发；子代理没报完不发，报完、被叫醒的那一轮也做完了才发；同一个会话只记一个；
+//!   通知的编号照订的那条结果的序号，时钟停住也不重（施工 FX-3）。
+//! - 等的这边：效果落了盘才订（订的是那条结果：它的序号、时刻）；那个会话不在了记 `gone`；载入再订；已经到点的载入时不订、当场
 //!   作废；撤销以后不订、恢复撤销再订。
 
 use std::sync::{Arc, PoisonError};
 use std::time::Duration;
 
-use crate::support::table::{CHILD, OTHER, Table, WAITER, reload, session, sid};
+use crate::support::table::{CHILD, OTHER, Table, WAITER, reload, session, sid, watching};
 use crate::support::{Home, ask, say, stop, until_logged, within};
 use miyu_kernel::event::{Body, ChildReason, ChildReported, Event, IdleReason};
 use miyu_kernel::id::{CommandId, JobId, SessionId};
+use miyu_kernel::ledger::PeerWatching;
 use miyu_kernel::origin::{By, Session};
 use miyu_kernel::session::{Command, Outcome};
 use miyu_kernel::time::Timestamp;
@@ -60,12 +62,16 @@ async fn a_while() {
     tokio::time::sleep(Duration::from_millis(300)).await;
 }
 
-/// 订的那条结果的时刻。
-fn watched_at(log: &[Event]) -> Timestamp {
-    log.iter()
+/// 订的那条结果：它的序号、时刻。
+fn watched(log: &[Event]) -> PeerWatching {
+    let event = log
+        .iter()
         .find(|event| matches!(&event.body, Body::ToolResult(result) if !result.effects.is_empty()))
-        .expect("订了")
-        .at
+        .expect("订了");
+    PeerWatching {
+        seq: event.seq,
+        since: event.at,
+    }
 }
 
 /// 日志里的 `peer.idle`，照先后：原因、谁记的。
@@ -93,8 +99,8 @@ async fn the_watch_is_placed_once_its_effect_is_on_disk() {
     until("订", || !table.placed().is_empty()).await;
     assert_eq!(
         table.placed(),
-        [(sid(OTHER), handle.id().clone(), watched_at(&log))],
-        "订的是落了盘的那条结果的时刻"
+        [(sid(OTHER), handle.id().clone(), watched(&log))],
+        "订的是落了盘的那条结果：它的序号、时刻"
     );
     assert!(
         table
@@ -142,7 +148,11 @@ async fn a_reload_places_the_watch_again_and_an_overdue_one_expires() {
     drop(handle);
     let again = reload(&home, &id, &script, &table).await;
     until("载入以后再订", || table.placed().len() == 2).await;
-    assert_eq!(table.placed()[0], table.placed()[1], "照日志再订，时刻不变");
+    assert_eq!(
+        table.placed()[0],
+        table.placed()[1],
+        "照日志再订，是同一次：序号、时刻都不变"
+    );
     stop(&again).await;
     drop(again);
     // 日志整个往前挪 13 个小时：订的那一刻过了 12 小时。
@@ -192,15 +202,15 @@ async fn an_idle_session_waits_for_its_next_turn_to_send() {
     until("它真空下来再取起算时刻", || !handle.busy()).await;
     tokio::time::sleep(Duration::from_millis(20)).await;
     let since = crate::support::now();
-    handle.watch(sid(WAITER), since).expect("在跑");
+    handle.watch(sid(WAITER), watching(7, since)).expect("在跑");
     a_while().await;
     assert!(table.notices().is_empty(), "订进来的时候已经空着：不当场发");
     turn(&home, &handle, 2).await;
     until("通知", || table.notices().len() == 1).await;
     let this = handle.id().clone();
     let [(to, id, by, status)] = table.notices().try_into().unwrap();
-    // 编号还是那次订的起算时刻，不是新忙完的时刻；带的是新那一轮的第一行，不是旧的。
-    let expected_id = format!("{this}/idle/{WAITER}/{}", since.unix_millis());
+    // 编号是那次订的那条结果的序号，不是新忙完的时刻；带的是新那一轮的第一行，不是旧的。
+    let expected_id = format!("{this}/idle/{WAITER}/7");
     assert_eq!(to, sid(WAITER));
     assert_eq!(id.as_str(), expected_id);
     assert_eq!(by, from(&this));
@@ -218,7 +228,7 @@ async fn watching_since_before_an_already_finished_turn_sends_at_once() {
     // 起算时刻在这一轮开始之前取，模拟「带话又订」这边手慢：那边先忙完才 `add_waiter`，照样当场发。
     let since = crate::support::now();
     turn(&home, &handle, 1).await;
-    handle.watch(sid(WAITER), since).expect("在跑");
+    handle.watch(sid(WAITER), watching(3, since)).expect("在跑");
     until("通知", || table.notices().len() == 1).await;
     let [(to, _, _, status)] = table.notices().try_into().unwrap();
     assert_eq!(to, sid(WAITER));
@@ -236,9 +246,11 @@ async fn a_busy_session_sends_it_when_its_turn_ends_and_keeps_one_per_watcher() 
     ask(&handle, "go", say("跑测试")).await.expect("在跑");
     let first = Timestamp::parse("2026-10-01T09:00:00.000Z").unwrap();
     let second = Timestamp::parse("2026-10-01T09:05:00.000Z").unwrap();
-    handle.watch(sid(WAITER), first).expect("在跑");
-    handle.watch(sid(WAITER), second).expect("在跑");
-    handle.watch(sid(OTHER), first).expect("在跑");
+    handle.watch(sid(WAITER), watching(5, first)).expect("在跑");
+    handle
+        .watch(sid(WAITER), watching(9, second))
+        .expect("在跑");
+    handle.watch(sid(OTHER), watching(5, first)).expect("在跑");
     a_while().await;
     assert!(table.notices().is_empty(), "忙着不发");
     ask(
@@ -259,14 +271,8 @@ async fn a_busy_session_sends_it_when_its_turn_ends_and_keeps_one_per_watcher() 
         .collect();
     let this = handle.id();
     assert_eq!(sent.len(), 2, "同一个会话只记一个：{sent:?}");
-    assert!(sent.contains(&(
-        sid(WAITER),
-        format!("{this}/idle/{WAITER}/{}", second.unix_millis())
-    )));
-    assert!(sent.contains(&(
-        sid(OTHER),
-        format!("{this}/idle/{OTHER}/{}", first.unix_millis())
-    )));
+    assert!(sent.contains(&(sid(WAITER), format!("{this}/idle/{WAITER}/9"))));
+    assert!(sent.contains(&(sid(OTHER), format!("{this}/idle/{OTHER}/5"))));
 }
 
 #[tokio::test]
@@ -284,7 +290,7 @@ async fn a_session_waiting_for_its_subagent_is_not_idle() {
     handle
         .watch(
             sid(WAITER),
-            Timestamp::parse("2026-10-01T09:00:00.000Z").unwrap(),
+            watching(5, Timestamp::parse("2026-10-01T09:00:00.000Z").unwrap()),
         )
         .expect("在跑");
     a_while().await;
@@ -320,6 +326,44 @@ async fn a_session_waiting_for_its_subagent_is_not_idle() {
     );
     let [(_, _, _, status)] = table.notices().try_into().unwrap();
     assert_eq!(status.as_deref(), Some("子代理说修好了。"));
+}
+
+/// 施工 FX-3：等的那一边时钟停住时两次订落在同一毫秒，编号照订的那条结果的序号，又订了一次的是新的编号，内核不会当成
+/// 重的吞掉；同一次订再交一遍（载入、恢复撤销以后再订）还是同一个编号，内核认得出是重的。起算时刻在未来：只有这个会话
+/// 忙起来才上膛。
+#[tokio::test]
+async fn the_notice_id_follows_the_watch_not_the_moment() {
+    let home = Home::new();
+    let table = Arc::new(Table::default());
+    let script = Script::new([
+        Play::Says("第一轮。"),
+        Play::Says("第二轮。"),
+        Play::Says("第三轮。"),
+    ]);
+    let handle = session(&home, &script, &table).await;
+    let stuck = Timestamp::parse("2100-01-01T00:00:00.000Z").unwrap();
+    for (n, seq) in [(1, 5), (2, 5), (3, 9)] {
+        handle
+            .watch(sid(WAITER), watching(seq, stuck))
+            .expect("在跑");
+        turn(&home, &handle, n).await;
+        until("通知", || table.notices().len() == n).await;
+    }
+    let this = handle.id();
+    let ids: Vec<String> = table
+        .notices()
+        .into_iter()
+        .map(|(_, id, ..)| id.as_str().to_string())
+        .collect();
+    assert_eq!(
+        ids,
+        [
+            format!("{this}/idle/{WAITER}/5"),
+            format!("{this}/idle/{WAITER}/5"),
+            format!("{this}/idle/{WAITER}/9"),
+        ],
+        "同一次订是同一个编号，又订了一次是新的"
+    );
 }
 
 /// 把会话 `id` 的日志里每一条的时刻往前挪 `hours` 小时。

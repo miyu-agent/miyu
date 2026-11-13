@@ -7,6 +7,7 @@
 //! - 核心重启：B 正忙的时候 A 订了它，核心停了；换一份核心，A 一载入就照日志再订，B 跟着载入、接着把被打断的那一轮做完，
 //!   A 照样等到。B 被重启打断不算空下来：停的时候不发。
 //! - 被等的会话删了：换一份核心以后先删 B，A 载入再订时会话表找不到它，记 `gone`、不叫醒她。
+//! - A 的时钟停住（施工 FX-3）：A 的日志挪到 2100 年再载入，先后两次订 B，两次都被叫醒。
 //!
 //! 模型是照请求答的替身：每一次照请求里最新的那一段字决定说什么、调什么。
 
@@ -21,6 +22,7 @@ use miyu_kernel::event::{Body, Event, IdleReason};
 use miyu_kernel::id::Seq;
 use miyu_kernel::origin::Model;
 use miyu_kernel::request::{Message, Request};
+use miyu_kernel::time::Timestamp;
 use miyu_session::testkit::{Play, Script};
 use miyu_session::{Cancel, ForSession, ModelPort, Models, Reports};
 use miyu_tool::Catalog;
@@ -326,4 +328,85 @@ async fn a_deleted_session_is_found_gone_when_she_watches_it_again() {
     until("A 记下不在了", || !notices(&home.log(&a)).is_empty()).await;
     assert_eq!(notices(&home.log(&a)), [(IdleReason::Gone, None)]);
     assert_eq!(turns(&home.log(&a)), 1, "不在了只记下，不叫醒");
+}
+
+/// 把会话 `session` 日志里每一条的时刻挪到 2100 年：像是系统时间在两次运行之间往回拨了，载入以后它的时钟一直停在那一毫秒
+/// （`miyu-session` 的 `clock.rs`）。
+fn into_the_future(home: &Home, session: &str) {
+    let later = Timestamp::parse("2100-01-01T00:00:00.000Z").expect("时刻合写法");
+    let id = miyu_kernel::id::SessionId::parse(session).expect("会话编号合写法");
+    let dir = home.root.session_dir(&id);
+    for entry in std::fs::read_dir(&dir).expect("读得了会话目录") {
+        let path = entry.expect("读得了").path();
+        if path
+            .extension()
+            .is_none_or(|extension| extension != "jsonl")
+        {
+            continue;
+        }
+        let text = std::fs::read_to_string(&path).expect("读得了");
+        let moved: String = text
+            .lines()
+            .map(|line| {
+                let mut event = Event::from_line(line).expect("每一行都是事件");
+                event.at = later;
+                event.to_line() + "\n"
+            })
+            .collect();
+        std::fs::write(&path, moved).expect("写得回去");
+    }
+}
+
+/// 施工 FX-3：等的一边时钟停住时先后两次订同一个会话，两次都被叫醒。以前通知的编号是 `<被等的>/idle/<等的>/<起算毫秒>`，
+/// 两次订的起算时刻是同一毫秒，第二次的通知和第一次同一个编号，内核照上一次回应、不叫醒她。
+#[tokio::test]
+async fn she_hears_back_each_time_while_her_clock_stands_still() {
+    let home = Home::new();
+    let brain = Brain::default();
+    let first = home.core_with_models(Arc::new(brain.clone()), tools());
+    let mut client = Client::connect(first.clone());
+    client.hello().await;
+    let work = home.work.to_string_lossy().into_owned();
+    let a = client.create("c1", &work).await;
+    let b = client.create("c2", &work).await;
+    first.stop_sessions().await;
+    drop(client);
+    into_the_future(&home, &a);
+    let mut client = Client::connect(home.core_with_models(Arc::new(brain.clone()), tools()));
+    client.hello().await;
+    // B 先载入：订交过去只是给它的 actor 送一封信，不用等它载入，B 那一轮不会赶在订到之前做完。
+    client.subscribe("s1", &b).await;
+    for round in 1..=2 {
+        client
+            .say(&format!("w{round}"), &a, &format!("订 {b}"))
+            .await;
+        home.until_turns(&a, round * 2 - 1).await;
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        client.say(&format!("b{round}"), &b, "做点事").await;
+        until(
+            &format!("A 被第 {round} 次的通知叫醒、做完"),
+            || {
+                let log = home.log(&a);
+                notices(&log).len() == round
+                    && turns(&log) == round * 2
+                    && log
+                        .last()
+                        .is_some_and(|event| matches!(event.body, Body::TurnEnded(_)))
+            },
+        )
+        .await;
+        until_idle(&mut client, &a).await;
+    }
+    let log = home.log(&a);
+    let causes: Vec<_> = log
+        .iter()
+        .filter(|event| matches!(event.body, Body::PeerIdle(_)))
+        .filter_map(|event| event.cause.clone())
+        .collect();
+    assert_eq!(causes.len(), 2, "{causes:?}");
+    assert_ne!(causes[0], causes[1], "两次订是两个编号");
+    assert!(
+        log.iter().all(|event| event.at == log[0].at),
+        "A 的时钟一直停着：测的就是这种情形"
+    );
 }

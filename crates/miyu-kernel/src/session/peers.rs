@@ -24,6 +24,7 @@ use super::rejected;
 use crate::block::Block;
 use crate::event::{Body, IdleReason, PeerIdle};
 use crate::id::{CommandId, SessionId};
+use crate::ledger::PeerWatching;
 use crate::ledger::digest;
 use crate::origin::By;
 use crate::time::Timestamp;
@@ -64,12 +65,13 @@ impl Session {
         None
     }
 
-    /// 在等哪几个会话的通知、各从哪一刻算起，照编号（施工 C-6，账本的 `watching()`）：订它的那一轮还没撤掉、那以后没收到过
-    /// 它的通知的。纯查询：执行器每送完一批照它看有没有新多出来的，去订、计时（`cross-session.md` 第六条第 3、8 款）。
-    pub fn watching(&self) -> Vec<(SessionId, Timestamp)> {
+    /// 在等哪几个会话的通知、各是哪一次订，照编号（施工 C-6，账本的 `watching()`；FX-3 起带上订的那条结果的序号）：订它
+    /// 的那一轮还没撤掉、那以后没收到过它的通知的。纯查询：执行器每送完一批照它看有没有新多出来的，去订、计时
+    /// （`cross-session.md` 第六条第 3、8 款）。
+    pub fn watching(&self) -> Vec<(SessionId, PeerWatching)> {
         self.ledger
             .watching()
-            .map(|(session, since)| (session.clone(), since))
+            .map(|(session, watching)| (session.clone(), watching))
             .collect()
     }
 

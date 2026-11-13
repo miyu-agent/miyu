@@ -30,6 +30,7 @@ mod undo;
 pub use jobs::JobTally;
 use jobs::Jobs;
 use nested::Settled;
+pub use peers::PeerWatching;
 use peers::Peers;
 pub(crate) use peers::digest;
 use seal::Sealing;

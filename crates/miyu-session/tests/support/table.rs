@@ -4,6 +4,7 @@
 use std::sync::{Arc, Mutex, PoisonError};
 
 use miyu_kernel::id::{CommandId, SessionId};
+use miyu_kernel::ledger::PeerWatching;
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{Command, Outcome};
 use miyu_kernel::time::Timestamp;
@@ -20,8 +21,8 @@ pub const WAITER: &str = "0192f3a0-3333-7abc-8def-0c5d77aa0c5d";
 /// 派出去的子代理的子会话。
 pub const CHILD: &str = "01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91";
 
-/// 一次订：被等的、在等的、起算时刻。
-pub type Placed = (SessionId, SessionId, Timestamp);
+/// 一次订：被等的、在等的、哪一次订（订的那条结果的序号、起算时刻）。
+pub type Placed = (SessionId, SessionId, PeerWatching);
 
 /// 假的会话表：订的照 `gone` 回；命令都接受；记下每一次订、每一个命令。看得到的别的会话只有 `OTHER`。
 #[derive(Default)]
@@ -135,12 +136,12 @@ impl SessionPort for Table {
         &self,
         session: SessionId,
         watcher: SessionId,
-        since: Timestamp,
+        watching: PeerWatching,
     ) -> Pending<'_, Result<(), NotWatched>> {
         self.placed
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .push((session, watcher, since));
+            .push((session, watcher, watching));
         let gone = self.gone;
         Box::pin(async move {
             match gone {
@@ -148,6 +149,14 @@ impl SessionPort for Table {
                 false => Ok(()),
             }
         })
+    }
+}
+
+/// 等的那一边的一次订：第 `seq` 条结果记下的，从 `since` 算起（施工 FX-3）。
+pub fn watching(seq: u64, since: Timestamp) -> PeerWatching {
+    PeerWatching {
+        seq: miyu_kernel::id::Seq::new(seq).expect("序号从 1 起"),
+        since,
     }
 }
 

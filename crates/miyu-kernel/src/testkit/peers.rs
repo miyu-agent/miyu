@@ -71,8 +71,8 @@ impl Stage {
         self.watch_ends(session, reason);
     }
 
-    /// 在等哪几个会话、各从哪一刻算起，照内核交给执行器的那一份（施工 C-6）。
-    pub fn watching(&self) -> Vec<(SessionId, Timestamp)> {
+    /// 在等哪几个会话、各是哪一次订，照内核交给执行器的那一份（施工 C-6）。
+    pub fn watching(&self) -> Vec<(SessionId, crate::ledger::PeerWatching)> {
         self.session.watching()
     }
 

@@ -14,9 +14,9 @@ use std::sync::{Arc, Weak};
 
 use miyu_kernel::event::Event;
 use miyu_kernel::id::{CommandId, Seq, SessionId};
+use miyu_kernel::ledger::PeerWatching;
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{Command, Outcome, Queued};
-use miyu_kernel::time::Timestamp;
 use miyu_session::{Advice, Child, ForkChild, NotWatched, Peek, Pending, SessionPort, peek};
 use miyu_store::index::Row;
 use miyu_store::log::{Flow, read_events, read_range, read_range_only, read_segments};
@@ -236,9 +236,9 @@ impl SessionPort for Table {
         &self,
         session: SessionId,
         watcher: SessionId,
-        since: Timestamp,
+        watching: PeerWatching,
     ) -> Pending<'_, Result<(), NotWatched>> {
-        Box::pin(self.watch_session(session, watcher, since))
+        Box::pin(self.watch_session(session, watcher, watching))
     }
 }
 
@@ -249,7 +249,7 @@ impl Table {
         &self,
         session: SessionId,
         watcher: SessionId,
-        since: Timestamp,
+        watching: PeerWatching,
     ) -> Result<(), NotWatched> {
         let core = self.core().map_err(NotWatched::Failed)?;
         let found = match core.sessions.get(&core, &session).await {
@@ -261,7 +261,7 @@ impl Table {
                 )));
             }
         };
-        if found.handle.watch(watcher, since).is_err() {
+        if found.handle.watch(watcher, watching).is_err() {
             core.sessions.forget(&session).await;
             return Err(NotWatched::Failed(format!("session {session} stopped")));
         }

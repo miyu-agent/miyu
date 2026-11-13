@@ -107,8 +107,8 @@ impl Actor {
             }
             // 有会话在等这个会话空下来（施工 C-6，`watchers.rs`）：不进内核，记进名单，上不上膛照 `watchers.rs` 判
             // （2026-10-01 改：空着的先不发，等下一次忙完）。
-            Message::Watch { watcher, since } => {
-                self.add_waiter(watcher, since);
+            Message::Watch { watcher, watching } => {
+                self.add_waiter(watcher, watching);
                 Mail::Done
             }
             // 人叫她现在就整理记忆（施工 R-7 补，`extract.rs`）：先抽再合，在后台，合完交回去。

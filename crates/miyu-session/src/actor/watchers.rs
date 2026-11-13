@@ -13,9 +13,10 @@
 //! 的路上空闲退出。
 //!
 //! 通知：经会话表给等的那个会话一个命令 `PeerIdle`，`by` 是这个会话，带它最近结束的那一轮最后一条有字的回复的第一行
-//! （[`Session::last_line`]）。命令编号 `<这个会话>/idle/<等的会话>/<那一边起算时刻的毫秒数>`：同一次订只有一个编号，
-//! 交重了那一边认得出（内核照编号只生效一次）；又订了一次的是新的编号，不会被当成重的吞掉。那一边正在撤销、恢复（`restoring`）
-//! 的退避着再交，别的拒绝、交不到的记一行运行日志就完了。
+//! （[`Session::last_line`]）。命令编号 `<这个会话>/idle/<等的会话>/<那一边记下这次订的那条工具结果的序号>`（施工 FX-3，
+//! 以前是起算时刻的毫秒数：那一边时钟停住时两次订落在同一毫秒，第二次的通知被当成重的吞掉）：同一次订只有一个编号，
+//! 交重了那一边认得出（内核照编号只生效一次）；又订了一次的是新的序号、新的编号，不会被当成重的吞掉。那一边正在撤销、
+//! 恢复（`restoring`）的退避着再交，别的拒绝、交不到的记一行运行日志就完了。
 //!
 //! [`Session::vacant`]: miyu_kernel::session::Session::vacant
 //! [`Session::last_line`]: miyu_kernel::session::Session::last_line
@@ -27,9 +28,9 @@ use std::time::Duration;
 use tracing::Instrument;
 
 use miyu_kernel::id::{CommandId, SessionId};
+use miyu_kernel::ledger::PeerWatching;
 use miyu_kernel::origin::{By, Session as From};
 use miyu_kernel::session::{Command, Outcome, Reason};
-use miyu_kernel::time::Timestamp;
 
 use super::Actor;
 use crate::TARGET;
@@ -41,23 +42,25 @@ const RETRY_FIRST_MS: u64 = 100;
 /// 一共最多等多久（毫秒）：撤销、恢复早该做完了。
 const RETRY_TOTAL_MS: u64 = 30_000;
 
-/// 名单上的一项：等的会话这次订的起算时刻，和有没有「上膛」。2026-10-01 项目主人定：空着时订进来的先不上膛，
-/// 等这个会话下一次从忙变空才上膛；忙着订进来的，或者起算时刻不晚于它上一次忙完的时刻的，当场上膛。
+/// 名单上的一项：等的会话这次订（订的那条结果的序号、起算时刻，施工 FX-3），和有没有「上膛」。2026-10-01 项目主人定：
+/// 空着时订进来的先不上膛，等这个会话下一次从忙变空才上膛；忙着订进来的，或者起算时刻不晚于它上一次忙完的时刻的，当场
+/// 上膛。
 #[derive(Debug, Clone, Copy)]
 pub(super) struct Waiter {
-    since: Timestamp,
+    watching: PeerWatching,
     armed: bool,
 }
 
-/// 在等这个会话空下来的：谁在等，和它这一项的起算时刻、上没上膛。
+/// 在等这个会话空下来的：谁在等，和它这一项是哪一次订、上没上膛。
 pub(super) type Waiters = BTreeMap<SessionId, Waiter>;
 
 impl Actor {
     /// 会话 `watcher` 等这个会话空下来：记进名单（同一个会话只记一个，后订的替掉先订的）。这个会话正忙着，或者
-    /// `since` 不晚于它上一次忙完的时刻（`finished_at`），当场上膛；不然不上膛，留着等它下一次忙完。
-    pub(super) fn add_waiter(&mut self, watcher: SessionId, since: Timestamp) {
-        let armed = !self.session.vacant() || self.finished_at.is_some_and(|at| at >= since);
-        self.waiters.insert(watcher, Waiter { since, armed });
+    /// 订的起算时刻不晚于它上一次忙完的时刻（`finished_at`），当场上膛；不然不上膛，留着等它下一次忙完。
+    pub(super) fn add_waiter(&mut self, watcher: SessionId, watching: PeerWatching) {
+        let armed =
+            !self.session.vacant() || self.finished_at.is_some_and(|at| at >= watching.since);
+        self.waiters.insert(watcher, Waiter { watching, armed });
         self.notify_if_vacant();
     }
 
@@ -109,7 +112,7 @@ impl Actor {
             let this = agents.session.clone();
             let status = status.clone();
             tokio::spawn(
-                async move { notify(&*port, this, watcher, waiter.since, status).await }
+                async move { notify(&*port, this, watcher, waiter.watching, status).await }
                     .in_current_span(),
             );
         }
@@ -121,11 +124,11 @@ async fn notify(
     port: &dyn SessionPort,
     this: SessionId,
     watcher: SessionId,
-    since: Timestamp,
+    watching: PeerWatching,
     status: Option<String>,
 ) {
     let to = watcher.short().to_string();
-    let Ok(id) = CommandId::parse(&format!("{this}/idle/{watcher}/{}", since.unix_millis())) else {
+    let Ok(id) = CommandId::parse(&format!("{this}/idle/{watcher}/{}", watching.seq)) else {
         tracing::warn!(target: TARGET, to = to.as_str(), "idle notice has no command id");
         return;
     };

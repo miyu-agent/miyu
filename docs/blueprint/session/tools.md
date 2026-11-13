@@ -140,7 +140,7 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
 **1c2. 订、计时、再订**（`crates/miyu-session/src/peers.rs`，施工 C-6；`cross-session.md` 第六条第 3、8、9 款）
 
 1. 工具只报效果 `peer.watch`，执行器把它照原样换成内核的（`effects.rs`）。订是执行器的事：每送完一批（这一批追加的都落了盘了，`session/actor.md` 第 3 条第 7 点），照内核的 `watching()` 和这里订过的比。
-2. 新多出来的（没订过的、起算时刻变了的：又订了一次、撤掉又订回到前一次），经会话表的 `SessionPort::watch(被等的会话, 这个会话, 起算时刻)` 起一个任务去订，同时起一个计时：起算时刻加 `watch_hours()` 小时到点，交回「到点了」，内核照账本判（`kernel/session.md`「空了的通知」第 3 条）。已经到点的不订，计时当场到。
+2. 新多出来的（没订过的、换了一次订的：又订了一次、撤掉又订回到前一次；照内核交的 `PeerWatching` 整个比，一次订的身份是记下它的那条工具结果的序号，施工 FX-3），经会话表的 `SessionPort::watch(被等的会话, 这个会话, PeerWatching)` 起一个任务去订，同时起一个计时：起算时刻加 `watch_hours()` 小时到点，交回「到点了」，内核照账本判（`kernel/session.md`「空了的通知」第 3 条）。已经到点的不订，计时当场到。
 3. 不在等了的（收到了通知、订它的那一轮撤掉了、作废了），撤掉它的计时；那边的名单不管，发来的通知内核拒。
 4. 订不上：会话表说那个会话不在了（找不到，`NotWatched::Gone`），交回「不在了」，内核记 `gone`；别的（它停了、核心正在停）记一行 `WARN watch not placed`，写短编号和原因，计时照走，到点作废。不重订：下次这边载入还会再订。
 5. 载入、恢复撤销以后，账本里在等的都算新多出来的，走的是同一条路；actor 停了，计时一起撤掉。

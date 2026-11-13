@@ -18,7 +18,7 @@ use miyu_tool::{Catalog, Exit, Tool};
 
 use crate::support::extracting::organizer_after;
 use crate::support::meaning::{catalog, chat};
-use crate::support::table::{OTHER, Table, WAITER, session, sid};
+use crate::support::table::{OTHER, Table, WAITER, session, sid, watching};
 use crate::support::*;
 
 /// 问退不退时说的「闲多久」：长得这次测试里不会到。
@@ -137,7 +137,9 @@ async fn a_session_another_waits_on_is_kept() {
     assert!(matches!(settled(&handle).await, Retire::Later(_)));
     // 起算时刻晚于它忙完的那一刻：同一毫秒的当「带话又订」，当场发、不留在名单上。
     tokio::time::sleep(Duration::from_millis(20)).await;
-    handle.watch(sid(WAITER), now()).expect("会话在跑");
+    handle
+        .watch(sid(WAITER), watching(5, now()))
+        .expect("会话在跑");
     kept(&handle, 3, Hold::Peers).await;
     assert!(table.notices().is_empty(), "空着订进来的，等它下一次忙完");
 }

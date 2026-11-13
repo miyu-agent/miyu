@@ -4,7 +4,8 @@
 //! 底子是这个会话（`OWN`）的一段：第 3 轮一次调用订了会话 B（第 5 条，07:00:05），回合结束。
 
 use super::*;
-use crate::id::SessionId;
+use crate::id::{Seq, SessionId};
+use crate::ledger::PeerWatching;
 use crate::time::Timestamp;
 
 /// 这个会话。
@@ -90,16 +91,29 @@ fn watching_after(n: usize) -> Ledger {
     ledger
 }
 
-/// 账本说在等的：会话，从哪一刻算起。
-fn waited(ledger: &Ledger) -> Vec<(SessionId, Timestamp)> {
+/// 账本说在等的：会话，哪一次订。
+fn waited(ledger: &Ledger) -> Vec<(SessionId, PeerWatching)> {
     ledger
         .watching()
-        .map(|(session, since)| (session.clone(), since))
+        .map(|(session, watching)| (session.clone(), watching))
         .collect()
+}
+
+/// 第 `seq` 条结果记下的一次订，从 07:00 过 `second` 秒算起。
+fn w(seq: u64, second: u64) -> PeerWatching {
+    PeerWatching {
+        seq: Seq::new(seq).unwrap(),
+        since: at(second),
+    }
 }
 
 /// 从第 `first` 条起开一轮，里面一次调用又订了 B，回合结束：六条，订的那一条在 `first + 3`，时刻是 07:00 过那么多秒。
 fn watch_again(ledger: &mut Ledger, first: u64) {
+    watch_again_at(ledger, first, first + 3);
+}
+
+/// 同 [`watch_again`]，订的那一条的时刻是 07:00 过 `second` 秒：时钟停住时照前一次的时刻写。
+fn watch_again_at(ledger: &mut Ledger, first: u64, second: u64) {
     let turn = first + 1;
     let call = format!("call_{}_1", first + 2);
     for event in [
@@ -118,7 +132,7 @@ fn watch_again(ledger: &mut Ledger, first: u64) {
         ),
         line(
             first + 3,
-            first + 3,
+            second,
             Some(turn),
             "tool.result",
             KERNEL,
@@ -144,7 +158,11 @@ fn watch_again(ledger: &mut Ledger, first: u64) {
 #[test]
 fn a_session_watching_another_appends() {
     let mut ledger = watching_after(7);
-    assert_eq!(waited(&ledger), [(id(B), at(5))], "从订的那一条的时刻算起");
+    assert_eq!(
+        waited(&ledger),
+        [(id(B), w(5, 5))],
+        "从订的那一条的时刻算起"
+    );
     ledger.append(&notice(8, &session(B), B, "idle")).unwrap();
     assert!(waited(&ledger).is_empty(), "等到了，不再等");
     assert_eq!(ledger.next_seq().get(), 9);
@@ -175,7 +193,11 @@ fn a_session_cannot_watch_itself() {
         "a session cannot watch itself",
     );
     ledger.append(&result(&[watch(C), watch(B)])).unwrap();
-    assert_eq!(waited(&ledger), [(id(B), at(5)), (id(C), at(5))], "照编号");
+    assert_eq!(
+        waited(&ledger),
+        [(id(B), w(5, 5)), (id(C), w(5, 5))],
+        "照编号"
+    );
     let mut blind = Ledger::default();
     for event in &opening()[..4] {
         blind.append(event).unwrap();
@@ -248,7 +270,7 @@ fn undoing_the_watching_turn_stops_the_watch() {
     restored
         .append(&event(9, None, "turn.unreverted", r#"{"turns":[3]}"#))
         .unwrap();
-    assert_eq!(waited(&restored), [(id(B), at(5))]);
+    assert_eq!(waited(&restored), [(id(B), w(5, 5))]);
     restored
         .append(&notice(10, &session(B), B, "idle"))
         .unwrap();
@@ -267,16 +289,27 @@ fn undoing_the_watching_turn_stops_the_watch() {
 fn watching_again_counts_from_the_new_moment() {
     let mut ledger = watching_after(7);
     watch_again(&mut ledger, 8);
-    assert_eq!(waited(&ledger), [(id(B), at(11))]);
+    assert_eq!(waited(&ledger), [(id(B), w(11, 11))]);
     ledger
         .append(&event(14, None, "turn.reverted", r#"{"turns":[9]}"#))
         .unwrap();
-    assert_eq!(waited(&ledger), [(id(B), at(5))], "回到第 3 轮订的");
+    assert_eq!(waited(&ledger), [(id(B), w(5, 5))], "回到第 3 轮订的");
     ledger.append(&notice(15, &session(B), B, "idle")).unwrap();
     watch_again(&mut ledger, 16);
-    assert_eq!(waited(&ledger), [(id(B), at(19))]);
+    assert_eq!(waited(&ledger), [(id(B), w(19, 19))]);
     ledger
         .append(&event(22, None, "turn.reverted", r#"{"turns":[17]}"#))
         .unwrap();
     assert!(waited(&ledger).is_empty(), "第 3 轮订的已经等到过了");
+}
+
+/// 施工 FX-3：时钟停住时（日志里的时刻在未来、系统时间往回拨了）等到过以后又订一次，和前一次是同一个时刻，序号不一样：
+/// 执行器照序号认出是新的一次，通知的编号也照它，不会被当成重的。
+#[test]
+fn a_watch_at_the_same_moment_is_told_apart_by_its_seq() {
+    let mut ledger = watching_after(7);
+    assert_eq!(waited(&ledger), [(id(B), w(5, 5))]);
+    ledger.append(&notice(8, &session(B), B, "idle")).unwrap();
+    watch_again_at(&mut ledger, 9, 5);
+    assert_eq!(waited(&ledger), [(id(B), w(12, 5))], "同一个时刻，新的序号");
 }

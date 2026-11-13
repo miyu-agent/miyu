@@ -53,7 +53,7 @@ impl Watch {
                 .watching()
                 .into_iter()
                 .find(|(watched, _)| watched == peer)
-                .map(|(_, since)| since)
+                .map(|(_, watching)| watching.since)
         };
         match input {
             Input::Command(received) if self.fresh(&received.id) => {

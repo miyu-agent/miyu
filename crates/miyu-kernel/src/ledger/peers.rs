@@ -1,8 +1,9 @@
 //! 账本里跨会话的几条（施工 C-1，`docs/blueprint/kernel/history.md`「账本查的规矩」，`cross-session.md`「效果
 //! peer.watch」「事件 peer.idle」）：在等哪几个会话的通知，`peer.idle` 只认在等的。
 //!
-//! 订的记录是工具结果的效果 `peer.watch`：一次订记一项，在哪一轮、从那条结果的时刻算起。算不算在等照回合看，撤销、恢复
-//! 不动这些记录：订它的那一轮撤掉了就不算，恢复了又算。又订了一次的从新的时刻算，撤掉后订的那一轮，回到前一次的时刻。
+//! 订的记录是工具结果的效果 `peer.watch`：一次订记一项，在哪一轮、那条结果的序号（这一次订的身份，施工 FX-3）、从那条
+//! 结果的时刻算起。算不算在等照回合看，撤销、恢复不动这些记录：订它的那一轮撤掉了就不算，恢复了又算。又订了一次的从新
+//! 的时刻算，撤掉后订的那一轮，回到前一次的时刻。
 //! 收到 `peer.idle`，那个会话以前订的都了结、清掉，再订从新的算起。账本随订的次数长，收到通知时清掉那个会话的。
 //!
 //! 施工 C-2 多两样，防刷屏用（`cross-session.md` 第五条第 5 款）：收下的别的会话的话，每个发话方照先后记时刻和字的哈希；
@@ -41,12 +42,24 @@ struct Said {
     digest: ContentHash,
 }
 
-/// 订了一次：在哪一轮，从哪一刻算起，那一轮的 `cause`（施工 C-6：作废、不在了的 `peer.idle` 照它记 `cause`）。
+/// 订了一次：在哪一轮，记下它的那条结果的序号、从哪一刻算起，那一轮的 `cause`（施工 C-6：作废、不在了的 `peer.idle`
+/// 照它记 `cause`）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Watch {
     turn: TurnId,
-    since: Timestamp,
+    at: PeerWatching,
     cause: Option<CommandId>,
+}
+
+/// 算数的一次订（施工 FX-3，`cross-session.md`「起草时定的」第 67 条）：记下它的那条工具结果的序号，和从那条结果的时刻
+/// 算起。序号是这一次订的身份：一个会话里不重、不跳号，载入、恢复撤销以后还是同一个，执行器照它认新多出来的，被等的那一边
+/// 发的通知的命令编号带着它。时钟停住时（日志里的时刻在未来、系统时间往回拨了）两次订的起算时刻一样，序号不一样。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PeerWatching {
+    /// 记下这次订的那条工具结果的序号。
+    pub seq: Seq,
+    /// 从哪一刻算起：那条结果的时刻。作废照它加上 `peers.watch_hours` 算。
+    pub since: Timestamp,
 }
 
 impl Ledger {
@@ -62,12 +75,12 @@ impl Ledger {
         }
     }
 
-    /// 在等哪几个会话的通知，各从哪一刻算起，照编号（施工 C-1）：订它的那一轮还没撤掉的里面，最近订的那一次。收到过
-    /// 通知的，那以前订的不算。
-    pub fn watching(&self) -> impl Iterator<Item = (&SessionId, Timestamp)> {
+    /// 在等哪几个会话的通知，各是哪一次订，照编号（施工 C-1，FX-3 起交回整个 [`PeerWatching`]）：订它的那一轮还没撤掉的
+    /// 里面，最近订的那一次。收到过通知的，那以前订的不算。
+    pub fn watching(&self) -> impl Iterator<Item = (&SessionId, PeerWatching)> {
         self.peers.watches.keys().filter_map(|session| {
             self.effective_watch(session)
-                .map(|watch| (session, watch.since))
+                .map(|watch| (session, watch.at))
         })
     }
 
@@ -75,7 +88,7 @@ impl Ledger {
     /// 到没到点、记 `cause`。不在等的没有。
     pub(crate) fn watch_of(&self, session: &SessionId) -> Option<(Timestamp, Option<&CommandId>)> {
         self.effective_watch(session)
-            .map(|watch| (watch.since, watch.cause.as_ref()))
+            .map(|watch| (watch.at.since, watch.cause.as_ref()))
     }
 
     /// 会话 `session` 算数的那一次订：订它的那一轮还没撤掉的里面，最近订的那一次。
@@ -151,8 +164,9 @@ impl Peers {
         }
     }
 
-    /// 记下查过的这一条带来的变化：订的记下在哪一轮、从这条的时刻算起；收到通知，那个会话以前订的都了结。`peer` 是这一条
-    /// 是别的会话发来的话时，发话的那个会话（施工 C-2，账本照 [`Ledger::is_peer`] 认好交来）：记下时刻、哈希，算没听到。
+    /// 记下查过的这一条带来的变化：订的记下在哪一轮、这条的序号、从这条的时刻算起；收到通知，那个会话以前订的都了结。
+    /// `peer` 是这一条是别的会话发来的话时，发话的那个会话（施工 C-2，账本照 [`Ledger::is_peer`] 认好交来）：记下时刻、
+    /// 哈希，算没听到。
     /// 主对话的请求、回复看到了的，不再算没听到。
     pub(super) fn record(&mut self, event: &Event, peer: Option<SessionId>) {
         match &event.body {
@@ -190,7 +204,10 @@ impl Peers {
                             .or_default()
                             .push(Watch {
                                 turn,
-                                since: event.at,
+                                at: PeerWatching {
+                                    seq: event.seq,
+                                    since: event.at,
+                                },
                                 cause: event.cause.clone(),
                             });
                     }

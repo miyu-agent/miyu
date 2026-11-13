@@ -121,8 +121,8 @@ fn a_notice_not_yet_heard_stays_after_the_checkpoint() {
     ]);
     s.tools([Play::watches(peer)]);
     s.say("它做完告诉我");
-    let [(_, since)] = s.watching().try_into().unwrap();
-    let due = since.unix_millis() + 12 * 3_600_000;
+    let [(_, watching)] = s.watching().try_into().unwrap();
+    let due = watching.since.unix_millis() + 12 * 3_600_000;
     s.watch_ends_at(
         peer,
         crate::event::IdleReason::Expired,

@@ -180,7 +180,7 @@
 
 **在等的通知**（施工 C-1，`cross-session.md` 第六条、第七条第 3 款）：
 
-1. 订的记录是工具结果的效果 `peer.watch`，一次订记一项：在哪一轮、从这条结果的 `at` 算起、这条结果的 `cause`（施工 C-6：作废、不在了的 `peer.idle` 照它记 `cause`，查询 `watch_of(会话)` 交回起算时刻和它）。撤销、恢复、压缩都不动这些记录。
+1. 订的记录是工具结果的效果 `peer.watch`，一次订记一项：在哪一轮、这条结果的序号、从这条结果的 `at` 算起、这条结果的 `cause`（施工 C-6：作废、不在了的 `peer.idle` 照它记 `cause`，查询 `watch_of(会话)` 交回起算时刻和它）。序号是这一次订的身份（施工 FX-3）：查询 `watching()` 交回每个在等的会话的 `PeerWatching`（序号、起算时刻），执行器照序号认新多出来的，通知的编号带它（`cross-session.md` 第 67 条）；时钟停住时两次订的起算时刻一样，序号不一样。撤销、恢复、压缩都不动这些记录。
 2. 在等一个会话：上一次收到它的通知以后订过它，订它的那一轮还没撤掉（压缩以前的回合也算）。从哪一刻算起：这样的几次里最近订的那一次。
 3. 所以撤掉订它的那一轮，就不在等了，之后到的通知不收；恢复了，又在等，从原来的时刻算起；撤了以后开了新的一轮、恢复不了了，就一直不算。
 4. 又订了一次（`cross-session.md` 第六条第 2 款），从新的时刻算；撤掉又订的那一轮，回到前一次的时刻。
@@ -348,7 +348,7 @@
 | `crates/miyu-kernel/src/ledger/tests/model.rs`（施工 3-8 四补从 `tests.rs` 分出来） | `model.called` 的 `seen`；回顾的两条不带回合编号，有回合在进行时也收；`session.recapped` 照到的在它之前；回顾的 `model.called` 照到了排着的那句，那句照样撤得回，主请求的照到了就撤不回；`replaced` 只和 `model` 一起出现，空闲时、回合里都收（施工 8-10） |
 | `crates/miyu-kernel/src/ledger/tests/jobs.rs`、`jobs/reports.rs`、`jobs/numbers.rs` | 施工 7-1 的每一条各一个被拦下的例子、一个放行的例子：编号不重复（同一条里、后来的、撤掉的回合里的；照整个编号比、用过的最大编号照最后一段数，`jobs/numbers.rs` 的 `prefixed_job_ids_count_by_their_last_part`，施工 7-1 补）；`agent` 带会话、`command` 不带、不认识的种类不管；后台命令只报一次结束、回报对不上的；子代理的回报对得上会话和 `by`、报好几次、停了的不再报、`aborted` 以后还能报；两种回报带 `turn` 的要是正在进行的那一轮；子会话的 `depth`、`parent` |
 | `crates/miyu-kernel/src/ledger/tests/jobs.rs` 的 `a_message_to_a_subagent_makes_it_owe_a_report`、`a_report_that_arrives_while_the_message_is_on_its_way_answers_it`（施工 7-7） | `job.messaged` 只能给这个会话派的子代理（后台命令、不认识的种类、没派过的拦下）；留了言欠一份回报、报了不欠；调用发出以后到的回报算回了；`subagent_in`、`subagents` |
-| `crates/miyu-kernel/src/ledger/tests/peers.rs`（施工 C-1） | 订的是自己的拒、同一条结果里有一个是自己的整条不收、不知道自己是谁的账本不查（`a_session_cannot_watch_itself`）；`peer.idle` 只认在等的：没订过的、订了别的、等到过的都拒，订它的那一轮还在进行时到的照收（`a_notice_is_taken_only_while_watching`）；`by` 对得上原因、不认识的原因不查、哪一种都算等到了头（`a_notice_is_by_the_session_or_by_the_kernel`）；撤掉订它的那一轮不算在等、恢复了照原来的时刻又算、恢复不了了一直不算（`undoing_the_watching_turn_stops_the_watch`）；又订从新的时刻算、撤掉又订的回到前一次、等到过以后再订的撤掉就不在等（`watching_again_counts_from_the_new_moment`） |
+| `crates/miyu-kernel/src/ledger/tests/peers.rs`（施工 C-1） | 订的是自己的拒、同一条结果里有一个是自己的整条不收、不知道自己是谁的账本不查（`a_session_cannot_watch_itself`）；`peer.idle` 只认在等的：没订过的、订了别的、等到过的都拒，订它的那一轮还在进行时到的照收（`a_notice_is_taken_only_while_watching`）；`by` 对得上原因、不认识的原因不查、哪一种都算等到了头（`a_notice_is_by_the_session_or_by_the_kernel`）；撤掉订它的那一轮不算在等、恢复了照原来的时刻又算、恢复不了了一直不算（`undoing_the_watching_turn_stops_the_watch`）；又订从新的时刻算、撤掉又订的回到前一次、等到过以后再订的撤掉就不在等（`watching_again_counts_from_the_new_moment`）；每一次订带着订的那条结果的序号，时钟停住时同一个时刻又订，序号不一样（`a_watch_at_the_same_moment_is_told_apart_by_its_seq`，施工 FX-3） |
 | `crates/miyu-kernel/src/ledger/tests/said.rs`（施工 C-2） | 别的会话不是父会话、不是派的子代理，还不知道父会话的哪个都算；只有别的会话的话记下、照时刻数（含正好那一刻）、哈希一字不差；还没听到的：回顾的请求不算听到，主请求看到哪里算到哪里，回复看到了也算 |
 | `crates/miyu-kernel/src/ledger/tests/seal.rs`（施工 C-8 下） | 封存只在两轮之间、只记一次；封存以后照记别的、不再开一轮 |
 | `crates/miyu-kernel/src/ledger/tests/goal.rs`（施工 X-6） | 长期目标同一时刻至多一个没结束的；没有的改、停、接着跑、结束都拒；跑着的才停、停着的才接着跑；原文不能是空白；结束了能再设，不认识的结局也算结束了 |
