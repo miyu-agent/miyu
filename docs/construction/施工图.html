@@ -1523,6 +1523,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sPF3"><span class="n">PF-3</span>回合开始的挂接点分段计时<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF1"><span class="n">LF-1</span>定时表多一种「人生」循环<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF5a"><span class="n">LF-5 上</span>预设多认 hidden<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sLF2"><span class="n">LF-2</span>人生循环醒来那段话分三层<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -58712,6 +58713,59 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LF-5上-预设不列进选择.md</code>；设计 <code>70-推演人生.md</code>；蓝图 <code>presets.md</code>、<code>protocol.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sLF2" aria-labelledby="h-sLF2">
+  <div class="sheet-head"><h2 id="h-sLF2"><span class="no">LF-2</span>人生循环醒来那段话分三层</h2><span class="pill done">做完，字待定稿</span></div>
+  <p class="purpose">循环的那句话原来由她每轮原样传回，推演的方法和她的留言挤在同一格里：她一改写，方法就没了。这一步把人生循环醒来那段话分成三层：固定的框讲机制、推演方法跟着人格、她的留言自己写。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint · schedules/life.rs　miyu-assemble · schedule.rs</span><span class="dir-note">LF-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>固定的框：人生自己的一对标签，冻结进快照，组装时照 <code>by.loop</code> 是 <code>life</code> 挑</li>
+              <li>到点时核心拼正文：推演方法、空一行、她的留言，原样记进 <code>message.user</code></li>
+              <li>推演方法：人格的 <code>prompts/life.md</code>，没有的用出厂的一段；改了下一次醒来就用新的</li>
+              <li>那一行的 <code>prompt</code> 只存留言，她这一轮没写的清掉</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">以前的快照没有这两格：字节、指纹不变</span><span class="rl">测试守着</span></div>
+          <div class="tile new"><span class="nm">schedule_wakeup 的工具说明一个字不动</span><span class="rl">框里说清这里的 prompt 是留言</span></div>
+          <div class="tile new"><span class="nm">三份字约 216 token，照草稿登记</span><span class="rl">LF-5 下真模型走一遍再定稿</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LF-2</dd></div>
+        <div><dt>名称</dt><dd>人生循环醒来那段话分三层</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">LF-2</dd></div>
+        <div><dt>验收</dt><dd>门禁十一项、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>人格目录有 <code>life.md</code> 的用它；没有、是空的、会话不带人格的用出厂的；改了文件下一次到点用新的</span></li>
+        <li><span class="ok">✓</span><span>带了 <code>prompt</code> 的下一次留言是它，没带的清成空的；她自己定节奏的循环一点不变</span></li>
+        <li><span class="ok">✓</span><span>不带人生两格的快照：字节逐字等于改前的写法，读得回，指纹相等</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LF-2-醒来那段话三层.md</code>；设计 <code>70-推演人生.md</code>；蓝图 <code>schedules.md</code>、<code>personas.md</code>、<code>prompts.md</code>。</li>
       </ul>
     </div>
   </div>

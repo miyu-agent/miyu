@@ -421,3 +421,28 @@ fn shipped_and_the_first_package_cover_the_others() {
         ]
     );
 }
+
+/// 推演方法（施工 LF-2）：照层叠同名替换、原样；上面一层的空文件也盖住下面的（空的怎么算归用它的一方）；哪一层都没有的是没有。
+#[test]
+fn the_life_method_stacks_by_layer() {
+    let places = Places::new();
+    places.write(Layer::Shipped, "miyu", "prompts/persona.md", "x\n");
+    assert_eq!(places.personas.find("miyu").unwrap().life, None);
+    places.write(Layer::Shipped, "miyu", "prompts/life.md", "shipped way\n");
+    assert_eq!(
+        places.personas.find("miyu").unwrap().life.as_deref(),
+        Some("shipped way\n")
+    );
+    places.write(Layer::Home, "miyu", "prompts/life.md", "my way\n\n");
+    assert_eq!(
+        places.personas.find("miyu").unwrap().life.as_deref(),
+        Some("my way\n\n"),
+        "你的盖出厂的，原样"
+    );
+    places.write(Layer::Home, "miyu", "prompts/life.md", "");
+    assert_eq!(
+        places.personas.find("miyu").unwrap().life.as_deref(),
+        Some(""),
+        "空的也盖住下面的"
+    );
+}

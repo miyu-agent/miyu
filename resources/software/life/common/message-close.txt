@@ -1,0 +1,2 @@
+Set your next wakeup with schedule_wakeup. Here its prompt is not passed back: write a note to yourself for that wakeup, or leave it out. delay_seconds is how long until then; reason is what you are doing now. Without a call you wake again after the default interval.
+</life-wakeup>

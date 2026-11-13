@@ -51,6 +51,10 @@ pub(crate) fn texts() -> Texts {
             schedule_close: "</task>\n".to_string(),
             loop_open: Template::parse("<wakeup {id}>\n").expect("模板合写法"),
             loop_close: "again?\n</wakeup>\n".to_string(),
+            life: Some((
+                Template::parse("<life {id}>\n").expect("模板合写法"),
+                "sleep?\n</life>\n".to_string(),
+            )),
         }),
         peers: Some(PeerTexts {
             open: Template::parse("<peer {id}>\n").expect("模板合写法"),

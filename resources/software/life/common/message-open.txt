@@ -1,0 +1,2 @@
+<life-wakeup id="{id}">
+This is your life session. You woke on the schedule you set. What you write and save here becomes memory shared with your other sessions; what real people did in it is taken as fact.

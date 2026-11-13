@@ -69,17 +69,17 @@ fn the_by_is_what_picks_it() {
     assert!(plain.get("loop").is_none(), "定时任务不写 loop");
 }
 
-/// 施工 LF-1：人生循环这一步先包循环那一对；`by` 写成 `"loop": "life"`，读得回。
+/// 施工 LF-1 起 `by` 写成 `"loop": "life"`，读得回；施工 LF-2 起人生包它自己的那一对（原来先借循环那一对），带任务编号。
 #[test]
-fn a_life_loop_uses_the_loop_pair_and_says_life_in_its_by() {
+fn a_life_loop_uses_its_own_pair_and_says_life_in_its_by() {
     let texts = texts().schedule.unwrap();
     assert_eq!(
         message(
             &task(Some(ScheduleLoop::Life)),
-            vec![words("看看 CI\n")],
+            vec![words("活法\n\n留言\n")],
             Some(&texts)
         ),
-        [words("<wakeup t3>\n看看 CI\nagain?\n</wakeup>\n")]
+        [words("<life t3>\n活法\n\n留言\nsleep?\n</life>\n")]
     );
     let by = By::Schedule(Schedule {
         schedule: "t1".to_string(),
@@ -89,4 +89,35 @@ fn a_life_loop_uses_the_loop_pair_and_says_life_in_its_by() {
     assert_eq!(json, r#"{"kind":"schedule","schedule":"t1","loop":"life"}"#);
     let back: By = serde_json::from_str(&json).unwrap();
     assert_eq!(back, by, "读得回原样");
+}
+
+/// 施工 LF-2：快照里没有人生那一对的（LF-2 以前造的），人生的那句照人的话原样；别的两种照旧包各自那一对。
+#[test]
+fn without_the_life_pair_a_life_loop_is_left_as_said_and_the_others_keep_theirs() {
+    let mut texts = texts().schedule.unwrap();
+    texts.life = None;
+    assert_eq!(
+        message(
+            &task(Some(ScheduleLoop::Life)),
+            vec![words("活法")],
+            Some(&texts)
+        ),
+        [words("活法")]
+    );
+    assert_eq!(
+        message(
+            &task(Some(ScheduleLoop::Dynamic)),
+            vec![words("看看 CI")],
+            Some(&texts)
+        ),
+        [words("<wakeup t3>\n看看 CI\nagain?\n</wakeup>\n")]
+    );
+    assert_eq!(
+        message(
+            &task(Some(ScheduleLoop::Fixed)),
+            vec![words("看看 CI")],
+            Some(&texts)
+        ),
+        [words("<task t3>\n看看 CI\n</task>\n")]
+    );
 }

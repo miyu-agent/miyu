@@ -1,6 +1,7 @@
 //! 到点的定时任务、循环交进来的话（施工 J-1 上，设计 `45-定时和循环.md` 第三节第 2、4 条）：`by` 是 `schedule` 的
 //! `message.user` 包一层带任务编号的标签，她分得清这句是到点了在叫她，不是人说的。定时任务、固定间隔的循环用一对，她自己定
-//! 节奏的循环用另一对（收尾提醒她要接着就调 `schedule_wakeup`）。字在造快照时冻结（施工 J-2 写），以前造的快照没有的原样交回。
+//! 节奏的循环用另一对（收尾提醒她要接着就调 `schedule_wakeup`），人生循环用它自己的一对（施工 LF-2，设计 `70-推演人生.md` 第三节
+//! 第 3 条：固定的框，讲人生会话的机制）。字在造快照时冻结（施工 J-2 写），以前造的快照没有的原样交回。
 
 use std::collections::BTreeMap;
 
@@ -21,8 +22,12 @@ pub(crate) fn message(
         return blocks;
     };
     let (open, close) = match schedule.looping {
-        // 人生（施工 LF-1）这一步先用循环那一对。
-        Some(ScheduleLoop::Dynamic | ScheduleLoop::Life) => (&texts.loop_open, &texts.loop_close),
+        Some(ScheduleLoop::Life) => match &texts.life {
+            Some((open, close)) => (open, close),
+            // 施工 LF-2 以前造的快照没有人生那一对：照人的话原样，不借循环那一对（收尾的提醒说的是 `/loop` 的那句话）。
+            None => return blocks,
+        },
+        Some(ScheduleLoop::Dynamic) => (&texts.loop_open, &texts.loop_close),
         Some(ScheduleLoop::Fixed) | None => (&texts.schedule_open, &texts.schedule_close),
     };
     let fields = BTreeMap::from([("id", schedule.schedule.as_str())]);

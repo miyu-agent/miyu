@@ -34,7 +34,8 @@ personas/<编号>/                 你的（数据根下）
 └── prompts/
     ├── persona.md               人设
     ├── examples.md              示范对话
-    └── reminders.md             角色扮演提示（施工 P-1 补）
+    ├── reminders.md             角色扮演提示（施工 P-1 补）
+    └── life.md                  推演方法（施工 LF-2）
 ```
 
 1. 编号就是目录名：小写字母开头，小写字母、数字、`-`、`_`，最多 64 个（和配置里的名字一个写法）。
@@ -42,6 +43,7 @@ personas/<编号>/                 你的（数据根下）
 3. 每样都可以没有：测试用的样本（软件工程师，`docs/designs/samples/personas/engineer/`）只有 `persona.toml` 的名字和 `prompts/persona.md`。
 4. `prompts/reminders.md`（施工 P-1 补）：整份是一条提示，照原样（例如旧版 Miyu 的 `miyu.hint.md`）；去掉末尾空白是空的，算没有。有它的人格每 3 轮在触发的那句后面多一块提示，system 最后多一句风格锁（`26-提示词.md` J10、第四节第 7 块）。
 5. 资源目录里没有 `personas/`（施工 P-4 下，2026-10-08 项目主人：「软件默认不自带任何人格，人格允许为空」，`16-人格与预设.md` Y11 改了）：原来出厂的软件工程师 `engineer`、空人格 `none` 撤掉了。施工 PE-1（2026-10-31 项目主人定，Y11 再改）起出厂带一个软件工程师 `software-engineer`，住在出厂包 `base-persona-engineer` 里（「软件包带的」第 3 条），人设见登记簿（`26-提示词.md` 第十节）；它不算进第一次引导，引导照常带人建自己的人格，`persona.default` 出厂照旧不设。软件工程师挪成测试用的样本 `docs/designs/samples/personas/engineer/`：要人格的测试把它装进临时数据根的 `root/personas/`（`miyu_session::testkit::install_sample_persona`），照旧用编号 `engineer`。以前造的、钉着 `engineer`、`none` 的会话照快照里冻结的接着用（「怎么走」第 6 条）。
+6. `prompts/life.md`（施工 LF-2，设计 `70-推演人生.md` 第三节第 3 条）：推演方法，这条人生怎么过，什么语言都行。照第 2 条同名替换（上面一层的空文件也盖住下面的），`miyu_store::personas::Found` 的 `life`。不进快照：人生循环每次醒来那一刻读，拼进交进会话的正文开头（`schedules.md` 第三节第 4 条）；去掉末尾空白是空的、哪一层都没有的用出厂的 `resources/software/life/method.txt`。编辑它的协议、界面随后面的步子做，现在人直接放文件。
 
 **`persona.toml`**：
 
@@ -177,7 +179,7 @@ assistant: 8640
 | `crates/miyu-endpoint/src/personas/delete/tests.rs`（施工 PE-1） | 只带这一个人格的包才算（带图标的也算）；带技能、带两个人格、带程序的不算；装上的包、你那一层也有的、没有的都不连包卸 |
 | `crates/miyu-endpoint/tests/persona_set.rs`（施工 P-3 下、补、再补） | 不写编号新建、读原文和版本、一对一对的示范对话、防覆盖、空的字、删提示词、写错的什么都不写还带一句、参数不对、删了挪进回收处（`protocol.md` 测试表）；写错的一项（旧的 `base` 也是，施工 AUD-3）列表里照连接的语言说、带行，改它的整条不收、文件不动 |
 | `crates/miyu-store/src/trash/personas/tests.rs`（施工 P-3 下） | 挪进回收处整个目录不变、多 `deleted_at`、原处没了、同一个编号删两次各是各的、不在的报错；清的时候正好满的删、没满的留、读不出删的时刻的留并报出来、没有回收处什么都不做 |
-| `crates/miyu-store/src/personas/tests.rs` | 三层逐项、逐文件叠、包那一层在出厂和你的中间、出厂的和排在前面的包盖住别的包（施工 P-11 上）、来自哪一层；空目录也算有这一层；没有的、编号不合写法的、是文件不是目录的；写错的写明哪一层；列编号不重复、照编号排 |
+| `crates/miyu-store/src/personas/tests.rs` | 三层逐项、逐文件叠、包那一层在出厂和你的中间、出厂的和排在前面的包盖住别的包（施工 P-11 上）、来自哪一层；空目录也算有这一层；没有的、编号不合写法的、是文件不是目录的；写错的写明哪一层；列编号不重复、照编号排；推演方法 `prompts/life.md` 照层同名替换、原样，空文件也盖住下面的（施工 LF-2） |
 | `crates/miyu-endpoint/src/personas/tests.rs` | 名字照语言挑、退回的先后 |
 | `crates/miyu-endpoint/src/personas/glance/tests.rs`（施工 V-16） | 看一次记在盘上、换个进程照记下的给（图读不了也给）；大小变了、大小没变修改时刻变了都重算；先只要版本、后来要候选主色的补算；图不在的没有 |
 | `crates/miyu-endpoint/tests/personas.rs` | 你那一层的人格进 system、示范对话排在前面；不写人格照默认；没有的、编号不对的、写错的拒绝，默认人格指着没有的也拒，什么都不造；场所会话带人格造、找回时不看、新场所指着没有的不造；`persona.list`、`persona.get`；角色扮演提示排在人说的那句后面、第二轮不再注入、system 带风格锁，软件工程师都没有（施工 P-1 补） |

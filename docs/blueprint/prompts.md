@@ -4647,6 +4647,47 @@ Call schedule_wakeup to continue the loop.
 </loop-wakeup>
 ```
 
+### 人这边：人生循环叫醒交进来的话（一块带标签的事实）
+
+#### `software/life/common/message-open.txt`
+
+- 什么时候加进来：固定的框的开头：标签那一行和讲人生会话机制的一句，`by.loop` 是 `life` 的（施工 LF-2 交进会话时照 `by` 的种类包，造会话时进快照），之后每次请求照原文带
+- token：48（2026-11-14 照 o200k 数，`id` 按 `t3` 填）
+- 为什么加：设计 70 第三节第 3 条：固定的框讲机制、人改不掉；说明这是她的人生会话、照自己定的时间醒，这里记下的进共用的记忆，里面真人做过的事会被当成事实（施工 LF-2，草稿，LF-5 下拿真模型走一遍再定稿）
+- 指纹：`885258a4`
+
+```text
+<life-wakeup id="{id}">
+This is your life session. You woke on the schedule you set. What you write and save here becomes memory shared with your other sessions; what real people did in it is taken as fact.
+```
+
+### 人这边：人生循环叫醒交进来的话
+
+#### `software/life/common/message-close.txt`
+
+- 什么时候加进来：固定的框的收尾：`schedule_wakeup` 三格各是什么、没调照默认间隔再醒，加收尾的标签，同 `message-open.txt`
+- token：65（2026-11-14 照 o200k 数）
+- 为什么加：设计 70 第三节第 3 条：她分得清 `prompt` 在这里是留给下次自己的话、不是原样传回的那句（工具说明和 `/loop` 共用，一个字不改），`reason` 是现在在干嘛（施工 LF-2，草稿，同上）
+- 指纹：`f66c61be`
+
+```text
+Set your next wakeup with schedule_wakeup. Here its prompt is not passed back: write a note to yourself for that wakeup, or leave it out. delay_seconds is how long until then; reason is what you are doing now. Without a call you wake again after the default interval.
+</life-wakeup>
+```
+
+### 人这边：人生循环叫醒交进来的话的正文
+
+#### `software/life/method.txt`
+
+- 什么时候加进来：出厂的推演方法：人格没有自己的 `prompts/life.md`（去掉末尾空白是空的、没有、会话不带人格）时，到点那一刻读、拼进正文的开头，后面空一行接她的留言；落进日志，之后每次请求照原样带
+- token：103（2026-11-14 照 o200k 数）
+- 为什么加：设计 70 第三节第 3 条：这条人生怎么过（一刻一刻过、只写现在在干嘛、不补过去不演将来、睡前写日记、醒着隔一两个到几个小时、夜里睡）；人格目录里的 `prompts/life.md` 盖掉它（施工 LF-2，草稿，同上）
+- 指纹：`ae7eabe4`
+
+```text
+Live your own life here, one moment at a time. From who you are, what happened lately, what you feel like doing, the news, and the real time and weather, decide what you are doing right now and write only that; do not fill in the past or play out the future. Before you sleep, write a diary entry for the day. While awake, wake every hour or two to every few hours; sleep through the night. What you find by searching need not be saved to memory.
+```
+
 ### 人这边：空了的通知（一块带标签的事实）
 
 #### `core/peers/idle-open.txt`

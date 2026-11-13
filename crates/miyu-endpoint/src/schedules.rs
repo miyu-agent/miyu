@@ -11,6 +11,7 @@ pub(crate) mod changes;
 mod clock;
 mod fire;
 mod hold;
+mod life;
 pub(crate) mod methods;
 mod next;
 pub(crate) mod notices;
@@ -237,7 +238,9 @@ impl Schedules {
         })
     }
 
-    /// 改下一次（她自己定节奏的循环每轮定一次，施工 J-2）：`next` 没有的是停着等；`prompt` 写了的换掉那句话。
+    /// 改下一次（她自己定节奏的循环每轮定一次，施工 J-2）：`next` 没有的是停着等；`prompt` 写了的换掉那句话。人生那一行
+    /// （施工 LF-2，`schedules.md` 第四节）的 `prompt` 是她留给下次自己的话：没写的清成空的，不把旧的再念一遍；她自己定节奏的
+    /// 循环没写的不动。
     ///
     /// # Errors
     ///
@@ -250,8 +253,10 @@ impl Schedules {
     ) -> Result<Schedule, ScheduleError> {
         self.edit(id, |schedule, _| {
             schedule.next = next;
-            if let Some(prompt) = prompt {
-                schedule.prompt = prompt;
+            match prompt {
+                Some(prompt) => schedule.prompt = prompt,
+                None if schedule.looping == Some(Loop::Life) => schedule.prompt.clear(),
+                None => {}
             }
             Ok(())
         })

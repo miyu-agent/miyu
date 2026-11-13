@@ -5,6 +5,7 @@
 //! - 她自己建的（`by` 是会话里的她）到点时看那个会话现在的预设：关了建它的那个包（定时任务看 `schedule`，循环看 `loop`）的
 //!   这一次不跑，记 `skipped:preset_off`，下一次照算。人建的、包建的不看预设。
 //! - 会话没了：记 `skipped:session_gone`，任务停掉，留给人看、给人删。
+//! - 人生循环（施工 LF-2）交的不是那一行的原话：推演方法接她的留言（`life.rs`）。
 
 use std::sync::Arc;
 
@@ -95,11 +96,22 @@ pub(super) async fn deliver(core: &Arc<Core>, schedule: &Schedule, due: Timestam
         Target::New { .. } => found.handle.subscribe().await.ok(),
         Target::Session { .. } | Target::Package { .. } => None,
     };
+    // 人生的正文由核心当场拼（施工 LF-2，`life.rs`）：推演方法照会话这一刻的人格读。
+    let text = match schedule.looping {
+        Some(Loop::Life) => {
+            let persona = found
+                .handle
+                .current()
+                .await
+                .ok()
+                .and_then(|current| current.persona);
+            super::life::said(core, persona, &schedule.prompt).await
+        }
+        Some(Loop::Fixed | Loop::Dynamic) | None => schedule.prompt.clone(),
+    };
     let busy = found.handle.busy();
     let send = Command::Send {
-        blocks: vec![Block::Text(Text {
-            text: schedule.prompt.clone(),
-        })],
+        blocks: vec![Block::Text(Text { text })],
         urgent: false,
         venue: None,
     };

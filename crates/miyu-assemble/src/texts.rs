@@ -279,6 +279,9 @@ pub struct ScheduleTexts {
     pub loop_open: Template,
     /// 它的收尾（`loop/common/message-close.txt`）。
     pub loop_close: String,
+    /// 人生循环的标签和收尾（施工 LF-2，`life/common/message-open.txt`、`message-close.txt`）：标签的字段 `id`。施工 LF-2
+    /// 以前造的快照里没有，是没有：人生的那句照人的话原样渲染。
+    pub life: Option<(Template, String)>,
 }
 
 /// 别的会话发来的话的标签（施工 C-2，`docs/blueprint/kernel/request.md`「别的会话发来的话」）：一块带标签的事实，写法照

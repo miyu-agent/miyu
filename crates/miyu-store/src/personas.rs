@@ -23,6 +23,10 @@ pub const PERSONA_MD: &str = "prompts/persona.md";
 /// 角色扮演提示在人格目录里的位置（施工 P-1 补）。
 pub const REMINDERS_MD: &str = "prompts/reminders.md";
 
+/// 推演方法在人格目录里的位置（施工 LF-2，设计 `70-推演人生.md` 第三节第 3 条）：人生循环醒来那段话的正文开头。不进快照，到点
+/// 那一刻读。
+pub const LIFE_MD: &str = "prompts/life.md";
+
 /// 头像的文件名（施工 P-5，`personas.md`「头像」）：同一层有好几张的照这个先后挑。
 pub const AVATARS: [&str; 3] = ["avatar.png", "avatar.jpg", "avatar.webp"];
 
@@ -68,6 +72,9 @@ pub struct Found {
     pub examples_from: Option<Layer>,
     /// 角色扮演提示来自哪一层，没有的是没有（施工 P-1 补）。
     pub reminders_from: Option<Layer>,
+    /// 推演方法（施工 LF-2，[`LIFE_MD`]）：有它的最上面那一层的原文，同名替换、不拼接；哪一层都没有的是没有。去掉末尾空白是空的
+    /// 怎么算由用它的一方定（人生循环照出厂的那一段）。
+    pub life: Option<String>,
     /// 头像（施工 P-5，`personas.md`「头像」）：有头像的最上面那一层里的那一张；没有的是没有。
     pub avatar: Option<PathBuf>,
     /// 背景图（施工 P-6）：有背景图的最上面那一层里的那一张；没有的是没有。
@@ -169,6 +176,7 @@ impl Personas {
             persona_from: None,
             examples_from: None,
             reminders_from: None,
+            life: None,
             avatar: None,
             background: None,
         };
@@ -212,6 +220,9 @@ impl Personas {
             if let Some(text) = text_of(REMINDERS_MD)? {
                 found.texts.reminders = text;
                 found.reminders_from = Some(*layer);
+            }
+            if let Some(text) = text_of(LIFE_MD)? {
+                found.life = Some(text);
             }
         }
         if found.layers.is_empty() {
