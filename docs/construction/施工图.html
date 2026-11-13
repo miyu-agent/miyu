@@ -1521,6 +1521,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sPF1"><span class="n">PF-1</span>CPU 被抢时请求体一口气发<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sPF2"><span class="n">PF-2</span>查清核心晚知道发完、收完<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sPF3"><span class="n">PF-3</span>回合开始的挂接点分段计时<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sLF1"><span class="n">LF-1</span>定时表多一种「人生」循环<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -58607,6 +58608,58 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/PF-3-回合开始分段计时.md</code>；蓝图 <code>session/actor.md</code>「运行日志」、<code>log.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLF1" aria-labelledby="h-sLF1">
+  <div class="sheet-head"><h2 id="h-sLF1"><span class="no">LF-1</span>定时表多一种「人生」循环</h2><span class="pill done">做完</span></div>
+  <p class="purpose">推演人生（设计 70）要一条不会悄悄断的循环。定时表的 <code>loop</code> 多一种 <code>life</code>：和她自己定节奏的循环走同一段代码，只有三处不同。这一步只有循环本身，谁来建它、醒来那段话、进记忆、结束都是后面的步子。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint · schedules/{run,port,methods}.rs</span><span class="dir-note">LF-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>到点：先把下一次写成现在加一小时，再交进会话；她这一轮定了的照她的</li>
+              <li>核心起来时错过的：下一次写成现在，马上补醒一次，停了多久都只这一回</li>
+              <li><code>schedule_wakeup</code> 的 <code>stop</code> 落在它上面不收，那一行不动</li>
+              <li>通用的定时入口看不到、改不了这一行</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">loop = life，交进会话的 by.loop 也是 life</span><span class="rl">core1 审过</span></div>
+          <div class="tile new"><span class="nm">默认间隔一小时，同最短 60 秒是写在代码旁的数</span><span class="rl">不加配置项</span></div>
+          <div class="tile new"><span class="nm">只有以后的 life.* 动得了这一行</span><span class="rl">core1 定</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LF-1</dd></div>
+        <div><dt>名称</dt><dd>定时表多一种「人生」循环</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">LF-1</dd></div>
+        <div><dt>验收</dt><dd>门禁十一项、Windows 版 clippy 全过；四个手写变异都被新测试逮住</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>交过以后没定下一次的，表里是到点那一刻加一小时；这一轮里她定了 10 分钟的，回合结束后还是 10 分钟那个</span></li>
+        <li><span class="ok">✓</span><span>钟拨过三天再起来只交一次；同样情形她自己定节奏的循环照旧停着等</span></li>
+        <li><span class="ok">✓</span><span>列表、流不列它，停、续、删、改照没有这个编号回；人照旧删得掉读不懂的行</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LF-1-定时表多一种人生.md</code>；设计 <code>70-推演人生.md</code>；蓝图 <code>schedules.md</code>、<code>kernel/ids.md</code>。</li>
       </ul>
     </div>
   </div>

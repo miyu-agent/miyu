@@ -3054,6 +3054,17 @@ No loop is running in this session.
 delay_seconds is required unless stop is true.
 ```
 
+#### `software/loop/wakeup/unstoppable.txt`
+
+- 什么时候加进来：`schedule_wakeup` 带 `stop: true`，落在人生循环那一行上
+- token：7（2026-11-14 照 o200k 数）
+- 为什么加：人生循环不收 `stop`，那一行不动（设计 70 第三节第 2 条，施工 LF-1）：不答的话她以为停了；结束人生的入口是后面的步子，这一步不提
+- 指纹：`89c119ac`
+
+```text
+A life loop cannot be stopped.
+```
+
 #### `software/knowledge/common/bad-args.txt`
 
 - 什么时候加进来：两件的参数读不懂（字段按 ``missing field `path` at line 1 column 14`` 填）

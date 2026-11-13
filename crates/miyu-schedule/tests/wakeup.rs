@@ -127,6 +127,16 @@ async fn with_no_loop_running_it_says_so() {
     assert_eq!(said(&done).0, "software/loop/wakeup/no-loop");
 }
 
+/// 施工 LF-1：人生循环不收 `stop`，端口拒了照实说一句。
+#[tokio::test]
+async fn stopping_a_life_loop_is_refused_in_words() {
+    let port = Fake::answering(Err(ScheduleRefused::Unstoppable));
+    let done = run("schedule_wakeup", Some(&port), json!({"stop": true})).await;
+    assert!(done.error);
+    assert_eq!(text(&done), "A life loop cannot be stopped.");
+    assert_eq!(said(&done).0, "software/loop/wakeup/unstoppable");
+}
+
 #[tokio::test]
 async fn without_the_port_it_is_not_available() {
     let done = run("schedule_wakeup", None, json!({"delay_seconds": 60})).await;

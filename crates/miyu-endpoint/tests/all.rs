@@ -276,6 +276,7 @@ mod retitle_failed;
 mod reused_ids;
 mod revert;
 mod schedule_clock_back;
+mod schedule_life;
 mod schedule_limits;
 mod schedule_methods;
 mod schedule_notices;

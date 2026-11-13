@@ -68,3 +68,25 @@ fn the_by_is_what_picks_it() {
     let plain = serde_json::to_value(By::Schedule(task(None))).unwrap();
     assert!(plain.get("loop").is_none(), "定时任务不写 loop");
 }
+
+/// 施工 LF-1：人生循环这一步先包循环那一对；`by` 写成 `"loop": "life"`，读得回。
+#[test]
+fn a_life_loop_uses_the_loop_pair_and_says_life_in_its_by() {
+    let texts = texts().schedule.unwrap();
+    assert_eq!(
+        message(
+            &task(Some(ScheduleLoop::Life)),
+            vec![words("看看 CI\n")],
+            Some(&texts)
+        ),
+        [words("<wakeup t3>\n看看 CI\nagain?\n</wakeup>\n")]
+    );
+    let by = By::Schedule(Schedule {
+        schedule: "t1".to_string(),
+        looping: Some(ScheduleLoop::Life),
+    });
+    let json = serde_json::to_string(&by).unwrap();
+    assert_eq!(json, r#"{"kind":"schedule","schedule":"t1","loop":"life"}"#);
+    let back: By = serde_json::from_str(&json).unwrap();
+    assert_eq!(back, by, "读得回原样");
+}

@@ -3,7 +3,7 @@
 //!
 //! - 间隔短于 [`WAKEUP_MIN`] 的照它，不报错，没有上限（施工 WK-1）；`prompt` 覆盖醒来交进来的话，不写的照旧（照 Claude Code，
 //!   她每次把同一句原话传回来）；`reason` 只给人看。成了说下一次几点，照会话的时区写。
-//! - `stop: true` 停掉这个会话的动态循环，别的参数不看。
+//! - `stop: true` 停掉这个会话的动态循环，别的参数不看；人生循环不收，答一句（施工 LF-1）。
 //! - 这个会话没开过循环的，端口拒，说没有在跑的循环。
 
 use std::path::Path;
@@ -33,6 +33,7 @@ pub(crate) struct Wakeup {
     stopped: Template,
     no_loop: Template,
     no_delay: Template,
+    unstoppable: Template,
 }
 
 /// 她给的参数：都能不写，`stop` 以外要有 `delay_seconds`。间隔收成整数以前不挑大小：负的、太大的照边界。
@@ -60,6 +61,7 @@ impl Wakeup {
             stopped: wakeup("stopped", &[])?,
             no_loop: wakeup("no-loop", &[])?,
             no_delay: wakeup("no-delay", &[])?,
+            unstoppable: wakeup("unstoppable", &[])?,
         })
     }
 
@@ -83,6 +85,9 @@ impl Wakeup {
     fn refused(&self, refused: ScheduleRefused) -> Done {
         match refused {
             ScheduleRefused::NoLoop => PACKAGE.error(&self.no_loop, "wakeup/no-loop", &[]),
+            ScheduleRefused::Unstoppable => {
+                PACKAGE.error(&self.unstoppable, "wakeup/unstoppable", &[])
+            }
             ScheduleRefused::Full
             | ScheduleRefused::AllFull
             | ScheduleRefused::BadCron(_)

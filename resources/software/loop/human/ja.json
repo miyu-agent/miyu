@@ -9,6 +9,7 @@
   "said": {
     "wakeup/set": "次は {next}",
     "wakeup/stopped": "ループを停止",
+    "wakeup/unstoppable": "人生ループは止められません",
     "wakeup/no-loop": "動いているループはありません",
     "wakeup/no-delay": "間隔が指定されていません",
     "common/bad-args": "引数が正しくありません：{error}",

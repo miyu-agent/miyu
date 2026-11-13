@@ -127,6 +127,8 @@ pub enum ScheduleLoop {
     Fixed,
     /// 她每轮结束自己定下一次。
     Dynamic,
+    /// 人生（施工 LF-1）：她每轮自己定下一次，没定的照默认间隔再醒。
+    Life,
 }
 
 impl By {

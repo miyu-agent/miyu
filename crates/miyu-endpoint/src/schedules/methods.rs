@@ -4,6 +4,9 @@
 //!
 //! 施工 J-4：扩展也能调（要批过 `sessions.drive`），建的记成包建的；它只看得到、改得了自己建的，别的编号一样 `unknown_schedule`。
 //! 只有扩展能写「跑在哪」是 `package`（到点推 `schedule.fired` 给它自己，`fire.rs`）。
+//!
+//! 施工 LF-1：人生循环那一行谁都看不到、改不了（列表、流不列，改的照没有这个编号回 `unknown_schedule`）：只有人生自己的入口动得
+//! 了，不然删一行定时就绕开了「只有有意的结束」。
 
 use std::sync::Arc;
 
@@ -91,8 +94,11 @@ pub(crate) async fn call(
     }
 }
 
-/// 这个连接看得到的：人看得到全部，扩展只看得到包 `package` 建的（施工 J-4）。
+/// 这个连接看得到的：人看得到全部，扩展只看得到包 `package` 建的（施工 J-4）；人生循环谁都看不到（施工 LF-1）。
 fn mine(package: Option<&str>, schedule: &Schedule) -> bool {
+    if schedule.looping == Some(Loop::Life) {
+        return false;
+    }
     match (package, &schedule.by) {
         (None, _) => true,
         (Some(package), Creator::Package { package: by }) => by == package,
@@ -100,34 +106,40 @@ fn mine(package: Option<&str>, schedule: &Schedule) -> bool {
     }
 }
 
-/// 扩展只改得了自己建的（施工 J-4）：别的、没有的都是 `unknown_schedule`。人的不查。
+/// 只改得了看得到的（[`mine`]）：扩展只改得了自己建的（施工 J-4），别的、没有的都是 `unknown_schedule`；谁都改不了人生循环
+/// （施工 LF-1）。人的只在读得出、又是人生那一行时拒：读不出的（没有的编号、读不懂的行）放过去，交给后面的方法自己判，读不懂
+/// 的行人照旧删得掉（`schedules.md` 第一节第 3 条，施工 AE-4）。
 fn own(core: &Core, package: Option<&str>, id: &str) -> Result<(), Refusal> {
-    if package.is_none() {
-        return Ok(());
-    }
-    let schedule = core.schedules().get(id).map_err(refusal)?;
-    if mine(package, &schedule) {
+    let found = core.schedules().get(id);
+    let visible = match (package, found) {
+        (None, Ok(schedule)) => mine(None, &schedule),
+        (None, Err(_)) => true,
+        (Some(_), found) => mine(package, &found.map_err(refusal)?),
+    };
+    if visible {
         Ok(())
     } else {
         Err(Refusal::UNKNOWN_SCHEDULE)
     }
 }
 
-/// 订阅 `schedules` 的回应：这一刻的全部。
+/// 订阅 `schedules` 的回应：这一刻的全部（只给人，人生循环不列）。
 pub(crate) fn listed(core: &Core) -> Result<Value, Refusal> {
     let listed: Vec<Value> = core
         .schedules()
         .list()
         .map_err(refusal)?
         .iter()
+        .filter(|schedule| mine(None, schedule))
         .map(entry)
         .collect();
     Ok(json!({"schedules": listed}))
 }
 
-/// 推送里的一项：任务 `id` 这一刻的样子，没有了的是删了；表读不成的没有（不推）。
+/// 推送里的一项：任务 `id` 这一刻的样子，没有了的是删了；表读不成的、人生循环的没有（不推）。
 pub(crate) fn changed(core: &Core, id: &str) -> Option<Value> {
     match core.schedules().get(id) {
+        Ok(schedule) if !mine(None, &schedule) => None,
         Ok(schedule) => Some(json!({"id": id, "entry": entry(&schedule)})),
         Err(ScheduleError::Unknown) => Some(json!({"id": id, "removed": true})),
         Err(_) => None,
@@ -406,6 +418,7 @@ pub(crate) fn entry(schedule: &Schedule) -> Value {
         entry["loop"] = json!(match looping {
             Loop::Fixed => "fixed",
             Loop::Dynamic => "dynamic",
+            Loop::Life => "life",
         });
     }
     if let Some(next) = schedule.next {

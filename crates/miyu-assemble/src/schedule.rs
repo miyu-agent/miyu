@@ -21,7 +21,8 @@ pub(crate) fn message(
         return blocks;
     };
     let (open, close) = match schedule.looping {
-        Some(ScheduleLoop::Dynamic) => (&texts.loop_open, &texts.loop_close),
+        // 人生（施工 LF-1）这一步先用循环那一对。
+        Some(ScheduleLoop::Dynamic | ScheduleLoop::Life) => (&texts.loop_open, &texts.loop_close),
         Some(ScheduleLoop::Fixed) | None => (&texts.schedule_open, &texts.schedule_close),
     };
     let fields = BTreeMap::from([("id", schedule.schedule.as_str())]);

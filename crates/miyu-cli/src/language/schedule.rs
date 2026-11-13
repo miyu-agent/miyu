@@ -96,8 +96,10 @@ impl Language {
     pub(crate) fn schedule_loop(&self, kind: &str) -> &'static str {
         match (self, kind) {
             (Language::Chinese, "dynamic") => "循环，节奏自定",
+            (Language::Chinese, "life") => "人生",
             (Language::Chinese, _) => "循环",
             (Language::English, "dynamic") => "loop, self-paced",
+            (Language::English, "life") => "life",
             (Language::English, _) => "loop",
         }
     }

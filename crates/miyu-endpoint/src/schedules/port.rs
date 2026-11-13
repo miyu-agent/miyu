@@ -3,8 +3,9 @@
 //!
 //! - 「这个会话上的」：她在这个会话里建的（`by` 是这个会话），和跑在这个会话上的（`target` 是这个会话，例如人敲的 `/loop`）。
 //!   列、删照它；一个会话最多 [`PER_SESSION`] 个只数她建的。
-//! - 动态循环是跑在这个会话上、`loop` 是 `dynamic` 的那一行（一个会话至多一行）：`schedule_wakeup` 改它下一次醒的时刻和那句话，
-//!   停的删掉它。
+//! - 动态循环是跑在这个会话上、`loop` 是 `dynamic` 或 `life` 的那一行（一个会话至多一行）：`schedule_wakeup` 改它下一次醒的
+//!   时刻和那句话，停的删掉它；人生循环（施工 LF-1）停不了，那一行不动。
+//! - 人生循环那一行 `cron_list` 不列、`cron_delete` 照没有回：只有人生自己的入口动得了。
 
 use std::sync::{Arc, Weak};
 
@@ -80,14 +81,17 @@ impl Port {
             ScheduleAsk::Delete { id } => {
                 let one = here
                     .iter()
-                    .find(|one| one.id == id)
+                    .find(|one| one.id == id && !life(one))
                     .ok_or(ScheduleRefused::NotFound)?;
                 let gone = shown(one);
                 schedules.cancel(&id).map_err(refused)?;
                 Ok(ScheduleAnswer::Deleted(gone))
             }
             ScheduleAsk::List => Ok(ScheduleAnswer::Listed(
-                here.iter().map(|one| shown(one)).collect(),
+                here.iter()
+                    .filter(|one| !life(one))
+                    .map(|one| shown(one))
+                    .collect(),
             )),
             ScheduleAsk::Wakeup { delay, prompt } => {
                 let looping = dynamic(&here, session).ok_or(ScheduleRefused::NoLoop)?;
@@ -104,6 +108,9 @@ impl Port {
             }
             ScheduleAsk::StopLoop => {
                 let looping = dynamic(&here, session).ok_or(ScheduleRefused::NoLoop)?;
+                if life(looping) {
+                    return Err(ScheduleRefused::Unstoppable);
+                }
                 schedules.cancel(&looping.id).map_err(refused)?;
                 Ok(ScheduleAnswer::LoopStopped)
             }
@@ -122,12 +129,17 @@ fn made_in(one: &Schedule, session: &SessionId) -> bool {
     matches!(&one.by, Creator::Model { session: by } if by == session)
 }
 
-/// 跑在这个会话上的动态循环那一行。
+/// 跑在这个会话上、下一次由她每轮定的循环那一行：她自己定节奏的、人生（施工 LF-1）。
 fn dynamic<'a>(here: &[&'a Schedule], session: &SessionId) -> Option<&'a Schedule> {
     here.iter().copied().find(|one| {
-        one.looping == Some(Loop::Dynamic)
+        matches!(one.looping, Some(Loop::Dynamic | Loop::Life))
             && matches!(&one.target, Target::Session { session: target } if target == session)
     })
+}
+
+/// 人生循环那一行（施工 LF-1）：定时工具列不出、删不掉。
+fn life(one: &Schedule) -> bool {
+    one.looping == Some(Loop::Life)
 }
 
 /// 给她看的那几样。
@@ -147,6 +159,7 @@ fn shown(one: &Schedule) -> Scheduled {
         kind: one.looping.map(|looping| match looping {
             Loop::Fixed => "fixed",
             Loop::Dynamic => "dynamic",
+            Loop::Life => "life",
         }),
         next: one.next,
         paused: one.paused,

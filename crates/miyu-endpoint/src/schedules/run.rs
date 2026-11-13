@@ -1,5 +1,6 @@
 //! 睡到点（施工 J-1 上）：一个后台任务，只睡到最早的那一次；表改了被叫醒、重算。到点的一个一个交进会话
-//! （`fire.rs`），先把下一次写进表再交：她在那一轮里改下一次（`schedule_wakeup`，施工 J-2）不会被这里盖掉。
+//! （`fire.rs`），先把下一次写进表再交：她在那一轮里改下一次（`schedule_wakeup`，施工 J-2）不会被这里盖掉。人生循环（施工
+//! LF-1）先写的是现在加默认间隔：她这一轮没定也照它再醒；交过以后只记上一次那几格（`record`），不带着旧的下一次写回去。
 
 use std::sync::{Arc, Weak};
 
@@ -83,12 +84,14 @@ async fn fire(core: &Arc<Core>, table: &Table, schedule: Schedule, now: Timestam
     let Some(due) = schedule.next else {
         return;
     };
-    let once = next::once(&schedule.when) && schedule.looping != Some(Loop::Dynamic);
+    let once = next::once(&schedule.when) && !paced(schedule.looping);
     let mut ahead = schedule.clone();
     ahead.next = match schedule.looping {
         // 她自己定节奏的：交进去以后停着等她定（施工 J-2：她不调就不再醒）。
         Some(Loop::Dynamic) => None,
-        _ => next::after(&schedule.when, due, now, &zone()),
+        // 人生：没定也照默认间隔再醒（施工 LF-1）；她在这一轮里定了的经 `set_next` 盖掉它。
+        Some(Loop::Life) => next::plus(now, next::LIFE_GAP),
+        Some(Loop::Fixed) | None => next::after(&schedule.when, due, now, &zone()),
     };
     // 错过的这一次推的时候一起报了（施工 J-4）：清零。
     if let Target::Package { missed } = &mut ahead.target {
@@ -127,24 +130,33 @@ async fn fire(core: &Arc<Core>, table: &Table, schedule: Schedule, now: Timestam
     core.schedules.notify(&schedule.id);
 }
 
-/// 核心起来时已经过了的一个（错过的不补）：跑完就没了的删掉，她自己定节奏的停着等，别的照现在算下一次；记一行。推给扩展的
-/// 记下错过了几次，下一次推的时候报（施工 J-4）。
+/// 核心起来时已经过了的一个（错过的不补）：跑完就没了的删掉，她自己定节奏的停着等，人生的下一次写成现在、马上补醒一次（停了
+/// 多久都只这一次，施工 LF-1），别的照现在算下一次；记一行。推给扩展的记下错过了几次，下一次推的时候报（施工 J-4）。
 pub(super) fn skip(table: &Table, mut schedule: Schedule, now: Timestamp) {
     let due = schedule.next;
     tracing::info!(target: TARGET, schedule = %schedule.id, "schedule missed");
     if let (Target::Package { missed }, Some(due)) = (&mut schedule.target, due) {
         *missed = missed.saturating_add(next::missed(&schedule.when, due, now, &zone()));
     }
-    let written = if next::once(&schedule.when) && schedule.looping != Some(Loop::Dynamic) {
+    let written = if next::once(&schedule.when) && !paced(schedule.looping) {
         table.remove(&schedule.id).map(|_| ())
     } else {
         schedule.next = match (schedule.looping, due) {
+            (Some(Loop::Life), _) => Some(now),
             (Some(Loop::Dynamic), _) | (_, None) => None,
-            (_, Some(due)) => next::after(&schedule.when, due, now, &zone()),
+            (Some(Loop::Fixed) | None, Some(due)) => next::after(&schedule.when, due, now, &zone()),
         };
         table.put(&schedule).map(|_| ())
     };
     if let Err(error) = written {
         tracing::warn!(target: TARGET, schedule = %schedule.id, error = %error, "schedule not advanced");
+    }
+}
+
+/// 下一次由她每轮定的循环（她自己定节奏的、人生）：「什么时候」是某个时刻也不是跑完就删。
+fn paced(looping: Option<Loop>) -> bool {
+    match looping {
+        Some(Loop::Dynamic | Loop::Life) => true,
+        Some(Loop::Fixed) | None => false,
     }
 }

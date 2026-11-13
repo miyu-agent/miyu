@@ -54,6 +54,7 @@ pub(super) async fn deliver(core: &Arc<Core>, schedule: &Schedule, due: Timestam
         looping: schedule.looping.map(|looping| match looping {
             Loop::Fixed => ScheduleLoop::Fixed,
             Loop::Dynamic => ScheduleLoop::Dynamic,
+            Loop::Life => ScheduleLoop::Life,
         }),
     });
     let session = match &schedule.target {

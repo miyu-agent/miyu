@@ -48,12 +48,12 @@ fn renew(schedule: &mut Schedule, when: When, now: Timestamp) -> Result<(), Sche
     Ok(())
 }
 
-/// 循环的种类跟着「什么时候」的写法（`/loop` 建的，`commands/looping.rs`）：她自己定节奏的是某个时刻（下一次由她每轮定），固定
-/// 间隔的是每隔一阵。换成别的写法就成了另一种循环，她那边对不上，不收。定时任务（不是循环）哪种都行。
+/// 循环的种类跟着「什么时候」的写法（`/loop` 建的，`commands/looping.rs`）：她自己定节奏的、人生（施工 LF-1）是某个时刻
+/// （下一次由她每轮定），固定间隔的是每隔一阵。换成别的写法就成了另一种循环，她那边对不上，不收。定时任务（不是循环）哪种都行。
 fn keeps_kind(looping: Option<Loop>, when: &When) -> bool {
     match looping {
         None => true,
-        Some(Loop::Dynamic) => matches!(when, When::At { .. }),
+        Some(Loop::Dynamic | Loop::Life) => matches!(when, When::At { .. }),
         Some(Loop::Fixed) => matches!(when, When::Every { .. }),
     }
 }

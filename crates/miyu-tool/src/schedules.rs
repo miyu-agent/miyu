@@ -57,7 +57,7 @@ pub enum ScheduleAsk {
         /// 醒来交进来的话，覆盖原来的；不写的照旧。
         prompt: Option<String>,
     },
-    /// 停掉这个会话的动态循环。
+    /// 停掉这个会话的动态循环；人生循环不收（[`ScheduleRefused::Unstoppable`]）。
     StopLoop,
 }
 
@@ -72,7 +72,7 @@ pub struct Scheduled {
     pub prompt: String,
     /// 是不是循环。
     pub recurring: bool,
-    /// 循环的哪一种：`fixed`、`dynamic`；不是 `/loop` 建的没有。
+    /// 循环的哪一种：`fixed`、`dynamic`、`life`（施工 LF-1）；不是 `/loop` 建的没有。
     pub kind: Option<&'static str>,
     /// 下一次的时刻；停着的（动态循环醒过、她还没定下一次）没有。
     pub next: Option<Timestamp>,
@@ -108,6 +108,8 @@ pub enum ScheduleRefused {
     NotFound,
     /// 这个会话没开着动态循环。
     NoLoop,
+    /// 这个会话上跑的是人生循环（施工 LF-1）：`stop` 不收，那一行不动。
+    Unstoppable,
     /// 唤醒表用不了、会话停了：没办成。
     Unavailable,
 }

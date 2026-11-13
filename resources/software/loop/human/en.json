@@ -9,6 +9,7 @@
   "said": {
     "wakeup/set": "Next at {next}",
     "wakeup/stopped": "Loop stopped",
+    "wakeup/unstoppable": "A life loop cannot be stopped",
     "wakeup/no-loop": "No loop is running",
     "wakeup/no-delay": "No delay given",
     "common/bad-args": "Bad arguments: {error}",

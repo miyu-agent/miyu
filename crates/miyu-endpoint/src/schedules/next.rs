@@ -12,6 +12,10 @@ use miyu_store::schedules::When;
 /// 隔一阵一次的最短间隔（秒）：同她自己定节奏的循环的下限（设计 45 第三节第 4 条）。
 pub const MIN_EVERY: u64 = 60;
 
+/// 人生循环的默认间隔（秒，施工 LF-1，设计 `70-推演人生.md` 第三节第 2 条）：交进会话以前先把下一次写成现在往后这么久，她在
+/// 那一轮里定了的照她的。同 [`MIN_EVERY`] 是写在这里的数，不是配置项。
+pub(super) const LIFE_GAP: u64 = 3600;
+
 /// 读一句 cron：只认五段（分、时、日、月、星期），不认秒、年。读不成的交回为什么（英文，原样给人看）。
 ///
 /// # Errors
@@ -132,7 +136,7 @@ fn read_in(named: &Option<String>, fallback: &TimeZone) -> TimeZone {
 }
 
 /// `at` 往后 `seconds` 秒。
-fn plus(at: Timestamp, seconds: u64) -> Option<Timestamp> {
+pub(super) fn plus(at: Timestamp, seconds: u64) -> Option<Timestamp> {
     let millis = i64::try_from(seconds.checked_mul(1000)?).ok()?;
     Timestamp::from_unix_millis(at.unix_millis().checked_add(millis)?)
 }

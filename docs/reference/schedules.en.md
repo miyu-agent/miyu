@@ -11,7 +11,7 @@ At a set time, hand one line to a session and let it run a turn: a morning brief
 | [`schedule.resume`](#scheduleresume) | Resume |
 | [`schedule.update`](#scheduleupdate) | Change the time or the line |
 
-**Who may call**: people; extensions need an approved `sessions.drive` (construction J-4), otherwise `needs_approval`. What an extension adds is recorded as added by its package, and it sees, cancels, pauses, resumes and updates only those: touching one it did not add is `unknown_schedule`. To keep up, subscribe to the `schedules` stream ([connection](connection.en.md)); `schedules.changed` follows ([pushes](pushes.en.md)).
+**Who may call**: people; extensions need an approved `sessions.drive` (construction J-4), otherwise `needs_approval`. What an extension adds is recorded as added by its package, and it sees, cancels, pauses, resumes and updates only those: touching one it did not add is `unknown_schedule`. The row of a life loop (`loop` is `life`, the one a persona keeps running) is out of everyone's reach: it is not in the list or the `schedules` stream, and `cancel`, `pause`, `resume` and `update` on it get `unknown_schedule` as if there were no such id. To keep up, subscribe to the `schedules` stream ([connection](connection.en.md)); `schedules.changed` follows ([pushes](pushes.en.md)).
 
 ## An item
 
@@ -24,7 +24,7 @@ At a set time, hand one line to a session and let it run a turn: a morning brief
 | `by` | Who added it: a person `{"kind": "person"}`, the AI in a session `{"kind": "model", "session"}`, a package `{"kind": "package", "package"}` |
 | `recurring` | Whether it stays after running: `false` for `at`, `true` for `every`, as written for `cron` |
 | `paused` | Paused |
-| `loop` | Loops only: `fixed` interval, or `dynamic` (the AI sets the pace) |
+| `loop` | Loops only: `fixed` interval, or `dynamic` (the AI sets the pace); a life loop's `life` never shows up here, see above |
 | `next` | Next time; absent while paused, or while a dynamic loop waits for the AI to set it |
 | `last` | Last run: `{"at", "result", "session"?}`; `result` is `ran`, `queued` (the session was busy; it waits its turn), `sent` (pushed to the extension that added it) or `skipped:<why>` (`session_gone`: the session is gone and the schedule paused; `preset_off`: the AI added it and the session's preset turns it off; `not_opened`: the new session could not be opened; `package_unavailable`: the extension that added it is not running and could not be started) |
 | `created` | When it was added |
