@@ -135,7 +135,6 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
             "ui.head",
             "ui.welcomed",
             "permission.start_read_only",
-            "permission.level",
             "profile.preferred_reply_language",
             "profile.name",
             "profile.about",
@@ -150,14 +149,11 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
     assert_eq!(switch["control"], "toggle");
     assert_eq!(switch["applies"], "new_session");
     assert!(switch.get("options").is_none());
-    let level = &all["result"]["items"][5];
-    assert_eq!(level["control"], "select", "{level}");
-    assert_eq!(level["default"], "full", "{level}");
     assert_eq!(
-        all["result"]["items"][8]["control"], "textarea",
+        all["result"]["items"][7]["control"], "textarea",
         "更多描述是几行的框（施工 P-9 三补）"
     );
-    let language = &all["result"]["items"][6];
+    let language = &all["result"]["items"][5];
     assert_eq!(language["control"], "combo", "下拉加手写（施工 P-9 补）");
     assert_eq!(
         language["common"], true,
@@ -171,14 +167,14 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
     );
     assert_eq!(language["suggestions"].as_array().map(Vec::len), Some(15));
     assert!(
-        all["result"]["items"][8].get("suggestions").is_none(),
+        all["result"]["items"][7].get("suggestions").is_none(),
         "别的控件不带建议值"
     );
-    assert_eq!(all["result"]["items"][9]["env"], "MIYU_LOG");
+    assert_eq!(all["result"]["items"][8]["env"], "MIYU_LOG");
     assert_eq!(
         all["result"]["pages"],
-        json!([{"id":"general","name":"通用"},{"id":"privacy","name":"隐私与安全"},{"id":"user","name":"用户"},{"id":"advanced","name":"高级"}]),
-        "端点自己那一份清单照它的先后：权限在关于你前面（核心登记的那一份「隐私与安全」排在「用户」下面）"
+        json!([{"id":"general","name":"通用"},{"id":"user","name":"用户"},{"id":"advanced","name":"高级"}]),
+        "端点自己那一份清单照它的先后（施工 AUD-4 去掉 `permission.level` 以后，端点自己没有「隐私与安全」那一页的项了）"
     );
 }
 
@@ -221,7 +217,6 @@ async fn get_says_every_value_and_where_it_came_from() {
         json!({
             "log.level": {"origin": {"file": "etc/config.toml", "layer": "system", "line": 4}, "value": "debug"},
             "permission.start_read_only": {"origin": {"layer": "default"}, "value": false},
-            "permission.level": {"origin": {"layer": "default"}, "value": "full"},
             "ui.language": {"origin": {"file": "etc/config.toml", "layer": "system", "line": 7}, "value": "zh"},
             "ui.startup": {"origin": {"layer": "default"}, "value": "new"},
             "ui.head": {"origin": {"layer": "default"}, "value": "tui"},
@@ -428,15 +423,16 @@ async fn a_session_starts_read_only_when_the_setting_says_so() {
     assert!(read_only(&strict), "系统配置打开了");
 }
 
-/// 新会话开局的级别照 `permission.level`（施工 8-32）：默认是工作区，系统配置写了 `full` 的从完全放开开局。
+/// 新会话都从完全放开开局（A16，施工 LV-1）：系统配置里还写着去掉了的 `permission.level`（施工 AUD-4）的也一样，那一行只是
+/// 不认识的键。
 #[tokio::test]
-async fn a_session_opens_at_the_configured_level() {
+async fn new_sessions_open_at_full() {
     let home = Home::new();
     let cwd = home.work.to_string_lossy().into_owned();
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
     hello(&mut client, None).await;
     let plain = client.create("c1", &cwd).await;
-    home.write("etc/config.toml", "[permission]\nlevel = \"full\"\n");
+    home.write("etc/config.toml", "[permission]\nlevel = \"workspace\"\n");
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
     hello(&mut client, None).await;
     let open = client.create("c2", &cwd).await;
@@ -444,8 +440,8 @@ async fn a_session_opens_at_the_configured_level() {
         Body::SessionCreated(created) => created.permission.level.clone(),
         other => panic!("第一条是 session.created：{other:?}"),
     };
-    assert_eq!(level(&plain), Level::Full, "默认是工作区");
-    assert_eq!(level(&open), Level::Full, "系统配置写了 full");
+    assert_eq!(level(&plain), Level::Full, "默认");
+    assert_eq!(level(&open), Level::Full, "写着去掉了的键也一样");
 }
 
 /// 「新会话」组（终端转来，主人验收时提的）：默认人格、默认预设、开局只读三项放在通用页的 `new_session` 组里，组名照连接的语言。

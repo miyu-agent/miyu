@@ -335,12 +335,21 @@ fn each_level_reads_into_its_own_variant() {
     }
 }
 
-/// A16 以前的工作区（施工 LV-1）：旧日志里的 `workspace` 读成完全放开，再写出来是 `full`，不当成不认识的按只读算。
+/// A16 以前的工作区 `workspace` 不再读成完全放开（施工 AUD-4：还没发版，旧会话直接删，不留这一行）：同别的不认识的级别，
+/// 原样留着、原样写出去，用到它的地方按只读算。
 #[test]
-fn the_old_workspace_level_reads_as_full() {
+fn the_old_workspace_level_is_unknown_like_any_other() {
     let level: Level = serde_json::from_str(r#""workspace""#).expect("读得出");
-    assert_eq!(level, Level::Full);
-    assert_eq!(serde_json::to_string(&level).expect("写得出"), r#""full""#);
+    assert_eq!(level, Level::Other("workspace".to_string()));
+    assert_eq!(
+        serde_json::to_string(&level).expect("写得出"),
+        r#""workspace""#
+    );
+    let permission = Permission {
+        level,
+        read_only: false,
+    };
+    assert_eq!(crate::facts::effective_level(&permission), "read_only");
 }
 
 #[test]

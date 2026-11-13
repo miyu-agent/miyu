@@ -231,32 +231,24 @@ async fn the_replies_say_where_the_session_works() {
         .await;
     assert_eq!(reply["result"]["cwd"], json!(root), "{reply}");
     assert_eq!(reply["result"]["wide"], json!(true), "{reply}");
-    // 带 `chosen` 的照收，说的一样。
+    // 以前的 `chosen`（施工 AUD-4 起不认）同别的不认识的格，不理：说的一样。
     let reply = client
         .call("c5", "session.create", json!({"cwd": "~", "chosen": true}))
         .await;
     assert_eq!(reply["result"]["cwd"], json!("~"), "{reply}");
     home_wide(&reply);
-    // 明着选了数据根里面、又不在 `workspace/` 里的：照不了，退回这个会话的默认工作区。
+    // 写了数据根里面、又不在 `workspace/` 里的：照不了，退回这个会话的默认工作区。
     let state = home.root.run().to_string_lossy().into_owned();
     let reply = client
-        .call(
-            "c7",
-            "session.create",
-            json!({"cwd": state, "chosen": true}),
-        )
+        .call("c7", "session.create", json!({"cwd": state}))
         .await;
     let session = reply["result"]["session"].as_str().expect("造出来了");
     let mine = own_of(&home, session).to_string_lossy().into_owned();
     assert_eq!(reply["result"]["cwd"], json!(mine), "{reply}");
     assert!(reply["result"].get("wide").is_none(), "{reply}");
-    // 不太宽的明着选，和不选一样，不带 `wide`。
+    // 不太宽的照用，不带 `wide`。
     let reply = client
-        .call(
-            "c6",
-            "session.create",
-            json!({"cwd": project, "chosen": true}),
-        )
+        .call("c6", "session.create", json!({"cwd": project}))
         .await;
     assert_eq!(reply["result"]["cwd"], json!(project), "{reply}");
     assert!(reply["result"].get("wide").is_none(), "{reply}");

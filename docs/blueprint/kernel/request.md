@@ -296,7 +296,7 @@
      - 没有上一块（会话第一轮，压缩以后，撤掉了带着它们的那几轮以后）：用平常那一份 `facts/permission.txt`。
      - 有上一块、级别不一样：用切换那一份 `facts/permission-changed.txt`，`previous` 是上一块的级别。上一块本身是切换那一份写的，算它的 `level`。
      - 快照里没有切换那一份的（以前造的会话）：用平常那一份，和以前逐字节比原文一模一样，前缀一字不变。
-     - 最近那一块说的是哪一级，照会话冻结的模板认：平常那一份写出的 `read_only`、`full`（还有 A16 以前的旧会话里的 `workspace`，留着好认出上一块，施工 LV-1）、切换那一份从其中任一级切过来写出的，对上哪一种就是哪一级。认不出的当作级别不一样、又没有上一级，用平常那一份（和逐字节比一样）。
+     - 最近那一块说的是哪一级，照会话冻结的模板认：平常那一份写出的 `read_only`、`full`、切换那一份从其中任一级切过来写出的，对上哪一种就是哪一级。认不出的当作级别不一样、又没有上一级，用平常那一份（和逐字节比一样）。
      - 只有人能切级别（`kernel/session.md`「切权限级别」），所以级别变了就是人切的：撤销、压缩都不改现在的权限，只改她看到过什么。
    - `reply_cut` 不比，每次都注入。
    - `preset`（施工 DM-8，2026-11-09 项目主人要的：换了预设她要像切权限级别一样知道）不比，照日志算还欠不欠：人换了预设（带 `preset` 的 `session.policy_changed`）以后的下一个回合开始注入一次 `facts/preset-changed.txt`，`id` 是换成的、`previous` 是换之前的，不用预设的写 `none`；内核注入过这一类就不再欠。换了几次还没开回合的，`previous` 是最早那个，又换回它的不注入。撤销、压缩都不改欠不欠。快照里没有这份模板的（以前造的会话）不注入，前缀一字不变。
@@ -367,7 +367,7 @@
 
 | 文件 | 原文 | 进到哪 |
 |---|---|---|
-| `permission-rule.txt` | `A <permission> block gives the permission level from that point on. In read_only, neither file tools nor commands can write anything. In workspace, commands can write only inside the workspace and the temp directory, and file tools need the user's approval to write outside the workspace. In full, there are no limits. Only the user can change the level.` | system，核心的几行的第一行；工具面是空的会话不带（施工 2-7 补） |
+| `permission-rule.txt` | `A <permission> block gives the permission level from that point on. In read_only, neither file tools nor commands can write anything. In full, there are no limits. Only the user can change the level.` | system，核心的几行的第一行；工具面是空的会话不带（施工 2-7 补） |
 | `local-paths-rule.txt` | `Relative paths in links and embeds in a reply resolve against the session working directory.` | system，核心的几行的第二行（施工 2-7 补） |
 | `machine.txt` | `The local machine runs {os}.` | system，核心的几行的第三行，`{os}` 换成本机系统的名字（施工 2-7 再补）；工具面是空的会话不带 |
 | `agent-version.txt` | `You run in miyu-agent {version}.` | system，核心的几行的最后一行，`{version}` 换成核心编进去的版本；有没有工具都带（施工 E-M） |

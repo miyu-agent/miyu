@@ -42,10 +42,6 @@ pub(super) struct CreateParams {
     /// 记忆的范围（施工 R-3 下）：`persona`、`session`、`off`；不写、写 `null` 的照人格的 `persona.toml`。
     #[serde(default)]
     pub(super) memory: Option<String>,
-    /// `cwd` 是人明着选的（施工 9-7 补）。施工 5-14 起照收不看：太宽的一律照用、回应带 `wide`，能写的工作区由会话退回它的
-    /// 默认工作区。
-    #[serde(default, rename = "chosen")]
-    pub(super) _chosen: bool,
     /// 这个头显示得了图片吗（施工 X-25）：语音这类写 `false`；不写的是显示得了。
     #[serde(default = "crate::venues::shows_images")]
     pub(super) images: bool,
@@ -279,12 +275,12 @@ pub(super) struct DeleteParams {
     pub(super) session: String,
 }
 
-/// 协议上能切到的常用的那一级。只认这两种（A16 起 `workspace` 照 `full` 算，施工 LV-1），别的是参数不对：内核的 `unknown_level` 从协议上碰不到，和 `queued`、`stream`
-/// 一样，值不在表里的算参数读不成（`protocol.md` 的 `session.set_permission_level`）。
+/// 协议上能切到的常用的那一级。只认 `full`（A16，施工 LV-1；以前的 `workspace` 施工 AUD-4 起不认），别的是参数不对：内核的
+/// `unknown_level` 从协议上碰不到，和 `queued`、`stream` 一样，值不在表里的算参数读不成（`protocol.md` 的
+/// `session.set_permission_level`）。
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub(super) enum LevelParam {
-    Workspace,
     Full,
 }
 

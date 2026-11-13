@@ -89,7 +89,7 @@ fn in_a_child_session_the_persons_words_are_tagged() {
 fn a_forks_base_keeps_the_parents_words_as_they_were() {
     let texts = shipped();
     let policy = "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
-    let created = r#""venue":"local","permission":{"level":"workspace","read_only":false}"#;
+    let created = r#""venue":"local","permission":{"level":"full","read_only":false}"#;
     let line = |seq: u64, kind: &str, by: &str, body: &str| {
         Event::from_line(&format!(
             r#"{{"seq":{seq},"at":"2026-09-25T07:00:00.000Z","kind":"{kind}","by":{by},"body":{body}}}"#

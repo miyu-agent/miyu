@@ -52,14 +52,11 @@ fn the_level_in_effect() {
         effective(&permission(Level::Full, true)),
         Effective::ReadOnly
     );
-    // A16 以前的工作区读成完全放开（施工 LV-1）。
+    // 不认识的级别按最严的算。A16 以前的工作区 `workspace` 也是不认识的了（施工 AUD-4：不再读成完全放开）。
     let legacy: Level = serde_json::from_str(r#""workspace""#).expect("读得出");
-    assert_eq!(effective(&permission(legacy, false)), Effective::Full);
-    // 不认识的级别按最严的算。
-    assert_eq!(
-        effective(&permission(Level::Other("root".to_string()), false)),
-        Effective::ReadOnly
-    );
+    for unknown in [legacy, Level::Other("root".to_string())] {
+        assert_eq!(effective(&permission(unknown, false)), Effective::ReadOnly);
+    }
 }
 
 #[test]

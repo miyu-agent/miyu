@@ -67,7 +67,6 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 | `compaction_line` | integer | This session's compaction line: a percent of the window, 20 to 95; omitted follows the configured `compaction.line`. Recorded as a `session.policy_changed` right after creation, like `compaction_line` in `session.configure` |
 | `memory` | `persona`, `off` | Memory follows the persona, or is off; omitted follows the persona. Anything else (the old `session` included) is `bad_params` |
 | `dirs` | array of strings | Extra directories, readable and writable like the working directory |
-| `chosen` | boolean, default `false` | Accepted and ignored (it used to mark a choice by the person): a too-wide `cwd` (root; on Windows also home) is always used and the response has `wide`; what the session may freely write is then its own default workspace |
 | `oneshot` | boolean, default `false` | A one-shot session (the `miyu ask` kind) |
 | `images` | boolean, default `true` | Whether you can display images |
 | `titles` | boolean, default `true` | Whether the session gets automatic titles: with `false` it never does; renaming by hand still works |
@@ -349,7 +348,7 @@ When it's written, every subscribed head first receives `model.called` (`purpose
 
 ## `session.set_permission_level`
 
-**Params**: `session`; `level`: only `full` (fully open; the old `workspace` is accepted as `full` and the core no longer writes it); `read_only`: the read-only switch. Give at least one.
+**Params**: `session`; `level`: only `full` (fully open); `read_only`: the read-only switch. Give at least one.
 
 **Response**: `{}`. A change is pushed as `session.policy_changed`. Tightening applies at once; loosening applies from the next request. Whether to ask the person before going fully open is up to the head.
 

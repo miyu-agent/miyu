@@ -56,11 +56,11 @@ fn the_permission_changed_template_goes_in_and_older_snapshots_lack_it() {
         .policy()
         .unwrap()
         .facts
-        .permission_changed(&full, "workspace")
+        .permission_changed(&full, "read_only")
         .unwrap();
     assert_eq!(
         fact.text,
-        "<permission level=\"full\" previous=\"workspace\">The user changed the permission level.</permission>\n"
+        "<permission level=\"full\" previous=\"read_only\">The user changed the permission level.</permission>\n"
     );
     let mut broken = snapshot.clone();
     broken.core.facts.permission_changed = Some("<permission was=\"{who}\"/>\n".to_string());
@@ -83,7 +83,7 @@ fn the_permission_changed_template_goes_in_and_older_snapshots_lack_it() {
         read.policy()
             .unwrap()
             .facts
-            .permission_changed(&full, "workspace"),
+            .permission_changed(&full, "read_only"),
         None
     );
 }

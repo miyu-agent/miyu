@@ -3,14 +3,14 @@
 
 use std::sync::Arc;
 
-use miyu_kernel::event::Permission;
+use miyu_kernel::event::{Level, Permission};
 use miyu_kernel::id::{CommandId, SessionId};
 use miyu_policy::Profile;
 use miyu_policy::memory::MemoryScope;
 use miyu_session::Create;
 use miyu_session::settings::ProfileSettings;
 
-use super::opening::{Opening, opening_level, profile_for};
+use super::opening::{Opening, profile_for};
 use super::{environment, local};
 use crate::Core;
 use crate::personas;
@@ -46,7 +46,6 @@ impl Setup {
     ) -> Result<Setup, Refusal> {
         let (resolved, _) = core.config().with_project(&workspace);
         let permission = PermissionSettings::from(&resolved.values());
-        let level = opening_level();
         let profile = profile_for(
             ProfileSettings::from(&resolved.values()),
             who.venue.as_ref(),
@@ -67,8 +66,9 @@ impl Setup {
             workspace,
             dirs,
             who,
+            // A16 起本机、场所的新会话都从完全放开开局（施工 LV-1）；外部身份另关进自己的工作区（`confined`），不看级别。
             permission: Permission {
-                level,
+                level: Level::Full,
                 read_only: permission.start_read_only,
             },
             profile,

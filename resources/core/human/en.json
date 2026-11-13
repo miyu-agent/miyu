@@ -169,14 +169,6 @@
         "name": "Other skill folders",
         "description": "Folders read while \"Read skills from other folders\" is on, in order; on a name clash the earlier one wins. Write ~/… or an absolute path."
       },
-      "permission.level": {
-        "name": "Permission level for new sessions",
-        "description": "New sessions always start with full access; workspace is read as full. To start read-only, turn on read-only for new sessions.",
-        "options": {
-          "workspace": "Full access (old name)",
-          "full": "Full access"
-        }
-      },
       "permission.start_read_only": {
         "name": "Start new sessions read-only",
         "description": "When on, new sessions begin read-only. The AI can look around and plan, and you turn read-only off when files should change. A project config can only turn it on."

@@ -1,6 +1,5 @@
-//! 造会话时定下的几样（施工 8-32、P-9，从 `sessions.rs` 抽出来）：谁开的、在哪开的，开局的级别，带不带「关于你」。
+//! 造会话时定下的几样（施工 8-32、P-9，从 `sessions.rs` 抽出来）：谁开的、在哪开的，带不带「关于你」。
 
-use miyu_kernel::event::Level;
 use miyu_kernel::id::VenueId;
 use miyu_policy::Profile;
 use miyu_policy::memory::MemoryScope;
@@ -47,12 +46,6 @@ impl Opening {
         format!("{persona:?}{self:?}").hash(&mut hasher);
         hasher.finish()
     }
-}
-
-/// 新会话开局的级别（施工 8-32）：A16 起本机、场所的都是完全放开（施工 LV-1），`permission.level` 写什么都一样；外部身份
-/// 另关进自己的工作区（`confined`），不看级别。
-pub(super) fn opening_level() -> Level {
-    Level::Full
 }
 
 /// 「关于你」（施工 P-9）：没关起来的会话（`for_owner`，施工 SU-4 中）、又是本机开的或者桥说要的（`asked`，

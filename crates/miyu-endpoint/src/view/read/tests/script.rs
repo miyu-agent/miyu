@@ -101,7 +101,7 @@ impl Script {
             command: 0,
             now: 0,
         };
-        let mut body = json!({"venue": "local", "policy": POLICY, "permission": {"level": "workspace", "read_only": false}});
+        let mut body = json!({"venue": "local", "policy": POLICY, "permission": {"level": "full", "read_only": false}});
         if child {
             body["parent"] = json!(PARENT);
             body["depth"] = json!(1);

@@ -67,7 +67,6 @@
 | `compaction_line` | 整数 | 这个会话的压缩触发线：窗口的百分之几，20 到 95；不写的跟着配置的 `compaction.line`。造好以后记一条 `session.policy_changed`，同 `session.configure` 的 `compaction_line` |
 | `memory` | `persona`、`off` | 记忆跟着人格、不用；不写是跟着人格。别的值（以前的 `session` 也算）回 `bad_params` |
 | `dirs` | 字符串的数组 | 另外加进来的目录，和工作目录一样能读能写 |
-| `chosen` | 布尔，默认 `false` | 照收不看（以前用来区分人选的）：太宽的 `cwd`（根目录；Windows 上还有家目录）一律照用、回应带 `wide`，能随便写的范围是这个会话自己的默认工作区 |
 | `oneshot` | 布尔，默认 `false` | 一次性的会话（命令行 `miyu ask` 那种） |
 | `images` | 布尔，默认 `true` | 你显示得了图片吗 |
 | `titles` | 布尔，默认 `true` | 自动起标题吗：`false` 的从此不自动起，人手改照旧改得了 |
@@ -350,7 +349,7 @@
 
 ## `session.set_permission_level`
 
-**参数**：`session`；`level`：只有 `full`（完全放开；以前的 `workspace` 照 `full` 收，核心不再写出它）；`read_only`：只读开关。改哪样写哪样，至少写一个。
+**参数**：`session`；`level`：只有 `full`（完全放开）；`read_only`：只读开关。改哪样写哪样，至少写一个。
 
 **回应**：`{}`。变了的推 `session.policy_changed`。收紧的当场生效；放宽的下一次请求生效。改成完全放开之前要不要问人一声，是头的事。
 

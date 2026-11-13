@@ -601,16 +601,6 @@
           },
           "type": "object"
         },
-        "level": {
-          "default": "full",
-          "description": "New sessions always start with full access; workspace is read as full. To start read-only, turn on read-only for new sessions. Allowed: full or workspace. Only in the system config. Applies to new sessions.",
-          "enum": [
-            "full",
-            "workspace"
-          ],
-          "title": "Permission level for new sessions",
-          "type": "string"
-        },
         "start_read_only": {
           "default": false,
           "description": "When on, new sessions begin read-only. The AI can look around and plan, and you turn read-only off when files should change. A project config can only turn it on. Allowed: true or false. Only in the system config or a project config. Applies to new sessions.",

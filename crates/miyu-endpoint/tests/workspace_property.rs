@@ -198,9 +198,9 @@ async fn a_change_survives_a_restart_before_any_turn() {
     );
 }
 
-/// 人选的太宽的工作区，核心重启以后照旧（施工 9-7 补：原来载入时再判一次太宽，人选的 `~` 被换成 `workspace/`）。
+/// 太宽的工作区，核心重启以后照旧（施工 9-7 补：原来载入时再判一次太宽，人选的 `~` 被换成 `workspace/`）。
 #[tokio::test]
-async fn a_chosen_wide_workspace_survives_a_restart() {
+async fn a_wide_workspace_survives_a_restart() {
     let home = Home::new();
     let script = Script::new([]);
     let own_home = home.work.join("home");
@@ -209,7 +209,7 @@ async fn a_chosen_wide_workspace_survives_a_restart() {
     let mut client = Client::connect(first.clone());
     client.hello().await;
     let made = client
-        .call("c1", "session.create", json!({"cwd": "~", "chosen": true}))
+        .call("c1", "session.create", json!({"cwd": "~"}))
         .await;
     assert_eq!(made["result"]["cwd"], json!("~"), "{made}");
     let session = made["result"]["session"]

@@ -81,7 +81,6 @@ fn the_registered_list_is_well_formed() {
             "permission.confirm.container",
             "permission.confirm.timeout",
             "permission.start_read_only",
-            "permission.level",
             "sandbox.private.enabled",
             "sandbox.private.add",
             "sandbox.private.remove",

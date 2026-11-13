@@ -126,7 +126,7 @@
 
 太宽（`too_wide`，施工 5-14 改，2026-10-22 项目主人定）：Windows 上同宽；别的平台只有第 2、4 样（家目录、包含数据根的，数据根、私密目录靠沙盒藏住，`11-权限与沙盒.md` 第四节）。加进来的目录、场所会话的工作目录照宽（`broad`）。
 
-一段一段比，分大小写。开会话时照它挑工作区：头自己带上的太宽退回默认工作区，人明着选的照用（施工 9-7 补，`crates/miyu-endpoint/src/sessions/places.rs` 的 `pick`，`protocol.md`「工作目录太宽」，`cli/ask.md` 第 5 条）。
+一段一段比，分大小写。开会话时照它挑工作区：太宽的照用、回应带 `wide`（施工 5-14，原来头自己带上的退回、人明着选的才照用；`crates/miyu-endpoint/src/sessions/places.rs` 的 `pick`，`protocol.md`「工作目录太宽」，`cli/ask.md` 第 5 条）。
 
 #### 四、安全地打开（`open_file`）
 

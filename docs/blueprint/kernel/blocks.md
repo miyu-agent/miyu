@@ -59,7 +59,7 @@
 | 取值 | 在哪（`crates/miyu-kernel/src/` 下） | 认识的值 | 见 |
 |---|---|---|---|
 | `Access` | `tool.rs` | `read`、`write`、`execute`、`network`、`outbound`、`venue`（施工 O-31 前）、`install`（施工 F-10 下） | `kernel/tools.md` |
-| `Level` | `event/session.rs` | `full`（A16 以前的 `workspace` 读成它，施工 LV-1） | `kernel/events-bodies.md` |
+| `Level` | `event/session.rs` | `full`（A16 以前的 `workspace` 施工 AUD-4 起不认，同别的不认识的取值） | `kernel/events-bodies.md` |
 | `EndReason` | `event/turn.rs` | `completed`、`interrupted`、`error`、`step_limit`、`aborted`、`restarted` | 同上 |
 | `ToolStatus` | `event/tool.rs` | `ok`、`error`、`cancelled`、`denied`、`skipped` | 同上 |
 | `Decision` | `event/tool.rs` | `once`、`session`、`workspace`、`deny` | 同上 |

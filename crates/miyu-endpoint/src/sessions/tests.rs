@@ -12,7 +12,7 @@ use miyu_session::{Child, Lineage};
 use miyu_store::resources::ResourceRoot;
 use miyu_tool::Catalog;
 
-use super::opening::{opening_level, profile_for};
+use super::opening::profile_for;
 use super::{Opening, local};
 use crate::Core;
 use crate::test_support::{resources, temp_root};
@@ -110,12 +110,6 @@ async fn a_session_someone_holds_a_handle_to_stays_in_the_table() {
     if let Err(error) = std::fs::remove_dir_all(&dir) {
         eprintln!("临时目录留着：{error}");
     }
-}
-
-/// 开局的级别（施工 8-32）：A16 起本机、场所的都从完全放开开局（施工 LV-1），`permission.level` 写什么都一样。
-#[test]
-fn new_sessions_open_at_full() {
-    assert_eq!(opening_level(), Level::Full);
 }
 
 /// 「关于你」（施工 P-9、P-9 补）：没关起来、又是本机开的或者桥说要的才带，别的都是空的；回复语言跟着一起带。

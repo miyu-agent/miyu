@@ -210,7 +210,7 @@ fn parse(words: &[&str]) -> Result<Ask, clap::Error> {
 }
 
 /// 新开的会话的几样（施工 AP-2）：和 `-c`、`-s` 一起写的读参数时就拒；`--persona` 和 `--no-persona` 不能一起写；权限级别只认
-/// 那三种。消息可以不写、可以写 `-`。
+/// `read-only`、`full`（以前的别名 `workspace` 施工 AUD-4 起不认）。消息可以不写、可以写 `-`。
 #[test]
 fn new_session_options_are_for_a_new_session_only() {
     for words in [
@@ -222,6 +222,7 @@ fn new_session_options_are_for_a_new_session_only() {
         &["ask", "--permission", "full", "-s", "x", "在吗"],
         &["ask", "--persona", "a", "--no-persona", "在吗"],
         &["ask", "--permission", "root", "在吗"],
+        &["ask", "--permission", "workspace", "在吗"],
         &["ask", "-C", "no-such-dir-for-miyu-cli-tests", "在吗"],
     ] {
         assert!(parse(words).is_err(), "{words:?}");

@@ -1,6 +1,6 @@
-//! 端点的配置项（`docs/blueprint/config.md`「M8 的配置项」）：界面语言 `ui.language`（施工 8-1），新会话的权限级别
-//! `permission.level`（施工 8-32），新会话开局只读
-//! `permission.start_read_only`（施工 8-2），默认人格 `persona.default`（施工 P-1 上），终端会话 `terminal.*`（施工 8-33），软件源 `packages.source`、`packages.mirrors`
+//! 端点的配置项（`docs/blueprint/config.md`「M8 的配置项」）：界面语言 `ui.language`（施工 8-1），新会话开局只读
+//! `permission.start_read_only`（施工 8-2；新会话的权限级别 `permission.level` 施工 AUD-4 去掉了：A16 起开局一律是完全放开），
+//! 默认人格 `persona.default`（施工 P-1 上），终端会话 `terminal.*`（施工 8-33），软件源 `packages.source`、`packages.mirrors`
 //! （施工 G-3 上）。
 //!
 //! 核心起来时照 `ui.language` 的最终值挑生成的文件用哪种语言；握手时照它和头报的系统语言算这个连接的语言（第二条
@@ -113,14 +113,6 @@ miyu_config::settings! {
             tighten: true_only,
             applies: new_session,
             ui: { page: "general", group: "new_session", control: toggle },
-        },
-        /// 新会话开局的权限级别（施工 8-32）：A16 起只有 `full`（完全放开，施工 LV-1），只读另由 `start_read_only` 管。`workspace`
-        /// 照收、读成 `full`：旧的配置、还没跟上的头的引导写它不报错。设置页不列（`hidden`）。
-        level: String = "full" {
-            kind: option ["full", "workspace"],
-            layers: [System],
-            applies: new_session,
-            ui: { page: "privacy", group: "permission", control: select, hidden: true },
         },
     }
 }

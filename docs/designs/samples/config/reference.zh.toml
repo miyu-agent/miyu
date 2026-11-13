@@ -354,10 +354,6 @@ source = "https://miyu-agent.github.io/packages/"
 # url =
 
 [permission]
-# 新会话的权限级别：新会话都从完全放开开局，写 workspace 的也照完全放开算。要开局只读，打开「新会话开局只读」。
-# 能写：full 或 workspace。只能写在系统配置里。新会话生效。
-level = "full"
-
 # 新会话开局只读：打开以后，新会话一开始就是只读。AI 只能查、写计划，要改文件时你再关掉只读。项目配置里只能把它打开。
 # 能写：true 或 false。只能写在系统配置或项目配置里。新会话生效。
 start_read_only = false

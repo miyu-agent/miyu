@@ -125,18 +125,6 @@ fn another_level_is_told_with_the_one_before() {
     );
 }
 
-/// A16 以前的会话（施工 LV-1）：她上一块看到的是工作区，现在读成完全放开，照切换那一份说一次。
-#[test]
-fn an_old_workspace_block_is_followed_by_the_switch_to_full() {
-    let mut log = Log::new();
-    saw(&mut log, &plain("workspace"));
-    log.start();
-    assert_eq!(
-        told(&switching(), &log, &full()),
-        Some(switched("full", "workspace"))
-    );
-}
-
 #[test]
 fn a_changed_block_counts_as_its_new_level() {
     let mut log = Log::new();

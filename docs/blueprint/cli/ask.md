@@ -48,7 +48,7 @@
 | `--persona <人格>` | 新开的会话用这个人格（施工 AP-2）：`session.create` 带 `persona`，编号原样交给核心，没有这个人格的照核心的原话说，退出码 1，不造会话 |
 | `--no-persona` | 新开的会话不用人格（施工 AP-2）：`session.create` 带 `"persona": null`；和 `--persona` 一起写的照「参数写错时」说 |
 | `--preset <预设>` | 新开的会话用这个预设（施工 AP-2）：`session.create` 带 `preset`，同 `--persona` |
-| `--permission <read-only\|full>` | 新开的会话开局的权限级别（施工 AP-2；A16 起只剩这两种，以前的 `workspace` 照 `full` 收，施工 LV-1）：造好以后、订阅之前发 `session.set_permission_level`。`read-only` 只写 `"read_only": true`（常用的那一级照配置）；`full` 写 `"level": "full"` 和 `"read_only": false`（配置里开局只读的也关上：放宽到哪一级是调用方明写的）。不写的照配置，不发 |
+| `--permission <read-only\|full>` | 新开的会话开局的权限级别（施工 AP-2；A16 起只剩这两种，施工 LV-1；以前的 `workspace` 这个别名施工 AUD-4 去掉了）：造好以后、订阅之前发 `session.set_permission_level`。`read-only` 只写 `"read_only": true`（常用的那一级照配置）；`full` 写 `"level": "full"` 和 `"read_only": false`（配置里开局只读的也关上：放宽到哪一级是调用方明写的）。不写的照配置，不发 |
 | `--timeout <时长>` | 最多等多久：从发出算到全部了结，到了不再等，退出码 3（施工 7-9，「等子代理」第 8 条）。正整数，后面可以跟 `s`、`m`、`h`，不写是秒（`30`、`30s`、`10m`、`1h`），照 GNU `timeout` 的写法；0、负数、小数、别的单位照「参数写错时」说（`cli/main.md`），退出码 2。长到算不出那一刻的，当没写 |
 
 - `-C`、`--persona`、`--no-persona`、`--preset`、`--permission`（施工 AP-2）只管新开的会话，同 `--no-memory`：和 `-c`、`-s` 一起写的读参数时就拒，照「参数写错时」说（`'--persona' 不能和 '--continue' 同时使用`），退出码 2。

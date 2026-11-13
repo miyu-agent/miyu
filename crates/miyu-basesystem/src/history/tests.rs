@@ -348,7 +348,7 @@ async fn pictures_and_files_are_placeholders_and_thinking_is_left_out() {
             "session.created",
             None,
             json!({"kind": "kernel"}),
-            json!({"venue": "local", "policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "permission": {"level": "workspace", "read_only": false}}),
+            json!({"venue": "local", "policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "permission": {"level": "full", "read_only": false}}),
         ),
         event(
             2,

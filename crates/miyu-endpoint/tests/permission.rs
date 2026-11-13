@@ -70,8 +70,7 @@ async fn switching_over_the_protocol_records_it_and_pushes_it() {
     client.hello().await;
     let session = client.create("c1", "~").await;
     client.subscribe("s1", &session).await;
-    // 开只读、关只读、写旧的 `workspace` 再开只读（A16 起读成完全放开，施工 LV-1）：每一次记一条，推给订阅着的头，推送在
-    // 回应前面。
+    // 开只读、关只读、写着级别再开只读：每一次记一条，推给订阅着的头，推送在回应前面。
     let steps = [
         (
             "c2",
@@ -85,7 +84,7 @@ async fn switching_over_the_protocol_records_it_and_pushes_it() {
         ),
         (
             "c4",
-            json!({"level": "workspace", "read_only": true}),
+            json!({"level": "full", "read_only": true}),
             json!({"level": "full", "read_only": true}),
         ),
     ];
@@ -127,10 +126,10 @@ async fn switching_to_the_same_permission_records_nothing() {
     let session = client.create("c1", "~").await;
     client.subscribe("s1", &session).await;
     let same = [
-        json!({"session": session, "level": "workspace"}),
+        json!({"session": session, "level": "full"}),
         json!({"session": session, "read_only": false}),
-        json!({"session": session, "level": "workspace", "read_only": false}),
-        json!({"session": session, "level": "workspace", "read_only": null}),
+        json!({"session": session, "level": "full", "read_only": false}),
+        json!({"session": session, "level": "full", "read_only": null}),
     ];
     for (n, params) in same.into_iter().enumerate() {
         let id = format!("c{}", n + 2);
@@ -172,6 +171,8 @@ async fn values_that_do_not_fit_are_bad_params() {
     let session = client.create("c1", "~").await;
     let wrong = [
         json!({"session": session, "level": "read_only"}),
+        // A16 以前的「工作区」不再照完全放开收（施工 AUD-4）：同别的不在表里的值。
+        json!({"session": session, "level": "workspace"}),
         json!({"session": session, "level": "Full"}),
         json!({"session": session, "level": 2}),
         json!({"session": session, "read_only": "yes"}),

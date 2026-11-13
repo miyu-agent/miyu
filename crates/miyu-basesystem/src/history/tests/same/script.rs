@@ -57,7 +57,7 @@ pub(super) const WORDS: [&str; 18] = [
 const PERSON: &str = r#"{"kind":"person"}"#;
 const KERNEL: &str = r#"{"kind":"kernel"}"#;
 const MODEL: &str = r#"{"kind":"model","endpoint":"deepseek","model":"deepseek-v4"}"#;
-const POLICY: &str = r#""policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}"#;
+const POLICY: &str = r#""policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"full","read_only":false}"#;
 const BLOB: &str = "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 /// 别的会话、父会话、子代理的会话编号：短编号各不同。
 pub(super) const PEER: &str = "0192f3a0-1111-7abc-8def-001122334455";
@@ -180,7 +180,7 @@ impl Script {
                     0 => format!(r#"{{"policy":"{BLOB}"}}"#),
                     1 => r#"{"permission":{"level":"read_only","read_only":true}}"#.to_string(),
                     2 => r#"{"permission":{"level":"full","read_only":false}}"#.to_string(),
-                    _ => r#"{"permission":{"level":"workspace","read_only":true}}"#.to_string(),
+                    _ => r#"{"permission":{"level":"full","read_only":true}}"#.to_string(),
                 };
                 self.line("session.policy_changed", None, PERSON, None, &body);
             }

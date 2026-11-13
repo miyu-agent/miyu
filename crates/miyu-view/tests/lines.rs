@@ -23,7 +23,7 @@ fn feed(lines: &[&str]) -> Vec<Entry> {
     projector.entries().to_vec()
 }
 
-const CREATED: &str = r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"person"},"cause":"cmd-0","body":{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}}"#;
+const CREATED: &str = r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"person"},"cause":"cmd-0","body":{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"full","read_only":false}}}"#;
 const ASKED: &str = r#"{"seq":2,"at":"2026-09-25T07:00:01.000Z","kind":"message.user","by":{"kind":"person"},"cause":"cmd-1","body":{"blocks":[{"type":"text","text":"go"}]}}"#;
 const STARTED: &str = r#"{"seq":3,"at":"2026-09-25T07:00:01.000Z","kind":"turn.started","turn":3,"by":{"kind":"kernel"},"cause":"cmd-1","body":{"trigger":2}}"#;
 

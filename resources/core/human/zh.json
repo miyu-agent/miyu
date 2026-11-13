@@ -169,14 +169,6 @@
         "name": "其他技能目录",
         "description": "「读取其他目录的 Skills」开着时读的目录，照先后，同名的先列的赢。写成 ~/… 或绝对路径。"
       },
-      "permission.level": {
-        "name": "新会话的权限级别",
-        "description": "新会话都从完全放开开局，写 workspace 的也照完全放开算。要开局只读，打开「新会话开局只读」。",
-        "options": {
-          "workspace": "完全放开（旧写法）",
-          "full": "完全放开"
-        }
-      },
       "permission.start_read_only": {
         "name": "新会话开局只读",
         "description": "打开以后，新会话一开始就是只读。AI 只能查、写计划，要改文件时你再关掉只读。项目配置里只能把它打开。"
