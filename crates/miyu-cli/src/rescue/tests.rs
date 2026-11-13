@@ -64,14 +64,24 @@ fn beside_the_typed_path_then_beside_the_real_one_then_path() {
     assert_eq!(find(&places, false), None, "哪里都没有");
     let in_path = scratch.put("path/litemiyu");
     assert_eq!(find(&places, false), Some(in_path.clone()));
+    // 真实位置旁边的那一个照解了链接的路径交回（`find` 先把 `exe` 解成真实路径）：macOS 的临时目录在 `/private` 下面，Windows
+    // 交回 `\\?\` 打头的长路径，和这里拼的字面不一样，两边都解了再比。
     let beside_real = scratch.put("real/litemiyu");
-    assert_eq!(find(&places, false), Some(beside_real.clone()));
+    assert_eq!(
+        resolved(find(&places, false)),
+        resolved(Some(beside_real.clone()))
+    );
     let beside_typed = scratch.put("typed/litemiyu");
     assert_eq!(find(&places, false), Some(beside_typed.clone()));
     // 是目录的不算。
     std::fs::remove_file(&beside_typed).expect("删得了");
     std::fs::create_dir(&beside_typed).expect("建得了");
-    assert_eq!(find(&places, false), Some(beside_real));
+    assert_eq!(resolved(find(&places, false)), resolved(Some(beside_real)));
+}
+
+/// 解了链接的路径：比「真实位置旁边」的那一个用。
+fn resolved(path: Option<PathBuf>) -> Option<PathBuf> {
+    path.map(|path| std::fs::canonicalize(path).expect("在"))
 }
 
 #[test]
