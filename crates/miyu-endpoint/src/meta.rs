@@ -92,7 +92,7 @@ struct RetitleParams {
 }
 
 /// `session.retitle`：照现在的对话重起一次标题（施工 TT-1，`docs/blueprint/protocol.md` 的 `session.retitle`）。请求发出去
-/// 就回 `{}`，不等模型：起好了的标题经 `session.meta_changed` 推来，`by` 是内核，不算人起的。
+/// 就回 `{}`，不等模型：起好了的标题经 `session.meta_changed` 推来，`by` 是要它的人，算人起的（施工 TT-2）。
 ///
 /// # Errors
 ///

@@ -81,7 +81,7 @@ Options:
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-cli/tests/rename.rs` | 真的核心：给上一次 `miyu ask` 的会话起名，什么都不印、退出码 0，日志里一条人改的 `session.meta_changed`；`--session` 起名的是指定的那个，最新的那个没动；一个会话都没有的说清楚、退出码 1；全是空白的照核心的话说、退出码 1、什么都没记；没写标题的走 `session.retitle`：模型收到一次起标题的请求，什么都不印、退出码 0，日志里一条内核起的（施工 TT-1） |
+| `crates/miyu-cli/tests/rename.rs` | 真的核心：给上一次 `miyu ask` 的会话起名，什么都不印、退出码 0，日志里一条人改的 `session.meta_changed`；`--session` 起名的是指定的那个，最新的那个没动；一个会话都没有的说清楚、退出码 1；全是空白的照核心的话说、退出码 1、什么都没记；没写标题的走 `session.retitle`：模型收到一次起标题的请求，什么都不印、退出码 0，日志里一条人起的（施工 TT-1、TT-2） |
 | `crates/miyu/tests/rename.rs` | 真跑主程序：`rename -h`、`--help`、`help rename` 印帮助页，跟着界面语言；核心在跑的给上一次 `miyu ask` 开的起名，几个词用空格连起来、记进日志，什么都不印；没写标题的是重起，没东西可起的照核心说「参数错误」、退出码 1；`-s` 和 `--session` 起名的是写的那个（不在的照核心说没有这个会话） |
 | `crates/miyu-cli/src/help/tests.rs` | 这一页列的选项和程序真有的对得上 |
 

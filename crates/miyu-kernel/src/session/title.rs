@@ -14,6 +14,9 @@
 //! - 人要求重起（`session.retitle`，施工 TT-1）：走同一条路、同一份指令，喂的换成最近几轮（`Assembler::retitle`），不看「标题动过」「说了不自动起」「一次性的会话」
 //!   「试过几次」；起好了盖掉现在的标题，人起的也盖。有一次在路上的并进去，不再发；这时还组装不出来、回合正在进行的，等
 //!   这一轮的 `turn.ended` 落了盘再起；空闲着也组装不出来的拒绝，`nothing_to_title`。
+//! - 人要的标题算人起的（施工 TT-2，2026-11-13 core1 定）：`session.meta_changed` 的 `by` 是要它的那个命令的 `by`，同
+//!   `set_meta`（会话列表照它算 `named`）；`model.called` 照旧是内核的。不带 `cause`：命令收下就回了，载入时照 `cause`
+//!   认回命令编号会附上这一条，活着时却没有，两边对不上。
 
 use super::Session;
 use super::action::{Action, Reason, accepted, rejected};
@@ -41,8 +44,9 @@ pub(super) struct Naming {
     goal: Option<String>,
     /// 有过不是模块发的话（人、场所里的人、别的会话、别的 harness）。
     spoke: bool,
-    /// 人要求重起、还没起成（施工 TT-1）：只在内存里，载入以后没有。标题一动（起好了、人又改了）就放下；没起成的也放下。
-    asked: bool,
+    /// 人要求重起、还没起成（施工 TT-1），记着要它的是谁（施工 TT-2：起好的标题记成他起的）。只在内存里，载入以后没有。
+    /// 标题一动（起好了、人又改了）就放下；没起成的也放下。
+    asked: Option<By>,
 }
 
 impl Naming {
@@ -55,7 +59,7 @@ impl Naming {
             }
             Body::MetaChanged(changed) if changed.title.is_some() => {
                 self.named = true;
-                self.asked = false;
+                self.asked = None;
             }
             Body::ModelCalled(called) if called.purpose == Some(Purpose::Title) => self.tries += 1,
             Body::MessageAssistant(reply) if said(&reply.blocks) => self.answered = event.turn,
@@ -96,10 +100,8 @@ impl Session {
         let titles = self.policy.titles?;
         let answered = self.naming.answered?;
         let due = match self.naming.asked {
-            true => !closed.is_empty(),
-            false => {
-                !self.oneshot && self.naming.wanted(titles.tries) && closed.contains(&answered)
-            }
+            Some(_) => !closed.is_empty(),
+            None => !self.oneshot && self.naming.wanted(titles.tries) && closed.contains(&answered),
         };
         if self.titling.is_some() || self.restarting || !due {
             return None;
@@ -107,21 +109,22 @@ impl Session {
         self.title_now(at, titles)
     }
 
-    /// 人要求重起标题（`session.retitle`，施工 TT-1）：收下就回，不等模型；标题经 `session.meta_changed` 到。
+    /// 人要求重起标题（`session.retitle`，施工 TT-1）：收下就回，不等模型；标题经 `session.meta_changed` 到，`by` 是这里的
+    /// `by`（施工 TT-2）。
     ///
     /// 有一次在路上的并进去；没有的当场照 [`Session::title_now`] 起；这时组装不出来、回合正在进行的等这一轮完
     /// （[`Session::title_up`]）；空闲着也组装不出来、策略里没有起标题的数的，拒绝，`nothing_to_title`。
-    pub(super) fn retitle(&mut self, id: CommandId, at: Timestamp) -> Vec<Action> {
+    pub(super) fn retitle(&mut self, id: CommandId, by: By, at: Timestamp) -> Vec<Action> {
         let Some(titles) = self.policy.titles else {
             return vec![rejected(id, Reason::NothingToTitle)];
         };
-        self.naming.asked = true;
+        self.naming.asked = Some(by);
         let started = match self.titling.is_some() {
             true => None,
             false => self.title_now(at, titles),
         };
         if started.is_none() && self.titling.is_none() && self.turn.is_none() {
-            self.naming.asked = false;
+            self.naming.asked = None;
             return vec![rejected(id, Reason::NothingToTitle)];
         }
         self.recent.insert(id.clone(), Vec::new());
@@ -131,23 +134,18 @@ impl Session {
     }
 
     /// 照这一刻落了盘的有效历史起一次：只有续轮的拿目标原文当场记下，别的组装请求发出去（人要求重起的喂最近几轮，自动起的
-    /// 只喂第一轮）；组装不出来的没有。
+    /// 只喂第一轮）；组装不出来的没有。人要的那一条记成他起的（施工 TT-2）。
     fn title_now(&mut self, at: Timestamp, titles: super::Titles) -> Option<Action> {
         if let Some(goal) = self.naming.goal_only().map(str::to_string) {
-            let changed = MetaChanged {
-                title: Some(shorten(goal.trim(), titles.chars)),
-                pinned: None,
-                project: None,
-            };
-            self.meta.note(&changed);
-            let event = self.record_aside(at, None, Body::MetaChanged(changed));
+            let by = self.naming.asked.clone();
+            let event = self.titled(at, by, shorten(goal.trim(), titles.chars));
             return Some(Action::Append(vec![event]));
         }
         let history = self.history.until(self.stored?);
         // 人要求重起的喂最近几轮，自动起的只喂第一轮（施工 TT-1）：指令、上限是同一份。
         let (request, upto) = match self.naming.asked {
-            true => self.policy.assembler.retitle(&history)?,
-            false => self.policy.assembler.title(&history)?,
+            Some(_) => self.policy.assembler.retitle(&history)?,
+            None => self.policy.assembler.title(&history)?,
         };
         self.titling = Some(Aside::new(upto, request.messages.len()));
         Some(Action::Aside {
@@ -157,8 +155,8 @@ impl Session {
         })
     }
 
-    /// 起标题的请求说完了：记 `model.called`；写成了、标题这时还没人动过的（人要求重起的不看动没动过），接着记
-    /// `session.meta_changed`（`by` 是内核），同一批。两条都不带回合编号、没有 `cause`。
+    /// 起标题的请求说完了：记 `model.called`（`by` 是内核）；写成了、标题这时还没人动过的（人要求重起的不看动没动过），接着记
+    /// `session.meta_changed`（`by` 是内核，人要的是要它的人，施工 TT-2），同一批。两条都不带回合编号、没有 `cause`。
     pub(super) fn title_ended(
         &mut self,
         at: Timestamp,
@@ -183,17 +181,28 @@ impl Session {
         // 人要求重起的那一次盖得掉动过的标题（施工 TT-1）；没起成的也放下，不留到下一轮。
         let asked = std::mem::take(&mut self.naming.asked);
         if let Ok(text) = text
-            && (asked || !self.naming.named)
+            && (asked.is_some() || !self.naming.named)
         {
-            let changed = MetaChanged {
-                title: Some(shorten(&text, chars)),
-                pinned: None,
-                project: None,
-            };
-            self.meta.note(&changed);
-            events.push(self.record_aside(at, None, Body::MetaChanged(changed)));
+            events.push(self.titled(at, asked, shorten(&text, chars)));
         }
         vec![Action::Append(events)]
+    }
+
+    /// 记下起好的标题：一条只写 `title` 的 `session.meta_changed`，不带回合编号、没有 `cause`。`asked` 是要它的人（施工
+    /// TT-2：人要的算他起的，同 `set_meta`），没人要的 `by` 是内核。
+    fn titled(&mut self, at: Timestamp, asked: Option<By>, title: String) -> Event {
+        let changed = MetaChanged {
+            title: Some(title),
+            pinned: None,
+            project: None,
+        };
+        self.meta.note(&changed);
+        self.record_outside(
+            at,
+            asked.unwrap_or(By::Kernel),
+            None,
+            Body::MetaChanged(changed),
+        )
     }
 }
 

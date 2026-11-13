@@ -428,7 +428,7 @@ impl Session {
                 pinned,
                 project,
             } => self.set_meta(id, by, at, (title, pinned, project)),
-            Command::Retitle => self.retitle(id, at),
+            Command::Retitle => self.retitle(id, by, at),
             Command::SetWorkspace { cwd, dirs } => self.set_workspace(id, by, at, cwd, dirs),
             Command::Ran { text, command } => self.ran(id, by, at, text, command),
             Command::Configure { model } => self.configure(id, by, at, model),

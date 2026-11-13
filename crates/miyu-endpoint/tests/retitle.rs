@@ -1,7 +1,7 @@
 //! 人要求重起标题（施工 TT-1，`docs/blueprint/protocol.md` 的 `session.retitle`）：照自动起标题的那一条路再发一次请求，
 //! 喂的是最近三轮（自动起的照旧只喂第一轮），
-//! 请求发出去就回 `{}`，标题经 `session.meta_changed` 推来（`by` 是内核，不算人起的）；人起过名的也换掉；说了不自动起的
-//! 照样起；一次在路上时再要的不重复发；没东西可起的拒。
+//! 请求发出去就回 `{}`，标题经 `session.meta_changed` 推来（`by` 是要它的人，算人起的，施工 TT-2：重启以后照样，
+//! 以后自动起标题不再盖掉它）；人起过名的也换掉；说了不自动起的照样起；一次在路上时再要的不重复发；没东西可起的拒。
 
 use serde_json::{Value, json};
 
@@ -79,9 +79,15 @@ async fn retitling_feeds_the_latest_turns_and_pushes_the_new_title() {
         Play::Says("答二"),
         Play::Says("答三"),
         Play::Says("答四"),
+        Play::Says("答五"),
     ])
-    .titles([Play::Says("打个招呼"), Play::Says("换一个")]);
-    let mut client = Client::connect(home.core(&script));
+    .titles([
+        Play::Says("打个招呼"),
+        Play::Says("换一个"),
+        Play::Says("不该再起"),
+    ]);
+    let core = home.core(&script);
+    let mut client = Client::connect(core.clone());
     client.hello().await;
     let session = client.create("c1", "~").await;
     client.subscribe("s1", &session).await;
@@ -99,7 +105,11 @@ async fn retitling_feeds_the_latest_turns_and_pushes_the_new_title() {
     assert_eq!(called["kind"], json!("model.called"));
     assert_eq!(called["body"]["purpose"], json!("title"));
     assert_eq!(renamed["body"], json!({"title": "换一个"}));
-    assert_eq!(renamed["by"], json!({"kind": "kernel"}), "{renamed}");
+    assert_eq!(
+        renamed["by"],
+        json!({"kind": "person"}),
+        "人要的算人起的：{renamed}"
+    );
     let titled = script.titled();
     let [(_, auto), (_, again)] = titled.as_slice() else {
         panic!("两次起标题的请求：{}", titled.len());
@@ -119,7 +129,29 @@ async fn retitling_feeds_the_latest_turns_and_pushes_the_new_title() {
     assert!(again.tools.is_empty() && again.system.is_empty());
     let item = listed(&mut client, "c7", &session).await;
     assert_eq!(item["title"], json!("换一个"));
-    assert!(item.get("named").is_none(), "不算人起的：{item}");
+    assert_eq!(item["named"], json!(true), "算人起的：{item}");
+    // 重启以后照样算人起的；再答完一轮，自动起标题不盖掉它。
+    core.stop_sessions().await;
+    drop(client);
+    let mut client = Client::connect(home.core(&script));
+    client.hello().await;
+    let item = listed(&mut client, "c8", &session).await;
+    assert_eq!(
+        (&item["title"], &item["named"]),
+        (&json!("换一个"), &json!(true)),
+        "{item}"
+    );
+    client.subscribe("s2", &session).await;
+    client.say("c9", &session, "五").await;
+    client.until_turn_ends(&session).await;
+    settled(&mut client, "c10", &session).await;
+    assert_eq!(script.titled().len(), 2, "不再自动起");
+    let item = listed(&mut client, "c11", &session).await;
+    assert_eq!(
+        (&item["title"], &item["named"]),
+        (&json!("换一个"), &json!(true)),
+        "{item}"
+    );
 }
 
 #[tokio::test]
@@ -154,7 +186,7 @@ async fn retitling_replaces_a_title_a_person_gave() {
     );
     let item = listed(&mut client, "c7", &session).await;
     assert_eq!(item["title"], json!("模型起的"));
-    assert!(item.get("named").is_none(), "换成了不是人起的：{item}");
+    assert_eq!(item["named"], json!(true), "人要的照旧是人起的：{item}");
 }
 
 #[tokio::test]

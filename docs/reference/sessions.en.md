@@ -401,7 +401,7 @@ Have the model write a new title from the latest part of the conversation. It us
 
 **Params**: `session`.
 
-**Response**: `{}`, as soon as the request is sent; it does not wait for the model. The new title is pushed as `session.meta_changed` (`by` is the kernel), and the session-list item no longer carries `named`. If a title request is already on its way, nothing more is sent and the response is still `{}`. A turn in progress is left out and not interrupted; if her first turn has not finished, the title is written when that turn ends. If the model fails or writes no title, the title stays and only the failed `model.called` is recorded; if a person sets a title with `session.set_meta` after asking and before it arrives, theirs is kept.
+**Response**: `{}`, as soon as the request is sent; it does not wait for the model. The new title is pushed as `session.meta_changed` with `by` set to the person who asked, so it counts as a title a person gave: the session-list item carries `named`, and the core's automatic title never replaces it. If a title request is already on its way, nothing more is sent and the response is still `{}`. A turn in progress is left out and not interrupted; if her first turn has not finished, the title is written when that turn ends. If the model fails or writes no title, the title stays and only the failed `model.called` is recorded; if a person sets a title with `session.set_meta` after asking and before it arrives, theirs is kept.
 
 **Errors**: `bad_params`: no `session`; nothing to title (she has no reply with text yet and no turn is running). `session_not_found` when there is no such session.
 

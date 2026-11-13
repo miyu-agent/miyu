@@ -114,3 +114,36 @@ fn loading_pauses_a_running_goal() {
     let (_, actions) = super::load::load(logged.log.clone());
     assert!(appended_events(&actions).is_empty(), "停着的不再记");
 }
+
+/// 只有续轮的会话人要求重起标题（施工 TT-2）：照目标原文当场记，`by` 是要它的人，算人起的。
+#[test]
+fn retitling_a_goal_only_session_is_the_persons_title() {
+    let mut s = session_with(Policy {
+        titles: Some(super::Titles {
+            tries: 2,
+            chars: 50,
+        }),
+        ..policy()
+    });
+    assert_eq!(
+        kind_or_reason(&mut s, goal(1, set("把测试修绿"))),
+        "goal.set"
+    );
+    let last = s.ledger.next_seq().get() - 1;
+    s.handle(stored(last));
+    let actions = s.handle(Input::Command(Received {
+        id: id(2),
+        by: person(),
+        at: at(2),
+        command: Command::Retitle,
+    }));
+    let appended = appended_events(&actions);
+    let [renamed] = appended.as_slice() else {
+        panic!("一条：{appended:?}");
+    };
+    assert!(
+        matches!(&renamed.body, Body::MetaChanged(changed) if changed.title.as_deref() == Some("把测试修绿")),
+        "{renamed:?}"
+    );
+    assert_eq!((&renamed.by, &renamed.cause), (&person(), &None));
+}

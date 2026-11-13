@@ -1,7 +1,7 @@
 //! `miyu rename`（施工 3-8 五补，`docs/blueprint/cli/rename.md`）：在进程里起一个核心，给上一次 `miyu ask` 开的会话起名，
 //! 几个词用一个空格连起来，什么都不印，退出码 0，日志里记一条人改的 `session.meta_changed`；`--session` 起名的是指定的那个；
 //! 核心不收的（全是空白的）照核心的话说、退出码 1；一个会话都没有的说清楚、退出码 1。没写标题的走 `session.retitle`
-//! （施工 TT-1）：模型收到一次起标题的请求，日志里记一条内核起的。
+//! （施工 TT-1）：模型收到一次起标题的请求，日志里记一条人起的（施工 TT-2）。
 
 use std::sync::Arc;
 
@@ -125,6 +125,7 @@ async fn without_a_title_the_model_is_asked_for_one() {
         }
     })
     .await;
-    assert_eq!((by, title.as_deref()), (By::Kernel, Some("打个招呼")));
+    assert!(matches!(by, By::Person(_)), "人要的算人起的：{by:?}");
+    assert_eq!(title.as_deref(), Some("打个招呼"));
     assert_eq!(script.titled().len(), 1, "一次起标题的请求");
 }

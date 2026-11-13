@@ -33,7 +33,7 @@
 | `oneshot` | 一次性的（0、1） | `session.created` 的 `oneshot` |
 | `title` | 标题，空的是没有 | `session.meta_changed` 一条条盖上：写了 `title` 的换成它 |
 | `pinned` | 置顶（0、1） | `session.meta_changed` 写了 `pinned` 的换成它 |
-| `named` | 标题是人起的（0、1，施工 3-8 八补） | `session.meta_changed` 写了 `title` 的：不是空的、`by` 是人的算 1，别的算 0；只改置顶的不动它 |
+| `named` | 标题是人起的（0、1，施工 3-8 八补） | `session.meta_changed` 写了 `title` 的：不是空的、`by` 是人的算 1（`session.retitle` 起的 `by` 是要它的人，也算，施工 TT-2），别的算 0；只改置顶的不动它 |
 | `cwd` | 工作目录，空的是日志里一条都没记（很早以前的日志） | 最后一条带 `cwd` 的 `turn.started`、换工作区的 `session.workspace_changed`（施工 9-7 上），都没有就照 `session.created` 的（`protocol.md`「会话表」第 5 条，同一个函数 `cwd`） |
 | `created` | 造的时刻，毫秒 | `session.created` 的 `at` |
 | `last_active` | 最近一次动静，毫秒 | 照到的最后一条事件的 `at`，哪种事件都算，只有 `tool.nested` 不算（施工 M-1：脚本里调的工具不是人和她的对话；后台任务的在回合外落盘，算了会把终端会话的闲置往后推） |
