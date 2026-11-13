@@ -71,13 +71,15 @@ fn add(slot: &mut Option<u64>, us: u64) {
     *slot = Some(slot.unwrap_or(0).saturating_add(us));
 }
 
-/// 记忆那个挂接点里的三件（`actor/model/hooks.rs` 的 `remember`）：摘要和卡并着，再联想。
+/// 记忆那个挂接点里的四件（`actor/model/hooks.rs` 的 `remember`）：摘要和卡并着，再新记的（施工 LF-6），再联想。
 #[derive(Debug, Default)]
 pub(crate) struct Remember {
     /// 常驻的摘要。
     pub(crate) summary: Lap,
     /// 和她说话的那个人的卡。
     pub(crate) card: Lap,
+    /// 人生循环叫醒时新记的（施工 LF-6）；别的回合一问就回，也量。
+    pub(crate) fresh: Lap,
     /// 联想。
     pub(crate) recall: Lap,
 }
@@ -87,9 +89,9 @@ pub(crate) struct Remember {
 pub(crate) struct Hooks {
     /// 知识库自动想起。
     pub(crate) knowledge: Lap,
-    /// 记忆整个那一件：摘要、卡、联想。
+    /// 记忆整个那一件：摘要、卡、新记的、联想。
     pub(crate) memory: Lap,
-    /// 记忆里的三件。
+    /// 记忆里的四件。
     pub(crate) remember: Remember,
 }
 
@@ -149,6 +151,8 @@ impl TurnStart {
             summary_wait_us = remember.summary.wait_us,
             card_us = remember.card.us,
             card_wait_us = remember.card.wait_us,
+            fresh_us = remember.fresh.us,
+            fresh_wait_us = remember.fresh.wait_us,
             recall_us = remember.recall.us,
             recall_wait_us = remember.recall.wait_us,
             knowledge_us = knowledge.us,

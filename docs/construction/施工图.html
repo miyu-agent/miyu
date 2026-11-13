@@ -1526,6 +1526,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sLF2"><span class="n">LF-2</span>人生循环醒来那段话分三层<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF3"><span class="n">LF-3</span>人生循环叫醒的回合进回合索引<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF5b"><span class="n">LF-5 中</span>开一条人生会话，暂停、继续、问状态<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sLF6"><span class="n">LF-6</span>人生会话醒来时交新记的<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -58874,6 +58875,60 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LF-5中-开启暂停继续.md</code>；设计 <code>70-推演人生.md</code>；蓝图 <code>life.md</code>、<code>store/index.md</code>、<code>presets.md</code>；协议参考 <code>life.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sLF6" aria-labelledby="h-sLF6">
+  <div class="sheet-head"><h2 id="h-sLF6"><span class="no">LF-6</span>人生会话醒来时交新记的</h2><span class="pill done">做完</span></div>
+  <p class="purpose">人生会话一直开着：常驻那一块只在第一轮、压缩以后交，人生循环叫醒的一轮又不联想。零代码实测里中途别处记下的两件事，她十几次醒来始终不知道、也没自己去搜。这一步在人生循环叫醒的一轮开头，多交一块「这一段交过以后新记的」。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-kernel · facts.rs　miyu-session · memory/fresh.rs</span><span class="dir-note">LF-6</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>内核给回合开始的挂接点多交一格 <code>opener</code>：触发这一轮的那条消息是谁发的</li>
+              <li>记忆照它认出人生循环叫醒的一轮，常驻那一块、人卡以后问这一块，限时 300 毫秒</li>
+              <li>下限是这一段常驻那一块、以前这种块列过的最新那一条；联想带过的只去重</li>
+              <li>她在这里过的、合并改出来的、作废的、出处死了的不交；一条都没有的不交</li>
+              <li>一块 <code>fresh</code>，外壳、一行、3000 字节上限、截断那一句和常驻那一块共用</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">走内核多交 opener，判法在记忆</span><span class="rl">主会话定，同 E-0 的 speakers</span></div>
+          <div class="tile new"><span class="nm">联想带过的不抬下限</span><span class="rl">主会话定：不然比它旧的永远不交</span></div>
+          <div class="tile new"><span class="nm">只有摘要一行照摘要合到哪；截掉的不补交</span><span class="rl">写成蓝图里已知的取舍</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LF-6</dd></div>
+        <div><dt>名称</dt><dd>人生会话醒来时交新记的</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">LF-6</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>醒来时列这一段以后别处记的、新的在前，下次没有新的不交</span></li>
+        <li><span class="ok">✓</span><span>第一轮、压缩以后常驻那一块照交，这一块不重复；人开的、别的循环叫醒的没有</span></li>
+        <li><span class="ok">✓</span><span>记在日志里，重新载入原样回放；读得慢的这一轮不交、下次醒来交</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LF-6-醒来时交新记的.md</code>；设计 <code>70-推演人生.md</code>；蓝图 <code>memory.md</code>、<code>kernel/session.md</code>。</li>
       </ul>
     </div>
   </div>

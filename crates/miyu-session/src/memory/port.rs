@@ -145,6 +145,26 @@ impl Calls {
         .await
     }
 
+    /// 人生循环叫醒的这一轮多交的那一块（施工 LF-6，`fresh.rs`）：开这一轮的那条消息 `opener` 不是人生循环发的，不读、没有；
+    /// `present` 连同这一轮常驻那一块，日期照会话的时区 `offset`，在阻塞线程里读，读的时候登记着（同上）。
+    pub(crate) async fn fresh(
+        &self,
+        opener: Option<&miyu_kernel::origin::By>,
+        offset: UtcOffset,
+        present: &[Present],
+    ) -> Option<Injection> {
+        if !super::fresh::woken_by_life(opener) {
+            return None;
+        }
+        let (keeper, reading) = (self.keeper.clone(), self.keeper.reading());
+        let (session, present) = (self.session.clone(), present.to_vec());
+        blocking(move || {
+            reading.pace();
+            keeper.fresh(offset, &present, &session)
+        })
+        .await
+    }
+
     /// 这一轮联想带什么（施工 R-8，`recall.rs`）：场所会话里也联想，挑法照谁在听（施工 R-13 下）；`said` 是这一轮人说的话，照意思找照这一轮的配置 `config`
     /// （`models.embedding`），日期照会话的时区 `offset`。
     pub(crate) async fn recall(

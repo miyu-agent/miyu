@@ -43,6 +43,9 @@ pub enum Action {
         /// 开这一轮的人话是哪几个人说的（施工 E-0，[`crate::facts::speakers`]）：记忆照它认人（设计 42）。本机的头上开的、不是
         /// 人开的是空的。
         speakers: Vec<crate::facts::Speaker>,
+        /// 开这一轮的那条消息是谁发的（施工 LF-6，[`crate::facts::opener`]）：记忆照它认出人生循环叫醒的一轮。没有 `trigger`
+        /// 的、触发的不是消息的没有。
+        opener: Option<crate::origin::By>,
     },
     /// 请求模型：把这份请求交给驱动编码、发出去（`05-内核接口.md` 第七节）。发出去了、
     /// 每一段增量、说完了，都带着 `seen` 回报（`02-内核.md` 第六节「回复怎么收、回合怎么结束」）。

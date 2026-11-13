@@ -358,11 +358,10 @@ impl Actor {
                 present,
                 said,
                 speakers,
-                ..
+                opener,
             } => {
-                // 这一轮开口的是不是主人记在这一轮上，派工具时交给脚本（施工 X-43）；记忆照说话的人带他的卡（施工 E-1 补）。
-                self.tools.round_started(turn, &speakers);
-                Some(self.turn_start(turn, model, present, said, speakers).await)
+                let hooked = (said, speakers, opener);
+                Some(self.turn_start(turn, model, present, hooked).await)
             }
             Action::CallModel {
                 seen,

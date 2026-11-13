@@ -136,12 +136,13 @@ impl Actor {
         turn: TurnId,
         reference: Option<String>,
         present: Vec<Present>,
-        said: Option<String>,
-        speakers: Vec<Speaker>,
+        (said, speakers, opener): (Option<String>, Vec<Speaker>, Option<By>),
     ) -> Input {
+        // 这一轮开口的是不是主人记在这一轮上，派工具时交给脚本（施工 X-43）；记忆照说话的人带他的卡（施工 E-1 补）。
+        self.tools.round_started(turn, &speakers);
         // 放到堆上（施工 PF-3）：分段计时每段多套一层 future，这一大块原样嵌在 actor 跑的 future 里，debug 编的测试在 2 MiB
         // 的线程栈上溢出（`memory_lanes` 几个测试）。一个回合多一次分配。
-        Box::pin(self.begin(turn, reference, present, said, speakers)).await
+        Box::pin(self.begin(turn, reference, present, (said, speakers, opener))).await
     }
 
     /// [`Actor::turn_start`] 做的事。
@@ -150,8 +151,7 @@ impl Actor {
         turn: TurnId,
         reference: Option<String>,
         present: Vec<Present>,
-        said: Option<String>,
-        speakers: Vec<Speaker>,
+        (said, speakers, opener): (Option<String>, Vec<Speaker>, Option<By>),
     ) -> Input {
         let mut laps = TurnStart::start();
         let cwd = self.session.cwd().to_string();
@@ -201,7 +201,7 @@ impl Actor {
             hooks::hooks(
                 self.tools.memory(),
                 knowledge,
-                (present, speakers),
+                (present, speakers, opener),
                 said,
                 config,
                 &mut laps.hooks

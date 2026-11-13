@@ -55,6 +55,8 @@ pub struct Stage {
     pub(super) saids: Vec<Option<String>>,
     /// 每次回合开始交给挂接点的说话的人（施工 E-0），照先后。
     pub(super) speakers: Vec<Vec<crate::facts::Speaker>>,
+    /// 每次回合开始交给挂接点的 `opener`（施工 LF-6），照先后。
+    pub(super) openers: Vec<Option<By>>,
     /// 停住的请求（它的 `seen` 和剩下的回复）、停住的调用。
     pub(super) held_model: Option<(Seq, Line)>,
     pub(super) held_tools: Vec<(CallId, Play)>,

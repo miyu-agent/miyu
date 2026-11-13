@@ -4,6 +4,7 @@
 
 mod gates;
 mod model;
+mod opener;
 mod permission;
 mod preset;
 mod reminder;

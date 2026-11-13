@@ -181,3 +181,54 @@ async fn extensions_add_blocks_before_what_was_said() {
     }
     core.stop_extensions().await;
 }
+
+/// 内核交给回合开始挂接点的 `opener`（施工 LF-6）只在核心里给记忆用：问扩展的 `user.append` 只带 `session`、`venue`、`text`，
+/// 不带开这一轮的是谁（核心主会话审内核接口时定的）。
+#[tokio::test]
+async fn extensions_are_not_told_who_opened_the_turn() {
+    let home = Home::new();
+    let program = Program::new();
+    let (path, step) = record(&home, "alpha");
+    let capabilities: &[&str] = &["tools", "context.inject"];
+    install_asking(
+        &home,
+        "alpha",
+        &program.name(),
+        "always",
+        &steps(&[
+            &step,
+            "hello",
+            &format!("ask:provide:{}", tools("alpha", "local")),
+            "inject:hint",
+            "serve",
+        ]),
+        capabilities,
+    );
+    approve(&home, "alpha", capabilities);
+    let script = Script::new([Play::Says("好。")]).titles([Play::Says("测试")]);
+    let core = Arc::new(
+        home.core_full(&script, Catalog::default(), None, TOKEN)
+            .with_extension_timing(quick()),
+    );
+    core.start_extensions();
+    lines(&path, 3).await;
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let session = client.create("c1", "~").await;
+    client.say("s1", &session, "早上好").await;
+    home.until_turns(&session, 1).await;
+
+    let recorded = read(&path);
+    let asked: Value = recorded
+        .lines()
+        .filter(|line| line.contains("\"method\":\"user.append\""))
+        .map(|line| serde_json::from_str(line).expect("一行 JSON"))
+        .next()
+        .unwrap_or_else(|| panic!("问过 user.append：{recorded}"));
+    let params = asked["params"].as_object().expect("参数是对象");
+    let mut keys: Vec<&str> = params.keys().map(String::as_str).collect();
+    keys.sort_unstable();
+    assert_eq!(keys, ["session", "text", "venue"], "{asked}");
+    assert!(!params.contains_key("opener"), "不带 opener：{asked}");
+    core.stop_extensions().await;
+}

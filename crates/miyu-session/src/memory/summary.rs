@@ -16,6 +16,7 @@ use miyu_kernel::id::{FactKind, ModuleId};
 use miyu_kernel::session::Injection;
 use miyu_kernel::template::Template;
 use miyu_kernel::time::UtcOffset;
+use miyu_recall::Entry;
 use miyu_tool::load::{self, LoadError};
 use miyu_tool::{Line, MemoryLines};
 
@@ -106,55 +107,8 @@ impl Keeper {
         if entries.is_empty() && digest.is_none() {
             return None;
         }
-        let say = |template: &Template, fields: &[(&str, &str)]| {
-            load::say(template, fields).trim_end().to_string()
-        };
-        let (open, close) = (say(&texts.open, &[]), say(&texts.close, &[]));
-        let head = digest
-            .as_ref()
-            .map(|(text, _)| say(&texts.digest, &[("text", text)]));
-        // 截了的那一句照最长的数留出地方：一条都放不下也说得出还有几条。
-        let more = say(&texts.more, &[("count", &entries.len().to_string())]);
-        let room = LIMIT.saturating_sub(
-            open.len()
-                + close.len()
-                + more.len()
-                + 3
-                + head.as_ref().map_or(0, |head| head.len() + 1),
-        );
-        let mut lines: Vec<String> = head.into_iter().collect();
-        let header = lines.len();
-        let mut used = 0;
-        let mut refs = Vec::new();
-        for entry in &entries {
-            let (id, date) = (entry.id.to_string(), entry.at.local_date(offset));
-            let text = entry.text.replace('\n', " ");
-            let class = miyu_recall::shown_class(&entry.class, entry.who.as_deref());
-            let row = texts
-                .lines
-                .say(&Line {
-                    id: &id,
-                    class: &class,
-                    date: &date,
-                    text: &text,
-                    venue: entry.venue.as_ref(),
-                    place: entry.place.as_deref(),
-                    retired: false,
-                })
-                .trim_end()
-                .to_string();
-            if used + row.len() + 1 > room {
-                break;
-            }
-            used += row.len() + 1;
-            lines.push(row);
-            refs.push(id);
-        }
-        let left = entries.len() - (lines.len() - header);
-        if left > 0 {
-            lines.push(say(&texts.more, &[("count", &left.to_string())]));
-        }
-        let text = format!("{open}\n{}\n{close}\n", lines.join("\n"));
+        let digest = digest.as_ref().map(|(text, _)| text.as_str());
+        let (text, refs) = listed(texts, digest, &entries, offset);
         Some(Injection {
             module: ModuleId::parse(NAME).expect("合写法"),
             fact: ContextInjected {
@@ -165,4 +119,58 @@ impl Keeper {
             },
         })
     }
+}
+
+/// 拼常驻那一块的原文和 `refs`（人生会话醒来时交新记的那一块也照它拼，施工 LF-6，`fresh.rs`）：外壳里头一行是摘要 `digest`
+/// （有的话），后面一条一行、照 `entries` 的先后，整块不超过 [`LIMIT`] 字节，超了截在一条的边界上、最后一行说还有几条。`refs`
+/// 是列出来的那几条，摘要那一行不算。`offset` 是会话的时区。
+pub(super) fn listed(
+    texts: &SummaryTexts,
+    digest: Option<&str>,
+    entries: &[Entry],
+    offset: UtcOffset,
+) -> (String, Vec<String>) {
+    let say = |template: &Template, fields: &[(&str, &str)]| {
+        load::say(template, fields).trim_end().to_string()
+    };
+    let (open, close) = (say(&texts.open, &[]), say(&texts.close, &[]));
+    let head = digest.map(|text| say(&texts.digest, &[("text", text)]));
+    // 截了的那一句照最长的数留出地方：一条都放不下也说得出还有几条。
+    let more = say(&texts.more, &[("count", &entries.len().to_string())]);
+    let room = LIMIT.saturating_sub(
+        open.len() + close.len() + more.len() + 3 + head.as_ref().map_or(0, |head| head.len() + 1),
+    );
+    let mut lines: Vec<String> = head.into_iter().collect();
+    let header = lines.len();
+    let mut used = 0;
+    let mut refs = Vec::new();
+    for entry in entries {
+        let (id, date) = (entry.id.to_string(), entry.at.local_date(offset));
+        let text = entry.text.replace('\n', " ");
+        let class = miyu_recall::shown_class(&entry.class, entry.who.as_deref());
+        let row = texts
+            .lines
+            .say(&Line {
+                id: &id,
+                class: &class,
+                date: &date,
+                text: &text,
+                venue: entry.venue.as_ref(),
+                place: entry.place.as_deref(),
+                retired: false,
+            })
+            .trim_end()
+            .to_string();
+        if used + row.len() + 1 > room {
+            break;
+        }
+        used += row.len() + 1;
+        lines.push(row);
+        refs.push(id);
+    }
+    let left = entries.len() - (lines.len() - header);
+    if left > 0 {
+        lines.push(say(&texts.more, &[("count", &left.to_string())]));
+    }
+    (format!("{open}\n{}\n{close}\n", lines.join("\n")), refs)
 }

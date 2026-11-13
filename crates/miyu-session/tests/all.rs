@@ -79,6 +79,7 @@ mod memory_extract_tail;
 mod memory_extract_undone;
 mod memory_filling;
 mod memory_follow;
+mod memory_fresh;
 mod memory_installed;
 mod memory_known;
 mod memory_lanes;

@@ -332,12 +332,14 @@ impl Session {
                 let present = crate::facts::present(&self.history);
                 let said = crate::facts::said(&self.history, turn);
                 let speakers = crate::facts::speakers(&self.history, turn);
+                let opener = crate::facts::opener(&self.history, turn);
                 vec![Action::RunTurnStartHooks {
                     turn,
                     model,
                     present,
                     said,
                     speakers,
+                    opener,
                 }]
             }
             Stage::Ready if self.unstored.is_empty() => {

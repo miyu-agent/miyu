@@ -244,6 +244,26 @@ impl Stage {
     pub fn watched(&mut self, watched: bool) {
         self.run(Input::Watched { watched });
     }
+
+    /// 以 `by` 的名义说一句（施工 LF-6：定时表、人生循环交进来的那一句），一块字。返回这个命令的编号。
+    pub fn says_as(&mut self, by: By, words: &str) -> CommandId {
+        let blocks = vec![Block::Text(Text {
+            text: words.to_string(),
+        })];
+        self.command_as(
+            by,
+            Command::Send {
+                blocks,
+                urgent: false,
+                venue: None,
+            },
+        )
+    }
+
+    /// 每次回合开始交给挂接点的 `opener`（施工 LF-6，开这一轮的那条消息是谁发的），照先后。
+    pub fn openers(&self) -> &[Option<By>] {
+        &self.openers
+    }
 }
 
 /// `j<n>`。
