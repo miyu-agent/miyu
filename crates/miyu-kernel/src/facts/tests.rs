@@ -7,6 +7,7 @@ mod model;
 mod permission;
 mod preset;
 mod reminder;
+mod said;
 mod speakers;
 
 use super::*;

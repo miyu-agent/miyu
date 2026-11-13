@@ -133,6 +133,11 @@
 
 - 关系在日志里都查得到，旧核心照样读得懂。三种内核都认（别的会话发来的话施工 C-2，账本的 `is_peer`、有效历史的 `is_peer` 同一个认法），`peer.idle` 的 `by` 由账本查（`kernel/history.md`）。
 
+`By` 上有两个判断（`origin.rs`）：
+
+- **是人**（`is_person`，施工 R-8）：`person`、`external`。续跑次数清零（`session/chain.rs`）、载入（`session/load.rs`）、联想拿哪句话（`facts.rs` 的 `said`，`memory.md` 第四条第 1 款）照它判。
+- **她过的一轮**（`is_lived_turn`，施工 LF-3，设计 `70-推演人生.md` 第三节第 4 条）：是人，或者人生循环叫醒的（`schedule`，`loop` 是 `life`）。回合索引收哪几轮照它判（`memory.md` 第一条第 1 款）。定时任务、`fixed`、`dynamic` 叫醒的，别的会话、子代理、harness、工具、模块、模型、内核都不是。不另改「是人」：人生循环叫醒的那段话每次都一样，续跑、联想照旧不认它。
+
 几格的写法照上面的类型：`venue` 是 `VenueId`，`id` 依次是 `ExternalId`、`ModuleId`、`SessionId`，`endpoint` 是 `ProviderId`，`model` 是 `ModelName`，`call_id` 是 `CallId`，`name` 是 `HarnessName`。
 
 `harness` 的 `name` 是对方自己报的，不可信，照 `external` 的做法只管写法：短名字的规则，1 到 128 字节、没有控制字符，读的时候不合的报错。收的那一边（协议的 `from`，施工 7-10，`protocol.md` 的 `session.send` 第 6 条）先去掉控制字符、截到 128 字节以内（不切断一个字），截完是空的不收；给模型看之前照模板的规矩转义（`kernel/request.md`「别的 harness 发来的话」）。
@@ -254,7 +259,7 @@ bad session id: must be 36 characters (got "x")
 | `crates/miyu-kernel/src/id/tests.rs` | 图纸上的例子读写一字不差（`samples_from_the_drawing_round_trip`、`names_from_the_drawing_round_trip`）；会话编号（`session_id_must_be_lowercase_uuid_text`）；短名字（`command_id_is_short_printable_text`、`short_names_are_opaque_but_bounded`）；路径里的名字（`module_driver_and_fact_names_follow_the_id_rule`）；内容哈希的写法和算法（`content_hash_is_sha256_in_lowercase_hex`、`content_hash_of_known_contents`、`hashing_piece_by_piece_is_the_same_as_all_at_once`）；媒体类型、文件名、事件种类各自的规则；序号和回合编号（`seq_starts_at_one`、`turn_id_reads_like_a_seq`）；会话的短编号（`a_short_session_id_is_its_last_eight_characters`，施工 C-1）；调用编号第 9 到 12 条（`call_id_accepts_only_what_the_kernel_writes`）；任务编号第 25、26 条和排序（`job_id_accepts_only_what_the_kernel_writes`、`job_ids_sort_by_number`，施工 7-1；几段的、`under`、`last`，施工 7-1 补）；报错的样子和 80 个字符（`error_says_what_why_and_what_was_read`、`long_text_in_errors_is_cut`） |
 | `crates/miyu-session/src/clock/tests.rs` 的 `ids_made_together_differ_in_their_short_form`（施工 C-1） | 真造的编号：同一刻连造的几个前 8 位一样，短编号是最后 8 位、各不一样。内核不造编号，所以放在造编号的那一层 |
 | `crates/miyu-kernel/src/time/tests.rs` | 图纸上的例子；几个标准时刻和两头的界（`well_known_moments`、`years_outside_0000_to_9999_are_refused`）；闰年；1600 年到 2400 年一天一天数过去和换算对得上；第 13 到 17 条每种坏写法；时区的写法和范围；第 18 条当地钟点（`the_local_ten_minutes_is_the_wall_clock_to_ten_minutes`；最后十分钟到 24 点 `the_last_ten_minutes_of_a_day_end_at_24`，施工 1-13 补、三补）；七天的写法 |
-| `crates/miyu-kernel/src/origin/tests.rs` | 八种读写一字不差、各读成自己那一种；不认识的一字不差；认识的种类多出来的格不管；第 19 条的几种坏写法；`harness` 的名字照短名字的规则（施工 7-1） |
+| `crates/miyu-kernel/src/origin/tests.rs` | 八种读写一字不差、各读成自己那一种；不认识的一字不差；认识的种类多出来的格不管；第 19 条的几种坏写法；`harness` 的名字照短名字的规则（施工 7-1）；她过的一轮（`is_lived_turn`）对人、人生循环叫醒的是，对定时任务、`fixed`、`dynamic`、别的会话、harness、工具、模块、模型、内核、不认识的不是，人生循环叫醒的不是人（施工 LF-3） |
 | `xtask/src/purity.rs`（门禁「纯逻辑」） | 内核的 `src/` 里没有 `SystemTime`、`Instant`：不读时钟 |
 
 ### 出处

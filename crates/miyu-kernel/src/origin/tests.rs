@@ -91,3 +91,36 @@ fn the_owner_is_a_person_or_someone_on_the_owner_table() {
     assert!(!By::Kernel.is_owner());
     assert!(!by(r#"{"kind":"harness","name":"claude"}"#).is_owner());
 }
+
+/// 她过的一轮（施工 LF-3）：人开的、人生循环叫醒的是；定时任务、固定间隔、她自己定节奏的循环、别的会话、子代理、harness、
+/// 工具、模块、模型、内核、不认识的都不是。
+#[test]
+fn a_lived_turn_is_opened_by_a_person_or_the_life_loop() {
+    let by = |json: &str| serde_json::from_str::<By>(json).unwrap();
+    for json in [
+        r#"{"kind":"person"}"#,
+        r#"{"kind":"person","via":"qq:1"}"#,
+        r#"{"kind":"external","venue":"qq:group:1","id":"qq:2"}"#,
+        r#"{"kind":"schedule","schedule":"t1","loop":"life"}"#,
+    ] {
+        assert!(by(json).is_lived_turn(), "{json} 是她过的一轮");
+    }
+    for json in [
+        r#"{"kind":"schedule","schedule":"t1"}"#,
+        r#"{"kind":"schedule","schedule":"t1","loop":"fixed"}"#,
+        r#"{"kind":"schedule","schedule":"t1","loop":"dynamic"}"#,
+        r#"{"kind":"session","id":"0192f3a0-1111-7abc-8def-001122334455"}"#,
+        r#"{"kind":"harness","name":"claude-code"}"#,
+        r#"{"kind":"tool","call_id":"call_44_1"}"#,
+        r#"{"kind":"module","id":"memory"}"#,
+        r#"{"kind":"model","endpoint":"deepseek","model":"deepseek-v4"}"#,
+        r#"{"kind":"kernel"}"#,
+        r#"{"kind":"someone_new"}"#,
+    ] {
+        assert!(!by(json).is_lived_turn(), "{json} 不是她过的一轮");
+    }
+    assert!(
+        !by(r#"{"kind":"schedule","schedule":"t1","loop":"life"}"#).is_person(),
+        "人生循环叫醒的不是人"
+    );
+}

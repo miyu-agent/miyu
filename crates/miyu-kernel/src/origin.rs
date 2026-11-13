@@ -140,6 +140,20 @@ impl By {
         matches!(self, By::Person(_) | By::External(_))
     }
 
+    /// 是她过的一轮（施工 LF-3，设计 `70-推演人生.md` 第三节第 4 条）：人（[`By::is_person`]），或者人生循环叫醒的（`Schedule`
+    /// 的循环是 [`ScheduleLoop::Life`]）。回合索引收哪几轮（`memory.md` 第一条第 1 款）照它判；定时任务、固定间隔、她自己定
+    /// 节奏的循环叫醒的，别的会话、子代理、harness 发来的都不是。
+    ///
+    /// 只给回合索引用：续跑次数清零、载入、联想拿哪句话照旧只认人（[`By::is_person`]），人生循环叫醒的那段话每次都一样，
+    /// 拿它联想只会带回噪声。
+    #[must_use]
+    pub fn is_lived_turn(&self) -> bool {
+        match self {
+            By::Schedule(schedule) => schedule.looping == Some(ScheduleLoop::Life),
+            by => by.is_person(),
+        }
+    }
+
     /// 是主人本人（施工 O-2 下，原来在斜杠命令里）：本机的头上的人、私聊里对应表认出的本人（`Person`）、群里对应表里有的
     /// 外部身份。斜杠命令照它判谁能换工作区，提供者的工具照它挡（`tool.call` 的 `owner`）。
     #[must_use]

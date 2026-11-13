@@ -3,6 +3,8 @@
 //!
 //! - 只收人开的回合：`turn.started` 的 `trigger` 指的那条 `message.user` 是人（`person`、`external`）说的。别的 harness、
 //!   子代理、别的会话发来的话开的，回报叫醒的，重启以后接着干的，没有 `trigger` 的，都不收（旧版自己造的回合进了日记）。
+//! - 人生循环叫醒的回合也收（施工 LF-3，`By::is_lived_turn`）：一条的字只有她这一轮最后一条字不空的回复，不写叫醒的那段话；
+//!   她一句没说的不收。别的循环、定时任务叫醒的照旧不收。增量、载入时铺回、照日志重放都走 [`TurnFeed::see`]，同一个判断。
 //! - 一条的字：触发的那句人话，空一行，她这一轮最后一条字不空的回复；`turn.ended` 时交出来，哪种原因都收。
 //! - 照记下的几条开的一轮（群里的 `session.respond`，`triggers`）：那几条人话一行一句都进，并进来的（`turn.joined`）接在
 //!   后面；她这一轮没开口的不收，那是旁听（施工 R-13 再补，2026-10-12 项目主人：「把回复的那次记录进去就行，无论是插话还是
@@ -25,7 +27,7 @@ use miyu_kernel::time::Timestamp;
 pub struct TurnItem {
     /// 哪一轮。
     pub turn: TurnId,
-    /// 字：触发的那句人话，空一行，她最后一条字不空的回复；只有一边有字的只写那一边。
+    /// 字：触发的那句人话，空一行，她最后一条字不空的回复；只有一边有字的只写那一边。人生循环叫醒的只有她的回复（施工 LF-3）。
     pub text: String,
     /// 这一轮 `turn.started` 的时刻。
     pub at: Timestamp,
@@ -48,15 +50,15 @@ pub enum Change {
 /// 照一条条事件算回合索引（增量）。
 #[derive(Debug, Default)]
 pub struct TurnFeed {
-    /// 还没触发回合的人话：序号、字。触发了一轮的那一条和它以前的都丢掉（排着的几条只有最后一条触发）。
+    /// 还没触发回合的人话（连同人生循环叫醒的那段话，字记成空的）：序号、字。触发了一轮的那一条和它以前的都丢掉（排着的几条只有最后一条触发）。
     said: BTreeMap<Seq, String>,
-    /// 正在进行的、人开的那一轮。
+    /// 正在进行的、人开的（或人生循环叫醒的）那一轮。
     open: Option<Open>,
     /// 整份过一遍时记得结束过的每一轮，恢复时照它放回（[`replay`]、[`TurnFeed::primed`]）；增量时没有。
     ended: Option<BTreeMap<TurnId, TurnItem>>,
 }
 
-/// 正在进行的、人开的一轮。
+/// 正在进行的、人开的（或人生循环叫醒的）一轮。
 #[derive(Debug)]
 struct Open {
     turn: TurnId,
@@ -95,8 +97,14 @@ impl TurnFeed {
     /// 看一条事件，交回要对回合库做的（照先后）。
     pub fn see(&mut self, event: &Event) -> Vec<Change> {
         match &event.body {
-            Body::MessageUser(message) if event.by.is_person() => {
-                self.said.insert(event.seq, words(&message.blocks));
+            // 人生循环叫醒的那段话也记下（才开得了一轮），记成空的：每次都是同一段推演方法，一条里只写她的回复（施工 LF-3）。
+            // 她一句没说的两边都没字，照「两边都没字的不收」不收。
+            Body::MessageUser(message) if event.by.is_lived_turn() => {
+                let said = match event.by.is_person() {
+                    true => words(&message.blocks),
+                    false => String::new(),
+                };
+                self.said.insert(event.seq, said);
                 Vec::new()
             }
             Body::TurnStarted(started) => {

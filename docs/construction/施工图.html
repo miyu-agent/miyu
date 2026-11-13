@@ -1524,6 +1524,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sLF1"><span class="n">LF-1</span>定时表多一种「人生」循环<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF5a"><span class="n">LF-5 上</span>预设多认 hidden<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF2"><span class="n">LF-2</span>人生循环醒来那段话分三层<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sLF3"><span class="n">LF-3</span>人生循环叫醒的回合进回合索引<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -58766,6 +58767,58 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LF-2-醒来那段话三层.md</code>；设计 <code>70-推演人生.md</code>；蓝图 <code>schedules.md</code>、<code>personas.md</code>、<code>prompts.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sLF3" aria-labelledby="h-sLF3">
+  <div class="sheet-head"><h2 id="h-sLF3"><span class="no">LF-3</span>人生循环叫醒的回合进回合索引</h2><span class="pill done">做完</span></div>
+  <p class="purpose">她在人生会话里一轮轮过的日子，别的会话搜不到：回合索引只收人开的回合。零代码实测里别的会话问她昨天干了什么，她翻遍历史和记忆只找到一条新闻。这一步让人生循环叫醒的回合进回合索引；抽取查下来本来就收，不用改。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-kernel · origin.rs　miyu-recall · turns.rs</span><span class="dir-note">LF-3</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>内核 <code>By</code> 加一个判断 <code>is_lived_turn()</code>：是人，或者人生循环叫醒的</li>
+              <li>回合索引照它收：人生循环叫醒的一条里只存她最后的回复，不存叫醒的那段话</li>
+              <li>她一句没说的不收；别的循环、定时任务叫醒的照旧不收</li>
+              <li>抽取不改，补两条测试守着人生回合进去的样子</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">is_person() 不动：续跑清零、载入、联想照旧只认人</span><span class="rl">core1 审时定</span></div>
+          <div class="tile new"><span class="nm">抽取本来就收她答了的每一轮，不看谁开的</span><span class="rl">施工时查出来，设计跟着改对</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LF-3</dd></div>
+        <div><dt>名称</dt><dd>人生循环叫醒的回合进回合索引</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">LF-3</dd></div>
+        <div><dt>验收</dt><dd>门禁十一项、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>人生循环叫醒的一轮进一条，只有她最后的回复；撤销拿掉、恢复放回</span></li>
+        <li><span class="ok">✓</span><span>照日志重放、铺回出来的和增量的一样（随机对照的生成器多造了这种回合，种子、例数不变）</span></li>
+        <li><span class="ok">✓</span><span>只有叫醒的回合时照样发抽取，每一轮只有 <code>You:</code> 那一行；人生循环叫醒的不带联想</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LF-3-人生的回合进记忆.md</code>；设计 <code>70-推演人生.md</code>；蓝图 <code>memory.md</code>、<code>kernel/ids.md</code>。</li>
       </ul>
     </div>
   </div>

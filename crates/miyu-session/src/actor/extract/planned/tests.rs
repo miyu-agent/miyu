@@ -493,6 +493,7 @@ fn a_reloaded_session_catches_up_with_one_whole_read() {
 }
 
 mod branch;
+mod life;
 mod swept;
 
 use swept::seed_from;
