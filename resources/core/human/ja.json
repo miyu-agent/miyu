@@ -155,7 +155,7 @@
       },
       "sandbox.private.add": {
         "name": "追加した非公開フォルダ",
-        "description": "読み取り専用のとき、コマンドが読めず、ファイルツールが読む前に確認するフォルダです。フルアクセスでは止めません。"
+        "description": ""
       },
       "sandbox.private.remove": {
         "name": "既定の非公開フォルダ",

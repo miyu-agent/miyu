@@ -155,7 +155,7 @@
       },
       "sandbox.private.add": {
         "name": "Added private folders",
-        "description": "Folders that, in read-only, commands can't read and file tools ask about before reading. With full access nothing is blocked."
+        "description": ""
       },
       "sandbox.private.remove": {
         "name": "Default private folders",

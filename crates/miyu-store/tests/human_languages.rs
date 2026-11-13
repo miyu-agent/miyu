@@ -97,7 +97,8 @@ fn tools(value: &Value) -> BTreeMap<String, Value> {
         .unwrap_or_default()
 }
 
-/// 配置那一格的样子：每一项的选项，页和组的编号（写了说明的组另记一条「<编号> 的说明」，施工 HZ-1）；名字、说明都不是空的。
+/// 配置那一格的样子：每一项的选项，页和组的编号（写了说明的组另记一条「<编号> 的说明」，施工 HZ-1）；名字不是空的。说明可以不写，
+/// 没写的另记一条「<键> 没有说明」，和英文比：英文没写的这种语言也不写，英文写了的这种语言也得写（2026-11-13）。
 fn config(
     value: &Value,
 ) -> (
@@ -113,10 +114,7 @@ fn config(
     let filled = |text: &str| !text.trim().is_empty();
     let mut items = BTreeMap::new();
     for (key, said) in &words.items {
-        assert!(
-            filled(&said.name) && filled(&said.description),
-            "{key} 的名字、说明"
-        );
+        assert!(filled(&said.name), "{key} 的名字");
         assert!(
             said.options.values().all(|name| filled(name)),
             "{key} 的选项名"
@@ -135,7 +133,14 @@ fn config(
     let described = words
         .group_descriptions
         .keys()
-        .map(|id| format!("{id} 的说明"));
+        .map(|id| format!("{id} 的说明"))
+        .chain(
+            words
+                .items
+                .iter()
+                .filter(|(_, said)| !filled(&said.description))
+                .map(|(key, _)| format!("{key} 没有说明")),
+        );
     (
         items,
         words.pages.keys().cloned().collect(),

@@ -77,7 +77,7 @@ impl fmt::Display for Missing {
 impl std::error::Error for Missing {}
 
 /// 查资源里的字和清单对不对得上（G10、`14-配置.md` 第十节），交回每一处不对，一处一句：每一项都有名字、说明，
-/// 选项都有名字，用到的页和组都有名字；资源里没有多出来的项、选项、页、组；组的说明写了的不是空的、那一组用到了（施工 HZ-1）。
+/// 名字不是空的（说明可以不写），选项都有名字，用到的页和组都有名字；资源里没有多出来的项、选项、页、组；组的说明写了的不是空的、那一组用到了（施工 HZ-1）。
 pub fn check(items: &[Item], words: &ConfigWords) -> Vec<String> {
     let mut problems = Vec::new();
     for item in items {
@@ -89,9 +89,8 @@ pub fn check(items: &[Item], words: &ConfigWords) -> Vec<String> {
         if said.name.trim().is_empty() {
             problems.push(format!("{key}：名字是空的"));
         }
-        if said.description.trim().is_empty() {
-            problems.push(format!("{key}：说明是空的"));
-        }
+        // 说明可以有意不写（2026-11-13 项目主人要去掉 `sandbox.private.add` 那句解释）：几种语言写没写要一致，由
+        // `miyu-store/tests/human_languages.rs` 对着英文查，这里不当问题。
         // 选项的列表（施工 8-7）里的选项也要有名字。
         let options = match item.kind {
             Kind::Option(options) | Kind::List(&Kind::Option(options)) | Kind::ModelOr(options) => {

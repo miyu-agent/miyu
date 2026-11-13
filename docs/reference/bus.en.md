@@ -40,7 +40,7 @@ Turns a piece of audio into text. Timeout 120 seconds.
 - `audio`: 16 kHz mono 16-bit PCM wav is always accepted; wav at other rates or channel counts is accepted too; ogg/opus may be refused. At most 10 minutes.
 - `language`: `zh`, `yue`, `en`, `ja`, `ko` or `auto`; omitted means the package's setting.
 - `clear`: `false` for audio shorter than 0.5 seconds or with fewer than 2 meaningful characters; `text` is then empty, and it isn't an error.
-- Errors: `bad_audio`, `too_long`, `engine_failed` (the chosen community engine failed; `message` is its own).
+- Errors: `bad_audio`, `too_long`, `silent_audio` (the whole recording is digital silence, peak at most 2/32768: the microphone is muted or unplugged, or the system's default input carries no sound; heads say the microphone has no sound), `engine_failed` (the chosen community engine failed; `message` is its own).
 
 ### `stt.record`
 
@@ -53,7 +53,7 @@ Records from this computer's microphone and transcribes it. Timeout 310 seconds.
 
 - Stops after `silence_ms` of silence (default 1200, 300 to 5000), after `max_ms` (default 60000, at most 300000), or on `stt.stop`. `ended` is `silence`, `stop` or `max`.
 - The machine has one microphone lock: if another head or the command line is already recording, the answer is `mic_busy`.
-- Errors: `mic_busy`, `no_microphone`, `engine_failed`.
+- Errors: `mic_busy`, `no_microphone`, `silent_audio` (as for `stt.transcribe`), `engine_failed`.
 
 ### `stt.stop`
 

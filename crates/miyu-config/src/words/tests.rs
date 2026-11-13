@@ -68,7 +68,6 @@ fn every_item_needs_a_name_a_description_and_option_names() {
         check(&items(), &words),
         vec![
             "ui.language：名字是空的",
-            "ui.language：说明是空的",
             "ui.language：选项 auto 没有名字",
             "ui.language：选项 zh 没有名字",
         ]

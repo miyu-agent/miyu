@@ -40,7 +40,7 @@
 - `audio`：一定收 16 kHz、单声道、16 位 PCM 的 wav；别的采样率、声道的 wav 也收，ogg/opus 可以不认。最长 10 分钟。
 - `language`：`zh`、`yue`、`en`、`ja`、`ko`、`auto`；不写照包的配置。
 - `clear`：短于 0.5 秒、有效字少于 2 个的是 `false`，`text` 是空的，不算出错。
-- 出错：`bad_audio`、`too_long`、`engine_failed`（选的社区引擎答错了，`message` 照它的）。
+- 出错：`bad_audio`、`too_long`、`silent_audio`（整段是数字静音：峰值不超过 2/32768，麦克风静音、没插上或系统默认输入没声音；头照它说「麦克风没有声音」）、`engine_failed`（选的社区引擎答错了，`message` 照它的）。
 
 ### `stt.record`
 
@@ -53,7 +53,7 @@
 
 - 人声停了 `silence_ms`（默认 1200，300 到 5000）就停；最长 `max_ms`（默认 60000，最多 300000）；`stt.stop` 也能停。`ended` 是 `silence`、`stop`、`max`。
 - 整台机器一把麦克风锁：别的头、命令行已经在录的，回 `mic_busy`。
-- 出错：`mic_busy`、`no_microphone`、`engine_failed`。
+- 出错：`mic_busy`、`no_microphone`、`silent_audio`（同 `stt.transcribe`）、`engine_failed`。
 
 ### `stt.stop`
 

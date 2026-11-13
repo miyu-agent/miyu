@@ -43,14 +43,16 @@ pub fn render(items: &[Item], words: &dyn Words) -> Result<String, Missing> {
             current = Some(table);
         }
         let said = words::item(words, item.key)?;
-        comment(
-            &mut text,
-            &words::sentence(
+        // 没写说明的（例如 `sandbox.private.add`，2026-11-13 项目主人要去掉那句解释）只写名字，不留「名字：」的空冒号。
+        let head = match said.description.trim().is_empty() {
+            true => said.name.clone(),
+            false => words::sentence(
                 words,
                 "config/reference-item",
                 &[("name", &said.name), ("description", &said.description)],
             )?,
-        );
+        };
+        comment(&mut text, &head);
         comment(&mut text, &words::facts(words, item)?);
         match &item.default {
             Some(default) => text.push_str(&format!(

@@ -155,7 +155,7 @@
       },
       "sandbox.private.add": {
         "name": "加的私密目录",
-        "description": "只读时命令读不到、文件工具读之前先问的目录。完全放开时不拦。"
+        "description": ""
       },
       "sandbox.private.remove": {
         "name": "默认私密目录",
