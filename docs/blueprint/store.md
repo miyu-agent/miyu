@@ -87,7 +87,7 @@
 | `blobs()` | `root/blobs/` |
 | `index()` | `var/cache/index/`：派生数据，会话列表的索引放在这里（施工 3-8 七补，`store/index.md`） |
 
-**缓存目录** `cache_root(env)`：只找不建。核心起来时算一次，沙盒的缓存放在它下面的 `sandbox/`（施工 5-4 下，`core.md`），后台拉的 models.dev 目录放在 `models/`：`models-dev.json`、`models-dev.meta.json`（带 `ETag`，施工 8-7，`models.md`「文件」）。
+**缓存目录** `cache_root(env)`：只找不建。核心起来时算一次（沙盒的缓存 `sandbox/` 随「工作区」一级去掉了，施工 LV-1），后台拉的 models.dev 目录放在 `models/`：`models-dev.json`、`models-dev.meta.json`（带 `ETag`，施工 8-7，`models.md`「文件」）。
 
 **会话日志** `SessionLog`：`create(目录, 上限)`、`open(目录, 上限)`、`open_each(目录, 上限, 每一块)`（施工 V-15）、`append(一批事件)`、`write(一批事件)`、`sync()`（施工 V-18）、`sync_handle()`（施工 V-19：正在写的那一段的另一个句柄，别的线程对它 `sync_data`，同步的是那一刻以前写进去的；换段以后要再拿）、`next_seq()`、`dir()`、`mark()`（写到哪了：正在写的那一段、它的长度、下一条该是几号，一起叫 `Mark`，施工 3-8 七补）；只读的 `read_events(目录)`、`read_segments(目录, 每一段)`、`read_marked(目录, 从哪里, 每一段)`（施工 3-8 七补）、`read_range(目录, 从第几条, 到第几条, 每一块)`（施工 V-37 中）、`read_range_only(目录, 从第几条, 到第几条, 要的种类, 每一块)`（施工 V-39 上补）、`scan_lines(目录, 序号小于, 每一行)`、`read_between(目录, 从哪一行, 到哪一行, 每一块)`、`read_line_near(目录, 附近的一行, 第几条)`（施工 V-41 上）、`read_one(目录, 第几条)`（施工 V-41 中）、`read_marked_with(目录, 从哪里, 怎么解一行, 每一块)`、`read_range_with(目录, 从第几条, 到第几条, 怎么解一行, 每一块)`（施工 V-43）、`first_event(目录)`。一段的上限 `SEGMENT_LIMIT` 是 64 MiB（67,108,864 字节）。
 

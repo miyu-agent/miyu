@@ -1640,8 +1640,8 @@ currency = "USD"
 | 说明 | 这条斜杠命令谁能用：你和群管理员，或者群里随便哪个人也行，或者停用、谁都不行。不写的照命令自带的设置，没有的是你和群管理员。 | Who can use this slash command: you and group admins, anyone in the chat, or off for no one. When unset, the command's own setting applies, otherwise you and group admins. | このスラッシュコマンドを使える人。あなたとグループの管理者、チャットの誰でも、または無効（誰も使えない）。設定しない場合はコマンド自身の設定、それもなければあなたとグループの管理者です。 |
 | 选项 | `admin` 你和群管理员、`anyone` 所有人、`off` 停用 | You and group admins、Everyone、Off | あなたとグループの管理者、全員、無効 |
 | `permission.level` 名字（8-32） | 新会话的权限级别 | Permission level for new sessions | 新しいセッションの権限レベル |
-| 说明 | 调整新会话开启时的默认权限模式，修改后开新会话生效。 | The default permission mode new sessions start in. Changes apply to sessions opened afterwards. | 新しいセッションを開いたときの既定の権限モードです。変更は次に開くセッションから効きます。 |
-| 选项 | `workspace` 工作区（沙盒）、`full` 完全放开（不启用沙盒） | Workspace (sandbox)、Full access (no sandbox) | ワークスペース（サンドボックス）、フルアクセス（サンドボックスなし） |
+| 说明（施工 LV-1） | 新会话都从完全放开开局，写 workspace 的也照完全放开算。要开局只读，打开「新会话开局只读」。 | New sessions always start with full access; workspace is read as full. To start read-only, turn on read-only for new sessions. | 新しいセッションは常にフルアクセスで始まります。workspace もフルアクセスとして扱います。読み取り専用で始めるには、新しいセッションを読み取り専用にする設定をオンにしてください。 |
+| 选项（施工 LV-1；设置页不列这一项） | `workspace` 完全放开（旧写法）、`full` 完全放开 | Full access (old name)、Full access | フルアクセス（旧表記）、フルアクセス |
 | `permission.confirm.git` 名字（HZ-1） | 破坏性 git 操作 | Destructive git operations | 破壊的な git 操作 |
 | 说明 | 强制推送、reset --hard、clean -f、丢弃改动、删除 stash 前先问。 | Ask before a force push, reset --hard, clean -f, discarding changes or dropping a stash. | 強制プッシュ、reset --hard、clean -f、変更の破棄、stash の削除の前に確認します。 |
 | `permission.confirm.delete` 名字（HZ-1） | 递归删除 | Recursive deletes | 再帰的な削除 |
@@ -2048,7 +2048,7 @@ Options:
 
 - `14-配置.md`：G1 到 G10，第二节（清单）、第三节（分层、项目配置、说得出来源）、第四节（写盘）、第五节（监视、生效）、第六节（校验、报错、不认识的键）、第七节（密钥）、第八节（协议）、第九节（四种改法）、第十节（代码里的规矩）。
 - `07-存储.md`：第二节（目录布局），第三节（日志记什么），第九节、S8（密钥），S7、S9（保留格式、没有迁移）。
-- `11-权限与沙盒.md` 第二节：只读、工作区，开局取哪一级。
+- `11-权限与沙盒.md` 第二节、A16：只读、完全放开，开局取哪一级（A16 起只剩这两级）。
 - `22-命令行.md` 第二节（输出的规矩、退出码、`--format json`）、第五节（`miyu config` 的七个子命令）、O5（管理命令只是协议的客户端）。
 - `26-提示词.md` 第三节（双槽：给人看的字跟着界面语言，不进请求）、第八节（`human/` 放在哪）。
 - `28-运行日志.md` 第三节、LG2：`log.level`，`MIYU_LOG` 管这一次启动。

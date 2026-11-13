@@ -48,7 +48,7 @@
 | `--persona <人格>` | 新开的会话用这个人格（施工 AP-2）：`session.create` 带 `persona`，编号原样交给核心，没有这个人格的照核心的原话说，退出码 1，不造会话 |
 | `--no-persona` | 新开的会话不用人格（施工 AP-2）：`session.create` 带 `"persona": null`；和 `--persona` 一起写的照「参数写错时」说 |
 | `--preset <预设>` | 新开的会话用这个预设（施工 AP-2）：`session.create` 带 `preset`，同 `--persona` |
-| `--permission <read-only\|workspace\|full>` | 新开的会话开局的权限级别（施工 AP-2）：造好以后、订阅之前发 `session.set_permission_level`。`read-only` 只写 `"read_only": true`（常用的那一级照配置）；`workspace`、`full` 写 `level` 和 `"read_only": false`（配置里开局只读的也关上：放宽到哪一级是调用方明写的）。不写的照配置，不发 |
+| `--permission <read-only\|full>` | 新开的会话开局的权限级别（施工 AP-2；A16 起只剩这两种，以前的 `workspace` 照 `full` 收，施工 LV-1）：造好以后、订阅之前发 `session.set_permission_level`。`read-only` 只写 `"read_only": true`（常用的那一级照配置）；`full` 写 `"level": "full"` 和 `"read_only": false`（配置里开局只读的也关上：放宽到哪一级是调用方明写的）。不写的照配置，不发 |
 | `--timeout <时长>` | 最多等多久：从发出算到全部了结，到了不再等，退出码 3（施工 7-9，「等子代理」第 8 条）。正整数，后面可以跟 `s`、`m`、`h`，不写是秒（`30`、`30s`、`10m`、`1h`），照 GNU `timeout` 的写法；0、负数、小数、别的单位照「参数写错时」说（`cli/main.md`），退出码 2。长到算不出那一刻的，当没写 |
 
 - `-C`、`--persona`、`--no-persona`、`--preset`、`--permission`（施工 AP-2）只管新开的会话，同 `--no-memory`：和 `-c`、`-s` 一起写的读参数时就拒，照「参数写错时」说（`'--persona' 不能和 '--continue' 同时使用`），退出码 2。
@@ -559,15 +559,15 @@ Examples:
 | `crates/miyu-cli/src/ask/follow/tests/joining.rs`（施工 7-10） | 接上正忙的那一轮：人的话带着回合编号的当场接上，`--from` 的话接下一条带回合编号的推送；接上以前的推送不印；接上的那一轮没听到就结束的（被打断的也是）接着跟下一轮、不收尾，听到了的照它怎么结束收尾；闲着时由它开的那一轮照旧认；`--from` 在她那一轮还在进行时不等了的两种说法，两种语言，在等子代理时照旧 |
 | `crates/miyu-cli/src/ask/tests.rs` | 几个词用空格连起来；给人看的字照界面语言读，读不出来的当没有；加进来的目录照写的先后、去掉重复的；相对的接成绝对的，不是目录的读不成（施工 5-10 上）；`--file` 相对的接成绝对的、不查在不在，照写的先后、不去重（施工 3-9 三补）；`--timeout` 的写法，读不成的几种（施工 7-9）；`--from` 空的、只有空白的读不成，别的照原样（施工 7-10）；`--no-memory` 和 `-c`、`-s` 一起写的读不成（施工 R-3 下） |
 | `crates/miyu-cli/src/ask/input/tests.rs`（施工 AP-2） | 标准输入用真的管道喂：没写消息的整段是消息，`-` 接在后面空一行、写在哪都一样，读到空白的照写的；写了消息、没写 `-` 的不读（写的一头一直开着也不卡）；不是 UTF-8、空的、只有空白的读不成；伪终端里没写消息的当没有消息 |
-| `crates/miyu-cli/tests/opening.rs`（施工 AP-2） | 真的核心：`--no-persona` 不用配置里默认的人格、不写的照配置、`--persona`、`--preset` 记进 `session.created`；没有的人格退出码 1、不造会话；`--permission` 三种在人说的话前面切好 |
+| `crates/miyu-cli/tests/opening.rs`（施工 AP-2） | 真的核心：`--no-persona` 不用配置里默认的人格、不写的照配置、`--persona`、`--preset` 记进 `session.created`；没有的人格退出码 1、不造会话；`--permission` 两种在人说的话前面切好 |
 | `crates/miyu/tests/ask_stdin.rs`（施工 AP-2） | 真跑主程序、标准输入接管道：没写消息的整段记成她收到的话；`-` 接在后面；写了消息不读、留着不关的管道也退出；不是 UTF-8、空的退出码 2；新会话的几样和 `-c`、`-s` 一起写、`--persona` 和 `--no-persona` 一起写、`--permission` 写错的退出码 2，各一句；伪终端里没写消息的退出码 2、不等人敲 |
 | `crates/miyu-cli/src/ask/follow/tests/stream.rs`（施工 AP-3） | 事件流：一轮的开头、思考、回答、结尾逐字节，格照字母排；每一步开始、结束，有说法的带 `summary`、没有的不写；开头的告警、压缩、出错的一轮带 `error`，标准错误上只有出错那一句 |
-| `crates/miyu-cli/tests/jsonl.rs`（施工 AP-3） | 真的核心：每一行是照字母排的 JSON，`session` 开头、`done` 结尾；接着说的 `new` 是 `false`；没有模型的那一轮带 `error`、`done` 退出码 5、`reason` 是 `no_model`；写到工作区外面要确认的一步：`step`、`step.done`（`ok` 是 `false`、说法）、`warning`、退出码 4 |
+| `crates/miyu-cli/tests/jsonl.rs`（施工 AP-3） | 真的核心：每一行是照字母排的 JSON，`session` 开头、`done` 结尾；接着说的 `new` 是 `false`；没有模型的那一轮带 `error`、`done` 退出码 5、`reason` 是 `no_model`；要确认的一步（高危命令 `git reset --hard`，完全放开下也问，施工 LV-1；只在 Unix 上）：`step`、`step.done`（`ok` 是 `false`、说法）、`warning`、退出码 4 |
 | `crates/miyu-cli/tests/commands.rs`（施工 AP-4） | 真的核心、出厂的工具：第一轮把命令放到后台就结束，等它报回来、叫醒的那一轮的回答也印了才退出，等的那一行写「后台命令」、报回来了那一行有标题、用量两轮加起来；事件流里 `job.reported`（编号、原因、退出码）在它叫醒的那一轮前面。改之前第一轮一结束就退出，两条都红 |
 | `crates/miyu-cli/tests/agents.rs` 的 `jsonl_streams_every_turn_and_each_report`（施工 AP-3） | 等子代理：每一轮各自开头结尾，两份回报 `agent.reported` 各在它叫醒的那一轮前面，最后 `done` |
 | `crates/miyu-cli/tests/attach.rs` | 真的核心走一遍 `--file`（施工 3-9 三补）：文字在前、附件照写的先后变成块，图片的宽高、文本的媒体类型；没有的、太大的说是哪个文件、为什么，中文、英文，退出码 1，不造会话 |
 | `crates/miyu-cli/tests/ask.rs` | 真的核心：开一次性会话、`--continue`、没有会话可接、被拒绝、没有模型、Ctrl+C 一次和两次；加进来的目录跟着每一次 `miyu ask`：`--continue` 不写的那一轮就没有，太宽的造会话时就被拒、不留空会话（施工 5-10 上）；`--model` 新开的照它造、接着的先换（`@池`）再说、换不成的（连同以前的挡位名）退出码 1 不发话（施工 8-10、8-8 补）；`--no-memory` 新开的会话快照里是 `off`、不写的不是（施工 R-3 下） |
-| `crates/miyu-cli/tests/steps.rs` | 真的核心、真的工具走一遍：每一步、执行命令和编辑那两块、目录太宽、给脚本的只看退出码。要确认的一步是写到工作区外面（施工 5-4 上起读哪儿都不问）；执行命令经 cargo 编出来的助手在沙盒里跑 |
+| `crates/miyu-cli/tests/steps.rs` | 真的核心、真的工具走一遍：每一步、执行命令和编辑那两块、目录太宽、给脚本的只看退出码。要确认的一步是高危命令 `git reset --hard`（完全放开下也问，施工 5-17、LV-1）；沙盒的助手照旧用 cargo 编出来的，完全放开下命令不进沙盒 |
 | `crates/miyu-cli/tests/resync.rs`（审计 R3E-3） | 假的核心：说话以后推这一轮的开头和回复、接着推 `resync`，`turn.ended` 掉在那一截里；重新订阅带的是看到的最后一个序号（`after`），补回来的 `turn.ended` 收到了照常收尾、退出码 0。改之前不带 `after`，等不到结束、一直挂着 |
 | `crates/miyu-cli/src/shown/tests.rs` | 原色的段不带控制序列，上过色的行尾回到原色 |
 | `crates/miyu/tests/ask.rs` | 真跑主程序：没配模型的退出码 5、不造会话（施工 8-11）；核心在跑的照样连；参数不对退出码 2；`-h` 印帮助页，跟着界面语言 |

@@ -185,7 +185,7 @@
    | `advisor` | 一条都不报：访问类别是读，放行（`tools/advisor.md`） |
    | `send_message` | 一条都不报：访问类别是读，放行（`tools/send_message.md`） |
    | `sessions` | 一条都不报：访问类别是读，放行（`tools/sessions.md`） |
-4. 执行时换路径（施工 5-18，`11-权限与沙盒.md` 第七节）：工具不自己调 `miyu_fs::resolve`，照 `Call::real`（碰的是这一条本身的照 `Call::real_itself`）换：换法和权限策略的一样，换出来的要在 `checked` 里，不在的不碰，交回出错 `Could not read "<path>": the path changed after the permission check.`（`common/failed.txt`，原因是 `miyu_tool::Unchecked` 的写法），说法 `common/failed`。判完到跑之前路径上的链接被换掉（沙盒里的命令就换得了工作区里的链接），工具换出来的就不是判过的那一个，可能落进数据根、私密目录，或者工作区一级不问人写到工作区外，所以照判过的核，不只守数据根。换出来以后到打开之间，照旧由逐层不跟链接地打开挡（`fs.md` 第四节）。`read`、`write`、`edit`、`trash`、`show`、`glob`、`grep`，`send_message`、`subagent` 的附件都照这一条；`glob`、`grep` 只核搜的那个目录，往下照走目录的不跟链接走，读文件照旧逐层不跟链接地打开。
+4. 执行时换路径（施工 5-18，`11-权限与沙盒.md` 第七节）：工具不自己调 `miyu_fs::resolve`，照 `Call::real`（碰的是这一条本身的照 `Call::real_itself`）换：换法和权限策略的一样，换出来的要在 `checked` 里，不在的不碰，交回出错 `Could not read "<path>": the path changed after the permission check.`（`common/failed.txt`，原因是 `miyu_tool::Unchecked` 的写法），说法 `common/failed`。判完到跑之前路径上的链接被换掉（她跑的命令就换得了工作区里的链接），工具换出来的就不是判过的那一个，可能落进数据根、私密目录，所以照判过的核，不只守数据根。换出来以后到打开之间，照旧由逐层不跟链接地打开挡（`fs.md` 第四节）。`read`、`write`、`edit`、`trash`、`show`、`glob`、`grep`，`send_message`、`subagent` 的附件都照这一条；`glob`、`grep` 只核搜的那个目录，往下照走目录的不跟链接走，读文件照旧逐层不跟链接地打开。
 
 #### 四、效果和她看过的
 

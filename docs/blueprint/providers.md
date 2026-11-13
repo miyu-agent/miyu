@@ -49,7 +49,7 @@
 4. 记下这个包现在由这个连接提供。连接断了、扩展崩了，工具照旧留在目录里（`05-内核接口.md` 第九节：工具从目录里消失会改变请求字节），被调到时回「暂时不可用」。
 5. 这一次登记的原文写进登记缓存 `var/cache/provide/<包>.json`（施工 O-2 中，下面「登记缓存」）。
 
-**在场所里做的事**（访问类别 `venue`，施工 O-31 前，2026-10-10 核心定；`kernel/tools.md`、`session/guard.md` 第四条）：通讯平台上的动作（撤回、禁言、戳一戳这些）登记成 `venue`。权限策略只看会话在不在场所里：场所会话里放行、不问人，本机的会话里拒绝（`not_in_venue`）。也给本机用的（工具的 `venues` 里有 `local`，施工 O-31 补，2026-10-17 接入QQ 的会话要的「主动发消息」）本机的会话里不拒，照对外发消息（`outbound`）判：完全放开放行，工作区问人，没人能确认的拒（本机的会话就是主人本人）。场所会话没人能确认，`network`、`outbound` 在那里一律被拒，所以不能拿它们登记要在群里用的动作。
+**在场所里做的事**（访问类别 `venue`，施工 O-31 前，2026-10-10 核心定；`kernel/tools.md`、`session/guard.md` 第四条）：通讯平台上的动作（撤回、禁言、戳一戳这些）登记成 `venue`。权限策略只看会话在不在场所里：场所会话里放行、不问人，本机的会话里拒绝（`not_in_venue`）。也给本机用的（工具的 `venues` 里有 `local`，施工 O-31 补，2026-10-17 接入QQ 的会话要的「主动发消息」）本机的会话里不拒，照对外发消息（`outbound`）判：完全放开放行，只读时问人，没人能确认的拒（本机的会话就是主人本人）。场所会话没人能确认：`network`、`outbound` 在那里照级别判，平时照完全放开放行，只读开着时要问人、等于被拒（A16 起场所会话照完全放开开局，施工 LV-1），所以要在群里用的动作登记成 `venue`，只读开着也照样放行。
 
 1. **谁能叫、能动谁是提供者的义务**：登记成 `venue` 的工具，核心不替它挡人。提供者照 `tool.call` 的 `by`（`by.role` 是 `manager` 的是管理的人）、`owner`、`venue.binding`（这个平台身份是不是主人，`venues.md`「问对应表」：动谁的时候要认目标）自己挡；挡下的照工具结果回一句，`error` 是真。
 2. **出去的动作不许记成 `read`**：`read` 是不碰这台机器、不出 Miyu 的。`send_message` 用 `read` 是因为它只发给她能看到的会话，不出 Miyu（`tools/send_message.md`）；`skip_reply` 只让桥这一轮不发，也不出去。撤回、禁言、戳一戳会在平台上留下后果，是 `venue`。
@@ -93,7 +93,7 @@
 
 **声明了 `paths` 的**（施工 XG-1 上，设计 63 第三节，2026-11-05 core1 定 4A）：
 
-1. `RemoteTool::targets` 照 `paths` 从参数里取路径：字的一条，字的数组每项一条，照声明的先后；参数缺的、不是字的不出（同内置工具「参数不对交回空的」，执行时扩展自己报错）。交给权限链，和内置 `edit` 走同一张判法表（`session/guard.md` 第三条）：工作区一级写工作区外的问人、人点头以前扩展收不到 `tool.call`，数据根拒，私密目录照表；不声明的照「不报路径的调用」判（读写放行），以前第三方的写工具改工作区外的文件不问人就是这样。
+1. `RemoteTool::targets` 照 `paths` 从参数里取路径：字的一条，字的数组每项一条，照声明的先后；参数缺的、不是字的不出（同内置工具「参数不对交回空的」，执行时扩展自己报错）。交给权限链，和内置 `edit` 走同一张判法表（`session/guard.md` 第三条）：数据根拒、扩展收不到 `tool.call`，只读时写一律拒，私密目录照表（A16 起完全放开下写工作区外不问人，施工 LV-1）；不声明的照「不报路径的调用」判（读写放行），以前第三方的写工具改工作区外的文件不问人就是这样。
 2. `tool.call` 带 `checked`。判过以后路径上的链接被换掉的，扩展写的就不是判的那个：照内置 `write` 的规矩，扩展写之前自己换真实位置核对是 `checked` 里的一条（作者文档写明）。
 3. 发 `tool.call` 之前，核心在阻塞线程里把要写的那几条各读一份留着（改前）：照「安全地打开」读（`miyu_fs::open_file`，不跟最后一层链接、不是普通文件的不读），不在的记成新建，超过 20 MiB 的不读（它的 `file.changed` 照 `too_big` 丢）。没有要写的不读，不多花一次磁盘。
 
@@ -158,7 +158,7 @@
 | `crates/miyu-endpoint/src/provide/tests/declared_tests.rs`（施工 XG-1 上） | `paths` 要是顶层的字或字的数组、写的要 `access` 是写、不重复、不多格；`background_parameters` 要是顶层的、不在 `required` 里、不重复；照 `paths` 报路径（数组每项一条，缺的、不是字的不出）；不写两格的登记缓存逐字节和以前一样；三格写 `null` 同不写（施工 XG-1 补） |
 | `crates/miyu-endpoint/src/provide/tests/effects_tests.rs`（施工 XG-1 上） | 改前改后核心读、带的哈希原文对不上的丢、没改的丢、新建的、太大的、改后不在的；只收判过的（只判了读的不收改、删，没声明的一条不收）；删了的要真不在、`trash` 至多 4096 字；不收的种类、写法不对的、重复的丢；出错时待办不收、文件照收；待办的 `done` 写 `null` 的照收、写成别的样子的丢（施工 XG-1 补） |
 | `crates/miyu-endpoint/tests/provide_effects.rs`（施工 XG-1 上，e0 写的红测试） | 契约：第三方 `edit` 和内置 `edit` 改两个一样的文件，`tool.result` 的 `file.changed`、`view.detail` 的差异和增删行数一样；`tool.call` 带 `checked`；接着用内置 `edit` 两边都不用重读；撤掉那一轮两边一样被拦、文件不动 |
-| `crates/miyu-endpoint/tests/provide_paths.rs`（施工 XG-1 上） | 契约：工作区一级写工作区外的问人，人点头以前扩展收不到 `tool.call`，`checked` 照判的；工作区里的不问；后台运行关着的会话工具面上没有声明的后台参数，开着的照旧，不写新格的参数格式逐字节照登记的 |
+| `crates/miyu-endpoint/tests/provide_paths.rs`（施工 XG-1 上） | 契约：声明的写进数据根当场拒、不问人，扩展收不到 `tool.call`；工作区里的照常发、不问，`checked` 是链判过的真实位置；后台运行关着的会话工具面上没有声明的后台参数，开着的照旧，不写新格的参数格式逐字节照登记的 |
 | `crates/miyu-endpoint/tests/provide_effects_log.rs`（施工 XG-1 上，单独一个测试程序） | 契约：报工作区别的文件、工作区外的私密文件、没改说改了、还在说删了、不收的种类、写法不对的各自丢、记 `WARN tool effect dropped`、结果照常；私密文件的路径不进日志、不进运行日志；没声明 `paths` 的一条文件效果不收 |
 | `crates/miyu-endpoint/src/provide/tests/declared_tests.rs` 的 `runs_commands_is_a_boolean_and_only_true_runs_commands`（施工 XG-1 下） | `runs_commands` 是布尔、不写是假，别的 `bad_tool`；只有真的跑命令，人跑命令不交给它（`serves_person` 是假）；登记缓存原样存 |
 | `crates/miyu-endpoint/tests/provide_commands.rs`（施工 XG-1 下） | 契约：扩展起的命令里经通道调 `probe` 成了，记一条 `tool.nested`、挂在那次调用下面；`tool.call` 带 `channel`（令牌 32 个字、有 `bin`）；核心进程（扩展的父进程，不是子孙）拿着令牌连上来退出码 2、那一次没调；答完端点关了、连不上；没批 `tools.commands` 的 `needs_approval`、不是布尔的 `bad_tool`；说明后面接 `miyu call` 那一段、不跑命令的照登记的；`!命令` 只有扩展的跑命令工具时 `shell_unavailable`；放行出沙盒的跑命令扩展工具 `miyu check` 报 `sandbox_shell` |

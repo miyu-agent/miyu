@@ -51,7 +51,7 @@
 | `MIYU_RESOURCES` | 资源目录，开发时指到源码树的 `resources/`（`store.md`） |
 | `MIYU_LOG` | 运行日志记到哪一级，压过配置项 `log.level`（`log.md`、`config.md`） |
 | `MIYU_CATALOG_UPDATE` | 后台更新 models.dev 的目录不更新，`true`、`false`，压过配置项 `models.catalog.update`（施工 8-7，2026-10-01 主会话定：离线的机器、测试拉起的核心用它） |
-| `XDG_CACHE_HOME`（Linux）、家目录（macOS）、`LOCALAPPDATA`（Windows） | 缓存目录在哪（`store.md` 第 3 条）：沙盒的缓存、后台拉的目录 |
+| `XDG_CACHE_HOME`（Linux）、家目录（macOS）、`LOCALAPPDATA`（Windows） | 缓存目录在哪（`store.md` 第 3 条）：后台拉的目录 |
 | 配置里 `{ env = "…" }` 写的那几个 | 供应商的 key（`config.md` 第九条第 5 条）：核心照自己起来时的环境取，回合开始时取一次 |
 | `XDG_RUNTIME_DIR`（Linux）、`TMPDIR` | 套接字放哪（`ipc.md`） |
 | `HTTPS_PROXY`、`HTTP_PROXY`、`NO_PROXY` 这些 | 请求模型走不走代理（`http.md`） |
@@ -87,7 +87,7 @@
 8. 算出套接字放哪、换本机令牌、在套接字上等连接、记下实际的位置（`ipc.md`）。
 9. 读供应商的档案、认原厂的表，造会话的路由和核心一份的模型资料（下面「模型」，施工 8-6、8-7）。目录这时还不读。
 10. 找沙盒的助手、探一次（`sandbox.md`「怎么走」第 1、2 条）：记一行 `INFO` `sandbox` 或者 `WARN` `sandbox unavailable`（施工 5-1）。探到的结果（能不能用、为什么，`Availability`）交给协议端点：握手时报给头（施工 5-4 下）；能用的，造会话、载入时把助手交给会话，权限策略照它判执行命令，执行器照它带沙盒（施工 5-4 上）；用不了的，会话里当沙盒用不了。
-    - 再算出缓存目录（`store.md` 第 3 条），沙盒的缓存放在它下面的 `sandbox/`，造会话、载入时交给会话（`session/tools.md` 第 1a 条，施工 5-4 下）。算不出来的：记一行 `WARN sandbox cache unavailable`，`reason` 是 `no home directory` 或者 `no LOCALAPPDATA`（运行日志一律英文），沙盒里不设工具链的变量。你的 cargo 目录：核心的环境里 `CARGO_HOME` 设了、不是空的照它，不然 `~/.cargo`。
+    - 沙盒的缓存（缓存目录下的 `sandbox/`，施工 5-4 下）只给「工作区」一级的沙盒用，随它去掉了（施工 LV-1，`session/tools.md` 第 1a 条第 5 条）：核心起来时不再算它，也不记 `sandbox cache unavailable`。
     - 本机 embedding（施工 R-5 下；R-5 三补改成照包，`recall.md` 第四条第 1 款）：照起来时读到的包清单拼（`embed::setup`）：人格记忆装着、它推荐的小程序包 `embed` 也装着（读成了、种类是小程序），程序照小程序清单先找包文件夹的 `bin/`、再找主程序真实位置的旁边（施工 F-8 上再补），模型清单 `model.toml`、模型文件在包目录里；交给协议端点（`Core::with_vectors`，接在模型资料后面：远程的 embedding 照那一份查供应商、记账，施工 R-5 补）。这一步只读模型清单，不核对文件、不碰网络、不拉起小程序：都等第一次要向量。没装 `embed` 的记一行 `INFO embedder unavailable reason=no embed package`（出厂不装，常态）；程序不在、模型清单读不了的记一行 `WARN embedder unavailable reason=…`。本机的那一路没有时，`models.embedding` 写了远程的照样用远程的，不写的只照关键词找。
     - 这两样都不影响起不起得来。
 11. 工具目录：登记基础系统，十一件：`edit`、`glob`、`grep`、`history`、`jobs`（施工 7-4）、`send_message`（施工 7-7）、`read`、`shell`、`subagent`（施工 7-5；7-5 再补从 `agent` 改名，以前的名字照样找得到）、`trash`、`write`；工具的字从资源目录读，登记完就冻结（`tools/interface.md`）。
@@ -167,7 +167,6 @@
 | `WARN` | `children not bound error=…`（Windows：进不了作业对象，施工 7-8） |
 | `INFO` | `sandbox helper=… platform=… mechanisms=…`（施工 5-1） |
 | `WARN` | `sandbox unavailable reason=…`（施工 5-1） |
-| `WARN` | `sandbox cache unavailable reason=…`（施工 5-4 下） |
 | `WARN` | `not started stage=…` |
 | `WARN` | `ready line not written error=…` |
 | `INFO` | `trash purged removed=…`（施工 3-8 三补） |
@@ -200,7 +199,7 @@
 | `crates/miyu-core/src/pending/tests.rs`（施工 TMP-1 补2） | 读目录时另起线程写的整理好的一份，等完以后已经在缓存目录里了（写得慢的，测试里让它先睡 300 毫秒，也等）；登记了的都等；起来时读的目录还没读完就等的（读的也先睡 300 毫秒），等完删掉数据根，过 1.5 秒里面没有又出现整理好的一份（施工 TMP-3）；另一处先取走了登记、正在等，这一处也等到写完才交回（施工 TMP-3 补） |
 | `crates/miyu-core/tests/tools.rs` | 工具目录里是基础系统的七件；资源目录坏了，说是哪一份 |
 | `crates/miyu-core/src/models/tests.rs` | 出厂的档案读得进来，DeepSeek 那一套开关和请求形状探针用的 `Compat::deepseek()` 一样、收图不收 PDF、图照官方的算法（施工 8-6，原来写在代码里，施工 4-13）；TOML 变成 JSON，写错的说是档案 |
-| `crates/miyu-core/src/sandbox/tests.rs` | 探沙盒的助手：旁边没有的、不知道主程序在哪的记找不到，跑不了的记原因（施工 5-1）；探到了手段的交回能用和助手，手段是空的、找不到、探不成的交回用不了和原因（施工 5-4 上、下）；沙盒的缓存在缓存目录下的 `sandbox`，cargo 目录照 `CARGO_HOME`、空的当没设、不然 `~/.cargo`，算不出缓存目录的记一行、交回空的（施工 5-4 下） |
+| `crates/miyu-core/src/sandbox/tests.rs` | 探沙盒的助手：旁边没有的、不知道主程序在哪的记找不到，跑不了的记原因（施工 5-1）；探到了手段的交回能用和助手，手段是空的、找不到、探不成的交回用不了和原因（施工 5-4 上、下） |
 
 ### 出处
 

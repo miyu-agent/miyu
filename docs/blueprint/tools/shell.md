@@ -51,7 +51,7 @@
 | `watch` | 否 | 布尔，没写是假。真的：监视，照放到后台走（和 `run_in_background` 一起写、只写它都一样），标准输出每出一批行记一条 `job.lines`、叫醒她（施工 MN-1 上，设计 56，下面「后台」第 9 条）。说明一句 `Implies run_in_background. Each stdout line wakes you.`。和 `run_in_background` 一样只在有后台时给，预设关了「后台运行」的会话工具面上没有 |
 
 - 别的参数不认，也不报错。施工 D-4 加过一格 `outside_sandbox`（这一次在沙盒外跑、先问人），随「工作区」一级去掉了（`11-权限与沙盒.md` A16，施工 LV-2）：旧会话里带着它的调用照常跑。
-- 不报要碰的路径。权限策略照访问类别判：完全放开放行；工作区、只读两级，沙盒能用就放行、在沙盒里跑，用不了的问人（施工 5-4 上，`session/guard.md`）。
+- 不报要碰的路径。权限策略照访问类别判：完全放开放行、不进沙盒；只读时沙盒能用就放行、在只读沙盒里跑，用不了的问人（施工 5-4 上，`session/guard.md`；A16 起只剩这两级，施工 LV-1）。
 - 问人时交给说明的几格（`Tool::asking`，施工 D-4）：`title` 是 `description`，`command` 原样。
 
 ### 怎么走
@@ -327,7 +327,7 @@ Exit code 2
 | `crates/miyu-basesystem/tests/script.rs` 的 `a_script_gets_the_same_environment_as_shell`（4-8 补） | 脚本拿到的环境变量和 `shell` 一样，自己那两个照设（Unix） |
 | `crates/miyu-basesystem/tests/human.rs` | 每一种结果的说法，两种语言都换得出字 |
 | `crates/miyu-session/tests/write.rs` | 会话里真的跑：结果进日志，给她的是输出加退出码，说法里有退出码，没有效果 |
-| `crates/miyu-session/tests/guard.rs` | 工作区这一级执行命令不问、只读时问（没人能确认就拒绝） |
+| `crates/miyu-session/tests/guard.rs` | 完全放开执行命令不问（沙盒能不能用都一样），只读时沙盒能用不问、用不了问（没人能确认就拒绝） |
 | `crates/miyu-basesystem/tests/shell.rs` 的 `shell_says_what_to_show_when_asking`（施工 D-4）、`a_call_with_the_retired_outside_sandbox_parameter_still_runs`（施工 LV-2） | 问人时交 `command`、`title`，参数不对的交空的；旧会话里带着 `outside_sandbox`（施工 LV-2 去掉的参数）的调用照常跑 |
 | `crates/miyu-call/src/leftovers/tests.rs`（施工 WC-1） | 留下的目录：名字对得上、是目录、进程不在了的整个删，名字差一点的、文件、进程还在的、不是自己的不动；进程号只认全是数字、放得进 `u32` 的 |
 | `crates/miyu-pipe/src/process/tests.rs`（施工 WC-1，只在 Windows 上） | 自己在跑；等它退了的子进程不在，句柄关了也不在；没有的进程号不在 |

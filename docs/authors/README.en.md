@@ -21,6 +21,8 @@ For third-party authors. Chinese version: [README.md](README.md). The guides, te
 
 **Without a package**: put skills, scripts and command templates straight into `~/.miyu/root/skills/`, `scripts/`, `commands/`, and MCP servers into the config. They work the same; they just aren't managed as a package.
 
+**Start from the template**: click Use this template on [miyu-package-template](https://github.com/miyu-agent/miyu-package-template) to get a repository that can already pack and release. Its package folder `my-package` is the id; to rename it, change the five places listed in that repository's README.
+
 ## What a package looks like
 
 ```text

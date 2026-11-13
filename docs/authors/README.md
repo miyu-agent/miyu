@@ -21,6 +21,8 @@
 
 **不想做成包的**：技能、脚本、命令模板直接放进 `~/.miyu/root/skills/`、`scripts/`、`commands/`，MCP 服务写进配置，一样能用，只是不归包管理。
 
+**从模板开始**：在 [miyu-package-template](https://github.com/miyu-agent/miyu-package-template) 点 Use this template，就有一个能打包、能发版的仓库。里面的包文件夹 `my-package` 就是编号，改名时照那个仓库 README 里的清单改五处。
+
 ## 一个包长什么样
 
 ```text

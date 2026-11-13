@@ -391,7 +391,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `bad_shown_when` | 组的 `shown_when` 写错了：不是一项对一个值或者几个值；指的不是这个包自己的选项，或者在这一节里面；值不是它的选项（施工 SG-1） |
 | `bad_choices_from` | 项的 `choices_from` 写错了：不是普通的 `text`（几行字、列表的元素、一组字段的字段）；方法名不是字、写法不对（施工 SG-2） |
 | `settings_taken` | 包的前缀和核心自己的配置撞了、又声明了配置项（施工 9-1 下；PN-1 起照前缀） |
-| `bad_prefix`、`prefix_taken` | `[package] prefix` 写法不像包编号；前缀被先读到的包占了（出厂的先于装上的，同一层照编号；没写的照包编号算）（施工 PN-1） |
+| `bad_prefix`、`prefix_taken` | `[package] prefix` 写法不对（照 `miyu_config::key::ID`：小写字母开头，小写字母、数字、`-`、`_`，最多 32 个，不是 Windows 保留名；比包编号的 64 个短，设计 48 第二节）；前缀被先读到的包占了（出厂的先于装上的，同一层照编号；没写的照包编号算）（施工 PN-1） |
 | `bad_capability` | `[process] capabilities` 里有不认识的、重复的名字（施工 9-4 下上） |
 | `bad_feature`、`bad_tool`、`bad_platform`、`bad_dependency` | 功能的编号写法不对；功能下的工具名写法不对（英文字母、数字、`_`、`-`，1 到 64 个）、同一个包里列了两次；平台名写法不对；依赖的包编号写法不对、重复（施工 F-1），版本下限不是 `>=` 加 semver 的版本、写在 `workers` 里（施工 PK-2） |
 | `feature_taken` | 功能的编号被先读到的包占了（施工 F-1） |

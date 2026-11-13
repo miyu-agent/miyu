@@ -100,7 +100,7 @@
    - 找到了就跑 `miyu-sandbox probe`（Windows 上带 `CREATE_NO_WINDOW`，施工 NW-1：网页软件、桌面端拉起的核心没有控制台，不带的话 Windows 11 每次都弹一个黑框），最多等 5 秒：读它的输出、等它退出加起来不过 5 秒，到时杀掉它。读输出在另一个线程里，它放出去的东西拿着管道不放，也不一直等。
    - 成了：记一行 `INFO` `sandbox`，字段 `helper`（路径，家目录写成 `~`）、`platform`、`mechanisms`（逗号连起来，空的写 `none`）。
    - 没找到、跑不了、超时、说的读不懂：记一行 `WARN` `sandbox unavailable`，字段 `reason`，是这几句之一：`helper not found`、`cannot run helper: <原话>`、`helper timed out`、`helper failed: <退出码>`、`helper output not understood: <原话>`（版本不是 1 的写 `version <几>`）、`helper <路径> is from another build (helper <它报的，没报的写 none>, core <核心的>); rebuild it: cargo build -p miyu-sandbox`（构建 id 对不上，施工 5-16 再补：网页的 demo 树只编了 `-p miyu`，助手停在旧版，规格多了一格它认不出，原来每条沙盒命令都报 bad spec 退出 125）。
-   - 探到了手段（`mechanisms` 不是空的）：能用，助手交给协议端点，造会话、载入时交给会话，权限策略照它判执行命令，执行器照它给每次调用写规格（施工 5-4 上，`core.md`）。手段是空的、探不成的：用不了，照上面的表记下原因，会话里工作区、只读两级执行命令都要问人（`session/guard.md`）。能不能用、为什么，握手时报给头（`protocol.md`，施工 5-4 下）。起不起得来不看它。
+   - 探到了手段（`mechanisms` 不是空的）：能用，助手交给协议端点，造会话、载入时交给会话，权限策略照它判执行命令，执行器照它给每次调用写规格（施工 5-4 上，`core.md`）。手段是空的、探不成的：用不了，照上面的表记下原因，会话里只读时执行命令要问人（`session/guard.md`；完全放开本来就不进沙盒，照跑，施工 LV-1）。能不能用、为什么，握手时报给头（`protocol.md`，施工 5-4 下）。起不起得来不看它。
 3. **`shell` 带了规格的**：命令写成 `<助手> run --spec <规格的 JSON> -- <shell> <shell 的参数…>`。工作目录、挑过的环境变量、标准输入输出、进程组、超时整组杀都和直接起一样：Unix 上助手换成了 shell，是同一个进程。规格写不成 JSON 的（里面有不是 UTF-8 的路径）：照「起不来」说，不会不经沙盒就跑。
 4. **助手的 `run`**：
    1. 读参数：不是 `run --spec <JSON> -- <程序> …` 的样子，印 `miyu-sandbox: usage: miyu-sandbox run --spec <json> -- <program> [args...]`，退出 125。
@@ -126,7 +126,6 @@
 | `crates/miyu-core/src/sandbox/tests.rs` | 旁边没有助手的、不知道主程序在哪的记 `helper not found`；助手跑不了的记原因；探到了手段的交回能用和助手，手段是空的、找不到、探不成的交回用不了和对应的原因（施工 5-4 上、下） |
 | `crates/miyu-session/tests/sandbox.rs` | 执行器写的规格；Unix 上有收紧手段的，真的经助手跑 `shell`（`session/tools.md`，施工 5-4 上） |
 | `crates/miyu-session/tests/sandbox_private.rs` | 规格里藏的私密目录；真跑时私密目录里的读不到（`session/tools.md`，施工 5-13） |
-| `crates/miyu-session/tests/sandbox_workspace.rs` | 工作目录太宽的：能写的是会话的默认工作区（施工 5-14） |
 
 ### 出处
 
