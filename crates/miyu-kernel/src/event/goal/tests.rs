@@ -51,11 +51,22 @@ fn an_unknown_outcome_is_kept_as_it_was() {
 /// 续轮消息的命令编号（施工 X-8 补）：造的和认的是同一个写法，别的写法认不出。
 #[test]
 fn the_round_command_id_reads_back() {
-    let made = crate::event::round_command(3, 1_760_000_000_123);
-    assert_eq!(made, "goal-3-1760000000123");
+    let unique =
+        crate::id::SessionId::parse("019a2b3c-4d5e-7f60-8a9b-0c1d2e3f4a5b").expect("合写法");
+    let made = crate::event::round_command(3, &unique);
+    assert_eq!(made, "goal-3-019a2b3c-4d5e-7f60-8a9b-0c1d2e3f4a5b");
     let id = CommandId::parse(&made).expect("合写法");
     assert_eq!(crate::event::round_of(&id), Some(3));
-    for other in ["cmd-1", "goal-x-1", "goal-3", "goal-3-x", "goal--1"] {
+    for other in [
+        "cmd-1",
+        "goal-x-1",
+        "goal-3",
+        "goal-3-x",
+        "goal--1",
+        // 施工 FX-2 以前的写法：后一段是毫秒。
+        "goal-3-1760000000123",
+        "goal-x-019a2b3c-4d5e-7f60-8a9b-0c1d2e3f4a5b",
+    ] {
         let id = CommandId::parse(other).expect("合写法");
         assert_eq!(crate::event::round_of(&id), None, "{other}");
     }

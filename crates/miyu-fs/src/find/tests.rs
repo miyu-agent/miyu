@@ -207,6 +207,42 @@ fn the_walk_stops_once_the_cap_is_reached_and_marks_partial() {
     assert!(built.partial, "收满就停，记着只是一部分");
 }
 
+/// 施工 FX-2（LiteMiyu 2026-11-12 量到：25000 个文件的目录里 `src/main.rs` 找不到）：深度优先照 readdir 的先后走，深的子目录
+/// 先走到就把清单占满。这里 30 个子目录各自底下第四层有 90 个文件，单拿哪一个都比上限多；浅处只有 `src/main.rs`。改前只有
+/// `src` 恰好排在 readdir 最前面才收得到（约 1/31），改后收满了按层重走，第二层以内的一个不落，第四层的一个都轮不到。
+#[test]
+fn a_full_index_keeps_the_shallow_entries_before_the_deep_ones() {
+    let scratch = Scratch::new();
+    let root = &scratch.0;
+    let (dirs, files) = (30, 90);
+    for d in 0..dirs {
+        for f in 0..files {
+            touch(root, &format!("d{d}/a/b/f{f}.txt"));
+        }
+    }
+    touch(root, "src/main.rs");
+    // 第一、二层：30 个 `dK/`、`src/`，30 个 `dK/a/`、`src/main.rs`。第三层 30 个 `dK/a/b/`，上限落在第三层中间。
+    let shallow = 2 * dirs + 2;
+    let cap = shallow + dirs / 2;
+
+    let index = Index::start(root.clone(), permissive(root), cap, no_errors);
+    let built = built(&index);
+    let found = paths(&built);
+    assert!(built.done && built.partial, "收满了，只是一部分");
+    assert_eq!(found.len(), cap);
+    assert!(found.contains(&"src/main.rs"), "浅处的先收：{found:?}");
+    let depth = |path: &str| path.trim_end_matches('/').split('/').count();
+    assert_eq!(
+        found.iter().filter(|path| depth(path) <= 2).count(),
+        shallow,
+        "第二层以内的一个不落：{found:?}"
+    );
+    assert!(
+        found.iter().all(|path| depth(path) <= 3),
+        "第四层的轮不到：{found:?}"
+    );
+}
+
 #[test]
 fn entries_in_the_forbidden_zone_are_skipped_except_the_workspace() {
     let scratch = Scratch::new();
@@ -284,6 +320,38 @@ fn unreadable_subdirectories_are_skipped_and_reported_through_the_callback() {
         !seen.lock().expect("锁没中毒").is_empty(),
         "读不了一层目录，`on_error` 收到那一句"
     );
+}
+
+/// 收满了按层重走（施工 FX-2）：同一层读不了的目录每一遍都会再碰到，`on_error` 只收一次。
+#[cfg(unix)]
+#[test]
+fn a_rewalk_reports_each_unreadable_directory_once() {
+    use std::os::unix::fs::{MetadataExt, PermissionsExt};
+    use std::sync::{Arc, Mutex};
+
+    let scratch = Scratch::new();
+    let root = &scratch.0;
+    if fs::metadata(root).expect("有").uid() == 0 {
+        return;
+    }
+    touch(root, "locked/secret.txt");
+    for i in 0..10 {
+        touch(root, &format!("open/x/y/f{i}.txt"));
+    }
+    let locked = root.join("locked");
+    fs::set_permissions(&locked, fs::Permissions::from_mode(0o000)).expect("改得了权限");
+
+    let seen: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+    let into = Arc::clone(&seen);
+    let index = Index::start(root.clone(), permissive(root), 6, move |error| {
+        into.lock().expect("锁没中毒").push(error);
+    });
+    let built = built(&index);
+    fs::set_permissions(&locked, fs::Permissions::from_mode(0o755)).expect("改得回来");
+
+    assert!(built.partial, "收满了：{:?}", paths(&built));
+    let seen = seen.lock().expect("锁没中毒");
+    assert_eq!(seen.len(), 1, "读不了的那一层只报一次：{seen:?}");
 }
 
 /// 照 [`Index::wait`] 等，最多五秒：等不到的当场红，不把整套测试卡死。

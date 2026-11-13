@@ -256,6 +256,24 @@ fn inherited() -> Vec<String> {
         .collect()
 }
 
+/// `proc` 那个进程这一刻的文件描述符和各自指向哪：列出来以后有一个已经没了（`NotFound`）的，这一遍不算，交回没有。
+#[cfg(target_os = "linux")]
+fn descriptors(proc: &str) -> Option<Vec<(String, String)>> {
+    let mut fds = Vec::new();
+    for entry in std::fs::read_dir(format!("{proc}/fd")).expect("读得了") {
+        let entry = entry.expect("读得了");
+        match std::fs::read_link(entry.path()) {
+            Ok(target) => fds.push((
+                entry.file_name().to_string_lossy().into_owned(),
+                target.to_string_lossy().into_owned(),
+            )),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return None,
+            Err(error) => panic!("读不了 {}：{error}", entry.path().display()),
+        }
+    }
+    Some(fds)
+}
+
 /// Linux：看门的手里只有生命线和两个空的输出，环境变量是空的，工作目录是 `/`；命令也不多拿一个文件描述符。
 #[cfg(target_os = "linux")]
 #[test]
@@ -269,16 +287,13 @@ fn the_watcher_holds_nothing_but_the_lifeline() {
         let deadline = Instant::now() + Duration::from_secs(5);
         let mut fds = Vec::new();
         while Instant::now() < deadline {
-            fds = std::fs::read_dir(format!("{proc}/fd"))
-                .expect("读得了")
-                .map(|entry| {
-                    let entry = entry.expect("读得了");
-                    let target = std::fs::read_link(entry.path()).expect("读得了");
-                    (
-                        entry.file_name().to_string_lossy().into_owned(),
-                        target.to_string_lossy().into_owned(),
-                    )
-                })
+            // 列完再一个个读的空当里，刚起来的 shell 自己开了又关的描述符（3 号）会读不到：这一遍不算，过一会儿重看（施工 FX-2）。
+            let Some(listed) = descriptors(&proc) else {
+                std::thread::sleep(Duration::from_millis(20));
+                continue;
+            };
+            fds = listed
+                .into_iter()
                 .filter(|(name, _)| !inherited.contains(name))
                 .collect::<Vec<_>>();
             fds.sort();

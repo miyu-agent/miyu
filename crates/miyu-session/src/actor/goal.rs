@@ -21,6 +21,7 @@ use miyu_kernel::session::{Command, GoalChange, Input, Received};
 use super::Actor;
 use crate::Pushed;
 use crate::TARGET;
+use crate::clock::new_id;
 use crate::goal::{Goal, GoalState};
 
 /// 发续轮的模块。
@@ -171,8 +172,8 @@ impl Actor {
         self.goal_run.sent_at = Some(goal.round);
         let at = self.clock.now();
         let next = goal.round.saturating_add(1);
-        // 编号照协议的约定写（施工 X-8 补）：头照它知道这是第几轮。
-        let id = CommandId::parse(&round_command(next, at.unix_millis())).ok()?;
+        // 编号照协议的约定写（施工 X-8 补）：头照它知道这是第几轮。后一段每一轮新造（施工 FX-2）：会话时钟停住时毫秒会重。
+        let id = CommandId::parse(&round_command(next, &new_id(at))).ok()?;
         let by = By::Module(Module {
             id: ModuleId::parse(MODULE).ok()?,
         });

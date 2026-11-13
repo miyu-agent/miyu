@@ -5,6 +5,7 @@
 //! 建完的（`fs.find` 带 `wait`，施工 V-6 上）照 [`Index::wait`] 睡着等，建完了叫醒，不隔一阵再问。清单记几份、`fresh` 时多久重建是协议端点的事（`crates/miyu-endpoint/src/files.rs`），这里只管
 //! 怎么走一遍目录、怎么打分。
 
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError};
 use std::thread;
@@ -79,9 +80,9 @@ impl Drop for Finish {
 
 impl Index {
     /// 在后台线程里建 `root` 的清单：认 `.gitignore`（不要求是 git 仓库），跳过隐藏的、出厂名单、落进边界表
-    /// 「谁都不能碰」那一片的（`boundary`，工作区除外），不跟链接；最深 [`DEPTH`] 层，收满 `cap` 个就停（出厂用
-    /// [`CAP`]；测试传小一点的，不用真造两万个文件）。读不了一层目录的（没有权限这类），`on_error` 收到那一句
-    /// 原话，跳过它接着建。
+    /// 「谁都不能碰」那一片的（`boundary`，工作区除外），不跟链接；最深 [`DEPTH`] 层，最多收 `cap` 个（出厂用
+    /// [`CAP`]；测试传小一点的，不用真造两万个文件），收不下的时候浅处的先收（施工 FX-2，见 `walk`）。读不了一层目录的
+    /// （没有权限这类），`on_error` 收到那一句原话（同一句只收一次），跳过它接着建。
     pub fn start(
         root: PathBuf,
         boundary: Boundary,
@@ -115,19 +116,88 @@ impl Index {
     }
 }
 
-/// 走一遍 `root`，把收到的分批写进 `into`；完了把 `partial` 置好（`done` 由 [`Finish`] 标）。
+/// 走 `root`，把收到的分批写进 `into`；完了把 `partial` 置好（`done` 由 [`Finish`] 标）。
+///
+/// 先深度优先一遍走完（没收满的和以前一样，只走这一遍）。收满了的，深度优先照 readdir 的先后走，先走到的深子目录可能已经把清单
+/// 占满、浅处的一个没收（施工 FX-2，LiteMiyu 量到 25000 个文件的目录里 `src/main.rs` 找不到）：清掉，按层加深重走——第 1 层、
+/// 第 2 层……每一遍只收正好在那一层的，收满就停。上限、内存和以前一样，只多花几遍读浅处目录的工夫，且只在收满时花。重走时清单
+/// 先空再长，读的一方看到的照旧是「没建完」的那部分。
 fn walk(
     root: &Path,
     boundary: &Boundary,
     cap: usize,
     into: &Mutex<Built>,
-    mut on_error: impl FnMut(String),
+    on_error: impl FnMut(String),
 ) {
+    let mut errors = Errors {
+        seen: HashSet::new(),
+        report: on_error,
+    };
+    let mut count = 0;
+    let mut partial = pass(root, boundary, None, cap, &mut count, into, &mut errors).full;
+    if partial {
+        into.lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .entries
+            .clear();
+        count = 0;
+        for depth in 1..=DEPTH {
+            let layer = pass(
+                root,
+                boundary,
+                Some(depth),
+                cap,
+                &mut count,
+                into,
+                &mut errors,
+            );
+            partial = layer.full;
+            if layer.full || !layer.deeper {
+                break;
+            }
+        }
+    }
+    into.lock().unwrap_or_else(PoisonError::into_inner).partial = partial;
+}
+
+/// 一遍走下来怎样了。
+struct Pass {
+    /// 收满了，还有没收的。
+    full: bool,
+    /// 这一层里有目录：按层走时，再深一层可能还有。
+    deeper: bool,
+}
+
+/// 读不了的目录报给 `on_error`：按层重走时同一个目录每一遍都会再碰到，同一句只报一次。
+struct Errors<F> {
+    seen: HashSet<String>,
+    report: F,
+}
+
+impl<F: FnMut(String)> Errors<F> {
+    fn report(&mut self, error: String) {
+        if self.seen.insert(error.clone()) {
+            (self.report)(error);
+        }
+    }
+}
+
+/// 走一遍：`layer` 是 `None` 的照深度优先收到 [`DEPTH`] 层，`Some(n)` 的只走到第 `n` 层、只收正好在第 `n` 层的。收到的接着
+/// `count` 往上数，收满 `cap` 就停。
+fn pass<F: FnMut(String)>(
+    root: &Path,
+    boundary: &Boundary,
+    layer: Option<usize>,
+    cap: usize,
+    count: &mut usize,
+    into: &Mutex<Built>,
+    errors: &mut Errors<F>,
+) -> Pass {
     let for_descent = boundary.clone();
     let walker = WalkBuilder::new(root)
         .hidden(true)
         .follow_links(false)
-        .max_depth(Some(DEPTH))
+        .max_depth(Some(layer.unwrap_or(DEPTH)))
         .require_git(false)
         .filter_entry(move |entry| {
             if entry.depth() == 0 {
@@ -143,41 +213,51 @@ fn walk(
         })
         .build();
     let mut batch = Vec::with_capacity(BATCH);
-    let mut count = 0;
-    let mut partial = false;
+    let mut done = Pass {
+        full: false,
+        deeper: false,
+    };
     for result in walker {
-        match result {
-            Err(error) => on_error(error.to_string()),
-            Ok(entry) if entry.depth() == 0 => {}
-            // 落进「谁都不能碰」那一片的不收：可能只是借道去找底下的工作区（施工 W-2）。
-            Ok(entry) if boundary.zone(entry.path()) == Zone::Forbidden => {}
-            Ok(entry) => {
-                if count >= cap {
-                    partial = true;
-                    break;
-                }
-                let Ok(relative) = entry.path().strip_prefix(root) else {
-                    continue;
-                };
-                let is_dir = entry.file_type().is_some_and(|kind| kind.is_dir());
-                let mut path = relative
-                    .components()
-                    .map(|part| part.as_os_str().to_string_lossy())
-                    .collect::<Vec<_>>()
-                    .join("/");
-                if is_dir {
-                    path.push('/');
-                }
-                batch.push(Found { path, dir: is_dir });
-                count += 1;
-                if batch.len() >= BATCH {
-                    push(into, &mut batch);
-                }
+        let entry = match result {
+            Err(error) => {
+                errors.report(error.to_string());
+                continue;
             }
+            Ok(entry) => entry,
+        };
+        if entry.depth() == 0 || layer.is_some_and(|layer| entry.depth() != layer) {
+            continue;
+        }
+        let is_dir = entry.file_type().is_some_and(|kind| kind.is_dir());
+        // 借道去找底下工作区的目录也算：再深一层可能有要收的。
+        done.deeper |= is_dir;
+        // 落进「谁都不能碰」那一片的不收：可能只是借道去找底下的工作区（施工 W-2）。
+        if boundary.zone(entry.path()) == Zone::Forbidden {
+            continue;
+        }
+        if *count >= cap {
+            done.full = true;
+            break;
+        }
+        let Ok(relative) = entry.path().strip_prefix(root) else {
+            continue;
+        };
+        let mut path = relative
+            .components()
+            .map(|part| part.as_os_str().to_string_lossy())
+            .collect::<Vec<_>>()
+            .join("/");
+        if is_dir {
+            path.push('/');
+        }
+        batch.push(Found { path, dir: is_dir });
+        *count += 1;
+        if batch.len() >= BATCH {
+            push(into, &mut batch);
         }
     }
     push(into, &mut batch);
-    into.lock().unwrap_or_else(PoisonError::into_inner).partial = partial;
+    done
 }
 
 fn push(into: &Mutex<Built>, batch: &mut Vec<Found>) {

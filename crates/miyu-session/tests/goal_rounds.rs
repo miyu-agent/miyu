@@ -7,10 +7,11 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use miyu_kernel::block::Block;
-use miyu_kernel::event::Body;
+use miyu_kernel::event::{Body, Event, GoalOutcome};
 use miyu_kernel::id::SessionId;
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{Command, GoalChange};
+use miyu_kernel::time::Timestamp;
 use miyu_kernel::tool::Access;
 use miyu_session::testkit::{Play, Script};
 use miyu_session::{Goal, GoalState, Handle, Retire};
@@ -300,4 +301,59 @@ async fn a_running_command_holds_the_round_until_it_reports() {
         .map(|(at, _)| at)
         .expect("第二轮续轮");
     assert!(reported < second, "回报叫醒在前，续轮在后");
+}
+
+/// 把日志里每一条的时刻挪到 2100 年：像是系统时间在两次运行之间往回拨了，载入以后会话的时钟一直停在那一毫秒（`clock.rs`）。
+fn into_the_future(home: &Home, session: &SessionId) {
+    let later = Timestamp::parse("2100-01-01T00:00:00.000Z").expect("时刻合写法");
+    let segment = home.root.session_dir(session).join("000000000001.jsonl");
+    let text = std::fs::read_to_string(&segment).expect("读得了第一段");
+    let moved: String = text
+        .lines()
+        .map(|line| {
+            let mut event = Event::from_line(line).expect("每一行都是事件");
+            event.at = later;
+            event.to_line() + "\n"
+        })
+        .collect();
+    std::fs::write(&segment, moved).expect("写得回去");
+}
+
+/// 施工 FX-2：会话的时钟停住时（系统时间往回拨了），清掉一个目标再设一个，新目标的第一轮照样开。以前续轮的编号是
+/// `goal-<第几轮>-<毫秒>`，两个目标的第一轮落在同一毫秒、编号一样，内核当成收过的（换了原文的拒成 `id_reused`），不开。
+#[tokio::test]
+async fn a_new_goal_runs_its_first_round_while_the_clock_stands_still() {
+    let home = Home::new();
+    let models = script([Play::Says("在等你。"), Play::Says("换了一个，也在等你。")]);
+    let handle = home.create_with(&models, &catalog()).await;
+    let session = handle.id().clone();
+    stop(&handle).await;
+    into_the_future(&home, &session);
+    let loaded = home.load_with(&session, &models, &catalog()).await;
+    goal(&loaded, "g1", set(None)).await;
+    until_goal(&loaded, |goal| goal.state == GoalState::Waiting).await;
+    let cleared = GoalChange::End {
+        outcome: GoalOutcome::Cleared,
+        reason: None,
+    };
+    goal(&loaded, "g2", cleared).await;
+    let other = GoalChange::Set {
+        text: "把文档补齐".to_string(),
+        limit: None,
+    };
+    goal(&loaded, "g3", other).await;
+    let waiting = until_goal(&loaded, |goal| {
+        goal.text == "把文档补齐" && goal.state == GoalState::Waiting
+    })
+    .await;
+    assert_eq!(waiting.round, 1);
+    let causes: Vec<_> = home
+        .log(&session)
+        .into_iter()
+        .filter(|event| matches!(&event.by, By::Module(module) if module.id.as_str() == "goal"))
+        .filter(|event| matches!(event.body, Body::MessageUser(_)))
+        .filter_map(|event| event.cause)
+        .collect();
+    assert_eq!(causes.len(), 2, "两个目标各开了第一轮：{causes:?}");
+    assert_ne!(causes[0], causes[1], "{causes:?}");
 }

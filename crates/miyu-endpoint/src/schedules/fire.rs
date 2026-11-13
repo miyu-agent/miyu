@@ -13,6 +13,7 @@ use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::origin::{self, By, ScheduleLoop};
 use miyu_kernel::session::{Command, Outcome};
 use miyu_kernel::time::Timestamp;
+use miyu_session::new_id;
 use miyu_store::schedules::{Creator, Loop, Schedule, Target};
 
 use crate::Core;
@@ -45,8 +46,9 @@ impl Delivered {
 
 /// 把 `schedule` 的这一次（到点在 `due`）交出去。
 pub(super) async fn deliver(core: &Arc<Core>, schedule: &Schedule, due: Timestamp) -> Delivered {
-    // 同一次的命令编号一样：核心重启后再交一遍，会话认得是重发。
-    let base = format!("schedule/{}/{}", schedule.id, due.unix_millis());
+    // 每一次到点新造一个编号（施工 FX-2，`schedules.md` 第三节第 4 条）：以前用到点的毫秒，系统时间往回拨以后同一时刻又到点，
+    // 编号和上一次一样，内核当成重发、不开轮。开会话的 `…/open` 和交话的 `…/say` 共用这一个。
+    let base = format!("schedule/{}/{}", schedule.id, new_id(due).as_str());
     let by = By::Schedule(origin::Schedule {
         schedule: schedule.id.clone(),
         looping: schedule.looping.map(|looping| match looping {
