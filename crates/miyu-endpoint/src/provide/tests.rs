@@ -143,20 +143,18 @@ fn the_timeout_is_checked() {
     }
 }
 
-/// 退役的「要先加载」（施工 L-1 登记、FL-1 拆掉：工具一律全量）：写了的扩展照旧登记得上，写什么都一样。
+/// 「要先加载」（施工 L-1 登记、FL-1 拆掉：工具一律全量）不再是规格的一格（施工 AUD-2：还没发版，不留「照旧登记得上」）：
+/// 写了的和别的不认识的格一样，读不成。
 #[test]
-fn a_retired_need_load_is_accepted_whatever_it_says() {
-    let marked = |need: Value| {
-        let mut params = serde_json::to_value(tool("read", json!(["local"]))).unwrap();
-        params["need_load"] = need;
-        serde_json::from_value::<ToolParams>(params).unwrap()
-    };
-    let plain = checked(tool("read", json!(["local"])))
-        .expect("合写法")
-        .spec;
+fn need_load_is_no_longer_a_field_of_the_spec() {
     for need in [json!(true), json!(false), json!("yes"), json!(1)] {
-        let spec = checked(marked(need.clone())).expect("合写法").spec;
-        assert_eq!(spec, plain, "{need}");
+        let mut params = serde_json::to_value(tool("read", json!(["local"]))).unwrap();
+        params["need_load"] = need.clone();
+        let refused = serde_json::from_value::<ToolParams>(params).expect_err("不认识的格");
+        assert!(
+            refused.to_string().contains("need_load"),
+            "{need}：{refused}"
+        );
     }
 }
 

@@ -37,7 +37,6 @@ fn people_only_stays_people_only() {
         "mcp.set",
         "mcp.remove",
         "skill.remove",
-        "tool.set_loading",
         "feature.set",
         "config.trust",
         "secret.set",

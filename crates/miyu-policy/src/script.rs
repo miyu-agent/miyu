@@ -8,12 +8,11 @@
 //! - `Timeout`：秒，正整数，没写的 [`TIMEOUT`]；
 //! - `Parameters`：参数的 JSON Schema，接在下面的几行注释里，拼成一份 JSON 为止；顶层得是 `"type": "object"`。没写的当
 //!   没有参数；
-//! - `Need load`：`yes` 和没写的要先加载，`no` 是全量（施工 L-3，`25-工具加载.md` W9，2026-10-20 项目主人改：脚本默认先加载，
-//!   原来没写的全量）；大小写不论，`true`、`false` 也认。配置的 `loading.tools.<工具名>` 盖过它。
 //! - `Venues`：给哪种会话（施工 X-43）：`local`、`private`、`group` 里的几个，逗号隔开，同清单的 `venues`（同一份查法
 //!   [`miyu_config::package::venues_fit`]）；没写的哪种会话都有。只有英文的键名，同上面这些给机器读的格。
 //!
-//! 别的键（`Id`、`Group`、`Trust`、`Permission`、编码声明……）照旧版留着的，认、不用。工具名照文件名（[`tool_name`]）。纯逻辑：
+//! 别的键（`Id`、`Group`、`Trust`、`Permission`、`Need load`、编码声明……）照旧版留着的，认、不用：工具一律给完整的参数
+//! （施工 FL-1），`Need load` 写什么都一样。工具名照文件名（[`tool_name`]）。纯逻辑：
 //! 进来的是文件名和文件里的字，出去的是读好的样子，或者哪里不对。
 
 use std::collections::BTreeMap;
@@ -154,7 +153,6 @@ pub fn read(file_name: &str, text: &str) -> Result<ScriptHead, ScriptProblem> {
                     .ok_or_else(|| ScriptProblem::BadTimeout(value.to_string()))?;
             }
             "Parameters" => head.parameters = parameters(value, &mut rest)?,
-            // 退役的 `Need load`（施工 L-1 登记、FL-1 拆掉：工具一律全量）：写了的照别的不认识的那几行，不管。
             "Clicall" => head.clicall = yes_or_no(value, ScriptProblem::BadClicall)?,
             "Venues" => head.venues = Some(venues(value)?),
             "Role" => {
@@ -212,7 +210,7 @@ fn near(key: &str, target: &str) -> bool {
     }
 }
 
-/// `Need load` 的值：`yes`、`true` 是要，`no`、`false` 是不要，大小写不论（施工 L-1）。
+/// 是、否的值（`Clicall` 用）：`yes`、`true` 是，`no`、`false` 不是，大小写不论。
 fn yes_or_no(value: &str, bad: fn(String) -> ScriptProblem) -> Result<bool, ScriptProblem> {
     match value.to_ascii_lowercase().as_str() {
         "yes" | "true" => Ok(true),

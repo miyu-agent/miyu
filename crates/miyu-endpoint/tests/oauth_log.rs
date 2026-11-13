@@ -34,7 +34,7 @@ async fn logging_in_never_writes_a_token_a_code_or_a_verifier() {
     let home = Home::new();
     home.write(
         "etc/config.toml",
-        &format!("[mcp.notes]\nurl = \"{}\"\nneed_load = false\n", server.url),
+        &format!("[mcp.notes]\nurl = \"{}\"\n", server.url),
     );
     home.root.prepare_workspace().expect("建得了家目录");
     let core = configured(&home, &Script::new([]));

@@ -2,7 +2,7 @@
 
 ### 是什么
 
-事件是已经发生的一件事，追加进会话的日志，一条一行 JSON，以后不改、不删；撤销、压缩也是追加一条新的。内核认识 38 种，每一种有自己的 `body`；不认识的原样留着。另有九种瞬时事件，只推给连着的头，不进日志。
+事件是已经发生的一件事，追加进会话的日志，一条一行 JSON，以后不改、不删；撤销、压缩也是追加一条新的。内核认识 41 种，每一种有自己的 `body`；不认识的原样留着。另有九种瞬时事件，只推给连着的头，不进日志。
 
 这一页写外壳、一行怎么读写、有哪些种类、瞬时事件、格式出错。每一种 `body` 的每一格见 `kernel/events-bodies.md`。
 
@@ -12,7 +12,7 @@
 |---|---|
 | `crates/miyu-kernel/src/event.rs` | 外壳 `Event`；种类表 `Body`（宏 `bodies!`，加一种只加一行）；`Body::KINDS`、`Body::kind`；一行怎么读写 |
 | `crates/miyu-kernel/src/event/only.rs`（施工 V-39 上补） | 只解要的种类读一行（`Event::from_line_only`）：哪几种全解、哪几种只解几格、别的不解 |
-| `crates/miyu-kernel/src/event/session.rs`、`turn.rs`、`restore.rs`、`message.rs`、`tool.rs`、`question.rs`、`context.rs`、`model.rs`、`effect.rs`、`job.rs`、`peer.rs`、`image.rs`（施工 8-17）、`venue.rs`（施工 O-13 上：`message.user` 的 `venue` 格、`venue.recalled`、`venue.delivered`） | 各种 `body`（`kernel/events-bodies.md`） |
+| `crates/miyu-kernel/src/event/session.rs`、`turn.rs`、`message.rs`、`tool.rs`、`question.rs`、`context.rs`、`model.rs`、`effect.rs`、`job.rs`、`peer.rs`、`image.rs`（施工 8-17）、`venue.rs`（施工 O-13 上：`message.user` 的 `venue` 格、`venue.recalled`、`venue.delivered`） | 各种 `body`（`kernel/events-bodies.md`） |
 | `crates/miyu-kernel/src/event/transient.rs` | 瞬时事件：外壳 `Transient` 和九种 `body`（`model.changed` 施工 8-9 加，由会话 actor 造；`todos.changed` 施工 D-3 加；`tool.nested_started` 施工 M-1 加；`compactable.changed` 施工 W-12 补加，由会话 actor 造） |
 | `crates/miyu-kernel/src/format_error.rs` | 编号、名字、时刻写法不对时的报错 `FormatError` |
 | `docs/designs/samples/events/`、`docs/designs/samples/transient/` | 样本：每一种一份 |
@@ -57,7 +57,6 @@
 | `turn.ended` | 回合结束 | 内核；被打断的，是打断的人 | 必带 | `turn.ended.jsonl` |
 | `turn.reverted` | 撤销了几个回合 | 撤销的人 | 不带：有回合在进行时撤不了 | `turn.reverted.jsonl` |
 | `turn.unreverted` | 恢复了最近一次撤销的回合 | 恢复的人 | 不带：撤了以后开过回合就恢复不了 | `turn.unreverted.jsonl` |
-| `files.restored` | 撤销、恢复时改回文件的结局：施工 U-1 起不再产生，以前的日志里照样读得进来 | 和那条撤销、恢复一样 | 不带 | `files.restored.jsonl` |
 | `message.user` | 人发来的消息，或者另一个会话发来的消息 | 发消息的 | 回合进行中来的带上：排着队；场所里旁听的不带（施工 O-13 上） | `message.user.jsonl` |
 | `message.assistant` | 模型一次响应的完整内容，工具调用也在里面 | 模型 | 必带 | `message.assistant.jsonl` |
 | `message.withdrawn` | 撤回排着队、她还没听到的消息 | 打断的人 | 必带 | `message.withdrawn.jsonl` |
@@ -79,7 +78,7 @@
 | `venue.delivered` | 她的一句话实际发到了平台上（施工 O-13 上） | 桥（模块），经 `events.append` | 不带 | `venue.delivered.jsonl` |
 
 - 「—」是现在还没有哪里写这一种：读得懂、账本查得了、投影认得，就是不产生（下面「还没有的」）。
-- `turn` 那一列的「必带」「它自己的序号」「不带」，账本在追加时查：`turn.started` 的 `turn` 要是它自己的序号；带 `turn` 的要是正在进行的那个回合；「必带」的九种不带就不收；`turn.reverted`、`files.restored` 在有回合进行时不收（`kernel/history.md`）。
+- `turn` 那一列的「必带」「它自己的序号」「不带」，账本在追加时查：`turn.started` 的 `turn` 要是它自己的序号；带 `turn` 的要是正在进行的那个回合；「必带」的九种不带就不收；`turn.reverted` 在有回合进行时不收（`kernel/history.md`）。
 - 模块自己的种类写成 `ext.<模块>.<种类>`，内核不认识，照不认识的种类处理。
 - `job.reported`、`child.reported` 渲染成带标签的事实（施工 7-2，`kernel/request.md`「回报」）。
 - `peer.idle` 由被等的会话交来的命令 `PeerIdle`、执行器交的 `WatchEnded` 写，空下来了的叫醒她，渲染成带标签的一块（施工 C-6，`cross-session.md` 第六条、第八条，`kernel/session.md`「空了的通知」）。

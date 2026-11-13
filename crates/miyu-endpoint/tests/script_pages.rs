@@ -1,5 +1,5 @@
 //! 技能、脚本、MCP 三页要的协议（施工 X-27，`docs/blueprint/skills.md`「脚本」、`presets.md`「全局开关」）：`script.list`
-//! 列出登记上的脚本，给人看的两格照连接的语言挑；`tool.set_loading` 施工 FL-1 起照旧收、什么都不改（工具一律全量）；
+//! 列出登记上的脚本，给人看的两格照连接的语言挑；改加载方式的 `tool.set_loading` 没有了（施工 AUD-2，工具一律全量）；
 //! `feature.set` 改全局开关，没写这个功能的预设照它、明写了的照预设，`preset.get`
 //! 每一项说是谁定的；写错的拒，什么都不写。
 
@@ -136,10 +136,10 @@ async fn scripts_are_listed_with_where_they_come_from_in_the_connection_language
     }
 }
 
-/// 退役的 `tool.set_loading`（施工 FL-1，工具一律全量）：照旧收、照旧查参数，回 `{}`，配置一个字不写，工具面照旧全量；
-/// `mcp.list` 不再带 `need_load`，全局开关照常。
+/// 工具一律全量（施工 FL-1），改加载方式的 `tool.set_loading` 没有了（施工 AUD-2：还没发版，不留空方法）：调它是
+/// `unknown_method`，配置一个字不写，工具面照旧全量；`script.list`、`mcp.list` 不带 `need_load`，全局开关照常。
 #[tokio::test]
-async fn set_loading_is_accepted_and_changes_nothing() {
+async fn set_loading_is_gone_and_tools_come_whole() {
     let home = Home::new();
     home.write(
         "root/scripts/weather.py",
@@ -155,23 +155,11 @@ async fn set_loading_is_accepted_and_changes_nothing() {
     let before = settings(&home);
     for (id, params) in [
         ("t1", json!({"tool": "weather", "need_load": true})),
-        ("t2", json!({"tool": "weather", "need_load": null})),
-        ("t3", json!({"server": "github", "need_load": false})),
+        ("t2", json!({"server": "github", "need_load": false})),
     ] {
-        let set = client.call(id, "tool.set_loading", params).await;
-        assert_eq!(set["result"], json!({}), "{set}");
+        let gone = client.call(id, "tool.set_loading", params).await;
+        assert_eq!(reason(&gone), "unknown_method", "{gone}");
     }
-    let refused = client
-        .call(
-            "t4",
-            "tool.set_loading",
-            json!({"tool": "weather", "server": "github", "need_load": true}),
-        )
-        .await;
-    assert_eq!(
-        refused["error"]["data"]["reason"], "bad_params",
-        "{refused}"
-    );
     assert_eq!(settings(&home), before, "什么都不写");
     assert!(
         listed(&mut client, "weather")
@@ -418,27 +406,7 @@ async fn badly_written_changes_are_refused_and_nothing_is_written() {
     home.write("etc/config.toml", before);
     let mut client = Client::connect(core(&home, &Script::new([])));
     client.hello().await;
-    let long = "a".repeat(129);
     for (method, params) in [
-        ("tool.set_loading", json!({"need_load": true})),
-        (
-            "tool.set_loading",
-            json!({"tool": "weather", "server": "github", "need_load": true}),
-        ),
-        ("tool.set_loading", json!({"tool": "weather"})),
-        (
-            "tool.set_loading",
-            json!({"tool": "a.b", "need_load": true}),
-        ),
-        ("tool.set_loading", json!({"tool": long, "need_load": true})),
-        (
-            "tool.set_loading",
-            json!({"server": "GitHub", "need_load": true}),
-        ),
-        (
-            "tool.set_loading",
-            json!({"tool": "weather", "need_load": "yes"}),
-        ),
         ("feature.set", json!({"feature": "memory", "on": false})),
         ("feature.set", json!({"feature": "skill-a.b", "on": false})),
         ("feature.set", json!({"feature": "skill-a"})),

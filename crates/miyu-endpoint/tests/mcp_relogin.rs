@@ -32,7 +32,7 @@ async fn logged_in(
 ) -> (Arc<miyu_endpoint::Core>, Client, Box<dyn std::any::Any>) {
     home.write(
         "etc/config.toml",
-        &format!("[mcp.notes]\nurl = \"{}\"\nneed_load = false\n", server.url),
+        &format!("[mcp.notes]\nurl = \"{}\"\n", server.url),
     );
     let (core, mut client, kept) = running_with(home, script).await;
     let waiting = until_listed(&mut client, "notes", |one| one["reason"] == "needs_login").await;
@@ -247,7 +247,7 @@ async fn a_pasted_callback_is_checked_like_the_local_one() {
     let home = Home::new();
     home.write(
         "etc/config.toml",
-        &format!("[mcp.notes]\nurl = \"{}\"\nneed_load = false\n", server.url),
+        &format!("[mcp.notes]\nurl = \"{}\"\n", server.url),
     );
     let (_core, mut client, _kept) = running_with(&home, &Script::new([])).await;
     until_listed(&mut client, "notes", |one| one["reason"] == "needs_login").await;
@@ -324,7 +324,7 @@ async fn a_remote_person_logs_in_by_pasting_the_callback_back_and_logs_out() {
     let home = Home::new();
     home.write(
         "etc/config.toml",
-        &format!("[mcp.notes]\nurl = \"{}\"\nneed_load = false\n", server.url),
+        &format!("[mcp.notes]\nurl = \"{}\"\n", server.url),
     );
     let (core, mut local, _kept) = running_with(&home, &Script::new([])).await;
     until_listed(&mut local, "notes", |one| one["reason"] == "needs_login").await;

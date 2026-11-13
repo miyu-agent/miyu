@@ -145,7 +145,6 @@ const METHODS: &[&str] = &[
     "system.append",
     "tool.call",
     "tool.cancel",
-    "tool.set_loading",
     "unsubscribe",
     "usage.convert",
     "usage.query",

@@ -11,7 +11,6 @@
 | `crates/miyu-kernel/src/event/session.rs` | `session.created`、`session.policy_changed`、`session.meta_changed`、`session.workspace_changed`（施工 9-7 上）、`session.recapped`（施工 3-8 四补）、`session.sealed`（施工 C-8 下）、`command.ran`（施工 O-6）、`todos.cleared`（施工 D-3 再补）；权限 `Permission`、级别 `Level` |
 | `crates/miyu-kernel/src/event/turn.rs` | `turn.joined`（施工 O-14 下）、`turn.started`、`turn.ended`（`EndReason`）、`turn.reverted`、`turn.unreverted` |
 | `crates/miyu-kernel/src/event/dream.rs` | `dream.ended`（施工 DR-1） |
-| `crates/miyu-kernel/src/event/restore.rs` | `files.restored`（`Restored`、`RestoreAction`、`RestoreOutcome`） |
 | `crates/miyu-kernel/src/event/message.rs` | `message.user`、`message.assistant`、`message.withdrawn` |
 | `crates/miyu-kernel/src/event/tool.rs` | `tool.result`（`ToolStatus`、给人看的说法 `Said`）、`tool.approval_requested`、`tool.approval_decided`（`Decision`） |
 | `crates/miyu-kernel/src/event/effect.rs` | 效果 `Effect`：`file.read`、`file.changed`、`file.trashed`、`job.started`（`JobStarted`、`JobKind`，施工 7-1）、`job.messaged`（`JobMessaged`，施工 7-7）、`peer.watch`（`PeerWatch`，施工 C-1）、`todo.written`（`TodoWritten`、`Todo`、`TodoStatus`，施工 D-3）、`file.shown`（`FileShown`，施工 D-5） |
@@ -195,33 +194,6 @@
 |---|---|---|---|---|
 | `turn.reverted` | `turns` | 回合编号的列表 | 必有 | 撤掉的回合：某一轮，和它以后还在有效历史里的每一轮，照先后 |
 | `turn.unreverted` | `turns` | 回合编号的列表 | 必有 | 恢复的回合：照最近那一条 `turn.reverted` 原样写 |
-
-**`files.restored`**：撤销、恢复时改回文件的结局。施工 U-1 起不再产生（撤销不再改回文件），类型留着只为读以前的日志。`files` 是一步一项的列表，必有，照做的先后。它不进上下文；`cause` 是撤销、恢复的那个命令。
-
-| 格 | 写法 | 有没有 | 是什么 |
-|---|---|---|---|
-| `result` | 序号 | 必有 | 照哪一条 `tool.result` |
-| `effect` | 整数（`u32`） | 必有 | 照那一条的第几个效果，从 0 数起 |
-| `path` | 字符串 | 必有 | 改的是哪里：效果里记的那个路径 |
-| `action` | 取值 | 必有 | 做了什么：`write` 写回一份内容；`trash` 移进回收站；`untrash` 从回收站移回原处 |
-| `outcome` | 取值 | 必有 | 结局，下表 |
-| `found` | 内容哈希 | 可以没有 | 内容被改过（`changed`）时，现在那个文件的内容的哈希；现在那里是目录、链接的没有 |
-| `trash` | 字符串 | 可以没有 | 移进了回收站（`trash` 成了）时，在回收站里的新位置：下一次撤销照它移回来 |
-| `hash` | 内容哈希 | 可以没有 | 移回来（`untrash` 成了）的是一个文件时，它的内容的哈希：恢复时照它核对，再移进回收站 |
-| `error` | 字符串 | 可以没有 | 出错（`failed`）时，系统的原话 |
-
-| `outcome` | 是什么 |
-|---|---|
-| `restored` | 改回了，或者现在已经是要改成的样子 |
-| `changed` | 内容被改过了，不是她留下的样子 |
-| `missing` | 东西没了 |
-| `occupied` | 原处被占了 |
-| `gone` | 回收站里已经没有了 |
-| `unsaved` | 要写回的内容当时没存下来 |
-| `unavailable` | 回收站收不了：不删 |
-| `failed` | 出错了 |
-
-除了 `restored`，都是没动。几步怎么算、谁来做，见 `kernel/history.md`、`session/actor.md`。
 
 **`message.user`**：人发来的消息，或者另一个会话发来的消息：父会话发给子会话的交代、留言（`by` 是父会话），子代理发给父会话的留言（`by` 是子会话，不带回合编号，施工 7-7，`kernel/session.md`「子代理的留言」），别的会话发来的话（`by` 是那个会话，不带回合编号，施工 C-2，`kernel/session.md`「别的会话发来的话」）。`by` 是会话的照关系分三种，见 `kernel/ids.md`「谁」。
 
@@ -657,7 +629,6 @@
 |---|---|
 | `crates/miyu-kernel/src/event/session/tests.rs` | 会话的四种：图纸上的写法、一次性的写与不写、每一级读成自己那一种、不认识的级别原样留着、权限两格都要写、坏的说是哪一种；子会话的 `parent`、`depth` 读写一字不差，主会话不写这两格（施工 7-1）；`session.recapped` 两格都要写（施工 3-8 四补）；`session.policy_changed` 的 `model`、`replaced` 读写一字不差、以前的日志照读、`null` 当没有、不是字的读不进来（施工 8-10）；以前日志里带 `effort` 的照读得进、内核不理它（施工 8-18 加，8-18（补）去掉） |
 | `crates/miyu-kernel/src/event/turn/tests.rs` | 回合的四种：图纸上的写法、没有 `trigger` 的不写这一格（施工 6-8）、每种结束原因、不认识的原样留着、坏的说是哪一种 |
-| `crates/miyu-kernel/src/event/restore/tests.rs` | `files.restored` 的每一格读写一字不差；新的 `action`、`outcome` 原样留着 |
 | `crates/miyu-kernel/src/event/message/tests.rs` | `message.assistant` 图纸上的写法、`seen` 必有、`interrupted` 只在是真时写；`message.withdrawn` 的写法和序号从 1 起 |
 | `crates/miyu-kernel/src/event/tool/tests.rs` | `tool.result` 的五种状态、不认识的原样留着、没真执行过的没有用时、说法怎么记；确认的两种：每种决定、没写规则、说明、理由的不写这几格；坏的说是哪一种 |
 | `crates/miyu-kernel/src/event/effect/tests.rs` | 四种效果读写一字不差；没显示行的不写 `lines`；新建的 `before` 写成 `null`、没写的当新建；不认识的原样留着；`job.started` 不认识的 `what` 原样留着、命令不写 `session`；`job.messaged` 读写一字不差（施工 7-7）；`peer.watch` 读写一字不差（`a_watch_on_another_session_round_trips`，施工 C-1）；`file.changed` 的 `before_text`、`after_text` 写了的读写一字不差、排在哈希后面，没写的不写（`small_contents_ride_along_and_are_left_out_when_absent`，施工 V-18）；坏的读不进来 |

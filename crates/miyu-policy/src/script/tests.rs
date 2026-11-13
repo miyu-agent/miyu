@@ -120,9 +120,9 @@ fn wrong_ones_say_what_is_wrong() {
     );
 }
 
-/// 退役的 `Need load`（施工 L-1 登记、FL-1 拆掉）：以前写了的脚本照旧读得进，写什么都一样，不报错。
+/// 不认识的键不管，同旧版留着的那些（`Need load` 是其中一个：工具一律给完整的参数，施工 FL-1）：写什么都一样，不报错。
 #[test]
-fn a_retired_need_load_line_is_ignored() {
+fn a_need_load_line_is_ignored_like_any_unknown_key() {
     let plain = read("a.py", "# Description: Hi.\n").expect("读得进");
     for line in [
         "# Need load: yes\n",

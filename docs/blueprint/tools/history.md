@@ -75,7 +75,7 @@
 | 带 `permission` 的 `session.policy_changed`：人切了权限级别（施工 2-7 补） | 算。「谁」那一格写 `user`，原文照 `history/permission.txt` 写切成了哪一级（`Changed the permission level to <级别>`，级别的写法和事实里的一样：只读开着是 `read_only`，不认识的级别是 `read_only`，`kernel/request.md` 的 `effective_level`）。撤掉的回合里切的也算：撤销不改现在的权限（`kernel/session.md`「切权限级别」第 7 条，施工 2-7 补照内核的算法核对过：载入时照整份日志算，活着时撤销不动它）。只换了策略快照、没带 `permission` 的不算 | `user` |
 | 撤掉的回合里的（里面的压缩也是，施工 6-9）、撤回的消息 | 不算：撤了就跟没说过一样。人切权限级别的除外（上一行） | |
 | 她自己翻记录的那几步：`history` 的调用、结果 | 不算（施工 6-4）：找的时候会找到自己这一次调用（参数里就有要找的词），翻出来的旧结果又和原文重复。回复里别的正文、别的工具调用照算 | |
-| 事实注入、`model.called`、回合和会话的事件（上面切权限的除外）、`files.restored` | 不算 | |
+| 事实注入、`model.called`、回合和会话的事件（上面切权限的除外） | 不算 | |
 
 ### 怎么走
 

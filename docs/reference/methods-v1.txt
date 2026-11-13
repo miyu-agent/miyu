@@ -198,7 +198,6 @@ tool.after
 tool.call
 tool.cancel
 tool.guard
-tool.set_loading
 usage.convert
 usage.query
 user.append

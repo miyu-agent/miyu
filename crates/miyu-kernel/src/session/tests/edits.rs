@@ -1,11 +1,11 @@
 //! 撤销、恢复、重做不再改回文件（施工 U-1，2026-10-15 项目主人定：改回文件交给 git 这类程序）：撤掉的那一轮改过文件的，
-//! 照样只记撤销那一条，落了盘就回应，不交出别的动作、不挡命令、照常空闲；以前日志里的 `files.restored` 照样载入。
+//! 照样只记撤销那一条，落了盘就回应，不交出别的动作、不挡命令、照常空闲。
 
 use super::executor::*;
-use super::load::{Logged, load};
+use super::load::Logged;
 use super::revert::{revert, unrevert};
 use super::*;
-use crate::event::{Effect, FileChanged, FilesRestored, RestoreAction, RestoreOutcome, Restored};
+use crate::event::{Effect, FileChanged};
 use crate::id::{CallId, ContentHash};
 
 /// 一段内容的哈希。
@@ -103,33 +103,4 @@ fn a_command_right_after_the_undo_is_taken() {
         replies(&actions).is_empty() && !appended(&actions).is_empty(),
         "不挡命令：{actions:?}"
     );
-}
-
-#[test]
-fn an_old_log_with_restored_files_still_loads() {
-    let (mut logged, result) = edited();
-    logged.handle(revert(9, 3));
-    logged.handle(stored(logged.last()));
-    let mut log = logged.log.clone();
-    let last = log.last().expect("有日志").clone();
-    let files = vec![Restored {
-        result,
-        effect: 0,
-        path: "/w/a.txt".to_string(),
-        action: RestoreAction::Write,
-        outcome: RestoreOutcome::Restored,
-        hash: None,
-        found: None,
-        trash: None,
-        error: None,
-    }];
-    log.push(Event {
-        seq: Seq::new(last.seq.get() + 1).expect("从 1 数起"),
-        body: Body::FilesRestored(FilesRestored { files }),
-        ..last
-    });
-    let (mut session, _) = load(log);
-    assert!(session.idle(), "以前改回文件的那一条照样认得");
-    let actions = session.handle(unrevert(10));
-    assert!(only_appends(&actions), "恢复照样只记那一条：{actions:?}");
 }

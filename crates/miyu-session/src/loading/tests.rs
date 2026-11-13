@@ -1,4 +1,4 @@
-//! 脚本里能不能调（施工 M-2）：工具自己那一项先，MCP 的再照服务那一项，都没写的照来处；退役的 `loading.*` 不算（施工 FL-1）。
+//! 脚本里能不能调（施工 M-2）：工具自己那一项先，MCP 的再照服务那一项，都没写的照来处；别的键（以前的 `loading.*`）不算。
 
 use super::*;
 
@@ -30,7 +30,7 @@ fn a_tool_setting_beats_its_server_and_both_beat_the_source() {
     assert!(clicall.clicall("read", false), "自带的也能开");
     assert!(
         !clicall.clicall("web_fetch", false),
-        "退役的加载方式那一项不算"
+        "以前的加载方式那一项不算"
     );
     assert!(clicall.clicall("mcp__other__x", true), "没写的照来处");
 }

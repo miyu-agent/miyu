@@ -131,7 +131,6 @@ Register every tool this package provides now, replacing the previous registrati
 | `role` | What the tool is for, so the core recognizes it by role rather than by name. The only role now is `read_file` (reads a text file: the AI sees the skill list only when a tool like this is there). Unset means none |
 | `scope` | Which sessions get it, narrowing further within `venues`: `any` (the default), `local` (sessions on this machine), `local_main` (the main session on this machine, not subagents), `local_main_attended` (the main session on this machine, with someone watching), `spawn` (this machine, while subagents may still go one level deeper) |
 | `timeout_ms` | 1000 to 600000, default 60000 |
-| `need_load` | Retired (construction FL-1, tools are always sent whole): still accepted, ignored |
 | `clicall` | `true`: the AI can also call it with `miyu call` inside a command (only read, network and execute tools can be); unset means it cannot. Put a structured result in the response's `data` and the script gets one line of JSON |
 | `result` | For a tool with a structured result, its shape on one line, for example `{"memes":[{"id","tags"}]}`: tells the AI which fields a script can take directly (`miyu call --schema` prints it too). Unset means none |
 | `display_name` | Name shown to people: `{"zh": "…", "en": "…"}` |

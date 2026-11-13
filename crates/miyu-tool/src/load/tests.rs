@@ -16,9 +16,10 @@ fn the_result_shape_in_a_descriptor_reaches_the_spec() {
     assert_eq!(fetch.result, None, "没写的不带");
 }
 
-/// 退役的 `need_load`（施工 L-1 登记、FL-1 拆掉）：包自带的说明文件写了的照旧读得进，规格里没有它。
+/// `need_load`（施工 L-1 登记、FL-1 拆掉）不再是说明文件的一格（施工 AUD-2：还没发版，不留「照旧读得进」）：写了的和别的
+/// 不认识的格一样，整份读不进。
 #[test]
-fn a_descriptor_with_a_retired_need_load_is_still_read() {
+fn a_descriptor_with_need_load_is_refused_like_any_unknown_field() {
     let dir = std::env::temp_dir().join(format!("miyu-load-retired-{}", std::process::id()));
     std::fs::create_dir_all(dir.join("tools")).expect("建得了");
     std::fs::write(
@@ -28,8 +29,8 @@ fn a_descriptor_with_a_retired_need_load_is_still_read() {
     .expect("写得进");
     let read = spec_in(&dir, "lookup", Access::Read);
     std::fs::remove_dir_all(&dir).expect("删得了");
-    let spec = read.expect("照旧读得进");
-    assert_eq!(spec.description, "Look a word up.");
+    let refused = read.expect_err("不认识的格");
+    assert!(refused.to_string().contains("need_load"), "{refused}");
 }
 
 /// 职能、范围（施工 XG-2 上，`64-工具职能.md` 第四、五节）：写了的读进规格，没写的没有职能、范围是 `any`；取值是封闭的，

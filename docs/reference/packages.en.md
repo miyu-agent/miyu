@@ -1,4 +1,4 @@
-# Packages and commands: `package.*`, `extension.*`, `mcp.*`, `skill.list`, `skill.remove`, `script.list`, `tool.set_loading`, `feature.set`, `command.*`, `check`
+# Packages and commands: `package.*`, `extension.*`, `mcp.*`, `skill.list`, `skill.remove`, `script.list`, `feature.set`, `command.*`, `check`
 
 Manage packages, extension processes and the MCP servers in the system config; list skills and scripts; change how tools load and the global switches of skills, scripts and MCP servers; run slash commands; check files for mistakes. Methods extensions call themselves, and calls the core makes to extensions, are in [Extensions](extensions.en.md). Chinese version: [packages.md](packages.md).
 
@@ -21,12 +21,12 @@ Manage packages, extension processes and the MCP servers in the system config; l
 | [`skill.list`](#skilllist) | List the skills that can be used |
 | [`skill.remove`](#skillremove) | Delete skills you placed yourself |
 | [`script.list`](#scriptlist) | List the registered scripts |
-| [`tool.set_loading`, `feature.set`](#toolset_loading-featureset) | Retired (accepted, changes nothing); change the global switch of a skill, script or MCP server |
+| [`feature.set`](#featureset) | Change the global switch of a skill, script or MCP server |
 | [`command.run`](#commandrun) | Run a slash command |
 | [`command.catalog`](#commandcatalog) | List the slash commands that can be used |
 | [`check`](#check) | Check config, personas, presets and packages for mistakes |
 
-**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.sync`, `package.search`, `package.clean`, `package.upgrades`, `package.upgrade`, `package.file`, `package.page`, `extension.*`, `mcp.*`, `tool.set_loading` and `feature.set` are for people only; extensions get `local_only`. So is `package.info` with `path` (it looks at any folder on this machine, like `package.install`; step IN-4). Everything else is open to people and extensions; an extension calling `package.call` reaches only itself (below).
+**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.sync`, `package.search`, `package.clean`, `package.upgrades`, `package.upgrade`, `package.file`, `package.page`, `extension.*`, `mcp.*` and `feature.set` are for people only; extensions get `local_only`. So is `package.info` with `path` (it looks at any folder on this machine, like `package.install`; step IN-4). Everything else is open to people and extensions; an extension calling `package.call` reaches only itself (below).
 
 **Three layers**: built-in (installed with Miyu, `shipped`), system-installed (put there by the system package manager, `distro`: on Linux `miyu/packages/` under each entry of `$XDG_DATA_DIRS`, `/usr/local/share:/usr/share` when unset, and Linuxbrew users add its `share` to `XDG_DATA_DIRS`; on macOS `share/miyu/packages/` under the Homebrew prefix; none on Windows; when `MIYU_DISTRO_PACKAGES` is set only that folder), and installed (`opt/` in the data root, `home`). When several layers have the same id, installed covers system-installed and system-installed covers built-in; a covered copy is not loaded and is not an error. Installing the same id in the home layer upgrades and replaces it; removing a built-in or system-installed package records it in `etc/removed/` (an empty file named after the id) without touching its files, and it can be installed back.
 
@@ -235,7 +235,7 @@ The core calls the extension's `driver.encode` with a small built-in set of samp
 
 MCP servers in the system config (`[mcp.<name>]` in `config.toml`). Editing the system config by hand or through `mcp.set` and `mcp.remove` takes effect at once: new servers start, changed ones restart, removed ones stop.
 
-**`mcp.list`**: no params. Response `{"servers": [...]}`: `name`, `command` (a URL server has `url` instead), `venues`, `state`, `failures`, `pid` while running (none for a URL server), `retry_in` while waiting, `reason` and `stderr` when stopped, and `covers` (packages whose same-named server it covers). When its tools are known it also has `tools`: the server's tool names in the tool catalog right now (`mcp__<server>__<tool>`), whether listed by the running server or registered from the catalog cache; a server that declares resources also has `mcp__<server>__list_resources` and `mcp__<server>__read_resource`; left out while unknown (never started, no cache). Tools the server listed this time but that were not registered come as `skipped: [{"tool", "why"}]` (`{"prompt", "why"}` for a prompt), sorted by name: `tool` is the server's own name for it (empty when it had none), `why` is `name` (no name), `parameters` (the parameters schema is not an object) or `name_taken` (it clashed after shortening to 64 characters, or another tool already has the name); left out when everything was registered or when the tools only came from the catalog cache and have not been listed yet. `miyu check` reports them as `mcp_tool_skipped`. `on` is the server's global switch (`features.mcp-<server>`, see `feature.set`), `true` when unset. A server logged in through the browser (a token from `mcp.login` is stored) has `logged_in: true`; one that never logged in, or after `mcp.logout`, leaves it out (step X-42 下再补). Heads use it to show "Log out" instead of "Log in"; only whether a token is stored is told, never the token. For editing, what was written comes back too: `env` (each value text, or `{"secret": …}`, `{"env": …}`; left out when none) and `timeout_ms` (only when not the default), plus `bearer` and `headers` for a URL server (written like `env`). These come back as written (they are plain text in the system config anyway): heads mask them on display and show them in full only in the edit box; values worth hiding should be secret references; `command` is the program and its arguments, split into `command` and `args` when sent back to `mcp.set`; change `need_load` with `tool.set_loading`.
+**`mcp.list`**: no params. Response `{"servers": [...]}`: `name`, `command` (a URL server has `url` instead), `venues`, `state`, `failures`, `pid` while running (none for a URL server), `retry_in` while waiting, `reason` and `stderr` when stopped, and `covers` (packages whose same-named server it covers). When its tools are known it also has `tools`: the server's tool names in the tool catalog right now (`mcp__<server>__<tool>`), whether listed by the running server or registered from the catalog cache; a server that declares resources also has `mcp__<server>__list_resources` and `mcp__<server>__read_resource`; left out while unknown (never started, no cache). Tools the server listed this time but that were not registered come as `skipped: [{"tool", "why"}]` (`{"prompt", "why"}` for a prompt), sorted by name: `tool` is the server's own name for it (empty when it had none), `why` is `name` (no name), `parameters` (the parameters schema is not an object) or `name_taken` (it clashed after shortening to 64 characters, or another tool already has the name); left out when everything was registered or when the tools only came from the catalog cache and have not been listed yet. `miyu check` reports them as `mcp_tool_skipped`. `on` is the server's global switch (`features.mcp-<server>`, see `feature.set`), `true` when unset. A server logged in through the browser (a token from `mcp.login` is stored) has `logged_in: true`; one that never logged in, or after `mcp.logout`, leaves it out (step X-42 下再补). Heads use it to show "Log out" instead of "Log in"; only whether a token is stored is told, never the token. For editing, what was written comes back too: `env` (each value text, or `{"secret": …}`, `{"env": …}`; left out when none) and `timeout_ms` (only when not the default), plus `bearer` and `headers` for a URL server (written like `env`). These come back as written (they are plain text in the system config anyway): heads mask them on display and show them in full only in the edit box; values worth hiding should be secret references; `command` is the program and its arguments, split into `command` and `args` when sent back to `mcp.set`.
 
 **`mcp.restart`**: param `name`. Response: that server. **Errors**: `unknown_server`.
 
@@ -252,7 +252,6 @@ MCP servers in the system config (`[mcp.<name>]` in `config.toml`). Editing the 
 | `headers` | object | Other request headers, values written like `env` values; `Authorization`, `Mcp-Session-Id`, `MCP-Protocol-Version`, `Mcp-Method` and `Mcp-Name` are the core's; goes with `url` |
 | `venues` | array of strings | Which sessions get it: `local`, `private`, `group`; local sessions only when left out |
 | `timeout_ms` | integer | How long one call may take, 1000 to 3600000; 600000 when left out |
-| `need_load` | boolean | Retired (construction FL-1, tools are always sent whole): still accepted, ignored and not written to the server table |
 | `clicall` | boolean | Whether the AI can call this server's tools with `miyu call` inside a command; when left out, what was written stays, and unwritten means it can |
 
 Fields left out are not written: replacing drops what was there before and is not sent again. It is checked by the same rules as reading the system config and written the way `config.set` writes (with a version, never over a concurrent hand edit). Response `{"name"}`; the server then follows what was written, and state changes push `mcp.changed`. **Errors**: `mcp_invalid` (badly written; `data.problem` says what is wrong, including neither or both of `command` and `url`); `bad_params` (`args` without `command`); `server_from_package` (the system config has no server by that name and a package brings one: servers from packages are not changed here); `config_file_broken` (the system config can't be read, or `mcp` is written in a shape that can't hold a server); `config_conflict`.
@@ -311,19 +310,9 @@ After logging in (build X-42 part two): when the token is about to expire or the
 | `timeout` | Seconds one call waits |
 | `on` | Global switch (`features.script-<tool>`); `true` when unset |
 
-## `tool.set_loading`, `feature.set`
+## `feature.set`
 
 What the skill, script and MCP pages change. Response `{}`.
-
-**`tool.set_loading`**: retired (construction FL-1, decided by the project owner on 2026-10-27: tools are always sent whole, nothing loads on demand). Protocol 1 froze the method, so it is still accepted and its params still checked, but it changes nothing and writes nothing to the system config. `loading.tools.<tool>` and `loading.mcp.<server>` already written there are read as retired keys: no warning, no effect.
-
-| Name | Type | Notes |
-|---|---|---|
-| `tool` | string | Tool name: 1 to 128 characters without `.` or control characters |
-| `server` | string | MCP server name |
-| `need_load` | boolean or `null`, required | Still required, ignored |
-
-Give exactly one of `tool` and `server`.
 
 **`feature.set`** writes the system config the way `config.set` changes one item (with the version, never over a hand edit made at the same time, pushing `config.changed` once written) and takes effect from the next turn. It changes the global switch of one skill, script or MCP server (`features.<feature id>`). Presets whose `unlisted` is `on` follow it, except where the preset turns that feature on or off itself (`by` of each feature in `preset.get`). Presets whose `unlisted` is `off` ignore it: what they leave out stays off.
 
@@ -332,7 +321,7 @@ Give exactly one of `tool` and `server`.
 | `feature` | string, required | Feature id: `skill-<name>`, `script-<tool>`, `mcp-<server>` |
 | `on` | boolean or `null`, required | `null` removes the switch and goes back to following the presets |
 
-**Errors**: `bad_params` (not exactly one of `tool` and `server`, a name that does not fit the key, a feature that is none of the three kinds, `need_load` or `on` missing); `config_file_broken`; `config_conflict`.
+**Errors**: `bad_params` (a name that does not fit the key, a feature that is none of the three kinds, `on` missing); `config_file_broken`; `config_conflict`.
 
 ## `command.run`
 

@@ -58,8 +58,6 @@ async fn a_set_server_is_written_followed_replaced_and_removed() {
                 "args": [record],
                 "env": {"MIYU_MCP_PROBE": "mine"},
                 "timeout_ms": 1000,
-                // 退役的一格（施工 FL-1）：老的头照旧交得进来，不写进服务表。
-                "need_load": true,
             }),
         )
         .await;
@@ -70,7 +68,6 @@ async fn a_set_server_is_written_followed_replaced_and_removed() {
         text.contains("[mcp.probe]\n") && text.contains("env = { MIYU_MCP_PROBE = \"mine\" }"),
         "{text}"
     );
-    assert!(!text.contains("need_load"), "{text}");
     let first = until_listed(&mut client, "probe", |one| one["state"] == "running").await;
     let pid = first["pid"].as_u64().expect("在跑的带进程号");
 
@@ -181,6 +178,15 @@ async fn bad_servers_and_package_ones_are_refused_and_nothing_is_written() {
         )
         .await;
     assert_eq!(reason(&unknown), "bad_params", "{unknown}");
+    // 以前的「要先加载」那一格不认了（施工 AUD-2：还没发版，不留照收不看的格），同别的不认识的格。
+    let retired = client
+        .call(
+            "s",
+            "mcp.set",
+            json!({"name": "ok", "command": "x", "need_load": true}),
+        )
+        .await;
+    assert_eq!(reason(&retired), "bad_params", "{retired}");
     // 参数接在程序后面：没有程序的写不进去（施工 X-32 下）。
     let orphan = client
         .call(

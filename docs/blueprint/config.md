@@ -259,7 +259,7 @@ miyu_config::settings! {
 | `memory.extract_turns` | 整数 1 到 100 | `2` | 系统 | 不能写 | `next_turn` | R-6 上：上次抽到以后至少有几轮她答了话才抽 |
 | `memory.extract_max_turns` | 整数 2 到 500 | `20` | 系统 | 不能写 | `next_turn` | E-5（`memory.md` 第六条第 1 款）：一直不闲的会话上次开始抽以后结束了这么多轮就不等闲、在后台抽（2026-10-27 主人本机 QQ 主群一下午 299 轮、最长只停 10.7 分钟，闲 30 分钟才抽的一次都没抽） |
 | `memory.extract_max_wait` | 时长，10 分钟到 1 天 | `1h` | 系统 | 不能写 | `next_turn` | E-5：一直不闲的会话最早没抽的那一轮结束了这么久就不等闲、在后台抽 |
-| `memory.merge_every` | 时长，1 小时到 720 小时 | `16h` | 系统 | 不能写 | `next_turn` | R-7 上（`memory.md` 第七条第 1 款）：离上次合并至少多久才再合；抽取记下以后照那一轮的配置读。施工 E-9 起后台整理只看它（`memory.merge_sessions` 拆了，写过的照退役的键读），出厂 24h 改 16h（2026-11-02 项目主人定） |
+| `memory.merge_every` | 时长，1 小时到 720 小时 | `16h` | 系统 | 不能写 | `next_turn` | R-7 上（`memory.md` 第七条第 1 款）：离上次合并至少多久才再合；抽取记下以后照那一轮的配置读。施工 E-9 起后台整理只看它（`memory.merge_sessions` 拆了），出厂 24h 改 16h（2026-11-02 项目主人定） |
 | `memory.dream_keep` | 整数 0 到 1000 | `20` | 系统 | 不能写 | `next_turn` | D-1 下（设计 41 DS9）：每一间留最近几趟整理会话，一趟跑完删多的；`0` 是跑完就删 |
 | `show.system_hint` | 开关 | `true` | 系统 | 不能写 | `new_session` | D-5 补二（`tools/show.md`，项目主人 2026-10-24 定）：system 里带不带 show 的那一句；工具面上有 `show` 的才带。造会话时读一次钉进快照（`no_show_hint`），会话中途改了 system 不变。核心替包 `base-show` 声明（`OWNED`，施工 BS-1 上中起；原来是基础系统；施工 PN-3 起包编号和键分开，键照旧是 `show.*`），设置页在「软件包」那一页、展示那一组（组的编号是包编号 `base-show`） |
 | `skills.external.enabled` | 开关 | `false` | Miyu 的配置 | 不能写 | `next_turn` | PT-2 外（`skills.md`「定了的」第 4 条，2026-10-29 项目主人定）：读不读别的目录里的技能。关着的一个都不碰。「高级」页的「技能」一组；网页另画在技能页顶上 |
@@ -304,7 +304,7 @@ miyu_config::settings! {
 | `models.catalog.every` | 时长 1 小时到 30 天 | `24h` | 系统 | 不能写 | `now` | 8-7 |
 | `models.cooldown.rate_limited.base`、`retryable.base`、`auth.base` | 时长 1 秒到 1 小时 | `30s`、`10s`、`10m` | 系统 | 不能写 | `now` | 8-9 |
 | `models.cooldown.rate_limited.max`、`retryable.max`、`auth.max` | 时长 1 秒到 1 天 | `10m`、`5m`、`2h` | 系统 | 不能写 | `now` | 8-9 |
-| 模型的 `driver`，供应商的 `headers`、`compat`（施工 L-2 登记过 `compat.strict_tools`，施工 FL-1 拆了，写过的照退役的键读）、`placeholder_tools`，`models.*` 的别的 | 见 `models.md` | | | | | 8-10 到 8-15 |
+| 模型的 `driver`，供应商的 `headers`、`compat`（施工 L-2 登记过 `compat.strict_tools`，施工 FL-1 拆了）、`placeholder_tools`，`models.*` 的别的 | 见 `models.md` | | | | | 8-10 到 8-15 |
 
 - `ui.language` 的 `auto`：跟着系统，终端的头照系统的语言，网页照浏览器（第二条第 8 条，2026-10-01 项目主人定）。它的界面提示：`general` 页的 `display` 组，常用项，下拉。`log.level` 的：`advanced` 页的 `log` 组，下拉。
 - 项目配置能写的，M8 里只有 `permission.start_read_only` 这一项（2026-10-01 项目主人定）。
@@ -665,7 +665,7 @@ miyu_config::settings! {
 3. 解析（`miyu-config` 的 `parse.rs`，用 `toml_edit`）：
    1. TOML 写法不对：`syntax`，行、列照 `toml_edit` 报的位置（它报的错的开头，例如字没收尾的，指到那一行行尾）。`why` 只取它的原话（`TomlError::message` 的最后一行），不带它印出来的那一行原文：原文可能很长，密钥文件里更不能印。
    2. 照清单一项项认：键在清单里、这一层能写、类型和范围对的，收下，记下键所在的行。
-   3. 不在清单里的键：`unknown_key`，警告，原样留在文件里，不进最终值。退役的键（以前登记过、拆掉了的，`miyu_config` 的 `retired.rs`，施工 FL-1 起：`providers.<id>.compat.strict_tools`、`loading.tools.<name>`、`loading.mcp.<id>`；施工 E-9 起：`memory.merge_sessions`）不报，也不进最终值：写过的人查配置不多一条警告。系统配置里的 `[mcp.<名字>]` 例外：不在清单里、跳过不报，由 `miyu_config::package::mcp::configured` 另读（施工 F-9 上，`mcp.md`）。不认识的一张表往里走，每一项照整个键报（`weird.thing`），离得最近的键名才找得准；空的不认识的表没什么可报。一组键（`ui`）下面写成了值：`wrong_type`，期望一张表。清单里的一项写成了表：`wrong_type`。
+   3. 不在清单里的键：`unknown_key`，警告，原样留在文件里，不进最终值。以前登记过、后来拆掉的键（施工 FL-1 的 `providers.<id>.compat.strict_tools`、`loading.tools.<name>`、`loading.mcp.<id>`，施工 E-9 的 `memory.merge_sessions`）同别的不认识的键一样报：原来另有一张「退役的键不报」的表，施工 AUD-2 拿掉了（2026-11-13 项目主人定：还没发版，不背旧兼容）。系统配置里的 `[mcp.<名字>]` 例外：不在清单里、跳过不报，由 `miyu_config::package::mcp::configured` 另读（施工 F-9 上，`mcp.md`）。不认识的一张表往里走，每一项照整个键报（`weird.thing`），离得最近的键名才找得准；空的不认识的表没什么可报。一组键（`ui`）下面写成了值：`wrong_type`，期望一张表。清单里的一项写成了表：`wrong_type`。
    4. 类型、范围、写法不对：那一项报错，不进最终值。
    5. 这一层不能写的：`wrong_layer`，不进最终值；值写得对的照样记下来，`explain` 列得出它、写明不算。
    6. 位置：一项的问题指到值（`log.level = "verbose"` 的第 9 列），不认识的键指到键；点号连着写的键（`ui.langauge = …`）指到整个键的开头。来源的 `line` 是键所在的那一行。列照 Unicode 字符数，`\r\n` 的 `\r` 在行尾不算进列。

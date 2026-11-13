@@ -211,7 +211,7 @@ impl Session {
         (session, vec![Action::Append(vec![event])])
     }
 
-    /// 空闲：没有在跑的回合，也没有结束了、`turn.ended` 还没落盘的，也没在读回日志、改回文件。核心看它决定能不能空闲
+    /// 空闲：没有在跑的回合，也没有结束了、`turn.ended` 还没落盘的，也没在读回日志。核心看它决定能不能空闲
     /// 退出（`12-进程形态与分发.md` 第二节，施工 3-9 上）。
     pub fn idle(&self) -> bool {
         self.turn.is_none() && self.closing.is_empty() && self.reading.is_none()
@@ -229,7 +229,7 @@ impl Session {
         self.stored
     }
 
-    /// 删得了没有（施工 3-8 三补，`protocol.md` 的 `session.delete`）：不空闲的删不了，正在读回日志、改回文件的是
+    /// 删得了没有（施工 3-8 三补，`protocol.md` 的 `session.delete`）：不空闲的删不了，正在读回日志的是
     /// [`Reason::Restoring`]，别的（有回合在进行、结束了 `turn.ended` 还没落盘）是 [`Reason::TurnRunning`]。纯查询：会话
     /// actor 照它答应删、停下，挪目录是会话表的事。
     ///

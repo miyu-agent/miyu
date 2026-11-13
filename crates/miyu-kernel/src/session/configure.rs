@@ -170,7 +170,7 @@ impl Session {
 
     /// 换模型：和现在的一样的接受，什么都不记，编号照样记下；不一样的记一条 `session.policy_changed`，`by` 是换的人，回合
     /// 进行中的带上这个回合，空闲时没有。`model` 空的是回到跟着 `models.chat`（施工 8-10 再补），本来就跟着的什么都不记。什么
-    /// 时候来都收，改回文件的时候照「命令和回应」第 5 条拒（`session.rs`）。
+    /// 时候来都收，读回日志的时候照「命令和回应」第 5 条拒（`session.rs`）。
     pub(super) fn configure(
         &mut self,
         id: CommandId,

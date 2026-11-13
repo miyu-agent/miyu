@@ -1,5 +1,5 @@
-//! 吃不下空外壳的那一家（施工 L-2）：施工 FL-1 起（2026-10-27 项目主人定）工具一律全量，哪一家、标没标 `compat.strict_tools`，
-//! 发到线上的 tools 里都是完整格式，没有 `load_tools`。登记成要先加载的也一样。
+//! 工具一律全量（施工 FL-1，2026-10-27 项目主人定）：发到线上的 tools 里都是完整格式，没有 `load_tools`。原来这里另试一家标了
+//! `compat.strict_tools` 的（施工 L-2，吃不下空外壳的那一家）：那个键早拆了，施工 AUD-2 起写了也只是不认识的键，不再试。
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -18,7 +18,7 @@ use crate::support::routing::{configs, hellos, routes, turn};
 const FULL: &str =
     r#"{"type":"object","properties":{"word":{"type":"string"}},"required":["word"]}"#;
 
-/// 要先加载的 `lookup` 和全量的 `echo`。
+/// 带参数的 `lookup` 和不带参数的 `echo`。
 fn catalog() -> Catalog {
     let lookup = Fake::from_spec(
         Spec {
@@ -38,12 +38,12 @@ fn catalog() -> Catalog {
     Catalog::new([lookup, echo].into_iter().map(|tool| tool as Arc<dyn Tool>)).expect("都合写法")
 }
 
-/// 照配置的尾巴 `compat` 说一轮，交回发到假服务器的 tools：名字 → 参数格式。
-async fn sent_tools(compat: &str) -> Vec<(String, Value)> {
+/// 说一轮，交回发到假服务器的 tools：名字 → 参数格式。
+async fn sent_tools() -> Vec<(String, Value)> {
     let mut home = Home::new();
     let server = Server::start(hellos(1)).await;
     let source = format!(
-        "[providers.relay]\ndriver = \"openai-chat\"\nbase_url = \"{}\"\nkey = {{ env = \"TEST_KEY\" }}\n{compat}\n[models]\nchat = \"relay/m-1\"\n",
+        "[providers.relay]\ndriver = \"openai-chat\"\nbase_url = \"{}\"\nkey = {{ env = \"TEST_KEY\" }}\n\n[models]\nchat = \"relay/m-1\"\n",
         server.base_url
     );
     home.configs = configs(
@@ -77,12 +77,10 @@ fn parameters<'a>(tools: &'a [(String, Value)], name: &str) -> &'a Value {
 }
 
 #[tokio::test]
-async fn every_provider_gets_the_full_parameters() {
+async fn the_provider_gets_the_full_parameters() {
     let full: Value = serde_json::from_str(FULL).expect("是 JSON");
-    for compat in ["", "\n[providers.relay.compat]\nstrict_tools = true\n"] {
-        let tools = sent_tools(compat).await;
-        let names: Vec<&str> = tools.iter().map(|(name, _)| name.as_str()).collect();
-        assert_eq!(names, ["echo", "lookup"], "没有 load_tools：{compat}");
-        assert_eq!(parameters(&tools, "lookup"), &full, "{compat}");
-    }
+    let tools = sent_tools().await;
+    let names: Vec<&str> = tools.iter().map(|(name, _)| name.as_str()).collect();
+    assert_eq!(names, ["echo", "lookup"], "没有 load_tools");
+    assert_eq!(parameters(&tools, "lookup"), &full);
 }

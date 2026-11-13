@@ -17,7 +17,7 @@ async fn a_url_server_is_connected_listed_and_called() {
     home.write(
         "etc/config.toml",
         &format!(
-            "[mcp.remote]\nurl = \"{}\"\nbearer = \"t0k\"\nheaders = {{ X-Team = \"core\" }}\nneed_load = false\n",
+            "[mcp.remote]\nurl = \"{}\"\nbearer = \"t0k\"\nheaders = {{ X-Team = \"core\" }}\n",
             server.url
         ),
     );
@@ -92,10 +92,7 @@ async fn an_expiring_session_reconnects_without_counting_failures() {
     let home = Home::new();
     home.write(
         "etc/config.toml",
-        &format!(
-            "[mcp.remote]\nurl = \"{}\"\nneed_load = false\n",
-            server.url
-        ),
+        &format!("[mcp.remote]\nurl = \"{}\"\n", server.url),
     );
     let turn = || {
         [

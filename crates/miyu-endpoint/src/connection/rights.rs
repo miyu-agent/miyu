@@ -173,7 +173,6 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "mcp.set"
         | "mcp.remove"
         | "skill.remove"
-        | "tool.set_loading"
         | "feature.set"
         | "config.trust"
         | "secret.set"

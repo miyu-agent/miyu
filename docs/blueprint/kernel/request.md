@@ -142,7 +142,7 @@
 | `message.assistant` | 一条 assistant，内容块原样 |
 | `tool.result` | 一条 tool：`call_id`；状态不是 `ok` 的（包括不认识的状态），`error` 是真；内容块 |
 | `job.reported`、`child.reported`、`job.lines`（施工 MN-1 上） | 一个文本块，带标签的事实（下面「回报」），攒进人这一边；派它的那一轮撤掉了的、没派过的、快照里没有写法的，不出（施工 7-2） |
-| `session.*`、`tool.approval_*`、`question.*`、`model.called`、`files.restored`、不认识的种类 | 不渲染。`session.recapped` 也在这里（施工 3-8 四补）：回顾不进她的上下文；内核起的标题（`session.meta_changed`）也一样（施工 3-8 五补）。`command.ran` 也不渲染（施工 O-6） |
+| `session.*`、`tool.approval_*`、`question.*`、`model.called`、不认识的种类 | 不渲染。`session.recapped` 也在这里（施工 3-8 四补）：回顾不进她的上下文；内核起的标题（`session.meta_changed`）也一样（施工 3-8 五补）。`command.ran` 也不渲染（施工 O-6） |
 | `peer.idle` | 一个文本块，带标签的事实（下面「空了的通知」），攒进人这一边；快照里没有通知的字的，不出（施工 C-6） |
 | `image.described` | 不渲染：转述经请求的 `described` 进请求，驱动把图的位置换成它（施工 8-17，下面「替它看的图」） |
 

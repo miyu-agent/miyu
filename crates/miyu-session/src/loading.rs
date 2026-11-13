@@ -3,8 +3,8 @@
 //! 它自己那一项，没写的是 MCP 的工具再照它的服务那一项，都没写的照来处。工具名那一段是占位 `<name>`（施工 X-27：MCP 工具的
 //! 全名常超过 `<id>` 的 32 个字）；服务名照 `<id>`。
 //!
-//! 同一个办法原来也管要不要先加载（`loading.tools.*`、`loading.mcp.*`，施工 L-3）：施工 FL-1 拆了，工具一律全量；写过的键照
-//! 退役的读（`miyu_config` 的 `retired.rs`）。
+//! 同一个办法原来也管要不要先加载（`loading.tools.*`、`loading.mcp.*`，施工 L-3）：施工 FL-1 拆了，工具一律全量；那两组键
+//! 现在只是不认识的键（施工 AUD-2）。
 
 use std::collections::BTreeMap;
 

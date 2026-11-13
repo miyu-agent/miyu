@@ -59,7 +59,7 @@ pub(crate) struct SetParams {
 }
 
 impl SetParams {
-    /// 改配置里的一个开关（施工 X-27 的 `tool.set_loading`、`feature.set`）：真的键 `key` 改成开关 `value`，`None` 是从
+    /// 改配置里的一个开关（施工 X-27 的 `feature.set`）：真的键 `key` 改成开关 `value`，`None` 是从
     /// 配置里删掉。
     pub(crate) fn switch(key: String, value: Option<bool>) -> SetParams {
         let change = ChangeParam {

@@ -186,18 +186,17 @@ fn no_unrevert_after_the_next_turn_or_a_compaction() {
     refused(&mut compacted, &unreverted(20, "[11]"), "nothing to redo");
 }
 
-/// 改回文件的结局（施工 4-7 上）只在回合外：撤销、恢复都在空闲时。
+/// `files.restored`（施工 4-7 上记的改回文件的结局，U-1 起不再产生）不再是内核认识的种类（施工 AUD-2：还没发版，不留只为读
+/// 以前日志的类型）：真碰上了就是不认识的种类，账本不另拦它，回合里、回合外都一样。
 #[test]
-fn files_are_restored_only_between_turns() {
+fn files_restored_is_just_an_unknown_kind_now() {
     let files = r#"{"files":[]}"#;
+    let old = event(4, None, "files.restored", files);
+    assert!(matches!(old.body, Body::Unknown { .. }), "{old:?}");
     let mut ledger = after(3);
-    refused(
-        &mut ledger,
-        &event(4, None, "files.restored", files),
-        "files are restored only after an undo or a redo",
-    );
+    ledger.append(&old).expect("回合里也不拦");
     let mut ledger = after(15);
     ledger
         .append(&event(16, None, "files.restored", files))
-        .expect("撤销以后，回合外记得下");
+        .expect("回合外照旧记得下");
 }

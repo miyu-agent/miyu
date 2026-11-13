@@ -25,7 +25,7 @@
 | `kernel/tools.md` | 内核这边的工具：访问类别、参数修正、内核写的那几句 |
 | `kernel/session.md` | 会话怎么走：输入、动作、回合、一步、调用、打断、排队、重试、重启、载入、原因码 |
 | `kernel/asking.md` | 执行前的链、确认、提问、在等的调用怎么了结 |
-| `kernel/history.md` | 账本、有效历史、撤销和恢复、改回文件的几步 |
+| `kernel/history.md` | 账本、有效历史、撤销、重做和恢复、撤掉压缩时读回日志 |
 | `kernel/request.md` | 统一的请求、组装、事实注入、模板、流式累积 |
 | `drivers/openai-chat.md` | OpenAI 兼容接口：编码、解码、出错分类 |
 | `drivers/anthropic.md` | Anthropic 的消息接口：编码、缓存打点、思考、解码、出错分类：图纸，2026-10-02 起草，待主会话审 |

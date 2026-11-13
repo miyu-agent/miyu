@@ -170,8 +170,7 @@ impl History {
         &self.events
     }
 
-    /// 最近一次撤销拿走的事件，照日志的先后；没有能恢复的撤销就是空的（施工 4-7 上：撤销、恢复时照它算要改回的
-    /// 文件）。
+    /// 最近一次撤销拿走的事件，照日志的先后；没有能恢复的撤销就是空的。重做照它找要重发的那几句（`session/redo.rs`）。
     pub fn last_undone(&self) -> &[Event] {
         self.undone.last().map_or(&[], Vec::as_slice)
     }

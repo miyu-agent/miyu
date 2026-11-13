@@ -101,7 +101,7 @@ pub(super) const THEME_TUI: &[&str] = &["file"];
 pub(super) const THEME_WEB: &[&str] = &["dir"];
 
 /// 一个 MCP 服务除了名字的几格：清单的 `[[mcp]]`、系统配置里的服务都是这几格。
-pub(super) const MCP_SERVER: [&str; 9] = [
+pub(super) const MCP_SERVER: [&str; 8] = [
     "command",
     "env",
     "url",
@@ -109,13 +109,11 @@ pub(super) const MCP_SERVER: [&str; 9] = [
     "headers",
     "venues",
     "timeout_ms",
-    // 退役的（施工 L-1 登记、FL-1 拆掉：工具一律全量）：写了的照旧认得这个键，值不读。
-    "need_load",
     "clicall",
 ];
 
 /// `[[mcp]]`：名字加 [`MCP_SERVER`]。
-pub(super) const MCP: [&str; 10] = [
+pub(super) const MCP: [&str; 9] = [
     "name",
     MCP_SERVER[0],
     MCP_SERVER[1],
@@ -125,7 +123,6 @@ pub(super) const MCP: [&str; 10] = [
     MCP_SERVER[5],
     MCP_SERVER[6],
     MCP_SERVER[7],
-    MCP_SERVER[8],
 ];
 
 /// `[[slash]]`。

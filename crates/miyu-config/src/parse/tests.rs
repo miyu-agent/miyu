@@ -96,10 +96,11 @@ fn dotted_keys_and_inline_tables_are_the_same_items() {
     assert_eq!(parsed.entries["permission.start_read_only"].line, 2);
 }
 
-/// 退役的键（施工 FL-1）：以前写过的照旧读得进，不报 `unknown_key`，也不进最终值；拼错的照旧报。
+/// 以前登记过、后来拆掉的键（施工 FL-1 的 `loading.*`、`compat.strict_tools`，E-9 的 `memory.merge_sessions`）不再另有一张
+/// 「退役的键不报」的表（施工 AUD-2：还没发版，不留）：和别的不认识的键一样报 `unknown_key`，不进最终值。
 #[test]
-fn retired_keys_are_read_quietly() {
-    let source = "[ui]\nlanguage = \"zh\"\n\n[loading.tools]\nweather = false\n\n[loading.mcp]\ngithub = true\n\n[providers.relay.compat]\nstrict_tools = true\n\n[loading]\ntool = 1\n";
+fn keys_taken_out_earlier_are_unknown_like_any_other() {
+    let source = "[ui]\nlanguage = \"zh\"\n\n[loading.tools]\nweather = false\n\n[loading.mcp]\ngithub = true\n\n[memory]\nmerge_sessions = 3\n";
     let parsed = parse(&items(), Layer::System, source).expect("写法对");
     assert_eq!(parsed.entries.len(), 1, "只有写对的那一项进最终值");
     let keys: Vec<_> = parsed
@@ -109,8 +110,11 @@ fn retired_keys_are_read_quietly() {
         .collect();
     assert_eq!(
         keys,
-        [(Code::UnknownKey, Some("loading.tool"))],
-        "不是退役的照旧报"
+        [
+            (Code::UnknownKey, Some("loading.tools.weather")),
+            (Code::UnknownKey, Some("loading.mcp.github")),
+            (Code::UnknownKey, Some("memory.merge_sessions")),
+        ]
     );
 }
 

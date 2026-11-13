@@ -1,7 +1,7 @@
 //! 配置里的 MCP 服务给头的方法（施工 F-9 补，`docs/blueprint/protocol.md` 的 `mcp.*`）：`mcp.list` 列出这时的状态，
 //! `mcp.restart` 重启一个；状态变了推 `mcp.changed`（订阅软件包列表的连接收，`subscriptions/listed.rs`）。一项同软件包列表上
-//! 服务的那一格（施工 X-4），另带 `covers`：它盖住了哪些包里的同名服务；知道有哪些工具的另带 `tools`（施工 X-26）；加载方式
-//! `need_load` 和全局开关 `on`（施工 X-27）；浏览器登录过的带 `logged_in`（施工 X-42 下再补）。只给本机的人用。加、换、删在
+//! 服务的那一格（施工 X-4），另带 `covers`：它盖住了哪些包里的同名服务；知道有哪些工具的另带 `tools`（施工 X-26）；全局开关
+//! `on`（施工 X-27）；浏览器登录过的带 `logged_in`（施工 X-42 下再补）。只给本机的人用。加、换、删在
 //! `editing.rs`（施工 X-26）。
 
 use std::sync::Arc;
@@ -154,8 +154,8 @@ fn value_written(value: &EnvValue) -> Value {
     }
 }
 
-/// 给服务 `server` 的那一格填上 `on`（施工 X-27；软件包列表上包带的服务同样，X-27 补）。`need_load` 那一格施工 FL-1 拆了：
-/// 工具一律全量。配置照最近换上的那一份读，不拿配置服务的锁：推送时也调它。
+/// 给服务 `server` 的那一格填上 `on`（施工 X-27；软件包列表上包带的服务同样，X-27 补）。配置照最近换上的那一份读，
+/// 不拿配置服务的锁：推送时也调它。
 pub(crate) fn toggles(core: &Core, server: &McpServer, one: &mut Value) {
     let values = core.config_now().borrow().resolved().values();
     let switches = miyu_session::switches::of(&values);

@@ -279,7 +279,6 @@ name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
 | `env` | 给服务的环境变量。密钥写成 `{ secret = "<名字>" }`（用 `miyu provider login` 或设置页存进去），别把值写在清单里 |
 | `venues` | `local`、`private`、`group` 里的一个或几个：本机的会话、聊天平台的私聊、群；不写是只给本机的会话 |
 | `timeout_ms` | 一次调用最多等多久，毫秒：1000 到 3600000，不写是 600000 |
-| `need_load` | 以前的写法，照认、不起作用：工具一律一开始就给完整的参数 |
 | `clicall` | AI 在命令里写脚本时能不能用 `miyu call` 调这个服务的工具，不写是能。服务会写东西、发东西的，写 `false` |
 
 ## `[[slash]]`

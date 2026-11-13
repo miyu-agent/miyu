@@ -41,7 +41,7 @@ async fn waiting_for_login(
 ) -> (Arc<miyu_endpoint::Core>, Client, Box<dyn std::any::Any>) {
     home.write(
         "etc/config.toml",
-        &format!("[mcp.notes]\nurl = \"{}\"\nneed_load = false\n", server.url),
+        &format!("[mcp.notes]\nurl = \"{}\"\n", server.url),
     );
     let (core, mut client, kept) = running(home).await;
     let stopped = until_listed(&mut client, "notes", |one| one["state"] == "stopped").await;

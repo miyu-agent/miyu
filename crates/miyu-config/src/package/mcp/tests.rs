@@ -14,7 +14,6 @@ command = ["npx", "-y", "@modelcontextprotocol/server-github"]
 env = { GITHUB_TOKEN = { secret = "github" }, LOG = "quiet", HOME_DIR = { env = "HOME" } }
 venues = ["local", "group"]
 timeout_ms = 120000
-need_load = true
 
 [[mcp]]
 name = "fetch"
@@ -55,7 +54,7 @@ fn a_package_with_only_mcp_servers_is_a_bundle_and_reads_every_field() {
     assert!(matches!(&fetch.reach, Reach::Command { env, .. } if env.is_empty()));
     assert_eq!(fetch.venues, ["local"], "没写的只给本机的会话");
     assert_eq!(fetch.timeout_ms, TIMEOUT_DEFAULT);
-    assert_eq!(fetch.line, Some(12));
+    assert_eq!(fetch.line, Some(11));
 }
 
 #[test]
@@ -232,20 +231,19 @@ fn every_mistake_is_bad_mcp_at_its_server() {
     assert_eq!(table.code, Code::NotATable);
 }
 
-/// 退役的 `need_load`（施工 L-1 登记、FL-1 拆掉：工具一律全量）：写过的包照旧读得进，写什么都一样。
+/// `need_load`（施工 L-1 登记、FL-1 拆掉：工具一律全量）不再是 `[[mcp]]` 的一格（施工 AUD-2：还没发版，不留「照旧读得进」）：
+/// 写了的和别的不认识的键一样报 `unknown_key`。
 #[test]
-fn a_retired_need_load_is_read_and_ignored() {
+fn need_load_is_an_unknown_key_now() {
     let plain = "[package]\nname = { en = \"P\" }\n\n[[mcp]]\nname = \"g\"\ncommand = [\"x\"]\n";
-    let wanted = read(plain).expect("读得进").mcp;
+    read(plain).expect("没写的读得进");
     for line in [
         "need_load = \"yes\"",
         "need_load = false",
         "need_load = \"maybe\"",
     ] {
-        let text = format!("{plain}{line}\n");
-        let mcp = read(&text).expect(line).mcp;
-        assert_eq!(mcp[0].reach, wanted[0].reach, "{line}");
-        assert_eq!(mcp[0].clicall, wanted[0].clicall, "{line}");
+        let refused = read(&format!("{plain}{line}\n")).expect_err(line);
+        assert_eq!(refused.code, Code::UnknownKey, "{line}：{refused}");
     }
 }
 

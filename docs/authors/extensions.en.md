@@ -183,7 +183,6 @@ After the handshake, send `provide`; `tools` is **all** the tools you provide no
 | `timeout_ms` | 1000 to 600000, default 60000 |
 | `display_name` | Name for people, per language: `{"zh": "打招呼", "en": "Greet"}` |
 | `subject` | Which argument's value the timeline shows after the name: "Greet · Ann". Tools that search, or act on a particular file or id, should set it: without it the timeline shows only the name, and nobody can tell what was searched or which one was touched |
-| `need_load` | An old field, still accepted and ignored: every tool gets its full parameters from the start |
 | `clicall` | `true`: the AI can also call it with `miyu call` from a script it runs, and the result goes to the script. Only read, network and execute tools can be; unset means it cannot. Tools that read or look things up, and that the AI can't easily do from a command on its own, should set it: the AI can call them in bulk from a script and skip many round trips. Don't set it on tools that change or send things. Put a structured result in the answer's `data` and the script gets one line of JSON |
 | `result` | The shape of a structured result, one line, such as `{"items":[{"id","title"}]}`: tells the AI which fields a script can take directly (`miyu call --schema` prints it too). Unset means none |
 | `role` | What the tool is for: `read_file` means it reads a text file (the path is a parameter). The core goes by the role, not the name, so if you replace the file reader, the AI still sees the skill list. Unset means none |

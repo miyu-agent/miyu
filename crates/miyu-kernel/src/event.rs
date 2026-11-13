@@ -26,7 +26,6 @@ mod package;
 mod peer;
 mod question;
 mod read;
-mod restore;
 mod session;
 mod shell;
 mod tool;
@@ -57,7 +56,6 @@ pub use nested::{NestedStatus, ToolNested};
 pub use package::{PackageState, State};
 pub use peer::{IdleReason, PeerIdle};
 pub use question::{Choice, Question, QuestionAnswered, QuestionAsked, Response, fits};
-pub use restore::{FilesRestored, RestoreAction, RestoreOutcome, Restored};
 pub use session::{
     CommandRan, ContextCap, Dream, Effort, Forked, Level, LinePin, MetaChanged, Permission,
     PolicyChanged, SessionCreated, SessionRecapped, SessionSealed, TodosCleared, WorkspaceChanged,
@@ -188,8 +186,6 @@ bodies! {
     TurnReverted = "turn.reverted",
     /// 恢复了最近一次撤销的回合。
     TurnUnreverted = "turn.unreverted",
-    /// 撤销、恢复时改回文件的结局（施工 4-7 上）。
-    FilesRestored = "files.restored",
     /// 人发来的消息，或者另一个会话发来的消息。
     MessageUser = "message.user",
     /// 模型一次响应的完整内容，工具调用也在里面。

@@ -279,7 +279,6 @@ MCP servers it brings, one per entry; see [MCP servers](mcp.en.md).
 | `env` | Environment variables for the server. Write secrets as `{ secret = "<name>" }` (stored with `miyu provider login` or the settings screen); don't put values in the manifest |
 | `venues` | One or more of `local`, `private`, `group`: local sessions, private chats and groups on chat platforms; local sessions only when not written |
 | `timeout_ms` | How long one call may take, in milliseconds: 1000 to 3600000, 600000 when not written |
-| `need_load` | An old field, still accepted, with no effect: every tool gets its full parameters from the start |
 | `clicall` | Whether the AI can call this server's tools with `miyu call` from a script it runs; unset means it can. Write `false` for servers that write or send things |
 
 ## `[[slash]]`

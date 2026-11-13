@@ -1,4 +1,4 @@
-# 软件包与命令：`package.*`、`extension.*`、`mcp.*`、`skill.list`、`skill.remove`、`script.list`、`tool.set_loading`、`feature.set`、`command.*`、`check`
+# 软件包与命令：`package.*`、`extension.*`、`mcp.*`、`skill.list`、`skill.remove`、`script.list`、`feature.set`、`command.*`、`check`
 
 管理软件包、扩展进程、系统配置里的 MCP 服务，列出技能、脚本，改工具的加载方式和技能、脚本、MCP 服务的全局开关，执行斜杠命令，查文件写没写错。扩展自己调的方法、核心发给扩展的调用见 [扩展](extensions.md)。英文版：[packages.en.md](packages.en.md)。
 
@@ -21,12 +21,12 @@
 | [`skill.list`](#skilllist) | 列出用得上的技能 |
 | [`skill.remove`](#skillremove) | 删你自己放的技能 |
 | [`script.list`](#scriptlist) | 列出登记上的脚本 |
-| [`tool.set_loading`、`feature.set`](#toolset_loadingfeatureset) | 退役（照旧收、什么都不改）；改技能、脚本、MCP 服务的全局开关 |
+| [`feature.set`](#featureset) | 改技能、脚本、MCP 服务的全局开关 |
 | [`command.run`](#commandrun) | 执行一条斜杠命令 |
 | [`command.catalog`](#commandcatalog) | 列能用的斜杠命令 |
 | [`check`](#check) | 查配置、人格、预设、软件包写没写错 |
 
-**谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.search`、`package.clean`、`package.upgrades`、`package.upgrade`、`package.file`、`package.page`、`extension.*`、`mcp.*`、`tool.set_loading`、`feature.set` 只给人，扩展调回 `local_only`；`package.info` 带 `path` 的也只给人（看的是本机任意一处的文件夹，同 `package.install`，施工 IN-4）。别的人、扩展都能调；扩展调 `package.call` 只调得到自己（见下）。
+**谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.search`、`package.clean`、`package.upgrades`、`package.upgrade`、`package.file`、`package.page`、`extension.*`、`mcp.*`、`feature.set` 只给人，扩展调回 `local_only`；`package.info` 带 `path` 的也只给人（看的是本机任意一处的文件夹，同 `package.install`，施工 IN-4）。别的人、扩展都能调；扩展调 `package.call` 只调得到自己（见下）。
 
 **三层**：出厂的（随 Miyu 装的，`shipped`）、系统加装的（系统的包管理器另外装的，`distro`：Linux 是 `$XDG_DATA_DIRS` 里每一处的 `miyu/packages/`，没设照 `/usr/local/share:/usr/share`，Linuxbrew 自己的 `share` 写进 `XDG_DATA_DIRS`；macOS 是 Homebrew 前缀的 `share/miyu/packages/`；Windows 没有；`MIYU_DISTRO_PACKAGES` 设了的只看它）、装上的（数据根的 `opt/`，`home`）。同一个编号几层都有的，装上的盖过系统加装的、系统加装的盖过出厂的，被盖住的不加载、不算错。装上那一层装了同编号的就是升级、换掉原来的；出厂的、系统加装的卸掉是在 `etc/removed/` 记一笔（空文件 `<编号>`），文件不动，能装回来。
 
@@ -235,7 +235,7 @@
 
 系统配置（`config.toml` 的 `[mcp.<名字>]`）里的 MCP 服务。手改系统配置、用 `mcp.set`、`mcp.remove` 改，都当场生效：新写的起，改了的停下再起，删掉的停下。
 
-**`mcp.list`**：没有参数。回应 `{"servers": [...]}`：`name`、`command`（网址的服务没有这一格，是 `url`）、`venues`、`state`、`failures`，在跑的 `pid`（网址的服务没有），在等的 `retry_in`，停下的 `reason`、`stderr`，盖住了哪些包里同名服务的 `covers`。知道有哪些工具的另带 `tools`：这个服务这时在工具目录里的工具名（`mcp__<服务名>__<工具名>`），起好列完的、照目录缓存先登记的都算；声明了资源的另有 `mcp__<服务名>__list_resources`、`mcp__<服务名>__read_resource` 两件（施工 X-41）；还不知道的（没起过、没缓存）没有这一格。这一次列出来却没登记的带 `skipped: [{"tool", "why"}]`（提示词是 `{"prompt", "why"}`），照原名排：`tool` 是服务那边的原名（没写名字的是空的），`why` 是 `name`（没写名字）、`parameters`（参数格式不是对象）、`name_taken`（截到 64 个字以后撞了，或者别的工具已经叫这个）；都登记上了的、照目录缓存先登记还没列过的没有这一格，`miyu check` 照它报 `mcp_tool_skipped`。`on` 是这个服务的全局开关（`features.mcp-<服务名>`，见 `feature.set`），没写的是 `true`。浏览器登录过的（存着 `mcp.login` 换来的令牌）带 `logged_in: true`，没登录的、`mcp.logout` 以后的没有这一格（施工 X-42 下再补）：头照它把「登录」换成「登出」；只看存没存着，令牌不经协议交出去。编辑时要先填上原来写的：`env`（值是字，或者 `{"secret": …}`、`{"env": …}`；没写的没有这一格）、`timeout_ms`（不是默认的才带），网址的服务另有 `bearer`、`headers`（写法同 `env`）。这几格的字照原样给（本来就明文写在系统配置里），头显示时遮住，编辑框里再给全；要藏的值该写成密钥的引用；`command` 是程序加参数，交回 `mcp.set` 时拆成 `command`、`args`，`need_load` 改用 `tool.set_loading`。
+**`mcp.list`**：没有参数。回应 `{"servers": [...]}`：`name`、`command`（网址的服务没有这一格，是 `url`）、`venues`、`state`、`failures`，在跑的 `pid`（网址的服务没有），在等的 `retry_in`，停下的 `reason`、`stderr`，盖住了哪些包里同名服务的 `covers`。知道有哪些工具的另带 `tools`：这个服务这时在工具目录里的工具名（`mcp__<服务名>__<工具名>`），起好列完的、照目录缓存先登记的都算；声明了资源的另有 `mcp__<服务名>__list_resources`、`mcp__<服务名>__read_resource` 两件（施工 X-41）；还不知道的（没起过、没缓存）没有这一格。这一次列出来却没登记的带 `skipped: [{"tool", "why"}]`（提示词是 `{"prompt", "why"}`），照原名排：`tool` 是服务那边的原名（没写名字的是空的），`why` 是 `name`（没写名字）、`parameters`（参数格式不是对象）、`name_taken`（截到 64 个字以后撞了，或者别的工具已经叫这个）；都登记上了的、照目录缓存先登记还没列过的没有这一格，`miyu check` 照它报 `mcp_tool_skipped`。`on` 是这个服务的全局开关（`features.mcp-<服务名>`，见 `feature.set`），没写的是 `true`。浏览器登录过的（存着 `mcp.login` 换来的令牌）带 `logged_in: true`，没登录的、`mcp.logout` 以后的没有这一格（施工 X-42 下再补）：头照它把「登录」换成「登出」；只看存没存着，令牌不经协议交出去。编辑时要先填上原来写的：`env`（值是字，或者 `{"secret": …}`、`{"env": …}`；没写的没有这一格）、`timeout_ms`（不是默认的才带），网址的服务另有 `bearer`、`headers`（写法同 `env`）。这几格的字照原样给（本来就明文写在系统配置里），头显示时遮住，编辑框里再给全；要藏的值该写成密钥的引用；`command` 是程序加参数，交回 `mcp.set` 时拆成 `command`、`args`。
 
 **`mcp.restart`**：参数 `name`。回应是那一项。**出错**：`unknown_server`。
 
@@ -252,7 +252,6 @@
 | `headers` | 对象 | 别的请求头，值的写法同 `env` 的；`Authorization`、`Mcp-Session-Id`、`MCP-Protocol-Version`、`Mcp-Method`、`Mcp-Name` 留给核心；跟着 `url` |
 | `venues` | 字符串数组 | 给哪种会话：`local`、`private`、`group`；不写是只给本机的会话 |
 | `timeout_ms` | 整数 | 一次调用等多久，1000 到 3600000；不写是 600000 |
-| `need_load` | 布尔 | 退役（施工 FL-1，工具一律全量）：照旧收，不看、不写进服务表 |
 | `clicall` | 布尔 | 这个服务的工具 AI 在命令里用 `miyu call` 能不能调；不写的照原来写的留着，原来没写的能 |
 
 没交的格子不写：整条换掉时原来写着、这次没交的也没了。写之前照读服务表的规矩查，写法同 `config.set`（带版本，不覆盖同时的手改）。回应 `{"name"}`；服务随后照新写的换，状态变了推 `mcp.changed`。**出错**：`mcp_invalid`（写错了，`data.problem` 说哪里不对：`command`、`url` 都没写、两样混写的也是）；`bad_params`（交了 `args` 没交 `command`）；`server_from_package`（系统配置里没写这个名字、有包带着同名服务：随包来的不经它改）；`config_file_broken`（系统配置读不进来，或者 `mcp` 写成了放不下的样子）；`config_conflict`。
@@ -311,19 +310,9 @@
 | `timeout` | 一次等多少秒 |
 | `on` | 全局开关（`features.script-<工具名>`）：没写的是 `true` |
 
-## `tool.set_loading`、`feature.set`
+## `feature.set`
 
 技能、脚本、MCP 服务那几页改的。回应 `{}`。
-
-**`tool.set_loading`**：退役（施工 FL-1，2026-10-27 项目主人定：工具一律全量，没有先加载了）。协议 1 冻结了这个方法：照旧收、照旧查参数，什么都不改，配置一个字不写。以前写进系统配置的 `loading.tools.<工具名>`、`loading.mcp.<服务名>` 照退役的键读，不报错、不起作用。
-
-| 名字 | 类型 | 说明 |
-|---|---|---|
-| `tool` | 字符串 | 工具名：1 到 128 个字符，没有 `.` 和控制字符 |
-| `server` | 字符串 | MCP 服务名 |
-| `need_load` | 布尔或 `null`，必写 | 照旧要写，不看 |
-
-`tool`、`server` 正好写一个。
 
 **`feature.set`**：改一个技能、脚本、MCP 服务的全局开关（`features.<功能编号>`），写系统配置，写法同 `config.set` 改一项（带版本，不覆盖同时的手改，写成了推 `config.changed`），从下一个回合开始生效。`unlisted` 是 `on` 的预设照它；预设里单独写了开或关的照预设（`preset.get` 每个功能的 `by`）。`unlisted` 是 `off` 的预设不照它：没写的照旧关着。
 
@@ -332,7 +321,7 @@
 | `feature` | 字符串，必写 | 功能编号：`skill-<名字>`、`script-<工具名>`、`mcp-<服务名>` |
 | `on` | 布尔或 `null`，必写 | `null` 删掉这一项，回到跟着预设 |
 
-**出错**：`bad_params`（`tool`、`server` 不是正好一个，名字写不进键，不是这三类功能，少了 `need_load`、`on`）；`config_file_broken`；`config_conflict`。
+**出错**：`bad_params`（名字写不进键，不是这三类功能，少了 `on`）；`config_file_broken`；`config_conflict`。
 
 ## `command.run`
 

@@ -156,7 +156,6 @@ pub(crate) fn render_in(history: &History, ordered: &[&Event], texts: &Texts) ->
             | Body::ImageDescribed(_)
             | Body::TurnReverted(_)
             | Body::TurnUnreverted(_)
-            | Body::FilesRestored(_)
             | Body::MessageWithdrawn(_)
             | Body::ApprovalRequested(_)
             | Body::ApprovalDecided(_)

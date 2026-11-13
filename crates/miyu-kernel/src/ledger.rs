@@ -275,12 +275,6 @@ impl Ledger {
             Body::MessageWithdrawn(withdrawn) => self.check_withdrawal(&withdrawn.messages),
             Body::TurnReverted(reverted) => self.check_revert(&reverted.turns),
             Body::TurnUnreverted(unreverted) => self.check_unrevert(&unreverted.turns),
-            Body::FilesRestored(_) => match self.open {
-                Some(open) => Err(format!(
-                    "turn {open} is still running; files are restored only after an undo or a redo"
-                )),
-                None => Ok(()),
-            },
             Body::ToolNested(nested) => {
                 match nested.id.parent() {
                     Parent::Call(call) => {

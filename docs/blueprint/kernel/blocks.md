@@ -61,8 +61,6 @@
 | `Access` | `tool.rs` | `read`、`write`、`execute`、`network`、`outbound`、`venue`（施工 O-31 前）、`install`（施工 F-10 下） | `kernel/tools.md` |
 | `Level` | `event/session.rs` | `full`（A16 以前的 `workspace` 读成它，施工 LV-1） | `kernel/events-bodies.md` |
 | `EndReason` | `event/turn.rs` | `completed`、`interrupted`、`error`、`step_limit`、`aborted`、`restarted` | 同上 |
-| `RestoreAction` | `event/restore.rs` | `write`、`trash`、`untrash` | 同上 |
-| `RestoreOutcome` | `event/restore.rs` | `restored`、`changed`、`missing`、`occupied`、`gone`、`unsaved`、`unavailable`、`failed` | 同上 |
 | `ToolStatus` | `event/tool.rs` | `ok`、`error`、`cancelled`、`denied`、`skipped` | 同上 |
 | `Decision` | `event/tool.rs` | `once`、`session`、`workspace`、`deny` | 同上 |
 | `Part` | `event/model.rs` | `tools`、`system`、`message` | 同上 |
@@ -114,7 +112,6 @@
 | `ToolStatus` | 投影里算没成（tool 消息的 `error` 是真） | `crates/miyu-assemble/src/render.rs` |
 | `Decision` | 回答确认的命令带着不认识的决定，拒绝，原因码 `unknown_decision` | `crates/miyu-kernel/src/session/approval.rs` 的 `answer` |
 | `ErrorClass` | 不重试 | `crates/miyu-kernel/src/session/retry.rs` 的 `retryable` |
-| `RestoreAction`、`RestoreOutcome` | 内核只读不写：施工 U-1 起撤销不再改回文件，`files.restored` 只为读以前的日志 | — |
 | `Part`、`MessageRole`、`CallResult` | 内核只写不读 | — |
 
 ### 出错
@@ -127,7 +124,7 @@
 |---|---|
 | `crates/miyu-kernel/src/block/tests.rs` | 只有路径的附件读写一字不差、认得出种类、没写大小的不写、坏的报错（`a_path_only_attachment_is_known_and_round_trips`，施工 AT-1）；五种读写一字不差、认得出种类，图片块带名字、不带名字的都一字不差（`every_block_from_the_drawing_round_trips`）；驱动私有数据一字不差（`private_data_is_kept_byte_for_byte`）；第 11、12 条工具名和参数照原文（`tool_call_keeps_name_and_args_as_the_model_wrote_them`）；第 7 条（`unknown_block_is_kept_byte_for_byte`）；第 3、5 条的坏写法，图片块的名字带路径的也算（`broken_blocks_are_errors`） |
 | `crates/miyu-kernel/src/text_enum/tests.rs` | 第 17、18 条：认识的读成对应的一种、不认识的原样留着、只收字符串 |
-| `crates/miyu-kernel/src/event/*/tests.rs`、`crates/miyu-kernel/src/tool/tests.rs` | `Level`、`EndReason`、`ToolStatus`、`Decision`、`ErrorClass`、`Access` 每个认识的值读成自己那一种，不认识的原样留着（`each_…_reads_into_its_own_variant`、`an_unknown_…_is_kept_as_it_is`、`access_is_written_as_text_and_unknown_kinds_are_kept`）；`RestoreAction`、`RestoreOutcome` 读几个认识的、不认识的原样留着（`every_field_reads_back_as_written`、`a_new_action_or_outcome_is_kept_as_it_is`）；`Part`、`MessageRole`、`CallResult` 只查了几个值的写法，没有不认识的值的测试 |
+| `crates/miyu-kernel/src/event/*/tests.rs`、`crates/miyu-kernel/src/tool/tests.rs` | `Level`、`EndReason`、`ToolStatus`、`Decision`、`ErrorClass`、`Access` 每个认识的值读成自己那一种，不认识的原样留着（`each_…_reads_into_its_own_variant`、`an_unknown_…_is_kept_as_it_is`、`access_is_written_as_text_and_unknown_kinds_are_kept`）；`Part`、`MessageRole`、`CallResult` 只查了几个值的写法，没有不认识的值的测试 |
 | `crates/miyu-kernel/src/tool/tests.rs` 的 `writing_files_and_unknown_kinds_count_as_writing`；`crates/miyu-kernel/src/session/tests/permission.rs` 的 `an_unknown_level_is_rejected`；`crates/miyu-kernel/src/facts/tests.rs` 的 `the_permission_block_names_the_level_in_effect`；`crates/miyu-session/src/guard/tests.rs`；`crates/miyu-kernel/src/session/tests/approval.rs` 的 `answers_that_do_not_fit_are_rejected` | 第 19 条表里的 `Access`、`Level`、`Decision` 几行 |
 
 ### 出处
