@@ -9,10 +9,11 @@ fn after_the_epoch_drops_the_fraction() {
     assert_eq!(at(time).map(|at| at.unix_millis()), Some(1_234));
 }
 
-/// 1970 年以前的也往早取：差 1 纳秒到 1 毫秒的都算前一毫秒，整毫秒的照原样。
+/// 1970 年以前的也往早取：差不到 1 毫秒的都算前一毫秒，整毫秒的照原样。差 100 纳秒：Windows 的时刻精度是 100 纳秒，
+/// 差 1 纳秒在那里表示不出来、截回 1970 年那一刻（SW-1 补，CI 只 Windows 红过）。
 #[test]
 fn before_the_epoch_rounds_earlier() {
-    let just = UNIX_EPOCH - Duration::from_nanos(1);
+    let just = UNIX_EPOCH - Duration::from_nanos(100);
     assert_eq!(at(just).map(|at| at.unix_millis()), Some(-1));
     let whole = UNIX_EPOCH - Duration::from_millis(5);
     assert_eq!(at(whole).map(|at| at.unix_millis()), Some(-5));
