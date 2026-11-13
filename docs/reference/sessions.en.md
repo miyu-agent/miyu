@@ -349,7 +349,7 @@ When it's written, every subscribed head first receives `model.called` (`purpose
 
 ## `session.set_permission_level`
 
-**Params**: `session`; `level`: only `full` (fully open; the old `workspace` is accepted as `full` and the core no longer writes it); `read_only`: the read-only switch. Give at least one.
+**Params**: `session`; `level`: only `full` (fully open); `read_only`: the read-only switch. Give at least one.
 
 **Response**: `{}`. A change is pushed as `session.policy_changed`. Tightening applies at once; loosening applies from the next request. Whether to ask the person before going fully open is up to the head.
 

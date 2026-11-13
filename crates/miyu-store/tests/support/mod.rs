@@ -110,7 +110,7 @@ pub fn created(at_: Timestamp, parent: Option<&SessionId>) -> Event {
         at_,
         "session.created",
         &format!(
-            r#"{{"venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{{"level":"workspace","read_only":false}}{parent}}}"#
+            r#"{{"venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{{"level":"full","read_only":false}}{parent}}}"#
         ),
     )
 }

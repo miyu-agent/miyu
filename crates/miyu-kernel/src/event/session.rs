@@ -292,11 +292,12 @@ impl serde::Serialize for Level {
 }
 
 impl<'de> serde::Deserialize<'de> for Level {
-    /// A16 以前的「工作区」（`workspace`）读成完全放开：旧会话、旧配置照完全放开接着用，不当成不认识的按只读算。
+    /// 只认 `full`；别的原样留着（[`Level::Other`]）。A16 以前的「工作区」`workspace` 不再另外读成完全放开（施工 AUD-4，
+    /// 2026-11-13 项目主人定：还没发版，旧会话直接删，不留这一行）：同别的不认识的级别，按只读算。
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         let text = <String as serde::Deserialize>::deserialize(d)?;
         Ok(match text.as_str() {
-            "full" | "workspace" => Level::Full,
+            "full" => Level::Full,
             _ => Level::Other(text),
         })
     }

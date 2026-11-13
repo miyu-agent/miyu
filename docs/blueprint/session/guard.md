@@ -38,7 +38,7 @@
 
 | 那一级 | 什么时候 |
 |---|---|
-| 完全放开 | 级别是 `full`，只读开关关着（A16 以前的 `workspace` 读成 `full`，施工 LV-1） |
+| 完全放开 | 级别是 `full`，只读开关关着 |
 | 只读 | 只读开关开着；或者级别不认识，按最严的算 |
 
 A16 起只剩这两级（`11-权限与沙盒.md` A16，施工 LV-1），代码在 `crates/miyu-session/src/guard/levels.rs`（`Effective`、`mark`）。
@@ -223,7 +223,7 @@ A16 起只剩这两级（`11-权限与沙盒.md` A16，施工 LV-1），代码�
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-session/src/guard/tests.rs` | 判法表的每一格（边界以外的读哪一级都放行）；实际生效的那一级，不认识的按只读，以前的 `workspace` 读成完全放开（施工 LV-1）；不报路径的：执行命令沙盒能用时两级都放行，用不了时完全放开照样放行、只读问人、不提规则、说明是 `{"sandbox":false,"tool":"shell"}`（施工 D-4 起），读写放行，联网只读问人、完全放开放行（施工 5-4 上）；说明并进工具交的几格、工具名盖不过、执行类才写 `sandbox`，沙盒用不了时也带标题和命令（施工 D-4） |
+| `crates/miyu-session/src/guard/tests.rs` | 判法表的每一格（边界以外的读哪一级都放行）；实际生效的那一级，不认识的按只读（以前的 `workspace` 也是不认识的，施工 AUD-4）；不报路径的：执行命令沙盒能用时两级都放行，用不了时完全放开照样放行、只读问人、不提规则、说明是 `{"sandbox":false,"tool":"shell"}`（施工 D-4 起），读写放行，联网只读问人、完全放开放行（施工 5-4 上）；说明并进工具交的几格、工具名盖不过、执行类才写 `sandbox`，沙盒用不了时也带标题和命令（施工 D-4） |
 | `crates/miyu-session/tests/hazard.rs`（施工 5-17） | 真的 `shell`：完全放开删家目录拒、不问，结果是拒绝、带那一句；`git push --force`、`git stash drop` 问、不提规则、说明带 `hazard`、`command`，没人能确认的拒；只读不看；平常的命令完全放开照旧不问。`permission.confirm.git` 关着的那一轮 `git reset --hard` 不问就跑，改回开着下一轮又问（施工 HZ-1） |
 | `crates/miyu-session/src/guard/tests.rs` 的 `a_hazard_never_softens_a_refusal`（施工 5-17） | 报的路径已经拒了的照拒（那一类关掉了也照拒）；灭顶的拒、拿工具交的那一句；别的问人、不提规则、说明带种类 |
 | `crates/miyu-session/src/guard/tests/protected.rs`（施工 HZ-1） | 真的 `shell` 报高危，直接调权限策略：没关的每一种都问；关一类，这一类的放行、别的类照旧问；直接拒的七种五类全关也照拒、和没关时一样；命中两类的只关一类照旧问、问的是还开着的那一种，两类都关才放行；九层命令替换里的删除、十层 `eval` 五类全关也照旧问、说明是 `delete_unresolved`；外部身份的会话五类全关每一条判下来的和没关时一样、没有一条放行；只读五类全关和没关时一样 |

@@ -350,7 +350,7 @@
 
 ## `session.set_permission_level`
 
-**参数**：`session`；`level`：只有 `full`（完全放开；以前的 `workspace` 照 `full` 收，核心不再写出它）；`read_only`：只读开关。改哪样写哪样，至少写一个。
+**参数**：`session`；`level`：只有 `full`（完全放开）；`read_only`：只读开关。改哪样写哪样，至少写一个。
 
 **回应**：`{}`。变了的推 `session.policy_changed`。收紧的当场生效；放宽的下一次请求生效。改成完全放开之前要不要问人一声，是头的事。
 

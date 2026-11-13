@@ -114,10 +114,10 @@ miyu_config::settings! {
             applies: new_session,
             ui: { page: "general", group: "new_session", control: toggle },
         },
-        /// 新会话开局的权限级别（施工 8-32）：A16 起只有 `full`（完全放开，施工 LV-1），只读另由 `start_read_only` 管。`workspace`
-        /// 照收、读成 `full`：旧的配置、还没跟上的头的引导写它不报错。设置页不列（`hidden`）。
+        /// 新会话开局的权限级别（施工 8-32）：A16 起只有 `full`（完全放开，施工 LV-1），只读另由 `start_read_only` 管。以前的
+        /// `workspace` 不再照收（施工 AUD-4）。设置页不列（`hidden`）。
         level: String = "full" {
-            kind: option ["full", "workspace"],
+            kind: option ["full"],
             layers: [System],
             applies: new_session,
             ui: { page: "privacy", group: "permission", control: select, hidden: true },

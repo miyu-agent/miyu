@@ -346,7 +346,7 @@ fn logs_the_skeleton_or_call_ids_cannot_follow_read_the_same() {
         ))
         .expect("手写的行读得懂")
     };
-    let created = r#"{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#;
+    let created = r#"{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"full","read_only":false}}"#;
     let kernel = r#"{"kind":"kernel"}"#;
     let person = r#"{"kind":"person"}"#;
     let model = r#"{"kind":"model","endpoint":"deepseek","model":"deepseek-v4"}"#;
@@ -441,7 +441,7 @@ fn logs_the_skeleton_or_call_ids_cannot_follow_read_the_same() {
 fn pages_filled_by_middling_entries_stop_where_they_used_to() {
     let texts = texts();
     let mut dice = Dice(0x5EED);
-    let mut events = vec![Event::from_line(r#"{"seq":1,"at":"2026-11-03T00:00:00.000Z","kind":"session.created","by":{"kind":"person"},"body":{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}}"#).expect("读得懂")];
+    let mut events = vec![Event::from_line(r#"{"seq":1,"at":"2026-11-03T00:00:00.000Z","kind":"session.created","by":{"kind":"person"},"body":{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"full","read_only":false}}}"#).expect("读得懂")];
     for seq in 2..700 {
         let text = format!("omega {}", "字".repeat(30 + dice.below(300) as usize));
         let (by, venue) = match dice.odds(3) {

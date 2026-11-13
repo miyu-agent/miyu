@@ -171,9 +171,8 @@
       },
       "permission.level": {
         "name": "Permission level for new sessions",
-        "description": "New sessions always start with full access; workspace is read as full. To start read-only, turn on read-only for new sessions.",
+        "description": "New sessions always start with full access. To start read-only, turn on read-only for new sessions.",
         "options": {
-          "workspace": "Full access (old name)",
           "full": "Full access"
         }
       },

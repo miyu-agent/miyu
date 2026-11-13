@@ -171,9 +171,8 @@
       },
       "permission.level": {
         "name": "新会话的权限级别",
-        "description": "新会话都从完全放开开局，写 workspace 的也照完全放开算。要开局只读，打开「新会话开局只读」。",
+        "description": "新会话都从完全放开开局。要开局只读，打开「新会话开局只读」。",
         "options": {
-          "workspace": "完全放开（旧写法）",
           "full": "完全放开"
         }
       },

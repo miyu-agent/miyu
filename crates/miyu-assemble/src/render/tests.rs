@@ -215,7 +215,7 @@ fn events_outside_the_context_are_not_rendered() {
     log.push(
         r#"{"kind":"person"}"#,
         "session.policy_changed",
-        r#"{"permission":{"level":"workspace","read_only":true}}"#,
+        r#"{"permission":{"level":"full","read_only":true}}"#,
     );
     log.push(
         r#"{"kind":"module","id":"weather"}"#,

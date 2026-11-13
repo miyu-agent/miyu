@@ -20,7 +20,7 @@ fn event(line: &str) -> Event {
 
 fn created() -> Event {
     event(
-        r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"person"},"cause":"c1","body":{"venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{"level":"workspace","read_only":false},"oneshot":true,"cwd":"~/a","persona":"engineer","preset":"dev"}}"#,
+        r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"person"},"cause":"c1","body":{"venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{"level":"full","read_only":false},"oneshot":true,"cwd":"~/a","persona":"engineer","preset":"dev"}}"#,
     )
 }
 

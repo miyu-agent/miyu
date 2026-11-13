@@ -32,14 +32,13 @@ pub enum PersonaChoice {
     Without,
 }
 
-/// 开局的权限级别：命令行上的写法是 `read-only`、`full`（A16，施工 LV-1；以前的 `workspace` 照 `full` 收）。协议上是常用的
+/// 开局的权限级别：命令行上的写法是 `read-only`、`full`（A16，施工 LV-1）。协议上是常用的
 /// 那一级 `level`（只有 `full`）加只读开关 `read_only`：只读开着的时候实际的级别就是只读。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub enum Permission {
     /// 只读：只开只读开关。
     ReadOnly,
     /// 完全放开：不启用沙盒。只读开关关上。
-    #[value(alias = "workspace")]
     Full,
 }
 

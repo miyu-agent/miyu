@@ -75,9 +75,8 @@ pub const REMINDER: &str = "reminder";
 /// 角色扮演提示隔几轮一条：连这一轮数，到这个数注入（`08-上下文投影.md` C3，旧版实测的间隔）。
 pub const REMINDER_EVERY: usize = 3;
 
-/// 权限那一块写过的几级，写法照 [`effective_level`]。认上一块说的是哪一级时，照这个先后试；`workspace` 只在 A16 以前的旧会话里
-/// 有（施工 LV-1），留着好认出上一块。
-const LEVELS: [&str; 3] = ["read_only", "workspace", "full"];
+/// 权限那一块写过的几级，写法照 [`effective_level`]。认上一块说的是哪一级时，照这个先后试。
+const LEVELS: [&str; 2] = ["read_only", "full"];
 
 /// 会话所在的环境：时区和工作目录（`02-内核.md` 第六节「回合怎么开、请求怎么发」第 6 条）。
 ///
