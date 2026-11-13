@@ -61,6 +61,8 @@ kb.reindex
 kb.remove
 kb.search
 kb.update
+life.kill
+life.new
 life.pause
 life.resume
 life.start

@@ -63,13 +63,22 @@ impl Session {
         self.ledger.sealed()
     }
 
+    /// 人生结束了没有（施工 LF-4 上，`life.md`「结束」）：日志里有过 `life.ended`。记了以后同封存；会话 actor 照它不再抽取。
+    pub fn life_ended(&self) -> bool {
+        self.ledger.life_ended()
+    }
+
     /// 一轮结束了、没有接着开的：跑满了轮数、还没封存的，记一条 `session.sealed`，`by` 内核，`cause` 同那一条 `turn.ended`。
+    /// 人生结束了的（施工 LF-4 上）也封存：这一轮结束时，或者记 `life.ended` 时就闲着的当场。有一轮在跑的不封。
     pub(super) fn seal_if_done(
         &mut self,
         at: Timestamp,
         cause: Option<CommandId>,
     ) -> Option<Event> {
-        if self.ledger.sealed() || !self.rounds.done() {
+        if self.ledger.sealed()
+            || self.ledger.turn_open()
+            || !(self.rounds.done() || self.ledger.life_ended())
+        {
             return None;
         }
         let body = Body::SessionSealed(SessionSealed {});

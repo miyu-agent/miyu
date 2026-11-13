@@ -8,12 +8,14 @@ Give a persona a "life session" that keeps running a loop: she decides when to w
 | [`life.status`](#lifestatus) | Where the persona's life session is and whether it is running |
 | [`life.pause`](#lifepause) | Pause: she does not wake |
 | [`life.resume`](#liferesume) | Resume: she wakes once right away, then on her own schedule |
+| [`life.kill`](#lifekill) | End this life: she never wakes again, the session is archived read-only, and its memories are cleared |
+| [`life.new`](#lifenew) | End the current life if there is one, then start a new one |
 
 **Who may call**: people only (local and remote heads); an extension started by the core gets `local_only`.
 
-All four take one parameter: `persona` (string, required), the persona's id. An unknown persona is `unknown_persona`.
+All of them take one parameter: `persona` (string, required), the persona's id. An unknown persona is `unknown_persona`.
 
-**Telling a life session apart**: its log holds one [`life.started`](events.en.md) event; in the session list (`session.list`, the `sessions` stream) its item has `life: true`, which other sessions do not carry.
+**Telling a life session apart**: its log holds one [`life.started`](events.en.md) event; in the session list (`session.list`, the `sessions` stream) its item has `life: true`, which other sessions do not carry. An ended one also holds a [`life.ended`](events.en.md) event, and its item also has `life_ended: true`.
 
 ## State
 
@@ -21,7 +23,7 @@ All four take one parameter: `persona` (string, required), the persona's id. An 
 
 | Name | Meaning |
 |---|---|
-| `state` | `none` (the persona has no life session), `running`, or `paused` |
+| `state` | `none` (the persona has no life session), `running`, `paused`, or `ended` (the latest one has ended and no new one was started) |
 | `session` | The life session's id; absent for `none` |
 | `next` | When she wakes next; only for `running` |
 
@@ -31,7 +33,7 @@ If the schedule row is gone (for instance the table was broken and replaced by a
 
 Opens a new session with the default model of this moment, the preset `life` and this persona (the title is generated as usual), sets its context cap to 32000 tokens (or to the least the current model needs, if that is more; it can be changed later with `context` in `session.configure`), records the identity in the log, and adds the life row with its first time set to now, so she wakes for the first time right away. Answers `{"session": <id>}`.
 
-- If the persona already has a life session: `life_exists`, with that one in `data.session`. When two connections start the same persona at once, only one session is opened and the other gets `life_exists`.
+- If the persona already has a life session: `life_exists`, with that one in `data.session`. When two connections start the same persona at once, only one session is opened and the other gets `life_exists`. A latest life that has ended does not count: a new one is opened (the old one stays as an archive, its memories already cleared).
 - If the session cannot be opened, the refusal is the one `session.create` gives, and nothing is left behind. If setting the context cap or recording the identity fails, the new session is deleted and the refusal is passed on.
 - If the identity is recorded but the schedule row cannot be added (for instance there are already 200 schedules: `too_many_schedules`), the refusal carries the session in `data.session`: it already is the persona's life session, `life.status` says `paused`, and `life.resume` picks it up once there is room.
 
@@ -51,11 +53,22 @@ Answers with the state above.
 
 ## `life.pause`
 
-Pause: she does not wake, and the next time is cleared. Pausing a paused one is fine. Answers with the state above. Without a life session: `no_life`.
+Pause: she does not wake, and the next time is cleared. Pausing a paused one is fine. Answers with the state above. Without a life session: `no_life`; an ended one: `life_ended`.
 
 ## `life.resume`
 
-Resume: the next time becomes now, so she wakes once right away and then on her own schedule; the note she left for her next wakeup is kept. A running one is left as it is; a missing schedule row is rebuilt from the log. Answers with the state above. Without a life session: `no_life`.
+Resume: the next time becomes now, so she wakes once right away and then on her own schedule; the note she left for her next wakeup is kept. A running one is left as it is; a missing schedule row is rebuilt from the log. Answers with the state above. Without a life session: `no_life`; an ended one: `life_ended`.
+
+## `life.kill`
+
+End this life, and answer once it is done: a `life.ended` event goes into the log (ended by a person, no last words) and a running turn is interrupted; the session is archived read-only (sending answers `session_sealed`) and can still be read and browsed; the life row is deleted, so she never wakes again; the persona's memories whose sources all lie in this session are cleared (this cannot be undone), and the session is taken out of the index of past conversations; heads subscribed to the `notices` stream get a `life.ended` notice (see [Pushes](pushes.en.md)). There is no way to continue it. Answers `{"state": "ended", "session": <id>}`.
+
+- Without a life session: `no_life`.
+- An ended one succeeds as well: whatever was left uncleared (for instance when the core stopped half way) is finished, and no second notice is sent.
+
+## `life.new`
+
+End a running or paused life as `life.kill` does, then start a new one as `life.start` does. Answers `{"session": <new id>, "ended": <the one that ended>}`; `ended` is absent when there was nothing to end. The new life does not remember the old one (its memories were cleared).
 
 ## Errors
 
@@ -63,5 +76,6 @@ Resume: the next time becomes now, so she wakes once right away and then on her 
 |---|---|---|
 | `unknown_persona` | No such persona | |
 | `life_exists` | `life.start`: the persona already has a life session | `session` |
-| `no_life` | `life.pause`, `life.resume`: the persona has no life session | |
+| `no_life` | `life.pause`, `life.resume`, `life.kill`: the persona has no life session | |
+| `life_ended` | `life.pause`, `life.resume`: the persona's latest life has ended | `session` |
 | `too_many_schedules` | `life.start`, `life.resume`: there are already 200 schedules, so the life row cannot be added | `session` for `life.start` |

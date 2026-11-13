@@ -404,7 +404,7 @@ impl Session {
         if self.reading.is_some() {
             return vec![rejected(id, Reason::Restoring)];
         }
-        if self.ledger.sealed() && !seal::taken_when_sealed(&command) {
+        if self.ledger.closed() && !seal::taken_when_sealed(&command) {
             return vec![rejected(id, Reason::Sealed)];
         }
         self.recent.expect(&id, digest);

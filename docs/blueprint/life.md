@@ -1,6 +1,6 @@
 ## 人生会话
 
-状态：LF-5 中施工中（2026-11-14）：开一条、问状态、暂停、继续，出厂预设「推演人生」。结束（`life.ended`、`end_life`、`life.kill`、`life.new`）是 LF-4，命令 `/life` 是 LF-5 下，头的开关是 LF-8。
+状态：LF-5 中施工中（2026-11-14）：开一条、问状态、暂停、继续，出厂预设「推演人生」。LF-4 上施工中（2026-11-14）：结束（`life.ended`、`life.kill`、`life.new`、清理）。她自己的工具 `end_life` 和带它的内置包是 LF-4 下，命令 `/life` 是 LF-5 下，头的开关是 LF-8。
 
 ### 是什么
 
@@ -10,10 +10,15 @@
 
 | 代码 | 管什么 |
 |---|---|
-| `crates/miyu-endpoint/src/life.rs` | `life.start`、`life.status`、`life.pause`、`life.resume`：查人格、照索引找这个人格的人生会话、开会话、设上下文上限、记身份、建和停续人生那一行 |
-| `crates/miyu-endpoint/src/refusal/life.rs` | `life_exists`（带 `session`）、`no_life`，拒绝带上会话编号 |
+| `crates/miyu-endpoint/src/life.rs` | `life.start`、`life.status`、`life.pause`、`life.resume`、`life.kill`、`life.new`：查人格、照索引找这个人格的人生会话、开会话、设上下文上限、记身份、建和停续人生那一行 |
+| `crates/miyu-endpoint/src/life/finish.rs`（施工 LF-4 上） | `finish`：结束一段人生的六步（「结束」），`life.kill`、`life.new` 和她的 `end_life`（LF-4 下）共用 |
+| `crates/miyu-kernel/src/ledger/seal.rs`、`session/seal.rs`（施工 LF-4 上） | `life.ended` 只记一次；记了以后同封存，这一轮结束时（闲着的当场）记 `session.sealed` |
+| `crates/miyu-session/src/actor/extract.rs`、`memory/extract/{extractor,job}.rs`（施工 LF-4 上） | 结束了的不再抽取：不上闹钟，在路上的那一次落地前丢掉 |
+| `crates/miyu-session/src/memory/turns.rs`（施工 LF-4 上） | 载入、补齐见到 `life.ended` 的不进回合索引 |
+| `crates/miyu-endpoint/src/schedules/fire.rs`（施工 LF-4 上） | 人生那一行到点、人生已经结束了的：删掉、不叫醒她 |
+| `crates/miyu-endpoint/src/refusal/life.rs` | `life_exists`（带 `session`）、`no_life`、`life_ended`（带 `session`，施工 LF-4 上），拒绝带上会话编号 |
 | `crates/miyu-endpoint/src/lib.rs` 的 `Core::life` | 一把锁：改的三个方法排着来 |
-| `crates/miyu-kernel/src/event/life.rs` | 事件 `life.started`（`kernel/events-bodies.md`）；内核命令 `Append` 的 `Life`（`input/command.rs`）记它 |
+| `crates/miyu-kernel/src/event/life.rs` | 事件 `life.started`、`life.ended`（`kernel/events-bodies.md`）；内核命令 `Append` 的 `Life`、`LifeEnded`（`input/command.rs`）记它们 |
 | `crates/miyu-store/src/index/row.rs` 的 `Life` | 会话索引的 `life` 一列（`store/index.md`） |
 | `crates/miyu-endpoint/src/list.rs` | 会话列表那一项写 `life: true` |
 | `crates/miyu-endpoint/src/schedules.rs` 的 `resume` | 人生那一行续上，下一次写成现在（`schedules.md` 第四节） |
@@ -22,19 +27,22 @@
 ### 对外的样子
 
 1. **身份记在会话日志里**：`life.start` 在新会话的日志里记一条 `life.started`（`body` 是 `{}`，`by` 是开它的人，不带回合）。真相只有日志（同长期目标，`goal.md`）：定时表那一行只管下次几点醒，表坏了换成空的以后照这一条接上。记成内核的事件而不是包的 `ext.*`：`ext.<前缀>` 是给包用的，前缀是 `life` 的包、本机的头经 `events.append` 都能往别的会话里记一条，冒充人生会话、占住一个人格（施工 LF-5 中，主会话 2026-11-14 定）。`events.append` 记不了 `life.started`：只有 `life.start` 经内核命令记。
-2. **会话索引一格**：`life`，照日志里有没有 `life.started` 派生（`store/index.md`），索引删了重建照样派生得出。会话列表（`session.list`、`sessions` 流）里人生会话那一项写 `life: true`，别的不写。
+2. **会话索引一格**：`life`，照日志里有没有 `life.started`、`life.ended` 派生（`store/index.md`：0 不是、1 开着、2 结束了），索引删了重建照样派生得出。会话列表（`session.list`、`sessions` 流）里人生会话那一项写 `life: true`，结束了的再写 `life_ended: true`（施工 LF-4 上，头照它显示成只读的档案），别的不写。
 3. **方法**（只给人，本机、远程的头都行；核心拉起的扩展回 `local_only`，`connection/rights.rs`）。参数都是 `{persona}`；没有这个人格的 `unknown_persona`（照 `personas::resolve`，写法不对的 `bad_params`）。
    - `life.start {persona}` → `{"session"}`。
    - `life.status {persona}` → `{"state": "none" | "running" | "paused", "session"?, "next"?}`：没有人生会话的 `none`；人生那一行在、没停的 `running`，带会话和下一次；停着的、那一行不在的 `paused`，带会话。
-   - `life.pause {persona}`、`life.resume {persona}` → 同 `life.status` 的回应。没有人生会话的 `no_life`。
-4. **出错**：`life_exists`（`data.session` 是那一个）、`no_life`；定时表的照 `schedule.*` 的说法（`too_many_schedules`、`internal_error`），`life.start` 记了身份以后才出的多带 `data.session`。给人看的话在 `refusal/message.rs`（中、英）。
+   - `life.pause {persona}`、`life.resume {persona}` → 同 `life.status` 的回应。没有人生会话的 `no_life`，结束了的 `life_ended`（施工 LF-4 上）。
+   - `life.status` 多一种 `ended`（施工 LF-4 上）：这个人格最近的那一条已经结束、还没开新的，带那个会话。
+   - `life.kill {persona}`（施工 LF-4 上）→ `{"state": "ended", "session"}`：照「结束」做完才回；结束了的把清理剩下的几步再走一遍、原样回成功；没有的 `no_life`。
+   - `life.new {persona}`（施工 LF-4 上）→ `{"session", "ended"?}`：在跑、暂停着的先结束（`ended` 是它），结束了的先补齐清理，再照 `life.start` 开一条新的。`life.start` 碰上结束了的同样先补齐清理、开新的。
+4. **出错**：`life_exists`（`data.session` 是那一个）、`no_life`、`life_ended`（`data.session` 是那一个，施工 LF-4 上）；清理哪一步没成的照那一步的原因，带 `data.session`；定时表的照 `schedule.*` 的说法（`too_many_schedules`、`internal_error`），`life.start` 记了身份以后才出的多带 `data.session`。给人看的话在 `refusal/message.rs`（中、英）。
 5. **出厂预设** `life`：见 `presets.md`「出厂的几份」。
 
 ### 怎么走
 
-**1. 找这个人格的人生会话**：照会话列表的读法（`list::scan`，索引落后的照日志补到末尾），在本机的主会话里找 `life` 是开着的、人格（这一刻的，中途换了人格的照换了的）是它的，取最新的一个。只照不会变的格（父会话、场所）先挑：`life`、人格在造好以后才变，落后的那一行照它们挑会漏掉。
+**1. 找这个人格的人生会话**：照会话列表的读法（`list::scan`，索引落后的照日志补到末尾），在本机的主会话里找 `life` 是开着的或者结束了的（施工 LF-4 上）、人格（这一刻的，中途换了人格的照换了的）是它的，取最新的一个。只照不会变的格（父会话、场所）先挑：`life`、人格在造好以后才变，落后的那一行照它们挑会漏掉。
 
-**2. 排着来**：`life.start`、`life.pause`、`life.resume` 在 `Core::life` 那一把锁里做完（同终端会话、场所会话找回的写法）：两个头同时开同一个人格的，后一个等前一个记完身份再找，找到了回 `life_exists`。`life.status` 只读，不拿锁。一把锁管全部人格：开、停、续很少，不同的人格排着队、结果互不相干。
+**2. 排着来**：`life.start`、`life.pause`、`life.resume`、`life.kill`、`life.new` 在 `Core::life` 那一把锁里做完（同终端会话、场所会话找回的写法）：两个头同时开同一个人格的，后一个等前一个记完身份再找，找到了回 `life_exists`。`life.status` 只读，不拿锁。一把锁管全部人格：开、停、续很少，不同的人格排着队、结果互不相干。
 
 **3. `life.start` 的四步**：
 
@@ -46,6 +54,17 @@
 **4. `life.pause`**：找，没有的 `no_life`；那一行在、没停的停掉（`Schedules::pause`：下一次清掉）；停着的、不在的不动。
 
 **5. `life.resume`**：找，没有的 `no_life`；那一行停着的续上（`Schedules::resume`：人生那一行的下一次写成现在，马上醒，她的留言不动）；在跑的不动；不在的照第 3 条第 4 步重建（表坏了换成空的以后，设计 70 第三节第 1 条）。
+
+**6. 结束**（施工 LF-4 上，设计 70 第三节第 5 条）：只有有意的结束，入口是主人的 `life.kill`、`life.new` 和她自己的 `end_life`（LF-4 下）。都调 `life::finish(core, session, by, last_words)`，`by` 是人或者她的那次工具调用，遗言只有她自己结束的才有。照这个先后，每一步先查后做、能重做，重做不重复清、不重复推：
+
+1. 记 `life.ended`（`kernel/events-bodies.md`）：已经记过的跳过。命令编号照会话固定（`life/<会话>/end`），两处同时结束的内核照编号只记一次。主人结束、这时正跑一轮的，打断它（`/stop` 的打断，排着的留着）；她自己结束的那一轮照常说完。记了以后同封存（`session/fork.md`「封存」）：改对话的命令拒 `session_sealed`，排着的不再开轮，这一轮结束时（闲着的当场同一批）记 `session.sealed`。
+2. 等封存了再清（订阅这个会话等 `session.sealed`）：那一轮里她记下的、进回合索引的不漏。第 1 步当场做完交回，第 2 到 6 步在自己的任务里做：她调工具结束的，那一轮要等工具答完才结束、才封存。
+3. 删掉定时表里人生那一行（没有的算成）。
+4. 清记忆：同 `memory.forget {clear: session}`（`memory.md` 第二条第 5 款），出处全在这个会话里的清掉，别处也有出处的、人记的不动；命令编号照会话固定（`life/<会话>/memory`），重做照编号只算一次。现成的清法本来就让摘要作废、下次整理从头写（`memory.md` 第七条第 8 款）；人卡不动（只清一个会话不碰卡）。这个会话没有记忆的跳过。抽取另拦两处（`memory.md` 第六条）：结束了的不上闹钟，在路上的那一次落地前再看一次、整批丢掉；看过以后才结束的，写下以后再清一次这个会话的。不拦的话封存当场响的闹钟会把这段人生抽回记忆：按会话清只清「那以前」的。
+5. 回合索引：`forget_session`（`memory.md` 第一条第 7 款），埋整个会话的墓碑、拿掉全部；回合库删了重建以后墓碑没了，载入、补齐照日志判：日志里有 `life.ended` 的不接（`memory/turns.rs`）。
+6. 给主人推一条通知 `life.ended {persona, session, by: "self" | "owner", last_words?}`（`schedules.md` 第七节）：只在第 1 步是这一次新记上的时候推。
+
+哪一步没成的照那一步的原因回（带 `data.session`），再结束一次（`life.kill`，或者 `life.start`、`life.new` 碰上它）接着清完。第 1 步成了、第 3 步以前断了的，人生那一行到点时看到会话已经结束，删掉这一行、记 `skipped:life_ended`，不叫醒她（`schedules/fire.rs`）。会话日志不删、不进回收处，照常能读、能翻历史；没有接上的入口。确认是头的事，协议上不另加往返。
 
 ### 守着它的
 
@@ -63,4 +82,10 @@
 | `crates/miyu-endpoint/tests/extension_rights.rs` 的 `life_methods_are_people_only` | 批了驱动会话、读写事件的扩展调四个方法回 `local_only` |
 | `crates/miyu-kernel/src/session/tests/venue.rs` 的 `the_life_identity_is_appended_like_the_rest` | 内核记身份：不带回合、不开回合、`by` 照发的 |
 | `crates/miyu-store/src/index/tests/life.rs` | 索引那一格照日志派生、存了读回、认不得的数读不懂 |
-| `crates/miyu-kernel/tests/samples.rs` | `life.started` 的样本读写一字不差 |
+| `crates/miyu-kernel/tests/samples.rs` | `life.started`、`life.ended` 的样本读写一字不差 |
+| `crates/miyu-endpoint/tests/life_end.rs` 的 `kill_ends_a_life_and_clears_what_it_left`（施工 LF-4 上） | `life.kill`：人记的、没有遗言、不带回合的 `life.ended`，封存；人生那一行没了；推了通知；这段人生记下的清掉、别的会话记的还在；回合索引拿掉、别的还在；往后拨不再醒；发话拒 `session_sealed`；状态 `ended`；列表带 `life_ended`，索引删了照日志一样 |
+| 同上 `an_ended_life_refuses_pause_and_resume_and_new_ones_start_fresh` | 停、续拒 `life_ended` 带会话；`life.start` 开出新的一条；在跑的时候 `life.new` 结束旧的、开出第三条 |
+| 同上 `ending_again_redoes_nothing_and_a_leftover_row_is_dropped_unwoken` | 没有的 `no_life`；再结束一次原样成功、不记第二条、不再推；留下的人生那一行到点删掉、不叫醒她 |
+| `crates/miyu-kernel/src/session/tests/life_end.rs`（施工 LF-4 上） | 闲着的同一批封存、只记一次；在跑一轮的这一轮说完才封存，中间来的话拒、不再开轮 |
+| `crates/miyu-session/tests/memory_extract_life.rs`（施工 LF-4 上） | 结束以后封存当场响的闹钟不抽；抽取正在半路上时结束的整批丢掉、不记抽到了哪 |
+| `crates/miyu-session/tests/memory_life_ended.rs`（施工 LF-4 上） | 回合库重建以后补齐不补结束了的人生，别的会话照补 |

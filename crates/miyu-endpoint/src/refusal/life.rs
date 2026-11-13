@@ -12,6 +12,11 @@ impl Refusal {
         data: None,
     };
 
+    /// 这个人格最近的那一段人生已经结束了（施工 LF-4 上）：`life.pause`、`life.resume` 回它，`data.session` 是那一个。
+    pub(crate) fn life_ended(session: &SessionId) -> Refusal {
+        Refusal::with("life_ended", "session", serde_json::json!(session.as_str()))
+    }
+
     /// 这个人格已经有一个没结束的人生会话：`life.start` 回它，`data.session` 是那一个。
     pub(crate) fn life_exists(session: &SessionId) -> Refusal {
         Refusal::with(

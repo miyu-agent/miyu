@@ -10,6 +10,7 @@ use tokio::sync::oneshot;
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::id::{Seq, SessionId};
+use miyu_kernel::origin::By;
 use miyu_kernel::request::Message;
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_recall::Skipped;
@@ -25,7 +26,7 @@ use crate::clock::wall_now;
 use crate::config::TurnConfig;
 use crate::memory::landed::Landed;
 use crate::memory::merge::{Hush, MergeJob};
-use crate::memory::{Dreamed, Keeper, NotDreamed};
+use crate::memory::{Dreamed, Keeper, NotDreamed, Stamp};
 use crate::route::Ask;
 
 /// 派出去抽的一次。
@@ -251,9 +252,28 @@ impl Job {
         (found, places): (Vec<miyu_recall::extract::Candidate>, BTreeMap<u64, String>),
         skipped: Option<Skipped>,
     ) -> Option<Vec<miyu_recall::MemoryId>> {
+        // 人生结束了的（施工 LF-4 上）：落地前再看一次，整批丢掉。
+        if self.extractor.closed() {
+            tracing::info!(target: TARGET, session = %self.session, "memory extraction dropped life_ended=true");
+            return None;
+        }
         let (keeper, session) = (self.keeper.clone(), self.session.clone());
+        let closed = Arc::clone(&self.extractor);
         let recorded = blocking(move || {
-            keeper.record_extraction(wall_now(), &session, upto, (found, &places), skipped)
+            let recorded =
+                keeper.record_extraction(wall_now(), &session, upto, (found, &places), skipped);
+            // 看过以后、写下以前结束了的：结束那边的清空可能已经清过了，这里再清一次这个会话的，不留下（`life.md`「结束」）。
+            if closed.closed() {
+                let stamp = Stamp {
+                    at: wall_now(),
+                    by: By::Kernel,
+                    cause: None,
+                };
+                if let Err(error) = keeper.clear(stamp, Some(session.clone())) {
+                    tracing::warn!(target: TARGET, session = %session, error = ?error, "memory extraction not cleared");
+                }
+            }
+            recorded
         })
         .await;
         recorded

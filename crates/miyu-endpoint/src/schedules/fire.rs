@@ -6,6 +6,8 @@
 //!   这一次不跑，记 `skipped:preset_off`，下一次照算。人建的、包建的不看预设。
 //! - 会话没了：记 `skipped:session_gone`，任务停掉，留给人看、给人删。
 //! - 人生循环（施工 LF-2）交的不是那一行的原话：推演方法接她的留言（`life.rs`）。
+//! - 人生那一行到点、会话的人生已经结束了的（施工 LF-4 上：结束到一半断了，那一行没删掉）：删掉这一行、记 `skipped:life_ended`，
+//!   不叫醒她。
 
 use std::sync::Arc;
 
@@ -33,6 +35,8 @@ pub(super) struct Delivered {
     pub(super) session: Option<SessionId>,
     /// 任务要停掉（会话没了）。
     pub(super) stop: bool,
+    /// 这一行要删掉（施工 LF-4 上：人生结束了）。
+    pub(super) remove: bool,
 }
 
 impl Delivered {
@@ -41,6 +45,7 @@ impl Delivered {
             result: format!("skipped:{why}"),
             session,
             stop,
+            remove: false,
         }
     }
 }
@@ -73,6 +78,18 @@ pub(super) async fn deliver(core: &Arc<Core>, schedule: &Schedule, due: Timestam
     let Ok(found) = core.sessions.get(core, &session).await else {
         return Delivered::skipped("session_gone", Some(session), true);
     };
+    if schedule.looping == Some(Loop::Life)
+        && found
+            .handle
+            .current()
+            .await
+            .is_ok_and(|current| current.life_ended)
+    {
+        return Delivered {
+            remove: true,
+            ..Delivered::skipped("life_ended", Some(session), false)
+        };
+    }
     if let Creator::Model { .. } = schedule.by {
         let package = match schedule.looping {
             None => SCHEDULE_PACKAGE,
@@ -125,6 +142,7 @@ pub(super) async fn deliver(core: &Arc<Core>, schedule: &Schedule, due: Timestam
                 result: if busy { "queued" } else { "ran" }.to_string(),
                 session: Some(session),
                 stop: false,
+                remove: false,
             }
         }
         Ok(_) => Delivered::skipped("refused", Some(session), false),
@@ -155,6 +173,7 @@ async fn pushed(core: &Arc<Core>, schedule: &Schedule, due: Timestamp, missed: u
         result: "sent".to_string(),
         session: None,
         stop: false,
+        remove: false,
     }
 }
 

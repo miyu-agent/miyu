@@ -57,6 +57,20 @@ impl Actor {
         called(config)
     }
 
+    /// 人生结束了的（施工 LF-4 上，`life.md`「结束」）：关上抽取（`Extractor::close`），撤掉闹钟。每落一批看一次账本。
+    pub(super) fn close_extraction_if_life_ended(&self) {
+        if !self.session.life_ended() {
+            return;
+        }
+        if let Some((calls, _)) = self.tools.memory() {
+            let (_, _, extractor) = calls.extracting();
+            if !extractor.closed() {
+                extractor.close();
+                extractor.cancel();
+            }
+        }
+    }
+
     /// 刚从忙到闲：抽取开着的上一个闹钟。封存了的支线（施工 C-8 下）闹钟当场就响（施工 V-23）：不会再开轮，等闲够
     /// `extract_idle` 只是让它在内存里多挂半小时（群里一条话开一条支线，同时挂着三十来条）；响了照常判，不跳过抽取
     /// （群里的支线一轮就封存，轮数不够，本来就不抽）。
@@ -65,6 +79,10 @@ impl Actor {
             return;
         };
         let (keeper, _, extractor) = calls.extracting();
+        // 人生结束了的（施工 LF-4 上）不上闹钟：封存当场响的闹钟会把这段人生抽回记忆。
+        if extractor.closed() {
+            return;
+        }
         // 只看闲多久，不拷整份抽取要的几样（施工 V-43：原来每次从忙到闲拷两遍）。
         let Some((idle, _)) = keeper.extract_waits() else {
             return;
@@ -98,6 +116,9 @@ impl Actor {
             return;
         };
         let (keeper, _, extractor) = calls.extracting();
+        if extractor.closed() {
+            return;
+        }
         // 每送完一批都看一眼：只看等多久，不拷整份（施工 V-43）。
         let Some((_, max_wait)) = keeper.extract_waits() else {
             return;
@@ -152,6 +173,9 @@ impl Actor {
             return;
         };
         let (keeper, session, extractor) = calls.extracting();
+        if extractor.closed() {
+            return;
+        }
         let put_down = |extractor: &Extractor| match forced {
             true => extractor.unforce(),
             false => extractor.disarm(generation),

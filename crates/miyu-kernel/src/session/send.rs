@@ -106,7 +106,8 @@ impl Session {
         actions
     }
 
-    /// `events.append`（施工 O-13 上）：记一条不带回合编号的事件，任何时候都收，不开回合、不打断。
+    /// `events.append`（施工 O-13 上）：记一条不带回合编号的事件，任何时候都收，不开回合、不打断。记的是 `life.ended`、这时
+    /// 闲着的（施工 LF-4 上），同一批当场封存；在跑一轮的等这一轮结束。
     pub(super) fn append(
         &mut self,
         id: CommandId,
@@ -115,7 +116,9 @@ impl Session {
         event: Appended,
     ) -> Vec<Action> {
         let event = self.record_outside(at, by, Some(id.clone()), event.into_body());
-        self.accept(id, vec![event.seq]);
-        vec![Action::Append(vec![event])]
+        self.accept(id.clone(), vec![event.seq]);
+        let mut events = vec![event];
+        events.extend(self.seal_if_done(at, Some(id)));
+        vec![Action::Append(events)]
     }
 }

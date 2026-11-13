@@ -67,6 +67,8 @@ impl Actor {
     /// 一批送完了：等的这一边照内核在等的去订、计时（`crate::peers`）；这个会话忙不忙跟着记——忙着的，名单上
     /// 的都上膛；刚从忙变空的，记下忙完的这一刻（`finished_at`）。然后给上膛的发通知。
     pub(super) fn after_batch(&mut self) {
+        // 人生结束了的（施工 LF-4 上）：抽取关上，闹钟撤掉。
+        self.close_extraction_if_life_ended();
         let now = self.clock.now();
         let agents = self.tools.agents().cloned();
         self.watches

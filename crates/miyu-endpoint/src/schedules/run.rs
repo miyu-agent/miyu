@@ -116,7 +116,12 @@ async fn fire(core: &Arc<Core>, table: &Table, schedule: Schedule, now: Timestam
         result = %delivered.result,
         "schedule fired"
     );
-    if !once {
+    if delivered.remove {
+        // 人生结束了的那一行（施工 LF-4 上）：删掉，不记上一次。
+        if let Err(error) = table.remove(&schedule.id) {
+            tracing::warn!(target: TARGET, schedule = %schedule.id, error = %error, "schedule not removed");
+        }
+    } else if !once {
         let last = miyu_store::schedules::Last {
             at: now,
             result: delivered.result,

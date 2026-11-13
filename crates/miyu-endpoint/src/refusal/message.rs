@@ -331,6 +331,8 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "这个人格没有人生会话。",
             "This persona has no life session.",
         ),
+        // 施工 LF-4 上。
+        "life_ended" => ("这段人生已经结束了。", "This life has ended."),
         // 施工 D-1：`session.answer` 碰得到的四个（`unknown_decision` 协议上碰不到，`protocol.md`「出错」）。
         "not_asking" => ("不在等待回答。", "Not waiting for an answer."),
         "no_rule" => ("只能允许本次或拒绝。", "Only allow once or deny."),

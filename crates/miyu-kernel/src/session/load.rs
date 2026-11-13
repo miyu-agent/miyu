@@ -326,6 +326,7 @@ impl Session {
             Some(ended)
                 if ended.reason == EndReason::Restarted
                     && ended.triggered
+                    && !self.ledger.life_ended()
                     && replay.resumed < self.policy.resumes =>
             {
                 let trigger = ended.queued.last().copied().unwrap_or(ended.seq);

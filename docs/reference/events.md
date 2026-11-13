@@ -55,6 +55,7 @@
 | `package.state` | 包的程序直接换上了它在这个会话里的一份状态（`{"package", "state"}`，见 [扩展](extensions.md)） |
 | `goal.set`、`goal.changed`、`goal.paused`、`goal.resumed`、`goal.ended` | 长期目标设下、改了、停了、继续、结束 |
 | `life.started` | 这是一个人格的人生会话（`life.start` 开的，见[人生会话](life.md)） |
+| `life.ended` | 这段人生结束了：`body` 是 `{"last_words"?}`，她自己结束的才有遗言；`by` 是人或者她的那次工具调用。之后会话归档只读 |
 | `dream.ended` | 一趟整理记忆跑完了：新记、改了、作废了几条，有没有写摘要，是不是叫停的 |
 | `venue.recalled`、`venue.delivered` | 平台上有人撤回了一条；她的话发到了平台上 |
 | `ext.<前缀>.<名字>` | 扩展自己记的（`events.append`；前缀是清单的 `prefix`，没写的是包编号） |

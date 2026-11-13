@@ -58,6 +58,8 @@ impl Actor {
             least_context: self.session.least_context(),
             vision: self.session.vision().map(str::to_string),
             compaction_line: self.session.pinned_line(),
+            sealed: self.session.sealed(),
+            life_ended: self.session.life_ended(),
         }
     }
 

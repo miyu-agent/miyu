@@ -1527,6 +1527,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sLF3"><span class="n">LF-3</span>人生循环叫醒的回合进回合索引<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF5b"><span class="n">LF-5 中</span>开一条人生会话，暂停、继续、问状态<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF6"><span class="n">LF-6</span>人生会话醒来时交新记的<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sLF4a"><span class="n">LF-4 上</span>结束一段人生<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -58929,6 +58930,60 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LF-6-醒来时交新记的.md</code>；设计 <code>70-推演人生.md</code>；蓝图 <code>memory.md</code>、<code>kernel/session.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sLF4a" aria-labelledby="h-sLF4a">
+  <div class="sheet-head"><h2 id="h-sLF4a"><span class="no">LF-4 上</span>结束一段人生</h2><span class="pill done">做完</span></div>
+  <p class="purpose">人生开得起来以后，要能有意地结束：不再醒、归档只读，这段人生产生的记忆和索引清掉，日志照常能看。这一步做结束本身和主人的两个入口，她自己的工具 <code>end_life</code> 留给下一步直接调同一个口子。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint · life/finish.rs　miyu-kernel · ledger/seal.rs　miyu-session · extract、turns</span><span class="dir-note">LF-4 上</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>记 <code>life.ended</code>（只记一次）→ 同支线封存：不收话、不再开轮</li>
+              <li>等封存了再清：删人生那一行 → 按会话清记忆 → 回合索引拿掉 → 推通知 <code>life.ended</code></li>
+              <li>抽取关上：结束了的不抽，半路上的整批丢掉；载入、重建照日志不再收它</li>
+              <li><code>life.kill</code>、<code>life.new</code>；<code>status</code> 多 <code>ended</code>，停、续拒 <code>life_ended</code></li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">归档只读就用封存</span><span class="rl">不另做一套</span></div>
+          <div class="tile new"><span class="nm">每一步先查后做、能重做</span><span class="rl">再结束一次接着清完</span></div>
+          <div class="tile new"><span class="nm">索引那一格存 2，不升版本</span><span class="rl">已有的行都对</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LF-4 上</dd></div>
+        <div><dt>名称</dt><dd>结束一段人生</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">LF-4上</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy 全过；手写变异都被逮住</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>结束以后不再醒、发话被拒、人生那一行没了，主人收到一条通知</span></li>
+        <li><span class="ok">✓</span><span>这段人生记下的清掉，别的会话记的照旧；回合索引里拿掉，重建以后也不补回来</span></li>
+        <li><span class="ok">✓</span><span>结束以后、抽取半路上结束的，都抽不回记忆</span></li>
+        <li><span class="ok">✓</span><span>再结束一次原样成功、不再推；留下的那一行到点删掉、不叫醒她</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LF-4上-结束.md</code>；设计 <code>70-推演人生.md</code>；蓝图 <code>life.md</code>、<code>memory.md</code>、<code>session/fork.md</code>、<code>store/index.md</code>、<code>schedules.md</code>；协议参考 <code>life.md</code>。</li>
       </ul>
     </div>
   </div>

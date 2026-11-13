@@ -47,3 +47,25 @@ fn a_life_number_the_index_does_not_know_is_an_unreadable_row() {
     let error = index.rows().unwrap_err();
     assert!(error.to_string().contains("life"), "{error}");
 }
+
+fn ended(seq: u64) -> Event {
+    event(&format!(
+        r#"{{"seq":{seq},"at":"2026-09-25T07:00:02.000Z","kind":"life.ended","by":{{"kind":"person"}},"cause":"c1/end","body":{{}}}}"#
+    ))
+}
+
+/// 施工 LF-4 上：结束了的照 `life.ended` 派生成第三种，存成 2、读得回来。
+#[test]
+fn an_ended_life_is_the_third_kind_and_survives_the_table() {
+    let scratch = Scratch::new();
+    let (index, _) = open(&scratch);
+    let mut listed = Row::new(id(), &created()).unwrap();
+    listed.see(&started(2));
+    listed.see(&ended(3));
+    assert_eq!(listed.life, Life::Ended);
+    assert_eq!(Life::Ended.number(), 2);
+    assert_eq!(Life::from_number(2), Some(Life::Ended));
+    listed.mark = mark(400, 4);
+    assert!(index.put(&listed, None).unwrap());
+    assert_eq!(row(&index).unwrap(), listed, "写进去读得回来");
+}

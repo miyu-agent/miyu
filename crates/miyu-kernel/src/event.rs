@@ -48,7 +48,7 @@ pub use goal::{
 };
 pub use image::ImageDescribed;
 pub use job::{ChildReason, ChildReported, JobLines, JobReason, JobReported};
-pub use life::LifeStarted;
+pub use life::{LifeEnded, LifeStarted};
 pub use message::{MessageAssistant, MessageUser, MessageWithdrawn, TypedCommand};
 pub use model::{
     BlockSpan, CallError, CallResult, ErrorClass, FirstDifference, ForgedCut, ForgedRole,
@@ -244,6 +244,8 @@ bodies! {
     DreamEnded = "dream.ended",
     /// 这个会话是它的人格的人生会话（施工 LF-5 中）。
     LifeStarted = "life.started",
+    /// 这段人生结束了（施工 LF-4 上）。
+    LifeEnded = "life.ended",
 }
 
 impl Event {

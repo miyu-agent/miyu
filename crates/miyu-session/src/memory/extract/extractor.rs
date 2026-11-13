@@ -1,5 +1,6 @@
 //! 一个会话的抽取状态（施工 R-6 上，从 `extract.rs` 挪出来）：闹钟是第几个、有没有一次在路上、同一段失败了几次；一直不闲的会话结束了几轮、有没有一次不等闲的在等着（施工 E-5）。
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, PoisonError};
 
 use miyu_kernel::event::Event;
@@ -17,6 +18,8 @@ pub(crate) struct Extractor {
     pub(crate) hushes: crate::memory::merge::Hushes,
     /// 会话日志折到哪、记下的几处（施工 E-5 补，`prefix.rs`）：抽的时候从上次抽到的那一条以前最后一处读起。
     marks: Mutex<Marks>,
+    /// 这个会话的人生结束了（施工 LF-4 上，`memory.md` 第六条）：不再抽，在路上的那一次落地前看它、整批丢掉。
+    closed: AtomicBool,
 }
 
 #[derive(Debug, Default)]
@@ -45,6 +48,16 @@ const DOUBLINGS: u32 = 16;
 impl Extractor {
     fn state(&self) -> std::sync::MutexGuard<'_, State> {
         self.state.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    /// 人生结束了（施工 LF-4 上）：以后不再抽，在路上的那一次不落地。会话 actor 每落一批看一次账本、立起它；立起了不再放下。
+    pub(crate) fn close(&self) {
+        self.closed.store(true, Ordering::Release);
+    }
+
+    /// 人生结束了没有：立起了的不再抽、不落地。
+    pub(crate) fn closed(&self) -> bool {
+        self.closed.load(Ordering::Acquire)
     }
 
     /// 上一个新闹钟，交回它是第几个。

@@ -191,6 +191,9 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "life.status"
         | "life.pause"
         | "life.resume"
+        // 结束一段人生（施工 LF-4 上）：同上只给人。
+        | "life.kill"
+        | "life.new"
         // 头自己的设置（施工 HP-1）：只给头，扩展、平台桥都不行。
         | "prefs.get"
         | "prefs.set"

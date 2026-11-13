@@ -143,6 +143,8 @@ pub(crate) fn render_in(history: &History, ordered: &[&Event], texts: &Texts) ->
             | Body::DreamEnded(_)
             // 人生会话的身份只给核心找、给会话列表看（施工 LF-5 中）：她照醒来那段话知道这是人生会话。
             | Body::LifeStarted(_)
+            // 人生结束了（施工 LF-4 上）：之后封存、不再开轮，她看不到它。
+            | Body::LifeEnded(_)
             // 换工作区不进上下文：下一轮开始时变了的环境照旧注成一块事实（施工 9-7 上）。
             | Body::WorkspaceChanged(_)
             | Body::SessionRecapped(_)

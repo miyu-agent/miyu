@@ -2,8 +2,8 @@
 
 use crate::block::Block;
 use crate::event::{
-    Body, ChildReported, ContextInjected, Decision, DreamEnded, Level, LifeStarted, Response,
-    TypedCommand, VenueDelivered, VenueMessage, VenueRecalled,
+    Body, ChildReported, ContextInjected, Decision, DreamEnded, Level, LifeEnded, LifeStarted,
+    Response, TypedCommand, VenueDelivered, VenueMessage, VenueRecalled,
 };
 use crate::id::EventKind;
 use crate::id::{CallId, Seq, TurnId};
@@ -274,6 +274,8 @@ pub enum Appended {
     Delivered(VenueDelivered),
     /// `life.started`（施工 LF-5 中）：只有核心的 `life.start` 发。
     Life(LifeStarted),
+    /// `life.ended`（施工 LF-4 上）：只有核心的 `life::finish` 发。
+    LifeEnded(LifeEnded),
 }
 
 impl Appended {
@@ -287,6 +289,7 @@ impl Appended {
             Appended::Recalled(recalled) => Body::VenueRecalled(recalled),
             Appended::Delivered(delivered) => Body::VenueDelivered(delivered),
             Appended::Life(started) => Body::LifeStarted(started),
+            Appended::LifeEnded(ended) => Body::LifeEnded(ended),
         }
     }
 }

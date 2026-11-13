@@ -51,7 +51,7 @@
 | `origin` | 从哪开的（施工 8-33 四补）：终端集成开的是 `terminal`，别的会话是空的 | `session.created` 的 `origin` |
 | `forked` | fork 子代理（施工 A-F 补）：是不是，头照它换图标 | `session.created` 的 `forked` 写了 `within` |
 | `dream_result` | 整理会话这一趟做了什么（施工 DR-1），没跑完的、别的会话是空的 | 最后一条 `dream.ended` 的 `body`，存成它的 JSON |
-| `life` | 是不是人生会话（施工 LF-5 中，`life.md`）：整数，0 不是、1 开着的人生会话；Rust 里是枚举 `Life`，以后结束了的只加一种取值，不改表的形状。表里是认不得的数的，这一行读不懂（`row <会话编号>: life`） | 有 `life.started` 的是 1，没有的是 0 |
+| `life` | 是不是人生会话（施工 LF-5 中，`life.md`）：整数，0 不是、1 开着的人生会话、2 结束了的（施工 LF-4 上：只加一种取值，不改表的形状、不升版本；升级以前的日志里没有 `life.ended`，已有的行都对）；Rust 里是枚举 `Life`。表里是认不得的数的，这一行读不懂（`row <会话编号>: life`） | 有 `life.ended` 的是 2，有 `life.started` 的是 1，都没有的是 0 |
 
 - 忙不忙不进索引：列会话时从会话表的内存里拿（`protocol.md` 的 `session.list` 第 5 条）。
 - 结构的版本记在 SQLite 的 `user_version` 里，现在是 15（施工 9-5 多了 `preview`、O-3 多了 `venue`、P-1 下多了 `persona`、P-2 上多了 `preset`、3-8 八补多了 `named`、H-2 多了 `project`、9-5 补多了 `tokens`、9-5 再补多了 `context`、`context_model`、D-1 下多了 `dream`、8-33 四补多了 `origin`、A-F 补多了 `forked`、DR-1 多了 `dream_result`、SU-6 上去掉 `owner`、LF-5 中多了 `life`；老的照版本不对删掉重建）。结构一变就加一；对不上的删掉重建，不写迁移（`07-存储.md` 第六节）。
@@ -122,7 +122,7 @@
 | `crates/miyu-endpoint/src/list/tests/indexed.rs` | 一批各种各样的会话（没记过工作目录的、改名置顶又去掉标题的、两段的、末尾半行的、日志坏了的、第一条不对的、空目录、一次性的子会话）：没有索引、照日志填、照索引读，列出来一字不差，只要一次性的也一样；日志坏了的不写进索引；索引没看见的几条补上、换了段的补上；截短了的、位置落在一行中间的、记的那一段没了的整份重读、写回去；没有、乱写、版本不对的起来时重建、照日志填好；用着用着读出坏了的，这一次照样列得对、重建好 |
 | `crates/miyu-endpoint/src/list/tests/limited.rs` | 带上限的就是不带上限的头几个，一字不差：各种各样的会话、四种挑法、空的索引先带上限列、跨批（31、32、33、64、65 个）、索引缺行、目录没了行还在、日志比索引长；200 个会话里列 5 个，从索引里读的整行不超过 50；量尺（`#[ignore]`）：500、2000、5000 个会话，上限 50 和全部各要多久 |
 | `crates/miyu-endpoint/src/list/tests/speed.rs` | 量尺，标 `#[ignore]`：250 个会话、日志共 13 MB，整份读、照日志填、照索引读、几个会话多写了几条以后，各要多久 |
-| `crates/miyu-store/src/index/tests/life.rs` | 人生会话那一格照 `life.started` 派生、写进表里读得回来，别的会话是「不是」；表里是认不得的数的读不懂（施工 LF-5 中） |
+| `crates/miyu-store/src/index/tests/life.rs` | 人生会话那一格照 `life.started` 派生、写进表里读得回来，别的会话是「不是」；表里是认不得的数的读不懂（施工 LF-5 中）；结束了的照 `life.ended` 是 2、读得回来（施工 LF-4 上） |
 | `crates/miyu-endpoint/tests/life.rs` 的 `the_list_marks_a_life_session_and_a_rebuilt_index_still_does` | 会话列表带 `life: true`；索引的行都没了，照日志补回来的一样，`life.start` 照样认得出来（施工 LF-5 中） |
 | `crates/miyu-endpoint/tests/index.rs` | 造会话就有那一行；说了一轮、改标题置顶以后那一行和日志对得上，照到日志的末尾；删会话删掉那一行 |
 | `crates/miyu-endpoint/tests/index_log.rs` | `INFO session index created`、`WARN session index rebuilt`、`WARN session index not read` 这几行；读出坏了的照样列得对 |

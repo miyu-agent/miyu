@@ -50,7 +50,7 @@
 | `session_read_only` | 会话日志中间坏了一行：坏行以前的用 `view.page` 照样看得到，会话载入不了、不能接着聊，要继续新开一个会话；`data.segment` 是哪一段（只是文件名），`data.line` 是第几行 |
 | `session_unavailable` | 会话这一刻读不了：读日志时读写出错，日志没坏，过一会儿再试（施工 YC-2） |
 | `session_stopped` | 会话停了（写不进去、出了 bug）；再发一次会重新载入 |
-| `session_sealed` | 会话封存了（分叉时写了 `seal_after`、跑满了），改对话的命令不收 |
+| `session_sealed` | 会话封存了（分叉时写了 `seal_after`、跑满了；人生会话结束了，见[人生会话](life.md)），改对话的命令不收 |
 | `restoring` | 撤销还没做完时来的命令（照常碰不到） |
 
 ## `session.create`

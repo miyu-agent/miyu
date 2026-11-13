@@ -6,6 +6,8 @@
 //! - 改的三个方法在 [`crate::Core`] 的一把锁里排着来：两个头同时开同一个人格的，开不出两条。
 //! - `life.start` 四步：造会话、设上下文上限、记身份、建那一行。前两步没成的删掉刚造的会话；身份记上了、那一行没建成的，说清
 //!   是哪个会话，`life.resume` 照日志重建那一行。
+//! - 结束（施工 LF-4 上，`finish.rs`）：`life.kill`、`life.new`。找的时候结束了的也算（最新的那一个）：`life.status` 说 `ended`，
+//!   `life.pause`、`life.resume` 拒 `life_ended`，`life.start`、`life.new` 先把它没清完的清完再开新的。
 
 use std::collections::BTreeSet;
 use std::sync::Arc;
@@ -29,6 +31,10 @@ use crate::schedules::{Creator, Loop, Schedule, Target, Wanted, When};
 use crate::sessions::{Opening, person};
 use crate::wire::Request;
 
+mod finish;
+
+pub(crate) use finish::finish;
+
 /// 出厂的人生会话用哪个预设（`resources/presets/life.toml`）。
 const PRESET: &str = "life";
 
@@ -44,28 +50,56 @@ struct LifeParams {
     persona: String,
 }
 
-/// 分给四个方法：先查人格在不在。
+/// 分给六个方法：先查人格在不在。
 pub(crate) async fn call(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
     let LifeParams { persona } = params(request)?;
     crate::personas::resolve(core, Some(Some(&persona))).await?;
     if request.method == "life.status" {
-        let session = find(core, &persona).await?;
-        return state(core, session.as_ref());
+        let found = find(core, &persona).await?;
+        return state(core, found.as_ref());
     }
     let _one_at_a_time = core.life.lock().await;
+    let found = find(core, &persona).await?;
     match request.method.as_str() {
-        "life.start" => start(core, request, &persona).await,
+        "life.start" => {
+            match &found {
+                Some((session, Life::Started)) => return Err(Refusal::life_exists(session)),
+                // 结束了的：先把没清完的清完（重做不重复清），再开新的。
+                Some((session, _)) => end(core, session).await?,
+                None => {}
+            }
+            start(core, request, &persona).await
+        }
+        "life.new" => {
+            let ended = match &found {
+                Some((session, life)) => {
+                    end(core, session).await?;
+                    (*life == Life::Started).then(|| session.as_str().to_string())
+                }
+                None => None,
+            };
+            let mut reply = start(core, request, &persona).await?;
+            if let Some(ended) = ended {
+                reply["ended"] = json!(ended);
+            }
+            Ok(reply)
+        }
+        "life.kill" => {
+            let (session, _) = found.ok_or(Refusal::NO_LIFE)?;
+            end(core, &session).await?;
+            Ok(json!({"state": "ended", "session": session.as_str()}))
+        }
         "life.pause" => {
-            let session = find(core, &persona).await?.ok_or(Refusal::NO_LIFE)?;
+            let session = running(found)?;
             if let Some(row) = row_of(core, &session)?
                 && !row.paused
             {
                 core.schedules().pause(&row.id).map_err(schedule_refusal)?;
             }
-            state(core, Some(&session))
+            state(core, Some(&(session, Life::Started)))
         }
         "life.resume" => {
-            let session = find(core, &persona).await?.ok_or(Refusal::NO_LIFE)?;
+            let session = running(found)?;
             match row_of(core, &session)? {
                 Some(row) if row.paused => {
                     core.schedules().resume(&row.id).map_err(schedule_refusal)?;
@@ -76,17 +110,32 @@ pub(crate) async fn call(core: &Arc<Core>, request: &Request) -> Result<Value, R
                     schedule(core, &session)?;
                 }
             }
-            state(core, Some(&session))
+            state(core, Some(&(session, Life::Started)))
         }
         _ => Err(Refusal::UNKNOWN_METHOD),
     }
 }
 
+/// 没结束的那一条：没有的 `no_life`，结束了的 `life_ended`（带那个会话）。
+fn running(found: Option<(SessionId, Life)>) -> Result<SessionId, Refusal> {
+    match found {
+        None => Err(Refusal::NO_LIFE),
+        Some((session, Life::Started)) => Ok(session),
+        Some((session, _)) => Err(Refusal::life_ended(&session)),
+    }
+}
+
+/// 人结束会话 `session` 上的人生，等清完：已经结束了的照重做。
+async fn end(core: &Arc<Core>, session: &SessionId) -> Result<(), Refusal> {
+    let finishing = finish(core, session, person(), None).await?;
+    finishing
+        .done()
+        .await
+        .map_err(|refusal| refusal.about_session(session))
+}
+
 /// `life.start`：见模块的说明。回应 `{"session"}`。
 async fn start(core: &Arc<Core>, request: &Request, persona: &str) -> Result<Value, Refusal> {
-    if let Some(session) = find(core, persona).await? {
-        return Err(Refusal::life_exists(&session));
-    }
     let who = Opening {
         attended: false,
         oneshot: false,
@@ -179,9 +228,9 @@ fn schedule(core: &Core, session: &SessionId) -> Result<Schedule, Refusal> {
     core.schedules().add(wanted).map_err(schedule_refusal)
 }
 
-/// 人格 `persona` 的人生会话：本机的主会话里，照会话索引（落后的照日志补）认 `life`、这一刻的人格，最新的那一个。只照不会变的
-/// 格（父会话、场所）先挑：`life`、人格会在造好以后才变，落后的那一行照它挑会漏掉。
-async fn find(core: &Arc<Core>, persona: &str) -> Result<Option<SessionId>, Refusal> {
+/// 人格 `persona` 的人生会话：本机的主会话里，照会话索引（落后的照日志补）认 `life`、这一刻的人格，最新的那一个，连同它开着
+/// 还是结束了（施工 LF-4 上）。只照不会变的格（父会话、场所）先挑：`life`、人格会在造好以后才变，落后的那一行照它挑会漏掉。
+async fn find(core: &Arc<Core>, persona: &str) -> Result<Option<(SessionId, Life)>, Refusal> {
     let root = core.root.clone();
     let index = core.index();
     let found = tokio::task::spawn_blocking(move || {
@@ -199,8 +248,8 @@ async fn find(core: &Arc<Core>, persona: &str) -> Result<Option<SessionId>, Refu
     match found {
         Ok(Ok(listed)) => Ok(listed
             .into_iter()
-            .find(|one| one.life == Life::Started && one.persona.as_deref() == Some(persona))
-            .map(|one| one.id)),
+            .find(|one| one.life != Life::Not && one.persona.as_deref() == Some(persona))
+            .map(|one| (one.id, one.life))),
         Ok(Err(error)) => {
             tracing::warn!(target: "miyu::endpoint", error = %error, "life session not found");
             Err(Refusal::INTERNAL)
@@ -222,12 +271,15 @@ fn row_of(core: &Core, session: &SessionId) -> Result<Option<Schedule>, Refusal>
         }))
 }
 
-/// `life.status` 的回应（`life.pause`、`life.resume` 同）：没有人生会话的 `none`；那一行在、没停的 `running`，带下一次；停着的、
-/// 那一行不在的 `paused`。
-fn state(core: &Core, session: Option<&SessionId>) -> Result<Value, Refusal> {
-    let Some(session) = session else {
+/// `life.status` 的回应（`life.pause`、`life.resume` 同）：没有人生会话的 `none`；结束了的 `ended`，带会话（施工 LF-4 上）；那一行
+/// 在、没停的 `running`，带下一次；停着的、那一行不在的 `paused`。
+fn state(core: &Core, found: Option<&(SessionId, Life)>) -> Result<Value, Refusal> {
+    let Some((session, life)) = found else {
         return Ok(json!({"state": "none"}));
     };
+    if *life == Life::Ended {
+        return Ok(json!({"state": "ended", "session": session.as_str()}));
+    }
     let mut reply = json!({"state": "paused", "session": session.as_str()});
     if let Some(row) = row_of(core, session)?
         && !row.paused

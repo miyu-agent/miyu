@@ -17,7 +17,7 @@
 | `prefs.changed` | `prefs` | `{"package", "values"}`：一个界面包的设置被别的连接改了，`values` 是改好的整份，照它整个换掉（见 [头自己的设置](prefs.md)）；改的那个连接不推，它的回应里就是整份。掉了队推 `resync {"stream": "prefs", "package"}` |
 | `schedules.changed` | `schedules` | `{"id", "entry": <一项>}`：一个定时任务整个换掉（同 `schedule.list` 的一项，到点交过的也推）；删了的、一次的跑完了的 `{"id", "removed": true}`（施工 J-1 下） |
 | `package.event` | `package` | `{"package", "event", "data"}`：包经 `package.emit` 推给人的（施工 IM-1 中下二），写法由包自己定。不存盘，没订着的收不到；掉了队推 `resync {"stream": "package", "package"}` |
-| `notice` | `notices` | `{"kind", "at", …}`：给人的通知（施工 J-3 中），头照 `kind` 弹系统通知。`schedule.ran`：`{"schedule", "session", "ok"}`，每次新开会话的定时，开出来的那一轮结束了，`ok` 是答完了（出错、被打断的是 `false`），跑在已有会话上的不推。`schedules.reset`：唤醒表坏了，改名留着、换了一份空的，原来的定时都没了。不存盘，没订着的收不到 |
+| `notice` | `notices` | `{"kind", "at", …}`：给人的通知（施工 J-3 中），头照 `kind` 弹系统通知。`schedule.ran`：`{"schedule", "session", "ok"}`，每次新开会话的定时，开出来的那一轮结束了，`ok` 是答完了（出错、被打断的是 `false`），跑在已有会话上的不推。`schedules.reset`：唤醒表坏了，改名留着、换了一份空的，原来的定时都没了。`life.ended`：`{"persona", "session", "by", "last_words"}`，一段人生结束了（见[人生会话](life.md)），`by` 是 `self`（她自己）或 `owner`（人），遗言她自己结束的才有，没有人格的不写 `persona`；同一段只推一次。不存盘，没订着的收不到 |
 | `notices.claimed` | `notices` | `{"claimed"}`：有没有连接认领了发后台通知（[`notices.claim`](connection.md#noticesclaim)，施工 TR-1）变了：`true` 是有了，别的头不再弹没人开着的会话、`notice` 的系统通知；`false` 是认领的都走了，照原来的弹 |
 | `kb.indexing` | `kb` | `{"kb", "done", "total"}`：一个知识库在建索引，要重建的 `total` 篇里做完了 `done` 篇；开头是 0，最后一篇照推，中间至多 0.1 秒一次（施工 W-15） |
 | `kb.indexed` | `kb` | `{"kb"}`：建好了；那个库这一刻的样子照 `kb.list` 重读 |

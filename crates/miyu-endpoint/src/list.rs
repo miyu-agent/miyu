@@ -128,7 +128,7 @@ pub(crate) struct Listed {
     pub(crate) forked: bool,
     /// 导进来的只读存档（施工 SE-1 下）：头把它排在单独一段，写 `archived: true`；别的不写。
     pub(crate) archived: bool,
-    /// 人生会话（施工 LF-5 中）：是的写 `life: true`，别的不写。
+    /// 人生会话（施工 LF-5 中）：是的写 `life: true`，结束了的再写 `life_ended: true`（施工 LF-4 上），别的不写。
     pub(crate) life: Life,
 }
 
@@ -231,9 +231,13 @@ impl Listed {
         if self.archived {
             item["archived"] = json!(true);
         }
-        // 人生会话（施工 LF-5 中）：头照它认出来。别的不写，字节不变。
-        if self.life == Life::Started {
+        // 人生会话（施工 LF-5 中）：头照它认出来。结束了的另写 `life_ended`（施工 LF-4 上），头照它显示成只读的档案。别的不写，
+        // 字节不变。
+        if self.life != Life::Not {
             item["life"] = json!(true);
+        }
+        if self.life == Life::Ended {
+            item["life_ended"] = json!(true);
         }
         context::write(&mut item, self);
         item

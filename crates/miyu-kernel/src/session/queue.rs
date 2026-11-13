@@ -30,30 +30,35 @@ impl Session {
         let reports = reason != EndReason::Interrupted && !self.unwatched();
         // 这一轮没有下一步了，挂着的监视命令的行这时记下，照回报接着开（施工 MN-1 上，`watch.rs`）。
         let lines = self.record_pending_lines(at);
-        let next = self.turn.as_ref().and_then(|turn| {
-            let message = turn
-                .queued
-                .last()
-                .map(|(seq, cause)| (*seq, cause.clone(), None));
-            // 回报叫醒的这一串用完了的，回报不接着开（审计 R3E-2，`chain.rs`）。由 respond 并进来的几条开的（施工 RT-1）
-            // 带上这一轮那一句：接着开的这一轮就是为了答它们。
-            let report = turn
-                .reports
-                .iter()
-                .rev()
-                .find(|arrived| !self.held_back(&arrived.waker))
-                .filter(|_| reports)
-                .map(|arrived| {
-                    let tail = matches!(arrived.waker, Waker::Joined)
-                        .then(|| turn.tail.clone())
-                        .flatten();
-                    (arrived.seq, arrived.cause.clone(), tail)
-                });
-            message
-                .into_iter()
-                .chain(report)
-                .max_by_key(|(seq, _, _)| *seq)
-        });
+        // 人生结束了的（施工 LF-4 上）不再开轮：排着的、回报照记，这一轮结束就封存。
+        let next = self
+            .turn
+            .as_ref()
+            .filter(|_| !self.ledger.life_ended())
+            .and_then(|turn| {
+                let message = turn
+                    .queued
+                    .last()
+                    .map(|(seq, cause)| (*seq, cause.clone(), None));
+                // 回报叫醒的这一串用完了的，回报不接着开（审计 R3E-2，`chain.rs`）。由 respond 并进来的几条开的（施工 RT-1）
+                // 带上这一轮那一句：接着开的这一轮就是为了答它们。
+                let report = turn
+                    .reports
+                    .iter()
+                    .rev()
+                    .find(|arrived| !self.held_back(&arrived.waker))
+                    .filter(|_| reports)
+                    .map(|arrived| {
+                        let tail = matches!(arrived.waker, Waker::Joined)
+                            .then(|| turn.tail.clone())
+                            .flatten();
+                        (arrived.seq, arrived.cause.clone(), tail)
+                    });
+                message
+                    .into_iter()
+                    .chain(report)
+                    .max_by_key(|(seq, _, _)| *seq)
+            });
         let mut events = lines;
         events.push(self.end_turn(at, by, cause.clone(), reason));
         match next {

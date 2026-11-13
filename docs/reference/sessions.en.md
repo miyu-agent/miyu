@@ -50,7 +50,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 | `session_read_only` | A line in the middle of the session log is broken: what came before it can still be read with `view.page`, but the session can't be loaded or continued; start a new session to go on. `data.segment` is which segment (file name only), `data.line` which line |
 | `session_unavailable` | The session can't be read right now: an I/O error while reading its log. The log is intact; try again later |
 | `session_stopped` | The session stopped (couldn't write, a bug); sending again reloads it |
-| `session_sealed` | A forked session ran its turns and was sealed; commands that change the conversation are refused |
+| `session_sealed` | A forked session ran its turns and was sealed, or a life session ended (see [Life sessions](life.en.md)); commands that change the conversation are refused |
 | `restoring` | A command arrived while an undo is still finishing (normally unreachable) |
 
 ## `session.create`

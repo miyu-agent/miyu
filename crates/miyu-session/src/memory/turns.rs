@@ -3,7 +3,7 @@
 
 use std::sync::{Arc, OnceLock};
 
-use miyu_kernel::event::Event;
+use miyu_kernel::event::{Body, Event};
 use miyu_kernel::id::{Seq, SessionId, TurnId, VenueId};
 use miyu_recall::uses::{Use, UseFeed, since};
 use miyu_recall::{Change, Priming, TurnFeed, TurnItem, key};
@@ -49,6 +49,8 @@ pub(crate) struct Laying {
     own: Option<Seq>,
     /// 换人格以后的最后一条：没有的不开库。
     mine: Option<Seq>,
+    /// 日志里有 `life.ended`（施工 LF-4 上，`memory.md` 第一条第 7 款）：结束了的人生会话不进回合索引，不开库。
+    ended: bool,
 }
 
 impl Laying {
@@ -61,6 +63,7 @@ impl Laying {
             used: Vec::new(),
             own: None,
             mine: None,
+            ended: false,
         }
     }
 
@@ -81,6 +84,7 @@ impl Laying {
     /// 会话自己的一条，照先后：换人格那一条以前的（连同它）同底子（`recast::split`），以后的铺回 `TurnFeed`、`UseFeed`。
     pub(crate) fn own(&mut self, event: &Event) {
         self.own = Some(event.seq);
+        self.ended |= matches!(event.body, Body::LifeEnded(_));
         if self.floor.is_some_and(|floor| event.seq <= floor) {
             self.priming.base(event);
             return;
@@ -138,9 +142,11 @@ impl Turns {
             uses,
             used,
             mine,
+            ended,
             ..
         } = laying;
-        let Some(last) = mine else {
+        // 结束了的人生会话（施工 LF-4 上）：结束时拿掉了，载入不再铺回来。
+        let Some(last) = mine.filter(|_| !ended) else {
             return turns;
         };
         let mark = turns.mark();
@@ -169,7 +175,11 @@ impl Turns {
         events: &[Event],
     ) -> Option<Turns> {
         let mut turns = Turns::empty(recall, room, (session, origin), venue);
-        let Some(last) = events.last() else {
+        // 结束了的人生会话（施工 LF-4 上）不补：回合库删了重建以后，整个会话的墓碑没了，照日志判。
+        let ended = events
+            .iter()
+            .any(|event| matches!(event.body, Body::LifeEnded(_)));
+        let Some(last) = events.last().filter(|_| !ended) else {
             return Some(turns);
         };
         let mark = turns.mark();

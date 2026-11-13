@@ -11,7 +11,7 @@
 | `crates/miyu-kernel/src/event/session.rs` | `session.created`、`session.policy_changed`、`session.meta_changed`、`session.workspace_changed`（施工 9-7 上）、`session.recapped`（施工 3-8 四补）、`session.sealed`（施工 C-8 下）、`command.ran`（施工 O-6）、`todos.cleared`（施工 D-3 再补）；权限 `Permission`、级别 `Level` |
 | `crates/miyu-kernel/src/event/turn.rs` | `turn.joined`（施工 O-14 下）、`turn.started`、`turn.ended`（`EndReason`）、`turn.reverted`、`turn.unreverted` |
 | `crates/miyu-kernel/src/event/dream.rs` | `dream.ended`（施工 DR-1） |
-| `crates/miyu-kernel/src/event/life.rs` | `life.started`（施工 LF-5 中） |
+| `crates/miyu-kernel/src/event/life.rs` | `life.started`（施工 LF-5 中）、`life.ended`（施工 LF-4 上） |
 | `crates/miyu-kernel/src/event/message.rs` | `message.user`、`message.assistant`、`message.withdrawn` |
 | `crates/miyu-kernel/src/event/tool.rs` | `tool.result`（`ToolStatus`、给人看的说法 `Said`）、`tool.approval_requested`、`tool.approval_decided`（`Decision`） |
 | `crates/miyu-kernel/src/event/effect.rs` | 效果 `Effect`：`file.read`、`file.changed`、`file.trashed`、`job.started`（`JobStarted`、`JobKind`，施工 7-1）、`job.messaged`（`JobMessaged`，施工 7-7）、`peer.watch`（`PeerWatch`，施工 C-1）、`todo.written`（`TodoWritten`、`Todo`、`TodoStatus`，施工 D-3）、`file.shown`（`FileShown`，施工 D-5） |
@@ -134,6 +134,8 @@
 | `stopped` | 布尔 | 叫停的才写（写 `true`） | 半路叫停的：做了的照数，没做完的不算 |
 
 **`life.started`**：这个会话是它的人格的人生会话（施工 LF-5 中，设计 `70-推演人生.md` 第三节第 1 条，`life.md`）。`body` 是 `{}`：人格写在 `session.created` 里，不另记。只有核心在 `life.start` 里记（内核命令 `Append` 的 `Life`，`events.append` 记不了它），`by` 是开它的人，`cause` 是 `<请求编号>/life`，不带 `turn`。真相只有它：定时表那一行只管下次几点醒，表坏了以后 `life.resume` 照它重建；会话索引照它写 `life` 一列（`store/index.md`），会话列表那一项照它写 `life: true`。不进她的上下文（渲染时不出）。
+
+**`life.ended`**：这段人生结束了（施工 LF-4 上，设计 `70-推演人生.md` 第三节第 5 条，`life.md`「结束」）。`body` 是 `{"last_words"?}`：遗言，她自己结束的才有。只有核心在 `life::finish` 里记（内核命令 `Append` 的 `LifeEnded`，`events.append` 记不了它），`by` 是结束它的人，或者她的那次工具调用（`tool`），`cause` 是 `life/<会话>/end`，不带 `turn`。一个会话只记一次（再记的账本拒）。记了以后同封存（`session/fork.md`「封存」）：改对话的命令拒 `session_sealed`，不再开轮，这一轮结束时（闲着的当场同一批）记 `session.sealed`。会话索引照它把 `life` 一列写成 2，会话列表那一项多写 `life_ended: true`。不进她的上下文（渲染时不出）。
 
 **`session.sealed`**：分叉出来的会话跑满了 `forked.seal_after` 轮，封存了（施工 C-8 下，`session/fork.md`「封存」）。`body` 是 `{}`。`by` 是内核，`cause` 同它前面那条 `turn.ended`，不带 `turn`：和那一轮的结束同一批追加，崩了载入时收尾的那一轮也是。之后不再开一轮（账本查，`kernel/history.md`）；不进上下文。
 
