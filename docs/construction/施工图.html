@@ -1519,6 +1519,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sSW1"><span class="n">SW-1</span>展示不拷进核心、不限大小<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sRC1"><span class="n">RC-1</span>miyu rescue 拉起 LiteMiyu 的应急模式<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sPF1"><span class="n">PF-1</span>CPU 被抢时请求体一口气发<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sPF2"><span class="n">PF-2</span>查清核心晚知道发完、收完<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -58509,6 +58510,54 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/PF-1-被抢CPU时每一步偏长.md</code>；蓝图 <code>http.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sPF2" aria-labelledby="h-sPF2">
+  <div class="sheet-head"><h2 id="h-sPF2"><span class="no">PF-2</span>查清核心晚知道发完、收完</h2><span class="pill done">查清，没改运行时</span></div>
+  <p class="purpose">压测里 CPU 被抢时，假模型早把回复写完了，核心要隔几百毫秒到几秒才记下收完；回合开始的挂接点也偏长。这一步先查清：两段是重叠的，HTTP 这一路就是回复到了以后线程排上 CPU 的那一下，没有可省的跳；步间的大头是换线程的次数乘排队时长。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-http · tests/reply_measure</span><span class="dir-note">PF-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>照假模型回 6 帧、一帧一次写，量收齐到交出 Sent、写完到收场</li>
+              <li>挤两核：每段增量叫醒 actor、event_interval 都不是它；运行时另有活时翻两三倍</li>
+              <li>运行时代码没改，五条待拍板</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">先补 turn start timed 分段和 off-CPU 采样再改</span><span class="rl">推荐，待拍板</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">PF-2</dd></div>
+        <div><dt>名称</dt><dd>查清核心晚知道发完、收完</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-13</dd></div>
+        <div><dt>提交</dt><dd class="mono">PF-2</dd></div>
+        <div><dt>验收</dt><dd>miyu-http 的测试、两个目标的 clippy 全过；量尺的数在施工单里</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>量尺：两核挤满时交出 Sent 和收场几乎同时，整段是一次排队</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/PF-2-核心晚知道发完收完.md</code>；蓝图 <code>http.md</code>。</li>
       </ul>
     </div>
   </div>

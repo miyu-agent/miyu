@@ -8,6 +8,7 @@ mod support;
 mod auth;
 mod get;
 mod post;
+mod reply_measure;
 mod resend;
 mod send;
 mod send_limits;
