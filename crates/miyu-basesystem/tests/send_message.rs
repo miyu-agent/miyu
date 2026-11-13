@@ -2,7 +2,7 @@
 //! 编号发给自己派的子代理，别的当会话编号认（和 `sessions`、`history` 同一个认法），经端口原样送出去；送到了说一句，是没人
 //! 看着的一次性会话只说存下了；给子代理的报 `job.messaged`；别的都拒，每一种说清为什么：没有父、不是她派的（写法都不对的
 //! 端口不问）、被停掉了、送不到、没有端口、找不到会话、撞了、是她自己、这个会话不能发给别的会话、太长、限速、一模一样的
-//! （不算出错）、对方没看的太多；参数不对的照共用的那一句。以前的名字 `message_agent` 还认得出。给人看的说法两种语言都
+//! （不算出错）、对方没看的太多；参数不对的照共用的那一句。给人看的说法两种语言都
 //! 换得出字。施工 C-6 多一格 `notify_when_idle`、`message` 可以不写（`send_message/watch.rs`）。
 
 /// 当会话编号认（施工 C-5）：找到的、找不到的、撞了的、是她自己的，每种说法；这个文件超过行数上限，拆进这里
@@ -132,8 +132,6 @@ fn it_declares_the_recipient_the_message_and_the_watch() {
         "能发给别的会话：{}",
         spec.description
     );
-    // 施工 C-5 从 `message_agent` 改名：以前的名字照样认得出。
-    assert_eq!(tool.formerly(), ["message_agent"]);
 }
 
 #[tokio::test]
@@ -370,5 +368,5 @@ async fn every_outcome_says_something_people_can_read() {
             .with("chars", "100001")
             .with("limit", "100000"),
     );
-    readable(&checked, &["send_message", "message_agent"]);
+    readable(&checked, &["send_message"]);
 }

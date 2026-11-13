@@ -52,11 +52,6 @@
       "subject": "description",
       "icon": "↗"
     },
-    "agent": {
-      "name": "派子代理",
-      "subject": "description",
-      "icon": "↗"
-    },
     "advisor": {
       "name": "求助旗舰模型",
       "subject": "question",
@@ -67,12 +62,6 @@
       "subject": "action",
       "icon": "≡"
     },
-    "message_agent": {
-      "name": "留言",
-      "subject": "to",
-      "icon": "↗"
-    },
-    "load_tools": {"name": "加载工具", "icon": "⇣"},
     "sessions": {
       "name": "列出会话",
       "icon": "≡"
@@ -197,11 +186,6 @@
     "jobs/stopped": "停掉了 {job}",
     "jobs/unknown": "没有任务 {id}",
     "jobs/ended": "{job} 已经结束了",
-    "message_agent/sent": "送到了：{to}",
-    "message_agent/no-parent": "没有父会话",
-    "message_agent/not-yours": "{to} 不是它派的子代理",
-    "message_agent/stopped": "{to} 已经停了",
-    "message_agent/not-sent": "没送到",
     "send_message/sent": "送到了：{to}",
     "send_message/held": "存下了：{to} 是没人看着的一次性会话",
     "send_message/no-parent": "没有父会话",

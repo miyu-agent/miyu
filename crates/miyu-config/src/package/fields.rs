@@ -91,8 +91,8 @@ pub(super) const TRAY: &[&str] = &["name"];
 /// `[mascot]`。
 pub(super) const MASCOT: &[&str] = &["model"];
 
-/// `[theme]`：`tui`、`web` 两张子表（施工 TH-1）；`file` 是以前的写法，读成 `[theme.tui] file`。
-pub(super) const THEME: &[&str] = &["tui", "web", "file"];
+/// `[theme]`：`tui`、`web` 两张子表（施工 TH-1）。
+pub(super) const THEME: &[&str] = &["tui", "web"];
 
 /// `[theme.tui]`：终端主题。
 pub(super) const THEME_TUI: &[&str] = &["file"];

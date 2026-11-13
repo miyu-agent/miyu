@@ -1,13 +1,10 @@
 //! 派到一半的空子会话（施工 7-8，`docs/blueprint/agents.md` 第一条第 7 条，`protocol.md`「会话表」第 8 条）：真核心走一遍。
 //! 父会话派出去一个子代理，子会话造好了、交代也送进去了，父会话却没来得及记下 `job.started` 就崩了（日志截在派它的那条
-//! 回复后面）：再载入父会话时，子会话挪进回收处；记下了的照留。改名以前造的父会话（调的是 `agent`）换现在的核心载入，
-//! 照样收（施工 7-5 再补）。
+//! 回复后面）：再载入父会话时，子会话挪进回收处；记下了的照留。
 
 use std::sync::Arc;
 
-use crate::support::deleting::{
-    Router, agent, base_tools, in_place, started_child, tools_before_the_rename, trashed,
-};
+use crate::support::deleting::{Router, agent, base_tools, in_place, started_child, trashed};
 use crate::support::{Client, Home, until};
 use miyu_kernel::event::Body;
 use miyu_kernel::id::SessionId;
@@ -90,20 +87,6 @@ async fn a_child_its_parent_never_recorded_goes_to_the_trash_when_the_parent_loa
         "父会话照崩了收尾"
     );
     assert!(started_child(&log).is_none(), "父会话从来没记下它");
-}
-
-/// 改名以前造的父会话（施工 7-5 再补）：日志里派子代理的调用叫 `agent`，换了现在的核心载入，照样认得出派到一半的、收掉。
-#[tokio::test]
-async fn a_parent_made_before_the_rename_still_has_its_orphan_swept() {
-    let home = Home::new();
-    let router = scripts("agent");
-    let (parent, child) = dispatched(&home, &router, tools_before_the_rename()).await;
-    crash_before_the_job_was_recorded(&home, &parent, 0);
-    let mut client = Client::connect(home.core_with_models(Arc::new(router), base_tools()));
-    client.hello().await;
-    client.subscribe("s1", &parent).await;
-    until("空子会话挪走了", || !in_place(&home, child.as_str())).await;
-    assert!(trashed(&home, child.as_str()).join("deleted_at").exists());
 }
 
 #[tokio::test]

@@ -97,7 +97,7 @@ pub enum Code {
     BadPageSource,
     /// `[mascot] model` 不是包目录里的相对路径（施工 F-7）。
     BadMascotModel,
-    /// 终端主题文件（`[theme.tui] file`，老写法 `[theme] file`）不是包目录里的相对路径（施工 F-16、TH-1）。
+    /// 终端主题文件（`[theme.tui] file`）不是包目录里的相对路径（施工 F-16、TH-1）。
     BadThemeFile,
     /// `[theme.web] dir` 不是包目录里的相对目录（施工 TH-1）。
     BadThemeDir,

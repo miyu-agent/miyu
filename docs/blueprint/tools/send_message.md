@@ -4,7 +4,7 @@
 
 发话（施工 7-7、C-5，`agents.md` 第六条、`cross-session.md` 第三条）：给自己派的、还没被停掉的子代理（`to` 写它的任务编号），给自己的父（`to: parent`），或者给不在这棵树上的别的会话（`to` 写它的会话编号）。话作为这个会话发来的话送过去，对方落了盘就返回，不等它回答：对方在跑，下一步看到；闲着，开一轮；是没人看着的一次性会话，只记下。对方的回应照留言、回报自己送回来。父子之间只在树上相邻的两层之间（2026-09-29 项目主人定）：孙代理不能越过子代理找父，兄弟之间不直接说，主会话没有父。发给别的会话要先认出是哪一个（`to` 写会话编号，和 `history` 的 `session` 同一个认法），受防刷屏管（限速、一模一样、对方没看的太多，`cross-session.md` 第五条），父子之间不受防刷屏管，只受长度上限管。
 
-施工 C-5 从 `message_agent` 改名（照 Claude Code 的 `SendMessage`，2026-10-01 项目主人定）：以前的名字照样认得出（[`formerly`]）。
+施工 C-5 从 `message_agent` 改名（照 Claude Code 的 `SendMessage`，2026-10-01 项目主人定）。以前的名字不再认（施工 AUD-3，2026-11-13 项目主人定：还没发版，旧兼容的都去掉；主人的数据里没有会话还冻着它）。
 
 施工 C-6 多一格 `notify_when_idle`（「空了告诉我」，`cross-session.md` 第六条）：`to` 是别的会话的，那次调用报效果 `peer.watch`，那个会话下次空下来时她收到一条通知。`message` 可以不写：只订不发，那边不开轮、不花 token。
 
@@ -16,7 +16,7 @@
 |---|---|
 | `crates/miyu-basesystem/src/send_message.rs` | 参数、认 `to`（parent/子代理/会话编号）、长度上限、交给端口、结果和效果 |
 | `crates/miyu-basesystem/src/attach.rs`（施工 C-9） | 读她带的附件：最多 8 个，照 `read` 的规矩过权限链、安全打开、读到上限多一个字节为止，照 `miyu_tool::attachment` 认，交回 `Attached`（名字、真实的位置、内容、种类） |
-| `crates/miyu-tool/src/messages.rs` | 发话的端口 `MessagePort`、发给谁 `Recipient`（多 `Session`）、送到了 `Delivered`（`Sent`/`Held`）、没送出去 `NotSent`，那件工具的名字 `SEND_MESSAGE`、以前的名字 `SEND_MESSAGE_FORMERLY`（`tools/interface.md`） |
+| `crates/miyu-tool/src/messages.rs` | 发话的端口 `MessagePort`、发给谁 `Recipient`（多 `Session`）、送到了 `Delivered`（`Sent`/`Held`）、没送出去 `NotSent`，那件工具的名字 `SEND_MESSAGE`（`tools/interface.md`） |
 | `crates/miyu-session/src/messages.rs` | 执行器这一头：照内核交的这个会话派出去的子代理认编号，经会话表的端口送过去；送到了再问一句对方是不是没人看着的一次性会话（`SessionPort::held`）；拒绝的原因码译成 `NotSent`（`session/tools.md`「父子之间留言」） |
 | `crates/miyu-session/src/attached.rs`（施工 C-9） | 附件存进 blob，接在那一句字后面造成图片块、文件块；派子代理的在 `agents/spawner.rs` 里先存好再造子会话 |
 | `crates/miyu-session/src/spawn.rs` | 会话表的端口多一个方法 `SessionPort::held`：对方这时是不是没人看着的一次性会话 |
@@ -30,7 +30,7 @@
 | `resources/software/basesystem/attachments/*.txt` | 附件超过 8 个、太大的两句（施工 C-9，`subagent` 共用） |
 | `resources/software/basesystem/tools/send_message.json` | 说明和参数格式 |
 | `resources/software/basesystem/send_message/*.txt` | 输出里给她看的几句 |
-| `resources/software/basesystem/human/{zh,en,ja}.json` | 显示名、结果那一句，`message_agent`、`send_message` 两个键都在 |
+| `resources/software/basesystem/human/{zh,en,ja}.json` | 显示名、结果那一句 |
 
 ### 对外的样子
 
@@ -132,7 +132,7 @@ Message sent to j1.
 
 ### 给人看的字
 
-显示名：留言（Message），后面跟 `to` 的值；符号 `↗`；`message_agent`、`send_message` 两个键都在，显示名一样。
+显示名：留言（Message），后面跟 `to` 的值；符号 `↗`。
 
 | 说法 | 中文 | 英文 |
 |---|---|---|
@@ -158,7 +158,7 @@ Message sent to j1.
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-basesystem/tests/send_message.rs` | 只声明 `to`、`message`、`notify_when_idle`（必填的只有 `to`）、访问类别是读、说明里那两句在、以前的名字认得出来；发给谁照 `to` 认、话原样交出去，几段的编号照样认（施工 7-1 补），发给子代理的报 `job.messaged`、发给父的不报；每种拒绝各一句；`held`、一模一样的不算出错；超长的发出去之前拒、刚好到上限不算超；写法不对的端口不问；没有端口的送不到；少了参数的端口不问；每种说法两种语言都换得出字 |
+| `crates/miyu-basesystem/tests/send_message.rs` | 只声明 `to`、`message`、`notify_when_idle`（必填的只有 `to`）、访问类别是读、说明里那两句在；发给谁照 `to` 认、话原样交出去，几段的编号照样认（施工 7-1 补），发给子代理的报 `job.messaged`、发给父的不报；每种拒绝各一句；`held`、一模一样的不算出错；超长的发出去之前拒、刚好到上限不算超；写法不对的端口不问；没有端口的送不到；少了参数的端口不问；每种说法两种语言都换得出字 |
 | `crates/miyu-basesystem/tests/send_message/watch.rs` | `notify_when_idle`（施工 C-6）：只订不发、端口不问、效果是整个编号；带话的送到了才订，被拒、太长的整次不订；订子代理、父会话、自己的拒；两样都没有的参数不对；说法两种语言都有 |
 | `crates/miyu-basesystem/tests/send_message/by_session_id.rs` | `to` 当会话编号认：整个编号、短编号都找得到同一个会话；没有列会话的端口的不去找、直接拒；找不到、对得上不止一个、是她自己：各一句，不去送 |
 | `crates/miyu-session/tests/messages.rs` | 执行器：送到对的会话、`by` 是这个会话、命令编号照调用、原话一块字、效果记进日志；到了深度上限的发给父；主会话没有父、没派过的、派它的那一轮撤掉了的、被停掉的、对方拒收、没有会话表；什么会话工具面里有它 |

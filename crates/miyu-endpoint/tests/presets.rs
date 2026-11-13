@@ -93,8 +93,6 @@ async fn the_persona_comes_from_the_request_then_the_default_and_never_the_prese
     mine(&home, "chat", "[preset]\nname = { en = \"Chat\" }\n");
     let script = Script::new([]);
     let mut client = connected(configured(&home, &script)).await;
-    // 旧文件里写着默认人格的，当没写（施工 P-4 上，2026-10-08 项目主人：只去掉预设的「默认人格」）。
-    mine(&home, "ghost", "[preset]\ndefault_persona = \"nobody\"\n");
     let cases = [
         (
             json!({"cwd": "~", "preset": "dev"}),
@@ -105,11 +103,6 @@ async fn the_persona_comes_from_the_request_then_the_default_and_never_the_prese
             json!({"cwd": "~", "preset": "chat"}),
             Some("miyu"),
             "照 persona.default",
-        ),
-        (
-            json!({"cwd": "~", "preset": "ghost"}),
-            Some("miyu"),
-            "旧文件里的默认人格当没写",
         ),
         (
             json!({"cwd": "~", "preset": "dev", "persona": "engineer"}),

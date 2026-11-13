@@ -1,7 +1,6 @@
 //! 载入交回的「要不要认派到一半的空子会话」（施工 V-37 上，`agents.md` 第一条第 8 条）：真会话派子代理，载入以后交回的
 //! [`miyu_session::Placed::recorded`]，和原来收空子会话时在载入以后另把父会话的整份日志读一遍攒出来的（照抄留在这里的
-//! [`old`]）一模一样。几种情形：没派过、派成了、派不成、一次派两个只派成一个、派完没来得及记下结果就崩了、改名以前的
-//! `agent`。
+//! [`old`]）一模一样。几种情形：没派过、派成了、派不成、一次派两个只派成一个、派完没来得及记下结果就崩了。
 
 use std::collections::BTreeSet;
 
@@ -102,11 +101,6 @@ struct Case {
     expected: Option<BTreeSet<SessionId>>,
 }
 
-/// 改名以前造的会话：调用叫 `agent`。
-fn renamed(text: &str) -> String {
-    text.replace(r#""name":"subagent""#, r#""name":"agent""#)
-}
-
 #[tokio::test]
 async fn what_loading_hands_back_is_what_reading_the_whole_log_found() {
     let ids = |ns: &[usize]| Some(ns.iter().map(|n| child_id(*n)).collect::<BTreeSet<_>>());
@@ -153,20 +147,6 @@ async fn what_loading_hands_back_is_what_reading_the_whole_log_found() {
             table: fine(),
             crash: before_the_result,
             expected: ids(&[]),
-        },
-        Case {
-            what: "改名以前的 agent，派不成",
-            script: one(),
-            table: Table::failing(&[1]),
-            crash: renamed,
-            expected: ids(&[]),
-        },
-        Case {
-            what: "改名以前的 agent，派成了",
-            script: one(),
-            table: fine(),
-            crash: renamed,
-            expected: None,
         },
     ];
     for case in cases {

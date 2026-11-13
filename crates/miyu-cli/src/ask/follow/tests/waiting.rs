@@ -45,7 +45,7 @@ fn round(
             "message.assistant",
             turn,
             cause,
-            json!({"seen": turn, "blocks": [{"type": "tool_call", "call_id": call, "name": "agent",
+            json!({"seen": turn, "blocks": [{"type": "tool_call", "call_id": call, "name": "subagent",
                 "args": json!({"description": "查"}).to_string()}]}),
         ));
         round.push(at(

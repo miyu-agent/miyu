@@ -305,7 +305,6 @@ impl Agents {
                 {
                     tracing::warn!(target: "miyu::session", tool = spec.name.as_str(), why = why.as_str(), "tool override not applied");
                 }
-                // 以前的名字也填：只在测试里拿改名以前的目录造会话时碰得到，照同一个规矩，两张工具面只差名字。
                 if is_subagent(&spec.name) {
                     entry.offer(POOL, &offers.pools);
                     entry.offer(PERSONA_PARAMETER, &offers.personas);
@@ -339,7 +338,7 @@ impl Agents {
         preset.is_some_and(|file| !file.opens(BACKGROUND))
     }
 
-    /// 快照的工具面 `face` 上派子代理能选的池（施工 8-8 补）：`subagent`（以前的名字也算）的 `pool` 的 `enum`。没有这件、
+    /// 快照的工具面 `face` 上派子代理能选的池（施工 8-8 补）：`subagent` 的 `pool` 的 `enum`。没有这件、
     /// 没有这一格的（以前造的会话、不能派的会话）是空的。
     pub(crate) fn pools_in(face: &[ToolEntry]) -> Vec<String> {
         face.iter()

@@ -61,7 +61,7 @@
 **包的工具变了，开着的会话下一个回合换上**（施工 O-2 中，`kernel/session.md`「换策略快照」）：会话记着它的快照照的是目录的第几代；回合开头目录换了代，照现在的目录、快照里的预设重新筛工具面：
 
 1. 提供者的包里的那几件照现在的登记：新登记的加上，改了说明、参数的照新的，不再给这个会话的拿掉。
-2. 核心自带的照旧快照里的原样（说明、`subagent` 能选的池、改过名的旧名字都不变），新装的自带工具不加：它们只随程序升级变，前缀稳定第一；预设改了时才照现在的目录加（施工 P-2 下）。
+2. 核心自带的照旧快照里的原样（说明、`subagent` 能选的池都不变），新装的自带工具不加：它们只随程序升级变，前缀稳定第一；预设改了时才照现在的目录加（施工 P-2 下）。
 3. 目录里没有了的：会话上一次对过的那一代里是提供者的拿掉（扩展关掉了、不再登记它）；别的照旧留着，调到时暂时不可用（施工 4-2：程序升级拿掉的；载入的会话不知道上一次对的是哪一代，认不出来的都留着）。
 4. 拼出来和原来一样的（只给群的工具、预设关着的包）什么都不记；不一样的照换人格的办法换上，记 `session.policy_changed`。
 5. 载入的会话不知道快照照的是哪一代，第一个回合照现在的目录对一次。以前造的快照找不回预设的（没有指纹）不跟。
@@ -154,7 +154,7 @@
 | `crates/miyu-kernel/src/session/tests/respond/asking.rs`、`origin/tests.rs` 的 `the_owner_is_a_person_or_someone_on_the_owner_table` | 是谁要的：开回合的触发、照记下的几条开的最后一条、并进来的和排着队的被请求看到以后换上，回报不换、别的 harness 换；主人的判法 |
 | `crates/miyu-endpoint/src/provide/tests/remote_tests.rs`、`reverse/tests.rs` | `tool.call` 带 `by`、`owner`；超时交回那一句、发 `tool.cancel`；叫它停发、照样等它回；掐掉发；回应先到的不发；不等了的调用从表里拿掉，通知不带编号、断了不发 |
 | `crates/miyu-tool/src/shelf/tests.rs`、`catalog/tests.rs` 的 `the_catalog_knows_which_tools_came_from_a_provider` | 架子换一次是一代、拿着同一个的都看到，换不成的不动；目录记着提供者的包的工具 |
-| `crates/miyu-session/src/actor/persona/shelf_tests.rs` | 目录换代：提供者的工具加上、改掉、去掉；自带的照旧、不新加（包里多了一件的）、改过名的照旧名字，目录里没有了的照旧留着；新装上的内置包的工具加进来、卸掉的照旧留着（施工 F-5 中）；只给群的不动本机的会话；载入的对一次；找不回预设的不跟 |
+| `crates/miyu-session/src/actor/persona/shelf_tests.rs` | 目录换代：提供者的工具加上、改掉、去掉；自带的照旧、不新加（包里多了一件的），目录里没有了的照旧留着；新装上的内置包的工具加进来、卸掉的照旧留着（施工 F-5 中）；只给群的不动本机的会话；载入的对一次；找不回预设的不跟 |
 | `crates/miyu-endpoint/src/provide/tests/declared_tests.rs`（施工 XG-1 上） | `paths` 要是顶层的字或字的数组、写的要 `access` 是写、不重复、不多格；`background_parameters` 要是顶层的、不在 `required` 里、不重复；照 `paths` 报路径（数组每项一条，缺的、不是字的不出）；不写两格的登记缓存逐字节和以前一样；三格写 `null` 同不写（施工 XG-1 补） |
 | `crates/miyu-endpoint/src/provide/tests/effects_tests.rs`（施工 XG-1 上） | 改前改后核心读、带的哈希原文对不上的丢、没改的丢、新建的、太大的、改后不在的；只收判过的（只判了读的不收改、删，没声明的一条不收）；删了的要真不在、`trash` 至多 4096 字；不收的种类、写法不对的、重复的丢；出错时待办不收、文件照收；待办的 `done` 写 `null` 的照收、写成别的样子的丢（施工 XG-1 补） |
 | `crates/miyu-endpoint/tests/provide_effects.rs`（施工 XG-1 上，e0 写的红测试） | 契约：第三方 `edit` 和内置 `edit` 改两个一样的文件，`tool.result` 的 `file.changed`、`view.detail` 的差异和增删行数一样；`tool.call` 带 `checked`；接着用内置 `edit` 两边都不用重读；撤掉那一轮两边一样被拦、文件不动 |

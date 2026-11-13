@@ -23,7 +23,7 @@
 | `crates/miyu-store/src/packages/distro.rs` | 系统加装那几处在哪（施工 SD-1，设计 `60-系统源分包.md` 第三节第 2 条，下面「系统加装」） |
 | `crates/miyu-store/src/packages/conflicts.rs` | 装之前查冲突（施工 F-8 六补，下面「冲突」）：一个包占的名字，和装着的别的包重了的那几处 |
 | `crates/miyu-store/src/packages/install.rs` | 装卸时拷进、换下、删掉 `packages/` 里的包目录（施工 F-5 上） |
-| `crates/miyu-config/src/package/kinds.rs`、`upgrade.rs` | 照带的表认种类、哪种包能写哪几张表；写了 `kind` 的清单怎么改（施工 F-8 上补） |
+| `crates/miyu-config/src/package/kinds.rs` | 照带的表认种类、哪种包能写哪几张表（施工 F-8 上补） |
 | `crates/miyu-endpoint/src/packages.rs` | 核心起来时读一次、记运行日志；`package.list`；照核心自己的模块认撞没撞、拼包的配置项（`settle`，施工 9-1 下） |
 | `crates/miyu-core/src/settings.rs` | 起来时照清单拼好包的配置项（`Packaged`），读配置、生成 Schema 和参考文件时并进去（施工 9-1 下） |
 | `crates/miyu-store/src/human.rs` | 给人看的字并进包的配置项的名字、说明和组名（`Human::with_packages`，施工 9-1 下） |
@@ -291,10 +291,10 @@ file = "theme.json"   # 终端主题：包目录里的相对路径
 dir = "web"           # 网页主题：包目录里的相对目录，里面是一个普通的网页包
 ```
 
-1. **清单**：外观包只能写 `[package]`、`[theme]`（另可写依赖），`[package]` 里可以写 `icon`；不说协议，写了 `protocol` 报 `wrong_kind`；写了别的表（`[command]`、`[mascot]` 都算）照样 `wrong_kind`：外观包不带吉祥物，别的包也带不了外观。`[theme]` 下只认 `tui`、`web` 两张子表和老写法的 `file`，至少带一样，都没有的报 `missing_key`（`theme.tui / theme.web`）。
+1. **清单**：外观包只能写 `[package]`、`[theme]`（另可写依赖），`[package]` 里可以写 `icon`；不说协议，写了 `protocol` 报 `wrong_kind`；写了别的表（`[command]`、`[mascot]` 都算）照样 `wrong_kind`：外观包不带吉祥物，别的包也带不了外观。`[theme]` 下只认 `tui`、`web` 两张子表，至少带一样，都没有的报 `missing_key`（`theme.tui / theme.web`）。
    - `[theme.tui]` 只有 `file`、必写，写法同 `[mascot] model`，写错 `bad_theme_file`。
    - `[theme.web]` 只有 `dir`、必写，写法同 `[page] dir`，写错 `bad_theme_dir`。目录里是一个普通的网页包（`manifest.json`、`index.js` 和别的文件），可以带脚本，不设限（2026-11-02 项目主人定）；里面怎么写由网页定、网页查。
-   - 老写法 `[theme] file = "…"` 照认，读成 `[theme.tui] file`：装着的包不用改。和 `[theme.tui]` 一起写的，老的 `file` 报 `unknown_key`，免得两份路径不知道认哪个。
+   - 分成两样以前的写法 `[theme] file = "…"` 不再认（施工 AUD-3，2026-11-13 项目主人定：还没发版，旧兼容的都去掉；发出去的、装着的主题包都已经是 `[theme.tui]`）：同别的不认识的键，`unknown_key`。
    - 读法在 `miyu-config` 的 `package/theme.rs`，测试 `package/theme/tests.rs`。
 2. **列出来**：`package.list`、`package.info` 的一项 `kind` 是 `theme`，多 `theme: {"tui"?: {"file"}, "web"?: {"dir"}}`，带了哪样写哪样，没有 `protocol`；以前顶层的 `theme: {"file"}` 不再给（终端跟着改）。装之前的看一眼多 `theme: true`。`packages` 流推的 `package.changed` 里的那一项同形状。
 3. **读主题**：`package.file {"package", "path"}` 对外观包的 `path` 照包目录写：终端主题给 `file` 那一份（照原样比）；网页主题给网页目录下的任何一份普通文件（什么类型都给，分块、512 KiB 一块照旧），目录本身不算。照真实路径找：链接出了包目录的、出了网页目录的（指到包里别处的也算）、不是普通文件的，都 `not_found`；别的路径也 `not_found`。
@@ -398,7 +398,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `not_built_in` | 清单是内置包，这一份核心没编进它的代码（施工 F-2，核心起来时标；`miyu check` 不查） |
 | `bad_icon`、`bad_page_dir` | `[package] icon` 不是 Lucide 图标名的写法，`[page] dir` 不是包目录里的相对目录（施工 F-6 上） |
 | `bad_page_source` | `[page]` 两样都写了 `dir`、`server`，`server` 不是 `true`，不是扩展写了 `server`（施工 BP-1） |
-| `bad_theme_file`、`bad_theme_dir` | 终端主题文件（`[theme.tui] file`、老写法 `[theme] file`）不是包目录里的相对路径（施工 F-16），`[theme.web] dir` 不是包目录里的相对目录（施工 TH-1）；`tui`、`web` 没写成表的也算 |
+| `bad_theme_file`、`bad_theme_dir` | 终端主题文件（`[theme.tui] file`）不是包目录里的相对路径（施工 F-16），`[theme.web] dir` 不是包目录里的相对目录（施工 TH-1）；`tui`、`web` 没写成表的也算 |
 | `bad_logo` | `[package] logo` 不是包目录里一个 `.png`、`.webp` 的相对路径（施工 F-18 上，`package-pages.md`「清单多的几格」）；图本身不合规矩的在 `miyu check` 报警告 `logo_missing`、`logo_not_image`、`logo_too_big`，包照装 |
 | `bad_export` | `[export]` 写错了：`methods` 里有不是方法名的、重复的（施工 X-18）；`provides`、`plugs` 的名字写法不对、重复、两样都写了、名字底下没有方法（施工 BUS-1，设计 67 B4、B6、B10）；`methods` 里有不在这个包自己声明的任何名字底下的，没声明名字却写了 `methods` 的也算（施工 BUS-5，B5：别的包只能经总线照名字调，不在名字底下的它们调不到）。`detail` 是哪一个方法、名字，报在那一格 |
 | `bad_mcp` | `[[mcp]]` 写错了（施工 X-2）：服务名、命令、环境变量、给哪种会话、时限，同一个包里服务名重了；`detail` 是哪一格（`mcp.<服务名>.<格>`）、报在那一段 |

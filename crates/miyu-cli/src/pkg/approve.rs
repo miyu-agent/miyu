@@ -111,17 +111,14 @@ pub(super) fn prefixed(id: &str, width: Option<usize>, line: &str) -> String {
     }
 }
 
-/// 「注意：」那一行：核心给的 `notice`（一句一个字符串，旧的写法一个字符串也认）照原样接；没有的没有。
+/// 「注意：」那一行：核心给的 `notice`（一句一个字符串）照原样接；没有的没有。
 pub(super) fn notice(value: &Value, language: &Language) -> Option<String> {
-    let sentences: Vec<&str> = match value {
-        Value::String(one) => vec![one.as_str()],
-        _ => value
-            .as_array()
-            .into_iter()
-            .flatten()
-            .filter_map(Value::as_str)
-            .collect(),
-    };
+    let sentences: Vec<&str> = value
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(Value::as_str)
+        .collect();
     (!sentences.is_empty()).then(|| language.notice(&sentences))
 }
 

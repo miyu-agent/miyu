@@ -414,46 +414,48 @@ async fn deleting_moves_your_layer_into_the_trash() {
     assert_eq!(reason(&reply), Some("bad_params"), "{reply}");
 }
 
-/// P-3 上那几个小时里建的人格写着 `base`（施工 P-3 再补）：照常列出、能用，下一次 `persona.set` 写这份文件时顺手去掉；写错了的
-/// 一项，列表里的 `problem` 照连接的语言说、带第几行。
+/// 写错了的一项，列表里的 `problem` 照连接的语言说、带第几行；改它的 `persona.set` 整条不收，文件一个字不动。P-3 上那几个
+/// 小时里写进去的 `base` 不再另外认（施工 AUD-3：还没发版，不留只为读旧文件的认法），同别的不认识的键。
 #[tokio::test]
-async fn an_old_base_is_ignored_and_dropped_on_the_next_save() {
+async fn a_broken_persona_is_listed_with_its_problem_and_is_not_written() {
     let home = Home::new();
     let dir = home.root.personas();
-    std::fs::create_dir_all(dir.join("old")).unwrap();
-    std::fs::write(
-        dir.join("old/persona.toml"),
-        "[persona]\nbase = \"none\"\nname = \"阿米\"\n",
-    )
-    .unwrap();
-    std::fs::create_dir_all(dir.join("broken")).unwrap();
-    std::fs::write(dir.join("broken/persona.toml"), "[persona]\n\nvoice = 1\n").unwrap();
+    let files = [
+        ("broken", "[persona]\n\nvoice = 1\n", "persona.voice", 3),
+        (
+            "based",
+            "[persona]\nbase = \"none\"\nname = \"阿米\"\n",
+            "persona.base",
+            2,
+        ),
+    ];
+    for (id, text, _, _) in files {
+        std::fs::create_dir_all(dir.join(id)).unwrap();
+        std::fs::write(dir.join(id).join("persona.toml"), text).unwrap();
+    }
     let mut client = connected(&home).await;
     let listed = client.call("l", "persona.list", json!({})).await;
     let personas = listed["result"]["personas"].as_array().unwrap();
-    let find = |id: &str| {
-        personas
+    for (id, text, key, line) in files {
+        let one = personas
             .iter()
             .find(|one| one["persona"] == id)
-            .unwrap()
-            .clone()
-    };
-    assert_eq!(find("old")["name"], "阿米", "{listed}");
-    assert!(find("old").get("problem").is_none(), "{listed}");
-    let broken = find("broken");
-    assert_eq!(broken["problem"], "不认识的键 persona.voice", "{listed}");
-    assert_eq!(broken["line"], 3, "{listed}");
-    let reply = set(
-        &mut client,
-        "s",
-        json!({"persona": "old", "changes": [{"key": "persona.summary", "value": "我的"}]}),
-    )
-    .await;
-    assert!(reply.get("error").is_none(), "{reply}");
-    assert_eq!(
-        mine(&home, "old", "persona.toml").as_deref(),
-        Some("[persona]\nname = \"阿米\"\nsummary = \"我的\"\n")
-    );
+            .unwrap_or_else(|| panic!("{id}：{listed}"));
+        assert_eq!(one["problem"], format!("不认识的键 {key}"), "{listed}");
+        assert_eq!(one["line"], line, "{listed}");
+        let reply = set(
+            &mut client,
+            &format!("s-{id}"),
+            json!({"persona": id, "changes": [{"key": "persona.summary", "value": "我的"}]}),
+        )
+        .await;
+        assert_eq!(reason(&reply), Some("persona_invalid"), "{id}：{reply}");
+        assert_eq!(
+            mine(&home, id, "persona.toml").as_deref(),
+            Some(text),
+            "{id}：什么都没写"
+        );
+    }
 }
 
 /// 说明能写空的字（施工 P-3 再补）：就是没有说明，盖住下面那一层的，`persona.get` 给 `null`；名字照旧不收空的。

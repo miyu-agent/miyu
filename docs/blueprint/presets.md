@@ -60,7 +60,7 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 ```
 
 1. `name`、`summary` 照人格的写法：一句字，名字去掉前后空白不能是空的，说明可以是空的字、就是没有说明（施工 P-3 补、再补）；以前写成语言表（`zh`、`en`、`ja`）的照样认，出厂的照旧这么写，界面照连接的语言显示。上一层写了的整格换掉。叠好的文件的指纹照以前的写法算（没写的是空表、语言表照原样）：以前造的快照照旧对得上。
-2. 没有 `default_persona`（施工 P-4 上撤了，2026-10-08 项目主人：「人格、记忆、预设相互之间耦合了」，只去掉预设的默认人格）：以前写了的认出来当没写，指纹照没写算，下一次 `preset.set` 写这份文件时去掉；`preset.set` 写这个键是 `bad_params`。
+2. 没有 `default_persona`（施工 P-4 上撤了，2026-10-08 项目主人：「人格、记忆、预设相互之间耦合了」，只去掉预设的默认人格）。以前写了的不再另外认（施工 AUD-3，2026-11-13 项目主人定：还没发版，旧兼容的都去掉）：文件里写着它、`preset.set` 写它，都同别的不认识的键（`unknown_key`，`preset.set` 回 `preset_invalid`）。P-3 上那几个小时里写进去的 `base` 同样。
 3. `unlisted`：几层都没写的照 `on`。功能全开是默认，`[tools]` 里只关一两件的写法也是建在「其余都开」上的。
 4. `[features]`（施工 F-3 上）的键是功能的编号（设计 30 第三节第 6 条那十五个，加上装了的包自己声明的），写法同包的编号，值是开关。一个功能开不开的先后：`[features]` 写了的；没写的照 `[software]`，先认功能的编号、再认它所在的包的编号、再认包所在的组（施工 BS-1 上中：`basesystem = true` 开组里没单独写的包；组照出厂清单的 `groups`，找预设时放进 `PresetFile::groups`，不进指纹）；都没写的照全局开关（下面「全局开关」，只管技能、脚本、MCP 服务，只在 `unlisted` 开着的预设里算，施工 X-27）；再没有的照 `unlisted`（`PresetFile::opens_in`、`decided`）。`decided` 同时说是谁定的（`By`）：写了功能编号的是 `Preset`，写了它所在的包或组的是 `Group`（施工 FG-1 拆出来，`preset.get` 的 `sections` 照它分；原来那一格 `features[].by` 照旧把组算 `preset`，`By::as_flat_str`），全局开关的 `Global`，`unlisted` 的 `Default`。只知道功能编号的地方（`PresetFile::opens`：记忆、后台运行、脚本调工具、长期目标）先照 `PresetFile::homes` 找功能所在的包（施工 PN-2：功能编号到包编号，照装着的清单，找预设时放进来、不进指纹；包改名以后功能编号不变），找不到的照功能编号算。写了没装的不报错。关掉的包（施工 U23 末上，配置 `packages.<编号>.off`，`switched_off`）整包不开，同场所扣下的包；不同的是它的功能算进没开的那几个，快照记的跟着变，开着的会话下一个回合换上工具面、技能（施工 BS-1 上中起没有必需的包）。
    以前的 `[software]`（施工 F-3 上起照认，新写的用 `[features]`）：键是软件的编号，写法同包的编号。现在装了的：基础系统组 `basesystem`（施工 BS-1 上中起是组，写它就是写组里没单独写的包；施工 FG-1 起组里十六个包，待办、定时、循环挪进组 `tasks`，项目文档挪进组 `environment`，记忆、人设遵循提醒是组 `persona`，联网、知识库是组 `research`，`packages.md` 文件表 `groups.toml` 那一行）、记忆 `base-memory`（三件工具和回合开始的召回）、知识库 `base-knowledge`（两件工具，施工 K-1 下）、角色扮演 `base-roleplay`（人格的角色扮演提示和风格锁）、联网 `base-net`、长期目标 `base-goal`，和清单装的 `process` 包（桥）。出厂的包施工 PN-3 起叫 `base-*`（设计 48），功能编号还是改名前的短名，`[software]` 里写短名的照「先认功能的编号」认得：`memory = false` 关的是功能 `memory`；功能编号和短名不同的包（联网的 `web-search`、`web-fetch`，注入环境信息的 `env-*`，写技能和包的两个技能），写短名（`net`、`env`、`authoring`）哪个都认不上，要写包编号或者功能编号。写了没装的不报错（这台机器上以后可能装），`preset.get` 的 `software` 里标 `installed: false`（施工 P-3 补）。
@@ -195,11 +195,11 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 | 测试 | 守什么 |
 |---|---|
 | `crates/miyu-policy/src/preset/tests.rs` 的 `the_icon_is_read_layered_and_left_out_of_the_digest`、`crates/miyu-endpoint/tests/persona_avatar.rs` 的 `presets_carry_their_icons_and_one_can_be_changed`（施工 P-5） | 图标的读法、层叠、不进指纹、写错报错；列出来、改、回到出厂的 |
-| `crates/miyu-policy/src/preset/tests.rs` | 每一格读对；空文件什么都没有、`unlisted` 照 `on`；逐格叠；每一种写错报对代码和行；工具名的写法；P-3 上写的 `base` 当没写（施工 P-3 再补） |
+| `crates/miyu-policy/src/preset/tests.rs` | 每一格读对；空文件什么都没有、`unlisted` 照 `on`；逐格叠；每一种写错报对代码和行；工具名的写法；以前撤掉的 `base`、`default_persona` 是不认识的键（施工 AUD-3） |
 | `crates/miyu-store/src/presets/tests.rs` | 三层逐格叠；包那一层在出厂和你的中间、一个编号只认一份（施工 P-11 上）；一层也行、空文件也算；没有的、编号不合写法的、写错的写明哪一层；编号照文件名、不重复、照编号排；`check` 每一层各查、写了文件的认得出；出厂两份读得出、零问题、三种语言齐；每一种代码三种语言都有给人看的一句 |
 | `crates/miyu-store/src/index/tests.rs` | 索引里存得下、读得回人格和预设 |
 | `crates/miyu-policy/src/preset/tests/limits.rs`、`crates/miyu-endpoint/tests/preset_set/fields.rs` 的 `the_unattended_step_limit_is_written_and_read_back`（施工 AE-1） | `[limits]` 读对、逐格盖；0、负数、小数、字、超出范围报 `bad_limit`，别的键 `unknown_key`，都带行；没写的指纹和以前一字不差（写没写 `[features]` 两条都钉住），写了才变；`preset.set` 写 `limits.unattended_steps`、`preset.get` 回它，没写的是 `null`，0 整条不收，`unset` 去掉 |
-| `crates/miyu-endpoint/tests/preset_set.rs`（施工 P-3 中、补、再补） | 不写编号新建、`remove`、改出厂的只写改了的、保留格式、删一项、`expect`、整条不收还带一句、参数不对、删你那一层、一样的值不写（`protocol.md` 测试表）；旧的 `base` 照常列出、下一次写时去掉，写错的一项列表里照连接的语言说、带行 |
+| `crates/miyu-endpoint/tests/preset_set.rs`（施工 P-3 中、补、再补） | 不写编号新建、`remove`、改出厂的只写改了的、保留格式、删一项、`expect`、整条不收还带一句、参数不对、删你那一层、一样的值不写（`protocol.md` 测试表）；写错的一项（旧的 `base`、`default_persona` 也是，施工 AUD-3）列表里照连接的语言说、带行，改它的整条不收、文件不动 |
 | `crates/miyu-config/src/plain/tests.rs`（施工 P-3 中） | 表、行内表、点号连着的键里读一项，没写的、是表的、读不懂的是空的；只有字、开关、数换得成要写的值 |
 | `crates/miyu-endpoint/src/connection/tests.rs`（施工 P-3 中） | 扩展进程调了回 `local_only` 的名单 |
 | `crates/miyu-kernel/src/facts/tests/gates.rs`、`crates/miyu-policy/src/shown/tests.rs`、`crates/miyu-policy/src/compose/tests.rs` 的 `a_preset_can_leave_out_each_core_line`（施工 C-11） | 环境那几块：都开着的逐字节一样；只关时间、只关工作目录照拆开的写法，都关了不注入；权限、编号、模型各自关得掉；拆开的写法要不了另一半；照预设没开的功能编号读；system 那几行跟着开关 |
@@ -208,7 +208,7 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 | `crates/miyu-endpoint/tests/preset_tokens.rs`（施工 DM-4） | 读得出的预设带 `tokens`，同无人格的新会话预览的 `estimated_total`，工具多的多，写错的不带；列预设、预览上下文、预览工具面都不在 `workspace/` 下留会话目录 |
 | `crates/miyu-session/tests/spawn.rs` | 子会话照父会话的预设，父会话载入以后也照 |
 | `crates/miyu-endpoint/tests/preset_face.rs`（施工 P-2 中） | 功能全开的工具面全有、没有那一行；开发预设没有记忆三件、范围 `off`（要了也没用）、那一行只写 `memory`；单件关掉的没有、不写那一行；整包关掉的工具全没、写进那一行；角色扮演开着的有提示和风格锁、那一行在风格锁前面，关着的都没有；`preset.get` 的 `software`：装了的、写了没装的，内置的照固定的先后（施工 P-3 补）；没有工具的 `process` 包关着：快照记它、那一行不列，有工具的照列（施工 O-18） |
-| `crates/miyu-tool/src/catalog/tests.rs` | 按包登记、以前的名字照现在的包、老写法算基础系统、两个包里同名的照样拒 |
+| `crates/miyu-tool/src/catalog/tests.rs` | 按包登记、老写法算基础系统、两个包里同名的照样拒 |
 | `crates/miyu-policy/src/preset/tests.rs` | 软件开不开、单件留不留；没开的照编号、不重复；功能照 `[features]`、`[software]`、`unlisted` 的先后开不开，上层盖下层；写了 `[features]` 才进指纹；以前记包编号的快照算同一回事（施工 F-3 上） |
 | `crates/miyu-policy/src/features/tests.rs`（施工 F-3 上） | 工具归写明它的功能、只有一个功能的包工具都归它；装了的就是表里的；以前的包编号读成它的功能 |
 | `crates/miyu-session/src/actor/persona/preset_tests.rs`（施工 F-3 上加的两条） | 以前的快照记包编号的不换、真改了的照换；`[features]` 关掉一个功能，工具没了、那一行写功能编号 |

@@ -420,20 +420,17 @@ fn examples_are_written_back_and_read_the_same() {
     assert_eq!(write_examples(&[]), Ok(String::new()));
 }
 
-/// P-3 上那几个小时里建的人格写着 `base`（施工 P-3 再补）：认出来当没写，写成什么样都不算写错，别的照读。
+/// P-3 上那几个小时里建的人格写着的 `base` 不再另外认（施工 AUD-3：还没发版，不留只为读旧文件的认法）：同别的不认识的键。
 #[test]
-fn a_base_written_by_p3_is_read_as_unwritten() {
-    let plain = read_toml("[persona]\nname = \"阿米\"\n").unwrap();
+fn a_base_is_an_unknown_key_like_any_other() {
     for text in [
         "[persona]\nbase = \"none\"\nname = \"阿米\"\n",
         "[persona]\nname = \"阿米\"\nbase = 3\n",
     ] {
-        assert_eq!(read_toml(text).unwrap(), plain, "{text:?}");
+        let problem = read_toml(text).expect_err(text);
+        assert_eq!(problem.code, Code::UnknownKey, "{text:?}");
+        assert_eq!(problem.detail, "persona.base", "{text:?}");
     }
-    assert!(
-        read_toml("[memory]\nbase = \"none\"\n").is_err(),
-        "别的表里照旧不认"
-    );
 }
 
 /// `[persona] subagent`（施工 P-10 补）：`true`、`false`，没写的是没有；别的写法报 `bad_subagent`；上一层写了的盖下面的。

@@ -29,7 +29,7 @@ use crate::Core;
 use crate::config::methods::words;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
-use crate::toml_changes::{ChangeParams, Wanted, check_expect, edited, wanted_as, without};
+use crate::toml_changes::{ChangeParams, Wanted, check_expect, edited, wanted_as};
 
 /// 提示词的名字到人格目录里的位置。
 fn prompt_file(name: &str) -> Option<&'static str> {
@@ -295,12 +295,7 @@ fn write(
     let (text, bom, version) = parts(toml);
     check_expect(&text, wanted, "persona_conflict")?;
     let label = format!("home {}", persona::TOML);
-    let new = edited(
-        &without(&text, &[format!("persona.{}", persona::BASE)]),
-        wanted,
-        &label,
-        Refusal::persona_invalid,
-    )?;
+    let new = edited(&text, wanted, &label, Refusal::persona_invalid)?;
     if new != text {
         pending.push(Pending {
             path: toml_path,

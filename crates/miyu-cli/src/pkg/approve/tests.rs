@@ -127,9 +127,7 @@ fn the_notice_is_the_core_words_as_they_are() {
         notice(&english, &Language::English).as_deref(),
         Some("Note: This is a community package. Outside.")
     );
-    assert_eq!(
-        notice(&json!("一句。"), &Language::Chinese).as_deref(),
-        Some("注意：一句。")
-    );
+    // 整个写成一个字符串的是以前的写法，不认（施工 AUD-3）：命令行和核心一起发，核心给的一直是数组。
+    assert_eq!(notice(&json!("一句。"), &Language::Chinese), None);
     assert_eq!(notice(&Value::Null, &Language::Chinese), None);
 }

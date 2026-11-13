@@ -58,7 +58,7 @@ bases = ["notes"]
 几张表，都可以不写（`[appearance]` 见下面「主题色、背景图」）：
 
 - `[persona]` 里的 `subagent`（施工 P-10 补，2026-10-17 项目主人定）：派子代理时能不能挑它，`true`、`false`，不写是不能（同池的 `subagent`）；上一层写了的盖下面的，写错报 `bad_subagent`。界面上叫「子代理可选」。
-- `[persona]` 里只有 `name`、`summary`、`subagent`（P-3 上那几个小时里写进去的 `base` 认出来当没写，下一次 `persona.set` 写这份文件时去掉，施工 P-3 再补）：各是一句字（施工 P-3 补，2026-10-08 项目主人定：名字只存一份、不分语言）。名字去掉前后空白不能是空的；说明可以是空的字，就是没有说明，盖住下面那一层的（施工 P-3 再补，2026-10-08 项目主人：「为什么说明不让为空？」），`*.get`、`*.list` 给 `null`，要回到下面那一层的照 `unset`。以前写成语言到一句话的表（`zh`、`en`、`ja`）的照样认，照连接的语言挑；出厂的几个照旧这么写，界面照连接的语言显示。上一层写了的整格换掉。界面上 `summary` 叫「简单描述」（2026-10-17 项目主人定，不另加字段），详细的写进人设 `prompts/persona.md`（界面上叫「具体人格提示词」）；派子代理挑人格时名字和它一起给模型看（施工 P-10，`tools/subagent.md`）。
+- `[persona]` 里只有 `name`、`summary`、`subagent`（P-3 上那几个小时里写进去的 `base` 不再另外认，同别的不认识的键，施工 AUD-3，2026-11-13 项目主人定：还没发版，旧兼容的都去掉）：各是一句字（施工 P-3 补，2026-10-08 项目主人定：名字只存一份、不分语言）。名字去掉前后空白不能是空的；说明可以是空的字，就是没有说明，盖住下面那一层的（施工 P-3 再补，2026-10-08 项目主人：「为什么说明不让为空？」），`*.get`、`*.list` 给 `null`，要回到下面那一层的照 `unset`。以前写成语言到一句话的表（`zh`、`en`、`ja`）的照样认，照连接的语言挑；出厂的几个照旧这么写，界面照连接的语言显示。上一层写了的整格换掉。界面上 `summary` 叫「简单描述」（2026-10-17 项目主人定，不另加字段），详细的写进人设 `prompts/persona.md`（界面上叫「具体人格提示词」）；派子代理挑人格时名字和它一起给模型看（施工 P-10，`tools/subagent.md`）。
 - 没有 `[memory]` 了：施工 R-3 下加的 `[memory] scope`（记忆的默认范围）施工 FH-1 去掉（设计 55 第六节第 3 条），记忆一律跟着人格、开会话时能关；写了的照不认识的表报 `unknown table [memory]`，不做旧版兼容。
 - `[knowledge]` 里只有 `bases`（施工 K-1 下，`knowledge.md`「怎么走」第六条，19 N11）：用这个人格的会话只查得到列着的、在的那几个知识库，一列知识库的编号（写法同人格的编号）；写了空的列表一个都查不到。不写是查全部。上一层写了的整格换掉。写错的报 `bad_knowledge_bases`（不是一列、编号不合写法）。
 
@@ -107,7 +107,6 @@ assistant: 8640
 - `persona.toml` 照 `changes` 改（`crate::toml_changes`，同预设）；提示词整份换，`unset` 删你那一层的，空的字就是这一段是空的；示范对话另收一对一对的（`persona::write_examples` 写成文件的写法，写了读不回原样的拒绝）。写之前照改完的叠一遍（`Personas::find_with`：你那一层的几份照改完的算，删掉的当没有，没改的读盘），写错的什么都不写，拒绝里带照连接语言的一句（`data.message`）。
 - 提示词防覆盖（终端的会话要的）：`persona.read` 给原文和你那一层这一份的版本，`persona.set` 带回来当 `expect`。写盘照配置文件的规矩，一份一份写，只试一次：几份里写到一半撞上手改的，前面写了的不撤、回 `persona_conflict`（重来时前面那几份已经是改完的样子，不再写）。
 - 删：整个目录挪进 `trash/personas/<编号>.<删的时刻，毫秒>/`（`miyu_store::trash::personas`），里面多一个 `deleted_at`；核心起来时和会话一起清，满 7 天的真删。开着的会话照旧用快照里的；默认人格指着它的，以后开会话照旧拒（不悄悄换）。你那一层没有、只住在一个只带它的出厂包里的，删它是卸那个包（「软件包带的」第 3 条，施工 PE-1；在 `crates/miyu-endpoint/src/personas/delete.rs`），开着的会话、默认人格照同样的规矩。
-- 写 `persona.toml` 时顺手去掉 P-3 上写进去的 `base`（施工 P-3 再补），不留迁移步骤给人做。
 - 运行日志 `INFO persona saved`、`persona deleted`。不推 `persona.changed`：两个头都是每次打开重新读。
 
 ### 头像（Y13，施工 P-5 做了，2026-10-10；网页、终端对过）
@@ -173,10 +172,10 @@ assistant: 8640
 | `crates/miyu-endpoint/tests/persona_seeds.rs`（施工 P-6 补） | 头像挑出的候选和 `miyu-seeds` 算的一样、最多 4 个、`persona.get`、`persona.list` 都带；没有头像的是 `null`；换了头像跟着换（`persona.set` 的回应和再读到的）；只有 PNG 开头、解不开的有版本没有候选 |
 | `crates/miyu-seeds/src/tests.rs`（施工 P-6 补） | 见得多的排第一、最多 4 个、少的也在候选里；透明的不算、全透明的没有候选；灰的给 Google 蓝；图的字节照 `thumbnail` 缩到 128 再挑、同一张图挑的一样、不是图的读不成；`#rrggbb` 小写 |
 | `crates/miyu-endpoint/tests/persona_appearance.rs`（施工 P-6） | 主题色大写写成小写、列出来带着、删了回到下面那一层、写错的和重复改的拒绝且什么都不写、只写主题色能新建；背景图比头像的上限大也收、读回、版本对不上不动、删了回到下面那一层、不合规矩的拒绝（`data` 带量到的和上限）且一起改的主题色也不写 |
-| `crates/miyu-policy/src/persona/tests.rs`、`persona/tables/tests.rs`（施工 K-1 下挪出去的几张表） | `persona.toml` 三种语言、写错的几种写明第几行（`[memory]` 照不认识的表，施工 FH-1）、P-3 上写的 `base` 当没写（施工 P-3 再补）、读不成 TOML 也说第几行；`[knowledge] bases` 读得出、空的列表、不写是没有、上一层整格换掉，写错的四种（施工 K-1 下）；逐种语言叠；示范对话照旧版写法读（大小写、冒号后的空格、接着的行、空行）、写错的七种写明第几行；示范对话进请求在 system 后面历史前面、`stable` 数对、软件工程师的快照里没有 `demos` |
+| `crates/miyu-policy/src/persona/tests.rs`、`persona/tables/tests.rs`（施工 K-1 下挪出去的几张表） | `persona.toml` 三种语言、写错的几种写明第几行（`[memory]` 照不认识的表，施工 FH-1）、P-3 上写的 `base` 是不认识的键（施工 AUD-3）、读不成 TOML 也说第几行；`[knowledge] bases` 读得出、空的列表、不写是没有、上一层整格换掉，写错的四种（施工 K-1 下）；逐种语言叠；示范对话照旧版写法读（大小写、冒号后的空格、接着的行、空行）、写错的七种写明第几行；示范对话进请求在 system 后面历史前面、`stable` 数对、软件工程师的快照里没有 `demos` |
 | `crates/miyu-endpoint/tests/persona_shipped.rs`（施工 PE-1） | 全新的数据根上就有软件工程师、名字照连接的语言（中文、英文）、`remove` 是 `delete`，默认人格不设；改了写你那一层、下一次读到改后的，删掉改动回到出厂的、包还在；你那一层没有的删了是卸它的出厂包（列表里没了、`package.list` 里 `removed: true`、`etc/removed/` 里记了一笔、再删 `nothing_to_delete`），写包编号装回来又有；装上的包带的照旧删不掉 |
 | `crates/miyu-endpoint/src/personas/delete/tests.rs`（施工 PE-1） | 只带这一个人格的包才算（带图标的也算）；带技能、带两个人格、带程序的不算；装上的包、你那一层也有的、没有的都不连包卸 |
-| `crates/miyu-endpoint/tests/persona_set.rs`（施工 P-3 下、补、再补） | 不写编号新建、读原文和版本、一对一对的示范对话、防覆盖、空的字、删提示词、写错的什么都不写还带一句、参数不对、删了挪进回收处（`protocol.md` 测试表）；旧的 `base` 照常列出、下一次写时去掉，写错的一项列表里照连接的语言说、带行 |
+| `crates/miyu-endpoint/tests/persona_set.rs`（施工 P-3 下、补、再补） | 不写编号新建、读原文和版本、一对一对的示范对话、防覆盖、空的字、删提示词、写错的什么都不写还带一句、参数不对、删了挪进回收处（`protocol.md` 测试表）；写错的一项（旧的 `base` 也是，施工 AUD-3）列表里照连接的语言说、带行，改它的整条不收、文件不动 |
 | `crates/miyu-store/src/trash/personas/tests.rs`（施工 P-3 下） | 挪进回收处整个目录不变、多 `deleted_at`、原处没了、同一个编号删两次各是各的、不在的报错；清的时候正好满的删、没满的留、读不出删的时刻的留并报出来、没有回收处什么都不做 |
 | `crates/miyu-store/src/personas/tests.rs` | 三层逐项、逐文件叠、包那一层在出厂和你的中间、出厂的和排在前面的包盖住别的包（施工 P-11 上）、来自哪一层；空目录也算有这一层；没有的、编号不合写法的、是文件不是目录的；写错的写明哪一层；列编号不重复、照编号排 |
 | `crates/miyu-endpoint/src/personas/tests.rs` | 名字照语言挑、退回的先后 |

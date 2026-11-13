@@ -13,7 +13,7 @@ use crate::features::Features;
 mod read;
 mod switches;
 
-pub use read::{Code, DEFAULT_PERSONA, Problem, read};
+pub use read::{Code, Problem, read};
 pub use switches::{By, switchable};
 
 /// 工具名最多几个字符。

@@ -5392,7 +5392,7 @@ Start a subagent in a new session to do one task and wait for it. Its report arr
 
 #### `software/basesystem/tools/send_message.json`
 
-- 什么时候加进来：会话的工具面里有 `send_message`：本机的会话，到了深度上限的也有（每次请求都带）；旧会话冻着 `message_agent` 这个名字
+- 什么时候加进来：会话的工具面里有 `send_message`：本机的会话，到了深度上限的也有（每次请求都带）
 - token：TX-1 后 155（o200k 数，改前 203）；原来 165 → 204 → 241（施工 C-5 是 165；施工 C-6，2026-10-01 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量，多 39。整个 tools 数组 2108 → 2147，多 39；施工 C-9 加 `attachments`，2026-10-15 主会话照同一个模型量，只带这一件时 446 → 483，多 37）
 - 为什么加：`send_message` 的说明和参数（施工 C-5，从 `message_agent` 改名）：说明第一句多了「or to another of your sessions by its id」，第二、三句一字不改（原来施工 7-7 的三句：发给自己派的子代理或者父、对方下一步看到闲着就开一轮、只发对方现在就得知道的）。参数 `to` 多认会话编号。文件从 `message_agent.json` 挪来，这次改名、改说明第一句、`to` 一起改，只冷一次缓存。施工 C-6 加 `notify_when_idle`（「空了告诉我」，`cross-session.md` 第六条，照 Claude Code 的 `SendMessage`，项目主人定）：一句，订那个会话下次空下来时的一条通知；`message` 的说明多半句「可以不写」，必填的只剩 `to`。说明本身一字没动：「只能订别的会话」写进被拒的那一句（调用之后才用得上）。施工 C-9 加 `attachments`（设计 29 第五节，2026-10-15 项目主人定 agent 之间的话能带附件）：一句，带的文件路径、最多几个；说明一字不改，读不成、太大的写进被拒的那一句。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明。施工 XG-2 上加 `"scope"`（工具职能，`64-工具职能.md`；不发给模型，token 不变）
 - 指纹：`674f9acb`

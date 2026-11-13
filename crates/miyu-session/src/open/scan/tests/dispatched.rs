@@ -59,7 +59,7 @@ impl Dice {
     }
 }
 
-/// 调用的名字：两个是派子代理的，别的不是。
+/// 调用的名字：只有 `subagent` 是派子代理的，别的不是（`agent` 是它改名以前的名字，不再认，施工 AUD-3）。
 const NAMES: [&str; 5] = ["subagent", "agent", "shell", "read", "subagents"];
 
 /// 第 `seq` 条，种类 `kind`、`body`。

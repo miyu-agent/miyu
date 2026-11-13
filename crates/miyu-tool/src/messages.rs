@@ -18,12 +18,8 @@ use miyu_kernel::id::{JobId, SessionId};
 use crate::attachment::Attached;
 
 /// 这件工具的名字（`agents.md` 第一条第 6 条）：场所会话里不给它。施工 C-5 从 `message_agent` 改名（照 Claude Code 的
-/// `SendMessage`，2026-10-01 项目主人定）。
+/// `SendMessage`，2026-10-01 项目主人定）；以前的名字不再认（施工 AUD-3）。
 pub const SEND_MESSAGE: &str = "send_message";
-
-/// 它以前的名字（施工 C-5）：以前造的会话快照里冻着它，前缀不能变，她照旧这样调；工具目录照它也找得到这一件
-/// （[`crate::Tool::formerly`]），新造的会话工具面上没有它。
-pub const SEND_MESSAGE_FORMERLY: &str = "message_agent";
 
 /// 留言发给谁：父会话、这个会话派的子代理，或者（施工 C-5）别的会话——整个编号。
 #[derive(Debug, Clone, PartialEq, Eq)]

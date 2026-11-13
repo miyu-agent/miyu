@@ -216,6 +216,11 @@ async fn conflicts_and_mistakes_write_nothing() {
             json!([{"key": "preset.colour", "value": "red"}]),
             "home dev.toml:",
         ),
+        // 以前撤掉的默认人格那一格不再另外认（施工 AUD-3）：同别的不认识的键。
+        (
+            json!([{"key": "preset.default_persona", "value": "engineer"}]),
+            "home dev.toml:",
+        ),
         (
             json!([{"key": "preset.name", "value": "  "}]),
             "home dev.toml:",
@@ -362,46 +367,50 @@ async fn the_same_value_writes_nothing() {
     assert_eq!(mine(&home, "ghost"), None);
 }
 
-/// P-3 上那几个小时里建的预设写着 `base`（施工 P-3 再补）：照常列出、能用，下一次 `preset.set` 写这份文件时顺手去掉；写错了的
-/// 一项，列表里的 `problem` 照连接的语言说、带第几行。
+/// 写错了的一项，列表里的 `problem` 照连接的语言说、带第几行；改它的 `preset.set` 整条不收，文件一个字不动。以前另外认的
+/// 两格（P-3 上那几个小时里写进去的 `base`、P-4 上撤掉的 `default_persona`）不再照顾（施工 AUD-3：还没发版，不留只为读旧
+/// 文件的认法），同别的不认识的键。
 #[tokio::test]
-async fn an_old_base_is_ignored_and_dropped_on_the_next_save() {
+async fn a_broken_preset_is_listed_with_its_problem_and_is_not_written() {
     let home = Home::new();
     let dir = home.root.presets();
     std::fs::create_dir_all(&dir).unwrap();
-    std::fs::write(
-        dir.join("old.toml"),
-        "[preset]\nbase = \"full\"\nname = \"我的\"\n",
-    )
-    .unwrap();
-    std::fs::write(dir.join("broken.toml"), "[preset]\nvoice = 1\n").unwrap();
+    let files = [
+        ("broken", "[preset]\nvoice = 1\n", "preset.voice"),
+        (
+            "based",
+            "[preset]\nbase = \"full\"\nname = \"我的\"\n",
+            "preset.base",
+        ),
+        (
+            "defaulted",
+            "[preset]\ndefault_persona = \"engineer\"\nname = \"我的\"\n",
+            "preset.default_persona",
+        ),
+    ];
+    for (id, text, _) in files {
+        std::fs::write(dir.join(format!("{id}.toml")), text).unwrap();
+    }
     let mut client = connected(&home).await;
     let listed = client.call("l", "preset.list", json!({})).await;
     let presets = listed["result"]["presets"].as_array().unwrap();
-    let find = |id: &str| {
-        presets
+    for (id, text, key) in files {
+        let one = presets
             .iter()
             .find(|one| one["preset"] == id)
-            .unwrap()
-            .clone()
-    };
-    assert_eq!(find("old")["name"], "我的", "{listed}");
-    assert!(find("old").get("problem").is_none(), "{listed}");
-    let broken = find("broken");
-    assert_eq!(broken["problem"], "不认识的键 preset.voice", "{listed}");
-    assert_eq!(broken["line"], 2, "{listed}");
-    let reply = set(
-        &mut client,
-        "s",
-        "old",
-        json!([{"key": "preset.summary", "value": "改过"}]),
-    )
-    .await;
-    assert!(reply.get("error").is_none(), "{reply}");
-    assert_eq!(
-        mine(&home, "old").as_deref(),
-        Some("[preset]\nname = \"我的\"\nsummary = \"改过\"\n")
-    );
+            .unwrap_or_else(|| panic!("{id}：{listed}"));
+        assert_eq!(one["problem"], format!("不认识的键 {key}"), "{listed}");
+        assert_eq!(one["line"], 2, "{listed}");
+        let reply = set(
+            &mut client,
+            &format!("s-{id}"),
+            id,
+            json!([{"key": "preset.summary", "value": "改过"}]),
+        )
+        .await;
+        assert_eq!(reason(&reply), Some("preset_invalid"), "{id}：{reply}");
+        assert_eq!(mine(&home, id).as_deref(), Some(text), "{id}：什么都没写");
+    }
 }
 
 /// 说明能写空的字（施工 P-3 再补，2026-10-08 项目主人：「为什么说明不让为空？」）：就是没有说明，盖住出厂的那句，`*.get`、

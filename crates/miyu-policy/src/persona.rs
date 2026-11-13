@@ -18,9 +18,6 @@ pub const TOML: &str = "persona.toml";
 /// 示范对话在人格目录里的位置。
 pub const EXAMPLES: &str = "prompts/examples.md";
 
-/// P-3 上写进 `[persona]`、`[preset]` 的「以谁为底」那一格的键（施工 P-3 补撤掉了）：读的时候当没写，写的时候去掉（施工 P-3
-/// 再补）。
-pub const BASE: &str = "base";
 /// 认得的语言：以前写成语言表的名字、说明，各写这几种里的几种。
 pub use miyu_config::phrases::{LANGUAGES, Phrases};
 
@@ -263,8 +260,6 @@ pub fn read_toml(text: &str) -> Result<PersonaFile, Problem> {
             let label = match key {
                 "name" => &mut file.name,
                 "summary" => &mut file.summary,
-                // P-3 上那几个小时里写进去的「以谁为底」：认出来就当没写（施工 P-3 再补），下一次写这份文件时去掉。
-                BASE => continue,
                 other => {
                     return Err(problem(
                         at(item),

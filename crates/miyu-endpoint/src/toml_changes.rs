@@ -118,14 +118,6 @@ pub(crate) fn check_expect(
     Ok(())
 }
 
-/// 去掉 `text` 里撤掉了的几格（施工 P-3 再补的「以谁为底」，P-4 上的预设的默认人格）：`keys` 是完整的键。没有的、去不掉的
-/// 照原样。
-pub(crate) fn without(text: &str, keys: &[String]) -> String {
-    keys.iter().fold(text.to_string(), |text, key| {
-        edit::apply(&text, Change::Unset(key)).unwrap_or(text)
-    })
-}
-
 /// 在 `text` 上一项项改：这一层本来就是这个值的不动（写法不同的也不动，例如单引号）；本来就没写又要删的，`edit::apply` 自己
 /// 不动。放不进去的（那一组写成了别的东西）照 `invalid` 拒绝，说是 `file` 的哪一项。
 pub(crate) fn edited(

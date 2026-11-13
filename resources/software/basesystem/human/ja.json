@@ -52,11 +52,6 @@
       "subject": "description",
       "icon": "↗"
     },
-    "agent": {
-      "name": "サブエージェント起動",
-      "subject": "description",
-      "icon": "↗"
-    },
     "advisor": {
       "name": "フラッグシップモデルに相談",
       "subject": "question",
@@ -67,12 +62,6 @@
       "subject": "action",
       "icon": "≡"
     },
-    "message_agent": {
-      "name": "メッセージ",
-      "subject": "to",
-      "icon": "↗"
-    },
-    "load_tools": {"name": "ツールを読み込む", "icon": "⇣"},
     "sessions": {
       "name": "セッション一覧",
       "icon": "≡"
@@ -197,11 +186,6 @@
     "jobs/stopped": "{job} を停止しました",
     "jobs/unknown": "タスク {id} はありません",
     "jobs/ended": "{job} はすでに終了しています",
-    "message_agent/sent": "送りました：{to}",
-    "message_agent/no-parent": "親セッションがありません",
-    "message_agent/not-yours": "{to} はこのセッションが起動したサブエージェントではありません",
-    "message_agent/stopped": "{to} はすでに停止しています",
-    "message_agent/not-sent": "送れませんでした",
     "send_message/sent": "送りました：{to}",
     "send_message/held": "保存しました：{to} は誰も見ていないワンショットセッションです",
     "send_message/no-parent": "親セッションがありません",

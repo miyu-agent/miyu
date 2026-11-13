@@ -120,7 +120,7 @@
 
 - 新的一件 `sessions`（C-3 做好了），一页 `tools/sessions.md`。
 - `history` 多一格 `session`（C-4，`tools/history.md`）。
-- 留言的工具 `message_agent` 改名 `send_message`（照 Claude Code 的 `SendMessage`，2026-10-01 项目主人定）。C-5 改名，和说明第一句、`to` 一起改，只冷一次缓存。以前造的会话快照里冻着 `message_agent`（前缀不能变），它们发来的 `message_agent` 调用照样执行、认成同一件，给人看的字两个键都在，照施工 7-5 再补给 `agent` 改名 `subagent` 的做法。结果里的几句从 `message_agent/` 挪到 `send_message/`，字节不变，登记簿换路径。`tools/message_agent.md` 改成 `tools/send_message.md`。
+- 留言的工具 `message_agent` 改名 `send_message`（照 Claude Code 的 `SendMessage`，2026-10-01 项目主人定）。C-5 改名，和说明第一句、`to` 一起改，只冷一次缓存。原来以前造的会话快照里冻着的 `message_agent` 照样认成同一件、给人看的字两个键都在（照施工 7-5 再补给 `agent` 改名 `subagent` 的做法）；施工 AUD-3 起旧名字不再认（2026-11-13 项目主人定：还没发版，旧兼容的都去掉，主人的数据里没有会话还冻着它）。结果里的几句从 `message_agent/` 挪到 `send_message/`，字节不变，登记簿换路径。`tools/message_agent.md` 改成 `tools/send_message.md`。
 - `send_message` 的 `to` 多认会话编号（C-5），`message` 改成可以不写，多一格 `notify_when_idle`（C-6，做好了）。
 - 派子代理的工具 `agent` 另开小单改名 `subagent`（施工 7-5 再补，2026-10-01 项目主人定），这一页照新名字写。
 - 说明的原文见「样子」，量了进登记簿（`26-提示词.md` 第十节），受工具面的预算管（`10-自带软件.md` 第九节）。`sessions` 量了是 95（C-3，2026-10-01，十二件一起时的边际份量，整个 tools 数组 1968 → 2063）。估的份量（待量）：`send_message` 多约 45（C-5 给 `sessions` 的说明补点名那半句另算），`history` 多约 18。子会话多约 63（没有 `sessions`）。
@@ -413,7 +413,7 @@ No notice came within 12 hours, so the request was dropped.
 | 说法 | 中文 | 英文 | 步 |
 |---|---|---|---|
 | `sessions` 的显示名 | 列会话，不跟参数，符号 `≡` | Sessions | C-3 |
-| `send_message` 的显示名 | 留言，后面跟 `to` 的值，符号 `↗`，和原来的一样。`message_agent`、`send_message` 两个键都在 | Message | C-5 |
+| `send_message` 的显示名 | 留言，后面跟 `to` 的值，符号 `↗`，和原来的一样 | Message | C-5 |
 | `sessions/listed`（`count`） | 列出 {count} 个会话 | Listed {count} sessions | C-3 |
 | `sessions/none` | 没有别的会话 | No other sessions | C-3 |
 | `sessions/past-end`（`total`） | 一共 {total} 个别的会话，已经列完了 | All {total} other sessions are listed | C-3 |
@@ -524,7 +524,7 @@ No notice came within 12 hours, so the request was dropped.
 |---|---|---|---|
 | 1 | 列会话新开一件 `sessions`，读并进 `history`（多 `session`），发和订并进 `send_message`（`to` 认会话编号，多 `notify_when_idle`） | 域内聚合、域间分名：翻日志是 `history` 的事，另开一件要把它七个参数再背一遍（估多 150 token）。给谁发话都是留言，Claude Code 的 `SendMessage` 也是一件管子代理、队友、别的会话。列会话是新的一件事，藏进参数里她想不起来（旧版 `kb:` 前缀的教训）。基础系统从 13 件变 14 件，`10-自带软件.md` 的决定跟着改 | 三件全新（估多两三百 token）。列会话并进 `jobs`（`jobs` 管她派出去的，会话不是她派的）。`history` 写 `session: list` 列会话 |
 | 2 | 列会话的工具叫 `sessions`（主会话认了，2026-10-01） | 和 `jobs` 一个样子：一个名词，列她手里有的。Miyu 里 agent 指子代理，不叫 `list_agents` | `list_sessions`。照 Claude Code 叫 `list_agents` |
-| 2a | 留言的工具在 C-5 改名 `send_message`（2026-10-01 项目主人定），派子代理的另开小单改名 `subagent`（施工 7-5 再补，项目主人定） | 照 Claude Code 的 `SendMessage`。和说明第一句、`to` 同一步改，只冷一次缓存。老会话冻着旧名字，照认成同一件 | 留着 `message_agent` |
+| 2a | 留言的工具在 C-5 改名 `send_message`（2026-10-01 项目主人定），派子代理的另开小单改名 `subagent`（施工 7-5 再补，项目主人定） | 照 Claude Code 的 `SendMessage`。和说明第一句、`to` 同一步改，只冷一次缓存。老会话冻着旧名字，照认成同一件（施工 AUD-3 起不再认旧名字） | 留着 `message_agent` |
 | 3 | 短编号取会话编号最后 8 位。撞了放长。认的时候照后缀 | UUIDv7 前 8 位约 65 秒才变，同一分钟开的会话前 8 位一样。最后 32 位是随机的。从编号算得出，不另存 | 前 8 位。照造的先后编 `s1`、`s2`（要另存计数，删了会重编）。编号的哈希 |
 | 4 | 没标题的，她看到 `(untitled)`，人看到「未命名」（主会话照推荐定，2026-10-01） | 设计 29 第一节第 1 条。施工 3-8 五补会给会话自动起标题，多数会话会有标题，用不着每行再带一截字 | 带第一句话的开头 |
 | 5 | `by` 沿用 `session`，照关系分三种 | `session` 本来就是「另一个会话」。关系在日志里查得到，不加种类，旧核心读得懂 | 新加一种 `peer` |

@@ -10,7 +10,7 @@ use crate::support::*;
 use miyu_session::testkit::Script;
 
 /// 主题包的清单。
-const ASCII: &str = "[package]\nname = { zh = \"纯字符\", en = \"ASCII\" }\n\n[theme]\nfile = \"look/theme.json\"\n";
+const ASCII: &str = "[package]\nname = { zh = \"纯字符\", en = \"ASCII\" }\n\n[theme.tui]\nfile = \"look/theme.json\"\n";
 
 async fn connected(home: &Home) -> Client {
     let mut client = Client::connect(home.core(&Script::new([])));
@@ -55,7 +55,6 @@ async fn a_theme_is_listed_and_its_file_is_read() {
         .unwrap_or_else(|| panic!("列出来了：{listed}"));
     assert_eq!(ascii["kind"], "theme");
     assert_eq!(ascii["name"], "纯字符");
-    // 老写法 `[theme] file` 读成终端主题（施工 TH-1）。
     assert_eq!(ascii["theme"], json!({"tui": {"file": "look/theme.json"}}));
     assert!(ascii.get("protocol").is_none(), "不说协议：{ascii}");
 

@@ -1,7 +1,7 @@
 //! `subagent`（`docs/blueprint/tools/subagent.md`，施工 7-5，7-5 再补改名）：声明标题、交代和池（施工 8-8 补）；经端口派
 //! 出去，交回编号和标题、报 `job.started`；没有端口、端口派不了的照「派不了」出错；参数不对的照共用的那一句。池只认端口列着
 //! 的，交给端口，不写的交没有，不在列表里的照参数不对、端口不派，原话照 `serde` 列出能写的几个；以前的 `tier` 不理。给人看
-//! 的说法两种语言都换得出字；显示名新旧两个名字都有、三种语言里一样。
+//! 的说法两种语言都换得出字。
 
 use std::sync::{Arc, Mutex, PoisonError};
 
@@ -14,10 +14,7 @@ use miyu_kernel::tool::Access;
 use miyu_tool::attachment::Attached;
 use miyu_tool::{AgentPort, Done, Effect, NotSpawned, Order, Spawned, Spawning};
 
-use miyu_store::human::Human;
-use miyu_store::resources::ResourceRoot;
-
-use crate::support::{Site, check, human, readable, resources, said, tool};
+use crate::support::{Site, check, human, readable, said, tool};
 
 /// 子会话的编号。
 const CHILD: &str = "01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91";
@@ -330,19 +327,7 @@ async fn every_outcome_says_something_people_can_read() {
     );
     let done = site.done_with_agents("subagent", args, None).await;
     check(&mut checked, human(done), said("agent/not-started"));
-    readable(&checked, &["subagent", "agent"]);
-}
-
-/// 给人看的显示名：新名字 `subagent`、以前的名字 `agent` 两个键都在，三种语言里各是同一个样子（施工 7-5 再补）：以前造的
-/// 会话里调的是 `agent`，头照它找显示名。
-#[test]
-fn both_names_show_the_same_to_people() {
-    let root = ResourceRoot::at(resources());
-    for language in ["zh", "en", "ja"] {
-        let words = Human::load(&root, language).expect("给人看的字读得出来");
-        let now = words.tool("subagent").expect("有 subagent 的显示名");
-        assert_eq!(words.tool("agent"), Some(now), "{language}");
-    }
+    readable(&checked, &["subagent"]);
 }
 
 /// 人格（施工 P-2 补）：只认端口列着的，写对的交给端口，不写的交没有；写错的照参数不对、端口不派，原话照 `serde` 列出能写的

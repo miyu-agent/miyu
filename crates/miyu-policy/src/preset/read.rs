@@ -22,10 +22,6 @@ pub struct Problem {
     pub message: String,
 }
 
-/// 撤掉了的默认人格那一格的键（施工 P-4 上，2026-10-08 项目主人：只去掉预设的「默认人格」）：读的时候当没写，写的时候去掉，
-/// `preset.set` 写它是参数不对。
-pub const DEFAULT_PERSONA: &str = "default_persona";
-
 /// `[limits]` 里没人看着时一个回合最多请求几次模型的那个键（施工 AE-1）。
 const UNATTENDED_STEPS: &str = "unattended_steps";
 
@@ -234,9 +230,6 @@ impl Reader<'_> {
                             })?,
                     );
                 }
-                // P-3 上那几个小时里写进去的「以谁为底」（施工 P-3 再补）、P-4 上撤掉的默认人格：认出来就当没写，下一次写这份
-                // 文件时去掉。
-                crate::persona::BASE | DEFAULT_PERSONA => {}
                 "unlisted" => {
                     file.unlisted = Some(match item.as_str() {
                         Some("on") => Unlisted::On,

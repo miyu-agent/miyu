@@ -1,4 +1,4 @@
-//! `[theme]` 的读法（施工 TH-1）：新写法、老写法、只带网页、两样都带、都没带，和每种写错报哪个代码。
+//! `[theme]` 的读法（施工 TH-1）：只带终端、只带网页、两样都带、都没带，和每种写错报哪个代码。
 
 use crate::package::{Code, PackageKind, Theme, read};
 
@@ -29,7 +29,7 @@ fn carried(tui: Option<&str>, web: Option<&str>) -> Theme {
 }
 
 #[test]
-fn the_new_spelling_reads_a_terminal_file_and_a_web_dir() {
+fn a_terminal_file_and_a_web_dir_are_read() {
     assert_eq!(
         theme("[theme.tui]\nfile = \"look/theme.json\"\n\n[theme.web]\ndir = \"web\"\n"),
         carried(Some("look/theme.json"), Some("web"))
@@ -49,17 +49,17 @@ fn the_new_spelling_reads_a_terminal_file_and_a_web_dir() {
     );
 }
 
+/// TH-1 以前的写法 `[theme] file` 不再读成终端主题（施工 AUD-3：还没发版，不留旧写法）：同别的不认识的键，带不带别的都一样。
 #[test]
-fn the_old_spelling_is_read_as_the_terminal_file() {
-    assert_eq!(
-        theme("[theme]\nfile = \"theme.json\"\n"),
-        carried(Some("theme.json"), None)
-    );
-    // 老写法加上网页主题：老的那份照旧是终端主题。
-    assert_eq!(
-        theme("[theme]\nfile = \"theme.json\"\n\n[theme.web]\ndir = \"web\"\n"),
-        carried(Some("theme.json"), Some("web"))
-    );
+fn the_spelling_before_the_split_is_an_unknown_key() {
+    for tables in [
+        "[theme]\nfile = \"theme.json\"\n",
+        "[theme]\nfile = \"theme.json\"\n\n[theme.web]\ndir = \"web\"\n",
+    ] {
+        let (code, line, detail) = wrong(tables);
+        assert_eq!((code, line), (Code::UnknownKey, Some(5)), "{tables}");
+        assert_eq!(detail, "theme.file", "{tables}");
+    }
 }
 
 #[test]

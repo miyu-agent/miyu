@@ -3,7 +3,7 @@
 //! 这个会话发来的话送过去，对方落了盘就返回，不等它回答：对方在跑，下一步看到；闲着，开一轮；是没人看着的一次性会话，
 //! 只记下（`cross-session.md` 第三条第 4 款）。
 //!
-//! 施工 C-5 从 `message_agent` 改名（以前的名字照样认，[`Tool::formerly`]）：`to` 不是 `parent`、也不是任务编号写法的，
+//! 施工 C-5 从 `message_agent` 改名：`to` 不是 `parent`、也不是任务编号写法的，
 //! 当会话编号认，和 `history` 的 `session` 同一个认法（[`find_session`]，`cross-session.md` 第三条第 1 款）：在这个会话
 //! 看得到的主会话（加她自己）里找，找不到、对得上不止一个、是她自己、这个会话不能发给别的会话的，各一句拒绝，不去送。
 //! `message` 超过 `peers.message_chars`（出厂值不进快照，照 `jobs.output_chars` 的放法）的，发出去之前拒；父子之间的
@@ -28,7 +28,7 @@ use miyu_kernel::tool::Access;
 use miyu_tool::attachment::Attached;
 use miyu_tool::{
     Call, Delivered, Done, Effect, Found, NotSent, Progress, Recipient, Running, SEND_MESSAGE,
-    SEND_MESSAGE_FORMERLY, Spec, Target, Tool, find_session,
+    Spec, Target, Tool, find_session,
 };
 
 use crate::attach;
@@ -120,11 +120,6 @@ impl SendMessage {
 impl Tool for SendMessage {
     fn spec(&self) -> &Spec {
         &self.spec
-    }
-
-    /// 改名以前叫 `message_agent`：以前造的会话快照里冻着它，她照它调（施工 C-5）。
-    fn formerly(&self) -> &'static [&'static str] {
-        &[SEND_MESSAGE_FORMERLY]
     }
 
     /// 带的附件要读（施工 C-9）：执行前的链照读文件的规矩查。

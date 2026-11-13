@@ -53,9 +53,7 @@ mod todos;
 mod usage;
 
 pub use advice::{ADVISOR, Advised, Advising, NotAdvised};
-pub use agents::{
-    AgentPort, NotSpawned, Order, SUBAGENT, SUBAGENT_FORMERLY, Spawned, Spawning, is_subagent,
-};
+pub use agents::{AgentPort, NotSpawned, Order, SUBAGENT, Spawned, Spawning, is_subagent};
 pub use caller::{Caller, InUse};
 pub use catalog::{
     BASESYSTEM, Catalog, CatalogError, MCP_PREFIX, Problem, mcp_prefix, mcp_service,
@@ -81,9 +79,7 @@ pub use memory::{
     CARDS, FORGET, FoundCard, FoundMemory, FoundTurn, Line, MEMORIES, MEMORY_SEARCH, MemoryLines,
     MemoryPort, Pending, REMEMBER, Refused, Remember, Searched, TEXT_CHARS, TURNS,
 };
-pub use messages::{
-    Delivered, MessagePort, NotSent, Recipient, SEND_MESSAGE, SEND_MESSAGE_FORMERLY, Sending,
-};
+pub use messages::{Delivered, MessagePort, NotSent, Recipient, SEND_MESSAGE, Sending};
 pub use nested::{Calling, Hold, Nested, NestedPort, Schema, Settled};
 pub use packages::{Looking, PACKAGE, PACKAGES, PackageConflict, PackageRefusal, PackagesPort};
 pub use person::{Halt, PersonCommand, PersonEnd, PersonRun, PersonRunning};
@@ -233,13 +229,6 @@ pub trait Tool: Send + Sync {
     /// 执行一次调用：执行器在它自己的任务里跑交回的 future，执行中的输出交给 `progress`。叫停有两种：
     /// 「叫它停」举 [`Call::stop`] 的旗，等它交回来（施工 4-9 再补一）；「掐掉」丢掉这个 future（施工 4-2）。
     fn run(&self, call: Call, progress: Progress) -> Running<'_>;
-
-    /// 它以前的名字（施工 7-5 再补）：改过名的工具，改名以前造的会话快照里冻着旧名字（工具面是前缀，不能变），她照旧名字调，
-    /// 工具目录照旧名字也找得到这一件（[`Catalog::get`]）。旧名字不进 [`Catalog::specs`]：新造的会话工具面上只有现在的名字。
-    /// 默认没有。
-    fn formerly(&self) -> &'static [&'static str] {
-        &[]
-    }
 
     /// 后台运行关着的会话里用的说明（施工 T-1 下）：在后台跑的工具换一种说法，`subagent` 有（派出去等它报回来）。别的没有，
     /// 照规格的。

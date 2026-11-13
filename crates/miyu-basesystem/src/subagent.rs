@@ -2,8 +2,8 @@
 //! `prompt`（整段交代）；经 [`Call::agents`] 交给执行器，执行器照父会话抄好权限、目录，造子会话、把交代送进去，交回编号就
 //! 返回，不等它做完。回报由子会话自己送来（7-6）。
 //!
-//! 施工 7-5 再补从 `agent` 改名：以前的名字照样认（[`Tool::formerly`]），输出那两句的目录和说法的编号照旧叫 `agent`
-//! （[`SAYINGS`]）。施工 8-8 加过挡位 `tier`，施工 8-8 补换成池 `pool`（`models.md`「工具」）：只认这个会话列着的池（端口的
+//! 施工 7-5 再补从 `agent` 改名：输出那两句的目录和说法的编号照旧叫 `agent`（[`SAYINGS`]）。施工 8-8 加过挡位 `tier`，
+//! 施工 8-8 补换成池 `pool`（`models.md`「工具」）：只认这个会话列着的池（端口的
 //! `pools()`，会话开局时拼进工具面、照快照读回），写错的照参数不对、端口不派，原话照 `serde` 的 `unknown variant`；交给
 //! 端口，子会话记 `@<池>`，不写的用父会话这时用的。以前的会话写 `tier` 不报错、不理它（[`Args`] 不认别的参数）。施工 P-2 补
 //! 加人格 `persona`，同池：只认这个会话列着的人格（端口的 `personas()`），没写的是软件工程师。预设不给她挑，子会话一律照父
@@ -18,9 +18,7 @@ use serde::Deserialize;
 use miyu_kernel::event::{JobKind, JobStarted};
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
-use miyu_tool::{
-    Call, Done, Effect, Order, Progress, Running, SUBAGENT, SUBAGENT_FORMERLY, Spec, Target, Tool,
-};
+use miyu_tool::{Call, Done, Effect, Order, Progress, Running, SUBAGENT, Spec, Target, Tool};
 
 use crate::attach;
 use crate::common::{Common, said};
@@ -107,11 +105,6 @@ impl Subagent {
 impl Tool for Subagent {
     fn spec(&self) -> &Spec {
         &self.spec
-    }
-
-    /// 改名以前叫 `agent`：以前造的会话快照里冻着它，她照它调（施工 7-5 再补）。
-    fn formerly(&self) -> &'static [&'static str] {
-        &[SUBAGENT_FORMERLY]
     }
 
     /// 后台运行关着的会话里派出去等它报回来（施工 T-1 下）。

@@ -1,5 +1,5 @@
 //! 包的工具变了，下一个回合换上（施工 O-2 中）：目录换了代，提供者的工具照现在的登记加上、改掉、去掉；自带的照旧快照里的
-//! 原样、不新加，改过名的照旧叫以前的名字；只给群的不进本机的会话，拼出来一样的不换；载入的不知道是哪一代，第一个回合对
+//! 原样、不新加；只给群的不进本机的会话，拼出来一样的不换；载入的不知道是哪一代，第一个回合对
 //! 一次；以前造的预设没有指纹的不跟。
 
 use std::sync::Arc;
@@ -7,7 +7,7 @@ use std::sync::Arc;
 use miyu_kernel::raw::RawJson;
 use miyu_kernel::tool::Access;
 use miyu_tool::testkit::{Act, Fake};
-use miyu_tool::{Call, Progress, Running, Spec, Tool, Venues};
+use miyu_tool::{Spec, Tool, Venues};
 
 use super::test_support::{look_now, names, setup};
 use super::*;
@@ -159,46 +159,6 @@ fn an_older_pin_does_not_follow_the_catalog() {
     assert!(
         matches!(look_now(&refresh), Seen::Same),
         "P-2（中）造的快照找不回预设，不跟"
-    );
-}
-
-/// 改过名的一件（施工 7-5 再补）：规格、执行照 `tool`，以前叫 `formerly`。
-struct Former(Arc<dyn Tool>, &'static [&'static str]);
-
-impl Tool for Former {
-    fn spec(&self) -> &Spec {
-        self.0.spec()
-    }
-
-    fn run(&self, call: Call, progress: Progress) -> Running<'_> {
-        self.0.run(call, progress)
-    }
-
-    fn formerly(&self) -> &'static [&'static str] {
-        self.1
-    }
-}
-
-#[test]
-fn a_renamed_tool_keeps_its_old_name() {
-    let (_scratch, _root, mut refresh) = setup("shelf-renamed", "");
-    let fake = |name: &str| -> Arc<dyn Tool> { Fake::new(name, Access::Read, Act::Echo) };
-    let renamed: Arc<dyn Tool> = Arc::new(Former(fake("sh"), &["shell"]));
-    refresh
-        .tools
-        .replace(|_| {
-            Catalog::in_packages([
-                ("basesystem", vec![fake("read"), renamed]),
-                ("memory", vec![fake("remember")]),
-            ])?
-            .replacing("onebot", vec![provided("send", LOCAL)])
-        })
-        .expect("登记得上");
-    let snapshot = swap(&mut refresh);
-    assert_eq!(
-        names(&snapshot),
-        ["read", "remember", "send", "shell"],
-        "快照里冻着旧名字"
     );
 }
 

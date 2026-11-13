@@ -80,7 +80,6 @@
 | `method` 没有，或者不是字符串 | `invalid_request` |
 | `jsonrpc` 不是 `"2.0"` | `invalid_request` |
 | `params` 写了，不是对象也不是数组 | `invalid_request` |
-| `scope` 写了，不是 `"system"` | `invalid_request` |
 | 没有 `id` | 通知：不回应；只认握手之前的 `connection.remote`（下面「本机和远程」），别的不理 |
 | `id` 不是字符串（数字、`null`……） | `invalid_request` |
 | `id` 不合命令编号的写法：1 到 128 字节，不含控制字符 | `invalid_request` |
@@ -89,7 +88,7 @@
 - 认不成请求的，回应里的 `id`：这一行的 `id` 是字符串或数字的照原样带回，别的（没有、`null`、对象……）写 `null`。
 - 头发来的通知只认一种：握手之前的 `connection.remote`（施工 Y-1 下）。
 - `params` 是数组的：`bad_params`（施工 4-9 再补三上）。方法都照名字取参数；照位置读的话，回应找不到该交给哪个订阅，破了「先见结果，后见回应」。
-- **只有一个人**（施工 SU-1，项目主人 2026-10-28 定）：连上来的都是主人。外壳里多写的 `"scope"` 照收不理。
+- **只有一个人**（施工 SU-1，项目主人 2026-10-28 定）：连上来的都是主人。外壳里多写的格（以前的 `"scope"` 也是）核心不看。
 - 参数里不认识的格不理。标着「可以不写」的格，写 `null` 等于没写；标着「不写是……」的格写 `null`，是 `bad_params`。
 
 #### 回应
@@ -765,7 +764,7 @@
 | 参数 | 类型 | 说明 |
 |---|---|---|
 | `preset` | 字符串，可以不写 | 预设的编号；不写的是新建，编号由核心起 `preset-<n>`（几层里都还没有的最小的 n，施工 P-3 补，2026-10-08 项目主人定：新建不填编号） |
-| `changes` | 数组，必写、不能是空的 | 每一项 `{"key", "value" \| "unset": true, "expect"?}`，照 `config.set` 的 `changes`：`key` 是文件里的键（`preset.name`、`preset.summary`、`preset.unlisted`、`features.<功能>`（施工 F-3 下，编号照 `preset.get` 的 `features[].id`；以前的 `software.<包>` 照认）、`tools.<工具>`、`limits.unattended_steps`（正整数，施工 AE-1）；写 `preset.default_persona` 的 `bad_params`，施工 P-4 上撤了），`value` 是字、开关、数，`expect` 是你那一层里这一项现在应当是什么（`{"value": …}` 或者 `{}` 没写） |
+| `changes` | 数组，必写、不能是空的 | 每一项 `{"key", "value" \| "unset": true, "expect"?}`，照 `config.set` 的 `changes`：`key` 是文件里的键（`preset.name`、`preset.summary`、`preset.unlisted`、`features.<功能>`（施工 F-3 下，编号照 `preset.get` 的 `features[].id`；以前的 `software.<包>` 照认）、`tools.<工具>`、`limits.unattended_steps`（正整数，施工 AE-1）；施工 P-4 上撤掉的 `preset.default_persona` 同别的不认识的键，`preset_invalid`，施工 AUD-3），`value` 是字、开关、数，`expect` 是你那一层里这一项现在应当是什么（`{"value": …}` 或者 `{}` 没写） |
 
 回应同 `preset.get`：改完叠好的样子（带着编号）。只写你那一层的 `<编号>.toml`：改出厂的、包带的就是建同名覆盖，只写改了的项。名字、说明写成一句字（施工 P-3 补，2026-10-08 项目主人：不分语言），以前写成语言表的整格换成一句。说明能写空的字（`"value": ""`）：就是没有说明，盖住出厂的那句，`unset` 才回到出厂的（施工 P-3 再补）；名字照旧不收空的。人格同样。新建的什么开关都不写，就是全开（`unlisted` 没写是开）。
 

@@ -8,7 +8,6 @@ use crate::features::Features;
 const DEV: &str = r#"[preset]
 name = { en = "Dev", zh = "开发" }
 summary = { en = "Only what coding needs" }
-default_persona = "engineer"
 unlisted = "off"
 
 [software]
@@ -33,11 +32,6 @@ fn every_field_reads() {
         Some("开发")
     );
     assert!(file.summary.is_some());
-    assert_eq!(
-        file,
-        read(&DEV.replace("default_persona = \"engineer\"\n", "")).unwrap(),
-        "撤掉了的默认人格当没写（施工 P-4 上）"
-    );
     assert_eq!(file.unlisted, Some(Unlisted::Off));
     assert_eq!(
         file.software,
@@ -299,24 +293,18 @@ fn old_style_names_keep_the_digest_they_had() {
     );
 }
 
-/// P-3 上那几个小时里建的预设写着 `base`（施工 P-3 再补）、撤掉了的默认人格（施工 P-4 上）：认出来当没写，写成什么样都
-/// 不算写错，别的照读。
+/// P-3 上那几个小时里建的预设写着的 `base`、撤掉了的默认人格（施工 P-4 上）不再另外认（施工 AUD-3：还没发版，不留只为读
+/// 旧文件的认法）：同别的不认识的键，报在它那一行。
 #[test]
-fn a_base_written_by_p3_is_read_as_unwritten() {
-    let plain = read("[preset]\nname = \"我的\"\n").unwrap();
-    for text in [
-        "[preset]\nbase = \"full\"\nname = \"我的\"\n",
-        "[preset]\nname = \"我的\"\nbase = { a = 1 }\n",
-        "[preset]\ndefault_persona = \"Miyu\"\nname = \"我的\"\n",
-        "[preset]\nname = \"我的\"\ndefault_persona = 1\n",
+fn the_keys_taken_out_earlier_are_unknown_like_any_other() {
+    for (text, line) in [
+        ("[preset]\nbase = \"full\"\nname = \"我的\"\n", 2),
+        ("[preset]\nname = \"我的\"\nbase = { a = 1 }\n", 3),
+        ("[preset]\ndefault_persona = \"Miyu\"\nname = \"我的\"\n", 2),
+        ("[preset]\nname = \"我的\"\ndefault_persona = 1\n", 3),
     ] {
-        assert_eq!(read(text).unwrap(), plain, "{text:?}");
+        assert_eq!(wrong(text), (Code::UnknownKey, Some(line)), "{text:?}");
     }
-    assert_eq!(
-        wrong("[software]\nbase = \"x\"\n").0,
-        Code::NotBool,
-        "别的表里照旧"
-    );
 }
 
 /// 图标（施工 P-5，`presets.md`「图标」）：Lucide 的名字，只查写法；上一层的盖下面的；不进指纹（界面上的事，换了不该换快照）。

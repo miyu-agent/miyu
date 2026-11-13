@@ -34,7 +34,6 @@ mod side;
 mod slash;
 mod target;
 mod theme;
-mod upgrade;
 mod version;
 mod widget;
 
@@ -61,7 +60,6 @@ pub use side::{SIDE_TIERS, SideRequest};
 pub use slash::{Access, SlashCommand};
 pub use target::Target;
 pub use theme::Theme;
-pub use upgrade::without_kind;
 pub use widget::{MOST as WIDGETS_MOST, Place as WidgetPlace, Widget};
 
 use reader::{Reader, line_of};

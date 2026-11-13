@@ -51,7 +51,7 @@ impl Places {
     }
 }
 
-const DEV: &str = "[preset]\nname = { en = \"Dev\", zh = \"开发\" }\ndefault_persona = \"engineer\"\nunlisted = \"off\"\n\n[software]\nbasesystem = true\nnet = true\n";
+const DEV: &str = "[preset]\nname = { en = \"Dev\", zh = \"开发\" }\nunlisted = \"off\"\n\n[software]\nbasesystem = true\nnet = true\n";
 
 #[test]
 fn the_layers_stack_field_by_field() {

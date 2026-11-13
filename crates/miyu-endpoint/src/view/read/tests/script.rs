@@ -40,7 +40,7 @@ const PERSON: &str = r#"{"kind":"person"}"#;
 const MODEL: &str = r#"{"kind":"model","endpoint":"deepseek","model":"deepseek-v4"}"#;
 const PARENT: &str = "01a0d75d-2180-7a3c-9e41-5b7d2c8f6a10";
 const POLICY: &str = "sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894";
-const TOOLS: [&str; 6] = ["shell", "read", "edit", "agent", "send_message", "grep"];
+const TOOLS: [&str; 6] = ["shell", "read", "edit", "subagent", "send_message", "grep"];
 const WORDS: [&str; 6] = [
     "看看 src",
     "跑一下测试 \u{1b}[31mred\u{1b}[0m",
@@ -227,7 +227,7 @@ impl Script {
                 "send_message" => {
                     json!({"to": self.agents.last().cloned().unwrap_or_else(|| "j1".to_string()), "text": "接着"})
                 }
-                "agent" => json!({"description": "查一下", "prompt": "查"}),
+                "subagent" => json!({"description": "查一下", "prompt": "查"}),
                 _ => json!({"command": format!("ls {index}"), "background": dice.odds(2)}),
             };
             blocks.push(json!({"type": "tool_call", "call_id": call, "name": name, "args": args.to_string()}));
@@ -261,7 +261,7 @@ impl Script {
     fn result(&mut self, dice: &mut Dice, turn: u64, call: &str, name: &str, shape: Shape) {
         let mut effects = Vec::new();
         match name {
-            "agent" => {
+            "subagent" => {
                 self.jobs += 1;
                 let job = format!("j{}", self.jobs);
                 effects.push(json!({"kind": "job.started", "job": job, "what": "agent", "title": format!("子代理 {job}"), "session": PARENT}));

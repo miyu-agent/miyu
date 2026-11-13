@@ -8,15 +8,14 @@
 
 | 代码 | 管什么 |
 |---|---|
-| `crates/miyu-basesystem/src/subagent.rs` | 参数（`pool` 照端口列着的查，施工 8-8 补）、交给端口、结果和效果；以前的名字（`formerly`） |
-| `crates/miyu-tool/src/agents.rs` | 派子代理的端口 `AgentPort`（`tools/interface.md`）；名字 `SUBAGENT`、以前的名字 `SUBAGENT_FORMERLY`，`is_subagent` 两个都认 |
-| `crates/miyu-tool/src/catalog.rs` | 工具目录照以前的名字也找得到这一件（`tools/interface.md`「登记」） |
+| `crates/miyu-basesystem/src/subagent.rs` | 参数（`pool` 照端口列着的查，施工 8-8 补）、交给端口、结果和效果 |
+| `crates/miyu-tool/src/agents.rs` | 派子代理的端口 `AgentPort`（`tools/interface.md`）；名字 `SUBAGENT`，认它的 `is_subagent` |
 | `crates/miyu-session/src/agents.rs` | 执行器这一头：照父会话填好子会话，经会话表的端口造出来、送交代（`session/tools.md`「派子代理」）；造会话时拼 `pool` 那一格、照快照读回列着的池（施工 8-8 补） |
 | `crates/miyu-policy/src/tools/choice.rs` | 拼 `pool` 那一格（`ToolEntry::offer`）、照快照读回（`ToolEntry::offered`），照原样的 JSON 搬，别的字节不动（施工 8-8 补） |
 | `crates/miyu-basesystem/src/attach.rs` | 交代带的附件（施工 C-9，同 `send_message`） |
 | `crates/miyu-session/src/agents/spawner.rs` | 派子代理的端口（施工 C-9 从 `agents.rs` 挪出来）：附件先存成 blob，存不下的不造子会话 |
 | `resources/software/basesystem/tools/subagent.json` | 说明和参数格式 |
-| `resources/software/basesystem/agent/*.txt` | 输出里给她看的两句（目录照以前的名字，「以前的名字」） |
+| `resources/software/basesystem/agent/*.txt` | 输出里给她看的两句（目录照改名以前的叫法，「以前的名字」） |
 | `resources/software/basesystem/human/{zh,en,ja}.json` | 显示名（`subagent`、`agent` 两个键）、结果那一句 |
 | `crates/miyu-endpoint/src/sessions/orphans.rs` | 收派到一半的空子会话（`agents.md` 第一条第 8 条） |
 | `crates/miyu-session/src/open/scan.rs` 的 `Dispatched` | 载入时认日志里派子代理的调用：两个名字都算（施工 V-37 上从 `orphans.rs` 挪来） |
@@ -63,9 +62,9 @@
 
 **以前的名字**：`agent`（施工 7-5 再补改名，2026-10-01 项目主人定：在 Miyu 里「agent」可能指她自己、子代理、别的会话，叫 `subagent` 一看就知道是派子代理）。
 
-- 新造的会话工具面上只有 `subagent`，照名字排在 `shell` 和 `trash` 之间；说明、参数格式、访问类别和以前一字不差。她调 `agent` 照没有这件工具拒掉（`kernel/tools.md`）。
-- 以前造的会话，快照里冻着的工具面上是 `agent`（排在最前）：工具面是请求的前缀，照快照发，一个字节不变。她照旧调 `agent`，工具目录照以前的名字找到这一件（`Tool::formerly`、`Catalog::get`，`tools/interface.md`），照样派得出去，结果、效果和调 `subagent` 一样。
-- 日志里认派子代理的调用（派到一半的空子会话，`agents.md` 第一条第 8 条）两个名字都算。
+- 工具面上只有 `subagent`，照名字排在 `shell` 和 `trash` 之间；说明、参数格式、访问类别和改名以前一字不差。她调 `agent` 照没有这件工具拒掉（`kernel/tools.md`）。
+- 以前的名字不再认（施工 AUD-3，2026-11-13 项目主人定：还没发版，旧兼容的都去掉）：原来改名以前造的会话快照里冻着 `agent`，工具目录照它也找得到这一件（`Tool::formerly`），日志里认派子代理的调用两个名字都算；主人的两份数据里没有一个会话的快照、日志里还有 `agent`，这一套去掉了。
+- 输出里那两句的目录、给人看的说法的编号照旧叫 `agent`（`agent/started` 这些），不跟着改名。
 - 不改名的：效果 `job.started` 的种类照旧是 `agent`（`kernel/events-bodies.md`）；输出那两句的目录 `agent/`、给人看的说法 `agent/started`、`agent/not-started` 照旧：说法记在日志里，头照它找字，改了以前的日志就换不出字。
 - 给人看的显示名：`human/{zh,en,ja}.json` 的 `tools` 里 `subagent`、`agent` 两个键都在，一样的样子：以前造的会话里调的是 `agent`，头照调用的名字找。
 
@@ -106,7 +105,7 @@ Started subagent j1: "查导出".
 
 ### 给人看的字
 
-显示名：派子代理（Subagent），后面跟 `description` 的值；符号 `↗`。`subagent`、`agent` 两个键一样（「以前的名字」）。
+显示名：派子代理（Subagent），后面跟 `description` 的值；符号 `↗`。
 
 | 说法 | 中文 | 英文 |
 |---|---|---|
@@ -123,9 +122,7 @@ Started subagent j1: "查导出".
 | `crates/miyu-session/tests/spawn.rs` | 执行器交给会话表的子会话抄对了每一样、交代记成父会话发的；一步里调两次派两个、各领各的编号；领了没派成的不回收、载入以后接着数；没有会话表的派不了；什么会话工具面里有 `subagent`、新会话里没有 `agent`（`session/tools.md`） |
 | `crates/miyu-session/tests/spawn/pool.rs` | 子会话的模型：写了 `pool` 的记 `@池`，不写的、写 `tier` 的抄父会话的；工具面照造会话时的配置拼、配置改了这个会话不变（连同载入以后）、新会话变，老会话里写新会话才列的池照参数不对（施工 8-8 补，取代 8-8 的 `tier.rs`） |
 | `crates/miyu-policy/src/tools/choice/tests.rs` | 拼 `pool`、读回列着的（施工 8-8 补） |
-| `crates/miyu-session/tests/spawn/renamed.rs` | 以前的名字：新会话调 `agent` 照没有的工具拒掉；拿改名以前的目录造的会话换现在的核心载入，工具面一个字节不变、调 `agent` 照样派得出去；两张工具面只差名字和它带来的先后 |
-| `crates/miyu-endpoint/tests/orphans.rs` | 改名以前造的父会话，派到一半的空子会话照样收掉 |
-| `crates/miyu-tool/src/catalog/tests.rs` | 目录照以前的名字找得到、以前的名字不进工具面、撞名的登记不上 |
+| `crates/miyu-tool/src/catalog/tests.rs` | 以前的名字 `agent` 在目录里找不到（施工 AUD-3） |
 | `crates/miyu-endpoint/tests/spawn.rs` | 真核心走一遍：子会话的日志、快照、请求，`session.list` 的 `parent` |
 | `crates/miyu-basesystem/tests/budget.rs` | 工具面的预算 |
 | `xtask/src/ledger.rs` | 这些字的指纹和登记簿对得上 |

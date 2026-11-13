@@ -141,8 +141,6 @@ pub(crate) fn parse(line: &[u8]) -> Incoming {
     if object.get("jsonrpc") != Some(&Value::String("2.0".to_string())) {
         return Incoming::Bad(echo, Refusal::INVALID);
     }
-    // 老头带着的 `scope` 照收不理（施工 SU-1）。
-    object.remove("scope");
     let params = match object.remove("params") {
         None => Value::Object(serde_json::Map::new()),
         Some(params @ (Value::Object(_) | Value::Array(_))) => params,

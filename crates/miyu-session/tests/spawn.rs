@@ -16,10 +16,6 @@ use miyu_tool::Catalog;
 
 use crate::support::*;
 
-/// 派子代理的那件改名 `subagent`，以前造的会话照旧认 `agent`（施工 7-5 再补）。
-#[path = "spawn/renamed.rs"]
-mod renamed;
-
 /// 深度上限、子代理自己派的编号：拆出去守 500 行上限（施工 C-4 加 `read_log` 顶到了这个上限）。
 #[path = "spawn/depth.rs"]
 mod depth;
@@ -461,8 +457,7 @@ async fn without_the_table_the_agent_is_not_started() {
     assert_eq!(text(result), "The subagent could not be started.\n");
 }
 
-/// 造一个会话、说一句：交回它发出的第一次请求，和这一轮里调 `subagent` 的结果（`spawn/depth.rs`、`spawn/renamed.rs`
-/// 都用得到）。
+/// 造一个会话、说一句：交回它发出的第一次请求，和这一轮里调 `subagent` 的结果（`spawn/depth.rs` 用）。
 async fn first_request(lines: Lines, table: &Arc<Table>) -> (Request, Vec<ToolResult>) {
     let home = Home::new();
     let script = Script::new([calls(&[subagent("甲", "Task A.")]), Play::Says("好。")]);

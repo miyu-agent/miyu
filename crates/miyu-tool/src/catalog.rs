@@ -1,5 +1,5 @@
 //! 工具目录（05 第八节，施工 4-1）：核心起来时登记一次；提供者登记一次换出新的一份（施工 O-2 上，放在 [`crate::Shelf`]
-//! 上）。照名字排好，造会话时照这个先后交出工具面。改过名的工具照以前的名字也找得到（施工 7-5 再补，[`Tool::formerly`]）。
+//! 上）。照名字排好，造会话时照这个先后交出工具面。
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
@@ -16,9 +16,7 @@ const NAME_LIMIT: usize = 64;
 #[derive(Clone, Default)]
 pub struct Catalog {
     tools: BTreeMap<String, Arc<dyn Tool>>,
-    /// 以前的名字到现在的名字（施工 7-5 再补）。
-    formerly: BTreeMap<String, String>,
-    /// 每件工具现在的名字到它的软件包（施工 P-2 中）：预设照包开关。
+    /// 每件工具的名字到它的软件包（施工 P-2 中）：预设照包开关。
     packages: BTreeMap<String, String>,
     /// 经提供者登记过的包（施工 O-2 中，[`Catalog::replacing`]）：回合开头换快照时，只有它们的工具照现在的登记换。
     provided: BTreeSet<String>,
@@ -60,8 +58,7 @@ pub struct CatalogError {
 /// 登记时查的几条（05 第六节）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Problem {
-    /// 已经有一件同名的：她调的是哪一件，说不清。以前的名字也算（施工 7-5 再补）：撞上别的工具现在的、以前的名字，
-    /// 同样说不清。
+    /// 已经有一件同名的：她调的是哪一件，说不清。
     Duplicate,
     /// 名字不合写法：只用英文字母、数字、`_`、`-`，1 到 64 个字符。不合的，每次请求都会被供应商拒收。
     Name,
@@ -70,12 +67,11 @@ pub enum Problem {
 }
 
 impl Catalog {
-    /// 登记这几件，照名字排好。有一件查不过，整个目录都登记不上，报交进来时排在前面的那一件。以前的名字跟着它现在的名字
-    /// 登记，只查重名：撞上的报那个以前的名字。
+    /// 登记这几件，照名字排好。有一件查不过，整个目录都登记不上，报交进来时排在前面的那一件。
     ///
     /// # Errors
     ///
-    /// 有两件同名的（以前的名字也算）、名字不合写法的、参数格式不是对象的。
+    /// 有两件同名的、名字不合写法的、参数格式不是对象的。
     pub fn new(tools: impl IntoIterator<Item = Arc<dyn Tool>>) -> Result<Catalog, CatalogError> {
         Catalog::in_packages([(BASESYSTEM, tools.into_iter().collect::<Vec<_>>())])
     }
@@ -224,12 +220,12 @@ impl Catalog {
         self.gone.contains_key(name)
     }
 
-    /// 拿掉包 `package` 的工具和它们以前的名字。
+    /// 拿掉包 `package` 的工具。
     fn take_out(&mut self, package: &str) {
         self.take_out_where(package, |_| true);
     }
 
-    /// 拿掉包 `package` 里名字合 `which` 的工具和它们以前的名字。
+    /// 拿掉包 `package` 里名字合 `which` 的工具。
     fn take_out_where(&mut self, package: &str, which: impl Fn(&str) -> bool) {
         let names: Vec<String> = self
             .packages
@@ -241,7 +237,6 @@ impl Catalog {
             self.tools.remove(name);
             self.packages.remove(name);
         }
-        self.formerly.retain(|_, now| !names.contains(now));
     }
 
     /// 登记一件：查过了放进目录，记下它的包。
@@ -251,7 +246,7 @@ impl Catalog {
             Some(Problem::Name)
         } else if !takes_an_object(spec) {
             Some(Problem::Parameters)
-        } else if self.taken(&spec.name) {
+        } else if self.tools.contains_key(&spec.name) {
             Some(Problem::Duplicate)
         } else {
             None
@@ -262,25 +257,14 @@ impl Catalog {
                 problem,
             });
         }
-        for former in tool.formerly() {
-            if self.taken(former) {
-                return Err(CatalogError {
-                    tool: (*former).to_string(),
-                    problem: Problem::Duplicate,
-                });
-            }
-            self.formerly
-                .insert((*former).to_string(), spec.name.clone());
-        }
         self.packages.insert(spec.name.clone(), package.to_string());
         self.tools.insert(spec.name.clone(), tool);
         Ok(())
     }
 
-    /// 叫 `name` 的那一件归哪个包（以前的名字也算）；没有这件的没有。
+    /// 叫 `name` 的那一件归哪个包；没有这件的没有。
     pub fn package_of(&self, name: &str) -> Option<&str> {
-        let now = self.formerly.get(name).map_or(name, String::as_str);
-        self.packages.get(now).map(String::as_str)
+        self.packages.get(name).map(String::as_str)
     }
 
     /// 叫 `name` 的那一件是经提供者登记的（施工 O-2 中）；没有这件的不是。
@@ -298,20 +282,14 @@ impl Catalog {
             .into_iter()
     }
 
-    /// `name` 已经有主了：是一件工具现在的名字，或者以前的名字。
-    fn taken(&self, name: &str) -> bool {
-        self.tools.contains_key(name) || self.formerly.contains_key(name)
-    }
-
     /// 每件的规格，照名字的先后。
     pub fn specs(&self) -> impl Iterator<Item = &Spec> {
         self.tools.values().map(|tool| tool.spec())
     }
 
-    /// 叫 `name` 的那一件（施工 4-2）；以前叫 `name` 的也算（施工 7-5 再补）：改名以前造的会话，快照里冻着旧名字。
+    /// 叫 `name` 的那一件（施工 4-2）。
     pub fn get(&self, name: &str) -> Option<&Arc<dyn Tool>> {
-        let now = self.formerly.get(name).map_or(name, String::as_str);
-        self.tools.get(now)
+        self.tools.get(name)
     }
 }
 

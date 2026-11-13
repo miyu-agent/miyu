@@ -26,7 +26,7 @@
 | `crates/miyu-assemble/src/jobs.rs` | 两种回报渲染成带标签的事实（施工 7-2） |
 | `crates/miyu-kernel/src/session/report.rs` | 子会话一轮结束时要不要向上回报、回报什么（施工 7-6） |
 | `crates/miyu-tool/src/jobs.rs` | 交给工具的任务端口 `JobPort`：交出起好的后台命令、拿回编号（施工 7-3）；列出、读输出、停（施工 7-4） |
-| `crates/miyu-tool/src/agents.rs` | 交给 `subagent` 的端口：派子代理（`AgentPort`，施工 7-5，`tools/interface.md`）；那件工具现在的、以前的名字（施工 7-5 再补） |
+| `crates/miyu-tool/src/agents.rs` | 交给 `subagent` 的端口：派子代理（`AgentPort`，施工 7-5，`tools/interface.md`）；那件工具的名字 |
 | `crates/miyu-session/src/jobs.rs`、`jobs/` | 执行器的任务表：后台进程活过那一次调用，输出落盘，结束了告诉会话，有计划地停下先记 `restarted` 再整组杀（施工 7-3）；派出去的任务照日志记着（`roster.rs`），列出、读、停（`query.rs`、`stop.rs`），子代理在做什么照它的日志看（`peek.rs`）（施工 7-4） |
 | `crates/miyu-session/src/actor/halt.rs` | 人用 `job.stop` 停一个、父会话停下这个会话时连它派的全停（施工 7-4）；撤销停掉那几轮派出去的（`undo_jobs`）、人删了的子代理当场记回报（`Halt::Deleted`）（施工 7-8） |
 | `crates/miyu-session/src/spawn.rs` | 造子会话、给别的会话发命令的端口（`SessionPort`），会话表造会话、载入时交进来（施工 7-5）；停下子会话、看它在做什么（施工 7-4）；封存了的报退得下（`retirable`，施工 V-51，`session/actor.md` 第 9 条） |
@@ -314,7 +314,7 @@
 | `crates/miyu-kernel/src/history/tests/jobs.rs` | 有效历史记着的派出去过的任务；由回报接着开的一轮撤掉时拿走什么（施工 7-2） |
 | `crates/miyu-assemble/src/jobs/tests.rs`、`tests/probe.rs` | 回报的写法和样本一字不差、排在哪；有回报的会话的请求形状（施工 7-2）；子代理这张脸的请求形状，和主会话只差场所说明（施工 7-5） |
 | `crates/miyu-basesystem/tests/subagent.rs` | `subagent` 的参数、交给端口、结果和效果、派不了，两个名字的显示名（施工 7-5，`tools/subagent.md`） |
-| `crates/miyu-session/tests/spawn.rs`、`spawn_log.rs`，`src/job_ids.rs` | 子会话抄对了父会话的每一样、交代记成父会话发的、一步里派几个；编号接着日志往下数、不回收；只有本机、没到深度上限的会话有 `subagent`，子会话的 system 接上场所说明；运行日志（施工 7-5）；新会话不认 `agent`，以前造的会话照旧认（`spawn/renamed.rs`，施工 7-5 再补）；子会话派的带上它在父会话里的编号，载入以后照 `cause` 读回（`a_child_numbers_its_jobs_under_its_own`，施工 7-1 补） |
+| `crates/miyu-session/tests/spawn.rs`、`spawn_log.rs`，`src/job_ids.rs` | 子会话抄对了父会话的每一样、交代记成父会话发的、一步里派几个；编号接着日志往下数、不回收；只有本机、没到深度上限的会话有 `subagent`，子会话的 system 接上场所说明；运行日志（施工 7-5）；子会话派的带上它在父会话里的编号，载入以后照 `cause` 读回（`a_child_numbers_its_jobs_under_its_own`，施工 7-1 补） |
 | `crates/miyu-endpoint/tests/spawn.rs` | 真核心走一遍：替身模型在子会话里答话，子会话的日志、快照、请求，`session.list` 的 `parent`（施工 7-5） |
 | `crates/miyu-kernel/src/ledger/tests/jobs/numbers.rs` | 用过的最大任务编号：撤掉的、不认识的种类也算（施工 7-5）；照最后一段数，带前缀的和不带的混在一起也不重（施工 7-1 补） |
 | `crates/miyu-basesystem/tests/background.rs`、`shell_sandbox.rs` | `shell` 的后台命令：真的进程、三个平台（施工 7-3，`tools/shell.md`「守着它的」） |
@@ -341,8 +341,8 @@
 | `crates/miyu-kernel/src/session/tests/scenario/checkpoint_jobs.rs`（施工 7-8、7-8 补），`crates/miyu-session/tests/rebuild.rs` 的 `a_command_still_running_is_not_listed_in_the_checkpoint`、`miyu-policy` 的 `snapshot/tests.rs`（施工 7-8 补） | 还在跑的任务不列：代码写的几段只有取回指路（内核的替身、照出厂资源的真会话各一条）；7-8 以后造的快照带着那两份模板照样读得回来，读成和出厂的一样；还没听到的回报留在检查点后面；撤到压缩以前照样停 |
 | `crates/miyu-session/tests/jobs_stop/undo.rs`（施工 7-8） | 执行器这一头：撤销整组杀后台命令、回应之前就杀了、记 `undone`、`by`、`cause`；子代理经会话表停、回报记成它交来的；都不叫醒；自己退出的不再报；恢复不重起；结束了的不再杀 |
 | `crates/miyu-endpoint/tests/undo_jobs.rs`（施工 7-8） | 真核心：撤销、重做的回应列出停掉的，恢复不带、停过的再撤销不列 |
-| `crates/miyu-endpoint/src/sessions/delete/tests.rs`、`tests/orphans.rs`（施工 7-8） | 父会话记下子代理停了以后没人叫得醒它、它删得掉；父会话没记下的空子会话载入时挪进回收处，记下了的照留；改名以前造的父会话照样收（施工 7-5 再补） |
-| `crates/miyu-session/src/open/scan/tests/dispatched.rs`、`tests/spawn/recorded.rs`（施工 V-37 上） | 载入时一条条记的「要不要认、哪些记下了」和原来整份读一遍攒的一样：照种子造的三千份日志切成几条一块喂；真会话没派过、派成了、派不成、两个只派成一个、没记下结果就崩了、改名以前的 `agent` |
+| `crates/miyu-endpoint/src/sessions/delete/tests.rs`、`tests/orphans.rs`（施工 7-8） | 父会话记下子代理停了以后没人叫得醒它、它删得掉；父会话没记下的空子会话载入时挪进回收处，记下了的照留 |
+| `crates/miyu-session/src/open/scan/tests/dispatched.rs`、`tests/spawn/recorded.rs`（施工 V-37 上） | 载入时一条条记的「要不要认、哪些记下了」和原来整份读一遍攒的一样：照种子造的三千份日志切成几条一块喂；真会话没派过、派成了、派不成、两个只派成一个、没记下结果就崩了 |
 | `crates/miyu/tests/crash.rs`、`crates/miyu-sandbox/tests/lifeline.rs`（施工 7-8、V-48） | 真的 `miyu core` 被硬杀，后台命令（Unix 上连它起的孙进程）跟着停，三个平台都跑；Unix 上前台、监视的、人用 `!` 跑的也停；生命线断了看门的杀整组 |
 
 以后照每一步补。至少：内核的单元测试和场景（开始、结束、载入补中断、子会话回报的条件）；工具面的预算；真核心走一遍后台命令。

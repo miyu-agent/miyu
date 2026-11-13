@@ -15,18 +15,13 @@ use crate::advice::{Advising, NotAdvised};
 use crate::attachment::Attached;
 
 /// 派子代理的那件工具的名字（`agents.md` 第一条第 5、6 条）：场所会话、到了深度上限的会话，造会话时从工具面上拿掉它。
-/// 施工 7-5 再补从 `agent` 改名（`tools/subagent.md`「以前的名字」）：在 Miyu 里「agent」可能指她自己、子代理、别的会话，
-/// 叫 `subagent` 一看就知道是派子代理（2026-10-01 项目主人定）。
+/// 施工 7-5 再补从 `agent` 改名：在 Miyu 里「agent」可能指她自己、子代理、别的会话，叫 `subagent` 一看就知道是派子代理
+/// （2026-10-01 项目主人定）。以前的名字不再认（施工 AUD-3：还没发版，没有会话的快照里还冻着它）。
 pub const SUBAGENT: &str = "subagent";
 
-/// 它以前的名字（施工 7-5 再补）：那以前造的会话，快照里冻着的工具面上是这个名字，前缀不能变，她照旧这样调；工具目录照它
-/// 也找得到这一件（[`crate::Tool::formerly`]），新造的会话工具面上没有它。
-pub const SUBAGENT_FORMERLY: &str = "agent";
-
-/// 调的是不是派子代理的那件：现在的名字、以前的名字都算。从日志里认派子代理的调用时用（派到一半的空子会话，施工 7-8）：
-/// 以前造的会话，日志里记的是以前的名字。
+/// 调的是不是派子代理的那件。从日志里认派子代理的调用时用（派到一半的空子会话，施工 7-8）。
 pub fn is_subagent(name: &str) -> bool {
-    name == SUBAGENT || name == SUBAGENT_FORMERLY
+    name == SUBAGENT
 }
 
 /// 一次派子代理她交的几样：`description` 是短标题，`prompt` 是整段交代，原样送进子会话。`pool` 是她选的池（施工 8-8 补，
