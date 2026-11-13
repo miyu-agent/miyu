@@ -17,9 +17,15 @@ use miyu_config::package::DriverKey;
 use miyu_config::secret::Reference;
 use miyu_http::testkit::Server;
 use miyu_kernel::block::Block;
-use miyu_kernel::event::{Body, ErrorClass};
+use miyu_kernel::event::{Body, ErrorClass, ModelCalled};
 use miyu_models::provider::DriverRef;
 use miyu_session::{Declared, DriverPending, DriverPort, NotYet};
+
+/// 这一轮的主请求那一条 `model.called`（最后一条不带用途的）。起标题这类旁路请求在这一轮说完以后才发，赶在读日志以前落盘的
+/// 排在主请求后面：假服务器只备了一份回复，它那一条是连不上的错，不能拿最后一条当主请求（施工 AUD-1）。
+fn main_request(calls: &[ModelCalled]) -> Option<&ModelCalled> {
+    calls.iter().rfind(|call| call.purpose.is_none())
+}
 
 /// 一家 `ag`：驱动写成扩展的 `driver`，地址指着假服务器 `base_url`，配了 key。
 fn extension(driver: &str, base_url: &str) -> String {
@@ -81,7 +87,7 @@ async fn in_a_pool_the_extension_member_is_skipped() {
     turn(&handle, "cmd-1").await;
     let calls = called(&home, &handle);
     assert!(
-        calls.last().is_some_and(|call| call.error.is_none()),
+        main_request(&calls).is_some_and(|call| call.error.is_none()),
         "{calls:?}"
     );
     assert!(ag.received().is_empty(), "扩展那一家一个请求都没收到");
@@ -253,7 +259,10 @@ async fn an_absent_driver_is_no_model_and_a_pool_moves_on() {
     );
     let (home, handle) = talk(&fake, &two(true, "@p", &b.base_url)).await;
     let calls = called(&home, &handle);
-    assert!(calls.last().is_some_and(|call| call.error.is_none()));
+    assert!(
+        main_request(&calls).is_some_and(|call| call.error.is_none()),
+        "{calls:?}"
+    );
     assert_eq!(b.received().len(), 1, "池里换到了下一个成员");
     assert!(fake.params().is_empty(), "不在的驱动一次都没调");
 }

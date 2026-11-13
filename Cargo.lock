@@ -1908,7 +1908,6 @@ version = "2026.11.0"
 dependencies = [
  "base64 0.22.1",
  "globset",
- "grep-matcher",
  "grep-regex",
  "grep-searcher",
  "ignore",

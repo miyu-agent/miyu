@@ -81,7 +81,7 @@
 | `crates/miyu-endpoint/tests/redo.rs` | 重做的回应：撤销那几样照撤销写，`events` 最后是重发的那一句（施工 4-7 再补，`protocol.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/undo_jobs.rs`（施工 7-8） | 撤销、重做的回应列出停掉的任务（编号、种类、标题），回应之前后台命令已经杀了、随后记 `undone`；恢复的不带、停过的再撤销不列 |
 | `crates/miyu-endpoint/tests/revert.rs` | 撤销、恢复的 `events`；`nothing_to_unrevert`、`unknown_turn`、`nothing_to_revert` 照头的语言；`turn` 写 0 |
-| `crates/miyu-session/tests/restore.rs` | 改回文件的那一半（`kernel/history.md`） |
+| `crates/miyu-session/tests/undo_files.rs` | 文件那一半（`kernel/history.md`）：撤销、恢复不改回文件（施工 U-1），她看过的照有效历史走 |
 
 ### 出处
 

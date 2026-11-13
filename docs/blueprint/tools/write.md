@@ -130,7 +130,7 @@ Created "src/new/a.rs".
 | `crates/miyu-fs/src/replace/tests.rs` | 整体换、只读的不写、盖不上去时临时文件删掉 |
 | `crates/miyu-basesystem/tests/human.rs` | 每一种结果的说法，两种语言都换得出字 |
 | `crates/miyu-session/tests/write.rs` | 会话里先读后写，日志里两次结果的效果对得上、效果里写着改前改后；新建的不用先读；重新载入以后她读过的照样算（施工 ED-2 起拿读过以后又被改了的看出来） |
-| `crates/miyu-session/tests/restore.rs` | 撤销时照 `write` 报的 `file.changed` 写回改前的，恢复时再写回改后的 |
+| `crates/miyu-session/tests/undo_files.rs` | 撤销、恢复不改回文件（施工 U-1，2026-10-15 起；以前照 `file.changed` 写回改前的）：改过的文件原样不动。测试用的是 `edit`，`write` 报的 `file.changed` 一样不再用来改回 |
 | `xtask/src/ledger.rs` | 这些字的指纹和登记簿对得上 |
 
 ### 出处

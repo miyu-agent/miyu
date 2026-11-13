@@ -92,7 +92,7 @@ mermaid 源码画成 SVG 由核心做一次：同一张图，终端和网页看�
 | `crates/miyu-mermaid/src/style/tests.rs` | 读得进来、少一格或者多一格不认的、数是 0 或者字体表是空的都读不了 |
 | `crates/miyu-mermaid/src/fonts/tests.rs` | 这台机器上读得到至少一种字体（真机验，三个平台都该过） |
 | `crates/miyu/tests/mermaid_fonts.rs`（施工 V-35） | 真的核心画一张图：数据根的 `var/cache/mermaid` 里只有几十字节的位置记录、没有拷下来的字体，画图的库默认的 `$XDG_CACHE_HOME/mmdr` 一个字都不写；重起核心照记下的位置再画，SVG 和头一回一字不差 |
-| `crates/miyu-endpoint/src/queries/tests.rs` | 没登记的方法交回 `None`；登记过的名字正好对上才找得到；同一个名字登记两次当场 panic |
+| `crates/miyu-endpoint/src/queries.rs` 里的测试 | 没登记的方法交回 `None`；登记过的名字正好对上才找得到；同一个名字登记两次当场 panic |
 | `crates/miyu-core/tests/packages.rs` | 真核心走一遍：一张流程图、一张时序图都出 SVG，回应的 `marks` 和 SVG 里用的三种记号色对得上；同一份源码两次拿到一样的回应；空的 `bad_params`、超过上限 `mermaid_too_long`、画不出 `mermaid_failed`（`data.detail` 不是空的）；查询表没登记的方法（没编进来某个软件包的情形）回 `unknown_method` |
 
 ### 出处

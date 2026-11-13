@@ -20,7 +20,7 @@ HTTP 执行器：照驱动编码好的请求体发一次请求，流式地读回
 | `crates/miyu-http/src/get.rs` | 一次 GET（施工 8-7）：拉 models.dev 的目录、拉供应商的模型列表 |
 | `crates/miyu-http/src/post.rs` | 一次 POST、整个读完（施工 R-5 补）：远程的 embedding。带着头和 JSON 的请求体，有总时限、大小上限，出错的说法同一次 GET（`Failed`：原话不带地址，回的不是 2xx 的带状态码、响应头、最多 64 KiB 的响应体） |
 | `crates/miyu-http/src/testkit.rs` | 测试用的假服务器，`testkit` 开关打开才编进去 |
-| `crates/miyu-session/src/http.rs` | 用它的：会话请求模型的端口，取 blob、编码、发；空闲超时的初值 |
+| `crates/miyu-session/src/route.rs`（和 `route/` 下的几份） | 用它的：会话请求模型的端口，取 blob、编码、发；空闲超时的初值 |
 | `crates/miyu-core/src/models.rs` | 造客户端和端点 |
 
 ### 对外的样子
@@ -49,7 +49,7 @@ HTTP 执行器：照驱动编码好的请求体发一次请求，流式地读回
 | 连接超时 `CONNECT_TIMEOUT` | 30 秒 | `client.rs` |
 | GET 的连接超时 `FETCH_CONNECT_TIMEOUT` | 10 秒（`models.md`「怎么走」第二条第 3、10 条） | `client.rs` |
 | 出错时读的响应体上限 `ERROR_BODY_LIMIT` | 64 KiB | `send.rs` |
-| 空闲超时的初值 `IDLE` | 180 秒 | `crates/miyu-session/src/http.rs` |
+| 空闲超时的初值 `IDLE` | 180 秒 | `crates/miyu-session/src/route.rs` |
 
 ### 怎么走
 

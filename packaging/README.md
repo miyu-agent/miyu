@@ -45,7 +45,7 @@ Ed25519 的才核得了，不认的说一句）、核 SHA-256、跑一次新的 
 
 核心默认一直开着，不再空闲 10 分钟就退（施工 Z-1 上）；要省的在系统配置里写 `core.idle_exit = <分钟>`（`0` 是不退）。头连不上核心时照旧自己拉起，所以不装服务也能用；装了的开机、登录就起，通讯平台的桥、定时任务不等人打开头。
 
-- **Linux（systemd）**：`systemd/user/miyu.service` 装进 `~/.config/systemd/user/`（安装包装进 `/usr/lib/systemd/user/`），`systemctl --user enable --now miyu`。没人登录也要开着的再 `sudo loginctl enable-linger <账号>`。日志：`journalctl --user -u miyu`，核心自己的运行日志照旧在 `~/.miyu/state/logs/`。
+- **Linux（systemd）**：`systemd/user/miyu.service` 装进 `~/.config/systemd/user/`（安装包装进 `/usr/lib/systemd/user/`），`systemctl --user enable --now miyu`。没人登录也要开着的再 `sudo loginctl enable-linger <账号>`。日志：`journalctl --user -u miyu`，核心自己的运行日志照旧在 `~/.miyu/var/log/`。
 - **Linux（没有 systemd 用户会话的桌面）**：`xdg/miyu.desktop` 放进 `~/.config/autostart/`，登录桌面时起。
 - **macOS**：`macos/miyu.plist` 改名成 `io.github.miyu-agent.core.plist` 放进 `~/Library/LaunchAgents/`，`launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/io.github.miyu-agent.core.plist`。
 - **Windows**：`schtasks /Create /TN Miyu /XML windows\miyu.xml`。
@@ -70,6 +70,6 @@ sudo systemctl enable --now miyu-web
 
 - systemd 照 `StateDirectory=miyu`、`CacheDirectory=miyu` 建好 `/var/lib/miyu`、`/var/cache/miyu`，都属于 `miyu`。别的初始化系统（`init/` 下）先自己建好这两个目录、`chown miyu:miyu`、数据根 `chmod 0700`。
 - **沙盒**：命令的沙盒在 Linux 上用 Landlock，不要用户命名空间。systemd 的加固项（`PrivateUsers=`、`ProtectHome=` 这些）没在这里写，要加的先在自己的机器上试过沙盒还起得来。
-- **本机的命令行**：在第二个本机入口（`run/public.sock`，施工 Y-1 下）做好以前，核心只认 `miyu` 这个用户自己连，本机要用命令行的 `sudo -u miyu env MIYU_HOME=/var/lib/miyu miyu …`。
+- **本机的命令行**：核心只认 `miyu` 这个用户自己连（原来打算的第二个本机入口随多用户一起不做了，施工 SU），本机要用命令行的 `sudo -u miyu env MIYU_HOME=/var/lib/miyu miyu …`。
 - **网页软件**现在只听 `127.0.0.1`：从别的机器进来等「开网络」那一段（局域网、TLS），之前用 ssh 的端口转发。
-- 日志：`journalctl -u miyu`，核心自己的运行日志在 `/var/lib/miyu/state/logs/`。备份、搬家照数据根 `/var/lib/miyu`。
+- 日志：`journalctl -u miyu`，核心自己的运行日志在 `/var/lib/miyu/var/log/`。备份、搬家照数据根 `/var/lib/miyu`。

@@ -60,17 +60,17 @@ pub const ALLOWED: &[(&str, &str, &str)] = &[
     (
         "crates/miyu-log/src/lib.rs",
         "dir",
-        "日志自己的目录：数据根里的 `state/logs`，不是谁的东西",
+        "日志自己的目录：数据根里的 `var/log`，不是谁的东西",
     ),
     (
         "crates/miyu-session/src/route/shared.rs",
         "file",
-        "`state/models/` 下写死的几个文件名（`learned.json` 这种），不是谁的东西",
+        "`var/lib/models/` 下写死的几个文件名（`learned.json` 这种），不是谁的东西",
     ),
     (
         "crates/miyu-session/src/route/shared/recall.rs",
         "file",
-        "`state/models/catalog.json`，写死的文件名，不是谁的东西（施工 V-25 下从 `shared.rs` 拆出来）",
+        "`var/cache/models/catalog.json`，写死的文件名，不是谁的东西（施工 V-25 下从 `shared.rs` 拆出来）",
     ),
     (
         "crates/miyu-session/src/embed/files.rs",

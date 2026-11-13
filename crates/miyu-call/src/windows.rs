@@ -32,7 +32,11 @@ pub struct Channel {
 }
 
 impl Channel {
-    /// 照端口 `port` 开一个，认 `kin`：建管道的第一个实例、起服务的任务。建不成的交回出错，命令照旧跑，只是没有通道。
+    /// 照端口 `port` 开一个，认 `kin`：建好管道空着等人连的那几个实例（`IDLE` 个）、起服务的任务。建不成的交回出错，命令照旧跑，
+    /// 只是没有通道。
+    ///
+    /// 空着的实例在这里就建齐，不留到服务的任务里（施工 AUD-1）：任务什么时候跑到由运行时排，开完马上连两个的会抢在它建第二个
+    /// 之前，第二个拿到 `ERROR_PIPE_BUSY`（Windows CI 上 `a_second_client_right_after_the_first_is_not_busy` 两次红在第 0 对）。
     ///
     /// # Errors
     ///
@@ -40,9 +44,12 @@ impl Channel {
     pub fn open(port: Arc<dyn NestedPort>, texts: Arc<Texts>, kin: Kin) -> io::Result<Channel> {
         let token = serve::random_hex()?;
         let name = format!(r"\\.\pipe\miyu-call-{}", serve::endpoint_tag()?);
-        let first = miyu_pipe::create_for_containers(name.as_ref(), true)?;
+        let mut waiting = vec![miyu_pipe::create_for_containers(name.as_ref(), true)?];
+        for _ in 1..IDLE {
+            waiting.push(miyu_pipe::create_for_containers(name.as_ref(), false)?);
+        }
         let server = tokio::spawn(accept(
-            first,
+            waiting,
             name.clone(),
             port,
             texts,
@@ -143,13 +150,14 @@ fn sweep(temp: &Path) {
 /// 同时空着等人连的实例有几个（施工 XG-1补2）。
 const IDLE: usize = 2;
 
-/// 服务：一直留 [`IDLE`] 个空着的实例等人连。连上了一个，先建好下一个顶上，再交给一个任务答；多了的直接断开。
+/// 服务：一直留 [`IDLE`] 个空着的实例等人连，开头那几个 `waiting` 是 [`Channel::open`] 建好交来的。连上了一个，先建好下一个
+/// 顶上，再交给一个任务答；多了的直接断开。
 ///
 /// 只留一个的话，连上那一刻到建好下一个之间再来连的拿到 `ERROR_PIPE_BUSY`（231）：`miyu call` 会等着重试，扩展作者自己写的
 /// 客户端不一定（施工 XG-1补2，e0 查 Windows 偶发时发现的）。客户端连到哪个空着的实例由系统挑，所以每个都要有人等着：各自
 /// 放进一个任务里等，连上了的连同管道一起交回来。
 async fn accept(
-    first: NamedPipeServer,
+    waiting: Vec<NamedPipeServer>,
     name: String,
     port: Arc<dyn NestedPort>,
     texts: Arc<Texts>,
@@ -158,15 +166,8 @@ async fn accept(
 ) {
     let mut open = JoinSet::new();
     let mut idle = JoinSet::new();
-    idle.spawn(connected(first));
-    for _ in 1..IDLE {
-        match miyu_pipe::create_for_containers(name.as_ref(), false) {
-            Ok(another) => idle.spawn(connected(another)),
-            Err(error) => {
-                tracing::warn!(target: TARGET, error = %error, "miyu call endpoint stopped");
-                return;
-            }
-        };
+    for pipe in waiting {
+        idle.spawn(connected(pipe));
     }
     loop {
         tokio::select! {

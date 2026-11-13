@@ -276,7 +276,7 @@
 | `crates/miyu-tool/src/sessions/tests.rs` | 认会话编号：整个编号、至少 8 位的后缀，别的写法对不上，撞了是不止一个（施工 C-3，`tools/sessions.md`） |
 | `crates/miyu-basesystem/tests/background.rs`、`crates/miyu-session/src/jobs/tests.rs` | 任务端口的两头：`shell` 交出去的输出、进程（`tools/shell.md`），任务表收下、收不下（`session/tools.md`）（施工 7-3） |
 | `crates/miyu-session/tests/write.rs` | 重新载入以后她读过的照样算、改完接着改不用重读、删了的不再算看过 |
-| `crates/miyu-session/tests/restore.rs` | 撤掉的回合里读过的不算、恢复以后又算 |
+| `crates/miyu-session/tests/undo_files.rs` | 撤掉的回合里读过的不算、恢复以后又算 |
 | `crates/miyu-store/tests/human.rs` | 内核的每一句两种语言都有、照语言换成字、显示名和跟的参数、控制字符换掉、坏了的说是哪一份 |
 | `crates/miyu-basesystem/tests/human.rs` | 基础系统每一种结果都带说法，两种语言都换得出字 |
 | `xtask/src/ledger.rs`（`cargo xtask check` 的「文档」） | 给模型看的每一份字在登记簿里、指纹对得上 |
