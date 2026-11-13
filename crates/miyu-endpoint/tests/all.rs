@@ -272,6 +272,7 @@ mod respond;
 mod restart;
 mod retire;
 mod retitle;
+mod retitle_failed;
 mod reused_ids;
 mod revert;
 mod schedule_clock_back;

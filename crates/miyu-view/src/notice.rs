@@ -65,6 +65,13 @@ pub enum Notice {
     },
     /// 等的会话怎么了。
     Peer(Peer),
+    /// 人要求的重起标题没起成（施工 TT-3）：标题没变。只在视图流里有。
+    RetitleFailed {
+        /// 给人看的那一句，照连接的语言（`core/sessions/retitle-failed`）。
+        text: String,
+        /// 那一次请求的错。
+        error: CallError,
+    },
 }
 
 /// 压缩那一条。

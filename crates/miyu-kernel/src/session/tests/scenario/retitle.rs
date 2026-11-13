@@ -4,7 +4,7 @@
 //! 起的（施工 TT-2）：并进自动起的那一次的也是，以后自动起标题不再盖掉它，重启以后照样。
 
 use super::*;
-use crate::event::{ErrorClass, MetaChanged, Purpose};
+use crate::event::{ErrorClass, MetaChanged, Purpose, TransientBody};
 use crate::session::{Reason, Titles};
 
 /// 起标题的策略：试两次，标题最多 50 个字。
@@ -240,4 +240,90 @@ fn a_person_renaming_after_asking_wins_and_a_failure_is_not_retried() {
     one_turn(&mut stage, "again");
     assert_eq!(stage.titles().len(), 2, "不留到下一轮再试");
     assert_eq!(titles(&stage).last(), Some(&(false, "又改了".to_string())));
+}
+
+/// 推给头的 `session.retitle_failed`（施工 TT-3），照先后：谁要的、错的分类。
+fn retitle_failures(stage: &Stage) -> Vec<(By, ErrorClass)> {
+    stage
+        .transients()
+        .iter()
+        .filter_map(|transient| match &transient.body {
+            TransientBody::RetitleFailed(failed) => {
+                assert_eq!(failed.human.key, "core/sessions/retitle-failed");
+                assert!(transient.turn.is_none() && transient.cause.is_none());
+                Some((transient.by.clone(), failed.error.class.clone()))
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+/// 人要的重起没起成（施工 TT-3）：出错、超时（会话那一层照出错送进来）、回复里取不出标题都告诉头，`by` 是要它的人，标题不动。
+#[test]
+fn a_retitle_that_fails_tells_the_heads_and_keeps_the_title() {
+    for (line, class) in [
+        (
+            Line::fails(ErrorClass::Retryable, "503"),
+            ErrorClass::Retryable,
+        ),
+        (
+            Line::fails(ErrorClass::Stalled, "空闲超时"),
+            ErrorClass::Stalled,
+        ),
+        (Line::says("   "), ErrorClass::EmptyReply),
+        // 要了工具、网关把它换成一句占位的字一起交回来的：那句字不是标题。
+        (
+            Line::calls(super::recap::PLACEHOLDER, &[("read", "{}")]),
+            ErrorClass::EmptyReply,
+        ),
+    ] {
+        let mut stage = titled_stage();
+        stage.set_meta(Some("人起的"), None);
+        one_turn(&mut stage, "hi");
+        stage.title_model([line]);
+        stage.retitle();
+        let failures = retitle_failures(&stage);
+        let [(by, failed)] = &failures[..] else {
+            panic!("推一条：{failures:?}");
+        };
+        assert!(matches!(by, By::Person(_)), "{by:?}");
+        assert_eq!(*failed, class);
+        assert_eq!(titles(&stage), [(false, "人起的".to_string())], "标题不动");
+    }
+}
+
+/// 自动起的时候模型要了工具（施工 TT-3，主人本机 2026-11-13）：占位的字不当标题，算没起成，不推；下一轮答完再试。
+#[test]
+fn an_automatic_title_that_asks_for_a_tool_is_not_a_title() {
+    let mut stage = titled_stage();
+    stage.title_model([
+        Line::calls(super::recap::PLACEHOLDER, &[("read", "{}")]),
+        Line::says("第二次起的"),
+    ]);
+    one_turn(&mut stage, "hi");
+    assert!(titles(&stage).is_empty(), "{:?}", titles(&stage));
+    assert!(retitle_failures(&stage).is_empty());
+    one_turn(&mut stage, "again");
+    assert_eq!(titles(&stage), [(true, "第二次起的".to_string())]);
+}
+
+/// 起成了的、自动起的没起成的、要了以后人又改了名的，都不推（施工 TT-3）。
+#[test]
+fn only_a_failed_retitle_is_told() {
+    let mut stage = titled_stage();
+    stage.title_model([Line::fails(ErrorClass::Retryable, "503")]);
+    one_turn(&mut stage, "hi");
+    assert_eq!(title_calls(&stage), 1, "自动起的没起成");
+    stage.title_model([Line::says("重起的")]);
+    stage.retitle();
+    assert_eq!(titles(&stage), [(false, "重起的".to_string())]);
+    stage.title_model([Line::fails(ErrorClass::Retryable, "503").held()]);
+    stage.retitle();
+    stage.set_meta(Some("又改了"), None);
+    stage.release_title();
+    assert!(
+        retitle_failures(&stage).is_empty(),
+        "{:?}",
+        stage.transients()
+    );
 }

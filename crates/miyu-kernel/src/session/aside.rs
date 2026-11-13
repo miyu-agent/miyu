@@ -100,8 +100,9 @@ impl Aside {
         wrote
     }
 
-    /// 说完了：正文块连起来、去掉前后空白，思考、工具调用不要。出错的、还没发出去的、没有正文的（`empty` 是那一句原话）
-    /// 没写成。`next` 是累积器收尾时给块编号用的下一条序号。
+    /// 说完了：正文块连起来、去掉前后空白，思考不要。出错的、还没发出去的、没有正文的（`empty` 是那一句原话）没写成；要了
+    /// 工具的也没写成（施工 TT-3）：请求里没有工具，模型要了，有的网关会把它换成一句占位的字一起交回来，那句字不是回答。
+    /// `next` 是累积器收尾时给块编号用的下一条序号。
     pub(super) fn finish(
         self,
         at: Timestamp,
@@ -113,6 +114,17 @@ impl Aside {
     ) -> Finished {
         let (mut called, blocks) = self.end(at, purpose, spent, error, next);
         let text = blocks.and_then(|blocks| {
+            if blocks
+                .iter()
+                .any(|block| matches!(block, Block::ToolCall(_)))
+            {
+                return Err(CallError {
+                    class: ErrorClass::EmptyReply,
+                    message: format!("{empty}, it asked for a tool"),
+                    status: None,
+                    retry_after_ms: None,
+                });
+            }
             let text = blocks
                 .iter()
                 .filter_map(|block| match block {

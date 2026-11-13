@@ -64,7 +64,8 @@ pub(super) fn notice(
         },
         Notice::Cleared {} => say.say("cleared", &[]),
         Notice::Paused { .. } => say.say("paused", &[]),
-        Notice::Reverted { .. } => return None,
+        // 只在视图流里有（施工 TT-3），翻页、导出见不到；见到了也不写：标题没变，不是对话里的事。
+        Notice::Reverted { .. } | Notice::RetitleFailed { .. } => return None,
         Notice::Job(done) if done.report.is_some() => return Some(report(out, done, say)),
         Notice::Job(done) => return Some(job(out, done, doc, say)),
         Notice::Lines(seen) => {

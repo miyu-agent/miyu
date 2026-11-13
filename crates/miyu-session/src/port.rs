@@ -89,6 +89,10 @@ impl ForSession {
     }
 }
 
+/// 辅助请求的总时限（施工 TT-3，2026-11-13 项目主人定）：起标题、回顾从交给端口起最多等 180 秒，到时没说完当失败；提前压
+/// 的摘要不管（`actor/model/overdue.rs` 的名单）。主请求不受它管，照旧只有路由的空闲超时（[`crate::route::IDLE`]）和它的十倍总时限。是常量，不进配置。
+pub const ASIDE_LIMIT: std::time::Duration = std::time::Duration::from_secs(180);
+
 /// 请求模型的端口。
 pub trait ModelPort: Send + Sync {
     /// 发给哪个端点的哪个模型：记进运行日志的 `request` 那一行。路由的是这个会话钉着的、上一次解析出来的那一个（施工 8-6：
@@ -137,6 +141,12 @@ pub trait ModelPort: Send + Sync {
             blind: false,
             identity: None,
         }
+    }
+
+    /// 辅助请求（起标题、回顾）最多等多久（施工 TT-3）：从交给端口起算，到时没说完 actor 叫停它、照出错交给
+    /// 内核。出厂的端口都是 [`ASIDE_LIMIT`]；只有测试的端口设短的，不用真等。
+    fn aside_limit(&self) -> std::time::Duration {
+        ASIDE_LIMIT
     }
 
     /// 换快照了（施工 P-1 三补）：驱动的占位换成新快照的 `texts`，以后的请求照它写。测试的端口不管。
@@ -413,6 +423,12 @@ pub(crate) enum Back {
         purpose: Purpose,
         upto: Seq,
         report: Report,
+    },
+    /// 辅助请求（用途 `purpose`、照到 `upto`、`asked` 那一刻交给端口的）到了总时限（施工 TT-3，`actor/overdue.rs`）。
+    AsideOverdue {
+        purpose: Purpose,
+        upto: Seq,
+        asked: std::time::Instant,
     },
     /// 为请求 `seen` 等的时刻到了。
     Woke { seen: Seq },

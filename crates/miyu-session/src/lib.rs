@@ -105,7 +105,7 @@ pub use open::{
 };
 pub use path_text::path_text;
 pub use plugins::VenuePlugins;
-pub use port::{Cancel, ForSession, ModelPort, Models, Reports, Sight};
+pub use port::{ASIDE_LIMIT, Cancel, ForSession, ModelPort, Models, Reports, Sight};
 pub use route::{
     Answer, Ask, Broken, CatalogReader, Declared, DriverPending, DriverPort, Holding, IDLE,
     LISTING_CAP, LISTING_FILE, LOCAL_WAIT, Listed, Missing, ModelData, ModelDirs, NotYet, Observed,

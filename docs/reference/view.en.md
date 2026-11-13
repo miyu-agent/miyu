@@ -57,6 +57,7 @@ One object each, with the common fields `id`, `kind`, `turn` (which turn), `hidd
 | `model` | The model changed: `endpoint`, `model`, `from`, `why` (`failover`, `replaced`) |
 | `workspace` | The workspace changed: `cwd`, `dirs` |
 | `peer` | A session being waited on went idle or can't be waited on: `session`, `reason`, `status` |
+| `retitle_failed` | A title a person asked for ([`session.retitle`](sessions.en.md#sessionretitle)) failed and the title is unchanged: `text` (the line written in the connection's language: "Failed to change the title"), `error` (that request's error). Only in the view stream; paging and resubscribing don't bring it back |
 
 ## Session `status`
 

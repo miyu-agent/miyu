@@ -76,3 +76,4 @@
 | `package.state_changed` | 一个包在这个会话里给头看的状态变了：`{"package", "state": {"widgets"?}}`，清掉了的 `state` 是 `{}` |
 | `compactable.changed` | 有没有能压的变了：`{"compactable": <布尔>}`，同订阅回应的 `compactable`（`session.compact` 会不会回 `nothing_to_compact`） |
 | `goal.changed` | 长期目标现在的整份 |
+| `session.retitle_failed` | 人要求的重起标题（[`session.retitle`](sessions.md#sessionretitle)）没起成，标题没变：`{"error", "human"}`，`error` 是那一次请求的错（`class`、`message`，有的话 `status`），`human` 是给人看的那一句 `{"key": "core/sessions/retitle-failed"}`，照 [`human.get`](misc.md#humanget) 的 `said` 换成字（「更改标题失败」）。`by` 是要它的人。核心自己起标题没起成的不推 |

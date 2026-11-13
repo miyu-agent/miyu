@@ -50,6 +50,10 @@ impl Watch {
             TransientBody::PackageStateChanged(_) => {
                 panic!("种子 {seed}：没写过包的状态，却推了 package.state_changed")
             }
+            // 随机测试里没有人要求重起标题（施工 TT-3）。
+            TransientBody::RetitleFailed(_) => {
+                panic!("种子 {seed}：没人要过重起标题，却推了 session.retitle_failed")
+            }
         }
     }
 }

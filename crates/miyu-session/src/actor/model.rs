@@ -32,6 +32,7 @@ use crate::settings::CompactionSettings;
 use crate::shown::{Next, Shown};
 
 mod line;
+mod overdue;
 
 /// 回合开始问挂接点最多等多久（施工 R-4 上定的起点）：过了当这一轮没交。读的是本机的小库，平常几毫秒。
 const HOOKS: Duration = Duration::from_millis(300);
@@ -58,8 +59,8 @@ impl Actor {
     }
 
     /// 发一次辅助请求（施工 3-8 四补的回顾、五补的起标题）：交给同一个端口，回报走辅助请求那一路，名字是用途和它照到的
-    /// 那一条。叫停它的那一头拿着不用：内核不叫停辅助请求，actor 停了放下它，请求跟着停。运行日志那一行前面带用途
-    /// （`recap request`、`title request`）。
+    /// 那一条。叫停它的那一头拿着不用：内核不叫停辅助请求，actor 停了放下它、到了总时限叫停它（施工 TT-3，`overdue.rs`），
+    /// 请求跟着停。运行日志那一行前面带用途（`recap request`、`title request`）。
     pub(super) fn aside(&mut self, purpose: Purpose, upto: Seq, request: Request) {
         let model = self.model.model();
         tracing::info!(
@@ -71,9 +72,10 @@ impl Actor {
             purpose.as_str()
         );
         let (stop, cancel) = oneshot::channel();
+        let asked = Instant::now();
         self.asides.retain(|(asking, ..)| *asking != purpose);
-        self.asides
-            .push((purpose.clone(), upto, stop, Instant::now()));
+        self.asides.push((purpose.clone(), upto, stop, asked));
+        self.overdue(purpose.clone(), upto, asked);
         let reports = Reports::aside(purpose, upto, self.backs.clone());
         let config = self.config.current();
         self.model

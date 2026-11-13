@@ -197,6 +197,7 @@ impl Projector {
             TransientBody::CompactionDone(done) => self.compaction_done(done),
             TransientBody::ModelChanged(changed) => self.model_changed(transient.at, changed),
             TransientBody::ToolProgress(progress) => self.tool_progress(transient.at, progress),
+            TransientBody::RetitleFailed(failed) => self.retitle_failed(transient.at, failed),
             _ => {}
         }
         self.track_transient(transient);

@@ -57,6 +57,7 @@
 | `model` | 换了模型：`endpoint`、`model`、`from`、`why`（`failover`、`replaced`） |
 | `workspace` | 换了工作区：`cwd`、`dirs` |
 | `peer` | 等的会话空下来了、等不到了：`session`、`reason`、`status` |
+| `retitle_failed` | 人要求的重起标题（[`session.retitle`](sessions.md#sessionretitle)）没起成，标题没变：`text`（照连接的语言写好的那一句：「更改标题失败」）、`error`（那一次请求的错）。只在视图流里有，翻页、重新订阅没有 |
 
 ## 会话状态 `status`
 

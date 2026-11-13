@@ -17,6 +17,7 @@
 | `crates/miyu-session/src/actor/watchers.rs` | 「空了告诉我」被等的这一边：谁在等这个会话空下来，每送完一批看空没空，空了发通知（施工 C-6，下面「被等的名单」） |
 | `crates/miyu-session/src/peers.rs` | 「空了告诉我」等的这一边：照内核在等的去订、计时，到点、不在了交回（施工 C-6，`session/tools.md`「订、计时、再订」） |
 | `crates/miyu-session/src/actor/model.rs` | 请求模型：交给端口、叫停、说完了记一行；回顾的请求也在这里（施工 3-8 四补）；替它看图交给端口（施工 8-17） |
+| `crates/miyu-session/src/actor/model/overdue.rs` | 辅助请求的总时限（施工 TT-3）：起标题、回顾交给端口时起定时的任务，到 `ModelPort::aside_limit()` 还在路上的叫停端口、照出错交给内核（「7. 请求模型」第 7 条） |
 | `crates/miyu-session/src/actor/life.rs` | 起 actor 的任务、看着它，停了以后把堆还给系统；闲够了退下：照自己的账答会话表（施工 V-2 再补从 `actor.rs` 挪出来，那个文件到了行数上限；第 9 条）；封存了的每办完一封照这本账看一次，退得下了报会话表（`offer_retire`，施工 V-51）；交给 `Handle` 的几份（`busy`、`shown`、`watched`、`leaving`，施工 V-51 从 `actor.rs` 挪来，同样的原因） |
 | `crates/miyu-session/src/actor/stop.rs` | 有计划地停下：要重启了、后台命令记 `restarted`、落了盘再整组杀（施工 7-3） |
 | `crates/miyu-session/src/actor/store.rs` | 写盘，哪一批要同步（`must_sync`，施工 V-18）；撤掉压缩时读回日志（施工 6-9） |
@@ -244,7 +245,7 @@
 4. 不要这次请求了：叫端口停下，记一行 `cancelled`，`seen`、`took_ms`。已经说完了的，什么都不做。
 5. 会话停了也算叫停：actor 退出时放下了叫停的那一头，路上的请求跟着停下，不白花 token。
 6. 重试是内核定的：能再来的错，内核推一条等着重试的状态提示、交出「到点叫醒」（`kernel/session.md`）。actor 照状态提示记一行 `retrying`：`seen`、第几次 `attempt`、最多几次 `limit`、等多久 `wait_ms`、分类 `class`；出错的原话不写，里面可能回显请求里的字。到点送回「到点了」，内核再交一次「请求模型」。
-7. **辅助请求**（`Aside { purpose, upto, request }`：回顾，施工 3-8 四补，`kernel/session.md`「回顾」；起标题，施工 3-8 五补，「起标题」）：提前压好，施工 6-11 上，`compaction.md` 第十五条）：交给同一个端口，名字是用途和它照到的那一条。回报另走一路（`Reports::aside`，送回的是 `AsideSent`、`AsideDelta`、`AsideEnded`，带着用途），和主请求的 `seen` 撞了也分得开：回合进行中的主请求多半就照到那一条。一种用途一次只有一个，它的叫停那一头 actor 拿着不用（内核不叫停辅助请求），actor 退出时放下，请求跟着停。记的几行和主请求的一样，前面带用途：交给端口之前 `recap request`、`title request`、`compaction request`（`seen` 是照到的那一条、端点、模型，没有 `changed`：它不和主请求比），说完了 `recap ended`、`recap failed`、`title ended`、`title failed`、`compaction ended`、`compaction failed`，格和第 3 条一样；提前压好的出错记 `WARN`（没人看得到它，到线时照当场压）。起标题两次都没起成就不再试，第二行 `title failed` 就是那一行。
+7. **辅助请求**（`Aside { purpose, upto, request }`：回顾，施工 3-8 四补，`kernel/session.md`「回顾」；起标题，施工 3-8 五补，「起标题」）：提前压好，施工 6-11 上，`compaction.md` 第十五条）：交给同一个端口，名字是用途和它照到的那一条。回报另走一路（`Reports::aside`，送回的是 `AsideSent`、`AsideDelta`、`AsideEnded`，带着用途），和主请求的 `seen` 撞了也分得开：回合进行中的主请求多半就照到那一条。一种用途一次只有一个，它的叫停那一头 actor 拿着不用（内核不叫停辅助请求），actor 退出时放下，请求跟着停。记的几行和主请求的一样，前面带用途：交给端口之前 `recap request`、`title request`、`compaction request`（`seen` 是照到的那一条、端点、模型，没有 `changed`：它不和主请求比），说完了 `recap ended`、`recap failed`、`title ended`、`title failed`、`compaction ended`、`compaction failed`，格和第 3 条一样；提前压好的出错记 `WARN`（没人看得到它，到线时照当场压）。起标题两次都没起成就不再试，第二行 `title failed` 就是那一行。**总时限**（施工 TT-3，2026-11-13 项目主人定，`actor/model/overdue.rs`）：只管起标题、回顾这类小请求，照用途的名单（`BOUNDED`：`title`、`recap`）；提前压的摘要不管（core1 同日定：大上下文、慢模型常超过 3 分钟，卡掉了回合反而多等），以后新加的辅助请求默认也不管，要管的写进名单。名单里的交给端口的那一刻起一个定时的任务，过了端口的 `aside_limit()`（出厂 `ASIDE_LIMIT`，180 秒，常量、不进配置；只有测试的剧本设短的）还在路上的，叫停端口（之后它什么都不再报）、照出错记那一行 `… failed`（`class` 是 `retryable`），送进内核 `AsideEnded`，`error` 是 `retryable`、原话「总超时：180 秒还没有说完」（同路由的总超时），没有用量；内核照辅助请求失败的那一条路了结。到时已经说完了、被同一种用途的下一次换掉了的（照交给端口的那一刻认），不理，也不算一次动静。主请求不归它管，照旧只有路由的空闲超时和它的十倍总时限（`models.md`「怎么走」第十一条第 5 条）。放在 actor 不放在路由：哪种端口都管得到（扩展驱动、测试的剧本），档位池里换人、退会话的模型也算在同一个时限里。
 8. **跟着端口的限额**（施工 8-9，`models.md`「怎么走」第五条第 7 条）：每次请求说完（主请求、辅助请求都算），在送进说完了之前，比端口的 `limits()` 和上一次交给内核的。变了的当场交 `Input::Limits`（不出动作），向内核要一份给头看的限额，连同端口的引用和模型写进和 `Handle` 共用的那一份（`Shown`，施工 8-10，`subscribe` 照它答）。限额里的模型变了、不是 `none` 的（轮换的池总是 `none`，不推），推一条瞬时的 `model.changed`：`by` 是内核，`turn`、`cause` 照内核这时的回合（`turn_cause()`），`ref` 照端口的 `reference()`，`endpoint`、`model` 是新的模型，`limits` 是刚要的那一份，`why` 是 `failover`。只换 key、模型没变的限额不变，不推。
 9. **替它看图**（`Describe { blob, request }`，施工 8-17，`kernel/session.md`「替它看图」，`models.md`「怎么走」第十三条第 4 条）：交给端口（`ModelPort::describe`），带上这一轮冻结的配置和一个 `Sight`（`blob` 和送回收件箱的那一头）；结果送回 `Back::Described`，写成 `Input::Described`。没成的记一行 `image not described`（`blob`、`why`），交内核的是没有。叫不停：会话停了，回来的没人收。路由那一头见第 8 条第 6 款。
 
@@ -393,6 +394,8 @@ actor 退出以后：等着回应的命令、要订阅的、要停下的，都�
 
 | 测试 | 守哪几条 |
 |---|---|
+| `crates/miyu-endpoint/tests/retitle_failed.rs`（施工 TT-3） | 「7. 请求模型」第 7 条的总时限：剧本设短的，起标题、回顾到时没说完的叫停端口、照出错交给内核（推失败、拒 `recap_failed`）；说完了的过了时限不当超时 |
+| `crates/miyu-session/tests/prepare.rs` 的 `a_prepared_summary_slower_than_the_aside_limit_still_lands`（施工 TT-3） | 同一条：提前压的摘要不在名单里，比总时限慢也照常说完、到线换上，不再请求 |
 | `crates/miyu-session/tests/route_vision.rs`、`vision_log.rs`（施工 8-17） | 替它看图：会话的模型看不了图，经一次性入口问 `models.vision`（指令、那一行、人这一轮说的那句、图的字节，不带工具），内核记一条 `image.described`，主请求里图的位置是带标签的转述、不发图；同一张图下一轮不再问；会话的模型看得了图的不问、照发原图；没配 `models.vision` 的照旧占位、主请求照发；没成的记一行 `image not described`（会话编号、图、为什么），成了的不另记、一次性入口那一行带会话编号 |
 | `crates/miyu-session/tests/watch.rs`（施工 C-6） | 被等的名单：订进来时已经空着不当场发、等它下一次忙完才发（2026-10-01 改）、起算时刻不晚于上一次忙完的时刻的照样当场发、正忙时订了忙完才发（编号、`by`、带的那一行）、同一个会话只记一个、子代理没报完不发、报完被叫醒的那一轮做完了才发；等的这一边见 `session/tools.md`「订、计时、再订」。真核心见 `crates/miyu-endpoint/tests/watch.rs`（被重启打断的不算空：停的时候不发，再起来做完才发） |
 | `crates/miyu-session/tests/workplace.rs`（施工 V-2 三补） | 照日志里最后一次记下的挑：挑法拿到的是记下的那一个、只挑一次，会话在挑定的目录里，加进来的目录照记下的 |

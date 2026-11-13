@@ -478,6 +478,7 @@
     "tool-results/uninstalled": "Uninstalled",
     "tool-results/timed-out": "Timed out ({seconds} s)",
     "tool-results/crashed": "Internal error, may be partly done",
+    "sessions/retitle-failed": "Failed to change the title",
     "permissions/forbidden": "Miyu's own data, off limits",
     "permissions/forbidden-kb": "a knowledge base document, use the knowledge base tools",
     "permissions/unresolvable": "can't tell where it points: {reason}",

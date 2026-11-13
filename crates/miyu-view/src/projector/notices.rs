@@ -5,7 +5,7 @@
 use miyu_kernel::event::{
     ChildReason, ChildReported, CompactTrigger, CompactionDone, CompactionPaused,
     CompactionProgress, ContextCompacted, Event, JobLines, JobReason, JobReported, ModelCalled,
-    ModelChanged, PeerIdle, PolicyChanged, SessionRecapped, Usage, WorkspaceChanged,
+    ModelChanged, PeerIdle, PolicyChanged, RetitleFailed, SessionRecapped, Usage, WorkspaceChanged,
 };
 use miyu_kernel::id::{JobId, Seq};
 use miyu_kernel::time::Timestamp;
@@ -111,6 +111,24 @@ impl Projector {
                 why: "failover".to_string(),
                 class,
             }),
+        );
+    }
+
+    /// 人要求的重起标题没起成（瞬时的，施工 TT-3）：只在视图流里有，字照连接的语言。
+    pub(super) fn retitle_failed(&mut self, at: Timestamp, failed: &RetitleFailed) {
+        let text = self
+            .texts
+            .local
+            .say(&failed.human)
+            .unwrap_or_else(|| failed.human.key.clone());
+        let id = self.fresh_transient();
+        self.notice(
+            id,
+            at,
+            Notice::RetitleFailed {
+                text,
+                error: failed.error.clone(),
+            },
         );
     }
 

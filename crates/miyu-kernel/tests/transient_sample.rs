@@ -20,13 +20,13 @@ use std::path::PathBuf;
 
 use miyu_kernel::accumulate::{Accumulator, Delta, Kind};
 use miyu_kernel::event::{
-    Body, ChangeWhy, CompactTrigger, CompactionDone, CompactionProgress, CompactionStarted,
-    EffortInUse, EffortSource, ErrorClass, Event, ModelChanged, ModelDelta, NestedStarted,
-    PackageStateChanged, Piece, Retry, State, Status, Todo, TodoStatus, TodosChanged, ToolProgress,
-    Transient, TransientBody, Usage,
+    Body, CallError, ChangeWhy, CompactTrigger, CompactionDone, CompactionProgress,
+    CompactionStarted, EffortInUse, EffortSource, ErrorClass, Event, ModelChanged, ModelDelta,
+    NestedStarted, PackageStateChanged, Piece, RetitleFailed, Retry, Said, State, Status, Todo,
+    TodoStatus, TodosChanged, ToolProgress, Transient, TransientBody, Usage,
 };
 use miyu_kernel::id::{CallId, CommandId, ModelName, NestedId, ProviderId, Seq, TurnId};
-use miyu_kernel::origin::{By, Model, Tool};
+use miyu_kernel::origin::{By, Model, Person, Tool};
 use miyu_kernel::raw::RawJson;
 use miyu_kernel::session::ContextLimits;
 use miyu_kernel::time::Timestamp;
@@ -474,4 +474,26 @@ fn the_nested_started_sample_is_written_exactly() {
         lines("transient/tool.nested_started.jsonl"),
         [started.to_line()]
     );
+}
+
+/// 人要求的重起标题到了总时限没说完（施工 TT-3）：不带回合、没有 `cause`，`by` 是要它的人，给人看的那一句照 `human.get`。
+#[test]
+fn the_retitle_failed_sample_is_written_exactly() {
+    let failed = Transient {
+        at: Timestamp::parse("2026-11-13T08:20:11.250Z").expect("样本的时刻合写法"),
+        turn: None,
+        by: By::Person(Person::default()),
+        cause: None,
+        body: TransientBody::RetitleFailed(RetitleFailed {
+            error: CallError {
+                class: ErrorClass::Retryable,
+                message: "总超时：180 秒还没有说完".to_string(),
+                status: None,
+                retry_after_ms: None,
+            },
+            human: Said::new("core/sessions/retitle-failed"),
+        }),
+    };
+    let sample = lines("transient/session.retitle_failed.jsonl");
+    assert_eq!(sample, [failed.to_line()]);
 }

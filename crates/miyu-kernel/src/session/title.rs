@@ -17,15 +17,24 @@
 //! - 人要的标题算人起的（施工 TT-2，2026-11-13 core1 定）：`session.meta_changed` 的 `by` 是要它的那个命令的 `by`，同
 //!   `set_meta`（会话列表照它算 `named`）；`model.called` 照旧是内核的。不带 `cause`：命令收下就回了，载入时照 `cause`
 //!   认回命令编号会附上这一条，活着时却没有，两边对不上。
+//! - 人要的没起成（施工 TT-3，2026-11-13 项目主人定）：超时、出错、取不出标题，标题不动，推一条 `session.retitle_failed`
+//!   给订阅着的头（`by` 是要它的人）。自动起的没起成照旧不吵人。辅助请求最多等多久归会话那一层（`miyu-session` 的
+//!   `port::ASIDE_LIMIT`），到时照出错送进来，这里不分。
 
 use super::Session;
 use super::action::{Action, Reason, accepted, rejected};
 use super::aside::{Aside, Finished};
 use crate::block::Block;
-use crate::event::{Body, CallError, Cost, Event, MetaChanged, Purpose, Usage};
+use crate::event::{
+    Body, CallError, Cost, Event, MetaChanged, Purpose, RetitleFailed, Said, Transient,
+    TransientBody, Usage,
+};
 use crate::id::{CommandId, Seq, TurnId};
 use crate::origin::By;
 use crate::time::Timestamp;
+
+/// 人要求的重起标题没起成时给人看的那一句（施工 TT-3）：字在 `core/human/<语言>.json` 的 `said` 下。
+const RETITLE_FAILED: &str = "core/sessions/retitle-failed";
 
 /// 起标题的账：从日志一条条算，活着时每追加一条记一次，载入时照日志再走一遍，算出来的一样。
 #[derive(Debug, Default)]
@@ -180,12 +189,18 @@ impl Session {
         let chars = self.policy.titles.map_or(0, |titles| titles.chars);
         // 人要求重起的那一次盖得掉动过的标题（施工 TT-1）；没起成的也放下，不留到下一轮。
         let asked = std::mem::take(&mut self.naming.asked);
-        if let Ok(text) = text
-            && (asked.is_some() || !self.naming.named)
-        {
-            events.push(self.titled(at, asked, shorten(&text, chars)));
-        }
-        vec![Action::Append(events)]
+        let failed = match (text, asked) {
+            (Ok(text), asked) if asked.is_some() || !self.naming.named => {
+                events.push(self.titled(at, asked, shorten(&text, chars)));
+                None
+            }
+            // 人要的没起成（施工 TT-3）：告诉头，标题不动。自动起的没起成不吵人。
+            (Err(error), Some(by)) => Some(retitle_failed(at, by, error)),
+            _ => None,
+        };
+        let mut actions = vec![Action::Append(events)];
+        actions.extend(failed.map(Action::PushTransient));
+        actions
     }
 
     /// 记下起好的标题：一条只写 `title` 的 `session.meta_changed`，不带回合编号、没有 `cause`。`asked` 是要它的人（施工
@@ -203,6 +218,21 @@ impl Session {
             None,
             Body::MetaChanged(changed),
         )
+    }
+}
+
+/// 人要求的重起标题没起成（施工 TT-3）：一条推给头的 `session.retitle_failed`，`by` 是要它的人，不属于哪一轮、没有 `cause`
+/// （命令收下就回过了）。给人看的那一句是 [`RETITLE_FAILED`]。
+fn retitle_failed(at: Timestamp, by: By, error: CallError) -> Transient {
+    Transient {
+        at,
+        turn: None,
+        by,
+        cause: None,
+        body: TransientBody::RetitleFailed(RetitleFailed {
+            error,
+            human: Said::new(RETITLE_FAILED),
+        }),
     }
 }
 

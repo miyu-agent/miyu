@@ -1142,7 +1142,7 @@
 4. 有一次起标题的请求在路上的（自动起的、上一次要的）：不再发，并进去，照样回 `{}`。
 5. 回合正在进行不碍事：照已经走完的几轮起，正在进行的这一轮不带、不打断。一轮都还没走完的（第一轮正在进行）：收下，等这一轮的 `turn.ended` 落了盘再起。
 6. 没东西可起：她一个带正文的回复都没有、这时也没有回合在进行，或者快照里没有起标题的字和数（以前造的、整理会话的）：`bad_params`，不带 `data`（内核的原因码是 `nothing_to_title`，端点换成它）。`session` 没写、写法不对：`bad_params`。先找会话，找不到的回的是找不到；没在跑的照「会话表」载入。
-7. 模型出错、回复里没有正文：标题不变，只有那一条出错的 `model.called`，不自己再试。要了以后、起好之前人又改了标题的：留人改的。
+7. 没起成：模型出错、过了辅助请求的总时限（180 秒，从发出去起算，`session/actor.md`「7. 请求模型」第 7 条，施工 TT-3）、回复里没有正文、要了工具（施工 TT-3）：标题不变，记那一条出错的 `model.called`，推给订阅着事件流的头一条瞬时的 `session.retitle_failed`（`by` 是要它的人，`body` 是 `error` 和给人看的那一句 `human`：`{"key": "core/sessions/retitle-failed"}`，`kernel/events.md`），视图流出一条只在视图流里有的旁白 `retitle_failed`（`text` 照连接的语言：「更改标题失败」，`view.md`）；不自己再试。要了以后、起好之前人又改了标题的：留人改的，什么都不推。自动起的没起成照旧什么都不推（2026-11-13 项目主人定）。
 8. 权限同 `session.set_meta`：扩展要 `sessions.drive`。封存了的会话照收。
 
 **`session.configure`**（施工 8-10，`models.md`「协议」「怎么走」第六条，`kernel/session.md`「换模型」；`effort` 施工 SM-1，设计 51）
@@ -1894,6 +1894,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/compact.rs` | 协议上手动压缩（施工 6-8）：回应是那一轮的开头、推送里压好了；要求原样到了摘要请求里；撤掉那一轮的回应里没有 `said`；有回合在进行、没有能压的两种拒绝，中文、英文；`instructions` 不是字符串的参数不对 |
 | `crates/miyu-endpoint/tests/recap.rs`（施工 3-8 四补） | 协议上要回顾：回应是那一句、照到的、不是交回的；推送里先有回顾的 `model.called`、`session.recapped`，都不带回合编号、`cause` 是这一条，再是回应，别的头也收到；请求是一条 user、没有 system 和工具面；没有新内容再要一次交回上一句、不请求；有回合在进行时照收、照到的是这一轮那句话；没有能回顾的、没写成的两种拒绝，中文、英文，没写成的不再来；会话编号不对、没写、不是字符串的参数不对，没有的会话找不到 |
 | `crates/miyu-endpoint/tests/retitle.rs`（施工 TT-1） | `session.retitle`：四轮的会话，模型收到的是同一份指令接最近三轮、没有第一轮（自动起的那一次照旧只有第一轮），推来 `model.called`（`purpose: "title"`）和 `by` 是人的 `session.meta_changed`，列表里算人起的，重启核心以后照样、再答完一轮不自动起（施工 TT-2）；人起过名的换掉；没说过话的、没写 `session` 的 `bad_params`；一次在路上时再要的只发一次；`titles: false` 的照样起 |
+| `crates/miyu-endpoint/tests/retitle_failed.rs`（施工 TT-3） | 辅助请求的总时限和人要的重起标题没起成：剧本设短的总时限，起标题一直不说完的到时叫停端口、推 `by` 是人的 `session.retitle_failed`（`retryable`、「总超时」、`human` 的编号），视图流出 `retitle_failed` 旁白（中文连接是「更改标题失败」），`model.called` 照出错记，标题不动；出错的也推，下一次起成了的不推、过了总时限也不当超时；自动起的超时了不推、下一轮照试；回顾到时拒 `recap_failed`；回复里要了工具、带着占位字的算没起成、推失败、标题不动 |
 | `crates/miyu-endpoint/tests/title.rs`（施工 3-8 五补） | 自动起标题：第一轮答完，订阅着的头收到起标题的 `model.called`（`purpose: "title"`）和 `session.meta_changed`，`by` 是内核、不带回合编号和 `cause`；请求是一条 user、没有 system 和工具面，只喂第一轮；`session.list` 带上标题，核心重启以后照样；第二轮不再起；人先起过名的不起 |
 | `crates/miyu-endpoint/tests/person_shell.rs`（施工 SH-1 上） | `session.send` 的 `shell`：真核心、真的基础系统，本人发的不问权限就跑、记 `shell.ran`、她的请求里是那条命令和输出；带 `from` 的 `shell_not_allowed`，带附件的 `bad_params`，空的 `empty_message`，工具目录里没有跑命令的工具的 `shell_unavailable`，都什么都不记；场所会话带不带 `as` 都 `shell_not_allowed`（`venues.rs`） |
 | `crates/miyu-endpoint/tests/commands.rs`（施工 O-6） | `command.run`：`/clear`、别名 `/reset`（开头空白、后面跟的字照认）清空并记 `command.ran`，回执是中文那一句；`/stop` 打断、排着的留在日志里不接着开、子代理停了，没有回合也照样记；认不出的、`/` 后面是空白的 `unknown_command`，不以 `/` 开头的、多写格的参数不对，都什么都不写；内核拒的照原因回；同一个编号再发、重启以后再发回应一样、只记一次；场所里主人、管理的人能用，别人 `command_not_allowed`，不带 `as` 的 `venue_session`，本机的会话带 `as` 参数不对；`session.interrupt` 收 `keep` |

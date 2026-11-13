@@ -6,6 +6,7 @@
 
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, PoisonError};
+use std::time::Duration;
 
 use miyu_drivers::DriverTexts;
 use miyu_kernel::accumulate::{Delta, Kind};
@@ -38,6 +39,13 @@ pub enum Play {
         /// 思考。
         thinking: &'static str,
         /// 回答。
+        text: &'static str,
+    },
+    /// 等 `ms` 毫秒才说 `text`、说完（施工 TT-3：比辅助请求的总时限慢的那一次）。用量同 [`Play::Says`]。
+    Late {
+        /// 等多久，毫秒。
+        ms: u64,
+        /// 说什么。
         text: &'static str,
     },
     /// 一口气推 `n` 段增量，每段一个字，再说完：好测读得慢的订阅者掉队。
@@ -110,6 +118,8 @@ pub struct Script {
     once: Option<Arc<Mutex<VecDeque<Once>>>>,
     /// 交给一次性入口的问，照先后。
     asked: Arc<Mutex<Vec<Ask>>>,
+    /// 辅助请求的总时限（施工 TT-3）：没设的照出厂的。
+    aside_limit: Option<Duration>,
 }
 
 /// 一次性入口的一个答案（[`Script::once`]）。
@@ -159,6 +169,7 @@ impl Script {
             cached: 40,
             once: None,
             asked: Arc::default(),
+            aside_limit: None,
         }
     }
 
@@ -188,6 +199,13 @@ impl Script {
     #[must_use]
     pub fn priced(mut self, tariff: Tariff) -> Script {
         self.tariff = Some(tariff);
+        self
+    }
+
+    /// 同一份剧本，辅助请求最多等 `limit`（施工 TT-3）：不用真等 180 秒。
+    #[must_use]
+    pub fn aside_limit(mut self, limit: Duration) -> Script {
+        self.aside_limit = Some(limit);
         self
     }
 
@@ -290,6 +308,10 @@ impl ModelPort for Script {
         *lock(&self.context) = context;
     }
 
+    fn aside_limit(&self) -> Duration {
+        self.aside_limit.unwrap_or(crate::port::ASIDE_LIMIT)
+    }
+
     fn call(
         &self,
         seen: Seq,
@@ -340,6 +362,10 @@ impl ModelPort for Script {
                         reports.delta(delta);
                     }
                     reports.ended(Some(usage), None, None, None);
+                }
+                Play::Late { ms, text } => {
+                    tokio::time::sleep(Duration::from_millis(ms)).await;
+                    says(reports, text, 1, usage);
                 }
                 Play::Floods(n) => says(reports, &"字".repeat(n), n, usage),
                 Play::SaysThenCalls { text, calls } => {

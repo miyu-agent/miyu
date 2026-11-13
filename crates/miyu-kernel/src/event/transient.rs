@@ -8,7 +8,7 @@
 use serde::{Serialize, Serializer};
 
 use crate::accumulate::Kind;
-use crate::event::{CompactTrigger, ErrorClass, Usage};
+use crate::event::{CallError, CompactTrigger, ErrorClass, Said, Usage};
 use crate::id::{CallId, CommandId, ModelName, ProviderId, Seq, TurnId};
 use crate::origin::By;
 use crate::session::ContextLimits;
@@ -56,6 +56,18 @@ pub enum TransientBody {
     NestedStarted(NestedStarted),
     /// `compactable.changed`：有没有能压的变了（施工 W-12 补，终端要的）。会话 actor 每落一批盘重算，变了推；内核不推。
     CompactableChanged(CompactableChanged),
+    /// `session.retitle_failed`：人要求的重起标题没起成（施工 TT-3，`docs/blueprint/kernel/session.md`「起标题」第 11 条）。
+    RetitleFailed(RetitleFailed),
+}
+
+/// `session.retitle_failed` 的 `body`（施工 TT-3）：人要求的重起标题（`session.retitle`）超时、出错、取不出标题，标题没变。
+/// 自动起的没起成不推。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct RetitleFailed {
+    /// 那一次请求的错，同那一条 `model.called` 的 `error`。
+    pub error: CallError,
+    /// 给人看的那一句：`core/sessions/retitle-failed`，头照 `human.get` 的 `said` 换成字。
+    pub human: Said,
 }
 
 /// `compactable.changed` 的 `body`（施工 W-12 补）：这一刻 `session.compact` 会不会回 `nothing_to_compact`，同会话状态的
@@ -279,6 +291,7 @@ impl TransientBody {
             TransientBody::TodosChanged(_) => "todos.changed",
             TransientBody::PackageStateChanged(_) => "package.state_changed",
             TransientBody::CompactableChanged(_) => "compactable.changed",
+            TransientBody::RetitleFailed(_) => "session.retitle_failed",
         }
     }
 }
@@ -335,6 +348,7 @@ impl Serialize for TransientBody {
             TransientBody::TodosChanged(changed) => changed.serialize(s),
             TransientBody::PackageStateChanged(changed) => changed.serialize(s),
             TransientBody::CompactableChanged(changed) => changed.serialize(s),
+            TransientBody::RetitleFailed(failed) => failed.serialize(s),
         }
     }
 }

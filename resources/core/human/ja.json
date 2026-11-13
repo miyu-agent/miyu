@@ -478,6 +478,7 @@
     "tool-results/uninstalled": "アンインストール済み",
     "tool-results/timed-out": "タイムアウト（{seconds} 秒）",
     "tool-results/crashed": "内部エラー。一部実行された可能性があります",
+    "sessions/retitle-failed": "タイトルの変更に失敗しました",
     "permissions/forbidden": "Miyu 自身のデータなので、誰も触れられません",
     "permissions/forbidden-kb": "ナレッジベースの文書なので、ナレッジベースのツールを使います",
     "permissions/unresolvable": "どこを指しているか判断できません：{reason}",

@@ -143,8 +143,10 @@ fn a_failed_recap_is_refused_and_not_tried_again() {
         Line::fails(ErrorClass::Retryable, "503"),
         Line::says("").thinking("只想不说"),
         Line::calls("", &[("read", "{}")]),
+        // 要了工具、网关把它换成一句占位的字一起交回来的（施工 TT-3）：那句字不是回顾。
+        Line::calls(PLACEHOLDER, &[("read", "{}")]),
     ]);
-    for _ in 0..3 {
+    for _ in 0..4 {
         let asked = stage.recap();
         assert_eq!(
             stage.outcome(&asked),
@@ -152,10 +154,10 @@ fn a_failed_recap_is_refused_and_not_tried_again() {
                 reason: Reason::RecapFailed,
                 about: Vec::new(),
             }),
-            "出错、没有正文都没写成，不再来"
+            "出错、没有正文、要了工具都没写成，不再来"
         );
     }
-    assert_eq!(stage.recaps().len(), 3, "一次一次，不重试");
+    assert_eq!(stage.recaps().len(), 4, "一次一次，不重试");
     assert!(recapped(&stage).is_empty());
     let classes: Vec<Option<ErrorClass>> = stage.model_calls()[1..]
         .iter()
@@ -166,10 +168,14 @@ fn a_failed_recap_is_refused_and_not_tried_again() {
         [
             Some(ErrorClass::Retryable),
             Some(ErrorClass::EmptyReply),
+            Some(ErrorClass::EmptyReply),
             Some(ErrorClass::EmptyReply)
         ]
     );
 }
+
+/// 请求里没有工具、模型要了一件时，有的网关交回来的那句占位的字（施工 TT-3，主人本机 2026-11-13 起标题时见到的）。
+pub(super) const PLACEHOLDER: &str = "(The model asked for a tool this session doesn't have)";
 
 #[test]
 fn asked_again_while_one_is_on_its_way_both_get_the_same() {

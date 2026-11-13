@@ -76,7 +76,7 @@
 | 压缩那一条 | `c<序号>`：替代到的那一条（`compaction.progress` 的 `seen`、摘要请求的 `seen`、`context.compacted` 的 `upto` 是同一个），流式的进度、摘要请求的记录、落了盘的检查点改的是同一条 |
 | 别的（一轮的收尾、旁白） | `e<序号>`：引出它的那一条事件 |
 | 她发出去的图（`media`） | `s<序号>.<第几张>`：序号是那条 `tool.result` 的（施工 X-19） |
-| 只在视图流里有的旁白（瞬时事件引出的：出错换了模型） | `x<序号>.<第几个>`：排在序号是它的那一条后面的第几个瞬时旁白。不进日志，翻页、重新订阅都没有它 |
+| 只在视图流里有的旁白（瞬时事件引出的：出错换了模型、人要的重起标题没起成） | `x<序号>.<第几个>`：排在序号是它的那一条后面的第几个瞬时旁白。不进日志，翻页、重新订阅都没有它 |
 
 **`message.assistant` 多一格 `indexes`**：每一块在流里是第几块（`model.delta` 的 `index`），照 `blocks` 的先后。空块、打断时丢掉的半截调用不进回复（`kernel/session.md`「收回复」），后面的块的位置和块号就错开了；只有错开时才写，和位置一样的不写，以前的日志没有这一格、照位置算。
 
@@ -111,6 +111,7 @@
 | `model` | 换了模型：`endpoint`、`model`；`from`（换之前的 `{endpoint, model}`）；`why`：`failover`（出错换了，瞬时的 `model.changed`，只在视图流里有，带换之前最近一次出错的 `class`）、`replaced`（钉着的没了、退回默认的，照 `session.policy_changed` 的 `replaced`）。回合开始重新解析的（`why: turn`）不出旁白 |
 | `workspace` | 换了工作区：`cwd`、`dirs`，原样（照 `session.workspace_changed`，家目录写 `~` 由头做）。「她在哪干活」是头拿自己的目录比的，留在头里 |
 | `peer` | 等的会话空下来了、等不到了（`peer.idle`）：`session`、`reason`（`idle`、`expired`、`gone`）、`status`。终端现在不画，网页画 |
+| `retitle_failed` | 人要求的重起标题没起成（瞬时的 `session.retitle_failed`，施工 TT-3，`kernel/session.md`「起标题」第 9 条最后一款）：`text` 照连接的语言写好的那一句（照事件的 `human`，`core/sessions/retitle-failed`：「更改标题失败」「Failed to change the title」「タイトルの変更に失敗しました」，字没有的照编号原样）、`error` 那一次请求的错。只在视图流里有；导出不写（`projector/notices.rs` 的 `retitle_failed`） |
 
 **标题那一句**（`tool` 的 `title`）：`{"name", "object", "said"}`，照连接的语言。派子代理的 `object` 是描述（`description`），任务编号在 `job`，两个头都写成「任务编号 · 描述」，还没派出去的只有描述；点开的交代是 `args` 里的 `prompt`。留言（`send_message`）的 `object` 照 `to`：子代理写任务编号（标题另在 `to_title`），父会话写「父会话」，别的会话写「会话 短编号」；送到了不写 `said`（和对象重了）。`name` 是显示名：先照结果里记下的 `display_name`（施工 9-8 六补：脚本、MCP 的、扩展的工具派出去那一刻的，照连接的语言挑，这种语言没写的照英文、中文、日文的先后；卸了包、关了服务历史照旧），没有的照 `human` 的 `tools.<名字>.name`（核心自带的），再没有的照这一刻工具目录里那件工具的显示名（还在跑的、内核替它写的拒绝和取消、以前的日志都走这一条），都没有的照工具名；`object` 是对象（`subject` 那个参数的值，`subject` 照 `human` 的 `tools.<名字>.subject`，没有的照这一刻工具目录里那件工具自己说的：扩展登记时写的、MCP 和脚本带的（施工 9-8 十一补，网页报的：原来只照 `human` 的，扩展的工具只有名字没有对象）；路径在家目录里的写 `~/…`，命令写短标题 `description`，参数带会话编号的另给 `session` 短编号）；`said` 是结果那一句（`tool.result` 的 `human` 换成字，换不成的不写）。被拒的（`denied`）不分工具都写（施工 HK-1补，网页实测 HK-1 时 core1 报的）：守卫拒的照 `core/guard/…`（「acme-guard 拦下了：理由」），权限策略拒的照 `core/permissions/…`，只读时内核拦下的、人拒的照 `core/tool-results/…`；不然写入、编辑、命令被拒了，人只能点开看给模型的英文那一句。被拒的结果没带 `human` 的照旧不写；命令、编辑出错的照旧不写（有预览、加减的行数）。`via` 是经谁做的（施工 N-2 再补，项目主人 2026-10-19 定：网络搜索的来源挑到名字后面）：结果的 `human` 带 `via` 这一格的照它给，头写成「网络搜索（Exa）」，没带的不写。准备中的 `name` 是「准备执行命令」这种。
 

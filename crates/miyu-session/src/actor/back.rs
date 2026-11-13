@@ -53,6 +53,16 @@ impl Actor {
         if matches!(back, Back::Extracted) {
             return None;
         }
+        // 辅助请求到了总时限（施工 TT-3，`model/overdue.rs`）：已经说完了的不进内核，也不算一次动静。
+        if let Back::AsideOverdue {
+            purpose,
+            upto,
+            asked,
+        } = back
+        {
+            let at = self.clock.now();
+            return self.aside_overdue(at, purpose, upto, asked);
+        }
         self.quiet = std::time::Instant::now();
         let at = self.clock.now();
         Some(match back {
@@ -107,6 +117,8 @@ impl Actor {
                 upto,
                 report,
             } => self.aside_back(at, purpose, upto, report),
+            // 上面已经收了。
+            Back::AsideOverdue { .. } => return None,
             // 替它看图回来了（施工 8-17）：没成的记一行，这张图这一轮写占位。
             Back::Described { blob, seen } => {
                 let seen = seen

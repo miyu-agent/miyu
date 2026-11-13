@@ -65,7 +65,7 @@ pub use tool::{ApprovalDecided, ApprovalRequested, Decision, Said, Sent, ToolRes
 pub use transient::{
     ChangeWhy, CompactableChanged, CompactionDone, CompactionProgress, CompactionStarted,
     EffortInUse, EffortSource, ModelChanged, ModelDelta, NestedStarted, PackageStateChanged, Piece,
-    Retry, Status, TodosChanged, ToolProgress, Transient, TransientBody,
+    RetitleFailed, Retry, Status, TodosChanged, ToolProgress, Transient, TransientBody,
 };
 pub use turn::{EndReason, TurnEnded, TurnJoined, TurnReverted, TurnStarted, TurnUnreverted};
 pub use venue::{
