@@ -43,6 +43,7 @@
 name = "开发"                   # 一句字（施工 P-3 补）；以前的语言表照样认
 summary = "只开写代码必需的"
 unlisted = "off"               # 没列在 [software] 里的软件开不开：on、off
+hidden = true                  # 不列进「新建会话选哪个预设」：true、false（施工 LF-5 上）
 
 [features]                     # 功能的编号 = 开不开（施工 F-3 上，设计 30 第三节）
 commands = false
@@ -67,6 +68,7 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 5. `[tools]` 的键是工具名：字母、数字、`-`、`_`，最多 64 个。单件打开某个包里的一件先不做（走查 C1），写 `true` 报错。
 6. 权限级别、压缩模板、强调色这些配置值随 P-2（下）（D1、C3）。
 7. `[limits]`（施工 AE-1，2026-10-30 项目主人定）只有 `unattended_steps`：没人看着时一个回合最多请求几次模型，正整数（0、负数、小数、字报 `bad_limit`，别的键报 `unknown_key`，写明第几行）。上一层写了的盖住下面的；几层都没写的照出厂的 500。管没人看着的主会话的每一轮、有人看着的会话里不是人开的回合（定时任务、长期目标续轮、重启接着干、回报叫醒……），回报叫醒的连着几轮合起来也照它（审计 R3E-2，`policy.md`「步数上限」第 8 条）；有人看着的会话里人开的回合不限，子代理照自己的出厂数（800、fork 500），都不看它（`policy.md`「步数上限」）。写了才进叠好的文件的指纹，没写的指纹和以前一字不差：以前造的快照照旧对得上；改了它，开着的会话下一个回合换上新的数（下面「改了文件」）。出厂的四份不写它。
+8. `hidden`（施工 LF-5 上，设计 `70-推演人生.md` 第三节第 7 条）：只收 `true`、`false`，别的（字、数……）报 `not_bool`，写明第几行。上一层写了的盖住下面的（同 `icon`），几层都没写的是 `false`。是 `true` 的，头在「新建会话选哪个预设」里不列，预设管理页照列、照改；核心不拦拿它开会话，`preset.list` 照旧列出它、只带上这一格（不列是头的事）。它不影响会话：不进叠好的文件的指纹（`PresetFile::digest`）、不进快照，改了它开着的会话不换快照、不断缓存（同 `icon`；以前造的快照照旧对得上）。出厂的四份不写它。
 
 **出厂的三个**（Y6、Y7，`10-自带软件.md` 第四节；极简开发是施工 P-16 上加的）：
 
@@ -156,14 +158,15 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
    - 记忆不跟着换：开不开记忆在开会话时定（L3），新预设里 `memory` 改了也照开会话时的。
    - 角色扮演、装了没开的那一行照新的重新算。
    - 找不着、写错了的照旧用原来的，记一行运行日志；P-2（中）造的快照没有指纹，不换。撤掉换快照那一轮不换回去。
-7. **`preset.list`**：几层里所有的编号，照编号排，一个一个找；名字、说明照这个连接的语言挑（挑法同 `persona.list`）；写错了的只带 `problem`（照这个连接的语言说）和知道第几行的 `line`（施工 P-3 再补）。读得出的带 `tokens`（施工 DM-4，2026-11-09 发版前检查第 4 条：新建会话时头在右下角写选的预设占多少）：照不写会话、无人格的 `session.context` 那一份备、估，只备不造；数的是 system 里人设、场所说明、群聊格式以外的几块，加上工具的说明和参数格式，即各块估了加起来（同那一份的 `estimated_total`，不照整份估摊）。每次列都现算、不存：release 下一个预设 1～2 ms（2026-11-09 量），存了要管配置、装的包、工具架子换代以后作废。备不出来的不带。
+7. **`preset.list`**：几层里所有的编号，照编号排，一个一个找；名字、说明照这个连接的语言挑（挑法同 `persona.list`）；写错了的只带 `problem`（照这个连接的语言说）和知道第几行的 `line`（施工 P-3 再补）。读得出的带 `hidden`（施工 LF-5 上，「格式」第 8 条）：叠好以后的，布尔，几层都没写的是 `false`；是 `true` 的照旧列出来，不列是头的事。读得出的带 `tokens`（施工 DM-4，2026-11-09 发版前检查第 4 条：新建会话时头在右下角写选的预设占多少）：照不写会话、无人格的 `session.context` 那一份备、估，只备不造；数的是 system 里人设、场所说明、群聊格式以外的几块，加上工具的说明和参数格式，即各块估了加起来（同那一份的 `estimated_total`，不照整份估摊）。每次列都现算、不存：release 下一个预设 1～2 ms（2026-11-09 量），存了要管配置、装的包、工具架子换代以后作废。备不出来的不带。
    - 预览只备不造（施工 DM-4 顺手修）：`session.tools`、`session.context` 不写会话的、`preset.list` 备的新会话照这个会话自己的默认工作区写工作目录、不建。原来照 `workspace/` 本身挑、建好，每预览一次在 `workspace/` 下留一个空目录（主人的数据根里一天攒了 50 个）。
-8. **`preset.get {preset}`**：叠好的各格（施工 P-3 补：只给人要看的）；`sections` 是分好组的同一些功能（施工 FG-1，上面「功能分组」）；名字、说明一句字；`unlisted` 是叠好以后的（几层都没写的是 `on`）；`unattended_steps` 是叠好以后 `[limits]` 写的数，几层都没写的是 `null`（照出厂的 500，施工 AE-1）；`features` 是一个个功能（施工 F-3 下，原来的 `software`、`tools` 换成它）：装了的照清单读的先后，各带开不开和归它的工具（每件的显示名、开不开）；接着是登记上的脚本，一个脚本一个功能 `script-<工具名>`（施工 X-12 中）：名字、说明照脚本开头给人看的几格（`显示名称`、`Display name`、`描述`）挑这个连接的语言，没写名字的照工具名，`tools` 是它那一件；再接着是用得上的技能，一个技能一个功能 `skill-<名字>`（施工 X-11 上，`skills.md`）：名字、说明照技能写在 `metadata` 里给人看的 `display_name`、`summary`，没写名字的照技能的名字，`tools` 是空的；再接着是用得上的命令模板，一条一个功能 `command-<名字>`（施工 X-14 上，`slash.md`「找、盖住、开关」第 3 条）：名字是 `/<名字>`，说明照模板的、照连接的语言挑，`tools` 是空的；写了没装的接在后面（`installed: false`，界面写「没安装」，16 第五节）；每个功能带 `by`：`preset`（预设里写了）、`global`（照全局开关）、`default`（都没写，照 `unlisted`）（施工 X-27），格子见 `protocol.md`「`preset.get`」；`remove` 是删了会怎样（`restore`、`delete`、`null`）。来自哪几层不给。头照它一个功能一个开关画，展开能逐件关（2026-10-09 项目主人定：一个开关下面还能逐件关工具）。
+8. **`preset.get {preset}`**：叠好的各格（施工 P-3 补：只给人要看的）；`sections` 是分好组的同一些功能（施工 FG-1，上面「功能分组」）；名字、说明一句字；`unlisted` 是叠好以后的（几层都没写的是 `on`）；`unattended_steps` 是叠好以后 `[limits]` 写的数，几层都没写的是 `null`（照出厂的 500，施工 AE-1）；`hidden` 同 `preset.list`（施工 LF-5 上）；`features` 是一个个功能（施工 F-3 下，原来的 `software`、`tools` 换成它）：装了的照清单读的先后，各带开不开和归它的工具（每件的显示名、开不开）；接着是登记上的脚本，一个脚本一个功能 `script-<工具名>`（施工 X-12 中）：名字、说明照脚本开头给人看的几格（`显示名称`、`Display name`、`描述`）挑这个连接的语言，没写名字的照工具名，`tools` 是它那一件；再接着是用得上的技能，一个技能一个功能 `skill-<名字>`（施工 X-11 上，`skills.md`）：名字、说明照技能写在 `metadata` 里给人看的 `display_name`、`summary`，没写名字的照技能的名字，`tools` 是空的；再接着是用得上的命令模板，一条一个功能 `command-<名字>`（施工 X-14 上，`slash.md`「找、盖住、开关」第 3 条）：名字是 `/<名字>`，说明照模板的、照连接的语言挑，`tools` 是空的；写了没装的接在后面（`installed: false`，界面写「没安装」，16 第五节）；每个功能带 `by`：`preset`（预设里写了）、`global`（照全局开关）、`default`（都没写，照 `unlisted`）（施工 X-27），格子见 `protocol.md`「`preset.get`」；`remove` 是删了会怎样（`restore`、`delete`、`null`）。来自哪几层不给。头照它一个功能一个开关画，展开能逐件关（2026-10-09 项目主人定：一个开关下面还能逐件关工具）。
 9. **`miyu check`**（`cli/check.md`）：每一层里每一份预设各查各的，上面一层盖住了照样报，种类 `preset`；给人看的那一句照 `preset-problems/<code>`。写了文件的，某一层 `presets/` 下的 `<编号>.toml` 认作预设（两边换成真的路径比），还没有的报读不了。
 
 ### 改（施工 P-3 中）
 
 - `preset.set {"preset", "changes"}`、`preset.delete {"preset"}`（`protocol.md`）：只写你那一层（数据根的 `root/presets/`）的 `<编号>.toml`。不写编号的是新建，编号由核心起 `preset-<n>`（施工 P-3 补，2026-10-08 项目主人定：新建不填编号；新建的什么开关都不写就是全开），改出厂的、包带的就是建同名覆盖、只写改了的项（16 第四节 Y3）。删掉你那一层，下面几层还有的回到它们的样子。
+- 键照文件写：`preset.hidden`（施工 LF-5 上）同别的格，写 `true`、`false`，`unset` 去掉你那一层的这一格、回到下面那一层的（都没写的是 `false`）；写成别的同文件里写错，`preset_invalid`。
 - 一项项在原来的字上改（`miyu_config::edit::apply`），注释、顺序照原样，P-3 上写进去的 `[preset] base` 顺手去掉（施工 P-3 再补：读的时候认出来当没写）；新开的一组在文件末尾另起一张表（`[preset.name]`）。`expect` 照 `miyu_config::plain::json_at` 读的你那一层现在的值比。
 - 写之前查：改完的一份照规矩读一遍，再照它叠一遍（`Presets::find_with`：你那一层照改完的字算，不读盘），写错的整条不收，拒绝里带照连接语言的一句（`data.message`，施工 P-3 补）。
 - 写盘照配置文件的规矩（`miyu_store::config_file`）：顺着链接写、先写临时文件再替换、替换之前再读一次本体，撞上手改的从头再来，三次还不行的 `preset_conflict`。写成了记一行运行日志 `INFO preset saved`，删了 `INFO preset deleted`；不进配置的留痕日志。
@@ -186,7 +189,7 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 | `unknown_table`、`not_a_table`、`unknown_key` | `[preset]`、`[features]`、`[software]`、`[tools]`、`[limits]` 以外的表；这几样不是表；`[preset]`、`[limits]` 里别的键 |
 | `not_phrases`、`unknown_language`、`empty_phrase` | 「语言到一句话」那一格写错 |
 | `bad_unlisted` | `unlisted` 不是 `on`、`off`（`bad_persona` 随 `default_persona` 施工 P-4 上撤了） |
-| `bad_feature`、`bad_software`、`not_bool` | `[features]` 的键不合功能编号的写法（施工 F-3 上）；`[software]` 的键不合包编号的写法；值不是开关 |
+| `bad_feature`、`bad_software`、`not_bool` | `[features]` 的键不合功能编号的写法（施工 F-3 上）；`[software]` 的键不合包编号的写法；值不是开关（`[preset] hidden` 不是开关的也是 `not_bool`，施工 LF-5 上） |
 | `bad_tool`、`not_false` | `[tools]` 的键不是工具名的写法；值不是 `false` |
 | `bad_limit` | `[limits] unattended_steps` 不是正整数（施工 AE-1） |
 
@@ -195,6 +198,7 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 | 测试 | 守什么 |
 |---|---|
 | `crates/miyu-policy/src/preset/tests.rs` 的 `the_icon_is_read_layered_and_left_out_of_the_digest`、`crates/miyu-endpoint/tests/persona_avatar.rs` 的 `presets_carry_their_icons_and_one_can_be_changed`（施工 P-5） | 图标的读法、层叠、不进指纹、写错报错；列出来、改、回到出厂的 |
+| `crates/miyu-policy/src/preset/tests/hidden.rs`、`crates/miyu-endpoint/tests/preset_hidden.rs`（施工 LF-5 上） | `hidden` 读得出 `true`、`false`，没写的是 `false`，写成字、数的报 `not_bool` 带行号；上一层的盖下面的；不进指纹、快照；`preset.list`、`preset.get` 带它，出厂四个是 `false`，`preset.set` 能写能去掉，带它的照旧能开会话 |
 | `crates/miyu-policy/src/preset/tests.rs` | 每一格读对；空文件什么都没有、`unlisted` 照 `on`；逐格叠；每一种写错报对代码和行；工具名的写法；以前撤掉的 `base`、`default_persona` 是不认识的键（施工 AUD-3） |
 | `crates/miyu-store/src/presets/tests.rs` | 三层逐格叠；包那一层在出厂和你的中间、一个编号只认一份（施工 P-11 上）；一层也行、空文件也算；没有的、编号不合写法的、写错的写明哪一层；编号照文件名、不重复、照编号排；`check` 每一层各查、写了文件的认得出；出厂两份读得出、零问题、三种语言齐；每一种代码三种语言都有给人看的一句 |
 | `crates/miyu-store/src/index/tests.rs` | 索引里存得下、读得回人格和预设 |

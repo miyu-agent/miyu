@@ -176,7 +176,8 @@ fn listed_problem(id: &str, error: &PresetError, words: Option<&Human>) -> Value
 }
 
 /// `preset.list`：几层里所有的预设，照编号排。每个带名字、说明（照这个连接的语言挑）；写错了的带 `problem`（照这个连接的
-/// 语言说，知道第几行的带 `line`，施工 P-3 再补）、不带名字和说明。来自哪几层不往外给（施工 P-3 补）。读得出的带 `tokens`
+/// 语言说，知道第几行的带 `line`，施工 P-3 再补）、不带名字和说明。读得出的带 `hidden`（施工 LF-5 上：叠好以后的，几层都没写的是
+/// 假；照旧列出来，不列是头的事）。来自哪几层不往外给（施工 P-3 补）。读得出的带 `tokens`
 /// （施工 DM-4，[`tokens`]），备不出来的不带。
 pub(crate) async fn list(core: &Arc<Core>, peer: Peer) -> Result<Value, Refusal> {
     let said = words(core, peer.language).ok();
@@ -202,6 +203,7 @@ pub(crate) async fn list(core: &Arc<Core>, peer: Peer) -> Result<Value, Refusal>
                     "name": label(found.file.name.as_ref(), peer.language),
                     "summary": label(found.file.summary.as_ref(), peer.language),
                     "icon": found.file.icon,
+                    "hidden": found.file.hidden(),
                 });
                 if let Some(tokens) = tokens::of(core, peer, &id).await {
                     item["tokens"] = json!(tokens);
@@ -245,7 +247,7 @@ pub(crate) struct GetParams {
 }
 
 /// `preset.get`：叠好的样子（施工 P-3 补：只给人要看的）。名字、说明照这个连接的语言挑；`unlisted` 是叠好以后的（几层都没写的
-/// 是 `on`）；`unattended_steps` 是叠好以后 `[limits]` 写的数，几层都没写的是 `null`（照出厂的 500，施工 AE-1）；`features` 是一个个功能，各带下面的工具（施工 F-3 下，`features.rs`）；删了会怎样（`remove`，同人格）。来自哪几层
+/// 是 `on`）；`hidden` 同 `preset.list`（施工 LF-5 上）；`unattended_steps` 是叠好以后 `[limits]` 写的数，几层都没写的是 `null`（照出厂的 500，施工 AE-1）；`features` 是一个个功能，各带下面的工具（施工 F-3 下，`features.rs`）；删了会怎样（`remove`，同人格）。来自哪几层
 /// 不往外给。
 pub(crate) async fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Value, Refusal> {
     let said = words(core, peer.language).ok();
@@ -293,6 +295,7 @@ fn describe(core: &Core, found: &Found, language: &str, carried: &Carried) -> Va
         "name": label(found.file.name.as_ref(), language),
         "summary": label(found.file.summary.as_ref(), language),
         "icon": found.file.icon,
+        "hidden": found.file.hidden(),
         "unlisted": found.file.unlisted().as_str(),
         "unattended_steps": found.file.unattended_steps,
         "features": features,

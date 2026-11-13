@@ -46,7 +46,7 @@ pub enum Code {
     BadUnlisted,
     /// `[software]` 的键不是合写法的软件包编号。
     BadSoftware,
-    /// `[features]`、`[software]` 的值不是开关。
+    /// `[features]`、`[software]` 的值、`[preset] hidden`（施工 LF-5 上）不是开关。
     NotBool,
     /// `[tools]` 的键不是工具名的写法。
     BadTool,
@@ -229,6 +229,16 @@ impl Reader<'_> {
                                 )
                             })?,
                     );
+                }
+                "hidden" => {
+                    file.hidden = Some(item.as_bool().ok_or_else(|| {
+                        self.problem(
+                            item,
+                            Code::NotBool,
+                            "preset.hidden",
+                            "preset.hidden must be true or false".to_string(),
+                        )
+                    })?);
                 }
                 "unlisted" => {
                     file.unlisted = Some(match item.as_str() {

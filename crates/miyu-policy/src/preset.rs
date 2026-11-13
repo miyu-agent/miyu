@@ -69,6 +69,9 @@ pub struct PresetFile {
     pub unattended_steps: Option<u32>,
     /// 图标（施工 P-5）：Lucide 的名字，只查过写法。界面上的事，不进 [`PresetFile::digest`]。
     pub icon: Option<String>,
+    /// 不列进「新建会话选哪个预设」（施工 LF-5 上，`presets.md`「格式」第 8 条）：几层都没写的是假（[`PresetFile::hidden()`]）。
+    /// 不列是头的事，核心只带出去；和 `icon` 一样是界面上的事，不进 [`PresetFile::digest`]，改了开着的会话不换快照。
+    pub hidden: Option<bool>,
     /// 这个会话里扣下的包（施工 X-25）：场所显示不了图片，要图的包整包当没开。不是文件里写的：会话照场所算好放进来
     /// （[`Chosen::situated`]），不进 [`PresetFile::digest`]、不叠层。
     pub withheld: BTreeSet<String>,
@@ -101,6 +104,7 @@ impl PresetFile {
         lower.name = self.name.or(lower.name);
         lower.summary = self.summary.or(lower.summary);
         lower.icon = self.icon.or(lower.icon);
+        lower.hidden = self.hidden.or(lower.hidden);
         lower.unlisted = self.unlisted.or(lower.unlisted);
         lower.features.extend(self.features);
         lower.software.extend(self.software);
@@ -115,6 +119,11 @@ impl PresetFile {
             self.withheld = features.image_packages().clone();
         }
         self.own = features.connected_to(venue);
+    }
+
+    /// 不列进「新建会话选哪个预设」（`hidden` 那一格）：几层都没写的是假。
+    pub fn hidden(&self) -> bool {
+        self.hidden.unwrap_or(false)
     }
 
     /// 没列出来的软件开不开：几层都没写的是开。功能全开是默认，`[tools]` 里只关一两件的写法也是建在「其余都开」上的。

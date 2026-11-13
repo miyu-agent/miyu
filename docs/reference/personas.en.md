@@ -96,13 +96,13 @@ Editors edit the text and send `version` back as `expect` in `persona.set`.
 
 ## `preset.list`, `preset.get`
 
-**`preset.list`**: no params. Response `{"presets": [...]}`, by id: `preset`, `icon` (a Lucide icon name, `null` when none), `name`, `summary`, `tokens` (how many tokens the system prompt and tool definitions take in a new session opened with it, persona not counted, estimated locally; absent when it cannot be worked out). Broken ones have only `preset`, `problem`, `line`. The shipped "Nothing" preset (`none`, step P-17) is an ordinary preset with every switch off, and it can be edited. The old fixed last item, no tools (`preset: null`), is no longer listed; `preset: null` when opening or switching still works as the old way to say it.
+**`preset.list`**: no params. Response `{"presets": [...]}`, by id: `preset`, `icon` (a Lucide icon name, `null` when none), `hidden` (boolean: when `true`, leave it out of the list for picking a preset for a new session, but keep it on the preset management page; `false` when not written. The core still lists it and still opens sessions with it; hiding it is up to the client), `name`, `summary`, `tokens` (how many tokens the system prompt and tool definitions take in a new session opened with it, persona not counted, estimated locally; absent when it cannot be worked out). Broken ones have only `preset`, `problem`, `line`. The shipped "Nothing" preset (`none`, step P-17) is an ordinary preset with every switch off, and it can be edited. The old fixed last item, no tools (`preset: null`), is no longer listed; `preset: null` when opening or switching still works as the old way to say it.
 
 **`preset.get`**: param `preset`. Response:
 
 | Name | Notes |
 |---|---|
-| `preset`, `name`, `summary`, `icon` | As above |
+| `preset`, `name`, `summary`, `icon`, `hidden` | As above |
 | `unlisted` | `on` or `off` after stacking: whether features it doesn't list are on |
 | `unattended_steps` | The number `[limits]` gives after stacking: at most how many model requests one turn makes when nobody is watching; `null` when no layer gives one, meaning the built-in 500 |
 | `features` | Each feature: `{"id", "name", "summary", "package", "on", "by", "installed", "tools"}`; `package` is the package it belongs to, for grouping; look its name up in [`package.list`](packages.en.md) (your own scripts, MCP servers and command templates say `~home`; skills outside packages and uninstalled ones have none); `by` says who decided `on`: `preset` (the preset says so), `global` (the preset says nothing and the global switch of a skill, script or MCP server does, see [`feature.set`](packages.en.md#featureset); only in presets whose `unlisted` is `on`), `default` (follows `unlisted`: everything a preset with `unlisted` `off` leaves out, even when its global switch is on); `tools` are its tools, `{"name", "label", "on"}`; `label` is the name for people (an MCP server's `title` when it gives one, otherwise the tool name without `mcp__<server>__`). Ones it names that aren't installed come last with `installed: false`. For a package that connects a platform (its manifest has `[connection]`), only what local sessions can get is listed: a feature with no tool whose `venues` include `local` is left out, and a listed feature shows only its tools with `local`; the same goes for `sections` |
@@ -121,7 +121,7 @@ Editors edit the text and send `version` back as `expect` in `persona.set`.
 |---|---|---|
 | `preset` | string | Id; omitted creates a new one, and the core picks `preset-<n>` |
 | `new` | boolean | Create with the ID you wrote (needs `preset`): an ID that already exists (built-in, from a package or yours) is refused with `preset_exists` instead of editing that one |
-| `changes` | array, required, not empty | Each `{"key", "value" | "unset": true, "expect"?}`; keys are `preset.name`, `preset.summary`, `preset.unlisted`, `features.<feature>`, `tools.<tool>`, `limits.unattended_steps` (a positive whole number) |
+| `changes` | array, required, not empty | Each `{"key", "value" | "unset": true, "expect"?}`; keys are `preset.name`, `preset.summary`, `preset.unlisted`, `preset.hidden` (`true` or `false`; `unset` goes back to the layer below, `false` when none writes it), `features.<feature>`, `tools.<tool>`, `limits.unattended_steps` (a positive whole number) |
 
 **Response**: as `preset.get`. An empty string as the summary means "no summary" (covering the built-in one); `unset` goes back to the built-in one.
 

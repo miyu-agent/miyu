@@ -1522,6 +1522,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sPF2"><span class="n">PF-2</span>查清核心晚知道发完、收完<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sPF3"><span class="n">PF-3</span>回合开始的挂接点分段计时<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF1"><span class="n">LF-1</span>定时表多一种「人生」循环<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sLF5a"><span class="n">LF-5 上</span>预设多认 hidden<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -58660,6 +58661,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LF-1-定时表多一种人生.md</code>；设计 <code>70-推演人生.md</code>；蓝图 <code>schedules.md</code>、<code>kernel/ids.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sLF5a" aria-labelledby="h-sLF5a">
+  <div class="sheet-head"><h2 id="h-sLF5a"><span class="no">LF-5 上</span>预设多认 hidden</h2><span class="pill done">做完</span></div>
+  <p class="purpose">出厂要带一个只给人生会话用的预设「推演人生」（设计 70），它不该每次新建会话都露在选择里。预设文件多认一个通用的键 <code>hidden</code>：写了的，头的新建会话选择不列，预设管理页照列。这一步只有这个键，不带那个预设。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-policy · preset/read.rs　miyu-endpoint · presets.rs</span><span class="dir-note">LF-5 上</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>[preset]</code> 认 <code>hidden</code>：只收 <code>true</code>、<code>false</code>，写错的报第几行；几层照图标的叠法</li>
+              <li><code>preset.list</code>、<code>preset.get</code> 的一项带 <code>hidden</code>，没写的是 <code>false</code>；<code>preset.set</code> 能写能去掉</li>
+              <li>不进指纹、不进策略快照</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">不列是头的事，核心只带上这一格、不拦拿它新建会话</span><span class="rl">core1 审过</span></div>
+          <div class="tile new"><span class="nm">叫 hidden，不叫 listed</span><span class="rl">已经有 unlisted</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LF-5 上</dd></div>
+        <div><dt>名称</dt><dd>预设多认 hidden</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">LF-5上</dd></div>
+        <div><dt>验收</dt><dd>门禁十一项、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>写了和没写 <code>hidden</code> 的两份预设，指纹、快照一样</span></li>
+        <li><span class="ok">✓</span><span>出厂四个都是 <code>false</code>；写了 <code>true</code> 再读是 <code>true</code>，去掉回到 <code>false</code>；带它的照旧能开会话</span></li>
+        <li><span class="ok">✓</span><span>两条把列表逐字比对的旧测试，期望里各项补了这一格（照当年加图标的做法）</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LF-5上-预设不列进选择.md</code>；设计 <code>70-推演人生.md</code>；蓝图 <code>presets.md</code>、<code>protocol.md</code>。</li>
       </ul>
     </div>
   </div>

@@ -96,13 +96,13 @@
 
 ## `preset.list`、`preset.get`
 
-**`preset.list`**：没有参数。回应 `{"presets": [...]}`，照编号排：`preset`、`icon`（Lucide 图标名，没有的 `null`）、`name`、`summary`、`tokens`（照它开新会话、不算人格时 system 和工具说明占多少 token，本地估的；算不出来的没有）。写错的只有 `preset`、`problem`、`line`。出厂的「无功能」（`none`，施工 P-17）是一份普通预设：菜单里能开关的全关着，能编辑。原来末尾固定的「无工具」（`preset: null`）不再列；开会话、换预设交 `preset: null` 照旧认，是以前的写法。
+**`preset.list`**：没有参数。回应 `{"presets": [...]}`，照编号排：`preset`、`icon`（Lucide 图标名，没有的 `null`）、`hidden`（布尔：是 `true` 的不列进「新建会话选哪个预设」，预设管理页照列；没写的是 `false`。核心照旧列出它、照旧能拿它开会话，不列是头的事）、`name`、`summary`、`tokens`（照它开新会话、不算人格时 system 和工具说明占多少 token，本地估的；算不出来的没有）。写错的只有 `preset`、`problem`、`line`。出厂的「无功能」（`none`，施工 P-17）是一份普通预设：菜单里能开关的全关着，能编辑。原来末尾固定的「无工具」（`preset: null`）不再列；开会话、换预设交 `preset: null` 照旧认，是以前的写法。
 
 **`preset.get`**：参数 `preset`。回应：
 
 | 名字 | 说明 |
 |---|---|
-| `preset`、`name`、`summary`、`icon` | 同上 |
+| `preset`、`name`、`summary`、`icon`、`hidden` | 同上 |
 | `unlisted` | 叠好以后的 `on` 或 `off`：没列出来的功能默认开不开 |
 | `unattended_steps` | 叠好以后 `[limits]` 写的数：没人看着时一个回合最多请求几次模型；几层都没写的是 `null`，照出厂的 500 |
 | `features` | 一个个功能：`{"id", "name", "summary", "package", "on", "by", "installed", "tools"}`；`package` 是它归哪个包，按包分组用，包名照 [`package.list`](packages.md) 查（自己放的脚本、MCP 服务、模板命令是 `~home`，不归包的技能和没装的没有）；`by` 是开不开谁定的：`preset`（预设里写了）、`global`（预设没写，照技能、脚本、MCP 服务的全局开关，见 [`feature.set`](packages.md#featureset)；只在 `unlisted` 是 `on` 的预设里有）、`default`（照 `unlisted`：`unlisted` 是 `off` 的预设没写的都是它，全局开关打开的也不开）；`tools` 是归它的工具 `{"name", "label", "on"}`，`label` 是给人看的名字（MCP 服务给了 `title` 的照它，没给的是去掉 `mcp__<服务名>__` 的工具名）。写了、没装的接在后面，`installed: false`。接平台的包（清单写了 `[connection]`）只列本机会话拿得到的：一件 `venues` 带 `local` 的工具都没有的功能不列，列出来的只列带 `local` 的工具；`sections` 也一样 |
@@ -121,7 +121,7 @@
 |---|---|---|
 | `preset` | 字符串 | 编号；不写是新建，核心起一个 `preset-<n>` |
 | `new` | 布尔 | 新建、编号自己写（要和 `preset` 一起写）：这个编号已经有了（出厂的、包带的、你那一层的）拒 `preset_exists`，不去改那一份 |
-| `changes` | 数组，必写、不能是空的 | 每项 `{"key", "value" | "unset": true, "expect"?}`；键是 `preset.name`、`preset.summary`、`preset.unlisted`、`features.<功能>`、`tools.<工具>`、`limits.unattended_steps`（正整数） |
+| `changes` | 数组，必写、不能是空的 | 每项 `{"key", "value" | "unset": true, "expect"?}`；键是 `preset.name`、`preset.summary`、`preset.unlisted`、`preset.hidden`（`true`、`false`；`unset` 回到下面那一层的，都没写的是 `false`）、`features.<功能>`、`tools.<工具>`、`limits.unattended_steps`（正整数） |
 
 **回应**：同 `preset.get`。说明写空的字就是没有说明（盖住出厂的那句），`unset` 才回到出厂的。
 
