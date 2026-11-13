@@ -188,5 +188,9 @@ name = "tool_log"
 path = "tests/tool_log.rs"
 
 [[test]]
+name = "turn_start_log"
+path = "tests/turn_start_log.rs"
+
+[[test]]
 name = "vision_log"
 path = "tests/vision_log.rs"

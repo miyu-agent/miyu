@@ -18,6 +18,8 @@
 | `crates/miyu-session/src/peers.rs` | 「空了告诉我」等的这一边：照内核在等的去订、计时，到点、不在了交回（施工 C-6，`session/tools.md`「订、计时、再订」） |
 | `crates/miyu-session/src/actor/model.rs` | 请求模型：交给端口、叫停、说完了记一行；回顾的请求也在这里（施工 3-8 四补）；替它看图交给端口（施工 8-17） |
 | `crates/miyu-session/src/actor/model/overdue.rs` | 辅助请求的总时限（施工 TT-3）：起标题、回顾交给端口时起定时的任务，到 `ModelPort::aside_limit()` 还在路上的叫停端口、照出错交给内核（「7. 请求模型」第 7 条） |
+| `crates/miyu-session/src/actor/model/hooks.rs` | 回合开始问记忆、知识库两个挂接点，各自限时（施工 PF-3 从 `model.rs` 挪出来） |
+| `crates/miyu-session/src/timing.rs`、`timing/turn.rs` | `DEBUG` 时量用时：一次模型请求每一段（`request timed`，施工 YC-14）、回合开始的挂接点每一段（`turn start timed`，施工 PF-3）；`blocking.rs` 在量着的那一段里记阻塞线程来回等的 |
 | `crates/miyu-session/src/actor/life.rs` | 起 actor 的任务、看着它，停了以后把堆还给系统；闲够了退下：照自己的账答会话表（施工 V-2 再补从 `actor.rs` 挪出来，那个文件到了行数上限；第 9 条）；封存了的每办完一封照这本账看一次，退得下了报会话表（`offer_retire`，施工 V-51）；交给 `Handle` 的几份（`busy`、`shown`、`watched`、`leaving`，施工 V-51 从 `actor.rs` 挪来，同样的原因） |
 | `crates/miyu-session/src/actor/stop.rs` | 有计划地停下：要重启了、后台命令记 `restarted`、落了盘再整组杀（施工 7-3） |
 | `crates/miyu-session/src/actor/store.rs` | 写盘，哪一批要同步（`must_sync`，施工 V-18）；撤掉压缩时读回日志（施工 6-9） |
@@ -166,7 +168,7 @@
 | 回应命令 | 交给等这个编号的最早那一头；它不等了，丢掉；没人在等的，不理 | |
 | 推送事件 | 推给订阅了的；没有订阅的，丢掉 | |
 | 推送瞬时事件 | 同上；是 `status`（现在只有等着重试这一种）的，先记一行 `retrying`；是 `compaction.done` 的，先记一行 `compacted`（施工 6-3 下；`trigger` 照它的 `trigger`，施工 6-8） | |
-| 跑回合开始的挂接点 | 先冻结这一轮的配置：从配置的 `watch` 取当前的一份，照会话这时的目录带上项目配置（阻塞线程里，施工 8-4，`config.md` 第八条第 3 条）。再叫端口照它重新解析内核交来的引用（施工 8-10，`ModelPort::turn`，第 8 条第 2 款）：限额和上一次交给内核的不一样的当场交 `Input::Limits`，给头看的（`Shown`）照内核算的限额、端口的引用和模型写一次；头看得到的（引用、接下来发给谁、思考强度、窗口、压缩线）和这一步之前的不一样，推一条 `model.changed`，`why` 是 `turn`。再问挂接点（施工 R-4 上，`actor/model.rs` 的 `hooks`）：记忆、知识库两个并着问，照模块编号排（知识库在前）。记忆照内核交来的 `present` 先交常驻的摘要（`memory.md` 第三条），再照 `said`（人开的一轮才有）联想（第四条，施工 R-8：照这一轮冻结的配置照意思找，常驻那一块这一轮列的也当交过的）；知识库照 `said` 自动想起（施工 K-6 下，`knowledge.md` 第九条：会话这一刻的工具面上有 `kb_search` 的才问）。各自限时 300 毫秒，过了的那一件当没交、记一行 `DEBUG turn start hook timed out`；没接记忆、知识库的不问。人格、预设看过以后再找一遍技能（施工 X-11 下，`actor/skills.rs`，`skills.md`；读盘在阻塞线程里，照这一刻的快照先和刷新人格并着找，人格、预设真换了的照新快照再找一次，施工 PERF-2；项目指令跟挂接点、扩展并着等，施工 PERF-1）：权限策略、执行器换上这一刻开着的技能文件夹，列表和她最后看到的不一样的交一块 `<skills-changed>`，接在记忆的后面；没交装了的软件包的不找 | 挂接点跑完了，带着挂接点交回的几块（没有的是空的）；端口退回了默认的带着 `replaced` |
+| 跑回合开始的挂接点 | 先冻结这一轮的配置：从配置的 `watch` 取当前的一份，照会话这时的目录带上项目配置（阻塞线程里，施工 8-4，`config.md` 第八条第 3 条）。再叫端口照它重新解析内核交来的引用（施工 8-10，`ModelPort::turn`，第 8 条第 2 款）：限额和上一次交给内核的不一样的当场交 `Input::Limits`，给头看的（`Shown`）照内核算的限额、端口的引用和模型写一次；头看得到的（引用、接下来发给谁、思考强度、窗口、压缩线）和这一步之前的不一样，推一条 `model.changed`，`why` 是 `turn`。再问挂接点（施工 R-4 上，`actor/model/hooks.rs` 的 `hooks`）：记忆、知识库两个并着问，照模块编号排（知识库在前）。记忆照内核交来的 `present` 先交常驻的摘要（`memory.md` 第三条），再照 `said`（人开的一轮才有）联想（第四条，施工 R-8：照这一轮冻结的配置照意思找，常驻那一块这一轮列的也当交过的）；知识库照 `said` 自动想起（施工 K-6 下，`knowledge.md` 第九条：会话这一刻的工具面上有 `kb_search` 的才问）。各自限时 300 毫秒，过了的那一件当没交、记一行 `DEBUG turn start hook timed out`；没接记忆、知识库的不问。人格、预设看过以后再找一遍技能（施工 X-11 下，`actor/skills.rs`，`skills.md`；读盘在阻塞线程里，照这一刻的快照先和刷新人格并着找，人格、预设真换了的照新快照再找一次，施工 PERF-2；项目指令跟挂接点、扩展并着等，施工 PERF-1）：权限策略、执行器换上这一刻开着的技能文件夹，列表和她最后看到的不一样的交一块 `<skills-changed>`，接在记忆的后面；没交装了的软件包的不找 | 挂接点跑完了，带着挂接点交回的几块（没有的是空的）；端口退回了默认的带着 `replaced` |
 | 请求模型 | 交给端口（第 7 条），带上这一轮的配置（施工 8-4）：回顾、起标题、手动压缩这些不开回合的，照上一轮的 | |
 | 到点叫醒 | 起一个定时的任务，到那一刻送回「到点了」；那一刻已经过了的，马上送 | |
 | 不要这次请求了 | 叫端口停下（第 7 条） | |
@@ -305,6 +307,7 @@ actor 退出以后：等着回应的命令、要订阅的、要停下的，都�
 | INFO | `loaded` | `events`（几条）；`read_ms`、`snapshot_ms`、`memory_ms`、`scan_ms`、`replay_ms`、`total_ms`：读、解日志，读快照，接上记忆，几样从日志重建的（看过的文件、任务、发给谁、累计用量），内核重放，各用了多少毫秒，和载入一共用了多少（含等模型目录读完；施工 V-2 中、下） | 载入，起 actor 之前 |
 | INFO | `request` | `seen`、`endpoint`、`model`、`changed`（变了的才有） | 第 7 条 |
 | DEBUG | `request timed` | `seen`；`kernel_us`、`assemble_us`、`estimate_us`、`fingerprint_us`、`messages`（主请求才有）；`wait_us`、`blobs_us`、`encode_us`、`drop_us`、`bytes` | 请求体编好、交给 HTTP 执行器之前，紧挨着 `http` 的 `sent`（施工 YC-14，`timing.rs`）。用时是微秒的整数，键名带 `_us`。`kernel_us`：出 `CallModel` 的那一次 `Session::handle` 整个用了多久（组装、看图、判线、算指纹）；后三格是出了动作以后照同一份历史、同一份请求各重跑一遍量的（内核不读时钟），不在 `kernel_us` 里：再组装一遍、再估一遍用量（一次 `handle` 里估三四遍）、再算一遍指纹；`messages` 是请求里几条消息。`wait_us`：从交给端口到发的任务开始（记 `request` 那一行、挑端点、排到任务）；`blobs_us`：列出、取好编码要的 blob；`encode_us`：补占位工具、压输出上限、编成片段清单；`drop_us`：放掉请求和取来的字节；`bytes`：请求体多大。请求体的哈希不在这以前算，跟着送出去的字节一路算（`http.md`）。辅助请求（回顾、起标题、摘要）也记，没有内核那几格；扩展驱动的、一次性入口的不带 `seen`，扩展驱动的不记。只在 `DEBUG` 开着时量：重跑的那三样只读、结果扔掉，发出去的请求一个字节不变 |
+| DEBUG | `turn start timed` | `turn`（回合编号，即 `turn.started` 的序号）；`config_us`、`config_wait_us`、`persona_us`、`persona_wait_us`、`skills_us`、`skills_wait_us`、`line_us`、`line_wait_us`、`extensions_us`、`project_us`、`project_wait_us`、`total_us`（每个回合都有）；`memory_us`、`summary_us`、`summary_wait_us`、`card_us`、`card_wait_us`、`recall_us`、`recall_wait_us`、`knowledge_us`、`knowledge_wait_us`（问了那一件才有） | 回合开始的挂接点都等完、`TurnStartHooksDone` 交给内核之前（施工 PF-3，`timing/turn.rs`）。微秒的整数。`turn_start` 串着的几段：`config_us` 冻结这一轮的配置；`persona_us`、`skills_us` 刷新人格、找技能，两样并着（人格换了照新快照再找一次技能，加进 `skills_us`）；`line_us` 压缩触发线；然后记忆、知识库、扩展、项目指令一起等最慢的那一个：`memory_us` 记忆整个那一件，里面 `summary_us`、`card_us` 并着、再 `recall_us`；`knowledge_us` 知识库自动想起；`extensions_us` 问扩展；`project_us` 项目指令。各件的用时含 300 毫秒的限时（过了的另记 `turn start hook timed out`）。`_wait_us`：那一段里阻塞线程（`blocking.rs`）来回等的，交出去到那边开始做、加上那边做完到这一头接着跑，不算那边做活的时间；被抢 CPU 时一跳排队多久看它。`total_us` 从冻结配置之前到这一行，含几段之间同步的活（换模型解析、权限、交技能）。只在 `DEBUG` 开着时量，平常不读时钟；注入、交给内核的一个字节不变 |
 | WARN | `no model` | `why`：`no_model` 的原话 | 路由挑不出端点，当场说完（第 8 条第 3 条，施工 8-6） |
 | INFO | `failed` | `seen`、`took_ms`、`class` | 请求出错收场 |
 | INFO | `ended` | `seen`、`took_ms`、`in`、`hit`、`write`、`out` | 请求说完 |
@@ -436,6 +439,7 @@ actor 退出以后：等着回应的命令、要订阅的、要停下的，都�
 | `crates/miyu-session/tests/title_log.rs`（施工 3-8 五补） | 起标题的请求记 `title request`、`title ended`、`title failed`，`seen` 是照到的那一条；两次都没起成，第三轮不再试；没有对话的字 |
 | `crates/miyu-session/tests/http_log.rs` | HTTP 的两行带会话编号，key 不在日志里 |
 | `crates/miyu-session/tests/timing_log.rs`（施工 YC-14） | `request timed`：`INFO` 时不记；调到 `DEBUG` 以后每次主请求一行、照先后、`seen` 对得上、十格都在，`bytes` 和 `http` 的 `sent` 一样 |
+| `crates/miyu-session/tests/turn_start_log.rs`（施工 PF-3） | `turn start timed`：`INFO` 时不记；调到 `DEBUG` 以后每个回合一行、回合编号往前走，每个回合都有的几格都在、每格都是数，冻结配置那一段等的不比整段长 |
 | `crates/miyu-session/tests/index_log.rs`（施工 3-8 七补） | 每落一批，索引里那一行照到日志的末尾；表没了，更新失败只记一行带会话编号的 `session index not updated`，会话照常说完下一轮（`store/index.md`「守着它的」） |
 
 ### 出处

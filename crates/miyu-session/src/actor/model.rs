@@ -5,7 +5,7 @@
 //! 思考强度（施工 8-18）给头看的那一档也算头看得到的一格。回合开始还问挂接点（施工 R-4 上，`hooks`）。替看不了图的模型看图也在这里交给端口（施工 8-17）。
 
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use tokio::sync::oneshot;
 
@@ -16,26 +16,23 @@ use miyu_kernel::facts::{Present, Speaker};
 use miyu_kernel::id::{ContentHash, Seq, TurnId};
 use miyu_kernel::origin::By;
 use miyu_kernel::request::{Difference, Request};
-use miyu_kernel::session::{Injection, Input, Limits};
-use miyu_kernel::time::{Timestamp, UtcOffset};
+use miyu_kernel::session::{Input, Limits};
+use miyu_kernel::time::Timestamp;
 
 use super::{Actor, answer};
 use crate::TARGET;
-use crate::config::TurnConfig;
 use crate::handle::Pushed;
 use crate::knowledge::Shelves;
 use crate::lines::{millis, where_};
-use crate::memory::Calls;
 use crate::port::{Cancel, Report, Reports, Sight};
 use crate::route::NONE;
 use crate::settings::CompactionSettings;
 use crate::shown::{Next, Shown};
+use crate::timing::turn::TurnStart;
 
+mod hooks;
 mod line;
 mod overdue;
-
-/// 回合开始问挂接点最多等多久（施工 R-4 上定的起点）：过了当这一轮没交。读的是本机的小库，平常几毫秒。
-const HOOKS: Duration = Duration::from_millis(300);
 
 impl Actor {
     /// 请求模型：交给端口，记下叫停它的那一头和这一刻。前缀和上一次比变了的，运行日志里写上第一处不同在哪
@@ -132,7 +129,8 @@ impl Actor {
     /// 解析内核交来的引用 `reference`（施工 8-10，`models.md`「怎么走」第六条第 3 条）。限额变了交给内核；头看得到的（引用、
     /// 接下来发给谁、思考强度、窗口、压缩线）变了推一条 `model.changed`，`why` 是 `turn`（「施工时定的」8-10）。给头看的那一档（照新的
     /// 配置算）变了也推 `model.changed`。人格的文件改了的，带上新快照的哈希（施工 P-1 再补，`persona.rs`）。问挂接点（施工
-    /// R-4 上，`hooks`），交回跑完了，带着退回了默认的那一次和挂接点交的。
+    /// R-4 上，`hooks`），交回跑完了，带着退回了默认的那一次和挂接点交的。`DEBUG` 开着的，每一段等了多久记一行
+    /// `turn start timed`（施工 PF-3，`timing/turn.rs`）。
     pub(super) async fn turn_start(
         &mut self,
         turn: TurnId,
@@ -141,7 +139,23 @@ impl Actor {
         said: Option<String>,
         speakers: Vec<Speaker>,
     ) -> Input {
-        self.config.turn(self.session.cwd().to_string()).await;
+        // 放到堆上（施工 PF-3）：分段计时每段多套一层 future，这一大块原样嵌在 actor 跑的 future 里，debug 编的测试在 2 MiB
+        // 的线程栈上溢出（`memory_lanes` 几个测试）。一个回合多一次分配。
+        Box::pin(self.begin(turn, reference, present, said, speakers)).await
+    }
+
+    /// [`Actor::turn_start`] 做的事。
+    async fn begin(
+        &mut self,
+        turn: TurnId,
+        reference: Option<String>,
+        present: Vec<Present>,
+        said: Option<String>,
+        speakers: Vec<Speaker>,
+    ) -> Input {
+        let mut laps = TurnStart::start();
+        let cwd = self.session.cwd().to_string();
+        laps.config.run(self.config.turn(cwd)).await;
         let before = self.shown_now();
         // 会话记的思考强度、钉的看图模型一起交（施工 SM-1、VM-1）：内核照日志算的。
         let (effort, vision) = (self.session.effort(), self.session.vision());
@@ -165,13 +179,16 @@ impl Actor {
         // 技能照这一刻的快照先找起来，和刷新人格并着等（施工 PERF-2）：两样都在阻塞线程里读盘，原来技能排在人格后面干等。
         // 人格、预设真换了的（交回新快照的哈希，很少见），工具面跟着变，照新的再找一次。
         let speculated = self.skills_turn(&present, &values);
-        let (policy, skills) = tokio::join!(self.refresh_persona(values.clone()), speculated);
+        let (policy, skills) = tokio::join!(
+            laps.persona.run(self.refresh_persona(values.clone())),
+            laps.skills.run(speculated)
+        );
         let skills = match policy {
-            Some(_) => self.skills_turn(&present, &values).await,
+            Some(_) => laps.skills.run(self.skills_turn(&present, &values)).await,
             None => skills,
         };
         // 压缩触发线照会话钉的、这一轮的配置（施工 CT-1，`model/line.rs`）：只换快照里的数，不重找技能。
-        let policy = self.reline(&values, policy).await;
+        let policy = laps.line.run(self.reline(&values, policy)).await;
         // 项目指令在阻塞线程里读盘，和挂接点、扩展一起等，不排在前面干等（施工 PERF-1）。
         let docs = self.project_docs_turn(&present);
         // 子目录的项目指令照同一个口径（施工 P-14 下）：这一轮读、改工作目录下面的文件时补。
@@ -181,20 +198,22 @@ impl Actor {
         // 扩展和记忆、知识库一起问：各有各的限时，这一轮只等慢的那一个（施工 X-16）。
         let extensions = self.extension_injections(said.clone());
         let (mut injected, extended, docs) = tokio::join!(
-            hooks(
+            hooks::hooks(
                 self.tools.memory(),
                 knowledge,
                 (present, speakers),
                 said,
-                config
+                config,
+                &mut laps.hooks
             ),
-            extensions,
-            docs
+            laps.extensions.run(extensions),
+            laps.project.run(docs)
         );
         let skills = self.skills_take(skills);
         injected.extend(extended);
         injected.extend(skills);
         injected.extend(docs);
+        laps.log(turn);
         Input::TurnStartHooksDone {
             policy,
             prepare,
@@ -414,87 +433,5 @@ fn finished(
             out = usage.map(|usage| usage.output),
             "{what}ended"
         ),
-    }
-}
-
-/// 问回合开始的挂接点：记忆（施工 R-4 上，`memory.md` 第三条；`memory` 是它的端口和会话的时区）交常驻的摘要和联想（施工
-/// R-8，第四条），知识库（施工 K-6 下，`knowledge.md` 第九条；`knowledge` 是会话的知识库）交自动想起。`said` 是这一轮人说的话，
-/// 不是人开的一轮没有；照意思找照这一轮的配置 `config`；`present` 是内核交来的这一段上下文里模块注入过的。两个挂接点并行问，
-/// 照模块编号排（知识库在记忆前面）；各自限时 [`HOOKS`]：过了的那一件当这一轮没交，记一行 `DEBUG`（那次读在阻塞线程里照样
-/// 读完，交回的丢掉）。
-async fn hooks(
-    memory: Option<(Calls, UtcOffset)>,
-    knowledge: Option<Arc<Shelves>>,
-    (present, speakers): (Vec<Present>, Vec<Speaker>),
-    said: Option<String>,
-    config: TurnConfig,
-) -> Vec<Injection> {
-    let known = async {
-        let (shelves, said) = (knowledge?, said.as_deref()?);
-        let using = shelves.using(&config);
-        timed(
-            "knowledge",
-            "recall",
-            shelves.recall(&using, said, &present),
-        )
-        .await
-    };
-    let remembered = remember(
-        memory,
-        (present.clone(), speakers),
-        said.clone(),
-        Arc::clone(&config),
-    );
-    let (known, remembered) = tokio::join!(known, remembered);
-    known.into_iter().chain(remembered).collect()
-}
-
-/// 记忆那一个挂接点：先问摘要、和她说话的那个人的卡（施工 E-1 补，照这一轮开口的人 `speakers`），再问联想（联想要知道这一轮
-/// 摘要列了哪几条，不重复带）。照这个先后排：摘要、卡、联想。
-async fn remember(
-    memory: Option<(Calls, UtcOffset)>,
-    (present, speakers): (Vec<Present>, Vec<Speaker>),
-    said: Option<String>,
-    config: TurnConfig,
-) -> Vec<Injection> {
-    let Some((memory, offset)) = memory else {
-        return Vec::new();
-    };
-    let (summary, card) = tokio::join!(
-        timed("memory", "summary", memory.summary(offset, present.clone())),
-        timed("memory", "card", memory.card(speakers, present.clone())),
-    );
-    let summary: Vec<Injection> = summary.into_iter().chain(card).collect();
-    let Some(said) = said else {
-        return summary;
-    };
-    // 这一轮摘要列的几条，联想当已经交过的。
-    let mut seen = present;
-    seen.extend(summary.iter().map(|injection| Present {
-        module: injection.module.clone(),
-        kind: injection.fact.kind.clone(),
-        refs: injection.fact.refs.clone(),
-    }));
-    let recall = timed(
-        "memory",
-        "recall",
-        memory.recall(said, offset, seen, &config),
-    )
-    .await;
-    summary.into_iter().chain(recall).collect()
-}
-
-/// 限时 [`HOOKS`] 等挂接点的一件（`module` 是哪个挂接点，`part`：`summary`、`card`、`recall`）；过了的没有，记一行 `DEBUG`。
-async fn timed(
-    module: &'static str,
-    part: &'static str,
-    asked: impl Future<Output = Option<Injection>>,
-) -> Option<Injection> {
-    match tokio::time::timeout(HOOKS, asked).await {
-        Ok(injected) => injected,
-        Err(_) => {
-            tracing::debug!(target: TARGET, module, part, "turn start hook timed out");
-            None
-        }
     }
 }

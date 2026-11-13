@@ -32,9 +32,9 @@
 | `crates/miyu-session/src/memory/lane.rs` | 回合索引在后台写（施工 V-9）：核心一个线程，照交来的先后接上（开库、对照到哪、读日志铺回）、写每一批，载入、落盘不等它，载入时等重放完了才交接上（V-9 补：不和载入抢 CPU）；搜以前的对话、读用到几次、删会话以前先等它把交过的写完，出处活不活不等；落盘的一批里有撤销、恢复的等这条道写完再回（R-32：回来以后照出处判活不活马上算数，Windows CI 撞见刚撤了马上搜还搜得到）；接上时一块块读日志、边读边铺，恢复了不记得字的边读边算（V-37 下）；刚分叉出来的支线照分叉时认好的底子接上、不读底子（V-39 下） | V-9、R-32 |
 | `crates/miyu-session/src/memory/reads.rs` | 回合开始问记忆的那几次读（常驻那一块、人卡、联想）登记着，读完放下；`Memory::finish` 先等它们读完、再走 `Memory::settle`，核心停下、放锁以前调（第三条第 4 款，`core.md`「停下」第 6 条） | TMP-1 补3 |
 | `crates/miyu-session/src/memory/backfill.rs` | 补齐旧会话：照会话一个个读日志、照载入时的判法补（第一条第 9 款）；在跑的登记着，`Memory::settle` 连它们一起等（R-28：删会话、测试以前等补完，不然删了的会被补回来） | R-2 下 |
-| `crates/miyu-session/src/memory/summary.rs` | 常驻的摘要（R-7 下：有摘要时头一行是摘要、后面接之后新记的）：交不交、交什么、上限，外壳的字（`SummaryTexts`）；`memory/port.rs` 在阻塞线程里读，`actor/model.rs` 的 `hooks` 在回合开始问它、限时（第三条） | R-4 上 |
-| `crates/miyu-session/src/memory/known.rs` | 认出来（第三条第 8 款）：和她说话的是谁、这一段带过没有、拼那一块；`memory/port.rs` 在阻塞线程里读，`actor/model.rs` 的 `hooks` 和常驻那一块并着问，排在它后面、联想前面 | E-1 补 |
-| `crates/miyu-session/src/memory/recall.rs`、`crates/miyu-recall/src/associate.rs`、`resources/core/memory/recall.toml` | 联想（第四条）：外壳的字和门槛表（`RecallTexts`）、照意思找、挑、拼那一块；挑法和门槛表的读法是纯逻辑（`associate`）；门槛表是数据。`actor/model.rs` 的 `hooks` 先问常驻那一块、再问联想 | R-8 |
+| `crates/miyu-session/src/memory/summary.rs` | 常驻的摘要（R-7 下：有摘要时头一行是摘要、后面接之后新记的）：交不交、交什么、上限，外壳的字（`SummaryTexts`）；`memory/port.rs` 在阻塞线程里读，`actor/model/hooks.rs` 的 `hooks` 在回合开始问它、限时（第三条） | R-4 上 |
+| `crates/miyu-session/src/memory/known.rs` | 认出来（第三条第 8 款）：和她说话的是谁、这一段带过没有、拼那一块；`memory/port.rs` 在阻塞线程里读，`actor/model/hooks.rs` 的 `hooks` 和常驻那一块并着问，排在它后面、联想前面 | E-1 补 |
+| `crates/miyu-session/src/memory/recall.rs`、`crates/miyu-recall/src/associate.rs`、`resources/core/memory/recall.toml` | 联想（第四条）：外壳的字和门槛表（`RecallTexts`）、照意思找、挑、拼那一块；挑法和门槛表的读法是纯逻辑（`associate`）；门槛表是数据。`actor/model/hooks.rs` 的 `hooks` 先问常驻那一块、再问联想 | R-8 |
 | `crates/miyu-recall/src/extract.rs`、`redact.rs` | 抽取交回的怎么读（第六条第 5 款）；遮 key 和 key 写法的读法（第六条第 7 款） | R-6 上 |
 | `crates/miyu-session/src/memory/extract.rs`、`extract/job.rs` | 抽取：给模型看的字、一个会话的抽取状态（闹钟、在路上的、失败几次）、照这一段拼请求（几轮怎么接、放不下的分几次、截中间）；`job.rs` 是派出去的那一件活（发、读、遮、记，记下以后看够不够合并；人叫的现在就合，R-7 补挪出来；发之前接上这一段开始以后忘掉的几条，R-6 修，`Keeper::dropped_since`） | R-6 上 |
 | `crates/miyu-session/src/actor/extract.rs` | 什么时候抽、这一段从哪来：闹钟、在阻塞线程里读两份日志、拼留着一切的历史交给组装器渲染（第六条第 1、2 款）；人叫的现在就抽（`Handle::dream`，第七条第 9 款，R-7 补） | R-6 上 |
@@ -201,7 +201,7 @@
 
 **三、常驻的记忆摘要**（R-4 上、下）
 
-1. **什么时候交**：回合开始，执行器问挂接点（`actor/model.rs` 的 `hooks`），记忆看内核交来的 `present`（有效历史里模块注入过的那几块）：没有模块 `memory`、类别 `memory` 的一块就交，有了不交。所以交在会话的第一轮、压缩以后、清空以后、撤掉带着它的那一轮以后的第一轮。回合中途压缩、那一块被压掉的，这一轮余下的请求里没有，下一轮开头再交；压的那一轮开头交的在留下的那一截里，不重交。和会话编号那一块一个道理：一个会话一份，会话中途不重发（`kernel/request.md`「事实」第 2 条）。范围 `off` 的、没接记忆的会话不问；一条都没有的不交。
+1. **什么时候交**：回合开始，执行器问挂接点（`actor/model/hooks.rs` 的 `hooks`），记忆看内核交来的 `present`（有效历史里模块注入过的那几块）：没有模块 `memory`、类别 `memory` 的一块就交，有了不交。所以交在会话的第一轮、压缩以后、清空以后、撤掉带着它的那一轮以后的第一轮。回合中途压缩、那一块被压掉的，这一轮余下的请求里没有，下一轮开头再交；压的那一轮开头交的在留下的那一截里，不重交。和会话编号那一块一个道理：一个会话一份，会话中途不重发（`kernel/request.md`「事实」第 2 条）。范围 `off` 的、没接记忆的会话不问；一条都没有的不交。
 2. **交什么**：一块 `context.injected`，`kind` 是 `memory`，`by` 是模块 `memory`，`refs` 是这一块里那几条的编号。原文是外壳加一条一行：
 
    ```text

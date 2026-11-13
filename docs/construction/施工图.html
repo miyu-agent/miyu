@@ -1520,6 +1520,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sRC1"><span class="n">RC-1</span>miyu rescue 拉起 LiteMiyu 的应急模式<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sPF1"><span class="n">PF-1</span>CPU 被抢时请求体一口气发<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sPF2"><span class="n">PF-2</span>查清核心晚知道发完、收完<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sPF3"><span class="n">PF-3</span>回合开始的挂接点分段计时<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -58558,6 +58559,54 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/PF-2-核心晚知道发完收完.md</code>；蓝图 <code>http.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sPF3" aria-labelledby="h-sPF3">
+  <div class="sheet-head"><h2 id="h-sPF3"><span class="no">PF-3</span>回合开始的挂接点分段计时</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">CPU 被抢时回合开始的挂接点要 93 ms～5.5 s，日志里分不出慢在哪一跳。这一步在 <code>DEBUG</code> 时每个回合开始记一行 <code>turn start timed</code>：每一段多少微秒，每段里阻塞线程来回排队等了多少。只加日志。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-session · timing/turn、blocking、actor/model</span><span class="dir-note">PF-3</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>冻结配置 → 人格、技能并着 → 压缩线 → 记忆（摘要、卡、联想）、知识库、扩展、项目指令一起等，每段套一层计时</li>
+              <li>量着的那一段里，阻塞线程交出去到开始做、做完到接着跑记成 <code>_wait_us</code></li>
+              <li>交给内核之前记一行；<code>INFO</code> 时不读时钟</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">问了的挂接点才有那一格</span><span class="rl">技术细节按推荐定</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">PF-3</dd></div>
+        <div><dt>名称</dt><dd>回合开始的挂接点分段计时</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-13</dd></div>
+        <div><dt>提交</dt><dd class="mono">PF-3</dd></div>
+        <div><dt>验收</dt><dd>miyu-session 的测试、两个目标的 clippy、日志门禁全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span><code>INFO</code> 时没有这一行；<code>DEBUG</code> 时每个回合一行、每格是数</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/PF-3-回合开始分段计时.md</code>；蓝图 <code>session/actor.md</code>「运行日志」、<code>log.md</code>。</li>
       </ul>
     </div>
   </div>

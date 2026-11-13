@@ -28,7 +28,7 @@
 | `crates/miyu-extract/`（`src/lib.rs`、`radicals.rs`、`main.rs`，`data/EquivalentUnifiedIdeograph.txt`） | 抽字的小程序：一次抽一份 PDF 或网页，照 JSON 交回去就退；PDF 一页一页抽、部首的码位换回平常的字（Unicode 的对照表原样带着），网页换成文字（第二条第 5、6 款） | K-5 |
 | `crates/miyu-endpoint/src/knowledge.rs`（`shelf`、`extractor`、`Core::with_extractor`） | 核心一份的知识库带上家目录、主程序旁边的 `miyu-extract`（测试里换成 cargo 编出来的那个）、照资源目录读的搜的下限（K-2 修） | K-5 |
 | `resources/core/knowledge/search.toml`、`Knowledge::with_floors`、`floor`，`miyu_recall::fuse_above` | 搜的时候只照意思找到的那一路的下限，照模型（第四条）；数据，不给模型看 | K-2 修 |
-| `crates/miyu-session/src/knowledge/recall.rs`、`resources/core/knowledge/recall.toml`、`resources/software/knowledge/recall/`，`crates/miyu-session/src/actor/model.rs`（`hooks`、`recalling`） | 自动想起：挑、拼那一块、门槛表、外壳；回合开始和记忆的挂接点并着问（第九条）；`Knowledge::sections`、`auto` 列出一个库的每一段、开没开 | K-6 下 |
+| `crates/miyu-session/src/knowledge/recall.rs`、`resources/core/knowledge/recall.toml`、`resources/software/knowledge/recall/`，`crates/miyu-session/src/actor/model.rs`（`recalling`）、`actor/model/hooks.rs`（`hooks`） | 自动想起：挑、拼那一块、门槛表、外壳；回合开始和记忆的挂接点并着问（第九条）；`Knowledge::sections`、`auto` 列出一个库的每一段、开没开 | K-6 下 |
 | `crates/miyu-recall/src/kb/keys.rs`、`resources/core/knowledge/keys.toml` | 小节的关键词那一行（K-9）：写法表（开头、冒号、分隔，数据）、认那一行、分开、交回那一行以后的正文（「对外的样子」、第九条第 3、4 款） | K-9 |
 | `crates/miyu-store/src/knowledge/manage.rs` | 人管理：建库、改名字说明、挂目录、加文档、删库、重建索引（第八条）；`RecallIndex::discard`（关上、删掉索引） | K-7 上 |
 | `crates/miyu-cli/src/kb.rs`（详见 `cli/kb.md`） | 命令行 `miyu kb`：照子命令发 `kb.*`，加文件照 `blob.put` 本机路径 | K-7 下 |
@@ -203,7 +203,7 @@ Knowledge bases you can search:
 7. 软件包带来的库（K-8）：改名字、说明，加、删文档，删库拒 `kb_packaged`；改 `auto` 照做，记在数据根的 `kb.toml`；建、挂同编号的回 `kb_exists`。
 8. 不认请求编号去重：建、挂的再发一次回 `kb_exists`，删的再发一次回 `unknown_kb`，加的再发一次回 `document_exists`（写了 `replace` 的照样换，结果一样）。改完不推通知：头自己再 `kb.list`。
 
-**九、自动想起**（K-6 下，19 N5；项目主人 2026-10-12 定开关放 `kb.toml`、关键词也算，2026-10-13 看了测评集定照标题名算、照意思门槛 0.60，`knowledge/eval.md`）：做法在 `crates/miyu-session/src/knowledge/recall.rs`，回合开始的挂接点在 `actor/model.rs` 的 `hooks`。
+**九、自动想起**（K-6 下，19 N5；项目主人 2026-10-12 定开关放 `kb.toml`、关键词也算，2026-10-13 看了测评集定照标题名算、照意思门槛 0.60，`knowledge/eval.md`）：做法在 `crates/miyu-session/src/knowledge/recall.rs`，回合开始的挂接点在 `actor/model/hooks.rs` 的 `hooks`。
 
 1. **哪些回合**：人开的一轮（`said` 有字的，同记忆的联想，`memory.md` 第四条第 1 款），本机的、场所的都算；会话这一刻的工具面上有 `kb_search`（知识库这个包装着、预设开着、查得到至少一个库）；只看她查得到的库（第六条第 1 款，人格收窄照旧）里 `kb.toml` 写了 `auto = true` 的。
 2. **补**：那几个库先照文件补（第三条，同搜之前；挂的目录用不了的跳过），再照索引里的每一段挑（`Knowledge::sections`）。这一轮的模型在门槛表里的（第 3 款），那几个库在后台补缺的向量（同搜完补，第四条，同一个名字）：她不搜，照意思那一路也补得上；头一回开的库这一轮照意思找不到，补完以后的回合找得到。不在表里的不补。
