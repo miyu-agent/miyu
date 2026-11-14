@@ -14,6 +14,7 @@ use miyu_kernel::origin::By;
 use miyu_kernel::time::Timestamp;
 use miyu_session::testkit::{Play, Script};
 use miyu_tool::Catalog;
+use serde_json::json;
 
 use crate::support::clock::{Hand, core_with_tools};
 use crate::support::*;
@@ -134,6 +135,40 @@ async fn her_own_method_comes_first_and_an_edit_shows_on_the_next_wakeup() {
     let said = woken(&home.log(&session));
     assert_eq!(said.len(), 2, "{said:?}");
     assert_eq!(said[1], "换个过法。\n\n昨晚没睡好", "改了下一次就用新的");
+}
+
+/// 经 `persona.set` 写的推演方法（施工 LF-8 上），到点那一刻读：这一次醒来用它，再经协议改了的下一次用新的。
+#[tokio::test]
+async fn a_method_set_through_the_protocol_is_used_on_the_next_wakeup() {
+    let home = Home::new();
+    let script = Script::new([Play::Says("醒了。"), Play::Says("又醒了。")]);
+    let hand = Hand::at(START);
+    let (core, session) = started(&home, &script, &hand, Some("engineer")).await;
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let set = |text: &str| json!({"persona": "engineer", "prompts": {"life": {"text": text}}});
+    let saved = client
+        .call("s1", "persona.set", set("经协议写的过法。\n"))
+        .await;
+    assert!(saved.get("error").is_none(), "{saved}");
+    let added = core
+        .schedules()
+        .add(looping(&session, Loop::Life, "昨晚没睡好", START))
+        .unwrap();
+    home.until_turns(&session, 1).await;
+    until_recorded(&core, &added.id).await;
+    assert_eq!(
+        woken(&home.log(&session)),
+        ["经协议写的过法。\n\n昨晚没睡好"]
+    );
+
+    let saved = client.call("s2", "persona.set", set("又改了。\n")).await;
+    assert!(saved.get("error").is_none(), "{saved}");
+    hand.advance(GAP);
+    home.until_turns(&session, 2).await;
+    let said = woken(&home.log(&session));
+    assert_eq!(said.len(), 2, "{said:?}");
+    assert_eq!(said[1], "又改了。\n\n昨晚没睡好", "改了下一次就用新的");
 }
 
 #[tokio::test]

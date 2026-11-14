@@ -39,7 +39,7 @@
 
 | 名字 | 说明 |
 |---|---|
-| `prompts` | `{"persona", "reminders"}`：人设、角色扮演提示有没有字（布尔）；原文用 `persona.read` 读 |
+| `prompts` | `{"persona", "reminders", "life"}`：人设、角色扮演提示、推演方法有没有字（布尔，去掉空白是空的算没有；推演方法没有字的人格用出厂的那一份）；原文用 `persona.read` 读 |
 | `examples` | 示范对话几轮 |
 | `subagent` | 派子代理时能不能挑它 |
 | `remove` | 删了会怎样：`restore`（回到出厂的样子）、`delete`（就没了；出厂带的软件工程师这类连包卸掉的也是它）、`null`（没什么可删） |
@@ -48,9 +48,9 @@
 
 ## `persona.read`
 
-**参数**：`persona`；`prompt`：`persona`（人设）、`examples`（示范对话）、`reminders`（角色扮演提示）。
+**参数**：`persona`；`prompt`：`persona`（人设）、`examples`（示范对话）、`reminders`（角色扮演提示）、`life`（推演方法：人生循环每次醒来那段话的开头）。
 
-**回应**：`{"text", "version"}`：叠好的那一份的原文、你家目录那一层这一份的版本（没有的都是 `null`）。示范对话另带 `pairs: [{"user", "assistant"}…]`。
+**回应**：`{"text", "version"}`：叠好的那一份的原文、你家目录那一层这一份的版本（没有的都是 `null`）。上面一层是空文件的，`text` 是空的字。示范对话另带 `pairs: [{"user", "assistant"}…]`。推演方法另带 `default`：出厂的那一份原文（去掉末尾空白），读不出的是 `null`；没写时用的就是它。
 
 编辑器照它在原文上改，存的时候把 `version` 当 `expect` 带回 `persona.set`。
 
@@ -63,7 +63,7 @@
 | `persona` | 字符串 | 编号；不写是新建，核心起一个 `persona-<n>` |
 | `new` | 布尔 | 同 `preset.set` 的：编号已经有了拒 `persona_exists` |
 | `changes` | 数组 | 改 `persona.toml`，写法同 `config.set` 的 `changes`；键是 `persona.name`、`persona.summary`、`persona.subagent`、`appearance.seed` |
-| `prompts` | 对象 | 提示词名（`persona`、`examples`、`reminders`）→ `{"text": <整份>}` 或 `{"unset": true}`；示范对话另可写 `{"pairs": [{"user", "assistant"}…]}`；都可带 `"expect": <版本>` 或 `null`（还没有） |
+| `prompts` | 对象 | 提示词名（`persona`、`examples`、`reminders`、`life`）→ `{"text": <整份>}` 或 `{"unset": true}`；示范对话另可写 `{"pairs": [{"user", "assistant"}…]}`；都可带 `"expect": <版本>` 或 `null`（还没有） |
 | `avatar`、`background` | 对象 | `{"blob": <哈希>}` 换成传上来的那一张，`{"unset": true}` 删掉你那一层的；可带 `expect` |
 | `seed` | 字符串或 `{"unset": true}` | 主题色 `#rrggbb` |
 | `background_opacity` | 0 到 100 或 `{"unset": true}` | 背景图露出多少 |

@@ -39,7 +39,7 @@ A persona whose files are wrong has only `persona` and `problem` (what's wrong, 
 
 | Name | Notes |
 |---|---|
-| `prompts` | `{"persona", "reminders"}`: whether the character prompt and roleplay reminders have text (booleans); read the text with `persona.read` |
+| `prompts` | `{"persona", "reminders", "life"}`: whether the character prompt, roleplay reminders and life method have text (booleans; whitespace only counts as none; a persona with no life method text uses the built-in one); read the text with `persona.read` |
 | `examples` | How many example exchanges |
 | `subagent` | Whether it can be picked when spawning a subagent |
 | `remove` | What deleting does: `restore` (back to the built-in version), `delete` (gone; also for a persona like the built-in Software Engineer that goes with its package), `null` (nothing to delete) |
@@ -48,9 +48,9 @@ A persona whose files are wrong has only `persona` and `problem` (what's wrong, 
 
 ## `persona.read`
 
-**Params**: `persona`; `prompt`: `persona` (character prompt), `examples` (example dialogue), `reminders` (roleplay reminders).
+**Params**: `persona`; `prompt`: `persona` (character prompt), `examples` (example dialogue), `reminders` (roleplay reminders), `life` (life method: the opening of what the life loop hands her each time she wakes).
 
-**Response**: `{"text", "version"}`: the stacked text, and the version of this file in your home layer (both `null` when none). Example dialogue also has `pairs: [{"user", "assistant"}…]`.
+**Response**: `{"text", "version"}`: the stacked text, and the version of this file in your home layer (both `null` when none). When the layer on top is an empty file, `text` is an empty string. Example dialogue also has `pairs: [{"user", "assistant"}…]`. The life method also has `default`: the built-in text (trailing whitespace removed), `null` if it can't be read; it's what's used when none is written.
 
 Editors edit the text and send `version` back as `expect` in `persona.set`.
 
@@ -63,7 +63,7 @@ Editors edit the text and send `version` back as `expect` in `persona.set`.
 | `persona` | string | Id; omitted creates a new one, and the core picks `persona-<n>` |
 | `new` | boolean | Create with the ID you wrote (needs `persona`): an ID that already exists (built-in, from a package or yours) is refused with `persona_exists` instead of editing that one |
 | `changes` | array | Changes to `persona.toml`, written like `config.set`'s `changes`; keys are `persona.name`, `persona.summary`, `persona.subagent`, `appearance.seed` |
-| `prompts` | object | Prompt name (`persona`, `examples`, `reminders`) → `{"text": <whole>}` or `{"unset": true}`; examples may also be `{"pairs": [{"user", "assistant"}…]}`; each may carry `"expect": <version>` or `null` (doesn't exist yet) |
+| `prompts` | object | Prompt name (`persona`, `examples`, `reminders`, `life`) → `{"text": <whole>}` or `{"unset": true}`; examples may also be `{"pairs": [{"user", "assistant"}…]}`; each may carry `"expect": <version>` or `null` (doesn't exist yet) |
 | `avatar`, `background` | object | `{"blob": <hash>}` uses the uploaded image, `{"unset": true}` removes yours; may carry `expect` |
 | `seed` | string or `{"unset": true}` | Theme color `#rrggbb` |
 | `background_opacity` | 0 to 100 or `{"unset": true}` | How much the background shows |

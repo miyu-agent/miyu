@@ -309,7 +309,7 @@ async fn personas_are_listed_and_read() {
             "name": "美羽",
             "summary": "Mine.",
             "subagent": false,
-            "prompts": {"persona": false, "reminders": true},
+            "prompts": {"persona": false, "reminders": true, "life": false},
             "examples": 2,
             "avatar": null,
             "background": null,
@@ -326,7 +326,7 @@ async fn personas_are_listed_and_read() {
         .await;
     assert_eq!(
         got["result"]["prompts"],
-        json!({"persona": true, "reminders": true})
+        json!({"persona": true, "reminders": true, "life": false})
     );
     let got = client
         .call("g3", "persona.get", json!({"persona": "nobody"}))

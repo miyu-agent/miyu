@@ -1530,6 +1530,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sLF4a"><span class="n">LF-4 上</span>结束一段人生<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF7"><span class="n">LF-7</span>别的会话知道她现在在干嘛<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF4b"><span class="n">LF-4 下</span>她自己结束这段人生<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sLF8a"><span class="n">LF-8 上</span>人格的协议认推演方法<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -59093,6 +59094,59 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LF-4下-她自己结束.md</code>；设计 <code>70-推演人生.md</code>；蓝图 <code>life.md</code>、<code>tools/end_life.md</code>、<code>packages.md</code>、<code>presets.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sLF8a" aria-labelledby="h-sLF8a">
+  <div class="sheet-head"><h2 id="h-sLF8a"><span class="no">LF-8 上</span>人格的协议认推演方法</h2><span class="pill done">做完</span></div>
+  <p class="purpose">推演方法是人格目录里的一份文件，原来只能人手放。人格页要一个「推演方法」文本框，得能经协议读、写它。照人格别的提示词已有的读写走，多认一个名字 <code>life</code>，不另起方法。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint · personas/write.rs　personas.rs　miyu-store · personas.rs</span><span class="dir-note">LF-8 上</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>persona.get</code> 的 <code>prompts</code> 多一格 <code>life</code>：推演方法有没有字</li>
+              <li><code>persona.read {prompt: "life"}</code>：原文、你那一层的版本，另带出厂的那一份 <code>default</code></li>
+              <li><code>persona.set</code> 的 <code>prompts.life</code>：写你那一层的 <code>prompts/life.md</code>，能删、能防覆盖</li>
+              <li>写了的，人生循环下一次醒来就用新的</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">不另起方法：推演方法是人格的第四种提示词</span><span class="rl">主会话定</span></div>
+          <div class="tile new"><span class="nm">读的时候带出厂的那一份，界面好显示「没写时用的是这个」</span><span class="rl">主会话定</span></div>
+          <div class="tile new"><span class="nm">界面不在这一步</span><span class="rl">LF-8，头的会话</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LF-8 上</dd></div>
+        <div><dt>名称</dt><dd>人格的协议认推演方法</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">LF-8上</dd></div>
+        <div><dt>验收</dt><dd>门禁十一项、Windows 版 clippy 全过；三个手写变异都被逮住</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>哪一层都没有的：原文、版本都是空，<code>default</code> 是出厂那一份；上面一层是空文件的：原文是空的字，不是空</span></li>
+        <li><span class="ok">✓</span><span>经协议写进去：落在你那一层，带错的版本拒、文件不变，删掉回到下面那一层</span></li>
+        <li><span class="ok">✓</span><span>经协议写的推演方法，她这一次醒来交进会话的正文开头就是它</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LF-8上-人格协议认推演方法.md</code>；设计 <code>70-推演人生.md</code>；蓝图 <code>personas.md</code>；协议参考 <code>personas.md</code> 中英两份。</li>
       </ul>
     </div>
   </div>

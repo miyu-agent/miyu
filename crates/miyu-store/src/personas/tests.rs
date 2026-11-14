@@ -446,3 +446,26 @@ fn the_life_method_stacks_by_layer() {
         "空的也盖住下面的"
     );
 }
+
+/// 推演方法来自哪一层（施工 LF-8 上，`persona.read` 照它找原文）：有它的最上面那一层，空文件也算；哪一层都没有的是没有。
+/// 出厂的和包里的各用一个编号：同一个编号出厂有了，包里的那一份被盖住（施工 P-11 上）。
+#[test]
+fn the_life_method_records_its_layer() {
+    let places = Places::new();
+    let from = |id: &str| places.personas.find(id).unwrap().life_from;
+    places.write(Layer::Shipped, "miyu", "prompts/persona.md", "x\n");
+    assert_eq!(from("miyu"), None);
+    places.write(Layer::Shipped, "miyu", "prompts/life.md", "shipped way\n");
+    assert_eq!(from("miyu"), Some(Layer::Shipped));
+    places.write(Layer::Home, "miyu", "prompts/life.md", "");
+    assert_eq!(from("miyu"), Some(Layer::Home), "空文件也算这一层");
+
+    places.write(Layer::Package, "cat", "prompts/life.md", "package way\n");
+    assert_eq!(from("cat"), Some(Layer::Package));
+    places.write(Layer::Home, "cat", "prompts/persona.md", "x\n");
+    assert_eq!(
+        from("cat"),
+        Some(Layer::Package),
+        "你那一层没有这个文件，照下面的"
+    );
+}

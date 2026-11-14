@@ -20,7 +20,7 @@ use miyu_policy::persona::{self, Demo};
 use miyu_store::config_file::{self, ConfigText, WriteError};
 use miyu_store::human::Human;
 use miyu_store::layers::valid;
-use miyu_store::personas::{Edits, Found, PERSONA_MD, Personas, REMINDERS_MD};
+use miyu_store::personas::{Edits, Found, LIFE_MD, PERSONA_MD, Personas, REMINDERS_MD};
 
 use super::appearance;
 use super::picture::{Picture, PictureParams};
@@ -37,6 +37,7 @@ fn prompt_file(name: &str) -> Option<&'static str> {
         "persona" => Some(PERSONA_MD),
         "examples" => Some(persona::EXAMPLES),
         "reminders" => Some(REMINDERS_MD),
+        "life" => Some(LIFE_MD),
         _ => None,
     }
 }
@@ -219,8 +220,8 @@ fn create(
     Err(Refusal::conflict("persona_conflict", None))
 }
 
-/// 查 `prompts`：名字只认那三种，`text`、`unset`、`pairs` 正好一个、`unset` 只能是 `true`；`pairs` 只给示范对话，每一句去掉
-/// 前后空白不能是空的，空的 `pairs` 等于删掉，写成文件的写法读不回原样的 `persona_invalid`（施工 P-3 补）。
+/// 查 `prompts`：名字只认那四种（[`prompt_file`]），`text`、`unset`、`pairs` 正好一个、`unset` 只能是 `true`；`pairs`
+/// 只给示范对话，每一句去掉前后空白不能是空的，空的 `pairs` 等于删掉，写成文件的写法读不回原样的 `persona_invalid`（施工 P-3 补）。
 fn prompts(
     params: BTreeMap<String, PromptParams>,
     said: Option<&Human>,
@@ -392,7 +393,8 @@ pub(crate) struct ReadParams {
 }
 
 /// `persona.read`：叠好的那一份提示词的原文，和你那一层这一份的版本：`{"text", "version"}`，没有的是 `null`；示范对话另带
-/// 一对一对的 `pairs`（施工 P-3 补，界面照它编）。来自哪一层不往外给。
+/// 一对一对的 `pairs`（施工 P-3 补，界面照它编）；推演方法另带 `default`：出厂的那一份去掉末尾空白，读不出的是 `null`
+/// （施工 LF-8 上，头照它显示「没写时用的是这一份」）。来自哪一层不往外给。
 pub(crate) async fn read_prompt(
     core: &Core,
     peer: Peer,
@@ -401,6 +403,7 @@ pub(crate) async fn read_prompt(
     let file = prompt_file(&params.prompt).ok_or(Refusal::BAD_PARAMS)?;
     let said = words(core, peer.language).ok();
     let personas = personas(core);
+    let resources = core.resources.clone();
     let id = params.persona;
     tokio::task::spawn_blocking(move || {
         let found = personas
@@ -408,8 +411,11 @@ pub(crate) async fn read_prompt(
             .map_err(|error| told(&error, said.as_ref()))?;
         let origin = match file {
             PERSONA_MD => &found.persona_from,
+            persona::EXAMPLES => &found.examples_from,
             REMINDERS_MD => &found.reminders_from,
-            _ => &found.examples_from,
+            LIFE_MD => &found.life_from,
+            // 到不了：名字先经 `prompt_file` 认过，只有上面这四个文件。
+            _ => return Err(Refusal::INTERNAL),
         };
         let text = match origin {
             Some(layer) => {
@@ -424,6 +430,10 @@ pub(crate) async fn read_prompt(
         let mut reply = json!({"text": text, "version": version});
         if file == persona::EXAMPLES {
             reply["pairs"] = json!(found.texts.examples);
+        }
+        if file == LIFE_MD {
+            let shipped = resources.life_method().ok();
+            reply["default"] = json!(shipped.as_deref().map(str::trim_end));
         }
         Ok(reply)
     })

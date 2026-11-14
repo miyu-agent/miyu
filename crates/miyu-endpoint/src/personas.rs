@@ -184,8 +184,8 @@ pub(crate) struct GetParams {
     persona: String,
 }
 
-/// `persona.get`：叠好的样子（施工 P-3 补：只给人要看的）。名字、说明照这个连接的语言挑；人设、角色扮演提示写没写；示范
-/// 对话几轮；删了会怎样（`remove`）。提示词原文照 `persona.read` 给，来自哪一层不往外给。
+/// `persona.get`：叠好的样子（施工 P-3 补：只给人要看的）。名字、说明照这个连接的语言挑；人设、角色扮演提示、推演方法（施工
+/// LF-8 上）写没写；示范对话几轮；删了会怎样（`remove`）。提示词原文照 `persona.read` 给，来自哪一层不往外给。
 pub(crate) async fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Value, Refusal> {
     let said = words(core, peer.language).ok();
     let personas = personas(core);
@@ -221,6 +221,7 @@ fn describe(
         "prompts": {
             "persona": !found.texts.persona.trim().is_empty(),
             "reminders": !found.texts.reminders.trim().is_empty(),
+            "life": found.life.as_deref().is_some_and(|text| !text.trim().is_empty()),
         },
         "examples": found.texts.examples.len(),
         "avatar": pictures.avatar,

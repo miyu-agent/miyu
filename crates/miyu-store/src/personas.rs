@@ -75,6 +75,8 @@ pub struct Found {
     /// 推演方法（施工 LF-2，[`LIFE_MD`]）：有它的最上面那一层的原文，同名替换、不拼接；哪一层都没有的是没有。去掉末尾空白是空的
     /// 怎么算由用它的一方定（人生循环照出厂的那一段）。
     pub life: Option<String>,
+    /// 推演方法来自哪一层，没有的是没有（施工 LF-8 上，`persona.read` 照它找原文）。
+    pub life_from: Option<Layer>,
     /// 头像（施工 P-5，`personas.md`「头像」）：有头像的最上面那一层里的那一张；没有的是没有。
     pub avatar: Option<PathBuf>,
     /// 背景图（施工 P-6）：有背景图的最上面那一层里的那一张；没有的是没有。
@@ -177,6 +179,7 @@ impl Personas {
             examples_from: None,
             reminders_from: None,
             life: None,
+            life_from: None,
             avatar: None,
             background: None,
         };
@@ -223,6 +226,7 @@ impl Personas {
             }
             if let Some(text) = text_of(LIFE_MD)? {
                 found.life = Some(text);
+                found.life_from = Some(*layer);
             }
         }
         if found.layers.is_empty() {
