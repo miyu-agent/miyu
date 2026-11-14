@@ -68,6 +68,17 @@ impl Session {
         self.ledger.life_ended()
     }
 
+    /// 是没结束的人生会话（施工 LF-4 下，`life.md`「结束」）：日志里有 `life.started`、没有 `life.ended`。回合开始重算工具面、
+    /// 换人格时照它定只给人生会话的包（`needs = ["life"]`）给不给。
+    pub fn living(&self) -> bool {
+        self.ledger.life_started() && !self.ledger.life_ended()
+    }
+
+    /// 是不是人生会话（施工 LF-4 下）：日志里有过 `life.started`，结束了的也是。
+    pub fn life_started(&self) -> bool {
+        self.ledger.life_started()
+    }
+
     /// 一轮结束了、没有接着开的：跑满了轮数、还没封存的，记一条 `session.sealed`，`by` 内核，`cause` 同那一条 `turn.ended`。
     /// 人生结束了的（施工 LF-4 上）也封存：这一轮结束时，或者记 `life.ended` 时就闲着的当场。有一轮在跑的不封。
     pub(super) fn seal_if_done(

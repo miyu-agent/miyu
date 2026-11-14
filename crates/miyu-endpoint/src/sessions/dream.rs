@@ -91,6 +91,7 @@ impl Sessions {
             presets: None,
             group: None,
             images: true,
+            life: false,
             titles: true,
             // 事件里的 `session` 那一格留着认老日志，新的不写（施工 FH-1：会话那一间去掉了）。
             dream: Some(Dream {

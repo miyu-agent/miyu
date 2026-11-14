@@ -119,6 +119,7 @@ mod life_doing;
 mod life_doing_more;
 mod life_end;
 mod life_preset;
+mod life_self_end;
 mod limits;
 mod line_pin;
 mod list;

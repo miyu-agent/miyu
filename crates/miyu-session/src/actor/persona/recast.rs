@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use miyu_config::Values;
 use miyu_kernel::session::Session;
+use miyu_policy::features::Features;
 use miyu_policy::memory::MemoryScope;
 use miyu_policy::preset::Chosen;
 use miyu_policy::{PersonaTexts, Snapshot};
@@ -27,11 +28,14 @@ pub(super) struct Wanted {
     pub(super) persona: Option<Option<String>>,
     /// 换预设。
     pub(super) preset: Option<String>,
+    /// 是没结束的人生会话（施工 LF-4 下）：照内核的日志问，只给人生会话的包照它给不给（[`situated`]）。
+    pub(super) life: bool,
 }
 
 impl Wanted {
     /// 照内核 `session` 记下的和快照 `snapshot` 比；子会话不换（协议那一头也不让换）。
     pub(super) fn of(session: &Session, snapshot: &Snapshot, child: bool) -> Wanted {
+        // 子会话的日志里没有 `life.started`：不是人生会话。
         if child {
             return Wanted::default();
         }
@@ -46,7 +50,11 @@ impl Wanted {
             .preset()
             .filter(|id| now.is_none_or(|now| now != *id))
             .map(str::to_string);
-        Wanted { persona, preset }
+        Wanted {
+            persona,
+            preset,
+            life: session.living(),
+        }
     }
 }
 
@@ -62,9 +70,14 @@ pub(super) fn texts(refresh: &Refresh, persona: Option<&str>) -> Result<PersonaT
     }
 }
 
-/// 新预设 `id`：照现在的几层找；记忆开不开照开会话时的（快照里的范围），场所显示不了图片的照旧扣下要图的包；全局开关照这一轮
-/// 的配置 `values`（施工 X-27）。
-pub(super) fn preset(refresh: &Refresh, id: &str, values: &Values) -> Result<Chosen, String> {
+/// 新预设 `id`：照现在的几层找；记忆开不开照开会话时的（快照里的范围），场所显示不了图片的照旧扣下要图的包，不是没结束的人生
+/// 会话（`life` 是假）的扣下只给人生会话的包（施工 LF-4 下）；全局开关照这一轮的配置 `values`（施工 X-27）。
+pub(super) fn preset(
+    refresh: &Refresh,
+    id: &str,
+    values: &Values,
+    life: bool,
+) -> Result<Chosen, String> {
     let places = refresh
         .presets
         .as_ref()
@@ -78,7 +91,20 @@ pub(super) fn preset(refresh: &Refresh, id: &str, values: &Values) -> Result<Cho
         .following(crate::switches::of(values))
         .switching_off(crate::packages_off::of(values));
     let chosen = Chosen::new(found.id, file, features).keeping_memory(memory, features);
-    Ok(chosen.situated(features, refresh.images, refresh.venue.as_str()))
+    Ok(situated(chosen, features, refresh, life))
+}
+
+/// 照场所、照是不是没结束的人生会话 `life` 定（[`Chosen::situated`]、[`Chosen::living`]）：回合开始重算、换预设都走它，和造会话时
+/// 一样（`open/setup.rs` 的 `situated`），人生会话从第一轮起工具面不变（施工 LF-4 下）。
+pub(super) fn situated(
+    chosen: Chosen,
+    features: &Features,
+    refresh: &Refresh,
+    life: bool,
+) -> Chosen {
+    chosen
+        .situated(features, refresh.images, refresh.venue.as_str())
+        .living(features, life)
 }
 
 /// 换了人格的知识库：照新人格查。没接知识库的没有。

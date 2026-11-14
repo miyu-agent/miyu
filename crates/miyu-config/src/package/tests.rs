@@ -377,6 +377,17 @@ fn needs_are_read_and_unknown_ones_are_refused() {
     assert_eq!(Code::BadNeeds.as_str(), "bad_needs");
 }
 
+/// `needs` 也认 `life`（施工 LF-4 下）：只在没结束的人生会话里有；和 `images` 一起写的照 [`Need`] 的先后排。
+#[test]
+fn life_is_a_known_need() {
+    let life = BRIDGE.replace(
+        "name = { en = \"QQ bridge\" }\n",
+        "name = { en = \"QQ bridge\" }\nneeds = [\"life\", \"images\"]\n",
+    );
+    assert_eq!(read(&life).unwrap().needs, [Need::Images, Need::Life]);
+    assert_eq!(Need::parse("life").map(Need::as_str), Some("life"));
+}
+
 /// 能装在哪几种系统上（施工 G-1）：`[package] targets` 照固定的先后排好；没写的是空的（哪种都能装），不认识的、重复的报
 /// `bad_targets`、说是哪一行。
 #[test]

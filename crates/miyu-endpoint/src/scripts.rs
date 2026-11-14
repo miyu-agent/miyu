@@ -205,6 +205,7 @@ pub(crate) fn features(core: &Core) -> Features {
     // 照他看得到的包（施工 U23 末上：关了的不在）。
     let packaged = crate::packages::features(&core.packages_of());
     let images = packaged.image_packages().clone();
+    let life = packaged.life_packages().clone();
     let connections = packaged.connections().clone();
     let mut list: Vec<Feature> = packaged.iter().cloned().collect();
     list.extend(core.scripts_for().iter().map(script_feature));
@@ -217,6 +218,7 @@ pub(crate) fn features(core: &Core) -> Features {
     }));
     Features::new(list)
         .needing_images(images)
+        .needing_life(life)
         .connecting(connections)
         .offering(core.extensions.offers.features_of())
 }

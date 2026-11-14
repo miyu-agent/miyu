@@ -6,7 +6,7 @@
 //! - 改的三个方法在 [`crate::Core`] 的一把锁里排着来：两个头同时开同一个人格的，开不出两条。
 //! - `life.start` 四步：造会话、设上下文上限、记身份、建那一行。前两步没成的删掉刚造的会话；身份记上了、那一行没建成的，说清
 //!   是哪个会话，`life.resume` 照日志重建那一行。
-//! - 结束（施工 LF-4 上，`finish.rs`）：`life.kill`、`life.new`。找的时候结束了的也算（最新的那一个）：`life.status` 说 `ended`，
+//! - 结束（施工 LF-4 上，`finish.rs`）：`life.kill`、`life.new`，她自己的 `end_life` 经 `port.rs`（施工 LF-4 下）。找的时候结束了的也算（最新的那一个）：`life.status` 说 `ended`，
 //!   `life.pause`、`life.resume` 拒 `life_ended`，`life.start`、`life.new` 先把它没清完的清完再开新的。
 
 use std::collections::BTreeSet;
@@ -32,8 +32,10 @@ use crate::sessions::{Opening, person};
 use crate::wire::Request;
 
 mod finish;
+mod port;
 
 pub(crate) use finish::finish;
+pub(crate) use port::Ending;
 
 /// 出厂的人生会话用哪个预设（`resources/presets/life.toml`）。
 const PRESET: &str = "life";
@@ -146,6 +148,7 @@ async fn start(core: &Arc<Core>, request: &Request, persona: &str) -> Result<Val
         group: None,
         profile: false,
         images: true,
+        life: true,
         titles: true,
         origin: None,
         confined: false,

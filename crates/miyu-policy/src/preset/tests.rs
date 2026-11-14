@@ -1,6 +1,7 @@
 //! 预设文件的读法（施工 P-2 上）：每一格读对、三层没写的照默认；逐格叠；每一种写错写明第几行。
 
 mod hidden;
+mod life;
 mod limits;
 
 use super::*;

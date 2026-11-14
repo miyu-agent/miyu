@@ -45,6 +45,7 @@ pub(super) async fn create(
         group: None,
         profile: false,
         images: params.images,
+        life: false,
         titles: params.titles,
         origin: None,
         confined: false,

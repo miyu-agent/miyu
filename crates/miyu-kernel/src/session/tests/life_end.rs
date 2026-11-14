@@ -67,3 +67,22 @@ fn a_running_turn_ends_first_then_the_session_is_sealed() {
     );
     assert!(!kinds.contains(&"turn.started"), "不再开轮：{kinds:?}");
 }
+
+/// 是不是没结束的人生会话（施工 LF-4 下）：记了 `life.started` 才是，记了 `life.ended` 就不是了；结束了的照旧认得是人生会话。
+#[test]
+fn a_session_lives_from_its_start_to_its_end() {
+    let mut session = session();
+    assert!(!session.living() && !session.life_started(), "普通会话");
+    session.handle(Input::Command(Received {
+        id: id(1),
+        by: person(),
+        at: at(1),
+        command: Command::Append {
+            event: Appended::Life(crate::event::LifeStarted {}),
+        },
+    }));
+    assert!(session.living() && session.life_started());
+    session.handle(end(2));
+    assert!(!session.living(), "结束了");
+    assert!(session.life_started(), "结束了的也是人生会话");
+}

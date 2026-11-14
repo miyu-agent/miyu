@@ -23,6 +23,7 @@ fn a_wanted_preset_refilters_the_face_and_keeps_memory() {
     let wanted = Wanted {
         persona: None,
         preset: Some("q".to_string()),
+        life: false,
     };
     let Seen::Swapped(snapshot, _, _, _, recast) = look_wanting(&refresh, wanted) else {
         panic!("要换");
@@ -37,6 +38,7 @@ fn a_wanted_preset_refilters_the_face_and_keeps_memory() {
     let missing = Wanted {
         persona: None,
         preset: Some("gone".to_string()),
+        life: false,
     };
     assert!(matches!(
         look_wanting(&refresh, missing),
@@ -51,6 +53,7 @@ fn a_wanted_persona_rebuilds_the_snapshot_and_asks_to_move_memory() {
     let wanted = Wanted {
         persona: Some(None),
         preset: None,
+        life: false,
     };
     let Seen::Swapped(snapshot, _, _, _, recast) = look_wanting(&refresh, wanted) else {
         panic!("要换");
@@ -66,6 +69,7 @@ fn a_wanted_persona_rebuilds_the_snapshot_and_asks_to_move_memory() {
     let missing = Wanted {
         persona: Some(Some("nobody".to_string())),
         preset: None,
+        life: false,
     };
     assert!(
         matches!(look_wanting(&refresh, missing), Seen::Kept(_)),
@@ -82,6 +86,7 @@ fn a_persona_with_the_same_words_still_swaps() {
     let wanted = Wanted {
         persona: Some(Some("twin".to_string())),
         preset: None,
+        life: false,
     };
     let Seen::Swapped(snapshot, ..) = look_wanting(&refresh, wanted) else {
         panic!("字一样也换：记忆要挪");

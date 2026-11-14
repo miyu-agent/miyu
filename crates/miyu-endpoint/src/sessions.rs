@@ -333,6 +333,7 @@ impl Sessions {
             group: None,
             confined: child.confined,
             images: child.images,
+            life: false,
             titles: true,
             dream: None,
             origin: None,

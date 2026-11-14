@@ -60,6 +60,7 @@ impl Actor {
             compaction_line: self.session.pinned_line(),
             sealed: self.session.sealed(),
             life_ended: self.session.life_ended(),
+            life: self.session.life_started(),
         }
     }
 

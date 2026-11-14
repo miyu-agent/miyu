@@ -218,8 +218,8 @@ fn look(
     let preset = match &wanted.preset {
         // 换成无工具（施工 P-16 下）：内核记的是空的编号。
         Some(id) if id.is_empty() => Ok(Preset::NoTools { changed: true }),
-        Some(id) => recast::preset(refresh, id, values).map(Preset::Changed),
-        None => preset(refresh, values),
+        Some(id) => recast::preset(refresh, id, values, wanted.life).map(Preset::Changed),
+        None => preset(refresh, values, wanted.life),
     };
     let preset = match preset {
         Ok(preset) => preset,
@@ -443,8 +443,8 @@ fn features(refresh: &Refresh) -> Option<std::borrow::Cow<'_, Features>> {
     refresh.presets.as_ref().map(PresetPlaces::features)
 }
 
-/// 照快照里预设的编号重新找一遍（施工 P-2 下），全局开关照这一轮的配置 `values`（施工 X-27）。
-fn preset(refresh: &Refresh, values: &Values) -> Result<Preset, String> {
+/// 照快照里预设的编号重新找一遍（施工 P-2 下），全局开关照这一轮的配置 `values`（施工 X-27），人生会话照 `life`（施工 LF-4 下）。
+fn preset(refresh: &Refresh, values: &Values, life: bool) -> Result<Preset, String> {
     if refresh.snapshot.no_tools {
         return Ok(Preset::NoTools { changed: false });
     }
@@ -469,7 +469,7 @@ fn preset(refresh: &Refresh, values: &Values) -> Result<Preset, String> {
         .following(crate::switches::of(values))
         .switching_off(crate::packages_off::of(values));
     let chosen = Chosen::new(found.id, file, features).keeping_memory(memory, features);
-    let chosen = chosen.situated(features, refresh.images, refresh.venue.as_str());
+    let chosen = recast::situated(chosen, features, refresh, life);
     // 以前的快照记的是包的编号（施工 F-3 上）：照现在的功能读一样的算没改，不为改了写法换一次快照。
     Ok(match pin.means_the_same(&chosen.pin(), features) {
         true => Preset::Same(chosen),

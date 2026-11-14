@@ -69,6 +69,10 @@ End this life, and answer once it is done: a `life.ended` event goes into the lo
 - Without a life session: `no_life`.
 - An ended one succeeds as well: whatever was left uncleared (for instance when the core stopped half way) is finished, and no second notice is sent.
 
+## When she ends it herself
+
+A life session's tools include `end_life` (from the built-in package "End of life", `base-life`): she can end this life herself and must leave last words. The tool exists only in a life session that hasn't ended; an ordinary session opened with the preset `life` doesn't have it. Once she calls it, the turn finishes as usual, and then everything happens as with `life.kill`: the session is archived read-only, she never wakes again and this life's memories are cleared; the `life.ended` event in the log has her tool call as `by` and carries the last words, and the `life.ended` notice pushed to heads has `by: "self"` and `last_words` (see [Pushes](pushes.en.md)). `life.status` then says `ended`.
+
 ## `life.new`
 
 End a running or paused life as `life.kill` does, then start a new one as `life.start` does. Answers `{"session": <new id>, "ended": <the one that ended>}`; `ended` is absent when there was nothing to end. The new life does not remember the old one (its memories were cleared).

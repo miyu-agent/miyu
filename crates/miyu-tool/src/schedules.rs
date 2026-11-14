@@ -125,6 +125,11 @@ pub type ScheduleAnswering<'a> =
 pub trait SchedulePort: Send + Sync {
     /// 在会话 `session` 上办 `ask`。
     fn schedule(&self, session: &SessionId, ask: ScheduleAsk) -> ScheduleAnswering<'_>;
+
+    /// 人生会话的端口（施工 LF-4 下，[`crate::LifePort`]）：`end_life` 经它结束人生。没有的（测试里的假端口）是空的。
+    fn life(&self) -> Option<&dyn crate::LifePort> {
+        None
+    }
 }
 
 impl fmt::Debug for dyn SchedulePort {

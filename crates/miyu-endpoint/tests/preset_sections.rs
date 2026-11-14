@@ -74,7 +74,11 @@ const SHIPPED: [Shipped; 5] = [
     (
         "persona",
         "人格",
-        &[("memory", "人格记忆"), ("roleplay", "人设遵循提醒")],
+        &[
+            ("memory", "人格记忆"),
+            ("roleplay", "人设遵循提醒"),
+            ("life", "结束人生"),
+        ],
     ),
     (
         "research",
@@ -247,11 +251,12 @@ async fn shipped_presets_are_sectioned_like_the_table() {
 
     let full = get(&mut client, "full").await;
     let opened = matches_shipped(&full, |_, _| (true, "default"));
-    assert_eq!(opened.len(), 35 + 2, "全部功能：都开着");
+    assert_eq!(opened.len(), 36 + 2, "全部功能：都开着");
 
     let dev = get(&mut client, "dev").await;
     let opened = matches_shipped(&dev, |group, feature| match (group, feature) {
-        (_, "roleplay" | "knowledge") => (false, "default"),
+        // 结束人生（施工 LF-4 下）后加的，常规开发没开。
+        (_, "roleplay" | "knowledge" | "life") => (false, "default"),
         ("basesystem" | "tasks" | "environment" | "persona" | "research" | "skills", _) => {
             (true, "group")
         }
@@ -260,7 +265,7 @@ async fn shipped_presets_are_sectioned_like_the_table() {
     let mut before: Vec<&str> = SHIPPED
         .iter()
         .flat_map(|(_, _, features)| features.iter().map(|(id, _)| *id))
-        .filter(|id| !["roleplay", "knowledge"].contains(id))
+        .filter(|id| !["roleplay", "knowledge", "life"].contains(id))
         .collect();
     before.extend(SKILLS.map(|(id, _)| id));
     assert_eq!(opened, before, "常规开发开的功能和改前一样");

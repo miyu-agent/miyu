@@ -168,6 +168,7 @@ pub fn built_in() -> Vec<&'static str> {
             Some(miyu_goal::PACKAGE),
             Some(miyu_schedule::SCHEDULE),
             Some(miyu_schedule::LOOP),
+            Some(miyu_schedule::LIFE),
             Some(miyu_knowledge::PACKAGE),
             Some(ROLEPLAY),
             Some(miyu_policy::shown::PACKAGE),
@@ -231,16 +232,14 @@ fn groups(resources: &ResourceRoot, found: &[Found], kit: &Kit) -> Result<Vec<Bu
         let goal = miyu_goal::tools(resources.path()).map_err(|error| error.to_string())?;
         groups.push((miyu_goal::PACKAGE, goal));
     }
-    // 定时任务、循环两个软件包（施工 J-2，设计 45）：`cron_*` 三件、`schedule_wakeup`，预设分开开关。
-    if installed(miyu_schedule::SCHEDULE) {
-        let schedule =
-            miyu_schedule::schedule_tools(resources.path()).map_err(|error| error.to_string())?;
-        groups.push((miyu_schedule::SCHEDULE, schedule));
-    }
-    if installed(miyu_schedule::LOOP) {
-        let looping =
-            miyu_schedule::loop_tools(resources.path()).map_err(|error| error.to_string())?;
-        groups.push((miyu_schedule::LOOP, looping));
+    // 定时任务、循环、结束人生三个软件包（施工 J-2、LF-4 下，设计 45、70）：`cron_*` 三件、`schedule_wakeup`、`end_life`，
+    // 预设分开开关。
+    for (package, tools) in
+        miyu_schedule::packages(resources.path()).map_err(|error| error.to_string())?
+    {
+        if installed(package) {
+            groups.push((package, tools));
+        }
     }
     // 知识库这个软件包的两件（施工 K-1 下，`knowledge.md`「她的工具」）：工具面上只给查得到至少一个库的会话。
     if installed(miyu_knowledge::PACKAGE) {

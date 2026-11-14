@@ -1,5 +1,5 @@
 # 推演人生（施工 LF-5 中，设计 `70-推演人生.md` 第三节第 7 条，`presets.md`「出厂的几份」）：`life.start` 开的人生会话用的。环境信息、
-# 联网、人格记忆、循环、角色扮演提示、查以前说过的话；没有命令行和读写文件。不列进新建会话的选择（`hidden`），核心不拦拿它开别的会话。
+# 联网、人格记忆、循环、结束人生、角色扮演提示、查以前说过的话；没有命令行和读写文件。不列进新建会话的选择（`hidden`），核心不拦拿它开别的会话。
 [preset]
 name = { zh = "推演人生", en = "Life Simulation", ja = "人生シミュレーション" }
 # 说明：给人看的，不发给模型。
@@ -17,6 +17,8 @@ base-net = true
 base-memory = true
 # 循环：schedule_wakeup，她定下次几点醒。
 base-loop = true
+# 结束人生：end_life，只在没结束的人生会话里有（施工 LF-4 下）。
+base-life = true
 # 角色扮演提示和风格锁。
 base-roleplay = true
 # 查以前说过的话：history。

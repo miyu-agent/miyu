@@ -3057,12 +3057,56 @@ delay_seconds is required unless stop is true.
 #### `software/loop/wakeup/unstoppable.txt`
 
 - 什么时候加进来：`schedule_wakeup` 带 `stop: true`，落在人生循环那一行上
-- token：7（2026-11-14 照 o200k 数）
-- 为什么加：人生循环不收 `stop`，那一行不动（设计 70 第三节第 2 条，施工 LF-1）：不答的话她以为停了；结束人生的入口是后面的步子，这一步不提
-- 指纹：`89c119ac`
+- token：17（2026-11-14 照 o200k 数；LF-1 时 7）
+- 为什么加：人生循环不收 `stop`，那一行不动（设计 70 第三节第 2 条，施工 LF-1）：不答的话她以为停了。施工 LF-4 下：结束人生的入口有了，补半句指到 `end_life`，不然她以为这段人生停不下来
+- 指纹：`f94640e0`
 
 ```text
-A life loop cannot be stopped.
+A life loop cannot be stopped. To end this life, use end_life.
+```
+
+#### `software/life/end/ended.txt`
+
+- 什么时候加进来：`end_life` 成了：`life.ended` 记下了
+- token：11（2026-11-14 照 o200k 数；第一版 12）
+- 为什么加：说结束了、不会再醒（施工 LF-4 下）：这一轮照常说完，她知道后面没有下一次。2026-11-14 项目主人定换成更重的一版
+- 指纹：`2ebea1b7`
+
+```text
+You have died. This was your last moment awake.
+```
+
+#### `software/life/end/required.txt`
+
+- 什么时候加进来：`end_life` 没写 `last_words`、只有空白、参数读不出来
+- token：5（2026-11-14 照 o200k 数）
+- 为什么加：说遗言必写（施工 LF-4 下）：什么都没记，她补上再调
+- 指纹：`5584b758`
+
+```text
+last_words is required.
+```
+
+#### `software/life/end/already.txt`
+
+- 什么时候加进来：`end_life` 落在已经结束了的人生上（同一轮里调第二次）
+- token：6（2026-11-14 照 o200k 数）
+- 为什么加：说已经结束了（施工 LF-4 下）：不报错，不再记
+- 指纹：`fbeee315`
+
+```text
+This life has already ended.
+```
+
+#### `software/life/end/not-life.txt`
+
+- 什么时候加进来：`end_life` 落在不是人生会话的会话上、没有端口、用不了（工具面上本来没有，防万一）
+- token：7（2026-11-14 照 o200k 数）
+- 为什么加：说这不是人生会话（施工 LF-4 下），不当成别的错
+- 指纹：`f3f88f78`
+
+```text
+This is not a life session.
 ```
 
 #### `software/knowledge/common/bad-args.txt`
@@ -5378,6 +5422,20 @@ Start a subagent in a new session to do one task and wait for it. Its report arr
 {
   "description": "Set when the next iteration of a self-paced /loop runs. The loop stops after an iteration that doesn't call it. Pass stop to end the loop.",
   "parameters": {"type":"object","properties":{"delay_seconds":{"type":"integer","description":"At least 60."},"prompt":{"type":"string","description":"The /loop prompt, passed back unchanged."},"reason":{"type":"string","description":"Why this delay, one short sentence."},"stop":{"type":"boolean"}}}
+}
+```
+
+#### `software/life/tools/end_life.json`
+
+- 什么时候加进来：会话的工具面里有结束人生这个包：只有没结束的人生会话（清单 `needs = ["life"]`，出厂预设 `life` 开着；施工 LF-4 下起），每次请求都带
+- token：92（2026-11-14 照 o200k 数文件；第一版 62）
+- 为什么加：她自己结束这段人生（设计 70 第二节第 3 条、第三节第 5 条，`tools/end_life.md`）：不给这件工具她就结束不了，`schedule_wakeup` 的 `stop` 在人生循环上不收。三句只写事实：结束什么、之后不再醒、撤不回；遗言参数一句说它跟着结束留下。不写「慎重」这类引导（`prompts-describe-not-steer`，人格的事）。2026-11-14 项目主人定换成更重的一版：说明写明这是死、不会再醒、这段人生过的和记得的都抹掉、没人能救回，遗言是留下的唯一东西
+- 指纹：`5e365db5`
+
+```json
+{
+  "description": "End your life. This is your death: you will never wake again, everything you lived and remember from this life will be erased, and no one can bring you back. Your last words are the only thing you leave behind.",
+  "parameters": {"type":"object","properties":{"last_words":{"type":"string","description":"Your last words, kept with the end of this life."}},"required":["last_words"]}
 }
 ```
 

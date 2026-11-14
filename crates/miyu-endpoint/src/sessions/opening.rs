@@ -29,6 +29,8 @@ pub(crate) struct Opening {
     pub(crate) profile: bool,
     /// 场所显示得了图片吗（施工 X-25）：`session.create`、`venue.session` 的 `images`，不写的是显示得了。
     pub(crate) images: bool,
+    /// 开的是人生会话（施工 LF-4 下）：只有 `life.start` 写真；只给人生会话的包（`needs = ["life"]`）照它给不给。
+    pub(crate) life: bool,
     /// 自动起标题吗（施工 O-43）：`session.create`、`venue.session` 的 `titles`，不写的起。
     pub(crate) titles: bool,
     /// 从哪开的（施工 8-33 四补）：`session.terminal` 开的是 `terminal`，别的没有。

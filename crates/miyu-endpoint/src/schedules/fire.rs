@@ -196,6 +196,7 @@ async fn opened(
         group: None,
         profile: false,
         images: true,
+        life: false,
         titles: true,
         origin: None,
         confined: false,

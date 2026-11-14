@@ -372,6 +372,7 @@ async fn presets_are_listed_and_read_by_layer() {
             ("history", "翻查本会话", true, true),
             ("jobs", "后台运行", true, true),
             ("knowledge", "知识库", false, true),
+            ("life", "结束人生", false, true),
             ("loop", "循环任务", true, true),
             ("memory", "人格记忆", true, true),
             ("web-search", "网络搜索", true, true),

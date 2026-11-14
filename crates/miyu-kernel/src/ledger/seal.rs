@@ -5,10 +5,11 @@ use super::Ledger;
 use crate::event::{Body, Event};
 use crate::id::TurnId;
 
-/// 封存了没有：日志里有过 `session.sealed`；人生结束了没有：日志里有过 `life.ended`。
+/// 封存了没有：日志里有过 `session.sealed`；是不是人生会话、人生结束了没有：日志里有过 `life.started`、`life.ended`。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(super) struct Sealing {
     sealed: bool,
+    life_started: bool,
     life_ended: bool,
 }
 
@@ -39,6 +40,7 @@ impl Sealing {
     pub(super) fn record(&mut self, event: &Event) {
         match event.body {
             Body::SessionSealed(_) => self.sealed = true,
+            Body::LifeStarted(_) => self.life_started = true,
             Body::LifeEnded(_) => self.life_ended = true,
             _ => {}
         }
@@ -54,6 +56,11 @@ impl Ledger {
     /// 人生结束了没有（施工 LF-4 上）：日志里有过 `life.ended`。
     pub fn life_ended(&self) -> bool {
         self.sealing.life_ended
+    }
+
+    /// 是不是人生会话（施工 LF-4 下）：日志里有过 `life.started`，结束了的也是。
+    pub fn life_started(&self) -> bool {
+        self.sealing.life_started
     }
 
     /// 封存了，或者人生结束了（施工 LF-4 上）：改对话的命令不收，不再开轮。结束了、这一轮还没跑完的，这一轮结束时封存。

@@ -24,6 +24,8 @@ pub struct Features {
     list: Vec<Feature>,
     /// 清单写了 `needs = ["images"]` 的包（施工 X-25）：显示不了图片的会话里整包当没开（[`crate::preset::Chosen::situated`]）。
     images: BTreeSet<String>,
+    /// 清单写了 `needs = ["life"]` 的包（施工 LF-4 下）：没结束的人生会话以外整包当没开（[`crate::preset::Chosen::living`]）。
+    life: BTreeSet<String>,
     /// 接平台的包（施工 IM-4）：包的编号到清单 `[connection] platform` 写的平台。在自己平台的场所会话里整包不过预设开关
     /// （[`crate::preset::Chosen::situated`]）。
     connections: BTreeMap<String, BTreeSet<String>>,
@@ -37,6 +39,7 @@ impl Features {
         Features {
             list,
             images: BTreeSet::new(),
+            life: BTreeSet::new(),
             connections: BTreeMap::new(),
             offered: Vec::new(),
         }
@@ -46,6 +49,13 @@ impl Features {
     #[must_use]
     pub fn needing_images(mut self, packages: impl IntoIterator<Item = String>) -> Features {
         self.images = packages.into_iter().collect();
+        self
+    }
+
+    /// 记下哪几个包只给没结束的人生会话（施工 LF-4 下，清单的 `[package] needs`）。
+    #[must_use]
+    pub fn needing_life(mut self, packages: impl IntoIterator<Item = String>) -> Features {
+        self.life = packages.into_iter().collect();
         self
     }
 
@@ -88,6 +98,11 @@ impl Features {
     /// 要这个地方显示得了图片的包（施工 X-25），照编号排。
     pub fn image_packages(&self) -> &BTreeSet<String> {
         &self.images
+    }
+
+    /// 只给没结束的人生会话的包（施工 LF-4 下），照编号排。
+    pub fn life_packages(&self) -> &BTreeSet<String> {
+        &self.life
     }
 
     /// 每一个，照先后；扩展交的（施工 IM-6）接在最后。

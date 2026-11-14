@@ -41,7 +41,7 @@ pub(super) async fn open(setup: &Create<'_>, values: &Values) -> Opened {
     let features = setup.presets.as_ref().map(|places| &places.features);
     let preset = situated(
         setup.preset.clone(),
-        (setup.images, setup.venue.as_str()),
+        (setup.images, setup.life, setup.venue.as_str()),
         features,
     );
     let installed = |feature| features.is_none_or(|features| features.installed(feature));

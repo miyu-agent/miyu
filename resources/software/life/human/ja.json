@@ -1,0 +1,15 @@
+{
+  "tools": {
+    "end_life": {
+      "name": "この人生を終える",
+      "subject": "last_words",
+      "icon": "✧"
+    }
+  },
+  "said": {
+    "end/ended": "この人生は終わりました",
+    "end/required": "最後の言葉がありません",
+    "end/already": "この人生はもう終わっています",
+    "end/not-life": "人生セッションではありません"
+  }
+}

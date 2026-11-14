@@ -109,6 +109,7 @@ pub(crate) async fn get(
         group: None,
         profile: false,
         images: false,
+        life: false,
         titles: true,
         // 终端集成开的（施工 8-33 四补）：会话列表照它分得出来。
         origin: Some("terminal".to_string()),

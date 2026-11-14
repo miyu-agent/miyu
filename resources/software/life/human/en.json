@@ -1,0 +1,15 @@
+{
+  "tools": {
+    "end_life": {
+      "name": "End this life",
+      "subject": "last_words",
+      "icon": "✧"
+    }
+  },
+  "said": {
+    "end/ended": "This life has ended",
+    "end/required": "No last words given",
+    "end/already": "This life has already ended",
+    "end/not-life": "Not a life session"
+  }
+}

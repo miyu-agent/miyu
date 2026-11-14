@@ -24,18 +24,25 @@ use crate::Core;
 pub(crate) fn port(core: &Arc<Core>) -> Arc<dyn SchedulePort> {
     Arc::new(Port {
         core: Arc::downgrade(core),
+        life: crate::life::Ending::new(core),
     })
 }
 
 /// 核心那一头：她建的记在唤醒表里。
 struct Port {
     core: Weak<Core>,
+    /// 人生会话的端口（施工 LF-4 下）：`end_life` 经它结束人生。
+    life: crate::life::Ending,
 }
 
 impl SchedulePort for Port {
     fn schedule(&self, session: &SessionId, ask: ScheduleAsk) -> ScheduleAnswering<'_> {
         let answered = self.answer(session, ask);
         Box::pin(async move { answered })
+    }
+
+    fn life(&self) -> Option<&dyn miyu_tool::LifePort> {
+        Some(&self.life)
     }
 }
 

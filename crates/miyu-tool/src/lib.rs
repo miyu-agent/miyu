@@ -30,6 +30,7 @@ mod goals;
 mod hooks;
 mod jobs;
 mod knowledge;
+mod life;
 pub mod load;
 mod log;
 mod memory;
@@ -74,6 +75,7 @@ pub use knowledge::{
     KB_DELETE, KB_EDIT, KB_HITS, KB_READ, KB_SAVE, KB_SEARCH, KbHit, KbPage, KbRefused, KbSave,
     KbTrashed, KbWritten, KnowledgePort,
 };
+pub use life::{END_LIFE, LifeEnding, LifePort, LifeRefused};
 pub use log::{Log, ReadLog};
 pub use memory::{
     CARDS, FORGET, FoundCard, FoundMemory, FoundTurn, Line, MEMORIES, MEMORY_SEARCH, MemoryLines,

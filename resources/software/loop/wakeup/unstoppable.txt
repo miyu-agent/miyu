@@ -1,1 +1,1 @@
-A life loop cannot be stopped.
+A life loop cannot be stopped. To end this life, use end_life.

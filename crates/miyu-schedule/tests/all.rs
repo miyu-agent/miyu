@@ -2,5 +2,6 @@
 
 mod budget;
 mod cron;
+mod life;
 mod support;
 mod wakeup;

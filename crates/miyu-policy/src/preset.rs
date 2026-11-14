@@ -258,6 +258,19 @@ impl Chosen {
         self
     }
 
+    /// 照会话是不是没结束的人生会话定（施工 LF-4 下，`life.md`「结束」）：不是的（`life` 是假），`features` 里只给人生会话的包
+    /// 整包扣下，同 [`Chosen::situated`] 扣下要图的包：当没开，不算进没开的那几个（换个预设也没有）。接在 [`Chosen::situated`]
+    /// 后面：它换掉扣下的那一份，这里只往上加。指纹不变。
+    #[must_use]
+    pub fn living(mut self, features: &Features, life: bool) -> Chosen {
+        if !life {
+            let held = features.life_packages().iter().cloned();
+            self.file.withheld.extend(held);
+            self.off = off(&self.file, features);
+        }
+        self
+    }
+
     /// 记进快照的那一份。
     pub fn pin(&self) -> PresetPin {
         PresetPin {

@@ -230,6 +230,7 @@ impl Home {
             }),
             confined: lines.confined,
             images: lines.images,
+            life: false,
             titles: true,
             dream: None,
             origin: None,

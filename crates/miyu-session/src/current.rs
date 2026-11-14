@@ -51,6 +51,8 @@ pub struct Current {
     pub sealed: bool,
     /// 人生结束了没有（施工 LF-4 上）：日志里有过 `life.ended`。
     pub life_ended: bool,
+    /// 是不是人生会话（施工 LF-4 下）：日志里有过 `life.started`，结束了的也是。她的 `end_life` 照它认。
+    pub life: bool,
 }
 
 /// 这个会话累计的：用量、金额照用量汇总的口径，另数压缩、缓存断了几次。

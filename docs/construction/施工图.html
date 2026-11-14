@@ -1529,6 +1529,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sLF6"><span class="n">LF-6</span>人生会话醒来时交新记的<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF4a"><span class="n">LF-4 上</span>结束一段人生<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF7"><span class="n">LF-7</span>别的会话知道她现在在干嘛<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sLF4b"><span class="n">LF-4 下</span>她自己结束这段人生<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -59039,6 +59040,59 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LF-7-现在在干嘛.md</code>；设计 <code>70-推演人生.md</code>；蓝图 <code>life.md</code>、<code>schedules.md</code>、<code>session/actor.md</code>、<code>prompts.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sLF4b" aria-labelledby="h-sLF4b">
+  <div class="sheet-head"><h2 id="h-sLF4b"><span class="no">LF-4 下</span>她自己结束这段人生</h2><span class="pill done">做完</span></div>
+  <p class="purpose">她可以自己结束这段人生。这是一件沉重的事，不是「停掉定时」：单独一件工具 <code>end_life</code>，必须写遗言，只在没结束的人生会话里有。调了以后这一轮照常说完，之后做的事和主人结束一模一样。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-schedule · life.rs　miyu-endpoint · life/port.rs　resources/packages/base-life</span><span class="dir-note">LF-4 下</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>新的出厂内置包 <code>base-life</code>：一件工具 <code>end_life {last_words}</code>，清单写 <code>needs = ["life"]</code></li>
+              <li>只有没结束的人生会话的工具面里有它，从第一轮起每一轮都一样</li>
+              <li>调了：当场记下结束、回她一句，后面的清理 <code>life::finish</code> 在后台做</li>
+              <li>人生循环上 <code>stop</code> 的那句拒绝补上去处</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">工具说明用更重的一版：这是你的死亡，这段人生记得的一切会被抹去</span><span class="rl">项目主人 2026-11-14 定</span></div>
+          <div class="tile new"><span class="nm">needs 多认 life：别的会话开了这个包也拿不到</span><span class="rl">主会话定</span></div>
+          <div class="tile new"><span class="nm">端口挂在定时端口上</span><span class="rl">两个文件贴着 500 行，施工时定</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LF-4 下</dd></div>
+        <div><dt>名称</dt><dd>她自己结束这段人生</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">LF-4下</dd></div>
+        <div><dt>验收</dt><dd>门禁十一项、Windows 版 clippy 全过；五个手写变异都被逮住</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>人生会话第一、二、三轮的工具面逐项相等，都有 <code>end_life</code>；拿同一个预设、开了这个包的普通会话没有</span></li>
+        <li><span class="ok">✓</span><span>带遗言调：这一轮照常说完，之后封存、不再醒、记忆清了，主人收到的通知是她自己、带遗言</span></li>
+        <li><span class="ok">✓</span><span>不带遗言拒；同一轮里调两次只记一条、只推一次</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LF-4下-她自己结束.md</code>；设计 <code>70-推演人生.md</code>；蓝图 <code>life.md</code>、<code>tools/end_life.md</code>、<code>packages.md</code>、<code>presets.md</code>。</li>
       </ul>
     </div>
   </div>

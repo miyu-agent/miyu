@@ -1,0 +1,20 @@
+# 结束人生（施工 LF-4 下，设计 70 第二节第 3 条、第三节第 5 条）：人格组的一个包，内置，代码编在核心里（`miyu-schedule`），默认装、能关
+# 能卸。工具 `end_life`：她自己结束这段人生。`needs = ["life"]`：只在没结束的人生会话里有，别的会话拿同一个预设也没有。给人看的字，
+# 不发给模型。
+
+[package]
+author = "miyu-agent"
+upstream = "https://github.com/miyu-agent/miyu"
+prefix = "life"
+protocol = [1, 1]
+groups = ["persona"]
+needs = ["life"]
+name = { en = "End of life", zh = "结束人生", ja = "人生の終わり" }
+summary = { en = "In a life session, the AI can end this life itself, leaving last words", zh = "人生会话里 AI 可以自己结束这段人生，留下遗言", ja = "人生セッションで、AI が自分でこの人生を終え、最後の言葉を残せます" }
+
+[features.life]
+name = { en = "End of life", zh = "结束人生", ja = "人生の終わり" }
+summary = { en = "In a life session, the AI can end this life itself, leaving last words", zh = "人生会话里 AI 可以自己结束这段人生，留下遗言", ja = "人生セッションで、AI が自分でこの人生を終え、最後の言葉を残せます" }
+tools = ["end_life"]
+
+[builtin]

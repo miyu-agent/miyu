@@ -158,7 +158,10 @@ async fn stopping_a_life_loop_is_refused_in_words() {
     let port = Fake::answering(Err(ScheduleRefused::Unstoppable));
     let done = run("schedule_wakeup", Some(&port), json!({"stop": true})).await;
     assert!(done.error);
-    assert_eq!(text(&done), "A life loop cannot be stopped.");
+    assert_eq!(
+        text(&done),
+        "A life loop cannot be stopped. To end this life, use end_life."
+    );
     assert_eq!(said(&done).0, "software/loop/wakeup/unstoppable");
 }
 

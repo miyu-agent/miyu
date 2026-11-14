@@ -212,6 +212,9 @@ pub struct Create<'a> {
     pub confined: bool,
     /// 场所显示得了图片吗（施工 X-25）：显示不了的，要图的包整包当没开（[`Chosen::situated`]），记进 `session.created`。
     pub images: bool,
+    /// 开的是人生会话（施工 LF-4 下）：`life.start` 开的才是，那时日志里还没有 `life.started`。不是的，只给人生会话的包整包当没开
+    /// （[`Chosen::living`]）；之后回合开始照日志问。不记进 `session.created`。
+    pub life: bool,
     /// 自动起标题吗（施工 O-43）：假的记进 `session.created`，这个会话从此不自动起标题。
     pub titles: bool,
     /// 整理会话（施工 D-1 上，设计 41）：记进 `session.created`；快照是裸的（没有 system、工具，回合开始不注入事实），之后不随
@@ -294,14 +297,19 @@ pub struct Load<'a> {
 }
 
 /// 照场所定预设（[`Chosen::situated`]）：显示不了图片的会话里要图的包整包扣下（施工 X-25），接这个场所平台的包整包开着（施工
-/// IM-4）。没交装了的功能的（测试里造的）照旧。
+/// IM-4）；不是人生会话（`life` 是假）的扣下只给人生会话的包（施工 LF-4 下，[`Chosen::living`]）。没交装了的功能的（测试里造的）
+/// 照旧。
 pub(crate) fn situated(
     preset: Option<Chosen>,
-    (images, venue): (bool, &str),
+    (images, life, venue): (bool, bool, &str),
     features: Option<&Features>,
 ) -> Option<Chosen> {
     match features {
-        Some(features) => preset.map(|chosen| chosen.situated(features, images, venue)),
+        Some(features) => preset.map(|chosen| {
+            chosen
+                .situated(features, images, venue)
+                .living(features, life)
+        }),
         None => preset,
     }
 }

@@ -54,6 +54,7 @@ summary = { en = "Memory and staying in character", zh = "记忆和人设遵循"
 order = [
     "base-memory",
     "base-roleplay",
+    "base-life",
 ]
 
 # 查资料（施工 FG-1，设计 52 第一节）。

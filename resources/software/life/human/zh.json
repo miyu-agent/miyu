@@ -1,0 +1,15 @@
+{
+  "tools": {
+    "end_life": {
+      "name": "结束这段人生",
+      "subject": "last_words",
+      "icon": "✧"
+    }
+  },
+  "said": {
+    "end/ended": "这段人生结束了",
+    "end/required": "没写遗言",
+    "end/already": "这段人生已经结束了",
+    "end/not-life": "这不是人生会话"
+  }
+}

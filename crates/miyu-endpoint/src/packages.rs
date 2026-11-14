@@ -413,7 +413,7 @@ pub(crate) fn installed(core: &std::sync::Arc<Core>) -> miyu_session::Installed 
 
 /// 装了的功能（施工 F-3 上，设计 30 第三节）：读成了的内置包、扩展包带的，照清单读的先后（包照编号，包里照写的先后）；
 /// 没写功能的包整个算一个（[`Manifest::features_of`]）。界面、小程序不带。预设照它开关、工具照它归。清单写了
-/// `needs = ["images"]` 的包另记一份（施工 X-25），接平台的包和它接的平台另记一份（施工 IM-4）。
+/// `needs = ["images"]`、`needs = ["life"]` 的包各另记一份（施工 X-25、LF-4 下），接平台的包和它接的平台另记一份（施工 IM-4）。
 pub fn features(found: &[Found]) -> Features {
     let connections = found
         .iter()
@@ -425,12 +425,18 @@ pub fn features(found: &[Found]) -> Features {
             ))
         })
         .collect();
-    let images = found
-        .iter()
-        .filter_map(|one| one.read.as_ref().ok().map(|manifest| (one, manifest)))
-        .filter(|(_, manifest)| manifest.needs.contains(&miyu_config::package::Need::Images))
-        .map(|(one, _)| one.id.clone());
-    let images: Vec<String> = images.collect();
+    let needing = |need: miyu_config::package::Need| -> Vec<String> {
+        let wants = |one: &&Found| {
+            one.read
+                .as_ref()
+                .is_ok_and(|read| read.needs.contains(&need))
+        };
+        found
+            .iter()
+            .filter(wants)
+            .map(|one| one.id.clone())
+            .collect()
+    };
     Features::new(
         found
             .iter()
@@ -451,7 +457,8 @@ pub fn features(found: &[Found]) -> Features {
             })
             .collect(),
     )
-    .needing_images(images)
+    .needing_images(needing(miyu_config::package::Need::Images))
+    .needing_life(needing(miyu_config::package::Need::Life))
     .connecting(connections)
 }
 

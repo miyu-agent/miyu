@@ -63,6 +63,7 @@ async fn no_one_wakes_the_child_between_its_stopped_report_and_its_deletion() {
         group: None,
         profile: false,
         images: true,
+        life: false,
         titles: true,
         origin: None,
         confined: false,
