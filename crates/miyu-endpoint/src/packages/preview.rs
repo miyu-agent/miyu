@@ -298,6 +298,17 @@ fn carries(
             .map(|driver| driver.name.as_str())
             .collect();
         answer.insert("drivers".into(), json!(names));
+        // 驱动会让供应商自己跑的工具（施工 HT-4，设计 71 第三节第 7 条）：驱动名 → 清单 `hosted` 里的名字，没写的驱动不列，
+        // 一个都没写的不带这一格。`drivers` 照旧是名字的数组，旧的头读得懂。
+        let hosted: Map<String, Value> = manifest
+            .drivers
+            .iter()
+            .filter(|driver| !driver.hosted.is_empty())
+            .map(|driver| (driver.name.clone(), json!(driver.hosted)))
+            .collect();
+        if !hosted.is_empty() {
+            answer.insert("hosted".into(), Value::Object(hosted));
+        }
     }
     // 第一个子命令照旧放在 `command`，几个都在 `commands`（施工 F-13）。
     if let Some(command) = manifest.command() {

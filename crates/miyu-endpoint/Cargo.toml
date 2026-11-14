@@ -162,6 +162,10 @@ name = "model_call_log"
 path = "tests/model_call_log.rs"
 
 [[test]]
+name = "extension_driver_hosted_log"
+path = "tests/extension_driver_hosted_log.rs"
+
+[[test]]
 name = "robust_methods"
 path = "tests/robust_methods.rs"
 

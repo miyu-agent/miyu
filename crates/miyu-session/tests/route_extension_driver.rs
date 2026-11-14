@@ -146,7 +146,11 @@ impl DriverPort for Fake {
 }
 
 fn declared(key: DriverKey) -> Result<Declared, String> {
-    Ok(Declared { key, images: false })
+    Ok(Declared {
+        key,
+        images: false,
+        hosted: Vec::new(),
+    })
 }
 
 /// 两家：`ag` 走扩展驱动 `pi/ag`（`key` 照写，没地址），`b` 走内置的、配了别的 key；`chat` 照写。

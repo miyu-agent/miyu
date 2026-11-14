@@ -43,7 +43,7 @@ pub use capability::Capability;
 pub use code::Code;
 pub use content::Content;
 pub use depend::Dependency;
-pub use driver::{DriverCache, DriverDecl, DriverKey, driver_name};
+pub use driver::{DriverCache, DriverDecl, DriverKey, HOSTED_NAME_BYTES, driver_name};
 pub use export::{Export, under};
 pub use features::Feature;
 pub use guard::{ACCESS as GUARD_ACCESS, Guard};

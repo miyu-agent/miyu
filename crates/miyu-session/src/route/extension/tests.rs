@@ -69,6 +69,7 @@ impl DriverPort for Fake {
         Ok(Declared {
             key: DriverKey::Optional,
             images: true,
+            hosted: vec!["search_web".to_string()],
         })
     }
 
@@ -177,6 +178,7 @@ fn ready(fake: &Arc<Fake>, idle: Duration) -> Ready {
             port,
             reach: Reach {
                 images: false,
+                hosted: vec!["search_web".to_string()],
                 key: Some(Secret::new("sk-ag").expect("key")),
                 base_url: None,
             },

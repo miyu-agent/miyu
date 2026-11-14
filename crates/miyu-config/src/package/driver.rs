@@ -20,6 +20,9 @@ pub struct DriverDecl {
     pub key: DriverKey,
     /// 看得了图的：请求里的图交过去（设计 66 第五节）。
     pub images: bool,
+    /// 会让供应商自己跑的工具名（设计 71 第三节第 7 条）：装包确认屏照它列出来，交上来的不在里面的核心照收、记一行 `WARN`。
+    /// 每个 1 到 64 个字节、不带控制字符、不重；没写的是空的。
+    pub hosted: Vec<String>,
     /// 这一段写在第几行。
     pub line: Option<usize>,
 }
@@ -30,6 +33,10 @@ impl DriverDecl {
         format!("{package}/{}", self.name)
     }
 }
+
+/// 清单 `hosted` 里一个工具名最多几个字节（设计 71 第三节第 7 条）：供应商的工具名都很短，写长了多半是写错了。执行器记
+/// 「没声明的名字说过没有」也照这个数（更长的一定没声明，不进表）。
+pub const HOSTED_NAME_BYTES: usize = 64;
 
 /// 驱动名的写法：同命令名（小写字母开头，小写字母、数字、`-`，最多 32 个）。配置里 `<包编号>/<驱动名>` 的后半照它查（施工 MD-1）。
 pub fn driver_name(name: &str) -> bool {
@@ -129,15 +136,49 @@ pub(super) fn read(reader: &Reader<'_>, node: &Item) -> Result<Vec<DriverDecl>, 
                 )
             })?,
         };
+        let hosted = hosted(table.get("hosted"), line, &at)?;
         drivers.push(DriverDecl {
             name,
             cache,
             key,
             images,
+            hosted,
             line,
         });
     }
     Ok(drivers)
+}
+
+/// `hosted`：工具名的数组，没写的是空的；每个 1 到 [`HOSTED_NAME_BYTES`] 个字节、不带控制字符、一段里不重（施工 HT-4）。
+fn hosted(item: Option<&Item>, line: Option<usize>, at: &str) -> Result<Vec<String>, Problem> {
+    let Some(item) = item else {
+        return Ok(Vec::new());
+    };
+    let key = format!("{at}.hosted");
+    let names = item
+        .as_array()
+        .and_then(|array| {
+            array
+                .iter()
+                .map(|value| value.as_str().map(str::to_string))
+                .collect::<Option<Vec<_>>>()
+        })
+        .ok_or_else(|| bad(line, &key, format!("{key} must be a list of tool names")))?;
+    for (n, name) in names.iter().enumerate() {
+        if name.is_empty() || name.len() > HOSTED_NAME_BYTES || name.chars().any(char::is_control) {
+            return Err(bad(
+                line,
+                &key,
+                format!(
+                    "{key} {name:?} must be 1 to {HOSTED_NAME_BYTES} bytes without control characters"
+                ),
+            ));
+        }
+        if names[..n].contains(name) {
+            return Err(bad(line, &key, format!("{key} {name:?} is written twice")));
+        }
+    }
+    Ok(names)
 }
 
 /// 写了 `[[driver]]` 的要声明 `model.driver`，声明了 `model.driver` 的要写 `[[driver]]`（设计 66 第四节第 1 条）：报在第一段上，

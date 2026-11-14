@@ -4,7 +4,9 @@
 //!   去、不重新解析；指纹的哈希写成 16 位十六进制的字（JSON 的数到 2⁵³ 以上就不准了）；`blobs` 只有声明了 `images` 的才有。
 //! - 请求：别家驱动的私有数据拿掉（设计 66 第四节第 3 条）；供应商侧工具带着这个家族的私有数据的原样交，别家的、没带私有
 //!   数据的换成一块正文，同内置驱动写的那一段字（施工 HT-2，设计 71 第三节第 5 条）。没有要改的原样交、不拷贝。
-//! - 增量：一条一样，和内核的 [`Delta`] 一一对应；私有数据记成这个驱动的家族（`<包编号>/<驱动名>`）。
+//! - 增量：一条一样，和内核的 [`Delta`] 一一对应；私有数据记成这个驱动的家族（`<包编号>/<驱动名>`）。供应商侧工具开一块是
+//!   `{"start": {"index", "kind": {"hosted_tool": {"name"}}}}`，它的结果是 `{"outcome": {"index", "text", "failed"?}}`，`failed`
+//!   不写当假（施工 HT-4，设计 71 第三节第 6 条）。
 //! - 回答：`{"usage"?, "error"?, "sent"?}`；分类照设计第八节第 3 条的七种认，不认识的当 `unclassified`，原话截到 500 个字，
 //!   要等多久只认限速的。
 
@@ -227,20 +229,39 @@ fn private(block: &Block) -> Option<&Private> {
 #[derive(Deserialize)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 enum Wire {
-    Start { index: usize, kind: WireKind },
-    Text { index: usize, text: String },
-    Private { index: usize, data: Value },
-    End { index: usize },
+    Start {
+        index: usize,
+        kind: WireKind,
+    },
+    Text {
+        index: usize,
+        text: String,
+    },
+    Private {
+        index: usize,
+        data: Value,
+    },
+    /// 供应商侧工具的结果：`failed` 不写当假。
+    Outcome {
+        index: usize,
+        text: String,
+        #[serde(default)]
+        failed: bool,
+    },
+    End {
+        index: usize,
+    },
     Truncated,
 }
 
-/// 一块的种类：`text`、`reasoning`、`{"tool_call": {"name"}}`。
+/// 一块的种类：`text`、`reasoning`、`{"tool_call": {"name"}}`、`{"hosted_tool": {"name"}}`。
 #[derive(Deserialize)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 enum WireKind {
     Text,
     Reasoning,
     ToolCall { name: String },
+    HostedTool { name: String },
 }
 
 /// 读一份 `driver.delta` 的 `deltas`：私有数据记成 `family` 的。
@@ -260,6 +281,7 @@ pub(super) fn deltas(batch: Value, family: &DriverFamily) -> Result<Vec<Delta>, 
                         WireKind::Text => Kind::Text,
                         WireKind::Reasoning => Kind::Reasoning,
                         WireKind::ToolCall { name } => Kind::ToolCall { name },
+                        WireKind::HostedTool { name } => Kind::HostedTool { name },
                     },
                 },
                 Wire::Text { index, text } => Delta::Text { index, text },
@@ -269,6 +291,15 @@ pub(super) fn deltas(batch: Value, family: &DriverFamily) -> Result<Vec<Delta>, 
                         driver: family.clone(),
                         data: RawJson::of(&data).ok_or("private data is not JSON")?,
                     },
+                },
+                Wire::Outcome {
+                    index,
+                    text,
+                    failed,
+                } => Delta::Outcome {
+                    index,
+                    text,
+                    failed,
                 },
                 Wire::End { index } => Delta::End { index },
                 Wire::Truncated => Delta::Truncated,

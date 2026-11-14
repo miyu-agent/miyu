@@ -154,6 +154,8 @@
 | `session` | INFO | `failover` | `from`、`to` 或 `key`、`class` | 出错换端点：从 `<供应商>/<模型>` 换到别的模型写 `to`，只换 key、模型没变的写换到第几个 `key`（`models.md` 第五条第 8 条，施工 8-9）。别的候选都在冷却、只剩等的不记。带会话编号；一次性入口记的不带（施工 8-20） |
 | `session` | INFO | `model fallback` | `from`、`to` | 回合开始重新解析，钉着的引用解析不出，退回这一轮的 `models.chat`：原来的、退回的（`models.md` 第六条第 4 条，施工 8-10）。带会话编号 |
 | `session` | WARN | `driver bad delta`、`driver bad answer` | `driver`（`<包>/<驱动名>`）、`error` | 扩展提供的模型驱动交的增量对不上（块的先后、写法），回答写坏了：这一次当 `unclassified` 结束，增量不对的发 `driver.cancel`（设计 66 第五节第 2 条，施工 MD-2）。参数、key 不进日志 |
+| `session` | WARN | `driver hosted tool undeclared` | `package`、`driver`（驱动名）、`tool`（供应商自己的工具名） | 扩展提供的模型驱动交了一块供应商侧工具，名字不在清单这个驱动的 `hosted` 里：照收、照落盘、照画，只记这一行（设计 71 第三节第 7 条，施工 HT-4）。同一个驱动同一个名字每次核心运行只记一次；每个驱动最多列 64 个名字，再有的和长过 64 个字节的记下一行 |
+| `session` | WARN | `driver hosted tools undeclared, more not listed` | `package`、`driver`（驱动名） | 同上，这个驱动列满了 64 个没声明的名字又来新的，或者名字长过 64 个字节（清单 `hosted` 一个名字的上限，更长的一定没声明）：照收、照落盘、照画，不带名字，名字也不进表（扩展能无限造新名字，表不能跟着长，施工 HT-4）。每个驱动每次核心运行至多记一次，之后这个驱动再有都不记 |
 | `session` | WARN | `driver encoded the same request differently` | `driver`、`request`（请求的哈希）、`before`、`sent`（两次报的 `sent`） | 同一个请求第二次（重试、重放）扩展驱动报的真发出去的字节不一样：编码看了参数以外的东西，缓存前缀命中不了。每个驱动每次核心运行记一次，每个驱动只留最近 64 次比（设计 66 第七节第 3 条，施工 MD-3） |
 | `endpoint` | DEBUG | `unknown model` | `why` | `session.create`、`session.configure`、`model.call` 的 `model` 解析不出，回 `unknown_model`（施工 8-8、8-10、8-20） |
 | `session` | INFO | `provider tested` | `provider`、`model`（没有模型可试的是空的）、`ok` | `provider.test` 试了一次（`models.md` 第七条第 4 条第 7 款，施工 8-11）：不属于哪个会话，不带会话编号；候选的 `provider` 是它推的编号。key、地址不进这一行 |

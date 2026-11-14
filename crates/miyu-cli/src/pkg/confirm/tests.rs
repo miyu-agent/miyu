@@ -54,6 +54,28 @@ fn an_upgrade_says_what_it_replaces_carries_needs_and_weighs() {
         plan(&driver, Doing::Install, &Language::English)[1],
         "Includes: extension, model driver ag"
     );
+    // 驱动会让供应商自己跑的（施工 HT-4）：声明了的驱动在「包含」下面一行，缩进到那一列；没声明的不印。
+    let hosted = json!({"package": "gravity", "program": "process", "drivers": ["ag", "lite"],
+                        "hosted": {"ag": ["search_web", "read_url_content"]}, "files": 1, "size": 9});
+    assert_eq!(
+        plan(&hosted, Doing::Install, &Language::Chinese)[1..3],
+        [
+            "包含：扩展程序、模型驱动 ag、模型驱动 lite",
+            "      模型驱动 ag 会让供应商自己跑：search_web、read_url_content",
+        ]
+    );
+    assert_eq!(
+        plan(&hosted, Doing::Install, &Language::English)[1..3],
+        [
+            "Includes: extension, model driver ag, model driver lite",
+            "          model driver ag has the provider run on its own: search_web, read_url_content",
+        ]
+    );
+    assert_eq!(
+        plan(&driver, Doing::Install, &Language::Chinese).len(),
+        3,
+        "没声明的不写这一行"
+    );
     let back = json!({"package": "net", "version": "1", "program": "builtin", "restores": true});
     assert_eq!(
         plan(&back, Doing::Restore, &Language::Chinese),

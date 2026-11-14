@@ -114,6 +114,67 @@ fn every_delta_kind_reads() {
 }
 
 #[test]
+fn hosted_tool_deltas_read_and_failed_defaults_to_false() {
+    let read = deltas(
+        json!([
+            {"start": {"index": 0, "kind": {"hosted_tool": {"name": "search_web"}}}},
+            {"text": {"index": 0, "text": "{\"query\":\"rust\"}"}},
+            {"private": {"index": 0, "data": {"step": 3}}},
+            {"outcome": {"index": 0, "text": "1. Rust"}},
+            {"outcome": {"index": 0, "text": "no network", "failed": true}},
+            {"outcome": {"index": 0, "text": "fine", "failed": false}},
+            {"end": {"index": 0}}
+        ]),
+        &family(),
+    )
+    .expect("读得出");
+    assert_eq!(
+        read[0],
+        Delta::Start {
+            index: 0,
+            kind: Kind::HostedTool {
+                name: "search_web".to_string()
+            }
+        }
+    );
+    let Delta::Private { private, .. } = &read[2] else {
+        panic!("{read:?}")
+    };
+    assert_eq!(private.driver.as_str(), "pi/ag", "记成这个驱动的家族");
+    let outcomes: Vec<_> = read[3..6]
+        .iter()
+        .map(|delta| match delta {
+            Delta::Outcome {
+                index,
+                text,
+                failed,
+            } => (*index, text.as_str(), *failed),
+            other => panic!("{other:?}"),
+        })
+        .collect();
+    assert_eq!(
+        outcomes,
+        [
+            (0, "1. Rust", false),
+            (0, "no network", true),
+            (0, "fine", false)
+        ],
+        "failed 不写当假"
+    );
+    for bad in [
+        json!([{"start": {"index": 0, "kind": {"hosted_tool": {}}}}]),
+        json!([{"start": {"index": 0, "kind": {"hosted_tool": {"name": "x", "id": 1}}}}]),
+        json!([{"start": {"index": 0, "kind": "hosted_tool"}}]),
+        json!([{"outcome": {"index": 0}}]),
+        json!([{"outcome": {"index": 0, "text": "x", "extra": 1}}]),
+        json!([{"outcome": {"index": 0, "text": "x", "failed": "yes"}}]),
+        json!([{"outcome": {"text": "x"}}]),
+    ] {
+        assert!(deltas(bad.clone(), &family()).is_err(), "{bad}");
+    }
+}
+
+#[test]
 fn errors_are_classified_cut_and_only_rate_limits_wait() {
     for (class, wanted) in [
         ("retryable", ErrorClass::Retryable),

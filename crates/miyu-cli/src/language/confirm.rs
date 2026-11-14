@@ -89,6 +89,16 @@ impl Language {
         }
     }
 
+    /// 模型驱动 `driver` 会让供应商自己跑的工具（施工 HT-4，设计 71 第三节第 7 条）：`names` 是连好的名字，印在「包含」下面。
+    pub(crate) fn hosted_by(&self, driver: &str, names: &str) -> String {
+        match self {
+            Language::Chinese => format!("模型驱动 {driver} 会让供应商自己跑：{names}"),
+            Language::English => {
+                format!("model driver {driver} has the provider run on its own: {names}")
+            }
+        }
+    }
+
     /// 读不成的一个：包文件夹里的路径和为什么（施工 X-13 补）。为什么是核心给的英文一句，同 `miyu check`。
     pub(crate) fn skipped(&self, file: &str, why: &str) -> String {
         match self {

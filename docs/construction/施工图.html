@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>1073</b><span>/ 1082 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>1074</b><span>/ 1083 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">HT-2</b><span>最近一步（HT-2 供应商侧工具进请求）</span></li>
+    <li><b class="mono">HT-4</b><span>最近一步（HT-4 扩展驱动交得上供应商侧工具）</span></li>
   </ul>
 </header>
 
@@ -1543,6 +1543,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sHT5"><span class="n">HT-5</span>Anthropic 驱动的服务端工具<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sNF1"><span class="n">NF-1</span>联网服务切供应商<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sPK1"><span class="n">PK-1</span>扩展拿主人配的供应商 key<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sHT4"><span class="n">HT-4</span>扩展驱动交得上供应商侧工具<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -59798,6 +59799,60 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/PK-1-扩展拿供应商的key.md</code>；蓝图 <code>extensions.md</code>「配置」第 5 条；协议参考 <code>extensions.md</code>「<code>provider_key</code>」（中英）；作者文档 <code>manifest.md</code> 的 <code>[provider_key]</code>（中英）。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sHT4" aria-labelledby="h-sHT4">
+  <div class="sheet-head"><h2 id="h-sHT4"><span class="no">HT-4</span>扩展驱动交得上供应商侧工具</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">借 agent CLI 订阅的扩展驱动（antigravity 这类）要把「供应商自己跑了一件工具」报上来。这一步线上多两种写法，清单里写明会让供应商自己跑哪些工具，装包时人看得见；从扩展进程到日志、到视图、到下一次请求是通的。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">扩展驱动交得上供应商侧工具</span><span class="dir-note">HT-4</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>driver.delta</code>：<code>start</code> 多 <code>{"hosted_tool": {"name"}}</code>，增量多 <code>{"outcome": {"index", "text", "failed"?}}</code>，照累加器的规矩查</li>
+              <li>清单 <code>[[driver]]</code> 多一格 <code>hosted</code>；装包预览带上，命令行确认屏写「模型驱动 ag 会让供应商自己跑：…」</li>
+              <li>没声明的名字交上来照收、照画，记一行 <code>WARN</code>，同一个驱动同一个名字只说一次</li>
+              <li><code>driver.check</code> 的样本带一块自己家的供应商侧工具；测试扩展多两种答法</li>
+              <li>作者文档加「供应商自己跑的工具」一节</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">会改东西的原生工具（跑命令、写文件）不许报成供应商侧工具，要关掉、改走核心的工具</span><span class="rl">设计 71 第三节第 7 条</span></div>
+          <div class="tile new"><span class="nm">核心不拦没声明的名字：挡不住供应商那边跑什么，只照实显示、照实记</span><span class="rl">设计 71 第三节第 7 条</span></div>
+          <div class="tile new"><span class="nm">想原样收回自己交的块，交的时候带一份私有数据；没带的核心换成一段字交回来</span><span class="rl">施工 HT-2、HT-4</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">HT-4</dd></div>
+        <div><dt>名称</dt><dd>扩展驱动交得上供应商侧工具</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">HT-4</dd></div>
+        <div><dt>验收</dt><dd>真核心、真扩展走一遍：日志里有这块、回合正常结束一件工具都没跑；视图里是一步工具，标着供应商；第二轮请求里原样在；换到内置驱动的模型以后是那段字</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>手搓变异 10 个全红</span></li>
+        <li><span class="ok">✓</span><span>没用新写法的扩展驱动，行为和字节不变</span></li>
+        <li><span class="ok">✓</span><span>门禁全过，分支三平台 CI 全绿</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/HT-4-扩展驱动交供应商侧工具.md</code>；<code>crates/miyu-session/src/route/extension/wire.rs</code>、<code>extension.rs</code>；<code>crates/miyu-config/src/package/driver.rs</code>；<code>crates/miyu-endpoint/tests/extension_driver_hosted.rs</code>。</li>
       </ul>
     </div>
   </div>

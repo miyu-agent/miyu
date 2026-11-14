@@ -4,7 +4,9 @@
 //! - `echo`：一段一段交完、回答带用量和 `sent`；
 //! - `half`：交了开头一段就以退出码 3 退出（交了一半断了）；
 //! - `pair`：第一次先不答，第二次来了两次交错着交（第一次的字、第二次的字、各自收尾），先答第二次、再答第一次：核心照 `call`
-//!   分开，两个会话各拿到自己的。
+//!   分开，两个会话各拿到自己的；
+//! - `hosted`：先一块供应商侧工具 `search_web`（参数分两段、带一份私有数据、结果、收），再一块正文（施工 HT-4）；
+//! - `hosted-undeclared`：同上，`search_web` 后面再一块清单里没声明的 `browse_page`。
 
 /// 压着没答的那一次：请求编号、调用编号、要回的字。
 pub(crate) struct Held {
@@ -36,6 +38,15 @@ pub(crate) fn answered(id: &str, how: &str, line: &str, held: &mut Held) -> Vec<
     match how {
         "echo" => {
             let mut lines = deltas(&call, &said);
+            lines.push(answer(id));
+            lines
+        }
+        "hosted" | "hosted-undeclared" => {
+            let names: &[&str] = match how {
+                "hosted" => &["search_web"],
+                _ => &["search_web", "browse_page"],
+            };
+            let mut lines = searched(&call, names, &said);
             lines.push(answer(id));
             lines
         }
@@ -134,6 +145,35 @@ fn deltas(call: &str, said: &str) -> Vec<String> {
         ),
         delta(call, r#"{"end":{"index":0}}"#),
     ]
+}
+
+/// 照先后一块块供应商侧工具 `names`（从第 0 块起），再一块正文 `said`：每块工具开、参数的前一段一条 `driver.delta`，参数的后
+/// 一段、私有数据、结果、收一条；正文一条。
+fn searched(call: &str, names: &[&str], said: &str) -> Vec<String> {
+    let mut lines = Vec::new();
+    for (index, name) in names.iter().enumerate() {
+        lines.push(delta(
+            call,
+            &format!(
+                r#"{{"start":{{"index":{index},"kind":{{"hosted_tool":{{"name":"{name}"}}}}}}}},{{"text":{{"index":{index},"text":"{{\"query\":"}}}}"#
+            ),
+        ));
+        lines.push(delta(
+            call,
+            &format!(
+                r#"{{"text":{{"index":{index},"text":"\"rust\"}}"}}}},{{"private":{{"index":{index},"data":{{"step":7}}}}}},{{"outcome":{{"index":{index},"text":"1. Rust https://www.rust-lang.org"}}}},{{"end":{{"index":{index}}}}}"#
+            ),
+        ));
+    }
+    let index = names.len();
+    lines.push(delta(
+        call,
+        &format!(
+            r#"{{"start":{{"index":{index},"kind":"text"}}}},{{"text":{{"index":{index},"text":"{}"}}}},{{"end":{{"index":{index}}}}}"#,
+            super::quoted(said)
+        ),
+    ));
+    lines
 }
 
 fn delta(call: &str, deltas: &str) -> String {

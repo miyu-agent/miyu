@@ -134,7 +134,7 @@ pub(super) const SIDE: &[&str] = &["id", "tier", "name", "summary"];
 /// `[[search]]`。
 pub(super) const SEARCH: &[&str] = &["id", "name"];
 /// `[[driver]]`（施工 MD-1，设计 66 第四节）。
-pub(super) const DRIVER: &[&str] = &["name", "cache", "key", "images"];
+pub(super) const DRIVER: &[&str] = &["name", "cache", "key", "images", "hosted"];
 
 /// `[provider_key]`（施工 PK-1）。
 pub(super) const PROVIDER_KEY: &[&str] = &["catalog"];

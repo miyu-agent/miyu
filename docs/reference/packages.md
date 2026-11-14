@@ -88,7 +88,7 @@
 | `package.remove` | `package`；`purge`（可以不写，默认 `false`）：`true` 的连配置目录 `etc/<编号>/`、系统配置里它的设置项一起删，不写的留下，重装同编号照旧用（照 pacman）。已经卸掉、还留着这几样的编号也收 `purge: true`：只删留下的；不带的照旧 `unknown_package` | `{"package", "removed": true, "layer"}`（没装的 `purge` 不带 `layer`） |
 | `package.remove` | `package`：组名是把组里装着的一起卸掉；组外装着的包依赖组里的整个拒（`package_depended`，`data.by` 是它们）；`purge` 同上，照样传给组里每个包 | `{"group", "removed": [<编号>…]}` |
 
-都可以带 `preview: true`：只看一眼、什么都不动，拒绝照真做的那一样。`install` 的预览回 `package`、`version`、要换掉的 `replaces: {"version"}`、装回出厂的、系统加装的 `restores: true`，和带了什么（`program`、`mcp`、`command`（第一个子命令名）、`commands`（全部子命令名）、`page`、`mascot`、`theme`、`connection`、`settings`、`skills`、`scripts`、`slash`、`personas`、`presets`、`knowledge`（知识库的编号）、`capabilities`、`files`、`size`）；`remove` 的预览回 `package`、`layer`、`version`、`files`、`size`、`settings`（要一并删掉的配置键：只有 `purge` 的列，不 `purge` 的是 `[]`）、`state`（会一并删掉的状态目录：`{"path", "size"}`，`path` 是 `var/lib/<编号>/` 的位置，`size` 是底下文件一共多少字节，符号链接不跟进去；没有状态目录的不写这一格。以前这一格是 `true`/`false`）、`config`（配置目录和设置项：`{"path"?, "kept", "settings"?}`，`path` 是 `etc/<编号>/` 的位置，不在的、空的不写；`settings` 是系统配置里写了的它的设置项有几项，0 的不写；`kept` 是 `true` 两样都留下、`false` 都删掉（写了 `purge: true`）；`path`、`settings` 都没有的不写这一格）。卸掉的包留在配置里的设置项不生效，`check` 不报不认识，一个包说一句 `settings_left`。
+都可以带 `preview: true`：只看一眼、什么都不动，拒绝照真做的那一样。`install` 的预览回 `package`、`version`、要换掉的 `replaces: {"version"}`、装回出厂的、系统加装的 `restores: true`，和带了什么（`program`、`mcp`、`drivers`（提供的模型驱动名）、`hosted`（驱动会让供应商自己跑的工具：`{"<驱动名>": ["<工具名>", …]}`，清单 `[[driver]]` 的 `hosted`，没写的驱动不列，一个都没写的不带这一格）、`command`（第一个子命令名）、`commands`（全部子命令名）、`page`、`mascot`、`theme`、`connection`、`settings`、`skills`、`scripts`、`slash`、`personas`、`presets`、`knowledge`（知识库的编号）、`capabilities`、`files`、`size`）；`remove` 的预览回 `package`、`layer`、`version`、`files`、`size`、`settings`（要一并删掉的配置键：只有 `purge` 的列，不 `purge` 的是 `[]`）、`state`（会一并删掉的状态目录：`{"path", "size"}`，`path` 是 `var/lib/<编号>/` 的位置，`size` 是底下文件一共多少字节，符号链接不跟进去；没有状态目录的不写这一格。以前这一格是 `true`/`false`）、`config`（配置目录和设置项：`{"path"?, "kept", "settings"?}`，`path` 是 `etc/<编号>/` 的位置，不在的、空的不写；`settings` 是系统配置里写了的它的设置项有几项，0 的不写；`kept` 是 `true` 两样都留下、`false` 都删掉（写了 `purge: true`）；`path`、`settings` 都没有的不写这一格）。卸掉的包留在配置里的设置项不生效，`check` 不报不认识，一个包说一句 `settings_left`。
 
 从软件源装的预览另有 `source`（从哪来：`official` 官方源里官方的、`community` 官方源里社区收录的或者配置里自己加的源里的）、`feed`（源的名字，官方的是 `official`；施工 PK-3 上以前这一格叫 `source`）、`official`、`origin`、`download`（要下的字节数，连依赖）、`with`（一起装的依赖 `[{"package", "version", "source", "feed", "capabilities"?}]`）、`recommends`（要装的包推荐的、还没装的，去重：`[{"package", "version", "source", "feed", "capabilities"?, "download", "installed_size"?}]`，没有的是空的）、`installed`（要装的全部包装好以后一共多少字节，不算推荐的；有一个索引没写的不写这一格）；`capabilities` 同从包文件夹装的那一格（`{"id", "name", "summary"}`）。
 
@@ -217,7 +217,7 @@
 
 查一个包提供的模型驱动编码稳不稳（作者用 `miyu dev driver-check <包编号>` 调它）。只给人。**会重启那个扩展**。
 
-核心照内置的一小套样本请求（纯文字、工具面、带私有数据的思考和工具调用、看不了图的转述、续写，各一份）调扩展的 `driver.encode`：每一份编两次；重启扩展、等它重新握手，再编一次；三次要逐字节相同。另有只在末尾加一条消息的一对：最后一条稳定区消息里放着记号字 `miyustableend7f3a`，两份编出来的字节都要找得到它，到它为止逐字节相同；找不到的照「没法查稳定区」算没通过。
+核心照内置的一小套样本请求（纯文字、工具面、带私有数据的思考、供应商侧工具和工具调用、看不了图的转述、续写，各一份；供应商侧工具是这个驱动自己家的 `hosted_tool`，带结果、带私有数据，同真发时一样原样交过去）调扩展的 `driver.encode`：每一份编两次；重启扩展、等它重新握手，再编一次；三次要逐字节相同。另有只在末尾加一条消息的一对：最后一条稳定区消息里放着记号字 `miyustableend7f3a`，两份编出来的字节都要找得到它，到它为止逐字节相同；找不到的照「没法查稳定区」算没通过。
 
 **参数**：`package`。**回应** `{"package", "drivers": [...]}`，一个驱动一项：
 

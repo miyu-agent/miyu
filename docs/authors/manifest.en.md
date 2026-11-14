@@ -334,6 +334,7 @@ Provides a model driver, one per entry; `capabilities` must include `model.drive
 | `cache` | Cache type: `contract` (hits while the prefix is unchanged; implement `driver.encode` and check with `miyu dev driver-check`), `best_effort` (default), `none` |
 | `key` | Whether Miyu hands over that provider's key: `none`, `optional` (default), `required` |
 | `images` | `true` if it can see images (default `false`) |
+| `hosted` | Tools this driver has the provider run on its own, such as `["search_web", "read_url_content"]` (default empty): the install screen shows the owner "the provider runs on its own: …" from it. Each 1 to 64 bytes, no control characters, no repeats. A name you send that isn't listed is still taken and shown, with a warning in the run log; see [Writing extensions](extensions.en.md#tools-the-provider-runs-on-its-own) |
 
 It's used only when the owner writes `driver = "<package id>/<driver name>"` in a provider's settings; model profiles, the npm table and the default are always the built-in drivers, so installing your package can't take over a provider the owner already set up. If the package isn't installed, isn't approved or the driver name is wrong, `miyu check` reports it and that provider can't be used; it never falls back to a built-in driver. How Miyu calls your driver (`driver.call`, `driver.delta`, `driver.cancel`) is in the [protocol reference](../reference/extensions.en.md#drivercall-driverdelta-drivercancel).
 

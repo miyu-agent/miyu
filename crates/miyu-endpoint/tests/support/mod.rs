@@ -8,6 +8,7 @@ pub mod doing;
 mod elsewhere;
 pub mod embedding;
 pub mod extensions;
+pub mod hosted;
 pub mod login;
 pub mod mcp;
 pub mod memories;

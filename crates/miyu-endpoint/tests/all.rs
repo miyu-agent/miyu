@@ -92,6 +92,7 @@ mod extension_config;
 mod extension_driver;
 mod extension_driver_call;
 mod extension_driver_check;
+mod extension_driver_hosted;
 mod extension_driver_models;
 mod extension_long_line;
 mod extension_provider_key;

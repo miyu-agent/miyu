@@ -56,6 +56,7 @@ impl DriverPort for Drivers {
                 Ok(Declared {
                     key: declared.key,
                     images: declared.images,
+                    hosted: declared.hosted.clone(),
                 })
             }
         }

@@ -282,6 +282,7 @@ name = "relay"          # 驱动名
 cache = "contract"      # 前缀不变就命中缓存：要实现 driver.encode
 key = "required"        # 要 Miyu 交这一家的 key
 images = false          # 看得了图的写 true
+hosted = ["search_web"] # 会让供应商自己跑的工具（见下面「供应商自己跑的工具」），没有的不写
 ```
 
 主人在供应商的配置里写 `driver = "<你的包编号>/relay"` 才用它（地址可以不写）。用到它的模型时，Miyu 发 `driver.call`：
@@ -309,6 +310,20 @@ images = false          # 看得了图的写 true
 **列模型**（可选）：实现 `driver.models`（参数 `{"driver", "key"?, "base_url"?}`），回 `{"models": [{"id", "window"?, "max_output"?, "tools"?, "vision"?}]}`，主人的模型列表里就有了，窗口、最大输出、能不能调工具、看不看得了图照你报的算（主人手写的压过你的）；不实现的，主人手写模型名。
 
 每个参数、增量、出错的细节见 [协议参考](../reference/extensions.md#drivercalldriverdeltadrivercancel)。
+
+### 供应商自己跑的工具
+
+有的供应商、agent CLI 会在它们那边自己跑工具（搜索、读网页），跑完接着写回复，Miyu 不用执行、也拦不住。照实报上来，人在时间线上看得见模型搜过什么，换了模型也接得上：
+
+```json
+{"jsonrpc":"2.0","method":"driver.delta","params":{"call":"d3","deltas":[{"start":{"index":0,"kind":{"hosted_tool":{"name":"search_web"}}}},{"text":{"index":0,"text":"{\"query\":\"rust\"}"}}]}}
+{"jsonrpc":"2.0","method":"driver.delta","params":{"call":"d3","deltas":[{"private":{"index":0,"data":{"step":7}}},{"outcome":{"index":0,"text":"1. Rust https://www.rust-lang.org"}},{"end":{"index":0}}]}}
+```
+
+- **怎么报**：一次调用一块，`start` 的 `kind` 写 `{"hosted_tool": {"name"}}`，名字是供应商自己的原样；这一块的 `text` 是参数原文；结果用 `{"outcome": {"index", "text", "failed"?}}`，一块至多一次、在 `end` 以前，跑失败的写 `"failed": true`。结果是给模型、给人都看得懂的字（标题、网址、摘录），Miyu 截到 64 KiB，你先截更好；被打断、没结果的不交 `outcome`。
+- **想原样收回**：交的时候带一份 `private`（内容随你，例如供应商的步骤编号），以后的请求里这一块原样交回给你；没带的，Miyu 换成一段 `<hosted-tool name="…">` 的字交回来，同交给别的驱动的那一份。
+- **会改东西的原生工具不许报成供应商侧工具**：跑命令、写文件这类会动主人机器、动外面世界的，Miyu 的权限、确认、撤销管不到供应商那边。要在 CLI、供应商那边关掉，改走 Miyu 的工具（照普通的工具调用交 `tool_call`，Miyu 来执行）。只读、不碰本机的（搜索、读网页）才报成这一种。
+- **清单 `hosted` 要写全**：会交的名字都写进 `[[driver]]` 的 `hosted`，装包时主人照它知道供应商会自己跑什么。没写的名字交上来，Miyu 照收、照显示，运行日志里记一行警告。
 
 ## 退出、崩了
 

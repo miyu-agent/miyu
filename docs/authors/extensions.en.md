@@ -282,6 +282,7 @@ name = "relay"          # driver name
 cache = "contract"      # the cache hits while the prefix is unchanged: implement driver.encode
 key = "required"        # Miyu hands over this provider's key
 images = false          # true if it can see images
+hosted = ["search_web"] # tools the provider runs on its own (see "Tools the provider runs on its own" below); leave out if none
 ```
 
 It's used only when the owner writes `driver = "<your package id>/relay"` in a provider's settings (the address can be left out). For that provider's models Miyu sends `driver.call`:
@@ -309,6 +310,20 @@ Send `driver.delta` notifications (no `id`) as the model's reply comes in, then 
 **List models** (optional): implement `driver.models` (params `{"driver", "key"?, "base_url"?}`) and answer `{"models": [{"id", "window"?, "max_output"?, "tools"?, "vision"?}]}`. The models then show up in the owner's model list, with the window, maximum output, tool use and image support you report (what the owner writes wins). Without it, the owner writes model names by hand.
 
 Every param, delta and error is in the [protocol reference](../reference/extensions.en.md#drivercall-driverdelta-drivercancel).
+
+### Tools the provider runs on its own
+
+Some providers and agent CLIs run tools on their own side (searching, reading web pages) and carry on writing the reply; Miyu doesn't run them and can't stop them. Report them as they happened, so the person sees on the timeline what the model searched for, and a different model can pick up from there:
+
+```json
+{"jsonrpc":"2.0","method":"driver.delta","params":{"call":"d3","deltas":[{"start":{"index":0,"kind":{"hosted_tool":{"name":"search_web"}}}},{"text":{"index":0,"text":"{\"query\":\"rust\"}"}}]}}
+{"jsonrpc":"2.0","method":"driver.delta","params":{"call":"d3","deltas":[{"private":{"index":0,"data":{"step":7}}},{"outcome":{"index":0,"text":"1. Rust https://www.rust-lang.org"}},{"end":{"index":0}}]}}
+```
+
+- **How to report**: one block per run. Its `start` has `kind` `{"hosted_tool": {"name"}}`, with the provider's own name as is; the block's `text` is the raw arguments; the result is `{"outcome": {"index", "text", "failed"?}}`, at most once per block and before its `end`, with `"failed": true` when the run failed. The result is text both the model and a person can read (titles, URLs, excerpts); Miyu cuts it at 64 KiB, and cutting it yourself first is better. If it was interrupted and has no result, send no `outcome`.
+- **To get it back as is**: send a `private` with it (anything you like, such as the provider's step id), and later requests hand that block back to you unchanged. Without one, Miyu hands it back as a `<hosted-tool name="…">` piece of text, the same one other drivers get.
+- **Native tools that change things must not be reported as provider-run tools**: running commands, writing files and anything else that touches the owner's machine or the outside world is beyond Miyu's permissions, confirmations and undo when it happens on the provider's side. Turn them off in the CLI or at the provider and go through Miyu's tools instead (send an ordinary `tool_call` and Miyu runs it). Only read-only tools that don't touch the local machine (search, reading web pages) are reported this way.
+- **List every name in `hosted`**: put every name you may send in the `[[driver]]`'s `hosted`, so the owner knows at install time what the provider will run on its own. A name that isn't listed is still taken and shown, with a warning in the run log.
 
 ## Exiting and crashing
 

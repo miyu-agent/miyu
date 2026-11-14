@@ -88,3 +88,51 @@ fn wrong_drivers_are_refused() {
     let ui = format!("[package]\nprotocol = [1, 1]\nname = {{ en = \"X\" }}\n\n[ui]\n\n{ONE}");
     assert_eq!(wrong(ui), Code::WrongKind, "只有扩展包能写");
 }
+
+#[test]
+fn hosted_tool_names_read_and_default_to_none() {
+    let declared = "\"model.driver\"";
+    let manifest = read(&extension(
+        declared,
+        &format!("{ONE}hosted = [\"search_web\", \"read_url_content\"]\n"),
+    ))
+    .unwrap();
+    assert_eq!(
+        manifest.drivers[0].hosted,
+        ["search_web", "read_url_content"]
+    );
+    assert!(
+        read(&extension(declared, ONE)).unwrap().drivers[0]
+            .hosted
+            .is_empty(),
+        "不写是空的"
+    );
+    let long = "x".repeat(64);
+    let fine = read(&extension(
+        declared,
+        &format!("{ONE}hosted = [\"{long}\"]\n"),
+    ))
+    .unwrap();
+    assert_eq!(fine.drivers[0].hosted, [long], "64 个字节正好");
+}
+
+#[test]
+fn wrong_hosted_tool_names_are_refused_on_their_line() {
+    let declared = "\"model.driver\"";
+    let long = "x".repeat(65);
+    for (hosted, why) in [
+        ("[\"\"]", "空名字"),
+        (&*format!("[\"{long}\"]"), "太长"),
+        ("[\"a\", \"b\", \"a\"]", "重复"),
+        ("[\"tab\\tname\"]", "控制字符"),
+        ("\"search_web\"", "不是数组"),
+        ("[\"a\", 1]", "不是字符串数组"),
+    ] {
+        // 驱动这一段从第 13 行起（清单的前面几段占了 12 行）。
+        let problem =
+            read(&extension(declared, &format!("{ONE}hosted = {hosted}\n"))).expect_err(why);
+        assert_eq!(problem.code, Code::BadDriver, "{why}");
+        assert_eq!(problem.detail, "driver.antigravity.hosted", "{why}");
+        assert_eq!(problem.line, Some(13), "{why}");
+    }
+}

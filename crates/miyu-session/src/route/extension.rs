@@ -1,12 +1,15 @@
 //! 发给扩展提供的驱动（施工 MD-2，设计 66 第三、五、八、九节）：`route/exchange.rs` 的分岔。供应商的驱动是扩展的，不走「编码、
 //! `miyu-http` 发、解码」，改成经端口（[`DriverPort`]）发 `driver.call`、收 `driver.delta`、收回答；交给挑的一方的还是「发出去了」、
-//! 同一串 [`Delta`](miyu_kernel::accumulate::Delta) 和同一个结尾，重试、冷却、换池照内置驱动一样走（`route/ended.rs`）。
+//! 同一串 [`Delta`] 和同一个结尾，重试、冷却、换池照内置驱动一样走（`route/ended.rs`）。
 //!
 //! - 挑候选（[`Routes::extension_choices`]）：驱动不在的（端口说的原因）当场 `no_model`，池里跳过；key 照驱动的声明取
 //!   （`none` 的不取，`required` 的没写当 `no_model`），地址是这一家写的，没写的不交。
 //! - 交过去的：别家驱动的私有数据拿掉，别家的、没带私有数据的供应商侧工具换成字（施工 HT-2）；声明了看得了图的，图照原样交；
 //!   参数的写法在 `extension/wire.rs`。
 //! - 增量照内核的累加器先查一遍：不对的不要了（端口发 `driver.cancel`），当 `unclassified`，记一行 `WARN driver bad delta`。
+//!   供应商侧工具的名字不在清单 `hosted` 里的照收，记一行 `WARN driver hosted tool undeclared`，同一个驱动同一个名字每次运行
+//!   只说一次（施工 HT-4，设计 71 第三节第 7 条：核心挡不住供应商那边跑什么，只照实显示）；每个驱动最多列 64 个名字，再有的
+//!   （和长过 64 个字节的）只再记一行 `WARN driver hosted tools undeclared, more not listed`（`extension/wires.rs`）。
 //! - 时限同内置驱动走 HTTP：发出去到第一条增量、两条增量之间、最后一条到回答都不超过空闲时限，整个不超过它的 `TOTAL_FACTOR` 倍；
 //!   超了的不要了，当 `retryable`。连接断了也当 `retryable`。
 //! - 回答写坏了的当 `unclassified`，记一行 `WARN driver bad answer`；回答里的 `sent` 随说完了交上去，记进 `model.called`。
@@ -27,7 +30,7 @@ use miyu_config::secret::{Reference, Secret};
 use miyu_drivers::DriverTexts;
 use miyu_drivers::classify::Classified;
 use miyu_http::{Endpoint, Progress, TOTAL_FACTOR};
-use miyu_kernel::accumulate::Accumulator;
+use miyu_kernel::accumulate::{Accumulator, Delta, Kind};
 use miyu_kernel::event::ErrorClass;
 use miyu_kernel::id::{ContentHash, DriverFamily};
 use miyu_kernel::request::Request;
@@ -52,14 +55,17 @@ mod wire;
 mod wires;
 
 pub(super) use listing::listed;
+use wires::Undeclared;
 pub(super) use wires::Wires;
 
 use wire::{Outgoing, Picture, Said};
 
-/// 挑候选时备下的（扩展驱动的那一家）：看不看得了图，这一家的 key（照驱动的声明，`none` 的没有），这一家写的地址。
+/// 挑候选时备下的（扩展驱动的那一家）：看不看得了图，这一家的 key（照驱动的声明，`none` 的没有），这一家写的地址，声明了会让
+/// 供应商自己跑的工具名。
 #[derive(Debug, Clone)]
 pub(super) struct Reach {
     pub(super) images: bool,
+    pub(super) hosted: Vec<String>,
     pub(super) key: Option<Secret>,
     pub(super) base_url: Option<String>,
 }
@@ -119,6 +125,7 @@ pub(super) fn reach(
     let base_url = provider::resolve_base_url(provider, secret)?;
     Ok(Reach {
         images: declared.images,
+        hosted: declared.hosted,
         key,
         base_url: (!base_url.is_empty()).then_some(base_url),
     })
@@ -205,7 +212,7 @@ pub(super) async fn exchange(
             batch = heard.recv(), if !closed => match batch {
                 Some(batch) => {
                     last = Instant::now();
-                    if let Err(why) = take(batch, &family, &mut checker, &mut on) {
+                    if let Err(why) = take(batch, reached, &family, &ready.learn.data, &mut checker, &mut on) {
                         return bad(&name, "delta", &why);
                     }
                 }
@@ -215,7 +222,7 @@ pub(super) async fn exchange(
             answered = &mut pending => {
                 // 回答之前到的增量都已经交进来了（同一条连接，端口先交增量再交回答）：收尾前读空。
                 while let Ok(batch) = heard.try_recv() {
-                    if let Err(why) = take(batch, &family, &mut checker, &mut on) {
+                    if let Err(why) = take(batch, reached, &family, &ready.learn.data, &mut checker, &mut on) {
                         return bad(&name, "delta", &why);
                     }
                 }
@@ -233,10 +240,12 @@ pub(super) async fn exchange(
     }
 }
 
-/// 收下一份增量：读、照累加器查，一条条交出去。
+/// 收下一份增量：读、照累加器查，一条条交出去；查过了的供应商侧工具没声明的照收、说一次（见模块的说明）。
 fn take(
     batch: Value,
+    reached: &Reached,
     family: &DriverFamily,
+    data: &ModelData,
     checker: &mut Accumulator,
     on: &mut impl FnMut(Progress),
 ) -> Result<(), String> {
@@ -244,6 +253,24 @@ fn take(
         checker
             .apply(delta.clone())
             .map_err(|error| error.to_string())?;
+        if let Delta::Start {
+            kind: Kind::HostedTool { name },
+            ..
+        } = &delta
+            && !reached.reach.hosted.contains(name)
+        {
+            let driver = &reached.driver;
+            let told = data.wires().undeclared(family.as_str(), name);
+            match told {
+                Undeclared::Tell => {
+                    tracing::warn!(target: TARGET, package = %driver.package, driver = %driver.name, tool = %name, "driver hosted tool undeclared");
+                }
+                Undeclared::TellMore => {
+                    tracing::warn!(target: TARGET, package = %driver.package, driver = %driver.name, "driver hosted tools undeclared, more not listed");
+                }
+                Undeclared::Told | Undeclared::ToldMore => {}
+            }
+        }
         on(Progress::Delta(delta));
     }
     Ok(())

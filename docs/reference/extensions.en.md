@@ -378,13 +378,16 @@ Your model driver takes one whole model call (core → extension, with an `id`, 
 
 | Entry | Meaning |
 |---|---|
-| `{"start": {"index", "kind"}}` | Block `index` starts; `kind` is `"text"`, `"reasoning"` or `{"tool_call": {"name"}}`. Blocks start from 0, one after another |
-| `{"text": {"index", "text"}}` | A piece of that block's text: the reply, reasoning, or a piece of the tool call's arguments |
-| `{"private": {"index", "data"}}` | Private data for a reasoning or tool call block (a signature, the provider's own call id), any JSON, at most one per block. Later requests hand it back to you as is, never to another driver |
+| `{"start": {"index", "kind"}}` | Block `index` starts; `kind` is `"text"`, `"reasoning"`, `{"tool_call": {"name"}}` or `{"hosted_tool": {"name"}}` (a tool the provider ran on its own side, `name` being the provider's own tool name as is; Miyu doesn't run it). Blocks start from 0, one after another |
+| `{"text": {"index", "text"}}` | A piece of that block's text: the reply, reasoning, or a piece of a tool call's or provider-run tool's arguments |
+| `{"private": {"index", "data"}}` | Private data for a reasoning, tool call or provider-run tool block (a signature, the provider's own call or step id), any JSON, at most one per block. Later requests hand it back to you as is, never to another driver |
+| `{"outcome": {"index", "text", "failed"?}}` | A provider-run tool's result: text both the model and a person can read (titles, URLs, excerpts, the page read), cut by the core at 64 KiB; `failed` is `true` when the provider says the run failed, `false` when left out. Only for a provider-run tool block, at most once per block and before it ends; leave it out when the run was interrupted and has no result |
 | `{"end": {"index"}}` | That block is complete |
 | `"truncated"` | The output limit was hit before the reply was finished |
 
 Text only after a block starts, nothing after it ends. A wrong delta ends the call as `unclassified` (`the driver sent a bad delta: …`) and later ones are dropped. Deltas for an unknown `call` are dropped silently.
+
+List the names of provider-run tools in the driver's `hosted` in the manifest ([manifest](../authors/manifest.en.md#driver)), so the owner knows at install time what the provider will run on its own. A name that isn't listed is still taken and shown, and the core logs a warning (once per driver and name each time the core runs; at most 64 names per driver are listed, and past that, or for a name longer than 64 bytes, one more line says there are more, without the name). Don't report tools that change things (running commands, writing files) this way; turn them off and go through the core's tools.
 
 **Response** `{"usage"?, "error"?, "sent"?}`, after all of the call's `driver.delta`:
 

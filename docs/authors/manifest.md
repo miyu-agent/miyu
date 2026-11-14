@@ -334,6 +334,7 @@ access = ["execute"]
 | `cache` | 缓存类型：`contract`（前缀不变就命中，要实现 `driver.encode`，用 `miyu dev driver-check` 查）、`best_effort`（默认）、`none` |
 | `key` | 要不要 Miyu 交这一家供应商的 key：`none`、`optional`（默认）、`required` |
 | `images` | 看得了图的写 `true`（默认 `false`） |
+| `hosted` | 这个驱动会让供应商自己跑的工具名，例如 `["search_web", "read_url_content"]`（默认空的）：装包时照它给主人看「会让供应商自己跑：…」。每个 1 到 64 个字节、不带控制字符、不重。交上来的名字不在里面的，Miyu 照收、照显示，运行日志里记一行警告；见 [写扩展](extensions.md#供应商自己跑的工具) |
 
 主人在供应商的配置里写 `driver = "<包的编号>/<驱动名>"` 才用它；模型档案、npm 表、默认永远是内置的几种，装上你的包也接不走主人原来配好的供应商。包没装、没批、驱动名写错的，`miyu check` 报出来，那一家供应商当用不了，不会退回内置驱动。Miyu 怎么调你的驱动（`driver.call`、`driver.delta`、`driver.cancel`）见 [协议参考](../reference/extensions.md#drivercalldriverdeltadrivercancel)。
 

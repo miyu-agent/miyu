@@ -14,13 +14,16 @@ use tokio::sync::mpsc;
 use miyu_config::package::DriverKey;
 use miyu_models::provider::DriverRef;
 
-/// 装着、批了、开着的驱动在清单里声明的（设计 66 第四节第 1 条）：执行器照它定交不交 key、交不交图。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// 装着、批了、开着的驱动在清单里声明的（设计 66 第四节第 1 条）：执行器照它定交不交 key、交不交图，交上来的供应商侧工具
+/// 声明过没有。
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Declared {
     /// 要不要核心交这一家的 key（第九节第 3 条）。
     pub key: DriverKey,
     /// 看得了图：请求里的图照原样交过去（第五节第 1 条）。
     pub images: bool,
+    /// 会让供应商自己跑的工具名（清单的 `hosted`，设计 71 第三节第 7 条）：交上来的不在里面的照收，执行器记一行 `WARN`。
+    pub hosted: Vec<String>,
 }
 
 /// 驱动在，这一刻却连不上（设计 66 第八节第 5 条）：正在退避、等着重新拉起，或者刚拉起、还没握手。执行器当可重试。

@@ -253,7 +253,7 @@ timeout_ms = 600000                               # 可以不写：一次调用�
 
 1. 一段一个服务，照写的先后；同一个包里服务名不重（重了 `bad_mcp`）。扩展包和 `bundle` 能写，别的种类写了 `wrong_kind`。`bundle` 只能写 `[package]`、`[[mcp]]`、`[mascot]`，不说协议（写了 `protocol` 报 `wrong_kind`：带的服务说的是 MCP，不是 Miyu 的协议）。
 2. 一个服务一个功能（2026-10-11 项目主人照推荐定，`mcp.md`）：编号 `mcp-<服务名>`，名字是服务名，接在包自己的功能后面（`Manifest::features_of`）；`bundle` 自己不另算一个。两个包带了同名的服务，功能编号撞了，后读到的那一份报 `feature_taken`、整份不收、报在那一段。这个服务的工具名是 `mcp__<服务名>__<工具名>`（X-3 登记），照前缀归它的功能；包自己的工具照包自己的功能算，MCP 服务的功能不算在「只有一个功能」里（`miyu_policy::features::Features::of_tool`）。
-3. 列出来：`package.list` 的一项多 `mcp`，`features` 里有每个服务的那一个；看一眼（`preview: true`）多 `mcp`（服务名），`bundle` 没有 `program`；`miyu pkg install` 照它印「MCP 服务 <名字>」。包文件夹里带的技能、脚本（施工 X-13 上）也列：看一眼多 `skills`（技能名）、`scripts`（工具名）、`slash`（斜杠命令模板的名字，施工 X-14 上补）、`personas`、`presets`（编号，施工 P-11 下），开头读得成的才列；读不成的另列在 `skipped`（施工 X-13 补：`file` 是包文件夹里的相对路径，`why` 英文一句）；`miyu pkg install` 照它印「技能 <名字>」「脚本 <名字>」，读不成的印「读不成：<路径>（为什么）」。
+3. 列出来：`package.list` 的一项多 `mcp`，`features` 里有每个服务的那一个；看一眼（`preview: true`）多 `mcp`（服务名），`bundle` 没有 `program`；`miyu pkg install` 照它印「MCP 服务 <名字>」。包文件夹里带的技能、脚本（施工 X-13 上）也列：看一眼多 `skills`（技能名）、`scripts`（工具名）、`slash`（斜杠命令模板的名字，施工 X-14 上补）、`personas`、`presets`（编号，施工 P-11 下），开头读得成的才列；读不成的另列在 `skipped`（施工 X-13 补：`file` 是包文件夹里的相对路径，`why` 英文一句）；`miyu pkg install` 照它印「技能 <名字>」「脚本 <名字>」，读不成的印「读不成：<路径>（为什么）」。提供模型驱动的（施工 MD-1）看一眼多 `drivers`（驱动名），`miyu pkg install` 印「模型驱动 <名字>」；驱动在 `[[driver]]` 写了 `hosted` 的（施工 HT-4，设计 71 第三节第 7 条）另带 `hosted`：`{"<驱动名>": ["<工具名>", …]}`，没写的驱动不列、一个都没写的不带这一格（`drivers` 照旧是名字的数组，旧的头读得懂），`miyu pkg install` 在「包含」下面一个驱动一行印「模型驱动 <名字> 会让供应商自己跑：<工具名>、…」（`cli/pkg.md`）；`package.info` 的 `contains` 同样带。
 4. 起服务、登记工具、开关随施工 X-3：带了服务的 `bundle` 照扩展的办法开关（只带技能、脚本的没有开关，施工 X-13 上），开关记在同一份 `extensions.json`，没写的关着；`status` 照它带的服务合起来算，`enabled` 照开关（施工 X-3 上，`mcp.md`、`package-pages.md`「开关」）。扩展包带的服务跟着扩展起停（施工 X-3 下）；卸包时服务的缓存、工作目录一起删。
 
 ### 吉祥物包（施工 F-7，2026-10-11 项目主人定，终端界面的会话转来）
@@ -411,7 +411,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `needs_newer_miyu` | 要比正在跑的这一版新的 Miyu（施工 X-31）：`detail` 是清单写的版本。装包、读装了的包时（`miyu_config::package::read_for`）第一件事比它，比不过的整份不再往下读，不报新版本才有的格是不认识的键；正在跑的是 `0.0.0`（开发时编的，没发过版）的不比；打包（`miyu pkg pack`）、软件源收录照 `read` 读，不比，只查写法 |
 | `bad_search` | `[[search]]` 写错了：编号、名字，重了，没声明 `search` 能力（施工 N-5） |
 | `bad_guard` | `[guard]` 写错了：工具名、访问类别、时限（100 到 5000），`tools`、`access` 两样都没写，没声明 `tool.guard` 能力（施工 HK-1） |
-| `bad_driver` | `[[driver]]` 写错了：驱动名、缓存类型、要不要 key、看不看图，重了，和 `model.driver` 能力对不上（写了没声明、声明了没写，施工 MD-1） |
+| `bad_driver` | `[[driver]]` 写错了：驱动名、缓存类型、要不要 key、看不看图，重了，和 `model.driver` 能力对不上（写了没声明、声明了没写，施工 MD-1）；`hosted`（会让供应商自己跑的工具名，施工 HT-4，设计 71 第三节第 7 条）不是字的数组、有空的、超过 64 个字节的、带控制字符的、一段里重了的，报在那一段的行上 |
 | `bad_provider_key` | `[provider_key]` 写错了：`catalog` 少了、不合名字的写法，和 `provider.key` 能力对不上（写了没声明、声明了没写，施工 PK-1） |
 | `bad_after` | `[after]` 写错了：工具名、访问类别，`tools`、`access` 两样都没写，没声明 `events.read` 能力（施工 HK-2）；写了 `timeout_ms` 的是 `unknown_key` |
 | `bad_side` | `[[side]]` 写错了（施工 Q-3）：编号不合写法、少了，档位不是 `lite`、`normal`、`flagship`，少了名字、说明，同一个包里重了；`detail` 是哪一格（`side.<编号>.<格>`） |

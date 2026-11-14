@@ -9,7 +9,7 @@
 use std::collections::BTreeMap;
 
 use miyu_drivers::{Call, Inputs};
-use miyu_kernel::block::{Block, Image, Private, Reasoning, Text, ToolCall};
+use miyu_kernel::block::{Block, HostedTool, Image, Outcome, Private, Reasoning, Text, ToolCall};
 use miyu_kernel::id::{CallId, ContentHash, DriverFamily, MediaType, ModelName};
 use miyu_kernel::raw::RawJson;
 use miyu_kernel::request::{Message, Request, ToolSpec};
@@ -28,8 +28,8 @@ pub struct Sample {
     pub params: String,
 }
 
-/// 驱动 `driver`（`<包编号>/<驱动名>`）的几份样本，照金样的几种：纯文字、工具面、带私有数据的思考和工具调用、看不了图的转述、
-/// 续写。
+/// 驱动 `driver`（`<包编号>/<驱动名>`）的几份样本，照金样的几种：纯文字、工具面、带私有数据的思考、供应商侧工具（施工 HT-4：
+/// 自己家带私有数据的原样交）和工具调用、看不了图的转述、续写。
 ///
 /// # Panics
 ///
@@ -58,6 +58,17 @@ pub fn samples(driver: &str) -> Vec<Sample> {
             Block::Reasoning(Reasoning {
                 text: "Look at the file first.".to_string(),
                 private: owned("sig-1"),
+            }),
+            Block::HostedTool(HostedTool {
+                call_id: CallId::parse("call_3_2").expect("合写法"),
+                name: "search_web".to_string(),
+                args: r#"{"query":"a.txt"}"#.to_string(),
+                outcome: Some(Outcome {
+                    text: "1. a.txt https://example.com/a.txt".to_string(),
+                    failed: false,
+                    cut: false,
+                }),
+                private: owned("step-1"),
             }),
             Block::ToolCall(ToolCall {
                 call_id,

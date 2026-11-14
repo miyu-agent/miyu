@@ -30,6 +30,19 @@ fn samples_differ_and_all_carry_the_stable_mark() {
         private.contains(r#""driver":"pi/ag","data":"sig-1""#),
         "私有数据记成这个驱动的：{private}"
     );
+    let value: Value = serde_json::from_str(private).expect("JSON");
+    let hosted = &value["request"]["messages"][3]["blocks"][1];
+    assert_eq!(hosted["type"], "hosted_tool", "{private}");
+    assert_eq!(hosted["name"], "search_web");
+    assert_eq!(
+        hosted["outcome"]["text"], "1. a.txt https://example.com/a.txt",
+        "带结果"
+    );
+    assert_eq!(
+        hosted["private"],
+        serde_json::json!({"driver": "pi/ag", "data": "step-1"}),
+        "自己家的私有数据原样带着"
+    );
     let [short, long] = pair("pi/ag");
     let (short, long): (Value, Value) = (
         serde_json::from_str(&short.params).expect("JSON"),
