@@ -12,8 +12,9 @@ use std::path::PathBuf;
 
 use miyu_drivers::openai_chat::Compat;
 use miyu_drivers::{
-    AttachedPathSources, Call, DriverTextSources, DriverTexts, ImageDescriptionSources,
-    ImageNameSources, Inputs, OpenPathSources, PathOnlySources, TextFileSources,
+    AttachedPathSources, Call, DriverTextSources, DriverTexts, HostedToolSources,
+    ImageDescriptionSources, ImageNameSources, Inputs, OpenPathSources, PathOnlySources,
+    TextFileSources,
 };
 use miyu_kernel::block::{Block, File, Image, Private, Reasoning, Text, ToolCall};
 use miyu_kernel::id::{CallId, ContentHash, DriverFamily, FileName, MediaType, ModelName};
@@ -22,7 +23,12 @@ use miyu_kernel::request::ToolSpec;
 
 /// 出厂的占位，从资源目录读。
 pub fn texts() -> DriverTexts {
-    DriverTexts::new(DriverTextSources {
+    DriverTexts::new(sources()).expect("出厂的占位用得了")
+}
+
+/// 出厂的占位的原文：要拿掉某一组（以前造的快照）的测试照它改。
+pub fn sources() -> DriverTextSources<'static> {
+    DriverTextSources {
         image_omitted: include_str!("../../../../resources/core/drivers/image-omitted.txt"),
         file_omitted: include_str!("../../../../resources/core/drivers/file-omitted.txt"),
         no_output: include_str!("../../../../resources/core/drivers/no-output.txt"),
@@ -71,8 +77,17 @@ pub fn texts() -> DriverTexts {
                 "../../../../resources/core/drivers/file-path-only-sized.txt"
             ),
         }),
-    })
-    .expect("出厂的占位用得了")
+        hosted_tool: Some(HostedToolSources {
+            hosted_tool: include_str!("../../../../resources/core/drivers/hosted-tool.txt"),
+            hosted_tool_failed: include_str!(
+                "../../../../resources/core/drivers/hosted-tool-failed.txt"
+            ),
+            hosted_tool_open: include_str!(
+                "../../../../resources/core/drivers/hosted-tool-open.txt"
+            ),
+            hosted_tool_cut: include_str!("../../../../resources/core/drivers/hosted-tool-cut.txt"),
+        }),
+    }
 }
 
 /// 发给 `deepseek-v4`，能收哪些输入照 `inputs`。

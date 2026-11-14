@@ -22,6 +22,7 @@
 | `crates/miyu-drivers/src/classify.rs` | 出错分类、要等多久、原话 |
 | `crates/miyu-drivers/src/texts.rs` | 给模型看的几句：五句占位，文本文件的三句（施工 3-9 三补），带名字的图片的三句（施工 3-9 四补），替它看的图的三句标签（施工 8-17） |
 | `crates/miyu-drivers/src/texts/path_only.rs` | 只有路径的附件写成的两句（施工 AT-1）：`DriverTexts::path_only` |
+| `crates/miyu-drivers/src/texts/hosted.rs` | 供应商侧工具写成的那一段字（施工 HT-2）：`DriverTexts::hosted_tool`，挑模板、结果截到 `HOSTED_TEXT_BYTES`（4 KiB）、截过的那一句；扩展驱动那一路（`miyu-session` 的 `route/extension/wire.rs`）调同一个 |
 | `crates/miyu-drivers/src/text_file.rs` | 什么算文本文件、最多给多少（施工 3-9 三补） |
 | `crates/miyu-drivers/src/base64.rs` | data URL 用的 base64：`base64` 这个库的标准写法（施工 V-38）；发请求体时一块 48 KiB |
 | `crates/miyu-drivers/src/fragments.rs` | 片段清单（施工 V-38）：编码时代替整份的字节，线上的结构里内嵌 blob 的那一格（`Inline`）拆成单独的一段 |
@@ -82,6 +83,7 @@
    - 思考各块直接接上。开关是 `Drop` 的不写；`Replay` 的写进 `reasoning_content` 或 `reasoning`，没有思考的，`always` 才写空串。思考的私有数据（签名这类）不发。
    - `Echo`（施工 RP-1，默认）：这条 assistant 里第一块私有数据是这个驱动的、记着来路的思考，来路是 `reasoning_content` 的写进 `reasoning_content`，是 `reasoning` 的写进 `reasoning`；各块照样直接接上，接起来是空的不写。没有这样的思考块的（没思考、别的驱动的思考、以前的日志没记来路、来路是 `reasoning_text`）不写。为什么：模型回了思考，就是会思考，照它来的那一格交回去，接上上一步的思路（2026-10-26 项目主人定；不回传时同一个任务的思考 token 多约六成，`docs/construction/RP-1-思考照来路回传.md`）。
    - 工具调用写进 `tool_calls`，见第 5 条；没有的不写这一格。图片、文件、不认识的块不写。
+   - 供应商侧工具（施工 HT-2，`kernel/blocks.md` 的 `hosted_tool` 块：模型在供应商那边自己跑了的搜索、读网页）：在它原来的位置写成一段字，接进正文（`content` 是一个字符串）：前面有字、又不是以换行结尾的先补一个换行，接完它补一个换行，后面的正文另起一行；它在最后的，末尾那个换行也留着（`media.rs` 的 `join_hosted`）。没有供应商侧工具的消息字节和以前一样。有结果的写 `hosted-tool.txt`，结果是失败的写 `hosted-tool-failed.txt`，没结果的（被打断、供应商没报）写 `hosted-tool-open.txt`，只有外壳和参数、不写空的结果。`name` 在属性里，照模板的规矩转义；参数、结果的字原样（JSON 的引号、多行结果的换行转义了模型读不顺，同文本文件、替它看的图的转述原样放在外壳里），只把每一处 `</` 写成 `<\/`：结果是网上来的字，这样写不出 `</hosted-tool>`、`</result>`、`</error>` 收住外壳。先截再挡，截的是原文的字节数。`DriverTexts::hosted_tool` 交回的那一段不带模板末尾的换行，前后怎么分开由驱动定。结果的字截到 4 KiB（`HOSTED_TEXT_BYTES`，字的边界上）：日志里留 64 KiB 给人看，进上下文的只要够模型知道搜过什么；块里 `cut` 是真的，或者这里又截了的，结果的字后面另起一行接 `hosted-tool-cut.txt` 那一句，仍在 `<result>`/`<error>` 里面。不管私有数据是哪一家的、模型能收什么，三个驱动写同一段（`texts/hosted.rs` 的 `DriverTexts::hosted_tool`）。快照里没有这四份的（以前造的会话）不写它，同 HT-1。同一家原样带回（Anthropic 的 `server_tool_use`）是以后的事（施工 HT-5）。
    - 一格的先后：`role`、`content`、`reasoning_content`、`reasoning`、`tool_calls`、`prefix`、`partial`。
 5. **工具调用**：`{"id":…,"type":"function","function":{"name":…,"arguments":…}}`。
    - `id`：私有数据是这个驱动的、里面有字符串 `id` 的，用它；没有的用内核分的 `call_<序号>_<第几个>`。
@@ -272,8 +274,12 @@
 | `file-omitted-path.txt` | `A file was attached here ({name}, {media_type}, {size} bytes, from {path}), but this model cannot read it.` | 同 `file-omitted`，另加 `path`（施工 3-9 五补：带原来的路径的文件） |
 | `file-path-only.txt` | `A file was attached here ({name}, at {path}). Its content is not included. Tools can read it.` | `name`、`path`，照模板的规矩转义（施工 AT-1：只有路径的附件，头没写大小的） |
 | `file-path-only-sized.txt` | `A file was attached here ({name}, {size} bytes, at {path}). Its content is not included. Tools can read it.` | `name`、`size`（头写的字节数）、`path`（施工 AT-1：只有路径的附件，头写了大小的） |
+| `hosted-tool.txt` | `<hosted-tool name="{name}">`、`{args}`、`<result>`、`{text}`、`</result>`、`</hosted-tool>` 六行 | `name` 照模板的规矩转义，`args`、`text` 原样、只把 `</` 写成 `<\/`（施工 HT-2：供应商侧工具，有结果的）；末尾的换行不要 |
+| `hosted-tool-failed.txt` | 同上，`<result>`、`</result>` 换成 `<error>`、`</error>` | 同上（施工 HT-2：结果是失败的） |
+| `hosted-tool-open.txt` | `<hosted-tool name="{name}">`、`{args}`、`</hosted-tool>` 三行 | `name`、`args`，同上（施工 HT-2：没结果的） |
+| `hosted-tool-cut.txt` | `The result is cut.` | 没有（施工 HT-2：结果截过的，接在结果的字后面另起一行，末尾的换行不要） |
 
-几份在 `DriverTexts::new` 时读成模板，拿字段试换一次：`file-omitted` 只能要 `name`、`media_type`、`size`，`file-omitted-path` 另加 `path`，`image-omitted-path` 只能要 `name`、`path`，`file-path-only` 只能要 `name`、`path`，`file-path-only-sized` 另加 `size`（施工 AT-1，这两句以前造的快照里也没有），`file-open`、`image-open`、`image-omitted-named` 只能要 `name`，`file-cut` 只能要 `shown`、`total`，别的不能要字段。原文随会话的策略快照（`policy.md`）；文本文件的三句、带名字的图片的三句、带路径的两句（施工 3-9 五补）以前造的快照里没有。看不了的附件带着原来的路径（`kernel/blocks.md` 的 `path`）、快照里有带路径的两句的，占位写带路径的那一句：她照路径用工具去读；没有的照旧（施工 3-9 五补）。看得了的照旧发，路径不进请求。
+几份在 `DriverTexts::new` 时读成模板，拿字段试换一次：`file-omitted` 只能要 `name`、`media_type`、`size`，`file-omitted-path` 另加 `path`，`image-omitted-path` 只能要 `name`、`path`，`file-path-only` 只能要 `name`、`path`，`file-path-only-sized` 另加 `size`（施工 AT-1，这两句以前造的快照里也没有），`hosted-tool`、`hosted-tool-failed` 只能要 `name`、`args`、`text`，`hosted-tool-open` 只能要 `name`、`args`（施工 HT-2，这四份以前造的快照里也没有），`file-open`、`image-open`、`image-omitted-named` 只能要 `name`，`file-cut` 只能要 `shown`、`total`，别的不能要字段。原文随会话的策略快照（`policy.md`）；文本文件的三句、带名字的图片的三句、带路径的两句（施工 3-9 五补）以前造的快照里没有。看不了的附件带着原来的路径（`kernel/blocks.md` 的 `path`）、快照里有带路径的两句的，占位写带路径的那一句：她照路径用工具去读；没有的照旧（施工 3-9 五补）。看得了的照旧发，路径不进请求。
 
 `text-files.json` 这份样本里那条 user 的 `content`，写开来是：
 
@@ -313,6 +319,7 @@ A file was attached here (报告.pdf, application/pdf, 15 bytes), but this model
 | `crates/miyu-drivers/tests/openai_chat_media.rs` | 图片、PDF 写成 data URL；不能收的占位；工具结果里的附件挪到后面、或者就地占位；思考的三种回传；缺 blob 报错；要哪些 blob（文件每一个都要） |
 | `crates/miyu-drivers/tests/openai_chat_files.rs` | 文本文件（施工 3-9 三补）：照字放进消息、带文件名，空的，二进制的、不是 UTF-8 的、读不了的 PDF 写占位带大小（样本）；能读 PDF 的照旧发 `file`；超过 64 KiB 的截掉、写明给了多少；工具结果里的照字进 `content`；以前造的快照没有那三句的写占位；缺 blob 报错 |
 | `crates/miyu-drivers/tests/openai_chat_image_names.rs` | 带名字的图片（施工 3-9 四补）：能看图的前后各一段标签，和挨着的字拼成一段；不能看图的占位写名字（两份样本）；工具结果里带名字的连同标签一起挪、就地的占位写名字；以前造的快照没有那三句的，带名字的和不带名字的一字不差，不带名字的出厂这一份也照旧 |
+| `crates/miyu-drivers/tests/hosted_tool.rs`（施工 HT-2） | 供应商侧工具：三个驱动和样本 `hosted-tool.json` 一字不差（`every_driver_matches_its_sample`：有结果的、失败的、没结果的、截过的）；正文、它、正文、它、工具调用的先后保住，Anthropic 各是一块 `text`、另两家照正文接上（`blocks_keep_their_order`）；正文、它、正文之间各有一个换行、不出空行（`text_around_it_starts_on_its_own_line`）；结果里的 `</` 写成 `<\/`、收不住外壳，别的字原样（`a_result_cannot_close_the_shell`）；4 KiB 加一个多字节的字截在字的边界上（`a_long_result_is_cut_at_a_char_boundary`）；以前造的快照不写它，编出来和请求里没有它的逐字节一样（`an_older_snapshot_leaves_it_out`）。`src/texts/hosted/tests.rs`：挑模板、截、转义、模板要了不该有的字段造不出来 |
 | `crates/miyu-drivers/tests/path_only.rs`（施工 AT-1） | 只有路径的附件：三个驱动写同一句（写了大小的、没写的），模型能收什么都一样，不要 blob；名字、路径转义；工具结果里的就地写、assistant 里的不写；以前造的快照没有那两句的只写路径本身 |
 | `crates/miyu-drivers/tests/openai_chat_described.rs`（施工 8-17） | 替它看的图：不能看图的换成带名字的标签和转述（样本 `image-descriptions.json`），转述原样、尖括号引号不转义，没转述的照旧占位；能看图的有没有转述一个字节不差；工具结果里不带名字的就地换、末尾有换行的不再补；以前造的快照没有标签的照旧写占位 |
 | `crates/miyu-drivers/src/text_file/tests.rs` | 什么算文本：空的、UTF-8、BOM 算，NUL（在后面的也算）、Latin-1、PDF 不算；截到 64 KiB、截在字的边界上 |
@@ -330,7 +337,7 @@ A file was attached here (报告.pdf, application/pdf, 15 bytes), but this model
 | `crates/miyu-drivers/src/fragments/tests.rs`（施工 V-38） | 内嵌的 blob 拆成单独的一段，拼起来和整份写的一字不差（前缀里的字照 JSON 转义）；位置算上还没编的 base64；blob 长短不对的报缺 |
 | `crates/miyu-session/src/route/exchange/golden.rs`（施工 V-38） | 金样：图、PDF、文本文件、工具结果里夹图、接着写、思考回传、替它看的图、占位工具、思考强度、温度、输出上限，openai-chat 两套、anthropic、openai-responses 四份，边编边发出去的字节和改前（`1b712ee5d`）的 SHA-256 一样，每条消息的起止、路径一样，「发出去了」报的哈希就是它 |
 | `crates/miyu-assemble/tests/probe.rs`、`random_logs.rs` | 编码以后也是上一次的前缀延伸（接着写那一次拿不接着写的编码比）；主请求一次次照留着编好的历史编（DeepSeek 那一套、anthropic、openai-responses 各一份 `Memo`），和整份编的一模一样（施工 V-42） |
-| `crates/miyu-drivers/tests/memo.rs`（施工 V-42） | 照种子造的对话一次次请求下去（加消息、再发一次、撤销、压缩、改前面、插事实块、接着写，换 system、工具面、稳定区、模型、输出上限、温度、思考强度、能收什么、转述、占位、驱动和开关，blob 没了、回来、长短变了），留着编的和整份编的片段清单、位置、路径、报的错一模一样；每一种单独来几遍；只往后加的整份接着用。全量 `MIYU_MEMO_SEEDS` |
+| `crates/miyu-drivers/tests/memo.rs`（施工 V-42） | 照种子造的对话一次次请求下去（加消息（施工 HT-2 起 assistant 里也有供应商侧工具）、再发一次、撤销、压缩、改前面、插事实块、接着写，换 system、工具面、稳定区、模型、输出上限、温度、思考强度、能收什么、转述、占位、驱动和开关，blob 没了、回来、长短变了），留着编的和整份编的片段清单、位置、路径、报的错一模一样；每一种单独来几遍；只往后加的整份接着用。全量 `MIYU_MEMO_SEEDS` |
 
 ### 出处
 

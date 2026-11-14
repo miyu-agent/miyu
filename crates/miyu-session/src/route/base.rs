@@ -164,6 +164,7 @@ impl Routes {
                         .drivers()
                         .ok_or_else(|| NoModel(super::unbuilt(&speaking)))?,
                     reach: reach.clone(),
+                    texts,
                 })),
                 _ => Speaker::Builtin(
                     speaking

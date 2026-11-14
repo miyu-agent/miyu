@@ -366,7 +366,7 @@ access = ["network"]         # 访问类别，可以不写；两样至少一样
 |---|---|
 | `call` | 这一次调用的编号，`driver.delta`、`driver.cancel` 照它对 |
 | `driver` | `<包编号>/<驱动名>`，你声明了几个驱动的照它分 |
-| `request` | 统一的请求原样：`tools`、`system`、`messages`、`stable`，有的才写 `continuation`、`described`（看不了图时图的转述）、`output_cap`、`tail`。同样的状态一字不差；别家驱动的私有数据已经拿掉 |
+| `request` | 统一的请求原样：`tools`、`system`、`messages`、`stable`，有的才写 `continuation`、`described`（看不了图时图的转述）、`output_cap`、`tail`。同样的状态一字不差；别家驱动的私有数据已经拿掉。`hosted_tool` 块（模型在供应商那边自己跑了的工具，例如搜索）带着你这个驱动的私有数据的原样交，由你决定带不带回供应商；别家的、没带私有数据的换成一块 `text`，内容是 Miyu 写给模型看的那一段字（`<hosted-tool name="…">` 包着参数和结果：参数、结果原样，其中的 `</` 写成 `<\/`；末尾不带换行）。认「你自己的」只看块上的私有数据 |
 | `fingerprint` | `{"tools", "system", "messages": [...]}`：工具面、system、每条消息各一个哈希（16 位十六进制的字），同样的内容同样的数，可以拿来做你自己的缓存 |
 | `params` | `{"model", "max_output"?, "effort"?, "temperature"?}` |
 | `key` | 这一家供应商配置里引用的那一把 key；你声明 `key = "none"` 的、这一家没写 key 的不交 |

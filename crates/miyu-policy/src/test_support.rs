@@ -161,6 +161,22 @@ pub(crate) fn core() -> CoreTexts {
                 )
                 .to_string(),
             }),
+            hosted_tool: Some(crate::HostedToolTexts {
+                hosted_tool: include_str!("../../../resources/core/drivers/hosted-tool.txt")
+                    .to_string(),
+                hosted_tool_failed: include_str!(
+                    "../../../resources/core/drivers/hosted-tool-failed.txt"
+                )
+                .to_string(),
+                hosted_tool_open: include_str!(
+                    "../../../resources/core/drivers/hosted-tool-open.txt"
+                )
+                .to_string(),
+                hosted_tool_cut: include_str!(
+                    "../../../resources/core/drivers/hosted-tool-cut.txt"
+                )
+                .to_string(),
+            }),
         },
         compaction: Some(CompactionTexts {
             summarize_task: include_str!("../../../resources/core/compaction/summarize-task.txt")

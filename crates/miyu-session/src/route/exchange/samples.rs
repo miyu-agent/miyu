@@ -207,6 +207,7 @@ pub(super) fn texts() -> DriverTexts {
             file_open_path: "<file name=\"{name}\" path=\"{path}\">",
         }),
         path_only: None,
+        hosted_tool: None,
     })
     .expect("占位用得了")
 }

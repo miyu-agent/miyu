@@ -483,14 +483,14 @@ fn text_block(text: String) -> Block {
     Block::Text(Text { text })
 }
 
-/// 认识的内容块，照先后。不认识的块原样存在日志里，投影跳过它（`03-事件模型.md` 第八节）。供应商侧工具（施工 HT-1）
-/// 照不认识的跳过：发请求时怎么带它是 HT-2 的事。
+/// 认识的内容块，照先后。不认识的块原样存在日志里，投影跳过它（`03-事件模型.md` 第八节）。供应商侧工具（施工 HT-2）照
+/// 原来的位置留着，驱动把它写成一段字（`miyu-drivers` 的 `DriverTexts::hosted_tool`）。
 fn known(blocks: &[Block]) -> Vec<Block> {
     let mut known = Vec::with_capacity(blocks.len());
     known.extend(
         blocks
             .iter()
-            .filter(|block| !matches!(block, Block::Unknown(_) | Block::HostedTool(_)))
+            .filter(|block| !matches!(block, Block::Unknown(_)))
             .cloned(),
     );
     known

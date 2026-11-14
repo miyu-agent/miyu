@@ -13,11 +13,9 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use miyu_policy::{
-    AttachedPathTexts, CompactionTexts, CoreLines, CoreTexts, DriverPlaceholders, FactTexts,
-    HarnessTexts, ImageDescriptionTexts, ImageNameTexts, JobTexts, OpenPathTexts, PathOnlyTexts,
-    PeerIdleTexts, PeerTexts, PermissionTexts, PersonaTexts, RebuildTexts, RecapTexts,
-    ShortenTexts, Sources, TextFileTexts, TitleTexts, ToolResultTexts, TurnEndedTexts, VisionTexts,
-    Wrap,
+    CompactionTexts, CoreLines, CoreTexts, FactTexts, HarnessTexts, JobTexts, PeerIdleTexts,
+    PeerTexts, PermissionTexts, PersonaTexts, RebuildTexts, RecapTexts, ShortenTexts, Sources,
+    TitleTexts, ToolResultTexts, TurnEndedTexts, VisionTexts, Wrap,
 };
 
 use crate::env::Env;
@@ -239,7 +237,6 @@ impl ResourceRoot {
         let ended = |name: &str| core(&["turn-ended", name]);
         let fact = |name: &str| core(&["facts", name]);
         let result = |name: &str| core(&["tool-results", name]);
-        let driver = |name: &str| core(&["drivers", name]);
         let job = |name: &str| core(&["jobs", name]);
         Ok(CoreTexts {
             checkpoint_open: core(&["checkpoint-open.txt"])?,
@@ -287,40 +284,7 @@ impl ResourceRoot {
                 unresolvable: core(&["permissions", "unresolvable.txt"])?,
                 knowledge: Some(core(&["permissions", "forbidden-kb.txt"])?),
             },
-            drivers: DriverPlaceholders {
-                image_omitted: driver("image-omitted.txt")?,
-                file_omitted: driver("file-omitted.txt")?,
-                no_output: driver("no-output.txt")?,
-                tool_attachments: driver("tool-attachments.txt")?,
-                tool_attachments_only: driver("tool-attachments-only.txt")?,
-                text_file: Some(TextFileTexts {
-                    file_open: driver("file-open.txt")?,
-                    file_cut: driver("file-cut.txt")?,
-                    file_close: driver("file-close.txt")?,
-                }),
-                image_name: Some(ImageNameTexts {
-                    image_open: driver("image-open.txt")?,
-                    image_close: driver("image-close.txt")?,
-                    image_omitted_named: driver("image-omitted-named.txt")?,
-                }),
-                image_description: Some(ImageDescriptionTexts {
-                    image_description_open: driver("image-description-open.txt")?,
-                    image_description_open_named: driver("image-description-open-named.txt")?,
-                    image_description_close: driver("image-description-close.txt")?,
-                }),
-                attached_path: Some(AttachedPathTexts {
-                    image_omitted_path: driver("image-omitted-path.txt")?,
-                    file_omitted_path: driver("file-omitted-path.txt")?,
-                }),
-                open_path: Some(OpenPathTexts {
-                    image_open_path: driver("image-open-path.txt")?,
-                    file_open_path: driver("file-open-path.txt")?,
-                }),
-                path_only: Some(PathOnlyTexts {
-                    file_path_only: driver("file-path-only.txt")?,
-                    file_path_only_sized: driver("file-path-only-sized.txt")?,
-                }),
-            },
+            drivers: self.driver_placeholders()?,
             compaction: Some(CompactionTexts {
                 summarize_task: core(&["compaction", "summarize-task.txt"])?,
                 summarize_instructions: core(&["compaction", "summarize-instructions.txt"])?,
@@ -477,6 +441,7 @@ impl ResourceRoot {
 }
 
 mod advisor;
+mod drivers;
 mod fork;
 mod goal;
 mod mcp_tools;

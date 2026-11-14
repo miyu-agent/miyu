@@ -157,7 +157,7 @@
 **扩展提供的模型驱动**（施工 MD-2，设计 `66-扩展提供模型驱动.md` 第五、八、九、十节；`models.md` 第四条第 2 条；协议参考 `extensions.md`「`driver.call`、`driver.delta`、`driver.cancel`」）：
 
 1. **在不在**（`models/drivers.rs` 的 `present`）：装着、清单里有这个驱动名、批了 `model.driver`、开着、没停下的在，交它的声明（`key`、`images`）；不在的交一句英文的原因（`its package is not installed`、`its package declares no driver by that name`、`its package is not approved to provide model drivers`、`its package is turned off`、`its extension stopped: <原因>`），执行器当这家供应商用不了、池里跳过、不重试。退避中、刚拉起的算在。
-2. **发**：找这个包握了手的连接（`Provided::linked`）；没有的当 `retryable`，退避中的带上还要等多久（`retry_in`）。先登记这一次的 `call`，再发 `driver.call`（参数是执行器写好的原文，原样拼进那一行：`Peer::call_raw`，1 MB 的请求不多解析一遍）。
+2. **发**：找这个包握了手的连接（`Provided::linked`）；没有的当 `retryable`，退避中的带上还要等多久（`retry_in`）。先登记这一次的 `call`，再发 `driver.call`（参数是执行器写好的原文，原样拼进那一行：`Peer::call_raw`，1 MB 的请求不多解析一遍）。交过去的请求（执行器在 `miyu-session` 的 `route/extension/wire.rs` 的 `handed` 里备好）：别家驱动的私有数据拿掉；`hosted_tool` 块（施工 HT-2，设计 71 第三节第 5 条）带着这个驱动家族的私有数据的原样交，扩展自己决定带不带回供应商；别家的、没带私有数据的换成一个 `text` 块，同内置驱动写的那一段字（`DriverTexts::hosted_tool`，`drivers/openai-chat.md` 第 4 条：工具名转义，参数、结果原样、只把 `</` 写成 `<\/`，末尾不带换行），占位冻结在会话上，以前造的快照里没有那几份的拿掉它（别家的私有数据不能原样交，又没有登记过的字可写）。认「自己家」只看块上的私有数据：扩展想原样收回自己交的块，交的时候带一份私有数据（内容随它）。没有要换、要拿掉的请求原样交、不拷贝（`route/extension/wire/tests/hosted.rs`、`route/extension/tests/hosted.rs`）。
 3. **增量**：连接读到 `driver.delta` 照 `call` 交给登记了的那一次（`Peer::delta`），对不上的、写法不对的丢掉；读的那一头先交增量再交回应。连接断了，登记的、在等的一起了结（`Gone`）。
 4. **不等了**：执行器丢下这一次（叫停、超时、增量不对）就不再收它的增量，没等到回应的发 `driver.cancel {"call"}`。
 5. **不进日志**：参数里有 key，不记；读坏了的增量、回答记一行 `WARN driver bad delta`、`driver bad answer`（`log.md`），只写驱动和原因。

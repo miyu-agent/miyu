@@ -176,6 +176,7 @@ fn an_older_snapshot_writes_named_images_as_if_they_had_no_names() {
         attached_path: None,
         open_path: None,
         path_only: None,
+        hosted_tool: None,
     })
     .expect("用得了");
     let plain = without_names(&attached());

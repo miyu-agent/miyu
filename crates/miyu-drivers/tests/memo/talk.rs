@@ -9,7 +9,7 @@ use miyu_drivers::{
     Anthropic, BlobBytes, Call, Driver, DriverTextSources, DriverTexts, Inputs, Memo, OpenAiChat,
     OpenAiResponses,
 };
-use miyu_kernel::block::{Block, File, Image, Reasoning, Text, ToolCall};
+use miyu_kernel::block::{Block, File, HostedTool, Image, Outcome, Reasoning, Text, ToolCall};
 use miyu_kernel::id::{CallId, ContentHash, FileName, MediaType, ModelName, SourcePath};
 use miyu_kernel::request::{Message, Request, ToolSpec};
 
@@ -112,6 +112,7 @@ pub(super) fn other_texts() -> DriverTexts {
         attached_path: None,
         open_path: None,
         path_only: None,
+        hosted_tool: None,
     })
     .expect("这一套占位用得了")
 }
@@ -277,13 +278,15 @@ impl Talk {
         id
     }
 
-    /// 一条 assistant：正文、各家的思考、工具调用（各家的编号）。交回调用编号。
+    /// 一条 assistant：正文、各家的思考、工具调用（各家的编号）、供应商侧工具（施工 HT-2：有结果的、失败的、截过的、没结果的，
+    /// 偶尔带私有数据）。交回调用编号。
     pub(super) fn assistant(&mut self) -> Vec<CallId> {
         let mut blocks = Vec::new();
         let mut calls = Vec::new();
         for _ in 0..1 + self.rng.below(4) {
-            match self.rng.below(5) {
+            match self.rng.below(6) {
                 0 | 1 => blocks.push(self.text()),
+                5 => blocks.push(self.hosted()),
                 2 => {
                     let (family, data) = match self.rng.below(6) {
                         0 => ("openai-chat", r#"{"field":"reasoning_content"}"#),
@@ -330,6 +333,33 @@ impl Talk {
         }
         self.request.messages.push(Message::Assistant { blocks });
         calls
+    }
+
+    /// 一块供应商侧工具（施工 HT-2）：参数、结果的字里混着会转义的、多字节的。
+    fn hosted(&mut self) -> Block {
+        let call_id = self.call_id();
+        let args = self.words(3);
+        let outcome = match self.rng.below(4) {
+            0 => None,
+            which => Some(Outcome {
+                text: self.words(6),
+                failed: which == 1,
+                cut: which == 2,
+            }),
+        };
+        Block::HostedTool(HostedTool {
+            call_id,
+            name: (*self
+                .rng
+                .pick(&["web_search", "search_web", "</hosted-tool>"]))
+            .to_string(),
+            args,
+            outcome,
+            private: self
+                .rng
+                .chance(30)
+                .then(|| private("anthropic", r#"{"type":"server_tool_use"}"#)),
+        })
     }
 
     pub(super) fn tool_result(&mut self, call_id: CallId) {

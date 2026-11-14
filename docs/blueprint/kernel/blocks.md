@@ -98,7 +98,7 @@
 14. 图片、文件本身不进事件：块里只放 blob 的内容哈希，内容存成 blob（`store.md`）。图片块的宽、高必有：量得出尺寸才当图片。造它们的：`read` 读图片造图片块（施工 4-13，`tools/read.md`），人附的附件造图片块、文件块（施工 3-9 三补，`protocol.md` 的 `blob.put`、`session.send`），都是进来时量好。图片块的名字（施工 3-9 四补）：人附的图片带，是 `blob.put` 回应里的那个名字，她分得清一句话里的几张图哪张是哪个文件；`read` 读出来的不带，那一次调用本来写着路径。以前的日志里图片块没有这一格，照读，写出去也没有。
     只有路径的附件（施工 AT-1，2026-11-11 项目主人定：上传上限不动，超限的文件只把路径交给她）另成一种块 `path`，不借文件块：文件块的 `blob`、`media_type` 必有，执行器、驱动、导出、视图到处照它取内容、取大小、认类型；把那两格改成可以没有，旧版本读到没有 `blob` 的文件块整条事件读不进（缺格），新加一种块旧版本照第 7 条原样留着、投影跳过。造它的只有 `session.send`、`session.redo`（`protocol.md`）：核心不读那个文件，`name`、`path`、`size` 照头写的记。请求里它写成一句（`drivers/openai-chat.md` 第 9 条）；本地估算照这一块规范的 JSON 的字节数（`compaction.md` 第二条第 2 条）。
 15. 格式上哪一种块放在哪里都读得进来。谁放什么，见各种事件的 `blocks`（`kernel/events-bodies.md`）。
-16. 投影跳过不认识的块：给模型看的只有认识的六种（供应商侧工具这一步还不发，`crates/miyu-assemble/src/render.rs` 照不认识的跳过）（`crates/miyu-assemble/src/render.rs` 的 `known`，`kernel/request.md`）。
+16. 投影跳过不认识的块：给模型看的只有认识的七种（`crates/miyu-assemble/src/render.rs` 的 `known`，`kernel/request.md`）。供应商侧工具（施工 HT-2）照原来的位置进 assistant 消息，内置驱动写成一段字（`drivers/openai-chat.md` 第 4 条）；交给扩展驱动的，自己家的原样、别家的换成同一段字（`extensions.md`「扩展提供的模型驱动」）。HT-1 时它和不认识的块一起跳过。
 
 **字符串取值**：
 

@@ -37,8 +37,8 @@ pub use fragments::{Fragment, Fragments};
 pub use image_tokens::{DeepSeekImages, deepseek_image_tokens};
 pub use memo::Memo;
 pub use texts::{
-    AttachedPathSources, DriverTextSources, DriverTexts, ImageDescriptionSources, ImageNameSources,
-    OpenPathSources, PathOnlySources, TextFileSources,
+    AttachedPathSources, DriverTextSources, DriverTexts, HOSTED_TEXT_BYTES, HostedToolSources,
+    ImageDescriptionSources, ImageNameSources, OpenPathSources, PathOnlySources, TextFileSources,
 };
 
 use std::collections::BTreeMap;

@@ -3,6 +3,7 @@
 //! - user：`{"role":"user","content":…}`，全是文字的拼成一个字符串（照 openai-chat 的拼法，[`crate::media::join`]），有能发
 //!   的图片、文件的分成几段；发不了的照 [`crate::media`] 换成字。
 //! - assistant：照块的先后写成几项，连着的正文接成一项；自己家带加密内容的思考一块一项；工具调用一次一项，不写 `id`。
+//!   供应商侧工具写成一段字（施工 HT-2，[`crate::DriverTexts::hosted_tool`]），前后各自另起一行接进连着的正文。
 //! - tool：`function_call_output`，内容照 user 的写法，图、PDF 放在里面；一个字都没有的写「没有输出」那一句。出错的标记
 //!   不发：这一家的结果没有这一格。
 
@@ -18,7 +19,7 @@ use serde::de::IgnoredAny;
 use super::FAMILY;
 use super::wire::{Content, Item, Part, RoleMessage, Summary, Typed};
 use crate::fragments::Inline;
-use crate::media::{Media, is_pdf, join};
+use crate::media::{Media, is_pdf, join, join_hosted};
 use crate::{BlobBytes, Call, DriverTexts, EncodeError};
 
 /// 写全部的项。
@@ -124,6 +125,13 @@ impl Writer<'_> {
                     text.push_str(&said.text);
                     continue;
                 }
+                // 供应商侧工具（施工 HT-2）写成一段字，前后各自另起一行接进连着的正文。
+                Block::HostedTool(hosted) => {
+                    if let Some(said) = self.media.texts.hosted_tool(hosted) {
+                        join_hosted(&mut text, &said);
+                    }
+                    continue;
+                }
                 Block::Reasoning(thought) => match reasoning(thought) {
                     Some(item) => item,
                     None => continue,
@@ -133,11 +141,7 @@ impl Writer<'_> {
                     name: call.name.clone(),
                     arguments: arguments(&call.args),
                 },
-                Block::Image(_)
-                | Block::File(_)
-                | Block::Path(_)
-                | Block::HostedTool(_)
-                | Block::Unknown(_) => continue,
+                Block::Image(_) | Block::File(_) | Block::Path(_) | Block::Unknown(_) => continue,
             };
             flush(&mut text, items);
             items.push(Item::Typed(item));

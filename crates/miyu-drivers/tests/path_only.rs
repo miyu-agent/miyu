@@ -194,6 +194,7 @@ fn an_older_snapshot_writes_only_the_path() {
         attached_path: None,
         open_path: None,
         path_only: None,
+        hosted_tool: None,
     })
     .expect("用得了");
     let body = openai_chat::encode(

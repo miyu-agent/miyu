@@ -1,0 +1,3 @@
+<hosted-tool name="{name}">
+{args}
+</hosted-tool>

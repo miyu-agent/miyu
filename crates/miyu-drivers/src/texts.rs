@@ -18,6 +18,8 @@
 //!   `path`；附件都落成了文件，路径是那个文件的。以前造的快照里没有这两句，照旧只带名字。
 //! - 只有路径的附件（施工 AT-1，`path_only.rs`）：写成一句，字段是 `name`、`path`，头写了大小的另一份多 `size`。以前造的
 //!   快照里没有这两句，只写路径本身。
+//! - 供应商侧工具（施工 HT-2，`hosted.rs`）：写成一段字，有结果的、失败的、没结果的各一份，字段是 `name`、`args`、`text`；
+//!   截过的结果另接一句。以前造的快照里没有这四份，不写它。
 //!
 //! 字段照模板的规矩转义（`08-上下文投影.md` 第五节「模板与转义怎么写」）。由执行器从资源目录读好
 //! 交进来，造会话时读一次，冻结在会话上。
@@ -28,7 +30,9 @@ use miyu_kernel::template::{Template, TemplateError};
 
 use crate::text_file;
 
+mod hosted;
 mod path_only;
+pub use hosted::{HOSTED_TEXT_BYTES, HostedToolSources};
 pub use path_only::PathOnlySources;
 
 /// 那几句，各是一份读好的模板。
@@ -56,6 +60,8 @@ pub struct DriverTexts {
     open_path: Option<OpenPath>,
     /// 只有路径的附件的两句（施工 AT-1）；以前造的快照里没有。
     path_only: Option<path_only::PathOnly>,
+    /// 供应商侧工具写成的字的四份（施工 HT-2）；以前造的快照里没有。
+    hosted: Option<hosted::Hosted>,
 }
 
 /// 看得了的附件开头带路径的两句（施工 3-9 六补）。
@@ -134,6 +140,8 @@ pub struct DriverTextSources<'a> {
     pub open_path: Option<OpenPathSources<'a>>,
     /// 只有路径的附件的两句（施工 AT-1）；以前造的快照里没有的是 `None`。
     pub path_only: Option<PathOnlySources<'a>>,
+    /// 供应商侧工具写成的字的四份（施工 HT-2）；以前造的快照里没有的是 `None`。
+    pub hosted_tool: Option<HostedToolSources<'a>>,
 }
 
 /// 看得了的附件开头带路径的两句的原文（施工 3-9 六补）。
@@ -257,6 +265,7 @@ impl DriverTexts {
                 .path_only
                 .map(path_only::PathOnly::new)
                 .transpose()?,
+            hosted: sources.hosted_tool.map(hosted::Hosted::new).transpose()?,
         };
         texts.file_omitted.render(&file("", "", ""))?;
         if let Some(path) = &texts.open_path {

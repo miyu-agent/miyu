@@ -108,6 +108,14 @@ pub(crate) fn join(into: &mut String, next: &str) {
     into.push_str(next);
 }
 
+/// 正文是一整个字符串的 assistant（openai-chat、Responses）里接上供应商侧工具写成的那一段字（施工 HT-2，`openai-chat.md`
+/// 第 4 条）：照 [`join`] 先和前面的字分开，接完补一个换行，后面的正文另起一行；它在最后的，末尾的换行也留着。没有
+/// 供应商侧工具的消息碰不到这里，字节和以前一样。
+pub(crate) fn join_hosted(into: &mut String, said: &str) {
+    join(into, said);
+    into.push('\n');
+}
+
 /// 这是不是一个 PDF：文件只有 PDF 能照原样发。
 pub(crate) fn is_pdf(file: &File) -> bool {
     file.media_type.as_str() == "application/pdf"

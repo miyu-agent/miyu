@@ -569,6 +569,64 @@ A file was attached here ({name}, at {path}). Its content is not included. Tools
 A file was attached here ({name}, {size} bytes, at {path}). Its content is not included. Tools can read it.
 ```
 
+### assistant 消息里的一段字
+
+#### `core/drivers/hosted-tool.txt`
+
+- 什么时候加进来：历史里有模型在供应商那边自己跑了的工具（施工 HT-2：`hosted_tool` 块，搜索、读网页），有结果的；三个内置驱动都写，交给扩展驱动的请求里别家的、没带私有数据的也换成它；以前造的快照没有，不写
+- token：外壳约 18（字段空着，按 o200k 本机估，带行尾换行；`web_search`、参数 `{"query":"rust 1.97 release date"}`、结果 `Rust 1.97 was released on 2026-07-07.` 原样填进去、去掉末尾换行的整块约 47）；结果至多 4 KiB
+- 为什么加：换了模型、换了驱动以后，新的模型不知道上一个模型搜过什么、看到了什么（设计 71 第三节第 5 条，2026-11-14 项目主人定：照推荐）。外壳写成标签包着工具名、参数、结果，照 J13 只写事实；工具名照模板的规矩转义；参数、结果原样（JSON 的引号、结果的换行转义了模型读不顺），只把 `</` 写成 `<\/`，网上来的结果收不住外壳。结果截到 4 KiB：日志里的 64 KiB 是给人看的，进上下文的只要够模型知道搜过什么
+- 指纹：`766d3a49`
+
+```text
+<hosted-tool name="{name}">
+{args}
+<result>
+{text}
+</result>
+</hosted-tool>
+```
+
+#### `core/drivers/hosted-tool-failed.txt`
+
+- 什么时候加进来：同 `hosted-tool.txt`，供应商说这一次跑失败了的
+- token：外壳约 18（同上估法；同样的值整块约 47）
+- 为什么加：同 `hosted-tool.txt`；`<result>` 换成 `<error>`：失败的结果写成成功的，模型会把出错的字当搜到的
+- 指纹：`135e2a92`
+
+```text
+<hosted-tool name="{name}">
+{args}
+<error>
+{text}
+</error>
+</hosted-tool>
+```
+
+#### `core/drivers/hosted-tool-open.txt`
+
+- 什么时候加进来：同 `hosted-tool.txt`，没有结果的（被打断、供应商没报）
+- token：外壳约 12（同上估法；同样的工具名、参数整块约 25）
+- 为什么加：同 `hosted-tool.txt`；只有外壳和参数，不写空的 `<result>`：空的结果会被当成什么都没搜到
+- 指纹：`64e90418`
+
+```text
+<hosted-tool name="{name}">
+{args}
+</hosted-tool>
+```
+
+#### `core/drivers/hosted-tool-cut.txt`
+
+- 什么时候加进来：结果截过的（块里记着截过，或者进请求时又截到 4 KiB 的）
+- token：约 5（按 o200k 本机估，带行尾换行）
+- 为什么加：接在结果的字后面另起一行，仍在 `<result>`/`<error>` 里面，让模型知道看到的不是整份。没用 `file-cut.txt`：那一句要总字节数，日志里截过的不知道总数；只说截过，不带数
+- 指纹：`ace38d3d`
+
+```text
+The result is cut.
+```
+
 ### 工具结果
 
 #### `core/drivers/no-output.txt`

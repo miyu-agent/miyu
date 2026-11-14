@@ -43,6 +43,7 @@ fn sources<'a>(file_omitted: &'a str) -> DriverTextSources<'a> {
         attached_path: Some(ATTACHED_PATH),
         open_path: None,
         path_only: None,
+        hosted_tool: None,
     }
 }
 

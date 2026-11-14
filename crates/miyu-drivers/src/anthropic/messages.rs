@@ -4,7 +4,8 @@
 //!   后面；一块都没有的不发。所以一串 tool 合成一条 user，tool 后面跟着的 user 也合进去，接在结果后面。
 //! - user 的块一块一块写，不拼；空的字不写。图片照模型能不能看、媒体类型收不收写成 `image` 或者换成字；文件能读 PDF 的
 //!   写成 `document`，别的换成字（[`crate::media`]）。
-//! - assistant：正文、自己家带签名的思考、工具调用照原来的先后；别家的、没签名的思考不写（发回去这一家报 400）。
+//! - assistant：正文、自己家带签名的思考、工具调用照原来的先后；别家的、没签名的思考不写（发回去这一家报 400）。供应商侧
+//!   工具写成一段字（施工 HT-2，[`DriverTexts::hosted_tool`]），一块 `text`。
 //! - tool：一块 `tool_result`，里面照 user 的写法；一块都没有的写「没有输出」那一句。
 
 use std::collections::BTreeMap;
@@ -137,7 +138,7 @@ impl Writer<'_> {
         Ok(parts)
     }
 
-    /// assistant 消息：正文、自己家带签名的思考、工具调用，照原来的先后。
+    /// assistant 消息：正文、自己家带签名的思考、工具调用、供应商侧工具写成的字（施工 HT-2），照原来的先后。
     fn assistant(&self, blocks: &[Block]) -> Vec<Part> {
         let mut parts = Vec::new();
         for block in blocks {
@@ -149,11 +150,12 @@ impl Writer<'_> {
                     name: call.name.clone(),
                     input: input(&call.args),
                 }),
-                Block::Image(_)
-                | Block::File(_)
-                | Block::Path(_)
-                | Block::HostedTool(_)
-                | Block::Unknown(_) => {}
+                Block::HostedTool(hosted) => {
+                    if let Some(said) = self.texts.hosted_tool(hosted) {
+                        push_text(&mut parts, &said);
+                    }
+                }
+                Block::Image(_) | Block::File(_) | Block::Path(_) | Block::Unknown(_) => {}
             }
         }
         parts

@@ -155,6 +155,7 @@ pub(crate) fn listing_texts() -> Result<DriverTexts, String> {
         attached_path: None,
         open_path: None,
         path_only: None,
+        hosted_tool: None,
     })
     .map_err(|error| error.to_string())
 }

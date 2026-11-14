@@ -6,6 +6,7 @@ use miyu_kernel::template::TemplateError;
 use serde::{Deserialize, Serialize};
 
 use crate::attached_path::AttachedPathTexts;
+use crate::hosted_tool::HostedToolTexts;
 use crate::image_name::ImageNameTexts;
 use crate::open_path::OpenPathTexts;
 use crate::path_only::PathOnlyTexts;
@@ -44,6 +45,9 @@ pub struct DriverPlaceholders {
     /// 只有路径的附件写成的两句（施工 AT-1）。以前造的快照里没有，读成没有：这种附件只写路径本身；没有的不写。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub path_only: Option<PathOnlyTexts>,
+    /// 供应商侧工具写成的字的四份（施工 HT-2）。以前造的快照里没有，读成没有：供应商侧工具不写进请求；没有的不写。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hosted_tool: Option<HostedToolTexts>,
 }
 
 impl DriverPlaceholders {
@@ -68,6 +72,7 @@ impl DriverPlaceholders {
             attached_path: self.attached_path.as_ref().map(AttachedPathTexts::sources),
             open_path: self.open_path.as_ref().map(OpenPathTexts::sources),
             path_only: self.path_only.as_ref().map(PathOnlyTexts::sources),
+            hosted_tool: self.hosted_tool.as_ref().map(HostedToolTexts::sources),
         })
     }
 }

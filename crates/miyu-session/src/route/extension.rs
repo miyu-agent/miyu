@@ -4,7 +4,8 @@
 //!
 //! - 挑候选（[`Routes::extension_choices`]）：驱动不在的（端口说的原因）当场 `no_model`，池里跳过；key 照驱动的声明取
 //!   （`none` 的不取，`required` 的没写当 `no_model`），地址是这一家写的，没写的不交。
-//! - 交过去的：别家驱动的私有数据拿掉；声明了看得了图的，图照原样交；参数的写法在 `extension/wire.rs`。
+//! - 交过去的：别家驱动的私有数据拿掉，别家的、没带私有数据的供应商侧工具换成字（施工 HT-2）；声明了看得了图的，图照原样交；
+//!   参数的写法在 `extension/wire.rs`。
 //! - 增量照内核的累加器先查一遍：不对的不要了（端口发 `driver.cancel`），当 `unclassified`，记一行 `WARN driver bad delta`。
 //! - 时限同内置驱动走 HTTP：发出去到第一条增量、两条增量之间、最后一条到回答都不超过空闲时限，整个不超过它的 `TOTAL_FACTOR` 倍；
 //!   超了的不要了，当 `retryable`。连接断了也当 `retryable`。
@@ -23,6 +24,7 @@ use tokio::time::Instant;
 
 use miyu_config::package::DriverKey;
 use miyu_config::secret::{Reference, Secret};
+use miyu_drivers::DriverTexts;
 use miyu_drivers::classify::Classified;
 use miyu_http::{Endpoint, Progress, TOTAL_FACTOR};
 use miyu_kernel::accumulate::Accumulator;
@@ -62,11 +64,12 @@ pub(super) struct Reach {
     pub(super) base_url: Option<String>,
 }
 
-/// 备好了的扩展驱动：哪一个、经哪个端口、挑候选时备下的。
+/// 备好了的扩展驱动：哪一个、经哪个端口、挑候选时备下的，和这个会话冻结的驱动占位（施工 HT-2：别家的供应商侧工具照它写成字）。
 pub(super) struct Reached {
     pub(super) driver: DriverRef,
     pub(super) port: Arc<dyn DriverPort>,
     pub(super) reach: Reach,
+    pub(super) texts: DriverTexts,
 }
 
 impl Routes {
@@ -145,15 +148,9 @@ pub(super) async fn exchange(
             None,
         ));
     };
-    // 别家驱动的私有数据只回给它自己（设计 66 第四节第 3 条）：有的拷一份拿掉，没有的原样交。
-    let request = match wire::foreign(&request, &family) {
-        false => request,
-        true => {
-            let mut copy = request.into_owned();
-            wire::strip(&mut copy, &family);
-            Cow::Owned(copy)
-        }
-    };
+    // 别家驱动的私有数据只回给它自己（设计 66 第四节第 3 条），别家的供应商侧工具换成字（施工 HT-2）：有要改的拷一份改，
+    // 没有的原样交。
+    let request = wire::handed(request, &family, &reached.texts);
     let pictures = match reached.reach.images {
         false => BTreeMap::new(),
         true => match pictures(blobs, wire::images(&request)).await {

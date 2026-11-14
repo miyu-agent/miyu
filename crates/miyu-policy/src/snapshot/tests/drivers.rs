@@ -112,3 +112,45 @@ fn the_path_only_texts_are_in_new_snapshots_and_absent_from_older_ones() {
     let texts = old.driver_texts().unwrap();
     assert_eq!(texts.path_only("a.iso", "/a.iso", Some(7)), "/a.iso");
 }
+
+/// 供应商侧工具写成的字的四份（施工 HT-2）：出厂的快照带着，有结果的照 `hosted-tool.txt` 写；以前造的快照里没有，读回来
+/// 一字不差，不写它。
+#[test]
+fn the_hosted_tool_texts_are_in_new_snapshots_and_absent_from_older_ones() {
+    let hosted = miyu_kernel::block::HostedTool {
+        call_id: miyu_kernel::id::CallId::parse("call_1_2").unwrap(),
+        name: "web_search".to_string(),
+        args: "rust".to_string(),
+        outcome: Some(miyu_kernel::block::Outcome {
+            text: "found".to_string(),
+            failed: false,
+            cut: false,
+        }),
+        private: None,
+    };
+    let new = engineer();
+    let texts = new.driver_texts().unwrap();
+    let written = core().drivers.hosted_tool.expect("出厂的带着");
+    assert_eq!(
+        texts.hosted_tool(&hosted).as_deref(),
+        Some(
+            written
+                .hosted_tool
+                .replace("{name}", "web_search")
+                .replace("{args}", "rust")
+                .replace("{text}", "found")
+                .trim_end_matches('\n')
+        )
+    );
+    let mut old = new.clone();
+    old.core.drivers.hosted_tool = None;
+    let bytes = String::from_utf8(old.to_bytes()).unwrap();
+    assert!(!bytes.contains("hosted_tool"), "没有的不写：{bytes}");
+    assert!(
+        String::from_utf8(new.to_bytes())
+            .unwrap()
+            .contains("hosted_tool")
+    );
+    assert_eq!(Snapshot::from_bytes(bytes.as_bytes()), Ok(old.clone()));
+    assert_eq!(old.driver_texts().unwrap().hosted_tool(&hosted), None);
+}

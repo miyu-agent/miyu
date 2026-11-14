@@ -330,6 +330,12 @@ fn the_core_texts_are_read_and_the_persona_texts_are_as_given() {
     assert_eq!(path_only.file_path_only, driver!("file-path-only.txt"));
     let sized = driver!("file-path-only-sized.txt");
     assert_eq!(path_only.file_path_only_sized, sized);
+    // 供应商侧工具写成的字的四份（施工 HT-2）：同上。
+    let hosted = drivers.hosted_tool.expect("出厂的有供应商侧工具的四份");
+    assert_eq!(hosted.hosted_tool, driver!("hosted-tool.txt"));
+    assert_eq!(hosted.hosted_tool_failed, driver!("hosted-tool-failed.txt"));
+    assert_eq!(hosted.hosted_tool_open, driver!("hosted-tool-open.txt"));
+    assert_eq!(hosted.hosted_tool_cut, driver!("hosted-tool-cut.txt"));
 }
 
 /// 资源目录里缺了一份核心的字：说是哪一份，英文，写进运行日志（施工 4-9 再补四中）。

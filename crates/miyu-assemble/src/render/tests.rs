@@ -204,6 +204,30 @@ fn unknown_blocks_are_skipped() {
     );
 }
 
+/// 供应商侧工具（施工 HT-2）照原来的位置进 assistant 消息，前后的正文、工具调用不动；驱动把它写成一段字。
+#[test]
+fn hosted_tools_stay_in_place() {
+    let mut log = Log::new();
+    let hi = log.say("search");
+    log.start(hi);
+    let seq = log.next();
+    let hosted = format!(
+        r#"{{"type":"hosted_tool","call_id":"call_{seq}_2","name":"web_search","args":"rust","outcome":{{"text":"found"}}}}"#
+    );
+    log.reply(&format!(
+        r#"[{},{hosted},{},{{"type":"tool_call","call_id":"call_{seq}_1","name":"read","args":"{{}}"}}]"#,
+        text_json("let me see"),
+        text_json("then read"),
+    ));
+    assert_eq!(
+        rendered(&log),
+        [
+            "user: search",
+            "assistant: let me see | [hosted web_search] | then read | [call read]",
+        ]
+    );
+}
+
 #[test]
 fn events_outside_the_context_are_not_rendered() {
     let mut log = Log::new();

@@ -59,6 +59,7 @@
    - 思考、工具调用、不认识的块不写。一个字都没有的，`content` 是空串。
 4. **assistant**：照块的先后，写成几项，相邻的同种块合成一项：
    - 正文：连着的几块直接接上，写一项 `{"role":"assistant","content":<字>}`。空的不写。
+   - 供应商侧工具（施工 HT-2）：在它原来的位置写成一段字，和前后连着的正文合成一项，不另开；前后各自另起一行，同 openai-chat 第 4 条（`join_hosted`）；那一段字照 openai-chat 第 4 条（`DriverTexts::hosted_tool`）。
    - 思考：私有数据是这个驱动的、里面有 `encrypted_content` 的，写 `{"type":"reasoning","id":<id>,"summary":[{"type":"summary_text","text":<字>}],"encrypted_content":<它>}`，字是空的写 `"summary":[]`。一块思考一项，不合。别家的、没有加密内容的不写：没有它，这一家认不出这一项（`store` 是假的，服务端没存）。
    - 工具调用：一次一项 `{"type":"function_call","call_id":…,"name":…,"arguments":…}`，不写 `id`（服务端没存，写了会去找）。`call_id`：私有数据是这个驱动的、里面有字符串 `call_id` 的用它，没有的用内核分的 `call_<序号>_<第几个>`。`arguments` 是一个字符串：参数原文是一个 JSON 对象的照原文，别的写 `{}`。
 5. **tool**：`{"type":"function_call_output","call_id":…,"output":…}`。
@@ -201,6 +202,7 @@ SSE 分帧共用 `sse.rs`。这一家没有 `[DONE]`：说完是 `response.compl
 | `crates/miyu-drivers/tests/openai_responses.rs` | 只有文字；顶层的先后；`instructions` 空的不发；工具面三种情形、`strict:false`；工具调用的编号、参数兜底、没有输出的占位；assistant 的几项照块的先后；每一项的位置 |
 | `crates/miyu-drivers/tests/openai_responses_reasoning.rs` | 加密的思考回传、空摘要、别家的和没有加密内容的不写；思考强度两种写法接在最后，没写的一个字节不加 |
 | `crates/miyu-drivers/tests/openai_responses_media.rs` | 图片、PDF、不能收的占位；工具结果里的图、PDF；文本文件、带名字的图片、替它看的图和 openai-chat 一样；缺 blob 报错 |
+| `crates/miyu-drivers/tests/hosted_tool.rs`（施工 HT-2，三个驱动共用一份） | 供应商侧工具在它原来的位置写成那一段字，和样本 `hosted-tool.json` 一字不差；先后、转义、截在字的边界上、以前造的快照不写它（`drivers/openai-chat.md`「守着它的」） |
 | `crates/miyu-drivers/tests/openai_responses_streams.rs` | 流的样本；从哪里切开喂都一样；解出来的编码回去：`call_id`、加密内容原样；驱动的接口走一遍；`finished()` 在收尾事件以后才说是 |
 | `crates/miyu-assemble/tests/probe.rs`、`random_logs.rs`、`tests/support` | 加 Responses 的脸：每个探针、每段随机日志的每一次请求编码以后是上一次的前缀延伸；主会话（`terminal`）的存档多 `openai-responses/` |
 | `crates/miyu-session/tests/route_responses.rs` | 路由照供应商的 `driver` 造驱动：发到 `/responses`、带 `Bearer`；输出上限不替它填、写了的照它；思考强度照这一家的写法；回来的流照这一家解 |

@@ -2,19 +2,22 @@
 //!
 //! - 参数：`{"call", "driver", "request", "fingerprint", "params", "key"?, "base_url"?, "blobs"?}`。`request` 是规范字节原样，拼进
 //!   去、不重新解析；指纹的哈希写成 16 位十六进制的字（JSON 的数到 2⁵³ 以上就不准了）；`blobs` 只有声明了 `images` 的才有。
+//! - 请求：别家驱动的私有数据拿掉（设计 66 第四节第 3 条）；供应商侧工具带着这个家族的私有数据的原样交，别家的、没带私有
+//!   数据的换成一块正文，同内置驱动写的那一段字（施工 HT-2，设计 71 第三节第 5 条）。没有要改的原样交、不拷贝。
 //! - 增量：一条一样，和内核的 [`Delta`] 一一对应；私有数据记成这个驱动的家族（`<包编号>/<驱动名>`）。
 //! - 回答：`{"usage"?, "error"?, "sent"?}`；分类照设计第八节第 3 条的七种认，不认识的当 `unclassified`，原话截到 500 个字，
 //!   要等多久只认限速的。
 
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use miyu_drivers::Call;
 use miyu_drivers::classify::Classified;
+use miyu_drivers::{Call, DriverTexts};
 use miyu_kernel::accumulate::{Delta, Kind};
-use miyu_kernel::block::{Block, Private};
+use miyu_kernel::block::{Block, HostedTool, Private, Text};
 use miyu_kernel::event::{CallError, ErrorClass, Usage};
 use miyu_kernel::id::{ContentHash, DriverFamily};
 use miyu_kernel::raw::RawJson;
@@ -111,13 +114,58 @@ pub(super) fn params(outgoing: &Outgoing<'_>) -> String {
     text
 }
 
-/// 请求里有没有别家驱动的私有数据（设计 66 第四节第 3 条：只回给同一个家族）。
+/// 交给家族是 `family` 的扩展驱动的请求（见模块的说明）：没有要改的原样交回、不拷贝；有的拷一份，先把不是它自己家的供应商
+/// 侧工具换成字（[`retell`]），再拿掉别家的私有数据（[`strip`]）。
+pub(super) fn handed<'a>(
+    request: Cow<'a, Request>,
+    family: &DriverFamily,
+    texts: &DriverTexts,
+) -> Cow<'a, Request> {
+    if !foreign(&request, family) {
+        return request;
+    }
+    let mut copy = request.into_owned();
+    retell(&mut copy, family, texts);
+    strip(&mut copy, family);
+    Cow::Owned(copy)
+}
+
+/// 请求交出去以前要不要改：有别家驱动的私有数据（设计 66 第四节第 3 条：只回给同一个家族），或者有不是这个家族原样收回
+/// 的供应商侧工具（施工 HT-2：没带私有数据的也要换成字）。
 pub(super) fn foreign(request: &Request, family: &DriverFamily) -> bool {
-    request
-        .messages
-        .iter()
-        .flat_map(blocks)
-        .any(|block| private(block).is_some_and(|private| private.driver != *family))
+    request.messages.iter().flat_map(blocks).any(|block| {
+        private(block).is_some_and(|private| private.driver != *family)
+            || matches!(block, Block::HostedTool(hosted) if !own(hosted, family))
+    })
+}
+
+/// 供应商侧工具是不是这个家族原样收回的：认「自己家」只看块上的私有数据（施工 HT-2）。
+fn own(hosted: &HostedTool, family: &DriverFamily) -> bool {
+    hosted
+        .private
+        .as_ref()
+        .is_some_and(|private| private.driver == *family)
+}
+
+/// 不是这个家族的供应商侧工具换成一块正文，内容是内置驱动写的那一段字（[`DriverTexts::hosted_tool`]），位置不变。占位里没有
+/// 那几份的（以前造的快照）拿掉它：别家的私有数据不能原样交给扩展，又没有登记过的字可写（施工 HT-2）。
+pub(super) fn retell(request: &mut Request, family: &DriverFamily, texts: &DriverTexts) {
+    for message in &mut request.messages {
+        let blocks = match message {
+            Message::User { blocks }
+            | Message::Assistant { blocks }
+            | Message::Tool { blocks, .. } => blocks,
+        };
+        let told = std::mem::take(blocks)
+            .into_iter()
+            .filter_map(|block| match block {
+                Block::HostedTool(hosted) if !own(&hosted, family) => texts
+                    .hosted_tool(&hosted)
+                    .map(|text| Block::Text(Text { text })),
+                block => Some(block),
+            });
+        *blocks = told.collect();
+    }
 }
 
 /// 拿掉别家驱动的私有数据：块还在，只是不带它。
@@ -315,4 +363,4 @@ pub(super) fn classified(
 }
 
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;

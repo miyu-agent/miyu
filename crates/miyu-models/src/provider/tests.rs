@@ -294,6 +294,7 @@ fn texts() -> miyu_drivers::DriverTexts {
         attached_path: None,
         open_path: None,
         path_only: None,
+        hosted_tool: None,
     })
     .expect("造得出")
 }

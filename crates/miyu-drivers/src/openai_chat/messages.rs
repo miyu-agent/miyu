@@ -2,7 +2,8 @@
 //!
 //! - user：全是文字的拼成一个字符串，相邻两块之间补一个换行，前一块已经以换行结尾的不补；有图片、
 //!   文件的分成几段，连着的文字照样拼成一段。
-//! - assistant：正文、思考各自直接接上，它们本来就是一整段；工具调用的编号用供应商自己的。
+//! - assistant：正文、思考各自直接接上，它们本来就是一整段；工具调用的编号用供应商自己的。供应商侧工具写成一段字
+//!   （施工 HT-2，[`crate::DriverTexts::hosted_tool`]），前后各自另起一行接进正文。
 //! - tool：文字照 user 的拼法；图片、PDF 挪到这一串 tool 消息后面的一条 user 消息里。
 //! - 图片、文件发不了时换成的字（文本文件、占位、带名字的图片的标签、替它看的图）照 [`crate::media`]，照文字拼。
 //! - 接着写的：最后那条 user（只有被打断的那一句）不发，半截那条 assistant 加上接着写的字段。
@@ -19,7 +20,7 @@ use serde::de::IgnoredAny;
 use super::wire::{Content, FileData, FunctionCall, Part, ToolCall as WireCall, Url, Wire};
 use super::{Compat, ContinuationField, EncodeError, FAMILY, ReasoningField, ReasoningReplay};
 use crate::fragments::Inline;
-use crate::media::{Media, is_pdf, join};
+use crate::media::{Media, is_pdf, join, join_hosted};
 use crate::{BlobBytes, Call, DriverTexts};
 
 /// 写全部消息：system 在最前，每条 tool 消息串后面跟着挪出来的图片、文件。`continuing` 有的是
@@ -166,11 +167,13 @@ impl Writer<'_> {
                         arguments: arguments(&call.args),
                     },
                 }),
-                Block::Image(_)
-                | Block::File(_)
-                | Block::Path(_)
-                | Block::HostedTool(_)
-                | Block::Unknown(_) => {}
+                // 供应商侧工具（施工 HT-2）写成一段字，前后各自另起一行接进正文。
+                Block::HostedTool(hosted) => {
+                    if let Some(said) = self.texts.hosted_tool(hosted) {
+                        join_hosted(&mut content, &said);
+                    }
+                }
+                Block::Image(_) | Block::File(_) | Block::Path(_) | Block::Unknown(_) => {}
             }
         }
         let content = (!content.is_empty() || tool_calls.is_empty()).then_some(content);

@@ -65,6 +65,7 @@
    - 正文：一块一块写 `text`，空的不写。
    - 思考：私有数据是这个驱动的，里面有 `signature` 的写 `{"type":"thinking","thinking":<字>,"signature":<签名>}`（字是空的也写：这一家默认不给思考的字，只给签名）；里面有 `redacted` 的写 `{"type":"redacted_thinking","data":<它>}`。别家的、没有私有数据的、只有字没有签名的（说到一半断了的）不写：发回去没签名的思考，这一家报 400。
    - 工具调用：`{"type":"tool_use","id":…,"name":…,"input":…}`。`id`：私有数据是这个驱动的、里面有字符串 `id` 的用它；没有的用内核分的 `call_<序号>_<第几个>`（别家的编号不用：可能带这一家不收的字）。`input`：参数原文是一个 JSON 对象的一个字节不改，别的写 `{}`。
+   - 供应商侧工具（施工 HT-2）：在它原来的位置写成一块 `text`，和前后的正文各是各的块，不拼；那一段字照 openai-chat 第 4 条（`DriverTexts::hosted_tool`），末尾不带换行（这一家不收以空白结尾的最后一条 assistant）。服务端工具的块原样带回（`server_tool_use`、`web_search_tool_result`）是施工 HT-5。
    - 图片、文件、不认识的块不写。
 6. **tool**：`{"type":"tool_result","tool_use_id":…,"content":[…],"is_error":true}`，`is_error` 只在统一的请求里 `error` 是真的时候写。
    - `tool_use_id` 和对应那次调用的 `id` 一样。
@@ -253,6 +254,7 @@ SSE 分帧共用 `sse.rs`（`drivers/openai-chat.md`「解码」）。一条事�
 | `crates/miyu-drivers/tests/anthropic_marks.rs` | 四处打点各在哪；第一次请求、system 空、`stable` 是 0 的；思考块不打、往前找；同一块只打一次、最多 4 处；`unmarked` 去掉以后，一段随机的会话每次请求都是上一次的前缀延伸 |
 | `crates/miyu-drivers/tests/anthropic_thinking.rs` | 思考块回传：带签名、只有签名、`redacted`、断了没签名的丢掉、别家的丢掉；思考强度四种写法，接在最后，没写的一个字节不加 |
 | `crates/miyu-drivers/tests/anthropic_media.rs` | 图片、PDF、媒体类型不对的占位；工具结果里的图、PDF 在 `tool_result` 里；文本文件、带名字的图片、替它看的图和 openai-chat 一样换成字；缺 blob 报错 |
+| `crates/miyu-drivers/tests/hosted_tool.rs`（施工 HT-2，三个驱动共用一份） | 供应商侧工具在它原来的位置写成那一段字，和样本 `hosted-tool.json` 一字不差；先后、转义、截在字的边界上、以前造的快照不写它（`drivers/openai-chat.md`「守着它的」） |
 | `crates/miyu-drivers/tests/anthropic_streams.rs` | 流的样本；从哪里切开喂都一样；解出来的编码回去：编号、签名原样；驱动的接口走一遍；`finished()` 在 `stop_reason` 到了以后才说是 |
 | `crates/miyu-drivers/src/anthropic/models/tests.rs` | 列模型：名字和窗口、坏的跳过、回应坏了说是模型列表 |
 | `crates/miyu-drivers/src/classify/tests.rs` | 加：`exceed context limit` 算超长；这一家的错误体几类各一个例子 |

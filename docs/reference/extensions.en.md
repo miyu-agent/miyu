@@ -366,7 +366,7 @@ Your model driver takes one whole model call (core → extension, with an `id`, 
 |---|---|
 | `call` | This call's id; `driver.delta` and `driver.cancel` refer to it |
 | `driver` | `<package id>/<driver name>`, to tell your drivers apart |
-| `request` | The unified request as is: `tools`, `system`, `messages`, `stable`, and when present `continuation`, `described` (what each image shows, for endpoints that can't see images), `output_cap`, `tail`. The same state gives the same bytes; other drivers' private data is removed |
+| `request` | The unified request as is: `tools`, `system`, `messages`, `stable`, and when present `continuation`, `described` (what each image shows, for endpoints that can't see images), `output_cap`, `tail`. The same state gives the same bytes; other drivers' private data is removed. A `hosted_tool` block (a tool the model ran on the provider's side, such as a search) that carries your driver's private data is handed over as is, and you decide whether to send it back to the provider; one from another driver, or with no private data, becomes a `text` block holding the text Miyu writes for the model (`<hosted-tool name="…">` wrapping the arguments and the result, both as they are except that every `</` becomes `<\/`; no trailing newline). Only the block's private data tells whether it is yours |
 | `fingerprint` | `{"tools", "system", "messages": [...]}`: one hash (16 hex digits) for the tool surface, the system prompt and each message; the same content gives the same hash, so you can use it for your own cache |
 | `params` | `{"model", "max_output"?, "effort"?, "temperature"?}` |
 | `key` | The key this provider's config refers to; left out when you declared `key = "none"` or the provider has no key |

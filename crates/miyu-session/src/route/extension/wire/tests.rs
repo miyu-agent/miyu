@@ -9,6 +9,8 @@ use miyu_kernel::id::{MediaType, ModelName};
 
 use super::*;
 
+pub(in crate::route::extension) mod hosted;
+
 fn family() -> DriverFamily {
     DriverFamily::parse("pi/ag").expect("家族")
 }

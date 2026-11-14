@@ -25,6 +25,8 @@ use super::super::shared::ModelData;
 use super::*;
 use crate::route::base::Speaker;
 
+mod hosted;
+
 /// 一次调用怎么答。
 #[derive(Debug)]
 enum Plan {
@@ -178,6 +180,7 @@ fn ready(fake: &Arc<Fake>, idle: Duration) -> Ready {
                 key: Some(Secret::new("sk-ag").expect("key")),
                 base_url: None,
             },
+            texts: hosted::texts(),
         })),
         call: Call {
             model: ModelName::parse("m").expect("模型名"),
