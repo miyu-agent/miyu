@@ -1,4 +1,4 @@
-//! `persona.toml` 里 `[persona]` 以外的几张表（`[knowledge]`、`[appearance]`）读得出；`[memory]` 不再认（施工 FH-1）、上一层盖下面的（施工 K-1 下从
+//! `persona.toml` 里 `[persona]` 以外的几张表（`[knowledge]`、`[appearance]`、`[life]`）读得出；`[memory]` 不再认（施工 FH-1）、上一层盖下面的（施工 K-1 下从
 //! `persona/tests.rs` 挪出来守 500 行上限）。写错了说第几行的在 `persona/tests.rs` 的 `a_wrong_toml_says_which_line`。
 
 use crate::persona::{Code, PersonaFile, color, read_toml};
@@ -101,4 +101,63 @@ fn background_opacity_and_focus_are_read_and_layered() {
         None,
         "没写的是没有"
     );
+}
+
+/// 人生会话的上下文上限（施工 LF-10）：`[life] context` 是正整数，照层叠；没有这张表的是没有。写错的各报各的原因码、带行号：
+/// 不是正整数的 `bad_life_context`，多了别的键的 `unknown_key`，不是表的 `not_a_table`。
+#[test]
+fn the_life_context_is_a_positive_number_and_an_upper_layer_wins() {
+    let read = |text: &str| read_toml(text).unwrap().life_context;
+    assert_eq!(read("[life]\ncontext = 50000\n"), Some(50_000));
+    assert_eq!(read("[life]\n"), None, "空表是没写");
+    assert_eq!(
+        read("[persona]\nname = \"美羽\"\n"),
+        None,
+        "没有这张表的照旧"
+    );
+    let lower = read_toml("[life]\ncontext = 80000\n").unwrap();
+    assert_eq!(
+        PersonaFile::default().over(lower.clone()).life_context,
+        Some(80_000),
+        "上一层没写沿用下面的"
+    );
+    let upper = read_toml("[life]\ncontext = 120000\n").unwrap();
+    assert_eq!(upper.over(lower).life_context, Some(120_000));
+    for (text, code, detail) in [
+        (
+            "\n[life]\ncontext = 0\n",
+            Code::BadLifeContext,
+            "life.context",
+        ),
+        (
+            "\n[life]\ncontext = -1\n",
+            Code::BadLifeContext,
+            "life.context",
+        ),
+        (
+            "\n[life]\ncontext = 1.5\n",
+            Code::BadLifeContext,
+            "life.context",
+        ),
+        (
+            "\n[life]\ncontext = \"9\"\n",
+            Code::BadLifeContext,
+            "life.context",
+        ),
+        ("\n[life]\nwindow = 9\n", Code::UnknownKey, "life.window"),
+    ] {
+        let problem = read_toml(text).unwrap_err();
+        assert_eq!(
+            (problem.code, problem.detail.as_str(), problem.line),
+            (code, detail, Some(3)),
+            "{text:?}"
+        );
+    }
+    let problem = read_toml("life = 3\n").unwrap_err();
+    assert_eq!(
+        (problem.code, problem.detail.as_str(), problem.line),
+        (Code::NotATable, "life", Some(1))
+    );
+    assert_eq!(Code::BadLifeContext.as_str(), "bad_life_context");
+    assert!(Code::ALL.contains(&Code::BadLifeContext));
 }

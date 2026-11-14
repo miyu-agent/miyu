@@ -1,5 +1,5 @@
 //! `persona.toml` 里 `[persona]` 以外的几张表（施工 P-6 从 `persona.rs` 挪出来守 500 行上限）：`[knowledge]`（施工 K-1 下）、
-//! `[appearance]`（施工 P-6）。`[memory]`（施工 R-3 下）施工 FH-1 去掉了，照不认识的表报。
+//! `[appearance]`（施工 P-6）、`[life]`（施工 LF-10）。`[memory]`（施工 R-3 下）施工 FH-1 去掉了，照不认识的表报。
 
 use toml_edit::Item;
 
@@ -150,6 +150,47 @@ pub(super) fn read_appearance(
         }
     }
     Ok(appearance)
+}
+
+/// `[life]`：只有 `context`，人生会话的上下文上限，正整数（施工 LF-10，设计 70 第四节）。太小、照模型算不出压缩线的不在这里
+/// 拒：要看用的时候的模型，用的时候往上抬。别的键 `unknown_key`。
+pub(super) fn read_life(
+    item: &Item,
+    at: &dyn Fn(&Item) -> Option<usize>,
+) -> Result<Option<u64>, Problem> {
+    let Some(table) = item.as_table_like() else {
+        return Err(problem(
+            at(item),
+            Code::NotATable,
+            "life",
+            "life must be a table".to_string(),
+        ));
+    };
+    let mut context = None;
+    for (key, item) in table.iter() {
+        if key != "context" {
+            return Err(problem(
+                at(item),
+                Code::UnknownKey,
+                &format!("life.{key}"),
+                format!("unknown key life.{key}"),
+            ));
+        }
+        let tokens = item
+            .as_integer()
+            .and_then(|number| u64::try_from(number).ok())
+            .filter(|tokens| *tokens > 0);
+        let Some(tokens) = tokens else {
+            return Err(problem(
+                at(item),
+                Code::BadLifeContext,
+                "life.context",
+                "life.context must be a positive whole number of tokens".to_string(),
+            ));
+        };
+        context = Some(tokens);
+    }
+    Ok(context)
 }
 
 /// 0 到 100 的百分比；别的没有。

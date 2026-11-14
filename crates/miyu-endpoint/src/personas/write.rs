@@ -6,16 +6,20 @@
 //! - 提示词防覆盖：`persona.read` 给你那一层这一份的版本，`persona.set` 带着它（`expect`），对不上 `persona_conflict`。
 //! - 写盘照配置文件的规矩（`miyu_store::config_file`），一份一份写；只试一次：几份里写到一半撞上有人手改的，前面写了的不撤，
 //!   回 `persona_conflict`，头重读再来（重来时前面那几份已经是改完的样子，不再写）。
+//! - 改了人生会话的上下文上限（`changes` 里的 `life.context`，施工 LF-10）、写成了的，当场改这个人格没结束的人生会话的
+//!   （`crate::life::follow`）；只在这一次你那一层的这一格确实变了时去找，别的改动不多做事。
 //! - 删在 `delete.rs`（施工 PE-1 挪出去）：整个目录挪进回收处（`miyu_store::trash::personas`），留 7 天。
 
 use std::collections::BTreeMap;
 use std::io;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use serde::{Deserialize, Deserializer};
 use serde_json::{Value as Json, json};
 
 use miyu_config::Words;
+use miyu_config::plain;
 use miyu_policy::persona::{self, Demo};
 use miyu_store::config_file::{self, ConfigText, WriteError};
 use miyu_store::human::Human;
@@ -110,6 +114,9 @@ struct Prompt {
     expect: Option<Option<String>>,
 }
 
+/// `persona.toml` 里人生会话的上下文上限那一格（施工 LF-10）。
+const LIFE_CONTEXT: &str = "life.context";
+
 /// 要写的一份：内容（`None` 是删掉），和读到时的版本（替换、删之前再比一次）。
 struct Pending {
     path: PathBuf,
@@ -119,7 +126,7 @@ struct Pending {
 
 /// `persona.set`：改你那一层，交回改完叠好的样子（同 `persona.get`）。不写 `persona` 的是新建（施工 P-3 补）：编号由
 /// 核心起，至少要写一样东西。
-pub(crate) async fn set(core: &Core, peer: Peer, params: SetParams) -> Result<Json, Refusal> {
+pub(crate) async fn set(core: &Arc<Core>, peer: Peer, params: SetParams) -> Result<Json, Refusal> {
     let empty = params.changes.is_empty()
         && params.prompts.is_empty()
         && params.avatar.is_none()
@@ -163,26 +170,32 @@ pub(crate) async fn set(core: &Core, peer: Peer, params: SetParams) -> Result<Js
     let packages = core.packages_of();
     let language = peer.language;
     let state = core.root.persona_picture_cache();
-    tokio::task::spawn_blocking(move || {
+    let (reply, life) = tokio::task::spawn_blocking(move || {
         let below = (packages.as_slice(), &personas);
-        let found = match params.persona {
+        let (found, life) = match params.persona {
             Some(id) if params.new && personas.ids().contains(&id) => Err(Refusal::PERSONA_EXISTS),
             Some(id) => write(&personas, &id, &wanted, &prompts, said.as_ref()),
             None => create(&personas, &wanted, &prompts, said.as_ref()),
         }?;
+        // 上限确实改了的：改完叠好的数交给外面去改人生会话（施工 LF-10）。
+        let life = life.then(|| (found.id.clone(), found.file.life_context));
         if pictures.is_empty() {
-            return Ok(describe(&found, language, &state, below));
+            return Ok((describe(&found, language, &state, below), life));
         }
         for checked in &pictures {
             super::picture::apply(&personas, &found.id, checked)?;
         }
         personas
             .find(&found.id)
-            .map(|found| describe(&found, language, &state, below))
+            .map(|found| (describe(&found, language, &state, below), life))
             .map_err(|error| super::told(&error, said.as_ref()))
     })
     .await
-    .map_err(|_| Refusal::INTERNAL)?
+    .map_err(|_| Refusal::INTERNAL)??;
+    if let Some((persona, written)) = life {
+        crate::life::follow(core, &persona, written).await;
+    }
+    Ok(reply)
 }
 
 /// 新建：挑一个没用过的编号，先建它的目录占住（别处同时建了同一个的，换下一个），再照常写；写不成的把空目录删掉。
@@ -191,7 +204,7 @@ fn create(
     wanted: &[Wanted],
     prompts: &[Prompt],
     said: Option<&Human>,
-) -> Result<Found, Refusal> {
+) -> Result<(Found, bool), Refusal> {
     for _ in 0..3 {
         let id = personas.unused_id();
         let dir = personas.home_dir(&id);
@@ -281,14 +294,15 @@ fn examples(pairs: &[PairParams], said: Option<&Human>) -> Result<Option<String>
     })
 }
 
-/// 读、查 `expect`、改、查改完的、写。什么都没变的不写，照盘上的找。
+/// 读、查 `expect`、改、查改完的、写。什么都没变的不写，照盘上的找。交回的开关是你那一层的 `life.context` 这一次确实变了、
+/// 写成了（施工 LF-10）。
 fn write(
     personas: &Personas,
     id: &str,
     wanted: &[Wanted],
     prompts: &[Prompt],
     said: Option<&Human>,
-) -> Result<Found, Refusal> {
+) -> Result<(Found, bool), Refusal> {
     let mut edits = Edits::new();
     let mut pending = Vec::new();
     let toml_path = personas.home_file(id, persona::TOML);
@@ -297,6 +311,8 @@ fn write(
     check_expect(&text, wanted, "persona_conflict")?;
     let label = format!("home {}", persona::TOML);
     let new = edited(&text, wanted, &label, Refusal::persona_invalid)?;
+    let life = wanted.iter().any(|want| want.key() == LIFE_CONTEXT)
+        && plain::json_at(&text, LIFE_CONTEXT) != plain::json_at(&new, LIFE_CONTEXT);
     if new != text {
         pending.push(Pending {
             path: toml_path,
@@ -333,7 +349,10 @@ fn write(
         edits.insert(prompt.file, prompt.text.clone());
     }
     if pending.is_empty() {
-        return personas.find(id).map_err(|error| told(&error, said));
+        return personas
+            .find(id)
+            .map(|found| (found, false))
+            .map_err(|error| told(&error, said));
     }
     let found = personas
         .find_with(id, &edits)
@@ -349,7 +368,7 @@ fn write(
         }
     }
     tracing::info!(target: TARGET, persona = %id, "persona saved");
-    Ok(found)
+    Ok((found, life))
 }
 
 /// 写一份、删一份：删之前也再读一次，和读到时的版本对不上的放弃。

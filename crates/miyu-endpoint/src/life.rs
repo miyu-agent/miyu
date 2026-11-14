@@ -9,6 +9,8 @@
 //! - 结束（施工 LF-4 上，`finish.rs`）：`life.kill`、`life.new`，她自己的 `end_life` 经 `port.rs`（施工 LF-4 下）。找的时候结束了的也算（最新的那一个）：`life.status` 说 `ended`，
 //!   `life.pause`、`life.resume` 拒 `life_ended`，`life.start`、`life.new` 先把它没清完的清完再开新的。
 //! - 命令 `/life`（施工 LF-5 下，`commands/life.rs`）是另一个入口：照会话的人格调同一个 [`act`]。
+//! - 上下文上限（施工 LF-10）：开会话时照人格的 `[life] context`（没写的照出厂的 [`CONTEXT`]）设；`persona.set` 改了它的，
+//!   当场改这个人格没结束的人生会话的（[`follow`]）。到点不同步：上限是会话自己的一格，人生会话里 `/context` 改的一直管用。
 
 use std::collections::BTreeSet;
 use std::sync::Arc;
@@ -41,10 +43,11 @@ pub(crate) use port::Ending;
 /// 出厂的人生会话用哪个预设（`resources/presets/life.toml`）。
 const PRESET: &str = "life";
 
-/// 新开的人生会话的上下文上限（token，设计 70 第四节）：她隔一两个小时才醒一次，供应商的缓存多半已经失效，每次醒来整份上下文
-/// 按原价算，不设的话一周后每次醒来要带二十多万 token（2026-11-14 项目主人定限制上下文长度）。主人以后照常能改（设计 68
-/// 的 `context`）。同 `LIFE_GAP` 是写在这里的数，不是配置项；照这一刻的模型最少要的比它大的，照最少要的设。
-const CONTEXT: u64 = 32_000;
+/// 人生会话出厂的上下文上限（token，设计 70 第四节）：她隔一两个小时才醒一次，供应商的缓存多半已经失效，每次醒来整份上下文
+/// 按原价算，不设的话一周后每次醒来要带二十多万 token（2026-11-14 项目主人定限制上下文长度，下午定出厂至少 100000，施工
+/// LF-10）。人格的 `[life] context` 写了的照它（`persona.get` 的 `life_context_default` 是这个数）；不是配置项。照这一刻的模型
+/// 最少要的比它大的，照最少要的设。
+pub(crate) const CONTEXT: u64 = 100_000;
 
 /// 四个方法的参数。
 #[derive(Debug, Deserialize)]
@@ -184,6 +187,10 @@ async fn end(core: &Arc<Core>, session: &SessionId) -> Result<(), Refusal> {
 
 /// `life.start`：见模块的说明。回应 `{"session"}`。
 async fn start(core: &Arc<Core>, id: &CommandId, persona: &str) -> Result<Value, Refusal> {
+    // 人格写的上限（施工 LF-10）：在 `core.life` 的锁里读，`persona.set` 改它时的 [`follow`] 也拿这把锁，两边不会错过。
+    let written = crate::personas::resolve(core, Some(Some(persona)))
+        .await?
+        .and_then(|found| found.file.life_context);
     let who = Opening {
         attended: false,
         oneshot: false,
@@ -212,7 +219,7 @@ async fn start(core: &Arc<Core>, id: &CommandId, persona: &str) -> Result<Value,
         .await?;
     let session = created.id;
     core.schedules().named(&session, persona);
-    if let Err(refusal) = mark(core, id, &session).await {
+    if let Err(refusal) = mark(core, id, &session, written).await {
         // 还不是人生会话的空会话：删掉，不留半截。
         if let Err(left) = core.sessions.delete(core, &session).await {
             tracing::warn!(target: "miyu::endpoint", session = session.as_str(), reason = left.reason, "life session not removed");
@@ -223,22 +230,66 @@ async fn start(core: &Arc<Core>, id: &CommandId, persona: &str) -> Result<Value,
     Ok(json!({"session": session.as_str()}))
 }
 
-/// 新开的会话设上下文上限、记身份（命令编号接在这一次的编号后面：`/context`、`/life`）。
-async fn mark(core: &Arc<Core>, id: &CommandId, session: &SessionId) -> Result<(), Refusal> {
+/// 新开的会话照人格写的 `written` 设上下文上限、记身份（命令编号接在这一次的编号后面：`/context`、`/life`）。
+async fn mark(
+    core: &Arc<Core>,
+    id: &CommandId,
+    session: &SessionId,
+    written: Option<u64>,
+) -> Result<(), Refusal> {
     let found = core.sessions.get(core, session).await?;
-    let least = found
-        .handle
-        .current()
-        .await
-        .map_err(|_| Refusal::STOPPED)?
-        .least_context
-        .unwrap_or(1);
-    let context = crate::models::context::command(&found.handle, Some(CONTEXT.max(least))).await?;
+    let context = cap(&found.handle, written).await?;
     send(core, id, session, &found.handle, "context", context).await?;
     let identity = Command::Append {
         event: Appended::Life(LifeStarted {}),
     };
     send(core, id, session, &found.handle, "life", identity).await
+}
+
+/// 人生会话要用的上下文上限（施工 LF-10）：人格写的 `written`，没写的照出厂的 [`CONTEXT`]；比会话这时最少要的小的抬到最少要的
+/// （`least_context`，同 `session.configure` 的 `context` 拒的那条线）。交回设它的命令。
+///
+/// # Errors
+///
+/// 会话停了：`stopped`。
+async fn cap(handle: &Handle, written: Option<u64>) -> Result<Command, Refusal> {
+    let least = handle
+        .current()
+        .await
+        .map_err(|_| Refusal::STOPPED)?
+        .least_context
+        .unwrap_or(1);
+    Ok(Command::SetContext {
+        tokens: Some(written.unwrap_or(CONTEXT).max(least)),
+    })
+}
+
+/// `persona.set` 改了人格 `persona` 的 `life.context`（写了新的数或者删掉）、写成了以后（施工 LF-10，`life.md`「上下文上限」）：
+/// 这个人格有没结束的人生会话（在跑的、停着的）的，当场把它的上限设成要用的数（[`cap`]，`written` 是改完叠好的）。和会话这时
+/// 一样的内核不记事件。没有人生会话的、结束了的什么都不做；设不成的记一行 `WARN`，不往外报：人格已经写好了，下一段人生照它。
+///
+/// 拿 `core.life` 那把锁：和 `life.start` 读人格、设上限排着来。命令记成人发的（主人在人格页上改的），编号每次新造
+/// （`life/<UUIDv7>/context`）：请求编号是各个连接自己编的，接它的话别的连接、过几天的另一次重用同一个编号会撞成
+/// `id_reused`，或者被内核当成重发吞掉。
+pub(crate) async fn follow(core: &Arc<Core>, persona: &str, written: Option<u64>) {
+    let _one_at_a_time = core.life.lock().await;
+    // 没有的、结束了的不做；读不了的 `find` 自己记过一行。
+    let Ok(Some((session, Life::Started))) = find(core, persona).await else {
+        return;
+    };
+    let base = format!(
+        "life/{}",
+        miyu_session::new_id(crate::sessions::now()).as_str()
+    );
+    let set = async {
+        let id = CommandId::parse(&base).map_err(|_| Refusal::BAD_PARAMS)?;
+        let found = core.sessions.get(core, &session).await?;
+        let context = cap(&found.handle, written).await?;
+        send(core, &id, &session, &found.handle, "context", context).await
+    };
+    if let Err(refusal) = set.await {
+        tracing::warn!(target: "miyu::endpoint", session = session.as_str(), reason = refusal.reason, "life context not set");
+    }
 }
 
 /// 照这一次的命令编号 `id` 接 `/<suffix>` 给会话发一个命令，记成人发的。拒绝的照内核的原因码；会话停了的从表里拿掉。

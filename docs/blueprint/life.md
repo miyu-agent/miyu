@@ -56,7 +56,7 @@
 
 1. 找（第 1 条），有的回 `life_exists`。
 2. 开会话：照 `session.create` 的那一条路（`Sessions::create`，命令编号是这条请求的编号），人格是参数、预设 `life`、模型照这一刻的默认（`model` 不写：照这时的 `models.chat` 记下，以后改配置这个会话照旧）、`cwd` 是 `~`、没人看着（`attended` 假，同定时任务每次新开的）、标题照常自动起。开不成的照原因回，什么都没留下。
-3. 设上下文上限（设计 68 的 `context`，同 `session.configure`，命令编号接 `/context`）：32000 token（设计 70 第四节：不设的话一周后每次醒来要带二十多万 token），这一刻的模型最少要的比它大的照最少要的；是写在 `life.rs` 的数，不是配置项。再记身份（命令 `Append` 的 `Life`，编号接 `/life`）。这两样哪一样没成，删掉刚开的会话（照 `session.delete`，删不掉的记 `WARN life session not removed`），照原因回：不留一个还不是人生会话的空会话。
+3. 设上下文上限（设计 68 的 `context`，同 `session.configure`，命令编号接 `/context`，记成人发的）：照人格的 `[life] context`，没写的照出厂的 100000 token，这一刻的模型最少要的比它大的照最少要的（下面「上下文上限」）。人格在 `core.life` 的锁里读。再记身份（命令 `Append` 的 `Life`，编号接 `/life`）。这两样哪一样没成，删掉刚开的会话（照 `session.delete`，删不掉的记 `WARN life session not removed`），照原因回：不留一个还不是人生会话的空会话。
 4. 建人生那一行：人建的、跑在这个会话上、留言是空的、第一次是现在（`Schedules::add`），于是马上醒第一次。没建成的（表挂满了、用不了）照原因回，带 `data.session`：身份已经记上了，它就是这个人格的人生会话，`life.status` 说 `paused`，`life.resume` 照第 5 条重建。
 
 **4. `life.pause`**：找，没有的 `no_life`；那一行在、没停的停掉（`Schedules::pause`：下一次清掉）；停着的、不在的不动。
@@ -91,6 +91,15 @@
 5. **写法**：一块 `context.injected`，模块 `life`、类别 `doing`，`refs` 是写下的时刻（毫秒），排在触发这一轮的那句前面。原文照 `resources/software/life/doing.txt`：`<life-doing since="{since}" until="{until}">{text}</life-doing>`，以换行结尾。`since` 是写下的时刻、`until` 是那时定的下次醒的时刻，照会话的时区写到分钟（`2026-11-14 19:31`，`Timestamp::local_minute`）；`text` 是她写的那一句。三个字段都照模板的规矩转义（`kernel/request.md`「模板」第 3 条）：`<`、`>`、`"`、`&` 写成 `\u` 的样子，伪造不了外壳。外壳读不成、写法不对的记 `WARN life doing shell not read`，不交。
 6. **结束**（LF-4）：删人生那一行走 `Schedules::cancel`，`doing` 表那一行跟着删，内存里那一份跟着拿掉。
 
+**9. 上下文上限**（施工 LF-10，设计 70 第四节，2026-11-14 项目主人定：32000 太小，出厂至少 100000，放在人格的编辑页能改）：
+
+1. **要用的数** = 人格叠好的 `[life] context`（`personas.md`「`persona.toml`」），没写的照出厂的数（`life.rs` 的 `CONTEXT`，100000，不是配置项）；比会话这时最少要的（`least_context`，同 `session.configure` 的 `context` 拒的那条线）小的抬到最少要的。生效的窗口照旧取它和模型窗口里小的（`Limits::capped`）。不做「不限」的写法：想放开的写一个很大的数。不设的话一周后每次醒来要带二十多万 token：她隔一两个小时才醒一次，供应商的缓存多半已经失效，每次醒来整份上下文按原价算。
+2. **什么时候设**：
+   - `life.start`、`life.new` 开会话时（第 3 条第 3 步）。
+   - `persona.set` 改了 `life.context`（写了新的数，或者 `unset`）、你那一层的这一格这一次确实变了、几份都写成了的：回应以前，在 `core.life` 的锁里照第 1 条找这个人格的人生会话，没结束的（在跑的、停着的；停着的没载入的载入一次）当场设成要用的数（`life::follow`）。命令记成人发的，编号每次新造 `life/<UUIDv7>/context`：请求编号是各个连接自己编的，接它的话别的连接、过几天的另一次重用同一个编号会撞成 `id_reused`，或者被内核当成重发吞掉。和会话这时一样的内核不记事件（端点不另比）。没有人生会话的、结束了的什么都不做；设不成的（会话这时停了、人生刚好在这一刻结束封存了）记一行 `WARN life context not set`（`session`、`reason`），`persona.set` 照样算成：数已经写进人格，下一段人生照它。
+3. **到点不同步**（2026-11-14 项目主人定）：上下文上限是会话自己的一格。人生会话里打 `/context`（或者 `session.configure` 的 `context`）改了的一直管用，她醒几次都是这个数，和别的会话一样；人格里的数是「开一段人生时用多少」和「在人格页上改的那一刻改成多少」。两个入口改的是会话的同一格，后改的算数。
+4. **手改 `persona.toml`** 的不碰跑着的人生会话（没有人告诉核心），只管下一段人生；要马上生效的走 `persona.set`（人格的编辑页），或者在人生会话里打 `/context`。
+
 ### 命令（施工 LF-5 下，设计 70 第二节第 11 条）
 
 人在本机的会话里打 `/life`，看、开、停、续、结束这个会话的人格的人生会话，不用先找到那个会话。它只是 `life.*` 的另一个入口：照这个会话这一刻的人格调同一个 `life::act`（`life.rs`，六个方法也走它），命令只认参数、拼回执。跳到人生会话是头的事，核心在回应里带上它的编号。
@@ -114,7 +123,7 @@
 
 | 测试 | 守什么 |
 |---|---|
-| `crates/miyu-endpoint/tests/life.rs` 的 `start_opens_a_life_session_and_she_wakes_at_once` | 开出的会话人格、预设、上下文上限 32000 都对；日志里一条不带回合、人记的 `life.started`；第一次醒来的正文是出厂的推演方法、`by.loop` 是 `life`；人生那一行人建的、醒过以后照默认间隔 |
+| `crates/miyu-endpoint/tests/life.rs` 的 `start_opens_a_life_session_and_she_wakes_at_once` | 开出的会话人格、预设、上下文上限 100000（人格没写，施工 LF-10）都对；日志里一条不带回合、人记的 `life.started`；第一次醒来的正文是出厂的推演方法、`by.loop` 是 `life`；人生那一行人建的、醒过以后照默认间隔 |
 | 同上 `one_life_per_persona_even_when_two_heads_start_at_once` | 两个连接同时开同一个人格只开出一条，另一个 `life_exists` 带那一个；再开同样；表里只有一行人生；别的人格互不相干 |
 | 同上 `status_says_none_running_or_paused` | 没开的 `none`；在跑的带会话和下一次；停了的 `paused` |
 | 同上 `a_paused_life_sleeps_and_a_resumed_one_wakes_from_now` | 停着到点不醒；续上照现在醒、再照默认间隔；那一行删了以后状态是停着，续上照日志重建、接着醒 |
@@ -122,6 +131,11 @@
 | 同上 `an_unknown_persona_is_refused_by_all_four` | 没有的人格四个方法都回 `unknown_persona` |
 | 同上 `the_list_marks_a_life_session_and_a_rebuilt_index_still_does` | 会话列表人生会话带 `life: true`、别的不带；索引的行都没了照日志补回来一样，`life.start` 照样认得出来 |
 | 同上 `resume_puts_a_life_row_at_now_and_leaves_other_loops_alone` | `Schedules::resume` 落在人生那一行上是现在、留言不动；`dynamic` 照旧 |
+| `crates/miyu-endpoint/tests/persona_life_context.rs` 的 `life_start_caps_by_the_persona`（施工 LF-10） | 人格没写的开出来 100000，写了 50000 的是 50000，写得比最少要的还小的抬到最少要的 |
+| 同上 `persona_set_moves_a_running_or_paused_life_once` | `persona.set` 改了 `life.context` 当场换在跑的人生会话的上限、只多一条；同一个数再写不多记；停着的也换，`unset` 换回出厂的数 |
+| 同上 `persona_set_leaves_no_life_and_ended_lives_alone` | 没有人生会话的照样写成；开的时候照人格写的；结束了的会话日志一条都不多 |
+| 同上 `context_typed_in_life_stays_across_wakeups` | 人生会话里 `/context` 改的，改人格别的格不动它、再醒两次还是它（到点不同步）；再在人格里改换成新写的 |
+| 同上 `life_context_is_set_and_unset_through_changes` | `persona.set` 的 `changes` 写、删 `life.context`，`persona.get` 的两格跟着变；0、负数、小数、字拒 `persona_invalid`、什么都不写 |
 | `crates/miyu-endpoint/tests/life_preset.rs` | 出厂预设列出来、`hidden`、图标、步数上限；开出的会话工具面 |
 | `crates/miyu-endpoint/tests/extension_rights.rs` 的 `life_methods_are_people_only` | 批了驱动会话、读写事件的扩展调四个方法回 `local_only` |
 | `crates/miyu-kernel/src/session/tests/venue.rs` 的 `the_life_identity_is_appended_like_the_rest` | 内核记身份：不带回合、不开回合、`by` 照发的 |

@@ -239,6 +239,7 @@ mod persona_appearance;
 mod persona_avatar;
 mod persona_delete_memory;
 mod persona_life;
+mod persona_life_context;
 mod persona_recast;
 mod persona_seeds;
 mod persona_set;

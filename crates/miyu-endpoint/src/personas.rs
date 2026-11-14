@@ -185,7 +185,8 @@ pub(crate) struct GetParams {
 }
 
 /// `persona.get`：叠好的样子（施工 P-3 补：只给人要看的）。名字、说明照这个连接的语言挑；人设、角色扮演提示、推演方法（施工
-/// LF-8 上）写没写；示范对话几轮；删了会怎样（`remove`）。提示词原文照 `persona.read` 给，来自哪一层不往外给。
+/// LF-8 上）写没写；示范对话几轮；人生会话的上下文上限（施工 LF-10：`life_context` 是叠好以后写的数，没写的 `null`；
+/// `life_context_default` 是出厂的数）；删了会怎样（`remove`）。提示词原文照 `persona.read` 给，来自哪一层不往外给。
 pub(crate) async fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Value, Refusal> {
     let said = words(core, peer.language).ok();
     let personas = personas(core);
@@ -231,6 +232,8 @@ fn describe(
         "background_opacity": found.file.background_opacity,
         "background_focus": found.file.background_focus,
         "background_blur": found.file.background_blur,
+        "life_context": found.file.life_context,
+        "life_context_default": crate::life::CONTEXT,
         "remove": remove(&found.layers, sole),
     })
 }

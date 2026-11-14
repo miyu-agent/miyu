@@ -42,6 +42,8 @@
 | `prompts` | `{"persona", "reminders", "life"}`：人设、角色扮演提示、推演方法有没有字（布尔，去掉空白是空的算没有；推演方法没有字的人格用出厂的那一份）；原文用 `persona.read` 读 |
 | `examples` | 示范对话几轮 |
 | `subagent` | 派子代理时能不能挑它 |
+| `life_context` | 人生会话的上下文上限（token），没写的 `null`，照出厂的数 |
+| `life_context_default` | 出厂的上下文上限：100000 |
 | `remove` | 删了会怎样：`restore`（回到出厂的样子）、`delete`（就没了；出厂带的软件工程师这类连包卸掉的也是它）、`null`（没什么可删） |
 
 **出错**：`unknown_persona`；`persona_invalid`（文件写错了：`data.problem`、`data.message`、`data.line`）。
@@ -62,7 +64,7 @@
 |---|---|---|
 | `persona` | 字符串 | 编号；不写是新建，核心起一个 `persona-<n>` |
 | `new` | 布尔 | 同 `preset.set` 的：编号已经有了拒 `persona_exists` |
-| `changes` | 数组 | 改 `persona.toml`，写法同 `config.set` 的 `changes`；键是 `persona.name`、`persona.summary`、`persona.subagent`、`appearance.seed` |
+| `changes` | 数组 | 改 `persona.toml`，写法同 `config.set` 的 `changes`；键是 `persona.name`、`persona.summary`、`persona.subagent`、`appearance.seed`、`life.context`（人生会话的上下文上限，正整数） |
 | `prompts` | 对象 | 提示词名（`persona`、`examples`、`reminders`、`life`）→ `{"text": <整份>}` 或 `{"unset": true}`；示范对话另可写 `{"pairs": [{"user", "assistant"}…]}`；都可带 `"expect": <版本>` 或 `null`（还没有） |
 | `avatar`、`background` | 对象 | `{"blob": <哈希>}` 换成传上来的那一张，`{"unset": true}` 删掉你那一层的；可带 `expect` |
 | `seed` | 字符串或 `{"unset": true}` | 主题色 `#rrggbb` |
@@ -71,6 +73,8 @@
 | `background_blur` | 1 到 100 或 `{"unset": true}` | 背景图模糊多少，删掉就是不模糊 |
 
 **回应**：同 `persona.get`，改完叠好的样子。几样一起查，有错什么都不写。和你那一层现在一样的不写。
+
+改了 `life.context`（写了新的数或者 `unset`）的，这个人格有没结束的人生会话（在跑的、停着的）的，回应以前把它的上下文上限当场改成新的（没写的照 100000，比这时的模型最少要的小的照最少要的）。改人生会话的上限就在这里改；在人生会话里经 `session.configure` 的 `context` 改的也一直管用，两处后改的算数。直接改 `persona.toml` 文件的只管下一段人生。
 
 **出错**
 

@@ -42,6 +42,8 @@ A persona whose files are wrong has only `persona` and `problem` (what's wrong, 
 | `prompts` | `{"persona", "reminders", "life"}`: whether the character prompt, roleplay reminders and life method have text (booleans; whitespace only counts as none; a persona with no life method text uses the built-in one); read the text with `persona.read` |
 | `examples` | How many example exchanges |
 | `subagent` | Whether it can be picked when spawning a subagent |
+| `life_context` | Context cap of the life session (tokens); `null` if not written, then the built-in number applies |
+| `life_context_default` | The built-in context cap: 100000 |
 | `remove` | What deleting does: `restore` (back to the built-in version), `delete` (gone; also for a persona like the built-in Software Engineer that goes with its package), `null` (nothing to delete) |
 
 **Errors**: `unknown_persona`; `persona_invalid` (its files are wrong: `data.problem`, `data.message`, `data.line`).
@@ -62,7 +64,7 @@ Editors edit the text and send `version` back as `expect` in `persona.set`.
 |---|---|---|
 | `persona` | string | Id; omitted creates a new one, and the core picks `persona-<n>` |
 | `new` | boolean | Create with the ID you wrote (needs `persona`): an ID that already exists (built-in, from a package or yours) is refused with `persona_exists` instead of editing that one |
-| `changes` | array | Changes to `persona.toml`, written like `config.set`'s `changes`; keys are `persona.name`, `persona.summary`, `persona.subagent`, `appearance.seed` |
+| `changes` | array | Changes to `persona.toml`, written like `config.set`'s `changes`; keys are `persona.name`, `persona.summary`, `persona.subagent`, `appearance.seed`, `life.context` (context cap of the life session, a positive whole number) |
 | `prompts` | object | Prompt name (`persona`, `examples`, `reminders`, `life`) → `{"text": <whole>}` or `{"unset": true}`; examples may also be `{"pairs": [{"user", "assistant"}…]}`; each may carry `"expect": <version>` or `null` (doesn't exist yet) |
 | `avatar`, `background` | object | `{"blob": <hash>}` uses the uploaded image, `{"unset": true}` removes yours; may carry `expect` |
 | `seed` | string or `{"unset": true}` | Theme color `#rrggbb` |
@@ -71,6 +73,8 @@ Editors edit the text and send `version` back as `expect` in `persona.set`.
 | `background_blur` | 1 to 100 or `{"unset": true}` | How much the background is blurred; unset means no blur |
 
 **Response**: as `persona.get`, the stacked result. Everything is checked together and nothing is written on error. Parts equal to your layer aren't written.
+
+When `life.context` changes (a new number or `unset`) and the persona has a life that has not ended (running or paused), that session's context cap is set to the new one before the answer (100000 when not written; the least the current model needs, if that is more). This is the place to change a life session's cap; a cap set inside the life session with `context` in `session.configure` also stays, and whichever is changed last counts. Editing `persona.toml` by hand only applies to the next life.
 
 **Errors**
 

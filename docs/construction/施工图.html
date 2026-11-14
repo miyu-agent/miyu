@@ -1533,6 +1533,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sLF8a"><span class="n">LF-8 上</span>人格的协议认推演方法<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF5c"><span class="n">LF-5 下</span>核心命令 /life<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF9"><span class="n">LF-9</span>推演人生定稿<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sLF10"><span class="n">LF-10</span>上下文上限出厂 100000，人格里能设<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sVW1"><span class="n">VW-1</span>主人只读地看场所会话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT1"><span class="n">HT-1</span>内核认得供应商侧工具<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT3"><span class="n">HT-3</span>供应商侧工具画成工具步骤<span class="st">✓</span></a></li>
@@ -59264,6 +59265,60 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
     </div>
   </div>
 </section>
+<section class="sheet" id="sLF10" aria-labelledby="h-sLF10">
+  <div class="sheet-head"><h2 id="h-sLF10"><span class="no">LF-10</span>上下文上限出厂 100000，人格里能设</h2><span class="pill done">做完</span></div>
+  <p class="purpose">人生会话的上下文上限原来写死 32000，要改只能进人生会话打 <code>/context</code>。项目主人定：太小，出厂至少 100000，并且要有一格放在人格的编辑页上。这一步做核心这一半。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-policy · persona.rs　miyu-endpoint · life.rs　personas/write.rs</span><span class="dir-note">LF-10</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>出厂的数从 32000 改成 100000</li>
+              <li><code>persona.toml</code> 多一张表 <code>[life]</code>、一格 <code>context</code>；<code>persona.get</code>、<code>persona.set</code> 读得到、改得了</li>
+              <li>开一段人生时照人格写的数设；没写的照出厂的</li>
+              <li>在人格里改了这一格：这个人格没结束的人生会话当场跟着改</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">出厂至少 100000；人格的编辑页上要有这一格</span><span class="rl">项目主人 2026-11-14 定</span></div>
+          <div class="tile new"><span class="nm">到点不同步：/context 改的是会话自己的一格，一直管用；两个入口后改的算数</span><span class="rl">项目主人问过以后改的</span></div>
+          <div class="tile new"><span class="nm">一个人格一个数，跟着人格文件走；开没开人生照旧不写进去</span><span class="rl">主会话定</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LF-10</dd></div>
+        <div><dt>名称</dt><dd>上下文上限出厂 100000，人格里能设</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">LF-10</dd></div>
+        <div><dt>验收</dt><dd>门禁十一项、Windows 版 clippy 全过；四个手写变异都被逮住</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>人格没写的开出来是 100000，写了 50000 的是 50000，写得太小的抬到最少要的</span></li>
+        <li><span class="ok">✓</span><span>人生跑着或停着时在人格里改：会话的上限当场换，只多记一条；删掉这一格回到 100000</span></li>
+        <li><span class="ok">✓</span><span>人生会话里打 <code>/context</code> 改过以后，改人格的别的格、她再醒两次，上限都还是那个数</span></li>
+        <li><span class="ok">—</span><span>「设不成记一行日志、人格照样写成」造不出来（只有人生恰好在那一刻结束才走得到），代码留着，没有测试守</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LF-10-人格设上下文上限.md</code>；设计 <code>70-推演人生.md</code> 第四节；蓝图 <code>life.md</code>「上下文上限」、<code>personas.md</code>；协议参考 <code>personas.md</code>、<code>life.md</code> 中英各两份。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
 <section class="sheet" id="sVW1" aria-labelledby="h-sVW1">
   <div class="sheet-head"><h2 id="h-sVW1"><span class="no">VW-1</span>主人只读地看场所会话</h2><span class="pill done">做完</span></div>
   <p class="purpose">主人在 im 网页点「查看会话」打开群、陌生人私聊的场所会话，核心回「会话不存在」：第 4 道对关着的场所会话一律拒，读的也拒。项目主人定过场所会话只读、查看会话只看不发，这一步让主人这边的连接只读地看得到，写的照旧拒。</p>

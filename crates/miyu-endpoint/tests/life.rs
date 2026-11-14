@@ -113,7 +113,7 @@ async fn start_opens_a_life_session_and_she_wakes_at_once() {
         Body::PolicyChanged(changed) => changed.context.as_ref().and_then(|cap| cap.tokens),
         _ => None,
     });
-    assert_eq!(capped, Some(32_000), "上下文上限设成 32000");
+    assert_eq!(capped, Some(100_000), "上下文上限设成 100000");
     let identity: Vec<&Event> = log
         .iter()
         .filter(|event| matches!(event.body, Body::LifeStarted(_)))

@@ -107,6 +107,7 @@ fn an_upper_layer_replaces_what_it_writes() {
         background_opacity: None,
         background_focus: None,
         background_blur: None,
+        life_context: None,
     };
     let mine = PersonaFile {
         name: one("我的工程师"),
@@ -117,6 +118,7 @@ fn an_upper_layer_replaces_what_it_writes() {
         background_opacity: None,
         background_focus: None,
         background_blur: None,
+        life_context: None,
     };
     let merged = mine.over(shipped);
     assert_eq!(merged.name, one("我的工程师"), "写了的整格换掉");
