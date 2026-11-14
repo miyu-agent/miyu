@@ -3,6 +3,10 @@
 //! - `/loop <间隔> <话>`、`/loop <话> every <间隔>`、`/loop every <间隔> <话>`：固定间隔。间隔写 `30s`、`5m`、`2h`、`1d`，不到
 //!   [`miyu_tool::WAKEUP_MIN`] 秒的照它；建这个会话上的一行固定循环，下一次就是现在：唤醒表马上交进来跑第一次。
 //! - `/loop <话>`：动态。同样马上跑一次，之后她每轮自己调 `schedule_wakeup` 定下一次，不调就停。
+//! - 光打 `/loop`：自主（施工 LO-1，项目主人 2026-11-14 定，照 Claude Code）。和动态的一样，只是交进去的不是人写的话，是一句
+//!   固定的英文（`software/loop/autonomous.txt`）：敲命令那一刻读，原样存进那一行的 `prompt`。到点交进会话、记进
+//!   `message.user` 都是这句原文，重放一字不差；她照工具说明原样传回的也是它。不另加标记：表、到点、组装一行都不用改。
+//! - 写错了的（只写了间隔没写话）回 `bad_params`，`data.why` 带上用法（[`usage::refused`]，和命令菜单同一份字表）。
 //! - `/loop off`：删掉这个会话的循环，固定的、动态的都删。
 //! - 一个会话同时只有一个循环：再敲一次 `/loop` 换掉原来的（主会话 2026-10-27 定，技术题）。人敲的记成你建的
 //!   （`by: person`），跑在这个会话上；到点交进会话、她每轮定下一次都是唤醒表的事（施工 J-1 上、`schedules/port.rs`）。
@@ -15,8 +19,8 @@ use miyu_kernel::id::SessionId;
 use miyu_kernel::origin::By;
 use miyu_session::Handle;
 
-use super::Said;
 use super::registry::{Call, Commands, Ran, Running, Slash};
+use super::{Said, usage};
 use crate::Core;
 use crate::refusal::Refusal;
 use crate::schedules::{Creator, Loop, Target, Wanted, When};
@@ -51,6 +55,7 @@ impl Slash for LoopCommand {
 
     fn usage(&self) -> &'static [(&'static str, &'static str)] {
         &[
+            ("", "commands/usage/loop/auto"),
             (
                 "commands/placeholder/loop-fixed",
                 "commands/usage/loop/fixed",
@@ -72,7 +77,14 @@ impl Slash for LoopCommand {
 
     fn run<'a>(&'a self, call: Call<'a>) -> Running<'a> {
         Box::pin(async move {
-            let asked = parse(call.rest)?;
+            let Ok(asked) = parse(call.rest) else {
+                return Err(usage::refused(call.core, call.peer, self).await);
+            };
+            // 自主的那句先读：读不出的什么都不动，原来的循环还在。
+            let autonomous = match asked {
+                Asked::Autonomous => Some(autonomous(call.core).await?),
+                _ => None,
+            };
             let stopped = stop(call.core, call.session)?;
             let said = match asked {
                 Asked::Off if stopped => Said::plain("commands/loop-off"),
@@ -101,6 +113,18 @@ impl Slash for LoopCommand {
                     )?;
                     Said::with("commands/loop-dynamic", vec![("text", one_line(prompt))])
                 }
+                Asked::Autonomous => {
+                    let at = call.core.schedules().now();
+                    let prompt = autonomous.unwrap_or_default();
+                    start(
+                        call.core,
+                        call.session,
+                        When::At { at },
+                        Loop::Dynamic,
+                        &prompt,
+                    )?;
+                    Said::plain("commands/loop-auto")
+                }
             };
             Ok(Ran {
                 session: None,
@@ -108,6 +132,19 @@ impl Slash for LoopCommand {
                 said,
             })
         })
+    }
+}
+
+/// 光打 `/loop` 交进去的那句：出厂的原文去掉行尾空白。读不出、是空的记一行运行日志，回 `internal_error`。
+async fn autonomous(core: &Core) -> Result<String, Refusal> {
+    let resources = core.resources.clone();
+    let read = tokio::task::spawn_blocking(move || resources.loop_autonomous()).await;
+    match read {
+        Ok(Ok(text)) if !text.trim().is_empty() => Ok(text.trim_end().to_string()),
+        _ => {
+            tracing::warn!(target: "miyu::endpoint", "autonomous loop prompt not read");
+            Err(Refusal::INTERNAL)
+        }
     }
 }
 
@@ -174,18 +211,20 @@ pub(super) enum Asked<'a> {
     Fixed { every: u64, prompt: &'a str },
     /// 动态：她自己定节奏，说什么。
     Dynamic { prompt: &'a str },
+    /// 自主（施工 LO-1）：光打 `/loop`，同动态，说的是出厂的那句。
+    Autonomous,
     /// 停掉这个会话的循环。
     Off,
 }
 
-/// 读 `/loop` 后面的字（去掉了前后空白）。什么都没写的、只写了间隔没写话的参数不对。
+/// 读 `/loop` 后面的字（去掉了前后空白）。什么都没写的是自主（施工 LO-1）；只写了间隔没写话的参数不对。
 pub(super) fn parse(asked: &str) -> Result<Asked<'_>, Refusal> {
     if asked == "off" {
         return Ok(Asked::Off);
     }
     let words: Vec<&str> = asked.split_whitespace().collect();
     let fixed = match words.as_slice() {
-        [] => return Err(Refusal::BAD_PARAMS),
+        [] => return Ok(Asked::Autonomous),
         ["every", interval, ..] => seconds(interval).map(|every| (every, after(asked, 2))),
         [interval, ..] if seconds(interval).is_some() => {
             seconds(interval).map(|every| (every, after(asked, 1)))

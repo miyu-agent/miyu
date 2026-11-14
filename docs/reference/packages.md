@@ -353,6 +353,7 @@
 | `/clear-memory`（`/reset-memory`） | 清掉这个会话记下的记忆 |
 | `/goal` 系列 | 看、设、停、继续、改、清掉长期目标 |
 | `/life`、`/life new`、`/life pause`、`/life resume`、`/life kill` | 照这个会话的人格：说它的人生会话怎么样了（没有的不开，回一句说明这是什么、怎么开）；开新的（有的先结束）、暂停、继续、结束，同 `life.new`、`life.pause`、`life.resume`、`life.kill`。只在带人格的本机会话里 |
+| `/loop <间隔> <话>`、`/loop <话>`、`/loop`、`/loop off` | 每隔一段时间说一次；她自己定下一次什么时候；她自己定做什么、下一次什么时候（自主循环）；停掉这个会话的循环。一个会话一个循环，再敲一次换掉原来的；会话的预设没开循环的没有这条命令 |
 
 不是这些的，依次照这几处找：自己放的命令模板（`commands/<名字>.md`）、扩展声明的命令（核心转给扩展，`command.call`）、包带的命令模板。模板展开成一句话，当这个人说的发出去：回应的 `events` 是那一句，`said` 是空的。
 
@@ -366,7 +367,7 @@
 
 | `data.reason` | 什么时候 |
 |---|---|
-| `bad_params`（`-32602`） | 不以 `/` 开头；`cwd` 不是绝对的；命令后面跟的字不对；`/context` 设得太小（`data.field` 是 `context`，`data.min` 是最少要多少） |
+| `bad_params`（`-32602`） | 不以 `/` 开头；`cwd` 不是绝对的；命令后面跟的字不对（`/loop` 的 `data.why` 是照连接的语言写的用法，一行一种写法）；`/context` 设得太小（`data.field` 是 `context`，`data.min` 是最少要多少） |
 | `unknown_command` | 没有这个命令 |
 | `command_not_allowed` | 这个人不能用，或者停用了、预设没开，`data.why` 是给人看的一句 |
 | `owner_only` | 只有主人本人能用 |

@@ -65,7 +65,8 @@ async fn without_a_session_every_command_is_listed_in_the_connections_language()
                 {"form": "/life resume", "summary": "继续"},
                 {"form": "/life kill", "summary": "结束"},
             ]},
-            {"name": "loop", "aliases": [], "summary": "循环执行", "argument": "[<间隔>] <要说的话> | off", "usage": [
+            {"name": "loop", "aliases": [], "summary": "循环执行", "argument": "[[<间隔>] <要说的话> | off]", "usage": [
+                {"form": "/loop", "summary": "不给具体要求，由 AI 自己定做什么、什么时候"},
                 {"form": "/loop <间隔> <要说的话>", "summary": "每隔一段时间说一次，例如 5m、2h"},
                 {"form": "/loop <要说的话>", "summary": "由 AI 自己定下一次什么时候"},
                 {"form": "/loop off", "summary": "停止此会话的循环"},

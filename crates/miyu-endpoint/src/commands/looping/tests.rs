@@ -1,4 +1,4 @@
-//! `/loop` 后面的字怎么读（施工 J-2）。
+//! `/loop` 后面的字怎么读（施工 J-2；光打的是自主，施工 LO-1）。
 
 use super::*;
 
@@ -87,9 +87,14 @@ fn without_an_interval_it_is_dynamic() {
     );
 }
 
+/// 光打 `/loop` 是自主的（施工 LO-1）。
 #[test]
-fn nothing_or_only_an_interval_is_bad() {
-    assert_eq!(parse(""), Err(Refusal::BAD_PARAMS));
+fn nothing_after_it_is_autonomous() {
+    assert_eq!(parse(""), Ok(Asked::Autonomous));
+}
+
+#[test]
+fn only_an_interval_is_bad() {
     assert_eq!(parse("5m"), Err(Refusal::BAD_PARAMS));
     assert_eq!(parse("every 5m"), Err(Refusal::BAD_PARAMS));
 }

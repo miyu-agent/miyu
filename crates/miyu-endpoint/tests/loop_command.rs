@@ -210,3 +210,99 @@ async fn a_resent_id_with_another_command_is_refused_before_it_runs() {
     assert_eq!(off["result"]["said"], "已停止此会话的循环。", "{off}");
     assert!(rows(&core).is_empty());
 }
+
+/// 出厂的自主循环那句（施工 LO-1）：去掉行尾的换行。
+fn autonomous() -> &'static str {
+    include_str!("../../../resources/software/loop/autonomous.txt").trim_end()
+}
+
+/// 光打 `/loop`（施工 LO-1）：同动态的，马上交进一轮，交进去的是出厂的那句，存在那一行的 `prompt` 里。
+#[tokio::test]
+async fn a_bare_loop_runs_now_on_the_fixed_sentence() {
+    let home = Home::new();
+    let script = Script::new([Play::Says("我自己看着办。")]);
+    let hand = Hand::at(START);
+    let core = core_with_tools(&home, &script, &hand, looping());
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let session = client.create("c1", "~").await;
+    core.start_schedules();
+    let reply = typed(&mut client, &session, "/loop").await;
+    assert_eq!(
+        reply["result"]["said"], "已开始循环：由 AI 自己定做什么、下一次什么时候",
+        "{reply}"
+    );
+    home.until_turns(&session, 1).await;
+    let row = rows(&core).pop().expect("有一行");
+    assert_eq!(row.looping, Some(Loop::Dynamic));
+    assert_eq!(row.by, Creator::Person);
+    assert_eq!(row.prompt, autonomous());
+    assert_eq!(row.next, None, "交过以后停着等她定");
+    let (_, request) = script.requests().into_iter().next().expect("发了请求");
+    let sent = serde_json::to_string(&request.messages.last()).expect("写得成 JSON");
+    assert!(sent.contains(autonomous()), "交进去的是那句：{sent}");
+}
+
+/// 光打 `/loop` 的第二轮（施工 LO-1）：她定了下一次、到点又交一次，第二轮的请求前缀和第一轮逐字节相同。
+#[tokio::test]
+async fn a_bare_loop_s_second_wakeup_keeps_the_prefix() {
+    let home = Home::new();
+    let script = Script::new([
+        Play::calls(&[("schedule_wakeup", r#"{"delay_seconds":120}"#)]),
+        Play::Says("过两分钟再看。"),
+        Play::Says("又看了一眼。"),
+    ]);
+    let hand = Hand::at(START);
+    let core = core_with_tools(&home, &script, &hand, looping());
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let session = client.create("c1", "~").await;
+    core.start_schedules();
+    typed(&mut client, &session, "/loop").await;
+    home.until_turns(&session, 1).await;
+    let row = rows(&core).pop().expect("有一行");
+    assert_eq!(row.prompt, autonomous(), "没传 prompt 的照旧");
+    hand.advance(120_000);
+    home.until_turns(&session, 2).await;
+    let requests = script.requests();
+    let first = &requests.first().expect("第一轮").1;
+    let second = &requests.last().expect("第二轮").1;
+    assert_eq!(requests.len(), 3, "一轮两次、第二轮一次");
+    assert_eq!(bytes(&second.tools), bytes(&first.tools), "工具面不变");
+    assert_eq!(second.system, first.system, "system 不变");
+    let before = first.messages.len();
+    assert!(second.messages.len() > before);
+    assert_eq!(
+        bytes(&second.messages[..before]),
+        bytes(&first.messages),
+        "第一轮的消息原样在前"
+    );
+}
+
+/// 参数写错了（施工 LO-1）：只写了间隔没写话，`bad_params`，`data.why` 带上用法，什么都不建。
+#[tokio::test]
+async fn a_wrong_loop_answers_with_the_usage() {
+    let home = Home::new();
+    let hand = Hand::at(START);
+    let core = core_with_tools(&home, &Script::new([]), &hand, looping());
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let session = client.create("c1", "~").await;
+    let reply = typed(&mut client, &session, "/loop every 5m").await;
+    assert_eq!(reason(&reply), Some("bad_params"), "{reply}");
+    assert_eq!(
+        reply["error"]["data"]["why"],
+        "参数不对。用法：\n\
+         /loop　不给具体要求，由 AI 自己定做什么、什么时候\n\
+         /loop <间隔> <要说的话>　每隔一段时间说一次，例如 5m、2h\n\
+         /loop <要说的话>　由 AI 自己定下一次什么时候\n\
+         /loop off　停止此会话的循环",
+        "{reply}"
+    );
+    assert!(rows(&core).is_empty());
+}
+
+/// 请求的几样写成 JSON 比字节。
+fn bytes<T: serde::Serialize + ?Sized>(value: &T) -> String {
+    serde_json::to_string(value).expect("写得成 JSON")
+}

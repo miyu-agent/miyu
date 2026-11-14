@@ -66,6 +66,7 @@ fn the_life_pair_needs_both_files_and_the_method_reads_as_shipped() {
     let texts = root.schedule_texts().expect("前四份都在");
     assert_eq!((texts.life_open, texts.life_close), (None, None), "缺一份");
     assert!(root.life_method().is_err(), "没有推演方法的报错");
+    assert!(root.loop_autonomous().is_err(), "没有自主循环那句的报错");
 
     let texts = repo().schedule_texts().expect("出厂的都在");
     assert_eq!(
@@ -83,5 +84,9 @@ fn the_life_pair_needs_both_files_and_the_method_reads_as_shipped() {
     assert_eq!(
         repo().life_method().unwrap(),
         include_str!("../../../../../resources/software/life/method.txt")
+    );
+    assert_eq!(
+        repo().loop_autonomous().unwrap(),
+        include_str!("../../../../../resources/software/loop/autonomous.txt")
     );
 }

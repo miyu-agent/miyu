@@ -3,6 +3,7 @@
 //! 冻结进快照的 `core.schedule`；前四份缺一份的当没有，那种话照人的话原样渲染；人生那一对缺一份的只当人生的没有。出厂的推演
 //! 方法 `software/life/method.txt`（施工 LF-2）不进快照：到点那一刻读（`schedules.md` 第三节第 4 条）。「现在在干嘛」那一行
 //! `software/life/doing.txt`（施工 LF-7）也不进快照：核心第一次用到时读一次。
+//! 光打 `/loop` 交进去的那句 `software/loop/autonomous.txt`（施工 LO-1）也不进快照：敲命令那一刻读，原样存进定时表那一行的 `prompt`。
 
 use miyu_policy::ScheduleTexts;
 
@@ -43,6 +44,16 @@ impl ResourceRoot {
     /// 读不了这份文件。
     pub fn life_doing(&self) -> Result<String, SourceError> {
         self.read(&["software", "life", "doing.txt"])
+    }
+
+    /// 光打 `/loop` 开的自主循环交进去的那句（施工 LO-1，`schedules.md` 第五节第 9 条）：没有人写的话，她照自己的判断接着做、
+    /// 定下一次或者停下。原文，行尾的空白由用的一方去掉。
+    ///
+    /// # Errors
+    ///
+    /// 读不了这份文件。
+    pub fn loop_autonomous(&self) -> Result<String, SourceError> {
+        self.read(&["software", "loop", "autonomous.txt"])
     }
 }
 

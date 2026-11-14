@@ -4749,6 +4749,19 @@ Call schedule_wakeup to continue the loop.
 </loop-wakeup>
 ```
 
+### 人这边：动态循环叫醒交进来的话的正文
+
+#### `software/loop/autonomous.txt`
+
+- 什么时候加进来：人光打 `/loop` 开自主循环（施工 LO-1）：敲命令那一刻读、去掉行尾空白，原样存进定时表那一行的 `prompt`；每次到点照那一行交进会话、落进日志，之后每次请求照原样带；她照工具说明原样传回的也是它
+- token：19（2026-11-14 照 o200k 数）
+- 为什么加：光打 `/loop` 没有人写的话，交进去的那一句不能是空的：空的那一块只剩标签，她不知道是要她自己拿主意（项目主人 2026-11-14 定照 Claude Code 开自主循环）。只说没有新的指示、照自己判断接着做、定下一次或者停下；怎么续交给收尾那一句（`message-close.txt`）和工具说明，不重复写工具名（施工 LO-1，没拿真模型 A/B）
+- 指纹：`a74e5459`
+
+```text
+No new instructions. Continue on your own judgment, then schedule the next wakeup or stop.
+```
+
 ### 人这边：人生循环叫醒交进来的话（一块带标签的事实）
 
 #### `software/life/common/message-open.txt`

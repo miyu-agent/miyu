@@ -19,7 +19,7 @@ use miyu_session::Handle;
 use miyu_store::slash::Command as Template;
 
 use super::declared::{self, Declared};
-use super::{Said, Slash, access, allowed, pages, prompts, skills, templates, words};
+use super::{Said, Slash, access, allowed, pages, prompts, skills, templates, usage, words};
 use crate::Core;
 use crate::hello::Peer;
 use crate::list::LOCAL;
@@ -114,20 +114,12 @@ pub(crate) async fn catalog(
         if let Some(argument) = &argument {
             item["argument"] = json!(argument);
         }
-        // 几种写法（施工 O-6 四补）：`/<名字>` 接上后面跟的；`commands/` 开头的照连接的语言换成那一句（施工 O-6 五补）。
-        let mut usage = Vec::new();
-        for (rest, said) in slash.usage() {
-            let rest = match rest.starts_with("commands/") {
-                true => words(core, peer, &Said::plain(rest)).await,
-                false => (*rest).to_string(),
-            };
-            let form = match rest.as_str() {
-                "" => format!("/{}", slash.name()),
-                rest => format!("/{} {rest}", slash.name()),
-            };
-            let summary = words(core, peer, &Said::plain(said)).await;
-            usage.push(json!({"form": form, "summary": summary}));
-        }
+        // 几种写法（施工 O-6 四补）：参数写错的拒绝带的用法同一份（施工 LO-1，[`usage::forms`]）。
+        let usage: Vec<Value> = usage::forms(core, peer, slash.as_ref())
+            .await
+            .into_iter()
+            .map(|(form, summary)| json!({"form": form, "summary": summary}))
+            .collect();
         if !usage.is_empty() {
             item["usage"] = json!(usage);
         }

@@ -1537,6 +1537,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sHT1"><span class="n">HT-1</span>内核认得供应商侧工具<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT3"><span class="n">HT-3</span>供应商侧工具画成工具步骤<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT2"><span class="n">HT-2</span>供应商侧工具进请求<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sLO1"><span class="n">LO-1</span>光打 /loop 开自主循环<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -59471,6 +59472,58 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/HT-2-供应商侧工具进请求.md</code>；<code>crates/miyu-drivers/src/texts/hosted.rs</code>；<code>crates/miyu-session/src/route/extension/wire.rs</code>；<code>resources/core/drivers/hosted-tool*.txt</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLO1" aria-labelledby="h-sLO1">
+  <div class="sheet-head"><h2 id="h-sLO1"><span class="no">LO-1</span>光打 /loop 开自主循环</h2><span class="pill done">做完</span></div>
+  <p class="purpose">照 Claude Code，不带话的 <code>/loop</code> 开一个她自己定节奏的循环：马上跑一次，之后她每轮自己定下一次，不定就停。交进去的不是人写的话，是出厂的一句英文。写错了的报错带上用法。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint · commands/looping.rs、commands/usage.rs　miyu-store · resources/schedules.rs</span><span class="dir-note">LO-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>光打 <code>/loop</code> → 读 <code>software/loop/autonomous.txt</code> → 建一行 <code>dynamic</code>，<code>prompt</code> 存原文</li>
+              <li>第一次是现在 → 交进会话、记进 <code>message.user</code>，同 <code>/loop &lt;话&gt;</code></li>
+              <li>只写了间隔 → <code>bad_params</code>，<code>data.why</code> 是用法</li>
+              <li>命令菜单、报错共用 <code>usage()</code> 的字表，三种语言加光打的一条</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">存原文，不加标记</span><span class="rl">表、到点、组装都不改</span></div>
+          <div class="tile new"><span class="nm">敲命令时读</span><span class="rl">开着的循环不跟着文件变</span></div>
+          <div class="tile new"><span class="nm">用法只有一份</span><span class="rl">菜单、报错同一份字表</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LO-1</dd></div>
+        <div><dt>名称</dt><dd>光打 /loop 开自主循环</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">LO-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>光打 /loop 建一行动态循环、马上交进一轮，交的是出厂的那句</span></li>
+        <li><span class="ok">✓</span><span>她定了下一次、到点再交，第二轮的请求前缀和第一轮逐字节相同</span></li>
+        <li><span class="ok">✓</span><span>只写了间隔的回 bad_params，data.why 是四行用法，什么都不建</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LO-1-光打loop开自主循环.md</code>；蓝图 <code>schedules.md</code>、<code>protocol.md</code>、<code>prompts.md</code>；协议参考 <code>packages.md</code>。</li>
       </ul>
     </div>
   </div>

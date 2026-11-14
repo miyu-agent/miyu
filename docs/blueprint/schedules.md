@@ -2,7 +2,7 @@
 
 设计 `45-定时和循环.md`。核心里只有一样东西：到点把一句话交给一个会话跑一轮的「唤醒」，记在一张表里，核心重启不丢。定时任务、固定间隔的循环、她自己定节奏的循环都是它。
 
-状态：J-1 上做完（唤醒表、到点、交进会话，2026-10-26），J-1 下做完（协议 `schedule.*`、`schedules` 流）；她的工具、`/loop`、标签的字是 J-2；命令行、系统通知是 J-3；J-4 做完（2026-10-27）：扩展能建，到点推给建它的扩展（第五节第 7 条），场所会话的循环由场所自己拿它拼；J-5 做完（2026-11-02）：`schedule.update` 改时间、改那句话，编号、上一次不变（第五节第 3a 条）。LF-1 施工中（2026-11-14）：`loop` 多一种 `life`（人生，设计 `70-推演人生.md` 第三节第 2 条）。LF-2 施工中（2026-11-14）：人生醒来那段话分三层（固定的框、推演方法、她的留言，设计 70 第三节第 3 条）。LF-7 施工中（2026-11-14）：人生那一行上记她写的「现在在干嘛」（`doing` 表，`life.md`「现在在干嘛」）。
+状态：J-1 上做完（唤醒表、到点、交进会话，2026-10-26），J-1 下做完（协议 `schedule.*`、`schedules` 流）；她的工具、`/loop`、标签的字是 J-2；命令行、系统通知是 J-3；J-4 做完（2026-10-27）：扩展能建，到点推给建它的扩展（第五节第 7 条），场所会话的循环由场所自己拿它拼；J-5 做完（2026-11-02）：`schedule.update` 改时间、改那句话，编号、上一次不变（第五节第 3a 条）。LF-1 施工中（2026-11-14）：`loop` 多一种 `life`（人生，设计 `70-推演人生.md` 第三节第 2 条）。LF-2 施工中（2026-11-14）：人生醒来那段话分三层（固定的框、推演方法、她的留言，设计 70 第三节第 3 条）。LF-7 施工中（2026-11-14）：人生那一行上记她写的「现在在干嘛」（`doing` 表，`life.md`「现在在干嘛」）。LO-1 做完（2026-11-14）：光打 `/loop` 开自主循环（第五节第 9 条）。
 
 ### 一、唤醒表
 
@@ -89,6 +89,7 @@
 6. 谁能调：人；扩展要批过 `sessions.drive`（施工 J-4，`connection/rights.rs`），建的 `by` 记成包，只看得到、改得了自己建的（`methods.rs` 的 `mine`、`own`，`schedule.update` 同样），别的编号一样 `unknown_schedule`。`schedules` 流只给人，扩展回 `local_only`。
 7. 推给扩展（施工 J-4，形状主会话 2026-10-27 和 onebot 定）：`target` 多一种 `{"package": {}}`，只有扩展能写（人写回 `bad_params`），不带 `loop`。到点不进会话：`fire.rs` 的 `pushed` 照 `by` 的包找那个包连着的连接（`Provided::linked`，不替它拉起），推通知 `schedule.fired {"id","at","prompt","missed"?}`，结果记 `sent`，推不到的记 `skipped:package_unavailable`。`missed` 是核心停着时错过的次数：起来跳过时（`run::skip`、`next::missed`，最多数到 1000）累加进表里 `target` 那一格，推过就清零。扩展握手成了另记一份连着的（`Provided` 的 `linked`），推通知照它找，不登记工具的扩展也推得到；工具调用照旧只认登记了工具的。
 8. **人生那一行通用的入口碰不到**（施工 LF-1，核心主会话 2026-11-14 审定）：只有人生自己的入口（`life.*`，施工 LF-5 中，`life.md`）动得了，不然删一行定时就绕开了「只有有意的结束」。协议 `schedule.list`、`schedules` 流的回应和推送不列 `loop` 是 `life` 的行；`schedule.cancel`、`pause`、`resume`、`update` 落在它上面照没有这个编号回 `unknown_schedule`，人和扩展一样（`methods.rs` 的 `mine`、`own`）。她的定时工具（`schedules/port.rs`）：`cron_list` 不列，`cron_delete` 照没有回；`schedule_wakeup` 照旧找得到跑在这个会话上的那一行、改得了下一次和那句话（那句话是她的留言：这一轮没写 `prompt` 的清成空的，施工 LF-2，第四节 `set_next`；工具说明和 `/loop` 共用，一个字不改），`stop: true` 不收，答 `software/loop/wakeup/unstoppable.txt`，那一行不动。
+9. **`/loop`**（施工 J-2，斜杠命令走 `command.run`，`protocol.md`「`command.run`」第 16 条；`crates/miyu-endpoint/src/commands/looping.rs`）：人敲的记成 `by: person`、跑在这个会话上，一个会话一个循环，再敲一次换掉原来的。`/loop <间隔> <话>`（`/loop every <间隔> <话>`、`/loop <话> every <间隔>` 也认）建 `fixed`，`/loop <话>` 建 `dynamic`，两种的第一次都是现在（`Wanted.first`）；`/loop off` 删掉这个会话的循环。光打 `/loop` 开自主循环（施工 LO-1，项目主人 2026-11-14 定，照 Claude Code）：同 `/loop <话>` 建一行 `dynamic`、马上跑一次、之后她每轮自己调 `schedule_wakeup`、不调就停，只是 `prompt` 是出厂的一句英文 `software/loop/autonomous.txt`（没有新的指示，照自己判断接着做，定下一次或者停下；去掉行尾空白），敲命令那一刻读、原样存进那一行。不另加「自主」的标记：表的形状、到点交话、组装、`schedule_wakeup` 都不用改，交进会话的就是存着的原文，记进 `message.user`，重放一字不差；读不出这份文件的回 `internal_error`，原来的循环不动。写错了的（只写了间隔、没写话）回 `bad_params`，`data.why` 是照连接的语言写的用法（「参数不对。用法：」，下面一行一种写法，同 `command.catalog` 的 `usage`）。回执照连接的语言：光打的「已开始循环：由 AI 自己定做什么、下一次什么时候」（`commands/loop-auto`）。群里的 `/loop` 由 im 自己截下，不到核心；私聊和本机的头一样走这一路。
 
 ### 六、标签
 
@@ -110,6 +111,7 @@
 | `crates/miyu-endpoint/src/schedules/update.rs` | 改一项：换时间、换那句话，循环不改种类（施工 J-5） |
 | `crates/miyu-endpoint/src/schedules/{methods,changes}.rs`、`crates/miyu-endpoint/src/refusal/schedule.rs` | 协议 `schedule.*`、一项的写法、推送的广播、拒绝（施工 J-1 下） |
 | `crates/miyu-endpoint/src/schedules/{clock,next,run,fire,hold}.rs` | 钟、下一次、睡到点、交进会话（扩展建的推给它，施工 J-4）、写不进的先放一放；人生那一行到点、人生已经结束了的删掉这一行、记 `skipped:life_ended`、不叫醒她（施工 LF-4 上，`life.md`「结束」） |
+| `crates/miyu-endpoint/src/commands/looping.rs`、`commands/usage.rs`（施工 J-2、LO-1） | `/loop` 的几种写法、写错了带用法；光打的读出厂的那句 |
 | `crates/miyu-endpoint/src/schedules/life.rs`（施工 LF-2） | 人生醒来那段话的正文：推演方法（人格的 `prompts/life.md`，没有的用出厂的）接留言 |
 | `crates/miyu-kernel/src/origin.rs` | `by` 的 `schedule` |
 | `crates/miyu-assemble/src/schedule.rs`、`crates/miyu-policy/src/schedule.rs`、`crates/miyu-store/src/resources/schedules.rs` | 标签：组装、快照、读资源；出厂的推演方法（`life_method`，施工 LF-2） |
@@ -126,6 +128,7 @@
 | `crates/miyu-endpoint/tests/schedule_update.rs`（施工 J-5） | 改时间照现在重算下一次、列表和推送是改过的、写进了表、睡着的照新的下一次醒；改话编号和上一次留着、下一次不动；停着的改完还停着，续上照新的时间算；循环换不了种类、话能改；写错的照 `problem` 拒、什么都不改，都不写的、没有的编号照拒。扩展改不了别人建的、改得了自己的在 `schedule_package.rs` |
 | `crates/miyu-endpoint/tests/schedule_life_wake.rs`（施工 LF-2） | 人生醒来那段话：人格有 `prompts/life.md` 的正文是它的原文、空一行、留言，改了文件下一次醒来用新的；没有这个文件、文件是空的、会话不带人格的用出厂的；留言空的只有推演方法、末尾没有空行；她这一轮 `schedule_wakeup` 带了 `prompt` 的下一次留言是它，没带的清成空的；`dynamic` 没带的不动、原话原样 |
 | `crates/miyu-endpoint/tests/life.rs` 的 `resume_puts_a_life_row_at_now_and_leaves_other_loops_alone`（施工 LF-5 中） | 停着的人生那一行续上，下一次是现在、她的留言不动；`dynamic` 的照旧照那一刻算、过了的报 `NoNext` |
+| `crates/miyu-endpoint/tests/loop_command.rs`（施工 J-2、LO-1） | `/loop` 固定的马上跑、之后照间隔；动态的跑一次停着等、再敲换掉、`off` 删掉；没有循环包的没有这条命令；光打的建一行动态、马上交进一轮、交的和存的都是出厂的那句，她定了下一次、到点再交，第二轮的请求前缀和第一轮逐字节相同；只写了间隔的 `bad_params`、`data.why` 是用法、什么都不建 |
 | `crates/miyu-assemble/src/schedule/tests.rs` | 三种标签照 `loop` 挑、带任务编号，人生用它自己的一对（施工 LF-2）；没有字的原样，快照里没有人生那一对的人生的那句原样、别的两种照旧；`by` 的 JSON 写法（`"loop":"life"`）、读得回 |
 | `crates/miyu-policy/src/schedule/tests.rs`（施工 LF-2） | 人生那一对两格都有才交给组装器，标签坏了写明；以前的快照没有这两格，字节和加之前一样、读得回、写回去一个字节不变、指纹不变；新的快照带上、读得回 |
 | `crates/miyu-store/src/resources/schedules/tests.rs` 的 `schedule_texts_need_all_four_files`、`the_life_pair_needs_both_files_and_the_method_reads_as_shipped` | 四份都在才读得出；人生那一对两份都在才有（施工 LF-2），出厂的两份、推演方法读得出原文 |

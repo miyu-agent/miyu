@@ -354,6 +354,7 @@ mod templates;
 #[cfg(test)]
 mod tests;
 mod todo;
+mod usage;
 mod why;
 mod workspace;
 
