@@ -1,11 +1,12 @@
 //! 账本的测试：一段合规的会话从头追加到尾；02 第九节表里的每一条规矩各有被拦下的例子，
 //! 被拦下时报错说清是哪一条，账本不变。撤销与恢复的在 `tests/undo.rs`，没有触发的回合在 `tests/manual.rs`，
 //! 任务的几条在 `tests/jobs.rs`（施工 7-1），模型调用的记录和回顾在 `tests/model.rs`（施工 3-8 四补），跨会话在 `tests/peers.rs`（施工 C-1）、
-//! `tests/said.rs`（施工 C-2）。
+//! `tests/said.rs`（施工 C-2），供应商侧工具的编号在 `tests/hosted.rs`（施工 HT-1）。
 
 use super::*;
 
 mod goal;
+mod hosted;
 mod jobs;
 mod manual;
 mod model;

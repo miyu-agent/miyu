@@ -1,7 +1,9 @@
 //! 累积器的测试：三种块各自拼对；调用编号；空块；交错的字；被打断；对不上的增量；
-//! 随机切片：同一份回复随机切成增量、随机交错着送进去，拼出来都一样。
+//! 随机切片：同一份回复随机切成增量、随机交错着送进去，拼出来都一样。供应商侧工具的在 `tests/hosted.rs`（施工 HT-1）。
 
 use super::*;
+
+mod hosted;
 
 fn private(json: &str) -> Private {
     serde_json::from_str(json).unwrap()

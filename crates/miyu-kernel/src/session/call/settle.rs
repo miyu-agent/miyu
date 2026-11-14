@@ -2,6 +2,7 @@
 //! 出错的由 `call.rs` 收，被打断的由 `interrupt.rs` 收，撤掉重发的由 `supersede.rs` 收。
 
 use super::Call;
+use crate::accumulate::renumber_hosted;
 use crate::block::{Block, ToolCall};
 use crate::event::{
     Body, CallError, CallResult, Cost, ErrorClass, Event, FirstDifference, MessageAssistant,
@@ -155,6 +156,8 @@ impl Session {
                     .any(|(_, block)| matches!(block, Block::ToolCall(_)));
                 if failed || short {
                     numbered.retain(|(_, block)| !matches!(block, Block::ToolCall(_)));
+                    // 供应商侧工具不丢（施工 HT-1）：它的编号接在工具调用后面，工具调用丢了要重排。
+                    renumber_hosted(seq, &mut numbered);
                 }
                 let said = numbered
                     .iter()

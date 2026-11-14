@@ -14,7 +14,7 @@ pub(super) struct Spans(Vec<(Timestamp, Timestamp)>);
 pub(super) enum Mark {
     /// 一块开始了。
     Opens,
-    /// 第几块来了字或者私有数据。
+    /// 第几块来了字、私有数据或者供应商侧工具的结果。
     Extends(usize),
     /// 收块的 `End`、写到上限的 `Truncated`（施工 3-10）：不算。驱动流完了才一起收块（`drivers/openai-chat.md`「收尾」第 2 条），算上它，每一块都收在
     /// 流的末尾，思考了多久就算不出来。
@@ -26,7 +26,9 @@ impl Mark {
     pub(super) fn of(delta: &Delta) -> Mark {
         match delta {
             Delta::Start { .. } => Mark::Opens,
-            Delta::Text { index, .. } | Delta::Private { index, .. } => Mark::Extends(*index),
+            Delta::Text { index, .. }
+            | Delta::Private { index, .. }
+            | Delta::Outcome { index, .. } => Mark::Extends(*index),
             Delta::End { .. } | Delta::Truncated => Mark::Closes,
         }
     }

@@ -3,7 +3,8 @@
 use serde_json::json;
 
 use miyu_drivers::Inputs;
-use miyu_kernel::block::{Image, Text};
+use miyu_kernel::block::{HostedTool, Image, Text};
+use miyu_kernel::id::CallId;
 use miyu_kernel::id::{MediaType, ModelName};
 
 use super::*;
@@ -185,4 +186,46 @@ fn images_are_listed_once_with_their_type() {
     let listed = images(&request);
     assert_eq!(listed.len(), 2);
     assert!(listed.values().all(|media_type| media_type == "image/png"));
+}
+
+/// 供应商侧工具（施工 HT-1）带的私有数据同工具调用：别家的认得出、拿掉，自己家的留着。
+#[test]
+fn a_hosted_tool_s_foreign_private_data_is_stripped() {
+    let hosted = |driver: &str| {
+        Block::HostedTool(HostedTool {
+            call_id: CallId::parse("call_3_1").expect("编号"),
+            name: "web_search".to_string(),
+            args: "{}".to_string(),
+            outcome: None,
+            private: Some(Private {
+                driver: DriverFamily::parse(driver).expect("家族"),
+                data: RawJson::of(&json!("ws_1")).expect("JSON"),
+            }),
+        })
+    };
+    let request = |driver: &str| Request {
+        tools: Vec::new(),
+        system: String::new(),
+        messages: vec![Message::Assistant {
+            blocks: vec![hosted(driver)],
+        }],
+        stable: 0,
+        continuation: false,
+        described: BTreeMap::new(),
+        output_cap: None,
+        used: None,
+        tail: None,
+    };
+    let own = request("pi/ag");
+    assert!(!foreign(&own, &family()));
+    let mut theirs = request("anthropic");
+    assert!(foreign(&theirs, &family()));
+    strip(&mut theirs, &family());
+    let Message::Assistant { blocks } = &theirs.messages[0] else {
+        panic!("助手消息");
+    };
+    let [Block::HostedTool(stripped)] = blocks.as_slice() else {
+        panic!("块还在");
+    };
+    assert_eq!(stripped.private, None);
 }

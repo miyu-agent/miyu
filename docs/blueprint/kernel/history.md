@@ -102,6 +102,7 @@
 | `message.assistant` 的 `seen` 在它之前 | seen <n> should come before this reply |
 | `seen` 不早于上一条回复 | seen <n> is before the previous reply <n>: a later request always sees the earlier reply |
 | 回复里第 k 个工具调用编号是 `call_<这一条的序号>_<k>`，k 从 1 起 | tool call <k> should have id call_<序号>_<k>, got <编号> |
+| 供应商侧工具（施工 HT-1）不和工具调用混着数：这一条有 m 个工具调用，第 j 个供应商侧工具编号是 `call_<这一条的序号>_<m+j>`（`kernel/ids.md`）；它不欠结果，不进 `pending_calls()` | hosted tool <m+j> should have id call_<序号>_<m+j>, got <编号> |
 | `tool.result`、`tool.approval_requested`、`question.asked` 对得上这一轮还没有结果的调用 | <编号> is not a call waiting for a result: no such call, or it already has a result |
 | `tool.approval_requested` 的调用没有在等的请求 | <编号> already has a pending approval request |
 | `tool.approval_decided` 对得上一个在等的请求 | <编号> is not waiting for approval: never asked, already decided, or it already has a result |
@@ -319,6 +320,7 @@
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu-kernel/src/ledger/tests.rs` | 一整个会话追加得进；序号；只有第 1 条是会话创建；回合开始；`turn` 是正在进行的；调用编号；结果要有在等的调用；回合结束时调用都有结果；压缩只前进，撤掉的压缩不算；不带 `turn` 的压缩不收；回复、`model.called` 的 `seen`；只能撤回排着的；请求和决定、题和回答跟着调用 |
+| `crates/miyu-kernel/src/ledger/tests/hosted.rs`（施工 HT-1） | 供应商侧工具的编号接在工具调用后面的收、混着数的拒（`hosted_tools_are_numbered_after_the_tool_calls`）；它不欠结果，回合不用等它（`a_hosted_tool_is_not_waiting_for_a_result`）；旧版本只数工具调用也读得进（`an_old_version_still_reads_the_tool_call_ids`） |
 | `crates/miyu-kernel/src/ledger/tests/manual.rs` | 没有 `trigger` 的回合开始也收，别的回合的规矩照查（施工 6-8）；摘要是空的只许清空，没写原因、别的几种、不认识的都拦下（施工 6-8 补） |
 | `crates/miyu-kernel/src/ledger/tests/model.rs`（施工 3-8 四补从 `tests.rs` 分出来） | `model.called` 的 `seen`；回顾的两条不带回合编号，有回合在进行时也收；`session.recapped` 照到的在它之前；回顾的 `model.called` 照到了排着的那句，那句照样撤得回，主请求的照到了就撤不回；`replaced` 只和 `model` 一起出现，空闲时、回合里都收（施工 8-10） |
 | `crates/miyu-kernel/src/ledger/tests/jobs.rs`、`jobs/reports.rs`、`jobs/numbers.rs` | 施工 7-1 的每一条各一个被拦下的例子、一个放行的例子：编号不重复（同一条里、后来的、撤掉的回合里的；照整个编号比、用过的最大编号照最后一段数，`jobs/numbers.rs` 的 `prefixed_job_ids_count_by_their_last_part`，施工 7-1 补）；`agent` 带会话、`command` 不带、不认识的种类不管；后台命令只报一次结束、回报对不上的；子代理的回报对得上会话和 `by`、报好几次、停了的不再报、`aborted` 以后还能报；两种回报带 `turn` 的要是正在进行的那一轮；子会话的 `depth`、`parent` |

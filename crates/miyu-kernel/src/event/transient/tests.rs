@@ -2,6 +2,7 @@
 //! 不属于回合、没有命令的，那两格不写。
 
 use super::*;
+use crate::block::Outcome;
 use crate::id::{ModelName, ProviderId};
 use crate::origin::Model;
 
@@ -53,6 +54,28 @@ fn each_piece_is_written_its_own_way() {
                 name: "read".to_string(),
             }),
             r#"{"seen":44,"index":1,"start":"tool_call","name":"read"}"#,
+        ),
+        (
+            Piece::Start(Kind::HostedTool {
+                name: "web_search".to_string(),
+            }),
+            r#"{"seen":44,"index":1,"start":"hosted_tool","name":"web_search"}"#,
+        ),
+        (
+            Piece::Outcome(Outcome {
+                text: "1. Rust".to_string(),
+                failed: false,
+                cut: false,
+            }),
+            r#"{"seen":44,"index":1,"outcome":{"text":"1. Rust"}}"#,
+        ),
+        (
+            Piece::Outcome(Outcome {
+                text: "x".to_string(),
+                failed: true,
+                cut: true,
+            }),
+            r#"{"seen":44,"index":1,"outcome":{"text":"x","failed":true,"cut":true}}"#,
         ),
         (Piece::End, r#"{"seen":44,"index":1,"end":true}"#),
     ] {

@@ -23,6 +23,7 @@ mod fork;
 mod fork_within;
 mod goal;
 mod grants;
+mod hosted;
 mod idle;
 mod interrupt;
 mod landed;

@@ -2,7 +2,7 @@
 //! 锚盖住的正好是前 `messages + 1` 条这个前提，在 `miyu-assemble` 的探针和随机日志里用真的组装器查。
 
 use super::*;
-use crate::block::{File, Image, Private, Reasoning, Text, ToolCall};
+use crate::block::{File, HostedTool, Image, Outcome, Private, Reasoning, Text, ToolCall};
 use crate::event::Event;
 use crate::id::{CallId, ContentHash, DriverFamily, FileName, MediaType, ModelName, ProviderId};
 use crate::raw::RawJson;
@@ -148,11 +148,23 @@ fn every_kind_of_block_is_counted() {
             }),
             // 认不出的块照原样的 JSON：12 字节。
             Block::Unknown(raw(r#"{"type":"x"}"#)),
+            // 供应商侧工具（施工 HT-1）：名字 10 字节，参数 2 字节，结果 14 字节，私有数据 10 字节。
+            Block::HostedTool(HostedTool {
+                call_id: CallId::parse("call_3_2").unwrap(),
+                name: "web_search".to_string(),
+                args: "{}".to_string(),
+                outcome: Some(Outcome {
+                    text: "1. Rust 语言".to_string(),
+                    failed: false,
+                    cut: false,
+                }),
+                private: Some(private()),
+            }),
         ],
     };
     assert_eq!(
         message(&reply, &FLAT),
-        (4 + 10 + 4 + 2 + 10 + 12u64).div_ceil(4)
+        (4 + 10 + 4 + 2 + 10 + 12 + 10 + 2 + 14 + 10u64).div_ceil(4)
     );
 
     let media = Message::Tool {

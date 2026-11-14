@@ -32,12 +32,22 @@ pub(super) fn tool_call_id(block: &Block) -> Option<CallId> {
     }
 }
 
-/// 助手消息里第 k 个工具调用，编号是 `call_<这一条的序号>_<k>`（`03-事件模型.md` 第二节）。
+/// 助手消息里调用编号的规矩（`03-事件模型.md` 第二节，`kernel/ids.md`）：第 k 个工具调用编号是
+/// `call_<这一条的序号>_<k>`；供应商侧工具（施工 HT-1）不和它混着数，照先后接着排 `_k+1` 起，k 是这一条里工具调用的个数。
+/// 旧版本只数工具调用、把供应商侧工具当不认识的块，这样排它也读得进。
 pub(super) fn check_call_ids(seq: Seq, blocks: &[Block]) -> Result<(), String> {
-    for (index, call) in (1..).zip(blocks.iter().filter_map(tool_call_id)) {
+    let calls = blocks
+        .iter()
+        .filter_map(tool_call_id)
+        .map(|call| ("tool call", call));
+    let hosted = blocks.iter().filter_map(|block| match block {
+        Block::HostedTool(hosted) => Some(("hosted tool", hosted.call_id)),
+        _ => None,
+    });
+    for (index, (what, call)) in (1..).zip(calls.chain(hosted)) {
         if CallId::new(seq, index) != Some(call) {
             return Err(format!(
-                "tool call {index} should have id call_{seq}_{index}, got {call}"
+                "{what} {index} should have id call_{seq}_{index}, got {call}"
             ));
         }
     }

@@ -1,4 +1,4 @@
-//! 内容块的测试：图纸上的五种读写一字不差；驱动私有数据、工具名和参数、不认识的块，
+//! 内容块的测试：图纸上的几种读写一字不差；供应商侧工具（施工 HT-1）；驱动私有数据、工具名和参数、不认识的块，
 //! 都一字不差；附件原来的路径（施工 3-9 五补）；只有路径的附件（施工 AT-1）；坏的报错。
 
 use super::*;
@@ -112,6 +112,59 @@ fn a_path_only_attachment_is_known_and_round_trips() {
         "expected u64",
     );
     rejected::<Block>(r#"{"type":"path","name":"b.iso"}"#, "path");
+}
+
+/// 供应商侧工具（施工 HT-1）：认得出种类，带不带结果、私有数据，`failed`、`cut` 是真的写、是假的不写，读写一字不差；
+/// 结果里缺了 `failed`、`cut` 的读成假；缺格的报错。
+#[test]
+fn a_hosted_tool_round_trips_with_or_without_outcome() {
+    for json in [
+        r#"{"type":"hosted_tool","call_id":"call_44_2","name":"web_search","args":"{\"query\":\"rust\"}"}"#,
+        r#"{"type":"hosted_tool","call_id":"call_44_2","name":"web_search","args":"{}","outcome":{"text":"1. Rust"}}"#,
+        r#"{"type":"hosted_tool","call_id":"call_44_2","name":"web_search","args":"{}","outcome":{"text":"","failed":true}}"#,
+        r#"{"type":"hosted_tool","call_id":"call_44_2","name":"web_search","args":"{}","outcome":{"text":"很长","cut":true}}"#,
+        r#"{"type":"hosted_tool","call_id":"call_44_2","name":"web_search","args":"{}","outcome":{"text":"x","failed":true,"cut":true},"private":{"driver":"anthropic","data":{ "id" : "srvtoolu_1" }}}"#,
+        r#"{"type":"hosted_tool","call_id":"call_44_2","name":"WebSearch","args":"","private":{"driver":"openai-chat","data":"ws_1"}}"#,
+    ] {
+        round_trip::<Block>(json);
+        let block: Block = serde_json::from_str(json).unwrap();
+        assert!(
+            matches!(block, Block::HostedTool(_)),
+            "{json} 应该认得出种类"
+        );
+    }
+    let Block::HostedTool(hosted) = serde_json::from_str(
+        r#"{"type":"hosted_tool","call_id":"call_44_2","name":"web_search","args":"{}","outcome":{"text":"ok"}}"#,
+    )
+    .unwrap() else {
+        panic!("是供应商侧工具");
+    };
+    assert_eq!(
+        hosted.outcome,
+        Some(Outcome {
+            text: "ok".into(),
+            failed: false,
+            cut: false
+        })
+    );
+    // 它不是正文：一串块里的字不算它。
+    assert_eq!(words(&[Block::HostedTool(hosted)]), "");
+    rejected::<Block>(
+        r#"{"type":"hosted_tool","call_id":"call_44_2","args":"{}"}"#,
+        "name",
+    );
+    rejected::<Block>(
+        r#"{"type":"hosted_tool","call_id":"call_44_2","name":"web_search"}"#,
+        "args",
+    );
+    rejected::<Block>(
+        r#"{"type":"hosted_tool","call_id":"call_44_2","name":"web_search","args":"{}","outcome":{"failed":true}}"#,
+        "text",
+    );
+    rejected::<Block>(
+        r#"{"type":"hosted_tool","call_id":"h1","name":"web_search","args":"{}"}"#,
+        "bad call id",
+    );
 }
 
 #[test]

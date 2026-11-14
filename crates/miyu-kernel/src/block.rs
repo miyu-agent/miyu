@@ -7,7 +7,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use crate::id::{CallId, ContentHash, DriverFamily, FileName, MediaType, SourcePath};
 use crate::raw::{self, RawJson};
 
-/// 一块内容。JSON 里用 `type` 分开六种；读到不认识的，整块原样留着，投影跳过它。
+/// 一块内容。JSON 里用 `type` 分开七种；读到不认识的，整块原样留着，投影跳过它。
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Block {
@@ -23,6 +23,8 @@ pub enum Block {
     Path(PathOnly),
     /// 模型发起的一次工具调用。
     ToolCall(ToolCall),
+    /// 供应商自己跑了的一次工具（施工 HT-1，`docs/designs/71-供应商侧工具.md` 第三节第 1 条）：核心不派、不等结果，照实记下。
+    HostedTool(HostedTool),
     /// 不认识的种类，新版本才有的：整块原样留着，写出去还是原样。
     #[serde(untagged)]
     Unknown(RawJson),
@@ -127,6 +129,41 @@ pub struct ToolCall {
     pub private: Option<Private>,
 }
 
+/// 供应商自己跑了的一次工具，例如供应商那边的搜索（施工 HT-1，`docs/designs/71-供应商侧工具.md` 第三节第 1 条）。
+///
+/// 核心不派它、不过权限、不等结果，只照模型说的先后记在回复里。编号写法同 [`ToolCall`]，但不和工具调用混着数：一条
+/// 回复里工具调用排 `_1` 到 `_k`，供应商侧工具照先后接着排 `_k+1` 起。旧版本把这种块当不认识的原样留着，混着数的话
+/// 旧版本查工具调用编号就对不上，整份日志读不进（`docs/blueprint/kernel/ids.md`）。
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct HostedTool {
+    /// 内核分配的调用编号，只用来在视图、日志里认它。
+    pub call_id: CallId,
+    /// 工具名，供应商自己的名字原样，例如 `web_search`。
+    pub name: String,
+    /// 参数原文，同 [`ToolCall::args`]，不解析后重写。
+    pub args: String,
+    /// 供应商交来的结果；没收到的（例如被打断）没有，没有的不写。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub outcome: Option<Outcome>,
+    /// 驱动私有数据：同一类驱动下一次请求要原样带回的原始块。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub private: Option<Private>,
+}
+
+/// 供应商侧工具的结果（施工 HT-1）。`failed`、`cut` 是假的不写，读时缺了当假。
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Outcome {
+    /// 给模型、给人都看得懂的结果文字：搜到的标题、网址、摘录，读到的正文。至多
+    /// [`OUTCOME_BYTES`](crate::accumulate::OUTCOME_BYTES) 字节，长的截掉后面。
+    pub text: String,
+    /// 供应商说这一次跑失败了。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub failed: bool,
+    /// 字太长，截掉了后面。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub cut: bool,
+}
+
 /// 驱动私有的原样数据。内核不解读，同一类驱动发请求时原样带上，别的驱动不理它
 /// （`docs/designs/03-事件模型.md` 第九节）。
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -150,6 +187,7 @@ impl<'de> Deserialize<'de> for Block {
                     "file" => raw::parse(json).map(Block::File),
                     "path" => raw::parse(json).map(Block::Path),
                     "tool_call" => raw::parse(json).map(Block::ToolCall),
+                    "hosted_tool" => raw::parse(json).map(Block::HostedTool),
                     _ => return None,
                 })
             },

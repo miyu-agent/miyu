@@ -166,7 +166,8 @@ fn blocks(blocks: &[Block], placeholders: &Placeholders, own: &str) -> String {
     let shown = blocks.iter().filter(|block| match block {
         Block::Text(_) | Block::Image(_) | Block::File(_) | Block::Path(_) => true,
         Block::ToolCall(call) => call.name != own,
-        Block::Reasoning(_) | Block::Unknown(_) => false,
+        // 供应商侧工具（施工 HT-1）照不认识的块不给。
+        Block::Reasoning(_) | Block::HostedTool(_) | Block::Unknown(_) => false,
     });
     for (k, block) in shown.enumerate() {
         if k > 0 {
@@ -190,7 +191,7 @@ fn blocks(blocks: &[Block], placeholders: &Placeholders, own: &str) -> String {
                 &placeholders.file,
                 &[("name", attached.name.as_str())],
             ))),
-            Block::Reasoning(_) | Block::Unknown(_) => {}
+            Block::Reasoning(_) | Block::HostedTool(_) | Block::Unknown(_) => {}
         }
     }
     text

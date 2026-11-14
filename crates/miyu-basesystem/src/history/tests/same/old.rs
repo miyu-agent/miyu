@@ -148,7 +148,7 @@ fn blocks(blocks: &[Block], placeholders: &Placeholders, own: &str) -> String {
                 &placeholders.file,
                 &[("name", attached.name.as_str())],
             ))),
-            Block::Reasoning(_) | Block::Unknown(_) => None,
+            Block::Reasoning(_) | Block::HostedTool(_) | Block::Unknown(_) => None,
         })
         .collect();
     parts.join("\n")

@@ -216,6 +216,18 @@ fn blocks_of(blocks: &[Block], price: &dyn Price) -> u64 {
                     bytes = bytes.saturating_add(private.data.get().len());
                 }
             }
+            // 供应商侧工具（施工 HT-1）：工具名、参数、结果的字、私有数据，同工具调用的算法。
+            Block::HostedTool(hosted) => {
+                bytes = bytes
+                    .saturating_add(hosted.name.len())
+                    .saturating_add(hosted.args.len());
+                if let Some(outcome) = &hosted.outcome {
+                    bytes = bytes.saturating_add(outcome.text.len());
+                }
+                if let Some(private) = &hosted.private {
+                    bytes = bytes.saturating_add(private.data.get().len());
+                }
+            }
             Block::Unknown(raw) => bytes = bytes.saturating_add(raw.get().len()),
             Block::Image(image) => {
                 media = media.saturating_add(price.image(image.width, image.height))

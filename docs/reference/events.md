@@ -36,7 +36,7 @@
 | `turn.reverted`、`turn.unreverted` | 撤销了几轮、恢复了最近一次撤销 |
 | `message.user` | 人（或别的会话、别的 agent、平台上的人）说的一句；人用 `!` 打的命令多 `shell: true`，`blocks` 是那一行命令。只给路径的附件（`session.send` 第 3 条）在 `blocks` 里是 `{"type": "path", "name", "path", "size"?}`：没有 blob，`size` 是头写的字节数 |
 | `message.withdrawn` | 排着队、她还没听到的话被退回了 |
-| `message.assistant` | 模型一次响应的完整内容：正文、思考、工具调用。模型在回答后面编出下一轮的（一行开头一个角色词，接着仿这一次请求里人这一边的标签或者群消息那一行），那一段在落盘前截掉了，这里只有截剩下的；流式的 `model.delta` 是原样的，以这一条为准 |
+| `message.assistant` | 模型一次响应的完整内容：正文、思考、工具调用、供应商侧工具（`hosted_tool`：供应商自己跑了的一次工具，例如它那边的搜索，核心不执行，只照实记下；`call_id`、`name`、`args`，有结果的带 `outcome`：`{"text", "failed"?, "cut"?}`，`cut` 是结果超过 64 KiB 截掉了后面）。模型在回答后面编出下一轮的（一行开头一个角色词，接着仿这一次请求里人这一边的标签或者群消息那一行），那一段在落盘前截掉了，这里只有截剩下的；流式的 `model.delta` 是原样的，以这一条为准 |
 | `model.called` | 一次模型请求的记录：用了谁、用量、花了多少、出错的 `error`。回复被截过的带 `cut`，一块字一项：`[{"block", "at", "bytes", "role"}]`（`block` 是第几块，同 `model.delta` 的 `index`；`at` 从那一块原文的第几个字节起；`bytes` 截掉多少字节；`role` 是那个角色词：`user`、`assistant`、`system`、`human`、`tool`），截掉的原文不记；没截的不写 |
 | `tool.result` | 一次工具调用的结果：`status` 是 `ok`、`error`、`denied`、`cancelled`、`skipped` |
 | `tool.nested` | 脚本里的一次 `miyu call` 了结了：`id`（前台调用下面的写成 `call_12_1#3`，后台任务下面的写成 `j7#3`）、`name`、`args`、`status`（`ok`、`error`、`denied`、`needs_approval`、`cancelled`），有的另带 `duration_ms`、`result`（blob）、`bytes`、`reason`。不进她的上下文；任务下面的不带 `turn` |
@@ -68,7 +68,7 @@
 
 | `kind` | 是什么 |
 |---|---|
-| `model.delta` | 模型输出的一段增量：`seen`、`index`（第几块），再加 `start`（`name` 是块的种类）、`text`、`end` 之一 |
+| `model.delta` | 模型输出的一段增量：`seen`、`index`（第几块），再加 `start`（块的种类：`text`、`reasoning`、`tool_call`、`hosted_tool`，后两种带 `name`）、`text`、`outcome`（供应商侧工具的结果 `{"text", "failed"?, "cut"?}`，和落进 `message.assistant` 的是同一份）、`end` 之一 |
 | `tool.progress` | 工具执行中的一段输出：`call_id`、`text` |
 | `tool.nested_started` | 脚本里的一次 `miyu call` 过了检查、派去跑了：`id`、`name`；了结以 `tool.nested` 为准 |
 | `status` | 请求在重试、换了供应商 |

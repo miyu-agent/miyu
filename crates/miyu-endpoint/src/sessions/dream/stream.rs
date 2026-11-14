@@ -37,7 +37,7 @@ impl Stream {
                 self.told = true;
                 watch(Watched::Text(text));
             }
-            Piece::Text(_) | Piece::End => {}
+            Piece::Text(_) | Piece::Outcome(_) | Piece::End => {}
         }
     }
 }

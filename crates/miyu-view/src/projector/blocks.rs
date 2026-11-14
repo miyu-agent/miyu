@@ -32,10 +32,13 @@ impl Projector {
                         self.tool_step(id.clone(), name, None, String::new(), at);
                         Block::Tool(id)
                     }
+                    // 供应商侧工具（施工 HT-1）还不画：照不认识的块，不建条目，它的字、结果也就没处写。
+                    Kind::HostedTool { .. } => return,
                 };
                 self.blocks.insert(delta.index, block);
             }
             Piece::Text(text) => self.write(delta.index, id, text, at),
+            Piece::Outcome(_) => {}
             Piece::End => self.close_block(delta.index),
         }
     }

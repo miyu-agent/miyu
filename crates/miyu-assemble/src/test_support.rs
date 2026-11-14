@@ -479,6 +479,7 @@ fn blocks_shape(blocks: &[Block]) -> String {
             Block::File(_) => "[file]".to_string(),
             Block::Path(_) => "[path]".to_string(),
             Block::ToolCall(call) => format!("[call {}]", call.name),
+            Block::HostedTool(hosted) => format!("[hosted {}]", hosted.name),
             Block::Unknown(_) => "[unknown]".to_string(),
         })
         .collect();

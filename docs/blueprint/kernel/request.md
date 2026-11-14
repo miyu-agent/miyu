@@ -115,13 +115,14 @@
 
 **模板** `Template`：`parse(原文)`、`render(字段)`、`fill(字段, 清理)`、`fields()`；另有 `escape(值)`。字段用 `BTreeMap<&str, &str>` 交进来。
 
-**累积器** `Accumulator`：`apply(增量)`、`finish(回复的序号)`、`cut_off(回复的序号)`。增量 `Delta` 五种，前四种带 `index`（第几块）：
+**累积器** `Accumulator`：`apply(增量)`、`finish(回复的序号)`、`cut_off(回复的序号)`。增量 `Delta` 六种，除了 `Truncated` 都带 `index`（第几块）：
 
 | 增量 | 另外带着 |
 |---|---|
-| `Start` | `kind`：`Text`、`Reasoning`、`ToolCall { name }` |
-| `Text` | `text`：正文、思考、或者工具调用参数原文的一段 |
+| `Start` | `kind`：`Text`、`Reasoning`、`ToolCall { name }`、`HostedTool { name }`（供应商侧工具，施工 HT-1） |
+| `Text` | `text`：正文、思考、或者工具调用、供应商侧工具参数原文的一段 |
 | `Private` | `private`：驱动私有数据 |
+| `Outcome`（施工 HT-1） | `text`：供应商侧工具的结果的字，原样；`failed`：供应商说跑失败了 |
 | `End` | 没有 |
 | `Truncated`（施工 3-10） | 不带 `index`：回复写到了输出上限，驱动在收块以后交，至多一次；累积器记下（`truncated()`），不推给头、不算块的起止 |
 
@@ -342,7 +343,8 @@
 **累积器**
 
 1. 一次响应一个。块照开始的先后编号，从 0 数起，一块接一块地开始；几块的字可以交错着来。
-2. `apply`：`Start` 的编号必须是下一块；`Text`、`Private`、`End` 要的块必须开始了、还没收全。`Text` 接在那一块后面；`Private` 只给思考和工具调用，一块最多一份；`End` 标成收全了。对不上的报错（见「出错」），累积器不动。
+2. `apply`：`Start` 的编号必须是下一块；`Text`、`Private`、`Outcome`、`End` 要的块必须开始了、还没收全。`Text` 接在那一块后面；`Private` 只给思考、工具调用、供应商侧工具，一块最多一份；`Outcome` 只给供应商侧工具，一块最多一次（施工 HT-1）；`End` 标成收全了。对不上的报错（见「出错」），累积器不动。
+    `Outcome` 的字超过 64 KiB（`OUTCOME_BYTES`）的，收下时截在不超过它的最后一个字的边界上，`cut` 写真（`cut_outcome`）；留前面：搜到的条目、读到的正文都是前面要紧。推给头的 `model.delta` 用同一个函数截，推的就是会落进块里的那一份。
 3. 收尾，拼成内容块，照开始的先后：
 
 | 块 | `finish`（正常说完） | `cut_off`（被打断） |
@@ -350,9 +352,11 @@
 | 正文 | 有字的留；空的不要 | 同左，没收全的也留 |
 | 思考 | 有字或者有私有数据的留；两样都没有的不要 | 同左，没收全的也留 |
 | 工具调用 | 都留，参数是收到的原文（可以是空的） | 只留收全了的 |
+| 供应商侧工具（施工 HT-1） | 都留，参数是收到的原文，收到了结果的带 `outcome` | 同左，没收全的也留、没收到结果的没有 `outcome`：供应商那边已经跑了 |
 
-4. 留下的工具调用照先后编号：`call_<回复的序号>_<第几个>`，从 1 数起，丢掉的不占号。回复的序号就是这条回复写进日志时的序号。
-5. 会话这样用它（`kernel/session.md`）：正常说完照 `finish` 收；被打断、出了错照 `cut_off` 收，出了错的再去掉全部工具调用；正常说完却一块都没有的，算出错 `empty_reply`；增量对不上的，这次请求按 `bad_stream` 出错，原话就是那句报错。会话收尾用的是只在内核里用的 `numbered(回复的序号, 是不是正常说完)`：拼出来的和 `finish`、`cut_off` 一样，每一块多带着它在流里是第几块，会话照它对上每一块的起止（施工 2-3 补）。
+4. 留下的工具调用照先后编号：`call_<回复的序号>_<第几个>`，从 1 数起，丢掉的不占号。回复的序号就是这条回复写进日志时的序号。供应商侧工具不和它混着数（施工 HT-1）：分两趟，先数留下的工具调用得 k，再给供应商侧工具照先后排 `_k+1` 起；块在输出里的先后不变，还是流里的先后（`kernel/ids.md`）。
+5. 会话这样用它（`kernel/session.md`）：正常说完照 `finish` 收；被打断、出了错照 `cut_off` 收，出了错的再去掉全部工具调用；正常说完却一块都没有的，算出错 `empty_reply`；增量对不上的，这次请求按 `bad_stream` 出错，原话就是那句报错。会话收尾用的是只在内核里用的 `numbered(回复的序号, 是不是正常说完)`：拼出来的和 `finish`、`cut_off` 一样，每一块多带着它在流里是第几块，会话照它对上每一块的起止（施工 2-3 补）。出了错、写到上限去掉工具调用以后，照还留着的工具调用重排供应商侧工具的编号（`renumber_hosted`，施工 HT-1）。
+6. 中途订阅的补推用 `so_far()`：到目前为止的每一块是什么、拼好的字、收全了没有、供应商侧工具收到的结果（截过的），私有数据不给（`kernel/session.md`）。
 
 **第一处不同**
 
@@ -665,7 +669,7 @@ Carry on from where the summary leaves off, without redoing work it records as d
 | 名字不合写法（含 `{}`） | `bad template: {<名字>} is not a field: a name starts with a lowercase letter and has only lowercase letters, digits and _` |
 | 单独一个 `}` | `bad template: a lone }: write } itself as }}` |
 | 要的字段没给 | `bad template: missing field <名字>` |
-| 增量对不上 | `模型的增量对不上，第 <几> 块：<哪里>`，哪里是：`这一块已经开始过了`、`跳过了编号，块要一块接一块地开始`、`这一块还没开始`、`这一块已经收全了`、`正文块没有私有数据`、`私有数据来了两次` |
+| 增量对不上 | `模型的增量对不上，第 <几> 块：<哪里>`，哪里是：`这一块已经开始过了`、`跳过了编号，块要一块接一块地开始`、`这一块还没开始`、`这一块已经收全了`、`正文块没有私有数据`、`私有数据来了两次`、`只有供应商侧工具有结果`、`结果来了两次` |
 
 - 事实模板坏了，造策略时报，会话造不成、载入不了（`policy.md`）。
 - 组装、事实、累积器收尾不会出错：请求里没有写不成 JSON 的东西，模板造的时候试换过，调用编号从 1 数起。
@@ -719,6 +723,7 @@ Carry on from where the summary leaves off, without redoing work it records as d
 | `crates/miyu-kernel/src/time/tests.rs` | 钟点到十分钟、星期、时区的写法和范围 |
 | `crates/miyu-kernel/src/template/tests.rs` | 换字段、双写的大括号、每种要转的字、转出来是一行合法的 JSON 字符串、伪造属性和记录和标签都失效、`fields()`、`fill`、坏模板、少了字段 |
 | `crates/miyu-kernel/src/accumulate/tests.rs` | 三种块拼对、调用编号、空块、交错、被打断、对不上的增量、随机切片拼出来一样；每一块带着它在流里是第几块（施工 2-3 补） |
+| `crates/miyu-kernel/src/accumulate/tests/hosted.rs` | 供应商侧工具（施工 HT-1）：拼成块（`a_hosted_tool_is_put_together`）；`[供应商侧, 工具调用, 供应商侧]` 拼出 `_2`、`_1`、`_3`（`hosted_tools_are_numbered_after_the_tool_calls`）；丢掉的半截工具调用不占号（`a_dropped_tool_call_takes_no_number_from_a_hosted_tool`）；没收全的、没结果的一律留下（`a_hosted_tool_stays_whether_or_not_it_ended`）；超长的截在字的边界上、带 `cut`（`a_long_outcome_is_cut_on_a_char_boundary`）；补推拿得到结果（`so_far_gives_the_outcome`）；结果给了别的块、来了两次、收全以后才来、私有数据来两次的都拒（`mismatched_outcomes_are_driver_errors`） |
 
 ### 出处
 

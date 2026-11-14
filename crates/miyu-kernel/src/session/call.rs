@@ -15,7 +15,7 @@ use super::compaction::Compacting;
 use super::input::Input;
 use super::spans::{Mark, Spans};
 use super::turn::Stage;
-use crate::accumulate::{Accumulator, Delta};
+use crate::accumulate::{Accumulator, Delta, cut_outcome};
 use crate::event::{
     CallError, CompactionProgress, Cost, EndReason, ErrorClass, ModelDelta, Piece, Transient,
     TransientBody, Usage,
@@ -125,15 +125,19 @@ impl Call {
         self.accumulator.truncated()
     }
 
-    /// 到目前为止推过的增量，拼好了重推一遍（施工 9-8 八补）：每块先 `start`，有字的再一段拼好的字，收全了的再 `end`。
+    /// 到目前为止推过的增量，拼好了重推一遍（施工 9-8 八补）：每块先 `start`，有字的再一段拼好的字，供应商侧工具收到了
+    /// 结果的再一条结果（施工 HT-1），收全了的再 `end`。
     /// 还没发出去的、摘要请求（推的是进度）没有。
     fn so_far(&self) -> Option<(By, Vec<(usize, Piece)>)> {
         let sent = self.sent.as_ref().filter(|_| self.compaction.is_none())?;
         let mut pieces = Vec::new();
-        for (index, (kind, text, ended)) in self.accumulator.so_far().enumerate() {
+        for (index, (kind, text, ended, outcome)) in self.accumulator.so_far().enumerate() {
             pieces.push((index, Piece::Start(kind.clone())));
             if !text.is_empty() {
                 pieces.push((index, Piece::Text(text.to_string())));
+            }
+            if let Some(outcome) = outcome {
+                pieces.push((index, Piece::Outcome(outcome.clone())));
             }
             if ended {
                 pieces.push((index, Piece::End));
@@ -392,11 +396,16 @@ impl Session {
     }
 }
 
-/// 主请求推给头的那一段：私有数据不推。
+/// 主请求推给头的那一段：私有数据不推。供应商侧工具的结果照累积器的截法截（[`cut_outcome`]），推的就是会落进块里的那一份。
 fn piece(delta: &Delta) -> Option<(usize, Piece)> {
     match delta {
         Delta::Start { index, kind } => Some((*index, Piece::Start(kind.clone()))),
         Delta::Text { index, text } => Some((*index, Piece::Text(text.clone()))),
+        Delta::Outcome {
+            index,
+            text,
+            failed,
+        } => Some((*index, Piece::Outcome(cut_outcome(text.clone(), *failed)))),
         Delta::Private { .. } | Delta::Truncated => None,
         Delta::End { index } => Some((*index, Piece::End)),
     }

@@ -101,7 +101,7 @@
 
 | 种类 | `body` | `by` |
 |---|---|---|
-| `model.delta` | 模型输出的一段增量：`seen` 这次请求看到了第几条为止，和这次响应最后写成的回复的 `seen` 一样；`index` 第几块，从 0 数起；再加下面五种写法之一 | 模型 |
+| `model.delta` | 模型输出的一段增量：`seen` 这次请求看到了第几条为止，和这次响应最后写成的回复的 `seen` 一样；`index` 第几块，从 0 数起；再加下面七种写法之一 | 模型 |
 | `tool.progress` | 工具执行中的一段输出：`call_id` 哪一次调用，`text` 一段输出。结果以 `tool.result` 为准，这些只给人看着它在跑 | 那次调用 |
 | `tool.nested_started` | 脚本里的一次 `miyu call` 过了链、派去跑了（施工 M-1，设计 `39-脚本调工具.md` 第七节第 4 条）：`id` 嵌套调用编号，`name` 工具名。了结以 `tool.nested` 为准；头照它在那次 `shell`、那个任务的那一行后面接 `#序号 显示名` | 内核（前台的 `turn`、`cause` 照这一轮，后台的都没有） |
 | `status` | 出了错，等着重试：`seen` 哪一次请求；`retry` 里 `attempt` 这是第几次重试（从 1 数起）、`limit` 一共最多几次（现在是 5，`kernel/session.md`）、`wait_ms` 等多久（毫秒）、`class` 出错的分类、`message` 出错的原话、`status` 出错的 HTTP 状态码（照那一次的 `model.called` 带过来，没有的不写；施工 3-5 三补）、`failover` 换了端点当场再来（是 `true` 才写，施工 8-9） | 内核 |
@@ -121,10 +121,12 @@
 | 一块开始了：正文 | `"start":"text"` |
 | 一块开始了：思考 | `"start":"reasoning"` |
 | 一块开始了：工具调用 | `"start":"tool_call","name":<工具名>` |
+| 一块开始了：供应商侧工具（施工 HT-1） | `"start":"hosted_tool","name":<供应商的工具名>` |
 | 这一块的一段字 | `"text":<那一段>` |
+| 供应商侧工具的结果（施工 HT-1） | `"outcome":{"text":<结果的字>,"failed":true?,"cut":true?}`：截过的，就是会落进块里的那一份（`kernel/blocks.md`），`failed`、`cut` 是假的不写 |
 | 这一块收全了 | `"end":true` |
 
-驱动私有数据那一种增量不推：头用不着，只进最后的那条回复。
+驱动私有数据、写到输出上限那两种增量不推：头用不着，私有数据只进最后的那条回复。
 
 ### 怎么走
 
@@ -161,8 +163,8 @@
 
 一条事件的样子，就是日志里的那一行。样本：
 
-- `docs/designs/samples/events/<种类>.jsonl`：内核认识的每一种一份，文件名是种类名加 `.jsonl`。内容就是日志里的那几行，这一种在样本会话里出现几次就写几行，以一个换行结尾，没有空行。几份样本讲的是同一个会话：序号不重复，时刻跟着序号不往回走。只有一条例外：带 `parent` 的那一条 `session.created` 是它派的子代理的会话日志里的第 1 条（施工 7-1），把样本当一个会话用的测试都跳过它。样本会话在 126、134 号订了两个别的会话的「空了告诉我」（`tool.result` 的效果 `peer.watch`），130 号等到了第一个空下来，138 号第二个 12 小时没等到、作废（施工 C-1；排在回顾的 121、122 号后面）；给她看的那两句、给人看的说法照 `cross-session.md`「样子」写（施工 C-6 定了）。145 号是 143 号那一轮里替她看的一张截图的转述（`image.described`，施工 8-17）：那时会话退回的 `deepseek/deepseek-v4` 在这里当作看不了图，`models.vision` 是 `bigmodel/glm-5.3-flash`。46 号 `model.called` 带着金额（`cost`，施工 8-15）：目录的价格、倍率 1；别的几条照以前的日志没有这一格。159 号是群里旁听的一条带一张图、一个小黄脸，图带着大小（`venue.media` 的 `size`，施工 O-33）；152、154 号照以前的日志没有这一格。
-- `docs/designs/samples/transient/model.delta.jsonl`、`tool.progress.jsonl`、`status.jsonl`、`compaction.progress.jsonl`、`compaction.done.jsonl`、`model.changed.jsonl`：样本会话里 44 号请求的回复一段段推给头的样子、那次 `read` 执行中的一段输出、44 号请求出了限速的错等 1 秒再试（第二条是 117 号请求的限速，带着 429，和 118 号 `model.called` 对得上；44 号那一条写在施工 3-5 下，还没有 `status` 那一格）、54 号压缩写摘要时的两段进度、一次压好了（81 万压到 3 万）；`compaction.done.jsonl` 第二条是另一个会话到线时换上了提前压好的那一份（带 `prepared`，施工 6-11 上），第三条是又一个会话被动压缩时摘要请求太长、截掉最老的两组才压成的（带 `truncated`，施工 UP-2），`compaction.started.jsonl` 是同一个会话起压那一刻推的（施工 6-11 再补）。`status.jsonl` 第三条、`model.changed.jsonl` 第一条（施工 8-9）不是样本会话里的：另一个会话里池 `@duo` 的一个成员限速，换到下一个当场再来，换过去成了以后推的那一条。`model.changed.jsonl` 第二条是样本会话 143 号回合开始时池 `free` 没了、退回 `models.chat` 推的（`why` 是 `turn`，施工 8-10），和 144 号 `session.policy_changed` 对得上；它的 `effort` 是 `deepseek/deepseek-v4` 配置的默认思考强度 `high`，`from` 是 `system`（施工 8-18；8-18（补）起不再是会话记的一格）。瞬时事件内核不读，测试在代码里照着造，写出去和样本一字不差。
+- `docs/designs/samples/events/<种类>.jsonl`：内核认识的每一种一份，文件名是种类名加 `.jsonl`。内容就是日志里的那几行，这一种在样本会话里出现几次就写几行，以一个换行结尾，没有空行。几份样本讲的是同一个会话：序号不重复，时刻跟着序号不往回走。只有一条例外：带 `parent` 的那一条 `session.created` 是它派的子代理的会话日志里的第 1 条（施工 7-1），把样本当一个会话用的测试都跳过它。样本会话在 126、134 号订了两个别的会话的「空了告诉我」（`tool.result` 的效果 `peer.watch`），130 号等到了第一个空下来，138 号第二个 12 小时没等到、作废（施工 C-1；排在回顾的 121、122 号后面）；给她看的那两句、给人看的说法照 `cross-session.md`「样子」写（施工 C-6 定了）。145 号是 143 号那一轮里替她看的一张截图的转述（`image.described`，施工 8-17）：那时会话退回的 `deepseek/deepseek-v4` 在这里当作看不了图，`models.vision` 是 `bigmodel/glm-5.3-flash`。46 号 `model.called` 带着金额（`cost`，施工 8-15）：目录的价格、倍率 1；别的几条照以前的日志没有这一格。159 号是群里旁听的一条带一张图、一个小黄脸，图带着大小（`venue.media` 的 `size`，施工 O-33）；152、154 号照以前的日志没有这一格。194 号回复里有一次供应商侧工具（`hosted_tool`，施工 HT-1）：193 号请求里供应商自己跑了一次搜索，结果和正文一起落盘。
+- `docs/designs/samples/transient/model.delta.jsonl`、`tool.progress.jsonl`、`status.jsonl`、`compaction.progress.jsonl`、`compaction.done.jsonl`、`model.changed.jsonl`：样本会话里 44 号请求的回复一段段推给头的样子、那次 `read` 执行中的一段输出、44 号请求出了限速的错等 1 秒再试（第二条是 117 号请求的限速，带着 429，和 118 号 `model.called` 对得上；44 号那一条写在施工 3-5 下，还没有 `status` 那一格）、54 号压缩写摘要时的两段进度、一次压好了（81 万压到 3 万）；`compaction.done.jsonl` 第二条是另一个会话到线时换上了提前压好的那一份（带 `prepared`，施工 6-11 上），第三条是又一个会话被动压缩时摘要请求太长、截掉最老的两组才压成的（带 `truncated`，施工 UP-2），`compaction.started.jsonl` 是同一个会话起压那一刻推的（施工 6-11 再补）。`status.jsonl` 第三条、`model.changed.jsonl` 第一条（施工 8-9）不是样本会话里的：另一个会话里池 `@duo` 的一个成员限速，换到下一个当场再来，换过去成了以后推的那一条。`model.changed.jsonl` 第二条是样本会话 143 号回合开始时池 `free` 没了、退回 `models.chat` 推的（`why` 是 `turn`，施工 8-10），和 144 号 `session.policy_changed` 对得上；它的 `effort` 是 `deepseek/deepseek-v4` 配置的默认思考强度 `high`，`from` 是 `system`（施工 8-18；8-18（补）起不再是会话记的一格）。`model.delta.jsonl` 最后两条是 193 号请求里那次供应商侧工具的开始和结果（施工 HT-1），结果和 194 号回复里落盘的一样。瞬时事件内核不读，测试在代码里照着造，写出去和样本一字不差。
 
 ### 出错
 
@@ -199,9 +201,9 @@ serde_json 在每一句后面加上 ` at line <几> column <几>`（没有测试
 | `crates/miyu-kernel/src/event/tests.rs` | 图纸上的两行读写一字不差（`lines_from_the_drawing_round_trip`）；认识的读成对应的类型；第 12 条（`an_unknown_kind_keeps_its_body_byte_for_byte`）；第 2 条字段顺序（`fields_are_written_in_the_drawing_order`）；第 3、7 条（`optional_fields_missing_or_null_read_as_absent`）；第 9 条（`new_fields_on_the_envelope_are_ignored`）；「出错」表里的几种（`broken_lines_say_what_is_wrong`） |
 | `crates/miyu-kernel/tests/only_samples.rs`、`src/event/only/tests.rs`（施工 V-39 上补） | `Event::from_line_only`：样本里每一行外壳和全解的一样，有效历史认的（测试里照规矩另抄一份，不引 `only.rs` 的表）、要的种类全解的一样，回复、请求那几格一样，别的读成 `null`，要的写全了的和全解一样（`each_kind_reads_as_deep_as_it_should`）；种类写在 `body` 后面的照样分（`a_kind_after_its_body_reads_the_same`）；外壳坏了、正文不是合法 JSON、要的种类正文不合写法、那几格不对的，报的错和全解一字不差（`a_broken_line_is_refused_word_for_word`）；不要的种类正文合 JSON、不合写法的不报（`a_skipped_body_that_is_still_json_is_not_checked`） |
 | `crates/miyu-kernel/tests/kind_written.rs`（施工 V-41 上） | `Event::kind_written`：样本里每一种写出去的都认得、和读成的种类一样；带空白、换了先后、种类转义了、序号写成字符串、半行的认不出；打头之后又写了一遍 `kind` 的读不成 |
-| `crates/miyu-kernel/src/event/transient/tests.rs` | 图纸上的那一行照写；四样增量各自的写法；没有 `turn`、`cause` 的不写；`tool.progress` 的写法 |
+| `crates/miyu-kernel/src/event/transient/tests.rs` | 图纸上的那一行照写；每样增量各自的写法，供应商侧工具的开始和结果也在（`each_piece_is_written_its_own_way`，施工 HT-1）；没有 `turn`、`cause` 的不写；`tool.progress` 的写法 |
 | `crates/miyu-kernel/tests/samples.rs` | 第 13 条：每一份样本的每一行读写一字不差、认得出种类、种类和文件名对得上（`every_sample_round_trips_as_its_own_kind`）；认识的每一种都有样本（`every_known_kind_has_a_sample`）；几份样本讲同一个会话，序号不重复、时刻不往回走（`samples_tell_one_session_in_order`）；子代理的样本对得上：回报的会话、`by` 就是派它的 `job.started` 记的，子会话的第一条带着父会话、第 1 层（`the_child_in_the_samples_is_the_one_the_parent_started`，施工 7-1）；空了的通知对得上：等的会话前面订过，`idle` 的 `by` 是它、作废的是内核（`the_notices_in_the_samples_answer_the_watches`，施工 C-1） |
-| `crates/miyu-kernel/tests/transient_sample.rs` | 瞬时样本在代码里照着造、写出去一字不差（施工 8-9 加 `status` 带 `failover` 的一条、`model.changed`；施工 8-10 加 `why` 是 `turn` 的一条；施工 8-18 那一条带 `effort`，`from` 是 `system`，8-18（补）起）；推给头的几段增量交给累积器，拼出来的就是日志里 45 号回复的内容块 |
+| `crates/miyu-kernel/tests/transient_sample.rs` | 瞬时样本在代码里照着造、写出去一字不差（施工 8-9 加 `status` 带 `failover` 的一条、`model.changed`；施工 8-10 加 `why` 是 `turn` 的一条；施工 8-18 那一条带 `effort`，`from` 是 `system`，8-18（补）起）；`model.delta` 的几条在 `tests/delta_sample.rs`（施工 HT-1 拆出来，原来那份到了行数上限）：推给头的几段增量交给累积器，拼出来的就是日志里 45 号回复的内容块；供应商侧工具的开始和结果两条一字不差，推的结果就是 194 号回复里落盘的那一份 |
 | `crates/miyu-kernel/src/test_support.rs` 的 `read_body`，各种 `body` 的测试都用它 | 每一种读写一字不差、认得出种类 |
 | `crates/miyu-kernel/src/id/tests.rs` 的 `error_says_what_why_and_what_was_read`、`long_text_in_errors_is_cut` | `FormatError` 那一句的样子、80 个字符 |
 

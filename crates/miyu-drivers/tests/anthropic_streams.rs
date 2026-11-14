@@ -72,7 +72,16 @@ fn render((deltas, ending): &(Vec<Delta>, Ending)) -> String {
                 index,
                 kind: Kind::ToolCall { name },
             } => format!("start {index} tool_call {name}"),
+            Delta::Start {
+                index,
+                kind: Kind::HostedTool { name },
+            } => format!("start {index} hosted_tool {name}"),
             Delta::Text { index, text } => format!("text {index} {}", json(text)),
+            Delta::Outcome {
+                index,
+                text,
+                failed,
+            } => format!("outcome {index} {} failed={failed}", json(text)),
             Delta::Private { index, private } => {
                 format!("private {index} {} {}", private.driver, private.data.get())
             }

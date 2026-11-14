@@ -123,11 +123,13 @@ impl Projector {
                 );
                 if let (Piece::Start(kind), false) = (&delta.piece, summarizing) {
                     let entry = EntryId::block(delta.seen, delta.index);
-                    self.tracking.doing = Some(match kind {
-                        Kind::Text => Doing::Writing { entry },
-                        Kind::Reasoning => Doing::Thinking { entry },
-                        Kind::ToolCall { .. } => Doing::Tool { entry },
-                    });
+                    self.tracking.doing = match kind {
+                        Kind::Text => Some(Doing::Writing { entry }),
+                        Kind::Reasoning => Some(Doing::Thinking { entry }),
+                        Kind::ToolCall { .. } => Some(Doing::Tool { entry }),
+                        // 供应商侧工具（施工 HT-1）还不画，正在做什么照旧（HT-3 接）。
+                        Kind::HostedTool { .. } => self.tracking.doing.take(),
+                    };
                 }
             }
             TransientBody::Status(status) => {

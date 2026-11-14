@@ -5,3 +5,5 @@
 {"at":"2026-09-25T07:04:06.690Z","kind":"model.delta","turn":42,"by":{"kind":"model","endpoint":"deepseek","model":"deepseek-v4"},"cause":"cmd-7f3a","body":{"seen":44,"index":1,"start":"tool_call","name":"read"}}
 {"at":"2026-09-25T07:04:07.320Z","kind":"model.delta","turn":42,"by":{"kind":"model","endpoint":"deepseek","model":"deepseek-v4"},"cause":"cmd-7f3a","body":{"seen":44,"index":1,"text":"{\"path\":\"src\"}"}}
 {"at":"2026-09-25T07:04:07.880Z","kind":"model.delta","turn":42,"by":{"kind":"model","endpoint":"deepseek","model":"deepseek-v4"},"cause":"cmd-7f3a","body":{"seen":44,"index":1,"end":true}}
+{"at":"2026-11-14T10:30:01.200Z","kind":"model.delta","turn":193,"by":{"kind":"model","endpoint":"deepseek","model":"deepseek-v4"},"cause":"cmd-b8c4","body":{"seen":193,"index":0,"start":"hosted_tool","name":"web_search"}}
+{"at":"2026-11-14T10:30:02.800Z","kind":"model.delta","turn":193,"by":{"kind":"model","endpoint":"deepseek","model":"deepseek-v4"},"cause":"cmd-b8c4","body":{"seen":193,"index":0,"outcome":{"text":"1. EditorConfig Specification - https://spec.editorconfig.org/"}}}

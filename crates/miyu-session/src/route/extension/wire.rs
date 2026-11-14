@@ -132,6 +132,7 @@ pub(super) fn strip(request: &mut Request, family: &DriverFamily) {
             let slot = match block {
                 Block::Reasoning(reasoning) => &mut reasoning.private,
                 Block::ToolCall(call) => &mut call.private,
+                Block::HostedTool(hosted) => &mut hosted.private,
                 _ => continue,
             };
             if slot
@@ -169,6 +170,7 @@ fn private(block: &Block) -> Option<&Private> {
     match block {
         Block::Reasoning(reasoning) => reasoning.private.as_ref(),
         Block::ToolCall(call) => call.private.as_ref(),
+        Block::HostedTool(hosted) => hosted.private.as_ref(),
         _ => None,
     }
 }

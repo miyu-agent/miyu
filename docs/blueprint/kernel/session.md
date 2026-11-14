@@ -83,7 +83,7 @@
 | `Limits(Limits)` | `model` 发给哪个端点的哪个模型、`window` 上下文窗口、`max_output` 最大输出，没报的是 `None`（施工 6-2 上）；`images` 一张图怎么算（`estimate::ImagePrice`，驱动交的，没有的照策略里的固定数，施工 6-3 上）；`blind` 看不了图（施工 8-17，池里有一个成员看不了就算） | 换掉会话的模型限额，什么都不出；只在内存里，载入以后执行器再交一次。没交过的不主动压缩（`compaction.md` 第二条） |
 | `TurnStartHooksDone { at, turn, injected, replaced, policy, prepare }` | 哪个回合；各模块的注入 `Injection { module, fact }`，照固定的先后；执行器重新解析时钉着的没了、退回了默认的 `Replaced { from, to }`（原来的、退回的，施工 8-10），没有的是没有；人格的文件改了的新快照的哈希（施工 P-1 再补）；这一轮开不开提前压好（`compaction.prepare`，施工 6-11 上，`compaction.md` 第十五条） | 「回合」第 4 条，「换模型」第 3 条 |
 | `RequestSent { at, seen, model, request }` | 哪次请求；发给了哪个端点的哪个模型（`Model { endpoint, model }`）；驱动编码以后的请求字节的哈希 | 「收回复」 |
-| `ModelDelta { at, seen, delta }` | 一段增量：`Start { index, kind }`、`Text { index, text }`、`Private { index, private }`、`End { index }` | 「收回复」 |
+| `ModelDelta { at, seen, delta }` | 一段增量：`Start { index, kind }`、`Text { index, text }`、`Private { index, private }`、`Outcome { index, text, failed }`（供应商侧工具的结果，施工 HT-1）、`End { index }`、`Truncated` | 「收回复」 |
 | `ModelEnded { at, seen, usage, cost, error, wait_ms, excess, failover }` | 用量；金额（施工 8-15：执行器照价格算好的，原样记进 `model.called` 的 `cost`，内核不碰价格）；出错的分类和原话；供应商说要等多少毫秒（换了端点的是别的候选都在冷却时要等多久）；超长的超了多少 token（施工 6-6 中，不进日志）；端口换了端点（`failover`，施工 8-9，不进日志）。没发出去就失败的不报 `RequestSent`，直接报这一条 | 「收回复」「出错再来」 |
 | `Woke { at, seen }` | 为哪一次请求等的；等停着的，是那一步回复的序号 | 「出错再来」「打断」第 7 条 |
 | `ToolDone { at, call_id, error, blocks, duration_ms, human, effects, stopped, end_turn, display_name }` | 出没出错、给模型看的内容、用时、给人看的说法、效果；叫它停以后停在了改之前的，`stopped` 是真的；要结束这一轮的（施工 4-14）；这件工具给人看的名字，派它那一刻取的（施工 9-8 六补） | 「调工具」「打断」第 7 条 |
@@ -288,17 +288,18 @@
 **收回复**：三种回报都带着 `seen`，不是在路上的那一次的，不理。
 
 1. `RequestSent`：记下时刻、模型、请求字节的哈希。报两次的只认第一次。摘要请求的，推一条 `written` 是 0 的 `compaction.progress`（施工 6-3 下）。
-2. `ModelDelta`：摘要请求的增量照样交给累积器，不推 `model.delta`，正文块的每一段推一条 `compaction.progress`（`compaction.md` 第三条第 8 条）。还没报发出去就来了增量，按出错算：分类 `bad_stream`，原话「请求还没发出去就来了增量」。交给累积器，对不上的也按 `bad_stream` 算，原话是累积器的报错（「出错」）。出错的照下面第 3 条收拾，再出 `CancelModel`。收下的推一条 `model.delta`（`by` 是那个模型，`cause` 是回合的，`body` 是 `seen`、第几块、这一段）；私有数据收下，不推。第一段增量到的时刻记下。累积器收下的，照流里的块编号记下每一块第一段、最后一段增量到的时刻（时钟往回拨了的，最后一段不往回挪）；收块的 `End` 不算，驱动流完了才一起收块（施工 2-3 补）。
+2. `ModelDelta`：摘要请求的增量照样交给累积器，不推 `model.delta`，正文块的每一段推一条 `compaction.progress`（`compaction.md` 第三条第 8 条）。还没报发出去就来了增量，按出错算：分类 `bad_stream`，原话「请求还没发出去就来了增量」。交给累积器，对不上的也按 `bad_stream` 算，原话是累积器的报错（「出错」）。出错的照下面第 3 条收拾，再出 `CancelModel`。收下的推一条 `model.delta`（`by` 是那个模型，`cause` 是回合的，`body` 是 `seen`、第几块、这一段）；私有数据收下，不推；供应商侧工具的结果推截过的那一份（施工 HT-1，和落进块里的一样，`kernel/request.md` 的累积器第 2 条）。第一段增量到的时刻记下。累积器收下的，照流里的块编号记下每一块第一段、最后一段增量到的时刻（时钟往回拨了的，最后一段不往回挪）；收块的 `End` 不算，驱动流完了才一起收块（施工 2-3 补）。
 3. `ModelEnded`：
    1. 没发出去、也没带出错的，按出错算：`bad_stream`，「请求还没发出去就说完了」。没发出去的不写回复。
    2. 摘要请求不写回复：正常说完的，收到的拼好交给组装取出摘要，取到了写 `context.compacted`，推 `compaction.done`（`compaction.md` 第三条第 6、11 条），手动压缩的接着结束回合，`completed`（`compaction.md` 第七条第 6 条）；调了工具的、取不出来的，按出错算，`bad_summary`，不再来。别的出错照下面第 5、6 条。
-   3. 发出去了的主请求，收到的拼成回复。正常说完：每一块照收到的拼，没收全的工具调用也留下。出错：只留收全了的工具调用（和打断一样），再把工具调用全去掉。一个字都没有的正文块不要；没有字、也没有私有数据的思考块不要。工具调用编号 `call_<这条回复的序号>_<k>`，`k` 从 1 数留下的（累积器见 `kernel/request.md`）。累积器交回的每一块带着它在流里是第几块，出错时去掉工具调用也连着这个编号一起去；每一块的起止照这个编号对上，照落盘的块的先后（施工 2-3 补）。拼好以后先把每一块字里模型编的下一轮截掉，截空了的那一块不要（下面「截掉模型编的下一轮」，施工 FT-1），下面几条都照截过的算。
+   3. 发出去了的主请求，收到的拼成回复。正常说完：每一块照收到的拼，没收全的工具调用也留下。出错：只留收全了的工具调用（和打断一样），再把工具调用全去掉。一个字都没有的正文块不要；没有字、也没有私有数据的思考块不要。工具调用编号 `call_<这条回复的序号>_<k>`，`k` 从 1 数留下的（累积器见 `kernel/request.md`）。供应商侧工具（施工 HT-1）一律留下：正常说完的、打断的、出错断了的、写到上限的、没收全的都留，供应商那边已经跑了；编号接着留下的工具调用排，出错、写到上限去掉工具调用以后重排。累积器交回的每一块带着它在流里是第几块，出错时去掉工具调用也连着这个编号一起去；每一块的起止照这个编号对上，照落盘的块的先后（施工 2-3 补）。拼好以后先把每一块字里模型编的下一轮截掉，截空了的那一块不要（下面「截掉模型编的下一轮」，施工 FT-1），下面几条都照截过的算。
    4. 拼出来一块都没有的不写回复；正常说完的，按出错算：`empty_reply`，「回复里一个块都没有」。
    5. 有的写成 `message.assistant`：`seen` 是这次请求的，出错的多写 `"interrupted":true`，`by` 是那个模型，`cause` 是回合的。
    6. 接着追加 `model.called`（下表），`by` 是内核，`cause` 是回合的。
    7. 出错的：摘要请求报 `context_too_long` 的，先截掉最老的几组再发（`compaction.md` 第三条第 10 条，施工 6-6 中）；fork 式的摘要回复里调了工具、快照里有隔离式那句 system、还没改走过的，改发隔离式（第三条第 7 条，施工 6-6 下），两样都记在回合上、落了盘再发；主请求报 `context_too_long`、一个字都没收到、这一步还没被动压过的，落了盘先压再重发（被动压缩，`compaction.md` 第六条，施工 6-7）；能再来就等着再来（「出错再来」），不能的结束回合，`error`。收到的半截照样留在日志里。自动压缩的摘要请求这样结束的，是一次失败：最近一次压缩以后写下的数到 3 次，在 `turn.ended` 前面写 `context.compaction_paused`（`compaction.md` 第十条第 4 条）。
    8. 正常说完、驱动报了写到输出上限的（`Delta::Truncated`，施工 3-10）：照下面「写到输出上限」。
    9. 正常说完的：这一步连着出错的次数、连着写到上限的次数清零。回复里有工具调用，调工具；没有，结束回合，`completed`。
+   10. 供应商侧工具（施工 HT-1，设计 71 第三节第 3 条）：不派、不过权限和挂接点、不发 `tool.called`、`tool.result`，不算「这条回复调了工具」，回合不因它停下等结果；只有它和正文的回复照没有工具调用收尾。写到上限的回复照第 8 条，算不算截掉了工作只看工具调用。
 
 | `model.called` 的格 | 写什么 |
 |---|---|
@@ -797,6 +798,7 @@
 | `crates/miyu-kernel/src/session/tests/respond.rs`（施工 O-14 上） | 照记下的几条开一轮：`triggers` 排好去重、`trigger` 是最后一条、桥的事实接在内核的后面；空的拒；不是旁听的、当过触发的拒，带上是哪几条；载入以后照样认得当过触发的 |
 | `crates/miyu-kernel/src/session/tests/respond/joining.rs`（施工 O-14 下） | 正在跑一轮时：桥的事实、`turn.joined` 带这个回合记下、回应附序号；下一步听到的不另开；没再请求就结束的接着开一轮、由 `turn.joined` 触发；打断（接着发、退回）不退回不接着开；在等的那一问作废 |
 | `crates/miyu-kernel/src/session/tests/respond/noting.rs`（施工 O-14 补） | 记几块事实：空闲时不带回合编号、不开回合，下一轮的请求里排在触发前面；同一个编号只记一次；调工具的时候来的带这个回合、不叫停不叫醒，下一次请求就有它，说完不另开；空的拒 |
+| `crates/miyu-kernel/src/session/tests/hosted.rs`（施工 HT-1） | 「收回复」第 3 条第 3、10 款的供应商侧工具：只有它和正文的回合照常结束、执行器没被叫去跑工具（`a_reply_with_only_hosted_tools_ends_the_turn`）；和工具调用混着只派工具调用（`only_the_tool_calls_beside_it_are_run`）；出错断了、被打断、写到上限的回复里它还在，工具调用不在，编号重排账本收得下（`a_failed_reply_keeps_it_and_drops_the_tool_calls`、`an_interrupted_reply_keeps_it_even_unfinished`、`a_truncated_reply_keeps_it_and_drops_the_tool_calls`）；只有正文和它的回复写到上限照正文截了收（`a_truncated_reply_with_only_text_and_hosted_tools_is_a_cut_text`）；推给头的结果是截过的、和落盘的一样（`the_pushed_outcome_is_the_cut_one`）；中途订阅补推带结果（`a_late_subscriber_gets_the_outcome`） |
 | `crates/miyu-kernel/src/session/tests/interrupt.rs` | 空闲时打断被拒；请求前、请求中、调工具时打断；什么都没收到不写回复；急着插话的三种时候；空闲时急着插话开回合；在跑的写叫它停、排在后面的当场补、10 秒以后叫醒、改完了的带着效果记、收了尾到点不理 |
 | `crates/miyu-kernel/src/session/tests/landed.rs`（施工 3-8 六补） | `landed()`：造会话那一条落盘以前没有；追加了、还没落盘的不算，落一部分走一部分；载入的是日志里最后一条 |
 | `crates/miyu-kernel/src/session/tests/meta.rs`（施工 3-8 三补） | 改名记一条、落了盘才回应、同一个编号再来不再记；只写变了的格，和现在一样的（含没有标题时去掉、没置顶时取消、两格都不写）当场回应、编号照记；去掉标题记成空的；回合进行中的带上回合；载入以后照日志算回来，撤掉的回合里改的也算；`deletable()`：空闲的删得了，开了回合、`turn.ended` 没落盘的是有回合在进行，改回文件的时候是正在改回；斜杠命令记一条 `command.ran`、带着说命令的人和起因、同一个编号再来不再记（施工 O-6） |
@@ -817,7 +819,7 @@
 | `crates/miyu-kernel/src/tool/tests.rs`、`tool/texts/tests.rs` | 参数修正的每一种，嵌套的对象、数组里的也修；访问类别不认识的算写入；那几句的字段转义、每句带说法 |
 | `crates/miyu-kernel/src/accumulate/tests.rs` | 拼回复、调用编号、空块、交错的字、截断只留收全的调用、增量对不上的六种；每一块带着它在流里是第几块（施工 2-3 补） |
 | `crates/miyu-kernel/tests/resources.rs` | 出厂的那几句读得进来，带字段的换出来一字不差 |
-| `crates/miyu-kernel/tests/transient_sample.rs` | `model.delta`、`tool.progress`、`status` 写出去和样本一字不差 |
+| `crates/miyu-kernel/tests/delta_sample.rs`、`transient_sample.rs` | `model.delta`（前一份）、`tool.progress`、`status`（后一份）写出去和样本一字不差 |
 
 ### 出处
 

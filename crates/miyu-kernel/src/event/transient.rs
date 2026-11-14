@@ -8,6 +8,7 @@
 use serde::{Serialize, Serializer};
 
 use crate::accumulate::Kind;
+use crate::block::Outcome;
 use crate::event::{CallError, CompactTrigger, ErrorClass, Said, Usage};
 use crate::id::{CallId, CommandId, ModelName, ProviderId, Seq, TurnId};
 use crate::origin::By;
@@ -265,13 +266,15 @@ pub struct ModelDelta {
     pub piece: Piece,
 }
 
-/// 推给头的一段增量：累积器收的四种里，除了私有数据的三种（03 第五节）。
+/// 推给头的一段增量：累积器收的几种里，除了私有数据、写到上限的那几种（03 第五节）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Piece {
     /// 一块开始了，是什么块。
     Start(Kind),
     /// 这一块的一段字。
     Text(String),
+    /// 供应商侧工具的结果（施工 HT-1）：截过的，就是会落进块里的那一份。
+    Outcome(Outcome),
     /// 这一块收全了。
     End,
 }
@@ -353,8 +356,8 @@ impl Serialize for TransientBody {
     }
 }
 
-/// `model.delta` 的 `body` 写出去的样子：一块开始写 `start`（工具调用再带 `name`），
-/// 一段字写 `text`，收全了写 `"end":true`。
+/// `model.delta` 的 `body` 写出去的样子：一块开始写 `start`（工具调用、供应商侧工具再带 `name`），
+/// 一段字写 `text`，供应商侧工具的结果写 `outcome`，收全了写 `"end":true`。
 #[derive(Serialize)]
 struct DeltaOut<'a> {
     seen: Seq,
@@ -365,6 +368,8 @@ struct DeltaOut<'a> {
     name: Option<&'a str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     text: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    outcome: Option<&'a Outcome>,
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     end: bool,
 }
@@ -377,6 +382,7 @@ impl Serialize for ModelDelta {
             start: None,
             name: None,
             text: None,
+            outcome: None,
             end: false,
         };
         match &self.piece {
@@ -386,7 +392,12 @@ impl Serialize for ModelDelta {
                 out.start = Some("tool_call");
                 out.name = Some(name);
             }
+            Piece::Start(Kind::HostedTool { name }) => {
+                out.start = Some("hosted_tool");
+                out.name = Some(name);
+            }
             Piece::Text(text) => out.text = Some(text),
+            Piece::Outcome(outcome) => out.outcome = Some(outcome),
             Piece::End => out.end = true,
         }
         out.serialize(s)
