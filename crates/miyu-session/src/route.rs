@@ -35,6 +35,7 @@
 //!   发给会话钉的看图模型（施工 VM-1：造端口时照内核从日志算的，回合开始换成内核交的），没钉的发给 `models.vision`
 //!   （`route/sight.rs`）。
 //! - 会话的上下文上限（施工 CTX-1，设计 68）：造端口时收下内核从日志算的，变了 actor 当场交；交限额时窗口取模型的和它里小的。
+//! - 供应商的额度（施工 QU-1，`route/quota.rs`）：一轮结束在后台查一次上一次解析出来的那一家，档案没写查额度接口的不查。
 
 mod base;
 mod choice;
@@ -51,6 +52,7 @@ mod once;
 mod placeholder;
 mod pool;
 mod probe;
+mod quota;
 mod retire;
 mod send;
 pub(crate) mod shared;
@@ -68,6 +70,7 @@ pub use local::{LOCAL_WAIT, Running, find_local};
 pub(crate) use once::Said;
 pub use once::{Answer, Ask, OneShot, Unanswered, Watched};
 pub use probe::{Probe, Probed, Stage, probe};
+pub use quota::{REUSE as QUOTA_REUSE, quota};
 pub use retire::Retirement;
 pub use shared::{
     CatalogReader, Holding, LISTING_CAP, LISTING_FILE, Listed, ModelData, ModelDirs, Observed,
@@ -279,6 +282,20 @@ impl ModelPort for Route {
 
     fn effort(&self) -> Option<EffortInUse> {
         self.shown_effort()
+    }
+
+    /// 一轮结束（施工 QU-1，`route/quota.rs`）：在后台查一次上一次解析出来的那一家的额度。
+    fn turn_ended(&self) {
+        let (provider, config) = {
+            let pinned = self.lock();
+            (
+                pinned.last.endpoint.as_str().to_string(),
+                pinned.config.clone(),
+            )
+        };
+        if provider != NONE {
+            quota::refresh(Arc::clone(&self.shared.data), config, provider);
+        }
     }
 
     /// 替看不了图的模型看图（施工 8-17，`route/sight.rs`）：经一次性入口发给会话钉的看图模型（施工 VM-1），没钉的发给这一轮的

@@ -109,8 +109,9 @@ pub use port::{ASIDE_LIMIT, Cancel, ForSession, ModelPort, Models, Reports, Sigh
 pub use route::{
     Answer, Ask, Broken, CatalogReader, Declared, DriverPending, DriverPort, Holding, IDLE,
     LISTING_CAP, LISTING_FILE, LOCAL_WAIT, Listed, Missing, ModelData, ModelDirs, NotYet, Observed,
-    OneShot, Probe, Probed, RECALL_CAP, RECALL_FILE, REFETCH, Retirement, Routes, Running, STALE,
-    Stage, Unanswered, Watched, driver_check, find_local, probe, read_observed, refresh_list,
+    OneShot, Probe, Probed, QUOTA_REUSE, RECALL_CAP, RECALL_FILE, REFETCH, Retirement, Routes,
+    Running, STALE, Stage, Unanswered, Watched, driver_check, find_local, probe, quota,
+    read_observed, refresh_list,
 };
 pub use shown::{Next, Shown};
 pub use spawn::{Advice, Child, ForkChild, Lineage, NotWatched, Pending, SessionPort};

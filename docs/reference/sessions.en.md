@@ -12,6 +12,7 @@ A session is one conversation: an append-only event log, from which the core wor
 | [`session.tools`](#sessiontools) | The tools she can use next turn |
 | [`session.context`](#sessioncontext) | What the context is made of |
 | [`session.usage_parts`](#sessionusage_parts) | Cumulative usage split by context part |
+| [`session.quota`](#sessionquota) | The provider's quota: how much of each window is used and when it resets |
 | [`session.answer`](#sessionanswer) | Answer an approval request or a set of questions |
 | [`session.revert`, `session.unrevert`](#sessionrevert-sessionunrevert) | Undo; restore the last undo |
 | [`session.redo`](#sessionredo) | Redo the last turn |
@@ -38,7 +39,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 ## Common
 
 - **Session ids** are UUIDv7 strings, ordered by creation.
-- **Who can call**: people can call all of these; on confined venue sessions (groups, strangers' private chats) people only read: the reading methods work, the rest return `session_not_found` (see "The owner viewing venue sessions" in [Venues](venues.en.md)). Extensions call them on sessions they can see (a bridge sees the venue sessions of its platforms; other extensions see local sessions and your own private chats) and need a capability: reading (`session.list`, `session.recap`, `session.tools`, `session.context`, `session.usage_parts`, `session.prompts`, `view.page`, `view.detail`) needs `events.read`; creating, sending, interrupting, reverting, unreverting, redoing, compacting, clearing, configuring, forking, renaming and retitling need `sessions.drive`; `session.answer`, `session.set_permission_level`, `session.set_workspace`, `session.terminal`, `session.set_terminal`, `session.delete`, `session.export` and `session.import` are for people only (`local_only`). What an extension says without `as` is recorded as itself (`harness`, named after the package); it can't set `from`.
+- **Who can call**: people can call all of these; on confined venue sessions (groups, strangers' private chats) people only read: the reading methods work, the rest return `session_not_found` (see "The owner viewing venue sessions" in [Venues](venues.en.md)). Extensions call them on sessions they can see (a bridge sees the venue sessions of its platforms; other extensions see local sessions and your own private chats) and need a capability: reading (`session.list`, `session.recap`, `session.tools`, `session.context`, `session.usage_parts`, `session.quota`, `session.prompts`, `view.page`, `view.detail`) needs `events.read`; creating, sending, interrupting, reverting, unreverting, redoing, compacting, clearing, configuring, forking, renaming and retitling need `sessions.drive`; `session.answer`, `session.set_permission_level`, `session.set_workspace`, `session.terminal`, `session.set_terminal`, `session.delete`, `session.export` and `session.import` are for people only (`local_only`). What an extension says without `as` is recorded as itself (`harness`, named after the package); it can't set `from`.
 - **Sessions that aren't running are loaded**: a session the core restarted past or that retired after idling is loaded on first use; heads don't have to care.
 - **Watch pushes for changes**: most methods return `{}` or a few event numbers; the change itself arrives as events to heads subscribed to the session ([Pushes](pushes.en.md)).
 - **Finding the session** can fail on every method with a `session`:
@@ -246,6 +247,20 @@ How much this session has used so far, split into the same parts as `session.con
 
 ```json
 {"requests":503,"input":80000000,"output":203822,"parts":[{"part":"system","label":"System prompt","tokens":220000},{"part":"tools","label":"Tool definitions","tokens":1900000},{"part":"messages","label":"Conversation","tokens":77880000},{"part":"output","label":"AI output","tokens":203822}]}
+```
+
+**Errors**: `bad_params`; the session lookup errors.
+
+## `session.quota`
+
+The quota of the provider this session will send its next request to: how much of each window is used and when it resets. Only providers with a quota interface have one (opencode Go for now); the usage panel draws it. The core checks once in the background after each turn of the session and reuses the result for the same provider within 60 seconds.
+
+**Params**: `session` (required).
+
+**Response**: `{"windows": [...]}`, in the order `rolling`, `weekly`, `monthly`; windows the provider didn't report are left out. Each has `id` (`rolling` is the rolling 5 hours, then `weekly`, `monthly`), `label` (in the connection's language: "5 hours", "Weekly", "Monthly"), `percent` (how much is used, as reported, possibly with decimals), `status` (the provider's status, as reported, such as `ok`) and `resets_at` (when it resets). A provider without a quota (not supported, a rotating pool, unreachable, a bad reply) gives `{}`, not an error.
+
+```json
+{"windows":[{"id":"rolling","label":"5 hours","percent":4,"status":"ok","resets_at":"2026-11-14T08:31:28.000Z"},{"id":"weekly","label":"Weekly","percent":12,"status":"ok","resets_at":"2026-11-17T00:00:00.000Z"},{"id":"monthly","label":"Monthly","percent":30,"status":"ok","resets_at":"2026-12-01T00:00:00.000Z"}]}
 ```
 
 **Errors**: `bad_params`; the session lookup errors.

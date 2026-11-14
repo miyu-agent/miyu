@@ -355,6 +355,10 @@
         "name": "Currency",
         "description": "Currency of the price, three capital letters such as USD or CNY. USD if left out."
       },
+      "providers.<id>.quota.url": {
+        "name": "Quota address",
+        "description": "Full address for checking this provider's quota, replacing the bundled one. Providers without a quota interface in the bundled data are not checked even if set."
+      },
       "models.catalog.update": {
         "name": "Update the catalog",
         "description": "Fetch a newer model catalog from models.dev in the background. Off uses only the bundled and already fetched ones."
@@ -1085,6 +1089,9 @@
     "context/part/messages.memory.recall": "Recalled memory",
     "context/part/messages.knowledge": "Knowledge recalled",
     "context/part/messages.project_docs": "Project instructions (AGENTS.md)",
-    "context/part/messages.facts": "Other notes"
+    "context/part/messages.facts": "Other notes",
+    "quota/window/rolling": "5 hours",
+    "quota/window/weekly": "Weekly",
+    "quota/window/monthly": "Monthly"
   }
 }

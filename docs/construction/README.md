@@ -1599,6 +1599,7 @@ flowchart LR
 | QT-1 | 场所消息带被引用的那一条的内容 | im 要的：群消息引用了一条不在她会话里的消息时把内容带给她。`venue` 多一格可选的 `quoted`，形状同 `forwards` 里的一条 `{name, text, media?, forwards?}`，里面的转发最多 3 层，算进整条消息的 100 条、16 KiB（超了照 `forwards` 拒），要带着 `reply_to`。渲染只看这一条以前的日志：有被引用的那一条的照旧只写编号，没有的在 `reply-to` 下面缩进写、写法同转发里的一条；群聊近况、判官看的记录（`current` 和之前的记录）同一个规矩，判官的快路说不准的照整份读。没带的、O-34 以前造的会话一字不变。施工单 `QT-1-场所消息带引用的内容.md` |
 | HT-4 | 扩展驱动交得上供应商侧工具 | 设计 71 第三节第 6、7 条：`driver.delta` 的 `start` 多一种 `{"hosted_tool": {"name"}}`，增量多一种 `{"outcome": {"index", "text", "failed"?}}`，照累加器的规矩查；清单 `[[driver]]` 多一格 `hosted`（会让供应商自己跑的工具名），装包预览带上、命令行确认屏列出来；没声明的名字交上来照收、照画，记一行 `WARN`，同一个驱动同一个名字只说一次；`driver.check` 的样本带一块自己家的；测试扩展多两种答法，真核心、真扩展把日志、视图、下一轮请求、换内置驱动串起来走一遍。作者文档写明会改东西的原生工具不许报成供应商侧工具。施工单见 `HT-4-扩展驱动交供应商侧工具.md` |
 | HT-5 | Anthropic 驱动的服务端工具 | 设计 71 第四节、第六节第 3 条：Anthropic 接口那边跑的服务端工具（`web_search`、`web_fetch` 这类），驱动把 `server_tool_use` 和随后的 `*_tool_result` 两块并成一块供应商侧工具：参数、给人看的结果（搜到的标题和网址、读到的正文、出错的错误码）、私有数据（两块的线上原文，1 MiB 以内）。下一次发给这一家时，带着私有数据的在原来的位置照原样写回两块（结果里加密的内容要原样回传），别的照 HT-2 写成字。结果块不占块编号；没等到结果的照常收块。不管怎么开服务端工具；`pause_turn` 续接、引用没做。施工单见 `HT-5-Anthropic服务端工具.md` |
+| QU-1 | 供应商的额度 | 项目主人 11-14 定：用量框显示 opencode Go 的三个额度窗口，只在会话用的是它时出现。档案 `[providers.opencode-go]` 多一格 `quota = { url, format }`（地址不进代码，配置 `[providers.<id>.quota] url` 能盖，格式现在只有 `opencode-go`），`Authorization: Bearer <key>` GET；同一家 60 秒内照上一次的，会话每轮结束在后台查一次，查不到的当没有、记一行 `DEBUG`。协议 `session.quota {session}` 回 `{windows: [{id, label, percent, status, resets_at}]}`，没有的 `{}`，名字三语。施工单 `QU-1-供应商额度.md` |
 
 **扩展拿供应商的 key**（项目主人 2026-11-14 定做官方包 `deepseek`，core1 定 A）
 

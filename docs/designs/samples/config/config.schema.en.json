@@ -907,6 +907,33 @@
             "minimum": 0,
             "title": "Price multiplier",
             "type": "number"
+          },
+          "quota": {
+            "properties": {
+              "url": {
+                "description": "Full address for checking this provider's quota, replacing the bundled one. Providers without a quota interface in the bundled data are not checked even if set. Allowed: an address starting with http:// or https:// or { env = \"…\" }. Only in the system config. Takes effect next turn.",
+                "oneOf": [
+                  {
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "env": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "env"
+                    ],
+                    "type": "object"
+                  }
+                ],
+                "title": "Quota address"
+              }
+            },
+            "type": "object"
           }
         },
         "type": "object"

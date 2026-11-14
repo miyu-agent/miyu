@@ -87,6 +87,7 @@ pub(crate) fn items() -> Vec<Item> {
         ProviderSettings::ITEMS,
         ModelSettings::ITEMS,
         PriceSettings::ITEMS,
+        crate::settings::QuotaSettings::ITEMS,
         UseSettings::ITEMS,
         PoolSettings::ITEMS,
         crate::settings::FIXED_POOL_ITEMS,

@@ -534,6 +534,11 @@ default = "full"
 # Allowed: a number from 0 to 1000000. Only in the system config. Takes effect next turn.
 # output =
 
+[providers."<id>".quota]
+# Quota address: Full address for checking this provider's quota, replacing the bundled one. Providers without a quota interface in the bundled data are not checked even if set.
+# Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config. Takes effect next turn.
+# url =
+
 [sandbox.private]
 # Added private folders
 # Allowed: a list of text of at most 4096 characters. Only in the system config. Takes effect next turn.

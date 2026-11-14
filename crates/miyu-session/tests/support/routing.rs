@@ -26,6 +26,7 @@ pub fn items() -> Vec<Item> {
         ProviderSettings::ITEMS,
         ModelSettings::ITEMS,
         PriceSettings::ITEMS,
+        miyu_models::settings::QuotaSettings::ITEMS,
         UseSettings::ITEMS,
         PoolSettings::ITEMS,
         miyu_models::settings::FIXED_POOL_ITEMS,

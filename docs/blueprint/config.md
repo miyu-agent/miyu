@@ -299,6 +299,7 @@ miyu_config::settings! {
 | `providers.<id>.models.<model>.temperature` | 小数 0 到 2 | 没有：请求里不带，照供应商的默认 | 系统 | 不能写 | `next_turn` | 8-22 |
 | `providers.<id>.models.<model>.price.input`、`output`、`cache_read`、`cache_write` | 小数 0 到 1000000 | 没有：照模型资料 | 系统 | 不能写 | `next_turn` | 8-7 |
 | `providers.<id>.models.<model>.price.currency` | 文字，最多 3 个字符 | 没有：`USD` | 系统 | 不能写 | `next_turn` | 8-7 |
+| `providers.<id>.quota.url` | 网址 | 没有：照档案的 `quota`（设置页不画） | 系统 | 不能写 | `next_turn` | QU-1 |
 | `models.catalog.update` | 开关 | `true`，`MIYU_CATALOG_UPDATE` 压过 | 系统 | 不能写 | `now` | 8-7 |
 | `models.catalog.url` | 网址（能写 `{ env = … }`，8-8 起照引用取） | `https://models.dev/api.json` | 系统 | 不能写 | `now` | 8-7 |
 | `models.catalog.every` | 时长 1 小时到 30 天 | `24h` | 系统 | 不能写 | `now` | 8-7 |
@@ -1511,6 +1512,11 @@ default = "full"
 # 能写：0 到 1000000 之间的数。只能写在系统配置里。下一轮生效。
 # output =
 
+[providers."<id>".quota]
+# 额度接口地址：查这家额度的完整地址，盖过资料里的。资料里没写额度接口的供应商写了也不查。
+# 能写：http:// 或 https:// 开头的网址 或 { env = "…" }。只能写在系统配置里。下一轮生效。
+# url =
+
 [sandbox.private]
 # 加的私密目录
 # 能写：最多 4096 个字的文字 的列表。只能写在系统配置里。下一轮生效。
@@ -1725,6 +1731,8 @@ currency = "USD"
 | `providers.<id>.cache` 名字（8-8） | 缓存类别 | Cache class | キャッシュの種類 |
 | 说明 | 这家的缓存怎么算钱。现在只用来定池不写分法时怎么分。不写照驱动的默认。 | How this provider bills its cache. For now it only decides how a pool without a strategy splits. Left out, it follows the driver. | このプロバイダーのキャッシュの課金のしかた。いまは分け方を書いていないプールの分け方を決めるだけです。書かなければドライバーの既定に従います。 |
 | 选项 | `contract` 照前缀计费、`best_effort` 尽量命中、`per_request` 按次计费 | Billed by prefix、Best effort、Per request | 前置きで課金、できるだけ当てる、リクエストごと |
+| `providers.<id>.quota.url` 名字（QU-1） | 额度接口地址 | Quota address | 利用枠の取得先 |
+| 说明 | 查这家额度的完整地址，盖过资料里的。资料里没写额度接口的供应商写了也不查。 | Full address for checking this provider's quota, replacing the bundled one. Providers without a quota interface in the bundled data are not checked even if set. | このプロバイダーの利用枠を確認する完全なアドレス。同梱のものより優先します。同梱データに利用枠の取得先がないプロバイダーは、書いても確認しません。 |
 | `providers.<id>.models.<model>.effort` 名字（8-18） | 思考程度 | Thinking effort | 思考の程度 |
 | 说明 | 这个模型默认的思考强度，写它的一档，例如 high；能关思考的写 off。不写的照供应商的默认。 | The reasoning effort this model uses by default: one of its levels, for example high, or off where thinking can be turned off. Left out, the provider decides. | このモデルが既定で使う思考の強さ。段階のひとつを書きます（例：high）。思考を切れるモデルは off。書かなければプロバイダーの既定に従います。 |
 | `providers.<id>.models.<model>.temperature` 名字（8-22） | 默认的温度 | Default temperature | 既定の温度 |

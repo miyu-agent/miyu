@@ -35,6 +35,7 @@ use crate::headers;
 use crate::knowledge::Knowledge;
 use crate::matching::Recognized;
 use crate::profile::ImageTokens;
+use crate::quota::Quota;
 use crate::settings::{ProviderSettings, UseSettings};
 
 /// 认得的驱动。8-6 有 OpenAI 兼容的对话接口，8-12 加 Anthropic 的消息接口，8-13 加 OpenAI 的 Responses 接口；MD-1 加扩展提供的
@@ -162,6 +163,8 @@ pub struct Provider {
     pub headers: BTreeMap<String, String>,
     /// 档案点名的占位工具（施工 8-14 补）：工具面里缺这几件时补同名的占位声明（`models.md`「八、opencode Zen」第 2 条）。
     pub placeholders: Vec<String>,
+    /// 查额度的接口（施工 QU-1）：档案写了的，地址照配置的 `[providers.<id>.quota]` 盖（[`crate::quota::settled`]）。
+    pub quota: Option<Quota>,
 }
 
 impl Provider {
@@ -402,6 +405,7 @@ pub fn provider(values: &Values, knowledge: &Knowledge<'_>, id: &str) -> Result<
             .compat
             .as_ref()
             .is_some_and(|compat| compat.reasoning.is_some()),
+        quota: crate::quota::settled(profile.quota.as_ref(), values, id),
         headers: profile.headers,
         placeholders: profile.placeholder_tools,
     })

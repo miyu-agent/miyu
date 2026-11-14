@@ -18,7 +18,7 @@ A venue is where a session happens: this machine (`local`), or a private chat or
 
 **The owner viewing venue sessions** (step VW-1): only the bridge for that platform can speak into, change or delete a confined venue session (a group, a stranger's private chat). The owner's connections (people's heads) can view it read-only: reading methods work, writing ones return `session_not_found`, as if there were no such session:
 
-- Reading: `subscribe`, `unsubscribe` (the `events` and `view` streams, catching up with `after` as usual), `view.page`, `view.detail`, `session.prompts`, `session.tools`, `session.context`, `session.usage_parts`, `job.output`, `blob.get` with `session`, `session.shown`.
+- Reading: `subscribe`, `unsubscribe` (the `events` and `view` streams, catching up with `after` as usual), `view.page`, `view.detail`, `session.prompts`, `session.tools`, `session.context`, `session.usage_parts`, `session.quota`, `job.output`, `blob.get` with `session`, `session.shown`.
 - Every other method with a `session` returns `session_not_found`: sending, `command.run`, redo, revert, interrupt, compact, clear, configure, `set_*`, fork, retitle, delete and so on.
 - Extensions and platform bridges aren't affected: a bridge still reaches only the venue sessions of its own platforms, for reading too.
 

@@ -310,6 +310,7 @@ mod session_export_markdown;
 mod session_export_presets;
 mod session_import;
 mod session_prompts;
+mod session_quota;
 mod session_read_only;
 mod session_shown;
 mod session_tools;

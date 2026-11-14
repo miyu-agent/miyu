@@ -197,6 +197,20 @@ miyu_config::settings! {
 }
 
 miyu_config::settings! {
+    /// 查额度的接口（施工 QU-1，`models.md`「怎么走」第十七条）：档案写了 `quota` 的供应商，这里能改地址。格式只有档案知道，
+    /// 档案没写的这一家写了也不查。设置页不画：供应商挪了地址、出厂的档案还没跟上时手写。
+    pub struct QuotaSettings in "providers.<id>.quota" {
+        /// 完整的地址，盖过档案的。
+        url: Option<String> = none {
+            kind: url,
+            layers: [System],
+            applies: next_turn,
+            ui: { page: "models", group: "providers", control: text, hidden: true },
+        },
+    }
+}
+
+miyu_config::settings! {
     /// 用量（施工 8-15，`models.md`「对外的样子」`usage.currency`）：当场生效。
     pub struct UsageSettings in "usage" {
         /// 显示用的币种：汇总里几种币种的先后，它排最前，别的照币种代码的字母先后（[`crate::price::ordered`]）。不换算。

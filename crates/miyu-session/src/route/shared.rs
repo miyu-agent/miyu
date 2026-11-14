@@ -41,6 +41,7 @@ use crate::TARGET;
 
 use super::driver_port::DriverPort;
 use super::extension::Wires;
+use super::quota::Quotas;
 use super::retire::{Retirement, Retiring};
 
 mod listing;
@@ -94,6 +95,8 @@ pub struct ModelData {
     claimed: Mutex<BTreeMap<String, Instant>>,
     /// 哪几家的列表变了（施工 V-26）：换上的列表和原来的不一样就交一次，订着配置流的连接推 `models.changed`。
     changes: broadcast::Sender<Vec<String>>,
+    /// 每一家上一次查的额度（施工 QU-1，`route/quota.rs`）：只在内存里。
+    quotas: Quotas,
 }
 
 /// 列表变了的通知攒多少条：头掉了队的只少一次刷新，下一次变了照样收到。
@@ -134,6 +137,7 @@ impl ModelData {
             logos: RwLock::new(Arc::new(BTreeMap::new())),
             claimed: Mutex::new(BTreeMap::new()),
             changes: broadcast::channel(CHANGES).0,
+            quotas: Quotas::default(),
         }
     }
 
@@ -174,6 +178,11 @@ impl ModelData {
     /// 扩展驱动最近几次报的 `sent`（施工 MD-3）。
     pub(super) fn wires(&self) -> MutexGuard<'_, Wires> {
         self.wires.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    /// 额度那一份（施工 QU-1，`route/quota.rs`）。
+    pub(super) fn quotas(&self) -> &Quotas {
+        &self.quotas
     }
 
     /// 下架的模型那一份（`route/retire.rs`）。

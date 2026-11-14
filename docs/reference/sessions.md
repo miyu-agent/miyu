@@ -12,6 +12,7 @@
 | [`session.tools`](#sessiontools) | 她下一轮能用的工具 |
 | [`session.context`](#sessioncontext) | 上下文一块块各占多少 |
 | [`session.usage_parts`](#sessionusage_parts) | 累计用量照上下文的块分开 |
+| [`session.quota`](#sessionquota) | 供应商的额度：几个窗口用了多少、什么时候重置 |
 | [`session.answer`](#sessionanswer) | 回答一次确认，或者一组提问 |
 | [`session.revert`、`session.unrevert`](#sessionrevertsessionunrevert) | 撤销、恢复最近一次撤销 |
 | [`session.redo`](#sessionredo) | 重做最后一轮 |
@@ -38,7 +39,7 @@
 ## 通用
 
 - **会话编号**是 UUIDv7 字符串，照造的先后排。
-- **谁能调**：下面的方法人都能调；关在沙盒里的场所会话（群、陌生人的私聊）人只读地看，读的几个照常，别的回 `session_not_found`（见[场所](venues.md)「主人看场所会话」）。扩展照它看得到的会话调（平台桥只看得到它的平台的场所会话，别的扩展看得到本机的、你自己的私聊），另要能力：读的（`session.list`、`session.recap`、`session.tools`、`session.context`、`session.usage_parts`、`session.prompts`、`view.page`、`view.detail`）要 `events.read`；造会话、说话、打断、撤销、恢复、重做、压缩、清空、换配置、分叉、改标题、重起标题要 `sessions.drive`；`session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`、`session.delete`、`session.export`、`session.import` 只给人（`local_only`）。扩展不带 `as` 说的话记成它自己（`harness`，名字是包的编号），它不能写 `from`。
+- **谁能调**：下面的方法人都能调；关在沙盒里的场所会话（群、陌生人的私聊）人只读地看，读的几个照常，别的回 `session_not_found`（见[场所](venues.md)「主人看场所会话」）。扩展照它看得到的会话调（平台桥只看得到它的平台的场所会话，别的扩展看得到本机的、你自己的私聊），另要能力：读的（`session.list`、`session.recap`、`session.tools`、`session.context`、`session.usage_parts`、`session.quota`、`session.prompts`、`view.page`、`view.detail`）要 `events.read`；造会话、说话、打断、撤销、恢复、重做、压缩、清空、换配置、分叉、改标题、重起标题要 `sessions.drive`；`session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`、`session.delete`、`session.export`、`session.import` 只给人（`local_only`）。扩展不带 `as` 说的话记成它自己（`harness`，名字是包的编号），它不能写 `from`。
 - **会话没在跑的先载入**：核心重启过、闲够了退下的会话，第一次用到时自动载入，不用头操心。
 - **改了什么看推送**：多数方法只回 `{}` 或几条事件的序号，变化本身照事件推给订阅着这个会话的头（[推送](pushes.md)）。
 - **找会话的出错**，每个带 `session` 的方法都可能回：
@@ -246,6 +247,20 @@
 
 ```json
 {"requests":503,"input":80000000,"output":203822,"parts":[{"part":"system","label":"系统提示","tokens":220000},{"part":"tools","label":"工具说明","tokens":1900000},{"part":"messages","label":"对话","tokens":77880000},{"part":"output","label":"AI 输出","tokens":203822}]}
+```
+
+**出错**：`bad_params`；找会话的那几种。
+
+## `session.quota`
+
+这个会话接下来请求的那一家供应商的额度：几个窗口各用了百分之几、什么时候重置。只有查得到额度的供应商有（现在是 opencode Go），用量框里照它画。会话每说完一轮核心在后台查一次，同一家 60 秒内照上一次的。
+
+**参数**：`session`（必写）。
+
+**回应**：`{"windows": [...]}`，照 `rolling`、`weekly`、`monthly` 的先后，供应商没报的窗口不交。一项：`id`（`rolling` 是 5 小时滚动的，`weekly`、`monthly`），`label`（照连接的语言：「5 小时」「每周」「每月」），`percent`（用了百分之几，原样，可能带小数），`status`（供应商说的状态，原样，例如 `ok`），`resets_at`（什么时候重置）。这一家查不到额度（不支持、轮换的池、连不上、回的不对）的回 `{}`，不报错。
+
+```json
+{"windows":[{"id":"rolling","label":"5 小时","percent":4,"status":"ok","resets_at":"2026-11-14T08:31:28.000Z"},{"id":"weekly","label":"每周","percent":12,"status":"ok","resets_at":"2026-11-17T00:00:00.000Z"},{"id":"monthly","label":"每月","percent":30,"status":"ok","resets_at":"2026-12-01T00:00:00.000Z"}]}
 ```
 
 **出错**：`bad_params`；找会话的那几种。

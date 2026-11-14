@@ -4,7 +4,7 @@
 //!
 //! 档案只有用得上的几格：驱动、地址、`openai-chat` 的开关（8-18 多开关思考的 `toggle`）、一张图怎么算（8-6），`[npm]`：目录里的 AI SDK 包名 → 驱动
 //! （8-7，照目录推驱动），名字（8-11：只在档案里的一家，第一次接入列给人看），另配的头（8-14：值是模板，只认
-//! `{session_digest}`，[`crate::headers`]）。找 key 的环境变量随第一家用得上它的。8-6 加的「能收哪些输入」8-7 拿掉了：
+//! `{session_digest}`，[`crate::headers`]），查额度的接口（QU-1，[`crate::quota`]）。找 key 的环境变量随第一家用得上它的。8-6 加的「能收哪些输入」8-7 拿掉了：
 //! 照模型资料（目录、手写的，「施工时定的」8-7）。
 
 use std::collections::BTreeMap;
@@ -12,6 +12,7 @@ use std::collections::BTreeMap;
 use serde::Deserialize;
 
 use crate::headers;
+use crate::quota::Quota;
 use miyu_drivers::openai_chat::{
     Compat, Continuation, ContinuationField, OutputLimit, ReasoningField, ReasoningReplay, Toggle,
 };
@@ -54,6 +55,9 @@ pub struct Profile {
     /// `resources/core/drivers/placeholder-tool.txt` 那一句。
     #[serde(default)]
     pub placeholder_tools: Vec<String>,
+    /// 查额度的接口（施工 QU-1，[`crate::quota`]）：地址和回应的格式。
+    #[serde(default)]
+    pub quota: Option<Quota>,
 }
 
 /// 一张图怎么算 token 的算法。

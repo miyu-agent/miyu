@@ -18,7 +18,7 @@
 
 **主人看场所会话**（施工 VW-1）：关在沙盒里的场所会话（群、陌生人的私聊）只有接这个平台的桥能往里说话、改它、删它；主人这边的连接（人的头）只读地看得到它，读的方法照常，写的回 `session_not_found`，同没有这个会话：
 
-- 读的：`subscribe`、`unsubscribe`（`events`、`view` 流，`after` 补发照常）、`view.page`、`view.detail`、`session.prompts`、`session.tools`、`session.context`、`session.usage_parts`、`job.output`、带 `session` 的 `blob.get`、`session.shown`。
+- 读的：`subscribe`、`unsubscribe`（`events`、`view` 流，`after` 补发照常）、`view.page`、`view.detail`、`session.prompts`、`session.tools`、`session.context`、`session.usage_parts`、`session.quota`、`job.output`、带 `session` 的 `blob.get`、`session.shown`。
 - 别的带 `session` 的一律 `session_not_found`：说话、`command.run`、重做、撤销、打断、压缩、清空、换配置、`set_*`、分叉、改标题、删这些。
 - 扩展、平台桥不受这一条影响：桥照旧只碰得到它的平台的场所会话，读的也一样。
 

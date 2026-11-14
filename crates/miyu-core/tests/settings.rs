@@ -117,6 +117,7 @@ fn the_registered_list_is_well_formed() {
             "providers.<id>.models.<model>.price.cache_read",
             "providers.<id>.models.<model>.price.cache_write",
             "providers.<id>.models.<model>.price.currency",
+            "providers.<id>.quota.url",
             "models.catalog.update",
             "models.catalog.url",
             "models.catalog.every",

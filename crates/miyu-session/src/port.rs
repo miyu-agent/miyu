@@ -149,6 +149,9 @@ pub trait ModelPort: Send + Sync {
         ASIDE_LIMIT
     }
 
+    /// 一轮结束了（施工 QU-1）：路由在后台查一次这一家的额度，不挡回合。测试的端口不管。
+    fn turn_ended(&self) {}
+
     /// 换快照了（施工 P-1 三补）：驱动的占位换成新快照的 `texts`，以后的请求照它写。测试的端口不管。
     fn retext(&self, _texts: DriverTexts) {}
 

@@ -1544,6 +1544,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sNF1"><span class="n">NF-1</span>联网服务切供应商<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sPK1"><span class="n">PK-1</span>扩展拿主人配的供应商 key<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT4"><span class="n">HT-4</span>扩展驱动交得上供应商侧工具<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sQU1"><span class="n">QU-1</span>供应商的额度<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -59853,6 +59854,59 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/HT-4-扩展驱动交供应商侧工具.md</code>；<code>crates/miyu-session/src/route/extension/wire.rs</code>、<code>extension.rs</code>；<code>crates/miyu-config/src/package/driver.rs</code>；<code>crates/miyu-endpoint/tests/extension_driver_hosted.rs</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sQU1" aria-labelledby="h-sQU1">
+  <div class="sheet-head"><h2 id="h-sQU1"><span class="no">QU-1</span>供应商的额度</h2><span class="pill done">做完</span></div>
+  <p class="purpose">opencode Go 按 5 小时、每周、每月三个窗口算额度。核心照会话用的那一家去问，头在用量框里一行一个窗口画出来；别的供应商没有这一块。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">resources · models/profiles.toml　miyu-models · quota.rs、profile.rs、provider.rs、settings.rs　miyu-session · route/quota.rs、port.rs、actor/store.rs　miyu-endpoint · quota.rs</span><span class="dir-note">QU-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>档案 <code>quota = { url, format }</code>：地址不进代码，配置 <code>[providers.&lt;id&gt;.quota] url</code> 能盖</li>
+              <li>GET，<code>Authorization: Bearer &lt;key&gt;</code>，同一家 60 秒内照上一次的</li>
+              <li>会话每轮结束在后台查一次，不挡回合；查不到的当没有、记一行 DEBUG</li>
+              <li><code>session.quota</code> → <code>{windows: [{id, label, percent, status, resets_at}]}</code>，没有的 <code>{}</code></li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">地址写在目录里</span><span class="rl">格式是可扩展的枚举</span></div>
+          <div class="tile new"><span class="nm">选方法不推送</span><span class="rl">额度属于供应商，不属于会话</span></div>
+          <div class="tile new"><span class="nm">查不到不出声</span><span class="rl">不报错、不告警</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">QU-1</dd></div>
+        <div><dt>名称</dt><dd>供应商的额度</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">QU-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>假服务器回实测那段 JSON，协议交出三格，名字照连接的语言</span></li>
+        <li><span class="ok">✓</span><span>60 秒内再问不再发；档案没写的不发</span></li>
+        <li><span class="ok">✓</span><span>404、500、乱码当没有，不报错；key 在 Authorization 里</span></li>
+        <li><span class="ok">✓</span><span>说完一轮在后台查一次</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/QU-1-供应商额度.md</code>；蓝图 <code>models.md</code>、<code>protocol.md</code>、<code>config.md</code>；协议参考 <code>sessions.md</code>、<code>venues.md</code>。</li>
       </ul>
     </div>
   </div>

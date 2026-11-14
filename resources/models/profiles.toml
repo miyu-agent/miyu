@@ -43,8 +43,12 @@ base_url = "https://api.openai.com/v1"
 # anthropic，GPT、Grok 走 openai-responses，别的走 openai-chat）。缺 x-opencode-session 回 400 MissingSessionID（2026-10-03 实测）；
 # 官方文档写明给第三方 agent 用：用自己的 User-Agent，每段对话发一个稳定的 x-opencode-session。值里的 {session_digest} 照种子
 # （会话编号、一次性调用的用途）换成 opencode 会话编号的样子：前 12 位是时间的倒序编法，后 14 位是 SHA-256 的十六进制。
+#
+# 额度（施工 QU-1）：GET 这个地址，头带 `Authorization: Bearer <key>`，回 5 小时滚动、每周、每月三个窗口用了百分之几、什么时候重置
+# （2026-11-14 实测 200；官方文档没写这个接口，旧地址 /zen/go/v1/usage 也还能用）。挪了地址的在配置 [providers.<id>.quota] 写 url。
 [providers.opencode-go]
 headers = { "x-opencode-session" = "ses_{session_digest}" }
+quota = { url = "https://opencode.ai/inference/go/v1/usage", format = "opencode-go" }
 
 # opencode Zen（施工 8-14 补，2026-10-04 实测；2026-10-13 再测）：免费档按客户端识别，几件同时成立——User-Agent 要是
 # opencode/<版本≥1.18> 的形状、请求带至少一个 x-opencode-* 头、x-opencode-session 的前 12 位是 opencode 那种倒序的时间编号

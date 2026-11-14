@@ -355,6 +355,10 @@
         "name": "币种",
         "description": "价格的币种，三个大写字母，例如 USD、CNY。不写是 USD。"
       },
+      "providers.<id>.quota.url": {
+        "name": "额度接口地址",
+        "description": "查这家额度的完整地址，盖过资料里的。资料里没写额度接口的供应商写了也不查。"
+      },
       "models.catalog.update": {
         "name": "后台更新目录",
         "description": "在后台去 models.dev 拉新的模型目录。关掉只用安装包带的和已经拉过的。"
@@ -1064,6 +1068,9 @@
     "context/part/messages.memory.recall": "召回的记忆",
     "context/part/messages.knowledge": "知识库想起的",
     "context/part/messages.project_docs": "项目指令",
-    "context/part/messages.facts": "其他提示"
+    "context/part/messages.facts": "其他提示",
+    "quota/window/rolling": "5 小时",
+    "quota/window/weekly": "每周",
+    "quota/window/monthly": "每月"
   }
 }

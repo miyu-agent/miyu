@@ -47,6 +47,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `crates/miyu-session/src/route/turn.rs` | 回合开始照这一轮的配置重新解析会话的引用：换成内核交的、解析不出的退回 `models.chat`、钉着的成员还在的照旧、限额重算（`ModelPort::turn`） | 8-10 |
 | `crates/miyu-session/src/shown.rs` | 给头看的那一份 `Shown`：限额和会话接下来请求的模型 `Next`（8-18 多 `effort`），actor 写、`Handle` 读，`subscribe` 照它答 | 8-10、8-18 |
 | `crates/miyu-session/src/route/lists.rs` | 拉一家供应商的模型列表：照驱动的 `models_path()` GET、`parse_models`，存 `var/cache/models/providers/<编号>.json`（8-7）；GET 一家的列表那一段 `provider.test` 也用（`list_models`，8-11） | 8-7、8-11 |
+| `crates/miyu-session/src/route/quota.rs` | 查一家的额度（QU-1）：GET 档案写的地址，key 在 `Authorization` 里；同一家 60 秒内照上一次的；会话每轮结束在后台查一次（`ModelPort::turn_ended`）；查不到的当没有、记一行 `DEBUG` | QU-1 |
 | `crates/miyu-session/src/route/shared/renamed.rs`（施工 8-34） | 供应商改名：用出来的、供应商的列表换编号，改名记进 `renamed.json`；回合开始照它换（`route/turn.rs`） |
 | `crates/miyu-session/src/route/probe.rs` | `provider.test` 试一次（8-11）：推驱动、地址、key，列模型；列得出的挑一个就算通，不发请求（8-11 五补）；写的模型不在列表里、列不出又不是认证错的才发一句（没写模型的照目录挑一个，施工 ST-1），收到第一段正文就停；发的那一句照这个模型的驱动、带档案另配的头（8-14） | 8-11、8-14、8-11 五补 |
 | `crates/miyu-session/src/route/endpoint.rs` | 照一家供应商拼地址、key、另配的头（`reach`，R-5 补从 `probe.rs` 抽出来）：`provider.test` 和远程的 embedding（`recall.md` 第四条第 7 款）共用，不走路由、池、冷却；引用的密钥、环境变量取不到的带上缺的那一样（`Missing`，8-11 五补） | R-5 补、8-11 五补 |
@@ -69,8 +70,9 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `crates/miyu-cli/src/ask.rs`、`ask/talk.rs` | `miyu ask --model`：新开的会话 `session.create` 带上，接着的先 `session.configure`（`talk.rs` 的「找会话」） | 8-10 |
 | `xtask/src/dev_home.rs` | `cargo xtask dev-home`：开发时照环境变量造一个带配置的数据根；测试在 `crates/miyu/tests/dev_home.rs`（原样编进去） | 8-6 |
 | `resources/models/models-dev.json`、`models-dev.meta.json`、`models-dev.LICENSE` | 安装包带的完整目录快照，原样的 `api.json`，和它是什么时候拉的；models.dev 的 MIT 许可证原文（`licenses.md`） | 8-7 |
-| `resources/models/profiles.toml` | 驱动怎么认（`[npm]`：包名 → 驱动，8-7），认得出的供应商的档案：开关、另配的头、占位工具、找 key 的环境变量、本机服务探哪里。现在有 `[npm]`、`[providers.deepseek]`：驱动、地址、开关（8-18 多开关思考的 `toggle`）、一张图怎么算（「能收哪些输入」8-7 拿掉，照模型资料）；`[providers.ollama]`：名字、驱动、地址，只为「找现成的」（8-11，档案多一格 `name`）；`anthropic`、`openai` 两段（8-12、8-13）；`[providers.opencode-go]`：只有另配的头（8-14，档案多一格 `headers`）；`[providers.opencode]`：另配的头（`User-Agent` 也在里头）+ `placeholder_tools`（8-14 补，第八条） | 8-6 起 |
+| `resources/models/profiles.toml` | 驱动怎么认（`[npm]`：包名 → 驱动，8-7），认得出的供应商的档案：开关、另配的头、占位工具、找 key 的环境变量、本机服务探哪里。现在有 `[npm]`、`[providers.deepseek]`：驱动、地址、开关（8-18 多开关思考的 `toggle`）、一张图怎么算（「能收哪些输入」8-7 拿掉，照模型资料）；`[providers.ollama]`：名字、驱动、地址，只为「找现成的」（8-11，档案多一格 `name`）；`anthropic`、`openai` 两段（8-12、8-13）；`[providers.opencode-go]`：另配的头（8-14，档案多一格 `headers`）、查额度的接口（QU-1，档案多一格 `quota`）；`[providers.opencode]`：另配的头（`User-Agent` 也在里头）+ `placeholder_tools`（8-14 补，第八条） | 8-6 起 |
 | `crates/miyu-models/src/headers.rs` | 另配的头的模板：只认 `{session_digest}`，读档案时查、发之前照种子换（8-14） | 8-14 |
+| `crates/miyu-models/src/quota.rs` | 供应商的额度（QU-1，「怎么走」第十七条）：档案的 `quota` 一格（地址、格式 `QuotaFormat`），配置的 `[providers.<id>.quota]` 盖地址（`settled`），读回应成几个窗口（`read`） | QU-1 |
 | `resources/models/vendors.toml` | 认原厂：家族的第一段 → 原厂在目录里的编号 | 8-7 |
 | `resources/core/models/probe.txt` | `provider.test` 发的那一句：核心每试一次照 `ResourceRoot::probe` 读一次，去掉行尾的空白 | 8-11 |
 | `resources/core/drivers/placeholder-tool.txt` | 占位工具的说明（8-14 补）：工具面里缺 `read`、`shell` 的请求补一条同名占位声明，说明就是这一句 | 8-14 补 |
@@ -335,6 +337,8 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 5. 以后别的临时开关（`04-核心协议.md` 第九节）加进来也是这个方法。
 
 **`subscribe`** 的回应多一格 `model`（8-10）：`{"ref":…,"endpoint":…,"model":…}`，是会话接下来请求的。轮换的池没有 `endpoint`、`model`。一个模型都没有的不写这一格。8-18 多一格 `effort`：`{"ref":…,"endpoint":…,"model":…,"effort":{"level":"high","from":"session"}}`，接下来那个模型真用的一档和从哪来：`session` 是会话记的那一档（施工 SM-1），`system` 是配置（照 `config.get` 说的来源，「怎么走」第十一条第 4 条）；请求里什么都不带的、轮换的池不写。会话刚换的一档下一个回合开始才算进来（重启以后订阅载入的照日志算，当场就是）。
+
+**`session.quota`**（查询，施工 QU-1）：会话接下来请求的那一家的额度，写法见 `protocol.md`「`session.quota`」、「怎么走」第十七条。
 
 **`model.list`**（查询。8-7 做，池 8-8 加，冷却 8-9 加，挡位 8-8 补去掉，`models` 施工 V-6 上加）
 
@@ -963,6 +967,16 @@ opencode 有两个端点：Zen（`https://opencode.ai/zen/v1`，按量付费）�
 3. **会话**：钉着的引用记在日志里（`session.created`、`session.policy_changed` 的 `model`），改不了。改名记进 `var/lib/models/renamed.json`（`{"<旧编号>":"<新编号>"}`，`miyu_models::observed::Renamed`）：连着改的拉平（a→b 以后 b→c，a、b 都指 c），改回去的（c→a）删掉 a 那一条。回合开始（第六条）钉着的解析不出、供应商在这张表里的，换成新编号再解析：解析出来的照第六条第 4 条那条路告诉内核（`replaced` 是旧的），记一行 `INFO model renamed`，不退回 `models.chat`；换了也解析不出的照旧退回。以后又建了旧编号的，照新建的那家，表不看。开着的会话下一轮起就照新编号，不用通知会话。
 4. **用出来的、供应商的列表**：`learned.json` 里 `<from>/` 开头的键换成 `<to>/`，`providers/<from>.json` 改名成 `<to>.json`；在核心手里那一份上改，写盘照旧（写不成的记一行，内存里照样换）。用量账本照日志重算，不动。
 
+**十七、供应商的额度**（施工 QU-1；2026-11-14 项目主人定：用量框里显示 opencode Go 的三个额度窗口，只在当前会话用的是它时出现，地址做成目录里的一格）：
+
+1. **档案的一格** `quota = { url, format }`（`miyu_models::quota`）：`url` 是完整的地址，GET 它；`format` 是回应的格式，现在只有 `opencode-go` 一种（`QuotaFormat`，以后别家有额度接口的多一种、`read` 多一支）。出厂只有 `[providers.opencode-go]` 写了：`https://opencode.ai/inference/go/v1/usage`（2026-11-14 实测 200，官方文档没写；旧地址 `/zen/go/v1/usage` 也还能用）。代码里不写地址。
+2. **配置盖地址**：`[providers.<id>.quota] url = "…"`（`QuotaSettings`，设置页不画），同 `base_url` 盖档案的地址。格式只有档案知道：档案没写 `quota` 的一家，配置写了地址也不查。没开 `format` 的配置项：选项至少两个，等有第二种格式时再加。
+3. **头**：`Authorization: Bearer <这一家的 key>`（不照驱动的认证头：Go 的 Claude、MiniMax 走 `anthropic`，认证头是 `x-api-key`），档案另配的头照固定的种子 `quota` 换（额度不属于哪个会话，同一次性调用照用途），`User-Agent` 是客户端的 `miyu/<版本>`（Cloudflare 挡默认库的）。地址落在本机的不走代理，同拉列表。没有 key 的不查。
+4. **读**：`opencode-go` 的回应 `{"usage": {"rolling", "weekly", "monthly"}}`，每个窗口 `{"status", "percent", "resetsAt"}`；照 rolling、weekly、monthly 的先后交，没有的窗口不交；`percent` 原样（不是数的算写错），`status` 原样，`resetsAt` 照 RFC 3339 读（带不带小数秒、`Z` 还是时区偏移都认，`quota/instant.rs`），换成 UTC、交出去照时刻的写法 `2026-11-14T08:31:28.000Z`（读不出的算写错）。一个窗口都没有、有一个写错，整份当没有。
+5. **什么时候查**（`miyu-session` 的 `route/quota.rs`）：会话每轮结束（`turn.ended` 落了盘）路由在后台查一次上一次解析出来的那一家，不挡回合；协议的 `session.quota` 照会话接下来请求的那一家查。同一家 60 秒内照上一次的（查不到的也算一次），同一时刻只有一个在查、后到的等它照它答；只在内存里，核心重启就清零。一次最多等 10 秒，响应体最多 64 KiB。
+6. **查不到**：这一家用不了、没有 key、连不上、超时、回的不是 2xx、格式不对，一律当没有，记一行 `DEBUG quota unavailable`（`provider`、`error`），不报错、不告警。
+7. **协议** `session.quota {"session"}`（`protocol.md`「`session.quota`」）：`{"windows": [{id, label, percent, status, resets_at}…]}`，没有的 `{}`。名字照连接的语言（`core/human/<语言>.json` 的 `quota/window/<编号>`：5 小时、每周、每月）。
+
 ### 样子
 
 配置（例子，地址用 `.invalid`）：
@@ -1188,6 +1202,14 @@ mimo = ["xiaomi"]
 
 币种的写法是给人看的字，放在 `core/human/`：`USD` 写 `$`、`CNY` 写 `¥`，别的写代码，例如 `EUR 1.20`。几位小数随界面定。
 
+额度窗口的名字（施工 QU-1，`session.quota` 的 `label`，`core/human/<语言>.json` 的 `quota/window/<编号>`）：
+
+| 编号 | 中文 | 英文 | 日文 |
+|---|---|---|---|
+| `rolling` | 5 小时 | 5 hours | 5 時間 |
+| `weekly` | 每周 | Weekly | 週間 |
+| `monthly` | 每月 | Monthly | 月間 |
+
 `model.changed` 的通知、`/models` 抽屉、底栏的字随 M9 的界面。
 
 ### 守着它的
@@ -1280,6 +1302,9 @@ mimo = ["xiaomi"]
 | `crates/miyu-kernel/src/session/tests/vision_pin.rs`、`event/session/tests.rs` 的 `vision`（VM-1） | 内核：钉了记一条只写 `vision`、一样的不记、去掉记成空的、换模型不清它、撤掉的回合里的也算、载入照日志算回来；事件读写一字不差 | VM-1 |
 | `crates/miyu-policy/src/snapshot/tests/vision.rs`、`crates/miyu-store/src/resources/tests.rs`（8-17） | 快照带着两份字和三句标签、老快照没有的不转述；资源目录读得出五份 | 8-17 |
 | `crates/miyu-endpoint/tests/model_call.rs`、`model_call_log.rs` | `model.call` 的回应形状；参数校验（`purpose` 的写法、`messages` 的样子、`max_tokens`、`model` 是空字）、blob 不在存处里的 `unknown_attachment`、不是图的 `bad_params`、`unknown_model`；出错的 `data`；不造会话、不进会话日志；测试的端口没有一次性入口的答 `no_model`；运行日志成了、没成各一行，不带 key（`model_call_log.rs`） | 8-20 |
+| `crates/miyu-models/src/quota/tests.rs`（QU-1） | 档案的 `quota` 读得进、写错的格式读不进；配置盖地址、档案没写的配置写了也没有；opencode Go 的回应读成三个窗口照先后、没有的窗口不交、写错一格整份当没有；重置时刻照 RFC 3339 的各种写法读成 UTC | QU-1 |
+| `crates/miyu-session/tests/route_quota.rs`（QU-1） | GET 档案写的地址、key 在 `Authorization`、另配的头照种子 `quota`、`User-Agent` 是 `miyu/`；60 秒内不再发；档案没写的不发；配置改地址；404、500、乱码、写错的当没有、查不到的也不再发；会话一轮结束在后台查一次 | QU-1 |
+| `crates/miyu-endpoint/tests/session_quota.rs`（QU-1） | 真核心、真路由：说完一轮后台查过，`session.quota` 交三格、名字照连接的语言、不再发；档案没写的、查不到的回 `{}`；找会话、参数写错的拒 | QU-1 |
 
 ### 出处
 

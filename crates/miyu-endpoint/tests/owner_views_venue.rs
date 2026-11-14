@@ -21,7 +21,7 @@ use crate::support::venues::BINDINGS;
 use crate::support::*;
 
 /// 人的头对关着的场所会话能调的，同 `sessions/peek.rs` 的 `READS`：两边要一起改。
-const READS: [&str; 11] = [
+const READS: [&str; 12] = [
     "subscribe",
     "unsubscribe",
     "view.page",
@@ -30,6 +30,7 @@ const READS: [&str; 11] = [
     "session.tools",
     "session.context",
     "session.usage_parts",
+    "session.quota",
     "job.output",
     "blob.get",
     "session.shown",

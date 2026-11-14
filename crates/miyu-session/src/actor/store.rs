@@ -189,6 +189,10 @@ impl Actor {
             Ok((store, Ok(handle), seen, mark)) => {
                 self.store = Some(store);
                 let at = self.clock.now();
+                // 回合结束落了盘：路由在后台查一次额度（施工 QU-1）。
+                if ended > 0 {
+                    self.model.turn_ended();
+                }
                 if let Some((memory, _)) = self.tools.memory() {
                     memory.ended(ended, at);
                     // 抽取记一处读起的位置（施工 E-5 补）：这一批里有回合结束的。

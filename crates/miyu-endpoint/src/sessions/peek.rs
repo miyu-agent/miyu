@@ -13,6 +13,7 @@ use crate::hello::Caller;
 /// - `view.page`、`view.detail`：读日志里的历史、一次调用的完整结果、一次压缩的摘要。
 /// - `session.prompts`：只读日志列问过的话，不载入会话。
 /// - `session.tools`、`session.context`、`session.usage_parts`：照这一刻的配置、日志、用量账本算，不影响会话。
+/// - `session.quota`：问会话接下来请求的那一家的额度（施工 QU-1），不影响会话。
 /// - `job.output`：读后台命令的输出。
 /// - `blob.get`、`session.shown`：读会话里的附件、展示过的文件（各有自己的判法，拒的说法照旧）。
 pub(crate) const READS: &[&str] = &[
@@ -24,6 +25,7 @@ pub(crate) const READS: &[&str] = &[
     "session.tools",
     "session.context",
     "session.usage_parts",
+    "session.quota",
     "job.output",
     "blob.get",
     "session.shown",

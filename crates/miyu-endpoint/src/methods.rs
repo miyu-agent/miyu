@@ -278,6 +278,9 @@ pub(crate) fn call<'a>(
         "session.usage_parts" => answer(move || async move {
             crate::session_context::usage_parts(core, peer, params(request)?).await
         }),
+        "session.quota" => {
+            answer(move || async move { crate::quota::quota(core, peer, params(request)?).await })
+        }
         "session.context" => answer(move || async move {
             crate::session_context::context(core, peer, params(request)?).await
         }),

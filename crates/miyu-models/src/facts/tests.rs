@@ -430,6 +430,7 @@ fn a_missing_hand_pick_borrows_nothing() {
         reasoning_written: false,
         headers: std::collections::BTreeMap::new(),
         placeholders: Vec::new(),
+        quota: None,
     };
     let (facts, found) = super::facts(&resolved, &empty.knowledge(), &deepseek, "deepseek-flash");
     assert_eq!(found, Found::Nothing);

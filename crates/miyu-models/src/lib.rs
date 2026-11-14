@@ -13,6 +13,7 @@
 //! - [`effort`]：思考强度：档位名怎么规整、一次请求用哪一档、空闲超时放大几倍、配置里写错的（施工 8-18）；
 //! - [`temperature`]：温度：这个模型用不用得了、配置里写的用不了的（施工 8-22）；
 //! - [`price`]：金额：挑哪一档价格、乘倍率、缺一项不算，几种币种的先后（施工 8-15）；
+//! - [`quota`]：供应商的额度：档案里查额度的地址和格式、读回应（施工 QU-1）；
 //! - [`Knowledge`]：查资料时手头的几份；
 //! - [`onboard`]：第一次接入（施工 8-11）：每一家合起来、找哪些环境变量、探本机的哪几家、搜目录、推荐模型、还没写进配置的
 //!   一家。
@@ -38,6 +39,7 @@ pub mod price;
 pub mod profile;
 pub mod provider;
 pub mod provider_key;
+pub mod quota;
 pub mod reference;
 pub mod settings;
 pub mod side;

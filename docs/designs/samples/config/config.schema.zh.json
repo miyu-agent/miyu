@@ -907,6 +907,33 @@
             "minimum": 0,
             "title": "倍率",
             "type": "number"
+          },
+          "quota": {
+            "properties": {
+              "url": {
+                "description": "查这家额度的完整地址，盖过资料里的。资料里没写额度接口的供应商写了也不查。能写：http:// 或 https:// 开头的网址 或 { env = \"…\" }。只能写在系统配置里。下一轮生效。",
+                "oneOf": [
+                  {
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "env": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "env"
+                    ],
+                    "type": "object"
+                  }
+                ],
+                "title": "额度接口地址"
+              }
+            },
+            "type": "object"
           }
         },
         "type": "object"

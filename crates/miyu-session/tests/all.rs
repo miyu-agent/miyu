@@ -139,6 +139,7 @@ mod route_failover;
 mod route_non_api;
 mod route_ordered;
 mod route_pools;
+mod route_quota;
 mod route_responses;
 mod route_retire;
 mod route_side;
