@@ -1532,6 +1532,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sLF4b"><span class="n">LF-4 下</span>她自己结束这段人生<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF8a"><span class="n">LF-8 上</span>人格的协议认推演方法<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF5c"><span class="n">LF-5 下</span>核心命令 /life<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sLF9"><span class="n">LF-9</span>推演人生定稿<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -59201,6 +59202,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LF-5下-life命令.md</code>；设计 <code>70-推演人生.md</code>；蓝图 <code>life.md</code>「命令」、<code>protocol.md</code>、<code>slash.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sLF9" aria-labelledby="h-sLF9">
+  <div class="sheet-head"><h2 id="h-sLF9"><span class="no">LF-9</span>推演人生定稿</h2><span class="pill done">做完</span></div>
+  <p class="purpose">做出来以后拿真模型又走了两趟。照量到的改一处给模型看的字，把项目主人后来定的几条和实测结果记进设计稿。不动代码。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">resources/software/life/method.txt　docs/designs/70-推演人生.md　26-提示词.md</span><span class="dir-note">LF-9</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>出厂的推演方法加半句：睡前把当天想留的一两件自己的事用 <code>remember</code> 记成自己的经历</li>
+              <li>登记簿的 token 数（103 变 127）、指纹和提示词页跟着改</li>
+              <li>设计稿第二、三节记上 11-14 定的几条，第四节补后两趟实测</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">量到的</p>
+          <div class="tile new"><span class="nm">没有那半句：一天下来她一次没调 remember，自动抽取从她的话里抽出 0 条</span><span class="rl">第二趟第一天</span></div>
+          <div class="tile new"><span class="nm">加了以后：一天记 3 条自己的经历，不记新闻</span><span class="rl">第二趟第二天</span></div>
+          <div class="tile new"><span class="nm">主人让她为测试调一次 end_life，她拒绝了</span><span class="rl">第三趟</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LF-9</dd></div>
+        <div><dt>名称</dt><dd>推演人生定稿</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">LF-9</dd></div>
+        <div><dt>验收</dt><dd>门禁十一项全过；逐字比对出厂推演方法的测试照文件读，不用改</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>登记簿和 <code>resources/</code> 两边一一对上，指纹对得上；提示词页重新生成过</span></li>
+        <li><span class="ok">✓</span><span>设计稿第四节三趟实测都有数；没测到的（往外发消息、别的模型、真模型真的调一次 <code>end_life</code>）照实写着</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LF-9-定稿.md</code>；设计 <code>70-推演人生.md</code>；登记簿 <code>26-提示词.md</code> 第十节；蓝图 <code>prompts.md</code>。实测报告在本机，不进仓库。</li>
       </ul>
     </div>
   </div>

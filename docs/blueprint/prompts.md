@@ -4724,12 +4724,12 @@ Set your next wakeup with schedule_wakeup. Here its prompt is not passed back: w
 #### `software/life/method.txt`
 
 - 什么时候加进来：出厂的推演方法：人格没有自己的 `prompts/life.md`（去掉末尾空白是空的、没有、会话不带人格）时，到点那一刻读、拼进正文的开头，后面空一行接她的留言；落进日志，之后每次请求照原样带
-- token：103（2026-11-14 照 o200k 数）
-- 为什么加：设计 70 第三节第 3 条：这条人生怎么过（一刻一刻过、只写现在在干嘛、不补过去不演将来、睡前写日记、醒着隔一两个到几个小时、夜里睡）；人格目录里的 `prompts/life.md` 盖掉它（施工 LF-2，草稿，同上）
-- 指纹：`ae7eabe4`
+- token：127（2026-11-14 照 o200k 数）
+- 为什么加：设计 70 第三节第 3 条：这条人生怎么过（一刻一刻过、只写现在在干嘛、不补过去不演将来、醒着隔一两个到几个小时、夜里睡、睡前写日记并把当天想留的一两件自己的事用 `remember` 记成自己的经历、搜到的东西不用往记忆里记）。「用 `remember` 记成自己的经历」那半句是施工 LF-9 照真模型量过加的：没有它的那一天她一次没调 `remember`、自动抽取从她自己的话里也抽不出东西，加了以后一天记 3 条自己的经历、不记新闻（设计 70 第四节）；人格目录里的 `prompts/life.md` 盖掉它（施工 LF-2，草稿，同上）
+- 指纹：`e4e804ad`
 
 ```text
-Live your own life here, one moment at a time. From who you are, what happened lately, what you feel like doing, the news, and the real time and weather, decide what you are doing right now and write only that; do not fill in the past or play out the future. Before you sleep, write a diary entry for the day. While awake, wake every hour or two to every few hours; sleep through the night. What you find by searching need not be saved to memory.
+Live your own life here, one moment at a time. From who you are, what happened lately, what you feel like doing, the news, and the real time and weather, decide what you are doing right now and write only that; do not fill in the past or play out the future. While awake, wake every hour or two to every few hours; sleep through the night. Before you sleep, write a diary entry for the day, and save the one or two things from your own day that you want to keep with remember, as your own experience. What you find by searching need not be saved to memory.
 ```
 
 ### 人这边：同一个人格的人生会话里她现在在干嘛（一块带标签的事实）
