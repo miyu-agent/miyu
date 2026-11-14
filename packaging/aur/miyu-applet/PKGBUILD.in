@@ -16,8 +16,8 @@ pkgdesc='Miyu, an AI assistant that runs on your own computer: the tray app'
 arch=('x86_64' 'aarch64')
 url='https://github.com/miyu-agent/miyu-applet'
 license=('AGPL-3.0-or-later')
-# 直接链接的是 gtk3、cairo、gdk-pixbuf2、glib2；托盘图标照托盘仓库的蓝图（desktop.md「包」）要 ayatana 的托盘库，运行时才加载。
-depends=('miyu-core' 'miyu-webui' 'gtk3' 'cairo' 'gdk-pixbuf2' 'glib2' 'libayatana-appindicator' 'glibc' 'gcc-libs')
+# 直接链接的是 gtk3、cairo、gdk-pixbuf2、glib2；托盘走 ksni（StatusNotifierItem），不要 ayatana 的托盘库（托盘仓库 AP-3）。
+depends=('miyu-core' 'miyu-webui' 'gtk3' 'cairo' 'gdk-pixbuf2' 'glib2' 'glibc' 'gcc-libs')
 options=('!strip' '!debug')
 source_x86_64=("miyu-applet-${_version}-linux-x86_64.tar.gz::${url}/releases/download/v${_version}/miyu-applet-${_version}-linux-x86_64.tar.gz")
 source_aarch64=("miyu-applet-${_version}-linux-aarch64.tar.gz::${url}/releases/download/v${_version}/miyu-applet-${_version}-linux-aarch64.tar.gz")
