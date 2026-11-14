@@ -65,6 +65,7 @@ impl Slash for Remember {
             .await?;
             // 回执说记下了那句话，不露编号（施工 R-3 四补）；换行这些在一行回执里换成空格，记下的原文不动。
             Ok(Ran {
+                session: None,
                 events: Vec::new(),
                 said: Said {
                     key: "commands/remembered",
@@ -132,6 +133,7 @@ impl Slash for Dream {
                 _ => return Err(Refusal::BAD_PARAMS),
             };
             Ok(Ran {
+                session: None,
                 events: Vec::new(),
                 said,
             })
@@ -168,6 +170,7 @@ impl Slash for ClearMemory {
             let cleared =
                 super::clear_in(call.core, call.handle(), call.id, call.by.clone()).await?;
             Ok(Ran {
+                session: None,
                 events: Vec::new(),
                 said: cleared_said(cleared),
             })

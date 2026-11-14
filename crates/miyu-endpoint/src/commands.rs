@@ -23,7 +23,7 @@ use miyu_config::Words;
 use miyu_config::package::Access;
 use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::origin::{By, Role};
-use miyu_kernel::session::{Command, Outcome};
+use miyu_kernel::session::{Command, Outcome, Reason};
 use miyu_session::Handle;
 use miyu_store::human::Human;
 
@@ -80,6 +80,7 @@ pub(crate) fn builtin() -> Commands {
     context::register(&mut commands);
     crate::memory::slash::register(&mut commands);
     goal::register(&mut commands);
+    life::register(&mut commands);
     looping::register(&mut commands);
     todo::register(&mut commands);
     commands
@@ -181,16 +182,29 @@ async fn fresh(
         head: params.cwd.as_deref(),
         prefix: params.prefix,
     };
-    let Ran { mut events, said } = slash.run(call).await?;
+    let Ran {
+        mut events,
+        said,
+        session: life,
+    } = slash.run(call).await?;
     let note = Command::Ran {
         text: params.text.clone(),
         command: slash.name().to_string(),
     };
-    events.extend(accepted(
-        command(core, &session, &handle, &noted, &by, note).await?,
-    )?);
+    match command(core, &session, &handle, &noted, &by, note).await? {
+        // 命令做完时会话已经封存（`/life kill` 结束的就是这个会话）：做了的照样回，只是记不进去了。
+        Outcome::Rejected {
+            reason: Reason::Sealed,
+            ..
+        } => {}
+        outcome => events.extend(accepted(outcome)?),
+    }
     let said = words(core, peer, &said).await;
-    Ok(json!({"command": slash.name(), "events": events, "said": said}))
+    let mut reply = json!({"command": slash.name(), "events": events, "said": said});
+    if let Some(life) = life {
+        reply["session"] = json!(life);
+    }
+    Ok(reply)
 }
 
 /// 说命令的是谁：本机的会话是主人（不收 `as`），场所会话照 `as` 认出平台上的人（不带的 `venue_session`）。
@@ -329,6 +343,7 @@ mod catalog;
 mod context;
 mod declared;
 mod goal;
+mod life;
 mod looping;
 mod pages;
 mod prompts;

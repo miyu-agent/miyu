@@ -1,6 +1,6 @@
 ## 人生会话
 
-状态：LF-5 中施工中（2026-11-14）：开一条、问状态、暂停、继续，出厂预设「推演人生」。LF-4 上施工中（2026-11-14）：结束（`life.ended`、`life.kill`、`life.new`、清理）。LF-7 施工中（2026-11-14）：别的会话知道她现在在干嘛（下面「现在在干嘛」）。LF-4 下施工中（2026-11-14）：她自己的工具 `end_life` 和带它的内置包 `base-life`（`tools/end_life.md`）。命令 `/life` 是 LF-5 下，头的开关是 LF-8。
+状态：LF-5 中施工中（2026-11-14）：开一条、问状态、暂停、继续，出厂预设「推演人生」。LF-4 上施工中（2026-11-14）：结束（`life.ended`、`life.kill`、`life.new`、清理）。LF-7 施工中（2026-11-14）：别的会话知道她现在在干嘛（下面「现在在干嘛」）。LF-4 下施工中（2026-11-14）：她自己的工具 `end_life` 和带它的内置包 `base-life`（`tools/end_life.md`）。LF-5 下施工中（2026-11-14）：核心命令 `/life`（「命令」）。头的开关是 LF-8。
 
 ### 是什么
 
@@ -11,6 +11,7 @@
 | 代码 | 管什么 |
 |---|---|
 | `crates/miyu-endpoint/src/life.rs` | `life.start`、`life.status`、`life.pause`、`life.resume`、`life.kill`、`life.new`：查人格、照索引找这个人格的人生会话、开会话、设上下文上限、记身份、建和停续人生那一行 |
+| `crates/miyu-endpoint/src/commands/life.rs`（施工 LF-5 下） | 命令 `/life`：认参数、照会话的人格调 `life.rs` 的 `act`、拼回执、回应带 `session` |
 | `crates/miyu-endpoint/src/life/finish.rs`（施工 LF-4 上） | `finish`：结束一段人生的六步（「结束」），`life.kill`、`life.new` 和她的 `end_life`（LF-4 下）共用 |
 | `crates/miyu-endpoint/src/life/port.rs`（施工 LF-4 下） | 交给 `end_life` 的端口 `LifePort`：查是不是没结束的人生会话、调 `finish`、不等清理；随定时端口交进会话（`schedules/port.rs`） |
 | `crates/miyu-schedule/src/life.rs`、`resources/software/life/`、`resources/packages/base-life/`（施工 LF-4 下） | 工具 `end_life` 和带它的内置包（`tools/end_life.md`） |
@@ -90,6 +91,25 @@
 5. **写法**：一块 `context.injected`，模块 `life`、类别 `doing`，`refs` 是写下的时刻（毫秒），排在触发这一轮的那句前面。原文照 `resources/software/life/doing.txt`：`<life-doing since="{since}" until="{until}">{text}</life-doing>`，以换行结尾。`since` 是写下的时刻、`until` 是那时定的下次醒的时刻，照会话的时区写到分钟（`2026-11-14 19:31`，`Timestamp::local_minute`）；`text` 是她写的那一句。三个字段都照模板的规矩转义（`kernel/request.md`「模板」第 3 条）：`<`、`>`、`"`、`&` 写成 `\u` 的样子，伪造不了外壳。外壳读不成、写法不对的记 `WARN life doing shell not read`，不交。
 6. **结束**（LF-4）：删人生那一行走 `Schedules::cancel`，`doing` 表那一行跟着删，内存里那一份跟着拿掉。
 
+### 命令（施工 LF-5 下，设计 70 第二节第 11 条）
+
+人在本机的会话里打 `/life`，看、开、停、续、结束这个会话的人格的人生会话，不用先找到那个会话。它只是 `life.*` 的另一个入口：照这个会话这一刻的人格调同一个 `life::act`（`life.rs`，六个方法也走它），命令只认参数、拼回执。跳到人生会话是头的事，核心在回应里带上它的编号。
+
+| 打的 | 做什么 | 回执（中文） | 带 `session` |
+|---|---|---|---|
+| `/life` | 同 `life.status`。在跑的说下次几点醒（核心这台机器的时区，到分钟），她这会儿正跑一轮的说醒着；停着的说停着。没有的、上一条结束了的**不开**，只回说明 | 「人生会话进行中，下次醒来：2026-11-14 15:00。」「人生会话进行中，她这会儿醒着。」「人生会话已暂停，用 /life resume 继续。」；说明见下 | 有的带，没有的不带 |
+| `/life new` | 同 `life.new`：有在跑、停着的先结束（它留下的记忆清掉），再开一条，她马上醒第一次 | 「人生会话已开始，她马上醒来。」，结束了旧的「上一段人生会话已结束，新的一段已开始，她马上醒来。」 | 新的那一条 |
+| `/life pause`、`/life resume` | 同 `life.pause`、`life.resume` | 停的回「已暂停」那一句，续的回状态那一句 | 带 |
+| `/life kill` | 同 `life.kill`：有在跑、停着的结束 | 「人生会话已结束，留下的记忆已清掉，会话保留为只读。」 | 结束的那一条 |
+
+1. **没有的**：停、续、结束碰上没有的、结束了的（`no_life`、`life_ended`）回「这个人格没有人生会话。」，不带 `session`；结束了的不再走一遍清理（要补齐的走 `life.kill` 或者 `/life new`）。
+2. **说明**（光打 `/life` 而没有的）：说清这是什么、她会自己醒、每次醒是一次请求会多花 token、她会自己记事、怎么开：「人生会话让这个人格一直过着自己的日子：她到点自己醒来，做点自己的事，记下的会进她的记忆。每次醒来都是一次模型请求，会多花 token。用 /life new 开始。」英文、日文照意思写（`core/human/<语言>.json` 的 `commands/life-*`）。
+3. **不做确认**：打了就做，没有 `confirm` 这种第二个词（2026-11-14 项目主人定）；有界面的头要不要自己画确认框是头的事（LF-8）。
+4. **谁能用**：同 `/workspace`，只给主人本人（管理的人 `owner_only`）；场所会话里照没有这条命令（`unknown_command`），菜单本来就不收场所会话。这个会话不带人格的回「这个会话没有人格，没有人生会话。」；人格已经删了的照 `unknown_persona`。认不出的参数回 `bad_params`，`data.why` 是「用法：/life [new | pause | resume | kill]」。都什么都不动。
+5. **预设**：核心自带的命令（同 `/clear`、`/context`），不归哪个包、不跟预设的功能开关：核心命令现在都这样（`Slash::package` 是空的就一直在，`commands/registry.rs`），菜单在每个本机会话里都列它（施工 LF-5 下查的现状，照它做）。
+6. **在人生会话自己里面打**：照它自己的人格，同样管用。`/life kill`、`/life new` 结束的就是这个会话：结束等封存了才回，回执照样回得出来；之后 `command.ran` 记不进封存了的会话（`protocol.md`「`command.run`」第 6 条），不算错。
+7. **回执不进她的上下文**：回执只在 `command.run` 的回应里，日志里只记一条 `command.ran`（原文和命令名，不带回执），渲染不给模型看（`miyu-assemble` 的 `render.rs`）。
+
 ### 守着它的
 
 | 测试 | 守什么 |
@@ -126,3 +146,4 @@
 | `crates/miyu-schedule/tests/wakeup.rs` 的 `a_blank_reason_is_not_handed_on` 等 | `reason` 交给端口，空白的当没写 |
 | `crates/miyu-endpoint/tests/life_self_end.rs`（施工 LF-4 下） | 她自己结束：工具面只在人生会话里有、第一轮起每一轮一样（重起核心以后也一样）、别的会话没有也不算没开；调了回那一句、这一轮说完，`by` 是那次调用、遗言原样，之后和主人结束一样清理，通知 `by: self`；没写遗言的拒；同一轮调两次只记一条；`stop` 回新的那一句 |
 | `crates/miyu-schedule/tests/life.rs`（施工 LF-4 下） | `end_life` 的几种回话（假端口） |
+| `crates/miyu-endpoint/tests/life_command.rs`（施工 LF-5 下） | `/life`：没有的只回说明、不开、不带 `session`，结束了的同没有；在跑的说下次几点醒、停着的说停着，带它；`new` 开出来马上醒，再 `new` 旧的人记结束、新的是另一个会话、回应带新的；`pause` 到点不醒、`resume` 接着醒，没有的两个都回没有；`kill` 结束、封存，没有的回没有；在人生会话自己里面看、结束、再开都管用；不带人格、场所会话、认不出的参数各回各的、什么都不动；英文、日文回执，命令目录里有它和几种写法 |

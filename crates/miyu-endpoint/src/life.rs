@@ -8,6 +8,7 @@
 //!   是哪个会话，`life.resume` 照日志重建那一行。
 //! - 结束（施工 LF-4 上，`finish.rs`）：`life.kill`、`life.new`，她自己的 `end_life` 经 `port.rs`（施工 LF-4 下）。找的时候结束了的也算（最新的那一个）：`life.status` 说 `ended`，
 //!   `life.pause`、`life.resume` 拒 `life_ended`，`life.start`、`life.new` 先把它没清完的清完再开新的。
+//! - 命令 `/life`（施工 LF-5 下，`commands/life.rs`）是另一个入口：照会话的人格调同一个 [`act`]。
 
 use std::collections::BTreeSet;
 use std::sync::Arc;
@@ -52,27 +53,72 @@ struct LifeParams {
     persona: String,
 }
 
+/// 对一个人格的人生会话做的六件事：协议的六个方法（`life.<名字>`）和命令 `/life`（施工 LF-5 下，`commands/life.rs`）都照它调
+/// [`act`]，做法只有一份。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Act {
+    /// `life.start`：开一条，有的拒 `life_exists`。
+    Start,
+    /// `life.status`：只读，不拿锁。
+    Status,
+    /// `life.pause`。
+    Pause,
+    /// `life.resume`。
+    Resume,
+    /// `life.kill`：结束，等清完。
+    Kill,
+    /// `life.new`：有的先结束，再开一条。
+    New,
+}
+
+impl Act {
+    /// 方法名 `life.<名字>` 是哪一件；别的没有。
+    fn of(method: &str) -> Option<Act> {
+        Some(match method {
+            "life.start" => Act::Start,
+            "life.status" => Act::Status,
+            "life.pause" => Act::Pause,
+            "life.resume" => Act::Resume,
+            "life.kill" => Act::Kill,
+            "life.new" => Act::New,
+            _ => return None,
+        })
+    }
+}
+
 /// 分给六个方法：先查人格在不在。
 pub(crate) async fn call(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
     let LifeParams { persona } = params(request)?;
     crate::personas::resolve(core, Some(Some(&persona))).await?;
-    if request.method == "life.status" {
-        let found = find(core, &persona).await?;
+    let what = Act::of(&request.method).ok_or(Refusal::UNKNOWN_METHOD)?;
+    act(core, &request.id, &persona, what).await
+}
+
+/// 对人格 `persona`（已经查过在）的人生会话做 `what`，交回协议的那个方法的回应（见模块的说明和 `life.md`「对外的样子」）。
+/// `id` 是这一次的命令编号：开新会话、设上限、记身份照它接（`/context`、`/life`）。
+pub(crate) async fn act(
+    core: &Arc<Core>,
+    id: &CommandId,
+    persona: &str,
+    what: Act,
+) -> Result<Value, Refusal> {
+    if what == Act::Status {
+        let found = find(core, persona).await?;
         return state(core, found.as_ref());
     }
     let _one_at_a_time = core.life.lock().await;
-    let found = find(core, &persona).await?;
-    match request.method.as_str() {
-        "life.start" => {
+    let found = find(core, persona).await?;
+    match what {
+        Act::Start => {
             match &found {
                 Some((session, Life::Started)) => return Err(Refusal::life_exists(session)),
                 // 结束了的：先把没清完的清完（重做不重复清），再开新的。
                 Some((session, _)) => end(core, session).await?,
                 None => {}
             }
-            start(core, request, &persona).await
+            start(core, id, persona).await
         }
-        "life.new" => {
+        Act::New => {
             let ended = match &found {
                 Some((session, life)) => {
                     end(core, session).await?;
@@ -80,18 +126,18 @@ pub(crate) async fn call(core: &Arc<Core>, request: &Request) -> Result<Value, R
                 }
                 None => None,
             };
-            let mut reply = start(core, request, &persona).await?;
+            let mut reply = start(core, id, persona).await?;
             if let Some(ended) = ended {
                 reply["ended"] = json!(ended);
             }
             Ok(reply)
         }
-        "life.kill" => {
+        Act::Kill => {
             let (session, _) = found.ok_or(Refusal::NO_LIFE)?;
             end(core, &session).await?;
             Ok(json!({"state": "ended", "session": session.as_str()}))
         }
-        "life.pause" => {
+        Act::Pause => {
             let session = running(found)?;
             if let Some(row) = row_of(core, &session)?
                 && !row.paused
@@ -100,7 +146,7 @@ pub(crate) async fn call(core: &Arc<Core>, request: &Request) -> Result<Value, R
             }
             state(core, Some(&(session, Life::Started)))
         }
-        "life.resume" => {
+        Act::Resume => {
             let session = running(found)?;
             match row_of(core, &session)? {
                 Some(row) if row.paused => {
@@ -114,7 +160,7 @@ pub(crate) async fn call(core: &Arc<Core>, request: &Request) -> Result<Value, R
             }
             state(core, Some(&(session, Life::Started)))
         }
-        _ => Err(Refusal::UNKNOWN_METHOD),
+        Act::Status => state(core, found.as_ref()),
     }
 }
 
@@ -137,7 +183,7 @@ async fn end(core: &Arc<Core>, session: &SessionId) -> Result<(), Refusal> {
 }
 
 /// `life.start`：见模块的说明。回应 `{"session"}`。
-async fn start(core: &Arc<Core>, request: &Request, persona: &str) -> Result<Value, Refusal> {
+async fn start(core: &Arc<Core>, id: &CommandId, persona: &str) -> Result<Value, Refusal> {
     let who = Opening {
         attended: false,
         oneshot: false,
@@ -157,7 +203,7 @@ async fn start(core: &Arc<Core>, request: &Request, persona: &str) -> Result<Val
         .sessions
         .create(
             core,
-            request.id.clone(),
+            id.clone(),
             Some(Some(persona)),
             "~".to_string(),
             Vec::new(),
@@ -166,7 +212,7 @@ async fn start(core: &Arc<Core>, request: &Request, persona: &str) -> Result<Val
         .await?;
     let session = created.id;
     core.schedules().named(&session, persona);
-    if let Err(refusal) = mark(core, request, &session).await {
+    if let Err(refusal) = mark(core, id, &session).await {
         // 还不是人生会话的空会话：删掉，不留半截。
         if let Err(left) = core.sessions.delete(core, &session).await {
             tracing::warn!(target: "miyu::endpoint", session = session.as_str(), reason = left.reason, "life session not removed");
@@ -177,8 +223,8 @@ async fn start(core: &Arc<Core>, request: &Request, persona: &str) -> Result<Val
     Ok(json!({"session": session.as_str()}))
 }
 
-/// 新开的会话设上下文上限、记身份（命令编号接在请求的编号后面：`/context`、`/life`）。
-async fn mark(core: &Arc<Core>, request: &Request, session: &SessionId) -> Result<(), Refusal> {
+/// 新开的会话设上下文上限、记身份（命令编号接在这一次的编号后面：`/context`、`/life`）。
+async fn mark(core: &Arc<Core>, id: &CommandId, session: &SessionId) -> Result<(), Refusal> {
     let found = core.sessions.get(core, session).await?;
     let least = found
         .handle
@@ -188,24 +234,24 @@ async fn mark(core: &Arc<Core>, request: &Request, session: &SessionId) -> Resul
         .least_context
         .unwrap_or(1);
     let context = crate::models::context::command(&found.handle, Some(CONTEXT.max(least))).await?;
-    send(core, request, session, &found.handle, "context", context).await?;
+    send(core, id, session, &found.handle, "context", context).await?;
     let identity = Command::Append {
         event: Appended::Life(LifeStarted {}),
     };
-    send(core, request, session, &found.handle, "life", identity).await
+    send(core, id, session, &found.handle, "life", identity).await
 }
 
-/// 照这条请求的编号接 `/<suffix>` 给会话发一个命令，记成人发的。拒绝的照内核的原因码；会话停了的从表里拿掉。
+/// 照这一次的命令编号 `id` 接 `/<suffix>` 给会话发一个命令，记成人发的。拒绝的照内核的原因码；会话停了的从表里拿掉。
 async fn send(
     core: &Core,
-    request: &Request,
+    id: &CommandId,
     session: &SessionId,
     handle: &Handle,
     suffix: &str,
     command: Command,
 ) -> Result<(), Refusal> {
-    let id = CommandId::parse(&format!("{}/{suffix}", request.id.as_str()))
-        .map_err(|_| Refusal::BAD_PARAMS)?;
+    let id =
+        CommandId::parse(&format!("{}/{suffix}", id.as_str())).map_err(|_| Refusal::BAD_PARAMS)?;
     match handle.command(id, person(), command).await {
         Ok(Outcome::Rejected { reason, about }) => Err(Refusal::kernel_about(reason, &about)),
         Ok(_) => Ok(()),

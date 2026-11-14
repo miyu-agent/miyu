@@ -1531,6 +1531,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sLF7"><span class="n">LF-7</span>别的会话知道她现在在干嘛<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF4b"><span class="n">LF-4 下</span>她自己结束这段人生<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF8a"><span class="n">LF-8 上</span>人格的协议认推演方法<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sLF5c"><span class="n">LF-5 下</span>核心命令 /life<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -59147,6 +59148,59 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LF-8上-人格协议认推演方法.md</code>；设计 <code>70-推演人生.md</code>；蓝图 <code>personas.md</code>；协议参考 <code>personas.md</code> 中英两份。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sLF5c" aria-labelledby="h-sLF5c">
+  <div class="sheet-head"><h2 id="h-sLF5c"><span class="no">LF-5 下</span>核心命令 /life</h2><span class="pill done">做完</span></div>
+  <p class="purpose">人生会话原来只有协议一个入口，人得先知道是哪个人格、找到那个会话。现在在任何本机会话里打 <code>/life</code>，就能看、开、停、续、结束这个会话的人格的人生会话。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint · commands/life.rs　life.rs　resources/core/human</span><span class="dir-note">LF-5 下</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>/life</code>：有的回状态（下次几点醒、醒着、停着），没有的只回说明、不开</li>
+              <li><code>/life new</code> 有的先结束再开；<code>/life pause</code>、<code>resume</code>、<code>kill</code> 同协议的那几个方法</li>
+              <li><code>life.rs</code> 抽出一层 <code>act</code>：协议的六个方法和命令走同一份做法</li>
+              <li><code>command.run</code> 的回应多带 <code>session</code>，头照它跳到人生会话</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">光打 /life 不开，只说明；开要打 /life new</span><span class="rl">项目主人 2026-11-13 定</span></div>
+          <div class="tile new"><span class="nm">不做确认，没有 confirm 这个词，打了就做</span><span class="rl">项目主人 2026-11-14 定</span></div>
+          <div class="tile new"><span class="nm">只给主人本人；场所会话里照没有这条命令</span><span class="rl">同 /workspace</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LF-5 下</dd></div>
+        <div><dt>名称</dt><dd>核心命令 /life</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">LF-5下</dd></div>
+        <div><dt>验收</dt><dd>门禁十一项、Windows 版 clippy 全过；<code>tests/life_command.rs</code> 八条</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>没有人生会话时打 <code>/life</code>：只回说明，不开、回应不带 <code>session</code>；上一条结束了的同没有</span></li>
+        <li><span class="ok">✓</span><span><code>/life new</code> 开出来马上醒；再打一次，旧的结束、新的是另一个会话，回应带新的</span></li>
+        <li><span class="ok">✓</span><span>在人生会话自己里面看、结束、再开都管用；不带人格的会话、场所会话、认不出的参数各回各的，什么都不动</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LF-5下-life命令.md</code>；设计 <code>70-推演人生.md</code>；蓝图 <code>life.md</code>「命令」、<code>protocol.md</code>、<code>slash.md</code>。</li>
       </ul>
     </div>
   </div>

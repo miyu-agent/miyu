@@ -54,6 +54,8 @@ pub(crate) struct Ran {
     pub(crate) events: Vec<u64>,
     /// 回执那一句。
     pub(crate) said: Said,
+    /// 回应多带的会话编号（`command.run` 的 `session`，施工 LF-5 下）：`/life` 带人生会话的，头照它跳过去；别的命令没有。
+    pub(crate) session: Option<String>,
 }
 
 /// 执行的结果。

@@ -77,7 +77,11 @@ impl Slash for GoalCommand {
                 call.rest,
             )
             .await?;
-            Ok(Ran { events, said })
+            Ok(Ran {
+                events,
+                said,
+                session: None,
+            })
         })
     }
 }

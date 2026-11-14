@@ -52,6 +52,7 @@ impl Slash for ContextCommand {
             let handle = call.handle();
             if call.rest.is_empty() {
                 return Ok(Ran {
+                    session: None,
                     events: Vec::new(),
                     said: said(None, &handle.limits()),
                 });
@@ -60,6 +61,7 @@ impl Slash for ContextCommand {
             let set = models::context::command(handle, tokens).await?;
             let outcome = command(call.core, call.session, handle, call.id, call.by, set).await?;
             Ok(Ran {
+                session: None,
                 events: accepted(outcome)?,
                 said: said(Some(tokens), &handle.limits()),
             })
