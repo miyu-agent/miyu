@@ -24,7 +24,7 @@
 | `internal_error` | -32603 | 核心自己出了问题（磁盘、坏了的文件……），原因记在核心的运行日志里 |
 | `hello_first` | -32010 | 握手以前调了别的方法 |
 | `local_only` | -32010 | 只给人的方法，扩展调了；或者登录方式不对 |
-| `local_machine_only` | -32010 | 只能在核心所在的机器上用：远程连进来的调了读本机文件、交本机路径这一类（施工 Y-1 下，[连接](connection.md)「本机才能用的」） |
+| `local_machine_only` | -32010 | 只能在核心所在的机器上用：远程连进来的调了读本机文件、交本机路径这一类（[连接](connection.md)「本机才能用的」） |
 | `not_a_provider`、`not_an_extension` | -32010 | 只给核心拉起的扩展的方法，别的连接调了 |
 | `needs_approval` | -32010 | 扩展要的能力还没批，或者调的方法要的能力清单没声明，或者 `provide` 的工具写了 `runs_commands`、包没批 `tools.commands`，`data.capabilities` |
 
@@ -113,7 +113,7 @@
 |---|---|---|
 | `unknown_persona`、`unknown_preset` | 没有这个人格、预设 | |
 | `persona_invalid`、`preset_invalid` | 文件写错了 | `problem`、`message`、`line` |
-| `persona_conflict`、`preset_conflict`、`avatar_conflict` | `expect` 对不上（`avatar_conflict` 是你的头像，施工 AV-1） | `current` |
+| `persona_conflict`、`preset_conflict`、`avatar_conflict` | `expect` 对不上（`avatar_conflict` 是你的头像） | `current` |
 | `nothing_to_delete` | 你那一层本来就没有 | |
 | `avatar_not_image`、`avatar_too_big`、`background_not_image`、`background_too_big` | 头像、背景图不是图、太大 | 量到的和上限 |
 
@@ -121,8 +121,8 @@
 
 | `reason` | 什么时候 | `data` |
 |---|---|---|
-| `unknown_schedule` | 没有这个定时任务：`schedule.cancel`、`schedule.pause`、`schedule.resume`、`schedule.update`（施工 J-1 下） | |
-| `too_many_schedules` | 定时任务已经有 200 个（人建、她建、包建合计，熔断性质的安全上限）：`schedule.add`（施工 J-3 上）。先删几个，已有的照跑 | |
+| `unknown_schedule` | 没有这个定时任务：`schedule.cancel`、`schedule.pause`、`schedule.resume`、`schedule.update` | |
+| `too_many_schedules` | 定时任务已经有 200 个（人建、她建、包建合计，熔断性质的安全上限）：`schedule.add`。先删几个，已有的照跑 | |
 | `life_exists`、`no_life`、`life_ended` | 人生会话：这个人格已经有一个（`life.start`）；这个人格没有（`life.pause`、`life.resume`、`life.kill`）；这个人格最近的那一段人生已经结束了（`life.pause`、`life.resume`），见[人生会话](life.md) | `life_exists`、`life_ended` 的带 `session` |
 | `unknown_project` | 没有这个项目：项目的方法，`session.create`、`session.set_meta` 写的 `project` | |
 

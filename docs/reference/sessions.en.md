@@ -60,9 +60,9 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 
 | Name | Type | Notes |
 |---|---|---|
-| `cwd` | string | The head's working directory as a person sees it, e.g. `~/src/miyu`. Omitted means the session's own default workspace; remote connections cannot give it (Y-1 下) |
+| `cwd` | string | The head's working directory as a person sees it, e.g. `~/src/miyu`. Omitted means the session's own default workspace; remote connections cannot give it |
 | `persona` | string or `null` | Which persona; `null` means none; omitted follows the `persona.default` setting |
-| `preset` | string or `null` | Which preset; omitted follows `preset.default`, else `full`; `null` means no tools: the session gets none (step P-16; the old way to say it, still accepted. New sessions pick "Nothing", `none`, step P-17) |
+| `preset` | string or `null` | Which preset; omitted follows `preset.default`, else `full`; `null` means no tools: the session gets none (the old way to say it, still accepted; new sessions pick "Nothing", `none`) |
 | `model` | string | `<provider>/<model>` or `@<pool>`; omitted records `models.chat` as it is right now (a pool stays a pool), and later changes to `models.chat` leave this session alone |
 | `vision` | string | Which model describes images for this session, written like `model`; omitted follows the configured `models.vision`. Recorded as a `session.policy_changed` right after creation, like `vision` in `session.configure` |
 | `compaction_line` | integer | This session's compaction line: a percent of the window, 20 to 95; omitted follows the configured `compaction.line`. Recorded as a `session.policy_changed` right after creation, like `compaction_line` in `session.configure` |
@@ -121,7 +121,7 @@ Sending the same `id` again returns the session created the first time.
 | `pinned` | `true`: pinned |
 | `busy` | `true`: a turn is running |
 | `viewed` | `true`: at least one head has it open ([`session.viewing`](#sessionviewing)); that head shows its background notices |
-| `persona`, `preset` | Which persona and preset; omitted when none. With no tools `preset` is `null` and `no_tools: true` is added (step P-16) |
+| `persona`, `preset` | Which persona and preset; omitted when none. With no tools `preset` is `null` and `no_tools: true` is added |
 | `tokens` | Tokens used by it and every session it spawned, all the way down: input (uncached, cache read, cache write) plus output of every model call (main, title, compaction alike), the same sum as the terminal's `Σ`; omitted while 0 |
 | `context` | `{"used", "window"?}`: tokens in context (the input of the latest main request: uncached, cache read, cache write, the same figure as the terminal footer and the session status); omitted before the first request and right after a compaction. `window` is the context window of that request's model under the current config, omitted when unknown |
 | `project` | Which project it is in; omitted when none |
@@ -213,7 +213,7 @@ The tools her next request will carry.
 
 **Params**: `session` (optional; without it, what a new session would get); without `session` you may pass `persona` (`null` for none) and `preset` (`null` for no tools), as in `session.create`.
 
-**Response**: `{"tools": [{"name", "source": {"kind", "id", "name"}, "summary"?}]}`, in the order sent to the model (byte order of names). `kind` is `builtin`, `package`, `mcp` or `script`; `source.name` follows the connection's language. Only scripts have `summary`. Tools are always sent whole (construction FL-1), so the old `loaded: false` for name-only tools no longer appears.
+**Response**: `{"tools": [{"name", "source": {"kind", "id", "name"}, "summary"?}]}`, in the order sent to the model (byte order of names). `kind` is `builtin`, `package`, `mcp` or `script`; `source.name` follows the connection's language. Only scripts have `summary`. Tools are always sent whole, so there is no `loaded: false` for name-only tools.
 
 ```json
 {"tools":[{"name":"edit","source":{"kind":"builtin","id":"basesystem","name":"Base system"}},{"name":"mcp__notes__search","source":{"kind":"mcp","id":"notes","name":"notes"}}]}
@@ -390,7 +390,7 @@ A `cwd` that is the workspace folder itself (the handshake's `host.workspace`) m
 
 ## `session.terminal`, `session.set_terminal`
 
-The terminal session: the one long-running session that what you say in the shell goes into (shell integration, design `22-命令行.md` section 7). One, and one per terminal for calls that carry a `terminal` key (construction T-22); the core decides which one it is and when a new one starts.
+The terminal session: the one long-running session that what you say in the shell goes into (shell integration). One, and one per terminal for calls that carry a `terminal` key; the core decides which one it is and when a new one starts.
 
 **`session.terminal`**: param `cwd` (optional): where a new one starts; without it, the default workspace. `fresh` (optional, default false): when true, start a new one as in rule 3 and point at it, whatever is pointed at now (`/new`). `terminal` (optional): which terminal, a key the head makes up, 1 to 128 characters with no control characters (otherwise `bad_params`); with it the pointer is kept per key, without it the original pointer is used. `create` (optional, default true): when false, only ask: in cases 2 and 3 below the response is `{"session": null}`, nothing starts and the pointer doesn't move (to show which session a freshly opened terminal is in before anything is said); together with `fresh: true` it's `bad_params`. Response `{"session"}`:
 
@@ -438,8 +438,8 @@ Change the session's model, vision model, persona, preset, reasoning effort or c
 - `model`: `<provider>/<model>` or `@<pool>`; `null` stops pinning a model and follows the configured `models.chat` again (read every turn, so a config change follows).
 - `vision`: the model that describes images, written like `model`: `<provider>/<model>` or `@<pool>`; `null` stops pinning one and follows the configured `models.vision` again. When the session's model can't view images, the core has this one turn each image into text (without a pin, `models.vision`). If the pin later stops resolving (its provider or pool removed), that image counts as not described; the core does not fall back to `models.vision`.
 - `persona`: a persona id; `null` means no persona.
-- `preset`: a preset id; `null` switches to no tools (step P-16).
-- `effort`: a reasoning effort level (step SM-1), checked against the levels of the session's model right now (`facts.reasoning` in `model.list`; when the same call changes the model, the new one's). A session on a pool cannot set one: you get `bad_params` (`data.field` is `effort`), and each member of the pool follows its own config; `null` goes back to following the config. It affects only this session: `providers.<id>.models.<model>.effort` in the config is the default for new sessions. A model without that level uses the config; switching back uses the level again.
+- `preset`: a preset id; `null` switches to no tools.
+- `effort`: a reasoning effort level, checked against the levels of the session's model right now (`facts.reasoning` in `model.list`; when the same call changes the model, the new one's). A session on a pool cannot set one: you get `bad_params` (`data.field` is `effort`), and each member of the pool follows its own config; `null` goes back to following the config. It affects only this session: `providers.<id>.models.<model>.effort` in the config is the default for new sessions. A model without that level uses the config; switching back uses the level again.
 - `context`: a context limit in tokens; `null` removes it. The window in effect is the smaller of the model's window and this limit (the limit alone when the model reports no window), and the compaction line follows that window. The limit stays with the session through model changes and pool member changes. One too small to give a compaction line gets `bad_params` (`data.field` is `context`, `data.min` is the least it accepts), and nothing changes. Typing `/context` changes it too.
 - `compaction_line`: the compaction line, a percent of the window, an integer from 20 to 95; `null` stops pinning one and follows the configured `compaction.line` again. The session compacts automatically once the context reaches it. The line still stays below the window minus the output reserve and a margin: with a 200K window anything above 85 has no effect, a 1M window can reach 95.
 

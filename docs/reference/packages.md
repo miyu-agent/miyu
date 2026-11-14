@@ -26,7 +26,7 @@
 | [`command.catalog`](#commandcatalog) | 列能用的斜杠命令 |
 | [`check`](#check) | 查配置、人格、预设、软件包写没写错 |
 
-**谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.search`、`package.clean`、`package.upgrades`、`package.upgrade`、`package.file`、`package.page`、`extension.*`、`mcp.*`、`feature.set` 只给人，扩展调回 `local_only`；`package.info` 带 `path` 的也只给人（看的是本机任意一处的文件夹，同 `package.install`，施工 IN-4）。别的人、扩展都能调；扩展调 `package.call` 只调得到自己（见下）。
+**谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.search`、`package.clean`、`package.upgrades`、`package.upgrade`、`package.file`、`package.page`、`extension.*`、`mcp.*`、`feature.set` 只给人，扩展调回 `local_only`；`package.info` 带 `path` 的也只给人（看的是本机任意一处的文件夹，同 `package.install`）。别的人、扩展都能调；扩展调 `package.call` 只调得到自己（见下）。
 
 **三层**：出厂的（随 Miyu 装的，`shipped`）、系统加装的（系统的包管理器另外装的，`distro`：Linux 是 `$XDG_DATA_DIRS` 里每一处的 `miyu/packages/`，没设照 `/usr/local/share:/usr/share`，Linuxbrew 自己的 `share` 写进 `XDG_DATA_DIRS`；macOS 是 Homebrew 前缀的 `share/miyu/packages/`；Windows 没有；`MIYU_DISTRO_PACKAGES` 设了的只看它）、装上的（数据根的 `opt/`，`home`）。同一个编号几层都有的，装上的盖过系统加装的、系统加装的盖过出厂的，被盖住的不加载、不算错。装上那一层装了同编号的就是升级、换掉原来的；出厂的、系统加装的卸掉是在 `etc/removed/` 记一笔（空文件 `<编号>`），文件不动，能装回来。
 
@@ -40,7 +40,7 @@
 | `shadowed` | 被上面一层盖住的才有：`{"by", "version", "over", "newer"}`，盖住它的那一层、这一份的版本、认的那一份的版本、这一份是不是更新。不算错，没有 `code` |
 | `kind` | `builtin`（编进核心的）、`process`（扩展）、`worker`（按需拉起的小程序）、`ui`（界面）、`mascot`（吉祥物）、`theme`（外观：终端主题、网页主题，见下面 `theme` 一格）、`bundle`（只带 MCP 服务、技能、脚本这类，不带程序） |
 | `name`、`summary`、`icon` | 名字、一句说明、Lucide 图标名 |
-| `logo` | 包自带的图标的版本（施工 F-18 上）：清单写了 `[package] logo`、图合规矩的才有，图用 `package.logo` 读 |
+| `logo` | 包自带的图标的版本：清单写了 `[package] logo`、图合规矩的才有，图用 `package.logo` 读 |
 | `author`、`upstream` | 作者、上游源码仓库（`https://` 开头）；清单没写的没有 |
 | `installed_at` | 装的时刻；出厂的没有。头照它排「别的按安装先后」 |
 | `from` | 从哪来：`shipped`（出厂）、`official`（从官方软件源装的）、`local`（本机文件夹、包文件装的）；以后有了社区软件源再多 `community` |
@@ -68,9 +68,9 @@
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `package.logo` | `package`、`from`? | `{"package", "logo", "media_type", "data"}`：包自带的图标（施工 F-18 上），`logo` 是版本（内容的 SHA-256 前 16 位，同 `package.list` 那一格），`data` 是 base64，`media_type` 是 `image/png` 或 `image/webp`；清单没写、不合规矩（不在、不是 PNG / WebP、超 256 KiB、宽高超 512）的三格都是 `null`。另可写 `from`（软件源的名字，同 `package.search` 每一行的 `source`）：读那个源里的包的图标，没装的也行（施工 F-18 下）；不认识的源 `unknown_source`，索引里没有 `unknown_package`，下不成 `download_failed` |
-| `package.info` | `package`、`source`? | `source` 写 `true` 只查软件源，`false` 只查装着的，不写的先查装着的、没装的查软件源。装着的：`{"package", "layer", "from", "files", "size", "version"?, "author"?, "upstream"?, "license"?, "installed"?, "path"?, "source", "feed"?, "name"?, "summary"?, "depends"?, "recommends"?, "contains"?, "capabilities"?, "required_by"?, "origin"?, "tools"?}`：从哪来（`from`、`source`、`feed` 同 `package.list`）、几个文件、多少字节、作者、上游、许可证（清单 `[package] license` 的原样，没写的没有）、装的时刻、装的时候的本机路径（`path`，只给主人；以前这一格叫 `source`）；名字、说明、依赖、推荐、带了什么（`contains`，同装之前看一眼的「包含」；和软件源那一份的 `provides` 不是一种形状）、要的能力、装着的包里依赖它的、来源仓库；`tools` 是装上以后模型会多的工具 `[{"name", "title"?, "from"}]`：`name` 是她看到的工具名，`title` 是显示名 `{"zh"?, "en"?}`，`from` 是 `script` 或 `extension`（MCP 的、要跑起来才知道的不列）。没装的照软件源：`{"from": "source", "source", "package", "version", "depends", "recommends", "provides", "capabilities", "origin", "official", "name"?, "summary"?, "author"?, "upstream"?, "license"?, "download"?, "installed_size"?, "tools"?, "stale"?}`：`source` 是源的名字，`provides`、`license` 是索引原样，`download` 是本机那份文件多少字节，`installed_size` 是装好以后多大，`tools` 照索引，写法同装着的 |
-| `package.info` | `path`（和 `package` 二选一，不收 `source`；施工 IN-4） | 看本机一个包文件夹（或里面的 `package.toml`）、包文件 `.miyu` 的绝对路径，照 pacman 的 `-Qip`：什么都不装，照真装之前查的那几样查一遍。回应照装着的那一份的样子：`{"from": "file", "path", "package", "files", "size", "version"?, "name"?, "summary"?, "author"?, "upstream"?, "license"?, "depends"?, "recommends"?, "contains"?, "capabilities"?, "skipped"?, "replaces"?}`：`path` 照写的原样（包文件的是那个文件，不是解开的暂存处），`files`、`size` 是包里几个文件、多少字节，`contains`、`capabilities`、`skipped`（读不成的技能、脚本、斜杠命令模板 `[{"file", "why"}]`）、`replaces` 同 `package.install` 看一眼的那几格；没有 `layer`、`installed`、`required_by`、`origin` |
+| `package.logo` | `package`、`from`? | `{"package", "logo", "media_type", "data"}`：包自带的图标，`logo` 是版本（内容的 SHA-256 前 16 位，同 `package.list` 那一格），`data` 是 base64，`media_type` 是 `image/png` 或 `image/webp`；清单没写、不合规矩（不在、不是 PNG / WebP、超 256 KiB、宽高超 512）的三格都是 `null`。另可写 `from`（软件源的名字，同 `package.search` 每一行的 `source`）：读那个源里的包的图标，没装的也行；不认识的源 `unknown_source`，索引里没有 `unknown_package`，下不成 `download_failed` |
+| `package.info` | `package`、`source`? | `source` 写 `true` 只查软件源，`false` 只查装着的，不写的先查装着的、没装的查软件源。装着的：`{"package", "layer", "from", "files", "size", "version"?, "author"?, "upstream"?, "license"?, "installed"?, "path"?, "source", "feed"?, "name"?, "summary"?, "depends"?, "recommends"?, "contains"?, "capabilities"?, "required_by"?, "origin"?, "tools"?}`：从哪来（`from`、`source`、`feed` 同 `package.list`）、几个文件、多少字节、作者、上游、许可证（清单 `[package] license` 的原样，没写的没有）、装的时刻、装的时候的本机路径（`path`，只给主人）；名字、说明、依赖、推荐、带了什么（`contains`，同装之前看一眼的「包含」；和软件源那一份的 `provides` 不是一种形状）、要的能力、装着的包里依赖它的、来源仓库；`tools` 是装上以后模型会多的工具 `[{"name", "title"?, "from"}]`：`name` 是她看到的工具名，`title` 是显示名 `{"zh"?, "en"?}`，`from` 是 `script` 或 `extension`（MCP 的、要跑起来才知道的不列）。没装的照软件源：`{"from": "source", "source", "package", "version", "depends", "recommends", "provides", "capabilities", "origin", "official", "name"?, "summary"?, "author"?, "upstream"?, "license"?, "download"?, "installed_size"?, "tools"?, "stale"?}`：`source` 是源的名字，`provides`、`license` 是索引原样，`download` 是本机那份文件多少字节，`installed_size` 是装好以后多大，`tools` 照索引，写法同装着的 |
+| `package.info` | `path`（和 `package` 二选一，不收 `source`） | 看本机一个包文件夹（或里面的 `package.toml`）、包文件 `.miyu` 的绝对路径，照 pacman 的 `-Qip`：什么都不装，照真装之前查的那几样查一遍。回应照装着的那一份的样子：`{"from": "file", "path", "package", "files", "size", "version"?, "name"?, "summary"?, "author"?, "upstream"?, "license"?, "depends"?, "recommends"?, "contains"?, "capabilities"?, "skipped"?, "replaces"?}`：`path` 照写的原样（包文件的是那个文件，不是解开的暂存处），`files`、`size` 是包里几个文件、多少字节，`contains`、`capabilities`、`skipped`（读不成的技能、脚本、斜杠命令模板 `[{"file", "why"}]`）、`replaces` 同 `package.install` 看一眼的那几格；没有 `layer`、`installed`、`required_by`、`origin` |
 | `package.files` | `package` | `{"dir", "files": [{"path", "sha256", "size"}…]}`：`path` 相对 `dir` |
 | `package.owns` | `path`（绝对路径） | `{"package", "layer", "path", "recorded"}`；哪个包都不在的 `{"package": null}` |
 | `package.check` | `package`（可不写） | `{"packages": [{"package", "modified", "missing", "extra"}…]}`：装上那一层的包，装好以后改了、少了、多了的文件。系统加装的另有一项，多 `"layer": "distro"`，不比哈希：清单读不成的多 `manifest`，清单写的程序不在 `bin/` 的进 `missing` |
@@ -83,18 +83,18 @@
 |---|---|---|
 | `package.install` | `path`：本机一个包文件夹的绝对路径（文件夹名就是编号），或者那份 `package.toml` 的路径，或者一个包文件 `.miyu` 的路径 | 同 `package.list` 的一项 |
 | `package.install` | `package`：出厂的、系统加装的编号是把卸掉的装回来；别的编号同 `source`，从软件源装 | 同上 |
-| `package.install` | `source`：从软件源装这个编号（缺的依赖一起装，先装依赖；依赖写了版本下限的照下限挑，装着的版本不够的一起升，施工 PK-2）；先全下完、再一个一个核对、再一个一个装，每一段推 `package.progress` 给这个连接（见下）。`from`（可以不写）：从哪个软件源装（`official` 或配置里加的源的名字），不写的照先后找（施工 U23 下下） | 同上，一起装了依赖的多 `with` |
+| `package.install` | `source`：从软件源装这个编号（缺的依赖一起装，先装依赖；依赖写了版本下限的照下限挑，装着的版本不够的一起升）；先全下完、再一个一个核对、再一个一个装，每一段推 `package.progress` 给这个连接（见下）。`from`（可以不写）：从哪个软件源装（`official` 或配置里加的源的名字），不写的照先后找 | 同上，一起装了依赖的多 `with` |
 | `package.install` | `package`：组名（`package.list` 顶上的 `groups`，例如 `basesystem`）是把组里卸掉的出厂包一起装回来 | `{"group", "packages": [<同 `package.list` 的一项>…]}`，一个都没卸过的是空的 |
 | `package.remove` | `package`；`purge`（可以不写，默认 `false`）：`true` 的连配置目录 `etc/<编号>/`、系统配置里它的设置项一起删，不写的留下，重装同编号照旧用（照 pacman）。已经卸掉、还留着这几样的编号也收 `purge: true`：只删留下的；不带的照旧 `unknown_package` | `{"package", "removed": true, "layer"}`（没装的 `purge` 不带 `layer`） |
 | `package.remove` | `package`：组名是把组里装着的一起卸掉；组外装着的包依赖组里的整个拒（`package_depended`，`data.by` 是它们）；`purge` 同上，照样传给组里每个包 | `{"group", "removed": [<编号>…]}` |
 
-都可以带 `preview: true`：只看一眼、什么都不动，拒绝照真做的那一样。`install` 的预览回 `package`、`version`、要换掉的 `replaces: {"version"}`、装回出厂的、系统加装的 `restores: true`，和带了什么（`program`、`mcp`、`drivers`（提供的模型驱动名）、`hosted`（驱动会让供应商自己跑的工具：`{"<驱动名>": ["<工具名>", …]}`，清单 `[[driver]]` 的 `hosted`，没写的驱动不列，一个都没写的不带这一格）、`command`（第一个子命令名）、`commands`（全部子命令名）、`page`、`mascot`、`theme`、`connection`、`settings`、`skills`、`scripts`、`slash`、`personas`、`presets`、`knowledge`（知识库的编号）、`capabilities`、`files`、`size`）；`remove` 的预览回 `package`、`layer`、`version`、`files`、`size`、`settings`（要一并删掉的配置键：只有 `purge` 的列，不 `purge` 的是 `[]`）、`state`（会一并删掉的状态目录：`{"path", "size"}`，`path` 是 `var/lib/<编号>/` 的位置，`size` 是底下文件一共多少字节，符号链接不跟进去；没有状态目录的不写这一格。以前这一格是 `true`/`false`）、`config`（配置目录和设置项：`{"path"?, "kept", "settings"?}`，`path` 是 `etc/<编号>/` 的位置，不在的、空的不写；`settings` 是系统配置里写了的它的设置项有几项，0 的不写；`kept` 是 `true` 两样都留下、`false` 都删掉（写了 `purge: true`）；`path`、`settings` 都没有的不写这一格）。卸掉的包留在配置里的设置项不生效，`check` 不报不认识，一个包说一句 `settings_left`。
+都可以带 `preview: true`：只看一眼、什么都不动，拒绝照真做的那一样。`install` 的预览回 `package`、`version`、要换掉的 `replaces: {"version"}`、装回出厂的、系统加装的 `restores: true`，和带了什么（`program`、`mcp`、`drivers`（提供的模型驱动名）、`hosted`（驱动会让供应商自己跑的工具：`{"<驱动名>": ["<工具名>", …]}`，清单 `[[driver]]` 的 `hosted`，没写的驱动不列，一个都没写的不带这一格）、`command`（第一个子命令名）、`commands`（全部子命令名）、`page`、`mascot`、`theme`、`connection`、`settings`、`skills`、`scripts`、`slash`、`personas`、`presets`、`knowledge`（知识库的编号）、`capabilities`、`files`、`size`）；`remove` 的预览回 `package`、`layer`、`version`、`files`、`size`、`settings`（要一并删掉的配置键：只有 `purge` 的列，不 `purge` 的是 `[]`）、`state`（会一并删掉的状态目录：`{"path", "size"}`，`path` 是 `var/lib/<编号>/` 的位置，`size` 是底下文件一共多少字节，符号链接不跟进去；没有状态目录的不写这一格）、`config`（配置目录和设置项：`{"path"?, "kept", "settings"?}`，`path` 是 `etc/<编号>/` 的位置，不在的、空的不写；`settings` 是系统配置里写了的它的设置项有几项，0 的不写；`kept` 是 `true` 两样都留下、`false` 都删掉（写了 `purge: true`）；`path`、`settings` 都没有的不写这一格）。卸掉的包留在配置里的设置项不生效，`check` 不报不认识，一个包说一句 `settings_left`。
 
-从软件源装的预览另有 `source`（从哪来：`official` 官方源里官方的、`community` 官方源里社区收录的或者配置里自己加的源里的）、`feed`（源的名字，官方的是 `official`；施工 PK-3 上以前这一格叫 `source`）、`official`、`origin`、`download`（要下的字节数，连依赖）、`with`（一起装的依赖 `[{"package", "version", "source", "feed", "capabilities"?}]`）、`recommends`（要装的包推荐的、还没装的，去重：`[{"package", "version", "source", "feed", "capabilities"?, "download", "installed_size"?}]`，没有的是空的）、`installed`（要装的全部包装好以后一共多少字节，不算推荐的；有一个索引没写的不写这一格）；`capabilities` 同从包文件夹装的那一格（`{"id", "name", "summary"}`）。
+从软件源装的预览另有 `source`（从哪来：`official` 官方源里官方的、`community` 官方源里社区收录的或者配置里自己加的源里的）、`feed`（源的名字，官方的是 `official`）、`official`、`origin`、`download`（要下的字节数，连依赖）、`with`（一起装的依赖 `[{"package", "version", "source", "feed", "capabilities"?}]`）、`recommends`（要装的包推荐的、还没装的，去重：`[{"package", "version", "source", "feed", "capabilities"?, "download", "installed_size"?}]`，没有的是空的）、`installed`（要装的全部包装好以后一共多少字节，不算推荐的；有一个索引没写的不写这一格）；`capabilities` 同从包文件夹装的那一格（`{"id", "name", "summary"}`）。
 
-从哪来、要的能力（施工 PK-3 上）：预览的 `source` 一共五种，从软件源装的 `official`、`community`，从包文件夹、包文件装的 `file`，装回的 `shipped`、`distro`。能力的每一项这一刻已经批过、装完照旧留着的多 `held: true`：只有从软件源装、源和来源仓库都和装着的那一份一样时才有（本机文件装的、换了源的、换了来源仓库的前面批过的不接着用）。社区的、本机文件的预览多 `notice`：要给人看的话，照连接的语言、一句一个字符串（社区的「这是个社区包，没有经过官方审核，可能存在风险。」，本机文件的「这个包来自本机文件，没有经过官方审核，可能存在风险。」；几个包的写出是哪几个，两样都有的各一句）；推荐的里有的另放 `recommends_notice`。照它原样印，「注意：」这样的前缀是头自己的字。
+从哪来、要的能力：预览的 `source` 一共五种，从软件源装的 `official`、`community`，从包文件夹、包文件装的 `file`，装回的 `shipped`、`distro`。能力的每一项这一刻已经批过、装完照旧留着的多 `held: true`：只有从软件源装、源和来源仓库都和装着的那一份一样时才有（本机文件装的、换了源的、换了来源仓库的前面批过的不接着用）。社区的、本机文件的预览多 `notice`：要给人看的话，照连接的语言、一句一个字符串（社区的「这是个社区包，没有经过官方审核，可能存在风险。」，本机文件的「这个包来自本机文件，没有经过官方审核，可能存在风险。」；几个包的写出是哪几个，两样都有的各一句）；推荐的里有的另放 `recommends_notice`。照它原样印，「注意：」这样的前缀是头自己的字。
 
-装的时候批（施工 PK-3 上）：`package.install`（`path`、`source`）、`package.upgrade` 可以带 `approve`：`{"<编号>": ["<能力>", …]}`，这一次装上的每个包各写各的（照预览里列出来的拼：要装的、`with` 的，升级的 `upgrades`、`with` 的）。能力名、编号写法不对的 `bad_params`；装上的那一份没声明的、编号不是这一次装的不理；不写的装上不批，打开时照旧用 `package.enable`、`extension.enable` 的 `approve` 批。批过的记进 `extensions.json` 的 `approved`：照「(源和来源仓库都没变时以前批过的 ∪ 这一次批的) ∩ 这一份声明的」，所以新版不再要的会去掉、以后加回来要重新批。手动开（`start = "manual"`）的装好以后打开不用再批，开着就跑的装上当场跑。
+装的时候批：`package.install`（`path`、`source`）、`package.upgrade` 可以带 `approve`：`{"<编号>": ["<能力>", …]}`，这一次装上的每个包各写各的（照预览里列出来的拼：要装的、`with` 的，升级的 `upgrades`、`with` 的）。能力名、编号写法不对的 `bad_params`；装上的那一份没声明的、编号不是这一次装的不理；不写的装上不批，打开时照旧用 `package.enable`、`extension.enable` 的 `approve` 批。批过的记进 `extensions.json` 的 `approved`：照「(源和来源仓库都没变时以前批过的 ∪ 这一次批的) ∩ 这一份声明的」，所以新版不再要的会去掉、以后加回来要重新批。手动开（`start = "manual"`）的装好以后打开不用再批，开着就跑的装上当场跑。
 
 真装时推给这个连接的 `package.progress`：`{"package", "stage", "index", "count", "done"?, "total"?}`。`stage` 是 `download`（带 `done`、`total` 字节）、`verify`（核对之前）、`install`（装之前）；`index`、`count` 是第几个（从 1 数）、一共几个。从包文件夹、包文件装的只推 `verify`、`install` 各一次（`1`、`1`）。老的核心只推 `{"package", "done", "total"}`，没写 `stage` 的当 `download`。
 
@@ -113,18 +113,18 @@
 | `package_file_bad` | 包文件解不开；从软件源装的，包里的编号和索引那一条对不上 |
 | `download_failed` | 从软件源装时包文件哪一处都没下成（大小、哈希对不上也算），`data.why` 是每一处的原因 |
 | `wrong_target` | 清单写了 `targets`，里面没有本机这一种系统 |
-| `depends_missing` | 依赖的包没装、装着的版本比清单写的下限低（施工 PK-2），`data.missing`：缺的那几个，照清单写的原样（带下限的是 `"onebot>=1.2.0"`） |
+| `depends_missing` | 依赖的包没装、装着的版本比清单写的下限低，`data.missing`：缺的那几个，照清单写的原样（带下限的是 `"onebot>=1.2.0"`） |
 | `package_depended` | 别的装着的包依赖它，`data.by` |
 | `unknown_package` | 没装的、没卸过的 |
 | `unknown_source` | `from` 写的软件源没有（没加、写错了） |
 
 ## `package.sync`
 
-从软件源拿索引（施工 G-3 上）。参数 `force`（可以不写）：`true` 不管本机那份新不新都去拿；不写的本机那份不到 24 小时就直接用。地址照系统配置的 `packages.mirrors`、`packages.source` 的先后试，索引照编进来的官方公钥验签，比本机那份旧的不收。
+从软件源拿索引。参数 `force`（可以不写）：`true` 不管本机那份新不新都去拿；不写的本机那份不到 24 小时就直接用。地址照系统配置的 `packages.mirrors`、`packages.source` 的先后试，索引照编进来的官方公钥验签，比本机那份旧的不收。
 
 回应 `{"generated", "fetched", "packages", "stale"?}`：索引生成的时刻、拿到的时刻（都是 RFC 3339）、几个包；这一次一处都没拿成、用的是本机那份的带 `stale`（最后一处的原因，英文）。
 
-别的软件源（施工 U23 下下）：系统配置里 `packages.sources.<名字>` 写了 `url`、`key`（Ed25519 公钥的 base64）的。官方的拿完再拿它们，各照各的公钥验；回应多 `sources: [{"source", "generated", "fetched", "packages", "stale"?}]`，拿不成的那一项是 `{"source", "error"}`。
+别的软件源：系统配置里 `packages.sources.<名字>` 写了 `url`、`key`（Ed25519 公钥的 base64）的。官方的拿完再拿它们，各照各的公钥验；回应多 `sources: [{"source", "generated", "fetched", "packages", "stale"?}]`，拿不成的那一项是 `{"source", "error"}`。
 
 **出错**
 
@@ -134,22 +134,22 @@
 
 ## `package.search`
 
-在软件源里搜（施工 G-3 下）。参数 `query`（可以不写）：几个词，空白分开，都得出现在编号、名字、说明（哪种语言都算）里，不分大小写；不写、空的列出全部。先照 `package.sync` 拿索引（本机那份不到 24 小时的直接用）。
+在软件源里搜。参数 `query`（可以不写）：几个词，空白分开，都得出现在编号、名字、说明（哪种语言都算）里，不分大小写；不写、空的列出全部。先照 `package.sync` 拿索引（本机那份不到 24 小时的直接用）。
 
-回应 `{"packages": [...], "generated", "stale"?}`，每一项 `{"package", "version", "name", "summary", "official", "installed", "blocked", "contents", "provides", "depends", "kind"?, "icon"?, "logo"?, "license"?, "published"?, "downloads"?, "downloads_week"?}`：名字、说明照连接的语言挑（没有的照英文、中文、日文），没有的 `null`；`installed` 是装着的版本（装着、没写版本的是空的字），没装的 `null`；`official` 是不是项目主人自己的仓库；`blocked` 是被拉黑的理由，没有的 `null`；`contents` 是给哪几个包带了内容（同 `package.list`），没带的是空数组；`provides` 是带了哪几样：种类到名字，种类有 `command`（子命令）、`features`（功能）、`mcp`（MCP 服务）、`slash`（斜杠命令）、`content`（带了内容的包）、`skills`、`scripts`、`personas`、`presets`、`knowledge`（知识库），没带的种类不写，什么都没带的是 `{}`；`depends` 是依赖的包，照索引原样：编号，或带版本下限的 `<编号>>=<版本>`（施工 PK-2），没有的是空数组（施工 G-10：软件市场照种类筛）；`kind` 是包的种类，照清单 `[package] kind` 的原样（`process`、`ui`、`theme`、`mascot`、`bundle`……，以后多了的照样原样），以前生成的索引没有这一格（施工 G-11）；`source` 是哪个软件源的（`official` 或配置里起的名字，施工 U23 下下），别的源里的 `official` 一律是 `false`；`icon` 是 Lucide 图标名，`logo` 是包自带图标的版本（同 `package.list`，图用 `package.logo` 带 `from` 读），索引里有的才有（施工 F-18 下）；`license` 是清单写的许可证（建议是 SPDX 表达式，核心不查），索引里有的才有；`published` 是这一版第一次进这个软件源的时刻（RFC 3339），`downloads` 是各版本、各系统一共被下载了几次，`downloads_week` 是近 7 天下载了几次，索引里有、写法对的才有（施工 DL-1，设计 54：头照它们排最新、下载量、趋势，没有的排在最后）。出错同 `package.sync`。
+回应 `{"packages": [...], "generated", "stale"?}`，每一项 `{"package", "version", "name", "summary", "official", "installed", "blocked", "contents", "provides", "depends", "kind"?, "icon"?, "logo"?, "license"?, "published"?, "downloads"?, "downloads_week"?}`：名字、说明照连接的语言挑（没有的照英文、中文、日文），没有的 `null`；`installed` 是装着的版本（装着、没写版本的是空的字），没装的 `null`；`official` 是不是项目主人自己的仓库；`blocked` 是被拉黑的理由，没有的 `null`；`contents` 是给哪几个包带了内容（同 `package.list`），没带的是空数组；`provides` 是带了哪几样：种类到名字，种类有 `command`（子命令）、`features`（功能）、`mcp`（MCP 服务）、`slash`（斜杠命令）、`content`（带了内容的包）、`skills`、`scripts`、`personas`、`presets`、`knowledge`（知识库），没带的种类不写，什么都没带的是 `{}`；`depends` 是依赖的包，照索引原样：编号，或带版本下限的 `<编号>>=<版本>`，没有的是空数组；`kind` 是包的种类：清单里不写种类，生成索引时照包带了哪几张表认出来，是 `ui`、`process`、`builtin`、`worker`、`mascot`、`theme`、`bundle` 之一（以后多了的照样原样交），以前生成的索引没有这一格；`source` 是哪个软件源的（`official` 或配置里起的名字），别的源里的 `official` 一律是 `false`；`icon` 是 Lucide 图标名，`logo` 是包自带图标的版本（同 `package.list`，图用 `package.logo` 带 `from` 读），索引里有的才有；`license` 是清单写的许可证（建议是 SPDX 表达式，核心不查），索引里有的才有；`published` 是这一版第一次进这个软件源的时刻（RFC 3339），`downloads` 是各版本、各系统一共被下载了几次，`downloads_week` 是近 7 天下载了几次，索引里有、写法对的才有（头照它们排最新、下载量、趋势，没有的排在最后）。出错同 `package.sync`。
 
 ## `package.clean`
 
-清掉下载过、不是装着那一版的包文件（施工 G-4 下）。没有参数，回应 `{"removed", "freed"}`：删了几个文件、几个字节。
+清掉下载过、不是装着那一版的包文件。没有参数，回应 `{"removed", "freed"}`：删了几个文件、几个字节。
 
 ## `package.upgrades`、`package.upgrade`
 
-照软件源升级（施工 G-5）。只碰从软件源装的；从文件夹、包文件装的不碰。版本不比大小，索引的和装着的不一样就升。
+照软件源升级。只碰从软件源装的；从文件夹、包文件装的不碰。版本不比大小，索引的和装着的不一样就升。
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
 | `package.upgrades` | 无 | `{"upgrades": [{"package", "from", "to"}], "moved": [{"package", "was", "now"}], "gone", "blocked": [{"package", "reason"}], "held", "generated", "stale"?}`：能升的；来源仓库变了、不升的；软件源里没有了的；被拉黑的；系统配置 `packages.hold` 跳过的 |
-| `package.upgrade` | `packages`（可以不写，只升这几个）、`preview`、`approve`（同 `package.install`，施工 PK-3 上） | 看一眼 `{"upgrades", "download", "with", "notice"?}`：`upgrades` 每一项多 `source`、`feed`、`capabilities`（新版声明的，带 `held`），`with` 是一起装的新依赖（同 `package.install` 预览的那一格）；真升 `{"upgraded": [{"package", "from", "to"}]}`，下载时同 `package.install {"source"}` 推进度 |
+| `package.upgrade` | `packages`（可以不写，只升这几个）、`preview`、`approve`（同 `package.install`） | 看一眼 `{"upgrades", "download", "with", "notice"?}`：`upgrades` 每一项多 `source`、`feed`、`capabilities`（新版声明的，带 `held`），`with` 是一起装的新依赖（同 `package.install` 预览的那一格）；真升 `{"upgraded": [{"package", "from", "to"}]}`，下载时同 `package.install {"source"}` 推进度 |
 
 ## `package.enable`、`package.disable`、`package.restart`
 
@@ -235,7 +235,7 @@
 
 系统配置（`config.toml` 的 `[mcp.<名字>]`）里的 MCP 服务。手改系统配置、用 `mcp.set`、`mcp.remove` 改，都当场生效：新写的起，改了的停下再起，删掉的停下。
 
-**`mcp.list`**：没有参数。回应 `{"servers": [...]}`：`name`、`command`（网址的服务没有这一格，是 `url`）、`venues`、`state`、`failures`，在跑的 `pid`（网址的服务没有），在等的 `retry_in`，停下的 `reason`、`stderr`，盖住了哪些包里同名服务的 `covers`。知道有哪些工具的另带 `tools`：这个服务这时在工具目录里的工具名（`mcp__<服务名>__<工具名>`），起好列完的、照目录缓存先登记的都算；声明了资源的另有 `mcp__<服务名>__list_resources`、`mcp__<服务名>__read_resource` 两件（施工 X-41）；还不知道的（没起过、没缓存）没有这一格。这一次列出来却没登记的带 `skipped: [{"tool", "why"}]`（提示词是 `{"prompt", "why"}`），照原名排：`tool` 是服务那边的原名（没写名字的是空的），`why` 是 `name`（没写名字）、`parameters`（参数格式不是对象）、`name_taken`（截到 64 个字以后撞了，或者别的工具已经叫这个）；都登记上了的、照目录缓存先登记还没列过的没有这一格，`miyu check` 照它报 `mcp_tool_skipped`。`on` 是这个服务的全局开关（`features.mcp-<服务名>`，见 `feature.set`），没写的是 `true`。浏览器登录过的（存着 `mcp.login` 换来的令牌）带 `logged_in: true`，没登录的、`mcp.logout` 以后的没有这一格（施工 X-42 下再补）：头照它把「登录」换成「登出」；只看存没存着，令牌不经协议交出去。编辑时要先填上原来写的：`env`（值是字，或者 `{"secret": …}`、`{"env": …}`；没写的没有这一格）、`timeout_ms`（不是默认的才带），网址的服务另有 `bearer`、`headers`（写法同 `env`）。这几格的字照原样给（本来就明文写在系统配置里），头显示时遮住，编辑框里再给全；要藏的值该写成密钥的引用；`command` 是程序加参数，交回 `mcp.set` 时拆成 `command`、`args`。
+**`mcp.list`**：没有参数。回应 `{"servers": [...]}`：`name`、`command`（网址的服务没有这一格，是 `url`）、`venues`、`state`、`failures`，在跑的 `pid`（网址的服务没有），在等的 `retry_in`，停下的 `reason`、`stderr`，盖住了哪些包里同名服务的 `covers`。知道有哪些工具的另带 `tools`：这个服务这时在工具目录里的工具名（`mcp__<服务名>__<工具名>`），起好列完的、照目录缓存先登记的都算；声明了资源的另有 `mcp__<服务名>__list_resources`、`mcp__<服务名>__read_resource` 两件；还不知道的（没起过、没缓存）没有这一格。这一次列出来却没登记的带 `skipped: [{"tool", "why"}]`（提示词是 `{"prompt", "why"}`），照原名排：`tool` 是服务那边的原名（没写名字的是空的），`why` 是 `name`（没写名字）、`parameters`（参数格式不是对象）、`name_taken`（截到 64 个字以后撞了，或者别的工具已经叫这个）；都登记上了的、照目录缓存先登记还没列过的没有这一格，`miyu check` 照它报 `mcp_tool_skipped`。`on` 是这个服务的全局开关（`features.mcp-<服务名>`，见 `feature.set`），没写的是 `true`。浏览器登录过的（存着 `mcp.login` 换来的令牌）带 `logged_in: true`，没登录的、`mcp.logout` 以后的没有这一格：头照它把「登录」换成「登出」；只看存没存着，令牌不经协议交出去。编辑时要先填上原来写的：`env`（值是字，或者 `{"secret": …}`、`{"env": …}`；没写的没有这一格）、`timeout_ms`（不是默认的才带），网址的服务另有 `bearer`、`headers`（写法同 `env`）。这几格的字照原样给（本来就明文写在系统配置里），头显示时遮住，编辑框里再给全；要藏的值该写成密钥的引用；`command` 是程序加参数，交回 `mcp.set` 时拆成 `command`、`args`。
 
 **`mcp.restart`**：参数 `name`。回应是那一项。**出错**：`unknown_server`。
 
@@ -260,7 +260,7 @@
 
 ## `mcp.login`
 
-网址的 MCP 服务回 `401` 要浏览器登录的（`reason` 是 `needs_login`，这张表自己没写令牌）：拿授权页，人在浏览器里点同意，核心换令牌、存进密钥文件（`mcp-oauth-<服务名>`，值不经协议交出去），服务自己连上（`mcp.changed`、软件包列表的推送照常）。只给人，远程连进来的也行（施工 X-42 下补）：核心只交回网址，头在它自己那边打开；回调听核心那台机器的 `127.0.0.1`，浏览器不在那台机器上的照 `mcp.login_finish` 贴回来。
+网址的 MCP 服务回 `401` 要浏览器登录的（`reason` 是 `needs_login`，这张表自己没写令牌）：拿授权页，人在浏览器里点同意，核心换令牌、存进密钥文件（`mcp-oauth-<服务名>`，值不经协议交出去），服务自己连上（`mcp.changed`、软件包列表的推送照常）。只给人，远程连进来的也行：核心只交回网址，头在它自己那边打开；回调听核心那台机器的 `127.0.0.1`，浏览器不在那台机器上的照 `mcp.login_finish` 贴回来。
 
 **参数**：`service`（服务名：系统配置里的，或者包里带的）。
 
@@ -268,13 +268,13 @@
 
 **出错**：`unknown_server`：没有这个服务；`bad_params`：不是网址的服务，或者这张表自己写了令牌（`bearer`、`headers` 里的 `Authorization`）；`oauth_unregistered`：没有客户端、授权服务器又不认动态注册，要人去服务那边注册、把 `client_id` 写进这张表；`oauth_failed`：找不到、用不了授权服务器，或者它拒了，`data.why` 说为什么（授权服务器的原话截过）。
 
-登录以后（施工 X-42 下）：令牌快过期的、服务回 `401` 的，核心自己拿 `refresh_token` 续，续期写回密钥不重起服务；续不成的、服务说范围不够（`403 insufficient_scope`）的，服务停在 `needs_login`，再 `mcp.login` 一次（要的范围是以前的加上这一次要的）。
+登录以后：令牌快过期的、服务回 `401` 的，核心自己拿 `refresh_token` 续，续期写回密钥不重起服务；续不成的、服务说范围不够（`403 insufficient_scope`）的，服务停在 `needs_login`，再 `mcp.login` 一次（要的范围是以前的加上这一次要的）。
 
 ## `mcp.login_finish`、`mcp.logout`
 
-**`mcp.login_finish`**（施工 X-42 下）：浏览器不在核心那台机器上的（网页从别的机器连进来），授权完浏览器跳到打不开的 `http://127.0.0.1:<端口>/callback?…`，把地址栏里那一整段交回来。参数 `service`、`url`。和本机收到的回调同一处判 `state`、`iss`。只给人，远程的也行。**回应**：`{}`：令牌换到、存好了，服务自己连上。**出错**：`not_waiting`：这个服务没有在等的登录，先 `mcp.login`；`oauth_failed`：对不上（那一次登录照旧等着，可以再贴），或者换令牌被拒。
+**`mcp.login_finish`**：浏览器不在核心那台机器上的（网页从别的机器连进来），授权完浏览器跳到打不开的 `http://127.0.0.1:<端口>/callback?…`，把地址栏里那一整段交回来。参数 `service`、`url`。和本机收到的回调同一处判 `state`、`iss`。只给人，远程的也行。**回应**：`{}`：令牌换到、存好了，服务自己连上。**出错**：`not_waiting`：这个服务没有在等的登录，先 `mcp.login`；`oauth_failed`：对不上（那一次登录照旧等着，可以再贴），或者换令牌被拒。
 
-**`mcp.logout`**（施工 X-42 下）：删掉存着的那一份（令牌、客户端、回调的端口），在等的那一次登录一起取消；服务重起、停在 `needs_login`。不吊销授权服务器那边的令牌。参数 `service`。只给人，远程的也行。**回应**：`{}`。**出错**：`not_logged_in`：没登录过。
+**`mcp.logout`**：删掉存着的那一份（令牌、客户端、回调的端口），在等的那一次登录一起取消；服务重起、停在 `needs_login`。不吊销授权服务器那边的令牌。参数 `service`。只给人，远程的也行。**回应**：`{}`。**出错**：`not_logged_in`：没登录过。
 
 ## `skill.list`
 

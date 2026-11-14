@@ -145,7 +145,7 @@
 
 现在就整理：带 `session` 的先把这个会话还没抽的抽了，再把新记的和以前的合一遍（重复的合掉，过时的作废，写一段对人的了解）。在后台答，几秒到十几秒。
 
-**参数**：只有 `persona` 或 `session`。**回应**：`{"given", "retired", "revised", "summary"}`：交进去几条、作废几条、改了几条、对人的了解换没换（布尔）。一条记忆都没有的四样都是零，不请求模型；没有新记的照样重看轮到的旧记忆（R-19）。叫停了（[`memory.dream_stop`](#memorydream_stop)，会话里叫的还有那个会话的 `/dream stop`、`/stop`）照样回，几样数是叫停以前合完了的，多 `"stopped": true`（R-22、R-23）：正在合的那一批放弃、下次再合，合完了的留着。
+**参数**：只有 `persona` 或 `session`。**回应**：`{"given", "retired", "revised", "summary"}`：交进去几条、作废几条、改了几条、对人的了解换没换（布尔）。一条记忆都没有的四样都是零，不请求模型；没有新记的照样重看轮到的旧记忆。叫停了（[`memory.dream_stop`](#memorydream_stop)，会话里叫的还有那个会话的 `/dream stop`、`/stop`）照样回，几样数是叫停以前合完了的，多 `"stopped": true`：正在合的那一批放弃、下次再合，合完了的留着。
 
 **出错**：`memory_busy`（这一间正在整理）；`dream_failed`（没合成，`data.message`）。
 
@@ -161,18 +161,18 @@
 | `ext.memory.card_retired` | `who`、`why` | 人作废了一张卡 |
 | `ext.memory.tagged` | `id`、`keywords` | 补了关键词：在这一批的 `merged` 后面 |
 | `ext.memory.merged` | `upto`、`given`、`revised`、`retired`、`failed`? | 这一批合完了（`failed` 是连着三次没成、跳过了） |
-| `ext.memory.merge_failed` | `upto`、`why`、`tries`? | 这一批这一次没合成；`why` 是 `interrupted` 的是核心半路停了，`stopped` 的是人叫停了（R-22），这两种不写 `tries` |
-| `ext.memory.swept` | `upto`、`count` | 顺带重看了几条旧记忆、轮到第几条（施工 R-19）：在这一批的 `merged` 后面 |
+| `ext.memory.merge_failed` | `upto`、`why`、`tries`? | 这一批这一次没合成；`why` 是 `interrupted` 的是核心半路停了，`stopped` 的是人叫停了，这两种不写 `tries` |
+| `ext.memory.swept` | `upto`、`count` | 顺带重看了几条旧记忆、轮到第几条：在这一批的 `merged` 后面 |
 
 - `merging` 和收尾它的 `merged`、`merge_failed` 带同一个 `upto`；这中间 `by` 是记忆模块的改、删、摘要就是这一批做了什么（同一时刻别的会话可能在记、人可能在改，`by` 分得开）。没收尾的是正在合。
 - 进度：头一批的 `left` 是总数，收了尾的各批 `fresh` 加起来是合了多少。一批之内不细分。
-- 人叫的整理要画「她正在写什么」（施工 R-21）：`merging` 的 `given` 是这一批交给模型的是哪几条，等的时候可以让它们浮过去；另有不落盘的推送 `memory.dreaming`：她每写完一条改的（`kind: revised`，`id`、`text`）、作废的（`kind: retired`，`id`、`retire`、`kept`、`why`）推一条，摘要每多 20 个字、写完推一条（`kind: summary`，`chars`、`done`），都带这一批的 `upto`。推的是她这一刻写的，落的照全部核对、可能少几条，以日志为准；掉了不补。
+- 人叫的整理要画「她正在写什么」：`merging` 的 `given` 是这一批交给模型的是哪几条，等的时候可以让它们浮过去；另有不落盘的推送 `memory.dreaming`：她每写完一条改的（`kind: revised`，`id`、`text`）、作废的（`kind: retired`，`id`、`retire`、`kept`、`why`）推一条，摘要每多 20 个字、写完推一条（`kind: summary`，`chars`、`done`），都带这一批的 `upto`。推的是她这一刻写的，落的照全部核对、可能少几条，以日志为准；掉了不补。
 - 每一趟头一个放得下的批顺带重看最多 20 条轮到的旧记忆（照编号轮，轮完一圈从头来），对它们的改、删同样算这一批做的。人叫的整理没有新记的也照样重看：那一批的 `fresh`、`left` 是 0。
 - 会话里叫的先抽的那几条（`ext.memory.saved`，`by` 是记忆模块，带出处）在第一条 `merging` 前面，后面跟 `ext.memory.extracted`。
 
 ## `memory.dream_stop`
 
-叫停这一间这时人叫的整理（R-23），不管是哪一路叫的（`memory.dream`、会话里的 `/dream`）；后台自己合的不停。合完了的批留着，正在合的那一批放弃、下次整理再合；记忆日志记一条 `ext.memory.merge_failed`（`why: stopped`）。被叫停的那条 `memory.dream` 照样回应，带 `"stopped": true`。`memory.dream` 在后台答，在同一条连接上接着发它就行。
+叫停这一间这时人叫的整理，不管是哪一路叫的（`memory.dream`、会话里的 `/dream`）；后台自己合的不停。合完了的批留着，正在合的那一批放弃、下次整理再合；记忆日志记一条 `ext.memory.merge_failed`（`why: stopped`）。被叫停的那条 `memory.dream` 照样回应，带 `"stopped": true`。`memory.dream` 在后台答，在同一条连接上接着发它就行。
 
 **参数**：只有 `persona` 或 `session`，同 `memory.dream`。**回应**：`{"stopped": true}`。
 
@@ -184,7 +184,7 @@
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `kb.list` | 没有 | `{"bases": [{"id", "name", "description", "documents", "chunks", "auto"}…]}`，照编号排；`auto` 是自动想起开着没有；读不了的另带 `error`，软件包带来的另带 `package`，挂进来的另带 `mount`（写的那个目录）；`indexing` 是这时在不在建（别处正在建的不等它，照索引现有的样子列），建好过的另带 `indexed_at`（上次建好的时刻，施工 W-15）；建的进度订阅 `kb` 流 |
+| `kb.list` | 没有 | `{"bases": [{"id", "name", "description", "documents", "chunks", "auto"}…]}`，照编号排；`auto` 是自动想起开着没有；读不了的另带 `error`，软件包带来的另带 `package`，挂进来的另带 `mount`（写的那个目录）；`indexing` 是这时在不在建（别处正在建的不等它，照索引现有的样子列），建好过的另带 `indexed_at`（上次建好的时刻）；建的进度订阅 `kb` 流 |
 | `kb.search` | `query`（必写）、`kb`（只搜这一个）、`limit`（1 到 50，默认 10） | `{"hits": [{"kb", "path", "chunk", "heading", "text", "at"}…]}`，最相关的在前；PDF 的多 `page` |
 | `kb.read` | `kb`、`path`（必写）、`page`（从 1 起，默认 1） | `{"text", "page", "pages"}`：一页 32 KiB；PDF 照它自己的页 |
 | `kb.documents` | `kb`（必写） | `{"documents": [{"path", "kind", "size", "at", "chunks"}…], "folders": [{"path", "reason", "why"}…]}`，照路径排：库里的每一篇；这一回读不了的另带 `reason`、`why` |
@@ -203,7 +203,7 @@
 | `kb.update` | `kb`；`name`、`description`、`auto` 至少一个（空字、`false` 是拿掉） | 一个库 |
 | `kb.mount` | `kb`、`folder`（绝对路径或 `~/`）；`name`、`description`、`auto` | 一个库：把一个现成的目录挂进来 |
 | `kb.delete` | `kb` | `{"trash"}`：挪进系统回收站的位置；挂进来的只拿掉登记，目录不动 |
-| `kb.add` | `kb`、`path`、`blob`（先 `blob.put`）、`replace`（布尔） | `{}`：加一篇，什么格式都行 |
+| `kb.add` | `kb`、`path`、`blob`（先 `blob.put`）、`replace`（布尔） | `{}`：加一篇。`path` 的扩展名只收 `.md`、`.markdown`、`.txt`、`.pdf`、`.html`、`.htm`（不分大小写），别的回 `bad_params` |
 | `kb.remove` | `kb`，`path`（一样）或者 `paths`（几样）：一篇文档，或者一个文件夹（库里的相对路径，整个删） | `path` 的回 `{"trash"}`，`paths` 的回 `{"trash": [...]}`，照先后；有一样不在就一样都不删；两样都写或都没写、重了、一样在另一样里面的 `bad_params` |
 | `kb.reindex` | `kb` | 一个库：删掉索引照文件重建 |
 

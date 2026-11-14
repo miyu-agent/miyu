@@ -1546,6 +1546,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sHT4"><span class="n">HT-4</span>扩展驱动交得上供应商侧工具<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU1"><span class="n">QU-1</span>供应商的额度<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sFX4"><span class="n">FX-4</span>文档查出的小修<span class="st">✓</span></a></li>
+        <li><a class="step review" href="#sDOC1"><span class="n">DOC-1</span>用户手册和开发者文档<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -59964,6 +59965,61 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/FX-4-文档查出的小修.md</code>；蓝图 <code>store.md</code>、<code>cli/setup.md</code>、<code>cli/memory.md</code>、<code>cli/check.md</code>、<code>protocol.md</code>、<code>config.md</code>、<code>life.md</code>；协议参考 <code>packages.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sDOC1" aria-labelledby="h-sDOC1">
+  <div class="sheet-head"><h2 id="h-sDOC1"><span class="no">DOC-1</span>用户手册和开发者文档</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">仓库里以前只有给第三方作者的教程、协议参考和内部的图纸，用户能读的只有 <code>miyu -h</code>。这一步加一套用户手册和开发者文档，只动文档。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">docs/guide　docs/dev　docs/README.md　docs/reference　docs/authors　README.md　packaging/README.md</span><span class="dir-note">DOC-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>docs/guide：用户手册 30 页，加目录页和快速上手的位置（快速上手由项目主人写）</li>
+              <li>docs/dev：架构、贡献代码、写一个头、写主题和外观、往界面上放东西，加一页地图</li>
+              <li>docs/README.md：文档首页，照读者分流，注明哪几个目录是内部记录</li>
+              <li>手册和开发者文档三个平台同等对待：Linux、macOS、Windows 不一样的分别写出来，示例 bash、PowerShell 各一份</li>
+              <li>docs/reference、docs/authors：清掉遗留的施工号和来历，改掉七处和代码对不上的；小标题和方法条目不动</li>
+              <li>README.md、packaging/README.md：改成现状，指到上面这些</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">用户手册放核心仓库 docs/guide，各个头也写在这里</span><span class="rl">项目主人 11-14 定</span></div>
+          <div class="tile new"><span class="nm">中文是正本，中文定稿以后再出英文</span><span class="rl">项目主人 11-14 定</span></div>
+          <div class="tile new"><span class="nm">手册只写现在怎么用，不写施工号和来历</span><span class="rl">同 reference、authors</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DOC-1</dd></div>
+        <div><dt>名称</dt><dd>用户手册和开发者文档</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">DOC-1</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；站内链接指到的页和小节都在</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>手册里的命令、参数、键、默认值、界面上的字逐条对过代码，出处留在各页的核对表里</span></li>
+        <li><span class="ok">✓</span><span>新写的页里没有施工号、设计编号</span></li>
+        <li><span class="ok">✓</span><span>参考和作者教程的小标题、方法条目标题一个没动</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/DOC-1-用户手册.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

@@ -90,7 +90,7 @@ if __name__ == "__main__":
 
 ## 用开发包写
 
-上面是手写的：协议不挑语言，什么语言都能照这样写。用 Python、Rust 的，有现成的开发包 [miyu-agent/miyu-sdk](https://github.com/miyu-agent/miyu-sdk)（MIT）：握手、一行一条的收发、几个调用同时来时照编号对着回、取消、配置推送、标准输入读到头就退、退出码 1 的规矩都包好了。它不多给本事，扩展能做什么照旧由协议定；另带一个假核心，不起 Miyu 也能测。
+上面是手写的：协议不挑语言，什么语言都能照这样写。用 Python、Rust 的，有现成的开发包 [miyu-agent/miyu-sdk](https://github.com/miyu-agent/miyu-sdk)（Apache-2.0）：握手、一行一条的收发、几个调用同时来时照编号对着回、取消、配置推送、标准输入读到头就退、退出码 1 的规矩都包好了。它不多给本事，扩展能做什么照旧由协议定；另带一个假核心，不起 Miyu 也能测。
 
 **Python**：一个文件 `miyu_ext.py`，只用标准库，Python 3.9 起，不用 pip。拷进包的 `bin/`，和程序放在一起；清单同上面那份：
 
@@ -169,7 +169,7 @@ core.close()
 
 之后配置变了，核心推通知 `extension.config {"keys": {"hello.greeting": "Hi"}}`，只放变了的键，变成没设的是 `null`。连上 10 秒还没握手成的会被断开。
 
-**要主人配好的模型 key**（施工 PK-1）：清单声明 `provider.key`、写 `[provider_key] catalog = "deepseek"`（见 [清单](manifest.md) 的 `[provider_key]`），主人批了以后，`config` 里多一格 `"provider_key": "<那一家的 key>"`。主人没配那一家、那一家没写 key 的没有这一格；主人换了 key 推 `extension.config {"keys": {"provider_key": "<新的>"}}`，删了那一家、去掉了 key 推 `null`。拿到的是真 key：只放在内存里，别写进日志、文件，别交给别人。
+**要主人配好的模型 key**：清单声明 `provider.key`、写 `[provider_key] catalog = "deepseek"`（见 [清单](manifest.md) 的 `[provider_key]`），主人批了以后，`config` 里多一格 `"provider_key": "<那一家的 key>"`。主人没配那一家、那一家没写 key 的没有这一格；主人换了 key 推 `extension.config {"keys": {"provider_key": "<新的>"}}`，删了那一家、去掉了 key 推 `null`。拿到的是真 key：只放在内存里，别写进日志、文件，别交给别人。
 
 ## 登记工具：`provide`
 

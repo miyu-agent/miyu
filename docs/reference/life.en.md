@@ -1,6 +1,6 @@
 # Life sessions: `life.*`
 
-Give a persona a "life session" that keeps running a loop: she decides when to wake next, lives a stretch of her own day when she wakes, and what she saves goes into the persona's memory. One per persona. A life session is an ordinary session opened with the shipped preset `life` (Life Simulation); it wakes on the life row of the schedule table (`loop` is `life`), which nobody else can touch (it is not in `schedule.list`, see [Schedules](schedules.en.md)): only these methods change it. Design: `docs/designs/70-推演人生.md`; how it runs: `docs/blueprint/life.md`. 中文版：[life.md](life.md).
+Give a persona a "life session" that keeps running a loop: she decides when to wake next, lives a stretch of her own day when she wakes, and what she saves goes into the persona's memory. One per persona. A life session is an ordinary session opened with the shipped preset `life` (Life Simulation); it wakes on the life row of the schedule table (`loop` is `life`), which nobody else can touch (it is not in `schedule.list`, see [Schedules](schedules.en.md)): only these methods change it. 中文版：[life.md](life.md).
 
 | Method | Does |
 |---|---|

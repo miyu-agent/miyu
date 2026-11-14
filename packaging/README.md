@@ -1,5 +1,7 @@
 # packaging
 
+给用户的说明见 [安装](../docs/guide/install.md)、[常驻和服务器](../docs/guide/service.md)。
+
 安装包、系统要用的文件。个人机器上那四份（systemd 用户服务、XDG 自启动、launchd、Windows 任务计划）也是 `miyu service enable` 写的样子：它照这里的编进程序，换上 `miyu` 的真实位置（施工 Z-1 下），改了这里的跟着变。写打包脚本（PKGBUILD、deb、rpm、Homebrew、安装脚本）的那一步照这里装。设计见 `docs/designs/12-进程形态与分发.md` 第二、四节。
 
 | 目录 | 是什么 |
@@ -62,14 +64,14 @@ Ed25519 的才核得了，不认的说一句）、核 SHA-256、跑一次新的 
 sudo useradd --system --home-dir /var/lib/miyu --shell /usr/sbin/nologin miyu
 sudo cp systemd/system/miyu.service systemd/system/miyu-web.service /etc/systemd/system/
 sudo systemctl enable --now miyu
-sudo -u miyu env MIYU_HOME=/var/lib/miyu miyu config set --system web.idle_seconds 0
+sudo -u miyu env MIYU_HOME=/var/lib/miyu miyu config set web.idle_seconds 0
 sudo systemctl enable --now miyu-web
 ```
 
-网页软件默认空闲 600 秒就退、退出码 0（`miyu web` 用的时候才起它，退了下次再起），当服务跑时服务管理器不会再起它。所以要先在系统配置里写 `idle_seconds = 0`（`[web]` 那一节，不退，网页软件 W-349 起认）再起 `miyu-web`。`miyu-web.service` 跑的是网页软件自己的 `miyu-web serve`，不在 `/usr/bin` 的把 `ExecStart` 换成它的位置。
+网页软件默认空闲 600 秒就退、退出码 0（`miyu web` 用的时候才起它，退了下次再起），当服务跑时服务管理器不会再起它。所以要先在系统配置里写 `idle_seconds = 0`（`[web]` 那一节，不退）再起 `miyu-web`。`miyu-web.service` 跑的是网页软件自己的 `miyu-web serve`。样例里写的 `/usr/bin/miyu-web` 没有哪种装法放在那里，装之前把 `ExecStart` 换成它的真实位置：AUR 装的是 `/usr/share/miyu/packages/webui/bin/miyu-web`，安装脚本装的在 `miyu` 旁边（`~/.local/lib/miyu/miyu-web`）。
 
 - systemd 照 `StateDirectory=miyu`、`CacheDirectory=miyu` 建好 `/var/lib/miyu`、`/var/cache/miyu`，都属于 `miyu`。别的初始化系统（`init/` 下）先自己建好这两个目录、`chown miyu:miyu`、数据根 `chmod 0700`。
 - **沙盒**：命令的沙盒在 Linux 上用 Landlock，不要用户命名空间。systemd 的加固项（`PrivateUsers=`、`ProtectHome=` 这些）没在这里写，要加的先在自己的机器上试过沙盒还起得来。
 - **本机的命令行**：核心只认 `miyu` 这个用户自己连（原来打算的第二个本机入口随多用户一起不做了，施工 SU），本机要用命令行的 `sudo -u miyu env MIYU_HOME=/var/lib/miyu miyu …`。
-- **网页软件**现在只听 `127.0.0.1`：从别的机器进来等「开网络」那一段（局域网、TLS），之前用 ssh 的端口转发。
+- **网页软件**默认只听 `127.0.0.1`。系统配置里 `web.listen` 改成 `0.0.0.0` 或这台机器的某个地址就开了局域网，别的设备要访问密码；局域网是明文 HTTP。没有浏览器的服务器先用 ssh 的端口转发进去设访问密码。见 [常驻和服务器](../docs/guide/service.md)。
 - 日志：`journalctl -u miyu`，核心自己的运行日志在 `/var/lib/miyu/var/log/`。备份、搬家照数据根 `/var/lib/miyu`。

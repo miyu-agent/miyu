@@ -1619,6 +1619,11 @@ flowchart LR
 | 步 | 名字 | 做什么 |
 |---|---|---|
 | NF-1 | 联网服务切供应商 | 设置「搜索服务供应商」改成「联网服务」（键照旧 `net.search.source`），选项只剩自动（免费额度）和要 key、要地址的 DeepSeek、Tavily、Brave、SearXNG。自动只用免费的几家（DeepSeek 拿出自动的顺序）；选了 DeepSeek 的搜索走 DeepSeek Search，`web_fetch` 先交 DeepSeek Fetch（新加）、不先自己抓；DeepSeek 没配 key、限额、余额不足、服务忙、超时、抓回来太短的，搜索照自动的顺序、抓网页先自己抓再照免费的名单。施工单见 `NF-1-联网服务切供应商.md` |
+**文档**（DOC 线，不占里程碑的号；项目主人 2026-11-14 交办：发版前给用户、开发者写一套 wiki 式的文档）
+
+| 步 | 名字 | 做什么 |
+|---|---|---|
+| DOC-1 | 用户手册和开发者文档 | 新增 `docs/guide/`（用户手册 30 页，加目录页和快速上手的位置）、`docs/dev/`（架构、贡献代码、写一个头、写主题和外观、往界面上放东西）、文档首页 `docs/README.md`；`docs/reference/`、`docs/authors/` 清掉遗留的施工号和来历，改掉七处和代码对不上的；`README.md`、`packaging/README.md` 改成现状。手册和开发者文档 Linux、macOS、Windows 三个平台都讲全。只动文档。施工单见 `DOC-1-用户手册.md` |
 
 ### 四、施工单的格式
 

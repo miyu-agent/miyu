@@ -69,7 +69,7 @@ place = "status"
 
 ## The format is frozen
 
-The tables and fields on this page are stable (frozen on 2026-10-23): from now on they are only added to, never renamed, changed or removed, so a manifest you've written keeps working with newer Miyu versions. New fields and tables say which version they arrived in; if you use one, put the lowest version you need in `[package] miyu`, and an older Miyu will say it needs updating. Unknown tables and fields are always errors, so write nothing that isn't on this page.
+The tables and fields on this page are stable: from now on they are only added to, never renamed, changed or removed, so a manifest you've written keeps working with newer Miyu versions. New fields and tables say which version they arrived in; if you use one, put the lowest version you need in `[package] miyu`, and an older Miyu will say it needs updating. Unknown tables and fields are always errors, so write nothing that isn't on this page.
 ## `[package]`
 
 | Field | Notes |
@@ -86,7 +86,7 @@ The tables and fields on this page are stable (frozen on 2026-10-23): from now o
 | `logo` | A picture shipped in the package: a relative path inside the package folder, `.png` or `.webp`. At most 256 KiB and 512 pixels a side; `miyu pkg pack` shrinks a bigger one in its own format while packing (the original in the folder stays). A missing, broken or oversized one counts as no logo: the package still installs and `miyu check` warns. Heads draw it first and fall back to `icon` |
 | `needs` | What a place must have for it to be useful. Two words: `images` (the whole package is off in sessions that can't show images); `life` (only in a life session that hasn't ended; in every other session the whole package is off, whatever the preset; the built-in "End of life" package works this way). `life` was added later and older Miyu versions don't know it, so a package using it should set `miyu` to a version that has it |
 | `miyu` | The oldest Miyu it works with: three numbers, such as `"2026.11.0"` (year.month.release of that month). Write it when you use newly added fields or methods; an older Miyu then says it needs updating instead of reporting keys it doesn't know |
-| `groups` | Only for packages that ship with Miyu: the groups it belongs to (for example `["basesystem"]`); a preset that names a group switches the packages in it. Other packages get an error. The old `required` (also shipped-only) was dropped on 2026-10-26 |
+| `groups` | Only for packages that ship with Miyu: the groups it belongs to (for example `["basesystem"]`); a preset that names a group switches the packages in it. Other packages get an error |
 | `targets` | Which systems it installs on: `linux-x86_64`, `linux-aarch64`, `macos-aarch64`, `windows-x86_64`. Leave it out for any system; when listed, other systems refuse it, and `miyu pkg pack --target` makes one package file per system |
 
 ## `[command]`
@@ -147,7 +147,7 @@ One table per setting; the key is `<prefix>.<name>` (see `prefix` above; without
 | `slider` | `slider = true` on an `int` or `number` draws a slider; needs `min` and `max`. Without `step` it moves by 1 for `int` and by a hundredth of the range for `number`; a `number` slider with `min` equal to `max` needs a `step` |
 | `default` | Default value of that type; not allowed for `secret` |
 | `layers` | Only `system` (the system config), which is also the default |
-| `fields`, `title` | Only for a list with `element = "record"`: under `fields`, one table per field, `[settings.<name>.fields.<field>]`, written like a setting (`type`, `default`, `name`, `description`, `hidden`, and the PC-1 additions), without `layers` or `applies`, and not a `list`; a field can't be called `fields`, and a field without `default` must be written in every entry. `title` names the `text`, `name` or `option` field used as each entry's title. The whole list can't have a default; at most 100 entries |
+| `fields`, `title` | Only for a list with `element = "record"`: under `fields`, one table per field, `[settings.<name>.fields.<field>]`, written like a setting (`type`, `default`, `name`, `description`, `hidden`, plus the `number` type, `choices` with `name` and `description`, `lines`, `step` and `slider`), without `layers` or `applies`, and not a `list`; a field can't be called `fields`, and a field without `default` must be written in every entry. `title` names the `text`, `name` or `option` field used as each entry's title. The whole list can't have a default; at most 100 entries |
 | `applies` | When it takes effect: `now`, `new_session`, `next_turn`, `restart` (the core's next start), `program_start` (your program's next start, default) |
 | `name`, `description` | Shown to people |
 | `hidden` | `true`: not drawn on the settings screen, still writable and readable |
@@ -273,7 +273,7 @@ MCP servers it brings, one per entry; see [MCP servers](mcp.en.md).
 | Field | Notes |
 |---|---|
 | `name` | Server name (the table name in the configuration): starts with a lowercase letter, then only lowercase letters, digits, `-`, 1 to 32 characters; globally unique |
-| `command` | Command and arguments. The first item is looked up in the package's `bin/`, then next to `miyu`, then on `PATH` (`npx`, `uvx`, `docker` and the like). Write this or `url` |
+| `command` | Command and arguments. The first item is looked up in the package's `bin/`, then on `PATH` (`npx`, `uvx`, `docker` and the like). Write this or `url` |
 | `url` | The server's address: starts with `https://`; `http://` only for servers on this machine (`localhost`, `127.0.0.1`), others aren't connected so the token isn't sent in the clear. Write this or `command` |
 | `bearer` | With `url`: the token, sent as `Authorization: Bearer <value>`; written like an `env` value, please as `{ secret = … }` |
 | `headers` | With `url`: other request headers, like `{ X-Api-Key = { secret = "key" } }`, written like `env` |
@@ -340,7 +340,7 @@ It's used only when the owner writes `driver = "<package id>/<driver name>"` in 
 
 ## `[provider_key]`
 
-Asks for the key of one model provider the owner already set up on the models side (PK-1), so the owner doesn't have to enter it again; `capabilities` must include `provider.key`, and declaring `provider.key` needs this table.
+Asks for the key of one model provider the owner already set up on the models side, so the owner doesn't have to enter it again; `capabilities` must include `provider.key`, and declaring `provider.key` needs this table.
 
 | Field | Notes |
 |---|---|

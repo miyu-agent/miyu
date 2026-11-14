@@ -15,8 +15,8 @@ Chinese version: [connection.md](connection.md).
 
 - **Local heads**: the core listens on a local socket only you can reach. Its path is in `run/socket` under the data root (one line, the path as-is) and the local token is in `run/token` (64 lowercase hex digits). Linux and macOS use a Unix domain socket, Windows a named pipe `\\.\pipe\miyu-<fingerprint>`. If no core is running, the head starts `miyu core` itself.
 - **Extensions**: programs the core launches from a package manifest speak the same protocol over stdin and stdout, with no credentials (any given in `hello` are ignored).
-- **Web**: the browser talks to the web app, which connects to the core like a local head. For a connection it opens on behalf of a remote person, the web app first writes the notification `{"jsonrpc":"2.0","method":"connection.remote","params":{"from":<address>}}` before the hello, then passes the browser's bytes through: that connection is remote (Y-1 下). It only goes one way: once marked it never becomes local again, and the notification is ignored after the hello.
-- **Local machine only** (Y-1 下): reading files on the core's machine, handing over local paths and picking local folders are for local connections only; a remote one gets `local_machine_only` and nothing happens: `fs.*`, `session.terminal`, `session.set_terminal`, `account.setup_code`, `core.stop`; `blob.put` and `package.install` with `path`, `kb.mount` with `folder`, `mcp.set` with `command`, `check` with `file` or `cwd`, `config.trust` and `config.get` with `cwd`; a session's `cwd` and `dirs`, an attachment's `path`, `command.run`'s `cwd` and `/workspace <path>`, a project's `workspace`. A session created without `cwd` works in its own default workspace. Remote connections get no `host` in the hello reply.
+- **Web**: the browser talks to the web app, which connects to the core like a local head. For a connection it opens on behalf of a remote person, the web app first writes the notification `{"jsonrpc":"2.0","method":"connection.remote","params":{"from":<address>}}` before the hello, then passes the browser's bytes through: that connection is remote. It only goes one way: once marked it never becomes local again, and the notification is ignored after the hello.
+- **Local machine only**: reading files on the core's machine, handing over local paths and picking local folders are for local connections only; a remote one gets `local_machine_only` and nothing happens: `fs.*`, `session.terminal`, `session.set_terminal`, `account.setup_code`, `core.stop`; `blob.put` and `package.install` with `path`, `kb.mount` with `folder`, `mcp.set` with `command`, `check` with `file` or `cwd`, `config.trust` and `config.get` with `cwd`; a session's `cwd` and `dirs`, an attachment's `path`, `command.run`'s `cwd` and `/workspace <path>`, a project's `workspace`. A session created without `cwd` works in its own default workspace. Remote connections get no `host` in the hello reply.
 
 ## One message per line
 
@@ -25,7 +25,7 @@ Chinese version: [connection.md](connection.md).
 
 **Requests** are JSON-RPC 2.0: `jsonrpc` is `"2.0"`, `method` the method name, `params` an object (omitted means `{}`, an array gets `bad_params`), `id` a string of 1 to 128 bytes with no control characters. A message without `id` is a notification and the core ignores it, except `connection.remote` before the hello (see **Web** above). Unknown params are ignored; `null` means omitted.
 
-**Just one person**: Miyu is for the one person who installed it (the owner); there are no accounts, members or admin mode (since 2026-10-28). A `"scope"` that old heads put in the request envelope is accepted and ignored.
+**Just one person**: Miyu is for the one person who installed it (the owner); there are no accounts, members or admin mode. A `"scope"` that old heads put in the request envelope is accepted and ignored.
 
 **Responses**: success in `result`; refusal in `error`: `code` is the error code, `message` a sentence for people (in the connection's language), `data.reason` the reason code for programs, sometimes with more fields.
 
@@ -70,8 +70,8 @@ Give exactly one kind of credential: `token`, `code`, `login`, `ticket` or `pass
 |---|---|
 | `protocol` | The chosen major version: `1` |
 | `core` | `{"version"}`: the core's version |
-| `avatar` | The version of your avatar, only when it has one (construction AV-1): heads use it to refresh their cache and fetch the picture with `account.avatar` |
-| `host` | `{"home", "platform", "workspace", "dirs"}`: the system home directory (`null` if unknown), `linux`/`macos`/`windows`, the default workspace, and the XDG-style folders `{"pictures", "videos", "documents", "downloads"}` (the real path when it exists and as is otherwise, step Y-11; on Windows without the `\\?\` prefix, step WP-1). Not given to remote connections (Y-1 下); extensions get no `dirs` |
+| `avatar` | The version of your avatar, only when it has one: heads use it to refresh their cache and fetch the picture with `account.avatar` |
+| `host` | `{"home", "platform", "workspace", "dirs"}`: the system home directory (`null` if unknown), `linux`/`macos`/`windows`, the workspace root (`root/workspace/` in the data root; each session's default workspace is `<session id>/` under it), and the XDG-style folders `{"pictures", "videos", "documents", "downloads"}` (the real path when it exists and as is otherwise; on Windows without the `\\?\` prefix). Not given to remote connections; extensions get no `dirs` |
 | `language` | `zh`, `en` or `ja`: the language for text from now on. If the setting changes, the next message follows it without a new handshake |
 | `view` | The view projection version, currently `1` (see `view.page` in [Sessions](sessions.en.md)) |
 | `sandbox` | `{"usable": true}`, or `{"usable": false, "reason"}`: `helper_missing`, `helper_failed`, `no_mechanism` |
@@ -83,7 +83,7 @@ Give exactly one kind of credential: `token`, `code`, `login`, `ticket` or `pass
 
 ```json
 → {"jsonrpc":"2.0","id":"h1","method":"hello","params":{"protocol":[1,1],"head":{"kind":"tui","version":"0.1.0"},"locale":"en-US","token":"3f9a…"}}
-← {"id":"h1","jsonrpc":"2.0","result":{"core":{"version":"0.0.1"},"host":{"home":"/home/me","platform":"linux","workspace":"/home/me/.miyu/home/me/workspace"},"language":"en","protocol":1,"sandbox":{"usable":true},"view":1}}
+← {"id":"h1","jsonrpc":"2.0","result":{"core":{"version":"0.0.1"},"host":{"home":"/home/me","platform":"linux","workspace":"/home/me/.miyu/root/workspace"},"language":"en","protocol":1,"sandbox":{"usable":true},"view":1}}
 ```
 
 Sending `hello` again after the handshake is fine: if it passes, the new language and capabilities apply; if it is refused and the connection stays open, the previous ones stay.
@@ -128,15 +128,15 @@ Subscribe to a push stream: from now on its pushes go to this connection.
 | `packages` | One item of the package list changed | `{"packages": […]}` |
 | `projects` | A project changed | `{"projects": […]}`, all of them |
 | `bus` | Names on the bus or their readiness changed ([`bus.list`](bus.en.md#buscall-buslist)) | `{"names": […]}`, all of them |
-| `schedules` | A schedule changed or ran (construction J-1 lower) | `{"schedules": […]}`, all of them |
-| `notices` | Notices for people (construction J-3 middle): a new-session schedule's run has ended, the schedule table broke and was replaced by an empty one. Heads show system notifications from it | `{}`, plus `claimed: true` while a connection has claimed background notices ([`notices.claim`](#noticesclaim)); earlier ones are not replayed |
+| `schedules` | A schedule changed or ran | `{"schedules": […]}`, all of them |
+| `notices` | Notices for people: a new-session schedule's run has ended, the schedule table broke and was replaced by an empty one. Heads show system notifications from it | `{}`, plus `claimed: true` while a connection has claimed background notices ([`notices.claim`](#noticesclaim)); earlier ones are not replayed |
 | `prefs` | With `package`: another connection changed that UI package's settings (see [A head's own settings](prefs.en.md)). Not a UI package that is installed: `unknown_package`, `not_a_ui_package` | `{"values": {…}}`, the whole object at that moment |
-| `package` | With `package`: what that package pushes to people (construction IM-1 lower-middle 2); its pages update from it instead of polling. A package that isn't installed gets `unknown_package` | `{}`; earlier ones are not replayed |
+| `package` | With `package`: what that package pushes to people; its pages update from it instead of polling. A package that isn't installed gets `unknown_package` | `{}`; earlier ones are not replayed |
 | `kb` | Index-building progress of knowledge bases: `kb.indexing`, `kb.indexed` | `{}`: the current state comes from `kb.list` |
 | `memory` | One memory's log | `{"upto": <last sequence number at that moment>}` |
 | `widgets` | Widgets | See [Packages and commands](packages.en.md) |
 
-`model` in the `events` response is what the session asks next: `ref` (its model or `@pool`), `endpoint` and `model` (who gets the next request; a rotating pool has neither), and `effort` `{"level", "from"}`: the reasoning effort that model uses, `from` being `session` (set with `session.configure`, step SM-1) or `system` (the config). A rotating pool, or a request that carries no effort, has no `effort`.
+`model` in the `events` response is what the session asks next: `ref` (its model or `@pool`), `endpoint` and `model` (who gets the next request; a rotating pool has neither), and `effort` `{"level", "from"}`: the reasoning effort that model uses, `from` being `session` (set with `session.configure`) or `system` (the config). A rotating pool, or a request that carries no effort, has no `effort`.
 
 Top-level `compaction_line` in the `events` response is the compaction trigger pinned on the session, as a percentage of the window (set with `session.configure`), and `vision` is the session's pinned vision model (a model or `@pool`). They match the same fields in `view.status`: absent when nothing is pinned (the config applies), and they change with the pushed `session.policy_changed`. `limits.compaction_line` shares the name but means something else: the compaction line in effect, in tokens, which follows a new pin only when the next turn starts.
 
@@ -178,7 +178,7 @@ The access password is only needed to connect from the local network (a phone, a
 | `account.setup` | `password`, `old`? | `{}` on a local-token connection; otherwise `{"login": {"expires", "token"}}`: a new device token, which this connection goes by from then on |
 | `account.logout` | `all` (boolean, default `false`) | `{"revoked": <how many>}`: revokes this device token, or all of them with `all` |
 
-A one-time code works once. Setting or changing the access password revokes every device and closes their connections (except the one making the change). The password is at most 1024 bytes and must not be empty or only whitespace; there is no minimum length. A device-token connection from another device on the LAN (brought in by the web server with `connection.remote`) must give the current password as `old` once one is set; it is throttled by source, the same as password login. Before a password is set it needn't. Connections from this machine never need it: local-token and one-time-code connections, and the device token of a page opened by `miyu web` on this machine (step PW-2, 2026-10-31).
+A one-time code works once. Setting or changing the access password revokes every device and closes their connections (except the one making the change). The password is at most 1024 bytes and must not be empty or only whitespace; there is no minimum length. A device-token connection from another device on the LAN (brought in by the web server with `connection.remote`) must give the current password as `old` once one is set; it is throttled by source, the same as password login. Before a password is set it needn't. Connections from this machine never need it: local-token and one-time-code connections, and the device token of a page opened by `miyu web` on this machine.
 
 **Errors**
 
@@ -190,7 +190,7 @@ A one-time code works once. Setting or changing the access password revokes ever
 
 ## `notices.claim`
 
-Claim background notices (construction TR-1): a head such as the tray, which opens no session and still has to pop system notifications after the browser is closed, calls it once on connecting to say "I pop the notices for sessions no head has open (no `viewed` on their session-list item) finishing, asking or needing approval, and the `notices` stream's notices". The core keeps it per connection and releases it when the connection drops; calling it again on the same connection changes nothing.
+Claim background notices: a head such as the tray, which opens no session and still has to pop system notifications after the browser is closed, calls it once on connecting to say "I pop the notices for sessions no head has open (no `viewed` on their session-list item) finishing, asking or needing approval, and the `notices` stream's notices". The core keeps it per connection and releases it when the connection drops; calling it again on the same connection changes nothing.
 
 **Who can call**: people; an extension gets `local_only`.
 
@@ -204,7 +204,7 @@ Other heads learn whether anyone has claimed from the `notices` stream: the subs
 
 ## `core.stop`
 
-Asks the core to stop (DT-4 下): the desktop app's tray "Quit" uses it to close the core too.
+Asks the core to stop: the desktop app's tray "Quit" uses it to close the core too.
 
 **Who can call**: people, only on a connection made with the local token; a remote one gets `local_machine_only`.
 
@@ -237,7 +237,7 @@ Hand-off tickets: a signed-in person jumps from one page to another program's pa
 - Give `ticket` in the handshake (see the credentials above): connected in one step; the reply carries the new device token. Pages that connect to the core straight from the browser use this.
 - Redeem it with `login.redeem` for a device token and connect to the core with that token (`connect_login` in `miyu-client`, over the local socket, `login` in the handshake; a page's own sign-in form uses `connect_password`, which returns the login token it got). The older way; it still works.
 
-**Who can call**: `login.ticket` is for people (connected with the local token, as the terminal does, or a device token, a password or a hand-off ticket). Extensions started by the core may only ask with `via` `"page"`, and need the capability `login.page` approved (step LP-1, see [Extensions](extensions.en.md), "Signing in pages on this machine"): without it they get `needs_approval`; without `via`, or with another one, `local_only`. Anyone holding a ticket can call `login.redeem`.
+**Who can call**: `login.ticket` is for people (connected with the local token, as the terminal does, or a device token, a password or a hand-off ticket). Extensions started by the core may only ask with `via` `"page"`, and need the capability `login.page` approved (see [Extensions](extensions.en.md), "Signing in pages on this machine"): without it they get `needs_approval`; without `via`, or with another one, `local_only`. Anyone holding a ticket can call `login.redeem`.
 
 | Method | Params | Result |
 |---|---|---|
@@ -246,7 +246,7 @@ Hand-off tickets: a signed-in person jumps from one page to another program's pa
 
 A ticket works once, whether given in a handshake or redeemed. At most 16 exist at a time; the oldest is dropped. Tickets live only in the core's memory and die with a restart.
 
-A ticket with `via` `"page"` only works on this machine (asked for by an extension: step LP-1; by a person, such as the web software asking for a page opened on this machine: step LP-2): a remote connection passed on by the web software (one that sent `connection.remote` before the hello, whatever address it named, including a loopback address from a reverse proxy on this machine) gets `bad_ticket` for it, in the handshake or with `login.redeem`, and the ticket is spent. Tickets people ask for with `"open"` or without `via` still work anywhere.
+A ticket with `via` `"page"` only works on this machine (asked for by an extension, or by a person, such as the web software asking for a page opened on this machine): a remote connection passed on by the web software (one that sent `connection.remote` before the hello, whatever address it named, including a loopback address from a reverse proxy on this machine) gets `bad_ticket` for it, in the handshake or with `login.redeem`, and the ticket is spent. Tickets people ask for with `"open"` or without `via` still work anywhere.
 
 **Errors**
 

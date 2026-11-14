@@ -1,6 +1,6 @@
 # The bus: `bus.*`
 
-The user-space bus (design `67-总线.md`): packages declare `provides` (one provider per name) and `plugs` (several allowed) under `[export]` in their manifest, and heads and other packages find and call them by name instead of by package id. The core's own methods (sessions, tools, drivers and so on) are not on the bus. To see who provides what and whether it's ready: `miyu bus list`. Chinese version: [bus.md](bus.md).
+The user-space bus: packages declare `provides` (one provider per name) and `plugs` (several allowed) under `[export]` in their manifest, and heads and other packages find and call them by name instead of by package id. The core's own methods (sessions, tools, drivers and so on) are not on the bus. To see who provides what and whether it's ready: `miyu bus list`. Chinese version: [bus.md](bus.md).
 
 | Method | What it does |
 |---|---|

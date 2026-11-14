@@ -49,7 +49,7 @@
 | `session_not_found` | 没有这个会话，删了的也是 |
 | `session_broken` | 会话载入不了：日志坏了、读不懂 |
 | `session_read_only` | 会话日志中间坏了一行：坏行以前的用 `view.page` 照样看得到，会话载入不了、不能接着聊，要继续新开一个会话；`data.segment` 是哪一段（只是文件名），`data.line` 是第几行 |
-| `session_unavailable` | 会话这一刻读不了：读日志时读写出错，日志没坏，过一会儿再试（施工 YC-2） |
+| `session_unavailable` | 会话这一刻读不了：读日志时读写出错，日志没坏，过一会儿再试 |
 | `session_stopped` | 会话停了（写不进去、出了 bug）；再发一次会重新载入 |
 | `session_sealed` | 会话封存了（分叉时写了 `seal_after`、跑满了；人生会话结束了，见[人生会话](life.md)），改对话的命令不收 |
 | `restoring` | 撤销还没做完时来的命令（照常碰不到） |
@@ -60,9 +60,9 @@
 
 | 名字 | 类型 | 说明 |
 |---|---|---|
-| `cwd` | 字符串 | 头的工作目录，人看到的写法，例如 `~/src/miyu`。不写的用这个会话自己的默认工作区；远程的连接不能写（施工 Y-1 下） |
+| `cwd` | 字符串 | 头的工作目录，人看到的写法，例如 `~/src/miyu`。不写的用这个会话自己的默认工作区；远程的连接不能写 |
 | `persona` | 字符串或 `null` | 用哪个人格；`null` 是不用人格；不写照配置 `persona.default` |
-| `preset` | 字符串或 `null` | 用哪个预设；不写照 `preset.default`，都没有是 `full`；`null` 是无工具：一件工具都不给（施工 P-16 下；以前的写法，照旧认。新开的选「无功能」写 `none`，施工 P-17） |
+| `preset` | 字符串或 `null` | 用哪个预设；不写照 `preset.default`，都没有是 `full`；`null` 是无工具：一件工具都不给（以前的写法，照旧认；新开的选「无功能」写 `none`） |
 | `model` | 字符串 | `<供应商>/<模型>` 或 `@<池>`；不写的照这一刻的 `models.chat` 记下（写的是池就记池），以后改 `models.chat` 这个会话照旧 |
 | `vision` | 字符串 | 这个会话替看图用哪个模型：写法同 `model`；不写的跟着配置的 `models.vision`。造好以后记一条 `session.policy_changed`，同 `session.configure` 的 `vision` |
 | `compaction_line` | 整数 | 这个会话的压缩触发线：窗口的百分之几，20 到 95；不写的跟着配置的 `compaction.line`。造好以后记一条 `session.policy_changed`，同 `session.configure` 的 `compaction_line` |
@@ -120,7 +120,7 @@
 | `pinned` | `true`：置顶了 |
 | `busy` | `true`：有回合在进行 |
 | `viewed` | `true`：至少一个头开着它（[`session.viewing`](#sessionviewing)），后台通知由那个头出 |
-| `persona`、`preset` | 用哪个人格、预设，没有的不写；无工具的 `preset` 是 `null`，另带 `no_tools: true`（施工 P-16 下） |
+| `persona`、`preset` | 用哪个人格、预设，没有的不写；无工具的 `preset` 是 `null`，另带 `no_tools: true` |
 | `tokens` | 连同它派出去的子会话（一层层往下）一共用了多少 token：每次模型调用（主请求、起标题、压缩都算）的输入（没命中、缓存读、缓存写）加输出，和终端底栏的 `Σ` 同一个算法；还是 0 的不写 |
 | `context` | `{"used", "window"?}`：上下文用了多少 token（最近一次主请求的输入：没命中、缓存读、缓存写，同终端底栏、会话状态的上下文），压缩以后、还没说过话的不写；`window` 是那一次请求的模型照这时的配置查到的上下文窗口，查不到的不写 |
 | `project` | 在哪个项目，不在的不写 |
@@ -213,7 +213,7 @@
 
 **参数**：`session`（可以不写：不写的照新会话会拿到的算）；不写 `session` 时可带 `persona`（`null` 是无人格）、`preset`（`null` 是无工具），同 `session.create`。
 
-**回应**：`{"tools": [{"name", "source": {"kind", "id", "name"}, "summary"?}]}`，照发给模型的先后（名字的字节序）。`kind` 是 `builtin`、`package`、`mcp`、`script`；`source.name` 照连接的语言挑。`summary` 只有脚本有。工具一律全量（施工 FL-1），以前只露名字的那一格 `loaded: false` 不再出现。
+**回应**：`{"tools": [{"name", "source": {"kind", "id", "name"}, "summary"?}]}`，照发给模型的先后（名字的字节序）。`kind` 是 `builtin`、`package`、`mcp`、`script`；`source.name` 照连接的语言挑。`summary` 只有脚本有。工具一律全量，不会有只露名字的 `loaded: false`。
 
 ```json
 {"tools":[{"name":"edit","source":{"kind":"builtin","id":"basesystem","name":"基础系统"}},{"name":"mcp__notes__search","source":{"kind":"mcp","id":"notes","name":"notes"}}]}
@@ -391,7 +391,7 @@
 
 ## `session.terminal`、`session.set_terminal`
 
-终端会话：在 shell 里说的话进的那个一直续下去的会话（终端无缝集成用，设计 `22-命令行.md` 第七节）。一个，带了 `terminal` 键的每个终端各一个（施工 T-22）；哪个算、什么时候换新的由核心定。
+终端会话：在 shell 里说的话进的那个一直续下去的会话（终端无缝集成用）。一个，带了 `terminal` 键的每个终端各一个；哪个算、什么时候换新的由核心定。
 
 **`session.terminal`**：参数 `cwd`（可以不写）：要新开时在哪个目录，没写的照默认工作区；`fresh`（可以不写，默认假）：真的不管指着谁，照下面第 3 条开一个新的、指过去（`/new`）；`terminal`（可以不写）：哪个终端，头生成的键，1 到 128 个字、没有控制字符，不合的拒 `bad_params`，带了的照这个键各记一个指针，不带的用原来那一个；`create`（可以不写，默认真）：假的只问不开，下面第 2、3 条的情形回 `{"session": null}`，不新开、不挪指针（终端刚开、还没说话时问一下在哪个会话），和 `fresh: true` 一起写的拒 `bad_params`。回应 `{"session"}`：
 
@@ -439,8 +439,8 @@
 - `model`：`<供应商>/<模型>` 或 `@<池>`；`null` 是不再钉着哪一个，回到跟着配置的 `models.chat`（每一轮照那时的配置，配置换了跟着换）。
 - `vision`：替看图用的模型，写法同 `model`：`<供应商>/<模型>` 或 `@<池>`；`null` 是不再钉着，回到跟着配置的 `models.vision`。会话的模型看不了图时，核心照它把图转成文字（没钉的照 `models.vision`）；钉的后来解析不出（供应商、池删了），那张图照没转成办，不退回 `models.vision`。
 - `persona`：人格编号；`null` 是无人格。
-- `preset`：预设编号；`null` 是换成无工具（施工 P-16 下）。
-- `effort`：思考强度的一档（施工 SM-1），照这个会话这时的模型的档位查（`model.list` 的 `facts.reasoning`；同一条换了模型的照换成的）。用着池的会话不能设，写了回 `bad_params`（`data.field` 是 `effort`），池里每个成员照它自己的配置；`null` 是回到跟着配置。只管这个会话：配置里的 `providers.<id>.models.<model>.effort` 是新会话的默认。换到没有这一档的模型照配置，换回来又用上。
+- `preset`：预设编号；`null` 是换成无工具。
+- `effort`：思考强度的一档，照这个会话这时的模型的档位查（`model.list` 的 `facts.reasoning`；同一条换了模型的照换成的）。用着池的会话不能设，写了回 `bad_params`（`data.field` 是 `effort`），池里每个成员照它自己的配置；`null` 是回到跟着配置。只管这个会话：配置里的 `providers.<id>.models.<model>.effort` 是新会话的默认。换到没有这一档的模型照配置，换回来又用上。
 - `context`：上下文上限，token 数；`null` 是去掉。生效的窗口取模型的窗口和它里小的（模型没报窗口的照它），压缩线照生效的窗口算；跟着会话，换模型、池换了成员都照用。太小、照它算不出压缩线的回 `bad_params`（`data.field` 是 `context`，`data.min` 是最少要多少），什么都不换。人打 `/context` 也是改它。
 - `compaction_line`：压缩触发线，窗口的百分之几，20 到 95 的整数；`null` 是不再钉着，回到跟着配置的 `compaction.line`。上下文用到这条线就自动压缩。压缩线照旧不超过「窗口 − 输出预留 − 余量」：20 万的窗口调到 85 以上不起作用，百万的窗口才到得了 95。
 

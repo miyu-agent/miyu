@@ -8,8 +8,8 @@
 | [`tool.call`、`tool.cancel`](#toolcalltoolcancel) | 核心 → 扩展 | 调它的工具；放下一次调用 |
 | [`package.methods`、`method.call`](#packagemethodsmethodcall) | 两个方向 | 登记后台页、界面块要调的方法；核心转来的调用 |
 | [`package.emit`](#packageemit) | 扩展 → 核心 | 推给开着它页面的人 |
-| [`feature.offer`](#featureoffer) | 扩展 → 核心 | 替这个人交预设菜单里的功能（施工 IM-6） |
-| [`port.claim`、`port.release`、`port.list`](#portclaimportreleaseportlist) | 扩展 → 核心（`port.list` 给主人） | 登记、放开要听的端口；看整张表（施工 IM-5） |
+| [`feature.offer`](#featureoffer) | 扩展 → 核心 | 替这个人交预设菜单里的功能 |
+| [`port.claim`、`port.release`、`port.list`](#portclaimportreleaseportlist) | 扩展 → 核心（`port.list` 给主人） | 登记、放开要听的端口；看整张表 |
 | [`command.call`](#commandcall) | 核心 → 扩展 | 人打了它声明的斜杠命令 |
 | [`user.append`](#userappend) | 核心 → 扩展 | 回合开始时问它要不要往上下文里放几句 |
 | [`tool.guard`、`guard.cancel`](#toolguardguardcancel) | 核心 → 扩展 | 工具调用执行前问它放行、拒绝还是问人；不等了 |
@@ -20,7 +20,7 @@
 | [`system.append`](#systemappend) | 扩展 → 核心 | 往系统提示词末尾放一段 |
 | [`widget.set`、`widget.clear`、`widget.watch`、`widget.unwatch`](#widgetsetwidgetclearwidgetwatchwidgetunwatch) | 两个方向 | 界面块的内容 |
 | [`extension.config`](#extensionconfig) | 核心 → 扩展 | 它自己的配置变了 |
-| [`schedule.fired`](schedules.md#schedulefired) | 核心 → 扩展 | 它建的定时到点了（施工 J-4） |
+| [`schedule.fired`](schedules.md#schedulefired) | 核心 → 扩展 | 它建的定时到点了 |
 | [`content.list`、`content.read`、`content.changed`](#contentlistcontentreadcontentchanged) | 两个方向 | 读别的包给它带的内容 |
 | [`events.append`](#eventsappend) | 扩展 → 核心 | 往会话里记一条自己的事件 |
 
@@ -29,12 +29,12 @@
 ## 拉起
 
 - **程序**：先找包文件夹的 `bin/`，再找 `miyu` 旁边，不走 `PATH`；参数是清单的 `[process] args`。
-- **环境**：照核心的，另设 `MIYU_HOME`（数据根）、`MIYU_RESOURCES`（资源目录）、`MIYU_PROGRAM`（主程序 `miyu` 的真实位置，施工 G-15），和这个包在各层的那一格（设计 55 第四节，都已经建好、交真实位置）：`MIYU_APP_DIR`（包的文件夹）、`MIYU_CONFIG_DIR`、`MIYU_STATE_DIR`（也是工作目录）、`MIYU_CACHE_DIR`、`MIYU_LOG_DIR`、`MIYU_TMP_DIR`（拉起前清空）、`MIYU_RUNTIME_DIR`，`MIYU_PICTURES_DIR` 这四个。旧名 `MIYU_PACKAGE_DIR`、`MIYU_PACKAGE_STATE` 过渡期间一起给。
+- **环境**：照核心的，另设 `MIYU_HOME`（数据根）、`MIYU_RESOURCES`（资源目录）、`MIYU_PROGRAM`（主程序 `miyu` 的真实位置），和这个包在各层的那一格（都已经建好、交真实位置）：`MIYU_APP_DIR`（包的文件夹）、`MIYU_CONFIG_DIR`、`MIYU_STATE_DIR`（也是工作目录）、`MIYU_CACHE_DIR`、`MIYU_LOG_DIR`、`MIYU_TMP_DIR`（拉起前清空）、`MIYU_RUNTIME_DIR`，`MIYU_PICTURES_DIR` 这四个。旧名 `MIYU_PACKAGE_DIR`、`MIYU_PACKAGE_STATE` 过渡期间一起给。
 - **工作目录**：这个包放状态的目录 `var/lib/<编号>/`。
 - **标准错误**：追加到 `var/log/<编号>/stderr`，超过 1 MiB 的先挪成 `.old`。
 - **握手**：照常发 `hello`，不出示凭据。回应的 `config` 是它自己的配置项的最终值（密钥是真值）；批了 `provider.key` 的多一格 `provider_key`（下面「`provider_key`」）。
 - **退出**：核心关它的标准输入就是「请退出」，5 秒没退的杀掉。
-- **核心没了**：核心崩了、被强行结束时，你和你起的子进程跟着结束（施工 XH-1）：Unix 上你起在一个自己的进程组里（不是组长），组里有一个核心看着的进程，核心一没就把整组杀掉；`setsid` 出去、自己换了进程组的不算。Windows 上你和你起的都在核心的作业对象里。有计划地停下照上一条。你不在核心的进程组里，终端里按 Ctrl+C 打不到你。
+- **核心没了**：核心崩了、被强行结束时，你和你起的子进程跟着结束：Unix 上你起在一个自己的进程组里（不是组长），组里有一个核心看着的进程，核心一没就把整组杀掉；`setsid` 出去、自己换了进程组的不算。Windows 上你和你起的都在核心的作业对象里。有计划地停下照上一条。你不在核心的进程组里，终端里按 Ctrl+C 打不到你。
 - **崩了**：退出码 1 以外的退出、被杀、握手不成都算一次失败，退避 1、2、4、8、16 秒再拉起，连续 5 次停下（`failed_repeatedly`）。**退出码 1** 表示配置错、端口被占这类重启也没用的：不再拉起，直接停下（`config_error`）。连着跑满 60 秒的，失败次数从零数。
 
 ## `feature.offer`
@@ -66,12 +66,12 @@
 
 ## 能力
 
-清单 `[process] capabilities` 声明要什么。自己装的包要人批：装的时候批（`package.install`、`package.upgrade` 带 `approve`，施工 PK-3 上，见 [软件包](packages.md)），没批全的打开时再批（`extension.enable` 带 `approve`）；出厂的算批过，`login.page`、`provider.key` 除外（出厂的也要人批，施工 LP-1、PK-1）。还有没批的不拉起。批过的记在开关文件 `extensions.json` 的 `approved` 里（包的编号到能力），只留这一份清单声明了的；换了来路（本机文件盖过去、换了源、换了来源仓库）装的不接着用以前批的；卸包时删掉。
+清单 `[process] capabilities` 声明要什么。自己装的包要人批：装的时候批（`package.install`、`package.upgrade` 带 `approve`，见 [软件包](packages.md)），没批全的打开时再批（`extension.enable` 带 `approve`）；出厂的算批过，`login.page`、`provider.key` 除外（出厂的也要人批）。还有没批的不拉起。批过的记在开关文件 `extensions.json` 的 `approved` 里（包的编号到能力），只留这一份清单声明了的；换了来路（本机文件盖过去、换了源、换了来源仓库）装的不接着用以前批的；卸包时删掉。
 
 | 能力 | 能做什么 |
 |---|---|
 | `tools` | 向工具目录提供工具（`provide`） |
-| `tools.commands` | 提供的工具会跑命令（`provide` 规格写 `runs_commands`）：这一次调用期间，你起的命令里能用 `miyu call` 以这个会话的身份调 AI 的工具（施工 XG-1 下） |
+| `tools.commands` | 提供的工具会跑命令（`provide` 规格写 `runs_commands`）：这一次调用期间，你起的命令里能用 `miyu call` 以这个会话的身份调 AI 的工具 |
 | `commands` | 提供斜杠命令（清单 `[[slash]]`） |
 | `widgets` | 在界面上显示自己的内容（界面块） |
 | `context.inject` | 回合开始时往上下文里放几句（`user.append`） |
@@ -89,7 +89,7 @@
 | `fs.read` | 经核心读文件（`fs.*`） |
 | `network` | 经核心抓链接（`link.preview`） |
 | `fs.write` | 写指定的路径：扩展进沙盒以后照它放行 |
-| `audio.record` | 录本机麦克风的声音：扩展自己开设备录，核心不经手；扩展进沙盒以后照它放行声卡的录音那一头（设计 62） |
+| `audio.record` | 录本机麦克风的声音：扩展自己开设备录，核心不经手；扩展进沙盒以后照它放行声卡的录音那一头 |
 | `audio.play` | 从本机的音箱、耳机放声音：扩展自己开设备放；扩展进沙盒以后照它放行声卡的放音那一头 |
 | `tool.guard` | 工具调用执行前放行、拒绝或者要问人（清单 `[guard]`，`tool.guard`） |
 | `tool.rewrite` | 工具执行后改写结果：还没有 |
@@ -98,7 +98,7 @@
 
 ## 替本机页面换登录票：`login.ticket`
 
-你的包带一个网页（例如平台桥的管理页），想让主人在这台电脑上打开它时不用输访问密码（施工 LP-1，项目主人 2026-11-06 定：只给本机免密）。声明 `login.page`、人批过以后，在扩展连接上调 `login.ticket {"via": "page"}`，回 `{"ticket", "expires"}`：60 秒、一次性。页面拿它照交接票登录：握手凭据 `ticket`（直连核心的页面），或者你在扩展连接上替它 `login.redeem {"ticket"}` 换一个设备令牌（见 [连接](connection.md)「`login.ticket`、`login.redeem`」）。
+你的包带一个网页（例如平台桥的管理页），想让主人在这台电脑上打开它时不用输访问密码（只有本机免密）。声明 `login.page`、人批过以后，在扩展连接上调 `login.ticket {"via": "page"}`，回 `{"ticket", "expires"}`：60 秒、一次性。页面拿它照交接票登录：握手凭据 `ticket`（直连核心的页面），或者你在扩展连接上替它 `login.redeem {"ticket"}` 换一个设备令牌（见 [连接](connection.md)「`login.ticket`、`login.redeem`」）。
 
 - 只认 `via` 是 `"page"`：不写、写别的回 `local_only`；没批 `login.page` 的回 `needs_approval`，`data.capabilities` 是 `["login.page"]`。出厂的包声明了它也要人批，不算批过。
 - 票只在本机换：网页软件转来的远程连接（握手之前说过 `connection.remote` 的，不管说的是什么地址）拿它握手、`login.redeem` 都回 `bad_ticket`，票当场作废。你自己在扩展连接上 `login.redeem` 算本机：核心看不到你的页面是谁、从哪儿打开的，下面几条只有你守得住。
@@ -138,7 +138,7 @@
 | `subject` | 给人看的名字后面跟哪个参数的值，要是 `input_schema.properties` 里的一个 |
 | `paths` | 哪几个参数是路径：`[{"parameter": "file_path", "write": true}]`。参数要是 `input_schema.properties` 顶层的一个，类型是字或字的数组；`write` 不写是读，写了真的 `access` 要是 `write`。核心照它判这次调用要碰的路径（工作区外的写问人，和内置的 `edit` 一样），`tool.call` 带 `checked`，回应里的文件效果只收这几条。不写的（写 `null` 同不写）不报路径，文件效果一条都不收 |
 | `background_parameters` | 只在会话有后台时才给的参数名：`["run_in_background"]`。要是 `input_schema.properties` 顶层的、不在 `required` 里的。后台运行关着的会话里，AI 看到的参数格式没有它们。写 `null` 同不写 |
-| `runs_commands` | `true`：这件工具会跑命令（施工 XG-1 下）。包要批过能力 `tools.commands`。AI 看到的说明后面接上 `miyu call` 怎么用那一段（和内置 `shell` 一样）；拿到了通道的调用，`tool.call` 带 `channel`（见下面「跑命令」）。不写、写 `null`、`false` 的不是 |
+| `runs_commands` | `true`：这件工具会跑命令。包要批过能力 `tools.commands`。AI 看到的说明后面接上 `miyu call` 怎么用那一段（和内置 `shell` 一样）；拿到了通道的调用，`tool.call` 带 `channel`（见下面「跑命令」）。不写、写 `null`、`false` 的不是 |
 
 **回应**：`{"tools": <件数>}`。连接断了工具照旧留在目录里，被调到时回「暂时不可用」。
 
@@ -155,11 +155,11 @@
 | `tool` | 工具名 |
 | `args` | 参数 |
 | `cwd` | 这一轮的工作目录：真实的绝对路径，`~` 已经照家目录换好（家目录不知道的照会话记的原样） |
-| `pictures` | 放图的目录（数据根里照 XDG 的 `pictures/`，施工 Y-11 下）：画出来、生成的图放这里，人在终端、网页里找得到。真实位置，可能还没建，写之前自己建好（缺的上级一起建）。只给本机的会话：会话外面的调用、场所会话（群、私聊，关在自己的工作区里，施工 Y-11 下修）没有这一格，照旧放工作区 |
+| `pictures` | 放图的目录（数据根里照 XDG 的 `pictures/`）：画出来、生成的图放这里，人在终端、网页里找得到。真实位置，可能还没建，写之前自己建好（缺的上级一起建）。只给本机的会话：会话外面的调用、场所会话（群、私聊，关在自己的工作区里）没有这一格，照旧放工作区 |
 | `by` | 是谁要她做的：触发这一轮的那条消息的 `by`；没有触发的回合不写 |
 | `owner` | 核心认不认 `by` 是主人本人 |
-| `permission` | 派这次调用那一刻实际生效的权限 `{"level", "read_only"}`（施工 TC-1）：`level` 是 `full`，`read_only` 开着就是只读。照它定能碰多大范围，例如完全放开的会话发什么文件都行。外人的会话另关着（`owner` 是假），自己照外人的规矩办 |
-| `persona` | 会话这一轮的人格编号（施工 TC-1），无人格的不写。照它挑声音、语气 |
+| `permission` | 派这次调用那一刻实际生效的权限 `{"level", "read_only"}`：`level` 是 `full`，`read_only` 开着就是只读。照它定能碰多大范围，例如完全放开的会话发什么文件都行。外人的会话另关着（`owner` 是假），自己照外人的规矩办 |
+| `persona` | 会话这一轮的人格编号，无人格的不写。照它挑声音、语气 |
 | `checked` | 只给声明了 `paths` 的：权限检查判过的真实位置，照参数里路径的先后（数组每项一条）。写文件就写这几个：你自己把参数里的路径换成真实位置以后，不在这里面的别碰（检查以后路径上的链接可能被换过） |
 | `channel` | 只给声明了 `runs_commands` 的、这次调用开了通道的：`{"sock", "token", "bin"}`，见下面「跑命令」 |
 
@@ -190,7 +190,7 @@
 - `error` 是真的照样收文件效果：改了一半出错，改了的是真的。
 - 撤销不改回文件（和内置工具一样），只退回 AI 看过的。
 
-**跑命令**（声明了 `runs_commands` 的，施工 XG-1 下）：会话里有 AI 能在脚本里调的工具时，这次调用开一个只给它的端点，`tool.call` 带 `channel`：
+**跑命令**（声明了 `runs_commands` 的）：会话里有 AI 能在脚本里调的工具时，这次调用开一个只给它的端点，`tool.call` 带 `channel`：
 
 | 名字 | 说明 |
 |---|---|
@@ -221,7 +221,7 @@
 
 ## `session.set_state`、`session.state`
 
-包在一个会话里的一份状态（设计 46）：你画在界面块上的、压缩时给模型留的、你自己的数据。要 `sessions.drive` 能力；只读写你这个包的、你替的那个人的会话。
+包在一个会话里的一份状态：你画在界面块上的、压缩时给模型留的、你自己的数据。要 `sessions.drive` 能力；只读写你这个包的、你替的那个人的会话。
 
 ```json
 {"widgets": {"todos": {"content": [<界面块的内容>], "title"?: <标题>}}, "note": "Todo list:\n- [ ] ...", "data": {...}}
@@ -248,7 +248,7 @@
 
 ## `package.emit`
 
-扩展 → 核心（施工 IM-1 中下二）：`{"event", "data"?}`，推给订了 `subscribe {"stream": "package", "package": <它的编号>}` 的连接，对方收到 `package.event {"package", "event", "data"}`。页面照它更新，不用轮询。回应 `{}`；没人订着也是。`event` 写法同方法名（小写字母开头，小写字母、数字、`_`、`.`、`-`，最多 64 个），`data` 写成 JSON 最多 256 KiB，不对的 `bad_params`；别的连接 `not_an_extension`。不存盘、不补。
+扩展 → 核心：`{"event", "data"?}`，推给订了 `subscribe {"stream": "package", "package": <它的编号>}` 的连接，对方收到 `package.event {"package", "event", "data"}`。页面照它更新，不用轮询。回应 `{}`；没人订着也是。`event` 写法同方法名（小写字母开头，小写字母、数字、`_`、`.`、`-`，最多 64 个），`data` 写成 JSON 最多 256 KiB，不对的 `bad_params`；别的连接 `not_an_extension`。不存盘、不补。
 
 ## `search.query`
 
@@ -328,7 +328,7 @@ access = ["network"]         # 访问类别，可以不写；两样至少一样
 
 - 一次调用的工具名在 `tools` 里，或者它的访问类别在 `access` 里，才发给你；两样都没写、访问类别不认识、工具名不像样、没声明 `events.read` 的清单读不进（`bad_after`，`miyu check` 报）。目录里没有的工具（AI 叫错了名字）没有访问类别，只照 `tools` 认。
 - 你自己 `provide` 的工具也发给你。被拒了的（权限策略、守卫、内核）、跳过的、取消的、出错的都发，`status` 照实写。
-- **会话照订事件流的规矩**（core1 2026-11-07 定）：碰不到的会话不发。不是平台桥的扩展只收本机的会话和主人本人没关起来的私聊；平台桥只收自己平台（清单 `[connection] platform`）的场所会话。
+- **会话照订事件流的规矩**：碰不到的会话不发。不是平台桥的扩展只收本机的会话和主人本人没关起来的私聊；平台桥只收自己平台（清单 `[connection] platform`）的场所会话。
 - 脚本里调的工具（`miyu call`）也发，形状不同，见下面。
 
 **参数**：
@@ -478,7 +478,7 @@ access = ["network"]         # 访问类别，可以不写；两样至少一样
 
 ### `provider_key`
 
-施工 PK-1。清单写 `[provider_key] catalog = "<目录里的编号>"`、声明 `provider.key`、人批过的扩展，握手的 `config` 和 `extension.config` 的 `keys` 里多一格 `"provider_key": "<key 的真值>"`（一个字符串）。只有核心拉起的扩展连接上有，头的连接没有。
+清单写 `[provider_key] catalog = "<目录里的编号>"`、声明 `provider.key`、人批过的扩展，握手的 `config` 和 `extension.config` 的 `keys` 里多一格 `"provider_key": "<key 的真值>"`（一个字符串）。只有核心拉起的扩展连接上有，头的连接没有。
 
 - **哪一家**：照主人的供应商配置 `providers.<id>` 认（`miyu_models::provider_key`）：写了 `catalog` 的照它；没写的，字面地址里有那一家的官方地址的算（现在只认 DeepSeek 的 `api.deepseek.com`，地址是环境变量引用的不算）；两样都没写的，编号就是那个目录编号的算。几家都算的照编号排第一的；没写 key 的不算。
 - **不交**：没批 `provider.key` 的（出厂的也要人批）、主人没配那一家的、那一家的 key 取不到的，没有这一格。别家供应商的 key 一律不交。

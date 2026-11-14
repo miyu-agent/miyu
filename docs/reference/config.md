@@ -24,6 +24,8 @@
 
 配置从下往上叠：出厂默认值 → 系统配置（`config.toml`，你的设置都写在这里）→ 项目配置（仓库里的 `.miyu/config.toml`，要信任过才算、只能收紧）。每一项能写在哪几层写在清单里（`layers`）。密钥另放 `secrets.toml`，配置里写 `{ secret = "<名字>" }` 引用它，或者写 `{ env = "<环境变量>" }`。
 
+三层上面还压着这一次启动的环境变量，只有两项认：`log.level` 认 `MIYU_LOG`，`models.catalog.update` 认 `MIYU_CATALOG_UPDATE`。设了、读得懂的就用它，`origin` 的 `layer` 是 `env`；选项不分大小写，开关只认 `true`、`false`（不分大小写），读不懂的不算，照配置。
+
 **问题**：读、查、改配置时发现的每一处写成一条：`level`（`error` 或 `warning`）、`code`（原因码）、`file`、`line`、`column`、`key`、`expected`、`got`、`suggest`（拼错的键最近的那个）、`using`（现在照什么用着）、`message`（整句给人看的话，照连接的语言）。没有的格不写。`got` 照抄收到的原文，最多 80 个字符；类型是密钥的项（和列表里的密钥字段）、不认识的键和字段、一组键写成的一个值不照抄，`got` 和 `message` 里只说写的是什么样的，例如「24 个字符的字」，原值不会出现在回应里。
 
 **谁能调**：读的（`config.schema`、`config.get`、`config.check`、`secret.list`、`model.list`、`provider.*`、`model.call`、`model.embed`、`usage.query`、`usage.convert`）人、扩展都能调。改的（`config.trust`、`secret.set`、`secret.delete`）只给人，扩展调回 `local_only`。`config.set` 扩展只能逐项改系统配置里自己清单声明的、不是密钥、不写成引用的项。
@@ -36,16 +38,16 @@
 
 | 名字 | 说明 |
 |---|---|
-| `key`、`type` | 键、类型：`bool`、`option`、`int`、`float`、`text`、`duration`、`path`、`url`、`name`、`reference`、`model`、`model_or`、`english`、`secret`、`list`、`table`，软件包的项还有 `persona`、`knowledge`、`preset`（选人格、选知识库、选预设，PC-3；选模型的是 `reference`）。键里人起的名字那一段写成占位 `<id>`、`<model>`、`<external>`、`<name>`，例如 `providers.<id>.base_url` |
-| `options` | 选项：`value`、给人看的 `name`；软件包清单里写了说明的带 `description`（暗色写在下面，PC-1）；核心查得出的带 `note`（暗色写在名字后面）、`available: false`（用不了，画成灰的） |
+| `key`、`type` | 键、类型：`bool`、`option`、`int`、`float`、`text`、`duration`、`path`、`url`、`name`、`reference`、`model`、`model_or`、`english`、`secret`、`list`、`table`，软件包的项还有 `persona`、`knowledge`、`preset`（选人格、选知识库、选预设；选模型的是 `reference`）。键里人起的名字那一段写成占位 `<id>`、`<model>`、`<external>`、`<name>`，例如 `providers.<id>.base_url` |
+| `options` | 选项：`value`、给人看的 `name`；软件包清单里写了说明的带 `description`（暗色写在下面）；核心查得出的带 `note`（暗色写在名字后面）、`available: false`（用不了，画成灰的） |
 | `ticks` | 列表带选项的怎么画勾：`unlisted` 的勾着的是不在值里的（`sandbox.private.remove`：勾着的照旧私密，取消勾选＝加进值里）；没有的勾着的是值里的 |
-| `min`、`max`、`max_chars`、`element` | 范围、长度、列表元素的类型（`record` 是每一项一组字段，PC-2） |
+| `min`、`max`、`max_chars`、`element` | 范围、长度、列表元素的类型（`record` 是每一项一组字段） |
 | `title`、`fields` | 元素是 `record` 的：拿哪个字段当每一项的标题（没有的照「第几项」写）；每个字段一项，格同这张表（`key` 是字段名） |
 | `default` | 默认值 |
 | `layers` | 能写在哪几层：`system`、`project` |
 | `applies` | 什么时候生效：`now` 当场、`next_turn` 下一轮、`new_session` 以后开的会话、`restart` 重启核心、`head_start` 头下次启动 |
 | `name`、`description` | 给人看的名字、说明，照连接的语言 |
-| `page`、`group`、`common`、`control` | 设置页放哪、常不常用、用什么控件：`select`、`toggle`、`number`、`text`、`list`、`combo`、`textarea`（几行的框）、`slider`（滑块，PC-1） |
+| `page`、`group`、`common`、`control` | 设置页放哪、常不常用、用什么控件：`select`、`toggle`、`number`、`text`、`list`、`combo`、`textarea`（几行的框）、`slider`（滑块） |
 | `step` | 控件是 `slider` 的：一格多少（整数的是整数） |
 | `suggestions` | 控件是 `combo` 的：建议值 |
 | `hidden` | 设置页不画 |

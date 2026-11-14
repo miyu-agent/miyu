@@ -52,7 +52,7 @@ clicall = false                                   # 可以不写：AI 在命令�
 | 格 | 说明 |
 |---|---|
 | `name` | 服务名（配置里是表名），小写字母开头，只有小写字母、数字、`-`，1 到 32 个；全局不重 |
-| `command` | 命令和参数。第一项先在包的 `bin/` 里找，再在 `miyu` 旁边找，最后找 `PATH`（`npx`、`uvx`、`docker` 这类）。和 `url` 写一个 |
+| `command` | 命令和参数。第一项先在包的 `bin/` 里找，再找 `PATH`（`npx`、`uvx`、`docker` 这类）。和 `url` 写一个 |
 | `url` | 服务的网址：`https://` 开头；`http://` 只给本机的服务（`localhost`、`127.0.0.1`），别的机器的不连，免得令牌明文发出去。和 `command` 写一个 |
 | `bearer` | 跟着 `url`：令牌，发成 `Authorization: Bearer <值>`；写法同 `env` 的值，令牌请写成 `{ secret = … }` |
 | `headers` | 跟着 `url`：别的请求头，`{ X-Api-Key = { secret = "key" } }` 这样，写法同 `env` |

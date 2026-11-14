@@ -8,8 +8,8 @@ An extension is a program a package brings. The core launches it from the manife
 | [`tool.call`, `tool.cancel`](#toolcall-toolcancel) | core → extension | Call one of its tools; drop a call |
 | [`package.methods`, `method.call`](#packagemethods-methodcall) | both | Register methods its page and widgets call; calls forwarded by the core |
 | [`package.emit`](#packageemit) | extension → core | Push to people who have its page open |
-| [`feature.offer`](#featureoffer) | extension → core | Offer features to this person's preset menu (construction IM-6) |
-| [`port.claim`, `port.release`, `port.list`](#portclaim-portrelease-portlist) | extension → core (`port.list` for the owner) | Claim and release the ports it listens on; see the whole table (construction IM-5) |
+| [`feature.offer`](#featureoffer) | extension → core | Offer features to this person's preset menu |
+| [`port.claim`, `port.release`, `port.list`](#portclaim-portrelease-portlist) | extension → core (`port.list` for the owner) | Claim and release the ports it listens on; see the whole table |
 | [`command.call`](#commandcall) | core → extension | A person typed a slash command it declared |
 | [`user.append`](#userappend) | core → extension | At the start of a turn, ask whether it wants to add a few lines to the context |
 | [`tool.guard`, `guard.cancel`](#toolguard-guardcancel) | core → extension | Ask it before a tool call runs: allow, deny or ask the person; stop waiting |
@@ -20,7 +20,7 @@ An extension is a program a package brings. The core launches it from the manife
 | [`system.append`](#systemappend) | extension → core | Put a section at the end of the system prompt |
 | [`widget.set`, `widget.clear`, `widget.watch`, `widget.unwatch`](#widgetset-widgetclear-widgetwatch-widgetunwatch) | both | Widget content |
 | [`extension.config`](#extensionconfig) | core → extension | Its own settings changed |
-| [`schedule.fired`](schedules.en.md#schedulefired) | core → extension | A schedule it added is due (construction J-4) |
+| [`schedule.fired`](schedules.en.md#schedulefired) | core → extension | A schedule it added is due |
 | [`content.list`, `content.read`, `content.changed`](#contentlist-contentread-contentchanged) | both | Read content other packages bring for it |
 | [`events.append`](#eventsappend) | extension → core | Record an event of its own in a session |
 
@@ -29,12 +29,12 @@ Other methods go through one table: those for people only (answering for the per
 ## Launch
 
 - **Program**: looked up in the package folder's `bin/` first, then next to `miyu`, never on `PATH`; arguments are the manifest's `[process] args`.
-- **Environment**: the core's, plus `MIYU_HOME` (data root), `MIYU_RESOURCES` (resources directory), `MIYU_PROGRAM` (the real path of the main `miyu` program, G-15), and this package's place in each part of the data root (design 55 section 4, all created and given as real paths): `MIYU_APP_DIR` (this package's folder), `MIYU_CONFIG_DIR`, `MIYU_STATE_DIR` (also the working directory), `MIYU_CACHE_DIR`, `MIYU_LOG_DIR`, `MIYU_TMP_DIR` (emptied before each start), `MIYU_RUNTIME_DIR`, and the four `MIYU_PICTURES_DIR`-style folders. The old names `MIYU_PACKAGE_DIR` and `MIYU_PACKAGE_STATE` are also set during the transition.
+- **Environment**: the core's, plus `MIYU_HOME` (data root), `MIYU_RESOURCES` (resources directory), `MIYU_PROGRAM` (the real path of the main `miyu` program), and this package's place in each part of the data root (all created and given as real paths): `MIYU_APP_DIR` (this package's folder), `MIYU_CONFIG_DIR`, `MIYU_STATE_DIR` (also the working directory), `MIYU_CACHE_DIR`, `MIYU_LOG_DIR`, `MIYU_TMP_DIR` (emptied before each start), `MIYU_RUNTIME_DIR`, and the four `MIYU_PICTURES_DIR`-style folders. The old names `MIYU_PACKAGE_DIR` and `MIYU_PACKAGE_STATE` are also set during the transition.
 - **Working directory**: the package's state directory `var/lib/<id>/`.
 - **Stderr**: appended to `var/log/<id>/stderr`; over 1 MiB it is moved to `.old` first.
 - **Handshake**: send `hello` as usual, without credentials. The response's `config` holds the final values of its own settings (secrets as real values); with `provider.key` approved it has one more cell, `provider_key` (see "`provider_key`" below).
 - **Exit**: the core closing its stdin means "please exit"; it is killed if it hasn't exited after 5 seconds.
-- **When the core dies**: if the core crashes or is killed, you and the processes you started go with it (construction XH-1). On Unix you run in a process group of your own (you are not its leader) together with a process the core watches; when the core is gone, it kills the whole group. Processes that `setsid` or move to another group are not covered. On Windows you and your children are in the core's job object. A planned stop follows the previous item. You are not in the core's process group, so Ctrl+C in a terminal does not reach you.
+- **When the core dies**: if the core crashes or is killed, you and the processes you started go with it. On Unix you run in a process group of your own (you are not its leader) together with a process the core watches; when the core is gone, it kills the whole group. Processes that `setsid` or move to another group are not covered. On Windows you and your children are in the core's job object. A planned stop follows the previous item. You are not in the core's process group, so Ctrl+C in a terminal does not reach you.
 - **Crashes**: an exit with any code other than 1, being killed, or a failed handshake counts as a failure; it is restarted after 1, 2, 4, 8, 16 seconds, and stopped after 5 in a row (`failed_repeatedly`). **Exit code 1** means a problem a restart won't fix, like bad config or a taken port: it isn't restarted and stops at once (`config_error`). After 60 seconds of running, the failure count starts over.
 
 ## `feature.offer`
@@ -66,12 +66,12 @@ A connection the core didn't start gets `not_an_extension` from `port.claim` and
 
 ## Capabilities
 
-The manifest's `[process] capabilities` declares what it needs. Packages you installed need your approval: given while installing (`package.install` and `package.upgrade` with `approve`, PK-3, see [Packages](packages.en.md)), and for anything still unapproved when opening (`extension.enable` with `approve`); built-in ones count as approved, except for `login.page` and `provider.key`, which need approval even for shipped packages (steps LP-1, PK-1). A package with unapproved capabilities isn't started. Approvals live in the switches file `extensions.json` under `approved` (package id to capabilities), keeping only what the current manifest declares; installing the same id another way (a local file over it, another source, another origin repository) does not keep earlier approvals; they are removed when the package is removed.
+The manifest's `[process] capabilities` declares what it needs. Packages you installed need your approval: given while installing (`package.install` and `package.upgrade` with `approve`, see [Packages](packages.en.md)), and for anything still unapproved when opening (`extension.enable` with `approve`); built-in ones count as approved, except for `login.page` and `provider.key`, which need approval even for shipped packages. A package with unapproved capabilities isn't started. Approvals live in the switches file `extensions.json` under `approved` (package id to capabilities), keeping only what the current manifest declares; installing the same id another way (a local file over it, another source, another origin repository) does not keep earlier approvals; they are removed when the package is removed.
 
 | Capability | Allows |
 |---|---|
 | `tools` | Providing tools to the catalog (`provide`) |
-| `tools.commands` | Provided tools run commands (`runs_commands` in the `provide` spec): during a call, the commands you start can use `miyu call` to call the AI's tools as that session (step XG-1 part 2) |
+| `tools.commands` | Provided tools run commands (`runs_commands` in the `provide` spec): during a call, the commands you start can use `miyu call` to call the AI's tools as that session |
 | `commands` | Providing slash commands (manifest `[[slash]]`) |
 | `widgets` | Showing its own content in the UI (widgets) |
 | `context.inject` | Adding a few lines to the context at the start of a turn (`user.append`) |
@@ -89,7 +89,7 @@ The manifest's `[process] capabilities` declares what it needs. Packages you ins
 | `fs.read` | Reading files through the core (`fs.*`) |
 | `network` | Fetching links through the core (`link.preview`) |
 | `fs.write` | Writing given paths: granted once extensions run in a sandbox |
-| `audio.record` | Recording from this computer's microphone: the extension opens the device itself, the core isn't involved; once extensions run in a sandbox, it opens the recording side of the sound card (design 62) |
+| `audio.record` | Recording from this computer's microphone: the extension opens the device itself, the core isn't involved; once extensions run in a sandbox, it opens the recording side of the sound card |
 | `audio.play` | Playing sound through this computer's speakers or headphones: the extension opens the device itself; once extensions run in a sandbox, it opens the playback side of the sound card |
 | `tool.guard` | Allowing, denying or asking the person before a tool call runs (manifest `[guard]`, `tool.guard`) |
 | `tool.rewrite` | Rewriting a tool's result after it runs: not available yet |
@@ -98,7 +98,7 @@ Calling a method whose capability isn't declared returns `needs_approval`, with 
 
 ## Signing in pages on this machine: `login.ticket`
 
-Your package serves a web page (a bridge's admin page, say) and wants the owner to open it on this computer without typing the access password (step LP-1; the project owner decided on 2026-11-06: no password on this machine only). Declare `login.page`; once it is approved, call `login.ticket {"via": "page"}` on the extension connection and get `{"ticket", "expires"}`: valid for 60 seconds, once. The page signs in with it like any hand-off ticket: the `ticket` credential in the handshake (pages that talk to the core directly), or you redeem it for a device token on the extension connection with `login.redeem {"ticket"}` (see [Connection](connection.en.md), "`login.ticket`, `login.redeem`").
+Your package serves a web page (a bridge's admin page, say) and wants the owner to open it on this computer without typing the access password (this works on this machine only). Declare `login.page`; once it is approved, call `login.ticket {"via": "page"}` on the extension connection and get `{"ticket", "expires"}`: valid for 60 seconds, once. The page signs in with it like any hand-off ticket: the `ticket` credential in the handshake (pages that talk to the core directly), or you redeem it for a device token on the extension connection with `login.redeem {"ticket"}` (see [Connection](connection.en.md), "`login.ticket`, `login.redeem`").
 
 - Only `via` `"page"` is accepted: without `via`, or with another one, you get `local_only`; without `login.page` approved, `needs_approval` with `data.capabilities` `["login.page"]`. A shipped package that declares it needs approval too; it doesn't count as approved.
 - The ticket only works on this machine: a remote connection passed on by the web software (one that sent `connection.remote` before the hello, whatever address it named) gets `bad_ticket` for it in the handshake or with `login.redeem`, and the ticket is spent. Your own `login.redeem` on the extension connection counts as this machine: the core can't see who opened your page or from where, so only you can keep the rules below.
@@ -138,7 +138,7 @@ Register every tool this package provides now, replacing the previous registrati
 | `subject` | Which argument's value is shown after the name; must be one of `input_schema.properties` |
 | `paths` | Which arguments are paths: `[{"parameter": "file_path", "write": true}]`. The argument must be a top-level one in `input_schema.properties` whose type is a string or an array of strings; `write` defaults to false (a read), and when true `access` must be `write`. The core checks the paths of each call against the permission rules (writing outside the workspace asks, as with the built-in `edit`), `tool.call` carries `checked`, and the file effects in the response are taken only for these paths. Without it (or with `null`) no paths are reported and no file effect is taken |
 | `background_parameters` | Names of arguments that only exist when the session has a background: `["run_in_background"]`. Each must be a top-level one in `input_schema.properties` and not in `required`. In sessions with background running off, the AI's schema doesn't have them. `null` is the same as unset |
-| `runs_commands` | `true`: this tool runs commands (step XG-1 part 2). The package must have `tools.commands` approved. The description the AI sees gets the section on how to use `miyu call` appended (as with the built-in `shell`); calls that get a channel carry `channel` in `tool.call` (see **Running commands** below). Unset, `null` or `false` means no |
+| `runs_commands` | `true`: this tool runs commands. The package must have `tools.commands` approved. The description the AI sees gets the section on how to use `miyu call` appended (as with the built-in `shell`); calls that get a channel carry `channel` in `tool.call` (see **Running commands** below). Unset, `null` or `false` means no |
 
 **Response**: `{"tools": <count>}`. If the connection drops, the tools stay in the catalog and answer "temporarily unavailable" when called.
 
@@ -155,11 +155,11 @@ Register every tool this package provides now, replacing the previous registrati
 | `tool` | Tool name |
 | `args` | Arguments |
 | `cwd` | This turn's working directory: a real absolute path with `~` already expanded (as the session recorded it when the home directory is unknown) |
-| `pictures` | The session owner's picture folder (the XDG-style `pictures/` in their home, step Y-11): put images you draw or generate here, where people find them in the terminal and web UI. A real path that may not exist yet; create it (with any missing parents) before writing. Calls outside a session have no such field; keep using the workspace there. Only local sessions get it: venue sessions (groups, private chats) are kept inside their own workspace and don't have it either (step Y-11 fix) |
+| `pictures` | The session owner's picture folder (the XDG-style `pictures/` in their home): put images you draw or generate here, where people find them in the terminal and web UI. A real path that may not exist yet; create it (with any missing parents) before writing. Calls outside a session have no such field; keep using the workspace there. Only local sessions get it: venue sessions (groups, private chats) are kept inside their own workspace and don't have it either |
 | `by` | Who asked her: the `by` of the message that triggered the turn; omitted for turns without a trigger |
 | `owner` | Whether the core recognizes `by` as the owner |
-| `permission` | The permission in effect when this call was dispatched, `{"level", "read_only"}` (step TC-1): `level` is `full`; with `read_only` on it is read-only. Use it to decide how far you may reach; for example, a fully open session may send any file. Outsiders' sessions are confined separately (`owner` is false); apply your own rules for outsiders |
-| `persona` | The session's persona for this turn (step TC-1); omitted when there is none. Use it to pick a voice or tone |
+| `permission` | The permission in effect when this call was dispatched, `{"level", "read_only"}`: `level` is `full`; with `read_only` on it is read-only. Use it to decide how far you may reach; for example, a fully open session may send any file. Outsiders' sessions are confined separately (`owner` is false); apply your own rules for outsiders |
+| `persona` | The session's persona for this turn; omitted when there is none. Use it to pick a voice or tone |
 | `checked` | Only for tools that declare `paths`: the real locations the permission check approved, in the order of the paths in the arguments (one per array item). Write to these: after resolving a path from the arguments yourself, don't touch it unless it is in this list (a link on the way may have been swapped after the check) |
 | `channel` | Only for tools that declare `runs_commands`, when this call opened a channel: `{"sock", "token", "bin"}`, see **Running commands** below |
 
@@ -190,7 +190,7 @@ Register every tool this package provides now, replacing the previous registrati
 - File effects are taken even when `error` is true: a change made before failing is real.
 - Undo doesn't put files back (as with the built-in tools); it only rolls back what the AI has seen.
 
-**Running commands** (tools that declare `runs_commands`, step XG-1 part 2): when the session has tools the AI can call from scripts, the call opens an endpoint just for it, and `tool.call` carries `channel`:
+**Running commands** (tools that declare `runs_commands`): when the session has tools the AI can call from scripts, the call opens an endpoint just for it, and `tool.call` carries `channel`:
 
 | Name | Notes |
 |---|---|
@@ -221,7 +221,7 @@ Who may ask for what, and who may be acted on, is the providing side's job: chec
 
 ## `session.set_state`, `session.state`
 
-A package's state in one session (design 46): what you draw in widgets, what you leave the model at compaction, and your own data. Needs the `sessions.drive` capability; you only read and write your own package's state in sessions of the person you act for.
+A package's state in one session: what you draw in widgets, what you leave the model at compaction, and your own data. Needs the `sessions.drive` capability; you only read and write your own package's state in sessions of the person you act for.
 
 ```json
 {"widgets": {"todos": {"content": [<widget content>], "title"?: <title>}}, "note": "Todo list:\n- [ ] ...", "data": {...}}
@@ -248,7 +248,7 @@ To let other extensions call a method, declare a bus name under `[export]` (`pro
 
 ## `package.emit`
 
-Extension → core (construction IM-1 lower-middle 2): `{"event", "data"?}` pushes to connections that subscribed with `subscribe {"stream": "package", "package": <its id>}`; they get `package.event {"package", "event", "data"}`. Pages update from it instead of polling. Response `{}`, also when nobody is subscribed. `event` follows the method-name rules (starts with a lowercase letter; lowercase letters, digits, `_`, `.`, `-`; at most 64), `data` is at most 256 KiB as JSON; otherwise `bad_params`. Other connections get `not_an_extension`. Not stored, not replayed.
+Extension → core: `{"event", "data"?}` pushes to connections that subscribed with `subscribe {"stream": "package", "package": <its id>}`; they get `package.event {"package", "event", "data"}`. Pages update from it instead of polling. Response `{}`, also when nobody is subscribed. `event` follows the method-name rules (starts with a lowercase letter; lowercase letters, digits, `_`, `.`, `-`; at most 64), `data` is at most 256 KiB as JSON; otherwise `bad_params`. Other connections get `not_an_extension`. Not stored, not replayed.
 
 ## `search.query`
 
@@ -328,7 +328,7 @@ access = ["network"]         # access classes, optional; at least one of the two
 
 - You're told about a call whose tool name is in `tools` or whose access class is in `access`. A manifest with neither, an unknown access class, a malformed tool name, or no `events.read` declared doesn't load (`bad_after`, reported by `miyu check`). A tool missing from the catalog (the AI got the name wrong) has no access class and only matches `tools`.
 - Tools you `provide` yourself are included. Calls that were denied (by the permission policy, a guard, the kernel), skipped, cancelled or failed are all sent, with `status` as recorded.
-- **Sessions follow the event-stream rule** (core1, 2026-11-07): you're not told about sessions you can't reach. An extension that isn't a platform bridge only hears about local sessions and the owner's own unconfined private chats; a platform bridge only hears about venue sessions on its own platforms (manifest `[connection] platform`).
+- **Sessions follow the event-stream rule**: you're not told about sessions you can't reach. An extension that isn't a platform bridge only hears about local sessions and the owner's own unconfined private chats; a platform bridge only hears about venue sessions on its own platforms (manifest `[connection] platform`).
 - Tools called from scripts (`miyu call`) are sent too, in a different shape; see below.
 
 **Params**:
@@ -478,7 +478,7 @@ Its own settings (those starting with "package id plus dot") changed (core → e
 
 ### `provider_key`
 
-Step PK-1. An extension whose manifest has `[provider_key] catalog = "<catalog id>"`, that declares `provider.key` and was approved, gets one more cell in the handshake's `config` and in `extension.config`'s `keys`: `"provider_key": "<the real key>"` (a string). Only on extension connections the core started, never on head connections.
+An extension whose manifest has `[provider_key] catalog = "<catalog id>"`, that declares `provider.key` and was approved, gets one more cell in the handshake's `config` and in `extension.config`'s `keys`: `"provider_key": "<the real key>"` (a string). Only on extension connections the core started, never on head connections.
 
 - **Which provider**: worked out from the owner's provider settings `providers.<id>` (`miyu_models::provider_key`): one with `catalog` written counts if it matches; without it, one whose literal address contains that provider's official address (only DeepSeek's `api.deepseek.com` for now; an address that is an environment-variable reference doesn't count); with neither, one whose id is that catalog id. If several count, the first by id; one without a key doesn't count.
 - **Not handed over**: without `provider.key` approved (shipped packages need approval too), when the owner hasn't set up that provider, when its key can't be read. No other provider's key is ever handed over.

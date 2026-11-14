@@ -24,6 +24,8 @@ Chinese version: [config.md](config.md).
 
 Settings stack from the bottom up: built-in defaults → system config (`config.toml`, where all your settings go) → project config (`.miyu/config.toml` in a repository; only counts once trusted, and can only tighten). Which layers a setting may be written in is in the settings list (`layers`). Secrets live in `secrets.toml`; a setting refers to one with `{ secret = "<name>" }`, or to an environment variable with `{ env = "<variable>" }`.
 
+Above the three layers sit the environment variables the core was started with, and only two settings read one: `log.level` reads `MIYU_LOG`, `models.catalog.update` reads `MIYU_CATALOG_UPDATE`. When set and understood, the variable wins, and `origin`'s `layer` is `env`; options are matched case-insensitively and switches take only `true` or `false` (any case); a value that isn't understood is ignored and the config applies.
+
 **Problems**: every issue found while reading, checking or changing config is one item: `level` (`error` or `warning`), `code`, `file`, `line`, `column`, `key`, `expected`, `got`, `suggest` (the nearest key for a misspelled one), `using` (what's in use instead), `message` (a full sentence for people, in the connection's language). Fields that don't apply are omitted. `got` quotes what was received, up to 80 characters; for items of type secret (and secret fields inside a list), and for unknown keys and fields or a single value written where a group of keys belongs, it is never quoted: `got` and `message` only describe what was given, e.g. "a string of 24 characters", so the value never appears in a response.
 
 **Who can call**: the read methods (`config.schema`, `config.get`, `config.check`, `secret.list`, `model.list`, `provider.*`, `model.call`, `model.embed`, `usage.query`, `usage.convert`) are open to people and extensions. The write methods (`config.trust`, `secret.set`, `secret.delete`) are for people only; extensions get `local_only`. `config.set` lets an extension change, one key at a time, only system settings its own manifest declares, that aren't secrets and aren't written as references.
@@ -36,16 +38,16 @@ Settings stack from the bottom up: built-in defaults → system config (`config.
 
 | Name | Notes |
 |---|---|
-| `key`, `type` | Key and type: `bool`, `option`, `int`, `float`, `text`, `duration`, `path`, `url`, `name`, `reference`, `model`, `model_or`, `english`, `secret`, `list`, `table`; package settings also have `persona`, `knowledge` and `preset` (pick a persona, a knowledge base or a preset, PC-3; picking a model is `reference`). A segment a person names is written as a placeholder `<id>`, `<model>`, `<external>`, `<name>`, e.g. `providers.<id>.base_url` |
-| `options` | Options: `value` and a display `name`; `description` (shown dimmed below) when the package manifest wrote one (PC-1); `note` (shown dimmed after the name) and `available: false` (shown greyed out) when the core can tell |
+| `key`, `type` | Key and type: `bool`, `option`, `int`, `float`, `text`, `duration`, `path`, `url`, `name`, `reference`, `model`, `model_or`, `english`, `secret`, `list`, `table`; package settings also have `persona`, `knowledge` and `preset` (pick a persona, a knowledge base or a preset; picking a model is `reference`). A segment a person names is written as a placeholder `<id>`, `<model>`, `<external>`, `<name>`, e.g. `providers.<id>.base_url` |
+| `options` | Options: `value` and a display `name`; `description` (shown dimmed below) when the package manifest wrote one; `note` (shown dimmed after the name) and `available: false` (shown greyed out) when the core can tell |
 | `ticks` | How to tick a list with options: `unlisted` means ticked ones are those not in the value (`sandbox.private.remove`: ticked stays private, unticking adds it to the value); without it, ticked ones are those in the value |
-| `min`, `max`, `max_chars`, `element` | Range, length, list element type (`record`: each entry is a set of fields, PC-2) |
+| `min`, `max`, `max_chars`, `element` | Range, length, list element type (`record`: each entry is a set of fields) |
 | `title`, `fields` | When the element is `record`: which field titles each entry (without it, entries are numbered); one entry per field, shaped like this table (`key` is the field name) |
 | `default` | Default value |
 | `layers` | Where it may be written: `system`, `project` |
 | `applies` | When it takes effect: `now`, `next_turn`, `new_session`, `restart`, `head_start` (the head's next start) |
 | `name`, `description` | Display name and description, in the connection's language |
-| `page`, `group`, `common`, `control` | Where it goes on the settings screen, whether it's common, which control: `select`, `toggle`, `number`, `text`, `list`, `combo`, `textarea` (a box of several lines), `slider` (PC-1) |
+| `page`, `group`, `common`, `control` | Where it goes on the settings screen, whether it's common, which control: `select`, `toggle`, `number`, `text`, `list`, `combo`, `textarea` (a box of several lines), `slider` |
 | `step` | For a `slider`: how much one step is (a whole number for integers) |
 | `suggestions` | `combo` controls: suggested values |
 | `hidden` | Not drawn on the settings screen |

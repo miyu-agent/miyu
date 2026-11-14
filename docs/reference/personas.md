@@ -100,7 +100,7 @@
 
 ## `preset.list`、`preset.get`
 
-**`preset.list`**：没有参数。回应 `{"presets": [...]}`，照编号排：`preset`、`icon`（Lucide 图标名，没有的 `null`）、`hidden`（布尔：是 `true` 的不列进「新建会话选哪个预设」，预设管理页照列；没写的是 `false`。核心照旧列出它、照旧能拿它开会话，不列是头的事）、`name`、`summary`、`tokens`（照它开新会话、不算人格时 system 和工具说明占多少 token，本地估的；算不出来的没有）。写错的只有 `preset`、`problem`、`line`。出厂的「无功能」（`none`，施工 P-17）是一份普通预设：菜单里能开关的全关着，能编辑。原来末尾固定的「无工具」（`preset: null`）不再列；开会话、换预设交 `preset: null` 照旧认，是以前的写法。
+**`preset.list`**：没有参数。回应 `{"presets": [...]}`，照编号排：`preset`、`icon`（Lucide 图标名，没有的 `null`）、`hidden`（布尔：是 `true` 的不列进「新建会话选哪个预设」，预设管理页照列；没写的是 `false`。核心照旧列出它、照旧能拿它开会话，不列是头的事）、`name`、`summary`、`tokens`（照它开新会话、不算人格时 system 和工具说明占多少 token，本地估的；算不出来的没有）。写错的只有 `preset`、`problem`、`line`。出厂的「无功能」（`none`）是一份普通预设：菜单里能开关的全关着，能编辑。「无工具」（`preset: null`）不在列表里；开会话、换预设照样能交 `preset: null`。
 
 **`preset.get`**：参数 `preset`。回应：
 

@@ -24,7 +24,7 @@ Chinese version: [errors.md](errors.md).
 | `internal_error` | -32603 | Something went wrong inside the core (disk, a broken file…); the reason is in the core's log |
 | `hello_first` | -32010 | Another method before the handshake |
 | `local_only` | -32010 | A method for people only, called by an extension; or the wrong way of logging in |
-| `local_machine_only` | -32010 | Only on the machine running the core: a remote connection called something that reads local files or takes local paths (Y-1 下, [Connection](connection.en.md) "Local machine only") |
+| `local_machine_only` | -32010 | Only on the machine running the core: a remote connection called something that reads local files or takes local paths ([Connection](connection.en.md) "Local machine only") |
 | `not_a_provider`, `not_an_extension` | -32010 | A method only for extensions the core launched, called by another connection |
 | `needs_approval` | -32010 | Capabilities the extension needs aren't approved yet, or the method it called needs one its manifest doesn't declare, or a tool in `provide` sets `runs_commands` while the package doesn't have `tools.commands` approved, `data.capabilities` |
 
@@ -113,7 +113,7 @@ Chinese version: [errors.md](errors.md).
 |---|---|---|
 | `unknown_persona`, `unknown_preset` | No such persona or preset | |
 | `persona_invalid`, `preset_invalid` | Its files are wrong | `problem`, `message`, `line` |
-| `persona_conflict`, `preset_conflict`, `avatar_conflict` | `expect` doesn't match (`avatar_conflict` is your avatar, construction AV-1) | `current` |
+| `persona_conflict`, `preset_conflict`, `avatar_conflict` | `expect` doesn't match (`avatar_conflict` is your avatar) | `current` |
 | `nothing_to_delete` | You have no layer to delete | |
 | `avatar_not_image`, `avatar_too_big`, `background_not_image`, `background_too_big` | The avatar or background isn't an image, or is too big | measured size and limit |
 
@@ -121,8 +121,8 @@ Chinese version: [errors.md](errors.md).
 
 | `reason` | When | `data` |
 |---|---|---|
-| `unknown_schedule` | No such schedule: `schedule.cancel`, `schedule.pause`, `schedule.resume`, `schedule.update` (construction J-1 lower) | |
-| `too_many_schedules` | There are already 200 schedules (added by people, the AI and packages together; a safety limit): `schedule.add` (construction J-3 upper). Remove some first; existing ones keep running | |
+| `unknown_schedule` | No such schedule: `schedule.cancel`, `schedule.pause`, `schedule.resume`, `schedule.update` | |
+| `too_many_schedules` | There are already 200 schedules (added by people, the AI and packages together; a safety limit): `schedule.add`. Remove some first; existing ones keep running | |
 | `life_exists`, `no_life`, `life_ended` | Life sessions: the persona already has one (`life.start`); the persona has none (`life.pause`, `life.resume`, `life.kill`); the persona's latest life has ended (`life.pause`, `life.resume`), see [Life sessions](life.en.md) | `session` for `life_exists` and `life_ended` |
 | `unknown_project` | No such project: the project methods, and `project` in `session.create` and `session.set_meta` | |
 

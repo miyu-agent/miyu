@@ -1,6 +1,6 @@
 # Schedules: `schedule.*`
 
-At a set time, hand one line to a session and let it run a turn: a morning briefing at 8, a look at the server every hour. There is one table, `root/schedules.db`, so schedules survive a core restart; times missed while the core was down are skipped, not made up. Design: `docs/designs/45-定时和循环.md`; how it runs: `docs/blueprint/schedules.md`. 中文版：[schedules.md](schedules.md).
+At a set time, hand one line to a session and let it run a turn: a morning briefing at 8, a look at the server every hour. There is one table, `root/schedules.db`, so schedules survive a core restart; times missed while the core was down are skipped, not made up. 中文版：[schedules.md](schedules.md).
 
 | Method | Does |
 |---|---|
@@ -11,7 +11,7 @@ At a set time, hand one line to a session and let it run a turn: a morning brief
 | [`schedule.resume`](#scheduleresume) | Resume |
 | [`schedule.update`](#scheduleupdate) | Change the time or the line |
 
-**Who may call**: people; extensions need an approved `sessions.drive` (construction J-4), otherwise `needs_approval`. What an extension adds is recorded as added by its package, and it sees, cancels, pauses, resumes and updates only those: touching one it did not add is `unknown_schedule`. The row of a life loop (`loop` is `life`, the one a persona keeps running) is out of everyone's reach: it is not in the list or the `schedules` stream, and `cancel`, `pause`, `resume` and `update` on it get `unknown_schedule` as if there were no such id. To keep up, subscribe to the `schedules` stream ([connection](connection.en.md)); `schedules.changed` follows ([pushes](pushes.en.md)).
+**Who may call**: people; extensions need an approved `sessions.drive`, otherwise `needs_approval`. What an extension adds is recorded as added by its package, and it sees, cancels, pauses, resumes and updates only those: touching one it did not add is `unknown_schedule`. The row of a life loop (`loop` is `life`, the one a persona keeps running) is out of everyone's reach: it is not in the list or the `schedules` stream, and `cancel`, `pause`, `resume` and `update` on it get `unknown_schedule` as if there were no such id. To keep up, subscribe to the `schedules` stream ([connection](connection.en.md)); `schedules.changed` follows ([pushes](pushes.en.md)).
 
 ## An item
 
@@ -76,7 +76,7 @@ Write at least one of `when` and `prompt`; neither gets `bad_params` (no `data.p
 
 ## `schedule.fired`
 
-Core → extension, a notification (construction J-4): a schedule an extension added with `target` `{"package": {}}` is due. It goes to that package's process; no subscription, no reply.
+Core → extension, a notification: a schedule an extension added with `target` `{"package": {}}` is due. It goes to that package's process; no subscription, no reply.
 
 | Name | Meaning |
 |---|---|

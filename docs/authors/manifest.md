@@ -69,7 +69,7 @@ place = "status"
 
 ## 格式是冻结的
 
-这一页列的表和格是稳定的（2026-10-23 冻结）：以后只加不改不删，已经写好的清单换了新版本的 Miyu 照样读。新加的格、表会写明从哪一版起有；用到了的，在 `[package] miyu` 写上要的最低版本，旧版本的 Miyu 读到会说清要更新。不认识的表、格一律报错，所以别写这一页以外的。
+这一页列的表和格是稳定的：以后只加不改不删，已经写好的清单换了新版本的 Miyu 照样读。新加的格、表会写明从哪一版起有；用到了的，在 `[package] miyu` 写上要的最低版本，旧版本的 Miyu 读到会说清要更新。不认识的表、格一律报错，所以别写这一页以外的。
 ## `[package]`
 
 | 格 | 说明 |
@@ -86,7 +86,7 @@ place = "status"
 | `logo` | 包里自带的一张图标：包目录里的相对路径，`.png` 或 `.webp`。不超过 256 KiB、每边不超过 512；`miyu pkg pack` 打包时超了的照原格式缩到以内（目录里的原图不动）。不在、不是图、超了的当没有图标，包照装，`miyu check` 报警告。界面有它先画它，没有画 `icon` |
 | `needs` | 要这个地方有什么才有用，认两个词：`images`（显示不了图片的会话里整包当没开）；`life`（只在没结束的人生会话里有，别的会话里整包当没开，换哪个预设都一样；出厂的「结束人生」就是这样）。`life` 是后加的词，旧版本的 Miyu 不认，用它的包在 `miyu` 写上带它的那一版 |
 | `miyu` | 最低要哪一版 Miyu：三段数字，例如 `"2026.11.0"`（年.月.这个月第几版）。用了新加的格、新的方法时写上；旧版本的 Miyu 读到会说清要更新，不会报看不懂的键 |
-| `groups` | 只给出厂的包：在哪几个组里（例如 `["basesystem"]`），预设写组名就开关组里的包。别的包写了报错。原来的 `required`（也只给出厂的包）2026-10-26 去掉了 |
+| `groups` | 只给出厂的包：在哪几个组里（例如 `["basesystem"]`），预设写组名就开关组里的包。别的包写了报错 |
 | `targets` | 能装在哪几种系统上：`linux-x86_64`、`linux-aarch64`、`macos-aarch64`、`windows-x86_64`。不写是哪种都能装；写了的，别的系统上装不上，打包时用 `miyu pkg pack --target` 一种一个包文件 |
 
 ## `[command]`
@@ -147,7 +147,7 @@ place = "status"
 | `slider` | `int`、`number` 写 `slider = true` 画成滑块，要写 `min`、`max`；`step` 不写的 `int` 是 1、`number` 是范围的百分之一；`number` 两头一样的要写 `step` |
 | `default` | 默认值，合这个类型；`secret` 不能写 |
 | `layers` | 只能写 `system`（系统配置），不写也是它 |
-| `fields`、`title` | `element = "record"` 的列表才有：`fields` 下面每个字段一张表 `[settings.<名字>.fields.<字段>]`，写法同一项（`type`、`default`、`name`、`description`、`hidden`，PC-1 那几种也能用），不写 `layers`、`applies`，不能再是 `list`；字段名不能叫 `fields`，没有 `default` 的字段每一项都要写。`title` 是拿哪个 `text`、`name`、`option` 字段当每一项的标题。整条列表不能写默认值，最多 100 项 |
+| `fields`、`title` | `element = "record"` 的列表才有：`fields` 下面每个字段一张表 `[settings.<名字>.fields.<字段>]`，写法同一项（`type`、`default`、`name`、`description`、`hidden`，`number` 类型、带 `name`、`description` 的 `choices`、`lines`、`step`、`slider` 也能用），不写 `layers`、`applies`，不能再是 `list`；字段名不能叫 `fields`，没有 `default` 的字段每一项都要写。`title` 是拿哪个 `text`、`name`、`option` 字段当每一项的标题。整条列表不能写默认值，最多 100 项 |
 | `applies` | 什么时候生效：`now`、`new_session`、`next_turn`、`restart`（重启核心）、`program_start`（你的程序下次启动，默认） |
 | `name`、`description` | 给人看的名字、说明 |
 | `hidden` | `true` 的设置页不画，照样能写、能查 |
@@ -273,7 +273,7 @@ name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
 | 格 | 说明 |
 |---|---|
 | `name` | 服务名（配置里是表名），小写字母开头，只有小写字母、数字、`-`，1 到 32 个；全局不重 |
-| `command` | 命令和参数。第一项先在包的 `bin/` 里找，再在 `miyu` 旁边找，最后找 `PATH`（`npx`、`uvx`、`docker` 这类）。和 `url` 写一个 |
+| `command` | 命令和参数。第一项先在包的 `bin/` 里找，再找 `PATH`（`npx`、`uvx`、`docker` 这类）。和 `url` 写一个 |
 | `url` | 服务的网址：`https://` 开头；`http://` 只给本机的服务（`localhost`、`127.0.0.1`），别的机器的不连，免得令牌明文发出去。和 `command` 写一个 |
 | `bearer` | 跟着 `url`：令牌，发成 `Authorization: Bearer <值>`；写法同 `env` 的值，令牌请写成 `{ secret = … }` |
 | `headers` | 跟着 `url`：别的请求头，`{ X-Api-Key = { secret = "key" } }` 这样，写法同 `env` |
@@ -340,7 +340,7 @@ access = ["execute"]
 
 ## `[provider_key]`
 
-要主人在模型那边配好的某一家供应商的 key（施工 PK-1），省得主人再填一遍；`capabilities` 里要有 `provider.key`，声明了 `provider.key` 也要写这张表。
+要主人在模型那边配好的某一家供应商的 key，省得主人再填一遍；`capabilities` 里要有 `provider.key`，声明了 `provider.key` 也要写这张表。
 
 | 格 | 说明 |
 |---|---|

@@ -90,7 +90,7 @@ Try it: `miyu pkg install ./hello`, answer yes to "Turn it on now?", then ask th
 
 ## Using a development kit
 
-The example above is written by hand: the protocol doesn't care about the language, so any language works this way. For Python and Rust there are ready-made development kits, [miyu-agent/miyu-sdk](https://github.com/miyu-agent/miyu-sdk) (MIT). They handle the handshake, sending and receiving one line per message, answering concurrent calls by their ids, cancellation, settings pushes, quitting when standard input ends, and the exit-code-1 rule. They add no powers: what an extension can do is still set by the protocol. Each comes with a fake core, so you can test without starting Miyu.
+The example above is written by hand: the protocol doesn't care about the language, so any language works this way. For Python and Rust there are ready-made development kits, [miyu-agent/miyu-sdk](https://github.com/miyu-agent/miyu-sdk) (Apache-2.0). They handle the handshake, sending and receiving one line per message, answering concurrent calls by their ids, cancellation, settings pushes, quitting when standard input ends, and the exit-code-1 rule. They add no powers: what an extension can do is still set by the protocol. Each comes with a fake core, so you can test without starting Miyu.
 
 **Python**: a single file, `miyu_ext.py`, standard library only, Python 3.9 or later, no pip. Copy it into the package's `bin/`, next to your program; the manifest is the same as above:
 
@@ -169,7 +169,7 @@ Send `hello` first, without credentials. In the response:
 
 When settings change later, the core sends the notification `extension.config {"keys": {"hello.greeting": "Hi"}}` with only the changed keys; ones that became unset are `null`. A connection that hasn't shaken hands within 10 seconds is closed.
 
-**Using a model key the owner already set up** (PK-1): declare `provider.key` and write `[provider_key] catalog = "deepseek"` (see `[provider_key]` in [the manifest](manifest.en.md)). Once the owner approves it, `config` has one more cell, `"provider_key": "<that provider's key>"`. It's absent when the owner hasn't set up that provider or it has no key; when the owner changes the key you get `extension.config {"keys": {"provider_key": "<new one>"}}`, and `null` when the provider or its key is removed. It's the real key: keep it in memory only, never write it to logs or files, never pass it on.
+**Using a model key the owner already set up**: declare `provider.key` and write `[provider_key] catalog = "deepseek"` (see `[provider_key]` in [the manifest](manifest.en.md)). Once the owner approves it, `config` has one more cell, `"provider_key": "<that provider's key>"`. It's absent when the owner hasn't set up that provider or it has no key; when the owner changes the key you get `extension.config {"keys": {"provider_key": "<new one>"}}`, and `null` when the provider or its key is removed. It's the real key: keep it in memory only, never write it to logs or files, never pass it on.
 
 ## Registering tools: `provide`
 

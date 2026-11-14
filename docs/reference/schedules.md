@@ -1,6 +1,6 @@
 # 定时任务：`schedule.*`
 
-到点把一句话交给一个会话跑一轮：每天早上 8 点的早报、每小时看一眼服务器。一张唤醒表，存在 `root/schedules.db`，核心重启不丢；核心停着时错过的不补。设计见 `docs/designs/45-定时和循环.md`，怎么走见 `docs/blueprint/schedules.md`。英文版：[schedules.en.md](schedules.en.md)。
+到点把一句话交给一个会话跑一轮：每天早上 8 点的早报、每小时看一眼服务器。一张唤醒表，存在 `root/schedules.db`，核心重启不丢；核心停着时错过的不补。英文版：[schedules.en.md](schedules.en.md)。
 
 | 方法 | 做什么 |
 |---|---|
@@ -11,7 +11,7 @@
 | [`schedule.resume`](#scheduleresume) | 续 |
 | [`schedule.update`](#scheduleupdate) | 改时间、改那句话 |
 
-**谁能调**：人；扩展要批过 `sessions.drive`（施工 J-4），没批的回 `needs_approval`，建的记成包建的，只看得到、删得了、停续得了、改得了自己建的：碰别人建的一律 `unknown_schedule`。人生循环（`loop` 是 `life`，一个人格一直跑着的那一条）的那一行谁都碰不到：不在列表和 `schedules` 流里，`cancel`、`pause`、`resume`、`update` 照没有这个编号回 `unknown_schedule`。要一直跟着最新的，订阅 `schedules` 流（[连接](connection.md)），之后推 `schedules.changed`（[推送](pushes.md)）。
+**谁能调**：人；扩展要批过 `sessions.drive`，没批的回 `needs_approval`，建的记成包建的，只看得到、删得了、停续得了、改得了自己建的：碰别人建的一律 `unknown_schedule`。人生循环（`loop` 是 `life`，一个人格一直跑着的那一条）的那一行谁都碰不到：不在列表和 `schedules` 流里，`cancel`、`pause`、`resume`、`update` 照没有这个编号回 `unknown_schedule`。要一直跟着最新的，订阅 `schedules` 流（[连接](connection.md)），之后推 `schedules.changed`（[推送](pushes.md)）。
 
 ## 一项
 
@@ -76,7 +76,7 @@
 
 ## `schedule.fired`
 
-核心 → 扩展，通知（施工 J-4）：扩展建的、`target` 是 `{"package": {}}` 的到点了，推给那个包的进程，不用订阅、不等回应。
+核心 → 扩展，通知：扩展建的、`target` 是 `{"package": {}}` 的到点了，推给那个包的进程，不用订阅、不等回应。
 
 | 名字 | 说明 |
 |---|---|

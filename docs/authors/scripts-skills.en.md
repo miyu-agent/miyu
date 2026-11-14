@@ -56,7 +56,7 @@ faces = [random.randint(1, sides) for _ in range(count)]
 print(f"{count}d{sides}: {faces} = {sum(faces)}")
 ```
 
-On Linux and macOS, `chmod +x dice.py`.
+Its first line is a `#!` line, so it needs no `chmod +x`: Miyu starts the interpreter and passes the script file to it. A script without `#!` is started directly on Linux and macOS and needs `chmod +x`.
 
 **The header**
 
@@ -67,7 +67,7 @@ On Linux and macOS, `chmod +x dice.py`.
 | `Display name`, `显示名称` | The name for people (English, Chinese); the timeline shows it |
 | `Parameters` | The parameters' JSON Schema, from the next line on, may span lines; none when omitted |
 | `Timeout` | Seconds, default 60 |
-| `Clicall` | `yes`: the AI can also call it with `miyu call` from a script it runs, and the result goes to the script. Unset means it cannot, and it can only be called directly. Scripts that read or look things up, and that the AI can't easily do from a command on its own, should set it: the AI can call them in bulk from a script and skip many round trips. Don't set it on scripts that change or send things or spend quota |
+| `Clicall` | `yes` or `true` (any case): the AI can also call it with `miyu call` from a script it runs, and the result goes to the script. `no`, `false` or unset means it cannot, and it can only be called directly; any other value keeps the whole script from being registered. Scripts that read or look things up, and that the AI can't easily do from a command on its own, should set it: the AI can call them in bulk from a script and skip many round trips. Don't set it on scripts that change or send things or spend quota |
 | `Venues` | Which sessions get it: some of `local` (this machine: the terminal, the web page and so on), `private` (private chats on a messaging platform), `group` (groups), comma separated, e.g. `Venues: local, private`. Unset means every kind of session; if it is wrong the whole script is not registered and `miyu check` reports it |
 | `Role` | What the tool is for, as an extension's `role`: `read_file` means it reads a text file. A wrong value rejects the script, and so does a key that looks like it but is misspelled (`role`, `Rloe`: wrong case or one letter off) |
 | `Scope` | Which sessions get it, as an extension's `scope` (`local`, `local_main`, `local_main_attended`, `spawn`), narrowing further within `Venues`; unset means `any`, and a wrong value rejects the script, as does a misspelled key such as `scope` or `Scpoe` |
@@ -76,7 +76,7 @@ The header is the run of comment lines (starting with `#` or `//`) at the very t
 
 **How it runs**
 
-- Started by its `#!` line (on Windows, the interpreter is found by extension: `.py` uses `python`, `.ps1` PowerShell, `.js` `node`).
+- With a `#!` line, it is started by that line: the interpreter runs with the script file as an argument (on Windows, the interpreter's name in the `#!` line is looked up on `PATH`; with `env`, the name after it; `python3` becomes `python`). Without one, Linux and macOS start the file directly; on Windows the interpreter is found by extension: `.py` uses `python`, `.ps1` PowerShell, `.js` `node`, `.cmd` and `.bat` `cmd /C`, and anything else is started directly.
 - The arguments are one JSON object. Stdin always has all of it; the environment variable `MIYU_ARGS_JSON` also has it when it is at most 30 KiB. Long arguments are only on stdin, so reading stdin is the safe way.
 - Stdout and stderr both go to the AI, in the order they were written; a non-zero exit code counts as failure, so write the reason to the output.
 - To report progress on a long run, print a whole line starting with `miyu-progress: `: people see it in the interface, the AI doesn't, and it stays out of the result. Write it to stderr and flush (Python buffers stdout in blocks when it goes to a pipe, so progress would only show up at the end):
@@ -124,7 +124,7 @@ shutil.copy("frame-01.png", os.environ["MIYU_IMAGES_DIR"])
 print("Grabbed 1 frame.")
 ```
 
-- Taken in file-name order, at most 4; PNG, JPEG, GIF or WebP, each at most 5 MiB and at most 8000 pixels per side.
+- Taken in file-name order, at most 4; PNG, JPEG, GIF or WebP. An image over 5 MiB or over 8000 pixels on a side is scaled down to fit first; one that can't be scaled down, or a file over 64 MiB, is not handed over.
 - Only regular files directly in the folder count, and links are not followed: copy the images in, don't link them.
 - Anything that doesn't fit is not handed over and the AI doesn't learn of it; the run log has a `script image dropped` line saying which script and why (not the file name).
 - A call stopped at its timeout hands over no images; a non-zero exit code still does.
@@ -132,7 +132,7 @@ print("Grabbed 1 frame.")
 **When a script runs in the sandbox**
 
 - In your own sessions (terminal, web, your QQ private chat, desktop voice), under full access (the default), scripts run outside the sandbox with your own permissions.
-- With read-only on, scripts run in a read-only sandbox and can't write anywhere; in group chats and strangers' private chats they run in the sandbox and can write only that venue's own workspace. Scripts that touch hardware or need root (`sudo`) don't work there, and there is no way to exempt a single script.
+- With read-only on, scripts run in a read-only sandbox: they can write only their own state, cache and image folders (`MIYU_STATE_DIR`, `MIYU_CACHE_DIR`, `MIYU_IMAGES_DIR`), plus, in local sessions, `pictures`, `videos`, `documents` and `downloads` under the data root's `root/`, and nowhere else; in group chats and strangers' private chats they run in the sandbox and can write only that venue's own workspace. Scripts that touch hardware or need root (`sudo`) don't work there, and there is no way to exempt a single script.
 
 ## Skills
 

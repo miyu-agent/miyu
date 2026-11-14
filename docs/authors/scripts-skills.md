@@ -56,7 +56,7 @@ faces = [random.randint(1, sides) for _ in range(count)]
 print(f"{count}d{sides}: {faces} = {sum(faces)}")
 ```
 
-Linux、macOS 上 `chmod +x dice.py`。
+第一行写了 `#!`，不用 `chmod +x`：Miyu 起的是解释器，脚本文件当参数交给它。没写 `#!` 的脚本在 Linux、macOS 上直接起，要 `chmod +x`。
 
 **开头的注释**
 
@@ -67,7 +67,7 @@ Linux、macOS 上 `chmod +x dice.py`。
 | `Display name`、`显示名称` | 给人看的名字（英文、中文），时间线上照它写 |
 | `Parameters` | 参数的 JSON Schema，从下一行起，可以写几行；不写是没有参数 |
 | `Timeout` | 秒，默认 60 |
-| `Clicall` | `yes`：AI 在命令里写脚本时也能用 `miyu call` 调它，结果交给脚本。不写是不能，只能直接调。要读、要查，并且 AI 在命令里自己不方便做到的脚本，都该写上：AI 能在脚本里批量调，省下一轮轮来回；会改东西、发东西、花额度的别写 |
+| `Clicall` | `yes` 或 `true`（大小写不论）：AI 在命令里写脚本时也能用 `miyu call` 调它，结果交给脚本。`no`、`false`、不写是不能，只能直接调；写别的值，整个脚本不登记。要读、要查，并且 AI 在命令里自己不方便做到的脚本，都该写上：AI 能在脚本里批量调，省下一轮轮来回；会改东西、发东西、花额度的别写 |
 | `Venues` | 给哪种会话：`local`（本机的终端、网页这些）、`private`（通讯平台的私聊）、`group`（群）里的几个，逗号隔开，例如 `Venues: local, private`。不写是哪种会话都有；写错的整个脚本不登记，`miyu check` 报出来 |
 | `Role` | 职能，写法同扩展的 `role`：`read_file` 表示这件是读文本文件的。写错的整个不收：值写错的，键名写成 `role`、`Rloe` 这样像它的（大小写不对、差一个字）也算 |
 | `Scope` | 给哪种会话，写法同扩展的 `scope`（`local`、`local_main`、`local_main_attended`、`spawn`），在 `Venues` 之内再收窄；不写是 `any`，写错的整个不收（键名写成 `scope`、`Scpoe` 这样像它的也算） |
@@ -76,7 +76,7 @@ Linux、macOS 上 `chmod +x dice.py`。
 
 **怎么跑**
 
-- 照 `#!` 那一行起（Windows 上照扩展名找解释器：`.py` 用 `python`，`.ps1` 用 PowerShell，`.js` 用 `node`）。
+- 有 `#!` 的照那一行起：起解释器，脚本文件当参数（Windows 上取 `#!` 里解释器的名字照 `PATH` 找，`env` 取它后面那个，`python3` 换成 `python`）。没有 `#!` 的，Linux、macOS 上直接起文件；Windows 上照扩展名找解释器：`.py` 用 `python`，`.ps1` 用 PowerShell，`.js` 用 `node`，`.cmd`、`.bat` 用 `cmd /C`，别的直接起。
 - 参数是一份 JSON，标准输入里有完整的一份；不超过 30 KiB 的，环境变量 `MIYU_ARGS_JSON` 里也有一份。长的参数只在标准输入里，所以稳妥的写法是读标准输入。
 - 标准输出、标准错误都交给 AI，照写出来的先后；退出码不是 0 的算失败，把原因写进输出。
 - 跑得久的想说到哪了：印一整行以 `miyu-progress: ` 开头的，人在界面上看得到，AI 看不到、不进结果。写到标准错误、马上冲出去（标准输出接管道时 Python 整块缓冲，进度会攒到最后才出来）：
@@ -124,7 +124,7 @@ shutil.copy("frame-01.png", os.environ["MIYU_IMAGES_DIR"])
 print("Grabbed 1 frame.")
 ```
 
-- 照文件名排，至多 4 张；PNG、JPEG、GIF、WebP，一张不超过 5 MiB、每边不超过 8000 像素。
+- 照文件名排，至多 4 张；PNG、JPEG、GIF、WebP。一张超过 5 MiB 或一边超过 8000 像素的，先缩到上限以内再交；缩不了的、文件超过 64 MiB 的不交。
 - 只看这一层的普通文件，不跟链接：要交的图请拷进去，别放链接。
 - 不合的不交，AI 也不知道有它；运行日志里有一行 `script image dropped`，写着哪个脚本、为什么（不写文件名）。
 - 到时被停掉的那一次不交图；退出码不是 0 的照样交。
@@ -132,7 +132,7 @@ print("Grabbed 1 frame.")
 **什么时候在沙盒里跑**
 
 - 你自己的会话（终端、网页、你的 QQ 私聊、桌面语音）在完全放开（默认）下不进沙盒，脚本以你本人的权限跑。
-- 打开只读以后，脚本在只读的沙盒里跑：哪里都写不了；群聊、陌生人的私聊里，脚本在沙盒里跑，只写得了那个场所自己的工作区。碰硬件、要 root（`sudo`）的脚本在那里跑不通，没有办法单独放行某个脚本。
+- 打开只读以后，脚本在只读的沙盒里跑：只写得了它自己的状态目录、缓存目录、交图目录（`MIYU_STATE_DIR`、`MIYU_CACHE_DIR`、`MIYU_IMAGES_DIR`），本机的会话另加数据根 `root/` 下的 `pictures`、`videos`、`documents`、`downloads`，别处都写不了；群聊、陌生人的私聊里，脚本在沙盒里跑，只写得了那个场所自己的工作区。碰硬件、要 root（`sudo`）的脚本在那里跑不通，没有办法单独放行某个脚本。
 
 ## 技能
 

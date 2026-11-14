@@ -32,7 +32,7 @@
 | `group` | 时间线的一段（几步思考和工具）：`steps`、`open`、`summary`、`summary_en`（收起那一行）、`took_ms`、`failed` |
 | `thought` | 一步思考：`group`、`text`、`open`、`took_ms` |
 | `tool` | 一步工具：`group`、`call`、`name`、`hosted`（模型在供应商那边自己跑的工具写 `true`，见下面「供应商侧工具」；核心执行的不写）、`title`、`state`、`args`、`diff`（`{added, removed}`）、`images`、`job`、`approval`（要人确认的：`access`、`rule`、`detail`，定了以后多 `decision`、`reason`、`by`；带 `expires_at` 的到那一刻没人确认就自动拒，头照它画倒计时，被拒的 `by` 是 `kernel`）、`took_ms`、`files`（`[{path, action}]`，`action` 是 `created`、`changed`、`trashed`）、`skill`、`shown`（模型用 `show` 展示的文件：`{path, name, media_type, size, modified, title?, language?, width?, height?}`，`modified` 是展示那一刻的修改时间，写法同事件的 `at`；内容不在核心里，本机的头照 `path` 读，远程的头用 [`session.shown`](blob.md#sessionshown) 带这一步的 `call` 分段读；同一个 `path` 再来一张换掉那一张）、`detail`（工具交的结构化详情，例如搜到的几条；带 `kind` 的是三种通用形状 `links`、`table`、`images`，见 [扩展](extensions.md#toolcalltoolcancel)）、`output`（结果原文的前面一段：最多 100 行、8 KiB；切了的带 `output_cut: true`，整份用 `view.detail` 取）、`questions`（提问那一步问的那一组，问的时候就有）、`nested`（脚本里调过工具的 `shell`：`{count, last}`，`last` 是序号最大的那一个 `{n, name, title, state, started?}`；头在那一行后面写 `· #n 显示名`，整份用 `view.detail` 取）、`progress`（在跑时最新的一行进度：工具输出里 `miyu-progress: ` 开头的那一行，去了前缀，最长 200 个字；同一步最多每 0.5 秒推一次；结果到了去掉，翻页、重新订阅没有） |
-| `end` | 一轮的收尾：`reason`、`model`、`endpoint`、`took_ms`、`usage`、`speed`（`{output, ms}`：这一轮每次主请求的输出 token、首字到结束的毫秒加起来，不算调工具、等人、旁路请求；没记下用时的不写；整段攒齐了一口气到的那一次不算——首字到结束不到 100 毫秒、或者算出来每秒超过 5000 个，施工 SP-3），出错的 `error`、`explain` |
+| `end` | 一轮的收尾：`reason`、`model`、`endpoint`、`took_ms`、`usage`、`speed`（`{output, ms}`：这一轮每次主请求的输出 token、首字到结束的毫秒加起来，不算调工具、等人、旁路请求；没记下用时的不写；整段攒齐了一口气到的那一次不算——首字到结束不到 100 毫秒、或者算出来每秒超过 5000 个），出错的 `error`、`explain` |
 | `notice` | 旁白：`what` 见下 |
 
 **`tool` 的 `state`**：`preparing`（还在写参数）、`running`、`ok`、`error`、`denied`、`cancelled`、`skipped`。
@@ -72,11 +72,11 @@
 | `waiting_since` | 正在等人的这一段从什么时候起；没在等的不写。用时照「现在 − `since` − `waited_ms` − (现在 − `waiting_since`)」算，等人时停住；条目里的 `took_ms` 也刨掉了等人的时间 |
 | `doing` | 正在做什么：`thinking`、`writing`、`tool`（带 `entry`）；`retrying`（`attempt`、`limit`、`at`、`class`、`message`）；`compacting`（`trigger`、`written`、`expected`） |
 | `context` | `{window, compaction_line, context, used}`：上下文窗口（设了会话的上下文上限的是生效的窗口，取模型的和上限里小的）、压缩线、会话的上下文上限（没设的不写）、最近一次用了多少（那次请求的输入加输出；刚压完的是压完的量） |
-| `speed` | `{output, ms}`：最近一次有速度的输出 token 和毫秒（攒齐了一口气到的那一次不算、不换掉它，口径同 `end` 的 `speed`，施工 SP-3） |
+| `speed` | `{output, ms}`：最近一次有速度的输出 token 和毫秒（攒齐了一口气到的那一次不算、不换掉它，口径同 `end` 的 `speed`） |
 | `cooling_until` | 候选都在冷却时最早恢复的时刻 |
 | `preparing` | 后台在提前压缩：`{seen, since}` |
 | `usage` | 本会话累计用量，写法同 `usage.query` 的一行（连同 `converted`、`converted_parts`） |
-| `model`、`permission`、`todos`、`workspace`、`persona`、`preset` | 同订阅回应的那几格；中途换了人格、预设的跟着推。无工具的会话 `preset` 是 `null`、另带 `no_tools: true`，同会话列表（施工 P-16 下补） |
+| `model`、`permission`、`todos`、`workspace`、`persona`、`preset` | 同订阅回应的那几格；中途换了人格、预设的跟着推。无工具的会话 `preset` 是 `null`、另带 `no_tools: true`，同会话列表 |
 | `vision` | 会话钉着的看图模型（`session.configure` 的 `vision`）：模型或 `@池`，原样；钉了马上推，没钉的（跟着 `models.vision`）不写 |
 | `compaction_line` | 会话钉着的压缩触发线（`session.configure` 的 `compaction_line`）：窗口的百分之几；钉了马上推，没钉的（跟着 `compaction.line`）不写。生效的压缩线看 `context.compaction_line` |
 | `todos_done` | 待办全部做完而清空时，清空前那一份（头打勾停一下再收） |
