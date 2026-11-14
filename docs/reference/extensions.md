@@ -32,7 +32,7 @@
 - **环境**：照核心的，另设 `MIYU_HOME`（数据根）、`MIYU_RESOURCES`（资源目录）、`MIYU_PROGRAM`（主程序 `miyu` 的真实位置，施工 G-15），和这个包在各层的那一格（设计 55 第四节，都已经建好、交真实位置）：`MIYU_APP_DIR`（包的文件夹）、`MIYU_CONFIG_DIR`、`MIYU_STATE_DIR`（也是工作目录）、`MIYU_CACHE_DIR`、`MIYU_LOG_DIR`、`MIYU_TMP_DIR`（拉起前清空）、`MIYU_RUNTIME_DIR`，`MIYU_PICTURES_DIR` 这四个。旧名 `MIYU_PACKAGE_DIR`、`MIYU_PACKAGE_STATE` 过渡期间一起给。
 - **工作目录**：这个包放状态的目录 `var/lib/<编号>/`。
 - **标准错误**：追加到 `var/log/<编号>/stderr`，超过 1 MiB 的先挪成 `.old`。
-- **握手**：照常发 `hello`，不出示凭据。回应的 `config` 是它自己的配置项的最终值（密钥是真值）。
+- **握手**：照常发 `hello`，不出示凭据。回应的 `config` 是它自己的配置项的最终值（密钥是真值）；批了 `provider.key` 的多一格 `provider_key`（下面「`provider_key`」）。
 - **退出**：核心关它的标准输入就是「请退出」，5 秒没退的杀掉。
 - **核心没了**：核心崩了、被强行结束时，你和你起的子进程跟着结束（施工 XH-1）：Unix 上你起在一个自己的进程组里（不是组长），组里有一个核心看着的进程，核心一没就把整组杀掉；`setsid` 出去、自己换了进程组的不算。Windows 上你和你起的都在核心的作业对象里。有计划地停下照上一条。你不在核心的进程组里，终端里按 Ctrl+C 打不到你。
 - **崩了**：退出码 1 以外的退出、被杀、握手不成都算一次失败，退避 1、2、4、8、16 秒再拉起，连续 5 次停下（`failed_repeatedly`）。**退出码 1** 表示配置错、端口被占这类重启也没用的：不再拉起，直接停下（`config_error`）。连着跑满 60 秒的，失败次数从零数。
@@ -66,7 +66,7 @@
 
 ## 能力
 
-清单 `[process] capabilities` 声明要什么。自己装的包要人批：装的时候批（`package.install`、`package.upgrade` 带 `approve`，施工 PK-3 上，见 [软件包](packages.md)），没批全的打开时再批（`extension.enable` 带 `approve`）；出厂的算批过，`login.page` 除外（出厂的也要人批，施工 LP-1）。还有没批的不拉起。批过的记在开关文件 `extensions.json` 的 `approved` 里（包的编号到能力），只留这一份清单声明了的；换了来路（本机文件盖过去、换了源、换了来源仓库）装的不接着用以前批的；卸包时删掉。
+清单 `[process] capabilities` 声明要什么。自己装的包要人批：装的时候批（`package.install`、`package.upgrade` 带 `approve`，施工 PK-3 上，见 [软件包](packages.md)），没批全的打开时再批（`extension.enable` 带 `approve`）；出厂的算批过，`login.page`、`provider.key` 除外（出厂的也要人批，施工 LP-1、PK-1）。还有没批的不拉起。批过的记在开关文件 `extensions.json` 的 `approved` 里（包的编号到能力），只留这一份清单声明了的；换了来路（本机文件盖过去、换了源、换了来源仓库）装的不接着用以前批的；卸包时删掉。
 
 | 能力 | 能做什么 |
 |---|---|
@@ -79,6 +79,7 @@
 | `packages.call` | 调别的包在总线上导出的方法（`bus.call`）；照包编号调自己（`package.call`） |
 | `search` | 当搜索服务供应商（清单 `[[search]]`，`search.query`） |
 | `model.driver` | 提供模型驱动（清单 `[[driver]]`）：用它的模型时，发给模型的全部对话都经过它。不附带网络 |
+| `provider.key` | 拿主人在模型那边配好的某一家供应商的 key（清单 `[provider_key]`，下面「`provider_key`」）：出厂的也要人批 |
 | `act_for_external` | 代表平台上的人说话（带 `as` 的 `session.send`、`command.run`）、`session.note`、不写 `to` 的 `session.respond`、`venue.*`、记 `venue.*` 事件：只给通讯平台的桥 |
 | `login.page` | 替本机打开的页面换登录票（`login.ticket {"via": "page"}`，下面「替本机页面换登录票」）：出厂的也要人批 |
 | `sessions.drive` | 驱动会话：`session.create`、`send`、`interrupt`、`revert`、`unrevert`、`redo`、`compact`、`clear`、`configure`、`fork`、`set_meta`、`retitle`、`respond`，`command.run`、`job.stop` |
@@ -470,7 +471,16 @@ access = ["network"]         # 访问类别，可以不写；两样至少一样
 
 ## `extension.config`
 
-它自己的配置项（「包的编号加点」开头的）变了（核心 → 扩展，通知）：`{"keys": {<键>: <新值> 或 null}}`，只放变了的键；密钥是真值；变成没设、取不到的是 `null`。不用订阅。
+它自己的配置项（「包的编号加点」开头的）变了（核心 → 扩展，通知）：`{"keys": {<键>: <新值> 或 null}}`，只放变了的键；密钥是真值；变成没设、取不到的是 `null`。不用订阅。批了 `provider.key` 的，`provider_key` 那一格变了也照这样推。
+
+### `provider_key`
+
+施工 PK-1。清单写 `[provider_key] catalog = "<目录里的编号>"`、声明 `provider.key`、人批过的扩展，握手的 `config` 和 `extension.config` 的 `keys` 里多一格 `"provider_key": "<key 的真值>"`（一个字符串）。只有核心拉起的扩展连接上有，头的连接没有。
+
+- **哪一家**：照主人的供应商配置 `providers.<id>` 认（`miyu_models::provider_key`）：写了 `catalog` 的照它；没写的，字面地址里有那一家的官方地址的算（现在只认 DeepSeek 的 `api.deepseek.com`，地址是环境变量引用的不算）；两样都没写的，编号就是那个目录编号的算。几家都算的照编号排第一的；没写 key 的不算。
+- **不交**：没批 `provider.key` 的（出厂的也要人批）、主人没配那一家的、那一家的 key 取不到的，没有这一格。别家供应商的 key 一律不交。
+- **变了**：换了 key（`secret.set`、改了引用）推新值；删了那一家、去掉了 key 推 `null`。
+- 值不进运行日志、不进事件。`config.get` 照旧只交引用 `{"secret": "<名字>"}`。
 
 ## `content.list`、`content.read`、`content.changed`
 

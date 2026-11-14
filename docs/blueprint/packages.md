@@ -71,7 +71,7 @@ pages_dir = "pages"              # 页面文件的目录，相对包文件夹（
 [process]                        # 有它的是核心拉起的扩展，要有 [command]
 args = ["serve"]                 # 拉起时带的参数，没写的是空的
 start = "manual"                 # manual：开关打开才拉起（默认）；always：核心起来就拉起
-capabilities = ["network"]       # 要的扩展能力（施工 9-4 下上，extensions.md「能力」）：只认 extensions.md「能力」那二十二个名字，可以不写
+capabilities = ["network"]       # 要的扩展能力（施工 9-4 下上，extensions.md「能力」）：只认 extensions.md「能力」那二十三个名字，可以不写
 
 [check]                          # 要有 [command]
 args = ["check"]                 # miyu check 跑 <program> <args…>（9-2）
@@ -137,7 +137,7 @@ program = "miyu-embed"
 | 种类 | 能写的表 |
 |---|---|
 | `ui` | `[package]`、`[command]`、`[ui]`、`[check]`、`[settings]`、`[depends]`、`[recommends]` |
-| `process` | `[package]`、`[command]`、`[process]`、`[check]`、`[settings]`、`[features]`、`[connection]`、`[depends]`、`[recommends]`、`[page]`、`[[mcp]]`、`[[slash]]`（施工 X-14 下）、`[[widget]]`（施工 X-15 上，`widgets.md`）、`[[side]]`（施工 Q-3，`models.md`「旁路请求」）、`[tray]`（施工 TR-2）（施工 X-2） |
+| `process` | `[package]`、`[command]`、`[process]`、`[check]`、`[settings]`、`[features]`、`[connection]`、`[depends]`、`[recommends]`、`[page]`、`[[mcp]]`、`[[slash]]`（施工 X-14 下）、`[[widget]]`（施工 X-15 上，`widgets.md`）、`[[side]]`（施工 Q-3，`models.md`「旁路请求」）、`[tray]`（施工 TR-2）、`[provider_key]`（施工 PK-1，`extensions.md`「配置」第 5 条）（施工 X-2） |
 | `builtin` | `[package]`、`[features]`、`[depends]`、`[recommends]`、`[page]`、`[tray]`（施工 TR-2） |
 | `worker` | `[package]`、`[worker]`、`[depends]`、`[recommends]` |
 | `mascot` | `[package]`、`[mascot]`（施工 F-7）、`[depends]`、`[recommends]` |
@@ -361,7 +361,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
    - **卸的说清设置项**（施工 PK-5补）：`config` 里的 `settings` 是配置里写了的它的设置项有几项，0 的不写；`path`、`settings` 都没有的整格不写。顶上的 `settings`（键的列表）照旧是「一并删掉的配置项」：只有 `purge` 的列，不 `purge` 的是 `[]`，没跟着改的头不会说成删掉。
    - **说清来源和能力**（施工 PK-3 上，设计 `61-装包说清来源和能力.md` 第二节，端点的 `packages/source/glance.rs`、`preview.rs`、`notice.rs`）：`package.install` 看一眼的 `source` 是这个包从哪来：从软件源装的 `official`（条目的 `official` 是真、又是官方那个源）、`community`（官方源里社区收录的，配置里自己加的源里的一律算社区：加源是信那把钥匙，包里的东西还是没人审过），从本机包文件夹、包文件装的 `file`（从软件源缓存里拿 `.miyu` 手装的也是：核心看不出它原来是哪一条），装回的 `shipped`、`distro`（照装回来那一份的层）。原来那一格源的名字改叫 `feed`，和本地库 `desc` 同名，从软件源装的都写（官方的写 `official`）。能力的名字、说明只用核心的字（`extensions/capabilities/<编号>`），作者不能写自己的说法；这一刻批过、装完照旧留着的标 `held: true`（只在来路没变时有，第 9 条）。社区的、本机文件的另给 `notice`：一句一个字符串，照连接的语言挑好：社区的「这是个社区包，没有经过官方审核，可能存在风险。」（几个包的写出是哪几个：「weather 是社区包，没有经过官方审核，可能存在风险。」，`packages/notice/unreviewed`、`…/named`），本机文件的「这个包来自本机文件，没有经过官方审核，可能存在风险。」（「kit 来自本机文件，……」，`packages/notice/file`、`…/named`：本机文件不是社区收录的，不叫社区包），两样都有的先社区后本机文件各一句（施工 CM-1，2026-11-12 项目主人定字；原来带程序、MCP 服务、脚本的另一句「不在沙盒里」去掉：扩展沙盒（设计 62）暂缓，现在没有那层沙盒）；推荐的另给 `recommends_notice`。`package.upgrade` 看一眼同样带（照从软件源装那一条一个一个看），另多一起装的新依赖 `with`。
 
-9. **装的时候批能力**（施工 PK-3 上，设计 `61-装包说清来源和能力.md` 第四节，端点的 `packages/approve.rs`）：`package.install`、`package.upgrade` 的 `approve`（`{编号: [能力…]}`）是这一次装上的每个包各批哪几样。能力名不是二十个之一的、编号写法不对的 `bad_params`；清单没声明的、编号不是这一次装的不理；不写的照旧装上不批。`from_path` 拷文件之前读出本地库旧的 `desc`；拷进去、重读通过、本地库记好以后，在 `switch_packages` 拉起扩展**之前**拿扩展开关那把锁（`one_at_a_time`）读、改、写 `extensions.json` 的 `approved`：「接着用 = 来路没变时旧的 `approved[编号]`，不然空的；新的 = (接着用 ∪ `approve[编号]`) ∩ 这一份清单声明的」，照名字排、不重，空的不写，没变的不写。来路没变是装之前 `desc` 记的和这一次一样都是从软件源装的、`feed`、`origin` 都一样；本机文件装的、换了源的、换了来源仓库的、本地库没记的都算变了。所以 `start = "always"` 的带着批准装上就当场拉起，清单不再要的从 `approved` 里去掉、以后加回来要重新批。从软件源装的把 `feed`、`origin` 交给 `from_path`，跟本地库一起记（原来装完另补 `set_origin`）。装不成、撤回的不写；写不进的记一行 `WARN extension approval not recorded`，装照算成，这个包照旧停在「要批准」，打开时再批。装回出厂的、系统加装的不经这里，不写（出厂的算全批过，`login.page` 除外，施工 LP-1；系统加装的照旧打开时批，设计 61 定了的 8）。打开时批（`extension.enable`、`package.enable` 的 `approve`）照旧留着当兜底，也照这个算法记。不做撤销入口：卸掉就是撤销（定了的 7）。
+9. **装的时候批能力**（施工 PK-3 上，设计 `61-装包说清来源和能力.md` 第四节，端点的 `packages/approve.rs`）：`package.install`、`package.upgrade` 的 `approve`（`{编号: [能力…]}`）是这一次装上的每个包各批哪几样。能力名不是能力表里的（`Capability::ALL`）、编号写法不对的 `bad_params`；清单没声明的、编号不是这一次装的不理；不写的照旧装上不批。`from_path` 拷文件之前读出本地库旧的 `desc`；拷进去、重读通过、本地库记好以后，在 `switch_packages` 拉起扩展**之前**拿扩展开关那把锁（`one_at_a_time`）读、改、写 `extensions.json` 的 `approved`：「接着用 = 来路没变时旧的 `approved[编号]`，不然空的；新的 = (接着用 ∪ `approve[编号]`) ∩ 这一份清单声明的」，照名字排、不重，空的不写，没变的不写。来路没变是装之前 `desc` 记的和这一次一样都是从软件源装的、`feed`、`origin` 都一样；本机文件装的、换了源的、换了来源仓库的、本地库没记的都算变了。所以 `start = "always"` 的带着批准装上就当场拉起，清单不再要的从 `approved` 里去掉、以后加回来要重新批。从软件源装的把 `feed`、`origin` 交给 `from_path`，跟本地库一起记（原来装完另补 `set_origin`）。装不成、撤回的不写；写不进的记一行 `WARN extension approval not recorded`，装照算成，这个包照旧停在「要批准」，打开时再批。装回出厂的、系统加装的不经这里，不写（出厂的算全批过，`login.page`、`provider.key` 除外，施工 LP-1、PK-1；系统加装的照旧打开时批，设计 61 定了的 8）。打开时批（`extension.enable`、`package.enable` 的 `approve`）照旧留着当兜底，也照这个算法记。不做撤销入口：卸掉就是撤销（定了的 7）。
 
 ### 冲突（施工 F-8 六补，设计 `31-软件包.md` 第四节最后两条、定了的 I、J）
 
@@ -412,6 +412,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `bad_search` | `[[search]]` 写错了：编号、名字，重了，没声明 `search` 能力（施工 N-5） |
 | `bad_guard` | `[guard]` 写错了：工具名、访问类别、时限（100 到 5000），`tools`、`access` 两样都没写，没声明 `tool.guard` 能力（施工 HK-1） |
 | `bad_driver` | `[[driver]]` 写错了：驱动名、缓存类型、要不要 key、看不看图，重了，和 `model.driver` 能力对不上（写了没声明、声明了没写，施工 MD-1） |
+| `bad_provider_key` | `[provider_key]` 写错了：`catalog` 少了、不合名字的写法，和 `provider.key` 能力对不上（写了没声明、声明了没写，施工 PK-1） |
 | `bad_after` | `[after]` 写错了：工具名、访问类别，`tools`、`access` 两样都没写，没声明 `events.read` 能力（施工 HK-2）；写了 `timeout_ms` 的是 `unknown_key` |
 | `bad_side` | `[[side]]` 写错了（施工 Q-3）：编号不合写法、少了，档位不是 `lite`、`normal`、`flagship`，少了名字、说明，同一个包里重了；`detail` 是哪一格（`side.<编号>.<格>`） |
 | `bad_tray` | `[tray]` 写错了（施工 TR-2）：没写 `[page]`（`detail` 是 `tray`），写了 `name` 以外的格（`detail` 是 `tray.<格>`）；`name` 本身照「语言到一句话」那几个代码报 |

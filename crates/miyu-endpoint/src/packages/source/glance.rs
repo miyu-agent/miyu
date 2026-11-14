@@ -40,6 +40,7 @@ impl<'a> Looking<'a> {
         let mut listed = crate::extensions::named(
             self.core,
             entry.capabilities.iter().map(String::as_str),
+            entry.provider_key.as_deref(),
             self.language,
         );
         let kept = approve::kept(

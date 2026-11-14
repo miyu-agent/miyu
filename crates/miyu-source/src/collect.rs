@@ -364,6 +364,10 @@ fn entry_of(
             .iter()
             .flat_map(|process| process.capabilities.iter().map(|c| c.as_str().to_string()))
             .collect(),
+        provider_key: manifest
+            .provider_key
+            .as_ref()
+            .map(|wanted| wanted.catalog.clone()),
         depends: manifest.depends.iter().map(ToString::to_string).collect(),
         recommends: manifest
             .recommends

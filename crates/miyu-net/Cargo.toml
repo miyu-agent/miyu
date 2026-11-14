@@ -30,6 +30,8 @@ markup5ever_rcdom = "0.38"
 miyu-tool = { path = "../miyu-tool" }
 # 「搜索来源」的配置项（施工 N-2 下）：`settings!` 声明，工具照这一轮的最终值读。
 miyu-config = { path = "../miyu-config" }
+# DeepSeek 搜索没单独配 key 时借模型那边哪一家的（施工 PK-1）：认法和批了 `provider.key` 的扩展共用一处。第 2 层，纯逻辑。
+miyu-models = { path = "../miyu-models" }
 # 抓到的网页照字符集解成字（施工 N-1）：中文的老站常是 GBK。reqwest 自己也带着它，本来就在依赖图里。(Apache-2.0 OR MIT) AND BSD-3-Clause。
 encoding_rs = "0.8"
 # 读 link_preview.json。

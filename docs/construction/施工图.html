@@ -1542,6 +1542,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sQT1"><span class="n">QT-1</span>场所消息带被引用的内容<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT5"><span class="n">HT-5</span>Anthropic 驱动的服务端工具<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sNF1"><span class="n">NF-1</span>联网服务切供应商<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sPK1"><span class="n">PK-1</span>扩展拿主人配的供应商 key<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -59744,6 +59745,59 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/NF-1-联网服务切供应商.md</code>；蓝图 <code>config.md</code>、<code>net.md</code>、<code>tools/web_search.md</code>、<code>tools/web_fetch.md</code>；协议参考 <code>extensions.md</code> 中英两份。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sPK1" aria-labelledby="h-sPK1">
+  <div class="sheet-head"><h2 id="h-sPK1"><span class="no">PK-1</span>扩展拿主人配的供应商 key</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">官方包 <code>deepseek</code> 要用主人在模型那边配好的 DeepSeek key，不让主人再填一遍。原来包读不到：握手只交包自己的配置项，<code>config.get</code> 只交引用。这一步加一项装时人批的能力，批了的才把那一家的 key 交给它。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">扩展拿主人配的供应商 key</span><span class="dir-note">PK-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>清单 <code>[provider_key] catalog = "deepseek"</code>，声明能力 <code>provider.key</code>（第二十三项）；两头对不上报 <code>bad_provider_key</code></li>
+              <li>装的那一屏：「这个包会拿到你 DeepSeek 的 key」；出厂的也要人批</li>
+              <li>认哪一家：<code>miyu_models::provider_key::serving</code>，写了 <code>catalog</code> 的照它、没写的看官方地址、都没写的看编号；联网包的 DeepSeek 搜索共用</li>
+              <li>交：握手的 <code>config</code>、<code>extension.config</code> 多一格 <code>provider_key</code>（真值），换了推新值、没了推 <code>null</code></li>
+              <li>不交：没批的、没配那一家的、key 取不到的；别家的 key 一律不交；<code>config.get</code> 照旧是引用</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">格子叫 provider_key、值是字符串：包自己的键都带点，撞不上</span><span class="rl">施工 PK-1</span></div>
+          <div class="tile new"><span class="nm">写了别家 catalog 的，地址再像也不算；什么都没写的照编号认</span><span class="rl">施工 PK-1</span></div>
+          <div class="tile new"><span class="nm">官方地址只放实测过的一家，放在 miyu-models，不等目录</span><span class="rl">施工 PK-1</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">PK-1</dd></div>
+        <div><dt>名称</dt><dd>扩展拿主人配的供应商 key</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">PK-1</dd></div>
+        <div><dt>验收</dt><dd>真核心拉起测试扩展：批过的拿到那一家的真值、跟着推，别家的一个字不交，没批的不拉起</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>批过的握手拿到真值；换了 key 推新值、去掉推 null；别家的换了不推</span></li>
+        <li><span class="ok">✓</span><span>没配那一家的没有这一格；没批的不拉起；config.get 照旧是引用</span></li>
+        <li><span class="ok">✓</span><span>出厂的也列在没批的里，说明写清是哪一家</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/PK-1-扩展拿供应商的key.md</code>；蓝图 <code>extensions.md</code>「配置」第 5 条；协议参考 <code>extensions.md</code>「<code>provider_key</code>」（中英）；作者文档 <code>manifest.md</code> 的 <code>[provider_key]</code>（中英）。</li>
       </ul>
     </div>
   </div>

@@ -2,7 +2,8 @@
 //! `[process] capabilities` 声明要哪些，人在 `extension.enable` 那一下带上 `approve` 批。批了就是记进开关文件
 //! `extensions.json` 的 `approved`（施工 SU-2 中：组表拿掉了），批的时候声明的全部。还没批的是「声明的减记着的」：升级
 //! 以后多了的只问多的。出厂的包（资源目录里随 Miyu 装的）和编译进核心的模块一样本来就被信任，算批过的、不记；只有
-//! `login.page`（施工 LP-1，[`Capability::needs_person`]）出厂的也要人批：换到的票能换主人的设备令牌。
+//! `login.page`（施工 LP-1，[`Capability::needs_person`]）出厂的也要人批：换到的票能换主人的设备令牌；`provider.key`（施工 PK-1）
+//! 也是：拿到的是主人的模型 key。
 
 use serde_json::{Value, json};
 
@@ -130,31 +131,52 @@ pub(super) fn shown(
 }
 
 /// 清单声明的每一个能力 `{"id", "name", "summary"}`（名字、一句说明照 `language` 挑，没有字的名字是编号、说明是 `null`）；
-/// 没声明能力的没有。装之前看一眼也照它说（施工 F-8 下补）。
+/// 没声明能力的没有。装之前看一眼也照它说（施工 F-8 下补）。`provider.key` 的说明说清是哪一家（施工 PK-1，清单的
+/// `[provider_key] catalog`）。
 pub(crate) fn described(core: &Core, manifest: &Manifest, language: &str) -> Option<Value> {
     let declared = declared(manifest);
     if declared.is_empty() {
         return None;
     }
-    Some(named(core, declared.iter().map(|it| it.as_str()), language))
+    let catalog = manifest
+        .provider_key
+        .as_ref()
+        .map(|wanted| wanted.catalog.as_str());
+    Some(named(
+        core,
+        declared.iter().map(|it| it.as_str()),
+        catalog,
+        language,
+    ))
 }
 
 /// 几个能力的编号写成 `[{"id", "name", "summary"}]`，同 [`described`]：软件源索引里写的能力（施工 IN-2，`package.info` 查
-/// 软件源的那一份）也照它说。
-pub(crate) fn named<'a>(core: &Core, ids: impl Iterator<Item = &'a str>, language: &str) -> Value {
+/// 软件源的那一份）也照它说。`catalog` 是要哪一家供应商的 key（施工 PK-1）：有的 `provider.key` 说「会拿到你 <那一家> 的
+/// key」，没有的（以前生成的索引）照不说是哪一家的那一句。
+pub(crate) fn named<'a>(
+    core: &Core,
+    ids: impl Iterator<Item = &'a str>,
+    catalog: Option<&str>,
+    language: &str,
+) -> Value {
     let words = crate::config::methods::words(core, language).ok();
-    let said = |key: String| {
+    let said = |key: String, fields: &[(&str, &str)]| {
         words
             .as_ref()
-            .and_then(|words| Words::sentence(words, &key, &[]))
+            .and_then(|words| Words::sentence(words, &key, fields))
     };
+    let vendor = catalog.map(|catalog| super::provider_key::shown_name(core, catalog));
     let listed: Vec<Value> = ids
         .map(|id| {
             let key = format!("extensions/capabilities/{id}");
+            let summary = match (id == Capability::ProviderKey.as_str(), vendor.as_deref()) {
+                (true, Some(vendor)) => said(format!("{key}/named"), &[("provider", vendor)]),
+                _ => said(format!("{key}/summary"), &[]),
+            };
             json!({
                 "id": id,
-                "name": said(key.clone()).unwrap_or_else(|| id.to_string()),
-                "summary": said(format!("{key}/summary")),
+                "name": said(key.clone(), &[]).unwrap_or_else(|| id.to_string()),
+                "summary": summary,
             })
         })
         .collect();

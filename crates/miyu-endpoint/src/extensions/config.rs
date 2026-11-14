@@ -1,12 +1,23 @@
 //! 包自己的配置（施工 9-4 下下，`docs/blueprint/extensions.md`「配置」）：核心拉起的扩展握手时交给它，之后变了推
 //! `extension.config`。是 `config.md` 第九条「密钥不经协议交出去」的例外：只在核心亲手拉起、走标准输入输出的连接上，只给
-//! 这个包自己的键（清单里声明的那几项，键照前缀起，施工 PN-1），值不进运行日志、不进事件。
+//! 这个包自己的键（清单里声明的那几项，键照前缀起，施工 PN-1），值不进运行日志、不进事件。批了 `provider.key` 的另多一格
+//! `provider_key`（施工 PK-1，`provider_key.rs`）。
 
 use std::collections::BTreeMap;
 
 use serde_json::{Map, Value};
 
 use crate::config::Config;
+
+/// 交给包 `package` 的那一份（握手、`extension.config` 照它算）：它自己的配置项（[`own`]），批了 `provider.key` 的再加一格
+/// 那一家供应商的 key（施工 PK-1）。
+pub(crate) fn given(core: &crate::Core, config: &Config, package: &str) -> BTreeMap<String, Value> {
+    let mut given = own(config, package);
+    if let Some(key) = super::provider_key::handed(core, config, package) {
+        given.insert(super::provider_key::CELL.to_string(), Value::String(key));
+    }
+    given
+}
 
 /// 包 `package` 自己的那份：键到值。值是最终值（没写的照默认值，配置合出来的，不看项目配置），密钥引用解成
 /// 真值的字；没设、没默认值、引用取不到的那一键不放。

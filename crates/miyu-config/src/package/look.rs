@@ -150,17 +150,24 @@ pub(super) fn tray(
     reader.phrases(name, "tray.name")
 }
 
+/// 吉祥物包的 `[mascot]`（施工 F-7，`packages.md`「吉祥物包」）：模型文件的格式由终端定，核心只认它在哪。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Mascot {
+    /// 模型文件：包目录里的相对路径，例如 `mascot.json`。
+    pub model: String,
+}
+
 /// `[mascot]`（施工 F-7）：只有 `model`，必写，包目录里的相对路径（写法同 `[page] dir`：不许 `..`、开头的 `/`）。
 pub(super) fn mascot(
     reader: &Reader<'_>,
     table: &dyn TableLike,
     at: &Item,
-) -> Result<super::Mascot, Problem> {
+) -> Result<Mascot, Problem> {
     reader.only(table, "mascot", super::fields::MASCOT)?;
     let item = reader.required(table, at, "mascot", "model")?;
     item.as_str()
         .filter(|model| relative_dir(model))
-        .map(|model| super::Mascot {
+        .map(|model| Mascot {
             model: model.to_string(),
         })
         .ok_or_else(|| {

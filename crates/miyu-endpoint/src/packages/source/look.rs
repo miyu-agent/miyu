@@ -33,7 +33,7 @@ pub(crate) async fn look(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value
         "depends": entry.depends,
         "recommends": entry.recommends,
         "provides": entry.provides,
-        "capabilities": crate::extensions::named(core, capabilities, language),
+        "capabilities": crate::extensions::named(core, capabilities, entry.provider_key.as_deref(), language),
         "origin": entry.origin,
         // 别的源里的不算官方（施工 U23 下下）：那一格是它的索引自己写的。
         "official": entry.official && feed.tier == Tier::Official,

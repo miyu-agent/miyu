@@ -169,6 +169,8 @@ Send `hello` first, without credentials. In the response:
 
 When settings change later, the core sends the notification `extension.config {"keys": {"hello.greeting": "Hi"}}` with only the changed keys; ones that became unset are `null`. A connection that hasn't shaken hands within 10 seconds is closed.
 
+**Using a model key the owner already set up** (PK-1): declare `provider.key` and write `[provider_key] catalog = "deepseek"` (see `[provider_key]` in [the manifest](manifest.en.md)). Once the owner approves it, `config` has one more cell, `"provider_key": "<that provider's key>"`. It's absent when the owner hasn't set up that provider or it has no key; when the owner changes the key you get `extension.config {"keys": {"provider_key": "<new one>"}}`, and `null` when the provider or its key is removed. It's the real key: keep it in memory only, never write it to logs or files, never pass it on.
+
 ## Registering tools: `provide`
 
 After the handshake, send `provide`; `tools` is **all** the tools you provide now, replacing the previous set each time. A tool:

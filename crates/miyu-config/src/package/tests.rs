@@ -311,6 +311,7 @@ fn capabilities_are_read_in_the_table_order() {
             "packages.call",
             "search",
             "model.driver",
+            "provider.key",
             "act_for_external",
             "login.page",
             "network",
@@ -324,13 +325,13 @@ fn capabilities_are_read_in_the_table_order() {
     for name in Capability::ALL.map(Capability::as_str) {
         assert_eq!(Capability::parse(name).map(Capability::as_str), Some(name));
     }
-    // 出厂的也要人批的只有 `login.page`（施工 LP-1）。
+    // 出厂的也要人批的只有 `provider.key`（施工 PK-1）、`login.page`（施工 LP-1）。
     let by_person: Vec<&str> = Capability::ALL
         .into_iter()
         .filter(|capability| capability.needs_person())
         .map(Capability::as_str)
         .collect();
-    assert_eq!(by_person, ["login.page"]);
+    assert_eq!(by_person, ["provider.key", "login.page"]);
     for (list, code) in [
         ("[\"telepathy\"]", Code::BadCapability),
         ("[\"network\", \"network\"]", Code::BadCapability),

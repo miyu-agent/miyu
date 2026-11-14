@@ -105,7 +105,7 @@ Makes it an extension; needs `[command]`.
 | `start` | `manual`: started when switched on (default); `always`: started with the core |
 | `capabilities` | What it needs, see below |
 
-**Capabilities**: only these twenty-two. The install screen lists each one your package asks for (name and one-line summary are Miyu's wording; a package can't supply its own), and answering yes approves them; after an upgrade the upgrade screen lists only the new ones, and approvals the manifest no longer asks for are dropped and must be approved again if they come back. Installing from a local folder or package file (including reinstalling while developing) doesn't keep earlier approvals: each install approves again. Community packages also get "this is a community package. It has not been reviewed and may be risky" on that screen, and packages installed from a local file "this package comes from a local file. It has not been reviewed and may be risky". **Declare honestly**: calling a method whose capability isn't declared returns `needs_approval`.
+**Capabilities**: only these twenty-three. The install screen lists each one your package asks for (name and one-line summary are Miyu's wording; a package can't supply its own), and answering yes approves them; after an upgrade the upgrade screen lists only the new ones, and approvals the manifest no longer asks for are dropped and must be approved again if they come back. Installing from a local folder or package file (including reinstalling while developing) doesn't keep earlier approvals: each install approves again. Community packages also get "this is a community package. It has not been reviewed and may be risky" on that screen, and packages installed from a local file "this package comes from a local file. It has not been reviewed and may be risky". **Declare honestly**: calling a method whose capability isn't declared returns `needs_approval`.
 
 | Capability | Allows |
 |---|---|
@@ -114,6 +114,7 @@ Makes it an extension; needs `[command]`.
 | `commands` | Providing slash commands (`[[slash]]`) |
 | `search` | Being a search provider (`[[search]]`) |
 | `model.driver` | Providing a model driver (`[[driver]]`): when its models are used, everything sent to the model goes through it. It doesn't include network access; declare `network` too if you need it |
+| `provider.key` | Getting the key of one model provider the owner already set up (`[provider_key]`). Shipped packages need approval for it too |
 | `widgets` | Showing its own content in the UI (`[[widget]]`) |
 | `context.inject` | Adding a few lines to her context at the start of a turn |
 | `context.system` | Putting a section at the end of the system prompt |
@@ -335,6 +336,24 @@ Provides a model driver, one per entry; `capabilities` must include `model.drive
 | `images` | `true` if it can see images (default `false`) |
 
 It's used only when the owner writes `driver = "<package id>/<driver name>"` in a provider's settings; model profiles, the npm table and the default are always the built-in drivers, so installing your package can't take over a provider the owner already set up. If the package isn't installed, isn't approved or the driver name is wrong, `miyu check` reports it and that provider can't be used; it never falls back to a built-in driver. How Miyu calls your driver (`driver.call`, `driver.delta`, `driver.cancel`) is in the [protocol reference](../reference/extensions.en.md#drivercall-driverdelta-drivercancel).
+
+## `[provider_key]`
+
+Asks for the key of one model provider the owner already set up on the models side (PK-1), so the owner doesn't have to enter it again; `capabilities` must include `provider.key`, and declaring `provider.key` needs this table.
+
+| Field | Notes |
+|---|---|
+| `catalog` | Which provider: its id in the model catalog, the same ids as `catalog` in a provider's settings, for example `deepseek` |
+
+```toml
+[process]
+capabilities = ["provider.key"]
+
+[provider_key]
+catalog = "deepseek"
+```
+
+The install screen says "This package gets your DeepSeek key", and the key is handed over only once that's approved. Miyu works out which of the owner's providers it is from their settings: a provider with `catalog` written counts if it matches; without it, one whose address contains that provider's official address (only DeepSeek's `api.deepseek.com` for now); with neither, one whose id matches. The first match with a key (by id) is the one whose key you get; no other provider's key is ever handed over. How to read it is in [Writing an extension](extensions.en.md), "Handshake and settings".
 
 ## `[after]`
 

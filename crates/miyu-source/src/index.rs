@@ -65,6 +65,10 @@ pub struct Entry {
     /// 扩展要的能力。
     #[serde(default)]
     pub capabilities: Vec<String>,
+    /// 要哪一家供应商的 key（施工 PK-1）：清单 `[provider_key] catalog` 的原样，装之前那一屏照它说「会拿到你哪一家的 key」。
+    /// 没写的、以前生成的索引没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider_key: Option<String>,
     /// 依赖的包：清单 `[depends]` 的原样，照写的先后，编号或者带版本下限的 `<编号>>=<版本>`（施工 PK-2，读成
     /// [`Entry::depends_on`]）。
     #[serde(default)]

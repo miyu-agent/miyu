@@ -26,6 +26,7 @@ mod links;
 mod look;
 mod mcp;
 mod need;
+mod provider_key;
 mod reader;
 mod reserved;
 mod search;
@@ -47,12 +48,13 @@ pub use export::{Export, under};
 pub use features::Feature;
 pub use guard::{ACCESS as GUARD_ACCESS, Guard};
 pub use links::{Connection, Worker};
-pub use look::{LOGO_MAX_BYTES, LOGO_MAX_SIDE, Page};
+pub use look::{LOGO_MAX_BYTES, LOGO_MAX_SIDE, Mascot, Page};
 pub use mcp::{
     EnvValue, McpServer, Reach, TIMEOUT_DEFAULT as MCP_TIMEOUT_DEFAULT,
     configured as configured_mcp, venues_fit,
 };
 pub use need::Need;
+pub use provider_key::ProviderKey;
 pub use reserved::{RESERVED, reserved_id};
 pub use search::{SEARCH_SOURCE, SearchSource};
 pub use settings::{Choice, Section, Setting, SettingKind, ShownWhen};
@@ -126,6 +128,8 @@ pub struct Manifest {
     pub search: Vec<SearchSource>,
     /// 提供的模型驱动（施工 MD-1，`[[driver]]`）：照写的先后，没有的是空的。只有扩展包能写，要声明 `model.driver`。
     pub drivers: Vec<DriverDecl>,
+    /// 要哪一家供应商的 key（施工 PK-1，`[provider_key]`）：没写的没有。只有扩展包能写，要声明 `provider.key`。
+    pub provider_key: Option<ProviderKey>,
     /// 界面块（施工 X-15 上，`[[widget]]`）：照写的先后，没有的是空的。只有扩展包能写。
     pub widgets: Vec<Widget>,
     /// 守卫（施工 HK-1，`[guard]`）：工具调用前问它的那几种调用；没写的没有。只有扩展包能写，要声明 `tool.guard`。
@@ -154,13 +158,6 @@ impl Manifest {
     pub fn prefix_of<'a>(&'a self, id: &'a str) -> &'a str {
         self.prefix.as_deref().unwrap_or(id)
     }
-}
-
-/// 吉祥物包的 `[mascot]`（施工 F-7，`packages.md`「吉祥物包」）：模型文件的格式由终端定，核心只认它在哪。
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Mascot {
-    /// 模型文件：包目录里的相对路径，例如 `mascot.json`。
-    pub model: String,
 }
 
 /// 包的种类：只说它跑在哪（设计 `30-插件框架.md` 第二节）；施工 F-8 上补起照带的表认（`kinds::of`），清单不写。
@@ -436,6 +433,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         None => Vec::new(),
     };
     driver::check(&drivers, capabilities)?;
+    let provider_key = provider_key::read(&reader, root.get("provider_key"), capabilities)?;
     let widgets = match root.get("widget") {
         Some(node) => widget::read(&reader, node)?,
         None => Vec::new(),
@@ -481,6 +479,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         side,
         search,
         drivers,
+        provider_key,
         widgets,
         guard,
         after,

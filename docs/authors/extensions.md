@@ -169,6 +169,8 @@ core.close()
 
 之后配置变了，核心推通知 `extension.config {"keys": {"hello.greeting": "Hi"}}`，只放变了的键，变成没设的是 `null`。连上 10 秒还没握手成的会被断开。
 
+**要主人配好的模型 key**（施工 PK-1）：清单声明 `provider.key`、写 `[provider_key] catalog = "deepseek"`（见 [清单](manifest.md) 的 `[provider_key]`），主人批了以后，`config` 里多一格 `"provider_key": "<那一家的 key>"`。主人没配那一家、那一家没写 key 的没有这一格；主人换了 key 推 `extension.config {"keys": {"provider_key": "<新的>"}}`，删了那一家、去掉了 key 推 `null`。拿到的是真 key：只放在内存里，别写进日志、文件，别交给别人。
+
 ## 登记工具：`provide`
 
 握手以后发 `provide`，`tools` 是你现在提供的**全部**工具，每发一次整份换掉。一件工具：

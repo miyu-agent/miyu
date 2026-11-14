@@ -142,7 +142,7 @@ mod tests;
 /// 照这一轮的配置 `settings` 拼这一次用得上的（施工 N-3 上）：挑的那一家，配了的 key（照引用取，取不到的当没配；密钥本身
 /// 已经去掉前后空白、不会是空的），
 /// SearXNG 的地址。DeepSeek 没单独配 key 的，照用模型那边配了 DeepSeek 的那一家供应商的 key（设计 36 第二节第 1 条）：
-/// 地址里有 `api.deepseek.com`，或者对的目录是 `deepseek`。
+/// 认法见 `miyu_models::provider_key`。
 pub(crate) fn using(settings: &dyn miyu_tool::SettingsPort) -> crate::search::Using {
     let values = settings.values();
     let secret = |reference: Option<Reference>| {
@@ -178,29 +178,10 @@ pub(crate) fn using(settings: &dyn miyu_tool::SettingsPort) -> crate::search::Us
     using
 }
 
-/// 模型那边配了 DeepSeek 的第一家供应商的 key 引用：`providers.<id>.base_url` 里有 `api.deepseek.com`，或者
-/// `providers.<id>.catalog` 是 `deepseek`。
+/// 模型那边配了 DeepSeek 的第一家供应商的 key 引用：认法在 `miyu_models::provider_key`（施工 PK-1 从这里挪过去，批了
+/// `provider.key` 的扩展也照它认）。
 fn deepseek_provider(values: &miyu_config::Values) -> Option<Reference> {
-    let text = |key: &str| match values.get(key) {
-        Some(miyu_config::Value::Text(text)) => Some(text.to_string()),
-        _ => None,
-    };
-    let ids: Vec<String> = values
-        .keys()
-        .filter_map(|key| key.strip_prefix("providers.")?.strip_suffix(".key"))
-        .map(str::to_string)
-        .collect();
-    ids.into_iter().find_map(|id| {
-        let base = text(&format!("providers.{id}.base_url")).unwrap_or_default();
-        let catalog = text(&format!("providers.{id}.catalog")).unwrap_or_default();
-        if !(base.contains("api.deepseek.com") || catalog == "deepseek") {
-            return None;
-        }
-        match values.get(&format!("providers.{id}.key")) {
-            Some(miyu_config::Value::Secret(reference)) => Some(reference.clone()),
-            _ => None,
-        }
-    })
+    miyu_models::provider_key::serving(values, "deepseek").map(|(_, key)| key)
 }
 
 /// 来源少配了什么（施工 N-3 上）：设置页的下拉里那一家后面写「要 key」「要地址」。

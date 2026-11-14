@@ -1599,6 +1599,12 @@ flowchart LR
 | QT-1 | 场所消息带被引用的那一条的内容 | im 要的：群消息引用了一条不在她会话里的消息时把内容带给她。`venue` 多一格可选的 `quoted`，形状同 `forwards` 里的一条 `{name, text, media?, forwards?}`，里面的转发最多 3 层，算进整条消息的 100 条、16 KiB（超了照 `forwards` 拒），要带着 `reply_to`。渲染只看这一条以前的日志：有被引用的那一条的照旧只写编号，没有的在 `reply-to` 下面缩进写、写法同转发里的一条；群聊近况、判官看的记录（`current` 和之前的记录）同一个规矩，判官的快路说不准的照整份读。没带的、O-34 以前造的会话一字不变。施工单 `QT-1-场所消息带引用的内容.md` |
 | HT-5 | Anthropic 驱动的服务端工具 | 设计 71 第四节、第六节第 3 条：Anthropic 接口那边跑的服务端工具（`web_search`、`web_fetch` 这类），驱动把 `server_tool_use` 和随后的 `*_tool_result` 两块并成一块供应商侧工具：参数、给人看的结果（搜到的标题和网址、读到的正文、出错的错误码）、私有数据（两块的线上原文，1 MiB 以内）。下一次发给这一家时，带着私有数据的在原来的位置照原样写回两块（结果里加密的内容要原样回传），别的照 HT-2 写成字。结果块不占块编号；没等到结果的照常收块。不管怎么开服务端工具；`pause_turn` 续接、引用没做。施工单见 `HT-5-Anthropic服务端工具.md` |
 
+**扩展拿供应商的 key**（项目主人 2026-11-14 定做官方包 `deepseek`，core1 定 A）
+
+| 步 | 名字 | 做什么 |
+|---|---|---|
+| PK-1 | 扩展拿主人配的某一家供应商的 key | 新能力 `provider.key`（第二十三项，出厂的也要人批，`Capability::needs_person`）；清单 `[provider_key] catalog = "<目录里的编号>"`，两头对不上报 `bad_provider_key`；认法从 `miyu-net` 抽到 `miyu_models::provider_key::serving`（写了 `catalog` 的照它、没写的看官方地址、都没写的看编号），联网包共用；批过的扩展握手、`extension.config` 多一格 `provider_key`（那一家的 key 的真值），换了推新值、没了推 `null`，没批、没配那一家的不交，别家的 key 一律不交，`config.get` 照旧是引用；装包那一屏说「这个包会拿到你 <显示名> 的 key」，软件源索引多 `provider_key`。施工单见 `PK-1-扩展拿供应商的key.md` |
+
 **LiteMiyu 的应急模式**（项目主人 2026-11-12、11-13 定）
 
 | 步 | 名字 | 做什么 |

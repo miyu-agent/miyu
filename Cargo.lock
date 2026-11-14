@@ -2282,6 +2282,7 @@ dependencies = [
  "miyu-config",
  "miyu-http",
  "miyu-kernel",
+ "miyu-models",
  "miyu-net",
  "miyu-store",
  "miyu-tool",

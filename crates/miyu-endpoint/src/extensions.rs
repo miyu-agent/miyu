@@ -13,6 +13,7 @@ mod instance;
 pub(crate) mod methods;
 mod offers;
 mod ports;
+mod provider_key;
 mod state;
 pub(crate) mod stderr;
 mod supervise;

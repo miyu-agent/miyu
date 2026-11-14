@@ -32,7 +32,7 @@ Other methods go through one table: those for people only (answering for the per
 - **Environment**: the core's, plus `MIYU_HOME` (data root), `MIYU_RESOURCES` (resources directory), `MIYU_PROGRAM` (the real path of the main `miyu` program, G-15), and this package's place in each part of the data root (design 55 section 4, all created and given as real paths): `MIYU_APP_DIR` (this package's folder), `MIYU_CONFIG_DIR`, `MIYU_STATE_DIR` (also the working directory), `MIYU_CACHE_DIR`, `MIYU_LOG_DIR`, `MIYU_TMP_DIR` (emptied before each start), `MIYU_RUNTIME_DIR`, and the four `MIYU_PICTURES_DIR`-style folders. The old names `MIYU_PACKAGE_DIR` and `MIYU_PACKAGE_STATE` are also set during the transition.
 - **Working directory**: the package's state directory `var/lib/<id>/`.
 - **Stderr**: appended to `var/log/<id>/stderr`; over 1 MiB it is moved to `.old` first.
-- **Handshake**: send `hello` as usual, without credentials. The response's `config` holds the final values of its own settings (secrets as real values).
+- **Handshake**: send `hello` as usual, without credentials. The response's `config` holds the final values of its own settings (secrets as real values); with `provider.key` approved it has one more cell, `provider_key` (see "`provider_key`" below).
 - **Exit**: the core closing its stdin means "please exit"; it is killed if it hasn't exited after 5 seconds.
 - **When the core dies**: if the core crashes or is killed, you and the processes you started go with it (construction XH-1). On Unix you run in a process group of your own (you are not its leader) together with a process the core watches; when the core is gone, it kills the whole group. Processes that `setsid` or move to another group are not covered. On Windows you and your children are in the core's job object. A planned stop follows the previous item. You are not in the core's process group, so Ctrl+C in a terminal does not reach you.
 - **Crashes**: an exit with any code other than 1, being killed, or a failed handshake counts as a failure; it is restarted after 1, 2, 4, 8, 16 seconds, and stopped after 5 in a row (`failed_repeatedly`). **Exit code 1** means a problem a restart won't fix, like bad config or a taken port: it isn't restarted and stops at once (`config_error`). After 60 seconds of running, the failure count starts over.
@@ -66,7 +66,7 @@ A connection the core didn't start gets `not_an_extension` from `port.claim` and
 
 ## Capabilities
 
-The manifest's `[process] capabilities` declares what it needs. Packages you installed need your approval: given while installing (`package.install` and `package.upgrade` with `approve`, PK-3, see [Packages](packages.en.md)), and for anything still unapproved when opening (`extension.enable` with `approve`); built-in ones count as approved, except for `login.page`, which needs approval even for shipped packages (step LP-1). A package with unapproved capabilities isn't started. Approvals live in the switches file `extensions.json` under `approved` (package id to capabilities), keeping only what the current manifest declares; installing the same id another way (a local file over it, another source, another origin repository) does not keep earlier approvals; they are removed when the package is removed.
+The manifest's `[process] capabilities` declares what it needs. Packages you installed need your approval: given while installing (`package.install` and `package.upgrade` with `approve`, PK-3, see [Packages](packages.en.md)), and for anything still unapproved when opening (`extension.enable` with `approve`); built-in ones count as approved, except for `login.page` and `provider.key`, which need approval even for shipped packages (steps LP-1, PK-1). A package with unapproved capabilities isn't started. Approvals live in the switches file `extensions.json` under `approved` (package id to capabilities), keeping only what the current manifest declares; installing the same id another way (a local file over it, another source, another origin repository) does not keep earlier approvals; they are removed when the package is removed.
 
 | Capability | Allows |
 |---|---|
@@ -79,6 +79,7 @@ The manifest's `[process] capabilities` declares what it needs. Packages you ins
 | `packages.call` | Calling methods other packages export on the bus (`bus.call`); calling itself by package id (`package.call`) |
 | `search` | Being a search provider (manifest `[[search]]`, `search.query`) |
 | `model.driver` | Providing a model driver (manifest `[[driver]]`): when its models are used, everything sent to the model goes through it. Doesn't include network access |
+| `provider.key` | Getting the key of one model provider the owner already set up (manifest `[provider_key]`, see "`provider_key`" below): shipped packages need approval for it too |
 | `act_for_external` | Speaking for people on a platform (`session.send` and `command.run` with `as`), `session.note`, `session.respond` without `to`, `venue.*`, recording `venue.*` events: for platform bridges only |
 | `login.page` | Getting sign-in tickets for pages opened on this machine (`login.ticket {"via": "page"}`, see "Signing in pages on this machine" below): shipped packages need approval for it too |
 | `sessions.drive` | Driving sessions: `session.create`, `send`, `interrupt`, `revert`, `unrevert`, `redo`, `compact`, `clear`, `configure`, `fork`, `set_meta`, `retitle`, `respond`, `command.run`, `job.stop` |
@@ -470,7 +471,16 @@ A widget is a block of content declared in the manifest's `[[widget]]` and shown
 
 ## `extension.config`
 
-Its own settings (those starting with "package id plus dot") changed (core → extension, notification): `{"keys": {<key>: <new value> or null}}`, only the changed keys; secrets as real values; `null` when no longer set or unavailable. No subscription needed.
+Its own settings (those starting with "package id plus dot") changed (core → extension, notification): `{"keys": {<key>: <new value> or null}}`, only the changed keys; secrets as real values; `null` when no longer set or unavailable. No subscription needed. With `provider.key` approved, changes to the `provider_key` cell are pushed the same way.
+
+### `provider_key`
+
+Step PK-1. An extension whose manifest has `[provider_key] catalog = "<catalog id>"`, that declares `provider.key` and was approved, gets one more cell in the handshake's `config` and in `extension.config`'s `keys`: `"provider_key": "<the real key>"` (a string). Only on extension connections the core started, never on head connections.
+
+- **Which provider**: worked out from the owner's provider settings `providers.<id>` (`miyu_models::provider_key`): one with `catalog` written counts if it matches; without it, one whose literal address contains that provider's official address (only DeepSeek's `api.deepseek.com` for now; an address that is an environment-variable reference doesn't count); with neither, one whose id is that catalog id. If several count, the first by id; one without a key doesn't count.
+- **Not handed over**: without `provider.key` approved (shipped packages need approval too), when the owner hasn't set up that provider, when its key can't be read. No other provider's key is ever handed over.
+- **Changes**: a changed key (`secret.set`, an edited reference) is pushed as the new value; removing the provider or its key pushes `null`.
+- The value never goes into the runtime log or events. `config.get` still only returns the reference `{"secret": "<name>"}`.
 
 ## `content.list`, `content.read`, `content.changed`
 

@@ -20,7 +20,7 @@ impl Handing {
         let package = instance.package.as_str();
         let mut current = core.config_now();
         let config = Arc::clone(&current.borrow_and_update());
-        let handed = crate::extensions::config::own(&config, package);
+        let handed = crate::extensions::config::given(core, &config, package);
         tracing::debug!(target: "miyu::endpoint", package, keys = handed.len(), "extension config handed");
         Handing {
             instance: instance.clone(),

@@ -244,6 +244,48 @@ async fn a_shipped_extension_still_asks_for_login_page() {
     assert!(courier.get("unapproved").is_none(), "批了就不列：{courier}");
 }
 
+/// 出厂的也要人批的 `provider.key`（施工 PK-1）：拿到的是主人的模型 key；说明里写清是哪一家（目录没读的照编号）。
+#[tokio::test]
+async fn a_shipped_extension_still_asks_for_provider_key() {
+    let home = Home::new();
+    let resources = shipped::resources(&home);
+    let manifest = resources
+        .join("packages")
+        .join(shipped::ID)
+        .join("package.toml");
+    let asking = shipped::COURIER.replace("\"network\"]", "\"network\", \"provider.key\"]");
+    assert_ne!(asking, shipped::COURIER, "改得到能力那一行");
+    std::fs::write(
+        &manifest,
+        format!("{asking}\n[provider_key]\ncatalog = \"deepseek\"\n"),
+    )
+    .expect("写得进");
+    let core = Arc::new(
+        shipped::core(&home, &resources, &miyu_session::testkit::Script::new([]))
+            .with_extension_timing(quick()),
+    );
+    core.start_extensions();
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let courier = status(&mut client, shipped::ID).await;
+    assert_eq!(
+        courier["unapproved"],
+        json!(["provider.key"]),
+        "出厂的不算批过它：{courier}"
+    );
+    let listed = courier["capabilities"]
+        .as_array()
+        .and_then(|all| all.iter().find(|one| one["id"] == "provider.key"))
+        .cloned()
+        .unwrap_or_else(|| panic!("{courier}"));
+    assert!(
+        listed["summary"]
+            .as_str()
+            .is_some_and(|it| it.contains("deepseek")),
+        "说清是哪一家：{listed}"
+    );
+}
+
 /// 开关文件里记着批过的（施工 SU-2 中）：起来照它认，开着的直接拉起、不再问；声明多了的只问多的那个。
 #[tokio::test]
 async fn an_approval_in_the_switches_file_counts() {
