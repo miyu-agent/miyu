@@ -96,7 +96,12 @@ async fn a_model_or_item_lists_its_words() {
     assert_eq!(item["control"], "text");
     assert_eq!(
         (item["name"].as_str(), item["description"].as_str()),
-        (Some("语义模型"), Some("提高记忆、知识库等内容的检索质量。"))
+        (
+            Some("语义模型"),
+            Some(
+                "提高记忆、知识库等内容的检索质量。只有内置模型会自动联想记忆和知识库，换成别的模型后只在搜索时用到。"
+            )
+        )
     );
     assert_eq!(
         item["options"],

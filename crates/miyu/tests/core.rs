@@ -288,6 +288,15 @@ async fn a_core_that_leaves_without_a_word_is_reported() {
     .await
     .expect_err("起不来");
     assert!(matches!(error, StartError::Silent), "{error:?}");
+    // 叫人看的日志就是核心真写的那一份（施工 FX-4：原来写死 `state/logs/core.log`，日志早挪到 `var/log/` 了）。
+    let said = error.to_string();
+    let named = said.rsplit("看数据根的 ").next().expect("说了在哪");
+    let (first, _) = within("拉起", connect_or_start(&home.root, || home.core()))
+        .await
+        .expect("拉得起");
+    drop(first);
+    home.until_stopped().await;
+    assert!(home.root.path().join(named).is_file(), "{said}");
 }
 
 #[tokio::test]

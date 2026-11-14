@@ -4,6 +4,8 @@ use std::fmt;
 use std::io;
 use std::path::PathBuf;
 
+use miyu_store::root::DataRoot;
+
 /// 核心起不来。
 #[derive(Debug)]
 pub enum OpenError {
@@ -95,7 +97,7 @@ pub enum StartError {
         /// 原因。
         reason: String,
     },
-    /// 核心没说好了就退了：原因在它的运行日志 `state/logs/core.log` 里。
+    /// 核心没说好了就退了：原因在它的运行日志里（数据根的 `var/log/core.log`，[`DataRoot::core_log`]）。
     Silent,
     /// 等核心说好了，等太久了。
     Timeout,
@@ -111,9 +113,11 @@ impl fmt::Display for StartError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             StartError::Refused { reason, .. } => write!(f, "核心起不来：{reason}"),
+            // 照数据根取的相对位置（施工 FX-4：原来写死 `state/logs/core.log`，FH-3 挪到 `var/log/` 以后指错了地方）。
             StartError::Silent => write!(
                 f,
-                "核心没起来，也没说为什么：看数据根的 state/logs/core.log"
+                "核心没起来，也没说为什么：看数据根的 {}",
+                DataRoot::at(PathBuf::new()).core_log().display()
             ),
             StartError::Timeout => write!(f, "等核心起来等了太久"),
             StartError::Busy => write!(f, "别的程序正在拉起核心，等了太久"),

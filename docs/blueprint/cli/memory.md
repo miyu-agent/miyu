@@ -24,7 +24,7 @@
 | `edit <编号> [<话>]` | 改一条 | `memory.update`；带 `--keywords`、`--who` 的另带 `keywords`、`who`；不写话的只换关键词（编号不变）、是谁（新编号）（施工 R-15 上、E-1 上） |
 | `forget <编号>` | 忘掉一条 | `memory.forget`，带 `--why` 的原因 |
 | `clear session [<会话>]` | 清掉这个会话记下的 | `memory.forget`，`clear: "session"`；不写会话的是上一次 `miyu ask` 开的 |
-| `clear me` | 清除关于用户本人的全部记忆 | `memory.forget`，`clear: "me"` |
+| `clear me` | 清除全部记忆（找到的那一间整间清空，连人物卡；施工 FX-4 照 `memory.md`「协议」改了说法，原来写「关于用户本人的」） | `memory.forget`，`clear: "me"` |
 | `cards` | 列出认识的人的卡，照是谁排 | `memory.cards`，带 `forgotten`（施工 E-1 下）；一张一行：`<是谁> (<叫法>, …)  <日期>  <正文>`，是谁照最长的对齐，没有叫法的不写括号，作废的同一条记忆 |
 | `dream` | 现在就整理：合掉重复的、改掉过时的、更新摘要 | `memory.dream`；要等模型，几秒到十几秒。等的时候按一次 Ctrl+C 发 `memory.dream_stop`（同一间、同一条连接），标准错误印「正在停止整理，再按一次 Ctrl+C 立即退出」，接着等原来那一条回应；再按一次不等，直接退（施工 R-23） |
 
@@ -112,7 +112,7 @@ m2   2026-10-07  [qq:10086] 小林用 RX 7800 XT
   forget <编号>           作废一条记忆
   clear session [<会话>]  清除一个会话记下的记忆（默认为上一次 miyu ask
                           的会话）
-  clear me                清除关于用户本人的全部记忆
+  clear me                清除全部记忆，包括人物卡
   dream                   立即整理记忆（Ctrl+C 停止，已整理的保留）
   cards                   列出人物卡
 
@@ -145,7 +145,7 @@ Commands:
   forget <id>           Forget a memory
   clear session [<id>]  Clear the memories of a session (default: the last
                         miyu ask session)
-  clear me              Clear all memories about the user
+  clear me              Clear all memories, person cards included
   dream                 Organize memories now (Ctrl+C stops, keeping what
                         is done)
   cards                 List person cards

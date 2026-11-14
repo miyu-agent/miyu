@@ -175,8 +175,9 @@ impl Code {
         }
     }
 
-    /// 全部，照先后。
-    pub const ALL: [Code; 15] = [
+    /// 全部，照先后：给人看的字的门禁照它查三种语言都有（`miyu-store` 的 `every_persona_problem_is_said_in_three_languages`）。
+    /// 列全了由测试 `all_lists_every_code_in_order` 守（施工 FX-4：P-7 加的背景三种原来没进表）。
+    pub const ALL: [Code; 18] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -187,6 +188,9 @@ impl Code {
         Code::BadKnowledgeBases,
         Code::BadSeed,
         Code::BadSubagent,
+        Code::BadBackgroundOpacity,
+        Code::BadBackgroundFocus,
+        Code::BadBackgroundBlur,
         Code::BadLifeContext,
         Code::FirstLine,
         Code::TakeTurns,

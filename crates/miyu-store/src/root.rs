@@ -47,6 +47,9 @@ pub const USER_DIRS: [&str; 4] = ["pictures", "videos", "documents", "downloads"
 /// `crate::config_file`）。
 pub const RUN: &str = "run";
 
+/// 核心的运行日志叫什么：装日志时交给 `miyu_log::install` 的名字，文件是 `var/log/<它>.log`（[`DataRoot::core_log`]）。
+pub const CORE_LOG: &str = "core";
+
 /// 核心起来时就建好的目录（施工 R3-1 补、FH-3，[`DataRoot::prepare_private`]，设计 55 第五节第 2 条）：Windows 的沙盒只禁
 /// 命令起来那一刻已有的，敏感的、透出路径上的几层都事先建好。
 const PRIVATE: [&str; 21] = [

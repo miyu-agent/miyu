@@ -17,6 +17,19 @@ on:
       - "docs/designs/01-架构.md"
       - "docs/designs/23-性能预算.md"
       - "docs/designs/26-提示词.md"
+  # 往 main 提的 PR 也跑（施工 FX-4）：外面的人从自己的分叉提的 PR 不推 step/**，原来一项都不跑。只读权限、拿不到密钥，缓存照
+  # 下面的 save-if 只有 main 存。不跑的文档同上。
+  pull_request:
+    branches: [main]
+    paths:
+      - "**"
+      - "!docs/construction/**"
+      - "!docs/authors/**"
+      - "!docs/reviews/**"
+      - "!docs/designs/**"
+      - "docs/designs/01-架构.md"
+      - "docs/designs/23-性能预算.md"
+      - "docs/designs/26-提示词.md"
   workflow_dispatch:
 
 permissions:

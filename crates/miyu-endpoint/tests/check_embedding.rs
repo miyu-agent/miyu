@@ -106,8 +106,9 @@ async fn it_says_which_model_and_how_far_each_index_is_filled() {
             "memory": [{"persona": "engineer", "have": 1, "total": 1}],
             "turns": [{"persona": "engineer", "have": 0, "total": 0}],
             "kb": [{"id": "notes", "name": "notes", "have": 1, "total": 1}],
+            "no_recall": ["memory", "kb"],
         }),
-        "补齐了"
+        "补齐了；测试的小模型不在门槛表里，两样都不自动联想（施工 FX-4）"
     );
     // 只查一份的不带。
     let settings = home.root.config_file();

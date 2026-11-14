@@ -291,8 +291,8 @@
 | `RootError` | `RelativeMiyuHome` | `MIYU_HOME 要写绝对路径，写的是 <路径>` |
 | | `NoHome` | `找不到家目录` |
 | | `NoLocalAppData` | `找不到 LOCALAPPDATA，或者它不是绝对路径` |
-| `PrepareError` | `NotOurs` | `<数据根> 里有别的东西，认不出是 Miyu 的数据根（顶层没有 .miyu-layout），不动它。设 MIYU_HOME 指到一个空目录` |
-| `PrepareError` | `OldLayout` | `<数据根> 是旧版 Miyu 的数据根（layout 2），新版不认；设 MIYU_HOME 指到一个空目录，旧数据照施工单 FH-7 自己搬` |
+| `PrepareError` | `NotOurs` | `<数据根> 里有别的东西，认不出是 Miyu 的数据根（顶层没有 .miyu-layout），不动它。是 0.7 版的数据目录的话，先 mv <数据根> <数据根>-0.7，再 miyu pkg install migrate、miyu migrate <数据根>-0.7；不是的话设 MIYU_HOME 指到一个空目录`（0.7 版的数据目录也在 `~/.miyu`、没有标记，落在这一种，施工 FX-4） |
+| `PrepareError` | `OldLayout` | `<数据根> 是旧版 Miyu 的数据根（layout 2），新版不认，不动它。设 MIYU_HOME 指到一个空目录`（施工 FX-4 去掉了施工号） |
 | `PrepareError` | `OtherLayout` | `<数据根> 的 .miyu-layout 写的不是这一版的布局（layout 3），不动它` |
 | | `Io` | 系统的原话 |
 | `OpenError` | `Missing` | `no session log`（目录不写；施工 LG-1 上） |

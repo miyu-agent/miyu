@@ -27,7 +27,7 @@ const START: i64 = 1_792_972_800_000;
 const GAP: i64 = 3_600_000;
 
 /// 没有人生会话时的说明（中文）。
-const ABOUT: &str = "人生会话让这个人格一直过着自己的日子：她到点自己醒来，做点自己的事，记下的会进她的记忆。每次醒来都是一次模型请求，会多花 token。用 /life new 开始。";
+const ABOUT: &str = "人生会话让这个人格一直过着自己的日子：到点自己醒来，做点自己的事，记下的会进这个人格的记忆。每次醒来都是一次模型请求，会多花 token。用 /life new 开始。";
 
 /// 没有人生会话时停、续、结束的那一句。
 const NOTHING: &str = "这个人格没有人生会话。";
@@ -189,7 +189,7 @@ async fn new_opens_one_and_again_ends_the_old_and_opens_another() {
     let (core, mut client, here) = started(&home, &script, &hand).await;
 
     let reply = typed(&mut client, "k1", &here, "/life new").await;
-    assert_eq!(said(&reply), "人生会话已开始，她马上醒来。");
+    assert_eq!(said(&reply), "人生会话已开始，马上醒来。");
     let first = carried(&reply).expect("带新会话").to_string();
     home.until_turns(&first, 1).await;
     assert_eq!(woken(&home.log(&first)), 1, "马上醒了第一次");
@@ -202,7 +202,7 @@ async fn new_opens_one_and_again_ends_the_old_and_opens_another() {
     let reply = typed(&mut client, "k2", &here, "/life new").await;
     assert_eq!(
         said(&reply),
-        "上一段人生会话已结束，新的一段已开始，她马上醒来。"
+        "上一段人生会话已结束，新的一段已开始，马上醒来。"
     );
     let second = carried(&reply).expect("带新会话").to_string();
     assert_ne!(first, second, "是两个会话");
@@ -407,7 +407,7 @@ async fn receipts_come_in_three_languages_and_the_catalog_lists_it() {
     let cases = [
         (
             "en-US",
-            "A life session lets this persona live her own days: she wakes up on her own, does her own things, and what she notes goes into her memory. Every wake-up is a model request and costs extra tokens. Start one with /life new.",
+            "A life session lets this persona live its own days: it wakes up on its own, does its own things, and what it notes goes into its memory. Every wake-up is a model request and costs extra tokens. Start one with /life new.",
             "This persona has no life session.",
             "Life session",
         ),

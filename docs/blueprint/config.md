@@ -1062,7 +1062,7 @@ merge_every = "16h"
 # 能写：<供应商>/<模型> 或 @<池>。只能写在系统配置里。新会话生效。
 # chat =
 
-# 语义模型：提高记忆、知识库等内容的检索质量。
+# 语义模型：提高记忆、知识库等内容的检索质量。只有内置模型会自动联想记忆和知识库，换成别的模型后只在搜索时用到。
 # 能写：local、off 或 <供应商>/<模型>。只能写在系统配置里。下一轮生效。
 # embedding =
 
@@ -1692,7 +1692,7 @@ currency = "USD"
 | `models.vision` 名字（8-8） | 看图的模型 | Vision model | 画像を見るモデル |
 | 说明 | 主对话的模型看不了图时，替它看图的模型。写法同主对话的模型。 | Looks at images for the chat model when it cannot. Written like the chat model. | 会話のモデルが画像を見られないとき、代わりに見るモデル。書き方は会話のモデルと同じです。 |
 | `models.embedding` 名字（R-5 下；R-5 再补改名，2026-10-09 项目主人定） | 语义模型 | Semantic model | 意味モデル |
-| 说明 | 提高记忆、知识库等内容的检索质量。 | Improves search quality for memories, knowledge bases and more. | 記憶やナレッジベースなどの検索の質を高めます。 |
+| 说明 | 提高记忆、知识库等内容的检索质量。只有内置模型会自动联想记忆和知识库，换成别的模型后只在搜索时用到。（后一句施工 FX-4 加：门槛表里没有的模型不联想，原来换了远程的模型以后联想不出来、没有任何提示） | Improves search quality for memories, knowledge bases and more. Only the built-in model recalls memories and knowledge on its own; other models are used for search only. | 記憶やナレッジベースなどの検索の質を高めます。記憶とナレッジを自動で思い出すのは内蔵モデルだけで、ほかのモデルは検索にだけ使います。 |
 | 选项 | `local` 内置模型、`off` 关 | Built-in model、Off | 内蔵モデル、オフ |
 | `memory.extract_idle` 名字（R-6 上） | 整理记忆前等多久 | Wait before organizing memories | 記憶を整理するまでの待ち時間 |
 | 说明 | 聊完闲了这么久，她把新聊的内容里值得记的整理成记忆。 | Once the conversation has been quiet this long, she turns what is worth keeping from the new part into memories. | 会話がこの時間止まると、新しい部分のうち覚えておく価値のあるものを記憶にまとめます。 |

@@ -24,7 +24,7 @@ fn preview() -> Value {
             {"package": "old", "version": "1.1"},
         ],
         "with": [{"package": "lib", "version": "1.0", "source": "community", "feed": "official",
-                  "capabilities": [{"id": "search", "name": "当搜索服务供应商", "summary": "在搜索服务供应商里列出来"},
+                  "capabilities": [{"id": "search", "name": "提供联网服务", "summary": "在联网服务里列出来"},
                                    {"id": "network", "name": "联网", "summary": "访问网络、开端口"}]}],
         "download": 2048,
         "notice": ["lib 是社区包，没有经过官方审核，可能存在风险。"],
@@ -40,7 +40,7 @@ fn an_upgrade_lists_only_the_new_capabilities_under_each_package() {
             "  新要：联网：访问网络、开端口",
             "将升级 old 1.0 → 1.1",
             "将安装 lib 1.0",
-            "  需要：当搜索服务供应商：在搜索服务供应商里列出来",
+            "  需要：提供联网服务：在联网服务里列出来",
             "        联网：访问网络、开端口",
             "下载：2.0 KiB",
         ]

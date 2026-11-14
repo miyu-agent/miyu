@@ -4,7 +4,7 @@
 //!
 //! 1. 找数据根，建骨架；
 //! 2. 拿单实例锁：已经有一个核心在跑的，说一声 `running` 就走；先拿锁再装日志，免得两个核心写同一份；
-//! 3. 装运行日志 `state/logs/core.log`，记一条「起来了」：版本、进程号、数据根、和 UTC 差多少；
+//! 3. 装运行日志 `var/log/core.log`，记一条「起来了」：版本、进程号、数据根、和 UTC 差多少；
 //! 4. 工作区，没有就建；资源目录；读配置、照 `log.level` 换运行日志的级别，照配置清单生成两份 JSON
 //!    Schema 和参考文件（[`settings`]，施工 8-1、8-2）；供应商的档案、认原厂的表，造会话的路由（[`models`]，施工 8-6、8-7）；开始监视配置文件，配置换了当场换级别、重写
 //!    生成的文件（施工 8-4）；
@@ -87,8 +87,8 @@ pub fn main(options: Options) -> ExitCode {
     };
     // 装上时照 `MIYU_LOG`（没设、读不懂的是 INFO），读完配置再照 `log.level` 换（施工 8-2）。
     let level = miyu_log::level(std::env::var("MIYU_LOG").ok().as_deref());
-    let logs = root.logs();
-    let log = match miyu_log::install(&logs, "core", level.filter, env.home.as_deref()) {
+    let (logs, name) = (root.logs(), miyu_store::root::CORE_LOG);
+    let log = match miyu_log::install(&logs, name, level.filter, env.home.as_deref()) {
         Ok(guard) => guard,
         Err(error) => return failed("log", None, error.to_string()),
     };

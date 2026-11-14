@@ -66,7 +66,7 @@ async fn a_key_in_the_environment_is_referenced_never_copied() {
     assert_eq!(asked.code, 0, "{}", asked.screen);
     assert_eq!(
         steady(&asked.screen),
-        "miyu: 警告：核心未读到 OPENAI_API_KEY（在核心启动后设置）\n提示：核心空闲退出后重新运行 'miyu setup'\n提示：或选择这一家供应商并粘贴密钥\n\
+        "miyu: 警告：核心未读到 OPENAI_API_KEY（在核心启动后设置）\n提示：先运行 'miyu core stop'，再重新运行 'miyu setup'\n提示：或选择这一家供应商并粘贴密钥\n\
          选择供应商：\n\
          \x20 1  OpenCode Zen\n\
          \x20 2  OpenCode Go\n\

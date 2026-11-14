@@ -235,3 +235,39 @@ fn japanese_turns_into_japanese() {
         Some("キャンセルしました")
     );
 }
+
+/// 给人看的字不说「她」（设计 47 第三节第 8 条，施工 T-10；施工 FX-4 查出人生会话的几句漏了）：中文不写「她」，英文不写
+/// she、her、hers、herself，日文不写「彼女」。说人格的照「这个人格」、人格的名字，或者换个说法不提。
+#[test]
+fn nothing_for_people_calls_the_ai_she() {
+    const ENGLISH: [&str; 4] = ["she", "her", "hers", "herself"];
+    fn strings<'a>(value: &'a Value, found: &mut Vec<&'a str>) {
+        match value {
+            Value::String(text) => found.push(text),
+            Value::Array(list) => list.iter().for_each(|one| strings(one, found)),
+            Value::Object(map) => map.values().for_each(|one| strings(one, found)),
+            _ => {}
+        }
+    }
+    for place in places() {
+        for language in LANGUAGES {
+            let file = place.join("human").join(format!("{language}.json"));
+            let Ok(text) = std::fs::read_to_string(&file) else {
+                continue;
+            };
+            let json: Value = serde_json::from_str(&text).expect("是 JSON");
+            let mut found = Vec::new();
+            strings(&json, &mut found);
+            for said in found {
+                let english = said
+                    .split(|c: char| !c.is_ascii_alphabetic())
+                    .any(|word| ENGLISH.contains(&word.to_lowercase().as_str()));
+                assert!(
+                    !said.contains('她') && !said.contains("彼女") && !english,
+                    "{}：{said}",
+                    file.display()
+                );
+            }
+        }
+    }
+}

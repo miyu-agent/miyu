@@ -1545,6 +1545,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sPK1"><span class="n">PK-1</span>扩展拿主人配的供应商 key<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT4"><span class="n">HT-4</span>扩展驱动交得上供应商侧工具<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU1"><span class="n">QU-1</span>供应商的额度<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sFX4"><span class="n">FX-4</span>文档查出的小修<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -59907,6 +59908,62 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/QU-1-供应商额度.md</code>；蓝图 <code>models.md</code>、<code>protocol.md</code>、<code>config.md</code>；协议参考 <code>sessions.md</code>、<code>venues.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sFX4" aria-labelledby="h-sFX4">
+  <div class="sheet-head"><h2 id="h-sFX4"><span class="no">FX-4</span>文档查出的小修</h2><span class="pill done">做完</span></div>
+  <p class="purpose">写文档时查出来、人会碰到的十二条：照着报错、帮助页、设置说明去做做得通，给人看的字不带施工号、不说「她」，两条测试守得住该守的，PR 上也跑 CI。两条要拍板的没做。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-store · root/prepare.rs、root/places.rs　miyu-ipc · error.rs　miyu-cli · language/setup.rs、language/embedding.rs、help　miyu-endpoint · check/embedding.rs　miyu-policy · persona.rs　resources · core/human　docs · reference　.github · ci.yml</span><span class="dir-note">FX-4</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>认不出的数据根说 0.7 版怎么搬；旧布局那句去掉施工号</li>
+              <li>核心没说话就退了：照 <code>DataRoot::core_log</code> 指 <code>var/log/core.log</code></li>
+              <li>核心看不到环境变量：先 <code>miyu core stop</code> 再跑 <code>miyu setup</code></li>
+              <li><code>clear me</code> 的帮助照蓝图说整间清空</li>
+              <li><code>check</code> 多 <code>no_recall</code>；没测过门槛的模型不自动联想，说出来</li>
+              <li>人生会话的回执不说「她」；人格 <code>Code::ALL</code> 补全</li>
+              <li>卸会话的测试不比时长；往 main 的 PR 也跑 CI</li>
+              <li>能力 <code>search</code> 叫「提供联网服务」；协议参考新加的行不说「她」</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">位置只从一处取</span><span class="rl">日志名 <code>CORE_LOG</code></span></div>
+          <div class="tile new"><span class="nm">三种语言都不说她</span><span class="rl">门禁扫全部 human 表</span></div>
+          <div class="tile new"><span class="nm">断言结果不断言时长</span><span class="rl">看排队的拿没拿到锁</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">FX-4</dd></div>
+        <div><dt>名称</dt><dd>文档查出的小修</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">FX-4</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>旧数据根的话、日志的位置、人生会话的回执、原因码全表：新测试改前红、改后绿</span></li>
+        <li><span class="ok">✓</span><span>远程的语义模型：<code>miyu check</code> 说不自动联想</span></li>
+        <li><span class="ok">✓</span><span>MEM-5 的分批退回去，卸会话的测试红</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/FX-4-文档查出的小修.md</code>；蓝图 <code>store.md</code>、<code>cli/setup.md</code>、<code>cli/memory.md</code>、<code>cli/check.md</code>、<code>protocol.md</code>、<code>config.md</code>、<code>life.md</code>；协议参考 <code>packages.md</code>。</li>
       </ul>
     </div>
   </div>

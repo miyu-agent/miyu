@@ -161,7 +161,7 @@ $ echo "$KEY" | miyu setup --provider deepseek --model deepseek-flash
 
 ```text
 miyu: 警告：核心未读到 OPENAI_API_KEY（在核心启动后设置）
-提示：核心空闲退出后重新运行 'miyu setup'
+提示：先运行 'miyu core stop'，再重新运行 'miyu setup'
 提示：或选择这一家供应商并粘贴密钥
 ```
 
@@ -224,7 +224,7 @@ Outside a terminal, give --provider and pipe the key in:
 | 用不了的原因 | 未知的接口；目录中没有地址；还没有 {driver} 驱动 | unknown API; no address in the catalog; no {driver} driver yet |
 | 问编号 | 选择编号： | Pick a number: |
 | 编号不对（说完接着问） | miyu: 无效的编号：{敲的} | miyu: invalid number: {typed} |
-| 核心看不到 | 见「样子」（2026-10-08 项目主人定改短：照软件的说法；CL-2 下改成告警加两行提示） | miyu: warning: the core has not read {vars} (set after the core started)<br>hint: run 'miyu setup' again after the core exits when idle<br>hint: or pick that provider and paste the key |
+| 核心看不到 | 见「样子」（2026-10-08 项目主人定改短：照软件的说法；CL-2 下改成告警加两行提示） | miyu: warning: the core has not read {vars} (set after the core started)<br>hint: run 'miyu core stop', then 'miyu setup' again<br>hint: or pick that provider and paste the key |
 | 问地址 | Base URL： | Base URL: |
 | 地址不对（说完接着问） | miyu: 地址必须以 http:// 或 https:// 开头 | miyu: the address must start with http:// or https:// |
 | 接口协议的头一行 | 接口协议： | API protocol: |
@@ -287,7 +287,7 @@ Outside a terminal, give --provider and pipe the key in:
 | 试不通回到上一步：贴的 key 回到贴 key，别的回到选一家；写了 `--provider` 的、不在终端里的没有上一步，退出码 1。直接回车、读到头是出口（「没选」「没收到 key」） | 图纸「回到上一步」；不能卡在一个问题上出不来 | 一律退出：贴错一次要从头来 |
 | 编号表最多列 20 个模型，多的说一句；模型也能敲名字 | 一家几百个模型的（中转站）一屏放不下 | 全列：几百行 |
 | 用不了的照样列，不编号、灰字、接原因 | 图纸「别的也列、标出来，人知道为什么选不了」 | 不列：找到了 key 却不知道为什么不见了 |
-| 「核心看不到」只说等核心空闲退出、或者选这一家贴 key | 让核心空闲时重启要一个新的协议方法，不在这一步 | 加一个 `core.restart`：多一个方法，不在图纸里 |
+| 「核心看不到」只说先 `miyu core stop` 再跑一次 `miyu setup`（由这个终端拉起的核心带着这个终端的环境）、或者选这一家贴 key（施工 FX-4：原来说等核心空闲退出，Z-1 上起核心默认不空闲退出，等不到） | 停核心已经有命令（`miyu core stop`），不另加方法 | 加一个 `core.restart`：多一个方法，不在图纸里 |
 | 目录里的编号不合「路径里的名字」写法的（`302ai`、`wafer.ai`）换一个配置里的编号（`p-302ai`、`wafer-ai`），另写 `catalog`；密钥也用这个名字 | 配置的编号、密钥的名字都只收小写字母开头的那种，照原样写进去 `config.set` 不收 | 这两家不让选：目录里有、选不了，说不清为什么 |
 | 不通的那一行不另写 HTTP 状态：驱动的原话里有（`HTTP 401: …`） | 写两遍；和 `miyu ask` 出错那一行一样 | 照 `status` 另写一段：`HTTP 401：HTTP 401: …` |
 | 用不了的原因照 `driver`、`base_url` 认：`driver` 是 `null` 的认不出接口，`base_url` 是 `null` 的没有地址，都有的是驱动还没有；`provider.detect` 的 `keys` 没有地址那一格，当有地址 | 核心不另交原因；现在用不了的几家（`anthropic`、`openai`）`driver` 都有 | `provider.catalog` 另交一格原因：这一步只有这一处要它 |

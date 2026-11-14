@@ -11,7 +11,7 @@ Commands:
   forget <id>           Forget a memory
   clear session [<id>]  Clear the memories of a session (default: the last
                         miyu ask session)
-  clear me              Clear all memories about the user
+  clear me              Clear all memories, person cards included
   dream                 Organize memories now (Ctrl+C stops, keeping what
                         is done)
   cards                 List person cards

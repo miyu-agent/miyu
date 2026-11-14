@@ -44,20 +44,22 @@ impl Language {
         }
     }
 
-    /// 头看得到、核心看不到的变量：几个名字连起来（2026-10-08 项目主人定的说法，设计 47 改成告警加两条提示）。
+    /// 头看得到、核心看不到的变量：几个名字连起来（2026-10-08 项目主人定的说法，设计 47 改成告警加两条提示）。核心默认常驻、
+    /// 不空闲退出（施工 Z-1 上），原来叫人等它空闲退出等不到（施工 FX-4）：停掉它，再跑一次 `miyu setup` 由这个终端拉起，
+    /// 新核心带着这个终端的环境。
     pub(crate) fn core_cannot_see(&self, names: &[&str]) -> Problem {
         match self {
             Language::Chinese => Problem::new(format!(
                 "核心未读到 {}（在核心启动后设置）",
                 names.join("、")
             ))
-            .hint("核心空闲退出后重新运行 'miyu setup'")
+            .hint("先运行 'miyu core stop'，再重新运行 'miyu setup'")
             .hint("或选择这一家供应商并粘贴密钥"),
             Language::English => Problem::new(format!(
                 "the core has not read {} (set after the core started)",
                 names.join(", ")
             ))
-            .hint("run 'miyu setup' again after the core exits when idle")
+            .hint("run 'miyu core stop', then 'miyu setup' again")
             .hint("or pick that provider and paste the key"),
         }
     }

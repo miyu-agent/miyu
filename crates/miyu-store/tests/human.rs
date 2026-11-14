@@ -361,3 +361,50 @@ fn config_words_go_to_the_settings_list_with_the_core_prefix() {
     assert!(error.file.ends_with("core/human/zh.json"), "{error}");
     assert!(error.why.contains("item"), "{error}");
 }
+
+/// 碰到旧数据根说的话（施工 FX-4）：不带施工号；认不出的那一句（0.7 版的数据目录也在 `~/.miyu`、没有标记，落在这一种）照
+/// 迁移程序的说明说怎么搬：先挪开，再装迁移程序、照挪开的目录迁。数据根自己的原话（命令行印的）和三种语言的 `start/` 那几句
+/// （头照代码取的）都这样。
+#[test]
+fn old_data_roots_say_how_to_move_in_plain_words() {
+    use miyu_store::root::PrepareError;
+    let path = PathBuf::from("/home/a/.miyu");
+    let moves = |said: &str| {
+        said.contains("mv /home/a/.miyu /home/a/.miyu-0.7")
+            && said.contains("miyu pkg install migrate")
+            && said.contains("miyu migrate /home/a/.miyu-0.7")
+    };
+    let not_ours = PrepareError::NotOurs(path.clone()).to_string();
+    assert!(moves(&not_ours), "{not_ours}");
+    let old = PrepareError::OldLayout(path).to_string();
+    for language in ["zh", "en", "ja"] {
+        let human = load(language);
+        let said = |code: &str| {
+            Words::sentence(
+                &human,
+                &format!("start/{code}"),
+                &[("path", "/home/a/.miyu")],
+            )
+            .expect("有这一句")
+        };
+        let not_ours = said("data_root_not_ours");
+        assert!(moves(&not_ours), "{language}：{not_ours}");
+        for said in [not_ours, said("data_root_old_layout"), old.clone()] {
+            assert!(!said.contains("FH-"), "{language}：不带施工号：{said}");
+        }
+    }
+}
+
+/// 人格的每一种问题三种语言都有给人看的一句（施工 FX-4，照预设、软件包的同一条）：照 `Code::ALL` 查，它列全了才查得全
+/// （列全了由 `miyu-policy` 的 `all_lists_every_code_in_order` 守）。
+#[test]
+fn every_persona_problem_is_said_in_three_languages() {
+    for language in ["zh", "en", "ja"] {
+        let human = load(language);
+        for code in miyu_policy::persona::Code::ALL {
+            let key = format!("persona-problems/{}", code.as_str());
+            let said = Words::sentence(&human, &key, &[("detail", "X")]);
+            assert!(said.is_some(), "{language} 少了 {key}");
+        }
+    }
+}

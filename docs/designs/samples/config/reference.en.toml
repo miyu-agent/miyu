@@ -84,7 +84,7 @@ merge_every = "16h"
 # Allowed: <provider>/<model> or @<pool>. Only in the system config. Applies to new sessions.
 # chat =
 
-# Semantic model: Improves search quality for memories, knowledge bases and more.
+# Semantic model: Improves search quality for memories, knowledge bases and more. Only the built-in model recalls memories and knowledge on its own; other models are used for search only.
 # Allowed: local, off or <provider>/<model>. Only in the system config. Takes effect next turn.
 # embedding =
 

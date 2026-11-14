@@ -94,7 +94,7 @@
 | `mentions_me`、`mentions_all` | @ 了她；@ 了全体成员 |
 | `media` | 带的东西 `[{"kind", "id", "name"?, "size"?, "shown"?}]`：`kind` 是 `image`、`file`、`voice`、`video`、`sticker`；`id` 是平台的编号（不下载）；`shown` 表示这一样的原图已经当附件交进来了 |
 | `forwards` | 合并转发：`[{"nodes": [{"name", "text", "media"?, "forwards"?}], "more"?}]`，`media` 同上，每样另可以带 `index`（正整数，桥给的编号，渲染成 `[image #3]`，照它取；只在转发里能写，写在外面的 `media` 里回 `bad_params`），套最多 3 层；整条最多 100 条、名字和正文合起来 16 KiB（超了 `bad_params`，`data.limit` 是 `forward_nodes` 或 `forward_bytes`）。正文里要有占位（例如 `[forward]`） |
-| `quoted` | 引用的那一条的内容（这一条引用了一条、她那里又没有的时候带）：`{"name", "text", "media"?, "forwards"?}`，和 `forwards` 里的一条完全一样，里面的转发最多 3 层；算进整条消息的 100 条、16 KiB（超了照 `forwards` 拒）。要带着 `reply_to`。她的日志里这一条以前已经有被引用的那一条的（补拉回来的不算），照旧只写编号；没有的才写在引用那一行下面 |
+| `quoted` | 引用的那一条的内容（这一条引用了一条、会话里又没有的时候带）：`{"name", "text", "media"?, "forwards"?}`，和 `forwards` 里的一条完全一样，里面的转发最多 3 层；算进整条消息的 100 条、16 KiB（超了照 `forwards` 拒）。要带着 `reply_to`。会话日志里这一条以前已经有被引用的那一条的（补拉回来的不算），照旧只写编号；没有的才写在引用那一行下面 |
 | `ambient` | 旁听：只记下，不开回合 |
 | `asleep` | 睡着时收到的 |
 | `backfill` | 补拉回来的（桥断线时漏掉、从平台补回来的）：只进聊天记录，不进群聊近况、判官看的记录；要带着 `ambient` |
@@ -127,7 +127,7 @@
 
 **参数**：`session`；`msg`：要判的那一条的序号（带 `venue` 的 `message.user`）；`count`：1 到 100；`grow`：可选，起点对齐的步长，至少 1，`count + grow` 不过 100。写了 `grow` 的，起点停在 `grow` 的倍数上（`(之前的条数 − count) / grow × grow`，不到 0 的从头），条数在 `count` 到 `count + grow − 1` 之间：起点一段时间不动，判官的请求前缀稳，缓存命中得上。
 
-**回应**：`{"records": "<之前的几条，一行一条>", "current": "<那一条>", "count": <之前的记录有几条>}`。她回过的话写成 `[you]` 行；撤回的照样标。`current` 引用了别的，编号后面写引用的那条的发的人和内容（`reply-to: msg=8805 小林: @Miyu 在吗`）；日志里没有那一条的只写编号，带了 `quoted` 的在下面缩进写出它；之前的记录里的行同样：带了 `quoted`、那一行以前没有被引用的那一条的写出它。
+**回应**：`{"records": "<之前的几条，一行一条>", "current": "<那一条>", "count": <之前的记录有几条>}`。模型回过的话写成 `[you]` 行；撤回的照样标。`current` 引用了别的，编号后面写引用的那条的发的人和内容（`reply-to: msg=8805 小林: @Miyu 在吗`）；日志里没有那一条的只写编号，带了 `quoted` 的在下面缩进写出它；之前的记录里的行同样：带了 `quoted`、那一行以前没有被引用的那一条的写出它。
 
 **出错**：`bad_params`；`session_not_found`。
 

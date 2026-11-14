@@ -211,7 +211,7 @@
       },
       "models.embedding": {
         "name": "意味モデル",
-        "description": "記憶やナレッジベースなどの検索の質を高めます。",
+        "description": "記憶やナレッジベースなどの検索の質を高めます。記憶とナレッジを自動で思い出すのは内蔵モデルだけで、ほかのモデルは検索にだけ使います。",
         "options": {
           "local": "内蔵モデル",
           "off": "オフ"
@@ -631,7 +631,7 @@
     "extensions/capabilities/sessions.drive/summary": "メッセージを送り、セッションを開始する",
     "extensions/capabilities/packages.call": "他のパッケージを呼ぶ",
     "extensions/capabilities/packages.call/summary": "他のパッケージが提供するメソッドを呼ぶ",
-    "extensions/capabilities/search": "検索プロバイダーになる",
+    "extensions/capabilities/search": "ウェブプロバイダーになる",
     "extensions/capabilities/search/summary": "ウェブプロバイダーに並び、選ばれると検索語を受け取る",
     "extensions/capabilities/model.driver": "モデルドライバーを提供する",
     "extensions/capabilities/model.driver/summary": "そのモデルを使うと、モデルに送る会話はすべてこれを通る",
@@ -905,8 +905,8 @@
     "config/unknown-knowledge": "{key} のナレッジベース {name} はまだありません。このナレッジベースを作れば使えます",
     "config/unknown-preset": "{key} のプリセット {name} はまだありません。このプリセットを作れば使えます",
     "config/unknown-driver": "{key} のモデルドライバー {name} はまだありません。提供するパッケージを入れて承認するまで、このプロバイダーは使えません",
-    "start/data_root_not_ours": "{path} にはほかのものがあり、Miyu のデータルートではないので触れていません。MIYU_HOME を空のフォルダにしてください",
-    "start/data_root_old_layout": "{path} は旧版 Miyu のデータルートで、このバージョンでは読めません。MIYU_HOME を空のフォルダにして、旧データは移行ツールで移してください",
+    "start/data_root_not_ours": "{path} にはほかのものがあり、Miyu のデータルートではないので触れていません。Miyu 0.7 のデータフォルダなら、mv {path} {path}-0.7 のあと miyu pkg install migrate、miyu migrate {path}-0.7 を実行してください。そうでなければ MIYU_HOME を空のフォルダにしてください",
+    "start/data_root_old_layout": "{path} は旧版 Miyu のデータルートで、このバージョンでは読めないので触れていません。MIYU_HOME を空のフォルダにしてください",
     "start/data_root_other_layout": "{path} のレイアウトはこのバージョンのものではないので、触れていません",
     "config/missing-field": "{key} がありません。このフィールドには既定値がないため、書く必要があります",
     "config/unknown-field": "{key} はこの項目のフィールドではありません",

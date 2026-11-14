@@ -10,7 +10,7 @@
   forget <编号>           作废一条记忆
   clear session [<会话>]  清除一个会话记下的记忆（默认为上一次 miyu ask
                           的会话）
-  clear me                清除关于用户本人的全部记忆
+  clear me                清除全部记忆，包括人物卡
   dream                   立即整理记忆（Ctrl+C 停止，已整理的保留）
   cards                   列出人物卡
 

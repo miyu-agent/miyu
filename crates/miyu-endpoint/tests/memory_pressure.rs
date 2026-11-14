@@ -282,8 +282,12 @@ fn remembering() -> serde_json::Value {
 }
 
 /// 卸一大批的时候别的请求插得进来（施工 MEM-5）：200 个闲着的会话判成紧全卸，运行时被几个任务轮流占着（测试的运行时只有
-/// 一个线程，每个任务占 1 毫秒再让出来，像 bm 复测里 939 个回合同时在跑：问一个会话要排一圈队）。卸的期间每 10 毫秒拿一次
-/// 表的锁（`Core::loaded`），最久等不过 1 秒。改之前卸完整批才放锁（一个个问，一个约两圈队），要等好几秒。
+/// 一个线程，每个任务占 1 毫秒再让出来，像 bm 复测里 939 个回合同时在跑：问一个会话要排一圈队）。卸的期间一直有人要表的锁
+/// （`Core::loaded`）：一批批放锁的，排着队的这一个在批与批之间拿得到，看得到卸了一部分的表（既不是 200 也不是 0）；改之前
+/// 卸完整批才放锁，排着队的只看得到 200 和 0。
+///
+/// 不比等了多久（施工 FX-4）：原来断言拿锁最久等不过 1 秒，macOS 的 CI 机器忙的时候等过 1.19 秒、重跑又绿。表的锁是公平的
+/// （先排先得），批与批之间放锁时排着的那一个一定拿得到，看到卸了一部分的表只看放没放锁，和机器快慢无关。
 #[tokio::test]
 async fn others_get_the_table_while_a_large_batch_retires() {
     const MANY: usize = 200;
@@ -308,26 +312,28 @@ async fn others_get_the_table_while_a_large_batch_retires() {
         })
         .collect();
     probe.set(SYSTEM_LOW, None, BIG);
-    let (started, mut longest) = (std::time::Instant::now(), Duration::ZERO);
+    let (started, mut seen) = (std::time::Instant::now(), Vec::new());
     loop {
-        let asked = std::time::Instant::now();
         let loaded = core.loaded().await;
-        longest = longest.max(asked.elapsed());
         if loaded == 0 {
             break;
+        }
+        if loaded < MANY && seen.last() != Some(&loaded) {
+            seen.push(loaded);
         }
         assert!(
             started.elapsed() < Duration::from_secs(60),
             "六十秒内没卸完：还载入着 {loaded} 个"
         );
-        tokio::time::sleep(Duration::from_millis(10)).await;
+        // 不睡：拿完马上排回去，卸的那一边放锁时总有人排着。
+        queue_again().await;
     }
     for hog in crowd {
         hog.abort();
     }
     assert!(
-        longest <= Duration::from_secs(1),
-        "卸的时候拿表的锁最久等了 {longest:?}（卸完用了 {:?}）",
+        !seen.is_empty(),
+        "卸的时候拿得到表的锁，看得到卸了一部分的表（卸完用了 {:?}）",
         started.elapsed()
     );
 }

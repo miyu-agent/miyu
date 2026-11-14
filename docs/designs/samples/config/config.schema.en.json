@@ -325,7 +325,7 @@
               "type": "string"
             }
           ],
-          "description": "Improves search quality for memories, knowledge bases and more. Allowed: local, off or <provider>/<model>. Only in the system config. Takes effect next turn.",
+          "description": "Improves search quality for memories, knowledge bases and more. Only the built-in model recalls memories and knowledge on its own; other models are used for search only. Allowed: local, off or <provider>/<model>. Only in the system config. Takes effect next turn.",
           "title": "Semantic model"
         },
         "vision": {

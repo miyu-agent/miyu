@@ -377,6 +377,34 @@ fn each_mistake_carries_its_code_and_where() {
     assert_eq!(names.len(), unique.len(), "写法不重复");
 }
 
+/// `Code::ALL` 列全了每一种，照先后（施工 FX-4：P-7 加的背景三种原来没进表）。加了一种代码，这里的
+/// `match` 编不过：照它补上一行，`ALL` 也要跟着补，下面才对得上。
+#[test]
+fn all_lists_every_code_in_order() {
+    let place = |code: Code| match code {
+        Code::Syntax => 0,
+        Code::UnknownTable => 1,
+        Code::NotATable => 2,
+        Code::UnknownKey => 3,
+        Code::NotPhrases => 4,
+        Code::UnknownLanguage => 5,
+        Code::EmptyPhrase => 6,
+        Code::BadKnowledgeBases => 7,
+        Code::BadSeed => 8,
+        Code::BadSubagent => 9,
+        Code::BadBackgroundOpacity => 10,
+        Code::BadBackgroundFocus => 11,
+        Code::BadBackgroundBlur => 12,
+        Code::BadLifeContext => 13,
+        Code::FirstLine => 14,
+        Code::TakeTurns => 15,
+        Code::LastLine => 16,
+        Code::EmptyLine => 17,
+    };
+    let places: Vec<usize> = Code::ALL.iter().map(|code| place(*code)).collect();
+    assert_eq!(places, (0..=17).collect::<Vec<_>>());
+}
+
 #[test]
 fn examples_are_written_back_and_read_the_same() {
     let demos = vec![

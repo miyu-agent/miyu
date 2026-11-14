@@ -77,7 +77,7 @@
 | `context.inject` | 回合开始时往上下文里放几句（`user.append`） |
 | `context.system` | 往系统提示词末尾放一段（`system.append`） |
 | `packages.call` | 调别的包在总线上导出的方法（`bus.call`）；照包编号调自己（`package.call`） |
-| `search` | 当搜索服务供应商（清单 `[[search]]`，`search.query`） |
+| `search` | 提供联网服务（清单 `[[search]]`，`search.query`） |
 | `model.driver` | 提供模型驱动（清单 `[[driver]]`）：用它的模型时，发给模型的全部对话都经过它。不附带网络 |
 | `provider.key` | 拿主人在模型那边配好的某一家供应商的 key（清单 `[provider_key]`，下面「`provider_key`」）：出厂的也要人批 |
 | `act_for_external` | 代表平台上的人说话（带 `as` 的 `session.send`、`command.run`）、`session.note`、不写 `to` 的 `session.respond`、`venue.*`、记 `venue.*` 事件：只给通讯平台的桥 |

@@ -353,7 +353,7 @@
 | `/clear-memory`（`/reset-memory`） | 清掉这个会话记下的记忆 |
 | `/goal` 系列 | 看、设、停、继续、改、清掉长期目标 |
 | `/life`、`/life new`、`/life pause`、`/life resume`、`/life kill` | 照这个会话的人格：说它的人生会话怎么样了（没有的不开，回一句说明这是什么、怎么开）；开新的（有的先结束）、暂停、继续、结束，同 `life.new`、`life.pause`、`life.resume`、`life.kill`。只在带人格的本机会话里 |
-| `/loop <间隔> <话>`、`/loop <话>`、`/loop`、`/loop off` | 每隔一段时间说一次；她自己定下一次什么时候；她自己定做什么、下一次什么时候（自主循环）；停掉这个会话的循环。一个会话一个循环，再敲一次换掉原来的；会话的预设没开循环的没有这条命令 |
+| `/loop <间隔> <话>`、`/loop <话>`、`/loop`、`/loop off` | 每隔一段时间说一次；模型自己定下一次什么时候；模型自己定做什么、下一次什么时候（自主循环）；停掉这个会话的循环。一个会话一个循环，再敲一次换掉原来的；会话的预设没开循环的没有这条命令 |
 
 不是这些的，依次照这几处找：自己放的命令模板（`commands/<名字>.md`）、扩展声明的命令（核心转给扩展，`command.call`）、包带的命令模板。模板展开成一句话，当这个人说的发出去：回应的 `events` 是那一句，`said` 是空的。
 
@@ -389,6 +389,6 @@
 
 **回应**：`{"problems": [...]}`，一处一项：`kind`（`config`、`secrets`、`persona`、`preset`、`package`、`script`、`skill`、`slash`、`mcp`、`schedule`（唤醒表里读不懂的行，`schedule_unreadable`）；包自己的检查照它报的原样交，例如 `venue`）、`file`、`code`、`level`、`message`，有行列的带 `line`、`column`，配置的另带 `key`、`got`、`suggest`、`using`，包自己的检查可以另带 `key`、`rule`、`source`。
 
-不写 `file` 的全查：系统配置、`cwd` 的项目配置、密钥文件、每一层的人格和预设、软件包清单、包自己的检查；读不成的、被盖住的、链接指到数据根里不认的地方的脚本、技能、命令模板，撞名没登记上的脚本，和自带命令同名的命令模板，MCP 服务列出来却没登记上的工具、提示词；装好的文件改了、少了。另带 `embedding`：语义模型的状态，不是问题（`model`，用不上的 `model` 是 `null`、带 `why`；后台在补的 `filling`；`memory`、`turns` 每个人格一项 `{persona, have, total}`；`kb` 每个库一项 `{id, name, have, total}`）。
+不写 `file` 的全查：系统配置、`cwd` 的项目配置、密钥文件、每一层的人格和预设、软件包清单、包自己的检查；读不成的、被盖住的、链接指到数据根里不认的地方的脚本、技能、命令模板，撞名没登记上的脚本，和自带命令同名的命令模板，MCP 服务列出来却没登记上的工具、提示词；装好的文件改了、少了。另带 `embedding`：语义模型的状态，不是问题（`model`，用不上的 `model` 是 `null`、带 `why`；后台在补的 `filling`；`memory`、`turns` 每个人格一项 `{persona, have, total}`；`kb` 每个库一项 `{id, name, have, total}`；`no_recall` 是这个模型不自动联想的几样，`memory`、`kb`：门槛表里没有这个模型的不自动联想，搜索照常）。
 
 **出错**：`unknown_file`：`file` 不是 Miyu 读的那几种。

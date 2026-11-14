@@ -9,7 +9,8 @@ use super::MARKER;
 /// 建骨架建不成。
 #[derive(Debug)]
 pub enum PrepareError {
-    /// 目录里有别的东西，又没有标记：认不出是 Miyu 的数据根，一个字节都不动它。里面是什么不去猜。
+    /// 目录里有别的东西，又没有标记：认不出是 Miyu 的数据根，一个字节都不动它。里面是什么不去猜：0.7 版的数据目录（也在
+    /// `~/.miyu`）也是这一种，给人看的话里顺带说怎么搬过来。
     NotOurs(PathBuf),
     /// 有旧版的标记（[`OLD_MARKER`](super::OLD_MARKER)）、没有这一版的：旧版 Miyu 的数据根（布局 2），新版不认、不动（施工 FH-3，设计 55 第六节
     /// 第 1 条）。
@@ -36,14 +37,17 @@ impl PrepareError {
 impl fmt::Display for PrepareError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            PrepareError::NotOurs(path) => write!(
-                f,
-                "{} 里有别的东西，认不出是 Miyu 的数据根（顶层没有 {MARKER}），不动它。设 MIYU_HOME 指到一个空目录",
-                path.display()
-            ),
+            // 0.7 版的数据目录也在 `~/.miyu`、没有标记，落在这一种：顺带说怎么搬（施工 FX-4，迁移程序 `miyu migrate` 的说明）。
+            PrepareError::NotOurs(path) => {
+                let path = path.display();
+                write!(
+                    f,
+                    "{path} 里有别的东西，认不出是 Miyu 的数据根（顶层没有 {MARKER}），不动它。是 0.7 版的数据目录的话，先 mv {path} {path}-0.7，再 miyu pkg install migrate、miyu migrate {path}-0.7；不是的话设 MIYU_HOME 指到一个空目录"
+                )
+            }
             PrepareError::OldLayout(path) => write!(
                 f,
-                "{} 是旧版 Miyu 的数据根（layout 2），新版不认；设 MIYU_HOME 指到一个空目录，旧数据照施工单 FH-7 自己搬",
+                "{} 是旧版 Miyu 的数据根（layout 2），新版不认，不动它。设 MIYU_HOME 指到一个空目录",
                 path.display()
             ),
             PrepareError::OtherLayout(path) => write!(

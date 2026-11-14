@@ -115,7 +115,8 @@ pub enum Clear {
         #[arg(id = "cleared", value_name = "SESSION")]
         session: Option<String>,
     },
-    /// 清掉她关于你的全部记忆。
+    /// 清掉这一间的全部记忆，连认识的人的卡（`memory.md`「协议」`memory.forget` 的 `clear: me` 是整间；施工 FX-4 改帮助页：
+    /// 原来写「关于用户本人的」，说窄了）。
     Me,
 }
 

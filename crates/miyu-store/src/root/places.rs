@@ -6,7 +6,7 @@
 
 use std::path::PathBuf;
 
-use super::DataRoot;
+use super::{CORE_LOG, DataRoot};
 
 impl DataRoot {
     // ---- 配置和凭据（设计 55：`etc/`、`etc/private/`） ----
@@ -288,6 +288,12 @@ impl DataRoot {
     /// 运行日志的目录：`var/log/`（核心的 `core.log`、`memory.jsonl`）。
     pub fn logs(&self) -> PathBuf {
         self.var_log()
+    }
+
+    /// 核心正在写的运行日志：`var/log/core.log`（`log.md`）。核心照 [`CORE_LOG`] 装日志，叫人去看日志的话照它说（施工 FX-4：
+    /// 原来几处各写各的，挪目录以后有一处还指着 `state/logs/`）。
+    pub fn core_log(&self) -> PathBuf {
+        self.logs().join(format!("{CORE_LOG}.log"))
     }
 
     /// 包 `id` 自己写日志的目录：`var/log/<编号>/`（施工 FH-2下，设计 55 第四节的 `MIYU_LOG_DIR`）。不建：用的一方建。核心

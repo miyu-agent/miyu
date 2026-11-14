@@ -16,7 +16,7 @@ fn preview() -> Value {
             {"id": "tools", "name": "提供工具", "summary": "给 AI 加能调用的工具"},
         ],
         "with": [{"package": "lib", "version": "1.0", "source": "official", "feed": "official",
-                  "capabilities": [{"id": "search", "name": "当搜索服务供应商"}]},
+                  "capabilities": [{"id": "search", "name": "提供联网服务"}]},
                  {"package": "bare", "version": "1.0", "source": "official", "feed": "official"}],
         "recommends": [{"package": "rec", "version": "1.0",
                         "capabilities": [{"id": "network", "name": "联网"}]}],
@@ -83,7 +83,7 @@ fn only_what_is_not_held_asks_and_is_said_as_approved() {
     assert_eq!(
         said(&items, &Language::Chinese),
         [
-            "已批准 lib 的能力：当搜索服务供应商",
+            "已批准 lib 的能力：提供联网服务",
             "已批准 app 的能力：提供工具"
         ]
     );

@@ -77,7 +77,7 @@ The manifest's `[process] capabilities` declares what it needs. Packages you ins
 | `context.inject` | Adding a few lines to the context at the start of a turn (`user.append`) |
 | `context.system` | Putting a section at the end of the system prompt (`system.append`) |
 | `packages.call` | Calling methods other packages export on the bus (`bus.call`); calling itself by package id (`package.call`) |
-| `search` | Being a search provider (manifest `[[search]]`, `search.query`) |
+| `search` | Being a web provider (manifest `[[search]]`, `search.query`) |
 | `model.driver` | Providing a model driver (manifest `[[driver]]`): when its models are used, everything sent to the model goes through it. Doesn't include network access |
 | `provider.key` | Getting the key of one model provider the owner already set up (manifest `[provider_key]`, see "`provider_key`" below): shipped packages need approval for it too |
 | `act_for_external` | Speaking for people on a platform (`session.send` and `command.run` with `as`), `session.note`, `session.respond` without `to`, `venue.*`, recording `venue.*` events: for platform bridges only |

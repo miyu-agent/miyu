@@ -1,6 +1,6 @@
 //! `miyu check` 合计后面那一段：语义模型的状态（施工 R-25，`docs/blueprint/cli/check.md`）。照核心 `check` 回应的 `embedding`
 //! 写：用哪个模型、补着没有，记忆、以前的对话、知识库各补到了哪；关着的、没装的说为什么，没装的另起一行提示怎么装（CL-2 下
-//! 照设计 47）。没有的那几样不写。
+//! 照设计 47）。没有的那几样不写。这个模型不自动联想的（门槛表里没有它，施工 FX-4）最后一行说哪几样，搜索照常。
 
 use serde_json::Value;
 
@@ -66,6 +66,30 @@ impl Language {
                 false => format!("  {en}: {}", parts.join(", ")),
             });
         }
+        let unrecalled: Vec<&str> = embedding["no_recall"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|kind| match (kind.as_str()?, chinese) {
+                ("memory", true) => Some("记忆"),
+                ("kb", true) => Some("知识库"),
+                ("memory", false) => Some("memories"),
+                ("kb", false) => Some("knowledge bases"),
+                _ => None,
+            })
+            .collect();
+        if !unrecalled.is_empty() {
+            lines.push(match chinese {
+                true => format!(
+                    "  不自动联想：{}（这个模型没有测过门槛，搜索照常）",
+                    unrecalled.join("、")
+                ),
+                false => format!(
+                    "  No auto recall: {} (no measured threshold for this model; search still works)",
+                    unrecalled.join(", ")
+                ),
+            });
+        }
         lines
     }
 }
@@ -102,6 +126,31 @@ mod tests {
                 "  Memory: engineer 120/120, no persona 1/2",
                 "  Knowledge bases: 设定集 840/900, notes 12/12",
             ]
+        );
+    }
+
+    /// 门槛表里没有这个模型的（远程的）：最后一行说哪几样不自动联想（施工 FX-4）。
+    #[test]
+    fn a_model_without_a_threshold_says_it_does_not_recall() {
+        let remote = json!({
+            "model": "openai/text-embedding-3-small",
+            "filling": false,
+            "memory": [{"persona": "engineer", "have": 3, "total": 3}],
+            "turns": [],
+            "kb": [],
+            "no_recall": ["memory", "kb"],
+        });
+        assert_eq!(
+            Language::Chinese.embedding(&remote),
+            [
+                "语义模型：openai/text-embedding-3-small",
+                "  记忆：engineer 3/3",
+                "  不自动联想：记忆、知识库（这个模型没有测过门槛，搜索照常）",
+            ]
+        );
+        assert_eq!(
+            Language::English.embedding(&remote)[2],
+            "  No auto recall: memories, knowledge bases (no measured threshold for this model; search still works)"
         );
     }
 
