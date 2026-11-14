@@ -96,5 +96,7 @@ pub fn texts(language: &str) -> Texts {
             ("shell".to_string(), "basesystem".to_string()),
         ]),
         language: language.to_string(),
+        // 施工 HT-3：替身的模型是 deepseek 的，这里不给显示名，供应商侧工具的 `via` 照编号（`with_providers` 另给）。
+        providers: std::collections::BTreeMap::new(),
     }
 }

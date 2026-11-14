@@ -11,6 +11,7 @@ mod broken;
 mod detail;
 mod page;
 mod project;
+mod providers;
 mod read;
 pub(crate) mod status;
 pub(crate) mod tree;
@@ -126,8 +127,8 @@ pub(crate) fn newest(slice: &Slice, texts: Texts, blobs: Blobs) -> (Value, Proje
     )
 }
 
-/// 投影要的字：照资源目录读 `language` 一份、英文一份，技能、工具的给人看的名字照 `titles` 挑（施工 9-8 四补、六补）。读不成的
-/// 记一行日志、回内部出错。碰磁盘。
+/// 投影要的字：照资源目录读 `language` 一份、英文一份，技能、工具、供应商的给人看的名字照 `titles` 挑（施工 9-8 四补、六补，
+/// HT-3）。读不成的记一行日志、回内部出错。碰磁盘。
 pub(crate) fn texts(
     resources: &ResourceRoot,
     language: &str,
@@ -141,6 +142,7 @@ pub(crate) fn texts(
     texts.tools = titles.tools(language);
     texts.subjects = titles.subjects.clone();
     texts.packages.clone_from(&titles.packages_of);
+    texts.providers = titles.providers.names();
     Ok(texts)
 }
 
@@ -157,6 +159,8 @@ pub(crate) struct Titles {
     subjects: BTreeMap<String, String>,
     /// 每件工具属于哪个包（施工 X-24，收起那一行判「只为发一张图」）。
     packages_of: BTreeMap<String, String>,
+    /// 供应商给人看的名字从哪读（施工 HT-3，供应商侧工具的 `via`）。
+    providers: providers::Providers,
 }
 
 impl Titles {
@@ -188,6 +192,7 @@ impl Titles {
             external: crate::skills::external(core),
             tools,
             subjects,
+            providers: providers::Providers::of(core),
         }
     }
 

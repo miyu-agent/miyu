@@ -38,6 +38,25 @@ pub(super) fn counted(entry: &Entry, texts: &Texts, sent: Option<&Sent>) -> Coun
         Body::Tool(tool) => {
             let args: Value = serde_json::from_str(&tool.args).unwrap_or(Value::Null);
             let arg = |key: &str| args.get(key).and_then(Value::as_str).map(str::to_string);
+            // 供应商侧工具（施工 HT-3）照对上的那件核心工具算，对不上的算别的工具；它的参数是供应商的写法，命令的短标题、
+            // 留言的对象不照它取。
+            if tool.hosted {
+                let core = texts.kinds.hosted_as(&tool.name).map(|h| h.core.as_str());
+                return Counted::Tool {
+                    kind: core.and_then(|core| texts.kinds.of(core)),
+                    failed: tool.state.failed(),
+                    diff: (0, 0),
+                    title: None,
+                    to_session: false,
+                    package: None,
+                    sent: 0,
+                    names: (
+                        tool.title.name.clone(),
+                        core.and_then(|core| texts.english.face(core).map(|face| face.name))
+                            .unwrap_or_else(|| tool.name.clone()),
+                    ),
+                };
+            }
             Counted::Tool {
                 kind: texts.kinds.of(&tool.name),
                 failed: tool.state.failed(),
@@ -84,6 +103,7 @@ impl Projector {
             group: group.clone(),
             call,
             name: name.to_string(),
+            hosted: false,
             title: title::of(name, &parsed, state, None, &BTreeMap::new(), &self.texts),
             state,
             diff: self.estimate(name, &parsed, state),
@@ -432,8 +452,7 @@ fn command_of(args: &str) -> Option<String> {
 const OUTPUT_LINES: usize = 100;
 const OUTPUT_BYTES: usize = 8 * 1024;
 
-/// 结果原文的前面一段：文字块照先后、块之间空一行（同 `view.detail` 的 `output`），最多 [`OUTPUT_LINES`] 行、
-/// [`OUTPUT_BYTES`] 字节，先到的算，切在字的边界上；后面只剩空白的不算切。交回那一段和切没切，没有字的是 `None`。
+/// 结果原文的前面一段：文字块照先后、块之间空一行（同 `view.detail` 的 `output`），照 [`output_of`] 切。
 pub(crate) fn output_head(blocks: &[Content]) -> (Option<String>, bool) {
     let whole = blocks
         .iter()
@@ -443,6 +462,12 @@ pub(crate) fn output_head(blocks: &[Content]) -> (Option<String>, bool) {
         })
         .collect::<Vec<&str>>()
         .join("\n\n");
+    output_of(&whole)
+}
+
+/// 一段结果原文的前面一段（供应商侧工具的结果也照它切，施工 HT-3）：最多 [`OUTPUT_LINES`] 行、[`OUTPUT_BYTES`] 字节，
+/// 先到的算，切在字的边界上；后面只剩空白的不算切。交回那一段和切没切，没有字的是 `None`。
+pub(crate) fn output_of(whole: &str) -> (Option<String>, bool) {
     if whole.is_empty() {
         return (None, false);
     }
@@ -457,7 +482,7 @@ pub(crate) fn output_head(blocks: &[Content]) -> (Option<String>, bool) {
         }
     }
     if whole[end..].trim_end().is_empty() {
-        return (Some(whole), false);
+        return (Some(whole.to_string()), false);
     }
     (Some(whole[..end].to_string()), true)
 }

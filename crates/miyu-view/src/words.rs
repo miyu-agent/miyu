@@ -55,6 +55,22 @@ pub struct Kinds {
     /// 参数里哪一格是别的会话的编号。
     #[serde(default)]
     pub session_arg: Option<String>,
+    /// 供应商侧工具（施工 HT-3，设计 `71-供应商侧工具.md` 第三节第 4 条）：供应商自己的工具名对到核心的哪件工具。不在里面的
+    /// 写原名、没有对象、算别的工具。
+    #[serde(default)]
+    pub hosted: BTreeMap<String, Hosted>,
+}
+
+/// 一件供应商侧工具照核心的哪件画（`core/view.json` 的 `hosted` 表的一项）。
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Hosted {
+    /// 核心的工具名：显示名、种类（搜索、读网页）照它。
+    #[serde(rename = "as")]
+    pub core: String,
+    /// 对象看供应商那件工具的哪个参数（各家参数名不一样）；拿不准的不写，没有对象。
+    #[serde(default)]
+    pub subject: Option<String>,
 }
 
 impl Kinds {
@@ -62,6 +78,12 @@ impl Kinds {
     #[must_use]
     pub fn of(&self, name: &str) -> Option<ToolKind> {
         self.kinds.get(name).copied()
+    }
+
+    /// 供应商侧工具 `name` 对到的核心那件工具；对不上的是 `None`。
+    #[must_use]
+    pub fn hosted_as(&self, name: &str) -> Option<&Hosted> {
+        self.hosted.get(name)
     }
 }
 
@@ -88,6 +110,8 @@ pub struct Texts {
     pub packages: BTreeMap<String, String>,
     /// 连接的语言（施工 9-8 五补）：从记下的显示名里挑一种。
     pub language: String,
+    /// 供应商编号到给人看的名字（施工 HT-3）：供应商侧工具的标题 `via` 照它写，不在里面的写编号。
+    pub providers: BTreeMap<String, String>,
 }
 
 /// 照语言 `language` 从一张显示名表里挑一个（施工 9-8 五补）：这种语言没写的照 `en`、`zh`、`ja` 的先后，都没写的没有。和

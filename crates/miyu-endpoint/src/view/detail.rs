@@ -7,7 +7,7 @@
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use miyu_kernel::block::Block as Content;
+use miyu_kernel::block::{Block as Content, Outcome};
 use miyu_kernel::event::{Body, Effect, Event};
 use miyu_kernel::id::{CallId, JobId, Parent, SessionId};
 use miyu_store::blob::Blobs;
@@ -39,7 +39,8 @@ pub(crate) struct DetailParams {
 }
 
 /// `view.detail`：调用的回应 `{"files": [...], "output"}`，`files` 照那次调用的效果的先后，`output` 是结果原文（施工 9-8 中）；
-/// 压缩的回应 `{"summary"}`，检查点的摘要原文。
+/// 供应商侧工具的 `files` 是空的，`output` 是回复里那一块的结果，截过的多 `output_cut: true`（施工 HT-3）。压缩的回应
+/// `{"summary"}`，检查点的摘要原文。
 pub(crate) async fn detail(
     core: &Core,
     peer: Peer,
@@ -72,6 +73,14 @@ async fn call_detail(
     after: Option<u32>,
 ) -> Result<Value, Refusal> {
     let events = super::events_of(core, session).await?;
+    // 供应商侧工具（施工 HT-3）：没有工具结果，整份结果在回复的那一块里。
+    if let Some(outcome) = hosted_outcome(&events, call) {
+        let mut reply = json!({ "files": [], "output": outcome.text });
+        if outcome.cut {
+            reply["output_cut"] = json!(true);
+        }
+        return Ok(reply);
+    }
     let nested = nested(core, peer, session, &events, Parent::Call(call), after).await?;
     let result = events.into_iter().rev().find_map(|event| match event.body {
         Body::ToolResult(result) if result.call_id == call => Some(result),
@@ -152,6 +161,17 @@ async fn compaction(core: &Core, session: &SessionId, upto: u64) -> Result<Value
         })
         .ok_or(Refusal::UNKNOWN_CALL)?;
     Ok(json!({ "summary": summary }))
+}
+
+/// 编号是 `call` 的供应商侧工具交来的结果（施工 HT-3）：落了盘的回复里那一块的，没有结果的、不是它的没有。
+fn hosted_outcome(events: &[Event], call: CallId) -> Option<&Outcome> {
+    events.iter().rev().find_map(|event| match &event.body {
+        Body::MessageAssistant(reply) => reply.blocks.iter().find_map(|block| match block {
+            Content::HostedTool(hosted) if hosted.call_id == call => hosted.outcome.as_ref(),
+            _ => None,
+        }),
+        _ => None,
+    })
 }
 
 /// 结果原文：给模型看的文字块，照先后接起来，块之间空一行；图片在条目的 `images` 里，不进这里。

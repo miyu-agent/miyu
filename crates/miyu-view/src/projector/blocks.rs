@@ -1,19 +1,21 @@
 //! 回复的一块块（终端蓝图 `tui.md`「时间线」第 1、9、10 条）：正文另起一条、收起前面那一段；思考、调工具记进在进行的
 //! 那一段。正文、思考出了字才有条目（空块不进落了盘的回复，流式时也不画）；调工具开始就有，落了盘的回复里没有它的
 //! （打断时丢掉的半截）拿掉。一块什么时候算完：它的 `end`，或者同一次请求里下一块开始了，先到的算。回复记下的
-//! 每一块的起止（`model.called` 的 `blocks`）定下每一块的开始时刻和思考用了多久，流式的、翻页的最后一样。
+//! 每一块的起止（`model.called` 的 `blocks`）定下每一块的开始时刻和思考、供应商侧工具用了多久，流式的、翻页的最后一样。
+//! 供应商侧工具（施工 HT-3）的那一步在 `hosted.rs`。
 
 use miyu_kernel::accumulate::Kind;
 use miyu_kernel::block::Block as Content;
 use miyu_kernel::event::{Event, MessageAssistant, ModelCalled, ModelDelta, Piece};
+use miyu_kernel::origin::By;
 use miyu_kernel::time::Timestamp;
 
 use super::{Block, Projector};
 use crate::entry::{Body, Entry, EntryId, Group, Reply, Thought};
 
 impl Projector {
-    /// 一段增量。
-    pub(super) fn delta(&mut self, at: Timestamp, delta: &ModelDelta) {
+    /// 一段增量，`by` 是写这条回复的（供应商侧工具的 `via` 照它）。
+    pub(super) fn delta(&mut self, at: Timestamp, by: &By, delta: &ModelDelta) {
         if self.request != Some(delta.seen) {
             self.close_blocks();
             self.blocks.clear();
@@ -32,13 +34,19 @@ impl Projector {
                         self.tool_step(id.clone(), name, None, String::new(), at);
                         Block::Tool(id)
                     }
-                    // 供应商侧工具（施工 HT-1）还不画：照不认识的块，不建条目，它的字、结果也就没处写。
-                    Kind::HostedTool { .. } => return,
+                    Kind::HostedTool { name } => {
+                        self.hosted_step(id.clone(), name, self.via_of(by), at);
+                        Block::Hosted(id)
+                    }
                 };
                 self.blocks.insert(delta.index, block);
             }
             Piece::Text(text) => self.write(delta.index, id, text, at),
-            Piece::Outcome(_) => {}
+            Piece::Outcome(outcome) => {
+                if let Some(Block::Hosted(id)) = self.blocks.get(&delta.index).cloned() {
+                    self.hosted_outcome(&id, outcome);
+                }
+            }
             Piece::End => self.close_block(delta.index),
         }
     }
@@ -62,10 +70,12 @@ impl Projector {
                 Body::Thought(thought) => Some(&mut thought.text),
                 _ => None,
             }),
-            Some(Block::Tool(id)) => self.append(&id, text, |body| match body {
-                Body::Tool(tool) => Some(&mut tool.args),
-                _ => None,
-            }),
+            Some(Block::Tool(id) | Block::Hosted(id)) => {
+                self.append(&id, text, |body| match body {
+                    Body::Tool(tool) => Some(&mut tool.args),
+                    _ => None,
+                })
+            }
             _ => {}
         }
     }
@@ -106,6 +116,7 @@ impl Projector {
                 }
             }
             Some(Block::Tool(id)) => self.ready(&id),
+            Some(Block::Hosted(id)) => self.hosted_ready(&id),
             _ => {}
         }
     }
@@ -126,14 +137,18 @@ impl Projector {
             let index = reply.index_of(position);
             kept.push(index);
             let id = EntryId::block(seen, index);
-            ids.push(self.settle_block(id, block, event.at));
+            ids.push(self.settle_block(id, block, event, reply.interrupted));
         }
         // 流式时开了、回复里没有的：拿掉。
         for (index, block) in streamed {
             if kept.contains(&index) {
                 continue;
             }
-            if let Block::Tool(id) | Block::Text(Some(id)) | Block::Thought(Some(id)) = block {
+            if let Block::Tool(id)
+            | Block::Hosted(id)
+            | Block::Text(Some(id))
+            | Block::Thought(Some(id)) = block
+            {
                 self.drop_step(&id);
             }
         }
@@ -148,14 +163,25 @@ impl Projector {
         }
         self.request = None;
         for (_, block) in std::mem::take(&mut self.blocks) {
-            if let Block::Tool(id) | Block::Text(Some(id)) | Block::Thought(Some(id)) = block {
+            if let Block::Tool(id)
+            | Block::Hosted(id)
+            | Block::Text(Some(id))
+            | Block::Thought(Some(id)) = block
+            {
                 self.drop_step(&id);
             }
         }
     }
 
-    /// 回复里的一块定下来，交回它的条目（没有条目的空思考是 `None`）。
-    fn settle_block(&mut self, id: EntryId, block: &Content, at: Timestamp) -> Option<EntryId> {
+    /// 回复 `event` 里的一块定下来，交回它的条目（没有条目的空思考是 `None`）。`interrupted` 是回复被打断了。
+    fn settle_block(
+        &mut self,
+        id: EntryId,
+        block: &Content,
+        event: &Event,
+        interrupted: bool,
+    ) -> Option<EntryId> {
+        let at = event.at;
         let exists = self.at.contains_key(&id);
         match block {
             Content::Text(text) => {
@@ -204,6 +230,11 @@ impl Projector {
                 self.named(&id, call.call_id, &call.args);
                 Some(id)
             }
+            Content::HostedTool(hosted) => {
+                let via = self.via_of(&event.by);
+                self.settle_hosted(&id, hosted, via, interrupted, at);
+                Some(id)
+            }
             _ => None,
         }
     }
@@ -227,18 +258,24 @@ impl Projector {
                 continue;
             };
             let took = span.end_ms.saturating_sub(span.start_ms);
-            let mut thought = false;
+            // 思考、供应商侧工具（施工 HT-3）用了多久照这一块的起止，也照它停表。
+            let mut timed = false;
             self.touch_if(id, |entry| {
                 let mut changed = entry.at != at;
                 entry.at = at;
-                if let Body::Thought(t) = &mut entry.body {
-                    thought = true;
-                    changed |= t.took_ms != Some(took);
-                    t.took_ms = Some(took);
+                let took_ms = match &mut entry.body {
+                    Body::Thought(t) => Some(&mut t.took_ms),
+                    Body::Tool(t) if t.hosted => Some(&mut t.took_ms),
+                    _ => None,
+                };
+                if let Some(took_ms) = took_ms {
+                    timed = true;
+                    changed |= *took_ms != Some(took);
+                    *took_ms = Some(took);
                 }
                 changed
             });
-            if thought
+            if timed
                 && let Some(end) =
                     Timestamp::from_unix_millis(sent + i64::try_from(span.end_ms).unwrap_or(0))
             {

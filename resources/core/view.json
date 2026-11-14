@@ -9,5 +9,13 @@
     "web_search": "search",
     "web_fetch": "fetch"
   },
-  "session_arg": "session"
+  "session_arg": "session",
+  "hosted": {
+    "search_web": {"as": "web_search", "subject": "query"},
+    "web_search": {"as": "web_search", "subject": "query"},
+    "WebSearch": {"as": "web_search", "subject": "query"},
+    "read_url_content": {"as": "web_fetch", "subject": "Url"},
+    "web_fetch": {"as": "web_fetch", "subject": "url"},
+    "WebFetch": {"as": "web_fetch", "subject": "url"}
+  }
 }

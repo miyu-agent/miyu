@@ -5,6 +5,8 @@ mod support;
 mod deadline;
 mod denied;
 mod forged;
+mod hosted;
+mod hosted_stream;
 mod lines;
 mod markdown;
 mod markdown_attached;

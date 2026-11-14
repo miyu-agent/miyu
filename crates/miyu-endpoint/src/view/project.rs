@@ -72,6 +72,7 @@ pub(super) fn texts(resources: &ResourceRoot, language: &str) -> Result<Texts, U
         subjects: std::collections::BTreeMap::new(),
         packages: std::collections::BTreeMap::new(),
         language: language.to_string(),
+        providers: std::collections::BTreeMap::new(),
     })
 }
 

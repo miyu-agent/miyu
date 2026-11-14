@@ -1,7 +1,7 @@
 //! 条目里没有、导出要的原文（调研第四节第 3 条「照序号回事件里取」）：读日志的一方边喂投影边照事件记下，不另读一遍。
 //!
 //! - 工具结果切过的（条目只带前面 100 行、8 KiB，`output_cut`）：她当时看到的全文，同 `view.detail` 的 `output`；没切过的
-//!   条目里已经整份有了，不记。
+//!   条目里已经整份有了，不记。供应商侧工具的照回复里那一块的结果记（施工 HT-3）。
 //! - 压缩的摘要：照压缩那一条的编号（`c<替代到的那一条>`）记，同 `view.detail` 的 `summary`；清空的没有摘要，不记。
 //! - 回复看到了第几条、自己是第几条（施工 SE-1 中下中）：回复里的块的编号照 `seen` 起（`b<seen>.<块号>`），挑「她现在的
 //!   上下文」时照它找回那条 `message.assistant`。
@@ -20,7 +20,7 @@ use miyu_kernel::id::{CallId, ContentHash, JobId, Parent, Seq, SessionId};
 
 use crate::entry::{Body as EntryBody, Entry, EntryId};
 use crate::notice::Notice;
-use crate::projector::output_head;
+use crate::projector::{output_head, output_of};
 
 /// 条目里没有的原文。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -99,6 +99,15 @@ impl Sources {
             }
             Body::MessageAssistant(reply) => {
                 self.replies.insert(reply.seen, event.seq);
+                // 供应商侧工具的结果切过的（施工 HT-3）：全文在块里，同 `view.detail` 交的那一份。
+                for block in &reply.blocks {
+                    if let Content::HostedTool(hosted) = block
+                        && let Some(outcome) = &hosted.outcome
+                        && output_of(&outcome.text).1
+                    {
+                        self.outputs.insert(hosted.call_id, outcome.text.clone());
+                    }
+                }
             }
             Body::ToolNested(nested) => {
                 self.nested

@@ -5,6 +5,7 @@
 //! 一条事件里同一条可能改好几次：先记下动过哪些（`Op`），喂完一条再照最后的样子交出变化（[`Projector::drain`]）。
 
 mod blocks;
+mod hosted;
 mod media;
 mod nested;
 mod notices;
@@ -28,7 +29,7 @@ use crate::entry::{Body, Entry, EntryId, Group, Notice};
 use crate::summary;
 use crate::words::Texts;
 use parts::{Block, Job, Running};
-pub(crate) use tools::output_head;
+pub(crate) use tools::{output_head, output_of};
 
 /// 改了的文件加减了几行：投影是纯逻辑、不读 blob，由外面交进来（端点照两个 blob 算，同 `view.detail`）。
 pub trait Lines: Send + Sync {
@@ -192,7 +193,7 @@ impl Projector {
     pub fn transient(&mut self, transient: &Transient) -> Vec<Change> {
         self.now = transient.at;
         match &transient.body {
-            TransientBody::ModelDelta(delta) => self.delta(transient.at, delta),
+            TransientBody::ModelDelta(delta) => self.delta(transient.at, &transient.by, delta),
             TransientBody::CompactionProgress(progress) => self.progress(transient.at, progress),
             TransientBody::CompactionDone(done) => self.compaction_done(done),
             TransientBody::ModelChanged(changed) => self.model_changed(transient.at, changed),

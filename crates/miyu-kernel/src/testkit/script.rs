@@ -1,6 +1,7 @@
 //! 剧本：模型每次请求说什么，每次调工具怎么回。执行前的链、回合开始的挂接点照默认的来：放行，
 //! 不注入；要别的，交给 [`super::Stage`] 另排。
 
+use crate::accumulate::Delta;
 use crate::event::{CallError, ErrorClass, JobKind, JobStarted, Question, Todo, Usage};
 use crate::id::{JobId, SessionId};
 
@@ -35,6 +36,8 @@ pub struct Line {
     pub failover: bool,
     /// 写到了输出上限（施工 3-10）：收全以后再送一声。
     pub truncated: bool,
+    /// 照原样送的增量（施工 HT-3，[`Line::streams`]）：不是空的就只送它们，不照思考、正文、调用拼。
+    pub raw: Vec<Delta>,
 }
 
 impl Line {
@@ -60,6 +63,16 @@ impl Line {
             usage: None,
             failover: false,
             truncated: false,
+            raw: Vec::new(),
+        }
+    }
+
+    /// 照原样送这一串增量（施工 HT-3）：块的先后、什么时候收全、供应商侧工具的结果都由剧本定，例如结果在下一块开始以后
+    /// 才到。出错、停住照常配。
+    pub fn streams(deltas: Vec<Delta>) -> Line {
+        Line {
+            raw: deltas,
+            ..Line::says("")
         }
     }
 
@@ -118,7 +131,10 @@ impl Line {
 
     /// 想了、说了或者调了点什么：出错的也要先送出去。
     pub(super) fn says_something(&self) -> bool {
-        !self.reasoning.is_empty() || !self.text.is_empty() || !self.calls.is_empty()
+        !self.reasoning.is_empty()
+            || !self.text.is_empty()
+            || !self.calls.is_empty()
+            || !self.raw.is_empty()
     }
 
     /// 同样的回复，说完了报的用量一共是 `total`：都算没命中缓存的输入（施工 6-2 上）。

@@ -226,8 +226,12 @@ pub struct Tool {
     /// 调用编号；流式时还没有。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub call: Option<CallId>,
-    /// 工具名。
+    /// 工具名。供应商侧工具的是供应商自己的名字原样。
     pub name: String,
+    /// 供应商侧工具（施工 HT-3，设计 `71-供应商侧工具.md` 第三节第 4 条）：模型在供应商那边自己跑的，核心不执行，没有确认；
+    /// 是谁跑的在标题的 `via`。核心执行的不写，读时缺了当假。
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub hosted: bool,
     /// 标题那一句。
     pub title: Title,
     /// 进行到哪了。
@@ -300,7 +304,8 @@ pub struct Title {
     /// 结果那一句。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub said: Option<String>,
-    /// 经谁做的（结果的 `human` 带 `via` 的，例如网络搜索的来源 `Exa`），头写在名字后面的括号里。
+    /// 经谁做的，头写在名字后面的括号里：结果的 `human` 带 `via` 的（例如网络搜索的来源 `Exa`）；供应商侧工具是写这条回复的
+    /// 供应商的显示名，没有显示名的写供应商编号（施工 HT-3）。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub via: Option<String>,
 }

@@ -84,6 +84,59 @@ pub(crate) fn of(
     }
 }
 
+/// 供应商侧工具那一步的标题（施工 HT-3，`docs/blueprint/view.md`「标题那一句」）：`core/view.json` 的 `hosted` 表对得上的照
+/// 核心那件工具的显示名、对象照表里说的参数；对不上的写原名、没有对象。`via` 是谁跑的（写这条回复的供应商，照
+/// [`via`] 挑好的），准备中也带。没有结果那一句：供应商不报给人看的一句。
+pub(crate) fn hosted(
+    name: &str,
+    args: &Value,
+    state: ToolState,
+    via: Option<String>,
+    texts: &Texts,
+) -> Title {
+    let words = texts.local.as_ref();
+    let mapped = texts.kinds.hosted_as(name);
+    let shown = mapped.map_or_else(
+        || name.to_string(),
+        |mapped| {
+            words
+                .face(&mapped.core)
+                .map(|face| face.name)
+                .or_else(|| texts.tools.get(&mapped.core).cloned())
+                .unwrap_or_else(|| mapped.core.clone())
+        },
+    );
+    if state == ToolState::Preparing {
+        let name = words::say(words, keys::PREPARE, &[("name", shown.clone())]).unwrap_or(shown);
+        return Title {
+            name,
+            via,
+            ..Title::default()
+        };
+    }
+    let object = mapped
+        .and_then(|mapped| mapped.subject.as_deref())
+        .and_then(|key| args.get(key))
+        .and_then(Value::as_str)
+        .filter(|value| !value.is_empty())
+        .map(|value| home_short(value, texts.home.as_deref()));
+    Title {
+        name: shown,
+        object,
+        via,
+        ..Title::default()
+    }
+}
+
+/// 供应商 `provider` 给人看的名字：交进来的显示名，没有的照编号。
+pub(crate) fn via(provider: &str, texts: &Texts) -> String {
+    texts
+        .providers
+        .get(provider)
+        .cloned()
+        .unwrap_or_else(|| provider.to_string())
+}
+
 /// 留言发给谁：子代理写任务编号，父会话写「父会话」，别的会话写「会话 短编号」。
 fn recipient(to: &str, texts: &Texts) -> String {
     if to == "parent" {

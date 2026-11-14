@@ -559,6 +559,7 @@
 **回应**
 
 - 调用：`{"files": [...], "output"}`。`output` 是结果原文，不截；`files` 一个文件一项：`path`、`action`（`write` 或 `trash`）、`diff`（统一格式，上下文 3 行）、`added`、`removed`，算不出差异的写 `skipped`（`too_big`、`binary`、`missing`）。
+- 供应商侧工具（视图里 `hosted: true` 的那一步）：`{"files": [], "output"}`，`output` 是供应商交来的结果（超过 64 KiB 的截过，截过的另带 `output_cut: true`）；还没结果的照没有这次调用。
 - 压缩：`{"summary"}`：那一次的摘要原文。
 - 脚本里调过工具的（`miyu call`）：调用的回应多 `nested`，后台任务的回应只有 `{"nested"}`。照序号一项一个：`n`（序号）、`name`、`title`（`{name, object}`，显示名照连接的语言）、`args`（参数原文）、`state`（`running`、`ok`、`error`、`denied`、`needs_approval`、`cancelled`），有的另带 `started`（在跑的开始时刻）、`took_ms`、`reason`（拒绝、出错的那一句）、`result`（`{blob, bytes}`，交给脚本的那份结果，用 `blob.get` 取）。那次 `shell` 还在跑、还没结果的，也交 `{"nested"}`。
 

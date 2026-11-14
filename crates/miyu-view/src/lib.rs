@@ -36,4 +36,4 @@ pub use status::{
     Doing, FINISHED_KEPT, JobRow, JobState, Preparing, Speed, State, Status, Wait, Waiting,
 };
 pub use summary::clock;
-pub use words::{Face, Kinds, Texts, ToolKind, Words};
+pub use words::{Face, Hosted, Kinds, Texts, ToolKind, Words};

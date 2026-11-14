@@ -31,6 +31,8 @@ pub(super) enum Block {
     Thought(Option<EntryId>),
     /// 调工具：开始就有条目。
     Tool(EntryId),
+    /// 供应商侧工具（施工 HT-3）：开始就有条目，不等 `tool.result`。
+    Hosted(EntryId),
 }
 
 /// 一件后台任务派出去时的样子。
