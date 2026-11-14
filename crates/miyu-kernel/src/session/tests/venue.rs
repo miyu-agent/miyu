@@ -36,7 +36,7 @@ fn said(n: u64, words: &str, venue: VenueMessage) -> Input {
                 text: words.to_string(),
             })],
             urgent: false,
-            venue: Some(venue),
+            venue: Some(Box::new(venue)),
         },
     })
 }
@@ -181,7 +181,7 @@ fn bare(n: u64, venue: VenueMessage) -> Input {
         command: Command::Send {
             blocks: Vec::new(),
             urgent: false,
-            venue: Some(venue),
+            venue: Some(Box::new(venue)),
         },
     })
 }

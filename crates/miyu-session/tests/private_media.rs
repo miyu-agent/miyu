@@ -66,12 +66,12 @@ fn said(
     Command::Send {
         blocks,
         urgent: false,
-        venue: Some(VenueMessage {
+        venue: Some(Box::new(VenueMessage {
             msg: msg.to_string(),
             media,
             forwards,
             ..VenueMessage::default()
-        }),
+        })),
     }
 }
 

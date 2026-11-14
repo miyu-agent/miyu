@@ -50,6 +50,16 @@ fn rendering() -> miyu_assemble::GroupChat {
     chat(540).texts().expect("字合写法")
 }
 
+/// 对照测试转发、引用的内容那几行照的字（施工 QT-1：带着它，引用的内容才写，几条路才比得到那几行）。
+fn forwarding() -> Option<miyu_assemble::ForwardTexts> {
+    let texts = ForwardTexts {
+        label: "forward:\n".to_string(),
+        numbered: "forward #{number}:\n".to_string(),
+        more: "({count} more not shown)\n".to_string(),
+    };
+    Some(texts.texts().expect("字合写法"))
+}
+
 mod files;
 mod old;
 mod recent;

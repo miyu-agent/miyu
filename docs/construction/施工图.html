@@ -1538,6 +1538,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sHT3"><span class="n">HT-3</span>供应商侧工具画成工具步骤<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT2"><span class="n">HT-2</span>供应商侧工具进请求<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLO1"><span class="n">LO-1</span>光打 /loop 开自主循环<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sQT1"><span class="n">QT-1</span>场所消息带被引用的内容<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -59524,6 +59525,60 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LO-1-光打loop开自主循环.md</code>；蓝图 <code>schedules.md</code>、<code>protocol.md</code>、<code>prompts.md</code>；协议参考 <code>packages.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sQT1" aria-labelledby="h-sQT1">
+  <div class="sheet-head"><h2 id="h-sQT1"><span class="no">QT-1</span>场所消息带被引用的内容</h2><span class="pill done">做完</span></div>
+  <p class="purpose">群里有人引用了一条她会话里没有的消息，以前她只看得到编号。现在桥把那一条的内容带进来，她的日志里这一条以前没有那一条的，就写在引用那一行下面。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-kernel · event/venue.rs　miyu-endpoint · venues/message.rs、venues/records/unseen.rs　miyu-assemble · group.rs、group/forward.rs、group/records.rs</span><span class="dir-note">QT-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>venue.quoted</code>：形状同转发里的一条，查法、上限同转发，要带 <code>reply_to</code></li>
+              <li>渲染：这一条以前的日志里有那一条 → 只写编号；没有 → <code>reply-to</code> 下面缩进写</li>
+              <li>群聊近况、回顾、判官的 <code>current</code> 和之前的记录同一个规矩</li>
+              <li>判官的快路只照判得准的答，说不准的照整份读</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">只看这一条以前的</span><span class="rl">同一份日志字节不变</span></div>
+          <div class="tile new"><span class="nm">原样记，判在渲染</span><span class="rl">内核不解读平台的编号</span></div>
+          <div class="tile new"><span class="nm">写法同转发里的一条</span><span class="rl">不加给模型看的字</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">QT-1</dd></div>
+        <div><dt>名称</dt><dd>场所消息带被引用的内容</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">QT-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>日志里有被引用的那一条的不写；没有的写在 reply-to 下面，里面的转发展开</span></li>
+        <li><span class="ok">✓</span><span>超了整条消息的上限照转发拒；没带的、老会话字节不变</span></li>
+        <li><span class="ok">✓</span><span>后来才记下被引用的那一条不改前面的；同一份日志渲染两次一样</span></li>
+        <li><span class="ok">✓</span><span>判官三条路答出来一样</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/QT-1-场所消息带引用的内容.md</code>；蓝图 <code>venues.md</code>、<code>kernel/request.md</code>、<code>kernel/events-bodies.md</code>；协议参考 <code>venues.md</code>。</li>
       </ul>
     </div>
   </div>

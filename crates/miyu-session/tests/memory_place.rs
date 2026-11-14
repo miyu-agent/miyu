@@ -41,14 +41,14 @@ fn heard(words: &str, msg: &str, place: Option<&str>, ambient: bool) -> Command 
             text: words.to_string(),
         })],
         urgent: false,
-        venue: Some(VenueMessage {
+        venue: Some(Box::new(VenueMessage {
             msg: msg.to_string(),
             name: Some("小林".to_string()),
             place: place.map(str::to_string),
             mentions_me: !ambient,
             ambient,
             ..VenueMessage::default()
-        }),
+        })),
     }
 }
 

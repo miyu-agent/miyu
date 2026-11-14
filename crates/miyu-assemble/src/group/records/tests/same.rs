@@ -172,6 +172,7 @@ fn trimmed(
         last,
         recalled: &recalled,
         quote,
+        unseen: &std::collections::BTreeSet::new(),
     };
     records_from(&picked, window, texts, None)
 }

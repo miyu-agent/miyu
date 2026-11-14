@@ -20,7 +20,8 @@ pub enum Command {
         /// 「打断和急着插话」）。
         urgent: bool,
         /// 通讯平台上的一条消息（施工 O-13 上）：原样记进 `message.user`。旁听的只记下，不开回合，回合进行中也不排进这一轮。
-        venue: Option<VenueMessage>,
+        /// 装箱（施工 QT-1）：场所的格多了引用的内容以后，这一种比别的种类大出一截（clippy 的 `large_enum_variant`）。
+        venue: Option<Box<VenueMessage>>,
     },
     /// `session.send {shell: true}`：人在头的输入框里用 `!` 打的一条命令（施工 SH-1 上，设计 57）。照发一条消息走，记成写了
     /// `shell` 的 `message.user`，她听到它的那一刻跑（`shell.rs`）。只收人说的：别的拒绝 `shell_not_allowed`（协议那一层先挡）。

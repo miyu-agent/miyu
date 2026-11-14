@@ -23,9 +23,10 @@ impl Session {
         id: CommandId,
         by: By,
         at: Timestamp,
-        (blocks, venue, command): (Vec<Block>, Option<VenueMessage>, Option<TypedCommand>),
+        (blocks, venue, command): (Vec<Block>, Option<Box<VenueMessage>>, Option<TypedCommand>),
         urgent: bool,
     ) -> Vec<Action> {
+        let venue = venue.map(|venue| *venue);
         self.send_as(id, by, at, (blocks, venue, command, false), urgent)
     }
 

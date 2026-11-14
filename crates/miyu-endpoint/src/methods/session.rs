@@ -158,7 +158,7 @@ pub(super) async fn send(
         (None, None) => Command::Send {
             blocks,
             urgent: params.urgent,
-            venue,
+            venue: venue.map(Box::new),
         },
     };
     // 场所会话只收代表外部的人说的话，本机的会话不收（施工 O-3，`venues.md`）。

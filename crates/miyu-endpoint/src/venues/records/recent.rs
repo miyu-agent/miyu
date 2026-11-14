@@ -6,7 +6,8 @@
 //! - 读到的第一条（钉下的字照它找）；
 //! - 记录（[`on_record`]）一共几条、最后 [`Caps::ring`] 条；
 //! - 撤回（`venue.recalled`）：序号、平台编号、谁撤的，全留（超过 [`Caps::recalls`] 条的窗作废）；
-//! - 引用能指到的编号（[`quoted_as`]）的哈希 → 最后一条的序号，最近 [`Caps::quotes`] 个（更早的挤掉）。
+//! - 引用能指到的编号（[`quoted_as`]）的哈希 → 最后一条的序号，最近 [`Caps::quotes`] 个（更早的挤掉）；
+//! - 留着的记录里哪几条写引用的内容、哪几条说不准（施工 QT-1，`unseen.rs`）：收到那一条时当场判下来的。
 //!
 //! 出厂的上限下一个会话的窗约 0.3 MB（V-44 施工单「实测」，heaptrack 量的）。
 //!
@@ -21,16 +22,19 @@
 //! 什么时候作废：追加的里有撤销、恢复、撤回排着的话（有效历史改了前面的，窗里收的可能不对了）；序号接不上；撤回多过上限。
 //! 作废的窗当场放掉，下一问照整份读、顺手重建。
 
-use std::collections::{BTreeMap, HashMap, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
-use miyu_assemble::group::{Picked, Records, Window, on_record, quoted_as, records_from};
+use miyu_assemble::group::{
+    Picked, Records, Window, backfilled, on_record, quoted_as, records_from,
+};
 use miyu_assemble::{ForwardTexts, GroupChat};
 use miyu_kernel::event::{Body, Event};
 use miyu_kernel::id::{ExternalId, Seq};
 use miyu_store::log::Flow;
 
 use super::read::Log;
+use super::unseen::{Quoted, judged};
 use crate::refusal::Refusal;
 use crate::sweep::bones::hash;
 
@@ -209,6 +213,11 @@ pub(crate) struct Lately {
     order: VecDeque<(u64, Seq)>,
     /// 挤掉过：窗里没有的编号不能说日志里没有。
     evicted: bool,
+    /// 留着的记录里写引用的内容的、说不准的（施工 QT-1，`unseen.rs`）：收到那一条的时候照它以前的编号判下来的，挤出去的跟着去掉。
+    unseen: BTreeSet<Seq>,
+    unsure: BTreeSet<Seq>,
+    /// 补拉回来的那几条的编号的哈希（施工 QT-1）：多过 [`Caps::quotes`] 个的窗作废。
+    backfilled: HashSet<u64>,
     /// 作废了。
     pub(crate) broken: bool,
 }
@@ -228,6 +237,8 @@ pub(crate) struct Snap {
     recalled: Vec<(String, ExternalId)>,
     /// 引用的那一条。
     pub(crate) quote: At,
+    /// 要显示的那几条里写引用的内容的（施工 QT-1，`unseen.rs`）。
+    unseen: BTreeSet<Seq>,
 }
 
 /// 引用的那一条在哪。
@@ -275,6 +286,7 @@ impl Snap {
             last: &last,
             recalled: &recalled,
             quote,
+            unseen: &self.unseen,
         };
         records_from(&picked, window, chat, forward).ok_or(Refusal::BAD_PARAMS)
     }
@@ -292,6 +304,9 @@ impl Lately {
             quotes: HashMap::new(),
             order: VecDeque::new(),
             evicted: false,
+            unseen: BTreeSet::new(),
+            unsure: BTreeSet::new(),
+            backfilled: HashSet::new(),
             broken: false,
         }
     }
@@ -314,8 +329,10 @@ impl Lately {
             }
         }
         for event in events {
+            self.quoting(event);
             self.marks(event);
         }
+        self.trim();
     }
 
     /// 追加的一批（日志里的，照先后）：已经收过的跳过；撤销、恢复、撤回排着的话、序号接不上的作废。
@@ -344,7 +361,29 @@ impl Lately {
                     self.ring.pop_front();
                 }
             }
+            self.quoting(event);
             self.marks(event);
+        }
+        self.trim();
+    }
+
+    /// 记录 `event` 的引用的内容写不写（施工 QT-1）：照这时记着的编号，正好是它以前的。
+    fn quoting(&mut self, event: &Event) {
+        if !on_record(event) {
+            return;
+        }
+        match judged(event, &self.quotes, &self.backfilled, self.evicted) {
+            Quoted::Write => self.unseen.insert(event.seq),
+            Quoted::Unsure => self.unsure.insert(event.seq),
+            Quoted::Plain | Quoted::Seen => false,
+        };
+    }
+
+    /// 挤出留着的记录的，引用的内容那两份也去掉。
+    fn trim(&mut self) {
+        if let Some(first) = self.ring.front().map(|event| event.seq) {
+            self.unseen = self.unseen.split_off(&first);
+            self.unsure = self.unsure.split_off(&first);
         }
     }
 
@@ -374,6 +413,12 @@ impl Lately {
                     .reserve_exact(want.saturating_sub(self.order.len()));
             }
             let key = hash(id);
+            if backfilled(event) {
+                self.backfilled.insert(key);
+                if self.backfilled.len() > self.caps.quotes {
+                    self.broken = true;
+                }
+            }
             self.quotes.insert(key, event.seq);
             self.order.push_back((key, event.seq));
         }
@@ -435,6 +480,12 @@ impl Lately {
                 },
             },
         };
+        // 写不写引用的内容说不准的照日志读（施工 QT-1）。
+        let lines = || shown.iter().chain([&judged]).map(|event| event.seq);
+        if lines().any(|seq| self.unsure.contains(&seq)) {
+            return None;
+        }
+        let unseen = lines().filter(|seq| self.unseen.contains(seq)).collect();
         Some(Snap {
             first: self.first.clone(),
             judged,
@@ -442,6 +493,7 @@ impl Lately {
             shown,
             recalled,
             quote,
+            unseen,
         })
     }
 }

@@ -1,7 +1,7 @@
 //! 群聊近况（施工 O-13 下，`docs/designs/18-通讯平台.md` 第九节，`docs/construction/O-13-群聊近况（下）.md`）：开一轮的那条人的
 //! 消息前面的一块，收上一个这样的触发之后、这一条之前的旁听消息（睡着时收到的不收）和别的线替她发进群里的话，一行一条。
 //!
-//! 只看这一条以前的日志：撤回的标记只认这以前记下的，这一轮开了以后哪几条、写什么就定了，以后每次请求一字不差。从最新往
+//! 只看这一条以前的日志：撤回的标记只认这以前记下的，引用的内容写不写只看那一条以前的（施工 QT-1），这一轮开了以后哪几条、写什么就定了，以后每次请求一字不差。从最新往
 //! 前装，装不下的写一行缺口提示。
 
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
@@ -10,7 +10,7 @@ use miyu_kernel::event::{Body, Event};
 use miyu_kernel::history::History;
 use miyu_kernel::id::{ExternalId, Seq};
 
-use super::{recall_mark, record, you};
+use super::{recall_mark, record, unseen, you};
 use crate::texts::{ForwardTexts, GroupChat};
 
 /// 第 `before` 条开始一轮，上一个由人的消息开的回合从第 `after` 条开始（没有的是没有）：这一块近况，当过触发的
@@ -94,7 +94,7 @@ fn one(
                 venue,
                 &message.blocks,
                 (texts, forward),
-                (&mark, ""),
+                (&mark, "", unseen(history.events(), event)),
             ))
         }
         Body::VenueDelivered(delivered) if !history.is_own(&delivered.line) => {

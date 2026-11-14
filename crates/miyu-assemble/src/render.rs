@@ -190,7 +190,7 @@ pub(crate) fn spoken(
 ) -> Vec<Block> {
     let forward = texts.forward.as_ref();
     match (&message.venue, &texts.group) {
-        (Some(venue), Some(chat)) => group::line(event.at, &event.by, venue, blocks, chat, forward),
+        (Some(venue), Some(chat)) => group::line(history, event, venue, blocks, chat, forward),
         // 不在群里的（私聊）：O-35 起造的，带了东西的那条在正文的块后面单独一块写 `[msg=…]` 和记号（施工 O-35，`private.rs`）；
         // 以前造的，只有带的东西的写成记号（施工 O-13 补），不然她看到的是空的。合并转发那几行接在最后，单独一块、不缩进（施工
         // O-34），快照里没有那几句的不写。

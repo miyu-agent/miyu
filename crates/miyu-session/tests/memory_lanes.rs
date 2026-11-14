@@ -159,12 +159,12 @@ async fn heard_then_answered(home: &Home, handing: bool) -> miyu_kernel::id::Ses
             text: "团子吃什么".to_string(),
         })],
         urgent: false,
-        venue: Some(VenueMessage {
+        venue: Some(Box::new(VenueMessage {
             msg: "8800".to_string(),
             name: Some("小林".to_string()),
             ambient: true,
             ..VenueMessage::default()
-        }),
+        })),
     };
     within("回应", parent.command(id("h1"), member(), heard))
         .await

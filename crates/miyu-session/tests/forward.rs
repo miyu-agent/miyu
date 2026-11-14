@@ -77,12 +77,12 @@ fn forwarded(words: &str, msg: &str) -> Command {
             text: words.to_string(),
         })],
         urgent: false,
-        venue: Some(VenueMessage {
+        venue: Some(Box::new(VenueMessage {
             msg: msg.to_string(),
             name: Some("小林".to_string()),
             forwards: vec![outer],
             ..VenueMessage::default()
-        }),
+        })),
     }
 }
 

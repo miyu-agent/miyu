@@ -85,10 +85,10 @@ async fn heard(handle: &Handle, cmd: &str, by: By, words: &str) {
             text: words.to_string(),
         })],
         urgent: false,
-        venue: Some(VenueMessage {
+        venue: Some(Box::new(VenueMessage {
             msg: cmd.to_string(),
             ..VenueMessage::default()
-        }),
+        })),
     };
     within("回应", handle.command(id(cmd), by, send))
         .await

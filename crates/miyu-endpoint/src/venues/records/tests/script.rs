@@ -207,6 +207,10 @@ impl Script {
         if dice.odds(3) {
             let reply_to = self.old_id(dice);
             venue.push_str(&format!(r#","reply_to":"{reply_to}""#));
+            // 带着引用的内容（施工 QT-1）：日志里有没有那一条都有，判官的几条路都要判到。
+            if dice.odds(2) {
+                venue.push_str(r#","quoted":{"name":"群友","text":"原话"}"#);
+            }
         }
         if dice.odds(6) {
             venue.push_str(r#","media":[{"kind":"image","id":"i1"}]"#);

@@ -96,11 +96,11 @@ pub(super) fn some_overheard(next_id: &mut u64) -> Input {
                 text: "今天谁值班".to_string(),
             })],
             urgent: false,
-            venue: Some(VenueMessage {
+            venue: Some(Box::new(VenueMessage {
                 msg: "8810".to_string(),
                 ambient: true,
                 ..VenueMessage::default()
-            }),
+            })),
         },
     })
 }

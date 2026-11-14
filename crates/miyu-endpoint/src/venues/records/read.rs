@@ -162,6 +162,17 @@ fn judge_with(
         Quote::Read(event) => Some(&*read_back.insert(*event)),
         Quote::Lost => return whole(log, pass.last, &chat, forward, &mut None),
     };
+    // 写不写引用的内容说不准的照整份读（施工 QT-1，`unseen.rs`）。
+    let unsure = &pass.settled.unsure;
+    if unsure.contains(&judged.seq)
+        || pass
+            .settled
+            .ring
+            .iter()
+            .any(|event| unsure.contains(&event.seq))
+    {
+        return whole(log, pass.last, &chat, forward, &mut None);
+    }
     let last: Vec<&Event> = pass.settled.ring.iter().collect();
     let recalled: BTreeMap<&str, &ExternalId> = pass
         .settled
@@ -175,6 +186,7 @@ fn judge_with(
         last: &last,
         recalled: &recalled,
         quote,
+        unseen: &pass.settled.unseen,
     };
     records_from(&picked, window, &chat, forward).ok_or(Refusal::BAD_PARAMS)
 }

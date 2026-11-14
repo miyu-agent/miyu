@@ -13,12 +13,17 @@
 //! 合并转发（施工 O-34）：`venue.forwards` 在引用、@ 那两行下面缩进写（`forward.rs`）；快照里没有那几句的（O-34 以前造的）
 //! 不写，只看得到正文里桥写的占位。
 //!
+//! 引用的那一条的内容（施工 QT-1）：`venue.quoted` 只在这一条以前的日志里没有被引用的那一条时（`records.rs` 的 `unseen`）写在 `reply-to` 那一行
+//! 下面，再缩进一层，写法同转发里的一条（`forward.rs` 的 `quoted`）；有的照旧只写编号。只看这一条以前的，同一份日志每次渲染
+//! 一字不差。快照里没有转发那几句的同样不写。
+//!
 //! 开一轮的那条前面的群聊近况在 `recent.rs`（施工 O-13 下）：两次触发之间的旁听、别的线替她发的话，一行一条。
 //!
 //! 行首那一段（钟点、发的人、编号、冒号）在 `head.rs`（施工 FT-1）：拼的和认的共用，内核照它认模型在回答后面编的一条。
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Event, Media, MediaKind, VenueDelivered, VenueMessage};
+use miyu_kernel::history::History;
 use miyu_kernel::id::ExternalId;
 use miyu_kernel::origin::{By, Role};
 use miyu_kernel::template::escape;
@@ -30,11 +35,12 @@ use crate::texts::{ForwardTexts, GroupChat};
 /// 正文最多留多少字节（照旧版）：超了的在字的边界上截掉后面的。
 const TEXT_LIMIT: usize = 4096;
 
-/// 群里的人在 `at` 说的一条：`by` 是谁，`venue` 是平台的格，`blocks` 是内容块，`forward` 是转发那几行的字（快照里没有的
-/// 是没有）。交回这一行，后面接着字以外的块。
+/// 群里的人说的一条 `event`（`event.at` 说的、`event.by` 是谁）：`venue` 是平台的格，`blocks` 是内容块，`forward` 是转发
+/// 那几行的字（快照里没有的是没有）。引用的内容照 `history` 里这一条以前的有没有被引用的那一条写不写（`records.rs` 的 `unseen`，施工
+/// QT-1）。交回这一行，后面接着字以外的块。
 pub(crate) fn line(
-    at: Timestamp,
-    by: &By,
+    history: &History,
+    event: &Event,
     venue: &VenueMessage,
     blocks: Vec<Block>,
     texts: &GroupChat,
@@ -43,22 +49,30 @@ pub(crate) fn line(
     let (words, rest): (Vec<Block>, Vec<Block>) = blocks
         .into_iter()
         .partition(|block| matches!(block, Block::Text(_)));
-    let line = record(at, by, venue, &words, (texts, forward), ("", ""));
+    let unseen = unseen(history.events(), event);
+    let line = record(
+        event.at,
+        &event.by,
+        venue,
+        &words,
+        (texts, forward),
+        ("", "", unseen),
+    );
     let mut out = vec![Block::Text(Text { text: line })];
     out.extend(rest);
     out
 }
 
 /// 一条的字：`[时刻] 发的人 [msg=编号]<mark>: 内容`，下面可选缩进的两行，再下面是转发那几行（有那几句的字才写）。`mark` 是
-/// 编号后面的可信记号（撤回的，`recent.rs`），`quote` 接在引用的编号后面（判官看的那一条，`records.rs`），没有的是空的。
-/// `words` 里只看文本块。
+/// 编号后面的可信记号（撤回的，`recent.rs`），`quote` 接在引用的编号后面（判官看的那一条，`records.rs`），没有的是空的；
+/// `unseen` 是真的把 `venue.quoted` 写在引用那一行下面（施工 QT-1，有转发那几句的字才写）。`words` 里只看文本块。
 fn record(
     at: Timestamp,
     by: &By,
     venue: &VenueMessage,
     words: &[Block],
     (texts, forward): (&GroupChat, Option<&ForwardTexts>),
-    (mark, quote): (&str, &str),
+    (mark, quote, unseen): (&str, &str, bool),
 ) -> String {
     let mut line = head::head(
         &at.local_clock(texts.offset),
@@ -71,6 +85,10 @@ fn record(
         line.push_str("\n  reply-to: msg=");
         line.push_str(&escape(reply_to));
         line.push_str(quote);
+        if let (true, Some(quoted), Some(forward)) = (unseen, &venue.quoted, forward) {
+            line.push('\n');
+            line.push_str(&forward::quoted(quoted, 4, forward));
+        }
     }
     if let Some(mentions) = mentions(venue) {
         line.push_str("\n  @mentions: ");
@@ -257,8 +275,10 @@ pub(crate) use forward::block as forwarded;
 pub(crate) use head::starts as starts_record;
 
 pub(crate) use recent::recent;
+pub(crate) use records::unseen;
 pub use records::{
-    Picked, Records, Window, on_record, quoted_as, records, records_from, records_in,
+    Picked, Records, Window, backfilled, on_record, quoted_as, quoting, records, records_from,
+    records_in,
 };
 
 #[cfg(test)]

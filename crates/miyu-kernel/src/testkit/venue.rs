@@ -33,10 +33,10 @@ impl Stage {
             Command::Send {
                 blocks: text(words),
                 urgent: false,
-                venue: Some(VenueMessage {
+                venue: Some(Box::new(VenueMessage {
                     ambient: true,
                     ..venue
-                }),
+                })),
             },
         );
         self.log()

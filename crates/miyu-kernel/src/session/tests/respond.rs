@@ -34,11 +34,11 @@ fn overheard(n: u64) -> Input {
                 text: format!("第 {n} 句"),
             })],
             urgent: false,
-            venue: Some(VenueMessage {
+            venue: Some(Box::new(VenueMessage {
                 msg: format!("88{n:02}"),
                 ambient: true,
                 ..VenueMessage::default()
-            }),
+            })),
         },
     })
 }

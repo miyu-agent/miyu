@@ -353,6 +353,7 @@ mod venue_judge;
 mod venue_my_name;
 mod venue_place;
 mod venue_plugins;
+mod venue_quoted;
 mod venue_recent;
 mod venue_records;
 mod venue_sessions;

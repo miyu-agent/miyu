@@ -8,10 +8,13 @@
 //! （`reply-to: msg=8805 小林: @Miyu 在吗`，她发的写 `[you]`）；认要判的那一条以前日志里最后一条这个编号的，睡着时收到的、
 //! 补拉回来的也认。日志里没有的照旧只写编号。之前的记录、她看到的一行照旧只写编号。
 //!
+//! 引用的那一条的内容（施工 QT-1，`venue.quoted`）：要判的那一条日志里没有引用的那一条的，`reply-to` 下面缩进写出它；之前的记录
+//! 里的行同她看到的一行，只在那一行以前的日志里没有的才写（[`Picked::unseen`]）。
+//!
 //! 挑行和渲染分两半（施工 V-39 上）：[`Picked`] 是挑好的（要判的那一条、之前一共几条、最后几条、撤回、引用的那一条），
 //! [`records_from`] 只渲染要显示的那几行。判官的端点边读日志边挑，[`records_in`] 从有效历史挑，渲染是同一份。
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use miyu_kernel::event::{Body, Event};
 use miyu_kernel::history::History;
@@ -98,12 +101,21 @@ pub fn records_in(
             .rev()
             .find(|event| quoted_as(event) == Some(reply_to))
     });
+    let shown = &lines[lines.len().saturating_sub(window.most())..];
+    let unseen: BTreeSet<Seq> = shown
+        .iter()
+        .copied()
+        .chain([judged])
+        .filter(|line| unseen(events, line))
+        .map(|line| line.seq)
+        .collect();
     let picked = Picked {
         judged,
         before: lines.len(),
         last: &lines,
         recalled: &recalled,
         quote,
+        unseen: &unseen,
     };
     records_from(&picked, window, texts, forward)
 }
@@ -122,6 +134,9 @@ pub struct Picked<'a> {
     pub recalled: &'a BTreeMap<&'a str, &'a ExternalId>,
     /// 它引用的那一条：它以前最后一条 [`quoted_as`] 是那个编号的；不引用的、找不到的没有。
     pub quote: Option<&'a Event>,
+    /// 要显示的记录和要判的那一条里写引用的内容的序号（施工 QT-1）：带着 [`quoting`]、它以前没有被引用的那一条（补拉回来的
+    /// 不算）的。要判的那一条照它写，和编号后面写不写 [`Picked::quote`] 无关：引用的是补拉回来的那一条时两样都写。
+    pub unseen: &'a BTreeSet<Seq>,
 }
 
 /// 照挑好的渲染（施工 V-39 上）：之前的记录照 `window` 从 `picked.last` 的末尾取，只渲染要显示的那几行；要判的那一条不是带
@@ -142,7 +157,8 @@ pub fn records_from(
     let shown = &picked.last[picked.last.len().saturating_sub(shown)..];
     let mut kept = String::new();
     for event in shown {
-        if let Some(line) = line(event, picked.recalled, texts, forward) {
+        let unseen = picked.unseen.contains(&event.seq);
+        if let Some(line) = line(event, picked.recalled, (texts, forward), unseen) {
             kept.push_str(&line);
             kept.push('\n');
         }
@@ -162,7 +178,7 @@ pub fn records_from(
             venue,
             &message.blocks,
             (texts, forward),
-            ("", &quote),
+            ("", &quote, picked.unseen.contains(&judged.seq)),
         ),
     })
 }
@@ -189,6 +205,40 @@ pub fn quoted_as(event: &Event) -> Option<&str> {
     }
 }
 
+/// 这一条带着引用的内容（施工 QT-1）：场所的 `message.user` 写了 `reply_to` 和 `quoted` 的，交回引用的编号；别的没有。
+pub fn quoting(event: &Event) -> Option<&str> {
+    match &event.body {
+        Body::MessageUser(said) => said
+            .venue
+            .as_ref()
+            .filter(|venue| venue.quoted.is_some())?
+            .reply_to
+            .as_deref(),
+        _ => None,
+    }
+}
+
+/// `event` 要写引用的内容（施工 QT-1）：带着引用的内容（[`quoting`]），`events` 里它以前没有一条 [`quoted_as`] 是那个编号、
+/// 又不是补拉回来的（[`backfilled`]）。补拉回来的不进群聊近况，她那一轮看不到，照没有算（主会话 2026-11-14 定）。只看它以前
+/// 的：之后记下的不改它，同一份日志每次渲染一字不差。
+pub(crate) fn unseen(events: &[Event], event: &Event) -> bool {
+    let Some(reply_to) = quoting(event) else {
+        return false;
+    };
+    !events
+        .iter()
+        .take_while(|earlier| earlier.seq < event.seq)
+        .any(|earlier| quoted_as(earlier) == Some(reply_to) && !backfilled(earlier))
+}
+
+/// 补拉回来的场所消息（`venue.backfill`，施工 O-40）：引用的内容写不写时不算「日志里有」（施工 QT-1）。
+pub fn backfilled(event: &Event) -> bool {
+    match &event.body {
+        Body::MessageUser(said) => said.venue.as_ref().is_some_and(|venue| venue.backfill),
+        _ => false,
+    }
+}
+
 /// 这一条引用的平台编号；不是场所的 `message.user`、不引用的没有。
 fn reply_to(event: &Event) -> Option<&str> {
     match &event.body {
@@ -205,12 +255,13 @@ fn recall(event: &Event) -> Option<(&str, &ExternalId)> {
     }
 }
 
-/// 之前的记录里的一行，不带换行：撤回了的照 `recalled` 打记号。不是记录的（[`on_record`]）没有。
+/// 之前的记录里的一行，不带换行：撤回了的照 `recalled` 打记号，`unseen` 的写引用的内容（施工 QT-1）。不是记录的
+/// （[`on_record`]）没有。
 fn line(
     event: &Event,
     recalled: &BTreeMap<&str, &ExternalId>,
-    texts: &GroupChat,
-    forward: Option<&ForwardTexts>,
+    (texts, forward): (&GroupChat, Option<&ForwardTexts>),
+    unseen: bool,
 ) -> Option<String> {
     match &event.body {
         Body::MessageUser(said) => {
@@ -228,7 +279,7 @@ fn line(
                 venue,
                 &said.blocks,
                 (texts, forward),
-                (&mark, ""),
+                (&mark, "", unseen),
             ))
         }
         Body::VenueDelivered(delivered) => Some(you(event, delivered, texts)),

@@ -14,8 +14,8 @@ use miyu_kernel::id::Seq;
 use miyu_store::log::{Flow, OpenError};
 
 use super::old;
-use super::rendering as chat;
 use super::script::{Dice, Script};
+use super::{forwarding, rendering as chat};
 use crate::refusal::Refusal;
 use crate::sweep::Tuning;
 use crate::sweep::bones::Bones;
@@ -250,7 +250,7 @@ fn every(k: usize, w: usize) -> bool {
 /// 第 `seeds` 段（平时只比前几段，见 [`part`]）：新旧比，交回三条退路各走了几次。
 fn compare(seeds: std::ops::RangeInclusive<u64>) -> [usize; 3] {
     let mut paths = [0; 3];
-    let texts = |_: Option<&Event>| Ok((chat(), None));
+    let texts = |_: Option<&Event>| Ok((chat(), forwarding()));
     for seed in part(seeds) {
         let events = events(seed);
         let only = only(seed);
@@ -266,8 +266,8 @@ fn compare(seeds: std::ops::RangeInclusive<u64>) -> [usize; 3] {
                 let mut log = Mem::new(only.clone(), 1 + (seed as usize + k + w) % 9);
                 let new = judge(&mut log, msg, window, texts, tuning);
                 // 以前的读法照同一份有效历史挑（`old::judge` 每次整份重放，三千段太慢；它和这一样）。
-                let old =
-                    records_in(&history, msg, window, &chat(), None).ok_or(Refusal::BAD_PARAMS);
+                let old = records_in(&history, msg, window, &chat(), forwarding().as_ref())
+                    .ok_or(Refusal::BAD_PARAMS);
                 assert_eq!(new, old, "种子 {seed} 第 {msg} 条 {window:?} {tuning:?}");
                 paths[0] += usize::from(log.reads[0] > 1);
                 paths[1] += log.reads[1];
@@ -324,7 +324,7 @@ fn a_log_growing_while_read_reads_the_first_read() {
         for msg in judged(head) {
             let mut log = Mem::new(only[..cut].to_vec(), 3);
             log.grows = only[cut..].to_vec();
-            let texts = |_: Option<&Event>| Ok::<(GroupChat, _), _>((chat(), None));
+            let texts = |_: Option<&Event>| Ok::<(GroupChat, _), _>((chat(), forwarding()));
             let tuning = Tuning {
                 flush_at: 2,
                 keep: 1,

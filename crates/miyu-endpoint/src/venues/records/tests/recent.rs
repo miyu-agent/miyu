@@ -12,7 +12,7 @@ use miyu_kernel::history::History;
 use miyu_kernel::id::Seq;
 use miyu_session::Onlooker;
 
-use super::rendering as chat;
+use super::{forwarding, rendering as chat};
 use miyu_store::log::{Flow, OpenError};
 
 use super::same::WINDOWS;
@@ -162,7 +162,7 @@ fn truth(
     msg: Seq,
     window: Window,
 ) -> Result<miyu_assemble::group::Records, Refusal> {
-    records_in(history, msg, window, &chat(), None).ok_or(Refusal::BAD_PARAMS)
+    records_in(history, msg, window, &chat(), forwarding().as_ref()).ok_or(Refusal::BAD_PARAMS)
 }
 
 /// 第 `seed` 段：一批批写、交，中间问；交回各条路走了几次。
@@ -170,7 +170,7 @@ fn replay(seed: u64, seen: &mut Seen) {
     let (full, only) = session(seed);
     let mut dice = Dice(seed ^ 0x2545_F491_4F6C_DD1D);
     let recent = Recent::new(caps(&mut dice));
-    let texts = |_: Option<&Event>| Ok((chat(), None));
+    let texts = |_: Option<&Event>| Ok((chat(), forwarding()));
     // 写进日志的到第几条、交给记录窗的到第几条；有效历史照写进日志的。
     let (mut disk, mut told) = (0, 0);
     let mut history = History::whole();
@@ -323,7 +323,7 @@ fn the_first_ask_builds_and_the_next_reads_the_window() {
         })
         .expect("有人话")
         .seq;
-    let texts = |_: Option<&Event>| Ok((chat(), None));
+    let texts = |_: Option<&Event>| Ok((chat(), forwarding()));
     let mut log = Mem::new(&only, only.len(), 5);
     assert_eq!(
         answer(&mut log, None, msg, WINDOWS[0], texts),
@@ -378,7 +378,7 @@ fn a_window_quote_whose_hash_collides_is_not_used() {
     for event in &events {
         history.append(event.clone());
     }
-    let texts = |_: Option<&Event>| Ok((chat(), None));
+    let texts = |_: Option<&Event>| Ok((chat(), forwarding()));
     let window = Window {
         count: 1,
         grow: None,

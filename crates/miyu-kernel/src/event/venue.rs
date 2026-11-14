@@ -44,6 +44,12 @@ pub struct VenueMessage {
     /// 没有，字节不变。写法、上限由收的一方查（`miyu-endpoint` 的 `venues/message.rs`），这里原样记。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub forwards: Vec<Forward>,
+    /// 引用的那一条的内容（施工 QT-1，`docs/blueprint/venues.md`「场所的格」）：桥照 `reply_to` 取出来的，形状同合并转发里的
+    /// 一条。渲染时只在这一条以前的日志里没有被引用的那一条才写（`miyu-assemble` 的 `group.rs`）。没有的不写，以前记的没有，
+    /// 字节不变。写法、上限由收的一方查，这里原样记。装箱：内联的话 `Command::Send` 比别的种类大出一截（clippy
+    /// `large_enum_variant`），JSON 的写法一样。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub quoted: Option<Box<ForwardNode>>,
     /// 旁听：不冲她来的，只记下。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub ambient: bool,

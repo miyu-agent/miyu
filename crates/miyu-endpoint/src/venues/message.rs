@@ -1,6 +1,7 @@
 //! `session.send` 的 `venue`（施工 O-13 上，`docs/blueprint/chat.md` 第七条第 2 条）：通讯平台上的一条消息的那几格，查过写法
 //! 换成内核的 [`VenueMessage`]，原样记进 `message.user`。写错的整条 `bad_params`。合并转发的内容（施工 O-34）查写法和上限：
-//! 单层的照查，整条消息合起来的另有上限（`docs/blueprint/venues.md`「场所的格」）。
+//! 单层的照查，整条消息合起来的另有上限（`docs/blueprint/venues.md`「场所的格」）。引用的那一条的内容 `quoted`（施工 QT-1）
+//! 和转发里的一条同一个形状、同一套查法，套在里面的转发从第一层数，条数、字节数算进同一个上限。
 
 use serde::Deserialize;
 
@@ -53,6 +54,9 @@ pub(crate) struct VenueMessageParams {
     /// 合并转发（施工 O-34）：写了就不能是空的列表，`Option` 才分得出没写和写了空的。
     #[serde(default)]
     forwards: Option<Vec<ForwardParams>>,
+    /// 引用的那一条的内容（施工 QT-1）：同转发里的一条，要带着 `reply_to`。
+    #[serde(default)]
+    quoted: Option<NodeParams>,
     #[serde(default)]
     ambient: bool,
     #[serde(default)]
@@ -131,15 +135,20 @@ impl VenueMessageParams {
             .into_iter()
             .map(MediaParams::checked)
             .collect::<Result<Vec<_>, Refusal>>()?;
+        // 引用的内容挂在引用的那一行下面：没写引用的是写错了（施工 QT-1）。
+        if self.quoted.is_some() && self.reply_to.is_none() {
+            return Err(Refusal::BAD_PARAMS);
+        }
+        let mut tally = Tally::default();
         let forwards = match self.forwards {
-            Some(forwards) => {
-                let mut tally = Tally::default();
-                let forwards = forwarded(forwards, 1, &mut tally)?;
-                tally.within()?;
-                forwards
-            }
+            Some(forwards) => forwarded(forwards, 1, &mut tally)?,
             None => Vec::new(),
         };
+        let quoted = self
+            .quoted
+            .map(|quoted| node(quoted, 1, &mut tally).map(Box::new))
+            .transpose()?;
+        tally.within()?;
         Ok(VenueMessage {
             msg: platform_id(self.msg)?,
             reply_to: self.reply_to.map(platform_id).transpose()?,
@@ -155,6 +164,7 @@ impl VenueMessageParams {
             mentions_all: self.mentions_all,
             media,
             forwards,
+            quoted,
             ambient: self.ambient,
             asleep: self.asleep,
             // 补拉回来的只记下：不带 `ambient` 的会开回合，写错了（施工 O-40）。
@@ -212,8 +222,7 @@ impl Tally {
 }
 
 /// 第 `depth` 层的几个转发（施工 O-34）：不是空的列表，不超过 [`FORWARD_DEPTH`] 层；每个 1 到 [`FORWARD_NODES`] 条、`more`
-/// 写了就大于 0；每条的名字同发的人的名字，正文最多 [`FORWARD_TEXT`] 字节（换行这些照收，渲染时转义），带的东西同
-/// `media`、不能写 `shown`（施工 O-35）。条数、字节数记进 `tally`。
+/// 写了就大于 0；每条照 [`node`] 查。条数、字节数记进 `tally`。
 fn forwarded(
     forwards: Vec<ForwardParams>,
     depth: usize,
@@ -234,28 +243,7 @@ fn forwarded(
             let nodes = forward
                 .nodes
                 .into_iter()
-                .map(|node| {
-                    // 转发里的东西没有当原图交进来的（施工 O-35）：写了 `shown` 的是写错了。
-                    if node.text.len() > FORWARD_TEXT || node.media.iter().any(|item| item.shown) {
-                        return Err(Refusal::BAD_PARAMS);
-                    }
-                    let name = words(node.name, NAME)?;
-                    tally.nodes += 1;
-                    tally.bytes += name.len() + node.text.len();
-                    Ok(ForwardNode {
-                        name,
-                        text: node.text,
-                        media: node
-                            .media
-                            .into_iter()
-                            .map(MediaParams::checked)
-                            .collect::<Result<_, _>>()?,
-                        forwards: match node.forwards {
-                            Some(inner) => forwarded(inner, depth + 1, tally)?,
-                            None => Vec::new(),
-                        },
-                    })
-                })
+                .map(|one| node(one, depth + 1, tally))
                 .collect::<Result<_, _>>()?;
             Ok(Forward {
                 nodes,
@@ -263,6 +251,31 @@ fn forwarded(
             })
         })
         .collect()
+}
+
+/// 一条（转发里的、引用的那一条，施工 O-34、QT-1）：名字同发的人的名字，正文最多 [`FORWARD_TEXT`] 字节（换行这些照收，渲染时
+/// 转义），带的东西同 `media`、不能写 `shown`（施工 O-35）。套在里面的转发是第 `depth` 层。条数、字节数记进 `tally`。
+fn node(node: NodeParams, depth: usize, tally: &mut Tally) -> Result<ForwardNode, Refusal> {
+    // 转发里的东西没有当原图交进来的（施工 O-35）：写了 `shown` 的是写错了。
+    if node.text.len() > FORWARD_TEXT || node.media.iter().any(|item| item.shown) {
+        return Err(Refusal::BAD_PARAMS);
+    }
+    let name = words(node.name, NAME)?;
+    tally.nodes += 1;
+    tally.bytes += name.len() + node.text.len();
+    Ok(ForwardNode {
+        name,
+        text: node.text,
+        media: node
+            .media
+            .into_iter()
+            .map(MediaParams::checked)
+            .collect::<Result<_, _>>()?,
+        forwards: match node.forwards {
+            Some(inner) => forwarded(inner, depth, tally)?,
+            None => Vec::new(),
+        },
+    })
 }
 
 /// 平台给的编号：不是空的，最多 [`ID`] 个字符，没有控制字符（`events.append` 的场所事件也照它查）。
