@@ -353,7 +353,7 @@
             "brave": {
               "properties": {
                 "key": {
-                  "description": "搜索服务供应商选了 Brave 时要它。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置里。下一轮生效。",
+                  "description": "联网服务选了 Brave 时要它。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置里。下一轮生效。",
                   "oneOf": [
                     {
                       "additionalProperties": false,
@@ -388,7 +388,7 @@
             "deepseek": {
               "properties": {
                 "key": {
-                  "description": "搜索服务供应商用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置里。下一轮生效。",
+                  "description": "联网服务选了 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。搜索、代抓按次收费。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置里。下一轮生效。",
                   "oneOf": [
                     {
                       "additionalProperties": false,
@@ -458,7 +458,7 @@
             "searxng": {
               "properties": {
                 "url": {
-                  "description": "你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。搜索服务供应商选了 SearXNG 时用它。能写：http:// 或 https:// 开头的网址 或 { env = \"…\" }。只能写在系统配置里。下一轮生效。",
+                  "description": "你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。联网服务选了 SearXNG 时用它。能写：http:// 或 https:// 开头的网址 或 { env = \"…\" }。只能写在系统配置里。下一轮生效。",
                   "oneOf": [
                     {
                       "format": "uri",
@@ -484,28 +484,21 @@
             },
             "source": {
               "default": "auto",
-              "description": "AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。自己抓不下来的网页会请 Exa、Firecrawl、Parallel 代抓，网址也会发给它们。能写：auto、exa、parallel、firecrawl、anysearch、you、deepseek、tavily、brave、searxng、duckduckgo 或 bing。只能写在系统配置里。下一轮生效。",
+              "description": "AI 搜网页、抓网页用哪一家。自动只用免费额度：搜索照 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；自己抓不下来的网页请 Exa、Firecrawl、Parallel 代抓。这几家都在国外，搜索词和网址会发给它们。选了一家的先用它（选了 DeepSeek 的，抓网页也先交它），它用不了再照自动的试。能写：auto、deepseek、tavily、brave 或 searxng。只能写在系统配置里。下一轮生效。",
               "enum": [
                 "auto",
-                "exa",
-                "parallel",
-                "firecrawl",
-                "anysearch",
-                "you",
                 "deepseek",
                 "tavily",
                 "brave",
-                "searxng",
-                "duckduckgo",
-                "bing"
+                "searxng"
               ],
-              "title": "搜索服务供应商",
+              "title": "联网服务",
               "type": "string"
             },
             "tavily": {
               "properties": {
                 "key": {
-                  "description": "搜索服务供应商选了 Tavily 时要它。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置里。下一轮生效。",
+                  "description": "联网服务选了 Tavily 时要它。能写：{ secret = \"…\" } 或 { env = \"…\" }。只能写在系统配置里。下一轮生效。",
                   "oneOf": [
                     {
                       "additionalProperties": false,

@@ -12,7 +12,8 @@ use crate::body;
 /// 一份回应至多读几个字节。
 const MOST_BYTES: usize = 4 * 1024 * 1024;
 
-/// 发一次，交回回应的字。2xx 以外的：回的是 JSON 的照样交回（几家把「没额度」写在 JSON 里，读法认），别的当失败。
+/// 发一次，交回回应的字。4xx 回的是 JSON 的照样交回（几家把「没额度」写在 JSON 里，读法认），别的 2xx 以外的当失败：5xx
+/// （服务忙、出错）不管回的是什么都换下一家（施工 NF-1：DeepSeek 503 回的 JSON 原先被读成「没搜到」）。
 pub(super) async fn send(
     client: &Client,
     rest: &Rest,
@@ -44,7 +45,7 @@ pub(super) async fn send(
         .await
         .map_err(|_| Failure::Failed("the answer broke off".to_string()))?;
     let text = String::from_utf8_lossy(&bytes).into_owned();
-    if !status.is_success() && !text.trim_start().starts_with('{') {
+    if !status.is_success() && (status.is_server_error() || !text.trim_start().starts_with('{')) {
         return Err(Failure::from_text(&format!(
             "HTTP {}: {}",
             status.as_u16(),

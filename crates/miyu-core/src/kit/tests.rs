@@ -1,4 +1,4 @@
-//! 端口问搜索来源的选项时照这一份家底答（施工 N-2 下）：被限额的那一家写冷却到什么时候，别的选项、别的配置项不写。
+//! 端口问联网服务的选项时照这一份家底答（施工 N-2 下）：被限额的那一家写冷却到什么时候，别的选项、别的配置项不写。
 
 use std::path::Path;
 use std::sync::Arc;
@@ -27,7 +27,7 @@ async fn limited() -> String {
             });
         }
     });
-    format!("http://127.0.0.1:{port}/exa")
+    format!("http://127.0.0.1:{port}/deepseek")
 }
 
 #[tokio::test]
@@ -36,16 +36,16 @@ async fn the_search_source_option_tells_when_a_limited_source_comes_back() {
     let url = limited().await;
     let search = Arc::new(
         miyu_net::Search::new(resources.path())
-            .testing(vec![("exa".to_string(), url)])
-            .only(&["exa"]),
+            .testing(vec![("deepseek".to_string(), url)])
+            .only(&["deepseek"]),
     );
     let kit = Kit::with_search(&resources, Arc::clone(&search));
     // 什么都没配的最终值（施工 N-3 上）：要 key、要地址的几家照它说。
     let values = miyu_config::Values::defaults(&miyu_net::ITEMS.concat());
     assert_eq!(
-        kit.option_state("net.search.source", "exa", &values),
-        None,
-        "还没搜过"
+        kit.option_state("net.search.source", "deepseek", &values),
+        Some(OptionState::NeedsKey),
+        "还没搜过：不写冷却，只说没配 key"
     );
 
     let before = SystemTime::now();
@@ -55,25 +55,28 @@ async fn the_search_source_option_tells_when_a_limited_source_comes_back() {
     };
     assert!(
         search
-            .search(&query, &miyu_net::Using::default())
+            .search(
+                &query,
+                &miyu_net::Using::picked("deepseek").with_key("deepseek", "sk-1")
+            )
             .await
             .is_err(),
         "唯一的一家限额了"
     );
 
     let Some(OptionState::CoolingUntil(until)) =
-        kit.option_state("net.search.source", "exa", &values)
+        kit.option_state("net.search.source", "deepseek", &values)
     else {
         panic!("限额的那一家冷却着");
     };
     assert!(until.duration_since(before).expect("在以后") >= Duration::from_secs(29 * 60));
     assert_eq!(
-        kit.option_state("net.search.source", "parallel", &values),
+        kit.option_state("net.search.source", "auto", &values),
         None,
         "别的选项不写"
     );
     assert_eq!(
-        kit.option_state("ui.language", "exa", &values),
+        kit.option_state("ui.language", "deepseek", &values),
         None,
         "别的配置项不写"
     );

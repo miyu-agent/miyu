@@ -288,6 +288,20 @@ impl Fetcher {
         })
     }
 
+    /// 交给别家代抓以前查一遍（施工 NF-1 补）：替别人抓的内部域名、过不了闸的（样子不对、解析出不是公网的）、本机解析不出来
+    /// 又像内网名字的，都不交出去。只查第一跳：别家那头跟的跳转不经过这里。
+    pub(crate) async fn screens(&self, url: &Url, asker: &Asker) -> bool {
+        let host = url.host_str().unwrap_or_default();
+        if asker.internal(host) {
+            return false;
+        }
+        match self.guard.pass(url, self.document.timeout).await {
+            Ok(Resolved::Nowhere) => !internal_name(host, &self.internal_suffixes),
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
+
     /// GET 一个地址，自己跟跳转：每一跳过闸、挑怎么连。交回最后那一跳（不是跳转的那一跳）的回应和它的地址；
     /// 状态码由调的一方看。
     async fn get(&self, url: &Url, fetching: &Fetching) -> Result<(Response, Url), Hop> {

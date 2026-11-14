@@ -264,12 +264,12 @@ miyu_config::settings! {
 | `show.system_hint` | 开关 | `true` | 系统 | 不能写 | `new_session` | D-5 补二（`tools/show.md`，项目主人 2026-10-24 定）：system 里带不带 show 的那一句；工具面上有 `show` 的才带。造会话时读一次钉进快照（`no_show_hint`），会话中途改了 system 不变。核心替包 `base-show` 声明（`OWNED`，施工 BS-1 上中起；原来是基础系统；施工 PN-3 起包编号和键分开，键照旧是 `show.*`），设置页在「软件包」那一页、展示那一组（组的编号是包编号 `base-show`） |
 | `skills.external.enabled` | 开关 | `false` | Miyu 的配置 | 不能写 | `next_turn` | PT-2 外（`skills.md`「定了的」第 4 条，2026-10-29 项目主人定）：读不读别的目录里的技能。关着的一个都不碰。「高级」页的「技能」一组；网页另画在技能页顶上 |
 | `skills.external.dirs` | 文字的列表，一个最多 4096 个字符：`~`、`~/…` 或绝对路径 | `["~/.agents/skills"]`（静态列表的出厂值：`Value::List` 借代码里写的切片，同 `Value::Text`，PT-2 外） | Miyu 的配置 | 不能写 | `next_turn` | PT-2 外：照先后读，同名的先列的赢。相对路径 `config.set`、`miyu check`、`config.check` 都报 `bad_format`（下面「问题」那张表）；读不到的静默跳过 |
-| `net.search.source` | 选项 `auto`、`exa`、`parallel`、`firecrawl`、`anysearch`、`you`、`deepseek`、`tavily`、`brave`、`searxng`、`duckduckgo`、`bing`（N-3 上加四个、N-3 下加网页抓取的两个） | `auto`，照出厂的顺序 | 系统 | 不能写 | `next_turn` | N-2 下（设计 36 第三节第 1 条、`tools/web_search.md`）：搜索服务供应商，挑了的先用、用不了照出厂的顺序兜底；`web_search` 照调用带来的这一轮的配置读（`miyu_tool::SettingsPort`）。核心替联网这个内置包声明（`miyu-net` 的 `settings.rs`），包没装的设置页不画；设置页在「软件包」那一页、「联网搜索」那一组 |
-| `net.search.exa.key` | 密钥 | 没有：照 Exa 的免费额度 | 系统 | 不能写 | `next_turn` | N-3 上（设计 36 第二节第 1 条）：配了的 Exa 走自己的额度（接在 MCP 地址后面 `exaApiKey`）。下面几项都是「软件包」页「API Key 和地址」组（`net_keys`，终端转来项目主人 2026-10-19 定：和「搜索服务供应商」分开画） |
-| `net.search.deepseek.key` | 密钥 | 没有：照用模型那边 DeepSeek 供应商的 key（地址里有 `api.deepseek.com`，或者 `catalog` 是 `deepseek`），也没有的 DeepSeek 不试 | 系统 | 不能写 | `next_turn` | N-3 上：DeepSeek 排在没配置时的顺序最后，有 key 才用；按次收费 |
-| `net.search.tavily.key` | 密钥 | 没有：Tavily 不试 | 系统 | 不能写 | `next_turn` | N-3 上：只在搜索服务供应商挑了 Tavily 时用 |
-| `net.search.brave.key` | 密钥 | 没有：Brave 不试 | 系统 | 不能写 | `next_turn` | N-3 上：只在搜索服务供应商挑了 Brave 时用 |
-| `net.search.searxng.url` | 网址，可以写 `{ env = … }` | 没有：SearXNG 不试 | 系统 | 不能写 | `next_turn` | N-3 上：自己搭的 SearXNG 实例，要开着 JSON 格式；只在搜索服务供应商挑了 SearXNG 时用 |
+| `net.search.source` | 选项 `auto`、`deepseek`、`tavily`、`brave`、`searxng`（施工 NF-1 起只剩自动和要 key、要地址的几家；扩展声明的来源接在后面，N-5） | `auto`，自动（免费额度）：照出厂的顺序，只有免费的几家 | 系统 | 不能写 | `next_turn` | N-2 下（设计 36 第三节第 1 条、`tools/web_search.md`），NF-1 改成「联网服务」（项目主人 2026-11-14 定）：选供应商。选了的那一家搜索先用它，能抓页面的（DeepSeek）`web_fetch` 自己抓之前先交它代抓；它用不了（没配 key、限额、余额不足、服务忙、超时、抓回来太短）搜索照自动的顺序兜底，抓网页先自己抓再照自动的名单。自动只用免费的几家，DeepSeek 不进自动的顺序（自动不花钱）。`web_search`、`web_fetch` 照调用带来的这一轮的配置读（`miyu_tool::SettingsPort`）。核心替联网这个内置包声明（`miyu-net` 的 `settings.rs`），包没装的设置页不画；设置页在「软件包」那一页、「联网搜索」那一组 |
+| `net.search.exa.key` | 密钥 | 没有：照 Exa 的免费额度 | 系统 | 不能写 | `next_turn` | N-3 上（设计 36 第二节第 1 条）：配了的 Exa 走自己的额度（接在 MCP 地址后面 `exaApiKey`）。下面几项都是「软件包」页「API Key 和地址」组（`net_keys`，终端转来项目主人 2026-10-19 定：和「联网服务」分开画） |
+| `net.search.deepseek.key` | 密钥 | 没有：照用模型那边 DeepSeek 供应商的 key（地址里有 `api.deepseek.com`，或者 `catalog` 是 `deepseek`），也没有的 DeepSeek 不试 | 系统 | 不能写 | `next_turn` | N-3 上；NF-1 起只在联网服务选了 DeepSeek 时用，搜索和代抓都先用它，自动不用（项目主人 2026-11-14 定：自动不花钱）；按次收费 |
+| `net.search.tavily.key` | 密钥 | 没有：Tavily 不试 | 系统 | 不能写 | `next_turn` | N-3 上：只在联网服务选了 Tavily 时用 |
+| `net.search.brave.key` | 密钥 | 没有：Brave 不试 | 系统 | 不能写 | `next_turn` | N-3 上：只在联网服务选了 Brave 时用 |
+| `net.search.searxng.url` | 网址，可以写 `{ env = … }` | 没有：SearXNG 不试 | 系统 | 不能写 | `next_turn` | N-3 上：自己搭的 SearXNG 实例，要开着 JSON 格式；只在联网服务选了 SearXNG 时用 |
 | `net.internal_domains` | 文字的列表，一个最多 253 个字符：域名，例如 `example-corp.com`（大小写、前面带点都认） | 没有 | 系统 | 不能写 | `next_turn` | MB-2（设计 06 U25 第 2 条，2026-10-22 项目主人定）：关起来的会话（群、陌生人的私聊）里让她上网时一律不去的域名，子域名也算，不管解析成什么地址、走不走代理，每一跳都查；主人自己不受影响（`tools/web_fetch.md`「怎么走」第 4 条）。设置页「软件包」联网那一组 |
 | `persona.default` | 名字（人格的编号） | 没有 | 系统 | 不能写 | `new_session` | P-1 上（`personas.md`）：没指定人格的新会话照它找；没设的无人格，指着没有的人格当没设（施工 P-4 上：出厂不设，原来是 `engineer`；预设不再管默认人格）。设置页在「通用」那一页的「新会话」一组（2026-10-23 从「人格」组挪来） |
 | `preset.default` | 名字（预设的编号） | `full` | 系统 | 不能写 | `new_session` | P-2 上（`presets.md`）：没指定预设的新会话照它找；指着没有的预设，造会话回 `unknown_preset`，不悄悄换（Y12）。设置页在「通用」那一页的「新会话」一组（2026-10-23 从「预设」组挪来） |
@@ -1124,17 +1124,17 @@ max = "5m"
 # internal_domains =
 
 [net.search]
-# 搜索服务供应商：AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。自己抓不下来的网页会请 Exa、Firecrawl、Parallel 代抓，网址也会发给它们。
-# 能写：auto、exa、parallel、firecrawl、anysearch、you、deepseek、tavily、brave、searxng、duckduckgo 或 bing。只能写在系统配置里。下一轮生效。
+# 联网服务：AI 搜网页、抓网页用哪一家。自动只用免费额度：搜索照 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；自己抓不下来的网页请 Exa、Firecrawl、Parallel 代抓。这几家都在国外，搜索词和网址会发给它们。选了一家的先用它（选了 DeepSeek 的，抓网页也先交它），它用不了再照自动的试。
+# 能写：auto、deepseek、tavily、brave 或 searxng。只能写在系统配置里。下一轮生效。
 source = "auto"
 
 [net.search.brave]
-# Brave Search：搜索服务供应商选了 Brave 时要它。
+# Brave Search：联网服务选了 Brave 时要它。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置里。下一轮生效。
 # key =
 
 [net.search.deepseek]
-# DeepSeek：搜索服务供应商用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。
+# DeepSeek：联网服务选了 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。搜索、代抓按次收费。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置里。下一轮生效。
 # key =
 
@@ -1144,12 +1144,12 @@ source = "auto"
 # key =
 
 [net.search.searxng]
-# SearXNG 的地址：你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。搜索服务供应商选了 SearXNG 时用它。
+# SearXNG 的地址：你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。联网服务选了 SearXNG 时用它。
 # 能写：http:// 或 https:// 开头的网址 或 { env = "…" }。只能写在系统配置里。下一轮生效。
 # url =
 
 [net.search.tavily]
-# Tavily：搜索服务供应商选了 Tavily 时要它。
+# Tavily：联网服务选了 Tavily 时要它。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置里。下一轮生效。
 # key =
 
@@ -1701,18 +1701,18 @@ currency = "USD"
 | 说明 | 隔这么久，她把新记的和以前的放在一起理一遍：重复的合掉，过时的作废，写一段对你的了解。 | After this long she goes over new and older memories together: drops repeats and outdated ones, and writes a summary of what she knows about you. | この間隔で、新しい記憶と以前の記憶を見直します：重複や古くなったものを除き、あなたについての要約を書きます。 |
 | `memory.dream_keep` 名字（D-1 下） | 保留几次整理过程 | Consolidation runs to keep | 残す整理の回数 |
 | 说明 | 每份记忆只保留最近这么多次整理记忆的过程，更早的移到回收处。0 是整理完就删。 | Keep only this many of the latest consolidation runs for each memory. Older ones go to the trash. 0 deletes each run when it ends. | 記憶ごとに、最新のこの回数分の整理の経過だけを残します。古いものはゴミ箱へ移します。0 は整理が終わるたびに削除します。 |
-| `net.search.source` 名字（N-2 下） | 搜索服务供应商 | Search provider | 検索プロバイダー |
-| 说明 | AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。自己抓不下来的网页会请 Exa、Firecrawl、Parallel 代抓，网址也会发给它们。 | Which service AI uses to search the web. Auto tries Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rests any that hit a rate limit; a chosen one is tried first, then the others. These services are outside China and receive the search terms. Pages that can't be fetched directly are fetched by Exa, Firecrawl or Parallel, which then receive the address. | AI がウェブ検索に使うサービス。自動では Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。選んだものを先に使い、使えなければほかを順に試します。検索語はこれらの海外のサービスに送られます。直接取得できないページは Exa、Firecrawl、Parallel に代わりに取得させ、その URL も送られます。 |
+| `net.search.source` 名字（N-2 下，NF-1 改名） | 联网服务 | Web provider | ウェブプロバイダー |
+| 说明 | AI 搜网页、抓网页用哪一家。自动只用免费额度：搜索照 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；自己抓不下来的网页请 Exa、Firecrawl、Parallel 代抓。这几家都在国外，搜索词和网址会发给它们。选了一家的先用它（选了 DeepSeek 的，抓网页也先交它），它用不了再照自动的试。 | Which service AI uses to search and fetch the web. Auto sticks to free tiers: searches try Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rest any that hit a rate limit, and pages that can't be fetched directly are fetched by Exa, Firecrawl or Parallel. These services are outside China and receive the search terms and addresses. A chosen one is tried first (DeepSeek also fetches pages before AI tries them itself), and Auto takes over when it fails. | AI がウェブ検索とページ取得に使うサービス。自動では無料枠だけを使います。検索は Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。直接取得できないページは Exa、Firecrawl、Parallel に代わりに取得させます。これらは海外のサービスで、検索語と URL が送られます。選んだものを先に使い（DeepSeek はページ取得も先に担当します）、使えなければ自動に切り替えます。 |
 | `net.search.exa.key` 名字（N-3 上） | Exa | Exa | Exa |
 | 说明 | 配了就用你自己的 Exa 额度，不配照免费额度。 | With a key, searches use your own Exa quota; without one, the free quota. | 設定すると自分の Exa の枠を使います。未設定なら無料枠です。 |
 | `net.search.deepseek.key` 名字（N-3 上） | DeepSeek | DeepSeek | DeepSeek |
-| 说明 | 搜索服务供应商用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。 | Needed when DeepSeek is the search provider; if unset, the key of your DeepSeek model provider is used. Charged per search. | 検索プロバイダーに DeepSeek を使うときに必要です。未設定ならモデルの DeepSeek プロバイダーのキーを使います。検索ごとに課金されます。 |
+| 说明 | 联网服务选了 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。搜索、代抓按次收费。 | Needed when DeepSeek is the web provider; if unset, the key of your DeepSeek model provider is used. Searches and fetched pages are charged per use. | ウェブプロバイダーに DeepSeek を使うときに必要です。未設定ならモデルの DeepSeek プロバイダーのキーを使います。検索とページ取得ごとに課金されます。 |
 | `net.search.tavily.key` 名字（N-3 上） | Tavily | Tavily | Tavily |
-| 说明 | 搜索服务供应商选了 Tavily 时要它。 | Needed when Tavily is the search provider. | 検索プロバイダーに Tavily を選んだときに必要です。 |
+| 说明 | 联网服务选了 Tavily 时要它。 | Needed when Tavily is the web provider. | ウェブプロバイダーに Tavily を選んだときに必要です。 |
 | `net.search.brave.key` 名字（N-3 上） | Brave Search | Brave Search | Brave Search |
-| 说明 | 搜索服务供应商选了 Brave 时要它。 | Needed when Brave is the search provider. | 検索プロバイダーに Brave を選んだときに必要です。 |
+| 说明 | 联网服务选了 Brave 时要它。 | Needed when Brave is the web provider. | ウェブプロバイダーに Brave を選んだときに必要です。 |
 | `net.search.searxng.url` 名字（N-3 上） | SearXNG 的地址 | SearXNG address | SearXNG のアドレス |
-| 说明 | 你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。搜索服务供应商选了 SearXNG 时用它。 | Your own SearXNG instance, for example http://127.0.0.1:8888, with the JSON format enabled. Used when SearXNG is the search provider. | 自分で立てた SearXNG（例 http://127.0.0.1:8888）。JSON 形式を有効にしておきます。検索プロバイダーに SearXNG を選んだときに使います。 |
+| 说明 | 你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。联网服务选了 SearXNG 时用它。 | Your own SearXNG instance, for example http://127.0.0.1:8888, with the JSON format enabled. Used when SearXNG is the web provider. | 自分で立てた SearXNG（例 http://127.0.0.1:8888）。JSON 形式を有効にしておきます。ウェブプロバイダーに SearXNG を選んだときに使います。 |
 | `pools.<id>.models` 名字（8-8） | 池的成员 | Pool members | プールのメンバー |
 | 说明 | 几个模型编成一组，每个写成 供应商/模型。 | A group of models, each written as provider/model. | いくつかのモデルをひとまとめにします。それぞれ プロバイダー/モデル の形で書きます。 |
 | `pools.<id>.strategy` 名字（8-8） | 池的分法 | Pool strategy | プールの分け方 |

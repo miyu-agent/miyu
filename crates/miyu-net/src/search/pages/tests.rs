@@ -72,3 +72,45 @@ fn each_source_is_asked_with_its_own_tool() {
     assert_eq!(args["formats"], json!(["markdown"]));
     assert!(call(Kind::You, "https://a.example/", 5000, "s").is_none());
 }
+
+/// DeepSeek Fetch（施工 NF-1，照官方文档）：`POST {"url"}`、key 在 `Authorization`；回 `{"title", "content"}`，出错的照原话认；
+/// 带用户名密码的、太长的、不是 http 的不去问。
+#[test]
+fn deepseek_fetch_is_asked_by_rest_and_reads_title_and_content() {
+    let asked = rest(
+        "https://api.deepseek.invalid/v1/tools/fetch",
+        "https://a.example/",
+        Some("sk-1"),
+    )
+    .unwrap();
+    assert!(!asked.get);
+    assert_eq!(asked.body, Some(json!({"url": "https://a.example/"})));
+    assert_eq!(
+        asked.headers,
+        vec![("Authorization", "Bearer sk-1".to_string())]
+    );
+    let long = format!("https://a.example/{}", "x".repeat(8192));
+    for refused in [
+        "https://me:pw@a.example/",
+        "ftp://a.example/",
+        long.as_str(),
+    ] {
+        assert!(
+            rest("https://d.invalid/", refused, None).is_err(),
+            "{refused}"
+        );
+    }
+    assert_eq!(
+        read(Kind::Deepseek, r##"{"title": "", "content": "# Hi"}"##).unwrap(),
+        (Some(String::new()), "# Hi".to_string()),
+        "空标题在后面筛掉"
+    );
+    assert_eq!(
+        read(
+            Kind::Deepseek,
+            r#"{"error": {"message": "Rate limit reached"}}"#
+        ),
+        Err(Failure::Limited)
+    );
+    assert!(read(Kind::Deepseek, r#"{"error": {"message": "bad url"}}"#).is_err());
+}

@@ -10,6 +10,7 @@ mod fetch;
 mod fetch_members;
 mod fetch_rescue;
 mod live;
+mod net_service;
 mod preview;
 mod proxy;
 mod search;

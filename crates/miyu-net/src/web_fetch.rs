@@ -178,15 +178,18 @@ impl Tool for WebFetch {
                 }
             };
             let asker = asker(&call);
-            let mut read = self.pages.read(&args.url, &asker).await;
+            // 这一轮的配置（施工 N-4、NF-1）：选了带代抓的联网服务的先交它，Exa 配了 key 的走自己的额度。
+            let using = call
+                .settings
+                .as_deref()
+                .map(crate::settings::using)
+                .unwrap_or_default();
+            let with = (&*self.pages, &*self.search, &using);
+            let mut read = match rescue::first(&args.url, &asker, with).await {
+                Some(read) => Ok(read),
+                None => self.pages.read(&args.url, &asker).await,
+            };
             if rescue::worth(&read, &self.search) {
-                // 这一轮的配置（施工 N-4）：挑的来源排在前面、Exa 配了 key 的走自己的额度。
-                let using = call
-                    .settings
-                    .as_deref()
-                    .map(crate::settings::using)
-                    .unwrap_or_default();
-                let with = (&*self.pages, &*self.search, &using);
                 read = rescue::rescue(read, &args.url, &asker, with).await;
             }
             let read = match read {

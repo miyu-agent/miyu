@@ -138,6 +138,8 @@ pub struct Seen {
     pub method: String,
     pub cookie: String,
     pub accept_language: String,
+    /// 请求的正文（施工 NF-1：代抓的网址写在正文里）。
+    pub body: String,
 }
 
 /// 跑着的假服务器：照请求行里的地址回，没有的回 404；路由以 `*` 结尾的照前缀对（W-7 再补：接口的查询参数长）。
@@ -248,6 +250,7 @@ async fn serve(mut socket: TcpStream, routes: &[(String, Reply)], log: &Mutex<Ve
             method,
             cookie: header("cookie"),
             accept_language: header("accept-language"),
+            body: String::from_utf8_lossy(&data[body_start.min(data.len())..]).into_owned(),
         });
     let reply = routes
         .iter()

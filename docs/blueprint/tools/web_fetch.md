@@ -59,6 +59,7 @@ Redirected to https://example.com/new.        ← 只有跟过跳转的，空一
 2. 读成网址：读不成、不是 `http`/`https` 的，`not-a-url`，不碰网络。
 3. 规矩第一次用时读（`link_preview.json`），读不懂的记一条 `WARN web fetch not ready`，这个核心的生命周期里不再试，每次都回 `not-ready`。
 4. 同一个网址（读成网址以后的写法）在 `keep_seconds`（600）之内抓过的，照记着的那一份分页，不重抓。记满 `keep_entries`（32）份整个清空。一个核心一份，各会话共用；替机器主人抓的、替别人抓的分开记（施工 MB-2，见下一条）。
+4.1 **选了带代抓的联网服务的，先交它**（施工 NF-1 补，项目主人 2026-11-14 定）：设置「联网服务」选的那一家能抓页面、用得上（要 key 的配了、没在冷却）的（现在是 DeepSeek），在自己抓之前先交它代抓（第 12 条的怎么问、怎么读）；成了的照代抓到的记进 `Pages`、给人写 `via`，不再自己抓。交出去以前照自己抓的那几道先查：内部域名（替别人抓的）、地址闸（样子不对、解析出不是公网的；本机解析不出来、名字像内网的也不交），过不了的不交、照自己抓那一路说；记着的照记着的给。它没成的（没 key、限额、余额不足、服务忙、超时、抓回来太短）照下面第 5 条起自己抓，自己也抓不下来的照第 12 条的免费名单，已经问过的那一家不再问。`auto` 和选了只管搜索的（Tavily、Brave、SearXNG、扩展的来源）不走这一条。
    - 替谁抓（施工 MB-2，2026-10-22 项目主人定）：这一轮开口的是主人（调用的事实 `Caller::owner`：本机的会话是，场所会话照这一轮开口的人）的照这一页；别的（群里的人，拿不准的也算）另有两条：系统配置 `net.internal_domains` 里的域名和它的子域名一律不去，先查它再看记着的，每一跳都查（跳过去的也拒）；本机解析不出来、要交给代理的，主机名是一个词的（`nas`）、带内网后缀的（`link_preview.json` 的 `internal_suffixes`：`.local`、`.lan`、`.internal`、`.intranet`、`.corp`、`.home`、`.home.arpa`、`.localdomain`）不交，别的照旧交（被墙的境外站照样抓得到）。这两条拦下的都是 `blocked`，不请别家代抓（内部的网址不发给第三方）。
 5. 抓（`Fetcher::document`）：每一跳过地址闸（`net.md`「地址闸」），不走代理的钉住解析好的地址，自己跟跳转，最多 5 跳；每一跳时限 `timeout_seconds`（20），读到 `max_bytes`（5 MiB）为止，超了截断、记下 `cut`。请求头照 `user_agent`、`accept_language`，`Accept` 照 `document.accept`。
    - 闸拦下的：`blocked`；连不上、超时：`unreachable`；跳太多：`redirects`。
@@ -70,8 +71,8 @@ Redirected to https://example.com/new.        ← 只有跟过跳转的，空一
 9. 收拾：每行去掉行尾空白，连着的空行并成一个，去掉前后空白。一个字都没有的：`empty`。
 10. 分页：每页至多 `page_chars`（30000）个字，尽量断在这一页后五分之一里最后一个换行上，断不了的照字数断；拼回去一个字不差。要的那一页没有的（0、超过页数）：`no-page`，带一共几页。
 11. 叫停：不看叫停的旗，抓最多 5 跳 × 20 秒。
-12. **请别家代抓**（施工 N-4，设计 36 的 N-4，2026-10-19 项目主人点头）：自己抓的是 `challenge`、`empty`、`unreachable`、`status` 401、403、429、451、503，或者抓到了但正文少于 `fetch.min_chars`（200）个字（登录墙、只有「载入中」的壳）的，交给搜索的家底（`Search::fetch`）照 `search.json` 的 `fetch.order`（Exa → Firecrawl → Parallel，照实测排：Exa 快、命中多，Parallel 能抓知乎、豆瓣但慢、免费额度小）一家家试；设置里挑的搜索服务供应商是这三家之一的排在最前；冷却着的跳过；和搜索共用冷却，报限额的搜和抓一起歇。一家回来的正文少于 `min_chars` 的当没抓到、换下一家（不冷却）；超过 `max_chars`（20 万）的截掉、记 `cut`。时限 `fetch.timeout_seconds`（45）：代抓常要现抓，Parallel 实测 12～28 秒。抓到的记进 `Pages`（翻页不再请），给她的字和自己抓的一样，给人的那一句多 `via`（是哪一家，同 `web_search`）；都不成的照自己抓的那个原因说。不是网址、内网、跳转太多、读不成字的种类、404 这些不请别家。
-   - Exa 调 `web_fetch_exa`（`urls`、`maxCharacters`），回一段字：去掉开头的 `# 标题` 和紧跟着的 `URL:`、`Published:` 这类行；Firecrawl 调 `firecrawl_scrape`（`formats: [markdown]`、`onlyMainContent`），读 `markdown`、`metadata.title`；Parallel 调 `web_fetch`（`full_content`、`session_id` 同搜索的），读 `results[0]` 的 `full_content`（没有的接 `excerpts`），没结果的照 `errors[0].error_type`。
+12. **请别家代抓**（施工 N-4，设计 36 的 N-4，2026-10-19 项目主人点头）：自己抓的是 `challenge`、`empty`、`unreachable`、`status` 401、403、429、451、503，或者抓到了但正文少于 `fetch.min_chars`（200）个字（登录墙、只有「载入中」的壳）的，交给搜索的家底（`Search::fetch`）照 `search.json` 的 `fetch.order`（Exa → Firecrawl → Parallel，照实测排：Exa 快、命中多，Parallel 能抓知乎、豆瓣但慢、免费额度小）一家家试（选了带代抓的联网服务的，那一家已经在第 4.1 条先问过，这里不再问）；冷却着的跳过；和搜索共用冷却，报限额的搜和抓一起歇。一家回来的正文少于 `min_chars` 的当没抓到、换下一家（不冷却）；超过 `max_chars`（20 万）的截掉、记 `cut`。时限 `fetch.timeout_seconds`（45）：代抓常要现抓，Parallel 实测 12～28 秒。抓到的记进 `Pages`（翻页不再请），给她的字和自己抓的一样，给人的那一句多 `via`（是哪一家，同 `web_search`）；都不成的照自己抓的那个原因说。不是网址、内网、跳转太多、读不成字的种类、404 这些不请别家。
+   - Exa 调 `web_fetch_exa`（`urls`、`maxCharacters`），回一段字：去掉开头的 `# 标题` 和紧跟着的 `URL:`、`Published:` 这类行；Firecrawl 调 `firecrawl_scrape`（`formats: [markdown]`、`onlyMainContent`），读 `markdown`、`metadata.title`；Parallel 调 `web_fetch`（`full_content`、`session_id` 同搜索的），读 `results[0]` 的 `full_content`（没有的接 `excerpts`），没结果的照 `errors[0].error_type`；DeepSeek Fetch（施工 NF-1，`search.json` 里 DeepSeek 那一家的 `fetch_url`）是 REST：`POST {url}`，`Authorization: Bearer`，key 和搜索同一份（没单独配的照用模型那边 DeepSeek 供应商的），读 `content`（Markdown）、`title`（可能是空串，当没有），回 `error` 的照原话认；官方只收 http、https、至多 8192 个字、不带用户名密码的网址，不合的不去问。
 
 ### 出错
 
@@ -89,6 +90,7 @@ Redirected to https://example.com/new.        ← 只有跟过跳转的，空一
 | `crates/miyu-net/tests/fetch.rs` | 本机的假服务器上整条走通：访问类别 `read`、只有 `url` 必填；网页换成 Markdown、标题给人看；JSON 照原样、GBK 照 `<meta>`、照回应头的 `charset` 解；超了 5 MiB 截断、最后一页说一声、页数照截下来的算；人机验证页说一句；十万字分四页、拼回去一字不差、翻页只抓一次、没有的页；跳转写落到了哪；404、图、换完是空的、`ftp`、解析到内网的各说一句；没开测试的口子时回环上的服务器被闸拦下、一次都没连 |
 | `crates/miyu-net/src/search/pages/tests.rs`（施工 N-4） | 三家的参数；Exa 去掉开头几行、正文里像那样的行留着；Firecrawl、Parallel 读 JSON，Parallel 没结果照 `errors`；读不懂的照原话认限额 |
 | `crates/miyu-net/tests/fetch_rescue.rs`（施工 N-4） | 假服务器上：403 的请 Exa、给人写 `via`、翻页不再抓也不再请；自己的、Exa、Firecrawl 都短得像登录墙的走到 Parallel；挑了 Firecrawl 的先问它；都不成的照自己的 `status`；404 不请别家；空页也请 |
+| `crates/miyu-net/tests/net_service.rs`（施工 NF-1） | 联网服务选了 DeepSeek 的：搜索、代抓都打到 DeepSeek，key 照模型那边的 DeepSeek 供应商，代抓的网址写在正文里；DeepSeek 回 429、402、503 的搜、抓都退回免费的几家；搜索报了限额，抓也一起歇；选了 DeepSeek 时第一次请求就交 DeepSeek Fetch、本机直抓不碰，它失败了才自己抓、自己抓成了不找免费的几家；自动的免费几家都不成、模型那边配了 DeepSeek 也一次不问它；没 key 的跳过 DeepSeek |
 | `crates/miyu-net/tests/budget.rs` | 工具说明不超过 283 字节 |
 | `crates/miyu-net/tests/live.rs` 的 `real_pages_are_read_by_web_fetch`（`#[ignore]`，还要设 `MIYU_NET_LIVE=1`） | 真网络：英文、中文维基，ArchWiki，GitHub 的接口（JSON），raw 的 README（纯文字），rust-lang.org（跳转）各读得出、开头和末尾印出来给人看 |
 | 同一份的 `blocked_pages_are_fetched_by_other_sources`（施工 N-4） | 真网络：Stack Overflow、纽约时报、B 站专栏、豆瓣自己抓不下来，请别家抓到了（2026-10-19：前三个 Exa、豆瓣 Parallel） |

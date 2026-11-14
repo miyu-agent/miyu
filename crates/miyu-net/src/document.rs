@@ -112,17 +112,7 @@ impl Pages {
     ///
     /// 见 [`Miss`]。
     pub async fn read(&self, text: &str, asker: &Asker) -> Result<Arc<Read>, Miss> {
-        let Ok(url) = Url::parse(text.trim()) else {
-            return Err(Miss::NotAUrl);
-        };
-        if !matches!(url.scheme(), "http" | "https") {
-            return Err(Miss::Scheme);
-        }
-        let ready = self.ready().ok_or(Miss::NotReady)?;
-        // 内部域名先查，再看记着的：机器主人抓到的不给别人（施工 MB-2）。
-        if asker.internal(url.host_str().unwrap_or_default()) {
-            return Err(Miss::Blocked);
-        }
+        let (ready, url) = self.checked(text, asker)?;
         let key = key(asker, &url);
         if let Some(kept) = ready.kept(&key) {
             return Ok(kept);
@@ -130,6 +120,42 @@ impl Pages {
         let read = Arc::new(fetch(ready, &url, asker).await?);
         ready.keep(key, Arc::clone(&read));
         Ok(read)
+    }
+
+    /// 自己抓之前先交给别家代抓的（施工 NF-1 补）：照自己抓的那几道先查，过不了的交回自己抓会说的原因；记着的交回那一份；
+    /// 能交出去的交回没有。
+    ///
+    /// # Errors
+    ///
+    /// 见 [`Miss`]：不是网址、不是 http、规矩读不懂、过不了闸（内部域名、内网的地址、像内网的名字）。
+    pub async fn before_others(
+        &self,
+        text: &str,
+        asker: &Asker,
+    ) -> Result<Option<Arc<Read>>, Miss> {
+        let (ready, url) = self.checked(text, asker)?;
+        if let Some(kept) = ready.kept(&key(asker, &url)) {
+            return Ok(Some(kept));
+        }
+        if !ready.fetcher.screens(&url, asker).await {
+            return Err(Miss::Blocked);
+        }
+        Ok(None)
+    }
+
+    /// 读成网址、查种类、查内部域名（内部域名先查，再看记着的：机器主人抓到的不给别人，施工 MB-2）。
+    fn checked(&self, text: &str, asker: &Asker) -> Result<(&Ready, Url), Miss> {
+        let Ok(url) = Url::parse(text.trim()) else {
+            return Err(Miss::NotAUrl);
+        };
+        if !matches!(url.scheme(), "http" | "https") {
+            return Err(Miss::Scheme);
+        }
+        let ready = self.ready().ok_or(Miss::NotReady)?;
+        if asker.internal(url.host_str().unwrap_or_default()) {
+            return Err(Miss::Blocked);
+        }
+        Ok((ready, url))
     }
 
     /// 记下别处读成的一份（施工 N-4：代抓到的），翻页不再去抓。网址读不成、规矩读不懂的不记。

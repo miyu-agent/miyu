@@ -4,6 +4,10 @@
 //! 2026-10-19 照实测写各家怎么问、怎么读：Exa 的 `web_fetch_exa` 交回一段字（`# 标题`、`URL:` 这些开头几行，再是正文）；
 //! Firecrawl 的 `firecrawl_scrape` 交回 JSON（`markdown`、`metadata.title`）；Parallel 的 `web_fetch` 交回 JSON 的 `results`、
 //! `errors`，要全文得说 `full_content`。正文少于 `min_chars` 个字的（登录墙、跳转页）当这一家没抓到，换下一家，不冷却。
+//!
+//! 选了带代抓的联网服务的（施工 NF-1，项目主人 2026-11-14 定）：配了 key 的，`web_fetch` 自己抓之前先交它
+//! （[`Search::fetch_by_provider`]）；它调不通（限额、余额不足、服务忙、超时、太短）再自己抓，再照自动的名单（[`Search::fetch`]）。
+//! DeepSeek Fetch 是 REST：`POST {"url"}`，回 `{"title", "content"}`（Markdown）。
 
 use std::time::Instant;
 
@@ -11,6 +15,7 @@ use reqwest::Url;
 use serde_json::{Value, json};
 
 use super::rules::{Kind, Source};
+use super::sources::Rest;
 use super::{Failure, Missed, Search, Using};
 use crate::TARGET;
 use crate::fetch::clients::Way;
@@ -29,31 +34,66 @@ pub struct Fetched {
 }
 
 impl Search {
-    /// 代抓一个网址，照 `using`：设置里挑的那一家能抓页面的排在最前，其余照 `fetch` 的先后；冷却着的跳过。
+    /// 选了带代抓的联网服务的（施工 NF-1 补，项目主人 2026-11-14 定）：`web_fetch` 自己抓之前先交它。没选、选了只管搜索的、
+    /// 要 key 没配的不算。
+    pub fn has_provider(&self, using: &Using) -> bool {
+        self.ready()
+            .is_some_and(|ready| ready.provider(using).is_some())
+    }
+
+    /// 交选了的联网服务代抓 `url`（见 [`Search::has_provider`]），冷却着的不问。
+    ///
+    /// # Errors
+    ///
+    /// 见 [`Missed`]：没有这样的服务、冷却着的是 [`Missed::Cooling`]。
+    pub async fn fetch_by_provider(&self, url: &str, using: &Using) -> Result<Fetched, Missed> {
+        let ready = self.ready().ok_or(Missed::NotReady)?;
+        let provider = ready.provider(using).into_iter().cloned().collect();
+        ready.fetch_from(provider, url, using).await
+    }
+
+    /// 照自动的名单（`fetch` 的先后）代抓 `url`，冷却着的跳过；选了带代抓的服务的，它已经先问过，不再问。
     ///
     /// # Errors
     ///
     /// 见 [`Missed`]。
     pub async fn fetch(&self, url: &str, using: &Using) -> Result<Fetched, Missed> {
         let ready = self.ready().ok_or(Missed::NotReady)?;
-        let order = &ready.rules.fetch.order;
-        let first = using.preferred.as_ref().filter(|id| order.contains(*id));
+        let asked = ready.provider(using);
+        let order = ready.rules.fetch.order.iter();
+        let ids = order.filter(|id| Some(*id) != asked).cloned().collect();
+        ready.fetch_from(ids, url, using).await
+    }
+}
+
+impl super::Ready {
+    /// 选了的那一家能抓页面、用得上（要 key 的配了）的：它的编号。
+    fn provider<'a>(&self, using: &'a Using) -> Option<&'a String> {
+        using.preferred.as_ref().filter(|id| {
+            self.rules.sources.get(*id).is_some_and(Source::fetches) && self.usable(id, using)
+        })
+    }
+
+    /// 照 `ids` 的先后一家家试，冷却着的跳过；报限额的进冷却。
+    async fn fetch_from(
+        &self,
+        ids: Vec<String>,
+        url: &str,
+        using: &Using,
+    ) -> Result<Fetched, Missed> {
         let mut last = None;
-        for id in first
-            .into_iter()
-            .chain(order.iter().filter(|id| Some(*id) != first))
-        {
-            let source = &ready.rules.sources[id];
-            if ready.cooling(id).is_some() {
+        for id in &ids {
+            let source = &self.rules.sources[id];
+            if self.cooling(id).is_some() {
                 continue;
             }
-            match ready.page(id, source, url, using).await {
+            match self.page(id, source, url, using).await {
                 Ok(fetched) => {
-                    ready.cooldown().succeeded(id);
+                    self.cooldown().succeeded(id);
                     return Ok(fetched);
                 }
                 Err(Failure::Limited) => {
-                    ready.cooldown().limited(id, Instant::now());
+                    self.cooldown().limited(id, Instant::now());
                     tracing::warn!(target: TARGET, source = id.as_str(), "web fetch source limited");
                     last = Some(format!("{} is rate limited", source.name));
                 }
@@ -77,7 +117,8 @@ impl Search {
 }
 
 impl super::Ready {
-    /// 叫 `id` 这一家抓 `url`：配了 key 的 Exa 接在地址后面。
+    /// 叫 `id` 这一家抓 `url`：另写了抓页面地址的（DeepSeek）照 REST 问，key 放在头里；别的走 MCP，配了 key 的 Exa 接在
+    /// 地址后面。
     async fn page(
         &self,
         id: &str,
@@ -85,8 +126,8 @@ impl super::Ready {
         url: &str,
         using: &Using,
     ) -> Result<Fetched, Failure> {
-        let mut endpoint =
-            Url::parse(&source.url).map_err(|error| Failure::Failed(error.to_string()))?;
+        let mut endpoint = Url::parse(source.fetch_url.as_deref().unwrap_or(&source.url))
+            .map_err(|error| Failure::Failed(error.to_string()))?;
         if let (Kind::Exa, Some(key)) = (source.kind, using.key(id)) {
             endpoint.query_pairs_mut().append_pair("exaApiKey", key);
         }
@@ -96,17 +137,22 @@ impl super::Ready {
             .get(&way)
             .map_err(|error| Failure::Failed(error.without_url().to_string()))?;
         let fetching = &self.rules.fetch;
-        let (tool, args) = call(source.kind, url, fetching.max_chars, &self.session)
-            .ok_or_else(|| Failure::Failed("this source cannot fetch pages".to_string()))?;
-        let answer = super::mcp::call(
-            &client,
-            &self.sessions,
-            endpoint.as_str(),
-            tool,
-            args,
-            fetching.timeout,
-        )
-        .await?;
+        let answer = if source.fetch_url.is_some() {
+            let rest = rest(endpoint.as_str(), url, using.key(id))?;
+            super::rest::send(&client, &rest, fetching.timeout).await?
+        } else {
+            let (tool, args) = call(source.kind, url, fetching.max_chars, &self.session)
+                .ok_or_else(|| Failure::Failed("this source cannot fetch pages".to_string()))?;
+            super::mcp::call(
+                &client,
+                &self.sessions,
+                endpoint.as_str(),
+                tool,
+                args,
+                fetching.timeout,
+            )
+            .await?
+        };
         let (title, text) = read(source.kind, &answer)?;
         let text = text.trim();
         let chars = text.chars().count();
@@ -152,6 +198,28 @@ pub(crate) fn call(
     })
 }
 
+/// DeepSeek Fetch 的一次请求：`endpoint` 是抓页面的地址，`url` 是要抓的，`key` 放在 `Authorization` 里。官方只收 http、https、
+/// 至多 8192 个字、不带用户名密码的网址，不合的不去问。
+pub(crate) fn rest(endpoint: &str, url: &str, key: Option<&str>) -> Result<Rest, Failure> {
+    let refused = || Failure::Failed("this source cannot fetch this address".to_string());
+    let parsed = Url::parse(url).map_err(|_| refused())?;
+    if url.chars().count() > 8192
+        || !matches!(parsed.scheme(), "http" | "https")
+        || !parsed.username().is_empty()
+        || parsed.password().is_some()
+    {
+        return Err(refused());
+    }
+    Ok(Rest {
+        get: false,
+        url: endpoint.to_string(),
+        headers: key
+            .map(|key| vec![("Authorization", format!("Bearer {key}"))])
+            .unwrap_or_default(),
+        body: Some(json!({"url": url})),
+    })
+}
+
 /// 读回应：标题和正文。
 pub(crate) fn read(kind: Kind, answer: &str) -> Result<(Option<String>, String), Failure> {
     match kind {
@@ -183,6 +251,20 @@ pub(crate) fn read(kind: Kind, answer: &str) -> Result<(Option<String>, String),
                     .join("\n\n"),
             };
             Ok((first["title"].as_str().map(str::to_string), text))
+        }
+        Kind::Deepseek => {
+            let value = json(answer)?;
+            match value["content"].as_str() {
+                Some(content) => Ok((
+                    value["title"].as_str().map(str::to_string),
+                    content.to_string(),
+                )),
+                None => Err(Failure::from_text(
+                    value["error"]["message"]
+                        .as_str()
+                        .unwrap_or("nothing came back"),
+                )),
+            }
         }
         _ => Err(Failure::Failed(
             "this source cannot fetch pages".to_string(),

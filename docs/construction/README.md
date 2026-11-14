@@ -1605,6 +1605,12 @@ flowchart LR
 |---|---|---|
 | RC-1 | `miyu rescue` 拉起 LiteMiyu 的应急模式 | 核心坏了时进 `litemiyu --rescue` 修，整条路不经过核心。找程序照「敲的路径旁边、真实位置旁边、`PATH`」，找不到的说怎么装、退出码 1；照 Miyu 的 `models.chat`（池取第一个用得了的成员）填 `LITEMIYU_RESCUE_BASE_URL`、`MODEL`、`API`、`API_KEY`，本来有的不覆盖，读不了的、走扩展驱动的（池里跳过扩展驱动的成员）一个都不填、警告一行照常拉起；key 只走环境变量；Unix 上 exec，Windows 上等它。读盘在 `miyu-core` 的 `rescue.rs`，纯逻辑在 `miyu-models` 的 `direct.rs`，命令行的头不依赖核心。施工单见 `RC-1-miyu-rescue.md` |
 
+**联网服务**（项目主人 2026-11-14 定）
+
+| 步 | 名字 | 做什么 |
+|---|---|---|
+| NF-1 | 联网服务切供应商 | 设置「搜索服务供应商」改成「联网服务」（键照旧 `net.search.source`），选项只剩自动（免费额度）和要 key、要地址的 DeepSeek、Tavily、Brave、SearXNG。自动只用免费的几家（DeepSeek 拿出自动的顺序）；选了 DeepSeek 的搜索走 DeepSeek Search，`web_fetch` 先交 DeepSeek Fetch（新加）、不先自己抓；DeepSeek 没配 key、限额、余额不足、服务忙、超时、抓回来太短的，搜索照自动的顺序、抓网页先自己抓再照免费的名单。施工单见 `NF-1-联网服务切供应商.md` |
+
 ### 四、施工单的格式
 
 每一张施工单只写这几节（2026-09-28 项目主人定：有了蓝图，施工单变薄）：

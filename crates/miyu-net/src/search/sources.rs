@@ -186,6 +186,10 @@ pub(crate) fn read(kind: Kind, text: &str) -> Result<Vec<Hit>, Failure> {
         }
         Kind::Deepseek => {
             let value = json(text)?;
+            // 出错是 OpenAI 那种 `{"error": {"message"}}`（key 不对这些）：照原话认，不当「没搜到」（施工 NF-1）。
+            if let Some(said) = value["error"]["message"].as_str() {
+                return Err(Failure::from_text(said));
+            }
             Ok(list(&value["results"])
                 .map(|one| {
                     let snippet = string(&one["summary"]).or_else(|| string(&one["snippet"]));

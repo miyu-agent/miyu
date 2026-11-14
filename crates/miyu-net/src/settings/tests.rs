@@ -1,4 +1,5 @@
-//! 搜索来源的选项和出厂的来源对得上（施工 N-2 下）：下拉里能选的、`search.json` 里有的，一一对应。
+//! 联网服务的选项和出厂的来源对得上（施工 N-2 下，NF-1 改成选供应商）：下拉里能选的是自动和 `search.json` 里要 key、要地址
+//! 的那几家。
 
 use std::path::Path;
 
@@ -8,7 +9,7 @@ use miyu_config::{Value, Values};
 use super::{AUTO, ITEMS, Missing, SearchSettings, missing, using};
 
 #[test]
-fn the_options_are_auto_and_every_shipped_source() {
+fn the_options_are_auto_and_the_sources_that_need_a_key_or_an_address() {
     let item = &SearchSettings::ITEMS[0];
     assert_eq!(item.key, "net.search.source");
     let miyu_config::Kind::Option(options) = item.kind else {
@@ -22,8 +23,9 @@ fn the_options_are_auto_and_every_shipped_source() {
     let mut sources: Vec<&str> = shipped["sources"]
         .as_object()
         .expect("有 sources")
-        .keys()
-        .map(String::as_str)
+        .iter()
+        .filter(|(_, source)| matches!(source["needs"].as_str(), Some("key" | "address")))
+        .map(|(id, _)| id.as_str())
         .collect();
     sources.sort_unstable();
     let mut listed: Vec<&str> = options
@@ -32,7 +34,10 @@ fn the_options_are_auto_and_every_shipped_source() {
         .filter(|option| *option != AUTO)
         .collect();
     listed.sort_unstable();
-    assert_eq!(listed, sources, "下拉里的来源就是出厂的那几家");
+    assert_eq!(
+        listed, sources,
+        "下拉里是要 key、要地址的几家，免费的几家归自动"
+    );
     assert_eq!(options[0], AUTO, "自动排第一，是默认值");
 }
 

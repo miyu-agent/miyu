@@ -1,5 +1,5 @@
-//! 要 key、要地址的几家（施工 N-3 上，设计 36 第二节）：key 带在各家要的地方；没配的跳过；DeepSeek 在没配置时的顺序里，
-//! 有 key 才用；SearXNG 照配的地址；Exa 配了 key 的走自己的额度（接在地址后面）。假服务器在回环上，几家的地址照
+//! 要 key、要地址的几家（施工 N-3 上，设计 36 第二节）：key 带在各家要的地方；没配的跳过；DeepSeek
+//! 挑了才用（NF-1 起不进自动）；SearXNG 照配的地址；Exa 配了 key 的走自己的额度（接在地址后面）。假服务器在回环上，几家的地址照
 //! `Search::testing` 换成它，`Using` 照手写的。
 
 use std::time::Duration;
@@ -114,8 +114,9 @@ async fn a_picked_keyed_source_carries_its_key_and_is_skipped_without_one() {
     assert_eq!(site.hits("/tavily"), 1, "没配 key 的那一次没去问");
 }
 
+/// DeepSeek 不进自动的顺序（施工 NF-1：自动不花钱）：有 key 的自动也不问它，挑了它才问，key 放在 `Authorization` 里。
 #[tokio::test]
-async fn deepseek_closes_the_shipped_order_only_with_a_key() {
+async fn deepseek_is_asked_only_when_picked() {
     let mut routes = free_ones_fail();
     routes.push((
         "/deepseek".to_string(),
@@ -124,18 +125,18 @@ async fn deepseek_closes_the_shipped_order_only_with_a_key() {
     let site = Site::start(routes).await;
     let search = search(&site);
 
-    let without = ask(&search, &Using::default()).await;
-    assert!(matches!(without, Err(Missed::Failed(_))), "{without:?}");
-    assert_eq!(site.hits("/deepseek"), 0, "没 key 不问 DeepSeek");
+    let auto = ask(&search, &Using::default().with_key("deepseek", "sk-1")).await;
+    assert!(matches!(auto, Err(Missed::Failed(_))), "{auto:?}");
+    assert_eq!(site.hits("/deepseek"), 0, "自动有 key 也不问 DeepSeek");
 
-    let with = ask(&search, &Using::default().with_key("deepseek", "sk-1"))
-        .await
-        .expect("搜成了");
-    assert_eq!(
-        with.source, "DeepSeek",
-        "免 key 的都不成，有 key 的 DeepSeek 兜在后面"
-    );
-    assert_eq!(with.hits[0].date.as_deref(), Some("2026-10-01"));
+    let picked = ask(
+        &search,
+        &Using::picked("deepseek").with_key("deepseek", "sk-1"),
+    )
+    .await
+    .expect("搜成了");
+    assert_eq!(picked.source, "DeepSeek");
+    assert_eq!(picked.hits[0].date.as_deref(), Some("2026-10-01"));
     let seen = site.seen();
     assert_eq!(
         seen.iter()

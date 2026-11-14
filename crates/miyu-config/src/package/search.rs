@@ -1,5 +1,5 @@
 //! 扩展声明的搜索来源（施工 N-5，设计 36 第二节第 5 条）：`[[search]]` 一段一个，读成 [`SearchSource`]。只查写法；核心起来时
-//! 把它们加进设置「搜索服务供应商」的下拉（值是 `<包>/<编号>`），选了它才经 `search.query` 问这个包的程序。只有扩展包能写
+//! 把它们加进设置「联网服务」的下拉（值是 `<包>/<编号>`），选了它才经 `search.query` 问这个包的程序。只有扩展包能写
 //! （`kinds::tables`），要在 `[process] capabilities` 里声明 `search`（[`needs_capability`]，读完整份以后查）。
 
 use toml_edit::Item;
@@ -9,7 +9,7 @@ use super::reader::{Reader, command_name, line_of};
 use super::{Code, Problem};
 use crate::phrases::Phrases;
 
-/// 扩展的来源进的那一项设置：联网包的「搜索服务供应商」。
+/// 扩展的来源进的那一项设置：联网包的「联网服务」。
 pub const SEARCH_SOURCE: &str = "net.search.source";
 
 /// 扩展声明的一个搜索来源。

@@ -1,5 +1,5 @@
 {
-  "order": ["exa", "parallel", "firecrawl", "anysearch", "you", "deepseek", "duckduckgo", "bing"],
+  "order": ["exa", "parallel", "firecrawl", "anysearch", "you", "duckduckgo", "bing"],
   "results": 8,
   "excerpt_chars": 1200,
   "timeout_seconds": 20,
@@ -12,7 +12,7 @@
     "firecrawl": {"name": "Firecrawl", "kind": "firecrawl", "url": "https://mcp.firecrawl.dev/v2/mcp", "needs": "nothing", "site_operator": true},
     "anysearch": {"name": "AnySearch", "kind": "anysearch", "url": "https://api.anysearch.com/v1/search", "needs": "nothing", "site_operator": false},
     "you": {"name": "You.com", "kind": "you", "url": "https://api.you.com/mcp?profile=free", "needs": "nothing", "site_operator": true},
-    "deepseek": {"name": "DeepSeek", "kind": "deepseek", "url": "https://api.deepseek.com/v1/tools/search", "needs": "key", "site_operator": true},
+    "deepseek": {"name": "DeepSeek", "kind": "deepseek", "url": "https://api.deepseek.com/v1/tools/search", "fetch_url": "https://api.deepseek.com/v1/tools/fetch", "needs": "key", "site_operator": true},
     "tavily": {"name": "Tavily", "kind": "tavily", "url": "https://api.tavily.com/search", "needs": "key", "site_operator": false},
     "brave": {"name": "Brave", "kind": "brave", "url": "https://api.search.brave.com/res/v1/web/search", "needs": "key", "site_operator": true},
     "searxng": {"name": "SearXNG", "kind": "searxng", "url": "", "needs": "address", "site_operator": true},

@@ -15,12 +15,12 @@
         "description": "上下文快满时，在后台先把旧的那一段压成摘要，到了要压缩的时候直接换上，不用停下来等。关掉的话，照旧到线再压。"
       },
       "net.search.exa.key": {"name": "Exa", "description": "配了就用你自己的 Exa 额度，不配照免费额度。"},
-      "net.search.deepseek.key": {"name": "DeepSeek", "description": "搜索服务供应商用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。"},
-      "net.search.tavily.key": {"name": "Tavily", "description": "搜索服务供应商选了 Tavily 时要它。"},
-      "net.search.brave.key": {"name": "Brave Search", "description": "搜索服务供应商选了 Brave 时要它。"},
+      "net.search.deepseek.key": {"name": "DeepSeek", "description": "联网服务选了 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。搜索、代抓按次收费。"},
+      "net.search.tavily.key": {"name": "Tavily", "description": "联网服务选了 Tavily 时要它。"},
+      "net.search.brave.key": {"name": "Brave Search", "description": "联网服务选了 Brave 时要它。"},
       "net.internal_domains": {"name": "内部域名", "description": "别人（群里的人、陌生人）让 AI 上网时一律不去的域名，子域名也算，不管解析成什么地址、走不走代理；你自己不受影响。写法例如 example-corp.com。"},
-      "net.search.searxng.url": {"name": "SearXNG 的地址", "description": "你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。搜索服务供应商选了 SearXNG 时用它。"},
-      "net.search.source": {"name": "搜索服务供应商", "description": "AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。自己抓不下来的网页会请 Exa、Firecrawl、Parallel 代抓，网址也会发给它们。", "options": {"auto": "自动", "exa": "Exa", "parallel": "Parallel", "firecrawl": "Firecrawl", "anysearch": "AnySearch", "you": "You.com", "deepseek": "DeepSeek", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG", "duckduckgo": "DuckDuckGo", "bing": "Bing"}},
+      "net.search.searxng.url": {"name": "SearXNG 的地址", "description": "你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。联网服务选了 SearXNG 时用它。"},
+      "net.search.source": {"name": "联网服务", "description": "AI 搜网页、抓网页用哪一家。自动只用免费额度：搜索照 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；自己抓不下来的网页请 Exa、Firecrawl、Parallel 代抓。这几家都在国外，搜索词和网址会发给它们。选了一家的先用它（选了 DeepSeek 的，抓网页也先交它），它用不了再照自动的试。", "options": {"auto": "自动（免费额度）", "deepseek": "DeepSeek", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG"}},
       "memory.extract_idle": {
         "name": "整理记忆前等多久",
         "description": "聊完闲了这么久，AI 把新聊的内容里值得记的整理成记忆。"
@@ -628,7 +628,7 @@
     "extensions/capabilities/packages.call": "调别的软件",
     "extensions/capabilities/packages.call/summary": "调别的软件包给出来的方法",
     "extensions/capabilities/search": "当搜索服务供应商",
-    "extensions/capabilities/search/summary": "在搜索服务供应商里列出来，选了它的，搜索词会交给它",
+    "extensions/capabilities/search/summary": "在联网服务里列出来，选了它的，搜索词会交给它",
     "extensions/capabilities/model.driver": "提供模型驱动",
     "extensions/capabilities/model.driver/summary": "用它的模型时，发给模型的全部对话都经过它",
     "extensions/capabilities/act_for_external": "代平台用户发言",

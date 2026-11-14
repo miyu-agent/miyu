@@ -154,7 +154,7 @@ impl Search {
         }
     }
 
-    /// 测试用：几家的地址换成给的（编号，地址），不走代理。生产的构建里没有这个方法。
+    /// 测试用：几家的地址换成给的（编号，地址），编号写成 `<编号>:fetch` 的换抓页面的地址；不走代理。生产的构建里没有这个方法。
     #[cfg(any(test, feature = "testkit"))]
     #[must_use]
     pub fn testing(mut self, urls: Vec<(String, String)>) -> Search {
@@ -290,8 +290,13 @@ impl Search {
     #[cfg(any(test, feature = "testkit"))]
     fn adjusted(&self, mut rules: Rules) -> Rules {
         for (id, url) in &self.urls {
-            if let Some(source) = rules.sources.get_mut(id) {
-                source.url.clone_from(url);
+            let (id, fetch) = id
+                .strip_suffix(":fetch")
+                .map_or((id.as_str(), false), |id| (id, true));
+            match rules.sources.get_mut(id) {
+                Some(source) if fetch => source.fetch_url = Some(url.clone()),
+                Some(source) => source.url.clone_from(url),
+                None => {}
             }
         }
         if !self.only.is_empty() {
@@ -322,16 +327,6 @@ impl Search {
 impl Ready {
     /// 这一次试的先后：挑了出厂有的那一家的排在最前，其余照出厂的顺序；要 key、要地址没配的不试（施工 N-3 上）。
     fn order(&self, using: &Using) -> Vec<String> {
-        let ready = |id: &String| {
-            self.rules
-                .sources
-                .get(id)
-                .is_some_and(|source| match source.needs {
-                    Needs::Nothing | Needs::KeyOptional => true,
-                    Needs::Key => using.key(id).is_some(),
-                    Needs::Address => using.address.is_some(),
-                })
-        };
         let first = using
             .preferred
             .as_ref()
@@ -346,8 +341,20 @@ impl Ready {
                     .filter(|id| Some(*id) != first)
                     .cloned(),
             )
-            .filter(ready)
+            .filter(|id| self.usable(id, using))
             .collect()
+    }
+
+    /// `id` 这一家这一次用得上吗：要 key、要地址没配的不用（施工 N-3 上；代抓也照它，施工 NF-1）。
+    fn usable(&self, id: &str, using: &Using) -> bool {
+        self.rules
+            .sources
+            .get(id)
+            .is_some_and(|source| match source.needs {
+                Needs::Nothing | Needs::KeyOptional => true,
+                Needs::Key => using.key(id).is_some(),
+                Needs::Address => using.address.is_some(),
+            })
     }
 
     fn cooldown(&self) -> std::sync::MutexGuard<'_, Cooldowns> {

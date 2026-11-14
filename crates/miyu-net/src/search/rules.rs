@@ -43,6 +43,13 @@ impl Kind {
     }
 }
 
+impl Source {
+    /// 这一家能不能代抓网页：走 MCP 的那三种，或者另写了抓页面的地址（施工 NF-1：DeepSeek Fetch）。
+    pub(crate) fn fetches(&self) -> bool {
+        self.kind.fetches() || self.fetch_url.is_some()
+    }
+}
+
 /// 一家要什么才能用（施工 N-3 上）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -71,6 +78,9 @@ pub(crate) struct Source {
     pub(crate) needs: Needs,
     /// 认不认查询里写 `site:`：认的把只要的域名写进查询。
     pub(crate) site_operator: bool,
+    /// 抓页面的地址（施工 NF-1）：和搜索分开的那几家写，现在只有 DeepSeek；不写的没有。
+    #[serde(default)]
+    pub(crate) fetch_url: Option<String>,
 }
 
 /// 读成的规矩。
@@ -97,7 +107,7 @@ pub(crate) struct Rules {
 /// 自己抓不下来的网页交给哪几家代抓（施工 N-4，设计 36 的 N-4）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Fetching {
-    /// 照这个先后试：来源的编号，只能是能抓页面的几种。
+    /// 自动的时候照这个先后试：来源的编号，只能是走 MCP 抓页面的几种（选了联网服务的那一家另排在最前，`pages.rs`）。
     pub(crate) order: Vec<String>,
     /// 正文少于这么多字的当没抓到（登录墙、跳转页）。
     pub(crate) min_chars: usize,
@@ -175,6 +185,16 @@ pub(crate) fn load(resources: &Path) -> Result<Rules, RulesError> {
     {
         return Err(bad(format!(
             "source {id} must have a url unless it needs an address"
+        )));
+    }
+    if let Some((id, _)) = parsed.sources.iter().find(|(_, source)| {
+        source
+            .fetch_url
+            .as_ref()
+            .is_some_and(|url| source.kind != Kind::Deepseek || url.is_empty())
+    }) {
+        return Err(bad(format!(
+            "source {id}: only deepseek takes a fetch_url, and it cannot be empty"
         )));
     }
     if let Some(missing) = parsed

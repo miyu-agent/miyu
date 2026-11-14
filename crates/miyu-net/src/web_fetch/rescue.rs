@@ -1,6 +1,7 @@
 //! 自己抓不下来的请别家代抓（施工 N-4，设计 36 的 N-4）：被挡（人机验证、401、403、429、451、503）、连不上、抓回来一个字
 //! 都没有、短得像登录墙的，交给 [`Search::fetch`] 照 `search.json` 的 `fetch` 一家家试；代抓到的记进 [`Pages`]，翻页不再
-//! 去抓。都不成的照自己抓的那个结果交：她看到的是原来的原因。不是网址、内网、跳转太多、读不成字的种类不代抓。
+//! 去抓。都不成的照自己抓的那个结果交：她看到的是原来的原因。不是网址、内网、跳转太多、读不成字的种类不代抓。选了带代抓的
+//! 联网服务的，自己抓之前先交它（[`first`]，施工 NF-1 补）。
 
 use std::sync::Arc;
 
@@ -17,6 +18,41 @@ pub(super) fn worth(own: &Result<Arc<Read>, Miss>, search: &Search) -> bool {
     }
 }
 
+/// 选了带代抓的联网服务的，自己抓之前先交它（施工 NF-1 补，项目主人 2026-11-14 定）：自己抓也会被拒的（不是网址、内网、内部
+/// 域名）不交，记着的照记着的给；抓到的记进 `pages`、交回。没选、它没成的交回没有，照自己抓、自动的名单走。
+pub(super) async fn first(
+    url: &str,
+    asker: &crate::Asker,
+    (pages, search, using): (&Pages, &Search, &Using),
+) -> Option<Arc<Read>> {
+    if !search.has_provider(using) {
+        return None;
+    }
+    if let Some(kept) = pages.before_others(url, asker).await.ok()? {
+        return Some(kept);
+    }
+    let fetched = search.fetch_by_provider(url.trim(), using).await.ok()?;
+    Some(keep(pages, url, asker, fetched))
+}
+
+/// 代抓到的 `fetched` 记进 `pages`（翻页不再抓），交回。
+fn keep(
+    pages: &Pages,
+    url: &str,
+    asker: &crate::Asker,
+    fetched: crate::search::Fetched,
+) -> Arc<Read> {
+    let read = Arc::new(Read {
+        url: url.trim().to_string(),
+        title: fetched.title,
+        text: fetched.text,
+        cut: fetched.cut,
+        via: Some(fetched.source),
+    });
+    pages.keep(url, asker, Arc::clone(&read));
+    read
+}
+
 /// 请别家代抓网址 `url`：抓到的记进 `pages`、交回；都不成的交回自己抓的 `own`。
 pub(super) async fn rescue(
     own: Result<Arc<Read>, Miss>,
@@ -27,13 +63,5 @@ pub(super) async fn rescue(
     let Ok(fetched) = search.fetch(url.trim(), using).await else {
         return own;
     };
-    let read = Arc::new(Read {
-        url: url.trim().to_string(),
-        title: fetched.title,
-        text: fetched.text,
-        cut: fetched.cut,
-        via: Some(fetched.source),
-    });
-    pages.keep(url, asker, Arc::clone(&read));
-    Ok(read)
+    Ok(keep(pages, url, asker, fetched))
 }

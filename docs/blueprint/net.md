@@ -34,7 +34,7 @@
 | `crates/miyu-endpoint/src/connection.rs` | 在后台答的方法交给一个后台任务，回应照 `id` 对上；连接断了这些任务一起停 |
 | `crates/miyu-core/src/packages.rs`、`packages/net.rs` | 登记 `link.preview`；参数怎么读、卡片怎么写成回应 |
 | `crates/miyu-net/src/document.rs`、`document/convert.rs`、`web_fetch.rs` | `web_fetch`：抓整份、换成字、分页（`tools/web_fetch.md`） |
-| `crates/miyu-net/src/search.rs`、`search/*.rs`、`web_search.rs` | `web_search`：几家来源照顺序试、冷却、MCP over HTTP（`tools/web_search.md`）。请求固定的公开地址，不过地址闸，代理照同一套 |
+| `crates/miyu-net/src/search.rs`、`search/*.rs`、`web_search.rs` | `web_search`：几家来源照顺序试、冷却、MCP over HTTP（`tools/web_search.md`）；`web_fetch` 的代抓（`search/pages.rs`；选了带代抓的联网服务的，自己抓之前先交它，现在是 DeepSeek Fetch，NF-1）。请求固定的公开地址，不过地址闸，代理照同一套 |
 | `resources/software/net/link_preview.json` | 规矩：时限、上限、请求头、记多久、客户端留多久；认得的站、人机验证页的认法（W-7 再补） |
 
 ### 对外的样子
@@ -284,7 +284,7 @@
 
 ### 还没有的
 
-- `web_search` 要 key 的几家、网页抓取兜底、「搜索来源」设置、扩展登记来源（设计 36 第五节 N-2 下到 N-5）。
+- `web_search` 要 key 的几家、网页抓取兜底、「联网服务」设置（NF-1 改成选供应商）、扩展登记来源（设计 36 第五节 N-2 下到 N-5）。
 - 别的站（推特、知乎……）：照第 12 条同一层加。登录才看得到的内容不做。
 - 网页软件的 `/media`（W-10）：卡片的图在那之前照桥的 `/blob` 给。
 - 链接卡片的图随存储的回收清掉：它们是没人引用的 blob（`store.md`「还没有的」）。

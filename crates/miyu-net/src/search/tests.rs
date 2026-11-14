@@ -19,6 +19,7 @@ fn source(site_operator: bool) -> Source {
         url: "https://example.invalid/mcp".to_string(),
         needs: Needs::Nothing,
         site_operator,
+        fetch_url: None,
     }
 }
 

@@ -303,7 +303,7 @@ Registers your program as a search provider, one per entry; `capabilities` must 
 | `id` | Id, written like `[command] name`; unique within the package |
 | `name` | Shown to people |
 
-The settings screen's "Search provider" dropdown gets one more entry, valued `<package id>/<id>`. It's used only when a person picks it and never joins the "Auto" order, so your program never receives search terms without the person knowing. When the AI searches, the core calls your program with `search.query`; when you can't answer (an error, a rate limit), the shipped providers take over. See [Writing an extension](extensions.en.md).
+The settings screen's "Web provider" dropdown gets one more entry, valued `<package id>/<id>`. It's used only when a person picks it and never joins the "Auto" order, so your program never receives search terms without the person knowing. When the AI searches, the core calls your program with `search.query`; when you can't answer (an error, a rate limit), the shipped providers take over. See [Writing an extension](extensions.en.md).
 
 ## `[guard]`
 

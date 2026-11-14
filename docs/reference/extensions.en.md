@@ -251,7 +251,7 @@ Extension → core (construction IM-1 lower-middle 2): `{"event", "data"?}` push
 
 ## `search.query`
 
-A person picked a source this package declares in `[[search]]` as the search provider, and the AI is searching the web (core → extension, with `id`, needs a response):
+A person picked a source this package declares in `[[search]]` as the web provider, and the AI is searching the web (core → extension, with `id`, needs a response):
 
 `{"source", "query", "want", "allowed_domains", "blocked_domains"}`: the source (`<package>/<id>`), what to search, at most how many results, only these domains, not these domains (the core filters by them again afterwards).
 

@@ -1541,6 +1541,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sLO1"><span class="n">LO-1</span>光打 /loop 开自主循环<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQT1"><span class="n">QT-1</span>场所消息带被引用的内容<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT5"><span class="n">HT-5</span>Anthropic 驱动的服务端工具<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sNF1"><span class="n">NF-1</span>联网服务切供应商<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -59688,6 +59689,61 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/HT-5-Anthropic服务端工具.md</code>；<code>crates/miyu-drivers/src/anthropic/hosted.rs</code>、<code>decode.rs</code>、<code>messages.rs</code>、<code>wire.rs</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sNF1" aria-labelledby="h-sNF1">
+  <div class="sheet-head"><h2 id="h-sNF1"><span class="no">NF-1</span>联网服务切供应商</h2><span class="pill done">做完</span></div>
+  <p class="purpose">设置「搜索服务供应商」改成「联网服务」：自动只用免费的几家；选了 DeepSeek 的，搜索走 DeepSeek Search，抓网页先交 DeepSeek Fetch，调不通的再自己抓、再退回免费的几家。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-net · settings.rs　search/pages.rs　search/rest.rs　search/sources.rs　resources · software/net/search.json</span><span class="dir-note">NF-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>下拉只剩自动和要 key、要地址的 DeepSeek、Tavily、Brave、SearXNG；键照旧 <code>net.search.source</code></li>
+              <li><code>search.json</code> 的 DeepSeek 多 <code>fetch_url</code>：<code>POST {"url"}</code>，读 <code>content</code>、<code>title</code></li>
+              <li>抓网页：选了的那一家能抓、配了 key 的先交它（交以前照自己抓的闸查），再自己抓，再照自动的名单；冷却和搜索共用</li>
+              <li>DeepSeek 拿出自动的出厂顺序：自动不花钱</li>
+              <li>DeepSeek 回 5xx、回 <code>error</code> 的当出错往下试，不再当「没搜到」</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">选了 DeepSeek：搜、抓都先走它，调不通退回免费的几家</span><span class="rl">项目主人 2026-11-14 定</span></div>
+          <div class="tile new"><span class="nm">key 照模型那边配了 DeepSeek 的那一家，代抓也一样</span><span class="rl">项目主人 2026-11-14 定</span></div>
+          <div class="tile new"><span class="nm">自动不花钱；选了带代抓的服务的，先交它再自己抓</span><span class="rl">项目主人 2026-11-14 定</span></div>
+          <div class="tile new"><span class="nm">配置键不改名，只换给人看的字</span><span class="rl">NF-1 施工时定</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">NF-1</dd></div>
+        <div><dt>名称</dt><dd>联网服务切供应商</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">NF-1</dd></div>
+        <div><dt>验收</dt><dd>假服务器上的七条集成测试（改前五条红）、整个工作区的测试、clippy（含 Windows）、fmt、doc、prompts、logs 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>选了 DeepSeek：搜索、代抓都打到 DeepSeek，key 是模型那边 DeepSeek 供应商的</span></li>
+        <li><span class="ok">✓</span><span>DeepSeek 回 429、402、503：搜、抓都退回免费的几家；报了限额以后抓也一起歇</span></li>
+        <li><span class="ok">✓</span><span>选了 DeepSeek：第一次请求就交 DeepSeek Fetch，本机直抓不碰；它失败了才自己抓</span></li>
+        <li><span class="ok">✓</span><span>自动的免费几家都不成、配了 DeepSeek 也一次不问它；没 key 的跳过它</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/NF-1-联网服务切供应商.md</code>；蓝图 <code>config.md</code>、<code>net.md</code>、<code>tools/web_search.md</code>、<code>tools/web_fetch.md</code>；协议参考 <code>extensions.md</code> 中英两份。</li>
       </ul>
     </div>
   </div>

@@ -88,7 +88,7 @@ const MODULES: [&[Item]; 41] = [
     miyu_store::skills::external::ITEMS,
 ];
 
-/// 联网这个内置包的几组（施工 N-2 下、N-3 上、MB-2）：「搜索来源」，要 key 的几家的 key、SearXNG 的地址，内部域名。cargo 开关 `net`
+/// 联网这个内置包的几组（施工 N-2 下、N-3 上、MB-2）：「联网服务」，要 key 的几家的 key、SearXNG 的地址，内部域名。cargo 开关 `net`
 /// 关着的核心没有这个包，也没有这几项。
 #[cfg(feature = "net")]
 const NET: [&[Item]; 7] = miyu_net::ITEMS;
@@ -175,7 +175,7 @@ impl Packaged {
             .collect()
     }
 
-    /// 扩展声明的搜索来源（施工 N-5，清单 `[[search]]`）加进「搜索服务供应商」的选项：`<包>/<编号>`。联网包没编进来的不加。
+    /// 扩展声明的搜索来源（施工 N-5，清单 `[[search]]`）加进「联网服务」的选项：`<包>/<编号>`。联网包没编进来的不加。
     fn search_sources(&self) -> impl Fn(Item) -> Item {
         let extra: Vec<String> = self
             .manifests

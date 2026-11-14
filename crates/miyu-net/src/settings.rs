@@ -1,7 +1,9 @@
-//! 联网这个包的配置项（施工 N-2 下，设计 36 第三节第 1 条，项目主人 2026-10-18 定）：设置页一个「搜索来源」下拉。
+//! 联网这个包的配置项（施工 N-2 下，设计 36 第三节第 1 条，项目主人 2026-10-18 定）：设置页一个「联网服务」下拉（施工 NF-1，
+//! 项目主人 2026-11-14 定：原来的「搜索服务供应商」改成选供应商）。
 //!
-//! `auto` 照出厂的顺序（`search.json` 的 `order`）；选了一家的一直先用它，它用不了（出错、限额冷却着）才照出厂的顺序兜底
-//! （第二节第 3 条）。下一轮生效：会话 actor 回合开始冻结配置，`web_search` 照调用带来的那一份读（`miyu_tool::SettingsPort`）。
+//! `auto` 是自动（免费额度）：搜索照出厂的顺序（`search.json` 的 `order`），代抓照 `fetch` 的名单。选了要 key、要地址的
+//! 那一家的，搜索、代抓（它能抓页面的）都先用它；它用不了（没配、出错、限额冷却着）照自动的顺序兜底（第二节第 3 条）。
+//! 下一轮生效：会话 actor 回合开始冻结配置，`web_search`、`web_fetch` 照调用带来的那一份读（`miyu_tool::SettingsPort`）。
 //! 核心替联网这个内置包声明，包没装的设置页不画（`miyu-core` 的 `settings::Packaged`）。
 
 use miyu_config::Address;
@@ -10,12 +12,9 @@ use miyu_config::secret::Reference;
 miyu_config::settings! {
     /// 搜索的配置。
     pub struct SearchSettings in "net.search" {
-        /// 搜索来源：`auto` 照出厂的顺序，或者先用定的那一家。
+        /// 联网服务：`auto` 照出厂的顺序用免费的几家，或者先用定的那一家（要 key、要地址的几家）。
         source: String = "auto" {
-            kind: option [
-                "auto", "exa", "parallel", "firecrawl", "anysearch", "you", "deepseek", "tavily", "brave",
-                "searxng", "duckduckgo", "bing"
-            ],
+            kind: option ["auto", "deepseek", "tavily", "brave", "searxng"],
             layers: [System],
             applies: next_turn,
             ui: { page: "packages", group: "base-net", package: "base-net", control: select },
@@ -115,7 +114,7 @@ pub const ITEMS: [&[miyu_config::Item]; 7] = [
 /// 不挑、照出厂顺序的那一个选项。
 pub const AUTO: &str = "auto";
 
-/// 「搜索服务供应商」加上扩展声明的来源（施工 N-5）：`extra` 是 `<包>/<编号>`，接在出厂的几家后面。字留在进程里，只在核心
+/// 「联网服务」加上扩展声明的搜索来源（施工 N-5）：`extra` 是 `<包>/<编号>`，接在出厂的几家后面。字留在进程里，只在核心
 /// 起来、装卸时调；不是这一项的照原样。
 pub fn with_extension_sources(item: &miyu_config::Item, extra: &[String]) -> miyu_config::Item {
     let mut item = item.clone();

@@ -42,7 +42,7 @@ impl Drop for Scratch {
 #[test]
 fn the_shipped_rules_carry_the_order_of_the_design() {
     let rules = load(&shipped()).unwrap();
-    // 设计 36 第二节第 2 条：免 key 的五家，有 key 才用的 DeepSeek，最后是网页抓取兜底的两家（N-3 下）
+    // 设计 36 第二节第 2 条：免 key 的五家，最后是网页抓取兜底的两家（N-3 下）；DeepSeek 选了才用，不进自动（NF-1）
     assert_eq!(
         rules.order,
         [
@@ -51,7 +51,6 @@ fn the_shipped_rules_carry_the_order_of_the_design() {
             "firecrawl",
             "anysearch",
             "you",
-            "deepseek",
             "duckduckgo",
             "bing"
         ]
@@ -75,6 +74,10 @@ fn the_shipped_rules_carry_the_order_of_the_design() {
     }
     assert_eq!(rules.sources["exa"].needs, Needs::KeyOptional);
     assert_eq!(rules.sources["searxng"].needs, Needs::Address);
+    // 施工 NF-1：DeepSeek 另有抓页面的地址，能代抓；自动的代抓名单里没有它
+    assert!(rules.sources["deepseek"].fetches());
+    assert!(!rules.sources["tavily"].fetches());
+    assert!(!rules.fetch.order.contains(&"deepseek".to_string()));
 }
 
 #[test]
@@ -99,6 +102,14 @@ fn a_wrong_file_is_refused() {
         ),
         ("\"min_chars\": 200", "\"min_chars\": 0"),
         ("\"max_chars\": 200000", "\"max_chars\": 100"),
+        (
+            "\"fetch_url\": \"https://api.deepseek.com/v1/tools/fetch\"",
+            "\"fetch_url\": \"\"",
+        ),
+        (
+            "\"kind\": \"tavily\",",
+            "\"kind\": \"tavily\", \"fetch_url\": \"https://t.invalid/\",",
+        ),
     ] {
         let changed = text().replacen(from, to, 1);
         assert_ne!(changed, text(), "{from} 在出厂的那一份里");
