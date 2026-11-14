@@ -1,0 +1,10 @@
+start 0 hosted_tool web_search
+text 0 "{\"query\":\"x\"}"
+outcome 0 "" failed=false
+private 0 anthropic {"use":{"type":"server_tool_use","id":"srvtoolu_01","name":"web_search","input":{"query":"x"}},"result":{"type":"web_search_tool_result","tool_use_id":"srvtoolu_01","content":[]}}
+end 0
+start 1 text
+text 1 "查到了"
+end 1
+usage uncached=3 cache_read=0 cache_write=0 output=5
+ok

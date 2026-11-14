@@ -1,0 +1,4 @@
+start 0 hosted_tool web_search
+text 0 "{\"query\":\"slow\"}"
+usage uncached=40 cache_read=0 cache_write=0 output=60
+error other "stop_reason: pause_turn"

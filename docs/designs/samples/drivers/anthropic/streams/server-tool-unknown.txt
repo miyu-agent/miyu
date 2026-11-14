@@ -1,0 +1,12 @@
+start 0 hosted_tool x_tool
+text 0 "{\"n\":1.50}"
+outcome 0 "{\"type\":\"x_result\",\"values\":[1.50,\"\\u00e9\"]}" failed=false
+private 0 anthropic {"use":{"type":"server_tool_use","id":"srvtoolu_x1","name":"x_tool","input":{"n":1.50}},"result":{"type":"x_tool_result","tool_use_id":"srvtoolu_x1","content":{"type":"x_result","values":[1.50,"\u00e9"]}}}
+end 0
+start 1 hosted_tool x_tool
+text 1 "{\"n\":2}"
+outcome 1 "{\"type\":\"x_tool_result_error\",\"error_code\":\"unavailable\"}" failed=true
+private 1 anthropic {"use":{"type":"server_tool_use","id":"srvtoolu_x2","name":"x_tool","input":{"n":2}},"result":{"type":"x_tool_result","tool_use_id":"srvtoolu_x2","content":{"type":"x_tool_result_error","error_code":"unavailable"}}}
+end 1
+usage uncached=40 cache_read=0 cache_write=0 output=60
+ok

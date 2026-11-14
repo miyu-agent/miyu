@@ -1,0 +1,10 @@
+start 0 hosted_tool web_search
+text 0 "{\"query\":\"q\"}"
+outcome 0 "max_uses_exceeded" failed=true
+private 0 anthropic {"use":{"type":"server_tool_use","id":"srvtoolu_a93jad","name":"web_search","input":{"query":"q"}},"result":{"type":"web_search_tool_result","tool_use_id":"srvtoolu_a93jad","content":{"type":"web_search_tool_result_error","error_code":"max_uses_exceeded"}}}
+end 0
+start 1 text
+text 1 "搜不了了。"
+end 1
+usage uncached=40 cache_read=0 cache_write=0 output=60
+ok

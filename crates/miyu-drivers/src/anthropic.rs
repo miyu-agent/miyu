@@ -9,6 +9,7 @@
 
 mod decode;
 mod effort;
+mod hosted;
 mod kept;
 mod marks;
 mod messages;
@@ -17,6 +18,7 @@ mod usage;
 mod wire;
 
 pub use decode::Decoder;
+pub use hosted::PRIVATE_BYTES;
 pub(crate) use kept::Kept;
 pub use models::{MODELS_PATH, parse_models};
 

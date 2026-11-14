@@ -1,0 +1,15 @@
+start 0 hosted_tool web_search
+text 0 "{\"query\":\"a\"}"
+start 1 hosted_tool web_search
+text 1 "{\"query\":\"b\"}"
+outcome 1 "B - https://b.example/" failed=false
+private 1 anthropic {"use":{"type":"server_tool_use","id":"srvtoolu_p2","name":"web_search","input":{"query":"b"}},"result":{"type":"web_search_tool_result","tool_use_id":"srvtoolu_p2","content":[{"type":"web_search_result","title":"B","url":"https://b.example/","encrypted_content":"EqgfCioIARgBEgy3va3pzix/LafPsn4aDFIT2Xlxh0L5L8rLVyIwxtE3rAFBa8cr3qpP","page_age":"April 30, 2025"}]}}
+end 1
+outcome 0 "A - https://a.example/" failed=false
+private 0 anthropic {"use":{"type":"server_tool_use","id":"srvtoolu_p1","name":"web_search","input":{"query":"a"}},"result":{"type":"web_search_tool_result","tool_use_id":"srvtoolu_p1","content":[{"type":"web_search_result","title":"A","url":"https://a.example/","encrypted_content":"EqgfCioIARgBEgy3va3pzix/LafPsn4aDFIT2Xlxh0L5L8rLVyIwxtE3rAFBa8cr3qpP","page_age":"April 30, 2025"}]}}
+end 0
+start 2 text
+text 2 "两样都查了。"
+end 2
+usage uncached=40 cache_read=0 cache_write=0 output=60
+ok

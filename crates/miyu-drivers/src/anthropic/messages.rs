@@ -5,7 +5,8 @@
 //! - user 的块一块一块写，不拼；空的字不写。图片照模型能不能看、媒体类型收不收写成 `image` 或者换成字；文件能读 PDF 的
 //!   写成 `document`，别的换成字（[`crate::media`]）。
 //! - assistant：正文、自己家带签名的思考、工具调用照原来的先后；别家的、没签名的思考不写（发回去这一家报 400）。供应商侧
-//!   工具写成一段字（施工 HT-2，[`DriverTexts::hosted_tool`]），一块 `text`。
+//!   工具带着这一家私有数据的照原样写回 `server_tool_use`、结果两块（施工 HT-5，[`hosted::written_back`]），别的写成一段字
+//!   （施工 HT-2，[`DriverTexts::hosted_tool`]），一块 `text`。
 //! - tool：一块 `tool_result`，里面照 user 的写法；一块都没有的写「没有输出」那一句。
 
 use std::collections::BTreeMap;
@@ -18,6 +19,7 @@ use serde::de::IgnoredAny;
 use serde_json::value::RawValue;
 
 use super::FAMILY;
+use super::hosted;
 use super::wire::{Part, Source, Wire};
 use crate::media::{Media, is_pdf};
 use crate::{BlobBytes, Call, DriverTexts, EncodeError};
@@ -138,7 +140,8 @@ impl Writer<'_> {
         Ok(parts)
     }
 
-    /// assistant 消息：正文、自己家带签名的思考、工具调用、供应商侧工具写成的字（施工 HT-2），照原来的先后。
+    /// assistant 消息：正文、自己家带签名的思考、工具调用、供应商侧工具（施工 HT-5 写回的两块原文，或者 HT-2 写成的字），
+    /// 照原来的先后。
     fn assistant(&self, blocks: &[Block]) -> Vec<Part> {
         let mut parts = Vec::new();
         for block in blocks {
@@ -150,11 +153,14 @@ impl Writer<'_> {
                     name: call.name.clone(),
                     input: input(&call.args),
                 }),
-                Block::HostedTool(hosted) => {
-                    if let Some(said) = self.texts.hosted_tool(hosted) {
-                        push_text(&mut parts, &said);
+                Block::HostedTool(hosted) => match hosted::written_back(hosted) {
+                    Some(blocks) => parts.extend(blocks.map(Part::Raw)),
+                    None => {
+                        if let Some(said) = self.texts.hosted_tool(hosted) {
+                            push_text(&mut parts, &said);
+                        }
                     }
-                }
+                },
                 Block::Image(_) | Block::File(_) | Block::Path(_) | Block::Unknown(_) => {}
             }
         }

@@ -1,0 +1,9 @@
+start 0 hosted_tool web_search
+text 0 "{\"query\":\"later\"}"
+start 1 tool_call read
+private 1 anthropic {"id":"toolu_01N"}
+text 1 "{\"path\":\"a\"}"
+end 0
+end 1
+usage uncached=40 cache_read=0 cache_write=0 output=60
+ok

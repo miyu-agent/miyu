@@ -6,6 +6,7 @@
 mod support;
 
 mod anthropic;
+mod anthropic_hosted;
 mod anthropic_marks;
 mod anthropic_media;
 mod anthropic_streams;

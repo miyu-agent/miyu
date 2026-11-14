@@ -1,9 +1,12 @@
 //! 解码（`docs/blueprint/drivers/anthropic.md`「怎么走：解码」）：SSE 流解成内核的四种增量，说完时交出收块的增量、用量和
 //! 出错。
 //!
-//! 一条事件照名字（`event`），没有名字的照 `data` 里的 `type`。块照第一次出现的先后编号，从 0 数起，不认的块（服务端工具
-//! 这些）不占编号，它以后的增量也不理；线上的 `index` 只拿来找是哪一块。思考的签名、工具调用的编号写进私有数据，一块一份：
-//! 来两次的只认第一次（不会发生；累积器一块只收一份）。`content_block_stop` 不理：块在收尾时一起收。
+//! 一条事件照名字（`event`），没有名字的照 `data` 里的 `type`。块照第一次出现的先后编号，从 0 数起，不认的块不占编号，它
+//! 以后的增量也不理；线上的 `index` 只拿来找是哪一块。思考的签名、工具调用的编号写进私有数据，一块一份：来两次的只认第一次
+//! （不会发生；累积器一块只收一份）。`content_block_stop` 不理：块在收尾时一起收。
+//!
+//! 服务端工具（施工 HT-5，[`super::hosted`]）：`server_tool_use` 开一块供应商侧工具，结果块不开新块、不占编号，交这一块的
+//! 结果、私有数据并当场收块；收了的块收尾时不再收。
 
 use std::collections::BTreeMap;
 use std::mem;
@@ -16,6 +19,7 @@ use miyu_kernel::raw::RawJson;
 use serde_json::Value;
 
 use super::FAMILY;
+use super::hosted::{self, Pending};
 use super::usage::Reported;
 use crate::Ending;
 use crate::classify::{Failure, classify};
@@ -29,6 +33,8 @@ pub struct Decoder {
     blocks: BTreeMap<u64, Option<Opened>>,
     /// 下一块的编号。
     next: usize,
+    /// 开着、等结果的服务端工具：线上的 `index` → 这一块（施工 HT-5）。
+    hosted: BTreeMap<u64, Pending>,
     /// 记下的用量。
     usage: Reported,
     /// 最后一次报的 `stop_reason`。
@@ -177,7 +183,7 @@ impl Decoder {
                     self.usage.update(usage);
                 }
             }
-            "content_block_start" => self.start(&value, out),
+            "content_block_start" => self.start(&value, data, out),
             "content_block_delta" => self.delta(&value, out),
             "message_delta" => {
                 if let Some(reason) = value.pointer("/delta/stop_reason").and_then(Value::as_str) {
@@ -196,8 +202,9 @@ impl Decoder {
         }
     }
 
-    /// `content_block_start`：照 `content_block.type` 开一块，别的种类记下不认。
-    fn start(&mut self, value: &Value, out: &mut Vec<Delta>) {
+    /// `content_block_start`：照 `content_block.type` 开一块，服务端工具的结果块交给它那一块，别的种类记下不认。`data` 是这一条
+    /// 事件的原文：服务端工具的两块要原文（施工 HT-5）。
+    fn start(&mut self, value: &Value, data: &str, out: &mut Vec<Delta>) {
         let Some(wire) = value.get("index").and_then(Value::as_u64) else {
             return;
         };
@@ -212,6 +219,14 @@ impl Decoder {
             "tool_use" => Kind::ToolCall {
                 name: field("name").to_string(),
             },
+            "server_tool_use" => Kind::HostedTool {
+                name: field("name").to_string(),
+            },
+            kind if hosted::is_result(kind) && block.get("tool_use_id").is_some() => {
+                self.blocks.insert(wire, None);
+                self.result(kind, field("tool_use_id"), data, out);
+                return;
+            }
             _ => {
                 self.blocks.insert(wire, None);
                 return;
@@ -232,18 +247,52 @@ impl Decoder {
                 opened.private(out, "signature", field("signature"));
             }
             "redacted_thinking" => opened.private(out, "redacted", field("data")),
+            // 私有数据等结果块来了才交（施工 HT-5）。
+            "server_tool_use" => {
+                let pending = Pending::new(index, field("id"), hosted::block_text(data));
+                self.hosted.insert(wire, pending);
+            }
             _ => opened.private(out, "id", field("id")),
         }
         self.blocks.insert(wire, Some(opened));
     }
 
-    /// `content_block_delta`：字、思考、参数的一段交 `Text`，签名交私有数据；没开的块、不认的块、别的种类不理。
-    fn delta(&mut self, value: &Value, out: &mut Vec<Delta>) {
-        let Some(Some(opened)) = value
-            .get("index")
-            .and_then(Value::as_u64)
-            .and_then(|wire| self.blocks.get_mut(&wire))
+    /// 服务端工具的结果块（施工 HT-5）：照 `tool_use_id` 找这一次响应里开着的那一块，交结果、私有数据，收块。找不到的不理。
+    fn result(&mut self, kind: &str, id: &str, data: &str, out: &mut Vec<Delta>) {
+        if id.is_empty() {
+            return;
+        }
+        let Some(wire) = self
+            .hosted
+            .iter()
+            .find_map(|(wire, pending)| (pending.id == id).then_some(*wire))
         else {
+            return;
+        };
+        let pending = self.hosted.remove(&wire).expect("刚找到的");
+        let block = hosted::block_text(data).unwrap_or("{}");
+        let (text, failed) = hosted::outcome(kind, block);
+        let index = pending.index;
+        out.push(Delta::Outcome {
+            index,
+            text,
+            failed,
+        });
+        if let Some(private) = pending.private(block) {
+            out.push(Delta::Private { index, private });
+        }
+        out.push(Delta::End { index });
+        // 收了：以后的增量不理，收尾时也不再收。
+        self.blocks.insert(wire, None);
+    }
+
+    /// `content_block_delta`：字、思考、参数的一段交 `Text`，签名交私有数据；没开的块、不认的块、别的种类不理。服务端工具的
+    /// 参数另攒一份，拼私有数据用（施工 HT-5）。
+    fn delta(&mut self, value: &Value, out: &mut Vec<Delta>) {
+        let Some(wire) = value.get("index").and_then(Value::as_u64) else {
+            return;
+        };
+        let Some(Some(opened)) = self.blocks.get_mut(&wire) else {
             return;
         };
         let delta = &value["delta"];
@@ -251,7 +300,12 @@ impl Decoder {
         match field("type") {
             "text_delta" => push_text(out, opened.index, field("text")),
             "thinking_delta" => push_text(out, opened.index, field("thinking")),
-            "input_json_delta" => push_text(out, opened.index, field("partial_json")),
+            "input_json_delta" => {
+                if let Some(pending) = self.hosted.get_mut(&wire) {
+                    pending.args.push_str(field("partial_json"));
+                }
+                push_text(out, opened.index, field("partial_json"));
+            }
             "signature_delta" if opened.thinking => {
                 opened.private(out, "signature", field("signature"));
             }

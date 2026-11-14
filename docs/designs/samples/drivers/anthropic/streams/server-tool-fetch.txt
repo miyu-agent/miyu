@@ -1,0 +1,20 @@
+start 0 hosted_tool web_fetch
+text 0 "{\"url\":\"https://example.com/article\"}"
+outcome 0 "https://example.com/article\nArticle Title\n\nFull text content of the article...\nSecond line." failed=false
+private 0 anthropic {"use":{"type":"server_tool_use","id":"srvtoolu_f1","name":"web_fetch","input":{"url":"https://example.com/article"}},"result":{"type":"web_fetch_tool_result","tool_use_id":"srvtoolu_f1","content":{"type":"web_fetch_result","url":"https://example.com/article","content":{"type":"document","source":{"type":"text","media_type":"text/plain","data":"Full text content of the article...\nSecond line."},"title":"Article Title","citations":{"enabled":true}},"retrieved_at":"2025-08-25T10:30:00Z"}}}
+end 0
+start 1 hosted_tool web_fetch
+text 1 "{\"url\":\"https://example.com/paper.pdf\"}"
+outcome 1 "https://example.com/paper.pdf\n\n(application/pdf)" failed=false
+private 1 anthropic {"use":{"type":"server_tool_use","id":"srvtoolu_f2","name":"web_fetch","input":{"url":"https://example.com/paper.pdf"}},"result":{"type":"web_fetch_tool_result","tool_use_id":"srvtoolu_f2","content":{"type":"web_fetch_result","url":"https://example.com/paper.pdf","content":{"type":"document","source":{"type":"base64","media_type":"application/pdf","data":"JVBERi0xLjQKJcOkw7zDtsOfCjIgMCBvYmoKPDwvTGVuZ3RoIDMgMCBSL0ZpbHRlci9GbGF0ZURlY29kZT4+"},"citations":{"enabled":true}},"retrieved_at":"2025-08-25T10:30:02Z"}}}
+end 1
+start 2 hosted_tool web_fetch
+text 2 "{\"url\":\"https://example.com/private\"}"
+outcome 2 "url_not_accessible" failed=true
+private 2 anthropic {"use":{"type":"server_tool_use","id":"srvtoolu_f3","name":"web_fetch","input":{"url":"https://example.com/private"}},"result":{"type":"web_fetch_tool_result","tool_use_id":"srvtoolu_f3","content":{"type":"web_fetch_tool_result_error","error_code":"url_not_accessible"}}}
+end 2
+start 3 text
+text 3 "读到了两份。"
+end 3
+usage uncached=40 cache_read=0 cache_write=0 output=60
+ok

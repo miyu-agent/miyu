@@ -355,10 +355,17 @@ impl Talk {
             .to_string(),
             args,
             outcome,
-            private: self
-                .rng
-                .chance(30)
-                .then(|| private("anthropic", r#"{"type":"server_tool_use"}"#)),
+            // 读不懂的私有数据照字写；Anthropic 写回原文的（施工 HT-5），结果里有加密的内容、数字的写法。
+            private: self.rng.chance(30).then(|| match self.rng.chance(50) {
+                true => private("anthropic", r#"{"type":"server_tool_use"}"#),
+                false => private(
+                    "anthropic",
+                    &format!(
+                        r#"{{"use":{{"type":"server_tool_use","id":"srvtoolu_{n}","name":"web_search","input":{{"q":"{n}"}}}},"result":{{"type":"web_search_tool_result","tool_use_id":"srvtoolu_{n}","content":[{{"title":"T","url":"https://a.example/","encrypted_content":"Eq{n}=","n":1.50}}]}}}}"#,
+                        n = self.rng.below(1000)
+                    ),
+                ),
+            }),
         })
     }
 

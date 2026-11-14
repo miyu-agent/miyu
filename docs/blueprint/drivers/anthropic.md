@@ -19,6 +19,7 @@
 | `crates/miyu-drivers/src/anthropic/effort.rs` | 思考强度换成 `thinking`、`output_config` |
 | `crates/miyu-drivers/src/anthropic/wire.rs` | 线上的 JSON 结构 |
 | `crates/miyu-drivers/src/anthropic/decode.rs` | 解码：事件、块、签名、`stop_reason`、流里的错 |
+| `crates/miyu-drivers/src/anthropic/hosted.rs` | 服务端工具（施工 HT-5）：结果的字、私有数据 `{"use","result"}` 怎么拼、上限 `PRIVATE_BYTES`，编码时读不读得懂、写回哪两块 |
 | `crates/miyu-drivers/src/anthropic/usage.rs` | 用量归成四项 |
 | `crates/miyu-drivers/src/anthropic/models.rs` | 列模型：`GET /models?limit=1000` 读出模型名和窗口 |
 | `crates/miyu-drivers/src/media.rs` | 图片、文件发不了时换成的字（占位、替它看的图、文本文件、带名字的图片的标签）、要哪些 blob：从 `openai_chat/messages.rs`、`openai_chat.rs` 挪出来，几个驱动共用，openai-chat 的样本一个字节不变 |
@@ -65,7 +66,7 @@
    - 正文：一块一块写 `text`，空的不写。
    - 思考：私有数据是这个驱动的，里面有 `signature` 的写 `{"type":"thinking","thinking":<字>,"signature":<签名>}`（字是空的也写：这一家默认不给思考的字，只给签名）；里面有 `redacted` 的写 `{"type":"redacted_thinking","data":<它>}`。别家的、没有私有数据的、只有字没有签名的（说到一半断了的）不写：发回去没签名的思考，这一家报 400。
    - 工具调用：`{"type":"tool_use","id":…,"name":…,"input":…}`。`id`：私有数据是这个驱动的、里面有字符串 `id` 的用它；没有的用内核分的 `call_<序号>_<第几个>`（别家的编号不用：可能带这一家不收的字）。`input`：参数原文是一个 JSON 对象的一个字节不改，别的写 `{}`。
-   - 供应商侧工具（施工 HT-2）：在它原来的位置写成一块 `text`，和前后的正文各是各的块，不拼；那一段字照 openai-chat 第 4 条（`DriverTexts::hosted_tool`），末尾不带换行（这一家不收以空白结尾的最后一条 assistant）。服务端工具的块原样带回（`server_tool_use`、`web_search_tool_result`）是施工 HT-5。
+   - 供应商侧工具：私有数据是这个驱动的、是 `{"use":{…},"result":{…}}`（两格都是 JSON 对象）的，在它原来的位置照原样写回两块，先 `use` 后 `result`，一个字节不改（施工 HT-5，「解码」第 6 条；结果里加密的内容缺了、改了这一家报 400）。别的（别家的、没带私有数据的、私有数据读不懂的）在它原来的位置写成一块 `text`，和前后的正文各是各的块，不拼；那一段字照 openai-chat 第 4 条（`DriverTexts::hosted_tool`，施工 HT-2），末尾不带换行（这一家不收以空白结尾的最后一条 assistant）。写回的两块是普通的内容块：照常合并、能打点（留着编和整份编逐字节相同，施工 V-42）。
    - 图片、文件、不认识的块不写。
 6. **tool**：`{"type":"tool_result","tool_use_id":…,"content":[…],"is_error":true}`，`is_error` 只在统一的请求里 `error` 是真的时候写。
    - `tool_use_id` 和对应那次调用的 `id` 一样。
@@ -142,9 +143,9 @@ SSE 分帧共用 `sse.rs`（`drivers/openai-chat.md`「解码」）。一条事�
 | 事件 | 怎么办 |
 |---|---|
 | `message_start` | `message.usage` 记下（「用量」） |
-| `content_block_start` | 照 `content_block.type` 开一块，见下表；别的种类（服务端工具这些）不理，这一块以后的增量也不理 |
+| `content_block_start` | 照 `content_block.type` 开一块，见下表；服务端工具的结果块交给它那一块（第 6 条）；别的种类不理，这一块以后的增量也不理 |
 | `content_block_delta` | `text_delta` 的 `text`、`thinking_delta` 的 `thinking`、`input_json_delta` 的 `partial_json`：这一块的 `Text`。`signature_delta` 的 `signature`：这一块的私有数据。别的（`citations_delta`）不理 |
-| `content_block_stop` | 不理：块在收尾时一起收 |
+| `content_block_stop` | 不理：块在收尾时一起收（服务端工具的块在结果来时收，第 6 条） |
 | `message_delta` | `delta.stop_reason` 不是空的记下，`finished()` 从此是真；`usage` 里有的项盖掉记下的 |
 | `message_stop` | 说完了 |
 | `ping` | 不理 |
@@ -157,9 +158,18 @@ SSE 分帧共用 `sse.rs`（`drivers/openai-chat.md`「解码」）。一条事�
 | `thinking` | 思考；`thinking` 不是空的接着交 `Text`；`signature` 不是空的，交私有数据 |
 | `redacted_thinking` | 思考，没有字；私有数据 `{"driver":"anthropic","data":{"redacted":<data>}}` |
 | `tool_use` | 工具调用 `ToolCall { name }`；私有数据 `{"driver":"anthropic","data":{"id":<id>}}`。`input` 在这里是空对象，不理，参数从 `input_json_delta` 来 |
+| `server_tool_use` | 供应商侧工具 `HostedTool { name }`（施工 HT-5），名字照 `name` 原样；参数照工具调用从 `input_json_delta` 来。记下 `id` 和这一块的每一格，私有数据等结果来了才交（第 6 条） |
+| 以 `_tool_result` 结尾、带 `tool_use_id` 的（`web_search_tool_result`、`web_fetch_tool_result`，以后别的同形状的也算） | 不开块（第 6 条） |
 
-4. 块照第一次出现的先后编号，从 0 数起，不认的块不占编号。线上的 `index` 只拿来找是哪一块。
+4. 块照第一次出现的先后编号，从 0 数起，不认的块、服务端工具的结果块不占编号。线上的 `index` 只拿来找是哪一块。
 5. 思考的私有数据是 `{"driver":"anthropic","data":{"signature":<签名>}}`，一块一份（内核的规矩，累积器一块只收一份）：签名来了才交，来两次的只认第一次（不会发生）。断在思考里的，这一块没有签名，编码时丢掉（「编码」第 5 条）。同一个线上 `index` 的 `content_block_start` 来第二次的不理。
+6. **服务端工具**（施工 HT-5，设计 `71-供应商侧工具.md` 第四节）：这一家自己跑的 `web_search`、`web_fetch` 这类，线上是 `server_tool_use` 一块、结果一块（结果整块都在 `content_block_start` 里，没有增量），并成内核的一块供应商侧工具：
+   1. `server_tool_use` 的 `content_block_stop` 不收块：等结果。
+   2. 结果块照 `tool_use_id` 找这一次响应里开着、还没收到结果的那块（几块并行的各对各的），接着交这一块的结果（`Outcome`）、私有数据（`Private`，有才交）、收块（`End`），收了的以后的增量不理、收尾时不再收。找不到的（上一次响应里开的、编号对不上的）不理。
+   3. 结果的字（`outcome.text`，给人、给别家模型看的）：`web_search_tool_result` 的 `content` 是数组的，一条结果一行 `<title> - <url>`，没有结果的是空的字；`web_fetch_tool_result` 成了的（`content.type` 是 `web_fetch_result`）写 `<url>`、有标题的下一行 `<title>`、空一行、正文（`content.content.source` 是文本的取它的 `data`，别的不放内容，写 `(<media_type>)`）；这两种 `content.type` 以 `_error` 结尾的，`failed` 真，字是 `error_code`。别的种类、这两种认不出的形状，字是 `content` 的 JSON 原文；`content.type` 以 `_error` 结尾的 `failed` 真。前两种的字里不放 `encrypted_content`、base64 的内容。
+   4. 私有数据 `{"driver":"anthropic","data":{"use":<…>,"result":<…>}}`：`result` 是结果块（流里 `content_block` 那一格）的原文，一个字节不改；`use` 是 `server_tool_use` 起始块的每一格照原来的先后，值是原文，`input` 换成收全的参数原文（前后的空白不算；一段参数都没收到的照起始块里的 `input`，起始块也没有的写 `{}`；起始块没有 `input` 这一格的接在最后）。参数不是合法 JSON 的、整份 `data` 超过 1 MiB（`PRIVATE_BYTES`）的不交私有数据，结果照交：日志里不存几兆的网页、PDF，这一块以后照 HT-2 写成字。
+   5. 流完了还没等到结果的（被打断、`pause_turn`、和核心的工具同一批并行调用时供应商还没跑）：照常收块（出了错的照第 2 条「收尾」不收），没有结果、没有私有数据。
+   6. 正文块的 `citations`（`citations_delta`）照旧不理。
 
 **收尾**（`finish`）：
 
@@ -173,7 +183,7 @@ SSE 分帧共用 `sse.rs`（`drivers/openai-chat.md`「解码」）。一条事�
 | 没有 `stop_reason`，见到了 `message_stop` | 正常说完 |
 | 两样都没见到 | `retryable`，「流断了：没等到 stop_reason，也没等到 message_stop」 |
 
-2. 正常说完的，开始了的块照编号一块块 `End`；`stop_reason` 是 `max_tokens`、`model_context_window_exceeded` 的，收完再交一段 `Truncated`（写到了输出上限，施工 3-10，`kernel/session.md`「写到输出上限」）。出了错的不收。
+2. 正常说完的，开始了的块照编号一块块 `End`（服务端工具收到结果时已经收了的不再收，「解码」第 6 条）；`stop_reason` 是 `max_tokens`、`model_context_window_exceeded` 的，收完再交一段 `Truncated`（写到了输出上限，施工 3-10，`kernel/session.md`「写到输出上限」）。出了错的不收。
 3. 用量取记下的那一份。
 
 **用量**，归成内核的四项（`message_start` 的 `message.usage` 先记，`message_delta` 的 `usage` 里有哪项盖哪项）：
@@ -226,10 +236,12 @@ SSE 分帧共用 `sse.rs`（`drivers/openai-chat.md`「解码」）。一条事�
 | `text-files.json`、`image-names.json`、`image-descriptions.json` | 同 openai-chat 那几份，写成这一家的块 |
 | `empty-tools.json` | 工具面是空的、历史里有调用：`"tools":[]` |
 | `effort-level.json`、`effort-off.json`、`effort-on.json` | 思考强度三种写法，接在最后 |
+| `hosted-tool.json` | 没带这一家私有数据的供应商侧工具写成的字（施工 HT-2） |
+| `server-tool.json` | 流 `server-tool-search` 解出来、拼好再编回去：`server_tool_use`、`web_search_tool_result` 两块原样写回，前后的正文照旧（施工 HT-5） |
 
 探针的每一次请求编码以后的样子：`docs/designs/samples/probe/terminal/anthropic/`（模型 `claude-opus-5`，`max_tokens` 8192，没有思考强度）。
 
-**流**，样本在同一目录的 `streams/` 下，`.sse` 进去、`.txt` 解出来：`text`、`thinking-signature`、`thinking-omitted`（字是空的、只有签名）、`redacted-thinking`、`tool-use-fragments`、`usage-in-delta`、`refusal`、`max-tokens`、`stream-error`、`ping-and-unknown`、`server-tool-ignored`、`cut-off`、`cut-in-thinking`、`bad-json`、`stop-without-message-stop`。
+**流**，样本在同一目录的 `streams/` 下，`.sse` 进去、`.txt` 解出来：`text`、`thinking-signature`、`thinking-omitted`（字是空的、只有签名）、`redacted-thinking`、`tool-use-fragments`、`usage-in-delta`、`refusal`、`max-tokens`、`stream-error`、`ping-and-unknown`、`cut-off`、`cut-in-thinking`、`bad-json`、`stop-without-message-stop`；服务端工具（施工 HT-5）：`server-tool-search`（正文、参数分两段的搜索、两条结果、正文，结果块不占号）、`server-tool-empty`（没有结果）、`server-tool-search-error`（`max_uses_exceeded`）、`server-tool-fetch`（文本、PDF、出错各一次）、`server-tool-unknown`（不认识的 `x_tool_result`、它的出错）、`server-tool-parallel`（两次并行、结果倒着来）、`server-tool-no-result`（和工具调用并行、`tool_use` 收尾，没等到结果）、`server-tool-pause`（`pause_turn`）、`server-tool-cut`（流断了）、`server-tool-unmatched`（对不上 `tool_use_id` 的结果块不理）。
 
 **给模型看的几句**：没有新的。占位、文本文件、带名字的图片、替它看的图那几句照 `DriverTexts`（`drivers/openai-chat.md`「样子」）；`tool-attachments.txt`、`tool-attachments-only.txt` 这一家不用。
 
@@ -255,7 +267,9 @@ SSE 分帧共用 `sse.rs`（`drivers/openai-chat.md`「解码」）。一条事�
 | `crates/miyu-drivers/tests/anthropic_thinking.rs` | 思考块回传：带签名、只有签名、`redacted`、断了没签名的丢掉、别家的丢掉；思考强度四种写法，接在最后，没写的一个字节不加 |
 | `crates/miyu-drivers/tests/anthropic_media.rs` | 图片、PDF、媒体类型不对的占位；工具结果里的图、PDF 在 `tool_result` 里；文本文件、带名字的图片、替它看的图和 openai-chat 一样换成字；缺 blob 报错 |
 | `crates/miyu-drivers/tests/hosted_tool.rs`（施工 HT-2，三个驱动共用一份） | 供应商侧工具在它原来的位置写成那一段字，和样本 `hosted-tool.json` 一字不差；先后、转义、截在字的边界上、以前造的快照不写它（`drivers/openai-chat.md`「守着它的」） |
-| `crates/miyu-drivers/tests/anthropic_streams.rs` | 流的样本；从哪里切开喂都一样；解出来的编码回去：编号、签名原样；驱动的接口走一遍；`finished()` 在 `stop_reason` 到了以后才说是 |
+| `crates/miyu-drivers/tests/anthropic_streams.rs` | 流的样本（含服务端工具的十份）；从哪里切开喂都一样；累积器一条都不拒；解出来的编码回去：编号、签名原样；驱动的接口走一遍；`finished()` 在 `stop_reason` 到了以后才说是 |
+| `crates/miyu-drivers/tests/anthropic_hosted.rs`（施工 HT-5） | 服务端工具：私有数据是 `use`、`result` 两块原文，拼好的块带着这一家的私有数据和结果；正好到 1 MiB 的交、多一个字节的不交而结果照交；参数坏了的不交；解一遍再编一遍两块和流里的一样（样本 `server-tool.json`）；别家的、读不懂的、不是对象的、没带的写成字；稳定区的打点落在结果块上 |
+| `crates/miyu-drivers/tests/memo/`（施工 V-42） | 留着编和整份编逐字节相同：随机的供应商侧工具里有这一家能写回的私有数据 |
 | `crates/miyu-drivers/src/anthropic/models/tests.rs` | 列模型：名字和窗口、坏的跳过、回应坏了说是模型列表 |
 | `crates/miyu-drivers/src/classify/tests.rs` | 加：`exceed context limit` 算超长；这一家的错误体几类各一个例子 |
 | `crates/miyu-assemble/tests/probe.rs`、`random_logs.rs`、`tests/support` | 加 Anthropic 的脸：每个探针、每段随机日志的每一次请求编码以后去掉打点，是上一次的前缀延伸；主会话（`terminal`）的存档多 `anthropic/` |
@@ -316,7 +330,8 @@ SSE 分帧共用 `sse.rs`（`drivers/openai-chat.md`「解码」）。一条事�
 - 1 小时的缓存、空闲续命（保温）：随投放层那一步（`08-上下文投影.md` 第六节）。
 - 一张图的官方公式（`ImagePrice`）：现在照策略的固定数。图太大（5 MB、8000 像素以上）先缩：现在照发，报 400 算 `other`。
 - 1M 上下文的 beta 头：要头才给 1M 的模型（Sonnet 4.5 这类）不发头，撞一次超长以后照「用出来的」窗口算（`models.md` 第二条第 9 条）。
-- 工具参数边生成边流（`eager_input_streaming`）、服务端工具、引用（citations）、文件接口（`file_id`）、思考预算。
+- 工具参数边生成边流（`eager_input_streaming`）、引用（citations）、文件接口（`file_id`）、思考预算。
+- 服务端工具（施工 HT-5 只做了解码、带回）：Miyu 自己往请求的 `tools` 里开服务端工具的设置；`pause_turn` 续接（要内核支持「最后一条是 assistant 的请求」，现在照「收尾」算 `other`）；和核心的工具并行时的那一次搜索（下一次响应里才来的结果块对不上，不理）；`usage.server_tool_use` 的次数不另记（回复里这种块的个数就是）。没有真端点实测：带回时不带正文的 `citations`、请求的 `tools` 里没声明这件工具，照文档推断这一家收，待有 key 的人实测；不收的话整对不带回、一律写成字（改 `hosted::written_back` 一处）。
 - 接着写：见「起草时定的」第 16 条。
 - 保留思考的校验撞上以后怎么办（「要实测确认的」）：这一步照原样回传；撞上的这个会话每次请求都 400，直到尾巴被下一次压缩压掉。有官方 key 实测以后另开一步：这一种 400 去掉全部思考块重发一次（官方文档给的恢复办法）。
 
@@ -333,6 +348,17 @@ SSE 分帧共用 `sse.rs`（`drivers/openai-chat.md`「解码」）。一条事�
 | 调用的参数原文前后的空白不算：嵌进请求的是那个对象本身（`serde_json` 读原样 JSON 的读法），中间一个字节不改 | `input` 是嵌进去的 JSON，不是字符串；同样的历史出同样的字节就够了 | 原文整段照抄：前后有空白的嵌不进去 |
 | 签名来两次只认第一次（图纸原写「照最后一次」） | 累积器一块只收一份私有数据，交第二次这次响应就算出错；不会发生 | 等 `content_block_stop` 再交：打断在中间的丢了签名 |
 | `blobs_needed` 挪进 `media.rs` 共用，openai-chat 的那个转过去 | 两家一样：图片（能看图时）、每一个文件 | 各写一份 |
+
+HT-5 施工时定的（2026-11-14 施工时定，写进了正文）：
+
+| 定了什么 | 为什么 | 别的选法 |
+|---|---|---|
+| 私有数据的 `use` 照起始块的每一格原来的先后重写，值是原文，`input` 换成参数原文；`result` 逐字节照抄 | 起始块的 `input` 是空对象，参数要从增量拼，`use` 没法逐字节照抄；格一个不丢、先后不变、值原样，就是这一家落成消息的那一块 | 解成 `Value` 再写：依赖开了 `preserve_order` 与否会改先后，数字写法会变 |
+| `result` 从事件原文里取 `content_block` 那一格（`RawValue`），不经过 `Value` | 加密的内容、键的先后、数字的写法都要一个字节不改 | 存整条事件：多存一层，写回还要再拆 |
+| 线上的块多一种 `Part::Raw`（`#[serde(untagged)]`），能打点 | 写回的两块是 JSON 对象，打点照旧去掉结尾的 `}`；这一家这两种块收 `cache_control` | 不打点、往前找：稳定区正好落在它后面时少命中一段 |
+| 上限照整份 `data` 的字节数算，正好 1 MiB 的交 | 存进日志的就是它 | 只算结果块 |
+| 一段参数都没收到的，`input` 照起始块里的 | 没有参数的工具线上可能不发增量 | 当坏参数不交私有数据 |
+| 认 `_tool_result` 结尾的块还要带 `tool_use_id`，空的编号不认 | 形状不对的不当结果，照旧不理 | 只看种类 |
 
 ### 要跟着改的别的页
 

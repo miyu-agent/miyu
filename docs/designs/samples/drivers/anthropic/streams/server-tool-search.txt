@@ -1,0 +1,15 @@
+start 0 text
+text 0 "我搜一下。"
+start 1 hosted_tool web_search
+text 1 "{\"query\":"
+text 1 "\"rust 1.97\"}"
+outcome 1 "Announcing Rust 1.97.0 - https://blog.rust-lang.org/2026/07/07/Rust-1.97.0/\nRust 1.97 发布说明 - https://example.com/rust?a=1&b=2" failed=false
+private 1 anthropic {"use":{"type":"server_tool_use","id":"srvtoolu_01","name":"web_search","input":{"query":"rust 1.97"},"caller":{"type":"direct"}},"result":{"type":"web_search_tool_result","tool_use_id":"srvtoolu_01","content":[{"type":"web_search_result","title":"Announcing Rust 1.97.0","url":"https://blog.rust-lang.org/2026/07/07/Rust-1.97.0/","encrypted_content":"EqgfCioIARgBEgy3va3pzix/LafPsn4aDFIT2Xlxh0L5L8rLVyIwxtE3rAFBa8cr3qpP","page_age":"April 30, 2025"},{"type":"web_search_result","title":"Rust 1.97 发布说明","url":"https://example.com/rust?a=1&b=2","encrypted_content":"EqgfCioIARgBEgy3va3pzix/LafPsn4aDFIT2Xlxh0L5L8rLVyIwxtE3rAFBa8cr3qpP","page_age":null}]}}
+end 1
+start 2 text
+text 2 "1.97 是 7 月 7 日"
+text 2 "发布的。"
+end 0
+end 2
+usage uncached=40 cache_read=0 cache_write=0 output=60
+ok

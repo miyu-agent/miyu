@@ -17,7 +17,7 @@ use miyu_kernel::request::{Message, Request};
 use serde_json::{Value, json};
 
 /// 流的样本，一份一种情形。
-const STREAMS: [&str; 16] = [
+const STREAMS: [&str; 25] = [
     "text",
     "thinking-signature",
     "thinking-omitted",
@@ -29,7 +29,16 @@ const STREAMS: [&str; 16] = [
     "window-exceeded",
     "stream-error",
     "ping-and-unknown",
-    "server-tool-ignored",
+    "server-tool-empty",
+    "server-tool-search",
+    "server-tool-search-error",
+    "server-tool-fetch",
+    "server-tool-unknown",
+    "server-tool-parallel",
+    "server-tool-no-result",
+    "server-tool-pause",
+    "server-tool-cut",
+    "server-tool-unmatched",
     "cut-off",
     "cut-in-thinking",
     "bad-json",

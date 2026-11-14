@@ -1,7 +1,7 @@
 //! 线上的写法：Anthropic 消息接口的 JSON（`docs/blueprint/drivers/anthropic.md`「怎么走：编码」）。
 //!
 //! 全用结构体，字段照声明的先后写出去，不经过 `serde_json::Value` 的映射：依赖里哪个 crate 打开了 serde_json 的
-//! `preserve_order`，键的先后也不会变。参数格式、调用的参数原文原样照抄。打点不在这里：编码时接在一块的后面（`anthropic.rs`）。
+//! `preserve_order`，键的先后也不会变。参数格式、调用的参数原文、服务端工具带回的两块原样照抄。打点不在这里：编码时接在一块的后面（`anthropic.rs`）。
 
 use miyu_kernel::block::Block;
 use miyu_kernel::raw::RawJson;
@@ -72,6 +72,10 @@ pub(super) enum Part {
         #[serde(skip_serializing_if = "Option::is_none")]
         is_error: Option<bool>,
     },
+    /// 一块原文，一个字节不改地写出去：服务端工具带回的 `server_tool_use`、`*_tool_result`（施工 HT-5）。一定是一个
+    /// JSON 对象（打点要去掉它结尾的 `}`）。
+    #[serde(untagged)]
+    Raw(Box<RawValue>),
 }
 
 impl Part {

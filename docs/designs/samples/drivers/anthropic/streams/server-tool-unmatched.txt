@@ -1,0 +1,8 @@
+start 0 hosted_tool web_search
+text 0 "{\"query\":\"u\"}"
+start 1 text
+text 1 "接着说。"
+end 0
+end 1
+usage uncached=40 cache_read=0 cache_write=0 output=60
+ok

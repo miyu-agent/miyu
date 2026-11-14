@@ -1539,6 +1539,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sHT2"><span class="n">HT-2</span>供应商侧工具进请求<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLO1"><span class="n">LO-1</span>光打 /loop 开自主循环<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQT1"><span class="n">QT-1</span>场所消息带被引用的内容<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sHT5"><span class="n">HT-5</span>Anthropic 驱动的服务端工具<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -59579,6 +59580,59 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/QT-1-场所消息带引用的内容.md</code>；蓝图 <code>venues.md</code>、<code>kernel/request.md</code>、<code>kernel/events-bodies.md</code>；协议参考 <code>venues.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sHT5" aria-labelledby="h-sHT5">
+  <div class="sheet-head"><h2 id="h-sHT5"><span class="no">HT-5</span>Anthropic 驱动的服务端工具</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">Anthropic 接口那边跑的搜索、抓网页，驱动原来整块不理：日志里没有、界面上看不见，下一次请求也不带。这一步驱动把它交给内核，下一次发给这一家时照原样带回。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">Anthropic 驱动的服务端工具</span><span class="dir-note">HT-5</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>server_tool_use</code> 开一块供应商侧工具，参数照工具调用收；随后的 <code>*_tool_result</code> 照 <code>tool_use_id</code> 并进同一块，不占块编号</li>
+              <li>给人、给别家模型看的结果：搜索一条一行「标题 - 网址」，抓取是网址、标题、正文，出错的是错误码；加密的内容、PDF 的 base64 不进字</li>
+              <li>私有数据存两块的线上原文（1 MiB 以内）；带着它的，下一次请求在原来的位置照原样写回两块</li>
+              <li>没带私有数据的、别家的照 HT-2 写成一段字；没等到结果的（打断、暂停）照常收块</li>
+              <li>不管怎么开服务端工具；暂停后的续接、引用没做</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">结果块一个字节不改地写回：里面加密的内容改了、缺了这一家报 400</span><span class="rl">Anthropic 文档，施工 HT-5</span></div>
+          <div class="tile new"><span class="nm">日志里一块的原文不超过 1 MiB，超过的以后写成字</span><span class="rl">施工 HT-5</span></div>
+          <div class="tile new"><span class="nm">暂停（pause_turn）照旧当出错：续接要内核支持最后一条是助手消息的请求</span><span class="rl">施工 HT-5</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">HT-5</dd></div>
+        <div><dt>名称</dt><dd>Anthropic 驱动的服务端工具</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">HT-5</dd></div>
+        <div><dt>验收</dt><dd>照官方文档的流造的 9 份样本解出来对；解一遍再编一遍，结果块和流里的逐字节相同；没有服务端工具的流和请求一个字节没变</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>手搓变异 15 个全红</span></li>
+        <li><span class="ok">✓</span><span>门禁全过，分支三平台 CI 全绿</span></li>
+        <li><span class="ok">✓</span><span>没有真端点实测：带回时不带引用、请求里没声明这件工具收不收，照文档推断</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/HT-5-Anthropic服务端工具.md</code>；<code>crates/miyu-drivers/src/anthropic/hosted.rs</code>、<code>decode.rs</code>、<code>messages.rs</code>、<code>wire.rs</code>。</li>
       </ul>
     </div>
   </div>

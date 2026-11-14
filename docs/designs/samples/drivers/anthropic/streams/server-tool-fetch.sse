@@ -1,0 +1,63 @@
+event: message_start
+data: {"type":"message_start","message":{"id":"msg_23","type":"message","role":"assistant","model":"claude-opus-5","content":[],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":40,"output_tokens":1}}}
+
+event: content_block_start
+data: {"type":"content_block_start","index":0,"content_block":{"type":"server_tool_use","id":"srvtoolu_f1","name":"web_fetch","input":{}}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{\"url\":\"https://example.com/article\"}"}}
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":0}
+
+event: content_block_start
+data: {"type":"content_block_start","index":1,"content_block":{"type":"web_fetch_tool_result","tool_use_id":"srvtoolu_f1","content":{"type":"web_fetch_result","url":"https://example.com/article","content":{"type":"document","source":{"type":"text","media_type":"text/plain","data":"Full text content of the article...\nSecond line."},"title":"Article Title","citations":{"enabled":true}},"retrieved_at":"2025-08-25T10:30:00Z"}}}
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":1}
+
+event: content_block_start
+data: {"type":"content_block_start","index":2,"content_block":{"type":"server_tool_use","id":"srvtoolu_f2","name":"web_fetch","input":{}}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"input_json_delta","partial_json":"{\"url\":\"https://example.com/paper.pdf\"}"}}
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":2}
+
+event: content_block_start
+data: {"type":"content_block_start","index":3,"content_block":{"type":"web_fetch_tool_result","tool_use_id":"srvtoolu_f2","content":{"type":"web_fetch_result","url":"https://example.com/paper.pdf","content":{"type":"document","source":{"type":"base64","media_type":"application/pdf","data":"JVBERi0xLjQKJcOkw7zDtsOfCjIgMCBvYmoKPDwvTGVuZ3RoIDMgMCBSL0ZpbHRlci9GbGF0ZURlY29kZT4+"},"citations":{"enabled":true}},"retrieved_at":"2025-08-25T10:30:02Z"}}}
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":3}
+
+event: content_block_start
+data: {"type":"content_block_start","index":4,"content_block":{"type":"server_tool_use","id":"srvtoolu_f3","name":"web_fetch","input":{}}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":4,"delta":{"type":"input_json_delta","partial_json":"{\"url\":\"https://example.com/private\"}"}}
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":4}
+
+event: content_block_start
+data: {"type":"content_block_start","index":5,"content_block":{"type":"web_fetch_tool_result","tool_use_id":"srvtoolu_f3","content":{"type":"web_fetch_tool_result_error","error_code":"url_not_accessible"}}}
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":5}
+
+event: content_block_start
+data: {"type":"content_block_start","index":6,"content_block":{"type":"text","text":""}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":6,"delta":{"type":"text_delta","text":"读到了两份。"}}
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":6}
+
+event: message_delta
+data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":60,"server_tool_use":{"web_search_requests":1}}}
+
+event: message_stop
+data: {"type":"message_stop"}
+
