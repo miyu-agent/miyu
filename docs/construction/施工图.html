@@ -1533,6 +1533,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sLF8a"><span class="n">LF-8 上</span>人格的协议认推演方法<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF5c"><span class="n">LF-5 下</span>核心命令 /life<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF9"><span class="n">LF-9</span>推演人生定稿<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sVW1"><span class="n">VW-1</span>主人只读地看场所会话<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -59253,6 +59254,59 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LF-9-定稿.md</code>；设计 <code>70-推演人生.md</code>；登记簿 <code>26-提示词.md</code> 第十节；蓝图 <code>prompts.md</code>。实测报告在本机，不进仓库。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sVW1" aria-labelledby="h-sVW1">
+  <div class="sheet-head"><h2 id="h-sVW1"><span class="no">VW-1</span>主人只读地看场所会话</h2><span class="pill done">做完</span></div>
+  <p class="purpose">主人在 im 网页点「查看会话」打开群、陌生人私聊的场所会话，核心回「会话不存在」：第 4 道对关着的场所会话一律拒，读的也拒。项目主人定过场所会话只读、查看会话只看不发，这一步让主人这边的连接只读地看得到，写的照旧拒。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint · sessions/peek.rs、connection/checks.rs、attach/reach.rs、shown.rs</span><span class="dir-note">VW-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>只读方法的白名单 <code>READS</code>，默认拒：订阅、退订、<code>view.page</code>、<code>view.detail</code>、问话、工具、上下文、用量、后台输出、<code>blob.get</code>、<code>session.shown</code></li>
+              <li>判法 <code>peeks</code>：人的头（没有包）、方法在表里 → 关着的场所会话也看得到</li>
+              <li>第 4 道、<code>blob.get</code>、<code>session.shown</code> 共用它；拒的说法照旧</li>
+              <li>发话、重做、换配置、<code>set_*</code>、打断、删 → 照旧 <code>session_not_found</code></li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">白名单，不是黑名单</span><span class="rl">新方法没归类就拒</span></div>
+          <div class="tile new"><span class="nm">reaches 不动</span><span class="rl">定时任务、HK-2 照旧</span></div>
+          <div class="tile new"><span class="nm">桥、扩展不变</span><span class="rl">只认没有包的连接</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">VW-1</dd></div>
+        <div><dt>名称</dt><dd>主人只读地看场所会话</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">VW-1</dd></div>
+        <div><dt>验收</dt><dd>改前红三条；门禁、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>人的头订得到关着的群会话（连补发）、读得到页、带会话取得到图</span></li>
+        <li><span class="ok">✓</span><span>发话、重做、换配置回 <code>session_not_found</code>，群会话日志一条不多</span></li>
+        <li><span class="ok">✓</span><span>接 QQ 的桥对主人在别的平台上的会话，读的也碰不到</span></li>
+        <li><span class="ok">✓</span><span>协议方法表逐个调：白名单外的一律 <code>session_not_found</code></span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/VW-1-主人只读看场所会话.md</code>；蓝图 <code>protocol.md</code>「关着的场所会话只给桥」、<code>venues.md</code>「不在本机的头上」；协议参考 <code>venues.md</code>「主人看场所会话」、<code>sessions.md</code>、<code>blob.md</code>（中英）。</li>
       </ul>
     </div>
   </div>

@@ -5,9 +5,11 @@
 //! 3. 扩展照它声明的能力挡（施工 X-30，`rights.rs`）：只对核心拉起的扩展。
 //! 4. 会话只给碰得到它的（施工 Y-2 上；SU-4 中起照场所认）：参数里写了 `session` 的，碰不到就当没有这个会话
 //!    （`session_not_found`，看不到的不露）。本机的会话给主人这边的连接，平台桥碰不到；场所会话只给接这个平台的桥（2026-10-23
-//!    项目主人定场所会话只读、不从头上交互），主人本人的私聊（没关起来的）另外主人这边的连接也碰得到。`blob.get` 不走这一道：它照
-//!    会话找 blob 有自己更细的一套（`attach/reach.rs`），而且拒的一律 `unknown_blob`，免得拿「会话不存在」和「不是你的」的不同
-//!    说法探编号。`session.shown` 同样不走（施工 SW-1）：照同一套判，拒的一律 `unknown_shown`。
+//!    项目主人定场所会话只读、不从头上交互），主人本人的私聊（没关起来的）另外主人这边的连接也碰得到。主人这边的连接（人的头，
+//!    没有包）对关着的场所会话只读地看（施工 VW-1，2026-11-12 项目主人定「查看会话只看不发」）：订阅、读页、历史这些只读的
+//!    方法放行，表在 `sessions/peek.rs`，默认拒；发话、重做、配置、打断、删这些写的照旧 `session_not_found`。`blob.get` 不走这一道：
+//!    它照会话找 blob 有自己更细的一套（`attach/reach.rs`，只读看照同一张表），而且拒的一律 `unknown_blob`，免得拿「会话不存在」和
+//!    「不是你的」的不同说法探编号。`session.shown` 同样不走（施工 SW-1）：照同一套判，拒的一律 `unknown_shown`。
 
 use std::sync::Arc;
 
@@ -45,9 +47,11 @@ pub(super) async fn refuse(core: &Arc<Core>, who: &Who<'_>, request: &Request) -
     others_session(core, who.caller, request).await
 }
 
-/// 第 4 道：参数里的 `session` 是碰不到的会话。没写、写法不对、没有这个会话的不在这里拒：方法照它原来的说法答。
+/// 第 4 道：参数里的 `session` 是碰不到的会话，人的头只读看的放行（施工 VW-1）。没写、写法不对、没有这个会话的不在这里拒：方法照它原来的说法答。
 async fn others_session(core: &Arc<Core>, caller: &Caller, request: &Request) -> Option<Refusal> {
-    if matches!(request.method.as_str(), "blob.get" | "session.shown") {
+    if matches!(request.method.as_str(), "blob.get" | "session.shown")
+        || crate::sessions::peeks(caller, &request.method)
+    {
         return None;
     }
     let id = request.params.get("session")?.as_str()?;

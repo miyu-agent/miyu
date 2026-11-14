@@ -16,6 +16,12 @@
 
 **谁能调**：`venue.sessions`、`venue.binding`、`venue.plugins` 和关进沙盒的 `venue.session`（群、陌生人的私聊）只给平台桥（核心拉起的、清单写了 `[connection] platform`、批了 `act_for_external` 的扩展），别的回 `needs_approval`（`data.capabilities` 是 `["act_for_external"]`）。主人本人的私聊主人这边的连接也开得了。桥只碰得到它接的平台的场所会话（场所编号的平台前缀）。代表平台上的人说话（带 `as` 的 `session.send`、`command.run`）、`session.note`、`venue.*`、记 `venue.*` 事件都要能力 `act_for_external`。
 
+**主人看场所会话**（施工 VW-1）：关在沙盒里的场所会话（群、陌生人的私聊）只有接这个平台的桥能往里说话、改它、删它；主人这边的连接（人的头）只读地看得到它，读的方法照常，写的回 `session_not_found`，同没有这个会话：
+
+- 读的：`subscribe`、`unsubscribe`（`events`、`view` 流，`after` 补发照常）、`view.page`、`view.detail`、`session.prompts`、`session.tools`、`session.context`、`session.usage_parts`、`job.output`、带 `session` 的 `blob.get`、`session.shown`。
+- 别的带 `session` 的一律 `session_not_found`：说话、`command.run`、重做、撤销、打断、压缩、清空、换配置、`set_*`、分叉、改标题、删这些。
+- 扩展、平台桥不受这一条影响：桥照旧只碰得到它的平台的场所会话，读的也一样。
+
 **场所编号**：桥自己定的短名字（1 到 128 字节，没有控制字符），例如 `qq:private:10001`、`qq:group:123456`。核心不解读，只认第一个 `:` 前面的平台前缀。
 
 **主人对应表**：系统配置 `[external.bindings]`，写了的平台身份就是主人（只有一个主人，值写什么都算，空的不算；施工 SU-3 下起 `external.me` 并进来了）：

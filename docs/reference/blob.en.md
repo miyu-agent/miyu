@@ -104,7 +104,7 @@ Read part of a blob.
 
 **Who can call**: people and extensions, with different reach:
 
-- **People**: without `session`, any blob; with it, the session must be local or your own private chat (confined group chats and strangers' private chats are out of reach, as the sessions themselves are).
+- **People**: without `session`, any blob; with it, the session can be local, your own private chat, or a confined group chat or stranger's private chat (those are read-only for you, as the sessions themselves are; see "The owner viewing venue sessions" in [Venues](venues.en.md)).
 - **Extensions, without `session`**: only blobs it stored itself (`blob.put`, chunked upload), and hashes in responses it got back from calling another package (`bus.call`) that the answering package can read itself. What it stored itself stays readable after the core restarts; what it got back from another package lasts only until the core restarts, so get it again after that. Removing and reinstalling the package starts over.
 - **Extensions, with `session`**: the session must be one it can see, and the blob must be referenced in that session (images and files in messages and tool results, images she sent); a hash merely written in some text doesn't count.
 
@@ -139,7 +139,7 @@ Files she shows with `show` aren't stored as blobs: the core only records the fi
 - **Local heads** (the hello response has `host`): read `shown.path` straight from disk; you don't need this method.
 - **Remote heads** (on the LAN, through the web app): they can't reach that computer's disk, so read through this method by "session + the step's call id", in chunks. Stream video and audio as they play: when seeking, compute `offset` and `length` for the part you need (like HTTP Range). Preview only the start of a very large text. The core doesn't cut anything for you; you decide how much to fetch.
 
-**Who can call**: people and extensions, with the same reach as `blob.get` with `session`: people reach local sessions and your own private chat; extensions need a session they can see.
+**Who can call**: people and extensions, with the same reach as `blob.get` with `session`: people reach local sessions, your own private chat and confined venue sessions; extensions need a session they can see.
 
 **Params**
 

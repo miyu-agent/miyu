@@ -88,9 +88,15 @@ async fn audit_a_head_cannot_schedule_into_a_confined_group() {
         .to_string();
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
-    // 同一道检查：头订阅关着的群会话是 `session_not_found`。
-    let seen = client.subscribe("g1", &session).await;
-    assert_eq!(reason(&seen), Some("session_not_found"), "{seen}");
+    // 同一道检查：头对关着的群会话说话是 `session_not_found`（施工 VW-1 起订阅、读页这些只读的放行，写的照旧拒）。
+    let said = client
+        .call(
+            "g1",
+            "session.send",
+            json!({"session": session, "text": "在吗"}),
+        )
+        .await;
+    assert_eq!(reason(&said), Some("session_not_found"), "{said}");
     let added = client
         .call(
             "a1",

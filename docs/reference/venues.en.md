@@ -16,6 +16,12 @@ A venue is where a session happens: this machine (`local`), or a private chat or
 
 **Who can call**: `venue.sessions`, `venue.binding`, `venue.plugins` and a confined `venue.session` (groups, strangers' private chats) are for platform bridges (extensions started by the core whose manifest has `[connection] platform` and that were granted `act_for_external`); others get `needs_approval` (`data.capabilities` is `["act_for_external"]`). The owner's own private chat can also be opened from the owner's connections. A bridge reaches only the venue sessions of its own platforms (by the venue id's platform prefix). Speaking for people on a platform (`session.send` and `command.run` with `as`), `session.note`, `venue.*` and recording `venue.*` events all require the `act_for_external` capability.
 
+**The owner viewing venue sessions** (step VW-1): only the bridge for that platform can speak into, change or delete a confined venue session (a group, a stranger's private chat). The owner's connections (people's heads) can view it read-only: reading methods work, writing ones return `session_not_found`, as if there were no such session:
+
+- Reading: `subscribe`, `unsubscribe` (the `events` and `view` streams, catching up with `after` as usual), `view.page`, `view.detail`, `session.prompts`, `session.tools`, `session.context`, `session.usage_parts`, `job.output`, `blob.get` with `session`, `session.shown`.
+- Every other method with a `session` returns `session_not_found`: sending, `command.run`, redo, revert, interrupt, compact, clear, configure, `set_*`, fork, retitle, delete and so on.
+- Extensions and platform bridges aren't affected: a bridge still reaches only the venue sessions of its own platforms, for reading too.
+
 **Venue ids**: short names the bridge chooses (1 to 128 bytes, no control characters), e.g. `qq:private:10001`, `qq:group:123456`. The core doesn't interpret them beyond the platform prefix before the first `:`.
 
 **Owner bindings**: the system setting `[external.bindings]`: every platform identity written there is the owner (there is only one owner, so any value counts; an empty one doesn't; since SU-3 the old `external.me` is folded in here):

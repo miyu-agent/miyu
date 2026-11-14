@@ -1,6 +1,6 @@
 //! `blob.get` 带 `session`（施工 W-6 补，`protocol.md` 的 `blob.get` 第 1 条）：照那个会话找。桥（接 QQ 的扩展）读得到群会话里
 //! 和主人私聊里引用过的 blob；只在正文里写着哈希的、没引用过的读不到，回
-//! `unknown_blob`。人的连接读不到群里的；会话编号不合写法的 `bad_params`。
+//! `unknown_blob`。人的连接只读地读得到群里的（施工 VW-1）；会话编号不合写法的 `bad_params`。
 
 use std::path::Path;
 use std::sync::Arc;
@@ -21,7 +21,12 @@ use crate::support::*;
 
 /// 照对应表、读好的清单起来的核心，拉起开着的扩展（同 `bridge_venues.rs`）。
 pub(crate) fn served_core(home: &Home, script: &Script) -> Arc<Core> {
-    home.write("etc/config.toml", BINDINGS);
+    served_core_bound(home, script, BINDINGS)
+}
+
+/// 同 [`served_core`]，对应表照 `bindings` 写（施工 VW-1：另一个平台上也认得出主人）。
+pub(crate) fn served_core_bound(home: &Home, script: &Script, bindings: &str) -> Arc<Core> {
+    home.write("etc/config.toml", bindings);
     let items = [
         miyu_endpoint::settings::UiSettings::ITEMS,
         miyu_endpoint::settings::PersonaSettings::ITEMS,
@@ -218,12 +223,12 @@ async fn the_bridge_reads_blobs_its_sessions_refer_to_and_nothing_else() {
     );
     assert_eq!(got(&read[9]), Err("bad_params".to_string()), "哈希不合写法");
 
-    // 人的连接读不到群里的（施工 Y-2 上：场所会话只在平台的后台看，人的头碰不到）；不合写法的
+    // 人的连接只读地读得到群里的（施工 VW-1：主人这边的连接看得到场所会话，说不了话）；不合写法的
     // 会话编号 `bad_params`。
     let reply = client
         .call("g1", "blob.get", json!({"blob": g, "session": group}))
         .await;
-    assert_eq!(got(&reply), Err("unknown_blob".to_string()), "{reply}");
+    assert_eq!(got(&reply), Ok(group_pic.to_vec()), "{reply}");
     let reply = client
         .call("g2", "blob.get", json!({"blob": g, "session": "nope"}))
         .await;

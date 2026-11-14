@@ -37,6 +37,7 @@ mod held;
 mod idle;
 mod opening;
 mod orphans;
+mod peek;
 mod places;
 pub(crate) mod prefix;
 mod pressure;
@@ -45,6 +46,7 @@ pub(crate) mod state;
 
 pub(crate) use confined::{confined_of, placed, reachable, reaches};
 pub(crate) use opening::Opening;
+pub(crate) use peek::peeks;
 pub(crate) use places::{Picked, check_dirs, opening_cwd, pick, roots, to_default, wide};
 pub(crate) use setup::Setup;
 #[cfg(test)]

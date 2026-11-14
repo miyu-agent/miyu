@@ -1,7 +1,7 @@
 //! `blob.get` 带 `session`（施工 W-6 补，`protocol.md` 的 `blob.get` 第 1 条）：照那个会话引用过的找 blob。
 //!
 //! 谁读得到（施工 SU-4 中起照场所认，同 `connection/checks.rs` 的第 4 道；[`reachable`]，`session.shown` 共用，施工 SW-1）：
-//! 本机的会话、主人本人的私聊（没关起来的），主人这边的人的连接随便读；扩展的连接（施工 W-6 三补）要的 blob 还得是那个会话引用过的；
+//! 本机的会话、主人本人的私聊（没关起来的），主人这边的人的连接随便读，关着的场所会话人的连接也只读地读得到（施工 VW-1）；扩展的连接（施工 W-6 三补）要的 blob 还得是那个会话引用过的；
 //! 平台桥只读得到它的平台的场所会话里引用过的 blob：消息、工具结果的图片块、文件块，她经工具发出去的图（`tool.result.sent`，
 //! 施工 W-6 再补：接入QQ 发表情包要读主人私聊里的）（[`references`]）。展示的文件施工 SW-1 起不存 blob，不在里面。
 //! 只认结构里的引用，不在原文里搜：桥能以外部身份往主人的私聊里发字，照原文搜它就能写一句带着哈希的话、读走主人别的 blob。不合的一律 `unknown_blob`，不说是哪一样不对：免得拿它探某个 blob 在不在。
@@ -24,7 +24,7 @@ pub(super) async fn check(
     hash: &ContentHash,
 ) -> Result<(), Refusal> {
     let id = SessionId::parse(session).map_err(|_| Refusal::BAD_PARAMS)?;
-    if !reachable(core, caller, &id).await {
+    if !reachable(core, caller, &id, "blob.get").await {
         return Err(Refusal::UNKNOWN_BLOB);
     }
     if !extension {
@@ -46,9 +46,10 @@ pub(super) async fn check(
     .await
 }
 
-/// 会话 `id` 这个连接（`caller`，平台桥照它的包认）读不读得到（施工 SW-1 从 [`check`] 拆出来，`session.shown` 共用）：会话要在；
-/// 平台桥只读得到它的平台的场所会话，别的连接读得到本机会话和没关起来的场所会话（主人本人的私聊）。
-pub(crate) async fn reachable(core: &Core, caller: &Caller, id: &SessionId) -> bool {
+/// 会话 `id` 这个连接（`caller`，平台桥照它的包认）调 `method` 时读不读得到（施工 SW-1 从 [`check`] 拆出来，`session.shown`
+/// 共用）：会话要在；平台桥只读得到它的平台的场所会话，别的连接读得到本机会话和没关起来的场所会话（主人本人的私聊）；人的头
+/// 另外只读地看得到关着的场所会话（施工 VW-1，[`crate::sessions::peeks`]）。
+pub(crate) async fn reachable(core: &Core, caller: &Caller, id: &SessionId, method: &str) -> bool {
     if !core.sessions.exists(core, id).await {
         return false;
     }
@@ -57,7 +58,7 @@ pub(crate) async fn reachable(core: &Core, caller: &Caller, id: &SessionId) -> b
     };
     match crate::venues::bridge(core, caller) {
         Some(bridge) => bridge.platforms(core).holds(venue.as_str()),
-        None => venue.as_str() == LOCAL || !confined,
+        None => venue.as_str() == LOCAL || !confined || crate::sessions::peeks(caller, method),
     }
 }
 

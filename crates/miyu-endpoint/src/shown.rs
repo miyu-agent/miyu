@@ -61,7 +61,7 @@ pub(crate) async fn read(core: &Core, caller: &Caller, params: Params) -> Result
     }
     let session = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
     let call = CallId::parse(&params.call).map_err(|_| Refusal::BAD_PARAMS)?;
-    if !crate::attach::reachable(core, caller, &session).await {
+    if !crate::attach::reachable(core, caller, &session, "session.shown").await {
         return Err(Refusal::UNKNOWN_SHOWN);
     }
     let dir = core.root.session_dir(&session);

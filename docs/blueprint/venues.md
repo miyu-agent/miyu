@@ -20,6 +20,7 @@
 | `crates/miyu-kernel/src/origin.rs` | `Person` 多 `via`（私聊里经哪个平台身份认出来的本人）；`External` 多 `owner`（对应表认出是主人的才写 `true`）、`role`（桥报的场所里的身份） |
 | `crates/miyu-store/src/index.rs`、`index/row.rs` | 索引一行多 `venue`，版本 3 |
 | `crates/miyu-endpoint/src/venues.rs` | `venue.session`：照场所加关不关找回或者造；`as` 怎么认、记成谁（照对应表和会话关不关）；`venue.binding`：问一个平台身份是不是主人（施工 O-31 前） |
+| `crates/miyu-endpoint/src/sessions/peek.rs`、`crates/miyu-endpoint/tests/owner_views_venue.rs`（施工 VW-1） | 主人只读地看关着的场所会话：只读方法的白名单 `READS`、判法 `peeks`（第 4 道、`blob.get`、`session.shown` 共用）；人的头订阅、读页、取图成，发话、重做、换配置 `session_not_found`，接别的平台的桥读的也碰不到；协议方法表里表外的逐个拒 |
 | `crates/miyu-endpoint/src/venues/sessions.rs`（施工 O-32 前） | `venue.sessions`：列出桥接的平台的场所会话，每个场所一个 |
 | `crates/miyu-endpoint/src/venues/plugins.rs`（施工 O-60） | `venue.plugins`：桥说一个场所开着哪些场所插件，整份替换，只管自己平台的场所 |
 | `crates/miyu-session/src/plugins.rs`（施工 O-60） | `VenuePlugins`：每个场所开着的场所插件（内存里），工具面、快照怎么照它筛，回合里调到刚关掉的怎么判 |
@@ -186,7 +187,7 @@
 2. 谁能用：私聊里对应表认出的本人、群里对应表里有的外部身份（带 `owner` 的）、`role` 是 `manager` 的；别人 `command_not_allowed`。本机的会话本来就是本人。`/workspace` 动的是沙盒能写的地方，只有本人（私聊里认出的、群里带 `owner` 的）能用，管理的人 `owner_only`。
 3. 执行了的记一条 `command.ran`（原文、正名），聊天记录看得到谁在什么时候清过、停过；被拒的什么都不记。命令编号照 `session.send` 的拼法，同一个只生效一次。
 
-**不在本机的头上**：`session.list`、`subscribe` 的 `sessions`、推送 `sessions.changed`、她的 `sessions` 工具、`history` 读别的会话，都跳过场所不是本机的会话（场所是 `local` 的才算本机的）。施工 Y-2 上起（2026-10-23 项目主人定：场所会话只读、不从头上交互，看、删放在平台自己的后台）拿编号也碰不到：带 `session` 的方法办之前统一查碰不碰得到（`protocol.md`「关着的场所会话只给桥」），关在沙盒里的场所会话（群、陌生人的私聊），人的头订阅、发话、删都回 `session_not_found`，只有接这个平台的桥碰得到；主人本人的私聊不关，头和桥都碰得到（`connection/checks.rs`）。删场所会话归桥（`session.delete` 对扩展要 `sessions.drive`），平台的后台照它给主人删。
+**不在本机的头上**：`session.list`、`subscribe` 的 `sessions`、推送 `sessions.changed`、她的 `sessions` 工具、`history` 读别的会话，都跳过场所不是本机的会话（场所是 `local` 的才算本机的）。施工 Y-2 上起（2026-10-23 项目主人定：场所会话只读、不从头上交互，看、删放在平台自己的后台）拿编号也碰不到：带 `session` 的方法办之前统一查碰不碰得到（`protocol.md`「关着的场所会话只给桥」），关在沙盒里的场所会话（群、陌生人的私聊），人的头发话、重做、换配置、删都回 `session_not_found`，只有接这个平台的桥碰得到；施工 VW-1 起（2026-11-12 项目主人定「查看会话只看不发」）人的头只读地看得到：订阅（连补发）、读页、问话跳转、取图这些只读的方法放行（表在 `sessions/peek.rs`，默认拒，`protocol.md`「关着的场所会话只给桥」）；主人本人的私聊不关，头和桥都碰得到（`connection/checks.rs`）。删场所会话归桥（`session.delete` 对扩展要 `sessions.drive`），平台的后台照它给主人删。
 
 ### 起草时定的
 
