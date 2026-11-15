@@ -12,8 +12,8 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use miyu_kernel::event::{JobReason, JobReported};
-use miyu_kernel::id::{CommandId, JobId};
-use miyu_kernel::origin::By;
+use miyu_kernel::id::{CallId, CommandId, JobId};
+use miyu_kernel::origin::{By, Tool};
 use miyu_store::jobs::{create_output, output_path};
 use miyu_tool::{Asking, Background, Exit, JobError, JobPort, Listed, Output as Read, Process};
 
@@ -32,6 +32,8 @@ const DRAIN: Duration = Duration::from_millis(500);
 /// 一次调用的任务端口：它起的命令自己退出了，照 `by`、`cause` 报；她用它停掉的，也照这两样报（施工 7-4）。
 pub(super) struct Port {
     shared: Arc<Shared>,
+    /// 起命令的那次调用：它的结果落盘以前，命令交来的扣下（施工 RB-1）。
+    call: CallId,
     by: By,
     cause: Option<CommandId>,
     limits: JobLimits,
@@ -40,13 +42,14 @@ pub(super) struct Port {
 impl Port {
     pub(super) fn new(
         shared: Arc<Shared>,
-        by: By,
+        call: CallId,
         cause: Option<CommandId>,
         limits: JobLimits,
     ) -> Port {
         Port {
             shared,
-            by,
+            call,
+            by: By::Tool(Tool { call_id: call }),
             cause,
             limits,
         }
@@ -93,6 +96,8 @@ impl JobPort for Port {
                     reported: false,
                 },
             );
+            // 拿着表的锁记：等它的线程起来以前就记下了是哪次调用起的（施工 RB-1）。
+            shared.gate().started(job.clone(), self.call);
         }
         // 三个线程都带着派活时的 span：它们发的行也有会话编号。
         let span = tracing::Span::current();

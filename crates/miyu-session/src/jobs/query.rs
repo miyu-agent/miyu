@@ -120,7 +120,7 @@ impl Shared {
     /// 停好的后台命令交给 actor 记下。actor 已经停了的送不进去：没人会落它的盘了，从表里拿掉。
     pub(super) fn back(&self, ended: Ended) {
         let key = ended.key.clone();
-        if self.backs.send(Back::Job(ended)).is_err() {
+        if !self.send(&key.1, Back::Job(ended)) {
             self.table.lock().remove(&key);
         }
     }

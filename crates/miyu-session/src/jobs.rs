@@ -11,6 +11,7 @@
 //!   都管（`query.rs`、`stop.rs`）；头经协议读后台命令的输出（施工 7-4 补），读的和 `jobs` 是同一份。
 
 mod batch;
+mod gate;
 mod limits;
 mod output;
 mod peek;
@@ -31,7 +32,7 @@ use tokio::sync::{mpsc, watch};
 
 use miyu_kernel::event::{Body, Event, JobLines, JobReason, JobReported};
 use miyu_kernel::id::{CallId, CommandId, JobId};
-use miyu_kernel::origin::{By, Tool};
+use miyu_kernel::origin::By;
 use miyu_kernel::session::Input;
 use miyu_kernel::time::Timestamp;
 use miyu_store::blob::Blobs;
@@ -42,6 +43,7 @@ use crate::blocking::blocking;
 use crate::job_ids::JobIds;
 use crate::lines::millis;
 use crate::port::Back;
+use gate::Gate;
 pub(crate) use limits::JobLimits;
 use output::Output;
 pub use peek::{Peek, peek};
@@ -130,6 +132,8 @@ struct Shared {
     changes: Arc<watch::Sender<u64>>,
     /// 监视的命令攒批的截法（施工 MN-1 上）：快照里的那一行省略，最多 4000 个字。
     cut: miyu_kernel::session::Reports,
+    /// 起它的那次调用的结果落盘以前到的先扣下（施工 RB-1，`gate.rs`）。和表的锁一起拿时先拿表的。
+    gate: Mutex<Gate>,
 }
 
 /// 一条后台命令结束了，交回 actor 的：`job.reported` 的 `by`、`cause`、`body`（`kernel/session.md`「回报」第 2 条）。
@@ -177,19 +181,33 @@ impl SessionJobs {
                 agents,
                 changes: Arc::new(watch::Sender::new(0)),
                 cut,
+                gate: Mutex::new(Gate::default()),
             }),
             landing: Vec::new(),
         }
     }
 
     /// 落了盘的一批：派出去的任务、回报记进 [`Roster`]（施工 7-4）。有后台命令的回报的，叫一声（施工 V-6 上）：等着读它
-    /// 输出的头醒来看见它不在跑了。
+    /// 输出的头醒来看见它不在跑了。记到 `tool.result` 的，那次调用起的命令交来的、扣着的照到的先后交回收件箱（施工 RB-1，
+    /// `gate.rs`）：这时内核已经记下了它的 `job.started`。
     pub(crate) fn note(&self, events: &[Event]) {
         let mut roster = self.shared.roster();
         for event in events {
             roster.note(event);
         }
         drop(roster);
+        for event in events {
+            if let Body::ToolResult(result) = &event.body {
+                let released = self.shared.gate().landed(result.call_id);
+                for back in released {
+                    #[expect(
+                        clippy::let_underscore_must_use,
+                        reason = "actor 正在落这一批盘，收件箱一定还开着"
+                    )]
+                    let _ = self.shared.backs.send(back);
+                }
+            }
+        }
         if events
             .iter()
             .any(|event| matches!(event.body, Body::JobReported(_)))
@@ -211,12 +229,9 @@ impl SessionJobs {
         cause: Option<CommandId>,
         limits: JobLimits,
     ) -> Arc<dyn JobPort> {
-        Arc::new(Port::new(
-            Arc::clone(&self.shared),
-            By::Tool(Tool { call_id }),
-            cause,
-            limits,
-        ))
+        // 它的结果落盘以前，它起的命令交来的都扣下（施工 RB-1）。
+        self.shared.gate().opened(call_id);
+        Arc::new(Port::new(Arc::clone(&self.shared), call_id, cause, limits))
     }
 
     /// 一条结束到了 actor：写成内核的输入，时刻是到的那一刻；记下它，这一批落了盘再从表里拿掉（[`Self::land`]）。
@@ -353,6 +368,19 @@ impl Shared {
         self.roster.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
+    fn gate(&self) -> MutexGuard<'_, Gate> {
+        self.gate.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    /// 说的是命令 `job` 的一封交给 actor：起它的那次调用还没落盘的扣下（施工 RB-1，[`Gate::pass`]）。actor 已经停了、送不进去
+    /// 的交回假。
+    fn send(&self, job: &JobId, back: Back) -> bool {
+        match self.gate().pass(job, back) {
+            Some(back) => self.backs.send(back).is_ok(),
+            None => true,
+        }
+    }
+
     /// 不再收新的，这个会话还在表里的都拿掉、整组杀掉、不再写输出。已经结束了的，杀也不碍事（[`Process::kill`]）。
     fn close(&self) {
         let gone: Vec<Entry> = {
@@ -378,16 +406,16 @@ impl Shared {
         if table.get(key).is_none_or(|entry| entry.reported) {
             return;
         }
-        #[expect(
-            clippy::let_underscore_must_use,
-            reason = "actor 停了：命令跟着整组杀，这一批没人记也不要紧"
-        )]
-        let _ = self.backs.send(Back::JobLines(Lines {
-            job: key.1.clone(),
-            by: by.clone(),
-            cause: cause.cloned(),
-            batch,
-        }));
+        // 送不进去的：actor 停了，命令跟着整组杀，这一批没人记也不要紧。
+        self.send(
+            &key.1,
+            Back::JobLines(Lines {
+                job: key.1.clone(),
+                by: by.clone(),
+                cause: cause.cloned(),
+                batch,
+            }),
+        );
     }
 
     /// 等着的那一头报它自己退出了：还在表里、还没人报过的，记成报了，交给 actor。拿着表的锁交：停下时拿到锁的那一刻，报了
@@ -402,7 +430,7 @@ impl Shared {
         }
         entry.reported = true;
         let key = ended.key.clone();
-        if self.backs.send(Back::Job(ended)).is_err() {
+        if !self.send(&key.1, Back::Job(ended)) {
             table.remove(&key);
         }
     }

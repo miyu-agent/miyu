@@ -11,6 +11,7 @@ use miyu_tool::Exit;
 use miyu_tool::testkit::Held;
 
 use super::*;
+use miyu_kernel::origin::Tool;
 
 /// 一个用完就删的临时目录：会话目录是 `session/`，blob 在 `blobs/`。
 struct Scratch(PathBuf);
@@ -89,6 +90,35 @@ fn at() -> Timestamp {
     Timestamp::from_unix_millis(0).unwrap()
 }
 
+/// 调用 `call_id` 的结果落了盘（施工 RB-1）：照产品里的先后，起了命令以后才到；在这以前它起的命令交来的都扣着。
+fn landed(jobs: &SessionJobs, call_id: CallId) {
+    jobs.note(&[result_of(call_id)]);
+}
+
+/// 调用 `call_id` 的一条 `tool.result`，什么效果都不带。
+fn result_of(call_id: CallId) -> Event {
+    use miyu_kernel::event::{ToolResult, ToolStatus};
+    Event {
+        seq: miyu_kernel::id::Seq::new(9).unwrap(),
+        at: at(),
+        turn: None,
+        by: By::Tool(Tool { call_id }),
+        cause: cause(),
+        body: Body::ToolResult(ToolResult {
+            call_id,
+            status: ToolStatus::Ok,
+            blocks: Vec::new(),
+            duration_ms: None,
+            human: None,
+            effects: Vec::new(),
+            end_turn: false,
+            sent: Vec::new(),
+            display_name: Default::default(),
+            detail: None,
+        }),
+    }
+}
+
 /// 等收件箱里来一条结束，最多十秒。
 async fn next_end(back: &mut mpsc::UnboundedReceiver<Back>) -> Ended {
     let waited = tokio::time::timeout(Duration::from_secs(10), back.recv()).await;
@@ -119,6 +149,7 @@ async fn a_job_counts_on_writes_its_output_and_reports_when_it_exits() {
         .port(call(), cause(), roomy())
         .start(held.background())
         .unwrap();
+    landed(&jobs, call());
     assert_eq!(job.to_string(), "j3", "照日志里用过的往后数");
     until_written(&scratch.output(3), "第一行\nsecond\n").await;
     assert!(table.running(), "在跑");
@@ -164,6 +195,7 @@ async fn a_signal_is_reported_and_an_empty_output_has_no_characters() {
     jobs.port(call(), None, roomy())
         .start(held.background())
         .unwrap();
+    landed(&jobs, call());
     held.end(Exit::Signal(15));
     let ended = next_end(&mut back).await;
     assert_eq!(ended.reported.job.to_string(), "j1");
@@ -183,9 +215,11 @@ async fn stopping_reports_the_running_ones_and_then_kills_only_them() {
     jobs.port(call(), cause(), roomy())
         .start(running.background())
         .unwrap();
+    landed(&jobs, call());
     jobs.port(call(), cause(), roomy())
         .start(exited.background())
         .unwrap();
+    landed(&jobs, call());
     until_written(&scratch.output(1), "half\n").await;
     exited.end(Exit::Code(0));
     // 等它报了（交进收件箱），再停下：它不再报成 restarted。
@@ -299,6 +333,7 @@ async fn stopping_after_it_ended_on_its_own_does_nothing() {
         .port(call(), cause(), roomy())
         .start(held.background())
         .unwrap();
+    landed(&jobs, call());
     held.end(Exit::Code(0));
     // 自己退出的已经报了、还没落盘：表里还有它，停也不再杀、不再报第二条。
     let ended = next_end(&mut back).await;
@@ -318,6 +353,7 @@ async fn a_stopped_job_is_not_reported_again_when_its_process_ends() {
         .port(call(), cause(), roomy())
         .start(held.background())
         .unwrap();
+    landed(&jobs, call());
     until_written(&scratch.output(1), "x\n").await;
     let stopped = jobs.stop_command(job, who()).await.expect("在跑，停得了");
     assert_eq!(stopped.reported.reason, JobReason::Stopped);
@@ -344,6 +380,7 @@ async fn a_job_over_its_limits_is_stopped() {
     jobs.port(call(), cause(), short)
         .start(held.background())
         .unwrap();
+    landed(&jobs, call());
     let ended = next_end(&mut back).await;
     assert_eq!(ended.reported.reason, JobReason::TimedOut);
     assert_eq!(ended.by, By::Tool(Tool { call_id: call() }));
@@ -359,6 +396,7 @@ async fn a_job_over_its_limits_is_stopped() {
     jobs.port(call(), cause(), small)
         .start(held.background())
         .unwrap();
+    landed(&jobs, call());
     let ended = next_end(&mut back).await;
     assert_eq!(ended.reported.reason, JobReason::TooLarge);
     assert_eq!(held.killed(), 1);
@@ -373,6 +411,7 @@ async fn a_job_over_its_limits_is_stopped() {
     jobs.port(call(), cause(), short)
         .start(held.background())
         .unwrap();
+    landed(&jobs, call());
     held.end(Exit::Code(0));
     assert_eq!(next_end(&mut back).await.reported.reason, JobReason::Exited);
     tokio::time::sleep(Duration::from_millis(400)).await;
@@ -408,6 +447,7 @@ async fn a_watched_job_hands_its_lines_over_and_still_times_out() {
         ..roomy()
     };
     let job = jobs.port(call(), cause(), short).start(background).unwrap();
+    landed(&jobs, call());
     let waited = tokio::time::timeout(Duration::from_secs(10), back.recv()).await;
     let Some(Back::JobLines(seen)) = waited.expect("十秒内交了一批") else {
         panic!("先交的是那一批行");
@@ -456,3 +496,5 @@ async fn a_chatty_watch_is_stopped_as_too_chatty() {
     assert_eq!(stopped.by, By::Tool(Tool { call_id: call() }));
     assert_eq!(held.killed(), 1);
 }
+
+mod early;
