@@ -70,6 +70,23 @@ async fn status(client: &mut Client, id: &str) -> Value {
         .clone()
 }
 
+/// 等她睡下：人生会话 `session` 不在跑一轮了（会话列表那一项没有 `busy`）。光等日志里记下回合结束（`until_turns`）不够：那一批
+/// 落了盘会话才写「没在跑」，这中间打 `/life` 回的是「这会儿醒着」（施工 LF-6 修；Linux 的 CI 上碰到过一次）。
+async fn asleep(client: &mut Client, session: &str) {
+    for n in 0..12_000 {
+        let listed = client
+            .call(&format!("asleep-{n}"), "session.list", json!({}))
+            .await;
+        let rows = listed["result"]["sessions"].as_array();
+        let row = rows.and_then(|rows| rows.iter().find(|row| row["session"] == session));
+        if row.is_some_and(|row| row.get("busy").is_none()) {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    panic!("六十秒内她没睡下");
+}
+
 /// 定时表里全部的人生那一行。
 fn life_rows(core: &Core) -> Vec<Schedule> {
     core.schedules()
@@ -164,6 +181,7 @@ async fn bare_life_with_one_tells_its_state_and_carries_it() {
         .expect("开出来")
         .to_string();
     home.until_turns(&session, 1).await;
+    asleep(&mut client, &session).await;
 
     let reply = typed(&mut client, "k1", &here, "/life").await;
     let next = Timestamp::from_unix_millis(START + GAP)

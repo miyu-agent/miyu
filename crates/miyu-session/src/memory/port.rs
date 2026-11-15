@@ -146,6 +146,11 @@ impl Calls {
         .await
     }
 
+    /// 回合开始等这个会话的记忆最多多久：测试里换过的照换的（施工 LF-6 修，`testkit` 才有的 `Memory::wait_reads`），别的没有、照出厂的。
+    pub(crate) fn wait(&self) -> Option<std::time::Duration> {
+        self.keeper.memory.read_wait()
+    }
+
     /// 人生循环叫醒的这一轮多交的那一块（施工 LF-6，`fresh.rs`）：开这一轮的那条消息 `opener` 不是人生循环发的，不读、没有；
     /// `present` 连同这一轮常驻那一块，日期照会话的时区 `offset`，在阻塞线程里读，读的时候登记着（同上）。
     pub(crate) async fn fresh(

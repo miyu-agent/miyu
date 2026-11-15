@@ -347,6 +347,8 @@ async fn a_slow_read_does_not_hold_the_turn() {
         });
     });
     held.recv().expect("握住了锁");
+    // 测试场地平常等得很长（`support` 的 `Home::new`）：这一条测的就是过了时限，换回很短的。
+    home.memory.wait_reads(std::time::Duration::from_millis(50));
     chat(&handle, "cmd-1", "在吗").await;
     assert!(
         summaries(&script.requests()[0].1).is_empty(),
@@ -354,6 +356,8 @@ async fn a_slow_read_does_not_hold_the_turn() {
     );
     drop(release);
     holder.join().expect("放开了");
+    // 过了时限的那一轮测完了：换回场地平常的，下一轮不赛这 50 毫秒。
+    home.memory.wait_reads(PATIENT);
     chat(&handle, "cmd-2", "再说一句").await;
     assert_eq!(
         summaries(&script.requests()[1].1).len(),

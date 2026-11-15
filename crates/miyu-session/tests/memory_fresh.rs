@@ -19,6 +19,7 @@ use miyu_store::recall::Room;
 use crate::support::*;
 
 mod prefix;
+mod slow;
 
 fn persona() -> Room {
     Room::persona("engineer")
@@ -262,9 +263,6 @@ async fn the_first_wake_and_after_compaction_the_summary_goes_first_and_is_not_r
     let home = Home::new();
     let other = elsewhere(&home).await;
     let first = save(&home, "第一件事", &[&other], alice(), None);
-    // 这一条断言的是会话的头一轮：判出处活不活要开回合库，头一次开是冷的（建库），慢的机器上会超过回合开始的时限、这一轮
-    // 不交（Windows 的 CI 上碰到过一次）。先开好，这里不测冷开。
-    let _ = home.recall.turns(&persona());
     let script = Script::new([
         Play::Says("好。"),
         Play::Says("嗯。"),
@@ -409,47 +407,6 @@ async fn a_reloaded_session_sends_the_same_block() {
     chat(&handle, "cmd-3", "还在吗").await;
     assert_eq!(blocks(&script.requests()[0].1), before, "原样回放");
     assert_eq!(injected(&home, &session, "fresh").len(), 1, "没有重算");
-    stop(&handle).await;
-}
-
-/// 读得慢的不挡回合（同常驻那一块，`memory.md` 第三条第 4 款）：另一个线程握着记忆日志的锁，这一轮过了时限照常请求、不带这一块；
-/// 放开以后下一次醒来再问，交了。时限是几毫秒不测。
-#[tokio::test]
-async fn a_slow_read_does_not_hold_the_wake() {
-    let home = Home::new();
-    note(&home, "主人养了一只猫");
-    let script = Script::new([Play::Says("好。"), Play::Says("嗯。"), Play::Says("嗯。")]);
-    let handle = home.create(&script).await;
-    chat(&handle, "cmd-1", "在吗").await;
-    let other = elsewhere(&home).await;
-    let new = save(&home, "群友换了手柄", &[&other], alice(), None);
-    let (log, _) = home.logs.open(&persona()).expect("开得了");
-    let (locked, held) = std::sync::mpsc::channel();
-    let (release, released) = std::sync::mpsc::channel::<()>();
-    let holder = std::thread::spawn(move || {
-        log.book(|_| {
-            locked.send(()).expect("测试在等");
-            assert!(released.recv().is_err(), "测试放开时关了这一头");
-        });
-    });
-    held.recv().expect("握住了锁");
-    wake(&handle, "cmd-2").await;
-    assert_eq!(
-        blocks(&script.requests()[1].1).len(),
-        1,
-        "过了时限，这一轮不带"
-    );
-    drop(release);
-    holder.join().expect("放开了");
-    wake(&handle, "cmd-3").await;
-    assert_eq!(
-        injected(&home, handle.id(), "fresh")
-            .into_iter()
-            .map(|(_, refs)| refs)
-            .collect::<Vec<_>>(),
-        [vec![new.to_string()]],
-        "下一次醒来再问，交了"
-    );
     stop(&handle).await;
 }
 

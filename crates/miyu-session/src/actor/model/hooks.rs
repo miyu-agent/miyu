@@ -43,8 +43,8 @@ pub(super) async fn hooks(
         let using = shelves.using(&config);
         knowing
             .run(timed(
-                "knowledge",
-                "recall",
+                ("knowledge", "recall"),
+                HOOKS,
                 shelves.recall(&using, said, &present),
             ))
             .await
@@ -77,15 +77,17 @@ async fn remember(
     config: TurnConfig,
     laps: &mut Remember,
 ) -> Vec<Injection> {
+    // 等多久：出厂的 [`HOOKS`]；测试场地换过的照换的（施工 LF-6 修，`Memory::wait_reads`）。
+    let limit = memory.wait().unwrap_or(HOOKS);
     let (summary, card) = tokio::join!(
         laps.summary.run(timed(
-            "memory",
-            "summary",
+            ("memory", "summary"),
+            limit,
             memory.summary(offset, present.clone())
         )),
         laps.card.run(timed(
-            "memory",
-            "card",
+            ("memory", "card"),
+            limit,
             memory.card(speakers, present.clone())
         )),
     );
@@ -100,8 +102,8 @@ async fn remember(
     let fresh = laps
         .fresh
         .run(timed(
-            "memory",
-            "fresh",
+            ("memory", "fresh"),
+            limit,
             memory.fresh(opener.as_ref(), offset, &seen),
         ))
         .await;
@@ -112,21 +114,21 @@ async fn remember(
     let recall = laps
         .recall
         .run(timed(
-            "memory",
-            "recall",
+            ("memory", "recall"),
+            limit,
             memory.recall(said, offset, seen, &config),
         ))
         .await;
     summary.into_iter().chain(recall).collect()
 }
 
-/// 限时 [`HOOKS`] 等挂接点的一件（`module` 是哪个挂接点，`part`：`summary`、`card`、`fresh`、`recall`）；过了的没有，记一行 `DEBUG`。
+/// 限时 `limit` 等挂接点的一件（`module` 是哪个挂接点，`part`：`summary`、`card`、`fresh`、`recall`）；过了的没有，记一行 `DEBUG`。
 async fn timed(
-    module: &'static str,
-    part: &'static str,
+    (module, part): (&'static str, &'static str),
+    limit: Duration,
     asked: impl Future<Output = Option<Injection>>,
 ) -> Option<Injection> {
-    match tokio::time::timeout(HOOKS, asked).await {
+    match tokio::time::timeout(limit, asked).await {
         Ok(injected) => injected,
         Err(_) => {
             tracing::debug!(target: TARGET, module, part, "turn start hook timed out");
