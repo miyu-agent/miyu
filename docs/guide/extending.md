@@ -77,7 +77,7 @@ AI 平时只看到每个技能的名字、`description` 和 `SKILL.md` 的路径
 miyu config set skills.external.enabled true
 ```
 
-或者在网页「技能」页顶上打开「读取其他目录的 Skills」。读哪些目录是 `skills.external.dirs`，出厂是 `["~/.agents/skills"]`，写 `~/…` 或绝对路径，照先后，同名的先列的赢。`~` 后面用 `/`，Windows 上也是，`~\…` 不认：
+或者在网页「技能」页顶上打开「读取其他目录的 Skills」。读哪些目录是 `skills.external.dirs`，出厂是 `["~/.agents/skills"]`，写 `~/…` 或绝对路径，照先后，同名的先列的赢。Windows 上 `~\…` 也认：
 
 ```bash
 miyu config set skills.external.dirs '["~/.agents/skills", "~/src/team-skills"]'
@@ -354,7 +354,7 @@ miyu provider login acme-docs
 | 格 | 说明 |
 |---|---|
 | 表名 `<名字>` | 服务名：小写字母开头，只用小写字母、数字、`-`，最多 32 个 |
-| `command` | 命令和参数，一个词一项，不经 shell。第一项写绝对路径、`~/…`（Windows 上也用 `/`，`~\…` 不认），或者只写名字照 `PATH` 找（`npx`、`uvx`、`docker` 这类）。Windows 上只写名字的照 `PATH` 找 `.exe`、`.cmd`、`.bat`，`npx`、`uvx` 是 `.cmd`，照样找得到。`~` 只换第一项的，后面的参数照原样交给程序。和 `url` 只写一个 |
+| `command` | 命令和参数，一个词一项，不经 shell。第一项写绝对路径、`~/…`（Windows 上 `~\…` 也认），或者只写名字照 `PATH` 找（`npx`、`uvx`、`docker` 这类）。Windows 上只写名字的照 `PATH` 找 `.exe`、`.cmd`、`.bat`，`npx`、`uvx` 是 `.cmd`，照样找得到。`~` 只换第一项的，后面的参数照原样交给程序。和 `url` 只写一个 |
 | `env` | 跟着 `command`：给服务的环境变量 |
 | `url` | 服务的网址。`https://` 开头；`http://` 只连本机的服务。和 `command` 只写一个 |
 | `bearer` | 跟着 `url`：令牌，发成 `Authorization: Bearer <值>` |

@@ -12,13 +12,13 @@ AI 在你的机器上能动什么、什么时候先问你、哪些目录碰不�
 |---|---|---|
 | 文件工具读 | 哪里都能读，数据根除外 | 同左；读私密目录先问你 |
 | 文件工具写 | 哪里都能写，数据根除外 | 不写，时间线上记「只读模式，未执行」 |
-| 命令 | 不进沙盒；受保护的命令先问你，几类危险命令直接拒（Windows 上这两样都没有，见 [Windows 上不认](#windows-上不认)） | 进沙盒，哪里都写不了（见下） |
+| 命令 | 不进沙盒；受保护的命令先问你，几类危险命令直接拒 | 进沙盒，哪里都写不了（见下） |
 | MCP 服务里没标只读的工具，扩展里联网、对外发消息的工具 | 直接用 | 每次问你 |
 | 装、卸软件包，打开扩展 | 每次问你 | 不做 |
 
 数据根是 Miyu 自己放数据的目录，默认 `~/.miyu`，Windows 上是 `%USERPROFILE%\.miyu`；设了 `MIYU_HOME` 的是它。文件工具碰到数据根的，不执行，时间线上记「这是 Miyu 自己的数据，谁都不能碰」。几处例外：这个会话的默认工作区 `~/.miyu/root/workspace/<会话编号>/` 和 `~/.miyu/root/` 下的 `pictures`、`videos`、`documents`、`downloads` 照常读写；开着的技能文件夹、这个会话的附件只能读。
 
-开放权限下，命令能动你这个系统用户能动的一切。Miyu 只照命令的字面认出几类危险写法（下面「要确认的命令」），防的是 AI 一时糊涂，挡不住刻意绕开的写法；Windows 上连这一层也没有。要 AI 什么都改不了，用只读。
+开放权限下，命令能动你这个系统用户能动的一切。Miyu 只照命令的字面认出几类危险写法（下面「要确认的命令」），防的是 AI 一时糊涂，挡不住刻意绕开的写法。要 AI 什么都改不了，用只读。
 
 只读下的命令：
 
@@ -77,15 +77,22 @@ miyu config set permission.confirm.git false
 - 往磁盘设备直接写：`dd of=/dev/…`、`> /dev/…`，`tee`、`shred`、`cp` 写到设备上。设备指 `/dev/` 下 `sd`、`nvme`、`mmcblk`、`disk`、`rdisk`、`vd`、`hd`、`xvd`、`mapper/`、`dm-`、`md`、`loop`、`nbd` 开头的。
 - 容器拿走整台机器：`--privileged`，`--cap-add` 加 `ALL` 或 `SYS_ADMIN`，挂宿主的 `/`、`/dev`、`/sys`。
 
-### Windows 上不认
+### Windows 上的写法
 
-要确认的、直接拒的这些规则只认 bash、zsh 的写法。Windows 上 AI 用 PowerShell 跑命令（见 [工具](tools.md#shell)），这些规则整套不查：
+Windows 上 AI 用 PowerShell 跑命令（见 [工具](tools.md#shell)）。上面这些规则照 PowerShell 和 cmd 的写法认，哪些先问、哪些直接拒同 Linux、macOS，五个开关照样管用：
 
-- 开放权限下，五类受保护的命令不问你，直接拒的那几类也照跑。`git push --force`、`git reset --hard` 这类在 PowerShell 里写法一样的命令同样不问。
-- 设置页「受保护的命令」的几个开关在 Windows 上不起作用。
-- 只读不受影响：三个平台的只读本来就不看这些规则，命令在沙盒里跑，哪里都写不了。
+| 哪一类 | Windows 上认的写法 |
+|---|---|
+| 破坏性 git 操作、容器使用宿主设备（先问） | 同上面的表；`git.exe`、带路径的 `git.exe` 也认 |
+| 递归删除（先问） | `Remove-Item -Recurse`（别名 `rm`、`del`、`erase`、`rd`、`rmdir`、`ri`，cmd 的 `rd /s`、`del /s`）删工作目录，例如 `Remove-Item -Recurse -Force .`；目标要到运行时才知道的，例如 `Remove-Item -Recurse $target`、`… \| Remove-Item -Recurse` |
+| 关机和重启（先问） | `Stop-Computer`、`Restart-Computer`、`shutdown /s`、`shutdown /r`、`shutdown /h`。`shutdown /a` 不算 |
+| 下载后直接执行（先问） | `irm`、`iwr`、`curl`、`wget` 下载下来交给 `iex`（`Invoke-Expression`）、`powershell`、`pwsh`、`cmd` 跑：`irm … \| iex`、`iex (irm …)` |
+| 删根目录、家目录、系统目录、数据根（直接拒） | 盘符本身（`C:\`）算根目录；盘符下一级的目录（`C:\Windows`、`C:\Users`、`C:\Program Files`，自己建的 `C:\dev` 也算）和根下一级的目录一样；`~`、`$HOME`、`$env:USERPROFILE`、`%USERPROFILE%` 是家目录 |
+| 格式化磁盘（直接拒） | `Format-Volume`、`Clear-Disk`、`Remove-Partition`、`format D:` |
+| 容器拿走整台机器（直接拒） | 同上面的列表 |
 
-在 Windows 上让 AI 碰不熟的仓库、做你没把握的事，用只读。
+- 写在 `cmd /c "…"`、`powershell -Command "…"`、`iex '…'` 里的照样认得出。程序名、参数名、路径不分大小写，参数名只写开头几个字的（`-r`、`-rec`）也认。带 `-WhatIf` 的删除不算。
+- Windows 上不认的：`-EncodedCommand` 里编过码的命令，往磁盘设备直接写（`\\.\PhysicalDrive0`），`Set-ExecutionPolicy`，删注册表（`reg delete`、`Remove-Item HKLM:\…`），网络路径（`\\server\share`）上的删除。这些开放权限下不问、不拒。
 
 ### 确认框
 
@@ -131,7 +138,7 @@ miyu config set sandbox.private.remove "['~/.docker']"                   # 去�
 miyu config set sandbox.private.enabled false                            # 整个关掉
 ```
 
-- `sandbox.private.add`：写 `~/…` 或绝对路径。`~` 后面用 `/`，Windows 上也是，`~\…` 不认。家目录本身和它的上级不能加。
+- `sandbox.private.add`：写 `~/…` 或绝对路径，Windows 上 `~\…` 也认。家目录本身和它的上级不能加。
 - `sandbox.private.remove`：只能写出厂清单里的。去掉的命令读得到、文件工具不再问；以后升级不会自己回来，新版本加的出厂项照样生效。
 - `sandbox.private.enabled`：关掉以后只读时也不藏、不问。数据根照旧碰不到。
 
@@ -159,7 +166,7 @@ miyu config set sandbox.private.enabled false                            # 整�
 |---|---|---|
 | Linux | 内核没有可用的 Landlock | 内核旧于 5.13，或者启动参数 `lsm=` 里没有 `landlock` |
 | macOS | 无法应用 Seatbelt 配置，Miyu 可能运行在另一个沙盒里 | Seatbelt 配置装不上 |
-| Windows | 此版本在 Windows 上还不能把命令关进沙盒 | 这台 Windows 起不了沙盒要的基础容器 |
+| Windows | 这台 Windows 起不了 MXC 的基础容器 | 沙盒要的基础容器在这台 Windows 上起不来 |
 
 工作目录太宽时：根目录在三个平台上都算太宽；Windows 上家目录本身、包住数据根的目录也算。太宽的照样当工作目录，命令从那里起，用 `/workspace` 换过去时回执写「工作区已切换到 …（范围较大）。」。
 

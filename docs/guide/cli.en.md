@@ -520,7 +520,7 @@ Without a subcommand, it runs `list`. Removed documents and deleted knowledge ba
 miyu kb mount handbook ~/Documents/handbook --name "Team handbook" --auto
 ```
 
-`<kb>` is a knowledge base's id: it starts with a lowercase letter, contains only lowercase letters, digits, `-` and `_`, and is at most 64 characters. A wrong form reports "invalid knowledge base id: <id>".
+`<kb>` is a knowledge base's id: it starts with a lowercase letter, contains only lowercase letters, digits, `-` and `_`, is at most 64 characters, and cannot be a Windows reserved name such as `con`, `nul` or `com1`. A wrong form reports "invalid knowledge base id: <id>".
 
 Exit codes: `0` done; `1` the core refused; `2` bad arguments. See [Knowledge base](knowledge.en.md).
 
@@ -596,7 +596,7 @@ miyu upgrade [--prerelease] [--yes]
 | `--prerelease` | Counts pre-releases too |
 | `--yes` | Upgrades without asking |
 
-If it was installed by the install script, it downloads the new version, verifies the signature and checksum, and replaces it; if it was installed from AUR or Homebrew, it says which package manager command to use; if the archive was unpacked by hand, it says the download address. After upgrading, the core already running is still the old version; type `miyu core stop`, and the next time you open it, it is the new version. On Windows, a running `miyu.exe` cannot be deleted, so it stays in `.miyu-old-<old version>/` in the install directory and is deleted at the start of the next `miyu upgrade`. For a system with no release archive (a Mac with an Intel chip, Windows on ARM and the like), it reports "cannot upgrade: no release is built for this system".
+If it was installed by the install script, it downloads the new version, verifies the signature and checksum, and replaces it; if it was installed from AUR or Homebrew, it says which package manager command to use; if the archive was unpacked by hand, it says the download address. After upgrading, the core already running is still the old version; type `miyu core stop`, and the next time you open it, it is the new version. On Windows, a running `miyu.exe` cannot be deleted, so it stays in `.miyu-old-<old version>/` in the install directory and is deleted at the start of the next `miyu upgrade`. For a system with no release archive (a Mac with an Intel chip, Windows on ARM and the like), it reports "cannot upgrade: no release is built for this system", with a hint saying which systems have release archives and that on other systems you build from the source on the release page.
 
 ```sh
 miyu upgrade --yes

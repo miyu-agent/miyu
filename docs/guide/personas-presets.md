@@ -68,7 +68,7 @@ miyu config set preset.default dev
 
 ## 自己写一个人格
 
-人格是数据根（默认 `~/.miyu`，Windows 上是 `%USERPROFILE%\.miyu`）里的一个文件夹 `~/.miyu/root/personas/<编号>/`。编号就是文件夹名：小写字母开头，只有小写字母、数字、`-`、`_`，最长 64 个字符。Miyu 不拦 `con`、`nul`、`aux`、`prn`、`com1` 到 `com9`、`lpt1` 到 `lpt9` 这些 Windows 的保留名，Windows 上建不了这些名字的文件夹和文件，别用。
+人格是数据根（默认 `~/.miyu`，Windows 上是 `%USERPROFILE%\.miyu`）里的一个文件夹 `~/.miyu/root/personas/<编号>/`。编号就是文件夹名：小写字母开头，只有小写字母、数字、`-`、`_`，最长 64 个字符。不能是 `con`、`nul`、`aux`、`prn`、`com1` 到 `com9`、`lpt1` 到 `lpt9` 这些 Windows 的保留名，三个系统都不收。
 
 ```text
 ~/.miyu/root/personas/captain/

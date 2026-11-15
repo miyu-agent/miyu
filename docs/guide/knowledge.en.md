@@ -38,7 +38,7 @@ The tools the AI uses to search knowledge bases come from the shipped package `b
    miyu kb search te-form
    ```
 
-A base id starts with a lowercase letter, contains only lowercase letters, digits, `-` and `_`, and is at most 64 characters long. A wrong one is reported as "invalid knowledge base id".
+A base id starts with a lowercase letter, contains only lowercase letters, digits, `-` and `_`, is at most 64 characters long, and cannot be a Windows reserved name such as `con`, `nul` or `com1`. A wrong one is reported as "invalid knowledge base id".
 
 ## Which files it takes
 

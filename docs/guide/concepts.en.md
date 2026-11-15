@@ -40,7 +40,7 @@ Which features this session has on: which tools, skills, scripts, MCP servers an
 
 ## Permission level
 
-Each session runs at one of "Full access" and "Read-only". Under full access the AI can read and write files and run commands, and dangerous commands ask you first (Windows does not recognize dangerous commands, see [Not checked on Windows](permissions.en.md#not-checked-on-windows)). Under read-only it cannot change anything, and commands run in the sandbox. See [Permissions and sandbox](permissions.en.md).
+Each session runs at one of "Full access" and "Read-only". Under full access the AI can read and write files and run commands, and dangerous commands ask you first. Under read-only it cannot change anything, and commands run in the sandbox. See [Permissions and sandbox](permissions.en.md).
 
 ## Tools
 

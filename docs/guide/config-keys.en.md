@@ -91,7 +91,7 @@ Settings page, "User → About you".
 
 ## Permissions
 
-Settings page, "Privacy & security". For the details of each item, see [Permissions and sandbox](permissions.en.md). The five switches `permission.confirm.git`, `delete`, `power`, `pipe_to_shell` and `container` do nothing on Windows: there the AI runs commands in PowerShell, and these rules are not checked, see [Not checked on Windows](permissions.en.md#not-checked-on-windows).
+Settings page, "Privacy & security". For the details of each item, see [Permissions and sandbox](permissions.en.md). The five switches `permission.confirm.git`, `delete`, `power`, `pipe_to_shell` and `container` work on all three platforms; on Windows the rules recognize PowerShell and cmd syntax, see [How it is written on Windows](permissions.en.md#how-it-is-written-on-windows).
 
 | Key | Type | Default | Allowed values | Description | Takes effect | Project config |
 |---|---|---|---|---|---|---|
@@ -102,7 +102,7 @@ Settings page, "Privacy & security". For the details of each item, see [Permissi
 | `permission.confirm.container` | Switch | `true` | | Ask you first before a container asks for the host's devices, processes or network namespace | Next turn | No |
 | `permission.confirm.timeout` | Integer | `300` | `0` to `86400`, seconds | If you take longer than this to confirm, it is denied automatically. `0` waits forever | Next turn | No |
 | `sandbox.private.enabled` | Switch | `true` | | Whether private folders are on at all | Next turn | No |
-| `sandbox.private.add` | List (text) | — | Each item `~/…` or an absolute path, at most 4096 characters; use `/` after `~`, on Windows too; cannot be the home folder or a parent of it | Private folders you add | Next turn | No |
+| `sandbox.private.add` | List (text) | — | Each item `~/…` or an absolute path, at most 4096 characters; on Windows `~\…` is accepted too; cannot be the home folder or a parent of it | Private folders you add | Next turn | No |
 | `sandbox.private.remove` | List (text) | — | Only private folders shipped for this machine | Shipped private folders you remove | Next turn | No |
 
 ## Commands, tools and feature switches
@@ -278,7 +278,7 @@ Settings page, "Advanced → Skills".
 | Key | Type | Default | Allowed values | Description | Takes effect | Project config |
 |---|---|---|---|---|---|---|
 | `skills.external.enabled` | Switch | `false` | | Also read skills that other apps installed in other directories. For the same name, Miyu's own wins | Next turn | No |
-| `skills.external.dirs` | List (text) | `["~/.agents/skills"]` | Each item `~/…` or an absolute path, at most 4096 characters; use `/` after `~`, on Windows too | Which directories to read, in the order written; for the same name, the one listed first wins | Next turn | No |
+| `skills.external.dirs` | List (text) | `["~/.agents/skills"]` | Each item `~/…` or an absolute path, at most 4096 characters; on Windows `~\…` is accepted too | Which directories to read, in the order written; for the same name, the one listed first wins | Next turn | No |
 
 ## Core
 

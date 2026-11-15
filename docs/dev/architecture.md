@@ -193,7 +193,7 @@ miyu-sdk ──── miyu-ocr
 | 沙盒把读也关住（`miyu-sandbox` 的 `CONFINES_READS`） | 能；Landlock、seccomp 都管不住 Unix 套接字的机器上，通讯平台上别人的会话不跑命令 | 能 | 不能：通讯平台上别人的会话（群、不是本人的私聊）里命令一律拒（`miyu-session` 的 `guard.rs`） |
 | 核心没了，起的命令跟着停 | 每个进程组一个看门的 | 每个进程组一个看门的 | 作业对象 |
 | AI 跑命令的 shell（`miyu-basesystem` 的 `shell/program.rs`） | bash：`PATH` 里找，找不到用 `/bin/bash` | zsh：固定 `/bin/zsh` | PowerShell 7：先找资源目录的 `pwsh/pwsh.exe`，再找 `PATH` 里的 `pwsh.exe`；都没有的用 `%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe`（5.1） |
-| 危险命令的识别（`shell/hazard.rs`） | 认 bash 的写法 | 认 zsh 的写法 | 不查：只认 bash、zsh 的写法，PowerShell 的命令一条都不认 |
+| 危险命令的识别（`shell/hazard.rs`，规则在 `miyu-policy` 的 `hazard`） | 认 bash 的写法 | 认 zsh 的写法 | 认 PowerShell 和 cmd 的写法（`hazard/windows*`）；往磁盘设备直接写那一类不认 |
 | 停核心的信号（`miyu-core` 的 `serve.rs`） | `Ctrl+C`、`SIGTERM` | `Ctrl+C`、`SIGTERM` | 只有 `Ctrl+C`。`miyu core stop` 走协议，三个平台一样 |
 | 常驻（`miyu service enable`） | systemd 用户服务；没有的写 `~/.config/autostart/miyu.desktop` | launchd | 任务计划 |
 | 缓存目录（`miyu-store` 的 `root.rs`，不跟 `MIYU_HOME` 变） | `$XDG_CACHE_HOME/miyu`，没设的 `~/.cache/miyu` | `~/Library/Caches/Miyu` | `%LOCALAPPDATA%\Miyu\cache` |

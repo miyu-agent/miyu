@@ -68,7 +68,7 @@ miyu config set preset.default dev
 
 ## Writing your own persona
 
-A persona is a folder `~/.miyu/root/personas/<id>/` in the data root (`~/.miyu` by default, and `%USERPROFILE%\.miyu` on Windows). The id is the folder name: it starts with a lowercase letter, contains only lowercase letters, digits, `-` and `_`, and is at most 64 characters. Miyu does not block the Windows reserved names `con`, `nul`, `aux`, `prn`, `com1` to `com9` and `lpt1` to `lpt9`; on Windows you cannot create a folder or file with these names, so do not use them.
+A persona is a folder `~/.miyu/root/personas/<id>/` in the data root (`~/.miyu` by default, and `%USERPROFILE%\.miyu` on Windows). The id is the folder name: it starts with a lowercase letter, contains only lowercase letters, digits, `-` and `_`, and is at most 64 characters. It cannot be one of the Windows reserved names `con`, `nul`, `aux`, `prn`, `com1` to `com9` and `lpt1` to `lpt9`; these are refused on all three systems.
 
 ```text
 ~/.miyu/root/personas/captain/

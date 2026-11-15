@@ -520,7 +520,7 @@ miyu kb [<子命令>] [<选项>]
 miyu kb mount handbook ~/Documents/handbook --name "团队手册" --auto
 ```
 
-`<库>` 是知识库的编号：小写字母开头，只有小写字母、数字、`-`、`_`，最长 64 个字符。写法不对的报「知识库编号无效」。
+`<库>` 是知识库的编号：小写字母开头，只有小写字母、数字、`-`、`_`，最长 64 个字符，不能是 `con`、`nul`、`com1` 这类 Windows 保留名。写法不对的报「知识库编号无效」。
 
 退出码：`0` 成了；`1` 核心拒绝了；`2` 参数不对。见 [知识库](knowledge.md)。
 
@@ -596,7 +596,7 @@ miyu upgrade [--prerelease] [--yes]
 | `--prerelease` | 预发布版也算 |
 | `--yes` | 不问，直接升 |
 
-安装脚本装的，下载新版、核对签名和校验和后替换；AUR、Homebrew 装的，说该用的包管理器命令；手工解开压缩包的，说下载地址。升完以后已经在跑的核心还是旧版，敲 `miyu core stop`，下次打开就是新版。Windows 上正在跑的 `miyu.exe` 删不掉，留在安装目录的 `.miyu-old-<旧版本>/` 里，下一次 `miyu upgrade` 开头再删。这种系统没有发行包的（Intel 芯片的 Mac、ARM 的 Windows 这类），报「无法升级：没有这种系统的发行包」。
+安装脚本装的，下载新版、核对签名和校验和后替换；AUR、Homebrew 装的，说该用的包管理器命令；手工解开压缩包的，说下载地址。升完以后已经在跑的核心还是旧版，敲 `miyu core stop`，下次打开就是新版。Windows 上正在跑的 `miyu.exe` 删不掉，留在安装目录的 `.miyu-old-<旧版本>/` 里，下一次 `miyu upgrade` 开头再删。这种系统没有发行包的（Intel 芯片的 Mac、ARM 的 Windows 这类），报「无法升级：没有这种系统的发行包」，提示发行包有哪几种、别的系统到发行页下载源码自己编译。
 
 ```sh
 miyu upgrade --yes

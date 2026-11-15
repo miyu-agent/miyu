@@ -1549,6 +1549,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sFX4"><span class="n">FX-4</span>文档查出的小修<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sDOC1"><span class="n">DOC-1</span>用户手册和开发者文档<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sDOC2"><span class="n">DOC-2</span>手册和开发者文档的英文版<span class="st">✓</span></a></li>
+        <li><a class="step review" href="#sDOC3"><span class="n">DOC-3</span>手册跟上 WN-1<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -60131,6 +60132,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/DOC-2-英文版.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sDOC3" aria-labelledby="h-sDOC3">
+  <div class="sheet-head"><h2 id="h-sDOC3"><span class="no">DOC-3</span>手册跟上 WN-1</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">手册里有几处是照 WN-1 以前 Windows 上的样子写的。WN-1 修了以后，中英两份跟着改回来。只动文档。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">docs/guide　docs/dev/architecture</span><span class="dir-note">DOC-3</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>权限页「Windows 上不认」一节换成「Windows 上的写法」：每一类在 Windows 上认哪些写法、哪些不认</li>
+              <li>安全、工具、配置键、概念几页里「Windows 上不查」的话改掉；还不认的几样（编过码的命令、往磁盘设备直接写、Set-ExecutionPolicy、删注册表）照实写</li>
+              <li>~\ 各处都认；编号不能是 con、nul、com1 这类 Windows 保留名</li>
+              <li>排错页命名管道、沙盒、没有发行包几句照新的原文</li>
+              <li>中文页、英文页同一处一起改</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">程序改了给人看的行为，手册中英两份同一步跟着改</span><span class="rl">DOC-2 施工单「风险」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DOC-3</dd></div>
+        <div><dt>名称</dt><dd>手册跟上 WN-1</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">DOC-3</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>手册里列的 Windows 上认的写法，每一条在 WN-1 的测试或施工单里有</span></li>
+        <li><span class="ok">✓</span><span>改过的每页中英行数、标题、表格、代码块个数相等</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/DOC-3-手册对WN-1.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

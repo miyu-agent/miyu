@@ -91,7 +91,7 @@
 
 ## 权限
 
-设置页「隐私与安全」。每一项的细节见[权限和沙盒](permissions.md)。`permission.confirm.git`、`delete`、`power`、`pipe_to_shell`、`container` 五个开关在 Windows 上不起作用：Windows 上 AI 用 PowerShell 跑命令，这些规则不查，见 [Windows 上不认](permissions.md#windows-上不认)。
+设置页「隐私与安全」。每一项的细节见[权限和沙盒](permissions.md)。`permission.confirm.git`、`delete`、`power`、`pipe_to_shell`、`container` 五个开关三个平台都管用；Windows 上照 PowerShell、cmd 的写法认，见 [Windows 上的写法](permissions.md#windows-上的写法)。
 
 | 键 | 类型 | 默认 | 能写 | 说明 | 生效 | 项目配置 |
 |---|---|---|---|---|---|---|
@@ -102,7 +102,7 @@
 | `permission.confirm.container` | 开关 | `true` | | 容器要宿主的设备、进程或网络命名空间先问你 | 下一轮 | 不能 |
 | `permission.confirm.timeout` | 整数 | `300` | `0` 到 `86400`，秒 | 等你确认超过这么久就自动拒绝。`0` 是一直等 | 下一轮 | 不能 |
 | `sandbox.private.enabled` | 开关 | `true` | | 私密目录整个开不开 | 下一轮 | 不能 |
-| `sandbox.private.add` | 列表（字） | — | 每项 `~/…` 或绝对路径，最多 4096 个字；`~` 后面用 `/`，Windows 上也是；不能是家目录或它的上级 | 你加的私密目录 | 下一轮 | 不能 |
+| `sandbox.private.add` | 列表（字） | — | 每项 `~/…` 或绝对路径，最多 4096 个字；Windows 上 `~\…` 也认；不能是家目录或它的上级 | 你加的私密目录 | 下一轮 | 不能 |
 | `sandbox.private.remove` | 列表（字） | — | 只能写这台机器出厂的私密目录 | 去掉的出厂私密目录 | 下一轮 | 不能 |
 
 ## 命令、工具和功能开关
@@ -278,7 +278,7 @@
 | 键 | 类型 | 默认 | 能写 | 说明 | 生效 | 项目配置 |
 |---|---|---|---|---|---|---|
 | `skills.external.enabled` | 开关 | `false` | | 也读别的应用装在其他目录里的技能。同名的照 Miyu 自己的 | 下一轮 | 不能 |
-| `skills.external.dirs` | 列表（字） | `["~/.agents/skills"]` | 每项 `~/…` 或绝对路径，最多 4096 个字；`~` 后面用 `/`，Windows 上也是 | 读哪些目录，照先后，同名的先列的赢 | 下一轮 | 不能 |
+| `skills.external.dirs` | 列表（字） | `["~/.agents/skills"]` | 每项 `~/…` 或绝对路径，最多 4096 个字；Windows 上 `~\…` 也认 | 读哪些目录，照先后，同名的先列的赢 | 下一轮 | 不能 |
 
 ## 核心
 

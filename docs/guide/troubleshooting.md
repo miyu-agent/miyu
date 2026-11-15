@@ -110,9 +110,9 @@ miyu
 | 「… 认不出是 Miyu 的数据根 …」 | 数据根的位置上有别的东西。0.7 旧版的数据目录也报这一句 | 是 0.7 旧版的数据目录的，照这句话后半说的挪开、装迁移软件包、迁，见 [从 0.7 旧版迁过来](migrate.md)；不是的把 `MIYU_HOME` 设成一个空目录 |
 | 「… 是旧版 Miyu 的数据根，新版不认 …」 | 发版前的开发版留下的数据根 | 把 `MIYU_HOME` 设成一个空目录 |
 | 「… 的布局不是这一版的 …」 | 更新版本的 Miyu 写过这个数据根 | 用写它的那一版，或者换一个数据根 |
-| 「… 不是自己的，或者别人也能进：不连」 | Linux、macOS：放套接字的目录不归你、或者别的用户也能进，Miyu 不往里连。Windows：命名管道另一头的程序不是你这个用户的 | Linux、macOS：把那个目录改成只有你能进，例如 `chmod 700 <目录>`。Windows：关掉占着这个管道的程序再打开 |
+| 「… 不是自己的，或者别人也能进：不连」（Linux、macOS）；「命名管道 … 另一头不是自己的进程：不连」（Windows） | Linux、macOS：放套接字的目录不归你、或者别的用户也能进，Miyu 不往里连。Windows：命名管道另一头的程序不是你这个用户的 | Linux、macOS：把那个目录改成只有你能进，例如 `chmod 700 <目录>`。Windows：关掉占着这个管道的程序再打开 |
 | 「套接字的路径太长，放不下：…；临时目录下也放不下」（Linux、macOS） | 数据根的路径太长 | 换一个短一点的 `MIYU_HOME`，或者把 `TMPDIR` 设成短的目录 |
-| 「… 上有别的东西：不是套接字的文件，或者别的程序正在听。不动它」 | Linux、macOS：套接字的位置被别的文件、程序占了。Windows：命名管道的名字被别的程序占了 | 不是 Miyu 的就挪走、关掉它 |
+| 「… 上有别的东西：不是套接字的文件，或者别的程序正在听。不动它」（Linux、macOS）；「命名管道 … 已经被别的程序占了。不动它」（Windows） | Linux、macOS：套接字的位置被别的文件、程序占了。Windows：命名管道的名字被别的程序占了 | 不是 Miyu 的就挪走、关掉它 |
 | 「与核心的连接已断开」 | 核心中途退了或者崩了 | 看 `core.log`，再打开一次 |
 
 套接字的位置：
@@ -243,14 +243,14 @@ Stop-Process -Id <进程号>
 |---|---|---|---|
 | `miyu ask` 开头「沙盒不可用：内核没有可用的 Landlock」，下一行「提示：需要 Linux 5.13 或更新，并在启动参数 lsm= 里启用 Landlock」 | Linux | 内核旧于 5.13，或者启动参数 `lsm=` 里没有 `landlock` | 照提示换内核、改启动参数。在那之前只读下的命令改成问你 |
 | `miyu ask` 开头「沙盒不可用：无法应用 Seatbelt 配置，Miyu 可能运行在另一个沙盒里」 | macOS | Seatbelt 配置装不上 | 不在别的沙盒里跑 Miyu。在那之前只读下的命令改成问你 |
-| `miyu ask` 开头「沙盒不可用：此版本在 Windows 上还不能把命令关进沙盒」 | Windows | 这台 Windows 起不了沙盒要的基础容器 | 只读下的命令改成问你 |
+| `miyu ask` 开头「沙盒不可用：这台 Windows 起不了 MXC 的基础容器」 | Windows | 沙盒要的基础容器在这台 Windows 上起不来 | 只读下的命令改成问你 |
 | 只读下命令的输出是 `miyu-sandbox: cannot confine: no desktop session, programs in the sandbox cannot start here; use Miyu from the desktop, or turn the sandbox off`，退出码 `125` | Windows | 核心不在桌面会话里，例如经 SSH 连进来起的 | 从登录的桌面用 Miyu，或者切到开放权限，见 [常驻和服务器](service.md#windows-上的只读会话) |
 | 只读下命令的输出是 `miyu-sandbox: cannot confine: this Windows has no base container (MXC tier …)` | Windows | 这台 Windows 起不了沙盒要的基础容器 | 切到开放权限再跑 |
 | 只读下命令输出后面跟着 `The sandbox blocks WMI. Commands that need it work outside the sandbox.` | Windows | 这条命令要用 WMI，沙盒里连不上 | 切到开放权限再让 AI 跑，见 [权限和沙盒](permissions.md#三个平台) |
 | 「无法安装服务：Windows 任务计划无法携带 MIYU_HOME」，下一行「提示：取消设置 MIYU_HOME 后重试」；终端设置页「开机启动核心」那一项写「设了 MIYU_HOME 时 Windows 上装不了」 | Windows | 任务计划带不了环境变量 | 用默认的数据根装服务；要用别的数据根的，用托盘的「开机时启动」，见 [数据和备份](data.md#换一个位置) |
 | `core.log` 里有 `catalog cache unavailable`，原因写 `no LOCALAPPDATA` | Windows | 环境变量 `LOCALAPPDATA` 没有，或者不是绝对路径，缓存目录算不出来 | 把 `LOCALAPPDATA` 设成绝对路径，再 `miyu core stop`、重新打开 |
 | 「未找到 litemiyu」，下一行「提示：暂只支持 Linux」 | macOS、Windows | LiteMiyu 只有 Linux x86_64 的版本，`miyu rescue` 用不了 | 照这一页上面「核心起不来、连不上」查，见 [应急修复](rescue.md#别的系统) |
-| 「无法升级：没有这种系统的发行包」 | Intel 芯片的 Mac、ARM 的 Windows 这类 | Miyu 没给这种系统出发行包 | 没有办法升级，见 [安装、升级、卸载](install.md#哪些系统能装) |
+| 「无法升级：没有这种系统的发行包」，下一行「提示：发行包只有 Linux x86_64、aarch64，macOS Apple 芯片，Windows x86_64；别的系统到 … 下载源码自己编译」 | Intel 芯片的 Mac、ARM 的 Windows 这类 | Miyu 没给这种系统出发行包 | 照提示到发行页下载源码自己编译，见 [安装、升级、卸载](install.md#哪些系统能装) |
 | 「不支持本机的系统。」 | 看包，例如 `im` 没有 Linux aarch64 的版本 | 这个软件包没给你这种系统打包 | 换这个包支持的系统，或者等它出这种系统的版本 |
 | `miyu call … --json '…'` 报 `--json takes one JSON object.`，后面一句 `Its double quotes were lost on the way, as Windows PowerShell 5.1 does. Pipe the JSON instead: '<json>' \| miyu call <tool> --json -` | Windows | Windows PowerShell 5.1 交给程序时吃掉了参数里的双引号 | 照它说的从管道传：`'<json>' \| miyu call <工具> --json -`，见 [命令行](cli.md) |
 | `miyu shellhook install` 说「PowerShell 的执行策略是 …，不加载启动文件，装了也不生效：在 PowerShell 里执行 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned 再开新窗口」 | Windows | 这个执行策略下 PowerShell 不加载 `$PROFILE`，shell 集成写进去也不生效 | 照它说的执行一次，开新窗口，见 [终端](heads/tui.md#shell-集成) |

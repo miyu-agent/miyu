@@ -12,13 +12,13 @@ Each session is set to either "Full access" or "Read-only", and each session kee
 |---|---|---|
 | File tools, read | Can read anywhere except the data root | Same; reading a private folder asks you first |
 | File tools, write | Can write anywhere except the data root | Does not write; the timeline says "Read-only mode, not run" |
-| Commands | Do not run in the sandbox; protected commands ask you first, and a few kinds of dangerous commands are refused outright (on Windows neither exists, see [Not checked on Windows](#not-checked-on-windows)) | Run in the sandbox, which can write nowhere (see below) |
+| Commands | Do not run in the sandbox; protected commands ask you first, and a few kinds of dangerous commands are refused outright | Run in the sandbox, which can write nowhere (see below) |
 | Tools of MCP servers that are not marked read-only, and tools in extensions that go online or send messages out | Used directly | Ask you each time |
 | Installing and removing packages, turning on an extension | Asks you each time | Not done |
 
 The data root is the folder where Miyu keeps its own data. By default it is `~/.miyu`, on Windows `%USERPROFILE%\.miyu`; if `MIYU_HOME` is set, it is that folder. A file tool that touches the data root is not run, and the timeline says "Miyu's own data, off limits". A few exceptions: this session's default workspace `~/.miyu/root/workspace/<session id>/` and `pictures`, `videos`, `documents` and `downloads` under `~/.miyu/root/` are read and written as usual; open skill folders and this session's attachments can only be read.
 
-Under full access, commands can do anything your system user can do. Miyu recognizes a few kinds of dangerous commands only by their literal text (see "Commands that need confirmation" below). That guards against the AI's momentary slips and cannot stop a command written to get around it; on Windows even this layer is absent. To keep the AI from changing anything, use read-only.
+Under full access, commands can do anything your system user can do. Miyu recognizes a few kinds of dangerous commands only by their literal text (see "Commands that need confirmation" below). That guards against the AI's momentary slips and cannot stop a command written to get around it. To keep the AI from changing anything, use read-only.
 
 Commands in read-only:
 
@@ -77,15 +77,22 @@ These kinds are refused outright. They do not run even if you approve, and they 
 - Writing directly to a disk device: `dd of=/dev/…`, `> /dev/…`, and `tee`, `shred` or `cp` writing to a device. A device means anything under `/dev/` that starts with `sd`, `nvme`, `mmcblk`, `disk`, `rdisk`, `vd`, `hd`, `xvd`, `mapper/`, `dm-`, `md`, `loop` or `nbd`.
 - Containers taking over the whole machine: `--privileged`, `--cap-add` with `ALL` or `SYS_ADMIN`, mounting the host's `/`, `/dev` or `/sys`.
 
-### Not checked on Windows
+### How it is written on Windows
 
-The rules for commands that need confirmation and for commands that are refused outright recognize only bash and zsh syntax. On Windows the AI runs commands in PowerShell (see [Tools the AI can use](tools.en.md#shell)), and none of these rules are checked:
+On Windows the AI runs commands in PowerShell (see [Tools the AI can use](tools.en.md#shell)). The rules above recognize PowerShell and cmd syntax; which kinds ask first and which are refused outright is the same as on Linux and macOS, and the five switches work the same way:
 
-- Under full access, the five kinds of protected commands do not ask you, and the kinds that are refused outright run as usual. Commands that are written the same way in PowerShell, such as `git push --force` and `git reset --hard`, do not ask either.
-- The switches under "Protected commands" on the settings page have no effect on Windows.
-- Read-only is not affected: on all three platforms read-only never looked at these rules in the first place, and commands run in the sandbox, which can write nowhere.
+| Kind | What is recognized on Windows |
+|---|---|
+| Destructive git operations, containers using host devices (ask first) | Same as the table above; `git.exe` and `git.exe` with a path are recognized too |
+| Recursive delete (ask first) | `Remove-Item -Recurse` (aliases `rm`, `del`, `erase`, `rd`, `rmdir`, `ri`, and cmd's `rd /s`, `del /s`) on the working directory, for example `Remove-Item -Recurse -Force .`; a target only known at run time, for example `Remove-Item -Recurse $target` or `… \| Remove-Item -Recurse` |
+| Shutdown and restart (ask first) | `Stop-Computer`, `Restart-Computer`, `shutdown /s`, `shutdown /r`, `shutdown /h`. `shutdown /a` does not count |
+| Running a download directly (ask first) | A download by `irm`, `iwr`, `curl` or `wget` handed to `iex` (`Invoke-Expression`), `powershell`, `pwsh` or `cmd` to run: `irm … \| iex`, `iex (irm …)` |
+| Deleting the root, the home directory, system directories or the data root (refused outright) | A drive letter itself (`C:\`) counts as the root; directories one level below a drive letter (`C:\Windows`, `C:\Users`, `C:\Program Files`, and ones you created such as `C:\dev`) count like directories one level below the root; `~`, `$HOME`, `$env:USERPROFILE` and `%USERPROFILE%` are the home directory |
+| Formatting disks (refused outright) | `Format-Volume`, `Clear-Disk`, `Remove-Partition`, `format D:` |
+| Containers taking over the whole machine (refused outright) | Same as the list above |
 
-On Windows, use read-only when the AI works on a repository you do not know, or does something you are not sure about.
+- Commands written inside `cmd /c "…"`, `powershell -Command "…"` or `iex '…'` are recognized all the same. Program names, parameter names and paths are case-insensitive, and parameter names cut to their first letters (`-r`, `-rec`) are recognized too. A delete with `-WhatIf` does not count.
+- Not recognized on Windows: commands encoded in `-EncodedCommand`, writing directly to disk devices (`\\.\PhysicalDrive0`), `Set-ExecutionPolicy`, deleting from the registry (`reg delete`, `Remove-Item HKLM:\…`), and deletes on network paths (`\\server\share`). Under full access these are neither asked about nor refused.
 
 ### The confirmation box
 
@@ -131,7 +138,7 @@ miyu config set sandbox.private.remove "['~/.docker']"                   # remov
 miyu config set sandbox.private.enabled false                            # turn the whole thing off
 ```
 
-- `sandbox.private.add`: write `~/…` or an absolute path. Use `/` after `~`, on Windows too; `~\…` is not recognized. The home directory itself and its parents cannot be added.
+- `sandbox.private.add`: write `~/…` or an absolute path; on Windows `~\…` is accepted too. The home directory itself and its parents cannot be added.
 - `sandbox.private.remove`: only entries from the shipped list can be written. Commands can read what you remove, and file tools stop asking; it does not come back by itself on upgrade, but shipped entries added by a new version still take effect.
 - `sandbox.private.enabled`: when off, read-only no longer hides or asks either. The data root still cannot be touched.
 
@@ -159,7 +166,7 @@ When the sandbox is unavailable, `miyu ask` prints a line "sandbox unavailable: 
 |---|---|---|
 | Linux | the kernel has no usable Landlock | The kernel is older than 5.13, or `landlock` is not in the `lsm=` boot parameter |
 | macOS | the Seatbelt profile cannot be applied; Miyu may be running inside another sandbox | The Seatbelt profile cannot be installed |
-| Windows | this version cannot sandbox commands on Windows yet | This Windows cannot start the base container the sandbox needs |
+| Windows | this Windows cannot start an MXC base container | The base container the sandbox needs does not start on this Windows |
 
 When the working directory is too broad: the root counts as too broad on all three platforms; on Windows the home directory itself and a directory that contains the data root count too. A directory that is too broad still works as the working directory and commands start from there; when you switch to it with `/workspace`, the reply says "Workspace switched to … (broad directory)."
 

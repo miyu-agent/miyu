@@ -130,12 +130,12 @@ AI 读文件、跑命令、联网，都是调工具。这一页列出出厂的�
   | Windows | PowerShell 7，没有的用 Windows PowerShell 5.1 | 先用托盘安装包（`.msi`）带的那一份，再找 `PATH` 里的 `pwsh.exe`，都没有的用 `%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe` | `PowerShell 7` 或 `Windows PowerShell 5.1` |
 - 在哪跑：这个会话的工作目录。每次调用都从工作目录起一个新的 shell，上一次的 `cd`、变量不带过来。工作目录被删了、挪走了，命令一条都跑不了，答「工作目录不存在了」，换个工作目录就好（见 [会话](sessions.md)）。
 - 环境变量：照核心的环境整份带过去，去掉名字里有 `KEY`、`SECRET`、`TOKEN`、`PASSWORD`、`PASSWD`、`CREDENTIAL` 的（不分大小写），和 `MIYU_` 开头的。另设 `GIT_TERMINAL_PROMPT=0`、`PAGER=cat`、`GIT_PAGER=cat`、`NO_COLOR=1`、`TERM=dumb`：git 要密码时直接失败，不翻页、不上色。
-- 超时：AI 不写的等 120 秒，最多能写 600 秒。到时还没跑完的，预设开着「后台运行」就挪到后台接着跑，时间线上记「超时，挪到后台了」；没开的、开头就是 `sleep` 的，整组停掉，记「超过 … 秒，停掉了」。
+- 超时：AI 不写的等 120 秒，最多能写 600 秒。到时还没跑完的，预设开着「后台运行」就挪到后台接着跑，时间线上记「超时，挪到后台了」；没开的、开头就是 `sleep`（Windows 上是 `Start-Sleep`）的，整组停掉，记「超过 … 秒，停掉了」。
 - 停掉：到时停掉、你叫停时，Linux、macOS 上杀掉命令的整个进程组，Windows 上用 `taskkill /T /F` 杀掉整棵进程树。命令自己跑完退出后，Linux、macOS 上它留在组里还没退的子进程也一起杀掉；Windows 上不杀，留下的照样在跑。
 - 后台跑：预设开着「后台运行」时，AI 能一开始就把命令放到后台，马上拿到一个任务编号（例如 `j1`），跑完自动回报。后台命令最多跑 `jobs.max_running`（默认 `30m`，能写 `1m` 到 `2h`），到了停掉。AI 还能让后台命令每输出一行就叫醒它，用来盯着日志。
 - 干等：前台 `sleep`（Windows 上是 `Start-Sleep`）两秒以上的命令不跑，答「不许前台用 sleep 干等」：后台的任务办完会自己回报。
 - 输出太长：给 AI 看的最多 30000 个字，多了留开头和结尾各一半，中间写省了多少。要看全的，让 AI 把输出写进文件再读。
-- 危险命令：开放权限下有几类先问你、几类直接拒，见 [权限和沙盒](permissions.md#要确认的命令)。这些规则只认 bash、zsh 的写法，Windows 上的 PowerShell 命令一条都不查，见 [Windows 上不认](permissions.md#windows-上不认)。
+- 危险命令：开放权限下有几类先问你、几类直接拒，见 [权限和沙盒](permissions.md#要确认的命令)。Windows 上照 PowerShell、cmd 的写法认，见 [Windows 上的写法](permissions.md#windows-上的写法)。
 
 ## trash
 

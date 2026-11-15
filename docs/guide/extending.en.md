@@ -77,7 +77,7 @@ Other apps (Codex, opencode and the like) often install skills in `~/.agents/ski
 miyu config set skills.external.enabled true
 ```
 
-Or turn on "Read Skills from other folders" at the top of the web UI "Skills" page. Which folders to read is `skills.external.dirs`, `["~/.agents/skills"]` when shipped; write `~/…` or an absolute path, in order, and for the same name the one listed first wins. After `~`, use `/`, on Windows too; `~\…` is not recognized:
+Or turn on "Read Skills from other folders" at the top of the web UI "Skills" page. Which folders to read is `skills.external.dirs`, `["~/.agents/skills"]` when shipped; write `~/…` or an absolute path, in order, and for the same name the one listed first wins. On Windows `~\…` is accepted too:
 
 ```bash
 miyu config set skills.external.dirs '["~/.agents/skills", "~/src/team-skills"]'
@@ -354,7 +354,7 @@ What you paste is not shown.
 | Field | Notes |
 |---|---|
 | Table name `<name>` | The server name: starts with a lowercase letter, only lowercase letters, digits and `-`, at most 32 characters |
-| `command` | The command and its arguments, one word per item, not through a shell. Write the first item as an absolute path, as `~/…` (on Windows too use `/`; `~\…` is not recognized), or as just a name to be looked up on `PATH` (`npx`, `uvx`, `docker` and the like). On Windows, a bare name is looked up on `PATH` as `.exe`, `.cmd` and `.bat`; `npx` and `uvx` are `.cmd` and are found all the same. `~` is replaced only in the first item; the arguments after it are given to the program as written. Write only one of this and `url` |
+| `command` | The command and its arguments, one word per item, not through a shell. Write the first item as an absolute path, as `~/…` (on Windows `~\…` is accepted too), or as just a name to be looked up on `PATH` (`npx`, `uvx`, `docker` and the like). On Windows, a bare name is looked up on `PATH` as `.exe`, `.cmd` and `.bat`; `npx` and `uvx` are `.cmd` and are found all the same. `~` is replaced only in the first item; the arguments after it are given to the program as written. Write only one of this and `url` |
 | `env` | Goes with `command`: environment variables for the server |
 | `url` | The server's address. Starts with `https://`; `http://` only connects to servers on this machine. Write only one of this and `command` |
 | `bearer` | Goes with `url`: the token, sent as `Authorization: Bearer <value>` |
