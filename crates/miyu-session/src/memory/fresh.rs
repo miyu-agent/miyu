@@ -7,7 +7,8 @@
 //!   只有摘要一行、一条都没列的，照底账现在的摘要合到哪。联想带过的只用来去重、不抬下限：它会带回很新的一条，照它算的话比它
 //!   旧、她没见过的那几条就永远不交了。
 //! - 去掉：作废的、改掉的、清掉的、出处死了的（同常驻那一块，[`Keeper::list`]）；合并自己改出来的；出处全在这个会话自己的（她
-//!   在这里过的，上下文里本来就有）。
+//!   在这里过的，上下文里本来就有）；她记下的自己的变化（施工 LF-11：常驻那一块里已经有）。常驻那一块列的她的变化不算下限：
+//!   它们不管摘要合到哪都列，照它们算下限会落到摘要以前。
 //! - 写法同常驻那一块（外壳、一行、上限、截了的那一句，`summary.rs` 的 `listed`），类别是 `fresh`。一条都没有的不交。
 
 use std::collections::BTreeSet;
@@ -18,7 +19,7 @@ use miyu_kernel::id::{FactKind, ModuleId, SessionId};
 use miyu_kernel::origin::{By, ScheduleLoop};
 use miyu_kernel::session::Injection;
 use miyu_kernel::time::UtcOffset;
-use miyu_recall::{Entry, MemoryId};
+use miyu_recall::{CHANGE, Entry, MemoryId};
 
 use super::merge::made_by_merge;
 use super::summary::listed;
@@ -65,25 +66,41 @@ impl Keeper {
             limit: usize::MAX,
         };
         let read = self.list(&filter).and_then(|entries| {
-            let digest = self
-                .log()
-                .map_err(|refused| format!("{refused:?}"))?
-                .book(|book| book.summary().map(|(_, upto)| upto));
-            Ok((entries, digest))
+            // 她的变化连改掉、作废了的都算上（施工 LF-11）：常驻那一块列它们的时候还算数。
+            let (digest, changes) =
+                self.log()
+                    .map_err(|refused| format!("{refused:?}"))?
+                    .book(|book| {
+                        let changes: BTreeSet<String> = book
+                            .all()
+                            .filter(|entry| entry.class == CHANGE)
+                            .map(|entry| entry.id.to_string())
+                            .collect();
+                        (book.summary().map(|(_, upto)| upto), changes)
+                    });
+            Ok((entries, digest, changes))
         });
-        let (mut entries, digest) = match read {
+        let (mut entries, digest, changes) = match read {
             Ok(read) => read,
             Err(error) => {
                 tracing::warn!(target: crate::TARGET, error = error.as_str(), "memory fresh not read");
                 return None;
             }
         };
-        let since = since(present, digest.map(MemoryId::new));
+        let present: Vec<Present> = present
+            .iter()
+            .cloned()
+            .map(|mut present| {
+                present.refs.retain(|id| !changes.contains(id));
+                present
+            })
+            .collect();
+        let since = since(&present, digest.map(MemoryId::new));
         entries.retain(|entry| wanted(entry, &since, session));
         if entries.is_empty() {
             return None;
         }
-        let (text, refs) = listed(texts, None, &entries, offset);
+        let (text, refs) = listed(texts, (None, None), &entries, offset);
         Some(Injection {
             module: ModuleId::parse(MODULE).expect("合写法"),
             fact: ContextInjected {
@@ -121,14 +138,15 @@ fn since(present: &[Present], digest: Option<MemoryId>) -> (Option<MemoryId>, BT
     (floor, seen)
 }
 
-/// 这一条要交：比下限新、这一段没交过（`since` 是 [`since`] 交回的）、不是合并自己改出来的、出处不全在这个会话 `session` 里。
-/// 算不算数、出处活不活由 [`Keeper::list`] 挑过。
+/// 这一条要交：不是她记下的自己的变化（施工 LF-11）、比下限新、这一段没交过（`since` 是 [`since`] 交回的）、不是合并自己改
+/// 出来的、出处不全在这个会话 `session` 里。算不算数、出处活不活由 [`Keeper::list`] 挑过。
 fn wanted(
     entry: &Entry,
     (floor, seen): &(Option<MemoryId>, BTreeSet<MemoryId>),
     session: &SessionId,
 ) -> bool {
-    floor.is_none_or(|floor| entry.id > floor)
+    entry.class != CHANGE
+        && floor.is_none_or(|floor| entry.id > floor)
         && !seen.contains(&entry.id)
         && !made_by_merge(entry)
         && !lived_here(entry, session)

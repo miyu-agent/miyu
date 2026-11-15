@@ -79,7 +79,8 @@ pub use life::{END_LIFE, LifeEnding, LifePort, LifeRefused};
 pub use log::{Log, ReadLog};
 pub use memory::{
     CARDS, FORGET, FoundCard, FoundMemory, FoundTurn, Line, MEMORIES, MEMORY_SEARCH, MemoryLines,
-    MemoryPort, Pending, REMEMBER, Refused, Remember, Searched, TEXT_CHARS, TURNS,
+    MemoryPort, NOTE_CHANGE, Note, NoteRefused, Pending, REMEMBER, Refused, Remember, Searched,
+    TEXT_CHARS, TURNS,
 };
 pub use messages::{Delivered, MessagePort, NotSent, Recipient, SEND_MESSAGE, Sending};
 pub use nested::{Calling, Hold, Nested, NestedPort, Schema, Settled};

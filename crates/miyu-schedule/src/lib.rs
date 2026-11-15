@@ -1,12 +1,14 @@
 //! 定时任务、循环这两个软件包（施工 J-2，设计 `45-定时和循环.md` 第三节第 3、4 条）：她用来建、删、列这个会话上的定时任务的
 //! `cron_create`、`cron_delete`、`cron_list`（包 [`SCHEDULE`]），动态循环每轮定下一次的 `schedule_wakeup`（包 [`LOOP`]）。两个包
 //! 能分开关：预设关了哪个，那几件就不在工具面上。人生会话里她自己结束这段人生的 `end_life`（包 [`LIFE`]，施工 LF-4 下，设计
-//! `70-推演人生.md`）也在这里：人生的醒来就是定时表里人生那一行。
+//! `70-推演人生.md`）也在这里：人生的醒来就是定时表里人生那一行。同一个包里她记下自己变了什么的 `note_change`（施工 LF-11，
+//! 设计 70 第六节）拿记忆的端口。
 //!
 //! 工具只拿 [`miyu_tool::SchedulePort`]（`end_life` 拿它带着的 [`miyu_tool::LifePort`]）：唤醒表在协议端点（施工 J-1），端点造
 //! 端口交进会话。给模型看的字在资源目录的 `software/schedule/`、`software/loop/`、`software/life/` 下（进登记簿），给人看的在
 //! 各自的 `human/`。`/loop` 是核心的斜杠命令，在端点里。
 
+mod change;
 mod cron;
 mod life;
 mod texts;
@@ -55,13 +57,16 @@ pub fn loop_tools(resources: &Path) -> Result<Vec<Arc<dyn Tool>>, LoadError> {
     Ok(vec![Arc::new(wakeup::Wakeup::load(resources)?)])
 }
 
-/// 结束人生这个包的工具：只有 `end_life`（施工 LF-4 下）。字从资源目录 `resources` 读。
+/// 人生这个包的工具，照 `end_life`（施工 LF-4 下）、`note_change`（施工 LF-11）的先后。字从资源目录 `resources` 读。
 ///
 /// # Errors
 ///
 /// 哪一份字读不出来、写法不对。
 pub fn life_tools(resources: &Path) -> Result<Vec<Arc<dyn Tool>>, LoadError> {
-    Ok(vec![Arc::new(life::EndLife::load(resources)?)])
+    Ok(vec![
+        Arc::new(life::EndLife::load(resources)?),
+        Arc::new(change::NoteChange::load(resources)?),
+    ])
 }
 
 /// 一个包：编号和它的几件。

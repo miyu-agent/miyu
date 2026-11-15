@@ -47,6 +47,7 @@ fn entry(n: u64, text: &str) -> Entry {
         who: None,
         people: Vec::new(),
         place: None,
+        why: None,
     }
 }
 

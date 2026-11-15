@@ -2355,6 +2355,7 @@ name = "miyu-schedule"
 version = "2026.11.0"
 dependencies = [
  "miyu-kernel",
+ "miyu-recall",
  "miyu-tool",
  "serde",
  "serde_json",

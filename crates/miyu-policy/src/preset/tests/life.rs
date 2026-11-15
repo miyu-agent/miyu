@@ -74,3 +74,50 @@ fn life_and_images_are_withheld_together() {
     assert!(!blind.file.opens_in("life", "base-life"), "人生的也扣下");
     assert!(blind.off.is_empty(), "{:?}", blind.off);
 }
+
+/// 人生那个包的两个功能（施工 LF-11）：`life`（`end_life`）、`change`（`note_change`）。
+fn with_change() -> Features {
+    let mut list: Vec<crate::features::Feature> = super::installed().iter().cloned().collect();
+    for (id, tool) in [("life", "end_life"), ("change", "note_change")] {
+        list.push(crate::features::Feature {
+            id: id.to_string(),
+            package: "base-life".to_string(),
+            tools: vec![tool.to_string()],
+            service: None,
+            script: None,
+        });
+    }
+    Features::new(list).needing_life(["base-life".to_string()])
+}
+
+/// 施工 LF-11 验收第 3 条：`note_change` 同 `end_life` 只在没结束的人生会话里有（结束了的、普通会话 `living` 是假，整包扣下）；
+/// 预设里单关功能 `change` 的人生会话里没有它、`end_life` 还在，`change` 算进没开的。
+#[test]
+fn note_change_lives_with_end_life_and_can_be_turned_off_alone() {
+    let features = with_change();
+    let all = Chosen::new("full".to_string(), read("").unwrap(), &features);
+    assert!(
+        all.clone()
+            .living(&features, true)
+            .file
+            .keeps("change", "base-life", "note_change")
+    );
+    let ended = all.living(&features, false);
+    assert!(
+        !ended.file.keeps("change", "base-life", "note_change"),
+        "结束了的、普通会话没有"
+    );
+    assert!(!ended.file.keeps("life", "base-life", "end_life"));
+    assert!(ended.off.is_empty(), "{:?}", ended.off);
+    let file = read("[features]\nchange = false\n").unwrap();
+    let off = Chosen::new("life".to_string(), file, &features).living(&features, true);
+    assert!(
+        !off.file.keeps("change", "base-life", "note_change"),
+        "单关了"
+    );
+    assert!(
+        off.file.keeps("life", "base-life", "end_life"),
+        "end_life 还在"
+    );
+    assert_eq!(off.off, ["change"]);
+}

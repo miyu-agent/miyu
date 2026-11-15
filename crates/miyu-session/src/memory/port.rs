@@ -1,4 +1,5 @@
-//! 记忆的端口的实现（施工 R-3 中，`docs/blueprint/memory.md`「工具」、第二条、第九条）：三件工具经它记、忘、搜。
+//! 记忆的端口的实现（施工 R-3 中，`docs/blueprint/memory.md`「工具」、第二条、第九条）：三件工具经它记、忘、搜；人生会话里的
+//! `note_change` 经它记、改、去掉她自己的变化（施工 LF-11）。
 //!
 //! 每个主会话一份 [`Calls`]（这一间、这个会话、听众），每次调用照它造一个端口，带上这一轮和这次调用：记下的出处是这一轮、
 //! `by` 是这次调用。怎么记、怎么挑在 [`Keeper`]（施工 R-3 补挪出去，协议也用）；碰磁盘的在阻塞线程里做。听众：本机的会话
@@ -14,8 +15,8 @@ use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_recall::{MemoryId, Source};
 use miyu_store::recall::Room;
 use miyu_tool::{
-    CARDS, FoundCard, FoundMemory, MEMORIES, MemoryPort, Pending, Refused, Remember, Searched,
-    TURNS,
+    CARDS, FoundCard, FoundMemory, MEMORIES, MemoryPort, Note, NoteRefused, Pending, Refused,
+    Remember, Searched, TURNS,
 };
 
 use crate::blocking::blocking;
@@ -222,10 +223,35 @@ impl MemoryPort for Port {
         Box::pin(async move { blocking(move || inner.save(remember)).await })
     }
 
+    /// 她的 `forget`：她记下的自己的变化拒（施工 LF-11，[`Keeper::forget`]）。
     fn retire<'a>(&'a self, id: MemoryId, why: String) -> Pending<'a, Result<(), Refused>> {
         let inner = Arc::clone(&self.0);
         Box::pin(async move {
-            blocking(move || inner.calls.keeper.retire(inner.stamp(), id, why)).await
+            blocking(move || inner.calls.keeper.forget(inner.stamp(), id, why)).await
+        })
+    }
+
+    fn note<'a>(&'a self, note: Note) -> Pending<'a, Result<MemoryId, NoteRefused>> {
+        let inner = Arc::clone(&self.0);
+        Box::pin(async move {
+            blocking(move || {
+                let noted = inner.calls.keeper.note(
+                    inner.stamp(),
+                    (note.text, note.why),
+                    note.replaces,
+                    inner.sources(),
+                )?;
+                inner.calls.keeper.fill(&inner.using);
+                Ok(noted)
+            })
+            .await
+        })
+    }
+
+    fn drop_note<'a>(&'a self, id: MemoryId, why: String) -> Pending<'a, Result<(), NoteRefused>> {
+        let inner = Arc::clone(&self.0);
+        Box::pin(async move {
+            blocking(move || inner.calls.keeper.drop_note(inner.stamp(), id, why)).await
         })
     }
 
@@ -263,18 +289,24 @@ impl Inner {
         }
     }
 
-    /// 出处是这一轮。记下了的在后台补它的向量（施工 R-5 五补：不等下一次搜）。
-    fn save(&self, remember: Remember) -> Result<MemoryId, Refused> {
-        let sources = self
-            .turn
+    /// 出处：这一轮；没有在跑的回合的没有。
+    fn sources(&self) -> Vec<Source> {
+        self.turn
             .map(|turn| {
                 vec![Source {
                     session: self.calls.session.clone(),
                     turn,
                 }]
             })
-            .unwrap_or_default();
-        let saved = self.calls.keeper.save(self.stamp(), remember, sources)?;
+            .unwrap_or_default()
+    }
+
+    /// 出处是这一轮。记下了的在后台补它的向量（施工 R-5 五补：不等下一次搜）。
+    fn save(&self, remember: Remember) -> Result<MemoryId, Refused> {
+        let saved = self
+            .calls
+            .keeper
+            .save(self.stamp(), remember, self.sources())?;
         self.calls.keeper.fill(&self.using);
         Ok(saved)
     }

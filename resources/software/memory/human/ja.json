@@ -30,6 +30,7 @@
     "common/off": "このセッションでは記憶がオフ",
     "common/failed": "記憶が使えない：{error}",
     "common/no-such": "{id} はない",
-    "common/not-current": "{id} はもう置き換えられたか忘れられた"
+    "common/not-current": "{id} はもう置き換えられたか忘れられた",
+    "common/change": "{id} は人生で書き留めた変化で、人生セッションでしか変えられない"
   }
 }

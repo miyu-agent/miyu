@@ -9,8 +9,8 @@ use miyu_kernel::id::{Seq, SessionId, TurnId, VenueId};
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_recall::MemoryId;
 use miyu_tool::{
-    Call, Done, FoundMemory, FoundTurn, MemoryPort, Pending, Progress, Refused, Remember, Searched,
-    Tool,
+    Call, Done, FoundMemory, FoundTurn, MemoryPort, Note, NoteRefused, Pending, Progress, Refused,
+    Remember, Searched, Tool,
 };
 
 use crate::past::call_reading;
@@ -45,6 +45,19 @@ impl MemoryPort for Fake {
             .push((id, why));
         let answer = self.refuse.clone().map_or(Ok(()), Err);
         Box::pin(async move { answer })
+    }
+
+    /// 记忆的三件不调它（`note_change` 在 `miyu-schedule`，施工 LF-11）。
+    fn note<'a>(&'a self, _note: Note) -> Pending<'a, Result<MemoryId, NoteRefused>> {
+        Box::pin(async { Err(Refused::Failed("not used".into()).into()) })
+    }
+
+    fn drop_note<'a>(
+        &'a self,
+        _id: MemoryId,
+        _why: String,
+    ) -> Pending<'a, Result<(), NoteRefused>> {
+        Box::pin(async { Err(Refused::Failed("not used".into()).into()) })
     }
 
     fn search<'a>(
@@ -273,6 +286,11 @@ async fn refusals_from_the_port_are_said() {
         (
             Refused::Failed("disk full".into()),
             "Memory is not available right now: disk full.",
+        ),
+        // 她记下的自己的变化（施工 LF-11）：`replaces`、`forget` 指着它的回同一句。
+        (
+            Refused::Change(id(9)),
+            "m9 is a note of how you have changed; it can only be updated or dropped from your life session.",
         ),
     ] {
         let port = Arc::new(Fake {

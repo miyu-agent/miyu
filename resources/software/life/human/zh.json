@@ -4,12 +4,24 @@
       "name": "结束这段人生",
       "subject": "last_words",
       "icon": "✧"
+    },
+    "note_change": {
+      "name": "记下自己的变化",
+      "subject": "text",
+      "icon": "✎"
     }
   },
   "said": {
     "end/ended": "这段人生结束了",
     "end/required": "没写遗言",
     "end/already": "这段人生已经结束了",
-    "end/not-life": "这不是人生会话"
+    "end/not-life": "这不是人生会话",
+    "change/saved": "记成 {id}",
+    "change/replaced": "记成 {id}，替换 {old}",
+    "change/dropped": "去掉了 {id}",
+    "change/full": "已经记了 {limit} 条",
+    "change/not-a-note": "{id} 不是记下的变化",
+    "change/one-of": "text 和 drop 只写一个",
+    "change/too-long": "太长，{chars} 个字"
   }
 }

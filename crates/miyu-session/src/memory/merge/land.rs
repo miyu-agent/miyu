@@ -8,8 +8,8 @@ use miyu_kernel::origin::{By, Module};
 use miyu_kernel::time::Timestamp;
 use miyu_recall::merge::{Decisions, Drafted, names};
 use miyu_recall::{
-    Card, Entry, INTERRUPTED, MemoryEvent, MemoryId, MergeFailed, Merged, Merging, Retired, Saved,
-    Summary, Swept,
+    CHANGE, Card, Entry, INTERRUPTED, MemoryEvent, MemoryId, MergeFailed, Merged, Merging, Retired,
+    Saved, Summary, Swept,
 };
 use miyu_store::memory::MemoryLog;
 use miyu_tool::Refused;
@@ -64,9 +64,10 @@ impl Keeper {
             }
         }
         let after = merged.filter(|_| !stale).map(|(_, upto)| upto);
+        // 她记下的自己的变化整理不碰（施工 LF-11）：不算新记的，不轮到重看，摘要里没有它。
         let (fresh, older): (Vec<Entry>, Vec<Entry>) = all
             .into_iter()
-            .filter(|entry| self.shown(entry, false))
+            .filter(|entry| self.shown(entry, false) && entry.class != CHANGE)
             .partition(|entry| after.is_none_or(|after| entry.id.seq() > after));
         let fresh: Vec<Entry> = fresh
             .into_iter()
@@ -131,6 +132,7 @@ impl Keeper {
                 who: old.who,
                 people: old.people,
                 place: old.place,
+                why: None,
                 imported: None,
             };
             self.append(&log, stamp(), &MemoryEvent::Saved(saved))?;

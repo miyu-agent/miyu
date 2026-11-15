@@ -44,7 +44,10 @@ fn catalog() -> Catalog {
         vec![fake("remember"), fake("memory_search"), fake("forget")],
     ));
     groups.push((miyu_schedule::LOOP, vec![fake("schedule_wakeup")]));
-    groups.push((miyu_schedule::LIFE, vec![fake("end_life")]));
+    groups.push((
+        miyu_schedule::LIFE,
+        vec![fake("end_life"), fake("note_change")],
+    ));
     groups.push((miyu_schedule::SCHEDULE, vec![fake("cron_create")]));
     Catalog::in_packages(groups).expect("合写法")
 }
@@ -95,6 +98,7 @@ async fn the_life_preset_is_listed_hidden_and_gives_only_its_tools() {
             "forget",
             "history",
             "memory_search",
+            "note_change",
             "remember",
             "schedule_wakeup",
             "web_fetch",

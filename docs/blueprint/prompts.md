@@ -2664,6 +2664,17 @@ There is no memory {id}.
 {id} was already replaced or retired.
 ```
 
+#### `software/memory/common/change.txt`
+
+- 什么时候加进来：`remember` 的 `replaces`、`forget` 指着一条她在人生会话里记下的变化（字段按 `m12` 填）
+- token：23（2026-11-14 照 o200k 数）
+- 为什么加：这一类只有人生会话里的 `note_change` 改得了、去得掉（施工 LF-11，设计 70 第六节「定了的」第 2 条：别的会话里谁也改不了）；说清为什么拒、在哪改得了，不当成编号写错
+- 指纹：`ab9189a8`
+
+```text
+{id} is a note of how you have changed; it can only be updated or dropped from your life session.
+```
+
 #### `software/memory/remember/saved.txt`
 
 - 什么时候加进来：`remember` 记下了（字段按 `m12` 填）
@@ -3165,6 +3176,83 @@ This life has already ended.
 
 ```text
 This is not a life session.
+```
+
+#### `software/life/change/saved.txt`
+
+- 什么时候加进来：`note_change` 记下了一条（字段按 `m12` 填）
+- token：6（2026-11-14 照 o200k 数）
+- 为什么加：说记成了哪个编号，她改、去掉时要用（施工 LF-11）
+- 指纹：`760f2728`
+
+```text
+Noted as {id}.
+```
+
+#### `software/life/change/replaced.txt`
+
+- 什么时候加进来：`note_change` 带 `replaces` 改了一条（字段按 `m15`、`m12` 填）
+- token：12（2026-11-14 照 o200k 数）
+- 为什么加：说新的编号、替了哪一条（施工 LF-11）
+- 指纹：`93071697`
+
+```text
+Noted as {id}, in place of {old}.
+```
+
+#### `software/life/change/dropped.txt`
+
+- 什么时候加进来：`note_change` 去掉了一条（字段按 `m12` 填）
+- token：4（2026-11-14 照 o200k 数）
+- 为什么加：说去掉了哪一条（施工 LF-11）
+- 指纹：`49c56d25`
+
+```text
+Dropped {id}.
+```
+
+#### `software/life/change/full.txt`
+
+- 什么时候加进来：现在算数的已经有 10 条，新记一条（字段按 `10` 填）
+- token：17（2026-11-14 照 o200k 数）
+- 为什么加：说满了、怎么办：改一条或者先去掉一条（施工 LF-11，设计 70 第六节：上限逼她取舍）
+- 指纹：`be3a5724`
+
+```text
+You already keep {limit} notes. Update one with replaces, or drop one first.
+```
+
+#### `software/life/change/not-a-note.txt`
+
+- 什么时候加进来：`replaces`、`drop` 指着不是她记下的变化的那一条（字段按 `m12` 填）
+- token：11（2026-11-14 照 o200k 数）
+- 为什么加：别的类她用这件工具碰不了，说清是编号指错了（施工 LF-11）
+- 指纹：`050082f8`
+
+```text
+{id} is not one of your notes of change.
+```
+
+#### `software/life/change/one-of.txt`
+
+- 什么时候加进来：`text`、`drop` 都没给、都给了，`drop` 带 `replaces`
+- token：14（2026-11-14 照 o200k 数）
+- 为什么加：四格都能不写，说清要哪一种写法（施工 LF-11）
+- 指纹：`6c472bd9`
+
+```text
+Give text to note a change, or drop alone to drop one.
+```
+
+#### `software/life/change/too-long.txt`
+
+- 什么时候加进来：`text` 超过 120 字（字段按 `134`、`120` 填）
+- token：14（2026-11-14 照 o200k 数）
+- 为什么加：同 `remember` 的上限，说几个字、上限多少（施工 LF-11）
+- 指纹：`23e907c9`
+
+```text
+That is {chars} characters; a note is at most {limit}.
 ```
 
 #### `software/knowledge/common/bad-args.txt`
@@ -4795,12 +4883,12 @@ Set your next wakeup with schedule_wakeup. Here its prompt is not passed back: w
 #### `software/life/method.txt`
 
 - 什么时候加进来：出厂的推演方法：人格没有自己的 `prompts/life.md`（去掉末尾空白是空的、没有、会话不带人格）时，到点那一刻读、拼进正文的开头，后面空一行接她的留言；落进日志，之后每次请求照原样带
-- token：127（2026-11-14 照 o200k 数）
-- 为什么加：设计 70 第三节第 3 条：这条人生怎么过（一刻一刻过、只写现在在干嘛、不补过去不演将来、醒着隔一两个到几个小时、夜里睡、睡前写日记并把当天想留的一两件自己的事用 `remember` 记成自己的经历、搜到的东西不用往记忆里记）。「用 `remember` 记成自己的经历」那半句是施工 LF-9 照真模型量过加的：没有它的那一天她一次没调 `remember`、自动抽取从她自己的话里也抽不出东西，加了以后一天记 3 条自己的经历、不记新闻（设计 70 第四节）；人格目录里的 `prompts/life.md` 盖掉它（施工 LF-2，草稿，同上）
-- 指纹：`e4e804ad`
+- token：179（2026-11-15 照 o200k 数；施工 LF-11 前 127）
+- 为什么加：设计 70 第三节第 3 条：这条人生怎么过（一刻一刻过、只写现在在干嘛、不补过去不演将来、醒着隔一两个到几个小时、夜里睡、睡前写日记并把当天想留的一两件自己的事用 `remember` 记成自己的经历、搜到的东西不用往记忆里记）。「用 `remember` 记成自己的经历」那半句是施工 LF-9 照真模型量过加的：没有它的那一天她一次没调 `remember`、自动抽取从她自己的话里也抽不出东西，加了以后一天记 3 条自己的经历、不记新闻（设计 70 第四节）；人格目录里的 `prompts/life.md` 盖掉它（施工 LF-2，草稿，同上）。施工 LF-11 末尾接一句：大约一周睡前回头看这一周的日记，变了、撑过这一周的用 `note_change` 记，多数时候什么都不记，淡了的去掉（设计 70 第六节「自然而然」：不派任务、只记已经发生的、能淡掉），多 52 个 token，人生会话每次醒来带。照真模型走过两趟定的：头一版写「连着几天」，她第三天就记了；改成「这一周的日记」「撑过这一周」、工具说明里写明一周以上，她到满一周那晚才记（设计 70 第六节「实测」）
+- 指纹：`90a994ca`
 
 ```text
-Live your own life here, one moment at a time. From who you are, what happened lately, what you feel like doing, the news, and the real time and weather, decide what you are doing right now and write only that; do not fill in the past or play out the future. While awake, wake every hour or two to every few hours; sleep through the night. Before you sleep, write a diary entry for the day, and save the one or two things from your own day that you want to keep with remember, as your own experience. What you find by searching need not be saved to memory.
+Live your own life here, one moment at a time. From who you are, what happened lately, what you feel like doing, the news, and the real time and weather, decide what you are doing right now and write only that; do not fill in the past or play out the future. While awake, wake every hour or two to every few hours; sleep through the night. Before you sleep, write a diary entry for the day, and save the one or two things from your own day that you want to keep with remember, as your own experience. What you find by searching need not be saved to memory. About once a week, before you sleep, look back over the week's diary entries. If something about you has shifted and held through the week, note it with note_change; most weeks nothing has, and then note nothing. Drop a note that has faded.
 ```
 
 ### 人这边：同一个人格的人生会话里她现在在干嘛（一块带标签的事实）
@@ -5510,6 +5598,20 @@ Start a subagent in a new session to do one task and wait for it. Its report arr
 }
 ```
 
+#### `software/life/tools/note_change.json`
+
+- 什么时候加进来：会话的工具面里有人生这个包的功能「后天」（`change`）：只有没结束的人生会话（清单 `needs = ["life"]`，出厂预设 `life` 开着整包；施工 LF-11 起），每次请求都带
+- token：278（2026-11-15 照 o200k 数文件）
+- 为什么加：她在人生里记下、改、去掉自己的一处变化（设计 70 第六节，`tools/note_change.md`）：后天走记忆，不给这件工具她就没法把变化留给别的会话。说明写清记什么（习惯、喜好、说话的样子、对人对事的态度）、什么才算一处变化（撑过一周以上、好多天都看得出来；这几天的新活动、某一天的事、打算和愿望都还不算）、留在哪（每个会话里，在天生的样子旁边）、最多 10 条、什么时候改一条（变化本身加深了、转了向，不是为了补上今天的事）、不解除人设里要一直守的规矩；四格参数各一句，`text` 写以前怎样现在怎样、不是流水账，`why` 写是什么让她变的。照真模型走过两趟定的：头一版没写什么才算，她第三天就记、第十天把当天的事改了进去；这一版她到满一周才记、写成了「以前……现在……」、之后六天没再动（设计 70 第六节「实测」）
+- 指纹：`679701ba`
+
+```json
+{
+  "description": "Keep a note of a lasting change in yourself over this life: a habit, a taste, a way of talking, how you feel about someone or something. A note is for a change that has held for a week or more and shows across many days; a new activity of the last few days, a single day's event, a plan or a wish is not one yet. Notes stay with you in every conversation, next to who you were to begin with, until you update or drop them; at most 10 are kept. Update a note only when the change itself has deepened or turned, not to add what happened today. Notes describe how you have changed; they do not lift anything you were told to always or never do.",
+  "parameters": {"type":"object","properties":{"text":{"type":"string","description":"One sentence, at most 120 characters: how you were before and how you are now. Not a log of what you did."},"replaces":{"type":"string","description":"Id of an earlier note this one updates, like m12."},"drop":{"type":"string","description":"Id of a note that no longer holds. Give only this, to drop it."},"why":{"type":"string","description":"What brought the change about; with drop, why the note no longer holds."}}}
+}
+```
+
 #### `software/knowledge/tools/kb_search.json`
 
 - 什么时候加进来：会话的工具面里有 `kb_search`：知识库这个包装着、预设开着、查得到至少一个库的会话，本机的、场所的、子会话都有（施工 K-1 下，每次请求都带）
@@ -6017,6 +6119,19 @@ in {platform} group 「{place}」
 
 ```text
 What I know: {text}
+```
+
+### 事实：常驻的记忆摘要那一块，她的变化那几行上面的标题
+
+#### `software/memory/summary/changes.txt`
+
+- 什么时候加进来：这一间有现在算数的 `change`（她在人生会话里记下的自己的变化）：第一轮、压缩、清空以后，在 `<memories>` 那一行后面、摘要前面（`memory.md` 第三条第 10 款）；一条都没有的不加，一个字节不多
+- token：12（2026-11-14 照 o200k 数）
+- 为什么加：设计 70 第六节「变化靠什么」：实测里没有标题、和别的记忆混着列的时候她要多想一步「这条说的是我」；标题说明这几条是她自己记下的变化，人设是起点（施工 LF-11）
+- 指纹：`ac69bfb8`
+
+```text
+How I have changed over this life, noted by me:
 ```
 
 ### 事实：联想那一块的开头

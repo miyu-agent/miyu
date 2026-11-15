@@ -70,6 +70,7 @@ fn the_catalog_has_the_base_system() {
             "kb_save",
             "kb_search",
             "memory_search",
+            "note_change",
             "package",
             "packages",
             "read",
@@ -107,10 +108,13 @@ fn a_builtin_without_its_manifest_brings_no_tools() {
         !names_without(&[GOAL]).contains(&"goal".to_string()),
         "没装长期目标，没有 goal"
     );
-    assert!(
-        !names_without(&[miyu_schedule::LIFE]).contains(&"end_life".to_string()),
-        "没装结束人生，没有 end_life（施工 LF-4 下）"
-    );
+    let without_life = names_without(&[miyu_schedule::LIFE]);
+    for tool in ["end_life", "note_change"] {
+        assert!(
+            !without_life.contains(&tool.to_string()),
+            "没装人生这个包，没有 {tool}（施工 LF-4 下、LF-11）"
+        );
+    }
     let without_knowledge = names_without(&[KNOWLEDGE]);
     for tool in ["kb_search", "kb_read", "kb_save", "kb_edit", "kb_delete"] {
         assert!(

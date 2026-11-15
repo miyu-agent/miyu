@@ -170,6 +170,7 @@ Chinese version: [errors.md](errors.md).
 | `memory_busy`, `dream_failed` | Already organizing; organizing failed | `message` |
 | `not_dreaming` | `/dream stop`, `memory.dream_stop`: nothing is organizing | |
 | `unknown_memory`, `memory_not_current` | No such memory; already changed, retired or cleared | |
+| `change_note` | `memory.update` names a change she noted herself in her life session: a person cannot edit it, only retire or restore it | |
 | `memory_too_long` | Over 120 characters | `chars`, `limit` |
 | `unknown_kb`, `unknown_document` | No such knowledge base or document | |
 | `kb_exists`, `document_exists`, `kb_read_only`, `kb_packaged` | Already exists; mounted ones can't be added to or removed from; ones from packages can't be changed | |

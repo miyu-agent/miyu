@@ -1,0 +1,1 @@
+You already keep {limit} notes. Update one with replaces, or drop one first.

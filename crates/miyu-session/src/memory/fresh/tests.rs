@@ -104,6 +104,7 @@ fn entry(n: u64) -> Entry {
         who: None,
         people: Vec::new(),
         place: None,
+        why: None,
         at: Timestamp::parse("2026-10-07T20:00:00.000Z").unwrap(),
         by: By::Person(Person::default()),
         replaced_by: None,

@@ -4,12 +4,24 @@
       "name": "この人生を終える",
       "subject": "last_words",
       "icon": "✧"
+    },
+    "note_change": {
+      "name": "自分の変化を書き留める",
+      "subject": "text",
+      "icon": "✎"
     }
   },
   "said": {
     "end/ended": "この人生は終わりました",
     "end/required": "最後の言葉がありません",
     "end/already": "この人生はもう終わっています",
-    "end/not-life": "人生セッションではありません"
+    "end/not-life": "人生セッションではありません",
+    "change/saved": "{id} として書き留めた",
+    "change/replaced": "{id} として書き留めた（{old} を置き換え）",
+    "change/dropped": "{id} を外した",
+    "change/full": "もう {limit} 件ある",
+    "change/not-a-note": "{id} は書き留めた変化ではない",
+    "change/one-of": "text と drop はどちらか一つだけ",
+    "change/too-long": "長すぎる（{chars} 文字）"
   }
 }

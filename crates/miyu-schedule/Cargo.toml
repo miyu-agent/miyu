@@ -13,6 +13,8 @@ autotests = false
 miyu-kernel = { path = "../miyu-kernel" }
 # 工具的接口、读字、定时的端口。
 miyu-tool = { path = "../miyu-tool" }
+# 记忆的编号（`note_change` 读她写的 `m12`，施工 LF-11）。
+miyu-recall = { path = "../miyu-recall" }
 # 她给的参数。
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

@@ -61,6 +61,7 @@ fn save_in(
         who: None,
         people: Vec::new(),
         place: place.map(str::to_string),
+        why: None,
         imported: None,
     };
     log.append(saved_at(), audience, None, &MemoryEvent::Saved(saved))

@@ -2,14 +2,14 @@
 
 ### 是什么
 
-她自己结束这段人生的工具（施工 LF-4 下，设计 `70-推演人生.md` 第二节第 3 条、第三节第 5 条，`life.md`「结束」）。软件包「结束人生」（`base-life`，功能 `life`）里唯一的一件。这是一件沉重的事，不是「停掉定时」：必须写遗言，结束了恢复不了。调了以后这一轮照常说完，之后做的事和主人结束（`life.kill`）一模一样。
+她自己结束这段人生的工具（施工 LF-4 下，设计 `70-推演人生.md` 第二节第 3 条、第三节第 5 条，`life.md`「结束」）。软件包「结束人生」（`base-life`，功能 `life`）里的一件；同一个包另有功能「后天」的 `note_change`（施工 LF-11，`note_change.md`）。这是一件沉重的事，不是「停掉定时」：必须写遗言，结束了恢复不了。调了以后这一轮照常说完，之后做的事和主人结束（`life.kill`）一模一样。
 
 ### 在哪
 
 | 代码 | 管什么 |
 |---|---|
 | `crates/miyu-schedule/src/life.rs` | 参数、交端口、结果的几句、给人看的说法 |
-| `crates/miyu-schedule/src/lib.rs` | 包编号 `LIFE`、资源目录名 `LIFE_SOFTWARE`、`life_tools`；`packages` 交出这个 crate 的三个包，核心照装了哪个登记哪个 |
+| `crates/miyu-schedule/src/lib.rs` | 包编号 `LIFE`、资源目录名 `LIFE_SOFTWARE`、`life_tools`（`end_life`、`note_change` 两件）；`packages` 交出这个 crate 的三个包，核心照装了哪个登记哪个 |
 | `crates/miyu-tool/src/life.rs` | 名字 `END_LIFE`、端口 `LifePort` 和它拒的三种 `LifeRefused` |
 | `crates/miyu-tool/src/schedules.rs` 的 `SchedulePort::life` | 端口随定时端口交给工具：交定时端口的地方都交了它（造会话、载入），调用上下文不另多一格；测试里的假端口没有 |
 | `crates/miyu-endpoint/src/life/port.rs` | 端口的实现：查是不是没结束的人生会话，调 `life::finish`，不等后面的清理 |
@@ -17,7 +17,7 @@
 | `resources/software/life/tools/end_life.json` | 说明和参数格式 |
 | `resources/software/life/end/*.txt` | 结果里给她看的几句 |
 | `resources/software/life/human/{zh,en,ja}.json` | 显示名、结果那一句 |
-| `resources/packages/base-life/package.toml` | 软件包的清单：人格组，`needs = ["life"]`，一个功能 `life`，`tools = ["end_life"]` |
+| `resources/packages/base-life/package.toml` | 软件包的清单：人格组，`needs = ["life"]`，功能 `life`（`tools = ["end_life"]`）、`change`（`note_change`，施工 LF-11） |
 
 ### 对外的样子
 
@@ -75,7 +75,7 @@
 | 测试 | 守什么 |
 |---|---|
 | `crates/miyu-schedule/tests/life.rs` | 遗言原样交端口；没写、空白、不是字、不是对象的不交端口、回同一句；端口拒的三种各回各的，已经结束了的不报错；没有端口、定时端口不带人生端口的照不是人生会话说（假端口） |
-| `crates/miyu-schedule/tests/budget.rs` | 说明不超过 446 字节（2026-11-14 换成更重的一版以后实测 406 字节加一成） |
+| `crates/miyu-schedule/tests/budget.rs` | 这个包的两份说明合计不超过 1737 字节（`end_life.json` 2026-11-14 换成更重的一版以后 406 字节，施工 LF-11 加 `note_change.json`，照真模型改定以后 1173 字节，合计 1579 加一成） |
 | `crates/miyu-endpoint/tests/life_self_end.rs` | 真核心：人生会话第一轮就有、第二轮、重起核心载入以后的第三轮工具面逐项一样；`life` 预设、开了 `base-life` 的别的预设开的普通会话没有、不算没开；她调了回那一句、这一轮照常说完，`life.ended` 的 `by` 是那次调用、遗言原样，封存、那一行没了、不再醒、记忆清了、通知 `by: self` 带遗言；没写的拒、什么都不记、人生照旧在跑；同一轮先后调、一步里一起调两次只记一条、只推一次，别的回已经结束了；`stop` 落在人生循环上回新的那一句 |
 | `crates/miyu-endpoint/tests/life_preset.rs` | 出厂预设开的人生会话工具面有 `end_life` |
 | `crates/miyu-policy/src/preset/tests/life.rs` | 不是人生会话的扣下 `needs = ["life"]` 的包、不算没开、快照记的不变；是的照预设；和显示不了图片一起扣 |

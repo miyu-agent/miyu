@@ -8,11 +8,12 @@ use super::{Keeper, Stamp, done};
 impl Keeper {
     /// 改一条（协议的 `memory.update`）：给了 `text` 的新记一条 `replaces` 它，类照旧的，出处空，关键词照 `keywords`（没给的带上
     /// 旧的，空的是去掉）；只给了 `keywords` 的只换关键词，编号不变（施工 R-15 上）。认识的人那一类给了 `who` 的照它换是谁，
-    /// 没给 `text` 的照旧的正文新记一条（施工 E-1 上）。都没给的照旧交回这一条，什么都不写。
+    /// 没给 `text` 的照旧的正文新记一条（施工 E-1 上）。都没给的照旧交回这一条，什么都不写。她记下的自己的变化（施工 LF-11）
+    /// 拒。
     ///
     /// # Errors
     ///
-    /// 同 [`Keeper::save`]。
+    /// 同 [`Keeper::save`]；是她记下的变化（[`Refused::Change`]）。
     pub fn update(
         &self,
         stamp: Stamp,
@@ -25,6 +26,8 @@ impl Keeper {
         if let Some((done, _)) = done(&log, &stamp) {
             return Ok(done);
         }
+        // 她记下的自己的变化人改不了（施工 LF-11）：只换关键词的也不行。
+        self.not_a_change(&log, id)?;
         let old = self.current(&log, id)?;
         let class = old.class;
         let text = match (text, &who) {

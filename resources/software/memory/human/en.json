@@ -30,6 +30,7 @@
     "common/off": "Memory is off in this session",
     "common/failed": "Memory unavailable: {error}",
     "common/no-such": "No memory {id}",
-    "common/not-current": "{id} was already replaced or forgotten"
+    "common/not-current": "{id} was already replaced or forgotten",
+    "common/change": "{id} is a note of change; only the life session can change it"
   }
 }

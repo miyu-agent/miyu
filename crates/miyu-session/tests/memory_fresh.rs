@@ -58,6 +58,7 @@ fn save(
         who: None,
         people: Vec::new(),
         place: None,
+        why: None,
         imported: None,
     };
     log.append(saved_at(), by, None, &MemoryEvent::Saved(saved))

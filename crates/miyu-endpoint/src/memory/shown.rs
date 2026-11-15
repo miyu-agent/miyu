@@ -28,7 +28,7 @@ fn shown(entry: &Entry) -> Value {
         .ok()
         .and_then(|by| by.get("kind").cloned())
         .unwrap_or(Value::Null);
-    json!({
+    let mut value = json!({
         "id": entry.id.to_string(),
         "class": entry.class,
         "text": entry.text,
@@ -41,5 +41,10 @@ fn shown(entry: &Entry) -> Value {
         "who": entry.who,
         "people": entry.people,
         "place": entry.place,
-    })
+    });
+    // 为什么变的（施工 LF-11）：她记下的变化写了原因的才有这一格，别的条目的样子不变。
+    if let Some(why) = &entry.why {
+        value["why"] = json!(why);
+    }
+    value
 }

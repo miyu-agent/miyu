@@ -53,7 +53,9 @@ fn fake(answer: Result<(), LifeRefused>) -> Arc<Fake> {
 async fn run(port: Option<Arc<dyn SchedulePort>>, args: &str) -> Done {
     let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
     let tools = miyu_schedule::life_tools(&resources).expect("读得出");
-    assert_eq!(tools.len(), 1);
+    // 施工 LF-11 起这个包两件，`end_life` 在前。
+    assert_eq!(tools.len(), 2);
+    assert_eq!(tools[0].spec().name, "end_life");
     let mut call = miyu_tool::testkit::call(args);
     call.schedules = port;
     call.ids = Some(ids());

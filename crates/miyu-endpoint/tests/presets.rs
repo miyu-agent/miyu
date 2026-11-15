@@ -373,6 +373,8 @@ async fn presets_are_listed_and_read_by_layer() {
             ("jobs", "后台运行", true, true),
             ("knowledge", "知识库", false, true),
             ("life", "结束人生", false, true),
+            // 同一个包的第二个功能（施工 LF-11）。
+            ("change", "后天", false, true),
             ("loop", "循环任务", true, true),
             ("memory", "人格记忆", true, true),
             ("web-search", "网络搜索", true, true),

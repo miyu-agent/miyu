@@ -1,6 +1,6 @@
 ## 人生会话
 
-状态：LF-5 中施工中（2026-11-14）：开一条、问状态、暂停、继续，出厂预设「推演人生」。LF-4 上施工中（2026-11-14）：结束（`life.ended`、`life.kill`、`life.new`、清理）。LF-7 施工中（2026-11-14）：别的会话知道她现在在干嘛（下面「现在在干嘛」）。LF-4 下施工中（2026-11-14）：她自己的工具 `end_life` 和带它的内置包 `base-life`（`tools/end_life.md`）。LF-5 下施工中（2026-11-14）：核心命令 `/life`（「命令」）。头的开关是 LF-8。
+状态：LF-5 中施工中（2026-11-14）：开一条、问状态、暂停、继续，出厂预设「推演人生」。LF-4 上施工中（2026-11-14）：结束（`life.ended`、`life.kill`、`life.new`、清理）。LF-7 施工中（2026-11-14）：别的会话知道她现在在干嘛（下面「现在在干嘛」）。LF-4 下施工中（2026-11-14）：她自己的工具 `end_life` 和带它的内置包 `base-life`（`tools/end_life.md`）。LF-5 下施工中（2026-11-14）：核心命令 `/life`（「命令」）。LF-11 施工中（2026-11-14）：后天，她记下自己变了什么（下面「后天」，`tools/note_change.md`）。头的开关是 LF-8。
 
 ### 是什么
 
@@ -15,6 +15,7 @@
 | `crates/miyu-endpoint/src/life/finish.rs`（施工 LF-4 上） | `finish`：结束一段人生的六步（「结束」），`life.kill`、`life.new` 和她的 `end_life`（LF-4 下）共用 |
 | `crates/miyu-endpoint/src/life/port.rs`（施工 LF-4 下） | 交给 `end_life` 的端口 `LifePort`：查是不是没结束的人生会话、调 `finish`、不等清理；随定时端口交进会话（`schedules/port.rs`） |
 | `crates/miyu-schedule/src/life.rs`、`resources/software/life/`、`resources/packages/base-life/`（施工 LF-4 下） | 工具 `end_life` 和带它的内置包（`tools/end_life.md`） |
+| `crates/miyu-schedule/src/change.rs`、`crates/miyu-session/src/memory/keeper/change.rs`（施工 LF-11） | 工具 `note_change`（功能「后天」，`tools/note_change.md`）和记忆那一层的规矩（`memory.md` 的类 `change`） |
 | `crates/miyu-kernel/src/ledger/seal.rs` 的 `life_started`、`session/seal.rs` 的 `Session::living`（施工 LF-4 下） | 是不是没结束的人生会话：只给人生会话的包（`needs = ["life"]`）照它给不给（`presets.md`） |
 | `crates/miyu-kernel/src/ledger/seal.rs`、`session/seal.rs`（施工 LF-4 上） | `life.ended` 只记一次；记了以后同封存，这一轮结束时（闲着的当场）记 `session.sealed` |
 | `crates/miyu-session/src/actor/extract.rs`、`memory/extract/{extractor,job}.rs`（施工 LF-4 上） | 结束了的不再抽取：不上闹钟，在路上的那一次落地前丢掉 |
@@ -99,6 +100,15 @@
    - `persona.set` 改了 `life.context`（写了新的数，或者 `unset`）、你那一层的这一格这一次确实变了、几份都写成了的：回应以前，在 `core.life` 的锁里照第 1 条找这个人格的人生会话，没结束的（在跑的、停着的；停着的没载入的载入一次）当场设成要用的数（`life::follow`）。命令记成人发的，编号每次新造 `life/<UUIDv7>/context`：请求编号是各个连接自己编的，接它的话别的连接、过几天的另一次重用同一个编号会撞成 `id_reused`，或者被内核当成重发吞掉。和会话这时一样的内核不记事件（端点不另比）。没有人生会话的、结束了的什么都不做；设不成的（会话这时停了、人生刚好在这一刻结束封存了）记一行 `WARN life context not set`（`session`、`reason`），`persona.set` 照样算成：数已经写进人格，下一段人生照它。
 3. **到点不同步**（2026-11-14 项目主人定）：上下文上限是会话自己的一格。人生会话里打 `/context`（或者 `session.configure` 的 `context`）改了的一直管用，她醒几次都是这个数，和别的会话一样；人格里的数是「开一段人生时用多少」和「在人格页上改的那一刻改成多少」。两个入口改的是会话的同一格，后改的算数。
 4. **手改 `persona.toml`** 的不碰跑着的人生会话（没有人告诉核心），只管下一段人生；要马上生效的走 `persona.set`（人格的编辑页），或者在人生会话里打 `/context`。
+**10. 后天**（施工 LF-11，设计 70 第六节，2026-11-14 晚项目主人定：建人格时写的提示词是天生的，推演过程里的变化是后天的，让她的人格随着推演自然而然地变化）：
+
+1. **走记忆，人设一字不动**：她记下的一处变化是记忆的一类 `change`（`memory.md`「对外的样子」），不拼进人设、不动系统提示词；常驻那一块单列（`memory.md` 第三条第 10 款），只在新会话、压缩以后换，不断缓存。
+2. **她自己写，只在人生会话里写得了**：工具 `note_change`（包 `base-life` 的功能「后天」，`tools/note_change.md`）同 `end_life` 只在没结束的人生会话的工具面上，预设里能单独关。这个人格别的会话（群、私聊、终端）都读得到，谁也改不了：她的 `remember`、`forget` 碰不了这一类，抽取、导入不收，人经协议记、改都拒。
+3. **主人只能看、作废、恢复，不能替她写**：`memory.list`（`class` 写 `change`）、`memory.forget`、`memory.restore` 照常；恢复不看上限。
+4. **最多 10 条**：现在算数的满了，新记的拒，她得先改一条、去掉一条（上限逼她取舍）。
+5. **暂停时照带，人生结束时清空**：暂停不改什么；结束（`life.kill`、`life.new`、她自己 `end_life`）时第 6 条第 5 步「清掉这段人生留下的记忆」照出处把它们一起清掉（出处都在这个人生会话里），别的会话的常驻那一块下次就没有了；`life.new` 开的新一段从零条开始。
+6. **多久记一次不由核心限**：节奏写在推演方法里（`resources/software/life/method.txt` 末尾一句：大约一周睡前回头看这一周的日记，变了、撑过这一周的才记，多数时候什么都不记，淡了的去掉），人格的 `prompts/life.md` 盖得掉。给模型看的几句照两趟真模型改定（设计 70 第六节「实测」）。
+7. **不做**：一处变化退回上一版（主人只能作废整条、恢复作废的）；头（记忆页照这一类列、几版排成时间线、人格页上看得到）归头的会话；命令行 `miyu memory` 不加这一类的写入口。
 
 ### 命令（施工 LF-5 下，设计 70 第二节第 11 条）
 
@@ -160,4 +170,6 @@
 | `crates/miyu-schedule/tests/wakeup.rs` 的 `a_blank_reason_is_not_handed_on` 等 | `reason` 交给端口，空白的当没写 |
 | `crates/miyu-endpoint/tests/life_self_end.rs`（施工 LF-4 下） | 她自己结束：工具面只在人生会话里有、第一轮起每一轮一样（重起核心以后也一样）、别的会话没有也不算没开；调了回那一句、这一轮说完，`by` 是那次调用、遗言原样，之后和主人结束一样清理，通知 `by: self`；没写遗言的拒；同一轮调两次只记一条；`stop` 回新的那一句 |
 | `crates/miyu-schedule/tests/life.rs`（施工 LF-4 下） | `end_life` 的几种回话（假端口） |
+| `crates/miyu-endpoint/tests/life_change.rs`（施工 LF-11） | 后天第 2、3 条：`note_change` 只在人生会话里有、能单独关；记、改、去掉、搜得到；她的 `remember`、`forget`，协议的 `memory.remember`、`memory.update`、`memory.import` 碰不了；主人作废、恢复照常 |
+| `crates/miyu-endpoint/tests/life_change_more.rs`（施工 LF-11） | 后天第 1、5 条：同一个人格另开的会话常驻那一块里有、别的人格没有；`life.kill`、她自己 `end_life` 以后清掉、别的会话没有，`life.new` 从零条开始 |
 | `crates/miyu-endpoint/tests/life_command.rs`（施工 LF-5 下） | `/life`：没有的只回说明、不开、不带 `session`，结束了的同没有；在跑的说下次几点醒、停着的说停着，带它；`new` 开出来马上醒，再 `new` 旧的人记结束、新的是另一个会话、回应带新的；`pause` 到点不醒、`resume` 接着醒，没有的两个都回没有；`kill` 结束、封存，没有的回没有；在人生会话自己里面看、结束、再开都管用；不带人格、场所会话、认不出的参数各回各的、什么都不动；英文、日文回执，命令目录里有它和几种写法 |

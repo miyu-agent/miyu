@@ -283,6 +283,11 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "not_dreaming" => ("没有正在进行的整理。", "No memory organizing in progress."),
         "unknown_memory" => ("记忆不存在。", "Memory not found."),
         "memory_not_current" => ("记忆已失效。", "Memory no longer current."),
+        // 施工 LF-11：AI 在人生会话里记下的自己的变化，人改不了。
+        "change_note" => (
+            "这是 AI 在推演人生里自己记下的变化，只能作废或恢复。",
+            "This is a change the AI noted about itself in its life; it can only be retired or restored.",
+        ),
         "memory_too_long" => ("记忆过长。", "Memory too long."),
         "unknown_kb" => ("知识库不存在。", "Knowledge base not found."),
         "unknown_document" => ("文档不存在。", "Document not found."),

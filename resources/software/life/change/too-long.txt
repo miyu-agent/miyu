@@ -1,0 +1,1 @@
+That is {chars} characters; a note is at most {limit}.

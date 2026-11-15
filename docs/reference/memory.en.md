@@ -43,7 +43,7 @@ With neither, the default persona's. To follow changes, subscribe to the `memory
 | Name | Notes |
 |---|---|
 | `id` | `m<number>` |
-| `class` | `user` (about the owner), `feedback` (what the person wants from her), `episode` (something that happened), `reference` (where to find something), `person` (someone else she knows, shown as "people you know") |
+| `class` | `user` (about the owner), `feedback` (what the person wants from her), `episode` (something that happened), `reference` (where to find something), `person` (someone else she knows, shown as "people you know"); `change` (a change she noted in herself in her life session: only she can note or update it there; a person can only view, retire and restore it; `memory.remember` and `memory.import` do not take this class) |
 | `text` | The memory, at most 120 characters |
 | `by` | `person` (a person remembered it) or `tool` (she did) |
 | `at` | When it was remembered |
@@ -60,7 +60,7 @@ With neither, the default persona's. To follow changes, subscribe to the `memory
 
 | Method | Params | Response |
 |---|---|---|
-| `memory.list` | `class`, `from` (a session id: sourced in it), `forgotten` (boolean, include retired), `limit` (1 to 500, default 50) | `{"memories": [...]}`, newest first |
+| `memory.list` | `class`, `from` (a session id: sourced in it), `forgotten` (boolean, include retired), `limit` (1 to 500, default 50) | `{"memories": [...]}`, newest first. An entry of class `change` (a change she noted in herself during her life) that was given a reason has one more field, `why`; other entries do not have it |
 | `memory.search` | `query` (required), `forgotten`, `limit` (1 to 500, default 10) | `{"memories": [...]}`, most relevant first |
 
 ## `memory.turns`
@@ -88,6 +88,7 @@ Answered once on disk. The same request `id` sent again counts once, also after 
 | `memory_too_long` | Text over 120 characters or keywords over 200, `data.chars`, `data.limit`, `data.field` is `text` or `keywords` |
 | `unknown_memory` | No such memory |
 | `memory_not_current` | Already changed, retired or cleared |
+| `change_note` | `memory.update` names a `change`: a change she noted herself cannot be edited by a person, only retired or restored |
 
 ## `memory.import`
 

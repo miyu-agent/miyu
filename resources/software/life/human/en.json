@@ -4,12 +4,24 @@
       "name": "End this life",
       "subject": "last_words",
       "icon": "✧"
+    },
+    "note_change": {
+      "name": "Note a change",
+      "subject": "text",
+      "icon": "✎"
     }
   },
   "said": {
     "end/ended": "This life has ended",
     "end/required": "No last words given",
     "end/already": "This life has already ended",
-    "end/not-life": "Not a life session"
+    "end/not-life": "Not a life session",
+    "change/saved": "Noted as {id}",
+    "change/replaced": "Noted as {id}, replacing {old}",
+    "change/dropped": "Dropped {id}",
+    "change/full": "Already {limit} notes",
+    "change/not-a-note": "{id} is not a note of change",
+    "change/one-of": "Give either text or drop",
+    "change/too-long": "Too long, {chars} characters"
   }
 }

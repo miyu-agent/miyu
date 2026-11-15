@@ -8,6 +8,7 @@ use miyu_kernel::time::Timestamp;
 use super::*;
 
 mod cards;
+mod change;
 mod dropped;
 mod imported;
 mod keywords;
@@ -54,6 +55,7 @@ fn saved(text: &str, replaces: Option<MemoryId>) -> Saved {
         who: None,
         people: Vec::new(),
         place: None,
+        why: None,
         imported: None,
     }
 }

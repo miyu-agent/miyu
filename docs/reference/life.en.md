@@ -73,6 +73,10 @@ End this life, and answer once it is done: a `life.ended` event goes into the lo
 
 A life session's tools include `end_life` (from the built-in package "End of life", `base-life`): she can end this life herself and must leave last words. The tool exists only in a life session that hasn't ended; an ordinary session opened with the preset `life` doesn't have it. Once she calls it, the turn finishes as usual, and then everything happens as with `life.kill`: the session is archived read-only, she never wakes again and this life's memories are cleared; the `life.ended` event in the log has her tool call as `by` and carries the last words, and the `life.ended` notice pushed to heads has `by: "self"` and `last_words` (see [Pushes](pushes.en.md)). `life.status` then says `ended`.
 
+## When she notes how she has changed
+
+The same package has a second tool, `note_change` (the feature "Change over life", `change`, which a preset can turn off on its own), also only in a life session that hasn't ended: when she finds she has really changed (a habit, a taste, a way of talking, how she feels about someone or something), she notes it; at most 10 notes are kept, and she can update or drop one. A note is a memory of class `change` (see [Memory](memory.en.md)): every session of this persona carries it in its standing memories, and no other session or protocol method can change it. A person can only view it with `memory.list` (`class` set to `change`), retire it with `memory.forget` and restore it with `memory.restore`; `memory.update` on it answers `change_note`. It is cleared with the rest of this life's memories when the life ends, and a life started by `life.new` begins with none.
+
 ## `life.new`
 
 End a running or paused life as `life.kill` does, then start a new one as `life.start` does. Answers `{"session": <new id>, "ended": <the one that ended>}`; `ended` is absent when there was nothing to end. The new life does not remember the old one (its memories were cleared).

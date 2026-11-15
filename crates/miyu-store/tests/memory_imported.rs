@@ -27,6 +27,7 @@ fn saved(text: &str, imported: Option<Origin>) -> MemoryEvent {
         who: None,
         people: Vec::new(),
         place: None,
+        why: None,
         imported: imported.map(Box::new),
     })
 }

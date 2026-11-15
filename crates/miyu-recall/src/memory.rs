@@ -91,6 +91,15 @@ pub const EPISODE: &str = "episode";
 /// 认识的人那一类（施工 E-1 上，设计 42）：一条记一件关于某个人的事，带着是谁（[`Saved::who`]）。主人的事照旧是 `user`。
 pub const PERSON: &str = "person";
 
+/// 她在人生里记下的自己的一处变化那一类（施工 LF-11，设计 `70-推演人生.md` 第六节）：只有人生会话里的 `note_change` 记得了、
+/// 改得了、去得掉，所以不进 [`CLASSES`]（她的 `remember`、抽取、导入、协议照那张名单查，自然不收）。一条一处变化，没有是谁、
+/// 涉及谁、关键词；常驻那一块单列，整理不碰，改它、作废它不让摘要作废。
+pub const CHANGE: &str = "change";
+
+/// 现在算数的 [`CHANGE`] 最多几条（施工 LF-11）：满了的先改一条、去掉一条才记得了新的。出厂值只在这一处，不进配置（设计 70
+/// 第六节：上限逼她取舍）。主人恢复作废的不看它。
+pub const CHANGES: usize = 10;
+
 /// 一条记忆在给她看的那一行里的类（施工 E-1 上）：认识的人那一类后面接是谁（`person qq:10086`），别的照类。
 #[must_use]
 pub fn shown_class(class: &str, who: Option<&str>) -> String {
@@ -190,11 +199,20 @@ pub struct Saved {
     /// 以前记的没有，不写。群改了名字的，以前记的照旧是那时的名字。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub place: Option<String>,
+    /// 为什么变的（施工 LF-11）：[`CHANGE`] 那一类她记的时候写的原因（`note_change` 的 `why`），给人看；别的类、没写的没有，
+    /// 不写。改一条不带上旧的：新的一版有它自己的原因。装在盒子里，理由同 [`Saved::imported`]。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub why: Option<Box<Why>>,
     /// 从别处导进来的（施工 MI-1，`memory.import`）：原来记下的时刻、在原来那边是哪一条，平铺成 `noted`、`origin` 两格；别的路记的
     /// 没有，不写。装在盒子里：两格放在外面，`MemoryEvent` 里这一种比别的大出一截（clippy 的 `large_enum_variant`）。
     #[serde(flatten)]
     pub imported: Option<Box<Origin>>,
 }
+
+/// 为什么变的那一句（施工 LF-11，[`Saved::why`]）：日志里就是一句字。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct Why(pub String);
 
 /// 导进来的一条从哪来（施工 MI-1）。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

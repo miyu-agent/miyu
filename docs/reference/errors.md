@@ -170,6 +170,7 @@
 | `memory_busy`、`dream_failed` | 正在整理；整理没成 | `message` |
 | `not_dreaming` | `/dream stop`、`memory.dream_stop`：没有正在跑的整理 | |
 | `unknown_memory`、`memory_not_current` | 没有这一条；已经改掉、作废、清掉了 | |
+| `change_note` | `memory.update` 指着她在人生会话里自己记下的变化：人改不了，只能作废、恢复 | |
 | `memory_too_long` | 超过 120 个字 | `chars`、`limit` |
 | `unknown_kb`、`unknown_document` | 没有这个库、这个文档 | |
 | `kb_exists`、`document_exists`、`kb_read_only`、`kb_packaged` | 已经有了；挂进来的库不能加删；软件包带来的库不能改 | |

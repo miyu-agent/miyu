@@ -75,6 +75,7 @@ impl Keeper {
                 who,
                 people,
                 place: None,
+                why: None,
                 imported: Some(Box::new(Origin {
                     noted: item.at,
                     origin: item.origin,

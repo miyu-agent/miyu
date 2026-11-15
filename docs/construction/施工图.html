@@ -1534,6 +1534,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sLF5c"><span class="n">LF-5 下</span>核心命令 /life<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF9"><span class="n">LF-9</span>推演人生定稿<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF10"><span class="n">LF-10</span>上下文上限出厂 100000，人格里能设<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sLF11"><span class="n">LF-11</span>后天：她记下自己变了什么<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sVW1"><span class="n">VW-1</span>主人只读地看场所会话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT1"><span class="n">HT-1</span>内核认得供应商侧工具<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT3"><span class="n">HT-3</span>供应商侧工具画成工具步骤<span class="st">✓</span></a></li>
@@ -59321,6 +59322,62 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LF-10-人格设上下文上限.md</code>；设计 <code>70-推演人生.md</code> 第四节；蓝图 <code>life.md</code>「上下文上限」、<code>personas.md</code>；协议参考 <code>personas.md</code>、<code>life.md</code> 中英各两份。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sLF11" aria-labelledby="h-sLF11">
+  <div class="sheet-head"><h2 id="h-sLF11"><span class="no">LF-11</span>后天：她记下自己变了什么</h2><span class="pill done">做完</span></div>
+  <p class="purpose">建人格时写的提示词是天生的，推演过程里的变化是后天的。项目主人定后天走记忆、人设一字不动：她在人生会话里记下自己的一处变化，这个人格每个会话里的她都带着，别处谁也改不了。这一步做核心的机关；给模型看的字拿真模型走了两趟改定：头一版她第三天就记，改过以后到满一周才记。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-recall · memory.rs　miyu-session · keeper/change.rs　summary.rs　miyu-schedule · change.rs</span><span class="dir-note">LF-11</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>记忆多一类 <code>change</code>，现在算数的最多 10 条</li>
+              <li>人生会话里多一件 <code>note_change</code>：记一条、改一条、去掉一条；预设能单独关</li>
+              <li>她的 <code>remember</code>、<code>forget</code>，抽取、导入、协议改一条都碰不了它；主人作废、恢复照常</li>
+              <li>常驻那一块开头单列：一行标题、旧的在前，不占 3000 字节</li>
+              <li>联想、醒来那一块、抽取、整理都不带它，改它不让摘要作废；人生结束跟着清掉</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">后天走记忆，人设一字不动；只在人生会话里写得了</span><span class="rl">项目主人 2026-11-14 晚定</span></div>
+          <div class="tile new"><span class="nm">主人只能看、作废、恢复，不能替她写；恢复不看上限</span><span class="rl">项目主人定</span></div>
+          <div class="tile new"><span class="nm">规矩落在记忆那一层，工具不判自己在哪种会话里</span><span class="rl">施工单定</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LF-11</dd></div>
+        <div><dt>名称</dt><dd>后天：她记下自己变了什么</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">LF-11</dd></div>
+        <div><dt>验收</dt><dd>动到的几个 crate 的测试、clippy、fmt 过；四个手写变异都被逮住</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>她记下、改、去掉一条，回的几句各是各的；满 10 条新记的拒，改一条照常</span></li>
+        <li><span class="ok">✓</span><span>只有没结束的人生会话里有这件工具，普通会话拿同一个预设没有，单关了的没有、<code>end_life</code> 还在</span></li>
+        <li><span class="ok">✓</span><span>同一个人格另开的会话开头就带着她的变化，别的人格没有；人生结束以后清掉</span></li>
+        <li><span class="ok">✓</span><span>常驻那一块整块逐字比对；没有变化的和原来一个字节不差</span></li>
+        <li><span class="ok">✓</span><span>整理交给模型的请求里没有它，改它、作废它、恢复它摘要照旧算数</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LF-11-后天.md</code>；设计 <code>70-推演人生.md</code> 第六节；蓝图 <code>memory.md</code>、<code>life.md</code>「后天」、<code>tools/note_change.md</code>、<code>packages.md</code>、<code>presets.md</code>；协议参考 <code>memory.md</code>、<code>life.md</code>、<code>errors.md</code> 中英各一份。</li>
       </ul>
     </div>
   </div>
