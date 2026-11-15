@@ -354,7 +354,9 @@ async fn a_bad_delta_drops_the_call() {
     );
 }
 
-#[tokio::test]
+/// 时钟停着、只在都等着的时候往前跳（施工 RB-1）：段间隔、空闲时限、总时限都照假的时钟算，机器忙不忙都一样；用真的时钟时，
+/// 机器忙得某两段之间隔过了空闲时限，就先按卡住结束了。
+#[tokio::test(start_paused = true)]
 async fn a_quiet_driver_times_out_but_a_trickling_one_does_not() {
     let fake = scripted(vec![Plan::Hang(vec![hello()[0].clone()])]);
     let (ended, deltas, _) =
@@ -389,7 +391,8 @@ fn trickle(n: usize) -> Vec<Value> {
     batches
 }
 
-#[tokio::test]
+/// 时钟停着（施工 RB-1，同上一条）：每一段都正好隔 10 毫秒到，永远碰不到空闲时限，结束只能是总时限。
+#[tokio::test(start_paused = true)]
 async fn the_total_limit_holds_even_when_deltas_keep_coming() {
     // 空闲时限 100 毫秒、总时限 1 秒（十倍）：每 10 毫秒来一段，三百段要 3 秒，总时限先到，后面的不收。
     let fake = scripted(vec![Plan::Answer(
@@ -402,7 +405,12 @@ async fn the_total_limit_holds_even_when_deltas_keep_coming() {
         error(&ended),
         Some((ErrorClass::Retryable, "the driver went quiet".to_string()))
     );
-    assert!(deltas.len() < 302, "没等它交完：{}", deltas.len());
+    // 到 1 秒那一刻停：开头那一段加上前一百段左右（假的时钟上一段不差），远不到三百段。
+    assert!(
+        (95..=105).contains(&deltas.len()),
+        "总时限一到就停：{}",
+        deltas.len()
+    );
 }
 
 #[tokio::test]

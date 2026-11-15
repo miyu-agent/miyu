@@ -61,6 +61,8 @@ uuid = { version = "1", features = ["v7"] }
 testkit = []
 
 [dev-dependencies]
+# 测试里停住时钟（施工 RB-1）：段间隔、空闲时限照假的时钟走，机器忙不忙都一样。
+tokio = { version = "1", features = ["test-util"] }
 # 测试的临时目录删到一半撞上后台写入的，过一会儿再删（施工 TMP-1）。
 miyu-store = { path = "../miyu-store", features = ["testkit"] }
 # 测试用的假工具（施工 4-2）。
