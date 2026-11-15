@@ -60078,6 +60078,59 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
     </div>
   </div>
 </section>
+<section class="sheet" id="sWN1" aria-labelledby="h-sWN1">
+  <div class="sheet-head"><h2 id="h-sWN1"><span class="no">WN-1</span>Windows 对齐的一批小修</h2><span class="pill done">做完</span></div>
+  <p class="purpose">三平台摸底查出 Windows 上几处和 Linux、macOS 不一样：危险命令一条都不拦，几处路径、编号、说法对不上。照 bash 那一路的口径补上 PowerShell 和 cmd，其余照实改。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-policy · hazard/windows.rs、windows/{lex,cmd,delete,paths}.rs　miyu-basesystem · shell/hazard.rs、waiting.rs　miyu-fs · private.rs、plain.rs　miyu-store · layers.rs　miyu-ipc · error.rs　miyu-cli · language</span><span class="dir-note">WN-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>PowerShell、<code>cmd /c</code> 里的删除、格式化、关机、<code>irm | iex</code>、git、容器照同样的种类拒或问，五个开关跟着管用</li>
+              <li>开头是 <code>Start-Sleep</code> 的到时照杀，不挪后台</li>
+              <li><code>~\</code> 各处照 <code>miyu_fs::tilde</code> 认</li>
+              <li>人格、预设编号拦 <code>con</code>、<code>nul</code>、<code>com1</code> 这类设备名，三个系统一律拦</li>
+              <li>命名管道、Windows 沙盒、没有发行包几句说法照实</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">盘符算根</span><span class="rl">盘符下一级算系统目录</span></div>
+          <div class="tile new"><span class="nm">判法共用</span><span class="rl">只有拆命令、认路径分两路</span></div>
+          <div class="tile"><span class="nm">等拍板</span><span class="rl">执行策略、HKLM 注册表要新种类</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">WN-1</dd></div>
+        <div><dt>名称</dt><dd>Windows 对齐的一批小修</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-14</dd></div>
+        <div><dt>提交</dt><dd class="mono">WN-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy 全过；Windows 上的测试看三台 CI</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>每种拦的、相近的常用命令不拦的，各有例子</span></li>
+        <li><span class="ok">✓</span><span><code>Start-Sleep</code>、设备名编号、命名管道、没有发行包的测试改前红</span></li>
+        <li><span class="ok">✓</span><span>会话层高危测试在 Windows 上打开</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/WN-1-Windows对齐.md</code>；蓝图 <code>tools/shell.md</code>、<code>cli/ask.md</code>、<code>cli/upgrade.md</code>、<code>config.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
 
 <footer class="foot">
   <p>这张图跟着施工走：一步合进 main，它的那张图就跟着定稿，标题栏里写上提交号。源文件是仓库里的 <code>docs/construction/施工图.html</code>，浏览器直接打开就能看。</p>
