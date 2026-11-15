@@ -22,6 +22,14 @@ const RESERVED: [&str; 22] = [
     "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
 ];
 
+/// 一段名字 `name` 是 Windows 的设备名（`CON`、`nul.txt` 这些，不管大小写、带不带扩展名）：Windows 上建不出这个名字的文件、
+/// 目录（施工 WN-1 从 [`usable`] 拆出来，人格、预设的编号也照它拦）。
+#[must_use]
+pub fn windows_reserved(name: &str) -> bool {
+    let stem = name.split('.').next().unwrap_or(name);
+    RESERVED.iter().any(|one| one.eq_ignore_ascii_case(stem))
+}
+
 /// 普通写法最长几个字（`MAX_PATH` 260 减结尾的零）。
 const MOST: usize = 259;
 
@@ -34,14 +42,10 @@ pub fn usable(real: &Path) -> PathBuf {
         return real.to_path_buf();
     }
     let short = plain(real);
-    let reserved = |name: &str| {
-        let stem = name.split('.').next().unwrap_or(name);
-        RESERVED.iter().any(|one| one.eq_ignore_ascii_case(stem))
-    };
     let odd = short
         .split('\\')
         .skip(1)
-        .any(|name| reserved(name) || name.ends_with('.') || name.ends_with(' '));
+        .any(|name| windows_reserved(name) || name.ends_with('.') || name.ends_with(' '));
     if odd || short.chars().count() > MOST {
         return real.to_path_buf();
     }

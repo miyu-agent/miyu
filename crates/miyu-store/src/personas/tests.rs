@@ -147,6 +147,17 @@ fn missing_and_badly_named_personas_are_refused() {
             "{id:?}"
         );
     }
+    // Windows 的设备名建不出目录，三个系统一律拦（施工 WN-1）；只是开头像的照旧收。
+    for id in ["con", "prn", "aux", "nul", "com1", "lpt9"] {
+        assert!(
+            matches!(places.personas.find(id), Err(PersonaError::BadId(_))),
+            "{id:?}"
+        );
+        assert!(!valid(id), "{id:?}");
+    }
+    for id in ["console", "nul-x", "com10", "lpt", "auxiliary"] {
+        assert!(valid(id), "{id:?}");
+    }
     // 是文件、不是目录的不算。
     fs::create_dir_all(places.scratch.path().join("res/personas")).unwrap();
     fs::write(places.scratch.path().join("res/personas/file"), "x").unwrap();

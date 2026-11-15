@@ -110,10 +110,12 @@ pub(crate) fn read_text(path: &Path) -> io::Result<Option<String>> {
     }
 }
 
-/// 人格、预设的编号合不合写法：小写字母开头，小写字母、数字、`-`、`_`，最多 64 个。它是一层目录或一个文件名，不许带路径。
+/// 人格、预设的编号合不合写法：小写字母开头，小写字母、数字、`-`、`_`，最多 64 个。它是一层目录或一个文件名，不许带路径；
+/// 也不许是 Windows 的设备名（`con`、`nul`、`com1` 这些，施工 WN-1）：Windows 上建不出来，编号要能跨机器用，三个系统一律拦。
 pub fn valid(id: &str) -> bool {
     let mut chars = id.chars();
     chars.next().is_some_and(|first| first.is_ascii_lowercase())
         && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '_')
         && id.len() <= 64
+        && !miyu_fs::windows_reserved(id)
 }

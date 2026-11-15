@@ -38,7 +38,7 @@ personas/<编号>/                 你的（数据根下）
     └── life.md                  推演方法（施工 LF-2）
 ```
 
-1. 编号就是目录名：小写字母开头，小写字母、数字、`-`、`_`，最多 64 个（和配置里的名字一个写法）。
+1. 编号就是目录名：小写字母开头，小写字母、数字、`-`、`_`，最多 64 个（和配置里的名字一个写法）；不能是 Windows 的设备名（`con`、`prn`、`aux`、`nul`、`com1`～`com9`、`lpt1`～`lpt9`，`miyu_fs::windows_reserved`，施工 WN-1）：Windows 上建不出来，编号要能跨机器用，三个系统一律拦。
 2. 同名的后面的叠在前面的上面：`persona.toml` 逐项盖（同一格里逐种语言盖），`prompts/` 里的文件同名替换、没写的沿用。只有一个空目录也算有这一层。
 3. 每样都可以没有：测试用的样本（软件工程师，`docs/designs/samples/personas/engineer/`）只有 `persona.toml` 的名字和 `prompts/persona.md`。
 4. `prompts/reminders.md`（施工 P-1 补）：整份是一条提示，照原样（例如旧版 Miyu 的 `miyu.hint.md`）；去掉末尾空白是空的，算没有。有它的人格每 3 轮在触发的那句后面多一块提示，system 最后多一句风格锁（`26-提示词.md` J10、第四节第 7 块）。

@@ -259,7 +259,7 @@ async fn what_the_core_would_refuse_is_said_plainly() {
     );
     assert_eq!(run(&home, &cwd, &[]).await.out, "notes  0 篇\n");
 
-    let rule = "miyu: 知识库编号无效：日语\n提示：编号以小写字母开头，只含小写字母、数字、- 和 _，最多 64 个字符\n";
+    let rule = "miyu: 知识库编号无效：日语\n提示：编号以小写字母开头，只含小写字母、数字、- 和 _，最多 64 个字符，不能是 con、nul、com1 这类 Windows 保留名\n";
     let named = run(&home, &cwd, &["new", "日语"]).await;
     assert_eq!((named.code, named.err.as_str()), (2, rule));
     let searched = run(&home, &cwd, &["search", "团子", "--kb", "日语"]).await;

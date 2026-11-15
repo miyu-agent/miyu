@@ -118,10 +118,10 @@ impl Language {
     pub(crate) fn kb_bad_id(&self, id: &str) -> Problem {
         match self {
             Language::Chinese => Problem::new(format!("知识库编号无效：{id}")).hint(
-                "编号以小写字母开头，只含小写字母、数字、- 和 _，最多 64 个字符",
+                "编号以小写字母开头，只含小写字母、数字、- 和 _，最多 64 个字符，不能是 con、nul、com1 这类 Windows 保留名",
             ),
             Language::English => Problem::new(format!("invalid knowledge base id: {id}")).hint(
-                "start with a lowercase letter, use only lowercase letters, digits, - and _, at most 64 characters",
+                "start with a lowercase letter, use only lowercase letters, digits, - and _, at most 64 characters, and not a Windows reserved name such as con, nul or com1",
             ),
         }
     }

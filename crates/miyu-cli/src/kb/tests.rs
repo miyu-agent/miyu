@@ -98,7 +98,7 @@ fn plain_refusals_in_both_languages() {
     );
     let bad = said(en, en.kb_bad_id("日语"));
     assert_eq!(bad[0], "miyu: invalid knowledge base id: 日语");
-    assert!(bad[1].ends_with("at most 64 characters"), "{bad:?}");
+    assert!(bad[1].ends_with("such as con, nul or com1"), "{bad:?}");
     assert_eq!(
         said(zh, zh.kb_no_page(9, 3)),
         ["miyu: 没有第 9 页：共 3 页"]

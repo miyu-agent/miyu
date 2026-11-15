@@ -92,7 +92,10 @@ fn missing_bad_and_broken_ones_say_why() {
         places.presets.find("nope"),
         Err(PresetError::NotFound(_))
     ));
-    for id in ["Dev", "../dev", "dev.toml", ""] {
+    // Windows 的设备名建不出文件，三个系统一律拦（施工 WN-1）。
+    for id in [
+        "Dev", "../dev", "dev.toml", "", "con", "nul", "com3", "lpt1",
+    ] {
         assert!(
             matches!(places.presets.find(id), Err(PresetError::BadId(_))),
             "{id}"
