@@ -201,12 +201,13 @@ fn home_dir(core: &Core) -> PathBuf {
     core.home.clone().unwrap_or_default()
 }
 
-/// 命令第一项写成 `~/` 开头的，换成家目录 `home` 下的绝对路径；不知道家目录的、网址的照原样。
+/// 命令第一项写成 `~/` 开头的（Windows 上 `~\` 也算，照 [`miyu_fs::tilde`]，施工 WN-1），换成家目录 `home` 下的绝对路径；
+/// 不知道家目录的、网址的照原样。
 fn tilde(server: &McpServer, home: &std::path::Path) -> McpServer {
     let mut server = server.clone();
     if let Reach::Command { command, .. } = &mut server.reach
         && let Some(first) = command.first_mut()
-        && let Some(rest) = first.strip_prefix("~/")
+        && let Some(rest) = miyu_fs::tilde(first).filter(|rest| !rest.is_empty())
         && home.is_absolute()
     {
         *first = home.join(rest).to_string_lossy().into_owned();

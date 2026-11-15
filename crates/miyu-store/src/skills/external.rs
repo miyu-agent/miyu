@@ -91,9 +91,10 @@ pub fn of(values: &Values, home: Option<&Path>) -> Vec<External> {
     external
 }
 
-/// 目录表里一项的写法 `text` 认不认（`config.set`、`miyu check` 照它查）：`~`、`~/…`、绝对路径认。
+/// 目录表里一项的写法 `text` 认不认（`config.set`、`miyu check` 照它查）：`~`、`~/…`（Windows 上 `~\…` 也算，照
+/// [`miyu_fs::tilde`]，施工 WN-1）、绝对路径认。
 pub fn well_written(text: &str) -> bool {
-    text == "~" || text.starts_with("~/") || Path::new(text).is_absolute()
+    miyu_fs::tilde(text).is_some() || Path::new(text).is_absolute()
 }
 
 /// 一项写法 `text` 照家目录 `home` 拼成的位置。

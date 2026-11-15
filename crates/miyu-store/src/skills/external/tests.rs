@@ -82,3 +82,9 @@ fn only_home_and_absolute_paths_are_well_written() {
     assert!(!well_written("~other/skills"));
     assert!(!well_written(""));
 }
+
+/// `~\` 和文件工具一样认（施工 WN-1，照 `miyu_fs::tilde`）：Windows 上认，别处 `\` 不是分隔符，照旧不认。
+#[test]
+fn a_backslash_after_the_tilde_follows_the_platform() {
+    assert_eq!(well_written(r"~\.agents\skills"), cfg!(windows));
+}

@@ -49,14 +49,12 @@ pub fn private_dirs_with(
     dirs
 }
 
-/// 人写的一个目录：`~`、`~/…` 照家目录拼（一段一段接上），绝对路径照原样；别的写法没有。
+/// 人写的一个目录：`~`、`~/…`（Windows 上 `~\…` 也算，照 [`crate::tilde`]，施工 WN-1）照家目录拼（一段一段接上），绝对路径
+/// 照原样；别的写法没有。
 pub fn written(home: &Path, text: &str) -> Option<PathBuf> {
-    if text == "~" {
-        return Some(home.to_path_buf());
-    }
-    if let Some(rest) = text.strip_prefix("~/") {
+    if let Some(rest) = crate::tilde(text) {
         let joined = rest
-            .split('/')
+            .split(|c| c == '/' || (cfg!(windows) && c == '\\'))
             .filter(|part| !part.is_empty())
             .fold(home.to_path_buf(), |dir, part| dir.join(part));
         return Some(joined);

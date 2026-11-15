@@ -138,3 +138,14 @@ fn the_store_apps_folder_is_not_hidden_on_windows() {
         "{SHIPPED_PRIVATE:?}"
     );
 }
+
+/// `~\` 和文件工具一样认（施工 WN-1，照 `tilde`）：Windows 上是家目录下面，别处 `\` 不是分隔符，照旧不收。
+#[test]
+fn a_backslash_after_the_tilde_follows_the_platform() {
+    let written = written(&home(), r"~\.config\gh");
+    if cfg!(windows) {
+        assert_eq!(written, Some(home().join(".config").join("gh")));
+    } else {
+        assert_eq!(written, None);
+    }
+}

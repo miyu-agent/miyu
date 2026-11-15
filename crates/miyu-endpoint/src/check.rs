@@ -465,13 +465,9 @@ fn unreadable_io(words: &Human, shown: &str, kind: &str, error: &std::io::Error)
     unreadable(words, shown, kind, &why)
 }
 
-/// `~`、`~/` 开头的照家目录接，相对的照 `cwd` 接，绝对的照原样。
+/// `~`、`~/` 开头的（Windows 上 `~\` 也算，照 [`miyu_fs::tilde`]，施工 WN-1）照家目录接，相对的照 `cwd` 接，绝对的照原样。
 fn expand(text: &str, home: Option<&Path>, cwd: Option<&Path>) -> PathBuf {
-    let rest = match text {
-        "~" => Some(""),
-        _ => text.strip_prefix("~/"),
-    };
-    if let (Some(rest), Some(home)) = (rest, home) {
+    if let (Some(rest), Some(home)) = (miyu_fs::tilde(text), home) {
         return home.join(rest);
     }
     let path = Path::new(text);

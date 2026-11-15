@@ -91,6 +91,13 @@ fn a_tilde_command_follows_the_home() {
             "--flag".to_string()
         ]
     );
+    // `~\` 和文件工具一样认（施工 WN-1，照 `miyu_fs::tilde`）：Windows 上换，别处 `\` 不是分隔符，照原样。
+    let backslash = tilde(&server("own", &[r"~\bin\server"], 1), home);
+    let expected = match cfg!(windows) {
+        true => home.join(r"bin\server").to_string_lossy().into_owned(),
+        false => r"~\bin\server".to_string(),
+    };
+    assert_eq!(command_of(&backslash), [expected]);
     let plain = tilde(&server("own", &["npx", "~/x"], 1), home);
     assert_eq!(command_of(&plain), ["npx", "~/x"], "只换第一项");
     let unknown = tilde(&server("own", &["~/bin/server"], 1), Path::new(""));
