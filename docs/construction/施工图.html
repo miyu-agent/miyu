@@ -1550,6 +1550,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sDOC1"><span class="n">DOC-1</span>用户手册和开发者文档<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sDOC2"><span class="n">DOC-2</span>手册和开发者文档的英文版<span class="st">✓</span></a></li>
         <li><a class="step review" href="#sDOC3"><span class="n">DOC-3</span>手册跟上 WN-1<span class="st">…</span></a></li>
+        <li><a class="step done" href="#sRB1"><span class="n">RB-1</span>可靠性修理一批<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -60236,6 +60237,61 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/WN-1-Windows对齐.md</code>；蓝图 <code>tools/shell.md</code>、<code>cli/ask.md</code>、<code>cli/upgrade.md</code>、<code>config.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sRB1" aria-labelledby="h-sRB1">
+  <div class="sheet-head"><h2 id="h-sRB1"><span class="no">RB-1</span>可靠性修理一批</h2><span class="pill done">做完</span></div>
+  <p class="purpose">五件：后台命令结束抢在起它的那次调用的结果前面到、被内核扔掉；Windows 上一条登录测试一直不返回；一条测试负载下偶发红；测试数据根里留下画图的字体位置；从软件源装的包看不到驱动会让供应商自己跑什么。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-session · jobs/gate.rs、jobs.rs、jobs/run.rs、jobs/query.rs、route/extension/tests.rs　miyu-mermaid · lib.rs　miyu-source · index.rs、collect.rs　miyu-endpoint · packages/source/glance.rs、look.rs　miyu-cli · pkg/confirm.rs、pkg/info.rs</span><span class="dir-note">RB-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>任务端口照调用扣：那次调用的 <code>tool.result</code> 落盘以前，它起的命令的结束、行、到了上限停掉的先扣下，落了盘照先后交</li>
+              <li>登录那条测试连运行时收尾一起限时 180 秒，到了说出卡在哪一步（根因没复现出来）</li>
+              <li>两条时间敏感的测试停住时钟（<code>start_paused</code>）</li>
+              <li>画图从定字体目录到画完拿着一把整个进程共用的锁</li>
+              <li>索引条目多 <code>hosted</code>，看一眼、<code>package.info</code>、确认屏、<code>miyu pkg info</code> 照它说</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">不早到的一字不变</span><span class="rl">只有抢在结果前面的才扣</span></div>
+          <div class="tile new"><span class="nm">结果先落盘的不扣</span><span class="rl">不然任务表一直不空</span></div>
+          <div class="tile new"><span class="nm">旧索引照旧不印</span><span class="rl">没有 hosted 的不说</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">RB-1</dd></div>
+        <div><dt>名称</dt><dd>可靠性修理一批</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">RB-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>结束等结果落盘才交、行和停掉的照先后、结果先落盘的不扣；压测卡住的从 0.75% 到 0</span></li>
+        <li><span class="ok">✓</span><span>总时限那一条去掉总时限报红</span></li>
+        <li><span class="ok">✓</span><span>另一份一直改字体目录，位置只记在画图的这一份里</span></li>
+        <li><span class="ok">✓</span><span>软件源的看一眼、package.info 带 hosted，旧索引不带</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/RB-1-可靠性.md</code>；蓝图 <code>packages.md</code>、<code>protocol.md</code>、<code>cli/pkg.md</code>；协议参考 <code>packages.md</code>。</li>
       </ul>
     </div>
   </div>

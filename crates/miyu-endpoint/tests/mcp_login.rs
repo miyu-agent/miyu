@@ -4,6 +4,7 @@
 //! 不走登录；没有的服务 `unknown_server`；第二次登录绑同一个端口；删了服务，存的那一份跟着清掉。
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use serde_json::json;
 
@@ -12,6 +13,7 @@ use miyu_mcp::testkit::oauth::{AuthServer, browse};
 use miyu_session::testkit::Script;
 
 use crate::support::mcp::*;
+use crate::support::watchdog::Watchdog;
 use crate::support::*;
 
 /// 一份核心，看着配置、起了扩展、跟着配置（密钥变了重起、删了服务清掉都在这一路上）；交回核心、连好的头，和要留着的两样。
@@ -176,26 +178,48 @@ async fn a_second_login_binds_the_same_port_and_removing_the_server_clears_it() 
     drop(core);
 }
 
-#[tokio::test]
-async fn only_a_listed_url_server_without_its_own_token_logs_in() {
-    let server = HttpServer::start(false).await;
-    let home = Home::new();
-    home.write(
-        "etc/config.toml",
-        &format!("[mcp.notes]\nurl = \"{}\"\nbearer = \"t0k\"\n", server.url),
+/// 连运行时的收尾一起限时（施工 RB-1，[`Watchdog`]）：CI 的 Windows 那格这一条跑满 60 分钟被取消过，测试里的时限都没到。
+#[test]
+fn only_a_listed_url_server_without_its_own_token_logs_in() {
+    let dog = Watchdog::new(
+        "only_a_listed_url_server_without_its_own_token_logs_in",
+        Duration::from_secs(180),
     );
-    let (_core, mut client, _kept) = running(&home).await;
-    until_listed(&mut client, "notes", |one| one["state"] == "running").await;
-    let own = client
-        .call("l1", "mcp.login", json!({"service": "notes"}))
-        .await;
-    assert_eq!(
-        reason(&own),
-        Some("bad_params"),
-        "写了令牌的不走登录：{own}"
-    );
-    let none = client
-        .call("l2", "mcp.login", json!({"service": "nobody"}))
-        .await;
-    assert_eq!(reason(&none), Some("unknown_server"), "{none}");
+    dog.run(async {
+        dog.step("起假服务");
+        let server = HttpServer::start(false).await;
+        let home = Home::new();
+        home.write(
+            "etc/config.toml",
+            &format!("[mcp.notes]\nurl = \"{}\"\nbearer = \"t0k\"\n", server.url),
+        );
+        dog.step("起核心、连上");
+        let (core, mut client, kept) = running(&home).await;
+        dog.step("等 notes 跑起来");
+        until_listed(&mut client, "notes", |one| one["state"] == "running").await;
+        dog.step("mcp.login notes");
+        let own = client
+            .call("l1", "mcp.login", json!({"service": "notes"}))
+            .await;
+        assert_eq!(
+            reason(&own),
+            Some("bad_params"),
+            "写了令牌的不走登录：{own}"
+        );
+        dog.step("mcp.login nobody");
+        let none = client
+            .call("l2", "mcp.login", json!({"service": "nobody"}))
+            .await;
+        assert_eq!(reason(&none), Some("unknown_server"), "{none}");
+        dog.step("收尾：放下监视和跟着配置的");
+        drop(kept);
+        dog.step("收尾：断开连接");
+        drop(client);
+        dog.step("收尾：放下核心");
+        drop(core);
+        dog.step("收尾：删数据根");
+        drop(home);
+        dog.step("收尾：停假服务");
+        drop(server);
+    });
 }
