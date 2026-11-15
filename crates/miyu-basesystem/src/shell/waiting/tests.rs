@@ -1,6 +1,6 @@
 //! 前台干等的认法（2026-10-26）：顶层的、不短于两秒的 `sleep` 拒；管道、循环体、后台、短停、引号里的照跑。
 
-use super::waits;
+use super::{sleeps, waits};
 
 #[test]
 fn a_foreground_wait_is_caught() {
@@ -46,5 +46,21 @@ fn other_commands_run() {
         "",
     ] {
         assert!(!waits(command), "{command}");
+    }
+}
+
+/// 到时照旧杀、不挪到后台的：开头是 `sleep` 的，PowerShell 的 `Start-Sleep` 也算（施工 WN-1）。
+#[test]
+fn a_leading_sleep_is_not_moved_to_the_background() {
+    for command in [
+        "sleep 30",
+        "sleep 5 && make",
+        "Start-Sleep -Seconds 30",
+        "start-sleep 5; Get-Date",
+    ] {
+        assert!(sleeps(command), "{command}");
+    }
+    for command in ["make; sleep 5", "Start-Sleeper 5", "sleeper 30", ""] {
+        assert!(!sleeps(command), "{command}");
     }
 }

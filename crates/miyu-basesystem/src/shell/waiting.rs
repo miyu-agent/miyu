@@ -118,9 +118,13 @@ fn start_sleep(args: &[&str]) -> Option<Duration> {
     Some(found.unwrap_or(Duration::ZERO))
 }
 
-/// 开头是 `sleep` 的（照 Claude Code）：到时照旧杀，不挪到后台（施工 7-12）。
+/// 开头是 `sleep` 的（照 Claude Code）：到时照旧杀，不挪到后台（施工 7-12）。PowerShell 的 `Start-Sleep` 也算（不分大小写，
+/// 施工 WN-1）。
 pub(super) fn sleeps(command: &str) -> bool {
-    command.split_whitespace().next() == Some("sleep")
+    command
+        .split_whitespace()
+        .next()
+        .is_some_and(|first| first == "sleep" || first.eq_ignore_ascii_case("start-sleep"))
 }
 
 /// 她写的 `timeout`：没写、写 0 的按默认，超过上限的按上限。
