@@ -4,7 +4,7 @@
 use std::path::Path;
 
 use miyu_kernel::tool::Worded;
-use miyu_policy::hazard::{Assessed, Group, Kind, Places, assess};
+use miyu_policy::hazard::{Assessed, Group, Kind, Places, assess, assess_powershell};
 use miyu_tool::{Call, Hazard, HazardAsk};
 
 use super::{Args, Shell};
@@ -12,12 +12,9 @@ use crate::common::said;
 use crate::load::say;
 
 impl Shell {
-    /// 这次调用认出来的高危：家目录、数据根照这次调用带的，工作目录照家目录换成绝对路径。只认 bash、zsh 的命令。
+    /// 这次调用认出来的高危：家目录、数据根照这次调用带的，工作目录照家目录换成绝对路径。bash、zsh 的照 POSIX 的写法认，
+    /// PowerShell 的照它自己的写法认（施工 WN-1）。
     pub(super) fn assessed(&self, call: &Call) -> Option<Hazard> {
-        // PowerShell 的写法（反引号转义、`Remove-Item`、`C:\` 路径）另排，第一版不认。
-        if !self.program.kind.posix() {
-            return None;
-        }
         let args = serde_json::from_str::<Args>(&call.args).ok()?;
         let home = call
             .home
@@ -48,7 +45,11 @@ impl Shell {
             data_root: &data_root,
             workspaces: &workspaces,
         };
-        let asked = match assess(&args.command, &places)? {
+        let assessed = match self.program.kind.posix() {
+            true => assess(&args.command, &places),
+            false => assess_powershell(&args.command, &places),
+        };
+        let asked = match assessed? {
             Assessed::Refused(kind) => return Some(Hazard::Refused(self.refusal(kind))),
             Assessed::Asks(kinds) => kinds,
         };

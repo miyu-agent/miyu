@@ -20,11 +20,19 @@ pub(super) fn target(
     let Some(path) = absolute(word, places, cwd) else {
         return recursive.then_some(Kind::DeleteUnresolved);
     };
-    let path = widest(&path, places);
+    judge(&path, places, false)
+}
+
+/// 照 [`Places`] 判一个规整过的绝对路径 `path`（`/` 分隔，不以 `/` 结尾）：通配的先照它删得到的最大的那一个算。`drives` 是
+/// Windows 的写法（施工 WN-1，`windows/paths.rs`）：第一段是盘符（`/c:/users/me`），盘符本身算根目录，盘符下一级算系统目录。
+pub(super) fn judge(path: &str, places: &Places<'_>, drives: bool) -> Option<Kind> {
+    let path = widest(path, places);
     let inside = |dir: &str, of: &str| {
         of == dir || of.starts_with(&format!("{}/", dir.trim_end_matches('/')))
     };
-    if path == "/" {
+    let depth = path.split('/').filter(|part| !part.is_empty()).count();
+    let root = usize::from(drives);
+    if depth <= root {
         return Some(Kind::DeleteRoot);
     }
     if let Some(home) = places.home
@@ -37,7 +45,7 @@ pub(super) fn target(
     {
         return Some(Kind::DeleteDataRoot);
     }
-    if path.rfind('/') == Some(0) {
+    if depth == root + 1 {
         return Some(Kind::DeleteSystem);
     }
     if inside(&path, places.cwd) {

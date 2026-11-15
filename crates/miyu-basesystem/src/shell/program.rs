@@ -47,7 +47,7 @@ impl Kind {
         }
     }
 
-    /// 照 POSIX shell 的写法拆命令（bash、zsh）：高危的规则只认这一种（施工 5-17）。
+    /// 照 POSIX shell 的写法拆命令（bash、zsh）：高危的规则照它挑 POSIX 那一路还是 PowerShell 那一路（施工 5-17、WN-1）。
     pub(super) fn posix(self) -> bool {
         matches!(self, Kind::Bash | Kind::Zsh)
     }

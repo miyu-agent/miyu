@@ -15,8 +15,10 @@ mod lex;
 mod paths;
 mod rules;
 mod vars;
+mod windows;
 
 pub use rules::{Assessed, assess};
+pub use windows::assess_powershell;
 
 /// 认出来的是哪一种。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

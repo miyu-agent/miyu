@@ -376,7 +376,7 @@ delete = true
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 git = true
 
-# Running a download directly: Ask before commands like curl … | sh.
+# Running a download directly: Ask before commands like curl … | sh or irm … | iex.
 # Allowed: true or false. Only in the system config. Takes effect next turn.
 pipe_to_shell = true
 

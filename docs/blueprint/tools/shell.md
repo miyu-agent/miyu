@@ -234,7 +234,7 @@ Exit code 2
 
 ### 高危（施工 5-17）
 
-报给权限策略（`Tool::hazard`，`session/guard.md` 第四条末），不进 `run`。只认 bash、zsh 的写法：用 PowerShell 的（Windows）不报，转义、删除命令、路径的写法都不一样，另排：
+报给权限策略（`Tool::hazard`，`session/guard.md` 第四条末），不进 `run`。bash、zsh 的照下面 1～6 认；PowerShell 的（Windows）照它自己的写法认，口径相同（施工 WN-1，见本节末「PowerShell」）：
 
 1. 读参数，读不懂的不报。
 2. 照命令的字面认（`miyu_policy::hazard::assess`）：工作目录照家目录换成绝对路径，家目录、数据根照这次调用带的。
@@ -252,6 +252,13 @@ Exit code 2
    - 同一条命令里单独成句的 `cd`、`pushd` 照先后记下当前目录（施工 AS-9）：不写的是家目录，写了的照上面的办法换；`cd -`、`popd`、换不掉的之后算说不清，整个往下删相对目标的照删不清。删的目标里相对的照这时的当前目录接；「工作目录或它上面的」照旧比会话的工作目录。
 5. 认：`rm`、`rmdir`、`unlink`、`shred`、`find … -delete`（`-exec rm`）的目标照字面换成绝对路径；通配的照它删得到的最大的那一个（施工 AS-9，通配只看最后一段）：整段都是通配的（`*`、`.*`、`?*`、`{*,.*}`）照删它所在的目录，`前缀*` 照删同一层里名字合前缀的家目录、数据根、工作目录（或通往它们的那一级），根下面的照根下那一级，有尾巴的（`*.log`）照原样；是根、家目录或它上面的、根下一层、数据根或装着它的（默认工作区 `workspace/` 里面除外）、工作目录或它上面的；带变量、命令替换又是整个往下删的照删不清，经 `xargs` 喂目标、整个往下删的也照删不清（施工 AS-9）；git 跳过 `-C`、`-c`、`--git-dir`、`--work-tree`、`--namespace` 和别的选项再认子命令：`push` 带 `-f`、`--force*`、`+分支`，`reset --hard`，`clean -f`，`checkout .`（不是 `-b`），`restore .`（只带 `--staged`/`-S` 的不算，带了 `--worktree`/`-W` 的照算，施工 AS-9），`stash drop`、`stash clear`；`mkfs*`、`wipefs`、`mke2fs`、`blkdiscard`、`mkswap`、`sgdisk -Z`/`--zap-all`，`dd of=`、`>`、`tee`、`shred`、`cp`（最后一个参数）写 `/dev/sd*` 这类裸设备（施工 AS-9 加上 LVM、LUKS 的 `/dev/mapper/…`、`/dev/dm-…`，软 RAID `/dev/md…`，`/dev/loop…`、`/dev/nbd…`）；`shutdown`、`reboot`、`halt`、`poweroff`、`init 0`、`init 6`、`systemctl poweroff` 这类；`curl`、`wget` 接到读标准输入的 shell 或解释器，`bash <(curl …)`、`sh -c "$(curl …)"`，在这个 shell 里执行的 `source <(curl …)`、`. <(wget …)`、`eval "$(curl …)"`（施工 AS-9）；容器（施工 5-17 三补，`docker`、`podman`、`nerdctl` 的 `run`、`create`、`container run`）：`--privileged`、`--cap-add` 加 `ALL`/`SYS_ADMIN`、把宿主的 `/`、`/dev`、`/sys` 整个挂进去（`-v`、`--volume`、`--mount` 的 `source`）是 `container_host`（拒），`--device`、`--device-cgroup-rule`、`--pid`/`--net`/`--network`/`--ipc` 写 `host`、挂 `/dev`、`/sys` 下面的某一个是 `container_share`（问人）；入口是 systemd 本身不拦（不带特权的 `podman --systemd=always` 是测 systemd 单元该用的）。
 6. 几处都认出来的：有拒的交回拒的那一种（`Hazard::Refused`），带写给她的一句和说法（上面的表）；都是问的全交回（`Hazard::Asks`，施工 HZ-1），照认出的先后、同一种只留一次，每一种带协议里的写法（`code`）和归设置页「受保护的命令」的哪一类（`class`：`git`、`delete`、`power`、`pipe_to_shell`、`container`；看不透的没有）。问哪一种、关掉的那几类问不问由权限策略判（`session/guard.md` 第四条末）。这一段在 `crates/miyu-basesystem/src/shell/hazard.rs`（施工 HZ-1 从 `shell.rs` 挪出来）。
+
+**PowerShell**（施工 WN-1，2026-11-14 项目主人定发版前补；`miyu_policy::hazard::assess_powershell`，代码在 `hazard/windows*`）：同样的几种、拒和问照同样的分法、归同样的类，设置页五个开关在 Windows 上照样管用。
+- 拆命令：`;`、`&&`、`||`、`|`、换行是边界，句首的 `&` 是调用运算符；单引号原样（`''` 是一个 `'`），双引号里反引号转义；反引号续行；`#`、`<# #>` 注释；`,` 隔开数组；`$( )`、`@( )`、词头的括号、脚本块 `{ }` 里的另认，套到第 8 层以下的照问（`Kind::TooDeep`）。程序名不分大小写、去掉路径和 `.exe`。
+- 外壳：`Invoke-Expression`（`iex`）的参数、`powershell`/`pwsh` 的 `-Command`（只写开头的 `-c` 也算）、`cmd /c`（`/k`、`/r`）的里面另认，cmd 的照 cmd 的写法拆（`&`、`&&`、`||`、`|`、双引号、`^` 转义、开头的 `@`）；开头的 `.`、`sudo`、赋值 `$x =` 剥掉；单独成句的 `cd`、`Set-Location`、`Push-Location`（cmd 的 `cd /d`）记当前目录。
+- 路径：不分大小写，`\`、`/` 都是分隔，`\\?\` 前缀去掉；`~`、`$HOME`、`$env:USERPROFILE`、`%USERPROFILE%` 接家目录，`$env:SystemDrive`、`$env:SystemRoot`、`$env:windir`（和 cmd 的写法）照家目录的盘；`\x` 接当前目录的盘；盘符本身算根目录、盘符下一级（`C:\Windows`、`C:\Users`、`C:\Program Files`）算系统目录；网络路径、注册表这类别的提供程序（`HKLM:\…`）不判；别的变量说不清。
+- 认：`Remove-Item` 和别名（`rm`、`del`、`erase`、`rd`、`rmdir`、`ri`），`-Recurse`（开头几个字也算）、cmd 的 `/s`、`-rf` 算整个往下删，目标是 `-Path`、`-LiteralPath`（`-Path:值`）和不带名字的参数，cmd 的单字母开关不是目标，带 `-WhatIf` 的不判；`Get-ChildItem …`（`gci`、`ls`、`dir`、`Get-Item`）喂给它的照删那几个起点，别的喂进来又整个往下删的照删不清；git、容器同 bash 那一路；`Format-Volume`、`Clear-Disk`、`Remove-Partition`、`format <盘符>:` 是 `disk_format`；`Stop-Computer`、`Restart-Computer`、`shutdown`（带 `/a`、`/?` 的不算）是 `power`；`irm`、`iwr`、`curl`、`wget` 接到 `iex` 或不带脚本参数的 `powershell`、`pwsh`、`cmd`、解释器，同一条命令里有 `iex` 又在下载（`iex (irm …)`、`DownloadString`、`$s = irm …; iex $s`），shell 的参数里在下载，是 `pipe_to_shell`。
+- 不认：变量里存的路径、`-EncodedCommand`、往裸设备写、`Set-ExecutionPolicy`、注册表（等拍板，`docs/construction/WN-1-Windows对齐.md`）。
 
 ### 出错
 
@@ -343,8 +350,6 @@ Exit code 2
 - `26-提示词.md` 第十节：登记簿里的 `tools/shell.json`、`shell/*.txt`。
 
 ### 还没有的
-
-- PowerShell 的高危规则（施工 5-17 只认 bash、zsh）：`Remove-Item -Recurse`、反引号转义、`C:\` 路径。
 
 - 沙盒：命令现在以本人的身份直接跑，碰得到任何地方；只读时每条都问人（`11-权限与沙盒.md` 第二节、第六节，M5）。放行规则照命令开头记，也随 M5（第二节）。
 - Windows 上改用 Git Bash 的配置（`10-自带软件.md` 第八节）。

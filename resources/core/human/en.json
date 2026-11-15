@@ -139,7 +139,7 @@
       },
       "permission.confirm.pipe_to_shell": {
         "name": "Running a download directly",
-        "description": "Ask before commands like curl … | sh."
+        "description": "Ask before commands like curl … | sh or irm … | iex."
       },
       "permission.confirm.container": {
         "name": "Containers using host devices",

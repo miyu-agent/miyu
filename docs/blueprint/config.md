@@ -1354,7 +1354,7 @@ delete = true
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 git = true
 
-# 下载后直接执行：curl … | sh 这类前先问。
+# 下载后直接执行：curl … | sh、irm … | iex 这类前先问。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 pipe_to_shell = true
 

@@ -5,6 +5,7 @@ use super::*;
 mod audit;
 mod fresh;
 mod groups;
+mod windows;
 
 const PLACES: Places<'static> = Places {
     cwd: "/home/me/proj",

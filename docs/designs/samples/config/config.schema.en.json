@@ -573,7 +573,7 @@
             },
             "pipe_to_shell": {
               "default": true,
-              "description": "Ask before commands like curl … | sh. Allowed: true or false. Only in the system config. Takes effect next turn.",
+              "description": "Ask before commands like curl … | sh or irm … | iex. Allowed: true or false. Only in the system config. Takes effect next turn.",
               "title": "Running a download directly",
               "type": "boolean"
             },

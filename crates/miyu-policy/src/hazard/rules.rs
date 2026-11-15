@@ -8,7 +8,7 @@ use super::vars::{Vars, after_keywords};
 use super::{Kind, Places};
 
 /// 替换套替换最多看这么多层：再深的照问人（[`Kind::TooDeep`]）。
-const DEPTH: usize = 8;
+pub(super) const DEPTH: usize = 8;
 
 /// 一条命令判下来的。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -23,6 +23,11 @@ pub enum Assessed {
 pub fn assess(command: &str, places: &Places<'_>) -> Option<Assessed> {
     let mut found = Vec::new();
     look(command, places, 0, &mut found);
+    settle(found)
+}
+
+/// 认出来的几种合成判下来的（施工 WN-1 拆出来，PowerShell 那一路也照它）：有拒的交回拒的那一种，都是问的照先后、去重全交回。
+pub(super) fn settle(found: Vec<Kind>) -> Option<Assessed> {
     if let Some(refused) = found.iter().find(|kind| kind.refused()) {
         return Some(Assessed::Refused(*refused));
     }
@@ -345,7 +350,7 @@ fn device(text: &str) -> bool {
 }
 
 /// git：跳过全局选项再认子命令。
-fn git(rest: &[Word], found: &mut Vec<Kind>) {
+pub(super) fn git(rest: &[Word], found: &mut Vec<Kind>) {
     let mut at = 0;
     while let Some(word) = rest.get(at) {
         match word.text.as_str() {

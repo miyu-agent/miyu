@@ -3,8 +3,7 @@
 //! 别的测试同时碰到会漏听；全局的一个进程只能装一次），
 //! 在 `Cargo.toml` 里另列。新加的测试文件在下面添一行。
 
-// 高危的规则只认 bash、zsh 的写法（施工 5-17），Windows 上的 PowerShell 不认。
-#[cfg(not(windows))]
+// 高危的规则 Windows 上照 PowerShell 的写法认（施工 WN-1）：这里的几条命令（`rm -rf ~`、git）两边认出来的一样。
 mod hazard;
 mod support;
 

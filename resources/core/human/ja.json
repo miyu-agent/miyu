@@ -139,7 +139,7 @@
       },
       "permission.confirm.pipe_to_shell": {
         "name": "ダウンロードして直接実行",
-        "description": "curl … | sh のようなコマンドの前に確認します。"
+        "description": "curl … | sh、irm … | iex のようなコマンドの前に確認します。"
       },
       "permission.confirm.container": {
         "name": "コンテナによるホストデバイスの使用",

@@ -573,7 +573,7 @@
             },
             "pipe_to_shell": {
               "default": true,
-              "description": "curl … | sh 这类前先问。能写：true 或 false。只能写在系统配置里。下一轮生效。",
+              "description": "curl … | sh、irm … | iex 这类前先问。能写：true 或 false。只能写在系统配置里。下一轮生效。",
               "title": "下载后直接执行",
               "type": "boolean"
             },

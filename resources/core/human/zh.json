@@ -139,7 +139,7 @@
       },
       "permission.confirm.pipe_to_shell": {
         "name": "下载后直接执行",
-        "description": "curl … | sh 这类前先问。"
+        "description": "curl … | sh、irm … | iex 这类前先问。"
       },
       "permission.confirm.container": {
         "name": "容器使用宿主设备",
