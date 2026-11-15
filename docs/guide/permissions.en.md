@@ -85,7 +85,7 @@ On Windows the AI runs commands in PowerShell (see [Tools the AI can use](tools.
 |---|---|
 | Destructive git operations, containers using host devices (ask first) | Same as the table above; `git.exe` and `git.exe` with a path are recognized too |
 | Recursive delete (ask first) | `Remove-Item -Recurse` (aliases `rm`, `del`, `erase`, `rd`, `rmdir`, `ri`, and cmd's `rd /s`, `del /s`) on the working directory, for example `Remove-Item -Recurse -Force .`; a target only known at run time, for example `Remove-Item -Recurse $target` or `… \| Remove-Item -Recurse` |
-| Shutdown and restart (ask first) | `Stop-Computer`, `Restart-Computer`, `shutdown /s`, `shutdown /r`, `shutdown /h`. `shutdown /a` does not count |
+| Shutdown and restart (ask first) | `Stop-Computer`, `Restart-Computer`; `shutdown` with any switch counts (`/s`, `/r`, `/h`, and `/l` for logging off too), except `/a` and `/?` |
 | Running a download directly (ask first) | A download by `irm`, `iwr`, `curl` or `wget` handed to `iex` (`Invoke-Expression`), `powershell`, `pwsh` or `cmd` to run: `irm … \| iex`, `iex (irm …)` |
 | Deleting the root, the home directory, system directories or the data root (refused outright) | A drive letter itself (`C:\`) counts as the root; directories one level below a drive letter (`C:\Windows`, `C:\Users`, `C:\Program Files`, and ones you created such as `C:\dev`) count like directories one level below the root; `~`, `$HOME`, `$env:USERPROFILE` and `%USERPROFILE%` are the home directory |
 | Formatting disks (refused outright) | `Format-Volume`, `Clear-Disk`, `Remove-Partition`, `format D:` |

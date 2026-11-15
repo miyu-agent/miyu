@@ -109,7 +109,7 @@ miyu pkg install ./hello-0.1.0.miyu # 一个 .miyu 包文件
 
 「包含」那一行列它带的：「界面程序」「扩展程序」「小程序」「内置功能」，「命令 miyu <名字>」「后台页」「吉祥物」「主题」「接入 <平台>」「MCP 服务 <名字>」「模型驱动 <名字>」「技能 <名字>」「脚本 <名字>」「斜杠命令 /<名字>」「人格 <编号>」「预设 <编号>」「知识库 <编号>」「N 项设置」。读不成、装上也用不了的技能和脚本列在「无法读取：」后面，带原因。同编号已经装着一份的，第一行接「（替换 <旧版本>）」。
 
-包里的模型驱动在清单里写明了会让供应商自己跑哪些工具的，「包含」下面一个驱动多一行，例如「模型驱动 ag 会让供应商自己跑：search_web、read_url_content」。网页里 AI 替你装包时的确认、「下载软件」里装着的包的详情，也在「包含」下面写这一句。
+包里的模型驱动在清单里写明了会让供应商自己跑哪些工具的，「包含」下面一个驱动多一行，例如「模型驱动 ag 会让供应商自己跑：search_web、read_url_content」；`miyu pkg info` 里也有这一行。网页里 AI 替你装包时的确认、「下载软件」里装着的包的详情，也在「包含」下面写这一句。
 
 ### 能力
 
@@ -319,7 +319,7 @@ miyu pkg remove --purge ocr   # 连配置一起删
 | `base-project-docs` | 自动注入 AGENTS 文档 | 每轮开头把仓库里的 AGENTS.md 交给 AI | 注入环境信息 |
 | `base-memory` | 人格记忆 | 记住你说过的事，以后想得起来（`remember`、`memory_search`、`forget`） | 人格 |
 | `base-roleplay` | 人设遵循提醒 | 隔几轮把人设提醒短语再给 AI 看一遍 | 人格 |
-| `base-life` | 结束人生 | 人生会话里 AI 可以自己结束这段人生（`end_life`） | 人格 |
+| `base-life` | 结束人生 | 人生会话里 AI 可以自己结束这段人生（`end_life`），记下自己变了什么（`note_change`） | 人格 |
 | `base-net` | 联网搜索 | 网络搜索、抓取网页（`web_search`、`web_fetch`） | 查资料 |
 | `base-knowledge` | 知识库 | 查你放进来的笔记和文档（`kb_search`、`kb_read`、`kb_save`、`kb_edit`、`kb_delete`） | 查资料 |
 | `base-authoring` | 写技能和包 | 两个技能：`skill-creator`（写技能）、`package-creator`（写脚本和包） | 不在组里 |

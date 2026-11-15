@@ -19,7 +19,7 @@ The two are chosen independently, so mix them as you like. Persona memory follow
 | Development | `dev` | The three groups Base system, Injected environment, and Tasks and schedules; web search, persona memory, and the two skills for writing skills and packages. Nothing else, and nothing installed later | Writing code, without extras such as extensions and MCP servers |
 | Minimal | `minimal` | Only four tools, for reading files, creating files, editing files and running commands, and the eight environment items | You want the AI to work the way the model knows how, with as few tools as possible |
 | Nothing | `none` | Nothing, and nothing installed later | Chat only; or use it as a base and turn on a few things yourself |
-| Life Simulation | `life` | Injected environment, web search, persona memory, loop tasks, end of life, persona reminders, session history. No commands and no files | For simulated life sessions, see [Simulated life](life.en.md). The web UI does not list it where you choose a preset (new session, switching preset, default preset, project, schedule); the "Presets" settings page lists it as usual; the terminal's picker lists it as usual |
+| Life Simulation | `life` | Injected environment, web search, persona memory, loop tasks, end of life, change over life, persona reminders, session history. No commands and no files | For simulated life sessions, see [Simulated life](life.en.md). The web UI does not list it where you choose a preset (new session, switching preset, default preset, project, schedule); the "Presets" settings page lists it as usual; the terminal's picker lists it as usual |
 
 The shipped default preset is `full`.
 
@@ -183,7 +183,7 @@ Feature ids:
 
 | What | Id |
 |---|---|
-| Shipped tools | Mostly the same as the tool name, for example `read`, `shell`, `subagent`. The ones that differ: `web_search` is `web-search`, `web_fetch` is `web-fetch`, `send_message` and `sessions` are one feature, `sessions`; `remember`, `memory_search` and `forget` are `memory`; the five `kb_*` are `knowledge`; the three `cron_*` are `schedule`; `schedule_wakeup` is `loop`; `end_life` is `life`. For the full table see [Tools the AI can use](tools.en.md) |
+| Shipped tools | Mostly the same as the tool name, for example `read`, `shell`, `subagent`. The ones that differ: `web_search` is `web-search`, `web_fetch` is `web-fetch`, `send_message` and `sessions` are one feature, `sessions`; `remember`, `memory_search` and `forget` are `memory`; the five `kb_*` are `knowledge`; the three `cron_*` are `schedule`; `schedule_wakeup` is `loop`; `end_life` is `life`; `note_change` is `change`. For the full table see [Tools the AI can use](tools.en.md) |
 | Shipped features without tools | The environment info items `env-time`, `env-workdir`, `env-permission`, `env-session`, `env-model`, `env-harness`, `env-machine`, `env-profile`; automatic injection of AGENTS docs `project-docs`; calling tools from the command line `clicall`; persona reminders `roleplay` |
 | Skills | `skill-<skill name>` |
 | Scripts | `script-<tool name>` |
@@ -197,7 +197,7 @@ The groups you can write in `[software]`:
 | `basesystem` | Base system | Read files, New file, Edit files, Find files, Search contents, Move to trash, Commands, Background, Call tools from the command line, Subagents, Ask the flagship model, Questions, Show to the user, Messages between sessions, Session history, Usage lookup, Packages |
 | `tasks` | Tasks and schedules | To-do list, Long-running goals, Scheduled tasks, Loop tasks |
 | `environment` | Injected environment | The eight environment info items, automatic injection of AGENTS docs |
-| `persona` | Persona | Persona memory, Persona reminders, End of life |
+| `persona` | Persona | Persona memory, Persona reminders, End of life, Change over life |
 | `research` | Research | Web search, Knowledge base |
 
 To change a little on top of a shipped preset, write only what you changed. For example, to turn off web search in Everything, the file is `full.toml`:

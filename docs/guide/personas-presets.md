@@ -19,7 +19,7 @@
 | 常规开发 | `dev` | 基础系统、注入环境信息、任务和定时三组，联网搜索，人格记忆，写技能和软件包的两个技能。别的不开，以后新装的也不开 | 写代码，不要扩展、MCP 服务这些额外的东西 |
 | 极简开发 | `minimal` | 只有读文件、新建文件、编辑文件、运行命令四件工具，和环境信息的八样 | 想让 AI 照模型自己会的做，工具越少越好 |
 | 无功能 | `none` | 什么都不开，以后新装的也不开 | 只聊天；或者以它为底，自己打开几样 |
-| 推演人生 | `life` | 注入环境信息、联网搜索、人格记忆、循环任务、结束人生、人设遵循提醒、翻查本会话。没有命令和文件 | 推演人生的会话用，见 [推演人生](life.md)。网页里选预设的地方（新会话、换预设、默认预设、项目、定时任务）不列它，设置的「预设」页照列；终端的选择框照列 |
+| 推演人生 | `life` | 注入环境信息、联网搜索、人格记忆、循环任务、结束人生、后天、人设遵循提醒、翻查本会话。没有命令和文件 | 推演人生的会话用，见 [推演人生](life.md)。网页里选预设的地方（新会话、换预设、默认预设、项目、定时任务）不列它，设置的「预设」页照列；终端的选择框照列 |
 
 出厂的默认预设是 `full`。
 
@@ -183,7 +183,7 @@ env-workdir = true
 
 | 什么 | 编号 |
 |---|---|
-| 出厂的工具 | 多数同工具名，例如 `read`、`shell`、`subagent`。不一样的：`web_search` 是 `web-search`，`web_fetch` 是 `web-fetch`，`send_message` 跟 `sessions` 一个功能 `sessions`，`remember`、`memory_search`、`forget` 是 `memory`，五件 `kb_*` 是 `knowledge`，三件 `cron_*` 是 `schedule`，`schedule_wakeup` 是 `loop`，`end_life` 是 `life`。全表见 [AI 能用的工具](tools.md) |
+| 出厂的工具 | 多数同工具名，例如 `read`、`shell`、`subagent`。不一样的：`web_search` 是 `web-search`，`web_fetch` 是 `web-fetch`，`send_message` 跟 `sessions` 一个功能 `sessions`，`remember`、`memory_search`、`forget` 是 `memory`，五件 `kb_*` 是 `knowledge`，三件 `cron_*` 是 `schedule`，`schedule_wakeup` 是 `loop`，`end_life` 是 `life`，`note_change` 是 `change`。全表见 [AI 能用的工具](tools.md) |
 | 不带工具的出厂功能 | 环境信息 `env-time`、`env-workdir`、`env-permission`、`env-session`、`env-model`、`env-harness`、`env-machine`、`env-profile`；自动注入 AGENTS 文档 `project-docs`；命令行调用工具 `clicall`；人设遵循提醒 `roleplay` |
 | 技能 | `skill-<技能名>` |
 | 脚本 | `script-<工具名>` |
@@ -197,7 +197,7 @@ env-workdir = true
 | `basesystem` | 基础系统 | 读文件、新建文件、编辑文件、找文件、搜内容、删到回收站、运行命令、后台运行、命令行调用工具、子代理、求助旗舰模型、提问、展示给用户、跨会话消息、翻查本会话、用量查询、软件包 |
 | `tasks` | 任务和定时 | 待办清单、长期目标、定时任务、循环任务 |
 | `environment` | 注入环境信息 | 环境信息的八样、自动注入 AGENTS 文档 |
-| `persona` | 人格 | 人格记忆、人设遵循提醒、结束人生 |
+| `persona` | 人格 | 人格记忆、人设遵循提醒、结束人生、后天 |
 | `research` | 查资料 | 联网搜索、知识库 |
 
 在出厂的基础上改一点，只写改了的。例如全部功能里关掉联网搜索，文件叫 `full.toml`：

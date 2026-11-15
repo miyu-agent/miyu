@@ -85,7 +85,7 @@ Windows 上 AI 用 PowerShell 跑命令（见 [工具](tools.md#shell)）。上�
 |---|---|
 | 破坏性 git 操作、容器使用宿主设备（先问） | 同上面的表；`git.exe`、带路径的 `git.exe` 也认 |
 | 递归删除（先问） | `Remove-Item -Recurse`（别名 `rm`、`del`、`erase`、`rd`、`rmdir`、`ri`，cmd 的 `rd /s`、`del /s`）删工作目录，例如 `Remove-Item -Recurse -Force .`；目标要到运行时才知道的，例如 `Remove-Item -Recurse $target`、`… \| Remove-Item -Recurse` |
-| 关机和重启（先问） | `Stop-Computer`、`Restart-Computer`、`shutdown /s`、`shutdown /r`、`shutdown /h`。`shutdown /a` 不算 |
+| 关机和重启（先问） | `Stop-Computer`、`Restart-Computer`；`shutdown` 带开关的都算（`/s`、`/r`、`/h`，注销的 `/l` 也算），只有 `/a`、`/?` 不算 |
 | 下载后直接执行（先问） | `irm`、`iwr`、`curl`、`wget` 下载下来交给 `iex`（`Invoke-Expression`）、`powershell`、`pwsh`、`cmd` 跑：`irm … \| iex`、`iex (irm …)` |
 | 删根目录、家目录、系统目录、数据根（直接拒） | 盘符本身（`C:\`）算根目录；盘符下一级的目录（`C:\Windows`、`C:\Users`、`C:\Program Files`，自己建的 `C:\dev` 也算）和根下一级的目录一样；`~`、`$HOME`、`$env:USERPROFILE`、`%USERPROFILE%` 是家目录 |
 | 格式化磁盘（直接拒） | `Format-Volume`、`Clear-Disk`、`Remove-Partition`、`format D:` |

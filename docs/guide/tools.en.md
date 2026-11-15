@@ -116,6 +116,7 @@ For which provider is used and how to set it up, see [Web search and fetching pa
 | Tool | Shown as | What it does | In read-only | Shipped package | Limits |
 |---|---|---|---|---|---|
 | `end_life` | End this life | The AI ends this life itself, leaving last words | Works as usual | `base-life` | Exists only in life sessions that have not ended, see [Simulated life](life.en.md) |
+| `note_change` | Note a change | The AI notes how it has changed in this life, updates a note or drops one | Works as usual | `base-life` | Exists only in life sessions that have not ended, see [Simulated life](life.en.md#change-over-life) |
 
 The shipped package `base-packages` also has two more tools, `packages` (view packages) and `package` (manage packages), which are for commands only and are not in the AI's tool list.
 

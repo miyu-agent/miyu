@@ -109,7 +109,7 @@ Install 'hello' and approve the capabilities it needs? [Y/n]
 
 The "Includes: " line lists what the package brings: "interface", "extension", "worker program", "built-in feature", "command miyu <name>", "admin page", "mascot", "theme", "<platform> connection", "MCP server <name>", "model driver <name>", "skill <name>", "script <name>", "slash command /<name>", "persona <id>", "preset <id>", "knowledge base <id>" and "N settings". Skills and scripts that cannot be read, and so would not work even if installed, are listed after "Unreadable: ", with the reason. If a copy with the same id is already installed, the first line is followed by " (replaces <old version>)".
 
-If a model driver in the package says in its manifest which tools it has the provider run on its own, each such driver gets one more line under "Includes", for example "model driver ag has the provider run on its own: search_web, read_url_content". When the AI installs a package for you in the web UI, the confirmation there, and the details of an installed package under "Get software", carry the same sentence under "Includes".
+If a model driver in the package says in its manifest which tools it has the provider run on its own, each such driver gets one more line under "Includes", for example "model driver ag has the provider run on its own: search_web, read_url_content"; `miyu pkg info` prints this line too. When the AI installs a package for you in the web UI, the confirmation there, and the details of an installed package under "Get software", carry the same sentence under "Includes".
 
 ### Capabilities
 
@@ -319,7 +319,7 @@ When the same id is in several layers, the one you installed wins, then the one 
 | `base-project-docs` | Inject AGENTS docs automatically | Give the AI the repository's AGENTS.md at the start of each turn | Injected environment |
 | `base-memory` | Persona memory | Remember what you said and recall it later (`remember`, `memory_search`, `forget`) | Persona |
 | `base-roleplay` | Persona reminders | Every few turns, show the AI the persona's reminder phrases again | Persona |
-| `base-life` | End of life | In a life session, the AI can end this life itself (`end_life`) | Persona |
+| `base-life` | End of life | In a life session, the AI can end this life itself (`end_life`) and note how it has changed (`note_change`) | Persona |
 | `base-net` | Web search | Web search and fetching pages (`web_search`, `web_fetch`) | Research |
 | `base-knowledge` | Knowledge base | Look things up in the notes and documents you put in (`kb_search`, `kb_read`, `kb_save`, `kb_edit`, `kb_delete`) | Research |
 | `base-authoring` | Authoring | Two skills: `skill-creator` (writes skills), `package-creator` (writes scripts and packages) | Not in a group |

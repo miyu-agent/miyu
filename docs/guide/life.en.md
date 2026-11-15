@@ -16,12 +16,12 @@ A life session is an ordinary session, with three differences:
   | `base-net` | Web search | `web_search` and `web_fetch`, for reading the news and the weather. For how to configure search, see [Web search and fetching pages](web-search.en.md) |
   | `base-memory` | Persona memory | `remember`, `memory_search`, `forget` |
   | `base-loop` | Loop tasks | `schedule_wakeup`, with which the AI decides what time to wake next |
-  | `base-life` | End of life | `end_life`, with which the AI ends this life itself |
+  | `base-life` | End of life, Change over life | `end_life`, with which the AI ends this life itself; `note_change`, with which the AI notes how it has changed |
   | `base-roleplay` | Persona reminders | Reminds the AI not to break character |
   | `base-history` | Session history | `history`, for looking back at what it wrote before |
 
 - It runs by itself even when nobody types: the core wakes it up at the due time, and one wake-up is one turn.
-- It can end itself with `end_life`. This tool exists only in a life session that has not ended; other sessions opened with the `life` preset do not have it.
+- It can end itself with `end_life`, and note how it has changed with `note_change` (see "Change over life" below). These two tools exist only in a life session that has not ended; other sessions opened with the `life` preset do not have them.
 
 A persona has only one life going at a time; different personas each have their own.
 
@@ -101,6 +101,23 @@ Open a persona on the "Personas" page of the web settings, and there is a "Simul
 Memories saved by a life session go into this persona's memory, together with this persona's usual memories, and other sessions can recall them. The automatic saving after a session goes idle works as usual.
 
 After it ends, the memories whose source is entirely in this life session are cleared and cannot be recovered; this session can no longer be found in the search of earlier conversations either. Memories whose source also includes other sessions are kept. A newly started life cannot recall the old one.
+
+## Change over life
+
+The persona files describe what this persona was like to begin with. As the days go by, when the AI notices it has changed (a habit, a taste, a way of talking, how it feels about someone or something), it notes that in the life session with `note_change`. The timeline records this step as "Note a change".
+
+- One note is one sentence of at most 120 characters. At most 10 notes count at a time; when it is full, one has to be updated or dropped first. The AI can update its own notes and drop ones that no longer hold.
+- Every session with this persona carries these notes, ahead of the other memories, oldest first. The persona files are not changed by a single character.
+- They are a separate memory class, `change`. In other sessions the AI cannot touch them with `remember` or `forget`, and automatic saving, organizing and importing leave them alone. You can retire and restore them (as with other memories, see [Memory](memory.en.md#viewing-and-changing)), but you cannot edit their text; trying to reports "This is a change the AI noted about itself in its life; it can only be retired or restored."
+- How often it notes something is up to the AI. The shipped life method has it look back about once a week, and most of the time it notes nothing; if you wrote your own `prompts/life.md`, say so there if you want it to.
+- When the life ends, these notes are cleared along with the memories of that life.
+- If you do not want this feature: put a `life` in your preset layer that turns off only this, and `end_life` stays:
+
+  ```toml
+  # ~/.miyu/root/presets/life.toml
+  [features]
+  change = false
+  ```
 
 ## Ending
 
