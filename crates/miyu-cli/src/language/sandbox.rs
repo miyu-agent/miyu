@@ -58,11 +58,13 @@ impl Language {
                 "the Seatbelt profile cannot be applied; Miyu may be running inside another sandbox",
                 None,
             ),
+            // Windows 上的沙盒是 MXC 的基础容器（施工 5-9 改上）：探不出基础容器的机器手段是空的（施工 WN-1 改：原来说「此版本还
+            // 不能」，和现状对不上）。
             (Unusable::NoMechanism, Platform::Windows, true) => {
-                ("此版本在 Windows 上还不能把命令关进沙盒", None)
+                ("这台 Windows 起不了 MXC 的基础容器", None)
             }
             (Unusable::NoMechanism, Platform::Windows, false) => {
-                ("this version cannot sandbox commands on Windows yet", None)
+                ("this Windows cannot start an MXC base container", None)
             }
             (Unusable::NoMechanism, Platform::Other, true) => ("此系统上没有可用的沙盒", None),
             (Unusable::NoMechanism, Platform::Other, false) => {

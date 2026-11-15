@@ -11,7 +11,7 @@ fn every_outcome_reads_in_both_languages() {
         Said::Unmarked(flow::download_page()),
         Said::BadMarker(PathBuf::from("/x/install.toml"), "no channel".to_string()),
         Said::NoKeys,
-        Said::UnknownSystem,
+        Said::UnknownSystem(flow::download_page()),
         Said::Net(NetError::Offline("dns".to_string())),
         Said::Net(NetError::Limited(Some(1_790_000_000))),
         Said::Net(NetError::Limited(None)),
@@ -134,4 +134,19 @@ fn what_was_left_in_the_install_folder_is_said_with_at_most_five_names() {
             .any(|l| l.contains("不是 Miyu 的")),
         "没有的不说"
     );
+}
+
+/// 没有这种系统的发行包时说该怎么办（施工 WN-1）：发行包有哪几种，别的系统去发行页拿源码。
+#[test]
+fn an_unknown_system_is_told_what_to_do() {
+    use crate::language::Language;
+    let page = flow::download_page();
+    for (language, hint) in [(Language::Chinese, "提示："), (Language::English, "hint: ")] {
+        let lines = language.upgrade(&Said::UnknownSystem(page.clone()));
+        assert_eq!(lines.len(), 2, "{lines:?}");
+        assert!(
+            lines[1].starts_with(hint) && lines[1].contains(&page),
+            "{lines:?}"
+        );
+    }
 }

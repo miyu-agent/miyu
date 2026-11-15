@@ -16,7 +16,8 @@
 //!
 //! 助手本身在 `src/bin/miyu-sandbox/`：共用的在 `main.rs`，收紧和换成命令各平台一个文件。
 //!
-//! Linux（Landlock，施工 5-2、5-3）、macOS（Seatbelt，施工 5-7）上照规格收紧；Windows 还不收紧（5-9）。
+//! Linux（Landlock，施工 5-2、5-3）、macOS（Seatbelt，施工 5-7）、Windows（MXC 的基础容器，施工 5-9 改上）上照规格收紧；Windows
+//! 上关不住读（[`CONFINES_READS`]），起不了基础容器的机器手段是空的。
 
 mod availability;
 mod busy;
@@ -45,7 +46,8 @@ pub use spec::Spec;
 pub use wrap::{Sandboxed, argv, checks_files, command};
 
 /// 这个平台的沙盒能不能把读也关住（规格的 `read`，施工 5-12 下）：Linux 的 Landlock、macOS 的 Seatbelt（施工 5-12 再补）做了；
-/// Windows 的沙盒还没有（施工 5-9 停着），助手收到写了 `read` 的规格不跑，核心照它决定外部身份的会话能不能跑命令。
+/// Windows 的 MXC 基础容器只管写（读整盘，施工 5-9 改上，收读放 5-9 改下），助手收到写了 `read` 的规格不跑，核心照它决定外部
+/// 身份的会话能不能跑命令。
 pub const CONFINES_READS: bool = cfg!(any(target_os = "linux", target_os = "macos"));
 
 /// 这台机器上关起来的会话的命令连不连得到 Unix 套接字（施工 MB-1）：进程里一份，核心起来时照探测设

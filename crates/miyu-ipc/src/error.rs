@@ -2,7 +2,7 @@
 
 use std::fmt;
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use miyu_store::root::DataRoot;
 
@@ -36,17 +36,34 @@ impl fmt::Display for OpenError {
                 "{} 不是自己的，或者别人也能进：套接字不放在这里",
                 dir.display()
             ),
-            OpenError::Occupied(path) => write!(
-                f,
-                "{} 上有别的东西：不是套接字的文件，或者别的程序正在听。不动它",
-                path.display()
-            ),
+            OpenError::Occupied(path) => f.write_str(&occupied(path, cfg!(windows))),
             OpenError::Io(error) => error.fmt(f),
         }
     }
 }
 
 impl std::error::Error for OpenError {}
+
+/// [`OpenError::Occupied`] 的说法：Windows 上是命名管道（`pipe`），名字被别的程序占了；别处是套接字的位置上有别的东西
+/// （施工 WN-1：原来 Windows 上也说「不是套接字的文件」）。
+fn occupied(path: &Path, pipe: bool) -> String {
+    match pipe {
+        true => format!("命名管道 {} 已经被别的程序占了。不动它", path.display()),
+        false => format!(
+            "{} 上有别的东西：不是套接字的文件，或者别的程序正在听。不动它",
+            path.display()
+        ),
+    }
+}
+
+/// [`ConnectError::NotPrivate`] 的说法：Windows 上是命名管道（`pipe`）另一头不是自己的进程；别处是套接字所在的目录不是自己的
+/// （施工 WN-1：原来 Windows 上也说「别人也能进」）。
+fn not_private(place: &Path, pipe: bool) -> String {
+    match pipe {
+        true => format!("命名管道 {} 另一头不是自己的进程：不连", place.display()),
+        false => format!("{} 不是自己的，或者别人也能进：不连", place.display()),
+    }
+}
 
 impl From<io::Error> for OpenError {
     fn from(error: io::Error) -> OpenError {
@@ -70,9 +87,7 @@ impl fmt::Display for ConnectError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ConnectError::NotRunning => write!(f, "核心没在跑"),
-            ConnectError::NotPrivate(dir) => {
-                write!(f, "{} 不是自己的，或者别人也能进：不连", dir.display())
-            }
+            ConnectError::NotPrivate(place) => f.write_str(&not_private(place, cfg!(windows))),
             ConnectError::Io(error) => error.fmt(f),
         }
     }
@@ -134,3 +149,6 @@ impl From<io::Error> for StartError {
         StartError::Io(error)
     }
 }
+
+#[cfg(test)]
+mod tests;

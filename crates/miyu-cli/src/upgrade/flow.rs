@@ -78,7 +78,7 @@ pub(crate) fn run(args: &Upgrade, world: &mut World<'_>) -> Said {
         return Said::NoKeys;
     }
     let Some(target) = world.target else {
-        return Said::UnknownSystem;
+        return Said::UnknownSystem(download_page());
     };
     let list = match world.net.get(&releases_url(), LIST_LIMIT, true) {
         Ok(bytes) => bytes,

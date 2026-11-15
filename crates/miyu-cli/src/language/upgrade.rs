@@ -99,10 +99,15 @@ impl Language {
                     "cannot upgrade: this build has no release key to verify the download",
                 ),
             ),
-            Said::UnknownSystem => pick_problem(
+            // 怎么办（施工 WN-1）：发行包只有这四种，别的系统拿源码自己编。
+            Said::UnknownSystem(page) => pick_problem(
                 zh,
                 ("无法升级：没有这种系统的发行包", "cannot upgrade: no release is built for this system"),
-            ),
+            )
+            .hint(pick(
+                format!("发行包只有 Linux x86_64、aarch64，macOS Apple 芯片，Windows x86_64；别的系统到 {page} 下载源码自己编译"),
+                format!("releases are built for Linux x86_64 and aarch64, macOS on Apple silicon and Windows x86_64; on other systems build from the source at {page}"),
+            )),
             Said::Net(NetError::Offline(why)) => Problem::new(pick(
                 format!("无法连接 GitHub：{}", clean(why)),
                 format!("cannot reach GitHub: {}", clean(why)),

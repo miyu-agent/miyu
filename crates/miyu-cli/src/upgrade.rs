@@ -69,8 +69,8 @@ pub(crate) enum Said {
     BadMarker(PathBuf, String),
     /// 这一版没编进发版公钥：不自己升级。
     NoKeys,
-    /// 这种系统不在发的四种里。
-    UnknownSystem,
+    /// 这种系统不在发的四种里：带发行页（施工 WN-1：提示去那里拿源码）。
+    UnknownSystem(String),
     /// 没拿到。
     Net(NetError),
     /// 一个能用的发布都没有。

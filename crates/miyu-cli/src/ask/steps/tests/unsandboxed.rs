@@ -65,9 +65,9 @@ fn an_unusable_sandbox_is_said_with_why_and_how_to_fix() {
         (
             "no_mechanism",
             &[Platform::Windows],
-            &["miyu: 警告：沙盒不可用：此版本在 Windows 上还不能把命令关进沙盒"],
+            &["miyu: 警告：沙盒不可用：这台 Windows 起不了 MXC 的基础容器"],
             &[
-                "miyu: warning: sandbox unavailable: this version cannot sandbox commands on Windows yet",
+                "miyu: warning: sandbox unavailable: this Windows cannot start an MXC base container",
             ],
         ),
         (

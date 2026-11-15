@@ -182,7 +182,10 @@ fn an_unknown_system_stops_before_the_network() {
         step: &mut step,
         rename: &mut rename,
     };
-    assert_eq!(flow::run(&plain(), &mut world), Said::UnknownSystem);
+    assert_eq!(
+        flow::run(&plain(), &mut world),
+        Said::UnknownSystem(flow::download_page())
+    );
     assert!(setup.net.asked.borrow().is_empty());
 }
 
