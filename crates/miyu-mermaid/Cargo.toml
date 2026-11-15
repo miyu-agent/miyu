@@ -6,6 +6,8 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 publish.workspace = true
+# 集成测试只有一个、自己一个程序（施工 RB-1）：画图的库记字体位置的目录是整个进程共用的。
+autotests = false
 
 [dependencies]
 # 画 SVG：设计 13 第九节定的库（旧版、tui-demo、web-demo 用的也是它）。只要出 SVG 的那一半，不要它自带的命令行
@@ -26,3 +28,8 @@ tracing = { version = "0.1", default-features = false, features = ["std"] }
 
 [lints]
 workspace = true
+
+# 记字体位置的目录不被别的家底改走（施工 RB-1）：画图的库只在进程头一回读某串字体时记位置，要自己一个进程。
+[[test]]
+name = "font_dir"
+path = "tests/font_dir.rs"

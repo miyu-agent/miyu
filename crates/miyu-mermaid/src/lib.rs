@@ -67,6 +67,11 @@ pub enum RenderError {
     NotReady,
 }
 
+/// 画图的库记字体位置的目录是整个进程共用的一个设置（`set_font_cache_dir`）：一次画图从定目录到画完拿着它（施工 RB-1）。生产里一个
+/// 进程一份核心、一次本来就只画一张，不多等；测试里一个进程好几份核心，不拿着的话，一份头一回读字体时另一份改了目录，位置就记进了
+/// 别人的目录，那一份的测试已经删了的数据根被这一写又建回来。
+static FONT_DIR: Mutex<()> = Mutex::new(());
+
 /// 画 mermaid 用的家底：资源目录在哪、记字体位置的目录、懒读好的 `style.json`、画好的缓存。一个核心一份，一直留着到核心
 /// 退出。
 pub struct Mermaid {
@@ -125,6 +130,9 @@ impl Mermaid {
         if let Some((_, rendered)) = cache.iter().find(|(h, _)| *h == hash) {
             return Ok(rendered.clone());
         }
+        // 画图的库记字体位置的目录整个进程只有一个：从定成这份家底的目录到画完都拿着这把锁，别的家底（测试里一个进程好几份核心）
+        // 插不进来改走它，记下的位置就写进这一份的目录（施工 RB-1）。先拿自己的缓存锁再拿它，次序总是这样，不会互相等。
+        let _fonts = FONT_DIR.lock().unwrap_or_else(PoisonError::into_inner);
         // 探字体要扫一遍系统的字体库，Windows 上能到几秒：空的、太长的、缓存里有的都不用等它，真要画才探；画图的库记过字体在哪、
         // 文件也没变的，不扫就知道有（施工 V-35）。
         mermaid_rs_renderer::set_font_cache_dir(self.fonts.clone());
