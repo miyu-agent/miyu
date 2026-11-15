@@ -76,6 +76,12 @@ fn an_upgrade_says_what_it_replaces_carries_needs_and_weighs() {
         3,
         "没声明的不写这一行"
     );
+    // 从软件源装的（施工 RB-1）：看一眼照索引交，没有 `drivers`，照 `hosted` 自己的先后。
+    let source = json!({"package": "gravity", "version": "1.0", "hosted": {"ag": ["search_web"]}});
+    assert_eq!(
+        plan(&source, Doing::Install, &Language::Chinese)[1],
+        "      模型驱动 ag 会让供应商自己跑：search_web"
+    );
     let back = json!({"package": "net", "version": "1", "program": "builtin", "restores": true});
     assert_eq!(
         plan(&back, Doing::Restore, &Language::Chinese),

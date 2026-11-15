@@ -52,18 +52,12 @@ pub(crate) fn plan(preview: &Value, doing: Doing, language: &Language) -> Vec<St
     };
     rows.extend(row(PlanLabel::Includes, included(preview, doing, language)));
     // 驱动会让供应商自己跑的工具（施工 HT-4）：声明了的驱动一个一行，缩进到「包含：」后面那一列；没声明的不印。
-    if let Some(hosted) = preview["hosted"].as_object() {
-        let indent = " ".repeat(columns(language.plan_label(PlanLabel::Includes)));
-        for driver in strings(&preview["drivers"]) {
-            let names = hosted
-                .get(driver)
-                .map(|names| strings(names).join(separator))
-                .unwrap_or_default();
-            if !names.is_empty() {
-                rows.push(format!("{indent}{}", language.hosted_by(driver, &names)));
-            }
-        }
-    }
+    let indent = " ".repeat(columns(language.plan_label(PlanLabel::Includes)));
+    rows.extend(
+        hosted(preview, language)
+            .into_iter()
+            .map(|line| format!("{indent}{line}")),
+    );
     // 读不成、装上也用不了的技能、脚本（施工 X-13 补）：包文件夹里的路径和为什么（英文一句，同 `miyu check`）。
     let skipped = preview["skipped"]
         .as_array()
@@ -214,6 +208,28 @@ pub(crate) fn question(preview: &Value, doing: Doing, id: &str, language: &Langu
         false => language.proceed(doing, id),
     };
     approve::noticed(approve::notice(&preview["notice"], language), asked)
+}
+
+/// 模型驱动会让供应商自己跑的工具（施工 HT-4），一个驱动一句：先照 `drivers` 的先后，再接 `hosted` 里有、`drivers` 里没有的（施工
+/// RB-1：从软件源装的看一眼、`package.info` 照索引交，没有 `drivers`）。没写 `hosted` 的（以前的索引、没声明的驱动）一句都没有。
+pub(crate) fn hosted(preview: &Value, language: &Language) -> Vec<String> {
+    let Some(hosted) = preview["hosted"].as_object() else {
+        return Vec::new();
+    };
+    let listed = strings(&preview["drivers"]);
+    let rest = hosted
+        .keys()
+        .map(String::as_str)
+        .filter(|driver| !listed.contains(driver));
+    listed
+        .iter()
+        .copied()
+        .chain(rest)
+        .filter_map(|driver| {
+            let names = strings(hosted.get(driver)?).join(language.list_separator());
+            (!names.is_empty()).then(|| language.hosted_by(driver, &names))
+        })
+        .collect()
 }
 
 fn strings(value: &Value) -> Vec<&str> {

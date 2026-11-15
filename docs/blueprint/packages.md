@@ -328,6 +328,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 7. **从软件源装时的依赖**（施工 G-4 上，PK-2 起照下限挑，端点的 `packages/source/fetch.rs`）：深度优先排，依赖在前。依赖装着、版本够的不动；没装的、装着的不够下限的，照先后（挑中的源、再官方的）找第一个索引里那一版够的，一起装：装着的就是一起升，排在要装的那个前面；哪个源都没有够的、前面已经排进去的那一份不够这一条下限的，拒绝 `depends_missing`（照写的原样）。索引里每个源只列最新的一版，挑不了更早的。看一眼的 `with` 里一起升的照列（编号、要装的版本）；`recommends` 里装着、版本够的不列，索引里那一版不够的也不列。施工 PK-3 上起 `with`、`recommends` 每一项另带从哪来（`source`）、哪个源（`feed`）、要的能力（`capabilities`，照索引，带 `held`）：依赖可以来自不同的源，各写各的（下面「装卸」第 8 条「说清来源和能力」）。
 8. **软件源索引里的 `tools`**（施工 PV-1）：每个包另有可选的 `tools`，装上以后模型会多的工具 `[{"name", "title"?, "from"}]`，收录时照 `miyu_source::tools::of` 算：包文件夹 `scripts/` 那一层的普通文件照开头读（`miyu_policy::script::read`，核心登记脚本用的同一份；点开头的、子目录、链接、读不成的不算），`title` 取「显示名称」「Display name」；清单里各功能写明的工具名算 `extension`，没有 `title`；MCP 的、要跑起来才知道的不列；照名字排、同名的留一个。没有的不写，索引照旧是 `version` 1，以前的索引读成空的，旧客户端照略过。`package.info` 三条路都带这一格（`protocol.md`）。
 9. **软件源索引里的 `license`**（施工 PV-3）：每个包另有可选的 `license`，清单 `[package] license` 的原样（读清单时已去掉前后空白）；没写的不写，索引照旧是 `version` 1，以前的索引读成没有，旧客户端照略过。`package.info` 没装的那一份、`package.search` 每一行照它带。
+10. **软件源索引里的 `hosted`**（施工 RB-1，同 HT-4 装包预览的那一格）：每个包另有可选的 `hosted`，模型驱动会让供应商自己跑的工具 `{"<驱动名>": ["<工具名>", …]}`，收录时照清单 `[[driver]] hosted` 原样写，没写 `hosted` 的驱动不列，一个都没写的不写这一格；索引照旧是 `version` 1，以前的索引读成空的，旧客户端照略过。从软件源装之前看一眼、`package.info` 没装的那一份照它带 `hosted`（`protocol.md`），`miyu pkg install` 的确认屏、`miyu pkg info` 的「提供」照它印「模型驱动 <名字> 会让供应商自己跑：…」（`cli/pkg.md`）；以前的索引没有的照旧不印。
 
 ### 本地库（施工 F-8 中上，设计 `31-软件包.md` 第四节）
 
@@ -447,6 +448,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `crates/miyu-core/tests/embed_package.rs`、`src/embed/tests.rs`（施工 R-5 三补） | 仓库里的内置语义模型的清单读得成小程序包；出厂的人格记忆推荐它、不依赖它，出厂的资源里没有它；照装了的包拼本机 embedding（`recall.md` 第四条第 1 款） |
 | `crates/miyu-core/tests/tools.rs`、`tests/packages.rs`（施工 F-2） | 没装记忆、基础系统组的包的工具目录里没有它们的工具（卸掉 `base-shell` 只少它，`base-sessions` 带着 `send_message`）；读坏了的清单不算装了；出厂的内置包清单和编进来的一一对得上；没装画 mermaid、联网的查询是 `unknown_method` |
 | `crates/miyu-endpoint/tests/packages_embed.rs`、`crates/miyu-core/src/embed/tests.rs`、`crates/miyu-core/tests/embed_log.rs`（施工 F-5 再补） | 真核心装上内置语义模型的包，`config.schema` 里「内置模型」当场写它的模型名，升级成另一个模型的换成新的，卸掉又没了；装卸时拼的和起来时一样、说得出缺的是哪一样，只有起来时记「没装」那一行 |
+| `crates/miyu-source/src/collect/tests/hosted.rs`、`crates/miyu-endpoint/tests/package_source_hosted.rs`（施工 RB-1） | 收录照清单写 `hosted`、没写 `hosted` 的驱动不列、一个都没写的这一格不出、读得回去；从软件源装之前看一眼、`package.info` 没装的那一份照索引带 `hosted`，索引没写的不出 |
 | `crates/miyu-endpoint/tests/packages_config.rs`、`crates/miyu/tests/packages_live.rs`、`crates/miyu-core/tests/tools.rs`、`crates/miyu-tool/src/catalog/tests.rs`（施工 F-5 补） | 装卸以后配置项当场换（见 `config.md`「守着它的」）；端口交的整份配置清单和起来时读配置用的一样、没装的人格记忆的几项不画；卸掉的提供者装回来登记了不再算卸掉 |
 | `crates/miyu-endpoint/tests/packages_extensions.rs`（施工 F-5 下） | 真核心装上的扩展当场拉起、卸掉的当场停下、旧会话调到它的工具报「已卸载」、升级了的重起、没变的不动 |
 | `crates/miyu-endpoint/tests/packages_live.rs`（施工 F-5 中） | 真核心卸掉一个内置包：查询当没有、用过它的会话工具面不变、调到报「已卸载」、新开的会话没有；装回来工具、查询都回来 |

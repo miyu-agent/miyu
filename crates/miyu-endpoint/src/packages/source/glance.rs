@@ -134,6 +134,10 @@ pub(super) fn preview(
             _ => answer[kind.as_str()] = json!(names),
         }
     }
+    // 驱动会让供应商自己跑的工具（施工 RB-1）：索引那一格原样，同从包文件夹装的那一份的 `hosted`；以前的索引没有的不写。
+    if !entry.hosted.is_empty() {
+        answer["hosted"] = json!(entry.hosted);
+    }
     if let Some(old) = now.iter().find(|one| one.id == entry.id) {
         let version = old.read.as_ref().ok().and_then(|old| old.version.clone());
         answer["replaces"] = json!({ "version": version });

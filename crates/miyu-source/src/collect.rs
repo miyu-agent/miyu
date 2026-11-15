@@ -368,6 +368,12 @@ fn entry_of(
             .provider_key
             .as_ref()
             .map(|wanted| wanted.catalog.clone()),
+        hosted: manifest
+            .drivers
+            .iter()
+            .filter(|driver| !driver.hosted.is_empty())
+            .map(|driver| (driver.name.clone(), driver.hosted.clone()))
+            .collect(),
         depends: manifest.depends.iter().map(ToString::to_string).collect(),
         recommends: manifest
             .recommends

@@ -254,3 +254,50 @@ fn knowledge_bases_are_provided_and_a_written_license_gets_a_row() {
         "没写的不印"
     );
 }
+
+/// 模型驱动会让供应商自己跑的工具（施工 RB-1）：没装的照回应顶上的 `hosted`、装着的照 `contains` 里的，一个驱动一行接在「提供」
+/// 后面、缩进到值的那一列；以前的索引没有这一格的不印。
+#[test]
+fn hosted_tools_follow_provides_one_driver_a_line() {
+    let remote = json!({
+        "from": "source", "source": "official", "package": "gravity", "version": "1.0",
+        "provides": {"command": ["gravity"]}, "origin": "github.com/ann/gravity", "official": true,
+        "hosted": {"ag": ["search_web", "read_url_content"]},
+    });
+    let shown = rows(&remote, east_eight(), &Language::Chinese);
+    let at = shown
+        .iter()
+        .position(|row| row.starts_with("提供"))
+        .expect("有「提供」");
+    assert_eq!(
+        shown[at..at + 2],
+        [
+            "提供    : 命令 miyu gravity",
+            "          模型驱动 ag 会让供应商自己跑：search_web、read_url_content",
+        ]
+    );
+    let installed = json!({
+        "package": "gravity", "layer": "home", "from": "file", "source": "file", "files": 1, "size": 9,
+        "contains": {"program": "process", "drivers": ["ag"], "hosted": {"ag": ["search_web"]}},
+    });
+    let shown = rows(&installed, east_eight(), &Language::English);
+    let at = shown
+        .iter()
+        .position(|row| row.starts_with("Provides"))
+        .expect("有 Provides");
+    assert_eq!(
+        shown[at + 1],
+        format!(
+            "{}model driver ag has the provider run on its own: search_web",
+            " ".repeat("Installed Size".len() + 4)
+        )
+    );
+    let mut old = remote.clone();
+    old.as_object_mut().expect("是表").remove("hosted");
+    assert!(
+        !rows(&old, east_eight(), &Language::Chinese)
+            .iter()
+            .any(|row| row.contains("会让供应商自己跑")),
+        "以前的索引没有这一格的不印"
+    );
+}

@@ -9,7 +9,7 @@ use serde_json::{Map, Value, json};
 
 use miyu_kernel::time::{Timestamp, UtcOffset};
 
-use super::confirm::included;
+use super::confirm::{hosted, included};
 use super::path::{is_path, joined};
 use super::query::size;
 use super::{PkgPlan, lines, refused};
@@ -155,8 +155,24 @@ fn ids(value: &Value, language: &Language) -> String {
 
 /// 「提供」：照装之前那一份「包含」的写法（[`included`]）。装着的、包目录和包文件的照回应的 `contains`（同看一眼的「包含」）；
 /// 软件源的照索引的 `provides`（种类到名字），先照从软件源装看一眼的那样摊开：子命令取第一个，功能、带给别的包的内容不列。
+/// 模型驱动会让供应商自己跑的工具（施工 RB-1，[`hosted`]）一个驱动一行，接在后面。
 fn provides(info: &Value, remote: bool, language: &Language) -> Option<String> {
-    let items = match remote {
+    let carried = match remote {
+        true => info,
+        false => &info["contains"],
+    };
+    let items = included_items(info, remote, language);
+    let lines: Vec<String> = (!items.is_empty())
+        .then(|| items.join(language.list_separator()))
+        .into_iter()
+        .chain(hosted(carried, language))
+        .collect();
+    (!lines.is_empty()).then(|| lines.join("\n"))
+}
+
+/// 「提供」那一行的几项（[`provides`]）。
+fn included_items(info: &Value, remote: bool, language: &Language) -> Vec<String> {
+    match remote {
         false => included(&info["contains"], Doing::Install, language),
         true => {
             let mut shaped = Map::new();
@@ -173,8 +189,7 @@ fn provides(info: &Value, remote: bool, language: &Language) -> Option<String> {
             }
             included(&Value::Object(shaped), Doing::Install, language)
         }
-    };
-    (!items.is_empty()).then(|| items.join(language.list_separator()))
+    }
 }
 
 /// 「无法读取」（施工 IN-4）：读不成的技能、脚本、斜杠命令模板，写法同装之前那一份（`<包里的路径>（<为什么>）`）。

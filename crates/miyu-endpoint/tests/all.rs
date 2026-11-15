@@ -205,6 +205,7 @@ mod package_personas;
 mod package_records;
 mod package_sections;
 mod package_settings;
+mod package_source_hosted;
 mod package_state;
 mod package_switch;
 mod package_theme;

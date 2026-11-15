@@ -69,6 +69,11 @@ pub struct Entry {
     /// 没写的、以前生成的索引没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub provider_key: Option<String>,
+    /// 模型驱动会让供应商自己跑的工具（施工 RB-1，同 HT-4 装包预览的 `hosted`）：驱动名到清单 `[[driver]] hosted` 的原样，没写
+    /// `hosted` 的驱动不列；从软件源装之前那一屏、`package.info` 照它说「模型驱动 … 会让供应商自己跑」。一个都没写的、以前生成的
+    /// 索引没有。
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub hosted: BTreeMap<String, Vec<String>>,
     /// 依赖的包：清单 `[depends]` 的原样，照写的先后，编号或者带版本下限的 `<编号>>=<版本>`（施工 PK-2，读成
     /// [`Entry::depends_on`]）。
     #[serde(default)]
