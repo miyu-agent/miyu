@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-你写了一个扩展，想让它在终端、网页上露面：侧边栏里一块状态、首页一段、底栏一小格、一整页可以改的设置、一个自己的后台网页、托盘菜单里一行。这一页讲每种怎么做。扩展本身怎么写见 [写扩展](../authors/extensions.md)。
+你写了一个扩展，想让它在终端、网页上露面：侧边栏里一块状态、首页一段、底栏一小格、一整页可以改的设置、一个自己的后台网页、托盘菜单里一行。这一页讲每种怎么做。扩展本身怎么写见 [写扩展](../authors/extensions.md)。英文版：[ui-surfaces.en.md](ui-surfaces.en.md)。
 
 ## 有哪几种
 
@@ -238,7 +238,7 @@ name = { zh = "打开时钟后台", en = "Open Clock" }
 
    Windows 上这份文件照样用：核心没找到 `bin/miyu-clock.exe`，就照第一行的 `#!` 找 `PATH` 里的 `python` 起它，不用执行权限。文件名照清单的 `program` 写 `miyu-clock`，不加 `.py`；要装好 Python 3，`python` 在 `PATH` 里找得到。见 [写一个 Miyu 软件包：三个平台](../authors/README.md#三个平台)。
 
-4. 装：`miyu pkg install ./clock`。那一屏列出它要的能力「widgets」，答 `Y`；问「现在打开？」也答是。
+4. 装：`miyu pkg install ./clock`。那一屏列出它要的能力「widgets」，答 `Y`；问「现在启用 'clock'？[Y/n]」也答是。
 5. 看：
    - 终端：窗口拉到 120 列以上，右边侧边栏里多一段「时间」，下面一行强调色的 `14:05`，再一行「日期 2026-11-14」。
    - 网页：点开右边一栏的「面板」，里面一块「时间」，内容同上。

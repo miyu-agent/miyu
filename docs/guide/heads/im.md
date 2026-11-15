@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-把 Miyu 接到 QQ 或 Telegram 上，在私聊和群里跟 AI 说话：从装、接号，到管谁能叫 AI、AI 在群里能做什么、记录和用量。
+把 Miyu 接到 QQ 或 Telegram 上，在私聊和群里跟 AI 说话：从装、接号，到管谁能叫 AI、AI 在群里能做什么、记录和用量。英文版：[im.en.md](im.en.md)。
 
 ## 是什么
 

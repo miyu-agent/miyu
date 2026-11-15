@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-用过旧版 Miyu（0.7.x）、装了这一版的，照这一页把以前的人格、会话、记忆、设置和文件搬过来。
+用过旧版 Miyu（0.7.x）、装了这一版的，照这一页把以前的人格、会话、记忆、设置和文件搬过来。英文版：[migrate.en.md](migrate.en.md)。
 
 路径里的 `~/.miyu` 是数据根（默认 `~/.miyu`，Windows 上是 `%USERPROFILE%\.miyu`；设了 `MIYU_HOME` 的照它）。
 

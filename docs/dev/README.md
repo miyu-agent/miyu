@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-给要扩展 Miyu、接入 Miyu 或给它改代码的开发者。文档在三处：`authors/` 是写软件包的教程，`reference/` 是协议参考，`dev/` 是架构和贡献代码。照你要做的事找：
+给要扩展 Miyu、接入 Miyu 或给它改代码的开发者。文档在三处：`authors/` 是写软件包的教程，`reference/` 是协议参考，`dev/` 是架构和贡献代码。英文版：[README.en.md](README.en.md)。照你要做的事找：
 
 | 我想做的事 | 读哪一篇 |
 |---|---|
@@ -20,4 +20,4 @@
 | 弄懂 Miyu 由哪些进程、crate、仓库组成 | [架构](architecture.md) |
 | 给核心或某个头提改动 | [贡献代码](contributing.md) |
 
-协议参考和作者教程各有中文、英文两份，中文是正本。`reference/`、`authors/`、`dev/` 和用户手册 `guide/` 用 Apache-2.0（仓库根目录 `LICENSES/Apache-2.0.txt`），照着写的东西用什么许可证都行；只经协议和 Miyu 说话的软件包、扩展、头是独立的作品，核心的 AGPL 管不到它们。
+这几处的文档各有中文、英文两份，中文是正本。`reference/`、`authors/`、`dev/` 和用户手册 `guide/` 用 Apache-2.0（仓库根目录 `LICENSES/Apache-2.0.txt`），照着写的东西用什么许可证都行；只经协议和 Miyu 说话的软件包、扩展、头是独立的作品，核心的 AGPL 管不到它们。

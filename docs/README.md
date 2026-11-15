@@ -2,6 +2,8 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
+英文版：[README.en.md](README.en.md)。
+
 | 你是 | 读 |
 |---|---|
 | 头一次用 Miyu | [快速上手](guide/quickstart.md) |
@@ -20,6 +22,6 @@
 | `dev/` | 开发者文档：架构、写一个头、主题和皮肤、往界面上放东西、贡献代码 | 接入 Miyu、改 Miyu 的人 |
 | `blueprint/`、`designs/`、`construction/`、`perf/`、`reviews/` | 项目内部的图纸、设计、施工记录、性能数据、调研 | 维护者。用 Miyu、给它写东西都不用看；各是什么见 [贡献代码](dev/contributing.md#先读什么) |
 
-`authors/`、`reference/` 有中文、英文两份，中文是正本，英文的文件名是 `<页>.en.md`。
+`guide/`、`authors/`、`reference/`、`dev/` 有中文、英文两份，中文是正本，英文的文件名是 `<页>.en.md`。
 
 `guide/`、`authors/`、`reference/`、`dev/` 用 Apache-2.0（仓库根目录 `LICENSES/Apache-2.0.txt`）：照着写东西、转载、翻译，用什么许可证都行。

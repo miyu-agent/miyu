@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-Miyu 起不来、连不上、没反应、报了看不懂的错，从这一页查起。各功能自己特有的报错写在各页的「出了问题」里，这里收总的。
+Miyu 起不来、连不上、没反应、报了看不懂的错，从这一页查起。各功能自己特有的报错写在各页的「出了问题」里，这里收总的。英文版：[troubleshooting.en.md](troubleshooting.en.md)。
 
 ## 先跑 miyu check
 

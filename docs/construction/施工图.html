@@ -1547,6 +1547,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sQU1"><span class="n">QU-1</span>供应商的额度<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sFX4"><span class="n">FX-4</span>文档查出的小修<span class="st">✓</span></a></li>
         <li><a class="step review" href="#sDOC1"><span class="n">DOC-1</span>用户手册和开发者文档<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sDOC2"><span class="n">DOC-2</span>手册和开发者文档的英文版<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -60020,6 +60021,59 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/DOC-1-用户手册.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sDOC2" aria-labelledby="h-sDOC2">
+  <div class="sheet-head"><h2 id="h-sDOC2"><span class="no">DOC-2</span>手册和开发者文档的英文版</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">用户手册和开发者文档中文定稿了，这一步出英文版：一页一份 <code>&lt;页&gt;.en.md</code>，和协议参考、作者教程一样。只动文档。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">docs/guide　docs/dev　docs/README.md</span><span class="dir-note">DOC-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>docs/guide 31 页、docs/dev 6 页、文档首页，各加一份 .en.md，共 38 页</li>
+              <li>一页对一页：标题、表格、代码块的个数和先后同中文页，中英行数相等</li>
+              <li>界面上的字、报错、设置项的名字取程序的英文原文；程序里只有中文的不加引号、照意思写</li>
+              <li>中文页头一段末尾加回「英文版」的链接；两个首页里「哪几处有英文」改成四处都有</li>
+              <li>译的时候对出的四处中文页的错跟着改（cli、models、packages、ui-surfaces）</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">英文页和中文页一页对一页、行数相等，中文改一处英文对着改一处</span><span class="rl">同 reference、authors</span></div>
+          <div class="tile new"><span class="nm">引界面上的字不自己翻，取程序的英文原文</span><span class="rl">施工单「怎么译的」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DOC-2</dd></div>
+        <div><dt>名称</dt><dd>手册和开发者文档的英文版</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-15</dd></div>
+        <div><dt>提交</dt><dd class="mono">DOC-2</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；英文页的站内链接指到的页和小节都在</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>38 页中英的标题个数和层级、表格行数、代码块个数、总行数相等</span></li>
+        <li><span class="ok">✓</span><span>英文页里没有指回中文页的链接（「Chinese version」那一条除外），锚点都对得上英文标题</span></li>
+        <li><span class="ok">✓</span><span>两个 Python 例子和中文页的只差注释和给人看的字</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/DOC-2-英文版.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

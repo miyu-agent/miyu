@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-给想给核心或某个头提一个改动的开发者：先读什么，怎么编、怎么跑、怎么过门禁，提交和 PR 怎么写。各部件在哪见 [架构](architecture.md)。
+给想给核心或某个头提一个改动的开发者：先读什么，怎么编、怎么跑、怎么过门禁，提交和 PR 怎么写。各部件在哪见 [架构](architecture.md)。英文版：[contributing.en.md](contributing.en.md)。
 
 ## 先读什么
 

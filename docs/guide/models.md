@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-Miyu 接上一家模型供应商才能对话。这一页讲怎么接、怎么换、key 放哪，和模型出错时 Miyu 怎么办。
+Miyu 接上一家模型供应商才能对话。这一页讲怎么接、怎么换、key 放哪，和模型出错时 Miyu 怎么办。英文版：[models.en.md](models.en.md)。
 
 ## 最快：miyu setup
 
@@ -296,6 +296,6 @@ chat = "@daily"
 | `miyu setup` 说「核心未读到 XXX_API_KEY（在核心启动后设置）」 | 核心比这个变量先起来。`miyu core stop` 以后再跑 `miyu setup`，或者直接贴 key |
 | `provider "acme" has no usable key` | 密钥没存，或者核心的环境里没有那个变量。`miyu provider list` 看哪个没设 |
 | `provider "acme" needs base_url: it matches nothing in the catalog` | 目录里认不出这一家，写 `base_url` |
-| 「未找到：请检查端点地址和模型名」 | `base_url` 要写到驱动接的路径前面那一截，模型名要和供应商那边的一样 |
+| 「未找到，请检查端点地址和模型名」 | `base_url` 要写到驱动接的路径前面那一截，模型名要和供应商那边的一样 |
 
 `miyu check` 查配置写没写错。

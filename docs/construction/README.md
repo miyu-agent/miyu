@@ -1624,6 +1624,7 @@ flowchart LR
 | 步 | 名字 | 做什么 |
 |---|---|---|
 | DOC-1 | 用户手册和开发者文档 | 新增 `docs/guide/`（用户手册 30 页，加目录页和快速上手的位置）、`docs/dev/`（架构、贡献代码、写一个头、写主题和外观、往界面上放东西）、文档首页 `docs/README.md`；`docs/reference/`、`docs/authors/` 清掉遗留的施工号和来历，改掉七处和代码对不上的；`README.md`、`packaging/README.md` 改成现状。手册和开发者文档 Linux、macOS、Windows 三个平台都讲全。只动文档。施工单见 `DOC-1-用户手册.md` |
+| DOC-2 | 用户手册和开发者文档的英文版 | `docs/guide/`、`docs/dev/`、`docs/README.md` 共 38 页各加一份 `<页>.en.md`，一页对一页，界面上的字取程序的英文原文；中文页加回「英文版」的链接；译的时候对出的四处中文页的错跟着改。只动文档。施工单见 `DOC-2-英文版.md` |
 
 ### 四、施工单的格式
 

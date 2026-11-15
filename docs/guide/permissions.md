@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-AI 在你的机器上能动什么、什么时候先问你、哪些目录碰不到，都在这一页。
+AI 在你的机器上能动什么、什么时候先问你、哪些目录碰不到，都在这一页。英文版：[permissions.en.md](permissions.en.md)。
 
 ## 两种权限级别
 

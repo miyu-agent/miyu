@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-找一个软件包、装上、看它要了什么、开关它、升级、卸掉，加别的软件源，和出厂带了哪些包。写包的人看 [写一个 Miyu 软件包](../authors/README.md)。
+找一个软件包、装上、看它要了什么、开关它、升级、卸掉，加别的软件源，和出厂带了哪些包。写包的人看 [写一个 Miyu 软件包](../authors/README.md)。英文版：[packages.en.md](packages.en.md)。
 
 路径里的 `~/.miyu` 是数据根（默认 `~/.miyu`，Windows 上是 `%USERPROFILE%\.miyu`；设了 `MIYU_HOME` 的照它）。
 
@@ -256,14 +256,14 @@ miyu pkg remove --purge ocr   # 连配置一起删
 
 ```text
 将卸载 ocr 0.2.0
-包含：扩展程序
 会删掉 /home/me/.miyu/var/lib/ocr（3.1 MiB）
 配置留在 /home/me/.miyu/etc/ocr，另有 2 项设置
+大小：18.4 MiB，12 个文件
 
 卸载 'ocr'？[Y/n]
 ```
 
-这两行印的是全路径。上面是 Linux 上的样子；macOS 上是 `/Users/me/.miyu/var/lib/ocr` 这样，Windows 上是 `C:\Users\me\.miyu\var\lib\ocr` 这样。
+中间两行印的是全路径。上面是 Linux 上的样子；macOS 上是 `/Users/me/.miyu/var/lib/ocr` 这样，Windows 上是 `C:\Users\me\.miyu\var\lib\ocr` 这样。
 
 - 删掉的：包文件夹 `~/.miyu/opt/<编号>/`，`~/.miyu/` 下 `var/lib/`、`var/cache/`、`var/log/`、`tmp/`、`run/` 里它的 `<编号>/`，它带的脚本的状态目录。
 - 留下的：配置目录 `~/.miyu/etc/<编号>/`，和 `~/.miyu/etc/config.toml` 里它的设置项。重装同编号照旧用。写了 `--purge`（`-n` 同）才一起删。

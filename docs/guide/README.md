@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-给用 Miyu 的人。头一次用，先读 [快速上手](quickstart.md)；之后要查哪件事，照下面找。
+给用 Miyu 的人。头一次用，先读 [快速上手](quickstart.md)；之后要查哪件事，照下面找。英文版：[README.en.md](README.en.md)。
 
 ## 开始
 

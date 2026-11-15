@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-每个会话开着一个人格、一个预设。这一页讲两者各管什么，怎么选、怎么换、怎么设默认，怎么自己写。
+每个会话开着一个人格、一个预设。这一页讲两者各管什么，怎么选、怎么换、怎么设默认，怎么自己写。英文版：[personas-presets.en.md](personas-presets.en.md)。
 
 ## 各管什么
 

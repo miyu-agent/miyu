@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-给要接入 Miyu 或给它改代码的开发者：Miyu 由哪些进程和仓库组成，一句话从敲下去到模型回答走过哪些部件，你要改、要接的那一块在哪。协议的每个方法查 [协议参考](../reference/README.md)，写软件包查 [作者教程](../authors/README.md)。
+给要接入 Miyu 或给它改代码的开发者：Miyu 由哪些进程和仓库组成，一句话从敲下去到模型回答走过哪些部件，你要改、要接的那一块在哪。协议的每个方法查 [协议参考](../reference/README.md)，写软件包查 [作者教程](../authors/README.md)。英文版：[architecture.en.md](architecture.en.md)。
 
 ## 进程
 

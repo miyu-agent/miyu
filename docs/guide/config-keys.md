@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-核心登记的每一个配置键，和随核心出厂的终端、网页的键，都在这一页。怎么改、改在哪、为什么没生效，见[配置](config.md)。
+核心登记的每一个配置键，和随核心出厂的终端、网页的键，都在这一页。怎么改、改在哪、为什么没生效，见[配置](config.md)。英文版：[config-keys.en.md](config-keys.en.md)。
 
 键都写在系统配置 `~/.miyu/etc/config.toml`（数据根默认 `~/.miyu`，Windows 上是 `%USERPROFILE%\.miyu`）里。只有 `permission.start_read_only` 还能写进项目配置。
 

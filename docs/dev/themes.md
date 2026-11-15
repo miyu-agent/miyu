@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-给终端、网页做一套自己的样子，做成软件包发出去：终端的主题、网页的主题和配色方案、吉祥物。读者要会写 JSON，做网页的部分还要会一点 JavaScript 和 CSS。
+给终端、网页做一套自己的样子，做成软件包发出去：终端的主题、网页的主题和配色方案、吉祥物。读者要会写 JSON，做网页的部分还要会一点 JavaScript 和 CSS。英文版：[themes.en.md](themes.en.md)。
 
 ## 能做哪几样
 

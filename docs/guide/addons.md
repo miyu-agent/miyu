@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-官方软件源里有四个要单独装的软件包：`embed`（内置语义模型）、`ocr`（OCR文字识别）、`render`（渲染）、`memes`（表情包）。这一页一个包一节：装了多什么、怎么装、怎么用、设置、出了问题怎么办。装包、开关、卸包的通用做法见 [软件包](packages.md)。
+官方软件源里有四个要单独装的软件包：`embed`（内置语义模型）、`ocr`（OCR文字识别）、`render`（渲染）、`memes`（表情包）。这一页一个包一节：装了多什么、怎么装、怎么用、设置、出了问题怎么办。装包、开关、卸包的通用做法见 [软件包](packages.md)。英文版：[addons.en.md](addons.en.md)。
 
 路径里的 `~/.miyu` 是数据根（默认 `~/.miyu`，Windows 上是 `%USERPROFILE%\.miyu`；设了 `MIYU_HOME` 的照它）。
 

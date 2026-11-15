@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-Miyu 坏了（核心起不来、配置改坏了、头打不开）时，用 `miyu rescue` 拉起 LiteMiyu，让 AI 帮你在终端里把它修好。这一页讲 LiteMiyu 是什么、怎么装、怎么用它修 Miyu。
+Miyu 坏了（核心起不来、配置改坏了、头打不开）时，用 `miyu rescue` 拉起 LiteMiyu，让 AI 帮你在终端里把它修好。这一页讲 LiteMiyu 是什么、怎么装、怎么用它修 Miyu。英文版：[rescue.en.md](rescue.en.md)。
 
 ## LiteMiyu 是什么
 
