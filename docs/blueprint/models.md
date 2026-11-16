@@ -974,7 +974,7 @@ opencode 有两个端点：Zen（`https://opencode.ai/zen/v1`，按量付费）�
 2. **配置盖地址**：`[providers.<id>.quota] url = "…"`（`QuotaSettings`，设置页不画），同 `base_url` 盖档案的地址。格式只有档案知道：档案没写 `quota` 的一家，配置写了地址也不查。没开 `format` 的配置项：选项至少两个，等有第二种格式时再加。
 3. **头**：`Authorization: Bearer <这一家的 key>`（不照驱动的认证头：Go 的 Claude、MiniMax 走 `anthropic`，认证头是 `x-api-key`），档案另配的头照固定的种子 `quota` 换（额度不属于哪个会话，同一次性调用照用途），`User-Agent` 是客户端的 `miyu/<版本>`（Cloudflare 挡默认库的）。地址落在本机的不走代理，同拉列表。没有 key 的不查。
 4. **读**：`opencode-go` 的回应 `{"usage": {"rolling", "weekly", "monthly"}}`，每个窗口 `{"status", "percent", "resetsAt"}`；照 rolling、weekly、monthly 的先后交，没有的窗口不交；`percent` 原样（不是数的算写错），`status` 原样，`resetsAt` 照 RFC 3339 读（带不带小数秒、`Z` 还是时区偏移都认，`quota/instant.rs`），换成 UTC、交出去照时刻的写法 `2026-11-14T08:31:28.000Z`（读不出的算写错）。一个窗口都没有、有一个写错，整份当没有。
-5. **什么时候查**（`miyu-session` 的 `route/quota.rs`）：会话每轮结束（`turn.ended` 落了盘）路由在后台查一次上一次解析出来的那一家，不挡回合；协议的 `session.quota` 照会话接下来请求的那一家查。同一家 60 秒内照上一次的（查不到的也算一次），同一时刻只有一个在查、后到的等它照它答；只在内存里，核心重启就清零。一次最多等 10 秒，响应体最多 64 KiB。
+5. **什么时候查**（`miyu-session` 的 `route/quota.rs`）：会话每轮结束（`turn.ended` 落了盘）路由在后台查一次上一次解析出来的那一家，不挡回合；协议的 `session.quota` 照会话接下来请求的那一家查：会话记着的引用（内核照日志算的，没记的跟着这一刻的 `models.chat`）和路由上一次解析的一样，照路由解析出的那一家（钉住的池照钉着的成员）；刚换了模型、还没开回合的，照引用写的那一家（改过名的照新编号），换成了池的下一个回合开始钉了成员才有（施工 QU-2修：原来照路由的，换了模型要等下一个回合才查对，重启才好）。同一家 60 秒内照上一次的（查不到的也算一次），同一时刻只有一个在查、后到的等它照它答；只在内存里，核心重启就清零。一次最多等 10 秒，响应体最多 64 KiB。
 6. **查不到**：这一家用不了、没有 key、连不上、超时、回的不是 2xx、格式不对，一律当没有，记一行 `DEBUG quota unavailable`（`provider`、`error`），不报错、不告警。
 7. **协议** `session.quota {"session"}`（`protocol.md`「`session.quota`」）：`{"windows": [{id, label, percent, status, resets_at}…]}`，没有的 `{}`。名字照连接的语言（`core/human/<语言>.json` 的 `quota/window/<编号>`：5 小时、每周、每月）。
 8. **DeepSeek 的余额**（施工 QU-2；2026-11-16 项目主人定：用 DeepSeek 官方供应商时用量面板里显示余额，头画一行「余额 ¥12.34」，有赠送的后面暗字「含赠送 ¥2.00」，不可用时整行变红，不画条）：
@@ -1310,10 +1310,10 @@ mimo = ["xiaomi"]
 | `crates/miyu-endpoint/tests/model_call.rs`、`model_call_log.rs` | `model.call` 的回应形状；参数校验（`purpose` 的写法、`messages` 的样子、`max_tokens`、`model` 是空字）、blob 不在存处里的 `unknown_attachment`、不是图的 `bad_params`、`unknown_model`；出错的 `data`；不造会话、不进会话日志；测试的端口没有一次性入口的答 `no_model`；运行日志成了、没成各一行，不带 key（`model_call_log.rs`） | 8-20 |
 | `crates/miyu-models/src/quota/tests.rs`（QU-1） | 档案的 `quota` 读得进、写错的格式读不进；配置盖地址、档案没写的配置写了也没有；opencode Go 的回应读成三个窗口照先后、没有的窗口不交、写错一格整份当没有；重置时刻照 RFC 3339 的各种写法读成 UTC | QU-1 |
 | `crates/miyu-session/tests/route_quota.rs`（QU-1） | GET 档案写的地址、key 在 `Authorization`、另配的头照种子 `quota`、`User-Agent` 是 `miyu/`；60 秒内不再发；档案没写的不发；配置改地址；404、500、乱码、写错的当没有、查不到的也不再发；会话一轮结束在后台查一次 | QU-1 |
-| `crates/miyu-endpoint/tests/session_quota.rs`（QU-1） | 真核心、真路由：说完一轮后台查过，`session.quota` 交三格、名字照连接的语言、不再发；档案没写的、查不到的回 `{}`；找会话、参数写错的拒 | QU-1 |
+| `crates/miyu-endpoint/tests/session_quota.rs`（QU-1） | 真核心、真路由：说完一轮后台查过，`session.quota` 交三格、名字照连接的语言、不再发；档案没写的、查不到的回 `{}`；找会话、参数写错的拒；先用别的一家开会话、换到 opencode Go，还没开回合就交窗口（QU-2修） | QU-1、QU-2修 |
 | `crates/miyu-models/src/quota/tests/deepseek.rs`（QU-2） | 档案读得进 `deepseek-balance`；没写地址、字面官方地址（大小写、带路径）的查，中转站、路径里藏官方地址、环境变量地址的不查，改了查的地址也只在官方地址时查；认不出官方地址的一家照旧；回应读成余额、金额原样、多的格不管、一种币都没有的照交；缺格、类型不对、不是这种格式的整份不要 | QU-2 |
 | `crates/miyu-session/tests/route_balance.rs`（QU-2） | 官方地址的 GET 档案写的地址、key 在 `Authorization: Bearer`、读成余额、60 秒内不再发；字面官方地址加配置改查的地址照查；中转站、写了 catalog 指中转站、环境变量地址的不发，配置改了地址也不发；401、500、乱码、缺格的当没有、查不到的也不再发 | QU-2 |
-| `crates/miyu-endpoint/tests/session_balance.rs`（QU-2） | 真核心、真路由：官方 DeepSeek 的会话 `session.quota` 交 `balance`（不带 `windows`），金额、币种照原样，key 在 `Authorization`；经中转站跑 DeepSeek 的会话回 `{}`、配置改了查的地址也不发请求 | QU-2 |
+| `crates/miyu-endpoint/tests/session_balance.rs`（QU-2） | 真核心、真路由：官方 DeepSeek 的会话 `session.quota` 交 `balance`（不带 `windows`），金额、币种照原样，key 在 `Authorization`；经中转站跑 DeepSeek 的会话回 `{}`、配置改了查的地址也不发请求；先用中转站开会话、换到官方的，还没开回合就交 `balance`，换回去回 `{}`、不再发（QU-2修） | QU-2、QU-2修 |
 
 ### 出处
 

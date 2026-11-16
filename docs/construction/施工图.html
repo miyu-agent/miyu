@@ -1560,6 +1560,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
         <li><a class="step review" href="#sRO2"><span class="n">RO-2</span>数据根两种模式都读得到<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sQU2F"><span class="n">QU-2修</span>换了模型照换成的那一家查额度<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -60765,6 +60766,56 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/RO-2-数据根放开读.md</code>；蓝图 <code>session/guard.md</code>、<code>session/tools.md</code>、<code>fs.md</code>、<code>tools/glob.md</code>、<code>sandbox.md</code>、<code>sandbox/</code> 三页、<code>prompts.md</code>、<code>kernel/tools.md</code>；协议参考 <code>sessions</code>（中英）。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sQU2F" aria-labelledby="h-sQU2F">
+  <div class="sheet-head"><h2 id="h-sQU2F"><span class="no">QU-2修</span>换了模型照换成的那一家查额度</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">会话中途换到 DeepSeek 官方（或 opencode Go）以后，用量框当场看得到余额（窗口），不用等下一轮、不用重启核心。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint · quota.rs</span><span class="dir-note">QU-2修</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>原来照路由上一次解析的那一家查：换模型下一个回合开始才重新解析，换了还没开回合的查的是换之前的</li>
+              <li>改成照会话记着的引用（同 <code>effort</code> 那条）：和路由的一样照路由的，不一样的照引用写的那一家</li>
+              <li>换成池的下一轮钉了成员才有；<code>subscribe</code>、<code>model.changed</code> 照旧下一轮才换</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">照记着的引用</span><span class="rl">刚换的当场就是换成的</span></div>
+          <div class="tile"><span class="nm">协议形状不变</span><span class="rl">只改查哪一家</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">QU-2修</dd></div>
+        <div><dt>名称</dt><dd>换了模型照换成的那一家查额度</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">QU-2修</dd></div>
+        <div><dt>验收</dt><dd>门禁、沙箱实测</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>中转站开的会话换到官方 DeepSeek，没开回合就交 balance，假服务器收到一次</span></li>
+        <li><span class="ok">✓</span><span>换回中转站回 {}，不再发；opencode Go 同一条路</span></li>
+        <li><span class="ok">✓</span><span>两条新测试改前红</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/QU-2修-换模型后查不到余额.md</code>；蓝图 <code>models.md</code>、<code>protocol.md</code>；协议参考 <code>sessions.md</code>。</li>
       </ul>
     </div>
   </div>

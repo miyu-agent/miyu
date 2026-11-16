@@ -254,7 +254,7 @@ How much this session has used so far, split into the same parts as `session.con
 
 ## `session.quota`
 
-The quota of the provider this session will send its next request to: how much of each window is used and when it resets, or how much money is left on the account. Only providers with a quota interface have one (opencode Go's windows and official DeepSeek's balance for now); the usage panel draws it. The core checks once in the background after each turn of the session and reuses the result for the same provider within 60 seconds.
+The quota of the provider this session will send its next request to: how much of each window is used and when it resets, or how much money is left on the account. Only providers with a quota interface have one (opencode Go's windows and official DeepSeek's balance for now); the usage panel draws it. The core checks once in the background after each turn of the session and reuses the result for the same provider within 60 seconds. Right after the session switches models, before its next turn, it asks the provider it switched to (a pool has none until the next turn starts).
 
 **Params**: `session` (required).
 

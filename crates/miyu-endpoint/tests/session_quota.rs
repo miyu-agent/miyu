@@ -1,6 +1,6 @@
 //! 用量框里的额度（施工 QU-1，`session.quota`）：真核心、真路由，会话用的是 opencode Go（档案写了查额度的地址，指着一台单独的
 //! 假服务器）。说完一轮核心在后台查过一次，再问照它答、不再发；交三格，名字照连接的语言。档案没写的供应商、查不到的回 `{}`、
-//! 不报错；没有这个会话的照找会话的说法拒。
+//! 不报错；没有这个会话的照找会话的说法拒。会话中途换到 opencode Go 的，还没开回合就照它查（施工 QU-2修）。
 
 use std::time::Duration;
 
@@ -81,6 +81,33 @@ async fn a_go_session_gets_three_windows_checked_after_its_turn() {
         "{reply}"
     );
     assert_eq!(usage.received().len(), 1, "60 秒内照后台查过的答");
+}
+
+/// 施工 QU-2修：先用别的一家开会话，`session.configure` 换到 opencode Go，还没开回合就问，照换成的那一家查。
+#[tokio::test]
+async fn switching_a_session_to_go_gets_its_windows_before_the_next_turn() {
+    let usage = Server::start(vec![json_reply(200, USAGE)]).await;
+    let home = Home::new();
+    let talk = "driver = \"openai-chat\"\nbase_url = \"http://127.0.0.1:9/v1\"\nkey = { env = \"GO_KEY\" }";
+    home.write(
+        "etc/config.toml",
+        &format!(
+            "[ui]\nlanguage = \"zh\"\n\n[providers.opencode-go]\n{talk}\n\n[providers.other]\n{talk}\n\n[models]\nchat = \"other/deepseek-v4.1-flash\"\n"
+        ),
+    );
+    let data = data(profiles(go(Some(format!("{}/usage", usage.base_url)))));
+    let mut client = Client::connect(routed(&home, &[("GO_KEY", "sk-go")], data));
+    client.hello().await;
+    let session = client.create("c1", &home.work.to_string_lossy()).await;
+    let result = crate::session_balance::switched(
+        &mut client,
+        "m1",
+        &session,
+        "opencode-go/deepseek-v4.1-flash",
+    )
+    .await;
+    assert_eq!(result["windows"][0]["id"], "rolling", "{result}");
+    assert_eq!(usage.received().len(), 1);
 }
 
 #[tokio::test]
