@@ -210,97 +210,38 @@ fn this_machine_has_its_system_and_temp_dirs() {
     assert_eq!(boundary.zone(&system), Zone::Readable);
 }
 
+/// 别的程序的钥匙、登录不再单是一片（施工 PV-RM）：`~/.ssh` 和家目录别处一样在边界以外；数据根照旧谁都不能碰。
 #[test]
-fn private_dirs_are_their_own_zone_after_the_data_root_and_added_dirs() {
+fn a_key_folder_is_outside_like_the_rest_of_the_home() {
     let site = Site::new();
-    let places = Places {
-        private: vec![
-            site.at("home/.ssh"),
-            site.at("data/run"),
-            site.at("work-other"),
-        ],
-        dirs: vec![site.at("work-other")],
-        ..site.places()
-    };
-    let boundary = Boundary::new(&places);
-    assert_eq!(boundary.zone(&site.real("home/.ssh/id")), Zone::Private);
-    assert_eq!(boundary.zone(&site.real("home/.ssh")), Zone::Private);
+    let boundary = site.boundary();
+    assert_eq!(boundary.zone(&site.real("home/.ssh/id")), Zone::Outside);
+    assert_eq!(boundary.zone(&site.real("home/.ssh")), Zone::Outside);
     assert_eq!(boundary.zone(&site.real("home/notes.txt")), Zone::Outside);
-    assert_eq!(
-        boundary.zone(&site.real("data/run/token")),
-        Zone::Forbidden,
-        "数据根在前"
-    );
-    assert_eq!(
-        boundary.zone(&site.real("work-other/x.txt")),
-        Zone::Writable,
-        "人加进来的目录在前"
-    );
+    assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::Forbidden);
 }
 
+/// 工作区包住数据根（施工 5-14 改：工作目录是 `~` 的就是工作区）：最深的那一片算，数据根照旧谁都不能碰、开着的技能文件夹照旧
+/// 只读；家目录别处（钥匙在内）能写。
 #[test]
-fn the_private_list_hangs_off_the_home() {
-    let home = PathBuf::from("/h");
-    let private = miyu_fs::private_dirs(&home);
-    for name in [".ssh", ".gnupg", ".claude", ".miyu"] {
-        assert!(private.contains(&home.join(name)), "{name}");
-    }
-    assert!(private.contains(&home.join(".config").join("gh")));
-    // 这个平台的浏览器配置、钥匙串也在。
-    let here = if cfg!(target_os = "macos") {
-        home.join("Library").join("Keychains")
-    } else if cfg!(windows) {
-        home.join("AppData").join("Roaming").join("GitHub CLI")
-    } else {
-        home.join(".mozilla")
-    };
-    assert!(private.contains(&here), "{}", here.display());
-    let places = Places::here(
-        PathBuf::from("/w"),
-        (PathBuf::from("/d"), PathBuf::from("/d").join("kb")),
-        Some(&home),
-    );
-    assert_eq!(places.private, private, "照家目录拼上");
-    let nowhere = Places::here(
-        PathBuf::from("/w"),
-        (PathBuf::from("/d"), PathBuf::from("/d").join("kb")),
-        None,
-    );
-    assert!(nowhere.private.is_empty(), "不知道家目录的没有");
-}
-
-/// 工作区包住数据根、私密目录（施工 5-14 改：工作目录是 `~` 的就是工作区）：最深的那一片算，数据根照旧谁都不能碰、私密目录照旧
-/// 私密、开着的技能文件夹照旧只读；家目录别处能写。工作区落在私密目录里的照工作区（施工 5-13 起就这样）。
-#[test]
-fn a_workspace_holding_the_data_root_and_private_dirs_keeps_them() {
+fn a_workspace_holding_the_data_root_keeps_it() {
     let site = Site::new();
     let boundary = Boundary::new(&Places {
         workspace: site.scratch.0.clone(),
-        private: vec![site.at("home/.ssh")],
         shelves: vec![site.at("data/root/skills/notes")],
         ..site.places()
     });
     assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::Forbidden);
     assert_eq!(boundary.zone(&site.real("data")), Zone::Forbidden);
-    assert_eq!(boundary.zone(&site.real("home/.ssh/id")), Zone::Private);
     assert_eq!(
         boundary.zone(&site.real("data/root/skills/notes/SKILL.md")),
         Zone::Shelf
     );
+    assert_eq!(boundary.zone(&site.real("home/.ssh/id")), Zone::Writable);
     assert_eq!(boundary.zone(&site.real("home/notes.txt")), Zone::Writable);
     assert!(
         boundary.blocks_descent(&site.real("data")),
         "往下走目录的工具不进数据根"
-    );
-    let inside = Boundary::new(&Places {
-        workspace: site.at("home/.ssh"),
-        private: vec![site.at("home/.ssh")],
-        ..site.places()
-    });
-    assert_eq!(
-        inside.zone(&site.real("home/.ssh/id")),
-        Zone::Writable,
-        "工作区开在私密目录里：照工作区"
     );
 }
 

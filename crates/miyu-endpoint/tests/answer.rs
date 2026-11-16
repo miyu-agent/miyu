@@ -1,9 +1,9 @@
-//! 回答确认（施工 D-1，`docs/blueprint/protocol.md` 的 `session.answer`）：真核心走一遍。允许这一次的照常跑；本会话都允许的，
-//! 同一个目录下一次写不再问；拒绝带的理由她看得到，这一轮接着走；参数不对的几种 `bad_params`；没在等的 `not_asking`，
+//! 回答确认（施工 D-1，`docs/blueprint/protocol.md` 的 `session.answer`）：真核心走一遍。允许这一次的照常跑；没提放行规则的
+//! 选「本会话都允许」是 `no_rule`；拒绝带的理由她看得到，这一轮接着走；参数不对的几种 `bad_params`；没在等的 `not_asking`，
 //! 允许却带了理由的 `unexpected_reason`。
 //!
-//! 会话开局只读，工作区里的 `secret/` 加成私密目录（配置的 `sandbox.private.add`）：假工具 `peek` 只报要读的路径、不真读，
-//! 读 `secret/` 里的一定要问人。A16 起（施工 LV-1）写越界不再问人，只读时读私密目录是还会问、还能「此目录不再询问」的那一种。
+//! 会话开局只读，这台机器上的沙盒用不了：假工具 `run` 执行命令，一定要问人（施工 PV-RM 去掉私密目录以前，这里是只读时读私密
+//! 目录问人、还能「本会话都允许」的那一种；现在权限策略问人的都不提放行规则）。
 
 use std::sync::Arc;
 
@@ -17,49 +17,28 @@ use miyu_tool::{Catalog, Tool};
 
 use crate::support::*;
 
-/// 加成私密目录的那一个：工作区里的 `secret/`。
-fn secret_dir(home: &Home) -> std::path::PathBuf {
-    home.work.join("secret")
-}
-
-/// 私密目录里的文件，写成她会给的样子。
-fn nowhere(home: &Home, name: &str) -> String {
-    secret_dir(home).join(name).to_string_lossy().into_owned()
-}
-
-/// 她调一次 `peek`，读 `path`。
-fn edit(path: &str) -> Play {
-    Play::calls(&[("peek", &json!({ "path": path }).to_string())])
+/// 她调一次 `run`。
+fn run_once() -> Play {
+    Play::calls(&[("run", "{}")])
 }
 
 /// 起核心、握手、在工作区里造会话、说一句：交回连接、会话编号、假工具。
 async fn started(home: &Home, plays: Vec<Play>) -> (Client, String, Arc<Fake>) {
-    let fake = Fake::new("peek", Access::Read, Act::Echo);
-    std::fs::create_dir_all(secret_dir(home)).expect("建得了目录");
-    let dir = serde_json::to_string(&secret_dir(home).to_string_lossy()).expect("写得出");
-    home.write(
-        "etc/config.toml",
-        &format!("[permission]\nstart_read_only = true\n\n[sandbox]\nprivate.add = [{dir}]\n"),
-    );
+    let fake = Fake::new("run", Access::Execute, Act::Echo);
+    home.write("etc/config.toml", "[permission]\nstart_read_only = true\n");
     let tools = Catalog::new([Arc::clone(&fake) as Arc<dyn Tool>]).expect("合写法");
-    let items = [
-        miyu_endpoint::settings::PermissionSettings::ITEMS,
-        miyu_tool::private::ITEMS,
-    ]
-    .concat();
     let config = miyu_endpoint::config::Config::load(
         &home.root,
         None,
-        items,
+        miyu_endpoint::settings::PermissionSettings::ITEMS.to_vec(),
         miyu_endpoint::config::Environment::of(&[]),
     );
-    // 私密目录照系统的家目录拼（没有家目录的不设），给一个假的：工作区里的 `home/`。
-    let system_home = home.work.join("home");
-    std::fs::create_dir_all(&system_home).expect("建得了目录");
     let core = home
-        .core_full(&Script::new(plays), tools, Some(system_home), TOKEN)
+        .core_full(&Script::new(plays), tools, None, TOKEN)
         .with_config(config)
-        .with_sandbox(miyu_sandbox::Availability::Usable("miyu-sandbox".into()));
+        .with_sandbox(miyu_sandbox::Availability::Unusable(
+            miyu_sandbox::Unusable::HelperMissing,
+        ));
     let mut client = Client::connect(Arc::new(core));
     client.hello().await;
     let cwd = home.work.to_string_lossy().into_owned();
@@ -105,7 +84,7 @@ fn reason_of(reply: &Value) -> &Value {
 #[tokio::test]
 async fn allowing_once_runs_it_and_the_reply_lists_the_events() {
     let home = Home::new();
-    let plays = vec![edit(&nowhere(&home, "a.txt")), Play::Says("好。")];
+    let plays = vec![run_once(), Play::Says("好。")];
     let (mut client, session, fake) = started(&home, plays).await;
     let call = nth_request(&home, &session, 1).await;
     assert!(fake.calls().is_empty(), "还没回答，没跑");
@@ -126,28 +105,28 @@ async fn allowing_once_runs_it_and_the_reply_lists_the_events() {
     assert_eq!(decided[0]["cause"], json!("answer-1"));
 }
 
+/// 权限策略问人时不提放行规则（施工 PV-RM）：选「本会话都允许」是 `no_rule`，什么都没改，还在等。
 #[tokio::test]
-async fn allowing_for_the_session_stops_asking_about_that_directory() {
+async fn allowing_for_the_session_without_a_rule_is_no_rule() {
     let home = Home::new();
-    let plays = vec![
-        edit(&nowhere(&home, "a.txt")),
-        edit(&nowhere(&home, "b.txt")),
-        Play::Says("好。"),
-    ];
+    let plays = vec![run_once(), Play::Says("好。")];
     let (mut client, session, fake) = started(&home, plays).await;
     let call = nth_request(&home, &session, 1).await;
     let params = json!({"session": session, "call": call, "decision": "session"});
     let reply = answer(&mut client, "answer-1", params).await;
-    assert!(reply["result"]["events"].is_array(), "{reply}");
-    home.until_turns(&session, 1).await;
-    assert_eq!(fake.calls().len(), 2, "第二次写同一个目录不再问");
-    assert_eq!(requested(&home, &session).len(), 1);
+    assert_eq!(reason_of(&reply), &json!("no_rule"), "{reply}");
+    assert!(fake.calls().is_empty());
+    assert!(
+        !logged(&home, &session)
+            .iter()
+            .any(|event| event["kind"] == json!("tool.approval_decided"))
+    );
 }
 
 #[tokio::test]
 async fn a_denial_carries_the_reason_to_her_and_the_turn_goes_on() {
     let home = Home::new();
-    let plays = vec![edit(&nowhere(&home, "a.txt")), Play::Says("那换个地方。")];
+    let plays = vec![run_once(), Play::Says("那换个地方。")];
     let (mut client, session, fake) = started(&home, plays).await;
     let call = nth_request(&home, &session, 1).await;
     let params =
@@ -176,7 +155,7 @@ async fn a_denial_carries_the_reason_to_her_and_the_turn_goes_on() {
 #[tokio::test]
 async fn params_that_do_not_fit_are_bad_params() {
     let home = Home::new();
-    let plays = vec![edit(&nowhere(&home, "a.txt")), Play::Says("好。")];
+    let plays = vec![run_once(), Play::Says("好。")];
     let (mut client, session, _) = started(&home, plays).await;
     let call = nth_request(&home, &session, 1).await;
     let cases = [
@@ -213,7 +192,7 @@ async fn params_that_do_not_fit_are_bad_params() {
 #[tokio::test]
 async fn the_kernel_refusals_come_back_with_their_reasons() {
     let home = Home::new();
-    let plays = vec![edit(&nowhere(&home, "a.txt")), Play::Says("好。")];
+    let plays = vec![run_once(), Play::Says("好。")];
     let (mut client, session, _) = started(&home, plays).await;
     let call = nth_request(&home, &session, 1).await;
     let params = json!({"session": session, "call": call, "decision": "once", "reason": "为什么"});
@@ -238,7 +217,7 @@ async fn the_kernel_refusals_come_back_with_their_reasons() {
 #[tokio::test]
 async fn a_denial_can_carry_pictures() {
     let home = Home::new();
-    let plays = vec![edit(&nowhere(&home, "a.txt")), Play::Says("看到图了。")];
+    let plays = vec![run_once(), Play::Says("看到图了。")];
     let (mut client, session, _) = started(&home, plays).await;
     let call = nth_request(&home, &session, 1).await;
 

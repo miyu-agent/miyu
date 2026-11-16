@@ -43,7 +43,7 @@ pub fn render(items: &[Item], words: &dyn Words) -> Result<String, Missing> {
             current = Some(table);
         }
         let said = words::item(words, item.key)?;
-        // 没写说明的（例如 `sandbox.private.add`，2026-11-13 项目主人要去掉那句解释）只写名字，不留「名字：」的空冒号。
+        // 没写说明的（当时的 `sandbox.private.add`，2026-11-13 项目主人要去掉那句解释）只写名字，不留「名字：」的空冒号。
         let head = match said.description.trim().is_empty() {
             true => said.name.clone(),
             false => words::sentence(

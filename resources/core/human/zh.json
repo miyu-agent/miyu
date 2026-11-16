@@ -149,18 +149,6 @@
         "name": "确认超时",
         "description": "等你确认超过这么多秒就自动拒绝。0 为一直等。"
       },
-      "sandbox.private.enabled": {
-        "name": "私密目录",
-        "description": "只在只读时起作用，命令读不到私密目录，文件工具读之前先问；完全放开时不拦。关掉以后只读时也不藏、不问；Miyu 自己的数据不受这个开关影响。"
-      },
-      "sandbox.private.add": {
-        "name": "加的私密目录",
-        "description": ""
-      },
-      "sandbox.private.remove": {
-        "name": "默认私密目录",
-        "description": "出厂的私密目录，只在只读时起作用。留着的照旧私密；去掉的命令读得到、文件工具不再问。恢复默认就全部回来。"
-      },
       "skills.external.enabled": {
         "name": "读取其他目录的 Skills",
         "description": "开着时，「其他技能目录」里的技能也能用：Codex、opencode 这些别的应用装的技能常放在 ~/.agents/skills。同名的照 Miyu 自己的；这些技能 Miyu 不删。"
@@ -424,7 +412,6 @@
     "groups": {
       "protected": "受保护的命令",
       "permission": "权限",
-      "private": "私密目录",
       "commands": "命令",
       "display": "显示",
       "new_session": "新会话",
@@ -860,9 +847,7 @@
     "config/wrong-layer": "{key} 只能写在{layers}里，写在{layer}里不算",
     "config/not-tightening": "项目配置只能让限制更严。{key} 现在是 {current}，这里写的 {got} 更宽，不算",
     "config/untrusted-project": "项目配置未信任，已忽略",
-    "config/private-not-shipped": "{got} 不是出厂的私密目录：只能去掉出厂清单里的",
-    "config/private-bad-path": "{got} 写法不对：要写成 ~/… 或绝对路径",
-    "config/private-too-broad": "{got} 是家目录或它的上级，不能设为私密目录：藏起来以后命令读不到工具和配置，什么都跑不了",
+    "config/bad-dir-path": "{got} 写法不对：要写成 ~/… 或绝对路径",
     "config/source-reserved": "official 是官方软件源的名字，别的源不能用",
     "config/source-incomplete": "软件源 {name} 要同时写 url 和 key 才能用",
     "config/source-key": "软件源 {name} 的 key 读不成：要写 base64 的 Ed25519 公钥",

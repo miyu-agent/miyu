@@ -539,19 +539,6 @@ default = "full"
 # Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config. Takes effect next turn.
 # url =
 
-[sandbox.private]
-# Added private folders
-# Allowed: a list of text of at most 4096 characters. Only in the system config. Takes effect next turn.
-# add =
-
-# Private folders: Applies only in read-only, where commands can't read private folders and file tools ask before reading them; with full access nothing is blocked. When off, read-only stops hiding and asking too; Miyu's own data is unaffected.
-# Allowed: true or false. Only in the system config. Takes effect next turn.
-enabled = true
-
-# Default private folders: The built-in private folders; they apply only in read-only. The ones kept stay private; for the ones taken out, commands can read them and file tools stop asking. Restoring the default brings them all back.
-# Allowed: a list of text of at most 4096 characters. Only in the system config. Takes effect next turn.
-# remove =
-
 [show]
 # Remind the AI to use Show: Has the AI hand over images, web pages, documents, video and audio it makes or fetches with Show, so you see them right away instead of just a path.
 # Allowed: true or false. Only in the system config. Applies to new sessions.

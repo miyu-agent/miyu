@@ -1,5 +1,5 @@
-//! 权限策略在阻塞线程里判（施工 4-9 再补四下）：判的时候跑异步任务的线程空着；问人时写出的 `rule`、`detail` 和
-//! 样本 `docs/designs/samples/events/tool.approval_requested.jsonl` 是同一个样子。
+//! 权限策略在阻塞线程里判（施工 4-9 再补四下）：判的时候跑异步任务的线程空着；问人时写出的 `detail` 和样本
+//! `docs/designs/samples/events/tool.approval_requested.jsonl` 是同一个样子，都不提放行规则（施工 PV-RM）。
 //!
 //! 场地不在系统的临时目录里（[`Home::outside_temp`]）：工作区 `work/`、假的家 `home/`。
 
@@ -15,7 +15,6 @@ use miyu_kernel::raw::RawJson;
 use miyu_kernel::session::{Command, Queued};
 use miyu_kernel::tool::Access;
 use miyu_session::testkit::{Play, Script};
-use miyu_tool::testkit::{Act, Fake};
 use miyu_tool::{Call, Catalog, Done, Progress, Running, Spec, Target, Tool};
 
 use crate::support::*;
@@ -124,28 +123,27 @@ fn shape(value: &Value) -> Value {
     }
 }
 
-/// 一条确认请求里的 `rule`、`detail`。
-fn rule_and_detail(event: &Event) -> (Value, Value) {
+/// 一条确认请求里的放行规则、`detail`。
+fn rule_and_detail(event: &Event) -> (Option<RawJson>, Value) {
     let Body::ApprovalRequested(request) = &event.body else {
         panic!("该是确认请求：{event:?}");
     };
-    let read = |raw: &Option<RawJson>| -> Value {
-        serde_json::from_str(raw.as_ref().expect("写了").get()).expect("是 JSON")
-    };
-    (read(&request.rule), read(&request.detail))
+    let detail =
+        serde_json::from_str(request.detail.as_ref().expect("写了").get()).expect("是 JSON");
+    (request.rule.clone(), detail)
 }
 
-/// A16 起报路径的调用问人的只剩只读时读别的程序的私密目录（施工 LV-1）：照它问。
+/// 施工 PV-RM 起权限策略问人的只剩不报路径的（只读时沙盒用不了的命令）、高危命令、装包卸包：照沙盒用不了的那一条问，用出厂的
+/// `shell`。
 #[tokio::test]
 async fn asking_writes_what_the_sample_shows() {
     let home = Home::outside_temp();
-    let private = home.home.join(".ssh/config");
-    std::fs::create_dir_all(private.parent().expect("有上级目录")).expect("建得了目录");
-    std::fs::write(&private, "Host *\n").expect("写得进");
-    let read = Fake::new("read", Access::Read, Act::Echo);
-    let catalog = Catalog::new([read as Arc<dyn Tool>]).expect("合写法");
-    let args = serde_json::json!({ "path": private.to_string_lossy() }).to_string();
-    let script = Script::new([Play::calls(&[("read", &args)])]);
+    let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
+    let catalog = Catalog::new(miyu_basesystem::tools(&resources).expect("出厂的资源读得出来"))
+        .expect("合写法");
+    let args =
+        serde_json::json!({ "command": "ls ~/.ssh", "description": "List keys" }).to_string();
+    let script = Script::new([Play::calls(&[("shell", &args)])]);
     let handle = session(&home, &script, &catalog, (true, true)).await;
     let mut pushes = watch(&handle).await;
     ask(&handle, "cmd-1", say("hi")).await.expect("会话在跑");
@@ -165,14 +163,11 @@ async fn asking_writes_what_the_sample_shows() {
     let drawn = Event::from_line(line.trim_end()).expect("样本读得进来");
     let (rule, detail) = rule_and_detail(&asked);
     let (drawn_rule, drawn_detail) = rule_and_detail(&drawn);
-    // 键、值的种类和样本一样；读的、私密目录里的也一样（施工 4-9 再补四下：样本原来是另一种写法，只比来回没拦住）。
-    assert_eq!(shape(&rule), shape(&drawn_rule), "{rule}");
+    // 键、值的种类和样本一样（施工 4-9 再补四下：样本原来是另一种写法，只比来回没拦住）；不在沙盒里跑的也一样；都不提规则。
+    assert!(rule.is_none() && drawn_rule.is_none(), "{rule:?}");
     assert_eq!(shape(&detail), shape(&drawn_detail), "{detail}");
-    assert_eq!(
-        detail["paths"][0]["write"],
-        drawn_detail["paths"][0]["write"]
-    );
-    assert_eq!(detail["paths"][0]["zone"], drawn_detail["paths"][0]["zone"]);
+    assert_eq!(detail["sandbox"], drawn_detail["sandbox"]);
+    assert_eq!(detail["tool"], drawn_detail["tool"]);
     ask(
         &handle,
         "cmd-2",

@@ -67,13 +67,9 @@ pub enum Code {
     /// 模型默认的温度这个模型用不了（施工 8-22，`miyu_models::temperature::unusable` 查）：目录说它不收温度的，`name` 没有；
     /// 超过这个模型走的驱动的上限的，`name` 是上限（`anthropic` 是 `1`）。只报不丢，请求照没写发。
     UnusableTemperature,
-    /// 私密目录写了家目录本身或它的上级（施工 5-15 下）：藏了它什么命令都跑不了，不收。
-    PrivateTooBroad,
-    /// 私密目录的写法不对（施工 5-15 下补）：不是 `~/…`、也不是绝对路径。协议上写 `bad_format`，说的话单给一句，说该怎么写。
-    /// 别的技能目录（`skills.external.dirs`，施工 PT-2 外）写法同它，也报这一种。
-    PrivatePath,
-    /// 去掉的不是这台机器出厂的私密目录（施工 5-15 下补）。协议上写 `not_an_option`，说的话单给一句。
-    PrivateNotShipped,
+    /// 目录的写法不对（施工 5-15 下补起，PV-RM 起只剩别的技能目录 `skills.external.dirs` 报它）：不是 `~/…`、也不是绝对路径。
+    /// 协议上写 `bad_format`，说的话单给一句，说该怎么写。
+    DirPath,
     /// 别的软件源（施工 U23 下下，`packages.sources.<名字>`）起名叫 `official`：留给官方那一个。`name` 是名字。协议上写
     /// `not_an_option`。
     SourceReserved,
@@ -119,9 +115,7 @@ impl Code {
             Code::NoProvider | Code::NoPool => "bad_reference",
             Code::UnknownEffort => "unknown_effort",
             Code::UnusableTemperature => "unusable_temperature",
-            Code::PrivateTooBroad => "private_too_broad",
-            Code::PrivatePath => "bad_format",
-            Code::PrivateNotShipped => "not_an_option",
+            Code::DirPath => "bad_format",
             Code::SourceReserved => "not_an_option",
             Code::SourceIncomplete | Code::SourceKey => "bad_format",
             Code::MissingField => "missing_field",

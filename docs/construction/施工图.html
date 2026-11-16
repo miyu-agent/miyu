@@ -1553,6 +1553,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sRB1"><span class="n">RB-1</span>可靠性修理一批<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sDOC4"><span class="n">DOC-4</span>手册写上「后天」<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sDOC5"><span class="n">DOC-5</span>手册写上软件包带的模型驱动<span class="st">✓</span></a></li>
+        <li><a class="step review" href="#sPVRM"><span class="n">PV-RM</span>去掉私密目录<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -60394,6 +60395,59 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/RB-1-可靠性.md</code>；蓝图 <code>packages.md</code>、<code>protocol.md</code>、<code>cli/pkg.md</code>；协议参考 <code>packages.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sPVRM" aria-labelledby="h-sPVRM">
+  <div class="sheet-head"><h2 id="h-sPVRM"><span class="no">PV-RM</span>去掉私密目录</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">只读就是完全放开减去写，Miyu 不替人藏东西，想藏的自己布沙盒。别的程序的私密目录连同设置一起删；Miyu 自己的数据根照旧哪一级都碰不到，一个字节不松。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-fs · miyu-tool · miyu-session · miyu-basesystem · miyu-endpoint · miyu-config</span><span class="dir-note">PV-RM</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>出厂清单、照环境变量挪去的位置、三项配置 sandbox.private.* 删掉；写着的报 unknown_key 警告</li>
+              <li>边界表没有「私密」这一片；只读时读 ~/.ssh 这些不问人，命令读得到、写不进</li>
+              <li>沙盒规格只藏数据根；往下走目录的篱笆只挡数据根</li>
+              <li>权限策略不再提放行规则：确认请求没有 rule、paths；内核那一套留着</li>
+              <li>人写的目录 written 挪进 miyu-fs/written.rs，别的技能目录照旧用</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">只读 = 完全放开减去写</span><span class="rl">项目主人 2026-11-16</span></div>
+          <div class="tile new"><span class="nm">数据根哪一级文件工具都碰不到，只读的命令读不到</span><span class="rl">测试 secrets_unreachable</span></div>
+          <div class="tile new"><span class="nm">完全放开下命令读得到数据根：另报拍板</span><span class="rl">施工单「拿不准」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">PV-RM</dd></div>
+        <div><dt>名称</dt><dd>去掉私密目录</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">PV-RM</dd></div>
+        <div><dt>验收</dt><dd>改前红的那一条在 main 上红、这一版绿；保数据根的测试一条没删；门禁十一项全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>配置写 [sandbox.private] 三项只报三条 unknown_key 警告（改前红）</span></li>
+        <li><span class="ok">✓</span><span>完全放开、只读的 read 都读不到 etc/private/secrets.toml；只读的命令读不到它、读得到 ~/.ssh</span></li>
+        <li><span class="ok">✓</span><span>链接在问人时被换成指进数据根，照旧不读</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/PV-RM-去掉私密目录.md</code>；蓝图 <code>config.md</code>、<code>session/guard.md</code>、<code>session/tools.md</code>、<code>sandbox.md</code>、<code>fs.md</code>、<code>tools/glob.md</code>；协议参考 <code>config</code>、<code>sessions</code>（中英）。</li>
       </ul>
     </div>
   </div>

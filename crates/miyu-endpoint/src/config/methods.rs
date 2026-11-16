@@ -137,7 +137,7 @@ fn schema_item(
         Kind::Option(options) | Kind::List(&Kind::Option(options)) | Kind::ModelOr(options) => {
             Some(options)
         }
-        _ => super::private::options(item.key),
+        _ => None,
     };
     if let Some(options) = options {
         let named: Vec<Value> = options
@@ -164,7 +164,6 @@ fn schema_item(
             .collect();
         map.insert("options".to_string(), json!(named));
     }
-    super::private::tick(item.key, &mut map);
     if let Some(default) = &item.default {
         map.insert("default".to_string(), default.json());
     }

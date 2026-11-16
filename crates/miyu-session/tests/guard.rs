@@ -170,6 +170,31 @@ async fn a_read_outside_runs_at_every_level() {
     }
 }
 
+/// 联网不算写（施工 PV-RM，2026-11-16 项目主人定：只读就是完全放开减去写）：只读时访问类别是联网的工具（扩展声明 `network` 的、
+/// MCP 的）不问人，没人能确认也照跑，和完全放开一样。
+#[tokio::test]
+async fn a_network_tool_runs_in_read_only_without_asking() {
+    let home = Home::outside_temp();
+    for read_only in [false, true] {
+        let fetch = Fake::new("fetch", Access::Network, Act::Echo);
+        let catalog = Catalog::new([Arc::clone(&fetch) as Arc<dyn Tool>]).expect("合写法");
+        let script = Script::new([Play::calls(&[("fetch", "{}")]), Play::Says("好。")]);
+        let opening = Opening {
+            permission: Permission {
+                level: Level::Full,
+                read_only,
+            },
+            attended: false,
+            cwd: at(&home, "work"),
+            dirs: Vec::new(),
+            sandbox: None,
+        };
+        let handle = home.create_as(&script, &catalog, opening).await;
+        turn(&handle).await;
+        assert_eq!(fetch.calls().len(), 1, "只读 {read_only}：联网不问");
+    }
+}
+
 #[tokio::test]
 async fn the_data_root_is_refused_at_every_level() {
     let home = Home::outside_temp();

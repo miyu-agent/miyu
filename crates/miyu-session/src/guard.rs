@@ -6,8 +6,8 @@
 //! 完全放开执行命令不进沙盒；只读时这台机器的沙盒能用就放行、在沙盒里跑（执行器写规格，`crate::sandbox`），用不了的问人。
 //! 高危命令、装包卸包在完全放开下也问人；高危的里面，本人的会话在设置页「受保护的命令」关掉的那几类不问（施工 HZ-1，A18）。
 //!
-//! 施工 D-1：要问人的那几条，落在本会话放行过的范围里的（人选过「本会话都允许」，内核把那几条规则交来），不问；放行的范围
-//! 照 `11-权限与沙盒.md` 第二节「放行规则管多大」，提规则时就算好。
+//! 报路径的调用只判拒不拒，不问人（施工 PV-RM，2026-11-16 项目主人定去掉私密目录：只读就是完全放开减去写）：问人的只剩不报
+//! 路径的命令（沙盒用不了）、高危命令、装包卸包，这几种都不提放行规则，所以本会话放行过的规则（内核交来的 `grants`）这里不看。
 //!
 //! 问人时的说明并进工具交的几格（`Tool::asking`），执行类的写明 `sandbox: false`。
 //!
@@ -31,9 +31,9 @@ use miyu_tool::{Call, Shelf, Stop, Target, Tool};
 use crate::default_workspace::DefaultWorkspace;
 use crate::lettering::Lettering;
 
-mod asking;
 mod bounds;
 mod confined;
+mod hazardous;
 mod levels;
 mod untargeted;
 
@@ -41,8 +41,8 @@ use bounds::Bounds;
 pub(crate) use levels::{Effective, effective};
 use levels::{Mark, mark};
 
-use asking::{Asked, ask, granted, hazardous};
 pub(crate) use confined::Confined;
+use hazardous::hazardous;
 use untargeted::{described, in_venue, untargeted};
 
 /// 权限策略：一个会话一份。
@@ -51,7 +51,7 @@ pub(crate) struct Guard {
     catalog: Shelf,
     data_root: PathBuf,
     home: Option<PathBuf>,
-    /// 家目录的真实位置（施工 D-1）：放行的范围拿它和换成真实位置的路径比。不换的话 Windows 上一边带 `\\?\` 前缀、一边不带，
+    /// 家目录的真实位置（施工 D-1）：挑工作区时拿它和换成真实位置的工作目录比。不换的话 Windows 上一边带 `\\?\` 前缀、一边不带，
     /// 永远比不上（CI run 960 撞见）；macOS 上家目录在链接后面时也一样。换不成的照原样。
     real_home: Option<PathBuf>,
     /// 边界表里跟环境有关的几片（临时目录、系统目录、工具链目录）：造的时候读一次，以后照它（施工 4-9 再补四下：
@@ -72,8 +72,6 @@ pub(crate) struct Guard {
     attachments: Option<PathBuf>,
     /// 工作目录太宽时退回哪（施工 5-14）：没有的工作区就是工作目录。
     workplace: Option<DefaultWorkspace>,
-    /// 别的程序的私密目录（施工 5-15 下）：造的时候是出厂的，回合开始照这一轮的配置换（人加的、去掉的），同技能文件夹上锁。
-    private: RwLock<Vec<PathBuf>>,
     /// 受保护的命令里关掉的那几类（施工 HZ-1，`permission.confirm.*`）：造的时候是空的（都问），回合开始照这一轮的配置换。
     /// 只有本人的会话看它，外部身份的会话照旧都问。
     waived: RwLock<Vec<&'static str>>,
@@ -122,7 +120,6 @@ impl Guard {
             data_root,
             home,
             real_home,
-            private: RwLock::new(places.private.clone()),
             places,
             lettering,
             sandboxed,
@@ -183,20 +180,6 @@ impl Guard {
             .unwrap_or_else(std::sync::PoisonError::into_inner) = shelves;
     }
 
-    /// 照这一轮的配置 `values` 拼出私密目录（施工 5-15 下）：家目录不知道的没有（照造的时候的算）。
-    pub(crate) fn private_of(&self, values: &miyu_config::Values) -> Option<Vec<PathBuf>> {
-        let home = self.home.as_deref()?;
-        Some(miyu_tool::private::dirs(values, home))
-    }
-
-    /// 换上这一轮的私密目录（施工 5-15 下）：回合开始照配置换，下一次判照新的。
-    pub(crate) fn set_private(&self, private: Vec<PathBuf>) {
-        *self
-            .private
-            .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner) = private;
-    }
-
     /// 换上这一轮关掉的那几类受保护的命令（施工 HZ-1，[`crate::settings::ConfirmSettings::waived`]）：回合开始照配置换，下
     /// 一次判照新的。
     pub(crate) fn set_waived(&self, waived: Vec<&'static str>) {
@@ -206,9 +189,8 @@ impl Guard {
             .unwrap_or_else(std::sync::PoisonError::into_inner) = waived;
     }
 
-    /// 判一次调用：工具名 `name`，修正过的参数 `args`，这一轮的工作目录 `cwd`，实际生效的级别 `permission`，本会话放行过的
-    /// 规则 `grants`（施工 D-1）。交回判下来的，连同报的路径判的时候换成的真实位置（施工 5-18）：执行器交给工具，工具只碰
-    /// 这几个。
+    /// 判一次调用：工具名 `name`，修正过的参数 `args`，这一轮的工作目录 `cwd`，加进来的目录 `dirs`，实际生效的级别
+    /// `permission`。交回判下来的，连同报的路径判的时候换成的真实位置（施工 5-18）：执行器交给工具，工具只碰这几个。
     pub(crate) fn judge(
         &self,
         name: &str,
@@ -216,10 +198,9 @@ impl Guard {
         cwd: String,
         dirs: &[String],
         permission: &Permission,
-        grants: &[RawJson],
     ) -> (Verdict, Vec<PathBuf>) {
         let mut checked = Vec::new();
-        let verdict = self.verdict((name, args, cwd), dirs, permission, grants, &mut checked);
+        let verdict = self.verdict((name, args, cwd), dirs, permission, &mut checked);
         (verdict, checked)
     }
 
@@ -229,7 +210,6 @@ impl Guard {
         (name, args, cwd): (&str, String, String),
         dirs: &[String],
         permission: &Permission,
-        grants: &[RawJson],
         checked: &mut Vec<PathBuf>,
     ) -> Verdict {
         // 目录里没有的：放行，执行时报现在用不了（施工 4-2）。
@@ -287,15 +267,7 @@ impl Guard {
         if local_venue {
             return untargeted(level, name, Access::Outbound, self.sandboxed, &asking);
         }
-        let verdict = self.paths(
-            tool.as_ref(),
-            (name, level),
-            &call,
-            dirs,
-            grants,
-            &asking,
-            checked,
-        );
+        let verdict = self.paths(tool.as_ref(), (name, level), &call, dirs, &asking, checked);
         // 装包、卸包（施工 SU-4 中）：只碰得到自己工作区的会话一律拒，没人能放行（施工 5-12 下）。
         if let Some(confined) = &self.confined
             && access == Access::Install
@@ -336,15 +308,14 @@ impl Guard {
         }
     }
 
-    /// 照报的路径判；一条都没报的照访问类别判（第四条）。每一条换成的真实位置记进 `checked`（施工 5-18）。
-    #[allow(clippy::too_many_arguments)]
+    /// 照报的路径判：每一条照级别、所在的那一片，有一条拒绝就拒绝，都过了放行；一条都没报的照访问类别判（第四条）。每一条
+    /// 换成的真实位置记进 `checked`（施工 5-18）。
     fn paths(
         &self,
         tool: &dyn Tool,
         (name, level): (&str, Effective),
         call: &Call,
         dirs: &[String],
-        grants: &[RawJson],
         asking: &[(&'static str, String)],
         checked: &mut Vec<PathBuf>,
     ) -> Verdict {
@@ -359,7 +330,6 @@ impl Guard {
             places,
             boundary,
         } = self.bounds(&call.cwd, dirs);
-        let mut asked = Vec::new();
         for target in targets {
             let real = match self.real(&cwd, &target) {
                 Ok(real) => real,
@@ -382,11 +352,6 @@ impl Guard {
             }
             match mark(level, zone, target.write) {
                 Mark::Allow => {}
-                Mark::Ask => asked.push(Asked {
-                    real,
-                    write: target.write,
-                    zone,
-                }),
                 Mark::Forbidden if boundary.knowledge(&real) => {
                     return deny(self.lettering.guard().forbidden_kb(&target.path));
                 }
@@ -394,13 +359,7 @@ impl Guard {
                 Mark::ReadOnly => return deny(self.lettering.guard().read_only()),
             }
         }
-        // 放行过的不问（施工 D-1）：只读、数据根上面已经拦下了，走不到这里。
-        asked.retain(|asked| !granted(grants, asked, &boundary));
-        if asked.is_empty() {
-            Verdict::Allow
-        } else {
-            ask(name, access, &asked, self.real_home.as_deref())
-        }
+        Verdict::Allow
     }
 }
 

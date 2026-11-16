@@ -39,7 +39,6 @@ mod nested;
 mod packages;
 mod person;
 pub mod picture;
-pub mod private;
 mod questions;
 mod run;
 mod schedules;

@@ -23,6 +23,7 @@
 
 pub(crate) mod checking;
 mod choices;
+mod dirs;
 mod effort;
 mod environment;
 pub(crate) mod file;
@@ -35,7 +36,6 @@ pub(crate) mod left;
 pub(crate) mod methods;
 pub(crate) mod observe;
 mod options;
-mod private;
 pub(crate) mod project;
 pub(crate) mod push;
 pub(crate) mod refit;

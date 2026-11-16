@@ -1,8 +1,8 @@
 //! 边界表（`11-权限与沙盒.md` 第四节，施工 4-3 上）：一个真实的位置落在哪一片。
 //!
-//! 几片重叠时最深的那一片算（施工 5-14 改）：数据根里单独放开只读的几个目录（开着的技能文件夹，施工 X-10 上）、数据根、别的
-//! 程序的私密目录（施工 5-13）包在工作区、加进来的目录（照工作区算，施工 5-10 上）里面的照它们自己那一片；工作区落在数据根里、
-//! 工作区和加进来的目录落在私密目录里的照工作区。再往后是临时目录、系统和工具链目录、边界以外。
+//! 几片重叠时最深的那一片算（施工 5-14 改）：数据根里单独放开只读的几个目录（开着的技能文件夹，施工 X-10 上）、数据根包在工作区、
+//! 加进来的目录（照工作区算，施工 5-10 上）里面的照它们自己那一片；工作区落在数据根里的照工作区。再往后是临时目录、系统和
+//! 工具链目录、边界以外。别的程序的私密目录这一片去掉了（施工 PV-RM，2026-11-16 项目主人定：只读就是不让写，不替人藏东西）。
 
 use std::path::{Component, Path, PathBuf};
 
@@ -15,9 +15,6 @@ pub enum Zone {
     Readable,
     /// 谁都不能碰：Miyu 的数据根。
     Forbidden,
-    /// 别的程序的私密目录（施工 5-13，`11-权限与沙盒.md` 第四节）：钥匙、登录、浏览器配置、旧版 Miyu 的数据。文件工具读写都
-    /// 问人，完全放开不问；往下走目录的工具不进。
-    Private,
     /// 数据根里单独放开的（施工 X-10 上，开着的技能文件夹）：能读，写不行，问人也不行。
     Shelf,
     /// 边界以外：要碰就得问人。
@@ -41,8 +38,6 @@ pub struct Places {
     pub readable: Vec<PathBuf>,
     /// 数据根里单独放开只读的目录（施工 X-10 上）：开着的技能文件夹。
     pub shelves: Vec<PathBuf>,
-    /// 别的程序的私密目录（施工 5-13，[`crate::private_dirs`]）。
-    pub private: Vec<PathBuf>,
     /// 这个人自己的几处（施工 Y-11 上：家目录里照 XDG 的 pictures、videos、documents、downloads）：照工作区算，落在数据根里也是；
     /// 还没建的也算。只给文件工具，不进沙盒的写名单（那是调的一方拼的）。
     pub own: Vec<PathBuf>,
@@ -75,7 +70,7 @@ const SYSTEM: &[&str] = &[];
 const TOOLCHAINS: &[&str] = &[".cargo", ".rustup", ".npm", ".gitconfig"];
 
 impl Places {
-    /// 照这台机器：临时目录、系统目录、家目录下的工具链目录，`CARGO_HOME`、`RUSTUP_HOME` 指到的地方，出厂的私密目录。
+    /// 照这台机器：临时目录、系统目录、家目录下的工具链目录，`CARGO_HOME`、`RUSTUP_HOME` 指到的地方。
     /// 家目录读不出来的，工具链目录只算环境变量指到的。
     pub fn here(
         workspace: PathBuf,
@@ -99,7 +94,6 @@ impl Places {
             temp: std::env::temp_dir(),
             readable,
             shelves: Vec::new(),
-            private: home.map(crate::private_dirs).unwrap_or_default(),
             own: Vec::new(),
         }
     }
@@ -132,7 +126,6 @@ pub struct Boundary {
     temp: Option<PathBuf>,
     readable: Vec<PathBuf>,
     shelves: Vec<PathBuf>,
-    private: Vec<PathBuf>,
     /// 这个人自己的几处（施工 Y-11 上）：还没建的照最近的、已经存在的上级换（[`crate::resolve()`]）。
     own: Vec<PathBuf>,
 }
@@ -148,7 +141,6 @@ impl Boundary {
             temp: real(&places.temp),
             readable: places.readable.iter().filter_map(|dir| real(dir)).collect(),
             shelves: places.shelves.iter().filter_map(|dir| real(dir)).collect(),
-            private: places.private.iter().filter_map(|dir| real(dir)).collect(),
             own: places
                 .own
                 .iter()
@@ -159,8 +151,8 @@ impl Boundary {
 
     /// 真实的位置 `path` 落在哪一片：先经 [`crate::resolve()`] 换过再交进来。
     ///
-    /// 最深的那一片算（施工 5-14 改）：工作区可以是 `~` 这种包住数据根、私密目录的，它们照旧是自己那一片；工作区、加进来的目录
-    /// 落在它们里面的（会话的默认工作区在数据根里、人把工作区开在 `~/.config` 里）才照工作区算。
+    /// 最深的那一片算（施工 5-14 改）：工作区可以是 `~` 这种包住数据根的，数据根照旧是自己那一片；工作区落在数据根里的（会话的
+    /// 默认工作区在数据根里）才照工作区算。
     pub fn zone(&self, path: &Path) -> Zone {
         if self.shelves.iter().any(|dir| within(path, dir)) {
             return Zone::Shelf;
@@ -168,35 +160,19 @@ impl Boundary {
         let workspace = self
             .workspace
             .as_deref()
-            .and_then(|root| Some((root, path.strip_prefix(root).ok()?)));
+            .filter(|root| path.starts_with(root));
         // 这个人自己的几处（施工 Y-11 上）：在数据根里也照工作区算。
-        let own = self
-            .own
-            .iter()
-            .find_map(|root| Some((root.as_path(), path.strip_prefix(root).ok()?)));
+        let own = self.own.iter().any(|root| path.starts_with(root));
         // 数据根：只有工作区、自己的几处落在数据根里时那一片照工作区算；加进来的目录落进了数据根的（报来以后被换成了链接）照样
         // 谁都不能碰。
         if let Some(data_root) = &self.data_root
             && within(path, data_root)
-            && !workspace.is_some_and(|(root, _)| within(root, data_root))
-            && own.is_none()
+            && !workspace.is_some_and(|root| within(root, data_root))
+            && !own
         {
             return Zone::Forbidden;
         }
-        let held = workspace.or(own).or_else(|| {
-            self.dirs
-                .iter()
-                .find_map(|root| Some((root.as_path(), path.strip_prefix(root).ok()?)))
-        });
-        // 私密目录：工作区、加进来的目录落在它里面的，照人给的算（施工 5-13）；包住它的不算。
-        if self
-            .private
-            .iter()
-            .any(|dir| within(path, dir) && !held.is_some_and(|(root, _)| within(root, dir)))
-        {
-            return Zone::Private;
-        }
-        if held.is_some() {
+        if workspace.is_some() || own || self.dirs.iter().any(|root| path.starts_with(root)) {
             return Zone::Writable;
         }
         if self

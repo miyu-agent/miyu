@@ -12,7 +12,7 @@ publish.workspace = true
 miyu-kernel = { path = "../miyu-kernel" }
 # 这一轮的配置的端口（施工 N-2 下）：最终值、密钥引用的类型。
 miyu-config = { path = "../miyu-config" }
-# 出厂的私密目录、照人加的去掉的拼（施工 5-15 下）。
+# 工具执行时照旧换真实的位置、核对判过的（施工 5-18，`checked.rs`）。
 miyu-fs = { path = "../miyu-fs" }
 # 记忆的端口交回的编号（施工 R-3 中）。
 miyu-recall = { path = "../miyu-recall" }

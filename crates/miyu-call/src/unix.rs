@@ -71,7 +71,7 @@ impl Channel {
     }
 
     /// 沙盒的规格放行这个套接字；只准读名单里的（外部身份的会话），再放开读 `miyu` 和它指着的程序。核心的程序被藏起来的盖住了
-    /// 的（私密目录包住了装的位置），单独只读放开，`miyu call` 才起得来（施工 5-15 下再修）。
+    /// 的（藏起来的那一处包住了装的位置，施工 5-15 下再修时是私密目录，PV-RM 起只剩数据根），单独只读放开，`miyu call` 才起得来。
     pub fn sandboxed(&self, sandboxed: &Sandboxed) -> Sandboxed {
         let mut sandboxed = sandboxed.clone();
         sandboxed.spec.sockets.push(self.path.clone());

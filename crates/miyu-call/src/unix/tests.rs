@@ -241,7 +241,7 @@ async fn the_sandbox_lets_the_command_reach_this_socket_only() {
 
 #[tokio::test]
 async fn the_core_s_own_program_under_a_hidden_place_is_let_through_read_only() {
-    // 施工 5-15 下再修：私密目录包住了核心装的位置，脚本里的 `miyu call` 找不到核心的程序。只在藏住了它的时候放开，
+    // 施工 5-15 下再修：藏起来的那一处包住了核心装的位置，脚本里的 `miyu call` 找不到核心的程序。只在藏住了它的时候放开，
     // 能写的里面的（在自己的工作树里开发 Miyu）不另挂，不然换不掉它。
     let channel = open(Arc::new(Port::default()));
     let exe = std::env::current_exe().expect("找得到");

@@ -11,8 +11,8 @@ use super::levels::Effective;
 use super::{Place, deny, module, raw};
 
 /// 不报路径的调用：执行命令，沙盒能用（`sandboxed`）就工作区、只读都放行，在沙盒里跑；用不了的问人（施工 5-4 上）。
-/// 读写放行（查不到路径的执行时自己报错），联网、对外发消息这些还没有的，除了完全放开都问人。问人时的说明并进工具交的
-/// `asking`（施工 D-4）。
+/// 读写放行（查不到路径的执行时自己报错）；联网哪一级都放行（施工 PV-RM，2026-11-16 项目主人定：只读就是完全放开减去写，联网
+/// 不算写；沙盒本来就不管网络）。对外发消息、不认识的，除了完全放开都问人。问人时的说明并进工具交的 `asking`（施工 D-4）。
 pub(super) fn untargeted(
     level: Effective,
     name: &str,
@@ -22,7 +22,7 @@ pub(super) fn untargeted(
 ) -> Verdict {
     let fine = matches!(
         (&access, level),
-        (_, Effective::Full) | (Access::Read | Access::Write, _)
+        (_, Effective::Full) | (Access::Read | Access::Write | Access::Network, _)
     ) || (access == Access::Execute && sandboxed);
     if fine {
         return Verdict::Allow;

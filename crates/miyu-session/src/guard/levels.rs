@@ -17,8 +17,6 @@ pub(crate) enum Effective {
 pub(super) enum Mark {
     /// 放行。
     Allow,
-    /// 要问人。
-    Ask,
     /// 拒绝：碰到了数据根。
     Forbidden,
     /// 拒绝：只读的时候要写。
@@ -37,13 +35,12 @@ pub(crate) fn effective(permission: &Permission) -> Effective {
 }
 
 /// 一条路径照级别判（11 第二节的判法表，A16 起只剩完全放开、只读两列）：数据根谁都碰不到；完全放开别的都放行；只读读哪儿都
-/// 放行（别的程序的私密目录问人，施工 5-13），写一律拒。
+/// 放行，写一律拒（施工 PV-RM 起私密目录不另问人：只读就是完全放开减去写）。
 pub(super) fn mark(level: Effective, zone: Zone, write: bool) -> Mark {
     match (zone, level, write) {
         (Zone::Forbidden, _, _) | (Zone::Shelf, _, true) => Mark::Forbidden,
         (_, Effective::Full, _) => Mark::Allow,
         (_, Effective::ReadOnly, true) => Mark::ReadOnly,
-        (Zone::Private, Effective::ReadOnly, false) => Mark::Ask,
         (_, Effective::ReadOnly, false) => Mark::Allow,
     }
 }

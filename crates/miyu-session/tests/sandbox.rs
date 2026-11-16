@@ -41,10 +41,7 @@ async fn attached(home: &Home, cwd: &str, permission: Permission) -> Option<Arc<
     turn(&handle).await;
     let calls = run.calls();
     assert_eq!(calls.len(), 1, "跑了一次");
-    calls[0]
-        .sandbox
-        .clone()
-        .map(|sandboxed| on_site(home, sandboxed))
+    calls[0].sandbox.clone()
 }
 
 /// 说一句，等这一轮说完。
@@ -137,10 +134,11 @@ async fn commands_really_run_in_the_sandbox() {
     assert!(!outside.exists());
 }
 
-/// 本人只读下私密目录里面的读不到（施工 LV-5：去掉 bubblewrap 一路以前、以后都一样，Linux 上靠 Landlock）；旁边不私密的照常读。
+/// 本人只读就是完全放开减去写（施工 PV-RM，2026-11-16 项目主人定）：家目录里别的程序的钥匙读得到、写不进；数据根里的密钥
+/// `etc/private/secrets.toml` 照旧读不到。
 #[cfg(unix)]
 #[tokio::test]
-async fn a_read_only_command_cannot_read_inside_a_private_dir() {
+async fn a_read_only_command_reads_a_key_folder_but_not_the_secrets() {
     let helper = miyu_sandbox::testkit::built_helper();
     if !can_confine(&helper) {
         return;
@@ -148,22 +146,23 @@ async fn a_read_only_command_cannot_read_inside_a_private_dir() {
     let home = Home::outside_temp();
     let work = home.scratch.0.join("work");
     let key = home.scratch.0.join("home/.ssh/id_ed25519");
-    let notes = home.scratch.0.join("home/notes.txt");
     std::fs::create_dir_all(key.parent().expect("有上级目录")).expect("建得了目录");
     std::fs::write(&key, "key\n").expect("写得进");
-    std::fs::write(&notes, "notes\n").expect("写得进");
+    let secrets = home.root.secrets_file();
+    std::fs::create_dir_all(secrets.parent().expect("有上级目录")).expect("建得了目录");
+    std::fs::write(&secrets, "secret-in-data-root\n").expect("写得进");
     let command = format!(
-        "cat '{}' 2>/dev/null || echo blocked-private; \
-         (echo x >> '{}') 2>/dev/null && echo wrote-private || echo blocked-write; \
-         cat '{}'",
+        "cat '{}'; \
+         (echo x >> '{}') 2>/dev/null && echo wrote-key || echo blocked-write; \
+         cat '{}' 2>/dev/null || echo blocked-secrets",
         key.display(),
         key.display(),
-        notes.display()
+        secrets.display()
     );
     let output = shell(&home, &helper, &work, &command).await;
     assert_eq!(
-        output, "blocked-private\nblocked-write\nnotes\n",
-        "只读：私密目录里面读不到、写不进，旁边的照常读"
+        output, "key\nblocked-write\nblocked-secrets\n",
+        "只读：钥匙读得到、写不进，密钥读不到"
     );
     assert_eq!(std::fs::read_to_string(&key).expect("还在"), "key\n");
 }

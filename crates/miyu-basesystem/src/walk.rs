@@ -7,8 +7,6 @@
 //! - Miyu 的数据根不进（[`Fence`]）：权限策略只核对搜的那个目录，从上面搜下来会走进去（`11-权限与沙盒.md` A9）。
 //!   这一轮的工作目录在数据根里面的（工作区 `workspace/` 就在数据根里），照样进，和权限策略的先后一样；工作目录包住数据根的
 //!   （`~`，施工 5-14 改起它也是工作区）照样不进：最深的那一片算。
-//! - 别的程序的私密目录也不进（施工 5-13，`miyu_fs::private_dirs`）：读它们要问人，从上面搜下来不该绕过去。搜的那个
-//!   目录就在里面的（问过了）、工作目录那一片照样进。
 //! - 按修改时间排，新的在前，时间一样的照路径排。
 //! - 不先把整棵树记下来（施工 V-21）：[`each`] 边走边交，要的一方只留自己要的（`glob` 留最新的 [`newest`] 几个、`grep`
 //!   留有匹配的）。2026-10-26 从家目录搜下来，先记下的几百万个文件让核心涨到约 900 MB。
@@ -20,7 +18,7 @@ use std::time::SystemTime;
 
 use ignore::WalkBuilder;
 
-use miyu_fs::{private_dirs, resolve, within};
+use miyu_fs::{resolve, within};
 use miyu_tool::{Call, Stop};
 
 /// 版本库自己的目录，不进（Claude Code 的名单）。
@@ -61,12 +59,10 @@ impl PartialEq for Found {
 
 impl Eq for Found {}
 
-/// 走目录时不进的地方：Miyu 的数据根、别的程序的私密目录（施工 5-13），除了这一轮的工作目录那一片。
+/// 走目录时不进的地方：Miyu 的数据根，除了这一轮的工作目录那一片（别的程序的私密目录施工 PV-RM 起不挡）。
 pub(crate) struct Fence {
     data_root: Option<PathBuf>,
     workspace: Option<PathBuf>,
-    /// 私密目录：真实的位置，这台机器上有的。
-    private: Vec<PathBuf>,
 }
 
 impl Fence {
@@ -78,41 +74,24 @@ impl Fence {
                 .as_deref()
                 .and_then(|dir| std::fs::canonicalize(dir).ok()),
             workspace: resolve(Path::new(&call.cwd), call.home.as_deref(), &call.cwd).ok(),
-            // 照这一轮的配置（施工 5-15 下）：人加的、去掉的；没有配置端口的照出厂的。
-            private: call
-                .home
-                .as_deref()
-                .map(|home| match &call.settings {
-                    Some(settings) => miyu_tool::private::dirs(&settings.values(), home),
-                    None => private_dirs(home),
-                })
-                .unwrap_or_default()
-                .iter()
-                .filter_map(|dir| std::fs::canonicalize(dir).ok())
-                .collect(),
         }
     }
 
-    /// 从 `root` 往下走：搜的那个目录就在里面的私密目录不挡（问过了才走得到这里）。
-    ///
-    /// 这棵树里碰不到的也去掉（施工 V-31）：走到的目录都是 `root` 再往下接几段（`ignore` 照上一层一段段 `join` 出来），
+    /// 从 `root` 往下走：这棵树里碰不到的去掉（施工 V-31）：走到的目录都是 `root` 再往下接几段（`ignore` 照上一层一段段 `join` 出来），
     /// [`within`] 又是一段一段比的，`within(dir, fenced)` 成立只有两种：`fenced` 包住 `root`（含等于），或者 `fenced` 落在
     /// `root` 下面。两样都不是的，[`Fence::keeps_out`] 对这棵树里每个目录都答「不挡它」，留着只是每进一个目录白比一遍
     /// （V-29 量过，约占 `grep` 的 23%）。判断用的还是同一个 [`within`]，大小写、前缀的口径和挡的时候一样。
     fn from(mut self, root: &Path) -> Fence {
         let reachable = |fenced: &Path| within(root, fenced) || within(fenced, root);
-        self.private
-            .retain(|dir| !within(root, dir) && reachable(dir));
         self.data_root = self.data_root.filter(|dir| reachable(dir));
         self
     }
 
-    /// 目录 `dir` 不进：在数据根、私密目录里，除非工作目录就落在那一处里面、`dir` 又在工作目录那一片里（最深的那一片算，施工
-    /// 5-14 改：工作目录是 `~` 这种包住数据根、私密目录的，照样不进它们）。
+    /// 目录 `dir` 不进：在数据根里，除非工作目录就落在数据根里面、`dir` 又在工作目录那一片里（最深的那一片算，施工 5-14 改：
+    /// 工作目录是 `~` 这种包住数据根的，照样不进它）。
     fn keeps_out(&self, dir: &Path) -> bool {
         self.data_root
             .iter()
-            .chain(&self.private)
             .any(|fenced| within(dir, fenced) && !self.held(dir, fenced))
     }
 

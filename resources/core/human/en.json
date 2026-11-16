@@ -149,18 +149,6 @@
         "name": "Confirmation timeout",
         "description": "Anything waiting for your confirmation is denied after this many seconds. 0 waits forever."
       },
-      "sandbox.private.enabled": {
-        "name": "Private folders",
-        "description": "Applies only in read-only, where commands can't read private folders and file tools ask before reading them; with full access nothing is blocked. When off, read-only stops hiding and asking too; Miyu's own data is unaffected."
-      },
-      "sandbox.private.add": {
-        "name": "Added private folders",
-        "description": ""
-      },
-      "sandbox.private.remove": {
-        "name": "Default private folders",
-        "description": "The built-in private folders; they apply only in read-only. The ones kept stay private; for the ones taken out, commands can read them and file tools stop asking. Restoring the default brings them all back."
-      },
       "skills.external.enabled": {
         "name": "Read skills from other folders",
         "description": "When on, skills in \"Other skill folders\" can be used too: apps like Codex and opencode often install theirs in ~/.agents/skills. Miyu's own skills win on a name clash, and Miyu never deletes these."
@@ -424,7 +412,6 @@
     "groups": {
       "protected": "Protected commands",
       "permission": "Permissions",
-      "private": "Private folders",
       "commands": "Commands",
       "display": "Display",
       "new_session": "New sessions",
@@ -865,9 +852,7 @@
     "config/wrong-layer": "{key} belongs in {layers}. It does not count in {layer}",
     "config/not-tightening": "A project config can only make limits stricter. {key} is {current}, and {got} here is looser, so it does not count",
     "config/untrusted-project": "Project config not trusted, ignored",
-    "config/private-not-shipped": "{got} isn't a built-in private folder: only built-in ones can be removed",
-    "config/private-bad-path": "{got} isn't written right: use ~/… or an absolute path",
-    "config/private-too-broad": "{got} is your home folder or above it, so it can't be private: hidden, it would keep every command from reading its tools and settings",
+    "config/bad-dir-path": "{got} isn't written right: use ~/… or an absolute path",
     "config/source-reserved": "official is the name of the official package source; other sources can't use it",
     "config/source-incomplete": "package source {name} needs both url and key",
     "config/source-key": "the key of package source {name} isn't readable: write a base64 Ed25519 public key",

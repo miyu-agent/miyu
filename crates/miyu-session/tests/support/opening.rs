@@ -52,6 +52,8 @@ pub struct Lines {
     pub id: Option<SessionId>,
     /// 装了的功能（施工 PN-3）：交了的照它认工具归哪个功能，预设的几层照数据根和资源目录找，和核心里一样；默认不交，工具照包认。
     pub features: Option<miyu_policy::features::Features>,
+    /// 扩展的挂接点（施工 HK-1 起）：默认没有。
+    pub hooks: Option<Arc<dyn miyu_tool::HooksPort>>,
 }
 
 impl Default for Lines {
@@ -74,6 +76,7 @@ impl Default for Lines {
             profile: miyu_policy::Profile::default(),
             id: None,
             features: None,
+            hooks: None,
         }
     }
 }

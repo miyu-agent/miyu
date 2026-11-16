@@ -283,7 +283,7 @@ When she does something that needs approval she stops and asks (pushed as `tool.
 
 Give exactly one of `decision` and `answers`. **Response**: `{"events": [numbers…]}`.
 
-**What `session` remembers**: the pushed request's `rule` (without one, `session` can't be chosen), compact JSON: `tool` is which tool, `read` and `write` the folders whose reads and writes are allowed (with everything below). Once chosen, this tool touching those folders in this session is not asked again. A request for a command carries no `rule`: it can only be allowed once or denied.
+**What `session` remembers**: the pushed request's `rule` (without one, `session` can't be chosen and the answer gets `no_rule`). Approval requests the core sends now never carry a `rule` (commands, risky commands, installs, extension guards): they can only be allowed once or denied. Reading another program's private folder in read-only used to carry one (the folders allowed for reading); that went with private folders. Heads offer "allow for this session" only when there is a `rule`.
 
 ```json
 {"read":["/home/me/.ssh"],"tool":"read"}

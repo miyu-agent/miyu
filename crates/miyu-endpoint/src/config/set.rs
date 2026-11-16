@@ -158,7 +158,7 @@ fn set_in(
     let words = words(core, peer.language)?;
     let layer = Layer::System;
     let mut config = core.config();
-    let plan = plan(&config, layer, params, &words, core.home.as_deref())?;
+    let plan = plan(&config, layer, params, &words)?;
     let via = match &plan {
         Plan::Changes(_) => Via::Set,
         Plan::Text(..) => Via::Edit,
@@ -200,13 +200,7 @@ fn set_in(
 }
 
 /// 查参数、认键、照类型读值，交回这一次改什么。
-fn plan(
-    config: &Config,
-    layer: Layer,
-    params: SetParams,
-    words: &Human,
-    checks: Checks<'_>,
-) -> Result<Plan, Refusal> {
+fn plan(config: &Config, layer: Layer, params: SetParams, words: &Human) -> Result<Plan, Refusal> {
     match (params.changes, params.text) {
         (Some(changes), None) if !changes.is_empty() => {
             let mut keys: Vec<&str> = changes.iter().map(|change| change.key.as_str()).collect();
@@ -216,7 +210,7 @@ fn plan(
             }
             let named: Vec<String> = changes.iter().map(|change| change.key.clone()).collect();
             selected(config, Some(named.as_slice()), words)?;
-            wanted(config, layer, changes, (words, checks)).map(Plan::Changes)
+            wanted(config, layer, changes, words).map(Plan::Changes)
         }
         (None, Some(text)) => match params.version {
             Some(version) => Ok(Plan::Text(text, version)),
@@ -226,15 +220,12 @@ fn plan(
     }
 }
 
-/// 照类型查以外多查的一道要的：系统的家目录（私密目录，施工 5-15 下）。
-type Checks<'a> = Option<&'a std::path::Path>;
-
 /// 每一项照类型读成值、查能不能写在这一层；有一项不对整条不收（`config_invalid`，每一处一条）。
 fn wanted(
     config: &Config,
     layer: Layer,
     changes: Vec<ChangeParam>,
-    (words, home): (&Human, Checks<'_>),
+    words: &Human,
 ) -> Result<Vec<Wanted>, Refusal> {
     let mut wanted = Vec::new();
     let mut problems = Vec::new();
@@ -293,9 +284,9 @@ fn wanted(
                     // 扩展驱动不在选项里的照收（施工 MD-1，`driver_ref.rs`）：读回来记警告。
                     Some(read) => miyu_config::driver_ref::check(item, read).err(),
                 };
-                // 私密目录多查一道（施工 5-15 下）：写错的那一个照原样说。
+                // 写目录的几项多查一道（别的技能目录，施工 PT-2 外）：写错的那一个照原样说。
                 let code = match (code, &read) {
-                    (None, Some(read)) => super::private::problem(&change.key, read, home),
+                    (None, Some(read)) => super::dirs::problem(&change.key, read),
                     (code, _) => code.map(|code| (code, raw.clone())),
                 };
                 if let Some((code, raw)) = code {

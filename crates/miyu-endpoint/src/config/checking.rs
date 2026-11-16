@@ -97,7 +97,7 @@ pub(crate) fn check_leaving(
     let leftover = config.left().take(&mut parsed);
     let mut layers = config.layers(None);
     let missing = config.missing_if(&parsed, layer);
-    let external = super::private::external_dirs(&parsed, layer);
+    let external = super::dirs::external_dirs(&parsed, layer);
     let unknown = known.map_or_else(Vec::new, |known| {
         miyu_config::dangling::unknown_names(config.items(), &parsed, layer, &|kind, id| {
             let ids = match kind {

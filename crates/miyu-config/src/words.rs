@@ -89,7 +89,7 @@ pub fn check(items: &[Item], words: &ConfigWords) -> Vec<String> {
         if said.name.trim().is_empty() {
             problems.push(format!("{key}：名字是空的"));
         }
-        // 说明可以有意不写（2026-11-13 项目主人要去掉 `sandbox.private.add` 那句解释）：几种语言写没写要一致，由
+        // 说明可以有意不写（2026-11-13 项目主人要去掉当时 `sandbox.private.add` 那句解释，那一项施工 PV-RM 删了）：几种语言写没写要一致，由
         // `miyu-store/tests/human_languages.rs` 对着英文查，这里不当问题。
         // 选项的列表（施工 8-7）里的选项也要有名字。
         let options = match item.kind {

@@ -17,7 +17,6 @@ pub mod remote_embedding;
 pub mod resources;
 pub mod routing;
 mod scratch;
-mod site;
 pub mod table;
 
 #[allow(
@@ -33,8 +32,6 @@ pub use opening::{Lines, Opening};
 pub use pushes::{until_delta, until_turn_ends};
 pub use scratch::Scratch;
 #[allow(unused_imports, reason = "只有沙盒那几个测试用")]
-pub use site::on_site;
-
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -210,7 +207,7 @@ impl Home {
             sessions: lines.sessions,
             packages: None,
             schedules: None,
-            hooks: None,
+            hooks: lines.hooks.clone(),
             jobs: &self.jobs,
             index: Some(Arc::clone(&self.index)),
             usage: Some(Arc::clone(&self.usage)),

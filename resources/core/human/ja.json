@@ -149,18 +149,6 @@
         "name": "確認のタイムアウト",
         "description": "確認待ちがこの秒数を過ぎると自動で拒否します。0 はずっと待ちます。"
       },
-      "sandbox.private.enabled": {
-        "name": "非公開フォルダ",
-        "description": "読み取り専用のときだけ働き、コマンドは非公開フォルダを読めず、ファイルツールは読む前に確認します。フルアクセスでは止めません。オフにすると読み取り専用でも隠さず、確認もしません。Miyu 自身のデータには影響しません。"
-      },
-      "sandbox.private.add": {
-        "name": "追加した非公開フォルダ",
-        "description": ""
-      },
-      "sandbox.private.remove": {
-        "name": "既定の非公開フォルダ",
-        "description": "既定の非公開フォルダです。読み取り専用のときだけ働きます。残したものは非公開のまま、外したものはコマンドから読め、ファイルツールも確認しなくなります。既定に戻すとすべて戻ります。"
-      },
       "skills.external.enabled": {
         "name": "ほかのフォルダのスキルを読む",
         "description": "オンにすると、「ほかのスキルフォルダ」にあるスキルも使えます。Codex や opencode などのアプリは ~/.agents/skills に入れることが多いです。同じ名前なら Miyu 自身のものが優先され、これらのスキルを Miyu が削除することはありません。"
@@ -424,7 +412,6 @@
     "groups": {
       "protected": "保護されたコマンド",
       "permission": "権限",
-      "private": "非公開フォルダ",
       "commands": "コマンド",
       "display": "表示",
       "new_session": "新しいセッション",
@@ -860,9 +847,7 @@
     "config/wrong-layer": "{key} は{layers}にだけ書けます。{layer}に書いても効きません",
     "config/not-tightening": "プロジェクト設定では制限を厳しくすることしかできません。{key} は今 {current} で、ここに書かれた {got} のほうが緩いので効きません",
     "config/untrusted-project": "プロジェクト設定は未信頼のため無視しました",
-    "config/private-not-shipped": "{got} は組み込みの非公開フォルダではありません。外せるのは組み込みのものだけです",
-    "config/private-bad-path": "{got} の書き方が違います。~/… か絶対パスで書いてください",
-    "config/private-too-broad": "{got} はホームフォルダかその上位なので非公開にできません。隠すとコマンドがツールや設定を読めず、何も実行できなくなります",
+    "config/bad-dir-path": "{got} の書き方が違います。~/… か絶対パスで書いてください",
     "config/source-reserved": "official は公式ソフトウェアソースの名前なので、ほかのソースには使えません",
     "config/source-incomplete": "ソフトウェアソース {name} には url と key の両方が必要です",
     "config/source-key": "ソフトウェアソース {name} の key を読めません。base64 の Ed25519 公開鍵を書いてください",

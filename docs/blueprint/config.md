@@ -247,8 +247,6 @@ miyu_config::settings! {
 | `permission.start_read_only` | 开关 | `false` | 系统、项目 | `true_only` | `new_session` | 8-2。设置页在「通用」那一页的「新会话」一组（2026-10-23 从「会话」组挪来） |
 | `permission.confirm.git`、`.delete`、`.power`、`.pipe_to_shell`、`.container` | 开关 | `true` | 系统 | 不能写 | `next_turn` | HZ-1：受保护的命令，完全放开下也先问的高危命令一类一个开关，关掉的那一类在本人的会话里不再问（`session/guard.md` 第四条末）。设置页「隐私与安全」那一页最上面的「受保护的命令」一组 |
 | `permission.confirm.timeout` | 整数，0 到 86400 | `300` | 系统 | 不能写 | `next_turn` | CD-1：等人确认等多少秒，到时没人确认内核替人拒绝，`0` 是一直等（`kernel/asking.md`「到时没人确认」）。设置页「隐私与安全」那一页「权限」一组的数字框 |
-| `sandbox.private.add` | 文字的列表，一个最多 4096 个字符：`~/…` 或绝对路径 | 空的 | 系统 | 不能写 | `next_turn` | 5-15 下：人加的私密目录，家目录和它的上级不收（`private_too_broad`）。设置页「隐私与安全」那一页的「私密目录」一组 |
-| `sandbox.private.remove` | 文字的列表，只收这台机器的出厂私密目录（`config.schema` 交成 `options`，5-15 下补：登记成选项的话生成的文件照系统不同） | 空的 | 系统 | 不能写 | `next_turn` | 5-15 下：去掉的出厂项，同上一组 |
 | `external.bindings.<external>` | 名字（写什么都算主人，im 写 `owner`） | 没有 | 系统 | 不能写 | `now` | O-3：主人的平台账号（`venues.md`），一个号一行；值是空的当没写。头在平台接入那个软件的信息页上画成「我的平台账号」，只填号码（2026-10-10 项目主人定，`package-pages.md`「平台接入的软件」） |
 | `ui.startup` | 选项 `new`、`recent` | `new`，开一个新会话 | 系统 | 不能写 | `head_start` | 8-3（8-28 从 `tui.startup` 改名） |
 | `ui.head` | 名字（软件包的编号） | `tui` | 系统 | 不能写 | `head_start` | 9-3（`cli/main.md`「怎么走」第 3 条）：直接敲 `miyu`、`miyu config` 时打开哪个界面；主程序每次敲的时候经 `config.get` 读，照清单找这个包的程序。界面提示：通用页的「显示」组，文字 |
@@ -314,8 +312,8 @@ miyu_config::settings! {
 - 新会话的权限级别没有配置项（施工 AUD-4，2026-11-13 项目主人定：还没发版，旧兼容的都去掉）：A16 起（`11-权限与沙盒.md`）新会话都从完全放开开局，本机、场所的一样，外部身份另有限制（`session/guard.md` 第四条末）；原来的 `permission.level`（施工 8-32 加，施工 LV-1 起只剩 `full`、写什么都一样）去掉了，配置里还写着的同别的不在清单里的键，报 `unknown_key` 警告（同施工 LV-2、LV-5 拆掉的 `sandbox.*`）。要开局只读的用 `permission.start_read_only`。
 - `permission.confirm.git`、`.delete`、`.power`、`.pipe_to_shell`、`.container`（施工 HZ-1，2026-11-11 项目主人定，`designs/11-权限与沙盒.md` A18）：受保护的命令。完全放开下也先问人的高危命令分五类（破坏性 git、递归删除、关机和重启、下载后直接执行、容器使用宿主设备），一类一个开关，出厂都开；关掉的那一类在本人的会话里不再问、直接跑，外部身份的会话不看。只有系统一层，下一轮生效（回合开始照这一轮的配置换进权限策略）。直接拒的那七种没有开关，列在这一组的说明里。在 `crates/miyu-session/src/settings.rs` 的 `ConfirmSettings` 声明；核心登记时排在 `PermissionSettings` 前面，所以「隐私与安全」那一页先出现的组是它，排在私密目录上面。哪一种归哪一类、怎么判见 `session/guard.md` 第四条末。
 - `permission.confirm.timeout`（施工 CD-1，2026-11-12 项目主人定）：等人确认等多少秒，出厂 300（5 分钟），`0` 是一直等，最多 86400（一天）。所有「允许/拒绝」的确认都算（权限策略问的高危命令、装包这些，扩展守卫问的）；她的提问（`ask_user`）不算，照旧一直等。到时没人确认的，内核替人拒绝，她拿到「没人确认」的那一句，换别的办法往下走：自己跑的时候不会因为一个确认卡住。只有系统一层，下一轮生效：回合开始照这一轮的配置交给内核（`TurnStartHooksDone` 的 `confirm_ms`），计时从记请求那一刻起，截止的时刻写在请求里（`expires_at`）。同在 `ConfirmSettings` 声明，设置页在「权限」那一组（那一组别的项不显示，这一项是它唯一显示的一项）。
-- `sandbox.private.add`、`sandbox.private.remove`（施工 5-15 下，`designs/11-权限与沙盒.md` 第四节）：人加的私密目录（`~/…` 或绝对路径，家目录和它的上级 `config.set` 拒 `private_too_broad`，手改文件写了的照不写算）、去掉的出厂项（只收这台机器的出厂清单 `miyu_fs::SHIPPED_PRIVATE`，照系统不同；清单里登记成文字的列表，生成的 Schema、参考文件哪个系统都一样，`config.schema` 另把出厂清单交成 `options`、名字同值，`config.set` 写了别的拒 `not_an_option`，5-15 下补）。记两份不记整份：以后的版本加了出厂项照样生效，人去掉的不随升级回来。下一轮生效：权限策略、沙盒、往下走目录的工具照这一轮的配置拼（`miyu_tool::private::dirs`）。`privacy` 页的 `private` 组，列表。两项手写登记。
-- 去掉的（施工 LV-5，2026-11-11 项目主人定，`designs/11-权限与沙盒.md` A17）：`sandbox.strength`（沙盒强度，施工 5-16 下）和 `sandbox.readonly.enabled`、`.add`、`.remove`（受保护的路径，施工 5-17 下）。老配置里留着的照不在清单里的键报 `unknown_key`（警告），原样留在文件里，不进最终值。私密目录那三项照留，只在只读时起作用：命令读不到，文件工具读之前先问；完全放开时不拦。
+- 去掉的（施工 LV-5，2026-11-11 项目主人定，`designs/11-权限与沙盒.md` A17）：`sandbox.strength`（沙盒强度，施工 5-16 下）和 `sandbox.readonly.enabled`、`.add`、`.remove`（受保护的路径，施工 5-17 下）。老配置里留着的照不在清单里的键报 `unknown_key`（警告），原样留在文件里，不进最终值。
+- 去掉的（施工 PV-RM，2026-11-16 项目主人定：只读就是完全放开减去写，不替人藏东西，想藏的自己布沙盒）：私密目录那三项 `sandbox.private.enabled`、`.add`、`.remove`（施工 5-13 到 5-17）连同出厂清单、照环境变量挪去的位置。老配置里留着的同上，照不在清单里的键报 `unknown_key`（警告）。`config.schema` 随之不再有 `ticks` 这一格，出错表去掉 `private_too_broad`。数据根照旧哪一级都碰不到，不受影响。
 - `ui.startup`：打开一个头（终端界面、网页）时开一个新会话（`new`），还是接着最近的那一个（`recent`）。头自己用 `config.get` 读，核心不管它（2026-10-01 主会话和终端界面定）。界面提示：`general` 页（通用）的 `display` 组（显示），下拉。施工 8-28 从 `tui.startup` 改名（2026-10-07 项目主人定：同一个人在同一台机器上，每个头的体验一样，几个头都有的行为是一个共用的项，只有一个头才有的才用 `tui.*`、`web.*`）；不留旧名字：还没发布，文件里写着旧名字的照不认识的键报警告、不算。
 - `log.level` 只能放在系统配置里：运行日志是整个核心的，项目配置不能写它。
 - 蓝图里写着「配置那一步能改」的几个数（压缩的几个数、`jobs.*`、回收处留几天、空闲多久退出）这次不挪：只挪真要调的（2026-10-01 主会话定）。有人要改哪一个，再为它开一张小单。
@@ -367,9 +365,8 @@ miyu_config::settings! {
 | `unknown_key` | 警告，`config.set` 里是错误 | 清单里没有这一项 | 8-2 |
 | `wrong_type` | 错误 | 类型不对，例如开关写成了 `"yes"`，还有一组键下面写成了一个值，例如 `ui = "zh"` | 8-2 |
 | `not_an_option` | 错误 | 选项不在列出的几个里 | 8-2 |
-| `private_too_broad` | 错误 | `sandbox.private.add` 写了家目录本身（`~`、`~/` 都算）或它的上级（`got` 是那一个）：藏了它什么命令都跑不了。只在 `config.set` 改几项时查，手改文件写了的照不写算 | 5-15 下 |
 | `out_of_range` | 错误 | 数不在范围里，字太长 | 8-6（整数） |
-| `bad_format` | 错误 | 时长、路径、网址、名字、引用写法不对；键里人起的名字那一段写法不对；`sandbox.private.add` 的一个目录不是 `~/…`、不是绝对路径（单给一句，说该怎么写，5-15 下补）；`skills.external.dirs` 的一项不是 `~`、`~/…`、绝对路径（同私密目录那一句，PT-2 外）：和别的项不同，手改的文件 `miyu check`、`config.check` 也报，不只 `config.set` 时查（2026-10-29 主会话定：读的时候认不了的静默跳过，人看不出来少了） | 8-6（网址、名字、引用、键里的名字） |
+| `bad_format` | 错误 | 时长、路径、网址、名字、引用写法不对；键里人起的名字那一段写法不对；`skills.external.dirs` 的一项不是 `~`、`~/…`、绝对路径（单给一句，说该怎么写，PT-2 外；施工 5-15 下补起私密目录也报这一句，PV-RM 去掉了）：和别的项不同，手改的文件 `miyu check`、`config.check` 也报，不只 `config.set` 时查（2026-10-29 主会话定：读的时候认不了的静默跳过，人看不出来少了） | 8-6（网址、名字、引用、键里的名字） |
 | `bad_reference` | 错误 | 引用、模型的列表指的供应商、池在不算项目配置的最终值里没有（`name` 是指的那个）。读进来以后另查、只报不丢：值照样用，路由当场照它说 `no_model`；算进 `config_errors`。`config.check` 照「这段字换掉它那一层」合出来的查 | 8-8 |
 | `unknown_effort` | 错误 | 模型的 `effort` 不在这个模型这时的档位里（`name` 是写的那一档，档位照 `models.md`「模型的资料」的 `reasoning`）。照 `bad_reference` 的办法：读进来以后另查、只报不丢，请求照没写发；算进 `config_errors`；`config.check` 照「这段字换掉它那一层」合出来的查。档位要目录：目录读完以前不查。那一家用不了（推不出驱动、地址）的不查 | 8-18 |
 | `unknown_persona`、`unknown_knowledge`、`unknown_preset` | 警告 | 软件包配置项选的人格、知识库、预设这时没有（`name` 是写的编号，施工 PC-3、PC-3 补）。只在 `check` 里报（核心照这时有的查，列不出来的那一种不查），值照样用 |
@@ -408,7 +405,6 @@ miyu_config::settings! {
 - 组的说明（施工 HZ-1，2026-11-11 项目主人定）：资源里给这一组写了说明的（`config.group_descriptions`，下面「给人看的字」），`groups` 里那一组再带 `description`：一句或几句，照连接的语言，这种语言没有的照英文（同组名）；头写在组名下面。哪一组都能写；没写的组不带这一格，回应和原来逐字节一样。现在只有「受保护的命令」写了：`{"description":"下面几类命令在完全放开时也会先问你，关掉就不再问。另有几类永远拒绝、不能关：…","id":"protected","name":"受保护的命令","page":"privacy"}`。
 - 包的分节（施工 SG-1，2026-11-10 项目主人经语音会话要的：一个包的设置一股脑全摊开，选了一个引擎还看得到别家的几项）：清单在组里声明的项（`[settings.<组>.<名字>]`，`packages.md`「配置项」第 1 条）再带 `section`：组名；不在组里的不写。这个包那一组（`groups` 里编号是包的编号的那一个）再带 `sections`：每一节 `{"id", "name", "shown_when"?}`，照清单写的先后；`name` 照连接的语言挑，同一项的名字（这种语言、`en`、`zh`、`ja`），清单没写的是组名；`shown_when` 是 `{"key": "<完整的键>", "is": ["<值>", …]}`，键是包的前缀接清单里写的名字，`is` 清单写一个值的也是列表。头照它分节画、照那一项的当前值决定画不画；不画的只是不画，值照旧存、读、查，核心哪里都不看 `shown_when`。没分组的包两格都不写，回应和原来逐字节一样。拼法在 `crates/miyu-endpoint/src/config/sections.rs`，照核心手里装着的包的清单现拼。
 - 选项由包在运行时给（施工 SG-2，2026-11-10 项目主人验收语音助手设置页时提的：麦克风不该让人手填设备名）：清单写了 `choices_from` 的文字项（`packages.md`「配置项」的表）再带 `choices_from`：`{"package": "<包的编号>", "method": "<方法名>"}`，`type` 照旧是 `text`；没写的项不带这一格，回应和原来逐字节一样。头画成下拉，选项调 `package.call {package, method}` 取，包回 `{"choices": [{"value", "name"?, "description"?}]}`；调不到、回空的退回文字框，存着的值不在列表里的照样显示。核心只交出这一格，不调那个方法、不照列表查值（设备拔了不算错）。拼法在 `crates/miyu-endpoint/src/config/choices.rs`，照核心手里装着的包的清单现拼。
-- 列表带选项的项怎么画勾（施工 5-15 再补，2026-10-21 项目主人验收时定）：`sandbox.private.remove` 带 `ticks: "unlisted"`，勾着的是不在值里的（照旧私密），取消勾选＝加进值里，存的值照旧是去掉的那几个；头照这一格反着画，不认键名。别的没有这一格，勾着的是值里的。
 - 写了清单里没有的键：`unknown_config_key`，`data.problems` 里每个不认识的一条：`code` 是 `unknown_key`，`level` 是 `error`（请求写错了，不是文件里的警告），`key`、`message`，有最近的键名的带 `suggest`，没有行列。
 - 名字、说明这种语言里没有的，照英文（`store/resources.md` 第 3 条的退法），英文也没有的名字照键、说明是空的；页、组的名字同样，都没有的照编号。
 
@@ -1517,19 +1513,6 @@ default = "full"
 # 能写：http:// 或 https:// 开头的网址 或 { env = "…" }。只能写在系统配置里。下一轮生效。
 # url =
 
-[sandbox.private]
-# 加的私密目录
-# 能写：最多 4096 个字的文字 的列表。只能写在系统配置里。下一轮生效。
-# add =
-
-# 私密目录：只在只读时起作用，命令读不到私密目录，文件工具读之前先问；完全放开时不拦。关掉以后只读时也不藏、不问；Miyu 自己的数据不受这个开关影响。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-enabled = true
-
-# 默认私密目录：出厂的私密目录，只在只读时起作用。留着的照旧私密；去掉的命令读得到、文件工具不再问。恢复默认就全部回来。
-# 能写：最多 4096 个字的文字 的列表。只能写在系统配置里。下一轮生效。
-# remove =
-
 [show]
 # 提醒 AI 用展示：让 AI 把做出来或拿到的图片、网页、文档、音视频用「展示」直接给你看，而不只是给一个路径。
 # 能写：true 或 false。只能写在系统配置里。新会话生效。
@@ -1660,9 +1643,6 @@ currency = "USD"
 | 说明 | 等你确认超过这么多秒就自动拒绝。0 为一直等。 | Anything waiting for your confirmation is denied after this many seconds. 0 waits forever. | 確認待ちがこの秒数を過ぎると自動で拒否します。0 はずっと待ちます。 |
 | 组 `protected`（`privacy`，HZ-1） | 受保护的命令 | Protected commands | 保護されたコマンド |
 | 组 `protected` 的说明（`config.group_descriptions`，HZ-1） | 下面几类命令在完全放开时也会先问你，关掉就不再问。另有几类永远拒绝、不能关：删根目录、家目录、系统目录、Miyu 的数据，格式化磁盘、往裸设备写，容器拿走整个宿主。 | These kinds of commands ask you first even with full access. Turn one off to stop asking. Some are always refused and can't be turned off: deleting the root, home or system directories or Miyu's data, formatting a disk or writing to a raw device, and giving a container the whole host. | 次の種類のコマンドは、フルアクセスでも実行前に確認します。オフにすると確認しません。常に拒否され、オフにできないものもあります：ルート、ホーム、システムディレクトリ、Miyu のデータの削除、ディスクのフォーマット、raw デバイスへの書き込み、コンテナへのホスト全体の引き渡し。 |
-| `sandbox.private.enabled` 名字（5-17 上） | 私密目录 | Private folders | 非公開フォルダ |
-| `sandbox.private.add` 名字（5-15 下） | 加的私密目录 | Added private folders | 追加した非公開フォルダ |
-| `sandbox.private.remove` 名字（5-15 下，5-15 再补改名） | 默认私密目录 | Default private folders | 既定の非公開フォルダ |
 | `net.internal_domains` 名字（MB-2） | 内部域名 | Internal domains | 内部ドメイン |
 | `skills.external.enabled` 名字（PT-2 外） | 读取其他目录的 Skills | Read skills from other folders | ほかのフォルダのスキルを読む |
 | `skills.external.dirs` 名字（PT-2 外） | 其他技能目录 | Other skill folders | ほかのスキルフォルダ |
@@ -2002,8 +1982,8 @@ Options:
 | `crates/miyu/tests/settings.rs` | 真核心：照 `LANG` 写两份，和样本逐字节一样（中文、英文）；一样的不重写（修改时间不变），改过的写回来；该是目录的地方是个文件，两份各记一条 `WARN`，照样起来 | 8-1 |
 | `crates/miyu-store/src/generated/tests.rs` | 没有的写上、目录建上；一样的不写（修改时间不变）；不一样的换掉、不留临时文件；目录建不了报错；临时文件点开头、不重名 | 8-1 |
 | `crates/miyu-store/tests/human.rs`、`human_languages.rs` | 配置那一格照 `Words` 交出去：项、选项名，句子的编号加 `core/`，少了字段的没有字；配置那一格写错说是哪一份。三种语言的项、选项、页、组、写了说明的组（施工 HZ-1）和英文的一样，名字、说明都不空 | 8-1 |
-| `crates/miyu-endpoint/tests/config_protected.rs` | 受保护的命令：`config.schema` 里五个开关的名字、那一组的名字和 `description` 照连接的语言（中文、英文、日文），都是出厂开的开关、只有系统一层、下一轮生效；没写说明的组不多出 `description`（私密目录那一组逐字比）；`config.set` 写得进、读回来是关着的，手写的 `config.check` 不报，项目配置里写了的报 | HZ-1 |
-| `crates/miyu-core/tests/settings_protected.rs` | 核心登记的清单里「隐私与安全」那一页先出现的组是「受保护的命令」、排在私密目录前面，五项挨着；三种语言都有这一组的说明，别的组没写 | HZ-1 |
+| `crates/miyu-endpoint/tests/config_protected.rs` | 受保护的命令：`config.schema` 里五个开关的名字、那一组的名字和 `description` 照连接的语言（中文、英文、日文），都是出厂开的开关、只有系统一层、下一轮生效；没写说明的组不多出 `description`（「权限」那一组逐字比）；`config.set` 写得进、读回来是关着的，手写的 `config.check` 不报，项目配置里写了的报 | HZ-1 |
+| `crates/miyu-core/tests/settings_protected.rs` | 核心登记的清单里「隐私与安全」那一页只有「受保护的命令」「权限」两组、先后照这个，五项挨着；三种语言都有这一组的说明，别的组没写 | HZ-1 |
 | `crates/miyu-endpoint/src/settings/tests.rs`、`crates/miyu-log/src/settings/tests.rs` | 界面语言：`auto` 照系统的语言（`zh`、`ja` 开头的，别的、没有的是 `en`），定了的照定的。`log.level` 的每个选项 `MIYU_LOG` 都读得懂，默认值和没设一样 | 8-1 |
 | `crates/miyu-config/src/parse/tests.rs` | 解析的每一种原因码各一例（不认识的键、类型不对、一组键写成值、一项写成表、不在选项里、层不对、写法不对），行、列（中文算一列、点号连着的键指到开头）、`got` 截到 80 个字符。BOM。`\r\n`。`toml_edit` 的报错只取为什么那一行。不认识的表往里报整个键，拼错的一组键也找得到最近的 | 8-2 |
 | `crates/miyu-config/src/problem/tests.rs` | 键名拼错给最近的、太远的不给、一样近的取前面的、换位算一次；`got` 截到 80 个字符；每一种原因码说成一句（假的中文字），英文段和段怎么接；缺字报是哪一句 | 8-2 |

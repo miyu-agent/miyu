@@ -29,11 +29,6 @@ fn every_cell_of_the_table() {
         (Zone::Outside, full, true, Mark::Allow),
         (Zone::Outside, read_only, false, Mark::Allow),
         (Zone::Outside, read_only, true, Mark::ReadOnly),
-        // 别的程序的私密目录：完全放开不问；只读的读问人、写照拒（施工 5-13）。
-        (Zone::Private, full, false, Mark::Allow),
-        (Zone::Private, full, true, Mark::Allow),
-        (Zone::Private, read_only, false, Mark::Ask),
-        (Zone::Private, read_only, true, Mark::ReadOnly),
     ];
     for (zone, level, write, expected) in cases {
         assert_eq!(
@@ -95,7 +90,7 @@ fn a_command_goes_by_whether_the_sandbox_can_be_used() {
 
 #[test]
 fn a_call_without_paths_goes_by_what_it_does() {
-    // 读写不报路径的放行；联网这些，只读问人、完全放开放行，沙盒能用也一样。
+    // 读写、联网不报路径的放行（联网只读也放行，施工 PV-RM）；对外发消息只读问人、完全放开放行，沙盒能用也一样。
     for sandboxed in [false, true] {
         assert_eq!(
             untargeted(Effective::ReadOnly, "x", Access::Read, sandboxed, &[]),
@@ -105,11 +100,21 @@ fn a_call_without_paths_goes_by_what_it_does() {
             untargeted(Effective::ReadOnly, "x", Access::Write, sandboxed, &[]),
             Verdict::Allow
         );
-        assert!(matches!(
+        assert_eq!(
             untargeted(
                 Effective::ReadOnly,
                 "fetch",
                 Access::Network,
+                sandboxed,
+                &[]
+            ),
+            Verdict::Allow
+        );
+        assert!(matches!(
+            untargeted(
+                Effective::ReadOnly,
+                "send",
+                Access::Outbound,
                 sandboxed,
                 &[]
             ),

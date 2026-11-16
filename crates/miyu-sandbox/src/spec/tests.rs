@@ -88,7 +88,7 @@ fn a_path_under_a_hidden_one_is_hidden_unless_a_writable_one_brings_it_back() {
         reveal: Vec::new(),
         sockets: Vec::new(),
     };
-    // 私密目录包住了装的位置：看不到。
+    // 藏起来的那一处包住了装的位置：看不到。
     assert!(spec.hides(Path::new(
         "/home/a/Documents/miyu/target/debug/miyu-sandbox"
     )));

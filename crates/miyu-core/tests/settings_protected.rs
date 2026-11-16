@@ -9,8 +9,8 @@ use miyu_store::resources::ResourceRoot;
 /// 出厂带的语言。
 const LANGUAGES: [&str; 3] = ["zh", "en", "ja"];
 
-/// 「受保护的命令」排在「隐私与安全」那一页最上面（施工 HZ-1，2026-11-11 项目主人定）：这一页先出现的项就是它的，私密目录
-/// 在后面；五个开关挨着。组带说明（哪几类永远拒、不能关写在里面），三种语言都有；别的组没写说明。
+/// 「受保护的命令」排在「隐私与安全」那一页最上面（施工 HZ-1，2026-11-11 项目主人定）：这一页先出现的项就是它的，权限在后面
+/// （私密目录那一组施工 PV-RM 去掉了）；五个开关挨着。组带说明（哪几类永远拒、不能关写在里面），三种语言都有；别的组没写说明。
 #[test]
 fn the_protected_commands_lead_the_privacy_page_and_carry_a_description() {
     let listed = items();
@@ -21,9 +21,7 @@ fn the_protected_commands_lead_the_privacy_page_and_carry_a_description() {
             groups.push(item.ui.group);
         }
     }
-    assert_eq!(groups.first(), Some(&"protected"), "{groups:?}");
-    let at = |group: &str| groups.iter().position(|one| *one == group);
-    assert!(at("protected") < at("private"), "{groups:?}");
+    assert_eq!(groups, ["protected", "permission"]);
     let keys: Vec<&str> = listed
         .iter()
         .filter(|item| item.ui.group == "protected")

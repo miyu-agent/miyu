@@ -40,11 +40,6 @@ impl Guard {
                 .chain(&self.attachments)
                 .cloned()
                 .collect(),
-            private: self
-                .private
-                .read()
-                .unwrap_or_else(PoisonError::into_inner)
-                .clone(),
             ..self.places.clone()
         };
         let boundary = Boundary::new(&places);

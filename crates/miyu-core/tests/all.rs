@@ -16,5 +16,6 @@ mod packaging;
 mod serve;
 mod settings;
 mod settings_protected;
+mod settings_removed;
 mod tools;
 mod workers;

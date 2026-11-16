@@ -93,14 +93,7 @@ fn judged(guard: &Guard, command: &str, read_only: bool) -> Verdict {
         read_only,
     };
     guard
-        .judge(
-            "shell",
-            args,
-            "/home/me/proj".to_string(),
-            &[],
-            &permission,
-            &[],
-        )
+        .judge("shell", args, "/home/me/proj".to_string(), &[], &permission)
         .0
 }
 

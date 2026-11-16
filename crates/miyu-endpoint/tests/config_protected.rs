@@ -30,9 +30,13 @@ async fn hello(client: &mut Client, locale: &str) {
     assert!(reply.get("error").is_none(), "{reply}");
 }
 
-/// 清单里有这五项和私密目录那三项的核心。
+/// 清单里有这五项和「权限」那一组的核心。
 fn core(home: &Home) -> std::sync::Arc<miyu_endpoint::Core> {
-    let items = [ConfirmSettings::ITEMS, miyu_tool::private::ITEMS].concat();
+    let items = [
+        ConfirmSettings::ITEMS,
+        miyu_endpoint::settings::PermissionSettings::ITEMS,
+    ]
+    .concat();
     home.core_with_items(&Script::new([]), None, &[], &items)
 }
 
@@ -123,18 +127,18 @@ async fn a_group_without_a_description_has_no_such_field() {
     hello(&mut client, "zh-CN").await;
     let reply = client.call("c1", "config.schema", json!({})).await;
     let groups = reply["result"]["groups"].as_array().expect("有组");
-    assert!(groups.len() > 2, "{reply}");
+    assert!(groups.len() >= 2, "{reply}");
     for group in groups {
         let described = group.get("description").is_some();
         assert_eq!(described, group["id"] == "protected", "{group}");
     }
-    let private: Vec<&Value> = groups
+    let permission: Vec<&Value> = groups
         .iter()
-        .filter(|group| group["id"] == "private")
+        .filter(|group| group["id"] == "permission")
         .collect();
     assert_eq!(
-        private,
-        [&json!({"id": "private", "name": "私密目录", "page": "privacy"})],
+        permission,
+        [&json!({"id": "permission", "name": "权限", "page": "privacy"})],
         "{reply}"
     );
 }

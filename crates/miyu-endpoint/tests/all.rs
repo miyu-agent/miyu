@@ -76,7 +76,7 @@ mod config_option_state;
 mod config_protected;
 mod config_secret_got;
 mod config_set;
-mod config_set_private;
+mod config_set_dirs;
 mod config_trust;
 mod config_unused;
 mod config_watch;

@@ -114,9 +114,10 @@ async fn a_nested_call_gets_the_positions_the_guard_judged() {
     );
 }
 
-/// 审计复现（漏洞排查 2026-10-22，原来是工作区一级写到外面问人；A16 起只剩只读读私密目录问人，施工 LV-1）：只读时 `read`
-/// 读工作区里的链接 `link/` 下面，链接指进私密目录 `~/.ssh`，权限策略问人；人还没点，链接被换成指进数据根。人点了允许，
-/// `read` 换出来的落在数据根里，不是判过的那一个：不读，说路径在判过以后变了。
+/// 审计复现（漏洞排查 2026-10-22，原来是工作区一级写到外面问人；A16 起是只读读私密目录问人，施工 LV-1；施工 PV-RM 去掉私密
+/// 目录以后，报路径的调用权限策略不再问人，问人的换成扩展挂的守卫，施工 HK-1）：只读时 `read` 读工作区里的链接 `link/` 下面，链接
+/// 指到家目录里的 `~/.ssh`，策略放行、守卫要问人；人还没点，链接被换成指进数据根。人点了允许，`read` 换出来的落在数据根里，不是
+/// 判过的那一个：不读，说路径在判过以后变了。
 #[cfg(unix)]
 #[tokio::test]
 async fn a_link_swapped_while_asking_is_not_followed_into_the_data_root() {
@@ -141,7 +142,21 @@ async fn a_link_swapped_while_asking_is_not_followed_into_the_data_root() {
         Play::calls(&[("read", &args.to_string())]),
         Play::Says("好了。"),
     ]);
-    let handle = session(&home, &script, &tools, true).await;
+    let opening = Opening {
+        permission: Permission {
+            level: Level::Full,
+            read_only: true,
+        },
+        attended: true,
+        cwd: at(&home, "work"),
+        dirs: Vec::new(),
+        sandbox: None,
+    };
+    let lines = Lines {
+        hooks: Some(Arc::new(Asking)),
+        ..Lines::default()
+    };
+    let handle = home.create_full(&script, &tools, opening, lines).await;
     let mut pushes = watch(&handle).await;
     ask(&handle, "cmd-1", say("hi")).await.expect("会话在跑");
     let session_id = handle.id().clone();
@@ -194,4 +209,37 @@ async fn a_link_swapped_while_asking_is_not_followed_into_the_data_root() {
         !text.contains("secret-in-data-root"),
         "读到了数据根：{text}"
     );
+}
+
+/// 挂在 `read` 上、每次都要问人的扩展守卫（施工 HK-1）：别的挂接点什么都不交。只有链接调包那一条用（只在 Unix 上）。
+#[cfg(unix)]
+struct Asking;
+
+#[cfg(unix)]
+impl miyu_tool::HooksPort for Asking {
+    fn turn_start(&self, _: miyu_tool::TurnAsk) -> miyu_tool::Injecting<'_> {
+        Box::pin(async { Vec::new() })
+    }
+
+    fn doing(
+        &self,
+        _persona: &str,
+        _session: &str,
+        _offset: miyu_kernel::time::UtcOffset,
+    ) -> Option<miyu_tool::DoingLine> {
+        None
+    }
+
+    fn guards(&self, tool: &str, _access: &str) -> bool {
+        tool == "read"
+    }
+
+    fn guard(&self, _: miyu_tool::GuardAsk) -> miyu_tool::Guarding {
+        Box::pin(async {
+            miyu_tool::Guarded::Ask {
+                module: miyu_kernel::id::ModuleId::parse("watcher").expect("合写法"),
+                detail: None,
+            }
+        })
+    }
 }

@@ -97,7 +97,6 @@ impl Site {
             temp: self.at("tmp"),
             readable: vec![self.at("sys"), self.at("home/.cargo")],
             shelves: Vec::new(),
-            private: Vec::new(),
             own: Vec::new(),
         }
     }

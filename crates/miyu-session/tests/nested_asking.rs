@@ -13,7 +13,8 @@ use miyu_tool::{Catalog, Tool};
 
 use crate::support::*;
 
-/// 一个脚本：经端口调一次要联网的 `fetch`。只读时联网要问人（A16 起完全放开不问，施工 LV-1）。
+/// 一个脚本：经端口调一次执行命令的 `fetch`。只读、沙盒用不了时执行命令要问人（A16 起完全放开不问，施工 LV-1；原来用联网的，
+/// 施工 PV-RM 起联网只读也不问）。
 async fn scripted(home: &Home, attended: bool) -> miyu_session::Handle {
     let shell = Fake::commanding(
         "shell",
@@ -21,7 +22,7 @@ async fn scripted(home: &Home, attended: bool) -> miyu_session::Handle {
         Some(miyu_tool::RUN_IN_BACKGROUND),
         Act::Calls(vec![("fetch", "{}")]),
     );
-    let fetch = Fake::callable("fetch", Access::Network, Act::Echo);
+    let fetch = Fake::callable("fetch", Access::Execute, Act::Echo);
     let script = Script::new([
         Play::calls(&[("shell", r#"{"command":"python3 x.py"}"#)]),
         Play::Says("好了。"),
@@ -92,7 +93,7 @@ async fn a_script_waits_for_the_person_and_hears_back_once_allowed() {
     let log = until_logged(&home, &session, |log| !requests(log).is_empty()).await;
     let request = requests(&log).remove(0);
     assert_eq!(request.nested, Some(1), "挂在 shell 上、带序号");
-    assert_eq!(request.access, Access::Network);
+    assert_eq!(request.access, Access::Execute);
     answer(&handle, &request, Decision::Once).await;
     until_turn_ends(&mut pushes).await;
     let log = home.log(&session);
