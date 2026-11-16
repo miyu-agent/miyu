@@ -491,3 +491,5 @@ mod forked;
 mod life;
 /// 只读一截、只读认父子的两格（施工 YC-13）。
 mod slices;
+/// 人最后一次发话（施工 SX-1）。
+mod spoken;

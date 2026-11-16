@@ -31,14 +31,14 @@ pub use crate::sqlite::{DbError as IndexError, Opened};
 pub const FILE: &str = "sessions.db";
 
 /// 表的结构的版本，记在 SQLite 的 `user_version` 里：结构一变就加一，对不上的删掉重建。施工 9-5 多了 `preview`，是 2；施工 O-3 多了 `venue`，是 3；
-/// 施工 P-1 下多了 `persona`，是 4；施工 P-2 上多了 `preset`，是 5；施工 3-8 八补 多了 `named`，是 6；施工 H-2 多了 `project`，是 7；终端要的会话列表 tokens 一列多了 `tokens`，是 8；网页要的上下文用量（施工 9-5 再补）多了 `context`、`context_model`，是 9；整理会话（施工 D-1 下）多了 `dream`，是 10；终端集成开的（施工 8-33 四补）多了 `origin`，是 11；fork 子代理（施工 A-F 补）多了 `forked`，是 12；整理会话的结果（施工 DR-1）多了 `dream_result`，是 13；施工 SU-6 上去掉 `owner`（只有主人一个），是 14；人生会话（施工 LF-5 中）多了 `life`，是 15。
-const VERSION: i64 = 15;
+/// 施工 P-1 下多了 `persona`，是 4；施工 P-2 上多了 `preset`，是 5；施工 3-8 八补 多了 `named`，是 6；施工 H-2 多了 `project`，是 7；终端要的会话列表 tokens 一列多了 `tokens`，是 8；网页要的上下文用量（施工 9-5 再补）多了 `context`、`context_model`，是 9；整理会话（施工 D-1 下）多了 `dream`，是 10；终端集成开的（施工 8-33 四补）多了 `origin`，是 11；fork 子代理（施工 A-F 补）多了 `forked`，是 12；整理会话的结果（施工 DR-1）多了 `dream_result`，是 13；施工 SU-6 上去掉 `owner`（只有主人一个），是 14；人生会话（施工 LF-5 中）多了 `life`，是 15；人最后一次发话（施工 SX-1）多了 `last_spoken`，是 16。
+const VERSION: i64 = 16;
 
 /// 表里的列，照这个先后读写（[`Row::from_sql`]、[`Row::to_sql`]）。
-const COLUMNS: &str = "id, parent, oneshot, title, pinned, cwd, created, last_active, segment, bytes, next, preview, venue, persona, preset, named, project, tokens, context, context_model, dream, origin, forked, dream_result, life";
+const COLUMNS: &str = "id, parent, oneshot, title, pinned, cwd, created, last_active, segment, bytes, next, preview, venue, persona, preset, named, project, tokens, context, context_model, dream, origin, forked, dream_result, life, last_spoken";
 
 /// 写一行时的占位，个数照 [`COLUMNS`]。
-const VALUES: &str = "?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25";
+const VALUES: &str = "?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26";
 
 /// 建表。`segment`、`bytes`、`next` 是这一行照到日志的哪里（[`Mark`]）；时刻存成毫秒。
 const SCHEMA: &str = "CREATE TABLE sessions (
@@ -66,7 +66,8 @@ const SCHEMA: &str = "CREATE TABLE sessions (
     origin TEXT,
     forked INTEGER NOT NULL,
     dream_result TEXT,
-    life INTEGER NOT NULL
+    life INTEGER NOT NULL,
+    last_spoken INTEGER
 ) WITHOUT ROWID";
 
 /// 会话列表的索引。
@@ -193,7 +194,8 @@ impl SessionIndex {
                 let n = values.len();
                 db.execute(
                     &format!(
-                        "{REPLACE} WHERE id = ?1 AND segment = ?{} AND bytes = ?{} AND next = ?{}",
+                        "{} WHERE id = ?1 AND segment = ?{} AND bytes = ?{} AND next = ?{}",
+                        replace(),
                         n + 1,
                         n + 2,
                         n + 3
@@ -275,9 +277,16 @@ impl SessionIndex {
     }
 }
 
-/// 换掉一整行，`WHERE` 由调的一方接上。
-const REPLACE: &str = "UPDATE sessions SET id = ?1, parent = ?2, oneshot = ?3, title = ?4, pinned = ?5, \
-     cwd = ?6, created = ?7, last_active = ?8, segment = ?9, bytes = ?10, next = ?11, preview = ?12, venue = ?13, persona = ?14, preset = ?15, named = ?16, project = ?17, tokens = ?18, context = ?19, context_model = ?20";
+/// 换掉一整行，`WHERE` 由调的一方接上：照 [`COLUMNS`] 一格格写，编号同 [`VALUES`]。以前手写到第 20 格，后来加的
+/// `dream_result`、`life` 照日志补的时候没写回去（施工 SX-1 顺手改）：加列不用再跟着改。
+fn replace() -> String {
+    let sets: Vec<String> = COLUMNS
+        .split(", ")
+        .enumerate()
+        .map(|(at, column)| format!("{column} = ?{}", at + 1))
+        .collect();
+    format!("UPDATE sessions SET {}", sets.join(", "))
+}
 
 /// 照到的位置写成三格。
 fn mark_values(mark: &Mark) -> Result<[rusqlite::types::Value; 3], IndexError> {

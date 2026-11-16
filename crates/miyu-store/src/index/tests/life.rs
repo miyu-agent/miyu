@@ -69,3 +69,19 @@ fn an_ended_life_is_the_third_kind_and_survives_the_table() {
     assert!(index.put(&listed, None).unwrap());
     assert_eq!(row(&index).unwrap(), listed, "写进去读得回来");
 }
+
+/// 列会话照日志补的那一行写回去，人生那一格跟着写（施工 SX-1 顺手修：以前换整行的时候只写到第 20 格，后加的几格停在旧的）。
+#[test]
+fn a_caught_up_row_writes_its_life_back() {
+    let scratch = Scratch::new();
+    let (index, _) = open(&scratch);
+    let mut listed = Row::new(id(), &created()).unwrap();
+    listed.mark = mark(100, 2);
+    assert!(index.put(&listed, None).unwrap());
+    let was = listed.mark;
+    listed.see(&started(2));
+    listed.see(&ended(3));
+    listed.mark = mark(400, 4);
+    assert!(index.put(&listed, Some(&was)).unwrap());
+    assert_eq!(row(&index).unwrap(), listed, "补上的几格都写回去了");
+}

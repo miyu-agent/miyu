@@ -18,6 +18,7 @@ fn listed(context: Option<u64>, model: Option<&str>) -> Listed {
         waiting: false,
         viewed: false,
         last_active: miyu_kernel::time::Timestamp::from_unix_millis(0).expect("是时刻"),
+        last_spoken: None,
         preview: String::new(),
         venue: "local".to_string(),
         persona: None,

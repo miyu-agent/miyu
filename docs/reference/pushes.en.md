@@ -6,7 +6,7 @@ Pushes are notifications the core sends on its own: `{"jsonrpc": "2.0", "method"
 |---|---|---|
 | `event` | `events` | `{"session", "event"}`: one event of the session, as-is (see [Events](events.en.md)); replays use it too |
 | `view.add`, `view.update`, `view.append`, `view.hidden`, `view.remove`, `view.status` | `view` | See [View stream](view.en.md) |
-| `sessions.changed` | `sessions` | `{"session", "entry"}`: one item of the session list, replaced whole (as in `session.list`); deleted ones are `{"session", "removed": true}`. When a child changes, its parent and ancestors (whose `tokens` include their descendants) are pushed too, level by level |
+| `sessions.changed` | `sessions` | `{"session", "entry"}`: one item of the session list, replaced whole (as in `session.list`); deleted ones are `{"session", "removed": true}`. When a child changes, its parent and ancestors (whose `tokens` include their descendants) are pushed too, level by level. A person speaking (a new `last_spoken`) is pushed too, even a message added mid-turn |
 | `config.changed` | `config` | `{"layer", "via", "by"?, "version", "keys", "problems"}`: a config layer changed; `keys` as in `config.set`'s response; `via` is `set`, `edit`, `file` (edited by hand), `package` (after installing or removing packages) |
 | `models.changed` | `config` | `{"providers"}`: these providers' model lists changed (a list the core fetched in the background differs from the one it had). No entries; call `model.list` again with your own params. Sent only on a real change; missed ones are not replayed: after `resync` or a reconnect, read everything again |
 | `extension.changed` | `extensions` | `{"entry"}`: one extension's status, as in `extension.status` |

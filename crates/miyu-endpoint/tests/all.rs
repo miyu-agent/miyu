@@ -116,6 +116,7 @@ mod knowledge_manage;
 mod knowledge_package;
 mod knowledge_progress;
 mod knowledge_remove;
+mod last_spoken;
 mod life;
 mod life_change;
 mod life_change_more;

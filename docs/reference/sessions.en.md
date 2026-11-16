@@ -113,6 +113,7 @@ Sending the same `id` again returns the session created the first time.
 | `session` | Id |
 | `cwd` | Working directory as a person sees it |
 | `last_active` | Time of the last event |
+| `last_spoken` | Time a person last spoke: the latest message from a person (the owner on a head, or someone on a chat platform); turns started by loops, schedules, a life waking itself, reports or resumes don't count. Heads sort the session list by it, so opening a session doesn't move it, a person speaking does. Omitted until a person has spoken |
 | `oneshot` | Whether it's one-shot |
 | `parent` | A child session's parent; `null` for main sessions |
 | `title` | Title; omitted when there is none |

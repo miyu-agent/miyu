@@ -1556,6 +1556,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sPVRM"><span class="n">PV-RM</span>去掉私密目录<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC6"><span class="n">DOC-6</span>照手册把命令真敲一遍<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC7"><span class="n">DOC-7</span>手册去掉私密目录<span class="st">…</span></a></li>
+        <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -60551,6 +60552,59 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/PV-RM-去掉私密目录.md</code>；蓝图 <code>config.md</code>、<code>session/guard.md</code>、<code>session/tools.md</code>、<code>sandbox.md</code>、<code>fs.md</code>、<code>tools/glob.md</code>；协议参考 <code>config</code>、<code>sessions</code>（中英）。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sSX1" aria-labelledby="h-sSX1">
+  <div class="sheet-head"><h2 id="h-sSX1"><span class="no">SX-1</span>会话列表记下人最后一次发话</h2><span class="pill done">做完</span></div>
+  <p class="purpose">会话列表的一项多 <code>last_spoken</code>：人最后一次发话的时刻。头照它排，只切进去不挪，人说了话才挪到顶上；循环、定时任务、人生自己醒、回报叫醒、续跑开的那几轮只动 <code>last_active</code>。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-store · index.rs、index/row.rs　miyu-session · actor/listing.rs　miyu-endpoint · list.rs</span><span class="dir-note">SX-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>索引多一列 <code>last_spoken</code>：最后一条 <code>by</code> 是人的 <code>message.user</code> 的时刻，版本 16，老的删掉照日志重建</li>
+              <li><code>session.list</code>、<code>sessions</code> 流、<code>sessions.changed</code> 的一项照它写，没人说过话的不写</li>
+              <li>人说的 <code>message.user</code> 报一声列表那一项变了：回合中途插的一句也推</li>
+              <li>照日志补的那一行换整行时每一格都写（原来只写到第 20 格）</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">只认人说的</span><span class="rl">主人、平台上的人；叫醒她的都不算</span></div>
+          <div class="tile new"><span class="nm">没有的不写</span><span class="rl">字节不变</span></div>
+          <div class="tile new"><span class="nm">别的事件不多推</span><span class="rl">last_active 照旧</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">SX-1</dd></div>
+        <div><dt>名称</dt><dd>会话列表记下人最后一次发话</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">SX-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、真模型实测</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>人说一句有这一格，循环两次、定时任务一次、她的回复不动它</span></li>
+        <li><span class="ok">✓</span><span>删了索引的行照日志补回来一样</span></li>
+        <li><span class="ok">✓</span><span>回合中途插的一句推一项；场所里旁听的一句也算</span></li>
+        <li><span class="ok">✓</span><span>真模型：人说过话的那个不动，开循环的那个没有这一格</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/SX-1-人最后发话.md</code>；蓝图 <code>store/index.md</code>、<code>protocol.md</code>、<code>session/actor.md</code>；协议参考 <code>sessions.md</code>、<code>pushes.md</code>。</li>
       </ul>
     </div>
   </div>

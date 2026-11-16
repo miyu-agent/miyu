@@ -100,6 +100,8 @@ pub(crate) struct Listed {
     pub(crate) viewed: bool,
     /// 日志最后一条事件的时刻（施工 C-3）。
     pub(crate) last_active: Timestamp,
+    /// 人最后一次发话的时刻（施工 SX-1）：一次都没有的没有，不写这一格。
+    pub(crate) last_spoken: Option<Timestamp>,
     /// 第一句话的第一行（施工 9-5）：空的是没有。
     pub(crate) preview: String,
     /// 场所（施工 O-3）：本机的是 [`LOCAL`]。
@@ -148,6 +150,7 @@ impl Listed {
             waiting: false,
             viewed: false,
             last_active: row.last_active,
+            last_spoken: row.last_spoken,
             preview: row.preview,
             venue: row.venue,
             persona: row.persona,
@@ -176,6 +179,10 @@ impl Listed {
             "cwd": self.cwd,
             "last_active": self.last_active,
         });
+        // 人最后一次发话（施工 SX-1）：头照它排会话列表。一次都没有的不写，字节不变。
+        if let Some(at) = &self.last_spoken {
+            item["last_spoken"] = json!(at);
+        }
         if let Some(dir) = &self.default_workspace {
             item["default_workspace"] = json!(dir);
         }
