@@ -137,6 +137,8 @@ key = { secret = "acme" }
 | `anthropic` | `<地址>/messages` | `x-api-key: <key>` |
 | `openai-responses` | `<地址>/responses` | `Authorization: Bearer <key>` |
 
+软件包也能带驱动，`driver` 写成 `<包编号>/<驱动名>`。例如社区的包 `antigravity`（只有 Linux、macOS）带驱动 `antigravity/antigravity`，把请求交给本机的 Antigravity CLI，用你在它那里的登录；装法和配法见这个包自己的说明（`miyu pkg info antigravity` 的「上游」那一行）。自己写一个驱动见 [写一个模型驱动](../authors/extensions.md#写一个模型驱动)。
+
 模型不用一个个列。Miyu 向供应商要模型列表（`<地址>/models`），再加上目录里对上的那一家的、配置里写到的，合在一起给你挑。引用里的模型名不查，列表里没有的也能用。
 
 一个 OpenAI 兼容的第三方服务：

@@ -113,7 +113,7 @@
 | 自己写的脚本 | 这一版的脚本格式不一样。报告逐个列出；官方软件源里有同名新包的，报告提示装哪个 |
 | 旧版包管理器装的技能、脚本 | 不拷。报告写软件源里对应的新包，用 `miyu pkg install` 装 |
 | 人格的子系统、插件开关，开发模式的提示词，没选人格时的系统提示词 | 这一版没有对应。人格、预设见 [人格和预设](personas-presets.md) |
-| 配置里的 CLI 中转供应商（`claude-code`、`codex`、`antigravity`、`codebuddy`） | 这一版没有对应的驱动。换成接 API 的供应商，见 [模型](models.md) |
+| 配置里的 CLI 中转供应商（`claude-code`、`codex`、`antigravity`、`codebuddy`） | 这一版核心里没有对应的驱动。`antigravity` 有一个社区的包 `antigravity` 带着驱动（只有 Linux、macOS），装了以后手写这一家供应商；别的三家换成接 API 的供应商。见 [模型](models.md#手写一家供应商) |
 | 配置里的 `context`、`tools`、`cache`、`display`、`notifications`、`voice`、`skills` 段，看图、搜索以外的插件设置 | 这一版没有对应的格 |
 | 配置里的 `mcp` 段 | MCP 服务在这一版重新加，见 [扩展 Miyu](extending.md#mcp-服务) |
 | QQ 的接入设置（管理员号以外的） | 在 im 里重新接 QQ，见 [接入通讯平台](heads/im.md#接-qq) |

@@ -109,7 +109,7 @@ miyu pkg install ./hello-0.1.0.miyu # 一个 .miyu 包文件
 
 「包含」那一行列它带的：「界面程序」「扩展程序」「小程序」「内置功能」，「命令 miyu <名字>」「后台页」「吉祥物」「主题」「接入 <平台>」「MCP 服务 <名字>」「模型驱动 <名字>」「技能 <名字>」「脚本 <名字>」「斜杠命令 /<名字>」「人格 <编号>」「预设 <编号>」「知识库 <编号>」「N 项设置」。读不成、装上也用不了的技能和脚本列在「无法读取：」后面，带原因。同编号已经装着一份的，第一行接「（替换 <旧版本>）」。
 
-包里的模型驱动在清单里写明了会让供应商自己跑哪些工具的，「包含」下面一个驱动多一行，例如「模型驱动 ag 会让供应商自己跑：search_web、read_url_content」；`miyu pkg info` 里也有这一行。网页里 AI 替你装包时的确认、「下载软件」里装着的包的详情，也在「包含」下面写这一句。
+包里的模型驱动在清单里写明了会让供应商自己跑哪些工具的，「包含」下面一个驱动多一行，例如「模型驱动 antigravity 会让供应商自己跑：search_web」；`miyu pkg info` 里也有这一行。网页里 AI 替你装包时的确认、「下载软件」里装着的包的详情，也在「包含」下面写这一句。
 
 ### 能力
 
@@ -420,7 +420,7 @@ key = "bWl5dS1leGFtcGxlLWtleS1ub3QtcmVhbC0wMDAwMDA="
 
 换了系统，带程序的包要重装这个系统的那一份，见 [数据和备份](data.md#换了系统)。
 
-社区收录过、占了编号的：`fake-id`、`github-bot`、`gray-intel`、`luckin-coffee`、`shorin-niri-use`、`webui-theme-claude-style`、`webui-theme-deep-whale`。
+社区收录过、占了编号的：`antigravity`、`fake-id`、`github-bot`、`gray-intel`、`luckin-coffee`、`shorin-niri-use`、`webui-theme-claude-style`、`webui-theme-deep-whale`。
 
 软件源每天更新，这张表会过时。现在有哪些，以 `miyu pkg search` 为准；一个包具体带什么，用 `miyu pkg info <编号>` 看。
 

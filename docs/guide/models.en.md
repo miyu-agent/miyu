@@ -137,6 +137,8 @@ For the other fields, see the [config key reference](config-keys.en.md).
 | `anthropic` | `<address>/messages` | `x-api-key: <key>` |
 | `openai-responses` | `<address>/responses` | `Authorization: Bearer <key>` |
 
+Packages can bring drivers too; write `driver` as `<package id>/<driver name>`. For example the community package `antigravity` (Linux and macOS only) brings the driver `antigravity/antigravity`, which hands requests to the Antigravity CLI on this machine and uses your login there; for how to install and configure it, see the package's own page (the "Upstream" line of `miyu pkg info antigravity`). To write a driver yourself, see [Writing a model driver](../authors/extensions.en.md#writing-a-model-driver).
+
 You do not have to list the models one by one. Miyu asks the provider for its model list (`<address>/models`), adds the ones from the matching provider in the catalog and the ones named in the config, and gives you the combined list to choose from. Model names in a reference are not checked, so a model that is not in the list can still be used.
 
 An OpenAI-compatible third-party service:

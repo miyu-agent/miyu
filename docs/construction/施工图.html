@@ -1552,6 +1552,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC3"><span class="n">DOC-3</span>手册跟上 WN-1<span class="st">…</span></a></li>
         <li><a class="step done" href="#sRB1"><span class="n">RB-1</span>可靠性修理一批<span class="st">✓</span></a></li>
         <li><a class="step review" href="#sDOC4"><span class="n">DOC-4</span>手册写上「后天」<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sDOC5"><span class="n">DOC-5</span>手册写上软件包带的模型驱动<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -60235,6 +60236,56 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/DOC-4-手册对LF-11.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sDOC5" aria-labelledby="h-sDOC5">
+  <div class="sheet-head"><h2 id="h-sDOC5"><span class="no">DOC-5</span>手册写上软件包带的模型驱动</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">社区的包 antigravity 进了软件源，它带一个模型驱动。手册中英两份写上「软件包也能带驱动」，迁移页和软件包页跟着改。只动文档。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">docs/guide</span><span class="dir-note">DOC-5</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>模型页：驱动表后面加一段，driver 写 &lt;包编号&gt;/&lt;驱动名&gt;，举 antigravity 为例</li>
+              <li>迁移页：旧版的 antigravity 中转有社区的包可用，别的三家照旧</li>
+              <li>软件包页：「会让供应商自己跑」的例子换成真的一行；占了编号的列表加 antigravity</li>
+              <li>中文页、英文页同一处一起改</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">社区包怎么装、怎么配写在它自己的说明里，手册只指过去</span><span class="rl">施工单「没写的」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DOC-5</dd></div>
+        <div><dt>名称</dt><dd>手册写上软件包带的模型驱动</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">DOC-5</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>包编号、驱动名、支持的系统对过这个包的清单</span></li>
+        <li><span class="ok">✓</span><span>改过的每页中英行数、标题、表格、代码块个数相等</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/DOC-5-手册对antigravity.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

@@ -109,7 +109,7 @@ Install 'hello' and approve the capabilities it needs? [Y/n]
 
 The "Includes: " line lists what the package brings: "interface", "extension", "worker program", "built-in feature", "command miyu <name>", "admin page", "mascot", "theme", "<platform> connection", "MCP server <name>", "model driver <name>", "skill <name>", "script <name>", "slash command /<name>", "persona <id>", "preset <id>", "knowledge base <id>" and "N settings". Skills and scripts that cannot be read, and so would not work even if installed, are listed after "Unreadable: ", with the reason. If a copy with the same id is already installed, the first line is followed by " (replaces <old version>)".
 
-If a model driver in the package says in its manifest which tools it has the provider run on its own, each such driver gets one more line under "Includes", for example "model driver ag has the provider run on its own: search_web, read_url_content"; `miyu pkg info` prints this line too. When the AI installs a package for you in the web UI, the confirmation there, and the details of an installed package under "Get software", carry the same sentence under "Includes".
+If a model driver in the package says in its manifest which tools it has the provider run on its own, each such driver gets one more line under "Includes", for example "model driver antigravity has the provider run on its own: search_web"; `miyu pkg info` prints this line too. When the AI installs a package for you in the web UI, the confirmation there, and the details of an installed package under "Get software", carry the same sentence under "Includes".
 
 ### Capabilities
 
@@ -420,7 +420,7 @@ Other packages do not depend on the system and install anywhere. The ones marked
 
 After you switch systems, packages that bring a program must be installed again for the new system; see [Data and backups](data.en.md#moving-to-a-different-operating-system).
 
-Ids once listed by the community that are still held: `fake-id`, `github-bot`, `gray-intel`, `luckin-coffee`, `shorin-niri-use`, `webui-theme-claude-style`, `webui-theme-deep-whale`.
+Ids once listed by the community that are still held: `antigravity`, `fake-id`, `github-bot`, `gray-intel`, `luckin-coffee`, `shorin-niri-use`, `webui-theme-claude-style`, `webui-theme-deep-whale`.
 
 The package source is updated every day, so this table will go out of date. For what exists now, go by `miyu pkg search`; for what one package brings exactly, use `miyu pkg info <id>`.
 
