@@ -9,7 +9,11 @@
 //! 3. 两样都没写的，编号就是 `catalog` 的算：核心照编号找档案（[`crate::provider::provider`]），第一次接入配 DeepSeek 写的
 //!    就是这个样子（`providers.deepseek.key`，不写 `catalog`、不写地址）。
 //!
-//! 地址是环境变量的引用时查不出来，当没对上。几家都对上的照编号排第一的那一家；没写 key 的不算。
+//! 认出是那一家以后，地址还得是官方的才交 key（PK-1 补，2026-11-16 语音会话报：catalog 写了 deepseek、地址指中转站的，中转站
+//! 的 key 被交给扩展、发到了官方地址）：没写地址（照档案就是官方的）或者字面地址的主机就是 [`OFFICIAL`] 那一个才算；地址是
+//! 环境变量的引用（查不出来）、别的地址一律不算。catalog 只说「模型照这一家的档案」，不说明 key 是这一家官方的。
+//!
+//! 几家都对上的照编号排第一的那一家；没写 key 的不算。
 
 use miyu_config::secret::Reference;
 use miyu_config::{Address, Values};
@@ -29,14 +33,30 @@ pub fn serving(values: &Values, catalog: &str) -> Option<(String, Reference)> {
     configured(values).into_iter().find_map(|id| {
         let settings = ProviderSettings::at(values, &[&id]);
         let key = settings.key?;
-        let counts = match (&settings.catalog, &settings.base_url) {
+        let is_catalog = match (&settings.catalog, &settings.base_url) {
             (Some(written), _) => written == catalog,
-            (None, Some(Address::Literal(url))) => official.is_some_and(|host| url.contains(host)),
+            (None, Some(Address::Literal(url))) => official.is_some_and(|host| host_is(url, host)),
             (None, Some(Address::Env(_))) => false,
             (None, None) => id == catalog,
         };
-        counts.then_some((id, key))
+        let official_address = match &settings.base_url {
+            None => true,
+            Some(Address::Literal(url)) => official.is_some_and(|host| host_is(url, host)),
+            Some(Address::Env(_)) => false,
+        };
+        (is_catalog && official_address).then_some((id, key))
     })
+}
+
+/// 地址 `url` 的主机是不是 `host`：去掉协议、用户名、端口、路径以后整段相同（不分大小写）；路径、查询里出现 `host` 的不算。
+fn host_is(url: &str, host: &str) -> bool {
+    let rest = url.split_once("://").map_or(url, |(_, rest)| rest);
+    let authority = rest.split(['/', '?', '#']).next().unwrap_or_default();
+    let authority = authority
+        .rsplit_once('@')
+        .map_or(authority, |(_, after)| after);
+    let name = authority.split(':').next().unwrap_or_default();
+    name.eq_ignore_ascii_case(host)
 }
 
 #[cfg(test)]
