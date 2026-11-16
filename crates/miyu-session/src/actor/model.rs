@@ -3,7 +3,8 @@
 //! 说完了跟着端口的限额（施工 8-9，[`Actor::follow_limits`]）：变了交给内核，模型变了推 `model.changed`。回合开始时叫端口照
 //! 这一轮的配置重新解析会话的引用（施工 8-10，[`Actor::turn_start`]）：限额变了交给内核，头看得到的变了推 `model.changed`。
 //! 思考强度（施工 8-18）给头看的那一档也算头看得到的一格。回合开始还问挂接点（施工 R-4 上，`hooks`），交同一个人格的人生里她在干嘛
-//! （施工 LF-7，`doing.rs`）。替看不了图的模型看图也在这里交给端口（施工 8-17）。
+//! （施工 LF-7，`doing.rs`）。替看不了图的模型看图也在这里交给端口（施工 8-17）。人换了模型、思考强度当场照预演的报给头（施工
+//! MC-1，`foresee.rs`）。
 
 use std::sync::Arc;
 use std::time::Instant;
@@ -28,10 +29,11 @@ use crate::lines::{millis, where_};
 use crate::port::{Cancel, Report, Reports, Sight};
 use crate::route::NONE;
 use crate::settings::CompactionSettings;
-use crate::shown::{Next, Shown};
+use crate::shown::Shown;
 use crate::timing::turn::TurnStart;
 
 mod doing;
+mod foresee;
 mod hooks;
 mod line;
 mod overdue;
@@ -120,7 +122,10 @@ impl Actor {
         if limits == self.handed {
             return;
         }
-        let moved = limits.model != self.handed.model && limits.model.endpoint.as_str() != NONE;
+        // 预演着下一轮的（施工 MC-1）：头看的是下一轮的，这一轮里换了成员不推。
+        let moved = limits.model != self.handed.model
+            && limits.model.endpoint.as_str() != NONE
+            && !self.foreseeing();
         self.hand(limits);
         if moved {
             self.announce(ChangeWhy::Failover);
@@ -158,6 +163,8 @@ impl Actor {
         let mut laps = TurnStart::start();
         let cwd = self.session.cwd().to_string();
         laps.config.run(self.config.turn(cwd)).await;
+        // 预演的清掉（施工 MC-1，`foresee.rs`）：照端口真解析的，和刚报的一样的不再推。
+        self.forget_foreseen();
         let before = self.shown_now();
         // 会话记的思考强度、钉的看图模型一起交（施工 SM-1、VM-1）：内核照日志算的。
         let (effort, vision) = (self.session.effort(), self.session.vision());
@@ -274,7 +281,7 @@ impl Actor {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         shown.limits = self.session.context_limits();
-        shown.next = Next::of(&*self.model);
+        shown.refresh_next(&*self.model);
     }
 
     /// 内核推了 `todos.changed`（施工 D-3）：给头看的那一份跟着换，`subscribe` 照它答。别的瞬时事件不管。

@@ -105,8 +105,8 @@ async fn one_session_s_level_leaves_the_other_and_the_config_alone() {
     send(&a, "a-1", effort(Some("high"))).await;
     assert_eq!(
         a.next().effort,
-        used("low", EffortSource::System),
-        "下一个回合起生效"
+        used("high", EffortSource::Session),
+        "给头看的当场换（施工 MC-1），请求下一个回合起照它"
     );
     turn(&a, "a-2", "alpha").await;
     turn(&b, "b-1", "bravo").await;

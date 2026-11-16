@@ -2,7 +2,7 @@
 //! `description`，没有 `tiers`），`uses` 多 `vision`，用途池里点名的模型也列；`session.create` 的 `model` 照这时的配置查过记进
 //! `session.created`，解析不出的（连同以前的挡位名）`unknown_model`、什么都不造；派子代理时子会话照 `pool`、父会话记下的；引用
 //! 的供应商、池没配的，配置的问题里报 `bad_reference`、算进 `config_errors`。换模型（施工 8-10）：`session.configure` 照这时的配置解析好交给内核，一样的不记，
-//! 解析不出、参数不对的什么都不记；`subscribe` 回应的 `model` 照会话接下来请求的写。
+//! 解析不出、参数不对的什么都不记；`subscribe` 回应的 `model` 照会话接下来请求的写，换了模型当场照换成的写（施工 MC-1）。
 
 use std::sync::Arc;
 
@@ -456,6 +456,19 @@ async fn subscribe_says_which_model_the_session_asks_next() {
         let reply = client.subscribe(&format!("s{n}"), session).await;
         assert_eq!(reply["result"]["model"], wanted, "{reply}");
     }
+    // 换了模型、不说话（施工 MC-1）：当场推一条 `model.changed`，再订阅照换成的答。
+    let reply = create(&mut client, "c4", json!("a/m")).await;
+    let session = reply["result"]["session"].as_str().expect("造出了会话");
+    client.subscribe("s4", session).await;
+    let (pushed, moved) = configuring(&mut client, "m4", session, json!("b/z")).await;
+    assert_eq!(moved["result"], json!({}), "{moved}");
+    let changed = pushed
+        .iter()
+        .filter(|p| p.to_string().contains("\"model.changed\""));
+    assert_eq!(changed.count(), 1, "{pushed:?}");
+    let reply = client.subscribe("s5", session).await;
+    let wanted = json!({"ref": "b/z", "endpoint": "b", "model": "z"});
+    assert_eq!(reply["result"]["model"], wanted, "{reply}");
     // 一个模型都没有的：不写这一格。
     let bare = Home::new();
     let mut client = Client::connect(routed(&bare));

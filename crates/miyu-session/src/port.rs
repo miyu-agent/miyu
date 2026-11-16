@@ -6,7 +6,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::mpsc;
 
 use miyu_drivers::DriverTexts;
 use miyu_kernel::accumulate::Delta;
@@ -20,7 +20,12 @@ use miyu_store::blob::Blobs;
 
 use crate::config::TurnConfig;
 use crate::route::OneShot;
+use crate::shown::Next;
 use crate::timing::{Kernel, Lead};
+
+mod cancel;
+
+pub use cancel::Cancel;
 
 /// 给一个会话造请求模型的端口（施工 3-7 下）。造会话、载入时，拿到了这个会话的策略快照再造：驱动的
 /// 占位冻结在快照里，核心升级改了字，老会话照样逐字节重现当时的请求（施工 3-6 上）。
@@ -123,6 +128,17 @@ pub trait ModelPort: Send + Sync {
     /// 请求起生效，不等下一轮。会话 actor 照内核从日志算的交，交完照 [`ModelPort::limits`] 再交给内核。不管上限的（测试的端口）
     /// 什么都不做。
     fn cap(&self, _context: Option<u64>) {}
+
+    /// 换了还没开回合的（施工 MC-1，`route/upcoming.rs`）：照这一刻的配置 `config` 预演下一个回合开始会怎么解析内核记着的引用
+    /// `reference`、思考强度 `effort`，给头看；不改钉着的。和钉着的一样的、不预演的（测试的端口）没有。
+    fn upcoming(
+        &self,
+        _config: &TurnConfig,
+        _reference: Option<&str>,
+        _effort: Option<&str>,
+    ) -> Option<Next> {
+        None
+    }
 
     /// 接下来那个模型真用的思考强度（施工 8-18，`models.md`「怎么走」第十一条第 7 条）：给头看的，`subscribe`、
     /// `model.changed` 照它写，会话记的压着配置的（施工 SM-1）。轮换的池、什么都不带的、不知道的（测试的端口）没有。
@@ -367,26 +383,6 @@ impl Sight {
             blob: self.blob,
             seen,
         });
-    }
-}
-
-/// 叫停一次请求：会话不要这次请求了，或者会话停了（actor 放下了叫停的那一头）。会话停了就没人要
-/// 结果了，接着读只是白花 token。说完了以后放下的，请求已经不在读了，停不停都一样。
-#[derive(Debug)]
-pub struct Cancel(oneshot::Receiver<()>);
-
-impl Cancel {
-    pub(crate) fn new(receiver: oneshot::Receiver<()>) -> Cancel {
-        Cancel(receiver)
-    }
-
-    /// 等到被叫停。
-    #[expect(
-        clippy::let_underscore_must_use,
-        reason = "明着叫停和放下了一个意思：都是叫停"
-    )]
-    pub async fn wait(self) {
-        let _ = self.0.await;
     }
 }
 

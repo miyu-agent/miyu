@@ -157,6 +157,11 @@ impl Turning {
         &self.current
     }
 
+    /// 照会话这时的目录 `dir` 取一份这一刻的，不换这一轮的（施工 MC-1：换了模型还没开回合的，照它预演给头看）。
+    pub(crate) async fn peek(&self, dir: String) -> TurnConfig {
+        take(&self.configs, dir).await
+    }
+
     /// 回合开始了：照会话这时的目录 `dir` 换一份新的。
     pub(crate) async fn turn(&mut self, dir: String) {
         self.current = take(&self.configs, dir).await;

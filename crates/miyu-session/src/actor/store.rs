@@ -153,6 +153,8 @@ impl Actor {
         }
         self.goal_run.note(&events);
         self.follow_context(&events);
+        // 人换了模型、思考强度：给头看的当场照预演的换（施工 MC-1，`model/foresee.rs`）。
+        self.follow_configured(&events).await;
         // 内核截了模型编的下一轮的，记一行（施工 FT-1）。
         forged::note(&events);
         // 阻塞线程带着会话的 span：那边记的 `session index not updated` 也有会话编号（施工 3-8 七补）。

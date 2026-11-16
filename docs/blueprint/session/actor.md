@@ -73,7 +73,7 @@
 | `oneshot()` | 一次性的会话：`miyu ask` 开的（施工 C-5，`cross-session.md` 第三条第 4 款）：`send_message` 发给它的时候，照它和 `watched()` 决定说送到了还是存下了 |
 | `watched()` | 这时有没有至少一个头订阅着（施工 C-5）：和 `busy()` 一样是一面共用的旗，拿着订阅的头从没有到有、从有到没有时（见下面「人的那条收件箱」第 6 条）一起写；造会话、载入以后是假的，和内核一样当没人看着 |
 | `limits()` | 给头看的限额：窗口、压缩线（`kernel/session.md` 的 `ContextLimits`）。造会话、载入时交完限额向内核要的；和 actor 共用（`Shown`），钉住的池出错换了成员（施工 8-9，第 7 条第 8 款）、回合开始重新解析换了的（施工 8-10，第 4 条「跑回合开始的挂接点」）跟着换；协议照它回 `subscribe`（`protocol.md`，施工 6-3 补） |
-| `next()` | 会话接下来请求的模型（`Next`，施工 8-10）：引用、接下来发给谁（轮换的池、解析不出的没有）、那个模型真用的思考强度（施工 8-18）。和 `limits()` 住在同一份 `Shown` 里，一起写；协议照它写 `subscribe` 回应的 `model` |
+| `next()` | 会话接下来请求的模型（`Next`，施工 8-10）：引用、接下来发给谁（轮换的池、解析不出的没有）、那个模型真用的思考强度（施工 8-18）。和 `limits()` 住在同一份 `Shown` 里，一起写；协议照它写 `subscribe` 回应的 `model`、照它查 `session.quota`。人换了模型、思考强度还没开回合的，是照会话记着的预演的那一份（施工 MC-1，`Shown::foreseen`，`actor/model/foresee.rs`：带 `model`、`effort` 的 `session.policy_changed` 落盘前照这一刻的配置问 `ModelPort::upcoming`，变了推 `model.changed`，回合开始重新解析前清掉；`models.md`「怎么走」第六条第 3 条第 5 款） |
 | `memory_room()` | 这个会话的记忆放在哪一间（施工 R-3 补，`memory.md`「协议」）：造会话、载入时照范围定的，以后不变；范围 `off` 的、核心没交记忆的没有。协议的 `memory.*`、`/remember` 照它找 |
 | `command(编号, 谁, 命令)` | 发一个命令，等回应：接受的，它产生的事件落了盘才回；拒绝的当场回。编号由发的一方生成，同一个编号只生效一次（`kernel/session.md`） |
 | `subscribe()` | 订阅：从这一刻起的推送。施工 9-6 上起订阅带着同一步里拿的「当前的」几样（`Subscription::current()`，`Current`）：人设的权限（内核的 `permission()`）、还在跑的任务（内核的 `running_started()`，账本记着派它的标题）、累计的（`Tally`：请求、四项用量、照币种的金额、没金额的次数，口径同用量汇总的一行；压缩的检查点、带 `first_difference` 的请求各几个）。累计的住在 `Shown` 里：载入时照整份日志算一次，每落一批盘、写之前加上这一批（写完、内核记下落了盘之前收件箱不动，订阅插不进来）；造会话时是空的 |

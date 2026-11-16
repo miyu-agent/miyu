@@ -16,6 +16,7 @@
 
 use std::sync::Arc;
 
+use miyu_config::Values;
 use miyu_kernel::id::{ModelName, ProviderId};
 use miyu_kernel::origin::Model;
 use miyu_kernel::session::Replaced;
@@ -23,7 +24,7 @@ use miyu_models::pools::Member;
 use miyu_models::provider;
 use miyu_models::reference::{Resolved, resolve};
 
-use super::{Route, nothing};
+use super::{ModelData, Route, nothing};
 use crate::TARGET;
 use crate::config::TurnConfig;
 
@@ -38,10 +39,6 @@ impl Route {
     ) -> Option<Replaced> {
         let values = config.resolved.values();
         let data = &self.shared.data;
-        let resolve = |text: &str| {
-            data.with(|knowledge| resolve(&values, knowledge, text))
-                .ok()
-        };
         let mut pinned = self.lock();
         pinned.config = Arc::clone(config);
         // 内核没记引用的跟着这一轮的 `models.chat`（施工 8-10 再补：人能回到「跟着配置」）：配置换了，这一轮就换。
@@ -54,41 +51,24 @@ impl Route {
             pinned.member = None;
         }
         let mut replaced = None;
-        let renamed = pinned
-            .reference
-            .as_deref()
-            .and_then(|text| renamed(data, text))
-            .and_then(|text| resolve(&text).map(|resolved| (text, resolved)));
-        let direct = pinned.reference.as_deref().and_then(resolve);
-        let resolved = match (direct, renamed) {
-            (Some(resolved), _) => Some(resolved),
-            (None, Some((to, resolved))) => {
-                tracing::info!(target: TARGET, "model renamed");
-                replaced = recorded.map(|from| Replaced {
-                    from: from.to_string(),
-                    to: to.clone(),
-                });
-                pinned.reference = Some(to);
-                pinned.member = None;
-                Some(resolved)
-            }
-            (None, None) => {
-                let chat = provider::chat(&values);
-                let fallback = chat.as_deref().and_then(resolve);
-                if let (Some(_), Some(to)) = (&fallback, chat) {
+        let settled = settle(data, &values, pinned.reference.as_deref());
+        if let Some(to) = settled.to {
+            match settled.renamed {
+                true => tracing::info!(target: TARGET, "model renamed"),
+                false => {
                     if let Some(from) = &pinned.reference {
                         tracing::info!(target: TARGET, from = from.as_str(), to = to.as_str(), "model fallback");
                     }
-                    replaced = recorded.map(|from| Replaced {
-                        from: from.to_string(),
-                        to: to.clone(),
-                    });
-                    pinned.reference = Some(to);
-                    pinned.member = None;
                 }
-                fallback
             }
-        };
+            replaced = recorded.map(|from| Replaced {
+                from: from.to_string(),
+                to: to.clone(),
+            });
+            pinned.reference = Some(to);
+            pinned.member = None;
+        }
+        let resolved = settled.resolved;
         // 池不用会话记的那一档（SM-1 补）：成员各照各的配置；换回模型又用上。
         let effort = effort.filter(|_| !matches!(resolved, Some(Resolved::Pool(_))));
         pinned.effort = effort.map(str::to_string);
@@ -108,8 +88,45 @@ impl Route {
     }
 }
 
+/// 引用解析到哪（[`settle`]）：回合开始照它换（[`Route::begin`]），换了还没开回合的照它预演（施工 MC-1，`route/upcoming.rs`）。
+pub(super) struct Settled {
+    /// 换成的引用：供应商改过名的新编号、退回的 `models.chat`。照原样解析得出的、退不回去的没有。
+    pub(super) to: Option<String>,
+    /// `to` 是改过名的新编号（不是退回的）。
+    pub(super) renamed: bool,
+    /// 解析出的。都解析不出的没有。
+    pub(super) resolved: Option<Resolved>,
+}
+
+/// 引用 `reference` 照这一轮的配置 `values` 解析到哪（见模块的说明）：照原样解析得出的照它；解析不出、供应商改过名的换成新
+/// 编号；还解析不出的退回 `models.chat`，它也解析不出的不退。只查，不记、不改钉着的。
+pub(super) fn settle(data: &ModelData, values: &Values, reference: Option<&str>) -> Settled {
+    let resolve = |text: &str| data.with(|knowledge| resolve(values, knowledge, text)).ok();
+    let renamed = reference
+        .and_then(|text| renamed(data, text))
+        .and_then(|text| resolve(&text).map(|resolved| (text, resolved)));
+    let direct = reference.and_then(resolve);
+    let (to, renamed, resolved) = match (direct, renamed) {
+        (Some(resolved), _) => (None, false, Some(resolved)),
+        (None, Some((to, resolved))) => (Some(to), true, Some(resolved)),
+        (None, None) => {
+            let chat = provider::chat(values);
+            let fallback = chat.as_deref().and_then(resolve);
+            match (fallback, chat) {
+                (Some(fallback), Some(to)) => (Some(to), false, Some(fallback)),
+                _ => (None, false, None),
+            }
+        }
+    };
+    Settled {
+        to,
+        renamed,
+        resolved,
+    }
+}
+
 /// 引用 `text` 指的供应商改过名的（施工 8-34）：换成新编号的引用；池、没改过名的没有。
-fn renamed(data: &super::ModelData, text: &str) -> Option<String> {
+fn renamed(data: &ModelData, text: &str) -> Option<String> {
     let (provider, model) = text.split_once('/')?;
     if provider.starts_with('@') {
         return None;

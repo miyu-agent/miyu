@@ -36,6 +36,7 @@
 //!   （`route/sight.rs`）。
 //! - 会话的上下文上限（施工 CTX-1，设计 68）：造端口时收下内核从日志算的，变了 actor 当场交；交限额时窗口取模型的和它里小的。
 //! - 供应商的额度（施工 QU-1，`route/quota.rs`）：一轮结束在后台查一次上一次解析出来的那一家，档案没写查额度接口的不查。
+//! - 换了还没开回合的（施工 MC-1，`route/upcoming.rs`）：照下一个回合开始会怎么解析预演一遍给头看，不改钉着的。
 
 mod base;
 mod choice;
@@ -59,6 +60,7 @@ pub(crate) mod shared;
 mod side;
 mod sight;
 mod turn;
+mod upcoming;
 
 pub use driver_port::{Broken, Declared, DriverPort, NotYet, Pending as DriverPending};
 pub use endpoint::Missing;
@@ -282,6 +284,15 @@ impl ModelPort for Route {
 
     fn effort(&self) -> Option<EffortInUse> {
         self.shown_effort()
+    }
+
+    fn upcoming(
+        &self,
+        config: &TurnConfig,
+        reference: Option<&str>,
+        effort: Option<&str>,
+    ) -> Option<crate::shown::Next> {
+        self.foresee(config, reference, effort)
     }
 
     /// 一轮结束（施工 QU-1，`route/quota.rs`）：在后台查一次上一次解析出来的那一家的额度。

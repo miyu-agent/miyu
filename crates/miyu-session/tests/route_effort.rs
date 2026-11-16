@@ -116,8 +116,13 @@ async fn a_request_takes_the_configured_default_or_nothing() {
     );
     // 换模型以后用新模型自己的：`b/n` 没有默认，什么都不带。
     switch(&handle, "cmd-2", "b/n").await;
-    let changed = turn(&handle, "cmd-3").await;
-    assert_eq!(changed[0].effort, None);
+    let next = handle.next();
+    assert_eq!(
+        (next.model.is_some(), next.effort),
+        (true, None),
+        "给头看的当场是新模型的（施工 MC-1）：没有默认"
+    );
+    turn(&handle, "cmd-3").await;
     assert_eq!(
         sent(&second).last().map(String::as_str),
         Some("-"),

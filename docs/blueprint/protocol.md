@@ -256,7 +256,7 @@
 | `notices.claim` | 头认领发后台通知（`{}`，只给人的头）：核心照连接记、断了就放；`notices` 流的订阅回应有人认领时写 `claimed: true`，有没有人认领变了推 `notices.claimed`（施工 TR-1，托盘 `miyu-applet` 用，`docs/reference/connection.md`「`notices.claim`」） |
 | `prefs.get`、`prefs.set` | 界面包自己的设置（皮肤、配色这些），存在数据根里、跟着人走：读整份；照顶层的键并、`null` 删，交回整份，推给别的连接（施工 HP-1，下面「头自己的设置」） |
 | `session.set_workspace` | 换会话在哪个目录干活（施工 9-7 上） |
-| `session.configure` | 换模型、人格、预设、思考强度、钉的看图模型、钉的压缩触发线，下一个回合开始生效（施工 8-10，`models.md`「协议」；人格、预设施工 P-13；思考强度施工 SM-1；看图模型施工 VM-1；压缩触发线施工 CT-1）；会话的上下文上限，当场生效（施工 CTX-1） |
+| `session.configure` | 换模型、人格、预设、思考强度、钉的看图模型、钉的压缩触发线，下一个回合开始生效、换模型和思考强度给头看的当场换（施工 MC-1）（施工 8-10，`models.md`「协议」；人格、预设施工 P-13；思考强度施工 SM-1；看图模型施工 VM-1；压缩触发线施工 CT-1）；会话的上下文上限，当场生效（施工 CTX-1） |
 | `session.delete` | 删除会话：挪进回收处，留 7 天（施工 3-8 三补） |
 | `config.schema` | 配置清单，名字和说明照这个连接的语言（施工 8-2，`config.md`「协议」）；选项可以带 `note`：只有核心查得出的才有，头接在名字后面暗色写（施工 R-5 再补）；可以带 `available: false`：核心查得出用不了的才有，头画成灰的、选不了（施工 R-5 三补）（施工 5-15 再补的 `ticks` 随私密目录去掉了，施工 PV-RM） |
 | `config.get` | 最终值和来源，每一份文件在哪、版本，现在的全部问题；带 `cwd` 的算上那个目录的项目配置（施工 8-2）。`files` 多 `secrets`，只有 `file`；问题里有密钥文件的、引用取不到的（施工 8-5） |
@@ -622,7 +622,7 @@
 {"windows":[{"id":"rolling","label":"5 小时","percent":4,"status":"ok","resets_at":"2026-11-14T08:31:28.000Z"},{"id":"weekly","label":"每周","percent":12,"status":"ok","resets_at":"2026-11-17T00:00:00.000Z"},{"id":"monthly","label":"每月","percent":30,"status":"ok","resets_at":"2026-12-01T00:00:00.000Z"}]}
 ```
 
-1. 照会话接下来请求的那一家（`subscribe` 的 `model.endpoint`）。刚 `session.configure` 换了模型、还没开回合的，`subscribe` 的 `model` 下一个回合开始才换，这里照会话记着的引用、当场就是换成的那一家（施工 QU-2修，同 `effort` 照会话记着的引用查）；换成了池的，下一个回合开始钉了成员才有。那一家的档案没写查额度的接口、轮换的池（没有 `endpoint`）、这一家用不了、查不到（连不上、超时、不是 2xx、格式不对）的，回 `{}`，不报错。
+1. 照会话接下来请求的那一家（`subscribe` 的 `model.endpoint`，`Handle::next`）。刚 `session.configure` 换了模型、还没开回合的，那里当场就是换成的那一家（施工 MC-1 起 `subscribe` 当场照会话记着的引用预演，`session.configure` 第 4 条；QU-2修 在这里另算的一份收进了它）；换成了池的，下一个回合开始钉了成员才有。那一家的档案没写查额度的接口、轮换的池（没有 `endpoint`）、这一家用不了、查不到（连不上、超时、不是 2xx、格式不对）的，回 `{}`，不报错。
 2. 选方法、不随用量推送（主会话 QU-1 定）：额度不属于会话、只有一家有，推进 `view.status` 要每个会话的状态多一格、查完了还得另找时机推；头的用量框本来就是打开时问几次 `usage.query`，多问一次最顺。会话每轮结束核心在后台查过一次，60 秒内照它答，打开用量框多半不用等；过了 60 秒的当场查，最多等 10 秒，在后台答，不挡这个连接别的请求。
 3. `session` 写法不对、有别的参数：`bad_params`；没有这个会话：`session_not_found`。权限同 `session.recap`；关着的场所会话人的头只读地也能问（`sessions/peek.rs` 的 `READS`）。
 4. **余额**（施工 QU-2，2026-11-16 项目主人定：用 DeepSeek 官方供应商时用量面板里显示余额；头画一行「余额 ¥12.34」，有赠送的后面暗字「含赠送 ¥2.00」，不可用时整行变红，不画条）：回应多一格 `balance`，没查到的不带这一格。`windows`、`balance` 各是各的，一家只交其中一样，有了哪一格不影响另一格。只认官方地址的 DeepSeek 供应商（没写地址，或者字面地址的主机就是 `api.deepseek.com`）：经中转站跑 DeepSeek 模型的、地址是环境变量引用的不查，配置改了查余额的地址也一样（`models.md`「怎么走」第十七条第 8 条）。
@@ -1206,9 +1206,9 @@
 1. 一格都没写、写了空字（`""`）、类型不对的：`bad_params`，不找会话；`session` 不合写法的也是。
 2. 先找会话，找不到的回的是找不到；没在跑的照「会话表」载入。再照这时不算项目配置的最终值解析（和 `session.create` 的 `model` 一样；`vision` 同样，施工 VM-1）：解析不出的 `unknown_model`，什么都不记（一起写的别的格也不换），原话记一行 `DEBUG unknown model`。
 3. 和会话现在记着的一样的：什么都不记，照样回 `{}`。别的记一条 `session.policy_changed`，只写 `model`，`by` 取自连接，`cause` 是这一条的 `id`，回合进行中换的带上这个回合；落了盘才回应。
-4. 下一个回合开始时生效，一轮里前后一致；撤掉的回合里换的也算。生效的那一刻，订阅着的头收到 `model.changed`（`why` 是 `turn`），之后的 `subscribe` 带新的 `model`、限额。
+4. 显示当场变，请求下一轮变（施工 MC-1，2026-11-16 项目主人定「当场报新的」）：真发请求下一个回合开始照新的，一轮里前后一致；撤掉的回合里换的也算。给头看的当场换：落了盘、回应以前，核心照这一刻的配置预演下一个回合开始会怎么解析（改过名的照新编号，解析不出的退回 `models.chat`），订阅着的头收到一条 `model.changed`（`why` 是 `turn`），之后的 `subscribe`（切走再切回来、重连）、`view.status` 的 `model` 和 `session.quota` 照换成的。换成模型的带 `endpoint`、`model`，`effort` 照这一刻的配置、会话记的一档算得出的才带；换成池的只有 `ref`，下一个回合开始钉了成员才有 `endpoint`、`model`。限额（窗口、压缩线）下一个回合开始才换。下一个回合开始真解析了，和刚报的一样不再推；不一样的（池钉了成员、窗口变了、解析不出退回了）照旧推一条。换回钉着的那一个照钉着的报。换思考强度（第 6 条）同样当场报。预演着的时候这一轮里出错换了成员不推 `failover`：头看的是下一轮的。
 5. 以后别的临时开关（`04-核心协议.md` 第九节）加进来也是这个方法，参数至少写一个。
-6. **换思考强度**（施工 SM-1，设计 51，`kernel/session.md`「换思考强度」）：照会话这时的模型的档位查：同一条换了模型的是换成的那个（`model: null` 的是这一刻的 `models.chat`），没换的是会话记着的引用（`Handle::current` 的 `model`，SM-1 补：原来照 `subscribe` 的 `model.ref`，刚换了模型、还没开回合的那还是上一轮的；没记的照这一刻的 `models.chat`）；用着池的设不了，写了 `bad_params`（SM-1 补，项目主人 10-30），池里每个成员照它自己的配置。名字先规整（`none`、`disabled` 读成 `off`），不在里面的 `bad_params`，`data.field` 是 `effort`，原话记一行 `DEBUG unknown effort`，什么都不记（一起写的模型也不换）；`null` 不查。模型先换，再换思考强度（命令编号接 `/effort`），再换人格、预设。和现在一样的什么都不记；别的记一条 `session.policy_changed`，只写 `effort`（`{"level": …}`，`null` 照写），`by` 取自连接，回合进行中换的带上这个回合。下一个回合开始时生效：真发的那个模型有这一档的照它，没有的（换了模型、池里别的成员）照配置，不报错；换模型不清它。生效的那一刻 `model.changed`、之后的 `subscribe` 的 `effort.from` 是 `session`。
+6. **换思考强度**（施工 SM-1，设计 51，`kernel/session.md`「换思考强度」）：照会话这时的模型的档位查：同一条换了模型的是换成的那个（`model: null` 的是这一刻的 `models.chat`），没换的是会话记着的引用（`Handle::current` 的 `model`，SM-1 补：原来照 `subscribe` 的 `model.ref`，刚换了模型、还没开回合的那还是上一轮的；没记的照这一刻的 `models.chat`）；用着池的设不了，写了 `bad_params`（SM-1 补，项目主人 10-30），池里每个成员照它自己的配置。名字先规整（`none`、`disabled` 读成 `off`），不在里面的 `bad_params`，`data.field` 是 `effort`，原话记一行 `DEBUG unknown effort`，什么都不记（一起写的模型也不换）；`null` 不查。模型先换，再换思考强度（命令编号接 `/effort`），再换人格、预设。和现在一样的什么都不记；别的记一条 `session.policy_changed`，只写 `effort`（`{"level": …}`，`null` 照写），`by` 取自连接，回合进行中换的带上这个回合。下一个回合开始时生效（给头看的 `effort` 当场换，第 4 条，施工 MC-1）：真发的那个模型有这一档的照它，没有的（换了模型、池里别的成员）照配置，不报错；换模型不清它。生效的那一刻 `model.changed`、之后的 `subscribe` 的 `effort.from` 是 `session`。
 7. **换人格、预设**（施工 P-13，`16-人格与预设.md` Y5，`kernel/session.md`「换人格、预设」）：先查人格、预设在不在（`unknown_persona`、`persona_invalid`、`unknown_preset`），子代理（有父会话、不是分叉出来的）不能换，`bad_params`，`data.field` 是写了的那一格；都在模型那一条之前查完。模型先换，再换人格、预设（命令编号接 `/recast`）。有回合在进行的 `turn_running`；和现在一样的什么都不记。收下的记一条 `session.policy_changed`（`persona`、`preset`，`by` 是人），能压的马上单开一轮压缩。下一个回合开始真换：执行器照新的人格、预设重拼快照，记一条带 `policy` 的 `session.policy_changed`；记忆的范围照旧，跟着人格的从这一轮起在新人格那一间（以前记的留在原来那一间，换之前还没抽的几轮不再抽）；知识库照新人格查。`session.list`、`subscribe` 回应、会话状态的 `persona`、`preset` 照换成的写（人换了就算，不等真换上）。
 
 **`session.delete`**（施工 3-8 三补，`store.md` 第 12 条，`agents.md` 第七条第 5 条）
@@ -1388,7 +1388,7 @@ Markdown 的回应 `{"path" | "text", "bytes", "tokens", "upto", "redacted", "ch
 2. 不写 `after` 的：这个连接已经订阅着这个会话、还在推的，还是那一个，回应照样带限额；停了推的（掉了队、会话停了），换一个新的。写了 `after` 的总是换一个新的（「补发」第 6 条）。
 3. 取消订阅：停掉转发。不载入会话，没订阅过的也回 `{}`。
 4. 不写 `after` 的，订阅的回应不排在推送后面：会话正忙的，回应之前可能已经有这个会话的推送。写了 `after` 的排在补发的后面（「补发」第 2 条）。
-5. 限额、模型是造会话、载入时定的：会话 actor 把模型的限额交给内核以后，向内核要一份（`kernel/session.md` 的 `context_limits()`），连同端口的引用和接下来发给谁，`Handle` 带着它（`session/actor.md`）。会话中途会变：钉住的池出错换了成员、成了以后（施工 8-9），回合开始重新解析换了模型、钉着的没了、配置改了窗口的（施工 8-10），`Handle` 跟着换，之后的 `subscribe` 交新的，订阅着的头收到一条 `model.changed`（`models.md`「瞬时事件」，`why` 是 `failover` 或 `turn`）。
+5. 限额、模型是造会话、载入时定的：会话 actor 把模型的限额交给内核以后，向内核要一份（`kernel/session.md` 的 `context_limits()`），连同端口的引用和接下来发给谁，`Handle` 带着它（`session/actor.md`）。会话中途会变：钉住的池出错换了成员、成了以后（施工 8-9），回合开始重新解析换了模型、钉着的没了、配置改了窗口的（施工 8-10），人换了模型、思考强度当场照预演的（施工 MC-1，`session.configure` 第 4 条），`Handle` 跟着换，之后的 `subscribe` 交新的，订阅着的头收到一条 `model.changed`（`models.md`「瞬时事件」，`why` 是 `failover` 或 `turn`）。
 6. 压缩线由内核算好，和它自己判到线用的是同一条；头照 `window` 画「用量 / 窗口」、照 `compaction_line` 算离压缩还有多少，不照公式自己算（公式里的输出预留、余量在策略里）。
 7. 限额不进日志：头每次接进来（造完会话、中途接进一个在跑的会话、掉了队重新订阅、核心重启以后）都经 `subscribe`，从回应里拿（为什么见 `04-核心协议.md` 第九节「先做的几样怎么写」）；接着的时候变了的，照推过来的瞬时 `model.changed` 换（施工 8-9）。
 8. 订阅着就算这个头在看着这个会话（施工 7-9）：一次性的会话没有头订阅着，回报只记下、不叫醒她（`agents.md` 第三条第 3 条）。取消订阅、连接断了，就不算了；会话 actor 数着拿着订阅的头（`session/actor.md` 第 3 条），不进日志，协议上不另说。头要知道还有几个子代理没报、叫醒的那一轮会不会来，照推过来的事件自己数（`job.started`、`child.reported`、`job.messaged`，`cli/ask.md`「等子代理」），协议不另给：施工 7-9 照最简单、不加协议定。

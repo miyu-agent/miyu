@@ -337,7 +337,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 4. 和会话现在记着的一样：什么都不记，照样回 `{}`。不一样的，内核记一条 `session.policy_changed`，落了盘才回应；订阅着的先收到推送。模型、思考强度、人格和预设各记各的一条，照这个先后。`vision`（施工 VM-1）同 `model` 先解析（解析不出的 `unknown_model`，什么都不记，一起写的模型也不换），交给内核 `SetVision`，命令编号是这条请求的接 `/vision`，排在上下文上限后面、人格和预设前面。`view.status` 照会话这一刻的写 `vision`，钉了当场推，没钉的不写；`subscribe` 回应、`model.changed` 不带它。
 5. 以后别的临时开关（`04-核心协议.md` 第九节）加进来也是这个方法。
 
-**`subscribe`** 的回应多一格 `model`（8-10）：`{"ref":…,"endpoint":…,"model":…}`，是会话接下来请求的。轮换的池没有 `endpoint`、`model`。一个模型都没有的不写这一格。8-18 多一格 `effort`：`{"ref":…,"endpoint":…,"model":…,"effort":{"level":"high","from":"session"}}`，接下来那个模型真用的一档和从哪来：`session` 是会话记的那一档（施工 SM-1），`system` 是配置（照 `config.get` 说的来源，「怎么走」第十一条第 4 条）；请求里什么都不带的、轮换的池不写。会话刚换的一档下一个回合开始才算进来（重启以后订阅载入的照日志算，当场就是）。
+**`subscribe`** 的回应多一格 `model`（8-10）：`{"ref":…,"endpoint":…,"model":…}`，是会话接下来请求的。轮换的池没有 `endpoint`、`model`。一个模型都没有的不写这一格。8-18 多一格 `effort`：`{"ref":…,"endpoint":…,"model":…,"effort":{"level":"high","from":"session"}}`，接下来那个模型真用的一档和从哪来：`session` 是会话记的那一档（施工 SM-1），`system` 是配置（照 `config.get` 说的来源，「怎么走」第十一条第 4 条）；请求里什么都不带的、轮换的池不写。会话刚换的一档、刚换的模型当场照预演的写（施工 MC-1，「怎么走」第六条第 3 条第 5 款；原来下一个回合开始才算进来），请求照旧下一个回合开始照它。
 
 **`session.quota`**（查询，施工 QU-1）：会话接下来请求的那一家的额度，写法见 `protocol.md`「`session.quota`」、「怎么走」第十七条。
 
@@ -765,14 +765,14 @@ flowchart TB
    2. actor 先叫路由照这一回合的配置重新解析（`ModelPort::turn`，`route/turn.rs`）：内核交了引用的换成它；没有的照路由记在内存里的（造端口那一刻的 `models.chat`，「施工时定的」8-10）。引用解析不出的，退回 `models.chat`（第 4 条），记一行 `INFO model fallback`。解析出的端点、限额换掉路由里的：钉着的成员还在池里、会话的 key 还在的，照旧。限额变了交 `Input::Limits`。头看得到的（引用、接下来发给谁、窗口、压缩线）变了推 `model.changed`（`why` 是 `turn`）。
    3. 再跑各模块的挂接点，一起交回 `TurnStartHooksDone`，多一格 `replaced`：退回了默认的，是原来的引用和退回的引用。
    4. 内核收到 `replaced`，`from` 正是它现在的引用的（对不上的不理：交回来之前人又换了，人换的算数），在注入的事实前面追加 `session.policy_changed`：`model` 是退回的，`replaced` 是原来的，`by` 是内核，`cause` 是回合的，带这个回合。
-   5. 所以换模型、配置变了（新 key、新地址、池的成员）、新的目录、用出来的窗口，都在下一个回合开始时生效，一轮里前后一致（`02-内核.md` K3）。
+   5. 所以换模型、配置变了（新 key、新地址、池的成员）、新的目录、用出来的窗口，都在下一个回合开始时生效，一轮里前后一致（`02-内核.md` K3）。显示当场变，请求下一轮变（施工 MC-1，2026-11-16 项目主人定「当场报新的」）：人换了模型、思考强度（带 `model` 或 `effort` 的 `session.policy_changed` 落了盘），actor 照这一刻的配置预演下一个回合开始会怎么解析（`ModelPort::upcoming`，`route/upcoming.rs`：同第 2 款的解析，改过名的照新编号，解析不出的退回 `models.chat`；只查，不动钉着的成员、池的指针、限额），给头看的接下来请求的模型换成它（`Shown::foreseen`），变了推 `model.changed`（`why` 是 `turn`）。换成模型的带端点、模型，思考强度照这一刻的配置、会话记的一档算，算不出的不带；换成池的只有引用，钉了成员才有端点、模型；和钉着的一样的照钉着的。`subscribe`、`view.status` 的 `model`，`session.quota` 照的那一家（第十七条第 5 条）都是这一份，不另算。第 2 款真解析完，预演的清掉，和刚报的一样不再推。预演着的时候这一轮里出错换了成员不推 `failover`（头看的是下一轮的）。配置改了 `models.chat`、跟着它的会话照旧下一个回合开始才换。
    6. 手动压缩、清空单开的那一轮不跑挂接点，也就不重新解析：压缩照旧用上一轮的端点，fork 式摘要要复用的正是那段前缀（`09-压缩.md`）。
 4. **钉着的没了**（`15-模型与供应商.md` M7）：供应商从配置里删了、池删了或者空了。退回 `models.chat`，时间线上照那条 `session.policy_changed` 说明换成了哪个，不报错、不断开。`models.chat` 也解析不出的：不记，端口是「没有模型」，这一轮的请求当场 `no_model`。模型下架（供应商那边没了）现在认不出，请求照供应商的报错走（「还没有的」）。
 5. **换了模型以后**：
    - 用量的锚对不上新的端点和模型，整份本地估，已经有的规则（`compaction.md` 第一条第 1 条）。
    - 自动压缩暂停着的，解除：带 `model` 的 `session.policy_changed` 写在暂停后面，暂停不再算（`compaction.md` 第十条第 6 条「换一个模型」，照「压缩成功一次，以前的都写在它前面」那样只看写下的先后）。换过去以后再失败，从 0 数。
    - 思考块、私有数据跨家怎么带，照驱动（「驱动要守的约定」第 6 条）。
-6. **头看得到**：`subscribe` 的回应带 `model`。推送里的 `session.policy_changed` 是人换的、退回的记录。`model.changed` 是真换过去的那一刻。
+6. **头看得到**：`subscribe` 的回应带 `model`。推送里的 `session.policy_changed` 是人换的、退回的记录。`model.changed` 是给头看的接下来请求的模型、限额变了：人换了的当场一条（第 3 条第 5 款，施工 MC-1），真换过去时和刚报的不一样的再一条。
 
 **七、第一次接入**（8-11）
 
@@ -974,7 +974,7 @@ opencode 有两个端点：Zen（`https://opencode.ai/zen/v1`，按量付费）�
 2. **配置盖地址**：`[providers.<id>.quota] url = "…"`（`QuotaSettings`，设置页不画），同 `base_url` 盖档案的地址。格式只有档案知道：档案没写 `quota` 的一家，配置写了地址也不查。没开 `format` 的配置项：选项至少两个，等有第二种格式时再加。
 3. **头**：`Authorization: Bearer <这一家的 key>`（不照驱动的认证头：Go 的 Claude、MiniMax 走 `anthropic`，认证头是 `x-api-key`），档案另配的头照固定的种子 `quota` 换（额度不属于哪个会话，同一次性调用照用途），`User-Agent` 是客户端的 `miyu/<版本>`（Cloudflare 挡默认库的）。地址落在本机的不走代理，同拉列表。没有 key 的不查。
 4. **读**：`opencode-go` 的回应 `{"usage": {"rolling", "weekly", "monthly"}}`，每个窗口 `{"status", "percent", "resetsAt"}`；照 rolling、weekly、monthly 的先后交，没有的窗口不交；`percent` 原样（不是数的算写错），`status` 原样，`resetsAt` 照 RFC 3339 读（带不带小数秒、`Z` 还是时区偏移都认，`quota/instant.rs`），换成 UTC、交出去照时刻的写法 `2026-11-14T08:31:28.000Z`（读不出的算写错）。一个窗口都没有、有一个写错，整份当没有。
-5. **什么时候查**（`miyu-session` 的 `route/quota.rs`）：会话每轮结束（`turn.ended` 落了盘）路由在后台查一次上一次解析出来的那一家，不挡回合；协议的 `session.quota` 照会话接下来请求的那一家查：会话记着的引用（内核照日志算的，没记的跟着这一刻的 `models.chat`）和路由上一次解析的一样，照路由解析出的那一家（钉住的池照钉着的成员）；刚换了模型、还没开回合的，照引用写的那一家（改过名的照新编号），换成了池的下一个回合开始钉了成员才有（施工 QU-2修：原来照路由的，换了模型要等下一个回合才查对，重启才好）。同一家 60 秒内照上一次的（查不到的也算一次），同一时刻只有一个在查、后到的等它照它答；只在内存里，核心重启就清零。一次最多等 10 秒，响应体最多 64 KiB。
+5. **什么时候查**（`miyu-session` 的 `route/quota.rs`）：会话每轮结束（`turn.ended` 落了盘）路由在后台查一次上一次解析出来的那一家，不挡回合；协议的 `session.quota` 照会话接下来请求的那一家查：`subscribe` 的 `model.endpoint`（`Handle::next`），刚换了模型、还没开回合的已经是照会话记着的引用预演的（第六条第 3 条第 5 款，施工 MC-1；施工 QU-2修 原来在协议那一头另算一份，收进了它），钉住的池照钉着的成员，换成了池的下一个回合开始钉了成员才有。同一家 60 秒内照上一次的（查不到的也算一次），同一时刻只有一个在查、后到的等它照它答；只在内存里，核心重启就清零。一次最多等 10 秒，响应体最多 64 KiB。
 6. **查不到**：这一家用不了、没有 key、连不上、超时、回的不是 2xx、格式不对，一律当没有，记一行 `DEBUG quota unavailable`（`provider`、`error`），不报错、不告警。
 7. **协议** `session.quota {"session"}`（`protocol.md`「`session.quota`」）：`{"windows": [{id, label, percent, status, resets_at}…]}`，没有的 `{}`。名字照连接的语言（`core/human/<语言>.json` 的 `quota/window/<编号>`：5 小时、每周、每月）。
 8. **DeepSeek 的余额**（施工 QU-2；2026-11-16 项目主人定：用 DeepSeek 官方供应商时用量面板里显示余额，头画一行「余额 ¥12.34」，有赠送的后面暗字「含赠送 ¥2.00」，不可用时整行变红，不画条）：
@@ -1257,11 +1257,11 @@ mimo = ["xiaomi"]
 | `crates/miyu-session/tests/route_non_api.rs`、`quota_log.rs`、`once_side.rs` 的 `an_out_of_quota_normal_pool_falls_back_too`（Q-4 中） | 池里第一家回 200 的 HTML 页、空的响应体、不是应答的 JSON，三家驱动都报可重试、换到下一个；402 额度用完换到别的成员，冷却照供应商说的两小时，记 `WARN provider out of quota` 带供应商、模型、冷却到的时刻；一次性旁路请求遇到额度用完照样退到会话的模型 |
 | `crates/miyu-session/tests/once_probe.rs`（Q-4 下） | 两个成员都失败过、都冷却过了还没成功过：只探最早恢复的那一个，它又失败就到此为止、不换到另一个；下一次探另一个，成了。有健康的成员时照旧，出错换下一个 |
 | `crates/miyu-kernel/src/session/tests/scenario/models.rs`、`session/tests/configure.rs`、`scenario/breaker.rs`、`scenario/manual.rs` | `Configure`：一样的不记、落了盘才回应、回合进行中的下一轮生效、撤掉的回合里的也算、载入照日志算，回合开始交引用，`replaced` 记在注入前面、对不上的不理，`models.chat` 也没有的不记，`failover` 不管分类当场再来、数进 5 次，`cooling`、`no_model`，换模型解除压缩的暂停、失败从 0 数（`breaker.rs`），手动压缩、清空那一轮不交引用（`manual.rs`） | 8-6、8-9、8-10 |
-| `crates/miyu-session/tests/route_turn.rs`、`fallback_log.rs` | 回合开始重新解析：换了模型的下一轮发给新的、推 `model.changed`（`turn`）、`Handle` 跟着换；钉着的没了退回 `models.chat`、内核记下、以后钉在它上面；`models.chat` 也没有的不记、`no_model`；只改窗口的下一轮用上；换成轮换的池推的没有端点；载入照换过的引用；`model fallback` 那一行 | 8-10 |
+| `crates/miyu-session/tests/route_turn.rs`、`fallback_log.rs` | 回合开始重新解析：换了模型的下一轮发给新的、推 `model.changed`（`turn`）、`Handle` 跟着换；钉着的没了退回 `models.chat`、内核记下、以后钉在它上面；`models.chat` 也没有的不记、`no_model`；只改窗口的下一轮用上；换成轮换的池推的没有端点；载入照换过的引用；`model fallback` 那一行。施工 MC-1：换了模型、不说话，`Handle::next` 当场是新的、推一条 `model.changed`，下一轮请求发给新的、一样的不再推，换回去照钉着的；换成钉住的池当场只有引用、说一轮照钉的成员再推（`route_effort*.rs` 里给头看的一档跟着当场换） | 8-10、MC-1 |
 | `crates/miyu-session/tests/route_turn.rs`（8-34 那一条） | 供应商改了名：钉着旧编号的下一轮照新编号发，内核记一条（`replaced` 是旧的），不退回 `models.chat` | 8-34 |
 | `crates/miyu-cli/tests/ask.rs` | `miyu ask --model`：新开的照它造，接着的先换（`@池`）再说，换不成的（连同以前的挡位名）退出码 1、不发话 | 8-10、8-8 补 |
 | `crates/miyu-kernel/src/event/*/tests.rs`、`crates/miyu-kernel/tests/samples.rs` | 新的几格读写一字不差，以前的日志照读，样本对得上（8-8：`session/tests.rs` 的 `session.created.model`，写在最后、`null` 当没有、不是字的读不进来） | 8-8、8-10、8-15 |
-| `crates/miyu-endpoint/tests/models.rs`、`models_pools.rs` | `model.list` 的形状、来源、状态，用不了的一家、手写指定不存在的、只看一家、`unknown_provider`，`refresh` 拉完再答、不写的在后台拉（8-7）；冷却：模型照能用的 key 里最好的那个、都在冷却的带最早恢复的、认证失败只停那个模型、key 照旧是 `ok`、取不到值的 key 不算（8-9，8-9 修）；`models_pools.rs`（8-8）：`pools`（8-8 补多 `subagent`、`description`，没有 `tiers`）、`uses` 的形状，用途池里点名的模型也列，`session.create` 的 `model` 记下解析出的、几种 `unknown_model`（连同以前的挡位名）什么都不造、不是字的 `bad_params`，真核心派子代理时子会话照 `pool`、抄父会话记下的，`bad_reference` 的问题、话、`config_errors`，`config.check` 照新的字查；`session.configure` 记下解析出的、先推再回应、一样的不记、参数不对和解析不出的什么都不记，`subscribe` 的 `model` 照真路由（8-10，`models_pools.rs`；`limits.rs` 照蓝图的例子一字不差）；`model.list` 的 `facts` 里来源是配置的带 `layer`（`models.rs`，8-7（补））；`models` 只列写到了的、没配的供应商不列、写法不对的 `bad_params`（`models_only.rs`，V-6 上） | 8-7 到 8-10；8-7（补）；V-6 上 |
+| `crates/miyu-endpoint/tests/models.rs`、`models_pools.rs` | `model.list` 的形状、来源、状态，用不了的一家、手写指定不存在的、只看一家、`unknown_provider`，`refresh` 拉完再答、不写的在后台拉（8-7）；冷却：模型照能用的 key 里最好的那个、都在冷却的带最早恢复的、认证失败只停那个模型、key 照旧是 `ok`、取不到值的 key 不算（8-9，8-9 修）；`models_pools.rs`（8-8）：`pools`（8-8 补多 `subagent`、`description`，没有 `tiers`）、`uses` 的形状，用途池里点名的模型也列，`session.create` 的 `model` 记下解析出的、几种 `unknown_model`（连同以前的挡位名）什么都不造、不是字的 `bad_params`，真核心派子代理时子会话照 `pool`、抄父会话记下的，`bad_reference` 的问题、话、`config_errors`，`config.check` 照新的字查；`session.configure` 记下解析出的、先推再回应、一样的不记、参数不对和解析不出的什么都不记，`subscribe` 的 `model` 照真路由、换了模型当场推一条 `model.changed`、再订阅照换成的（8-10，MC-1，`models_pools.rs`；`limits.rs` 照蓝图的例子一字不差）；`model.list` 的 `facts` 里来源是配置的带 `layer`（`models.rs`，8-7（补））；`models` 只列写到了的、没配的供应商不列、写法不对的 `bad_params`（`models_only.rs`，V-6 上） | 8-7 到 8-10；8-7（补）；V-6 上 |
 | `crates/miyu-session/tests/route_retire.rs`、`crates/miyu-endpoint/tests/models_retire.rs` | 下架的模型（8-23）：池的成员回 404、当场拉的列表里没有它的交「下架了」，列表里还有、拉不成的交「没下架」，别的错、直接写着的不查不拉；端点从配置里写着它的池都拿掉、推 `config.changed`（`by` 是内核）、删空了的池留着 `usable` 是假、`models.chat` 不动，列表里还有的不动 | 8-23 |
 | `crates/miyu-models/src/onboard/tests.rs` | 找哪些变量（只有一个名字的、几家同名一家一条）、只探本机能用的几家、档案的一家也列、名字档案的先；搜（编号、名字、不分大小写）、排（能用的先、名字不分大小写）、`limit`；推荐（够格的里发布最晚的、没日期的排后、一样的取靠前的、都不够格取第一个、`deprecated`、窗口、工具）；候选写成的最终值和写进配置的一样推、`{value}` 的引用不和真的密钥撞名 | 8-11 |
 | `crates/miyu-endpoint/tests/providers.rs`、`providers_test.rs` | `provider.detect` 照交进来的环境找、值不交、空白的不算设了，本机的服务几家一起探（假服务器等三家都到了才回，挨个探的一家都探不到）、300 毫秒没回的、回错的、读不出的当没有，配好的写 `configured`（变量、地址），`looked_for` 不带值；`provider.catalog` 搜、排、`supported`、`local` 的标法、`limit`、参数不对，`featured` 照资源的先后、名字照语言、中文挑国内的、目录里没有的跳过、不看 `query` 和 `limit`（8-11 再补）；`provider.test`（`providers_test.rs`）对假服务器：成了交 `first_token_ms`、收到第一段正文就停（假服务器停住不动也照样成了）、只有一条 user 没有工具、配好的存列表、候选不存、`{value}` 去掉前后空白，列不出的照目录列，认证失败交分类、状态、原话，推荐的不是列表第一个，推不出的 `config`，没有模型可试的 `list`，参数不对、`unknown_provider` | 8-11 |
@@ -1604,7 +1604,7 @@ SM-1 施工时照推荐定的技术细节（2026-10-30 施工时定，写进了�
 | `session.configure` 查档位照「会话接下来请求的引用」（`Handle::next().reference`），池是成员的档位合起来（SM-1 补改成照会话记着的引用查、池一律拒，项目主人 10-30 定） | 头底栏显示的就是它；池里的成员各有各的档位，合起来哪一档都设得上，真发的成员没有的照配置（第十一条第 3 条） | 照钉着的那一个成员查：换了成员就设不上；池一律拒：池里的会话设不了 |
 | 档位不在里面的回 `bad_params`、`data.field` 是 `effort`，不恢复 8-18 的 `unknown_effort` 原因码 | 照施工单的写法；`data.field` 说清了是哪一格 | 加回 `unknown_effort`：多一个原因码、给人看的字 |
 | 限额里那一块给模型看的事实（施工 E-M 的 `Identity.effort`）照会话的一档改（`Routes::stamp`） | 告诉模型的和真发的一致 | 不改：会话设了 `max`，模型看到的还是配置的 `low` |
-| 会话刚换的一档下一个回合开始才进 `subscribe`、`model.changed`，不当场推 | 和换模型一样（`model.changed` 只在回合开始、出错换成员时推）；不碰 actor 的追加路径 | 落盘时当场推：要改 actor.rs |
+| 会话刚换的一档下一个回合开始才进 `subscribe`、`model.changed`，不当场推（施工 MC-1 改成落盘时当场照预演的推，同换模型：「怎么走」第六条第 3 条第 5 款） | 和换模型一样（`model.changed` 只在回合开始、出错换成员时推）；不碰 actor 的追加路径 | 落盘时当场推：要改 actor.rs |
 
 8-20 施工时照推荐定的技术细节（2026-10-02 施工时定，写进了正文「怎么走」第十二条、「协议」`model.call`）：
 

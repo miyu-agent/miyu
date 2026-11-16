@@ -36,7 +36,7 @@ impl Route {
 
 impl Routes {
     /// 限额里的模型 `model` 照配置 `config` 的资料：还没有模型的（`none`）、那一家这时用不了的没有。
-    fn facts_of(&self, config: &TurnConfig, model: &Model) -> Option<Facts> {
+    pub(super) fn facts_of(&self, config: &TurnConfig, model: &Model) -> Option<Facts> {
         if model.endpoint.as_str() == NONE {
             return None;
         }

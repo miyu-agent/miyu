@@ -254,7 +254,7 @@
 
 ## `session.quota`
 
-这个会话接下来请求的那一家供应商的额度：几个窗口各用了百分之几、什么时候重置，或者账户里还有多少钱。只有查得到额度的供应商有（现在是 opencode Go 的窗口、DeepSeek 官方的余额），用量框里照它画。会话每说完一轮核心在后台查一次，同一家 60 秒内照上一次的。刚换了模型、还没开回合的，照换成的那一家查（换成池的下一轮开始才有）。
+这个会话接下来请求的那一家供应商的额度：几个窗口各用了百分之几、什么时候重置，或者账户里还有多少钱。只有查得到额度的供应商有（现在是 opencode Go 的窗口、DeepSeek 官方的余额），用量框里照它画。会话每说完一轮核心在后台查一次，同一家 60 秒内照上一次的。照 `subscribe` 回应的 `model.endpoint` 那一家：刚换了模型、还没开回合的就是换成的那一家（换成池的下一轮开始才有）。
 
 **参数**：`session`（必写）。
 
@@ -442,7 +442,7 @@
 
 ## `session.configure`
 
-换这个会话用的模型、看图模型、人格、预设、思考强度、压缩触发线，下一轮开始生效；上下文上限下一次请求起生效。
+换这个会话用的模型、看图模型、人格、预设、思考强度、压缩触发线，下一轮开始生效；上下文上限下一次请求起生效。换模型、思考强度显示当场变、请求下一轮变：`subscribe` 回应、`view.status` 的 `model` 当场照换成的写，切到别的会话再切回来、重连也是新的。
 
 **参数**：`session`；下面七格至少写一格：
 - `model`：`<供应商>/<模型>` 或 `@<池>`；`null` 是不再钉着哪一个，回到跟着配置的 `models.chat`（每一轮照那时的配置，配置换了跟着换）。
@@ -455,7 +455,7 @@
 
 换人格、预设时先压缩一轮：核心马上照旧人格把前面的对话压成摘要，下一轮换上新的，从摘要接着聊。跟着人格的记忆从这一轮起记在新人格那一间，以前的留在原来那一间。
 
-**回应**：`{}`。变了的推 `session.policy_changed`；换模型、思考强度生效的那一刻推 `model.changed`；换了上下文上限，`subscribe` 回应、`view.status` 的 `limits` 当场换（`window` 是生效的窗口，`context` 是上限，没设的不写）。之后 `subscribe` 回应、`model.changed` 的 `model.effort` 是 `{"level", "from"}`：`from` 是 `session` 的是会话记的这一档，`system` 的是配置。`session.list`、`subscribe` 回应里的 `persona`、`preset` 马上照换成的写（换成无工具的写 `preset: null`、`no_tools: true`）。钉了看图模型的，`view.status` 马上带 `vision`，去掉了的不写；钉了压缩触发线的同样马上带 `compaction_line`，下一轮开始 `limits.compaction_line` 照它换。
+**回应**：`{}`。变了的推 `session.policy_changed`；换了模型、思考强度当场推一条 `model.changed`（`why` 是 `turn`）：换成模型的带 `endpoint`、`model`，`effort` 算得出的才带，换成池的只有 `ref`，窗口、压缩线照旧；下一轮开始真换过去时和刚推的一样不再推，不一样的（池钉了成员、窗口变了）再推一条；换了上下文上限，`subscribe` 回应、`view.status` 的 `limits` 当场换（`window` 是生效的窗口，`context` 是上限，没设的不写）。之后 `subscribe` 回应、`model.changed` 的 `model.effort` 是 `{"level", "from"}`：`from` 是 `session` 的是会话记的这一档，`system` 的是配置。`session.list`、`subscribe` 回应里的 `persona`、`preset` 马上照换成的写（换成无工具的写 `preset: null`、`no_tools: true`）。钉了看图模型的，`view.status` 马上带 `vision`，去掉了的不写；钉了压缩触发线的同样马上带 `compaction_line`，下一轮开始 `limits.compaction_line` 照它换。
 
 **出错**：`bad_params`（一格都没写、空字符串、类型不对；子代理换人格、预设，`data.field` 是那一格；`effort` 不在这时的模型的档位里，`data.field` 是 `effort`，什么都不换；`context` 不是非负整数；`context` 太小，`data.field` 是 `context`、`data.min` 是最少要多少，什么都不换；`compaction_line` 不是整数，或者不在 20 到 95 里，`data.field` 是 `compaction_line`，什么都不换）；`unknown_model`：`model`、`vision` 解析不出，什么都不换；`unknown_persona`；`unknown_preset`；`turn_running`：换人格、预设时有回合在进行（等这一轮做完）。
 

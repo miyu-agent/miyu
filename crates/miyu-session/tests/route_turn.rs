@@ -1,7 +1,8 @@
 //! 回合开始时重新解析（`docs/blueprint/models.md`「怎么走」第六条，`session/actor.md` 第 8 条，施工 8-10）：换了模型的下一轮
 //! 发给新的、推 `model.changed`（`why` 是 `turn`）、限额和给头看的跟着换；钉着的没了退回这一轮的 `models.chat`，内核记一条、
 //! 以后钉在它上面；`models.chat` 也没有的不记、当场 `no_model`；只改了窗口的下一轮用上；换成轮换的池推的没有端点；载入
-//! 以后照换过的说。
+//! 以后照换过的说。换了模型给头看的当场是新的（施工 MC-1）：`Handle::next`、`model.changed` 当场照会话记着的，请求照旧下一轮发给
+//! 新的；下一轮真解析了一样的不再推，换成池的钉了成员再推。
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -13,17 +14,17 @@ use crate::support::{Home, Lines, Opening, ask, say, stop, until_turn_ends, watc
 use miyu_http::testkit::Server;
 use miyu_kernel::event::{Body, ChangeWhy, ErrorClass, ModelChanged, PolicyChanged, TransientBody};
 use miyu_kernel::session::Command;
-use miyu_session::{ConfigSource, Handle, Models, Pushed};
+use miyu_session::{ConfigSource, Handle, Models, Pushed, Subscription};
 use miyu_tool::Catalog;
 
 /// 两家 `a`、`b`，都不带 key；`b` 的 `n` 窗口 32000，`a` 的 `m` 窗口 `window`。`models.chat` 是 `chat`；池 `p` 是 `a/m`、
-/// `b/n`，轮换。`only_b` 的，配置里没有 `a`、池。
+/// `b/n`，轮换；池 `q` 是 `b/n`、`a/m`，钉住（施工 MC-1）。`only_b` 的，配置里没有 `a`、池。
 fn config(first: &Server, second: &Server, window: u64, chat: &str, only_b: bool) -> String {
     let a = format!(
         "[providers.a]\ndriver = \"openai-chat\"\nbase_url = \"{}\"\n\n[providers.a.models.m]\nwindow = {window}\n\n",
         first.base_url
     );
-    let pool = "[pools.p]\nmodels = [\"a/m\", \"b/n\"]\nstrategy = \"rotate\"\n";
+    let pool = "[pools.p]\nmodels = [\"a/m\", \"b/n\"]\nstrategy = \"rotate\"\n\n[pools.q]\nmodels = [\"b/n\", \"a/m\"]\n";
     let b = format!(
         "[providers.b]\ndriver = \"openai-chat\"\nbase_url = \"{}\"\n\n[providers.b.models.n]\nwindow = 32000\n\n[models]\nchat = \"{chat}\"\n\n",
         second.base_url
@@ -68,6 +69,24 @@ fn changes(pushed: &[Arc<Pushed>]) -> Vec<ModelChanged> {
             Pushed::Events(_) | Pushed::Goal { .. } => None,
         })
         .collect()
+}
+
+/// 订阅这一刻已经收着的 `model.changed`，不等。
+fn changes_now(subscription: &mut Subscription) -> Vec<ModelChanged> {
+    let mut pushed = Vec::new();
+    while let Some(next) = subscription.try_next() {
+        pushed.push(next.expect("订阅没断"));
+    }
+    changes(&pushed)
+}
+
+/// 接下来请求的模型：引用，和发给哪一家的哪个模型。
+fn next_of(handle: &Handle) -> (Option<String>, Option<String>) {
+    let next = handle.next();
+    (
+        next.reference,
+        next.model.map(|m| format!("{}/{}", m.endpoint, m.model)),
+    )
 }
 
 /// 主请求发给了哪一家，照先后。
@@ -120,12 +139,12 @@ async fn a_new_model_is_used_from_the_next_turn_and_announced_once() {
     configure(&handle, "cmd-2", "b/n").await;
     assert_eq!(
         handle.next().reference.as_deref(),
-        Some("a/m"),
-        "下一个回合开始才换"
+        Some("b/n"),
+        "给头看的当场换（施工 MC-1），请求下一个回合开始才换"
     );
     let pushed = turn(&handle, "cmd-3").await;
     let changed = changes(&pushed);
-    assert_eq!(changed.len(), 1, "回合开始推一条");
+    assert_eq!(changed.len(), 1, "回合开始窗口换了，推一条");
     assert_eq!(changed[0].why, ChangeWhy::Turn);
     assert_eq!(changed[0].reference.as_deref(), Some("b/n"));
     assert_eq!(
@@ -313,4 +332,90 @@ async fn a_loaded_session_speaks_of_the_model_it_was_switched_to() {
         "载入照日志算的引用造路由"
     );
     assert_eq!(loaded.limits().window, Some(32_000));
+}
+
+/// 施工 MC-1：换了模型、不说话，给头看的当场是新的、推一条 `model.changed`；再说一轮请求发给新的，和刚报的一样的不再推。
+#[tokio::test]
+async fn a_new_model_is_shown_at_once_and_sent_from_the_next_turn() {
+    let (first, second) = (
+        Server::start(hellos(8)).await,
+        Server::start(hellos(8)).await,
+    );
+    let mut home = Home::new();
+    home.configs = configs(&config(&first, &second, 32_000, "a/m", false), &[]);
+    let routes = routes(serde_json::json!({}), Duration::from_secs(60));
+    let handle = create(&home, &routes, "a/m").await;
+    turn(&handle, "cmd-1").await;
+    let mut pushes = watch(&handle).await;
+    configure(&handle, "cmd-2", "b/n").await;
+    assert_eq!(
+        next_of(&handle),
+        (Some("b/n".to_string()), Some("b/n".to_string())),
+        "重新订阅照新的答"
+    );
+    let changed = changes_now(&mut pushes);
+    assert_eq!(changed.len(), 1, "换了当场推一条：{changed:?}");
+    assert_eq!(changed[0].why, ChangeWhy::Turn);
+    assert_eq!(
+        (
+            changed[0].reference.as_deref(),
+            changed[0].endpoint.as_ref().map(|e| e.as_str()),
+            changed[0].model.as_ref().map(|m| m.as_str())
+        ),
+        (Some("b/n"), Some("b"), Some("n"))
+    );
+    assert_eq!(endpoints(&home, &handle), ["a"], "还没说话，请求一条没发");
+    let pushed = turn(&handle, "cmd-3").await;
+    assert!(changes(&pushed).is_empty(), "真解析了和刚报的一样，不再推");
+    assert_eq!(endpoints(&home, &handle), ["a", "b"], "下一轮发给新的");
+    // 换回去：当场照钉着的报。
+    configure(&handle, "cmd-4", "a/m").await;
+    assert_eq!(
+        next_of(&handle),
+        (Some("a/m".to_string()), Some("a/m".to_string()))
+    );
+    assert_eq!(changes_now(&mut pushes).len(), 1);
+}
+
+/// 施工 MC-1：换成钉住的池，当场只有引用、没有端点和模型；说一轮钉了成员，照钉的成员再推一条。
+#[tokio::test]
+async fn a_pinned_pool_is_shown_at_once_and_its_member_after_the_next_turn() {
+    let (first, second) = (
+        Server::start(hellos(8)).await,
+        Server::start(hellos(8)).await,
+    );
+    let mut home = Home::new();
+    home.configs = configs(&config(&first, &second, 32_000, "a/m", false), &[]);
+    let routes = routes(serde_json::json!({}), Duration::from_secs(60));
+    let handle = create(&home, &routes, "a/m").await;
+    let mut pushes = watch(&handle).await;
+    configure(&handle, "cmd-1", "@q").await;
+    assert_eq!(next_of(&handle), (Some("@q".to_string()), None));
+    assert_eq!(handle.next().effort, None);
+    let changed = changes_now(&mut pushes);
+    assert_eq!(changed.len(), 1, "{changed:?}");
+    assert_eq!(
+        (
+            changed[0].reference.as_deref(),
+            &changed[0].endpoint,
+            &changed[0].model
+        ),
+        (Some("@q"), &None, &None),
+        "钉哪个成员下一轮才知道"
+    );
+    let pushed = turn(&handle, "cmd-2").await;
+    let changed = changes(&pushed);
+    assert_eq!(changed.len(), 1, "钉了成员推一条：{changed:?}");
+    assert_eq!(
+        (
+            changed[0].endpoint.as_ref().map(|e| e.as_str()),
+            changed[0].model.as_ref().map(|m| m.as_str())
+        ),
+        (Some("b"), Some("n"))
+    );
+    assert_eq!(
+        next_of(&handle),
+        (Some("@q".to_string()), Some("b/n".to_string()))
+    );
+    assert_eq!(endpoints(&home, &handle), ["b"]);
 }

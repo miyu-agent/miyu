@@ -1561,6 +1561,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
         <li><a class="step review" href="#sRO2"><span class="n">RO-2</span>数据根两种模式都读得到<span class="st">…</span></a></li>
         <li><a class="step review" href="#sQU2F"><span class="n">QU-2修</span>换了模型照换成的那一家查额度<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sMC1"><span class="n">MC-1</span>换了模型当场报新的<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -60816,6 +60817,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/QU-2修-换模型后查不到余额.md</code>；蓝图 <code>models.md</code>、<code>protocol.md</code>；协议参考 <code>sessions.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sMC1" aria-labelledby="h-sMC1">
+  <div class="sheet-head"><h2 id="h-sMC1"><span class="no">MC-1</span>换了模型当场报新的</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">选完模型不说话、切到别的会话再切回来（或者重连），底栏照旧是新选的，不画回旧的；真发请求照旧从下一轮开始。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-session · route/upcoming.rs、actor/model/foresee.rs</span><span class="dir-note">MC-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>换模型、思考强度落盘前，路由照这一刻的配置预演下一轮会怎么解析，只查、不动钉着的</li>
+              <li>给头看的那一份换成预演的，变了当场推一条 <code>model.changed</code>；<code>subscribe</code>、<code>session.quota</code> 都读它</li>
+              <li>下一轮真解析了，一样的不再推；换成池的钉了成员再推</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">显示当场变</span><span class="rl">请求下一轮变</span></div>
+          <div class="tile new"><span class="nm">算法一处</span><span class="rl">QU-2修 那份收进来</span></div>
+          <div class="tile"><span class="nm">协议形状不变</span><span class="rl">why 照旧 turn</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">MC-1</dd></div>
+        <div><dt>名称</dt><dd>换了模型当场报新的</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">MC-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、沙箱实测、终端头截图</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>换了模型不说话，重新订阅的 model 是新的，推一条 model.changed</span></li>
+        <li><span class="ok">✓</span><span>说一轮请求发给新的，不再多推一样的；换成池当场只有 ref，钉了成员再推</span></li>
+        <li><span class="ok">✓</span><span>QU-2修 的额度两条照旧过；新测试改前红</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/MC-1-换模型当场报新的.md</code>；蓝图 <code>models.md</code>、<code>protocol.md</code>、<code>session/actor.md</code>；协议参考 <code>sessions.md</code>、<code>events.md</code>。</li>
       </ul>
     </div>
   </div>

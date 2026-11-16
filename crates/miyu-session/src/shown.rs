@@ -2,6 +2,8 @@
 //! 和会话接下来请求的模型。actor 造会话、载入时，交了新的限额、回合开始重新解析完写一次，和 `Handle` 共用：`subscribe` 照它
 //! 答，`model.changed` 照它推，两边说的是同一份。施工 D-3 起还有当前的待办：内核推 `todos.changed` 时跟着换，`subscribe` 照它
 //! 回 `todos`。
+//!
+//! 换了还没开回合的（施工 MC-1）：`next` 照会话记着的预演的那一份（`foreseen`），下一个回合开始真解析了照端口的。
 
 use miyu_kernel::event::{EffortInUse, State, Todo};
 use miyu_kernel::origin::Model;
@@ -17,8 +19,10 @@ use crate::route::NONE;
 pub struct Shown {
     /// 窗口、压缩线（施工 6-3 补）：向内核要的，和它判到线用的是同一条。
     pub limits: ContextLimits,
-    /// 会话接下来请求的模型（施工 8-10）。
+    /// 会话接下来请求的模型（施工 8-10）：有预演的照预演的，没有的照端口的（`Shown::refresh_next`）。
     pub next: Next,
+    /// 人换了模型、思考强度，还没开回合（施工 MC-1，[`ModelPort::upcoming`]）：照会话记着的预演的那一份。下一个回合开始清掉。
+    pub foreseen: Option<Next>,
     /// 当前的待办（施工 D-3）：造会话、载入时照内核的，内核推 `todos.changed` 时跟着换。
     pub todos: Vec<Todo>,
     /// 因为全部做完而清空的：清空前那一份（施工 9-8 九补，`todos.changed` 的 `done`）。清单不是空的、载入以后的是空的。
@@ -43,6 +47,7 @@ impl Shown {
         Shown {
             limits,
             next,
+            foreseen: None,
             todos,
             todos_done: Vec::new(),
             states,
@@ -50,6 +55,13 @@ impl Shown {
             goals: Goals::default(),
             compactable: None,
         }
+    }
+}
+
+impl Shown {
+    /// 照预演的、没有的照端口 `port` 这一刻的，重写 `next`（施工 MC-1）。
+    pub(crate) fn refresh_next(&mut self, port: &dyn ModelPort) {
+        self.next = self.foreseen.clone().unwrap_or_else(|| Next::of(port));
     }
 }
 
