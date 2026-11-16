@@ -165,7 +165,7 @@ When the core is broken and no head opens, use `miyu rescue` to enter LiteMiyu's
 | What you see | Cause |
 |---|---|
 | "Read-only mode, not run" | The session is read-only and cannot write |
-| "Miyu's own data, off limits" | The command touched the data root |
+| "Miyu's own data, can't be changed" | It tried to write to the data root |
 | The confirmation box keeps waiting | It is waiting for you to click allow or deny; if nobody clicks in time, it is denied automatically: "No one confirmed in time, denied automatically" |
 | "Needs confirmation, no one to confirm"; `miyu ask` exits with code `4` | In `miyu ask` and on chat platforms nobody can confirm on the spot, so the steps that need confirmation are not done |
 

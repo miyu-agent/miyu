@@ -168,7 +168,7 @@ The lamp keeper lives in the lighthouse on the headland…
 - It can write only Markdown and plain text, and after writing the file must not exceed 4 MiB.
 - It cannot write to mounted bases or bases that come with a package.
 - It cannot delete a whole base.
-- The AI cannot touch the documents in `~/.miyu/root/kb/` with the tools that read and write files; it is pointed to the knowledge base tools.
+- The AI cannot change the documents in `~/.miyu/root/kb/` with the tools that write files; it is pointed to the knowledge base tools. Reading is not blocked.
 
 To stop the AI from writing, pick one:
 

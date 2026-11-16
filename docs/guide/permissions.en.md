@@ -10,22 +10,22 @@ Each session is set to either "Full access" or "Read-only", and each session kee
 
 | | Full access | Read-only |
 |---|---|---|
-| File tools, read | Can read anywhere except the data root | Same |
+| File tools, read | Can read anywhere, Miyu's own data root included | Same |
 | File tools, write | Can write anywhere except the data root | Does not write; the timeline says "Read-only mode, not run" |
 | Commands | Do not run in the sandbox; protected commands ask you first, and a few kinds of dangerous commands are refused outright | Run in the sandbox, which can write nowhere (see below) |
 | Tools in extensions that go online | Used directly | Used directly |
 | Tools of MCP servers that are not marked read-only, and tools in extensions that send messages out | Used directly | Ask you each time |
 | Installing and removing packages, turning on an extension | Asks you each time | Not done |
 
-The data root is the folder where Miyu keeps its own data. By default it is `~/.miyu`, on Windows `%USERPROFILE%\.miyu`; if `MIYU_HOME` is set, it is that folder. A file tool that touches the data root is not run, and the timeline says "Miyu's own data, off limits". A few exceptions: this session's default workspace `~/.miyu/root/workspace/<session id>/` and `pictures`, `videos`, `documents` and `downloads` under `~/.miyu/root/` are read and written as usual; open skill folders and this session's attachments can only be read.
+The data root is the folder where Miyu keeps its own data. By default it is `~/.miyu`, on Windows `%USERPROFILE%\.miyu`; if `MIYU_HOME` is set, it is that folder. At both permission levels it can be read and cannot be written: a file tool that tries to write to the data root is not run, and the timeline says "Miyu's own data, can't be changed"; reading is not blocked, and `~/.miyu/etc/private/secrets.toml`, which holds your keys, can be read by file tools and by commands too. The few places that can be written are exceptions: this session's default workspace `~/.miyu/root/workspace/<session id>/`, and `pictures`, `videos`, `documents` and `downloads` under `~/.miyu/root/`. When `glob` and `grep` search down from a directory above, they do not go into the data root, for the same reason they do not go into `.git`; a search that starts inside the data root works as usual.
 
 Under full access, commands can do anything your system user can do. Miyu recognizes a few kinds of dangerous commands only by their literal text (see "Commands that need confirmation" below). That guards against the AI's momentary slips and cannot stop a command written to get around it. To keep the AI from changing anything, use read-only.
 
-Read-only means no writing; it does not hide things for you: under read-only the AI can still read `~/.ssh`, browser data, other programs' logins and the like, and what it reads goes into the context and is sent to the model provider. If you do not want it to read something, put Miyu inside another sandbox yourself, or run it as a different system user. Miyu's own data root cannot be touched at either permission level.
+Read-only means no writing; it does not hide things for you: under read-only the AI can still read `~/.ssh`, browser data, other programs' logins and the like, and what it reads goes into the context and is sent to the model provider. If you do not want it to read something, put Miyu inside another sandbox yourself, or run it as a different system user. Miyu's own data root is the same: it is readable at both permission levels, the secrets file that holds your keys included; it cannot be written.
 
 Commands in read-only:
 
-- The whole disk is readable (on Windows, the machine's fixed drives); the data root is not.
+- The whole disk is readable (on Windows, the machine's fixed drives), the data root included. The read-only sandbox hides no directory; it only blocks writing.
 - Nothing can be written anywhere, the temp folder included; a command that writes reports that it has no permission.
 - Network access works. On macOS and on Linux with a new enough kernel, system services such as Docker and ssh-agent cannot be reached.
 - When the sandbox cannot be used on this machine, every command asks you first, and if you allow it, it runs without the sandbox.
@@ -120,7 +120,7 @@ In read-only, each platform confines commands with a mechanism of its own system
 
 | | What you will run into |
 |---|---|
-| Linux | The sandbox is unavailable when the kernel has no usable Landlock. The data root shows its name, but its contents cannot be read. On a new enough kernel, sockets of system services such as Docker and ssh-agent cannot be reached |
+| Linux | The sandbox is unavailable when the kernel has no usable Landlock. On a new enough kernel, sockets of system services such as Docker and ssh-agent cannot be reached |
 | macOS | The sandbox is unavailable when Miyu itself runs inside another sandbox. Sockets of system services such as Docker and ssh-agent cannot be reached |
 | Windows | Works only inside a logged-in desktop session: if the core is not in a desktop session (for example one started over SSH), every command is refused in read-only, with exit code `125`. Read-only reaches the machine's fixed drives; removable drives such as USB sticks, network drives and optical drives cannot be read. The clipboard and simulated keyboard and mouse are unavailable. Commands that use WMI (`Get-CimInstance`, `Get-WmiObject`, `wmic`, `systeminfo`, `Get-ComputerInfo` and the like) fail; to use them, switch to full access |
 
@@ -149,7 +149,7 @@ If chat platforms are connected, group sessions and private chats with someone o
 
 | What you see | What to do |
 |---|---|
-| "Miyu's own data, off limits" | Put the files you want the AI to work on outside the data root, or in places like `~/.miyu/root/documents/` |
+| "Miyu's own data, can't be changed" | The AI tried to write to the data root. Put the files you want it to change outside the data root, or in places like `~/.miyu/root/documents/` |
 | "Read-only mode, not run" | Switch back to full access |
 | "Needs confirmation, no one to confirm", `miyu ask` exit code `4` | Do this in the terminal or web UI, or turn off the matching kind of protected command |
 | "No one confirmed in time, denied automatically" | Raise `permission.confirm.timeout`; `0` waits forever |

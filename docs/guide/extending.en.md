@@ -232,7 +232,7 @@ It follows the rules for commands the AI runs (see [Permissions and sandbox](per
 - Read-only: in the sandbox, and it can write only its own cache, state and image folders and the four folders above, and nowhere else.
 - Groups and strangers' private chats on chat platforms: it runs in the sandbox and can write only that session's workspace and its own cache, state and image folders. On Windows no scripts run in these two kinds of session, and on Linux scripts do not run where the sandbox cannot confine Unix sockets either; see [Permissions and sandbox](permissions.en.md#sessions-on-chat-platforms).
 
-The script file itself is in the data root, and it is opened up as read-only on its own when it goes into the sandbox. Scripts that touch hardware or need `sudo` do not work in the sandbox. On Windows, ones that use WMI (`Get-CimInstance`, `Get-WmiObject`, `wmic` and the like) cannot connect inside the sandbox either; to use them, switch to full access. For the other differences between the sandboxes of each system, see [Permissions and sandbox](permissions.en.md#the-three-platforms).
+The script file itself is in the data root, which the sandbox can still read. Scripts that touch hardware or need `sudo` do not work in the sandbox. On Windows, ones that use WMI (`Get-CimInstance`, `Get-WmiObject`, `wmic` and the like) cannot connect inside the sandbox either; to use them, switch to full access. For the other differences between the sandboxes of each system, see [Permissions and sandbox](permissions.en.md#the-three-platforms).
 
 ### After you add one
 
