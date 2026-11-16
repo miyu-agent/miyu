@@ -186,7 +186,7 @@
 | `session.tools` | 她下一次请求会拿到的工具，照发的先后、带来处；不写会话的照新会话会拿到的算（施工 S-T） |
 | `session.context` | 这个会话这时的上下文一块块的：system、工具说明、示范对话、检查点摘要、对话各占多少，用量和压缩线（施工 CX-1 上）；不写会话的照新会话会拿到的算（CX-1 下） |
 | `session.usage_parts` | 这个会话（可连子代理）累计用了多少，照上下文的块分开：每次主请求的输入照那一刻各块的比例摊，输出单成一块（施工 CX-3） |
-| `session.quota` | 这个会话接下来请求的那一家的额度：几个窗口各用了百分之几、什么时候重置；只有档案写了查额度接口的供应商有（施工 QU-1） |
+| `session.quota` | 这个会话接下来请求的那一家的额度：几个窗口各用了百分之几、什么时候重置（施工 QU-1），或者账户余额（施工 QU-2，DeepSeek 官方）；只有档案写了查额度接口的供应商有 |
 | `session.revert`、`session.unrevert` | 撤销、恢复最近一次撤销（`protocol/undo.md`） |
 | `session.redo` | 重做最后一轮：撤掉它，把开它的话再发一次（施工 4-7 再补） |
 | `session.compact` | 手动压缩：单开一轮只做压缩（施工 6-8） |
@@ -625,6 +625,20 @@
 1. 照会话接下来请求的那一家（`subscribe` 的 `model.endpoint`）：那一家的档案没写查额度的接口、轮换的池（没有 `endpoint`）、这一家用不了、查不到（连不上、超时、不是 2xx、格式不对）的，回 `{}`，不报错。
 2. 选方法、不随用量推送（主会话 QU-1 定）：额度不属于会话、只有一家有，推进 `view.status` 要每个会话的状态多一格、查完了还得另找时机推；头的用量框本来就是打开时问几次 `usage.query`，多问一次最顺。会话每轮结束核心在后台查过一次，60 秒内照它答，打开用量框多半不用等；过了 60 秒的当场查，最多等 10 秒，在后台答，不挡这个连接别的请求。
 3. `session` 写法不对、有别的参数：`bad_params`；没有这个会话：`session_not_found`。权限同 `session.recap`；关着的场所会话人的头只读地也能问（`sessions/peek.rs` 的 `READS`）。
+4. **余额**（施工 QU-2，2026-11-16 项目主人定：用 DeepSeek 官方供应商时用量面板里显示余额；头画一行「余额 ¥12.34」，有赠送的后面暗字「含赠送 ¥2.00」，不可用时整行变红，不画条）：回应多一格 `balance`，没查到的不带这一格。`windows`、`balance` 各是各的，一家只交其中一样，有了哪一格不影响另一格。只认官方地址的 DeepSeek 供应商（没写地址，或者字面地址的主机就是 `api.deepseek.com`）：经中转站跑 DeepSeek 模型的、地址是环境变量引用的不查，配置改了查余额的地址也一样（`models.md`「怎么走」第十七条第 8 条）。
+
+| 格 | 说明 |
+|---|---|
+| `balance.available` | 能不能用，官方的 `is_available` 原样（余额够不够调用） |
+| `balance.items` | 每种币一项，照官方的先后；一种都没有的是空的 |
+| `items[].currency` | 币种，官方写的原样（`CNY`、`USD`） |
+| `items[].total` | 一共多少，官方的 `total_balance` 原样的字符串 |
+| `items[].granted` | 赠送的，`granted_balance` 原样的字符串 |
+| `items[].topped_up` | 充值的，`topped_up_balance` 原样的字符串 |
+
+```json
+{"balance":{"available":true,"items":[{"currency":"CNY","total":"12.34","granted":"2.00","topped_up":"10.34"}]}}
+```
 
 **`session.redo`**（施工 4-7 再补，`kernel/history.md`「重做」）
 

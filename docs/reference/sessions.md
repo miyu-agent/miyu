@@ -12,7 +12,7 @@
 | [`session.tools`](#sessiontools) | 她下一轮能用的工具 |
 | [`session.context`](#sessioncontext) | 上下文一块块各占多少 |
 | [`session.usage_parts`](#sessionusage_parts) | 累计用量照上下文的块分开 |
-| [`session.quota`](#sessionquota) | 供应商的额度：几个窗口用了多少、什么时候重置 |
+| [`session.quota`](#sessionquota) | 供应商的额度：几个窗口用了多少、什么时候重置，或者账户余额 |
 | [`session.answer`](#sessionanswer) | 回答一次确认，或者一组提问 |
 | [`session.revert`、`session.unrevert`](#sessionrevertsessionunrevert) | 撤销、恢复最近一次撤销 |
 | [`session.redo`](#sessionredo) | 重做最后一轮 |
@@ -254,7 +254,7 @@
 
 ## `session.quota`
 
-这个会话接下来请求的那一家供应商的额度：几个窗口各用了百分之几、什么时候重置。只有查得到额度的供应商有（现在是 opencode Go），用量框里照它画。会话每说完一轮核心在后台查一次，同一家 60 秒内照上一次的。
+这个会话接下来请求的那一家供应商的额度：几个窗口各用了百分之几、什么时候重置，或者账户里还有多少钱。只有查得到额度的供应商有（现在是 opencode Go 的窗口、DeepSeek 官方的余额），用量框里照它画。会话每说完一轮核心在后台查一次，同一家 60 秒内照上一次的。
 
 **参数**：`session`（必写）。
 
@@ -262,6 +262,12 @@
 
 ```json
 {"windows":[{"id":"rolling","label":"5 小时","percent":4,"status":"ok","resets_at":"2026-11-14T08:31:28.000Z"},{"id":"weekly","label":"每周","percent":12,"status":"ok","resets_at":"2026-11-17T00:00:00.000Z"},{"id":"monthly","label":"每月","percent":30,"status":"ok","resets_at":"2026-12-01T00:00:00.000Z"}]}
+```
+
+用 DeepSeek 官方的供应商（没写地址，或者地址的主机就是 `api.deepseek.com`）时回应是余额 `{"balance": {...}}`，没查到的不带这一格：`available`（能不能用，DeepSeek 说的原样），`items`（每种币一项，照 DeepSeek 的先后：`currency` 币种，`total` 一共多少，`granted` 赠送的，`topped_up` 充值的，金额都是 DeepSeek 写的原样的字符串）。经中转站跑 DeepSeek 模型的、地址写成环境变量的不查余额：那把 key 不是 DeepSeek 官方的。`windows`、`balance` 各是各的，有了哪一格不影响另一格。
+
+```json
+{"balance":{"available":true,"items":[{"currency":"CNY","total":"12.34","granted":"2.00","topped_up":"10.34"}]}}
 ```
 
 **出错**：`bad_params`；找会话的那几种。

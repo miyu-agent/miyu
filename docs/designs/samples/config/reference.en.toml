@@ -535,7 +535,7 @@ default = "full"
 # output =
 
 [providers."<id>".quota]
-# Quota address: Full address for checking this provider's quota, replacing the bundled one. Providers without a quota interface in the bundled data are not checked even if set.
+# Quota address: Full address for checking this provider's quota, replacing the bundled one. Providers without a quota interface in the bundled data are not checked even if set. For a provider with a known official address such as DeepSeek, nothing is checked unless the provider's own address is the official one.
 # Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config. Takes effect next turn.
 # url =
 

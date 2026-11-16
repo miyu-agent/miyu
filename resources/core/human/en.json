@@ -345,7 +345,7 @@
       },
       "providers.<id>.quota.url": {
         "name": "Quota address",
-        "description": "Full address for checking this provider's quota, replacing the bundled one. Providers without a quota interface in the bundled data are not checked even if set."
+        "description": "Full address for checking this provider's quota, replacing the bundled one. Providers without a quota interface in the bundled data are not checked even if set. For a provider with a known official address such as DeepSeek, nothing is checked unless the provider's own address is the official one."
       },
       "models.catalog.update": {
         "name": "Update the catalog",

@@ -1,5 +1,5 @@
 //! 查供应商的额度（施工 QU-1，`docs/blueprint/models.md`「怎么走」第十七条）：档案写了 `quota` 的一家（[`miyu_models::quota`]），
-//! GET 那个地址，读成几个窗口。
+//! GET 那个地址，读成几个窗口或者余额（施工 QU-2，DeepSeek 官方；供应商的地址不是官方的，`quota` 那一格就没有，不查）。
 //!
 //! - 谁来查：协议的 `session.quota` 照会话接下来请求的那一家查；会话每轮结束在后台查一次（[`refresh`]，不挡回合）。
 //! - 同一家 [`REUSE`] 内用上一次的结果，查不到的也算一次：几个会话同时收尾、头接着来问，只发一次。同一时刻只有一个在查，后到的
@@ -16,7 +16,7 @@ use miyu_config::Values;
 use miyu_config::secret::{Reference, Secret};
 use miyu_http::{Get, Got, get_full};
 use miyu_models::provider::{self, Provider};
-use miyu_models::quota::{self, SEED, Window};
+use miyu_models::quota::{self, Reading, SEED};
 
 use crate::TARGET;
 
@@ -28,11 +28,11 @@ pub const REUSE: Duration = Duration::from_secs(60);
 /// 一次最多等多久。
 const TIMEOUT: Duration = Duration::from_secs(10);
 
-/// 响应体最多多少字节：几个窗口，几百字节。
+/// 响应体最多多少字节：几个窗口、几种币的余额，几百字节。
 const LIMIT: usize = 64 * 1024;
 
 /// 一家上一次查的：什么时候、查到了什么（没查到的是 `None`）。
-type Asked = (Instant, Option<Vec<Window>>);
+type Asked = (Instant, Option<Reading>);
 
 /// 每一家上一次查的。
 #[derive(Debug, Default)]
@@ -44,47 +44,47 @@ pub(crate) struct Quotas {
 
 impl Quotas {
     /// 编号 `id` 这一家 [`REUSE`] 内查过的。
-    fn fresh(&self, id: &str) -> Option<Option<Vec<Window>>> {
+    fn fresh(&self, id: &str) -> Option<Option<Reading>> {
         let last = self.last.lock().unwrap_or_else(PoisonError::into_inner);
         last.get(id)
             .filter(|(at, _)| at.elapsed() < REUSE)
-            .map(|(_, windows)| windows.clone())
+            .map(|(_, reading)| reading.clone())
     }
 
-    fn keep(&self, id: &str, windows: Option<Vec<Window>>) {
+    fn keep(&self, id: &str, reading: Option<Reading>) {
         self.last
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .insert(id.to_string(), (Instant::now(), windows));
+            .insert(id.to_string(), (Instant::now(), reading));
     }
 }
 
-/// 编号 `id` 这一家这时的额度，照这一刻的最终值 `values`，key、地址照 `secret` 取：档案没写 `quota` 的、这一家用不了的不查，
-/// 没有；[`REUSE`] 内查过的照上一次的。
+/// 编号 `id` 这一家这时的额度，照这一刻的最终值 `values`，key、地址照 `secret` 取：档案没写 `quota` 的、地址不是官方的
+/// （[`miyu_models::quota::settled`]）、这一家用不了的不查，没有；[`REUSE`] 内查过的照上一次的。
 pub async fn quota(
     data: &ModelData,
     values: &Values,
     secret: &(dyn Fn(&Reference) -> Option<Secret> + Sync),
     id: &str,
-) -> Option<Vec<Window>> {
+) -> Option<Reading> {
     let provider = data
         .with(|knowledge| provider::provider(values, knowledge, id))
         .ok()?;
     let spec = provider.quota.clone()?;
     let quotas = data.quotas();
     let _asking = quotas.asking.lock().await;
-    if let Some(windows) = quotas.fresh(id) {
-        return windows;
+    if let Some(reading) = quotas.fresh(id) {
+        return reading;
     }
-    let windows = match fetch(data, &provider, &spec, secret).await {
-        Ok(windows) => Some(windows),
+    let reading = match fetch(data, &provider, &spec, secret).await {
+        Ok(reading) => Some(reading),
         Err(error) => {
             tracing::debug!(target: TARGET, provider = id, error = %error, "quota unavailable");
             None
         }
     };
-    quotas.keep(id, windows.clone());
-    windows
+    quotas.keep(id, reading.clone());
+    reading
 }
 
 /// 会话一轮结束（[`crate::ModelPort::turn_ended`]）：在后台查一次，结果留着给 `session.quota`。
@@ -101,7 +101,7 @@ async fn fetch(
     provider: &Provider,
     spec: &quota::Quota,
     secret: &(dyn Fn(&Reference) -> Option<Secret> + Sync),
-) -> Result<Vec<Window>, String> {
+) -> Result<Reading, String> {
     let reference = provider.key.as_ref().ok_or("no key")?;
     let key = secret(reference).ok_or("no usable key")?;
     let mut headers = provider.headers(SEED);

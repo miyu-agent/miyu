@@ -163,7 +163,8 @@ pub struct Provider {
     pub headers: BTreeMap<String, String>,
     /// 档案点名的占位工具（施工 8-14 补）：工具面里缺这几件时补同名的占位声明（`models.md`「八、opencode Zen」第 2 条）。
     pub placeholders: Vec<String>,
-    /// 查额度的接口（施工 QU-1）：档案写了的，地址照配置的 `[providers.<id>.quota]` 盖（[`crate::quota::settled`]）。
+    /// 查额度的接口（施工 QU-1）：档案写了的，地址照配置的 `[providers.<id>.quota]` 盖；认得出官方地址的那一家，供应商的地址
+    /// 不是官方的没有（施工 QU-2，[`crate::quota::settled`]）。
     pub quota: Option<Quota>,
 }
 
@@ -389,6 +390,7 @@ pub fn provider(values: &Values, knowledge: &Knowledge<'_>, id: &str) -> Result<
         .as_ref()
         .map(|compat| compat.compat())
         .unwrap_or_default();
+    let quota = crate::quota::settled(profile.quota.as_ref(), values, id, &catalog);
     Ok(Provider {
         id: id.to_string(),
         driver: driver_kind,
@@ -405,7 +407,7 @@ pub fn provider(values: &Values, knowledge: &Knowledge<'_>, id: &str) -> Result<
             .compat
             .as_ref()
             .is_some_and(|compat| compat.reasoning.is_some()),
-        quota: crate::quota::settled(profile.quota.as_ref(), values, id),
+        quota,
         headers: profile.headers,
         placeholders: profile.placeholder_tools,
     })

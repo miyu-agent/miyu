@@ -72,7 +72,8 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `resources/models/models-dev.json`、`models-dev.meta.json`、`models-dev.LICENSE` | 安装包带的完整目录快照，原样的 `api.json`，和它是什么时候拉的；models.dev 的 MIT 许可证原文（`licenses.md`） | 8-7 |
 | `resources/models/profiles.toml` | 驱动怎么认（`[npm]`：包名 → 驱动，8-7），认得出的供应商的档案：开关、另配的头、占位工具、找 key 的环境变量、本机服务探哪里。现在有 `[npm]`、`[providers.deepseek]`：驱动、地址、开关（8-18 多开关思考的 `toggle`）、一张图怎么算（「能收哪些输入」8-7 拿掉，照模型资料）；`[providers.ollama]`：名字、驱动、地址，只为「找现成的」（8-11，档案多一格 `name`）；`anthropic`、`openai` 两段（8-12、8-13）；`[providers.opencode-go]`：另配的头（8-14，档案多一格 `headers`）、查额度的接口（QU-1，档案多一格 `quota`）；`[providers.opencode]`：另配的头（`User-Agent` 也在里头）+ `placeholder_tools`（8-14 补，第八条） | 8-6 起 |
 | `crates/miyu-models/src/headers.rs` | 另配的头的模板：只认 `{session_digest}`，读档案时查、发之前照种子换（8-14） | 8-14 |
-| `crates/miyu-models/src/quota.rs` | 供应商的额度（QU-1，「怎么走」第十七条）：档案的 `quota` 一格（地址、格式 `QuotaFormat`），配置的 `[providers.<id>.quota]` 盖地址（`settled`），读回应成几个窗口（`read`） | QU-1 |
+| `crates/miyu-models/src/quota.rs` | 供应商的额度（QU-1，「怎么走」第十七条）：档案的 `quota` 一格（地址、格式 `QuotaFormat`），配置的 `[providers.<id>.quota]` 盖地址（`settled`；认得出官方地址的一家，供应商地址不是官方的没有，QU-2），读回应成几个窗口或者余额（`read`，交 `Reading`） | QU-1、QU-2 |
+| `crates/miyu-models/src/quota/balance.rs` | DeepSeek 官方的余额（QU-2，「怎么走」第十七条第 8 条）：读 `is_available`、`balance_infos`，金额、币种照原样 | QU-2 |
 | `resources/models/vendors.toml` | 认原厂：家族的第一段 → 原厂在目录里的编号 | 8-7 |
 | `resources/core/models/probe.txt` | `provider.test` 发的那一句：核心每试一次照 `ResourceRoot::probe` 读一次，去掉行尾的空白 | 8-11 |
 | `resources/core/drivers/placeholder-tool.txt` | 占位工具的说明（8-14 补）：工具面里缺 `read`、`shell` 的请求补一条同名占位声明，说明就是这一句 | 8-14 补 |
@@ -976,6 +977,11 @@ opencode 有两个端点：Zen（`https://opencode.ai/zen/v1`，按量付费）�
 5. **什么时候查**（`miyu-session` 的 `route/quota.rs`）：会话每轮结束（`turn.ended` 落了盘）路由在后台查一次上一次解析出来的那一家，不挡回合；协议的 `session.quota` 照会话接下来请求的那一家查。同一家 60 秒内照上一次的（查不到的也算一次），同一时刻只有一个在查、后到的等它照它答；只在内存里，核心重启就清零。一次最多等 10 秒，响应体最多 64 KiB。
 6. **查不到**：这一家用不了、没有 key、连不上、超时、回的不是 2xx、格式不对，一律当没有，记一行 `DEBUG quota unavailable`（`provider`、`error`），不报错、不告警。
 7. **协议** `session.quota {"session"}`（`protocol.md`「`session.quota`」）：`{"windows": [{id, label, percent, status, resets_at}…]}`，没有的 `{}`。名字照连接的语言（`core/human/<语言>.json` 的 `quota/window/<编号>`：5 小时、每周、每月）。
+8. **DeepSeek 的余额**（施工 QU-2；2026-11-16 项目主人定：用 DeepSeek 官方供应商时用量面板里显示余额，头画一行「余额 ¥12.34」，有赠送的后面暗字「含赠送 ¥2.00」，不可用时整行变红，不画条）：
+   1. 档案 `[providers.deepseek]` 的 `quota = { url = "https://api.deepseek.com/user/balance", format = "deepseek-balance" }`（官方文档 <https://api-docs.deepseek.com/api/get-user-balance>）。头、节奏、查不到照上面第 3、5、6 条，同一份代码。
+   2. **只认官方地址**：目录里认得出官方地址的那一家（`provider_key::OFFICIAL`，现在只有 DeepSeek），配置里这一家供应商的地址还得是官方的才有 `quota` 这一格（`quota::settled`）：没写地址（照档案就是官方的），或者字面地址的主机就是 `api.deepseek.com`。经中转站跑 DeepSeek 模型的（`catalog = "deepseek"`、地址指中转站）、地址是环境变量引用的（查不出来）一律不查：那把 key 不是 DeepSeek 官方的，发过去是把中转站的 key 交给 DeepSeek。配置 `[providers.<id>.quota] url` 改了查的地址也照这一条（不然官方的 key 会发去别处）。判法和交 key 给扩展（PK-1 补）同一处：`provider_key::official_address`，只看主机，路径、查询、用户名里出现的不算。认不出官方地址的一家（opencode Go）不管地址，照 QU-1。
+   3. **读**：`{"is_available": bool, "balance_infos": [{"currency", "total_balance", "granted_balance", "topped_up_balance"}…]}`（`quota/balance.rs`）。金额是字符串，照原样交，不换成数（头照原样画）；币种照官方写的，不认死 `CNY`、`USD`。多出来的格不管；缺格、金额不是字符串的整份当没有。一种币都没有的照样交（`items` 空着）。
+   4. **协议**：`session.quota` 多一格 `balance`：`{"available": bool, "items": [{"currency", "total", "granted", "topped_up"}…]}`，照官方的先后；没查到的不带这一格。`windows`、`balance` 各是各的，一家的格式只交其中一样，没有的那一格不带。
 
 ### 样子
 
@@ -1305,6 +1311,9 @@ mimo = ["xiaomi"]
 | `crates/miyu-models/src/quota/tests.rs`（QU-1） | 档案的 `quota` 读得进、写错的格式读不进；配置盖地址、档案没写的配置写了也没有；opencode Go 的回应读成三个窗口照先后、没有的窗口不交、写错一格整份当没有；重置时刻照 RFC 3339 的各种写法读成 UTC | QU-1 |
 | `crates/miyu-session/tests/route_quota.rs`（QU-1） | GET 档案写的地址、key 在 `Authorization`、另配的头照种子 `quota`、`User-Agent` 是 `miyu/`；60 秒内不再发；档案没写的不发；配置改地址；404、500、乱码、写错的当没有、查不到的也不再发；会话一轮结束在后台查一次 | QU-1 |
 | `crates/miyu-endpoint/tests/session_quota.rs`（QU-1） | 真核心、真路由：说完一轮后台查过，`session.quota` 交三格、名字照连接的语言、不再发；档案没写的、查不到的回 `{}`；找会话、参数写错的拒 | QU-1 |
+| `crates/miyu-models/src/quota/tests/deepseek.rs`（QU-2） | 档案读得进 `deepseek-balance`；没写地址、字面官方地址（大小写、带路径）的查，中转站、路径里藏官方地址、环境变量地址的不查，改了查的地址也只在官方地址时查；认不出官方地址的一家照旧；回应读成余额、金额原样、多的格不管、一种币都没有的照交；缺格、类型不对、不是这种格式的整份不要 | QU-2 |
+| `crates/miyu-session/tests/route_balance.rs`（QU-2） | 官方地址的 GET 档案写的地址、key 在 `Authorization: Bearer`、读成余额、60 秒内不再发；字面官方地址加配置改查的地址照查；中转站、写了 catalog 指中转站、环境变量地址的不发，配置改了地址也不发；401、500、乱码、缺格的当没有、查不到的也不再发 | QU-2 |
+| `crates/miyu-endpoint/tests/session_balance.rs`（QU-2） | 真核心、真路由：官方 DeepSeek 的会话 `session.quota` 交 `balance`（不带 `windows`），金额、币种照原样，key 在 `Authorization`；经中转站跑 DeepSeek 的会话回 `{}`、配置改了查的地址也不发请求 | QU-2 |
 
 ### 出处
 

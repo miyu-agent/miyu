@@ -26,10 +26,7 @@ pub const OFFICIAL: [(&str, &str); 1] = [("deepseek", "api.deepseek.com")];
 
 /// 配置 `values` 里算目录里 `catalog` 那一家、写了 key 的第一家供应商（照编号排）：编号和 key 的引用。没有的没有。
 pub fn serving(values: &Values, catalog: &str) -> Option<(String, Reference)> {
-    let official = OFFICIAL
-        .iter()
-        .find(|(id, _)| *id == catalog)
-        .map(|(_, host)| *host);
+    let official = official_host(catalog);
     configured(values).into_iter().find_map(|id| {
         let settings = ProviderSettings::at(values, &[&id]);
         let key = settings.key?;
@@ -39,13 +36,30 @@ pub fn serving(values: &Values, catalog: &str) -> Option<(String, Reference)> {
             (None, Some(Address::Env(_))) => false,
             (None, None) => id == catalog,
         };
-        let official_address = match &settings.base_url {
-            None => true,
-            Some(Address::Literal(url)) => official.is_some_and(|host| host_is(url, host)),
-            Some(Address::Env(_)) => false,
-        };
-        (is_catalog && official_address).then_some((id, key))
+        let official = official_address(settings.base_url.as_ref(), catalog);
+        (is_catalog && official).then_some((id, key))
     })
+}
+
+/// 目录里 `catalog` 那一家的官方地址认的那一段（[`OFFICIAL`]）；没列的没有。
+pub fn official_host(catalog: &str) -> Option<&'static str> {
+    OFFICIAL
+        .iter()
+        .find(|(id, _)| *id == catalog)
+        .map(|(_, host)| *host)
+}
+
+/// 配置里一家供应商写的地址 `written` 算不算 `catalog` 那一家官方的：没写的算（照档案就是官方的），字面地址的主机是
+/// [`OFFICIAL`] 里那一个的算；环境变量的引用（查不出来）、别的地址不算。交 key（[`serving`]）、查余额（施工 QU-2，
+/// [`crate::quota::settled`]）都照它。
+pub fn official_address(written: Option<&Address>, catalog: &str) -> bool {
+    match written {
+        None => true,
+        Some(Address::Literal(url)) => {
+            official_host(catalog).is_some_and(|host| host_is(url, host))
+        }
+        Some(Address::Env(_)) => false,
+    }
 }
 
 /// 地址 `url` 的主机是不是 `host`：去掉协议、用户名、端口、路径以后整段相同（不分大小写）；路径、查询里出现 `host` 的不算。

@@ -69,7 +69,7 @@ async fn settle(done: impl Fn() -> bool) {
 /// 问一次 `opencode-go` 的额度，写成 `[[编号, 百分比]…]`；没有的是 `None`。
 async fn ask(data: &ModelData, more: &str) -> Option<Vec<(String, Value)>> {
     let values = resolved(&source("http://127.0.0.1:9/v1", more)).values();
-    let windows = quota(data, &values, &secret, "opencode-go").await?;
+    let windows = quota(data, &values, &secret, "opencode-go").await?.windows;
     Some(
         windows
             .iter()

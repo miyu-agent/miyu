@@ -1557,6 +1557,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC6"><span class="n">DOC-6</span>照手册把命令真敲一遍<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC7"><span class="n">DOC-7</span>手册去掉私密目录<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -60605,6 +60606,59 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/SX-1-人最后发话.md</code>；蓝图 <code>store/index.md</code>、<code>protocol.md</code>、<code>session/actor.md</code>；协议参考 <code>sessions.md</code>、<code>pushes.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sQU2" aria-labelledby="h-sQU2">
+  <div class="sheet-head"><h2 id="h-sQU2"><span class="no">QU-2</span>DeepSeek 余额</h2><span class="pill done">做完</span></div>
+  <p class="purpose">用 DeepSeek 官方供应商时，核心去问账户里还剩多少钱，头在用量框里画一行「余额 ¥12.34」。经中转站跑 DeepSeek 的不查：那把 key 不是官方的。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">resources · models/profiles.toml　miyu-models · quota.rs、quota/balance.rs、provider_key.rs、provider.rs　miyu-session · route/quota.rs　miyu-endpoint · quota.rs</span><span class="dir-note">QU-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>档案 <code>[providers.deepseek]</code> 多一格 <code>quota</code>，格式 <code>deepseek-balance</code>，GET <code>/user/balance</code></li>
+              <li>供应商地址是官方的才有这一格：没写地址，或者主机就是 <code>api.deepseek.com</code>；和交 key 给扩展同一处判</li>
+              <li>配置改了查余额的地址也照这一条；节奏、查不到照 QU-1</li>
+              <li><code>session.quota</code> 多一格 <code>balance: {available, items: [{currency, total, granted, topped_up}]}</code>，没查到的不带</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">只认官方地址</span><span class="rl">中转站、环境变量地址不查</span></div>
+          <div class="tile new"><span class="nm">金额照原样</span><span class="rl">字符串、币种都照官方的</span></div>
+          <div class="tile new"><span class="nm">两格各是各的</span><span class="rl">windows、balance 互不影响</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">QU-2</dd></div>
+        <div><dt>名称</dt><dd>DeepSeek 余额</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">QU-2</dd></div>
+        <div><dt>验收</dt><dd>门禁、沙箱实测</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>假服务器回官方那段 JSON，协议交出 balance，金额原样</span></li>
+        <li><span class="ok">✓</span><span>中转站、环境变量地址、配置改了查的地址都不发请求</span></li>
+        <li><span class="ok">✓</span><span>60 秒内不再发；401、500、乱码当没有，不报错</span></li>
+        <li><span class="ok">✓</span><span>真模型经网关：没有 balance，没有发往官方的请求</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/QU-2-DeepSeek余额.md</code>；蓝图 <code>models.md</code>、<code>protocol.md</code>、<code>config.md</code>；协议参考 <code>sessions.md</code>。</li>
       </ul>
     </div>
   </div>

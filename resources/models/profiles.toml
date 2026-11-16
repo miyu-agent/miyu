@@ -12,11 +12,15 @@
 # （2026-09-27 实测）。一张图照官方计算器的算法算；收不收图照模型资料（目录里 deepseek-flash 收图，施工 8-7 起）。
 # 思考的开关（施工 8-18）：thinking 写 {"type": "enabled"} 或 {"type": "disabled"}（2026-10-01 主会话在开发端点实测：disabled 时
 # 思考 token 是 0）。有了它，目录里有 toggle 的模型多一档 off，只有开关的是 off、on。
+# 余额（施工 QU-2）：GET 这个地址，头带 `Authorization: Bearer <key>`，回能不能用和每种币的余额（官方文档
+# https://api-docs.deepseek.com/api/get-user-balance）。只在供应商的地址是官方的时候查：经中转站跑 DeepSeek 的、地址是环境变量
+# 引用的不查，配置 [providers.<id>.quota] 改了地址也一样。
 [providers.deepseek]
 driver = "openai-chat"
 base_url = "https://api.deepseek.com"
 image_tokens = "deepseek"
 compat = { reasoning = { replay = "reasoning_content", always = true }, continuation = { field = "prefix", path = "/beta/chat/completions" }, toggle = { field = "thinking", on = { type = "enabled" }, off = { type = "disabled" } } }
+quota = { url = "https://api.deepseek.com/user/balance", format = "deepseek-balance" }
 
 # Ollama 本机的服务（施工 8-11）：目录里没有（目录里的 ollama-cloud 是云端的），只为第一次接入找现成的本机服务。
 [providers.ollama]

@@ -345,7 +345,7 @@
       },
       "providers.<id>.quota.url": {
         "name": "额度接口地址",
-        "description": "查这家额度的完整地址，盖过资料里的。资料里没写额度接口的供应商写了也不查。"
+        "description": "查这家额度的完整地址，盖过资料里的。资料里没写额度接口的供应商写了也不查。DeepSeek 这类认得出官方地址的，供应商的地址不是官方的也不查。"
       },
       "models.catalog.update": {
         "name": "后台更新目录",

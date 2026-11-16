@@ -12,7 +12,7 @@ A session is one conversation: an append-only event log, from which the core wor
 | [`session.tools`](#sessiontools) | The tools she can use next turn |
 | [`session.context`](#sessioncontext) | What the context is made of |
 | [`session.usage_parts`](#sessionusage_parts) | Cumulative usage split by context part |
-| [`session.quota`](#sessionquota) | The provider's quota: how much of each window is used and when it resets |
+| [`session.quota`](#sessionquota) | The provider's quota: how much of each window is used and when it resets, or the account balance |
 | [`session.answer`](#sessionanswer) | Answer an approval request or a set of questions |
 | [`session.revert`, `session.unrevert`](#sessionrevert-sessionunrevert) | Undo; restore the last undo |
 | [`session.redo`](#sessionredo) | Redo the last turn |
@@ -254,7 +254,7 @@ How much this session has used so far, split into the same parts as `session.con
 
 ## `session.quota`
 
-The quota of the provider this session will send its next request to: how much of each window is used and when it resets. Only providers with a quota interface have one (opencode Go for now); the usage panel draws it. The core checks once in the background after each turn of the session and reuses the result for the same provider within 60 seconds.
+The quota of the provider this session will send its next request to: how much of each window is used and when it resets, or how much money is left on the account. Only providers with a quota interface have one (opencode Go's windows and official DeepSeek's balance for now); the usage panel draws it. The core checks once in the background after each turn of the session and reuses the result for the same provider within 60 seconds.
 
 **Params**: `session` (required).
 
@@ -262,6 +262,12 @@ The quota of the provider this session will send its next request to: how much o
 
 ```json
 {"windows":[{"id":"rolling","label":"5 hours","percent":4,"status":"ok","resets_at":"2026-11-14T08:31:28.000Z"},{"id":"weekly","label":"Weekly","percent":12,"status":"ok","resets_at":"2026-11-17T00:00:00.000Z"},{"id":"monthly","label":"Monthly","percent":30,"status":"ok","resets_at":"2026-12-01T00:00:00.000Z"}]}
+```
+
+With an official DeepSeek provider (no address written, or an address whose host is `api.deepseek.com`) the response is the balance, `{"balance": {...}}`, left out when it couldn't be checked: `available` (whether it can be used, as DeepSeek says) and `items` (one per currency, in DeepSeek's order: `currency`, `total`, `granted` for the granted part, `topped_up` for the topped-up part, every amount the string DeepSeek wrote). DeepSeek models run through a relay, and addresses written as environment variables, get no balance check: that key isn't an official DeepSeek one. `windows` and `balance` are separate: having one doesn't affect the other.
+
+```json
+{"balance":{"available":true,"items":[{"currency":"CNY","total":"12.34","granted":"2.00","topped_up":"10.34"}]}}
 ```
 
 **Errors**: `bad_params`; the session lookup errors.

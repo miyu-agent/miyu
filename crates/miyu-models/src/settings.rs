@@ -198,7 +198,8 @@ miyu_config::settings! {
 
 miyu_config::settings! {
     /// 查额度的接口（施工 QU-1，`models.md`「怎么走」第十七条）：档案写了 `quota` 的供应商，这里能改地址。格式只有档案知道，
-    /// 档案没写的这一家写了也不查。设置页不画：供应商挪了地址、出厂的档案还没跟上时手写。
+    /// 档案没写的这一家写了也不查；DeepSeek 这样认得出官方地址的，供应商的地址不是官方的不查，改了这里也不查（施工 QU-2）。
+    /// 设置页不画：供应商挪了地址、出厂的档案还没跟上时手写。
     pub struct QuotaSettings in "providers.<id>.quota" {
         /// 完整的地址，盖过档案的。
         url: Option<String> = none {

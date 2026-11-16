@@ -1,4 +1,5 @@
-//! 额度的纯逻辑（施工 QU-1）：档案的写法、配置盖地址、读 opencode Go 的回应。
+//! 额度的纯逻辑（施工 QU-1）：档案的写法、配置盖地址、读 opencode Go 的回应；DeepSeek 的余额（施工 QU-2）在
+//! `tests/deepseek.rs`。
 
 use miyu_config::Value as ConfigValue;
 use serde_json::json;
@@ -36,16 +37,19 @@ fn the_profile_takes_a_quota_with_its_format() {
 #[test]
 fn the_config_moves_the_address_but_needs_the_profile() {
     let mut values = Values::default();
-    assert_eq!(settled(Some(&go()), &values, "opencode-go"), Some(go()));
+    assert_eq!(
+        settled(Some(&go()), &values, "opencode-go", "opencode-go"),
+        Some(go())
+    );
     values.set(
         "providers.opencode-go.quota.url",
         ConfigValue::Text("https://moved.invalid/usage".into()),
     );
-    let moved = settled(Some(&go()), &values, "opencode-go").expect("档案有");
+    let moved = settled(Some(&go()), &values, "opencode-go", "opencode-go").expect("档案有");
     assert_eq!(moved.url, "https://moved.invalid/usage");
     assert_eq!(moved.format, QuotaFormat::OpencodeGo);
     assert_eq!(
-        settled(None, &values, "opencode-go"),
+        settled(None, &values, "opencode-go", "opencode-go"),
         None,
         "格式只有档案知道"
     );
@@ -53,7 +57,9 @@ fn the_config_moves_the_address_but_needs_the_profile() {
 
 #[test]
 fn the_go_reply_reads_into_three_windows_in_order() {
-    let windows = read(QuotaFormat::OpencodeGo, REPLY.as_bytes()).expect("读得出");
+    let reading = read(QuotaFormat::OpencodeGo, REPLY.as_bytes()).expect("读得出");
+    assert_eq!(reading.balance, None);
+    let windows = reading.windows;
     let ids: Vec<_> = windows.iter().map(|window| window.id.as_str()).collect();
     assert_eq!(ids, ["rolling", "weekly", "monthly"]);
     assert_eq!(windows[0].percent, Number::from(4));
@@ -66,7 +72,9 @@ fn the_go_reply_reads_into_three_windows_in_order() {
 fn a_missing_window_is_left_out_and_a_broken_one_spoils_the_reply() {
     let one =
         r#"{"usage":{"weekly":{"status":"ok","percent":1,"resetsAt":"2026-11-17T00:00:00.000Z"}}}"#;
-    let windows = read(QuotaFormat::OpencodeGo, one.as_bytes()).expect("读得出");
+    let windows = read(QuotaFormat::OpencodeGo, one.as_bytes())
+        .expect("读得出")
+        .windows;
     assert_eq!(windows.len(), 1);
     assert_eq!(windows[0].id, WindowId::Weekly);
     for broken in [
@@ -92,7 +100,7 @@ fn reset_times_read_any_rfc3339_form_into_utc() {
         );
         read(QuotaFormat::OpencodeGo, reply.as_bytes())
             .ok()
-            .map(|windows| windows[0].resets_at.to_string())
+            .map(|reading| reading.windows[0].resets_at.to_string())
     };
     let wanted = Some("2026-11-14T08:31:28.000Z".to_string());
     for same in [
@@ -124,3 +132,5 @@ fn reset_times_read_any_rfc3339_form_into_utc() {
         assert_eq!(at(broken), None, "{broken}");
     }
 }
+
+mod deepseek;
