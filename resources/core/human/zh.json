@@ -552,7 +552,7 @@
     "commands/usage/loop/auto": "不给具体要求，由 AI 自己定做什么、什么时候",
     "commands/usage/loop/fixed": "每隔一段时间说一次，例如 5m、2h",
     "commands/usage/loop/dynamic": "由 AI 自己定下一次什么时候",
-    "commands/usage/loop/off": "停止此会话的循环",
+    "commands/usage/loop/off": "停止此会话的循环（也可以写 clear、stop）",
     "commands/summary/context": "上下文上限",
     "commands/argument/context": "[<数值> | unset]",
     "commands/placeholder/context": "<数值>",

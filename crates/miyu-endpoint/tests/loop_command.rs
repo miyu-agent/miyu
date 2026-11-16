@@ -1,5 +1,6 @@
 //! `/loop`（施工 J-2，设计 `45-定时和循环.md` 第三节第 4 条）：真核心、手拨的钟。写了间隔的建一行固定循环、马上交进来跑第一次，
-//! 之后照间隔；没写的建一行动态循环、马上跑一次，交过以后停着等她定；再敲一次换掉原来的；`/loop off` 删掉；工具面上没有
+//! 之后照间隔；没写的建一行动态循环、马上跑一次，之后照她定的下一次（不定就删，施工 LO-3，`loop_ends.rs`）；再敲一次换掉
+//! 原来的；`/loop off` 删掉；工具面上没有
 //! `schedule_wakeup` 的会话里没有这条命令。
 
 use std::sync::Arc;
@@ -74,10 +75,14 @@ async fn a_fixed_loop_runs_now_and_then_every_interval() {
 }
 
 #[tokio::test]
-async fn a_self_paced_loop_runs_once_then_waits_and_off_removes_it() {
+async fn a_self_paced_loop_runs_once_then_waits_for_her_next_and_off_removes_it() {
     let home = Home::new();
-    // 换成固定循环的那一次也马上跑：剧本多排一句。
-    let script = Script::new([Play::Says("先看一眼。"), Play::Says("换了。")]);
+    // 她定了十分钟以后再看；换成固定循环的那一次也马上跑：剧本多排一句。
+    let script = Script::new([
+        Play::calls(&[("schedule_wakeup", r#"{"delay_seconds":600}"#)]),
+        Play::Says("先看一眼。"),
+        Play::Says("换了。"),
+    ]);
     let hand = Hand::at(START);
     let core = core_with_tools(&home, &script, &hand, looping());
     let mut client = Client::connect(Arc::clone(&core));
@@ -92,7 +97,11 @@ async fn a_self_paced_loop_runs_once_then_waits_and_off_removes_it() {
     home.until_turns(&session, 1).await;
     let row = rows(&core).pop().expect("有一行");
     assert_eq!(row.looping, Some(Loop::Dynamic));
-    assert_eq!(row.next, None, "交过以后停着等她定");
+    assert_eq!(
+        row.next.map(|next| next.unix_millis()),
+        Some(START + 600_000),
+        "交过以后照她定的"
+    );
     // 再敲一次换掉原来的：同一个会话只有一个循环。
     typed(&mut client, &session, "/loop 10m 换一句").await;
     home.until_turns(&session, 2).await;
@@ -153,12 +162,17 @@ async fn typed_as(client: &mut Client, id: &str, session: &str, text: &str) -> V
     client.call(id, "command.run", params).await
 }
 
-/// 同一个编号原样重发（施工 YC-7补）：不再跑第二遍，回应和头一次一样。动态循环交过第一次以后停着，再跑一遍的话会被
-/// 换成一行新的、又马上交一次。
+/// 同一个编号原样重发（施工 YC-7补）：不再跑第二遍，回应和头一次一样。动态循环交过第一次以后等她定的下一次，再跑一遍的话
+/// 会被换成一行新的、又马上交一次。
 #[tokio::test]
 async fn a_resent_loop_command_does_not_run_twice() {
     let home = Home::new();
-    let script = Script::new([Play::Says("看过了。"), Play::Says("不该有第二轮。")]);
+    let script = Script::new([
+        Play::calls(&[("schedule_wakeup", r#"{"delay_seconds":600}"#)]),
+        Play::Says("看过了。"),
+        Play::calls(&[("schedule_wakeup", r#"{"delay_seconds":600}"#)]),
+        Play::Says("新编号的一轮。"),
+    ]);
     let hand = Hand::at(START);
     let core = core_with_tools(&home, &script, &hand, looping());
     let mut client = Client::connect(Arc::clone(&core));
@@ -170,13 +184,15 @@ async fn a_resent_loop_command_does_not_run_twice() {
     home.until_turns(&session, 1).await;
     let before = rows(&core);
     assert_eq!(before.len(), 1, "{before:?}");
-    assert_eq!(before[0].next, None, "交过第一次，停着等她定");
+    let hers = Some(START + 600_000);
+    let next = |row: &Schedule| row.next.map(|next| next.unix_millis());
+    assert_eq!(next(&before[0]), hers, "交过第一次，等她定的下一次");
     let again = typed_as(&mut client, "again-1", &session, "/loop 盯着部署").await;
     assert_eq!(again["result"], first["result"], "{again}");
     let after = rows(&core);
     assert_eq!(after.len(), 1, "{after:?}");
     assert_eq!(after[0].id, before[0].id, "还是原来那一行");
-    assert_eq!(after[0].next, None, "没有再交一次");
+    assert_eq!(next(&after[0]), hers, "没有再交一次");
     // 新的编号照旧：换掉原来的。
     let fresh = typed_as(&mut client, "again-2", &session, "/loop 盯着部署").await;
     assert!(fresh["result"]["events"].is_array(), "{fresh}");
@@ -220,7 +236,10 @@ fn autonomous() -> &'static str {
 #[tokio::test]
 async fn a_bare_loop_runs_now_on_the_fixed_sentence() {
     let home = Home::new();
-    let script = Script::new([Play::Says("我自己看着办。")]);
+    let script = Script::new([
+        Play::calls(&[("schedule_wakeup", r#"{"delay_seconds":600}"#)]),
+        Play::Says("我自己看着办。"),
+    ]);
     let hand = Hand::at(START);
     let core = core_with_tools(&home, &script, &hand, looping());
     let mut client = Client::connect(Arc::clone(&core));
@@ -237,7 +256,11 @@ async fn a_bare_loop_runs_now_on_the_fixed_sentence() {
     assert_eq!(row.looping, Some(Loop::Dynamic));
     assert_eq!(row.by, Creator::Person);
     assert_eq!(row.prompt, autonomous());
-    assert_eq!(row.next, None, "交过以后停着等她定");
+    assert_eq!(
+        row.next.map(|next| next.unix_millis()),
+        Some(START + 600_000),
+        "交过以后照她定的"
+    );
     let (_, request) = script.requests().into_iter().next().expect("发了请求");
     let sent = serde_json::to_string(&request.messages.last()).expect("写得成 JSON");
     assert!(sent.contains(autonomous()), "交进去的是那句：{sent}");
@@ -296,7 +319,7 @@ async fn a_wrong_loop_answers_with_the_usage() {
          /loop　不给具体要求，由 AI 自己定做什么、什么时候\n\
          /loop <间隔> <要说的话>　每隔一段时间说一次，例如 5m、2h\n\
          /loop <要说的话>　由 AI 自己定下一次什么时候\n\
-         /loop off　停止此会话的循环",
+         /loop off　停止此会话的循环（也可以写 clear、stop）",
         "{reply}"
     );
     assert!(rows(&core).is_empty());

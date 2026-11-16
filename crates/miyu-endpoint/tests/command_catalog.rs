@@ -69,7 +69,7 @@ async fn without_a_session_every_command_is_listed_in_the_connections_language()
                 {"form": "/loop", "summary": "不给具体要求，由 AI 自己定做什么、什么时候"},
                 {"form": "/loop <间隔> <要说的话>", "summary": "每隔一段时间说一次，例如 5m、2h"},
                 {"form": "/loop <要说的话>", "summary": "由 AI 自己定下一次什么时候"},
-                {"form": "/loop off", "summary": "停止此会话的循环"},
+                {"form": "/loop off", "summary": "停止此会话的循环（也可以写 clear、stop）"},
             ]},
             {"name": "remember", "aliases": [], "summary": "添加记忆", "argument": "<内容>"},
             {"name": "stop", "aliases": [], "summary": "停止此会话所有处理中的东西"},

@@ -556,7 +556,7 @@
     "commands/usage/loop/auto": "No prompt: let the AI decide what to do and when",
     "commands/usage/loop/fixed": "Send it at a fixed interval, such as 5m or 2h",
     "commands/usage/loop/dynamic": "Let the AI pick when to run next",
-    "commands/usage/loop/off": "Stop this session's loops",
+    "commands/usage/loop/off": "Stop this session's loops (clear or stop works too)",
     "commands/summary/context": "Context limit",
     "commands/argument/context": "[<tokens> | unset]",
     "commands/placeholder/context": "<tokens>",

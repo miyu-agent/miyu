@@ -94,7 +94,7 @@ async fn fire(core: &Arc<Core>, table: &Table, schedule: Schedule, now: Timestam
     let once = next::once(&schedule.when) && !paced(schedule.looping);
     let mut ahead = schedule.clone();
     ahead.next = match schedule.looping {
-        // 她自己定节奏的：交进去以后停着等她定（施工 J-2：她不调就不再醒）。
+        // 她自己定节奏的：交进去以后清掉，她这一轮里定（施工 J-2）；没定的那一轮结束时删掉这一行（施工 LO-3，`ended.rs`）。
         Some(Loop::Dynamic) => None,
         // 人生：没定也照默认间隔再醒（施工 LF-1）；她在这一轮里定了的经 `set_next` 盖掉它。
         Some(Loop::Life) => next::plus(now, next::LIFE_GAP),

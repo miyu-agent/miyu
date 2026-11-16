@@ -11,6 +11,7 @@ mod busy;
 pub(crate) mod changes;
 mod clock;
 mod doing;
+mod ended;
 mod fire;
 mod hold;
 mod life;

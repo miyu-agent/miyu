@@ -282,3 +282,44 @@ fn a_life_loop_row_reads_back_the_same() {
         .unwrap();
     assert_eq!(cell, "life");
 }
+
+/// 施工 LO-3：她自己定节奏的那一行没定下一次、没停着才删；定了的、停着的、别的种类不删。
+#[test]
+fn an_unpaced_dynamic_loop_ends_and_nothing_else_does() {
+    let scratch = Scratch::new();
+    let table = opened(&root(&scratch));
+    let dynamic = |next: Option<i64>| NewSchedule {
+        when: When::At { at: at(2_000) },
+        looping: Some(Loop::Dynamic),
+        next: next.map(at),
+        ..every_minute(2_000)
+    };
+    let unset = table.add(dynamic(None), at(1_000)).unwrap();
+    let set = table.add(dynamic(Some(9_000)), at(1_000)).unwrap();
+    let mut paused = table.add(dynamic(None), at(1_000)).unwrap();
+    paused.paused = true;
+    assert!(table.put(&paused).unwrap());
+    let fixed = table
+        .add(
+            NewSchedule {
+                looping: Some(Loop::Fixed),
+                next: None,
+                ..every_minute(2_000)
+            },
+            at(1_000),
+        )
+        .unwrap();
+    assert!(table.end_unpaced(&unset.id).unwrap());
+    for kept in [&set.id, &paused.id, &fixed.id] {
+        assert!(!table.end_unpaced(kept).unwrap(), "{kept} 留着");
+    }
+    assert!(!table.end_unpaced(&unset.id).unwrap(), "删过的没有了");
+    let left: Vec<String> = table
+        .list()
+        .unwrap()
+        .into_iter()
+        .map(|one| one.id)
+        .collect();
+    assert_eq!(left.len(), 3, "{left:?}");
+    assert!(!left.contains(&unset.id));
+}

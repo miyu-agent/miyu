@@ -1,6 +1,7 @@
 //! 交进会话（施工 J-1 上，设计 `45-定时和循环.md` 第三节第 2 条）：照「跑在哪」交给已有的会话，或者照建时定下的人格、预设、
 //! 工作目录新开一个。交进去的那句记成 `by: schedule`（带任务编号），照「别处来的话」的规矩叫醒她：正在跑一轮的排在这一轮
-//! 后面。跑在已有会话上的循环不交进正在跑的这一轮，等它结束再交（施工 LO-2，[`waits`]、`busy.rs`）。
+//! 后面。跑在已有会话上的循环不交进正在跑的这一轮，等它结束再交（施工 LO-2，[`waits`]、`busy.rs`）。她自己定节奏的循环交进去
+//! 开的那一轮结束时没定下一次的，删掉这一行（施工 LO-3，`ended.rs`）。
 //!
 //! - 她自己建的（`by` 是会话里的她）到点时看那个会话现在的预设：关了建它的那个包（定时任务看 `schedule`，循环看 `loop`）的
 //!   这一次不跑，记 `skipped:preset_off`，下一次照算。人建的、包建的不看预设。
@@ -128,10 +129,13 @@ pub(super) async fn deliver(core: &Arc<Core>, schedule: &Schedule, due: Timestam
     let Ok(id) = CommandId::parse(&format!("{base}/say")) else {
         return Delivered::skipped("bad_id", Some(session), false);
     };
-    // 每次新开的跑完要告诉人（施工 J-3 下）：先订阅，交进去的那一轮的事件一定在订阅以后。
-    let watching = match schedule.target {
-        Target::New { .. } => found.handle.subscribe().await.ok(),
-        Target::Session { .. } | Target::Package { .. } => None,
+    // 每次新开的跑完要告诉人（施工 J-3 下），她自己定节奏的那一轮结束时看她定没定下一次（施工 LO-3，`ended.rs`）：先订阅，
+    // 交进去的那一轮的事件一定在订阅以后。
+    let watching = match (&schedule.target, schedule.looping) {
+        (Target::New { .. }, _) | (Target::Session { .. }, Some(Loop::Dynamic)) => {
+            found.handle.subscribe().await.ok()
+        }
+        (Target::Session { .. } | Target::Package { .. }, _) => None,
     };
     // 人生的正文由核心当场拼（施工 LF-2，`life.rs`）：推演方法照会话这一刻的人格读。
     let text = match schedule.looping {
@@ -155,8 +159,15 @@ pub(super) async fn deliver(core: &Arc<Core>, schedule: &Schedule, due: Timestam
     match found.handle.command(id, by, send).await {
         Ok(Outcome::Accepted { events }) => {
             if let (Some(pushes), Some(said)) = (watching, events.first().copied()) {
-                let which = (schedule.id.clone(), session.clone());
-                core.schedules().watch_ran(which, said, pushes);
+                match schedule.target {
+                    Target::New { .. } => {
+                        let which = (schedule.id.clone(), session.clone());
+                        core.schedules().watch_ran(which, said, pushes);
+                    }
+                    // 正忙的排进了这一轮，不是它自己开的一轮：不盯。
+                    _ if busy => {}
+                    _ => super::ended::watch(core, schedule.id.clone(), said, pushes),
+                }
             }
             Delivered {
                 result: if busy { "queued" } else { "ran" }.to_string(),

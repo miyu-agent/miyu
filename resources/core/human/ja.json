@@ -552,7 +552,7 @@
     "commands/usage/loop/auto": "指示なし：内容もタイミングも AI が決めます",
     "commands/usage/loop/fixed": "一定の間隔で送ります（例：5m、2h）",
     "commands/usage/loop/dynamic": "次の実行は AI が決めます",
-    "commands/usage/loop/off": "このセッションのループを止めます",
+    "commands/usage/loop/off": "このセッションのループを止めます（clear、stop でも可）",
     "commands/summary/context": "コンテキスト上限",
     "commands/argument/context": "[<トークン数> | unset]",
     "commands/placeholder/context": "<トークン数>",

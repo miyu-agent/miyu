@@ -102,8 +102,11 @@ async fn a_loop_typed_mid_turn_runs_in_its_own_turn_after_it() {
     let requests = script.requests();
     let second = serde_json::to_string(&requests[1].1.messages).expect("JSON");
     assert!(!second.contains("盯着部署"), "没有并进第一轮：{second}");
-    let row = rows(&core).pop().expect("有一行");
-    assert_eq!(row.next, None, "交过以后停着等她定");
+    // 她在循环那一轮里没定下一次：那一轮结束时这一行删了（施工 LO-3）。
+    until("没定下一次的那一行删了", || {
+        rows(&core).is_empty()
+    })
+    .await;
 }
 
 /// 她这一步停在工具上时敲 `/loop`，人再打断（不是 `/stop`）：打断的只是这一轮，循环照样在它结束以后跑第一次。

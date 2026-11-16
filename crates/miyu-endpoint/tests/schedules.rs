@@ -252,14 +252,14 @@ async fn her_own_ones_follow_the_session_s_preset_and_people_s_do_not() {
     assert_eq!(by.schedule, "t2");
 }
 
+/// 她自己定节奏的交进去开的一轮里她没定下一次：那一轮结束时这一行删了（施工 LO-3：以前停着等她定，图标在、循环停了）。
 #[tokio::test]
-async fn a_dynamic_loop_waits_after_it_speaks_until_she_sets_the_next() {
+async fn a_dynamic_loop_ends_after_a_turn_that_sets_no_next() {
     let home = Home::new();
-    let script = Script::new([Play::Says("一。"), Play::Says("二。")]);
+    let script = Script::new([Play::Says("一。")]);
     let hand = Hand::at(START);
     let (core, _client, session) = started(&home, &script, &hand).await;
-    let added = core
-        .schedules()
+    core.schedules()
         .add(Wanted {
             looping: Some(Loop::Dynamic),
             first: Some(at(START)),
@@ -267,26 +267,18 @@ async fn a_dynamic_loop_waits_after_it_speaks_until_she_sets_the_next() {
         })
         .unwrap();
     home.until_turns(&session, 1).await;
-    let after = until_recorded(&core, &added.id).await;
-    assert_eq!(after.next, None, "交过以后停着等她定");
-    assert_eq!(core.schedules().list().unwrap().len(), 1, "不删");
     let said = scheduled(&home.log(&session));
     let By::Schedule(by) = &said[0].0 else {
         unreachable!()
     };
     assert_eq!(by.looping, Some(ScheduleLoop::Dynamic));
-    core.schedules()
-        .set_next(
-            &added.id,
-            Some(at(START + 300_000)),
-            Some("再看看".to_string()),
-        )
-        .unwrap();
-    hand.advance(300_000);
-    home.until_turns(&session, 2).await;
-    let said = scheduled(&home.log(&session));
-    assert_eq!(said.len(), 2);
-    assert!(said[1].1.contains("再看看"), "换过的那句：{}", said[1].1);
+    let waited = tokio::time::timeout(Duration::from_secs(5), async {
+        while !core.schedules().list().unwrap().is_empty() {
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    })
+    .await;
+    assert!(waited.is_ok(), "删了：{:?}", core.schedules().list());
 }
 
 #[tokio::test]

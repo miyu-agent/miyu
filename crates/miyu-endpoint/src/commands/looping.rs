@@ -2,12 +2,14 @@
 //!
 //! - `/loop <间隔> <话>`、`/loop <话> every <间隔>`、`/loop every <间隔> <话>`：固定间隔。间隔写 `30s`、`5m`、`2h`、`1d`，不到
 //!   [`miyu_tool::WAKEUP_MIN`] 秒的照它；建这个会话上的一行固定循环，下一次就是现在：唤醒表马上交进来跑第一次。
-//! - `/loop <话>`：动态。同样马上跑一次，之后她每轮自己调 `schedule_wakeup` 定下一次，不调就停。
+//! - `/loop <话>`：动态。同样马上跑一次，之后她每轮自己调 `schedule_wakeup` 定下一次，不调就停：那一轮结束时删掉这一行（施工
+//!   LO-3，`schedules/ended.rs`）。
 //! - 光打 `/loop`：自主（施工 LO-1，项目主人 2026-11-14 定，照 Claude Code）。和动态的一样，只是交进去的不是人写的话，是一句
 //!   固定的英文（`software/loop/autonomous.txt`）：敲命令那一刻读，原样存进那一行的 `prompt`。到点交进会话、记进
 //!   `message.user` 都是这句原文，重放一字不差；她照工具说明原样传回的也是它。不另加标记：表、到点、组装一行都不用改。
 //! - 写错了的（只写了间隔没写话）回 `bad_params`，`data.why` 带上用法（[`usage::refused`]，和命令菜单同一份字表）。
-//! - `/loop off`：删掉这个会话的循环，固定的、动态的都删。`/stop` 也删（施工 LO-2，`basic.rs`）。
+//! - `/loop off`：删掉这个会话的循环，固定的、动态的都删；单独一个 `clear`、`stop` 同它（施工 LO-3，大小写不论）。`/stop` 也删
+//!   （施工 LO-2，`basic.rs`）。
 //! - 一个会话同时只有一个循环：再敲一次 `/loop` 换掉原来的（主会话 2026-10-27 定，技术题）。人敲的记成你建的
 //!   （`by: person`），跑在这个会话上；到点交进会话、她每轮定下一次都是唤醒表的事（施工 J-1 上、`schedules/port.rs`）。
 //!
@@ -218,9 +220,13 @@ pub(super) enum Asked<'a> {
     Off,
 }
 
+/// 单独一个就是关掉循环的词（施工 LO-3，项目主人 2026-11-16 定 `clear`、`stop` 同 `off`）：大小写不论；后面带了字的是要说的话。
+const OFF: [&str; 3] = ["off", "clear", "stop"];
+
 /// 读 `/loop` 后面的字（去掉了前后空白）。什么都没写的是自主（施工 LO-1）；只写了间隔没写话的参数不对。
 pub(super) fn parse(asked: &str) -> Result<Asked<'_>, Refusal> {
-    if asked == "off" {
+    let asked = asked.trim();
+    if OFF.iter().any(|word| asked.eq_ignore_ascii_case(word)) {
         return Ok(Asked::Off);
     }
     let words: Vec<&str> = asked.split_whitespace().collect();

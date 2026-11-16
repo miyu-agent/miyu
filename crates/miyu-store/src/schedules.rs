@@ -325,6 +325,21 @@ impl Schedules {
         Ok(removed)
     }
 
+    /// 她自己定节奏的循环（`loop` 是 `dynamic`）那一轮结束时没定下一次（施工 LO-3）：只在那一行还在、没定下一次、没停着时删，
+    /// 删了的交回真。查和删是同一条语句：她这一轮里定了下一次、人这时停了它的，都不删。
+    ///
+    /// # Errors
+    ///
+    /// 写不了库。
+    pub fn end_unpaced(&self, id: &str) -> Result<bool, DbError> {
+        let db = self.lock();
+        let removed = db.execute(
+            "DELETE FROM schedules WHERE id = ?1 AND loop = 'dynamic' AND next_at IS NULL AND paused = 0",
+            params![id],
+        )?;
+        Ok(removed > 0)
+    }
+
     /// 任务 `id` 上她写的「现在在干嘛」（施工 LF-7，只有人生那一行有）；没写过的、清掉了的没有。
     ///
     /// # Errors

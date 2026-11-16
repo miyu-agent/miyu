@@ -1564,6 +1564,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sMC1"><span class="n">MC-1</span>换了模型当场报新的<span class="st">…</span></a></li>
         <li><a class="step review" href="#sLO2"><span class="n">LO-2</span>回合进行中敲的 /loop<span class="st">…</span></a></li>
         <li><a class="step review" href="#sQT2"><span class="n">QT-2</span>引用总带原文<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLO3"><span class="n">LO-3</span>循环的两处收尾<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -60977,6 +60978,59 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/QT-2-引用总带原文.md</code>；蓝图 <code>venues.md</code>、<code>kernel/request.md</code>；协议参考 <code>venues.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLO3" aria-labelledby="h-sLO3">
+  <div class="sheet-head"><h2 id="h-sLO3"><span class="no">LO-3</span>循环的两处收尾</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">AI 自己定节奏的循环，她那一轮没定下一次，以前那一行停着等她定：图标在、循环其实停了。现在那一轮结束时删掉这一行，图标跟着消失。<code>/loop clear</code>、<code>/loop stop</code> 也能关循环。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint · schedules/ended.rs、schedules/fire.rs、commands/looping.rs　miyu-store · schedules.rs</span><span class="dir-note">LO-3</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>交进去之前先订阅那个会话，盯着这句开的那一轮</li>
+              <li>那一轮结束时下一次还是空的：删掉这一行、推 <code>removed</code></li>
+              <li>人插的、别的会话开的一轮不算；她定了的、人停了的不删</li>
+              <li>单独一个 <code>clear</code>、<code>stop</code> 同 <code>off</code>，大小写不论</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">不调就停</span><span class="rl">照 Claude Code，推翻 J-2 的停着等</span></div>
+          <div class="tile new"><span class="nm">只看它自己那一轮</span><span class="rl">trigger 是交进去的那一条</span></div>
+          <div class="tile new"><span class="nm">查和删一条语句</span><span class="rl">不和她定下一次抢</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LO-3</dd></div>
+        <div><dt>名称</dt><dd>循环的两处收尾</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">LO-3</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>循环自己那一轮没定下一次：那一行删了、推了 removed</span></li>
+        <li><span class="ok">✓</span><span>定了的留着，下一次是她定的，到点再跑</span></li>
+        <li><span class="ok">✓</span><span>循环等着时人插的一轮不删</span></li>
+        <li><span class="ok">✓</span><span>/loop clear、/loop STOP、/loop stop 关掉；/loop clear the cache 开循环</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LO-3-循环收尾.md</code>；蓝图 <code>schedules.md</code>、<code>protocol.md</code>；设计 45；协议参考 <code>packages.md</code>。</li>
       </ul>
     </div>
   </div>

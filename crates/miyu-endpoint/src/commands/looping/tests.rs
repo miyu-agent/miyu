@@ -14,6 +14,25 @@ fn off_alone_stops_the_loops() {
     );
 }
 
+/// 施工 LO-3：单独一个 `clear`、`stop` 同 `off`，大小写不论、前后空白不算；后面带了字的照旧是要说的话。
+#[test]
+fn clear_and_stop_alone_stop_the_loops_too() {
+    for alone in ["clear", "STOP", "stop ", " Clear", "OFF"] {
+        assert_eq!(parse(alone), Ok(Asked::Off), "{alone:?}");
+    }
+    assert_eq!(
+        parse("clear the cache"),
+        Ok(Asked::Dynamic {
+            prompt: "clear the cache"
+        })
+    );
+    assert_eq!(
+        parse("stop 5m"),
+        Ok(Asked::Dynamic { prompt: "stop 5m" }),
+        "间隔在后面不带 every 的不算固定"
+    );
+}
+
 #[test]
 fn an_interval_first_or_after_every_makes_it_fixed() {
     assert_eq!(

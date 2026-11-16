@@ -136,6 +136,7 @@ mod login_device;
 mod login_ticket;
 mod loop_busy;
 mod loop_command;
+mod loop_ends;
 mod mcp;
 mod mcp_cache;
 mod mcp_edit;
