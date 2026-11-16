@@ -1565,6 +1565,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sLO2"><span class="n">LO-2</span>回合进行中敲的 /loop<span class="st">…</span></a></li>
         <li><a class="step review" href="#sQT2"><span class="n">QT-2</span>引用总带原文<span class="st">…</span></a></li>
         <li><a class="step review" href="#sLO3"><span class="n">LO-3</span>循环的两处收尾<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLO3F"><span class="n">LO-3补</span>核心停过以后的循环<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -61031,6 +61032,59 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LO-3-循环收尾.md</code>；蓝图 <code>schedules.md</code>、<code>protocol.md</code>；设计 45；协议参考 <code>packages.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLO3F" aria-labelledby="h-sLO3F">
+  <div class="sheet-head"><h2 id="h-sLO3F"><span class="no">LO-3补</span>核心停过以后的循环</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">修 LO-3 带进来的问题：核心正常重启时，循环那一轮被当成结束、那一行被删，接着干的那一轮里她定不了下一次。现在重启了的不删、起来接着盯；被强杀、错过的留下的那一行，起来时删掉，头上的图标跟着没了。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint · schedules/ended.rs、schedules/fire.rs、schedules/run.rs</span><span class="dir-note">LO-3补</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>循环那一轮照「重启了」结束：不删，那一行留着</li>
+              <li>核心起来时，没定下一次的那几行载入跑在的会话</li>
+              <li>在跑接着干的那一轮：照命令编号 <code>schedule/&lt;任务&gt;/</code> 接着盯</li>
+              <li>空着的、会话没了的：删掉、推 <code>removed</code>；人停着的留着</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">重启了不算结束</span><span class="rl">那一轮接着干</span></div>
+          <div class="tile new"><span class="nm">接着干的认 cause</span><span class="rl">trigger 换了，命令编号没换</span></div>
+          <div class="tile new"><span class="nm">停在那儿的删</span><span class="rl">再也不会到点</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LO-3补</dd></div>
+        <div><dt>名称</dt><dd>核心停过以后的循环</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">LO-3补</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>正常停：那一行留着，接着干的一轮里她定了下一次，到点再跑</span></li>
+        <li><span class="ok">✓</span><span>正常停后接着干的一轮没定：删掉</span></li>
+        <li><span class="ok">✓</span><span>强杀留下的、错过的：起来时删掉，停着的、定了的留着</span></li>
+        <li><span class="ok">✓</span><span>实测强杀、正常停各一次，图标照预期</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LO-3补-重启清掉停了的循环.md</code>；蓝图 <code>schedules.md</code>。</li>
       </ul>
     </div>
   </div>

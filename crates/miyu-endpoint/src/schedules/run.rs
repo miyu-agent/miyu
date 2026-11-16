@@ -14,6 +14,8 @@ impl Core {
     /// 起唤醒表（施工 J-1 上）：开上已有的表、跳过错过的，然后在后台睡到点、到点交进会话。核心没了，它下一次醒来就收手。
     pub fn start_schedules(self: &Arc<Self>) -> tokio::task::JoinHandle<()> {
         self.schedules.recall();
+        // 她自己定节奏的停在那儿的（核心在她那一轮里停了、错过了的）：接着干的接着盯，别的删掉（施工 LO-3补，`ended.rs`）。
+        super::ended::boot(self);
         // 人生那几行、她写的「现在在干嘛」照表铺回（施工 LF-7）。
         super::doing::boot(self);
         tokio::spawn(run(Arc::downgrade(self)))
@@ -142,8 +144,9 @@ async fn fire(core: &Arc<Core>, table: &Table, schedule: Schedule, now: Timestam
     core.schedules.notify(&schedule.id);
 }
 
-/// 核心起来时已经过了的一个（错过的不补）：跑完就没了的删掉，她自己定节奏的停着等，人生的下一次写成现在、马上补醒一次（停了
-/// 多久都只这一次，施工 LF-1），别的照现在算下一次；记一行。推给扩展的记下错过了几次，下一次推的时候报（施工 J-4）。
+/// 核心起来时已经过了的一个（错过的不补）：跑完就没了的删掉，她自己定节奏的清掉下一次（跳完以后照「没定下一次」收尾，施工
+/// LO-3补，`ended.rs`），人生的下一次写成现在、马上补醒一次（停了多久都只这一次，施工 LF-1），别的照现在算下一次；记一行。
+/// 推给扩展的记下错过了几次，下一次推的时候报（施工 J-4）。
 pub(super) fn skip(table: &Table, mut schedule: Schedule, now: Timestamp) {
     let due = schedule.next;
     tracing::info!(target: TARGET, schedule = %schedule.id, "schedule missed");

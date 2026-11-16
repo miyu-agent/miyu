@@ -8,7 +8,7 @@ use std::time::Duration;
 use serde_json::{Value, json};
 
 use miyu_endpoint::Core;
-use miyu_endpoint::schedules::{Creator, Loop, Schedule, Target, Wanted, When};
+use miyu_endpoint::schedules::{Creator, Loop, Schedule, ScheduleError, Target, Wanted, When};
 use miyu_kernel::event::{Body, Event};
 use miyu_kernel::id::SessionId;
 use miyu_kernel::origin::{By, ScheduleLoop};
@@ -149,7 +149,7 @@ async fn her_wakeup_in_the_woken_turn_beats_the_default() {
 }
 
 #[tokio::test]
-async fn a_missed_life_loop_wakes_once_on_restart_and_a_dynamic_one_waits() {
+async fn a_missed_life_loop_wakes_once_on_restart_and_a_dynamic_one_ends() {
     let home = Home::new();
     let hand = Hand::at(START);
     let session = {
@@ -184,9 +184,13 @@ async fn a_missed_life_loop_wakes_once_on_restart_and_a_dynamic_one_waits() {
     let said = scheduled(&home.log(&session));
     assert_eq!(said.len(), 1, "只补一次：{said:?}");
     assert_eq!(said[0].schedule, "t1");
-    let dynamic = core.schedules().get("t2").unwrap();
-    assert_eq!(dynamic.next, None, "她自己定节奏的照旧停着等");
-    assert!(dynamic.last.is_none(), "没交");
+    // 她自己定节奏的错过了：再也不会到点，起来时删掉（施工 LO-3补），没交。
+    let gone = || matches!(core.schedules().get("t2"), Err(ScheduleError::Unknown));
+    until("错过的那一行删了", gone).await;
+    assert!(
+        said.iter().all(|one| one.schedule != "t2"),
+        "没交：{said:?}"
+    );
 }
 
 #[tokio::test]

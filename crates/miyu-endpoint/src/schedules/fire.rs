@@ -166,7 +166,10 @@ pub(super) async fn deliver(core: &Arc<Core>, schedule: &Schedule, due: Timestam
                     }
                     // 正忙的排进了这一轮，不是它自己开的一轮：不盯。
                     _ if busy => {}
-                    _ => super::ended::watch(core, schedule.id.clone(), said, pushes),
+                    _ => {
+                        let mine = super::ended::Mine::Said(said);
+                        super::ended::watch(core, schedule.id.clone(), mine, pushes);
+                    }
                 }
             }
             Delivered {

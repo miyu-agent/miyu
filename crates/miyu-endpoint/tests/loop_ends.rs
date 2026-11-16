@@ -1,6 +1,7 @@
 //! 她自己定节奏的循环没定下一次就结束（施工 LO-3，项目主人 2026-11-16 定，照 Claude Code「不调就停」）：真核心、手拨的钟。
 //! `/loop <话>` 交进去开的那一轮里她没调 `schedule_wakeup`，那一轮结束时删掉这一行、推 `removed`；调了的留着、下一次是她定的；
-//! 人插的一轮不算。`/loop clear`、`/loop stop` 同 `/loop off`。以前那一行停着等她定，头上的图标在、循环其实停了。
+//! 人插的一轮不算。`/loop clear`、`/loop stop` 同 `/loop off`。以前那一行停着等她定，头上的图标在、循环其实停了。核心在她那一轮
+//! 里停了的，起来时删掉（施工 LO-3补）。
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -8,7 +9,9 @@ use std::time::Duration;
 use serde_json::{Value, json};
 
 use miyu_endpoint::Core;
-use miyu_endpoint::schedules::{Loop, Schedule};
+use miyu_endpoint::schedules::{Creator, Loop, Schedule, Target, Wanted, When};
+use miyu_kernel::id::SessionId;
+use miyu_kernel::time::Timestamp;
 use miyu_session::testkit::{Play, Script};
 use miyu_tool::Catalog;
 
@@ -166,4 +169,97 @@ async fn clear_and_stop_alone_turn_the_loop_off() {
     );
     let row = rows(&core).pop().expect("开了一个");
     assert_eq!(row.prompt, "clear the cache");
+}
+
+/// 核心没来得及看完循环那一轮就没了（施工 LO-3补：被强杀、断电，那一行还是交过以后没定下一次的样子），起来时会话空着，删掉；
+/// 人停着的那一行留着给人续，定了下一次的照旧。
+#[tokio::test]
+async fn a_loop_left_without_a_next_ends_on_restart() {
+    let home = Home::new();
+    let hand = Hand::at(START);
+    let ids = {
+        let first = core_with_tools(&home, &Script::new([]), &hand, looping());
+        let mut client = Client::connect(Arc::clone(&first));
+        client.hello().await;
+        let session = client.create("c1", "~").await;
+        let schedules = first.schedules();
+        let dynamic = |prompt: &str| Wanted {
+            by: Creator::Person,
+            when: When::At {
+                at: Timestamp::from_unix_millis(START + 600_000).expect("时刻"),
+            },
+            prompt: prompt.to_string(),
+            target: Target::Session {
+                session: SessionId::parse(&session).expect("编号"),
+            },
+            looping: Some(Loop::Dynamic),
+            first: None,
+        };
+        let left = schedules.add(dynamic("交过、没定")).expect("建得了");
+        schedules.set_next(&left.id, None, None).expect("清得掉");
+        let paused = schedules.add(dynamic("人停着的")).expect("建得了");
+        schedules.pause(&paused.id).expect("停得了");
+        let set = schedules.add(dynamic("定了的")).expect("建得了");
+        (left.id, paused.id, set.id)
+    };
+    let core = core_with_tools(&home, &Script::new([]), &hand, looping());
+    core.start_schedules();
+    until("没定下一次的那一行删了", || {
+        rows(&core).iter().all(|row| row.id != ids.0)
+    })
+    .await;
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    let left: Vec<String> = rows(&core).into_iter().map(|row| row.id).collect();
+    assert!(left.contains(&ids.1) && left.contains(&ids.2), "{left:?}");
+}
+
+/// 有计划地停（施工 LO-3补，修 LO-3 带进来的）：循环那一轮停在请求上时核心停下，那一轮照「重启了」结束，那一行留着、下一次
+/// 还空着。再起来那一轮接着干，她在接着的一轮里定了下一次：那一行留着、下一次是她定的。
+async fn stopped_in_its_turn(home: &Home, hand: &Arc<Hand>) -> String {
+    let script = Script::new([Play::Holds]);
+    let (first, mut client, session) = started(home, &script, hand).await;
+    typed(&mut client, "k1", &session, "/loop 报一下时间").await;
+    until("循环那一轮请求了", || script.requests().len() == 1).await;
+    first.stop_sessions().await;
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    let kept = rows(&first);
+    assert_eq!(kept.len(), 1, "停的时候不删：{kept:?}");
+    assert_eq!(kept[0].next, None);
+    session
+}
+
+#[tokio::test]
+async fn a_planned_stop_lets_the_resumed_turn_set_the_next() {
+    let home = Home::new();
+    let hand = Hand::at(START);
+    let session = stopped_in_its_turn(&home, &hand).await;
+    let script = Script::new([
+        Play::calls(&[("schedule_wakeup", r#"{"delay_seconds":120}"#)]),
+        Play::Says("两分钟后再报。"),
+    ]);
+    let core = core_with_tools(&home, &script, &hand, looping());
+    core.start_schedules();
+    let set = || rows(&core).first().and_then(|row| row.next);
+    until("接着的那一轮定了下一次", || set().is_some()).await;
+    assert_eq!(set().map(|next| next.unix_millis()), Some(START + 120_000));
+    home.until_turns(&session, 2).await;
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    assert_eq!(rows(&core).len(), 1, "接着的那一轮结束以后留着");
+}
+
+/// 有计划地停以后接着干的那一轮里她没定下一次：那一轮结束时删掉。
+#[tokio::test]
+async fn a_resumed_turn_that_sets_no_next_ends_the_loop() {
+    let home = Home::new();
+    let hand = Hand::at(START);
+    let session = stopped_in_its_turn(&home, &hand).await;
+    let script = Script::new([Play::Says("现在是早上八点。")]);
+    let core = core_with_tools(&home, &script, &hand, looping());
+    core.start_schedules();
+    until("接着的那一轮请求了", || {
+        script.requests().len() == 1
+    })
+    .await;
+    home.until_turns(&session, 2).await;
+    until("那一行删了", || rows(&core).is_empty()).await;
 }
