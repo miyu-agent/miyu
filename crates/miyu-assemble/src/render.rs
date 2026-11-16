@@ -190,10 +190,10 @@ pub(crate) fn spoken(
 ) -> Vec<Block> {
     let forward = texts.forward.as_ref();
     match (&message.venue, &texts.group) {
-        (Some(venue), Some(chat)) => group::line(history, event, venue, blocks, chat, forward),
+        (Some(venue), Some(chat)) => group::line(event, venue, blocks, chat, forward),
         // 不在群里的（私聊）：O-35 起造的，带了东西的那条在正文的块后面单独一块写 `[msg=…]` 和记号（施工 O-35，`private.rs`）；
-        // 以前造的，只有带的东西的写成记号（施工 O-13 补），不然她看到的是空的。合并转发那几行接在最后，单独一块、不缩进（施工
-        // O-34），快照里没有那几句的不写。
+        // 以前造的，只有带的东西的写成记号（施工 O-13 补），不然她看到的是空的。引用的那一行（施工 QT-2）、合并转发那几行接在
+        // 最后，各自单独一块、不缩进（施工 O-34），引用的内容、转发在快照里没有那几句的不写；没引用的和以前一个字节不差。
         (Some(venue), None) => {
             let media = texts.private_media.as_ref();
             let mut out = if blocks.is_empty() && media.is_none() {
@@ -209,9 +209,7 @@ pub(crate) fn spoken(
                     .count();
                 out.splice(at..at, private::line(venue, media));
             }
-            let forwards =
-                forward.and_then(|forward| group::forwarded(&venue.forwards, 0, forward));
-            out.extend(forwards.map(|text| Block::Text(Text { text })));
+            out.extend(private::tail(venue, forward));
             out
         }
         _ => said(history, event, blocks, texts),

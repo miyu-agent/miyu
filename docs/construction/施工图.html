@@ -1563,6 +1563,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sQU2F"><span class="n">QU-2修</span>换了模型照换成的那一家查额度<span class="st">…</span></a></li>
         <li><a class="step review" href="#sMC1"><span class="n">MC-1</span>换了模型当场报新的<span class="st">…</span></a></li>
         <li><a class="step review" href="#sLO2"><span class="n">LO-2</span>回合进行中敲的 /loop<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sQT2"><span class="n">QT-2</span>引用总带原文<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -60923,6 +60924,59 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LO-2-回合中的loop.md</code>；蓝图 <code>schedules.md</code>、<code>protocol.md</code>；协议参考 <code>packages.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sQT2" aria-labelledby="h-sQT2">
+  <div class="sheet-head"><h2 id="h-sQT2"><span class="no">QT-2</span>引用总带原文</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">以前被引用的那一条在她之前的日志里就只写编号，私聊根本不写引用。现在带了 <code>quoted</code> 的一律写出原文，私聊也写引用那一行。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-assemble · group.rs、group/records.rs、group/recent.rs、private.rs、render.rs　miyu-endpoint · venues/records/{pass,read,recent}.rs</span><span class="dir-note">QT-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>带了 <code>quoted</code> 的一律写在 <code>reply-to</code> 下面，只看这一条自己带的</li>
+              <li>判官的 <code>current</code>：日志里有那一条的编号后面照旧写它，下面也写</li>
+              <li>私聊：最后单独一块 <code>reply-to: msg=编号</code>，带 <code>quoted</code> 的写在下面</li>
+              <li>删掉「之前的日志里有就不写」和判官快路为它记的编号哈希</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">只看这一条自己带的</span><span class="rl">同一份日志字节不变</span></div>
+          <div class="tile new"><span class="nm">没带的一字不变</span><span class="rl">老消息前缀不动</span></div>
+          <div class="tile new"><span class="nm">写法同 QT-1</span><span class="rl">不加给模型看的字</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">QT-2</dd></div>
+        <div><dt>名称</dt><dd>引用总带原文</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">QT-2</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>被引用的那一条在之前的日志里也写出原文</span></li>
+        <li><span class="ok">✓</span><span>私聊的引用写在最后一块、转发展开</span></li>
+        <li><span class="ok">✓</span><span>没带 reply_to 的私聊、没带 quoted 的群消息一字不变</span></li>
+        <li><span class="ok">✓</span><span>判官三条路答出来一样</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/QT-2-引用总带原文.md</code>；蓝图 <code>venues.md</code>、<code>kernel/request.md</code>；协议参考 <code>venues.md</code>。</li>
       </ul>
     </div>
   </div>

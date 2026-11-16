@@ -26,7 +26,6 @@ use crate::refusal::Refusal;
 mod pass;
 mod read;
 mod recent;
-mod unseen;
 
 use crate::sweep::Tuning;
 use recent::{At, Caps, Recent};

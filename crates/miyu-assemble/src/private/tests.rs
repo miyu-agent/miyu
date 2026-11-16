@@ -167,3 +167,5 @@ fn a_venue_without_unshown_media_has_no_line() {
     };
     assert_eq!(line(&venue, &texts), None);
 }
+
+mod quoted;

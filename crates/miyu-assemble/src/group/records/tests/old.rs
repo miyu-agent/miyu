@@ -51,7 +51,7 @@ pub(super) fn records_in(
                     venue,
                     &said.blocks,
                     (texts, forward),
-                    (&mark, "", false),
+                    (&mark, ""),
                 ))
             }
             Body::VenueDelivered(delivered) => Some(you(event, delivered, texts)),
@@ -78,7 +78,7 @@ pub(super) fn records_in(
             venue,
             &message.blocks,
             (texts, forward),
-            ("", &quote, false),
+            ("", &quote),
         ),
     })
 }
