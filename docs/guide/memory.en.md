@@ -104,7 +104,7 @@ Organizing uses the everyday pool (`normal`), the same as automatic saving. Each
 miyu memory [<command>] [<options>]
 ```
 
-With no command it runs `list`. Without `--persona` or `-s`, it uses the memory of the default persona (`persona.default`); if no default persona is set, it reports "Memory unavailable.". For the memory of sessions with no persona, write `--persona _none`.
+With no command it runs `list`. Without `--persona` or `-s`, it uses the memory of the default persona (`persona.default`); if no default persona is set, it reports "memory unavailable". For the memory of sessions with no persona, write `--persona _none`.
 
 | Command | What it does |
 |---|---|
@@ -211,7 +211,7 @@ For backups and moving to another machine, see [Data and backups](data.en.md).
 
 | What you see | What to do |
 |---|---|
-| `miyu memory` reports "Memory unavailable." | No default persona is set. Write `--persona <id>`, or `--persona _none` for the memory of sessions with no persona |
+| `miyu memory` reports "memory unavailable" | No default persona is set. Write `--persona <id>`, or `--persona _none` for the memory of sessions with no persona |
 | `/remember` says "Preset "…" has memory off." | The preset of this session does not have persona memory on. Open a new session with a preset that has it on, or turn it on in the preset |
 | "Persona memory not installed." | `miyu pkg install base-memory` |
 | "Memory is being organized." | This memory is being organized. Wait for it to finish |

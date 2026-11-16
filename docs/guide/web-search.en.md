@@ -97,7 +97,7 @@ miyu config set net.search.source deepseek
 
 To give web access a key of its own, store it as in the Tavily steps above, then write `net.search.deepseek.key`.
 
-"The DeepSeek provider on the model side" is recognized like this: for a `[providers.<id>]` with `catalog` written, it counts only if `catalog` is `deepseek`; for one without `catalog`, it counts only if `base_url` contains `api.deepseek.com` (one written as `{ env = "…" }` does not count); for one with neither, it counts only if the id is `deepseek`. If several count, the one whose id comes first and that has a key is used.
+"The DeepSeek provider on the model side" is recognized like this: for a `[providers.<id>]` with `catalog` written, it counts only if `catalog` is `deepseek`; for one without `catalog`, it counts only if the host of `base_url` is `api.deepseek.com` (one written as `{ env = "…" }` does not count); for one with neither, it counts only if the id is `deepseek`. Once recognized, its key is borrowed only if the address is the official one too: no `base_url` written, or a `base_url` whose host is `api.deepseek.com`. One with `catalog = "deepseek"` whose address points at a relay is not borrowed from, so that a relay's key is never sent to DeepSeek's official service. If several count, the one whose id comes first and that has a key is used.
 
 ### A SearXNG you host yourself
 

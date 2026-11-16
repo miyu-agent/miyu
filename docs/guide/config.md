@@ -107,7 +107,7 @@ miyu config set tui.footer "[{ part = 'usage' }, { part = 'model', hidden = true
 miyu config set 'providers.ollama.models."qwen3:8b".window' 32768
 ```
 
-这种键在 Windows PowerShell 5.1 里双引号同样会被吃掉，改用 `miyu config edit` 手改。
+这种键在 Windows PowerShell 5.1 里双引号同样会被吃掉。键里的引号换成单引号、外面用双引号：`miyu config set "providers.ollama.models.'qwen3:8b'.window" 32768`；或者用 `miyu config edit` 手改。
 
 `miyu config set` 一次改一个键。整张表（例如一个 MCP 服务 `[mcp.<名字>]`）要手改文件。
 

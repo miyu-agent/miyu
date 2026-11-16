@@ -172,7 +172,7 @@ Undoes the last turn of a session; rolls back only the conversation, not the fil
 miyu undo
 ```
 
-When refused (for example "Nothing to undo."), the exit code is `1`. See [Sessions](sessions.en.md#undo-restore-redo).
+When refused (for example "nothing to undo"), the exit code is `1`. See [Sessions](sessions.en.md#undo-restore-redo).
 
 ## miyu restore
 
@@ -186,7 +186,7 @@ Restores the turn you just undid, before you send the next message. Arguments ar
 miyu restore
 ```
 
-When there is nothing to restore, it reports "Nothing to restore." with exit code `1`.
+When there is nothing to restore, it reports "nothing to restore" with exit code `1`.
 
 ## miyu redo
 
@@ -200,7 +200,7 @@ Undoes the last turn and sends your message again; if you write a message, the n
 miyu redo Only change the README, leave the code alone
 ```
 
-Exit codes are the same as `miyu ask`. If the last turn was not opened by your message, it reports "Cannot redo." with exit code `1`.
+Exit codes are the same as `miyu ask`. If the last turn was not opened by your message, it reports "cannot redo" with exit code `1`.
 
 ## miyu compact
 
@@ -214,7 +214,7 @@ Compacts the session's context into a summary; the most recent part stays as it 
 miyu compact Keep the details of the database migration
 ```
 
-Exit codes: `0` compacted; `1` refused or the compaction failed; `3` interrupted; `5` no usable model. See [Sessions](sessions.en.md#when-the-context-is-full).
+Exit codes: `0` compacted; `1` refused or the compaction failed (with nothing to compress it reports "nothing to compact"); `3` interrupted; `5` no usable model. See [Sessions](sessions.en.md#when-the-context-is-full).
 
 ## miyu recap
 
@@ -258,7 +258,7 @@ miyu session import <file> [--archive]
 | `--md` | Exports as Markdown |
 | `--for <read\|agent\|chat>` | Who the Markdown is for: `read` for yourself (the default), `agent` for another AI, `chat` to paste into a web chat. Must be given with `--md` |
 | `--last <turns>` | Markdown with only the latest turns, at least 1. Must be given with `--md` |
-| `import <file>` | Imports a raw bundle, printing the ids of the newly imported sessions, one per line |
+| `import <file>` | Imports a raw bundle, printing the ids of the newly imported sessions, one per line; sessions this data root already has are not printed |
 | `--archive` | Imports as a read-only archive: it can be viewed and searched, but not continued |
 
 ```sh

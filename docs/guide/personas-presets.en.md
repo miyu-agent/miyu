@@ -237,6 +237,6 @@ Packages can also provide personas and presets; for how, see [Things that work a
 
 | What you see | What to do |
 |---|---|
-| You cannot open a new session, and `miyu check` says "preset.default names preset …, which doesn't exist yet" | The default preset was deleted or renamed. Change `preset.default` to one that exists, or choose one when you open the session |
+| You cannot open a new session, and `miyu ask` reports "preset not found" (`miyu check` does not check this key) | The default preset was deleted or renamed. Change `preset.default` to one that exists, or choose one when you open the session |
 | A persona or preset is marked as an error in the list and cannot be chosen | Use `miyu check` to see which line of which file is wrong |
 | When switching persona or preset: "A reply is in progress: stop it or wait for it to finish" | Wait for this turn to finish, or stop it first |

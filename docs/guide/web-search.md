@@ -97,7 +97,7 @@ miyu config set net.search.source deepseek
 
 想给联网单用一个 key，照上面 Tavily 的做法存好，再写 `net.search.deepseek.key`。
 
-「模型那边的 DeepSeek 供应商」这样认：`[providers.<编号>]` 写了 `catalog` 的，`catalog` 是 `deepseek` 才算；没写 `catalog` 的，`base_url` 里有 `api.deepseek.com` 才算（写成 `{ env = "…" }` 的不算）；两样都没写的，编号是 `deepseek` 才算。几家都算的，用编号排在最前、写了 key 的那一家。
+「模型那边的 DeepSeek 供应商」这样认：`[providers.<编号>]` 写了 `catalog` 的，`catalog` 是 `deepseek` 才算；没写 `catalog` 的，`base_url` 的主机是 `api.deepseek.com` 才算（写成 `{ env = "…" }` 的不算）；两样都没写的，编号是 `deepseek` 才算。认出来以后，地址还得是官方的才借它的 key：没写 `base_url`，或者 `base_url` 的主机就是 `api.deepseek.com`。写了 `catalog = "deepseek"`、地址却指到中转站的不借，免得把中转站的 key 发到 DeepSeek 官方去。几家都算的，用编号排在最前、写了 key 的那一家。
 
 ### 自建的 SearXNG
 

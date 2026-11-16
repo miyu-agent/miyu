@@ -1554,6 +1554,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sDOC4"><span class="n">DOC-4</span>手册写上「后天」<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sDOC5"><span class="n">DOC-5</span>手册写上软件包带的模型驱动<span class="st">✓</span></a></li>
         <li><a class="step review" href="#sPVRM"><span class="n">PV-RM</span>去掉私密目录<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sDOC6"><span class="n">DOC-6</span>照手册把命令真敲一遍<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -60287,6 +60288,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/DOC-5-手册对antigravity.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sDOC6" aria-labelledby="h-sDOC6">
+  <div class="sheet-head"><h2 id="h-sDOC6"><span class="no">DOC-6</span>照手册把命令真敲一遍</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">前几步的手册只对过代码。这一步在沙箱数据根里把手册里的命令照原样敲一遍，改掉对不上的五处。只动文档。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">docs/guide</span><span class="dir-note">DOC-6</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>实测：不要模型的约 110 条、要模型的约 35 条，Linux、命令行，中文和英文界面各一遍</li>
+              <li>默认预设写错时：miyu check 并不报，miyu ask 报「预设不存在」</li>
+              <li>命令行印的拒绝语没有句号、英文小写开头，英文页照改</li>
+              <li>session import 早就有的不印；compact 没东西可压时的报错</li>
+              <li>带引号的键在 PowerShell 里可以写成里面单引号、外面双引号</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">手册里的命令能在沙箱里敲的都敲一遍；没实测的写明是哪些</span><span class="rl">项目主人 11-16 立</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DOC-6</dd></div>
+        <div><dt>名称</dt><dd>照手册把命令真敲一遍</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">DOC-6</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改的每一处有实测的输出对着</span></li>
+        <li><span class="ok">✓</span><span>改过的每页中英行数、标题、表格、代码块个数相等</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/DOC-6-手册实测.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

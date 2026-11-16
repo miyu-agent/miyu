@@ -107,7 +107,7 @@ If one part of a key contains characters such as `.` or `:`, put that part in do
 miyu config set 'providers.ollama.models."qwen3:8b".window' 32768
 ```
 
-Windows PowerShell 5.1 strips the double quotes in such keys as well; use `miyu config edit` and change it by hand instead.
+Windows PowerShell 5.1 strips the double quotes in such keys as well. Use single quotes inside the key and double quotes outside: `miyu config set "providers.ollama.models.'qwen3:8b'.window" 32768`; or change it by hand with `miyu config edit`.
 
 `miyu config set` changes one key at a time. A whole table (for example an MCP server `[mcp.<name>]`) has to be edited in the file by hand.
 
