@@ -1562,6 +1562,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sRO2"><span class="n">RO-2</span>数据根两种模式都读得到<span class="st">…</span></a></li>
         <li><a class="step review" href="#sQU2F"><span class="n">QU-2修</span>换了模型照换成的那一家查额度<span class="st">…</span></a></li>
         <li><a class="step review" href="#sMC1"><span class="n">MC-1</span>换了模型当场报新的<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLO2"><span class="n">LO-2</span>回合进行中敲的 /loop<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -60868,6 +60869,60 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/MC-1-换模型当场报新的.md</code>；蓝图 <code>models.md</code>、<code>protocol.md</code>、<code>session/actor.md</code>；协议参考 <code>sessions.md</code>、<code>events.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sLO2" aria-labelledby="h-sLO2">
+  <div class="sheet-head"><h2 id="h-sLO2"><span class="no">LO-2</span>回合进行中敲的 /loop</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">AI 正在一步步干活时敲的 <code>/loop</code>，以前到点就并进这一轮，她顺着手上的活看到、不定下一次，循环停了、图标还在，<code>/stop</code> 也去不掉。现在等这一轮结束再交、由它自己开一轮；<code>/stop</code> 连循环一起删。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint · schedules/busy.rs、schedules/fire.rs、schedules/run.rs、spawn.rs、commands/basic.rs、commands/looping.rs</span><span class="dir-note">LO-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>跑在已有会话上的循环到点时会话正忙：这一次先不交、表不动，内存里记下等它</li>
+              <li>会话忙不忙变了（<code>listing</code> 端口）：放掉、再挑，空下来的照常交、开一轮</li>
+              <li>人打断这一轮的，循环照样在它结束以后跑</li>
+              <li><code>/stop</code> 先删循环再打断；人生那一行不删</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">排在这一轮后面</span><span class="rl">不并进正在跑的一轮</span></div>
+          <div class="tile new"><span class="nm">先记再看忙不忙</span><span class="rl">不漏叫醒、不轮询</span></div>
+          <div class="tile new"><span class="nm">头照定时表画</span><span class="rl">不用改头</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LO-2</dd></div>
+        <div><dt>名称</dt><dd>回合进行中敲的 /loop</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">LO-2</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>停在工具上时敲的 /loop 在这一轮结束后自己开一轮，第一轮里没有它</span></li>
+        <li><span class="ok">✓</span><span>打断以后循环照样跑</span></li>
+        <li><span class="ok">✓</span><span>/loop 后 /stop：那一行没了、也不交</span></li>
+        <li><span class="ok">✓</span><span>循环自己那一轮里 /stop 删掉</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LO-2-回合中的loop.md</code>；蓝图 <code>schedules.md</code>、<code>protocol.md</code>；协议参考 <code>packages.md</code>。</li>
       </ul>
     </div>
   </div>

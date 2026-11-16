@@ -1,6 +1,6 @@
 //! 交进会话（施工 J-1 上，设计 `45-定时和循环.md` 第三节第 2 条）：照「跑在哪」交给已有的会话，或者照建时定下的人格、预设、
 //! 工作目录新开一个。交进去的那句记成 `by: schedule`（带任务编号），照「别处来的话」的规矩叫醒她：正在跑一轮的排在这一轮
-//! 后面。
+//! 后面。跑在已有会话上的循环不交进正在跑的这一轮，等它结束再交（施工 LO-2，[`waits`]、`busy.rs`）。
 //!
 //! - 她自己建的（`by` 是会话里的她）到点时看那个会话现在的预设：关了建它的那个包（定时任务看 `schedule`，循环看 `loop`）的
 //!   这一次不跑，记 `skipped:preset_off`，下一次照算。人建的、包建的不看预设。
@@ -48,6 +48,26 @@ impl Delivered {
             remove: false,
         }
     }
+}
+
+/// 跑在已有会话上的循环（固定的、她自己定节奏的）到点时那个会话正在跑一轮：记下等它空下来（施工 LO-2，`busy.rs`），交回真，
+/// 这一次先不交、表不动。先记再看忙不忙：看完到记下之间空下来的也叫得醒。会话找不到的交回假，照常交（交的时候记没了）。
+pub(super) async fn waits(core: &Arc<Core>, schedule: &Schedule) -> bool {
+    let (Some(Loop::Fixed | Loop::Dynamic), Target::Session { session }) =
+        (schedule.looping, &schedule.target)
+    else {
+        return false;
+    };
+    let Ok(found) = core.sessions.get(core, session).await else {
+        return false;
+    };
+    let waiting = &core.schedules.waiting;
+    waiting.hold(&schedule.id, session);
+    if found.handle.busy() {
+        return true;
+    }
+    waiting.drop_one(&schedule.id);
+    false
 }
 
 /// 把 `schedule` 的这一次（到点在 `due`）交出去。

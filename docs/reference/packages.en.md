@@ -344,7 +344,7 @@ Run a slash command: the head passes along exactly what the person typed; the co
 | Command | What it does |
 |---|---|
 | `/clear` (`/reset`) | Clear the context and the to-do list, like `session.clear` |
-| `/stop` | Interrupt this turn and stop the background commands and subagents this session spawned, and its organizing |
+| `/stop` | Remove this session's loop, interrupt this turn and stop the background commands and subagents this session spawned, and its organizing |
 | `/workspace <path>` | Change the working directory; without a path, say where it is |
 | `/context <tokens>`, `/context unset` (or `off`), `/context` | Set this session's context limit (`128000`, `128k` and `1m` all work), like `context` in `session.configure`; remove it; say the limit and compaction line right now |
 | `/todo`, `/todo clear` | Show the to-do list; clear it |
@@ -353,7 +353,7 @@ Run a slash command: the head passes along exactly what the person typed; the co
 | `/clear-memory` (`/reset-memory`) | Clear what this session remembered |
 | `/goal` family | Show, set, pause, resume, edit, clear the standing goal |
 | `/life`, `/life new`, `/life pause`, `/life resume`, `/life kill` | For this session's persona: say how its life session is doing (with none, nothing is started: the reply explains what a life session is and how to start one); start a new one (ending the current one first), pause, resume, end it, like `life.new`, `life.pause`, `life.resume`, `life.kill`. Local sessions with a persona only |
-| `/loop <interval> <prompt>`, `/loop <prompt>`, `/loop`, `/loop off` | Send it at a fixed interval; let the AI pick when to run next; let the AI decide what to do and when (an autonomous loop); stop this session's loops. One loop per session, typing it again replaces the old one; absent when the session's preset has loops off |
+| `/loop <interval> <prompt>`, `/loop <prompt>`, `/loop`, `/loop off` | Send it at a fixed interval; let the AI pick when to run next; let the AI decide what to do and when (an autonomous loop); stop this session's loops. One loop per session, typing it again replaces the old one; typed (or due) while the session is in a turn, it waits for that turn to end instead of joining it; absent when the session's preset has loops off |
 
 Anything else is looked up, in order, among your own command templates (`commands/<name>.md`), commands extensions declare (the core forwards them, `command.call`), and templates in packages. A template expands into a message sent as if the person said it: the response's `events` is that message and `said` is empty.
 

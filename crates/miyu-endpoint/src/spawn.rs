@@ -46,6 +46,8 @@ impl Table {
 impl SessionPort for Table {
     fn listing(&self, session: SessionId) {
         if let Ok(core) = self.core() {
+            // 忙不忙变了也走这里：等这个会话空下来的循环再挑一遍（施工 LO-2）。
+            core.schedules().session_changed(&session);
             core.listing.changed(&core, session);
         }
     }

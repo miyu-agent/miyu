@@ -7,7 +7,7 @@
 //!   固定的英文（`software/loop/autonomous.txt`）：敲命令那一刻读，原样存进那一行的 `prompt`。到点交进会话、记进
 //!   `message.user` 都是这句原文，重放一字不差；她照工具说明原样传回的也是它。不另加标记：表、到点、组装一行都不用改。
 //! - 写错了的（只写了间隔没写话）回 `bad_params`，`data.why` 带上用法（[`usage::refused`]，和命令菜单同一份字表）。
-//! - `/loop off`：删掉这个会话的循环，固定的、动态的都删。
+//! - `/loop off`：删掉这个会话的循环，固定的、动态的都删。`/stop` 也删（施工 LO-2，`basic.rs`）。
 //! - 一个会话同时只有一个循环：再敲一次 `/loop` 换掉原来的（主会话 2026-10-27 定，技术题）。人敲的记成你建的
 //!   （`by: person`），跑在这个会话上；到点交进会话、她每轮定下一次都是唤醒表的事（施工 J-1 上、`schedules/port.rs`）。
 //!
@@ -148,13 +148,14 @@ async fn autonomous(core: &Core) -> Result<String, Refusal> {
     }
 }
 
-/// 删掉跑在这个会话上的循环（固定的、动态的）：删了的交回真，一个都没有的交回假。
-fn stop(core: &Core, session: &SessionId) -> Result<bool, Refusal> {
+/// 删掉跑在这个会话上的循环（固定的、动态的）：删了的交回真，一个都没有的交回假。`/loop off`、`/stop`（施工 LO-2）共用。
+/// 人生那一行不删：只有人生自己的入口动得了它（同 `schedules/port.rs`）。
+pub(super) fn stop(core: &Core, session: &SessionId) -> Result<bool, Refusal> {
     let schedules = core.schedules();
     let rows = schedules.list().map_err(|_| Refusal::INTERNAL)?;
     let mut stopped = false;
     for row in rows.iter().filter(|row| {
-        row.looping.is_some()
+        matches!(row.looping, Some(Loop::Fixed | Loop::Dynamic))
             && matches!(&row.target, Target::Session { session: on } if on == session)
     }) {
         schedules.cancel(&row.id).map_err(|_| Refusal::INTERNAL)?;

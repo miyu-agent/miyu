@@ -71,6 +71,7 @@ async fn run(core: Weak<Core>) {
                 schedule
                     .next
                     .is_some_and(|next| holds.later(&schedule.id, next) <= now)
+                    && !core.schedules.waiting.held(&schedule.id)
             }) {
                 fire(&core, &table, schedule, now).await;
             }
@@ -81,11 +82,15 @@ async fn run(core: Weak<Core>) {
     }
 }
 
-/// 到点的一个：先写下一次（跑完就没了的删掉），再交进会话，记上一次。
+/// 到点的一个：先写下一次（跑完就没了的删掉），再交进会话，记上一次。会话正在跑一轮的循环先不动（`busy.rs`）。
 async fn fire(core: &Arc<Core>, table: &Table, schedule: Schedule, now: Timestamp) {
     let Some(due) = schedule.next else {
         return;
     };
+    // 会话正在跑一轮的循环等它结束（施工 LO-2）：这一次先不交、表不动，空下来再挑。
+    if super::fire::waits(core, &schedule).await {
+        return;
+    }
     let once = next::once(&schedule.when) && !paced(schedule.looping);
     let mut ahead = schedule.clone();
     ahead.next = match schedule.looping {

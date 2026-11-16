@@ -7,6 +7,7 @@
 //! - 表改了叫醒睡着的那个（`Schedules::changed`），重算最早的一次；不轮询。
 //! - 错过的不补：核心起来时已经过了的跳过（`Schedules::recall`），照现在算下一次。
 
+mod busy;
 pub(crate) mod changes;
 mod clock;
 mod doing;
@@ -26,6 +27,7 @@ use std::sync::{Arc, Mutex};
 use jiff::tz::TimeZone;
 use tokio::sync::Notify;
 
+use miyu_kernel::id::SessionId;
 use miyu_kernel::time::Timestamp;
 use miyu_store::root::DataRoot;
 use miyu_store::schedules::{self as table, NewSchedule, Opened, Schedules as Table};
@@ -91,6 +93,8 @@ pub struct Schedules {
     wake: Arc<Notify>,
     /// 写不进下一次的先放一放（`hold.rs`）。
     holds: hold::Holds,
+    /// 等会话这一轮结束的循环（`busy.rs`，施工 LO-2）。
+    waiting: busy::Waiting,
     /// 哪个任务变了（`changes.rs`，施工 J-1 下）。
     changes: tokio::sync::broadcast::Sender<String>,
     /// 给人的通知（`notices.rs`，施工 J-3 下）。
@@ -122,6 +126,7 @@ impl Schedules {
             table: Mutex::new(None),
             wake: Arc::new(Notify::new()),
             holds: hold::Holds::default(),
+            waiting: busy::Waiting::default(),
             changes: tokio::sync::broadcast::channel(changes::CHANGES).0,
             notices: notices::Notices::default(),
             lives: doing::Lives::default(),
@@ -294,6 +299,13 @@ impl Schedules {
         self.wake.notify_one();
     }
 
+    /// 会话 `session` 的状态变了（施工 LO-2，`busy.rs`）：有等它空下来的循环的，放掉、叫醒睡着的那个再挑一遍。
+    pub(crate) fn session_changed(&self, session: &SessionId) {
+        if self.waiting.release(session) {
+            self.changed();
+        }
+    }
+
     /// 表：开过的照开过的；没开过的，`create` 的没有就建，不 `create` 的没有文件就当没有（[`ScheduleError::Unknown`]）。开不了的
     /// 记一行、这一回都当用不了。
     fn table(&self, create: bool) -> Result<Arc<Table>, ScheduleError> {
@@ -358,7 +370,7 @@ impl Schedules {
             .list()
             .unwrap_or_default()
             .into_iter()
-            .filter(|schedule| !schedule.paused)
+            .filter(|schedule| !schedule.paused && !self.waiting.held(&schedule.id))
             .filter_map(|schedule| {
                 let next = schedule.next?;
                 Some(self.holds.later(&schedule.id, next))

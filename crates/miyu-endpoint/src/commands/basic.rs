@@ -1,5 +1,5 @@
-//! 核心自己的斜杠命令（施工 O-6、9-7 下，O-6 三补起照登记表登记）：`/clear`（别名 `/reset`）清空上下文；`/stop` 全停：打断
-//! 这一轮（排着的话留着，不撤回、不接着开），再停掉她派出去的后台命令和子代理；`/workspace` 换会话在哪个目录干活，只有主人
+//! 核心自己的斜杠命令（施工 O-6、9-7 下，O-6 三补起照登记表登记）：`/clear`（别名 `/reset`）清空上下文；`/stop` 全停：删掉
+//! 跑在这个会话上的循环（施工 LO-2），打断这一轮（排着的话留着，不撤回、不接着开），再停掉她派出去的后台命令和子代理；`/workspace` 换会话在哪个目录干活，只有主人
 //! 本人能用（`workspace.rs`）。
 
 use std::sync::Arc;
@@ -57,7 +57,7 @@ impl Slash for Clear {
     }
 }
 
-/// `/stop`：打断这一轮，再停掉派出去的。
+/// `/stop`：删掉这个会话的循环，打断这一轮，再停掉派出去的。
 struct Stop;
 
 impl Slash for Stop {
@@ -71,6 +71,10 @@ impl Slash for Stop {
 
     fn run<'a>(&'a self, call: Call<'a>) -> Running<'a> {
         Box::pin(async move {
+            // 先删循环再打断（施工 LO-2）：打断了这一轮会话就空下来，等它的循环马上会交进来。表用不了的记一行，照样停。
+            if super::looping::stop(call.core, call.session).is_err() {
+                tracing::warn!(target: "miyu::endpoint", "loops not stopped");
+            }
             let interrupt = Command::Interrupt {
                 queued: Queued::Keep,
             };
