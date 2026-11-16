@@ -105,6 +105,26 @@ fn a_community_package_says_where_it_comes_from_what_it_needs_and_asks_to_approv
     );
 }
 
+/// 从软件源装一个带模型驱动的包（施工 RB-1 补）：索引交的 `hosted` 一个驱动一句，接在能力后面。
+#[test]
+fn a_driver_that_lets_the_provider_run_tools_says_so_under_its_capabilities() {
+    let mut zh = weather(&Language::Chinese);
+    zh["package"] = json!("antigravity");
+    zh["capabilities"] = json!([
+        {"id": "model.driver", "name": "提供模型驱动", "summary": "用它的模型时，发给模型的全部对话都经过它"},
+        capability("network", &Language::Chinese),
+    ]);
+    zh["hosted"] = json!({"antigravity": ["search_web"]});
+    assert_eq!(
+        plan(&zh, &Language::Chinese)[5..],
+        [
+            "需要的能力  : 提供模型驱动：用它的模型时，发给模型的全部对话都经过它",
+            "              联网：访问网络、开端口",
+            "              模型驱动 antigravity 会让供应商自己跑：search_web",
+        ]
+    );
+}
+
 #[test]
 fn several_packages_from_different_places_are_named_on_each_line() {
     let zh = weather_with_onebot(&Language::Chinese);

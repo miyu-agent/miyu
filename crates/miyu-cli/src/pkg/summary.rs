@@ -76,7 +76,17 @@ pub(super) fn plan(preview: &Value, language: &Language) -> Vec<String> {
     rows.push(String::new());
     let items = approve::installing(preview);
     let ids = (items.len() > 1).then(|| id_width(&items));
-    let needs = approve::needs_of(&items, ids, language);
+    let mut needs = approve::needs_of(&items, ids, language);
+    // 模型驱动会让供应商自己跑的工具（施工 HT-4、RB-1 补）：一个驱动一句，接在能力后面；几个包的照能力那样前面接要装的那个的编号。
+    let target = preview["package"].as_str().unwrap_or_default();
+    needs.extend(
+        super::confirm::hosted(preview, language)
+            .into_iter()
+            .map(|line| match ids {
+                Some(_) => approve::prefixed(target, ids, &line),
+                None => line,
+            }),
+    );
     rows.extend(aligned(
         vec![
             (
