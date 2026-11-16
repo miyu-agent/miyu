@@ -238,11 +238,10 @@ Buttons:
 
 When the AI needs you to confirm something or asks you a question, the whole input box turns into a drawer. What you typed in the box is kept and comes back once you answer.
 
-Confirmation: the first line says what it wants to do ("Run command", "Write N file(s)", "Install or remove a package" and the like); protected commands are marked "Dangerous command". Below are three choices:
+Confirmation: the first line says what it wants to do ("Run command", "Write N file(s)", "Install or remove a package" and the like); protected commands are marked "Dangerous command". Below are two choices:
 
 1. "Allow this time"
-2. "Don’t ask again for this folder": only when reading or writing a folder needs confirmation
-3. "Don't allow": write a sentence under "Reason (optional)", and the AI sees it
+2. "Don't allow": write a sentence under "Reason (optional)", and the AI sees it
 
 Keys: `↑` `↓` to choose, `Enter` to confirm. If it has a timeout, it shows "Auto-deny in …".
 
@@ -310,7 +309,7 @@ The settings page is a dialog in the middle of the page. Open it with the gear a
 |---|---|
 | General | Appearance (theme, color scheme; see "Appearance" below); Display, New sessions, Sessions, Commands, Shell integration session; "Access" |
 | User | Avatar; "About you": what the AI calls you, a description of you |
-| Privacy & security | Permissions, protected commands, private folders; see [Permissions and sandbox](../permissions.en.md) |
+| Privacy & security | Permissions and protected commands; see [Permissions and sandbox](../permissions.en.md) |
 | Models | Three tabs, "Providers", "Default models", "Model pools"; see [Models](../models.en.md) |
 | Usage | Usage and cost, by day, by model, by session, by use; today, 7 days, 30 days, all, custom |
 | Presets, Personas | Create, change, delete; see [Personas and presets](../personas-presets.en.md). For the "Simulated life" switch on the persona page and the "Life method" and "Life session context window" under it, see [Simulated life](../life.en.md#turning-it-on-in-the-persona-settings-in-the-web-ui) |

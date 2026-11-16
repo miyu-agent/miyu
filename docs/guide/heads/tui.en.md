@@ -423,7 +423,7 @@ Changes take effect at once.
 | Appearance | Theme, Color scheme, Figure, Icons |
 | Providers & models | Three pages: Providers, Default models, Pools; see [Models](../models.en.md) |
 | User | About you: what the AI calls you, which language it replies in |
-| Privacy & security | Permissions, protected commands, private folders; see [Permissions and sandbox](../permissions.en.md) |
+| Privacy & security | Permissions and protected commands; see [Permissions and sandbox](../permissions.en.md) |
 | Personas | Create, edit and delete personas; see [Personas and presets](../personas-presets.en.md) |
 | Presets | Create, edit and delete presets |
 | MCP | Status of MCP servers, logging in and out. Listed only when there are servers |

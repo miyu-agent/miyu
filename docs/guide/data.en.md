@@ -220,7 +220,7 @@ Restore with the same or a newer Miyu.
 When you move from Linux to macOS or Windows, or the other way round, a few things do not carry over:
 
 - Packages that come with a program (extensions and MCP server programs, for example `im` and `embed`) are built per system and will not run on the new system. Reinstall them one by one: `miyu pkg list` shows what is installed, and `miyu pkg install <id>` installs this system's build.
-- Places written as absolute paths: a session's working directory, the directories of projects in the web UI, mounted knowledge base directories (`mount` in `kb.toml`), paths in the config (`sandbox.private.add`, the command of an MCP server). Where a path does not exist on the new machine, change it to the new location.
+- Places written as absolute paths: a session's working directory, the directories of projects in the web UI, mounted knowledge base directories (`mount` in `kb.toml`), paths in the config (`skills.external.dirs`, the command of an MCP server). Where a path does not exist on the new machine, change it to the new location.
 - The `#!` interpreter of scripts, and scripts such as `.ps1` that run on only one system.
 
 ## Cleaning up

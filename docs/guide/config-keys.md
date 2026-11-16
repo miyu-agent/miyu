@@ -101,9 +101,6 @@
 | `permission.confirm.pipe_to_shell` | 开关 | `true` | | 下载下来直接执行先问你 | 下一轮 | 不能 |
 | `permission.confirm.container` | 开关 | `true` | | 容器要宿主的设备、进程或网络命名空间先问你 | 下一轮 | 不能 |
 | `permission.confirm.timeout` | 整数 | `300` | `0` 到 `86400`，秒 | 等你确认超过这么久就自动拒绝。`0` 是一直等 | 下一轮 | 不能 |
-| `sandbox.private.enabled` | 开关 | `true` | | 私密目录整个开不开 | 下一轮 | 不能 |
-| `sandbox.private.add` | 列表（字） | — | 每项 `~/…` 或绝对路径，最多 4096 个字；Windows 上 `~\…` 也认；不能是家目录或它的上级 | 你加的私密目录 | 下一轮 | 不能 |
-| `sandbox.private.remove` | 列表（字） | — | 只能写这台机器出厂的私密目录 | 去掉的出厂私密目录 | 下一轮 | 不能 |
 
 ## 命令、工具和功能开关
 

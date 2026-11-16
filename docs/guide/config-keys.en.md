@@ -101,9 +101,6 @@ Settings page, "Privacy & security". For the details of each item, see [Permissi
 | `permission.confirm.pipe_to_shell` | Switch | `true` | | Ask you first before something is downloaded and run directly | Next turn | No |
 | `permission.confirm.container` | Switch | `true` | | Ask you first before a container asks for the host's devices, processes or network namespace | Next turn | No |
 | `permission.confirm.timeout` | Integer | `300` | `0` to `86400`, seconds | If you take longer than this to confirm, it is denied automatically. `0` waits forever | Next turn | No |
-| `sandbox.private.enabled` | Switch | `true` | | Whether private folders are on at all | Next turn | No |
-| `sandbox.private.add` | List (text) | — | Each item `~/…` or an absolute path, at most 4096 characters; on Windows `~\…` is accepted too; cannot be the home folder or a parent of it | Private folders you add | Next turn | No |
-| `sandbox.private.remove` | List (text) | — | Only private folders shipped for this machine | Shipped private folders you remove | Next turn | No |
 
 ## Commands, tools and feature switches
 

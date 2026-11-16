@@ -220,7 +220,7 @@ tar -czf "$HOME\miyu-backup.tar.gz" -C $HOME --exclude=.miyu/var/cache --exclude
 从 Linux 搬到 macOS、Windows，或者反过来，有几样带不过去：
 
 - 带程序的软件包（扩展、MCP 服务的程序，例如 `im`、`embed`）是照系统打的，在新系统上跑不起来。逐个重装：`miyu pkg list` 看装了哪些，`miyu pkg install <编号>` 装这个系统的那一份。
-- 写成绝对路径的地方：会话的工作目录、网页里项目的目录、挂进来的知识库目录（`kb.toml` 的 `mount`）、配置里的路径（`sandbox.private.add`、MCP 服务的命令）。路径在新机器上不在的，照新位置改。
+- 写成绝对路径的地方：会话的工作目录、网页里项目的目录、挂进来的知识库目录（`kb.toml` 的 `mount`）、配置里的路径（`skills.external.dirs`、MCP 服务的命令）。路径在新机器上不在的，照新位置改。
 - 脚本的 `#!` 解释器、`.ps1` 这类只在一种系统上跑的脚本。
 
 ## 清理

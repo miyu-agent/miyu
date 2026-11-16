@@ -34,8 +34,6 @@ timeout = 600
 [jobs]
 max_running = "45m"
 
-[sandbox.private]
-add = ["~/notes/keys"]
 ```
 
 键照 `.` 分段，前几段是表头，最后一段写在表里：`permission.confirm.timeout` 就是上面 `[permission.confirm]` 下的 `timeout`。时长写成带引号的字，数字后面跟 `s`、`m`、`h`，不跟的是秒。文件最大 1 MiB。
@@ -75,7 +73,7 @@ add = ["~/notes/keys"]
 | 印的 | 意思 | 例如 |
 |---|---|---|
 | 立即生效 | 改了马上照新的 | `ui.language`、`log.level`、`core.idle_exit`、模型的冷却 |
-| 下一轮生效 | 开着的会话从下一轮起照新的，正在跑的这一轮照旧 | 供应商的地址和 key、受保护的命令、私密目录、压缩 |
+| 下一轮生效 | 开着的会话从下一轮起照新的，正在跑的这一轮照旧 | 供应商的地址和 key、受保护的命令、压缩 |
 | 新会话生效 | 以后开的会话照新的，开着的不变 | `models.chat`、`persona.default`、`permission.start_read_only` |
 | 重启后生效 | 头（终端、网页）下次启动时才读 | `ui.startup`，软件包里没写生效时机的键 |
 | 重启核心后生效 | 核心下次起来时才读 | `core.workers` |

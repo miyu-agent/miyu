@@ -28,7 +28,7 @@ For people who use Miyu. If this is your first time, read the [quick start](quic
 | [Sessions](sessions.en.md) | Starting new ones, continuing, working directory, undo, compaction, export and import |
 | [Personas and presets](personas-presets.en.md) | Who the AI is and which features are on, how to choose and how to write your own |
 | [Models](models.en.md) | Connecting providers, storing keys, switching models, pools, what to do when rate-limited |
-| [Permissions and sandbox](permissions.en.md) | What the AI can touch, which commands ask you first, private folders |
+| [Permissions and sandbox](permissions.en.md) | What the AI can touch, which commands ask you first, read-only and the sandbox |
 | [Memory](memory.en.md) | What the AI remembers, when it recalls it, how to view and clear it |
 | [Knowledge base](knowledge.en.md) | Handing documents to the AI to look things up in |
 | [Letting the AI keep working on its own](automation.en.md) | Subagents, background commands, schedules, loops, goals |

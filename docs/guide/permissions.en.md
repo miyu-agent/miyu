@@ -10,19 +10,22 @@ Each session is set to either "Full access" or "Read-only", and each session kee
 
 | | Full access | Read-only |
 |---|---|---|
-| File tools, read | Can read anywhere except the data root | Same; reading a private folder asks you first |
+| File tools, read | Can read anywhere except the data root | Same |
 | File tools, write | Can write anywhere except the data root | Does not write; the timeline says "Read-only mode, not run" |
 | Commands | Do not run in the sandbox; protected commands ask you first, and a few kinds of dangerous commands are refused outright | Run in the sandbox, which can write nowhere (see below) |
-| Tools of MCP servers that are not marked read-only, and tools in extensions that go online or send messages out | Used directly | Ask you each time |
+| Tools in extensions that go online | Used directly | Used directly |
+| Tools of MCP servers that are not marked read-only, and tools in extensions that send messages out | Used directly | Ask you each time |
 | Installing and removing packages, turning on an extension | Asks you each time | Not done |
 
 The data root is the folder where Miyu keeps its own data. By default it is `~/.miyu`, on Windows `%USERPROFILE%\.miyu`; if `MIYU_HOME` is set, it is that folder. A file tool that touches the data root is not run, and the timeline says "Miyu's own data, off limits". A few exceptions: this session's default workspace `~/.miyu/root/workspace/<session id>/` and `pictures`, `videos`, `documents` and `downloads` under `~/.miyu/root/` are read and written as usual; open skill folders and this session's attachments can only be read.
 
 Under full access, commands can do anything your system user can do. Miyu recognizes a few kinds of dangerous commands only by their literal text (see "Commands that need confirmation" below). That guards against the AI's momentary slips and cannot stop a command written to get around it. To keep the AI from changing anything, use read-only.
 
+Read-only means no writing; it does not hide things for you: under read-only the AI can still read `~/.ssh`, browser data, other programs' logins and the like, and what it reads goes into the context and is sent to the model provider. If you do not want it to read something, put Miyu inside another sandbox yourself, or run it as a different system user. Miyu's own data root cannot be touched at either permission level.
+
 Commands in read-only:
 
-- The whole disk is readable (on Windows, the machine's fixed drives); the data root and private folders are not.
+- The whole disk is readable (on Windows, the machine's fixed drives); the data root is not.
 - Nothing can be written anywhere, the temp folder included; a command that writes reports that it has no permission.
 - Network access works. On macOS and on Linux with a new enough kernel, system services such as Docker and ssh-agent cannot be reached.
 - When the sandbox cannot be used on this machine, every command asks you first, and if you allow it, it runs without the sandbox.
@@ -96,57 +99,20 @@ On Windows the AI runs commands in PowerShell (see [Tools the AI can use](tools.
 
 ### The confirmation box
 
-The confirmation box has three choices:
+The confirmation box has two choices:
 
 1. "Allow once".
-2. "Don't ask again for this folder": shown only when the confirmation is about reading or writing a folder (reading a private folder in read-only is such a case). For the rest of this session, nothing under this folder asks again.
-3. "Don't allow": you can write a reason, which the AI sees.
+2. "Don't allow": you can write a reason, which the AI sees.
 
-Confirmations for protected commands, package installs and the like have only "Allow once" and "Don't allow". The confirmation box for a protected command is labeled "Dangerous command".
+The confirmation box for a protected command is marked "Dangerous command".
 
 The wait for your confirmation lasts at most `permission.confirm.timeout` seconds. The default is `300`, you can set `0` to `86400`, and `0` waits forever. The box shows "Auto-deny in …"; if nobody answers in time, the timeline says "No one confirmed in time, denied automatically" and the AI tries another way. Questions the AI asks you are not covered by it.
 
 Wherever there is no confirmation box, anything that needs confirmation is not done: after this turn `miyu ask` ends with exit code `4`; sessions on chat platforms are the same.
 
-## Private folders
-
-Private folders hold other programs' keys, logins and browser data. They matter only in read-only: commands cannot read them, and file tools ask you before reading. Under full access they are not blocked.
-
-The shipped list differs by system. All three platforms have: `~/.ssh`, `~/.gnupg`, `~/.claude`, `~/.miyu`, `~/.config/gh`, `~/.codex`, `~/.gemini`, `~/.aws`, `~/.azure`, `~/.config/gcloud`, `~/.kube`, `~/.docker`, `~/.git-credentials`, `~/.netrc`, `~/.pypirc`, `~/.cargo/credentials.toml`, `~/.vault-token`.
-
-Linux also has: `~/.oci`, `~/.config/git/credentials`, `~/.gem/credentials`, `~/.terraform.d`, `~/.pgpass`, `~/.password-store`, `~/.local/share/keyrings`, `~/.local/share/kwalletd`, `~/.mozilla`, `~/.thunderbird`, `~/.config/google-chrome`, `~/.config/google-chrome-beta`, `~/.config/google-chrome-unstable`, `~/.config/chromium`, `~/.config/BraveSoftware`, `~/.config/microsoft-edge`, `~/.config/vivaldi`, `~/.config/opera`, under `~/.var/app/` the folders `org.mozilla.firefox`, `org.mozilla.Thunderbird`, `com.google.Chrome`, `org.chromium.Chromium`, `com.brave.Browser`, `com.microsoft.Edge`, `com.vivaldi.Vivaldi`, `com.opera.Opera`, and `~/snap/firefox`, `~/snap/chromium`.
-
-macOS also has: `~/Library/Keychains`, `~/Library/Cookies`, `~/Library/Safari`, and under `~/Library/Application Support/` the folders `Google/Chrome`, `Chromium`, `BraveSoftware`, `Microsoft Edge`, `Vivaldi`, `Firefox`, `1Password`, `Bitwarden`.
-
-Windows also has: `~/.terraform.d`, `~/_netrc`, `~/NTUSER.DAT`, under `~/AppData/Roaming/` the folders `gnupg`, `GitHub CLI`, `gcloud`, `Mozilla/Firefox`, `Opera Software`, `1Password`, `Bitwarden`, `KeePass`, `KeePassXC`, `Microsoft/Credentials`, `Microsoft/Protect`, `Microsoft/Vault`, `Microsoft/Crypto`, `Microsoft/SystemCertificates`, and under `~/AppData/Local/` the folders `Google/Chrome/User Data`, `Microsoft/Edge/User Data`, `BraveSoftware/Brave-Browser/User Data`, `Chromium/User Data`, `Vivaldi/User Data`, `Microsoft/Credentials`, `Microsoft/Protect`, `Microsoft/Vault`, `Microsoft/Crypto`, `Microsoft/SystemCertificates`, `Microsoft/IdentityCache`, `Microsoft/TokenBroker`, `Microsoft/OneAuth`, `Microsoft/Windows/UsrClass.dat`.
-
-When an environment variable tells a tool to keep its credentials somewhere else, the new location counts as private too: `GNUPGHOME`, `AWS_SHARED_CREDENTIALS_FILE`, `AWS_CONFIG_FILE`, `KUBECONFIG`, `DOCKER_CONFIG`, `GH_CONFIG_DIR`, `AZURE_CONFIG_DIR`, `NETRC`, and `credentials.toml` under `CARGO_HOME`. A few entries under `~/.config/` are found through `XDG_CONFIG_HOME`. The variables are read from the core's environment at startup.
-
-Add and remove entries in "Privacy & security → Private folders" on the settings page, or use `miyu config set`. Lists are written as TOML arrays, and what you write is the whole list:
-
-```bash
-miyu config set sandbox.private.add '["~/notes/keys", "/srv/secrets"]'   # add
-miyu config set sandbox.private.remove '["~/.docker"]'                   # remove a shipped one
-miyu config set sandbox.private.enabled false                            # turn the whole thing off
-```
-
-In PowerShell, use double quotes outside and TOML single-quoted strings for the paths inside; this works as is in both Windows PowerShell 5.1 and PowerShell 7:
-
-```powershell
-miyu config set sandbox.private.add "['~/notes/keys', 'D:\secrets']"     # add
-miyu config set sandbox.private.remove "['~/.docker']"                   # remove a shipped one
-miyu config set sandbox.private.enabled false                            # turn the whole thing off
-```
-
-- `sandbox.private.add`: write `~/…` or an absolute path; on Windows `~\…` is accepted too. The home directory itself and its parents cannot be added.
-- `sandbox.private.remove`: only entries from the shipped list can be written. Commands can read what you remove, and file tools stop asking; it does not come back by itself on upgrade, but shipped entries added by a new version still take effect.
-- `sandbox.private.enabled`: when off, read-only no longer hides or asks either. The data root still cannot be touched.
-
-All three take effect from the next turn.
-
 ## Project config
 
-A repository's `.miyu/config.toml` (for how to use project config, see [Configuration](config.en.md)) can only tighten things on this page: only `permission.start_read_only = true` is recognized, and `false` does not count. `permission.confirm.*` and `sandbox.private.*` are recognized only in your own config; putting them in a project config does not count, and `miyu config explain <key>` shows that it did not take effect.
+A repository's `.miyu/config.toml` (for how to use project config, see [Configuration](config.en.md)) can only tighten things on this page: only `permission.start_read_only = true` is recognized, and `false` does not count. `permission.confirm.*` is recognized only in your own config; putting it in a project config does not count, and `miyu config explain <key>` shows that it did not take effect.
 
 ## The three platforms
 
@@ -154,7 +120,7 @@ In read-only, each platform confines commands with a mechanism of its own system
 
 | | What you will run into |
 |---|---|
-| Linux | The sandbox is unavailable when the kernel has no usable Landlock. Private folders and the data root show their names, but their contents cannot be read. On a new enough kernel, sockets of system services such as Docker and ssh-agent cannot be reached |
+| Linux | The sandbox is unavailable when the kernel has no usable Landlock. The data root shows its name, but its contents cannot be read. On a new enough kernel, sockets of system services such as Docker and ssh-agent cannot be reached |
 | macOS | The sandbox is unavailable when Miyu itself runs inside another sandbox. Sockets of system services such as Docker and ssh-agent cannot be reached |
 | Windows | Works only inside a logged-in desktop session: if the core is not in a desktop session (for example one started over SSH), every command is refused in read-only, with exit code `125`. Read-only reaches the machine's fixed drives; removable drives such as USB sticks, network drives and optical drives cannot be read. The clipboard and simulated keyboard and mouse are unavailable. Commands that use WMI (`Get-CimInstance`, `Get-WmiObject`, `wmic`, `systeminfo`, `Get-ComputerInfo` and the like) fail; to use them, switch to full access |
 
@@ -191,5 +157,3 @@ If chat platforms are connected, group sessions and private chats with someone o
 | `miyu-sandbox: cannot confine: no desktop session, programs in the sandbox cannot start here; use Miyu from the desktop, or turn the sandbox off` (exit code `125`) | On Windows, start Miyu from the logged-in desktop, or switch to full access |
 | In read-only on Windows, the command output is followed by `The sandbox blocks WMI. Commands that need it work outside the sandbox.` | The command needs WMI, which does not work in the sandbox. Switch to full access and have the AI run it again |
 | "sandbox unavailable: the kernel has no usable Landlock" | Use Linux 5.13 or newer, and add `landlock` to the `lsm=` boot parameter |
-| "… is your home folder or above it, so it can't be private" | Write a folder one level deeper |
-| "… isn't a built-in private folder: only built-in ones can be removed" | A folder you added yourself must be removed from `sandbox.private.add` |

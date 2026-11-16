@@ -34,8 +34,6 @@ timeout = 600
 [jobs]
 max_running = "45m"
 
-[sandbox.private]
-add = ["~/notes/keys"]
 ```
 
 Keys are split at `.`: the leading parts are the table header, and the last part is written inside the table. `permission.confirm.timeout` is `timeout` under `[permission.confirm]` above. Durations are written as quoted strings: a number followed by `s`, `m` or `h`; without a unit it is seconds. The file can be at most 1 MiB.
@@ -75,7 +73,7 @@ Each key has a registered time at which changes take effect, and both `miyu conf
 | What it prints | Meaning | Examples |
 |---|---|---|
 | Takes effect immediately | The new value is used right away | `ui.language`, `log.level`, `core.idle_exit`, model cooldowns |
-| Takes effect next turn | Open sessions use the new value from the next turn; the turn running now keeps the old one | Provider addresses and keys, protected commands, private folders, compaction |
+| Takes effect next turn | Open sessions use the new value from the next turn; the turn running now keeps the old one | Provider addresses and keys, protected commands, compaction |
 | Applies to new sessions | Sessions opened from now on use the new value; open ones do not change | `models.chat`, `persona.default`, `permission.start_read_only` |
 | Takes effect after restart | A head (terminal, web UI) reads it only the next time it starts | `ui.startup`, and keys in packages that do not declare when they take effect |
 | Takes effect after the core restarts | The core reads it only the next time it starts | `core.workers` |
