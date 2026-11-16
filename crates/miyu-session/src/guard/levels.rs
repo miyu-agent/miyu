@@ -17,7 +17,7 @@ pub(crate) enum Effective {
 pub(super) enum Mark {
     /// 放行。
     Allow,
-    /// 拒绝：碰到了数据根。
+    /// 拒绝：要写数据根（数据根里单独放开的也算）。
     Forbidden,
     /// 拒绝：只读的时候要写。
     ReadOnly,
@@ -34,11 +34,11 @@ pub(crate) fn effective(permission: &Permission) -> Effective {
     }
 }
 
-/// 一条路径照级别判（11 第二节的判法表，A16 起只剩完全放开、只读两列）：数据根谁都碰不到；完全放开别的都放行；只读读哪儿都
-/// 放行，写一律拒（施工 PV-RM 起私密目录不另问人：只读就是完全放开减去写）。
+/// 一条路径照级别判（11 第二节的判法表，A16 起只剩完全放开、只读两列）：读哪儿都放行，数据根也是（施工 RO-2，2026-11-16
+/// 项目主人定）；数据根哪一级都写不进；完全放开别处都能写；只读写一律拒（施工 PV-RM 起只读就是完全放开减去写）。
 pub(super) fn mark(level: Effective, zone: Zone, write: bool) -> Mark {
     match (zone, level, write) {
-        (Zone::Forbidden, _, _) | (Zone::Shelf, _, true) => Mark::Forbidden,
+        (Zone::DataRoot | Zone::Shelf, _, true) => Mark::Forbidden,
         (_, Effective::Full, _) => Mark::Allow,
         (_, Effective::ReadOnly, true) => Mark::ReadOnly,
         (_, Effective::ReadOnly, false) => Mark::Allow,

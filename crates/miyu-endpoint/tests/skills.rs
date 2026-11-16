@@ -1,6 +1,6 @@
 //! 技能（施工 X-10 上，`docs/blueprint/skills.md`「技能」第 2、3 条）：真核心走一遍。数据根里放的技能列进 system，她读得
 //! 到 `SKILL.md`；换一份核心像重启过，载入的会话照样读得到（文件夹放开只读是造会话、载入时各找一次）；沙盒里的命令的规格
-//! 两次都单独放开技能文件夹（施工 X-10 中）。
+//! 两次都什么都不藏（施工 RO-2；原来单独放开技能文件夹，施工 X-10 中）。
 
 use std::sync::Arc;
 
@@ -31,7 +31,6 @@ async fn skills_in_the_home_are_listed_and_read_before_and_after_a_restart() {
     } else {
         skill
     };
-    let folder = std::fs::canonicalize(home.root.skills().join("notes")).expect("在");
     let read = Fake::new("read", Access::Read, Act::Echo);
     let run = Fake::new("run", Access::Execute, Act::Echo);
     let tools = || {
@@ -74,17 +73,18 @@ async fn skills_in_the_home_are_listed_and_read_before_and_after_a_restart() {
     client.say("c3", &session, "again").await;
     home.until_turns(&session, 2).await;
     assert_eq!(read.calls().len(), 2, "载入的会话照样读得到");
-    // 沙盒里的命令也读得到（施工 X-10 中）：造的、载入的会话，规格都单独放开技能文件夹。
-    let reveals: Vec<Vec<std::path::PathBuf>> = run
+    // 沙盒里的命令也读得到：造的、载入的会话，只读的规格什么都不藏（施工 RO-2；原来单独放开技能文件夹，施工 X-10 中）。
+    let specs: Vec<miyu_sandbox::Spec> = run
         .calls()
         .into_iter()
-        .map(|call| call.sandbox.expect("带着沙盒").spec.reveal.clone())
+        .map(|call| call.sandbox.expect("带着沙盒").spec.clone())
         .collect();
-    // 出厂包带的技能文件夹也在里面（施工 X-13 下）。
-    assert_eq!(reveals.len(), 2);
+    assert_eq!(specs.len(), 2);
     assert!(
-        reveals.iter().all(|one| one.contains(&folder)),
-        "{reveals:?}"
+        specs
+            .iter()
+            .all(|spec| spec.hidden.is_empty() && spec.reveal.is_empty()),
+        "{specs:?}"
     );
 }
 

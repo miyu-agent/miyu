@@ -13,9 +13,11 @@ pub enum Zone {
     Writable,
     /// 只能读：系统目录、工具链目录。
     Readable,
-    /// 谁都不能碰：Miyu 的数据根。
-    Forbidden,
-    /// 数据根里单独放开的（施工 X-10 上，开着的技能文件夹）：能读，写不行，问人也不行。
+    /// Miyu 的数据根：文件工具两种模式都读得到，哪一级都写不进（施工 RO-2，2026-11-16 项目主人定：只读就是完全放开减去写，
+    /// 数据根放开读）。头列文件、找文件、读文件、附件（协议端点）照旧不给这一片，由端点自己判。
+    DataRoot,
+    /// 数据根里单独放开的（施工 X-10 上，开着的技能文件夹）：能读，写不行，问人也不行。只碰得到自己工作区的会话也读得到它，
+    /// 读不到数据根别处。
     Shelf,
     /// 边界以外：要碰就得问人。
     Outside,
@@ -164,13 +166,13 @@ impl Boundary {
         // 这个人自己的几处（施工 Y-11 上）：在数据根里也照工作区算。
         let own = self.own.iter().any(|root| path.starts_with(root));
         // 数据根：只有工作区、自己的几处落在数据根里时那一片照工作区算；加进来的目录落进了数据根的（报来以后被换成了链接）照样
-        // 谁都不能碰。
+        // 写不进。
         if let Some(data_root) = &self.data_root
             && within(path, data_root)
             && !workspace.is_some_and(|root| within(root, data_root))
             && !own
         {
-            return Zone::Forbidden;
+            return Zone::DataRoot;
         }
         if workspace.is_some() || own || self.dirs.iter().any(|root| path.starts_with(root)) {
             return Zone::Writable;
@@ -206,12 +208,12 @@ impl Boundary {
         )
     }
 
-    /// 走目录的工具（`fs.find`，施工 W-2）要不要挡住往下走进 `dir`：`dir` 落进「谁都不能碰」那一片、又没有
+    /// 走目录的工具（`fs.find`，施工 W-2）要不要挡住往下走进 `dir`：`dir` 落进数据根那一片、又没有
     /// 工作区、加进来的目录藏在它底下——工作区常常就在数据根里面（默认的会话就在那里干活），得穿过数据根才能
     /// 走到它，但数据根自己、旁的子目录不许进（施工 W-2）。
     #[must_use]
     pub fn blocks_descent(&self, dir: &Path) -> bool {
-        if self.zone(dir) != Zone::Forbidden {
+        if self.zone(dir) != Zone::DataRoot {
             return false;
         }
         let leads_somewhere_writable = self

@@ -42,11 +42,7 @@ async fn she_reads_a_file_in_the_workspace_and_hears_it() {
     let home = Home::outside_temp();
     std::fs::write(home.scratch.0.join("work/a.txt"), "hello\n").expect("写得进");
     std::fs::write(home.scratch.0.join("other/b.txt"), "far\n").expect("写得进");
-    std::fs::write(
-        home.root.path().join("marker"),
-        "marker-content-never-read\n",
-    )
-    .expect("写得进");
+    std::fs::write(home.root.path().join("marker"), "marker-content-read\n").expect("写得进");
     let outside = home
         .scratch
         .0
@@ -98,23 +94,18 @@ async fn she_reads_a_file_in_the_workspace_and_hears_it() {
             .find(|result| text(&result.blocks).contains(said))
             .unwrap_or_else(|| panic!("有一条含「{said}」：{results:?}"))
     };
-    let (inside, outside, data) = (find("hello"), find("far"), find("Miyu's own data"));
+    let (inside, outside, data) = (find("hello"), find("far"), find("marker-content-read"));
     assert_eq!(inside.status, ToolStatus::Ok);
     assert_eq!(text(&inside.blocks), "1\thello\n");
-    // 工具交的给人看的说法，经会话记进日志（施工 4-5 上）；数据根里被拒的，是权限策略写的那一句的说法。
+    // 工具交的给人看的说法，经会话记进日志（施工 4-5 上）。
     assert_eq!(
         inside.human,
         Some(Said::new("software/basesystem/read/lines/one").with("count", "1"))
     );
     assert_eq!(outside.status, ToolStatus::Ok, "边界以外的读不用问");
     assert_eq!(text(&outside.blocks), "1\tfar\n");
-    assert_eq!(data.status, ToolStatus::Denied, "数据根哪一级都不能碰");
-    assert_eq!(
-        data.human,
-        Some(Said::new("core/permissions/forbidden").with("path", marker.as_str()))
-    );
-    // 比内容，不比「secret」：工作树的路径里可能就有这个词（施工 8-5 的 `.worktrees/8-5-secrets` 撞上过）。
-    assert!(!text(&data.blocks).contains("marker-content-never-read"));
+    assert_eq!(data.status, ToolStatus::Ok, "数据根读得到（施工 RO-2）");
+    assert_eq!(text(&data.blocks), "1\tmarker-content-read\n");
     // 读到的报 `file.read`（施工 4-6 上）：真实的位置、读了哪几行、整份的哈希。没读的没有效果。
     let real = std::fs::canonicalize(home.scratch.0.join("work/a.txt")).expect("在");
     assert_eq!(
@@ -127,7 +118,7 @@ async fn she_reads_a_file_in_the_workspace_and_hears_it() {
             display_name: Default::default(),
         })]
     );
-    assert!(data.effects.is_empty());
+    assert_eq!(data.effects.len(), 1, "数据根里读到的也报 file.read");
     // 她下一次请求里听到了。
     let requests = script.requests();
     let heard = requests[1].1.messages.iter().any(

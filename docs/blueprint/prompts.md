@@ -873,24 +873,24 @@ Not run: no one answered the approval request in time.
 
 #### `core/permissions/forbidden.txt`
 
-- 什么时候加进来：权限策略拒绝：要碰的路径在 Miyu 的数据根里
-- token：27（路径按 `~/.miyu/run/token` 算）
-- 为什么加：告诉她为什么没做、哪一条路径，别换个说法再来（施工 4-3 下，`11-权限与沙盒.md` A9）
-- 指纹：`245c770b`
+- 什么时候加进来：权限策略拒绝：要写的路径在 Miyu 的数据根里（施工 RO-2 起数据根两种模式都读得到，只有写才拒）
+- token：RO-2 后 25（o200k 数，改前 27；路径按 `~/.miyu/run/token` 算）
+- 为什么加：告诉她为什么没做、哪一条路径，别换个说法再来（施工 4-3 下，`11-权限与沙盒.md` A9）。施工 RO-2（2026-11-16 项目主人定数据根放开读）：去掉「read or」，读放开了还说读不了是错话
+- 指纹：`7abebf15`
 
 ```text
-"{path}" is inside Miyu's own data, which no tool can read or change.
+"{path}" is inside Miyu's own data, which no tool can change.
 ```
 
 #### `core/permissions/forbidden-kb.txt`
 
-- 什么时候加进来：权限策略拒绝：要碰的路径是数据根里某个知识库的文档（`kb/<库>/` 下面），以前造的快照没有、照 `forbidden.txt`（施工 K-3 补）
-- token：约 45（路径按 `~/.local/share/miyu/home/alice/kb/notes/todo.md`，o200k 估；同一条路径 `forbidden.txt` 是 36）
-- 为什么加：项目主人在 Windows 虚拟机里实测（2026-10-23）：她要删自己建的知识库文档，去调了 `trash`，被「Miyu 自己的数据」拒了，没想到工具面上就有 `kb_delete`，只好让人手动清。只在被拒时出现，不进前缀
-- 指纹：`bad10ac7`
+- 什么时候加进来：权限策略拒绝：要写的路径是数据根里某个知识库的文档（`kb/<库>/` 下面），以前造的快照没有、照 `forbidden.txt`（施工 K-3 补；施工 RO-2 起读放开，只在写时出现）
+- token：RO-2 后约 40（改前约 45；路径按 `~/.local/share/miyu/home/alice/kb/notes/todo.md`，o200k 估；同一条路径 `forbidden.txt` 是 34）
+- 为什么加：项目主人在 Windows 虚拟机里实测（2026-10-23）：她要删自己建的知识库文档，去调了 `trash`，被「Miyu 自己的数据」拒了，没想到工具面上就有 `kb_delete`，只好让人手动清。只在被拒时出现，不进前缀。施工 RO-2：读照 `read` 放行了，只说改、只点 `kb_edit`、`kb_delete`
+- 指纹：`b1e24668`
 
 ```text
-"{path}" is a knowledge base document. Read and change it with the knowledge base tools: kb_read, kb_edit, kb_delete.
+"{path}" is a knowledge base document. Change it with the knowledge base tools: kb_edit, kb_delete.
 ```
 
 #### `core/permissions/unresolvable.txt`
@@ -5887,7 +5887,7 @@ set by the user with `/goal`
 
 - 什么时候加进来：包 `packages` 开着的会话登记它，不进请求
 - token：0（施工 BS-1 中以前 111：2026-10-19 照开发端点、`deepseek-v4.1-flash` 量，施工 G-6 加 `search` 多 26）
-- 为什么加：她看软件包（施工 F-10 上，设计 `31-软件包.md` 第六节）：列出装了的、看一个、装之前看一个包文件夹、在软件源里搜（施工 G-6）。包目录在数据根里，文件工具碰不到，不给这件她不知道装了什么、自己写的包写对没有；2026-10-21 施工 M-2 再补加 `"clicall": true`，施工 BS-1 中去掉（`miyu call` 调不了它，会话里改用 `miyu pkg`）
+- 为什么加：她看软件包（施工 F-10 上，设计 `31-软件包.md` 第六节）：列出装了的、看一个、装之前看一个包文件夹、在软件源里搜（施工 G-6）。包目录在数据根里，文件工具当时碰不到（施工 RO-2 起读得到、写不进），不给这件她不知道装了什么、自己写的包写对没有；2026-10-21 施工 M-2 再补加 `"clicall": true`，施工 BS-1 中去掉（`miyu call` 调不了它，会话里改用 `miyu pkg`）
 - 指纹：`88459d8f`
 
 ```json
@@ -5903,7 +5903,7 @@ set by the user with `/goal`
 
 - 什么时候加进来：同上
 - token：0（施工 BS-1 中以前 150：2026-10-19 照开发端点、`deepseek-v4.1-flash` 量：施工 G-6 `install` 认编号、加 `upgrade` 多 34；之前 116，F-10 下上是 86，下下加 `enable` 多 30）
-- 为什么加：她装、卸软件包，打开装着的，从软件源装、升级（施工 F-10 下、G-6，设计 `31-软件包.md` 第六节）：她自己写的技能、脚本、扩展照包的样子写在工作区里，用它装上；包目录在数据根里，文件工具碰不到，这是她装包唯一的门
+- 为什么加：她装、卸软件包，打开装着的，从软件源装、升级（施工 F-10 下、G-6，设计 `31-软件包.md` 第六节）：她自己写的技能、脚本、扩展照包的样子写在工作区里，用它装上；包目录在数据根里，文件工具写不进，这是她装包唯一的门
 - 指纹：`ce0f5e5a`
 
 ```json

@@ -155,7 +155,7 @@ mod sandbox_confined;
 mod sandbox_member;
 mod sandbox_skills;
 mod search;
-mod secrets_unreachable;
+mod secrets_readable;
 mod session_fact;
 mod session_usage;
 mod sessions;

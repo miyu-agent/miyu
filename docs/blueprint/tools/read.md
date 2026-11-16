@@ -193,7 +193,7 @@ Did you mean "notes.txt"?
 | `crates/miyu-basesystem/tests/read_memory.rs`（审计 E-3，只在 Linux 上） | 读 64 MiB 没换行的 UTF-8、64 MiB 的 UTF-16 的第一页，进程峰值多分的不过 16 MiB |
 | `crates/miyu-basesystem/src/common/tests.rs` | Windows 的前缀怎么去；相近的名字怎么算 |
 | `crates/miyu-basesystem/tests/human.rs` | 每一种结果的说法，两种语言都换得出字 |
-| `crates/miyu-session/tests/read.rs` | 会话里真的调它：读得到、带行号、下一次请求里有；边界以外的也读得到（施工 5-4 上）；数据根里的被拒 |
+| `crates/miyu-session/tests/read.rs` | 会话里真的调它：读得到、带行号、下一次请求里有；边界以外的也读得到（施工 5-4 上）；数据根里的也读得到（施工 RO-2） |
 | `xtask/src/ledger.rs` | 这些字的指纹和登记簿对得上 |
 
 ### 出处

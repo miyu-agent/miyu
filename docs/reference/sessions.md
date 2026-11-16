@@ -374,6 +374,8 @@
 
 **参数**：`session`；`level`：只有 `full`（完全放开）；`read_only`：只读开关。改哪样写哪样，至少写一个。
 
+两种模式读得到的一样多，数据根也读得到（包括 `etc/private/secrets.toml`）；只读只多一条：哪儿都不能写，命令在只读的沙盒里跑。数据根哪一种都写不进，文件工具被拒时写给她的是「Miyu 自己的数据，不能改」（说法 `core/permissions/forbidden`）。
+
 **回应**：`{}`。变了的推 `session.policy_changed`。收紧的当场生效；放宽的下一次请求生效。改成完全放开之前要不要问人一声，是头的事。
 
 **出错**：`bad_params`：两样都没写；`level` 不是那两种。

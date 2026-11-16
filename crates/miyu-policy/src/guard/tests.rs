@@ -11,7 +11,7 @@ fn the_three_texts_carry_the_path_and_the_reason() {
     let texts = engineer().guard_texts().unwrap();
     assert_eq!(
         texts.forbidden("~/.miyu/run/token").text,
-        "\"~/.miyu/run/token\" is inside Miyu's own data, which no tool can read or change.\n"
+        "\"~/.miyu/run/token\" is inside Miyu's own data, which no tool can change.\n"
     );
     assert_eq!(
         texts

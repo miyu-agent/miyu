@@ -175,8 +175,6 @@ async fn a_write_that_fails_stops_the_session() {
             hooks: None,
             preset: None,
             shelves: Vec::new(),
-            attachments: std::env::temp_dir().join("miyu-no-attachments"),
-            jobs_dir: std::env::temp_dir().join("miyu-no-jobs"),
             workplace: None,
             names: Default::default(),
         },

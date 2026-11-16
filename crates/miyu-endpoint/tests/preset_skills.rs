@@ -1,6 +1,6 @@
 //! 技能照预设开关（施工 X-11 上，`docs/blueprint/skills.md`「定了的」）：每个技能算一个功能 `skill-<名字>`。`preset.get` 列出
 //! 它（名字、说明照技能写给人看的两格），常规开发（没列出来的关着）里关着、全部功能里开着、写了关的关着，写过的不再当没装的
-//! 另列一遍；照预设造的会话只列开着的、只放开开着的文件夹，换一份核心像重启过，载入的会话照样只放开开着的。
+//! 另列一遍；照预设造的会话只列开着的，换一份核心像重启过，载入的会话照样只列开着的；关着的文件夹施工 RO-2 起照数据根读得到。
 
 use std::sync::Arc;
 
@@ -118,13 +118,14 @@ async fn a_session_lists_and_opens_only_the_skills_its_preset_turns_on() {
     let system = &first.requests()[0].1.system;
     assert!(system.contains("- plain: Plain one."), "{system}");
     assert!(!system.contains("- notes:"), "关着的不列：{system}");
-    assert!(read.calls().is_empty(), "关着的文件夹不放开");
+    // 施工 RO-2 起数据根读得到：关着的技能只是不列，点名读它的文件照数据根放行。
+    assert_eq!(read.calls().len(), 1, "照数据根读得到");
     // 换一份核心，像重启过：载入的会话照样只放开开着的。
     let mut client = Client::connect(configured_core(&home, &script(), tools()));
     client.hello_without_input().await;
     client.say("s2", &session, "again").await;
     home.until_turns(&session, 2).await;
-    assert!(read.calls().is_empty(), "载入以后也不放开");
+    assert_eq!(read.calls().len(), 2, "载入以后照样");
     let denied = home
         .log(&session)
         .into_iter()
@@ -132,7 +133,7 @@ async fn a_session_lists_and_opens_only_the_skills_its_preset_turns_on() {
             matches!(&event.body, Body::ToolResult(result) if result.status == ToolStatus::Denied)
         })
         .count();
-    assert_eq!(denied, 2);
+    assert_eq!(denied, 0);
 }
 
 /// 会话中途改预设打开关着的技能（施工 X-11 下）：下一轮尾巴上交一份新的完整列表，文件夹当场放开只读；system 不改。

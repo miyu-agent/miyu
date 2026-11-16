@@ -192,7 +192,7 @@ async fn outside_the_working_directory_paths_are_absolute_and_the_data_root_is_s
 #[tokio::test]
 async fn a_workspace_inside_the_data_root_is_searched_all_the_way_down() {
     let site = Site::new();
-    // 工作区 `workspace/` 就在数据根里：照样往下走，和权限策略的先后一样；数据根别的地方照样不进。
+    // 工作区 `workspace/` 就在数据根里：照样往下走；起点就是数据根的，数据根里别处也照常走（施工 RO-2）。
     site.file("data/root/workspace/src/deep/a.rs", b"");
     site.file("data/root/workspace/b.rs", b"");
     site.file("data/state/c.rs", b"");
@@ -215,7 +215,10 @@ async fn a_workspace_inside_the_data_root_is_searched_all_the_way_down() {
         )
         .await;
     assert!(!error);
-    assert!(!text.contains("c.rs"), "{text}");
+    assert!(
+        text.contains("c.rs"),
+        "起点就是数据根：照常往下走（施工 RO-2）：{text}"
+    );
 }
 
 #[tokio::test]

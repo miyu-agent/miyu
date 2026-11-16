@@ -25,17 +25,17 @@ fn the_workspace_is_writable_all_the_way_down() {
 }
 
 #[test]
-fn nobody_touches_the_data_root_even_inside_the_temp_dir() {
+fn the_data_root_is_its_own_zone_even_inside_the_temp_dir() {
     let site = Site::new();
     let boundary = site.boundary();
-    assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::Forbidden);
-    assert_eq!(boundary.zone(&site.real("data")), Zone::Forbidden);
-    // 临时目录把数据根包在里面（测试、MIYU_HOME 指到那里）：数据根照样谁都不能碰。
+    assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::DataRoot);
+    assert_eq!(boundary.zone(&site.real("data")), Zone::DataRoot);
+    // 临时目录把数据根包在里面（测试、MIYU_HOME 指到那里）：数据根照样算数据根那一片。
     let wide = Boundary::new(&Places {
         temp: site.scratch.0.clone(),
         ..site.places()
     });
-    assert_eq!(wide.zone(&site.real("data/run/token")), Zone::Forbidden);
+    assert_eq!(wide.zone(&site.real("data/run/token")), Zone::DataRoot);
     assert_eq!(wide.zone(&site.real("tmp/t.txt")), Zone::Writable);
 }
 
@@ -50,7 +50,7 @@ fn a_workspace_moved_into_the_data_root_is_still_a_workspace() {
         boundary.zone(&site.real("data/root/workspace/w.txt")),
         Zone::Writable
     );
-    assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::Forbidden);
+    assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::DataRoot);
 }
 
 /// 加进来的目录（施工 5-10 上）：和工作区一样能读能写。
@@ -73,7 +73,7 @@ fn an_added_dir_is_writable_like_the_workspace() {
     );
 }
 
-/// 加进来的目录落进了数据根（例如报来以后被换成了链接）：数据根照样谁都不能碰。
+/// 加进来的目录落进了数据根（例如报来以后被换成了链接）：数据根照样算数据根那一片。
 #[test]
 fn the_data_root_wins_over_an_added_dir() {
     let site = Site::new();
@@ -81,10 +81,10 @@ fn the_data_root_wins_over_an_added_dir() {
         dirs: vec![site.at("data"), site.at("data/home")],
         ..site.places()
     });
-    assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::Forbidden);
+    assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::DataRoot);
     assert_eq!(
         boundary.zone(&site.real("data/root/workspace/w.txt")),
-        Zone::Forbidden
+        Zone::DataRoot
     );
 }
 
@@ -130,12 +130,12 @@ fn a_shelf_in_the_data_root_is_its_own_zone() {
         boundary.zone(&site.real("data/root/skills/notes")),
         Zone::Shelf
     );
-    // 旁边的照旧谁都不能碰。
+    // 旁边的照旧算数据根那一片。
     assert_eq!(
         boundary.zone(&site.real("data/root/skills")),
-        Zone::Forbidden
+        Zone::DataRoot
     );
-    assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::Forbidden);
+    assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::DataRoot);
 }
 
 #[test]
@@ -156,7 +156,7 @@ fn the_data_root_is_known_in_any_case_where_case_does_not_matter() {
     let token = site.real("data/run/token");
     let shouting = PathBuf::from(token.to_string_lossy().to_uppercase());
     let expected = if cfg!(any(target_os = "macos", windows)) {
-        Zone::Forbidden
+        Zone::DataRoot
     } else {
         // 分大小写的文件系统上，那是另一个地方。
         Zone::Outside
@@ -210,7 +210,7 @@ fn this_machine_has_its_system_and_temp_dirs() {
     assert_eq!(boundary.zone(&system), Zone::Readable);
 }
 
-/// 别的程序的钥匙、登录不再单是一片（施工 PV-RM）：`~/.ssh` 和家目录别处一样在边界以外；数据根照旧谁都不能碰。
+/// 别的程序的钥匙、登录不再单是一片（施工 PV-RM）：`~/.ssh` 和家目录别处一样在边界以外；数据根照旧算数据根那一片。
 #[test]
 fn a_key_folder_is_outside_like_the_rest_of_the_home() {
     let site = Site::new();
@@ -218,10 +218,10 @@ fn a_key_folder_is_outside_like_the_rest_of_the_home() {
     assert_eq!(boundary.zone(&site.real("home/.ssh/id")), Zone::Outside);
     assert_eq!(boundary.zone(&site.real("home/.ssh")), Zone::Outside);
     assert_eq!(boundary.zone(&site.real("home/notes.txt")), Zone::Outside);
-    assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::Forbidden);
+    assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::DataRoot);
 }
 
-/// 工作区包住数据根（施工 5-14 改：工作目录是 `~` 的就是工作区）：最深的那一片算，数据根照旧谁都不能碰、开着的技能文件夹照旧
+/// 工作区包住数据根（施工 5-14 改：工作目录是 `~` 的就是工作区）：最深的那一片算，数据根照旧算数据根那一片、开着的技能文件夹照旧
 /// 只读；家目录别处（钥匙在内）能写。
 #[test]
 fn a_workspace_holding_the_data_root_keeps_it() {
@@ -231,8 +231,8 @@ fn a_workspace_holding_the_data_root_keeps_it() {
         shelves: vec![site.at("data/root/skills/notes")],
         ..site.places()
     });
-    assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::Forbidden);
-    assert_eq!(boundary.zone(&site.real("data")), Zone::Forbidden);
+    assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::DataRoot);
+    assert_eq!(boundary.zone(&site.real("data")), Zone::DataRoot);
     assert_eq!(
         boundary.zone(&site.real("data/root/skills/notes/SKILL.md")),
         Zone::Shelf
@@ -245,8 +245,8 @@ fn a_workspace_holding_the_data_root_keeps_it() {
     );
 }
 
-/// 这个人自己的几处（施工 Y-11 上：家目录里照 XDG 的 pictures 这些）：落在数据根里也照工作区算，还没建的也算；数据根别处照旧
-/// 谁都不能碰；往下走目录的工具通得到它。
+/// 这个人自己的几处（施工 Y-11 上：家目录里照 XDG 的 pictures 这些）：落在数据根里也照工作区算，还没建的也算；数据根别处照旧算
+/// 数据根那一片；往下走目录的工具通得到它。
 #[test]
 fn the_own_dirs_in_the_data_root_are_writable_even_before_they_exist() {
     let site = Site::new();
@@ -259,7 +259,7 @@ fn the_own_dirs_in_the_data_root_are_writable_even_before_they_exist() {
         boundary.zone(&data.join("root/pictures").join("cat.png")),
         Zone::Writable
     );
-    assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::Forbidden);
+    assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::DataRoot);
     assert!(!boundary.blocks_descent(&data), "通得到它");
     assert!(boundary.blocks_descent(&data.join("run")));
 }

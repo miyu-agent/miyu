@@ -80,7 +80,7 @@ impl Drop for Finish {
 
 impl Index {
     /// 在后台线程里建 `root` 的清单：认 `.gitignore`（不要求是 git 仓库），跳过隐藏的、出厂名单、落进边界表
-    /// 「谁都不能碰」那一片的（`boundary`，工作区除外），不跟链接；最深 [`DEPTH`] 层，最多收 `cap` 个（出厂用
+    /// 数据根那一片（[`Zone::DataRoot`]）的（`boundary`，工作区除外），不跟链接；最深 [`DEPTH`] 层，最多收 `cap` 个（出厂用
     /// [`CAP`]；测试传小一点的，不用真造两万个文件），收不下的时候浅处的先收（施工 FX-2，见 `walk`）。读不了一层目录的
     /// （没有权限这类），`on_error` 收到那一句原话（同一句只收一次），跳过它接着建。
     pub fn start(
@@ -231,8 +231,8 @@ fn pass<F: FnMut(String)>(
         let is_dir = entry.file_type().is_some_and(|kind| kind.is_dir());
         // 借道去找底下工作区的目录也算：再深一层可能有要收的。
         done.deeper |= is_dir;
-        // 落进「谁都不能碰」那一片的不收：可能只是借道去找底下的工作区（施工 W-2）。
-        if boundary.zone(entry.path()) == Zone::Forbidden {
+        // 落进数据根那一片的不收（头找文件不给数据根）：可能只是借道去找底下的工作区（施工 W-2）。
+        if boundary.zone(entry.path()) == Zone::DataRoot {
             continue;
         }
         if *count >= cap {

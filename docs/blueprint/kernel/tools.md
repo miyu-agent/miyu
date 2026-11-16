@@ -151,7 +151,7 @@
 |---|---|---|---|
 | `tool-results/unavailable.txt` | `The tool "{name}" is not available right now.` | 执行器：快照里有、核心的工具目录里没有这件（`session/actor.md`） | `error`，那次调用，没有用时 |
 | `tool-results/crashed.txt` | `The tool "{name}" stopped because of an internal error. It may have been partly done.` | 执行器：工具执行时崩了 | `error`，那次调用，用时算到崩为止 |
-| `permissions/forbidden.txt` | `"{path}" is inside Miyu's own data, which no tool can read or change.` | 权限策略：要碰的路径在数据根里（`session/guard.md`） | `denied`，模块 `permissions` |
+| `permissions/forbidden.txt` | `"{path}" is inside Miyu's own data, which no tool can change.` | 权限策略：要写的路径在数据根里（施工 RO-2 起读放开）（`session/guard.md`） | `denied`，模块 `permissions` |
 | `permissions/unresolvable.txt` | `Can't tell where "{path}" points: {reason}.` | 权限策略：路径换不成真实的位置 | `denied`，模块 `permissions` |
 
 权限策略在只读时要写的，也用 `read-only` 那一句，`by` 是模块 `permissions`。
@@ -178,7 +178,7 @@
 | `core/tool-results/restarted` | 重启中断 | Interrupted by restart |
 | `core/tool-results/unavailable` | 不可用 | not available right now |
 | `core/tool-results/crashed` | 内部错误，可能已部分执行 | Internal error, may be partly done |
-| `core/permissions/forbidden` | 这是 Miyu 自己的数据，谁都不能碰 | Miyu's own data, off limits |
+| `core/permissions/forbidden` | 这是 Miyu 自己的数据，不能改 | Miyu's own data, can't be changed |
 | `core/permissions/unresolvable` | 说不清它指向哪里：{reason} | can't tell where it points: {reason} |
 
 - 给人看的只用给模型的那一句有的字段，可以少用：`unknown` 给模型的有 `name`，给人的不用。

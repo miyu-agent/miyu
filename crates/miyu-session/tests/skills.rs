@@ -1,5 +1,5 @@
 //! 技能（施工 X-10 上，`docs/blueprint/skills.md`「技能」第 2、3 条）：数据根里放的技能列进 system，一个一行带 `SKILL.md`
-//! 的路径；技能的文件夹在数据根里，单独放开只读：读放行、写一律拒（完全放开也拒），旁边的数据根照旧谁都不能碰；只碰得到自己
+//! 的路径；技能的文件夹在数据根里，单独放开只读：读放行、写一律拒（完全放开也拒），旁边的数据根施工 RO-2 起也读得到、写不进；只碰得到自己
 //! 工作区的群会话也读得到；载入以后照样放开。工具面上没有读文件的工具的不列（施工 XG-2 上起照职能认，不照名字）。
 
 use std::path::PathBuf;
@@ -128,12 +128,16 @@ async fn her_skills_are_listed_and_their_folder_is_read_only() {
         ]);
         let handle = session(&home, &script, &kit, level.clone(), ("local", true)).await;
         let log = turn(&home, &handle, "cmd-1").await;
-        assert_eq!(kit.read.calls().len(), 1, "{level:?}：读技能放行");
+        assert_eq!(
+            kit.read.calls().len(),
+            2,
+            "{level:?}：读技能、旁边的数据根都放行"
+        );
         assert!(kit.write.calls().is_empty(), "{level:?}：写技能一律拒");
         assert_eq!(
             statuses(&log),
-            [ToolStatus::Ok, ToolStatus::Denied, ToolStatus::Denied],
-            "{level:?}：旁边的数据根照旧不给碰"
+            [ToolStatus::Ok, ToolStatus::Denied, ToolStatus::Ok],
+            "{level:?}：旁边的数据根施工 RO-2 起读得到"
         );
         let system = &script.requests()[0].1.system;
         assert!(

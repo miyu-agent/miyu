@@ -462,7 +462,7 @@
     "tool-results/timed-out": "Timed out ({seconds} s)",
     "tool-results/crashed": "Internal error, may be partly done",
     "sessions/retitle-failed": "Failed to change the title",
-    "permissions/forbidden": "Miyu's own data, off limits",
+    "permissions/forbidden": "Miyu's own data, can't be changed",
     "permissions/forbidden-kb": "a knowledge base document, use the knowledge base tools",
     "permissions/unresolvable": "can't tell where it points: {reason}",
     "permissions/not-in-venue": "Only works in a group or private chat",

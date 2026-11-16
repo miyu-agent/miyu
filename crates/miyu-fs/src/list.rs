@@ -19,7 +19,7 @@ pub struct Entry {
 }
 
 /// 列 `dir` 这一层：名字照 `prefix` 开头对、大小写不论；点开头的要 `prefix` 也以 `.` 开头才列；目录在前、文件在后，
-/// 各照名字排（大小写不论）；落进边界表「谁都不能碰」那一片的不列。交回最多 [`SHOWN`] 条，和有没有列全。
+/// 各照名字排（大小写不论）；落进边界表数据根那一片（[`Zone::DataRoot`]）的不列。交回最多 [`SHOWN`] 条，和有没有列全。
 ///
 /// # Errors
 ///
@@ -42,7 +42,7 @@ pub fn list_dir(
                 return None;
             }
             let full = entry.path();
-            if boundary.zone(&full) == Zone::Forbidden {
+            if boundary.zone(&full) == Zone::DataRoot {
                 return None;
             }
             let is_dir = entry.file_type().map(|kind| kind.is_dir()).unwrap_or(false);

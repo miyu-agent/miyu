@@ -1558,6 +1558,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC7"><span class="n">DOC-7</span>手册去掉私密目录<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
+        <li><a class="step review" href="#sRO2"><span class="n">RO-2</span>数据根两种模式都读得到<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -60659,6 +60660,60 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/QU-2-DeepSeek余额.md</code>；蓝图 <code>models.md</code>、<code>protocol.md</code>、<code>config.md</code>；协议参考 <code>sessions.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sRO2" aria-labelledby="h-sRO2">
+  <div class="sheet-head"><h2 id="h-sRO2"><span class="no">RO-2</span>数据根两种模式都读得到</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">只读就是完全放开减去写：完全放开读得到的，只读都读得到。Miyu 的数据根（连同存 key 的 etc/private/secrets.toml）两种模式都放开读，写照旧哪一级都不行。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-fs · miyu-session · miyu-basesystem · miyu-endpoint · resources/core</span><span class="dir-note">RO-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>边界表 Forbidden 改名 DataRoot；判法表数据根读放行、写拒</li>
+              <li>只读的沙盒规格什么都不藏：hidden、reveal 都是空的，命令前补 run/、jobs/ 随着去掉</li>
+              <li>拒的话只说改：「Miyu 自己的数据，不能改」（中英日），知识库那句只点 kb_edit、kb_delete</li>
+              <li>glob、grep 的篱笆只留起点下面的数据根：从上面路过不进，起点在数据根里照常往下走</li>
+              <li>外部身份的会话照旧藏数据根；头的 fs.list、fs.find、fs.read、blob.put 照旧不给</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">数据根两种模式都读得到，哪一级都写不进</span><span class="rl">项目主人 2026-11-16</span></div>
+          <div class="tile new"><span class="nm">只读的命令读得到密钥、写不进数据根</span><span class="rl">测试 secrets_readable、sandbox</span></div>
+          <div class="tile new"><span class="nm">glob、grep 只跳过从上面路过的数据根，起点在里面的照常搜</span><span class="rl">主会话 2026-11-16</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">RO-2</dd></div>
+        <div><dt>名称</dt><dd>数据根两种模式都读得到</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">RO-2</dd></div>
+        <div><dt>验收</dt><dd>改前红的十一条在 main 上红、这一版绿；写数据根的测试照旧绿；门禁十一项全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>完全放开、只读的 read 都读得到 etc/private/secrets.toml（改前红）</span></li>
+        <li><span class="ok">✓</span><span>只读的命令 cat 得到密钥，touch 数据根里写不进（改前红）</span></li>
+        <li><span class="ok">✓</span><span>完全放开下 edit、write 写数据根照旧拒，话只说改</span></li>
+        <li><span class="ok">✓</span><span>grep 起点在数据根里搜得到密钥那一行（改前红）；从上面搜下来不出数据根里的</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/RO-2-数据根放开读.md</code>；蓝图 <code>session/guard.md</code>、<code>session/tools.md</code>、<code>fs.md</code>、<code>tools/glob.md</code>、<code>sandbox.md</code>、<code>sandbox/</code> 三页、<code>prompts.md</code>、<code>kernel/tools.md</code>；协议参考 <code>sessions</code>（中英）。</li>
       </ul>
     </div>
   </div>

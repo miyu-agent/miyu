@@ -369,7 +369,7 @@ fn read(place: &Place, path: &str) -> Result<(Vec<u8>, PathBuf), Refusal> {
         place.home.as_deref(),
     );
     let own = place.own.as_ref().is_some_and(|own| real.starts_with(own));
-    if !own && Boundary::new(&places).zone(&real) == Zone::Forbidden {
+    if !own && Boundary::new(&places).zone(&real) == Zone::DataRoot {
         return Err(Refusal::ATTACHMENT_IN_DATA_ROOT);
     }
     let file = open_file(&real).map_err(|_| Refusal::ATTACHMENT_UNREADABLE)?;

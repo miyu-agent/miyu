@@ -1,5 +1,5 @@
 //! 会话的附件目录（施工 3-9 六补，`docs/blueprint/fs.md` 第一节第 2 行）：落成文件的附件放在会话目录的 `attachments/` 里，
-//! 这个会话读得到、写不了；别的会话的附件目录照数据根，谁都不能碰。
+//! 这个会话读得到、写不了；别的会话的附件目录照数据根，读得到、写不进（施工 RO-2）。
 
 use std::path::Path;
 use std::sync::Arc;
@@ -85,20 +85,30 @@ async fn her_own_attachments_are_readable_and_nobody_elses() {
     let mine = put(&home, handle.id().as_str(), "截图.png");
     let theirs = put(&home, other.id().as_str(), "别人的.png");
     assert!(Path::new(&mine).is_file());
-    // 载入以后（附件是收到话时才落的，这一刻目录已经在）：读自己的放行，写自己的拒，读别人的拒。
+    // 载入以后（附件是收到话时才落的，这一刻目录已经在）：读自己的放行，写自己的拒，读别人的照数据根放行（施工 RO-2）、写别人的拒。
     let again = Script::new([
         one("read", &mine),
         one("write", &mine),
         one("read", &theirs),
+        one("write", &theirs),
         Play::Says("好。"),
     ]);
     let loaded = home.load_with(handle.id(), &again, &catalog).await;
     let log = turn(&home, &loaded, "cmd-2").await;
-    assert_eq!(read.calls().len(), 1, "读自己的附件放行：{log:#?}");
+    assert_eq!(
+        read.calls().len(),
+        2,
+        "读自己的、别人的附件都放行：{log:#?}"
+    );
     assert!(write.calls().is_empty(), "写一律拒（完全放开也拒）");
     assert_eq!(
-        statuses(&log)[statuses(&log).len() - 3..],
-        [ToolStatus::Ok, ToolStatus::Denied, ToolStatus::Denied],
-        "别的会话的附件照数据根，不给碰"
+        statuses(&log)[statuses(&log).len() - 4..],
+        [
+            ToolStatus::Ok,
+            ToolStatus::Denied,
+            ToolStatus::Ok,
+            ToolStatus::Denied
+        ],
+        "别的会话的附件照数据根：读得到、写不进"
     );
 }

@@ -276,11 +276,11 @@ async fn a_command_s_calls_are_judged_as_the_session_would_judge_them() {
             Some("code=2"),
             Some("code=2"),
             Some("code=0"),
-            Some("code=1")
+            Some("code=0")
         ],
-        "不许在脚本里调的、写的、读工作区里的、读数据根里的：{said:?}"
+        "不许在脚本里调的、写的、读工作区里的、读数据根里的（施工 RO-2 起数据根读得到，同会话里）：{said:?}"
     );
     assert!(hidden.calls().is_empty(), "不许在脚本里调的没跑");
     assert!(writer.calls().is_empty(), "写的一律不经通道");
-    assert_eq!(reader.calls().len(), 1, "只有读工作区里那一次跑了");
+    assert_eq!(reader.calls().len(), 2, "读工作区里、数据根里的两次都跑了");
 }

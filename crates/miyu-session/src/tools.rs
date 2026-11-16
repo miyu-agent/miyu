@@ -209,8 +209,6 @@ impl Tools {
                     kit.confined,
                 )
                 .with_shelves(kit.shelves.clone())
-                .with_attachments(kit.attachments.clone())
-                .with_jobs(kit.jobs_dir.clone())
             })
             .map(|sandbox| match kit.workplace.clone() {
                 Some(workplace) => sandbox.with_workplace(workplace),

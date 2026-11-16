@@ -1,7 +1,6 @@
-//! 沙盒里的命令读得到开着的技能文件夹（施工 X-10 中，`docs/blueprint/skills.md`「技能」第 3 条）：数据根照旧藏着，技能的
-//! 文件夹在规格里单独放开只读（本机的会话写进 `reveal`，外部身份的会话加进只准读的名单）。Unix 上有收紧手段的，真的经
-//! 助手跑 `shell`：技能读得到、写不进，旁边的数据根读不到。自己放的脚本（施工 X-12 下）也在数据根里，经真助手跑照样
-//! 读得到它自己；往交图的目录里写的图（施工 X-35）经真助手照样写得进、交得上来。脚本是链接、指到数据根里自己装的包的（施工
+//! 沙盒里的命令读得到开着的技能文件夹（施工 X-10 中，`docs/blueprint/skills.md`「技能」第 3 条）：本机的会话只读时什么都不藏
+//! （施工 RO-2），技能文件夹、旁边的数据根都读得到、写不进；外部身份的会话照旧藏数据根，技能文件夹加进只准读的名单。Unix 上
+//! 有收紧手段的，真的经助手跑 `shell`。自己放的脚本（施工 X-12 下）也在数据根里，经真助手跑照样读得到它自己；往交图的目录里写的图（施工 X-35）经真助手照样写得进、交得上来。脚本是链接、指到数据根里自己装的包的（施工
 //! X-37），照它指到的那一个文件放开，照样跑得起来。
 
 use std::path::{Path, PathBuf};
@@ -75,19 +74,14 @@ async fn spec_of(home: &Home, venue: (&str, bool)) -> Option<Arc<Sandboxed>> {
 }
 
 #[tokio::test]
-async fn the_skill_folder_is_revealed_in_the_spec() {
+async fn the_skill_folder_is_readable_in_the_spec() {
     let home = Home::outside_temp();
-    let skill = put(&home);
+    put(&home);
     let sandboxed = spec_of(&home, ("local", true)).await.expect("带着沙盒");
-    assert_eq!(
-        sandboxed.spec.reveal,
-        std::slice::from_ref(&skill),
-        "本机的会话：单独放开只读"
-    );
-    assert_eq!(
-        sandboxed.spec.hidden,
-        [std::fs::canonicalize(home.root.path()).expect("在")],
-        "数据根照旧藏着"
+    assert!(
+        sandboxed.spec.hidden.is_empty() && sandboxed.spec.reveal.is_empty(),
+        "本机的会话只读：什么都不藏，不用单独放开（施工 RO-2）：{:?}",
+        sandboxed.spec
     );
     let home = Home::outside_temp();
     let skill = put(&home);
@@ -105,10 +99,10 @@ async fn the_skill_folder_is_revealed_in_the_spec() {
     assert!(confined.spec.reveal.is_empty());
 }
 
-/// 真的经助手跑 `shell`（Unix 上有收紧手段的）：技能读得到、写不进，旁边的数据根读不到。
+/// 真的经助手跑 `shell`（Unix 上有收紧手段的）：技能、旁边的数据根都读得到、写不进（施工 RO-2）。
 #[cfg(unix)]
 #[tokio::test]
-async fn a_command_reads_the_skill_but_not_the_data_root() {
+async fn a_command_reads_the_skill_and_the_data_root_but_writes_neither() {
     let helper = miyu_sandbox::testkit::built_helper();
     let probe = miyu_sandbox::probe(&helper, std::time::Duration::from_secs(60)).expect("探得了");
     if probe.mechanisms.is_empty() {
@@ -120,7 +114,8 @@ async fn a_command_reads_the_skill_but_not_the_data_root() {
     let command = format!(
         "head -n 2 '{0}'; \
          (echo x >> '{0}') 2>/dev/null && echo wrote-skill || echo blocked-skill; \
-         cat '{1}' 2>/dev/null || echo blocked-data",
+         cat '{1}'; \
+         (echo x >> '{1}') 2>/dev/null && echo wrote-data || echo blocked-data",
         skill.display(),
         marker.display()
     );
@@ -147,7 +142,11 @@ async fn a_command_reads_the_skill_but_not_the_data_root() {
             other => panic!("只该有字：{other:?}"),
         })
         .collect();
-    assert_eq!(output, "---\nname: notes\nblocked-skill\nblocked-data\n");
+    assert_eq!(
+        output,
+        "---\nname: notes\nblocked-skill\nsecret\nblocked-data\n"
+    );
+    assert_eq!(std::fs::read_to_string(&marker).expect("在"), "secret\n");
     assert!(
         std::fs::read_to_string(&skill)
             .expect("在")
@@ -156,7 +155,7 @@ async fn a_command_reads_the_skill_but_not_the_data_root() {
     );
 }
 
-/// 脚本当工具（施工 X-12 下）：自己放的脚本在数据根里，经真助手跑照样读得到它自己这一个文件，旁边的数据根照旧读不到。
+/// 脚本当工具（施工 X-12 下）：自己放的脚本在数据根里，经真助手跑照样读得到它自己这一个文件；旁边的数据根施工 RO-2 起也读得到。
 #[cfg(unix)]
 #[tokio::test]
 async fn a_script_in_the_data_root_runs_in_the_sandbox() {
@@ -199,11 +198,11 @@ async fn a_script_in_the_data_root_runs_in_the_sandbox() {
         })
         .collect();
     assert_eq!(result.status, ToolStatus::Ok, "{output}");
-    assert_eq!(output, "ran\nblocked-data\n");
+    assert_eq!(output, "ran\nsecret\n");
 }
 
 /// 脚本是链接（施工 X-37）：家目录 `scripts/` 里的链接指到自己装的包里的脚本，两处都在藏着的数据根里；照它指到的那一个
-/// 文件起、放开，经真助手照样跑得起来，旁边的数据根照旧读不到。
+/// 文件起、放开，经真助手照样跑得起来；旁边的数据根施工 RO-2 起也读得到。
 #[cfg(unix)]
 #[tokio::test]
 async fn a_linked_script_runs_in_the_sandbox_where_it_really_is() {
@@ -257,7 +256,7 @@ async fn a_linked_script_runs_in_the_sandbox_where_it_really_is() {
         })
         .collect();
     assert_eq!(result.status, ToolStatus::Ok, "{output}");
-    assert_eq!(output, "ran\nblocked-data\n");
+    assert_eq!(output, "ran\nsecret\n");
 }
 
 /// 脚本交图（施工 X-35）：经真助手跑，脚本写得进 `MIYU_SCRIPT_IMAGES_DIR`，那张图记进结果。macOS 的临时目录在链接下面，
@@ -334,8 +333,8 @@ async fn keep(home: &Home, helper: &Path, text: &str, venue: (&str, bool)) -> (T
     (result.status, output)
 }
 
-/// 状态目录（施工 X-44）：经真助手跑的脚本写得进自己的那一格（数据根照旧藏着，越深的越算数），下一次还在；别的脚本的那一格读
-/// 不到。
+/// 状态目录（施工 X-44）：经真助手跑的脚本写得进自己的那一格，下一次还在；别的脚本的那一格本机只读时读得到（施工 RO-2：数据根
+/// 不藏了）、写不进。
 #[cfg(unix)]
 #[tokio::test]
 async fn a_script_in_the_sandbox_writes_only_its_own_state() {
@@ -349,12 +348,12 @@ async fn a_script_in_the_sandbox_writes_only_its_own_state() {
     std::fs::create_dir_all(&other).expect("建得了");
     std::fs::write(other.join("secret"), "secret\n").expect("写得进");
     let text = format!(
-        "#!/bin/sh\n# Description: Keep.\necho kept > \"$MIYU_SCRIPT_STATE_DIR/n\" && cat \"$MIYU_SCRIPT_STATE_DIR/n\"\ncat '{}' 2>/dev/null || echo blocked-other\n",
+        "#!/bin/sh\n# Description: Keep.\necho kept > \"$MIYU_SCRIPT_STATE_DIR/n\" && cat \"$MIYU_SCRIPT_STATE_DIR/n\"\ncat '{0}'\n(echo x >> '{0}') 2>/dev/null && echo wrote-other || echo blocked-other\n",
         other.join("secret").display()
     );
     let (status, output) = keep(&home, &helper, &text, ("local", true)).await;
     assert_eq!(status, ToolStatus::Ok, "{output}");
-    assert_eq!(output, "kept\nblocked-other\n");
+    assert_eq!(output, "kept\nsecret\nblocked-other\n");
     let kept = home.root.path().join("root/state/scripts/~home/keep/n");
     assert_eq!(std::fs::read_to_string(kept).expect("留着"), "kept\n");
 }
@@ -392,8 +391,8 @@ async fn a_group_s_script_cannot_read_another_group_s_state() {
     assert_eq!(std::fs::read_to_string(kept).expect("留着"), "kept\n");
 }
 
-/// 缓存目录（施工 Y-11 上）：在数据根的 `cache/` 里，数据根照旧藏着；经真助手跑的脚本写得进自己那一格，别的脚本的那一格
-/// 读不到。
+/// 缓存目录（施工 Y-11 上）：在数据根的 `cache/` 里；经真助手跑的脚本写得进自己那一格，别的脚本的那一格本机只读时读得到
+/// （施工 RO-2）、写不进。
 #[cfg(unix)]
 #[tokio::test]
 async fn a_script_in_the_sandbox_writes_only_its_own_cache() {
@@ -407,17 +406,17 @@ async fn a_script_in_the_sandbox_writes_only_its_own_cache() {
     std::fs::create_dir_all(&other).expect("建得了");
     std::fs::write(other.join("secret"), "secret\n").expect("写得进");
     let text = format!(
-        "#!/bin/sh\n# Description: Keep.\necho cached > \"$MIYU_SCRIPT_CACHE_DIR/n\" && cat \"$MIYU_SCRIPT_CACHE_DIR/n\"\ncat '{}' 2>/dev/null || echo blocked-other\n",
+        "#!/bin/sh\n# Description: Keep.\necho cached > \"$MIYU_SCRIPT_CACHE_DIR/n\" && cat \"$MIYU_SCRIPT_CACHE_DIR/n\"\ncat '{0}'\n(echo x >> '{0}') 2>/dev/null && echo wrote-other || echo blocked-other\n",
         other.join("secret").display()
     );
     let (status, output) = keep(&home, &helper, &text, ("local", true)).await;
     assert_eq!(status, ToolStatus::Ok, "{output}");
-    assert_eq!(output, "cached\nblocked-other\n");
+    assert_eq!(output, "cached\nsecret\nblocked-other\n");
     let kept = home.root.script_caches().join("~home/keep/n");
     assert_eq!(std::fs::read_to_string(kept).expect("留着"), "cached\n");
 }
 
-/// 家目录那四处（施工 Y-11 补）：经真助手跑，本机会话的脚本写得进数据根的 `pictures/`、`downloads/`（数据根照旧藏着，先建好再起
+/// 家目录那四处（施工 Y-11 补）：经真助手跑，本机会话的脚本写得进数据根的 `pictures/`、`downloads/`（先建好再起
 /// 沙盒）。
 #[cfg(unix)]
 #[tokio::test]

@@ -12,10 +12,14 @@ mod protected;
 fn every_cell_of_the_table() {
     let (full, read_only) = (Effective::Full, Effective::ReadOnly);
     let cases = [
-        // 数据根：哪一级都拒绝。
-        (Zone::Forbidden, full, false, Mark::Forbidden),
-        (Zone::Forbidden, full, true, Mark::Forbidden),
-        (Zone::Forbidden, read_only, false, Mark::Forbidden),
+        // 数据根：哪一级都读得到、写不进（施工 RO-2）。
+        (Zone::DataRoot, full, false, Mark::Allow),
+        (Zone::DataRoot, read_only, false, Mark::Allow),
+        (Zone::DataRoot, full, true, Mark::Forbidden),
+        (Zone::DataRoot, read_only, true, Mark::Forbidden),
+        // 数据根里单独放开的：同数据根。
+        (Zone::Shelf, full, false, Mark::Allow),
+        (Zone::Shelf, read_only, true, Mark::Forbidden),
         // 能读能写的那几片。
         (Zone::Writable, full, true, Mark::Allow),
         (Zone::Writable, read_only, false, Mark::Allow),

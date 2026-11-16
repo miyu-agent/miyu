@@ -40,7 +40,7 @@
 | 格 | 是什么 |
 |---|---|
 | `write` | 能写的目录、文件 |
-| `hidden` | 读写都不行的，例如数据根：里面有本机令牌、密钥，读到就能冒充本人（施工 5-13 起还有别的程序的私密目录，施工 PV-RM 去掉了：只读就是完全放开减去写，不替人藏东西） |
+| `hidden` | 读写都不行的：现在只有外部身份的会话藏数据根（`session/tools.md` 第 1a 条，里面有本机令牌、密钥）。本人只读的规格什么都不藏（施工 RO-2，2026-11-16 项目主人定：只读就是完全放开减去写，数据根放开读，原来藏数据根；施工 5-13 起还藏过别的程序的私密目录，施工 PV-RM 去掉了） |
 | `sockets` | 这条命令要连的 Unix 套接字（施工 M-3，脚本调工具的端点，`tools/shell.md`「脚本调工具」）：别的套接字照旧连不上，这几个放行，只读一级也放行；Linux 上 Landlock 只放行连它（`ResolveUnix`），落在藏起来的里面的用挂载时挂回来；macOS 上每个一条照字面的放行，写在最后。没有的不写，规格的字节和以前一样 |
 | `reveal` | 藏起来的里面单独放开只读的（施工 X-10 中）：开着的技能文件夹（`skills.md`「技能」第 3 条）、这个会话的附件目录（施工 3-9 六补，还没建的不写：Landlock 认不得不在的路径），读得到、列得出、执行得了，写不了；没有的不写，规格的字节和以前一样 |
 
@@ -125,7 +125,7 @@
 | `crates/miyu/tests/core.rs` | 起来时探一次：旁边有助手的记 `sandbox` 那一行，平台是这台机器的，有手段那一格；没有的记找不到 |
 | `crates/miyu-core/src/sandbox/tests.rs` | 旁边没有助手的、不知道主程序在哪的记 `helper not found`；助手跑不了的记原因；探到了手段的交回能用和助手，手段是空的、找不到、探不成的交回用不了和对应的原因（施工 5-4 上、下） |
 | `crates/miyu-session/tests/sandbox.rs` | 执行器写的规格；Unix 上有收紧手段的，真的经助手跑 `shell`（`session/tools.md`，施工 5-4 上） |
-| `crates/miyu-session/tests/secrets_unreachable.rs`（施工 PV-RM） | 只读的规格里藏的只有数据根，家目录里别的程序的钥匙不藏；文件工具哪一级都读不到数据根里的密钥（`session/tools.md`；施工 5-13 起的 `sandbox_private.rs` 守的是藏私密目录，随它换掉） |
+| `crates/miyu-session/tests/secrets_readable.rs`（施工 PV-RM，RO-2 改） | 只读的规格什么都不藏，数据根、家目录里别的程序的钥匙都不藏；文件工具哪一级都读得到数据根里的密钥、写不进数据根（`session/tools.md`；施工 PV-RM 时叫 `secrets_unreachable.rs`、守读不到，施工 5-13 起的 `sandbox_private.rs` 守的是藏私密目录） |
 
 ### 出处
 

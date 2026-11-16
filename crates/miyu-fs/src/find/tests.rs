@@ -1,5 +1,5 @@
 //! 打分（照 proto/web-demo 分支 `web-demo/bridge/src/mention.rs` 的 `score`，测试搬过来）；模糊找：认
-//! `.gitignore`（不要求是 git 仓库）、跳过隐藏目录和名单、最深几层、收满就停、落进边界表「谁都不能碰」那一片
+//! `.gitignore`（不要求是 git 仓库）、跳过隐藏目录和名单、最深几层、收满就停、落进边界表数据根那一片
 //! 的不收（`web-module.md`「怎么走」第 2、4 条）。
 
 use std::fs;

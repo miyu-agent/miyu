@@ -64,12 +64,8 @@ pub(crate) struct ToolKit {
     pub(crate) schedules: Option<Arc<dyn miyu_tool::SchedulePort>>,
     /// 回合开始问扩展要加的字（施工 X-16）。
     pub(crate) hooks: Option<Arc<dyn miyu_tool::HooksPort>>,
-    /// 开着的技能文件夹（施工 X-10 中）：沙盒藏着数据根，照它单独放开只读。
+    /// 开着的技能文件夹（施工 X-10 中）：关起来的会话的沙盒藏着数据根，照它加进只准读的名单。
     pub(crate) shelves: Vec<std::path::PathBuf>,
-    /// 这个会话的附件目录（施工 3-9 六补）：沙盒里单独放开只读。
-    pub(crate) attachments: PathBuf,
-    /// 这个会话放后台命令输出的目录 `jobs/`（施工 R3-1 补）：沙盒每条命令起来以前建好。
-    pub(crate) jobs_dir: PathBuf,
     /// 工作目录太宽时退回的默认工作区（施工 5-14）：沙盒能写的照它；没有的照工作目录。
     pub(crate) workplace: Option<crate::default_workspace::DefaultWorkspace>,
     /// 开着的技能给人看的名字（施工 9-8 五补）：读它们的 `SKILL.md` 时记进效果。

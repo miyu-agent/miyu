@@ -171,7 +171,7 @@ f.txt-9-line 9
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-basesystem/tests/grep.rs` | 参数格式里的八个参数、报的路径；默认只列文件、新的在前；三种输出的写法；前后行和 `--`、`-C`、`context` 压过 `-A`、只要 `-A`；跳过的匹配不带它的前后行、`head_limit` 以外的也不带；`glob`、`include`、点名一个文件不管 `glob`；点名一个 FIFO 马上交回（Unix）；`-A`、`-B`、`-C` 写成字符串的整数也认；忽略的、二进制的、数据根里的不搜；`-i`、UTF-16；`head_limit`、`offset` 翻页、0 不限、`content` 够数就停；默认 250；一行截到 500；没搜到不算出错、正则和 `glob` 写错了算、没有的路径 |
+| `crates/miyu-basesystem/tests/grep.rs` | 参数格式里的八个参数、报的路径；默认只列文件、新的在前；三种输出的写法；前后行和 `--`、`-C`、`context` 压过 `-A`、只要 `-A`；跳过的匹配不带它的前后行、`head_limit` 以外的也不带；`glob`、`include`、点名一个文件不管 `glob`；点名一个 FIFO 马上交回（Unix）；`-A`、`-B`、`-C` 写成字符串的整数也认；忽略的、二进制的、从上面路过的数据根不搜（起点在数据根里的照常搜，施工 RO-2，`walk_home.rs`）；`-i`、UTF-16；`head_limit`、`offset` 翻页、0 不限、`content` 够数就停；默认 250；一行截到 500；没搜到不算出错、正则和 `glob` 写错了算、没有的路径 |
 | `crates/miyu-basesystem/tests/grep.rs` 的 `counts_are_newest_first_and_the_same_time_sorts_by_path`（施工 V-21） | 边走边搜的计数照样新的在前、时间一样的照路径 |
 | `crates/miyu-basesystem/tests/glob.rs`、`src/pattern/tests.rs`、`src/walk/tests.rs` | 走目录、模式、叫停（和 `glob` 共用） |
 | `crates/miyu-basesystem/tests/human.rs` | 每一种结果的说法，两种语言都换得出字 |

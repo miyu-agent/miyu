@@ -9,7 +9,7 @@
 | 代码 | 管什么 |
 |---|---|
 | `crates/miyu-session/src/tools.rs` | 执行工具的端口：找、派、量用时、叫停、收回报 |
-| `crates/miyu-session/src/sandbox.rs` | 照这一刻实际生效的级别给一次调用写沙盒的规格（施工 5-4 上）；命令起来以前补上数据根的 `run/`、这个会话的 `jobs/`（施工 R3-1、R3-1 补） |
+| `crates/miyu-session/src/sandbox.rs` | 照这一刻实际生效的级别给一次调用写沙盒的规格（施工 5-4 上）：只读什么都不藏（施工 RO-2） |
 | `crates/miyu-session/src/tools/checked.rs` | 权限策略判过的真实位置：照调用编号记下、派的时候取走、回合结束扔掉没派出去的（施工 5-18，第 1 条第 3 款） |
 | `crates/miyu-session/src/tools/nested.rs`、`tools/nested/port.rs`、`tools/nested/asking.rs`、`actor/nested.rs`、`actor/run.rs` | 脚本调工具（施工 M-2、M-3）：直接调的 `shell` 的端口、收下来送进内核、判、跑、掐、落了盘答回去；下面的在等人确认时告诉那次 `shell`（施工 M-7 上）（「1g. 脚本调工具」） |
 | `crates/miyu-session/src/tools/sandboxed.rs` | 给一次调用写上沙盒（施工 M-2 从 `tools.rs` 挪来）：直接调用、嵌套调用都经它 |
@@ -82,14 +82,13 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
    - 完全放开：不带。
    - 规格里没有 `mount`（施工 5-16 用 bubblewrap 的挂载收紧的那一路、回合开始照沙盒强度换的那一步，施工 LV-5 去掉了，`11-权限与沙盒.md` A17）：Linux 上只用 Landlock，藏起来的看得到名字、读不到里面（`sandbox/linux.md`「已知的限制」）。
    - A16 起本人的会话只剩完全放开、只读两级（施工 LV-1）：原来「工作区」一级的规格（能写工作区、加进来的目录、临时目录）随它去掉了。
-   - 只读：哪儿都不能写（`/dev/null` 助手总放）；藏数据根。
-   - 只读时藏的只有数据根（施工 5-13 起在它后面还藏别的程序的私密目录，施工 PV-RM 去掉了，2026-11-16 项目主人定：只读就是完全放开减去写，`~/.ssh` 这些读得到、写不进）。
-   - 只读时把开着的技能文件夹、这个会话已经建了的附件目录写进 `reveal`（施工 X-10 中、3-9 六补，`skills.md`「技能」第 3 条）：造会话、载入时照这一刻找到的（`Sandbox::with_shelves`，和权限策略同一份），换成真实的位置。
-3. 工作目录、加进来的目录照权限策略的办法换成真实的位置（`~` 接家目录）；换不成的照原样。数据根、临时目录也换成真实的位置。数据根（有标记）的 `run/`、这个会话的 `jobs/` 不在的补上，补不上的这一次调用不跑、照崩了交回（施工 R3-1、R3-1 补）：写配置、密钥的临时文件建在 `run/` 里（`config.md` 第五条第 5 条），后台命令的输出写在 `jobs/` 里，Windows 的沙盒只禁命令起来那一刻已有的，命令跑着时才建的 `run/` 里面读得到（2026-11-02 虚拟机上量过）。
+   - 只读：哪儿都不能写（`/dev/null` 助手总放）；什么都不藏，`hidden`、`reveal` 都是空的（施工 RO-2，2026-11-16 项目主人定：只读就是完全放开减去写，数据根放开读，`etc/private/secrets.toml` 也读得到、写不进；`~/.ssh` 这些施工 PV-RM 起就不藏）。
+   - 施工 RO-2 以前只读藏数据根，开着的技能文件夹、这个会话已经建了的附件目录写进 `reveal` 单独放开（施工 X-10 中、3-9 六补）；什么都不藏以后不用了。外部身份的会话照旧藏数据根、技能文件夹进只准读的名单（第 1 条）。
+3. 外部身份的会话：工作目录、加进来的目录照权限策略的办法换成真实的位置（`~` 接家目录）；换不成的照原样。数据根也换成真实的位置。施工 R3-1、R3-1 补起只读的规格写之前补上数据根的 `run/`、这个会话的 `jobs/`（Windows 的沙盒只禁命令起来那一刻已有的，命令跑着时才建的 `run/` 里面读得到），施工 RO-2 只读不藏数据根以后去掉了：后台命令的输出文件由任务端口自己建（`miyu_store::jobs::create_output`），`run/` 核心起来时就建好（`DataRoot::prepare_private`）。
 4. 数据根落在临时目录里时改放沙盒自己的临时目录（`<数据根>-sandbox-tmp`、`TMPDIR` 指过去）：只给「工作区」一级用，随它去掉了（施工 LV-1）。只读哪儿都写不了，完全放开不进沙盒；外部身份的会话的临时目录照第 1 条用工作区里的 `.tmp`。
 5. 工具链的缓存用沙盒自己的一份（施工 5-4 下：`CARGO_HOME`、`npm_config_cache` 这些变量，cargo 的全局配置，施工 SB-1 的浏览器那几个变量）：同样只给「工作区」一级用，随它去掉了（施工 LV-1）。只读时照你原来的缓存读，写不了。
 6. 在阻塞线程里算，在跑这次调用的任务里：换真实的位置、建目录、建链接都碰磁盘。
-7. 写不成（数据根的 `run/`、这个会话的 `jobs/` 补不上，关起来的会话工作区里的 `.tmp` 建不成）：不跑，不会不经沙盒就跑。记一行 `ERROR` `sandbox not set up`（`call`、`error`），再照工具崩了交回（第 1 条第 7 步）。
+7. 写不成（关起来的会话工作区里的 `.tmp` 建不成；施工 RO-2 以前还有只读时数据根的 `run/`、这个会话的 `jobs/` 补不上）：不跑，不会不经沙盒就跑。记一行 `ERROR` `sandbox not set up`（`call`、`error`），再照工具崩了交回（第 1 条第 7 步）。
 
 **1b. 派子代理**（`crates/miyu-session/src/agents.rs`，施工 7-5；`agents.md` 第一条）
 
@@ -249,10 +248,9 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
 | `crates/miyu-session/src/effects/tests.rs` | 改前改后小的写进效果、不建 blob 目录，正好 32 KiB 的写、多一个字节的存成 blob，不是 UTF-8 的存成 blob（施工 V-18）、别的照原样过去；存不成的照样有哈希；载入时重建看过的不留原文（施工 V-18）；读过的记整份的哈希、写过的记改后的、删了的拿掉、后来的盖前面的；从日志重建的和一路记下的一样 |
 | `crates/miyu-session/src/pictures/tests.rs` | 交回的图片存成 blob，块里是哈希、媒体类型、宽高，照先后；存不下来的交回空的（施工 4-13） |
 | `crates/miyu-session/tests/write.rs` | 先读后写，日志里两次结果的效果对得上、效果里写着改前改后、没另存 blob（施工 V-18）；重新载入以后读过的照样算、删了的不再算看过（施工 ED-2 起都拿读过以后又被改了的看出来）；改完一次接着改不用重读；执行的命令（完全放开）记进日志、退出码在说法里 |
-| `crates/miyu-session/tests/read.rs`、`search.rs` | 真的 `read`、`glob`、`grep` 在会话里跑：工作区里的读得到、搜得到；边界以外的也读得到、搜得到，没人能确认也不用问（施工 5-4 上）；数据根里的读被拒；从上面往下搜不进数据根 |
-| `crates/miyu-session/tests/sandbox.rs` | 执行器写的沙盒（施工 5-4 上；A16 起只剩两级，施工 LV-1）：只读（连同不认识的级别）哪儿都不能写、藏数据根，不设环境变量；完全放开不带；Unix 上有收紧手段的，真的经助手跑 `shell`：只读时哪儿都写不进，外面读得到，数据根读不到；本人只读下家目录里的钥匙读得到、写不进，数据根里的密钥 `etc/private/secrets.toml` 读不到（施工 PV-RM，原来是私密目录里面的读不到，施工 LV-5） |
-| `crates/miyu-session/tests/secrets_unreachable.rs`、`src/sandbox/tests.rs`（施工 5-13，PV-RM 改） | 只读的规格里藏的只有数据根，家目录里有 `.ssh`、`.claude`、`.config/gh` 也不藏；能写的里面的数据根 macOS、Windows 上照藏、Landlock 不藏（施工 5-14 改，`hidden` 本身的单元测试）；文件工具哪一级都读不到数据根里的密钥。施工 5-13 到 PV-RM 之间这里守的是藏私密目录（`sandbox_private.rs`） |
-| `src/sandbox/tests.rs` 的 `the_run_directory_is_back_before_a_command_starts`（施工 R3-1）、`the_jobs_directory_is_made_before_a_command_starts`（施工 R3-1 补） | 数据根的 `run/` 被删了的、这个会话还没有的 `jobs/`，写规格时建上 |
+| `crates/miyu-session/tests/read.rs`、`search.rs` | 真的 `read`、`glob`、`grep` 在会话里跑：工作区里的读得到、搜得到；边界以外的也读得到、搜得到，没人能确认也不用问（施工 5-4 上）；数据根里的读得到（施工 RO-2）；从上面往下搜不进数据根 |
+| `crates/miyu-session/tests/sandbox.rs` | 执行器写的沙盒（施工 5-4 上；A16 起只剩两级，施工 LV-1）：只读（连同不认识的级别）哪儿都不能写、什么都不藏（施工 RO-2），不设环境变量；完全放开不带；Unix 上有收紧手段的，真的经助手跑 `shell`：只读时哪儿都写不进，外面、数据根都读得到；本人只读下家目录里的钥匙、数据根里的密钥 `etc/private/secrets.toml` 都读得到、改不了，数据根里建不了新文件（施工 RO-2，PV-RM 时是密钥读不到） |
+| `crates/miyu-session/tests/secrets_readable.rs`、`src/sandbox/tests.rs`（施工 5-13，PV-RM、RO-2 改） | 只读的规格什么都不藏：家目录里有 `.ssh`、`.claude`、`.config/gh`，数据根、开着的技能文件夹都不藏、不另放开；完全放开不带规格；文件工具哪一级都读得到数据根里的密钥、写不进数据根。施工 5-14 到 RO-2 之间单元测试还守「能写的里面的数据根 macOS、Windows 上照藏、Landlock 不藏」、写规格前补上 `run/`、`jobs/`（施工 R3-1、R3-1 补），随不藏去掉了 |
 | `crates/miyu-session/tests/sandbox_log.rs` | 沙盒写不成：记一行 `ERROR sandbox not set up`，带原因，再照崩了记一行，没跑（施工 5-4 上） |
 | `crates/miyu-session/tests/spawn.rs` | 派子代理（施工 7-5）：交给会话表的子会话抄对了父会话的每一样（场所、权限连同只读、能不能确认、工作目录、加进来的目录、第几层、命令编号、人格），交代原样、`by` 是父会话；一步里调两次派两个、各领各的编号；造不成的不送交代、编号不回收，载入以后接着数、照日志和快照抄；子会话派的带上它在父会话里的编号，载入以后照 `cause` 读回（施工 7-1 补）；没有会话表的派不了；主会话和第 1 层有 `subagent`、没有 `agent`，第 2 层、群里没有、调了照没有的工具拒掉，子会话的 system 接上场所说明；`spawn/renamed.rs`：新会话调 `agent` 照没有的工具拒掉，改名以前造的会话换现在的核心载入以后工具面一个字节不变、调 `agent` 照样派得出去（施工 7-5 再补） |
 | `crates/miyu-session/tests/spawn/pool.rs` | 子会话用哪个模型（施工 8-8 补，取代 8-8 的 `tier.rs`）：写了 `pool` 的记 `@池`，没写的、写 `tier` 的抄父会话钉着的引用；工具面照造会话时的配置拼，配置改了这个会话（连同载入以后）一字不变、新会话变，老会话里写新会话才列的池照参数不对 |

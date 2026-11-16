@@ -1,8 +1,10 @@
 //! 一次调用带的沙盒（`docs/blueprint/session/tools.md` 第 1a 条，施工 5-4 上）：执行器照派出去那一刻实际生效的那一级
-//! 写规格。A16 起本人的会话只剩两级（施工 LV-1）：完全放开不进沙盒，只读哪儿都不能写、藏数据根。Unix 上有收紧手段的，
-//! 真的经助手跑 `shell`：只读时哪儿都写不进，外面读得到，数据根读不到。
+//! 写规格。A16 起本人的会话只剩两级（施工 LV-1）：完全放开不进沙盒，只读哪儿都不能写、什么都不藏（施工 RO-2）。Unix 上有
+//! 收紧手段的，真的经助手跑 `shell`：只读时哪儿都写不进，外面、数据根都读得到。
 
-use std::path::{Path, PathBuf};
+#[cfg(unix)]
+use std::path::Path;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 #[cfg(unix)]
@@ -19,11 +21,6 @@ use crate::support::*;
 
 /// 假的助手：假工具不起它。
 const HELPER: &str = "miyu-sandbox";
-
-/// 真实的位置。
-fn real(path: &Path) -> PathBuf {
-    std::fs::canonicalize(path).expect("在")
-}
 
 /// 在 `cwd` 里造一个会话，沙盒能用，没人能确认：执行命令的假工具 `run` 跑一次，交回它拿到的沙盒。
 async fn attached(home: &Home, cwd: &str, permission: Permission) -> Option<Arc<Sandboxed>> {
@@ -71,13 +68,12 @@ fn results(home: &Home, handle: &Handle) -> Vec<ToolResult> {
 async fn each_level_gets_its_own_spec() {
     let home = Home::outside_temp();
     let work = home.scratch.0.join("work");
-    let data = real(home.root.path());
     let cwd = work.to_string_lossy().into_owned();
     let read_only = Sandboxed {
         helper: PathBuf::from(HELPER),
         spec: Spec {
             write: Vec::new(),
-            hidden: vec![data],
+            hidden: Vec::new(),
             read: None,
             reveal: Vec::new(),
             sockets: Vec::new(),
@@ -92,7 +88,7 @@ async fn each_level_gets_its_own_spec() {
         assert_eq!(
             attached(&home, &cwd, level.clone()).await.as_deref(),
             Some(&read_only),
-            "{level:?}：只读，哪儿都不能写；不认识的级别按只读"
+            "{level:?}：只读，哪儿都不能写、什么都不藏（施工 RO-2）；不认识的级别按只读"
         );
     }
     assert_eq!(
@@ -127,18 +123,18 @@ async fn commands_really_run_in_the_sandbox() {
     );
     let output = shell(&home, &helper, &work, &command).await;
     assert_eq!(
-        output, "blocked-inside\nblocked-outside\nreadable\nblocked-data\n",
-        "只读：哪儿都写不进，外面读得到，数据根读不到"
+        output, "blocked-inside\nblocked-outside\nreadable\nsecret\n",
+        "只读：哪儿都写不进，外面、数据根都读得到（施工 RO-2）"
     );
     assert!(!work.join("inside.txt").exists());
     assert!(!outside.exists());
 }
 
-/// 本人只读就是完全放开减去写（施工 PV-RM，2026-11-16 项目主人定）：家目录里别的程序的钥匙读得到、写不进；数据根里的密钥
-/// `etc/private/secrets.toml` 照旧读不到。
+/// 本人只读就是完全放开减去写（施工 PV-RM、RO-2，2026-11-16 项目主人定）：家目录里别的程序的钥匙、数据根里的密钥
+/// `etc/private/secrets.toml` 都读得到；钥匙、密钥都改不了，数据根里也建不了新文件。
 #[cfg(unix)]
 #[tokio::test]
-async fn a_read_only_command_reads_a_key_folder_but_not_the_secrets() {
+async fn a_read_only_command_reads_the_secrets_but_cannot_write_the_data_root() {
     let helper = miyu_sandbox::testkit::built_helper();
     if !can_confine(&helper) {
         return;
@@ -151,20 +147,28 @@ async fn a_read_only_command_reads_a_key_folder_but_not_the_secrets() {
     let secrets = home.root.secrets_file();
     std::fs::create_dir_all(secrets.parent().expect("有上级目录")).expect("建得了目录");
     std::fs::write(&secrets, "secret-in-data-root\n").expect("写得进");
+    let fresh = home.root.path().join("etc/new.txt");
     let command = format!(
-        "cat '{}'; \
-         (echo x >> '{}') 2>/dev/null && echo wrote-key || echo blocked-write; \
-         cat '{}' 2>/dev/null || echo blocked-secrets",
-        key.display(),
-        key.display(),
-        secrets.display()
+        "cat '{key}'; \
+         (echo x >> '{key}') 2>/dev/null && echo wrote-key || echo blocked-key; \
+         cat '{secrets}'; \
+         (echo x >> '{secrets}') 2>/dev/null && echo wrote-secrets || echo blocked-secrets; \
+         touch '{fresh}' 2>/dev/null && echo wrote-data || echo blocked-data",
+        key = key.display(),
+        secrets = secrets.display(),
+        fresh = fresh.display(),
     );
     let output = shell(&home, &helper, &work, &command).await;
     assert_eq!(
-        output, "key\nblocked-write\nblocked-secrets\n",
-        "只读：钥匙读得到、写不进，密钥读不到"
+        output, "key\nblocked-key\nsecret-in-data-root\nblocked-secrets\nblocked-data\n",
+        "只读：钥匙、密钥都读得到，哪个都写不进，数据根里建不了"
     );
     assert_eq!(std::fs::read_to_string(&key).expect("还在"), "key\n");
+    assert_eq!(
+        std::fs::read_to_string(&secrets).expect("还在"),
+        "secret-in-data-root\n"
+    );
+    assert!(!fresh.exists());
 }
 
 /// 这台机器上助手有没有收紧的手段：没有的（例如没有 Landlock 的内核），这个测试到此为止。

@@ -45,7 +45,7 @@
   ```text
   Files passed to show open in the user's interface. A path in a reply is only text to them.
   ```
-- 报给权限策略的路径：一条，`path` 原样，读（同 `read`）：工作区以外的问人、只读的数据根碰不到、沙盒藏起来的看不见（`session/guard.md`）。
+- 报给权限策略的路径：一条，`path` 原样，读（同 `read`）：照读判：哪儿都放行，数据根里的施工 RO-2 起也放行（`session/guard.md`）。
 
 ### 怎么走
 

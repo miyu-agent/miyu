@@ -1,4 +1,4 @@
-//! 按目录找：开头对、大小写不论、点开头的打了点才列、目录在前、50 条截断、`partial`；落进边界表「谁都不能碰」
+//! 按目录找：开头对、大小写不论、点开头的打了点才列、目录在前、50 条截断、`partial`；落进边界表数据根
 //! 那一片的不列（`web-module.md`「怎么走」第 2、3 条）。
 
 use std::fs;
@@ -130,7 +130,7 @@ fn entries_in_the_forbidden_zone_are_skipped_but_siblings_still_list() {
     let scratch = Scratch::new();
     touch(&scratch.0, "data/secret.txt");
     touch(&scratch.0, "keep.txt");
-    // 工作区在别处，数据根是 `data/`：`data/` 这一条自己落进「谁都不能碰」那一片。
+    // 工作区在别处，数据根是 `data/`：`data/` 这一条自己落进数据根那一片。
     let places = Places::here(
         scratch.0.join("elsewhere"),
         (scratch.0.join("data"), scratch.0.join("data").join("kb")),

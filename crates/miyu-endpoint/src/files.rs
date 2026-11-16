@@ -193,7 +193,7 @@ pub(crate) async fn read(core: &Core, params: ReadParams) -> Result<Value, Refus
 fn read_blocking(place: &Place, params: &ReadParams) -> Result<Value, Refusal> {
     let real = resolve(Path::new("/"), place.home.as_deref(), &params.path)
         .map_err(|_| Refusal::PATH_UNREADABLE)?;
-    if boundary_of(place).zone(&real) == Zone::Forbidden {
+    if boundary_of(place).zone(&real) == Zone::DataRoot {
         return Err(Refusal::PATH_FORBIDDEN);
     }
     let segment = miyu_fs::read_range(&real, params.offset, params.length)
@@ -271,7 +271,7 @@ fn boundary_of(place: &Place) -> Boundary {
     Boundary::new(&places)
 }
 
-/// `input` 接在 `base` 后面换成真实的位置，要是一个目录、不落进「谁都不能碰」那一片。
+/// `input` 接在 `base` 后面换成真实的位置，要是一个目录、不落进数据根那一片。
 fn require_dir(
     base: &Path,
     home: Option<&Path>,
@@ -285,7 +285,7 @@ fn require_dir(
     if !is_dir {
         return Err(Refusal::PATH_UNREADABLE);
     }
-    if boundary.zone(&real) == Zone::Forbidden {
+    if boundary.zone(&real) == Zone::DataRoot {
         return Err(Refusal::PATH_FORBIDDEN);
     }
     Ok(real)

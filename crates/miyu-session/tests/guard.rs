@@ -1,5 +1,5 @@
-//! 权限策略（施工 4-3 下）：工具报出要碰的路径，会话照边界和级别判放行、问人还是拒绝。施工 5-4 上起读哪儿都放行
-//! （数据根除外）。A16 起本人的会话只剩完全放开、只读两级（施工 LV-1）：完全放开读写都不问，只读执行命令照沙盒能不能用。
+//! 权限策略（施工 4-3 下）：工具报出要碰的路径，会话照边界和级别判放行、问人还是拒绝。施工 5-4 上起读哪儿都放行，
+//! 施工 RO-2 起数据根也放开读、照旧写不进。A16 起本人的会话只剩完全放开、只读两级（施工 LV-1）：完全放开读写都不问，只读执行命令照沙盒能不能用。
 //!
 //! 场地不在系统的临时目录里（[`Home::outside_temp`]）：数据根 `data/`、假的家 `home/`、工作区 `work/`、
 //! 边界以外的 `other/`。
@@ -195,8 +195,9 @@ async fn a_network_tool_runs_in_read_only_without_asking() {
     }
 }
 
+/// 数据根两种模式都读得到、哪一级都写不进（施工 RO-2，2026-11-16 项目主人定）：拒绝的话只说改。
 #[tokio::test]
-async fn the_data_root_is_refused_at_every_level() {
+async fn the_data_root_is_read_at_every_level_but_never_written() {
     let home = Home::outside_temp();
     let token = home.root.run().join("token-for-test");
     std::fs::write(&token, "secret").expect("写得进");
@@ -206,20 +207,33 @@ async fn the_data_root_is_refused_at_every_level() {
         let script = Script::new([one("read", &token), Play::Says("好。")]);
         let handle = session(&home, &script, &kit, Level::Full, read_only, true).await;
         turn(&handle).await;
+        let (result, _) = first_result(&home.log(handle.id()));
+        assert_eq!(result.status, ToolStatus::Ok, "只读 {read_only}：读得到");
+        assert_eq!(kit.read.calls().len(), 1, "只读 {read_only}");
+
+        let kit = Kit::new();
+        let script = Script::new([one("edit", &token), Play::Says("好。")]);
+        let handle = session(&home, &script, &kit, Level::Full, read_only, true).await;
+        turn(&handle).await;
         let (result, by) = first_result(&home.log(handle.id()));
         assert_eq!(result.status, ToolStatus::Denied, "只读 {read_only}");
+        assert!(kit.edit.calls().is_empty(), "只读 {read_only}");
+        // 只读时写入类的调用内核先拦下（只读那一句）；完全放开由权限策略拒，说的是数据根。
+        if read_only {
+            continue;
+        }
         assert!(by_permissions(&by), "{by:?}");
-        assert!(
-            text(&result).contains("inside Miyu's own data"),
-            "{}",
-            text(&result)
+        // 路径照模板转义换进去（Windows 上反斜杠写成两个），同生产的写法拼。
+        let path = miyu_kernel::template::escape(&token);
+        assert_eq!(
+            text(&result),
+            format!("\"{path}\" is inside Miyu's own data, which no tool can change.\n")
         );
         // 给人看的说法也记下了（施工 4-5 上）。
         assert_eq!(
             result.human,
             Some(Said::new("core/permissions/forbidden").with("path", token.as_str()))
         );
-        assert!(kit.read.calls().is_empty(), "只读 {read_only}");
     }
 }
 
@@ -275,14 +289,14 @@ async fn several_paths_go_by_the_strictest() {
     std::fs::write(&token, "secret").expect("写得进");
     let kit = Kit::new();
     let args = serde_json::json!({ "paths": [at(&home, "work/a.txt"), token.to_string_lossy(), at(&home, "other/b.txt")] }).to_string();
-    let script = Script::new([Play::calls(&[("read", &args)]), Play::Says("好。")]);
+    let script = Script::new([Play::calls(&[("edit", &args)]), Play::Says("好。")]);
     let handle = session(&home, &script, &kit, Level::Full, false, true).await;
     turn(&handle).await;
     let (result, by) = first_result(&home.log(handle.id()));
     assert_eq!(
         result.status,
         ToolStatus::Denied,
-        "有一条在数据根里：拒绝，不问人"
+        "有一条要写数据根：拒绝，不问人"
     );
     assert!(by_permissions(&by));
 }
