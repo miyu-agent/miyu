@@ -425,6 +425,23 @@ summary = { en = "Decides whether to reply in a group.", zh = "群里有人说�
 
 Call `model.call` with `"side": "judge"` (only an id registered in your own package, without the package name) and without `model` or `use`: the core takes a model from the pool named after the tier (`lite`, `normal`, `flagship`; people put models into them in settings). When that pool is empty, or every model in it is cooling down or failed, it uses the session's model — the session you pass as `session`, or `models.chat` if you pass none. People don't configure a model for your request. An id you didn't register gets `bad_params`. `model.list` lists yours under `side` (as `<package id>/<id>`) with where each one lands right now. See [Writing an extension](extensions.en.md).
 
+## `[[purpose]]`
+
+Gives a name people can read to a purpose your program writes in `model.call` (`purpose`), one per entry. Usage rows grouped by purpose (`purpose_name` in `usage.query`, `/usage` in the terminal, the usage page on the web) show it; an undeclared purpose shows as written. No capability is needed.
+
+| Field | Notes |
+|---|---|
+| `id` | The purpose, exactly as in `model.call`'s `purpose`: 1 to 32 lowercase letters, digits and `-`; unique within the package |
+| `name` | Shown to people, per language; write it the way software names things, as a noun phrase ("Join review", not "Deciding whether to let someone in") |
+
+```toml
+[[purpose]]
+id = "join-approval"
+name = { en = "Join review", zh = "入群审核" }
+```
+
+The core's own purposes (`title`, `compaction`, `vision` and so on) keep the core's names even if you declare them. When several packages declare the same purpose, the one whose package id sorts first wins.
+
 ## `[[widget]]`
 
 A block of your own content in the terminal and web UIs; `capabilities` must include `widgets`. At most 16 per package.

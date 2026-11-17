@@ -33,8 +33,11 @@ impl SideRequest {
     }
 }
 
-/// `[[side]]`：一段一条，编号在一个包里不重。
-pub(super) fn read(reader: &Reader<'_>, node: &Item) -> Result<Vec<SideRequest>, Problem> {
+/// `[[side]]`：一段一条，编号在一个包里不重；没写的是空的。
+pub(super) fn read(reader: &Reader<'_>, node: Option<&Item>) -> Result<Vec<SideRequest>, Problem> {
+    let Some(node) = node else {
+        return Ok(Vec::new());
+    };
     let Some(array) = node.as_array_of_tables() else {
         return Err(reader.problem(
             Some(node),

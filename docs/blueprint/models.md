@@ -480,7 +480,8 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 - 先补再查（第九条第 4 条）；汇总读出坏了的，删掉重建再补一次，还不行回 `internal`。`usage.currency` 照这一刻的配置。
 - 订阅一个会话的回应里的 `usage`（施工 9-6 上，`protocol.md` 的 `subscribe`）和 `{"session": <它>}` 的这一行同一个写法、同一个口径，由会话 actor 随落盘累计，不经汇总；另加 `compactions`、`cache_breaks`。它的 `converted`、`converted_parts` 照配置的 `usage.currency`，只用缓存里的汇率（常推的一处，不等）。
 - 例子：头看「这个会话（连子代理）× 用途」写 `{"session":"<编号>","tree":true,"group":["use"]}`，回 `{"rows":[{"use":"compaction",…},{"use":"main",…},{"use":"subagent",…}]}`，每行的四项用量、金额照旧。
-- 例子：`{"group":["purpose","model"]}` 回 `{"rows":[{"purpose":"vision","model":"deepseek/deepseek-flash","requests":2,"usage":{"uncached":1624,"cache_read":0,"cache_write":0,"output":18},"amounts":[{"currency":"USD","amount":0.0002544}],"unpriced":0}]}`。
+- 照 `purpose` 分组的每一行带 `purpose_name`（施工 UP-3，2026-11-18 主人第 39 条：终端 `/usage` 一行里中英混杂），照连接的语言（`usage/names.rs`）：核心自己的用途照字表 `core/human` 的 `usage/purpose/<用途>`（`recap` 回顾、`title` 起标题、`compaction` 压缩、`memory` 记忆整理、`vision` 看图、`embedding` 向量化；有哪几种就看字表里有哪几条），`purpose` 是 `null` 的那一行（主请求，连同子代理的、当场压缩的）照 `usage/purpose/main`「主对话」；扩展写的照包清单 `[[purpose]]` 声明的名字（`packages.md`），几个包声明同一个的照包的编号排第一的，核心自己有的扩展改不了名；都没有的不写，头照 `purpose` 原样印。名字照 UX-1 的规矩写成软件说法的名词短语。不照 `purpose` 分组的不带。
+- 例子：`{"group":["purpose","model"]}` 回 `{"rows":[{"purpose":"vision","purpose_name":"看图","model":"deepseek/deepseek-flash","requests":2,"usage":{"uncached":1624,"cache_read":0,"cache_write":0,"output":18},"amounts":[{"currency":"USD","amount":0.0002544}],"unpriced":0}]}`。
 
 **`usage.convert`**（查询，施工 UC-3）
 
@@ -1283,6 +1284,7 @@ mimo = ["xiaomi"]
 | `crates/miyu-core/src/models/tests.rs`、`crates/miyu-core/tests/serve.rs` | 出厂的档案读得进来、DeepSeek 那一套和请求形状探针用的一样、TOML 读成 JSON、写坏的说是档案；真核心没配模型的每次请求 `no_model`、没发出去 | 8-6 |
 | `crates/miyu/tests/dev_home.rs` | `xtask dev-home` 的三个变量怎么读、哪些不收；造的配置照清单读一处错都没有；已经有配置的不盖、别人的目录不动；真核心在这个数据根上照配置连上假服务器，带着 `MIYU_DEV_API_KEY` 的值、发给写的那个模型，`miyu ask` 答得上来 | 8-6 |
 | `crates/miyu-store/tests/usage.rs`、`usage_purged.rs`、`crates/miyu-endpoint/tests/usage.rs`、`crates/miyu-endpoint/src/usage/tests.rs` | 一次一行、没发出去的不算、重复不出两行、补多出来的（连同换了段的、从没写过的）、重建（版本不对、乱写的文件、用着用着坏了）、回收处、撤掉的回合也算、分组（`null` 在前）、`tree`、左闭右开；`usage.purged` 按小时按用途的合计一字不差、写进去了才删、写不进去的留着、写两遍只算一次、重建照日志读回来、整点时区一分不差、半点时区照小时开头；一次性调用记进日志、照用途分组、重建以后还在；协议上照分组、币种各加各的、照 `usage.currency` 排、参数不对的 `bad_params` | 8-15 |
+| `crates/miyu-endpoint/tests/usage_names.rs`（施工 UP-3） | 照 `purpose` 分组的每一行带 `purpose_name`：中文连接是「主对话」（`null` 那一行）、「入群审核」（扩展声明的）、「起标题」「看图」（核心的），英文连接照英文；两个包声明同一个的照编号排第一的，扩展声明核心的用途改不了名，都没有的不写；不照 `purpose` 分组的不带 | UP-3 |
 | `crates/miyu-endpoint/tests/usage_convert_method.rs`（施工 UC-3） | `usage.convert`：两组照各自那天的汇率换成一个数、同币种的不用汇率、空的组和一笔都没换成的是 `null`、取不到汇率的在 `rest`、`currency` 跟着配置、再问不再取；日子、币种、金额写错和超上限的 `bad_params`，正好在上限上的照办 |
 | `crates/miyu-store/src/usage/convert/tests.rs`、`crates/miyu-store/tests/usage_convert.rs`、`crates/miyu-endpoint/tests/usage_convert.rs`、`crates/miyu-endpoint/tests/usage.rs`（施工 UP-1） | 分四种：照同样的汇率换、加起来就是 `converted.amount`，没换成的不进四种；有一笔没记四种的整行不给，有一笔哪一种用了、价格不知道的那一种不给（没换成的那一笔也算），用量是 0 的照准的 0 给（只写了输入、输出价的模型缓存两种照给 0）；照每一次记下的价格算好记进汇总，重建一样，删掉的会话的合计带着，老的合计算进来的那一组不给、别的组照给；`usage.query` 的行（会话的请求、一次性调用）和订阅回应的累计都带 `converted_parts`，写缓存的价格不知道、用量是 0 的照 0 写 | UP-1 |
 | `crates/miyu-basesystem/tests/subagent.rs` | `pool` 只认端口列着的、交给端口，不写的、`null` 交没有，不在列表里的、大小写不对的、带 `@` 的、不是字的照参数不对、端口不派、原话列出能写的几个，一个都没列的照样拒；`tier` 不报错、不理它；资源里 `pool` 没有 `enum`（8-8 补） | 8-8、8-8 补 |

@@ -34,9 +34,6 @@ use crate::Core;
 use crate::attach;
 use crate::refusal::Refusal;
 
-/// `purpose` 最多几个字符。
-const PURPOSE_MAX: usize = 32;
-
 /// `model.call` 的参数：不认识的格不理，「可以不写」的写 `null` 等于没写。
 #[derive(Debug, Deserialize)]
 pub(crate) struct CallParams {
@@ -195,12 +192,9 @@ pub(crate) async fn call(
     }
 }
 
-/// 用途合不合写法：1 到 32 个字符，只有小写字母、数字、`-`。
+/// 用途合不合写法：1 到 32 个字符，只有小写字母、数字、`-`（和清单 `[[purpose]]` 的编号同一个规矩，施工 UP-3）。
 fn purpose_ok(purpose: &str) -> bool {
-    (1..=PURPOSE_MAX).contains(&purpose.len())
-        && purpose
-            .bytes()
-            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
+    miyu_config::package::purpose_written(purpose)
 }
 
 /// 查消息的样子（见模块的说明），交回 system（没有的是空的）和后面几条。

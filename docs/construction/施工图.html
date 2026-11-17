@@ -1603,6 +1603,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sPV4"><span class="n">PV-4</span>软件包自带供应商<span class="st">…</span></a></li>
         <li><a class="step review" href="#sVM2"><span class="n">VM-2</span>找回的场所会话也认语音上限<span class="st">…</span></a></li>
         <li><a class="step review" href="#sPR1"><span class="n">PR-1</span>中转站的模型价格照原厂<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sUP3"><span class="n">UP-3</span>用量的用途有给人看的名字<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -63031,6 +63032,55 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/PR-1-中转站价格照原厂.md</code>；蓝图 <code>models.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sUP3" aria-labelledby="h-sUP3">
+  <div class="sheet-head"><h2 id="h-sUP3"><span class="no">UP-3</span>用量的用途有给人看的名字</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">用量照用途分的每一行带上给人看的名字，核心的照字表，扩展的照清单声明。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint/usage/names.rs · miyu-config/package/purpose.rs · resources/core/human</span><span class="dir-note">UP-3</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>usage.query</code> 照 <code>purpose</code> 分组：每行多 <code>purpose_name</code></li>
+              <li>核心的照字表 <code>usage/purpose/&lt;用途&gt;</code></li>
+              <li>扩展的照清单 <code>[[purpose]]</code></li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">照连接的语言</span><span class="rl">没有名字的不带</span></div>
+          <div class="tile new"><span class="nm">核心的扩展改不了名</span><span class="rl">同名照包编号排第一的</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">UP-3</dd></div>
+        <div><dt>名称</dt><dd>用量的用途有给人看的名字</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-18</dd></div>
+        <div><dt>提交</dt><dd class="mono">UP-3</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改前红：端点 <code>usage_names::rows_by_purpose_carry_a_name_in_the_connection_s_language</code></span></li>
+        <li><span class="ok">✓</span><span>沙箱实测：中英日三个连接各看一遍 <code>purpose_name</code></span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/UP-3-用量用途的名字.md</code>；蓝图 <code>models.md</code>、<code>packages.md</code>、<code>protocol.md</code>；协议参考 <code>config.md</code>；作者文档 <code>manifest.md</code>。</li>
       </ul>
     </div>
   </div>

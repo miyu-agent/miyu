@@ -356,9 +356,9 @@ pub(crate) fn call<'a>(
         "provider.test" => {
             answer(move || async move { providers::test(core, peer, params(request)?).await })
         }
-        "usage.query" => {
-            answer(move || async move { crate::usage::query(core, params(request)?).await })
-        }
+        "usage.query" => answer(move || async move {
+            crate::usage::query(core, peer.language, params(request)?).await
+        }),
         "usage.convert" => {
             answer(
                 move || async move { crate::usage::convert::convert(core, params(request)?).await },
