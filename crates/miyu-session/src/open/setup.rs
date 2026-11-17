@@ -239,6 +239,9 @@ pub struct Create<'a> {
     pub dream: Option<miyu_kernel::event::Dream>,
     /// 从哪开的（施工 8-33 四补）：`session.terminal` 开的是 `terminal`，记进 `session.created`；别的没有。
     pub origin: Option<String>,
+    /// 这个场所一段语音至多多长，毫秒（施工 SD-1）：`venue.session` 的 `voice_max_ms`，记进 `session.created`，派调用时交给扩展。
+    /// 没有上限的、本机的没有。
+    pub voice_max_ms: Option<u64>,
 }
 
 /// 照最后一次记下的工作目录（没有的是空的）定实际在哪干活。

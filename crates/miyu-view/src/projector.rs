@@ -65,6 +65,8 @@ pub struct Projector {
     queued: BTreeMap<Seq, EntryId>,
     /// 每条消息：序号到条目（撤回、开轮时照它找）。
     users: BTreeMap<Seq, EntryId>,
+    /// 每条消息是谁说的（施工 SD-1）：开轮时照它记这一轮是谁开的。
+    speakers: BTreeMap<Seq, miyu_kernel::origin::By>,
     /// 现在的权限级别：发出去的消息、一轮的收尾照它记。
     level: Option<String>,
     /// 现在回话的人格、人要换成还没换上的（施工 9-8 十三补）：回复条目照前一个记。
@@ -127,6 +129,7 @@ impl Projector {
             calls: BTreeMap::new(),
             queued: BTreeMap::new(),
             users: BTreeMap::new(),
+            speakers: BTreeMap::new(),
             level: None,
             persona: (None, None),
             preset: (None, None),

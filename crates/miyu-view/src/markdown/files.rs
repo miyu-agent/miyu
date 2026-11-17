@@ -137,6 +137,9 @@ pub fn wanted(entries: &[Entry]) -> BTreeSet<ContentHash> {
             Body::Media(media) => {
                 wanted.extend(media.image.blob.clone());
             }
+            Body::Voice(voice) => {
+                wanted.insert(voice.blob.clone());
+            }
             Body::Tool(tool) => wanted.extend(tool.images.iter().map(|p| p.blob.clone())),
             _ => {}
         }

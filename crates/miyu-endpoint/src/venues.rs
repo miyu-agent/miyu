@@ -69,6 +69,10 @@ pub(crate) struct VenueParams {
     /// 新的就是最新的，以后照常找回它，旧的照旧在列表里、看得到。不写的照常找。
     #[serde(default)]
     fresh: bool,
+    /// 这个场所一段语音至多多长，毫秒（施工 SD-1）：平台的语音有上限的才写，正整数；记进 `session.created`，这个会话的
+    /// `tool.call` 原样带上。找回已有的会话时不看。
+    #[serde(default)]
+    voice_max_ms: Option<u64>,
 }
 
 /// 群聊近况最多能写几条。
@@ -191,6 +195,10 @@ pub(crate) async fn session(
         (Kind::Group, Some(recent @ 1..=RECENT_MOST)) => Some(recent),
         _ => return Err(Refusal::bad_field("recent")),
     };
+    // 语音的上限是正整数（施工 SD-1）。
+    if params.voice_max_ms == Some(0) {
+        return Err(Refusal::bad_field("voice_max_ms"));
+    }
     let confined = !peer
         .as_ref()
         .is_some_and(|peer| owner_in(core, peer, venue.as_str()));
@@ -219,6 +227,7 @@ pub(crate) async fn session(
         titles: params.titles,
         origin: None,
         confined,
+        voice_max_ms: params.voice_max_ms,
     };
     let cwd = params
         .cwd

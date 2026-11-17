@@ -235,6 +235,7 @@ async fn opened(
         titles: true,
         origin: None,
         confined: false,
+        voice_max_ms: None,
     };
     match core
         .sessions

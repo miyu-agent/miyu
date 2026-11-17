@@ -389,6 +389,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
             confined,
             venue: venue.clone(),
             session_log: (!confined).then_some(owner_log),
+            voice_max_ms: created.voice_max_ms,
             catalog: tools.clone(),
             lettering,
             home: home.map(Path::to_path_buf),

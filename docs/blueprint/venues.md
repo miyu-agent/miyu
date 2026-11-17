@@ -88,6 +88,7 @@
 | `preset` | 字符串，可以不写 | 造的时候用哪个预设（施工 P-2 上，`presets.md`）：同 `persona`，桥照场所规则算好交来；不写的照 `preset.default`。找回的不看。指着没有的回 `unknown_preset`、写错的回 `preset_invalid`，什么都不造 |
 | `profile` | 布尔，不写是假 | 造的时候带不带你写的「关于你」（施工 P-9，`prompts.md`「关于你」）：桥照场所规则算好交来，主人本人的私聊这类才写 `true`；群聊不写。关起来的会话写了也不带。找回的不看 |
 | `images` | 布尔，不写是 `true` | 这个场所显示得了图片吗（施工 X-25）：语音这类显示不了的写 `false`，清单写了 `needs = ["images"]` 的包在这个会话里整包当没开（工具不进工具面、回合开始不问、`system.append` 那一段不拼，也不列进「装了没开」那一行，`presets.md`「怎么走」）；记进 `session.created`，造的时候定、以后不变，子会话照父会话的。QQ 不写。找回的不看 |
+| `voice_max_ms` | 正整数，可以不写 | 这个平台一段语音至多多少毫秒（施工 SD-1，say 交付方案「im」一节：QQ 暂定 60000，私聊、群都带；Telegram 没有时长上限不写）：记进 `session.created` 的 `voice_max_ms`，这个会话派给扩展的 `tool.call` 原样带上，`say` 合成长了的不交、回出错让她重说。写 `0` 的 `bad_params`（`data.field` 是 `voice_max_ms`）。找回的不看 |
 | `titles` | 布尔，不写是 `true` | 这个会话自动起标题吗（施工 O-43）：机器人的会话这类不要标题的写 `false`，记进 `session.created`，这个会话从此不自动起标题（`kernel/session.md`「起标题」），人手改照旧改得了。找回的不看 |
 
 回应：`{"session": <编号>, "created": <布尔>}`（桥要认陌生人照 `venue.binding`）。

@@ -20,6 +20,11 @@ pub(super) struct Running {
     pub(super) manual: bool,
     /// 这一轮她出过字、做过事。
     pub(super) spoke: bool,
+    /// 开这一轮的那句话是谁说的、那条请求的编号（施工 SD-1）：语音条目照它带，头照它定放不放。
+    pub(super) asked: (
+        Option<miyu_kernel::origin::By>,
+        Option<miyu_kernel::id::CommandId>,
+    ),
 }
 
 /// 这次请求的一块。

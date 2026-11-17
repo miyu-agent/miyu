@@ -14,6 +14,16 @@ impl ResourceRoot {
         self.read(&["core", "tool-results", "timed-out.txt"])
     }
 
+    /// 扩展的工具交回的语音太大、没交（施工 SD-1）：`core/tool-results/voice-too-big.txt` 的原文，字段 `megabytes`。不进快照，
+    /// 同 [`ResourceRoot::tool_timed_out`]。
+    ///
+    /// # Errors
+    ///
+    /// 读不了这份文件，写明是哪一份。
+    pub fn voice_too_big(&self) -> Result<String, SourceError> {
+        self.read(&["core", "tool-results", "voice-too-big.txt"])
+    }
+
     /// MCP 服务交回的、不给她看的一样东西（施工 X-3 上，`mcp.md`「怎么走」第四条第 3 款：声音、二进制的资源、收不了的图）：
     /// `core/mcp/not-shown.txt` 的原文，字段 `mime`、`bytes`。不进快照，同 [`ResourceRoot::tool_timed_out`]。
     ///

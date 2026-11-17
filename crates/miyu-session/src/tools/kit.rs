@@ -25,6 +25,8 @@ pub(crate) struct ToolKit {
     pub(crate) venue: VenueId,
     /// 会话日志的目录（施工 E-M）：没关起来的会话才交给命令（`MIYU_SESSION_LOG`），关起来的 `None`。
     pub(crate) session_log: Option<PathBuf>,
+    /// 这个场所一段语音至多多长（施工 SD-1）：`session.created` 的 `voice_max_ms`，派调用时交给扩展。
+    pub(crate) voice_max_ms: Option<u64>,
     /// 工具目录的架子：执行时照现在的那一份找（施工 O-2 中）。
     pub(crate) catalog: Shelf,
     /// 替工具写的两句，和权限策略同一份（施工 P-1 三补：换快照时跟着换）。

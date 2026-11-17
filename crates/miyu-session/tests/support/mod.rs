@@ -237,6 +237,7 @@ impl Home {
             titles: true,
             dream: None,
             origin: None,
+            voice_max_ms: lines.voice_max_ms,
         });
         within("造会话", created).await.expect("造得出会话")
     }

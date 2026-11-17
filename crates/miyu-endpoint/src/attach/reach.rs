@@ -68,7 +68,7 @@ fn references(event: &Event, hash: &ContentHash) -> bool {
         Body::MessageUser(message) => &message.blocks,
         Body::MessageAssistant(reply) => &reply.blocks,
         Body::ToolResult(result) => {
-            if result.sent.iter().any(|sent| sent.image.blob == *hash) {
+            if result.sent.iter().any(|sent| sent.blob() == hash) {
                 return true;
             }
             &result.blocks

@@ -75,6 +75,7 @@ pub(super) fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
         dream: None,
         origin: None,
         confined: created.confined,
+        voice_max_ms: created.voice_max_ms,
         forked: Some(Forked {
             from: parent.clone(),
             upto: plan.upto,

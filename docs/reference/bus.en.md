@@ -93,6 +93,7 @@ Plays through this computer's speakers. Timeout 600 seconds.
 
 - Either `audio` or `text`; `text` is synthesized first as with `synthesize`.
 - Several at once are queued in order and don't interrupt each other; ones stopped by `tts.stop` answer `{"finished": false}`.
+- The core calls it too: when a turn nobody spoke in (a schedule, a loop, a life) in a local session produces a voice (a `voice` item in a tool result's `sent`) and no head has that session open, the core sends `{"audio": <blob>}`, without `language`.
 - Errors: `bad_audio`, `no_speaker`, and those of `synthesize`.
 
 ### `tts.stop`

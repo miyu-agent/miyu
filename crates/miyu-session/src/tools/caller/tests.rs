@@ -17,7 +17,7 @@ fn turn(seq: u64) -> TurnId {
 }
 
 fn callers(venue: &str) -> Callers {
-    Callers::new(VenueId::parse(venue).expect("合写法"), None)
+    Callers::new(VenueId::parse(venue).expect("合写法"), None, None)
 }
 
 #[test]
@@ -59,7 +59,11 @@ fn a_local_session_is_always_the_owners() {
 #[test]
 fn a_call_carries_the_model_in_use_and_the_log_dir() {
     let log = std::path::PathBuf::from("/data/home/alice/sessions/s");
-    let mut callers = Callers::new(VenueId::parse("local").expect("合写法"), Some(log.clone()));
+    let mut callers = Callers::new(
+        VenueId::parse("local").expect("合写法"),
+        Some(log.clone()),
+        None,
+    );
     assert_eq!(callers.of(None).model, None, "还没解析过模型");
     assert_eq!(callers.of(None).log, Some(log));
     let in_use = InUse {

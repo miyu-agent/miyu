@@ -67,6 +67,7 @@ async fn no_one_wakes_the_child_between_its_stopped_report_and_its_deletion() {
         titles: true,
         origin: None,
         confined: false,
+        voice_max_ms: None,
     };
     let cwd = dir.to_string_lossy().into_owned();
     let created = core

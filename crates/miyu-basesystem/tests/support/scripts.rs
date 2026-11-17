@@ -54,6 +54,7 @@ impl Site {
             log: None,
             permission: None,
             persona: None,
+            voice_max_ms: None,
         });
         let call = Call {
             caller,

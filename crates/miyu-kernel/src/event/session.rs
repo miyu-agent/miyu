@@ -75,6 +75,10 @@ pub struct SessionCreated {
     /// 工作区。不关的不写。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub confined: bool,
+    /// 这个场所一段语音至多多长，毫秒（施工 SD-1，`venues.md`「`venue.session`」）：桥造场所会话时报的，之后不变；这个会话的
+    /// `tool.call` 原样带上，`say` 照它比。没有上限的、本机的不写，以前的日志没有这一格。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub voice_max_ms: Option<u64>,
 }
 
 /// 整理会话是哪一间的记忆、怎么来的（设计 41 DS1）：人格那一间写 `persona`；`session` 是以前会话那一间写的（施工 FH-1 去掉了，留着认老日志，新的不写）。

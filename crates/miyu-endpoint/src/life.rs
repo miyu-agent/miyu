@@ -224,6 +224,7 @@ fn start<'a>(
             titles: true,
             origin: None,
             confined: false,
+            voice_max_ms: None,
         };
         let created = core
             .sessions

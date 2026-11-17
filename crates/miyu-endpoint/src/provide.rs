@@ -7,6 +7,7 @@ mod commands;
 mod declared;
 mod effects;
 mod remote;
+mod voice;
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::{Arc, Mutex, PoisonError};
@@ -195,7 +196,7 @@ pub(crate) async fn provide(
 }
 
 /// 照规格 `tools` 换掉包 `package` 在目录里的工具，交回几件：`provide`、读缓存共用。两处同时换的一个接一个（[`miyu_tool::Shelf`]）。
-fn register(core: &Core, package: &str, tools: Vec<ToolParams>) -> Result<usize, Refusal> {
+fn register(core: &Arc<Core>, package: &str, tools: Vec<ToolParams>) -> Result<usize, Refusal> {
     let texts = Texts {
         unavailable: core
             .resources
@@ -205,6 +206,10 @@ fn register(core: &Core, package: &str, tools: Vec<ToolParams>) -> Result<usize,
         timed_out: core
             .resources
             .tool_timed_out()
+            .map_err(|_| Refusal::INTERNAL)?,
+        voice_too_big: core
+            .resources
+            .voice_too_big()
             .map_err(|_| Refusal::INTERNAL)?,
     };
     let count = tools.len();
@@ -248,6 +253,7 @@ fn register(core: &Core, package: &str, tools: Vec<ToolParams>) -> Result<usize,
                 Stores {
                     root: core.root.clone(),
                     declared: Arc::clone(&declared),
+                    core: Arc::downgrade(core),
                 },
             )
             .for_platform(platforms.iter())

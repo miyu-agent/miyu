@@ -37,6 +37,8 @@ pub(crate) struct Opening {
     pub(crate) origin: Option<String>,
     /// 关起来（施工 SU-4 中）：`venue.session` 开的群、陌生人的私聊；记进 `session.created`。别的不关。
     pub(crate) confined: bool,
+    /// 这个场所一段语音至多多长，毫秒（施工 SD-1）：`venue.session` 的 `voice_max_ms`，记进 `session.created`。别的没有。
+    pub(crate) voice_max_ms: Option<u64>,
 }
 
 impl Opening {

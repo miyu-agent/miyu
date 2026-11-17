@@ -353,3 +353,43 @@ async fn a_fresh_venue_session_replaces_the_one_found_from_then_on() {
         "旧的照旧在"
     );
 }
+
+/// 场所的语音上限（施工 SD-1）：`venue.session` 的 `voice_max_ms` 记进 `session.created`，写 `0` 的不收；场所会话不带「这一轮的
+/// 话从哪来」那几句（施工 VN-1：桥自己写了场所），回合开始没有那一块。
+#[tokio::test]
+async fn a_venue_voice_limit_is_recorded_and_no_channel_is_told() {
+    let home = Home::new();
+    let script = Script::new([Play::Says("在。")]);
+    let mut client = connected(&home, &script).await;
+    let mut zero = private("qq:10001");
+    zero["voice_max_ms"] = json!(0);
+    let refused = venue(&mut client, "v0", zero).await;
+    assert_eq!(reason(&refused), Some("bad_params"), "{refused}");
+    assert_eq!(
+        refused["error"]["data"]["field"], "voice_max_ms",
+        "{refused}"
+    );
+    let mut params = private("qq:10001");
+    params["voice_max_ms"] = json!(60_000);
+    let made = venue(&mut client, "v1", params).await;
+    let session = made["result"]["session"]
+        .as_str()
+        .expect("有编号")
+        .to_string();
+    let log = home.log(&session);
+    let Body::SessionCreated(created) = &log[0].body else {
+        panic!("第 1 条是造会话");
+    };
+    assert_eq!(created.voice_max_ms, Some(60_000));
+    send(
+        &mut client,
+        "s1",
+        json!({"session": session, "text": "在吗", "as": {"external": "qq:10001"}}),
+    )
+    .await;
+    home.until_turns(&session, 1).await;
+    let told = home.log(&session).into_iter().any(|event| {
+        matches!(&event.body, Body::ContextInjected(fact) if fact.kind.as_str() == "channel")
+    });
+    assert!(!told, "场所会话不说从哪来");
+}

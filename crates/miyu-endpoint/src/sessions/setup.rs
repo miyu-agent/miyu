@@ -126,6 +126,7 @@ impl Setup {
             titles: who.titles,
             dream: None,
             origin: who.origin.clone(),
+            voice_max_ms: who.voice_max_ms,
         }
     }
 }

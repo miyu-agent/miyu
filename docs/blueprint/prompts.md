@@ -904,6 +904,17 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
 The tool "{name}" did not answer within {seconds} seconds. It may have been partly done.
 ```
 
+#### `core/tool-results/voice-too-big.txt`
+
+- 什么时候加进来：扩展的工具交回的语音大过 10 MiB，没交出去（施工 SD-1）
+- token：16（`megabytes` 按 `10` 算）
+- 为什么加：她以为说出去了其实没有：告诉她没交出去、为什么，她改短了重说；提供者的工具自己读，不进快照的核心字，同 `timed-out.txt`
+- 指纹：`37c85f06`
+
+```text
+The audio was not delivered: it is larger than {megabytes} MB.
+```
+
 #### `core/tool-results/approval-timed-out.txt`
 
 - 什么时候加进来：等人确认到了配置的时限（`permission.confirm.timeout`，出厂 5 分钟）还没人确认，内核替人拒绝（施工 CD-1）

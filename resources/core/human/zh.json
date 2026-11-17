@@ -458,6 +458,7 @@
     "tool-results/unavailable": "不可用",
     "tool-results/uninstalled": "已卸载",
     "tool-results/timed-out": "超时（{seconds} 秒）",
+    "tool-results/voice-too-big": "语音太大，未发送（上限 {megabytes} MB）",
     "tool-results/crashed": "内部错误，可能已部分执行",
     "sessions/retitle-failed": "更改标题失败",
     "permissions/unresolvable": "说不清它指向哪里：{reason}",

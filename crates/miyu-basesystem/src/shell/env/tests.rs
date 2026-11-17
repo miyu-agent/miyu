@@ -168,6 +168,7 @@ fn caller(model: Option<(&str, &str)>, log: Option<&str>) -> Caller {
         log: log.map(std::path::PathBuf::from),
         permission: None,
         persona: None,
+        voice_max_ms: None,
     }
 }
 

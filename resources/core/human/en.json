@@ -458,6 +458,7 @@
     "tool-results/unavailable": "Unavailable",
     "tool-results/uninstalled": "Uninstalled",
     "tool-results/timed-out": "Timed out ({seconds} s)",
+    "tool-results/voice-too-big": "Voice too large, not sent (limit {megabytes} MB)",
     "tool-results/crashed": "Internal error, may be partly done",
     "sessions/retitle-failed": "Failed to change the title",
     "permissions/unresolvable": "can't tell where it points: {reason}",

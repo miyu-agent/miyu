@@ -108,6 +108,7 @@ fn texts() -> Texts {
     Texts {
         unavailable: "The tool \"{name}\" is not available right now.\n".to_string(),
         timed_out: "The tool \"{name}\" did not answer within {seconds} seconds.\n".to_string(),
+        voice_too_big: "too big {megabytes}\n".to_string(),
     }
 }
 
@@ -118,6 +119,7 @@ fn stores() -> (Stores, crate::test_support::TempDir) {
         Stores {
             root,
             declared: Default::default(),
+            core: std::sync::Weak::new(),
         },
         dir,
     )

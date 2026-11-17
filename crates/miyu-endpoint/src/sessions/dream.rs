@@ -101,6 +101,7 @@ impl Sessions {
                 from: spec.from,
             }),
             origin: None,
+            voice_max_ms: None,
         })
         .await
         .map_err(|error| error.to_string())?;

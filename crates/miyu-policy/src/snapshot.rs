@@ -243,6 +243,7 @@ impl Snapshot {
             dream: None,
             origin: None,
             confined: false,
+            voice_max_ms: None,
         }
     }
 

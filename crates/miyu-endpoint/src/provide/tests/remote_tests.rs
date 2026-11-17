@@ -276,6 +276,7 @@ async fn sent_with_root(data: &std::path::Path, venue: Option<&str>) -> Value {
             read_only: true,
         }),
         persona: Some("miyu".to_string()),
+        voice_max_ms: Some(60_000),
     });
     let (remote, peer, mut lines) = remote(Duration::from_secs(60));
     let running = tokio::spawn(async move { remote.run(call, Progress::new(|_| {})).await });
@@ -329,9 +330,12 @@ async fn a_call_carries_the_permission_and_persona() {
         "{sent}"
     );
     assert_eq!(sent["params"]["persona"], json!("miyu"), "{sent}");
+    // 场所一段语音的上限照会话记的原样带（施工 SD-1）；没有的不写。
+    assert_eq!(sent["params"]["voice_max_ms"], json!(60_000), "{sent}");
     let unknown = sent_with_root(&data, None).await;
     assert!(unknown["params"].get("permission").is_none(), "{unknown}");
     assert!(unknown["params"].get("persona").is_none(), "{unknown}");
+    assert!(unknown["params"].get("voice_max_ms").is_none(), "{unknown}");
 }
 
 /// 交给扩展的工作目录是真实路径（施工 XW-1）：从旧版导入的会话记的是 `~`，原来照字面交出去，im 换不成真实位置，发什么文件

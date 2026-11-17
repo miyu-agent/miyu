@@ -320,6 +320,7 @@ async fn a_script_gets_who_called_it_and_nothing_left_over() {
             log: None,
             permission: None,
             persona: None,
+            voice_max_ms: None,
         });
         let done = site.script_as("scripts/who.py", json!({}), caller).await;
         assert!(!done.error, "{}", text(&done));

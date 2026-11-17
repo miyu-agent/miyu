@@ -34,6 +34,7 @@ fn seen(caller: &Option<Caller>) -> Option<Caller> {
         log: None,
         permission: None,
         persona: None,
+        voice_max_ms: None,
         ..caller
     })
 }
@@ -55,6 +56,7 @@ fn caller(venue: &str, owner: bool) -> Option<Caller> {
         log: None,
         permission: None,
         persona: None,
+        voice_max_ms: None,
     })
 }
 
@@ -240,4 +242,36 @@ async fn a_script_is_offered_only_where_its_head_says() {
         assert_eq!(names.contains(&"near"), near, "{venue}：{names:?}");
         assert!(names.contains(&"any"), "{venue}：没写的两边都有：{names:?}");
     }
+}
+
+/// 场所的语音上限（施工 SD-1）：造会话时记进 `session.created`，每次派调用原样交；本机的没有。
+#[tokio::test]
+async fn a_venue_voice_limit_is_recorded_and_handed_to_every_call() {
+    let home = Home::new();
+    let note = Fake::new("note", Access::Read, Act::Echo);
+    let script = Script::new([Play::calls(&[("note", "{}")]), Play::Says("好。")]);
+    let lines = Lines {
+        venue: VenueId::parse(GROUP).expect("合写法"),
+        voice_max_ms: Some(60_000),
+        ..Lines::default()
+    };
+    let handle = home
+        .create_full(&script, &catalog(&[&note]), Opening::default(), lines)
+        .await;
+    let mut pushes = watch(&handle).await;
+    say_as(&handle, owner_in_group()).await;
+    until_turn_ends(&mut pushes).await;
+    let log = home.log(handle.id());
+    let Body::SessionCreated(created) = &log[0].body else {
+        panic!("第 1 条是造会话");
+    };
+    assert_eq!(created.voice_max_ms, Some(60_000));
+    let calls = note.calls();
+    assert_eq!(
+        calls[0]
+            .caller
+            .as_ref()
+            .and_then(|caller| caller.voice_max_ms),
+        Some(60_000)
+    );
 }

@@ -18,17 +18,21 @@ pub(crate) struct Callers {
     model: Option<InUse>,
     log: Option<PathBuf>,
     persona: Option<String>,
+    /// 这个场所一段语音至多多长（施工 SD-1）：`session.created` 记的，之后不变。
+    voice_max_ms: Option<u64>,
 }
 
 impl Callers {
-    /// 场所是 `venue` 的会话：还没有开始的一轮，还没解析过模型。`log`：交出去的日志目录。
-    pub(crate) fn new(venue: VenueId, log: Option<PathBuf>) -> Callers {
+    /// 场所是 `venue` 的会话：还没有开始的一轮，还没解析过模型。`log`：交出去的日志目录；`voice_max_ms`：这个场所一段语音
+    /// 至多多长（施工 SD-1）。
+    pub(crate) fn new(venue: VenueId, log: Option<PathBuf>, voice_max_ms: Option<u64>) -> Callers {
         Callers {
             venue,
             round: None,
             model: None,
             log,
             persona: None,
+            voice_max_ms,
         }
     }
 
@@ -49,6 +53,7 @@ impl Callers {
             log: self.log.clone(),
             permission: None,
             persona: self.persona.clone(),
+            voice_max_ms: self.voice_max_ms,
         }
     }
 }

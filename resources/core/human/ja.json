@@ -458,6 +458,7 @@
     "tool-results/unavailable": "利用できません",
     "tool-results/uninstalled": "アンインストール済み",
     "tool-results/timed-out": "タイムアウト（{seconds} 秒）",
+    "tool-results/voice-too-big": "音声が大きすぎるため未送信（上限 {megabytes} MB）",
     "tool-results/crashed": "内部エラー。一部実行された可能性があります",
     "sessions/retitle-failed": "タイトルの変更に失敗しました",
     "permissions/unresolvable": "どこを指しているか判断できません：{reason}",

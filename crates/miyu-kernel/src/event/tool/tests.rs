@@ -201,3 +201,44 @@ fn the_name_people_see_round_trips_and_is_left_out_when_empty() {
         other => panic!("{other:?}"),
     }
 }
+
+/// 她发出去的：图照以前的写法，写了 `"voice": true` 的是语音（施工 SD-1）；读进来再写出去一字不差（read_body 查了）。
+#[test]
+fn sent_images_and_a_voice_round_trip() {
+    let hash = format!("sha256:{}", "a".repeat(64));
+    let body = format!(
+        r#"{{"call_id":"call_44_1","status":"ok","blocks":[],"sent":[{{"blob":"{hash}","media_type":"image/png","width":2,"height":3,"sticker":true}},{{"blob":"{hash}","name":"say-1.mp3","media_type":"audio/mpeg","voice":true,"duration_ms":3200}},{{"blob":"{hash}","media_type":"audio/wav","voice":true}}]}}"#
+    );
+    let Body::ToolResult(result) = read_body("tool.result", &body) else {
+        panic!("tool.result");
+    };
+    assert!(
+        matches!(&result.sent[0], Sent::Image(image) if image.sticker && image.image.width == 2)
+    );
+    let Sent::Voice(voice) = &result.sent[1] else {
+        panic!("写了 voice 的是语音：{:?}", result.sent[1]);
+    };
+    assert_eq!(
+        (
+            voice.media_type.as_str(),
+            voice.duration_ms,
+            voice.name.as_ref().map(|name| name.as_str())
+        ),
+        ("audio/mpeg", Some(3200), Some("say-1.mp3"))
+    );
+    assert!(matches!(&result.sent[2], Sent::Voice(voice) if voice.duration_ms.is_none()));
+    assert!(result.sent.iter().all(|sent| sent.blob().as_str() == hash));
+}
+
+#[test]
+fn a_voice_that_is_not_true_is_not_read() {
+    let hash = format!("sha256:{}", "a".repeat(64));
+    let body = format!(
+        r#"{{"call_id":"call_44_1","status":"ok","blocks":[],"sent":[{{"blob":"{hash}","media_type":"audio/mpeg","voice":false}}]}}"#
+    );
+    let line = event_line("tool.result", &body);
+    assert!(
+        Event::from_line(&line).is_err()
+            || !matches!(Event::from_line(&line).unwrap().body, Body::ToolResult(_))
+    );
+}

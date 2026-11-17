@@ -149,6 +149,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         titles,
         dream,
         origin,
+        voice_max_ms,
     } = setup;
     let span = actor::span(&id);
     // 没指定的照这时的 `models.chat`：记进 `session.created`，以后照它（施工 8-8）。
@@ -273,6 +274,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         dream,
         origin,
         confined: shut_in,
+        voice_max_ms,
         ..snapshot.session_created(venue.clone(), permission)
     };
     // 监视的命令攒批的截法（施工 MN-1 上）：策略交给会话以前拿一份。
@@ -340,6 +342,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
             confined,
             venue: venue.clone(),
             session_log,
+            voice_max_ms,
             catalog: tools.clone(),
             lettering,
             home: home.map(Path::to_path_buf),

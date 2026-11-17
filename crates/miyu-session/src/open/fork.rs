@@ -208,8 +208,9 @@ async fn forked<H: Hand>(setup: Fork<'_>) -> Result<(Seq, H::Handed), ForkError>
             // 分叉出来的是普通会话，不算整理会话（施工 D-1 上）。
             dream: None,
             origin: None,
-            // 关着的会话分叉出来的照旧关着（施工 SU-4 中）。
+            // 关着的会话分叉出来的照旧关着（施工 SU-4 中），语音的上限照旧（施工 SD-1）。
             confined: created.confined,
+            voice_max_ms: created.voice_max_ms,
             forked: Some(Forked {
                 from: parent.clone(),
                 upto: plan.upto,

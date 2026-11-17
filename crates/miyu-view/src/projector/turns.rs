@@ -26,6 +26,12 @@ impl Projector {
             // 手动压缩、清空那一轮没有触发（施工 6-8）。
             manual: started.trigger.is_none() && started.triggers.is_empty(),
             spoke: false,
+            asked: (
+                started
+                    .trigger
+                    .and_then(|trigger| self.speakers.get(&trigger).cloned()),
+                event.cause.clone(),
+            ),
         });
         let mut triggers = started.triggers.clone();
         if let Some(trigger) = started.trigger

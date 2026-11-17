@@ -42,6 +42,8 @@ pub struct Lines {
     pub confined: bool,
     /// 场所显示得了图片吗（施工 X-25）：默认显示得了。
     pub images: bool,
+    /// 这个场所一段语音至多多长（施工 SD-1）。
+    pub voice_max_ms: Option<u64>,
     /// 群会话（施工 O-13 中）：默认不是。
     pub group: bool,
     /// 群会话的群聊近况最多几条（施工 O-13 再补）：默认不限。
@@ -73,6 +75,7 @@ impl Default for Lines {
             recent: None,
             confined: false,
             images: true,
+            voice_max_ms: None,
             profile: miyu_policy::Profile::default(),
             id: None,
             features: None,

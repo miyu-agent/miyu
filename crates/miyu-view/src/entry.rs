@@ -19,6 +19,7 @@ mod sender;
 mod shell;
 mod swap;
 mod touched;
+mod voice;
 
 pub use job::{JobDone, JobEnd, Mark, Output, WatchedLines};
 pub use nested::{Nested, NestedCall};
@@ -26,6 +27,7 @@ pub use sender::Sender;
 pub use shell::Shell;
 pub use swap::{ModelSwap, Recast, Swapped, Was};
 pub use touched::{SkillUsed, TouchKind, Touched};
+pub use voice::Voice;
 
 pub use crate::id::EntryId;
 pub use crate::notice::Notice;
@@ -62,6 +64,8 @@ pub enum Body {
     Reply(Reply),
     /// 她发出去的一张图（施工 X-19）：工具交的 `tool.result.sent`，画在正文里。
     Media(Media),
+    /// 她说出来的一段语音（施工 SD-1）：同上，写了 `voice` 的那一项。
+    Voice(Voice),
     /// 时间线的一段：她开口之前的思考、调工具。
     Group(Group),
     /// 一步思考。

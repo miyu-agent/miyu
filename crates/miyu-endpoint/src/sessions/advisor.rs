@@ -159,6 +159,7 @@ impl Sessions {
             titles: false,
             dream: None,
             origin: Some(ADVISOR_ORIGIN.to_string()),
+            voice_max_ms: None,
         })
         .await
         .map_err(|error| error.to_string())?;

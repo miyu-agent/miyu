@@ -49,6 +49,7 @@ pub(super) async fn create(
         titles: params.titles,
         origin: None,
         confined: false,
+        voice_max_ms: None,
     };
     let created = core
         .sessions

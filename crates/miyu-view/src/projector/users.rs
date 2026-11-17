@@ -56,6 +56,7 @@ impl Projector {
             self.queued.insert(event.seq, id.clone());
         }
         self.users.insert(event.seq, id.clone());
+        self.speakers.insert(event.seq, event.by.clone());
         // 排着的不收起在进行的那一段：被听到时才收起、挪到末尾。
         if !queued {
             self.close_group();

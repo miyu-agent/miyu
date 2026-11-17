@@ -60,6 +60,7 @@
 | `origin` | 字 | 可以没有 | 从哪开的（施工 8-33 四补，2026-10-21 项目主人：会话列表里分得出终端集成开的）：`session.terminal` 开的写 `terminal`，她调 `advisor` 开的顾问会话写 `advisor`（施工 ADV-1，`tools/advisor.md`）。照原样存字，以后多了别的来源旧核心照样读得了。别的不写，以前的日志没有这一格 |
 | `forked` | `{from, upto, seal_after?, within?}` | 可以没有 | 分叉出来的（施工 C-8 上，`session/fork.md`）：从哪个会话（`from`）的第几条为止（`upto`，含）分叉，这一条的序号是 `upto` 的下一个；`seal_after`（1 起的整数，施工 C-8 下）是跑完几轮封存，不封存的不写。`within`（施工 A-F 上，`session/fork.md`「fork 子代理」）是分叉点在哪一轮当中：fork 子代理从父会话这一轮派它的那一步分叉，`upto` 是那一步的 `message.assistant`；普通分叉不写。不是分叉出来的不写 |
 | `confined` | 布尔 | 不写是假 | 关起来的会话（施工 SU-4 中）：群、陌生人的私聊，只碰得到自己的工作区（`session/guard.md`）。分叉、子会话照父会话的。不关的不写 |
+| `voice_max_ms` | 整数 | 可以没有 | 这个场所一段语音至多多少毫秒（施工 SD-1，`venues.md`「`venue.session`」）：桥造场所会话时报的，之后不变，这个会话派给扩展的 `tool.call` 原样带上。分叉照父会话的。没有上限的、本机的不写，以前的日志没有 |
 
 子会话不写 `oneshot`：`--continue`、`miyu undo` 找「最近一次 `miyu ask` 开的」不会找到它（`agents.md`）。以前的日志没有 `parent`、`depth`、`model` 几格，原样一个字节不变；没有 `model` 的，路由照载入那一刻的 `models.chat`（`models.md`「怎么走」第一条第 7 条）。样本两条都带 `model`（施工 8-8）。
 
@@ -242,7 +243,7 @@
 | `human` | 说法 | 可以没有 | 给人看的说法，不发给模型。工具没交的、老日志里的没有 |
 | `effects` | 效果的列表 | 空的不写 | 给内核和头看的效果，不发给模型，照工具交的先后。内核自己写的结果没有 |
 | `end_turn` | 布尔 | 假的不写 | 这一次调用要结束这一轮（施工 4-14）：这一步齐了不再请求模型，回合照 `completed` 结束。只有 `ok` 的带它；老日志没有 |
-| `sent` | 数组 | 空的不写 | 她发出去的图（施工 X-19）：每项同图片块（`blob`、`media_type`、`width`、`height`、`name`?）加 `alt`?（看不了图时的一句）、`sticker`?（表情包）。不发给模型，头画在正文里；老日志没有 |
+| `sent` | 数组 | 空的不写 | 她发出去的东西，照交的先后，不发给模型，头画在正文里；老日志没有。图（施工 X-19）：每项同图片块（`blob`、`media_type`、`width`、`height`、`name`?）加 `alt`?（看不了图时的一句）、`sticker`?（表情包）。语音（施工 SD-1）：`{"blob", "name"?, "media_type", "voice": true, "duration_ms"?}`，`media_type` 是 `audio/` 开头的；没有种类的格，写了 `"voice": true` 的是语音（`event::Sent` 照它分，`voice` 不是 `true` 的读不成） |
 | `display_name` | 语言到名字 | 空的不写 | 这件工具给人看的名字（施工 9-8 六补）：脚本的「显示名称」、MCP 服务给的 `title`（记在 `en` 下）、扩展登记时写的，执行器派它那一刻取下、随结果交回；头在时间线上照连接的语言挑。不发给模型。核心自带的、内核替它写的结果、没写显示名的、老日志没有 |
 | `detail` | 对象 | 没有的不写 | 给头看的结构化结果（施工 W-11，2026-10-17 两个头要的）：形状由那件工具定、写在它自己那一页图纸里（`memory_search` 见 `memory.md`「工具」，`kb_search`、`kb_read` 见 `knowledge.md`「她的工具」）；扩展的工具只能交三种通用形状 `links`、`table`、`images`（施工 W-11 补，`providers.md`、`miyu_tool::detail`），带 `kind` 那一格。不发给模型，内核不看，原样记、原样回放（`RawJson`）。工具没交的、内核替它写的结果、老日志没有 |
 

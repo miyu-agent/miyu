@@ -91,6 +91,7 @@ pub(crate) async fn new_session(
         titles: true,
         origin: None,
         confined: false,
+        voice_max_ms: None,
     };
     let id = new_id(now());
     // 这个会话自己的默认工作区，不建（施工 DM-4）：预览只备不造，原来照 `workspace/` 本身挑、建好，每预览一次留一个空目录。

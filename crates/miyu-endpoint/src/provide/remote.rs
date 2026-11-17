@@ -31,7 +31,11 @@ use super::commands::Commands;
 use super::declared::{self, PathParameter};
 use super::effects;
 use super::{Checked, Provided};
-use crate::reverse::{Gone, Peer};
+use crate::reverse::Gone;
+
+mod cancel;
+
+use cancel::{Cancel, Sending};
 
 /// 叫它停了没有，隔多久看一眼旗。
 const STOP_POLL: Duration = Duration::from_millis(100);
@@ -43,6 +47,8 @@ pub(super) struct Texts {
     pub(super) unavailable: String,
     /// 没在时限里答完（`core/tool-results/timed-out.txt`），字段 `name`、`seconds`。
     pub(super) timed_out: String,
+    /// 语音太大、没交（`core/tool-results/voice-too-big.txt`，施工 SD-1），字段 `megabytes`。
+    pub(super) voice_too_big: String,
 }
 
 /// 扩展传上来的 blob 在哪（施工 O-2 三补）：数据根（施工 SU-4 下起和主人共用一个存处）。
@@ -51,6 +57,8 @@ pub(crate) struct Stores {
     pub(crate) root: DataRoot,
     /// 包声明的状态块（施工 TW-1）：工具结果带的 `state` 照它查。
     pub(crate) declared: Arc<crate::sessions::state::Declared>,
+    /// 核心（施工 SD-1）：没人开口的一轮里说出来的语音，经它的总线交给这台电脑的音箱（[`super::voice::fallback`]）。
+    pub(crate) core: std::sync::Weak<crate::Core>,
 }
 
 /// 提供者的一件工具。
@@ -87,7 +95,8 @@ struct Answer {
     /// 要结束这一轮（施工 4-14，`protocol.md` 的 `tool.call`）：通讯平台的 `skip_reply` 这类。出错的不算。
     #[serde(default)]
     end_turn: bool,
-    /// 她发出去的图（施工 X-19，`protocol.md` 的 `tool.call`）：至多 [`MOST_SENT`] 张，多了整份当写法不对。
+    /// 她发出去的图（施工 X-19，`protocol.md` 的 `tool.call`）、语音（施工 SD-1）：照 [`super::voice::shaped`] 查，图至多
+    /// [`MOST_SENT`] 张、语音至多一段，多了整份当写法不对。
     #[serde(default)]
     sent: Vec<Sent>,
     /// 给头看的结构化结果（施工 W-11 补，`providers.md`）：照 [`miyu_tool::detail`] 的通用形状读，读不成的丢掉、记一行。
@@ -187,7 +196,7 @@ impl RemoteTool {
     fn answered(&self, outcome: Result<Result<Value, Value>, Gone>) -> (Done, Option<Value>) {
         match outcome {
             Ok(Ok(result)) => match serde_json::from_value::<Answer>(result.clone()) {
-                Ok(answer) if answer.sent.len() <= MOST_SENT => (
+                Ok(answer) if super::voice::shaped(&answer.sent, MOST_SENT) => (
                     Done {
                         detail: answer
                             .detail
@@ -208,7 +217,9 @@ impl RemoteTool {
                             .sent
                             .into_iter()
                             .map(|mut sent| {
-                                sent.image.path = None;
+                                if let Sent::Image(image) = &mut sent {
+                                    image.image.path = None;
+                                }
                                 sent
                             })
                             .collect(),
@@ -260,21 +271,37 @@ impl RemoteTool {
     }
 
     /// 交回的图、文件引用的 blob 要在附件存处里（施工 O-2 三补；施工 SU-4 下起扩展和主人共用一个存处，不用再拷）。
-    /// 没有引用的、不知道是哪个会话的（`in_session` 是假的，测试里的假调用）原样交回；不在的记一行，照暂时不可用。
+    /// 没有引用的、不知道是哪个会话的（`in_session` 是假的，测试里的假调用）原样交回；不在的记一行，照暂时不可用。语音大过
+    /// [`super::voice::MOST_BYTES`] 的（施工 SD-1）记一行，不交，回她一句（`core/tool-results/voice-too-big.txt`）。
     async fn handed(&self, done: Done, in_session: bool) -> Done {
         let hashes = referenced(&done);
         if !in_session || hashes.is_empty() {
             return done;
         }
         let root = self.stores.root.clone();
+        let voices = super::voice::blobs(&done.sent);
         let there = tokio::task::spawn_blocking(move || {
             let blobs = miyu_store::blob::Blobs::new(root.blobs());
-            hashes.iter().all(|hash| blobs.path(hash).is_file())
+            let there = hashes.iter().all(|hash| blobs.path(hash).is_file());
+            (there, super::voice::fits(&blobs, &voices))
         })
         .await;
         match there {
-            Ok(true) => done,
-            Ok(false) | Err(_) => {
+            Ok((true, true)) => done,
+            Ok((true, false)) => {
+                tracing::warn!(target: "miyu::endpoint", tool = self.spec.name.as_str(), "tool voice too big");
+                let megabytes = super::voice::megabytes();
+                let said =
+                    Said::new("core/tool-results/voice-too-big").with("megabytes", &megabytes);
+                Done {
+                    human: Some(said),
+                    ..failed(render(
+                        &self.texts.voice_too_big,
+                        &[("megabytes", megabytes.as_str())],
+                    ))
+                }
+            }
+            Ok((false, _)) | Err(_) => {
                 tracing::warn!(target: "miyu::endpoint", tool = self.spec.name.as_str(), "tool blobs not found");
                 self.unavailable()
             }
@@ -352,6 +379,10 @@ impl Tool for RemoteTool {
                 if let Some(persona) = &caller.persona {
                     params["persona"] = json!(persona);
                 }
+                // 场所一段语音至多多长（施工 SD-1）：桥报的，原样交给扩展。
+                if let Some(most) = caller.voice_max_ms {
+                    params["voice_max_ms"] = json!(most);
+                }
             }
             // 链判过的真实位置（施工 XG-1 上）：只给声明了 `paths` 的，交给别的程序用的写法（去掉 Windows 的 `\\?\`）。
             let judged = effects::judged(&self.paths, &call);
@@ -397,7 +428,10 @@ impl Tool for RemoteTool {
                         let (done, raw) = self.answered(outcome);
                         let judged = (&call, judged, befores);
                         let done = effects::vetted(&self.spec.name, done, raw, judged).await;
-                        return self.handed(done, in_session).await;
+                        let done = self.handed(done, in_session).await;
+                        // 没人开口的一轮里说出来的、没有头开着这个会话的，这台电脑的音箱放（施工 SD-1）。
+                        super::voice::fallback(&self.stores.core, &call, &done);
+                        return done;
                     }
                     // 超时：交回那一句，`tool.cancel` 由 `cancel` 丢掉时发。
                     () = tokio::time::sleep_until(deadline) => return self.timed_out(),
@@ -413,47 +447,11 @@ impl Tool for RemoteTool {
     }
 }
 
-/// `tool.cancel` 发到哪一步了。
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Sending {
-    /// 还没发，丢掉时发。
-    Armed,
-    /// 发过了。
-    Sent,
-    /// 回应到了，不用发。
-    Done,
-}
-
-/// 发 `tool.cancel` 的：叫它停时发；回应没到就不等了的（超时、这次调用的 future 被丢掉）丢掉它时发。
-struct Cancel {
-    peer: Peer,
-    params: Value,
-    state: Sending,
-}
-
-impl Cancel {
-    /// 还没发的发一次。
-    fn send(&mut self) {
-        if self.state == Sending::Armed {
-            self.state = Sending::Sent;
-            if !self.peer.notify("tool.cancel", self.params.clone()) {
-                tracing::warn!(target: "miyu::endpoint", "tool.cancel not sent");
-            }
-        }
-    }
-}
-
-impl Drop for Cancel {
-    fn drop(&mut self) {
-        self.send();
-    }
-}
-
 /// 照模板 `template` 换进字段 `fields`；模板坏了的交回空的。
 /// 一份结果引用的 blob：图片、文件块，发出去的图，`images` 形状里的图（施工 W-11 补：读过一遍，这里读得成）。
 pub(super) fn referenced(done: &Done) -> Vec<ContentHash> {
     let mut hashes = crate::attach::blobs_of(&done.blocks);
-    hashes.extend(done.sent.iter().map(|sent| sent.image.blob.clone()));
+    hashes.extend(done.sent.iter().map(|sent| sent.blob().clone()));
     if let Some(Ok(detail)) = done.detail.as_ref().map(miyu_tool::detail::read) {
         hashes.extend(detail.blobs());
     }

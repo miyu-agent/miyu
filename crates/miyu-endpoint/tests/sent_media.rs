@@ -75,10 +75,13 @@ async fn a_sent_image_is_logged_but_not_shown_to_the_model() {
         .flatten()
         .collect();
     assert_eq!(sent.len(), 1, "{sent:?}");
-    assert_eq!(sent[0].image.blob, blob);
-    assert_eq!(sent[0].alt.as_deref(), Some("A cat waving."));
-    assert!(sent[0].sticker);
-    assert_eq!(sent[0].image.path, None, "扩展写的本机路径不收");
+    let miyu_kernel::event::Sent::Image(sent) = &sent[0] else {
+        panic!("是图：{sent:?}");
+    };
+    assert_eq!(sent.image.blob, blob);
+    assert_eq!(sent.alt.as_deref(), Some("A cat waving."));
+    assert!(sent.sticker);
+    assert_eq!(sent.image.path, None, "扩展写的本机路径不收");
 
     let requests = script.requests();
     assert_eq!(requests.len(), 3, "结果回给她以后她又调了一次、说了一句");

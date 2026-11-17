@@ -63,7 +63,10 @@ pub use session::{
     PolicyChanged, SessionCreated, SessionRecapped, SessionSealed, TodosCleared, WorkspaceChanged,
 };
 pub use shell::{ShellRan, ShellReason};
-pub use tool::{ApprovalDecided, ApprovalRequested, Decision, Said, Sent, ToolResult, ToolStatus};
+pub use tool::{
+    ApprovalDecided, ApprovalRequested, Decision, Said, Sent, SentImage, ToolResult, ToolStatus,
+    Voice, VoiceMark,
+};
 pub use transient::{
     ChangeWhy, CompactableChanged, CompactionDone, CompactionProgress, CompactionStarted,
     EffortInUse, EffortSource, ModelChanged, ModelDelta, NestedStarted, PackageStateChanged, Piece,

@@ -23,6 +23,9 @@ pub struct Caller {
     pub permission: Option<miyu_kernel::event::Permission>,
     /// 会话这时的人格编号（施工 TC-1）：无人格的没有。
     pub persona: Option<String>,
+    /// 这个场所一段语音至多多长，毫秒（施工 SD-1）：桥造场所会话时报的（`session.created` 的 `voice_max_ms`），交给扩展照它比；
+    /// 没有上限的、本机的没有。
+    pub voice_max_ms: Option<u64>,
 }
 
 /// 这一轮发给的模型（施工 E-M）：和尾巴上模型那一块同一份。

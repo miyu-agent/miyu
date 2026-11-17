@@ -89,6 +89,7 @@ async fn a_session_someone_holds_a_handle_to_stays_in_the_table() {
         titles: true,
         origin: None,
         confined: false,
+        voice_max_ms: None,
     };
     let cwd = dir.to_string_lossy().into_owned();
     let command = CommandId::parse("c1").expect("合写法");

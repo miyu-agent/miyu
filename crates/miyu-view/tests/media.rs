@@ -1,7 +1,7 @@
 //! 她发出去的图（施工 X-19）：`tool.result.sent` 一张一条 `media`，排在那一步工具后面，把前面那段时间线收起；图一定带宽高。
 
 use miyu_kernel::block::Image;
-use miyu_kernel::event::Sent;
+use miyu_kernel::event::{Sent, SentImage, Voice, VoiceMark};
 use miyu_kernel::id::{ContentHash, MediaType};
 use miyu_kernel::testkit::{Line, Play};
 use std::sync::Arc;
@@ -11,7 +11,7 @@ use miyu_view::{Body, Change, Projector};
 use crate::support::*;
 
 fn sticker() -> Sent {
-    Sent {
+    Sent::Image(SentImage {
         image: Image {
             blob: ContentHash::of(b"cat"),
             name: None,
@@ -22,7 +22,35 @@ fn sticker() -> Sent {
         },
         alt: Some("A cat waving.".to_string()),
         sticker: true,
-    }
+    })
+}
+
+/// 一段语音（施工 SD-1）。
+fn spoken() -> Sent {
+    Sent::Voice(Voice {
+        blob: ContentHash::of(b"hello"),
+        name: None,
+        media_type: MediaType::parse("audio/mpeg").expect("合写法"),
+        voice: VoiceMark,
+        duration_ms: Some(3200),
+    })
+}
+
+/// 语音一段一条 `voice`，带上开这一轮的那句话是谁说的、那条请求的编号：头照它定放不放（施工 SD-1）。
+#[test]
+fn a_spoken_voice_carries_who_opened_the_turn() {
+    let mut stage = stage();
+    stage.model([Line::calls("", &[("read", r#"{"file_path":"a"}"#)])]);
+    stage.tools([Play::Sends("Spoken.".to_string(), vec![spoken()])]);
+    stage.say("hi");
+    let entries = same(&stage);
+    let voice = json(of_kind(&entries, "voice")[0]);
+    assert_eq!(voice["media_type"], "audio/mpeg", "{voice}");
+    assert_eq!(voice["duration_ms"], 3200);
+    assert_eq!(voice["blob"], serde_json::json!(ContentHash::of(b"hello")));
+    assert_eq!(voice["by"]["kind"], "person", "{voice}");
+    assert!(voice["cause"].is_string(), "开这一轮的那条请求：{voice}");
+    assert!(of_kind(&entries, "media").is_empty(), "语音不是图");
 }
 
 #[test]

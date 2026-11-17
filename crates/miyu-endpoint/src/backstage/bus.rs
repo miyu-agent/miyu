@@ -148,29 +148,54 @@ pub(crate) async fn call(
     (caller, language): (&Caller, &str),
     params: CallParams,
 ) -> Result<Value, Refusal> {
-    if params.method.is_empty() || params.method.contains('.') {
+    let (package, method) = found(
+        core,
+        &params.name,
+        &params.method,
+        params.package.as_deref(),
+    )?;
+    let from = caller.package.as_deref();
+    let to = (package.as_str(), method.as_str());
+    super::calls::forward(core, (from, Some(language)), to, params.params).await
+}
+
+/// 核心自己经总线调（施工 SD-1：没人开口的一轮里说出来的语音交给 `tts.play`）：只找 `provides` 的那一家，不带 `from`、`language`。
+///
+/// # Errors
+///
+/// 同 [`call`]：没人提供的 `no_provider`，没导出的 `not_exported`，转过去出的错。
+pub(crate) async fn call_by_core(
+    core: &Core,
+    (name, method): (&str, &str),
+    params: Value,
+) -> Result<Value, Refusal> {
+    let (package, method) = found(core, name, method, None)?;
+    let to = (package.as_str(), method.as_str());
+    super::calls::forward(core, (None, None), to, Some(params)).await
+}
+
+/// 照名字 `name` 找到提供它的包，交回包编号和拼好的全名（`<名字>.<短名>`）。`plugs` 的要写 `package`。
+fn found(
+    core: &Core,
+    name: &str,
+    method: &str,
+    package: Option<&str>,
+) -> Result<(String, String), Refusal> {
+    if method.is_empty() || method.contains('.') {
         return Err(Refusal::BAD_PARAMS);
     }
     let all = entries(core);
-    let named: Vec<&Entry> = all
-        .iter()
-        .filter(|entry| entry.name == params.name)
-        .collect();
-    let entry = match (
-        named.first().map(|entry| entry.kind),
-        params.package.as_deref(),
-    ) {
-        (None, _) => return Err(Refusal::no_provider(&params.name)),
-        (Some(Kind::Plugs), None) => return Err(Refusal::package_required(&params.name)),
+    let named: Vec<&Entry> = all.iter().filter(|entry| entry.name == name).collect();
+    let entry = match (named.first().map(|entry| entry.kind), package) {
+        (None, _) => return Err(Refusal::no_provider(name)),
+        (Some(Kind::Plugs), None) => return Err(Refusal::package_required(name)),
         (Some(_), Some(package)) => named.iter().find(|entry| entry.package == package),
         (Some(Kind::Provides), None) => named.first(),
     }
-    .ok_or_else(|| Refusal::no_provider(&params.name))?;
-    let method = format!("{}.{}", params.name, params.method);
+    .ok_or_else(|| Refusal::no_provider(name))?;
+    let method = format!("{name}.{method}");
     if !entry.export.exports(&method) {
         return Err(Refusal::not_exported(&method));
     }
-    let from = caller.package.as_deref();
-    let to = (entry.package.as_str(), method.as_str());
-    super::calls::forward(core, (from, Some(language)), to, params.params).await
+    Ok((entry.package.clone(), method))
 }

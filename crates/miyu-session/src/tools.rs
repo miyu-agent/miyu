@@ -242,7 +242,7 @@ impl Tools {
             checked: checked::Judged::default(),
             venue: kit.venue.clone(),
             plugins: kit.plugins,
-            callers: caller::Callers::new(kit.venue, kit.session_log),
+            callers: caller::Callers::new(kit.venue, kit.session_log, kit.voice_max_ms),
             nested: nested::Nesting::default(),
             docs: docs::Docs::default(),
             person: person::Person::default(),

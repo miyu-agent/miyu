@@ -1598,6 +1598,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sVP1B"><span class="n">VP-1补</span>视图流带上戳一戳<span class="st">…</span></a></li>
         <li><a class="step review" href="#sVN1"><span class="n">VN-1</span>她知道你从哪说话<span class="st">…</span></a></li>
         <li><a class="step review" href="#sML1"><span class="n">ML-1</span>调扩展带调用方的语言<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sSD1"><span class="n">SD-1</span>她说的话合成以后交给人<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -62775,6 +62776,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/ML-1-调扩展带调用方的语言.md</code>；蓝图 <code>package-pages.md</code>、<code>protocol.md</code>；协议参考 <code>extensions.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sSD1" aria-labelledby="h-sSD1">
+  <div class="sheet-head"><h2 id="h-sSD1"><span class="no">SD-1</span>她说的话合成以后交给人</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">工具结果的 <code>sent</code> 收一段语音；视图流带上这一轮是谁开的，头照它放不放；没人开口、没人开着会话的，核心交给这台电脑的音箱；场所会话的语音上限原样交给工具。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-kernel/event/tool/sent.rs · miyu-endpoint/provide/voice.rs · miyu-view/entry/voice.rs</span><span class="dir-note">SD-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>sent</code> 多一种 <code>{"voice": true}</code>，至多一段、≤ 10 MiB</li>
+              <li>视图流 <code>voice</code> 条目带 <code>by</code>、<code>cause</code></li>
+              <li>自跑的轮、没头开着：<code>bus.call tts.play {"audio"}</code></li>
+              <li><code>venue.session</code> 的 <code>voice_max_ms</code> 进 <code>session.created</code>、<code>tool.call</code></li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">谁发的话谁放</span><span class="rl">本头发话当场放，别的头只画播放条</span></div>
+          <div class="tile new"><span class="nm">没人开口的开着的都放</span><span class="rl">没头开着由核心兜底</span></div>
+          <div class="tile new"><span class="nm">上限 10 MiB</span><span class="rl">大了回她一句没交出去</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">SD-1</dd></div>
+        <div><dt>名称</dt><dd>她说的话合成以后交给人</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">SD-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改前红：内核 <code>sent_images_and_a_voice_round_trip</code>、视图 <code>a_spoken_voice_carries_who_opened_the_turn</code>、端点 <code>provide::voice</code></span></li>
+        <li><span class="ok">✓</span><span>沙箱实测：假扩展交语音，视图流条目、假 <code>tts.play</code> 收到</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/SD-1-说出来交给人.md</code>；蓝图 <code>providers.md</code>、<code>view.md</code>、<code>venues.md</code>、<code>kernel/events-bodies.md</code>；协议参考 <code>extensions.md</code>、<code>view.md</code>、<code>venues.md</code>、<code>bus.md</code>。</li>
       </ul>
     </div>
   </div>

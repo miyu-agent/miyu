@@ -157,6 +157,23 @@ pub fn draft(doc: &Document<'_>) -> Draft {
                 out.block(&asset(&media.image, about, doc, &say));
                 Speaker::Assistant
             }
+            // 她说出来的语音（施工 SD-1）：照文件写一条链接。
+            Body::Voice(voice) => {
+                assistant(&mut out, speaker);
+                let audio = Attachment {
+                    kind: "file".to_string(),
+                    name: voice.name.clone(),
+                    media_type: Some(voice.media_type.clone()),
+                    blob: Some(voice.blob.clone()),
+                    width: None,
+                    height: None,
+                    path: None,
+                    size: None,
+                    path_only: false,
+                };
+                out.block(&asset(&audio, voice.name.as_deref(), doc, &say));
+                Speaker::Assistant
+            }
             Body::Thought(thought) if !doc.options.thinking || thought.text.trim().is_empty() => {
                 speaker
             }
