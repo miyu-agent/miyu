@@ -398,6 +398,55 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "只能在核心所在的机器上用。",
             "Only available on the machine running the core.",
         ),
+        // 施工 CLI-SAID-1：下面这些原来没有话，头和命令行只印得出「已拒绝。」。
+        "unknown_schedule" => ("没有这个定时任务。", "No such schedule."),
+        "life_schedule" => (
+            "这是人生会话的循环，不能当定时任务改：暂停、继续、结束请用 /life。",
+            "This is a life session's loop and can't be changed as a schedule. Use /life to pause, resume or end it.",
+        ),
+        "too_many_schedules" => (
+            "定时任务已经有 200 个，先删掉几个再加。",
+            "There are already 200 schedules. Delete a few before adding more.",
+        ),
+        "embedding_off" => ("语义模型没有开。", "The embedding model is off."),
+        "embedding_failed" => (
+            "语义模型没算出来，详见运行日志。",
+            "The embedding model failed. See the runtime log.",
+        ),
+        "not_exported" => (
+            "这个软件包没有公开这个方法。",
+            "The package does not export this method.",
+        ),
+        "unknown_widget" => (
+            "这个软件包没有这个界面块。",
+            "The package has no such widget.",
+        ),
+        "bad_widget_content" => ("界面块的内容写法不对。", "The widget content is malformed."),
+        "unknown_level" => ("没有这个权限级别。", "No such permission level."),
+        "unknown_decision" => ("没有这个选项。", "No such choice."),
+        "nothing_to_title" => (
+            "还没有可以起标题的内容。",
+            "There is nothing to make a title from yet.",
+        ),
+        "too_many_messages" => (
+            "这个会话发来的话太多了，过一会儿再发。",
+            "Too many messages from this session. Try again later.",
+        ),
+        "duplicate_message" => (
+            "刚发过一字不差的一句，没有再收。",
+            "The same message was just sent; it was not accepted again.",
+        ),
+        "inbox_full" => (
+            "对方还没看的话已经够多了，过一会儿再发。",
+            "The other session already has enough unread messages. Try again later.",
+        ),
+        "unknown_watch" => (
+            "这边没有在等这个通知。",
+            "Nothing here is waiting for this notice.",
+        ),
         _ => ("已拒绝。", "Refused."),
     }
 }
+
+#[cfg(test)]
+mod tests;
