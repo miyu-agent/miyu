@@ -7,7 +7,7 @@ use miyu_store::env::Env;
 use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
 
-use super::{Live, Options, failed, load_packages, models, run, settings};
+use super::{Failure, Live, Options, failed, load_packages, models, run, settings};
 
 /// 后半段：见这一页开头。`logging` 是起来时照 `MIYU_LOG` 定的级别和装好的运行日志，读完配置照 `log.level` 换。
 pub(super) async fn start(
@@ -19,13 +19,13 @@ pub(super) async fn start(
 ) -> ExitCode {
     let opened = match miyu_ipc::open_locked(&root, &Dirs::current(), lock) {
         Ok(opened) => opened,
-        Err(error) => return failed("socket", None, error.to_string()),
+        Err(error) => return failed("socket", Failure::socket(&error)),
     };
     if let Err(error) = root
         .prepare_workspace()
         .and_then(|()| root.prepare_private())
     {
-        return failed("home", None, error.to_string());
+        return failed("home", Failure::new("home_failed", error));
     }
     crate::leftovers::tidy(&root);
     let mut found = load_packages(&resources, &root);

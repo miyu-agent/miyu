@@ -12,6 +12,9 @@ use miyu_store::root::DataRoot;
 
 use crate::CoreCommand;
 
+mod unreachable;
+use unreachable::unreachable;
+
 /// 怎么把网址交给浏览器：交出去了的是真。
 pub trait Browser {
     /// 打开 `url`。
@@ -144,7 +147,7 @@ impl Core {
     pub async fn connect(root: &DataRoot, core: &CoreCommand, kind: &str) -> Result<Core, Refused> {
         let (connection, token) = miyu_ipc::connect_or_start(root, || core())
             .await
-            .map_err(|error| Refused::local("unreachable", error))?;
+            .map_err(|error| unreachable(error.said(), error))?;
         Core::shake(connection, &[("token", &token)], kind)
             .await
             .map(|(core, _)| core)
@@ -159,7 +162,7 @@ impl Core {
     pub async fn connect_running(root: &DataRoot, kind: &str) -> Result<Core, Refused> {
         let (connection, token) = miyu_ipc::connect(root)
             .await
-            .map_err(|error| Refused::local("unreachable", error))?;
+            .map_err(|error| unreachable(error.said(), error))?;
         Core::shake(connection, &[("token", &token)], kind)
             .await
             .map(|(core, _)| core)
@@ -174,7 +177,7 @@ impl Core {
     pub async fn connect_login(root: &DataRoot, login: &str, kind: &str) -> Result<Core, Refused> {
         let connection = miyu_ipc::connect_bare(root)
             .await
-            .map_err(|error| Refused::local("unreachable", error))?;
+            .map_err(|error| unreachable(error.said(), error))?;
         Core::shake(connection, &[("login", login)], kind)
             .await
             .map(|(core, _)| core)
@@ -194,7 +197,7 @@ impl Core {
     ) -> Result<(Core, Login), Refused> {
         let connection = miyu_ipc::connect_bare(root)
             .await
-            .map_err(|error| Refused::local("unreachable", error))?;
+            .map_err(|error| unreachable(error.said(), error))?;
         let (core, shaken) = Core::shake(connection, &[("password", password)], kind).await?;
         let login = Login {
             token: shaken["login"]["token"]

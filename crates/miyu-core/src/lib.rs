@@ -23,6 +23,8 @@ mod cache;
 pub mod embed;
 mod kit;
 mod leftovers;
+mod not_started;
+use not_started::{Failure, failed, say};
 pub mod memlog;
 pub mod models;
 pub mod packages;
@@ -41,7 +43,6 @@ mod workers;
 pub use kit::Kit;
 pub use serve::{Stopped, idle_limit, serve, serve_then};
 
-use std::io::{self, Write};
 use std::path::Path;
 use std::process::ExitCode;
 use std::sync::Arc;
@@ -72,10 +73,10 @@ pub fn main(options: Options) -> ExitCode {
     let env = Env::current();
     let root = match DataRoot::locate(&env) {
         Ok(root) => root,
-        Err(error) => return failed("data_root", None, error.to_string()),
+        Err(error) => return failed("data_root", Failure::root(&error)),
     };
     if let Err(error) = root.prepare() {
-        return failed("data_root", error.code(), error.to_string());
+        return failed("data_root", Failure::prepare(&error, &root));
     }
     let lock = match Lock::acquire(&root) {
         Ok(lock) => lock,
@@ -83,14 +84,14 @@ pub fn main(options: Options) -> ExitCode {
             say(&Ready::Running);
             return ExitCode::SUCCESS;
         }
-        Err(error) => return failed("lock", None, error.to_string()),
+        Err(error) => return failed("lock", Failure::lock(&error)),
     };
     // 装上时照 `MIYU_LOG`（没设、读不懂的是 INFO），读完配置再照 `log.level` 换（施工 8-2）。
     let level = miyu_log::level(std::env::var("MIYU_LOG").ok().as_deref());
     let (logs, name) = (root.logs(), miyu_store::root::CORE_LOG);
     let log = match miyu_log::install(&logs, name, level.filter, env.home.as_deref()) {
         Ok(guard) => guard,
-        Err(error) => return failed("log", None, error.to_string()),
+        Err(error) => return failed("log", Failure::log(&error)),
     };
     tracing::info!(
         target: TARGET,
@@ -119,7 +120,7 @@ pub fn main(options: Options) -> ExitCode {
     }
     let resources = match ResourceRoot::locate(&env) {
         Ok(resources) => resources,
-        Err(error) => return failed("resources", None, error.to_string()),
+        Err(error) => return failed("resources", Failure::resources(&error)),
     };
     // 系统的证书不再先读（施工 V-33）：第一次验对方的证书时才读（`miyu_http::tls`），一回一次网都不上的核心不读。
     // 目录最先读（施工 V-2 下补）：和下面读清单、配置、生成文件并着走。
@@ -142,7 +143,7 @@ pub fn main(options: Options) -> ExitCode {
         .build()
     {
         Ok(runtime) => runtime,
-        Err(error) => return failed("runtime", None, error.to_string()),
+        Err(error) => return failed("runtime", Failure::new("runtime_failed", error)),
     };
     let outcome = runtime.block_on(start::start(
         env,
@@ -358,7 +359,7 @@ async fn run(
 ) -> ExitCode {
     let routes = match models::prepare(&resources, Some(models::dirs(&root))) {
         Ok(routes) => routes,
-        Err(error) => return failed("models", None, error),
+        Err(error) => return failed("models", Failure::new("models_failed", error)),
     };
     let model_data = Arc::clone(&routes.data);
     // 造好路由就放行目录（施工 V-2 下）：读在找到资源目录时就开始了（施工 V-2 下补），这里等它读完、读用出来的，不挡
@@ -375,7 +376,7 @@ async fn run(
     let kit = Kit::new(&resources);
     let tools = match tools_in(&resources, &live.found, &kit) {
         Ok(tools) => tools,
-        Err(error) => return failed("tools", None, error),
+        Err(error) => return failed("tools", Failure::new("tools_failed", error)),
     };
     let (trashed, cached) = (root.clone(), root.clone());
     let logs = root.logs();
@@ -472,28 +473,4 @@ async fn run(
     let closing = pending::closing(purging, sweeping);
     serve_then(opened.listener, core, idle, serve::signal(), closing).await;
     ExitCode::SUCCESS
-}
-
-/// 起不来：原因写成那一行交给头，头印给人看；运行日志（装上了的话）只记没过的是哪一步 `stage`，原因是给人看的
-/// 中文，不进日志（施工 4-9 再补四上）。调它的地方接着就走、放锁，所以先等另起线程写盘的写完（施工 TMP-1 补2）。
-/// 认得出是哪一种的带上代码 `code`（施工 LC-1）：头照 `start/<代码>` 照自己的语言说。
-fn failed(stage: &'static str, code: Option<&'static str>, reason: String) -> ExitCode {
-    pending::finish();
-    tracing::warn!(target: TARGET, stage, "not started");
-    say(&Ready::Failed {
-        code: code.map(str::to_string),
-        reason,
-    });
-    ExitCode::FAILURE
-}
-
-/// 往标准输出写那一行：拉起核心的头在管道的另一头等着。
-fn say(ready: &Ready) {
-    let mut out = io::stdout();
-    if let Err(error) = out
-        .write_all(ready.line().as_bytes())
-        .and_then(|()| out.flush())
-    {
-        tracing::warn!(target: TARGET, error = %error, "ready line not written");
-    }
 }

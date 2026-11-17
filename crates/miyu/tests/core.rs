@@ -125,7 +125,8 @@ async fn a_data_root_it_does_not_know_comes_with_a_code() {
         panic!("应该说了原因：{error:?}");
     };
     assert_eq!(code.as_deref(), Some("data_root_other_layout"), "{reason}");
-    assert!(reason.contains(".miyu-layout"), "{reason}");
+    // 原因只写会变的那一段：数据根的位置（施工 EN-2）。
+    assert_eq!(reason, home.root.path().display().to_string());
 }
 
 #[tokio::test]
@@ -145,11 +146,11 @@ async fn a_core_that_cannot_start_says_why() {
     let StartError::Refused { code, reason } = error else {
         panic!("应该说了原因：{error:?}");
     };
-    assert_eq!(code, None, "找不到资源目录没有代码");
-    assert!(reason.contains("MIYU_RESOURCES"), "{reason}");
-    assert!(reason.contains("no-resources"), "{reason}");
+    // 每一步都带代码，原因只写会变的那一段（施工 EN-2）。
+    assert_eq!(code.as_deref(), Some("resources_missing"), "{reason}");
+    assert_eq!(reason, missing.display().to_string());
     home.until_stopped().await;
-    // 运行日志只写没过的是哪一步：原因是给人看的中文，只交给头（施工 4-9 再补四上）。
+    // 运行日志只写没过的是哪一步：原因只交给头（施工 4-9 再补四上）。
     let log = home.core_log();
     assert_eq!(count(&log, "not started stage=resources"), 1, "{log}");
     assert!(!log.contains("MIYU_RESOURCES"), "{log}");

@@ -1569,6 +1569,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sCK1"><span class="n">CK-1</span>默认人格、预设指着没有的<span class="st">…</span></a></li>
         <li><a class="step review" href="#sEN1"><span class="n">EN-1</span>英文界面漏的几句<span class="st">…</span></a></li>
         <li><a class="step review" href="#sTD1"><span class="n">TD-1</span>命令行拒绝语去句号<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sEN2"><span class="n">EN-2</span>核心起不来照代码说<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -61232,6 +61233,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/TD-1-命令行拒绝语去句号.md</code>；设计 <code>47-命令行文案.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sEN2" aria-labelledby="h-sEN2">
+  <div class="sheet-head"><h2 id="h-sEN2"><span class="no">EN-2</span>核心起不来照代码说</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">核心起不来时原来只有数据根那三种带代码，别的照中文整句写原因，英文界面印 <code>the core couldn't start: 运行日志写不了：…</code>。现在每一步都带代码、原因只写会变的一段，头照语言说整句。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-core · not_started.rs　miyu-ipc · error.rs、ready.rs　miyu-client · open/unreachable.rs</span><span class="dir-note">EN-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>起不来的每一步带代码（二十二个），原因是系统的原话或路径</li>
+              <li>内核 <code>human/</code> 三种语言加十六句 <code>start/*</code></li>
+              <li><code>StartError::said</code> 照代码说，<code>{reason}</code>、<code>{path}</code> 都给</li>
+              <li><code>miyu-client</code> 连不上的原话照机器的语言取字：迁移包换钉就有</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">原因只写会变的</span><span class="rl">整句在字表里</span></div>
+          <div class="tile new"><span class="nm">取不到字</span><span class="rl">核心起不来（代码）：原因</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">EN-2</dd></div>
+        <div><dt>名称</dt><dd>核心起不来照代码说</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">EN-2</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>每个代码三种语言都有字</span></li>
+        <li><span class="ok">✓</span><span>运行日志、工作区是文件：英文界面 <code>miyu ask hi</code> 整句英文</span></li>
+        <li><span class="ok">✓</span><span>实测资源目录不在、套接字目录别人能进几种</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/EN-2-核心起不来照代码说.md</code>；蓝图 <code>core.md</code>、<code>ipc.md</code>、<code>client.md</code>。</li>
       </ul>
     </div>
   </div>

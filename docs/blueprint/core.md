@@ -97,7 +97,7 @@
 15. 开始自己记内存账（施工 V-4，`heap.md`「自己记账」）：Linux、macOS（施工 V-4 补）上起一个任务，记一行 `start`，之后每分钟一行，涨得快的多一行，写进 `var/log/memory.jsonl`；量不出来的平台不起，记一条 `DEBUG memory samples unsupported`；文件打不开的记一条 `WARN memory samples not started`，照样起来。接着起合库的写前日志的线程（施工 V-28，`store.md`「怎么走」第 14 条）：库最后一次提交过去 2 秒，把 `-wal` 合回主库、截短；一个进程只起一个，起不来的记一条 `WARN wal checkpoints not started`，照样起来。
 16. 一个个接连接，直到停下（下面「停下」）。
 
-第 2 到 11 步哪一步出了错（第 3 步拿不到锁的除外；第 10 步探沙盒只记日志，不会出错）：写 `error <原因>`，退出码 1；运行日志已经装上了的（第 5 步起），再记一条 `WARN not started stage=<哪一步>`：第 5 到第 9 步依次是 `home`、`resources`、`runtime`、`socket`、`models`，第 11 步是 `tools`。原因是给人看的中文，只交给头，不进运行日志（施工 4-9 再补四上：原来 `reason=<原因>` 整句写进去）。第 8 步以后出的错，走的时候照样删掉套接字文件、放开锁（`ipc.md`）；写那一行之前先等另起线程写盘的写完（下面「停下」第 6 条），调它的地方接着就放锁。
+第 2 到 11 步哪一步出了错（第 3 步拿不到锁的除外；第 10 步探沙盒只记日志，不会出错）：写 `error <代码>: <原因>`（施工 EN-2：每一步都带代码，`miyu-core` 的 `not_started.rs`；原因只写会变的那一段，系统的原话或路径），退出码 1；运行日志已经装上了的（第 5 步起），再记一条 `WARN not started stage=<哪一步>`：第 5 到第 9 步依次是 `home`、`resources`、`runtime`、`socket`、`models`，第 11 步是 `tools`。原因只交给头，不进运行日志（施工 4-9 再补四上：原来 `reason=<原因>` 整句写进去）。第 8 步以后出的错，走的时候照样删掉套接字文件、放开锁（`ipc.md`）；写那一行之前先等另起线程写盘的写完（下面「停下」第 6 条），调它的地方接着就放锁。
 
 **那一行**
 
@@ -108,7 +108,7 @@
 | `ready` | 好了：在套接字上等连接了 | 之后照「停下」 |
 | `running` | 已经有一个核心在跑：这一个走了，头去连那一个 | 0 |
 | `error <原因>` | 起不来。原因是出错的原话，照原样给人看；里面的回车、换行换成空格 | 1 |
-| `error <代码>: <原因>` | 起不来、认得出是哪一种（施工 LC-1）：第 2 步数据根认不出（`data_root_not_ours`）、是旧版的（`data_root_old_layout`）、布局不是这一版的（`data_root_other_layout`）。头照 `core/start/<代码>` 照自己的语言说（`resources/core/human/`），原因照旧是中文原话 | 1 |
+| `error <代码>: <原因>` | 起不来、认得出是哪一种（施工 LC-1；EN-2 起每一步都带）：数据根认不出（`data_root_not_ours`）、是旧版的（`data_root_old_layout`）、布局不是这一版的（`data_root_other_layout`），原因是数据根的位置；`MIYU_HOME` 相对、找不到家目录（`miyu_home_relative`、`no_home`、`no_local_app_data`），建骨架读写出错（`data_root_failed`），拿锁（`lock_failed`）、装运行日志（`log_failed`）、资源目录（`resources_relative`、`resources_missing`、`resources_not_found`、`resources_unknown`）、运行时（`runtime_failed`）、套接字（`socket_too_long`、`socket_not_private`、`socket_occupied`、`pipe_occupied`、`socket_failed`）、工作区（`home_failed`）、模型（`models_failed`）、工具（`tools_failed`），原因是系统的原话或路径。头照 `core/start/<代码>` 照自己的语言说（`resources/core/human/`） | 1 |
 
 - 每一种都带一个 `\n`，写完马上送出去。写不出去的，记一条 `WARN ready line not written error=…`（运行日志装上了的话）。
 - 原因是出错的原话：Miyu 自己写的多是中文，例如 `MIYU_HOME 要写绝对路径，写的是 …`、`找不到资源目录：… 都没有。开发时设 MIYU_RESOURCES 指到源码树的 resources/`（`store.md`、`ipc.md`）；工具的字读不出来的是 `<哪一份文件>: <为什么>`；工具登记时查不过的是英文，例如 `tool "read": another tool has the same name`（`tools/interface.md`）；系统和用到的库报的错（例如 HTTP 客户端造不出来的）照它们的写法。
@@ -150,7 +150,7 @@
 | 什么时候 | 那一行 | 退出码 |
 |---|---|---|
 | 已经有一个核心在跑 | `running` | 0 |
-| 找不到数据根、建不了骨架、拿锁出了别的错、装不上运行日志、建不了默认工作区、找不到资源目录、起不了运行时、套接字放不下或者绑不上、令牌写不进、HTTP 客户端造不出来、工具的字读不出来或者登记时查不过 | `error <原因>` | 1 |
+| 找不到数据根、建不了骨架、拿锁出了别的错、装不上运行日志、建不了默认工作区、找不到资源目录、起不了运行时、套接字放不下或者绑不上、令牌写不进、HTTP 客户端造不出来、工具的字读不出来或者登记时查不过 | `error <代码>: <原因>`（施工 EN-2） | 1 |
 | 参数不对（`--idle-seconds` 不是非负整数、不认识的参数） | 不写那一行，clap 把错印在标准错误上 | 2 |
 
 运行日志（目标 `miyu::core`）：

@@ -150,6 +150,11 @@ pub enum StartError {
 impl fmt::Display for StartError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            // 带代码的原因只是会变的那一段（施工 EN-2），整句由头照 `start/<代码>` 说；取不到字的照代码和原因说。
+            StartError::Refused {
+                code: Some(code),
+                reason,
+            } => write!(f, "核心起不来（{code}）：{reason}"),
             StartError::Refused { reason, .. } => write!(f, "核心起不来：{reason}"),
             // 照数据根取的相对位置（施工 FX-4：原来写死 `state/logs/core.log`，FH-3 挪到 `var/log/` 以后指错了地方）。
             StartError::Silent => write!(
@@ -168,11 +173,18 @@ impl fmt::Display for StartError {
 impl std::error::Error for StartError {}
 
 impl StartError {
-    /// 给人看的说法（施工 EN-1）：同 [`ConnectError::said`]。核心说了原因的照 `start/refused` 带上原话（带代码的，头另可照
-    /// `start/<代码>` 说，要数据根的位置）；日志的位置照数据根取相对的。
+    /// 给人看的说法（施工 EN-1）：同 [`ConnectError::said`]。核心说了原因的：带代码的照 `start/<代码>`（施工 EN-2：每一步都带），
+    /// `{reason}` 是原因（数据根认不出的那几种原因是数据根的位置，字里写成 `{path}`，两个字段都给）；没代码的照
+    /// `start/refused` 带上原话。日志的位置照数据根取相对的。
     #[must_use]
     pub fn said(&self) -> Option<Said> {
         Some(match self {
+            StartError::Refused {
+                code: Some(code),
+                reason,
+            } => Said::new(format!("core/start/{code}"))
+                .with("reason", reason.as_str())
+                .with("path", reason.as_str()),
             StartError::Refused { reason, .. } => {
                 Said::new("core/start/refused").with("reason", reason.as_str())
             }
