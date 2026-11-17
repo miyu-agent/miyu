@@ -132,7 +132,7 @@
       },
       "permission.confirm.delete": {
         "name": "Recursive deletes",
-        "description": "Ask before deleting the working directory or a parent of it, or a whole directory whose target is only known at run time."
+        "description": "Ask before deleting the working directory or a parent of it, Miyu's data, or a whole directory whose target is only known at run time."
       },
       "permission.confirm.power": {
         "name": "Shutdown and restart",
@@ -434,7 +434,7 @@
       "source": "Package source"
     },
     "group_descriptions": {
-      "protected": "These kinds of commands ask you first even with full access. Turn one off to stop asking. Some are always refused and can't be turned off: deleting the root, home or system directories or Miyu's data, formatting a disk or writing to a raw device, and giving a container the whole host."
+      "protected": "These kinds of commands ask you first even with full access. Turn one off to stop asking. Some are always refused and can't be turned off: deleting the root, home or system directories, formatting a disk or writing to a raw device, and giving a container the whole host."
     }
   },
   "said": {

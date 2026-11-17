@@ -228,7 +228,7 @@ Exit code 2
 | 执行不了 | `failed.txt` | `Could not run {shell}: {error}.` |
 | 要放到后台，没有任务端口 | `no-background.txt` | `Running in the background is not available here. Foreground runs can take a larger timeout.` |
 | 认出灭顶的高危，拒了（施工 5-17） | `hazard.txt` | `Not run: this command {reason}, which is never allowed.` |
-| 同上，`{reason}` | `hazard/delete-root.txt`、`delete-home.txt`、`delete-system.txt`、`delete-data-root.txt`、`disk-format.txt`、`disk-write.txt`、`container-host.txt`（施工 5-17 三补） | `would delete the root directory`、`would delete the home directory`、`would delete a top-level system directory`、`would delete Miyu's own data`、`would format a disk`、`would write to a raw disk device`、`would give a container full access to this machine's devices` |
+| 同上，`{reason}` | `hazard/delete-root.txt`、`delete-home.txt`、`delete-system.txt`、`disk-format.txt`、`disk-write.txt`、`container-host.txt`（施工 5-17 三补；删数据根的那一句施工 RO-3补 随改成问人删了） | `would delete the root directory`、`would delete the home directory`、`would delete a top-level system directory`、`would format a disk`、`would write to a raw disk device`、`would give a container full access to this machine's devices` |
 
 输出本身不转义；换进这几句的字段照模板的规矩转义（`tools/read.md` 第 8 条）。
 
@@ -289,7 +289,6 @@ Exit code 2
 | `shell/hazard-delete_root` | 没有执行：会删掉根目录 | not run: would delete the root directory |
 | `shell/hazard-delete_home` | 没有执行：会删掉家目录 | not run: would delete the home directory |
 | `shell/hazard-delete_system` | 没有执行：会删掉系统目录 | not run: would delete a system directory |
-| `shell/hazard-delete_data_root` | 没有执行：会删掉 Miyu 自己的数据 | not run: would delete Miyu's own data |
 | `shell/hazard-disk_format` | 没有执行：会格式化磁盘 | not run: would format a disk |
 | `shell/hazard-disk_write` | 没有执行：会直接写磁盘设备 | not run: would write to a disk device |
 | `shell/hazard-container_host` | 没有执行：会让容器拿到整台机器的设备 | not run: would give a container full access to this machine's devices |

@@ -686,7 +686,7 @@
             },
             "delete": {
               "default": true,
-              "description": "删工作目录或它的上级、删运行时才知道目标的整个目录前先问。能写：true 或 false。只能写在系统配置里。下一轮生效。",
+              "description": "删工作目录或它的上级、删 Miyu 的数据、删运行时才知道目标的整个目录前先问。能写：true 或 false。只能写在系统配置里。下一轮生效。",
               "title": "递归删除",
               "type": "boolean"
             },

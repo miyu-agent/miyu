@@ -46,7 +46,7 @@ async fn the_switches_and_their_group_are_named_in_the_language_of_the_connectio
         (
             "zh-CN",
             "受保护的命令",
-            "下面几类命令在完全放开时也会先问你，关掉就不再问。另有几类永远拒绝、不能关：删根目录、家目录、系统目录、Miyu 的数据，格式化磁盘、往裸设备写，容器拿走整个宿主。",
+            "下面几类命令在完全放开时也会先问你，关掉就不再问。另有几类永远拒绝、不能关：删根目录、家目录、系统目录，格式化磁盘、往裸设备写，容器拿走整个宿主。",
             [
                 "破坏性 git 操作",
                 "递归删除",
@@ -58,7 +58,7 @@ async fn the_switches_and_their_group_are_named_in_the_language_of_the_connectio
         (
             "en",
             "Protected commands",
-            "These kinds of commands ask you first even with full access. Turn one off to stop asking. Some are always refused and can't be turned off: deleting the root, home or system directories or Miyu's data, formatting a disk or writing to a raw device, and giving a container the whole host.",
+            "These kinds of commands ask you first even with full access. Turn one off to stop asking. Some are always refused and can't be turned off: deleting the root, home or system directories, formatting a disk or writing to a raw device, and giving a container the whole host.",
             [
                 "Destructive git operations",
                 "Recursive deletes",
@@ -70,7 +70,7 @@ async fn the_switches_and_their_group_are_named_in_the_language_of_the_connectio
         (
             "ja",
             "保護されたコマンド",
-            "次の種類のコマンドは、フルアクセスでも実行前に確認します。オフにすると確認しません。常に拒否され、オフにできないものもあります：ルート、ホーム、システムディレクトリ、Miyu のデータの削除、ディスクのフォーマット、raw デバイスへの書き込み、コンテナへのホスト全体の引き渡し。",
+            "次の種類のコマンドは、フルアクセスでも実行前に確認します。オフにすると確認しません。常に拒否され、オフにできないものもあります：ルート、ホーム、システムディレクトリの削除、ディスクのフォーマット、raw デバイスへの書き込み、コンテナへのホスト全体の引き渡し。",
             [
                 "破壊的な git 操作",
                 "再帰的な削除",

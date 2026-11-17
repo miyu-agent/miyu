@@ -1,1 +1,1 @@
-"{path}" cannot be deleted: it is the working directory, one of its parents, the home directory, Miyu's data or a folder holding it, or the root.
+"{path}" cannot be deleted: it is the working directory, one of its parents, the home directory, or the root.

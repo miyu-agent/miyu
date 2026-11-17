@@ -213,7 +213,7 @@ start_read_only = false
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 container = true
 
-# 递归删除：删工作目录或它的上级、删运行时才知道目标的整个目录前先问。
+# 递归删除：删工作目录或它的上级、删 Miyu 的数据、删运行时才知道目标的整个目录前先问。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 delete = true
 

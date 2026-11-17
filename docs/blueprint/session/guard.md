@@ -113,7 +113,7 @@ A16 起只剩这两级（`11-权限与沙盒.md` A16，施工 LV-1），代码�
 | 读（数据根、技能文件夹也是） | 放行 | 放行 |
 | 写（数据根、技能文件夹也是） | 放行 | 拒绝：只读 |
 
-所以报路径的调用不问人（施工 LV-1 去掉了工作区那一列；施工 PV-RM 去掉了最后一种：只读时读私密目录）。数据根的读施工 RO-2 起放行，写施工 RO-3 起完全放开下放行（2026-11-17 项目主人定：文件工具拦得住、命令拦不住，等于没保护；只读照旧哪儿都不写）。删整个数据根照旧拦：`shell` 的高危命令 `delete_data_root` 灭顶直接拒（第四条末），`trash` 不删数据根和装着它的（`tools/trash.md`）。
+所以报路径的调用不问人（施工 LV-1 去掉了工作区那一列；施工 PV-RM 去掉了最后一种：只读时读私密目录）。数据根的读施工 RO-2 起放行，写施工 RO-3 起完全放开下放行（2026-11-17 项目主人定：文件工具拦得住、命令拦不住，等于没保护；只读照旧哪儿都不写）。删整个数据根照旧要人点头：`shell` 的高危命令 `delete_data_root`、`trash` 删数据根和装着它的，都照「受保护的命令」删除那一类问人（第四条末，施工 RO-3补，2026-11-17 项目主人定「问你，不是拦」），人点了允许才跑。
 
 只读时访问类别要写入的调用，内核在交给链之前就拦下了（`kernel/session.md`）；走到这里的写，也拒绝。
 
@@ -135,10 +135,10 @@ A16 起只剩这两级（`11-权限与沙盒.md` A16，施工 LV-1），代码�
 - 问人时不提规则，只能选允许这一次或者拒绝；说明照第五条第 4 款。
 - 越过沙盒问人（`shell` 的 `outside_sandbox`、「此目录不再询问」和它带的命令前缀，施工 D-4、5-15、SB-3）、你在配置里事先放行的工具（`sandbox.tools`，施工 X-36、X-37）随「工作区」一级去掉了（`11-权限与沙盒.md` A16，施工 LV-1、LV-2）：命令只在只读时进沙盒，完全放开不进，没有「这一次到沙盒外跑」这回事。
 - 高危命令（工具报 `Tool::hazard`，`shell` 照命令的字面认，施工 5-17，`11-权限与沙盒.md` 第四节）：完全放开下管（A16，施工 LV-1，2026-11-09 项目主人定：不做沙盒不等于不做保护；改掉 5-17 再补的「完全放开只拦灭顶的」），判在报的路径之后，先于别的放行（放行过的规则也管不到它）；只读不看，命令本来就在只读沙盒里跑。报的路径已经判了拒绝的照拒，不改成问人。
-  - 灭顶的（删根、家目录、根下的系统目录、数据根，格式化、写裸磁盘，容器把整个宿主交出去）拒绝，人点了也不跑：`by` 是 `permissions`，写给她工具交的那一句（`shell` 的 `hazard.txt` 填上 `hazard/<种类>.txt`），说法是工具交的（`shell/hazard-<种类>`）。
+  - 灭顶的（删根、家目录、根下的系统目录，格式化、写裸磁盘，容器把整个宿主交出去）拒绝，人点了也不跑：`by` 是 `permissions`，写给她工具交的那一句（`shell` 的 `hazard.txt` 填上 `hazard/<种类>.txt`），说法是工具交的（`shell/hazard-<种类>`）。
   - 别的问人，不提规则（只能允许这一次或者拒绝），没人能确认的拒；说明照第五条第 4 款再多 `hazard`：种类的写法，例如 `{"command":"git push --force","hazard":"git_force_push","sandbox":false,"title":"Push","tool":"shell"}`。
-  - 种类：`delete_root`、`delete_home`、`delete_system`、`delete_data_root`、`disk_format`、`disk_write`、`container_host`（施工 5-17 三补）拒绝；`delete_working_dir`、`delete_unresolved`、`git_force_push`、`git_reset_hard`、`git_clean`、`git_discard`、`git_stash_drop`、`power`、`pipe_to_shell`、`container_share`（施工 5-17 三补）问人。
-  - 受保护的命令按类给开关（A18，施工 HZ-1，2026-11-11 项目主人定）：问人的十种分五类（`miyu_policy::hazard::Group`），一类一项配置 `permission.confirm.<类>`（`config.md`），出厂都开。工具把一条命令里认出的每一种问人的连同归的类全报上来（`Hazard::Asks`，一种一个 `HazardAsk`：`code`、`class`），权限策略去掉归关掉的那几类的：还有剩的照剩下的最先认出的那一种问（`hazard` 写它）；一种都不剩的照没认出高危接着判（完全放开就是放行，直接跑）。所以一条命令命中几类的，有一类还开着就照旧问。
+  - 种类：`delete_root`、`delete_home`、`delete_system`、`disk_format`、`disk_write`、`container_host`（施工 5-17 三补）拒绝；`delete_working_dir`、`delete_unresolved`、`delete_data_root`（施工 RO-3补 起问人，归删除那一类；`trash` 删数据根和装着它的也报它）、`git_force_push`、`git_reset_hard`、`git_clean`、`git_discard`、`git_stash_drop`、`power`、`pipe_to_shell`、`container_share`（施工 5-17 三补）问人。
+  - 受保护的命令按类给开关（A18，施工 HZ-1，2026-11-11 项目主人定）：问人的十一种分五类（`miyu_policy::hazard::Group`），一类一项配置 `permission.confirm.<类>`（`config.md`），出厂都开。工具把一条命令里认出的每一种问人的连同归的类全报上来（`Hazard::Asks`，一种一个 `HazardAsk`：`code`、`class`），权限策略去掉归关掉的那几类的：还有剩的照剩下的最先认出的那一种问（`hazard` 写它）；一种都不剩的照没认出高危接着判（完全放开就是放行，直接跑）。所以一条命令命中几类的，有一类还开着就照旧问。
 
     | 类（`permission.confirm.<类>`） | 管哪几种 |
     |---|---|

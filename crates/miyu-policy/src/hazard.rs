@@ -146,15 +146,15 @@ impl Kind {
         }
     }
 
-    /// 灭顶的直接拒，人点了也不跑（2026-10-20 项目主人定）：删根、家目录、系统目录、数据根，格式化、往裸设备写；容器把整个
-    /// 宿主交出去（施工 5-17 三补，2026-10-22 项目主人定）。别的问人。
+    /// 灭顶的直接拒，人点了也不跑（2026-10-20 项目主人定）：删根、家目录、系统目录，格式化、往裸设备写；容器把整个宿主交
+    /// 出去（施工 5-17 三补，2026-10-22 项目主人定）。别的问人。删数据根施工 RO-3补 起问人、归删除那一类（2026-11-17 项目主人
+    /// 定「删整个数据根这类危险命令照旧弹确认：问你，不是拦」）。
     pub const fn refused(self) -> bool {
         matches!(
             self,
             Kind::DeleteRoot
                 | Kind::DeleteHome
                 | Kind::DeleteSystem
-                | Kind::DeleteDataRoot
                 | Kind::DiskFormat
                 | Kind::DiskWrite
                 | Kind::ContainerHost
@@ -169,14 +169,15 @@ impl Kind {
             | Kind::GitClean
             | Kind::GitDiscard
             | Kind::GitStashDrop => Some(Group::Git),
-            Kind::DeleteWorkingDir | Kind::DeleteUnresolved => Some(Group::Delete),
+            Kind::DeleteWorkingDir | Kind::DeleteUnresolved | Kind::DeleteDataRoot => {
+                Some(Group::Delete)
+            }
             Kind::Power => Some(Group::Power),
             Kind::PipeToShell => Some(Group::PipeToShell),
             Kind::ContainerShare => Some(Group::Container),
             Kind::DeleteRoot
             | Kind::DeleteHome
             | Kind::DeleteSystem
-            | Kind::DeleteDataRoot
             | Kind::DiskFormat
             | Kind::DiskWrite
             | Kind::ContainerHost

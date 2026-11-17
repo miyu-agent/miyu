@@ -14,7 +14,7 @@ use miyu_tool::{Catalog, Shelf};
 use super::*;
 
 /// 每一类各几条问人的命令，连同问人时说明里的 `hazard`。
-const ASKING: [(&str, &str, &str); 10] = [
+const ASKING: [(&str, &str, &str); 11] = [
     ("git", "git push --force", "git_force_push"),
     ("git", "git reset --hard", "git_reset_hard"),
     ("git", "git clean -fd", "git_clean"),
@@ -22,6 +22,8 @@ const ASKING: [(&str, &str, &str); 10] = [
     ("git", "git stash drop", "git_stash_drop"),
     ("delete", "rm -rf .", "delete_working_dir"),
     ("delete", "rm -rf \"$TARGET\"", "delete_unresolved"),
+    // 删数据根施工 RO-3补 起问人（2026-11-17 项目主人定「问你，不是拦」）。
+    ("delete", "rm -rf ~/.miyu", "delete_data_root"),
     ("power", "sudo reboot", "power"),
     (
         "pipe_to_shell",
@@ -35,12 +37,11 @@ const ASKING: [(&str, &str, &str); 10] = [
     ),
 ];
 
-/// 直接拒的七种各一条。
-const REFUSED: [&str; 7] = [
+/// 直接拒的六种各一条。
+const REFUSED: [&str; 6] = [
     "rm -rf /",
     "rm -rf ~",
     "rm -rf /usr",
-    "rm -rf ~/.miyu",
     "mkfs.ext4 /dev/sda1",
     "dd if=/dev/zero of=/dev/sda",
     "docker run --privileged alpine",

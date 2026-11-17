@@ -3,7 +3,7 @@
 use super::super::*;
 use super::PLACES;
 
-/// 问人的十种正好分进五类；直接拒的七种不归类，哪个开关都管不到。
+/// 问人的十一种正好分进五类（删数据根施工 RO-3补 起问人、归删除）；直接拒的六种不归类，哪个开关都管不到。
 #[test]
 fn every_asking_kind_is_in_one_group_and_no_refused_kind_is() {
     let expected = [
@@ -14,6 +14,7 @@ fn every_asking_kind_is_in_one_group_and_no_refused_kind_is() {
         (Kind::GitStashDrop, Group::Git),
         (Kind::DeleteWorkingDir, Group::Delete),
         (Kind::DeleteUnresolved, Group::Delete),
+        (Kind::DeleteDataRoot, Group::Delete),
         (Kind::Power, Group::Power),
         (Kind::PipeToShell, Group::PipeToShell),
         (Kind::ContainerShare, Group::Container),

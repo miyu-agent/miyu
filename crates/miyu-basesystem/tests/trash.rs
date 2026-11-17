@@ -7,7 +7,7 @@ use serde_json::json;
 use miyu_kernel::block::Block;
 use miyu_kernel::event::Said;
 use miyu_kernel::tool::Access;
-use miyu_tool::{Call, Done, Effect};
+use miyu_tool::{Call, Done, Effect, Hazard, Seen, Stop};
 
 use crate::support::{Site, tool};
 
@@ -88,18 +88,36 @@ async fn the_working_directory_its_parents_home_and_root_are_not_deleted() {
     );
 }
 
-/// 数据根本身不删（施工 RO-3）：完全放开下文件工具写得进数据根以后，`trash` 照「删数据根」那一条高危命令一样拒；数据根里面的
-/// 照常删。
-#[tokio::test]
-async fn the_data_root_itself_is_not_deleted() {
+/// 删数据根要人点头（施工 RO-3补，2026-11-17 项目主人定「问你，不是拦」）：数据根自己、装着它的报高危 `delete_data_root`、归
+/// 删除那一类，权限策略照「受保护的命令」问人；数据根里面的、别处的不报。工具本身不拦（人点了允许才走到这里）。
+#[test]
+fn deleting_the_data_root_is_reported_as_a_hazard() {
     let site = Site::new();
     site.file("data/inside.txt", b"x");
+    let tool = tool("trash");
+    let hazard = |path: &str| {
+        tool.hazard(&site.call_for(
+            "work",
+            json!({ "file_path": path }),
+            Seen::new(),
+            Stop::default(),
+        ))
+    };
     let data = site.real("data").to_string_lossy().into_owned();
-    let done = trash(&site, &data).await;
-    assert!(done.error, "{}", text(&done));
-    assert_eq!(done.human, Some(said("trash/protected")), "{}", text(&done));
-    assert!(text(&done).contains("Miyu's data"), "{}", text(&done));
-    assert!(site.0.join("data/inside.txt").is_file(), "还在");
+    let above = site.real("").to_string_lossy().into_owned();
+    for path in [data.as_str(), above.as_str()] {
+        match hazard(path) {
+            Some(Hazard::Asks(asks)) => {
+                assert_eq!(asks.len(), 1, "{path}");
+                assert_eq!(asks[0].code, "delete_data_root", "{path}");
+                assert_eq!(asks[0].class, Some("delete"), "{path}");
+            }
+            other => panic!("{path}：{other:?}"),
+        }
+    }
+    let inside = site.real("data/inside.txt").to_string_lossy().into_owned();
+    assert!(hazard(&inside).is_none(), "数据根里面的照常删");
+    assert!(hazard("old.txt").is_none(), "别处的不报");
 }
 
 #[cfg(target_os = "linux")]

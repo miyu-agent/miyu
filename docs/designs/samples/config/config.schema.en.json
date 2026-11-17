@@ -686,7 +686,7 @@
             },
             "delete": {
               "default": true,
-              "description": "Ask before deleting the working directory or a parent of it, or a whole directory whose target is only known at run time. Allowed: true or false. Only in the system config. Takes effect next turn.",
+              "description": "Ask before deleting the working directory or a parent of it, Miyu's data, or a whole directory whose target is only known at run time. Allowed: true or false. Only in the system config. Takes effect next turn.",
               "title": "Recursive deletes",
               "type": "boolean"
             },

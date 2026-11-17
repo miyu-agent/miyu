@@ -1194,7 +1194,7 @@ start_read_only = false
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 container = true
 
-# 递归删除：删工作目录或它的上级、删运行时才知道目标的整个目录前先问。
+# 递归删除：删工作目录或它的上级、删 Miyu 的数据、删运行时才知道目标的整个目录前先问。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 delete = true
 
@@ -1484,7 +1484,7 @@ currency = "USD"
 | `permission.confirm.git` 名字（HZ-1） | 破坏性 git 操作 | Destructive git operations | 破壊的な git 操作 |
 | 说明 | 强制推送、reset --hard、clean -f、丢弃改动、删除 stash 前先问。 | Ask before a force push, reset --hard, clean -f, discarding changes or dropping a stash. | 強制プッシュ、reset --hard、clean -f、変更の破棄、stash の削除の前に確認します。 |
 | `permission.confirm.delete` 名字（HZ-1） | 递归删除 | Recursive deletes | 再帰的な削除 |
-| 说明 | 删工作目录或它的上级、删运行时才知道目标的整个目录前先问。 | Ask before deleting the working directory or a parent of it, or a whole directory whose target is only known at run time. | 作業ディレクトリやその上位、実行時まで対象が分からないディレクトリ全体を削除する前に確認します。 |
+| 说明 | 删工作目录或它的上级、删 Miyu 的数据、删运行时才知道目标的整个目录前先问。 | Ask before deleting the working directory or a parent of it, Miyu's data, or a whole directory whose target is only known at run time. | 作業ディレクトリやその上位、Miyu のデータ、実行時まで対象が分からないディレクトリ全体を削除する前に確認します。 |
 | `permission.confirm.power` 名字（HZ-1） | 关机和重启 | Shutdown and restart | シャットダウンと再起動 |
 | 说明 | 关机、重启前先问。 | Ask before shutting down or restarting. | シャットダウン、再起動の前に確認します。 |
 | `permission.confirm.pipe_to_shell` 名字（HZ-1） | 下载后直接执行 | Running a download directly | ダウンロードして直接実行 |
@@ -1494,7 +1494,7 @@ currency = "USD"
 | `permission.confirm.timeout` 名字（CD-1） | 确认超时 | Confirmation timeout | 確認のタイムアウト |
 | 说明 | 等你确认超过这么多秒就自动拒绝。0 为一直等。 | Anything waiting for your confirmation is denied after this many seconds. 0 waits forever. | 確認待ちがこの秒数を過ぎると自動で拒否します。0 はずっと待ちます。 |
 | 组 `protected`（`privacy`，HZ-1） | 受保护的命令 | Protected commands | 保護されたコマンド |
-| 组 `protected` 的说明（`config.group_descriptions`，HZ-1） | 下面几类命令在完全放开时也会先问你，关掉就不再问。另有几类永远拒绝、不能关：删根目录、家目录、系统目录、Miyu 的数据，格式化磁盘、往裸设备写，容器拿走整个宿主。 | These kinds of commands ask you first even with full access. Turn one off to stop asking. Some are always refused and can't be turned off: deleting the root, home or system directories or Miyu's data, formatting a disk or writing to a raw device, and giving a container the whole host. | 次の種類のコマンドは、フルアクセスでも実行前に確認します。オフにすると確認しません。常に拒否され、オフにできないものもあります：ルート、ホーム、システムディレクトリ、Miyu のデータの削除、ディスクのフォーマット、raw デバイスへの書き込み、コンテナへのホスト全体の引き渡し。 |
+| 组 `protected` 的说明（`config.group_descriptions`，HZ-1） | 下面几类命令在完全放开时也会先问你，关掉就不再问。另有几类永远拒绝、不能关：删根目录、家目录、系统目录，格式化磁盘、往裸设备写，容器拿走整个宿主。 | These kinds of commands ask you first even with full access. Turn one off to stop asking. Some are always refused and can't be turned off: deleting the root, home or system directories, formatting a disk or writing to a raw device, and giving a container the whole host. | 次の種類のコマンドは、フルアクセスでも実行前に確認します。オフにすると確認しません。常に拒否され、オフにできないものもあります：ルート、ホーム、システムディレクトリの削除、ディスクのフォーマット、raw デバイスへの書き込み、コンテナへのホスト全体の引き渡し。 |
 | `net.internal_domains` 名字（MB-2） | 内部域名 | Internal domains | 内部ドメイン |
 | `skills.external.enabled` 名字（PT-2 外） | 读取其他目录的 Skills | Read skills from other folders | ほかのフォルダのスキルを読む |
 | `skills.external.dirs` 名字（PT-2 外） | 其他技能目录 | Other skill folders | ほかのスキルフォルダ |

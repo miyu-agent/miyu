@@ -10,10 +10,13 @@ use std::path::Path;
 use serde::Deserialize;
 
 use miyu_fs::trash::{Refused, put};
-use miyu_fs::{resolve, within};
+use miyu_fs::{resolve, resolve_itself, within};
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
-use miyu_tool::{Call, Done, Effect, Progress, Running, Spec, Stop, Target, Tool};
+use miyu_policy::hazard::{Group, Kind};
+use miyu_tool::{
+    Call, Done, Effect, Hazard, HazardAsk, Progress, Running, Spec, Stop, Target, Tool,
+};
 
 use crate::blocking::blocking;
 use crate::common::{Common, Shown, said};
@@ -78,6 +81,24 @@ impl Tool for Trash {
             .unwrap_or_default()
     }
 
+    /// 删的是数据根或装着它的（施工 RO-3补，2026-11-17 项目主人定「问你，不是拦」）：报高危 `delete_data_root`，归删除那一类，
+    /// 同 `shell` 的 `rm -rf <数据根>`，权限策略照「受保护的命令」问人，人点了允许才删。数据根里面的照常删、不问。
+    fn hazard(&self, call: &Call) -> Option<Hazard> {
+        let args = serde_json::from_str::<Args>(&call.args).ok()?;
+        let root = call.data_root.as_deref()?;
+        let home = call.home.as_deref();
+        let cwd = resolve(Path::new("/"), home, &call.cwd).ok()?;
+        let real = resolve_itself(&cwd, home, &args.file_path).ok()??;
+        let root = std::fs::canonicalize(root).unwrap_or_else(|_| root.to_path_buf());
+        within(&root, &real).then(|| {
+            let kind = Kind::DeleteDataRoot;
+            Hazard::Asks(vec![HazardAsk {
+                code: kind.code(),
+                class: kind.group().map(Group::code),
+            }])
+        })
+    }
+
     fn run(&self, call: Call, _progress: Progress) -> Running<'_> {
         let texts = self.texts.clone();
         Box::pin(async move {
@@ -134,20 +155,13 @@ fn trash(texts: &Texts, call: &Call, path: &str, stop: &Stop) -> Done {
     }
 }
 
-/// 不许删的：工作目录本身和它的每一层上级（根目录也是它的上级）、系统的家目录、Miyu 的数据根和装着它的（施工 RO-3：完全放开下
-/// 文件工具写得进数据根以后，删整个数据根照「删数据根」那一条高危命令拦）。一段一段比，macOS、Windows 上不分
+/// 不许删的：工作目录本身和它的每一层上级（根目录也是它的上级）、系统的家目录。一段一段比，macOS、Windows 上不分
 /// 大小写（[`within`]，施工 4-9 再补二）：`real` 的最后一段是她写的原样，换个大小写写的也拦得住。
 fn protected(call: &Call, real: &Path) -> bool {
     if let Ok(cwd) = resolve(Path::new(&call.cwd), call.home.as_deref(), &call.cwd)
         && within(&cwd, real)
     {
         return true;
-    }
-    if let Some(root) = call.data_root.as_deref() {
-        let root = std::fs::canonicalize(root).unwrap_or_else(|_| root.to_path_buf());
-        if within(&root, real) {
-            return true;
-        }
     }
     call.home.as_deref().is_some_and(|home| {
         let home = std::fs::canonicalize(home).unwrap_or_else(|_| home.to_path_buf());

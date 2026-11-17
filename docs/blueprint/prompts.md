@@ -1335,13 +1335,13 @@ Shown to the user.
 
 #### `software/basesystem/trash/protected.txt`
 
-- 什么时候加进来：要删的是工作目录、它的上级、家目录、Miyu 的数据根和装着它的、根目录
-- token：37（施工 RO-3 量，o200k，路径按 `~/x`；改前同法 27）
-- 为什么加：说清为什么不能删，她好改路径。施工 RO-3（2026-11-17 项目主人定完全放开下文件工具不拦数据根）：加上数据根，删整个数据根照高危命令一样拦，不说的话她会当是别的原因换个说法再删
-- 指纹：`99fa2e2a`
+- 什么时候加进来：要删的是工作目录、它的上级、家目录、根目录
+- token：约 24（估的）
+- 为什么加：说清为什么不能删，她好改路径
+- 指纹：`74a2791a`
 
 ```text
-"{path}" cannot be deleted: it is the working directory, one of its parents, the home directory, Miyu's data or a folder holding it, or the root.
+"{path}" cannot be deleted: it is the working directory, one of its parents, the home directory, or the root.
 ```
 
 #### `software/basesystem/trash/lost.txt`
@@ -4104,17 +4104,6 @@ would delete the home directory
 
 ```text
 would delete a top-level system directory
-```
-
-#### `software/basesystem/shell/hazard/delete-data-root.txt`
-
-- 什么时候加进来：删 Miyu 的数据根或者装着它的目录（施工 5-17）
-- token：9（2026-10-20 量）
-- 为什么加：同上
-- 指纹：`a8d194b2`
-
-```text
-would delete Miyu's own data
 ```
 
 #### `software/basesystem/shell/hazard/disk-format.txt`

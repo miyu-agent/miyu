@@ -44,11 +44,6 @@ fn deleting_the_big_places_is_refused() {
         ("ri -r $env:SystemRoot", "delete_system"),
         (r"Remove-Item 'C:\Program Files' -Recurse", "delete_system"),
         (
-            r"Remove-Item -LiteralPath C:\Users\me\.miyu -Recurse",
-            "delete_data_root",
-        ),
-        (r"del C:\Users\me\.miyu\etc\config.toml", "delete_data_root"),
-        (
             "Get-ChildItem ~ | Remove-Item -Recurse -Force",
             "delete_home",
         ),
@@ -58,6 +53,18 @@ fn deleting_the_big_places_is_refused() {
     ] {
         assert_eq!(kind(command), Some(expected), "{command}");
         assert!(refused(command), "{command}");
+    }
+}
+
+/// 删数据根（施工 RO-3补）：PowerShell、cmd 的写法同样认出来、问人。
+#[test]
+fn deleting_the_data_root_asks() {
+    for command in [
+        r"Remove-Item -LiteralPath C:\Users\me\.miyu -Recurse",
+        r"del C:\Users\me\.miyu\etc\config.toml",
+    ] {
+        assert_eq!(kind(command), Some("delete_data_root"), "{command}");
+        assert!(!refused(command), "{command}");
     }
 }
 

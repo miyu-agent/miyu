@@ -40,17 +40,30 @@ fn deleting_the_big_places_is_refused() {
         ("rm -rf ../..", "delete_home"),
         ("rm -rf /usr", "delete_system"),
         ("/bin/rm -r /etc/", "delete_system"),
-        ("rm -rf ~/.miyu", "delete_data_root"),
-        ("rm ~/.miyu/sessions/s1/log.jsonl", "delete_data_root"),
         ("find ~ -name x -delete", "delete_home"),
         ("find / -exec rm {} +", "delete_root"),
-        ("shred -u ~/.miyu/token", "delete_data_root"),
     ] {
         assert_eq!(kind(command), Some(expected), "{command}");
         assert!(
             first(command, &PLACES).is_some_and(Kind::refused),
             "{command}"
         );
+    }
+}
+
+/// 删数据根（施工 RO-3补，2026-11-17 项目主人定「问你，不是拦」）：照旧认出来，改成问人、归删除那一类，设置页「受保护的命令」
+/// 的删除那一项管得到。
+#[test]
+fn deleting_the_data_root_asks_as_a_delete() {
+    for command in [
+        "rm -rf ~/.miyu",
+        "rm ~/.miyu/sessions/s1/log.jsonl",
+        "shred -u ~/.miyu/token",
+    ] {
+        assert_eq!(kind(command), Some("delete_data_root"), "{command}");
+        let found = first(command, &PLACES).expect("认得出");
+        assert!(!found.refused(), "{command}：问人，不是拦");
+        assert_eq!(found.group(), Some(Group::Delete), "{command}");
     }
 }
 
