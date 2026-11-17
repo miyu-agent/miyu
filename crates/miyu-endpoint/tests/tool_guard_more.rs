@@ -186,11 +186,14 @@ async fn a_switched_off_guard_is_not_asked() {
     core.stop_extensions().await;
 }
 
+// 说不清落在哪的路径（还不存在的目录往上走）只在 Unix 上拒：Windows 上照字面消掉 `..`（`session/guard.md` 第六条）。施工 RO-3 起
+// 数据根写得进，权限策略拒的换成这一种。
+#[cfg(unix)]
 #[tokio::test]
 async fn a_guard_is_not_asked_about_its_own_tools_or_what_the_policy_refused() {
     let home = Home::new();
     let program = Program::new();
-    // 它自己登记 `own_jot`，也守着 `own_jot` 和 `jot`：`jot` 写数据根，权限策略先拒了。
+    // 它自己登记 `own_jot`，也守着 `own_jot` 和 `jot`：`jot` 写说不清落在哪的地方，权限策略先拒了。
     let tools = json!({"tools": [{"name": "own_jot", "description": "A test tool.",
         "input_schema": {"type": "object"}, "access": "write", "venues": ["local"]}]});
     let guard = waiting("acme-policy", "deny", "tools = [\"own_jot\", \"jot\"]");
@@ -205,7 +208,7 @@ async fn a_guard_is_not_asked_about_its_own_tools_or_what_the_policy_refused() {
     install_guard_with(&home, &program, &guard, Some(args));
     approve(&home, guard.id, &["tools"]);
     rewrite_capabilities(&home, guard.id);
-    let inside = json!({"path": home.root.path().join("secret.txt")}).to_string();
+    let inside = json!({"path": home.work.join("nope").join("..").join("secret.txt")}).to_string();
     let plays = vec![
         Play::calls(&[("own_jot", "{}")]),
         Play::calls(&[("jot", inside.as_str())]),
@@ -237,7 +240,8 @@ async fn a_guard_is_not_asked_about_its_own_tools_or_what_the_policy_refused() {
     core.stop_extensions().await;
 }
 
-/// 包 `id` 的清单声明 `tools`、`tool.guard` 两项（[`install_guard_with`] 只写后一项）。
+/// 包 `id` 的清单声明 `tools`、`tool.guard` 两项（[`install_guard_with`] 只写后一项）。只有 Unix 上的那一条用（施工 RO-3）。
+#[cfg(unix)]
 fn rewrite_capabilities(home: &Home, id: &str) {
     let path = home.root.path().join(format!("opt/{id}/package.toml"));
     let text = std::fs::read_to_string(&path).expect("装了");

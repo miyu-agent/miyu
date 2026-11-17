@@ -379,7 +379,7 @@ When it's written, every subscribed head first receives `model.called` (`purpose
 
 **Params**: `session`; `level`: only `full` (fully open); `read_only`: the read-only switch. Give at least one.
 
-Both modes can read the same things, the data root included (`etc/private/secrets.toml` too); read-only adds one rule: nothing can be written, and commands run in a read-only sandbox. Neither mode can write the data root: a file tool refused there tells her it is Miyu's own data and can't be changed (wording `core/permissions/forbidden`).
+Both modes can read the same things, the data root included (`etc/private/secrets.toml` too); read-only adds one rule: nothing can be written, and commands run in a read-only sandbox. Under full access the data root can be written like any other folder; only deleting the whole data root is still stopped: such a command is refused, and `trash` won't delete the data root or a folder holding it.
 
 **Response**: `{}`. A change is pushed as `session.policy_changed`: `permission` is the new setting and `from` the one before it, so a head can draw what came before this event without reading further back (older logs have no `from`). Tightening applies at once; loosening applies from the next request. Whether to ask the person before going fully open is up to the head.
 

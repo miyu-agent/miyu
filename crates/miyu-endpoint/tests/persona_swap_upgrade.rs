@@ -1,6 +1,10 @@
 //! 升级以后老会话照样换快照（施工 P-1 三补，`docs/construction/P-1-人格（三补）.md`）：会话开着的时候程序换了核心的字（这里
 //! 改资源目录里的一份），光是这样不换；再改人格，下一个回合换上，执行器手里的字跟着换：权限策略拒绝时说的是新的那一句，请求
 //! 模型的端口收到新的驱动占位。
+//!
+//! 拒绝用的是说不清落在哪的路径（还不存在的目录往上走），只在 Unix 上拒：Windows 上照字面消掉 `..`（`session/guard.md` 第六条）。
+//! 施工 RO-3 起数据根写得进，权限策略拒的换成这一种。
+#![cfg(unix)]
 
 use std::path::Path;
 use std::sync::Arc;
@@ -87,8 +91,8 @@ async fn an_upgraded_session_swaps_and_its_executor_takes_the_new_texts() {
     let resources = home.work.join("resources");
     copy_tree(&default_resources(), &resources);
     home.write("root/personas/miyu/prompts/persona.md", "You are Miyu.\n");
-    let forbidden = home.root.path().join("x.txt");
-    let wrote = json!({"file_path": forbidden, "content": "x"}).to_string();
+    let unresolvable = home.work.join("nope").join("..").join("x.txt");
+    let wrote = json!({"file_path": unresolvable, "content": "x"}).to_string();
     let script = Script::new([
         Play::Says("嗯。"),
         Play::Says("好。"),
@@ -113,8 +117,8 @@ async fn an_upgraded_session_swaps_and_its_executor_takes_the_new_texts() {
 
     // 程序升级了：两句核心的字变了。光是这样，下一个回合不换。
     std::fs::write(
-        resources.join("core/permissions/forbidden.txt"),
-        "UPGRADED: \"{path}\" is off limits.\n",
+        resources.join("core/permissions/unresolvable.txt"),
+        "UPGRADED: \"{path}\": {reason}.\n",
     )
     .expect("写得进");
     std::fs::write(

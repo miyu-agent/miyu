@@ -280,9 +280,7 @@ impl ResourceRoot {
                 uninstalled: result("uninstalled.txt")?,
             },
             permissions: PermissionTexts {
-                forbidden: core(&["permissions", "forbidden.txt"])?,
                 unresolvable: core(&["permissions", "unresolvable.txt"])?,
-                knowledge: Some(core(&["permissions", "forbidden-kb.txt"])?),
             },
             drivers: self.driver_placeholders()?,
             compaction: Some(CompactionTexts {

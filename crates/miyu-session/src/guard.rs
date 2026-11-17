@@ -2,7 +2,8 @@
 //! 模块编号 `permissions`。工具报出这次调用要碰的路径，换成真实的位置、查边界表，每一条照实际生效的那一级判，
 //! 合起来照最严的：有一条拒绝就拒绝，有一条要问人就问人。
 //!
-//! 施工 5-4 上起：读哪儿都放行（沙盒整盘能读，文件工具跟它一样），施工 RO-2 起数据根也是；数据根哪一级都写不进。A16 起（施工 LV-1）只剩完全放开、只读两级：
+//! 施工 5-4 上起：读哪儿都放行（沙盒整盘能读，文件工具跟它一样），施工 RO-2 起数据根也是；施工 RO-3 起完全放开下数据根也写得进
+//! （同别的目录），只读哪儿都不写。A16 起（施工 LV-1）只剩完全放开、只读两级：
 //! 完全放开执行命令不进沙盒；只读时这台机器的沙盒能用就放行、在沙盒里跑（执行器写规格，`crate::sandbox`），用不了的问人。
 //! 高危命令、装包卸包在完全放开下也问人；高危的里面，本人的会话在设置页「受保护的命令」关掉的那几类不问（施工 HZ-1，A18）。
 //!
@@ -106,12 +107,7 @@ impl Guard {
         lettering: Arc<Lettering>,
         (sandboxed, place, confined): (bool, Place, Option<Confined>),
     ) -> Guard {
-        let knowledge = miyu_store::root::DataRoot::at(data_root.clone()).knowledge();
-        let places = Places::here(
-            PathBuf::new(),
-            (data_root.clone(), knowledge),
-            home.as_deref(),
-        );
+        let places = Places::here(PathBuf::new(), data_root.clone(), home.as_deref());
         let real_home = home
             .as_deref()
             .map(|home| resolve(home, Some(home), "~").unwrap_or_else(|_| home.to_path_buf()));
@@ -350,13 +346,8 @@ impl Guard {
             {
                 return deny(confined.outside(&target.path));
             }
-            match mark(level, zone, target.write) {
-                Mark::Allow => {}
-                Mark::Forbidden if boundary.knowledge(&real) => {
-                    return deny(self.lettering.guard().forbidden_kb(&target.path));
-                }
-                Mark::Forbidden => return deny(self.lettering.guard().forbidden(&target.path)),
-                Mark::ReadOnly => return deny(self.lettering.guard().read_only()),
+            if mark(level, target.write) == Mark::ReadOnly {
+                return deny(self.lettering.guard().read_only());
             }
         }
         Verdict::Allow

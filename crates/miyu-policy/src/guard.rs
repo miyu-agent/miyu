@@ -1,4 +1,5 @@
-//! 权限策略拒绝时写给她的话（施工 4-3 下）：碰到了数据根、路径说不清在哪；只读时的写，用内核现成的那一句。
+//! 权限策略拒绝时写给她的话（施工 4-3 下）：路径说不清在哪；只读时的写，用内核现成的那一句。碰到数据根那两句施工 RO-3 起
+//! 不要了：完全放开下数据根同别的目录一样写得进。
 //! 和执行器替工具写的两句一样，从快照里拿。
 
 use std::collections::BTreeMap;
@@ -9,35 +10,14 @@ use miyu_kernel::tool::Worded;
 
 use crate::snapshot::{BuildError, Snapshot};
 
-/// 权限策略拒绝时写给她的三句。
+/// 权限策略拒绝时写给她的两句。
 #[derive(Debug, Clone)]
 pub struct GuardTexts {
-    forbidden: Template,
-    /// 知识库里的文档（施工 K-3 补）：以前的快照没有，照 `forbidden`。
-    knowledge: Option<Template>,
     unresolvable: Template,
     read_only: Template,
 }
 
 impl GuardTexts {
-    /// `path` 在数据根里。说法是 `core/permissions/forbidden`（施工 4-5 上）。
-    pub fn forbidden(&self, path: &str) -> Worded {
-        word(
-            &self.forbidden,
-            "core/permissions/forbidden",
-            &[("path", path)],
-        )
-    }
-
-    /// `path` 是数据根里知识库的文档（施工 K-3 补）：指她去用知识库的工具。说法是 `core/permissions/forbidden-kb`；以前的快照
-    /// 没有这一句的照 [`GuardTexts::forbidden`]。
-    pub fn forbidden_kb(&self, path: &str) -> Worded {
-        match &self.knowledge {
-            Some(template) => word(template, "core/permissions/forbidden-kb", &[("path", path)]),
-            None => self.forbidden(path),
-        }
-    }
-
     /// `path` 换不成真实的位置，因为 `reason`。说法是 `core/permissions/unresolvable`。
     pub fn unresolvable(&self, path: &str, reason: &str) -> Worded {
         word(
@@ -54,7 +34,7 @@ impl GuardTexts {
 }
 
 impl Snapshot {
-    /// 权限策略拒绝时写给她的三句。
+    /// 权限策略拒绝时写给她的两句。
     ///
     /// # Errors
     ///
@@ -64,12 +44,6 @@ impl Snapshot {
         let read_only = &self.core.tool_results.read_only;
         let build = || -> Result<GuardTexts, TemplateError> {
             Ok(GuardTexts {
-                forbidden: parse(&texts.forbidden, &[("path", "")])?,
-                knowledge: texts
-                    .knowledge
-                    .as_deref()
-                    .map(|text| parse(text, &[("path", "")]))
-                    .transpose()?,
                 unresolvable: parse(&texts.unresolvable, &[("path", ""), ("reason", "")])?,
                 read_only: parse(read_only, &[])?,
             })

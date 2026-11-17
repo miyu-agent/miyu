@@ -124,7 +124,7 @@ async fn read_only_still_refuses_a_write_into_an_added_dir() {
 }
 
 /// 数据根里照 XDG 的几处（施工 Y-11 上，pictures 这些）：落在数据根里也同工作区，写进去不用问人，还没建的也算；数据根
-/// 别处照旧写不进。
+/// 别处完全放开下也写得进（施工 RO-3）。
 #[tokio::test]
 async fn a_write_into_the_owner_s_pictures_runs_without_asking() {
     let home = Home::outside_temp();
@@ -146,5 +146,5 @@ async fn a_write_into_the_owner_s_pictures_runs_without_asking() {
         .await
         .expect("会话在跑");
     until_turn_ends(&mut pushes).await;
-    assert_eq!(kit.edit.calls().len(), 1, "数据根别处的没放行");
+    assert_eq!(kit.edit.calls().len(), 2, "数据根别处完全放开下也放行");
 }

@@ -47,14 +47,7 @@ fn touch(root: &Path, relative: &str) {
 
 /// 不挡任何路径的边界表：工作区就是这个目录本身，数据根指到一个不存在的地方。
 fn permissive(root: &Path) -> Boundary {
-    let places = Places::here(
-        root.to_path_buf(),
-        (
-            root.join("does-not-exist"),
-            root.join("does-not-exist").join("kb"),
-        ),
-        None,
-    );
+    let places = Places::here(root.to_path_buf(), root.join("does-not-exist"), None);
     Boundary::new(&places)
 }
 
@@ -251,11 +244,7 @@ fn entries_in_the_forbidden_zone_are_skipped_except_the_workspace() {
     touch(root, "data/root/workspace/w.txt");
     touch(root, "keep.txt");
     // 工作区在数据根里面：照样进。
-    let places = Places::here(
-        root.join("data/root/workspace"),
-        (root.join("data"), root.join("data").join("kb")),
-        None,
-    );
+    let places = Places::here(root.join("data/root/workspace"), root.join("data"), None);
     let boundary = Boundary::new(&places);
 
     let index = Index::start(root.clone(), boundary, CAP, no_errors);

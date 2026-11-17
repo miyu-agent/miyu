@@ -49,7 +49,7 @@ fn other_denials_are_not_about_approval() {
         "completed",
         vec![
             denied("c1", "core/tool-results/read-only"),
-            denied("c2", "core/permissions/forbidden"),
+            denied("c2", "core/permissions/unresolvable"),
         ],
     );
     let Fed { step, err, .. } = feed(&plan, false, &turn);

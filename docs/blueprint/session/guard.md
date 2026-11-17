@@ -11,8 +11,8 @@
 | `crates/miyu-session/src/guard.rs` | 判一次调用：实际生效的那一级、判法表、不报路径的、问人时提的规则和说明、拒绝 |
 | `crates/miyu-fs/src/resolve.rs` | 换成真实的位置，`~` 接家目录（`fs.md`） |
 | `crates/miyu-fs/src/boundary.rs` | 边界表：一个真实的位置落在哪一片（`fs.md`） |
-| `crates/miyu-policy/src/guard.rs` | 拒绝时写给她的三句，造会话、载入时从策略快照里拿 |
-| `resources/core/permissions/forbidden.txt`、`unresolvable.txt`，`resources/core/tool-results/read-only.txt` | 三句的原文 |
+| `crates/miyu-policy/src/guard.rs` | 拒绝时写给她的两句，造会话、载入时从策略快照里拿 |
+| `resources/core/permissions/unresolvable.txt`，`resources/core/tool-results/read-only.txt` | 两句的原文（写数据根的那两句 `forbidden.txt`、`forbidden-kb.txt` 施工 RO-3 删了） |
 | `resources/core/permissions/not-in-venue.txt`（施工 O-31 前） | 本机的会话里拒绝在场所里做的事的那一句：不进策略快照，本机的会话造、载入时读（`crates/miyu-session/src/open.rs` 的 `place`） |
 | `crates/miyu-session/src/guard/untargeted.rs` | 不报路径的调用（第四条）：照访问类别、在场所里做的事（施工 5-18 从 `guard.rs` 挪出来：那边到了 500 行） |
 | `crates/miyu-session/src/guard/hazardous.rs` | 认出了高危的怎么判：灭顶的拒、别的问人不提规则（施工 X-10 上从 `guard.rs` 挪出来时叫 `asking.rs`，还管报路径的问人、放行规则，施工 PV-RM 随私密目录去掉，改名） |
@@ -24,7 +24,7 @@
 
 ### 对外的样子
 
-在 crate 里面，不对外。一个会话一份，造会话、载入时造：工具目录、数据根、系统的家目录（读不出来的是空的）、拒绝时的三句、这台机器上的沙盒能不能用（核心起来时探的，`core.md`；施工 5-4 上）、会话在不在场所里（`Place`，施工 O-31 前：场所是 `local` 的是本机的会话，带着拒绝的那一句；读不出那一句的造不成、载入不了，`shipped text not readable`）。
+在 crate 里面，不对外。一个会话一份，造会话、载入时造：工具目录、数据根、系统的家目录（读不出来的是空的）、拒绝时的两句、这台机器上的沙盒能不能用（核心起来时探的，`core.md`；施工 5-4 上）、会话在不在场所里（`Place`，施工 O-31 前：场所是 `local` 的是本机的会话，带着拒绝的那一句；读不出那一句的造不成、载入不了，`shipped text not readable`）。
 
 判一次交进来的：工具名、修正过的参数、这一轮的工作目录、实际生效的权限（级别 `level`，只读开关 `read_only`）。交回的结论（`Verdict`）：
 
@@ -49,7 +49,7 @@ A16 起只剩这两级（`11-权限与沙盒.md` A16，施工 LV-1），代码�
 |---|---|
 | 能读能写（`Writable`） | 工作区、加进来的目录（施工 5-10 上）、临时目录 |
 | 只能读（`Readable`） | 系统目录、工具链目录（只禁写的名单、受保护的路径在施工 LV-5 去掉了，`11-权限与沙盒.md` A17：工作区里的 `.git/hooks` 这些照工作区算） |
-| 数据根（`DataRoot`） | Miyu 的数据根：读得到，哪一级都写不进（施工 RO-2，2026-11-16 项目主人定：只读就是完全放开减去写，数据根两种模式都放开读；原来叫 `Forbidden`、读写都拒） |
+| 数据根（`DataRoot`） | Miyu 的数据根：本人的会话照级别判，同别的目录（施工 RO-3，2026-11-17 项目主人定：文件工具拦得住、命令拦不住，等于没保护；施工 RO-2 到 RO-3 之间读得到、哪一级都写不进，再以前叫 `Forbidden`、读写都拒）。只碰得到自己工作区的会话碰不到它；头那一边的端点照它不给 |
 | 单独放开只读（`Shelf`） | 数据根里开着的技能文件夹（施工 X-10 上，`skills.md`「技能」第 3 条）：造会话、载入时照这一刻找到的技能放（`Guard::with_shelves`） |
 | 边界以外（`Outside`） | 别的 |
 
@@ -89,10 +89,10 @@ A16 起只剩这两级（`11-权限与沙盒.md` A16，施工 LV-1），代码�
    - 只能读的：下表的系统目录；家目录下的 `.cargo`、`.rustup`、`.npm`、`.gitconfig`；环境变量 `CARGO_HOME`、`RUSTUP_HOME` 设了、不是空的，它们指到的地方。家目录不知道的，工具链目录只算环境变量指到的。
 2. 每一片也换成真实的位置；不存在、换不成的那一片不算。
 3. 照这个先后，先对上的算：
-   0. 最深的那一片算（施工 5-14 改）：工作区是 `~` 这种包住数据根、开着的技能文件夹的，那几处照下面它们自己那一条算（数据根、技能文件夹都只读）；工作区落在它们里面的才照第 1 条。
+   0. 最深的那一片算（施工 5-14 改）：工作区是 `~` 这种包住数据根、开着的技能文件夹的，那几处照下面它们自己那一条算；工作区落在它们里面的才照第 1 条。
    1. 在工作区里：能读能写。
-   2. 在数据根里：读得到、写不进。工作区退回到了数据根里的 `root/workspace/` 的，那一片照第 1 条算。
-   3. 在加进来的哪一个目录里：照第 1 条（施工 5-10 上）。排在数据根后面：落进了数据根的（报来以后被换成了链接），数据根照样写不进。
+   2. 在数据根里：数据根那一片。工作区退回到了数据根里的 `root/workspace/` 的，那一片照第 1 条算。
+   3. 在加进来的哪一个目录里：照第 1 条（施工 5-10 上）。排在数据根后面：落进了数据根的（报来以后被换成了链接），照数据根算。
    4. 在临时目录里：能读能写。数据根可能就在临时目录里（测试、`MIYU_HOME` 指到那里），所以数据根排在前面。
    5. 在只能读的哪一片里：只能读。
    6. 别的：边界以外。
@@ -106,22 +106,14 @@ A16 起只剩这两级（`11-权限与沙盒.md` A16，施工 LV-1），代码�
 | Windows | `%SystemRoot%`、`%ProgramFiles%`、`%ProgramFiles(x86)%`，没设的、空的不算 |
 | 别的 Unix | 一个都没有：要读就问人 |
 
-**3. 判法表**：一条路径，照实际生效的那一级。
+**3. 判法表**：一条路径，照实际生效的那一级；本人的会话不看落在哪一片（施工 RO-3 起），边界表只给只碰得到自己工作区的会话用（第四条末）。
 
 | 这一条是 | 完全放开 | 只读 |
 |---|---|---|
-| 数据根里的读 | 放行 | 放行 |
-| 数据根里的写 | 拒绝 | 拒绝 |
-| 放开只读的技能文件夹里的读 | 放行 | 放行 |
-| 放开只读的技能文件夹里的写 | 拒绝 | 拒绝 |
-| 能读能写那几片里的读 | 放行 | 放行 |
-| 能读能写那几片里的写 | 放行 | 拒绝：只读 |
-| 只能读那几片里的读 | 放行 | 放行 |
-| 只能读那几片里的写 | 放行 | 拒绝：只读 |
-| 边界以外的读 | 放行 | 放行 |
-| 边界以外的写 | 放行 | 拒绝：只读 |
+| 读（数据根、技能文件夹也是） | 放行 | 放行 |
+| 写（数据根、技能文件夹也是） | 放行 | 拒绝：只读 |
 
-所以报路径的调用不问人（施工 LV-1 去掉了工作区那一列；施工 PV-RM 去掉了最后一种：只读时读私密目录）。数据根的读施工 RO-2 起放行（原来哪一级都拒）：只读和完全放开读得到的一样多，只差不能写。
+所以报路径的调用不问人（施工 LV-1 去掉了工作区那一列；施工 PV-RM 去掉了最后一种：只读时读私密目录）。数据根的读施工 RO-2 起放行，写施工 RO-3 起完全放开下放行（2026-11-17 项目主人定：文件工具拦得住、命令拦不住，等于没保护；只读照旧哪儿都不写）。删整个数据根照旧拦：`shell` 的高危命令 `delete_data_root` 灭顶直接拒（第四条末），`trash` 不删数据根和装着它的（`tools/trash.md`）。
 
 只读时访问类别要写入的调用，内核在交给链之前就拦下了（`kernel/session.md`）；走到这里的写，也拒绝。
 
@@ -172,11 +164,10 @@ A16 起只剩这两级（`11-权限与沙盒.md` A16，施工 LV-1），代码�
 
 | 什么时候 | 写给她的一句 | 说法 |
 |---|---|---|
-| 要写数据根 | `"{path}" is inside Miyu's own data, which no tool can change.` | `core/permissions/forbidden`，字段 `path`（施工 RO-2 起只说改：读放开了） |
 | 换不成真实的位置 | `Can't tell where "{path}" points: {reason}.` | `core/permissions/unresolvable`，字段 `path`、`reason` |
 | 只读的时候要写 | `Not run: the session is read-only.` | `core/tool-results/read-only` |
 
-- 三句的原文行尾都带换行；造会话、载入时拿空的字段试换过一次，要了不该有的字段的，会话造不成、载入不了（`policy.md`）。
+- 两句的原文行尾都带换行；造会话、载入时拿空的字段试换过一次，要了不该有的字段的，会话造不成、载入不了（`policy.md`）。
 - `path` 是工具报的原样，不是换过的真实位置。换进去的字段照模板转义（`kernel/request.md`）；说法里的字段是原样的。
 - `reason` 是换不成的原因，英文：
 
@@ -201,7 +192,6 @@ A16 起只剩这两级（`11-权限与沙盒.md` A16，施工 LV-1），代码�
 
 | 说法 | 中文 | 英文 |
 |---|---|---|
-| `core/permissions/forbidden` | 这是 Miyu 自己的数据，不能改 | Miyu's own data, can't be changed |
 | `core/permissions/unresolvable` | 说不清它指向哪里：{reason} | can't tell where it points: {reason} |
 | `core/tool-results/read-only` | 只读模式，未执行 | Read-only mode, not run |
 | `core/permissions/not-in-venue`（施工 O-31 前） | 只能在群聊、私聊里用 | Only works in a group or private chat |
@@ -222,7 +212,7 @@ A16 起只剩这两级（`11-权限与沙盒.md` A16，施工 LV-1），代码�
 | `crates/miyu-policy/src/hazard/tests.rs`、`hazard/lex/tests.rs`（施工 5-17） | 三类各几条认得出、拒的和问的分对；连写、外壳、`sh -c`、`eval`、替换里的认得出；平常的删、git 不误报；拆命令的边界、引号、反斜杠、注释、替换、重定向（读进来的、文件描述符不是参数） |
 | `crates/miyu-policy/src/hazard/tests/fresh.rs`（施工 HZ-2） | `x=$(mktemp …)` 以后删 `$x`、`"$x"`、`${x}`、`"${x}"` 不问，几种 `mktemp` 写法、反引号、`-u` 都认；带后缀的、赋值前后拼了字或里面不止一条 `mktemp`、参数带变量的、中间改过的（赋值、`read`、`for`、`printf -v`、`declare -n`、`${x:=…}`、算术）、赋值不一定跑到的（分支、`&&`、`\|\|`、括号、花括号、`&`、`case`、管道）、循环和函数里改的、有 `eval`、`source`、`trap`、`IFS` 的、跨命令的、`sh -c` 和替换里的、`find`、别的命令替换照旧判；同一个 `rm` 里别的目标照原规矩、最严者胜；`$(echo /)x` 不当 `$x` |
 | `crates/miyu-policy/src/hazard/tests/groups.rs`（施工 HZ-1） | 问人的十种正好分进五类，直接拒的七种和看不透的不归类；套得太深的单列一种、对外的写法是 `delete_unresolved`，八层还看得透，目标运行时才知道的删除照旧归「递归删除」；一条命令里认出几种问人的全交回、照先后、不重复，有拒的只交回拒的那一种 |
-| `crates/miyu-session/tests/guard.rs` | 相对路径照工作目录接、工作区里还不存在的也能写；越界的读哪一级都放行（施工 5-4 上）；数据根哪一级都读得到、写拒、写对了那一句和说法（施工 RO-2）；完全放开越界的写不问；执行命令（施工 LV-1）：完全放开沙盒能不能用都照跑，只读沙盒能用不问、用不了问人（没人能确认就拒）；几条路径照最严的，有一条要写数据根就拒、不问；指向不存在处的链接拒绝、写对了那一句和说法；`~` 照家目录换，完全放开照写、工具拿到的判过的位置是家目录下那一个；`trash` 判的是链接本身：工作区里指向不存在处的、指进数据根的、指到外面的链接都放行 |
+| `crates/miyu-session/tests/guard.rs` | 相对路径照工作目录接、工作区里还不存在的也能写；越界的读哪一级都放行（施工 5-4 上）；数据根哪一级都读得到、完全放开写得进、只读写拒（施工 RO-2、RO-3）；完全放开越界的写不问；执行命令（施工 LV-1）：完全放开沙盒能不能用都照跑，只读沙盒能用不问、用不了问人（没人能确认就拒）；几条路径照最严的，有一条拒就拒、不问；指向不存在处的链接拒绝、写对了那一句和说法；`~` 照家目录换，完全放开照写、工具拿到的判过的位置是家目录下那一个；`trash` 判的是链接本身：工作区里指向不存在处的、指进数据根的、指到外面的链接都放行 |
 | `crates/miyu-session/src/guard/tests.rs` 的 `a_venue_action_runs_only_in_a_venue`、`crates/miyu-session/tests/guard_venue.rs`（施工 O-31 前） | 在场所里做的事：场所会话（群、私聊）里放行、不问人，只读开着、没人能确认也一样；本机的会话拒绝，`by` 是 `permissions`，写给她出厂的那一句、说法对，工具没跑；载入以后照样；`venues` 有 `local` 的在本机的会话里照 `outbound`：完全放开跑，只读没人能确认的拒、说的不是「不在场所里」（施工 O-31 补） |
 | `crates/miyu-endpoint/tests/provide_venue.rs`（施工 O-31 前，O-31 补改） | 契约：扩展登记 `venue` 的工具收；`venues` 有 `local` 的本机的会话调到它照 `outbound` 判，只读时问人，人点头以前扩展收不到 `tool.call`（完全放开直接发，施工 LV-1）。扩展登记的工具 `venues` 没有 `local` 的本来就不在本机会话的工具面上，「不在场所里」那一句只剩给没写 `venues` 的工具兜底（`guard_venue.rs`） |
 | `crates/miyu-session/tests/guard_confined.rs`、`guard_venue.rs`、`src/sandbox/tests.rs`（施工 Y-2 下①、SU-4） | 关起来的会话（群）：工作区里读得到，别处拒，命令拒；载入以后、分叉出来的照样关着；装不了包；主人本人的私聊、本机的会话不关 |
@@ -230,7 +220,7 @@ A16 起只剩这两级（`11-权限与沙盒.md` A16，施工 LV-1），代码�
 | `crates/miyu-session/tests/sockets_off.rs`（施工 MB-1，自己一个进程） | 套接字管不住的机器上群会话不跑命令，本机的会话照跑；管得住以后照跑 |
 | `crates/miyu-session/tests/guard_checked.rs`（施工 5-18） | 判过的真实位置交到工具手里：报的几条照先后（相对的、外面的、还不存在的），不报路径的是空的；脚本里调的一样带；只读时 `read` 读工作区里指到 `~/.ssh` 的链接，策略放行、扩展挂的守卫要问人（施工 PV-RM 起报路径的调用策略不问，换成守卫问），问的时候链接被换成指进数据根，人点了允许，`read` 不读、说路径在判过以后变了（只在 Unix 上） |
 | `crates/miyu-session/tests/guard_dirs.rs` | 加进来的目录（施工 5-10 上）：里面写不用问、只读照旧拒绝 |
-| `crates/miyu-session/tests/secrets_readable.rs`（施工 PV-RM，RO-2 改） | 数据根里的密钥 `etc/private/secrets.toml`：出厂的 `read` 完全放开、只读都读得到；`write` 在数据根里建新文件、`edit` 改密钥，完全放开、只读都拒，拒的话只说改，文件不动；只读时读家目录里的 `~/.ssh/config` 不问人、读得到；只读的沙盒规格什么都不藏（家目录里有 `.ssh`、`.claude`、`.config/gh` 也不藏，数据根也不藏）。施工 PV-RM 时叫 `secrets_unreachable.rs`、守读不到；施工 5-13 到 PV-RM 之间守私密目录的 `guard_private.rs`、`guard_grants.rs` 随它删了 |
+| `crates/miyu-session/tests/secrets_readable.rs`（施工 PV-RM，RO-2、RO-3 改） | 数据根里的密钥 `etc/private/secrets.toml`：出厂的 `read` 完全放开、只读都读得到；`write` 在数据根里建新文件、`edit` 改密钥，完全放开写得进（施工 RO-3），只读拒、文件不动；只读时读家目录里的 `~/.ssh/config` 不问人、读得到；只读的沙盒规格什么都不藏（家目录里有 `.ssh`、`.claude`、`.config/gh` 也不藏，数据根也不藏）。施工 PV-RM 时叫 `secrets_unreachable.rs`、守读不到；施工 5-13 到 PV-RM 之间守私密目录的 `guard_private.rs`、`guard_grants.rs` 随它删了 |
 | `crates/miyu-session/tests/guard_protected.rs`（施工 LV-5） | 受保护的路径撤了以后：工作区里的 `.git/hooks`、`.git/config`、`.vscode`、`Makefile` 和旁边平常的文件判的一样（完全放开读写都不问，只读读放行、写拒）；老配置里的 `sandbox.readonly.*` 不起作用 |
 | `crates/miyu-fs/tests/boundary.rs` | 工作区能读能写、`.git/hooks` 这些和工作区里别的一样（只禁写的名单施工 LV-5 撤了）；数据根在临时目录里照样是数据根那一片；工作区退回到数据根里照样是工作区；临时目录能读能写、系统和工具链只能读、别的在边界以外；不存在的一片不算；大小写不分的平台上数据根不分大小写；这一片自己也算；这台机器的系统目录、临时目录；`~/.ssh` 和家目录别处一样在边界以外，工作区包住数据根时数据根照旧是数据根那一片（施工 PV-RM） |
 | `crates/miyu-fs/tests/resolve.rs` | 相对路径、`~`、还不存在的照上级、链接照指向的地方、Windows 的两种分隔符和目录联接 |

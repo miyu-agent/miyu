@@ -4,7 +4,7 @@
 //! 加进来的目录（照工作区算，施工 5-10 上）里面的照它们自己那一片；工作区落在数据根里的照工作区。再往后是临时目录、系统和
 //! 工具链目录、边界以外。别的程序的私密目录这一片去掉了（施工 PV-RM，2026-11-16 项目主人定：只读就是不让写，不替人藏东西）。
 
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 
 /// 一个真实的位置落在哪一片。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -13,11 +13,11 @@ pub enum Zone {
     Writable,
     /// 只能读：系统目录、工具链目录。
     Readable,
-    /// Miyu 的数据根：文件工具两种模式都读得到，哪一级都写不进（施工 RO-2，2026-11-16 项目主人定：只读就是完全放开减去写，
-    /// 数据根放开读）。头列文件、找文件、读文件、附件（协议端点）照旧不给这一片，由端点自己判。
+    /// Miyu 的数据根：文件工具两种模式都读得到（施工 RO-2），完全放开下也写得进、同别的目录（施工 RO-3，2026-11-17 项目主人
+    /// 定）。头列文件、找文件、读文件、附件（协议端点）照旧不给这一片，由端点自己判；只碰得到自己工作区的会话碰不到它。
     DataRoot,
-    /// 数据根里单独放开的（施工 X-10 上，开着的技能文件夹）：能读，写不行，问人也不行。只碰得到自己工作区的会话也读得到它，
-    /// 读不到数据根别处。
+    /// 数据根里单独放开的（施工 X-10 上，开着的技能文件夹）：只碰得到自己工作区的会话也读得到它（写不行），读不到数据根别处。
+    /// 本人的会话照级别判，同数据根。
     Shelf,
     /// 边界以外：要碰就得问人。
     Outside,
@@ -32,8 +32,6 @@ pub struct Places {
     pub dirs: Vec<PathBuf>,
     /// Miyu 的数据根。
     pub data_root: PathBuf,
-    /// 数据根里放知识库的目录（施工 FH-2：调的一方照 `DataRoot::knowledge` 给，这一层不认数据根的布局）；下面一个库一个目录。
-    pub knowledge: PathBuf,
     /// 临时目录。
     pub temp: PathBuf,
     /// 只能读的：系统目录、工具链目录。
@@ -74,11 +72,7 @@ const TOOLCHAINS: &[&str] = &[".cargo", ".rustup", ".npm", ".gitconfig"];
 impl Places {
     /// 照这台机器：临时目录、系统目录、家目录下的工具链目录，`CARGO_HOME`、`RUSTUP_HOME` 指到的地方。
     /// 家目录读不出来的，工具链目录只算环境变量指到的。
-    pub fn here(
-        workspace: PathBuf,
-        (data_root, knowledge): (PathBuf, PathBuf),
-        home: Option<&Path>,
-    ) -> Places {
+    pub fn here(workspace: PathBuf, data_root: PathBuf, home: Option<&Path>) -> Places {
         let mut readable = system_dirs();
         if let Some(home) = home {
             readable.extend(TOOLCHAINS.iter().map(|name| home.join(name)));
@@ -92,7 +86,6 @@ impl Places {
             workspace,
             dirs: Vec::new(),
             data_root,
-            knowledge,
             temp: std::env::temp_dir(),
             readable,
             shelves: Vec::new(),
@@ -124,7 +117,6 @@ pub struct Boundary {
     workspace: Option<PathBuf>,
     dirs: Vec<PathBuf>,
     data_root: Option<PathBuf>,
-    knowledge: Option<PathBuf>,
     temp: Option<PathBuf>,
     readable: Vec<PathBuf>,
     shelves: Vec<PathBuf>,
@@ -139,7 +131,6 @@ impl Boundary {
             workspace: real(&places.workspace),
             dirs: places.dirs.iter().filter_map(|dir| real(dir)).collect(),
             data_root: real(&places.data_root),
-            knowledge: real_below(&places.knowledge),
             temp: real(&places.temp),
             readable: places.readable.iter().filter_map(|dir| real(dir)).collect(),
             shelves: places.shelves.iter().filter_map(|dir| real(dir)).collect(),
@@ -190,24 +181,6 @@ impl Boundary {
         Zone::Outside
     }
 
-    /// 真实的位置 `path` 是不是数据根里某个知识库的文档（施工 K-3 补）：放知识库的目录（[`Places::knowledge`]）下、某个库里
-    /// 面的。拒绝时照它换一句，指她去用知识库的工具。
-    #[must_use]
-    pub fn knowledge(&self, path: &Path) -> bool {
-        let Some(inside) = self
-            .knowledge
-            .as_ref()
-            .and_then(|root| path.strip_prefix(root).ok())
-        else {
-            return false;
-        };
-        let parts: Vec<Component<'_>> = inside.components().collect();
-        matches!(
-            parts.as_slice(),
-            [Component::Normal(_), Component::Normal(_), ..]
-        )
-    }
-
     /// 走目录的工具（`fs.find`，施工 W-2）要不要挡住往下走进 `dir`：`dir` 落进数据根那一片、又没有
     /// 工作区、加进来的目录藏在它底下——工作区常常就在数据根里面（默认的会话就在那里干活），得穿过数据根才能
     /// 走到它，但数据根自己、旁的子目录不许进（施工 W-2）。
@@ -229,19 +202,6 @@ impl Boundary {
 /// 换成真实的位置；不存在、读不了的不算。
 fn real(path: &Path) -> Option<PathBuf> {
     std::fs::canonicalize(path).ok()
-}
-
-/// 同 [`real`]，还没建的几层照最近一层已经在的上级的真实位置接上后面的名字：放知识库的目录用到才建（施工 FH-2）。
-fn real_below(path: &Path) -> Option<PathBuf> {
-    let mut missing = Vec::new();
-    let mut at = path;
-    loop {
-        if let Some(found) = real(at) {
-            return Some(missing.iter().rev().fold(found, |dir, name| dir.join(name)));
-        }
-        missing.push(at.file_name()?);
-        at = at.parent()?;
-    }
 }
 
 /// 真实的位置 `path` 在不在目录 `root` 里（`root` 自己也算）：大小写不分的平台上不分大小写，免得换个大小写就

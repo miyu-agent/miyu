@@ -85,7 +85,7 @@ async fn her_own_attachments_are_readable_and_nobody_elses() {
     let mine = put(&home, handle.id().as_str(), "截图.png");
     let theirs = put(&home, other.id().as_str(), "别人的.png");
     assert!(Path::new(&mine).is_file());
-    // 载入以后（附件是收到话时才落的，这一刻目录已经在）：读自己的放行，写自己的拒，读别人的照数据根放行（施工 RO-2）、写别人的拒。
+    // 载入以后（附件是收到话时才落的，这一刻目录已经在）：读写自己的、别人的都照数据根，完全放开下都放行（施工 RO-2、RO-3）。
     let again = Script::new([
         one("read", &mine),
         one("write", &mine),
@@ -100,15 +100,10 @@ async fn her_own_attachments_are_readable_and_nobody_elses() {
         2,
         "读自己的、别人的附件都放行：{log:#?}"
     );
-    assert!(write.calls().is_empty(), "写一律拒（完全放开也拒）");
+    assert_eq!(write.calls().len(), 2, "完全放开写得进（施工 RO-3）");
     assert_eq!(
         statuses(&log)[statuses(&log).len() - 4..],
-        [
-            ToolStatus::Ok,
-            ToolStatus::Denied,
-            ToolStatus::Ok,
-            ToolStatus::Denied
-        ],
-        "别的会话的附件照数据根：读得到、写不进"
+        vec![ToolStatus::Ok; 4],
+        "别的会话的附件照数据根"
     );
 }

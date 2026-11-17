@@ -1,10 +1,11 @@
 //! 扩展的工具在规格里的两样声明（施工 XG-1 上，设计 `63-扩展工具的效果和声明.md` 第二、三、六节）：真核心走一遍。
 //!
-//! - `paths`：和内置 `edit` 走同一张判法表（以前扩展的工具不报路径，照「不报路径的调用」放行）：写进数据根的当场拒，扩展收不到
+//! - `paths`：和内置 `edit` 走同一张判法表（以前扩展的工具不报路径，照「不报路径的调用」放行）：策略拒的（说不清落在哪的）当场拒，扩展收不到
 //!   `tool.call`；放行的 `tool.call` 带 `checked`，是链判过的真实位置（A16 起完全放开下写工作区外不再问人，施工 LV-1）；
 //! - `background_parameters`：后台运行关着的会话，工具面上去掉那几个参数；开着的照旧。不写这几格的工具，参数格式逐字节照登记的。
 
 use std::path::Path;
+#[cfg(unix)]
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -32,6 +33,7 @@ async fn lines(path: &Path, n: usize) {
 }
 
 /// 扩展收到的 `tool.call`，照先后。
+#[cfg(unix)]
 fn calls(path: &Path) -> Vec<Value> {
     read(path)
         .lines()
@@ -41,6 +43,7 @@ fn calls(path: &Path) -> Vec<Value> {
 }
 
 /// 日志里的确认请求有几条。
+#[cfg(unix)]
 fn asked(home: &Home, session: &str) -> usize {
     logged(home, session)
         .iter()
@@ -48,8 +51,11 @@ fn asked(home: &Home, session: &str) -> usize {
         .count()
 }
 
+// 说不清落在哪的路径（还不存在的目录往上走）只在 Unix 上拒：Windows 上照字面消掉 `..`（`session/guard.md` 第六条）。施工 RO-3 起
+// 数据根写得进，权限策略拒的换成这一种。
+#[cfg(unix)]
 #[tokio::test]
-async fn a_declared_write_into_the_data_root_is_refused_before_the_extension_hears_of_it() {
+async fn a_declared_write_the_policy_refuses_never_reaches_the_extension() {
     let home = Home::new();
     let program = Program::new();
     let (path, keep) = record(&home, "writer");
@@ -68,8 +74,9 @@ async fn a_declared_write_into_the_data_root_is_refused_before_the_extension_hea
         &steps(&[&keep, "hello", &format!("ask:provide:{offered}"), "serve"]),
     );
     let outside = home
-        .root
-        .path()
+        .work
+        .join("nope")
+        .join("..")
         .join("x.txt")
         .to_string_lossy()
         .into_owned();
@@ -95,12 +102,12 @@ async fn a_declared_write_into_the_data_root_is_refused_before_the_extension_hea
     let session = client.create("c1", &home.work.to_string_lossy()).await;
     client.say("c2", &session, "写一下").await;
     home.until_turns(&session, 1).await;
-    assert_eq!(asked(&home, &session), 0, "数据根不问人，直接拒");
+    assert_eq!(asked(&home, &session), 0, "说不清落在哪的不问人，直接拒");
     let sent = calls(&path);
     assert_eq!(
         sent.len(),
         1,
-        "工作区里的照常发；数据根里的扩展收不到：{sent:?}"
+        "工作区里的照常发；拒了的扩展收不到：{sent:?}"
     );
     let inside = std::fs::canonicalize(&home.work)
         .expect("在")

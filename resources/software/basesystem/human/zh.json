@@ -145,7 +145,7 @@
     "edit/not-text": "不是文本文件",
     "trash/trashed": "移进了回收站",
     "trash/unavailable": "放不进回收站，没删",
-    "trash/protected": "工作目录、它的上级、家目录、根目录不能删",
+    "trash/protected": "工作目录、它的上级、家目录、Miyu 的数据、根目录不能删",
     "trash/lost": "删了，可回收站里找不到",
     "trash/failed": "删不了：{error}",
     "show/shown": "展示给了用户",

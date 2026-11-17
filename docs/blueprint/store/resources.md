@@ -58,7 +58,7 @@
 │   ├── facts/env.txt、permission.txt、reply-cut.txt、session.txt、permission-changed.txt、preset-changed.txt
 │   ├── facts/reminder-open.txt、reminder-close.txt  角色扮演提示的包装（施工 P-1 补）
 │   ├── tool-results/<哪一句>.txt         15 份
-│   ├── permissions/forbidden.txt、unresolvable.txt
+│   ├── permissions/unresolvable.txt
 │   ├── drivers/<哪一句>.txt              5 份
 │   ├── compaction/<哪一份>.txt           摘要指令、代码写的几段、重读的文件的头尾、截短重试的两份、隔离式那一句 system，12 份
 │   ├── jobs/<哪一份>.txt                 两种回报的写法，11 份（施工 7-2）；回报截在中间的那一行（施工 7-6）；留言的标签，2 份（施工 7-7）；人停的那一句（施工 7-2 补）
@@ -124,7 +124,7 @@
 | `core/turn-ended/interrupted.txt`、`error.txt`、`step_limit.txt`、`aborted.txt`、`restarted.txt` | 回合没走完的几句 |
 | `core/facts/env.txt`、`permission.txt`、`reply-cut.txt`、`session.txt`、`permission-changed.txt`、`preset-changed.txt` | 事实的模板（`session.txt` 施工 1-13 再补，`permission-changed.txt` 施工 2-7 补，`preset-changed.txt` 施工 DM-8） |
 | `core/tool-results/unknown.txt`、`not-an-object.txt`、`cancelled-before.txt`、`cancelled-running.txt`、`skipped.txt`、`read-only.txt`、`denied.txt`、`denied-with-reason.txt`、`unattended.txt`、`question-interrupted.txt`、`question-voided.txt`、`question-unattended.txt`、`restarted.txt`、`unavailable.txt`、`crashed.txt` | 替工具写的结果 |
-| `core/permissions/forbidden.txt`、`unresolvable.txt` | 权限策略拒绝时的话（`session/guard.md`） |
+| `core/permissions/unresolvable.txt` | 权限策略拒绝时的话（`session/guard.md`） |
 | `core/drivers/image-omitted.txt`、`file-omitted.txt`、`no-output.txt`、`tool-attachments.txt`、`tool-attachments-only.txt`、`file-open.txt`、`file-cut.txt`、`file-close.txt`、`image-open.txt`、`image-close.txt`、`image-omitted-named.txt`、`image-description-open.txt`、`image-description-open-named.txt`、`image-description-close.txt` | 驱动的占位，文本文件照字放进消息的三句（施工 3-9 三补），带名字的图片的三句（施工 3-9 四补），替它看的图的三句标签（施工 8-17，`drivers/openai-chat.md` 第 9 条） |
 | `core/compaction/summarize-task.txt`、`summarize-instructions.txt`、`summarize-end.txt`、`notes-files.txt`、`notes-files-more.txt`、`notes-retrieve.txt`、`notes-too-large.txt`、`restored-open.txt`、`restored-close.txt`、`truncated.txt`、`notes-uncovered.txt`、`summarize-system.txt` | 压缩的字：摘要指令（施工 6-2 上；施工 6-8 拆出最后那一句、加上手动压缩的要求前面那一行，`compaction.md` 第七条），检查点里代码写的几段、重读的文件那一块的头尾（施工 6-5，`compaction.md` 第八条），截过的摘要请求前面补的那一条、摘要没看到的那一段（施工 6-6 中，第三条第 10 条），隔离式那一句 system（施工 6-6 下，第四条） |
 | `core/jobs/command-open.txt`、`command-exit.txt`、`command-signal.txt`、`command-duration.txt`、`command-output.txt`、`command-close.txt`、`subagent-open.txt`、`subagent-person.txt`、`subagent-truncated.txt`、`subagent-silent.txt`、`subagent-close.txt` | 两种回报的写法（施工 7-2，`kernel/request.md`「回报」） |

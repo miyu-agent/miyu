@@ -186,11 +186,7 @@ fn within_counts_the_dir_itself_and_folds_case_where_case_does_not_matter() {
 #[test]
 fn this_machine_has_its_system_and_temp_dirs() {
     let site = Site::new();
-    let places = Places::here(
-        site.at("work"),
-        (site.at("data"), site.at("data").join("kb")),
-        Some(&site.at("home")),
-    );
+    let places = Places::here(site.at("work"), site.at("data"), Some(&site.at("home")));
     // 家目录下的工具链目录都列上了。场地本身在临时目录里，所以不拿它们查是哪一片。
     for name in [".cargo", ".rustup", ".npm", ".gitconfig"] {
         assert!(
@@ -262,25 +258,4 @@ fn the_own_dirs_in_the_data_root_are_writable_even_before_they_exist() {
     assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::DataRoot);
     assert!(!boundary.blocks_descent(&data), "通得到它");
     assert!(boundary.blocks_descent(&data.join("run")));
-}
-
-/// 数据根里知识库的文档（施工 K-3 补）：`root/kb/<库>/` 下面的才算；库目录本身、数据根别处、数据根以外的都不算。
-#[test]
-fn a_knowledge_base_document_is_told_apart_inside_the_data_root() {
-    let site = Site::new();
-    let boundary = site.boundary();
-    let doc = site.real("data").join("root/kb/notes/todo.md");
-    assert!(boundary.knowledge(&doc));
-    assert!(boundary.knowledge(&site.real("data").join("root/kb/notes/sub/a.md")));
-    assert!(!boundary.knowledge(&site.real("data").join("root/kb/notes")));
-    assert!(!boundary.knowledge(&site.real("data").join("settings.toml")));
-    assert!(!boundary.knowledge(&site.real("data").join("var/cache/index/kb/notes/a.md")));
-    assert!(!boundary.knowledge(&site.real("work").join("kb/notes/a.md")));
-    // 放知识库的目录照给的认（施工 FH-2：调的一方照数据根的布局给），不照数据根下面的 `kb/` 猜。
-    let moved = Boundary::new(&Places {
-        knowledge: site.at("data/elsewhere/kb"),
-        ..site.places()
-    });
-    assert!(moved.knowledge(&site.real("data").join("elsewhere/kb/notes/a.md")));
-    assert!(!moved.knowledge(&doc));
 }

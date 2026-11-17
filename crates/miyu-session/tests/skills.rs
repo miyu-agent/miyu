@@ -114,7 +114,7 @@ fn statuses(log: &[Event]) -> Vec<ToolStatus> {
 }
 
 #[tokio::test]
-async fn her_skills_are_listed_and_their_folder_is_read_only() {
+async fn her_skills_are_listed_and_their_folder_is_readable() {
     for level in [Level::Full] {
         let home = Home::new();
         let kit = Kit::new();
@@ -133,10 +133,14 @@ async fn her_skills_are_listed_and_their_folder_is_read_only() {
             2,
             "{level:?}：读技能、旁边的数据根都放行"
         );
-        assert!(kit.write.calls().is_empty(), "{level:?}：写技能一律拒");
+        assert_eq!(
+            kit.write.calls().len(),
+            1,
+            "{level:?}：完全放开下写技能同数据根别处（施工 RO-3）"
+        );
         assert_eq!(
             statuses(&log),
-            [ToolStatus::Ok, ToolStatus::Denied, ToolStatus::Ok],
+            vec![ToolStatus::Ok; 3],
             "{level:?}：旁边的数据根施工 RO-2 起读得到"
         );
         let system = &script.requests()[0].1.system;

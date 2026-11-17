@@ -871,28 +871,6 @@ Not run: no one answered the approval request in time.
 [{cut} more characters were cut]
 ```
 
-#### `core/permissions/forbidden.txt`
-
-- 什么时候加进来：权限策略拒绝：要写的路径在 Miyu 的数据根里（施工 RO-2 起数据根两种模式都读得到，只有写才拒）
-- token：RO-2 后 25（o200k 数，改前 27；路径按 `~/.miyu/run/token` 算）
-- 为什么加：告诉她为什么没做、哪一条路径，别换个说法再来（施工 4-3 下，`11-权限与沙盒.md` A9）。施工 RO-2（2026-11-16 项目主人定数据根放开读）：去掉「read or」，读放开了还说读不了是错话
-- 指纹：`7abebf15`
-
-```text
-"{path}" is inside Miyu's own data, which no tool can change.
-```
-
-#### `core/permissions/forbidden-kb.txt`
-
-- 什么时候加进来：权限策略拒绝：要写的路径是数据根里某个知识库的文档（`kb/<库>/` 下面），以前造的快照没有、照 `forbidden.txt`（施工 K-3 补；施工 RO-2 起读放开，只在写时出现）
-- token：RO-2 后约 40（改前约 45；路径按 `~/.local/share/miyu/home/alice/kb/notes/todo.md`，o200k 估；同一条路径 `forbidden.txt` 是 34）
-- 为什么加：项目主人在 Windows 虚拟机里实测（2026-10-23）：她要删自己建的知识库文档，去调了 `trash`，被「Miyu 自己的数据」拒了，没想到工具面上就有 `kb_delete`，只好让人手动清。只在被拒时出现，不进前缀。施工 RO-2：读照 `read` 放行了，只说改、只点 `kb_edit`、`kb_delete`
-- 指纹：`b1e24668`
-
-```text
-"{path}" is a knowledge base document. Change it with the knowledge base tools: kb_edit, kb_delete.
-```
-
 #### `core/permissions/unresolvable.txt`
 
 - 什么时候加进来：权限策略拒绝：路径换不成真实的位置（指向不存在处的链接这类）
@@ -1357,13 +1335,13 @@ Shown to the user.
 
 #### `software/basesystem/trash/protected.txt`
 
-- 什么时候加进来：要删的是工作目录、它的上级、家目录、根目录
-- token：约 24（估的）
-- 为什么加：说清为什么不能删，她好改路径
-- 指纹：`74a2791a`
+- 什么时候加进来：要删的是工作目录、它的上级、家目录、Miyu 的数据根和装着它的、根目录
+- token：37（施工 RO-3 量，o200k，路径按 `~/x`；改前同法 27）
+- 为什么加：说清为什么不能删，她好改路径。施工 RO-3（2026-11-17 项目主人定完全放开下文件工具不拦数据根）：加上数据根，删整个数据根照高危命令一样拦，不说的话她会当是别的原因换个说法再删
+- 指纹：`99fa2e2a`
 
 ```text
-"{path}" cannot be deleted: it is the working directory, one of its parents, the home directory, or the root.
+"{path}" cannot be deleted: it is the working directory, one of its parents, the home directory, Miyu's data or a folder holding it, or the root.
 ```
 
 #### `software/basesystem/trash/lost.txt`

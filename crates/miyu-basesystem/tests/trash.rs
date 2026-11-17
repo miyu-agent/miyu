@@ -88,6 +88,20 @@ async fn the_working_directory_its_parents_home_and_root_are_not_deleted() {
     );
 }
 
+/// 数据根本身不删（施工 RO-3）：完全放开下文件工具写得进数据根以后，`trash` 照「删数据根」那一条高危命令一样拒；数据根里面的
+/// 照常删。
+#[tokio::test]
+async fn the_data_root_itself_is_not_deleted() {
+    let site = Site::new();
+    site.file("data/inside.txt", b"x");
+    let data = site.real("data").to_string_lossy().into_owned();
+    let done = trash(&site, &data).await;
+    assert!(done.error, "{}", text(&done));
+    assert_eq!(done.human, Some(said("trash/protected")), "{}", text(&done));
+    assert!(text(&done).contains("Miyu's data"), "{}", text(&done));
+    assert!(site.0.join("data/inside.txt").is_file(), "还在");
+}
+
 #[cfg(target_os = "linux")]
 mod linux {
     use std::os::unix::fs::{MetadataExt, PermissionsExt, symlink};

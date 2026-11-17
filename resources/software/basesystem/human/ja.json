@@ -145,7 +145,7 @@
     "edit/not-text": "テキストファイルではありません",
     "trash/trashed": "ゴミ箱に移しました",
     "trash/unavailable": "ゴミ箱に入れられないため、削除していません",
-    "trash/protected": "作業ディレクトリ、その上位、ホーム、ルートは削除できません",
+    "trash/protected": "作業ディレクトリ、その上位、ホーム、Miyu のデータ、ルートは削除できません",
     "trash/lost": "削除しましたが、ゴミ箱に見つかりません",
     "trash/failed": "削除できません：{error}",
     "show/shown": "ユーザーに表示しました",

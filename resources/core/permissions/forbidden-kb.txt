@@ -1,1 +1,0 @@
-"{path}" is a knowledge base document. Change it with the knowledge base tools: kb_edit, kb_delete.

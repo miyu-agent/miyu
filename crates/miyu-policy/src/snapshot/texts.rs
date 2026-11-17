@@ -30,16 +30,12 @@ pub struct CompactionTexts {
     pub summarize_system: Option<String>,
 }
 
-/// 权限策略拒绝时写给她的两句（施工 4-3 下）。
+/// 权限策略拒绝时写给她的一句（施工 4-3 下）。碰到数据根的 `forbidden`、`knowledge` 两格施工 RO-3 起不要了：以前造的快照里
+/// 有，读的时候不认、跳过。
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PermissionTexts {
-    /// 碰到了数据根（`forbidden.txt`）。
-    pub forbidden: String,
     /// 路径换不成真实的位置（`unresolvable.txt`）。
     pub unresolvable: String,
-    /// 碰到的是知识库里的文档（`forbidden-kb.txt`，施工 K-3 补）。以前造的快照里没有，读成没有：照 `forbidden` 那一句。
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub knowledge: Option<String>,
 }
 
 /// 回合没走完的几句，照原因。

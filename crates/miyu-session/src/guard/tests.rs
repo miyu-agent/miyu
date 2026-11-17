@@ -8,38 +8,18 @@ use super::*;
 #[cfg(not(windows))]
 mod protected;
 
+/// 判法表（施工 RO-3 起不看在哪一片）：读都放行，完全放开写也放行（数据根也是），只读的写拒。
 #[test]
 fn every_cell_of_the_table() {
     let (full, read_only) = (Effective::Full, Effective::ReadOnly);
     let cases = [
-        // 数据根：哪一级都读得到、写不进（施工 RO-2）。
-        (Zone::DataRoot, full, false, Mark::Allow),
-        (Zone::DataRoot, read_only, false, Mark::Allow),
-        (Zone::DataRoot, full, true, Mark::Forbidden),
-        (Zone::DataRoot, read_only, true, Mark::Forbidden),
-        // 数据根里单独放开的：同数据根。
-        (Zone::Shelf, full, false, Mark::Allow),
-        (Zone::Shelf, read_only, true, Mark::Forbidden),
-        // 能读能写的那几片。
-        (Zone::Writable, full, true, Mark::Allow),
-        (Zone::Writable, read_only, false, Mark::Allow),
-        (Zone::Writable, read_only, true, Mark::ReadOnly),
-        // 只能读的那几片。
-        (Zone::Readable, full, true, Mark::Allow),
-        (Zone::Readable, read_only, false, Mark::Allow),
-        (Zone::Readable, read_only, true, Mark::ReadOnly),
-        // 边界以外：读哪一级都放行（施工 5-4 上）。
-        (Zone::Outside, full, false, Mark::Allow),
-        (Zone::Outside, full, true, Mark::Allow),
-        (Zone::Outside, read_only, false, Mark::Allow),
-        (Zone::Outside, read_only, true, Mark::ReadOnly),
+        (full, false, Mark::Allow),
+        (full, true, Mark::Allow),
+        (read_only, false, Mark::Allow),
+        (read_only, true, Mark::ReadOnly),
     ];
-    for (zone, level, write, expected) in cases {
-        assert_eq!(
-            mark(level, zone, write),
-            expected,
-            "{zone:?} {level:?} write={write}"
-        );
+    for (level, write, expected) in cases {
+        assert_eq!(mark(level, write), expected, "{level:?} write={write}");
     }
 }
 

@@ -1,6 +1,6 @@
-//! 数据根两种模式都读得到、哪一级都写不进（施工 RO-2，2026-11-16 项目主人定：只读就是完全放开减去写，数据根放开读）：只读的
-//! 沙盒规格什么都不藏；出厂的 `read` 完全放开、只读都读得到 `etc/private/secrets.toml`；`write`、`edit` 完全放开、只读都写不进
-//! 数据根，完全放开时拒绝的话只说改（只读时内核先拦下）；只读时读家目录里的钥匙不问人。只读时命令读得到密钥、写不进数据根见 `sandbox.rs` 的
+//! 数据根两种模式都读得到，完全放开下写得进、只读写不进（施工 RO-2、RO-3，2026-11-16、11-17 项目主人定）：只读的
+//! 沙盒规格什么都不藏；出厂的 `read` 完全放开、只读都读得到 `etc/private/secrets.toml`；`write`、`edit` 完全放开下写得进
+//! 数据根（施工 RO-3），只读时内核先拦下；只读时读家目录里的钥匙不问人。只读时命令读得到密钥、写不进数据根见 `sandbox.rs` 的
 //! `a_read_only_command_reads_the_secrets_but_cannot_write_the_data_root`。场地的假家目录是 `home/`。
 
 use std::path::{Path, PathBuf};
@@ -132,48 +132,53 @@ async fn file_tools_read_the_secrets_at_either_level() {
 }
 
 #[tokio::test]
-async fn file_tools_cannot_write_the_data_root_at_either_level() {
-    let home = Home::outside_temp();
-    let secrets = secrets(&home);
-    let fresh = home.root.path().join("etc/new.txt");
+async fn file_tools_write_the_data_root_only_at_full_access() {
     let path = |at: &Path| at.to_string_lossy().into_owned();
-    let calls = [
-        (
-            "write",
-            serde_json::json!({ "file_path": path(&fresh), "content": "x" }),
-        ),
-        (
-            "edit",
-            serde_json::json!({
-                "file_path": path(&secrets),
-                "old_string": "secret",
-                "new_string": "changed",
-            }),
-        ),
-    ];
-    for read_only in [false, true] {
+    for read_only in [true, false] {
+        let home = Home::outside_temp();
+        let secrets = secrets(&home);
+        let fresh = home.root.path().join("etc/new.txt");
+        let calls = [
+            (
+                "write",
+                serde_json::json!({ "file_path": path(&fresh), "content": "x" }),
+            ),
+            (
+                "edit",
+                serde_json::json!({
+                    "file_path": path(&secrets),
+                    "old_string": "secret",
+                    "new_string": "changed",
+                }),
+            ),
+        ];
         for (tool, args) in &calls {
             let result = once(&home, (tool, &args.to_string()), read_only).await;
+            // 只读时写入类的调用内核先拦下；完全放开同别的目录一样写得进（施工 RO-3）。
+            let expected = if read_only {
+                ToolStatus::Denied
+            } else {
+                ToolStatus::Ok
+            };
             assert_eq!(
-                result.status,
-                ToolStatus::Denied,
+                result.status, expected,
                 "{tool} 只读 {read_only}：{result:?}"
             );
-            // 只读时写入类的调用内核先拦下；完全放开由权限策略拒，话只说改。
-            let said = text(&result);
-            let expected = if read_only {
-                "Not run: the session is read-only.\n"
-            } else {
-                "is inside Miyu's own data, which no tool can change.\n"
-            };
-            assert!(said.ends_with(expected), "{tool} 只读 {read_only}：{said}");
+            if read_only {
+                assert!(
+                    text(&result).ends_with("Not run: the session is read-only.\n"),
+                    "{tool}：{}",
+                    text(&result)
+                );
+            }
         }
+        let (now, wrote) = match read_only {
+            true => ("secret-in-data-root\n", false),
+            false => ("changed-in-data-root\n", true),
+        };
+        assert_eq!(std::fs::read_to_string(&secrets).expect("还在"), now);
+        assert_eq!(fresh.exists(), wrote, "只读 {read_only}");
     }
-    assert_eq!(
-        std::fs::read_to_string(&secrets).expect("还在"),
-        "secret-in-data-root\n"
-    );
-    assert!(!fresh.exists(), "没写进新文件");
 }
 
 /// 只读时读家目录里别的程序的钥匙不问人（施工 PV-RM）：没人能确认也照读。

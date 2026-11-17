@@ -134,13 +134,20 @@ fn trash(texts: &Texts, call: &Call, path: &str, stop: &Stop) -> Done {
     }
 }
 
-/// 不许删的：工作目录本身和它的每一层上级（根目录也是它的上级）、系统的家目录。一段一段比，macOS、Windows 上不分
+/// 不许删的：工作目录本身和它的每一层上级（根目录也是它的上级）、系统的家目录、Miyu 的数据根和装着它的（施工 RO-3：完全放开下
+/// 文件工具写得进数据根以后，删整个数据根照「删数据根」那一条高危命令拦）。一段一段比，macOS、Windows 上不分
 /// 大小写（[`within`]，施工 4-9 再补二）：`real` 的最后一段是她写的原样，换个大小写写的也拦得住。
 fn protected(call: &Call, real: &Path) -> bool {
     if let Ok(cwd) = resolve(Path::new(&call.cwd), call.home.as_deref(), &call.cwd)
         && within(&cwd, real)
     {
         return true;
+    }
+    if let Some(root) = call.data_root.as_deref() {
+        let root = std::fs::canonicalize(root).unwrap_or_else(|_| root.to_path_buf());
+        if within(&root, real) {
+            return true;
+        }
     }
     call.home.as_deref().is_some_and(|home| {
         let home = std::fs::canonicalize(home).unwrap_or_else(|_| home.to_path_buf());

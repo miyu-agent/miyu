@@ -2,7 +2,7 @@
 
 ### 是什么
 
-把一个文件或者目录移进系统的回收站，记下它在回收站里的真实位置，报 `file.trashed`；撤销时照它移回来。链接删的是链接本身。工作目录和它的上级、家目录、根目录不许删。回收站收不了的不删，说为什么。
+把一个文件或者目录移进系统的回收站，记下它在回收站里的真实位置，报 `file.trashed`；撤销时照它移回来。链接删的是链接本身。工作目录和它的上级、家目录、Miyu 的数据根和装着它的、根目录不许删。回收站收不了的不删，说为什么。
 
 ### 在哪
 
@@ -47,6 +47,7 @@
 4. 不许删的：
    - 工作目录本身和它的每一层上级：这一轮的工作目录换成真实的位置，要删的就是它，或者它在要删的那个里面，不许删。根目录是工作目录的上级。工作目录换不成真实位置的，这一条不查。
    - 系统的家目录：家目录换成真实的位置（换不成照原样）以后，和要删的一样的，不许删。
+   - Miyu 的数据根和装着它的（施工 RO-3）：这次调用带的数据根换成真实的位置（换不成照原样），它在要删的那个里面（数据根自己也算），不许删。完全放开下文件工具写得进数据根以后，删整个数据根照 `shell` 的 `delete_data_root` 一样拦；数据根里面的照常删。
    - 一段一段比，macOS、Windows 上不分大小写（`within`，`fs.md`）：最后一段是她写的原样（只换了上级），换个大小写写（工作目录是 `Proj`，她写 `../proj`）照样拦得住。
 5. 放进系统的回收站（`fs.md` 第六节）：
    - 成了：`Moved "{path}" to the trash.`，路径照结果的规矩写（在这一轮的工作目录里的写相对的，在外面的写绝对的，Windows 上不写 `\\?\`）。报 `file.trashed`：`path` 是移走之前的真实位置（最后一段不跟链接），`trash` 是它在回收站里的真实路径。
@@ -81,7 +82,7 @@ Moved "a.txt" to the trash.
 |---|---|---|
 | 移进了回收站 | `trash/trashed.txt` | `Moved "{path}" to the trash.` |
 | 收不了，没删 | `trash/unavailable.txt` | `"{path}" was not deleted: its drive has no trash to move it into. Ask the user, or use rm in the shell to delete it for good.` |
-| 不许删 | `trash/protected.txt` | `"{path}" cannot be deleted: it is the working directory, one of its parents, the home directory, or the root.` |
+| 不许删 | `trash/protected.txt` | `"{path}" cannot be deleted: it is the working directory, one of its parents, the home directory, Miyu's data or a folder holding it, or the root.` |
 | 挪了却找不到 | `trash/lost.txt` | `"{path}" was deleted, but it was not found in the trash afterwards, so it may not come back.` |
 | 删不了 | `trash/failed.txt` | `Could not delete "{path}": {error}.` |
 
@@ -112,7 +113,7 @@ Moved "a.txt" to the trash.
 |---|---|---|
 | `trash/trashed` | 移进了回收站 | moved to the trash |
 | `trash/unavailable` | 放不进回收站，没删 | no trash here, not deleted |
-| `trash/protected` | 工作目录、它的上级、家目录、根目录不能删 | the working directory, its parents, home and root can't be deleted |
+| `trash/protected` | 工作目录、它的上级、家目录、Miyu 的数据、根目录不能删 | the working directory, its parents, home, Miyu's data and root can't be deleted |
 | `trash/lost` | 删了，可回收站里找不到 | deleted, but not found in the trash |
 | `trash/failed`（`error`） | `删不了：{error}` | `can't delete: {error}` |
 | `common/missing`、`common/missing-similar`、`common/failed`、`common/bad-args` | 见 `tools/read.md` | |
@@ -121,7 +122,7 @@ Moved "a.txt" to the trash.
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-basesystem/tests/trash.rs` | 报要写的路径、`path` 也认；不许删的几种（`.`、`..`、`~`、`~/`、`~/.`、`/`、工作目录、它的上级、家目录）、没有的；Linux：放进家目录的回收站、记录的样子、报的位置、`files/` 和 `info/` 只有自己能进、重名接 `.2`、同名却没有记录的不盖、目录和链接（指向的东西不动、指向不存在处的也删得掉）、转义、挪不动的不删不留记录、家目录是链接的照样拦、家目录的回收站建不了的不删；macOS、Windows（在 CI 上）：文件、目录进了回收站，报的位置真有这个东西，换个大小写写的工作目录、家目录照样不许删 |
+| `crates/miyu-basesystem/tests/trash.rs` | 报要写的路径、`path` 也认；不许删的几种（`.`、`..`、`~`、`~/`、`~/.`、`/`、工作目录、它的上级、家目录）、数据根自己（施工 RO-3，里面的文件还在）、没有的；Linux：放进家目录的回收站、记录的样子、报的位置、`files/` 和 `info/` 只有自己能进、重名接 `.2`、同名却没有记录的不盖、目录和链接（指向的东西不动、指向不存在处的也删得掉）、转义、挪不动的不删不留记录、家目录是链接的照样拦、家目录的回收站建不了的不删；macOS、Windows（在 CI 上）：文件、目录进了回收站，报的位置真有这个东西，换个大小写写的工作目录、家目录照样不许删 |
 | `crates/miyu-fs/tests/trash.rs`、`src/trash/recycled/tests.rs` | 移回来、`$I` 记录（`fs.md`） |
 | `crates/miyu-basesystem/tests/human.rs` | 每一种结果的说法，两种语言都换得出字 |
 | `crates/miyu-basesystem/tests/stop.rs` | 旗举了不删，文件还在原处 |
