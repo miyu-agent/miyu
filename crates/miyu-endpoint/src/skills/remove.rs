@@ -34,7 +34,7 @@ pub(crate) async fn remove(core: &Core, params: RemoveParams) -> Result<Value, R
         return Err(Refusal::BAD_PARAMS);
     }
     // 只删你自己放的：包里的照「随包来的」拒。
-    let (packages, root) = (core.packages_of(), core.root.clone());
+    let (packages, root) = (core.system_packages(), core.root.clone());
     let home = core.home.clone();
     let external = super::external(core);
     tokio::task::spawn_blocking(move || {

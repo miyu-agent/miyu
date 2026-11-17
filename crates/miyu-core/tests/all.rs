@@ -15,6 +15,7 @@ mod packages;
 mod packaging;
 mod serve;
 mod settings;
+mod settings_names;
 mod settings_protected;
 mod settings_removed;
 mod tools;

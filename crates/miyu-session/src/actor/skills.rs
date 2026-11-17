@@ -41,14 +41,12 @@ impl Actor {
         });
         let present = present.to_vec();
         let switches = crate::switches::of(values);
-        // 这个人关了的包（施工 U23 末上）：它带的技能下一个回合就不列。
-        let off = crate::packages_off::of(values);
         async move {
             let (watch, external, resources, face, pinned, preset) = asking?;
             let looked = blocking(move || {
                 let file = preset.and_then(|(id, places)| {
                     let found = places.presets.find(&id).ok()?;
-                    Some(found.file.following(switches).switching_off(off))
+                    Some(found.file.following(switches))
                 });
                 let looked = watch.look(&resources, &face, file.as_ref(), &external)?;
                 let tail = skills::tail(

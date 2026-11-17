@@ -28,6 +28,7 @@ mod item;
 pub mod key;
 pub mod list;
 pub mod merge;
+pub mod naming;
 pub mod package;
 pub mod parse;
 pub mod phrases;

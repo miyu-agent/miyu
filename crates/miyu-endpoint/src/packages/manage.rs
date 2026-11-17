@@ -50,8 +50,6 @@ impl Core {
             .packages
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner) = std::sync::Arc::new(found);
-        // 去掉关了的那一份照新的重造（施工 U23 上下）：用到时再造。
-        self.visible_packages.forget();
         // 脚本照新的清单重找、重登记（施工 X-12 中）。
         self.follow_scripts();
         crate::config::refit::refit(self, items, left);

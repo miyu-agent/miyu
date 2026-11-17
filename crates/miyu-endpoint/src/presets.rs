@@ -98,11 +98,7 @@ pub(crate) fn places(core: &std::sync::Arc<Core>) -> PresetPlaces {
 /// 找好的预设换成造会话要的：带上这时的全局开关（施工 X-27），算好装了、没开的功能（施工 F-3 上）。
 pub(crate) fn chosen(core: &Core, found: Found) -> Chosen {
     let features = crate::scripts::features(core);
-    // 这个人关了的包扣下（施工 U23 末上）。
-    let file = found
-        .file
-        .following(switches(core))
-        .switching_off(core.packages_off());
+    let file = found.file.following(switches(core));
     Chosen::new(found.id, file, &features)
 }
 
@@ -270,7 +266,7 @@ pub(super) struct Carried {
 
 /// 找 [`Carried`]：碰磁盘，在阻塞线程里找；找不成的当没有。
 pub(super) async fn carried(core: &Core) -> Carried {
-    let (packages, root) = (core.packages_of(), core.root.clone());
+    let (packages, root) = (core.system_packages(), core.root.clone());
     let external = crate::skills::external(core);
     let skills = tokio::task::spawn_blocking(move || {
         miyu_store::skills::find(&packages, &root, &external).0

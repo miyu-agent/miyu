@@ -131,6 +131,8 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
         .expect("有项")
         .iter()
         .map(|item| item["key"].as_str().expect("有键"))
+        // 出厂的包各一项「启用」（施工 UX-1），排在最后，`package_enabled.rs` 另测。
+        .filter(|key| miyu_config::package::enabled::id_of(key).is_none())
         .collect();
     assert_eq!(
         keys,
@@ -178,8 +180,8 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
     assert_eq!(all["result"]["items"][8]["env"], "MIYU_LOG");
     assert_eq!(
         all["result"]["pages"],
-        json!([{"id":"general","name":"通用"},{"id":"user","name":"用户"},{"id":"advanced","name":"高级"}]),
-        "端点自己那一份清单照它的先后（施工 AUD-4 去掉 `permission.level` 以后，端点自己没有「隐私与安全」那一页的项了）"
+        json!([{"id":"general","name":"通用"},{"id":"user","name":"用户"},{"id":"advanced","name":"高级"},{"id":"packages","name":"软件包"}]),
+        "端点自己那一份清单照它的先后（施工 AUD-4 去掉 `permission.level` 以后，端点自己没有「隐私与安全」那一页的项了）；出厂的包的「启用」在最后的「软件包」页（施工 UX-1）"
     );
 }
 
@@ -217,8 +219,13 @@ async fn get_says_every_value_and_where_it_came_from() {
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
     hello(&mut client, Some("zh-CN")).await;
     let reply = client.call("c1", "config.get", json!({})).await;
+    // 出厂的包各一项「启用」（施工 UX-1），来源是 `package`，`package_enabled.rs` 另测。
+    let mut items = reply["result"]["items"].clone();
+    if let Some(items) = items.as_object_mut() {
+        items.retain(|key, _| miyu_config::package::enabled::id_of(key).is_none());
+    }
     assert_eq!(
-        reply["result"]["items"],
+        items,
         json!({
             "log.level": {"origin": {"file": "etc/config.toml", "layer": "system", "line": 4}, "value": "debug"},
             "permission.start_read_only": {"origin": {"layer": "default"}, "value": false},

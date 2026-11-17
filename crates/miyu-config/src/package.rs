@@ -16,6 +16,7 @@ mod content;
 mod credits;
 mod depend;
 mod driver;
+pub mod enabled;
 mod export;
 mod features;
 mod fields;

@@ -141,6 +141,27 @@ pub(crate) async fn disable(
     item(core, peer, &params.package)
 }
 
+/// 设置页上包的「启用」（施工 UX-1，`config/enabled.rs`）：开同 `package.enable`（不带 `approve`：要批的能力还没批的照它拒），
+/// 关同 `package.disable`。
+pub(crate) async fn turn(
+    core: &Arc<Core>,
+    peer: Peer,
+    id: &str,
+    on: bool,
+) -> Result<Value, Refusal> {
+    let package = id.to_string();
+    match on {
+        true => {
+            let params = EnableParams {
+                package,
+                approve: None,
+            };
+            enable(core, peer, params).await
+        }
+        false => disable(core, peer, DisableParams { package }).await,
+    }
+}
+
 /// `package.restart`（施工 X-4）：扩展同 `extension.restart`（关着的、要批的能力还有没批的照它拒），再重启它带的 MCP 服务；
 /// `bundle` 重启它带的服务。关着的 `package_off`；别的种类没有能重启的，`not_restartable`。
 pub(crate) async fn restart(

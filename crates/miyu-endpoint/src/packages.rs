@@ -35,7 +35,6 @@ pub(crate) mod manage;
 mod may_manage;
 pub(crate) mod methods;
 mod notice;
-pub(crate) mod off;
 pub(crate) mod own;
 pub(crate) mod port;
 pub(crate) mod preview;
@@ -290,8 +289,6 @@ pub fn settle_with(
         let Ok(manifest) = &one.read else {
             continue;
         };
-        // 每个人能把它对自己整个关掉（施工 U23 末上）：「软件包」页这个包那一组底下一个开关。
-        items.push(miyu_session::packages_off::item_for(&one.id));
         if manifest.settings.is_empty() {
             continue;
         }
@@ -390,23 +387,21 @@ pub fn is_installed(found: &[Found], id: &str) -> bool {
     })
 }
 
-/// 带人格、预设的那一层的几个包文件夹（施工 P-11 上，设计 31 第十节）：看得到的（施工 U23 上下，
-/// [`Core::packages_of`]）读成了的装着的包，出厂的在前、同一层照编号。
+/// 带人格、预设的那一层的几个包文件夹（施工 P-11 上，设计 31 第十节）：读成了的装着的包，出厂的在前、同一层照编号。
 pub(crate) fn folders(core: &Core) -> Vec<std::path::PathBuf> {
-    let found = core.packages_of();
+    let found = core.system_packages();
     let mut read: Vec<&Found> = found.iter().filter(|one| one.read.is_ok()).collect();
     read.sort_by(|a, b| (a.layer, &a.id).cmp(&(b.layer, &b.id)));
     read.iter().map(|one| one.files_dir()).collect()
 }
 
-/// 交给会话的「这一刻装了的软件包」（施工 X-11 下，`miyu_session::Installed`）：看得到的（施工 U23 上下，
-/// [`Core::packages_of`]）。拿着核心的弱引用，会话活在核心里面，拿强的会绕成环；核心没了的交空的。
+/// 交给会话的「这一刻装了的软件包」（施工 X-11 下，`miyu_session::Installed`）。拿着核心的弱引用，会话活在核心里面，拿强的会绕成环；核心没了的交空的。
 pub(crate) fn installed(core: &std::sync::Arc<Core>) -> miyu_session::Installed {
     let core = std::sync::Arc::downgrade(core);
     std::sync::Arc::new(move || {
         core.upgrade().map_or_else(
             || std::sync::Arc::new(Vec::new()),
-            |core| core.packages_of(),
+            |core| core.system_packages(),
         )
     })
 }

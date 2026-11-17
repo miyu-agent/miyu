@@ -359,12 +359,8 @@ async fn the_host_reads_and_writes_only_the_page_s_own_settings() {
         .iter()
         .map(|item| &item["key"])
         .collect();
-    // 同网页 `frame.js`：照配置清单的 `package` 认，核心替每个包加的「只对我关掉」也算它的。
-    assert_eq!(
-        keys,
-        [&json!("packages.tuned.off"), &json!("tuned.port")],
-        "只有它自己的项：{settings}"
-    );
+    // 同网页 `frame.js`：照配置清单的 `package` 认；它的「启用」（施工 UX-1）是核心的，后台页改不了，不算。
+    assert_eq!(keys, [&json!("tuned.port")], "只有它自己的项：{settings}");
     assert_eq!(
         settings["result"]["values"]["tuned.port"], 8400,
         "没写的照默认"

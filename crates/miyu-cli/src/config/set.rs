@@ -15,6 +15,9 @@ use crate::diagnostic::{self, Problem};
 use crate::exit;
 use crate::shown::{Line, write};
 
+/// 包的「启用」的来源（施工 UX-1）：是包自己的开关，不在哪一层配置里。
+const PACKAGE: &str = "package";
+
 /// `set`：改一项，交回退出码。
 pub(super) async fn set(talk: &mut Talk<'_>, key: &str, value: &str) -> u8 {
     let language = talk.plan.language;
@@ -29,8 +32,9 @@ pub(super) async fn set(talk: &mut Talk<'_>, key: &str, value: &str) -> u8 {
             let value = toml(&entry["value"]);
             let effective = toml(&entry["effective"]);
             match entry["origin"]["layer"].as_str() {
-                // 上面一层压着（设计 47 第四节）：结果行不说什么时候生效，接一行告警说用的是哪一层的。
-                Some(above) if above != layer => {
+                // 上面一层压着（设计 47 第四节）：结果行不说什么时候生效，接一行告警说用的是哪一层的。包的「启用」（施工 UX-1）
+                // 来源是 `package`，不在哪一层里，不算压着。
+                Some(above) if above != layer && above != PACKAGE => {
                     gray(talk, language.saved(key, &value, ""));
                     let warned = language.overridden(key, above, &effective);
                     diagnostic::warning(talk.err, language, &warned);

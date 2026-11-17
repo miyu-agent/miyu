@@ -1,6 +1,6 @@
 //! 造会话、载入要交进来的几样（施工 8-8 从 `open.rs` 挪来：那一页长过了行数的上限）。
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -93,20 +93,14 @@ impl PresetPlaces {
     }
 
     /// 照编号 `id` 找叠好的预设文件（载入时放开技能的文件夹用）：找不着、写错了的没有。照场所定（`images`、`venue`，施工 X-25、
-    /// IM-4，[`PresetFile::situate`]），带上这一轮的全局开关 `switches`（施工 X-27）、这个人关了的包 `off`（施工 U23 末上）。
+    /// IM-4，[`PresetFile::situate`]），带上这一轮的全局开关 `switches`（施工 X-27）。
     pub(crate) fn file(
         &self,
         id: &str,
         (images, venue): (bool, &str),
-        (switches, off): (BTreeMap<String, bool>, BTreeSet<String>),
+        switches: BTreeMap<String, bool>,
     ) -> Option<PresetFile> {
-        let mut file = self
-            .presets
-            .find(id)
-            .ok()?
-            .file
-            .following(switches)
-            .switching_off(off);
+        let mut file = self.presets.find(id).ok()?.file.following(switches);
         file.situate(&self.features(), images, venue);
         Some(file)
     }

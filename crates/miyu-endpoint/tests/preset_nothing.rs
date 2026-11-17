@@ -63,7 +63,6 @@ async fn opened(home: &Home, params: Value) -> (String, Request) {
     let items = [
         miyu_endpoint::settings::PresetSettings::ITEMS,
         miyu_session::switches::ITEMS,
-        miyu_session::packages_off::ITEMS,
     ]
     .concat();
     let mut client = Client::connect(home.core_with_items(&script, None, &[], &items));

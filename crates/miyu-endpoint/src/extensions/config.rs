@@ -77,11 +77,11 @@ fn handed(config: &Config, kind: miyu_config::Kind, value: &miyu_config::Value) 
 }
 
 /// 配置项 `item` 是不是包 `package` 的清单里声明的（施工 PN-1）：键照前缀起，不一定以包编号开头，照挂在哪个包认；「软件包」
-/// 页上关掉这个包的那一项（`packages.<编号>.off`）也挂在它底下，是核心的，不算。
+/// 页上这个包的「启用」（`packages.<编号>.enabled`，施工 UX-1）也挂在它底下，是核心的，不算。
 pub(crate) fn declared_by(item: &miyu_config::Item, package: &str) -> bool {
     item.ui.package == Some(package)
         && !item.key.contains('<')
-        && item.key != miyu_config::key::fill(miyu_session::packages_off::OFF, &[package])
+        && miyu_config::package::enabled::id_of(item.key).is_none()
 }
 
 /// 编号是 `package` 的包的前缀（施工 PN-1，设计 48 第二节）：照核心读到的清单；没读成的、没装的照包编号。

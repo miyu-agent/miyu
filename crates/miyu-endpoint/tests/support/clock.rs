@@ -73,7 +73,6 @@ pub fn core_with_tools(
         miyu_endpoint::settings::PresetSettings::ITEMS,
         miyu_endpoint::settings::PermissionSettings::ITEMS,
         miyu_session::switches::ITEMS,
-        miyu_session::packages_off::ITEMS,
     ]
     .concat();
     let config = miyu_endpoint::config::Config::load(

@@ -22,7 +22,7 @@ use crate::personas::pick;
 pub(crate) async fn list(core: &Core, peer: Peer) -> Value {
     let values = core.config().resolved().values();
     let switches = miyu_session::switches::of(&values);
-    let packages = core.packages_of();
+    let packages = core.system_packages();
     // 登记上的脚本照工具名排（`Core::scripts`）。
     let scripts: Vec<Script> = core.scripts().to_vec();
     let listed: Vec<Value> = scripts

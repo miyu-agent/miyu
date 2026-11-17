@@ -25,6 +25,7 @@ pub(crate) mod checking;
 mod choices;
 mod dirs;
 mod effort;
+pub(crate) mod enabled;
 mod environment;
 pub(crate) mod file;
 pub(crate) mod forget;

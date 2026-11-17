@@ -6,7 +6,7 @@
         "mcp": {
           "additionalProperties": {
             "description": "When on, all of this server's tools can be called with miyu call; when off, only directly. A tool with its own setting follows that one. Allowed: true or false. Only in the system config. Takes effect next turn.",
-            "title": "Callable from scripts: this MCP server's tools",
+            "title": "Allow script calls",
             "type": "boolean"
           },
           "type": "object"
@@ -14,7 +14,7 @@
         "tools": {
           "additionalProperties": {
             "description": "When on, the AI can also call this tool with miyu call inside a command, and the result goes to the script; when off, it can only be called directly. Unset follows how it was registered (MCP servers and script tools are callable, among built-in tools only search, fetching pages, memory search and the knowledge base tools are, extension tools are not). Tools that write or send messages stay uncallable even when on. Allowed: true or false. Only in the system config. Takes effect next turn.",
-            "title": "Callable from scripts",
+            "title": "Allow script calls",
             "type": "boolean"
           },
           "type": "object"
@@ -32,7 +32,7 @@
               "anyone",
               "off"
             ],
-            "title": "Who can use this command",
+            "title": "Access",
             "type": "string"
           }
         },
@@ -53,7 +53,7 @@
         "prepare": {
           "default": true,
           "description": "When the context is nearly full, the older part is summarized in the background, so the switch happens without a wait when compaction is due. Off means compacting only once the limit is reached, as before. Allowed: true or false. Only in the system config. Takes effect next turn.",
-          "title": "Prepare compaction early",
+          "title": "Pre-compaction",
           "type": "boolean"
         }
       },
@@ -66,7 +66,7 @@
           "description": "Minutes with no connection and no running turn before the core exits. 0 keeps it running (the default); a head starts the core again when it can't reach it. Allowed: a whole number from 0 to 525600. Only in the system config. Takes effect immediately.",
           "maximum": 525600,
           "minimum": 0,
-          "title": "Core idle exit",
+          "title": "Idle exit time",
           "type": "integer"
         },
         "workers": {
@@ -85,7 +85,7 @@
         "bindings": {
           "additionalProperties": {
             "description": "Which platform identities are you. The key is the platform identity (for example qq:10001), the value is owner. In private chats that identity is you. Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Takes effect immediately.",
-            "title": "My platform accounts",
+            "title": "Platform accounts",
             "type": "string"
           },
           "type": "object"
@@ -96,7 +96,7 @@
     "features": {
       "additionalProperties": {
         "description": "Presets that turn on what they don't list follow this switch for the skill, script or MCP server, except where a preset turns it on or off itself. Presets that leave unlisted features off ignore it. Allowed: true or false. Only in the system config. Takes effect next turn.",
-        "title": "Turn this skill, script or MCP server on",
+        "title": "Enabled",
         "type": "boolean"
       },
       "type": "object"
@@ -139,14 +139,14 @@
           "description": "Keep only this many of the latest consolidation runs for each memory. Older ones go to the trash. 0 deletes each run when it ends. Allowed: a whole number from 0 to 1000. Only in the system config. Takes effect next turn.",
           "maximum": 1000,
           "minimum": 0,
-          "title": "Consolidation runs to keep",
+          "title": "Organizing records kept",
           "type": "integer"
         },
         "extract_idle": {
           "default": "30m",
           "description": "Once the conversation has been quiet this long, the AI turns what is worth keeping from the new part into memories. Allowed: a length of time from 1m to 1h, written like 30s, 10m or 1h. Only in the system config. Takes effect next turn.",
           "pattern": "^[0-9]+[smh]?$",
-          "title": "Wait before organizing memories",
+          "title": "Idle time before organizing",
           "type": "string"
         },
         "extract_max_turns": {
@@ -154,14 +154,14 @@
           "description": "When a chat never goes quiet, the AI organizes in the background once this many turns have passed since the last time, without waiting for a pause. Allowed: a whole number from 2 to 500. Only in the system config. Takes effect next turn.",
           "maximum": 500,
           "minimum": 2,
-          "title": "Turns before organizing a busy chat",
+          "title": "Organizing interval in continuous chats (turns)",
           "type": "integer"
         },
         "extract_max_wait": {
           "default": "1h",
           "description": "When a chat never goes quiet, the AI organizes in the background once the earliest unorganized turn is this old, without waiting for a pause. Allowed: a length of time from 10m to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect next turn.",
           "pattern": "^[0-9]+[smh]?$",
-          "title": "Longest wait in a busy chat",
+          "title": "Longest wait in continuous chats",
           "type": "string"
         },
         "extract_turns": {
@@ -169,14 +169,14 @@
           "description": "The AI organizes only after at least this many turns since the last time. Allowed: a whole number from 1 to 100. Only in the system config. Takes effect next turn.",
           "maximum": 100,
           "minimum": 1,
-          "title": "Turns before organizing",
+          "title": "Organizing interval (turns)",
           "type": "integer"
         },
         "merge_every": {
           "default": "16h",
           "description": "After this long the AI goes over new and older memories together: drops repeats and outdated ones, and writes a summary of what it knows about you. Allowed: a length of time from 1h to 720h, written like 30s, 10m or 1h. Only in the system config. Takes effect next turn.",
           "pattern": "^[0-9]+[smh]?$",
-          "title": "How often to consolidate memories",
+          "title": "Consolidation interval",
           "type": "string"
         }
       },
@@ -190,7 +190,7 @@
               "default": "24h",
               "description": "Fetch again once the cached catalog is this old. Allowed: a length of time from 1h to 720h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.",
               "pattern": "^[0-9]+[smh]?$",
-              "title": "Update every",
+              "title": "Update interval",
               "type": "string"
             },
             "update": {
@@ -238,14 +238,14 @@
                   "default": "10m",
                   "description": "How long a pool model rests the first time it fails to authenticate. It doubles each time in a row. Allowed: a length of time from 1s to 1h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.",
                   "pattern": "^[0-9]+[smh]?$",
-                  "title": "Auth failure pause",
+                  "title": "Auth failure suspension (initial)",
                   "type": "string"
                 },
                 "max": {
                   "default": "2h",
                   "description": "The auth failure pause stops doubling here. Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.",
                   "pattern": "^[0-9]+[smh]?$",
-                  "title": "Auth failure pause cap",
+                  "title": "Auth failure suspension (max)",
                   "type": "string"
                 }
               },
@@ -257,14 +257,14 @@
                   "default": "30m",
                   "description": "How long a pool model rests the first time it runs out of quota or credit and the provider doesn't say when it comes back. When it does say, that time is used, up to a day. Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.",
                   "pattern": "^[0-9]+[smh]?$",
-                  "title": "Out-of-quota pause",
+                  "title": "Quota exhausted suspension (initial)",
                   "type": "string"
                 },
                 "max": {
                   "default": "30m",
                   "description": "Without a stated reset time, the pause doubles each time in a row up to this. Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.",
                   "pattern": "^[0-9]+[smh]?$",
-                  "title": "Out-of-quota pause cap",
+                  "title": "Quota exhausted suspension (max)",
                   "type": "string"
                 }
               },
@@ -276,14 +276,14 @@
                   "default": "30s",
                   "description": "How long an endpoint rests the first time it is rate limited. It doubles each time in a row. Allowed: a length of time from 1s to 1h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.",
                   "pattern": "^[0-9]+[smh]?$",
-                  "title": "Rate limit cooldown",
+                  "title": "Rate limit cooldown (initial)",
                   "type": "string"
                 },
                 "max": {
                   "default": "10m",
                   "description": "The rate limit cooldown stops doubling here, even when the provider asks for longer. Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.",
                   "pattern": "^[0-9]+[smh]?$",
-                  "title": "Rate limit cooldown cap",
+                  "title": "Rate limit cooldown (max)",
                   "type": "string"
                 }
               },
@@ -295,14 +295,14 @@
                   "default": "10s",
                   "description": "How long an endpoint rests the first time it cannot be reached or fails on its side. It doubles each time in a row. Allowed: a length of time from 1s to 1h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.",
                   "pattern": "^[0-9]+[smh]?$",
-                  "title": "Error cooldown",
+                  "title": "Error cooldown (initial)",
                   "type": "string"
                 },
                 "max": {
                   "default": "5m",
                   "description": "The cooldown for these errors stops doubling here. Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.",
                   "pattern": "^[0-9]+[smh]?$",
-                  "title": "Error cooldown cap",
+                  "title": "Error cooldown (max)",
                   "type": "string"
                 }
               },
@@ -537,15 +537,103 @@
       "type": "object"
     },
     "packages": {
-      "additionalProperties": {
-        "properties": {
-          "off": {
-            "description": "Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it. Allowed: true or false. Only in the system config. Takes effect next turn.",
-            "title": "Turn this package off for me",
-            "type": "boolean"
-          }
+      "properties": {
+        "hold": {
+          "description": "Packages (by id) skipped when upgrading; the installed version stays. Allowed: a list of text of at most 64 characters. Only in the system config. Takes effect immediately.",
+          "items": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Held packages",
+          "type": "array"
         },
-        "type": "object"
+        "mirrors": {
+          "default": [],
+          "description": "Tried in order before the source when it is slow or unreachable. Content is still checked against the signature and hashes, so a mirror can't change it. Allowed: a list of an address starting with http:// or https:// or { env = \"…\" }. Only in the system config. Takes effect immediately.",
+          "items": {
+            "oneOf": [
+              {
+                "format": "uri",
+                "type": "string"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "env": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "env"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "title": "Mirrors",
+          "type": "array"
+        },
+        "source": {
+          "default": "https://miyu-agent.github.io/packages/",
+          "description": "Where to look up and download packages. The official source by default; any other address must serve content signed by the official key. Allowed: an address starting with http:// or https:// or { env = \"…\" }. Only in the system config. Takes effect immediately.",
+          "oneOf": [
+            {
+              "format": "uri",
+              "type": "string"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "env": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "env"
+              ],
+              "type": "object"
+            }
+          ],
+          "title": "Package source address"
+        },
+        "sources": {
+          "additionalProperties": {
+            "properties": {
+              "key": {
+                "description": "The Ed25519 public key (base64) its index is signed with. An index that doesn't verify isn't taken. Allowed: text of at most 64 characters. Only in the system config. Takes effect immediately.",
+                "maxLength": 64,
+                "minLength": 1,
+                "title": "Other source key",
+                "type": "string"
+              },
+              "url": {
+                "description": "The folder holding its index. Together with a key it makes a source you trust. It goes in the system config. Allowed: an address starting with http:// or https:// or { env = \"…\" }. Only in the system config. Takes effect immediately.",
+                "oneOf": [
+                  {
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "env": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "env"
+                    ],
+                    "type": "object"
+                  }
+                ],
+                "title": "Other source address"
+              }
+            },
+            "type": "object"
+          },
+          "type": "object"
+        }
       },
       "type": "object"
     },
@@ -620,7 +708,7 @@
             "description": "One line the AI sees after the pool name when it starts a subagent. Write it in English. Allowed: one line of English, at most 60 characters. Only in the system config. Applies to new sessions.",
             "maxLength": 60,
             "minLength": 1,
-            "title": "Description for the model",
+            "title": "Description",
             "type": "string"
           },
           "models": {
@@ -638,13 +726,13 @@
               "rotate",
               "ordered"
             ],
-            "title": "Pool strategy",
+            "title": "Allocation strategy",
             "type": "string"
           },
           "subagent": {
             "default": false,
             "description": "When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members. Allowed: true or false. Only in the system config. Applies to new sessions.",
-            "title": "Subagents can pick it",
+            "title": "Available to subagents",
             "type": "boolean"
           }
         },
@@ -669,21 +757,21 @@
           "description": "Anything you want the AI to know about you; can be left empty. Not included in group chats on messaging platforms. Allowed: text of at most 2000 characters; line breaks allowed. Only in the system config. Applies to new sessions.",
           "maxLength": 2000,
           "minLength": 1,
-          "title": "More about you",
+          "title": "Additional details",
           "type": "string"
         },
         "name": {
           "description": "How the AI addresses you, such as your name or a nickname. Allowed: text of at most 64 characters. Only in the system config. Applies to new sessions.",
           "maxLength": 64,
           "minLength": 1,
-          "title": "What the AI calls you",
+          "title": "Preferred name",
           "type": "string"
         },
         "preferred_reply_language": {
           "description": "The language the AI replies in by default. You can ask it to switch at any time. Allowed: text of at most 64 characters. Only in the system config. Applies to new sessions.",
           "maxLength": 64,
           "minLength": 1,
-          "title": "What language should the AI reply in",
+          "title": "Reply language",
           "type": "string"
         }
       },
@@ -781,7 +869,7 @@
                   "description": "Which models.dev entry to use: <provider>/<model>. Left out, it is found by name. Allowed: text of at most 256 characters. Only in the system config. Takes effect next turn.",
                   "maxLength": 256,
                   "minLength": 1,
-                  "title": "Catalog entry",
+                  "title": "Catalog model",
                   "type": "string"
                 },
                 "effort": {
@@ -803,7 +891,7 @@
                     ],
                     "type": "string"
                   },
-                  "title": "Inputs",
+                  "title": "Input types",
                   "type": "array"
                 },
                 "max_output": {
@@ -945,7 +1033,7 @@
         "system_hint": {
           "default": true,
           "description": "Has the AI hand over images, web pages, documents, video and audio it makes or fetches with Show, so you see them right away instead of just a path. Allowed: true or false. Only in the system config. Applies to new sessions.",
-          "title": "Remind the AI to use Show",
+          "title": "Show hint",
           "type": "boolean"
         }
       },
@@ -1036,7 +1124,7 @@
         "welcomed": {
           "default": false,
           "description": "The first-run guide is done; the terminal and web pages no longer open it. Allowed: true or false. Only in the system config. Takes effect immediately.",
-          "title": "First-run guide done",
+          "title": "First-run guide completed",
           "type": "boolean"
         }
       },

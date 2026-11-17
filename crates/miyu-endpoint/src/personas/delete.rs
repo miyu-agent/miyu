@@ -46,7 +46,7 @@ pub(crate) async fn delete(core: &Arc<Core>, params: DeleteParams) -> Result<Jso
         return Err(Refusal::BAD_PARAMS);
     }
     let layers = personas(core);
-    let packages = core.packages_of();
+    let packages = core.system_packages();
     let (root, at) = (core.root.clone(), now());
     let logs = std::sync::Arc::clone(&core.memory.logs);
     let id = params.persona;

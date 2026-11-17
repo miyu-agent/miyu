@@ -181,16 +181,6 @@ impl Core {
             missed: Arc::new(missed),
         };
     }
-
-    /// 看得到的登记上的脚本（预设的功能表、预设页、工具的来处要的）：核心登记的全部，关了的包带的不算（施工 U23 末上）。
-    pub(crate) fn scripts_for(&self) -> Vec<Script> {
-        let off = self.packages_off();
-        self.scripts()
-            .iter()
-            .filter(|script| !off.contains(package(script)))
-            .cloned()
-            .collect()
-    }
 }
 
 /// 脚本登记在哪个包下：包带的照包的编号，家目录里放的是 [`HOME_PACKAGE`]。
@@ -202,13 +192,12 @@ pub(crate) fn package(script: &Script) -> &str {
 /// 工具名；系统配置里的 MCP 服务每个一个，挂在 [`HOME_PACKAGE`] 下（施工 F-9 下）。包里被它盖住的同名服务的功能留着也碰不到
 /// 工具：那个服务不起，目录里没有挂在那个包下的工具。
 pub(crate) fn features(core: &Core) -> Features {
-    // 照他看得到的包（施工 U23 末上：关了的不在）。
-    let packaged = crate::packages::features(&core.packages_of());
+    let packaged = crate::packages::features(&core.system_packages());
     let images = packaged.image_packages().clone();
     let life = packaged.life_packages().clone();
     let connections = packaged.connections().clone();
     let mut list: Vec<Feature> = packaged.iter().cloned().collect();
-    list.extend(core.scripts_for().iter().map(script_feature));
+    list.extend(core.scripts().iter().map(script_feature));
     list.extend(core.home_mcp.now().iter().map(|server| Feature {
         id: server.feature_id(),
         package: HOME_PACKAGE.to_string(),

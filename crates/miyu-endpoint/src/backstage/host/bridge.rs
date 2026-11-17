@@ -53,7 +53,7 @@ fn error(code: i64, message: &str) -> Value {
     json!({"code": code, "message": message})
 }
 
-/// 配置清单里 `package` 是它的那几项。
+/// 配置清单里 `package` 是它的那几项。设置页上它的「启用」（施工 UX-1）是核心的、它的后台页改不了，不算。
 async fn items(link: &Link, package: &str) -> Result<Vec<Value>, Value> {
     let schema = link.request("config.schema", json!({})).await?;
     Ok(schema["items"]
@@ -61,6 +61,11 @@ async fn items(link: &Link, package: &str) -> Result<Vec<Value>, Value> {
         .into_iter()
         .flatten()
         .filter(|item| item["package"] == package)
+        .filter(|item| {
+            item["key"]
+                .as_str()
+                .is_none_or(|key| miyu_config::package::enabled::id_of(key).is_none())
+        })
         .cloned()
         .collect())
 }

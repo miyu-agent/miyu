@@ -58,6 +58,8 @@
 
 带 `choices_from` 的项：类型照旧是 `text`，头把它画成下拉，选项调 `package.call`（参数 `{"package", "method"}`，照这一格原样填，不带 `params`）取，包回 `{"choices": [{"value", "name"?, "description"?}]}`：`value` 是存进配置的字，`name` 没写的照 `value` 画，`description` 暗色写在下面。调不到（`program_not_running`、`unregistered`、`method_failed`、`method_timeout`）、回的 `choices` 是空的或者不是这个样子的，退回文字框；存着的值不在列表里的照样显示。核心不照列表查值，写什么存什么。
 
+**包的「启用」**（UX-1）：有开关的包（同 `package.list` 带 `enabled` 的那几个）各一项 `packages.<编号>.enabled`：`type` 是 `bool`、`control` 是 `toggle`、`applies` 是 `now`，`page` 是 `packages`、`group` 和 `package` 是这个包，排在这个包自己的配置项前面。`true` 是开。它就是 `package.enable`、`package.disable` 那个开关，不写在配置文件里。以前的 `packages.<编号>.off`（只对某个人关掉）删了，哪儿都不认。
+
 **出错**：`unknown_config_key`：`keys` 里有清单里没有的，`data.problems` 每个一条，带最近的键名 `suggest`。
 
 ## `config.get`
@@ -82,6 +84,8 @@
 {"files":{"secrets":{"file":"secrets.toml"},"system":{"file":"config.toml","version":"sha256:…"}},"items":{"ui.language":{"origin":{"file":"config.toml","layer":"system","line":3},"value":"zh"}},"problems":[]}
 ```
 
+包的「启用」：`{"origin": {"layer": "package"}, "value": true}`，来源 `package` 是说它不在哪一层配置里；`all` 的 `layers` 是 `[]`。
+
 **出错**：`unknown_config_key`。
 
 ## `config.set`
@@ -105,6 +109,8 @@
 ```
 
 几项一起查、一起写：有一项不对整条不收。写盘、推 `config.changed` 以后才回应。
+
+改包的「启用」（`packages.<编号>.enabled`）就是开关这个包，同 `package.enable`（不带 `approve`）、`package.disable`：不写配置文件、不推 `config.changed`，`keys` 里那一项是 `{"applies": "now", "effective": <这时开没开>, "origin": {"layer": "package"}, "value": <同 effective>}`；`miyu config set` 照来源 `package` 不报「被上面一层压着」。只收 `value` 写 `true`、`false`，或者 `input`；`unset` 是 `bad_params`，`expect` 不看。和别的项写在同一条里的，别的项先写进配置，再开关包；开不起来的回 `package.enable` 的原因（`needs_approval`、`program_missing`……），已经写进配置的留着。扩展改它回 `local_only`。
 
 **出错**
 

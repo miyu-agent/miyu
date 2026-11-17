@@ -126,7 +126,7 @@ pub(crate) fn source(core: &Core, language: &str, name: &str) -> (Value, Option<
     if let Some(service) = miyu_tool::mcp_service(name) {
         return (json!({"kind": "mcp", "id": service, "name": service}), None);
     }
-    let scripts = core.scripts_for();
+    let scripts = core.scripts();
     if let Some(script) = scripts.iter().find(|script| script.head.name == name) {
         let shown = pick(&script.head.display_name, language).unwrap_or_else(|| name.to_string());
         let summary = pick(&script.head.summary, language);

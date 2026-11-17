@@ -50,7 +50,6 @@ pub fn core(home: &Home, script: &Script, hand: &Arc<Hand>) -> Arc<Core> {
         miyu_endpoint::settings::EXTERNAL_BINDINGS,
         miyu_session::loading::ITEMS,
         miyu_session::switches::ITEMS,
-        miyu_session::packages_off::ITEMS,
     ]
     .concat();
     let config = miyu_endpoint::config::Config::load(

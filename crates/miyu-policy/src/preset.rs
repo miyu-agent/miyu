@@ -76,13 +76,9 @@ pub struct PresetFile {
     /// （[`Chosen::situated`]），不进 [`PresetFile::digest`]、不叠层。
     pub withheld: BTreeSet<String>,
     /// 这个会话里不过开关的包（施工 IM-4，接入通讯平台设计 06 第 4.6 节第 3 样）：接平台的包在自己平台的场所会话里整包开着，
-    /// `[features]`、`[software]`、`[tools]`、全局开关、`unlisted` 都不管它；扣下的、这个人关了的照旧不开。不是文件里写的：
+    /// `[features]`、`[software]`、`[tools]`、全局开关、`unlisted` 都不管它；扣下的照旧不开。不是文件里写的：
     /// 会话照场所算好放进来（[`Chosen::situated`]），不进 [`PresetFile::digest`]、不叠层。
     pub own: BTreeSet<String>,
-    /// 主人关了的包（施工 U23 末上，配置 `packages.<编号>.off`，[`PresetFile::switching_off`]）：同扣下的包都不开；和扣下的
-    /// 不一样的是它的功能算进没开的那几个，改了快照记的不一样，开着的会话下一个回合换上工具面。不是文件里写的，不进
-    /// [`PresetFile::digest`]、不叠层。
-    pub switched_off: BTreeSet<String>,
     /// 人设的全局开关（施工 X-27，`switches.rs`）：功能编号到开不开，只认技能、脚本、MCP 三类。不是文件里写的：核心照这一轮的
     /// 配置放进来（[`PresetFile::following`]），不进 [`PresetFile::digest`]、不叠层。
     pub global: BTreeMap<String, bool>,
@@ -135,7 +131,7 @@ impl PresetFile {
     /// `[features]` 写了的照写的；没写的照以前的 `[software]`，先认功能的编号、再认包的编号；都没写的照人设的全局开关（施工
     /// X-27）；再没有的照 `unlisted`。
     pub fn opens_in(&self, feature: &str, package: &str) -> bool {
-        if self.withheld.contains(package) || self.switched_off.contains(package) {
+        if self.withheld.contains(package) {
             return false;
         }
         self.own.contains(package) || self.decided(feature, package).0

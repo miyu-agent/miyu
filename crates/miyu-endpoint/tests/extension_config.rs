@@ -233,7 +233,7 @@ async fn an_extension_sets_only_its_own_plain_settings() {
 }
 
 /// 包的前缀（施工 PN-1，设计 48 第二节）：清单写了 `prefix` 的，配置项的键照前缀起；握手交的、它自己改得了的都是这几项，
-/// 关掉这个包的 `packages.<编号>.off` 不算它的：交的里没有，它改不了。
+/// 设置页上这个包的「启用」`packages.<编号>.enabled`（施工 UX-1）不算它的：交的里没有，它改不了。
 #[tokio::test]
 async fn settings_follow_the_prefix_not_the_package_id() {
     let home = Home::new();
@@ -245,7 +245,7 @@ async fn settings_follow_the_prefix_not_the_package_id() {
     );
     let off = format!(
         "ask:config.set:{}",
-        json!({"layer": "system", "changes": [{"key": "packages.miyu-echo.off", "value": true}]})
+        json!({"layer": "system", "changes": [{"key": "packages.miyu-echo.enabled", "value": false}]})
     );
     home.write(
         "opt/miyu-echo/package.toml",
@@ -284,7 +284,7 @@ async fn settings_follow_the_prefix_not_the_package_id() {
     );
     assert_eq!(
         answers[2]["error"]["data"]["reason"], "local_only",
-        "关掉自己的那一项不是它的：{}",
+        "自己的「启用」不是它的：{}",
         answers[2]
     );
     assert!(read(&home.root.config_file()).contains("[echo]"));

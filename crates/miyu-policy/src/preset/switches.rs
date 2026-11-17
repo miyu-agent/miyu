@@ -57,14 +57,6 @@ impl By {
 }
 
 impl PresetFile {
-    /// 放进这一轮主人关了的包 `off`（施工 U23 末上，配置 `packages.<编号>.off`）：整份换掉原来的（[`PresetFile::switched_off`]）。
-    /// 改了从下一个回合开始生效。施工 BS-1 上中起没有必需的包，哪个都关得掉。
-    #[must_use]
-    pub fn switching_off(mut self, off: impl IntoIterator<Item = String>) -> PresetFile {
-        self.switched_off = off.into_iter().collect();
-        self
-    }
-
     /// 放进这一轮的全局开关 `global`（功能编号到开不开，照 `features.<功能编号>` 读的）：整份换掉原来的。
     #[must_use]
     pub fn following(mut self, global: BTreeMap<String, bool>) -> PresetFile {

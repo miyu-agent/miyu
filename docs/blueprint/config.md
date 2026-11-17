@@ -313,6 +313,7 @@ miyu_config::settings! {
 - `permission.confirm.git`、`.delete`、`.power`、`.pipe_to_shell`、`.container`（施工 HZ-1，2026-11-11 项目主人定，`designs/11-权限与沙盒.md` A18）：受保护的命令。完全放开下也先问人的高危命令分五类（破坏性 git、递归删除、关机和重启、下载后直接执行、容器使用宿主设备），一类一个开关，出厂都开；关掉的那一类在本人的会话里不再问、直接跑，外部身份的会话不看。只有系统一层，下一轮生效（回合开始照这一轮的配置换进权限策略）。直接拒的那七种没有开关，列在这一组的说明里。在 `crates/miyu-session/src/settings.rs` 的 `ConfirmSettings` 声明；核心登记时排在 `PermissionSettings` 前面，所以「隐私与安全」那一页先出现的组是它，排在私密目录上面。哪一种归哪一类、怎么判见 `session/guard.md` 第四条末。
 - `permission.confirm.timeout`（施工 CD-1，2026-11-12 项目主人定）：等人确认等多少秒，出厂 300（5 分钟），`0` 是一直等，最多 86400（一天）。所有「允许/拒绝」的确认都算（权限策略问的高危命令、装包这些，扩展守卫问的）；她的提问（`ask_user`）不算，照旧一直等。到时没人确认的，内核替人拒绝，她拿到「没人确认」的那一句，换别的办法往下走：自己跑的时候不会因为一个确认卡住。只有系统一层，下一轮生效：回合开始照这一轮的配置交给内核（`TurnStartHooksDone` 的 `confirm_ms`），计时从记请求那一刻起，截止的时刻写在请求里（`expires_at`）。同在 `ConfirmSettings` 声明，设置页在「权限」那一组（那一组别的项不显示，这一项是它唯一显示的一项）。
 - 去掉的（施工 LV-5，2026-11-11 项目主人定，`designs/11-权限与沙盒.md` A17）：`sandbox.strength`（沙盒强度，施工 5-16 下）和 `sandbox.readonly.enabled`、`.add`、`.remove`（受保护的路径，施工 5-17 下）。老配置里留着的照不在清单里的键报 `unknown_key`（警告），原样留在文件里，不进最终值。
+- 去掉的（施工 UX-1，2026-11-17 项目主人定：只留一个「启用」）：`packages.<编号>.off`（施工 U23 末上，多用户时「对某个人隐藏这个包」，和真正的开关 `package.enable`、`package.disable` 是两个开关管一件事）。设置页上包的开关换成「启用」`packages.<编号>.enabled`（第八条「协议」的 `config.schema`），它不写在配置文件里。老配置里写着 `off` 的照不在清单里的键报 `unknown_key`（警告）；手写了 `packages.<编号>.enabled` 的同样（`crates/miyu-core/tests/settings_removed.rs`）。
 - 去掉的（施工 PV-RM，2026-11-16 项目主人定：只读就是完全放开减去写，不替人藏东西，想藏的自己布沙盒）：私密目录那三项 `sandbox.private.enabled`、`.add`、`.remove`（施工 5-13 到 5-17）连同出厂清单、照环境变量挪去的位置。老配置里留着的同上，照不在清单里的键报 `unknown_key`（警告）。`config.schema` 随之不再有 `ticks` 这一格，出错表去掉 `private_too_broad`。数据根照旧哪一级都碰不到，不受影响。
 - `ui.startup`：打开一个头（终端界面、网页）时开一个新会话（`new`），还是接着最近的那一个（`recent`）。头自己用 `config.get` 读，核心不管它（2026-10-01 主会话和终端界面定）。界面提示：`general` 页（通用）的 `display` 组（显示），下拉。施工 8-28 从 `tui.startup` 改名（2026-10-07 项目主人定：同一个人在同一台机器上，每个头的体验一样，几个头都有的行为是一个共用的项，只有一个头才有的才用 `tui.*`、`web.*`）；不留旧名字：还没发布，文件里写着旧名字的照不认识的键报警告、不算。
 - `log.level` 只能放在系统配置里：运行日志是整个核心的，项目配置不能写它。
@@ -407,6 +408,7 @@ miyu_config::settings! {
 - 选项由包在运行时给（施工 SG-2，2026-11-10 项目主人验收语音助手设置页时提的：麦克风不该让人手填设备名）：清单写了 `choices_from` 的文字项（`packages.md`「配置项」的表）再带 `choices_from`：`{"package": "<包的编号>", "method": "<方法名>"}`，`type` 照旧是 `text`；没写的项不带这一格，回应和原来逐字节一样。头画成下拉，选项调 `package.call {package, method}` 取，包回 `{"choices": [{"value", "name"?, "description"?}]}`；调不到、回空的退回文字框，存着的值不在列表里的照样显示。核心只交出这一格，不调那个方法、不照列表查值（设备拔了不算错）。拼法在 `crates/miyu-endpoint/src/config/choices.rs`，照核心手里装着的包的清单现拼。
 - 写了清单里没有的键：`unknown_config_key`，`data.problems` 里每个不认识的一条：`code` 是 `unknown_key`，`level` 是 `error`（请求写错了，不是文件里的警告），`key`、`message`，有最近的键名的带 `suggest`，没有行列。
 - 名字、说明这种语言里没有的，照英文（`store/resources.md` 第 3 条的退法），英文也没有的名字照键、说明是空的；页、组的名字同样，都没有的照编号。
+- 包的「启用」（施工 UX-1，2026-11-17 项目主人定：只留一个开关，`true` 是开）：这一刻有开关的包（同 `package.list` 带 `enabled` 的那几个：扩展、带服务的 `bundle`、出厂的内置包，卸掉了的出厂包也算）各一项 `packages.<编号>.enabled`：`type` 是 `bool`、`control` 是 `toggle`、`applies` 是 `now`，在「软件包」页、这个包那一组（`package` 是它），排在这个包自己的配置项前面，没有别的项的排在最后。名字「启用」/ Enabled / 有効。它不写在配置文件里，不在配置清单里（生成的 Schema、参考文件没有它，配置文件里写了的照不认识的键警告）：值就是这个包真的开没开，`config.set` 改它就是 `package.enable`、`package.disable`。`keys` 写它的照样认；没有开关的包（必需的、界面、小程序、只带技能脚本的 `bundle`）没有这一项，写了是 `unknown_config_key`。原来的 `packages.<编号>.off`（施工 U23 末上，多用户时「只对你自己关掉」）删了，扩展进程那一面同样认不出它。
 
 **`config.get`**（查询，8-2）：最终值，每个值附上来源。
 
@@ -428,9 +430,10 @@ miyu_config::settings! {
 - `files.project` 多一格 `trusted`：`true` 信任过这一份，`false` 选了不信任，`null` 还没问过或者信任以后内容变了。不是 `true` 的，项目配置不算进最终值（第三条第 2 条）。
 - `problems`：这几份文件现在的问题，全部，不只 `keys` 那几项的。8-5 起连同引用取不到的（`unknown_secret`、`env_not_set`，在引用它的那份文件里），和密钥文件的（`file` 是 `secrets.toml`，不带 `got`）。
 - 写了清单里没有的键：`unknown_config_key`，同 `config.schema`。
+- 包的「启用」（施工 UX-1，同 `config.schema`）：没写 `keys` 的、`keys` 里写了的列出，`{"origin": {"layer": "package"}, "value": true|false}`，来源 `package` 是说它不在哪一层配置里、是包自己的开关；`all` 的 `layers` 是 `[]`。
 - 不带 `cwd` 就不碰项目配置。`cwd` 照 `session.create` 的写法（`protocol.md`「工作目录太宽」第 2 条换成真实的位置），换不成的当没找到项目配置。
 
-**`config.set`**（命令，8-3）：在一层里改一项或几项、恢复默认。或者整份换掉（`miyu config edit` 用）。只给人：扩展进程调回 `local_only`（施工 T-9）。例外（施工 T-9 补，2026-10-17 接入QQ 的会话要的、项目主人定：只许写自己包的项）：核心拉起的扩展能逐项改系统配置里这个包清单里声明的项（配置清单里这一项的 `ui.package` 是这个包，施工 5-19：包编号和核心模块同名、没声明配置项的包照样装得上，光看开头它就改得了 `ui.*` 这类核心自己的项；施工 PN-1 起键照前缀起、不一定以包编号开头，只照 `ui.package` 认，关掉这个包的 `packages.<编号>.off` 不算），留痕的 `by` 记成这个包（`{"kind": "module", "id": "<包>"}`）；密钥类的项（密钥、密钥的列表）、写成引用的值（`{ secret = … }`、`{ env = … }`，`value` 是对象或 `input` 以 `{` 开头的；施工 R3S-1 起值照这一项的类型读出来，列表的元素、一组字段的字段里任何一层写成引用的也算）、别的键、整份换的照旧 `local_only`。为什么挡引用：扩展握手时拿到的自己的密钥是真值，能改引用就能指到别人的 key、环境里的 key 再读回去。
+**`config.set`**（命令，8-3）：在一层里改一项或几项、恢复默认。或者整份换掉（`miyu config edit` 用）。只给人：扩展进程调回 `local_only`（施工 T-9）。例外（施工 T-9 补，2026-10-17 接入QQ 的会话要的、项目主人定：只许写自己包的项）：核心拉起的扩展能逐项改系统配置里这个包清单里声明的项（配置清单里这一项的 `ui.package` 是这个包，施工 5-19：包编号和核心模块同名、没声明配置项的包照样装得上，光看开头它就改得了 `ui.*` 这类核心自己的项；施工 PN-1 起键照前缀起、不一定以包编号开头，只照 `ui.package` 认，这个包的「启用」`packages.<编号>.enabled` 不算，施工 UX-1），留痕的 `by` 记成这个包（`{"kind": "module", "id": "<包>"}`）；密钥类的项（密钥、密钥的列表）、写成引用的值（`{ secret = … }`、`{ env = … }`，`value` 是对象或 `input` 以 `{` 开头的；施工 R3S-1 起值照这一项的类型读出来，列表的元素、一组字段的字段里任何一层写成引用的也算）、别的键、整份换的照旧 `local_only`。为什么挡引用：扩展握手时拿到的自己的密钥是真值，能改引用就能指到别人的 key、环境里的 key 再读回去。
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
@@ -457,6 +460,7 @@ miyu_config::settings! {
 
 - 每一项：`value` 这一层现在的值（删掉的不写）。`effective`、`origin` 算上别的层以后的最终值和来源（不算项目配置）。`applies` 什么时候生效。
 - 一项都没变的：`{"keys":{},"version":<现在的版本>}`，什么都不写，也不记日志。这一层本来就是这个值的、本来就没写又要删的，都算没变；文件还没有、又只是删的，不新建。
+- 包的「启用」（施工 UX-1）：改它的那几项不写进配置文件，照 `package.enable`（不带 `approve`）、`package.disable` 开关包，回应的 `keys` 里那一项是 `{"applies": "now", "effective": <这时开没开>, "origin": {"layer": "package"}, "value": <同 effective>}`，不推 `config.changed`（包自己的事件照推）。值只收开关（`value` 写 `true`、`false`，或 `input` 照开关读）；`unset`、同一个键写两次是 `bad_params`；`expect` 不看。同一条里别的项先照常写进配置、再一个个开关包；开不起来的（要批的能力还没批、程序不在……）回 `package.enable` 的那个拒绝原因，前面写进配置的照旧留着。只人改的那一路认它：扩展经 `config.set` 改不了（`local_only`）。
 
 1. `changes`、`text` 正好写一个。两个都写、都不写，`changes` 是空的，一项里 `value`、`input`、`unset` 不是正好一个，同一个键写了两次，`layer` 写了不是 `system`，写了 `text` 没写 `version`：`bad_params`。
 2. 写了清单里没有的键：`unknown_config_key`。
@@ -976,17 +980,17 @@ $ miyu provider logout bigmodel-2
 # 配置写在数据根的 config.toml。
 
 [clicall.mcp]
-# 脚本里能调这个 MCP 服务的工具：开着的话，这个服务的工具在 miyu call 里都能调；关着的只能直接调。单件工具另写了的照那一件的。
+# 允许脚本调用：开着的话，这个服务的工具在 miyu call 里都能调；关着的只能直接调。单件工具另写了的照那一件的。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # "<id>" =
 
 [clicall.tools]
-# 脚本里能调这件工具：开着的话，AI 在命令里用 miyu call 也能调这件工具，结果交给脚本；关着的只能直接调。不写的照它自己登记的（MCP 服务、脚本工具默认能调，自带的只有搜索、抓网页、搜记忆、知识库几件能调，扩展的默认不能）。写入、发消息这类工具开了也调不成。
+# 允许脚本调用：开着的话，AI 在命令里用 miyu call 也能调这件工具，结果交给脚本；关着的只能直接调。不写的照它自己登记的（MCP 服务、脚本工具默认能调，自带的只有搜索、抓网页、搜记忆、知识库几件能调，扩展的默认不能）。写入、发消息这类工具开了也调不成。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # "<name>" =
 
 [commands."<id>"]
-# 谁能用这条命令：这条斜杠命令谁能用：你和群管理员，或者群里随便哪个人也行，或者停用、谁都不行。不写的照命令自带的设置，没有的是你和群管理员。
+# 使用权限：这条斜杠命令谁能用：你和群管理员，或者群里随便哪个人也行，或者停用、谁都不行。不写的照命令自带的设置，没有的是你和群管理员。
 # 能写：admin、anyone 或 off。只能写在系统配置里。立即生效。
 # access =
 
@@ -995,12 +999,12 @@ $ miyu provider logout bigmodel-2
 # 能写：20 到 95 之间的整数。只能写在系统配置里。下一轮生效。
 line = 85
 
-# 提前压好：上下文快满时，在后台先把旧的那一段压成摘要，到了要压缩的时候直接换上，不用停下来等。关掉的话，照旧到线再压。
+# 预压缩：上下文快满时，在后台先把旧的那一段压成摘要，到了要压缩的时候直接换上，不用停下来等。关掉的话，照旧到线再压。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 prepare = true
 
 [core]
-# 核心空闲多久退出：没有连接、也没有在跑的回合，连续这么多分钟以后核心退出。0 表示一直开着（默认）；头连不上核心时会自己拉起。
+# 空闲退出时间：没有连接、也没有在跑的回合，连续这么多分钟以后核心退出。0 表示一直开着（默认）；头连不上核心时会自己拉起。
 # 能写：0 到 525600 之间的整数。只能写在系统配置里。立即生效。
 idle_exit = 0
 
@@ -1009,12 +1013,12 @@ idle_exit = 0
 workers = 0
 
 [external.bindings]
-# 我的平台账号：通讯平台上哪几个号是你本人。键写平台上的身份（例如 qq:10001），值写 owner。私聊里，这个号就是你。
+# 平台账号：通讯平台上哪几个号是你本人。键写平台上的身份（例如 qq:10001），值写 owner。私聊里，这个号就是你。
 # 能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置里。立即生效。
 # "<external>" =
 
 [features]
-# 这个技能、脚本或 MCP 服务开着：默认全开的预设照它开关这个技能、脚本或 MCP 服务，预设里单独写了开或关的照预设。默认关的预设不照它。
+# 启用：默认全开的预设照它开关这个技能、脚本或 MCP 服务，预设里单独写了开或关的照预设。默认关的预设不照它。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # "<name>" =
 
@@ -1029,27 +1033,27 @@ max_running = "30m"
 level = "info"
 
 [memory]
-# 保留几次整理过程：每份记忆只保留最近这么多次整理记忆的过程，更早的移到回收处。0 是整理完就删。
+# 保留的整理记录数：每份记忆只保留最近这么多次整理记忆的过程，更早的移到回收处。0 是整理完就删。
 # 能写：0 到 1000 之间的整数。只能写在系统配置里。下一轮生效。
 dream_keep = 20
 
-# 整理记忆前等多久：聊完闲了这么久，AI 把新聊的内容里值得记的整理成记忆。
+# 整理前的空闲时间：聊完闲了这么久，AI 把新聊的内容里值得记的整理成记忆。
 # 能写：1m 到 1h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。下一轮生效。
 extract_idle = "30m"
 
-# 一直在聊时攒几轮就整理：群里一直有人说话、总闲不下来时，上次整理以后聊满这么多轮就不等闲，在后台整理。
+# 连续对话时的整理间隔（轮）：群里一直有人说话、总闲不下来时，上次整理以后聊满这么多轮就不等闲，在后台整理。
 # 能写：2 到 500 之间的整数。只能写在系统配置里。下一轮生效。
 extract_max_turns = 20
 
-# 一直在聊时最多等多久：群里一直有人说话、总闲不下来时，最早没整理的那一轮过了这么久就不等闲，在后台整理。
+# 连续对话时的最长等待：群里一直有人说话、总闲不下来时，最早没整理的那一轮过了这么久就不等闲，在后台整理。
 # 能写：10m 到 24h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。下一轮生效。
 extract_max_wait = "1h"
 
-# 攒几轮再整理：上次整理以后至少聊了这么多轮才整理。
+# 整理间隔（轮）：上次整理以后至少聊了这么多轮才整理。
 # 能写：1 到 100 之间的整数。只能写在系统配置里。下一轮生效。
 extract_turns = 2
 
-# 多久归纳一次记忆：隔这么久，AI 把新记的和以前的放在一起理一遍：重复的合掉，过时的作废，写一段对你的了解。
+# 归纳间隔：隔这么久，AI 把新记的和以前的放在一起理一遍：重复的合掉，过时的作废，写一段对你的了解。
 # 能写：1h 到 720h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。下一轮生效。
 merge_every = "16h"
 
@@ -1067,7 +1071,7 @@ merge_every = "16h"
 # vision =
 
 [models.catalog]
-# 多久更新一次：缓存的目录旧过这么久才再拉。
+# 更新间隔：缓存的目录旧过这么久才再拉。
 # 能写：1h 到 720h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。立即生效。
 every = "24h"
 
@@ -1080,38 +1084,38 @@ update = true
 url = "https://models.dev/api.json"
 
 [models.cooldown.auth]
-# 认证失败先停用多久：池里的一个模型认证失败时，第一次停用这么久，连着再失败就翻倍。
+# 认证失败停用（初始）：池里的一个模型认证失败时，第一次停用这么久，连着再失败就翻倍。
 # 能写：1s 到 1h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。立即生效。
 base = "10m"
 
-# 认证失败最多停用多久：认证失败的停用翻倍到这么久为止。
+# 认证失败停用（上限）：认证失败的停用翻倍到这么久为止。
 # 能写：1s 到 24h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。立即生效。
 max = "2h"
 
 [models.cooldown.quota]
-# 额度用完先停用多久：池里的一个模型额度、余额用完，供应商又没说什么时候恢复时，第一次停用这么久。说了的照它说的，最多一天。
+# 额度用完停用（初始）：池里的一个模型额度、余额用完，供应商又没说什么时候恢复时，第一次停用这么久。说了的照它说的，最多一天。
 # 能写：1s 到 24h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。立即生效。
 base = "30m"
 
-# 额度用完最多停用多久：没说什么时候恢复的，连着再用完就翻倍，到这么久为止。
+# 额度用完停用（上限）：没说什么时候恢复的，连着再用完就翻倍，到这么久为止。
 # 能写：1s 到 24h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。立即生效。
 max = "30m"
 
 [models.cooldown.rate_limited]
-# 限速后先冷却多久：一个端点被限速，第一次停用这么久，连着再被限速就翻倍。
+# 限速冷却（初始）：一个端点被限速，第一次停用这么久，连着再被限速就翻倍。
 # 能写：1s 到 1h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。立即生效。
 base = "30s"
 
-# 限速最多冷却多久：限速的冷却翻倍到这么久为止，供应商说要等更久的也不超过它。
+# 限速冷却（上限）：限速的冷却翻倍到这么久为止，供应商说要等更久的也不超过它。
 # 能写：1s 到 24h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。立即生效。
 max = "10m"
 
 [models.cooldown.retryable]
-# 出错后先冷却多久：连不上、服务端出错，第一次停用这么久，连着再出错就翻倍。
+# 出错冷却（初始）：连不上、服务端出错，第一次停用这么久，连着再出错就翻倍。
 # 能写：1s 到 1h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。立即生效。
 base = "10s"
 
-# 出错最多冷却多久：这类错的冷却翻倍到这么久为止。
+# 出错冷却（上限）：这类错的冷却翻倍到这么久为止。
 # 能写：1s 到 24h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。立即生效。
 max = "5m"
 
@@ -1163,166 +1167,6 @@ mirrors = []
 # 能写：http:// 或 https:// 开头的网址 或 { env = "…" }。只能写在系统配置里。立即生效。
 source = "https://miyu-agent.github.io/packages/"
 
-[packages."<id>"]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-advisor]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-ask-user]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-authoring]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-clicall]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-edit]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-env]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-glob]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-goal]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-grep]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-history]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-jobs]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-knowledge]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-life]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-loop]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-memory]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-mermaid]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-net]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-packages]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-persona-engineer]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-project-docs]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-read]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-roleplay]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-schedule]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-session-usage]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-sessions]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-shell]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-show]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-subagent]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-todowrite]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-trash]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.base-write]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
 [packages.sources."<id>"]
 # 别的软件源的公钥：签它的索引的 Ed25519 公钥（base64）。索引照它验，验不过的不收。
 # 能写：最多 64 个字的文字。只能写在系统配置里。立即生效。
@@ -1368,7 +1212,7 @@ timeout = 300
 # default =
 
 [pools."<id>"]
-# 给模型看的说明：AI 派子代理时看到的一句，接在池名后面。用英文写，一行。
+# 说明：AI 派子代理时看到的一句，接在池名后面。用英文写，一行。
 # 能写：最多 60 个字的一行英文。只能写在系统配置里。新会话生效。
 # description =
 
@@ -1376,26 +1220,26 @@ timeout = 300
 # 能写：<供应商>/<模型> 的列表。只能写在系统配置里。下一轮生效。
 # models =
 
-# 池的分法：一个会话一直用一个成员，还是每次请求换下一个，还是每次从第一个排起（主力加备用，出错才用后面的）。不写的：成员全是按次计费的轮换，别的钉住。
+# 分配策略：一个会话一直用一个成员，还是每次请求换下一个，还是每次从第一个排起（主力加备用，出错才用后面的）。不写的：成员全是按次计费的轮换，别的钉住。
 # 能写：pin、rotate 或 ordered。只能写在系统配置里。下一轮生效。
 # strategy =
 
-# 子代理能选：打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。
+# 子代理可用：打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。
 # 能写：true 或 false。只能写在系统配置里。新会话生效。
 subagent = false
 
 [pools.flagship]
-# 子代理能选：打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。
+# 子代理可用：打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。
 # 能写：true 或 false。只能写在系统配置里。新会话生效。
 subagent = true
 
 [pools.lite]
-# 子代理能选：打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。
+# 子代理可用：打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。
 # 能写：true 或 false。只能写在系统配置里。新会话生效。
 subagent = true
 
 [pools.normal]
-# 子代理能选：打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。
+# 子代理可用：打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。
 # 能写：true 或 false。只能写在系统配置里。新会话生效。
 subagent = true
 
@@ -1409,11 +1253,11 @@ default = "full"
 # 能写：最多 2000 个字的文字，可以分行。只能写在系统配置里。新会话生效。
 # about =
 
-# AI 怎么称呼你：AI 平时怎么叫你，例如名字、昵称。
+# 称呼：AI 平时怎么叫你，例如名字、昵称。
 # 能写：最多 64 个字的文字。只能写在系统配置里。新会话生效。
 # name =
 
-# AI 用什么语言回复：AI 默认用哪种语言回复，对话里可以随时让它换。
+# 回复语言：AI 默认用哪种语言回复，对话里可以随时让它换。
 # 能写：最多 64 个字的文字。只能写在系统配置里。新会话生效。
 # preferred_reply_language =
 
@@ -1426,7 +1270,7 @@ default = "full"
 # 能写：contract、best_effort 或 per_request。只能写在系统配置里。下一轮生效。
 # cache =
 
-# 对应的供应商：这家对应资料里的哪一家，例如只转 DeepSeek 的中转写 deepseek。
+# 目录中的供应商：这家对应资料里的哪一家，例如只转 DeepSeek 的中转写 deepseek。
 # 能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置里。下一轮生效。
 # catalog =
 
@@ -1438,7 +1282,7 @@ default = "full"
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置里。下一轮生效。
 # key =
 
-# 本机的服务：本机跑的模型服务，价格当 0。不写的照地址：在本机的是。
+# 本地服务：本机跑的模型服务，价格当 0。不写的照地址：在本机的是。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # local =
 
@@ -1451,7 +1295,7 @@ default = "full"
 # price_multiplier =
 
 [providers."<id>".models."<model>"]
-# 对应目录里的：照 models.dev 目录里的哪一个：<供应商>/<模型>。不写的照名字找。
+# 目录中的模型：照 models.dev 目录里的哪一个：<供应商>/<模型>。不写的照名字找。
 # 能写：最多 256 个字的文字。只能写在系统配置里。下一轮生效。
 # catalog =
 
@@ -1459,7 +1303,7 @@ default = "full"
 # 能写：最多 32 个字的文字。只能写在系统配置里。下一轮生效。
 # effort =
 
-# 能收哪些输入：这个模型能读的：文字、图片、PDF、音频、视频。
+# 输入类型：这个模型能读的：文字、图片、PDF、音频、视频。
 # 能写：text、image、pdf、audio 或 video 的列表。只能写在系统配置里。下一轮生效。
 # inputs =
 
@@ -1479,7 +1323,7 @@ default = "full"
 # 能写：0 到 2 之间的数。只能写在系统配置里。下一轮生效。
 # temperature =
 
-# 能调工具：这个模型能不能调工具。
+# 工具调用：这个模型能不能调工具。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # tools =
 
@@ -1514,7 +1358,7 @@ default = "full"
 # url =
 
 [show]
-# 提醒 AI 用展示：让 AI 把做出来或拿到的图片、网页、文档、音视频用「展示」直接给你看，而不只是给一个路径。
+# 展示提示：让 AI 把做出来或拿到的图片、网页、文档、音视频用「展示」直接给你看，而不只是给一个路径。
 # 能写：true 或 false。只能写在系统配置里。新会话生效。
 system_hint = true
 
@@ -1528,7 +1372,7 @@ dirs = ["~/.agents/skills"]
 enabled = false
 
 [terminal]
-# 闲置多久开新会话：上一次说话以后闲置超过这么多分钟，下一句开一个新的终端集成会话，旧会话保留。0 表示不开新的。
+# 闲置后新建会话：上一次说话以后闲置超过这么多分钟，下一句开一个新的终端集成会话，旧会话保留。0 表示不开新的。
 # 能写：0 到 525600 之间的整数。只能写在系统配置里。立即生效。
 idle_new_after = 180
 
@@ -1553,7 +1397,7 @@ language = "auto"
 # 能写：new 或 recent。只能写在系统配置里。重启后生效。
 startup = "new"
 
-# 第一次引导走过了：已经走完第一次引导，终端、网页不再打开引导。
+# 已完成首次引导：已经走完第一次引导，终端、网页不再打开引导。
 # 能写：true 或 false。只能写在系统配置里。立即生效。
 welcomed = false
 
@@ -1619,14 +1463,14 @@ currency = "USD"
 | 选项（8-28 改了 `info`、`debug`、`trace` 三个：照多少排，一眼看出哪个更细） | `error` 只记错误、`warn` 错误和警告、`info` 常规、`debug` 详细，排查用、`trace` 最详细、`off` 不记 | Errors only、Errors and warnings、Normal、Detailed, for debugging、Most detailed、Nothing | エラーのみ、エラーと警告、通常、詳細（調査用）、最も詳細、記録しない |
 | `permission.start_read_only` 名字 | 新会话开局只读 | Start new sessions read-only | 新しいセッションを読み取り専用で始める |
 | 说明 | 打开以后，新会话一开始就是只读。她只能查、写计划，要改文件时你再关掉只读。项目配置里只能把它打开。 | When on, new sessions begin read-only. She can look around and plan, and you turn read-only off when files should change. A project config can only turn it on. | オンにすると、新しいセッションは読み取り専用で始まります。調査と計画だけを行い、ファイルを変更するときに読み取り専用をオフにします。プロジェクト設定ではオンにすることしかできません。 |
-| `profile.name` 名字（P-9） | AI 怎么称呼你 | What the AI calls you | AI からの呼び名 |
+| `profile.name` 名字（P-9；UX-1 改名） | 称呼 | Preferred name | 呼び名 |
 | 说明 | AI 平时怎么叫你，例如名字、昵称。 | How the AI addresses you, such as your name or a nickname. | AI があなたを呼ぶときの名前やニックネームです。 |
-| `profile.about` 名字（P-9） | 更多描述 | More about you | あなたについての補足 |
+| `profile.about` 名字（P-9；UX-1 改名） | 更多描述 | Additional details | 補足 |
 | 说明 | 想让 AI 知道的关于你的事，可以空。通讯平台的群聊里不带。 | Anything you want the AI to know about you; can be left empty. Not included in group chats on messaging platforms. | AI に知っておいてほしいことです。空でもかまいません。メッセージングのグループチャットでは使われません。 |
-| `profile.preferred_reply_language` 名字（P-9 补；2026-10-17 改名、排到「用户」页第一） | AI 用什么语言回复 | What language should the AI reply in | AI が返信する言語 |
+| `profile.preferred_reply_language` 名字（P-9 补；2026-10-17 改名、排到「用户」页第一；UX-1 改名） | 回复语言 | Reply language | 返信の言語 |
 | 说明 | AI 默认用哪种语言回复，对话里可以随时让它换。 | The language the AI replies in by default. You can ask it to switch at any time. | AI が既定で返信に使う言語です。会話の中でいつでも切り替えを頼めます。 |
 | 建议值（先后照这种语言） | 简体中文、繁體中文、English、日本語、한국어、Français、Deutsch、Español、Português、Italiano、Русский、Tiếng Việt、ไทย、Bahasa Indonesia、العربية | English、简体中文、繁體中文、日本語、한국어，后面同中文 | 日本語、English、简体中文、繁體中文、한국어，后面同中文 |
-| `commands.<id>.access` 名字（O-6 六补） | 谁能用这条命令 | Who can use this command | このコマンドを使える人 |
+| `commands.<id>.access` 名字（O-6 六补；UX-1 改名） | 使用权限 | Access | 使用権限 |
 | 说明 | 这条斜杠命令谁能用：你和群管理员，或者群里随便哪个人也行，或者停用、谁都不行。不写的照命令自带的设置，没有的是你和群管理员。 | Who can use this slash command: you and group admins, anyone in the chat, or off for no one. When unset, the command's own setting applies, otherwise you and group admins. | このスラッシュコマンドを使える人。あなたとグループの管理者、チャットの誰でも、または無効（誰も使えない）。設定しない場合はコマンド自身の設定、それもなければあなたとグループの管理者です。 |
 | 选项 | `admin` 你和群管理员、`anyone` 所有人、`off` 停用 | You and group admins、Everyone、Off | あなたとグループの管理者、全員、無効 |
 | `permission.confirm.git` 名字（HZ-1） | 破坏性 git 操作 | Destructive git operations | 破壊的な git 操作 |
@@ -1665,7 +1509,7 @@ currency = "USD"
 | 说明 | 这家的接口地址，路径由驱动接在后面。认得出的供应商可以不写。 | The address of this provider's API; the driver adds the path. Known providers can leave it out. | このプロバイダーの API のアドレス。パスはドライバーが付けます。知っているプロバイダーなら書かなくてもかまいません。 |
 | `providers.<id>.key` 名字（8-6，8-25 从 `keys` 改） | key | Key | キー |
 | 说明 | 写 { secret = "名字" }（用 miyu provider login 存）或 { env = "环境变量" }，一个会话钉在其中一个上。空的不带认证头。 | Write { secret = "name" } (saved with miyu provider login) or { env = "VARIABLE" }. Each session sticks to one of them. Empty means no auth header. | { secret = "名前" }（miyu provider login で保存）か { env = "環境変数" } を書きます。セッションはそのうちの一つを使い続けます。空なら認証ヘッダーを付けません。 |
-| `providers.<id>.catalog` 名字（8-6） | 对应的供应商 | Catalog provider | 対応するプロバイダー |
+| `providers.<id>.catalog` 名字（8-6；UX-1 改名） | 目录中的供应商 | Catalog provider | カタログのプロバイダー |
 | 说明 | 这家对应资料里的哪一家，例如只转 DeepSeek 的中转写 deepseek。 | Which provider in the model data this one is, for example deepseek for a relay that only forwards DeepSeek. | モデル資料のどのプロバイダーに当たるか。DeepSeek だけを中継するなら deepseek と書きます。 |
 | `providers.<id>.models.<model>.window` 名字（8-6） | 上下文窗口 | Context window | コンテキストウィンドウ |
 | 说明 | 这个模型的上下文窗口，单位 token。 | The context window of this model, in tokens. | このモデルのコンテキストウィンドウ。単位はトークン。 |
@@ -1674,18 +1518,18 @@ currency = "USD"
 | `models.embedding` 名字（R-5 下；R-5 再补改名，2026-10-09 项目主人定） | 语义模型 | Semantic model | 意味モデル |
 | 说明 | 提高记忆、知识库等内容的检索质量。只有内置模型会自动联想记忆和知识库，换成别的模型后只在搜索时用到。（后一句施工 FX-4 加：门槛表里没有的模型不联想，原来换了远程的模型以后联想不出来、没有任何提示） | Improves search quality for memories, knowledge bases and more. Only the built-in model recalls memories and knowledge on its own; other models are used for search only. | 記憶やナレッジベースなどの検索の質を高めます。記憶とナレッジを自動で思い出すのは内蔵モデルだけで、ほかのモデルは検索にだけ使います。 |
 | 选项 | `local` 内置模型、`off` 关 | Built-in model、Off | 内蔵モデル、オフ |
-| `memory.extract_idle` 名字（R-6 上） | 整理记忆前等多久 | Wait before organizing memories | 記憶を整理するまでの待ち時間 |
+| `memory.extract_idle` 名字（R-6 上；UX-1 改名） | 整理前的空闲时间 | Idle time before organizing | 整理前のアイドル時間 |
 | 说明 | 聊完闲了这么久，她把新聊的内容里值得记的整理成记忆。 | Once the conversation has been quiet this long, she turns what is worth keeping from the new part into memories. | 会話がこの時間止まると、新しい部分のうち覚えておく価値のあるものを記憶にまとめます。 |
-| `memory.extract_turns` 名字（R-6 上） | 攒几轮再整理 | Turns before organizing | 整理までのターン数 |
+| `memory.extract_turns` 名字（R-6 上；UX-1 改名） | 整理间隔（轮） | Organizing interval (turns) | 整理の間隔（ターン） |
 | 说明 | 上次整理以后至少聊了这么多轮才整理。 | She organizes only after at least this many turns since the last time. | 前回の整理からこのターン数以上話したときだけ整理します。 |
-| `memory.extract_max_turns` 名字（E-5） | 一直在聊时攒几轮就整理 | Turns before organizing a busy chat | 会話が続くときの整理までのターン数 |
+| `memory.extract_max_turns` 名字（E-5；UX-1 改名） | 连续对话时的整理间隔（轮） | Organizing interval in continuous chats (turns) | 連続した会話での整理の間隔（ターン） |
 | 说明 | 群里一直有人说话、总闲不下来时，上次整理以后聊满这么多轮就不等闲，在后台整理。 | When a chat never goes quiet, the AI organizes in the background once this many turns have passed since the last time, without waiting for a pause. | グループで誰かが話し続けて会話が止まらないとき、前回の整理からこのターン数に達したら、止まるのを待たずに裏で整理します。 |
-| `memory.extract_max_wait` 名字（E-5） | 一直在聊时最多等多久 | Longest wait in a busy chat | 会話が続くときの最長の待ち時間 |
+| `memory.extract_max_wait` 名字（E-5；UX-1 改名） | 连续对话时的最长等待 | Longest wait in continuous chats | 連続した会話での最長待ち時間 |
 | 说明 | 群里一直有人说话、总闲不下来时，最早没整理的那一轮过了这么久就不等闲，在后台整理。 | When a chat never goes quiet, the AI organizes in the background once the earliest unorganized turn is this old, without waiting for a pause. | グループで誰かが話し続けて会話が止まらないとき、まだ整理していない最初のターンからこの時間がたったら、止まるのを待たずに裏で整理します。 |
 | 说明 | 整理记忆时用的模型，照用量算钱。没选的用主对话的模型。 | The model used to organize memories, billed by usage. If none is chosen, the chat model is used. | 記憶の整理に使うモデルです。使った分だけ料金がかかります。選ばなければ会話のモデルを使います。 |
-| `memory.merge_every` 名字（R-7 上） | 多久归纳一次记忆 | How often to consolidate memories | 記憶をまとめる間隔 |
+| `memory.merge_every` 名字（R-7 上；UX-1 改名） | 归纳间隔 | Consolidation interval | 統合の間隔 |
 | 说明 | 隔这么久，她把新记的和以前的放在一起理一遍：重复的合掉，过时的作废，写一段对你的了解。 | After this long she goes over new and older memories together: drops repeats and outdated ones, and writes a summary of what she knows about you. | この間隔で、新しい記憶と以前の記憶を見直します：重複や古くなったものを除き、あなたについての要約を書きます。 |
-| `memory.dream_keep` 名字（D-1 下） | 保留几次整理过程 | Consolidation runs to keep | 残す整理の回数 |
+| `memory.dream_keep` 名字（D-1 下；UX-1 改名） | 保留的整理记录数 | Organizing records kept | 保持する整理記録の数 |
 | 说明 | 每份记忆只保留最近这么多次整理记忆的过程，更早的移到回收处。0 是整理完就删。 | Keep only this many of the latest consolidation runs for each memory. Older ones go to the trash. 0 deletes each run when it ends. | 記憶ごとに、最新のこの回数分の整理の経過だけを残します。古いものはゴミ箱へ移します。0 は整理が終わるたびに削除します。 |
 | `net.search.source` 名字（N-2 下，NF-1 改名） | 联网服务 | Web provider | ウェブプロバイダー |
 | 说明 | AI 搜网页、抓网页用哪一家。自动只用免费额度：搜索照 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；自己抓不下来的网页请 Exa、Firecrawl、Parallel 代抓。这几家都在国外，搜索词和网址会发给它们。选了一家的先用它（选了 DeepSeek 的，抓网页也先交它），它用不了再照自动的试。 | Which service AI uses to search and fetch the web. Auto sticks to free tiers: searches try Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rest any that hit a rate limit, and pages that can't be fetched directly are fetched by Exa, Firecrawl or Parallel. These services are outside China and receive the search terms and addresses. A chosen one is tried first (DeepSeek also fetches pages before AI tries them itself), and Auto takes over when it fails. | AI がウェブ検索とページ取得に使うサービス。自動では無料枠だけを使います。検索は Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。直接取得できないページは Exa、Firecrawl、Parallel に代わりに取得させます。これらは海外のサービスで、検索語と URL が送られます。選んだものを先に使い（DeepSeek はページ取得も先に担当します）、使えなければ自動に切り替えます。 |
@@ -1701,12 +1545,12 @@ currency = "USD"
 | 说明 | 你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。联网服务选了 SearXNG 时用它。 | Your own SearXNG instance, for example http://127.0.0.1:8888, with the JSON format enabled. Used when SearXNG is the web provider. | 自分で立てた SearXNG（例 http://127.0.0.1:8888）。JSON 形式を有効にしておきます。ウェブプロバイダーに SearXNG を選んだときに使います。 |
 | `pools.<id>.models` 名字（8-8） | 池的成员 | Pool members | プールのメンバー |
 | 说明 | 几个模型编成一组，每个写成 供应商/模型。 | A group of models, each written as provider/model. | いくつかのモデルをひとまとめにします。それぞれ プロバイダー/モデル の形で書きます。 |
-| `pools.<id>.strategy` 名字（8-8） | 池的分法 | Pool strategy | プールの分け方 |
+| `pools.<id>.strategy` 名字（8-8；UX-1 改名） | 分配策略 | Allocation strategy | 割り当て方式 |
 | 说明 | 一个会话一直用一个成员，还是每次请求换下一个。不写的：成员全是按次计费的轮换，别的钉住。 | Keep a session on one member, or take the next member for every request. Left out, a pool whose members are all billed per request rotates and the others pin. | ひとつのセッションでずっと同じメンバーを使うか、リクエストごとに次のメンバーに替えるか。書かなければ、メンバーがすべてリクエストごとの課金なら順番に替え、ほかは固定します。 |
 | 选项 | `pin` 钉住、`rotate` 轮换 | Pin、Rotate | 固定、順番に替える |
-| `pools.<id>.subagent` 名字（8-8 补） | 子代理能选 | Subagents can pick it | サブエージェントが選べる |
+| `pools.<id>.subagent` 名字（8-8 补；UX-1 改名） | 子代理可用 | Available to subagents | サブエージェントで使用可 |
 | 说明 | 打开以后，新会话里她派子代理时能选这个池。池里有成员才列出来。 | When on, she can pick this pool for a subagent in new sessions. It is listed only once it has members. | オンにすると、新しいセッションでサブエージェントを出すときにこのプールを選べます。メンバーがいるときだけ並びます。 |
-| `pools.<id>.description` 名字（8-8 补） | 给模型看的说明 | Description for the model | モデル向けの説明 |
+| `pools.<id>.description` 名字（8-8 补；UX-1 改名） | 说明 | Description | 説明 |
 | 说明 | 她派子代理时看到的一句，接在池名后面。用英文写，一行。 | One line she sees after the pool name when she starts a subagent. Write it in English. | サブエージェントを出すときに、プール名のあとに見える一行です。英語で書きます。 |
 | `providers.<id>.cache` 名字（8-8） | 缓存类别 | Cache class | キャッシュの種類 |
 | 说明 | 这家的缓存怎么算钱。现在只用来定池不写分法时怎么分。不写照驱动的默认。 | How this provider bills its cache. For now it only decides how a pool without a strategy splits. Left out, it follows the driver. | このプロバイダーのキャッシュの課金のしかた。いまは分け方を書いていないプールの分け方を決めるだけです。書かなければドライバーの既定に従います。 |
@@ -1736,6 +1580,13 @@ currency = "USD"
 | 组 `base-memory`（`packages`，R-6 上；施工 PN-3 起组的编号是包编号，原来是 `memory`，PN-5 起去掉 `miyu-`；包装着的照清单的名字） | 记忆 | Memory | 記憶 |
 | 组 `base-net`（`packages`，施工 N-2 下；施工 PN-3 起是包编号，原来是 `net`，PN-5 起去掉 `miyu-`） | 联网搜索 | Web search | ウェブ検索 |
 | 组 `net_keys`（`packages`，施工 N-2 下） | API Key 和地址 | API keys and addresses | API キーとアドレス |
+
+**命名的规矩**（施工 UX-1，项目主人 2026-11-17 定）：
+
+- 项和组的名字是软件术语、名词短语，例如「预压缩」「归纳间隔」「使用权限」「平台账号」；不写成一句话，不带「AI」「你」，不用「多久」「几轮」「谁能」这类问法。单位、上下限写进括号：「整理间隔（轮）」「限速冷却（初始）」「限速冷却（上限）」。英文、日文照同一标准写成软件里常见的说法，不逐字翻中文。
+- 开关一律正着说：`true` 是开。键不以 `off`、`disable` 结尾，不以 `no_`、`not_`、`disable_`、`hide_`、`skip_` 开头，要反着说的改成 `…enabled`；名字不带「不」「禁用」「隐藏」这类字。枚举里的 `off` 选项（`log.level`、`commands.<id>.access`、`models.embedding`）不是开关，不算。
+- 说明可以是句子，要短、说事实；单用户（施工 10-28 拆了多用户），不写「只对你自己」「别人照旧」「每个人」。
+- 门禁：`miyu-core` 的 `tests/settings_names.rs` 照 `miyu_config::naming` 查核心登记的项、包的「启用」、出厂的包的项在中英日三份字表里的名字，只拦一眼看得出的几样（开关的键、句子里才有的字、开关名字里反着说的字），名词短语靠人审。别人做的包照它自己的写法，不拦。
 
 **生成的文件要的几句**（`core/human/<语言>.json` 的 `said`，编号前面加 `core/`，8-1）。日文照中文写，用词照终端界面的日文（施工 4-5 补），句子里用全角的「：」：
 

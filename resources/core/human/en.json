@@ -5,13 +5,13 @@
         "name": "Longest background command",
         "description": "A command the AI runs in the background is stopped after this long, and the AI is told. At most 2 hours."
       },
-      "show.system_hint": {"name": "Remind the AI to use Show", "description": "Has the AI hand over images, web pages, documents, video and audio it makes or fetches with Show, so you see them right away instead of just a path."},
+      "show.system_hint": {"name": "Show hint", "description": "Has the AI hand over images, web pages, documents, video and audio it makes or fetches with Show, so you see them right away instead of just a path."},
       "compaction.line": {
         "name": "Compaction line",
         "description": "Compact automatically once the context fills this percent of the window. Small windows keep room for the reply, so compaction may start earlier. With a 200K window, values above 85 have no effect. A 1M window can reach 95."
       },
       "compaction.prepare": {
-        "name": "Prepare compaction early",
+        "name": "Pre-compaction",
         "description": "When the context is nearly full, the older part is summarized in the background, so the switch happens without a wait when compaction is due. Off means compacting only once the limit is reached, as before."
       },
       "net.search.exa.key": {"name": "Exa", "description": "With a key, searches use your own Exa quota; without one, the free quota."},
@@ -22,31 +22,31 @@
       "net.search.searxng.url": {"name": "SearXNG address", "description": "Your own SearXNG instance, for example http://127.0.0.1:8888, with the JSON format enabled. Used when SearXNG is the web provider."},
       "net.search.source": {"name": "Web provider", "description": "Which service AI uses to search and fetch the web. Auto sticks to free tiers: searches try Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rest any that hit a rate limit, and pages that can't be fetched directly are fetched by Exa, Firecrawl or Parallel. These services are outside China and receive the search terms and addresses. A chosen one is tried first (DeepSeek also fetches pages before AI tries them itself), and Auto takes over when it fails.", "options": {"auto": "Auto (free tiers)", "deepseek": "DeepSeek", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG"}},
       "memory.extract_idle": {
-        "name": "Wait before organizing memories",
+        "name": "Idle time before organizing",
         "description": "Once the conversation has been quiet this long, the AI turns what is worth keeping from the new part into memories."
       },
       "memory.extract_turns": {
-        "name": "Turns before organizing",
+        "name": "Organizing interval (turns)",
         "description": "The AI organizes only after at least this many turns since the last time."
       },
       "memory.extract_max_turns": {
-        "name": "Turns before organizing a busy chat",
+        "name": "Organizing interval in continuous chats (turns)",
         "description": "When a chat never goes quiet, the AI organizes in the background once this many turns have passed since the last time, without waiting for a pause."
       },
       "memory.extract_max_wait": {
-        "name": "Longest wait in a busy chat",
+        "name": "Longest wait in continuous chats",
         "description": "When a chat never goes quiet, the AI organizes in the background once the earliest unorganized turn is this old, without waiting for a pause."
       },
       "memory.merge_every": {
-        "name": "How often to consolidate memories",
+        "name": "Consolidation interval",
         "description": "After this long the AI goes over new and older memories together: drops repeats and outdated ones, and writes a summary of what it knows about you."
       },
       "memory.dream_keep": {
-        "name": "Consolidation runs to keep",
+        "name": "Organizing records kept",
         "description": "Keep only this many of the latest consolidation runs for each memory. Older ones go to the trash. 0 deletes each run when it ends."
       },
       "core.idle_exit": {
-        "name": "Core idle exit",
+        "name": "Idle exit time",
         "description": "Minutes with no connection and no running turn before the core exits. 0 keeps it running (the default); a head starts the core again when it can't reach it."
       },
       "core.workers": {
@@ -92,7 +92,7 @@
         "description": "The interface plain miyu opens."
       },
       "ui.welcomed": {
-        "name": "First-run guide done",
+        "name": "First-run guide completed",
         "description": "The first-run guide is done; the terminal and web pages no longer open it."
       },
       "persona.default": {
@@ -104,20 +104,20 @@
         "description": "The preset new sessions use."
       },
       "profile.name": {
-        "name": "What the AI calls you",
+        "name": "Preferred name",
         "description": "How the AI addresses you, such as your name or a nickname."
       },
       "profile.about": {
-        "name": "More about you",
+        "name": "Additional details",
         "description": "Anything you want the AI to know about you; can be left empty. Not included in group chats on messaging platforms."
       },
       "profile.preferred_reply_language": {
-        "name": "What language should the AI reply in",
+        "name": "Reply language",
         "description": "The language the AI replies in by default. You can ask it to switch at any time.",
         "suggestions": ["English", "简体中文", "繁體中文", "日本語", "한국어", "Français", "Deutsch", "Español", "Português", "Italiano", "Русский", "Tiếng Việt", "ไทย", "Bahasa Indonesia", "العربية"]
       },
       "commands.<id>.access": {
-        "name": "Who can use this command",
+        "name": "Access",
         "description": "Who can use this slash command: you and group admins, anyone in the chat, or off for no one. When unset, the command's own setting applies, otherwise you and group admins.",
         "options": {
           "admin": "You and group admins",
@@ -162,19 +162,16 @@
         "description": "When on, new sessions begin read-only. The AI can look around and plan, and you turn read-only off when files should change. A project config can only turn it on."
       },
       "clicall.tools.<name>": {
-        "name": "Callable from scripts",
+        "name": "Allow script calls",
         "description": "When on, the AI can also call this tool with miyu call inside a command, and the result goes to the script; when off, it can only be called directly. Unset follows how it was registered (MCP servers and script tools are callable, among built-in tools only search, fetching pages, memory search and the knowledge base tools are, extension tools are not). Tools that write or send messages stay uncallable even when on."
       },
       "clicall.mcp.<id>": {
-        "name": "Callable from scripts: this MCP server's tools",
+        "name": "Allow script calls",
         "description": "When on, all of this server's tools can be called with miyu call; when off, only directly. A tool with its own setting follows that one."
       },
-      "packages.<id>.off": {
-        "name": "Turn this package off for me",
-        "description": "Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it."
-      },
+      "packages.<id>.enabled": {"name": "Enabled", "description": "Whether the package is on. Turning it off stops an extension and the services it brings, and removes a shipped built-in package. It can be turned back on any time."},
       "features.<name>": {
-        "name": "Turn this skill, script or MCP server on",
+        "name": "Enabled",
         "description": "Presets that turn on what they don't list follow this switch for the skill, script or MCP server, except where a preset turns it on or off itself. Presets that leave unlisted features off ignore it."
       },
       "terminal.persona": {
@@ -210,7 +207,7 @@
         "description": "A group of models, each written as provider/model."
       },
       "pools.<id>.strategy": {
-        "name": "Pool strategy",
+        "name": "Allocation strategy",
         "description": "Keep a session on one member, take the next member for every request, or start from the first member every time (a main model with backups used only on errors). Left out, a pool whose members are all billed per request rotates and the others pin.",
         "options": {
           "pin": "Pin",
@@ -219,23 +216,23 @@
         }
       },
       "pools.<id>.subagent": {
-        "name": "Subagents can pick it",
+        "name": "Available to subagents",
         "description": "When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members."
       },
       "pools.lite.subagent": {
-        "name": "Subagents can pick it",
+        "name": "Available to subagents",
         "description": "When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members."
       },
       "pools.normal.subagent": {
-        "name": "Subagents can pick it",
+        "name": "Available to subagents",
         "description": "When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members."
       },
       "pools.flagship.subagent": {
-        "name": "Subagents can pick it",
+        "name": "Available to subagents",
         "description": "When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members."
       },
       "pools.<id>.description": {
-        "name": "Description for the model",
+        "name": "Description",
         "description": "One line the AI sees after the pool name when it starts a subagent. Write it in English."
       },
       "providers.<id>.driver": {
@@ -285,7 +282,7 @@
         }
       },
       "providers.<id>.models.<model>.catalog": {
-        "name": "Catalog entry",
+        "name": "Catalog model",
         "description": "Which models.dev entry to use: <provider>/<model>. Left out, it is found by name."
       },
       "providers.<id>.models.<model>.max_output": {
@@ -293,7 +290,7 @@
         "description": "How many tokens this model can write at most in one reply."
       },
       "providers.<id>.models.<model>.inputs": {
-        "name": "Inputs",
+        "name": "Input types",
         "description": "What this model can read: text, images, PDF, audio, video.",
         "options": {
           "text": "Text",
@@ -361,43 +358,43 @@
         "description": "Where to fetch the model catalog from."
       },
       "models.catalog.every": {
-        "name": "Update every",
+        "name": "Update interval",
         "description": "Fetch again once the cached catalog is this old."
       },
       "models.cooldown.rate_limited.base": {
-        "name": "Rate limit cooldown",
+        "name": "Rate limit cooldown (initial)",
         "description": "How long an endpoint rests the first time it is rate limited. It doubles each time in a row."
       },
       "models.cooldown.rate_limited.max": {
-        "name": "Rate limit cooldown cap",
+        "name": "Rate limit cooldown (max)",
         "description": "The rate limit cooldown stops doubling here, even when the provider asks for longer."
       },
       "models.cooldown.retryable.base": {
-        "name": "Error cooldown",
+        "name": "Error cooldown (initial)",
         "description": "How long an endpoint rests the first time it cannot be reached or fails on its side. It doubles each time in a row."
       },
       "models.cooldown.retryable.max": {
-        "name": "Error cooldown cap",
+        "name": "Error cooldown (max)",
         "description": "The cooldown for these errors stops doubling here."
       },
       "models.cooldown.auth.base": {
-        "name": "Auth failure pause",
+        "name": "Auth failure suspension (initial)",
         "description": "How long a pool model rests the first time it fails to authenticate. It doubles each time in a row."
       },
       "models.cooldown.auth.max": {
-        "name": "Auth failure pause cap",
+        "name": "Auth failure suspension (max)",
         "description": "The auth failure pause stops doubling here."
       },
       "models.cooldown.quota.base": {
-        "name": "Out-of-quota pause",
+        "name": "Quota exhausted suspension (initial)",
         "description": "How long a pool model rests the first time it runs out of quota or credit and the provider doesn't say when it comes back. When it does say, that time is used, up to a day."
       },
       "models.cooldown.quota.max": {
-        "name": "Out-of-quota pause cap",
+        "name": "Quota exhausted suspension (max)",
         "description": "Without a stated reset time, the pause doubles each time in a row up to this."
       },
       "external.bindings.<external>": {
-        "name": "My platform accounts",
+        "name": "Platform accounts",
         "description": "Which platform identities are you. The key is the platform identity (for example qq:10001), the value is owner. In private chats that identity is you."
       }
     },
@@ -424,7 +421,7 @@
       "clicall": "Calling tools from scripts",
       "features": "Feature switches",
       "terminal": "Shell integration session",
-      "profile": "About you",
+      "profile": "Profile",
       "uses": "Uses",
       "pools": "Pools",
       "providers": "Providers",

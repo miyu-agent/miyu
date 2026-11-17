@@ -33,7 +33,7 @@ use crate::personas::pick;
 pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carried) -> Vec<Entry> {
     let words = words(core, language).ok();
     let catalog = core.tools.current();
-    let found_packages = core.packages_of();
+    let found_packages = core.system_packages();
     let table = crate::scripts::features(core);
     let file = &found.file.clone().following(super::switches(core));
     let row = |on: bool| {
@@ -102,10 +102,10 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
             .with_tools(tools),
         );
     }
-    let scripts = core.scripts_for();
+    let scripts = core.scripts();
     // 脚本各算一个功能（施工 X-12 中）：名字、说明照脚本写给人看的几格挑这个连接的语言，没写名字的照工具名；它自己那件工具
     // 带着同一个名字，开不开照功能和 `[tools]`。
-    for script in &scripts {
+    for script in scripts.iter() {
         let id = script_feature(&script.head.name);
         let package = crate::scripts::package(script);
         let decided = file.decided(&id, package);

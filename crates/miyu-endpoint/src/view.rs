@@ -164,7 +164,7 @@ pub(crate) struct Titles {
 }
 
 impl Titles {
-    /// 看得到的（施工 U23 上下，[`Core::packages_of`]）。
+    /// 照这一刻的工具目录和装着的包。
     pub(crate) fn of(core: &Core) -> Titles {
         let catalog = core.tools.current();
         let tools = catalog
@@ -187,7 +187,7 @@ impl Titles {
             .collect();
         Titles {
             packages_of,
-            packages: core.packages_of(),
+            packages: core.system_packages(),
             root: core.root.clone(),
             external: crate::skills::external(core),
             tools,

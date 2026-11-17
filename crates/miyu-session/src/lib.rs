@@ -49,7 +49,6 @@ mod memory;
 mod messages;
 mod onlooker;
 mod open;
-pub mod packages_off;
 mod path_text;
 mod peers;
 mod pictures;

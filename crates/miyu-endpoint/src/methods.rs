@@ -314,8 +314,9 @@ pub(crate) fn call<'a>(
                     )
                 }
                 // 人改的：指着没有的人格、预设照收，回应带上警告（施工 CK-1）。
+                // 包的「启用」开关包（施工 UX-1），别的写进配置。
                 None => {
-                    let reply = config::set::set(core, peer, &request.id, params)?;
+                    let reply = config::enabled::set(core, peer, &request.id, params).await?;
                     config::set::unknown::warned(core, peer, reply).await
                 }
             }

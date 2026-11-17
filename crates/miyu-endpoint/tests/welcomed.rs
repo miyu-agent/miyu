@@ -31,7 +31,7 @@ async fn the_welcome_flag_is_hidden_and_written_by_the_heads() {
             &json!(false),
             &json!(["system"]),
             &json!(true),
-            &json!("第一次引导走过了")
+            &json!("已完成首次引导")
         ),
         "{schema}"
     );

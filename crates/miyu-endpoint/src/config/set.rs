@@ -105,6 +105,13 @@ pub(super) struct ChangeParam {
     expect: Option<Map<String, Json>>,
 }
 
+impl ChangeParam {
+    /// 没写 `unset`：是改成一个值，不是删掉（`expect` 不算，包的「启用」不看它，施工 UX-1）。
+    pub(super) fn plain(&self) -> bool {
+        self.unset.is_none()
+    }
+}
+
 /// 写了这一格（哪怕是 `null`）就是有。
 fn present<'de, D: Deserializer<'de>, T: Deserialize<'de>>(d: D) -> Result<Option<T>, D::Error> {
     T::deserialize(d).map(Some)

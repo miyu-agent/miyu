@@ -3,8 +3,6 @@
 //!
 //! 写了清单里没有的键：`unknown_config_key`，`data.problems` 里每个不认识的一条，带离得最近的键名。
 
-use std::collections::BTreeSet;
-
 use serde::Deserialize;
 use serde_json::{Map, Value, json};
 
@@ -42,21 +40,20 @@ pub(crate) struct GetParams {
     all: bool,
 }
 
-/// `config.schema`：配置清单，名字和说明照这个连接的语言。读的是这个连接的人那一份（施工 Y-2 下下中上）。
+/// `config.schema`：配置清单，名字和说明照这个连接的语言。有开关的包多一项「启用」（施工 UX-1，`enabled.rs`）。
 pub(crate) fn schema(core: &Core, peer: Peer, params: SchemaParams) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
-    // 他关了的包（施工 U23 末下）：拿配置的锁之前读，那个包的配置项不给他看。
-    let off = core.packages_off();
+    // 包的开关拿配置的锁之前读。
+    let (switches, keys) =
+        super::enabled::split(&super::enabled::switches(core), params.keys.as_deref());
     let config = &*core.config();
     let mut items: Vec<&Item> = Vec::new();
-    for (item, _) in selected(config, params.keys.as_deref(), &words)? {
-        if hidden_by(item, &off) {
-            continue;
-        }
+    for (item, _) in selected(config, keys.as_deref(), &words)? {
         if !items.iter().any(|seen| seen.key == item.key) {
             items.push(item);
         }
     }
+    super::enabled::place(&mut items, &switches);
     let fallback = || Human::load(&core.resources, FALLBACK).ok();
     let english = if items.iter().all(|item| words.item(item.key).is_some()) {
         None
@@ -253,7 +250,8 @@ fn config_name(words: &Human, english: Option<&Human>, what: &str, id: &str) -> 
 /// `config.get`：最终值，每个值附上来源；每一份文件的位置、版本；这几份文件现在的全部问题。
 pub(crate) fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
-    let off = core.packages_off();
+    let (switches, keys) =
+        super::enabled::split(&super::enabled::switches(core), params.keys.as_deref());
     let config = &*core.config();
     let project = params.cwd.as_deref().and_then(|cwd| config.project(cwd));
     let layers = config.layers(project.as_ref());
@@ -264,12 +262,10 @@ pub(crate) fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Value, R
         Layer::System => Some(config.system.shown.clone()),
         Layer::Project => project.as_ref().map(|project| project.file.shown.clone()),
     };
-    let wanted = selected_in(config, &resolved, params.keys.as_deref(), &words)?;
+    let wanted = selected_in(config, &resolved, keys.as_deref(), &words)?;
     let mut listed = Map::new();
+    super::enabled::got(&mut listed, &switches, params.all);
     for (item, key) in wanted {
-        if hidden_by(item, &off) {
-            continue;
-        }
         let Some((value, origin)) = resolved.get(&key) else {
             continue;
         };
@@ -411,13 +407,6 @@ pub(crate) fn words(core: &Core, language: &str) -> Result<Human, Refusal> {
             tracing::warn!(target: TARGET, error = %error, "resource unreadable");
             Refusal::INTERNAL
         })
-}
-
-/// 包的配置项 `item` 归他关了的包（`off`，施工 U23 末下）：设置页上不给他看，值照旧留在文件里，开回来就在。那个包的关包开关
-/// （`packages.<编号>.off`）照给，好开回来。
-fn hidden_by(item: &Item, off: &BTreeSet<String>) -> bool {
-    item.ui.package.is_some_and(|package| off.contains(package))
-        && miyu_config::key::item_of(miyu_session::packages_off::ITEMS, item.key).is_none()
 }
 
 /// 请求里的 `keys` 挑出的几项和真的键，照清单的先后；不写的是全部写死的项（键里有人起的名字的项，`config.schema` 用它的样子）。

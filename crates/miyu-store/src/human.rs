@@ -30,7 +30,7 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
-use miyu_config::package::settings::OFF;
+use miyu_config::package::enabled::KEY as ENABLED;
 use miyu_config::package::{Choice, Manifest, Setting, SettingKind};
 use miyu_config::phrases::Phrases;
 use miyu_config::{ConfigWords, ItemWords, Words};
@@ -255,16 +255,16 @@ impl Human {
                 .iter()
                 .find_map(|language| phrases.get(*language).cloned())
         };
-        // 每个人关掉某个包的那一项（施工 U23 末上）：每个不是必需的包一份，字照带占位的那一项。
-        let off = self.config.items.get(OFF).cloned();
+        // 包的「启用」（施工 UX-1）：每个包一份，字照带占位的那一项。
+        let enabled = self.config.items.get(ENABLED).cloned();
         for (id, manifest) in packages {
             if let Some(name) = pick(&manifest.name) {
                 self.config.groups.insert(id.to_string(), name);
             }
-            if let Some(words) = off.as_ref() {
+            if let Some(words) = enabled.as_ref() {
                 self.config
                     .items
-                    .insert(miyu_config::key::fill(OFF, &[id]), words.clone());
+                    .insert(miyu_config::key::fill(ENABLED, &[id]), words.clone());
             }
             for setting in &manifest.settings {
                 let key = format!("{}.{}", manifest.prefix_of(id), setting.name);

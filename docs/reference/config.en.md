@@ -58,6 +58,8 @@ A group: `id`, `name` (in the connection's language), `page`; a group that has a
 
 A setting with `choices_from`: its type is still `text`. Draw it as a dropdown and get the choices with `package.call` (params `{"package", "method"}` exactly as given here, no `params`); the package answers `{"choices": [{"value", "name"?, "description"?}]}`: `value` is the text stored in the config, `name` falls back to `value`, `description` is drawn dimmed below. When the call fails (`program_not_running`, `unregistered`, `method_failed`, `method_timeout`), or `choices` is empty or not in this shape, fall back to a text box; a stored value that isn't in the list is still shown. The core never checks the value against the list: what is written is what is stored.
 
+**A package's "Enabled"** (UX-1): every package with a switch (those with `enabled` in `package.list`) has one item `packages.<id>.enabled`: `type` `bool`, `control` `toggle`, `applies` `now`, `page` `packages`, `group` and `package` the package, placed before the package's own settings. `true` means on. It is the switch of `package.enable` and `package.disable` and is not stored in the config file. The former `packages.<id>.off` (turning a package off for one person) is gone and not recognized anywhere.
+
 **Errors**: `unknown_config_key`: `keys` has keys not in the list; `data.problems` has one item each, with the nearest key as `suggest`.
 
 ## `config.get`
@@ -82,6 +84,8 @@ A setting with `choices_from`: its type is still `text`. Draw it as a dropdown a
 {"files":{"secrets":{"file":"secrets.toml"},"system":{"file":"config.toml","version":"sha256:…"}},"items":{"ui.language":{"origin":{"file":"config.toml","layer":"system","line":3},"value":"en"}},"problems":[]}
 ```
 
+A package's "Enabled": `{"origin": {"layer": "package"}, "value": true}`; origin `package` means it lives in no config layer. With `all`, `layers` is `[]`.
+
 **Errors**: `unknown_config_key`.
 
 ## `config.set`
@@ -105,6 +109,8 @@ Give exactly one of `changes` and `text`. Each change: `key` (required; a list w
 ```
 
 All changes are checked and written together: one bad item refuses the whole request. The response comes after the file is written and `config.changed` is pushed.
+
+Changing a package's "Enabled" (`packages.<id>.enabled`) switches that package, as `package.enable` (without `approve`) and `package.disable` do: nothing is written to the config file and no `config.changed` is pushed; its entry in `keys` is `{"applies": "now", "effective": <on now>, "origin": {"layer": "package"}, "value": <same as effective>}`; `miyu config set` does not report origin `package` as overridden. Only `value` `true` or `false`, or `input`, is taken; `unset` is `bad_params` and `expect` is ignored. Other changes in the same request are written first, then the packages are switched; one that cannot be turned on returns the `package.enable` reason (`needs_approval`, `program_missing`, ...), and what was written stays. An extension changing it gets `local_only`.
 
 **Errors**
 
