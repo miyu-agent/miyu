@@ -190,6 +190,11 @@ async fn an_extension_calls_only_itself_by_package_id() {
         asked.contains(r#""from":"bridge""#),
         "经总线转过去带 from：{asked}"
     );
+    // 带调的那个连接这一刻的界面语言（施工 ML-1）：扩展握手没报系统语言，照 `auto` 算是英文。
+    assert!(
+        asked.contains(r#""language":"en""#),
+        "经总线转过去带调的包那个连接的语言：{asked}"
+    );
     let own = read(&bridge_log);
     assert!(
         own.contains(r#""from":"bridge""#) && own.contains("relay.echo"),
@@ -219,6 +224,10 @@ async fn an_extension_calls_only_itself_by_package_id() {
         assert!(
             last.contains(method) && !last.contains("\"from\""),
             "人的不带 from：{last}"
+        );
+        assert!(
+            last.contains(r#""language":"zh""#),
+            "人的带这个头握手报的语言（施工 ML-1）：{last}"
         );
     }
     core.stop_extensions().await;

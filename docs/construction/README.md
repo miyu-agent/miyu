@@ -1688,6 +1688,7 @@ flowchart LR
 | UX-1修 | 开关只有一条路 | im 换钉后三条测试红：`extension.enable`、`extension.disable` 不走包的开关那条路，开关以后不推 `content.changed`，im 认不出经它打开的插件。五个入口收成 `packages::switch::switch_on`、`switch_off`，扩展进程那一截只由它调。另两条 im 测试要「关着的插件照样列」，和 UX-1补 冲突，另报拍板。施工单 `UX-1-设置项正名.md` 最后一节 |
 | VP-1补 | 视图流带上戳一戳 | 网页上戳一戳只画出名字：视图流 `user` 条目多 `poke`（只写 `true`）、`poke_text`（不可信，原样交头转义），没戳的不写。施工单 `VP-1补-视图流带戳一戳.md` |
 | VN-1 | 她知道你从哪说话 | 项目主人 11-17 本机验收第 16 条：网页里叫她念一句，她合成文件发进 QQ 群；问她在哪说话，她照记忆猜成群里。人在头上说的话记上握手报的头的种类（`by.head`，`session.send`、开轮的 `command.run`），本机会话回合开始照开这一轮的那句话注入一块 `channel` 事实：`core/facts/channel/head/<种类>.txt`（终端界面、网页、`miyu ask`、终端集成各一句），别的头 `other.txt`，到点叫醒的 `nobody.txt`；和最近一块一样的不注入，换了地方才说，前缀不变。场所会话的快照不带这几句（桥写了 `<venue>`）。shellhook 现在握手报的也是 `tui`，要分开由终端头改。施工单见 `VN-1-她知道你从哪说话.md` |
+| ML-1 | 调扩展带调用方的语言 | 网页 W-1208：`method.call` 多带 `language`，调的那个连接这一刻的界面语言，照 `command.call` 的写法（`auto` 照连接握手报的 `locale`）：头经 `package.call`、`bus.call` 的是头的，包经 `bus.call` 的是那个包连接的，核心自己调的不带。SDK 那一半语音会话在 `miyu-sdk` 做。施工单见 `ML-1-调扩展带调用方的语言.md` |
 
 ### 四、施工单的格式
 

@@ -934,7 +934,7 @@
 
 - `package.file {"package", "path", "offset"?}`：回应 `{"data", "size", "eof"}`，一次最多 512 KiB。拒绝：路径写法不对 `bad_params`；没有的包 `unknown_package`；没有后台页 `no_page`；没有、跑出目录、不是普通文件 `not_found`。扩展调回 `local_only`。
 - `package.methods {"methods": [{"name", "timeout_ms"?}]}`：只给核心拉起的扩展，别的连接 `not_an_extension`；换掉这个包上一次登记的，回应 `{"methods": 个数}`；写法不对的 `bad_params`。
-- `package.call {"package", "method", "params"?}`：核心发 `method.call {"method", "params", "from"?}` 给那个扩展，回什么交回什么；在后台答。人的连接哪个包登记了的都调得到，不带 `from`。扩展照包编号只调得到自己（施工 BUS-5，设计 67 B5；原来施工 X-18 让它调别的包导出的）：`package` 不是它自己的回 `own_package_only`（`data.package` 是它写的编号；先于找包，那个包在不在、方法导没导出都是这一句），跨包走 `bus.call`；调自己要声明 `packages.call`，只调得到自己清单 `[export]` 里的，转过去带 `from`（它自己的编号）。拒绝：`unknown_package`、`program_not_running`、`unregistered`（`data.method`）、`method_failed`（`data.message`、`data.code`）、`method_timeout`；扩展调的另有 `own_package_only`、`needs_approval`（`data.capabilities` 是 `["packages.call"]`）、`not_exported`（`data.method`）。
+- `package.call {"package", "method", "params"?}`：核心发 `method.call {"method", "params", "from"?, "language"?}` 给那个扩展（`language` 是调的连接这一刻的界面语言，施工 ML-1），回什么交回什么；在后台答。人的连接哪个包登记了的都调得到，不带 `from`。扩展照包编号只调得到自己（施工 BUS-5，设计 67 B5；原来施工 X-18 让它调别的包导出的）：`package` 不是它自己的回 `own_package_only`（`data.package` 是它写的编号；先于找包，那个包在不在、方法导没导出都是这一句），跨包走 `bus.call`；调自己要声明 `packages.call`，只调得到自己清单 `[export]` 里的，转过去带 `from`（它自己的编号）。拒绝：`unknown_package`、`program_not_running`、`unregistered`（`data.method`）、`method_failed`（`data.message`、`data.code`）、`method_timeout`；扩展调的另有 `own_package_only`、`needs_approval`（`data.capabilities` 是 `["packages.call"]`）、`not_exported`（`data.method`）。
 
 **`extension.status`、`extension.enable`、`extension.disable`、`extension.restart`**（施工 9-4 上，`extensions.md`「对外的样子」）
 

@@ -142,10 +142,10 @@ pub(crate) fn listed(core: &Core, name: Option<&str>) -> Vec<Value> {
         .collect()
 }
 
-/// `bus.call`：照名字找到包，转过去。
+/// `bus.call`：照名字找到包，转过去，带上调的这一头这一刻的界面语言 `language`（施工 ML-1）。
 pub(crate) async fn call(
     core: &Core,
-    caller: &Caller,
+    (caller, language): (&Caller, &str),
     params: CallParams,
 ) -> Result<Value, Refusal> {
     if params.method.is_empty() || params.method.contains('.') {
@@ -171,5 +171,6 @@ pub(crate) async fn call(
         return Err(Refusal::not_exported(&method));
     }
     let from = caller.package.as_deref();
-    super::calls::forward(core, from, &entry.package, &method, params.params).await
+    let to = (entry.package.as_str(), method.as_str());
+    super::calls::forward(core, (from, Some(language)), to, params.params).await
 }

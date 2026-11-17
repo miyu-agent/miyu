@@ -124,7 +124,7 @@ name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
    - 不是核心拉起的扩展的连接调它，`not_an_extension`。名字写法不对、重复、时限不在范围里的 `bad_params`，什么都不换。回应 `{"methods": 个数}`。
 2. **调**：头发 `package.call {"package", "method", "params"?}`：出示本机令牌、登录令牌的连接（人：各个头、宿主页、命令行、人在终端起的程序）调得到哪个包登记的全部。扩展（核心拉起的那条连接）照包编号只调得到自己（施工 BUS-5，设计 67 B5）：`package` 写了别的包的回 `own_package_only`（`data.package`），先于找包，那个包在不在都是这一句；调自己要声明 `packages.call`、人批过（没声明的 `needs_approval`），只调得到自己清单 `[export] methods` 里的（别的 `not_exported`，`data.method` 是哪一个）。调别的软件走总线（「软件之间互相调」）。
    - 没有这个包 `unknown_package`；它的程序没连着、还没登记方法 `program_not_running`；没登记这个方法 `unregistered`，`data.method` 是哪一个。
-   - 核心发反向请求 `{"jsonrpc":"2.0","id":"core-<n>","method":"method.call","params":{"method","params","from"?}}` 给扩展，等它回，回什么交回什么（`result` 原样）。扩展调的（调自己的、经 `bus.call` 调别的包的）带 `from`：调的那个包的编号，核心照连接填、调的一方写不了；人调的不带（施工 X-18）。
+   - 核心发反向请求 `{"jsonrpc":"2.0","id":"core-<n>","method":"method.call","params":{"method","params","from"?,"language"?}}` 给扩展，等它回，回什么交回什么（`result` 原样）。扩展调的（调自己的、经 `bus.call` 调别的包的）带 `from`：调的那个包的编号，核心照连接填、调的一方写不了；人调的不带（施工 X-18）。`language`（施工 ML-1，网页 W-1208 要的）：调的那个连接这一刻的界面语言，照斜杠命令 `command.call` 的写法（`hello::Shaken::now`：`ui.language` 是 `auto` 的照那个连接握手报的 `locale`）；头经 `package.call`、`bus.call` 的是头的，包经 `bus.call` 的是那个包连接的。核心自己经总线调的（施工 SD-1 兜底放语音，`bus::call_by_core`）不带。
    - 扩展回了错：`method_failed`，`data.message` 是它说的那一句，`data.code` 是它的错误码（没有的不写）。扩展回的那一行超过 1 MiB 的核心没读（`protocol.md`「一行最长」，施工 YC-5补）：也是 `method_failed`，`data.code` 是 `line_too_long`，当场回、不等时限。到了 `timeout_ms` 没回：`method_timeout`，核心不再等，扩展晚回的扔掉。等着时连接断了：`program_not_running`。
    - 在后台答：这个连接后面的请求不等它（同 `link.preview`，`methods::answered_later`）。
 3. 扩展这边：收到 `method.call` 照自己的方法表办；不认识的回 JSON-RPC 的 `-32601`（核心交回 `method_failed`）。

@@ -110,10 +110,11 @@ pub(crate) fn register(
 /// `package.call`：照登记的转给扩展，回什么交回什么。人的连接没有 `from`，哪个包登记了的方法都调得到。`from` 是调的扩展的包
 /// （核心拉起的那条连接）：它要声明了 `packages.call`（连接那一头照 `connection/rights.rs` 的表查，施工 X-30），`package` 只能是
 /// 它自己（施工 BUS-5：写了别的包的回 `own_package_only`，那个包在不在、方法导没导出都是这一句，跨包走 `bus.call`），只调得到
-/// 自己清单 `[export]` 里的方法，转过去时带上 `from`。blob 怎么交见 [`forward`]。
+/// 自己清单 `[export]` 里的方法，转过去时带上 `from`。blob 怎么交见 [`forward`]。`language` 是调的这一头这一刻的界面语言
+/// （施工 ML-1），转过去时带上。
 pub(crate) async fn call(
     core: &Core,
-    caller: &Caller,
+    (caller, language): (&Caller, &str),
     params: CallParams,
 ) -> Result<Value, Refusal> {
     let from = caller.package.as_deref();
@@ -135,17 +136,18 @@ pub(crate) async fn call(
     if from.is_some() && !target.export.exports(&params.method) {
         return Err(Refusal::not_exported(&params.method));
     }
-    forward(core, from, &params.package, &params.method, params.params).await
+    let to = (params.package.as_str(), params.method.as_str());
+    forward(core, (from, Some(language)), to, params.params).await
 }
 
 /// 转给包 `package` 登记的方法 `method`，`from` 是调的扩展（人的连接没有）：查过能不能调的由调的一方做。参数里的 blob 先交给
 /// 被调的一方（施工 BUS-2：扩展只交得出它自己拿得到的，人的连接都交），回应里对方拿得到的再交给 `from`。扩展回的错带的码
 /// 照 `error.data.code`（字的，JSON-RPC 的 `code` 只能是整数，施工 BUS-2）、没有的照 `error.code` 放进 `data.code`。
+/// `language` 是调的那个连接这一刻的界面语言（施工 ML-1，`zh`、`en`、`ja`），`method.call` 带上；核心自己调的没有。
 pub(crate) async fn forward(
     core: &Core,
-    from: Option<&str>,
-    package: &str,
-    method: &str,
+    (from, language): (Option<&str>, Option<&str>),
+    (package, method): (&str, &str),
     params: Option<Value>,
 ) -> Result<Value, Refusal> {
     let params = CallParams {
@@ -174,6 +176,9 @@ pub(crate) async fn forward(
     let mut request = json!({"method": params.method, "params": given});
     if let Some(from) = from {
         request["from"] = Value::String(from.to_string());
+    }
+    if let Some(language) = language {
+        request["language"] = Value::String(language.to_string());
     }
     match tokio::time::timeout(timeout, peer.call("method.call", request)).await {
         Err(_) => Err(Refusal::METHOD_TIMEOUT),

@@ -173,8 +173,10 @@ async fn a_page_calls_the_methods_its_program_registered() {
     assert_eq!(echo["result"], json!({"answered": "echo"}), "{echo}");
     let seen = std::fs::read_to_string(&record).expect("记了");
     assert!(
-        seen.contains(r#""method":"method.call","params":{"method":"echo","params":{"n":1}}"#),
-        "转过去的照原样：{seen}"
+        seen.contains(
+            r#""method":"method.call","params":{"language":"zh","method":"echo","params":{"n":1}}"#
+        ),
+        "转过去的照原样，带上调的这一头的界面语言（施工 ML-1）：{seen}"
     );
 
     let boom = call(&mut client, "relay", "boom").await;

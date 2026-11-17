@@ -1597,6 +1597,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sUX1F"><span class="n">UX-1修</span>开关只有一条路<span class="st">…</span></a></li>
         <li><a class="step review" href="#sVP1B"><span class="n">VP-1补</span>视图流带上戳一戳<span class="st">…</span></a></li>
         <li><a class="step review" href="#sVN1"><span class="n">VN-1</span>她知道你从哪说话<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sML1"><span class="n">ML-1</span>调扩展带调用方的语言<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -62726,6 +62727,54 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/VN-1-她知道你从哪说话.md</code>；蓝图 <code>kernel/request.md</code>「事实」、<code>kernel/ids.md</code>、<code>policy.md</code>；协议参考 <code>connection.md</code>、<code>events.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sML1" aria-labelledby="h-sML1">
+  <div class="sheet-head"><h2 id="h-sML1"><span class="no">ML-1</span>调扩展带调用方的语言</h2><span class="pill review">待验收</span></div>
+  <p class="purpose"><code>method.call</code> 多带 <code>language</code>：调的那个连接这一刻的界面语言，扩展回给人看的字照它挑。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint/backstage/calls.rs · bus.rs · methods/later.rs</span><span class="dir-note">ML-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>头经 <code>package.call</code>、<code>bus.call</code> 的带头的</li>
+              <li>包经 <code>bus.call</code> 的带那个包连接的</li>
+              <li>核心自己调的不带</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">照 <code>command.call</code> 的写法</span><span class="rl"><code>auto</code> 照连接握手报的 <code>locale</code></span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">ML-1</dd></div>
+        <div><dt>名称</dt><dd>调扩展带调用方的语言</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">ML-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改前红：端点 <code>backstage</code>、<code>bus</code>、<code>package_call_ext</code> 查 <code>language</code></span></li>
+        <li><span class="ok">✓</span><span>沙箱实测：假扩展收到的 <code>method.call</code> 带 <code>language</code></span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/ML-1-调扩展带调用方的语言.md</code>；蓝图 <code>package-pages.md</code>、<code>protocol.md</code>；协议参考 <code>extensions.md</code>。</li>
       </ul>
     </div>
   </div>

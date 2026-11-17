@@ -132,6 +132,12 @@ async fn names_are_listed_and_called_without_package_ids() {
         json!({"answered": "stt.transcribe"}),
         "{said}"
     );
+    // 带调的这一头这一刻的界面语言（施工 ML-1）：测试的头握手报 `zh-CN`。
+    let seen = std::fs::read_to_string(&stt).expect("记了");
+    assert!(
+        seen.contains(r#""params":{"language":"zh","method":"stt.transcribe","params":{"x":1}}"#),
+        "{seen}"
+    );
     let plugged = bus(
         &mut client,
         "c2",

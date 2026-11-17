@@ -37,8 +37,9 @@ pub(crate) async fn call_later(
     match request.method.as_str() {
         "model.call" => models::call(core, caller.package.as_deref(), params(request)?).await,
         "memory.dream" => memory::dream::call(core, &request.params).await,
-        "package.call" => backstage::call(core, caller, params(request)?).await,
-        "bus.call" => backstage::bus::call(core, caller, params(request)?).await,
+        // 转给扩展时带上调的这一头这一刻的界面语言（施工 ML-1）。
+        "package.call" => backstage::call(core, (caller, peer.language), params(request)?).await,
+        "bus.call" => backstage::bus::call(core, (caller, peer.language), params(request)?).await,
         "command.run" => {
             let params = commands::spoken(params(request)?, caller);
             commands::run(core, &peer, &request.id, params).await

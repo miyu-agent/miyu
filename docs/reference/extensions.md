@@ -242,7 +242,7 @@
 
 **`package.methods`**（扩展 → 核心）：`{"methods": [{"name", "timeout_ms"?}…]}`，登记它的后台页、界面块要调的方法，换掉上一次的。回应 `{"methods": <个数>}`。别的连接回 `not_an_extension`。
 
-**`method.call`**（核心 → 扩展）：`{"method", "params", "from"?}`：人的头经 `package.call`、`bus.call`，别的包经 `bus.call` 调到它；`from` 是调的包的编号（人调的没有）。回什么，调的一方就收到什么；回 JSON-RPC 错误的，对方收到 `method_failed`。回应也是一行最长 1 MiB：太长的核心不读，回你一条 `line_too_long`（`id` 是那条 `method.call` 的），对方当场收到 `method_failed`、`data.code` 是 `line_too_long`；大的内容存成 blob（`blob.put`）、回应里只写哈希。
+**`method.call`**（核心 → 扩展）：`{"method", "params", "from"?, "language"?}`：人的头经 `package.call`、`bus.call`，别的包经 `bus.call` 调到它；`from` 是调的包的编号（人调的没有）；`language` 是调的那个连接这一刻的界面语言（`zh`、`en`、`ja`）：头调的是头的，包调的是那个包的连接的；配置 `ui.language` 是 `auto` 的照那个连接握手报的 `locale` 算。给人看的字照它挑语言。核心自己调的（例如替没人开着的会话放语音）不带。回什么，调的一方就收到什么；回 JSON-RPC 错误的，对方收到 `method_failed`。回应也是一行最长 1 MiB：太长的核心不读，回你一条 `line_too_long`（`id` 是那条 `method.call` 的），对方当场收到 `method_failed`、`data.code` 是 `line_too_long`；大的内容存成 blob（`blob.put`）、回应里只写哈希。
 
 想让别的扩展调到：在清单 `[export]` 里声明总线上的名字（`provides` 或 `plugs`），方法照 `<名字>.<方法>` 列进 `methods`（[总线](bus.md)）。别的扩展只能照名字调，照包编号调不到你（`own_package_only`）。
 
