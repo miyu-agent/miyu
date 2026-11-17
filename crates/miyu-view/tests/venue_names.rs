@@ -46,3 +46,38 @@ fn a_venue_message_carries_the_sender_name() {
         round_trip(entry);
     }
 }
+
+/// 戳一戳（施工 VP-1补，VP-1 的场所格进视图）：`user` 条目多带 `poke`（只写 `true`）和 `poke_text`（平台上那半句，不可信，原样
+/// 交头转义）；没戳的两格都不写。读回来一样。
+#[test]
+fn a_poke_carries_its_mark_and_text() {
+    let mut projector = Projector::new(Arc::new(texts("zh")), None);
+    let poked = format!(
+        r#"{{"seq":2,"at":"2026-11-17T09:00:02.000Z","kind":"message.user","by":{{"kind":"external","venue":"qq:group:777","id":"qq:20017","role":"member"}},"cause":"cmd-2","body":{{"blocks":[],"venue":{}}}}}"#,
+        r#"{"msg":"8812","name":"小林","poke":true,"poke_text":"的小脑袋<b>"}"#
+    );
+    for line in [
+        CREATED.to_string(),
+        poked,
+        said(3, "qq:20018", r#"{"msg":"8813","name":"阿青"}"#),
+    ] {
+        projector.event(&Event::from_line(&line).unwrap_or_else(|e| panic!("{line}: {e}")));
+    }
+    let entries = projector.entries().to_vec();
+    let users = of_kind(&entries, "user");
+    let poke = json(users[0]);
+    assert_eq!(
+        (poke["poke"].clone(), poke["poke_text"].clone()),
+        (serde_json::json!(true), serde_json::json!("的小脑袋<b>")),
+        "原样，头照常转义：{poke}"
+    );
+    assert_eq!(poke["from"]["name"], "小林");
+    let plain = json(users[1]);
+    assert!(
+        plain.get("poke").is_none() && plain.get("poke_text").is_none(),
+        "没戳的不写：{plain}"
+    );
+    for entry in &entries {
+        round_trip(entry);
+    }
+}

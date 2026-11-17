@@ -41,6 +41,11 @@ impl Projector {
             text,
             attachments,
             from: from(&event.by, message),
+            poke: message.venue.as_ref().is_some_and(|venue| venue.poke),
+            poke_text: message
+                .venue
+                .as_ref()
+                .and_then(|venue| venue.poke_text.clone()),
             level: self.level.clone(),
             queued,
             withdrawn: false,

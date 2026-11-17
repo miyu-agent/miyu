@@ -85,6 +85,12 @@ pub struct User {
     /// 别处来的话的来处；人在本机说的没有。场所里的人说的带名字（施工 VW-2，[`Sender`]）。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub from: Option<Sender>,
+    /// 场所里的人戳了她一下（施工 VP-1补，那条消息的 `venue.poke`）：只写 `true`。
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub poke: bool,
+    /// 戳一戳的后缀（`venue.poke_text`，平台上那人自己设的那半句）：不可信，头照常转义；没写的没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub poke_text: Option<String>,
     /// 发出去那一刻的权限级别：`workspace`、`full`、`read_only`。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub level: Option<String>,

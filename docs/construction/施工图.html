@@ -1595,6 +1595,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sNS1"><span class="n">NS-1</span>网络搜索的 key 和名字<span class="st">…</span></a></li>
         <li><a class="step review" href="#sRO3B"><span class="n">RO-3补</span>删数据根改成问人<span class="st">…</span></a></li>
         <li><a class="step review" href="#sUX1F"><span class="n">UX-1修</span>开关只有一条路<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sVP1B"><span class="n">VP-1补</span>视图流带上戳一戳<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -62626,6 +62627,54 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/UX-1-设置项正名.md</code> 最后一节。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sVP1B" aria-labelledby="h-sVP1B">
+  <div class="sheet-head"><h2 id="h-sVP1B"><span class="no">VP-1补</span>视图流带上戳一戳</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">视图流的 <code>user</code> 条目多带 <code>poke</code>、<code>poke_text</code>：网页上戳一戳不再只出名字、下面空着。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates · miyu-view/src/entry.rs、projector/users.rs</span><span class="dir-note">VP-1补</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>poke</code> 只写 <code>true</code></li>
+              <li><code>poke_text</code> 不可信，原样交头转义</li>
+              <li>没戳的两格都不写</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">以前的条目字节不变</span><span class="rl">没戳的不写这两格</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">VP-1补</dd></div>
+        <div><dt>名称</dt><dd>视图流带上戳一戳</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">VP-1补</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改前红：造一条带 <code>venue.poke</code> 的 <code>message.user</code>，<code>user</code> 条目没有这两格</span></li>
+        <li><span class="ok">✓</span><span>读回来一样</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/VP-1补-视图流带戳一戳.md</code>；蓝图 <code>view.md</code>；协议参考 <code>view</code> 中英。</li>
       </ul>
     </div>
   </div>
