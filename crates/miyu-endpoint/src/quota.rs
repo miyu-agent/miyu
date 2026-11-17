@@ -13,9 +13,13 @@ use std::sync::Arc;
 use serde::Deserialize;
 use serde_json::{Map, Value, json};
 
+use miyu_config::Values;
 use miyu_config::Words;
 use miyu_kernel::id::SessionId;
+use miyu_models::provider;
 use miyu_models::quota::{Balance, Window};
+use miyu_models::settings::ProviderSettings;
+use miyu_session::ModelData;
 
 use crate::Core;
 use crate::config::methods::words;
@@ -29,8 +33,8 @@ pub(crate) struct Params {
     session: String,
 }
 
-/// `{"windows": [{id, label, percent, status, resets_at}…], "balance": {available, items: [{currency, total, granted,
-/// topped_up}…]}}`，没查到的那一格不带；都没有的 `{}`。
+/// `{"provider": {id, name}, "windows": [{id, label, percent, status, resets_at}…], "balance": {available, items: [{currency,
+/// total, granted, topped_up}…]}}`，没查到的那一格不带；都没有的 `{}`（也不带 `provider`）。
 pub(crate) async fn quota(core: &Arc<Core>, peer: Peer, params: Params) -> Result<Value, Refusal> {
     let id = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
     let found = core.sessions.get(core, &id).await?;
@@ -54,7 +58,36 @@ pub(crate) async fn quota(core: &Arc<Core>, peer: Peer, params: Params) -> Resul
     if let Some(balance) = &reading.balance {
         answer.insert("balance".into(), balanced(balance));
     }
+    // 查的是哪一家（施工 QU-3）：头照它写「{供应商} 额度情况」，不照自己记的模型猜。
+    if !answer.is_empty() {
+        let id = model.endpoint.as_str();
+        let name = provider_name(&data, &values, id);
+        answer.insert("provider".into(), json!({"id": id, "name": name}));
+    }
     Ok(Value::Object(answer))
+}
+
+/// 这一家给人看的名字（同 `model.list` 的 `name`，施工 8-21）：配置写了的（去掉两头空白不是空的）、目录里对上的那一家的、编号。
+fn provider_name(data: &ModelData, values: &Values, id: &str) -> String {
+    let settings = ProviderSettings::at(values, &[id]);
+    if let Some(name) = settings
+        .name
+        .as_deref()
+        .map(str::trim)
+        .filter(|name| !name.is_empty())
+    {
+        return name.to_string();
+    }
+    data.with_once(|knowledge| {
+        let found = provider::provider(values, knowledge, id).ok()?;
+        let recognized = found.recognized?;
+        knowledge
+            .lookup?
+            .listing(&recognized.provider)?
+            .name
+            .clone()
+    })
+    .unwrap_or_else(|| id.to_string())
 }
 
 /// 余额照协议写：金额、币种照官方原样。

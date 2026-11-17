@@ -1,6 +1,7 @@
 //! 用量框里的额度（施工 QU-1，`session.quota`）：真核心、真路由，会话用的是 opencode Go（档案写了查额度的地址，指着一台单独的
 //! 假服务器）。说完一轮核心在后台查过一次，再问照它答、不再发；交三格，名字照连接的语言。档案没写的供应商、查不到的回 `{}`、
-//! 不报错；没有这个会话的照找会话的说法拒。会话中途换到 opencode Go 的，还没开回合就照它查（施工 QU-2修）。
+//! 不报错；没有这个会话的照找会话的说法拒。会话中途换到 opencode Go 的，还没开回合就照它查（施工 QU-2修）。查到了的带
+//! `provider`：哪一家，名字照配置写的显示名，没写的照目录里那一家的（`OpenCode Go`）、再没有的照编号（施工 QU-3）。
 
 use std::time::Duration;
 
@@ -70,7 +71,7 @@ async fn a_go_session_gets_three_windows_checked_after_its_turn() {
         .await;
     assert_eq!(
         reply["result"],
-        json!({"windows": [
+        json!({"provider": {"id": "opencode-go", "name": "OpenCode Go"}, "windows": [
             {"id": "rolling", "label": "5 小时", "percent": 4, "status": "ok",
              "resets_at": "2026-11-14T08:31:28.000Z"},
             {"id": "weekly", "label": "每周", "percent": 12, "status": "ok",
@@ -92,7 +93,7 @@ async fn switching_a_session_to_go_gets_its_windows_before_the_next_turn() {
     home.write(
         "etc/config.toml",
         &format!(
-            "[ui]\nlanguage = \"zh\"\n\n[providers.opencode-go]\n{talk}\n\n[providers.other]\n{talk}\n\n[models]\nchat = \"other/deepseek-v4.1-flash\"\n"
+            "[ui]\nlanguage = \"zh\"\n\n[providers.opencode-go]\nname = \" Go 套餐 \"\n{talk}\n\n[providers.other]\n{talk}\n\n[models]\nchat = \"other/deepseek-v4.1-flash\"\n"
         ),
     );
     let data = data(profiles(go(Some(format!("{}/usage", usage.base_url)))));
@@ -107,6 +108,12 @@ async fn switching_a_session_to_go_gets_its_windows_before_the_next_turn() {
     )
     .await;
     assert_eq!(result["windows"][0]["id"], "rolling", "{result}");
+    // 哪一家（施工 QU-3）：头照它写「{供应商} 额度情况」，名字照配置写的显示名。
+    assert_eq!(
+        result["provider"],
+        json!({"id": "opencode-go", "name": "Go 套餐"}),
+        "{result}"
+    );
     assert_eq!(usage.received().len(), 1);
 }
 

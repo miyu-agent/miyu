@@ -1585,6 +1585,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sSW1"><span class="n">SW-1</span>分节跟着运行时给选项的项<span class="st">…</span></a></li>
         <li><a class="step review" href="#sVP1"><span class="n">VP-1</span>场所消息「戳一戳」<span class="st">…</span></a></li>
         <li><a class="step review" href="#sVW2"><span class="n">VW-2</span>场所会话的「查看会话」<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sQU3"><span class="n">QU-3</span>额度写明是哪一家<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -62115,6 +62116,52 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/VW-2-场所会话的查看会话.md</code>；蓝图 <code>view.md</code>（条目 <code>user</code>、会话状态 <code>jobs</code>、<code>title</code>）；协议参考 <code>view</code>、<code>connection</code> 中英两份。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sQU3" aria-labelledby="h-sQU3">
+  <div class="sheet-head"><h2 id="h-sQU3"><span class="no">QU-3</span>额度写明是哪一家</h2><span class="pill review">待验收</span></div>
+  <p class="purpose"><code>session.quota</code> 查到额度、余额的回应带 <code>provider: {id, name}</code>，头照它写「{供应商} 额度情况」，不再照自己记的模型猜。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates · miyu-endpoint/src/quota.rs</span><span class="dir-note">QU-3</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>有 <code>windows</code> 或 <code>balance</code> 才带 <code>provider</code></li>
+              <li>名字：配置写的显示名、目录里那一家的、编号</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">名字同 model.list</span><span class="rl">一处说法，头不另算</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">QU-3</dd></div>
+        <div><dt>名称</dt><dd>额度写明是哪一家</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">QU-3</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>真核心、假额度接口：opencode Go 回 <code>{"id": "opencode-go", "name": "OpenCode Go"}</code>，配置写了显示名的照它，DeepSeek 官方的余额带 <code>DeepSeek</code>；查不到的回 <code>{}</code></span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/QU-3-额度写明是哪一家.md</code>；蓝图 <code>protocol.md</code>「<code>session.quota</code>」第 5 条；协议参考 <code>sessions</code> 中英两份。</li>
       </ul>
     </div>
   </div>

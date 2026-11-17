@@ -270,6 +270,12 @@
 {"balance":{"available":true,"items":[{"currency":"CNY","total":"12.34","granted":"2.00","topped_up":"10.34"}]}}
 ```
 
+有 `windows` 或 `balance` 的回应另带 `provider`：`{"id", "name"}`，查的是哪一家：`id` 是配置里那一家的编号，`name` 是给人看的名字（配置写了 `providers.<id>.name` 的照它，没写的照目录里对上的那一家的名字，再没有的照编号，同 `model.list` 的 `name`）。头照它写「{供应商} 额度情况」「{供应商} 余额」，不照自己记的当前模型猜。回 `{}` 的不带。
+
+```json
+{"provider":{"id":"deepseek","name":"DeepSeek"},"balance":{"available":true,"items":[{"currency":"CNY","total":"12.34","granted":"2.00","topped_up":"10.34"}]}}
+```
+
 **出错**：`bad_params`；找会话的那几种。
 
 ## `session.answer`

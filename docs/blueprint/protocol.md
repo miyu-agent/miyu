@@ -642,6 +642,8 @@
 {"balance":{"available":true,"items":[{"currency":"CNY","total":"12.34","granted":"2.00","topped_up":"10.34"}]}}
 ```
 
+5. **是哪一家**（施工 QU-3，2026-11-17 终端会话要的，本机验收第 6、34 条：头照自己记的当前模型猜是哪家，换了模型、池里换了成员就写错）：有 `windows` 或 `balance` 的回应另带 `provider`：`{"id", "name"}`，`id` 是配置里那一家的编号（`model.endpoint` 的那一家），`name` 给人看：配置写了 `providers.<id>.name` 的照它（去掉两头空白），没写的照目录里对上的那一家的名字，再没有的照编号（同 `model.list` 的 `name`，施工 8-21）。头写「{供应商} 额度情况」「{供应商} 余额」。回 `{}` 的不带。写法在 `crates/miyu-endpoint/src/quota.rs`。
+
 **`session.redo`**（施工 4-7 再补，`kernel/history.md`「重做」）
 
 | 参数 | 类型 | 说明 |

@@ -270,6 +270,12 @@ With an official DeepSeek provider (no address written, or an address whose host
 {"balance":{"available":true,"items":[{"currency":"CNY","total":"12.34","granted":"2.00","topped_up":"10.34"}]}}
 ```
 
+An answer with `windows` or `balance` also has `provider`: `{"id", "name"}`, which provider was checked: `id` is that provider's id in the config, `name` the name shown to people (`providers.<id>.name` when the config sets it, otherwise the name of the matching catalog provider, otherwise the id, as in `model.list`'s `name`). Heads use it for "{provider} quota" and "{provider} balance" instead of guessing from the model they remember. A `{}` answer doesn't have it.
+
+```json
+{"provider":{"id":"deepseek","name":"DeepSeek"},"balance":{"available":true,"items":[{"currency":"CNY","total":"12.34","granted":"2.00","topped_up":"10.34"}]}}
+```
+
 **Errors**: `bad_params`; the session lookup errors.
 
 ## `session.answer`

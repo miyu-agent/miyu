@@ -56,7 +56,7 @@ async fn an_official_deepseek_session_gets_its_balance_as_written() {
     let result = asked(&home, &format!("{}/user/balance", balance.base_url)).await;
     assert_eq!(
         result,
-        json!({"balance": {"available": false, "items": [
+        json!({"provider": {"id": "deepseek", "name": "DeepSeek"}, "balance": {"available": false, "items": [
             {"currency": "CNY", "total": "12.34", "granted": "2.00", "topped_up": "10.34"},
             {"currency": "USD", "total": "0.00", "granted": "0.00", "topped_up": "0.00"}
         ]}}),
