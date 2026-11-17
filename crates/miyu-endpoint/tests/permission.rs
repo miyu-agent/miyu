@@ -59,6 +59,7 @@ fn switched_to(event: &Event) -> Option<&Permission> {
             vision: None,
             compaction_line: None,
             from: _,
+            voice_max_ms: None,
         }) => Some(permission),
         _ => None,
     }

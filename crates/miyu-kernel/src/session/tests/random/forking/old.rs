@@ -166,6 +166,7 @@ fn plan_upto(events: &[Event], upto: Seq, within: Option<TurnId>) -> Result<Fork
         policy,
         persona: reference.persona().map(str::to_string),
         preset: reference.preset().map(str::to_string),
+        voice_max_ms: reference.voice(),
         within,
     })
 }

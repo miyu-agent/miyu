@@ -70,7 +70,7 @@ pub(crate) struct VenueParams {
     #[serde(default)]
     fresh: bool,
     /// 这个场所一段语音至多多长，毫秒（施工 SD-1）：平台的语音有上限的才写，正整数；记进 `session.created`，这个会话的
-    /// `tool.call` 原样带上。找回已有的会话时不看。
+    /// `tool.call` 带上。找回已有的会话时也看（施工 VM-2）：和记过的不一样的另记一条，之后照新的；不写的照记过的。
     #[serde(default)]
     voice_max_ms: Option<u64>,
 }
@@ -211,6 +211,9 @@ pub(crate) async fn session(
     if !params.fresh
         && let Some(found) = find(core, &venue, confined).await?
     {
+        if let Some(ms) = params.voice_max_ms {
+            voice_limit(core, caller, &command, &found, ms).await;
+        }
         return Ok(json!({"session": found.as_str(), "created": false}));
     }
     let who = Opening {
@@ -244,6 +247,44 @@ pub(crate) async fn session(
         )
         .await?;
     Ok(json!({"session": created.id.as_str(), "created": true}))
+}
+
+/// 找回的场所会话 `session` 照桥这次报的语音上限 `ms` 认（施工 VM-2）：和记过的不一样（含没记过的）内核记一条
+/// `session.policy_changed`，`by` 是报的桥；一样的什么都不记。命令编号接 `/voice`（造会话那一条已经用了原来的）。
+///
+/// 记不成（日志只读、会话停了）照样交回找到的会话，记一行 `WARN venue voice limit not recorded`：桥接着对它说话时照那一处的
+/// 原因办（只读的另开一个，施工 YC-6补），这一次派调用照记过的。
+async fn voice_limit(
+    core: &Arc<Core>,
+    caller: &Caller,
+    command: &CommandId,
+    session: &miyu_kernel::id::SessionId,
+    ms: u64,
+) {
+    let recorded = async {
+        let id = CommandId::parse(&format!("{}/voice", command.as_str()))
+            .map_err(|_| Refusal::BAD_PARAMS)?;
+        let by = crate::appending::recorder(caller)?;
+        let found = core.sessions.get(core, session).await?;
+        match found
+            .handle
+            .command(id, by, miyu_kernel::session::Command::SetVoiceLimit { ms })
+            .await
+        {
+            Ok(miyu_kernel::session::Outcome::Accepted { .. }) => Ok(()),
+            Ok(miyu_kernel::session::Outcome::Rejected { reason, about }) => {
+                Err(Refusal::kernel_about(reason, &about))
+            }
+            Ok(_) => Err(Refusal::INTERNAL),
+            Err(_) => {
+                core.sessions.forget(session).await;
+                Err(Refusal::STOPPED)
+            }
+        }
+    };
+    if let Err(refusal) = recorded.await {
+        tracing::warn!(target: "miyu::endpoint", session = session.as_str(), reason = refusal.reason, "venue voice limit not recorded");
+    }
 }
 
 /// 主人的主会话里，场所是 `venue`、关不关是 `confined` 的最新的那一个。

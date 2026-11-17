@@ -18,7 +18,7 @@ pub(crate) struct Callers {
     model: Option<InUse>,
     log: Option<PathBuf>,
     persona: Option<String>,
-    /// 这个场所一段语音至多多长（施工 SD-1）：`session.created` 记的，之后不变。
+    /// 这个场所一段语音至多多长（施工 SD-1）：`session.created` 记的，桥找回时报了新的照新的（施工 VM-2）。
     voice_max_ms: Option<u64>,
 }
 
@@ -77,6 +77,11 @@ impl super::Tools {
     /// 交给内核的限额换了模型（施工 E-M）：以后派的调用照它。
     pub(crate) fn model_in_use(&mut self, model: Option<InUse>) {
         self.callers.model = model;
+    }
+
+    /// 场所的语音上限换了（施工 VM-2）：以后派的调用照它。
+    pub(crate) fn voice_in_use(&mut self, voice_max_ms: Option<u64>) {
+        self.callers.voice_max_ms = voice_max_ms;
     }
 
     /// 会话这时的人格（施工 TC-1）：交限额时一起换，以后派的调用照它。

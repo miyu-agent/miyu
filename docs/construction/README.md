@@ -1692,6 +1692,7 @@ flowchart LR
 | SD-1 | 她说的话合成以后交给人 | 项目主人 11-17 本机验收第 16、26 条，语音会话 say 交付方案「核心」一节：工具结果的 `sent` 多收一段语音 `{"blob", "media_type", "voice": true, "duration_ms"?, "name"?}`，至多一段、`audio/` 开头、≤ 10 MiB（大了回 `voice-too-big.txt`）；视图流多 `voice` 条目，带开这一轮的那句话的 `by` 和那条请求的 `cause`，头照它定放不放；本机会话里没人开口的一轮（定时、循环、人生）出了语音、没有头开着这个会话的，核心经总线调 `tts.play {"audio"}`；`venue.session` 多 `voice_max_ms`，记进 `session.created`，这个会话的 `tool.call` 原样带上。施工单见 `SD-1-说出来交给人.md` |
 | PL-2 | 软件包声明支持的系统 | 项目主人 11-17 本机验收第 21 条，定「默认藏，可打开看」。清单 `[package] systems`（`linux`、`macos`、`windows`），和 `targets`（一种系统一个包文件）分开；两样都写的 `targets` 的系统都要在里面（`bad_systems`），没写的照 `targets` 推。收录把它原样写进索引，客户端照它和包文件的系统算本机支不支持、不下载。`package.search` 默认不列不支持的，新配置项 `packages.other_systems`「其他系统的软件包」开着才列、带 `unsupported`，`miyu pkg search` 接「（不支持该系统）」；从软件源、文件夹装都拒 `wrong_target`「不支持该系统」。施工单 `PL-2-软件包声明支持的系统.md` |
 | PV-4 | 软件包自带供应商 | 项目主人 11-17 定（本机验收第 20 条）。清单 `[providers.<编号>]`，格子同配置里的（`key` 不收，`driver` 只能内置或自己的）；装着、开着的包带的进配置的「包这一层」（默认值之上、配置文件之下，`config.get` 来源 `{"layer": "package", "package"}`），不写配置文件，卸了、关了就没有。人改它写进配置文件、带 `package = "<包>"` 盖住包给的；没写 `package` 的同编号是人自己的，包带的不出现、`miyu check` 提示 `provider_shadowed`。设计 66 第四节第 2 条跟着改。派工时叫 PV-1，和已有的撞号改 PV-4。施工单 `PV-4-软件包自带供应商.md` |
+| VM-2 | 找回的场所会话也认语音上限 | im 在等：SD-1 只在造场所会话时记 `voice_max_ms`，主人机器上早就造好的主群、私聊找回时不看，一直没有上限。找回的也看：和记过的不一样（含没记过的）记一条只写 `voice_max_ms` 的 `session.policy_changed`（`by` 是桥，命令编号 `<请求>/voice`），开着的会话当场换、载入照日志算、分叉照分叉点；没交的照记过的，只设不去。记不成照样回找到的会话、记一行 WARN。不改给模型看的字。施工单见 `VM-2-找回的场所会话认语音上限.md` |
 
 ### 四、施工单的格式
 

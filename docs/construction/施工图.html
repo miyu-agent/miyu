@@ -1601,6 +1601,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sSD1"><span class="n">SD-1</span>她说的话合成以后交给人<span class="st">…</span></a></li>
         <li><a class="step review" href="#sPL2"><span class="n">PL-2</span>软件包声明支持的系统<span class="st">…</span></a></li>
         <li><a class="step review" href="#sPV4"><span class="n">PV-4</span>软件包自带供应商<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sVM2"><span class="n">VM-2</span>找回的场所会话也认语音上限<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -62931,6 +62932,55 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/PV-4-软件包自带供应商.md</code>；设计 66 第四节第 2 条；蓝图 <code>config.md</code>、<code>models.md</code>、<code>packages.md</code>；协议参考 <code>config.md</code>；作者文档 <code>manifest.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sVM2" aria-labelledby="h-sVM2">
+  <div class="sheet-head"><h2 id="h-sVM2"><span class="no">VM-2</span>找回的场所会话也认语音上限</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">桥找回场所会话时交的语音上限也算数：和记过的不一样就记一条，之后派给扩展的调用带最新的。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-kernel/session/voice.rs · miyu-endpoint/venues.rs · miyu-session/actor/store.rs</span><span class="dir-note">VM-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>venue.session</code> 找回的：发 <code>SetVoiceLimit</code></li>
+              <li>不一样的记 <code>session.policy_changed {"voice_max_ms"}</code></li>
+              <li>开着的会话当场换，载入照日志算</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">只设不去</span><span class="rl">没交的照记过的</span></div>
+          <div class="tile new"><span class="nm">记在策略变更里</span><span class="rl">不另加事件种类</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">VM-2</dd></div>
+        <div><dt>名称</dt><dd>找回的场所会话也认语音上限</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-18</dd></div>
+        <div><dt>提交</dt><dd class="mono">VM-2</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改前红：端点 <code>venue_voice_limit::a_found_venue_session_takes_the_voice_limit_reported_now</code></span></li>
+        <li><span class="ok">✓</span><span>沙箱实测：真模型调假桥的工具，<code>tool.call</code> 带 60000，重起核心照旧</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/VM-2-找回的场所会话认语音上限.md</code>；蓝图 <code>venues.md</code>、<code>kernel/events-bodies.md</code>、<code>kernel/session.md</code>、<code>providers.md</code>；协议参考 <code>venues.md</code>、<code>extensions.md</code>。</li>
       </ul>
     </div>
   </div>

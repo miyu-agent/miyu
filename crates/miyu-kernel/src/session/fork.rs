@@ -41,6 +41,8 @@ pub struct ForkPlan {
     pub persona: Option<String>,
     /// 那一刻要用的预设（施工 P-13）：同上；以前的日志没记的没有。
     pub preset: Option<String>,
+    /// 那一刻场所一段语音的上限（施工 VM-2）：中途桥报过新的照新的，分叉出来的照它记进 `session.created`。没有上限的没有。
+    pub voice_max_ms: Option<u64>,
     /// 分叉点在哪一轮当中（施工 A-F 上，[`ForkFeed::finish`] 给了派它的调用）：子会话的 `forked.within` 照它写；普通分叉没有。
     pub within: Option<TurnId>,
 }

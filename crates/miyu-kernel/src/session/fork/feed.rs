@@ -354,6 +354,7 @@ impl Planning {
             policy,
             persona: self.reference.persona().map(str::to_string),
             preset: self.reference.preset().map(str::to_string),
+            voice_max_ms: self.reference.voice(),
             within,
         })
     }

@@ -66,7 +66,8 @@ impl Actor {
 
     /// 这一批里换了会话的上下文上限的（施工 CTX-1，设计 68 第四节「下一次请求起生效」）：内核记下就已经是新的，当场交给端口，
     /// 再把端口套过的限额交给内核：压缩线、给头看的限额马上换，不等下一轮。在写盘、回应之前做：回了的命令读得到新的限额。
-    /// 换了策略快照的（施工 CT-1：压缩触发线在快照里），给头看的限额照新的重写（`model/line.rs`）。
+    /// 换了策略快照的（施工 CT-1：压缩触发线在快照里），给头看的限额照新的重写（`model/line.rs`）；换了场所的语音上限的（施工
+    /// VM-2），派调用照新的。
     fn follow_context(&mut self, events: &[Event]) {
         let changed = |pick: fn(&PolicyChanged) -> bool| {
             events
@@ -79,6 +80,10 @@ impl Actor {
         }
         if changed(|changed| changed.policy.is_some()) {
             self.follow_policy();
+        }
+        // 桥报了新的语音上限（施工 VM-2）：以后派的调用照它。
+        if changed(|changed| changed.voice_max_ms.is_some()) {
+            self.tools.voice_in_use(self.session.voice_max_ms());
         }
     }
 
