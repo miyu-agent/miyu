@@ -1,6 +1,7 @@
 //! 人生循环（施工 LF-1，设计 `70-推演人生.md` 第三节第 2 条）：真核心、手拨的钟。和她自己定节奏的循环走同一段代码，只有三处
 //! 不同：交过以后没定下一次的照默认间隔再醒，她在那一轮里定了的照她的；核心起来时错过的马上补醒一次（停了多久都只一次）；
-//! `stop` 不收。通用的定时入口（`schedule.*`、`schedules` 流、`cron_list`、`cron_delete`）碰不到这一行。
+//! `stop` 不收。通用的定时入口改不了、删不掉这一行（`schedule.cancel` 这些回 `life_schedule`，她的 `cron_list`、`cron_delete`
+//! 照没有办）；给人看得到（`schedule.list`、`schedules` 流，施工 LF-13）。
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -219,7 +220,7 @@ async fn her_schedule_tools_cannot_stop_list_or_delete_a_life_loop() {
 }
 
 #[tokio::test]
-async fn schedule_methods_cannot_reach_a_life_loop() {
+async fn schedule_methods_show_a_life_loop_but_cannot_change_it() {
     let home = Home::new();
     let hand = Hand::at(START);
     let (core, mut client, session) =
@@ -229,7 +230,10 @@ async fn schedule_methods_cannot_reach_a_life_loop() {
         .add(looping(&session, Loop::Life, START + GAP))
         .unwrap();
     let listed = client.call("l", "schedule.list", json!({})).await;
-    assert_eq!(listed["result"], json!({"schedules": []}), "{listed}");
+    let rows = listed["result"]["schedules"].as_array().expect("有表");
+    assert_eq!(rows.len(), 1, "列得出：{listed}");
+    assert_eq!(rows[0]["id"], "t1", "{listed}");
+    assert_eq!(rows[0]["loop"], "life", "{listed}");
     for (method, (name, params)) in [
         ("schedule.cancel", json!({"id": "t1"})),
         ("schedule.pause", json!({"id": "t1"})),
@@ -244,7 +248,7 @@ async fn schedule_methods_cannot_reach_a_life_loop() {
     .enumerate()
     {
         let reply = client.call(&format!("m{method}"), name, params).await;
-        assert_eq!(reason(&reply), "unknown_schedule", "{name}：{reply}");
+        assert_eq!(reason(&reply), "life_schedule", "{name}：{reply}");
     }
     assert_eq!(
         core.schedules().get(&added.id).unwrap(),
@@ -257,18 +261,12 @@ async fn schedule_methods_cannot_reach_a_life_loop() {
     let reply = watcher
         .call("s", "subscribe", json!({"stream": "schedules"}))
         .await;
-    assert_eq!(reply["result"], json!({"schedules": []}), "{reply}");
-    // 改了人生那一行不推；接着建的一行推出来的是它自己。
+    let rows = reply["result"]["schedules"].as_array().expect("有表");
+    assert_eq!(rows.len(), 1, "订阅的回应里有它：{reply}");
+    // 改了人生那一行的下一次：推出来。
     core.schedules()
         .set_next(&added.id, Some(at(START + 600_000)), None)
         .unwrap();
-    client
-        .call(
-            "a",
-            "schedule.add",
-            json!({"when": {"every": 600}, "prompt": "看看", "target": {"session": session}}),
-        )
-        .await;
     let pushed = loop {
         let message = watcher
             .next_within(Duration::from_secs(60))
@@ -278,7 +276,13 @@ async fn schedule_methods_cannot_reach_a_life_loop() {
             break message["params"].clone();
         }
     };
-    assert_eq!(pushed["id"], "t2", "人生那一行不推：{pushed}");
+    assert_eq!(pushed["id"], "t1", "{pushed}");
+    assert_eq!(pushed["entry"]["loop"], "life", "{pushed}");
+    assert_eq!(
+        pushed["entry"]["next"],
+        json!(at(START + 600_000)),
+        "{pushed}"
+    );
 }
 
 /// 拦人生那一行不挡人删读不懂的行（`schedules.md` 第一节第 3 条，施工 AE-4）：`get` 读不出的放过去，`schedule.cancel` 照旧

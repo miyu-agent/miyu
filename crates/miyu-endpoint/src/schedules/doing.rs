@@ -103,6 +103,11 @@ impl Schedules {
             .and_then(|lived| lived.doing.clone())
     }
 
+    /// 人生会话 `session` 是哪个人格的：只查内存。还不知道的（核心刚起来、还没查完）没有。
+    pub(crate) fn persona_of(&self, session: &SessionId) -> Option<String> {
+        self.lives.read().names.get(session).cloned()
+    }
+
     /// 记下人生会话 `session` 是人格 `persona` 的（`life.start` 开出来时）。
     pub(crate) fn named(&self, session: &SessionId, persona: &str) {
         self.lives

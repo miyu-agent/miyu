@@ -122,6 +122,7 @@
 | `reason` | 什么时候 | `data` |
 |---|---|---|
 | `unknown_schedule` | 没有这个定时任务：`schedule.cancel`、`schedule.pause`、`schedule.resume`、`schedule.update` | |
+| `life_schedule` | 这一行是人生循环，这四个方法改不了它：用 `life.pause`、`life.resume`、`life.kill`，见[人生会话](life.md) | |
 | `too_many_schedules` | 定时任务已经有 200 个（人建、她建、包建合计，熔断性质的安全上限）：`schedule.add`。先删几个，已有的照跑 | |
 | `life_exists`、`no_life`、`life_ended` | 人生会话：这个人格已经有一个（`life.start`）；这个人格没有（`life.pause`、`life.resume`、`life.kill`）；这个人格最近的那一段人生已经结束了（`life.pause`、`life.resume`），见[人生会话](life.md) | `life_exists`、`life_ended` 的带 `session` |
 | `unknown_project` | 没有这个项目：项目的方法，`session.create`、`session.set_meta` 写的 `project` | |

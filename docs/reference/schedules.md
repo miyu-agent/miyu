@@ -11,7 +11,7 @@
 | [`schedule.resume`](#scheduleresume) | 续 |
 | [`schedule.update`](#scheduleupdate) | 改时间、改那句话 |
 
-**谁能调**：人；扩展要批过 `sessions.drive`，没批的回 `needs_approval`，建的记成包建的，只看得到、删得了、停续得了、改得了自己建的：碰别人建的一律 `unknown_schedule`。人生循环（`loop` 是 `life`，一个人格一直跑着的那一条）的那一行谁都碰不到：不在列表和 `schedules` 流里，`cancel`、`pause`、`resume`、`update` 照没有这个编号回 `unknown_schedule`。要一直跟着最新的，订阅 `schedules` 流（[连接](connection.md)），之后推 `schedules.changed`（[推送](pushes.md)）。
+**谁能调**：人；扩展要批过 `sessions.drive`，没批的回 `needs_approval`，建的记成包建的，只看得到、删得了、停续得了、改得了自己建的：碰别人建的一律 `unknown_schedule`。人生循环（`loop` 是 `life`，一个人格一直跑着的那一条）的那一行人看得到、改不了：列表和 `schedules` 流里有它，多带一格 `persona`（它是哪个人格的人生）；`cancel`、`pause`、`resume`、`update` 回 `life_schedule`，暂停、继续、结束用 [`life.pause`、`life.resume`、`life.kill`](life.md)。扩展看不到它。要一直跟着最新的，订阅 `schedules` 流（[连接](connection.md)），之后推 `schedules.changed`（[推送](pushes.md)）。
 
 ## 一项
 
@@ -24,7 +24,8 @@
 | `by` | 谁建的：人 `{"kind": "person"}`、她在会话里建的 `{"kind": "model", "session"}`、包建的 `{"kind": "package", "package"}` |
 | `recurring` | 跑完还在不在：`at` 的是 `false`，`every` 的是 `true`，`cron` 的照写的 |
 | `paused` | 停着 |
-| `loop` | 循环才有：`fixed` 固定间隔、`dynamic` 她自己定节奏（人生循环的 `life` 不在这里出现，见上） |
+| `loop` | 循环才有：`fixed` 固定间隔、`dynamic` 她自己定节奏、`life` 人生循环（见上） |
+| `persona` | 人生循环那一行才有：它是哪个人格的人生（人格的编号）；核心刚起来、还没认出来的不带 |
 | `next` | 下一次的时刻；停着的、她自己定节奏还没定的没有 |
 | `last` | 上一次：`{"at", "result", "session"?}`，`result` 是 `ran`、`queued`（会话正在跑一轮，排在后面）、`sent`（推给了建它的扩展）或 `skipped:<原因>`（`session_gone` 会话没了、任务跟着停了，`preset_off` 她建的而会话的预设关了它，`not_opened` 新会话开不成，`package_unavailable` 建它的扩展没在跑、拉不起来） |
 | `created` | 建的时刻 |

@@ -12,6 +12,7 @@
 |---|---|
 | `crates/miyu-endpoint/src/life.rs` | `life.start`、`life.status`、`life.pause`、`life.resume`、`life.kill`、`life.new`：查人格、照索引找这个人格的人生会话、开会话、设上下文上限、记身份、建和停续人生那一行 |
 | `crates/miyu-endpoint/src/commands/life.rs`（施工 LF-5 下） | 命令 `/life`：认参数、照会话的人格调 `life.rs` 的 `act`、拼回执、回应带 `session` |
+| `crates/miyu-endpoint/src/commands/life/bare.rs`（施工 LF-12）、`here.rs`（施工 LF-13） | 不带人格的会话里的 `/life`；人生会话自己里面的 `/loop`、`/stop` |
 | `crates/miyu-endpoint/src/life/finish.rs`（施工 LF-4 上） | `finish`：结束一段人生的六步（「结束」），`life.kill`、`life.new` 和她的 `end_life`（LF-4 下）共用 |
 | `crates/miyu-endpoint/src/life/port.rs`（施工 LF-4 下） | 交给 `end_life` 的端口 `LifePort`：查是不是没结束的人生会话、调 `finish`、不等清理；随定时端口交进会话（`schedules/port.rs`） |
 | `crates/miyu-schedule/src/life.rs`、`resources/software/life/`、`resources/packages/base-life/`（施工 LF-4 下） | 工具 `end_life` 和带它的内置包（`tools/end_life.md`） |
@@ -137,6 +138,25 @@
    - 原来一律回「这个会话没有人格，没有人生会话。」：后半句不对（人生会话在，只是不是这个会话的），人找不到也进不去。那个键（`commands/life-no-persona`）拿掉了。给会话选人格是头的事，核心没有 `/persona`，回执里不写命令名。
 9. **快速跳转人生会话**（施工 LF-12，项目主人 2026-11-17 本机验收第 29 条：「没法快速切换到人生会话查看内容，如果直接运行 `/life` 可以有一个列表，里面是正在运行的人生会话」）：光打的 `/life` 的回应多带 `lives`，形状同 `life.list`，带不带人格都带；这个会话的人格的那一条排最前，其余照人格的编号。一条都没有的不写这一格；`new`、`pause`、`resume`、`kill` 不带。列表怎么画、只有一条时是不是直接跳是头的事：`session`、`persona` 照旧只在有明确的一条时带（这个会话的人格的，不带人格的会话里唯一的那一条）。回执那一句不变。
 
+### 人生会话里的 `/loop`、`/stop`（施工 LF-13）
+
+人生就是这个会话的循环（项目主人 2026-11-17 定，本机验收第 23 条）：看得见、能停，不能随手结束。和 `/loop` 开的循环用同一张表、同一件 `schedule_wakeup`，以前差在三处，这一步改掉：
+
+1. **看得见**：人生那一行在 `schedule.list`、`schedules` 流里照常列，带 `loop: "life"` 和 `persona`（`schedules.md` 第五节第 8 条）；头在循环图标的位置画下次几点醒。改、删照旧只有 `life.*`。
+2. **`/loop` 不另开一行**（`commands/life/here.rs`，照会话认：没结束的人生会话，不经人格找）：
+
+   | 打的 | 做什么 | 回执（中文） |
+   |---|---|---|
+   | `/loop` | 看人生的状态，同 `/life` | 「人生会话进行中，下次醒来：…。」「…这会儿醒着。」「人生会话已暂停，用 /life resume 继续。」 |
+   | `/loop off`（`clear`、`stop`） | 暂停人生，同 `/life pause`；已经停着的回同一句 | 「人生会话已暂停，用 /life resume 继续。」 |
+   | `/loop <话>`、带间隔的 | 不收，什么都不动 | 「这是人生会话，什么时候醒由 AI 自己定，这里不另开循环；想说什么直接发消息。」 |
+
+   以前 `/loop` 不认人生是这个会话的循环，在它旁边另建一行：新的那一行一交进去下一次就清空，排到人生那一行后面，她定下一次（`schedule_wakeup` 取这个会话上循环的第一行）每次都落在人生那一行上，新的那一行这一轮结束照「不定就停」被删掉，图标亮一下又没了，人生的下一次和她留给自己的话还被这一轮改掉。回应不带 `session`：人已经在这个会话里。
+3. **`/stop` 是全停**：先暂停人生（同 `life.pause`），再打断这一轮、停掉派出去的；回执「已全部停止，人生会话已暂停；用 /life resume 继续。」。以前只打断，她照默认间隔一小时里又自己醒。暂停不成的记 `WARN life not paused`，别的几样照做、回执照普通的。
+4. **到点时她正在跑一轮的等一等**（`schedules.md` 第三节第 9 条）：同循环，等这一轮结束再醒、自己开一轮。
+5. **结束只有有意的**：`/loop off`、`/stop` 最多是暂停，那一行还在、记忆不清；结束只有 `/life kill`、`/life new` 和她自己的 `end_life`。她的 `schedule_wakeup` 的 `stop: true` 照旧不收。
+6. **留着的差别**：她这一轮没定下一次的，循环结束、人生照默认间隔再醒。这是人生的定义，不改。
+
 ### 守着它的
 
 | 测试 | 守什么 |
@@ -182,3 +202,4 @@
 | `crates/miyu-endpoint/tests/life_change_more.rs`（施工 LF-11） | 后天第 1、5 条：同一个人格另开的会话常驻那一块里有、别的人格没有；`life.kill`、她自己 `end_life` 以后清掉、别的会话没有，`life.new` 从零条开始 |
 | `crates/miyu-endpoint/tests/life_command.rs`（施工 LF-5 下） | `/life`：没有的只回说明、不开、不带 `session`，结束了的同没有；在跑的说下次几点醒、停着的说停着，带它；`new` 开出来马上醒，再 `new` 旧的人记结束、新的是另一个会话、回应带新的；`pause` 到点不醒、`resume` 接着醒，没有的两个都回没有；`kill` 结束、封存，没有的回没有；在人生会话自己里面看、结束、再开都管用；场所会话、认不出的参数各回各的、什么都不动；英文、日文回执，命令目录里有它和几种写法 |
 | `crates/miyu-endpoint/tests/life_command_bare.rs`（施工 LF-12） | 不带人格的会话里的 `/life`：只有一个人格有人生会话的，光打回它的状态、写上人格的名字、带 `session` 和 `persona`，`pause`、`resume`、`kill` 照它办，结束了的算没有；带人格的会话里回执照旧、回应也带 `persona`；一个都没有的回说明、`new` 不开、停续结束回没有；不止一个的照编号列出来、四种打法都不动；光打的带 `lives`（一条的、几条的照编号、带人格的会话里自己的排最前，停续结束不带，一条都没有的不写），`life.list` 回同一份；英文、日文的回执 |
+| `crates/miyu-endpoint/tests/life_loop.rs`（施工 LF-13） | 人生会话里：`/loop` 光打回状态，带话的、带间隔的回不收的那一句，表里只有人生那一行、她没被多叫醒、留言没被换；`/loop off`、`clear`、`stop` 暂停人生、到点不醒；`/stop` 打断这一轮并暂停人生、没结束没封存；到点时她正在跑一轮的等它结束再醒；`schedule.list` 列得出人生那一行、带 `persona` |

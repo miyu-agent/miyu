@@ -23,7 +23,7 @@ When both sides have the same name (`/clear`, `/stop`, `/context`, `/workspace` 
 | Command | Alias | Arguments | What it does | Details |
 |---|---|---|---|---|
 | `/clear` | `/reset` | | Clears the context; the session stays | [Sessions](sessions.en.md) |
-| `/stop` | | | Interrupts this turn, keeps queued messages without sending them, and stops this session's background commands, subagents and loop | [Sessions](sessions.en.md) |
+| `/stop` | | | Interrupts this turn, keeps queued messages without sending them, and stops this session's background commands, subagents and loop; in a life session it also pauses the life | [Sessions](sessions.en.md) |
 | `/workspace` | | `<path>` | Changes this session's working directory. Without a path, it says what the current one is. Only you can use it | [Sessions](sessions.en.md) |
 | `/context` | | `[<value> \| unset]` | With a value, sets this session's context limit, for example `128k` or `1m`; `unset` or `off` removes it; without one, it says the current limit and the compaction line | [Sessions](sessions.en.md) |
 | `/todo` | | `[clear]` | Lists the todos; `clear` empties them | [Sessions](sessions.en.md) |

@@ -10,6 +10,13 @@ impl Refusal {
         data: None,
     };
 
+    /// 这一行是人生循环（施工 LF-13）：通用的定时入口改不了、删不掉它，要用 `life.pause`、`life.resume`、`life.kill`。
+    pub(crate) const LIFE_SCHEDULE: Refusal = Refusal {
+        code: REFUSED,
+        reason: "life_schedule",
+        data: None,
+    };
+
     /// 全机挂满了 200 个（施工 J-3 上，熔断性质的安全上限）：先删几个。
     pub(crate) const TOO_MANY_SCHEDULES: Refusal = Refusal {
         code: REFUSED,

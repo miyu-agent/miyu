@@ -62,6 +62,7 @@ In the terminal or web UI, type these in a session that has this persona:
 | `/life resume` | Continues: wakes once right away, then follows what the AI decided. The note it left for itself last time is still there | The same as `/life` |
 | `/life kill` | Ends this life | "Life session ended. What it left in memory was cleared; the session stays read-only." |
 
+- Inside the life session itself, `/loop` and `/stop` act on this life too: `/loop` typed alone is the same as `/life`; `/loop off` is the same as `/life pause`; `/stop` interrupts this turn and also pauses the life, replying "All stopped, and the life session is paused. Resume it with /life resume." `/loop <text>` is not accepted here: the AI decides when it wakes, and to say something you just send a message. None of these ends the life.
 - In the terminal it acts as soon as you type it, without asking. `/life new` ends a life that is going, directly.
 - In the web UI, before `/life new` and `/life kill` are sent, a card asks first: "Start a new life?" and "End this life?"; they are sent only when you click "End and start over" or "End life"; "Cancel", `Esc`, and clicking outside the card send nothing. `/life`, `pause` and `resume` do not ask.
 - When the web UI receives the reply, it opens the life session the reply is about; if you are already looking at it, it does not jump.
@@ -91,7 +92,7 @@ Open a persona on the "Personas" page of the web settings, and there is a "Simul
 2. From the time, its memories and what it found, the AI writes what it is doing at this moment. It can save memories, search the web, and look back at what it wrote before.
 3. The AI calls `schedule_wakeup` to decide how long until the next wake-up (at least 60 seconds), writes one line about what it is doing now, and can leave a note for its next self.
 
-- If the AI does not decide this turn, it wakes again one hour after this wake-up. The AI cannot stop a life with `schedule_wakeup`; to stop one, use `/life pause`.
+- If the AI does not decide this turn, it wakes again one hour after this wake-up. The AI cannot stop a life with `schedule_wakeup`; to stop one, use `/life pause`. If the wake-up comes due while you are talking with the AI, it waits for that turn to finish.
 - At a wake-up the AI also sees the memories this persona has newly saved in other sessions since the last wake-up.
 - The line the AI wrote about what it is doing now is given to the AI at the start of the next turn in the other sessions of the same persona (local ones, ones on chat platforms, forked ones, but not subagents sent out); the same line is not given twice. While the life is paused, it is not given.
 - Waking depends on the core. When the core is not running, it does not wake; when the core starts again, the missed wake-ups are made up with only one, and then it goes on as usual. To keep it going all the time, keep the core running; see [Keeping it running, and servers](service.en.md).

@@ -400,6 +400,23 @@ async fn mains(core: &Arc<Core>, busy: BTreeSet<SessionId>) -> Result<Vec<Listed
     }
 }
 
+/// 没结束的人生会话 `session` 这一刻的样子（`life.status` 那个样子的回应），不经人格找（施工 LF-13：人生会话自己里面的
+/// `/loop`、`/stop` 照会话认，会话这时带不带人格都一样）。
+pub(crate) fn here(core: &Core, session: &SessionId) -> Result<Value, Refusal> {
+    state(core, Some(&(session.clone(), Life::Started)))
+}
+
+/// 暂停没结束的人生会话 `session`（同 `life.pause`，不经人格找，施工 LF-13）：那一行在、没停的停掉；交回它这一刻的样子。
+pub(crate) async fn pause_here(core: &Arc<Core>, session: &SessionId) -> Result<Value, Refusal> {
+    let _one_at_a_time = core.life.lock().await;
+    if let Some(row) = row_of(core, session)?
+        && !row.paused
+    {
+        core.schedules().pause(&row.id).map_err(schedule_refusal)?;
+    }
+    here(core, session)
+}
+
 /// 定时表里跑在 `session` 上的人生那一行；没有的是空的。
 fn row_of(core: &Core, session: &SessionId) -> Result<Option<Schedule>, Refusal> {
     Ok(core

@@ -75,6 +75,8 @@ impl Slash for Stop {
             if super::looping::stop(call.core, call.session).is_err() {
                 tracing::warn!(target: "miyu::endpoint", "loops not stopped");
             }
+            // 人生会话：全停也暂停人生（施工 LF-13），同样先停再打断。
+            let life = super::life::stopped(call.core, call.session, call.handle()).await;
             let interrupt = Command::Interrupt {
                 queued: Queued::Keep,
             };
@@ -98,7 +100,10 @@ impl Slash for Stop {
             }
             Ok(Ran {
                 events,
-                said: Said::plain("commands/stopped"),
+                said: Said::plain(match life {
+                    true => "commands/stopped-life",
+                    false => "commands/stopped",
+                }),
                 life: None,
             })
         })

@@ -34,6 +34,9 @@ use crate::list::LOCAL;
 use crate::refusal::Refusal;
 
 mod bare;
+mod here;
+
+pub(super) use here::{living, looped, stopped};
 
 /// 登记 `/life`。
 pub(super) fn register(commands: &mut Commands) {
@@ -202,31 +205,39 @@ async fn run(
     }
 }
 
-/// 照 `life.status` 那个样子的回应说状态：没有的、结束了的回说明、不带会话；停着的说停着；在跑的她这会儿醒着就说醒着，
-/// 不然说下次几点醒（核心这台机器的时区，到分钟）。`who` 是人格的编号和要不要写的名字（[`say`]）。
+/// 照 `life.status` 那个样子的回应说状态：没有的、结束了的回说明、不带会话；别的照 [`told`]，带它。`who` 是人格的编号和
+/// 要不要写的名字（[`say`]）。
 async fn shown(
     core: &Arc<Core>,
     now: &Value,
     (persona, name): (&str, Option<&str>),
 ) -> Result<Ran, Refusal> {
-    let session = jump(now, persona);
-    let said = match (state(now), &session) {
-        ("running", Some(life)) => {
+    match told(core, now, name).await {
+        Some(said) => Ok(ran(said, jump(now, persona))),
+        None => Ok(ran(Said::plain("commands/life-about"), None)),
+    }
+}
+
+/// 没结束的人生会话的状态那一句：停着的说停着；在跑的她这会儿醒着就说醒着，不然说下次几点醒（核心这台机器的时区，到
+/// 分钟）。没有的、结束了的没有这一句。
+async fn told(core: &Arc<Core>, now: &Value, name: Option<&str>) -> Option<Said> {
+    let session = now["session"].as_str()?;
+    match state(now) {
+        "running" => {
             let next = now["next"]
                 .as_str()
                 .and_then(|next| Timestamp::parse(next).ok());
-            match (awake(core, &life.session).await, next) {
+            Some(match (awake(core, session).await, next) {
                 (false, Some(next)) => {
                     let next = next.local_minute(crate::sessions::offset());
                     say(RUNNING, name, vec![("next", next)])
                 }
                 _ => say(AWAKE, name, Vec::new()),
-            }
+            })
         }
-        ("paused", Some(_)) => say(PAUSED, name, Vec::new()),
-        _ => return Ok(ran(Said::plain("commands/life-about"), None)),
-    };
-    Ok(ran(said, session))
+        "paused" => Some(say(PAUSED, name, Vec::new())),
+        _ => None,
+    }
 }
 
 /// 人生会话 `id` 这会儿在跑一轮（她醒着）。找不到的当没醒。

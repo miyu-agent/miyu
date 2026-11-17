@@ -51,10 +51,11 @@ impl Delivered {
     }
 }
 
-/// 跑在已有会话上的循环（固定的、她自己定节奏的）到点时那个会话正在跑一轮：记下等它空下来（施工 LO-2，`busy.rs`），交回真，
-/// 这一次先不交、表不动。先记再看忙不忙：看完到记下之间空下来的也叫得醒。会话找不到的交回假，照常交（交的时候记没了）。
+/// 跑在已有会话上的循环（固定的、她自己定节奏的、人生）到点时那个会话正在跑一轮：记下等它空下来（施工 LO-2，`busy.rs`），
+/// 交回真，这一次先不交、表不动。先记再看忙不忙：看完到记下之间空下来的也叫得醒。会话找不到的交回假，照常交（交的时候记
+/// 没了）。人生以前不等（施工 LF-13 起等）：人正和她说着话时到点，那一次醒来被并进说话的这一轮里。
 pub(super) async fn waits(core: &Arc<Core>, schedule: &Schedule) -> bool {
-    let (Some(Loop::Fixed | Loop::Dynamic), Target::Session { session }) =
+    let (Some(Loop::Fixed | Loop::Dynamic | Loop::Life), Target::Session { session }) =
         (schedule.looping, &schedule.target)
     else {
         return false;

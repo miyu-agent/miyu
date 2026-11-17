@@ -122,6 +122,7 @@ Chinese version: [errors.md](errors.md).
 | `reason` | When | `data` |
 |---|---|---|
 | `unknown_schedule` | No such schedule: `schedule.cancel`, `schedule.pause`, `schedule.resume`, `schedule.update` | |
+| `life_schedule` | The row is a life loop, which these four methods cannot change: use `life.pause`, `life.resume`, `life.kill`, see [Life sessions](life.en.md) | |
 | `too_many_schedules` | There are already 200 schedules (added by people, the AI and packages together; a safety limit): `schedule.add`. Remove some first; existing ones keep running | |
 | `life_exists`, `no_life`, `life_ended` | Life sessions: the persona already has one (`life.start`); the persona has none (`life.pause`, `life.resume`, `life.kill`); the persona's latest life has ended (`life.pause`, `life.resume`), see [Life sessions](life.en.md) | `session` for `life_exists` and `life_ended` |
 | `unknown_project` | No such project: the project methods, and `project` in `session.create` and `session.set_meta` | |

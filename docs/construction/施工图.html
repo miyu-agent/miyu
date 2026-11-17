@@ -1536,6 +1536,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sLF10"><span class="n">LF-10</span>上下文上限出厂 100000，人格里能设<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF11"><span class="n">LF-11</span>后天：她记下自己变了什么<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF12"><span class="n">LF-12</span>没有人格的会话也找得到人生；快速跳转<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sLF13"><span class="n">LF-13</span>人生就是这个会话的循环<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sVW1"><span class="n">VW-1</span>主人只读地看场所会话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT1"><span class="n">HT-1</span>内核认得供应商侧工具<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT3"><span class="n">HT-3</span>供应商侧工具画成工具步骤<span class="st">✓</span></a></li>
@@ -59465,6 +59466,62 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LF-12-没有人格的会话也找得到人生、快速跳转.md</code>；蓝图 <code>life.md</code>「对外的样子」「命令」第 8、9 条、<code>protocol.md</code>；协议参考 <code>life.md</code>、<code>packages.md</code> 中英各一份；手册 <code>guide/life.md</code>、<code>guide/commands.md</code> 中英各一份。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sLF13" aria-labelledby="h-sLF13">
+  <div class="sheet-head"><h2 id="h-sLF13"><span class="no">LF-13</span>人生就是这个会话的循环</h2><span class="pill done">做完</span></div>
+  <p class="purpose">人生的醒来和 <code>/loop</code> 本来用同一张定时表、同一件工具，可人生那一行对通用入口整行藏着：头画不出下次醒来的图标，人生会话里再敲 <code>/loop</code> 还会多出一行循环和它抢。项目主人定：人生就是这个会话的循环，看得见、能停、不能随手结束。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint · schedules/methods.rs　schedules/fire.rs　commands/life/here.rs　commands/looping.rs　commands/basic.rs</span><span class="dir-note">LF-13</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>人生那一行进 <code>schedule.list</code> 和 <code>schedules</code> 推送，带 <code>loop: "life"</code>、<code>persona</code></li>
+              <li>通用入口改它、删它回 <code>life_schedule</code>；扩展照旧看不到</li>
+              <li>人生会话里 <code>/loop</code>：光打看状态，<code>off</code> 暂停人生，带话的不收；不另建一行</li>
+              <li>人生会话里 <code>/stop</code>：打断这一轮，同时暂停人生</li>
+              <li>到点时她正在跑一轮的，等这一轮结束再醒</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">人生就是这个会话的循环：看得见、能停、不能随手结束</span><span class="rl">项目主人 2026-11-17 定</span></div>
+          <div class="tile new"><span class="nm"><code>/loop off</code>、<code>/stop</code> 最多是暂停；结束只有 <code>/life kill</code>、<code>/life new</code>、<code>end_life</code></span><span class="rl">项目主人定</span></div>
+          <div class="tile new"><span class="nm">人生会话里带话的 <code>/loop</code> 不收，想说什么直接发消息</span><span class="rl">项目主人定</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LF-13</dd></div>
+        <div><dt>名称</dt><dd>人生就是这个会话的循环</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">LF-13</dd></div>
+        <div><dt>验收</dt><dd>改前六条测试红在旧行为上；门禁；沙箱里真模型走了一遍</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>人生会话里敲三种带话的 <code>/loop</code>：表里还是只有人生那一行，她没被多叫醒，留言没被换</span></li>
+        <li><span class="ok">✓</span><span><code>/loop off</code>、<code>clear</code>、<code>stop</code> 都暂停人生，到点不醒</span></li>
+        <li><span class="ok">✓</span><span><code>/stop</code> 打断这一轮并暂停人生，没结束、没封存</span></li>
+        <li><span class="ok">✓</span><span>到点时她停在工具上：这一轮里不交，结束以后才醒、自己开一轮</span></li>
+        <li><span class="ok">✓</span><span>列表和推送里有人生那一行、带人格；四个改它的方法都回 <code>life_schedule</code>，那一行不动</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LF-13-人生就是这个会话的循环.md</code>；设计 <code>70-推演人生.md</code> 第三节；蓝图 <code>life.md</code>「人生会话里的 <code>/loop</code>、<code>/stop</code>」、<code>schedules.md</code>、<code>protocol.md</code>；协议参考 <code>schedules.md</code>、<code>life.md</code>、<code>errors.md</code>、<code>packages.md</code> 中英各一份；手册 <code>guide/life.md</code>、<code>guide/commands.md</code> 中英各一份。</li>
       </ul>
     </div>
   </div>
