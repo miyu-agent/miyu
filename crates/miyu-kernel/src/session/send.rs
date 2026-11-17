@@ -14,7 +14,7 @@ use crate::time::Timestamp;
 type Said = (Vec<Block>, Option<VenueMessage>, Option<TypedCommand>, bool);
 
 impl Session {
-    /// 发一条消息：一块内容都没有、也没带场所的东西（交了原图的不算，施工 O-35）的拒绝，`empty_message`。别处来的（子代理的留言，施工 7-7；别的 harness 发来的话，
+    /// 发一条消息：一块内容都没有、也没带场所的东西（交了原图的不算，施工 O-35）、也不是戳一戳（施工 VP-1）的拒绝，`empty_message`。别处来的（子代理的留言，施工 7-7；别的 harness 发来的话，
     /// 施工 7-10；别的会话发来的话，施工 C-2）照回报的规矩到。空闲时追加 `message.user`、同一批开一个回合；回合进行中
     /// 追加、带上这个回合、排进队，这一步里在等人的调用作废，在路上的请求一个字都还没回的撤掉重发（施工 4-15），急着插话的
     /// 再跳过还没跑的，叫停的 `CancelTool`、`CancelModel` 排在 `Append` 后面。
@@ -61,7 +61,9 @@ impl Session {
     ) -> Vec<Action> {
         // 只有带的东西（图、表情、文件）、没有字的场所消息照样收（施工 O-13 补）：内容块和带的东西都没有才是空的。交了原图的
         // （`shown`）不算（施工 O-35）：原图该在内容块里，O-35 起造的私聊会话写记号时跳过它们。
-        let unshown = |venue: &VenueMessage| venue.media.iter().any(|item| !item.shown);
+        // 戳一戳（施工 VP-1）本身就是内容：桥交进来的是一条空消息。
+        let unshown =
+            |venue: &VenueMessage| venue.poke || venue.media.iter().any(|item| !item.shown);
         if blocks.is_empty() && !venue.as_ref().is_some_and(unshown) {
             return vec![rejected(id, Reason::EmptyMessage)];
         }

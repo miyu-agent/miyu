@@ -97,7 +97,7 @@ fn quote_of(events: &[Event], reply_to: &str, texts: &GroupChat) -> String {
                     format!(
                         " {}: {}",
                         sender(&event.by, venue),
-                        content(&said.blocks, &venue.media, texts)
+                        content(&event.by, venue, &said.blocks, texts)
                     )
                 }),
             Body::VenueDelivered(delivered) if delivered.msg == reply_to => {

@@ -76,7 +76,7 @@ fn record(
         &escape(&venue.msg),
         mark,
     );
-    line.push_str(&content(words, &venue.media, texts));
+    line.push_str(&content(by, venue, words, texts));
     if let Some(reply) = reply(venue, quote, 2, forward) {
         line.push('\n');
         line.push_str(&reply);
@@ -146,8 +146,9 @@ fn sender(by: &By, venue: &VenueMessage) -> String {
     }
 }
 
-/// 内容：正文去掉前后空白、截到 [`TEXT_LIMIT`] 字节，带的东西空一格接在后面（[`markers`]）；都没有的写 `no_text`。
-fn content(words: &[Block], media: &[Media], texts: &GroupChat) -> String {
+/// 内容：戳一戳那一句（施工 VP-1，`poke.rs`），正文去掉前后空白、截到 [`TEXT_LIMIT`] 字节，带的东西空一格接在后面
+/// （[`markers`]）；都没有的写 `no_text`。`by` 是发的人。
+fn content(by: &By, venue: &VenueMessage, words: &[Block], texts: &GroupChat) -> String {
     let joined = words
         .iter()
         .filter_map(|block| match block {
@@ -156,12 +157,14 @@ fn content(words: &[Block], media: &[Media], texts: &GroupChat) -> String {
         })
         .collect::<Vec<_>>()
         .join("\n");
-    let mut parts = Vec::new();
+    let mut parts: Vec<String> = crate::poke::said(by, venue, texts.poke.as_ref())
+        .into_iter()
+        .collect();
     let text = cut(joined.trim(), TEXT_LIMIT);
     if !text.is_empty() {
         parts.push(escape(text));
     }
-    parts.extend(markers(media, texts.voice.as_deref()));
+    parts.extend(markers(&venue.media, texts.voice.as_deref()));
     if parts.is_empty() {
         texts.no_text.clone()
     } else {

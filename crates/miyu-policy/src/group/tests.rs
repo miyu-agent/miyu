@@ -21,6 +21,7 @@ fn tokyo() -> GroupChat {
             budget: RECENT_BUDGET,
         }),
         voice: Some("(voice note)\n".to_string()),
+        poke: Some("{name} poked you on {platform}\n".to_string()),
     }
 }
 
@@ -56,7 +57,31 @@ fn the_assembler_gets_the_pinned_offset_and_the_bare_line() {
                 budget: 80_000,
             }),
             voice: Some("(voice note)".to_string()),
+            poke: Some(Template::parse("{name} poked you on {platform}").unwrap()),
         }
+    );
+}
+
+/// 施工 VP-1：以前造的没有戳一戳那一句，组装器只写记号，快照不写这一格（字节不变）；写错了的造不出策略。
+#[test]
+fn a_group_made_before_pokes_has_none_and_a_broken_poke_builds_no_policy() {
+    let older = GroupChat {
+        poke: None,
+        ..tokyo()
+    };
+    assert_eq!(older.texts().unwrap().poke, None);
+    let bytes = serde_json::to_string(&engineer().with_group(NOTE, older).group).unwrap();
+    assert!(!bytes.contains("\"poke\""), "{bytes}");
+    let broken = GroupChat {
+        poke: Some("{who} poked you\n".to_string()),
+        ..tokyo()
+    };
+    let Err(error) = engineer().with_group(NOTE, broken).policy() else {
+        panic!("戳一戳那一句写错了的造不出策略");
+    };
+    assert!(
+        matches!(error, BuildError::Texts { which: "poke", .. }),
+        "{error}"
     );
 }
 

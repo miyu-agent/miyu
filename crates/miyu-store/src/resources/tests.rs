@@ -280,6 +280,11 @@ fn the_core_texts_are_read_and_the_persona_texts_are_as_given() {
         private.voice,
         include_str!("../../../../resources/core/venues/voice.txt")
     );
+    assert_eq!(
+        private.poke.as_deref(),
+        Some(include_str!("../../../../resources/core/venues/poke.txt")),
+        "戳一戳那一句（施工 VP-1）"
+    );
     assert_eq!(repo().private_media().unwrap(), private);
     // 文本文件照字放进消息的三句（施工 3-9 三补）：每一格是它自己那份文件。
     let drivers = sources.core.drivers;
@@ -404,6 +409,11 @@ fn the_group_chat_texts_are_their_own_files() {
         chat.voice.as_deref(),
         Some(include_str!("../../../../resources/core/venues/voice.txt"))
     );
+    // 戳一戳那一句（施工 VP-1）。
+    assert_eq!(
+        chat.poke.as_deref(),
+        Some(include_str!("../../../../resources/core/venues/poke.txt"))
+    );
     let scratch = Scratch::new();
     let empty = ResourceRoot::at(scratch.path());
     for (error, file) in [
@@ -432,6 +442,13 @@ fn the_group_chat_texts_are_their_own_files() {
                 empty.group_chat(0).unwrap_err()
             },
             "core/venues/voice.txt",
+        ),
+        (
+            {
+                std::fs::write(scratch.path().join("core/venues/voice.txt"), "x\n").unwrap();
+                empty.group_chat(0).unwrap_err()
+            },
+            "core/venues/poke.txt",
         ),
     ] {
         match error {

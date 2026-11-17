@@ -5028,6 +5028,19 @@ Group messages look like [HH:MM] name (id=..., role) [msg=...]: text, with optio
 (not playable yet)
 ```
 
+### 人这边：群里一行的内容最前面（群聊近况、判官看的那一行同一份）；私聊那一条正文前面单独一块
+
+#### `core/venues/poke.txt`
+
+- 什么时候加进来：场所消息带 `venue.poke`（施工 VP-1：QQ 的戳一戳，桥当成戳的人发来的一条空消息）；VP-1 起造的会话才有（快照的 `group.poke`、`core.private_media.poke`），以前造的只写记号 `[poke]`
+- token：16（2026-11-17，名字填「小林」、平台填 QQ 的整句 18 减去名字 2；接在一行群里的话的行首后面多 17）
+- 为什么加：项目主人 11-17 定：被戳一般都有提示，写成「谁戳了你」，加一句它是什么，免得她理解错（只写 `[poke]` 她看不出是双击头像、不是一句话）。字段 `name`、`platform` 由代码填、转义；后缀是戳的人自己设的半句，代码转义接在后面，不进模板。英文短句，只陈述是什么
+- 指纹：`e18500aa`
+
+```text
+{name} poked you (a {platform} nudge: they double-clicked your avatar)
+```
+
 ### 人这边：群里一行下面、私聊正文后面，合并转发那几行的头一行
 
 #### `core/venues/forward/label.txt`

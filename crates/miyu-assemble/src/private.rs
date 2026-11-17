@@ -12,6 +12,7 @@
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::VenueMessage;
+use miyu_kernel::origin::By;
 use miyu_kernel::template::escape;
 
 use crate::group::{self, markers};
@@ -30,6 +31,21 @@ pub(crate) fn line(venue: &VenueMessage, texts: &PrivateMedia) -> Option<Block> 
             text: format!("[msg={}] {}", escape(&venue.msg), marks.join(" ")),
         })
     })
+}
+
+/// 戳一戳（施工 VP-1，`poke.rs`）：那一句单独一块排在正文的块前面；不是戳一戳的原样交回。`media` 是快照里私聊记号的字，
+/// 那一句在它里面，没有的写记号。
+pub(crate) fn poked(
+    by: &By,
+    venue: &VenueMessage,
+    mut blocks: Vec<Block>,
+    media: Option<&PrivateMedia>,
+) -> Vec<Block> {
+    let sentence = media.and_then(|media| media.poke.as_ref());
+    if let Some(text) = crate::poke::said(by, venue, sentence) {
+        blocks.insert(0, Block::Text(Text { text }));
+    }
+    blocks
 }
 
 /// 私聊的一条接在最后的几块：引用那一行（施工 QT-2，同群里那一行的写法、不缩进，带了 `quoted` 的下面写出它）、合并转发那几行

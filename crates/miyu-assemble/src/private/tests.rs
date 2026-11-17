@@ -160,6 +160,7 @@ fn names_are_escaped_and_recap_reads_the_same_line() {
 fn a_venue_without_unshown_media_has_no_line() {
     let texts = crate::texts::PrivateMedia {
         voice: "<voice>".to_string(),
+        poke: None,
     };
     let venue = miyu_kernel::event::VenueMessage {
         msg: "711".to_string(),

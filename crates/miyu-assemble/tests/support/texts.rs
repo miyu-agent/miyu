@@ -97,6 +97,7 @@ pub fn group_texts() -> Texts {
                 .to_string(),
             recent: None,
             voice: None,
+            poke: None,
         }),
         ..texts()
     }

@@ -1,0 +1,1 @@
+{name} poked you (a {platform} nudge: they double-clicked your avatar)

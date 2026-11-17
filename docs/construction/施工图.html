@@ -1583,6 +1583,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sPL1"><span class="n">PL-1</span>换级别带上换以前的<span class="st">…</span></a></li>
         <li><a class="step review" href="#sUX1"><span class="n">UX-1</span>设置项正名，软件包只留一个「启用」<span class="st">…</span></a></li>
         <li><a class="step review" href="#sSW1"><span class="n">SW-1</span>分节跟着运行时给选项的项<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sVP1"><span class="n">VP-1</span>场所消息「戳一戳」<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -61993,6 +61994,64 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/SW-1-分节跟着运行时给选项的项.md</code>；蓝图 <code>packages.md</code>「配置项」；作者 <code>manifest</code>、协议参考 <code>config</code>、<code>bus</code> 中英两份。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sVP1" aria-labelledby="h-sVP1">
+  <div class="sheet-head"><h2 id="h-sVP1"><span class="no">VP-1</span>场所消息「戳一戳」</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">桥把 QQ 的戳一戳当成戳的人发来的一条空消息交进来（<code>venue.poke</code>、可选的 <code>poke_text</code>）；她看到一句「谁戳了你」，带一句它是什么。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates · miyu-endpoint/src/venues/message.rs、miyu-kernel/src/session/send.rs</span><span class="dir-note">VP-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>poke</code> 只收 <code>true</code>；<code>poke_text</code> 只跟着它来，最多 64 个字</li>
+              <li>内核认 <code>poke</code> 当内容：没有内容块也照收、开得了一轮</li>
+            </ol>
+          </div>
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates · miyu-assemble/src/poke.rs；resources · core/venues/poke.txt</span><span class="dir-note">VP-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>造会话时冻进快照：群会话 <code>group.poke</code>，私聊 <code>core.private_media.poke</code></li>
+              <li>群里一行的内容、群聊近况、判官看的那一行同一份；私聊正文前面单独一块</li>
+              <li>以前造的会话写记号 <code>[poke]</code></li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">「谁戳了你」加一句它是什么</span><span class="rl">项目主人 11-17 定，免得她理解错</span></div>
+          <div class="tile new"><span class="nm">平台名照戳的人的平台</span><span class="rl">不是 QQ 的写那个平台的名字</span></div>
+          <div class="tile new"><span class="nm">别的规矩照一条普通的话</span><span class="rl">限流、判官、并行支线、重发不判都不动</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">VP-1</dd></div>
+        <div><dt>名称</dt><dd>场所消息「戳一戳」</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">VP-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>沙箱里改前的核心收到 im 的形状回 <code>bad_params</code></span></li>
+        <li><span class="ok">✓</span><span>假桥在群里发一条旁听、一条戳一戳：请求里是 <code>[18:32] 小林 [msg=1794905517642]: 小林 poked you (a QQ nudge: they double-clicked your avatar) 的小脑袋</code>，判官看的 <code>current</code> 同一行</span></li>
+        <li><span class="ok">✓</span><span>主人私聊里戳一下：真模型回「诶——被戳了！（捂住小脑袋）主人有什么事吗？」</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/VP-1-场所消息戳一戳.md</code>；蓝图 <code>venues.md</code>「场所的格」、<code>kernel/request.md</code>「群里的一行」；登记簿 <code>26-提示词.md</code> 第十节；协议参考 <code>venues</code> 中英两份。</li>
       </ul>
     </div>
   </div>

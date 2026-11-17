@@ -196,6 +196,8 @@ pub(crate) fn spoken(
         // 最后，各自单独一块、不缩进（施工 O-34），引用的内容、转发在快照里没有那几句的不写；没引用的和以前一个字节不差。
         (Some(venue), None) => {
             let media = texts.private_media.as_ref();
+            // 戳一戳（施工 VP-1）那一句是正文前面单独一块。
+            let blocks = private::poked(&event.by, venue, blocks, media);
             let mut out = if blocks.is_empty() && media.is_none() {
                 group::bare(venue).into_iter().collect()
             } else {

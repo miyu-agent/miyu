@@ -271,3 +271,28 @@ fn a_message_whose_media_are_all_shown_needs_blocks() {
     let read: VenueMessage = serde_json::from_str(&line).unwrap();
     assert!(read.media[0].shown);
 }
+
+/// 戳一戳（施工 VP-1）本身就是内容：没有内容块、也没带东西的一条照样收，旁听的只记下、冲她来的开一轮。
+#[test]
+fn a_poke_without_blocks_is_kept() {
+    let mut session = session();
+    let poke = |msg: &str, ambient: bool| VenueMessage {
+        media: Vec::new(),
+        poke: true,
+        poke_text: Some("的小脑袋".to_string()),
+        ..venue(msg, ambient)
+    };
+    let events = appended_events(&session.handle(bare(1, poke("1794905517642", true))));
+    assert!(
+        matches!(&events[..], [event] if matches!(&event.body, Body::MessageUser(message)
+            if message.blocks.is_empty() && message.venue.as_ref().is_some_and(|venue| venue.poke))),
+        "旁听的只记下：{events:?}"
+    );
+    let actions = session.handle(bare(2, poke("1794905517643", false)));
+    assert!(
+        appended_events(&actions)
+            .iter()
+            .any(|event| matches!(event.body, Body::TurnStarted(_))),
+        "开一轮"
+    );
+}

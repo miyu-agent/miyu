@@ -107,6 +107,7 @@ pub(crate) fn with_private_media(texts: Texts) -> Texts {
     Texts {
         private_media: Some(PrivateMedia {
             voice: "<voice>".to_string(),
+            poke: None,
         }),
         ..texts
     }
@@ -131,6 +132,7 @@ pub(crate) fn group_texts_within(minutes: i32, budget: usize) -> Texts {
                 budget,
             }),
             voice: None,
+            poke: None,
         }),
         ..texts()
     }

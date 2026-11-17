@@ -50,6 +50,15 @@ pub struct VenueMessage {
     /// `large_enum_variant`），JSON 的写法一样。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub quoted: Option<Box<ForwardNode>>,
+    /// 戳一戳（施工 VP-1，`docs/blueprint/venues.md`「场所的格」）：平台上发的人戳了她（QQ 的拍一拍、戳一戳：双击她的头像），
+    /// 桥把它当成发的人发来的一条空消息交进来，内容块可以是空的。渲染时照模板写成一句（`miyu-assemble` 的 `group.rs`、
+    /// `render.rs`）。假的不写，以前记的没有，字节不变。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub poke: bool,
+    /// 戳一戳的后缀（施工 VP-1）：平台上发的人自己设的那半句（QQ 的「的小脑袋」），只跟着 `poke` 来。不可信，渲染时照模板的规矩
+    /// 转义成一行，接在那一句后面。没有的不写。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub poke_text: Option<String>,
     /// 旁听：不冲她来的，只记下。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub ambient: bool,

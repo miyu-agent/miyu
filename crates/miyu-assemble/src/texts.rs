@@ -69,6 +69,9 @@ pub struct Texts {
 pub struct PrivateMedia {
     /// 语音后面接的那一句（`core/venues/voice.txt`，同群会话的 `voice`），不带行尾的换行。
     pub voice: String,
+    /// 戳一戳那一句（施工 VP-1，`core/venues/poke.txt`，同群会话的 `poke`）：字段 `name`、`platform`。VP-1 以前造的没有：
+    /// 戳一戳只写记号 `[poke]`（`poke.rs`）。
+    pub poke: Option<Template>,
 }
 
 /// 合并转发那几行的三句（施工 O-34，`docs/blueprint/kernel/request.md`「合并转发」），都不带行尾的换行；缩进由代码加。
@@ -94,6 +97,9 @@ pub struct GroupChat {
     /// 语音后面接的那一句（施工 O-33，`core/venues/voice.txt`），不带行尾的换行。有它的是 O-33 起造的群会话：带的东西
     /// 不止一样的照先后标第几个、语音接这一句；以前造的没有，照旧写，前缀一个字节不变。
     pub voice: Option<String>,
+    /// 戳一戳那一句（施工 VP-1，`core/venues/poke.txt`）：字段 `name` 是戳的人、`platform` 是平台名。VP-1 以前造的群会话
+    /// 没有：戳一戳只写记号 `[poke]`（`poke.rs`）。
+    pub poke: Option<Template>,
 }
 
 /// 群聊近况要用的（施工 O-13 下）：块头、缺口提示、预算。

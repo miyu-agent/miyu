@@ -245,7 +245,7 @@ fn quote_of(event: &Event, texts: &GroupChat) -> Option<String> {
             format!(
                 " {}: {}",
                 sender(&event.by, venue),
-                content(&said.blocks, &venue.media, texts)
+                content(&event.by, venue, &said.blocks, texts)
             )
         }),
         Body::VenueDelivered(delivered) => Some(format!(" [you]: {}", you_said(delivered, texts))),

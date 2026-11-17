@@ -303,7 +303,7 @@ impl Snapshot {
             title: self.title(),
             vision: self.vision(),
             forward: self.forward()?,
-            private_media: self.private_media(),
+            private_media: self.private_media()?,
             group: self.group.as_ref().map(GroupChat::texts).transpose()?,
         };
         // 工具一律全量（施工 FL-1，设计 25 W10）：以前造的快照里登记成要先加载的、冻着先加载的字的，也照完整格式发。

@@ -17,7 +17,7 @@ impl ResourceRoot {
 
     /// 群会话钉下的（施工 O-13 中）：时区 `offset`（比 UTC 早多少分钟），空的一条写什么照 `core/venues/no-text.txt` 的原文；
     /// 群聊近况（施工 O-13 下）的块头、缺口提示照 `core/venues/recent-open.txt`、`recent-omitted.txt` 的原文，预算是出厂的；
-    /// 语音那一句（施工 O-33）照 `core/venues/voice.txt` 的原文。
+    /// 语音那一句（施工 O-33）照 `core/venues/voice.txt` 的原文；戳一戳那一句（施工 VP-1）照 `core/venues/poke.txt` 的原文。
     ///
     /// # Errors
     ///
@@ -33,6 +33,7 @@ impl ResourceRoot {
                 limit: None,
             }),
             voice: Some(self.read(&["core", "venues", "voice.txt"])?),
+            poke: Some(self.read(&["core", "venues", "poke.txt"])?),
         })
     }
 
@@ -50,7 +51,8 @@ impl ResourceRoot {
         })
     }
 
-    /// 私聊里带的东西的记号要用的（施工 O-35）：语音那一句照 `core/venues/voice.txt` 的原文（同群会话钉下的那一份）。造会话时
+    /// 私聊里带的东西的记号要用的（施工 O-35）：语音那一句照 `core/venues/voice.txt` 的原文（同群会话钉下的那一份），戳一戳那一句
+    /// （施工 VP-1）照 `core/venues/poke.txt` 的原文。造会话时
     /// 冻结进快照的 `core.private_media`。
     ///
     /// # Errors
@@ -59,6 +61,7 @@ impl ResourceRoot {
     pub fn private_media(&self) -> Result<PrivateMediaTexts, SourceError> {
         Ok(PrivateMediaTexts {
             voice: self.read(&["core", "venues", "voice.txt"])?,
+            poke: Some(self.read(&["core", "venues", "poke.txt"])?),
         })
     }
 }

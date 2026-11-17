@@ -270,6 +270,7 @@ pub(crate) fn core() -> CoreTexts {
         }),
         private_media: Some(crate::PrivateMediaTexts {
             voice: include_str!("../../../resources/core/venues/voice.txt").to_string(),
+            poke: Some(include_str!("../../../resources/core/venues/poke.txt").to_string()),
         }),
     }
 }

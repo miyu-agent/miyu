@@ -22,6 +22,10 @@ pub struct GroupChat {
     /// 不止一样的标第几个；O-33 以前造的没有，照旧写记号，字节不变。没有的不写。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub voice: Option<String>,
+    /// 戳一戳那一句（施工 VP-1，`core/venues/poke.txt` 的原文）：字段 `name`、`platform`。VP-1 以前造的没有，戳一戳只写记号；
+    /// 没有的不写，字节不变。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub poke: Option<String>,
 }
 
 /// 群聊近况一块最多多少字节（照旧版的 80000）。
@@ -59,8 +63,26 @@ impl GroupChat {
                 .voice
                 .as_deref()
                 .map(|voice| voice.trim_end().to_string()),
+            poke: self.poke.as_deref().map(poke).transpose()?,
         })
     }
+}
+
+/// 戳一戳那一句（施工 VP-1）交给组装器的样子：去掉行尾的空白读成模板，照 `name`、`platform` 两个字段试换过。群会话、私聊共用。
+///
+/// # Errors
+///
+/// 模板写错了、字段不对：快照坏了。
+pub(crate) fn poke(text: &str) -> Result<Template, BuildError> {
+    let broken = |error| BuildError::Texts {
+        which: "poke",
+        error,
+    };
+    let template = Template::parse(text.trim_end()).map_err(broken)?;
+    template
+        .render(&[("name", "a"), ("platform", "b")].into_iter().collect())
+        .map_err(broken)?;
+    Ok(template)
 }
 
 impl GroupRecent {

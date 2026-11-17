@@ -2,6 +2,7 @@
 //! 换成内核的 [`VenueMessage`]，原样记进 `message.user`。写错的整条 `bad_params`。合并转发的内容（施工 O-34）查写法和上限：
 //! 单层的照查，整条消息合起来的另有上限（`docs/blueprint/venues.md`「场所的格」）。引用的那一条的内容 `quoted`（施工 QT-1）
 //! 和转发里的一条同一个形状、同一套查法，套在里面的转发从第一层数，条数、字节数算进同一个上限。
+//! 戳一戳（施工 VP-1）：`poke` 只收 `true`，`poke_text` 只跟着它来、同名字的规矩；带 `poke` 的内容块可以是空的（内核认它当内容）。
 
 use serde::Deserialize;
 
@@ -27,6 +28,8 @@ const FORWARD_TEXT: usize = 4096;
 const ALL_NODES: usize = 100;
 /// 一条场所消息里所有转发的名字和正文合起来最多几个字节（同上）。
 const ALL_BYTES: usize = 16 * 1024;
+/// 戳一戳的后缀最长几个字符（施工 VP-1：im 截到 64）。
+const POKE_TEXT: usize = 64;
 
 /// `venue` 的参数。
 #[derive(Debug, Deserialize)]
@@ -57,6 +60,12 @@ pub(crate) struct VenueMessageParams {
     /// 引用的那一条的内容（施工 QT-1）：同转发里的一条，要带着 `reply_to`。
     #[serde(default)]
     quoted: Option<NodeParams>,
+    /// 戳一戳（施工 VP-1）：只收 `true`，写 `false` 的是写错了；带它的 `text` 可以是空的。
+    #[serde(default)]
+    poke: Option<bool>,
+    /// 戳一戳的后缀（施工 VP-1）：只跟着 `poke` 来，同名字的规矩、最多 [`POKE_TEXT`] 个字符。
+    #[serde(default)]
+    poke_text: Option<String>,
     #[serde(default)]
     ambient: bool,
     #[serde(default)]
@@ -149,6 +158,11 @@ impl VenueMessageParams {
             .map(|quoted| node(quoted, 1, &mut tally).map(Box::new))
             .transpose()?;
         tally.within()?;
+        // 戳一戳只写 `true`；后缀只跟着它来（施工 VP-1）。
+        let poke = match (self.poke, &self.poke_text) {
+            (Some(false), _) | (None, Some(_)) => return Err(Refusal::BAD_PARAMS),
+            (poke, _) => poke.unwrap_or(false),
+        };
         Ok(VenueMessage {
             msg: platform_id(self.msg)?,
             reply_to: self.reply_to.map(platform_id).transpose()?,
@@ -165,6 +179,11 @@ impl VenueMessageParams {
             media,
             forwards,
             quoted,
+            poke,
+            poke_text: self
+                .poke_text
+                .map(|text| words(text, POKE_TEXT))
+                .transpose()?,
             ambient: self.ambient,
             asleep: self.asleep,
             // 补拉回来的只记下：不带 `ambient` 的会开回合，写错了（施工 O-40）。

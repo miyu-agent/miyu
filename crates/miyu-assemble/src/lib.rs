@@ -20,6 +20,7 @@ pub mod group;
 mod harness;
 mod jobs;
 mod peers;
+mod poke;
 mod private;
 mod recap;
 mod render;

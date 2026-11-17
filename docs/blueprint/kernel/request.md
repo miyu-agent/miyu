@@ -22,6 +22,7 @@
 | `crates/miyu-assemble/src/peers.rs` | 别的会话发来的话包一层带短编号的标签（施工 C-2）；空了的通知那一块（施工 C-6）；人这边的一条照谁发的包哪种外壳在 `render.rs` 的 `said`；群会话里群里的人说的先走 `group.rs`（`spoken`，主请求和回顾的请求共用） |
 | `crates/miyu-assemble/src/group.rs` | 群会话里群里的人说的一条渲染成一行（施工 O-13 中，下面「群里的一行」）；`group/head.rs` 一行的行首，拼的和认的共用（施工 FT-1）；`group/recent.rs` 开一轮的那条前面的群聊近况（施工 O-13 下，下面「群聊近况」）；`group/forward.rs` 合并转发那几行（施工 O-34，下面「合并转发」） |
 | `crates/miyu-assemble/src/private.rs`（施工 O-35） | O-35 起造的会话，私聊里带了东西的那条，正文后面单独一块的 `[msg=…]` 和记号（下面「群里的一行」私聊那一条）；私聊最后的引用、转发那几块（`tail`，施工 QT-2） |
+| `crates/miyu-assemble/src/poke.rs`（施工 VP-1） | 戳一戳那一句：群里一行的内容、私聊那一块共用（下面「群里的一行」） |
 | `crates/miyu-assemble/src/recap.rs` | 回顾的请求：取最近几轮的对话正文、截到上限、接在回顾的指令后面（施工 3-8 四补，下面「回顾的请求」） |
 | `crates/miyu-assemble/src/title.rs` | 起标题的请求：取第一轮的对话正文，照回顾的写法截到上限、接在起标题的指令后面（施工 3-8 五补，下面「起标题的请求」） |
 | `crates/miyu-assemble/src/vision.rs` | 转述一张图的请求：指令、人这一轮最近说的那一句、这张图（施工 8-17，下面「替它看的图」） |
@@ -96,9 +97,9 @@
 | | `peers` | `PeerTexts`：别的会话发来的话的标签，`core/peers/` 下的两份（施工 C-2，下面「别的会话发来的话」）：`open` 字段 `id`，`close`。以前造的快照里没有的，是没有：那种话照人的话原样渲染。`idle`（施工 C-6，`IdleTexts`，下面「空了的通知」）：`open` 字段 `id`、`reason`，`silent`、`expired`（造快照时照 `peers.watch_hours` 换好了 `hours`）、`gone`、`close`；C-2 时造的快照里没有，是没有：通知不出 |
 | | `recap` | `Recap`：回顾的指令、两种标签、两句记号（`core/recap/` 下的五份），最多几轮 `turns`、整份最多约多少 token `tokens`（施工 3-8 四补，下面「回顾的请求」）。以前造的快照里没有的，是没有：不做回顾 |
 | | `title` | `Title`：起标题的指令（`core/title/instruction.txt`），整份最多约多少 token `tokens`（施工 3-8 五补，下面「起标题的请求」）。标签、截断的记号借 `recap` 的，两样都有才起标题。以前造的快照里没有的，是没有：不起标题 |
-| | `group` | `GroupChat`：群会话钉下的时区和空的一条写什么（`core/venues/no-text.txt`，施工 O-13 中，下面「群里的一行」）；`recent`：群聊近况的块头、缺口提示的模板（字段 `count`）、预算（施工 O-13 下，下面「群聊近况」），O-13 中造的没有；`voice`：语音那一句（`core/venues/voice.txt`，施工 O-33，下面「群里的一行」），O-33 以前造的没有，带的东西照以前写。私聊、本机的会话没有：人的话照原样渲染 |
+| | `group` | `GroupChat`：群会话钉下的时区和空的一条写什么（`core/venues/no-text.txt`，施工 O-13 中，下面「群里的一行」）；`recent`：群聊近况的块头、缺口提示的模板（字段 `count`）、预算（施工 O-13 下，下面「群聊近况」），O-13 中造的没有；`voice`：语音那一句（`core/venues/voice.txt`，施工 O-33，下面「群里的一行」），O-33 以前造的没有，带的东西照以前写；`poke`：戳一戳那一句的模板（`core/venues/poke.txt`，字段 `name`、`platform`，施工 VP-1，下面「群里的一行」），VP-1 以前造的没有，只写记号 `[poke]`。私聊、本机的会话没有：人的话照原样渲染 |
 | | `forward` | `ForwardTexts`：合并转发那几行的三句（`core/venues/forward/` 下的 `label.txt`、`numbered.txt` 字段 `number`、`more.txt` 字段 `count`，施工 O-34，下面「合并转发」），去掉行尾空白。在快照的 `core.forward`，不在 `group` 里：私聊会话的快照没有 `group`，私聊里的转发也要写。以前造的快照里没有的，是没有：收到转发也不写那几行 |
-| | `private_media` | `PrivateMedia`：私聊里带的东西的记号要用的语音那一句（`core/venues/voice.txt`，同群会话的 `voice`，施工 O-35，下面「群里的一行」私聊那一条），去掉行尾空白。在快照的 `core.private_media`：私聊会话的快照没有 `group`。它也是「O-35 起造的会话」的标志：以前造的快照里没有的，是没有，私聊照以前渲染 |
+| | `private_media` | `PrivateMedia`：私聊里带的东西的记号要用的语音那一句（`core/venues/voice.txt`，同群会话的 `voice`，施工 O-35，下面「群里的一行」私聊那一条），去掉行尾空白；戳一戳那一句的模板（`poke`，同群会话的 `poke`，施工 VP-1），VP-1 以前造的没有。在快照的 `core.private_media`：私聊会话的快照没有 `group`。它也是「O-35 起造的会话」的标志：以前造的快照里没有的，是没有，私聊照以前渲染 |
 | | `vision` | `Vision`：转述一张图的指令（`core/vision/instruction.txt`）、人的话前面那一行（`question.txt`）（施工 8-17，下面「替它看的图」）。以前造的快照里没有的，是没有：不转述 |
 
 默认的 `summarize`：截到第 `upto` 条照平常组装；最后一条是 user 的，指令并进这一条做最后一块，不是的另起一条 user；`continuation` 是假。指令是一个文本块：`summarize_task`；有要求的接 `summarize_instructions` 和要求（原样，不转义，末尾没有换行的补一个）；最后是 `summarize_end`（施工 6-8，`compaction.md` 第七条第 3 条）。默认的 `summary`：只看正文块，有 `<summary>` 的取到 `</summary>` 或者末尾，没有的去掉 `<analysis>…</analysis>`，前后空白去掉，空的是 `None`（`crates/miyu-assemble/src/summary.rs`）。
@@ -603,6 +604,14 @@ Carry on from where the summary leaves off, without redoing work it records as d
   [14:06] 阿杰 [msg=8816]: [file: 排班.pdf, 1.2 MB]
   [14:07] 阿杰 [msg=8817]: [voice: 5 KB] (not playable yet)
   ```
+- 戳一戳（施工 VP-1，2026-11-17 im I-248 要的；项目主人定：被戳一般都有提示，写成「谁戳了你」，加一句它是什么，免得她理解错）：带 `venue.poke` 的一条（`venues.md`「场所的格」），内容最前面写快照钉下的 `poke` 那一句（`core/venues/poke.txt`，字段 `name`、`platform`），后面有字、带的东西的照常接；写法在 `poke.rs`，群里这一行、群聊近况、判官看的那一行（`venue.records`）同一份：
+
+  ```text
+  [14:08] 小林 [msg=1794905517642]: 小林 poked you (a QQ nudge: they double-clicked your avatar) 的小脑袋
+  ```
+
+  - `name` 照 `venue.name`，没有的写平台身份；`platform` 照戳的人的平台身份头一截，认识的写惯用的大小写（`qq` 写 `QQ`、`telegram` 写 `Telegram`），别的原样；两格照模板的规矩转义。`venue.poke_text` 转义、空一格接在那一句后面。
+  - VP-1 以前造的会话（快照里没有 `poke`）只写记号 `[poke]`（代码写的格式，同 `[image]`）：私聊里一条什么块都没有的 user，供应商回 400。
 - 缩进的两行可选：引用了的写 `reply-to`；`@mentions` 是 `@all`（@ 了全体成员）、`[you]`（@ 了她），`show_ids` 是真的再列 @ 了的人的平台身份，都没有的不写。
 - 名字、字、编号、带的东西的名字、身份照模板的规矩转义（`template::escape`）：多行的字成了一行，伪造不出另一条记录。钟点、`owner`、`manager`、`@all`、`[you]` 原样。
 - 回顾、起标题的请求读人这边的话也走这一步（`spoken`）。
@@ -618,6 +627,7 @@ Carry on from where the summary leaves off, without redoing work it records as d
   - 以前造的会话（快照里没有 `private_media`）一字不变：有内容块的照原样；没有内容块只有带的东西的（施工 O-13 补）写成带的东西的记号（`[image] [sticker: 字]`，和一行里的写法同一个函数，只多大小），不然她看到的是空的。
   - 群里冲她来的那条，当原图交进来的图在一行里也写着记号（施工 O-33 起），桥不填 `shown`，这一步不动（后续）。
   - 不加给模型看的字：`[msg=…]`、记号是代码写的格式（同一行里的），语音那一句是 O-33 冻好的同一份，登记簿（26 第十节）只改它「什么时候加进来」那一格。
+  - 戳一戳（施工 VP-1）：那一句（`private_media.poke`，同群会话的 `poke`）单独一个文字块，排在正文的块前面（im 交的戳一戳没有正文，就是唯一的一块）；以前造的会话（没有 `private_media`，或者它里面没有 `poke`）写 `[poke]`。
 - 带着引用的那一条的内容的（`venue.quoted`，施工 QT-1，`venues.md`「场所的格」）：一律在 `reply-to` 那一行下面写出它（施工 QT-2，项目主人 2026-11-16 定：以前只在这一条以前的日志里没有被引用的那一条时写，日志里有的只写编号，她要往前翻才知道引用的是什么），比那一行多缩进 2 格，写法同合并转发里的一条（`名字: 正文 [记号]`，里面的转发接在下面、再缩进一层，`group/forward.rs` 的 `quoted`）；没带的照旧只写编号。只看这一条自己带的，同一份日志每次渲染一字不差。快照里没有转发那几句的（O-34 以前造的）不写。群聊近况、判官看的记录、回顾和起标题的请求同一个写法（`group.rs` 的 `reply`）。
 - 私聊的引用（施工 QT-2，项目主人 2026-11-16 定）：引用了的（`venue.reply_to`）在最后单独一个文字块写 `reply-to: msg=编号`（照一行里的写法转义），带着 `quoted` 的下面缩进 2 格写出它，写法同群里；位置在正文、记号那一块、图片和文件块后面，合并转发那一块前面。快照里没有转发那几句的只写编号。没引用的和以前一个字节不差；以前记下的私聊消息带着 `reply_to` 的，从这一版起多这一块（发布前不做旧兼容，2026-11-11 项目主人定）。`private.rs` 的 `tail`。
 
@@ -714,6 +724,7 @@ Carry on from where the summary leaves off, without redoing work it records as d
 | `crates/miyu-assemble/tests/probe_title.rs` 后三条（施工 TT-1） | 真内核、出厂的字：五轮的会话重起，同一份指令接最后三轮、没有第一轮，带工具调用的那一轮只有人的话和最后的正文，自动起的那一次照旧；只答过一轮的重起和自动起的是同一份请求；三轮超过 4096 字节的整轮去掉最老的、最前一行 `[Earlier exchanges omitted]` |
 | `crates/miyu-assemble/tests/probe_title.rs`（施工 3-8 五补） | 起标题这张脸：真内核照剧本跑，起标题的请求（`titles/`）和主请求一样和存档（`docs/designs/samples/probe/title/`）逐字节比；它是单独的一次，一条 user，指令接第一轮的话和回答，工具的输出、中间一步说的不在里面；只起一次；主请求照查五条性质，第二轮接着第一轮往后长 |
 | `crates/miyu-assemble/src/group/tests.rs`（施工 O-13 中） | 群里的一行：钟点照会话的时区、名字、`id=` 跟着这一条的 `show_ids`、只写 `owner` 和 `manager`、没名字的写身份；带的东西、图片块接在后面、空的写那一句；引用和 @ 两行（`@all`、`[you]`、看得到身份的列身份）；转义成一行；4096 字节截在字的边界；旁听的不进、私聊的照原样；回顾里也是这一行。施工 O-33：带大小、不止一样的标 `#n`、只有一样的不标、语音接那一句；以前造的快照（没有 `voice`）同一条一字不差；私聊只多大小 |
+| `crates/miyu-assemble/src/poke/tests.rs`、`crates/miyu-endpoint/tests/venue_poke.rs`、`miyu-kernel` `session::tests::venue::a_poke_without_blocks_is_kept`（施工 VP-1） | 戳一戳：群里一行、判官看的那一行、私聊那一块照冻下的那一句写，名字、后缀转义，平台名照平台身份，没名字的写平台身份；以前造的会话写 `[poke]`；`poke` 只收 `true`、`poke_text` 只跟着它来、超长和控制字符拒；没有内容块的戳一戳照收、开得了一轮 |
 | `crates/miyu-assemble/src/group/head/tests.rs`、`tests/forged.rs`（施工 FT-1） | 行首：拼出来的每一种（写没写平台身份、主人、管理的人、没名字的、`[you]`、名字里带 `[msg=` 的）都认得，线上模型编的那一行认得，冒号后面空着的认得；没有编号、没有冒号、钟点不是两位、不在行首、换了行、全角方括号、私聊的记号行、带撤回记号的不认。真内核、真组装器照线上的样子跑的在 `kernel/session.md`「守着它的」 |
 | `crates/miyu-assemble/src/group/forward/tests.rs`（施工 O-34） | 合并转发：一个的接在那一行、引用和 @ 两行下面；几个的标 `#n`、套的再缩进一层、`more` 写一行、转发里带的东西不标第几个、语音不接那一句；名字、正文里的换行、伪造的记录行、`forward:` 字样转义成一行、每一行都缩进；O-34 以前造的会话（快照没有 `forward`）群里、私聊里带转发和不带的一字不差、只看得到占位，新会话里没有转发的和以前一字不差；私聊接在正文后面、不缩进，没有字只带了东西的接在记号后面；判官看的记录、回顾也是这几行；`more` 写 0 的不写那一行 |
 | `crates/miyu-assemble/src/private/tests.rs`（施工 O-35） | 私聊的记号那一块：正文后面单独一块写 `[msg=…]`、大小，不止一样的标 `#n`、语音接那一句，只有东西的这一块在最前；交了原图的不写、编号连着数，全交了原图的整块不写，记号在图片块前面；合并转发接在记号后面；没带东西的（带转发、有引用来的图片块）和以前造的一字不差、`show_ids` 不管 `[msg=…]`；名字转义成一行，回顾的记录也是这一块；以前造的会话照原样、只有东西的照 O-13 补写记号 |

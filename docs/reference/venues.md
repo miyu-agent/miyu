@@ -95,6 +95,8 @@
 | `media` | 带的东西 `[{"kind", "id", "name"?, "size"?, "shown"?}]`：`kind` 是 `image`、`file`、`voice`、`video`、`sticker`；`id` 是平台的编号（不下载）；`shown` 表示这一样的原图已经当附件交进来了 |
 | `forwards` | 合并转发：`[{"nodes": [{"name", "text", "media"?, "forwards"?}], "more"?}]`，`media` 同上，每样另可以带 `index`（正整数，桥给的编号，渲染成 `[image #3]`，照它取；只在转发里能写，写在外面的 `media` 里回 `bad_params`），套最多 3 层；整条最多 100 条、名字和正文合起来 16 KiB（超了 `bad_params`，`data.limit` 是 `forward_nodes` 或 `forward_bytes`）。正文里要有占位（例如 `[forward]`） |
 | `quoted` | 引用的那一条的内容（这一条引用了一条时带，群聊、私聊都收）：`{"name", "text", "media"?, "forwards"?}`，和 `forwards` 里的一条完全一样，里面的转发最多 3 层；算进整条消息的 100 条、16 KiB（超了照 `forwards` 拒）。要带着 `reply_to`。带了的一律写在引用那一行下面（会话日志里有没有那一条都写）；没带的只写编号。私聊也写引用那一行，单独一块 |
+| `poke` | 戳一戳（QQ 的拍一拍、戳一戳：双击她的头像），只写 `true`（写 `false` 是 `bad_params`）。桥当成戳的人发来的一条：`text` 可以是空的；她看到的是一句 `<名字> poked you (a QQ nudge: they double-clicked your avatar)`，平台名照场所的平台，名字照 `name`（没有的照平台身份）。别的规矩（旁听、判官、并行支线）照一条普通的话 |
+| `poke_text` | 戳一戳的后缀：平台上那个人自己设的半句（例如「的小脑袋」），转义后接在那一句后面。只跟着 `poke` 来（单写它是 `bad_params`），不是空白、最多 64 个字、没有控制字符 |
 | `ambient` | 旁听：只记下，不开回合 |
 | `asleep` | 睡着时收到的 |
 | `backfill` | 补拉回来的（桥断线时漏掉、从平台补回来的）：只进聊天记录，不进群聊近况、判官看的记录；要带着 `ambient` |
