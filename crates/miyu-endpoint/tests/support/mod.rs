@@ -404,7 +404,7 @@ impl Client {
         }
     }
 
-    /// 握手：令牌对，中文，能输入。
+    /// 握手：令牌对，中文，能输入；头的种类是 `test`（人在这个连接上说的话、打的命令记成 [`said_here`]）。
     pub async fn hello(&mut self) -> Value {
         self.hello_as(TOKEN).await
     }
@@ -476,4 +476,9 @@ fn stamp() -> u128 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |since| since.as_nanos())
+}
+
+/// 人在测试的头（[`Client::hello`] 报种类 `test`）上说的话、打的命令的 `by`（施工 VN-1）。
+pub fn said_here() -> miyu_kernel::origin::By {
+    serde_json::from_value(serde_json::json!({"kind": "person", "head": "test"})).expect("合写法")
 }

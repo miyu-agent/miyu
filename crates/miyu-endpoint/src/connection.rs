@@ -110,8 +110,9 @@ async fn read_all<R: AsyncRead + Unpin>(
     // 这个连接是谁：都替主人干活（施工 SU-4 中），是哪个包另记在 `package`。
     // 核心往这个连接发的请求（施工 O-2 上，`reverse.rs`）：提供者的工具经它反向调用。
     let reverse = Peer::new(out.clone());
-    let caller = Caller {
+    let mut caller = Caller {
         reverse: reverse.clone(),
+        head: None,
         prefix: package
             .as_deref()
             .map(|package| crate::extensions::config::prefix_of(&core, package)),
@@ -271,6 +272,7 @@ async fn read_all<R: AsyncRead + Unpin>(
                             result["config"] = json!(given.handed);
                             handing = Some(given);
                         }
+                        caller.head = shook.head().cloned();
                         shaken = Some(shook);
                         revoked = by.login().is_some().then(|| core.identity.revoked());
                         via = Some(by);

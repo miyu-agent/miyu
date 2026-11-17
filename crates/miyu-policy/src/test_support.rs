@@ -40,6 +40,7 @@ pub(crate) fn core() -> CoreTexts {
             preset_changed: Some(
                 include_str!("../../../resources/core/facts/preset-changed.txt").to_string(),
             ),
+            channel: None,
         },
         tool_results: ToolResultTexts {
             unknown: include_str!("../../../resources/core/tool-results/unknown.txt").to_string(),

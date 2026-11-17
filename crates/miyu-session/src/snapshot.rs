@@ -45,6 +45,8 @@ pub(crate) struct Parts {
     pub(crate) bare: bool,
     /// 给了的场所插件工具（施工 O-60，`miyu_policy::Snapshot::plugin_tools`）。
     pub(crate) plugin_tools: Vec<String>,
+    /// 本机会话（施工 VN-1）：事实里带「这一轮的话从哪来」那几句；场所会话的桥自己写了场所，去掉。换快照时照旧快照有没有。
+    pub(crate) local: bool,
     /// 步数上限（施工 AE-1，`miyu_policy::steps`）：造会话时照会话的种类、预设算好；换快照时照它重算或者照旧。
     pub(crate) steps: StepLimits,
 }
@@ -79,6 +81,9 @@ pub(crate) fn laid(
     snapshot.foreground = parts.foreground;
     snapshot.no_show_hint = !parts.show_hint;
     snapshot.plugin_tools = parts.plugin_tools;
+    if !parts.local {
+        snapshot.core.facts.channel = None;
+    }
     if !parts.roleplay {
         snapshot.reminder = None;
     }
@@ -219,3 +224,6 @@ pub(crate) fn pieces(layout: &Layout, total: u64) -> Vec<(SystemPart, u64)> {
     parts.retain(|(_, tokens)| *tokens > 0);
     parts
 }
+
+#[cfg(test)]
+mod tests;

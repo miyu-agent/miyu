@@ -1596,6 +1596,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sRO3B"><span class="n">RO-3补</span>删数据根改成问人<span class="st">…</span></a></li>
         <li><a class="step review" href="#sUX1F"><span class="n">UX-1修</span>开关只有一条路<span class="st">…</span></a></li>
         <li><a class="step review" href="#sVP1B"><span class="n">VP-1补</span>视图流带上戳一戳<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sVN1"><span class="n">VN-1</span>她知道你从哪说话<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -62675,6 +62676,56 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/VP-1补-视图流带戳一戳.md</code>；蓝图 <code>view.md</code>；协议参考 <code>view</code> 中英。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sVN1" aria-labelledby="h-sVN1">
+  <div class="sheet-head"><h2 id="h-sVN1"><span class="no">VN-1</span>她知道你从哪说话</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">本机会话每轮开始告诉她这一轮的话从哪来：终端界面、网页、命令行、终端集成，或者到点叫醒、没人在场；换了地方才说，前缀不变。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-kernel/facts/channel.rs · miyu-endpoint/hello.rs · miyu-store/resources/channel.rs</span><span class="dir-note">VN-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>握手的 <code>head.kind</code> 记在人说的话上：<code>by.head</code></li>
+              <li>回合开始照开这一轮的那句话挑一句（<code>core/facts/channel/</code>）</li>
+              <li>和最近一块一样的不注入；场所会话不带</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">只说在哪</span><span class="rl">英文一句，不写该怎么做，15～21 token</span></div>
+          <div class="tile new"><span class="nm">一种头一份文件</span><span class="rl">加一种头只加 <code>head/&lt;种类&gt;.txt</code></span></div>
+          <div class="tile new"><span class="nm">场所会话不归核心</span><span class="rl">桥在 system 尾部写了 <code>&lt;venue&gt;</code></span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">VN-1</dd></div>
+        <div><dt>名称</dt><dd>她知道你从哪说话</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">VN-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改前红：内核 <code>facts::tests::channel</code>、<code>session::tests::channel</code>，端点 <code>channel</code></span></li>
+        <li><span class="ok">✓</span><span>沙箱真模型：网页、<code>miyu ask</code> 各问「从哪里和你说话」</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/VN-1-她知道你从哪说话.md</code>；蓝图 <code>kernel/request.md</code>「事实」、<code>kernel/ids.md</code>、<code>policy.md</code>；协议参考 <code>connection.md</code>、<code>events.md</code>。</li>
       </ul>
     </div>
   </div>

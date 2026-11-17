@@ -7,6 +7,7 @@
 
 mod again;
 mod approval;
+mod channel;
 mod clear;
 mod compact;
 mod configure;

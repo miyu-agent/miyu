@@ -43,7 +43,7 @@ async fn the_first_turn_carries_the_session_id_and_loading_does_not_send_it_agai
     let session = handle.id().clone();
     one_turn(&handle, "cmd-1", "hi").await;
     assert_eq!(session_facts(&home.log(&session)), [block(&session)]);
-    // 第一次请求里，环境、权限、编号三块排在人那一句前面。
+    // 第一次请求里，环境、权限、编号几块排在人那一句前面。
     let Some(Message::User { blocks }) = before.requests()[0].1.messages.first().cloned() else {
         panic!("第一条是人这一边的");
     };
@@ -54,9 +54,11 @@ async fn the_first_turn_carries_the_session_id_and_loading_does_not_send_it_agai
             other => panic!("都是字：{other:?}"),
         })
         .collect();
-    assert_eq!(texts.len(), 4, "{texts:?}");
+    // 环境、权限、编号、这一轮的话从哪来（施工 VN-1：测试里说话的是没报头的种类的人，是「别的头」那一句），再是人那一句。
+    assert_eq!(texts.len(), 5, "{texts:?}");
     assert_eq!(texts[2], block(&session));
-    assert_eq!(texts[3], "hi");
+    assert!(texts[3].starts_with("<channel>"), "{texts:?}");
+    assert_eq!(texts[4], "hi");
     stop(&handle).await;
 
     let after = Script::new([Play::Says("再见。")]);

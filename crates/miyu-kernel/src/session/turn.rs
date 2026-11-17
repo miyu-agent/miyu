@@ -247,6 +247,9 @@ impl Session {
             &self.permission,
             (&self.id, self.identity()),
         );
+        // 这一轮的话从哪来（施工 VN-1）：照开这一轮的那句话的 `by`，换了地方才说。
+        let asked = self.turn.as_ref().and_then(|turn| turn.asked.as_ref());
+        facts.extend(self.policy.facts.channel(&self.history, asked));
         facts.extend(self.policy.facts.reminder(&self.history));
         // 换了预设、还没告诉她的，这一轮告诉一次（施工 DM-8）。
         if let (Some(previous), Some(preset)) = (self.reference.announce(), self.reference.preset())

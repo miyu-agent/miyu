@@ -103,6 +103,8 @@ pub(super) async fn draft(
         // 顾问会话也是裸的（施工 ADV-1），system 造好以后换成顾问那一份（`open.rs`）。
         bare: setup.dream.is_some() || crate::advising(setup.origin.as_deref()),
         plugin_tools: Vec::new(),
+        // 这一轮的话从哪来只给本机会话（施工 VN-1）：场所会话的桥自己写了场所。
+        local: setup.venue.as_str() == crate::agents::LOCAL,
         // 子代理照出厂的，主会话照有没有人看着、预设写的（施工 AE-1）。
         steps: StepLimits::of(
             match setup.lineage {

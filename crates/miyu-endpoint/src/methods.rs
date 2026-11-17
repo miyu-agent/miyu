@@ -254,7 +254,13 @@ pub(crate) fn call<'a>(
         "session.revert" => answer(move || session::revert(core, request)),
         "session.unrevert" => answer(move || session::unrevert(core, request)),
         "command.run" => answer(move || async move {
-            commands::run(core, &peer, &request.id, params(request)?).await
+            commands::run(
+                core,
+                &peer,
+                &request.id,
+                commands::spoken(params(request)?, caller),
+            )
+            .await
         }),
         "command.catalog" => {
             answer(move || async move { commands::catalog(core, &peer, params(request)?).await })

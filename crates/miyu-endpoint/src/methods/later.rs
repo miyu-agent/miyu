@@ -39,7 +39,10 @@ pub(crate) async fn call_later(
         "memory.dream" => memory::dream::call(core, &request.params).await,
         "package.call" => backstage::call(core, caller, params(request)?).await,
         "bus.call" => backstage::bus::call(core, caller, params(request)?).await,
-        "command.run" => commands::run(core, &peer, &request.id, params(request)?).await,
+        "command.run" => {
+            let params = commands::spoken(params(request)?, caller);
+            commands::run(core, &peer, &request.id, params).await
+        }
         "fs.find" => files::find(core, params(request)?).await,
         "job.output" => job_output::read(core, params(request)?).await,
         "job.stop" => super::session::stop_job(core, request).await,

@@ -462,6 +462,72 @@ preferred_reply_language: {preferred_reply_language}
 <model provider="{provider}" name="{name}" effort="{effort}" preset="{preset}"/>
 ```
 
+#### `core/facts/channel/head/cli.txt`
+
+- 什么时候加进来：本机会话的回合开始：命令行（`miyu ask`，握手报 `cli`）发的话开的一轮，和最近一块不一样时（换了地方才说；压缩以后、撤掉了带着它的那一轮以后重新说）；场所会话、以前造的快照没有
+- token：18（2026-11-17 照 tiktoken `o200k_base` 量，带行尾换行）
+- 为什么加：她不知道这一轮的话从哪来（施工 VN-1，项目主人 2026-11-17 本机验收第 16 条）：在网页里叫她念一句，她合成了文件发进 QQ 群；问她在哪说话，她照记忆猜成群里。只陈述在哪，不写该怎么做；放回合开始的事实里，换了地方才追加，不进 system、前缀不变
+- 指纹：`92363f2f`
+
+```text
+<channel>The user sent this from the command line (miyu ask).</channel>
+```
+
+#### `core/facts/channel/head/shellhook.txt`
+
+- 什么时候加进来：本机会话的回合开始：终端无缝集成上说的话开的一轮，和最近一块不一样时（换了地方才说；压缩以后、撤掉了带着它的那一轮以后重新说）；场所会话、以前造的快照没有
+- token：21（2026-11-17 照 tiktoken `o200k_base` 量，带行尾换行）
+- 为什么加：她不知道这一轮的话从哪来（施工 VN-1，项目主人 2026-11-17 本机验收第 16 条）：在网页里叫她念一句，她合成了文件发进 QQ 群；问她在哪说话，她照记忆猜成群里。只陈述在哪，不写该怎么做；放回合开始的事实里，换了地方才追加，不进 system、前缀不变
+- 指纹：`3e24a2cf`
+
+```text
+<channel>The user is talking to you from their shell prompt (Miyu shell integration).</channel>
+```
+
+#### `core/facts/channel/head/tui.txt`
+
+- 什么时候加进来：本机会话的回合开始：终端界面上说的话开的一轮，和最近一块不一样时（换了地方才说；压缩以后、撤掉了带着它的那一轮以后重新说）；场所会话、以前造的快照没有
+- token：17（2026-11-17 照 tiktoken `o200k_base` 量，带行尾换行）
+- 为什么加：她不知道这一轮的话从哪来（施工 VN-1，项目主人 2026-11-17 本机验收第 16 条）：在网页里叫她念一句，她合成了文件发进 QQ 群；问她在哪说话，她照记忆猜成群里。只陈述在哪，不写该怎么做；放回合开始的事实里，换了地方才追加，不进 system、前缀不变
+- 指纹：`1a919e42`
+
+```text
+<channel>The user is talking to you in the Miyu terminal UI.</channel>
+```
+
+#### `core/facts/channel/head/web.txt`
+
+- 什么时候加进来：本机会话的回合开始：网页上说的话开的一轮，和最近一块不一样时（换了地方才说；压缩以后、撤掉了带着它的那一轮以后重新说）；场所会话、以前造的快照没有
+- token：17（2026-11-17 照 tiktoken `o200k_base` 量，带行尾换行）
+- 为什么加：她不知道这一轮的话从哪来（施工 VN-1，项目主人 2026-11-17 本机验收第 16 条）：在网页里叫她念一句，她合成了文件发进 QQ 群；问她在哪说话，她照记忆猜成群里。只陈述在哪，不写该怎么做；放回合开始的事实里，换了地方才追加，不进 system、前缀不变
+- 指纹：`1e92816e`
+
+```text
+<channel>The user is talking to you in the Miyu web UI.</channel>
+```
+
+#### `core/facts/channel/other.txt`
+
+- 什么时候加进来：本机会话的回合开始：别的头（种类没有自己的一句、没报种类的）上说的话开的一轮，和最近一块不一样时（换了地方才说；压缩以后、撤掉了带着它的那一轮以后重新说）；场所会话、以前造的快照没有
+- token：16（2026-11-17 照 tiktoken `o200k_base` 量，带行尾换行）
+- 为什么加：她不知道这一轮的话从哪来（施工 VN-1，项目主人 2026-11-17 本机验收第 16 条）：在网页里叫她念一句，她合成了文件发进 QQ 群；问她在哪说话，她照记忆猜成群里。只陈述在哪，不写该怎么做；放回合开始的事实里，换了地方才追加，不进 system、前缀不变
+- 指纹：`01022a65`
+
+```text
+<channel>The user is talking to you in a Miyu app.</channel>
+```
+
+#### `core/facts/channel/nobody.txt`
+
+- 什么时候加进来：本机会话的回合开始：到点的定时任务、循环、人生叫醒的一轮（没有人在场），和最近一块不一样时（换了地方才说；压缩以后、撤掉了带着它的那一轮以后重新说）；场所会话、以前造的快照没有
+- token：15（2026-11-17 照 tiktoken `o200k_base` 量，带行尾换行）
+- 为什么加：她不知道这一轮的话从哪来（施工 VN-1，项目主人 2026-11-17 本机验收第 16 条）：在网页里叫她念一句，她合成了文件发进 QQ 群；问她在哪说话，她照记忆猜成群里。只陈述在哪，不写该怎么做；放回合开始的事实里，换了地方才追加，不进 system、前缀不变
+- 指纹：`ea103f74`
+
+```text
+<channel>No user is present. A schedule started this turn.</channel>
+```
+
 ### 事实：角色扮演提示那一块的开头，排在触发的那句后面（08 C2 唯一的例外）
 
 #### `core/facts/reminder-open.txt`

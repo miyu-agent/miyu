@@ -53,7 +53,7 @@ The handshake. It must be the first message; before it every other method gets `
 | Name | Type | Notes |
 |---|---|---|
 | `protocol` | `[lowest, highest]`, required | The protocol major versions you support; the core only has `1` |
-| `head` | `{"kind", "version"}`, required | What you are and which version; only logged |
+| `head` | `{"kind", "version"}`, required | What you are and which version; logged. `kind` is also recorded on what the person says and the commands they type on this connection (`by.head` of the events, see [Events](events.en.md)), so she knows where a turn's words came from. The terminal UI writes `tui`, the web UI `web`, the command line (`miyu ask`) `cli` and the shell integration `shellhook`: each of these gets its own line for her; any other kind reads as "in a Miyu app". It starts with a lowercase letter and uses lowercase letters, digits, `-` and `_`, at most 32; one written otherwise still connects, it just isn't recorded |
 | `locale` | string | Your system's language (`zh-CN`, `en_US.UTF-8` both work). Sets the connection's language when the `ui.language` setting is `auto` |
 | `caps` | object | `input` (boolean): whether you can let a person type. `prefix_ask` (boolean): you ask the person when changed files are about to change the prefix (see **Prefix changing** under [`session.send`](sessions.en.md#sessionsend)) |
 | `token` | string | The local token |

@@ -6,7 +6,7 @@
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::id::{
-    CallId, ExternalId, HarnessName, ModelName, ModuleId, ProviderId, SessionId, VenueId,
+    CallId, ExternalId, HarnessName, HeadKind, ModelName, ModuleId, ProviderId, SessionId, VenueId,
 };
 use crate::raw::{self, RawJson};
 
@@ -44,6 +44,10 @@ pub struct Person {
     /// 本机的头上说的没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub via: Option<ExternalId>,
+    /// 本机的头上说的话是在哪种头上说的（施工 VN-1）：说话的那个连接握手报的 `head.kind`，写法不对的不写。内核照它告诉她这一轮
+    /// 的话从哪来（`facts/channel.rs`）。记在 `session.send` 落下的话、`command.run` 的命令上（重做照原来的）；平台上认出的主人没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub head: Option<HeadKind>,
 }
 
 /// 通讯平台上的人。

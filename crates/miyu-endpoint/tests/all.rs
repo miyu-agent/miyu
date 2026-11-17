@@ -60,6 +60,7 @@ mod blob_grants_restart;
 mod blob_own_package;
 mod blob_session;
 mod bridge_venues;
+mod channel;
 mod check;
 mod check_embedding;
 mod clear;

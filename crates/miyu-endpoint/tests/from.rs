@@ -111,7 +111,11 @@ async fn without_from_it_is_the_person() {
         .into_iter()
         .map(|(by, _)| by)
         .collect();
-    assert_eq!(by, [person(), person()], "不写的、写 null 的照旧是本人");
+    assert_eq!(
+        by,
+        [said_here(), said_here()],
+        "不写的、写 null 的照旧是本人，记上头的种类"
+    );
 }
 
 #[tokio::test]
@@ -222,7 +226,7 @@ async fn create_and_redo_do_not_take_it() {
     assert_eq!(caused(&log, "c3", "turn.reverted").by, person());
     assert_eq!(
         caused(&log, "c3", "message.user").by,
-        person(),
+        said_here(),
         "重发的照原来的"
     );
 }

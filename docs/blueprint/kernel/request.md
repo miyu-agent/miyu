@@ -301,6 +301,7 @@
      - 最近那一块说的是哪一级，照会话冻结的模板认：平常那一份写出的 `read_only`、`full`、切换那一份从其中任一级切过来写出的，对上哪一种就是哪一级。认不出的当作级别不一样、又没有上一级，用平常那一份（和逐字节比一样）。
      - 只有人能切级别（`kernel/session.md`「切权限级别」），所以级别变了就是人切的：撤销、压缩都不改现在的权限，只改她看到过什么。
    - `reply_cut` 不比，每次都注入。
+   - `channel`（施工 VN-1，项目主人 2026-11-17 本机验收第 16 条：她分不清话是在终端、网页、命令行还是没人在场时来的）：回合开始照开这一轮的那句话的 `by` 挑一句，和同一个 `by`、同一类的最近一块比原文，一样的不注入（同 `env`）。本机的头上的人（`person`、没有 `via`）照 `by.head` 挑 `facts/channel/head/<种类>.txt`，没有这一种的、没报种类的挑 `facts/channel/other.txt`；到点叫醒的（`schedule`：定时任务、循环、人生）挑 `facts/channel/nobody.txt`；别的（平台上的人、别的会话、子代理、别的 harness、模块，没有触发的那句的回合）不挑、不注入，最近那一块照旧算数。排在 `env`、`permission`、`session`、`model` 后面，角色扮演提示前面。快照里没有这几句的（场所会话：桥在 system 尾部写了场所；以前造的会话）不注入，前缀一字不变。
    - `preset`（施工 DM-8，2026-11-09 项目主人要的：换了预设她要像切权限级别一样知道）不比，照日志算还欠不欠：人换了预设（带 `preset` 的 `session.policy_changed`）以后的下一个回合开始注入一次 `facts/preset-changed.txt`，`id` 是换成的、`previous` 是换之前的，不用预设的写 `none`；内核注入过这一类就不再欠。换了几次还没开回合的，`previous` 是最早那个，又换回它的不注入。撤销、压缩都不改欠不欠。快照里没有这份模板的（以前造的会话）不注入，前缀一字不变。
 3. **回合开始**：照第 2 条查过，变了的和 `turn.started` 同一批追加，照环境、权限、会话编号的先后（`boundary`）。时刻取开这一轮那一刻（送进来的那条输入的时刻；载入以后接着干的，是载入的时刻）；时区、工作目录取会话现在的；权限取人最近一次切成的；编号取会话自己的，执行器造会话、载入时交进来（`kernel/session.md`「对外的样子」）。放宽的级别这时生效。
 4. **这一轮里切过级别**（切成了和原来不一样的）：到下面的边界，几块再查一遍，照第 2 条：
@@ -383,6 +384,7 @@
 | `facts/model.txt` | `<model provider="{provider}" name="{name}" effort="{effort}" preset="{preset}"/>` | 事实 `model`：首次带，换了模型、强度、预设才追加（施工 E-M） |
 | `facts/permission-changed.txt` | `<permission level="{level}" previous="{previous}">The user changed the permission level.</permission>` | 事实 `permission`：人切了级别以后的边界、她看到过上一块的（施工 2-7 补；原文等主会话 A/B 定） |
 | `facts/preset-changed.txt` | `<preset id="{id}" previous="{previous}">The user changed the preset.</preset>` | 事实 `preset`：人换了预设以后的下一个回合开始，一次（施工 DM-8） |
+| `facts/channel/head/<种类>.txt`、`facts/channel/other.txt`、`facts/channel/nobody.txt` | `<channel>The user is talking to you in the Miyu web UI.</channel>` 这样一句，一种头一份（`tui`、`web`、命令行 `cli`、`shellhook`），别的头、没人在场各一份 | 事实 `channel`：这一轮的话从哪来，换了地方才追加（施工 VN-1） |
 | `facts/reply-cut.txt` | `<reply-cut>The reply above was cut off before it was finished. The user has already seen it. Continue from exactly where it stopped, without repeating it.</reply-cut>` | 事实 `reply_cut` |
 | `facts/output-limit.txt`（施工 3-10） | `<output-limit>Your reply hit the output limit, so none of its tool calls ran. Split the work into smaller steps and continue.</output-limit>` |
 | `facts/reminder-open.txt`、`facts/reminder-close.txt` | `<persona-reminder>`、`</persona-reminder>`，各一行 | 事实 `reminder` 的开头、收尾：拼快照时和人格的原文拼成一块（施工 P-1 补，`policy.md`「拼」第 4 条） |

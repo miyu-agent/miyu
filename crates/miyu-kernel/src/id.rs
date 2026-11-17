@@ -245,6 +245,13 @@ text_id!(
     check_short_text
 );
 
+text_id!(
+    /// 头的种类（施工 VN-1）：握手 `head.kind` 报的，例如 `tui`、`web`、`cli`。头自己报的，只管写法，同模块编号。
+    HeadKind,
+    "head kind",
+    check_name
+);
+
 fn is_lower_hex(b: u8) -> bool {
     matches!(b, b'0'..=b'9' | b'a'..=b'f')
 }

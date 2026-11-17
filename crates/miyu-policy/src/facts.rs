@@ -2,7 +2,9 @@
 //! （施工 1-13 再补）、切了级别以后的权限那一份（施工 2-7 补）以前造的快照里没有，读成没有、不写。施工 2-7 补从
 //! `snapshot.rs` 挪出来（行数门禁）。
 
-use miyu_kernel::facts::{FactTemplates, Gates};
+use std::collections::BTreeMap;
+
+use miyu_kernel::facts::{Channels, FactTemplates, Gates};
 use serde::{Deserialize, Serialize};
 
 use crate::snapshot::BuildError;
@@ -43,6 +45,21 @@ pub struct FactTexts {
     /// 不写，旧快照的字节不变。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub preset_changed: Option<String>,
+    /// 这一轮的话从哪来那几句（`channel/`，施工 VN-1）：只给本机会话，场所会话拼快照时去掉。以前造的快照里没有，读成没有：那些
+    /// 会话不注入这一块；没有的不写，旧快照的字节不变。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub channel: Option<ChannelTexts>,
+}
+
+/// 这一轮的话从哪来那几句的原文（施工 VN-1，`miyu_kernel::facts::Channels`）。
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ChannelTexts {
+    /// 头的种类 → 那一句（`channel/head/<种类>.txt`）。
+    pub heads: BTreeMap<String, String>,
+    /// 别的头（`channel/other.txt`）。
+    pub other: String,
+    /// 没有人在场（`channel/nobody.txt`）。
+    pub nobody: String,
 }
 
 impl FactTexts {
@@ -62,6 +79,13 @@ impl FactTexts {
         .and_then(|templates| templates.with_output_limit(self.output_limit.as_deref()))
         .and_then(|templates| templates.with_model(self.model.as_deref()))
         .and_then(|templates| templates.with_preset_changed(self.preset_changed.as_deref()))
+        .map(|templates| {
+            templates.with_channels(self.channel.as_ref().map(|texts| Channels {
+                heads: texts.heads.clone(),
+                other: texts.other.clone(),
+                nobody: texts.nobody.clone(),
+            }))
+        })
         .and_then(|templates| {
             templates.with_gates(gates, self.env_time.as_deref(), self.env_cwd.as_deref())
         })

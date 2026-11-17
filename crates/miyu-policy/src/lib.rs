@@ -57,7 +57,7 @@ pub use appended::APPEND_MAX;
 pub use attached_path::AttachedPathTexts;
 pub use compose::{CoreLines, PersonaTexts, Sources, Wrap, compose};
 pub use drivers::DriverPlaceholders;
-pub use facts::FactTexts;
+pub use facts::{ChannelTexts, FactTexts};
 pub use forward::ForwardTexts;
 pub use group::{GroupChat, GroupRecent, RECENT_BUDGET};
 pub use guard::GuardTexts;

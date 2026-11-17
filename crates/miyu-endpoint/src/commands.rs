@@ -53,6 +53,9 @@ pub(crate) struct RunParams {
     /// 前缀要变了时人选的（施工 OV-1 下，`sessions/prefix.rs`）：开新一轮的命令（模板、提示词、设定和继续长期目标）照它。
     #[serde(default)]
     prefix: Option<crate::sessions::prefix::Choice>,
+    /// 发命令的那个连接握手报的头的种类（施工 VN-1）：不从参数读，分发时照连接填；开轮的命令说的话记上它。
+    #[serde(skip)]
+    pub(crate) head: Option<miyu_kernel::id::HeadKind>,
 }
 
 /// 这一条 `command.run` 在后台答不答（施工 R-7 补，`methods::answered_later` 问它）：照原文认出的命令问
@@ -116,6 +119,12 @@ impl Said {
     }
 }
 
+/// 照连接 `caller` 填上头的种类（施工 VN-1）。
+pub(crate) fn spoken(mut params: RunParams, caller: &crate::hello::Caller) -> RunParams {
+    params.head = caller.head.clone();
+    params
+}
+
 /// `command.run`：先查这个编号执行过没有（施工 YC-7补，[`resent`]），没有的才执行（[`fresh`]）。命令是先做事、再交内核
 /// 记的，等内核照编号去重就晚了：执行过、参数一样的交回当时的回应，参数换了的 `id_reused`，都不再执行。
 pub(crate) async fn run(
@@ -164,7 +173,7 @@ fn fresh<'a>(
         let session = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
         let found = core.sessions.get(core, &session).await?;
         let handle = found.handle.clone();
-        let by = speaker(core, &handle, params.as_external)?;
+        let by = speaker(core, &handle, params.as_external, params.head.clone())?;
         if let Err(refused) = allowed(core, slash.as_ref(), &handle, &by) {
             if access(core, slash.name(), None) == Access::Off {
                 return Err(turned_off(core, peer, slash.name()).await);
@@ -215,10 +224,16 @@ fn fresh<'a>(
     })
 }
 
-/// 说命令的是谁：本机的会话是主人（不收 `as`），场所会话照 `as` 认出平台上的人（不带的 `venue_session`）。
-fn speaker(core: &Core, handle: &Handle, speaking: Option<AsParams>) -> Result<By, Refusal> {
+/// 说命令的是谁：本机的会话是主人（不收 `as`），在种类是 `head` 的头上说的（施工 VN-1）；场所会话照 `as` 认出平台上的人（不带的
+/// `venue_session`）。
+fn speaker(
+    core: &Core,
+    handle: &Handle,
+    speaking: Option<AsParams>,
+    head: Option<miyu_kernel::id::HeadKind>,
+) -> Result<By, Refusal> {
     match (handle.venue().as_str() == LOCAL, speaking) {
-        (true, None) => Ok(crate::sessions::person()),
+        (true, None) => Ok(crate::sessions::person_on(head)),
         (true, Some(_)) => Err(Refusal::BAD_PARAMS),
         (false, None) => Err(Refusal::VENUE_SESSION),
         (false, Some(speaking)) => venues::speaker(core, handle, speaking),

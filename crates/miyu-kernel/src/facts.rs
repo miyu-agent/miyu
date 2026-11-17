@@ -20,10 +20,12 @@
 
 use std::collections::BTreeMap;
 
+mod channel;
 mod gates;
 mod model;
 mod preset;
 
+pub use channel::{CHANNEL, Channels};
 pub use gates::Gates;
 pub use model::Identity;
 pub use preset::PRESET;
@@ -67,6 +69,8 @@ pub struct FactTemplates {
     quiet: bool,
     /// 预设关了哪几块（施工 C-11，`facts/gates.rs`），和环境拆开以后的两份写法。
     gated: gates::Gated,
+    /// 这一轮的话从哪来那几句（施工 VN-1，`facts/channel.rs`）。场所会话、以前造的快照没有，不注入这一块。
+    channels: Option<Channels>,
 }
 
 /// 角色扮演提示这一类的名字。组装照它把回合开始时注入的这一块排在触发的那句后面（`08-上下文投影.md` C2 唯一的例外）。
@@ -117,6 +121,7 @@ impl FactTemplates {
             preset_changed: None,
             quiet: false,
             gated: gates::Gated::default(),
+            channels: None,
         };
         templates.env.render(&env_fields("", "", ""))?;
         templates.permission.render(&permission_fields(""))?;

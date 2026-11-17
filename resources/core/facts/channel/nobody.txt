@@ -1,0 +1,1 @@
+<channel>No user is present. A schedule started this turn.</channel>

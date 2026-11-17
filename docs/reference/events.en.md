@@ -14,7 +14,7 @@ A session's truth is an append-only event log. Heads subscribed to the `events` 
 | `at` | Time, UTC, milliseconds |
 | `kind` | Kind, see below |
 | `turn` | Which turn (that turn's `turn.started` number); omitted when it belongs to none |
-| `by` | Who: `person` (you; `via` when recognized on a platform), `external` (a person on a platform: `venue`, `id`, `role`; `owner: true` when the bindings recognize you), `model`, `kernel`, `tool` (`call_id`), `module` (`id`, e.g. a package), `harness` (`name`), `session` (another session) |
+| `by` | Who: `person` (you; `via` when recognized on a platform; words said and commands typed on a local head also carry `head`: the `head.kind` that connection gave in its handshake, such as `tui`, `web`, `cli`, starting with a lowercase letter, lowercase letters, digits, `-` and `_`, at most 32, left out when written otherwise), `external` (a person on a platform: `venue`, `id`, `role`; `owner: true` when the bindings recognize you), `model`, `kernel`, `tool` (`call_id`), `module` (`id`, e.g. a package), `harness` (`name`), `session` (another session) |
 | `cause` | Which command caused it: the request `id` |
 | `body` | Fields of this kind |
 

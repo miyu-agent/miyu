@@ -260,6 +260,7 @@ impl ResourceRoot {
                 env_time: Some(fact("env-time.txt")?),
                 env_cwd: Some(fact("env-cwd.txt")?),
                 preset_changed: Some(fact("preset-changed.txt")?),
+                channel: Some(self.channels()?),
             },
             tool_results: ToolResultTexts {
                 unknown: result("unknown.txt")?,
@@ -439,6 +440,7 @@ impl ResourceRoot {
 }
 
 mod advisor;
+mod channel;
 mod drivers;
 mod fork;
 mod goal;

@@ -19,6 +19,7 @@
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+use miyu_kernel::id::HeadKind;
 use miyu_sandbox::Availability;
 
 use std::sync::Arc;
@@ -91,6 +92,8 @@ pub(crate) struct Shaken {
     input: bool,
     /// 会问人「前缀要变了」（施工 OV-1 下）。
     prefix_ask: bool,
+    /// 头的种类（施工 VN-1）：握手报的 `head.kind`，写法不对的没有。人在这个连接上说的话记上它。
+    head: Option<HeadKind>,
 }
 
 impl Shaken {
@@ -109,6 +112,11 @@ impl Shaken {
     /// `ui.language` 是 `auto` 时用哪一种。
     pub(crate) fn system(&self) -> &'static str {
         self.system
+    }
+
+    /// 头的种类（施工 VN-1）。
+    pub(crate) fn head(&self) -> Option<&HeadKind> {
+        self.head.as_ref()
     }
 }
 
@@ -129,6 +137,8 @@ pub(crate) struct Caller {
     pub(crate) package: Option<String>,
     /// 这个包的前缀（施工 PN-1）：`events.append` 只收 `ext.<前缀>.` 开头的。
     pub(crate) prefix: Option<String>,
+    /// 握手报的头的种类（施工 VN-1，[`Shaken::head`]）：握手以前、写法不对的没有。人在这个连接上说的话记上它。
+    pub(crate) head: Option<HeadKind>,
     /// 核心往这个连接发请求的一头（施工 O-2 上）：`provide` 照它记下这个包由谁提供。
     pub(crate) reverse: crate::reverse::Peer,
 }
@@ -193,6 +203,7 @@ pub(crate) async fn hello(
         system: system(params.locale.as_deref()),
         input: params.caps.input,
         prefix_ask: params.caps.prefix_ask,
+        head: HeadKind::parse(&params.head.kind).ok(),
     };
     let language = shaken.now(core).language;
     let mut result = json!({

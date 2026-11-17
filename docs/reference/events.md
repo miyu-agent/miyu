@@ -14,7 +14,7 @@
 | `at` | 时刻，UTC，毫秒 |
 | `kind` | 种类，见下表 |
 | `turn` | 属于哪一轮（那一轮 `turn.started` 的序号）；不属于哪一轮的不写 |
-| `by` | 谁：`person`（主人；平台上认出的另带 `via`）、`external`（平台上的人：`venue`、`id`、`role`，对应表认出是主人的带 `owner: true`）、`model`、`kernel`、`tool`（`call_id`）、`module`（`id`，例如一个包）、`harness`（`name`）、`session`（别的会话） |
+| `by` | 谁：`person`（主人；平台上认出的另带 `via`；在本机的头上说的话、打的命令另带 `head`：说话的那个连接握手报的 `head.kind`，例如 `tui`、`web`、`cli`，小写字母开头、小写字母数字 `-` `_`、至多 32 个，写法不对的不带）、`external`（平台上的人：`venue`、`id`、`role`，对应表认出是主人的带 `owner: true`）、`model`、`kernel`、`tool`（`call_id`）、`module`（`id`，例如一个包）、`harness`（`name`）、`session`（别的会话） |
 | `cause` | 哪条命令引起的：请求的 `id` |
 | `body` | 这一种自己的格 |
 

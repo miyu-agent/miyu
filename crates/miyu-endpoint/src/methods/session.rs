@@ -109,7 +109,8 @@ pub(super) async fn send(
         (Some(_), Some(_)) => return Err(Refusal::BAD_PARAMS),
         (Some(name), None) => from::harness(name)?,
         (None, Some(package)) => from::harness(package)?,
-        (None, None) => crate::sessions::person(),
+        // 人在头上说的记上头的种类（施工 VN-1）：她照它知道这一轮的话从哪来。
+        (None, None) => crate::sessions::person_on(caller.head.clone()),
     };
     // 人用 `!` 打的命令（施工 SH-1 上）：只收人，不带附件，要有跑命令的工具。
     if params.shell {
@@ -141,7 +142,7 @@ pub(super) async fn send(
     let shell_sent = shell.is_some();
     // 人用 `$` 点名的技能（施工 SN-1）：正文排在这句话前面，时间线照人敲的原文；场所会话、`!` 命令、别人说的不收。
     let skills = (&params.skills[..], typed.as_str());
-    let others = shell_sent || params.as_external.is_some() || by != crate::sessions::person();
+    let others = shell_sent || params.as_external.is_some() || !matches!(by, By::Person(_));
     if !params.skills.is_empty() && others {
         return Err(Refusal::BAD_PARAMS);
     }

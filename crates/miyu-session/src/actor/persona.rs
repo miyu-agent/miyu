@@ -14,10 +14,9 @@ use std::sync::Arc;
 use miyu_config::Values;
 use miyu_kernel::id::{ContentHash, VenueId};
 use miyu_kernel::session::Policy;
-use miyu_policy::PersonaTexts;
-use miyu_policy::Snapshot;
 use miyu_policy::features::Features;
 use miyu_policy::preset::{Chosen, MEMORY, ROLEPLAY};
+use miyu_policy::{PersonaTexts, Snapshot};
 use miyu_store::blob::Blobs;
 use miyu_store::personas::{PersonaError, Personas};
 use miyu_store::resources::ResourceRoot;
@@ -366,6 +365,7 @@ fn look(
         appended,
         bare: false,
         plugin_tools,
+        local: old.core.facts.channel.is_some(),
         // 步数上限照这一刻的预设重算（施工 AE-1）：改了 `[limits]` 下一轮生效。
         steps: steps::restepped(old, refresh.child, &preset),
     };

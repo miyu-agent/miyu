@@ -153,13 +153,7 @@ async fn the_todo_command_shows_and_clears_the_list() {
 
     let reply = todo(&mut client, "k3", &session, "/todo clear").await;
     assert_eq!(reply["result"]["said"], "已清空待办。", "{reply}");
-    assert_eq!(
-        cleared(&home, &session),
-        [(
-            miyu_kernel::origin::By::Person(miyu_kernel::origin::Person::default()),
-            "k3".to_string()
-        )]
-    );
+    assert_eq!(cleared(&home, &session), [(said_here(), "k3".to_string())]);
     let reply = todo(&mut client, "k4", &session, "/todo").await;
     assert_eq!(reply["result"]["said"], "无待办。");
 

@@ -402,6 +402,11 @@ pub(crate) fn person() -> By {
     By::Person(Person::default())
 }
 
+/// 主人在种类是 `head` 的头上说的话（施工 VN-1，[`Person::head`]）。
+pub(crate) fn person_on(head: Option<miyu_kernel::id::HeadKind>) -> By {
+    By::Person(Person { via: None, head })
+}
+
 /// 核心重启以后补回去重的编号（施工 4-9 再补三上）：最新的 [`REMEMBERED`] 个会话（会话编号是 UUIDv7，[`miyu_store::root::DataRoot::sessions`]
 /// 已经从新到旧），`session.created` 的 `cause` 就是造会话的命令编号。读不了的跳过。在阻塞线程里读，交回的照从旧
 /// 到新。

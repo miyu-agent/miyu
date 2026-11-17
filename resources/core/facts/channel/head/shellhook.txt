@@ -1,0 +1,1 @@
+<channel>The user is talking to you from their shell prompt (Miyu shell integration).</channel>

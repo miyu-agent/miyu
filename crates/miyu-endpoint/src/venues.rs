@@ -298,7 +298,10 @@ pub(crate) fn speaker(
     let id = ExternalId::parse(&params.external).map_err(|_| Refusal::BAD_PARAMS)?;
     let owner = owner_in(core, &id, venue.as_str());
     if !handle.confined() && owner {
-        return Ok(By::Person(Person { via: Some(id) }));
+        return Ok(By::Person(Person {
+            via: Some(id),
+            head: None,
+        }));
     }
     Ok(By::External(External {
         venue: venue.clone(),
