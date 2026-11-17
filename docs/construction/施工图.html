@@ -1568,6 +1568,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sLO3F"><span class="n">LO-3补</span>核心停过以后的循环<span class="st">…</span></a></li>
         <li><a class="step review" href="#sCK1"><span class="n">CK-1</span>默认人格、预设指着没有的<span class="st">…</span></a></li>
         <li><a class="step review" href="#sEN1"><span class="n">EN-1</span>英文界面漏的几句<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sTD1"><span class="n">TD-1</span>命令行拒绝语去句号<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -61190,6 +61191,47 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/EN-1-英文界面漏的几句.md</code>；蓝图 <code>store.md</code>、<code>ipc.md</code>、<code>cli/main.md</code>、<code>cli/schedule.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sTD1" aria-labelledby="h-sTD1">
+  <div class="sheet-head"><h2 id="h-sTD1"><span class="no">TD-1</span>命令行拒绝语去句号</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">核心的拒绝语经命令行印出来去了句号、英文首字母小写，和终端、网页不一样。查清是设计 47 定的（照 GNU 报错写法，项目主人 10-29 同意），保留，不改代码。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-cli · diagnostic.rs（不改）</span><span class="dir-note">TD-1</span></div>
+            <ol class="pipe" aria-label="查到的">
+              <li>设计 47 第二节：GNU「Formatting Error Messages」，不大写开头、不带句号</li>
+              <li>第五节点名核心拒绝语：命令行只加 <code>miyu: </code>、去句号</li>
+              <li>CL-2 上（10-29）落到 <code>tidy</code>，蓝图 <code>cli/main.md</code> 写着</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">保留</span><span class="rl">两种载体各自的排版，正文同一份</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">TD-1</dd></div>
+        <div><dt>名称</dt><dd>命令行拒绝语去句号</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">TD-1</dd></div>
+        <div><dt>验收</dt><dd>只动文档</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/TD-1-命令行拒绝语去句号.md</code>；设计 <code>47-命令行文案.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>
