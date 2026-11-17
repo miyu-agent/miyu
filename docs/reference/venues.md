@@ -48,7 +48,7 @@
 | `preset` | 字符串 | 造的时候用哪个预设 |
 | `profile` | 布尔 | 造的时候带不带主人写的「关于你」：主人自己的私聊才写 `true` |
 | `images` | 布尔，默认 `true` | 这个场所显示得了图片吗 |
-| `voice_max_ms` | 正整数 | 这个平台一段语音至多多少毫秒：语音有上限的平台才写。记进 `session.created`，这个会话的工具调用原样带上（扩展的 `tool.call` 的 `voice_max_ms`），`say` 合成长了的回出错让她重说。找回已有的会话时不看；写 `0` 的 `bad_params`（`data.field` 是 `voice_max_ms`） |
+| `voice_max_ms` | 正整数 | 这个平台一段语音至多多少毫秒：语音有上限的平台才写。记进 `session.created`，这个会话的工具调用带上（扩展的 `tool.call` 的 `voice_max_ms`），`say` 合成长了的回出错让她重说。找回已有的会话时也看：和记过的不一样的另记一条 `session.policy_changed`（`voice_max_ms`），之后的调用带新的；不写的照记过的。写 `0` 的 `bad_params`（`data.field` 是 `voice_max_ms`） |
 | `titles` | 布尔，默认 `true` | 这个会话自动起标题吗：`false` 的从此不自动起，人手改照旧改得了。找回已有的会话时不看 |
 | `cwd` | 字符串 | 造的时候的工作目录，不写是这个会话的默认工作区 |
 | `recent` | 整数，1 到 1000 | 只给群：开一轮时群聊近况最多带几条（从最新往前），字节预算照旧做上限、两个取少的；不写的只照字节预算。造的时候钉死 |

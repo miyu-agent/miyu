@@ -66,6 +66,7 @@ mod todos;
 mod tools;
 mod truncated;
 mod turn;
+mod voice;
 mod watch;
 mod workspace;
 
@@ -436,6 +437,7 @@ impl Session {
             Command::SetContext { tokens } => self.set_context(id, by, at, tokens),
             Command::SetVision { vision } => self.set_vision(id, by, at, vision),
             Command::SetCompactionLine { percent } => self.set_line(id, by, at, percent),
+            Command::SetVoiceLimit { ms } => self.set_voice_limit(id, by, at, ms),
             Command::Recast { persona, preset } => self.recast(id, by, at, (persona, preset)),
             Command::SetPermission { level, read_only } => {
                 self.set_permission(id, by, at, level, read_only)

@@ -1690,6 +1690,7 @@ flowchart LR
 | VN-1 | 她知道你从哪说话 | 项目主人 11-17 本机验收第 16 条：网页里叫她念一句，她合成文件发进 QQ 群；问她在哪说话，她照记忆猜成群里。人在头上说的话记上握手报的头的种类（`by.head`，`session.send`、开轮的 `command.run`），本机会话回合开始照开这一轮的那句话注入一块 `channel` 事实：`core/facts/channel/head/<种类>.txt`（终端界面、网页、`miyu ask`、终端集成各一句），别的头 `other.txt`，到点叫醒的 `nobody.txt`；和最近一块一样的不注入，换了地方才说，前缀不变。场所会话的快照不带这几句（桥写了 `<venue>`）。shellhook 现在握手报的也是 `tui`，要分开由终端头改。施工单见 `VN-1-她知道你从哪说话.md` |
 | ML-1 | 调扩展带调用方的语言 | 网页 W-1208：`method.call` 多带 `language`，调的那个连接这一刻的界面语言，照 `command.call` 的写法（`auto` 照连接握手报的 `locale`）：头经 `package.call`、`bus.call` 的是头的，包经 `bus.call` 的是那个包连接的，核心自己调的不带。SDK 那一半语音会话在 `miyu-sdk` 做。施工单见 `ML-1-调扩展带调用方的语言.md` |
 | SD-1 | 她说的话合成以后交给人 | 项目主人 11-17 本机验收第 16、26 条，语音会话 say 交付方案「核心」一节：工具结果的 `sent` 多收一段语音 `{"blob", "media_type", "voice": true, "duration_ms"?, "name"?}`，至多一段、`audio/` 开头、≤ 10 MiB（大了回 `voice-too-big.txt`）；视图流多 `voice` 条目，带开这一轮的那句话的 `by` 和那条请求的 `cause`，头照它定放不放；本机会话里没人开口的一轮（定时、循环、人生）出了语音、没有头开着这个会话的，核心经总线调 `tts.play {"audio"}`；`venue.session` 多 `voice_max_ms`，记进 `session.created`，这个会话的 `tool.call` 原样带上。施工单见 `SD-1-说出来交给人.md` |
+| VM-2 | 找回的场所会话也认语音上限 | im 在等：SD-1 只在造场所会话时记 `voice_max_ms`，主人机器上早就造好的主群、私聊找回时不看，一直没有上限。找回的也看：和记过的不一样（含没记过的）记一条只写 `voice_max_ms` 的 `session.policy_changed`（`by` 是桥，命令编号 `<请求>/voice`），开着的会话当场换、载入照日志算、分叉照分叉点；没交的照记过的，只设不去。记不成照样回找到的会话、记一行 WARN。不改给模型看的字。施工单见 `VM-2-找回的场所会话认语音上限.md` |
 
 ### 四、施工单的格式
 

@@ -60,7 +60,7 @@
 | `origin` | 字 | 可以没有 | 从哪开的（施工 8-33 四补，2026-10-21 项目主人：会话列表里分得出终端集成开的）：`session.terminal` 开的写 `terminal`，她调 `advisor` 开的顾问会话写 `advisor`（施工 ADV-1，`tools/advisor.md`）。照原样存字，以后多了别的来源旧核心照样读得了。别的不写，以前的日志没有这一格 |
 | `forked` | `{from, upto, seal_after?, within?}` | 可以没有 | 分叉出来的（施工 C-8 上，`session/fork.md`）：从哪个会话（`from`）的第几条为止（`upto`，含）分叉，这一条的序号是 `upto` 的下一个；`seal_after`（1 起的整数，施工 C-8 下）是跑完几轮封存，不封存的不写。`within`（施工 A-F 上，`session/fork.md`「fork 子代理」）是分叉点在哪一轮当中：fork 子代理从父会话这一轮派它的那一步分叉，`upto` 是那一步的 `message.assistant`；普通分叉不写。不是分叉出来的不写 |
 | `confined` | 布尔 | 不写是假 | 关起来的会话（施工 SU-4 中）：群、陌生人的私聊，只碰得到自己的工作区（`session/guard.md`）。分叉、子会话照父会话的。不关的不写 |
-| `voice_max_ms` | 整数 | 可以没有 | 这个场所一段语音至多多少毫秒（施工 SD-1，`venues.md`「`venue.session`」）：桥造场所会话时报的，之后不变，这个会话派给扩展的 `tool.call` 原样带上。分叉照父会话的。没有上限的、本机的不写，以前的日志没有 |
+| `voice_max_ms` | 整数 | 可以没有 | 这个场所一段语音至多多少毫秒（施工 SD-1，`venues.md`「`venue.session`」）：桥造场所会话时报的；找回时报的不一样另记一条带 `voice_max_ms` 的 `session.policy_changed`（施工 VM-2），这个会话派给扩展的 `tool.call` 带最新的。分叉照父会话分叉点那一刻的。没有上限的、本机的不写，以前的日志没有 |
 
 子会话不写 `oneshot`：`--continue`、`miyu undo` 找「最近一次 `miyu ask` 开的」不会找到它（`agents.md`）。以前的日志没有 `parent`、`depth`、`model` 几格，原样一个字节不变；没有 `model` 的，路由照载入那一刻的 `models.chat`（`models.md`「怎么走」第一条第 7 条）。样本两条都带 `model`（施工 8-8）。
 
@@ -73,7 +73,7 @@
 
 两格都写，少一格读不进来。不认识的级别按最严的算（`kernel/blocks.md` 第 19 条）。每一级能做什么，见 `session/guard.md`。
 
-**`session.policy_changed`**：换了策略快照，或者换了权限，或者换了模型、思考强度、上下文上限、看图模型、压缩触发线，也可以一起换。
+**`session.policy_changed`**：换了策略快照，或者换了权限，或者换了模型、思考强度、上下文上限、看图模型、压缩触发线、场所的语音上限，也可以一起换。
 
 | 格 | 写法 | 有没有 | 是什么 |
 |---|---|---|---|
@@ -88,10 +88,11 @@
 | `vision` | 字符串 | 可以没有 | 人钉的会话的看图模型（施工 VM-1，`models.md`「事件」）：写法同 `model`，模型 `<供应商>/<模型>` 或池 `@<池>`；空的是去掉，回到跟着 `models.vision`。下一个回合开始时生效，撤掉的回合里的也算，换模型不清它。`by` 是人，`cause` 是 `<session.configure 或 session.create 那条命令>/vision`。写在 `context` 后面。内核只记不解读 |
 | `compaction_line` | 对象 | 可以没有 | 人钉的会话的压缩触发线（施工 CT-1，`compaction.md` 第二条第 2 条）：`{"percent": 整数或 null}`，窗口的百分之几，`percent` 总是写，`null` 是去掉、回到跟着 `compaction.line`。下一个回合开始时会话那一层照它换快照里的数（换了的另记一条只写 `policy` 的），撤掉的回合里的也算，换模型不清它。`by` 是人，`cause` 是 `<session.configure 或 session.create 那条命令>/compaction_line`。写在 `vision` 后面。内核只记不解读，范围协议那一头查过 |
 | `from` | 权限 | 可以没有 | 换以前人设的权限（施工 PL-1，2026-11-17 项目主人定）：内核切权限时写，是切以前那一刻会话的权限（`session.created` 的，或者上一次切成的），两格都写。头读老会话不用往前翻，就知道一页里第一次切以前是哪一级。只和 `permission` 一起出现，账本查（`from comes only with permission`）。会话造的时候就有权限，所以内核切的总带着它。写在 `compaction_line` 后面，以前的日志没有这一格，照没有读（头照以前的办法往前找） |
+| `voice_max_ms` | 整数 | 可以没有 | 场所一段语音的上限换了，毫秒（施工 VM-2，`venues.md`「`venue.session`」）：桥找回场所会话时报的和记过的不一样（含造的时候没报的），当场生效，之后派给扩展的 `tool.call` 照它；撤掉的回合里的也算，分叉照分叉点那一刻的。只设不去：桥没报的照记过的，没有去掉的写法。`by` 是报的那个桥的包（`module`），`cause` 是 `<venue.session 那条请求>/voice`。写在 `from` 后面，以前的日志没有这一格。内核只记不解读，正不正协议那一头查过 |
 
 施工 8-18 记过同一格，多一个 `model`（`{"model": 字符串, "level": 字符串或 null}`，会话给那一个模型记的一档）；8-18（补）去掉了那一层。那时的日志照样读得进、写回去一字不差，带 `model` 的不算会话的一档。
 
-几格都没有的 `{}` 也读得进来。内核切权限时写 `permission`、`from`（施工 PL-1），换模型时只写 `model`，退回默认时写 `model`、`replaced`（`kernel/session.md`「换模型」），换快照时只写 `policy`（施工 P-1 再补）。换思考强度时只写 `effort`（施工 SM-1），钉看图模型时只写 `vision`（施工 VM-1），钉压缩触发线时只写 `compaction_line`（施工 CT-1）。以前的日志没有 `model`、`replaced`、`effort`、`from`，照没有读；带着 8-18 那阵子写的 `effort`（有 `model`）的照样读得进，内核不理它。样本里 52、63 号是人切的权限，带着切以前的（施工 PL-1）；137 号是人钉的压缩触发线，139 号是人换的，140 号是人换的思考强度，141 号是人设的上下文上限，142 号是人钉的看图模型，144 号是 143 号回合开始时池没了、退回的。
+几格都没有的 `{}` 也读得进来。内核切权限时写 `permission`、`from`（施工 PL-1），换模型时只写 `model`，退回默认时写 `model`、`replaced`（`kernel/session.md`「换模型」），换快照时只写 `policy`（施工 P-1 再补）。换思考强度时只写 `effort`（施工 SM-1），钉看图模型时只写 `vision`（施工 VM-1），钉压缩触发线时只写 `compaction_line`（施工 CT-1），桥报了新的语音上限时只写 `voice_max_ms`（施工 VM-2）。以前的日志没有 `model`、`replaced`、`effort`、`from`，照没有读；带着 8-18 那阵子写的 `effort`（有 `model`）的照样读得进，内核不理它。样本里 52、63 号是人切的权限，带着切以前的（施工 PL-1）；137 号是人钉的压缩触发线，139 号是人换的，140 号是人换的思考强度，141 号是人设的上下文上限，142 号是人钉的看图模型，144 号是 143 号回合开始时池没了、退回的。
 
 **`session.meta_changed`**：改了哪项写哪项。
 

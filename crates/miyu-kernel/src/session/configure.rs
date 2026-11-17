@@ -48,6 +48,9 @@ pub(super) struct Reference {
     vision: Option<String>,
     /// 会话钉的压缩触发线，窗口的百分之几（施工 CT-1）：没钉的、去掉了的没有（跟着 `compaction.line`）。
     line: Option<u64>,
+    /// 场所一段语音的上限，毫秒（施工 VM-2，`voice.rs`）：`session.created` 的，被后来带 `voice_max_ms` 的
+    /// `session.policy_changed` 盖掉。没有上限的没有。
+    voice: Option<u64>,
     /// 换了预设、还没告诉她（施工 DM-8，`facts/preset.rs`）：换之前的那个预设（空的是不用预设）。内核注入了预设那一块就清掉；
     /// 换了几次还没开回合的，记最早的那个，换回它的也清掉。
     announce: Option<String>,
@@ -66,6 +69,7 @@ impl Reference {
                     false => created.preset.clone(),
                 };
                 self.announce = None;
+                self.voice = created.voice_max_ms;
             }
             // 内核告诉过她换了预设（施工 DM-8）。
             Body::ContextInjected(fact)
@@ -111,6 +115,10 @@ impl Reference {
             if let Some(pin) = &changed.compaction_line {
                 self.line = pin.percent;
             }
+            // 场所的语音上限（施工 VM-2）：只设不去。
+            if let Some(ms) = changed.voice_max_ms {
+                self.voice = Some(ms);
+            }
         }
     }
 
@@ -147,6 +155,11 @@ impl Reference {
     /// 会话钉的压缩触发线：没钉的没有。
     pub(super) fn line(&self) -> Option<u64> {
         self.line
+    }
+
+    /// 场所一段语音的上限：没有上限的没有（施工 VM-2）。
+    pub(super) fn voice(&self) -> Option<u64> {
+        self.voice
     }
 
     /// 换了预设、还没告诉她的：换之前的那个预设（空的是不用预设）。没换过、告诉过的没有（施工 DM-8）。

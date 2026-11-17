@@ -325,6 +325,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
         cut,
     };
     let waiting = session.waiting_children();
+    let voice = session.voice_max_ms();
     let (inbox, mailbox) = mpsc::unbounded_channel();
     let lettering = Arc::new(Lettering::new(run, guard));
     // 外部身份的会话（施工 5-12）：权限策略、命令的沙盒都照它。
@@ -389,7 +390,8 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
             confined,
             venue: venue.clone(),
             session_log: (!confined).then_some(owner_log),
-            voice_max_ms: created.voice_max_ms,
+            // 照整份日志算的（施工 VM-2）：桥找回时报过新的照新的。
+            voice_max_ms: voice,
             catalog: tools.clone(),
             lettering,
             home: home.map(Path::to_path_buf),

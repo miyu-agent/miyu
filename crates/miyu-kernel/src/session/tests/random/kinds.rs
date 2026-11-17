@@ -162,7 +162,8 @@ impl InputKind {
                 | Command::SetEffort { .. }
                 | Command::SetContext { .. }
                 | Command::SetVision { .. }
-                | Command::SetCompactionLine { .. } => InputKind::Configure,
+                | Command::SetCompactionLine { .. }
+                | Command::SetVoiceLimit { .. } => InputKind::Configure,
                 Command::Answer {
                     answer: Answer::Approval { .. },
                     ..

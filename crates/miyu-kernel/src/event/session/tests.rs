@@ -344,6 +344,28 @@ fn a_policy_change_records_the_line_pin() {
     rejected::<Event>(&line, "body of session.policy_changed not readable");
 }
 
+/// 场所的语音上限（施工 VM-2）：`voice_max_ms` 写在最后，读写一字不差；和别的能在同一条里；写 `null` 当没有；不是整数的读不进来。
+#[test]
+fn a_policy_change_records_the_venue_voice_limit() {
+    for body in [
+        r#"{"voice_max_ms":60000}"#,
+        r#"{"permission":{"level":"full","read_only":true},"from":{"level":"full","read_only":false},"voice_max_ms":30000}"#,
+    ] {
+        let line = event_line("session.policy_changed", body);
+        assert_eq!(Event::from_line(&line).unwrap().to_line(), line, "一字不差");
+    }
+    let nulled = event_line(
+        "session.policy_changed",
+        r#"{"model":"a/m","voice_max_ms":null}"#,
+    );
+    assert_eq!(
+        Event::from_line(&nulled).unwrap().to_line(),
+        event_line("session.policy_changed", r#"{"model":"a/m"}"#)
+    );
+    let line = event_line("session.policy_changed", r#"{"voice_max_ms":"60000"}"#);
+    rejected::<Event>(&line, "body of session.policy_changed not readable");
+}
+
 /// 施工 8-18 的日志里 `effort` 多一个 `model`（会话给那一个模型记的一档）；8-18（补）去掉了那一层。SM-1 起照样读得进、写回去
 /// 一字不差，但不算会话的一档（`Effort::session` 是 `None`）。
 #[test]

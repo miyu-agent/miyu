@@ -75,8 +75,9 @@ pub struct SessionCreated {
     /// 工作区。不关的不写。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub confined: bool,
-    /// 这个场所一段语音至多多长，毫秒（施工 SD-1，`venues.md`「`venue.session`」）：桥造场所会话时报的，之后不变；这个会话的
-    /// `tool.call` 原样带上，`say` 照它比。没有上限的、本机的不写，以前的日志没有这一格。
+    /// 这个场所一段语音至多多长，毫秒（施工 SD-1，`venues.md`「`venue.session`」）：桥造场所会话时报的；找回时报的不一样，
+    /// 另记一条带 `voice_max_ms` 的 `session.policy_changed`（施工 VM-2）。这个会话的 `tool.call` 带最新的，`say` 照它比。
+    /// 没有上限的、本机的不写，以前的日志没有这一格。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub voice_max_ms: Option<u64>,
 }
@@ -128,8 +129,8 @@ pub struct Forked {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SessionSealed {}
 
-/// `session.policy_changed`：换了策略快照，或者换了权限，或者换了模型、思考强度、上下文上限、看图模型、压缩触发线，也可以一起换。
-/// 谁换的看事件的 `by`：人改的是配置，内核换的是目录变了、钉着的模型没了。
+/// `session.policy_changed`：换了策略快照，或者换了权限，或者换了模型、思考强度、上下文上限、看图模型、压缩触发线、场所的
+/// 语音上限，也可以一起换。谁换的看事件的 `by`：人改的是配置，内核换的是目录变了、钉着的模型没了，桥换的是场所的语音上限。
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PolicyChanged {
     /// 新的策略快照，下一个回合开始时生效（`02-内核.md` K3）。
@@ -175,6 +176,11 @@ pub struct PolicyChanged {
     /// 第一次换级别以前是哪一级。会话造的时候就有权限，所以换级别的总带着它。写在最后一格，以前的日志没有这一格，照没有读。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub from: Option<Permission>,
+    /// 场所一段语音的上限换了，毫秒（施工 VM-2，`venues.md`「`venue.session`」）：桥找回场所会话时报的和记过的不一样（含
+    /// 造的时候没报的），`by` 是那个桥的包，当场生效，撤掉的回合里的也算。只设不去：桥没报的照记过的。写在最后一格，以前的
+    /// 日志没有这一格。内核只记不解读。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub voice_max_ms: Option<u64>,
 }
 
 /// `session.policy_changed` 的 `compaction_line`（施工 CT-1）：会话钉的压缩触发线换成窗口的 `percent`%，`null` 是去掉（跟着配置）。

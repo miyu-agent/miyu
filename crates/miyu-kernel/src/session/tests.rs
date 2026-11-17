@@ -59,6 +59,7 @@ mod turn;
 mod typed;
 mod venue;
 mod vision_pin;
+mod voice_limit;
 mod workspace;
 
 use std::collections::BTreeMap;

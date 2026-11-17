@@ -122,6 +122,7 @@ pub(super) fn taken_when_sealed(command: &Command) -> bool {
         | Command::SetContext { .. }
         | Command::SetVision { .. }
         | Command::SetCompactionLine { .. }
+        | Command::SetVoiceLimit { .. }
         | Command::Recast { .. }
         | Command::SetWorkspace { .. }
         | Command::Ran { .. }

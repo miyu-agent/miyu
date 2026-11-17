@@ -39,6 +39,7 @@
 | `crates/miyu-kernel/src/session/permission.rs` | 切权限级别、请求之前查事实 |
 | `crates/miyu-kernel/src/session/meta.rs` | 改标题、置顶；现在的标题、置顶（施工 3-8 三补） |
 | `crates/miyu-kernel/src/session/configure.rs` | 换模型：会话的引用和最近一次换模型写在第几条（`Reference`，施工 P-13 起也记要用的人格、预设），收命令，回合开始退回默认的记下（施工 8-10，`models.md`「怎么走」第六条）。换思考强度：会话的一档从日志算、收 `SetEffort`（施工 SM-1；8-18 那时每个模型一格，8-18（补）去掉了）。钉看图模型：会话钉的那一个从日志算、收 `SetVision`（施工 VM-1）。钉压缩触发线：会话钉的百分数从日志算、收 `SetCompactionLine`（施工 CT-1） |
+| `crates/miyu-kernel/src/session/voice.rs` | 场所的语音上限：从日志算（`Reference` 记）、收 `SetVoiceLimit`（施工 VM-2，「换场所的语音上限」） |
 | `crates/miyu-kernel/src/session/recast.rs` | 中途换人格、预设（施工 P-13）：收命令、记下要换成的、马上单开一轮压缩（「换人格、预设」） |
 | `crates/miyu-kernel/src/session/send.rs` | 发一条消息（施工 8-10 从 `session.rs` 挪出来，那边放不下了） |
 | `crates/miyu-kernel/src/session/restart.rs`、`load.rs` | 有计划的重启；从日志载入（认出哪次压缩还算数，`history.md`「载入」）、崩了的收尾、重启后接着干 |
@@ -656,6 +657,11 @@
 1. 会话钉的百分数从日志算：带 `compaction_line` 的 `session.policy_changed` 里最后那一个（`percent` 是 `null` 的是去掉，回到跟着 `compaction.line`），撤掉的回合里换的也算（照上下文上限）。换模型不清它。`Session::pinned_line()` 只读交给执行器：回合开始时 actor 照它（没钉的照这一轮的配置）换策略快照里的 `line_percent`（`session/actor.md`「换快照」第 5 条），给头看的会话状态也照它写。
 2. 和现在的一样的：接受，什么都不记，编号照样记下。不一样的：追加一条 `session.policy_changed`，只写 `compaction_line`，`by` 是换的人，回合进行中的带上这个回合；落了盘才回应。范围协议那一头查过，内核只存数。封存了的拒（同换模型）。
 3. 内核判到线只照策略里的 `line_percent`（`Compaction::line`），不直接读钉的数：换快照记在日志里，重放照日志。
+
+**换场所的语音上限**（`SetVoiceLimit`，施工 VM-2，`voice.rs`，`venues.md`「`venue.session`」）：
+
+1. 会话的上限从日志算：`session.created` 的 `voice_max_ms`，被后来带 `voice_max_ms` 的 `session.policy_changed` 盖掉，撤掉的回合里的也算（场所的事实，不是对话的一部分）。只设不去，没有去掉的写法。`Session::voice_max_ms()` 只读交给执行器：载入时照它交给派调用的那一份（`miyu_tool::Caller::voice_max_ms`），落了盘的一批里有它的当场换；分叉照分叉点那一刻的（`ForkPlan::voice_max_ms`）。
+2. 和现在的一样的：接受，什么都不记，编号照样记下。不一样的：追加一条 `session.policy_changed`，只写 `voice_max_ms`，`by` 是报的那个桥，回合进行中的带上这个回合；落了盘才回应。正不正协议那一头查过，内核只存数。封存了的拒（同换模型）。
 
 **换人格、预设**（`Recast`，施工 P-13，`recast.rs`，`16-人格与预设.md` Y5）：
 

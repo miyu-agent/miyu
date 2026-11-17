@@ -99,6 +99,12 @@ pub enum Command {
         /// 窗口的百分之几，协议那一头照 `compaction.line` 的范围查过。`None` 是去掉，回到跟着 `compaction.line`。
         percent: Option<u64>,
     },
+    /// `venue.session` 找回场所会话时报的 `voice_max_ms`：换场所一段语音的上限（施工 VM-2，`voice.rs`）。当场生效；和现在的
+    /// 一样的不记。
+    SetVoiceLimit {
+        /// 毫秒，正整数，协议那一头查过。
+        ms: u64,
+    },
     /// `session.set_meta`：改标题、置顶，改哪样写哪样（施工 3-8 三补，`meta.rs`）。
     SetMeta {
         /// 新的标题，照 `session.meta_changed` 的写法：空的是去掉标题；不改就没有。去掉前后空白、量长短是协议端点的事

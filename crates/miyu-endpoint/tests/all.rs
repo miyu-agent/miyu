@@ -378,6 +378,7 @@ mod venue_records;
 mod venue_sessions;
 mod venue_shown;
 mod venue_view;
+mod venue_voice_limit;
 mod venues;
 mod view_detail;
 mod view_entries;

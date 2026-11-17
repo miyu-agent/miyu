@@ -41,6 +41,7 @@ fn switched_to(event: &Event) -> &Permission {
             vision: None,
             compaction_line: None,
             from: _,
+            voice_max_ms: None,
         }) => permission,
         body => panic!("应该是只换了权限的 session.policy_changed：{body:?}"),
     }

@@ -275,3 +275,43 @@ async fn a_venue_voice_limit_is_recorded_and_handed_to_every_call() {
         Some(60_000)
     );
 }
+
+/// 找回时桥报了新的语音上限（施工 VM-2）：内核记下，这时开着的会话以后派的调用照新的；重新载入照日志算回来。
+#[tokio::test]
+async fn a_reported_voice_limit_reaches_later_calls_and_survives_a_reload() {
+    let home = Home::new();
+    let note = Fake::new("note", Access::Read, Act::Echo);
+    let script = Script::new([Play::calls(&[("note", "{}")]), Play::Says("好。")]);
+    let tools = catalog(&[&note]);
+    let handle = session(&home, &script, &tools, GROUP).await;
+    let bridge = By::Module(miyu_kernel::origin::Module {
+        id: miyu_kernel::id::ModuleId::parse("bridge").expect("合写法"),
+    });
+    let limit = miyu_kernel::session::Command::SetVoiceLimit { ms: 60_000 };
+    within("回应", handle.command(id("cmd-voice"), bridge, limit))
+        .await
+        .expect("会话在跑");
+    let mut pushes = watch(&handle).await;
+    say_as(&handle, owner_in_group()).await;
+    until_turn_ends(&mut pushes).await;
+    let voice = |calls: &[miyu_tool::Call]| {
+        calls
+            .last()
+            .and_then(|call| call.caller.as_ref())
+            .and_then(|caller| caller.voice_max_ms)
+    };
+    assert_eq!(voice(&note.calls()), Some(60_000), "开着的会话当场换");
+    stop(&handle).await;
+    let again = Script::new([Play::calls(&[("note", "{}")]), Play::Says("好。")]);
+    let loaded = home.load_with(handle.id(), &again, &tools).await;
+    let mut pushes = watch(&loaded).await;
+    within(
+        "回应",
+        loaded.command(id("cmd-2"), owner_in_group(), say("再来")),
+    )
+    .await
+    .expect("会话在跑");
+    until_turn_ends(&mut pushes).await;
+    assert_eq!(note.calls().len(), 2);
+    assert_eq!(voice(&note.calls()), Some(60_000), "载入照日志算回来");
+}
