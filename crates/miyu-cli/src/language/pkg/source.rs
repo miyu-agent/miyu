@@ -71,6 +71,14 @@ impl Language {
         }
     }
 
+    /// 不支持本机的系统（施工 PL-2）。
+    pub(crate) fn unsupported_mark(&self) -> &'static str {
+        match self {
+            Language::Chinese => "（不支持该系统）",
+            Language::English => " (not supported on this system)",
+        }
+    }
+
     /// 装着的。
     pub(crate) fn installed_mark(&self) -> &'static str {
         match self {

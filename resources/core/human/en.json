@@ -352,6 +352,7 @@
       "packages.source": {"name": "Package source address", "description": "Where to look up and download packages. The official source by default; any other address must serve content signed by the official key."},
       "packages.mirrors": {"name": "Mirrors", "description": "Tried in order before the source when it is slow or unreachable. Content is still checked against the signature and hashes, so a mirror can't change it."},
       "packages.hold": {"name": "Held packages", "description": "Packages (by id) skipped when upgrading; the installed version stays."},
+      "packages.other_systems": {"name": "Packages for other systems", "description": "Also list packages that don't support this system in the package source, marked \"Not supported on this system\". They can't be installed."},
       "packages.sources.<id>.url": {"name": "Other source address", "description": "The folder holding its index. Together with a key it makes a source you trust. It goes in the system config."},
       "packages.sources.<id>.key": {"name": "Other source key", "description": "The Ed25519 public key (base64) its index is signed with. An index that doesn't verify isn't taken."},
       "models.catalog.url": {
@@ -770,6 +771,7 @@
     "package-problems/bad_prefix": "Prefix is not written like a package id: {detail}",
     "package-problems/prefix_taken": "The prefix {detail} is taken by another package; this one does not count",
     "package-problems/bad_targets": "Unknown or repeated target, known are linux-x86_64, linux-aarch64, macos-aarch64, windows-x86_64: {detail}",
+    "package-problems/bad_systems": "Unknown or repeated system, known are linux, macos, windows, and every system in targets must be listed: {detail}",
     "package-problems/bad_miyu": "{detail} must be a version of three numbers, such as 2026.11.0",
     "package-problems/needs_newer_miyu": "This package needs Miyu {detail} or newer: update Miyu first",
     "package-problems/page_missing": "{detail} has no index.html",

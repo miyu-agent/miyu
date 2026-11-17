@@ -1690,6 +1690,7 @@ flowchart LR
 | VN-1 | 她知道你从哪说话 | 项目主人 11-17 本机验收第 16 条：网页里叫她念一句，她合成文件发进 QQ 群；问她在哪说话，她照记忆猜成群里。人在头上说的话记上握手报的头的种类（`by.head`，`session.send`、开轮的 `command.run`），本机会话回合开始照开这一轮的那句话注入一块 `channel` 事实：`core/facts/channel/head/<种类>.txt`（终端界面、网页、`miyu ask`、终端集成各一句），别的头 `other.txt`，到点叫醒的 `nobody.txt`；和最近一块一样的不注入，换了地方才说，前缀不变。场所会话的快照不带这几句（桥写了 `<venue>`）。shellhook 现在握手报的也是 `tui`，要分开由终端头改。施工单见 `VN-1-她知道你从哪说话.md` |
 | ML-1 | 调扩展带调用方的语言 | 网页 W-1208：`method.call` 多带 `language`，调的那个连接这一刻的界面语言，照 `command.call` 的写法（`auto` 照连接握手报的 `locale`）：头经 `package.call`、`bus.call` 的是头的，包经 `bus.call` 的是那个包连接的，核心自己调的不带。SDK 那一半语音会话在 `miyu-sdk` 做。施工单见 `ML-1-调扩展带调用方的语言.md` |
 | SD-1 | 她说的话合成以后交给人 | 项目主人 11-17 本机验收第 16、26 条，语音会话 say 交付方案「核心」一节：工具结果的 `sent` 多收一段语音 `{"blob", "media_type", "voice": true, "duration_ms"?, "name"?}`，至多一段、`audio/` 开头、≤ 10 MiB（大了回 `voice-too-big.txt`）；视图流多 `voice` 条目，带开这一轮的那句话的 `by` 和那条请求的 `cause`，头照它定放不放；本机会话里没人开口的一轮（定时、循环、人生）出了语音、没有头开着这个会话的，核心经总线调 `tts.play {"audio"}`；`venue.session` 多 `voice_max_ms`，记进 `session.created`，这个会话的 `tool.call` 原样带上。施工单见 `SD-1-说出来交给人.md` |
+| PL-2 | 软件包声明支持的系统 | 项目主人 11-17 本机验收第 21 条，定「默认藏，可打开看」。清单 `[package] systems`（`linux`、`macos`、`windows`），和 `targets`（一种系统一个包文件）分开；两样都写的 `targets` 的系统都要在里面（`bad_systems`），没写的照 `targets` 推。收录把它原样写进索引，客户端照它和包文件的系统算本机支不支持、不下载。`package.search` 默认不列不支持的，新配置项 `packages.other_systems`「其他系统的软件包」开着才列、带 `unsupported`，`miyu pkg search` 接「（不支持该系统）」；从软件源、文件夹装都拒 `wrong_target`「不支持该系统」。施工单 `PL-2-软件包声明支持的系统.md` |
 
 ### 四、施工单的格式
 

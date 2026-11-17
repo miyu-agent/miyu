@@ -21,6 +21,7 @@ icon = "hand"                                       # a Lucide icon name, option
 logo = "art/logo.png"                               # a picture shipped in the package, optional
 needs = ["images"]                                  # optional: off where images can't be shown (voice)
 targets = ["linux-x86_64", "macos-aarch64"]         # optional: the systems its own programs run on
+systems = ["linux", "macos"]                        # optional: the only systems it supports; leave out for all
 
 [command]                                           # required for extensions
 name = "hello"                                      # `miyu hello …` is handed to your program
@@ -88,6 +89,7 @@ The tables and fields on this page are stable: from now on they are only added t
 | `miyu` | The oldest Miyu it works with: three numbers, such as `"2026.11.0"` (year.month.release of that month). Write it when you use newly added fields or methods; an older Miyu then says it needs updating instead of reporting keys it doesn't know |
 | `groups` | Only for packages that ship with Miyu: the groups it belongs to (for example `["basesystem"]`); a preset that names a group switches the packages in it. Other packages get an error |
 | `targets` | Which systems it installs on: `linux-x86_64`, `linux-aarch64`, `macos-aarch64`, `windows-x86_64`. Leave it out for any system; when listed, other systems refuse it, and `miyu pkg pack --target` makes one package file per system |
+| `systems` | Which systems it supports: `linux`, `macos`, `windows`, no repeats. Leave it out to support every system. Not the same as `targets`: `targets` is for packages carrying native programs, one package file per system; `systems` says which ones you support, and packages without programs (scripts, extensions) can write it too, e.g. `["linux", "macos"]` when you haven't done Windows. When both are written, the system of every entry in `targets` must be in `systems`. Without `systems`, the package source works out support from `targets`. On other systems the package source list hides the package by default (turn on "Packages for other systems" in settings to list it, marked "Not supported on this system"), and installing it is refused |
 
 ## `[command]`
 

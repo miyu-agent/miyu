@@ -4,7 +4,8 @@
 //! - 依赖照 pacman 自动补：缺的依赖从索引里一起装，先装依赖；索引里也没有的 `depends_missing`（`data.missing`）。依赖带版本
 //!   下限的（施工 PK-2）照下限挑：装着的版本够的不动，不够的、没装的照先后找第一个版本够的源一起装（装着的就是一起升），
 //!   哪个源都不够的同缺了，`data.missing` 照写的原样（`<编号>>=<版本>`）。
-//! - 每个包挑本机能用的那个文件（不分系统的、或者写了本机这一种的），没有的 `wrong_target`。
+//! - 每个包挑本机能用的那个文件（不分系统的、或者写了本机这一种的），没有的、索引的 `systems` 里没有本机的系统的（施工 PL-2）
+//!   `wrong_target`。
 //! - 看一眼只照索引说要装哪几个、要下多大、装好以后多大、推荐的还没装的有哪些（施工 IN-3），不下载。
 //! - 真装：一次只装一件（`core.packaging`）。照 pacman 分三段（施工 IN-3，设计 `49-装包照pacman.md` 第二节）：先一个一个下完
 //!   （[`super::download`]），再一个一个核对 SHA-256，最后一个一个照装包文件那一条装（[`super::super::archive`]），本地库记上
@@ -356,6 +357,9 @@ impl<'a> Walk<'a, '_> {
 /// 本机能用的那个文件：写了本机这一种的先，不分系统的其次。
 pub(super) fn pick(entry: &Entry) -> Option<&File> {
     let here = Target::here().map(Target::as_str);
+    if !super::look::supported(entry) {
+        return None;
+    }
     entry
         .files
         .iter()

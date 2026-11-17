@@ -611,6 +611,12 @@
           "title": "镜像",
           "type": "array"
         },
+        "other_systems": {
+          "default": false,
+          "description": "软件源的列表里也列出不支持本机系统的软件包，并标注「不支持该系统」。这些包无法安装。能写：true 或 false。只能写在系统配置里。立即生效。",
+          "title": "其他系统的软件包",
+          "type": "boolean"
+        },
         "source": {
           "default": "https://miyu-agent.github.io/packages/",
           "description": "从这里查、下载软件包。默认是官方的软件源；换了地址，那边的内容也得是官方签过名的。能写：http:// 或 https:// 开头的网址 或 { env = \"…\" }。只能写在系统配置里。立即生效。",

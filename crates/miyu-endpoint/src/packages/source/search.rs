@@ -5,6 +5,8 @@
 //! 包带了内容（`contents`，施工 G-9：im 的商城只列 im 的插件）；带了哪几样、依赖哪几个包（`provides`、`depends`，施工 G-10：
 //! 软件市场照种类筛）；Lucide 的图标名、包自带图标的版本（`icon`、`logo`，施工 F-18 下）；许可证（`license`，施工 PV-3）；这一版上的时刻、下载次数、近 7 天的
 //! 下载次数（`published`、`downloads`、`downloads_week`，施工 DL-1，索引里有的才写）。
+//!
+//! 不支持本机的包（施工 PL-2，[`super::look::supported`]）默认不列；`packages.other_systems` 开着的照列，带 `unsupported: true`。
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -19,6 +21,7 @@ use crate::Core;
 use crate::hello::Peer;
 use crate::personas::pick;
 use crate::refusal::Refusal;
+use crate::settings::SourceSettings;
 
 /// `package.search` 的参数。
 #[derive(Debug, Deserialize)]
@@ -52,18 +55,24 @@ pub(crate) async fn search(
             (found.id.clone(), version)
         })
         .collect();
+    let others = SourceSettings::from(&core.config().resolved().values()).other_systems;
     let words: Vec<String> = params
         .query
         .split_whitespace()
         .map(str::to_lowercase)
         .collect();
-    let mut rows = matching((OFFICIAL, &synced.index), &installed, &words, peer.language);
+    let mut rows = matching(
+        (OFFICIAL, &synced.index),
+        &installed,
+        (words.as_slice(), others),
+        peer.language,
+    );
     for feed in super::feeds::feeds(core).iter().skip(1) {
         match super::sync::sync_feed(feed, false).await {
             Ok(other) => rows.extend(matching(
                 (&feed.name, &other.index),
                 &installed,
-                &words,
+                (words.as_slice(), others),
                 peer.language,
             )),
             Err(refusal) => {
@@ -78,18 +87,20 @@ pub(crate) async fn search(
     Ok(answer)
 }
 
-/// 源 `source`（名字）的索引 `index` 里合得上 `words` 的那几行。
+/// 源 `source`（名字）的索引 `index` 里合得上 `words` 的那几行；不支持本机的，`others`（`packages.other_systems`）开着的才列。
 fn matching(
     (source, index): (&str, &Index),
     installed: &BTreeMap<String, Option<String>>,
-    words: &[String],
+    (words, others): (&[String], bool),
     language: &str,
 ) -> Vec<Value> {
     index
         .packages
         .iter()
         .filter(|entry| matches(entry, words))
-        .map(|entry| {
+        .map(|entry| (entry, super::look::supported(entry)))
+        .filter(|(_, supported)| *supported || others)
+        .map(|(entry, supported)| {
             let mut row = json!({
                 "package": entry.id,
                 "version": entry.version,
@@ -105,6 +116,10 @@ fn matching(
                 "installed": installed.get(&entry.id).map(|version| version.clone().unwrap_or_default()),
                 "blocked": index.blocked(&entry.id, &entry.origin).map(|blocked| blocked.reason.clone()),
             });
+            // 不支持本机的（施工 PL-2）：只有 `packages.other_systems` 开着才列得出来。
+            if !supported {
+                row["unsupported"] = json!(true);
+            }
             // 包的种类（施工 G-11）：索引里的原样，以前生成的索引没有的不写。
             if let Some(kind) = &entry.kind {
                 row["kind"] = json!(kind);

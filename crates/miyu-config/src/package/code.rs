@@ -141,6 +141,8 @@ pub enum Code {
     PrefixTaken,
     /// `[package] targets` 里有不认识的、重复的系统（施工 G-1）。
     BadTargets,
+    /// `[package] systems` 里有不认识的、重复的系统，或者 `targets` 里有一种的系统不在里面（施工 PL-2）。
+    BadSystems,
     /// `[package] miyu` 不是三段数字的版本（施工 X-31）。
     BadMiyu,
     /// 要比这一版新的 Miyu（施工 X-31）：`detail` 是清单写的版本。读清单时先比它，比不过的不再往下读。
@@ -219,13 +221,14 @@ impl Code {
             Code::BadPrefix => "bad_prefix",
             Code::PrefixTaken => "prefix_taken",
             Code::BadTargets => "bad_targets",
+            Code::BadSystems => "bad_systems",
             Code::BadMiyu => "bad_miyu",
             Code::NeedsNewerMiyu => "needs_newer_miyu",
         }
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 68] = [
+    pub const ALL: [Code; 69] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -294,5 +297,6 @@ impl Code {
         Code::BadPrefix,
         Code::PrefixTaken,
         Code::BadTargets,
+        Code::BadSystems,
     ];
 }

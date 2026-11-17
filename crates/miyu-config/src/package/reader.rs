@@ -17,6 +17,7 @@ pub(super) struct Head {
     pub(super) logo: Option<String>,
     pub(super) needs: Vec<Need>,
     pub(super) targets: Vec<super::Target>,
+    pub(super) systems: Vec<super::System>,
     pub(super) credits: super::credits::Credits,
 }
 
@@ -121,6 +122,7 @@ impl Reader<'_> {
         };
         let needs = self.needs(table)?;
         let targets = self.targets(table)?;
+        let systems = self.systems(table, &targets)?;
         let credits = super::credits::read(self, table)?;
         Ok(Head {
             version,
@@ -133,6 +135,7 @@ impl Reader<'_> {
             logo,
             needs,
             targets,
+            systems,
             credits,
         })
     }

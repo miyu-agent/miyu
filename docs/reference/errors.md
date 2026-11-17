@@ -135,7 +135,7 @@
 | `package_invalid` | 清单写错了 | `problem`、`line` |
 | `no_provider`、`package_required` | `bus.call`：总线上没有包提供这个名字；`plugs` 的名字没写挑哪家 | |
 | `package_conflict`、`package_exists` | 带的名字撞了；和出厂的同编号 | |
-| `package_file_bad`、`wrong_target` | 包文件解不开；清单写的 `targets` 里没有本机这一种系统 | |
+| `package_file_bad`、`wrong_target` | 包文件解不开；不支持该系统（清单写的 `targets` 里没有本机这一种，或者 `systems` 里没有本机的系统） | |
 | `download_failed`、`source_unreachable` | 从软件源装：包文件哪一处都没下成；软件源一处都没连上，本机也没有索引 | `why` |
 | `depends_missing`、`package_depended` | 依赖没装、装着的版本不够下限；别的包依赖它 | `missing`、`by` |
 | `program_missing` | 程序没找到 | |

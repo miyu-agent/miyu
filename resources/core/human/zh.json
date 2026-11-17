@@ -352,6 +352,7 @@
       "packages.source": {"name": "软件源地址", "description": "从这里查、下载软件包。默认是官方的软件源；换了地址，那边的内容也得是官方签过名的。"},
       "packages.mirrors": {"name": "镜像", "description": "官方的软件源连不上或者慢的时候，先照先后试这几个地址。内容照样验签名、比哈希，镜像改不了。"},
       "packages.hold": {"name": "不升级的包", "description": "升级时跳过这几个包（写编号），照旧用装着的那一版。"},
+      "packages.other_systems": {"name": "其他系统的软件包", "description": "软件源的列表里也列出不支持本机系统的软件包，并标注「不支持该系统」。这些包无法安装。"},
       "packages.sources.<id>.url": {"name": "别的软件源的地址", "description": "放索引的那一层目录。和公钥一起写才算一个源，加了就是信任它；写在系统配置里。"},
       "packages.sources.<id>.key": {"name": "别的软件源的公钥", "description": "签它的索引的 Ed25519 公钥（base64）。索引照它验，验不过的不收。"},
       "models.catalog.url": {
@@ -766,6 +767,7 @@
     "package-problems/bad_prefix": "前缀的写法不像包编号：{detail}",
     "package-problems/prefix_taken": "前缀 {detail} 已经被别的包占了，这一份不算",
     "package-problems/bad_targets": "系统的写法不对，只认 linux-x86_64、linux-aarch64、macos-aarch64、windows-x86_64，不能重复：{detail}",
+    "package-problems/bad_systems": "系统的写法不对，只认 linux、macos、windows，不能重复，targets 里每一种的系统都要写上：{detail}",
     "package-problems/bad_miyu": "{detail} 要写成三段数字的版本，例如 2026.11.0",
     "package-problems/needs_newer_miyu": "这个包要 Miyu {detail} 以上，先更新 Miyu",
     "package-problems/page_missing": "{detail} 里没有 index.html",

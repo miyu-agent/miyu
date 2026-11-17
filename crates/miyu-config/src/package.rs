@@ -27,6 +27,7 @@ mod links;
 mod look;
 mod mcp;
 mod need;
+mod program;
 mod provider_key;
 mod reader;
 mod reserved;
@@ -34,6 +35,7 @@ mod search;
 pub mod settings;
 mod side;
 mod slash;
+mod system;
 mod target;
 mod theme;
 mod version;
@@ -55,12 +57,14 @@ pub use mcp::{
     configured as configured_mcp, venues_fit,
 };
 pub use need::Need;
+pub use program::{Check, Command, Pages, Process, Start};
 pub use provider_key::ProviderKey;
 pub use reserved::{RESERVED, reserved_id};
 pub use search::{SEARCH_SOURCE, SearchSource};
 pub use settings::{Choice, Section, Setting, SettingKind, ShownWhen};
 pub use side::{SIDE_TIERS, SideRequest};
 pub use slash::{Access, SlashCommand};
+pub use system::{System, fits_here};
 pub use target::Target;
 pub use theme::Theme;
 pub use widget::{MOST as WIDGETS_MOST, Place as WidgetPlace, Widget};
@@ -145,6 +149,8 @@ pub struct Manifest {
     pub needs: Vec<Need>,
     /// 能装在哪几种系统上（施工 G-1，`[package] targets`）：照 [`Target::ALL`] 的先后；没写的是空的，哪种都能装。
     pub targets: Vec<Target>,
+    /// 支持哪几种系统（施工 PL-2，`[package] systems`）：照 [`System::ALL`] 的先后；没写的是空的，照 `targets` 算（[`fits_here`]）。
+    pub systems: Vec<System>,
     /// 作者（施工 F-12，`[package] author`）：没写的没有。
     pub author: Option<String>,
     /// 上游：这个包的源码仓库，`https://` 开头（施工 F-12，`[package] upstream`）：没写的没有。
@@ -194,67 +200,6 @@ impl PackageKind {
             PackageKind::Bundle => "bundle",
         }
     }
-}
-
-/// `[command]`，`[[command]]` 的一个（施工 F-13）。
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Command {
-    /// `miyu` 后面敲的那个词。
-    pub name: String,
-    /// 程序名，不带路径。
-    pub program: String,
-    /// 转交时加在人敲的参数前面的（施工 F-13）：没写的是空的。
-    pub args: Vec<String>,
-    /// 一句说明，`miyu -h` 照它列。
-    pub about: Phrases,
-    /// `name` 写在第几行：两个包撞了名，报在这一行。
-    pub line: Option<usize>,
-}
-
-/// `[process]`。
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Process {
-    /// 拉起时带的参数。
-    pub args: Vec<String>,
-    /// 什么时候拉起。
-    pub start: Start,
-    /// 要哪些扩展能力（施工 9-4 下上）：照 [`Capability::ALL`] 的先后，不重复；没写的是空的。
-    pub capabilities: Vec<Capability>,
-}
-
-/// 什么时候拉起。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Start {
-    /// 开关打开才拉起（默认）。
-    Manual,
-    /// 核心起来就拉起。
-    Always,
-}
-
-impl Start {
-    /// 清单、协议上的写法。
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Start::Manual => "manual",
-            Start::Always => "always",
-        }
-    }
-}
-
-/// `[ui]`。
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Pages {
-    /// 认的页（`--page`）。
-    pub opens: Vec<String>,
-    /// 页面文件的目录，相对包文件夹（施工 G-15：包能装进数据根，原来相对资源目录的说法不成立）；没有的没有。
-    pub pages_dir: Option<String>,
-}
-
-/// `[check]`。
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Check {
-    /// 跑 `<program> <args…>`。
-    pub args: Vec<String>,
 }
 
 /// 读不成：第几行（整份的没有）、代码、换进给人看的那一句的那一格、英文一句。
@@ -488,6 +433,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         content,
         needs: head.needs,
         targets: head.targets,
+        systems: head.systems,
         author: head.credits.author,
         upstream: head.credits.upstream,
         license: head.credits.license,

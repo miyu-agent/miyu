@@ -1599,6 +1599,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sVN1"><span class="n">VN-1</span>她知道你从哪说话<span class="st">…</span></a></li>
         <li><a class="step review" href="#sML1"><span class="n">ML-1</span>调扩展带调用方的语言<span class="st">…</span></a></li>
         <li><a class="step review" href="#sSD1"><span class="n">SD-1</span>她说的话合成以后交给人<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sPL2"><span class="n">PL-2</span>软件包声明支持的系统<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -62827,6 +62828,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/SD-1-说出来交给人.md</code>；蓝图 <code>providers.md</code>、<code>view.md</code>、<code>venues.md</code>、<code>kernel/events-bodies.md</code>；协议参考 <code>extensions.md</code>、<code>view.md</code>、<code>venues.md</code>、<code>bus.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sPL2" aria-labelledby="h-sPL2">
+  <div class="sheet-head"><h2 id="h-sPL2"><span class="no">PL-2</span>软件包声明支持的系统</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">清单写 <code>[package] systems</code>，不支持本机的包软件源默认不列、打开「其他系统的软件包」才列出来标「不支持该系统」，装的时候拒。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-config/src/package/system.rs · miyu-source/src/index.rs · miyu-endpoint/src/packages/source</span><span class="dir-note">PL-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>systems</code> 读成 <code>System</code>，和 <code>targets</code> 对得上</li>
+              <li>索引原样带 <code>systems</code>，<code>Entry::fits_here</code> 照它和包文件算</li>
+              <li><code>package.search</code> 默认不列，<code>packages.other_systems</code> 开着带 <code>unsupported</code></li>
+              <li>装照索引先拒 <code>wrong_target</code>「不支持该系统」</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">默认藏，可打开看</span><span class="rl">项目主人 11-17</span></div>
+          <div class="tile new"><span class="nm">键名 <code>systems</code>，只说操作系统</span><span class="rl">「平台」是通讯平台</span></div>
+          <div class="tile new"><span class="nm">没写的照 <code>targets</code> 推</span><span class="rl">有本机的包文件才算</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">PL-2</dd></div>
+        <div><dt>名称</dt><dd>软件包声明支持的系统</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">PL-2</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改前红：<code>package::system::tests</code>、<code>packages_systems</code></span></li>
+        <li><span class="ok">✓</span><span>沙箱实测：两个本地包，开关前后 <code>miyu pkg search</code>、装被拒</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/PL-2-软件包声明支持的系统.md</code>；蓝图 <code>packages.md</code>、<code>protocol.md</code>、<code>cli/pkg.md</code>；设计 37；协议参考 <code>packages.md</code>、<code>errors.md</code>；作者文档 <code>manifest.md</code>。</li>
       </ul>
     </div>
   </div>

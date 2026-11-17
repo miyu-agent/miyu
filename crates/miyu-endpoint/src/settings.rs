@@ -173,6 +173,14 @@ miyu_config::settings! {
             applies: now,
             ui: { page: "packages", group: "source", control: list },
         },
+        /// 其他系统的软件包（施工 PL-2，项目主人 2026-11-17 定默认藏、可打开看）：开着的，软件源的列表（`package.search`）也列
+        /// 出不支持本机的包，标上 `unsupported`；关着的不列。装照旧拒（`wrong_target`）。
+        other_systems: bool = false {
+            kind: bool,
+            layers: [System],
+            applies: now,
+            ui: { page: "packages", group: "source", control: toggle },
+        },
     }
 }
 

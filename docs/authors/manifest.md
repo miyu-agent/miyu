@@ -21,6 +21,7 @@ icon = "hand"                                       # Lucide 的图标名，可�
 logo = "art/logo.png"                               # 包里自带的一张图标，可以不写
 needs = ["images"]                                  # 可以不写：显示不了图片的地方（语音）整包当没开
 targets = ["linux-x86_64", "macos-aarch64"]         # 可以不写：带了本机程序的写它能跑的几种系统
+systems = ["linux", "macos"]                        # 可以不写：只支持这几种系统；不写是哪种系统都支持
 
 [command]                                           # 扩展必写
 name = "hello"                                      # 人敲 miyu hello … 时转给你的程序
@@ -88,6 +89,7 @@ place = "status"
 | `miyu` | 最低要哪一版 Miyu：三段数字，例如 `"2026.11.0"`（年.月.这个月第几版）。用了新加的格、新的方法时写上；旧版本的 Miyu 读到会说清要更新，不会报看不懂的键 |
 | `groups` | 只给出厂的包：在哪几个组里（例如 `["basesystem"]`），预设写组名就开关组里的包。别的包写了报错 |
 | `targets` | 能装在哪几种系统上：`linux-x86_64`、`linux-aarch64`、`macos-aarch64`、`windows-x86_64`。不写是哪种都能装；写了的，别的系统上装不上，打包时用 `miyu pkg pack --target` 一种一个包文件 |
+| `systems` | 支持哪几种系统：`linux`、`macos`、`windows`，不重复。不写是哪种系统都支持。和 `targets` 不是一回事：`targets` 是带了本机程序、一种系统一个包文件；`systems` 是你支持哪几种，不带程序的脚本、扩展也能写（例如没做 Windows 适配的写 `["linux", "macos"]`）。两样都写的，`targets` 里每一种的系统都要在 `systems` 里。没写 `systems` 的，软件源照 `targets` 算支不支持。别的系统上，软件源的列表默认不列这个包（设置里打开「其他系统的软件包」才列出来、标「不支持该系统」），装的时候拒绝 |
 
 ## `[command]`
 
@@ -336,7 +338,7 @@ access = ["execute"]
 | `images` | 看得了图的写 `true`（默认 `false`） |
 | `hosted` | 这个驱动会让供应商自己跑的工具名，例如 `["search_web", "read_url_content"]`（默认空的）：装包时照它给主人看「会让供应商自己跑：…」。每个 1 到 64 个字节、不带控制字符、不重。交上来的名字不在里面的，Miyu 照收、照显示，运行日志里记一行警告；见 [写扩展](extensions.md#供应商自己跑的工具) |
 
-主人在供应商的配置里写 `driver = "<包的编号>/<驱动名>"` 才用它；模型档案、npm 表、默认永远是内置的几种，装上你的包也接不走主人原来配好的供应商。包没装、没批、驱动名写错的，`miyu check` 报出来，那一家供应商当用不了，不会退回内置驱动。Miyu 怎么调你的驱动（`driver.call`、`driver.delta`、`driver.cancel`）见 [协议参考](../reference/extensions.md#drivercalldriverdeltadrivercancel)。
+主人在供应商的配置里写 `driver = "<包的编号>/<驱动名>"`才用它；模型档案、npm 表、默认永远是内置的几种，装上你的包也接不走主人原来配好的供应商。包没装、没批、驱动名写错的，`miyu check` 报出来，那一家供应商当用不了，不会退回内置驱动。Miyu 怎么调你的驱动（`driver.call`、`driver.delta`、`driver.cancel`）见 [协议参考](../reference/extensions.md#drivercalldriverdeltadrivercancel)。
 
 ## `[provider_key]`
 

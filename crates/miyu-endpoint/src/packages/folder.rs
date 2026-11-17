@@ -2,7 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
-use miyu_config::package::{self, Target};
+use miyu_config::package::{self, System, Target};
 use miyu_store::packages::{MANIFEST, Packages};
 
 use super::manage::invalid;
@@ -13,7 +13,8 @@ use crate::refusal::Refusal;
 
 /// 从 `path` 装之前查的（装、看一眼共用）：包文件夹（写成里面的 `package.toml` 的取它的上一层）、编号（文件夹名）、读成了的
 /// 清单。路径不是绝对的、编号不合写法的 `bad_params`；读不了的 `path_unreadable`；写错的、编号是保留名字的 `package_invalid`；清单写了
-/// `targets`、里面没有本机这一种的 `wrong_target`（施工 G-1）；和出厂的撞了的 `package_exists`。
+/// `targets`、里面没有本机这一种的，写了 `systems`、里面没有本机的系统的 `wrong_target`（施工 G-1、PL-2）；和出厂的撞了的
+/// `package_exists`。
 pub(super) fn source(
     core: &Core,
     peer: Peer,
@@ -45,7 +46,11 @@ pub(super) fn read(
     // 要更新的 Miyu 的照这一版报（施工 X-31）。
     let manifest = package::read_for(&text, env!("CARGO_PKG_VERSION"))
         .map_err(|problem| invalid(&words, &problem))?;
-    if !fits_here(&manifest.targets, Target::here()) {
+    if !package::fits_here(
+        &manifest.systems,
+        &manifest.targets,
+        (System::here(), Target::here()),
+    ) {
         return Err(Refusal::WRONG_TARGET);
     }
     Ok((folder.to_path_buf(), id, manifest))
@@ -68,9 +73,4 @@ pub(super) fn id_of(path: &Path) -> Option<String> {
         .filter(|id| miyu_store::personas::valid(id))
         .map(str::to_string)
         .filter(|_| folder.is_absolute())
-}
-
-/// 清单写的 `targets` 里有没有 `here`：没写的哪种都行；本机不在那四种里的，写了就不行。
-fn fits_here(targets: &[Target], here: Option<Target>) -> bool {
-    targets.is_empty() || here.is_some_and(|here| targets.contains(&here))
 }

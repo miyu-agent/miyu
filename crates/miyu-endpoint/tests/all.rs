@@ -246,6 +246,7 @@ mod packages_search;
 mod packages_settings_left;
 mod packages_stages;
 mod packages_sync;
+mod packages_systems;
 mod packages_tool;
 mod packages_upgrade;
 mod peers;

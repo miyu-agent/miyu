@@ -12,6 +12,7 @@ fn mirrors_come_before_the_source() {
             Address::Literal("  ".to_string()),
         ],
         hold: None,
+        other_systems: false,
     };
     assert_eq!(
         bases(&settings),

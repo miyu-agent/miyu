@@ -6,6 +6,9 @@ use std::sync::Arc;
 
 use serde_json::{Value, json};
 
+use miyu_config::package::{System, Target};
+use miyu_source::index::Entry;
+
 use super::feeds::Tier;
 use crate::Core;
 use crate::hello::Peer;
@@ -15,7 +18,8 @@ use crate::refusal::Refusal;
 /// 软件源里编号是 `id` 的那一个：`from: "source"`、源的名字、编号、版本、名字和说明（照连接的语言挑）、依赖、推荐、带了哪几样
 /// （索引原样）、要的能力（同装着的那一份的写法）、来源仓库、是不是官方；写了的有作者、上游、本机那份文件多大（`download`）、
 /// 装好以后多大（`installed_size`）、装上以后模型会多的工具（`tools`，施工 PV-1）、驱动会让供应商自己跑的工具（`hosted`，
-/// 施工 RB-1）；用的是本机旧索引的带 `stale`（同 `package.search`）。
+/// 施工 RB-1）；不支持本机的带 `unsupported: true`（施工 PL-2，照 [`supported`]）；用的是本机旧索引的带 `stale`（同
+/// `package.search`）。
 ///
 /// # Errors
 ///
@@ -52,6 +56,9 @@ pub(crate) async fn look(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value
     if let Some(file) = super::fetch::pick(entry) {
         answer["download"] = json!(file.size);
     }
+    if !supported(entry) {
+        answer["unsupported"] = json!(true);
+    }
     if let Some(bytes) = entry.installed {
         answer["installed_size"] = json!(bytes);
     }
@@ -67,4 +74,12 @@ pub(crate) async fn look(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value
         answer["stale"] = Value::String(stale);
     }
     Ok(answer)
+}
+
+/// 本机支不支持索引里这一条（施工 PL-2）：照 [`Entry::fits_here`]，本机的系统、操作系统加处理器是编译时定的。
+pub(super) fn supported(entry: &Entry) -> bool {
+    entry.fits_here(
+        System::here().map(System::as_str),
+        Target::here().map(Target::as_str),
+    )
 }

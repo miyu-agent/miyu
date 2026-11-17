@@ -57,7 +57,8 @@ impl Refusal {
         reason: "package_file_bad",
         data: None,
     };
-    /// 清单写了 `targets`，里面没有本机这一种系统（施工 G-1）。
+    /// 不支持本机：清单写了 `targets`，里面没有本机这一种；写了 `systems`，里面没有本机的系统（施工 G-1、PL-2）。从软件源装的照
+    /// 索引的 `systems`、`files` 先查，不下载。
     pub(crate) const WRONG_TARGET: Refusal = Refusal {
         code: REFUSED,
         reason: "wrong_target",

@@ -49,6 +49,7 @@ summary = { en = "…", zh = "…" } # 可以不写
 needs = ["images"]               # 要这个地方有什么才有用（施工 X-25），可以不写；认 images：显示不了图片的会话里整包当没开；life（施工 LF-4 下）：只在没结束的人生会话里有，别的会话里整包当没开
 miyu = "2026.11.0"               # 最低要哪一版 Miyu（施工 X-31）：三段数字，可以不写；读清单时先比它，见「出错」的 `needs_newer_miyu`
 targets = ["linux-x86_64"]       # 能装在哪几种系统上（施工 G-1，设计 37 第二节第 3 条），可以不写（哪种都能装）；只认 linux-x86_64、linux-aarch64、macos-aarch64、windows-x86_64，带了本机程序的写它能跑的几种
+systems = ["linux", "macos"]     # 支持哪几种系统（施工 PL-2，项目主人 2026-11-17 定），可以不写（哪种都支持）；只认 linux、macos、windows，不重复；和 targets 都写的，targets 里每一种的系统都要在里面，不然 bad_systems。见下面「支持的系统」
 author = "miyu-agent"              # 作者（施工 F-12，项目主人 2026-10-19 定每个包都写），可以不写；一行，1 到 100 个字
 upstream = "https://github.com/miyu-agent/miyu"   # 上游源码仓库（施工 F-12），可以不写；https:// 开头，至多 300 个字。`package.list`、`package.info` 原样交出去，另交 `from`（shipped、official、local）
 license = "AGPL-3.0-or-later"    # 许可证（施工 PV-3，项目主人 2026-11-12 定加一格、可以不写）：建议写 SPDX 表达式（MIT、MIT OR Apache-2.0），只查一行、去掉前后空白 1 到 100 个字，不查是不是合法的 SPDX；`package.info`（三条路）、`package.search`、软件源索引原样交出去，`package.list` 不带
@@ -329,6 +330,16 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 8. **软件源索引里的 `tools`**（施工 PV-1）：每个包另有可选的 `tools`，装上以后模型会多的工具 `[{"name", "title"?, "from"}]`，收录时照 `miyu_source::tools::of` 算：包文件夹 `scripts/` 那一层的普通文件照开头读（`miyu_policy::script::read`，核心登记脚本用的同一份；点开头的、子目录、链接、读不成的不算），`title` 取「显示名称」「Display name」；清单里各功能写明的工具名算 `extension`，没有 `title`；MCP 的、要跑起来才知道的不列；照名字排、同名的留一个。没有的不写，索引照旧是 `version` 1，以前的索引读成空的，旧客户端照略过。`package.info` 三条路都带这一格（`protocol.md`）。
 9. **软件源索引里的 `license`**（施工 PV-3）：每个包另有可选的 `license`，清单 `[package] license` 的原样（读清单时已去掉前后空白）；没写的不写，索引照旧是 `version` 1，以前的索引读成没有，旧客户端照略过。`package.info` 没装的那一份、`package.search` 每一行照它带。
 10. **软件源索引里的 `hosted`**（施工 RB-1，同 HT-4 装包预览的那一格）：每个包另有可选的 `hosted`，模型驱动会让供应商自己跑的工具 `{"<驱动名>": ["<工具名>", …]}`，收录时照清单 `[[driver]] hosted` 原样写，没写 `hosted` 的驱动不列，一个都没写的不写这一格；索引照旧是 `version` 1，以前的索引读成空的，旧客户端照略过。从软件源装之前看一眼、`package.info` 没装的那一份照它带 `hosted`（`protocol.md`），`miyu pkg install` 的确认屏、`miyu pkg info` 的「提供」照它印「模型驱动 <名字> 会让供应商自己跑：…」（`cli/pkg.md`）；以前的索引没有的照旧不印。
+11. **软件源索引里的 `systems`**（施工 PL-2）：每个包另有可选的 `systems`，清单 `[package] systems` 的原样；没写的不写，索引照旧是 `version` 1，以前的索引读成空的（哪种都支持），旧客户端照略过。见下面「支持的系统」。
+
+### 支持的系统（施工 PL-2，项目主人 2026-11-17 定「默认藏，可打开看」）
+
+清单 `[package] systems` 说作者支持哪几种操作系统（`linux`、`macos`、`windows`），`targets` 说带了本机程序的包有哪几种包文件（操作系统加处理器）：两回事，前者不带程序的脚本、扩展也能写（例如没做 Windows 适配的写 `["linux", "macos"]`）。「平台」在清单里说的是通讯平台，这里叫「系统」。
+
+1. **本机支不支持**（`miyu_config::package::fits_here`，索引那一头 `miyu_source::index::Entry::fits_here`）：写了 `systems` 的要有本机的系统；写了 `targets` 的（索引里是 `files[].target`）要有本机这一种。没写 `systems` 的就照 `targets` 推，两样都没写的哪里都支持。本机认不出的（不在那几种里的），写了就不支持。照索引就算得出来，不用下载包文件。
+2. **列表**：`package.search`（`miyu pkg search`、头的软件源列表、她的 `package` 工具都照它）默认不列不支持本机的包；配置 `packages.other_systems`（「其他系统的软件包」，布尔，默认关，「软件包」页「软件源」那一组）开着的照列，那一行带 `unsupported: true`，`miyu pkg search` 接「（不支持该系统）」。`package.info` 查软件源的那一份不支持的带 `unsupported: true`。推荐的包不支持本机的不提（照旧挑不出文件）。
+3. **装**：从软件源装（`miyu pkg install`、协议 `package.install {"source"}`、升级）照索引先拒 `wrong_target`，不下载；从文件夹、包文件装照清单拒 `wrong_target`。给人看的话「不支持该系统。」/「Not supported on this system.」。
+4. 名字照 UX-1 的命名规矩（`config.md`「命名的规矩」）：开关的名字不带「不」「隐藏」，所以叫「其他系统的软件包」，说明里写清是不支持本机系统的那些。
 
 ### 本地库（施工 F-8 中上，设计 `31-软件包.md` 第四节）
 

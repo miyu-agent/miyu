@@ -190,6 +190,10 @@ source = "auto"
 # Allowed: a list of an address starting with http:// or https:// or { env = "…" }. Only in the system config. Takes effect immediately.
 mirrors = []
 
+# Packages for other systems: Also list packages that don't support this system in the package source, marked "Not supported on this system". They can't be installed.
+# Allowed: true or false. Only in the system config. Takes effect immediately.
+other_systems = false
+
 # Package source address: Where to look up and download packages. The official source by default; any other address must serve content signed by the official key.
 # Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config. Takes effect immediately.
 source = "https://miyu-agent.github.io/packages/"

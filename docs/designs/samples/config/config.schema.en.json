@@ -611,6 +611,12 @@
           "title": "Mirrors",
           "type": "array"
         },
+        "other_systems": {
+          "default": false,
+          "description": "Also list packages that don't support this system in the package source, marked \"Not supported on this system\". They can't be installed. Allowed: true or false. Only in the system config. Takes effect immediately.",
+          "title": "Packages for other systems",
+          "type": "boolean"
+        },
         "source": {
           "default": "https://miyu-agent.github.io/packages/",
           "description": "Where to look up and download packages. The official source by default; any other address must serve content signed by the official key. Allowed: an address starting with http:// or https:// or { env = \"…\" }. Only in the system config. Takes effect immediately.",

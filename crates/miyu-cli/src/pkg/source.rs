@@ -99,7 +99,8 @@ pub(super) async fn pacman(
     Ok(())
 }
 
-/// `search`：一行一个，`<编号>  <名字>  <说明>`，编号照最长的对齐；装着的接「已装」，社区的接「社区」，拉黑的接理由。一个都
+/// `search`：一行一个，`<编号>  <名字>  <说明>`，编号照最长的对齐；装着的接「已装」，社区的接「社区」，不支持本机的接「不支持
+/// 该系统」（施工 PL-2：`packages.other_systems` 开着才搜得出），拉黑的接理由。一个都
 /// 没搜到的什么都不印、退出码 1（照 pacman）；用的是本机的旧索引的在标准错误上说一句。`json` 的原样印回应。
 pub(super) async fn search(
     rpc: &mut Rpc,
@@ -157,6 +158,9 @@ fn shown(rows: &[Value], language: &Language) -> Vec<String> {
             }
             if row["official"].as_bool() != Some(true) {
                 line.push_str(language.community_mark());
+            }
+            if row["unsupported"].as_bool() == Some(true) {
+                line.push_str(language.unsupported_mark());
             }
             if let Some(reason) = row["blocked"].as_str() {
                 line.push_str(&language.blocked_mark(reason));

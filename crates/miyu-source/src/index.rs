@@ -117,6 +117,10 @@ pub struct Entry {
     /// 以前生成的索引没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub installed: Option<u64>,
+    /// 支持哪几种系统（施工 PL-2）：清单 `[package] systems` 的原样（`linux`、`macos`、`windows`）；没写的、以前生成的索引没有，
+    /// 哪种都支持。本机支不支持照它和 `files` 一起算（[`Entry::fits_here`]），不用下载包文件。
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub systems: Vec<String>,
     /// 装上以后模型会多的工具（施工 PV-1，[`crate::tools`]）：没有的不写，以前生成的索引没有，读成空的。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub tools: Vec<crate::tools::Tool>,
@@ -134,6 +138,20 @@ impl Entry {
             && plain_version(&self.version)
             && self.depends.iter().all(|dep| linked(dep))
             && self.recommends.iter().all(|dep| linked(dep))
+    }
+
+    /// 本机（操作系统 `system`、操作系统加处理器 `target`，写法同 `systems`、`files[].target`）支不支持（施工 PL-2）：写了
+    /// `systems` 的要有本机的系统；包文件要有一份不分系统的、或者给本机这一种的。认不出本机的，写了 `systems` 的、包文件都分了
+    /// 系统的不支持。同 `miyu_config::package::fits_here`，这里照索引里的字比，认不得的写法当不是本机。
+    pub fn fits_here(&self, system: Option<&str>, target: Option<&str>) -> bool {
+        let system_fits = self.systems.is_empty()
+            || system.is_some_and(|here| self.systems.iter().any(|one| one == here));
+        let file_fits = self.files.is_empty()
+            || self
+                .files
+                .iter()
+                .any(|file| file.target.is_none() || file.target.as_deref() == target);
+        system_fits && file_fits
     }
 
     /// 依赖的包读成 [`Dependency`]，照写的先后（读索引时写法不对的整条已经丢掉了，这里读不成的跳过）。

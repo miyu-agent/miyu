@@ -352,6 +352,7 @@
       "packages.source": {"name": "ソフトウェアソースのアドレス", "description": "ここでパッケージを検索・ダウンロードします。既定は公式のソースです。別のアドレスでも公式の署名がある内容が必要です。"},
       "packages.mirrors": {"name": "ミラー", "description": "公式のソースにつながらない・遅いとき、先に順番に試します。内容は署名とハッシュで確かめるので、ミラーが書き換えることはできません。"},
       "packages.hold": {"name": "更新しないパッケージ", "description": "更新のときに飛ばすパッケージ（ID）。入っている版をそのまま使います。"},
+      "packages.other_systems": {"name": "他のシステム向けのパッケージ", "description": "このシステムに対応していないパッケージもソースの一覧に表示し、「このシステムには非対応」と示します。インストールはできません。"},
       "packages.sources.<id>.url": {"name": "ほかのソフトウェアソースのアドレス", "description": "インデックスを置いたフォルダー。公開鍵と一緒に書くとソースになり、信頼したことになります。システム設定に書きます。"},
       "packages.sources.<id>.key": {"name": "ほかのソフトウェアソースの公開鍵", "description": "インデックスに署名した Ed25519 公開鍵（base64）。検証できないインデックスは受け取りません。"},
       "models.catalog.url": {
@@ -766,6 +767,7 @@
     "package-problems/bad_prefix": "プレフィックスの書き方がパッケージ ID の形ではありません: {detail}",
     "package-problems/prefix_taken": "プレフィックス {detail} はほかのパッケージが使っています。こちらは数えません",
     "package-problems/bad_targets": "システムの書き方が正しくありません。使えるのは linux-x86_64、linux-aarch64、macos-aarch64、windows-x86_64 で、重複はできません: {detail}",
+    "package-problems/bad_systems": "システムの書き方が正しくありません。使えるのは linux、macos、windows で、重複はできず、targets のシステムはすべて書く必要があります: {detail}",
     "package-problems/bad_miyu": "{detail} は 2026.11.0 のような三つの数字のバージョンで書いてください",
     "package-problems/needs_newer_miyu": "このパッケージには Miyu {detail} 以上が必要です。先に Miyu を更新してください",
     "package-problems/page_missing": "{detail} に index.html がありません",
