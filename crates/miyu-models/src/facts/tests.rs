@@ -138,6 +138,7 @@ fn one_layer(system: &str) -> Resolved {
     let item_list = items();
     let system = parse(&item_list, Layer::System, system).expect("写法对");
     let layers = Layers {
+        package: None,
         system: Some(&system),
         ..Layers::default()
     };

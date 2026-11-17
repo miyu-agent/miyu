@@ -87,6 +87,8 @@
 
 包的「启用」：`{"origin": {"layer": "package"}, "value": true}`，来源 `package` 是说它不在哪一层配置里；`all` 的 `layers` 是 `[]`。
 
+软件包带的供应商（清单的 `[providers.<编号>]`）的几项：`{"origin": {"layer": "package", "package": "<包>"}, "value": …}`，在默认值之上、配置文件之下，不写配置文件；包卸了、关了就没有。人改它写进配置文件、盖住包给的（核心顺手写上 `providers.<编号>.package = "<包>"`）；配置文件里原来就有同编号、没写 `package` 的是人自己的供应商，包带的那一家整家不出现。包这一层变了推 `config.changed`，`via` 是 `package`。
+
 借来的：`{"origin": {"layer": "inherited", "from": "providers.deepseek.key"}, "value": null}`：哪一层都没写、照 `from` 那一项的值用（画成「已继承」）。现在只有 `net.search.deepseek.key`：没填的借模型那边官方 DeepSeek 供应商（地址没写或是 `api.deepseek.com`）的 key，`from` 是那一家的 `providers.<编号>.key`；中转站的不借，来源照旧 `default`。值不交 key。`config.set` 的回应、`config.changed` 推送里同样写；改了供应商的 key 不另推这一项，要画的照 `config.changed` 里有 `providers.` 的再读一次。
 
 **出错**：`unknown_config_key`。

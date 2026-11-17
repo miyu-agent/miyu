@@ -93,6 +93,7 @@ fn resolved() -> Resolved {
     let parsed = parse(&items, Layer::System, CONFIG).expect("写法对");
     assert!(parsed.problems.is_empty(), "{:?}", parsed.problems);
     let layers = Layers {
+        package: None,
         system: Some(&parsed),
         ..Layers::default()
     };

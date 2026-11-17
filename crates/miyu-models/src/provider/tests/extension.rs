@@ -18,6 +18,7 @@ fn values_with_installed(source: &str) -> Values {
     let parsed = parse(&items, Layer::System, source).expect("写法对");
     assert!(parsed.problems.is_empty(), "{:?}", parsed.problems);
     let layers = Layers {
+        package: None,
         system: Some(&parsed),
         ..Layers::default()
     };

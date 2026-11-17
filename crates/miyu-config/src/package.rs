@@ -28,6 +28,7 @@ mod look;
 mod mcp;
 mod need;
 mod program;
+mod provider;
 mod provider_key;
 mod reader;
 mod reserved;
@@ -58,6 +59,7 @@ pub use mcp::{
 };
 pub use need::Need;
 pub use program::{Check, Command, Pages, Process, Start};
+pub use provider::ProviderDecl;
 pub use provider_key::ProviderKey;
 pub use reserved::{RESERVED, reserved_id};
 pub use search::{SEARCH_SOURCE, SearchSource};
@@ -133,6 +135,8 @@ pub struct Manifest {
     pub search: Vec<SearchSource>,
     /// 提供的模型驱动（施工 MD-1，`[[driver]]`）：照写的先后，没有的是空的。只有扩展包能写，要声明 `model.driver`。
     pub drivers: Vec<DriverDecl>,
+    /// 自带的模型供应商（施工 PV-4，`[providers.<编号>]`）：照编号的先后，没有的是空的。扩展包、`bundle` 能写。
+    pub providers: Vec<ProviderDecl>,
     /// 要哪一家供应商的 key（施工 PK-1，`[provider_key]`）：没写的没有。只有扩展包能写，要声明 `provider.key`。
     pub provider_key: Option<ProviderKey>,
     /// 界面块（施工 X-15 上，`[[widget]]`）：照写的先后，没有的是空的。只有扩展包能写。
@@ -379,6 +383,10 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         None => Vec::new(),
     };
     driver::check(&drivers, capabilities)?;
+    let providers = match root.get("providers") {
+        Some(node) => provider::read(&reader, node, &drivers)?,
+        None => Vec::new(),
+    };
     let provider_key = provider_key::read(&reader, root.get("provider_key"), capabilities)?;
     let widgets = match root.get("widget") {
         Some(node) => widget::read(&reader, node)?,
@@ -425,6 +433,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         side,
         search,
         drivers,
+        providers,
         provider_key,
         widgets,
         guard,

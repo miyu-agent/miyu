@@ -138,16 +138,28 @@ program = "miyu-embed"
 | 种类 | 能写的表 |
 |---|---|
 | `ui` | `[package]`、`[command]`、`[ui]`、`[check]`、`[settings]`、`[depends]`、`[recommends]` |
-| `process` | `[package]`、`[command]`、`[process]`、`[check]`、`[settings]`、`[features]`、`[connection]`、`[depends]`、`[recommends]`、`[page]`、`[[mcp]]`、`[[slash]]`（施工 X-14 下）、`[[widget]]`（施工 X-15 上，`widgets.md`）、`[[side]]`（施工 Q-3，`models.md`「旁路请求」）、`[tray]`（施工 TR-2）、`[provider_key]`（施工 PK-1，`extensions.md`「配置」第 5 条）（施工 X-2） |
+| `process` | `[package]`、`[command]`、`[process]`、`[check]`、`[settings]`、`[features]`、`[connection]`、`[depends]`、`[recommends]`、`[page]`、`[[mcp]]`、`[[slash]]`（施工 X-14 下）、`[[widget]]`（施工 X-15 上，`widgets.md`）、`[[side]]`（施工 Q-3，`models.md`「旁路请求」）、`[tray]`（施工 TR-2）、`[provider_key]`（施工 PK-1，`extensions.md`「配置」第 5 条）、`[providers.<编号>]`（施工 PV-4，下面「自带的供应商」）（施工 X-2） |
 | `builtin` | `[package]`、`[features]`、`[depends]`、`[recommends]`、`[page]`、`[tray]`（施工 TR-2） |
 | `worker` | `[package]`、`[worker]`、`[depends]`、`[recommends]` |
 | `mascot` | `[package]`、`[mascot]`（施工 F-7）、`[depends]`、`[recommends]` |
 | `theme` | `[package]`、`[theme]`（施工 F-16；TH-1 起分 `[theme.tui]`、`[theme.web]`，见「外观包」）、`[depends]`、`[recommends]` |
-| `bundle` | `[package]`、`[command]`（施工 PK-1）、`[settings]`（施工 PS-1）、`[[mcp]]`、`[mascot]`（施工 X-2）、`[depends]`、`[recommends]`；只带技能、脚本的只有 `[package]`（施工 X-13 上） |
+| `bundle` | `[package]`、`[command]`（施工 PK-1）、`[settings]`（施工 PS-1）、`[[mcp]]`、`[mascot]`（施工 X-2）、`[providers.<编号>]`（施工 PV-4）、`[depends]`、`[recommends]`；只带技能、脚本的只有 `[package]`（施工 X-13 上） |
 
 施工 F-11 起，什么种类都能写 `[depends]`、`[recommends]`（照 pacman：依赖是包和包之间的事，不管种类）。
 
 施工 F-6 上加的两格（`package-pages.md`「清单多的几格」）：`[package] icon` 是 Lucide 的图标名，哪种包都能写；`[page] dir` 是软件后台页在包目录里的子目录，入口是里面的 `index.html`，只有扩展、内置包能写。
+
+**自带的供应商**（施工 PV-4，设计 66 第四节第 2 条，项目主人 2026-11-17 定：装上包，供应商列表就出现它，直接切换）：`[providers.<编号>]` 一张一家（`crates/miyu-config/src/package/provider.rs`，读成 `ProviderDecl`），格子同配置里的 `[providers.<编号>]`，只认 `name`（三种语言，同包的 `name`）、`driver`（必写：内置的三种，或者 `<包编号>/<驱动名>`、驱动名要在这份清单的 `[[driver]]` 里，包编号是不是自己由核心查）、`base_url`（只能写死的字）、`catalog`、`price_multiplier`、`local`、`cache`、`models`；`key` 不收（key 是人的）。编号照配置里供应商的写法（小写字母开头，小写字母、数字、`-`、`_`，最多 32 个）。写错的报 `bad_provider`，不认的格 `unknown_key`。别的格的值照配置清单读，读不过的那几格不收、`miyu check` 警告。装着、开着的进配置的包这一层（`config.md`「包这一层」），不写配置文件。
+
+```toml
+[providers.agy]
+name = { en = "Antigravity", zh = "Antigravity" }
+driver = "antigravity/antigravity"
+local = true
+
+[providers.agy.models."gemini-3-pro"]
+window = 1000000
+```
 
 施工 TR-2 加的一张（`package-pages.md`「清单多的几格」第 4 条）：`[tray] name` 在托盘菜单（`miyu-applet`）里挂一行，点了用浏览器打开这个包自己的后台页；要先有 `[page]`。
 

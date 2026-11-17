@@ -80,6 +80,14 @@ miyu_config::settings! {
             applies: next_turn,
             ui: { page: "models", group: "providers", control: select },
         },
+        /// 盖在哪个软件包带的这一家上（施工 PV-4）：写了的，这一段写的几项盖在那个包带的同一编号的供应商上；没写的是人自己的
+        /// 供应商，包带的同编号那一家不出现。人经 `config.set` 改包带的那一家时核心顺手写上；那个包卸了、关了的，这一段都不算。
+        package: Option<String> = none {
+            kind: name,
+            layers: [System],
+            applies: now,
+            ui: { page: "models", group: "providers", control: text, hidden: true },
+        },
     }
 }
 

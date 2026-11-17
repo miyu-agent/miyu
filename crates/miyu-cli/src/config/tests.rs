@@ -12,6 +12,8 @@ use crate::ask::Format;
 use crate::diagnostic::Level;
 use crate::language::Language;
 
+mod package_origin;
+
 /// 假的家目录：绝对路径，三个平台都是（`/home/me` 在 Windows 上不算绝对路径）。
 fn home() -> PathBuf {
     std::env::temp_dir().join("me")

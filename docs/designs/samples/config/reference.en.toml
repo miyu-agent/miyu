@@ -321,6 +321,10 @@ default = "full"
 # Allowed: text of at most 64 characters. Only in the system config. Takes effect immediately.
 # name =
 
+# Package: Which package this provider comes from. When set, the entries here override the provider that package brings; without it this is your own provider and the package's one with the same id is not added. Written automatically when you change a provider a package brings.
+# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Takes effect immediately.
+# package =
+
 # Price multiplier: Prices of this provider are multiplied by it. 1 if left out. A multiplier on the model wins.
 # Allowed: a number from 0 to 1000. Only in the system config. Takes effect next turn.
 # price_multiplier =

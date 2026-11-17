@@ -103,6 +103,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `placeholder_tools` | 工具名的列表 | 档案的，没有是空的 | 工具面里缺这几件时补同名的占位声明（第八条第 2 条） |
 | `local` | 布尔 | 地址在本机（`127.0.0.1`、`localhost`、`::1`）的，或者档案标了 `local` 的，是 `true` | 本机的模型服务（Ollama、LM Studio 这类）：价格默认是 0，当免费（第二条第 12 条）。放在局域网别的机器上的，要当免费就写 `true` |
 | `models` | 表：模型名 → 手写的资料 | 空 | 见下 |
+| `package` | 包的编号（施工 PV-4） | 没有 | 这一段盖在哪个软件包带的同编号供应商上（`config.md`「包这一层」）：写了的，这里的几项盖在包给的上面，那个包卸了、关了的整段不算；没写的是人自己的供应商，包带的同编号那一家不出现。`config.set` 改包带的那一家时核心顺手写上，设置页不画 |
 
 `compat` 里的六格，一格对 `Compat` 的一格（`drivers/openai-chat.md`「开关」）：
 
@@ -246,6 +247,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `from` | 另带 | 例子 |
 |---|---|---|
 | `config` | `file` 哪份配置（数据根里的相对路径）、`line` 第几行、`layer` 是哪一层（`system`，照 `config.get` 说的来源；模型这一块只能写在这一层，8-6，不会出现别的值，施工 8-7（补）） | `{"from":"config","file":"config.toml","line":12,"layer":"system"}` |
+| `package` | `package` 哪个软件包带的（施工 PV-4：包自带的供应商写的资料，同手写的那一层；价格的出处写 `package:<包>`） | `{"from":"package","package":"antigravity"}` |
 | `learned` | `at` 什么时候记下的 | `{"from":"learned","at":"2026-10-01T08:12:30.000Z"}` |
 | `provider` | `fetched` 列表什么时候拉的 | `{"from":"provider","fetched":"2026-10-01T03:00:00.000Z"}` |
 | `catalog` | `entry` 目录里的哪一个、`layer` 第几层对上的、`fetched` 目录什么时候拉的 | `{"from":"catalog","entry":"deepseek/deepseek-flash","layer":3,"fetched":"2026-09-27"}` |

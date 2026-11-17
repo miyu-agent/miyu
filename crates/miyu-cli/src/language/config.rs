@@ -98,7 +98,7 @@ impl Language {
         })
     }
 
-    /// 一层的名字（`explain`）：`default`、`system`、`project`、`env`。
+    /// 一层的名字（`explain`）：`default`、`system`、`project`、`env`、`package`（施工 PV-4：软件包带的）。
     pub(crate) fn layer_name(&self, layer: &str) -> &'static str {
         match (self, layer) {
             (Language::Chinese, "system") => "系统配置",
@@ -106,11 +106,13 @@ impl Language {
             (Language::Chinese, "env") => "环境变量",
             // 借来的（施工 NS-1）：没写、照别处的值用的，例如网络搜索借模型那边 DeepSeek 供应商的 key。
             (Language::Chinese, "inherited") => "已继承",
+            (Language::Chinese, "package") => "软件包",
             (Language::Chinese, _) => "默认值",
             (Language::English, "system") => "system config",
             (Language::English, "project") => "project config",
             (Language::English, "env") => "environment",
             (Language::English, "inherited") => "inherited",
+            (Language::English, "package") => "package",
             (Language::English, _) => "default",
         }
     }

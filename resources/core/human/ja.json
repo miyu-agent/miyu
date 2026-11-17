@@ -273,6 +273,7 @@
         "name": "ローカルサービス",
         "description": "このマシンで動くモデルのサービスで、価格は 0 として数えます。書かなければアドレスで決まります。"
       },
+      "providers.<id>.package": {"name": "提供元パッケージ", "description": "このプロバイダーを追加したパッケージ。書いてあると、ここの項目がそのパッケージのプロバイダーを上書きします。書いていなければ自分のプロバイダーで、同じ ID のパッケージのものは追加されません。パッケージのプロバイダーを変更すると自動で書かれます。"},
       "providers.<id>.cache": {
         "name": "キャッシュの種類",
         "description": "このプロバイダーのキャッシュの課金のしかた。いまは分け方を書いていないプールの分け方を決めるだけです。書かなければドライバーの既定に従います。",
@@ -754,6 +755,10 @@
     "package-problems/driver_unapproved": "プロバイダー {provider} のモデルドライバー {driver}：そのパッケージは「モデルドライバーを提供する」がまだ承認されていません。承認するまでこのプロバイダーは使えません",
     "package-problems/driver_key_missing": "プロバイダー {provider} のモデルドライバー {driver} にはキーが要りますが、このプロバイダーには設定されていません",
     "package-problems/driver_key_unused": "プロバイダー {provider} のモデルドライバー {driver} はキーを使いません。設定されたキーは渡しません",
+    "package-problems/provider_shadowed": "パッケージ {package} のプロバイダー {provider} は追加されていません。設定にすでに自分の {provider} があります。パッケージのものを使うには設定の [providers.{provider}] を削除してください",
+    "package-problems/provider_taken": "パッケージ {package} のプロバイダー {provider} は追加されていません。パッケージ {by} が同じ ID のものをすでに追加しています",
+    "package-problems/provider_foreign": "パッケージ {package} のプロバイダー {provider} は追加されていません。ドライバーが別のパッケージのものです",
+    "package-problems/provider_invalid": "パッケージ {package} のプロバイダー {provider} に正しくない項目があり、無視しました: {keys}",
     "package-problems/bad_after": "ツール実行後の通知の書き方が正しくありません: {detail}",
     "package-problems/bad_side": "サイドリクエストの書き方が正しくありません: {detail}",
     "package-problems/bad_tray": "トレイ項目の書き方が正しくありません: {detail}",
@@ -768,6 +773,7 @@
     "package-problems/prefix_taken": "プレフィックス {detail} はほかのパッケージが使っています。こちらは数えません",
     "package-problems/bad_targets": "システムの書き方が正しくありません。使えるのは linux-x86_64、linux-aarch64、macos-aarch64、windows-x86_64 で、重複はできません: {detail}",
     "package-problems/bad_systems": "システムの書き方が正しくありません。使えるのは linux、macos、windows で、重複はできず、targets のシステムはすべて書く必要があります: {detail}",
+    "package-problems/bad_provider": "同梱のプロバイダーの書き方が正しくありません：{detail}",
     "package-problems/bad_miyu": "{detail} は 2026.11.0 のような三つの数字のバージョンで書いてください",
     "package-problems/needs_newer_miyu": "このパッケージには Miyu {detail} 以上が必要です。先に Miyu を更新してください",
     "package-problems/page_missing": "{detail} に index.html がありません",

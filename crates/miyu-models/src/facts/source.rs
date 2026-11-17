@@ -35,6 +35,11 @@ pub enum Source {
         /// 目录什么时候拉的：`meta` 里的原样。
         fetched: String,
     },
+    /// 软件包带的（施工 PV-4，配置的包这一层）：哪个包。
+    Package {
+        /// 包的编号。
+        package: String,
+    },
     /// 本机的服务：价格当 0。
     Local,
     /// 驱动的保守默认。
@@ -65,6 +70,7 @@ impl Source {
                 layer,
                 fetched,
             } => json!({"from": "catalog", "entry": entry, "layer": layer, "fetched": fetched}),
+            Source::Package { package } => json!({"from": "package", "package": package}),
             Source::Local => json!({"from": "local"}),
             Source::Default => json!({"from": "default"}),
         };

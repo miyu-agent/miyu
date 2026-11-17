@@ -335,13 +335,15 @@ miyu_config::settings! {
 
 | 格 | 是什么 |
 |---|---|
-| `layer` | `default` 默认值、`system` 系统配置、`project` 项目配置、`env` 环境变量（只有带 `env` 的项有）、`package` 包的「启用」（施工 UX-1）、`inherited` 借来的（施工 NS-1：哪儿都没写、照别处的值用的，现在只有 `net.search.deepseek.key` 借官方 DeepSeek 供应商的 key，`miyu_models::provider_key::INHERITED` 登记；值照旧是 `null`，不交 key） |
+| `layer` | `default` 默认值、`system` 系统配置、`project` 项目配置、`env` 环境变量（只有带 `env` 的项有）、`package` 包的「启用」（施工 UX-1）和软件包带的供应商的几项（施工 PV-4，另带 `package`：哪个包）、`inherited` 借来的（施工 NS-1：哪儿都没写、照别处的值用的，现在只有 `net.search.deepseek.key` 借官方 DeepSeek 供应商的 key，`miyu_models::provider_key::INHERITED` 登记；值照旧是 `null`，不交 key） |
 | `from` | 借的是哪一项，例如 `providers.deepseek.key`，只有 `inherited` 有 |
 | `file` | 哪个文件。数据根里的写成相对数据根的路径。项目配置写成人看的那种路径，家目录下的写成 `~/…`。默认值、环境变量没有 |
 | `line` | 第几行，从 1 数，是这一项的键所在的那一行。默认值、环境变量没有 |
 | `name` | 环境变量的名字，只有 `env` 有 |
 
-从下往上，上面的盖掉下面的：默认值、系统配置、项目配置，最后是环境变量（只对带 `env` 的项、只管这一次启动）。人格、预设、会话里临时改的三层不在 M8（「还没有的」）。
+从下往上，上面的盖掉下面的：默认值、包这一层（施工 PV-4）、系统配置、项目配置，最后是环境变量（只对带 `env` 的项、只管这一次启动）。人格、预设、会话里临时改的三层不在 M8（「还没有的」）。
+
+**包这一层**（施工 PV-4，设计 66 第四节第 2 条，项目主人 2026-11-17 定；`miyu_config::merge::Packaged`，端点的 `config/provided.rs`、`packages/providers.rs`）：装着、开着的包清单里 `[providers.<编号>]` 声明的供应商，照配置清单读（名字照系统配置里定了的界面语言挑，没定、`auto` 的照核心环境的 `LC_ALL`、`LC_MESSAGES`、`LANG`（`zh`、`ja` 开头的照它，别的是英文）），不写配置文件。核心起来时、装卸以后、开关以后照 `Core::packages_of` 重算，最终值变了的推 `config.changed`（`layer: system`、`via: package`）。和配置文件对：配置文件里没有 `providers.<编号>.*` 的照包给的；有、写着 `providers.<编号>.package = "<包>"` 的，写的几项盖在包给的上面（`config.set` 改包带的那一家时顺手写上它）；有、没写 `package` 或写的是别的包的，是人自己的供应商，包带的整家不出现、`miyu check` 警告 `provider_shadowed`。写着 `package = "<包>"`、那个包这时不带这一家的，那一段整段不算（`Packaged::masked`，`explain` 照列、不生效）。两个包同编号先到先得（`provider_taken`），驱动指别的包的不收（`provider_foreign`），照清单读不过的几格不收（`provider_invalid`），都是警告。
 
 #### 报错（8-2）
 
@@ -1301,6 +1303,10 @@ default = "full"
 # 显示名：界面上给人看的名字。编号只用来引用模型；不写的照资料里那一家的名字，再没有的照编号。
 # 能写：最多 64 个字的文字。只能写在系统配置里。立即生效。
 # name =
+
+# 所属软件包：这一家是哪个软件包带的。写了的，这里的几项盖在那个包带的供应商上；没写的是你自己的供应商，包带的同编号那一家不出现。改包带的供应商时自动写上。
+# 能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置里。立即生效。
+# package =
 
 # 倍率：这家的价格照它乘，不写是 1。模型上写的盖过它。
 # 能写：0 到 1000 之间的数。只能写在系统配置里。下一轮生效。

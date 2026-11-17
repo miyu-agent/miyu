@@ -273,6 +273,7 @@
         "name": "本地服务",
         "description": "本机跑的模型服务，价格当 0。不写的照地址：在本机的是。"
       },
+      "providers.<id>.package": {"name": "所属软件包", "description": "这一家是哪个软件包带的。写了的，这里的几项盖在那个包带的供应商上；没写的是你自己的供应商，包带的同编号那一家不出现。改包带的供应商时自动写上。"},
       "providers.<id>.cache": {
         "name": "缓存类别",
         "description": "这家的缓存怎么算钱。现在只用来定池不写分法时怎么分。不写照驱动的默认。",
@@ -754,6 +755,10 @@
     "package-problems/driver_unapproved": "供应商 {provider} 用的模型驱动 {driver}：那个包还没批「提供模型驱动」，这一家在批了以前用不了",
     "package-problems/driver_key_missing": "供应商 {provider} 用的模型驱动 {driver} 要 key，这一家没配",
     "package-problems/driver_key_unused": "供应商 {provider} 用的模型驱动 {driver} 不要 key：配了的不交给它",
+    "package-problems/provider_shadowed": "软件包 {package} 带的供应商 {provider} 没有加上：配置里已经有你自己的 {provider}。要用包带的，删掉配置里的 [providers.{provider}]",
+    "package-problems/provider_taken": "软件包 {package} 带的供应商 {provider} 没有加上：软件包 {by} 已经带了同编号的",
+    "package-problems/provider_foreign": "软件包 {package} 带的供应商 {provider} 没有加上：驱动是别的软件包的",
+    "package-problems/provider_invalid": "软件包 {package} 带的供应商 {provider} 有几项不对，已忽略：{keys}",
     "package-problems/bad_after": "工具调用后通知的写法不对：{detail}",
     "package-problems/bad_side": "旁路请求的写法不对：{detail}",
     "package-problems/bad_tray": "托盘入口的写法不对：{detail}",
@@ -768,6 +773,7 @@
     "package-problems/prefix_taken": "前缀 {detail} 已经被别的包占了，这一份不算",
     "package-problems/bad_targets": "系统的写法不对，只认 linux-x86_64、linux-aarch64、macos-aarch64、windows-x86_64，不能重复：{detail}",
     "package-problems/bad_systems": "系统的写法不对，只认 linux、macos、windows，不能重复，targets 里每一种的系统都要写上：{detail}",
+    "package-problems/bad_provider": "自带的供应商写法不对：{detail}",
     "package-problems/bad_miyu": "{detail} 要写成三段数字的版本，例如 2026.11.0",
     "package-problems/needs_newer_miyu": "这个包要 Miyu {detail} 以上，先更新 Miyu",
     "package-problems/page_missing": "{detail} 里没有 index.html",

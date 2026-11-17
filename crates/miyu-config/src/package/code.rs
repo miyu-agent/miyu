@@ -143,6 +143,8 @@ pub enum Code {
     BadTargets,
     /// `[package] systems` 里有不认识的、重复的系统，或者 `targets` 里有一种的系统不在里面（施工 PL-2）。
     BadSystems,
+    /// `[providers.<编号>]` 写错了（施工 PV-4）：编号不合写法、驱动不是内置的也不是这个包声明的、地址不是字。
+    BadProvider,
     /// `[package] miyu` 不是三段数字的版本（施工 X-31）。
     BadMiyu,
     /// 要比这一版新的 Miyu（施工 X-31）：`detail` 是清单写的版本。读清单时先比它，比不过的不再往下读。
@@ -222,13 +224,14 @@ impl Code {
             Code::PrefixTaken => "prefix_taken",
             Code::BadTargets => "bad_targets",
             Code::BadSystems => "bad_systems",
+            Code::BadProvider => "bad_provider",
             Code::BadMiyu => "bad_miyu",
             Code::NeedsNewerMiyu => "needs_newer_miyu",
         }
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 69] = [
+    pub const ALL: [Code; 70] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -298,5 +301,6 @@ impl Code {
         Code::PrefixTaken,
         Code::BadTargets,
         Code::BadSystems,
+        Code::BadProvider,
     ];
 }

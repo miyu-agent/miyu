@@ -338,7 +338,36 @@ access = ["execute"]
 | `images` | 看得了图的写 `true`（默认 `false`） |
 | `hosted` | 这个驱动会让供应商自己跑的工具名，例如 `["search_web", "read_url_content"]`（默认空的）：装包时照它给主人看「会让供应商自己跑：…」。每个 1 到 64 个字节、不带控制字符、不重。交上来的名字不在里面的，Miyu 照收、照显示，运行日志里记一行警告；见 [写扩展](extensions.md#供应商自己跑的工具) |
 
-主人在供应商的配置里写 `driver = "<包的编号>/<驱动名>"`才用它；模型档案、npm 表、默认永远是内置的几种，装上你的包也接不走主人原来配好的供应商。包没装、没批、驱动名写错的，`miyu check` 报出来，那一家供应商当用不了，不会退回内置驱动。Miyu 怎么调你的驱动（`driver.call`、`driver.delta`、`driver.cancel`）见 [协议参考](../reference/extensions.md#drivercalldriverdeltadrivercancel)。
+主人在供应商的配置里写 `driver = "<包的编号>/<驱动名>"`，或者你的包用 `[providers.<编号>]` 自带一家指向它（下一节），才用它；模型档案、npm 表、默认永远是内置的几种，装上你的包也接不走主人原来配好的供应商。包没装、没批、驱动名写错的，`miyu check` 报出来，那一家供应商当用不了，不会退回内置驱动。Miyu 怎么调你的驱动（`driver.call`、`driver.delta`、`driver.cancel`）见 [协议参考](../reference/extensions.md#drivercalldriverdeltadrivercancel)。
+
+## `[providers.<编号>]`
+
+带一家模型供应商，一张一家：装上、开着的时候它出现在主人的供应商列表里，主人直接切到它的模型（`/model`、默认模型），不用自己抄配置。卸掉、关掉就没有。扩展包和只带脚本、技能的包能写。
+
+```toml
+[providers.agy]                                     # 编号：小写字母开头，小写字母、数字、-、_，最多 32 个；模型写成 agy/<模型>
+name = { en = "Antigravity", zh = "Antigravity" }   # 可以不写：照目录、编号
+driver = "antigravity/antigravity"                  # 必写：这个包 [[driver]] 里的一种（<包的编号>/<驱动名>），或者内置的 openai-chat、anthropic、openai-responses
+local = true                                        # 可以不写：价格当 0
+
+[providers.agy.models."gemini-3-pro"]              # 可以不写：模型手写的资料，同配置里的
+window = 1000000
+```
+
+| 格 | 说明 |
+|---|---|
+| `name` | 名字，三种语言，照主人的界面语言挑；不写的照目录、编号 |
+| `driver` | 必写。你自己的扩展驱动写 `<包的编号>/<驱动名>`（驱动名要在这份清单的 `[[driver]]` 里）；也可以是内置的 `openai-chat`、`anthropic`、`openai-responses`。指别的包的驱动的不收 |
+| `base_url` | 地址，只能写死的字（不能写 `{ env = … }`）；你的驱动自己连的可以不写 |
+| `catalog` | 对应 models.dev 里的哪一家，同配置里的 |
+| `price_multiplier` | 价格的倍率，同配置里的 |
+| `local` | 本机的服务，价格当 0 |
+| `cache` | 缓存类别：`contract`、`best_effort`、`per_request`，同配置里的 |
+| `models` | 模型手写的资料，`[providers.<编号>.models."<模型>"]`，格子同配置里的（`window`、`max_output`、`inputs`、`tools`、`reasoning`、`effort`、`price` 这些）。模型列表照你驱动的 `driver.models` 拉，不用在这里列全 |
+
+`key` 不收：key 是主人的，主人在设置里配（你的驱动 `key = "required"` 的，主人没配 `miyu check` 报出来）。别的格写错的那几格不收，`miyu check` 提示。
+
+主人改这一家的设置写在他自己的配置里、盖住你给的（Miyu 顺手写上 `package = "<你的包>"`）。主人配置里原来就有同编号、不是盖在你这一家上的，主人的优先，你的这一家不出现，`miyu check` 提示；所以编号挑一个不容易撞的（例如带上你的包名）。两个包带了同一个编号，先装的那个得。
 
 ## `[provider_key]`
 

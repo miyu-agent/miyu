@@ -273,6 +273,7 @@
         "name": "Local service",
         "description": "A model service on this machine, counted as free. Left out, it follows the address: on this machine means yes."
       },
+      "providers.<id>.package": {"name": "Package", "description": "Which package this provider comes from. When set, the entries here override the provider that package brings; without it this is your own provider and the package's one with the same id is not added. Written automatically when you change a provider a package brings."},
       "providers.<id>.cache": {
         "name": "Cache class",
         "description": "How this provider bills its cache. For now it only decides how a pool without a strategy splits. Left out, it follows the driver.",
@@ -758,6 +759,10 @@
     "package-problems/driver_unapproved": "Provider {provider} uses model driver {driver}, but that package hasn't been approved to provide model drivers; this provider can't be used until it is",
     "package-problems/driver_key_missing": "Provider {provider} uses model driver {driver}, which needs a key, but this provider has none",
     "package-problems/driver_key_unused": "Provider {provider} uses model driver {driver}, which takes no key; the configured key isn't handed to it",
+    "package-problems/provider_shadowed": "Provider {provider} from package {package} isn't added: your config already has its own {provider}. Remove [providers.{provider}] from the config to use the package's",
+    "package-problems/provider_taken": "Provider {provider} from package {package} isn't added: package {by} already brings one with the same id",
+    "package-problems/provider_foreign": "Provider {provider} from package {package} isn't added: its driver belongs to another package",
+    "package-problems/provider_invalid": "Provider {provider} from package {package} has invalid entries, ignored: {keys}",
     "package-problems/bad_after": "Badly written tool.after notice: {detail}",
     "package-problems/bad_side": "Badly written side request: {detail}",
     "package-problems/bad_tray": "Badly written tray entry: {detail}",
@@ -772,6 +777,7 @@
     "package-problems/prefix_taken": "The prefix {detail} is taken by another package; this one does not count",
     "package-problems/bad_targets": "Unknown or repeated target, known are linux-x86_64, linux-aarch64, macos-aarch64, windows-x86_64: {detail}",
     "package-problems/bad_systems": "Unknown or repeated system, known are linux, macos, windows, and every system in targets must be listed: {detail}",
+    "package-problems/bad_provider": "A bundled provider is written wrong: {detail}",
     "package-problems/bad_miyu": "{detail} must be a version of three numbers, such as 2026.11.0",
     "package-problems/needs_newer_miyu": "This package needs Miyu {detail} or newer: update Miyu first",
     "package-problems/page_missing": "{detail} has no index.html",

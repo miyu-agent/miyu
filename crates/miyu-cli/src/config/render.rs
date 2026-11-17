@@ -156,8 +156,10 @@ impl Row {
         let name = origin["layer"].as_str().unwrap_or("default");
         let used = layer["used"].as_bool().unwrap_or(false);
         let env = name == "env";
-        let layer_name = match (env, origin["name"].as_str()) {
-            (true, Some(variable)) => format!("{} {variable}", language.layer_name(name)),
+        // 环境变量带名字；软件包带的（施工 PV-4）带包的编号。
+        let layer_name = match (env, origin["name"].as_str(), origin["package"].as_str()) {
+            (true, Some(variable), _) => format!("{} {variable}", language.layer_name(name)),
+            (false, _, Some(package)) => format!("{} {package}", language.layer_name(name)),
             _ => language.layer_name(name).to_string(),
         };
         let place = match (origin["file"].as_str(), origin["line"].as_u64()) {

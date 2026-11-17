@@ -1,7 +1,8 @@
 //! 分层合出最终值和来源（`docs/blueprint/config.md`「最终值和来源」、「怎么走」第二条第 5 条、第三条第 4 条，G2、G3，
 //! 施工 8-2）。
 //!
-//! 从下往上，上面的盖掉下面的：默认值、系统配置、项目配置，最后是环境变量（只对带 `env` 的项）。
+//! 从下往上，上面的盖掉下面的：默认值、包这一层（施工 PV-4：装着、开着的包带来的，[`Packaged`]）、系统配置、项目配置，最后是
+//! 环境变量（只对带 `env` 的项）。系统配置里由用的一方点名不算的键（[`Packaged::masked`]）不合。
 //!
 //! - 项目配置信任过才算；算了也只认收紧的：和下面几层合出来的比，宽的不算、报 `not_tightening`，一样的收下。还没问过
 //!   的报一条 `untrusted_project`（警告），选了不信任的不报。
@@ -10,7 +11,7 @@
 //! - 键里有人起的名字那一段的项（施工 8-6）：哪几层写了哪几个真的键，每个各合各的；没有默认值的项哪一层都没写，最终值里
 //!   就没有它。
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::item::{Item, Layer};
 use crate::parse::Parsed;
@@ -31,15 +32,18 @@ pub enum Origin {
     },
     /// 这一次启动的环境变量。
     Env(&'static str),
+    /// 包这一层（施工 PV-4）：哪个包带来的。
+    Package(String),
 }
 
 impl Origin {
-    /// 协议上 `layer` 的写法：`default`、`system`、`project`、`env`。
+    /// 协议上 `layer` 的写法：`default`、`system`、`project`、`env`、`package`。
     pub fn layer_name(&self) -> &'static str {
         match self {
             Origin::Default => "default",
             Origin::File { layer, .. } => layer.as_str(),
             Origin::Env(_) => "env",
+            Origin::Package(_) => "package",
         }
     }
 }
@@ -58,10 +62,46 @@ pub enum Trust {
 /// 要合的几层：没有的那一层是空的。
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Layers<'a> {
+    /// 包这一层（施工 PV-4）。
+    pub package: Option<&'a Packaged>,
     /// 系统配置。
     pub system: Option<&'a Parsed>,
     /// 项目配置，和它信不信任。
     pub project: Option<(&'a Parsed, Trust)>,
+}
+
+/// 包这一层（施工 PV-4，`docs/blueprint/config.md`「最终值和来源」）：装着、开着的包带来的项，在默认值之上、系统配置之下。哪个包
+/// 带什么、和系统配置怎么对由用的一方算（核心的 `config/provided.rs`），这里只照它合。
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Packaged {
+    /// 包带来的项：照配置清单读成的样子（行号没有用）。
+    pub parsed: Parsed,
+    /// 真的键到带来它的包。
+    pub owners: BTreeMap<String, String>,
+    /// 系统配置里不合的真的键：写着、照旧列得出（[`explain`]），不算数。
+    pub masked: BTreeSet<String>,
+}
+
+impl Packaged {
+    /// 真的键 `key` 包这一层给的值和来源。
+    fn get(&self, key: &str) -> Option<(Value, Origin)> {
+        let entry = self.parsed.entries.get(key).filter(|entry| entry.counts)?;
+        let package = self.owners.get(key)?;
+        Some((entry.value.clone(), Origin::Package(package.clone())))
+    }
+}
+
+impl Layers<'_> {
+    /// 系统配置里算数的那一项：写了、能写在这一层、没被包这一层点名不合。
+    fn system_entry(&self, key: &str) -> Option<&crate::parse::Entry> {
+        if self
+            .package
+            .is_some_and(|package| package.masked.contains(key))
+        {
+            return None;
+        }
+        self.system?.entries.get(key).filter(|entry| entry.counts)
+    }
 }
 
 /// 合出来的最终值。
@@ -157,7 +197,16 @@ pub fn merge(items: &[Item], layers: &Layers, env: &dyn Fn(&str) -> Option<Strin
 
 /// 要合的每一个真的键和它是清单里的哪一项：写死的键一项一个；键里有人起的名字的，哪一层写了哪个就是哪个（施工 8-6）。
 fn concrete<'a>(items: &'a [Item], layers: &Layers) -> Vec<(&'a Item, String)> {
-    let files = [layers.system, layers.project.map(|(parsed, _)| parsed)];
+    let files = [
+        layers.system,
+        layers.project.map(|(parsed, _)| parsed),
+        layers.package.map(|package| &package.parsed),
+    ];
+    let masked = |key: &String| {
+        layers
+            .package
+            .is_some_and(|package| package.masked.contains(key))
+    };
     let mut keys = Vec::new();
     for item in items {
         if !item.is_pattern() {
@@ -168,7 +217,7 @@ fn concrete<'a>(items: &'a [Item], layers: &Layers) -> Vec<(&'a Item, String)> {
             .iter()
             .flatten()
             .flat_map(|parsed| parsed.entries.iter())
-            .filter(|(_, entry)| entry.item == item.key)
+            .filter(|(key, entry)| entry.item == item.key && !masked(key))
             .map(|(key, _)| key)
             .collect();
         keys.extend(written.into_iter().map(|key| (item, key.clone())));
@@ -183,17 +232,13 @@ pub fn below(item: &Item, key: &str, layers: &Layers, layer: Layer) -> Option<(V
         .default
         .clone()
         .map(|default| (default, Origin::Default));
-    let files = [(Layer::System, layers.system)];
-    for (at, parsed) in files {
-        if at >= layer {
-            break;
-        }
-        if let Some(entry) = parsed
-            .and_then(|parsed| parsed.entries.get(key))
-            .filter(|entry| entry.counts)
-        {
-            top = Some(file(at, entry));
-        }
+    if let Some(packaged) = layers.package.and_then(|package| package.get(key)) {
+        top = Some(packaged);
+    }
+    if layer > Layer::System
+        && let Some(entry) = layers.system_entry(key)
+    {
+        top = Some(file(Layer::System, entry));
     }
     top
 }
@@ -252,6 +297,14 @@ pub fn explain(item: &Item, key: &str, layers: &Layers, resolved: &Resolved) -> 
             origin,
             value: entry.value.clone(),
             problem,
+        });
+    }
+    if let Some((value, origin)) = layers.package.and_then(|package| package.get(key)) {
+        written.push(Written {
+            used: used.as_ref() == Some(&origin),
+            origin,
+            value,
+            problem: None,
         });
     }
     if let Some(default) = &item.default {

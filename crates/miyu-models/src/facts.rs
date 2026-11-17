@@ -385,7 +385,7 @@ impl Written<'_> {
         }
     }
 
-    /// 照段落接成真的键，取值和来源。来源只认写在文件里的（这几项没有默认值，也不由环境变量压过）。
+    /// 照段落接成真的键，取值和来源。来源只认写在文件里的、软件包带的（施工 PV-4；这几项没有默认值，也不由环境变量压过）。
     fn at(&self, segments: &[&str]) -> Option<(&Value, Source)> {
         let (value, origin) = self.resolved.get(&key::join(segments))?;
         match origin {
@@ -394,6 +394,12 @@ impl Written<'_> {
                 Source::Config {
                     layer: *layer,
                     line: *line,
+                },
+            )),
+            Origin::Package(package) => Some((
+                value,
+                Source::Package {
+                    package: package.clone(),
                 },
             )),
             Origin::Default | Origin::Env(_) => None,

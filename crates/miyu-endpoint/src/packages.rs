@@ -40,6 +40,7 @@ pub(crate) mod own;
 pub(crate) mod port;
 pub(crate) mod preview;
 pub(crate) mod progress;
+pub(crate) mod providers;
 mod remove;
 mod services;
 pub mod settings_left;

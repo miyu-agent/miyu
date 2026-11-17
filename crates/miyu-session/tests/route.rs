@@ -97,6 +97,7 @@ fn an_old_keys_list_is_not_read() {
         .collect();
     assert_eq!(found, [(Code::UnknownKey, Some("providers.a.keys"))]);
     let layers = Layers {
+        package: None,
         system: Some(&parsed),
         ..Layers::default()
     };

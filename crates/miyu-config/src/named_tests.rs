@@ -174,6 +174,7 @@ fn layers_merge_per_real_key_and_no_default_means_absent() {
     );
     let system = parse(&items(), Layer::System, &written).expect("写法对");
     let layers = Layers {
+        package: None,
         system: Some(&system),
         project: None,
     };
@@ -235,6 +236,7 @@ fn references_in_a_list_are_each_checked_and_listed_as_used() {
         ]
     );
     let layers = Layers {
+        package: None,
         system: Some(&parsed),
         ..Layers::default()
     };

@@ -65,6 +65,7 @@ pub fn resolved_with(source: &str, more: &str) -> Resolved {
     let parsed = parse(&items(), Layer::System, &text).expect("写法对");
     assert!(parsed.problems.is_empty(), "{:?}", parsed.problems);
     let layers = Layers {
+        package: None,
         system: Some(&parsed),
         ..Layers::default()
     };
@@ -84,6 +85,7 @@ pub fn configs_with_unknown_drivers(source: &str, secrets: &[(Reference, &str)])
         parsed.problems
     );
     let layers = Layers {
+        package: None,
         system: Some(&parsed),
         ..Layers::default()
     };

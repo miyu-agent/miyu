@@ -19,11 +19,13 @@ pub(super) fn origin_of(
         .unwrap_or_else(|| self::origin(origin, shown))
 }
 
-/// 来源：`{"file","layer","line"}`、`{"layer":"env","name"}`、`{"layer":"default"}`。文件照 `shown` 找这一层的写法。
+/// 来源：`{"file","layer","line"}`、`{"layer":"env","name"}`、`{"layer":"default"}`、`{"layer":"package","package"}`（施工 PV-4：
+/// 软件包带的）。文件照 `shown` 找这一层的写法。
 pub(super) fn origin(origin: &Origin, shown: &dyn Fn(Layer) -> Option<String>) -> Value {
     match origin {
         Origin::Default => json!({"layer": "default"}),
         Origin::Env(name) => json!({"layer": "env", "name": name}),
+        Origin::Package(package) => json!({"layer": "package", "package": package}),
         Origin::File { layer, line } => {
             let mut map = Map::new();
             if let Some(file) = shown(*layer) {

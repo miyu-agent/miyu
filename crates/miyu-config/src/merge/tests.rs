@@ -52,6 +52,7 @@ fn a_written_value_wins_and_says_where_it_came_from() {
         "[ui]\nlanguage = \"zh\"\n[log]\nlevel = \"debug\"\n",
     );
     let layers = Layers {
+        package: None,
         system: Some(&system),
         project: None,
     };
@@ -90,6 +91,7 @@ fn nothing_written_is_every_default() {
 fn an_environment_variable_wins_when_understood() {
     let system = read(Layer::System, "log.level = \"info\"\n");
     let layers = Layers {
+        package: None,
         system: Some(&system),
         ..Layers::default()
     };
@@ -125,6 +127,7 @@ fn a_broken_item_falls_back_to_the_default_and_the_rest_stays() {
     );
     assert_eq!(system.problems.len(), 1);
     let layers = Layers {
+        package: None,
         system: Some(&system),
         project: None,
     };
@@ -160,6 +163,7 @@ fn a_trusted_project_only_tightens() {
     let resolved = merge(
         &items(),
         &Layers {
+            package: None,
             project: Some((&on, Trust::Trusted)),
             ..Layers::default()
         },
@@ -173,6 +177,7 @@ fn a_trusted_project_only_tightens() {
     assert!(resolved.problems.is_empty());
 
     let layers = Layers {
+        package: None,
         system: Some(&system_on),
         project: Some((&off, Trust::Trusted)),
     };
@@ -198,6 +203,7 @@ fn a_trusted_project_only_tightens() {
     let resolved = merge(
         &items(),
         &Layers {
+            package: None,
             project: Some((&off, Trust::Trusted)),
             ..Layers::default()
         },
@@ -217,6 +223,7 @@ fn an_untrusted_project_does_not_count() {
     let key = "permission.start_read_only";
     for (trust, warned) in [(Trust::Unknown, true), (Trust::Distrusted, false)] {
         let layers = Layers {
+            package: None,
             project: Some((&on, trust)),
             ..Layers::default()
         };
@@ -239,6 +246,7 @@ fn an_untrusted_project_does_not_count() {
 fn a_project_cannot_write_what_it_may_not() {
     let project = read(Layer::Project, "ui.language = \"zh\"\n");
     let layers = Layers {
+        package: None,
         project: Some((&project, Trust::Trusted)),
         ..Layers::default()
     };
@@ -258,6 +266,7 @@ fn every_layer_is_listed_top_down() {
     );
     let system_on = read(Layer::System, "permission.start_read_only = true\n");
     let layers = Layers {
+        package: None,
         system: Some(&system),
         project: Some((&project, Trust::Trusted)),
     };
@@ -278,6 +287,7 @@ fn every_layer_is_listed_top_down() {
         ]
     );
     let layers = Layers {
+        package: None,
         system: Some(&system_on),
         project: Some((&project, Trust::Trusted)),
     };
@@ -295,6 +305,7 @@ fn every_layer_is_listed_top_down() {
         ]
     );
     let layers = Layers {
+        package: None,
         project: Some((&project, Trust::Unknown)),
         ..layers
     };
@@ -331,6 +342,7 @@ fn values_are_the_entries_every_time_and_a_change_stays_private() {
     let resolved = merge(
         &items(),
         &Layers {
+            package: None,
             system: Some(&system),
             project: None,
         },
@@ -352,4 +364,64 @@ fn values_are_the_entries_every_time_and_a_change_stays_private() {
     assert_eq!(changed.get("ui.language"), Some(&text("en")));
     assert_eq!(resolved.values().get("ui.language"), Some(&text("zh")));
     assert_eq!(values.get("ui.language"), Some(&text("zh")));
+}
+
+/// 包这一层（施工 PV-4）：在默认值之上、系统配置之下，来源说是哪个包；系统配置里点名不合的键不算，`explain` 照列、不生效。
+#[test]
+fn the_package_layer_sits_between_defaults_and_the_system() {
+    let package = crate::merge::Packaged {
+        parsed: read(
+            Layer::System,
+            "[ui]\nlanguage = \"en\"\n[log]\nlevel = \"debug\"\n",
+        ),
+        owners: [
+            ("ui.language".to_string(), "gravity".to_string()),
+            ("log.level".to_string(), "gravity".to_string()),
+        ]
+        .into(),
+        masked: ["permission.start_read_only".to_string()].into(),
+    };
+    let system = read(
+        Layer::System,
+        "[ui]\nlanguage = \"zh\"\n[permission]\nstart_read_only = true\n",
+    );
+    let layers = Layers {
+        package: Some(&package),
+        system: Some(&system),
+        project: None,
+    };
+    let resolved = merge(&items(), &layers, &no_env);
+    assert_eq!(
+        resolved.get("ui.language"),
+        Some((&text("zh"), &line(Layer::System, 2))),
+        "系统配置盖住包给的"
+    );
+    let from_package = Origin::Package("gravity".to_string());
+    assert_eq!(
+        resolved.get("log.level"),
+        Some((&text("debug"), &from_package)),
+        "没写的照包给的"
+    );
+    assert_eq!(from_package.layer_name(), "package");
+    assert_eq!(
+        resolved.get("permission.start_read_only"),
+        Some((&Value::Bool(false), &Origin::Default)),
+        "点名不合的照下面的"
+    );
+    let item = &items()[2];
+    let written = explain(item, "permission.start_read_only", &layers, &resolved);
+    assert!(
+        written
+            .iter()
+            .any(|row| !row.used && row.value == Value::Bool(true)),
+        "照列、不生效：{written:?}"
+    );
+    let language = explain(&items()[0], "ui.language", &layers, &resolved);
+    assert_eq!(
+        language
+            .iter()
+            .map(|row| row.origin.layer_name())
+            .collect::<Vec<_>>(),
+        ["system", "package", "default"]
+    );
 }

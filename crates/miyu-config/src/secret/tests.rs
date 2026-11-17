@@ -349,6 +349,7 @@ fn a_secret_item_reads_both_forms_and_rejects_the_rest() {
     let resolved = merge(
         &items,
         &Layers {
+            package: None,
             system: Some(&parsed),
             ..Layers::default()
         },

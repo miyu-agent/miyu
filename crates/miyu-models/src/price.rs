@@ -28,7 +28,7 @@ pub struct Tariff {
     pub price: Price,
     /// 倍率。
     pub multiplier: f64,
-    /// 价格从哪来：`catalog:<供应商>/<模型>`、`config:<文件>:<行>`、`local`。
+    /// 价格从哪来：`catalog:<供应商>/<模型>`、`config:<文件>:<行>`、`package:<包>`（施工 PV-4）、`local`。
     pub source: String,
 }
 
@@ -39,6 +39,7 @@ impl Tariff {
         let source = match &facts.price.source {
             Source::Catalog { entry, .. } => format!("catalog:{entry}"),
             Source::Config { layer, line } => format!("config:{}:{line}", file(*layer)),
+            Source::Package { package } => format!("package:{package}"),
             Source::Local => "local".to_string(),
             // 价格只从手写的、目录、本机的来；别的来源说明是空的，不算。
             Source::Learned { .. } | Source::Provider { .. } | Source::Default => return None,

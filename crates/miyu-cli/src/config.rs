@@ -392,7 +392,8 @@ impl Talk<'_> {
 }
 
 /// `get [键…]`：只写一个键的只印值，字不带引号；别的一行一个 `键 = 值`，照键名排。`--format json`：`items` 原样。不写键的
-/// 不印包的「启用」（施工 UX-1，来源 `package`）：它们不在配置文件里，点名问的照印。
+/// 不印包的「启用」（施工 UX-1，来源 `package`、不带是哪个包）：它们不在配置文件里，点名问的照印。软件包带的供应商（施工 PV-4，
+/// 来源 `package` 带 `package`）照印。
 async fn get(talk: &mut Talk<'_>, keys: &[String], format: Format, out: &mut dyn Write) -> u8 {
     let mut params = json!({"cwd": talk.cwd()});
     if !keys.is_empty() {
@@ -403,7 +404,9 @@ async fn get(talk: &mut Talk<'_>, keys: &[String], format: Format, out: &mut dyn
         Err(code) => return code,
     };
     if let Some(items) = result["items"].as_object_mut().filter(|_| keys.is_empty()) {
-        items.retain(|_, entry| entry["origin"]["layer"] != "package");
+        items.retain(|_, entry| {
+            entry["origin"]["layer"] != "package" || entry["origin"]["package"].is_string()
+        });
     }
     match format {
         Format::Json => say(out, &result["items"].to_string()),

@@ -22,6 +22,7 @@ impl Config {
         self.left = left;
         let system = self.system.refit((&self.items, &self.left));
         let old = [std::mem::replace(&mut self.system, system)];
+        self.repack();
         self.resolved = self.merged(None);
         old
     }

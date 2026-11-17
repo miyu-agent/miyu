@@ -55,6 +55,8 @@ impl Core {
         // 脚本照新的清单重找、重登记（施工 X-12 中）。
         self.follow_scripts();
         crate::config::refit::refit(self, items, left);
+        // 包带的供应商照新的清单换（施工 PV-4）。
+        self.follow_providers();
         super::changes::announce(self, &before, &super::changes::snapshot(self));
         // 给别的包带的内容照新的清单查一遍（施工 X-22）。
         self.content_rereads.bump();

@@ -87,6 +87,8 @@ A setting with `choices_from`: its type is still `text`. Draw it as a dropdown a
 
 A package's "Enabled": `{"origin": {"layer": "package"}, "value": true}`; origin `package` means it lives in no config layer. With `all`, `layers` is `[]`.
 
+Entries of a provider a package brings (the manifest's `[providers.<id>]`): `{"origin": {"layer": "package", "package": "<package>"}, "value": …}`, above the defaults and below the config file, never written to the file; they go away when the package is removed or turned off. Changing one writes it to the config file, overriding the package (the core adds `providers.<id>.package = "<package>"` along the way); a provider with the same id already in the config file without `package` is the owner's own, and the package's one is not added at all. When the package layer changes, `config.changed` is pushed with `via` `package`.
+
 Borrowed: `{"origin": {"layer": "inherited", "from": "providers.deepseek.key"}, "value": null}`: no layer sets it and the value of `from` is used (show it as "inherited"). Only `net.search.deepseek.key` does this today: when unset it borrows the key of your official DeepSeek model provider (base URL unset or `api.deepseek.com`), and `from` is that provider's `providers.<id>.key`; a relay is not borrowed from and the origin stays `default`. The value never carries the key. `config.set` replies and `config.changed` pushes write it the same way; changing the provider's key pushes nothing for this item, so read it again when a `config.changed` touches `providers.`.
 
 **Errors**: `unknown_config_key`.

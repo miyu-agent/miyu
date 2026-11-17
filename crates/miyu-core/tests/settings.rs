@@ -99,6 +99,7 @@ fn the_registered_list_is_well_formed() {
             "providers.<id>.price_multiplier",
             "providers.<id>.local",
             "providers.<id>.cache",
+            "providers.<id>.package",
             "providers.<id>.models.<model>.window",
             "providers.<id>.models.<model>.catalog",
             "providers.<id>.models.<model>.max_output",

@@ -376,6 +376,7 @@ impl Core {
     pub fn with_packages(mut self, packages: Vec<miyu_store::packages::Found>) -> Core {
         self.adopt_packages(&packages);
         self.packages = std::sync::RwLock::new(Arc::new(packages));
+        self.provide_from_start();
         self
     }
 
@@ -392,6 +393,7 @@ impl Core {
         config.set_models(Arc::clone(&self.model_data));
         self.hub = Hub::new(&config);
         self.config = std::sync::Mutex::new(config);
+        self.provide_from_start();
         self
     }
 

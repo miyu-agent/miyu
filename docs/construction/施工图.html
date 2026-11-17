@@ -1600,6 +1600,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sML1"><span class="n">ML-1</span>调扩展带调用方的语言<span class="st">…</span></a></li>
         <li><a class="step review" href="#sSD1"><span class="n">SD-1</span>她说的话合成以后交给人<span class="st">…</span></a></li>
         <li><a class="step review" href="#sPL2"><span class="n">PL-2</span>软件包声明支持的系统<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sPV4"><span class="n">PV-4</span>软件包自带供应商<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -62879,6 +62880,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/PL-2-软件包声明支持的系统.md</code>；蓝图 <code>packages.md</code>、<code>protocol.md</code>、<code>cli/pkg.md</code>；设计 37；协议参考 <code>packages.md</code>、<code>errors.md</code>；作者文档 <code>manifest.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sPV4" aria-labelledby="h-sPV4">
+  <div class="sheet-head"><h2 id="h-sPV4"><span class="no">PV-4</span>软件包自带供应商</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">清单写 <code>[providers.&lt;编号&gt;]</code>，装上、开着的包带的供应商进配置的包这一层：供应商列表直接有它，卸了、关了就没有，人改的盖住包给的。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-config/src/package/provider.rs、merge.rs · miyu-endpoint/src/config/provided.rs</span><span class="dir-note">PV-4</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>清单读成 <code>ProviderDecl</code>，驱动只能内置或自己的</li>
+              <li>配置多一层 <code>Packaged</code>：默认值之上、配置文件之下</li>
+              <li>人改的写 <code>package = "&lt;包&gt;"</code>，没写的同编号是人自己的</li>
+              <li>装卸、开关以后重算，推 <code>config.changed</code></li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">包能自带、不能改人的</span><span class="rl">项目主人 11-17</span></div>
+          <div class="tile new"><span class="nm">不照「写没写驱动」猜</span><span class="rl">防 key 被新包接走</span></div>
+          <div class="tile new"><span class="nm">包不带 key</span><span class="rl">key 是人的</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">PV-4</dd></div>
+        <div><dt>名称</dt><dd>软件包自带供应商</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">PV-4</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改前红：<code>package::provider::tests</code>、<code>config::provided::tests</code>、<code>package_providers</code></span></li>
+        <li><span class="ok">✓</span><span>沙箱实测：假驱动的包装上就列得出、说得出话，关了就没</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/PV-4-软件包自带供应商.md</code>；设计 66 第四节第 2 条；蓝图 <code>config.md</code>、<code>models.md</code>、<code>packages.md</code>；协议参考 <code>config.md</code>；作者文档 <code>manifest.md</code>。</li>
       </ul>
     </div>
   </div>

@@ -39,6 +39,7 @@ pub(crate) mod methods;
 pub(crate) mod observe;
 mod options;
 pub(crate) mod project;
+pub(crate) mod provided;
 pub(crate) mod push;
 pub(crate) mod refit;
 pub(crate) mod rewrite;
@@ -57,7 +58,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use miyu_config::merge::{Layers, Resolved, Trust, merge};
+use miyu_config::merge::{Layers, Packaged, Resolved, Trust, merge};
 use miyu_config::{Item, Layer};
 use miyu_session::ModelData;
 use miyu_store::root::DataRoot;
@@ -108,6 +109,23 @@ pub struct Config {
     resolved: Resolved,
     /// 核心一份的模型资料（施工 8-18）：查模型默认的思考强度在不在档位里。没交的（单独读配置的测试）不查。
     models: Option<Arc<ModelData>>,
+    /// 装着、开着的包带的供应商（施工 PV-4，`config/provided.rs`），照包的先后。
+    declared: Vec<provided::Declared>,
+    /// 包这一层：照 `declared`、系统配置算好的（[`Config::repack`]）。
+    packaged: Packaged,
+    /// 包带的供应商没出现、没全收的（`miyu check` 提示）。
+    clashes: Vec<provided::Clash>,
+}
+
+/// 系统的语言 `locale`（`LANG` 这些）说的是哪种界面语言：`zh`、`ja` 开头的照它，别的、没有的是 `en`（同
+/// `UiSettings::language_for`）。
+fn language_of(locale: Option<&str>) -> String {
+    match locale {
+        Some(locale) if locale.starts_with("zh") => "zh",
+        Some(locale) if locale.starts_with("ja") => "ja",
+        _ => "en",
+    }
+    .to_string()
 }
 
 /// 系统配置在哪、给人看的写法（相对数据根）。
@@ -240,9 +258,45 @@ impl Config {
             places: Places::of(root),
             resolved: Resolved::default(),
             models: None,
+            declared: Vec::new(),
+            packaged: Packaged::default(),
+            clashes: Vec::new(),
         };
         config.resolved = config.merged(None);
         config
+    }
+
+    /// 换上装着、开着的包带的供应商 `declared`（施工 PV-4）：包这一层、最终值跟着重算。和手里的一样的什么都不做，交回 `false`。
+    pub(crate) fn provide(&mut self, declared: Vec<provided::Declared>) -> bool {
+        if self.declared == declared {
+            return false;
+        }
+        self.declared = declared;
+        self.repack();
+        self.resolved = self.merged(None);
+        true
+    }
+
+    /// 包带的供应商没出现、没全收的（施工 PV-4）。
+    pub(crate) fn clashes(&self) -> &[provided::Clash] {
+        &self.clashes
+    }
+
+    /// 照 `declared`、这时的系统配置和清单重算包这一层（施工 PV-4）：名字照系统配置里定了的界面语言挑，没定、`auto` 的照核心的
+    /// 环境的语言（同 `UiSettings::language_for`）。
+    fn repack(&mut self) {
+        let locale = ["LC_ALL", "LC_MESSAGES", "LANG"]
+            .iter()
+            .find_map(|name| self.environment.get(name));
+        let language = match self.system.parsed.entries.get("ui.language") {
+            Some(entry) => match &entry.value {
+                miyu_config::Value::Text(language) if language != "auto" => language.to_string(),
+                _ => language_of(locale.as_deref()),
+            },
+            None => language_of(locale.as_deref()),
+        };
+        (self.packaged, self.clashes) =
+            provided::layer(&self.items, &self.declared, &self.system.parsed, &language);
     }
 
     /// 登记的全部配置项。
@@ -407,6 +461,7 @@ impl Config {
     /// 换上一份新的系统配置（写成了、重读了），最终值跟着重算。
     pub(crate) fn replace(&mut self, file: File) {
         self.system = file;
+        self.repack();
         self.resolved = self.merged(None);
     }
 
@@ -418,6 +473,7 @@ impl Config {
     /// 要合的几层。
     pub(crate) fn layers<'a>(&'a self, project: Option<&'a Project>) -> Layers<'a> {
         Layers {
+            package: Some(&self.packaged),
             system: Some(&self.system.parsed),
             project: project.map(|project| (&project.file.parsed, project.trust)),
         }

@@ -136,6 +136,18 @@ pub(super) const SEARCH: &[&str] = &["id", "name"];
 /// `[[driver]]`（施工 MD-1，设计 66 第四节）。
 pub(super) const DRIVER: &[&str] = &["name", "cache", "key", "images", "hosted"];
 
+/// `[providers.<编号>]`（施工 PV-4）：同配置里 `[providers.<编号>]` 的几格，`key` 不收（人的 key 在人那一层配）。
+pub(super) const PROVIDER: &[&str] = &[
+    "name",
+    "driver",
+    "base_url",
+    "catalog",
+    "price_multiplier",
+    "local",
+    "cache",
+    "models",
+];
+
 /// `[provider_key]`（施工 PK-1）。
 pub(super) const PROVIDER_KEY: &[&str] = &["catalog"];
 
@@ -155,7 +167,7 @@ pub(super) const EXPORT: &[&str] = &["methods", "provides", "plugs"];
 pub(super) const CONTENT: &[&str] = &["dir"];
 
 /// 清单认得的表，照这个先后；哪种包能写哪几张见 `kinds::tables`。
-pub(super) const TABLES: [Table; 27] = [
+pub(super) const TABLES: [Table; 28] = [
     table("package", &[PACKAGE]),
     Table {
         name: "builtin",
@@ -202,6 +214,7 @@ pub(super) const TABLES: [Table; 27] = [
     table("search", &[SEARCH]),
     table("driver", &[DRIVER]),
     table("provider_key", &[PROVIDER_KEY]),
+    table("providers", &[PROVIDER]),
     table("widget", &[WIDGET]),
     table("guard", &[GUARD]),
     table("after", &[AFTER]),

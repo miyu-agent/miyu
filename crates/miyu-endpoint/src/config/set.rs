@@ -218,7 +218,19 @@ fn plan(config: &Config, layer: Layer, params: SetParams, words: &Human) -> Resu
             }
             let named: Vec<String> = changes.iter().map(|change| change.key.clone()).collect();
             selected(config, Some(named.as_slice()), words)?;
-            wanted(config, layer, changes, words).map(Plan::Changes)
+            let mut wanted = wanted(config, layer, changes, words)?;
+            // 改包带的那一家的，顺手写上是哪个包的（施工 PV-4，`provided.rs`）。
+            let keys = wanted.iter().filter(|one| one.value.is_some());
+            for (key, package) in super::provided::markers(config, keys.map(|one| one.key.as_str()))
+            {
+                let value = Some(Value::Text(package.into()));
+                wanted.push(Wanted {
+                    key,
+                    value,
+                    expect: None,
+                });
+            }
+            Ok(Plan::Changes(wanted))
         }
         (None, Some(text)) => match params.version {
             Some(version) => Ok(Plan::Text(text, version)),

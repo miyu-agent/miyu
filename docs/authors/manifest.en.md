@@ -338,7 +338,36 @@ Provides a model driver, one per entry; `capabilities` must include `model.drive
 | `images` | `true` if it can see images (default `false`) |
 | `hosted` | Tools this driver has the provider run on its own, such as `["search_web", "read_url_content"]` (default empty): the install screen shows the owner "the provider runs on its own: …" from it. Each 1 to 64 bytes, no control characters, no repeats. A name you send that isn't listed is still taken and shown, with a warning in the run log; see [Writing extensions](extensions.en.md#tools-the-provider-runs-on-its-own) |
 
-It's used only when the owner writes `driver = "<package id>/<driver name>"` in a provider's settings; model profiles, the npm table and the default are always the built-in drivers, so installing your package can't take over a provider the owner already set up. If the package isn't installed, isn't approved or the driver name is wrong, `miyu check` reports it and that provider can't be used; it never falls back to a built-in driver. How Miyu calls your driver (`driver.call`, `driver.delta`, `driver.cancel`) is in the [protocol reference](../reference/extensions.en.md#drivercall-driverdelta-drivercancel).
+It's used only when the owner writes `driver = "<package id>/<driver name>"` in a provider's settings, or your package brings a provider pointing at it with `[providers.<id>]` (next section); model profiles, the npm table and the default are always the built-in drivers, so installing your package can't take over a provider the owner already set up. If the package isn't installed, isn't approved or the driver name is wrong, `miyu check` reports it and that provider can't be used; it never falls back to a built-in driver. How Miyu calls your driver (`driver.call`, `driver.delta`, `driver.cancel`) is in the [protocol reference](../reference/extensions.en.md#drivercall-driverdelta-drivercancel).
+
+## `[providers.<id>]`
+
+Brings a model provider, one table each: while the package is installed and on, it shows up in the owner's provider list and the owner can switch to its models right away (`/model`, the default model) without copying any config. Removing or turning off the package takes it away. Extensions and packages carrying only scripts or skills can write it.
+
+```toml
+[providers.agy]                                     # id: starts with a lowercase letter; lowercase letters, digits, -, _, at most 32; models are agy/<model>
+name = { en = "Antigravity", zh = "Antigravity" }   # optional: falls back to the catalog, then the id
+driver = "antigravity/antigravity"                  # required: one of this package's [[driver]] (<package id>/<driver name>), or the built-in openai-chat, anthropic, openai-responses
+local = true                                        # optional: priced as free
+
+[providers.agy.models."gemini-3-pro"]              # optional: hand-written model facts, as in the config
+window = 1000000
+```
+
+| Field | Notes |
+|---|---|
+| `name` | Name in three languages, picked by the owner's interface language; falls back to the catalog, then the id |
+| `driver` | Required. Your own extension driver is `<package id>/<driver name>` (the driver must be in this manifest's `[[driver]]`); the built-in `openai-chat`, `anthropic`, `openai-responses` also work. A driver of another package is refused |
+| `base_url` | The address, plain text only (no `{ env = … }`); leave it out when your driver connects by itself |
+| `catalog` | Which models.dev provider it corresponds to, as in the config |
+| `price_multiplier` | Price multiplier, as in the config |
+| `local` | A local service, priced as free |
+| `cache` | Cache class: `contract`, `best_effort`, `per_request`, as in the config |
+| `models` | Hand-written model facts, `[providers.<id>.models."<model>"]`, same fields as in the config (`window`, `max_output`, `inputs`, `tools`, `reasoning`, `effort`, `price`…). The model list comes from your driver's `driver.models`; no need to list every model here |
+
+`key` isn't accepted: keys belong to the owner, who sets them in settings (with `key = "required"` on your driver, `miyu check` reports a missing one). Other fields written wrong are dropped and `miyu check` tells.
+
+When the owner changes this provider's settings they go into the owner's own config and override yours (Miyu adds `package = "<your package>"` along the way). If the owner's config already has a provider with the same id that doesn't override yours, the owner's wins, yours is not added, and `miyu check` tells; pick an id unlikely to clash (for example one with your package name). When two packages bring the same id, the one installed first keeps it.
 
 ## `[provider_key]`
 

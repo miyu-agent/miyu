@@ -107,6 +107,7 @@ fn config(path: &Path) -> Result<Resolved, String> {
     let parsed = parse(&items, Layer::System, &text)
         .map_err(|problem| format!("{}: {}", path.display(), told(&problem)))?;
     let layers = Layers {
+        package: None,
         system: Some(&parsed),
         ..Layers::default()
     };

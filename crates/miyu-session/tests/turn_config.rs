@@ -29,6 +29,7 @@ fn resolved(level: &str) -> Resolved {
     let text = format!("[log]\nlevel = \"{level}\"\n");
     let parsed = parse(items, Layer::System, &text).expect("读得懂");
     let layers = Layers {
+        package: None,
         system: Some(&parsed),
         project: None,
     };

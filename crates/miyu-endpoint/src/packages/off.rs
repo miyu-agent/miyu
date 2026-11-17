@@ -26,9 +26,10 @@ impl Core {
             .collect()
     }
 
-    /// 开关变了以后（施工 UX-1 补）：知识库、本机的向量模型照开着的包重算，给别的包带的内容推一次 `content.changed`。技能、脚本、
-    /// 命令、预设是用到时照 [`Core::packages_of`] 现算的，不用另管。
+    /// 开关变了以后（施工 UX-1 补）：知识库、本机的向量模型照开着的包重算，给别的包带的内容推一次 `content.changed`，包带的供应商
+    /// 跟着换（施工 PV-4）。技能、脚本、命令、预设是用到时照 [`Core::packages_of`] 现算的，不用另管。
     pub(crate) async fn follow_switches(self: &Arc<Self>) {
+        self.follow_providers();
         let visible = self.packages_of();
         let now: Vec<&Found> = visible.iter().collect();
         crate::knowledge::follow(&self.knowledge, &now);

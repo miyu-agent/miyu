@@ -132,6 +132,7 @@ fn a_url_item_takes_a_literal_address_or_an_env_reference() {
         Value::Secret(Reference::Env("RELAY_URL".to_string()))
     );
     let layers = Layers {
+        package: None,
         system: Some(&parsed),
         ..Layers::default()
     };

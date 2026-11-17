@@ -12,7 +12,7 @@
 //! - `base_url` 照配置写的样子交（`address_json`，施工 8-6b）：写死的是地址本身，是环境变量的引用的交 `{"env": "…"}`，
 //!   地址本身不解出来，不会进这份回应。
 //! - 思考强度的那一格多 `key`（施工 8-18（补），`models.md`「协议」）：这一项完整的配置键名，头照抄它发 `config.set`。
-//! - 显示名 `name`（施工 8-21）：写了的照写的（带文件、行、层），只有空白的当没写；没写的、对上了目录的照目录里那一家
+//! - 显示名 `name`（施工 8-21）：写了的照写的（带文件、行、层；软件包带的带 `from: "package"`、`package`，施工 PV-4），只有空白的当没写；没写的、对上了目录的照目录里那一家
 //!   的名字；都没有的照编号。用不了的那一家也有。也带 `key`。
 //! - 能出向量的（施工 R-5 再补）：照 `names`（资源目录的 `models/embedding.toml`）认模型名和目录里那个条目的 `family`，认得出
 //!   的多一格 `embedding: true`，不是的不写。
@@ -190,6 +190,10 @@ fn name(snapshot: &Snapshot, id: &str, catalog: Option<&str>) -> Value {
         .and_then(|(value, origin)| match (value, origin) {
             (ConfigValue::Text(text), Origin::File { layer, line }) if !text.trim().is_empty() => {
                 Some(json!({"value": text.trim(), "from": "config", "file": snapshot.file(*layer), "line": line, "layer": layer.as_str()}))
+            }
+            // 软件包带的这一家（施工 PV-4）：名字照包清单里写的。
+            (ConfigValue::Text(text), Origin::Package(package)) if !text.trim().is_empty() => {
+                Some(json!({"value": text.trim(), "from": "package", "package": package}))
             }
             _ => None,
         });

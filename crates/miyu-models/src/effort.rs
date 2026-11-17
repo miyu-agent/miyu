@@ -119,6 +119,7 @@ pub fn in_use(effort: &Fact<Option<String>>) -> Option<EffortInUse> {
             layer: Layer::Project,
             ..
         } => EffortSource::Other("project".to_string()),
+        Source::Package { .. } => EffortSource::Other("package".to_string()),
         _ => return None,
     };
     Some(EffortInUse { level, from })

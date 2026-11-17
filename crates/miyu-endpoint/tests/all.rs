@@ -212,6 +212,7 @@ mod package_logo;
 mod package_logo_source;
 mod package_mascot;
 mod package_personas;
+mod package_providers;
 mod package_records;
 mod package_sections;
 mod package_settings;
