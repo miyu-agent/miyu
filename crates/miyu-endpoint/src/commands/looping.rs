@@ -129,7 +129,7 @@ impl Slash for LoopCommand {
                 }
             };
             Ok(Ran {
-                session: None,
+                life: None,
                 events: Vec::new(),
                 said,
             })

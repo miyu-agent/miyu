@@ -54,8 +54,27 @@ pub(crate) struct Ran {
     pub(crate) events: Vec<u64>,
     /// 回执那一句。
     pub(crate) said: Said,
-    /// 回应多带的会话编号（`command.run` 的 `session`，施工 LF-5 下）：`/life` 带人生会话的，头照它跳过去；别的命令没有。
-    pub(crate) session: Option<String>,
+    /// 回应多带的人生会话那几格（施工 LF-5 下、LF-12）：`/life` 带；别的命令没有。
+    pub(crate) life: Option<Carried>,
+}
+
+/// `/life` 的回应多带的（`command.run` 的 `session`、`persona`、`lives`）。
+#[derive(Default)]
+pub(crate) struct Carried {
+    /// 头要跳过去的那一条（`session`、`persona`）：这个会话的人格的，不带人格的会话里是唯一的那一条；没有明确的一条的不带。
+    pub(crate) jump: Option<Jump>,
+    /// 所有人格没结束的人生会话（`lives`，施工 LF-12，[`crate::life::lives`]）：光打的 `/life` 带，头照它画「快速跳转人生
+    /// 会话」；一条都没有的、别的打法是空的，不写这一格。
+    pub(crate) lives: Vec<serde_json::Value>,
+}
+
+/// 头要跳过去的人生会话：它的编号，和它是哪个人格的（施工 LF-12：不带人格的会话里打的 `/life` 照所有人格的找，头要知道找到的
+/// 是谁的）。
+pub(crate) struct Jump {
+    /// 人生会话的编号。
+    pub(crate) session: String,
+    /// 人格的编号。
+    pub(crate) persona: String,
 }
 
 /// 执行的结果。

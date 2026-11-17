@@ -122,6 +122,7 @@ mod life;
 mod life_change;
 mod life_change_more;
 mod life_command;
+mod life_command_bare;
 mod life_doing;
 mod life_doing_more;
 mod life_end;

@@ -10,10 +10,11 @@ Give a persona a "life session" that keeps running a loop: she decides when to w
 | [`life.resume`](#liferesume) | Resume: she wakes once right away, then on her own schedule |
 | [`life.kill`](#lifekill) | End this life: she never wakes again, the session is archived read-only, and its memories are cleared |
 | [`life.new`](#lifenew) | End the current life if there is one, then start a new one |
+| [`life.list`](#lifelist) | List every persona's life session that has not ended |
 
 **Who may call**: people only (local and remote heads); an extension started by the core gets `local_only`.
 
-All of them take one parameter: `persona` (string, required), the persona's id. An unknown persona is `unknown_persona`.
+Except for `life.list`, which takes none, all of them take one parameter: `persona` (string, required), the persona's id. An unknown persona is `unknown_persona`.
 
 **Telling a life session apart**: its log holds one [`life.started`](events.en.md) event; in the session list (`session.list`, the `sessions` stream) its item has `life: true`, which other sessions do not carry. An ended one also holds a [`life.ended`](events.en.md) event, and its item also has `life_ended: true`.
 
@@ -80,6 +81,27 @@ The same package has a second tool, `note_change` (the feature "Change over life
 ## `life.new`
 
 End a running or paused life as `life.kill` does, then start a new one as `life.start` does. Answers `{"session": <new id>, "ended": <the one that ended>}`; `ended` is absent when there was nothing to end. The new life does not remember the old one (its memories were cleared).
+
+## `life.list`
+
+List every persona's life session that has not ended (running or paused), at most one per persona, ordered by persona id. It takes no parameters, is read-only and leaves no trace in any session; a head's "Life" page and its quick jump list from it.
+
+```json
+{"jsonrpc": "2.0", "id": "q1", "method": "life.list", "params": {}}
+{"jsonrpc": "2.0", "id": "q1", "result": {"lives": [
+  {"state": "running", "session": "<id>", "next": "2026-11-14T10:00:00.000Z", "persona": "miyu", "name": "Miyu"}
+]}}
+```
+
+Each item of `lives` is what [`life.status`](#state) answers for that persona (`state` is only ever `running` or `paused`), plus three fields:
+
+| Name | Meaning |
+|---|---|
+| `persona` | The persona's id |
+| `name` | The persona's display name in the connection's language; the id when it has none |
+| `awake` | `true` while she is in the middle of a turn; absent otherwise |
+
+With no life at all, `lives` is empty. The reply to the command `/life` (typed alone) carries the same `lives`, with the life of that session's persona first (see [Packages and commands](packages.en.md)).
 
 ## Errors
 

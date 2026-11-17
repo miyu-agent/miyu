@@ -27,7 +27,7 @@ A persona has only one life going at a time; different personas each have their 
 
 ## Before you start
 
-- The session must have a persona. `/life` manages the life of the persona that the session you type it in has now; a session with no persona replies "This session has no persona, so it has no life session.". The shipped persona is `software-engineer`; to write one yourself, see [Personas and presets](personas-presets.en.md#writing-your-own-persona).
+- The session you start a life in must have a persona. `/life` manages the life of the persona that the session you type it in has now. You can also type `/life` in a session with no persona to look, pause, resume or end: when only one persona has a life, that is the one, the reply names the persona, and the terminal and the web UI jump into that session; when several personas have one, the reply lists them, and you type it again in a session of one of them. `/life new` cannot start a life in a session with no persona. The shipped persona is `software-engineer`; to write one yourself, see [Personas and presets](personas-presets.en.md#writing-your-own-persona).
 - Web search must be configured so that the AI can see the news.
 - In the persona folder `~/.miyu/root/personas/<id>/` (the data root is `~/.miyu` by default, `%USERPROFILE%\.miyu` on Windows), write `prompts/life.md` to tell the AI how this life is lived (the next section). You can start without it; the shipped one is used.
 
@@ -166,7 +166,8 @@ Each wake-up is one round of model requests, whether or not you are looking. A l
 
 | What you see | What to do |
 |---|---|
-| "This session has no persona, so it has no life session." | Type `/life` in a session that has a persona |
+| "This session has no persona, so a new life session cannot be started here: give it a persona first." | Give this session a persona, or switch to one that has a persona, then type `/life new` |
+| "This session has no persona, and more than one persona has a life session: …" | Type `/life` in a session of one of the personas listed |
 | `/life new` reports that the schedules are full (`too_many_schedules`) | All schedules together can number at most 200. The life session has been opened and counts as paused; delete a few schedules, then `/life resume` |
 | It has not woken for a long time | Type `/life` to see whether it is paused; check whether the core is running |
 | What the AI wrote does not match the news | Check whether [Web search and fetching pages](web-search.en.md) is configured |

@@ -1,6 +1,6 @@
 //! 核心命令 `/life`（施工 LF-5 下，`docs/blueprint/life.md`「命令」）：真核心、手拨的钟，命令经 `command.run` 发。照打命令的
 //! 会话的人格调 `life.*` 那一组：光打 `/life` 只说状态、没有的不开只说明；`new`、`pause`、`resume`、`kill` 同那几个方法；回应
-//! 多带一格 `session`（人生会话的编号，有才带）。在人生会话自己里面打照样管用；不带人格、场所会话、认不出的参数各回各的、
+//! 多带一格 `session`（人生会话的编号，有才带）。在人生会话自己里面打照样管用；场所会话、认不出的参数各回各的、
 //! 什么都不动；回执三种语言都有，命令目录里有它。
 
 use std::sync::Arc;
@@ -21,10 +21,10 @@ use crate::support::venues::bound_core;
 use crate::support::*;
 
 /// 钟从这一刻起：2026-10-26T00:00:00Z。
-const START: i64 = 1_792_972_800_000;
+pub(crate) const START: i64 = 1_792_972_800_000;
 
 /// 默认间隔：一小时。
-const GAP: i64 = 3_600_000;
+pub(crate) const GAP: i64 = 3_600_000;
 
 /// 没有人生会话时的说明（中文）。
 const ABOUT: &str = "人生会话让这个人格一直过着自己的日子：到点自己醒来，做点自己的事，记下的会进这个人格的记忆。每次醒来都是一次模型请求，会多花 token。用 /life new 开始。";
@@ -33,7 +33,11 @@ const ABOUT: &str = "人生会话让这个人格一直过着自己的日子：�
 const NOTHING: &str = "这个人格没有人生会话。";
 
 /// 起好唤醒表的核心、握好手的连接，和一个人格是 `muse` 的本机会话（打命令的那一个）。
-async fn started(home: &Home, script: &Script, hand: &Arc<Hand>) -> (Arc<Core>, Client, String) {
+pub(crate) async fn started(
+    home: &Home,
+    script: &Script,
+    hand: &Arc<Hand>,
+) -> (Arc<Core>, Client, String) {
     home.write("root/personas/muse/prompts/persona.md", "You are Muse.\n");
     let core = core_with_tools(home, script, hand, Catalog::default());
     core.start_schedules();
@@ -44,21 +48,21 @@ async fn started(home: &Home, script: &Script, hand: &Arc<Hand>) -> (Arc<Core>, 
 }
 
 /// 在会话 `session` 里打 `text`。
-async fn typed(client: &mut Client, id: &str, session: &str, text: &str) -> Value {
+pub(crate) async fn typed(client: &mut Client, id: &str, session: &str, text: &str) -> Value {
     client
         .call(id, "command.run", json!({"session": session, "text": text}))
         .await
 }
 
 /// 回应里的 `said`。
-fn said(reply: &Value) -> &str {
+pub(crate) fn said(reply: &Value) -> &str {
     reply["result"]["said"]
         .as_str()
         .unwrap_or_else(|| panic!("没成：{reply}"))
 }
 
 /// 回应里带的人生会话编号：没带的是空的。
-fn carried(reply: &Value) -> Option<&str> {
+pub(crate) fn carried(reply: &Value) -> Option<&str> {
     reply["result"]["session"].as_str()
 }
 
@@ -72,7 +76,7 @@ async fn status(client: &mut Client, id: &str) -> Value {
 
 /// 等她睡下：人生会话 `session` 不在跑一轮了（会话列表那一项没有 `busy`）。光等日志里记下回合结束（`until_turns`）不够：那一批
 /// 落了盘会话才写「没在跑」，这中间打 `/life` 回的是「这会儿醒着」（施工 LF-6 修；Linux 的 CI 上碰到过一次）。
-async fn asleep(client: &mut Client, session: &str) {
+pub(crate) async fn asleep(client: &mut Client, session: &str) {
     for n in 0..12_000 {
         let listed = client
             .call(&format!("asleep-{n}"), "session.list", json!({}))
@@ -88,7 +92,7 @@ async fn asleep(client: &mut Client, session: &str) {
 }
 
 /// 定时表里全部的人生那一行。
-fn life_rows(core: &Core) -> Vec<Schedule> {
+pub(crate) fn life_rows(core: &Core) -> Vec<Schedule> {
     core.schedules()
         .list()
         .expect("读得了")
@@ -98,7 +102,7 @@ fn life_rows(core: &Core) -> Vec<Schedule> {
 }
 
 /// 跑在 `session` 上的人生那一行。
-fn life_row(core: &Core, session: &str) -> Option<Schedule> {
+pub(crate) fn life_row(core: &Core, session: &str) -> Option<Schedule> {
     life_rows(core).into_iter().find(
         |one| matches!(&one.target, Target::Session { session: on } if on.as_str() == session),
     )
@@ -124,7 +128,7 @@ fn ended(log: &[Event]) -> Vec<&Event> {
 }
 
 /// 本机这时的时区，同核心（`sessions::offset`）。
-fn offset() -> UtcOffset {
+pub(crate) fn offset() -> UtcOffset {
     let minutes = jiff::Zoned::now().offset().seconds() / 60;
     UtcOffset::from_minutes(minutes).expect("在范围里")
 }
@@ -350,20 +354,13 @@ async fn inside_the_life_session_itself_it_works_too() {
     assert!(life_row(&core, &next).is_some());
 }
 
-/// 不带人格的会话、场所会话、认不出的参数：各回各的那一句，什么都不动。
+/// 场所会话、认不出的参数：各回各的那一句，什么都不动。不带人格的会话在 `life_command_bare.rs`（施工 LF-12）。
 #[tokio::test]
-async fn no_persona_a_venue_and_unknown_words_change_nothing() {
+async fn a_venue_and_unknown_words_change_nothing() {
     let home = Home::new();
     let script = Script::new([]);
     let hand = Hand::at(START);
     let (core, mut client, here) = started(&home, &script, &hand).await;
-
-    let bare = client.create("c1", "~").await;
-    for (id, text) in [("b1", "/life"), ("b2", "/life new"), ("b3", "/life kill")] {
-        let reply = typed(&mut client, id, &bare, text).await;
-        assert_eq!(said(&reply), "这个会话没有人格，没有人生会话。", "{text}");
-        assert_eq!(carried(&reply), None, "{text}：{reply}");
-    }
 
     for (id, text) in [
         ("u1", "/life now"),

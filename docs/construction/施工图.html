@@ -1535,6 +1535,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sLF9"><span class="n">LF-9</span>推演人生定稿<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF10"><span class="n">LF-10</span>上下文上限出厂 100000，人格里能设<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF11"><span class="n">LF-11</span>后天：她记下自己变了什么<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sLF12"><span class="n">LF-12</span>没有人格的会话也找得到人生；快速跳转<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sVW1"><span class="n">VW-1</span>主人只读地看场所会话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT1"><span class="n">HT-1</span>内核认得供应商侧工具<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT3"><span class="n">HT-3</span>供应商侧工具画成工具步骤<span class="st">✓</span></a></li>
@@ -59408,6 +59409,62 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LF-11-后天.md</code>；设计 <code>70-推演人生.md</code> 第六节；蓝图 <code>memory.md</code>、<code>life.md</code>「后天」、<code>tools/note_change.md</code>、<code>packages.md</code>、<code>presets.md</code>；协议参考 <code>memory.md</code>、<code>life.md</code>、<code>errors.md</code> 中英各一份。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sLF12" aria-labelledby="h-sLF12">
+  <div class="sheet-head"><h2 id="h-sLF12"><span class="no">LF-12</span>没有人格的会话也找得到人生；快速跳转</h2><span class="pill done">做完</span></div>
+  <p class="purpose">人生是照人格算的，<code>/life</code> 原来只认打命令的这个会话的人格：会话没有人格就一句「没有人生会话」挡回去，人生会话明明在也进不去（项目主人本机验收碰到的）。这一步让它照所有人格的找，并且光打 <code>/life</code> 时把所有在过的人生列给头，头照它画「快速跳转人生会话」。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint · commands/life.rs　commands/life/bare.rs　life.rs</span><span class="dir-note">LF-12</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>没有人格的会话里：只有一个人格有人生的照它办，回执写上人格的名字</li>
+              <li>不止一个人格有的不猜，一句话列出来；<code>/life new</code> 不开，回先选人格</li>
+              <li>回应带 <code>session</code> 的都带 <code>persona</code></li>
+              <li>光打的 <code>/life</code> 多带 <code>lives</code>：所有人格没结束的人生，自己人格的排最前</li>
+              <li>新方法 <code>life.list</code> 回同一份，只读，不在会话里留痕</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">光打 <code>/life</code> 给一份正在过的人生的列表，挑了就跳过去</span><span class="rl">项目主人 2026-11-17 定</span></div>
+          <div class="tile new"><span class="nm">不止一个不猜；开新的不猜给谁开</span><span class="rl">施工单定</span></div>
+          <div class="tile new"><span class="nm">醒没醒照会话表里忙不忙，不为它载入会话</span><span class="rl">施工单定</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LF-12</dd></div>
+        <div><dt>名称</dt><dd>没有人格的会话也找得到人生；快速跳转</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">LF-12</dd></div>
+        <div><dt>验收</dt><dd>改前四条测试红在主人看到的那一句上；门禁；沙箱里真模型走了一遍</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>没有人格的会话里光打回那个人格的状态、带它的编号和人格；停、续、结束照它办</span></li>
+        <li><span class="ok">✓</span><span>两个人格都有人生的：四种打法都只列出来，表里一行没动</span></li>
+        <li><span class="ok">✓</span><span>一个都没有的回说明、<code>new</code> 不开</span></li>
+        <li><span class="ok">✓</span><span><code>lives</code>：一条的、几条的照编号、带人格的会话里自己的排最前；<code>life.list</code> 同一份</span></li>
+        <li><span class="ok">✓</span><span>英文、日文的回执都有</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LF-12-没有人格的会话也找得到人生、快速跳转.md</code>；蓝图 <code>life.md</code>「对外的样子」「命令」第 8、9 条、<code>protocol.md</code>；协议参考 <code>life.md</code>、<code>packages.md</code> 中英各一份；手册 <code>guide/life.md</code>、<code>guide/commands.md</code> 中英各一份。</li>
       </ul>
     </div>
   </div>

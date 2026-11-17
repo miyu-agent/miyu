@@ -49,7 +49,7 @@ impl Slash for Clear {
             )
             .await?;
             Ok(Ran {
-                session: None,
+                life: None,
                 events: accepted(outcome)?,
                 said: Said::plain("commands/cleared"),
             })
@@ -99,7 +99,7 @@ impl Slash for Stop {
             Ok(Ran {
                 events,
                 said: Said::plain("commands/stopped"),
-                session: None,
+                life: None,
             })
         })
     }
@@ -144,7 +144,7 @@ impl Slash for Workspace {
             Ok(Ran {
                 events,
                 said,
-                session: None,
+                life: None,
             })
         })
     }

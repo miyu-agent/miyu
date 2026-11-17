@@ -63,7 +63,7 @@ impl Slash for TodoCommand {
                 "" => {
                     let said = shown(call.core, call.peer, &handle.todos()).await;
                     Ok(Ran {
-                        session: None,
+                        life: None,
                         events: Vec::new(),
                         said,
                     })
@@ -79,7 +79,7 @@ impl Slash for TodoCommand {
                             ..
                         } => Ok(none()),
                         outcome => Ok(Ran {
-                            session: None,
+                            life: None,
                             events: accepted(outcome)?,
                             said: Said::plain("commands/todos-cleared"),
                         }),
@@ -94,7 +94,7 @@ impl Slash for TodoCommand {
 /// 没有待办：什么都不记。
 fn none() -> Ran {
     Ran {
-        session: None,
+        life: None,
         events: Vec::new(),
         said: Said::plain("commands/todo-none"),
     }

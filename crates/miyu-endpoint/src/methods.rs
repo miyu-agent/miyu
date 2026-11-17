@@ -108,6 +108,7 @@ pub(crate) fn call<'a>(
         "project.list" | "project.create" | "project.update" | "project.delete" => {
             answer(move || async move { crate::projects::call(core, request).await })
         }
+        "life.list" => answer(move || async move { crate::life::list(core, peer).await }),
         name if name.starts_with("life.") => {
             answer(move || async move { crate::life::call(core, request).await })
         }

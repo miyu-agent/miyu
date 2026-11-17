@@ -43,6 +43,7 @@
    - `life.pause {persona}`、`life.resume {persona}` → 同 `life.status` 的回应。没有人生会话的 `no_life`，结束了的 `life_ended`（施工 LF-4 上）。
    - `life.status` 多一种 `ended`（施工 LF-4 上）：这个人格最近的那一条已经结束、还没开新的，带那个会话。
    - `life.kill {persona}`（施工 LF-4 上）→ `{"state": "ended", "session"}`：照「结束」做完才回；结束了的把清理剩下的几步再走一遍、原样回成功；没有的 `no_life`。
+   - `life.list {}`（施工 LF-12）→ `{"lives": [...]}`：所有人格没结束的人生会话（`life::lives`），只读、不拿锁、不记事件。本机主会话里每个人格最新的那一条（同第 1 条的认法），结束了的不要，照人格的编号排。一项是 `life.status` 对那个人格的回应（`state` 只会是 `running`、`paused`），多带 `persona`（编号）、`name`（给人看的名字，照连接的语言挑，没起的、人格读不出来的写编号）、她这会儿正跑一轮的 `awake: true`（照会话表里忙不忙，不为它载入会话）。头的「推演人生」页、快速跳转照它列：借命令 `/life` 的话每问一次在会话里记一条 `command.ran`（miyu-ui 2026-11-17 提的）。
    - `life.new {persona}`（施工 LF-4 上）→ `{"session", "ended"?}`：在跑、暂停着的先结束（`ended` 是它），结束了的先补齐清理，再照 `life.start` 开一条新的。`life.start` 碰上结束了的同样先补齐清理、开新的。
 4. **出错**：`life_exists`（`data.session` 是那一个）、`no_life`、`life_ended`（`data.session` 是那一个，施工 LF-4 上）；清理哪一步没成的照那一步的原因，带 `data.session`；定时表的照 `schedule.*` 的说法（`too_many_schedules`、`internal_error`），`life.start` 记了身份以后才出的多带 `data.session`。给人看的话在 `refusal/message.rs`（中、英）。
 5. **出厂预设** `life`：见 `presets.md`「出厂的几份」。
@@ -112,7 +113,7 @@
 
 ### 命令（施工 LF-5 下，设计 70 第二节第 11 条）
 
-人在本机的会话里打 `/life`，看、开、停、续、结束这个会话的人格的人生会话，不用先找到那个会话。它只是 `life.*` 的另一个入口：照这个会话这一刻的人格调同一个 `life::act`（`life.rs`，六个方法也走它），命令只认参数、拼回执。跳到人生会话是头的事，核心在回应里带上它的编号。
+人在本机的会话里打 `/life`，看、开、停、续、结束这个会话的人格的人生会话，不用先找到那个会话。它只是 `life.*` 的另一个入口：照这个会话这一刻的人格调同一个 `life::act`（`life.rs`，六个方法也走它），命令只认参数、拼回执。跳到人生会话是头的事，核心在回应里带上它的编号 `session`，连同它是哪个人格的 `persona`（人格的编号，施工 LF-12；带 `session` 的都带）。不带人格的会话里照所有人格的找，见第 8 条。光打的 `/life` 再多带 `lives`（第 9 条）。
 
 | 打的 | 做什么 | 回执（中文） | 带 `session` |
 |---|---|---|---|
@@ -124,10 +125,17 @@
 1. **没有的**：停、续、结束碰上没有的、结束了的（`no_life`、`life_ended`）回「这个人格没有人生会话。」，不带 `session`；结束了的不再走一遍清理（要补齐的走 `life.kill` 或者 `/life new`）。
 2. **说明**（光打 `/life` 而没有的）：说清这是什么、她会自己醒、每次醒是一次请求会多花 token、她会自己记事、怎么开：「人生会话让这个人格一直过着自己的日子：到点自己醒来，做点自己的事，记下的会进这个人格的记忆。每次醒来都是一次模型请求，会多花 token。用 /life new 开始。」（给人看的字不说「她」，施工 FX-4）英文、日文照意思写（`core/human/<语言>.json` 的 `commands/life-*`）。
 3. **不做确认**：打了就做，没有 `confirm` 这种第二个词（2026-11-14 项目主人定）；有界面的头要不要自己画确认框是头的事（LF-8）。
-4. **谁能用**：同 `/workspace`，只给主人本人（管理的人 `owner_only`）；场所会话里照没有这条命令（`unknown_command`），菜单本来就不收场所会话。这个会话不带人格的回「这个会话没有人格，没有人生会话。」；人格已经删了的照 `unknown_persona`。认不出的参数回 `bad_params`，`data.why` 是「用法：/life [new | pause | resume | kill]」。都什么都不动。
+4. **谁能用**：同 `/workspace`，只给主人本人（管理的人 `owner_only`）；场所会话里照没有这条命令（`unknown_command`），菜单本来就不收场所会话。这个会话不带人格的见第 8 条；人格已经删了的照 `unknown_persona`。认不出的参数回 `bad_params`，`data.why` 是「用法：/life [new | pause | resume | kill]」。都什么都不动。
 5. **预设**：核心自带的命令（同 `/clear`、`/context`），不归哪个包、不跟预设的功能开关：核心命令现在都这样（`Slash::package` 是空的就一直在，`commands/registry.rs`），菜单在每个本机会话里都列它（施工 LF-5 下查的现状，照它做）。
 6. **在人生会话自己里面打**：照它自己的人格，同样管用。`/life kill`、`/life new` 结束的就是这个会话：结束等封存了才回，回执照样回得出来；之后 `command.ran` 记不进封存了的会话（`protocol.md`「`command.run`」第 6 条），不算错。
 7. **回执不进她的上下文**：回执只在 `command.run` 的回应里，日志里只记一条 `command.ran`（原文和命令名，不带回执），渲染不给模型看（`miyu-assemble` 的 `render.rs`）。
+8. **不带人格的会话里打**（施工 LF-12，`commands/life/bare.rs`；项目主人 2026-11-17 本机验收第 25 条）：人生是照人格算的，会话没有人格就照所有人格的找：本机主会话里每个人格最新的那一条（同第一节第 1 条的认法），结束了的不算（`life::lives`）。
+   - **只有一个人格有**：照它办，同在带着这个人格的会话里打的一样（光打回状态、`pause`、`resume`、`kill`），回应带 `session`、`persona`；回执写上是哪个人格的：「缪斯 的人生会话进行中，下次醒来：2026-11-14 15:00。」「…这会儿醒着。」「缪斯 的人生会话已暂停，用 /life resume 继续。」「缪斯 的人生会话已结束，留下的记忆已清掉，会话保留为只读。」（`commands/life-*-of`）。名字是 `persona.toml` 里起的、照连接的语言挑，没起的、人格读不出来的写编号。
+   - **不止一个人格有**：不猜。四种打法都只列出来、什么都不动、不带 `session`：「这个会话没有人格，有人生会话的人格不止一个：echo（进行中），muse（已暂停）。到其中一个人格的会话里再用 /life。」照人格的编号排，一个一段（`commands/life-one-running`、`life-one-paused`），照 `commands/joiner` 连。
+   - **一个都没有**：光打的回说明，末尾换成「这个会话没有人格：先给它选一个人格，再用 /life new 开始。」；`pause`、`resume`、`kill` 回「这个会话没有人格，也没有哪个人格有人生会话。」
+   - **`/life new`**：不看有几个，不猜给谁开，回「这个会话没有人格，开不了新的人生会话：先给它选一个人格。」，什么都不开。
+   - 原来一律回「这个会话没有人格，没有人生会话。」：后半句不对（人生会话在，只是不是这个会话的），人找不到也进不去。那个键（`commands/life-no-persona`）拿掉了。给会话选人格是头的事，核心没有 `/persona`，回执里不写命令名。
+9. **快速跳转人生会话**（施工 LF-12，项目主人 2026-11-17 本机验收第 29 条：「没法快速切换到人生会话查看内容，如果直接运行 `/life` 可以有一个列表，里面是正在运行的人生会话」）：光打的 `/life` 的回应多带 `lives`，形状同 `life.list`，带不带人格都带；这个会话的人格的那一条排最前，其余照人格的编号。一条都没有的不写这一格；`new`、`pause`、`resume`、`kill` 不带。列表怎么画、只有一条时是不是直接跳是头的事：`session`、`persona` 照旧只在有明确的一条时带（这个会话的人格的，不带人格的会话里唯一的那一条）。回执那一句不变。
 
 ### 守着它的
 
@@ -172,4 +180,5 @@
 | `crates/miyu-schedule/tests/life.rs`（施工 LF-4 下） | `end_life` 的几种回话（假端口） |
 | `crates/miyu-endpoint/tests/life_change.rs`（施工 LF-11） | 后天第 2、3 条：`note_change` 只在人生会话里有、能单独关；记、改、去掉、搜得到；她的 `remember`、`forget`，协议的 `memory.remember`、`memory.update`、`memory.import` 碰不了；主人作废、恢复照常 |
 | `crates/miyu-endpoint/tests/life_change_more.rs`（施工 LF-11） | 后天第 1、5 条：同一个人格另开的会话常驻那一块里有、别的人格没有；`life.kill`、她自己 `end_life` 以后清掉、别的会话没有，`life.new` 从零条开始 |
-| `crates/miyu-endpoint/tests/life_command.rs`（施工 LF-5 下） | `/life`：没有的只回说明、不开、不带 `session`，结束了的同没有；在跑的说下次几点醒、停着的说停着，带它；`new` 开出来马上醒，再 `new` 旧的人记结束、新的是另一个会话、回应带新的；`pause` 到点不醒、`resume` 接着醒，没有的两个都回没有；`kill` 结束、封存，没有的回没有；在人生会话自己里面看、结束、再开都管用；不带人格、场所会话、认不出的参数各回各的、什么都不动；英文、日文回执，命令目录里有它和几种写法 |
+| `crates/miyu-endpoint/tests/life_command.rs`（施工 LF-5 下） | `/life`：没有的只回说明、不开、不带 `session`，结束了的同没有；在跑的说下次几点醒、停着的说停着，带它；`new` 开出来马上醒，再 `new` 旧的人记结束、新的是另一个会话、回应带新的；`pause` 到点不醒、`resume` 接着醒，没有的两个都回没有；`kill` 结束、封存，没有的回没有；在人生会话自己里面看、结束、再开都管用；场所会话、认不出的参数各回各的、什么都不动；英文、日文回执，命令目录里有它和几种写法 |
+| `crates/miyu-endpoint/tests/life_command_bare.rs`（施工 LF-12） | 不带人格的会话里的 `/life`：只有一个人格有人生会话的，光打回它的状态、写上人格的名字、带 `session` 和 `persona`，`pause`、`resume`、`kill` 照它办，结束了的算没有；带人格的会话里回执照旧、回应也带 `persona`；一个都没有的回说明、`new` 不开、停续结束回没有；不止一个的照编号列出来、四种打法都不动；光打的带 `lives`（一条的、几条的照编号、带人格的会话里自己的排最前，停续结束不带，一条都没有的不写），`life.list` 回同一份；英文、日文的回执 |

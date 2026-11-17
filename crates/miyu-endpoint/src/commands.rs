@@ -185,7 +185,7 @@ async fn fresh(
     let Ran {
         mut events,
         said,
-        session: life,
+        life,
     } = slash.run(call).await?;
     let note = Command::Ran {
         text: params.text.clone(),
@@ -202,7 +202,13 @@ async fn fresh(
     let said = words(core, peer, &said).await;
     let mut reply = json!({"command": slash.name(), "events": events, "said": said});
     if let Some(life) = life {
-        reply["session"] = json!(life);
+        if let Some(jump) = life.jump {
+            reply["session"] = json!(jump.session);
+            reply["persona"] = json!(jump.persona);
+        }
+        if !life.lives.is_empty() {
+            reply["lives"] = json!(life.lives);
+        }
     }
     Ok(reply)
 }

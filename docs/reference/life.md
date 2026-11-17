@@ -10,10 +10,11 @@
 | [`life.resume`](#liferesume) | 继续：马上醒一次，接着照她定的醒 |
 | [`life.kill`](#lifekill) | 结束这段人生：不再醒、归档只读，这段人生的记忆清掉 |
 | [`life.new`](#lifenew) | 有就先结束，再开一条新的 |
+| [`life.list`](#lifelist) | 列出所有人格没结束的人生会话 |
 
 **谁能调**：只给人（本机、远程的头都行）；核心拉起的扩展调了回 `local_only`。
 
-这几个方法的参数都只有一个：`persona`（字符串，必写），人格的编号。没有这个人格的回 `unknown_persona`。
+除了 `life.list`（不带参数），这几个方法的参数都只有一个：`persona`（字符串，必写），人格的编号。没有这个人格的回 `unknown_persona`。
 
 **认得出人生会话**：会话日志里记着一条 [`life.started`](events.md)；会话列表（`session.list`、`sessions` 流）里那一项多一格 `life: true`，别的会话不写这一格。结束了的另记一条 [`life.ended`](events.md)，列表那一项再多一格 `life_ended: true`。
 
@@ -80,6 +81,27 @@
 ## `life.new`
 
 有在跑、暂停着的人生先照 `life.kill` 结束，再照 `life.start` 开一条新的。回应 `{"session": <新的编号>, "ended": <结束了的那一条>}`，没有要结束的不写 `ended`。新的一条想不起旧的那一段（记忆已经清了）。
+
+## `life.list`
+
+列出所有人格没结束的人生会话（在跑的、暂停着的），一个人格至多一条，照人格的编号排。不带参数，只读，不在哪个会话里留痕；头的「推演人生」页、快速跳转照它列。
+
+```json
+{"jsonrpc": "2.0", "id": "q1", "method": "life.list", "params": {}}
+{"jsonrpc": "2.0", "id": "q1", "result": {"lives": [
+  {"state": "running", "session": "<编号>", "next": "2026-11-14T10:00:00.000Z", "persona": "miyu", "name": "Miyu"}
+]}}
+```
+
+`lives` 的一项就是 [`life.status`](#状态) 对那个人格的回应（`state` 只会是 `running`、`paused`），多带三格：
+
+| 名字 | 说明 |
+|---|---|
+| `persona` | 人格的编号 |
+| `name` | 人格给人看的名字，照连接的语言；没起名字的是编号 |
+| `awake` | 她这会儿正在跑一轮的写 `true`，别的不写 |
+
+一条都没有的 `lives` 是空的。命令 `/life`（光打）的回应里带同一份 `lives`，这个会话的人格的那一条排最前（见[软件包和命令](packages.md)）。
 
 ## 出错
 

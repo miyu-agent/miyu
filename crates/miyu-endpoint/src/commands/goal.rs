@@ -80,7 +80,7 @@ impl Slash for GoalCommand {
             Ok(Ran {
                 events,
                 said,
-                session: None,
+                life: None,
             })
         })
     }

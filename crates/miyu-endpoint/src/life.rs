@@ -12,7 +12,7 @@
 //! - 上下文上限（施工 LF-10）：开会话时照人格的 `[life] context`（没写的照出厂的 [`CONTEXT`]）设；`persona.set` 改了它的，
 //!   当场改这个人格没结束的人生会话的（[`follow`]）。到点不同步：上限是会话自己的一格，人生会话里 `/context` 改的一直管用。
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use serde::Deserialize;
@@ -26,7 +26,8 @@ use miyu_store::index::{Life, Row};
 use miyu_tool::Stop;
 
 use crate::Core;
-use crate::list::{LOCAL, scan};
+use crate::hello::Peer;
+use crate::list::{LOCAL, Listed, scan};
 use crate::methods::params;
 use crate::refusal::Refusal;
 use crate::schedules::methods::refusal as schedule_refusal;
@@ -332,25 +333,65 @@ fn schedule(core: &Core, session: &SessionId) -> Result<Schedule, Refusal> {
 /// 人格 `persona` 的人生会话：本机的主会话里，照会话索引（落后的照日志补）认 `life`、这一刻的人格，最新的那一个，连同它开着
 /// 还是结束了（施工 LF-4 上）。只照不会变的格（父会话、场所）先挑：`life`、人格会在造好以后才变，落后的那一行照它挑会漏掉。
 async fn find(core: &Arc<Core>, persona: &str) -> Result<Option<(SessionId, Life)>, Refusal> {
+    Ok(mains(core, BTreeSet::new())
+        .await?
+        .into_iter()
+        .find(|one| one.life != Life::Not && one.persona.as_deref() == Some(persona))
+        .map(|one| (one.id, one.life)))
+}
+
+/// 所有人格里没结束的人生会话这一刻的样子（施工 LF-12：`life.list`、光打的 `/life`、不带人格的会话里的 `/life` 都照它）：每个
+/// 人格照 [`find`] 的认法取最新的那一条，结束了的不要；照人格的编号排。一项是 `life.status` 对那个人格的回应，多带 `persona`
+/// （编号）、`name`（给人看的名字，照 `language` 挑；没起的、人格读不出来的写编号）、她这会儿正跑一轮的 `awake: true`。
+pub(crate) async fn lives(core: &Arc<Core>, language: &str) -> Result<Vec<Value>, Refusal> {
+    let mut latest: BTreeMap<String, Listed> = BTreeMap::new();
+    // 醒没醒照会话表里这时忙不忙：不为它载入会话（停着的人生会话多半没载入）。
+    let busy = core.sessions.busy_ids().await;
+    for one in mains(core, busy).await? {
+        if one.life != Life::Not
+            && let Some(persona) = one.persona.clone()
+        {
+            latest.entry(persona).or_insert(one);
+        }
+    }
+    let mut lives = Vec::new();
+    for (persona, one) in latest {
+        if one.life != Life::Started {
+            continue;
+        }
+        let mut now = state(core, Some(&(one.id, Life::Started)))?;
+        let name = crate::personas::resolve(core, Some(Some(&persona)))
+            .await
+            .ok()
+            .flatten()
+            .and_then(|found| crate::personas::label(found.file.name.as_ref(), language));
+        now["name"] = json!(name.as_deref().unwrap_or(&persona));
+        now["persona"] = json!(persona);
+        if one.busy {
+            now["awake"] = json!(true);
+        }
+        lives.push(now);
+    }
+    Ok(lives)
+}
+
+/// `life.list`（施工 LF-12）：不带参数，回 `{"lives": [...]}`（[`lives`]，照这个连接的语言挑名字）。只读、不记事件：头的
+/// 「推演人生」页照它列，不用借命令 `/life`（命令会在会话里记一条 `command.ran`）。
+pub(crate) async fn list(core: &Arc<Core>, peer: Peer) -> Result<Value, Refusal> {
+    Ok(json!({"lives": lives(core, peer.language).await?}))
+}
+
+/// 本机的主会话，从新到旧（会话索引，落后的照日志补）；`busy` 里的写成忙着的。读不了的记一行，回 `internal_error`。
+async fn mains(core: &Arc<Core>, busy: BTreeSet<SessionId>) -> Result<Vec<Listed>, Refusal> {
     let root = core.root.clone();
     let index = core.index();
     let found = tokio::task::spawn_blocking(move || {
         let main = |row: &Row| row.parent.is_none() && row.venue == LOCAL;
-        scan(
-            &root,
-            Some(&*index),
-            &BTreeSet::new(),
-            main,
-            None,
-            &Stop::default(),
-        )
+        scan(&root, Some(&*index), &busy, main, None, &Stop::default())
     })
     .await;
     match found {
-        Ok(Ok(listed)) => Ok(listed
-            .into_iter()
-            .find(|one| one.life != Life::Not && one.persona.as_deref() == Some(persona))
-            .map(|one| (one.id, one.life))),
+        Ok(Ok(listed)) => Ok(listed),
         Ok(Err(error)) => {
             tracing::warn!(target: "miyu::endpoint", error = %error, "life session not found");
             Err(Refusal::INTERNAL)
