@@ -206,3 +206,62 @@ async fn a_content_package_switched_off_is_not_listed() {
     );
     core.stop_extensions().await;
 }
+
+/// 开包只有一条路（施工 UX-1修，im 换钉后三条测试红的根因）：手动开的扩展给别的包带了内容，经 `extension.enable` 打开也推
+/// `content.changed`（同 `package.enable`），带内容的宿主才知道去重读；`extension.disable` 同样推，重读不再列它。
+#[tokio::test]
+async fn an_extension_switched_by_extension_enable_pushes_its_content() {
+    use crate::support::extensions::{Program, install, quick, record, steps};
+    let home = Home::new();
+    let program = Program::new();
+    let (path, step) = record(&home, "memes");
+    let all = [step.as_str(), "hello", "call:content.list", "listen"];
+    install(&home, "memes", &program.name(), "always", &steps(&all));
+    install(
+        &home,
+        "late",
+        &program.name(),
+        "manual",
+        &steps(&["hello", "wait"]),
+    );
+    let manifest = home.root.packages().join("late/package.toml");
+    let text = std::fs::read_to_string(&manifest).expect("装好了");
+    std::fs::write(&manifest, format!("{text}\n[content.memes]\ndir = \"x\"\n")).expect("写得进");
+    home.write("opt/late/x/index.json", "{}");
+    let core = crate::support::extensions::core(&home, quick());
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    assert_eq!(
+        reply(&path, "s2").await["result"]["packages"],
+        json!([]),
+        "手动开的关着，不列"
+    );
+    let pushes = |path: &std::path::Path| {
+        said(path)
+            .iter()
+            .filter(|line| line["method"] == "content.changed")
+            .count()
+    };
+    let until = async |n: usize| {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+        while pushes(&path) < n {
+            assert!(
+                tokio::time::Instant::now() < deadline,
+                "等不到第 {n} 条 content.changed：{}",
+                read(&path)
+            );
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    };
+    let on = client
+        .call("e", "extension.enable", json!({"package": "late"}))
+        .await;
+    assert_eq!(on["result"]["on"], true, "{on}");
+    until(1).await;
+    let off = client
+        .call("d", "extension.disable", json!({"package": "late"}))
+        .await;
+    assert_eq!(off["result"]["on"], false, "{off}");
+    until(2).await;
+    core.stop_extensions().await;
+}

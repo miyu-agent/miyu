@@ -224,3 +224,46 @@ async fn the_bus_stream_pushes_the_whole_list_when_readiness_changes() {
     );
     core.stop_extensions().await;
 }
+
+/// 手动开的扩展经 `extension.enable` 打开（施工 UX-1修：im 的桥这样开插件）：同 `package.enable`，登记了方法推 `bus.changed`、
+/// `bus.list` 列它可用。
+#[tokio::test]
+async fn an_extension_switched_on_by_extension_enable_is_ready_on_the_bus() {
+    let home = Home::new();
+    let program = Program::new();
+    let hook = voice(
+        &home,
+        &program,
+        "late",
+        &["chat.hook.event"],
+        "plugs = [\"chat.hook\"]\nmethods = [\"chat.hook.event\"]",
+    );
+    let core = core(&home, quick());
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    client
+        .call("s1", "subscribe", json!({"stream": "bus"}))
+        .await;
+    let on = json!({"jsonrpc": "2.0", "id": "e", "method": "extension.enable", "params": {"package": "late"}});
+    client.line(&on.to_string()).await;
+    let ready = tokio::time::timeout(Duration::from_secs(60), async {
+        loop {
+            let next = client.next().await.expect("没断开");
+            if next["method"] == "bus.changed" && next["params"]["names"][0]["ready"] == true {
+                return next;
+            }
+        }
+    })
+    .await;
+    assert!(
+        ready.is_ok(),
+        "登记了以后推了可用的那一份：{}",
+        std::fs::read_to_string(&hook).unwrap_or_default()
+    );
+    let listed = client.call("l", "bus.list", json!({})).await;
+    assert_eq!(
+        listed["result"]["names"][0]["ready"], true,
+        "bus.list 列它可用：{listed}"
+    );
+    core.stop_extensions().await;
+}

@@ -97,54 +97,73 @@ fn switch(manifest: &Manifest, layer: Layer) -> Result<Switch, Refusal> {
     })
 }
 
-/// `package.enable`。卸掉了的出厂包先装回来；扩展再照 `approve` 打开。
+/// `package.enable`。回应同 `package.list` 的一项。
 pub(crate) async fn enable(
     core: &Arc<Core>,
     peer: Peer,
     params: EnableParams,
 ) -> Result<Value, Refusal> {
-    let (manifest, layer, dir, removed) = find(core, &params.package)?;
-    let how = switch(&manifest, layer)?;
-    if crate::packages::status::program_missing(&dir, &manifest) {
-        return Err(Refusal::PROGRAM_MISSING);
-    }
-    if removed {
-        manage::bring_back(core, peer, &params.package).await?;
-    }
-    match how {
-        Switch::Extension => {
-            turn_on(core, peer, &params.package, params.approve.as_deref()).await?;
-        }
-        Switch::Bundle => crate::mcp::turn_on(core, &params.package, &manifest).await?,
-        Switch::Plain => crate::extensions::set_on(core, &params.package, true).await?,
-        Switch::Shipped => {}
-    }
-    core.follow_switches().await;
+    switch_on(core, peer, &params.package, params.approve.as_deref()).await?;
     item(core, peer, &params.package)
 }
 
-/// `package.disable`。扩展关掉进程；出厂的内置包卸掉。
+/// `package.disable`。回应同 `package.list` 的一项。
 pub(crate) async fn disable(
     core: &Arc<Core>,
     peer: Peer,
     params: DisableParams,
 ) -> Result<Value, Refusal> {
-    let (manifest, layer, _, removed) = find(core, &params.package)?;
+    switch_off(core, peer, &params.package).await?;
+    item(core, peer, &params.package)
+}
+
+/// 打开包 `id`：开包只有这一条路（施工 UX-1修：`package.enable`、`extension.enable`、设置页的「启用」都走这里，行为一样）。
+/// 卸掉了的出厂包先装回来；扩展照 `approve` 批了能力再拉起；开了以后知识库、给别的包带的内容这些照开着的包重算
+/// （[`Core::follow_switches`]）。
+pub(crate) async fn switch_on(
+    core: &Arc<Core>,
+    peer: Peer,
+    id: &str,
+    approve: Option<&[String]>,
+) -> Result<(), Refusal> {
+    let (manifest, layer, dir, removed) = find(core, id)?;
+    let how = switch(&manifest, layer)?;
+    if crate::packages::status::program_missing(&dir, &manifest) {
+        return Err(Refusal::PROGRAM_MISSING);
+    }
+    if removed {
+        manage::bring_back(core, peer, id).await?;
+    }
+    match how {
+        Switch::Extension => {
+            turn_on(core, peer, id, approve).await?;
+        }
+        Switch::Bundle => crate::mcp::turn_on(core, id, &manifest).await?,
+        Switch::Plain => crate::extensions::set_on(core, id, true).await?,
+        Switch::Shipped => {}
+    }
+    core.follow_switches().await;
+    Ok(())
+}
+
+/// 关掉包 `id`：关包只有这一条路（同 [`switch_on`]）。扩展关掉进程；出厂的内置包卸掉。
+pub(crate) async fn switch_off(core: &Arc<Core>, peer: Peer, id: &str) -> Result<(), Refusal> {
+    let (manifest, layer, _, removed) = find(core, id)?;
     let how = switch(&manifest, layer)?;
     if !removed {
         match how {
             Switch::Extension => {
-                turn_off(core, peer, &params.package).await?;
+                turn_off(core, peer, id).await?;
             }
             Switch::Shipped => {
-                manage::remove_package(core, params.package.clone(), false).await?;
+                manage::remove_package(core, id.to_string(), false).await?;
             }
-            Switch::Bundle => crate::mcp::turn_off(core, &params.package, &manifest).await?,
-            Switch::Plain => crate::extensions::set_on(core, &params.package, false).await?,
+            Switch::Bundle => crate::mcp::turn_off(core, id, &manifest).await?,
+            Switch::Plain => crate::extensions::set_on(core, id, false).await?,
         }
     }
     core.follow_switches().await;
-    item(core, peer, &params.package)
+    Ok(())
 }
 
 /// 设置页上包的「启用」（施工 UX-1，`config/enabled.rs`）：开同 `package.enable`（不带 `approve`：要批的能力还没批的照它拒），

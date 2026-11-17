@@ -1685,6 +1685,7 @@ flowchart LR
 | VS-1 | 包的命令认版本、转交带数据根 | 项目主人 11-17 本机验收第 11 条：`miyu im --version` 报未知命令、`miyu tui --version` 印一大段。只敲 `miyu <包的命令> --version`、`-V` 的主程序自己印 `miyu <命令> <包的版本>`（清单 `[package] version`，没写的只印命令），不交给包的程序；两份帮助页写上。顺带（语音会话查出、主人本机实锤）：转交只给包的几处、没给 `MIYU_HOME`，没设它的机器上 `miyu say --voices` 报「MIYU_HOME is not set」；转交和核心拉起扩展改成同一份 `PackageDirs::launch_env`。施工单见 `VS-1-包的命令认版本.md` |
 | NS-1 | 网络搜索的 key 和名字 | 项目主人 11-17 本机验收第 10、13 条，加上网页 W-1206 要的英文名。包名「联网搜索」改「网络搜索」；联网服务加 Exa、AnySearch（新项 `net.search.anysearch.key`，配了的带 `Bearer`，没配的照免费额度）；DeepSeek 的 key 两处都留，没填的借官方 DeepSeek 供应商的（认法照 PK-1补），`config.get` 的来源写 `{"layer":"inherited","from":"providers.<编号>.key"}`、值 `null`，借哪几项登记在 `provider_key::INHERITED`；`config.schema` 每一项每一组、`package.list`、`package.info` 每个包，连接不是英文的多 `name_en`。AnySearch 读网页（`/v1/extract`）没接。施工单见 `NS-1-网络搜索的key和名字.md` |
 | RO-3补 | 删数据根改成问人 | 项目主人 11-17 定（照选项字面）：删整个数据根这类危险命令照旧弹确认，问你，不是拦。`shell` 的 `delete_data_root` 从灭顶直接拒改成问人、归「受保护的命令」删除那一类；`trash` 删数据根和装着它的也报它、问人，RO-3 加的「不许删」退回。拒绝那一句 `hazard/delete-data-root.txt` 和说法 `shell/hazard-delete_data_root` 删了，受保护命令那一组的说明三语跟着改。施工单见 `RO-3补-删数据根改成问人.md` |
+| UX-1修 | 开关只有一条路 | im 换钉后三条测试红：`extension.enable`、`extension.disable` 不走包的开关那条路，开关以后不推 `content.changed`，im 认不出经它打开的插件。五个入口收成 `packages::switch::switch_on`、`switch_off`，扩展进程那一截只由它调。另两条 im 测试要「关着的插件照样列」，和 UX-1补 冲突，另报拍板。施工单 `UX-1-设置项正名.md` 最后一节 |
 
 ### 四、施工单的格式
 

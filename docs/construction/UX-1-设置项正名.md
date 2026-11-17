@@ -74,3 +74,17 @@
 文档会话 11-17 实测查出：`miyu config explain packages.base-net.enabled` 在 `base-net` 卸掉以后印「packages.base-net.enabled（packages.base-net.enabled）：立即生效。」，名字是键本身、没有说明。根因：给人看的字只给装着的包拼「启用」那一项（`Human::with_packages` 照 `system_packages`），卸掉了的出厂包也有开关（`config/enabled.rs` 的 `switches`），却没有字。改：`Human` 找不到某个 `packages.<编号>.enabled` 的字时照带占位的那一项（名字、说明人人一样）。
 
 验收：改前红 `miyu-endpoint` `package_enabled::switches_mix_with_other_changes_and_odd_writes_are_refused`（关掉 `base-memory` 后 `config.schema` 那一项名字是键、说明空）；实测沙箱卸掉 `base-net`，`miyu config explain` 中英都印「启用 / Enabled」和说明。
+
+### 修：开关只有一条路（UX-1修）
+
+im 换钉到 UX-1 以后三条测试红（`hooks::a_package_switched_on_after_the_bridge_is_hooked_from_the_pushed_change`、`plugins::a_plugin_installed_while_running_is_known_from_the_pushed_change`、`site_plugins::the_plugin_page_lists_reads_and_switches_plugins_through_the_core`），主会话 2026-11-17 转来。
+
+根因：im 的插件就是给 im 带了内容（`[content.im]`）的包，im 照 `content.list` 认插件、照推来的 `content.changed` 重读。UX-1补 起关着的包 `content.list` 不列，开关以后由 `Core::follow_switches` 推 `content.changed`；可这一步只挂在 `package.enable`、`package.disable` 上，`extension.enable`、`extension.disable` 直接走扩展的开关、不推。im 经 `extension.enable` 打开手动开的插件，核心不推，im 一直不知道它，挂不上。
+
+改了什么：
+
+1. 开关只有一条路：`packages::switch::switch_on`、`switch_off`。`package.enable`、`package.disable`、设置页的「启用」、`extension.enable`、`extension.disable` 都走它（`extension.*` 先认是扩展，回应照旧是扩展那一项）；扩展进程那一截（`extensions::methods::turn_on`、`turn_off`）只由它调。开关以后一律 `follow_switches`。
+2. 测试：`package_all_off::an_extension_switched_by_extension_enable_pushes_its_content`（改前红：`extension.enable` 以后等不到 `content.changed`）；`bus::an_extension_switched_on_by_extension_enable_is_ready_on_the_bus`（守着两条路一样：登记了方法推 `bus.changed`、`bus.list` 列它可用；改前也是绿的，总线本来不看开关）。
+
+验收：im 那三条照 im 的测试、核心照这一版（`[patch]` 指这棵树）跑：`hooks::…` 绿；另外两条照旧红，不是这一处：它们要的是「装着、还没开的手动插件，im 的插件页照样列出来」，和 UX-1补「关着的包带给别的包的内容不列」冲突，另报拍板。
+

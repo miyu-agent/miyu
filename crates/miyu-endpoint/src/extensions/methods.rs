@@ -57,16 +57,22 @@ pub(crate) fn entry(core: &Core, id: &str, peer: Peer) -> Option<Value> {
 
 /// `extension.enable`：要的能力还有没批的，照 `approve` 批（施工 9-4 下上）；批过的、开着的一起记下，照登记缓存先登记
 /// 它的工具（施工 O-2 中），没在跑的拉起。
+///
+/// 开包只有一条路（施工 UX-1修）：只认扩展，照 `package.enable` 的那一条开（[`crate::packages::switch::switch_on`]），回应照旧是
+/// 扩展的这一项。
 pub(crate) async fn enable(
     core: &Arc<Core>,
     peer: Peer,
     params: EnableParams,
 ) -> Result<Value, Refusal> {
-    turn_on(core, peer, &params.package, params.approve.as_deref()).await
+    let id = params.package.as_str();
+    extension(core, id)?;
+    crate::packages::switch::switch_on(core, peer, id, params.approve.as_deref()).await?;
+    entry(core, id, peer).ok_or(Refusal::UNKNOWN_PACKAGE)
 }
 
-/// 打开扩展 `id`（`extension.enable`；施工 F-6 上起 `package.enable` 也走这里）：程序不在的拒绝 `program_missing`，开了也起不来
-/// （`package-pages.md`「程序不在就当没装」）。
+/// 打开扩展 `id` 的进程那一截：只由开包的那一条路调（[`crate::packages::switch::switch_on`]，施工 UX-1修），别处不直接调。
+/// 程序不在的拒绝 `program_missing`，开了也起不来（`package-pages.md`「程序不在就当没装」）。
 pub(crate) async fn turn_on(
     core: &Arc<Core>,
     peer: Peer,
@@ -91,15 +97,20 @@ pub(crate) async fn turn_on(
 }
 
 /// `extension.disable`：记成关着，在跑的请它退出、等它退出，它的工具出目录（施工 O-2 中）。
+///
+/// 关包只有一条路（施工 UX-1修，同 [`enable`]）。
 pub(crate) async fn disable(
     core: &Arc<Core>,
     peer: Peer,
     params: PackageParams,
 ) -> Result<Value, Refusal> {
-    turn_off(core, peer, &params.package).await
+    let id = params.package.as_str();
+    extension(core, id)?;
+    crate::packages::switch::switch_off(core, peer, id).await?;
+    entry(core, id, peer).ok_or(Refusal::UNKNOWN_PACKAGE)
 }
 
-/// 关掉扩展 `id`（`extension.disable`；施工 F-6 上起 `package.disable` 也走这里）。
+/// 关掉扩展 `id` 的进程那一截：只由关包的那一条路调（[`crate::packages::switch::switch_off`]，施工 UX-1修）。
 pub(crate) async fn turn_off(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value, Refusal> {
     let manifest = &extension(core, id)?;
     let _one_at_a_time = core.extensions.ops.lock().await;

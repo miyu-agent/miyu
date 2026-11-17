@@ -1594,6 +1594,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sVS1"><span class="n">VS-1</span>包的命令认版本、转交带数据根<span class="st">…</span></a></li>
         <li><a class="step review" href="#sNS1"><span class="n">NS-1</span>网络搜索的 key 和名字<span class="st">…</span></a></li>
         <li><a class="step review" href="#sRO3B"><span class="n">RO-3补</span>删数据根改成问人<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sUX1F"><span class="n">UX-1修</span>开关只有一条路<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -62577,6 +62578,54 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/RO-3补-删数据根改成问人.md</code>；蓝图 <code>session/guard.md</code>、<code>tools/shell.md</code>、<code>tools/trash.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sUX1F" aria-labelledby="h-sUX1F">
+  <div class="sheet-head"><h2 id="h-sUX1F"><span class="no">UX-1修</span>开关只有一条路</h2><span class="pill review">待验收</span></div>
+  <p class="purpose"><code>extension.enable</code>、<code>extension.disable</code> 和 <code>package.*</code>、设置页的「启用」收成一条路：开关以后一律重算、推 <code>content.changed</code>，im 认得出经它打开的插件。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates · miyu-endpoint/src/packages/switch.rs、extensions/methods.rs</span><span class="dir-note">UX-1修</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>switch_on</code>、<code>switch_off</code> 是开关包唯一的路</li>
+              <li><code>extension.*</code> 先认是扩展，回应照旧</li>
+              <li>扩展进程那一截只由它调</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">五个入口行为一样</span><span class="rl">不让两条路分岔（主会话 11-17）</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">UX-1修</dd></div>
+        <div><dt>名称</dt><dd>开关只有一条路</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">UX-1修</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改前红：<code>extension.enable</code> 以后等不到 <code>content.changed</code></span></li>
+        <li><span class="ok">✓</span><span>im 的 <code>hooks::a_package_switched_on_after…</code> 照这棵树跑绿；另两条要「关着的插件照样列」，另报拍板</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/UX-1-设置项正名.md</code> 最后一节。</li>
       </ul>
     </div>
   </div>
