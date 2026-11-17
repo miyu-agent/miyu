@@ -1662,6 +1662,7 @@ flowchart LR
 | GO-1 | opencode Go 按协议分地址 | 发版前核对真端点：opencode 2026-11 起按协议分地址（`/inference/go/openai/v1`、`/inference/go/anthropic/v1`），models.dev 给每个模型写了自己的 `provider.api`。核心只认这一家的地址，后台拉到新目录以后 Go 里走 anthropic 的模型发到 `…/openai/v1/messages`、404。目录读模型的 `provider.api`（整理好的一份版本 3、记下的答版本 2），驱动、地址都不是手写的照模型自己的发（`Provider::for_model`；路由、`provider.test` 只换地址，key、头照旧），手写的照手写的。出厂快照不换（旧地址还答），换不换另拍板。施工单 `GO-1-opencode-Go按协议分地址.md` |
 | FL-8 | 监视起不来的测试真走轮询 | 门禁并行时红过一次的 `config_watch_log::a_hand_edit_and_an_unavailable_watch_are_logged`。根因在测试：后半段让整个数据根进不去来逼 inotify 拒绝，`notify` 的轮询也 stat 不到那个目录，不报错、不记、以后也不补，只交一次出错；监视照「出错当都变了」过 200 毫秒重读一遍，手改赶在这一遍以前才看得到，测试线程慢 200 毫秒就等满六十秒（改回权限后插睡 300 毫秒，1/1 红）。改成只拿掉配置目录的读权限：inotify 照样拒绝，轮询真的每两秒看一次。产品代码不动。改后插睡 300 毫秒、3.3 秒都过，四种负载各 50 遍 0 红（改前自然负载 170 遍也没压出来）。施工单 `FL-8-监视起不来的测试真走轮询.md` |
 | TK-1 | 登记簿的数用真端点补 | HT-2 四段供应商侧工具的字登记时照 o200k 本机估。照登记簿已有的真端点量法补上：magpie 网关的 `marvis/deepseek-v4-1-flash-261017`（DeepSeek V4.1 Flash 的分词），`hi` 对 `hi` 加换行加那段字的 `prompt_tokens` 差。`hosted-tool.txt`、`hosted-tool-failed.txt` 外壳 21、整块 51，`hosted-tool-open.txt` 15、28，`hosted-tool-cut.txt` 6（o200k 估的是 18、47、12、25、5）。`prompts.md` 重出，给模型看的字一字不变。施工单 `TK-1-登记簿的数用真端点补.md` |
+| JB-1压 | 后台瞬间就完的命令在 tmpfs 上重压 | JB-1 修后只有钉死时序的单元测试担保，没在 tmpfs 上复跑过。照 RB-1 第 1 条的复现（临时的会话测试真的 `shell` 后台跑 `echo hi`、等十秒看 `job.reported`，没提交），数据根放 `/dev/shm`：main 上 4 核 8 路、2 核 16 路、12 核 24 路各 50 遍，2400 遍 0 遍卡住；把 `Gate::pass` 临时改成一律当场交的同样压，1200 遍卡 65 遍，证明压得出原来的毛病。只压测、没改代码。施工单 `JB-1压-tmpfs上重压.md` |
 
 ### 四、施工单的格式
 
