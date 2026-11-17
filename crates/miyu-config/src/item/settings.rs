@@ -293,6 +293,10 @@ macro_rules! __settings_default {
     (name, $default:literal) => {
         ::core::option::Option::Some($crate::Value::Text(::std::borrow::Cow::Borrowed($default)))
     };
+    // 选预设有默认值的（施工 CK-1：`preset.default` 默认 `full`）。
+    (preset, $default:literal) => {
+        ::core::option::Option::Some($crate::Value::Text(::std::borrow::Cow::Borrowed($default)))
+    };
 }
 
 /// [`settings!`](crate::settings) 里 `tighten` 那一格：不写是没有。

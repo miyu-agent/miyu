@@ -313,7 +313,11 @@ pub(crate) fn call<'a>(
                         (package, by),
                     )
                 }
-                None => config::set::set(core, peer, &request.id, params),
+                // 人改的：指着没有的人格、预设照收，回应带上警告（施工 CK-1）。
+                None => {
+                    let reply = config::set::set(core, peer, &request.id, params)?;
+                    config::set::unknown::warned(core, peer, reply).await
+                }
             }
         }),
         "config.trust" => answer(move || async move {

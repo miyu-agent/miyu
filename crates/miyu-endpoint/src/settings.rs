@@ -50,9 +50,9 @@ miyu_config::settings! {
     /// 人格的配置（施工 P-1 上，`docs/blueprint/personas.md`）。
     pub struct PersonaSettings in "persona" {
         /// 新会话默认用哪个人格：人格目录的编号。开会话时指定的、通讯平台的桥照场所规则交来的优先。出厂不设：没设的新会话
-        /// 无人格（施工 P-4 上）；指着没有的人格的当没设。
+        /// 无人格（施工 P-4 上）；指着没有的人格的当没设。类型是选人格（施工 CK-1）：头照人格列表让人挑，`check` 照现有的人格查。
         default: Option<String> = none {
-            kind: name,
+            kind: persona,
             layers: [System],
             applies: new_session,
             ui: { page: "general", group: "new_session", control: text },
@@ -64,9 +64,9 @@ miyu_config::settings! {
     /// 预设的配置（施工 P-2 上，`docs/blueprint/presets.md`）。
     pub struct PresetSettings in "preset" {
         /// 新会话默认用哪个预设：预设文件的编号。开会话时指定的、通讯平台的桥照场所规则交来的优先。指着没有的不悄悄换
-        /// （Y12）。
+        /// （Y12）。类型是选预设（施工 CK-1）。
         default: String = "full" {
-            kind: name,
+            kind: preset,
             layers: [System],
             applies: new_session,
             ui: { page: "general", group: "new_session", control: text },

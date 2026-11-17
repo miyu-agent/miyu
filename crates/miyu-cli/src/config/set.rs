@@ -2,7 +2,8 @@
 //! 不带 `expect`（后写的算，第五条第 11 条）。
 //!
 //! - `set` 把人敲的值原样交给核心（`input`），由它照这一项的类型读。成了：标准错误上印一行灰字，设了什么、什么时候
-//!   生效；上面一层压着的再接一行告警，说用的还是哪一层写的（设计 47 第四节）。这一层本来就是的说没改。
+//!   生效；上面一层压着的再接一行告警，说用的还是哪一层写的（设计 47 第四节）。这一层本来就是的说没改。回应带了警告的
+//!   （施工 CK-1：选的人格、预设现在没有）一条再接一行告警。
 //! - `unset`：成了说现在是哪一层的什么；这一层本来就没写的说一句，退出码 0。
 //! - `set --project`：项目配置只能手改，参数不对，退出码 2：连核心以前就拦下了（`config.rs` 的 `early`）。
 
@@ -10,7 +11,7 @@ use serde_json::{Value, json};
 
 use super::Talk;
 use super::render::toml;
-use crate::diagnostic;
+use crate::diagnostic::{self, Problem};
 use crate::exit;
 use crate::shown::{Line, write};
 
@@ -33,6 +34,7 @@ pub(super) async fn set(talk: &mut Talk<'_>, key: &str, value: &str) -> u8 {
                     gray(talk, language.saved(key, &value, ""));
                     let warned = language.overridden(key, above, &effective);
                     diagnostic::warning(talk.err, language, &warned);
+                    warn_missing(talk, &result);
                     return exit::OK;
                 }
                 _ => {
@@ -51,7 +53,18 @@ pub(super) async fn set(talk: &mut Talk<'_>, key: &str, value: &str) -> u8 {
         }
     };
     gray(talk, said);
+    warn_missing(talk, &result);
     exit::OK
+}
+
+/// 回应里的警告（施工 CK-1：选的人格、预设现在没有，照收）：一条一行 `miyu: 警告：…`，照核心的原话。
+fn warn_missing(talk: &mut Talk<'_>, result: &Value) {
+    let language = talk.plan.language;
+    for problem in result["problems"].as_array().into_iter().flatten() {
+        if let Some(message) = problem["message"].as_str() {
+            diagnostic::warning(talk.err, language, &Problem::new(message));
+        }
+    }
 }
 
 /// `unset`：从这一层删掉一项，交回退出码。

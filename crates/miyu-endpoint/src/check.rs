@@ -29,7 +29,7 @@ use crate::Core;
 
 mod drivers;
 mod embedding;
-mod known;
+pub(crate) mod known;
 mod left;
 mod mcp;
 mod run;

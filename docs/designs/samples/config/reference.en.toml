@@ -390,7 +390,7 @@ timeout = 300
 
 [persona]
 # Default persona: The persona new sessions use. When unset, new sessions have no persona: no character prompt, and a memory of their own.
-# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Applies to new sessions.
+# Allowed: a persona id. Only in the system config. Applies to new sessions.
 # default =
 
 [pools."<id>"]
@@ -427,7 +427,7 @@ subagent = true
 
 [preset]
 # Default preset: The preset new sessions use.
-# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Applies to new sessions.
+# Allowed: a preset id. Only in the system config. Applies to new sessions.
 default = "full"
 
 [profile]

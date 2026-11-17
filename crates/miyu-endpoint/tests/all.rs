@@ -81,6 +81,7 @@ mod config_trust;
 mod config_unused;
 mod config_watch;
 mod context_cap;
+mod default_names;
 mod delete;
 mod delete_children;
 mod dirs;

@@ -10,7 +10,7 @@
 //! 4. 只改那几项（`miyu_config::edit`），先写临时文件再替换；替换前发现这一瞬间有人手改了，从第 3 步重来，最多三次，还不行
 //!    的回 `config_conflict`。写不成：`internal_error`，记一条 `WARN config not written`。
 //! 5. 写成了：换上新的最终值，记日志（第六条），记一条 `INFO config changed`，推 `config.changed`（施工 8-4），回应。先落盘，
-//!    后回应。
+//!    后回应。改了的几项里指着现在没有的人格、知识库、预设的，回应带上警告（施工 CK-1，`set/unknown.rs`）。
 //!
 //! 第 3 步的重读和监视看到手改走同一条路（`observe.rs`）：手改过的先当手改推、记，再改。
 
@@ -37,6 +37,7 @@ use crate::hello::Peer;
 use crate::refusal::Refusal;
 
 pub(super) mod records;
+pub(crate) mod unknown;
 
 /// 替换前发现有人手改，最多重来几次（第五条第 6 条）。
 pub(super) const TRIES: usize = 3;

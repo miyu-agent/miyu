@@ -148,7 +148,7 @@ trusted = true
 | 网址 `url` | `"https://…"`，或者 `{ env = "DEEPSEEK_API_URL" }`（施工 8-6b，照「密钥」这一行的读法、查法：行内表、有表头的表都认，没有 `{ secret = … }`：地址不进密钥文件） | `http://`、`https://` 开头（不分大小写），后面有主机名，没有空白、控制字符；不对的 `bad_format`；`{ env = … }` 取不到的（没设、设成空的）照第九条报 `env_not_set`，指的东西在不在由用它的一方当场说（8-6b 由会话的路由当场说 `no_model`） | 8-6（供应商的 `base_url`），8-6b 加引用 |
 | 名字 `name` | `"deepseek"` | 小写字母开头，只有小写字母、数字、`-`、`_`，最长 64 个字符；不对的 `bad_format` | 8-6（供应商的 `catalog`） |
 | 引用 `reference` | `"deepseek/deepseek-v4"` | 模型 `<供应商>/<模型>` 或池 `@<池>`（`models.md`「两种写法」），写法不对的 `bad_format`。指的供应商、池在不在，读进来以后照最终值另查，没有的 `bad_reference`（8-8，`miyu_config::dangling`，「报错」那张表），会话的路由也当场说 `no_model` | 8-6（`models.chat`） |
-| 人格 `persona`、知识库 `knowledge`、预设 `preset` | `"cat"` | 施工 PC-3（设计 53 第四节，软件包的清单声明；预设是 PC-3 补；核心自己的 `terminal.persona`、`terminal.preset` 也是这两种，施工 PC-4）：写法同名字；有没有这个人格、知识库、预设不在类型里查，`check` 照核心这时有的另查，没有的报警告 `unknown_persona`、`unknown_knowledge`、`unknown_preset`（可能以后才建，不挡），列表、一组字段的列表里的也查（`dangling.rs` 的 `unknown_names`）；`config.check` 不查。软件包的 `type = "model"` 是上一行的引用（模型、池都行），一组字段里的也照 `bad_reference` 查 | PC-3、PC-3 补 |
+| 人格 `persona`、知识库 `knowledge`、预设 `preset` | `"cat"` | 施工 PC-3（设计 53 第四节，软件包的清单声明；预设是 PC-3 补；核心自己的 `terminal.persona`、`terminal.preset` 也是这两种，施工 PC-4；`persona.default`、`preset.default` 施工 CK-1 起也是）：写法同名字；有没有这个人格、知识库、预设不在类型里查，`check` 照核心这时有的另查，没有的报警告 `unknown_persona`、`unknown_knowledge`、`unknown_preset`（可能以后才建，不挡），列表、一组字段的列表里的也查（`dangling.rs` 的 `unknown_names`）；`config.check` 不查。`config.set` 照收，改了的那几项里有没有的，回应带 `problems`（同一条警告，施工 CK-1，`config/set/unknown.rs`）软件包的 `type = "model"` 是上一行的引用（模型、池都行），一组字段里的也照 `bad_reference` 查 | PC-3、PC-3 补 |
 | 模型 `model` | `"deepseek/deepseek-v4"` | 只能是 `<供应商>/<模型>`：池、写法不对的 `bad_format`。指的供应商在不在同引用 | 8-8（池的成员：宏里写 `models`，模型的列表） |
 | 模型或几个字 `model_or` | `"local"`、`"siliconflow/BAAI/bge-m3"` | 宏里写 `model_or ["local", "off"]`：等于列出的字的就是那个字（字不带 `/`，模型的写法一定带，撞不上）；别的照「模型」这一行查，不收池。指的供应商在不在只查模型那一种，同「模型」。说法是列出的字再接上「或 `<供应商>/<模型>`」；JSON Schema 是 `anyOf`：那几个字的 `enum`、模型的写法（`pattern`）；协议上 `config.schema` 的 `type` 是 `model_or`，带 `options`（那几个字和它们的名字），界面控件照 `text` | R-5 补（`models.embedding`） |
 | 给模型看的字 `english` | `"Small model for quick lookups."` | 必写最多几个字符，宏里写 `english [60]`；空的、超了的、有控制字符（连同换行：只能一行）的 `bad_format`；CJK 的字（汉字、假名、谚文、全角的标点和字母）数乘二不小于总字数的也是 `bad_format`：给模型看的字一律英文（`26-提示词.md` J3），期望说「一行英文」。协议上 `config.schema` 照文字一样带 `max` | 8-8 补（池的 `description`） |
@@ -269,8 +269,8 @@ miyu_config::settings! {
 | `net.search.brave.key` | 密钥 | 没有：Brave 不试 | 系统 | 不能写 | `next_turn` | N-3 上：只在联网服务选了 Brave 时用 |
 | `net.search.searxng.url` | 网址，可以写 `{ env = … }` | 没有：SearXNG 不试 | 系统 | 不能写 | `next_turn` | N-3 上：自己搭的 SearXNG 实例，要开着 JSON 格式；只在联网服务选了 SearXNG 时用 |
 | `net.internal_domains` | 文字的列表，一个最多 253 个字符：域名，例如 `example-corp.com`（大小写、前面带点都认） | 没有 | 系统 | 不能写 | `next_turn` | MB-2（设计 06 U25 第 2 条，2026-10-22 项目主人定）：关起来的会话（群、陌生人的私聊）里让她上网时一律不去的域名，子域名也算，不管解析成什么地址、走不走代理，每一跳都查；主人自己不受影响（`tools/web_fetch.md`「怎么走」第 4 条）。设置页「软件包」联网那一组 |
-| `persona.default` | 名字（人格的编号） | 没有 | 系统 | 不能写 | `new_session` | P-1 上（`personas.md`）：没指定人格的新会话照它找；没设的无人格，指着没有的人格当没设（施工 P-4 上：出厂不设，原来是 `engineer`；预设不再管默认人格）。设置页在「通用」那一页的「新会话」一组（2026-10-23 从「人格」组挪来） |
-| `preset.default` | 名字（预设的编号） | `full` | 系统 | 不能写 | `new_session` | P-2 上（`presets.md`）：没指定预设的新会话照它找；指着没有的预设，造会话回 `unknown_preset`，不悄悄换（Y12）。设置页在「通用」那一页的「新会话」一组（2026-10-23 从「预设」组挪来） |
+| `persona.default` | 人格（人格的编号；施工 CK-1 前是名字） | 没有 | 系统 | 不能写 | `new_session` | P-1 上（`personas.md`）：没指定人格的新会话照它找；没设的无人格，指着没有的人格当没设（施工 P-4 上：出厂不设，原来是 `engineer`；预设不再管默认人格）。指着没有的，`check` 报警告 `unknown_persona`，`config.set` 照收、回应带同一条警告（施工 CK-1）。设置页在「通用」那一页的「新会话」一组（2026-10-23 从「人格」组挪来） |
+| `preset.default` | 预设（预设的编号；施工 CK-1 前是名字） | `full` | 系统 | 不能写 | `new_session` | P-2 上（`presets.md`）：没指定预设的新会话照它找；指着没有的预设，造会话回 `unknown_preset`，不悄悄换（Y12）。指着没有的，`check` 报警告 `unknown_preset`，`config.set` 照收、回应带同一条警告（施工 CK-1）。设置页在「通用」那一页的「新会话」一组（2026-10-23 从「预设」组挪来） |
 | `models.chat` | 引用 | 没有：`no_model` | 系统 | 不能写 | `new_session` | 8-6 |
 | `models.vision` | 引用 | 没有 | 系统 | 不能写 | `next_turn` | 8-8 |
 | `models.embedding` | 模型或几个字：`local`、`off`、`<供应商>/<模型>` | 没有：照 `local` | 系统 | 不能写 | `next_turn` | R-5 下（R-5 补从选项换成模型或几个字，`recall.md` 第四条第 1、7 款） |
@@ -1364,7 +1364,7 @@ timeout = 300
 
 [persona]
 # 默认人格：新会话默认用哪个人格。不设的话，新会话不使用人格，记忆单独一份。
-# 能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置里。新会话生效。
+# 能写：人格的编号。只能写在系统配置里。新会话生效。
 # default =
 
 [pools."<id>"]
@@ -1401,7 +1401,7 @@ subagent = true
 
 [preset]
 # 默认预设：新会话默认用哪个预设。
-# 能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置里。新会话生效。
+# 能写：预设的编号。只能写在系统配置里。新会话生效。
 default = "full"
 
 [profile]

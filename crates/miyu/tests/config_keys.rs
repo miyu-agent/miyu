@@ -55,3 +55,46 @@ async fn a_quoted_model_key_is_found_and_next_turn_is_said() {
     );
     drop(held);
 }
+
+/// 施工 CK-1：默认预设、默认人格指着现在没有的，`config set` 照收、接一行告警，`check` 报警告，照界面语言（英文）说。
+#[tokio::test]
+async fn a_default_that_is_not_there_is_set_with_a_warning_and_checked() {
+    let home = Home::new();
+    let root = home.root.path().to_path_buf();
+    let (held, _) = within("拉起", connect_or_start(&home.root, || home.core()))
+        .await
+        .expect("拉得起");
+    let cwd = std::env::temp_dir();
+    let set = run(
+        &root,
+        &cwd,
+        "en_US.UTF-8",
+        &["config", "set", "preset.default", "gone"],
+    )
+    .await;
+    assert_eq!(
+        (set.status.code(), stderr(&set)),
+        (
+            Some(0),
+            "set preset.default = \"gone\" (applies to new sessions)\nmiyu: warning: preset.default names preset gone, which doesn't exist yet; it works once the preset is created\n".to_string()
+        )
+    );
+    let set = run(
+        &root,
+        &cwd,
+        "en_US.UTF-8",
+        &["config", "set", "persona.default", "ghost"],
+    )
+    .await;
+    assert_eq!(set.status.code(), Some(0), "{set:?}");
+    let checked = run(&root, &cwd, "en_US.UTF-8", &["check"]).await;
+    let shown = stdout(&checked);
+    for line in [
+        "warning: persona.default names persona ghost, which doesn't exist yet; it works once the persona is created",
+        "warning: preset.default names preset gone, which doesn't exist yet; it works once the preset is created",
+    ] {
+        assert!(shown.contains(line), "{shown}");
+    }
+    assert_eq!(checked.status.code(), Some(0), "只有警告：{checked:?}");
+    drop(held);
+}

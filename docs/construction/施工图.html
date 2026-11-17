@@ -1566,6 +1566,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sQT2"><span class="n">QT-2</span>引用总带原文<span class="st">…</span></a></li>
         <li><a class="step review" href="#sLO3"><span class="n">LO-3</span>循环的两处收尾<span class="st">…</span></a></li>
         <li><a class="step review" href="#sLO3F"><span class="n">LO-3补</span>核心停过以后的循环<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sCK1"><span class="n">CK-1</span>默认人格、预设指着没有的<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -61090,6 +61091,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
   </div>
 </section>
 
+<section class="sheet" id="sCK1" aria-labelledby="h-sCK1">
+  <div class="sheet-head"><h2 id="h-sCK1"><span class="no">CK-1</span>默认人格、预设指着没有的</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">默认人格、默认预设指着现在没有的，原来 <code>config set</code> 照收、<code>check</code> 说没问题，开会话才报。现在两项是「选人格」「选预设」，同软件包设置项：<code>check</code> 报警告，<code>config set</code> 照收、接一行警告。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint · settings.rs、config/set/unknown.rs、methods.rs　miyu-cli · config/set.rs</span><span class="dir-note">CK-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>persona.default</code>、<code>preset.default</code> 的类型改成 <code>persona</code>、<code>preset</code></li>
+              <li><code>check</code> 照现有的查：没有的报 <code>unknown_persona</code>、<code>unknown_preset</code></li>
+              <li><code>config.set</code> 写成了：改的几项里指着没有的，回应带 <code>problems</code></li>
+              <li><code>miyu config set</code> 结果行后面接 <code>miyu: warning: …</code></li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">警告、不挡</span><span class="rl">同软件包设置项那一句</span></div>
+          <div class="tile new"><span class="nm">回应多 problems</span><span class="rl">没有的不带这一格</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">CK-1</dd></div>
+        <div><dt>名称</dt><dd>默认人格、预设指着没有的</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">CK-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span><code>config.schema</code> 两项是 <code>persona</code>、<code>preset</code>，<code>check</code> 报两条警告</span></li>
+        <li><span class="ok">✓</span><span><code>config.set</code> 照收、回应带英文那条警告；<code>full</code>、有的人格不带</span></li>
+        <li><span class="ok">✓</span><span>实测英文界面 <code>miyu config set preset.default gone</code>、<code>miyu check</code></span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/CK-1-默认人格预设指着没有的.md</code>；蓝图 <code>config.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
 <footer class="foot">
   <p>这张图跟着施工走：一步合进 main，它的那张图就跟着定稿，标题栏里写上提交号。源文件是仓库里的 <code>docs/construction/施工图.html</code>，浏览器直接打开就能看。</p>
 </footer>
