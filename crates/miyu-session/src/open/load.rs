@@ -39,6 +39,7 @@ use crate::tools::ToolKit;
 use super::{Load, LoadError, Placed, Workplace};
 use crate::default_workspace::DefaultWorkspace;
 
+mod skilled;
 pub(super) mod stream;
 use stream::millis;
 
@@ -334,32 +335,16 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
         root: root.clone(),
         home: home.map(Path::to_path_buf),
     });
-    let (shelves_open, skill_names) = match installed {
-        Some(installed) => {
-            let root = root.clone();
-            let wanted = snapshot.preset.as_ref().map(|pin| pin.id.clone());
-            let places = presets.clone();
-            let values = config.current().resolved.values();
-            let off = places
-                .as_ref()
-                .map(crate::PresetPlaces::switched_off)
-                .unwrap_or_default();
-            let looked = (crate::switches::of(&values), off);
-            // 别的目录照这时的配置（施工 PT-2 外）：关着的不碰。
-            let external = miyu_store::skills::external::of(&values, home);
-            let site = venue.clone();
-            blocking(move || {
-                let file = wanted
-                    .zip(places)
-                    .and_then(|(id, places)| places.file(&id, (images, site.as_str()), looked));
-                let found = skills::find(&installed(), &root, &external);
-                let found = skills::opened(found, file.as_ref());
-                (skills::shelves(&found), skills::names(&found))
-            })
-            .await
-        }
-        None => (Vec::new(), skills::Names::new()),
-    };
+    let wanted = snapshot.preset.as_ref().map(|pin| pin.id.clone());
+    let values = config.current().resolved.values();
+    let (shelves_open, skill_names) = skilled::opened(
+        installed,
+        root,
+        (wanted, presets.clone()),
+        (&values, home),
+        (images, &venue),
+    )
+    .await;
     let guard = Guard::new(
         tools.clone(),
         root.path().to_path_buf(),
