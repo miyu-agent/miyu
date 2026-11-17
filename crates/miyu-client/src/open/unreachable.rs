@@ -13,10 +13,25 @@ use super::{Refused, locale};
 
 /// 连不上：原话照语言说。
 pub(super) fn unreachable(said: Option<Said>, error: impl Display) -> Refused {
-    let words = ResourceRoot::locate(&Env::current())
+    Refused::local("unreachable", spoken(said, &error, words().as_ref()))
+}
+
+/// 拉不起核心：人停的（施工 CS-5）是 `stopped_by_user`，别的同 [`unreachable()`]。原话都照语言说。
+pub(super) fn not_started(error: miyu_ipc::StartError) -> Refused {
+    match error {
+        miyu_ipc::StartError::StoppedByUser => Refused::local(
+            "stopped_by_user",
+            spoken(error.said(), &error, words().as_ref()),
+        ),
+        error => unreachable(error.said(), error),
+    }
+}
+
+/// 这台机器的语言的那一份字，取不到的是空的。
+fn words() -> Option<Human> {
+    ResourceRoot::locate(&Env::current())
         .ok()
-        .and_then(|resources| Human::load(&resources, language(&locale())).ok());
-    Refused::local("unreachable", spoken(said, &error, words.as_ref()))
+        .and_then(|resources| Human::load(&resources, language(&locale())).ok())
 }
 
 /// 照 `words` 说 `said`，取不到的照 `error` 的原话。

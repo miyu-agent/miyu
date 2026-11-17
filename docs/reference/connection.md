@@ -212,7 +212,19 @@
 |---|---|---|
 | `core.stop` | 没有 | `{}`：回应写出去以后，核心照收到停的信号那样停下：跑到一半的回合记成「重启了」，下次载入接着干，在跑的后台命令先记 `restarted` 再杀，扩展一起退出，然后放开套接字。运行日志记 `stopped reason=request` |
 
-核心停了，连着的连接都断开。之后谁再连（终端、网页的标签页重连），照旧把核心拉起来。
+核心停了，连着的连接都断开。回应以前核心在数据根的 `run/` 里留下记号 `stopped`：人停的，头断线以后自己重连时不再把它拉起来。
+
+**头怎么拉起核心**（Rust 的头经 `miyu-client`）：
+
+| 什么时候 | 用哪个 | 人停的核心 |
+|---|---|---|
+| 人要用：敲命令、头刚打开、点了「启动」 | `connect::connect_or_start`、`connect_or_start_bare`，`open::Core::connect` | 照拉起来 |
+| 头断线以后自己重连 | `connect::reconnect_or_start`、`reconnect_or_start_bare`，`open::Core::reconnect` | 不拉，交回 `StartError::StoppedByUser`（`Core::reconnect` 交回的 `Refused` 的 `reason` 是 `stopped_by_user`） |
+
+- `StoppedByUser` 的说法是 `core/start/stopped_by_user`（「核心已停止」），头照它画「核心已停止」的卡片，带一个「启动」按钮，点了照「人要用」那一行拉起。
+- 核心崩了、空闲退出了、收到停的信号停的，不留记号，自己重连照旧拉起来。
+- 核心不管怎么起来的，拿到数据根的锁就删掉记号。
+- 不是 Rust 写的头：自己重连以前看 `run/stopped` 在不在，在就别拉。
 
 **出错**
 

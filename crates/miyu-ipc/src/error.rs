@@ -141,6 +141,8 @@ pub enum StartError {
     Timeout,
     /// 别的头正在拉起核心，等太久了。
     Busy,
+    /// 核心是人停的（施工 CS-5，`run/stopped`）：头自己重连（[`crate::reconnect_or_start`]）不拉，等人点「启动」。
+    StoppedByUser,
     /// 连不上。
     Connect(ConnectError),
     /// 读写出错，例如拉不起来：找不到程序。
@@ -164,6 +166,7 @@ impl fmt::Display for StartError {
             ),
             StartError::Timeout => write!(f, "等核心起来等了太久"),
             StartError::Busy => write!(f, "别的程序正在拉起核心，等了太久"),
+            StartError::StoppedByUser => write!(f, "核心已停止"),
             StartError::Connect(error) => error.fmt(f),
             StartError::Io(error) => write!(f, "拉不起核心：{error}"),
         }
@@ -197,6 +200,7 @@ impl StartError {
             ),
             StartError::Timeout => Said::new("core/start/timeout"),
             StartError::Busy => Said::new("core/start/busy"),
+            StartError::StoppedByUser => Said::new("core/start/stopped_by_user"),
             StartError::Connect(error) => return error.said(),
             StartError::Io(error) => {
                 Said::new("core/start/spawn_failed").with("error", error.to_string())

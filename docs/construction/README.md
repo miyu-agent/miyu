@@ -1677,6 +1677,7 @@ flowchart LR
 | VW-2 | 场所会话的「查看会话」 | 项目主人 11-17 验收 im「查看会话」（第 15、27 条）：群聊只写「外部」看不出谁发的，并行时看不到支线，标题写「未命名会话」。改：视图流 `user` 条目的 `from` 多 `name`（那条消息的 `venue.name`，只当显示名、头转义；`entry/sender.rs`）；场所主线的并行支线（`session.fork {seal_after: 1}`）像子代理一样列进会话状态 `jobs`：`what: agent`、`fork: true`、`session` 是支线，`state` 是 `running`、`done`、`stopped`，在跑的都列、做完的留最近 20 条（订阅时照日志第一条认，会话列表报支线动了重读那一条；`view/branches.rs`）；订阅回应和 `view.status` 带 `title`，改了推整份。施工单 `VW-2-场所会话的查看会话.md` |
 | QU-3 | 额度写明是哪一家 | 终端会话 11-17 要的（本机验收第 6、34 条）：用量框写「{供应商} 额度情况」，头原来照自己记的当前模型猜是哪家。`session.quota` 有 `windows` 或 `balance` 的回应多一格 `provider: {id, name}`：`id` 是配置里那一家的编号，`name` 照配置写的显示名、没写的照目录里那一家的、再没有的照编号（同 `model.list`）；回 `{}` 的不带。施工单 `QU-3-额度写明是哪一家.md` |
 | RO-3 | 完全放开下文件工具不拦数据根 | 项目主人 11-17 本机验收第 1 条定：完全放开下拦数据根只拦得住文件工具、拦不住命令，等于没保护。判法表不看在哪一片，完全放开下写、改、删数据根同别的目录；只读照旧不写。写数据根的两句（知识库那句一起）和给人看的两句删了，快照里那两格读时跳过。`trash` 加上不删数据根和装着它的，同高危命令 `delete_data_root`。只碰得到自己工作区的会话、头的端点不变。派工叫 DR-1，撞号改 RO-3。施工单见 `RO-3-开放权限不拦数据根.md` |
+| CS-5 | 人停的核心不自动拉起 | 项目主人 11-17 本机验收第 18 条：网页开着时 `miyu core stop`，核心断一瞬又被拉起。定「停了就停，卡片带启动」：核心收到 `core.stop` 回应以前在 `run/` 留下 `stopped`，起来拿到锁就删；`miyu-ipc` 加 `reconnect_or_start`、`reconnect_or_start_bare`（头断线以后自己重连用，见到记号交回 `StartError::StoppedByUser`，说法 `core/start/stopped_by_user`「核心已停止」），`miyu-client` 加 `Core::reconnect`（`Refused.reason` 是 `stopped_by_user`）；人要用的照旧 `connect_or_start*`。头换接口、画卡片各自做。派工叫 CS-1，撞号改 CS-5。施工单见 `CS-5-人停的核心不自动拉起.md` |
 
 ### 四、施工单的格式
 

@@ -16,7 +16,8 @@
 | `crates/miyu-ipc/src/unix.rs` | Unix 域套接字：只有自己能进的目录、旧套接字、跟终端脱开 |
 | `crates/miyu-ipc/src/windows.rs` | 命名管道：等连接、连过去、核对另一头、跟终端脱开 |
 | `crates/miyu-ipc/src/ready.rs` | 核心说「好了」的那一行 |
-| `crates/miyu-ipc/src/start.rs` | `connect_or_start`：连不上就拉起核心；`connect_or_start_bare` 同样拉起、不读本机令牌（施工 W-8） |
+| `crates/miyu-ipc/src/start.rs` | `connect_or_start`：连不上就拉起核心；`connect_or_start_bare` 同样拉起、不读本机令牌（施工 W-8）；`reconnect_or_start`、`reconnect_or_start_bare`：头自己重连用，人停的不拉（施工 CS-5） |
+| `crates/miyu-ipc/src/stopped.rs`（施工 CS-5） | 人停的记号 `run/stopped`：留下（`mark_stopped`）、看在不在、核心起来时删掉 |
 | `crates/miyu-ipc/src/unreachable.rs` | `running_unreachable`：照 `run/socket` 连不上时，核心是不是还在、只是连不上（施工 CS-3） |
 | `crates/miyu-ipc/src/error.rs` | 起不来、连不上、拉不起的几种情形和它们的话 |
 | `crates/miyu-pipe/src/lib.rs`、`windows.rs`、`process.rs`、`parent.rs` | Windows 的安全接口：只对本人开放的管道实例，当前用户和管道另一头的 SID；一个进程还在不在跑（`process_running`，脚本调工具的通道清留下的目录用，施工 WC-1，`tools/shell.md`）；问父进程（施工 XG-1 下，脚本调工具的通道认扩展的子孙，`providers.md`「会跑命令的」）：Windows 拍进程快照（`process_parents`），macOS 问 `proc_pidinfo`（`parent_process`，这个 crate 在 macOS 上唯一的一样）；Windows 上一个进程什么时候起的（`process_created`，`GetProcessTimes`，施工 XG-1补2，认出父进程链上被重用的编号）。整个仓库只有这个 crate 放开了 `unsafe`，每个 `unsafe` 块都写着为什么安全 |
@@ -131,6 +132,13 @@
 6. 拉起锁一直拿到交回为止（连上了，或者出了错）。
 7. 真正保证一个数据根只跑一个核心的是核心自己拿的 `run/core.lock`；拉起锁只是免得几个头同时白拉。清旧套接字的是核心，头不碰。
 
+**人停的不自己拉起**（施工 CS-5，2026-11-17 项目主人定「停了就停，卡片带启动」：网页开着时 `miyu core stop`，核心断一瞬又被网页拉起来）：
+
+1. 记号是 `run/stopped`，一个空文件：核心收到 `core.stop`（人停的：`miyu core stop`、头上的「停止」、托盘的「退出」）回应以前写（`mark_stopped`，写不进的记一行 `WARN stop mark not written`、照停）。崩了、空闲退出、收到停的信号的不写。
+2. 核心起来拿到锁以后、建套接字以前删掉它（`open_locked`），不管是谁、怎么拉起来的。删不掉的起不来（`OpenError::Io`）。
+3. 拉起分两种：人要用的（命令行的命令、头刚打开、头上的「启动」）照上面「连不上就拉起」（`connect_or_start`、`connect_or_start_bare`）；头断线以后自己重连的照 `reconnect_or_start`、`reconnect_or_start_bare`：第 1 步没在跑的，看一眼记号，在就交回 `StoppedByUser`（说法 `core/start/stopped_by_user`「核心已停止」），不拿拉起锁、不拉；拿到拉起锁、再连还是没在跑的再看一眼（等锁的时候别的头可能刚停了它）。
+4. 记号读不了的当没有：照旧拉起，和以前一样。
+
 **那一行**
 
 | 核心写的 | 读成 |
@@ -162,7 +170,7 @@
 | `StartError::Connect` | 连不上 | 照 `ConnectError` 的话 |
 | `StartError::Io` | 读写出错，例如找不到程序、拉不起来 | 拉不起核心：<系统的原话> |
 
-- 上面是原话（`Display`，中文），日志和取不到字的时候用。`ConnectError`、`StartError` 另交说法 `said()`（施工 EN-1）：内核 `human/` 里三种语言的 `start/not_running`、`start/not_private_socket`、`start/not_private_pipe`（`{path}`）、`start/refused`（`{reason}`，核心的原话；带代码的头另可照 `start/<代码>` 说）、`start/silent`（`{log}`，数据根里的相对位置）、`start/timeout`、`start/busy`、`start/spawn_failed`（`{error}`）；`Io` 的没有，照系统的原话。命令行照握手以前的界面语言取字（`miyu-cli` 的 `startup.rs`），印在标准错误上，退出码 1；`miyu ask` 没有 key、核心又没在跑的另说，退出码 5（`cli/ask.md`）。
+- 上面是原话（`Display`，中文），日志和取不到字的时候用。`ConnectError`、`StartError` 另交说法 `said()`（施工 EN-1）：内核 `human/` 里三种语言的 `start/not_running`、`start/not_private_socket`、`start/not_private_pipe`（`{path}`）、`start/refused`（`{reason}`，核心的原话；带代码的头另可照 `start/<代码>` 说）、`start/silent`（`{log}`，数据根里的相对位置）、`start/timeout`、`start/busy`、`start/stopped_by_user`（施工 CS-5）、`start/spawn_failed`（`{error}`）；`Io` 的没有，照系统的原话。命令行照握手以前的界面语言取字（`miyu-cli` 的 `startup.rs`），印在标准错误上，退出码 1；`miyu ask` 没有 key、核心又没在跑的另说，退出码 5（`cli/ask.md`）。
 - 运行日志（目标 `miyu::ipc`）：核心里记 `INFO listening socket=…`、`INFO stale socket removed socket=…`、`WARN XDG_RUNTIME_DIR not usable, using run/ dir=…`、`DEBUG socket file not removed error=…`（删套接字文件没删成）。头里发的 `DEBUG core not reaped error=…`（替拉起的核心收尸没收成）记不下来：头不装运行日志。
 
 ### 给人看的字

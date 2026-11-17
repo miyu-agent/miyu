@@ -3,6 +3,9 @@
 //! 先连；连不上，拿 `run/spawn.lock` 这把拉起锁，免得几个头同时拉起好几个核心；拿到以后再连一次，
 //! 别的头可能刚拉起来；还是连不上，拉起核心，把一根管道的写端给它当标准输出，等它写来的那一行，不轮询。
 //! 真正保证一个数据根只跑一个核心的是核心自己拿的 `run/core.lock`（施工 3-8 下），拉起锁只是免得白拉。
+//!
+//! 拉起分两种（施工 CS-5）：人要用的（命令行的命令、头上的「启动」、头刚打开）照 [`connect_or_start`] 拉；头断线以后自己重连
+//! 照 [`reconnect_or_start`]，人停的核心（`run/stopped`，[`crate::mark_stopped`]）不拉，交回 [`StartError::StoppedByUser`]。
 
 use std::fs::{File, OpenOptions, TryLockError};
 use std::io::{self, BufRead, BufReader, PipeReader, Read};
@@ -42,7 +45,20 @@ pub async fn connect_or_start(
     root: &DataRoot,
     start: impl FnOnce() -> Command,
 ) -> Result<(Connection, String), StartError> {
-    start_with(root, start, connect).await
+    start_with(root, Starting::Asked, start, connect).await
+}
+
+/// 同 [`connect_or_start`]，只是头断线以后自己重连用（施工 CS-5）：核心是人停的（`run/stopped`）就不拉，交回
+/// [`StartError::StoppedByUser`]，头给人看「核心已停止」和「启动」，点了再照 [`connect_or_start`] 拉。崩了、空闲退出的照旧拉起。
+///
+/// # Errors
+///
+/// 同 [`connect_or_start`]，另有人停的 [`StartError::StoppedByUser`]。
+pub async fn reconnect_or_start(
+    root: &DataRoot,
+    start: impl FnOnce() -> Command,
+) -> Result<(Connection, String), StartError> {
+    start_with(root, Starting::Auto, start, connect).await
 }
 
 /// 同 [`connect_or_start`]，只是不读本机令牌（施工 W-8，[`connect_bare`]）：网页软件转发浏览器的连接用它。
@@ -54,12 +70,34 @@ pub async fn connect_or_start_bare(
     root: &DataRoot,
     start: impl FnOnce() -> Command,
 ) -> Result<Connection, StartError> {
-    start_with(root, start, connect_bare).await
+    start_with(root, Starting::Asked, start, connect_bare).await
 }
 
-/// 照 `connect` 连（读不读本机令牌由它定），没在跑就拉起来。
+/// 同 [`reconnect_or_start`]，只是不读本机令牌（[`connect_bare`]）：网页软件断线以后替浏览器重连用。
+///
+/// # Errors
+///
+/// 同 [`reconnect_or_start`]。
+pub async fn reconnect_or_start_bare(
+    root: &DataRoot,
+    start: impl FnOnce() -> Command,
+) -> Result<Connection, StartError> {
+    start_with(root, Starting::Auto, start, connect_bare).await
+}
+
+/// 为什么拉起（施工 CS-5）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Starting {
+    /// 人要用：照拉，核心起来时自己删掉「人停的」记号。
+    Asked,
+    /// 头自己重连：人停的不拉。
+    Auto,
+}
+
+/// 照 `connect` 连（读不读本机令牌由它定），没在跑就拉起来；`starting` 是自己重连、核心是人停的不拉。
 async fn start_with<'a, T, F, Fut>(
     root: &'a DataRoot,
+    starting: Starting,
     start: impl FnOnce() -> Command,
     connect: F,
 ) -> Result<T, StartError>
@@ -70,9 +108,17 @@ where
     if let Some(connected) = connected(connect(root).await)? {
         return Ok(connected);
     }
+    let held_back = || starting == Starting::Auto && crate::stopped::stopped_by_user(root);
+    if held_back() {
+        return Err(StartError::StoppedByUser);
+    }
     let _spawning = spawn_lock(root).await?;
     if let Some(connected) = connected(connect(root).await)? {
         return Ok(connected);
+    }
+    // 等拉起锁的时候别的头可能刚停了它（人停的），拿到锁以后再看一眼。
+    if held_back() {
+        return Err(StartError::StoppedByUser);
     }
     match launch(start(), root).await? {
         Ready::Ready => connect(root).await.map_err(StartError::Connect),

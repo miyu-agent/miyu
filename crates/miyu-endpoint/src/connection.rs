@@ -316,6 +316,10 @@ async fn read_all<R: AsyncRead + Unpin>(
                 let result = match via.as_ref().unwrap_or(&Via::Token) {
                     Via::Token => {
                         stopping = true;
+                        // 人停的（施工 CS-5）：回应以前留下记号，别的头断线以后自己重连见到它不再拉起。写不进的照停，只是会被拉起。
+                        if let Err(error) = miyu_ipc::mark_stopped(&core.root) {
+                            tracing::warn!(target: "miyu::endpoint", error = %error, "stop mark not written");
+                        }
                         Ok(json!({}))
                     }
                     _ => Err(Refusal::LOCAL_ONLY),

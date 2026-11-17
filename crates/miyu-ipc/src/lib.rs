@@ -10,7 +10,8 @@
 //! 5. 实际位置写进 `run/socket`。
 //!
 //! 头（[`connect`]）读 `run/socket`，核对套接字所在的目录只有自己能进，连过去，再现读本机令牌。核心没在跑，
-//! 头用 [`connect_or_start`] 把它拉起来，等它写来 [`Ready`] 那一行再连（施工 3-9 上）。
+//! 头用 [`connect_or_start`] 把它拉起来，等它写来 [`Ready`] 那一行再连（施工 3-9 上）；头断线以后自己重连用
+//! [`reconnect_or_start`]，人停的（[`mark_stopped`]）不拉（施工 CS-5）。核心起来拿到锁就删掉「人停的」记号。
 //! 照 `run/socket` 连不上的，[`running_unreachable`] 再看一眼锁和算出来的位置：核心跑着时 `run/` 被删了，它还在、只是
 //! 连不上（施工 CS-3）。
 //!
@@ -25,6 +26,7 @@ pub mod open_files;
 mod place;
 mod ready;
 mod start;
+mod stopped;
 #[cfg(test)]
 mod test_support;
 mod unreachable;
@@ -43,7 +45,11 @@ pub use listener::{Connection, Listener};
 pub use lock::{Held, Lock, wait_released};
 pub use place::{Dirs, fingerprint};
 pub use ready::Ready;
-pub use start::{connect_or_start, connect_or_start_bare, spawn_detached};
+pub use start::{
+    connect_or_start, connect_or_start_bare, reconnect_or_start, reconnect_or_start_bare,
+    spawn_detached,
+};
+pub use stopped::mark_stopped;
 pub use unreachable::running_unreachable;
 
 use std::fmt;
@@ -97,6 +103,7 @@ pub fn open(root: &DataRoot, dirs: &Dirs) -> Result<Opened, OpenError> {
 ///
 /// 不在 tokio 运行时里。
 pub fn open_locked(root: &DataRoot, dirs: &Dirs, lock: Lock) -> Result<Opened, OpenError> {
+    stopped::clear(root)?;
     let path = place::locate(root, dirs)?;
     let token = files::renew_token(root)?;
     let own_dir = place::own_dir(&path, dirs);

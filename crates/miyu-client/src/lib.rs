@@ -2,7 +2,8 @@
 //! 依赖核心里别的 crate。代码大多留在原来的 crate，这里 `pub use` 转出去；门面上有的就是界面能用的，改了、少了照改协议的
 //! 规矩告诉两个头（`tests.rs` 把每一样用一遍钉住）。
 //!
-//! - [`connect`]：经本机传输连核心、没在跑时拉起来（`miyu-ipc`）。
+//! - [`connect`]：经本机传输连核心、没在跑时拉起来（`miyu-ipc`）；断线以后自己重连用 `reconnect_or_start*`，人停的不拉起
+//!   （施工 CS-5）。
 //! - [`open`]：照终端的样子连核心（出示本机令牌）、一问一答，带一次性码开浏览器（从 `miyu-webserve` 挪来）。
 //! - [`places`]：数据根、资源目录、环境、语言、缓存目录在哪（`miyu-store`）。
 //! - [`texts`]：给人看的字（`miyu-store` 的 `human`）。
@@ -41,7 +42,7 @@ pub const WORKSPACE_ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
 pub mod connect {
     pub use miyu_ipc::{
         ConnectError, Connection, Ready, StartError, connect, connect_or_start,
-        connect_or_start_bare, spawn_detached,
+        connect_or_start_bare, reconnect_or_start, reconnect_or_start_bare, spawn_detached,
     };
 }
 

@@ -13,7 +13,7 @@ use miyu_store::root::DataRoot;
 use crate::CoreCommand;
 
 mod unreachable;
-use unreachable::unreachable;
+use unreachable::{not_started, unreachable};
 
 /// 怎么把网址交给浏览器：交出去了的是真。
 pub trait Browser {
@@ -72,7 +72,8 @@ pub(crate) fn handed(mut command: Command, wait: Duration) -> bool {
 }
 
 /// 核心拒了、连不上、没回（施工 W-8 再补，接入通讯平台要的）：`reason` 是核心的 `data.reason`（`bad_password`、`bad_login`、
-/// `login_throttled`、`bad_ticket`……），核心之外的几种是固定的词：`unreachable`（连不上、拉不起来）、`no_answer`（等太久没回，默认 30 秒）、
+/// `login_throttled`、`bad_ticket`……），核心之外的几种是固定的词：`unreachable`（连不上、拉不起来）、`stopped_by_user`（人停的，
+/// 自己重连不拉起，施工 CS-5）、`no_answer`（等太久没回，默认 30 秒）、
 /// `disconnected`（核心断开）、`io`（写不出去、读不了）。`message` 是原话；`retry_after_ms` 是登录被挡时还要等多久；`data` 是核心
 /// 那份 `error.data` 原样（施工 CA-2：`config_conflict` 的 `current`、写错的 `problems`、续传的 `received` 这些），核心之外的几种是
 /// `null`。
@@ -147,7 +148,27 @@ impl Core {
     pub async fn connect(root: &DataRoot, core: &CoreCommand, kind: &str) -> Result<Core, Refused> {
         let (connection, token) = miyu_ipc::connect_or_start(root, || core())
             .await
-            .map_err(|error| unreachable(error.said(), error))?;
+            .map_err(not_started)?;
+        Core::shake(connection, &[("token", &token)], kind)
+            .await
+            .map(|(core, _)| core)
+    }
+
+    /// 同 [`Core::connect`]，只是头断线以后自己重连用（施工 CS-5）：核心是人停的（`miyu core stop`、头上的「停止」）不拉起，
+    /// 交回 `reason` 是 `stopped_by_user` 的 [`Refused`]（原话「核心已停止」照这台机器的语言），头给人看卡片和「启动」，点了
+    /// 照 [`Core::connect`] 连。崩了、空闲退出的照旧拉起。
+    ///
+    /// # Errors
+    ///
+    /// 同 [`Core::connect`]，另有人停的 `stopped_by_user`。
+    pub async fn reconnect(
+        root: &DataRoot,
+        core: &CoreCommand,
+        kind: &str,
+    ) -> Result<Core, Refused> {
+        let (connection, token) = miyu_ipc::reconnect_or_start(root, || core())
+            .await
+            .map_err(not_started)?;
         Core::shake(connection, &[("token", &token)], kind)
             .await
             .map(|(core, _)| core)

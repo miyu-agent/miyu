@@ -6,7 +6,7 @@ use crate::{
     CoreCommand,
     connect::{
         ConnectError, Connection, Ready, StartError, connect, connect_or_start,
-        connect_or_start_bare, spawn_detached,
+        connect_or_start_bare, reconnect_or_start, reconnect_or_start_bare, spawn_detached,
     },
     // 施工 S-6 上：接入QQ 和群聊内核用到的几组。
     events::{Block, Body, By, Event, FormatError},

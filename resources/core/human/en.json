@@ -914,6 +914,7 @@
     "start/silent": "The core didn't start and gave no reason; see {log} in the data root",
     "start/timeout": "Timed out waiting for the core to start",
     "start/busy": "Another program is starting the core and it took too long",
+    "start/stopped_by_user": "The core was stopped",
     "start/spawn_failed": "Cannot launch the core: {error}",
     "start/data_root_failed": "The core couldn't start: cannot set up the data root: {reason}",
     "start/lock_failed": "The core couldn't start: cannot take the data root's lock: {reason}",

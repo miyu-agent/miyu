@@ -240,7 +240,7 @@
 | `job.output` | 读一条后台命令到这时为止的输出（施工 7-4 补）；带 `after` 只要新长出来的、带 `wait` 等它长了再答（施工 V-6 上） |
 | `blob.put` | 传一个附件，存成 blob（施工 3-9 三补） |
 | `account.setup_code` | 要一个一次性码：网页第一次设访问密码；只给出示本机令牌的连接（施工 W-8） |
-| `core.stop` | 叫核心停下：回应 `{}` 写出去以后照收到停的信号那样停（`core.md`「停下」第 10 条）；只给出示本机令牌的连接，别的回 `local_only`，远程的回 `local_machine_only`（施工 DT-4 下：桌面端托盘里的「退出」连核心一起关） |
+| `core.stop` | 叫核心停下：回应 `{}` 写出去以后照收到停的信号那样停（`core.md`「停下」第 10 条）；回应以前留下人停的记号 `run/stopped`，头自己重连不再拉起（施工 CS-5，`ipc.md`）；只给出示本机令牌的连接，别的回 `local_only`，远程的回 `local_machine_only`（施工 DT-4 下：桌面端托盘里的「退出」连核心一起关） |
 | `login.ticket`、`login.redeem` | 交接票（施工 W-8 补，接入通讯平台要的）：人要一张 60 秒、一次性的票（本机令牌、设备令牌、密码、交接票连上的都能要）；接的一方握手交 `ticket`（施工 LT-1），或者 `login.redeem` 换一个设备令牌。要票时可以写 `via`（`page`、`open`，施工 LT-2），进运行日志；人要的 `page` 票（网页软件 `/ticket` 替本机页面要的）也只在本机换（施工 LP-2，同下面扩展的），`open`、不写的哪儿都能换。扩展（施工 LP-1，项目主人 2026-11-06 定只给本机免密）只能要 `via: "page"` 的，要批过能力 `login.page`（出厂的也要人批），没批的 `needs_approval`，不写、别的 `via` `local_only`；它要的票记成只在本机换：远程的连接（说过 `connection.remote` 的，不管地址）握手交它、`login.redeem` 它都回 `bad_ticket`，票当场作废（`login/ticket.rs` 的 `Reach`）。详见 `docs/reference/connection.md`、`docs/reference/extensions.md`「替本机页面换登录票」 |
 | `account.setup` | 设、改访问密码（施工 W-8）：`{"password"}`，本机令牌连上的回 `{}`，别的换一个设备令牌；以前的设备全部作废、连着的断开。设备令牌连上的（施工 SU-1 补）设过的要带对现在的 `old`，照来源限流同密码登录 |
 | `account.logout` | 作废设备令牌：这一个，或者 `all` 全部（施工 W-8） |

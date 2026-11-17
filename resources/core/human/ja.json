@@ -909,6 +909,7 @@
     "start/silent": "コアが起動せず、理由もありません。データルートの {log} を見てください",
     "start/timeout": "コアの起動を待ちきれませんでした",
     "start/busy": "ほかのプログラムがコアを起動中で、待ちきれませんでした",
+    "start/stopped_by_user": "コアは停止されました",
     "start/spawn_failed": "コアを起動できません：{error}",
     "start/data_root_failed": "コアを起動できません：データルートを用意できません：{reason}",
     "start/lock_failed": "コアを起動できません：データルートのロックを取れません：{reason}",

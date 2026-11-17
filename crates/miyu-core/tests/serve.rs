@@ -191,7 +191,8 @@ async fn a_stop_signal_stops_the_running_sessions_first() {
     );
 }
 
-/// 头叫停（施工 DT-4 下，`core.stop`）：先回应，再和收到停的信号一样先停下在跑的会话，原因是 `request`。
+/// 头叫停（施工 DT-4 下，`core.stop`）：先回应，再和收到停的信号一样先停下在跑的会话，原因是 `request`；`run/` 里留下「人停的」
+/// 记号（施工 CS-5）。
 #[tokio::test]
 async fn a_head_asking_it_to_stop_stops_the_running_sessions_first() {
     let home = Home::new();
@@ -204,6 +205,11 @@ async fn a_head_asking_it_to_stop_stops_the_running_sessions_first() {
     head.say(&session, "在吗").await;
     let reply = head.call("s", "core.stop", serde_json::json!({})).await;
     assert_eq!(reply["result"], serde_json::json!({}), "先回应：{reply}");
+    // 人停的（施工 CS-5）：回应以前留下记号，头断线以后自己重连见到它不拉起。
+    assert!(
+        home.root.run().join("stopped").is_file(),
+        "留下了人停的记号"
+    );
     let stopped = within("叫停以后停下", running).await.expect("没 panic");
     assert_eq!(stopped, Stopped::Request);
     let ended = home

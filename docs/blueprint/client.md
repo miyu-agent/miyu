@@ -14,7 +14,7 @@
 
 | 一组 | 转出什么 | 原来在 |
 |---|---|---|
-| `connect` | `connect`、`connect_or_start`、`connect_or_start_bare`、`spawn_detached`、`Connection`、`Ready`、`ConnectError`、`StartError` | `miyu-ipc` |
+| `connect` | `connect`、`connect_or_start`、`connect_or_start_bare`、`reconnect_or_start`、`reconnect_or_start_bare`（施工 CS-5：头自己重连，人停的不拉）、`spawn_detached`、`Connection`、`Ready`、`ConnectError`、`StartError` | `miyu-ipc` |
 | `open_files` | `raise`、`Raised`：常驻的头、扩展起来时把打开文件数的软上限调高（施工 YC-1） | `miyu-ipc` |
 | `open` | `Core`、`Browser`、`SystemBrowser`、`locale`；连不上、拉不起核心的 `Refused`（`unreachable`）原话照 `locale` 的语言从资源目录取字（施工 EN-2，`open/unreachable.rs`），取不到的照底层的原话 | 本 crate |
 | `places` | `DataRoot`、`ResourceRoot`、`Env`、`Platform`、`locale`、`cache_root`；施工 S-6 上补 `write`（生成的文件，`generated`）、`config_file`（读配置文件那一层）、`Packages`、`Issue`（两层的软件包清单） | `miyu-store` |

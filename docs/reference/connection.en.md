@@ -212,7 +212,19 @@ Asks the core to stop: the desktop app's tray "Quit" uses it to close the core t
 |---|---|---|
 | `core.stop` | none | `{}`: once the reply is out, the core stops as on a stop signal: a turn halfway through is recorded as restarted and carries on next time it loads, running background commands are recorded `restarted` and then killed, extensions exit, and the socket is let go. The run log says `stopped reason=request` |
 
-When the core stops, every connection closes. Whoever connects next (a terminal, a web tab reconnecting) starts the core again as usual.
+When the core stops, every connection closes. Before replying, the core leaves a mark `stopped` in the data root's `run/`: a core a person stopped is not started again when a head reconnects on its own.
+
+**How a head starts the core** (Rust heads through `miyu-client`):
+
+| When | Use | A core a person stopped |
+|---|---|---|
+| A person wants it: typing a command, a head just opening, clicking "Start" | `connect::connect_or_start`, `connect_or_start_bare`, `open::Core::connect` | Started as usual |
+| A head reconnecting on its own after losing the connection | `connect::reconnect_or_start`, `reconnect_or_start_bare`, `open::Core::reconnect` | Not started: you get `StartError::StoppedByUser` (`Core::reconnect` gives a `Refused` whose `reason` is `stopped_by_user`) |
+
+- `StoppedByUser` has the wording `core/start/stopped_by_user` ("The core was stopped"). Show a "core stopped" card with a "Start" button; clicking it starts the core the way the first row does.
+- A core that crashed, exited when idle or stopped on a signal leaves no mark, and reconnecting starts it again as before.
+- However the core starts, it removes the mark once it holds the data root's lock.
+- Heads not written in Rust: before reconnecting on your own, check whether `run/stopped` exists, and don't start the core if it does.
 
 **Errors**
 
