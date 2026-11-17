@@ -164,8 +164,10 @@ fn a_recall_without_listings_writes_the_same_text_as_before() {
     let _ = recalled.provider_side(Some(&loaded), "deepseek", None, None, true);
     let text = recalled.to_json().expect("写得成");
     assert!(!text.contains("listings"), "路由那份不多这一格：{text}");
-    let old = r#"{"v":1,"of":"v","source":"snapshot","fetched":"x","providers":[],"models":[]}"#;
-    let read = Recalled::from_json(old).expect("以前写的读得回来");
+    let old = format!(
+        r#"{{"v":{RECALL_VERSION},"of":"v","source":"snapshot","fetched":"x","providers":[],"models":[]}}"#
+    );
+    let read = Recalled::from_json(&old).expect("以前写的读得回来");
     assert_eq!(read.entries(), 0);
     assert_eq!(read.to_json().expect("写得成"), old);
 }

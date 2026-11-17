@@ -7,13 +7,16 @@
 //! 4. 规整以后取最长的前缀（在 `-` 处断开）；只有一段、没有数字的通用名只在正好相等时算。
 //!
 //! 第 3、4 层几家同名的照第 6 条挑：先取第 2 层认出的那一家，再取原厂（[`Vendors`]），都没有的取编号照字节排第一的，价格
-//! 不借。
+//! 照原厂那一家里同一个模型的借（施工 PR-1，`borrow.rs`），借不到的没有价格。
 
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
 use crate::catalog::{Catalog, Entry};
+
+mod borrow;
+pub use borrow::Priced;
 
 /// 规整一个模型名（第 5 条）：取最后一个 `/` 后面的；转成小写；空格、`_`、`.`、`-` 连成的一串换成一个 `-`；去掉头尾的
 /// `-`。
@@ -161,8 +164,9 @@ pub struct Matched {
     pub model: String,
     /// 第几层对上的：1 到 4。
     pub layer: u8,
-    /// 价格借不借：第 1、2 层借；第 3、4 层是认出的那一家、原厂的借，照字节序挑的不借。
-    pub price: bool,
+    /// 价格借哪一条：第 1、2 层借它自己的；第 3、4 层是认出的那一家、原厂的借它自己的，照字节序挑的借原厂那一家里同一个
+    /// 模型的（施工 PR-1，[`Priced`]）；借不到的没有。
+    pub price: Option<Priced>,
 }
 
 /// 对目录的结果。
@@ -213,8 +217,7 @@ pub fn find(
         return Found::Matched(pick(catalog, vendors, recognized, named, 3));
     }
     for prefix in prefixes(&normalized) {
-        let generic = !prefix.contains('-') && !prefix.chars().any(|c| c.is_ascii_digit());
-        if generic && prefix != normalized {
+        if generic(prefix) && prefix != normalized {
             continue;
         }
         let entries = catalog.normalized(prefix);
@@ -223,6 +226,11 @@ pub fn find(
         }
     }
     Found::Nothing
+}
+
+/// 只有一段、没有数字的通用名（第 4 层只在正好相等时算）：`custom`、`fast`。
+fn generic(prefix: &str) -> bool {
+    !prefix.contains('-') && !prefix.chars().any(|c| c.is_ascii_digit())
 }
 
 /// 规整以后的名字本身，和它在每个 `-` 处断开的前缀，从长到短。
@@ -236,7 +244,7 @@ fn prefixes(normalized: &str) -> impl Iterator<Item = &str> {
 }
 
 /// 几家同名挑哪家（第 6 条）：认出的那一家；原厂（照条目照字节排的先后，取各自的原厂，第一个列了它的）；都没有的取第一个，
-/// 价格不借。`entries` 照字节排、不是空的。
+/// 价格照原厂那一家里同一个模型的借（施工 PR-1，`borrow.rs`），借不到的没有。`entries` 照字节排、不是空的。
 fn pick(
     catalog: &Catalog,
     vendors: &Vendors,
@@ -261,16 +269,20 @@ fn pick(
         .find_map(|vendor| entries.iter().find(|(provider, _)| **provider == **vendor));
     match vendor {
         Some((provider, model)) => matched(provider, model, layer, true),
-        None => matched(&entries[0].0, &entries[0].1, layer, false),
+        None => Matched {
+            price: borrow::from_vendor(catalog, vendors, entries),
+            ..matched(&entries[0].0, &entries[0].1, layer, false)
+        },
     }
 }
 
-fn matched(provider: &str, model: &str, layer: u8, price: bool) -> Matched {
+/// 对上 `provider` 家的 `model`：`own` 的价格借它自己的，不是的先不借。
+fn matched(provider: &str, model: &str, layer: u8, own: bool) -> Matched {
     Matched {
         provider: provider.to_string(),
         model: model.to_string(),
         layer,
-        price,
+        price: own.then(|| Priced::of(provider, model)),
     }
 }
 

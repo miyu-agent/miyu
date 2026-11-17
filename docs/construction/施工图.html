@@ -1602,6 +1602,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sPL2"><span class="n">PL-2</span>软件包声明支持的系统<span class="st">…</span></a></li>
         <li><a class="step review" href="#sPV4"><span class="n">PV-4</span>软件包自带供应商<span class="st">…</span></a></li>
         <li><a class="step review" href="#sVM2"><span class="n">VM-2</span>找回的场所会话也认语音上限<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sPR1"><span class="n">PR-1</span>中转站的模型价格照原厂<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -62981,6 +62982,55 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/VM-2-找回的场所会话认语音上限.md</code>；蓝图 <code>venues.md</code>、<code>kernel/events-bodies.md</code>、<code>kernel/session.md</code>、<code>providers.md</code>；协议参考 <code>venues.md</code>、<code>extensions.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sPR1" aria-labelledby="h-sPR1">
+  <div class="sheet-head"><h2 id="h-sPR1"><span class="no">PR-1</span>中转站的模型价格照原厂</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">中转站对上的目录条目照旧，价格照原厂那一家里同一个模型的借，主人看得到钱。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-models/matching/borrow.rs · miyu-models/facts.rs · miyu-models/catalog/lookup.rs</span><span class="dir-note">PR-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>字节序挑的条目：去原厂找同一个模型</li>
+              <li>先找同名、最长前缀，再找同家族段对得最多的</li>
+              <li>来源写借的那一条，倍率照乘</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">借原厂价、不标</span><span class="rl">用量里不另标估算</span></div>
+          <div class="tile new"><span class="nm">只挑有价格的</span><span class="rl">借不到才没有价格</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">PR-1</dd></div>
+        <div><dt>名称</dt><dd>中转站的模型价格照原厂</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-18</dd></div>
+        <div><dt>提交</dt><dd class="mono">PR-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改前红：<code>matching::borrow::tests</code> 两条、<code>each_row_of_the_example_table</code>、<code>facts</code> 一条</span></li>
+        <li><span class="ok">✓</span><span>沙箱实测：假中转 <code>marvis</code> 的 <code>model.list</code> 价格来自 <code>deepseek/deepseek-v4-flash</code>，倍率 1.5</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/PR-1-中转站价格照原厂.md</code>；蓝图 <code>models.md</code>。</li>
       </ul>
     </div>
   </div>

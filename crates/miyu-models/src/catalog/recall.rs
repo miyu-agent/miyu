@@ -27,8 +27,8 @@ use super::lookup::{
 use super::{CatalogSource, Loaded};
 use crate::matching::Vendors;
 
-/// 写法的版本：这一份的样子变了就加一。
-pub const RECALL_VERSION: u32 = 1;
+/// 写法的版本：这一份的样子变了就加一（施工 PR-1 加到 2：对上的答多了借的价格，中转站照原厂借）。
+pub const RECALL_VERSION: u32 = 2;
 
 /// 照记下的答：说得出来的，和说不出来的（没记过，又没有整份目录可借）。
 #[derive(Debug, Clone, PartialEq)]

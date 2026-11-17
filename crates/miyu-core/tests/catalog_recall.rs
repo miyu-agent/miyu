@@ -22,7 +22,7 @@ use miyu_core::models::{begin, read_early};
 use miyu_http::testkit::{Piece, Reply, Server};
 use miyu_http::{Proxy, fetcher};
 use miyu_models::catalog::Recall;
-use miyu_models::catalog::Recalled;
+use miyu_models::catalog::{RECALL_VERSION, Recalled};
 use miyu_models::facts::facts;
 use miyu_models::matching::Vendors;
 use miyu_models::profile::Profiles;
@@ -201,7 +201,7 @@ async fn a_broken_or_old_recall_is_rebuilt_from_the_catalog() {
     let good = recalled(&dir);
     let file = dir.at("state").join(RECALL_FILE);
     let text = good.to_json().expect("写得成");
-    let older = text.replacen("{\"v\":1,", "{\"v\":0,", 1);
+    let older = text.replacen(&format!("{{\"v\":{RECALL_VERSION},"), "{\"v\":0,", 1);
     assert_ne!(older, text);
     for broken in ["{", "not json at all", older.as_str()] {
         std::fs::write(&file, broken).expect("写得进");

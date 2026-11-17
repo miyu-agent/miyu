@@ -342,9 +342,10 @@ fn a_written_price_is_taken_whole() {
     );
 }
 
-/// 第 3、4 层：能力、窗口、名字照借，价格照挑的那家借不借。
+/// 第 3、4 层：能力、窗口、名字照借；价格照挑的那家，挑的不是原厂的照原厂里同一个模型借（施工 PR-1），来源写借的那一条；
+/// 倍率照乘，用量里不另标。
 #[test]
-fn name_matches_borrow_all_but_an_unofficial_price() {
+fn name_matches_borrow_all_and_a_relay_takes_the_vendor_s_price() {
     let relay = "[providers.newapi]\ndriver = \"openai-chat\"\nbase_url = \"https://relay.example.invalid/v1\"\n";
     let (facts, _) = facts_of(&held(), relay, "newapi", "deepseek-v4.1-flash");
     let from = |source: &Source| match source {
@@ -355,8 +356,24 @@ fn name_matches_borrow_all_but_an_unofficial_price() {
     assert_eq!(facts.window.value, Some(1_000_000));
     assert_eq!(from(&facts.window.source), above);
     assert_eq!(from(&facts.tools.source), above);
-    assert_eq!(facts.price.value, None, "照字节序挑的，不借价");
-    assert_eq!(facts.price.source, Source::Default);
+    let price = facts.price.value.as_ref().expect("照原厂借");
+    assert_eq!(
+        price.rates.input,
+        Some(0.15),
+        "DeepSeek 官方的价，不是 above 的 0.165"
+    );
+    assert_eq!(
+        from(&facts.price.source),
+        Some(("deepseek/deepseek-v4-flash".to_string(), 3)),
+        "来源是借的那一条"
+    );
+    let doubled = format!("{relay}price_multiplier = 2.0\n");
+    let (facts, _) = facts_of(&held(), &doubled, "newapi", "deepseek-v4.1-flash");
+    assert_eq!(facts.multiplier.value, 2.0, "供应商的倍率照乘");
+    assert_eq!(
+        facts.price.value.and_then(|price| price.rates.input),
+        Some(0.15)
+    );
     let (facts, _) = facts_of(&held(), relay, "newapi", "claude-sonnet-4-5");
     assert_eq!(
         facts.price.value.and_then(|price| price.rates.input),

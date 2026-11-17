@@ -1,5 +1,5 @@
 //! 四层对目录（施工 8-7）：「怎么走」第二条第 7 条那张表的每一行，规整，单段通用名，几家同名先取第 2 层认出的那家、再
-//! 原厂、再字节序且不借价格。目录是真目录裁出来的一份（`test_support`）。
+//! 原厂、再字节序且价格照原厂借（施工 PR-1）。目录是真目录裁出来的一份（`test_support`）。
 
 use serde_json::json;
 
@@ -11,8 +11,16 @@ fn matched(provider: &str, model: &str, layer: u8, price: bool) -> Found {
         provider: provider.to_string(),
         model: model.to_string(),
         layer,
-        price,
+        price: price.then(|| Priced::of(provider, model)),
     })
+}
+
+/// 对上的条目，价格先不借。
+fn matched_entry(provider: &str, model: &str, layer: u8) -> Matched {
+    match matched(provider, model, layer, false) {
+        Found::Matched(matched) => matched,
+        _ => unreachable!("matched 只造对上的"),
+    }
 }
 
 /// 配好的一家 `id`（地址 `base_url`）的模型 `model`，模型手写指定 `written`。
@@ -49,8 +57,11 @@ fn each_row_of_the_example_table() {
     );
     assert_eq!(
         found("newapi", relay, "deepseek-v4.1-flash", None),
-        matched("above", "deepseek-v4.1-flash", 3, false),
-        "十几家都不是原厂：取编号排第一的，价格不借"
+        Found::Matched(Matched {
+            price: Some(Priced::of("deepseek", "deepseek-v4-flash")),
+            ..matched_entry("above", "deepseek-v4.1-flash", 3)
+        }),
+        "十几家都不是原厂：取编号排第一的，价格照原厂同家族段对得最多的借（施工 PR-1）"
     );
     assert_eq!(
         found("newapi", relay, "claude-sonnet-4-5", None),

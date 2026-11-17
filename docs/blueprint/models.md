@@ -20,6 +20,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `resources/models/embedding.toml` | 认能出向量的模型的名字规矩（模型资料，不给模型看，不进登记簿） | R-5 再补 |
 | `crates/miyu-models/src/onboard.rs`、`onboard/` | 第一次接入的纯逻辑（8-11）：目录和档案里的每一家合起来（`Listed`：名字、驱动、地址、能不能用）、找哪些环境变量、探本机的哪几家（`listing.rs`）；`provider.catalog` 搜、排（`search`）；推荐哪个模型（`recommend.rs`）；还没写进配置的一家写成一份最终值（`candidate.rs`），和配好的一家走同一条路；常用的几家 `featured.toml` 的写法（`featured.rs`，8-11 再补） | 8-11、8-11 再补 |
 | `crates/miyu-models/src/matching.rs` | 四层对目录、名字规整、认供应商（`recognize`）、认原厂（`Vendors`） | 8-7 |
+| `crates/miyu-models/src/matching/borrow.rs` | 中转站的价格照原厂里同一个模型借（`Priced`，「怎么走」第二条第 6 条第 3 款） | PR-1 |
 | `crates/miyu-models/src/facts.rs`、`facts/source.rs` | 资料的每一格、来源、合起来，写成 `model.list` 的 `facts` | 8-7 |
 | `crates/miyu-models/src/observed.rs` | 用出来的（`learned.json`）、供应商的列表（`providers/<编号>.json`）的样子、读写、只记小的；改过名的供应商（`renamed.json`，8-34） | 8-7、8-34 |
 | `crates/miyu-models/src/knowledge.rs` | 查资料时手头的几份：档案、认原厂的表、目录、怎么查目录（`lookup`，V-25 上）、用出来的、列表（`Knowledge`） | 8-7、V-25 上 |
@@ -236,7 +237,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 
 - 价格是一整格：从哪一层来，四项和币种就都照那一层的，不拿别处的一项补。
 - 本机的服务（`local` 是真的）价格只认手写的，不借目录，没写的是 0，来源是 `local`（2026-10-01 项目主人定）：按名字对上的目录价是云端的价，本机跑不花这个钱。
-- 第 3、4 层按名字对上的，借不借照 `15-模型与供应商.md` 第三节那张表：能收什么、能不能调工具、思考强度都借，窗口、最大输出借、标明来源，价格照第二条第 6 条挑。
+- 第 3、4 层按名字对上的，借不借照 `15-模型与供应商.md` 第三节那张表：能收什么、能不能调工具、思考强度都借，窗口、最大输出借、标明来源，价格照第二条第 6 条挑：中转站对上的照原厂里同一个模型的借（施工 PR-1），来源写借的那一条。
 - 档位名（8-18）：照目录原样（`minimal`、`low`、`medium`、`high`、`xhigh`、`max` 这些），`none`、`disabled` 读成 `off`，手写的也一样；重复的只留第一个。能不能关、关和开怎么写，照驱动和档案（`miyu_models::provider::Provider::switchable`）：openai-chat 的，目录的 `toggle` 只在档案写了开关时才算，没写的驱动说不出来，不加 `off`；anthropic 的开关是接口自带的（`thinking` 写 `disabled`），目录有 `toggle` 就算（8-12）；openai-responses 没有开关，目录的 `toggle` 不算，`off` 只从目录写的 `none` 来（8-13）。不能关的没有 `off`。`off` 和「没写」是两回事：`off` 是关掉，没写是照供应商的默认。
 - 谁在用：窗口、最大输出交给内核当限额（压缩线），造会话、载入时定，开着的会话下一个回合开始时照新的重算（8-10）。能收什么交给驱动（`Call.inputs`），每次请求照这一轮查；音频、视频只是声明能收（施工 8-27，2026-10-07 项目主人定），驱动照旧只认图片、PDF，附件里的音频、视频怎么发随以后（2026-09-28 项目主人定先不做）。`driver` 定这个模型走哪种驱动。价格、倍率算金额（8-15）。思考强度的几档、`effort` 定一次请求带哪一档（8-18，「怎么走」第十一条）。能不能调温度、`temperature` 定一次请求带不带温度（8-22，「怎么走」第十四条）。别的只给 `model.list` 看。
 - 8-7 做了的格：窗口、最大输出、能收什么、能不能调工具、思考强度、价格、倍率、显示名、状态（`miyu_models::facts`）；8-18 加 `effort`；8-22 加 `takes_temperature`、`temperature`。`cache` 8-8 只用来定池不写分法时怎么分，照供应商手写的那一格直接读（`miyu_models::pools`），不进资料、`model.list` 的 `facts` 里没有（「施工时定的」8-8）；`driver`、`interleaved` 8-14 做了，只照目录、不进 `model.list` 的 `facts`（`Facts::wire`，路由造驱动时照它换，`Provider::for_model`）。
@@ -279,7 +280,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `currency` | 币种，ISO 4217 的三个大写字母 | 那一份价格的币种：目录的是 `USD`，手写的照写的 |
 | `price` | `{ input, output, cache_read, cache_write }`，每一百万 token，币种同上 | 实际用的那一档价格，只写有的几项 |
 | `multiplier` | 数 | 乘的倍率 |
-| `source` | 字符串 | 价格从哪来：`catalog:<目录里的供应商>/<模型>`、`config:<文件>:<行>`，或者 `local`（本机的服务，`amount` 是 0，`price` 四项都是 0，`currency` 是 `USD`） |
+| `source` | 字符串 | 价格从哪来：`catalog:<目录里的供应商>/<模型>`（中转站照原厂借的写原厂那一条，施工 PR-1）、`config:<文件>:<行>`，或者 `local`（本机的服务，`amount` 是 0，`price` 四项都是 0，`currency` 是 `USD`） |
 | `above` | 整数，可以没有 | 用了按上下文分档的价格：是超过多少 token 的那一档 |
 
 这几个数是整数值的写成整数（`1` 不写 `1.0`），别的照最短能读回原值的写法（「施工时定的」8-15）。主请求、摘要请求、辅助请求（回顾、起标题）都带；出错了、报了用量的照样算（钱已经花了）；被打断的、没报用量的没有。
@@ -577,7 +578,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `var/lib/models/learned.json` | 用出来的：`{"<供应商>/<模型>":{"window":{"value":…,"at":…}}}` | 重新学 |
 | `var/cache/models/providers/<编号>.json` | 供应商的列表：`{"fetched":…,"models":[{"id":…,"window":…}]}` | 下次再拉 |
 | `var/lib/models/pools.json` | 池的指针：`{"<池>":<下一个是第几个>}` | 从头轮 |
-| `var/cache/models/catalog.json` | 记下的查目录的答（施工 V-25 下）：`{"v":1,"of":<版本串>,"source":…,"fetched":…,"providers":[[输入,答]…],"models":[[输入,答]…]}`，只记配置里写过、真问过的，模型那一面最多 200 条 | 起来时读一次整份目录、照配置重记；坏了、写法的版本不对的同样，记一行 `WARN` |
+| `var/cache/models/catalog.json` | 记下的查目录的答（施工 V-25 下）：`{"v":2,"of":<版本串>,"source":…,"fetched":…,"providers":[[输入,答]…],"models":[[输入,答]…]}`（`v` 施工 PR-1 加到 2：模型那一面的答多了借的价格，旧的一份照版本不对整份重算），只记配置里写过、真问过的，模型那一面最多 200 条 | 起来时读一次整份目录、照配置重记；坏了、写法的版本不对的同样，记一行 `WARN` |
 | `var/cache/models/listing.json` | `model.list` 列整份记下的查目录的答（施工 V-32）：和 `catalog.json` 同一个写法、同一个版本串，多一张 `listings`（目录里那一家的编号 → 显示名、每个模型的 `family`），平时不进内存，`model.list` 每次读、用完放；模型那一面最多 1000 条 | 下次 `model.list` 读一次整份目录、重记；坏了、版本串对不上的同样，坏了的记一行 `WARN` |
 | `var/cache/usage.db` | 用量汇总，SQLite | 重建 |
 | `var/cache/rates.db` | 汇率的缓存（施工 UC-1），SQLite | 重建：删掉再取 |
@@ -659,14 +660,19 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 6. **几家同名挑哪家**，先对上的算：
    1. 第 2 层认出来的那一家（P 在目录里的那一家）有：取它。你用的就是这家，它列的价格就是它的官方价。
    2. 原厂有：原厂照 `vendors.toml` 认。拿目录里这个条目的 `family`（没有的用名字）规整以后的第一段，去掉末尾的数字（`qwen3` 是 `qwen`，`o3` 是 `o`），查表得出原厂的几个编号，照先后，第一个列了它的就是。
-   3. 都没有：照编号的字节序取第一家，能力、窗口照它借，价格不借（不是原厂的价，`15-模型与供应商.md` M9「缺的那一格拿别的价格顶，数字就不是官方价了」）。
+   3. 都没有：照编号的字节序取第一家，能力、窗口照它借；价格不照它（中转的价不是官方价），照原厂那一家里同一个模型的借（施工 PR-1，2026-11-17 项目主人定「借原厂价、不标」，`matching/borrow.rs`）。原厂照第 2 款同一张表、同一个条目认，表里列了几家的照先后一家家找，先找到的算；在一家里只挑有价格的，照这个先后，先对上的算：
+      1. 规整以后的名字是这个条目的规整名 N，或者 N 在 `-` 处断开的最长的前缀（单段通用名照第 4 层只在正好相等时算）：`deepseek-v4-1-flash-261017` 借 `deepseek-v4.1-flash`。
+      2. `family` 规整以后和这个条目的一样的：和 N 从头数相同的段最多的那个，一样多的取名字照字节排第一的。原厂没列这个版本时靠它：DeepSeek 官方（2026-11-17 的目录）没列 V4.1，`deepseek-v4-1-flash-261017`（家族 `deepseek-flash`）借 `deepseek-v4-flash`。
+      
+      借到的价格来源写借的那一条（`{"from": "catalog", "entry": "deepseek/deepseek-v4-flash", "layer": 对上的那一层}`），`model.called` 的 `cost.source` 同样写它；用量里不另标估算。供应商、模型设了 `price_multiplier` 的照乘（第 11 条）。都对不上、认不出原厂的没有价格。
 7. **例子**（8-7 的测试照这张表写，目录用真目录裁出来的一份）：
 
 | 配好的 | 对上 | 层 | 为什么 |
 |---|---|---|---|
 | `opencodego/deepseek-v4.1-flash` | `opencode-go/deepseek-v4.1-flash` | 2 | 编号去掉 `-` 一样 |
 | `deepseek`（地址 `https://api.deepseek.com/v1`）的 `deepseek-flash` | `deepseek/deepseek-flash` | 2 | 编号一样。地址去掉 `/v1` 也一样 |
-| `newapi` 的 `deepseek-v4.1-flash` | 目录里有它的十几家都不是原厂，取编号排第一的，价格不借 | 3 | 自己配的中转。原厂 `deepseek` 没列这个名字 |
+| `newapi` 的 `deepseek-v4.1-flash` | 目录里有它的十几家都不是原厂，取编号排第一的，价格照原厂 `deepseek/deepseek-v4-flash` 借 | 3 | 自己配的中转。原厂 `deepseek` 没列这个名字，同家族段对得最多的是它（施工 PR-1） |
+| `marvis`（认不出的网关）的 `marvis/deepseek-v4-1-flash-261017` | `byteplus/deepseek-v4-1-flash-261017`，价格照原厂 `deepseek` 借 | 4 | 规整以后只有 byteplus 列了这个名字。原厂列了 `deepseek-v4.1-flash` 的借它，没列的照家族借（施工 PR-1） |
 | `newapi` 的 `claude-sonnet-4-5` | `anthropic/claude-sonnet-4-5` | 3 | 原厂 `anthropic` 列了 |
 | `newapi` 的 `deepseek-flash-expire-xxxx` | `deepseek/deepseek-flash` | 4 | 前缀，原厂列了 |
 | `newapi` 的 `DeepSeek V4 Flash` | 规整成 `deepseek-v4-flash`，原厂的那一条 | 4 | 大小写、空格不分 |
@@ -674,7 +680,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `newapi` 的 `custom-7b` | 没对上 | | `custom` 是单段通用名 |
 | `newapi` 的 `x`，写了 `catalog = "deepseek/nope"` | 没对上，标出来 | 1 | 手写指定的不存在，不往下猜 |
 
-8. **合起来**：每一格照「模型的资料」那张表从上往下查。第 1、2 层对上的全借。第 3、4 层照 `15-模型与供应商.md` 第三节借，价格照第 6 条。
+8. **合起来**：每一格照「模型的资料」那张表从上往下查。第 1、2 层对上的全借。第 3、4 层照 `15-模型与供应商.md` 第三节借，价格照第 6 条（中转站照原厂借，施工 PR-1）。
    - **查目录只经一个接口**（施工 V-25 上，`catalog/lookup.rs`）：合一家供应商（第一条第 2 条）、合一个模型的资料，读目录最后只落到两处，抽成两个纯函数：`provider_side`（编号、字面地址、手写的 `catalog` → 认成了哪一家、怎么认的，那一家的 `npm`、`api`、显示名；认不出的没有）、`model_side`（认出的那一家、模型名、手写的 `catalog` → 四层对目录的结果，对上的那一条的原样拷贝；手写指定不存在、没对上的没有那一条）。`miyu_models::provider`、`facts` 只经 `Knowledge.lookup`（`CatalogLookup`）取这两样和目录的 `fetched`，不再直接碰目录；没有的当没有目录，和以前目录还没读完一样。要整份目录的（第一次接入、搜目录、图标）照旧看 `Knowledge.catalog`。`model.list` 要的目录里一家的模型清单（施工 V-32）另一个纯函数 `listing_side`（目录里的编号 → 显示名、每个模型的名字和 `family`；目录里没有的没有），也经 `CatalogLookup::listing` 取，照样记、照样说不出来时立 `missed`。为什么切在这里：整份目录八千多个模型、常驻约 3 MB，一个核心真问到的只有配置里那几家、那几个模型；两个函数是纯的，同一份目录、同样的输入答的一定一样，答过的可以照输入记下来，以后照记下的答，和现算逐字一样，目录平时就不用常驻（V-25 下）。
    - `CatalogLookup` 两种：`Full` 拿着整份目录现算；`Recalled` 照记下的答（`catalog/recall.rs` 的 `Recalled`，锁着借进来，查的时候可能要记），没记过的借整份目录现算，调的一方说记才记（配置里写过、真问过的该记，临时问一句的不记，免得越记越大），没有整份目录可借的说不出来，合资料时当没有目录。负的答（认不出、没对上、手写指定不存在）也记：路由每一轮都要问。`Recalled` 认它记的是哪一份目录照 `of`（版本串，调的一方定）、`source`、`fetched`；认原厂的表不算进输入，变了由调的一方算进 `of`。写成 JSON、读回带写法的版本（`RECALL_VERSION`），读不懂的报错由调的一方处理。写成枚举不写成 trait：只有这两种、都在这个 crate 里，枚举能整份拷着走（`Knowledge` 是 `Copy`），造的地方一句 `catalog.map(CatalogLookup::Full)`。常驻时一律给 `Full`；不常驻时（第 2 条，施工 V-25 下）给 `Recalled`，记下的那份在 `ModelData` 里，换版本时换成新的一份（换 `Arc`），借着旧的合到一半的照旧合完。
 9. **用出来的**：主请求、摘要请求报上下文超长，驱动交出了上限 N（「驱动要守的约定」第 7 条），N 比这个模型发的时候手头的窗口小（或者手头没有窗口）：记进 `var/lib/models/learned.json`（已经学到的比 N 小的不换），记一行 `INFO learned window provider=… model=… window=…`。新造的、载入的会话用上；开着的会话下一个回合开始时用上（8-10，第六条第 3 条）。只学窗口。一直留着，手写的盖过它，删掉文件就重新学。这一次的超长照旧走被动压缩（`compaction.md` 第六条）。
@@ -1243,8 +1249,9 @@ mimo = ["xiaomi"]
 | `crates/miyu-core/tests/catalog_recall.rs` | 起来时（V-25 下）：头一回读整份目录、照配置记下写盘；下一回版本对上了不读整份目录（原文换成同样大小、同样改动时间的乱码、整理好的删掉，答的照旧）；记下的那份坏了、写法的版本不对、认原厂的表换了、原文换了的整份重算；后台拉到新目录记下的那份换版本、下次起来照它；`listing.json` 起来时版本对不上、后台拉到新目录跟着重算（V-32） | V-25 下、V-32 |
 | `crates/miyu-endpoint/tests/models_recall.rs` | 不常驻和常驻逐字一样（V-25 下）：同一份配置、裁出来的目录，常驻、起来时记好的、什么都没记的三种各导一份逐字节比：每一家合出来的供应商、配置过的模型和池成员、没写过的几个模型的资料（`Debug` 和 `model.list` 的写法）、引用解析的结果、思考强度的档位，`model.list` 三种问法的整份回应，`config.get` 的 `unknown_effort`/`unusable_temperature`、`config.check`、`session.configure` 照档位查的 `effort`；记好的问配置里写过的不读整份目录，`model.list` 临时读 | V-25 下 |
 | `crates/miyu-endpoint/tests/models_listing.rs` | `model.list` 不读整份目录（V-32）：裁出来的目录里每一家都配上（加照地址认的、认不出的、手写 `catalog` 的、列表里才有的、能出向量的），照整份目录现算和照 `listing.json` 记下的，列整份、带 `refresh`、只要几个、只看每一家的回应逐字节比；头一回读一次、记下，以后、重启以后一次都不读；坏了的、版本串对不上的读一次、重记；配置里新加的一家补一次；后台拉到新目录跟着重算、不读、答的和新目录常驻的一样；过了上限的那一家不记、每次读、答的照样一样，只问别的几家不读 | V-32 |
-| `crates/miyu-models/src/matching/tests.rs` | 第二条第 7 条那张表的每一行，规整，单段通用名，几家同名先取第 2 层认出的那家、再原厂、再字节序且不借价格 | 8-7 |
-| `crates/miyu-models/src/facts/tests.rs` | 每一格各查各的，窗口照手写、用出来的、列表、目录的先后，价格整份不拼，第 3、4 层借哪些，本机的当免费，倍率谁盖谁，手写指定不存在的什么都不借，来源一字不差；来源是配置的带 `layer`，别的来源不带这一格（8-7（补）） | 8-7；8-7（补） |
+| `crates/miyu-models/src/matching/tests.rs` | 第二条第 7 条那张表的每一行，规整，单段通用名，几家同名先取第 2 层认出的那家、再原厂、再字节序且价格照原厂借 | 8-7、PR-1 |
+| `crates/miyu-models/src/matching/borrow/tests.rs`（PR-1） | 网关认不出的 `marvis/deepseek-v4-1-flash-261017` 对到 byteplus、价格借原厂的 `deepseek-v4.1-flash`；原厂没列这个版本的照家族借段对得最多的、一样多的取字节序在前的，家族不同的、没价格的不挑；认不出原厂、原厂里名字家族都对不上的不借 | PR-1 |
+| `crates/miyu-models/src/facts/tests.rs` | 每一格各查各的，窗口照手写、用出来的、列表、目录的先后，价格整份不拼，第 3、4 层借哪些（中转站的价格照原厂借、来源写借的那一条、倍率照乘，PR-1），本机的当免费，倍率谁盖谁，手写指定不存在的什么都不借，来源一字不差；来源是配置的带 `layer`，别的来源不带这一格（8-7（补）） | 8-7；8-7（补） |
 | `crates/miyu-models/src/observed/tests.rs`、`provider/tests.rs`（8-7 那几条） | 用出来的只记小的、读写一字不差，列表读写；照目录推驱动、地址，本机的认法 | 8-7 |
 | `crates/miyu-models/src/observed/tests.rs`（8-34 那一条） | 改名：学到的跟着换、前缀像的不动；改名记下来，连着改的拉平，改回去的删掉，读写一字不差 | 8-34 |
 | `crates/miyu-config/src/item/kind/tests.rs` | 小数、文字、时长三种类型：查、从 TOML 和协议读、Schema、说成什么话、宏的写法、类型本身写坏了的（8-7）；给模型看的字：一行、最多几个字、没有控制字符、CJK 的字占一半以上的不收，话里说要英文（8-8 补，`english.rs`） | 8-7、8-8 补 |
@@ -1365,7 +1372,7 @@ mimo = ["xiaomi"]
 | 5 | 8-6 的「出错才换」挪到 8-9，和池的出错换用同一套冷却。8-6 只做钉 key、排候选 | 换 key 和换池里的成员是同一件事，两步各写一套会对不上 | 8-6 先写一个简单的换 key：8-9 再推倒 |
 | 6 | 第 2 层在认出的那一家里也认规整以后一样的名字。第 3、4 层同名几家的，先取第 2 层认出的那一家，再取原厂 | 你用的就是那一家，它列的价就是它的官方价（例如 opencode 给 `deepseek-v4.1-flash` 标的价是 opencode-go 的两倍，按原厂算就少算了一半） | 严格照「取原厂」：走 opencode 的请求按 DeepSeek 的价算，数不对 |
 | 7 | 原厂照 `vendors.toml` 认：家族的第一段去掉末尾数字，查表 | 目录里没有「原厂」这一格。试过「哪家列这个家族的占比最高」，`gpt`、`qwen`、`gemma` 都认错。一张十几行的表是数据，不进代码 | 照供应商编号是不是名字的前缀：`claude`、`gpt`、`glm`、`kimi` 全对不上。没有原厂就不借：`deepseek-v4.1-flash` 在十几家都有，只好一格格手写 |
-| 8 | 认不出原厂的，能力、窗口借编号排第一的，价格不借 | 价格要的是官方价，拿中转的价顶就不是准数（M9 的原则）。能力、窗口换渠道不变 | 取最低价：中转有时比原厂低，数也不准 |
+| 8 | 认不出原厂的，能力、窗口借编号排第一的；价格照原厂里同一个模型的借（施工 PR-1 改，2026-11-17 项目主人定「借原厂价、不标」），借不到的没有 | 价格要的是官方价，拿中转的价顶就不是准数（M9 的原则）。PR-1 以前一概不借，主人看不到中转站模型的价（例：magpie 网关的 `marvis/deepseek-v4-1-flash-261017` 对到 byteplus 的条目，没有价格）。原厂的同一个模型的价就是官方价；用量里不另标估算。能力、窗口换渠道不变 | 一概不借（PR-1 以前）：中转站的模型都看不到钱。取最低价：中转有时比原厂低，数也不准 |
 | 9 | 第 4 层跳过只有一段、没有数字的通用名，除非正好相等 | 真目录里有 47 个这样的名字（`custom`、`fast`、`free`），不跳 `custom-7b` 会对上 `custom` | 不跳：错借。要求前缀至少两段：`codestral-latest` 对不上 `codestral`，要手写 |
 | 10 | 手写指定的目录条目不存在，不往下猜，标出来 | 人写明了要哪一个，猜到别的反而藏住了错 | 往下三层接着找 |
 | 11 | 供应商认目录：手写的 `catalog`、编号、去掉分隔的编号、地址（去掉 `/v1`）。几家都对上取字节序第一 | 设计的先后，加上可以手写。`/v1` 两种写法 DeepSeek 都收 | 地址压过编号：设计定的是编号先 |
