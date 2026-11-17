@@ -132,77 +132,79 @@ pub(super) fn arguments(declared: &[Argument], rest: &str) -> Result<Matched, Ve
 /// `command_unavailable`，没有这个服务的 `unknown_command`），判身份、预设，对上参数（缺必填的 `command_failed`，说缺哪几个），
 /// 照服务的 `timeout_ms` 取、最多一分钟（到时没答的 `command_unavailable`；回错、要补信息的 `command_failed`，`data.why` 照原话），
 /// 并成一句发出去，交回 `{"command", "events", "said": ""}`。
-pub(super) async fn run(
-    core: &Arc<Core>,
-    peer: &Peer,
-    id: &CommandId,
-    params: &RunParams,
-    (name, rest): (&str, &str),
-) -> Result<Value, Refusal> {
-    let session = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
-    let found = core.sessions.get(core, &session).await?;
-    let handle = found.handle.clone();
-    let by = speaker(core, &handle, params.as_external.clone())?;
-    let Some(entry) = usable(core)
-        .into_iter()
-        .find(|entry| entry.offered.command == name)
-    else {
-        let service = name.split_once(':').map_or(name, |(service, _)| service);
-        return Err(match configured(core, service) {
-            true => Refusal::COMMAND_UNAVAILABLE,
-            false => Refusal::UNKNOWN_COMMAND,
-        });
-    };
-    if handle.venue().as_str() != LOCAL {
-        return Err(Refusal::COMMAND_UNAVAILABLE);
-    }
-    match access(core, name, None) {
-        Access::Off => return Err(turned_off(core, peer, name).await),
-        granted if !passes(granted, &by) => return Err(Refusal::COMMAND_NOT_ALLOWED),
-        _ => {}
-    }
-    let feature = entry.feature();
-    templates::opened_by(core, peer, &handle, (name, &feature, &entry.package)).await?;
-    let prompt = &entry.offered.prompt;
-    let (arguments, tail) = match arguments(&prompt.arguments, rest) {
-        Ok(matched) => matched,
-        Err(missing) => {
-            let why = super::words(core, peer, &super::why::missing_arguments(missing)).await;
-            return Err(Refusal::COMMAND_FAILED.because(why));
+pub(super) fn run<'a>(
+    core: &'a Arc<Core>,
+    peer: &'a Peer,
+    id: &'a CommandId,
+    params: &'a RunParams,
+    (name, rest): (&'a str, &'a str),
+) -> crate::life::Heaped<'a, Result<Value, Refusal>> {
+    Box::pin(async move {
+        let session = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
+        let found = core.sessions.get(core, &session).await?;
+        let handle = found.handle.clone();
+        let by = speaker(core, &handle, params.as_external.clone())?;
+        let Some(entry) = usable(core)
+            .into_iter()
+            .find(|entry| entry.offered.command == name)
+        else {
+            let service = name.split_once(':').map_or(name, |(service, _)| service);
+            return Err(match configured(core, service) {
+                true => Refusal::COMMAND_UNAVAILABLE,
+                false => Refusal::UNKNOWN_COMMAND,
+            });
+        };
+        if handle.venue().as_str() != LOCAL {
+            return Err(Refusal::COMMAND_UNAVAILABLE);
         }
-    };
-    let asked = tokio::time::timeout(
-        entry.offered.wait,
-        entry.client.prompt(&prompt.name, &arguments),
-    );
-    let messages = match asked.await {
-        Ok(Ok(messages)) => messages,
-        Ok(Err(error)) => return Err(Refusal::COMMAND_FAILED.because(error.to_string())),
-        // 到时没答同扩展的命令（施工 X-39 补）。
-        Err(_) => return Err(Refusal::COMMAND_UNAVAILABLE),
-    };
-    let (mut blocks, pictures) =
-        crate::mcp::prompts::said(core, messages).ok_or(Refusal::INTERNAL)?;
-    if let Some(tail) = tail {
-        blocks.push(Block::Text(Text { text: tail }));
-    }
-    let blobs = Blobs::new(core.root.blobs());
-    let images = tokio::task::spawn_blocking(move || stored(&blobs, pictures))
-        .await
-        .map_err(|_| Refusal::INTERNAL)??;
-    blocks.extend(images);
-    let typed = TypedCommand {
-        name: name.to_string(),
-        text: params.text.trim().to_string(),
-    };
-    let sent = Command::Typed {
-        blocks,
-        command: typed,
-    };
-    // 文件改了、前缀要变的，开这一轮之前问人（施工 OV-1 下）。
-    crate::sessions::prefix::ask(core, (*peer, &by), (&handle, id), params.prefix).await?;
-    let events = accepted(command(core, &session, &handle, id, &by, sent).await?)?;
-    Ok(json!({"command": name, "events": events, "said": ""}))
+        match access(core, name, None) {
+            Access::Off => return Err(turned_off(core, peer, name).await),
+            granted if !passes(granted, &by) => return Err(Refusal::COMMAND_NOT_ALLOWED),
+            _ => {}
+        }
+        let feature = entry.feature();
+        templates::opened_by(core, peer, &handle, (name, &feature, &entry.package)).await?;
+        let prompt = &entry.offered.prompt;
+        let (arguments, tail) = match arguments(&prompt.arguments, rest) {
+            Ok(matched) => matched,
+            Err(missing) => {
+                let why = super::words(core, peer, &super::why::missing_arguments(missing)).await;
+                return Err(Refusal::COMMAND_FAILED.because(why));
+            }
+        };
+        let asked = tokio::time::timeout(
+            entry.offered.wait,
+            entry.client.prompt(&prompt.name, &arguments),
+        );
+        let messages = match asked.await {
+            Ok(Ok(messages)) => messages,
+            Ok(Err(error)) => return Err(Refusal::COMMAND_FAILED.because(error.to_string())),
+            // 到时没答同扩展的命令（施工 X-39 补）。
+            Err(_) => return Err(Refusal::COMMAND_UNAVAILABLE),
+        };
+        let (mut blocks, pictures) =
+            crate::mcp::prompts::said(core, messages).ok_or(Refusal::INTERNAL)?;
+        if let Some(tail) = tail {
+            blocks.push(Block::Text(Text { text: tail }));
+        }
+        let blobs = Blobs::new(core.root.blobs());
+        let images = tokio::task::spawn_blocking(move || stored(&blobs, pictures))
+            .await
+            .map_err(|_| Refusal::INTERNAL)??;
+        blocks.extend(images);
+        let typed = TypedCommand {
+            name: name.to_string(),
+            text: params.text.trim().to_string(),
+        };
+        let sent = Command::Typed {
+            blocks,
+            command: typed,
+        };
+        // 文件改了、前缀要变的，开这一轮之前问人（施工 OV-1 下）。
+        crate::sessions::prefix::ask(core, (*peer, &by), (&handle, id), params.prefix).await?;
+        let events = accepted(command(core, &session, &handle, id, &by, sent).await?)?;
+        Ok(json!({"command": name, "events": events, "said": ""}))
+    })
 }
 
 /// 有这个服务：系统配置里写了的、装了的包带的（没在跑的也算）。

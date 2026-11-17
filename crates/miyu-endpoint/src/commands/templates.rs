@@ -94,87 +94,90 @@ pub(super) async fn closed_by(
 /// （施工 X-14 下，交给 [`declared::run`]），再包里的模板；包里的两种装包时查过、撞不上），判身份、看预设。技能不认（施工
 /// SN-1：改用 `$` 点名）。模板展开发出去，交回
 /// `{"command", "events", "said": ""}`。都没有的 `unknown_command`；展开完是空的照内核拒 `empty_message`。
-pub(super) async fn run(
-    core: &Arc<Core>,
-    peer: &Peer,
-    id: &CommandId,
-    params: &RunParams,
-    (name, rest): (&str, &str),
-) -> Result<Value, Refusal> {
-    let session = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
-    let found = core.sessions.get(core, &session).await?;
-    let handle = found.handle.clone();
-    let by = speaker(core, &handle, params.as_external.clone())?;
-    // 先认再判身份：认不出的照旧 `unknown_command`，场所里的桥照它把话当成平常说的记下。
-    let template = found_named(core, name).await;
-    let own = matches!(&template, Some(own) if own.package.is_none());
-    // 关了的包（施工 U23 末下）：它声明的命令、整页当没有。
-    let off = core.packages_off();
-    // 整页的命令（施工 X-15 下）：只在本机的会话里认，自己放的模板盖住它；只叫头打开那一页，不碰会话。
-    if !own
-        && handle.venue().as_str() == LOCAL
-        && let Some(page) = pages::named(core, name).filter(|page| !off.contains(page.package()))
-    {
-        // 停用了的不开（施工 O-6 六补）；整页只在本机开，身份那一关本来就是本人。
-        if access(core, name, None) == Access::Off {
-            return Err(turned_off(core, peer, name).await);
+pub(super) fn run<'a>(
+    core: &'a Arc<Core>,
+    peer: &'a Peer,
+    id: &'a CommandId,
+    params: &'a RunParams,
+    (name, rest): (&'a str, &'a str),
+) -> crate::life::Heaped<'a, Result<Value, Refusal>> {
+    Box::pin(async move {
+        let session = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
+        let found = core.sessions.get(core, &session).await?;
+        let handle = found.handle.clone();
+        let by = speaker(core, &handle, params.as_external.clone())?;
+        // 先认再判身份：认不出的照旧 `unknown_command`，场所里的桥照它把话当成平常说的记下。
+        let template = found_named(core, name).await;
+        let own = matches!(&template, Some(own) if own.package.is_none());
+        // 关了的包（施工 U23 末下）：它声明的命令、整页当没有。
+        let off = core.packages_off();
+        // 整页的命令（施工 X-15 下）：只在本机的会话里认，自己放的模板盖住它；只叫头打开那一页，不碰会话。
+        if !own
+            && handle.venue().as_str() == LOCAL
+            && let Some(page) =
+                pages::named(core, name).filter(|page| !off.contains(page.package()))
+        {
+            // 停用了的不开（施工 O-6 六补）；整页只在本机开，身份那一关本来就是本人。
+            if access(core, name, None) == Access::Off {
+                return Err(turned_off(core, peer, name).await);
+            }
+            return Ok(pages::opened(&page));
         }
-        return Ok(pages::opened(&page));
-    }
-    let declared = match &template {
-        Some(own) if own.package.is_none() => None,
-        _ => declared::named(core, name).filter(|one| !off.contains(&one.package)),
-    };
-    // 技能不再当命令认（施工 SN-1，发版前检查第 26 条）：改在输入框里用 `$` 点名，交 `session.send` 的 `skills`。
-    if template.is_none() && declared.is_none() {
-        return Err(Refusal::UNKNOWN_COMMAND);
-    }
-    // 谁能用（施工 O-6 六补）：扩展的照清单写的出厂值，模板没有出厂值。
-    let shipped = declared
-        .as_ref()
-        .and_then(|declared| declared.command.access);
-    match access(core, name, shipped) {
-        Access::Off => return Err(turned_off(core, peer, name).await),
-        granted if !passes(granted, &by) => return Err(Refusal::COMMAND_NOT_ALLOWED),
-        _ => {}
-    }
-    if let Some(declared) = declared {
-        opened(
-            core,
-            peer,
-            &handle,
-            (&declared.command.name, &declared.package),
-        )
-        .await?;
-        return declared::run(
-            core,
-            peer,
-            id,
-            params,
-            (&session, &handle, &by),
-            (&declared, rest),
-        )
-        .await;
-    }
-    let template = template.ok_or(Refusal::UNKNOWN_COMMAND)?;
-    opened(core, peer, &handle, (&template.name, package(&template))).await?;
-    let expanded = expand(&template.template.body, rest);
-    let blocks = match expanded.is_empty() {
-        true => Vec::new(),
-        false => vec![Block::Text(Text { text: expanded })],
-    };
-    let typed = TypedCommand {
-        name: template.name.clone(),
-        text: params.text.trim().to_string(),
-    };
-    let sent = Command::Typed {
-        blocks,
-        command: typed,
-    };
-    // 文件改了、前缀要变的，开这一轮之前问人（施工 OV-1 下）。
-    crate::sessions::prefix::ask(core, (*peer, &by), (&handle, id), params.prefix).await?;
-    let events = accepted(command(core, &session, &handle, id, &by, sent).await?)?;
-    Ok(json!({"command": template.name, "events": events, "said": ""}))
+        let declared = match &template {
+            Some(own) if own.package.is_none() => None,
+            _ => declared::named(core, name).filter(|one| !off.contains(&one.package)),
+        };
+        // 技能不再当命令认（施工 SN-1，发版前检查第 26 条）：改在输入框里用 `$` 点名，交 `session.send` 的 `skills`。
+        if template.is_none() && declared.is_none() {
+            return Err(Refusal::UNKNOWN_COMMAND);
+        }
+        // 谁能用（施工 O-6 六补）：扩展的照清单写的出厂值，模板没有出厂值。
+        let shipped = declared
+            .as_ref()
+            .and_then(|declared| declared.command.access);
+        match access(core, name, shipped) {
+            Access::Off => return Err(turned_off(core, peer, name).await),
+            granted if !passes(granted, &by) => return Err(Refusal::COMMAND_NOT_ALLOWED),
+            _ => {}
+        }
+        if let Some(declared) = declared {
+            opened(
+                core,
+                peer,
+                &handle,
+                (&declared.command.name, &declared.package),
+            )
+            .await?;
+            return declared::run(
+                core,
+                peer,
+                id,
+                params,
+                (&session, &handle, &by),
+                (&declared, rest),
+            )
+            .await;
+        }
+        let template = template.ok_or(Refusal::UNKNOWN_COMMAND)?;
+        opened(core, peer, &handle, (&template.name, package(&template))).await?;
+        let expanded = expand(&template.template.body, rest);
+        let blocks = match expanded.is_empty() {
+            true => Vec::new(),
+            false => vec![Block::Text(Text { text: expanded })],
+        };
+        let typed = TypedCommand {
+            name: template.name.clone(),
+            text: params.text.trim().to_string(),
+        };
+        let sent = Command::Typed {
+            blocks,
+            command: typed,
+        };
+        // 文件改了、前缀要变的，开这一轮之前问人（施工 OV-1 下）。
+        crate::sessions::prefix::ask(core, (*peer, &by), (&handle, id), params.prefix).await?;
+        let events = accepted(command(core, &session, &handle, id, &by, sent).await?)?;
+        Ok(json!({"command": template.name, "events": events, "said": ""}))
+    })
 }
 
 /// 名字是 `name` 的那一条模板命令；没有的没有。

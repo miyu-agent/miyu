@@ -13,6 +13,8 @@
 //!   当场改这个人格没结束的人生会话的（[`follow`]）。到点不同步：上限是会话自己的一格，人生会话里 `/context` 改的一直管用。
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
 
 use serde::Deserialize;
@@ -42,6 +44,11 @@ mod unseen;
 pub(crate) use finish::finish;
 pub(crate) use port::Ending;
 pub(crate) use unseen::{said as seen_said, seen};
+
+/// 放在堆上的一步（施工 LF-12 修）：开、结束人生的那一串很深，状态一层套一层地大。写成普通的 `async fn` 的话，调的一方那一帧里
+/// 要先放下整份状态；调试版里每一处 `.await` 各占一份，从连接一路到这里叠起来超过线程的 2 MiB 栈（Windows 的 CI 上溢出
+/// 过）。交回装好箱的，调的一方只拿一个指针。
+pub(crate) type Heaped<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
 /// 出厂的人生会话用哪个预设（`resources/presets/life.toml`）。
 const PRESET: &str = "life";
@@ -102,72 +109,74 @@ pub(crate) async fn call(core: &Arc<Core>, request: &Request) -> Result<Value, R
 
 /// 对人格 `persona`（已经查过在）的人生会话做 `what`，交回协议的那个方法的回应（见模块的说明和 `life.md`「对外的样子」）。
 /// `id` 是这一次的命令编号：开新会话、设上限、记身份照它接（`/context`、`/life`）。
-pub(crate) async fn act(
-    core: &Arc<Core>,
-    id: &CommandId,
-    persona: &str,
+pub(crate) fn act<'a>(
+    core: &'a Arc<Core>,
+    id: &'a CommandId,
+    persona: &'a str,
     what: Act,
-) -> Result<Value, Refusal> {
-    if what == Act::Status {
+) -> Heaped<'a, Result<Value, Refusal>> {
+    Box::pin(async move {
+        if what == Act::Status {
+            let found = find(core, persona).await?;
+            return state(core, found.as_ref());
+        }
+        let _one_at_a_time = core.life.lock().await;
         let found = find(core, persona).await?;
-        return state(core, found.as_ref());
-    }
-    let _one_at_a_time = core.life.lock().await;
-    let found = find(core, persona).await?;
-    match what {
-        Act::Start => {
-            match &found {
-                Some((session, Life::Started)) => return Err(Refusal::life_exists(session)),
-                // 结束了的：先把没清完的清完（重做不重复清），再开新的。
-                Some((session, _)) => end(core, session).await?,
-                None => {}
-            }
-            start(core, id, persona).await
-        }
-        Act::New => {
-            let ended = match &found {
-                Some((session, life)) => {
-                    end(core, session).await?;
-                    (*life == Life::Started).then(|| session.as_str().to_string())
+        match what {
+            Act::Start => {
+                match &found {
+                    Some((session, Life::Started)) => return Err(Refusal::life_exists(session)),
+                    // 结束了的：先把没清完的清完（重做不重复清），再开新的。
+                    Some((session, _)) => end(core, session).await?,
+                    None => {}
                 }
-                None => None,
-            };
-            let mut reply = start(core, id, persona).await?;
-            if let Some(ended) = ended {
-                reply["ended"] = json!(ended);
+                start(core, id, persona).await
             }
-            Ok(reply)
-        }
-        Act::Kill => {
-            let (session, _) = found.ok_or(Refusal::NO_LIFE)?;
-            end(core, &session).await?;
-            Ok(json!({"state": "ended", "session": session.as_str()}))
-        }
-        Act::Pause => {
-            let session = running(found)?;
-            if let Some(row) = row_of(core, &session)?
-                && !row.paused
-            {
-                core.schedules().pause(&row.id).map_err(schedule_refusal)?;
-            }
-            state(core, Some(&(session, Life::Started)))
-        }
-        Act::Resume => {
-            let session = running(found)?;
-            match row_of(core, &session)? {
-                Some(row) if row.paused => {
-                    core.schedules().resume(&row.id).map_err(schedule_refusal)?;
+            Act::New => {
+                let ended = match &found {
+                    Some((session, life)) => {
+                        end(core, session).await?;
+                        (*life == Life::Started).then(|| session.as_str().to_string())
+                    }
+                    None => None,
+                };
+                let mut reply = start(core, id, persona).await?;
+                if let Some(ended) = ended {
+                    reply["ended"] = json!(ended);
                 }
-                Some(_) => {}
-                // 表坏了换过空的、那一行没建成的：照日志里的身份重建。
-                None => {
-                    schedule(core, &session)?;
-                }
+                Ok(reply)
             }
-            state(core, Some(&(session, Life::Started)))
+            Act::Kill => {
+                let (session, _) = found.ok_or(Refusal::NO_LIFE)?;
+                end(core, &session).await?;
+                Ok(json!({"state": "ended", "session": session.as_str()}))
+            }
+            Act::Pause => {
+                let session = running(found)?;
+                if let Some(row) = row_of(core, &session)?
+                    && !row.paused
+                {
+                    core.schedules().pause(&row.id).map_err(schedule_refusal)?;
+                }
+                state(core, Some(&(session, Life::Started)))
+            }
+            Act::Resume => {
+                let session = running(found)?;
+                match row_of(core, &session)? {
+                    Some(row) if row.paused => {
+                        core.schedules().resume(&row.id).map_err(schedule_refusal)?;
+                    }
+                    Some(_) => {}
+                    // 表坏了换过空的、那一行没建成的：照日志里的身份重建。
+                    None => {
+                        schedule(core, &session)?;
+                    }
+                }
+                state(core, Some(&(session, Life::Started)))
+            }
+            Act::Status => state(core, found.as_ref()),
         }
-        Act::Status => state(core, found.as_ref()),
-    }
+    })
 }
 
 /// 没结束的那一条：没有的 `no_life`，结束了的 `life_ended`（带那个会话）。
@@ -180,57 +189,65 @@ fn running(found: Option<(SessionId, Life)>) -> Result<SessionId, Refusal> {
 }
 
 /// 人结束会话 `session` 上的人生，等清完：已经结束了的照重做。
-async fn end(core: &Arc<Core>, session: &SessionId) -> Result<(), Refusal> {
-    let finishing = finish(core, session, person(), None).await?;
-    finishing
-        .done()
-        .await
-        .map_err(|refusal| refusal.about_session(session))
+fn end<'a>(core: &'a Arc<Core>, session: &'a SessionId) -> Heaped<'a, Result<(), Refusal>> {
+    Box::pin(async move {
+        let finishing = finish(core, session, person(), None).await?;
+        finishing
+            .done()
+            .await
+            .map_err(|refusal| refusal.about_session(session))
+    })
 }
 
 /// `life.start`：见模块的说明。回应 `{"session"}`。
-async fn start(core: &Arc<Core>, id: &CommandId, persona: &str) -> Result<Value, Refusal> {
-    // 人格写的上限（施工 LF-10）：在 `core.life` 的锁里读，`persona.set` 改它时的 [`follow`] 也拿这把锁，两边不会错过。
-    let written = crate::personas::resolve(core, Some(Some(persona)))
-        .await?
-        .and_then(|found| found.file.life_context);
-    let who = Opening {
-        attended: false,
-        oneshot: false,
-        model: None,
-        venue: None,
-        memory: None,
-        preset: Some(PRESET.to_string()),
-        group: None,
-        profile: false,
-        images: true,
-        life: true,
-        titles: true,
-        origin: None,
-        confined: false,
-    };
-    let created = core
-        .sessions
-        .create(
-            core,
-            id.clone(),
-            Some(Some(persona)),
-            "~".to_string(),
-            Vec::new(),
-            who,
-        )
-        .await?;
-    let session = created.id;
-    core.schedules().named(&session, persona);
-    if let Err(refusal) = mark(core, id, &session, written).await {
-        // 还不是人生会话的空会话：删掉，不留半截。
-        if let Err(left) = core.sessions.delete(core, &session).await {
-            tracing::warn!(target: "miyu::endpoint", session = session.as_str(), reason = left.reason, "life session not removed");
+fn start<'a>(
+    core: &'a Arc<Core>,
+    id: &'a CommandId,
+    persona: &'a str,
+) -> Heaped<'a, Result<Value, Refusal>> {
+    Box::pin(async move {
+        // 人格写的上限（施工 LF-10）：在 `core.life` 的锁里读，`persona.set` 改它时的 [`follow`] 也拿这把锁，两边不会错过。
+        let written = crate::personas::resolve(core, Some(Some(persona)))
+            .await?
+            .and_then(|found| found.file.life_context);
+        let who = Opening {
+            attended: false,
+            oneshot: false,
+            model: None,
+            venue: None,
+            memory: None,
+            preset: Some(PRESET.to_string()),
+            group: None,
+            profile: false,
+            images: true,
+            life: true,
+            titles: true,
+            origin: None,
+            confined: false,
+        };
+        let created = core
+            .sessions
+            .create(
+                core,
+                id.clone(),
+                Some(Some(persona)),
+                "~".to_string(),
+                Vec::new(),
+                who,
+            )
+            .await?;
+        let session = created.id;
+        core.schedules().named(&session, persona);
+        if let Err(refusal) = mark(core, id, &session, written).await {
+            // 还不是人生会话的空会话：删掉，不留半截。
+            if let Err(left) = core.sessions.delete(core, &session).await {
+                tracing::warn!(target: "miyu::endpoint", session = session.as_str(), reason = left.reason, "life session not removed");
+            }
+            return Err(refusal);
         }
-        return Err(refusal);
-    }
-    schedule(core, &session).map_err(|refusal| refusal.about_session(&session))?;
-    Ok(json!({"session": session.as_str()}))
+        schedule(core, &session).map_err(|refusal| refusal.about_session(&session))?;
+        Ok(json!({"session": session.as_str()}))
+    })
 }
 
 /// 新开的会话照人格写的 `written` 设上下文上限、记身份（命令编号接在这一次的编号后面：`/context`、`/life`）。
@@ -345,31 +362,36 @@ async fn find(core: &Arc<Core>, persona: &str) -> Result<Option<(SessionId, Life
 /// 所有人格里没结束的人生会话这一刻的样子（施工 LF-12：`life.list`、光打的 `/life`、不带人格的会话里的 `/life` 都照它）：每个
 /// 人格照 [`find`] 的认法取最新的那一条，结束了的不要；照人格的编号排。一项是 `life.status` 对那个人格的回应，多带 `persona`
 /// （编号）、`name`（给人看的名字，照 `language` 挑；没起的、人格读不出来的写编号）、她这会儿正跑一轮的 `awake: true`。
-pub(crate) async fn lives(core: &Arc<Core>, language: &str) -> Result<Vec<Value>, Refusal> {
-    let mut latest: BTreeMap<String, Listed> = BTreeMap::new();
-    // 醒没醒照会话表里这时忙不忙：不为它载入会话（停着的人生会话多半没载入）。
-    let busy = core.sessions.busy_ids().await;
-    for one in mains(core, busy).await? {
-        if one.life != Life::Not
-            && let Some(persona) = one.persona.clone()
-        {
-            latest.entry(persona).or_insert(one);
+pub(crate) fn lives<'a>(
+    core: &'a Arc<Core>,
+    language: &'a str,
+) -> Heaped<'a, Result<Vec<Value>, Refusal>> {
+    Box::pin(async move {
+        let mut latest: BTreeMap<String, Listed> = BTreeMap::new();
+        // 醒没醒照会话表里这时忙不忙：不为它载入会话（停着的人生会话多半没载入）。
+        let busy = core.sessions.busy_ids().await;
+        for one in mains(core, busy).await? {
+            if one.life != Life::Not
+                && let Some(persona) = one.persona.clone()
+            {
+                latest.entry(persona).or_insert(one);
+            }
         }
-    }
-    let mut lives = Vec::new();
-    for (persona, one) in latest {
-        if one.life != Life::Started {
-            continue;
+        let mut lives = Vec::new();
+        for (persona, one) in latest {
+            if one.life != Life::Started {
+                continue;
+            }
+            let mut now = state(core, Some(&(one.id, Life::Started)))?;
+            now["name"] = json!(name(core, &persona, language).await);
+            now["persona"] = json!(persona);
+            if one.busy {
+                now["awake"] = json!(true);
+            }
+            lives.push(now);
         }
-        let mut now = state(core, Some(&(one.id, Life::Started)))?;
-        now["name"] = json!(name(core, &persona, language).await);
-        now["persona"] = json!(persona);
-        if one.busy {
-            now["awake"] = json!(true);
-        }
-        lives.push(now);
-    }
-    Ok(lives)
+        Ok(lives)
+    })
 }
 
 /// `life.list`（施工 LF-12）：不带参数，回 `{"lives": [...], "ended_unseen": [...]}`（[`lives`]、`unseen.rs`，照这个连接的

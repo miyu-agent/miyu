@@ -12,33 +12,36 @@ use serde_json::Value;
 use super::{Asked, listing, ran};
 use crate::commands::Said;
 use crate::commands::registry::{Call, Ran};
+use crate::life::Heaped;
 use crate::refusal::Refusal;
 
 /// 在不带人格的会话里做 `asked`。
-pub(super) async fn run(call: &Call<'_>, asked: Asked) -> Result<Ran, Refusal> {
-    if matches!(asked, Asked::New) {
-        return Ok(ran(Said::plain("commands/life-new-bare"), None));
-    }
-    let lives = crate::life::lives(call.core, call.peer.language).await?;
-    let mut done = match lives.as_slice() {
-        [] => {
-            let key = match asked {
-                Asked::Show => "commands/life-about-bare",
-                _ => "commands/life-nothing-bare",
-            };
-            ran(Said::plain(key), None)
+pub(super) fn run<'a>(call: &'a Call<'a>, asked: Asked) -> Heaped<'a, Result<Ran, Refusal>> {
+    Box::pin(async move {
+        if matches!(asked, Asked::New) {
+            return Ok(ran(Said::plain("commands/life-new-bare"), None));
         }
-        [only] => {
-            let persona = only["persona"].as_str().unwrap_or_default();
-            let name = only["name"].as_str().unwrap_or(persona);
-            super::run(call.core, call.id, persona, asked, Some(name)).await?
+        let lives = crate::life::lives(call.core, call.peer.language).await?;
+        let mut done = match lives.as_slice() {
+            [] => {
+                let key = match asked {
+                    Asked::Show => "commands/life-about-bare",
+                    _ => "commands/life-nothing-bare",
+                };
+                ran(Said::plain(key), None)
+            }
+            [only] => {
+                let persona = only["persona"].as_str().unwrap_or_default();
+                let name = only["name"].as_str().unwrap_or(persona);
+                super::run(call.core, call.id, persona, asked, Some(name)).await?
+            }
+            several => ran(listed(several), None),
+        };
+        if matches!(asked, Asked::Show) {
+            listing(&mut done, lives, None);
         }
-        several => ran(listed(several), None),
-    };
-    if matches!(asked, Asked::Show) {
-        listing(&mut done, lives, None);
-    }
-    Ok(done)
+        Ok(done)
+    })
 }
 
 /// 不止一个人格有人生会话的那一句：一个一段（名字，在跑还是停着），照这门语言连起来。

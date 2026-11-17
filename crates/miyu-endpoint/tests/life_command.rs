@@ -316,6 +316,11 @@ async fn kill_ends_it_and_without_one_says_none() {
 /// `/life new` 开下一段。
 #[tokio::test]
 async fn inside_the_life_session_itself_it_works_too() {
+    inside_the_life_session().await;
+}
+
+/// 上面那一条的步骤：`life_command_stack.rs` 在一条栈小的线程上再走一遍。
+pub(crate) async fn inside_the_life_session() {
     let home = Home::new();
     let script = Script::new([Play::Says("醒了。"), Play::Says("新的一段。")]);
     let hand = Hand::at(START);

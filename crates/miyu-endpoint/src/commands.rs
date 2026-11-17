@@ -135,82 +135,84 @@ pub(crate) async fn run(
 
 /// 执行一条没执行过的：认命令、判谁能用、执行、记下，交回 `{"command", "events", "said"}`。登记表里没有的照模板命令
 /// （[`templates::run`]）。
-async fn fresh(
-    core: &Arc<Core>,
-    peer: &Peer,
-    id: &CommandId,
+fn fresh<'a>(
+    core: &'a Arc<Core>,
+    peer: &'a Peer,
+    id: &'a CommandId,
     params: RunParams,
-) -> Result<Value, Refusal> {
-    let (name, rest) = split(&params.text)?;
-    if params
-        .cwd
-        .as_deref()
-        .is_some_and(|cwd| !workspace::head_cwd_ok(cwd))
-    {
-        return Err(Refusal::BAD_PARAMS);
-    }
-    let Some(slash) = core.commands.find_present(core, name) else {
-        if name.is_empty() {
-            return Err(Refusal::UNKNOWN_COMMAND);
+) -> crate::life::Heaped<'a, Result<Value, Refusal>> {
+    Box::pin(async move {
+        let (name, rest) = split(&params.text)?;
+        if params
+            .cwd
+            .as_deref()
+            .is_some_and(|cwd| !workspace::head_cwd_ok(cwd))
+        {
+            return Err(Refusal::BAD_PARAMS);
         }
-        // 名字里有 `:` 的是 MCP 服务的提示词（施工 X-39）：模板、内置命令的名字里都没有。
-        if name.contains(':') {
-            return prompts::run(core, peer, id, &params, (name, rest)).await;
+        let Some(slash) = core.commands.find_present(core, name) else {
+            if name.is_empty() {
+                return Err(Refusal::UNKNOWN_COMMAND);
+            }
+            // 名字里有 `:` 的是 MCP 服务的提示词（施工 X-39）：模板、内置命令的名字里都没有。
+            if name.contains(':') {
+                return prompts::run(core, peer, id, &params, (name, rest)).await;
+            }
+            return templates::run(core, peer, id, &params, (name, rest)).await;
+        };
+        let noted = CommandId::parse(&format!("{id}/ran")).map_err(|_| Refusal::BAD_PARAMS)?;
+        let session = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
+        let found = core.sessions.get(core, &session).await?;
+        let handle = found.handle.clone();
+        let by = speaker(core, &handle, params.as_external)?;
+        if let Err(refused) = allowed(core, slash.as_ref(), &handle, &by) {
+            if access(core, slash.name(), None) == Access::Off {
+                return Err(turned_off(core, peer, slash.name()).await);
+            }
+            let why = why::why(core, peer, &handle, &refused).await;
+            return Err(refused.because(why));
         }
-        return templates::run(core, peer, id, &params, (name, rest)).await;
-    };
-    let noted = CommandId::parse(&format!("{id}/ran")).map_err(|_| Refusal::BAD_PARAMS)?;
-    let session = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
-    let found = core.sessions.get(core, &session).await?;
-    let handle = found.handle.clone();
-    let by = speaker(core, &handle, params.as_external)?;
-    if let Err(refused) = allowed(core, slash.as_ref(), &handle, &by) {
-        if access(core, slash.name(), None) == Access::Off {
-            return Err(turned_off(core, peer, slash.name()).await);
+        let call = Call {
+            core,
+            peer,
+            session: &session,
+            found: &found,
+            id,
+            by: &by,
+            rest,
+            head: params.cwd.as_deref(),
+            prefix: params.prefix,
+        };
+        let Ran {
+            mut events,
+            said,
+            life,
+        } = slash.run(call).await?;
+        let note = Command::Ran {
+            text: params.text.clone(),
+            command: slash.name().to_string(),
+        };
+        match command(core, &session, &handle, &noted, &by, note).await? {
+            // 命令做完时会话已经封存（`/life kill` 结束的就是这个会话）：做了的照样回，只是记不进去了。
+            Outcome::Rejected {
+                reason: Reason::Sealed,
+                ..
+            } => {}
+            outcome => events.extend(accepted(outcome)?),
         }
-        let why = why::why(core, peer, &handle, &refused).await;
-        return Err(refused.because(why));
-    }
-    let call = Call {
-        core,
-        peer,
-        session: &session,
-        found: &found,
-        id,
-        by: &by,
-        rest,
-        head: params.cwd.as_deref(),
-        prefix: params.prefix,
-    };
-    let Ran {
-        mut events,
-        said,
-        life,
-    } = slash.run(call).await?;
-    let note = Command::Ran {
-        text: params.text.clone(),
-        command: slash.name().to_string(),
-    };
-    match command(core, &session, &handle, &noted, &by, note).await? {
-        // 命令做完时会话已经封存（`/life kill` 结束的就是这个会话）：做了的照样回，只是记不进去了。
-        Outcome::Rejected {
-            reason: Reason::Sealed,
-            ..
-        } => {}
-        outcome => events.extend(accepted(outcome)?),
-    }
-    let said = words(core, peer, &said).await;
-    let mut reply = json!({"command": slash.name(), "events": events, "said": said});
-    if let Some(life) = life {
-        if let Some(jump) = life.jump {
-            reply["session"] = json!(jump.session);
-            reply["persona"] = json!(jump.persona);
+        let said = words(core, peer, &said).await;
+        let mut reply = json!({"command": slash.name(), "events": events, "said": said});
+        if let Some(life) = life {
+            if let Some(jump) = life.jump {
+                reply["session"] = json!(jump.session);
+                reply["persona"] = json!(jump.persona);
+            }
+            if !life.lives.is_empty() {
+                reply["lives"] = json!(life.lives);
+            }
         }
-        if !life.lives.is_empty() {
-            reply["lives"] = json!(life.lives);
-        }
-    }
-    Ok(reply)
+        Ok(reply)
+    })
 }
 
 /// 说命令的是谁：本机的会话是主人（不收 `as`），场所会话照 `as` 认出平台上的人（不带的 `venue_session`）。

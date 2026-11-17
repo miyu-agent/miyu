@@ -134,86 +134,88 @@ impl Sessions {
     /// 造一个会话：有没有人能确认照 `attended`；`miyu ask` 开的是一次性的。先找预设（`who.preset`，
     /// 没写的照默认预设，施工 P-2 上，`presets.rs`），再找人格：`persona` 照 [`personas::resolve`]，预设不再参与（施工 P-4
     /// 上，2026-10-08 项目主人：只去掉预设的「默认人格」）。同一个命令编号重发，交回上一次造的那一个，预设、人格都不再找。
-    pub(crate) async fn create(
-        &self,
-        core: &Arc<Core>,
+    pub(crate) fn create<'a>(
+        &'a self,
+        core: &'a Arc<Core>,
         command: CommandId,
-        persona: Option<Option<&str>>,
+        persona: Option<Option<&'a str>>,
         cwd: String,
         dirs: Vec<String>,
         who: Opening,
-    ) -> Result<Created, Refusal> {
-        check_dirs(core, &dirs)?;
-        let mut open = self.open.lock().await;
-        if !open.recalled {
-            open.recalled = true;
-            let earlier = recall(core).await;
-            for (made, session) in earlier.into_iter().rev() {
-                open.created.push_front((made, session, None));
+    ) -> crate::life::Heaped<'a, Result<Created, Refusal>> {
+        Box::pin(async move {
+            check_dirs(core, &dirs)?;
+            let mut open = self.open.lock().await;
+            if !open.recalled {
+                open.recalled = true;
+                let earlier = recall(core).await;
+                for (made, session) in earlier.into_iter().rev() {
+                    open.created.push_front((made, session, None));
+                }
+                while open.created.len() > REMEMBERED {
+                    open.created.pop_front();
+                }
             }
-            while open.created.len() > REMEMBERED {
+            // 同一个命令编号重发的，交回上一次造的那一个；工作目录照它的默认工作区挑（施工 5-14）。除了 `cwd`、`dirs` 别的参数换了的
+            // 拒（施工 YC-7）：没有指纹的（重启以后补回来的）照旧交回。
+            let made = command.clone();
+            let digest = who.digest(persona);
+            let earlier = match open.created.iter().find(|(seen, ..)| *seen == made) {
+                Some((_, _, Some(seen))) if *seen != digest => return Err(Refusal::ID_REUSED),
+                Some((_, session, _)) => Some(session.clone()),
+                None => None,
+            };
+            let id = earlier.clone().unwrap_or_else(|| new_id(now()));
+            let (workspace, wide) = opening_cwd(core, &who, &cwd, &id);
+            // 开局只读照这个会话实际干活的目录算，带上信任着的项目配置（`config.md` 第二条第 9 条）。
+            let (_, project) = core.config().with_project(&workspace);
+            let untrusted = project.and_then(|project| project.untrusted());
+            if let Some(id) = earlier {
+                return Ok(Created {
+                    id,
+                    cwd: workspace,
+                    wide,
+                    untrusted,
+                });
+            }
+            let mut setup = Setup::resolve(
+                core,
+                (id.clone(), command.clone()),
+                persona,
+                (workspace.clone(), dirs.clone()),
+                who,
+            )
+            .await?;
+            let created = create(setup.create(core)).await;
+            let handle = match created {
+                Ok(handle) => handle,
+                // 人格已经找好了：`core/` 下哪一份读不了（安装坏了），是内部出错（施工 4-9 再补三上）。
+                Err(error) => {
+                    tracing::warn!(target: "miyu::endpoint", error = %error, "create failed");
+                    return Err(Refusal::INTERNAL);
+                }
+            };
+            open.running.insert(
+                id.clone(),
+                Running {
+                    handle,
+                    workspace: workspace.clone(),
+                    dirs,
+                },
+            );
+            open.created.push_back((made, id.clone(), Some(digest)));
+            if open.created.len() > REMEMBERED {
                 open.created.pop_front();
             }
-        }
-        // 同一个命令编号重发的，交回上一次造的那一个；工作目录照它的默认工作区挑（施工 5-14）。除了 `cwd`、`dirs` 别的参数换了的
-        // 拒（施工 YC-7）：没有指纹的（重启以后补回来的）照旧交回。
-        let made = command.clone();
-        let digest = who.digest(persona);
-        let earlier = match open.created.iter().find(|(seen, ..)| *seen == made) {
-            Some((_, _, Some(seen))) if *seen != digest => return Err(Refusal::ID_REUSED),
-            Some((_, session, _)) => Some(session.clone()),
-            None => None,
-        };
-        let id = earlier.clone().unwrap_or_else(|| new_id(now()));
-        let (workspace, wide) = opening_cwd(core, &who, &cwd, &id);
-        // 开局只读照这个会话实际干活的目录算，带上信任着的项目配置（`config.md` 第二条第 9 条）。
-        let (_, project) = core.config().with_project(&workspace);
-        let untrusted = project.and_then(|project| project.untrusted());
-        if let Some(id) = earlier {
-            return Ok(Created {
+            // 内存紧的话先腾地方（施工 MEM-2）：只叫一声，不等、不拒。
+            self.opened();
+            self.sweep(core);
+            Ok(Created {
                 id,
                 cwd: workspace,
                 wide,
                 untrusted,
-            });
-        }
-        let mut setup = Setup::resolve(
-            core,
-            (id.clone(), command.clone()),
-            persona,
-            (workspace.clone(), dirs.clone()),
-            who,
-        )
-        .await?;
-        let created = create(setup.create(core)).await;
-        let handle = match created {
-            Ok(handle) => handle,
-            // 人格已经找好了：`core/` 下哪一份读不了（安装坏了），是内部出错（施工 4-9 再补三上）。
-            Err(error) => {
-                tracing::warn!(target: "miyu::endpoint", error = %error, "create failed");
-                return Err(Refusal::INTERNAL);
-            }
-        };
-        open.running.insert(
-            id.clone(),
-            Running {
-                handle,
-                workspace: workspace.clone(),
-                dirs,
-            },
-        );
-        open.created.push_back((made, id.clone(), Some(digest)));
-        if open.created.len() > REMEMBERED {
-            open.created.pop_front();
-        }
-        // 内存紧的话先腾地方（施工 MEM-2）：只叫一声，不等、不拒。
-        self.opened();
-        self.sweep(core);
-        Ok(Created {
-            id,
-            cwd: workspace,
-            wide,
-            untrusted,
+            })
         })
     }
 

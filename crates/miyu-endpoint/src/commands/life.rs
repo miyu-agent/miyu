@@ -29,7 +29,7 @@ use miyu_session::Handle;
 use super::registry::{Call, Carried, Commands, Jump, Ran, Running, Slash};
 use super::{Said, words};
 use crate::Core;
-use crate::life::{Act, act};
+use crate::life::{Act, Heaped, act};
 use crate::list::LOCAL;
 use crate::refusal::Refusal;
 
@@ -164,45 +164,47 @@ fn say(keys: Keys, name: Option<&str>, mut fields: Vec<(&'static str, String)>) 
 }
 
 /// 照人格 `persona` 做 `asked`，拼回执；`name` 见 [`say`]。
-async fn run(
-    core: &Arc<Core>,
-    id: &CommandId,
-    persona: &str,
+fn run<'a>(
+    core: &'a Arc<Core>,
+    id: &'a CommandId,
+    persona: &'a str,
     asked: Asked,
-    name: Option<&str>,
-) -> Result<Ran, Refusal> {
-    let who = (persona, name);
-    match asked {
-        Asked::Show => {
-            let now = boxed(core, id, persona, Act::Status).await?;
-            shown(core, &now, who).await
-        }
-        Asked::New => {
-            let opened = boxed(core, id, persona, Act::New).await?;
-            let key = match opened.get("ended") {
-                Some(_) => "commands/life-renewed",
-                None => "commands/life-started",
-            };
-            Ok(ran(Said::plain(key), jump(&opened, persona)))
-        }
-        Asked::Switch(switch) => match boxed(core, id, persona, switch).await {
-            Ok(now) => shown(core, &now, who).await,
-            Err(refusal) if none(&refusal) => Ok(nothing()),
-            Err(refusal) => Err(refusal),
-        },
-        Asked::Kill => {
-            // 结束了的也算没有：`life.kill` 对它是把清理再走一遍，这里不说「已结束」。
-            let now = boxed(core, id, persona, Act::Status).await?;
-            if !matches!(state(&now), "running" | "paused") {
-                return Ok(nothing());
+    name: Option<&'a str>,
+) -> Heaped<'a, Result<Ran, Refusal>> {
+    Box::pin(async move {
+        let who = (persona, name);
+        match asked {
+            Asked::Show => {
+                let now = act(core, id, persona, Act::Status).await?;
+                shown(core, &now, who).await
             }
-            match boxed(core, id, persona, Act::Kill).await {
-                Ok(ended) => Ok(ran(say(ENDED, name, Vec::new()), jump(&ended, persona))),
+            Asked::New => {
+                let opened = act(core, id, persona, Act::New).await?;
+                let key = match opened.get("ended") {
+                    Some(_) => "commands/life-renewed",
+                    None => "commands/life-started",
+                };
+                Ok(ran(Said::plain(key), jump(&opened, persona)))
+            }
+            Asked::Switch(switch) => match act(core, id, persona, switch).await {
+                Ok(now) => shown(core, &now, who).await,
                 Err(refusal) if none(&refusal) => Ok(nothing()),
                 Err(refusal) => Err(refusal),
+            },
+            Asked::Kill => {
+                // 结束了的也算没有：`life.kill` 对它是把清理再走一遍，这里不说「已结束」。
+                let now = act(core, id, persona, Act::Status).await?;
+                if !matches!(state(&now), "running" | "paused") {
+                    return Ok(nothing());
+                }
+                match act(core, id, persona, Act::Kill).await {
+                    Ok(ended) => Ok(ran(say(ENDED, name, Vec::new()), jump(&ended, persona))),
+                    Err(refusal) if none(&refusal) => Ok(nothing()),
+                    Err(refusal) => Err(refusal),
+                }
             }
         }
-    }
+    })
 }
 
 /// 照 `life.status` 那个样子的回应说状态：没有的、结束了的回说明、不带会话；别的照 [`told`]，带它。`who` 是人格的编号和
@@ -220,24 +222,30 @@ async fn shown(
 
 /// 没结束的人生会话的状态那一句：停着的说停着；在跑的她这会儿醒着就说醒着，不然说下次几点醒（核心这台机器的时区，到
 /// 分钟）。没有的、结束了的没有这一句。
-async fn told(core: &Arc<Core>, now: &Value, name: Option<&str>) -> Option<Said> {
-    let session = now["session"].as_str()?;
-    match state(now) {
-        "running" => {
-            let next = now["next"]
-                .as_str()
-                .and_then(|next| Timestamp::parse(next).ok());
-            Some(match (awake(core, session).await, next) {
-                (false, Some(next)) => {
-                    let next = next.local_minute(crate::sessions::offset());
-                    say(RUNNING, name, vec![("next", next)])
-                }
-                _ => say(AWAKE, name, Vec::new()),
-            })
+fn told<'a>(
+    core: &'a Arc<Core>,
+    now: &'a Value,
+    name: Option<&'a str>,
+) -> Heaped<'a, Option<Said>> {
+    Box::pin(async move {
+        let session = now["session"].as_str()?;
+        match state(now) {
+            "running" => {
+                let next = now["next"]
+                    .as_str()
+                    .and_then(|next| Timestamp::parse(next).ok());
+                Some(match (awake(core, session).await, next) {
+                    (false, Some(next)) => {
+                        let next = next.local_minute(crate::sessions::offset());
+                        say(RUNNING, name, vec![("next", next)])
+                    }
+                    _ => say(AWAKE, name, Vec::new()),
+                })
+            }
+            "paused" => Some(say(PAUSED, name, Vec::new())),
+            _ => None,
         }
-        "paused" => Some(say(PAUSED, name, Vec::new())),
-        _ => None,
-    }
+    })
 }
 
 /// 人生会话 `id` 这会儿在跑一轮（她醒着）。找不到的当没醒。
@@ -249,16 +257,6 @@ async fn awake(core: &Arc<Core>, id: &str) -> bool {
         Ok(found) => found.handle.busy(),
         Err(_) => false,
     }
-}
-
-/// 同 [`act`]，放在堆上：开、结束的那一串很深，整个塞进 `command.run` 的那一个 future 里，调试版的测试线程栈不够。
-async fn boxed(
-    core: &Arc<Core>,
-    id: &CommandId,
-    persona: &str,
-    what: Act,
-) -> Result<Value, Refusal> {
-    Box::pin(act(core, id, persona, what)).await
 }
 
 /// 回应里的 `state`。
