@@ -58,7 +58,7 @@ AI 正在干活时也能切。切到只读当场生效，这一步里还没跑�
 | 设置页上 | 配置键 | 拦哪些命令 |
 |---|---|---|
 | 破坏性 git 操作 | `permission.confirm.git` | `git push --force`（`-f`、`+分支` 也算）、`git reset --hard`、`git clean -f`、`git checkout .`、`git restore .`、`git stash drop`、`git stash clear` |
-| 递归删除 | `permission.confirm.delete` | 删工作目录或它的上级，例如在 `~/src/app` 里跑 `rm -rf ..`；删 Miyu 的数据根、数据根里的东西、装着它的目录，例如 `rm -rf ~/.miyu`，用回收站工具删数据根本身的也算；整个目录往下删、目标要到运行时才知道的，例如 `rm -rf "$OUT"`、`… \| xargs rm -r`。`find` 带 `-delete` 的同样算 |
+| 递归删除 | `permission.confirm.delete` | 删工作目录或它的上级，例如在 `~/src/app` 里跑 `rm -rf ..`；删 Miyu 的数据根、数据根里的东西、装着它的目录，例如 `rm -rf ~/.miyu`，AI 用 `trash` 工具删数据根本身、装着它的目录也算；整个目录往下删、目标要到运行时才知道的，例如 `rm -rf "$OUT"`、`… \| xargs rm -r`。`find` 带 `-delete` 的同样算 |
 | 关机和重启 | `permission.confirm.power` | `shutdown`、`reboot`、`halt`、`poweroff`、`init 0`、`init 6`，`systemctl` 的 `poweroff`、`reboot`、`halt`、`suspend`、`hibernate`、`kexec` |
 | 下载后直接执行 | `permission.confirm.pipe_to_shell` | `curl` 或 `wget` 下载下来交给 shell、`python`、`python3`、`perl`、`ruby`、`node` 跑：`curl … \| sh`、`bash <(curl …)`、`sh -c "$(curl …)"` |
 | 容器使用宿主设备 | `permission.confirm.container` | `docker`、`podman`、`nerdctl` 的 `run`、`create` 带 `--device`、`--device-cgroup-rule`，`--pid`、`--net`、`--network`、`--ipc` 写 `host`，或者挂 `/dev`、`/sys` 下面的某一个，例如 `-v /dev/snd:/dev/snd` |
