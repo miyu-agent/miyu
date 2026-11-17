@@ -119,7 +119,7 @@ fn the_bundled_catalog_and_vendor_table_read() {
     let flash = catalog.model("deepseek", "deepseek-flash").expect("有");
     assert_eq!(
         (flash.window, flash.max_output),
-        (Some(1_000_000), Some(393_216))
+        (Some(1_048_576), Some(393_216))
     );
     assert!(flash.inputs.is_some_and(|inputs| inputs.has("image")));
     let meta: catalog::Meta = serde_json::from_str(include_str!(

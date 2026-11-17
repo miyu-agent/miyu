@@ -1575,6 +1575,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sTK1"><span class="n">TK-1</span>登记簿的数用真端点补<span class="st">…</span></a></li>
         <li><a class="step review" href="#sJB1P"><span class="n">JB-1压</span>后台瞬间就完的命令在 tmpfs 上重压<span class="st">…</span></a></li>
         <li><a class="step review" href="#sFL9"><span class="n">FL-9</span>扩展驱动首字成对比<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sMDSNAP"><span class="n">MD-SNAP</span>出厂目录快照换新<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -61540,6 +61541,56 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/FL-9-扩展驱动首字成对比.md</code>；蓝图 <code>perf.md</code>；预算 <code>23-性能预算.md</code> 第二节。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sMDSNAP" aria-labelledby="h-sMDSNAP">
+  <div class="sheet-head"><h2 id="h-sMDSNAP"><span class="no">MD-SNAP</span>出厂目录快照换新</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">安装包带的目录快照换成现在的：离线、还没拉到新目录的机器也照 opencode 的新地址走，也认得这一个半月新出的模型。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">resources · models/models-dev.json、models-dev.meta.json</span><span class="dir-note">MD-SNAP</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>原样字节换成 2026-11-17 的 <code>api.json</code></li>
+              <li><code>meta</code> 的 <code>fetched</code> 跟着换</li>
+              <li>照快照写的测试只改期望值</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">324 家、9922 个模型</span><span class="rl">原来 225 家、8341 个</span></div>
+          <div class="tile new"><span class="nm">离线照快照</span><span class="rl">Go 照模型的地址，Zen 钉 /zen/v1</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">MD-SNAP</dd></div>
+        <div><dt>名称</dt><dd>出厂目录快照换新</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">MD-SNAP</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>离线起来 <code>catalog loaded source=snapshot … models=9922</code></span></li>
+        <li><span class="ok">✓</span><span><code>model.list</code> 列得出 Go 42 个、Zen 140 个</span></li>
+        <li><span class="ok">✓</span><span>假 key 真发：Go 的 minimax-m3 401（落在 <code>…/anthropic/v1</code>）</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/MD-SNAP-出厂目录快照换新.md</code>；蓝图 <code>models.md</code> 第二条第 1 条。</li>
       </ul>
     </div>
   </div>
