@@ -54,8 +54,8 @@ When you switch, Miyu first compacts the earlier conversation into a summary und
 
 | Key | What it controls | On the settings page |
 |---|---|---|
-| `persona.default` | Which persona new sessions use by default. With none set, new sessions use no persona; if it points to a persona that no longer exists, that also counts as not set | "General → New sessions → Default persona" |
-| `preset.default` | Which preset new sessions use by default; `full` as shipped. If it points to a preset that does not exist, opening a new session reports an error and does not quietly switch to another | "General → New sessions → Default preset" |
+| `persona.default` | Which persona new sessions use by default. With none set, new sessions use no persona; if it points to a persona that no longer exists, that also counts as not set, and `miyu config set` and `miyu check` warn about it | "General → New sessions → Default persona" |
+| `preset.default` | Which preset new sessions use by default; `full` as shipped. If it points to a preset that does not exist, opening a new session reports an error and does not quietly switch to another; `miyu config set` accepts it and adds a warning line, and `miyu check` warns too | "General → New sessions → Default preset" |
 | `terminal.persona` | Which persona a newly started shell integration session uses, that is, the session you enter when you talk to Miyu straight from the shell. With none set, it follows `persona.default` | "General → Shell integration session" |
 | `terminal.preset` | Same as above, for the preset. With none set, it follows `preset.default` | "General → Shell integration session" |
 
@@ -237,6 +237,6 @@ Packages can also provide personas and presets; for how, see [Things that work a
 
 | What you see | What to do |
 |---|---|
-| You cannot open a new session, and `miyu ask` reports "preset not found" (`miyu check` does not check this key) | The default preset was deleted or renamed. Change `preset.default` to one that exists, or choose one when you open the session |
+| You cannot open a new session, and `miyu ask` reports "preset not found"; `miyu check` warns "preset.default names preset …, which doesn't exist yet; it works once the preset is created." | The default preset was deleted or renamed. Change `preset.default` to one that exists, or choose one when you open the session |
 | A persona or preset is marked as an error in the list and cannot be chosen | Use `miyu check` to see which line of which file is wrong |
 | When switching persona or preset: "A reply is in progress: stop it or wait for it to finish" | Wait for this turn to finish, or stop it first |

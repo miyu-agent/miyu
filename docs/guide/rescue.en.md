@@ -75,7 +75,7 @@ In a few cases where things cannot be filled in, `miyu rescue` first prints a wa
 
 ## One repair
 
-Example: after you edit `~/.miyu/etc/config.toml` by hand, typing `miyu` reports that the core could not start.
+Example: after you edit `~/.miyu/etc/config.toml` by hand, typing `miyu` reports "the core couldn't start: …".
 
 1. Type:
 

@@ -1557,6 +1557,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC6"><span class="n">DOC-6</span>照手册把命令真敲一遍<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC7"><span class="n">DOC-7</span>手册去掉私密目录<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC8"><span class="n">DOC-8</span>手册改成数据根读得到、写不进<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sDOC9"><span class="n">DOC-9</span>手册跟上警告、英文报错、循环、迁移包<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
         <li><a class="step review" href="#sRO2"><span class="n">RO-2</span>数据根两种模式都读得到<span class="st">…</span></a></li>
@@ -60460,6 +60461,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/DOC-8-手册数据根读得到.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sDOC9" aria-labelledby="h-sDOC9">
+  <div class="sheet-head"><h2 id="h-sDOC9"><span class="no">DOC-9</span>手册跟上警告、英文报错、循环、迁移包</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">核心和迁移包合了几处给人看的改动：默认人格预设写错会警告、几句报错有了英文、/stop 连循环一起停、迁移报告有英文。手册中英两份跟上。只动文档。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">docs/guide</span><span class="dir-note">DOC-9</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>默认人格、预设指着没有的：config set 照收并警告，check 警告</li>
+              <li>英文页：连不上核心、数据根出错那几句从照意思写换成引原文</li>
+              <li>/stop 连这个会话的循环一起停；/loop clear、stop 也能关</li>
+              <li>迁移英文页：Old Miyu migration、report.md、for-agent.json，报告里的词照英文原文</li>
+              <li>先在沙箱里实测拿到原文，再改</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">引程序的话，先实测拿到印出来的原文再写</span><span class="rl">DOC-6 的教训</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DOC-9</dd></div>
+        <div><dt>名称</dt><dd>手册跟上警告、英文报错、循环、迁移包</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">DOC-9</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改的每一处有实测的输出对着</span></li>
+        <li><span class="ok">✓</span><span>改过的每页中英行数、标题、表格、代码块个数相等</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/DOC-9-手册对CK-1等.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

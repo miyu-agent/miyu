@@ -183,7 +183,7 @@ If you do not want the earlier content any more:
 - Terminal: while the AI is answering, press `Esc` twice to interrupt, and the queued messages are sent afterwards; press `Ctrl+C` to interrupt, and the queued messages go back to the input box.
 - Web UI: while the AI is answering, press `Esc` twice to interrupt.
 - Command line: press `Ctrl+C`, with exit code `3`.
-- `/stop`: interrupts this turn, keeps the queued messages without sending them, and then stops the background commands and subagents this session sent out. The reply is "All stopped.".
+- `/stop`: interrupts this turn, keeps the queued messages without sending them, and then stops the background commands and subagents this session sent out, along with this session's loop. The reply is "All stopped.".
 
 ## Renaming
 

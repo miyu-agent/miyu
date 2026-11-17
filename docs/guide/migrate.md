@@ -136,7 +136,7 @@
 
 ## 看报告
 
-每跑一次一个目录 `~/.miyu/root/documents/旧版 Miyu 迁移/<时刻>/`，时刻是 UTC，写成 `20261114T083000Z`。里面有：
+每跑一次一个目录 `~/.miyu/root/documents/旧版 Miyu 迁移/<时刻>/`，时刻是 UTC，写成 `20261114T083000Z`。界面语言是英文的，目录叫 `Old Miyu migration`，两份文件叫 `report.md`、`for-agent.json`，报告也是英文的。里面有：
 
 | 文件 | 是什么 |
 |---|---|
@@ -187,7 +187,7 @@
 
 ## 迁完以后
 
-- 旧程序：AUR 上旧的 `miyu` 包升级以后就换成了过渡包 `miyu`，它自己不带文件，只依赖 `miyu-agent`；旧版的程序已经没了。新版的 `miyu-core` 和 0.7 那一代的 `miyu` 互斥，见 [安装、升级、卸载](install.md#用-aur-装arch-linux)。别的装法装的，照报告「数据根外面」那一节，确认是旧版的再删。报告里说 `~/.local/bin/miyu` 是新版包装脚本的，别删。Linux、macOS 上用安装脚本装的这一版，`~/.local/bin/miyu` 是指向 `~/.local/lib/miyu/miyu` 的链接，也是新版的，别删。
+- 旧程序：AUR 上旧的 `miyu` 包升级以后就换成了过渡包 `miyu`，它自己不带文件，只依赖 `miyu-agent`；旧版的程序已经没了。新版的 `miyu-core` 和 0.7 那一代的 `miyu` 互斥，见 [安装、升级、卸载](install.md#用-aur-装arch-linux)。别的装法装的，照报告「数据根外面」那一节，确认是旧版的再删。`~/.local/bin/miyu` 是这一版的（安装脚本放的链接，或者早先的包装脚本）时，报告里写「这是新版的 miyu，不是旧版的，别删。」，别删。
 - 旧目录 `~/.miyu-0.7`：迁移不删。确认都迁过来了、用了一阵没问题，自己删。
 - 压缩包：留着。以后想让 AI 接着迁没迁的东西，要用它和 `给agent.json`。不要了再删整个 `<时刻>/` 目录。
 - `migrate` 这个包：用完可以 `miyu pkg remove migrate`。迁移的目录在 `~/.miyu/root/documents/` 里，卸包不删。

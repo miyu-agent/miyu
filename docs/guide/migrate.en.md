@@ -10,7 +10,7 @@ If you used the old Miyu (0.7.x) and have installed this version, follow this pa
 
 - This version does not read the old version's data folder and does not move it by itself. Moving it is done by the command `miyu migrate` that comes with the package `migrate`, which you install first.
 - The old version's data folder is also `~/.miyu` by default, the same place as this version's data root. While the old folder is still there, this version's core does not start. So the first step is to move the old folder out of the way.
-- Migration does not change or delete the old folder. It first packs the whole old folder into one archive, `miyu-0.7.tar.zst`, checks it file by file, and from then on reads only from the unpacked copy. The archive is kept in `~/.miyu/root/documents/旧版 Miyu 迁移/<time>/` and is not deleted when you uninstall `migrate`.
+- Migration does not change or delete the old folder. It first packs the whole old folder into one archive, `miyu-0.7.tar.zst`, checks it file by file, and from then on reads only from the unpacked copy. The archive is kept in `~/.miyu/root/documents/Old Miyu migration/<time>/` and is not deleted when you uninstall `migrate`.
 - There is no "look first, change nothing" mode. Before it changes anything, it checks that the old version has stopped and that there is enough disk space; if either is not met, it writes nothing.
 - You can run it again. What was already migrated is not duplicated; see "Running again and failures part-way" below.
 
@@ -38,7 +38,7 @@ Supported on Linux x86_64, macOS (M series) and Windows x86_64. There is no such
    miyu setup
    ```
 
-   You can migrate without one: the providers, keys and default model set in the old version are added. But the memory step asks the AI to consolidate memories once, and that needs a model. If there is no model at that point, the step is skipped and the report says consolidation failed (`整理没成`); run `miyu memory dream` after migrating. How to connect one: [Models](models.en.md).
+   You can migrate without one: the providers, keys and default model set in the old version are added. But the memory step asks the AI to consolidate memories once, and that needs a model. If there is no model at that point, the step is skipped and the report says "consolidation failed (…); it will run again at the usual interval"; run `miyu memory dream` after migrating. How to connect one: [Models](models.en.md).
 
 5. For anything you want migrated along with the rest, install the matching package first (you can also add it later, see the table below):
 
@@ -68,13 +68,13 @@ Supported on Linux x86_64, macOS (M series) and Windows x86_64. There is no such
    If the core is not running, it is started first. On success it prints two lines:
 
    ```text
-   报告：/home/me/.miyu/root/documents/旧版 Miyu 迁移/20261114T083000Z/报告.md
-   给 agent 的：/home/me/.miyu/root/documents/旧版 Miyu 迁移/20261114T083000Z/给agent.json
+   Report: /home/me/.miyu/root/documents/Old Miyu migration/20261114T083000Z/report.md
+   For the agent: /home/me/.miyu/root/documents/Old Miyu migration/20261114T083000Z/for-agent.json
    ```
 
    It prints full paths; the above is what it looks like on Linux. On macOS and Windows it prints the full path of the data root on that system.
 
-8. Read `报告.md` and check it as described in "Reading the report" below.
+8. Read `report.md` and check it as described in "Reading the report" below.
 
 `miyu migrate` takes exactly one argument:
 
@@ -97,7 +97,7 @@ With the wrong number of arguments it prints usage and exits with code `2`. Whic
 | Configuration and keys | `config.jsonc`, the profile about you | Providers (address, key, model context window, temperature, price), the default model (`models.chat`), the vision model (`models.vision`), a remote semantic model (`models.embedding`), the models of the three tiers into the `lite`, `normal` and `flagship` pools, Tavily and Exa keys and the SearXNG address, about you (`profile.about`), and the old version's admin QQ number taken as you. Only what this version does not have yet is added; anything already set is left alone. Keys go into the secrets file | |
 | Stickers | Your own sticker libraries, one folder each | Each library becomes a sticker package `legacy-memes-<library>` and is installed | `memes`: if not installed, the sticker package stays in this run's folder and the report says which line to run after installing it |
 | Skills | Skills you wrote | Copied into `~/.miyu/root/skills/<name>/`. One with the same name but different content is renamed `<name>-legacy`. Ones that were disabled are enabled in this version | |
-| Knowledge base | Documents you put into the knowledge base | Copied into a new knowledge base `旧版知识库` (old knowledge base, `~/.miyu/root/kb/legacy/`); this version builds the index itself. One with the same name but different content is renamed `<name>-legacy.<ext>` | |
+| Knowledge base | Documents you put into the knowledge base | Copied into a new knowledge base "Old Miyu knowledge base" (`旧版知识库` when the interface language is Chinese; `~/.miyu/root/kb/legacy/`); this version builds the index itself. One with the same name but different content is renamed `<name>-legacy.<ext>` | |
 | Files | Pictures, documents, tool output, working directories | Pictures go into `~/.miyu/root/pictures/`; documents into `~/.miyu/root/documents/`; output, sorted by session, into `~/.miyu/root/documents/旧版产物/`; working directories into `~/.miyu/root/workspace/旧版/`. One with the same name but different content is renamed `<name> (旧版 N).<ext>` | |
 | Goofish login state | The login file of Goofish search | Copied into the state folder of the `goofish` package. It is not guaranteed that the new package reads the old format; if it does not, log in again as the new package describes | `goofish`: if not installed, nothing is copied |
 | Sponsorship records | The sponsorship records in the session database | Imported into the ledger of the "Sponsorships" plugin, keeping the original times, amounts and exchange rates | `im-sponsor`: if not installed, install it and run the migration again |
@@ -106,7 +106,7 @@ Every copied file is checked against its SHA-256.
 
 ## What is not migrated
 
-All of it stays in the archive; the report lists, item by item, where it is in the archive and what format it is in. When you need something, have the AI read `给agent.json` in the same folder and continue the migration.
+All of it stays in the archive; the report lists, item by item, where it is in the archive and what format it is in. When you need something, have the AI read `for-agent.json` in the same folder and continue the migration.
 
 | Item | Why, and what to do |
 |---|---|
@@ -122,7 +122,7 @@ All of it stays in the archive; the report lists, item by item, where it is in t
 | Pictures, files and avatars received on QQ | This version's im records only placeholders and does not store the content |
 | QQ plugin data such as affection and mood | Has to be rebuilt in this version's im |
 | Diaries, turn-by-turn experiences, change records and old vectors in memory | Only facts are imported. This version computes vectors itself |
-| The AI's own memories, memories not in use, memories longer than 120 characters | Overlong ones are written into `给agent.json`; once shortened, they can still be imported |
+| The AI's own memories, memories not in use, memories longer than 120 characters | Overlong ones are written into `for-agent.json`; once shortened, they can still be imported |
 | One-off `ask` sessions, members' sessions, sessions on platforms other than QQ | |
 | Members' home folders | This version is for one person only |
 | Scheduled reminders | If you want them, set them up again from what the report says, see [Schedules](automation.en.md#schedules) |
@@ -132,29 +132,29 @@ All of it stays in the archive; the report lists, item by item, where it is in t
 | Things you shared with others before | Not migrated |
 | Logs, caches, indexes | This version rebuilds them |
 
-Things the old version installed outside the data root do not go into the archive. Migration looks only at these six places under your home folder: `~/.local/bin/miyu`, `~/.config/fish/conf.d/miyu.fish`, `~/.gemini/config/agents/miyu`, `~/.gemini/antigravity-cli`, `~/.cache/miyu/voice-models`, `~/.local/state/miyu`. The report's section on things outside the data root (`数据根外面`) lists which of them exist. On macOS and Windows it also looks only at these places under your home folder; things the old version installed elsewhere are not listed in the report, and you have to find and clean them up yourself.
+Things the old version installed outside the data root do not go into the archive. Migration looks only at these six places under your home folder: `~/.local/bin/miyu`, `~/.config/fish/conf.d/miyu.fish`, `~/.gemini/config/agents/miyu`, `~/.gemini/antigravity-cli`, `~/.cache/miyu/voice-models`, `~/.local/state/miyu`. The report's "Outside the data root" section lists which of them exist. On macOS and Windows it also looks only at these places under your home folder; things the old version installed elsewhere are not listed in the report, and you have to find and clean them up yourself.
 
 ## Reading the report
 
-Each run creates a folder `~/.miyu/root/documents/旧版 Miyu 迁移/<time>/`; the time is UTC, written as `20261114T083000Z`. It contains:
+Each run creates a folder `~/.miyu/root/documents/Old Miyu migration/<time>/`; the time is UTC, written as `20261114T083000Z`. When the interface language is Chinese, the folder is called `旧版 Miyu 迁移`, the two files `报告.md` and `给agent.json`, and the report is in Chinese. It contains:
 
 | File | What it is |
 |---|---|
-| `报告.md` | The report for you to read |
-| `给agent.json` | The same report as JSON, for the AI to read and continue migrating what was not migrated |
+| `report.md` | The report for you to read |
+| `for-agent.json` | The same report as JSON, for the AI to read and continue migrating what was not migrated |
 | `miyu-0.7.tar.zst` | The archive of the whole old folder |
 | `miyu-0.7.manifest.json` | The SHA-256 of every file in the archive |
 | `qq-records.jsonl` | Only if there are QQ message records |
 | `legacy-memes-<library>/` | Only if you have your own sticker libraries |
 
-`报告.md`, from top to bottom (the report is written in Chinese; section names are given as they appear):
+`report.md`, from top to bottom:
 
 - The start: the time of the migration, where the old folder is, where the archive is.
-- `人格` (personas): a table of which persona in this version each old persona maps to: `新建` (created), `已经有同名的` (one with the same name already existed), `出厂的软件工程师` (the shipped Software Engineer), `没映射上` (not mapped).
-- `每一类` (each kind): one section per kind, named with the kind's English name (such as `sessions`, `memories`, `config`). Each section first says `迁了` (migrated), `迁了一部分` (partly migrated), `没迁，在压缩包里` (not migrated, in the archive) or `不用迁` (no need to migrate), how many entries were migrated and how many skipped, where they went, and then one more sentence. If the matching package is not installed, that sentence says which line to run after installing it.
-- `数据根外面` (outside the data root): what the old version installed outside the data root.
-- `没迁的` (not migrated): a table with each item's path in the archive and its old format.
-- `旧数据根` (old data root): the archive's size and SHA-256, and when you can delete the old folder.
+- "Personas": a table of which persona in this version each old persona maps to: "created", "a persona with this name already existed", "built-in software engineer", "not mapped".
+- "By category": one section per category, named with the category's English name (such as `sessions`, `memories`, `config`). Each section first says "Migrated", "Partly migrated", "Not migrated, kept in the archive" or "Nothing to migrate", how many entries were migrated and how many skipped, where they went, and then one more sentence. If the matching package is not installed, that sentence says which line to run after installing it.
+- "Outside the data root": what the old version installed outside the data root.
+- "Not migrated": a table with each item's path in the archive and its old format.
+- "Old data root": the archive's size and SHA-256, and when you can delete the old folder.
 
 The report only contains names and counts, no keys, cookies or chat content.
 
@@ -182,14 +182,14 @@ Every run packs a new archive and adds a new folder, which takes twice the old f
 
 If it fails part-way, it prints `miyu migrate: <reason>` on standard error and exits with code `1`. What was written before the failure stays; fix the cause and run again, and what was already migrated is skipped. A failed run leaves behind:
 
-- `~/.miyu/root/documents/旧版 Miyu 迁移/<time>/`: the archive, without a report. You can delete it once you have checked.
+- `~/.miyu/root/documents/Old Miyu migration/<time>/`: the archive, without a report. You can delete it once you have checked.
 - `~/.miyu/var/lib/migrate/<time>/`: the unpacked copy used for checking. A successful run deletes it when done; a failed one leaves it, and you can delete it.
 
 ## After migrating
 
-- The old program: after upgrading, the old `miyu` package on the AUR becomes the transitional package `miyu`, which ships no files of its own and only depends on `miyu-agent`; the old program is gone. The new `miyu-core` conflicts with the 0.7-era `miyu`, see [Installing, upgrading and uninstalling](install.en.md#installing-from-the-aur-arch-linux). If you installed some other way, go by the report's section on things outside the data root, and delete what you have confirmed belongs to the old version. If the report says `~/.local/bin/miyu` is the new version's wrapper script, do not delete it. If you installed this version with the install script on Linux or macOS, `~/.local/bin/miyu` is a link to `~/.local/lib/miyu/miyu`, which also belongs to the new version; do not delete it.
+- The old program: after upgrading, the old `miyu` package on the AUR becomes the transitional package `miyu`, which ships no files of its own and only depends on `miyu-agent`; the old program is gone. The new `miyu-core` conflicts with the 0.7-era `miyu`, see [Installing, upgrading and uninstalling](install.en.md#installing-from-the-aur-arch-linux). If you installed some other way, go by the report's section on things outside the data root, and delete what you have confirmed belongs to the old version. When `~/.local/bin/miyu` belongs to this version (the link the install script puts there, or an earlier wrapper script), the report says "This is the new miyu, not the old one. Do not delete it."; do not delete it.
 - The old folder `~/.miyu-0.7`: migration does not delete it. Once you have confirmed everything came over and have used it for a while without problems, delete it yourself.
-- The archive: keep it. If you later want the AI to continue migrating what was not migrated, it needs the archive and `给agent.json`. When you no longer need it, delete the whole `<time>/` folder.
+- The archive: keep it. If you later want the AI to continue migrating what was not migrated, it needs the archive and `for-agent.json`. When you no longer need it, delete the whole `<time>/` folder.
 - The `migrate` package: when you are done, you can run `miyu pkg remove migrate`. The migration folders are in `~/.miyu/root/documents/`, and uninstalling the package does not delete them.
 
 ## When something goes wrong
@@ -204,5 +204,5 @@ If it fails part-way, it prints `miyu migrate: <reason>` on standard error and e
 | `not enough disk space for the archive and its check under <folder>: need <N> MiB, have <M> MiB` | Not enough disk space: the place for the archive needs twice the old folder's size. Free up space and run again |
 | `cannot reach the core: …` | Cannot connect to this version's core. See [Troubleshooting](troubleshooting.en.md) |
 | ``run this as `miyu migrate <old folder>`: MIYU_STATE_DIR is not set`` | You ran the program inside the package directly. Use `miyu migrate` |
-| The report says consolidation failed (`整理没成`) | There was no usable model when memories were migrated. After connecting a model, run `miyu memory dream --persona <id>` |
-| In the report, some kind is `没迁，在压缩包里` (not migrated, in the archive), and the note says a package is not installed | Install that package and run the line given in the note, or run the migration again |
+| The report says "consolidation failed (…)" | There was no usable model when memories were migrated. After connecting a model, run `miyu memory dream --persona <id>` |
+| In the report, some category is "Not migrated, kept in the archive", and the note says a package is not installed | Install that package and run the line given in the note, or run the migration again |

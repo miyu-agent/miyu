@@ -29,7 +29,7 @@ $env:MIYU_HOME = 'D:\miyu'
 
 Set this way, it applies only to this one shell window. To make it stick, see the table below and the notes after it.
 
-- Write an absolute path; a leading `~` is replaced with the home directory. If you write a relative path, it reports that `MIYU_HOME` must be an absolute path and shows what you wrote.
+- Write an absolute path; a leading `~` is replaced with the home directory. If you write a relative path, it reports "MIYU_HOME must be an absolute path, got …".
 - Set to empty, it counts as not set.
 - If the directory does not exist, it is created on first use. On Linux and macOS, the new directory is accessible only to you (`0700`); on Windows it inherits the access control of the parent directory.
 
@@ -284,7 +284,7 @@ Put the `alias` or `function` line in your shell config (`~/.bashrc`, `~/.zshrc`
 
 | What you see | What to do |
 |---|---|
-| A message that `MIYU_HOME` must be an absolute path, showing what you wrote | Write an absolute path, or one starting with `~` |
+| "MIYU_HOME must be an absolute path, got …" | Write an absolute path, or one starting with `~` |
 | "… has other things in it and isn't a Miyu data root, so it was left alone. …" | `MIYU_HOME` points at the wrong directory, or `.miyu-layout` was deleted. Point it at an empty directory; if it is your own data root and only the marker is missing, get `.miyu-layout` back from the backup |
 | "… uses a layout this version doesn't know, so it was left alone" | The restored backup was written by a newer version; upgrade Miyu |
 | After restoring, the web UI asks you to sign in again and extensions have to be turned on again | `etc/private/` and `etc/extensions.json` were not backed up; set them again as prompted |

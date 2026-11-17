@@ -52,7 +52,7 @@ When a subagent finishes a turn and goes idle, it sends the last thing it said i
 - Ask the AI to stop one with the `jobs` tool.
 - Terminal: in the main session, when no turn is running, press `Esc` twice in a row to stop all the subagents it sent out; when switched into a subagent, press `Esc` twice or `Ctrl+C` to stop it. You can also select that line and press `x`.
 - Web UI: in "Background tasks", click "Stop" or "Stop all".
-- `/stop`: interrupts this turn, then stops the background commands and subagents this session sent out.
+- `/stop`: interrupts this turn, then stops the background commands and subagents this session sent out; this session's loop is stopped too.
 
 ### When background running is turned off
 
@@ -216,7 +216,7 @@ Invalid arguments. Usage:
 /loop  No prompt: let the AI decide what to do and when
 /loop <interval> <prompt>  Send it at a fixed interval, such as 5m or 2h
 /loop <prompt>  Let the AI pick when to run next
-/loop off  Stop this session's loops
+/loop off  Stop this session's loops (clear or stop works too)
 ```
 
 An interval that cannot be recognized (`/loop 5x look`) is not an error; the whole line is treated as a message of the no-interval kind.
@@ -232,7 +232,7 @@ An interval that cannot be recognized (`/loop 5x look`) is not an error; the who
 /loop off
 ```
 
-This stops this session's loop, and the reply is "Stopped this session's loops.". `/stop` does not stop loops.
+This stops this session's loop, and the reply is "Stopped this session's loops.". `clear` or `stop` works in place of `off` (with more words after it, it is still taken as the message to say). `/stop` stops loops too: while interrupting this turn it also turns off this session's loop. A `/loop` typed while the AI is working step by step runs for the first time after that turn ends.
 
 ### How it differs from schedules
 
@@ -304,7 +304,7 @@ To stop everything:
 | What to stop | How |
 |---|---|
 | This turn, background commands, subagents | `/stop` |
-| Loops | `/loop off` |
+| Loops | `/loop off`, or `/stop` |
 | Goals | `/goal pause` or `/goal clear` |
 | Schedules | `miyu schedule pause <id>`, `miyu schedule rm <id>`, or the web UI's "Scheduled tasks" page |
 

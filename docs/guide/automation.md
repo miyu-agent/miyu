@@ -52,7 +52,7 @@ AI 派的时候能挑：
 - 让 AI 用 `jobs` 工具停掉某一个。
 - 终端：在主会话、这一轮没在跑时，连按两下 `Esc` 停掉它派出去的全部子代理；切进一个子代理时，连按两下 `Esc` 或按 `Ctrl+C` 停掉它。也可以选中那一行按 `x`。
 - 网页：「后台任务」里点「停止」或「全部停止」。
-- `/stop`：打断这一轮，再停掉这个会话派出去的后台命令和子代理。
+- `/stop`：打断这一轮，再停掉这个会话派出去的后台命令和子代理，这个会话的循环也一起停。
 
 ### 关掉后台运行时
 
@@ -216,7 +216,7 @@ No new instructions. Continue on your own judgment, then schedule the next wakeu
 /loop　不给具体要求，由 AI 自己定做什么、什么时候
 /loop <间隔> <要说的话>　每隔一段时间说一次，例如 5m、2h
 /loop <要说的话>　由 AI 自己定下一次什么时候
-/loop off　停止此会话的循环
+/loop off　停止此会话的循环（也可以写 clear、stop）
 ```
 
 间隔写得认不出的（`/loop 5x 看看`）不算错，整句当成不写间隔的那种话。
@@ -232,7 +232,7 @@ No new instructions. Continue on your own judgment, then schedule the next wakeu
 /loop off
 ```
 
-停掉这个会话的循环，回执「已停止此会话的循环。」。`/stop` 不停循环。
+停掉这个会话的循环，回执「已停止此会话的循环。」。`off` 写成 `clear`、`stop` 也行（后面再跟别的字的，照旧当要说的话）。`/stop` 也停循环：它打断这一轮的同时把这个会话的循环一起关掉。AI 正在一步步干活时敲的 `/loop`，等这一轮结束再跑头一次。
 
 ### 和定时任务的区别
 
@@ -304,7 +304,7 @@ unattended_steps = 200
 | 停什么 | 怎么做 |
 |---|---|
 | 这一轮、后台命令、子代理 | `/stop` |
-| 循环 | `/loop off` |
+| 循环 | `/loop off`，或者 `/stop` |
 | 长期目标 | `/goal pause` 或 `/goal clear` |
 | 定时任务 | `miyu schedule pause <编号>`、`miyu schedule rm <编号>`，或网页「定时任务」页 |
 

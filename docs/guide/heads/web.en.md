@@ -171,7 +171,7 @@ Type `/` to pop up the command list. It filters as you type, `Tab` completes, `E
 |---|---|
 | `/new` | New session |
 | `/sessions` | Session list, optionally with a search term |
-| `/stop` | Interrupt this turn and stop this session's background commands and subagents |
+| `/stop` | Interrupt this turn and stop this session's background commands, subagents and loop |
 | `/undo` | Undo the last turn |
 | `/redo` | Drop the last turn and run the same message again |
 | `/compact` | Compact the context now |
