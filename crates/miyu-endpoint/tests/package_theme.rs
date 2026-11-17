@@ -90,8 +90,12 @@ async fn a_theme_is_listed_and_its_file_is_read() {
         .call("e", "package.disable", json!({"package": "ascii"}))
         .await;
     assert_eq!(
-        switched["error"]["data"]["reason"], "not_switchable",
-        "{switched}"
+        (
+            switched["result"]["enabled"].clone(),
+            switched["result"]["status"].clone()
+        ),
+        (json!(false), json!("off")),
+        "也有开关（施工 UX-1 补：人人有开关）：{switched}"
     );
 }
 

@@ -71,6 +71,8 @@ pub(crate) fn places(core: &std::sync::Arc<Core>) -> PresetPlaces {
     // 文件改动的版本（施工 OV-1 下）：盯上你那一层，会话回合开始比号。
     core.watch_edits();
     let weak_edits = std::sync::Arc::downgrade(core);
+    // 关着的包（施工 UX-1 补）每回合开始照开关读一次。
+    let weak_off = std::sync::Arc::downgrade(core);
     PresetPlaces {
         presets: presets(core),
         features: crate::scripts::features(core),
@@ -81,6 +83,12 @@ pub(crate) fn places(core: &std::sync::Arc<Core>) -> PresetPlaces {
                     .unwrap_or_default()
             },
         ))),
+        off: Some(miyu_session::SwitchedOff(std::sync::Arc::new(move || {
+            weak_off
+                .upgrade()
+                .map(|core| core.packages_off())
+                .unwrap_or_default()
+        }))),
         edits: Some(miyu_session::prefix::EditsVersion(std::sync::Arc::new(
             move || weak_edits.upgrade().map_or(0, |core| core.edits.version()),
         ))),
@@ -98,7 +106,11 @@ pub(crate) fn places(core: &std::sync::Arc<Core>) -> PresetPlaces {
 /// 找好的预设换成造会话要的：带上这时的全局开关（施工 X-27），算好装了、没开的功能（施工 F-3 上）。
 pub(crate) fn chosen(core: &Core, found: Found) -> Chosen {
     let features = crate::scripts::features(core);
-    let file = found.file.following(switches(core));
+    // 关着的包扣下（施工 U23 末上；UX-1 补起照包的开关）。
+    let file = found
+        .file
+        .following(switches(core))
+        .switching_off(core.packages_off());
     Chosen::new(found.id, file, &features)
 }
 
@@ -266,7 +278,7 @@ pub(super) struct Carried {
 
 /// 找 [`Carried`]：碰磁盘，在阻塞线程里找；找不成的当没有。
 pub(super) async fn carried(core: &Core) -> Carried {
-    let (packages, root) = (core.system_packages(), core.root.clone());
+    let (packages, root) = (core.packages_of(), core.root.clone());
     let external = crate::skills::external(core);
     let skills = tokio::task::spawn_blocking(move || {
         miyu_store::skills::find(&packages, &root, &external).0

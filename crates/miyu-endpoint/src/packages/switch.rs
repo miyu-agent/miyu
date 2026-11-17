@@ -1,6 +1,7 @@
 //! 列表上的开关（施工 F-6 上，`docs/blueprint/package-pages.md`「开关」）：头只发 `package.enable`、`package.disable`，怎么做照
-//! 种类定。扩展开关进程（同 `extension.enable`、`extension.disable`）；出厂的、不是必需的内置包关是卸掉（在家目录记一笔）、
-//! 开是装回来；必需的、界面、小程序没有开关。`package.restart`（施工 X-4）重启扩展的进程和带的 MCP 服务、`bundle` 带的服务。
+//! 种类定。扩展开关进程（同 `extension.enable`、`extension.disable`）；出厂的内置包关是卸掉（在家目录记一笔）、开是装回来；
+//! 别的包（施工 UX-1 补：人人有开关）只记在 `extensions.json` 的 `on`。关着的包带来的一切都不在（`off.rs`），开关以后
+//! 知识库、给别的包带的内容、本机的向量模型照开着的包重算（[`Core::follow_switches`]）。`package.restart`（施工 X-4）重启扩展的进程和带的 MCP 服务、`bundle` 带的服务。
 //! 回应同 `package.list` 的一项。
 
 use std::path::PathBuf;
@@ -43,6 +44,8 @@ enum Switch {
     Shipped,
     /// `bundle`：开关它带的 MCP 服务（施工 X-3 上）。
     Bundle,
+    /// 别的（施工 UX-1 补）：只记开关。
+    Plain,
 }
 
 /// 打开之前查一遍（施工 F-10 下下，她的 `package` 看一眼时）：有这个包、有开关、程序在，同 `package.enable` 头几步。交回
@@ -79,20 +82,19 @@ fn find(core: &Core, id: &str) -> Result<(Manifest, Layer, PathBuf, bool), Refus
     Ok((manifest, found.layer, found.files_dir(), true))
 }
 
-/// 这个包的开关怎么做：没有开关的 `not_switchable`。
+/// 这个包的开关怎么做：每个包都有（施工 UX-1 补）。
 fn switch(manifest: &Manifest, layer: Layer) -> Result<Switch, Refusal> {
-    match manifest.kind {
-        PackageKind::Process => Ok(Switch::Extension),
-        PackageKind::Builtin if layer == Layer::Shipped => Ok(Switch::Shipped),
-        // 只带技能、脚本的没有开关（施工 X-13 上）。
-        PackageKind::Bundle if crate::packages::status::runs(manifest) => Ok(Switch::Bundle),
+    Ok(match manifest.kind {
+        PackageKind::Process => Switch::Extension,
+        PackageKind::Builtin if layer == Layer::Shipped => Switch::Shipped,
+        PackageKind::Bundle if crate::packages::status::runs(manifest) => Switch::Bundle,
         PackageKind::Builtin
         | PackageKind::Ui
         | PackageKind::Worker
         | PackageKind::Mascot
         | PackageKind::Theme
-        | PackageKind::Bundle => Err(Refusal::NOT_SWITCHABLE),
-    }
+        | PackageKind::Bundle => Switch::Plain,
+    })
 }
 
 /// `package.enable`。卸掉了的出厂包先装回来；扩展再照 `approve` 打开。
@@ -114,8 +116,10 @@ pub(crate) async fn enable(
             turn_on(core, peer, &params.package, params.approve.as_deref()).await?;
         }
         Switch::Bundle => crate::mcp::turn_on(core, &params.package, &manifest).await?,
+        Switch::Plain => crate::extensions::set_on(core, &params.package, true).await?,
         Switch::Shipped => {}
     }
+    core.follow_switches().await;
     item(core, peer, &params.package)
 }
 
@@ -136,8 +140,10 @@ pub(crate) async fn disable(
                 manage::remove_package(core, params.package.clone(), false).await?;
             }
             Switch::Bundle => crate::mcp::turn_off(core, &params.package, &manifest).await?,
+            Switch::Plain => crate::extensions::set_on(core, &params.package, false).await?,
         }
     }
+    core.follow_switches().await;
     item(core, peer, &params.package)
 }
 

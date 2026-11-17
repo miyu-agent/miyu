@@ -167,7 +167,7 @@ pub(crate) async fn set(core: &Arc<Core>, peer: Peer, params: SetParams) -> Resu
         }
     }
     let personas = personas(core);
-    let packages = core.system_packages();
+    let packages = core.packages_of();
     let language = peer.language;
     let state = core.root.persona_picture_cache();
     let (reply, life) = tokio::task::spawn_blocking(move || {

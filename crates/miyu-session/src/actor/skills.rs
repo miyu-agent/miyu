@@ -41,12 +41,19 @@ impl Actor {
         });
         let present = present.to_vec();
         let switches = crate::switches::of(values);
+        // 关着的包（施工 UX-1 补）：它带的技能下一个回合就不列。
+        let off = self
+            .persona
+            .as_ref()
+            .and_then(|refresh| refresh.presets.as_ref())
+            .map(crate::PresetPlaces::switched_off)
+            .unwrap_or_default();
         async move {
             let (watch, external, resources, face, pinned, preset) = asking?;
             let looked = blocking(move || {
                 let file = preset.and_then(|(id, places)| {
                     let found = places.presets.find(&id).ok()?;
-                    Some(found.file.following(switches))
+                    Some(found.file.following(switches).switching_off(off))
                 });
                 let looked = watch.look(&resources, &face, file.as_ref(), &external)?;
                 let tail = skills::tail(

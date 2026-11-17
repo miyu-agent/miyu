@@ -137,7 +137,7 @@ Chinese version: [errors.md](errors.md).
 | `package_file_bad`, `wrong_target` | The package file can't be unpacked; the manifest lists `targets` and this system isn't one of them | |
 | `download_failed`, `source_unreachable` | Installing from a source: the package file couldn't be downloaded from anywhere; no source could be reached and there is no local index | `why` |
 | `depends_missing`, `package_depended` | A dependency is missing or below its version floor; another package depends on it | `missing`, `by` |
-| `program_missing`, `not_switchable` | The program wasn't found; no switch | |
+| `program_missing` | The program wasn't found | |
 | `not_restartable`, `package_off` | Nothing to restart; it's off | |
 | `extension_off` | Restarting an extension that's off | |
 | `no_drivers` | `driver.check` on a package that declares no model driver | |

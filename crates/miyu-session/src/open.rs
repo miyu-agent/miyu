@@ -59,7 +59,8 @@ pub use load::{load, load_placed};
 pub use scan::Placed;
 pub(crate) use scan::current_policy;
 pub use setup::{
-    Create, GroupSettings, Installed, Load, OfferedFeatures, PresetPlaces, ToolOverrides, Workplace,
+    Create, GroupSettings, Installed, Load, OfferedFeatures, PresetPlaces, SwitchedOff,
+    ToolOverrides, Workplace,
 };
 
 /// 造一个会话：先把策略快照存成 blob（先落 blob，再写引用它的事件），再建会话目录和日志，交给内核

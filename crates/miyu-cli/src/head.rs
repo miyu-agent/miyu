@@ -61,7 +61,13 @@ pub fn open(page: Option<&str>, start: impl FnOnce() -> Command) -> Opened {
         }
     };
     let found = match (DataRoot::locate(&env), ResourceRoot::locate(&env)) {
-        (Ok(root), Ok(resources)) => Packages::system(&resources, &root).read(),
+        // 人明着关掉了的界面不拉起（施工 UX-1 补）。
+        (Ok(root), Ok(resources)) => {
+            let off = packages::switched_off(&root);
+            let mut found = Packages::system(&resources, &root).read();
+            found.retain(|one| !off.contains(&one.id));
+            found
+        }
         _ => Vec::new(),
     };
     let main = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("miyu"));

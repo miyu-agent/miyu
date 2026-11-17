@@ -158,6 +158,7 @@ pub(super) fn setup_in(name: &str, text: &str, tools: Catalog) -> (Scratch, Data
             offers: None,
             overrides: None,
             edits: None,
+            off: None,
         }),
         seen: Some(Shelf::new(tools.clone()).edition()),
         tools: Shelf::new(tools),

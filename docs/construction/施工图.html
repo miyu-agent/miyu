@@ -61735,6 +61735,7 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
           <div class="tile new"><span class="nm">一个包只有一个开关</span><span class="rl">项目主人 11-17 定；true 是开</span></div>
           <div class="tile new"><span class="nm">「启用」不写在配置文件里</span><span class="rl">写了的同 off，照不认识的键警告</span></div>
           <div class="tile new"><span class="nm">名字是软件术语、名词短语</span><span class="rl">不带「AI」「你」，开关正着说</span></div>
+          <div class="tile new"><span class="nm">关了就全没，人人有开关</span><span class="rl">项目主人 11-17 定（UX-1补）；没程序的包记在 extensions.json</span></div>
         </div>
       </div>
     </div>
@@ -61743,7 +61744,7 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
         <div><dt>图号</dt><dd class="mono">UX-1</dd></div>
         <div><dt>名称</dt><dd>设置项正名，软件包只留一个「启用」</dd></div>
         <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
-        <div><dt>提交</dt><dd class="mono">UX-1上、UX-1下</dd></div>
+        <div><dt>提交</dt><dd class="mono">UX-1、UX-1补</dd></div>
         <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
       </dl>
     </figcaption>
@@ -61756,6 +61757,8 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
         <li><span class="ok">✓</span><span><code>config.set</code> 设成 true，核心日志 <code>extension started</code>、进程在；设回 false，<code>extension exited</code>、进程没了，配置文件一个字没写</span></li>
         <li><span class="ok">✓</span><span><code>miyu config set packages.&lt;id&gt;.enabled true</code> 开得起来，不报「被压着」</span></li>
         <li><span class="ok">✓</span><span>手写 <code>[packages.x] off = false</code>，<code>miyu check</code> 报没有这一项、已忽略</span></li>
+        <li><span class="ok">✓</span><span>补：真模型同一个会话里，关掉只带技能的包，下一轮技能清单里没了它；开回来又有；关掉带程序的包，进程停、它带的技能也没了</span></li>
+        <li><span class="ok">✓</span><span>补：关掉内容包，宿主扩展收到 <code>content.changed</code>、<code>content.list</code> 列空；开回来又列；<code>miyu pkg list</code> 关着的标「已关闭」</span></li>
         <li><span class="ok">✓</span><span>网页（main f346c39a）包的信息页画出「启用」，点开包起来、头部开关跟着开；改名的几项（个人资料、回复语言、称呼、预压缩、冷却的几项、空闲退出时间）照新名字画</span></li>
       </ul>
     </div>

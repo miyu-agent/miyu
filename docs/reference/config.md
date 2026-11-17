@@ -58,7 +58,7 @@
 
 带 `choices_from` 的项：类型照旧是 `text`，头把它画成下拉，选项调 `package.call`（参数 `{"package", "method"}`，照这一格原样填，不带 `params`）取，包回 `{"choices": [{"value", "name"?, "description"?}]}`：`value` 是存进配置的字，`name` 没写的照 `value` 画，`description` 暗色写在下面。调不到（`program_not_running`、`unregistered`、`method_failed`、`method_timeout`）、回的 `choices` 是空的或者不是这个样子的，退回文字框；存着的值不在列表里的照样显示。核心不照列表查值，写什么存什么。
 
-**包的「启用」**（UX-1）：有开关的包（同 `package.list` 带 `enabled` 的那几个）各一项 `packages.<编号>.enabled`：`type` 是 `bool`、`control` 是 `toggle`、`applies` 是 `now`，`page` 是 `packages`、`group` 和 `package` 是这个包，排在这个包自己的配置项前面。`true` 是开。它就是 `package.enable`、`package.disable` 那个开关，不写在配置文件里。以前的 `packages.<编号>.off`（只对某个人关掉）删了，哪儿都不认。
+**包的「启用」**（UX-1）：每个包（同 `package.list` 的 `enabled`，人人有开关）各一项 `packages.<编号>.enabled`：`type` 是 `bool`、`control` 是 `toggle`、`applies` 是 `now`，`page` 是 `packages`、`group` 和 `package` 是这个包，排在这个包自己的配置项前面。`true` 是开。它就是 `package.enable`、`package.disable` 那个开关，不写在配置文件里。以前的 `packages.<编号>.off`（只对某个人关掉）删了，哪儿都不认。
 
 **出错**：`unknown_config_key`：`keys` 里有清单里没有的，`data.problems` 每个一条，带最近的键名 `suggest`。
 

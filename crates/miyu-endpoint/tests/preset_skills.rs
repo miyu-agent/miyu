@@ -253,6 +253,8 @@ async fn a_package_installed_mid_session_brings_its_skills_in_the_next_turn() {
     let script = Script::new([Play::Says("一。"), Play::Says("二。")]);
     let read: Arc<dyn Tool> = Fake::new("read", Access::Read, Act::Echo);
     let tools = Catalog::new([read]).expect("合写法");
+    // 手动开的扩展没写开关的关着，关着的包的技能不列（施工 UX-1 补）：这里记成开着。
+    crate::support::extensions::switch_on(&home, "kit");
     let mut client = Client::connect(configured_core(&home, &script, tools));
     client.hello().await;
     let work = home.work.to_string_lossy().into_owned();

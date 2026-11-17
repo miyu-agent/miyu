@@ -190,9 +190,9 @@ program = "miyu-embed"
 
 核心起来时照环境算一次（`miyu-core` 的 `distro_dirs`），交给 `Core::with_distro`，装卸以后重读照它；测试里造的核心没有这一层，要的自己指一处。命令行转交子命令、找界面照 `Packages::system` 现算。这一层只归系统的包管理器：程序照包文件夹的 `bin/` 找（同装上的），能力照装上的一样要人批（只有出厂的自动批），本地库不记它、`package.check` 不比哈希（下面「本地库」）；卸它只是记一笔不再加载（下面「装卸」）。
 
-**用得到的那一份**：核心手里的 `Core::system_packages` 是出厂的、装上的全部，进程、扩展、MCP 服务、装卸、会话看得到用得到的（工具面里预设的功能、技能、脚本列表、命令模板、包带的人格预设、投影里技能的显示名）都照它（施工 UX-1 起没有「去掉关了的」那一份 `packages_of`）。装、卸、升级人的连接、不关的会话做得了（`packages/may_manage.rs`），关起来的会话回 `not_permitted`。
+**用得到的那一份**：核心手里的 `Core::system_packages` 是出厂的、装上的全部，进程、扩展、MCP 服务、装卸照它；会话看得到、用得到的（工具面里预设的功能、技能、脚本列表、命令模板、包带的人格预设、投影里技能的显示名、知识库、给别的包带的内容）照 `Core::packages_of`：全部去掉关着的（下面「关掉某个包」，施工 UX-1 补起照包的开关算，原来照配置项 `packages.<编号>.off`），用到时造一份留着，装卸了清掉。装、卸、升级人的连接、不关的会话做得了（`packages/may_manage.rs`），关起来的会话回 `not_permitted`。
 
-**关掉某个包**（施工 UX-1，项目主人 2026-11-17 定：只留一个开关）：包的开关只有一个，就是 `package.enable`、`package.disable`（扩展起停进程、带服务的 `bundle` 起停服务、出厂的内置包卸掉装回）；设置页「软件包」页有开关的包那一组底下的「启用」`packages.<编号>.enabled` 读写的就是它（`config.md`「协议」的 `config.schema`、`config.set`，`crates/miyu-endpoint/src/config/enabled.rs`），不写进配置文件。原来施工 U23 末上的 `packages.<编号>.off`（多用户时「只对你自己隐藏这个包」：会话里扣下它的工具、技能、命令，设置页、预设页不列）删了：和真正的开关是两个开关管一件事，2026-11-17 主人验收时拨了 `off = false` 以为开了、包其实没起。老配置里写着的照不认识的键警告。只带技能、脚本的包没有开关，要关它带的东西用预设的功能开关或 `features.<功能编号>`，或者卸掉。
+**关掉某个包**（施工 UX-1，项目主人 2026-11-17 定：只留一个开关；UX-1 补同日定「关了就全没，人人有开关」）：每个包都有开关，就是 `package.enable`、`package.disable`，设置页「软件包」页每个包那一组底下的「启用」`packages.<编号>.enabled` 读写的也是它（`config.md`「协议」，`crates/miyu-endpoint/src/config/enabled.rs`），不写进配置文件。怎么开关照种类：扩展起停进程，带服务的 `bundle` 起停服务，出厂的内置包卸掉、装回（`base-*` 照旧，原来就有开关），别的（只带技能、脚本、命令、内容、知识库的 `bundle`，界面、小程序、吉祥物包、主题包）只记在 `extensions.json` 的 `on`。没写的：扩展、带服务的 `bundle` 照清单（`start`），别的开着（`extensions::package_on`）。关着的包它带来的一切都不在（`packages/off.rs`，`Core::packages_off`）：看得到的那一份 `Core::packages_of` 去掉它，技能、脚本、命令模板、整页命令、MCP 提示词、人格预设、交给会话的「装了的包」、预设页都跟着没有；会话每回合照这时的开关把它并进预设文件扣下的那几个（`PresetPlaces::off`、`PresetFile::switching_off`），开着的会话下一个回合工具面、技能就没有；开关以后知识库、本机的向量模型照开着的包重算、给别的包带的内容推 `content.changed`、`content.list` 不列它（`Core::follow_switches`）。命令行人明着关掉的包（`on` 写成 `false`）的子命令、界面不加不拉起。它的配置项照旧列、照旧能改（关着也能先配好再开）。原来施工 U23 末上的 `packages.<编号>.off`（多用户时「只对你自己隐藏这个包」）删了：和真正的开关是两个开关管一件事，2026-11-17 主人验收时拨了 `off = false` 以为开了、包其实没起。老配置里写着的照不认识的键警告。
 
 **包的身份**：核心拉起的扩展连进来替主人干活，是哪个包另记在连接上，能力照批过的挡。清单写了 `[connection] platform` 的是平台桥（`venues/bridge.rs`），场所会话归主人，群和陌生人的私聊关在沙盒里（`venues.md`）。
 
@@ -273,7 +273,7 @@ model = "mascot.json"   # 包目录 packages/pudding/ 里的相对路径
 2. **列出来**：`package.list` 的一项多 `mascot: {"model"}`，没有 `protocol`。
 3. **读模型**：`package.file {"package", "path"}` 对吉祥物包只给 `model` 那一份（`path` 照原样写），照真实路径找，链接出了包目录的不认；别的路径 `file_not_found`。分块、512 KiB 一块照旧。
 4. **`miyu check`**：模型文件不在（照真实路径，出了包目录的也算不在）`mascot_missing`，超过 256 KiB `mascot_too_big`，不是 JSON 的对象 `mascot_not_json`，都是错误，写清哪个包、哪个文件。模型里面写得对不对由终端查。
-5. **装卸照常**：`package.install`、`package.remove`；没有开关（`package.enable`、`package.disable` 回 `not_switchable`）、没有配置项、不拉起程序。终端照配置项 `tui.mascot`（终端的清单 `[settings.mascot]`，填包的编号）挑用哪一个。
+5. **装卸照常**：`package.install`、`package.remove`；开关同别的包（施工 UX-1 补：记在 `extensions.json`，关着的终端不用它）、没有配置项、不拉起程序。终端照配置项 `tui.mascot`（终端的清单 `[settings.mascot]`，填包的编号）挑用哪一个。
 
 ### 外观包（施工 F-16，2026-10-21 项目主人定，终端界面的会话转来；TH-1 起能带网页主题，2026-11-02 项目主人定）
 

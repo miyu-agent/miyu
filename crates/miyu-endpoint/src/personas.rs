@@ -190,7 +190,7 @@ pub(crate) struct GetParams {
 pub(crate) async fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Value, Refusal> {
     let said = words(core, peer.language).ok();
     let personas = personas(core);
-    let packages = core.system_packages();
+    let packages = core.packages_of();
     let language = peer.language;
     let state = core.root.persona_picture_cache();
     tokio::task::spawn_blocking(move || {

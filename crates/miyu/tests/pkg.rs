@@ -50,7 +50,8 @@ async fn pkg_lists_installs_and_removes_through_a_real_core() {
     assert_eq!(stdout(&installed), "已安装 xpkg\n", "{installed:?}");
     let text = stdout(&run(&root, &cwd, zh, &["pkg", "list"]).await);
     assert!(
-        line(&text, "xpkg").is_some_and(|line| line.ends_with("测试包")),
+        // 手动开的扩展装上是关着的，标「已关闭」（施工 UX-1 补）。
+        line(&text, "xpkg").is_some_and(|line| line.ends_with("测试包（已关闭）")),
         "{text}"
     );
     let removed = run(&root, &cwd, zh, &["pkg", "remove", "xpkg", "--yes"]).await;

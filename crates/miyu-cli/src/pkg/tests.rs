@@ -12,15 +12,17 @@ fn a_package_is_one_aligned_line_and_only_what_people_need() {
         json!({"package": "basesystem", "layer": "shipped", "kind": "builtin", "name": "基础系统", "version": "1"}),
         json!({"package": "net", "layer": "shipped", "kind": "builtin", "name": "联网", "removed": true}),
         json!({"package": "bad", "layer": "home", "code": "bad_toml", "problem": "第一行不是 TOML"}),
+        json!({"package": "kit", "layer": "home", "kind": "bundle", "name": "笔记", "enabled": false}),
     ];
     assert_eq!(
         shown::listed(&packages, &Language::Chinese),
         [
             "bad         （清单有误：第一行不是 TOML）",
             "basesystem  基础系统",
+            "kit         笔记（已关闭）",
             "net         联网（已卸载）",
         ],
-        "照编号排"
+        "照编号排；关着的标一句（施工 UX-1 补）"
     );
     assert_eq!(
         shown::listed(&packages[1..2], &Language::English),

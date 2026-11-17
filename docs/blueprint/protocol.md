@@ -918,7 +918,7 @@
 
 - 参数 `{"package"}`，`package.enable` 另可带 `approve`（同 `extension.enable`）。回应同 `package.list` 的一项。
 - 扩展：同 `extension.enable`、`extension.disable`。`bundle`（施工 X-3 上）：开是起它带的 MCP 服务，关是停下、它们的工具出目录；开关和扩展记在同一份 `extensions.json`，没写的关着。出厂的、不是必需的内置包：关是卸掉（同 `package.remove`，在 `packages/` 记一笔），开是装回来（同 `package.install {"package"}`）。卸掉了的出厂扩展，开时先装回来再开。关着的再关、开着的再开，什么都不动。
-- 拒绝：没有的 `unknown_package`；界面、小程序、吉祥物包 `not_switchable`；程序没找到的（包文件夹的 `bin/`、`miyu` 旁边都没有）开不了，`program_missing`；扩展要的能力还有没批的照 `extension.enable` 回 `needs_approval`。扩展自己调回 `local_only`。
+- 拒绝：没有的 `unknown_package`（施工 UX-1 补起每个包都有开关，`not_switchable` 删了）；程序没找到的（包文件夹的 `bin/`、`miyu` 旁边都没有）开不了，`program_missing`；扩展要的能力还有没批的照 `extension.enable` 回 `needs_approval`。扩展自己调回 `local_only`。
 
 **`package.restart`**（施工 X-4，`package-pages.md`「开关」、`mcp.md`）
 
@@ -1591,7 +1591,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `not_a_ui_package`、`prefs_too_big` | -32010 | `prefs.*`、订 `prefs` 流：装着的包不是界面包；并好的整份超过 64 KiB，`data` 带 `size`、`limit`（施工 HP-1，「头自己的设置」） |
 | `depends_missing`、`package_depended` | -32010 | `package.install`：依赖的包没装、装着的版本不够下限（施工 PK-2），`data.missing`（照清单写的原样）；`package.remove`、`package.disable`：别的装着的包依赖它，`data.by`（施工 F-11，`packages.md`「依赖」） |
 | `package_invalid`、`package_conflict`、`package_exists` | -32010 | `package.install`、`package.remove`：清单写错了；带的名字和装着的别的包撞了（施工 F-8 六补，`data.conflicts`；人格、预设还和几层里有的撞，施工 P-11 下）；和出厂的同编号 |
-| `program_missing`、`not_switchable` | -32010 | `package.enable`、`extension.enable`：包的程序没找到（包文件夹的 `bin/`、`miyu` 旁边都没有），当没装，开不了；`package.enable`、`package.disable`：这个包没有开关（施工 F-6 上，`package-pages.md`） |
+| `program_missing` | -32010 | `package.enable`、`extension.enable`：包的程序没找到（包文件夹的 `bin/`、`miyu` 旁边都没有），当没装，开不了（施工 UX-1 补起每个包都有开关，原来同一行的 `not_switchable` 删了） |
 | `not_restartable`、`package_off` | -32010 | `package.restart`：包没有能重启的进程、服务（内置包、界面、小程序、吉祥物包）；包关着，卸掉了的出厂包也算（施工 X-4） |
 | `unknown_server` | -32010 | `mcp.restart`、`mcp.remove`：系统配置里没有这个名字的 MCP 服务（施工 F-9 补、X-26） |
 | `mcp_invalid`、`server_from_package` | -32010 | `mcp.set`：交来的服务写错了，`data.problem`；系统配置里没写这个名字、有包带着同名服务（施工 X-26） |
@@ -1785,7 +1785,6 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `program_missing` | 程序未安装。 | Program not installed. |
 | `depends_missing` | 缺少依赖的软件包。 | Required packages are missing. |
 | `package_depended` | 其他软件包依赖它，无法卸载。 | Other packages depend on it. |
-| `not_switchable` | 不能启用或停用。 | Cannot be enabled or disabled. |
 | `not_restartable` | 不能重启。 | Cannot be restarted. |
 | `package_off` | 软件包已停用。 | Package disabled. |
 | `unknown_server` | 系统配置里没有这个 MCP 服务。 | No such MCP server in the system config. |

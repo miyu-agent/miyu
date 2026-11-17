@@ -16,6 +16,8 @@ fn extension(home: &Home, id: &str, program: &Program, name: &str, features: &st
             program.name()
         ),
     );
+    // 手动开的扩展没写开关的关着，关着的包带来的都不在（施工 UX-1 补）：这里的扩展算开着。
+    crate::support::extensions::switch_on(home, id);
 }
 
 /// 装的扩展：带几个功能的自己一组（`kind: "package"`），只带一个功能的合进「扩展」（一个扩展一行、名字是包名），都排在出厂组

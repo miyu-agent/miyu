@@ -165,7 +165,6 @@ Upgrade from the package source. Only packages installed from the source are tou
 | `data.reason` | When |
 |---|---|
 | `unknown_package` | No such package |
-| `not_switchable` | UI, worker, mascot and theme packages have no switch |
 | `program_missing` | The package's program wasn't found (neither in the package folder's `bin/` nor next to `miyu`) |
 | `needs_approval` | Capabilities still need approval, `data.capabilities` |
 | `package_depended` | Turning off one another package depends on |

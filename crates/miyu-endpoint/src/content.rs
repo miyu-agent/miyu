@@ -52,10 +52,11 @@ pub(crate) struct ReadParams {
     offset: u64,
 }
 
-/// 给包 `target` 带了内容的包，照编号排：编号、版本、内容在哪个目录。它自己给自己带的照样算（就是它自己的目录）。
+/// 给包 `target` 带了内容的包，照编号排：编号、版本、内容在哪个目录。它自己给自己带的照样算（就是它自己的目录）。关着的包
+/// 不算（施工 UX-1 补）。
 fn providers(core: &Core, target: &str) -> Vec<(String, Option<String>, PathBuf)> {
     let mut found: Vec<_> = core
-        .system_packages()
+        .packages_of()
         .iter()
         .filter_map(|found| {
             let manifest = found.read.as_ref().ok()?;

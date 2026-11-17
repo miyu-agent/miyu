@@ -226,6 +226,7 @@ impl Home {
                 offers: None,
                 overrides: None,
                 edits: None,
+                off: None,
             }),
             group: lines.group.then_some(miyu_session::GroupSettings {
                 recent: lines.recent,

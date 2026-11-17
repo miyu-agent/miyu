@@ -169,7 +169,7 @@
         "name": "Allow script calls",
         "description": "When on, all of this server's tools can be called with miyu call; when off, only directly. A tool with its own setting follows that one."
       },
-      "packages.<id>.enabled": {"name": "Enabled", "description": "Whether the package is on. Turning it off stops an extension and the services it brings, and removes a shipped built-in package. It can be turned back on any time."},
+      "packages.<id>.enabled": {"name": "Enabled", "description": "Whether the package is on. Turned off, the tools, skills, commands and content it brings are gone, an extension and the services it brings stop, and a shipped built-in package is removed. It can be turned back on any time."},
       "features.<name>": {
         "name": "Enabled",
         "description": "Presets that turn on what they don't list follow this switch for the skill, script or MCP server, except where a preset turns it on or off itself. Presets that leave unlisted features off ignore it."

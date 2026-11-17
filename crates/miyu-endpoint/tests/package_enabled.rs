@@ -69,7 +69,10 @@ async fn the_settings_switch_is_the_package_switch() {
         !keys.iter().any(|key| key.ends_with(".off")),
         "关包的那一项删了：{keys:?}"
     );
-    assert!(!keys.contains(&"packages.screen.enabled"), "界面没有开关");
+    assert!(
+        keys.contains(&"packages.screen.enabled"),
+        "界面也有开关（施工 UX-1 补：人人有开关）"
+    );
     let at = |key: &str| keys.iter().position(|one| *one == key);
     assert!(
         at("packages.relay.enabled") < at("relay.port"),
@@ -205,7 +208,7 @@ async fn switches_mix_with_other_changes_and_odd_writes_are_refused() {
         ),
         (
             4,
-            json!({"key": "packages.screen.enabled", "value": true}),
+            json!({"key": "packages.nothing.enabled", "value": true}),
             "unknown_config_key",
         ),
         (

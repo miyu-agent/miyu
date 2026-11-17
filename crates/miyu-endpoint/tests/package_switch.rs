@@ -118,7 +118,10 @@ async fn the_list_says_status_switch_icon_and_page() {
     );
     let screen = entry(&mut client, "screen").await;
     assert_eq!(screen["status"], "program_missing");
-    assert!(screen.get("enabled").is_none(), "界面没有开关：{screen}");
+    assert_eq!(
+        screen["enabled"], true,
+        "界面也有开关，没写的开着（施工 UX-1 补）：{screen}"
+    );
     core.stop_extensions().await;
 }
 
@@ -184,8 +187,7 @@ async fn switches_that_do_not_apply_are_refused() {
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
     for (method, id, reason) in [
-        ("package.enable", "screen", "not_switchable"),
-        ("package.disable", "screen", "not_switchable"),
+        ("package.enable", "screen", "program_missing"),
         ("package.enable", "ghost", "program_missing"),
         ("extension.enable", "ghost", "program_missing"),
         ("package.enable", "nothing", "unknown_package"),

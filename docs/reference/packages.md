@@ -165,7 +165,6 @@
 | `data.reason` | 什么时候 |
 |---|---|
 | `unknown_package` | 没有这个包 |
-| `not_switchable` | 界面、小程序、吉祥物包、主题包没有开关 |
 | `program_missing` | 包的程序没找到（包文件夹的 `bin/`、`miyu` 旁边都没有） |
 | `needs_approval` | 要的能力还有没批的，`data.capabilities` |
 | `package_depended` | 关一个别的包依赖的 |

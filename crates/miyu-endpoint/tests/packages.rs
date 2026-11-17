@@ -106,6 +106,7 @@ async fn shipped_and_home_packages_are_listed_in_the_connections_language() {
                 "provides": {"command": ["term"]},
                 "state": state.to_string_lossy(),
                 "status": "program_missing",
+                "enabled": true,
             }),
         ],
         "握手说的是中文，照中文挑；没写的格不写"
@@ -113,7 +114,7 @@ async fn shipped_and_home_packages_are_listed_in_the_connections_language() {
 }
 
 /// 种类多的两种、功能、平台接入、依赖、小程序（施工 F-1，设计 30）：照连接的语言列出来；没写功能的扩展包列出照包算的那一个，
-/// 界面、小程序没有 `features`（施工 BS-1 上中起没有 `required`）。
+/// 界面、小程序没有 `features`（施工 BS-1 上中起没有 `required`）；施工 UX-1 补起每个包都带 `enabled`。
 #[tokio::test]
 async fn features_connections_and_workers_are_listed() {
     let home = Home::new();
@@ -194,6 +195,7 @@ args = ["serve"]
                 "recommends": {"packages": ["xembed"]},
                 "provides": {"features": ["xcmd", "xfiles"]},
                 "status": "ready",
+                "enabled": true,
             }),
             json!({
                 "package": "xbridge",
@@ -224,6 +226,7 @@ args = ["serve"]
                 "worker": {"program": "miyu-xembed", "args": ["serve"]},
                 "provides": {},
                 "status": "program_missing",
+                "enabled": true,
             }),
         ]
     );

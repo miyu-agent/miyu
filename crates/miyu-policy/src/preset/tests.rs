@@ -351,7 +351,7 @@ fn a_blind_session_withholds_the_packages_that_need_images() {
 }
 
 /// 接平台的包在自己平台的场所会话里不过开关（施工 IM-4，接入通讯平台设计 06 第 4.6 节第 3 样）：预设关了它的功能、单件关了它的
-/// 工具，在它平台的场所里照开、照留，不算进没开的；别的平台的、本机的照预设；显示不了图片扣下的、这个人关了的照旧不开；指纹不变。
+/// 工具，在它平台的场所里照开、照留，不算进没开的；别的平台的、本机的照预设；显示不了图片扣下的、关着的照旧不开；指纹不变。
 #[test]
 fn a_platform_package_ignores_the_preset_in_its_own_venues() {
     let connections = std::collections::BTreeMap::from([(
@@ -402,6 +402,39 @@ send = false
         !blind.file.opens_in("qq", "onebot"),
         "显示不了图片的照旧扣下"
     );
+    let off = Chosen::new(
+        "full".to_string(),
+        file.clone().switching_off(["onebot".to_string()]),
+        &features,
+    )
+    .situated(&features, true, "qq:group:1");
+    assert!(!off.file.opens_in("qq", "onebot"), "关着的照旧不开");
+}
+
+/// 关着的包（施工 U23 末上；UX-1 补起照包的开关）：它的功能、工具都不开，功能算进没开的那几个（快照记的不一样，开着的会话下一轮换上）；
+/// 场所显示不了图片再扣也不冲掉；指纹不变。施工 BS-1 上中起没有必需的包，哪个都关得掉。
+#[test]
+fn packages_switched_off_are_withheld() {
+    let features = installed();
+    let file = read("[features]\nmemory = false\n").unwrap();
+    let plain = Chosen::new("full".to_string(), file.clone(), &features);
+    let off = file.switching_off(["onebot".to_string(), "basesystem".to_string()]);
+    let chosen = Chosen::new("full".to_string(), off, &features);
+    assert!(!chosen.file.opens_in("qq", "onebot"), "关了的不开");
+    assert!(!chosen.file.keeps("qq", "onebot", "send"), "工具不留");
+    assert!(
+        !chosen.file.opens_in("files", "basesystem"),
+        "原来必需的包也关得掉"
+    );
+    assert_eq!(chosen.digest, plain.digest, "指纹不变");
+    assert!(
+        chosen.off.contains(&"qq".to_string()),
+        "算进没开的：{:?}",
+        chosen.off
+    );
+    assert_ne!(chosen.pin(), plain.pin(), "快照记的不一样");
+    let blind = chosen.situated(&features, false, "local");
+    assert!(!blind.file.opens_in("qq", "onebot"), "再扣要图的不冲掉");
 }
 
 /// 组（施工 BS-1 上中，设计 44 第三节第 2 条）：`[software]` 写了组名的，组里没单独写的包照组的；单独写了的照它自己的；不在组里的
@@ -425,7 +458,7 @@ fn a_group_switches_its_packages_unless_one_is_written() {
     assert_eq!(file.digest(), digest, "组不进指纹");
 }
 
-/// 按功能查开没开先找它的包（施工 PN-2，设计 48 第三节第 2 条）：包改了编号、功能编号照旧的，组、`[software]` 写包编号
+/// 按功能查开没开先找它的包（施工 PN-2，设计 48 第三节第 2 条）：包改了编号、功能编号照旧的，关包、组、`[software]` 写包编号
 /// 都照它所在的包算；找不到包的照功能的编号算。
 #[test]
 fn a_feature_is_switched_by_the_package_it_lives_in() {
@@ -444,4 +477,6 @@ fn a_feature_is_switched_by_the_package_it_lives_in() {
     assert!(file.opens("jobs"), "照它所在的包的组开");
     assert!(file.opens("memory"), "[software] 写的是包编号");
     assert!(!file.opens("goal"), "找不到包的照功能编号算，这里没写");
+    let off = file.switching_off(["base-memory".to_string()]);
+    assert!(!off.opens("memory"), "关了它所在的包");
 }

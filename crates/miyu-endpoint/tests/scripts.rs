@@ -240,6 +240,11 @@ async fn a_package_with_scripts_registers_them_when_installed() {
         "root/presets/nokit.toml",
         "[preset]\nname = { en = \"No kit\" }\nunlisted = \"on\"\n\n[software]\nkit = false\n",
     );
+    // 扩展没写开关的照清单（手动开的关着），关着的包带来的都不在（施工 UX-1 补）：这里记成开着。
+    home.write(
+        "etc/extensions.json",
+        "{\"version\": 1, \"on\": {\"kit\": true}}",
+    );
     let script = Script::new([Play::Says("一。"), Play::Says("二。")]);
     let core = core(&home, &script);
     assert!(core.scripts().is_empty());
@@ -350,14 +355,14 @@ async fn a_package_with_only_skills_and_scripts_installs_without_a_switch() {
         .cloned()
         .unwrap_or_else(|| panic!("{listed}"));
     assert_eq!(entry["status"], "ready", "{entry}");
-    assert!(entry.get("enabled").is_none(), "没有开关：{entry}");
+    assert_eq!(
+        entry["enabled"], true,
+        "也有开关，没写的开着（施工 UX-1 补）：{entry}"
+    );
     let switched = client
         .call("e1", "package.enable", json!({"package": "notes"}))
         .await;
-    assert_eq!(
-        switched["error"]["data"]["reason"], "not_switchable",
-        "{switched}"
-    );
+    assert_eq!(switched["result"]["enabled"], true, "{switched}");
     let restarted = client
         .call("r1", "package.restart", json!({"package": "notes"}))
         .await;

@@ -178,6 +178,16 @@ pub(crate) fn write(
     })
 }
 
+/// 没有程序、服务的包的开关（施工 UX-1 补）：记成 `on`，推一次「谁变了」。同扩展的开关一件件办。
+pub(crate) async fn set_on(core: &Core, id: &str, on: bool) -> Result<(), Refusal> {
+    let _one_at_a_time = core.extensions.one_at_a_time().await;
+    let (mut switches, version) = read_switches(core);
+    switches.on.insert(id.to_string(), on);
+    write(core, id, &switches, version.as_deref())?;
+    core.extensions.notify(id);
+    Ok(())
+}
+
 /// 一个扩展：编号、名字（照连接的语言挑）、`start`、开没开、这时的状态；声明了能力的多 `capabilities`，还有没批的多
 /// `unapproved`（施工 9-4 下上）。开没开、批过哪些照 `switches`。
 fn one(core: &Core, id: &str, manifest: &Manifest, switches: &Switches, peer: Peer) -> Value {

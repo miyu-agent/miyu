@@ -99,8 +99,8 @@ pub use memory::{
 pub use onlooker::Onlooker;
 pub use open::{
     Create, CreateError, Fork, ForkError, ForkedBase, GroupSettings, Installed, Load, LoadError,
-    OfferedFeatures, Placed, PresetPlaces, ToolOverrides, Within, Workplace, create, fork,
-    fork_handing, load, load_placed, preview, preview_context,
+    OfferedFeatures, Placed, PresetPlaces, SwitchedOff, ToolOverrides, Within, Workplace, create,
+    fork, fork_handing, load, load_placed, preview, preview_context,
 };
 pub use path_text::path_text;
 pub use plugins::VenuePlugins;

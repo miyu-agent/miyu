@@ -463,7 +463,11 @@ fn preset(refresh: &Refresh, values: &Values, life: bool) -> Result<Preset, Stri
         .map_err(|error| error.to_string())?;
     let features = &places.features();
     let memory = !pin.off.iter().any(|feature| feature == MEMORY);
-    let file = found.file.following(crate::switches::of(values));
+    // 关着的包（施工 UX-1 补：开关在 `extensions.json`）照这一轮的开关扣下：开着的会话下一个回合就没有它的东西。
+    let file = found
+        .file
+        .following(crate::switches::of(values))
+        .switching_off(places.switched_off());
     let chosen = Chosen::new(found.id, file, features).keeping_memory(memory, features);
     let chosen = recast::situated(chosen, features, refresh, life);
     // 以前的快照记的是包的编号（施工 F-3 上）：照现在的功能读一样的算没改，不为改了写法换一次快照。

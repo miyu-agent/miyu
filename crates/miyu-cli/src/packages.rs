@@ -55,15 +55,17 @@ pub struct Added {
 }
 
 /// 两层里读成了的、带 `[command]` 的清单加的子命令，照编号排，一个包加几个的照写的先后（施工 F-13）。写错的、子命令名被先读到的占了的（`command_taken`）不算；
-/// 名字是内置子命令 `builtins` 里的也不算：内置的优先。数据根、资源目录找不到的当没有。
+/// 名字是内置子命令 `builtins` 里的也不算：内置的优先。人明着关掉了的包（[`switched_off`]，施工 UX-1 补）不算。数据根、资源目录找不到的当没有。
 pub fn added(env: &Env, builtins: &[&str]) -> Vec<Added> {
     let (Ok(root), Ok(resources)) = (DataRoot::locate(env), ResourceRoot::locate(env)) else {
         return Vec::new();
     };
     let places = Packages::system(&resources, &root);
+    let off = switched_off(&root);
     places
         .read()
         .into_iter()
+        .filter(|found| !off.contains(&found.id))
         .filter_map(|found| Some((found.read.ok()?, found.path, found.id)))
         .flat_map(|(manifest, path, package)| {
             let resources = resources.path().to_path_buf();
@@ -84,6 +86,21 @@ pub fn added(env: &Env, builtins: &[&str]) -> Vec<Added> {
                 })
         })
         .collect()
+}
+
+/// 人明着关掉了的包（施工 UX-1 补：关了就全没）：`extensions.json` 里 `on` 写成 `false` 的。没写的照核心那边的默认，这里不猜；
+/// 文件读不成的当都没关。
+pub fn switched_off(root: &DataRoot) -> std::collections::BTreeSet<String> {
+    miyu_store::extensions::read(&root.extensions_file())
+        .map(|read| {
+            read.switches
+                .on
+                .into_iter()
+                .filter(|(_, on)| !on)
+                .map(|(id, _)| id)
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 /// 同 [`added`]，照这个进程的环境找数据根、资源目录。

@@ -96,6 +96,12 @@ pub(crate) async fn catalog(
             (listed, opened, usable, Some(handle.clone()))
         }
     };
+    // 关了的包声明的命令、整页、提示词都不列（施工 U23 末下）。
+    let off = core.packages_off();
+    let declared: Vec<Declared> = declared
+        .into_iter()
+        .filter(|one| !off.contains(&one.package))
+        .collect();
     let mut commands = Vec::with_capacity(listed.len() + templates.len());
     for slash in listed {
         let summary = words(core, peer, &Said::plain(slash.summary())).await;
@@ -154,6 +160,7 @@ pub(crate) async fn catalog(
     commands.extend(
         pages::found(core)
             .iter()
+            .filter(|page| !off.contains(page.package()))
             .filter(|page| {
                 !templates
                     .iter()

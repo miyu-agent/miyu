@@ -32,6 +32,8 @@ fn extension(home: &Home, id: &str, program: &Program, rest: &str) {
             program.name()
         ),
     );
+    // 手动开的扩展没写开关的关着，关着的包带来的都不在（施工 UX-1 补）：这里的扩展算开着。
+    crate::support::extensions::switch_on(home, id);
 }
 
 /// 一件只给 `venues` 的假工具。

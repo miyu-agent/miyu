@@ -45,10 +45,13 @@ impl Usable {
 
 /// 这一刻在跑、列过了的服务登记的提示词，关了的包带的不算，照命令名排。
 pub(super) fn usable(core: &Core) -> Vec<Usable> {
+    // 关了的包带的服务（施工 U23 末下）不列、敲了当没有。
+    let off = core.packages_off();
     let mut usable: Vec<Usable> = core
         .mcp
         .prompts()
         .into_iter()
+        .filter(|prompts| !off.contains(&prompts.package))
         .flat_map(|prompts| {
             let (package, service, client) = (prompts.package, prompts.service, prompts.client);
             prompts.offered.into_iter().map(move |offered| Usable {

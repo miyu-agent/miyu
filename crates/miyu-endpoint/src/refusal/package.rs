@@ -69,12 +69,6 @@ impl Refusal {
         reason: "program_missing",
         data: None,
     };
-    /// 这个包没有开关（施工 F-6 上）：必需的、界面、小程序。
-    pub(crate) const NOT_SWITCHABLE: Refusal = Refusal {
-        code: REFUSED,
-        reason: "not_switchable",
-        data: None,
-    };
     /// 配置里没有这个名字的 MCP 服务（施工 F-9 补，`mcp.restart`）。
     pub(crate) const UNKNOWN_SERVER: Refusal = Refusal {
         code: REFUSED,

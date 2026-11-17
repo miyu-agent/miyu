@@ -41,7 +41,7 @@ pub(crate) fn external(core: &Core) -> Vec<External> {
 ///
 /// 找的线程崩了：内部出错；这种语言的字表读不出来。
 pub(crate) async fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
-    let (packages, root) = (core.system_packages(), core.root.clone());
+    let (packages, root) = (core.packages_of(), core.root.clone());
     let external = external(core);
     let found = tokio::task::spawn_blocking(move || {
         let found = miyu_store::skills::find(&packages, &root, &external).0;

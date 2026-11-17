@@ -1,6 +1,6 @@
 ## 施工 UX-1：设置项正名，软件包只留一个「启用」
 
-状态：做完，等合（分支 `step/UX-1`）。项目主人 2026-11-17 定。
+状态：做完，等合（分支 `step/UX-1`，两个提交：UX-1、UX-1补）。项目主人 2026-11-17 定。
 
 ### 为什么
 
@@ -43,7 +43,28 @@
 4. 实测（沙箱数据根，调试版核心）：装一个手动开的扩展 `tick-pkg`（程序只等着）；`config.schema` 那一项 `name` 是「启用」、`type` 是 `bool`，排在 `tick-pkg.interval` 前面，一项 `.off` 都没有；`config.get` 是 `{"origin":{"layer":"package"},"value":false}`；`config.set` true 后日志 `extension started package=tick-pkg`、进程在，false 后 `extension exited`、进程没了，`etc/config.toml` 没生成。`miyu config set packages.tick-pkg.enabled true` 印「已设置 … = true（立即生效）」。手写 `[packages.tick-pkg] off = false`，`miyu check` 报「没有 packages.tick-pkg.off 这一项。已忽略此行。」。
 5. 网页头（miyu-web main `f346c39a`）：包的信息页「设置」底下画出「启用」和说明，点开包起来、头部开关跟着变开；改名的几项照新名字画。两处要头改：「启用」旁边挂着「默认」小标签（头把来源 `package` 当默认）；在头部开关关掉包以后，「启用」不跟着变（核心不为包开关推 `config.changed`，头要照 `package.changed` 重读，或者在包的信息页不画这一项）。
 
+### 补：关了就全没，人人有开关（UX-1补）
+
+主人同日看了第一版定（主会话转来）：①每个包都有「启用」（只带技能、脚本、命令、知识库、内容的，皮肤、界面、小程序、吉祥物包，没有程序的也算），开关都走同一处（`extensions.json` 的 `on`、`package.enable`、`package.disable`）；②关掉以后它带来的一切都不在，再开就回来，开着的会话下一轮生效；出厂的 `base-*` 照旧。
+
+改了什么：
+
+1. 开关：`package.enable`、`package.disable` 不再回 `not_switchable`（这个拒绝原因删了），扩展、带服务的 `bundle`、出厂的内置包照旧，别的包只把 `on` 记进 `extensions.json`（`extensions::set_on`）。`package.list` 每个包都带 `enabled`：出厂的内置包照卸没卸，别的照 `extensions::package_on`（扩展、带服务的 `bundle` 没写的照清单的 `start`，别的没写的开着）；没有程序、服务的包关着的 `status` 是 `off`。
+2. 关着的都不在：第一版删掉的那一套（看得到的包 `Core::packages_of`、`Core::packages_off`、`scripts_for`、命令目录、模板、整页命令、MCP 提示词、预设的 `switching_off`、会话每轮扣下的那几个）原样恢复，只是「关着的」从配置项 `packages.<编号>.off` 换成包的开关：`Core::packages_off` 读 `extensions.json`；会话经 `PresetPlaces::off`（端点给的闭包）每回合取一次，开着的会话下一轮工具面、技能就变。另外三样跟着开关变（`Core::follow_switches`，装卸时的 `switch_packages` 同样只算开着的）：包带的知识库、本机的向量模型、给别的包带的内容（`content.list` 不列关着的，开关推 `content.changed`）。
+3. 出厂的 `base-*`：原来就有开关（卸掉、装回），照旧，卸掉了的不在装着的里面，本来就全没；不另记 `on`。
+4. 命令行：`extensions.json` 里明着关掉（`on: false`）的包，它加的子命令不列、界面不拉起（`miyu-cli` 的 `packages::switched_off`）。没写的不猜（扩展、`bundle` 的默认照清单，由核心算）。
+5. 配置项照旧列、照旧能改：关着的包也能先配好再开。
+6. 一个连带的变化：手动开（`start = "manual"`）、还没开过的扩展，`enabled` 本来就是 `false`，现在它带的技能、脚本、命令、功能也跟着不列，开了才有。几条原来照「扩展没跑也有它的功能」写的测试改成先把它记成开着（`support::extensions::switch_on`），断言不变。
+
+验收：
+
+1. 改前红：`package_all_off::a_package_switched_off_takes_everything_it_brought`（只带技能、脚本的包：第一版回 `not_switchable`）、`package_all_off::a_content_package_switched_off_is_not_listed`（内容包关了 `content.list` 照列）；`package_switch`、`package_mascot`、`package_theme`、`scripts` 里原来断言 `not_switchable` 的改成关得掉。
+2. 跟着改的测试：`packages.rs` 两条（每个包都带 `enabled`）、`packages_install`、`preset_face`、`preset_platform`、`preset_sections_more`、`preset_skills`、`slash_extension`（手动开的扩展记成开着）、`package_enabled`（界面也有「启用」）。
+3. 门禁十一项、`random::` 长跑、Windows 版 clippy、`cargo xtask prompts`、`cargo xtask logs`。
+4. 实测见施工图 UX-1 那一张。
+
 ### 风险
 
-- 扩展关了以后，它带的技能、脚本、命令模板照旧在（原来 `off` 会一起扣下）：真正的开关只停进程和它带的服务。要不要让关着的扩展连带的技能脚本一起不列，另报拍板。
-- 网页头的两处（「默认」小标签、头部开关关了「启用」不刷新）要头跟着改；终端头原来在包页画 `off` 那一项，现在那一项没了、换成「启用」。
+- 手动开的扩展没开以前它带的技能、脚本也不列（上面第 6 条），以前装上就有。
+- 网页皮肤、吉祥物是头照 `package.list` 挑的：核心给了每个包的 `enabled`，头要跳过关着的（交回的头清单）。
+- 头要跟着改的见交回的清单（网页 5 条：「默认」小标签、头部开关关了「启用」不刷新、后台页过滤「启用」、关着的皮肤吉祥物不列不用、每个包都有开关）；终端头原来在包页画 `off` 那一项，现在换成「启用」。

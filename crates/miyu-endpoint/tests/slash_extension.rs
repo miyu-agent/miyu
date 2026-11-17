@@ -134,6 +134,8 @@ async fn not_running_is_unavailable() {
         "opt/wx/package.toml",
         &manifest(&program.name(), &steps(&["hello", "wait"])),
     );
+    // 开着、只是没在跑（施工 UX-1 补：关着的包的命令整个不在，回 `unknown_command`）。
+    crate::support::extensions::switch_on(&home, "wx");
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
     let session = client.create("c1", "~").await;

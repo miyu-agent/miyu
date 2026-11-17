@@ -129,6 +129,19 @@ pub fn approve(home: &Home, id: &str, capabilities: &[&str]) {
     std::fs::write(&path, format!("{switches}\n")).expect("写得进");
 }
 
+/// 记下包 `id` 开着（施工 UX-1 补：关着的包带来的都不在；手动开的扩展没写开关的关着）：写进开关文件 `extensions.json` 的 `on`，
+/// 别的格照旧。
+pub fn switch_on(home: &Home, id: &str) {
+    let path = home.root.extensions_file();
+    std::fs::create_dir_all(path.parent().expect("有上一级")).expect("建得了");
+    let mut switches: Value = std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|text| serde_json::from_str(&text).ok())
+        .unwrap_or_else(|| json!({"version": 1, "on": {}}));
+    switches["on"][id] = json!(true);
+    std::fs::write(&path, format!("{switches}\n")).expect("写得进");
+}
+
 /// 同 [`install`]，登记工具的扩展照实声明 `tools`，算批过（施工 X-30）。
 pub fn install_providing(home: &Home, id: &str, program: &str, start: &str, args: &[String]) {
     install_asking(home, id, program, start, args, &["tools"]);

@@ -124,6 +124,11 @@ async fn software_without_tools_is_pinned_off_but_left_out_of_the_line() {
         "root/presets/lean.toml",
         "[preset]\nname = { en = \"Lean\" }\n\n[software]\nquiet = false\nbase-memory = false\n",
     );
+    // 包自己开着、预设把它关了（施工 UX-1 补：包关着的话它的功能整个不在）。
+    home.write(
+        "etc/extensions.json",
+        "{\"version\": 1, \"on\": {\"quiet\": true}}",
+    );
     let (session, request) = first_request(
         &home,
         json!({"cwd": "~", "persona": "engineer", "preset": "lean"}),

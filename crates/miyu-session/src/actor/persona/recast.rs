@@ -85,7 +85,11 @@ pub(super) fn preset(
     let found = places.presets.find(id).map_err(|error| error.to_string())?;
     let features = &places.features();
     let memory = refresh.snapshot.memory_scope() != MemoryScope::Off;
-    let file = found.file.following(crate::switches::of(values));
+    // 关着的包（施工 UX-1 补：开关在 `extensions.json`）照这一轮的开关扣下：开着的会话下一个回合就没有它的东西。
+    let file = found
+        .file
+        .following(crate::switches::of(values))
+        .switching_off(places.switched_off());
     let chosen = Chosen::new(found.id, file, features).keeping_memory(memory, features);
     Ok(situated(chosen, features, refresh, life))
 }

@@ -22,7 +22,7 @@ mod table;
 pub(crate) use approval::{declared, described, forget as forget_switch, held, named};
 pub(crate) use instance::Instance;
 pub(crate) use methods::{
-    disable, enable, entry, restart, restart_process, status, write as write_switches,
+    disable, enable, entry, restart, restart_process, set_on, status, write as write_switches,
 };
 pub(crate) use offers::offer;
 pub(crate) use ports::{claim as claim_port, list as list_ports, release as release_port};
@@ -367,6 +367,15 @@ fn process(found: &Found) -> Option<(&str, &Manifest)> {
 pub(crate) fn switched_on(core: &Core, id: &str, manifest: &Manifest) -> bool {
     let (switches, _) = read_switches(core);
     on(&switches, id, manifest)
+}
+
+/// 包 `id` 的开关这时开没开，每种包都算（施工 UX-1 补：人人有开关）：起得来的（扩展、带服务的 `bundle`）照 [`on`]，别的写了的
+/// 照写的、没写的开着。出厂的内置包的开关是卸没卸，不看这里。
+pub(crate) fn package_on(switches: &Switches, id: &str, manifest: &Manifest) -> bool {
+    if crate::packages::status::runs(manifest) {
+        return on(switches, id, manifest);
+    }
+    switches.on.get(id).copied().unwrap_or(true)
 }
 
 /// 包 `id` 开没开：写了的照写的，没写的照清单的 `start`。

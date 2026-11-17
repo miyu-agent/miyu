@@ -1,6 +1,6 @@
 //! 造会话、载入要交进来的几样（施工 8-8 从 `open.rs` 挪来：那一页长过了行数的上限）。
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::sync::Arc;
 
@@ -39,6 +39,18 @@ pub struct PresetPlaces {
     pub overrides: Option<ToolOverrides>,
     /// 文件改动的版本（施工 OV-1 下）：回合开始比一次。没交的（测试里造的）一直是零。
     pub edits: Option<crate::prefix::EditsVersion>,
+    /// 这时关着的包（施工 UX-1 补）：每回合开始取一次，并进预设文件扣下的那几个。没交的（测试里造的）都开着。
+    pub off: Option<SwitchedOff>,
+}
+
+/// 取这时关着的包（施工 UX-1 补，项目主人 2026-11-17 定「关了就全没」）：协议端点给的，照包的开关现读。
+#[derive(Clone)]
+pub struct SwitchedOff(pub Arc<dyn Fn() -> BTreeSet<String> + Send + Sync>);
+
+impl std::fmt::Debug for SwitchedOff {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("SwitchedOff")
+    }
 }
 
 /// 取主人写的工具说明的覆盖（施工 OV-1 上）：协议端点给的，工具名到叠好的那一份。
@@ -54,6 +66,11 @@ impl std::fmt::Debug for ToolOverrides {
 }
 
 impl PresetPlaces {
+    /// 这时关着的包：没交的是空的。
+    pub fn switched_off(&self) -> BTreeSet<String> {
+        self.off.as_ref().map(|off| (off.0)()).unwrap_or_default()
+    }
+
     /// 这时的文件改动的版本：没交的是零。
     pub(crate) fn edits(&self) -> u64 {
         self.edits.as_ref().map_or(0, |edits| (edits.0)())
@@ -93,14 +110,20 @@ impl PresetPlaces {
     }
 
     /// 照编号 `id` 找叠好的预设文件（载入时放开技能的文件夹用）：找不着、写错了的没有。照场所定（`images`、`venue`，施工 X-25、
-    /// IM-4，[`PresetFile::situate`]），带上这一轮的全局开关 `switches`（施工 X-27）。
+    /// IM-4，[`PresetFile::situate`]），带上这一轮的全局开关 `switches`（施工 X-27）、关着的包 `off`（施工 UX-1 补）。
     pub(crate) fn file(
         &self,
         id: &str,
         (images, venue): (bool, &str),
-        switches: BTreeMap<String, bool>,
+        (switches, off): (BTreeMap<String, bool>, BTreeSet<String>),
     ) -> Option<PresetFile> {
-        let mut file = self.presets.find(id).ok()?.file.following(switches);
+        let mut file = self
+            .presets
+            .find(id)
+            .ok()?
+            .file
+            .following(switches)
+            .switching_off(off);
         file.situate(&self.features(), images, venue);
         Some(file)
     }

@@ -50,6 +50,8 @@ impl Core {
             .packages
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner) = std::sync::Arc::new(found);
+        // 去掉关了的那一份照新的重造（施工 U23 上下）：用到时再造。
+        self.visible_packages.forget();
         // 脚本照新的清单重找、重登记（施工 X-12 中）。
         self.follow_scripts();
         crate::config::refit::refit(self, items, left);
@@ -70,9 +72,16 @@ impl Core {
         self.follow_packages(&processes_of(before), &processes_of(now))
             .await;
         self.follow_bundles(before, now).await;
-        crate::knowledge::follow(&self.knowledge, now);
+        // 关着的包带的知识库、向量模型不算（施工 UX-1 补）。
+        let off = self.packages_off();
+        let on: Vec<&Found> = now
+            .iter()
+            .copied()
+            .filter(|one| !off.contains(&one.id))
+            .collect();
+        crate::knowledge::follow(&self.knowledge, &on);
         if let (Some(builtins), Some(vectors)) = (&self.builtins, self.memory.vectors()) {
-            vectors.replace_local(builtins.embed(now)).await;
+            vectors.replace_local(builtins.embed(&on)).await;
         }
     }
 

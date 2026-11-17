@@ -197,6 +197,14 @@ impl Language {
         }
     }
 
+    /// 关着的包（施工 UX-1 补：`enabled` 是 `false`）接在名字后面的那一截。
+    pub(crate) fn off_mark(&self) -> &'static str {
+        match self {
+            Language::Chinese => "（已关闭）",
+            Language::English => " (off)",
+        }
+    }
+
     /// 写错的包接在后面的那一截：哪里不对。
     pub(crate) fn broken_mark(&self, problem: &str) -> String {
         match self {

@@ -339,7 +339,11 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
             let wanted = snapshot.preset.as_ref().map(|pin| pin.id.clone());
             let places = presets.clone();
             let values = config.current().resolved.values();
-            let looked = crate::switches::of(&values);
+            let off = places
+                .as_ref()
+                .map(crate::PresetPlaces::switched_off)
+                .unwrap_or_default();
+            let looked = (crate::switches::of(&values), off);
             // 别的目录照这时的配置（施工 PT-2 外）：关着的不碰。
             let external = miyu_store::skills::external::of(&values, home);
             let site = venue.clone();

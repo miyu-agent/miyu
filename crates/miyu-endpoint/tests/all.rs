@@ -190,6 +190,7 @@ mod note;
 mod notices_claim;
 mod orphans;
 mod owner_views_venue;
+mod package_all_off;
 mod package_check;
 mod package_choices_from;
 mod package_choose;

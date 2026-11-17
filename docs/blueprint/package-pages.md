@@ -85,7 +85,7 @@ name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
 | 扩展 | 开关开着 | 同 `extension.enable`（要批的能力照它的 `approve`、`needs_approval`） | 同 `extension.disable` | 同 `extension.restart`，再重启它带的 MCP 服务 |
 | 出厂的内置包（不是必需的） | 没有卸掉 | 同 `package.install {package}`：装回来 | 同 `package.remove {package}`：卸掉（在数据根记一笔） | `not_restartable` |
 | 带了 MCP 服务的 `bundle`（施工 X-3 上） | 开关开着（没写的关着） | 起它带的 MCP 服务 | 停下服务，它们的工具出目录 | 重启它带的服务 |
-| 必需的、界面、小程序、吉祥物包，只带技能、脚本的 `bundle`（施工 X-13 上） | 没有这一格 | `not_switchable` | `not_switchable` | 必需的扩展照扩展办，别的 `not_restartable` |
+| 界面、小程序、吉祥物包、主题包，只带技能、脚本、内容的 `bundle`（施工 UX-1 补：人人有开关） | 照 `extensions.json` 的 `on`，没写的开着 | 记成开着 | 记成关着：它带来的都不在（`packages.md`「关掉某个包」） | `not_restartable` |
 
 1. 参数 `{package}`，`package.enable` 另可带 `approve`（同 `extension.enable`）。回应同 `package.list` 的一项。`package.restart` 关着的 `package_off`。
 2. 没有的包 `unknown_package`；程序不在的 `program_missing`（施工 BS-1 上中起没有必需的包）。

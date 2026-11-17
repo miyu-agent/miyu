@@ -149,7 +149,15 @@ pub(crate) fn status(
         return "off";
     }
     if !runs(manifest) {
-        return "ready";
+        // 没有程序、服务的包也有开关（施工 UX-1 补）：关着的写 `off`。出厂的内置包的开关是卸没卸，上面算过了。
+        let shipped = found.layer == miyu_store::packages::Layer::Shipped;
+        let (switches, _) = crate::extensions::read_switches(core);
+        return match shipped && manifest.kind == PackageKind::Builtin
+            || crate::extensions::package_on(&switches, id, manifest)
+        {
+            true => "ready",
+            false => "off",
+        };
     }
     if !crate::extensions::switched_on(core, id, manifest) {
         return "off";
@@ -171,8 +179,8 @@ fn of_state(state: State) -> &'static str {
     }
 }
 
-/// `enabled`：有开关的才有（`package-pages.md`「开关」）。扩展、带了服务的 `bundle`（施工 X-3 上，[`runs`]）照它的开关；
-/// 出厂的、不是必需的内置包照有没有卸掉；必需的、界面、小程序、吉祥物包、只带技能脚本的 `bundle` 没有。`shipped` 是出厂的那一层。
+/// `enabled`：每个包都有（施工 UX-1 补，项目主人 2026-11-17 定「人人有开关」）。出厂的内置包照有没有卸掉；别的照开关
+/// （[`crate::extensions::package_on`]：扩展、带了服务的 `bundle` 没写的照清单，别的没写的开着）。`shipped` 是出厂的那一层。
 pub(crate) fn enabled(
     core: &Core,
     id: &str,
@@ -180,10 +188,11 @@ pub(crate) fn enabled(
     shipped: bool,
     removed: bool,
 ) -> Option<bool> {
-    if runs(manifest) {
-        return Some(!removed && crate::extensions::switched_on(core, id, manifest));
+    if manifest.kind == PackageKind::Builtin && shipped {
+        return Some(!removed);
     }
-    (manifest.kind == PackageKind::Builtin && shipped).then_some(!removed)
+    let (switches, _) = crate::extensions::read_switches(core);
+    Some(!removed && crate::extensions::package_on(&switches, id, manifest))
 }
 
 #[cfg(test)]

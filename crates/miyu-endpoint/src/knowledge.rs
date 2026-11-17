@@ -107,7 +107,7 @@ impl Core {
             self.home.clone(),
             extractor,
             &self.resources,
-            &self.system_packages(),
+            &self.packages_of(),
         );
         self
     }

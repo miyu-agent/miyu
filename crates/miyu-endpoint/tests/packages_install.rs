@@ -75,6 +75,11 @@ async fn a_manifest_installs_with_its_files_and_counts_at_once() {
     );
     std::fs::create_dir_all(home.work.join("xtool/bin")).expect("建得了");
     std::fs::write(home.work.join("xtool/bin/data.txt"), "hi").expect("写得进");
+    // 手动开的扩展没写开关的关着，关着的包带的功能不在（施工 UX-1 补）：这里记成开着。
+    home.write(
+        "etc/extensions.json",
+        "{\"version\": 1, \"on\": {\"xtool\": true}}",
+    );
     let mut client = connected(&home).await;
     assert_eq!(
         feature_installed(&mut client, "xread").await,
