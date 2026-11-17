@@ -323,8 +323,12 @@ impl Human {
 
 /// 配置清单要的字：项照 `config` 那一格，几句话照内核那一份 `said` 里的，编号前面加上 `core/`。
 impl Words for Human {
+    /// 包的「启用」（施工 UX-1）没并进来的（卸掉了的出厂包不在装着的包里，`with_packages` 没给它拼）照带占位的那一项的字：
+    /// 名字、说明人人一样。
     fn item(&self, key: &str) -> Option<&ItemWords> {
-        self.config.items.get(key)
+        self.config.items.get(key).or_else(|| {
+            miyu_config::package::enabled::id_of(key).and_then(|_| self.config.items.get(ENABLED))
+        })
     }
 
     fn sentence(&self, key: &str, fields: &[(&str, &str)]) -> Option<String> {

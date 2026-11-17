@@ -183,6 +183,23 @@ async fn switches_mix_with_other_changes_and_odd_writes_are_refused() {
         "{both}"
     );
     assert_eq!(enabled(&mut client, "base-memory").await, false);
+    // 卸掉了的出厂包那一项照样有名字、说明（`miyu config explain` 照它印）。
+    let schema = client
+        .call(
+            "k",
+            "config.schema",
+            json!({"keys": ["packages.base-memory.enabled"]}),
+        )
+        .await;
+    let item = &schema["result"]["items"][0];
+    assert_eq!(item["key"], "packages.base-memory.enabled", "{schema}");
+    assert_ne!(item["name"], item["key"], "名字不是键：{schema}");
+    assert!(
+        item["description"]
+            .as_str()
+            .is_some_and(|said| !said.is_empty()),
+        "{schema}"
+    );
     let on = set(
         &mut client,
         1,

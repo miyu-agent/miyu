@@ -68,3 +68,9 @@
 - 手动开的扩展没开以前它带的技能、脚本也不列（上面第 6 条），以前装上就有。
 - 网页皮肤、吉祥物是头照 `package.list` 挑的：核心给了每个包的 `enabled`，头要跳过关着的（交回的头清单）。
 - 头要跟着改的见交回的清单（网页 5 条：「默认」小标签、头部开关关了「启用」不刷新、后台页过滤「启用」、关着的皮肤吉祥物不列不用、每个包都有开关）；终端头原来在包页画 `off` 那一项，现在换成「启用」。
+
+### 再补：卸掉了的出厂包「启用」也有名字（UX-1再补）
+
+文档会话 11-17 实测查出：`miyu config explain packages.base-net.enabled` 在 `base-net` 卸掉以后印「packages.base-net.enabled（packages.base-net.enabled）：立即生效。」，名字是键本身、没有说明。根因：给人看的字只给装着的包拼「启用」那一项（`Human::with_packages` 照 `system_packages`），卸掉了的出厂包也有开关（`config/enabled.rs` 的 `switches`），却没有字。改：`Human` 找不到某个 `packages.<编号>.enabled` 的字时照带占位的那一项（名字、说明人人一样）。
+
+验收：改前红 `miyu-endpoint` `package_enabled::switches_mix_with_other_changes_and_odd_writes_are_refused`（关掉 `base-memory` 后 `config.schema` 那一项名字是键、说明空）；实测沙箱卸掉 `base-net`，`miyu config explain` 中英都印「启用 / Enabled」和说明。
