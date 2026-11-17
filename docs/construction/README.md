@@ -1661,6 +1661,7 @@ flowchart LR
 | EN-2 | 核心起不来的各步照代码说 | 核心起不来的每一步都带代码（`miyu-core` 的 `not_started.rs`，二十二个），原因只写会变的那一段（系统的原话、路径），内核 `human/` 三种语言加十六句 `start/*`；`StartError::said` 照代码说，命令行照 EN-1 的路子印整句；`miyu-client` 连不上、拉不起核心的原话照这台机器的语言取字，迁移包换钉以后照它说。施工单见 `EN-2-核心起不来照代码说.md` |
 | GO-1 | opencode Go 按协议分地址 | 发版前核对真端点：opencode 2026-11 起按协议分地址（`/inference/go/openai/v1`、`/inference/go/anthropic/v1`），models.dev 给每个模型写了自己的 `provider.api`。核心只认这一家的地址，后台拉到新目录以后 Go 里走 anthropic 的模型发到 `…/openai/v1/messages`、404。目录读模型的 `provider.api`（整理好的一份版本 3、记下的答版本 2），驱动、地址都不是手写的照模型自己的发（`Provider::for_model`；路由、`provider.test` 只换地址，key、头照旧），手写的照手写的。出厂快照不换（旧地址还答），换不换另拍板。施工单 `GO-1-opencode-Go按协议分地址.md` |
 | FL-8 | 监视起不来的测试真走轮询 | 门禁并行时红过一次的 `config_watch_log::a_hand_edit_and_an_unavailable_watch_are_logged`。根因在测试：后半段让整个数据根进不去来逼 inotify 拒绝，`notify` 的轮询也 stat 不到那个目录，不报错、不记、以后也不补，只交一次出错；监视照「出错当都变了」过 200 毫秒重读一遍，手改赶在这一遍以前才看得到，测试线程慢 200 毫秒就等满六十秒（改回权限后插睡 300 毫秒，1/1 红）。改成只拿掉配置目录的读权限：inotify 照样拒绝，轮询真的每两秒看一次。产品代码不动。改后插睡 300 毫秒、3.3 秒都过，四种负载各 50 遍 0 红（改前自然负载 170 遍也没压出来）。施工单 `FL-8-监视起不来的测试真走轮询.md` |
+| TK-1 | 登记簿的数用真端点补 | HT-2 四段供应商侧工具的字登记时照 o200k 本机估。照登记簿已有的真端点量法补上：magpie 网关的 `marvis/deepseek-v4-1-flash-261017`（DeepSeek V4.1 Flash 的分词），`hi` 对 `hi` 加换行加那段字的 `prompt_tokens` 差。`hosted-tool.txt`、`hosted-tool-failed.txt` 外壳 21、整块 51，`hosted-tool-open.txt` 15、28，`hosted-tool-cut.txt` 6（o200k 估的是 18、47、12、25、5）。`prompts.md` 重出，给模型看的字一字不变。施工单 `TK-1-登记簿的数用真端点补.md` |
 
 ### 四、施工单的格式
 
