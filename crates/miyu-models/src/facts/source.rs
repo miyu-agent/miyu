@@ -51,6 +51,17 @@ impl Source {
         }
     }
 
+    /// 价格借的那一条（施工 PR-1，`matching::Matched::price`）：中转站借原厂的，`entry` 写原厂那一条，层照对上的那一层；不借的
+    /// 没有。
+    pub fn priced(matched: &Matched, fetched: &str) -> Option<Source> {
+        let priced = matched.price.as_ref()?;
+        Some(Source::Catalog {
+            entry: format!("{}/{}", priced.provider, priced.model),
+            layer: matched.layer,
+            fetched: fetched.to_string(),
+        })
+    }
+
     /// 写成协议上的样子：`from` 和另带的几格。手写的写成哪份文件，由 `file` 照层给（数据根里的相对路径）；`layer`
     /// 是配置的哪一层给的这一格，`system` 或 `project`（施工 8-7（补），照 `config.get` 说的来源一样写法）。
     pub fn json(&self, file: &dyn Fn(Layer) -> String) -> Map<String, Value> {

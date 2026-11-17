@@ -9,13 +9,14 @@
 //! 施工 V-32 多一个切口：`model.list` 要列目录里那一家的全部模型（[`listing_side`]），也是纯函数，照样记、照样借整份目录现算。
 
 use std::collections::BTreeMap;
+use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::sync::{MutexGuard, PoisonError};
 
 use serde::{Deserialize, Serialize};
 
 use super::recall::{Recall, Recalled, Recalling};
-use super::{Catalog, CatalogModel, CatalogSource, Loaded};
+use super::{Catalog, CatalogModel, CatalogSource, Loaded, Price};
 use crate::matching::{Found, Recognized, Vendors, find, recognize};
 
 /// 一家配好的供应商在目录里的那一面（[`provider_side`]）：认成了哪一家、怎么认的，和那一家的几格。
@@ -47,6 +48,9 @@ pub struct ModelSide {
     pub found: Found,
     /// 对上时目录里那一条的原样拷贝；手写指定的不存在（`Missing`）、没对上（`Nothing`）的没有。
     pub entry: Option<CatalogModel>,
+    /// 价格借的那一条（[`crate::matching::Matched::price`]，施工 PR-1）的价格：借它自己的同 `entry` 的；借原厂的是那一条的；
+    /// 不借的、那一条没写价格的没有。
+    pub price: Option<Arc<Price>>,
 }
 
 impl ModelSide {
@@ -55,6 +59,7 @@ impl ModelSide {
         ModelSide {
             found: Found::Nothing,
             entry: None,
+            price: None,
         }
     }
 }
@@ -92,11 +97,22 @@ pub fn model_side(
     written: Option<&str>,
 ) -> ModelSide {
     let found = find(catalog, vendors, recognized, model, written);
-    let entry = match &found {
-        Found::Matched(matched) => catalog.model(&matched.provider, &matched.model).cloned(),
-        Found::Missing(_) | Found::Nothing => None,
+    let (entry, price) = match &found {
+        Found::Matched(matched) => (
+            catalog.model(&matched.provider, &matched.model).cloned(),
+            matched
+                .price
+                .as_ref()
+                .and_then(|priced| catalog.model(&priced.provider, &priced.model))
+                .and_then(|entry| entry.price.clone()),
+        ),
+        Found::Missing(_) | Found::Nothing => (None, None),
     };
-    ModelSide { found, entry }
+    ModelSide {
+        found,
+        entry,
+        price,
+    }
 }
 
 /// 目录里编号 `provider` 那一家的模型清单（施工 V-32）：显示名，每个模型的名字和 `family`；目录里没有这一家的没有。

@@ -179,7 +179,14 @@ pub fn facts(
         }
         _ => None,
     };
-    // 对上了目录的：每一格借的来源都是这一个条目（价格另看挑的那家借不借）。
+    // 价格另看借的那一条（施工 PR-1）：中转站照原厂里同一个模型的借，来源写那一条。
+    let priced = match (&side.found, &side.price, &fetched) {
+        (Found::Matched(matched), Some(price), Some(fetched)) => {
+            Some((&**price, matched, fetched.as_str()))
+        }
+        _ => None,
+    };
+    // 对上了目录的：每一格借的来源都是这一个条目（价格另看借的那一条）。
     let model_data = entry.map(|(entry, _, _)| entry);
     let borrowed = entry.map(|(_, matched, fetched)| Source::catalog(matched, fetched));
     let wire = entry
@@ -274,7 +281,7 @@ pub fn facts(
         effort: fact(chosen),
         takes_temperature,
         temperature: fact(temperature),
-        price: price(&written, provider.local, entry),
+        price: price(&written, provider.local, priced),
         multiplier: or_default(
             written
                 .float(&["price_multiplier"])
@@ -320,11 +327,12 @@ fn fact<T>(found: Option<(T, Source)>) -> Fact<Option<T>> {
     }
 }
 
-/// 价格：手写的整份；本机的服务没写是 0；目录的照挑的那家借不借；都没有的没有。
+/// 价格：手写的整份；本机的服务没写是 0；目录的照借的那一条（`priced`：它的价格、对上的结果、目录拉的时刻，施工 PR-1）；
+/// 都没有的没有。
 fn price(
     written: &Written<'_>,
     local: bool,
-    entry: Option<(&CatalogModel, &Matched, &str)>,
+    priced: Option<(&Price, &Matched, &str)>,
 ) -> Fact<Option<Price>> {
     let item = |name: &str| written.float(&["price", name]);
     let rates = ["input", "output", "cache_read", "cache_write"].map(item);
@@ -356,9 +364,8 @@ fn price(
             source: Source::Local,
         };
     }
-    fact(entry.and_then(|(entry, matched, fetched)| {
-        let price = entry.price.as_deref().cloned().filter(|_| matched.price)?;
-        Some((price, Source::catalog(matched, fetched)))
+    fact(priced.and_then(|(price, matched, fetched)| {
+        Some((price.clone(), Source::priced(matched, fetched)?))
     }))
 }
 
