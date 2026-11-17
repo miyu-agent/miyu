@@ -29,7 +29,7 @@ Once installed, a package comes in one of three kinds:
 
 - Runs as soon as it is installed: an extension whose manifest says to start it together with the core. Once installed and the capabilities it asks for are approved, it runs in the background.
 - Needs you to turn it on: other extensions, and packages that bring only MCP servers. They are off after installing. The install asks "Enable '<id>' now? [Y/n]", and later you turn them on on the Packages page.
-- Only adds things: packages that bring only skills, scripts, slash commands, personas or knowledge bases. There is no switch; they are there once installed, and each skill, script and command is switched separately in presets (see [Personas and presets](personas-presets.en.md)).
+- Only adds things: packages that bring only skills, scripts, slash commands, personas or knowledge bases. They are on once installed, and the whole package can be turned off; each skill, script and command is also switched separately in presets (see [Personas and presets](personas-presets.en.md)).
 
 ## Finding and installing
 
@@ -152,27 +152,28 @@ The AI can also look in the package source and install packages for you (the shi
 
 ## Turning on and off
 
-What has a switch: extensions, packages that bring MCP servers, and the shipped built-in feature packages. Interfaces, workers, mascots, appearance, and packages that bring only skills and scripts have no switch; forcing one reports "Cannot be enabled or disabled".
+Every package has one "Enabled" switch, including packages that bring only skills, scripts or content, and appearance, interfaces, workers and mascots. When it is off, the tools, skills, scripts, commands, presets, knowledge bases, content and appearance it brings are gone, and an extension and the services it brings stop; turn it back on and they return. Open sessions follow from the next turn.
 
 | Where | How |
 |---|---|
 | Web UI | Type `/pkg` to open "Packages" on the settings page; each row has a switch on the right. Groups such as "Base system" are folded into one row; click in to see the packages in the group |
 | Terminal | `/settings` → "Packages" → "Installed", select one and press `Space` |
+| Command line | `miyu config set packages.<id>.enabled false`; write `true` to turn it back on |
 | Tray | No switch. A package that has a dashboard page and whose manifest gives a tray entry gets one row in the tray menu while it is on; click it to open its dashboard page |
 
 When you turn on an extension that still has unapproved capabilities, it lists them and asks first: the web UI writes "Approve these permissions before enabling:" and you press "Approve and enable"; the terminal asks "Turning on <name> needs:".
 
 For a shipped built-in feature package, turning off means removing and turning on means installing it back; see "Three layers" below.
 
-### Turn a package off for yourself only
+### Switching from the command line
 
-Set `packages.<id>.off` to `true`, and your sessions have none of this package's tools, skills, commands, or what it adds to the conversation; the settings page and the preset page do not list it either. It is for you only: other people's sessions on chat platforms still have it. Any package can be turned off this way, from the next turn:
+`packages.<id>.enabled` is this package's switch, the same one as on the Packages page; `true` is on:
 
 ```sh
-miyu config set packages.base-jobs.off true
+miyu config set packages.base-jobs.enabled false
 ```
 
-On the terminal settings page, each package's own page has the item "Turn this package off for me".
+It replies "set packages.base-jobs.enabled = false (takes effect immediately)". This item is not written to the config file, and one written into `config.toml` by hand is not recognized. Turning off a shipped built-in feature package removes it: `miyu pkg list` shows it with " (removed)", and writing `true` installs it back.
 
 ### Each thing in a package has its own switch
 
@@ -197,7 +198,7 @@ The address is always printed, so you can copy it even when the browser did not 
 
 | Command | What it prints |
 |---|---|
-| `miyu pkg list` (same as `miyu pkg`) | Installed packages, one per line, `<id>  <name>`. A removed shipped package is followed by " (removed)", and one whose manifest is wrong by " (invalid: <what is wrong>)" |
+| `miyu pkg list` (same as `miyu pkg`) | Installed packages, one per line, `<id>  <name>`. One that is off is followed by " (off)", a removed shipped package by " (removed)", and one whose manifest is wrong by " (invalid: <what is wrong>)" |
 | `miyu pkg files <id>` | The files it installed, one per line, `<id> <absolute path>` |
 | `miyu pkg owns <path>` | "<path> is owned by <id>"; for a path inside the package's directory that was not there at install time, "<path> is in the directory of <id> but was not installed with it"; for a path no package has, it reports "no package owns <path>", exit code `1` |
 | `miyu pkg check [<id>]` | Whether installed files were changed: for a package with no problem, one line "<id>: OK"; for one with problems, one line per file, "modified", "missing" or "extra". Exit code `1` if something was changed or is missing; extra files are only a notice, and what the package writes itself while running counts too. Shipped packages are not checked; for ones installed by the system package manager, only whether the manifest can be read and the program is there is checked |
@@ -467,7 +468,6 @@ Errors are printed on standard error, starting with `miyu: `.
 | `Required packages are missing` | A package it depends on is not in the package source, or its version is too old |
 | `cannot install <what you wrote>: This package needs Miyu <version> or newer: update Miyu first` | `miyu upgrade` |
 | `Other packages depend on it` | Remove the ones that depend on it first |
-| `Cannot be enabled or disabled` | This kind of package has no switch, see "Turning on and off" above |
 | `Program not installed` | The package's program is missing; install the package again |
 | `Extension permissions not approved` | Approve the capabilities it asks for when you turn it on |
 | `cancelled: no confirmation` | Running in a script; add `--yes` |

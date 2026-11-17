@@ -172,10 +172,10 @@ The AI opens another session and dispatches a subagent, which works in the backg
 ## Turning off a tool
 
 - In the preset: turn that feature or tool off in the preset on the settings page, or write `[features]` and `[tools]` in the preset file. See [Personas and presets](personas-presets.en.md).
-- Turning off a whole package: the package's switch under "Packages" on the settings page, recorded in `packages.<id>.off`, and your sessions no longer have its tools:
+- Turning off a whole package: the package's "Enabled" switch under "Packages" on the settings page, and all the tools it brings are gone. From the command line:
 
   ```sh
-  miyu config set packages.base-net.off true
+  miyu config set packages.base-net.enabled false
   ```
 
 - Skills, scripts and MCP servers also have a master switch `features.<feature id>` (for example `features.mcp-github`), which affects only presets that are fully on by default; a switch written in the preset follows the preset.

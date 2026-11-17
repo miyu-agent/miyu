@@ -11,17 +11,17 @@ AI 在你的机器上能动什么、什么时候先问你、哪些目录碰不�
 | | 开放权限 | 只读 |
 |---|---|---|
 | 文件工具读 | 哪里都能读，Miyu 自己的数据根也在内 | 同左 |
-| 文件工具写 | 哪里都能写，数据根除外 | 不写，时间线上记「只读模式，未执行」 |
+| 文件工具写 | 哪里都能写，Miyu 自己的数据根也在内 | 不写，时间线上记「只读模式，未执行」 |
 | 命令 | 不进沙盒；受保护的命令先问你，几类危险命令直接拒 | 进沙盒，哪里都写不了（见下） |
 | 扩展里联网的工具 | 直接用 | 直接用 |
 | MCP 服务里没标只读的工具，扩展里对外发消息的工具 | 直接用 | 每次问你 |
 | 装、卸软件包，打开扩展 | 每次问你 | 不做 |
 
-数据根是 Miyu 自己放数据的目录，默认 `~/.miyu`，Windows 上是 `%USERPROFILE%\.miyu`；设了 `MIYU_HOME` 的是它。两种权限下它都读得到、写不进：文件工具要写数据根的，不执行，时间线上记「这是 Miyu 自己的数据，不能改」；读不拦，存 key 的 `~/.miyu/etc/private/secrets.toml` 文件工具和命令也读得到。能写的几处例外：这个会话的默认工作区 `~/.miyu/root/workspace/<会话编号>/` 和 `~/.miyu/root/` 下的 `pictures`、`videos`、`documents`、`downloads`。`glob`、`grep` 从上面的目录往下搜时不进数据根，同不进 `.git` 一个道理；起点就在数据根里的照常搜。
+数据根是 Miyu 自己放数据的目录，默认 `~/.miyu`，Windows 上是 `%USERPROFILE%\.miyu`；设了 `MIYU_HOME` 的是它。Miyu 不另外护着它：开放权限下文件工具和命令读写它同别的目录一样，存 key 的 `~/.miyu/etc/private/secrets.toml` 也读得到；只读下读得到、写不进，同别处。只有删整个数据根先问你，见下面「要确认的命令」。`glob`、`grep` 从上面的目录往下搜时不进数据根，同不进 `.git` 一个道理；起点就在数据根里的照常搜。
 
 开放权限下，命令能动你这个系统用户能动的一切。Miyu 只照命令的字面认出几类危险写法（下面「要确认的命令」），防的是 AI 一时糊涂，挡不住刻意绕开的写法。要 AI 什么都改不了，用只读。
 
-只读就是不让写，不替你藏东西：`~/.ssh`、浏览器的数据、别的程序的登录这些，只读下 AI 照样读得到，读了的进上下文、发给模型供应商。不想让它读到的，自己把 Miyu 关进另一层沙盒，或者换一个系统用户跑。Miyu 自己的数据根也一样：两种权限下都读得到，存 key 的密钥文件在内；写不进。
+只读就是不让写，不替你藏东西：`~/.ssh`、浏览器的数据、别的程序的登录这些，只读下 AI 照样读得到，读了的进上下文、发给模型供应商。不想让它读到的，自己把 Miyu 关进另一层沙盒，或者换一个系统用户跑。Miyu 自己的数据根也一样：两种权限下都读得到，存 key 的密钥文件在内；开放权限下还写得进。
 
 只读下的命令：
 
@@ -58,7 +58,7 @@ AI 正在干活时也能切。切到只读当场生效，这一步里还没跑�
 | 设置页上 | 配置键 | 拦哪些命令 |
 |---|---|---|
 | 破坏性 git 操作 | `permission.confirm.git` | `git push --force`（`-f`、`+分支` 也算）、`git reset --hard`、`git clean -f`、`git checkout .`、`git restore .`、`git stash drop`、`git stash clear` |
-| 递归删除 | `permission.confirm.delete` | 删工作目录或它的上级，例如在 `~/src/app` 里跑 `rm -rf ..`；整个目录往下删、目标要到运行时才知道的，例如 `rm -rf "$OUT"`、`… \| xargs rm -r`。`find` 带 `-delete` 的同样算 |
+| 递归删除 | `permission.confirm.delete` | 删工作目录或它的上级，例如在 `~/src/app` 里跑 `rm -rf ..`；删 Miyu 的数据根、数据根里的东西、装着它的目录，例如 `rm -rf ~/.miyu`，用回收站工具删数据根本身的也算；整个目录往下删、目标要到运行时才知道的，例如 `rm -rf "$OUT"`、`… \| xargs rm -r`。`find` 带 `-delete` 的同样算 |
 | 关机和重启 | `permission.confirm.power` | `shutdown`、`reboot`、`halt`、`poweroff`、`init 0`、`init 6`，`systemctl` 的 `poweroff`、`reboot`、`halt`、`suspend`、`hibernate`、`kexec` |
 | 下载后直接执行 | `permission.confirm.pipe_to_shell` | `curl` 或 `wget` 下载下来交给 shell、`python`、`python3`、`perl`、`ruby`、`node` 跑：`curl … \| sh`、`bash <(curl …)`、`sh -c "$(curl …)"` |
 | 容器使用宿主设备 | `permission.confirm.container` | `docker`、`podman`、`nerdctl` 的 `run`、`create` 带 `--device`、`--device-cgroup-rule`，`--pid`、`--net`、`--network`、`--ipc` 写 `host`，或者挂 `/dev`、`/sys` 下面的某一个，例如 `-v /dev/snd:/dev/snd` |
@@ -75,7 +75,7 @@ miyu config set permission.confirm.git false
 
 下面几类直接拒，你点了也不跑，也没有开关：
 
-- 删根目录 `/`、家目录或它的上级、根下一级的目录（`/usr`、`/etc` 这样的）、数据根或装着它的目录。
+- 删根目录 `/`、家目录或它的上级、根下一级的目录（`/usr`、`/etc` 这样的）。
 - 格式化磁盘：`mkfs` 开头的、`wipefs`、`mke2fs`、`blkdiscard`、`mkswap`、`sgdisk -Z`（`--zap-all`）。
 - 往磁盘设备直接写：`dd of=/dev/…`、`> /dev/…`，`tee`、`shred`、`cp` 写到设备上。设备指 `/dev/` 下 `sd`、`nvme`、`mmcblk`、`disk`、`rdisk`、`vd`、`hd`、`xvd`、`mapper/`、`dm-`、`md`、`loop`、`nbd` 开头的。
 - 容器拿走整台机器：`--privileged`，`--cap-add` 加 `ALL` 或 `SYS_ADMIN`，挂宿主的 `/`、`/dev`、`/sys`。
@@ -90,7 +90,7 @@ Windows 上 AI 用 PowerShell 跑命令（见 [工具](tools.md#shell)）。上�
 | 递归删除（先问） | `Remove-Item -Recurse`（别名 `rm`、`del`、`erase`、`rd`、`rmdir`、`ri`，cmd 的 `rd /s`、`del /s`）删工作目录，例如 `Remove-Item -Recurse -Force .`；目标要到运行时才知道的，例如 `Remove-Item -Recurse $target`、`… \| Remove-Item -Recurse` |
 | 关机和重启（先问） | `Stop-Computer`、`Restart-Computer`；`shutdown` 带开关的都算（`/s`、`/r`、`/h`，注销的 `/l` 也算），只有 `/a`、`/?` 不算 |
 | 下载后直接执行（先问） | `irm`、`iwr`、`curl`、`wget` 下载下来交给 `iex`（`Invoke-Expression`）、`powershell`、`pwsh`、`cmd` 跑：`irm … \| iex`、`iex (irm …)` |
-| 删根目录、家目录、系统目录、数据根（直接拒） | 盘符本身（`C:\`）算根目录；盘符下一级的目录（`C:\Windows`、`C:\Users`、`C:\Program Files`，自己建的 `C:\dev` 也算）和根下一级的目录一样；`~`、`$HOME`、`$env:USERPROFILE`、`%USERPROFILE%` 是家目录 |
+| 删根目录、家目录、系统目录（直接拒） | 盘符本身（`C:\`）算根目录；盘符下一级的目录（`C:\Windows`、`C:\Users`、`C:\Program Files`，自己建的 `C:\dev` 也算）和根下一级的目录一样；`~`、`$HOME`、`$env:USERPROFILE`、`%USERPROFILE%` 是家目录 |
 | 格式化磁盘（直接拒） | `Format-Volume`、`Clear-Disk`、`Remove-Partition`、`format D:` |
 | 容器拿走整台机器（直接拒） | 同上面的列表 |
 
@@ -149,7 +149,6 @@ Windows 上 AI 用 PowerShell 跑命令（见 [工具](tools.md#shell)）。上�
 
 | 看到的 | 怎么办 |
 |---|---|
-| 「这是 Miyu 自己的数据，不能改」 | AI 要写的是数据根。要它改的文件放到数据根外面，或者 `~/.miyu/root/documents/` 这几处 |
 | 「只读模式，未执行」 | 切回开放权限 |
 | 「需要确认，无人确认」，`miyu ask` 退出码 `4` | 到终端、网页里做这件事，或者关掉对应的那一类受保护的命令 |
 | 「无人确认，已自动拒绝」 | 调大 `permission.confirm.timeout`，`0` 是一直等 |

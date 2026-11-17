@@ -194,7 +194,7 @@ Miyu 从会话的工作目录往上一层层找 `.miyu/config.toml`，只认最�
 | `miyu provider list [--format text\|json]` | 列出存了的，和配置里用到了、还没存的，带谁在用。不显示值 |
 | `miyu provider logout [<名字>]` | 删一个 |
 
-名字小写字母开头，只有小写字母、数字、`-`、`_`，最长 64 个字符。例如给联网搜索存 Tavily 的 key：
+名字小写字母开头，只有小写字母、数字、`-`、`_`，最长 64 个字符。例如给网络搜索存 Tavily 的 key：
 
 ```bash
 echo "$TAVILY_KEY" | miyu provider login tavily

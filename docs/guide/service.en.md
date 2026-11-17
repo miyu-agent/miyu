@@ -12,7 +12,7 @@ The core is `miyu` running in the background; sessions, models and schedules all
 - Only one core runs per data root at a time. The data root is `~/.miyu` by default, `%USERPROFILE%\.miyu` on Windows, or the value of `MIYU_HOME` if set.
 - By default the core stays up, even when all heads are closed.
 
-To have it exit by itself when idle, enter a number of minutes in "Advanced → Core → Core idle exit" on the settings page (type `/settings` in the terminal or web UI), or run:
+To have it exit by itself when idle, enter a number of minutes in "Advanced → Core → Idle exit time" on the settings page (type `/settings` in the terminal or web UI), or run:
 
 ```sh
 miyu config set core.idle_exit 30

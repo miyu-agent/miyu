@@ -11,17 +11,17 @@ Each session is set to either "Full access" or "Read-only", and each session kee
 | | Full access | Read-only |
 |---|---|---|
 | File tools, read | Can read anywhere, Miyu's own data root included | Same |
-| File tools, write | Can write anywhere except the data root | Does not write; the timeline says "Read-only mode, not run" |
+| File tools, write | Can write anywhere, Miyu's own data root included | Does not write; the timeline says "Read-only mode, not run" |
 | Commands | Do not run in the sandbox; protected commands ask you first, and a few kinds of dangerous commands are refused outright | Run in the sandbox, which can write nowhere (see below) |
 | Tools in extensions that go online | Used directly | Used directly |
 | Tools of MCP servers that are not marked read-only, and tools in extensions that send messages out | Used directly | Ask you each time |
 | Installing and removing packages, turning on an extension | Asks you each time | Not done |
 
-The data root is the folder where Miyu keeps its own data. By default it is `~/.miyu`, on Windows `%USERPROFILE%\.miyu`; if `MIYU_HOME` is set, it is that folder. At both permission levels it can be read and cannot be written: a file tool that tries to write to the data root is not run, and the timeline says "Miyu's own data, can't be changed"; reading is not blocked, and `~/.miyu/etc/private/secrets.toml`, which holds your keys, can be read by file tools and by commands too. The few places that can be written are exceptions: this session's default workspace `~/.miyu/root/workspace/<session id>/`, and `pictures`, `videos`, `documents` and `downloads` under `~/.miyu/root/`. When `glob` and `grep` search down from a directory above, they do not go into the data root, for the same reason they do not go into `.git`; a search that starts inside the data root works as usual.
+The data root is the folder where Miyu keeps its own data. By default it is `~/.miyu`, on Windows `%USERPROFILE%\.miyu`; if `MIYU_HOME` is set, it is that folder. Miyu does not guard it separately: under full access, file tools and commands read and write it like any other directory, and `~/.miyu/etc/private/secrets.toml`, which holds your keys, can be read too; under read-only it can be read and not written, like everywhere else. Only deleting the whole data root asks you first, see "Commands that need confirmation" below. When `glob` and `grep` search down from a directory above, they do not go into the data root, for the same reason they do not go into `.git`; a search that starts inside the data root works as usual.
 
 Under full access, commands can do anything your system user can do. Miyu recognizes a few kinds of dangerous commands only by their literal text (see "Commands that need confirmation" below). That guards against the AI's momentary slips and cannot stop a command written to get around it. To keep the AI from changing anything, use read-only.
 
-Read-only means no writing; it does not hide things for you: under read-only the AI can still read `~/.ssh`, browser data, other programs' logins and the like, and what it reads goes into the context and is sent to the model provider. If you do not want it to read something, put Miyu inside another sandbox yourself, or run it as a different system user. Miyu's own data root is the same: it is readable at both permission levels, the secrets file that holds your keys included; it cannot be written.
+Read-only means no writing; it does not hide things for you: under read-only the AI can still read `~/.ssh`, browser data, other programs' logins and the like, and what it reads goes into the context and is sent to the model provider. If you do not want it to read something, put Miyu inside another sandbox yourself, or run it as a different system user. Miyu's own data root is the same: it is readable at both permission levels, the secrets file that holds your keys included; under full access it can be written too.
 
 Commands in read-only:
 
@@ -58,7 +58,7 @@ Under full access, the five kinds of commands below ask you first. On the settin
 | On the settings page | Config key | Which commands it catches |
 |---|---|---|
 | Destructive git operations | `permission.confirm.git` | `git push --force` (`-f` and `+branch` count too), `git reset --hard`, `git clean -f`, `git checkout .`, `git restore .`, `git stash drop`, `git stash clear` |
-| Recursive deletes | `permission.confirm.delete` | Deleting the working directory or a parent of it, for example running `rm -rf ..` inside `~/src/app`; deleting a whole directory tree where the target is only known at run time, for example `rm -rf "$OUT"` or `… \| xargs rm -r`. `find` with `-delete` counts too |
+| Recursive deletes | `permission.confirm.delete` | Deleting the working directory or a parent of it, for example running `rm -rf ..` inside `~/src/app`; deleting Miyu's data root, things in it, or a directory that contains it, for example `rm -rf ~/.miyu`, and deleting the data root itself with the trash tool counts too; deleting a whole directory tree where the target is only known at run time, for example `rm -rf "$OUT"` or `… \| xargs rm -r`. `find` with `-delete` counts too |
 | Shutdown and restart | `permission.confirm.power` | `shutdown`, `reboot`, `halt`, `poweroff`, `init 0`, `init 6`, and `systemctl` with `poweroff`, `reboot`, `halt`, `suspend`, `hibernate` or `kexec` |
 | Running a download directly | `permission.confirm.pipe_to_shell` | `curl` or `wget` downloads handed to a shell, `python`, `python3`, `perl`, `ruby` or `node` to run: `curl … \| sh`, `bash <(curl …)`, `sh -c "$(curl …)"` |
 | Containers using host devices | `permission.confirm.container` | `run` or `create` of `docker`, `podman` or `nerdctl` with `--device` or `--device-cgroup-rule`, with `--pid`, `--net`, `--network` or `--ipc` set to `host`, or mounting something under `/dev` or `/sys`, for example `-v /dev/snd:/dev/snd` |
@@ -75,7 +75,7 @@ It takes effect from the next turn.
 
 These kinds are refused outright. They do not run even if you approve, and they have no switch:
 
-- Deleting the root `/`, the home directory or a parent of it, a directory one level under the root (such as `/usr` or `/etc`), the data root, or a directory that contains it.
+- Deleting the root `/`, the home directory or a parent of it, or a directory one level under the root (such as `/usr` or `/etc`).
 - Formatting a disk: anything starting with `mkfs`, `wipefs`, `mke2fs`, `blkdiscard`, `mkswap`, `sgdisk -Z` (`--zap-all`).
 - Writing directly to a disk device: `dd of=/dev/…`, `> /dev/…`, and `tee`, `shred` or `cp` writing to a device. A device means anything under `/dev/` that starts with `sd`, `nvme`, `mmcblk`, `disk`, `rdisk`, `vd`, `hd`, `xvd`, `mapper/`, `dm-`, `md`, `loop` or `nbd`.
 - Containers taking over the whole machine: `--privileged`, `--cap-add` with `ALL` or `SYS_ADMIN`, mounting the host's `/`, `/dev` or `/sys`.
@@ -90,7 +90,7 @@ On Windows the AI runs commands in PowerShell (see [Tools the AI can use](tools.
 | Recursive delete (ask first) | `Remove-Item -Recurse` (aliases `rm`, `del`, `erase`, `rd`, `rmdir`, `ri`, and cmd's `rd /s`, `del /s`) on the working directory, for example `Remove-Item -Recurse -Force .`; a target only known at run time, for example `Remove-Item -Recurse $target` or `… \| Remove-Item -Recurse` |
 | Shutdown and restart (ask first) | `Stop-Computer`, `Restart-Computer`; `shutdown` with any switch counts (`/s`, `/r`, `/h`, and `/l` for logging off too), except `/a` and `/?` |
 | Running a download directly (ask first) | A download by `irm`, `iwr`, `curl` or `wget` handed to `iex` (`Invoke-Expression`), `powershell`, `pwsh` or `cmd` to run: `irm … \| iex`, `iex (irm …)` |
-| Deleting the root, the home directory, system directories or the data root (refused outright) | A drive letter itself (`C:\`) counts as the root; directories one level below a drive letter (`C:\Windows`, `C:\Users`, `C:\Program Files`, and ones you created such as `C:\dev`) count like directories one level below the root; `~`, `$HOME`, `$env:USERPROFILE` and `%USERPROFILE%` are the home directory |
+| Deleting the root, the home directory or system directories (refused outright) | A drive letter itself (`C:\`) counts as the root; directories one level below a drive letter (`C:\Windows`, `C:\Users`, `C:\Program Files`, and ones you created such as `C:\dev`) count like directories one level below the root; `~`, `$HOME`, `$env:USERPROFILE` and `%USERPROFILE%` are the home directory |
 | Formatting disks (refused outright) | `Format-Volume`, `Clear-Disk`, `Remove-Partition`, `format D:` |
 | Containers taking over the whole machine (refused outright) | Same as the list above |
 
@@ -149,7 +149,6 @@ If chat platforms are connected, group sessions and private chats with someone o
 
 | What you see | What to do |
 |---|---|
-| "Miyu's own data, can't be changed" | The AI tried to write to the data root. Put the files you want it to change outside the data root, or in places like `~/.miyu/root/documents/` |
 | "Read-only mode, not run" | Switch back to full access |
 | "Needs confirmation, no one to confirm", `miyu ask` exit code `4` | Do this in the terminal or web UI, or turn off the matching kind of protected command |
 | "No one confirmed in time, denied automatically" | Raise `permission.confirm.timeout`; `0` waits forever |

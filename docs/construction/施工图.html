@@ -1561,6 +1561,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC7"><span class="n">DOC-7</span>手册去掉私密目录<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC8"><span class="n">DOC-8</span>手册改成数据根读得到、写不进<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC9"><span class="n">DOC-9</span>手册跟上警告、英文报错、循环、迁移包<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sDOC10"><span class="n">DOC-10</span>手册跟上「启用」开关和设置项改名<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
         <li><a class="step review" href="#sRO2"><span class="n">RO-2</span>数据根两种模式都读得到<span class="st">…</span></a></li>
@@ -60694,6 +60695,56 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/DOC-9-手册对CK-1等.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sDOC10" aria-labelledby="h-sDOC10">
+  <div class="sheet-head"><h2 id="h-sDOC10"><span class="no">DOC-10</span>手册跟上「启用」开关和设置项改名</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">UX-1 把软件包的两个开关收成一个「启用」，一批设置项改成软件术语。手册中英两份跟上。只动文档。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">docs/guide</span><span class="dir-note">DOC-10</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>软件包页：每个包一个「启用」开关，关了它带来的一切都不在，再开就回来</li>
+              <li>packages.&lt;编号&gt;.off 的说法和示例换成 packages.&lt;编号&gt;.enabled</li>
+              <li>设置页上改了名的几项跟着改；终端、网页自己的字没变的不动</li>
+              <li>先在沙箱里实测开关一个包、看几项的新名字，再改</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">引设置页上的名字前，先分清是核心字表里的还是头自己的</span><span class="rl">施工单「没改的」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DOC-10</dd></div>
+        <div><dt>名称</dt><dd>手册跟上「启用」开关和设置项改名</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-16</dd></div>
+        <div><dt>提交</dt><dd class="mono">DOC-10</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改的每一处有实测的输出对着</span></li>
+        <li><span class="ok">✓</span><span>改过的每页中英行数、标题、表格、代码块个数相等</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/DOC-10-手册对UX-1.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

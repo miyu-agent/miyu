@@ -422,7 +422,7 @@ Changes take effect at once.
 | General | Display (Interface language, On start, open), New sessions (Default persona, Default preset, Start new sessions read-only, Don't ask for persona and preset in new sessions), Sessions, Shell integration session; the terminal's own timeline, interaction, sidebar counts and history list |
 | Appearance | Theme, Color scheme, Figure, Icons |
 | Providers & models | Three pages: Providers, Default models, Pools; see [Models](../models.en.md) |
-| User | About you: what the AI calls you, which language it replies in |
+| User | Profile: preferred name, reply language, additional details |
 | Privacy & security | Permissions and protected commands; see [Permissions and sandbox](../permissions.en.md) |
 | Personas | Create, edit and delete personas; see [Personas and presets](../personas-presets.en.md) |
 | Presets | Create, edit and delete presets |

@@ -11,7 +11,7 @@ AI 怎么搜网页、读网页，用哪一家联网服务、怎么填 key，怎�
 | `web_search` | 网络搜索 | 搜网页，交回最多 8 条标题、网址、日期和摘录。AI 能限定只要、或者不要哪几个网站 |
 | `web_fetch` | 抓取网页 | 照网址取一个网页或文本文件，换成文字一页一页读 |
 
-两件都在出厂软件包「联网搜索」（`base-net`）里，出厂装着。出厂的预设里，「全部功能」「常规开发」开着它们，「极简开发」「无功能」没开。
+两件都在出厂软件包「网络搜索」（`base-net`）里，出厂装着。出厂的预设里，「全部功能」「常规开发」开着它们，「极简开发」「无功能」没开。
 
 不配任何 key 也能搜：出厂会依次试几家不要 key 的搜索服务，见下面。
 
@@ -23,6 +23,8 @@ AI 怎么搜网页、读网页，用哪一家联网服务、怎么填 key，怎�
 |---|---|---|---|
 | `auto`（「自动（免费额度）」） | 不要 | | 搜索照下面免费的几家依次试；自己抓不下来的网页请 Exa、Firecrawl、Parallel 代抓 |
 | `deepseek`（DeepSeek） | key。没单独配的，照用模型那边 DeepSeek 供应商的 key。搜索、代抓都按次收费 | `net.search.deepseek.key` | 搜索、抓网页都先交它 |
+| `exa`（Exa） | 可以不配 key：配了用你自己的额度，不配照免费额度 | `net.search.exa.key` | 搜索先交它，抓网页照自动 |
+| `anysearch`（AnySearch） | 可以不配 key：配了用你自己的额度，不配照免费额度（按 IP 每天算） | `net.search.anysearch.key` | 搜索先交它，抓网页照自动 |
 | `tavily`（Tavily） | key | `net.search.tavily.key` | 搜索先交它，抓网页照自动 |
 | `brave`（Brave） | key | `net.search.brave.key` | 搜索先交它，抓网页照自动 |
 | `searxng`（SearXNG） | 你自己搭的 SearXNG 的地址 | `net.search.searxng.url` | 搜索先交它，抓网页照自动 |
@@ -83,7 +85,7 @@ key 去各家的网站申请。装了的扩展也能提供搜索服务，选项�
 
 从下一轮起生效。key 也能写成 `{ env = "变量名" }`，照核心起来时的环境变量取。密钥怎么存、怎么删见 [配置](config.md#密钥)。
 
-在设置页里做：设置页（终端、网页里敲 `/settings`）「软件包」，打开「联网搜索」这个包的设置。「联网搜索」一组里是「联网服务」下拉；「API Key 和地址」一组里有 Exa、DeepSeek、Tavily、Brave Search 的 key 和「SearXNG 的地址」。key 粘贴进框里，存下的是密钥的引用，key 本身进密钥文件。
+在设置页里做：设置页（终端、网页里敲 `/settings`）「软件包」，打开「网络搜索」这个包的设置。「网络搜索」一组里是「联网服务」下拉；「API Key 和地址」一组里有 Exa、AnySearch、DeepSeek、Tavily、Brave Search 的 key 和「SearXNG 的地址」。key 粘贴进框里，存下的是密钥的引用，key 本身进密钥文件。
 
 这几个键只认 `~/.miyu/etc/config.toml`（数据根默认 `~/.miyu`，Windows 上是 `%USERPROFILE%\.miyu`），写进项目配置不算。
 
@@ -200,10 +202,10 @@ miyu core stop
   web-fetch = false
   ```
 
-- 整个包关掉，你所有会话里都没有这两件：设置页「软件包」里「联网搜索」的开关，或者：
+- 整个包关掉，你所有会话里都没有这两件：设置页「软件包」里「网络搜索」的开关，或者：
 
   ```sh
-  miyu config set packages.base-net.off true
+  miyu config set packages.base-net.enabled false
   ```
 
 预设怎么改见 [人格和预设](personas-presets.md)。

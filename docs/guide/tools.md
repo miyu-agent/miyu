@@ -172,10 +172,10 @@ AI 另开一个会话派子代理，子代理在后台做，做完报告送回�
 ## 关掉一件工具
 
 - 在预设里关：设置页的预设里把那个功能或那件工具关掉，或者在预设文件里写 `[features]`、`[tools]`。见 [人格和预设](personas-presets.md)。
-- 整个软件包关掉：设置页「软件包」里那个包的开关，记在 `packages.<编号>.off`，你的会话里就没有它的工具了：
+- 整个软件包关掉：设置页「软件包」里那个包的「启用」开关，它带的工具就都不在了。命令行里：
 
   ```sh
-  miyu config set packages.base-net.off true
+  miyu config set packages.base-net.enabled false
   ```
 
 - 技能、脚本、MCP 服务另有总开关 `features.<功能编号>`（例如 `features.mcp-github`），只对默认全开的预设起作用，预设里写了开关的照预设。

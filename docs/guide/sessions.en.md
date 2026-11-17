@@ -162,7 +162,7 @@ The two settings for automatic compaction are on the settings page under "Advanc
 | Key | On the settings page | Shipped value | What it does |
 |---|---|---|---|
 | `compaction.line` | Compaction line | `85` | At what percentage of the window the context is used up before it compacts automatically; it can be `20` to `95`. A model with a small window has to leave room for the answer, so it actually compacts earlier: with a 200,000-token window, setting it above 85 has no effect, and only a million-token window can reach 95 |
-| `compaction.prepare` | Prepare compaction early | `true` | When nearing the line, it compacts the older part in the background ahead of time, and swaps it in when the line is reached, so there is no stop to wait. When turned off, it compacts only when the line is reached |
+| `compaction.prepare` | Pre-compaction | `true` | When nearing the line, it compacts the older part in the background ahead of time, and swaps it in when the line is reached, so there is no stop to wait. When turned off, it compacts only when the line is reached |
 
 Both take effect from the next turn. To change them only for the current session:
 

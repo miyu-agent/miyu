@@ -308,7 +308,7 @@ The settings page is a dialog in the middle of the page. Open it with the gear a
 | Page | What it covers |
 |---|---|
 | General | Appearance (theme, color scheme; see "Appearance" below); Display, New sessions, Sessions, Commands, Shell integration session; "Access" |
-| User | Avatar; "About you": what the AI calls you, a description of you |
+| User | Avatar; "Profile": preferred name, additional details |
 | Privacy & security | Permissions and protected commands; see [Permissions and sandbox](../permissions.en.md) |
 | Models | Three tabs, "Providers", "Default models", "Model pools"; see [Models](../models.en.md) |
 | Usage | Usage and cost, by day, by model, by session, by use; today, 7 days, 30 days, all, custom |

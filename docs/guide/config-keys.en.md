@@ -79,9 +79,9 @@ Settings page, "General → Sessions".
 |---|---|---|---|---|---|---|
 | `jobs.max_running` | Duration | `"30m"` | `1m` to `2h` | How long a command the AI runs in the background can run at most; when the time is up it is stopped and the AI is told | Next turn | No |
 
-## About you
+## Profile
 
-Settings page, "User → About you".
+Settings page, "User → Profile".
 
 | Key | Type | Default | Allowed values | Description | Takes effect | Project config |
 |---|---|---|---|---|---|---|
@@ -112,7 +112,7 @@ These are not on the settings page. Use `miyu config set` or edit the file by ha
 | `features.<feature id>` | Switch | — | | Whether a skill, script or MCP server is on. The feature id is `skill-<name>`, `script-<tool name>` or `mcp-<server name>`. It only applies to presets with `unlisted = "on"`; if the preset writes on or off for this item, the preset wins. With none set, the preset decides | Next turn | No |
 | `clicall.tools.<tool name>` | Switch | — | | Whether the AI can call this tool with `miyu call` in a command. With none set, what the tool itself registered applies | Next turn | No |
 | `clicall.mcp.<server name>` | Switch | — | | Whether the AI can call this MCP server's tools with `miyu call` in a command. If a single tool has its own setting, that one wins | Next turn | No |
-| `packages.<id>.off` | Switch | — | | `true` turns this package off: your sessions have none of its tools, skills or commands, and the settings page and preset page do not list it. It affects only you. In the terminal's settings page each package's own page has this switch; the web UI does not | Next turn | No |
+| `packages.<id>.enabled` | Switch | — | | Whether this package is on; the same switch as on the Packages page. Changing it with `miyu config set` turns the package on or off; it is not written to the config file, and one written into `config.toml` by hand is not recognized | Immediately | No |
 
 ## Platform accounts
 
@@ -248,8 +248,9 @@ Settings for the web search package. They show on the settings page under "Packa
 
 | Key | Type | Default | Allowed values | Description | Takes effect | Project config |
 |---|---|---|---|---|---|---|
-| `net.search.source` | Option | `"auto"` | `auto`, `deepseek`, `tavily`, `brave`, `searxng`, and `<package>/<id>` provided by an installed extension | Web provider: which one the AI tries first to search the web and fetch pages. `auto` uses only free quotas and, for searches, tries 7 providers in the shipped order; if you pick one, it is tried first and, if it cannot be used, the `auto` order follows; if you pick `deepseek`, page fetching goes to it first too. See [Web search and fetching pages](web-search.en.md) | Next turn | No |
+| `net.search.source` | Option | `"auto"` | `auto`, `exa`, `anysearch`, `deepseek`, `tavily`, `brave`, `searxng`, and `<package>/<id>` provided by an installed extension | Web provider: which one the AI tries first to search the web and fetch pages. `auto` uses only free quotas and, for searches, tries 7 providers in the shipped order; if you pick one, it is tried first and, if it cannot be used, the `auto` order follows; if you pick `deepseek`, page fetching goes to it first too. See [Web search and fetching pages](web-search.en.md) | Next turn | No |
 | `net.search.exa.key` | Secret reference | — | | Exa's key. With none set, the free quota is used | Next turn | No |
+| `net.search.anysearch.key` | Secret reference | — | | AnySearch's key. With one set, your own quota is used; with none, the free quota | Next turn | No |
 | `net.search.deepseek.key` | Secret reference | — | | The key for DeepSeek search and page fetching. With none set, the key of the DeepSeek provider on the model side is used | Next turn | No |
 | `net.search.tavily.key` | Secret reference | — | | Tavily's key | Next turn | No |
 | `net.search.brave.key` | Secret reference | — | | Brave Search's key | Next turn | No |

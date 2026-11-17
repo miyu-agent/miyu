@@ -23,6 +23,8 @@ On the settings page it is called "Web provider", with the config key `net.searc
 |---|---|---|---|
 | `auto` ("Auto (free tiers)") | Nothing | | Search tries the free ones below in turn; pages it cannot fetch itself are fetched by Exa, Firecrawl and Parallel on its behalf |
 | `deepseek` (DeepSeek) | A key. If you did not set a separate one, the key of the DeepSeek provider on the model side is used. Search and fetching on its behalf are charged per use | `net.search.deepseek.key` | Search and fetching pages both go to it first |
+| `exa` (Exa) | A key is optional: with one, your own quota is used; without one, the free quota | `net.search.exa.key` | Search goes to it first; fetching pages follows auto |
+| `anysearch` (AnySearch) | A key is optional: with one, your own quota is used; without one, the free quota (counted per IP per day) | `net.search.anysearch.key` | Search goes to it first; fetching pages follows auto |
 | `tavily` (Tavily) | A key | `net.search.tavily.key` | Search goes to it first; fetching pages follows auto |
 | `brave` (Brave) | A key | `net.search.brave.key` | Search goes to it first; fetching pages follows auto |
 | `searxng` (SearXNG) | The address of a SearXNG you set up yourself | `net.search.searxng.url` | Search goes to it first; fetching pages follows auto |
@@ -83,7 +85,7 @@ Take Tavily as an example:
 
 It takes effect from the next turn. A key can also be written as `{ env = "variable name" }`, which is read from the environment variable at the time the core starts. For how secrets are stored and deleted, see [Configuration](config.en.md#secrets).
 
-On the settings page: open the settings page (type `/settings` in the terminal or web UI), go to "Packages", and open the settings of the "Web search" package. In the "Web search" group there is the "Web provider" dropdown; in the "API keys and addresses" group there are the keys of Exa, DeepSeek, Tavily and Brave Search, and "SearXNG address". Paste the key into the box; what is saved is a reference to the secret, and the key itself goes into the secrets file.
+On the settings page: open the settings page (type `/settings` in the terminal or web UI), go to "Packages", and open the settings of the "Web search" package. In the "Web search" group there is the "Web provider" dropdown; in the "API keys and addresses" group there are the keys of Exa, AnySearch, DeepSeek, Tavily and Brave Search, and "SearXNG address". Paste the key into the box; what is saved is a reference to the secret, and the key itself goes into the secrets file.
 
 These keys are read only from `~/.miyu/etc/config.toml` (the data root is `~/.miyu` by default, `%USERPROFILE%\.miyu` on Windows); writing them in a project config does not count.
 
@@ -203,7 +205,7 @@ All take effect from the next turn, and are read only from `~/.miyu/etc/config.t
 - To turn off the whole package, so that neither tool is in any of your sessions: the switch for "Web search" under "Packages" on the settings page, or:
 
   ```sh
-  miyu config set packages.base-net.off true
+  miyu config set packages.base-net.enabled false
   ```
 
 For how to change presets, see [Personas and presets](personas-presets.en.md).

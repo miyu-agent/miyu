@@ -243,7 +243,7 @@ When it is not written, it is `pin`; if the providers of all the members have `c
 
 For a pool with `subagent = true`, the AI can pick it when it dispatches a subagent; `description` is the one-line description the AI sees, written in English. The three fixed pools have it on by default, and pools you create have it off by default. A change applies to new sessions.
 
-In the web UI, pools are on the "Model pools" tab of the "Models" settings page, one card per pool, with a "Subagents can pick it" switch on the last row. Click "+ New model pool" below the cards, write a name, and a "Subagents can pick it" switch appears under the name (off by default); press Enter to create it. A change is saved straight into `~/.miyu/etc/config.toml`.
+In the web UI, pools are on the "Model pools" tab of the "Models" settings page, one card per pool, with a "Available to subagents" switch on the last row. Click "+ New model pool" below the cards, write a name, and a "Available to subagents" switch appears under the name (off by default); press Enter to create it. A change is saved straight into `~/.miyu/etc/config.toml`.
 
 In the terminal, on the "Providers & models" settings page, open the "Pools" page and open a pool or create one. Under "Strategy" there is a "Subagents can pick it" field; choose "On" or "Off". A new pool starts at "Off".
 
