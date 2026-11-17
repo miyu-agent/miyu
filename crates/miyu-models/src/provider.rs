@@ -437,31 +437,6 @@ pub fn provider(values: &Values, knowledge: &Knowledge<'_>, id: &str) -> Result<
 /// 推不出驱动时用的（施工 8-26）。
 pub const DEFAULT_DRIVER: &str = "openai-chat";
 
-/// 一家供应商的驱动从哪来（施工 8-26）。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DriverFrom {
-    /// 配置里手写的。
-    Config,
-    /// 档案（`profiles.toml`）写的。
-    Profile,
-    /// 照目录里那一家的 `npm` 换的。
-    Catalog,
-    /// 都没有，用 [`DEFAULT_DRIVER`]。
-    Default,
-}
-
-impl DriverFrom {
-    /// `model.list` 里的写法：`config`、`profile`、`catalog`、`default`。
-    pub fn as_str(self) -> &'static str {
-        match self {
-            DriverFrom::Config => "config",
-            DriverFrom::Profile => "profile",
-            DriverFrom::Catalog => "catalog",
-            DriverFrom::Default => "default",
-        }
-    }
-}
-
 /// 字面地址：写死的就是它，环境变量的引用查不出来（施工 8-6b）。
 fn literal(address: &Address) -> Option<&str> {
     match address {
@@ -503,6 +478,9 @@ pub(crate) fn on_this_machine(base_url: &str) -> bool {
         .iter()
         .any(|local| host.eq_ignore_ascii_case(local))
 }
+
+mod driver_from;
+pub use driver_from::DriverFrom;
 
 #[cfg(test)]
 mod tests;
