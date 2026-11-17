@@ -41,6 +41,7 @@ fn schedule() -> By {
     By::Schedule(Schedule {
         schedule: "t1".to_string(),
         looping: None,
+        person: false,
     })
 }
 

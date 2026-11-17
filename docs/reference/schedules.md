@@ -29,7 +29,7 @@
 | `busy` | 人生循环那一行才有：这一轮正在跑的写 `true`，别的不写；变了推 `schedules.changed` |
 | `rounds` | 人生循环那一行才有：推演到第几轮（每次到点开始的算一轮）。只是记着，头不显示 |
 | `next` | 下一次的时刻；停着的、她自己定节奏还没定的没有 |
-| `last` | 上一次：`{"at", "result", "session"?}`，`result` 是 `ran`、`queued`（会话正在跑一轮，排在后面）、`sent`（推给了建它的扩展）或 `skipped:<原因>`（`session_gone` 会话没了、任务跟着停了，`preset_off` 她建的而会话的预设关了它，`not_opened` 新会话开不成，`package_unavailable` 建它的扩展没在跑、拉不起来） |
+| `last` | 上一次：`{"at", "result", "session"?}`，`result` 是 `ran`（开了一轮）、`queued`（会话正在跑一轮，排在后面）、`held`（那句话记进了会话、没开轮，等人下一次开口时一起看到：`miyu ask` 开的、这时没有头开着的会话里，AI 自己建的任务和循环是这样；你建的定时任务在那种会话里照样开轮）、`sent`（推给了建它的扩展）或 `skipped:<原因>`（`session_gone` 会话没了、任务跟着停了，`preset_off` 她建的而会话的预设关了它，`not_opened` 新会话开不成，`package_unavailable` 建它的扩展没在跑、拉不起来） |
 | `created` | 建的时刻 |
 
 没有的格不出现。时刻的写法同别处：`2026-10-26T08:00:00.000Z`。

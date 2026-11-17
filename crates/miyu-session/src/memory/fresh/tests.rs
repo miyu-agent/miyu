@@ -71,6 +71,7 @@ fn only_a_life_loop_wakes_it() {
         By::Schedule(Schedule {
             schedule: "t1".to_string(),
             looping,
+            person: false,
         })
     };
     assert!(woken_by_life(Some(&schedule(Some(ScheduleLoop::Life)))));

@@ -128,11 +128,13 @@ impl Language {
         }
     }
 
-    /// 上一次的结果：`ran`、`queued`、`sent`、`skipped:<原因>`；不认得的照原样。
+    /// 上一次的结果：`ran`、`queued`、`held`、`sent`、`skipped:<原因>`；不认得的照原样。
     pub(crate) fn schedule_result(&self, result: &str) -> String {
         let said = match (self, result) {
             (Language::Chinese, "ran") => "已运行",
             (Language::Chinese, "queued") => "已排队",
+            (Language::Chinese, "held") => "已记下，下次对话时处理",
+            (Language::English, "held") => "recorded, handled at the next message",
             (Language::Chinese, "sent") => "已发给软件包",
             (Language::English, "sent") => "sent to package",
             (Language::Chinese, "skipped:package_unavailable") => "跳过：软件包未运行",

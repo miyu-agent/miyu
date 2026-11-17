@@ -37,7 +37,11 @@ pub(super) enum Waker {
     /// 别的会话发来的话（施工 C-2，`peers.rs`）、等的会话空下来了的通知（施工 C-6）：和别的 harness 发来的话一样，一律叫醒。
     Peer,
     /// 到点的定时任务、循环交进来的话（施工 J-1 上）：同别的 harness 发来的话，一律叫醒；正在跑一轮的，排在这一轮后面。
-    Schedule,
+    /// `unattended` 是人建的定时任务（施工 SC-1，[`crate::origin::Schedule::unattended`]）：没人看着的一次性会话也由它开轮。
+    Schedule {
+        /// 没人看着的一次性会话也开。
+        unattended: bool,
+    },
     /// 照记下的几条并进正在跑的这一轮（施工 O-14 下，`turn.joined`）：照回报排，下一步听到，没听到就接着开。
     Joined,
 }
@@ -208,7 +212,7 @@ impl Session {
             if !hidden {
                 turn.reports.push(arrived);
             }
-        } else if !hidden && self.can_wake() && !self.held_back(&arrived.waker) {
+        } else if !hidden && self.can_wake(&arrived.waker) && !self.held_back(&arrived.waker) {
             events.extend(self.open_turn(at, arrived.seq, arrived.cause));
         } else {
             self.deferred.push(arrived);
@@ -219,14 +223,18 @@ impl Session {
     /// 记在一边的回报，这时开得了、派它的那一轮还在的，由最后那条开一轮（「回报」第 7 条）：恢复了撤销以后。有回合在
     /// 进行、这时开不了、没有这样的，什么都不做。交回追加的事件。
     pub(super) fn wake_deferred(&mut self, at: Timestamp) -> Vec<Event> {
-        if self.turn.is_some() || !self.can_wake() {
+        if self.turn.is_some() {
             return Vec::new();
         }
         let Some(last) = self
             .deferred
             .iter()
             .rev()
-            .find(|arrived| !self.hidden(&arrived.waker) && !self.held_back(&arrived.waker))
+            .find(|arrived| {
+                self.can_wake(&arrived.waker)
+                    && !self.hidden(&arrived.waker)
+                    && !self.held_back(&arrived.waker)
+            })
             .cloned()
         else {
             return Vec::new();
@@ -270,11 +278,16 @@ impl Session {
         self.oneshot && !self.watched
     }
 
-    /// 闲着时回报这时开得了一轮：能恢复撤销的时候不开，恢复了或者人说了下一句再说（`02-内核.md` 第六节「撤销与恢复」）；
-    /// 没人看着的一次性会话不开；要重启了的不开（施工 7-3）。读回日志的时候回报到不了这里：后台
-    /// 命令结束先放着，子会话的回报照别的命令拒绝。
-    fn can_wake(&self) -> bool {
-        !self.unwatched()
+    /// 没人看着的一次性会话里这一条也开得了轮（施工 SC-1）：人建的定时任务到点交进来的。别的在那种会话里只记下。
+    pub(super) fn attended(&self, waker: &Waker) -> bool {
+        !self.unwatched() || matches!(waker, Waker::Schedule { unattended: true })
+    }
+
+    /// 闲着时 `waker` 的这一条这时开得了一轮：能恢复撤销的时候不开，恢复了或者人说了下一句再说（`02-内核.md` 第六节
+    /// 「撤销与恢复」）；没人看着的一次性会话不开，人建的定时任务除外（[`Session::attended`]）；要重启了的不开（施工 7-3）。
+    /// 读回日志的时候回报到不了这里：后台命令结束先放着，子会话的回报照别的命令拒绝。
+    fn can_wake(&self, waker: &Waker) -> bool {
+        self.attended(waker)
             && !self.ledger.closed()
             && !self.restarting
             && self.ledger.last_reverted().is_none()
@@ -288,7 +301,7 @@ impl Session {
                 .history
                 .dispatched(job)
                 .is_none_or(|dispatched| dispatched.undone),
-            Waker::Harness | Waker::Peer | Waker::Schedule | Waker::Joined => false,
+            Waker::Harness | Waker::Peer | Waker::Schedule { .. } | Waker::Joined => false,
         }
     }
 }

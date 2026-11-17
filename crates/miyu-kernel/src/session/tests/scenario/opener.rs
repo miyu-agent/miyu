@@ -11,6 +11,7 @@ fn life() -> By {
     By::Schedule(Schedule {
         schedule: "t1".to_string(),
         looping: Some(ScheduleLoop::Life),
+        person: false,
     })
 }
 

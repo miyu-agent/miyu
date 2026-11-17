@@ -121,6 +121,17 @@ pub struct Schedule {
     /// 是循环的话，哪一种：组装照它挑标签（施工 J-2）。定时任务没有。
     #[serde(rename = "loop", default, skip_serializing_if = "Option::is_none")]
     pub looping: Option<ScheduleLoop>,
+    /// 这个任务是人建的（施工 SC-1）：`miyu schedule add`、头里建的。她自己用工具建的、扩展建的、以前的日志没有。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub person: bool,
+}
+
+impl Schedule {
+    /// 人建的定时任务，不是循环（施工 SC-1，`kernel/session.md`「定时交进来的话」）：到点一律开一轮，没人看着的一次性会话
+    /// 也开。她自己建的、循环在那种会话里照旧只记下。
+    pub fn unattended(&self) -> bool {
+        self.person && self.looping.is_none()
+    }
 }
 
 /// 循环的种类。

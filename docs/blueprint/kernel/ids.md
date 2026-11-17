@@ -121,7 +121,7 @@
 | `module` | 模块，包括扩展 | `id`：模块 | `{"kind":"module","id":"memory"}` |
 | `session` | 另一个会话：照它和这个会话的关系分三种（下面） | `id`：会话编号 | `{"kind":"session","id":"0192f3a0-1111-7abc-8def-001122334455"}` |
 | `harness` | 别的 harness：经 `miyu ask --from` 发来的话（`agents.md` 第十一条，施工 7-1） | `name`：它自己报的名字 | `{"kind":"harness","name":"claude-code"}` |
-| `schedule` | 到点的定时任务、循环交进来的话（施工 J-1 上，`schedules.md`） | `schedule`：任务编号；`loop`，可以没有：`fixed`、`dynamic`、`life`（人生，施工 LF-1），循环的才写，组装照它挑标签 | `{"kind":"schedule","schedule":"t3"}` |
+| `schedule` | 到点的定时任务、循环交进来的话（施工 J-1 上，`schedules.md`） | `schedule`：任务编号；`loop`，可以没有：`fixed`、`dynamic`、`life`（人生，施工 LF-1），循环的才写，组装照它挑标签；`person`，可以没有：这个任务是人建的（`miyu schedule add`、头里建的）才写 `true`（施工 SC-1），她自己建的、扩展建的、以前的日志不写，内核照它定没人看着的一次性会话开不开轮（`session.md`「定时交进来的话」） | `{"kind":"schedule","schedule":"t3","person":true}` |
 | `kernel` | 内核自己 | 没有 | `{"kind":"kernel"}` |
 
 `by` 是 `session` 的，照它和这个会话的关系分三种，不另加种类（施工 C-1，`cross-session.md`「谁」）：

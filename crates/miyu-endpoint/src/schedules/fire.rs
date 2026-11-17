@@ -84,6 +84,7 @@ pub(super) async fn deliver(core: &Arc<Core>, schedule: &Schedule, due: Timestam
             Loop::Dynamic => ScheduleLoop::Dynamic,
             Loop::Life => ScheduleLoop::Life,
         }),
+        person: matches!(schedule.by, Creator::Person),
     });
     let session = match &schedule.target {
         Target::Package { missed } => return pushed(core, schedule, due, *missed).await,
@@ -173,8 +174,15 @@ pub(super) async fn deliver(core: &Arc<Core>, schedule: &Schedule, due: Timestam
                     }
                 }
             }
+            // 内核回的是那一句，由它开了一轮的连同那条 `turn.started`（施工 SC-1）：开了的记 `ran`；没开、正在跑一轮的是排
+            // 进了这一轮，`queued`；没开也没在跑的是只记下了（没人看着的一次性会话里她自己建的、还能恢复撤销的……），`held`。
+            let result = match (events.len() > 1, busy) {
+                (true, _) => "ran",
+                (false, true) => "queued",
+                (false, false) => "held",
+            };
             Delivered {
-                result: if busy { "queued" } else { "ran" }.to_string(),
+                result: result.to_string(),
                 session: Some(session),
                 stop: false,
                 remove: false,

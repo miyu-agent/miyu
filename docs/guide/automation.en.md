@@ -157,6 +157,7 @@ Tell the AI "remind me to write a diary at 10 every night", and the AI uses `cro
 ### When the time comes
 
 - If the session is in the middle of a turn, the message is queued after that turn.
+- If the session was opened by `miyu ask` and no terminal or web page has it open: schedules you added still run. Schedules the AI added in such a session, and loops, only record the message in the session without starting a turn; it is seen the next time you speak there, and `miyu schedule` shows the last run as "recorded, handled at the next message".
 - If the session it was handed to has been deleted: the task stops and stays in the table for you to delete.
 - Runs missed while the core was not running are not made up. After the core starts, the next run is counted from now. For punctuality, keep the core running, see [Keeping it running, and servers](service.en.md). To run even when nobody is logged in, only Linux can do it (`loginctl enable-linger`, or install it as a system service); on macOS and Windows the service is on only while you are logged in, see [What to know about each system](service.en.md#what-to-know-about-each-system).
 

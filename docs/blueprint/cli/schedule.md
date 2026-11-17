@@ -79,7 +79,7 @@ t2  every 10m  停着  会话 s-1  「看一眼服务器」
 | 循环 | 循环、循环，节奏自定 | loop、loop, self-paced |
 | 停着 | 停着 | paused |
 | 下一次、上一次 | 下一次 {时刻}、上一次 {时刻} {结果} | next {time}、last {time} {result} |
-| 上一次的结果 | `ran` 已运行、`queued` 已排队、`sent` 已发给软件包、`skipped:session_gone` 跳过：会话已不存在、`skipped:preset_off` 跳过：预设已关闭、`skipped:not_opened` 跳过：无法新建会话、`skipped:package_unavailable` 跳过：软件包未运行，别的照原样 | ran、queued、sent to package、skipped: session gone、skipped: disabled by preset、skipped: new session failed to open、skipped: package not running |
+| 上一次的结果 | `ran` 已运行、`queued` 已排队、`held` 已记下，下次对话时处理（英文 `recorded, handled at the next message`，施工 SC-1）、`sent` 已发给软件包、`skipped:session_gone` 跳过：会话已不存在、`skipped:preset_off` 跳过：预设已关闭、`skipped:not_opened` 跳过：无法新建会话、`skipped:package_unavailable` 跳过：软件包未运行，别的照原样 | ran、queued、sent to package、skipped: session gone、skipped: disabled by preset、skipped: new session failed to open、skipped: package not running |
 | 只跑一次（`cron`） | 只运行一次 | once |
 | 跑在哪 | 会话 {id}、发给软件包 {id}、新会话 人格 {p} / 无人格 预设 {p} 目录 {dir} | session {id}、to package {id}、new persona {p} / no persona preset {p} in {dir} |
 

@@ -82,13 +82,22 @@ impl Session {
             command: None,
             shell: false,
         });
-        let events = match self.land(at, by, Some(id.clone()), body, Some(waker)) {
+        let events = match self.land(at, by, Some(id.clone()), body, Some(waker.clone())) {
             Ok(events) => events,
             Err(error) => {
                 panic!("a message from elsewhere failed the ledger, a kernel bug: {error}")
             }
         };
-        self.accept(id, vec![events[0].seq]);
+        // 定时交进来的附上由它开的那一轮（施工 SC-1）：核心照有没有它记这一次开了轮还是只记下。别的照旧只附那一句。
+        let opened = matches!(waker, Waker::Schedule { .. })
+            .then(|| {
+                events
+                    .iter()
+                    .find(|event| matches!(event.body, Body::TurnStarted(_)))
+            })
+            .flatten()
+            .map(|event| event.seq);
+        self.accept(id, [events[0].seq].into_iter().chain(opened).collect());
         vec![Action::Append(events)]
     }
 }
@@ -102,7 +111,9 @@ pub(super) fn sent_by(ledger: &Ledger, by: &By) -> Option<Waker> {
             None => ledger.is_peer(&session.id).then_some(Waker::Peer),
         },
         By::Harness(_) => Some(Waker::Harness),
-        By::Schedule(_) => Some(Waker::Schedule),
+        By::Schedule(schedule) => Some(Waker::Schedule {
+            unattended: schedule.unattended(),
+        }),
         _ => None,
     }
 }

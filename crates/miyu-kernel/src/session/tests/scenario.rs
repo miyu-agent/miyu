@@ -60,6 +60,7 @@ mod swap;
 mod tail;
 mod title;
 mod truncated;
+mod unattended;
 mod undo_jobs;
 mod upward;
 mod upward_load;

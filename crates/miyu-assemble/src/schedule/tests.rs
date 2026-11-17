@@ -17,6 +17,7 @@ fn task(looping: Option<ScheduleLoop>) -> Schedule {
     Schedule {
         schedule: "t3".to_string(),
         looping,
+        person: false,
     }
 }
 
@@ -84,6 +85,7 @@ fn a_life_loop_uses_its_own_pair_and_says_life_in_its_by() {
     let by = By::Schedule(Schedule {
         schedule: "t1".to_string(),
         looping: Some(ScheduleLoop::Life),
+        person: false,
     });
     let json = serde_json::to_string(&by).unwrap();
     assert_eq!(json, r#"{"kind":"schedule","schedule":"t1","loop":"life"}"#);

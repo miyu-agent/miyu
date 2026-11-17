@@ -311,6 +311,7 @@ mod schedule_methods;
 mod schedule_notices;
 mod schedule_package;
 mod schedule_tools;
+mod schedule_unattended;
 mod schedule_update;
 mod schedules;
 mod script_pages;

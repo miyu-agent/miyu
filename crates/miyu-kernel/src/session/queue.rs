@@ -19,7 +19,8 @@ impl Session {
     }
 
     /// 结束正在进行的回合。还有排着队的消息、没听到的回报，接着开下一轮，由最后那一条触发，`cause` 是它的；两轮在
-    /// 同一批里追加。回报不由打断接着开：人刚叫停，留到下一轮；没人看着的一次性会话也不开（施工 7-2）。返回追加的事件。
+    /// 同一批里追加。回报不由打断接着开：人刚叫停，留到下一轮；没人看着的一次性会话也不开（施工 7-2），人建的定时任务除外
+    /// （施工 SC-1）。返回追加的事件。
     pub(super) fn finish_turn(
         &mut self,
         at: Timestamp,
@@ -27,7 +28,7 @@ impl Session {
         cause: Option<CommandId>,
         reason: EndReason,
     ) -> Vec<Event> {
-        let reports = reason != EndReason::Interrupted && !self.unwatched();
+        let reports = reason != EndReason::Interrupted;
         // 这一轮没有下一步了，挂着的监视命令的行这时记下，照回报接着开（施工 MN-1 上，`watch.rs`）。
         let lines = self.record_pending_lines(at);
         // 人生结束了的（施工 LF-4 上）不再开轮：排着的、回报照记，这一轮结束就封存。
@@ -46,7 +47,9 @@ impl Session {
                     .reports
                     .iter()
                     .rev()
-                    .find(|arrived| !self.held_back(&arrived.waker))
+                    .find(|arrived| {
+                        self.attended(&arrived.waker) && !self.held_back(&arrived.waker)
+                    })
                     .filter(|_| reports)
                     .map(|arrived| {
                         let tail = matches!(arrived.waker, Waker::Joined)
