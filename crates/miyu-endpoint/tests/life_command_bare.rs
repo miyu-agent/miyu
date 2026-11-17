@@ -77,6 +77,7 @@ async fn a_session_without_a_persona_reaches_the_only_life() {
     let next = at.local_minute(offset());
     let one = json!([{
         "state": "running", "session": session, "next": at, "persona": "muse", "name": "缪斯",
+        "rounds": 1,
     }]);
     let reply = typed(&mut client, "k1", &bare, "/life").await;
     assert_eq!(

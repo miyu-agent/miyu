@@ -10,11 +10,12 @@
 | [`life.resume`](#liferesume) | 继续：马上醒一次，接着照她定的醒 |
 | [`life.kill`](#lifekill) | 结束这段人生：不再醒、归档只读，这段人生的记忆清掉 |
 | [`life.new`](#lifenew) | 有就先结束，再开一条新的 |
-| [`life.list`](#lifelist) | 列出所有人格没结束的人生会话 |
+| [`life.list`](#lifelist) | 列出所有人格没结束的人生会话，和结束了、还没看过的 |
+| [`life.seen`](#lifeseen) | 说一段结束了的人生看过了 |
 
 **谁能调**：只给人（本机、远程的头都行）；核心拉起的扩展调了回 `local_only`。
 
-除了 `life.list`（不带参数），这几个方法的参数都只有一个：`persona`（字符串，必写），人格的编号。没有这个人格的回 `unknown_persona`。
+除了 `life.list`（不带参数）、`life.seen`（参数是 `session`），这几个方法的参数都只有一个：`persona`（字符串，必写），人格的编号。没有这个人格的回 `unknown_persona`。
 
 **认得出人生会话**：会话日志里记着一条 [`life.started`](events.md)；会话列表（`session.list`、`sessions` 流）里那一项多一格 `life: true`，别的会话不写这一格。结束了的另记一条 [`life.ended`](events.md)，列表那一项再多一格 `life_ended: true`。
 
@@ -27,6 +28,7 @@
 | `state` | `none`（这个人格没有人生会话）、`running`（在跑）、`paused`（暂停着）、`ended`（最近的那一条已经结束、还没开新的） |
 | `session` | 人生会话的编号；`none` 的不写 |
 | `next` | 下一次醒的时刻；只有 `running` 的写 |
+| `rounds` | 推演到第几轮：每次到点醒来算一轮，开出来马上醒的那一次是第 1 轮；暂停着不加。只是记着，头不显示。`none`、`ended` 的不写 |
 | `doing` | 她在人生会话里最近一次定下次醒来时写的「现在在干嘛」：`{"text", "at"}`，`text` 是那一句（换行换成了空格，最多 200 个字），`at` 是写下的时刻；她没写过、最近一次没写的不带。暂停着的照样带 |
 
 定时表那一行不在了（例如表坏了、换成了空的）的，算 `paused`：`life.resume` 照会话日志把它重建出来。
@@ -102,6 +104,17 @@
 | `awake` | 她这会儿正在跑一轮的写 `true`，别的不写 |
 
 一条都没有的 `lives` 是空的。命令 `/life`（光打）的回应里带同一份 `lives`，这个会话的人格的那一条排最前（见[软件包和命令](packages.md)）。
+
+回应里另有一格 `ended_unseen`：她自己结束了、还没人看过的那几段人生，结束得早的在前，没有的是空的。一项 `{"session", "persona", "name", "at"}`：那个人生会话、人格的编号和名字（会话那时不带人格的不写）、结束的时刻。头照它在顶上出一条提示、在推演人生的入口上画记号。主人结束的不进这里；她结束的那一刻有头正开着那个会话的也不进。有头打开那个会话（`session.viewing`）、调了 [`life.seen`](#lifeseen)、会话删了就清掉，清掉时推一条 `life.seen`（见[推送](pushes.md)）。
+
+## `life.seen`
+
+说会话 `session` 上那段结束了的人生看过了（人收起了提示）：从 `ended_unseen` 里拿掉，推一条 `life.seen`。本来就不在里面的照样回 `{}`。
+
+```json
+{"jsonrpc": "2.0", "id": "s2", "method": "life.seen", "params": {"session": "<编号>"}}
+{"jsonrpc": "2.0", "id": "s2", "result": {}}
+```
 
 ## 出错
 

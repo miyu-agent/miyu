@@ -1537,6 +1537,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sLF11"><span class="n">LF-11</span>后天：她记下自己变了什么<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF12"><span class="n">LF-12</span>没有人格的会话也找得到人生；快速跳转<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF13"><span class="n">LF-13</span>人生就是这个会话的循环<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sLF14"><span class="n">LF-14</span>推演轮数；结束了、还没看过<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sVW1"><span class="n">VW-1</span>主人只读地看场所会话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT1"><span class="n">HT-1</span>内核认得供应商侧工具<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT3"><span class="n">HT-3</span>供应商侧工具画成工具步骤<span class="st">✓</span></a></li>
@@ -59522,6 +59523,62 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LF-13-人生就是这个会话的循环.md</code>；设计 <code>70-推演人生.md</code> 第三节；蓝图 <code>life.md</code>「人生会话里的 <code>/loop</code>、<code>/stop</code>」、<code>schedules.md</code>、<code>protocol.md</code>；协议参考 <code>schedules.md</code>、<code>life.md</code>、<code>errors.md</code>、<code>packages.md</code> 中英各一份；手册 <code>guide/life.md</code>、<code>guide/commands.md</code> 中英各一份。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sLF14" aria-labelledby="h-sLF14">
+  <div class="sheet-head"><h2 id="h-sLF14"><span class="no">LF-14</span>推演轮数；结束了、还没看过</h2><span class="pill done">做完</span></div>
+  <p class="purpose">两样小账。一是人生推演到第几轮：记着，交给头，界面上不写。二是她结束了自己的人生，人要知道：结束时的通知带上人格的名字，之后留一条「还没看过」，直到有人打开那个会话。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-store · schedules/lived.rs　miyu-endpoint · schedules/run.rs　life/unseen.rs　life/finish.rs</span><span class="dir-note">LF-14</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>定时库多两张小表 <code>rounds</code>、<code>life_unseen</code>，开库时补上、不升版本</li>
+              <li>人生那一行每次到点交进会话，轮数加一；状态、列表、定时表那一项都带 <code>rounds</code></li>
+              <li>通知 <code>life.ended</code> 多带人格的名字</li>
+              <li>她自己结束的、没人正看着的记成没看过；<code>life.list</code> 多回 <code>ended_unseen</code></li>
+              <li>打开那个会话、<code>life.seen</code>、删会话都清掉，推 <code>life.seen</code></li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">第几轮推演只记不显示</span><span class="rl">项目主人 2026-11-17 定</span></div>
+          <div class="tile new"><span class="nm">她结束了人生要通知、要留提示直到看过；不带遗言</span><span class="rl">项目主人定</span></div>
+          <div class="tile new"><span class="nm">主人自己结束的、正看着的不算没看过</span><span class="rl">施工单定</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LF-14</dd></div>
+        <div><dt>名称</dt><dd>推演轮数；结束了、还没看过</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">LF-14</dd></div>
+        <div><dt>验收</dt><dd>改前四条测试红；门禁；沙箱里真模型走了一遍</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>开出来第 1 轮、到点第 2 轮，停着不加，续上第 3 轮；三处都带</span></li>
+        <li><span class="ok">✓</span><span>她自己结束的：通知带名字，列表里记着；另一个头打开就清掉、推了看过</span></li>
+        <li><span class="ok">✓</span><span>主人结束的、她结束时有头开着的不记</span></li>
+        <li><span class="ok">✓</span><span><code>life.seen</code> 清掉、再调照回；删会话清掉</span></li>
+        <li><span class="ok">✓</span><span>以前建的库开的时候补上两张表，原来的行照读</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LF-14-推演轮数、结束了没看过.md</code>；蓝图 <code>life.md</code>「推演轮数」「结束了、还没看过」、<code>schedules.md</code>、<code>protocol.md</code>；协议参考 <code>life.md</code>、<code>schedules.md</code>、<code>pushes.md</code> 中英各一份。</li>
       </ul>
     </div>
   </div>

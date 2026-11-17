@@ -149,14 +149,18 @@ pub(crate) fn changed(core: &Core, id: &str) -> Option<Value> {
     }
 }
 
-/// 列表、推送里的一项：[`entry`]，人生那一行多带 `persona`（施工 LF-13）：它是哪个人格的人生，头的卡片照它写名字、调
+/// 列表、推送里的一项：[`entry`]，人生那一行多带 `rounds`（施工 LF-14）和 `persona`（施工 LF-13）：它是哪个人格的人生，头的卡片照它写名字、调
 /// `life.pause`、`life.resume`、`life.kill`。还不知道的（核心刚起来、还没查完那一行指着的会话）不带。
 fn shown(core: &Core, schedule: &Schedule) -> Value {
     let mut entry = entry(schedule);
-    if let (Some(Loop::Life), Target::Session { session }) = (schedule.looping, &schedule.target)
-        && let Some(persona) = core.schedules().persona_of(session)
-    {
-        entry["persona"] = json!(persona);
+    if let (Some(Loop::Life), Target::Session { session }) = (schedule.looping, &schedule.target) {
+        if let Some(persona) = core.schedules().persona_of(session) {
+            entry["persona"] = json!(persona);
+        }
+        // 推演到第几轮（施工 LF-14）：给头的数据里有，界面上不写。读不了的不带。
+        if let Ok(rounds) = core.schedules().rounds(&schedule.id) {
+            entry["rounds"] = json!(rounds);
+        }
     }
     entry
 }

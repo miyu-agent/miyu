@@ -125,6 +125,14 @@ async fn fire(core: &Arc<Core>, table: &Table, schedule: Schedule, now: Timestam
         result = %delivered.result,
         "schedule fired"
     );
+    // 人生又推演了一轮（施工 LF-14）：交进了会话的才算（当场开轮的、排进去的），跳过的不算。只在这里加：重启以后接着干的
+    // 那一轮不再到点一次，不会多算。
+    if schedule.looping == Some(Loop::Life)
+        && matches!(delivered.result.as_str(), "ran" | "queued")
+        && let Err(error) = table.add_round(&schedule.id)
+    {
+        tracing::warn!(target: TARGET, schedule = %schedule.id, error = %error, "life round not counted");
+    }
     if delivered.remove {
         // 人生结束了的那一行（施工 LF-4 上）：删掉，不记上一次。
         if let Err(error) = table.remove(&schedule.id) {

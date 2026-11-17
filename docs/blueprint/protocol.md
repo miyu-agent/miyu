@@ -197,7 +197,8 @@
 | `preset.list`、`preset.get` | 列出预设、读一个预设叠好的样子（施工 P-2 上，`presets.md`） |
 | `preset.set`、`preset.delete` | 新建、改一个预设（只写你那一层），删掉你那一层（施工 P-3 中，`presets.md`「改」） |
 | `life.start`、`life.status`、`life.pause`、`life.resume` | 人生会话：给一个人格开一条、问在哪在不在跑、暂停、继续，只给人（施工 LF-5 中，`life.md`，协议参考 `docs/reference/life.md`） |
-| `life.list` | 所有人格没结束的人生会话，只读、只给人（施工 LF-12，`life.md`「对外的样子」第 3 条） |
+| `life.list` | 所有人格没结束的人生会话，和她自己结束了、还没看过的（`ended_unseen`，施工 LF-14），只读、只给人（施工 LF-12，`life.md`「对外的样子」第 3 条） |
+| `life.seen` | 说一段结束了的人生看过了，只给人（施工 LF-14，`life.md`「结束了、还没看过」） |
 | `schedule.add`、`schedule.list`、`schedule.cancel`、`schedule.pause`、`schedule.resume`、`schedule.update` | 定时任务：建、列、删、停、续、改（改的施工 J-5），照唤醒表（施工 J-1 下，`schedules.md` 第五节，协议参考 `docs/reference/schedules.md`） |
 | `persona.set`、`persona.read`、`persona.delete` | 新建、改一个人格（只写你那一层），读一份提示词的原文和版本，删掉你那一层（挪进回收处）；你那一层没有、只有只带它的出厂包带的，删它是卸那个包（施工 P-3 下，PE-1，`personas.md`「改」） |
 | `persona.avatar` | 读一个人格的头像：`{"avatar", "media_type", "data"}`，没有的 `null`（施工 P-5，`personas.md`「头像」） |

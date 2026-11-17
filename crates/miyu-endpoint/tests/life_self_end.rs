@@ -32,7 +32,7 @@ const GAP: i64 = 3_600_000;
 const ENDED: &str = "You have died. This was your last moment awake.";
 
 /// 记忆、循环、结束人生三个包的真工具。
-fn catalog() -> Catalog {
+pub(crate) fn catalog() -> Catalog {
     let resources = default_resources();
     Catalog::in_packages([
         (
@@ -52,7 +52,7 @@ fn catalog() -> Catalog {
 }
 
 /// 起好唤醒表的核心、握好手的连接。人格 `muse` 写在数据根里。
-async fn started(home: &Home, script: &Script, hand: &Arc<Hand>) -> (Arc<Core>, Client) {
+pub(crate) async fn started(home: &Home, script: &Script, hand: &Arc<Hand>) -> (Arc<Core>, Client) {
     home.write("root/personas/muse/prompts/persona.md", "You are Muse.\n");
     let core = core_with_tools(home, script, hand, catalog());
     core.start_schedules();
@@ -61,7 +61,7 @@ async fn started(home: &Home, script: &Script, hand: &Arc<Hand>) -> (Arc<Core>, 
     (core, client)
 }
 
-async fn start(client: &mut Client, id: &str) -> String {
+pub(crate) async fn start(client: &mut Client, id: &str) -> String {
     let reply = client
         .call(id, "life.start", json!({"persona": "muse"}))
         .await;
@@ -124,7 +124,7 @@ fn end_calls(log: &[Event]) -> Vec<String> {
 }
 
 /// 读到一条 `notice` 为止，等 `wait`；等不到的没有。
-async fn notice(client: &mut Client, wait: Duration) -> Option<Value> {
+pub(crate) async fn notice(client: &mut Client, wait: Duration) -> Option<Value> {
     let deadline = tokio::time::Instant::now() + wait;
     loop {
         let left = deadline.saturating_duration_since(tokio::time::Instant::now());
@@ -135,7 +135,7 @@ async fn notice(client: &mut Client, wait: Duration) -> Option<Value> {
     }
 }
 
-fn end_life(words: &str) -> Play {
+pub(crate) fn end_life(words: &str) -> Play {
     Play::calls(&[("end_life", &json!({"last_words": words}).to_string())])
 }
 

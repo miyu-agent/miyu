@@ -77,9 +77,20 @@ pub(crate) async fn finish(
             send(core, &handle, step(session, "stop")?, by.clone(), stop).await?;
         }
     }
+    // 她自己结束的、这一刻没有头开着这个会话的：记成还没看过（施工 LF-14）。
+    if recorded && matches!(by, By::Tool(_)) {
+        super::unseen::mark(core, session, now.persona.clone());
+    }
+    // 通知里人格的名字（施工 LF-14，头的系统通知写「<名字> 的人生结束了」）：通知是广播的，不照哪个连接的语言；名字写成
+    // 语言表的照 `en`、`zh`、`ja` 的先后挑（`personas::pick`），要照自己语言写的头自己照 `persona` 查。
+    let named = match (&now.persona, recorded) {
+        (Some(persona), true) => Some(super::name(core, persona, "en").await),
+        _ => None,
+    };
     let notice = recorded.then(|| {
         json!({
             "persona": now.persona,
+            "name": named,
             "session": session.as_str(),
             "by": match by { By::Tool(_) => "self", _ => "owner" },
             "last_words": last_words,

@@ -26,6 +26,7 @@ At a set time, hand one line to a session and let it run a turn: a morning brief
 | `paused` | Paused |
 | `loop` | Loops only: `fixed` interval, `dynamic` (the AI sets the pace), or `life` for a life loop (see above) |
 | `persona` | Only on a life loop's row: the id of the persona whose life it is; absent right after the core starts, until it has been worked out |
+| `rounds` | Only on a life loop's row: which round of the life this is (every wake-up that comes due counts as one). It is only recorded, heads do not show it |
 | `next` | Next time; absent while paused, or while a dynamic loop waits for the AI to set it |
 | `last` | Last run: `{"at", "result", "session"?}`; `result` is `ran`, `queued` (the session was busy; it waits its turn), `sent` (pushed to the extension that added it) or `skipped:<why>` (`session_gone`: the session is gone and the schedule paused; `preset_off`: the AI added it and the session's preset turns it off; `not_opened`: the new session could not be opened; `package_unavailable`: the extension that added it is not running and could not be started) |
 | `created` | When it was added |

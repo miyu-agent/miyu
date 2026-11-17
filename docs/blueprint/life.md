@@ -13,6 +13,7 @@
 | `crates/miyu-endpoint/src/life.rs` | `life.start`、`life.status`、`life.pause`、`life.resume`、`life.kill`、`life.new`：查人格、照索引找这个人格的人生会话、开会话、设上下文上限、记身份、建和停续人生那一行 |
 | `crates/miyu-endpoint/src/commands/life.rs`（施工 LF-5 下） | 命令 `/life`：认参数、照会话的人格调 `life.rs` 的 `act`、拼回执、回应带 `session` |
 | `crates/miyu-endpoint/src/commands/life/bare.rs`（施工 LF-12）、`here.rs`（施工 LF-13） | 不带人格的会话里的 `/life`；人生会话自己里面的 `/loop`、`/stop` |
+| `crates/miyu-endpoint/src/life/unseen.rs`、`schedules/lived.rs`，`crates/miyu-store/src/schedules/lived.rs`（施工 LF-14） | 结束了、还没看过的记、列、清，方法 `life.seen`；推演轮数、没看过的在定时库的两张小表 |
 | `crates/miyu-endpoint/src/life/finish.rs`（施工 LF-4 上） | `finish`：结束一段人生的六步（「结束」），`life.kill`、`life.new` 和她的 `end_life`（LF-4 下）共用 |
 | `crates/miyu-endpoint/src/life/port.rs`（施工 LF-4 下） | 交给 `end_life` 的端口 `LifePort`：查是不是没结束的人生会话、调 `finish`、不等清理；随定时端口交进会话（`schedules/port.rs`） |
 | `crates/miyu-schedule/src/life.rs`、`resources/software/life/`、`resources/packages/base-life/`（施工 LF-4 下） | 工具 `end_life` 和带它的内置包（`tools/end_life.md`） |
@@ -45,6 +46,7 @@
    - `life.status` 多一种 `ended`（施工 LF-4 上）：这个人格最近的那一条已经结束、还没开新的，带那个会话。
    - `life.kill {persona}`（施工 LF-4 上）→ `{"state": "ended", "session"}`：照「结束」做完才回；结束了的把清理剩下的几步再走一遍、原样回成功；没有的 `no_life`。
    - `life.list {}`（施工 LF-12）→ `{"lives": [...]}`：所有人格没结束的人生会话（`life::lives`），只读、不拿锁、不记事件。本机主会话里每个人格最新的那一条（同第 1 条的认法），结束了的不要，照人格的编号排。一项是 `life.status` 对那个人格的回应（`state` 只会是 `running`、`paused`），多带 `persona`（编号）、`name`（给人看的名字，照连接的语言挑，没起的、人格读不出来的写编号）、她这会儿正跑一轮的 `awake: true`（照会话表里忙不忙，不为它载入会话）。头的「推演人生」页、快速跳转照它列：借命令 `/life` 的话每问一次在会话里记一条 `command.ran`（miyu-ui 2026-11-17 提的）。
+   - `life.seen {session}`（施工 LF-14）→ `{}`：见「结束了、还没看过」。`life.list` 的回应同一步多一格 `ended_unseen`；`life.status` 那个样子的回应多一格 `rounds`（「推演轮数」）。
    - `life.new {persona}`（施工 LF-4 上）→ `{"session", "ended"?}`：在跑、暂停着的先结束（`ended` 是它），结束了的先补齐清理，再照 `life.start` 开一条新的。`life.start` 碰上结束了的同样先补齐清理、开新的。
 4. **出错**：`life_exists`（`data.session` 是那一个）、`no_life`、`life_ended`（`data.session` 是那一个，施工 LF-4 上）；清理哪一步没成的照那一步的原因，带 `data.session`；定时表的照 `schedule.*` 的说法（`too_many_schedules`、`internal_error`），`life.start` 记了身份以后才出的多带 `data.session`。给人看的话在 `refusal/message.rs`（中、英）。
 5. **出厂预设** `life`：见 `presets.md`「出厂的几份」。
@@ -157,6 +159,23 @@
 5. **结束只有有意的**：`/loop off`、`/stop` 最多是暂停，那一行还在、记忆不清；结束只有 `/life kill`、`/life new` 和她自己的 `end_life`。她的 `schedule_wakeup` 的 `stop: true` 照旧不收。
 6. **留着的差别**：她这一轮没定下一次的，循环结束、人生照默认间隔再醒。这是人生的定义，不改。
 
+### 推演轮数（施工 LF-14）
+
+人生那一行记着推演到第几轮（项目主人 2026-11-17 定：只记，不显示，写出来不像真的在过日子）。
+
+1. **什么算一轮**：人生那一行到点、交进了会话的一次（`schedules/run.rs`：`last_result` 是 `ran`、`queued` 的；跳过的不算）。开出来马上醒的那一次是第 1 轮；停着不加，续上马上醒的那一次算一轮；核心停着时错过的补醒那一次算一轮（停了多久都只一次）。只在到点那一处加：核心重启以后接着干的那一轮不再到点，不会多算。
+2. **存在哪**：定时库的小表 `rounds`（`schedules.md` 第一节），照任务编号；那一行删了（人生结束）跟着删。那一行照日志重建的（表坏了换成空的以后 `life.resume`）从 0 重新数。
+3. **给谁**：`life.status`（`life.pause`、`life.resume` 同）的回应、`life.list` 的一项、`schedule.list` 和 `schedules` 流里人生那一行都多带 `rounds`。头不显示。读不了的不带，不碍别的。
+
+### 结束了、还没看过（施工 LF-14）
+
+人要知道她结束了自己的人生（项目主人 2026-11-17 定）：结束那一刻弹系统通知，之后界面里留一条提示，直到看过。不带遗言。
+
+1. **通知**：现成的 `notice` `life.ended`（「结束」第 6 步）多带 `name`：人格给人看的名字，头的系统通知写「<名字> 的人生结束了」、点开跳到 `session`。通知是广播的，不照哪个连接的语言：名字写成几种语言的照 `en`、`zh`、`ja` 的先后挑。主人结束的照旧也推。
+2. **记**（`life/unseen.rs`）：她自己结束的（`end_life`），记下 `life.ended` 的那一刻没有头开着这个会话的（`viewing`），在定时库的小表 `life_unseen` 记一条：会话、人格、时刻。主人结束的不记（是他自己做的）；有头正开着的不记（人就在看着）。记不下的记 `WARN ended life not marked unseen`，不碍结束。
+3. **给头**：`life.list` 多回一格 `ended_unseen`：`[{session, persona?, name?, at}]`，结束得早的在前，没有的是空的。头起来时、收到 `life.ended` 时照它在顶上出一条提示、在推演人生的入口上画记号。
+4. **清**：有头对那个会话发 `session.viewing`（打开了它）；头调 `life.seen {session}`（人收起了提示），回 `{}`，本来没记着的也回 `{}`；`session.delete` 删了那个会话。只清那一个会话的。清掉了推 `notice` `life.seen {session}`，别的头跟着收起。没有唤醒表的（从没开过人生、定时）什么都不做。
+
 ### 守着它的
 
 | 测试 | 守什么 |
@@ -203,3 +222,5 @@
 | `crates/miyu-endpoint/tests/life_command.rs`（施工 LF-5 下） | `/life`：没有的只回说明、不开、不带 `session`，结束了的同没有；在跑的说下次几点醒、停着的说停着，带它；`new` 开出来马上醒，再 `new` 旧的人记结束、新的是另一个会话、回应带新的；`pause` 到点不醒、`resume` 接着醒，没有的两个都回没有；`kill` 结束、封存，没有的回没有；在人生会话自己里面看、结束、再开都管用；场所会话、认不出的参数各回各的、什么都不动；英文、日文回执，命令目录里有它和几种写法 |
 | `crates/miyu-endpoint/tests/life_command_bare.rs`（施工 LF-12） | 不带人格的会话里的 `/life`：只有一个人格有人生会话的，光打回它的状态、写上人格的名字、带 `session` 和 `persona`，`pause`、`resume`、`kill` 照它办，结束了的算没有；带人格的会话里回执照旧、回应也带 `persona`；一个都没有的回说明、`new` 不开、停续结束回没有；不止一个的照编号列出来、四种打法都不动；光打的带 `lives`（一条的、几条的照编号、带人格的会话里自己的排最前，停续结束不带，一条都没有的不写），`life.list` 回同一份；英文、日文的回执 |
 | `crates/miyu-endpoint/tests/life_loop.rs`（施工 LF-13） | 人生会话里：`/loop` 光打回状态，带话的、带间隔的回不收的那一句，表里只有人生那一行、她没被多叫醒、留言没被换；`/loop off`、`clear`、`stop` 暂停人生、到点不醒；`/stop` 打断这一轮并暂停人生、没结束没封存；到点时她正在跑一轮的等它结束再醒；`schedule.list` 列得出人生那一行、带 `persona` |
+| `crates/miyu-endpoint/tests/life_rounds.rs`（施工 LF-14） | 推演轮数：开出来 1、到点再醒 2，`life.status`、`life.list`、`schedule.list` 都带，停着不加、续上那一次 3。结束了、还没看过：她自己结束的通知带人格的名字、`ended_unseen` 列它、`lives` 里没有了，另一个头 `session.viewing` 清掉并推 `life.seen`；主人结束的、她结束时有头开着的不记；`life.seen` 清掉、再调照回、编号写法不对的 `bad_params`；`session.delete` 清掉 |
+| `crates/miyu-store/src/schedules/lived/tests.rs`（施工 LF-14） | 轮数一次加一、重开读得回、删那一行跟着删；没看过的照结束的先后列、同一个会话再记不重复、清只清那一个；以前建的库没有这两张表的开的时候补上 |

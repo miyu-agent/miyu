@@ -10,11 +10,12 @@ Give a persona a "life session" that keeps running a loop: she decides when to w
 | [`life.resume`](#liferesume) | Resume: she wakes once right away, then on her own schedule |
 | [`life.kill`](#lifekill) | End this life: she never wakes again, the session is archived read-only, and its memories are cleared |
 | [`life.new`](#lifenew) | End the current life if there is one, then start a new one |
-| [`life.list`](#lifelist) | List every persona's life session that has not ended |
+| [`life.list`](#lifelist) | List every persona's life session that has not ended, and the ended ones not seen yet |
+| [`life.seen`](#lifeseen) | Say that an ended life has been seen |
 
 **Who may call**: people only (local and remote heads); an extension started by the core gets `local_only`.
 
-Except for `life.list`, which takes none, all of them take one parameter: `persona` (string, required), the persona's id. An unknown persona is `unknown_persona`.
+Except for `life.list`, which takes none, and `life.seen`, which takes `session`, all of them take one parameter: `persona` (string, required), the persona's id. An unknown persona is `unknown_persona`.
 
 **Telling a life session apart**: its log holds one [`life.started`](events.en.md) event; in the session list (`session.list`, the `sessions` stream) its item has `life: true`, which other sessions do not carry. An ended one also holds a [`life.ended`](events.en.md) event, and its item also has `life_ended: true`.
 
@@ -27,6 +28,7 @@ Except for `life.list`, which takes none, all of them take one parameter: `perso
 | `state` | `none` (the persona has no life session), `running`, `paused`, or `ended` (the latest one has ended and no new one was started) |
 | `session` | The life session's id; absent for `none` |
 | `next` | When she wakes next; only for `running` |
+| `rounds` | Which round of the life this is: every wake-up that comes due counts as one, and the wake-up right after starting is round 1; a paused life does not count up. It is only recorded, heads do not show it. Absent for `none` and `ended` |
 | `doing` | What she is doing now, as she wrote it the last time she set her next wakeup in the life session: `{"text", "at"}`, where `text` is that line (line breaks turned into spaces, at most 200 characters) and `at` is when she wrote it. Absent if she never wrote one or left it out the last time. Present while paused too |
 
 If the schedule row is gone (for instance the table was broken and replaced by an empty one), the state is `paused`: `life.resume` rebuilds the row from the session log.
@@ -102,6 +104,17 @@ Each item of `lives` is what [`life.status`](#state) answers for that persona (`
 | `awake` | `true` while she is in the middle of a turn; absent otherwise |
 
 With no life at all, `lives` is empty. The reply to the command `/life` (typed alone) carries the same `lives`, with the life of that session's persona first (see [Packages and commands](packages.en.md)).
+
+The answer also has `ended_unseen`: the lives she ended herself that nobody has seen yet, earliest first, empty when there are none. Each item is `{"session", "persona", "name", "at"}`: that life session, the persona's id and name (absent when the session had no persona then) and when it ended. Heads use it to show a hint at the top and a mark on the way into the Life page. A life the owner ended is not listed, nor is one that some head had open at the moment she ended it. An entry goes away when a head opens that session (`session.viewing`), when [`life.seen`](#lifeseen) is called, or when the session is deleted; a `life.seen` notice follows (see [Pushes](pushes.en.md)).
+
+## `life.seen`
+
+Say that the ended life in `session` has been seen (the person dismissed the hint): it is taken out of `ended_unseen` and a `life.seen` notice is sent. One that was not listed still answers `{}`.
+
+```json
+{"jsonrpc": "2.0", "id": "s2", "method": "life.seen", "params": {"session": "<id>"}}
+{"jsonrpc": "2.0", "id": "s2", "result": {}}
+```
 
 ## Errors
 

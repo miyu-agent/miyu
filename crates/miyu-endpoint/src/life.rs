@@ -37,9 +37,11 @@ use crate::wire::Request;
 
 mod finish;
 mod port;
+mod unseen;
 
 pub(crate) use finish::finish;
 pub(crate) use port::Ending;
+pub(crate) use unseen::{said as seen_said, seen};
 
 /// 出厂的人生会话用哪个预设（`resources/presets/life.toml`）。
 const PRESET: &str = "life";
@@ -360,12 +362,7 @@ pub(crate) async fn lives(core: &Arc<Core>, language: &str) -> Result<Vec<Value>
             continue;
         }
         let mut now = state(core, Some(&(one.id, Life::Started)))?;
-        let name = crate::personas::resolve(core, Some(Some(&persona)))
-            .await
-            .ok()
-            .flatten()
-            .and_then(|found| crate::personas::label(found.file.name.as_ref(), language));
-        now["name"] = json!(name.as_deref().unwrap_or(&persona));
+        now["name"] = json!(name(core, &persona, language).await);
         now["persona"] = json!(persona);
         if one.busy {
             now["awake"] = json!(true);
@@ -375,10 +372,23 @@ pub(crate) async fn lives(core: &Arc<Core>, language: &str) -> Result<Vec<Value>
     Ok(lives)
 }
 
-/// `life.list`（施工 LF-12）：不带参数，回 `{"lives": [...]}`（[`lives`]，照这个连接的语言挑名字）。只读、不记事件：头的
-/// 「推演人生」页照它列，不用借命令 `/life`（命令会在会话里记一条 `command.ran`）。
+/// `life.list`（施工 LF-12）：不带参数，回 `{"lives": [...], "ended_unseen": [...]}`（[`lives`]、`unseen.rs`，照这个连接的
+/// 语言挑名字）。只读、不记事件：头的「推演人生」页照它列，不用借命令 `/life`（命令会在会话里记一条 `command.ran`）。
 pub(crate) async fn list(core: &Arc<Core>, peer: Peer) -> Result<Value, Refusal> {
-    Ok(json!({"lives": lives(core, peer.language).await?}))
+    Ok(json!({
+        "lives": lives(core, peer.language).await?,
+        "ended_unseen": unseen::listed(core, peer.language).await,
+    }))
+}
+
+/// 人格 `persona` 给人看的名字：`persona.toml` 里起的，照 `language` 挑；没起的、人格读不出来的（后来删了、写坏了）写编号。
+async fn name(core: &Core, persona: &str, language: &str) -> String {
+    crate::personas::resolve(core, Some(Some(persona)))
+        .await
+        .ok()
+        .flatten()
+        .and_then(|found| crate::personas::label(found.file.name.as_ref(), language))
+        .unwrap_or_else(|| persona.to_string())
 }
 
 /// 本机的主会话，从新到旧（会话索引，落后的照日志补）；`busy` 里的写成忙着的。读不了的记一行，回 `internal_error`。
@@ -440,12 +450,16 @@ fn state(core: &Core, found: Option<&(SessionId, Life)>) -> Result<Value, Refusa
         return Ok(json!({"state": "ended", "session": session.as_str()}));
     }
     let mut reply = json!({"state": "paused", "session": session.as_str()});
-    if let Some(row) = row_of(core, session)?
-        && !row.paused
-    {
-        reply["state"] = json!("running");
-        if let Some(next) = row.next {
-            reply["next"] = json!(next);
+    if let Some(row) = row_of(core, session)? {
+        if !row.paused {
+            reply["state"] = json!("running");
+            if let Some(next) = row.next {
+                reply["next"] = json!(next);
+            }
+        }
+        // 推演到第几轮（施工 LF-14）：那一行在的才有。读不了的不带。
+        if let Ok(rounds) = core.schedules().rounds(&row.id) {
+            reply["rounds"] = json!(rounds);
         }
     }
     crate::schedules::doing_shown(core, session, &mut reply);

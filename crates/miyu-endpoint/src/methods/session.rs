@@ -456,5 +456,7 @@ pub(super) async fn delete(core: &Arc<Core>, request: &Request) -> Result<Value,
     let params: DeleteParams = params(request)?;
     let session = session(&params.session)?;
     core.sessions.delete(core, &session).await?;
+    // 删的是一段结束了、还没看过的人生：那一条跟着清（施工 LF-14）。
+    crate::life::seen(core, &session);
     Ok(json!({}))
 }

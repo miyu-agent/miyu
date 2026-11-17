@@ -31,6 +31,8 @@
 | `next_at` | 下一次；停着的、她自己定节奏的循环这一轮还没定的没有（这一轮结束时还没有的删掉这一行，施工 LO-3，第三节第 10 条；人生的总有：没定的照默认间隔） |
 | `last_at`、`last_result`、`last_session` | 上一次：时刻、`ran` \| `queued` \| `skipped:<原因>`、交给了哪个会话 |
 
+另有两张小表 `rounds`、`life_unseen`（施工 LF-14，`miyu_store::schedules` 的 `lived.rs`，同 `doing` 开库时照 `CREATE TABLE IF NOT EXISTS` 补上、不升版本）：`rounds` 是人生那一行推演到第几轮，`id`（任务编号）、`count`，到点交进会话加一（`run.rs`，只算交进去了的：`ran`、`queued`），删那一行跟着删；`life_unseen` 是她自己结束了、还没人看过的人生会话，`session`、`persona`（可空）、`at`（结束的时刻，毫秒），见 `life.md`「结束了、还没看过」。
+
 另有一张小表 `doing`（施工 LF-7，`miyu_store::schedules` 的 `doing.rs`）：人生那一行上她写的「现在在干嘛」，一个任务至多一行，`id`（任务编号）、`text`（她写的那一句，清理、截短过）、`at`（写下的时刻，毫秒）、`until`（那时定的下次醒的时刻，毫秒）。照「只加表、加索引的改动不升版本」：每次开库照 `CREATE TABLE IF NOT EXISTS` 补上，以前建的库原来的行照读；不在 `schedules` 上加一列，那要升版本，而且 `put` 整行写回，到点那一刻读出的旧行会盖掉她这一轮刚写的。只有 `set_doing` 写它，`put`、`record` 碰不到；`remove` 删任务那一行时连它一起删（同一个事务）。比这一版旧的程序看不见它，它删了任务留下的那一行编号不再用，不碍事。
 
 ### 二、什么时候跑
@@ -103,7 +105,7 @@
 ### 七、给人的通知（施工 J-3 中，形状两个头 2026-10-27 都推荐）
 
 - `subscribe {"stream": "notices"}`：回应 `{}`，有连接认领了发后台通知的写 `{"claimed": true}`（施工 TR-1，下面最后一条）；不补以前的；扩展订不了（`local_only`）；掉队推 `resync {"stream": "notices"}`。
-- `notice {"kind", "at", …}`：`schedule.ran {schedule, session, ok}`：每次新开会话的定时，交进去之前先订阅那个会话，交进去的那句开的那一轮结束时推（`schedules/ran.rs`），`ok` 是答完了；跑在已有会话上的不推（头照会话状态弹）。`schedules.reset {}`：唤醒表坏了改名留着、换了一份空的。`life.ended {persona, session, by, last_words?}`（施工 LF-4 上，`life.md`「结束」）：一段人生结束了，`by` 是 `self`（她自己）或 `owner`（人），遗言她自己结束的才有，没有人格的不写 `persona`；只在这一次新记上 `life.ended` 时推，重做不推（`life/finish.rs`）。
+- `notice {"kind", "at", …}`：`schedule.ran {schedule, session, ok}`：每次新开会话的定时，交进去之前先订阅那个会话，交进去的那句开的那一轮结束时推（`schedules/ran.rs`），`ok` 是答完了；跑在已有会话上的不推（头照会话状态弹）。`schedules.reset {}`：唤醒表坏了改名留着、换了一份空的。`life.seen {session}`（施工 LF-14，`life.md`「结束了、还没看过」）：一段她自己结束了、还没看过的人生被看过了。`life.ended {persona, name?, session, by, last_words?}`（施工 LF-4 上，`life.md`「结束」；`name` 是施工 LF-14 加的人格的名字）：一段人生结束了，`by` 是 `self`（她自己）或 `owner`（人），遗言她自己结束的才有，没有人格的不写 `persona`；只在这一次新记上 `life.ended` 时推，重做不推（`life/finish.rs`）。
 - 不存盘（`schedules/notices.rs`，一条就是推送的那一行，同知识库的进度）。头照 `kind` 弹系统通知。
 - 谁来发后台通知（施工 TR-1，托盘 `miyu-applet` 的蓝图 `app.md` 第 5 条）：托盘这样浏览器关了也要弹的头连上时调 `notices.claim`（只给人的头），核心照连接记（`viewing.rs` 的座位），断了就放。「有没有人认领」变了往这条流推 `notices.claimed {"claimed"}`，几个认领的走了一个不推。有人认领时，别的头不再为没人开着的会话（列表那一项没有 `viewed`）、`notice` 弹系统通知，免得和托盘弹两遍；开着某个会话的头照常弹它那一个。
 

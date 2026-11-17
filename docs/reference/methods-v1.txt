@@ -66,6 +66,7 @@ life.list
 life.new
 life.pause
 life.resume
+life.seen
 life.start
 life.status
 link.preview

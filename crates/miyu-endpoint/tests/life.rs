@@ -190,7 +190,7 @@ async fn status_says_none_running_or_paused() {
         .await;
     assert_eq!(
         running["result"],
-        json!({"state": "running", "session": session, "next": at(START + GAP)}),
+        json!({"state": "running", "session": session, "next": at(START + GAP), "rounds": 1}),
         "{running}"
     );
     let paused = client
@@ -198,7 +198,7 @@ async fn status_says_none_running_or_paused() {
         .await;
     assert_eq!(
         paused["result"],
-        json!({"state": "paused", "session": session})
+        json!({"state": "paused", "session": session, "rounds": 1})
     );
     let status = client
         .call("s3", "life.status", json!({"persona": "muse"}))

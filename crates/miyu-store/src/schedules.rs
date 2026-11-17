@@ -9,6 +9,7 @@
 //! - 到点怎么算、怎么交进会话不在这里（端点的 `schedules`）：这里只存取。
 
 mod doing;
+mod lived;
 mod open;
 mod row;
 #[cfg(test)]
@@ -27,6 +28,7 @@ use crate::root::DataRoot;
 use crate::sqlite::{DbError, idle};
 
 pub use doing::Doing;
+pub use lived::Unseen;
 pub use open::Opened;
 
 /// 一个任务。
@@ -321,6 +323,8 @@ impl Schedules {
         let removed = tx.execute("DELETE FROM schedules WHERE id = ?1", params![id])? > 0;
         // 她在这一行上写的「现在在干嘛」跟着删（施工 LF-7）。
         doing::write(&tx, id, None)?;
+        // 推演到第几轮也跟着删（施工 LF-14）。
+        lived::forget_rounds(&tx, id)?;
         tx.commit()?;
         Ok(removed)
     }
@@ -358,6 +362,51 @@ impl Schedules {
     pub fn set_doing(&self, id: &str, doing: Option<&Doing>) -> Result<(), DbError> {
         let db = self.lock();
         doing::write(&db, id, doing)
+    }
+
+    /// 任务 `id` 又推演了一轮（施工 LF-14，只有人生那一行记）：加一，交回加完是第几轮。
+    ///
+    /// # Errors
+    ///
+    /// 写不了库。
+    pub fn add_round(&self, id: &str) -> Result<u64, DbError> {
+        lived::add_round(&self.lock(), id)
+    }
+
+    /// 任务 `id` 推演到第几轮；一轮都没有的是 0。
+    ///
+    /// # Errors
+    ///
+    /// 读不了库。
+    pub fn rounds(&self, id: &str) -> Result<u64, DbError> {
+        lived::rounds(&self.lock(), id)
+    }
+
+    /// 她自己结束了、还没人看过的那几段人生（施工 LF-14），结束得早的在前。
+    ///
+    /// # Errors
+    ///
+    /// 读不了库。
+    pub fn unseen(&self) -> Result<Vec<Unseen>, DbError> {
+        lived::unseen(&self.lock())
+    }
+
+    /// 记下一段还没人看过的人生。
+    ///
+    /// # Errors
+    ///
+    /// 写不了库。
+    pub fn mark_unseen(&self, one: &Unseen) -> Result<(), DbError> {
+        lived::mark(&self.lock(), one)
+    }
+
+    /// 会话 `session` 的那一段看过了（或者会话删了）：清掉，原来记着的交回真。
+    ///
+    /// # Errors
+    ///
+    /// 写不了库。
+    pub fn seen(&self, session: &SessionId) -> Result<bool, DbError> {
+        lived::seen(&self.lock(), session)
     }
 
     /// 最早的下一次（停着的不算）；一个都没有的没有。

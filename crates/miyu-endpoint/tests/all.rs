@@ -128,6 +128,7 @@ mod life_doing_more;
 mod life_end;
 mod life_loop;
 mod life_preset;
+mod life_rounds;
 mod life_self_end;
 mod limits;
 mod line_pin;
