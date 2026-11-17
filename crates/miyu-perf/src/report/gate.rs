@@ -1,6 +1,6 @@
 //! 闸门（施工 V-3，23 F4「回归闸门钉住一个大会话，每次改动都跑」）：有预算的几行，时间超过预算的 `factor` 倍、内存超过
-//! 预算就算没过。CI 的机器比开发的机器慢、抖得多，时间的倍数照 CI 实测定（`docs/blueprint/perf.md`「闸门」）；内存不随
-//! 机器快慢变，照预算拦。
+//! 预算就算没过。CI 的机器比开发的机器慢、抖得多，时间的倍数照 CI 实测定（`docs/blueprint/perf.md`「闸门」）；内存、
+//! 成对比的倍数（施工 FL-9）不随机器快慢变，照预算拦。
 
 use std::collections::BTreeMap;
 
@@ -25,6 +25,7 @@ pub fn over(
             let (unit, times) = match check.budget.unit {
                 Unit::Ms => ("ms", factor),
                 Unit::Mb => ("MB", 1.0),
+                Unit::Times => ("倍", 1.0),
             };
             let limit = check.budget.value * times;
             (measured > limit).then(|| {

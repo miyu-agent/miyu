@@ -1574,6 +1574,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sFL8"><span class="n">FL-8</span>监视起不来的测试真走轮询<span class="st">…</span></a></li>
         <li><a class="step review" href="#sTK1"><span class="n">TK-1</span>登记簿的数用真端点补<span class="st">…</span></a></li>
         <li><a class="step review" href="#sJB1P"><span class="n">JB-1压</span>后台瞬间就完的命令在 tmpfs 上重压<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sFL9"><span class="n">FL-9</span>扩展驱动首字成对比<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -61488,6 +61489,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/JB-1压-tmpfs上重压.md</code>；<code>RB-1-可靠性.md</code> 第 1 条补一句。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sFL9" aria-labelledby="h-sFL9">
+  <div class="sheet-head"><h2 id="h-sFL9"><span class="no">FL-9</span>扩展驱动首字成对比</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">扩展驱动多的首字时延原来比两边各自的 p95，CI 上一边冒一次尖就超。现在同一次里两边交替说、一对一对比、取中位数，预算写成倍数。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-perf · measure/driver.rs、stats.rs、report/rows.rs、report/gate.rs、budget.rs</span><span class="dir-note">FL-9</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>一对里两边各说一句，先后一对一换，至少 20 对</li>
+              <li>一对一对除、取中位数；表里另写一对一对减的</li>
+              <li>预算「中位数 1.5 倍」，闸门照预算拦、不乘 <code>--gate</code></li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">成对比</span><span class="rl">抵掉机器抖动</span></div>
+          <div class="tile new"><span class="nm">看倍率</span><span class="rl">不看绝对毫秒</span></div>
+          <div class="tile new"><span class="nm">原始数据不变</span><span class="rl">以前的照样重出表</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">FL-9</dd></div>
+        <div><dt>名称</dt><dd>扩展驱动首字成对比</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">FL-9</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>一边冒一次尖（200 ms）不拦，原来拦（改前红）</span></li>
+        <li><span class="ok">✓</span><span>每一对都慢一倍照拦</span></li>
+        <li><span class="ok">✓</span><span>CI 31 趟：0.86～1.02 倍；本机 10 次：0.76～0.94 倍</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/FL-9-扩展驱动首字成对比.md</code>；蓝图 <code>perf.md</code>；预算 <code>23-性能预算.md</code> 第二节。</li>
       </ul>
     </div>
   </div>

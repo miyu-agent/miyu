@@ -7,7 +7,7 @@ use crate::budget::{Budget, verdict};
 use crate::measure::Said;
 use crate::measure::large::Large;
 use crate::memory::Process;
-use crate::stats::{percentile, spread};
+use crate::stats::{paired_median, percentile, spread};
 
 const HOT: &str = "热启动到能提交第一轮";
 const PROJECTION: &str = "一次请求的投影（增量，一万条事件的会话）";
@@ -133,15 +133,24 @@ pub fn checks(results: &Results, budgets: &BTreeMap<String, Budget>) -> Result<V
             }
         })
         .collect();
-    // 扩展驱动（施工 MD-4）：两边的分位一减。以前的原始数据没有，不量。
+    // 扩展驱动（施工 MD-4）：首字照成对比（施工 FL-9）：同一轮里两边交替量，一对一对除、取中位数，表里另写一对一对减的中位数。
+    // 两边各取 p95 再减，CI 上一边冒一次尖就是几十上百毫秒。以前的原始数据没有，不量。
     let driven = results.driven.as_ref();
     let first = driven.and_then(|driven| {
-        Some(percentile(&driven.extension_first, 95.0)? - percentile(&driven.builtin_first, 95.0)?)
+        let pair = |f: fn(f64, f64) -> f64| {
+            paired_median(&driven.builtin_first, &driven.extension_first, f)
+        };
+        Some((
+            pair(|builtin, extension| extension / builtin)?,
+            pair(|builtin, extension| extension - builtin)?,
+        ))
     });
     checks.push(Check {
-        label: format!("{DRIVER_FIRST}：p95 扩展的减内置的"),
-        cell: first.map_or("—".to_string(), |extra| format!("多 {extra:.1} ms")),
-        measured: first,
+        label: format!("{DRIVER_FIRST}：成对比，中位数扩展的除以内置的"),
+        cell: first.map_or("—".to_string(), |(times, extra)| {
+            format!("{times:.2} 倍（多 {extra:.1} ms）")
+        }),
+        measured: first.map(|(times, _)| times),
         budget: budget(DRIVER_FIRST)?,
     });
     let cpu = driven.and_then(|driven| {

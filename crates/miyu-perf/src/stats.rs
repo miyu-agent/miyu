@@ -18,6 +18,18 @@ pub fn percentile(values: &[f64], p: f64) -> Option<f64> {
     sorted.get(rank.clamp(1, sorted.len()) - 1).copied()
 }
 
+/// 成对比的中位数（施工 FL-9）：同一次里交替量的两边 `first`、`second`，第几对照第几对算 `pair(前一边, 后一边)`。
+/// 两边对数不齐的只算齐的那几对，算出来不是有限数的（除以零）那一对不算；一对都没有的没有。
+pub fn paired_median(first: &[f64], second: &[f64], pair: impl Fn(f64, f64) -> f64) -> Option<f64> {
+    let pairs: Vec<f64> = first
+        .iter()
+        .zip(second)
+        .map(|(first, second)| pair(*first, *second))
+        .filter(|value| value.is_finite())
+        .collect();
+    percentile(&pairs, 50.0)
+}
+
 /// 写进表里的一格：`p50 / p95`，没量的写「—」。
 pub fn spread(values: &[f64]) -> String {
     match (percentile(values, 50.0), percentile(values, 95.0)) {

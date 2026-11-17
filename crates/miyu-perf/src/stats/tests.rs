@@ -21,3 +21,16 @@ fn a_cell() {
     assert_eq!(spread(&[]), "—");
     assert_eq!(ms(Duration::from_micros(1500)), 1.5);
 }
+
+/// 成对比（施工 FL-9）：第几对照第几对算，对数不齐的只算齐的，除以零的那一对不算。
+#[test]
+fn paired_median_pairs_by_position() {
+    let ratio = |a: f64, b: f64| b / a;
+    assert_eq!(
+        paired_median(&[10.0, 20.0, 5.0], &[11.0, 22.0, 100.0], ratio),
+        Some(1.1)
+    );
+    assert_eq!(paired_median(&[2.0, 4.0], &[3.0], |a, b| b - a), Some(1.0));
+    assert_eq!(paired_median(&[0.0, 2.0], &[1.0, 3.0], ratio), Some(1.5));
+    assert_eq!(paired_median(&[], &[1.0], ratio), None);
+}

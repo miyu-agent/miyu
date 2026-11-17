@@ -2,7 +2,7 @@
 //! 数字不抄进代码。
 //!
 //! 一行的第二格里找第一个「数 单位」，前面带 `p50`、`p95`、`p99` 的照那个分位比；只写了一个数的照 p50 比。单位认
-//! `ms`、`MB`；一个数都没有的（「用完就退」）不算预算。
+//! `ms`、`MB`、`倍`（两边成对比的倍数，施工 FL-9）；一个数都没有的（「用完就退」）不算预算。
 
 use std::collections::BTreeMap;
 
@@ -27,6 +27,8 @@ pub enum Unit {
     Ms,
     /// 兆字节（MiB，和 `smaps_rollup` 的 kB 一样按 1024 算）。
     Mb,
+    /// 倍数（施工 FL-9）：同一次里两边成对量、一对一对除，不随机器快慢变。
+    Times,
 }
 
 impl Budget {
@@ -35,6 +37,7 @@ impl Budget {
         let unit = match self.unit {
             Unit::Ms => "ms",
             Unit::Mb => "MB",
+            Unit::Times => "倍",
         };
         match self.quantile {
             50 => format!("{} {unit}", self.value),
@@ -92,6 +95,7 @@ fn budget(cell: &str) -> Option<Budget> {
         let unit = match pair[1] {
             "ms" => Unit::Ms,
             "MB" => Unit::Mb,
+            "倍" => Unit::Times,
             _ => return None,
         };
         let quantile = at

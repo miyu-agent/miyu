@@ -5,8 +5,9 @@
 //! `relay`，程序是拷过去的量尺本身，带参数 [`ARG`] 起来（`driver/extension.rs`）。配置另加两个窗口大的模型：内置驱动的
 //! `perf/big`（同一个假服务）、扩展驱动的 `perfx/big`，免得 1 MB 的请求到了压缩线。
 //!
-//! - **首字时延**：两个会话各先垫上四句、每句约 250 KB 的话（协议一行最长 1 MiB），之后每次请求约 1 MB；再各说 `turns` 轮，记
-//!   说出去到推来第一段 `model.delta` 的字。比两边的 p95。
+//! - **首字时延**：两个会话各先垫上四句、每句约 250 KB 的话（协议一行最长 1 MiB），之后每次请求约 1 MB；再说至少
+//!   [`FIRST_PAIRS`] 对，一对里两边各说一句，先后一对一换，记说出去到推来第一段 `model.delta` 的字。一对一对比、取中位数
+//!   （施工 FL-9：原来比两边的 p95，CI 上一边冒一次尖就超）。
 //! - **流式的 CPU**：两边都在一秒里匀着交 `pieces` 段：内置的照假服务切成 `pieces` 块、一个事件隔一下写（[`Fake::pace`]），扩展的照记号
 //!   [`PACE`]；各说 `turns` 轮，记每一轮核心进程花的 CPU，比两边的中位数。一秒的流多花多少毫秒，就是多用了百分之几的一个核。
 
@@ -31,15 +32,18 @@ const PACKAGE: &str = "perf-driver";
 /// 扩展照这个记号在一秒里匀着交增量；没有的当场交一段。
 pub const PACE: &str = "perf-pace";
 
+/// 首字至少比几对（施工 FL-9）：一对两句 1 MB 的请求，假服务回得快，二十对几秒。
+pub const FIRST_PAIRS: usize = 20;
+
 /// 垫几句、每句多少字节：协议一行最长 1 MiB，分几句垫到约 1 MB。
 const PADDING: (usize, usize) = (4, 250_000);
 
 /// 量到的（以前的原始数据没有这一份）。
 #[derive(Debug, Clone, Default)]
 pub struct Driven {
-    /// 内置驱动：说出去到第一段增量推来（毫秒），一轮一个。
+    /// 内置驱动：说出去到第一段增量推来（毫秒），一对一个。
     pub builtin_first: Vec<f64>,
-    /// 扩展驱动：同上。
+    /// 扩展驱动：同上，第几个和内置的第几个是同一对。
     pub extension_first: Vec<f64>,
     /// 内置驱动交 `pieces` 段的一轮核心花的 CPU（毫秒）。读不到的平台是空的。
     pub builtin_cpu: Vec<f64>,
@@ -96,14 +100,22 @@ pub async fn driven(
             pieces,
             ..Driven::default()
         };
-        for n in 0..turns {
+        // 一对一对量，先后一对一换：先说的那一边总吃亏（或占便宜）的抵掉（施工 FL-9：原来总是内置的先说，CI 上扩展的中位数
+        // 反倒常比内置的少一毫秒）。
+        for n in 0..turns.max(FIRST_PAIRS) {
             let marker = format!("perf-first-{n:03}: keep going.");
-            driven
-                .builtin_first
-                .push(send(&mut rpc, &builtin, &marker).await?);
-            driven
-                .extension_first
-                .push(send(&mut rpc, &extension, &marker).await?);
+            let (builtin_ms, extension_ms) = match n % 2 {
+                0 => {
+                    let builtin_ms = send(&mut rpc, &builtin, &marker).await?;
+                    (builtin_ms, send(&mut rpc, &extension, &marker).await?)
+                }
+                _ => {
+                    let extension_ms = send(&mut rpc, &extension, &marker).await?;
+                    (send(&mut rpc, &builtin, &marker).await?, extension_ms)
+                }
+            };
+            driven.builtin_first.push(builtin_ms);
+            driven.extension_first.push(extension_ms);
         }
         // 两边都在一秒里匀着交 `pieces` 段：真模型的回答是匀着来的，每一段都叫醒核心一次（头一回 CI 上内置的一次写完、扩展的匀着
         // 交，多出来的大半是叫醒的次数，不是扩展这一跳）。

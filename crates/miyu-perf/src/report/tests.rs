@@ -34,7 +34,11 @@ fn budgets() -> BTreeMap<String, Budget> {
         ("追加一步的事件并同步", ms(99, 20.0)),
         (
             "扩展提供的模型驱动比内置驱动多的首字时延（1 MB 的请求）",
-            ms(95, 5.0),
+            Budget {
+                quantile: 50,
+                value: 1.5,
+                unit: Unit::Times,
+            },
         ),
         (
             "扩展驱动流式时核心多用的 CPU（一秒 300 段增量）",
@@ -152,10 +156,11 @@ fn the_table_judges_against_the_budgets() {
         "{projection}"
     );
     assert!(projection.ends_with("| p95 5 ms | 过 |"), "{projection}");
-    // 扩展驱动（施工 MD-4）：首字每一轮都多 3，p95 一减是 3，没超 5；CPU 中位数 45 减 41 是 4，没超 10。
+    // 扩展驱动（施工 MD-4）：首字一对一对除，1.3、1.27、1.25 取中位数 1.27，没超 1.5 倍；每一对都多 3（施工 FL-9）。CPU
+    // 中位数 45 减 41 是 4，没超 10。
     let first = row("扩展提供的模型驱动比内置驱动多的首字时延");
     assert!(
-        first.contains("多 3.0 ms") && first.ends_with("| 过 |"),
+        first.contains("| 1.27 倍（多 3.0 ms） | 1.5 倍 | 过 |"),
         "{first}"
     );
     let cpu = row("扩展驱动流式时核心多用的 CPU");
@@ -431,5 +436,31 @@ fn the_streamed_turn_is_listed_and_older_raw_data_goes_without() {
         !rows::markdown(&read, &budgets(), "x")
             .unwrap()
             .contains("流式一轮")
+    );
+}
+
+/// 施工 FL-9：首字一对一对比。扩展那一边冒一次尖（CI 上见过多 133.8 ms），中位数不动，闸门不拦；原来两边各取 p95 再减是
+/// 190 ms，一倍的闸门就拦下了。
+#[test]
+fn one_spike_on_one_side_does_not_trip_the_first_token_gate() {
+    let mut spiky = results(true);
+    let driven = spiky.driven.as_mut().expect("有");
+    driven.builtin_first = vec![10.0; 10];
+    driven.extension_first = vec![10.5, 10.4, 10.6, 10.5, 200.0, 10.5, 10.4, 10.6, 10.5, 10.5];
+    let over = gate::over(&spiky, &budgets(), 1.0).unwrap();
+    assert!(
+        !over
+            .iter()
+            .any(|line| line.starts_with("扩展提供的模型驱动")),
+        "{over:?}"
+    );
+    // 真慢了照拦：每一对都慢一倍。
+    let driven = spiky.driven.as_mut().expect("有");
+    driven.extension_first = vec![20.0; 10];
+    let over = gate::over(&spiky, &budgets(), 100.0).unwrap();
+    assert!(
+        over.iter()
+            .any(|line| line.contains("量到 2.0 倍，预算 1.5 倍，闸门是它的 1 倍（1.5 倍）")),
+        "倍数不随闸门放宽：{over:?}"
     );
 }

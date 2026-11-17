@@ -18,6 +18,7 @@ const DESIGN: &str = "\
 | 切会话 | 一帧之内（p95 16 ms） | 要近乎秒切 |
 | 追加一步的事件并同步 | p99 20 ms（固态硬盘） | 先落盘后推送 |
 | 核心空闲 | 30 MB | 常驻时这是底 |
+| 扩展驱动的首字 | 中位数 1.5 倍 | 成对比 |
 | 重型 worker | 用完就退，不算常驻 | 只在用的时候占 |
 
 - 超了预算，先查是不是量法的问题。
@@ -46,9 +47,20 @@ fn the_second_section_is_read() {
             unit: Unit::Mb,
         }
     );
+    // 成对比的倍数（施工 FL-9）：前面写的「中位数」不是分位，照 p50。
+    let times = budgets["扩展驱动的首字"];
+    assert_eq!(
+        times,
+        Budget {
+            quantile: 50,
+            value: 1.5,
+            unit: Unit::Times,
+        }
+    );
+    assert_eq!(times.show(), "1.5 倍");
     assert!(!budgets.contains_key("重型 worker"));
     assert!(!budgets.contains_key("项目"));
-    assert_eq!(budgets.len(), 5);
+    assert_eq!(budgets.len(), 6);
 }
 
 #[test]
