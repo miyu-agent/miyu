@@ -10,6 +10,8 @@
 //!   汇率换成 `usage.currency` 的一个数，没换成的那几笔在它的 `rest`，一笔都没换成的不写；`converted_parts`（施工 UP-1）：
 //!   换成的那几笔分四种各多少，同一个币种，有一笔没分四种的不写，有一笔那一种用了、价格又不知道的那一种不写（用量是 0 的是准的 0）。用到了兜底源的汇率，回应顶上
 //!   写 `rates`（来源，头照它注明）。缺的汇率当场去取，最多等两秒；会话状态这些常推的几处不等，只用缓存。
+//! - 照 `purpose` 分组的每一行带 `purpose_name`（施工 UP-3，`usage/names.rs`）：照连接的语言，核心自己的照字表，扩展写的照包
+//!   清单 `[[purpose]]` 声明的，都没有的不写。
 //! - 读出坏了的：记一行 `WARN usage not read`，删掉重建再补一次；还不行的回 `internal`。
 
 use std::sync::Arc;
@@ -76,9 +78,17 @@ pub(crate) struct QueryParams {
     offset: Option<String>,
 }
 
-/// `usage.query`：见模块的说明。
-pub(crate) async fn query(core: &Arc<Core>, params: QueryParams) -> Result<Value, Refusal> {
+/// `usage.query`：见模块的说明。`language` 是连接的语言：照 `purpose` 分组的每一行照它带 `purpose_name`（施工 UP-3）。
+pub(crate) async fn query(
+    core: &Arc<Core>,
+    language: &str,
+    params: QueryParams,
+) -> Result<Value, Refusal> {
     let query = read(params, crate::sessions::offset)?;
+    let names = match query.group.contains(&Group::Purpose) {
+        true => Some(names::Names::load(core, language)?),
+        false => None,
+    };
     let currency = currency(core);
     let usage = Arc::clone(&core.usage);
     let group = query.group.clone();
@@ -111,7 +121,13 @@ pub(crate) async fn query(core: &Arc<Core>, params: QueryParams) -> Result<Value
     let rows: Vec<Value> = totals
         .into_iter()
         .zip(converted)
-        .map(|(total, converted)| row(&group, total, &currency, converted))
+        .map(|(total, converted)| {
+            let mut row = row(&group, total, &currency, converted);
+            if let Some(names) = &names {
+                names.name(&mut row);
+            }
+            row
+        })
         .collect();
     let mut reply = json!({"rows": rows});
     if fallback {
@@ -366,5 +382,6 @@ pub(crate) fn tallied(core: &Core, tally: &miyu_session::Tally) -> Value {
 }
 
 pub(crate) mod convert;
+mod names;
 #[cfg(test)]
 mod tests;

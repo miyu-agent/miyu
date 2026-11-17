@@ -394,6 +394,23 @@ summary = { en = "Decides whether to reply in a group.", zh = "群里有人说�
 
 调 `model.call` 时写 `"side": "judge"`（只写你自己包里的编号，不带包名），不写 `model`、`use`：核心照档位从同名的模型池（`lite`、`normal`、`flagship`，人在设置里往里放模型）取；池是空的、或者池里的模型都在冷却、都出了错，用会话的模型——你同时写了 `session` 的照那个会话，没写的照 `models.chat`。人不用为你的请求另配模型。写了你没登记的编号，回 `bad_params`。`model.list` 的 `side` 里列得出你登记的（编号是 `<包的编号>/<编号>`）和这一刻会落到哪。见 [写扩展](extensions.md)。
 
+## `[[purpose]]`
+
+给你的程序调 `model.call` 时写的用途（`purpose`）起一个给人看的名字，一段一条。人看用量照用途分的那几行（`usage.query` 的 `purpose_name`，终端的 `/usage`、网页的用量页）照它显示；没声明的照 `purpose` 原样显示。不用另声明能力。
+
+| 格 | 说明 |
+|---|---|
+| `id` | 用途，和 `model.call` 的 `purpose` 一模一样：1 到 32 个小写字母、数字、`-`，一个包里不重 |
+| `name` | 给人看的名字，分语言；写成软件里的说法、名词短语（「入群审核」，不写「她判断要不要让人进群」） |
+
+```toml
+[[purpose]]
+id = "join-approval"
+name = { en = "Join review", zh = "入群审核" }
+```
+
+核心自己的用途（`title`、`compaction`、`vision` 这些）名字是核心给的，声明了也不换。几个包声明了同一个用途的，照包的编号排第一的那个算。
+
 ## `[[widget]]`
 
 往终端、网页上放自己的一块内容；`capabilities` 里要有 `widgets`。一个包最多 16 块。

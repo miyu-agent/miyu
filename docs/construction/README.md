@@ -1692,6 +1692,7 @@ flowchart LR
 | SD-1 | 她说的话合成以后交给人 | 项目主人 11-17 本机验收第 16、26 条，语音会话 say 交付方案「核心」一节：工具结果的 `sent` 多收一段语音 `{"blob", "media_type", "voice": true, "duration_ms"?, "name"?}`，至多一段、`audio/` 开头、≤ 10 MiB（大了回 `voice-too-big.txt`）；视图流多 `voice` 条目，带开这一轮的那句话的 `by` 和那条请求的 `cause`，头照它定放不放；本机会话里没人开口的一轮（定时、循环、人生）出了语音、没有头开着这个会话的，核心经总线调 `tts.play {"audio"}`；`venue.session` 多 `voice_max_ms`，记进 `session.created`，这个会话的 `tool.call` 原样带上。施工单见 `SD-1-说出来交给人.md` |
 | VM-2 | 找回的场所会话也认语音上限 | im 在等：SD-1 只在造场所会话时记 `voice_max_ms`，主人机器上早就造好的主群、私聊找回时不看，一直没有上限。找回的也看：和记过的不一样（含没记过的）记一条只写 `voice_max_ms` 的 `session.policy_changed`（`by` 是桥，命令编号 `<请求>/voice`），开着的会话当场换、载入照日志算、分叉照分叉点；没交的照记过的，只设不去。记不成照样回找到的会话、记一行 WARN。不改给模型看的字。施工单见 `VM-2-找回的场所会话认语音上限.md` |
 | PR-1 | 中转站的模型价格照原厂 | 项目主人 2026-11-17 定「借原厂价、不标」：对目录第 3、4 层几家同名、挑不出认出的那一家和原厂的，条目照旧取字节序第一家，价格不再一概不借，照原厂（`vendors.toml`）那一家里同一个模型的借：先找规整名相同或最长前缀的，再找同家族、从头数相同的段最多的，只挑有价格的，借不到才没有；来源写借的那一条，`cost.source` 同；倍率照乘，用量不另标。`Matched::price` 改成借哪一条，`catalog.json` 写法版本加到 2。例：magpie 的 `marvis/deepseek-v4-1-flash-261017` 对到 byteplus，价格借 DeepSeek 官方（目录里官方没列 V4.1，照家族借到 `deepseek-v4-flash`）。施工单见 `PR-1-中转站价格照原厂.md` |
+| UP-3 | 用量的用途有给人看的名字 | 项目主人第 39 条：终端 `/usage` 一行里中英混杂。`usage.query` 照 `purpose` 分组的每一行带 `purpose_name`，照连接的语言：核心自己的照字表 `core/human` 的 `usage/purpose/<用途>`（回顾、起标题、压缩、记忆整理、看图、向量化；`null` 那一行是「主对话」），扩展写的照清单新加的 `[[purpose]]`（`id` 同 `model.call` 的 `purpose`、`name` 分语言，写错 `bad_purpose`；几个包同一个的照编号排第一的，核心的改不了名），都没有的不带。派工时叫 UP-1，撞号改 UP-3。施工单见 `UP-3-用量用途的名字.md` |
 
 ### 四、施工单的格式
 

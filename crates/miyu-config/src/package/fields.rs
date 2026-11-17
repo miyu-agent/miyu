@@ -131,6 +131,9 @@ pub(super) const SLASH: &[&str] = &["name", "summary", "argument", "access"];
 /// `[[side]]`（施工 Q-3）。
 pub(super) const SIDE: &[&str] = &["id", "tier", "name", "summary"];
 
+/// `[[purpose]]`（施工 UP-3）。
+pub(super) const PURPOSE: &[&str] = &["id", "name"];
+
 /// `[[search]]`。
 pub(super) const SEARCH: &[&str] = &["id", "name"];
 /// `[[driver]]`（施工 MD-1，设计 66 第四节）。
@@ -155,7 +158,7 @@ pub(super) const EXPORT: &[&str] = &["methods", "provides", "plugs"];
 pub(super) const CONTENT: &[&str] = &["dir"];
 
 /// 清单认得的表，照这个先后；哪种包能写哪几张见 `kinds::tables`。
-pub(super) const TABLES: [Table; 27] = [
+pub(super) const TABLES: [Table; 28] = [
     table("package", &[PACKAGE]),
     Table {
         name: "builtin",
@@ -199,6 +202,7 @@ pub(super) const TABLES: [Table; 27] = [
     table("mcp", &[&MCP]),
     table("slash", &[SLASH]),
     table("side", &[SIDE]),
+    table("purpose", &[PURPOSE]),
     table("search", &[SEARCH]),
     table("driver", &[DRIVER]),
     table("provider_key", &[PROVIDER_KEY]),

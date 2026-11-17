@@ -80,6 +80,7 @@ pub(super) fn tables(kind: PackageKind) -> &'static [&'static str] {
             "mcp",
             "slash",
             "side",
+            "purpose",
             "search",
             "driver",
             "provider_key",

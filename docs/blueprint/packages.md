@@ -16,6 +16,7 @@
 | `crates/miyu-config/src/package/fields.rs` | 清单格式的真相源（施工 Y-5 末上，冻结）：认的 22 张表、每张表认的格；读的各处照它挡，`fields/tests.rs` 拿中英作者文档 `docs/authors/manifest*` 对它。以后只加不改不删，新格写进这里和两份作者文档，用到的包写 `[package] miyu` |
 | `crates/miyu-config/src/package/links.rs` | `[connection]`、`[depends]`、`[recommends]`、`[worker]` 的读法（施工 F-1） |
 | `crates/miyu-config/src/package/depend.rs` | 依赖、推荐的一项（施工 PK-2）：`<编号>` 或 `<编号>>=<版本>` 的写法，版本照 semver 比（`Dependency`）；读索引也照它 |
+| `crates/miyu-config/src/package/purpose.rs` | `[[purpose]]` 的读法：扩展声明的用量用途的名字（施工 UP-3）；用途的写法 `purpose_written`（`model.call` 的 `purpose` 同一个规矩） |
 | `crates/miyu-config/src/package/side.rs` | `[[side]]` 的读法：扩展登记的旁路请求（施工 Q-3），档位只认三个固定池名（`SIDE_TIERS`） |
 | `crates/miyu-config/src/package/code.rs` | 读不成时的代码（施工 F-1 从 `package.rs` 挪出来） |
 | `crates/miyu-config/src/phrases.rs` | 「语言到一句话」那一格的读法，和人格的名字、说明共用 |
@@ -107,6 +108,10 @@ tier = "lite"                    # 要哪一档：lite、normal、flagship（三
 name = { en = "Reply judge", zh = "判断要不要回" }
 summary = { en = "Decides whether to reply in a group.", zh = "群里有人说话时判断要不要回" }
 
+[[purpose]]                      # 用量的用途叫什么（施工 UP-3）：只有扩展包能写，一段一条，不另要能力
+id = "join-approval"             # 同 model.call 的 purpose：1 到 32 个小写字母、数字、-，包里不重
+name = { en = "Join review", zh = "入群审核" }   # usage.query 照 purpose 分组时的 purpose_name；软件说法的名词短语
+
 [depends]                        # 依赖的包：缺了装不上、装着的不起；包编号，什么种类都行，不重复（施工 F-11）
 packages = ["onebot>=1.2.0"]     # 可以带版本下限（施工 PK-2）：只认 >=，版本照 semver；以前只写小程序，叫 workers，照样认（只写编号）
 
@@ -137,7 +142,7 @@ program = "miyu-embed"
 | 种类 | 能写的表 |
 |---|---|
 | `ui` | `[package]`、`[command]`、`[ui]`、`[check]`、`[settings]`、`[depends]`、`[recommends]` |
-| `process` | `[package]`、`[command]`、`[process]`、`[check]`、`[settings]`、`[features]`、`[connection]`、`[depends]`、`[recommends]`、`[page]`、`[[mcp]]`、`[[slash]]`（施工 X-14 下）、`[[widget]]`（施工 X-15 上，`widgets.md`）、`[[side]]`（施工 Q-3，`models.md`「旁路请求」）、`[tray]`（施工 TR-2）、`[provider_key]`（施工 PK-1，`extensions.md`「配置」第 5 条）（施工 X-2） |
+| `process` | `[package]`、`[command]`、`[process]`、`[check]`、`[settings]`、`[features]`、`[connection]`、`[depends]`、`[recommends]`、`[page]`、`[[mcp]]`、`[[slash]]`（施工 X-14 下）、`[[widget]]`（施工 X-15 上，`widgets.md`）、`[[side]]`（施工 Q-3，`models.md`「旁路请求」）、`[[purpose]]`（施工 UP-3，`models.md`「协议」`usage.query`）、`[tray]`（施工 TR-2）、`[provider_key]`（施工 PK-1，`extensions.md`「配置」第 5 条）（施工 X-2） |
 | `builtin` | `[package]`、`[features]`、`[depends]`、`[recommends]`、`[page]`、`[tray]`（施工 TR-2） |
 | `worker` | `[package]`、`[worker]`、`[depends]`、`[recommends]` |
 | `mascot` | `[package]`、`[mascot]`（施工 F-7）、`[depends]`、`[recommends]` |
@@ -415,6 +420,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `bad_driver` | `[[driver]]` 写错了：驱动名、缓存类型、要不要 key、看不看图，重了，和 `model.driver` 能力对不上（写了没声明、声明了没写，施工 MD-1）；`hosted`（会让供应商自己跑的工具名，施工 HT-4，设计 71 第三节第 7 条）不是字的数组、有空的、超过 64 个字节的、带控制字符的、一段里重了的，报在那一段的行上 |
 | `bad_provider_key` | `[provider_key]` 写错了：`catalog` 少了、不合名字的写法，和 `provider.key` 能力对不上（写了没声明、声明了没写，施工 PK-1） |
 | `bad_after` | `[after]` 写错了：工具名、访问类别，`tools`、`access` 两样都没写，没声明 `events.read` 能力（施工 HK-2）；写了 `timeout_ms` 的是 `unknown_key` |
+| `bad_purpose` | `[[purpose]]` 写错了（施工 UP-3）：编号不合用途的写法（1 到 32 个小写字母、数字、`-`）、少了，少了名字，同一个包里重了；`detail` 是哪一格（`purpose.<编号>.<格>`） |
 | `bad_side` | `[[side]]` 写错了（施工 Q-3）：编号不合写法、少了，档位不是 `lite`、`normal`、`flagship`，少了名字、说明，同一个包里重了；`detail` 是哪一格（`side.<编号>.<格>`） |
 | `bad_tray` | `[tray]` 写错了（施工 TR-2）：没写 `[page]`（`detail` 是 `tray`），写了 `name` 以外的格（`detail` 是 `tray.<格>`）；`name` 本身照「语言到一句话」那几个代码报 |
 | `bad_author` | `[package] author` 不是一行 1 到 100 个字（施工 F-12） |
@@ -435,6 +441,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `crates/miyu-config/src/package/features/tests.rs`（施工 F-1） | 功能照写的先后读对、编号在第几行；没写的照包算一个；空表一个都没有；界面、小程序没有；编号、表、名字、工具的每一种写错；只有内置包、扩展包能写 |
 | `crates/miyu-config/src/package/export/tests.rs`（施工 BUS-1、BUS-5） | `[export]` 的 `provides`、`plugs` 和名字底下的方法读对；名字写法不对、重复、两样都写、名字底下没有方法的报 `bad_export`；`methods` 里不在声明的名字底下的（一段的、前缀没声明的、短名带点的）、没声明名字却写了 `methods` 的报 `bad_export`，`detail` 是那个方法；短名只有一段 |
 | `crates/miyu-config/src/package/links/tests.rs`（施工 F-1） | 小程序的程序和参数；依赖、推荐；平台接入；组只给内置包、写法不对和重复的报 `bad_group`、`required` 不认了（施工 BS-1 上中）；每种包只能写自己的表；种类四选一 |
+| `crates/miyu-config/src/package/purpose/tests.rs`（施工 UP-3） | `[[purpose]]` 读成编号、名字，照写的先后，没写的是空的；用途的写法同 `model.call`；编号写错、少了、重了，少了名字报 `bad_purpose`、`detail` 对；不认识的格、写成一张表的、不是扩展包的照各自的代码 |
 | `crates/miyu-config/src/package/side/tests.rs`（施工 Q-3） | `[[side]]` 读成编号、档位、名字、说明，全编号是 `<包>/<编号>`，三档都认；编号写错、少了、重了，档位不认识、少了，少了名字、说明报 `bad_side`、`detail` 对；不认识的格、写成一张表的、不是扩展包的照各自的代码 |
 | `crates/miyu-config/src/package/settings/tests.rs` | 每一种类型、默认值、几层、什么时候生效、隐藏；每一种写错；拼成配置项的键、类型、界面提示（施工 9-1 下）；列表的每一种元素、默认值一个个查、写错（施工 9-1 补） |
 | `crates/miyu-config/src/package/settings/tests/section.rs`、`crates/miyu-endpoint/tests/package_sections.rs`（施工 SG-1） | 组的名字、`shown_when` 读对（一个值的也是列表），指带 `choices_from` 的文字项装得上、值不查（施工 SW-1），每一种写错报 `bad_shown_when`、报在那一行；`config.schema` 里组里的项带 `section`、包那一组带 `sections`（名字照语言、没写的照编号、键写全），没分组的包和原来一样；不画的节照旧写得进、读得到 |

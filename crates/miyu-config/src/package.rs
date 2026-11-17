@@ -28,6 +28,7 @@ mod look;
 mod mcp;
 mod need;
 mod provider_key;
+mod purpose;
 mod reader;
 mod reserved;
 mod search;
@@ -56,6 +57,7 @@ pub use mcp::{
 };
 pub use need::Need;
 pub use provider_key::ProviderKey;
+pub use purpose::{UsagePurpose, purpose_written};
 pub use reserved::{RESERVED, reserved_id};
 pub use search::{SEARCH_SOURCE, SearchSource};
 pub use settings::{Choice, Section, Setting, SettingKind, ShownWhen};
@@ -125,6 +127,8 @@ pub struct Manifest {
     pub slash: Vec<SlashCommand>,
     /// 登记的旁路请求（施工 Q-3，`[[side]]`）：照写的先后，没有的是空的。只有扩展包能写。
     pub side: Vec<SideRequest>,
+    /// 声明的用量用途（施工 UP-3，`[[purpose]]`）：照写的先后，没有的是空的。只有扩展包能写。
+    pub purposes: Vec<UsagePurpose>,
     /// 声明的搜索来源（施工 N-5，`[[search]]`）：照写的先后，没有的是空的。只有扩展包能写。
     pub search: Vec<SearchSource>,
     /// 提供的模型驱动（施工 MD-1，`[[driver]]`）：照写的先后，没有的是空的。只有扩展包能写，要声明 `model.driver`。
@@ -314,12 +318,12 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
                 format!("unknown table [{key}]"),
             ));
         }
-        // `[[mcp]]`、`[[slash]]`、`[[widget]]`、`[[side]]` 是一串表（施工 X-2、X-14 下、X-15 上、Q-3）：写成别的样子的由各自的模块
+        // `[[mcp]]`、`[[slash]]`、`[[widget]]`、`[[side]]`、`[[purpose]]` 是一串表（施工 X-2、X-14 下、X-15 上、Q-3、UP-3）：写成别的样子的由各自的模块
         // 报。`command` 一张、一串都行（施工 F-13）。
         if !item.is_table_like()
             && !(matches!(
                 key,
-                "mcp" | "slash" | "search" | "driver" | "widget" | "side" | "command"
+                "mcp" | "slash" | "search" | "driver" | "widget" | "side" | "purpose" | "command"
             ) && item.is_array_of_tables())
         {
             return Err(reader.problem(
@@ -416,18 +420,13 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         Some(node) => slash::read(&reader, node)?,
         None => Vec::new(),
     };
-    let side = match root.get("side") {
-        Some(node) => side::read(&reader, node)?,
-        None => Vec::new(),
-    };
+    let side = side::read(&reader, root.get("side"))?;
+    let purposes = purpose::read(&reader, root.get("purpose"))?;
     let capabilities = process
         .as_ref()
         .map_or(&[][..], |process| process.capabilities.as_slice());
     slash::needs_capability(&slash, capabilities)?;
-    let search = match root.get("search") {
-        Some(node) => search::read(&reader, node)?,
-        None => Vec::new(),
-    };
+    let search = search::read(&reader, root.get("search"))?;
     search::needs_capability(&search, capabilities)?;
     let drivers = match root.get("driver") {
         Some(node) => driver::read(&reader, node)?,
@@ -478,6 +477,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         mcp,
         slash,
         side,
+        purposes,
         search,
         drivers,
         provider_key,

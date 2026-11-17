@@ -119,6 +119,8 @@ pub enum Code {
     BadAfter,
     /// `[[side]]` 写错了（施工 Q-3）：编号、档位、名字、说明，同一个包里重了。
     BadSide,
+    /// `[[purpose]]` 写错了（施工 UP-3）：编号不合用途的写法、少了，少了名字，同一个包里重了。
+    BadPurpose,
     /// `[tray]` 写错了（施工 TR-2）：没写 `[page]`，写了 `name` 以外的格（托盘入口只能打开这个包自己的后台页）。
     BadTray,
     /// `[package] author` 不是一行 1 到 100 个字（施工 F-12）。
@@ -208,6 +210,7 @@ impl Code {
             Code::BadProviderKey => "bad_provider_key",
             Code::BadAfter => "bad_after",
             Code::BadSide => "bad_side",
+            Code::BadPurpose => "bad_purpose",
             Code::BadTray => "bad_tray",
             Code::BadAuthor => "bad_author",
             Code::BadUpstream => "bad_upstream",
@@ -225,7 +228,7 @@ impl Code {
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 68] = [
+    pub const ALL: [Code; 69] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -283,6 +286,7 @@ impl Code {
         Code::BadProviderKey,
         Code::BadAfter,
         Code::BadSide,
+        Code::BadPurpose,
         Code::BadTray,
         Code::BadAuthor,
         Code::BadUpstream,
