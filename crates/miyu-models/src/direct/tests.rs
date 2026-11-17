@@ -260,3 +260,115 @@ fn a_pool_skips_extension_members_for_a_builtin_one() {
     .expect("交扩展的那个");
     assert_eq!(direct.driver.as_str(), "pi/ag");
 }
+
+/// models.dev 2026-11 起的写法（施工 GO-1，2026-11-17 照 `https://models.dev/api.json` 裁的）：opencode Go 按协议分地址，
+/// 这一家写 OpenAI 兼容的那条，每个模型另写自己那条。
+fn split_catalog() -> crate::catalog::Loaded {
+    let text = json!({"opencode-go": {
+        "id": "opencode-go", "name": "OpenCode Go", "npm": "@ai-sdk/openai-compatible",
+        "api": "https://opencode.ai/inference/go/openai/v1",
+        "models": {
+            "deepseek-v4.1-flash": {"provider": {"npm": "@ai-sdk/openai-compatible",
+                                                 "api": "https://opencode.ai/inference/go/openai/v1"}},
+            "minimax-m3": {"provider": {"npm": "@ai-sdk/anthropic",
+                                        "api": "https://opencode.ai/inference/go/anthropic/v1"}},
+            "gpt-5.6-luna": {"provider": {"npm": "@ai-sdk/openai",
+                                          "api": "https://opencode.ai/inference/go/openai/v1"}}
+        }
+    }, "opencode": {
+        "id": "opencode", "name": "OpenCode Zen", "npm": "@ai-sdk/openai-compatible",
+        "api": "https://opencode.ai/inference/openai/v1",
+        "models": {
+            "minimax-m3-free": {"provider": {"npm": "@ai-sdk/anthropic",
+                                             "api": "https://opencode.ai/inference/anthropic/v1"}}
+        }
+    }})
+    .to_string();
+    crate::catalog::Loaded {
+        catalog: crate::catalog::Catalog::parse(&text)
+            .expect("读得进")
+            .catalog,
+        source: crate::catalog::CatalogSource::Cache,
+        fetched: "2026-11-17T00:00:00.000Z".to_string(),
+    }
+}
+
+/// 施工 GO-1：模型写了自己的地址的照它走（opencode Go 的 Anthropic 那几个照这一家的地址发是 `…/openai/v1/messages`，
+/// 404）；配置手写了地址、驱动的照手写的。
+#[test]
+fn a_model_s_own_address_follows_its_package_unless_written_by_hand() {
+    let mut held = held();
+    held.catalog = Some(split_catalog());
+    let reach = |source: &str| {
+        let resolved = resolved(source);
+        direct(
+            &resolved,
+            &held.knowledge(),
+            &secrets(&[("go", "sk-go")], &[]),
+        )
+        .expect("用得了")
+    };
+    let go = |model: &str| {
+        reach(&format!(
+            "[providers.opencode-go]\nkey = {{ secret = \"go\" }}\n\n[models]\nchat = \"opencode-go/{model}\"\n"
+        ))
+    };
+    let minimax = go("minimax-m3");
+    assert_eq!(
+        (minimax.base_url.as_str(), minimax.driver),
+        (
+            "https://opencode.ai/inference/go/anthropic/v1",
+            Driver::Anthropic
+        )
+    );
+    let flash = go("deepseek-v4.1-flash");
+    assert_eq!(flash.base_url, "https://opencode.ai/inference/go/openai/v1");
+    let luna = go("gpt-5.6-luna");
+    assert_eq!(
+        (luna.base_url.as_str(), luna.driver),
+        (
+            "https://opencode.ai/inference/go/openai/v1",
+            Driver::OpenAiResponses
+        )
+    );
+    let relay = reach(
+        "[providers.relay]\ncatalog = \"opencode-go\"\nbase_url = \"https://relay.invalid/v1\"\nkey = { secret = \"go\" }\n\n[models]\nchat = \"relay/minimax-m3\"\n",
+    );
+    assert_eq!(
+        (relay.base_url.as_str(), relay.driver),
+        ("https://relay.invalid/v1", Driver::Anthropic),
+        "手写的地址压过模型的"
+    );
+    let fixed = reach(
+        "[providers.opencode-go]\ndriver = \"openai-chat\"\nkey = { secret = \"go\" }\n\n[models]\nchat = \"opencode-go/minimax-m3\"\n",
+    );
+    assert_eq!(
+        (fixed.base_url.as_str(), fixed.driver),
+        (
+            "https://opencode.ai/inference/go/openai/v1",
+            Driver::OpenAiChat
+        ),
+        "手写的驱动不跟模型的包名，地址也不跟"
+    );
+    // 档案写了地址的也不跟（出厂的 Zen 钉在 /zen/v1，核心主会话 2026-11-17 定）。
+    let mut pinned = self::held();
+    pinned.profiles = crate::profile::Profiles::parse(&json!({
+        "npm": {"@ai-sdk/openai-compatible": "openai-chat", "@ai-sdk/anthropic": "anthropic"},
+        "providers": {"opencode": {"base_url": "https://opencode.ai/zen/v1"}}
+    }))
+    .expect("档案写法对");
+    pinned.catalog = Some(split_catalog());
+    let zen = direct(
+        &resolved(
+            "[providers.opencode]\nkey = { secret = \"go\" }\n\n[models]\nchat = \"opencode/minimax-m3-free\"\n",
+        ),
+        &pinned.knowledge(),
+        &secrets(&[("go", "sk-go")], &[]),
+    )
+    .expect("用得了");
+    assert_eq!(
+        (zen.base_url.as_str(), zen.driver),
+        ("https://opencode.ai/zen/v1", Driver::Anthropic),
+        "档案写的地址压过模型的"
+    );
+}

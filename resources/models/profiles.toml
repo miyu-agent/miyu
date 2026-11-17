@@ -43,8 +43,9 @@ driver = "openai-chat"
 driver = "openai-responses"
 base_url = "https://api.openai.com/v1"
 
-# opencode Console Go（施工 8-14）：驱动、地址照目录（https://opencode.ai/zen/go/v1，模型各自写着包名：Claude、MiniMax 这几个走
-# anthropic，GPT、Grok 走 openai-responses，别的走 openai-chat）。缺 x-opencode-session 回 400 MissingSessionID（2026-10-03 实测）；
+# opencode Console Go（施工 8-14）：驱动、地址照目录（模型各自写着包名：Claude、MiniMax 这几个走 anthropic，GPT、Grok 走
+# openai-responses，别的走 openai-chat）。地址（施工 GO-1）：2026-11 起按协议分路径，https://opencode.ai/inference/go/openai/v1、
+# …/anthropic/v1，目录每个模型写着自己那条，照它发；出厂快照还是旧的 https://opencode.ai/zen/go/v1（2026-11-17 还答）。缺 x-opencode-session 回 400 MissingSessionID（2026-10-03 实测）；
 # 官方文档写明给第三方 agent 用：用自己的 User-Agent，每段对话发一个稳定的 x-opencode-session。值里的 {session_digest} 照种子
 # （会话编号、一次性调用的用途）换成 opencode 会话编号的样子：前 12 位是时间的倒序编法，后 14 位是 SHA-256 的十六进制。
 #
@@ -60,6 +61,11 @@ quota = { url = "https://opencode.ai/inference/go/v1/usage", format = "opencode-
 # 还要求流式。头只发给这一家（目录里的地址是 https://opencode.ai/zen/v1）。User-Agent 盖掉客户端的 miyu/<版本>，这里写的是
 # 本机装的 opencode 版本（2.0.21）；opencode 升级或被闸改判据时，先跑旧版 `miyu-agent` 仓库里的测具
 # `testkit/opencode-zen/freetier_probe.js` 再动这一行。占位工具见「八、opencode Zen」第 2 条。
+#
+# 地址钉在旧的 /zen/v1（施工 GO-1，核心主会话 2026-11-17 定）：新目录里这一家是 https://opencode.ai/inference/openai/v1、每个
+# 模型另写自己那条；免费档在新地址上认不认没实测出来（新旧地址不带 key 都回 429 FreeUsageLimitError，出不了字），实测出字以前
+# 不跟着走。档案写了地址，模型自己的地址就不换（Go 没写，照模型的走）。
 [providers.opencode]
+base_url = "https://opencode.ai/zen/v1"
 headers = { "User-Agent" = "opencode/2.0.21", "x-opencode-client" = "cli", "x-opencode-project" = "global", "x-opencode-session" = "ses_{session_digest}" }
 placeholder_tools = ["read", "shell"]

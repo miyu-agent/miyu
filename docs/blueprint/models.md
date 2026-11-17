@@ -806,7 +806,9 @@ flowchart TB
 
 **八、opencode Zen**（8-14；2026-10-03 主会话照实测收窄，2026-10-04 项目主人定：接上免费档）
 
-opencode 有两个端点：Zen（`https://opencode.ai/zen/v1`，按量付费）和 Console Go（`https://opencode.ai/zen/go/v1`，订阅）。两个都在目录里，地址、驱动照目录推，只写 key 就能用。
+opencode 有两个端点：Zen（按量付费）和 Console Go（订阅）。两个都在目录里，地址、驱动照目录推，只写 key 就能用。
+
+地址（施工 GO-1，2026-11-17 照官方文档 `opencode.ai/docs/go`、`opencode.ai/docs/console/harnesses` 核过）：2026-11 起按协议分路径，根是 `https://opencode.ai/inference`（Zen）、`https://opencode.ai/inference/go`（Go），后面接 `/openai/v1`（Chat Completions、Responses）、`/anthropic/v1`（Messages）、`/google/v1beta`（Gemini）。models.dev 跟着改了：一家写 OpenAI 兼容的那条，每个模型在 `provider.api` 写自己那条。驱动、地址都不是手写的，模型写了自己的地址的照它发（`Provider::for_model`；路由、`provider.test`、`miyu rescue` 都照它），key、头照这一家的；手写了地址或者驱动的照手写的。没有这一格的老目录（出厂快照 2026-10-01 的还是 `https://opencode.ai/zen/go/v1`、`https://opencode.ai/zen/v1` 一条走三种协议）照这一家的：旧地址 2026-11-17 还答（不带 key 回 401，不是 404）。只照这一家的地址发会错：Go 的 Anthropic 那几个（MiniMax、Qwen）发到 `…/inference/go/openai/v1/messages`，404。Zen 的地址在档案里钉在旧的 `https://opencode.ai/zen/v1`（核心主会话 2026-11-17 定）：免费档在新地址上认不认没实测出来（新旧地址照下面第 1 条的头、不带 key 打免费模型都回 429 `FreeUsageLimitError`，出不了字），实测出字以前不跟；档案写了地址，模型自己的地址就不换。
 
 1. **头**：档案 `[providers.opencode]`（Zen）和 `[providers.opencode-go]`（Go）各带几个头，值里的 `{session_digest}` 照种子换成 opencode 会话编号的样子，26 位小写十六进制：前 12 位是时间照 opencode 的倒序编法（`~(毫秒 × 4096)` 的低 48 位），后 14 位是种子的 SHA-256 的十六进制前 14 位（施工 8-14 补，2026-10-13）。种子是会话编号（同一个会话重启以后还是它；分叉出来的会话照来源会话的编号，施工 FC-1：前缀和来源会话一样，上游认同一个会话头才吃得到它的缓存，挑 key 也照它），是 UUIDv7 的照它记的毫秒数编时间；一次性调用是用途，`provider.test` 是固定的 `provider.test`，这两种照固定的 2026-01-01 编。值里只认这一个字段，别的 `{…}` 读档案时就报错（档案读不进来）。头由 HTTP 执行器照端点另配的头发（`http.md`），和驱动无关；名字和上面同名的（`User-Agent`）换掉上面那个。
 

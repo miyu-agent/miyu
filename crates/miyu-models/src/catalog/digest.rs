@@ -7,6 +7,8 @@
 //!
 //! 两份索引（名字、规整过的名字）也照平铺的样子写下来（施工 V-8，版本 2）：读回来照编号拼，不再一个个规整、排序、去重。
 //! 原来读回来约 8 ms，三成多花在现建索引上；核心起来时载入会话要等它读完。
+//!
+//! 版本 3（施工 GO-1）：模型的一行多一格自己的地址（`provider.api`）。
 
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -20,10 +22,10 @@ use super::{
 };
 
 /// 写法的版本：这一份的样子变了就加一。
-pub const VERSION: u32 = 2;
+pub const VERSION: u32 = 3;
 
 /// 一个模型一行：名字、显示名、家族、能不能调工具、输入、窗口、最大输出、价格、思考强度、能不能调温度、状态、发布日期、
-/// 包名、交错思考的字段。字写 `texts` 里的编号，价格、思考强度写各自那一排里的编号。
+/// 包名、交错思考的字段、地址。字写 `texts` 里的编号，价格、思考强度写各自那一排里的编号。
 type Row = (
     u32,
     Option<u32>,
@@ -35,6 +37,7 @@ type Row = (
     Option<u32>,
     Option<u32>,
     Option<bool>,
+    Option<u32>,
     Option<u32>,
     Option<u32>,
     Option<u32>,
@@ -141,6 +144,7 @@ impl Catalog {
                     release_date: at(row.11)?,
                     npm: at(row.12)?,
                     interleaved: at(row.13)?,
+                    api: at(row.14)?,
                 };
                 models.push((text_at(row.0)?, model));
             }
@@ -224,6 +228,7 @@ impl<'a> Writer<'a> {
             model.release_date.as_ref().map(|text| self.text(text)),
             model.npm.as_ref().map(|text| self.text(text)),
             model.interleaved.as_ref().map(|text| self.text(text)),
+            model.api.as_ref().map(|text| self.text(text)),
         )
     }
 

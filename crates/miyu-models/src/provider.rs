@@ -155,6 +155,8 @@ pub struct Provider {
     pub local: bool,
     /// 驱动是配置里手写的（施工 8-14）：压过目录里模型的 `npm`。
     pub driver_written: bool,
+    /// 地址是配置、档案写的（施工 GO-1）：压过目录里模型的 `api`。照目录这一家推出来的不算。
+    pub base_url_written: bool,
     /// 驱动从哪来（施工 8-26）：配置手写的、档案的、目录的，都没有的是默认的 `openai-chat`。`model.list` 的 `driver_from`。
     pub driver_from: DriverFrom,
     /// 档案写了思考怎么回传（施工 8-14）：压过目录的 `interleaved`。
@@ -188,6 +190,7 @@ impl Provider {
     /// [`crate::facts::Facts::wire`]），`npm` 是档案的 `[npm]` 表。
     ///
     /// - 驱动：手写的照手写的；不然模型写了自己的包名的照它换，换不出现在有的驱动的，这个模型用不了；都没有的照这一家的。
+    /// - 地址（施工 GO-1）：驱动、地址都不是手写的，模型写了自己的地址的照它（一家按协议分地址的，跟着包名走）；别的照这一家的。
     /// - 开关：走 `openai-chat`、档案没写 `reasoning` 的，目录写了交错思考的照它回传（`always` 是真的），认不出的字段照旧。
     ///
     /// # Errors
@@ -211,6 +214,13 @@ impl Provider {
                 ))
             })?;
         }
+        if let Some(api) = wire
+            .api
+            .as_deref()
+            .filter(|api| !api.is_empty() && !self.driver_written && !self.base_url_written)
+        {
+            speaking.base_url = Address::Literal(api.to_string());
+        }
         let field = match wire.interleaved.as_deref() {
             Some("reasoning_content") => Some(ReasoningField::ReasoningContent),
             Some("reasoning") => Some(ReasoningField::Reasoning),
@@ -225,6 +235,15 @@ impl Provider {
             };
         }
         Ok(speaking)
+    }
+
+    /// 照 [`Provider::for_model`] 换了地址的（施工 GO-1）：和这一家 `of` 的不一样的那个字面地址；没换的没有。发请求的一方
+    /// 照这一家先算好地址和 key，换了的只换地址，key、头照旧。
+    pub fn moved_address(&self, of: &Provider) -> Option<&str> {
+        match &self.base_url {
+            Address::Literal(url) if self.base_url != of.base_url => Some(url),
+            _ => None,
+        }
     }
 
     /// 发给模型 `model` 时真走的驱动（施工 8-22，温度的上限照它）：照 [`Provider::for_model`]，这个模型用不了的照这一家的
@@ -333,6 +352,7 @@ pub fn provider(values: &Values, knowledge: &Knowledge<'_>, id: &str) -> Result<
         None => by_id.unwrap_or_default(),
     };
     let written_url = written_url.or_else(|| profile.base_url.clone().map(Address::Literal));
+    let base_url_written = written_url.is_some();
     let from_npm = side
         .as_ref()
         .and_then(|side| side.npm.as_ref())
@@ -402,6 +422,7 @@ pub fn provider(values: &Values, knowledge: &Knowledge<'_>, id: &str) -> Result<
         recognized: side.map(|side| side.recognized),
         local,
         driver_written,
+        base_url_written,
         driver_from,
         reasoning_written: profile
             .compat

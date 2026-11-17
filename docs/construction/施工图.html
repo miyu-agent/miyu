@@ -1570,6 +1570,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sEN1"><span class="n">EN-1</span>英文界面漏的几句<span class="st">…</span></a></li>
         <li><a class="step review" href="#sTD1"><span class="n">TD-1</span>命令行拒绝语去句号<span class="st">…</span></a></li>
         <li><a class="step review" href="#sEN2"><span class="n">EN-2</span>核心起不来照代码说<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sGO1"><span class="n">GO-1</span>opencode Go 按协议分地址<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -61284,6 +61285,59 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/EN-2-核心起不来照代码说.md</code>；蓝图 <code>core.md</code>、<code>ipc.md</code>、<code>client.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sGO1" aria-labelledby="h-sGO1">
+  <div class="sheet-head"><h2 id="h-sGO1"><span class="no">GO-1</span>opencode Go 按协议分地址</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">opencode 2026-11 起按协议分地址，models.dev 给每个模型写了自己那条。原来只认这一家的地址，新目录里 MiniMax、Qwen 这几个走 anthropic 的发到 <code>…/openai/v1/messages</code>，404。现在照模型自己的地址发，手写的照手写的。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-models · catalog.rs、catalog/digest.rs、facts.rs、provider.rs；miyu-session · route/base.rs、route/probe.rs</span><span class="dir-note">GO-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>目录读模型的 <code>provider.api</code></li>
+              <li>合资料：第 1、2 层对上的带上它</li>
+              <li>驱动、地址都不是手写的：照模型的地址</li>
+              <li>路由、<code>provider.test</code> 只换地址，key、头照这一家的</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">地址跟着包名走</span><span class="rl">模型写了自己的照它</span></div>
+          <div class="tile new"><span class="nm">手写的不跳</span><span class="rl">配置、档案写了地址或驱动的照写的</span></div>
+          <div class="tile new"><span class="nm">快照不换</span><span class="rl">旧地址还答，另拍板</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">GO-1</dd></div>
+        <div><dt>名称</dt><dd>opencode Go 按协议分地址</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">GO-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>minimax-m3 照目录走 <code>…/inference/go/anthropic/v1</code>（改前红）</span></li>
+        <li><span class="ok">✓</span><span>假服务器上真发：<code>/anthropic/v1/messages</code>、<code>/openai/v1/chat/completions</code>（改前红）</span></li>
+        <li><span class="ok">✓</span><span>手写地址的中转、手写驱动的照手写的</span></li>
+        <li><span class="ok">✓</span><span>不带 key 探官方新旧地址：401 对 404</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/GO-1-opencode-Go按协议分地址.md</code>；蓝图 <code>models.md</code> 第八条。</li>
       </ul>
     </div>
   </div>

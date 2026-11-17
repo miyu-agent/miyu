@@ -76,6 +76,8 @@ fn the_shipped_profiles_keep_what_was_in_the_code() {
     assert_eq!(zen.headers["x-opencode-project"], "global");
     assert_eq!(zen.headers["x-opencode-session"], "ses_{session_digest}");
     assert_eq!(zen.placeholder_tools, ["read", "shell"]);
+    // 施工 GO-1：Zen 的地址钉在旧的 /zen/v1（免费档在新地址上没实测出字），模型自己的地址不跟；Go 照模型的走。
+    assert_eq!(zen.base_url.as_deref(), Some("https://opencode.ai/zen/v1"));
     assert!(
         !include_str!("../../../../resources/core/drivers/placeholder-tool.txt").is_empty(),
         "占位说明在资源里"

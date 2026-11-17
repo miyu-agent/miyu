@@ -18,7 +18,8 @@ fn the_wire_comes_only_from_the_first_two_layers() {
         flash.wire,
         Wire {
             npm: None,
-            interleaved: Some("reasoning_content".to_string())
+            interleaved: Some("reasoning_content".to_string()),
+            api: None,
         }
     );
     let (minimax, _) = facts_of(&held, go, "opencode-go", "minimax-m3");

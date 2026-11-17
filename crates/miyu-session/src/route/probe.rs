@@ -225,6 +225,10 @@ async fn run(
     let asking = speaking
         .build(listing_texts().map_err(unready)?)
         .ok_or_else(|| unready(super::unbuilt(&speaking)))?;
+    // 模型自己的地址（施工 GO-1）：列模型照这一家的，发那一句照这个模型的。
+    let base_url = speaking
+        .moved_address(&provider)
+        .map_or(base_url, str::to_string);
     let endpoint = Reached {
         provider,
         base_url,

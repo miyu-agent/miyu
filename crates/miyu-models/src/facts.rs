@@ -51,6 +51,8 @@ pub struct Wire {
     pub npm: Option<String>,
     /// 交错思考写回哪个字段。
     pub interleaved: Option<String>,
+    /// 模型自己的地址（施工 GO-1）：一家按协议分地址的，跟着包名走。
+    pub api: Option<String>,
 }
 
 /// 一个模型的资料：每一格各有来源。没有的值是 `None`，来源照样有（驱动的保守默认）。
@@ -185,6 +187,7 @@ pub fn facts(
         .map_or_else(Wire::default, |(entry, _, _)| Wire {
             npm: entry.npm.as_deref().map(str::to_string),
             interleaved: entry.interleaved.as_deref().map(str::to_string),
+            api: entry.api.as_deref().map(str::to_string),
         });
     // 能不能关思考、温度的上限照这个模型真走的驱动（施工 8-14、8-22）；它用不了的照这一家的（发的时候当场 `no_model`）。
     let speaking = provider

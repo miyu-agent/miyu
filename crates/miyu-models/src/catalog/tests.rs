@@ -215,6 +215,17 @@ fn a_model_carries_its_own_package_and_interleaved_field() {
     );
     assert_eq!(odd.model("p", "number").expect("有").interleaved, None);
     assert_eq!(odd.model("p", "no-npm").expect("有").npm, None);
+    assert_eq!(
+        odd.model("p", "no-npm").expect("有").api.as_deref(),
+        Some("https://x.invalid"),
+        "模型自己的地址（施工 GO-1）"
+    );
+    let digest = odd.digest("odd");
+    assert_eq!(
+        Catalog::from_digest(&digest, "odd").as_ref(),
+        Some(&odd),
+        "整理好的一份带着它"
+    );
 }
 
 #[test]
@@ -344,7 +355,7 @@ fn a_digest_reads_back_the_same_catalog_and_only_for_its_own_fingerprint() {
         None,
         "指纹不对"
     );
-    let other = digest.replacen("{\"v\":2,", "{\"v\":1,", 1);
+    let other = digest.replacen("{\"v\":3,", "{\"v\":2,", 1);
     assert_ne!(other, digest);
     assert_eq!(
         Catalog::from_digest(&other, "snapshot 1 2"),

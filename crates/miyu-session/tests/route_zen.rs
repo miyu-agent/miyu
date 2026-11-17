@@ -34,6 +34,11 @@ fn trimmed() -> Loaded {
 
 /// 档案照出厂的写法：`[npm]` 和 Go 的头。目录读完了。
 fn zen_routes() -> Routes {
+    routes_over(trimmed())
+}
+
+/// 同 [`zen_routes`]，目录是 `catalog`。
+fn routes_over(catalog: Loaded) -> Routes {
     let profiles = json!({
         "npm": {"@ai-sdk/openai-compatible": "openai-chat", "@ai-sdk/anthropic": "anthropic",
                 "@ai-sdk/openai": "openai-responses"},
@@ -54,7 +59,7 @@ fn zen_routes() -> Routes {
     .with_placeholder_tool(
         include_str!("../../../resources/core/drivers/placeholder-tool.txt").to_string(),
     );
-    data.loaded(Some(trimmed()), Observed::default());
+    data.loaded(Some(catalog), Observed::default());
     routes_with(Arc::new(data), Duration::from_secs(60))
 }
 
@@ -336,4 +341,48 @@ async fn the_zen_free_tier_headers_and_placeholders_go_out() {
         json!({"type": "object", "properties": {}}),
         "占位的参数格式是空的"
     );
+}
+
+/// 施工 GO-1：models.dev 2026-11 起 opencode Go 按协议分地址（这一家写 `…/openai/v1`，每个模型写自己那条）。没写地址的照
+/// 模型自己的发：走 anthropic 的发到 `…/anthropic/v1/messages`，别的照这一家的；key、头照这一家的。
+#[tokio::test]
+async fn a_go_model_with_its_own_address_is_sent_there() {
+    let server = Server::start(vec![hello("anthropic"), hello("openai-chat")]).await;
+    let base = server.base_url.trim_end_matches("/v1");
+    let text = json!({"opencode-go": {
+        "id": "opencode-go", "npm": "@ai-sdk/openai-compatible", "api": format!("{base}/openai/v1"),
+        "models": {
+            "minimax-m3": {"provider": {"npm": "@ai-sdk/anthropic", "api": format!("{base}/anthropic/v1")}},
+            "deepseek-v4.1-flash": {"provider": {"npm": "@ai-sdk/openai-compatible",
+                                                 "api": format!("{base}/openai/v1")}}
+        }
+    }})
+    .to_string();
+    let routes = routes_over(Loaded {
+        catalog: Catalog::parse(&text).expect("读得进").catalog,
+        source: CatalogSource::Cache,
+        fetched: "2026-11-17T00:00:00.000Z".to_string(),
+    });
+    let config = frozen(
+        "[providers.opencode-go]\nkey = { env = \"GO_KEY\" }\n\n[models]\nchat = \"opencode-go/minimax-m3\"\n",
+        &key(),
+    );
+    let (_scratch, blobs) = blobs();
+    let entry = entry(&routes);
+    for model in ["minimax-m3", "deepseek-v4.1-flash"] {
+        let reference = format!("opencode-go/{model}");
+        let answered = entry
+            .call(&config, &blobs, asking(Some(&reference), "title", "hi"))
+            .await
+            .expect("答得上来");
+        assert_eq!(answered.text, "你好！", "{model}");
+    }
+    let received = server.received();
+    let paths: Vec<&str> = received.iter().map(|each| each.path.as_str()).collect();
+    assert_eq!(
+        paths,
+        ["/anthropic/v1/messages", "/openai/v1/chat/completions"]
+    );
+    assert_eq!(received[0].header("x-api-key"), Some("sk-go"));
+    assert!(session_header(&server, 0).is_some(), "档案的头照带");
 }

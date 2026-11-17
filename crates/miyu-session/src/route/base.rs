@@ -140,7 +140,11 @@ impl Routes {
             (facts, speaking)
         });
         let speaking = speaking?;
-        let endpoint = choice.endpoint.clone();
+        let mut endpoint = choice.endpoint.clone();
+        // 模型自己的地址（施工 GO-1）：一家按协议分地址的，照真发的这个模型换，key、头照这一家的。
+        if let Some(url) = speaking.moved_address(&target.provider) {
+            endpoint.base_url = url.to_string();
+        }
         // 思考强度：会话记的这个模型有的照它（施工 SM-1），不然照配置的默认（施工 8-18，已经照档位查过）。
         let effort = miyu_models::effort::held(session, facts.levels())
             .map(str::to_string)

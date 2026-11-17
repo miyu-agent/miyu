@@ -208,6 +208,7 @@ fn resolving_the_address_follows_the_reference_or_fails_cleanly() {
         recognized: None,
         local: false,
         driver_written: false,
+        base_url_written: false,
         driver_from: crate::provider::DriverFrom::Profile,
         reasoning_written: false,
         headers: std::collections::BTreeMap::new(),
@@ -319,6 +320,7 @@ fn wire(npm: Option<&str>, interleaved: Option<&str>) -> Wire {
     Wire {
         npm: npm.map(str::to_string),
         interleaved: interleaved.map(str::to_string),
+        api: None,
     }
 }
 
