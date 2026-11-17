@@ -26,7 +26,7 @@
 
 | `kind` | 格 |
 |---|---|
-| `user` | `text`；`attachments`（`kind`、`name`、`media_type`、`blob`，图有 `width`、`height`，带了路径的有 `path`；只给路径的附件 `kind` 是 `file`，没有 `media_type`、`blob`，有 `name`、`path`、`path_only: true`，头写了大小的有 `size`）；`from`（别处来的话的来处）；`level`；`queued: true`（排着、她还没听到）；`withdrawn: true`（排着的被退回了：头把字放回输入框）；`round`（长期目标的续轮是第几轮）；`shell`（人用 `!` 打的命令，`text` 是那一行：还没跑完的是 `{"running": true}`，跑完了是 `exit` 或 `signal`、`text`（输出）、`omitted`、`duration_ms`，异常结束的另有 `reason`：`timed_out`、`interrupted`、`aborted`） |
+| `user` | `text`；`attachments`（`kind`、`name`、`media_type`、`blob`，图有 `width`、`height`，带了路径的有 `path`；只给路径的附件 `kind` 是 `file`，没有 `media_type`、`blob`，有 `name`、`path`、`path_only: true`，头写了大小的有 `size`）；`from`（别处来的话的来处，写法同事件的 `by`；场所里的人说的再带 `name`：那条消息的 `venue.name`（群名片、昵称），只当显示名、不可信，头照常转义，例如画成「昵称（qq:号）」；没写名字的不带）；`level`；`queued: true`（排着、她还没听到）；`withdrawn: true`（排着的被退回了：头把字放回输入框）；`round`（长期目标的续轮是第几轮）；`shell`（人用 `!` 打的命令，`text` 是那一行：还没跑完的是 `{"running": true}`，跑完了是 `exit` 或 `signal`、`text`（输出）、`omitted`、`duration_ms`，异常结束的另有 `reason`：`timed_out`、`interrupted`、`aborted`） |
 | `reply` | `text`（Markdown 原文，解析和渲染是头的事）；`open: true`（还在写）；`persona`：这一轮是哪个人格回的（编号，无人格的是 `null`）。会话中途换了人格的，以前的回复照旧是旧人格：人换的那一下先记着，真换上（下一个回合开始）以后的回复才是新的 |
 | `media` | 她发出去的一张图：`image`、`alt`、`sticker` |
 | `group` | 时间线的一段（几步思考和工具）：`steps`、`open`、`summary`、`summary_en`（收起那一行）、`took_ms`、`failed` |
@@ -81,4 +81,5 @@
 | `compaction_line` | 会话钉着的压缩触发线（`session.configure` 的 `compaction_line`）：窗口的百分之几；钉了马上推，没钉的（跟着 `compaction.line`）不写。生效的压缩线看 `context.compaction_line` |
 | `todos_done` | 待办全部做完而清空时，清空前那一份（头打勾停一下再收） |
 | `goal` | 长期目标：`{text, limit, state, reason, round, since, usage}`，`state` 是 `running`、`paused`、`completed`、`blocked`、`waiting` |
-| `jobs` | 这个会话直接派出去的任务（在跑的和最近做完的 20 个）：`{job, what, title, state, started, ended, session, command, exit_code, signal, why, nested, fork}`（`nested` 同 `tool` 的，脚本调过工具的后台命令才有；`fork` 只有 fork 子代理才有，是 `true`，头照它换图标），`state` 是 `running`、`done`、`failed`、`stopped`、`aborted` |
+| `jobs` | 这个会话直接派出去的任务（在跑的和最近做完的 20 个）：`{job, what, title, state, started, ended, session, command, exit_code, signal, why, nested, fork}`（`nested` 同 `tool` 的，脚本调过工具的后台命令才有；`fork` 只有 fork 子代理才有，是 `true`，头照它换图标），`state` 是 `running`、`done`、`failed`、`stopped`、`aborted`。场所会话里桥分出去的并行支线（`session.fork`）也列在这里，排在任务后面：`{job, what: "agent", fork: true, session, title, state, started, ended?}`，`job`、`session` 都是支线的会话编号，`title` 是支线的标题、没有的是第一句话的头一行，`state` 是 `running`（在跑、还没跑完第一轮）、`done`、`stopped`（被打断）；在跑的都列，做完的只留最近的 20 条；点开照 `session` 订阅它的视图流 |
+| `title` | 会话的标题：起了的才有；改了推一份新的状态。场所会话不在会话列表里，头照它写会话名 |

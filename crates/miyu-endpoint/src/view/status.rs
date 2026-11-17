@@ -4,6 +4,7 @@
 
 use serde_json::{Value, json};
 
+use miyu_kernel::id::SessionId;
 use miyu_session::{Current, Goal, Handle};
 use miyu_view::Status;
 
@@ -17,6 +18,20 @@ pub(crate) struct Fixed {
     pub(crate) preset: Option<Value>,
     /// 订阅时会话是明着无工具的（施工 P-16 下补）：`preset` 那时是 null。
     pub(crate) no_tools: bool,
+    /// 是场所会话（施工 VW-2）：桥分出去的并行支线列进 `jobs`（`branches.rs`）。
+    pub(crate) venue: bool,
+}
+
+/// 会话这一刻的标题（施工 VW-2）：照会话列表的算法（索引那一行补到日志末尾），没起标题的、读不出来的没有。订阅回应、会话状态
+/// 都带它；场所会话不在会话列表里，头只能从这里拿。
+pub(crate) async fn title_of(core: &Core, session: &SessionId) -> Option<String> {
+    let (root, index, id) = (core.root.clone(), core.index(), session.clone());
+    tokio::task::spawn_blocking(move || crate::list::one(&root, &index, &id, false))
+        .await
+        .ok()
+        .flatten()
+        .map(|listed| listed.title)
+        .filter(|title| !title.is_empty())
 }
 
 /// 整份会话状态。`current` 是向会话 actor 要的那一份（拿不到的不写那几格）。

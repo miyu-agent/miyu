@@ -283,6 +283,9 @@ async fn view(
         persona: reply.get("persona").cloned(),
         preset: reply.get("preset").cloned(),
         no_tools: reply.get("no_tools") == Some(&json!(true)),
+        venue: created_of(core, &session)
+            .await
+            .is_some_and(|created| created.venue.as_str() != crate::list::LOCAL),
     };
     let view = View::start(
         Arc::clone(core),
@@ -317,6 +320,10 @@ async fn head(core: &Core, handle: &Handle, session: &SessionId) -> Value {
         } else if let Some(preset) = created.preset {
             reply["preset"] = json!(preset);
         }
+    }
+    // 标题（施工 VW-2）：起了的才写；场所会话不在会话列表里，头照它写会话名。视图流之后变了推 `view.status`。
+    if let Some(title) = crate::view::status::title_of(core, session).await {
+        reply["title"] = json!(title);
     }
     // 当前的待办（施工 D-3）：没有的不写；之后变了照推送的 `todos.changed`。
     let todos = handle.todos();

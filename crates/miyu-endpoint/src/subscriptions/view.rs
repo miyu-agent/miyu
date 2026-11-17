@@ -9,6 +9,8 @@
 //!   actor 重要一份「当前的」（用量、权限、工作区），只有增量的不打扰它。
 //! - 会话树（施工 9-8 补下，`view/tree.rs`）：任务表变了，或者有子代理时别的会话动了（会话列表报的；子代理新派的孙会话还
 //!   不在记着的成员里，所以不只看成员），重量一遍再比。
+//! - 标题、场所会话的并行支线（施工 VW-2）：标题照落了盘的 `session.meta_changed` 换；支线是别的会话，会话列表报它动了才重读
+//!   那一条（`view/branches.rs`）。
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -17,6 +19,7 @@ use std::time::Duration;
 use serde_json::json;
 use tokio::sync::{broadcast, mpsc};
 
+use miyu_kernel::event::{Body, MetaChanged};
 use miyu_kernel::id::{JobId, SessionId};
 use miyu_kernel::time::Timestamp;
 use miyu_session::{Current, Ended, Handle, Pushed, Subscription};
@@ -24,6 +27,7 @@ use miyu_view::{Change, JobState, Projector};
 
 use crate::Core;
 use crate::hello::Shaken;
+use crate::view::branches::Branches;
 use crate::view::status::{Fixed, whole};
 use crate::view::tree::{self, Tree};
 
@@ -45,6 +49,10 @@ pub(crate) struct View {
     shape: Vec<(JobId, JobState)>,
     /// 哪个会话动了：树里的动了就重量。
     touched: broadcast::Receiver<SessionId>,
+    /// 会话这一刻的标题（施工 VW-2）：订阅时照会话列表的算法取，之后照落了盘的 `session.meta_changed` 换。
+    title: Option<String>,
+    /// 场所会话的并行支线（施工 VW-2，`view/branches.rs`）：只有场所会话有。
+    branches: Option<Branches>,
 }
 
 impl std::fmt::Debug for View {
@@ -68,6 +76,12 @@ impl View {
         current: Option<Current>,
     ) -> View {
         let touched = core.listing.touched();
+        let session = handle.id().clone();
+        let title = crate::view::status::title_of(&core, &session).await;
+        let branches = match fixed.venue {
+            true => Some(Branches::measure(&core, &session).await),
+            false => None,
+        };
         let mut view = View {
             core,
             shaken,
@@ -80,6 +94,8 @@ impl View {
             tree: Tree::default(),
             shape: Vec::new(),
             touched,
+            title,
+            branches,
         };
         view.remeasure().await;
         view.status = view.whole();
@@ -114,7 +130,22 @@ impl View {
             .as_ref()
             .map(|current| crate::usage::own(&current.tally));
         tree::merge(&self.core, &mut status, &self.tree, own);
+        if let Some(title) = &self.title {
+            status["title"] = json!(title);
+        }
+        if let (Some(branches), Some(jobs)) = (&self.branches, status["jobs"].as_array_mut()) {
+            jobs.extend(branches.rows());
+        }
         status
+    }
+
+    /// 会话 `touched` 动了（施工 VW-2）：是这个场所会话的支线的重读那一条，列出来的变了交回要推的那一条。
+    async fn rebranch(&mut self, session: &SessionId, touched: &SessionId) -> Option<String> {
+        let branches = self.branches.as_mut()?;
+        if !branches.touched(&self.core, session, touched).await {
+            return None;
+        }
+        self.refresh(session)
     }
 
     /// 一批喂完以后：有落了盘的事件的，重要一份「当前的」；任务表变了的重量会话树；和上一份比，变了交回要推的那一条。
@@ -180,6 +211,13 @@ impl View {
             match pushed.as_ref() {
                 Pushed::Events(events) => {
                     for event in events {
+                        // 改了标题的（施工 VW-2）：会话状态跟着换，空的是去掉。
+                        if let Body::MetaChanged(MetaChanged {
+                            title: Some(title), ..
+                        }) = &event.body
+                        {
+                            self.title = Some(title.clone()).filter(|title| !title.is_empty());
+                        }
                         changes.extend(self.projector.event(event));
                     }
                 }
@@ -298,14 +336,21 @@ async fn relay(
             }
             touched = view.touched.recv() => {
                 // 有子代理的才重量：子代理新派的孙会话还不在记着的成员里，它动了也算（子代理那一项的 `spawned` 跟着变）。
-                let moved = match touched {
-                    Ok(touched) => !view.tree.branches.is_empty() && touched != *session,
+                let moved = match &touched {
+                    Ok(touched) => !view.tree.branches.is_empty() && touched != session,
                     // 漏了几条：不知道是谁，照动了算。
                     Err(broadcast::error::RecvError::Lagged(_)) => !view.tree.branches.is_empty(),
                     Err(broadcast::error::RecvError::Closed) => false,
                 };
                 if moved
                     && let Some(line) = view.retree(session).await
+                    && out.send(line).await.is_err()
+                {
+                    return;
+                }
+                // 场所会话的支线（施工 VW-2）：动了的是它的支线才重读那一条。
+                if let Ok(touched) = &touched
+                    && let Some(line) = view.rebranch(session, touched).await
                     && out.send(line).await.is_err()
                 {
                     return;

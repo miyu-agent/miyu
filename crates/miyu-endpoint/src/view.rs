@@ -7,6 +7,7 @@
 //! 只读地读会话目录里的日志，不为翻历史载入会话：读的时候会话照常跑，正在写的那半行不算。只读一页要的那一截（施工 V-41
 //! 上，`view/read.rs`）：先数一遍行、不解，再只解最后几轮和切点前要的那几行；原来每一页都整份读（`read_events`）。
 
+pub(crate) mod branches;
 mod broken;
 mod detail;
 mod page;

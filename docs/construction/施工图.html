@@ -1584,6 +1584,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sUX1"><span class="n">UX-1</span>设置项正名，软件包只留一个「启用」<span class="st">…</span></a></li>
         <li><a class="step review" href="#sSW1"><span class="n">SW-1</span>分节跟着运行时给选项的项<span class="st">…</span></a></li>
         <li><a class="step review" href="#sVP1"><span class="n">VP-1</span>场所消息「戳一戳」<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sVW2"><span class="n">VW-2</span>场所会话的「查看会话」<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -62052,6 +62053,68 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/VP-1-场所消息戳一戳.md</code>；蓝图 <code>venues.md</code>「场所的格」、<code>kernel/request.md</code>「群里的一行」；登记簿 <code>26-提示词.md</code> 第十节；协议参考 <code>venues</code> 中英两份。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sVW2" aria-labelledby="h-sVW2">
+  <div class="sheet-head"><h2 id="h-sVW2"><span class="no">VW-2</span>场所会话的「查看会话」</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">网页看群聊：每条话写得出是谁发的，并行的支线在右侧边栏，会话有群名做标题。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates · miyu-view/src/entry/sender.rs</span><span class="dir-note">VW-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>user</code> 条目的 <code>from</code> 多 <code>name</code>：那条消息的 <code>venue.name</code></li>
+            </ol>
+          </div>
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates · miyu-endpoint/src/view/branches.rs</span><span class="dir-note">VW-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>场所主线的支线列进会话状态 <code>jobs</code>：<code>what: agent</code>、<code>fork: true</code>、<code>session</code> 是支线</li>
+              <li>订阅时照日志第一条认支线；会话列表报支线动了才重读那一条</li>
+              <li>在跑的都列，做完的留最近 20 条</li>
+            </ol>
+          </div>
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates · miyu-endpoint/src/view/status.rs、connection/streams.rs</span><span class="dir-note">VW-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>订阅回应、<code>view.status</code> 带 <code>title</code>，改了推整份</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">名字只当显示名</span><span class="rl">不可信，头照常转义</span></div>
+          <div class="tile new"><span class="nm">支线像子代理一样列</span><span class="rl">网页右侧边栏现成读 <code>jobs</code>，不改</span></div>
+          <div class="tile new"><span class="nm">做完的支线留 20 条</span><span class="rl">同任务表；一天四十几条全列一推十几 KB</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">VW-2</dd></div>
+        <div><dt>名称</dt><dd>场所会话的「查看会话」</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">VW-2</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>沙箱里假桥造群会话、两条支线各跑一轮、设群名：<code>subscribe {stream: "view"}</code> 回应带 <code>title</code>，<code>status.jobs</code> 两条 <code>fork: true</code>、<code>done</code>，<code>user</code> 的 <code>from.name</code> 是群名片</span></li>
+        <li><span class="ok">✓</span><span>网页头打开这个群会话：标题是群名，右侧边栏列着两条支线</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/VW-2-场所会话的查看会话.md</code>；蓝图 <code>view.md</code>（条目 <code>user</code>、会话状态 <code>jobs</code>、<code>title</code>）；协议参考 <code>view</code>、<code>connection</code> 中英两份。</li>
       </ul>
     </div>
   </div>

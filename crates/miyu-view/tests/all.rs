@@ -29,4 +29,5 @@ mod status;
 mod steps;
 mod turns;
 mod undo;
+mod venue_names;
 mod web;

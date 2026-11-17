@@ -120,7 +120,7 @@
 
 | `stream` | 推什么 | `subscribe` 的回应 |
 |---|---|---|
-| `events` | 一个会话的事件，原样 | 会话这时的状态：`model`、`limits`、`permission`、`usage`、`jobs`、`workspace`、`default_workspace`（会话的默认工作区）、`compactable`（这时有没有可压缩的，也就是 `session.compact` 会不会回 `nothing_to_compact`；变了推 `compactable.changed`），有的话还有 `compaction_line`（会话钉的压缩触发线）、`persona`、`preset`、`todos`、`goal`、`vision`（会话钉的看图模型）、`nested`（在跑的 `miyu call`：`[{id, name, args, at}]`，`at` 是各自开始的时刻）；写了 `after` 的还有 `upto` |
+| `events` | 一个会话的事件，原样 | 会话这时的状态：`model`、`limits`、`permission`、`usage`、`jobs`、`workspace`、`default_workspace`（会话的默认工作区）、`compactable`（这时有没有可压缩的，也就是 `session.compact` 会不会回 `nothing_to_compact`；变了推 `compactable.changed`），有的话还有 `compaction_line`（会话钉的压缩触发线）、`persona`、`preset`、`todos`、`goal`、`vision`（会话钉的看图模型）、`nested`（在跑的 `miyu call`：`[{id, name, args, at}]`，`at` 是各自开始的时刻）、`title`（会话的标题，起了的才有）；写了 `after` 的还有 `upto` |
 | `view` | 一个会话的视图投影（画好就能显示的条目） | 同上，再加最新一页条目和完整的会话 `status` |
 | `config` | 配置的变化 | `{}` |
 | `sessions` | 会话列表里一项变了 | `{"sessions": [<项>…]}`，全部 |

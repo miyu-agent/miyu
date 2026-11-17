@@ -15,12 +15,14 @@ use crate::status::Speed;
 
 mod job;
 mod nested;
+mod sender;
 mod shell;
 mod swap;
 mod touched;
 
 pub use job::{JobDone, JobEnd, Mark, Output, WatchedLines};
 pub use nested::{Nested, NestedCall};
+pub use sender::Sender;
 pub use shell::Shell;
 pub use swap::{ModelSwap, Recast, Swapped, Was};
 pub use touched::{SkillUsed, TouchKind, Touched};
@@ -80,13 +82,9 @@ pub struct User {
     /// 附件，照先后。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub attachments: Vec<Attachment>,
-    /// 别处来的话的来处；人在本机说的没有。
-    #[serde(
-        default,
-        deserialize_with = "crate::relay::some",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub from: Option<By>,
+    /// 别处来的话的来处；人在本机说的没有。场所里的人说的带名字（施工 VW-2，[`Sender`]）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub from: Option<Sender>,
     /// 发出去那一刻的权限级别：`workspace`、`full`、`read_only`。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub level: Option<String>,

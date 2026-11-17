@@ -7,7 +7,7 @@ use miyu_kernel::id::Seq;
 use miyu_kernel::origin::By;
 
 use super::Projector;
-use crate::entry::{Attachment, Body, Entry, EntryId, Shell, User};
+use crate::entry::{Attachment, Body, Entry, EntryId, Sender, Shell, User};
 
 /// 长期目标的续轮是第几轮（施工 X-8 补）：模块 `goal` 发的、命令编号照约定写的才有。
 fn round(event: &Event) -> Option<u32> {
@@ -40,7 +40,7 @@ impl Projector {
         let user = User {
             text,
             attachments,
-            from: from(&event.by),
+            from: from(&event.by, message),
             level: self.level.clone(),
             queued,
             withdrawn: false,
@@ -186,10 +186,13 @@ fn content(blocks: &[Block]) -> (String, Vec<Attachment>) {
     (text, attachments)
 }
 
-/// 别处来的话的来处：人自己说的没有。
-fn from(by: &By) -> Option<By> {
+/// 别处来的话的来处：人自己说的没有；场所消息带着名字的写上名字（施工 VW-2）。
+fn from(by: &By, message: &MessageUser) -> Option<Sender> {
     match by {
         By::Person(person) if person.via.is_none() => None,
-        other => Some(other.clone()),
+        other => Some(Sender {
+            by: other.clone(),
+            name: message.venue.as_ref().and_then(|venue| venue.name.clone()),
+        }),
     }
 }
