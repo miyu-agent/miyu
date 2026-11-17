@@ -277,23 +277,18 @@ async fn spawn_settled(plan: &Plan) -> io::Result<(Child, Kept)> {
 /// 里建），标准错误接到它的文件上，核心丢下它时杀掉。核心没了它跟着走（施工 XH-1，[`miyu_sandbox::lifeline::keep`]）：Unix 上
 /// 自成一组、组里有看门的，Windows 上在核心的作业对象里；看门的起不来的记一行 `WARN`，照旧拉起。
 fn spawn(plan: &Plan) -> io::Result<(Child, Kept)> {
-    use miyu_store::program::{self, HOME, RESOURCES};
+    use miyu_store::program;
     let root = miyu_store::root::DataRoot::at(plan.home.clone());
     let dirs = program::PackageDirs::ready(&root, &plan.instance.package, plan.package.clone())?;
     let errors = stderr::open(&plan.log)?;
     let mut command = plan.launch.command();
-    // 主程序的真实位置（施工 G-15）：核心就是 `miyu core`，扩展要拉起核心、跑 `miyu` 的子命令照它找。
-    if let Some(program) = miyu_store::env::Env::current().exe {
-        command.env(miyu_store::env::PROGRAM, program);
-    }
-    // 环境照核心的，数据根、资源目录设成核心手上的（施工 O-18）：扩展和核心认同一份，不管核心是怎么找到它们的；包文件夹由核心
-    // 挑是哪一层，扩展照它读自己的文件，不自己拼数据根的布局（施工 S-6 上）；它在各层的那一格照设计 55 第四节的名字给，交真实
-    // 位置，工作目录照旧是状态目录（施工 F-15）。
+    // 环境照核心的，数据根、资源目录设成核心手上的（施工 O-18）：扩展和核心认同一份，不管核心是怎么找到它们的；主程序的真实位置
+    // （施工 G-15）：核心就是 `miyu core`，扩展要拉起核心、跑 `miyu` 的子命令照它找；包文件夹由核心挑是哪一层，扩展照它读自己的
+    // 文件，不自己拼数据根的布局（施工 S-6 上）；它在各层的那一格照设计 55 第四节的名字给，交真实位置，工作目录照旧是状态目录
+    // （施工 F-15）。和 `miyu <包的命令>` 同一份（`PackageDirs::launch_env`，施工 VS-1）。
     command
         .args(&plan.args)
-        .envs(program::named(HOME, &plan.home))
-        .envs(program::named(RESOURCES, &plan.resources))
-        .envs(dirs.env())
+        .envs(dirs.launch_env(&plan.home, &plan.resources))
         .current_dir(&dirs.state)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

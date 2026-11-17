@@ -141,6 +141,21 @@ impl PackageDirs {
         })
     }
 
+    /// 拉起包的程序时交的全部（施工 VS-1，扩展、`miyu <包的命令>` 共用这一份）：数据根 `home`（`MIYU_HOME`）、资源目录
+    /// `resources`（`MIYU_RESOURCES`）、主程序的真实位置（`MIYU_PROGRAM`，[`crate::env::Env::exe`]，找不到的不给）、它的几处
+    /// （[`PackageDirs::env`]）。原来转交命令只给后两样，包的命令照 `MIYU_HOME` 连核心，没设 `MIYU_HOME` 的机器上就连不上
+    /// （项目主人 11-17 本机 `miyu say --voices` 报「MIYU_HOME is not set」）。
+    pub fn launch_env(&self, home: &Path, resources: &Path) -> Vec<(&'static str, PathBuf)> {
+        let mut env: Vec<(&'static str, PathBuf)> = named(HOME, home)
+            .chain(named(RESOURCES, resources))
+            .collect();
+        if let Some(program) = crate::env::Env::current().exe {
+            env.push((crate::env::PROGRAM, program));
+        }
+        env.extend(self.env());
+        env
+    }
+
     /// 交给它的环境变量：每一处照它的名字表，新名字、旧名字都指过去。
     pub fn env(&self) -> Vec<(&'static str, PathBuf)> {
         let mut env: Vec<(&'static str, PathBuf)> = named(APP, &self.app)

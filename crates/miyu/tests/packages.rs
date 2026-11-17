@@ -41,12 +41,12 @@ fn text(bytes: &[u8]) -> String {
 fn a_package_command_runs_its_program_with_the_same_arguments() {
     let home = Home::new();
     install(&home, "probe", &manifest("probe", "miyu", "Probe it"));
-    let version = miyu(&home, "C", &["probe", "--version"]);
-    assert_eq!(version.status.code(), Some(0), "{}", text(&version.stderr));
+    let help = miyu(&home, "C", &["probe", "--help"]);
+    assert_eq!(help.status.code(), Some(0), "{}", text(&help.stderr));
     assert!(
-        text(&version.stdout).starts_with("miyu "),
+        text(&help.stdout).starts_with("Usage: miyu"),
         "参数原样交过去：{}",
-        text(&version.stdout)
+        text(&help.stdout)
     );
     let wrong = miyu(&home, "C", &["probe", "nonsense"]);
     assert_eq!(wrong.status.code(), Some(2), "退出码照它的");
@@ -80,12 +80,12 @@ fn a_package_command_runs_the_program_in_its_bin() {
     std::os::unix::fs::symlink(MIYU, &target).expect("链得上");
     #[cfg(not(unix))]
     std::fs::copy(MIYU, &target).expect("拷得了");
-    let version = miyu(&home, "C", &["own", "--version"]);
-    assert_eq!(version.status.code(), Some(0), "{}", text(&version.stderr));
+    let help = miyu(&home, "C", &["own", "--help"]);
+    assert_eq!(help.status.code(), Some(0), "{}", text(&help.stderr));
     assert!(
-        text(&version.stdout).starts_with("miyu "),
+        text(&help.stdout).starts_with("Usage: miyu"),
         "跑的是包里的那一个：{}",
-        text(&version.stdout)
+        text(&help.stdout)
     );
 }
 
@@ -332,4 +332,61 @@ fn a_package_command_on_an_old_data_root_says_it_is_old() {
         .collect();
     left.sort();
     assert_eq!(left, [".miyu-root", "state"], "一个字节不动");
+}
+
+/// `miyu <包的命令> --version`、`-V`（施工 VS-1，项目主人 11-17 报 `miyu im --version` 说未知命令、`miyu tui --version` 印一大段）：
+/// 主程序自己答 `miyu <命令> <包的版本>`，不交给包的程序；清单没写版本的只印命令。后面还跟着别的参数的照旧交过去。
+#[test]
+fn a_package_command_answers_its_version_itself() {
+    let home = Home::new();
+    let program = format!("miyu-missing-{}", std::process::id());
+    let versioned = manifest("own", &program, "Own it")
+        .replace("[package]\n", "[package]\nversion = \"1.2.3\"\n");
+    install(&home, "own", &versioned);
+    install(&home, "bare", &manifest("bare", &program, "Bare"));
+    for flag in ["--version", "-V"] {
+        let printed = miyu(&home, "C", &["own", flag]);
+        assert_eq!(printed.status.code(), Some(0), "{}", text(&printed.stderr));
+        assert_eq!(text(&printed.stdout), "miyu own 1.2.3\n", "{flag}");
+        assert!(printed.stderr.is_empty(), "{}", text(&printed.stderr));
+    }
+    let printed = miyu(&home, "C", &["bare", "--version"]);
+    assert_eq!(text(&printed.stdout), "miyu bare\n");
+    // 程序没装：只答版本时照答，别的照旧说没装。
+    let other = miyu(&home, "C", &["own", "--version", "x"]);
+    assert_eq!(other.status.code(), Some(1), "{}", text(&other.stdout));
+}
+
+/// 没设 `MIYU_HOME` 时转交也交数据根（施工 VS-1，项目主人 11-17 本机 `miyu say --voices` 报「MIYU_HOME is not set」）：数据根照
+/// 默认找（家目录下的 `.miyu`），包的程序拿到的 `MIYU_HOME` 是它；同核心拉起扩展交的一份。
+#[cfg(unix)]
+#[test]
+fn a_package_command_is_told_the_data_root_without_miyu_home() {
+    let home = Home::new();
+    let user = home.dir.join("user");
+    let root = user.join(".miyu");
+    let program = format!("miyu-printenv-{}", std::process::id());
+    miyu_store::root::DataRoot::at(root.clone())
+        .prepare()
+        .expect("建得了数据根");
+    let dir = root.join("opt/own");
+    std::fs::create_dir_all(dir.join("bin")).expect("建得了目录");
+    std::fs::write(
+        dir.join("package.toml"),
+        manifest("own", &program, "Own it"),
+    )
+    .expect("写得进");
+    std::os::unix::fs::symlink("/usr/bin/printenv", dir.join("bin").join(&program))
+        .expect("链得上");
+    let printed = Command::new(MIYU)
+        .args(["own", "MIYU_HOME"])
+        .env_remove("MIYU_HOME")
+        .env("HOME", &user)
+        .env("MIYU_RESOURCES", crate::support::resources())
+        .envs(crate::support::offline(&root))
+        .env("LANG", "C")
+        .output()
+        .expect("跑得起来");
+    assert_eq!(printed.status.code(), Some(0), "{}", text(&printed.stderr));
+    assert_eq!(text(&printed.stdout), format!("{}\n", root.display()));
 }

@@ -91,7 +91,14 @@ fn the_help_is_the_page_and_the_version_says_miyu() {
     }
     let output = miyu(&home, "C", &["--version"]);
     assert!(output.status.success(), "{output:?}");
-    assert!(String::from_utf8_lossy(&output.stdout).starts_with("miyu "));
+    let version = String::from_utf8_lossy(&output.stdout).into_owned();
+    assert!(version.starts_with("miyu "), "{version}");
+    // 自己的子命令后面带的照主程序的印（施工 VS-1）：clap 原样会印成 `miyu-ask …`、`miyu-pkg-list …`。
+    for args in [&["ask", "--version"][..], &["pkg", "list", "-V"]] {
+        let output = miyu(&home, "C", args);
+        assert!(output.status.success(), "{args:?}：{output:?}");
+        assert_eq!(String::from_utf8_lossy(&output.stdout), version, "{args:?}");
+    }
 }
 
 #[test]

@@ -16,6 +16,7 @@ fn added(name: &str, program: &str) -> Added {
         resources: PathBuf::from("/usr/share/miyu"),
         package: "tui".to_string(),
         home: PathBuf::from("/data"),
+        version: Some("0.4.2".to_string()),
     }
 }
 
@@ -149,7 +150,7 @@ fn the_program_gets_its_package_folder() {
         &Launch::direct(std::path::PathBuf::from("/bin/miyu-tui")),
         &[OsString::from("--x")],
         &dirs,
-        resources,
+        (root.path(), resources),
     );
     assert_eq!(command.get_program(), "/bin/miyu-tui");
     assert_eq!(command.get_args().collect::<Vec<_>>(), ["--x"]);
@@ -158,7 +159,12 @@ fn the_program_gets_its_package_folder() {
         program: std::path::PathBuf::from("python"),
         args: vec![OsString::from("/pkg/bin/miyu-tui")],
     };
-    let shebang = super::command(&script, &[OsString::from("--x")], &dirs, resources);
+    let shebang = super::command(
+        &script,
+        &[OsString::from("--x")],
+        &dirs,
+        (root.path(), resources),
+    );
     assert_eq!(shebang.get_program(), "python");
     assert_eq!(
         shebang.get_args().collect::<Vec<_>>(),
@@ -193,7 +199,9 @@ fn the_program_gets_its_package_folder() {
         .and_then(std::fs::canonicalize)
         .expect("测试程序在");
     assert_eq!(given("MIYU_PROGRAM"), Some(program.into_os_string()));
-    assert_eq!(envs.len(), dirs.env().len() + 2, "{envs:?}");
+    // 数据根（施工 VS-1）：同核心拉起扩展交的那一份。
+    assert_eq!(given("MIYU_HOME"), Some("/data".into()));
+    assert_eq!(envs.len(), dirs.env().len() + 3, "{envs:?}");
 }
 
 #[test]
@@ -220,4 +228,24 @@ fn the_manifest_args_go_before_what_was_typed() {
         Some(("tui".to_string(), os(&["--page", "config"]))),
         "没写 args 的照旧"
     );
+}
+
+/// `miyu <名字> --version`、`-V` 由主程序答（施工 VS-1）：只敲这一个的才算，后面还有别的、`miyu help <名字>` 的照旧交过去。
+#[test]
+fn only_a_bare_version_flag_is_answered_here() {
+    assert!(asks_version(&args(&["tui", "--version"])));
+    assert!(asks_version(&args(&["tui", "-V"])));
+    assert!(!asks_version(&args(&["tui", "--version", "x"])));
+    assert!(!asks_version(&args(&["tui", "config", "--version"])));
+    assert!(!asks_version(&args(&["help", "--version"])));
+    let mut out = Vec::new();
+    assert_eq!(version(&added("tui", "miyu-tui"), &mut out), 0);
+    assert_eq!(String::from_utf8(out).expect("UTF-8"), "miyu tui 0.4.2\n");
+    let bare = Added {
+        version: None,
+        ..added("tui", "miyu-tui")
+    };
+    let mut out = Vec::new();
+    version(&bare, &mut out);
+    assert_eq!(String::from_utf8(out).expect("UTF-8"), "miyu tui\n");
 }

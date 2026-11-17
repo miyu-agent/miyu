@@ -36,7 +36,8 @@ System:
 
 Options:
   -h, --help     Print help
-  -V, --version  Print version
+  -V, --version  Print version; after a command from a package, that package's
+                 version
 
 Examples:
   miyu ask "what is this project"

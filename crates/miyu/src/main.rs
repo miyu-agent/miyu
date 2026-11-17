@@ -25,7 +25,7 @@ const USAGE: u8 = 2;
 /// 主程序的参数。名字定死成 `miyu`：clap 默认照可执行文件的名字，Windows 上会在用法和报错里带出 `miyu.exe`（施工 5-8
 /// 查出来的）。
 #[derive(Parser)]
-#[command(name = "miyu", bin_name = "miyu", version)]
+#[command(name = "miyu", bin_name = "miyu", version, propagate_version = true)]
 struct Cli {
     #[command(subcommand)]
     command: Option<Command>,
@@ -339,15 +339,19 @@ fn core() -> std::process::Command {
 }
 
 /// 参数不对：帮助、版本照常印在标准输出上，退出码 0；别的在标准错误上照设计 47 说（`miyu: ` 打头，能照着改的另起
-/// `hint:`），退出码 2。
+/// `hint:`），退出码 2。子命令后面带 `--version`、`-V` 的（施工 VS-1）照主程序的印 `miyu <版本>`：clap 原样印成 `miyu-ask <版本>`。
 #[expect(
     clippy::let_underscore_must_use,
     reason = "帮助印不出来，也没有别处可说了"
 )]
 fn refused(error: clap::Error, language: Language) -> ExitCode {
     match error.kind() {
-        ErrorKind::DisplayHelp | ErrorKind::DisplayVersion => {
+        ErrorKind::DisplayHelp => {
             let _ = error.print();
+            ExitCode::SUCCESS
+        }
+        ErrorKind::DisplayVersion => {
+            print!("{}", Cli::command().render_version());
             ExitCode::SUCCESS
         }
         _ => {

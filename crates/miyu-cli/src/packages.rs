@@ -2,7 +2,8 @@
 //! 子命令时，照两层的清单找 `[command]` 是它的那个包，原样跑包里的程序：参数、环境、标准输入输出照原样，退出码照它的；环境
 //! 多它在各层的那几处（设计 55 第四节，`miyu_store::program::PackageDirs`：包的文件夹、配置、状态、缓存、日志、暂存、运行时，
 //! 跑之前建好、清掉暂存），同核心拉起扩展。
-//! `miyu help <名字>` 转成 `<程序> --help`：帮助由包自己说。`miyu -h` 多一节「软件包加的命令」。
+//! `miyu help <名字>` 转成 `<程序> --help`：帮助由包自己说。`miyu <名字> --version`（`-V`）由主程序自己答 `miyu <名字> <包的版本>`，
+//! 不交给包的程序（施工 VS-1：各家程序认不认、印成什么样不一样）。`miyu -h` 多一节「软件包加的命令」。
 //!
 //! 和内置的撞名：内置的优先，不转交、不列（装包时拦随装包那一步）。清单照磁盘现读，不连核心：转交不该为了找一个程序拉起
 //! 核心。
@@ -50,6 +51,8 @@ pub struct Added {
     pub resources: PathBuf,
     /// 哪个包：转交时照它在数据根里建好它的几处（施工 F-15、FH-3下）。
     pub package: String,
+    /// 包的版本（清单 `[package] version`，同 `miyu pkg list`）：`miyu <名字> --version` 照它答（施工 VS-1）；没写的没有。
+    pub version: Option<String>,
     /// 读到这份清单时的数据根。
     pub home: PathBuf,
 }
@@ -70,6 +73,7 @@ pub fn added(env: &Env, builtins: &[&str]) -> Vec<Added> {
         .flat_map(|(manifest, path, package)| {
             let resources = resources.path().to_path_buf();
             let home = root.path().to_path_buf();
+            let version = manifest.version.clone();
             manifest
                 .commands
                 .into_iter()
@@ -83,6 +87,7 @@ pub fn added(env: &Env, builtins: &[&str]) -> Vec<Added> {
                     resources: resources.clone(),
                     package: package.clone(),
                     home: home.clone(),
+                    version: version.clone(),
                 })
         })
         .collect()
@@ -180,6 +185,9 @@ pub fn forward(
     err: &mut dyn Write,
 ) -> Option<u8> {
     let (one, rest) = target(args, added)?;
+    if asks_version(args) {
+        return Some(version(one, &mut std::io::stdout()));
+    }
     // 包文件夹就是清单所在的那一层（施工 F-8 上再补：程序先找它的 `bin/`）。
     let dir = one.manifest.parent().unwrap_or(Path::new(""));
     let Some(launch) = locate(&one.program, dir, main) else {
@@ -208,7 +216,27 @@ pub fn forward(
             return Some(1);
         }
     };
-    Some(run(command(&launch, &rest, &dirs, &one.resources), err))
+    Some(run(
+        command(&launch, &rest, &dirs, (&one.home, &one.resources)),
+        err,
+    ))
+}
+
+/// 敲的是不是正好 `miyu <名字> --version`（或 `-V`）：后面还有别的、`miyu help <名字>` 的不算，照旧交给程序。
+fn asks_version(args: &[OsString]) -> bool {
+    matches!(args, [_, first, flag] if first != "help" && (flag == "--version" || flag == "-V"))
+}
+
+/// 答 `miyu <名字> <包的版本>`（清单没写版本的只印 `miyu <名字>`），同 `miyu --version` 的样子，退出码 0；印不出去的退出码 1。
+fn version(one: &Added, out: &mut dyn Write) -> u8 {
+    let line = match &one.version {
+        Some(version) => format!("miyu {} {version}", one.name),
+        None => format!("miyu {}", one.name),
+    };
+    match writeln!(out, "{line}") {
+        Ok(()) => 0,
+        Err(_) => 1,
+    }
 }
 
 /// 命令行 `args` 转交给哪一个、交给它的参数；不该转交的没有。清单写的参数在前（施工 F-13）：`miyu shellhook install` 转交成
@@ -228,27 +256,19 @@ fn target<'a>(args: &[OsString], added: &'a [Added]) -> Option<(&'a Added, Vec<O
     ))
 }
 
-/// 跑包的程序的命令：照 `launch` 起（Windows 上照 `#!` 起的是解释器加脚本，施工 X-34），参数 `args`，环境照这个进程的，另把它在
-/// 各层的几处 `dirs` 照设计 55 第四节的名字交（包照它读自己的文件、写自己的东西，不自己拼数据根的布局；施工 S-6 上、F-15、
-/// FH-3下），`MIYU_RESOURCES` 设成找到它的那份资源目录 `resources`（施工 S-6 中：自己装的包程序在包的 `bin/` 里，照「程序旁边」
-/// 找不到资源目录；核心拉起时也设这一个），`MIYU_PROGRAM` 设成主程序的真实位置（施工 G-15）。
+/// 跑包的程序的命令：照 `launch` 起（Windows 上照 `#!` 起的是解释器加脚本，施工 X-34），参数 `args`，环境照这个进程的，另交
+/// 核心拉起扩展时交的那一份（施工 VS-1，`PackageDirs::launch_env`）：`MIYU_HOME` 是找到它的数据根 `home`（包的命令照它连
+/// 核心，人没设 `MIYU_HOME` 时数据根是照默认找的），`MIYU_RESOURCES` 是找到它的那份资源目录 `resources`（施工 S-6 中：自己装的
+/// 包程序在包的 `bin/` 里，照「程序旁边」找不到资源目录），`MIYU_PROGRAM` 是主程序的真实位置（施工 G-15），它在各层的几处
+/// `dirs` 照设计 55 第四节的名字（施工 S-6 上、F-15、FH-3下）。
 fn command(
     launch: &Launch,
     args: &[OsString],
     dirs: &PackageDirs,
-    resources: &Path,
+    (home, resources): (&Path, &Path),
 ) -> std::process::Command {
     let mut command = launch.command();
-    command
-        .args(args)
-        .envs(dirs.env())
-        .envs(miyu_store::program::named(
-            miyu_store::program::RESOURCES,
-            resources,
-        ));
-    if let Some(program) = Env::current().exe {
-        command.env(miyu_store::env::PROGRAM, program);
-    }
+    command.args(args).envs(dirs.launch_env(home, resources));
     command
 }
 

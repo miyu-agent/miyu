@@ -91,7 +91,7 @@ place = "status"
 
 ## `[command]`
 
-扩展、界面要写。`name`：人在终端敲 `miyu <name> …` 时，核心把后面的参数原样交给你的程序，退出码照你的（`miyu help <name>` 转成 `--help`）：小写字母开头，只用小写字母、数字、`-`，最多 32 个；和内置子命令（`ask`、`config`、`pkg`、`web` 这些）撞了的内置的赢。`program`：`bin/` 下的程序名，Windows 上核心找 `<名字>.exe`。`about`：一句说明。`args`：可以不写，转交时加在人敲的参数前面。一个包要加几个子命令的，写成几段 `[[command]]`，每段同上；第一段的 `program` 是这个包的程序（扩展拉起的就是它）。
+扩展、界面要写。`name`：人在终端敲 `miyu <name> …` 时，核心把后面的参数原样交给你的程序，退出码照你的（`miyu help <name>` 转成 `--help`；只敲 `miyu <name> --version`、`-V` 的不交给你，Miyu 自己印 `miyu <name> <[package] version>`）：小写字母开头，只用小写字母、数字、`-`，最多 32 个；和内置子命令（`ask`、`config`、`pkg`、`web` 这些）撞了的内置的赢。`program`：`bin/` 下的程序名，Windows 上核心找 `<名字>.exe`。`about`：一句说明。`args`：可以不写，转交时加在人敲的参数前面。一个包要加几个子命令的，写成几段 `[[command]]`，每段同上；第一段的 `program` 是这个包的程序（扩展拉起的就是它）。
 
 所以你的程序除了 `serve` 这类给核心用的参数，也该认人敲的那些。
 

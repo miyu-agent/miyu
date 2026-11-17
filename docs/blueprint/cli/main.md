@@ -64,13 +64,13 @@
 ### 怎么走
 
 0. **软件包加的子命令**（施工 9-2，`crates/miyu-cli/src/packages.rs`，`packages.md`「转交」）：第一个词不是内置的子命令（名字、别名都算，连 `help`），或者是 `help`、选项、没写，才照磁盘读两层的清单（不连核心）：
-   1. 第一个词是某个包 `[command]` 的名字：照那份清单找程序（先找包文件夹的 `bin/`，再找 `miyu` 真实位置旁边的，不找 `PATH`；施工 F-8 上再补），参数（第一个词以后的全部）、环境、标准输入输出原样交给它，Unix 上换成它，Windows 上起它、等它、这期间不理 Ctrl+C；退出码照它的。`help <名字>` 转成 `<程序> --help`。程序没找到：标准错误上说没找到、哪一份清单说这个子命令由它跑，退出码 1。
+   1. 第一个词是某个包 `[command]` 的名字：照那份清单找程序（先找包文件夹的 `bin/`，再找 `miyu` 真实位置旁边的，不找 `PATH`；施工 F-8 上再补），参数（第一个词以后的全部）、环境、标准输入输出原样交给它，Unix 上换成它，Windows 上起它、等它、这期间不理 Ctrl+C；退出码照它的。`help <名字>` 转成 `<程序> --help`。正好是 `<名字> --version`、`<名字> -V`（后面没别的）的不转交，主程序自己在标准输出上印 `miyu <名字> <包的版本>`（清单 `[package] version`，同 `miyu pkg list`；没写版本的只印 `miyu <名字>`），退出码 0（施工 VS-1，项目主人 2026-11-17 报 `miyu im --version` 说未知命令、`miyu tui --version` 印一大段：各家程序认不认、印成什么样不一样）。环境另交 `MIYU_HOME`（找到它的数据根）、`MIYU_RESOURCES`、`MIYU_PROGRAM` 和它的几处，同核心拉起扩展的那一份（`PackageDirs::launch_env`，施工 VS-1：原来不交 `MIYU_HOME`，人没设它的机器上包的命令连不上核心）。程序没找到：标准错误上说没找到、哪一份清单说这个子命令由它跑，退出码 1。
    2. 主程序的帮助页在最后一组命令后面、「选项」那一节前面多一组「软件包加的命令」（`Commands from packages:`），空一行隔开，一个一行，说明和上面的命令从同一列（第 22 列）开始，说明照界面语言挑；没有的不写这一组（施工 AP-1：原来接在「命令」那一节后面）。撞了内置子命令的不转交、不列：内置的优先。`miyu web` 施工 CL-7 起不再内置，由网页包（`webui`）的 `[command]` 加，同 `miyu tui`（项目主人 2026-10-30 定：没装时内置的那一条只会报没装）。
    3. 别的照下面走。
 1. 先照界面语言给主程序和 `ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename`、`memory`（连同它的子命令，施工 R-3 再补）、`pkg`（连同它的子命令，施工 T-3）、`kb`（连同它的子命令，施工 K-7 下）、`schedule`（连同它的子命令，施工 J-3 下）、`config`（连同它的八个子命令）、`provider`（连同它的 `login`、`list`、`logout`）、`setup`、`sandbox`（连同它的 `setup`、`remove`）换上帮助页（clap 的 `override_help`；`rewind` 是 `undo` 的别名，用同一页），再解析参数。
 2. 解析参数，不对的：
    1. 不认识的子命令：标准错误上报 `miyu: 未知命令 '<名字>'`，提示运行 `miyu --help`（下面「给人看的字」），退出码 2。不连核心，不拉起，什么都不发。本机存着的软件源索引（`var/cache/packages/sync`，再照名字找 `var/cache/packages/sources/<名字>/`，不验签名，只是提示）里有包提供这个命令（`provides.command`）的，提示换成「软件包 <编号> 提供这个命令，用 'miyu pkg install <编号>' 安装」（施工 CL-7，`crates/miyu-cli/src/packages/offered.rs`）。
-   2. `-h`、`--help`、`help`、`help <子命令>`：把那一页原样印在标准输出上，退出码 0。`-V`、`--version`：印 `miyu <版本>`，退出码 0。
+   2. `-h`、`--help`、`help`、`help <子命令>`：把那一页原样印在标准输出上，退出码 0。`-V`、`--version`：印 `miyu <版本>`，退出码 0；跟在自己的子命令后面的（`miyu ask --version`）印同一行（施工 VS-1：clap 的 `propagate_version` 原样印 `miyu-ask <版本>`，换成主程序那一行）。
    3. 别的：标准错误上报错（下面「参数写错时」），退出码 2。
 3. 没写子命令（施工 9-3，`crates/miyu-cli/src/head.rs`）：标准输入、标准输出都是终端的，连上核心（没在跑就拉起）问 `config.get` 拿 `ui.head`（出厂 `tui`），照两层清单找这个编号的界面包（`kind = "ui"`、有 `[command]`），程序照第 0 条找，换成它、不带参数，退出码照它的。没有这个界面（没清单、不是界面、没有子命令）：标准错误上报没装哪一个，提示用 `miyu pkg install <编号>` 装；装了别的界面的再提示一行换成哪几个（`miyu config set ui.head <编号>`），一个都没装的提示不用界面也能 `miyu ask`，退出码 1。有清单、程序不在旁边的（出厂带了终端的清单，程序随 M9；9-3 补）：报这个界面的程序找不到，提示重新安装，后一行同上，退出码 1（设计 47，施工 CL-2 上）。「装了的界面」只算程序在 `miyu` 旁边的：只有清单的列出来也打不开。不在终端里（被脚本调、接管道）：把主程序的帮助页印在标准输出上，退出码 2，不连核心。
    - `config` 不写它的子命令（原来的 8-24）：在终端里、`ui.head` 那个界面的清单 `[ui] opens` 里有 `config` 的，同上拉起它、带 `--page config`；没有这一页的、不在终端里的，把 `config` 的帮助页印在标准输出上，退出码 2。
@@ -124,7 +124,7 @@
 
 选项：
   -h, --help     显示帮助
-  -V, --version  显示版本
+  -V, --version  显示版本；跟在软件包加的命令后面，显示那个包的版本
 
 例子：
   miyu ask "这个项目是做什么的"
@@ -175,7 +175,8 @@ System:
 
 Options:
   -h, --help     Print help
-  -V, --version  Print version
+  -V, --version  Print version; after a command from a package, that package's
+                 version
 
 Examples:
   miyu ask "what is this project"

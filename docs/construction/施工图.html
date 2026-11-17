@@ -1588,6 +1588,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sQU3"><span class="n">QU-3</span>额度写明是哪一家<span class="st">…</span></a></li>
         <li><a class="step review" href="#sRO3"><span class="n">RO-3</span>完全放开下文件工具不拦数据根<span class="st">…</span></a></li>
         <li><a class="step review" href="#sCS5"><span class="n">CS-5</span>人停的核心不自动拉起<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sVS1"><span class="n">VS-1</span>包的命令认版本、转交带数据根<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -62266,6 +62267,56 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/CS-5-人停的核心不自动拉起.md</code>；蓝图 <code>ipc.md</code>「人停的不自己拉起」、<code>core.md</code>、<code>client.md</code>；协议参考 <code>connection.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sVS1" aria-labelledby="h-sVS1">
+  <div class="sheet-head"><h2 id="h-sVS1"><span class="no">VS-1</span>包的命令认版本、转交带数据根</h2><span class="pill review">待验收</span></div>
+  <p class="purpose"><code>miyu &lt;包的命令&gt; --version</code> 由主程序答包的版本；转交给包的程序的环境和核心拉起扩展同一份，带上数据根。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-cli/src/packages.rs · miyu-store/src/program.rs · miyu-endpoint/src/extensions/supervise.rs</span><span class="dir-note">VS-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>只敲 <code>--version</code>、<code>-V</code> 的印 <code>miyu &lt;命令&gt; &lt;版本&gt;</code>，不转交</li>
+              <li><code>PackageDirs::launch_env</code>：<code>MIYU_HOME</code>、<code>MIYU_RESOURCES</code>、<code>MIYU_PROGRAM</code>、几处</li>
+              <li>转交、拉起扩展共用</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">版本照清单</span><span class="rl"><code>[package] version</code>，同 <code>miyu pkg list</code></span></div>
+          <div class="tile new"><span class="nm">后面还有参数的照转交</span><span class="rl"><code>miyu tui config --version</code> 交给程序</span></div>
+          <div class="tile new"><span class="nm">没设 <code>MIYU_HOME</code> 也连得上</span><span class="rl">数据根照默认找到的交出去</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">VS-1</dd></div>
+        <div><dt>名称</dt><dd>包的命令认版本、转交带数据根</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">VS-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改前红两条：<code>miyu own --version</code> 印 <code>miyu own 1.2.3</code>；不设 <code>MIYU_HOME</code> 时包的程序拿到 <code>~/.miyu</code></span></li>
+        <li><span class="ok">✓</span><span>沙箱实测：本地包 <code>miyu &lt;命令&gt; --version</code>；<code>HOME</code> 指沙箱、不设 <code>MIYU_HOME</code>，包的命令连上沙箱核心</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/VS-1-包的命令认版本.md</code>；蓝图 <code>cli/main.md</code> 第 0 条、<code>packages.md</code>「转交」；写包的 <code>manifest.md</code>。</li>
       </ul>
     </div>
   </div>
