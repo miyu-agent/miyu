@@ -1571,6 +1571,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sTD1"><span class="n">TD-1</span>命令行拒绝语去句号<span class="st">…</span></a></li>
         <li><a class="step review" href="#sEN2"><span class="n">EN-2</span>核心起不来照代码说<span class="st">…</span></a></li>
         <li><a class="step review" href="#sGO1"><span class="n">GO-1</span>opencode Go 按协议分地址<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sFL8"><span class="n">FL-8</span>监视起不来的测试真走轮询<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -61338,6 +61339,55 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/GO-1-opencode-Go按协议分地址.md</code>；蓝图 <code>models.md</code> 第八条。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sFL8" aria-labelledby="h-sFL8">
+  <div class="sheet-head"><h2 id="h-sFL8"><span class="no">FL-8</span>监视起不来的测试真走轮询</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">这条测试要证明「系统的监视起不来，退回轮询，照旧看得到手改」，原来让整个数据根进不去，轮询其实也没在看，能过全靠出错以后那一遍重读赶在手改以后。现在只拿掉配置目录的读权限，轮询真的在看。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint · tests/config_watch_log.rs</span><span class="dir-note">FL-8</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>配置目录改成 <code>0o300</code>：inotify 要读权限，拒绝</li>
+              <li>退回轮询：stat 得到，每两秒看一次</li>
+              <li>改回权限、手改：下一次轮询看到，推 <code>via=file</code></li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">只改测试</span><span class="rl">真起不来时目录照样看得了</span></div>
+          <div class="tile new"><span class="nm">不靠那一遍重读</span><span class="rl">慢多久都看得到</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">FL-8</dd></div>
+        <div><dt>名称</dt><dd>监视起不来的测试真走轮询</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">FL-8</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改回权限后插睡 300 毫秒：改前红、改后过</span></li>
+        <li><span class="ok">✓</span><span>四种负载各 50 遍，改后 0 红</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/FL-8-监视起不来的测试真走轮询.md</code>。</li>
       </ul>
     </div>
   </div>

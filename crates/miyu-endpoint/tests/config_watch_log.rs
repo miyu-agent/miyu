@@ -1,6 +1,10 @@
 //! 监视记的运行日志（施工 8-4，`docs/blueprint/config.md`「出错」）：手改被看到的记 `INFO config changed`（`via=file`，
-//! 只有键名）；监视起不来记 `WARN config watch unavailable`，退回轮询，照旧看得到手改（Linux 上让数据根读不了，inotify
-//! 拒绝）。
+//! 只有键名）；监视起不来记 `WARN config watch unavailable`，退回轮询，照旧看得到手改（Linux 上让配置所在的目录列不了，
+//! inotify 拒绝）。
+//!
+//! 施工 FL-8：原来让整个数据根读不了。inotify 拒绝了，轮询也 stat 不到那个目录，`notify` 的轮询就不看它（不报错、以后也
+//! 不补），只交一次出错；监视照「出错当都变了」过 200 毫秒重读一遍。手改赶在这一遍之前写下的才看得到，门禁并行时测试线程
+//! 慢了就等满六十秒。现在只拿掉配置目录的读权限：inotify 照样拒绝，轮询 stat 得到、照常每两秒看一次。
 //!
 //! 全局装一个写进内存的订阅者：监视在它自己的线程上。全局的一个进程只能装一次，所以这个文件单独一个测试程序，只有一个测试。
 
@@ -55,12 +59,13 @@ async fn a_hand_edit_and_an_unavailable_watch_are_logged() {
         use std::os::unix::fs::PermissionsExt;
         let home = Home::new();
         let core = home.core_configured(&Script::new([]), None, &[]);
-        // 数据根读不了（施工 SU-5 上：原来拿掉家目录，现在配置都在数据根下）：inotify 拒绝。
-        let root = home.root.path();
+        // 配置所在的目录列不了（只留写和进入）：inotify 要读权限，拒绝；轮询 stat 得到，照样看（施工 FL-8）。
+        let etc = home.root.path().join("etc");
         let mode = |bits| std::fs::Permissions::from_mode(bits);
-        std::fs::set_permissions(root, mode(0o000)).expect("改得了");
+        let before = std::fs::metadata(&etc).expect("有配置目录").permissions();
+        std::fs::set_permissions(&etc, mode(0o300)).expect("改得了");
         let watching = core.watch_config();
-        std::fs::set_permissions(root, mode(0o700)).expect("改得回来");
+        std::fs::set_permissions(&etc, before).expect("改得回来");
         let watching = watching.expect("退回轮询，照样监视");
         assert!(watching.unavailable().is_some());
         assert!(
