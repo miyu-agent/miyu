@@ -1,5 +1,6 @@
 //! 设置页上一个包的分节（施工 SG-1，`docs/blueprint/packages.md`「配置项」第 1 条）：组表 `[settings.<组>]` 自己可以写两格，
-//! `name`（语言表，写法同一项的名字）和 `shown_when`（`{ "<这个包的一项>" = "<值>" }`，值也可以是几个的列表）。头照它分节画、
+//! `name`（语言表，写法同一项的名字）和 `shown_when`（`{ "<这个包的一项>" = "<值>" }`，值也可以是几个的列表；那一项是选项，
+//! 或者带 `choices_from` 的文字项，施工 SW-1）。头照它分节画、
 //! 照那一项现在的值决定画不画；核心只读、只查写得对不对，原样交 `config.schema`，存、读、查值都不看它。
 
 use toml_edit::{Item as Node, TableLike};
@@ -23,9 +24,10 @@ pub struct Section {
 /// 照哪一项的值画一节。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ShownWhen {
-    /// 看哪一项：这个包自己的名字（键里前缀后面那一段，例如 `engine`、`qq.mode`），只能是选项、不在这一节里。
+    /// 看哪一项：这个包自己的名字（键里前缀后面那一段，例如 `engine`、`qq.mode`），是选项或者带 `choices_from` 的文字项
+    /// （施工 SW-1），不在这一节里。
     pub setting: String,
-    /// 那一项是这几个之一时画，照写的先后；清单写一个的也是一个的列表。每一个都是那一项的选项。
+    /// 那一项是这几个之一时画，照写的先后；清单写一个的也是一个的列表。指选项的每一个都是它的选项；指文字项的不查。
     pub values: Vec<String>,
 }
 
@@ -76,8 +78,8 @@ fn shown_when(reader: &Reader<'_>, at: &str, item: &Node) -> Result<ShownWhen, P
     })
 }
 
-/// 每一节的 `shown_when` 指的是这个包自己的一项（名字照 `settings` 认，别的包的键、写全了前缀的都不是）、是选项、不在这一节里，
-/// 值都是它的选项。`table` 是整张 `[settings]`，报错时照它找回那一格的行号。
+/// 每一节的 `shown_when` 指的是这个包自己的一项（名字照 `settings` 认，别的包的键、写全了前缀的都不是）、不在这一节里，
+/// 是选项（值都是它的选项），或者是带 `choices_from` 的文字项（施工 SW-1：值不查，只按值比）。`table` 是整张 `[settings]`，报错时照它找回那一格的行号。
 pub(super) fn check(
     reader: &Reader<'_>,
     table: &dyn TableLike,
@@ -101,9 +103,17 @@ pub(super) fn check(
             let why = format!("{} is inside this group itself", when.setting);
             return Err(located(reader, item, &at, &why));
         }
-        let SettingKind::Option(choices) = &target.kind else {
-            let why = format!("{} is not an option", when.setting);
-            return Err(located(reader, item, &at, &why));
+        let choices = match &target.kind {
+            SettingKind::Option(choices) => choices,
+            // 选项运行时才知道的文字项（施工 SW-1）：只按值比，值不查选项，同它自己写什么存什么。
+            SettingKind::Text { .. } if target.choices_from.is_some() => continue,
+            _ => {
+                let why = format!(
+                    "{} is not an option or a text with choices_from",
+                    when.setting
+                );
+                return Err(located(reader, item, &at, &why));
+            }
         };
         if let Some(value) = when
             .values

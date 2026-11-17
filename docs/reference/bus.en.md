@@ -40,6 +40,7 @@ Turns a piece of audio into text. Timeout 120 seconds.
 - `audio`: 16 kHz mono 16-bit PCM wav is always accepted; wav at other rates or channel counts is accepted too; ogg/opus may be refused. At most 10 minutes.
 - `language`: `zh`, `yue`, `en`, `ja`, `ko` or `auto`; omitted means the package's setting.
 - `clear`: `false` for audio shorter than 0.5 seconds or with fewer than 2 meaningful characters; `text` is then empty, and it isn't an error.
+- `speech`: present only when no speech was heard in the whole recording (even the loudest stretch is background noise), and always `false`: nothing was sent to be recognized, `clear` is `false` and `text` is empty; it isn't an error. Absent when speech was heard. Heads say "no speech heard" rather than "didn't catch that".
 - Errors: `bad_audio`, `too_long`, `silent_audio` (the whole recording is digital silence, peak at most 2/32768: the microphone is muted or unplugged, or the system's default input carries no sound; heads say the microphone has no sound), `engine_failed` (the chosen community engine failed; `message` is its own).
 
 ### `stt.record`
@@ -51,6 +52,7 @@ Records from this computer's microphone and transcribes it. Timeout 310 seconds.
 ← {"text": "…", "language": "en", "duration_ms": 4100, "clear": true, "ended": "silence"}
 ```
 
+- `speech`: as for `stt.transcribe`. When `speech` is `false` the answer also has `device`: the display name of the microphone that was open (for example `fifine Microphone Mono`), omitted when it has no name; heads say "no speech heard, check the microphone, the one in use is …".
 - Stops after `silence_ms` of silence (default 1200, 300 to 5000), after `max_ms` (default 60000, at most 300000), or on `stt.stop`. `ended` is `silence`, `stop` or `max`.
 - The machine has one microphone lock: if another head or the command line is already recording, the answer is `mic_busy`.
 - Errors: `mic_busy`, `no_microphone`, `silent_audio` (as for `stt.transcribe`), `engine_failed`.

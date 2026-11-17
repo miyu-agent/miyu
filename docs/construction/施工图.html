@@ -1582,6 +1582,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sMDSNAP"><span class="n">MD-SNAP</span>出厂目录快照换新<span class="st">…</span></a></li>
         <li><a class="step review" href="#sPL1"><span class="n">PL-1</span>换级别带上换以前的<span class="st">…</span></a></li>
         <li><a class="step review" href="#sUX1"><span class="n">UX-1</span>设置项正名，软件包只留一个「启用」<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sSW1"><span class="n">SW-1</span>分节跟着运行时给选项的项<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -61937,6 +61938,61 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/UX-1-设置项正名.md</code>；蓝图 <code>config.md</code>（协议、去掉的、给人看的字「命名的规矩」）、<code>packages.md</code>「关掉某个包」、<code>presets.md</code>；协议参考 <code>config</code> 中英两份。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sSW1" aria-labelledby="h-sSW1">
+  <div class="sheet-head"><h2 id="h-sSW1"><span class="no">SW-1</span>分节跟着运行时给选项的项</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">组的 <code>shown_when</code> 也可以指带 <code>choices_from</code> 的文字项：只按值比，值不查选项。朗读的引擎做成一张列表（内置的几家加装着的 <code>tts.engine</code> 包），三节照它显示、隐藏。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates · miyu-config/src/package/settings/section.rs</span><span class="dir-note">SW-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>指 <code>option</code> 的照旧查值在不在选项里</li>
+              <li>指带 <code>choices_from</code> 的 <code>text</code>：放行，值原样留着</li>
+              <li>别的（普通文字、开关、整数）照旧 <code>bad_shown_when</code></li>
+            </ol>
+          </div>
+          <div class="dir">
+            <div class="dir-label"><span class="path">docs · reference/bus.md</span><span class="dir-note">顺手</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>stt.transcribe</code>、<code>stt.record</code> 回应的 <code>speech</code>、<code>device</code> 两格</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">节可以跟着运行时给选项的项</span><span class="rl">语音会话 11-17 要的；头本来就只按值比，不改</span></div>
+          <div class="tile new"><span class="nm">核心不查那几个值</span><span class="rl">同 SG-2：不调方法、写什么存什么</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">SW-1</dd></div>
+        <div><dt>名称</dt><dd>分节跟着运行时给选项的项</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">SW-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>沙箱核心装 miyu-voice VO-32 的 say 包（连程序）：装得上；<code>config.schema</code> 里 <code>say.engine</code> 是 <code>text</code>、带 <code>choices_from</code>，三节的 <code>shown_when</code> 指 <code>say.engine</code></span></li>
+        <li><span class="ok">✓</span><span><code>package.call engines</code> 回三家；<code>say.engine</code> 写一个不在列表里的包编号照样存</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/SW-1-分节跟着运行时给选项的项.md</code>；蓝图 <code>packages.md</code>「配置项」；作者 <code>manifest</code>、协议参考 <code>config</code>、<code>bus</code> 中英两份。</li>
       </ul>
     </div>
   </div>

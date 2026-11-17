@@ -40,6 +40,7 @@
 - `audio`：一定收 16 kHz、单声道、16 位 PCM 的 wav；别的采样率、声道的 wav 也收，ogg/opus 可以不认。最长 10 分钟。
 - `language`：`zh`、`yue`、`en`、`ja`、`ko`、`auto`；不写照包的配置。
 - `clear`：短于 0.5 秒、有效字少于 2 个的是 `false`，`text` 是空的，不算出错。
+- `speech`：整段没听到说话（最响的一小段也只有底噪）的多这一格，只写 `false`：没送去认，`clear` 是 `false`、`text` 是空的，不算出错；听到了的不带。头照它说「没听到说话」，而不是「没听清」。
 - 出错：`bad_audio`、`too_long`、`silent_audio`（整段是数字静音：峰值不超过 2/32768，麦克风静音、没插上或系统默认输入没声音；头照它说「麦克风没有声音」）、`engine_failed`（选的社区引擎答错了，`message` 照它的）。
 
 ### `stt.record`
@@ -51,6 +52,7 @@
 ← {"text": "…", "language": "zh", "duration_ms": 4100, "clear": true, "ended": "silence"}
 ```
 
+- `speech`：同 `stt.transcribe`。`speech` 是 `false` 的再带 `device`：开的是哪个麦克风，给人看的名字（例如 `fifine Microphone Mono`），叫不出名字的不带；头照它说「没听到说话，看看麦克风选对没有，现在用的是 …」。
 - 人声停了 `silence_ms`（默认 1200，300 到 5000）就停；最长 `max_ms`（默认 60000，最多 300000）；`stt.stop` 也能停。`ended` 是 `silence`、`stop`、`max`。
 - 整台机器一把麦克风锁：别的头、命令行已经在录的，回 `mic_busy`。
 - 出错：`mic_busy`、`no_microphone`、`silent_audio`（同 `stt.transcribe`）、`engine_failed`。

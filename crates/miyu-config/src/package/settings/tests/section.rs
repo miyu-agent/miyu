@@ -1,5 +1,5 @@
 //! 组的名字和 `shown_when`（施工 SG-1）：读对、照写的先后；一个值的也读成列表；指的项不在这个包里、是别的包的键、写全了前缀、
-//! 不是选项、在这一组里面、值不是它的选项，都报 `bad_shown_when`；没分组的包没有节。
+//! 不是选项（也不是带 `choices_from` 的文字项）、在这一组里面、值不是它的选项，都报 `bad_shown_when`；没分组的包没有节。
 
 use super::*;
 
@@ -122,4 +122,23 @@ fn a_group_name_is_read_like_an_item_name() {
         Code::MissingKey,
         "只有名字、说明的是缺了 type 的一项"
     );
+}
+
+/// 引擎是运行时才知道的（施工 SW-1，语音包装着的引擎包也进下拉）：`shown_when` 可以指带 `choices_from` 的文字项，只按值比，
+/// 值不查选项（同文字项原样存）；不带 `choices_from` 的文字项照旧不行。
+#[test]
+fn a_group_may_follow_a_text_with_choices_from() {
+    let engines = ENGINES.replace(
+        "type = \"option\"\nchoices = [\"minimax\", \"mimo\", \"openai\"]\ndefault = \"minimax\"",
+        "type = \"text\"\nchoices_from = \"engines\"\ndefault = \"minimax\"",
+    );
+    let engines = engines.replace("[\"mimo\", \"openai\"]", "[\"mimo\", \"edge-tts\"]");
+    let manifest = read(&web(&engines)).expect("指带 choices_from 的文字项装得上");
+    let when = manifest.sections[1].shown_when.as_ref().expect("写了");
+    assert_eq!(when.setting, "engine");
+    assert_eq!(when.values, ["mimo", "edge-tts"], "值原样留着，不查选项");
+    let plain = engines.replace("choices_from = \"engines\"\n", "");
+    let problem = read(&web(&plain)).expect_err("不带 choices_from 的文字项不行");
+    assert_eq!(problem.code, Code::BadShownWhen);
+    assert_eq!(problem.detail, "settings.minimax.shown_when");
 }
