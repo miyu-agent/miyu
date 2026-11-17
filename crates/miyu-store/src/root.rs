@@ -11,6 +11,7 @@ use std::fs;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 
+use miyu_kernel::event::Said;
 use miyu_kernel::id::SessionId;
 
 use crate::durable::{create_dir, create_dir_anywhere, sync_dir};
@@ -115,6 +116,21 @@ impl fmt::Display for RootError {
 }
 
 impl std::error::Error for RootError {}
+
+impl RootError {
+    /// 给人看的说法（施工 EN-1）：头照内核的 `start/<代码>` 照自己的语言说，`{path}` 是写的路径。[`fmt::Display`] 的中文
+    /// 原话留给日志和取不到字的时候。
+    #[must_use]
+    pub fn said(&self) -> Said {
+        match self {
+            RootError::RelativeMiyuHome(path) => {
+                Said::new("core/start/miyu_home_relative").with("path", path.display().to_string())
+            }
+            RootError::NoHome => Said::new("core/start/no_home"),
+            RootError::NoLocalAppData => Said::new("core/start/no_local_app_data"),
+        }
+    }
+}
 
 /// 一个数据根。
 #[derive(Debug, Clone, PartialEq, Eq)]

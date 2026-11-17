@@ -38,7 +38,7 @@ pub fn core_stop() -> ExitCode {
     let language = language::current();
     let root = match DataRoot::locate(&Env::current()) {
         Ok(root) => root,
-        Err(error) => return ExitCode::from(diagnostic::fail(error.to_string())),
+        Err(error) => return ExitCode::from(diagnostic::fail(crate::startup::spoken(&error))),
     };
     ExitCode::from(runtime.block_on(core_stop_on(&root, language, &mut std::io::stderr())))
 }
@@ -54,7 +54,7 @@ pub async fn core_stop_on(root: &DataRoot, language: Language, err: &mut dyn Wri
                 Err(error) => said(err, language, &Problem::new(error.to_string())),
             };
         }
-        Err(error) => return said(err, language, &Problem::new(error.to_string())),
+        Err(error) => return said(err, language, &Problem::new(crate::startup::spoken(&error))),
     };
     let mut rpc = Rpc::new(connection, "core-stop");
     if let Err(code) = link::hello(&mut rpc, &token, &language, false, err).await {

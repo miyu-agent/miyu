@@ -146,7 +146,9 @@ pub fn old_layout(language: Language, err: &mut dyn Write) -> Option<u8> {
     if !at(miyu_store::root::OLD_MARKER) || at(miyu_store::root::MARKER) {
         return None;
     }
-    let said = miyu_store::root::PrepareError::OldLayout(root.path().to_path_buf()).to_string();
+    let said = crate::startup::spoken(&miyu_store::root::PrepareError::OldLayout(
+        root.path().to_path_buf(),
+    ));
     crate::diagnostic::error(err, language, &crate::diagnostic::Problem::new(said));
     Some(1)
 }
@@ -176,7 +178,7 @@ pub fn forward(
         crate::diagnostic::error(
             err,
             language,
-            &crate::diagnostic::Problem::new(error.to_string()),
+            &crate::diagnostic::Problem::new(crate::startup::spoken(&error)),
         );
         return Some(1);
     }

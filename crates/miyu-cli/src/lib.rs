@@ -56,6 +56,7 @@ mod service;
 mod session;
 mod setup;
 mod shown;
+mod startup;
 #[cfg(test)]
 mod text_rules;
 mod undo;

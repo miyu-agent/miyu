@@ -98,11 +98,13 @@ async fn head(
     start: impl FnOnce() -> Command,
 ) -> Result<(String, Language), Option<Problem>> {
     let failed = |error: &dyn std::fmt::Display| Some(Problem::new(error.to_string()));
-    let root = DataRoot::locate(env).map_err(|error| failed(&error))?;
-    root.prepare().map_err(|error| failed(&error))?;
+    let early =
+        |error: &dyn crate::startup::Early| Some(Problem::new(crate::startup::spoken(error)));
+    let root = DataRoot::locate(env).map_err(|error| early(&error))?;
+    root.prepare().map_err(|error| early(&error))?;
     let (connection, token) = connect_or_start(&root, start)
         .await
-        .map_err(|error| failed(&error))?;
+        .map_err(|error| early(&error))?;
     let mut rpc = Rpc::new(connection, "head");
     let asked = language::current();
     let hello = link::hello(&mut rpc, &token, &asked, false, &mut io::stderr())

@@ -26,6 +26,6 @@ Options:
       --no-persona          Open a new session each time with no persona
       --preset <preset>     Use this preset for the new session
       --cwd <dir>           Working directory for the new session (default:
-                            home)
+                            the new session's own workspace)
       --format <text|json>  Output format (default: text)
   -h, --help                Print help

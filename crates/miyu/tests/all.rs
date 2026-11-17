@@ -17,6 +17,7 @@ mod core;
 mod crash;
 mod crash_kept;
 mod dev_home;
+mod early_words;
 mod heads;
 mod kb;
 mod leftovers;

@@ -75,14 +75,14 @@ async fn run(args: Undo, direction: Direction, start: impl FnOnce() -> Command) 
     let env = Env::current();
     let root = match DataRoot::locate(&env) {
         Ok(root) => root,
-        Err(error) => return diagnostic::fail(error.to_string()),
+        Err(error) => return diagnostic::fail(crate::startup::spoken(&error)),
     };
     if let Err(error) = root.prepare() {
-        return diagnostic::fail(error.to_string());
+        return diagnostic::fail(crate::startup::spoken(&error));
     }
     let connected = connect_or_start(&root, start)
         .await
-        .map_err(|error| error.to_string());
+        .map_err(|error| crate::startup::spoken(&error));
     let (connection, token) = match connected {
         Ok(connected) => connected,
         Err(reason) => return diagnostic::fail(&reason),

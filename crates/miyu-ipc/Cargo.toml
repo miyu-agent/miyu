@@ -11,6 +11,8 @@ autotests = false
 [dependencies]
 # 本机令牌：32 个随机字节，取系统的随机数。
 getrandom = { version = "0.4", features = ["std"] }
+# 给人看的说法（施工 EN-1）：连不上、起不来的错交 `Said`，头照自己的语言取字。
+miyu-kernel = { path = "../miyu-kernel" }
 # 数据根：锁、令牌、套接字的位置都记在它的 `run/` 里；平台。
 miyu-store = { path = "../miyu-store" }
 # 数据根的指纹：路径的 SHA-256。

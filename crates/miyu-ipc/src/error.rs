@@ -4,6 +4,7 @@ use std::fmt;
 use std::io;
 use std::path::{Path, PathBuf};
 
+use miyu_kernel::event::Said;
 use miyu_store::root::DataRoot;
 
 /// 核心起不来。
@@ -95,6 +96,28 @@ impl fmt::Display for ConnectError {
 
 impl std::error::Error for ConnectError {}
 
+impl ConnectError {
+    /// 给人看的说法（施工 EN-1）：头照内核的 `start/<代码>` 照自己的语言说；[`fmt::Display`] 的中文原话留给日志和取不到字的
+    /// 时候。读写出错的没有，照系统给的原话。
+    #[must_use]
+    pub fn said(&self) -> Option<Said> {
+        match self {
+            ConnectError::NotRunning => Some(Said::new("core/start/not_running")),
+            ConnectError::NotPrivate(place) => Some(not_private_said(place, cfg!(windows))),
+            ConnectError::Io(_) => None,
+        }
+    }
+}
+
+/// [`not_private`] 的说法：命名管道、套接字各一句。
+fn not_private_said(place: &Path, pipe: bool) -> Said {
+    let key = match pipe {
+        true => "core/start/not_private_pipe",
+        false => "core/start/not_private_socket",
+    };
+    Said::new(key).with("path", place.display().to_string())
+}
+
 impl From<io::Error> for ConnectError {
     fn from(error: io::Error) -> ConnectError {
         ConnectError::Io(error)
@@ -143,6 +166,32 @@ impl fmt::Display for StartError {
 }
 
 impl std::error::Error for StartError {}
+
+impl StartError {
+    /// 给人看的说法（施工 EN-1）：同 [`ConnectError::said`]。核心说了原因的照 `start/refused` 带上原话（带代码的，头另可照
+    /// `start/<代码>` 说，要数据根的位置）；日志的位置照数据根取相对的。
+    #[must_use]
+    pub fn said(&self) -> Option<Said> {
+        Some(match self {
+            StartError::Refused { reason, .. } => {
+                Said::new("core/start/refused").with("reason", reason.as_str())
+            }
+            StartError::Silent => Said::new("core/start/silent").with(
+                "log",
+                DataRoot::at(PathBuf::new())
+                    .core_log()
+                    .display()
+                    .to_string(),
+            ),
+            StartError::Timeout => Said::new("core/start/timeout"),
+            StartError::Busy => Said::new("core/start/busy"),
+            StartError::Connect(error) => return error.said(),
+            StartError::Io(error) => {
+                Said::new("core/start/spawn_failed").with("error", error.to_string())
+            }
+        })
+    }
+}
 
 impl From<io::Error> for StartError {
     fn from(error: io::Error) -> StartError {

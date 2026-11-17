@@ -1656,6 +1656,7 @@ flowchart LR
 |---|---|---|
 | SX-1 | 会话列表记下人最后一次发话的时刻 | `session.list`、`sessions` 流、`sessions.changed` 的一项多 `last_spoken`：最后一条 `by` 是人的 `message.user` 的时刻（主人、通讯平台上的人都算，循环、定时任务、人生自己醒、回报叫醒、续跑开的不算），没人说过话的不写；存在会话索引里照日志派生（版本 16，删了重建照样在）；人发了话推一项，回合中途插的一句也推。顺手修：照日志补的那一行写回去时后加的几格（`dream_result`、`life`）没写。头照它排。施工单见 `SX-1-人最后发话.md` |
 | CK-1 | 默认人格、默认预设指着没有的 | `persona.default`、`preset.default` 的类型从名字改成选人格、选预设（同终端会话、软件包设置项）：`check` 报警告 `unknown_persona`、`unknown_preset`；`config.set` 照收，改的几项里指着现在没有的人格、知识库、预设，回应多 `problems`（同一条警告，照连接的语言），`miyu config set` 结果行后面接 `miyu: warning: …`。警告不挡，同软件包设置项那一句。施工单见 `CK-1-默认人格预设指着没有的.md` |
+| EN-1 | 英文界面漏的几句 | 连不上核心的八句（`ConnectError`、`StartError`）、数据根出错的几句（`RootError`、`PrepareError`）交说法 `said()`，内核 `human/` 三种语言加 `start/*` 十一句；命令行新增 `startup.rs`，十八个命令连核心以前出的错照握手以前的界面语言说，取不到字的照原话。`miyu check` 帮助的例子补 `root/`，`miyu schedule --cwd` 的默认改成新会话自己的工作区。施工单见 `EN-1-英文界面漏的几句.md` |
 
 ### 四、施工单的格式
 

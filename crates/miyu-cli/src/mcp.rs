@@ -75,14 +75,14 @@ async fn run(args: Mcp, start: impl FnOnce() -> Command) -> u8 {
     let env = Env::current();
     let root = match DataRoot::locate(&env) {
         Ok(root) => root,
-        Err(error) => return diagnostic::fail(error.to_string()),
+        Err(error) => return diagnostic::fail(crate::startup::spoken(&error)),
     };
     if let Err(error) = root.prepare() {
-        return diagnostic::fail(error.to_string());
+        return diagnostic::fail(crate::startup::spoken(&error));
     }
     let (connection, token) = match connect_or_start(&root, start).await {
         Ok(connected) => connected,
-        Err(error) => return diagnostic::fail(error.to_string()),
+        Err(error) => return diagnostic::fail(crate::startup::spoken(&error)),
     };
     let mut rpc = Rpc::new(connection, "mcp");
     let err = &mut io::stderr();

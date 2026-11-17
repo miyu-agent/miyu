@@ -2177,6 +2177,7 @@ name = "miyu-ipc"
 version = "2026.11.0"
 dependencies = [
  "getrandom 0.4.3",
+ "miyu-kernel",
  "miyu-pipe",
  "miyu-store",
  "rustix",

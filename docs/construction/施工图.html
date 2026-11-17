@@ -1567,6 +1567,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sLO3"><span class="n">LO-3</span>循环的两处收尾<span class="st">…</span></a></li>
         <li><a class="step review" href="#sLO3F"><span class="n">LO-3补</span>核心停过以后的循环<span class="st">…</span></a></li>
         <li><a class="step review" href="#sCK1"><span class="n">CK-1</span>默认人格、预设指着没有的<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sEN1"><span class="n">EN-1</span>英文界面漏的几句<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -61138,6 +61139,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/CK-1-默认人格预设指着没有的.md</code>；蓝图 <code>config.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sEN1" aria-labelledby="h-sEN1">
+  <div class="sheet-head"><h2 id="h-sEN1"><span class="no">EN-1</span>英文界面漏的几句</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">连不上核心、数据根出错的几句原来只有中文，命令行英文界面也印中文；两处帮助页写错了。现在底层交说法、头照语言取字，帮助页照代码改。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-store · root.rs、root/prepare.rs　miyu-ipc · error.rs　miyu-cli · startup.rs、help/</span><span class="dir-note">EN-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>内核 <code>human/</code> 三种语言加 <code>start/*</code> 十一句</li>
+              <li><code>RootError</code>、<code>PrepareError</code>、<code>ConnectError</code>、<code>StartError</code> 交 <code>said()</code></li>
+              <li>命令行十八个命令连核心以前的错经 <code>startup::spoken</code>，照界面语言说</li>
+              <li><code>check</code> 帮助的例子补 <code>root/</code>，<code>schedule --cwd</code> 默认改成新会话自己的工作区</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">低层只交说法</span><span class="rl">字在内核 human/，头照语言取</span></div>
+          <div class="tile new"><span class="nm">取不到照原话</span><span class="rl">Display 留给日志</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">EN-1</dd></div>
+        <div><dt>名称</dt><dd>英文界面漏的几句</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">EN-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>八句连不上的、三句数据根的三种语言都取得出字</span></li>
+        <li><span class="ok">✓</span><span>英文界面 <code>MIYU_HOME=rel/path miyu check</code> 印英文</span></li>
+        <li><span class="ok">✓</span><span>实测停着核心、拉不起时 <code>miyu ask hi</code> 印英文</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/EN-1-英文界面漏的几句.md</code>；蓝图 <code>store.md</code>、<code>ipc.md</code>、<code>cli/main.md</code>、<code>cli/schedule.md</code>。</li>
       </ul>
     </div>
   </div>

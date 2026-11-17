@@ -4,6 +4,8 @@ use std::fmt;
 use std::io;
 use std::path::PathBuf;
 
+use miyu_kernel::event::Said;
+
 use super::MARKER;
 
 /// 建骨架建不成。
@@ -31,6 +33,20 @@ impl PrepareError {
             PrepareError::OtherLayout(_) => Some("data_root_other_layout"),
             PrepareError::Io(_) => None,
         }
+    }
+
+    /// 给人看的说法（施工 EN-1）：认得出的三种照 [`PrepareError::code`] 说 `start/<代码>`，`{path}` 是数据根；读写出错的
+    /// 没有，照系统给的原话。
+    #[must_use]
+    pub fn said(&self) -> Option<Said> {
+        let (PrepareError::NotOurs(path)
+        | PrepareError::OldLayout(path)
+        | PrepareError::OtherLayout(path)) = self
+        else {
+            return None;
+        };
+        let code = self.code()?;
+        Some(Said::new(format!("core/start/{code}")).with("path", path.display().to_string()))
     }
 }
 

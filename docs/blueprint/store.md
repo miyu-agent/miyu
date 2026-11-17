@@ -284,7 +284,7 @@
 
 ### 出错
 
-数据根的几句（`RootError`、`PrepareError`）是中文：`miyu ask`、`miyu undo` 找数据根、建骨架出错时，照原样印在标准错误上，退出码 1（`cli/ask.md`），等界面语言那一步照界面语言说。别的只进运行日志，是英文（施工 4-9 再补四中：原来是中文）。
+数据根的几句（`RootError`、`PrepareError`）的原话（`Display`）是中文，日志和取不到字的时候用。给人看的照 `said()`（施工 EN-1）：交内核 `human/` 里的 `start/<代码>`（`RootError` 是 `miyu_home_relative`、`no_home`、`no_local_app_data`，`{path}` 是写的路径；`PrepareError` 是 `data_root_not_ours`、`data_root_old_layout`、`data_root_other_layout`，`{path}` 是数据根；`Io` 没有），头照自己的语言取字；命令行各命令找数据根、建骨架出错时照握手以前的界面语言印在标准错误上，退出码 1（`cli/ask.md`）。别的只进运行日志，是英文（施工 4-9 再补四中：原来是中文）。
 
 | 类型 | 哪一种 | 说的话 |
 |---|---|---|

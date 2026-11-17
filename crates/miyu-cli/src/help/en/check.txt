@@ -15,4 +15,4 @@ Options:
 
 Examples:
   miyu check
-  miyu check ~/.miyu/personas/miyu/prompts/examples.md
+  miyu check ~/.miyu/root/personas/miyu/prompts/examples.md

@@ -162,7 +162,7 @@
 | `StartError::Connect` | 连不上 | 照 `ConnectError` 的话 |
 | `StartError::Io` | 读写出错，例如找不到程序、拉不起来 | 拉不起核心：<系统的原话> |
 
-- 这些话只有中文，不跟界面语言。头（`miyu ask`、`miyu undo`）照原样印在标准错误上，退出码 1；`miyu ask` 没有 key、核心又没在跑的另说，退出码 5（`cli/ask.md`）。
+- 上面是原话（`Display`，中文），日志和取不到字的时候用。`ConnectError`、`StartError` 另交说法 `said()`（施工 EN-1）：内核 `human/` 里三种语言的 `start/not_running`、`start/not_private_socket`、`start/not_private_pipe`（`{path}`）、`start/refused`（`{reason}`，核心的原话；带代码的头另可照 `start/<代码>` 说）、`start/silent`（`{log}`，数据根里的相对位置）、`start/timeout`、`start/busy`、`start/spawn_failed`（`{error}`）；`Io` 的没有，照系统的原话。命令行照握手以前的界面语言取字（`miyu-cli` 的 `startup.rs`），印在标准错误上，退出码 1；`miyu ask` 没有 key、核心又没在跑的另说，退出码 5（`cli/ask.md`）。
 - 运行日志（目标 `miyu::ipc`）：核心里记 `INFO listening socket=…`、`INFO stale socket removed socket=…`、`WARN XDG_RUNTIME_DIR not usable, using run/ dir=…`、`DEBUG socket file not removed error=…`（删套接字文件没删成）。头里发的 `DEBUG core not reaped error=…`（替拉起的核心收尸没收成）记不下来：头不装运行日志。
 
 ### 给人看的字

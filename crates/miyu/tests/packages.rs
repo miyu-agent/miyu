@@ -317,7 +317,8 @@ fn a_package_command_on_an_old_data_root_says_it_is_old() {
         .expect("跑得起来");
     assert_eq!(printed.status.code(), Some(1), "{}", text(&printed.stderr));
     let said = text(&printed.stderr);
-    assert!(said.contains("旧版 Miyu 的数据根（layout 2）"), "{said}");
+    // 照界面语言说（施工 EN-1）：`LANG=C` 是英文。
+    assert!(said.contains("is an old Miyu data root"), "{said}");
     assert!(!said.contains("web"), "不当成不认识的命令：{said}");
     let mut left: Vec<String> = std::fs::read_dir(&old)
         .expect("读得了")

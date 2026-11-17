@@ -112,7 +112,7 @@ t2  every 10m  停着  会话 s-1  「看一眼服务器」
       --persona <人格>      每次新建会话，使用这个人格
       --no-persona          每次新建无人格的会话
       --preset <预设>       新建的会话使用这个预设
-      --cwd <目录>          新建的会话的工作目录（默认家目录）
+      --cwd <目录>          新建的会话的工作目录（默认是新会话自己的工作区）
       --format <text|json>  输出格式（默认 text）
   -h, --help                显示帮助
 ```
@@ -148,7 +148,7 @@ Options:
       --no-persona          Open a new session each time with no persona
       --preset <preset>     Use this preset for the new session
       --cwd <dir>           Working directory for the new session (default:
-                            home)
+                            the new session's own workspace)
       --format <text|json>  Output format (default: text)
   -h, --help                Print help
 ```

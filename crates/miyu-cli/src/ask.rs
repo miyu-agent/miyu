@@ -286,14 +286,14 @@ async fn run(args: Ask, text: String, start: impl FnOnce() -> Command, language:
     let env = Env::current();
     let root = match DataRoot::locate(&env) {
         Ok(root) => root,
-        Err(error) => return early(jsonl, diagnostic::fail(error.to_string())),
+        Err(error) => return early(jsonl, diagnostic::fail(crate::startup::spoken(&error))),
     };
     if let Err(error) = root.prepare() {
-        return early(jsonl, diagnostic::fail(error.to_string()));
+        return early(jsonl, diagnostic::fail(crate::startup::spoken(&error)));
     }
     let connected = connect_or_start(&root, start)
         .await
-        .map_err(|error| error.to_string());
+        .map_err(|error| crate::startup::spoken(&error));
     let (mut connection, token) = match connected {
         Ok(connected) => connected,
         Err(reason) => return early(jsonl, diagnostic::fail(&reason)),
@@ -318,7 +318,7 @@ async fn run(args: Ask, text: String, start: impl FnOnce() -> Command, language:
         }
         connection = match miyu_ipc::connect(&root).await {
             Ok((connection, _)) => connection,
-            Err(error) => return early(jsonl, diagnostic::fail(error.to_string())),
+            Err(error) => return early(jsonl, diagnostic::fail(crate::startup::spoken(&error))),
         };
     }
     let presses = presses();
