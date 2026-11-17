@@ -1,5 +1,5 @@
 //! 她用定时工具（施工 J-2，设计 `45-定时和循环.md` 第三节第 3、4 条）：真核心的会话里她照剧本调 `cron_create`、`cron_list`、
-//! `cron_delete`、`schedule_wakeup`，经端口动唤醒表。她建的记成这个会话建的、跑在这个会话上；动态循环那一行她定下一次、
+//! `cron_delete`、`schedule_next`，经端口动唤醒表。她建的记成这个会话建的、跑在这个会话上；动态循环那一行她定下一次、
 //! 换那句话；没开循环的说没有在跑的循环。
 
 use std::sync::Arc;
@@ -111,7 +111,7 @@ async fn she_sets_the_next_wakeup_of_this_session_s_loop() {
     let home = Home::new();
     let plays = vec![
         Play::calls(&[(
-            "schedule_wakeup",
+            "schedule_next",
             r#"{"delay_seconds":120,"prompt":"接着盯","reason":"等构建"}"#,
         )]),
         Play::Says("等着。"),
@@ -142,7 +142,7 @@ async fn she_sets_the_next_wakeup_of_this_session_s_loop() {
 async fn a_wakeup_too_far_to_write_waits_until_the_last_moment() {
     let home = Home::new();
     let plays = vec![
-        Play::calls(&[("schedule_wakeup", r#"{"delay_seconds":1000000000000000}"#)]),
+        Play::calls(&[("schedule_next", r#"{"delay_seconds":1000000000000000}"#)]),
         Play::Says("等着。"),
     ];
     let (core, _) = ran(&home, plays, |core, session| {
@@ -166,7 +166,7 @@ async fn a_wakeup_too_far_to_write_waits_until_the_last_moment() {
 async fn without_a_loop_she_hears_there_is_none() {
     let home = Home::new();
     let plays = vec![
-        Play::calls(&[("schedule_wakeup", r#"{"delay_seconds":120}"#)]),
+        Play::calls(&[("schedule_next", r#"{"delay_seconds":120}"#)]),
         Play::Says("没有。"),
     ];
     let (core, session) = ran(&home, plays, |_, _| {}).await;
@@ -189,7 +189,7 @@ async fn without_a_loop_she_hears_there_is_none() {
 async fn she_stops_the_loop_and_cannot_pass_the_cap() {
     let home = Home::new();
     let plays = vec![
-        Play::calls(&[("schedule_wakeup", r#"{"stop":true}"#)]),
+        Play::calls(&[("schedule_next", r#"{"stop":true}"#)]),
         Play::calls(&[(
             "cron_create",
             r#"{"cron":"0 9 * * *","prompt":"第二十一个","recurring":true}"#,

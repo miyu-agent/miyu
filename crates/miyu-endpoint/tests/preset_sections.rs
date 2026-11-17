@@ -112,7 +112,7 @@ fn catalog() -> Catalog {
             "base-schedule",
             all(&["cron_create", "cron_delete", "cron_list"]),
         ),
-        ("base-loop", all(&["schedule_wakeup"])),
+        ("base-loop", all(&["schedule_next"])),
         ("base-memory", all(&["remember", "forget", "memory_search"])),
         ("base-net", all(&["web_search", "web_fetch"])),
         (

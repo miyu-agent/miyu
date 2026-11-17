@@ -15,7 +15,7 @@ base-env = true
 base-net = true
 # 人格记忆：remember、memory_search、forget。
 base-memory = true
-# 循环：schedule_wakeup，她定下次几点醒。
+# 循环：schedule_next，她定下次几点醒。
 base-loop = true
 # 结束人生：end_life，只在没结束的人生会话里有（施工 LF-4 下）；同一个包里的后天：note_change（施工 LF-11）。
 base-life = true

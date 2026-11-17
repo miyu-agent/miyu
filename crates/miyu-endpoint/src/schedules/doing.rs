@@ -1,5 +1,5 @@
 //! 她现在在干嘛（施工 LF-7，设计 `70-推演人生.md` 第三节第 8 条，`docs/blueprint/life.md`「现在在干嘛」）：人生会话里她调
-//! `schedule_wakeup` 写的 `reason`，记在定时表人生那一行上（`miyu_store::schedules` 的 `doing` 表），同一个人格别的会话每一轮
+//! `schedule_next` 写的 `reason`，记在定时表人生那一行上（`miyu_store::schedules` 的 `doing` 表），同一个人格别的会话每一轮
 //! 开头经 `HooksPort::doing` 查内存里的一份（[`Lives`]），不读盘。
 //!
 //! - 记：落在人生那一行上的才记（[`Schedules::set_doing`]），换行换成空格、去掉两头空白、最多 [`MOST`] 个字；她没写、写了空白

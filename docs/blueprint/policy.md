@@ -58,7 +58,7 @@
 | `peers` | 对象 | 别的会话发来的话怎么防刷屏（施工 C-2，`cross-session.md`「对外的样子」）：`burst` 同一个发话方一个窗口里最多几句、`window` 窗口多少秒、`unread` 没听到的最多几句，现在是 5、600、50（数是估的，待 C-7 实测）。排在 `title` 后面。以前造的快照里没有，读成没有、不写：照出厂的数，防刷屏不能因为会话旧就不管。施工 C-6 加两格，排在后面：`watch_hours` 订了多久没等到就作废（小时，出厂 12）、`status_chars` 通知那一行最多几个字（出厂 200）；C-2 时造的快照里没有这两格，读成没有、不写，照出厂的数 |
 | `memory` | 字符串 | 记忆的范围（施工 R-3 下，`memory.md`「范围」）：`persona`、`off`（`session` 施工 FH-1 去掉，读到的照认不出的），造会话时定（`with_memory`），新造的都写明；排在 `peers` 后面、最后。以前造的快照里没有，读成没有、不写，照 `persona`；认不出的照 `off` |
 
-**`ToolEntry`**：`name`、`description`、`parameters`（参数的 JSON Schema，原样的 JSON）、`access`（`read`、`write`、`execute`、`network`、`outbound`、`venue`（施工 O-31 前）、`install`（施工 F-10 下），不认识的原样留着），照这个先后；`clicall`（施工 M-2：脚本里能调，来处的默认、配置的 `clicall.*` 算好了写进来；预设关了「脚本调工具」的一律假，施工 M-6）是真的才写，以前造的快照读成假，字节不变（以前的会话里脚本一件都调不了，2026-10-20 项目主人定）。以前造的快照里还可能有 `need_load`（施工 L-1，FL-1 拆了）：读的时候不认，照完整格式发。
+**`ToolEntry`**：`name`、`description`、`parameters`（参数的 JSON Schema，原样的 JSON）、`access`（`read`、`write`、`execute`、`network`、`outbound`、`venue`（施工 O-31 前）、`install`（施工 F-10 下），不认识的原样留着），照这个先后；`clicall`（施工 M-2：脚本里能调，来处的默认、配置的 `clicall.*` 算好了写进来；预设关了「脚本调工具」的一律假，施工 M-6）是真的才写，以前造的快照读成假，字节不变（以前的会话里脚本一件都调不了，2026-10-20 项目主人定）。`package`（施工 WK-2：这件从哪个软件包来，组工具面时照目录的 `Catalog::package_of` 写进来；回合开始重筛时目录里没了的这件照它认是不是程序升级拿掉的，`providers.md`「目录换代」第 3 条）有才写，不进 tools 数组，以前造的快照读成没有，字节不变。以前造的快照里还可能有 `need_load`（施工 L-1，FL-1 拆了）：读的时候不认，照完整格式发。
 
 **`CoreTexts`**，每一格是 `resources/core/` 下一份文件的原文：
 

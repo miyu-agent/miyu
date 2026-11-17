@@ -125,6 +125,7 @@ mod questions;
 mod read;
 mod rebuild;
 mod rebuild_skills;
+mod renamed_tool;
 mod report_up;
 mod retire;
 mod retire_sealed;

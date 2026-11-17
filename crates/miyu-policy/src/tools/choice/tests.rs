@@ -21,6 +21,7 @@ fn entry(parameters: &str) -> ToolEntry {
         runs_commands: false,
         command_only: false,
         role: None,
+        package: None,
     }
 }
 

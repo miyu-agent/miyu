@@ -50,7 +50,7 @@ A persona whose files are wrong has only `persona` and `problem` (what's wrong, 
 
 ## `persona.read`
 
-**Params**: `persona`; `prompt`: `persona` (character prompt), `examples` (example dialogue), `reminders` (roleplay reminders), `life` (life method: the opening of what the life loop hands her each time she wakes).
+**Params**: `persona`; `prompt`: `persona` (character prompt), `examples` (example dialogue), `reminders` (roleplay reminders), `life` (life method: the opening of what the life loop hands her in each round).
 
 **Response**: `{"text", "version"}`: the stacked text, and the version of this file in your home layer (both `null` when none). When the layer on top is an empty file, `text` is an empty string. Example dialogue also has `pairs: [{"user", "assistant"}…]`. The life method also has `default`: the built-in text (trailing whitespace removed), `null` if it can't be read; it's what's used when none is written.
 

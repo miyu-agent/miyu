@@ -237,10 +237,11 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
         .tools
         .iter()
         .any(|tool| tool.name == miyu_tool::GOAL);
-    let loops = snapshot
-        .tools
-        .iter()
-        .any(|tool| tool.name == miyu_tool::SCHEDULE_WAKEUP);
+    // 改名以前造的快照里冻着旧名字（施工 WK-2，`miyu_tool::RENAMED`）：照样认 `/loop`，下一个回合工具面换成新名字的。
+    let loops = snapshot.tools.iter().any(|tool| {
+        tool.name == miyu_tool::SCHEDULE_NEXT
+            || miyu_tool::renamed(&tool.name) == Some(miyu_tool::SCHEDULE_NEXT)
+    });
     // 默认工作区用哪个会话的（施工 5-14）：照 `session.created` 记的，没记的用自己的。
     let default_workspace =
         DefaultWorkspace::new(root, created.workspace_from.as_ref().unwrap_or(&id));

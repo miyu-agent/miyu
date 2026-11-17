@@ -1,2 +1,2 @@
-Set your next wakeup with schedule_wakeup. Here its prompt is not passed back: write a note to yourself for that wakeup, or leave it out. delay_seconds is how long until then; reason is what you are doing now. Without a call you wake again after the default interval.
-</life-wakeup>
+End this round by setting when the next one starts with schedule_next: call it once, last. Here its prompt is not passed back: write a note to yourself for the next round, or leave it out. delay_seconds is how long until then; reason is what you are doing now. Time does not move within a round. Without a call the next round starts after the default interval.
+</life-round>

@@ -1,5 +1,5 @@
 //! 定时和循环的端口（施工 J-2，设计 `45-定时和循环.md` 第三节第 3、4 条）：`cron_create`、`cron_delete`、`cron_list`、
-//! `schedule_wakeup` 经它建、删、列这个会话上的定时任务，改动态循环下一次醒的时刻。实现在协议端点：唤醒表（施工 J-1）
+//! `schedule_next` 经它建、删、列这个会话上的定时任务，改动态循环下一次醒的时刻。实现在协议端点：唤醒表（施工 J-1）
 //! 在端点里，造会话、载入时交进来，同 [`crate::PackagesPort`]。
 
 use std::fmt;
@@ -19,7 +19,20 @@ pub const CRON_DELETE: &str = "cron_delete";
 pub const CRON_LIST: &str = "cron_list";
 
 /// 动态循环定下一次的工具名：工具面上有它的会话才认 `/loop`。
-pub const SCHEDULE_WAKEUP: &str = "schedule_wakeup";
+pub const SCHEDULE_NEXT: &str = "schedule_next";
+
+/// 改过名的工具：旧名字到现在的名字（施工 WK-2）。这不是兼容的别名：模型只看得到新名字，旧名字调不了；这张表只让快照里
+/// 冻着旧名字的会话（改名以前造的）下一个回合换成新的那件工具（`miyu-session` 回合开始重筛工具面，载入时认 `/loop`）。
+/// 出过版的工具改名，就在这里添一行。
+pub const RENAMED: &[(&str, &str)] = &[("schedule_wakeup", SCHEDULE_NEXT)];
+
+/// 旧名字 `old` 现在叫什么（施工 WK-2，[`RENAMED`]）：没改过名的没有。
+pub fn renamed(old: &str) -> Option<&'static str> {
+    RENAMED
+        .iter()
+        .find(|(was, _)| *was == old)
+        .map(|(_, now)| *now)
+}
 
 /// 一个会话里她最多同时挂几个定时任务（设计 45 第三节第 3 条）：照谁建的数，超了报错叫她先删。
 pub const PER_SESSION: usize = 20;

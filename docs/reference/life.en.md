@@ -1,14 +1,14 @@
 # Life sessions: `life.*`
 
-Give a persona a "life session" that keeps running a loop: she decides when to wake next, lives a stretch of her own day when she wakes, and what she saves goes into the persona's memory. One per persona. A life session is an ordinary session opened with the shipped preset `life` (Life Simulation); it wakes on the life row of the schedule table (`loop` is `life`), which shows up in `schedule.list` and the `schedules` stream (see [Schedules](schedules.en.md)) but which only these methods change: the general schedule methods get `life_schedule` when they try to change or cancel it. 中文版：[life.md](life.md).
+Give a persona a "life session" that keeps running a loop: she decides when to continue next, lives a stretch of her own day in each round, and what she saves goes into the persona's memory. One per persona. A life session is an ordinary session opened with the shipped preset `life` (Life Simulation); it continues on the life row of the schedule table (`loop` is `life`), which shows up in `schedule.list` and the `schedules` stream (see [Schedules](schedules.en.md)) but which only these methods change: the general schedule methods get `life_schedule` when they try to change or cancel it. 中文版：[life.md](life.md).
 
 | Method | Does |
 |---|---|
-| [`life.start`](#lifestart) | Open a life session for a persona; she wakes for the first time right away |
+| [`life.start`](#lifestart) | Open a life session for a persona; the first round begins right away |
 | [`life.status`](#lifestatus) | Where the persona's life session is and whether it is running |
-| [`life.pause`](#lifepause) | Pause: she does not wake |
-| [`life.resume`](#liferesume) | Resume: she wakes once right away, then on her own schedule |
-| [`life.kill`](#lifekill) | End this life: she never wakes again, the session is archived read-only, and its memories are cleared |
+| [`life.pause`](#lifepause) | Pause: she does not continue |
+| [`life.resume`](#liferesume) | Resume: a round starts right away, then on her own schedule |
+| [`life.kill`](#lifekill) | End this life: it never continues, the session is archived read-only, and its memories are cleared |
 | [`life.new`](#lifenew) | End the current life if there is one, then start a new one |
 | [`life.list`](#lifelist) | List every persona's life session that has not ended, and the ended ones not seen yet |
 | [`life.seen`](#lifeseen) | Say that an ended life has been seen |
@@ -27,9 +27,9 @@ Except for `life.list`, which takes none, and `life.seen`, which takes `session`
 |---|---|
 | `state` | `none` (the persona has no life session), `running`, `paused`, or `ended` (the latest one has ended and no new one was started) |
 | `session` | The life session's id; absent for `none` |
-| `next` | When she wakes next; only for `running` |
-| `rounds` | Which round of the life this is: every wake-up that comes due counts as one, and the wake-up right after starting is round 1; a paused life does not count up. It is only recorded, heads do not show it. Absent for `none` and `ended` |
-| `doing` | What she is doing now, as she wrote it the last time she set her next wakeup in the life session: `{"text", "at"}`, where `text` is that line (line breaks turned into spaces, at most 200 characters) and `at` is when she wrote it. Absent if she never wrote one or left it out the last time. Present while paused too |
+| `next` | When the next round starts; only for `running` |
+| `rounds` | Which round of the life this is: every round that comes due counts as one, and the round right after starting is round 1; a paused life does not count up. It is only recorded, heads do not show it. Absent for `none` and `ended` |
+| `doing` | What she is doing now, as she wrote it the last time she set her next round in the life session: `{"text", "at"}`, where `text` is that line (line breaks turned into spaces, at most 200 characters) and `at` is when she wrote it. Absent if she never wrote one or left it out the last time. Present while paused too |
 
 If the schedule row is gone (for instance the table was broken and replaced by an empty one), the state is `paused`: `life.resume` rebuilds the row from the session log.
 
@@ -37,7 +37,7 @@ What she is doing now is also handed to her other sessions of the same persona (
 
 ## `life.start`
 
-Opens a new session with the default model of this moment, the preset `life` and this persona (the title is generated as usual), sets its context cap to the persona's `life.context`, or 100000 tokens when it is not written (or to the least the current model needs, if that is more). Changing it later in the persona with `persona.set` applies to the running life at once; a cap set inside the life session with `context` in `session.configure` also stays, waking up does not reset it, and whichever is changed last counts, records the identity in the log, and adds the life row with its first time set to now, so the first wake-up happens right away. Answers `{"session": <id>}`.
+Opens a new session with the default model of this moment, the preset `life` and this persona (the title is generated as usual), sets its context cap to the persona's `life.context`, or 100000 tokens when it is not written (or to the least the current model needs, if that is more). Changing it later in the persona with `persona.set` applies to the running life at once; a cap set inside the life session with `context` in `session.configure` also stays, the next round does not reset it, and whichever is changed last counts, records the identity in the log, and adds the life row with its first time set to now, so the first round begins right away. Answers `{"session": <id>}`.
 
 - If the persona already has a life session: `life_exists`, with that one in `data.session`. When two connections start the same persona at once, only one session is opened and the other gets `life_exists`. A latest life that has ended does not count: a new one is opened (the old one stays as an archive, its memories already cleared).
 - If the session cannot be opened, the refusal is the one `session.create` gives, and nothing is left behind. If setting the context cap or recording the identity fails, the new session is deleted and the refusal is passed on.
@@ -59,22 +59,22 @@ Answers with the state above.
 
 ## `life.pause`
 
-Pause: she does not wake, and the next time is cleared. Pausing a paused one is fine. Answers with the state above. Without a life session: `no_life`; an ended one: `life_ended`.
+Pause: she does not continue, and the next time is cleared. Pausing a paused one is fine. Answers with the state above. Without a life session: `no_life`; an ended one: `life_ended`.
 
 ## `life.resume`
 
-Resume: the next time becomes now, so she wakes once right away and then on her own schedule; the note she left for her next wakeup is kept. A running one is left as it is; a missing schedule row is rebuilt from the log. Answers with the state above. Without a life session: `no_life`; an ended one: `life_ended`.
+Resume: the next time becomes now, so a round starts right away and then on her own schedule; the note she left for her next round is kept. A running one is left as it is; a missing schedule row is rebuilt from the log. Answers with the state above. Without a life session: `no_life`; an ended one: `life_ended`.
 
 ## `life.kill`
 
-End this life, and answer once it is done: a `life.ended` event goes into the log (ended by a person, no last words) and a running turn is interrupted; the session is archived read-only (sending answers `session_sealed`) and can still be read and browsed; the life row is deleted, so she never wakes again; the persona's memories whose sources all lie in this session are cleared (this cannot be undone), and the session is taken out of the index of past conversations; heads subscribed to the `notices` stream get a `life.ended` notice (see [Pushes](pushes.en.md)). There is no way to continue it. Answers `{"state": "ended", "session": <id>}`.
+End this life, and answer once it is done: a `life.ended` event goes into the log (ended by a person, no last words) and a running turn is interrupted; the session is archived read-only (sending answers `session_sealed`) and can still be read and browsed; the life row is deleted, so this life never continues; the persona's memories whose sources all lie in this session are cleared (this cannot be undone), and the session is taken out of the index of past conversations; heads subscribed to the `notices` stream get a `life.ended` notice (see [Pushes](pushes.en.md)). There is no way to continue it. Answers `{"state": "ended", "session": <id>}`.
 
 - Without a life session: `no_life`.
 - An ended one succeeds as well: whatever was left uncleared (for instance when the core stopped half way) is finished, and no second notice is sent.
 
 ## When she ends it herself
 
-A life session's tools include `end_life` (from the built-in package "End of life", `base-life`): she can end this life herself and must leave last words. The tool exists only in a life session that hasn't ended; an ordinary session opened with the preset `life` doesn't have it. Once she calls it, the turn finishes as usual, and then everything happens as with `life.kill`: the session is archived read-only, she never wakes again and this life's memories are cleared; the `life.ended` event in the log has her tool call as `by` and carries the last words, and the `life.ended` notice pushed to heads has `by: "self"` and `last_words` (see [Pushes](pushes.en.md)). `life.status` then says `ended`.
+A life session's tools include `end_life` (from the built-in package "End of life", `base-life`): she can end this life herself and must leave last words. The tool exists only in a life session that hasn't ended; an ordinary session opened with the preset `life` doesn't have it. Once she calls it, the turn finishes as usual, and then everything happens as with `life.kill`: the session is archived read-only, this life never continues and this life's memories are cleared; the `life.ended` event in the log has her tool call as `by` and carries the last words, and the `life.ended` notice pushed to heads has `by: "self"` and `last_words` (see [Pushes](pushes.en.md)). `life.status` then says `ended`.
 
 ## When she notes how she has changed
 
@@ -101,7 +101,7 @@ Each item of `lives` is what [`life.status`](#state) answers for that persona (`
 |---|---|
 | `persona` | The persona's id |
 | `name` | The persona's display name in the connection's language; the id when it has none |
-| `awake` | `true` while she is in the middle of a turn; absent otherwise |
+| `busy` | `true` while she is in the middle of a turn; absent otherwise |
 
 With no life at all, `lives` is empty. The reply to the command `/life` (typed alone) carries the same `lives`, with the life of that session's persona first (see [Packages and commands](packages.en.md)).
 

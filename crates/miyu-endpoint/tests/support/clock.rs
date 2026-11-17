@@ -61,7 +61,7 @@ pub fn core_with(home: &Home, script: &Script, hand: &Arc<Hand>) -> Arc<Core> {
     core_with_tools(home, script, hand, miyu_tool::Catalog::default())
 }
 
-/// 同 [`core_with`]，工具目录是 `tools`（施工 J-2：`/loop` 只在工具面上有 `schedule_wakeup` 的会话里认）。
+/// 同 [`core_with`]，工具目录是 `tools`（施工 J-2：`/loop` 只在工具面上有 `schedule_next` 的会话里认）。
 pub fn core_with_tools(
     home: &Home,
     script: &Script,

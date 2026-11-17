@@ -29,7 +29,7 @@ const START: i64 = 1_792_972_800_000;
 const GAP: i64 = 3_600_000;
 
 /// 成了的那一句。
-const ENDED: &str = "You have died. This was your last moment awake.";
+const ENDED: &str = "You have died. This was your last moment.";
 
 /// 记忆、循环、结束人生三个包的真工具。
 pub(crate) fn catalog() -> Catalog {
@@ -360,7 +360,7 @@ async fn a_refused_end_leaves_the_life_running_and_stop_points_to_end_life() {
     let home = Home::new();
     let script = Script::new([
         end_life(""),
-        Play::calls(&[("schedule_wakeup", r#"{"stop":true}"#)]),
+        Play::calls(&[("schedule_next", r#"{"stop":true}"#)]),
         Play::Says("那就继续。"),
     ]);
     let hand = Hand::at(START);
@@ -373,7 +373,7 @@ async fn a_refused_end_leaves_the_life_running_and_stop_points_to_end_life() {
     );
     let stop = results(&home, &session)
         .into_iter()
-        .find(|(name, ..)| name == "schedule_wakeup")
+        .find(|(name, ..)| name == "schedule_next")
         .expect("调了");
     assert_eq!(
         stop.1,

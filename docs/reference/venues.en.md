@@ -119,7 +119,7 @@ Start a turn from messages recorded while listening (when it's decided she shoul
 
 ## `session.note`
 
-Record a few facts without starting a turn, interrupting or waking her (e.g. her message couldn't be delivered and she should know at the next step).
+Record a few facts without starting a turn, interrupting, or setting her going when idle (e.g. her message couldn't be delivered and she should know at the next step).
 
 **Params**: `session`; `facts`: 1 to 16 blocks `{"kind", "text"}`. **Response**: `{"events": [...]}`. During a turn they belong to that turn and she sees them at the next request; when idle, at the start of the next turn.
 

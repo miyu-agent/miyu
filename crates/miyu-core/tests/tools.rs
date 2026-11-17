@@ -75,7 +75,7 @@ fn the_catalog_has_the_base_system() {
             "packages",
             "read",
             "remember",
-            "schedule_wakeup",
+            "schedule_next",
             "send_message",
             "session_usage",
             "sessions",
@@ -89,6 +89,8 @@ fn the_catalog_has_the_base_system() {
             "write"
         ]
     );
+    // 施工 WK-2：循环的工具改名 `schedule_next`，旧名不留兼容。
+    assert!(!names.contains(&"schedule_wakeup"), "旧名不在出厂目录里");
 }
 
 /// 内置包照清单启用（施工 F-2，设计 30 第二节第 3 条）：没有清单的，它的工具不登记。

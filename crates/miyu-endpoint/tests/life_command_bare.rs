@@ -21,7 +21,7 @@ use crate::support::clock::{Hand, core_with_tools};
 use crate::support::*;
 
 /// 没有人格、也没有哪个人格有人生会话时光打 `/life` 的说明。
-const ABOUT: &str = "人生会话让一个人格一直过着自己的日子：到点自己醒来，做点自己的事，记下的会进这个人格的记忆。每次醒来都是一次模型请求，会多花 token。这个会话没有人格：先给它选一个人格，再用 /life new 开始。";
+const ABOUT: &str = "人生会话让一个人格一直过着自己的日子：到点自己继续，做点自己的事，记下的会进这个人格的记忆。每一轮都是一次模型请求，会多花 token。这个会话没有人格：先给它选一个人格，再用 /life new 开始。";
 
 /// 没有人格的会话里 `/life new`。
 const NO_NEW: &str = "这个会话没有人格，开不了新的人生会话：先给它选一个人格。";
@@ -82,7 +82,7 @@ async fn a_session_without_a_persona_reaches_the_only_life() {
     let reply = typed(&mut client, "k1", &bare, "/life").await;
     assert_eq!(
         said(&reply),
-        format!("缪斯 的人生会话进行中，下次醒来：{next}。")
+        format!("缪斯 的人生会话进行中，下次继续：{next}。")
     );
     assert_eq!(carried(&reply), Some(session.as_str()), "{reply}");
     assert_eq!(persona(&reply), Some("muse"), "{reply}");
@@ -91,7 +91,7 @@ async fn a_session_without_a_persona_reaches_the_only_life() {
 
     // 带人格的会话里回执照旧不写名字，回应同样带上是哪个人格的、同一份列表。
     let reply = typed(&mut client, "k2", &here, "/life").await;
-    assert_eq!(said(&reply), format!("人生会话进行中，下次醒来：{next}。"));
+    assert_eq!(said(&reply), format!("人生会话进行中，下次继续：{next}。"));
     assert_eq!(persona(&reply), Some("muse"), "{reply}");
     assert_eq!(lives(&reply), &one, "{reply}");
 
@@ -238,13 +238,13 @@ async fn bare_receipts_come_in_english_and_japanese() {
     let cases = [
         (
             "en-US",
-            "A life session lets a persona live its own days: it wakes up on its own, does its own things, and what it notes goes into its memory. Every wake-up is a model request and costs extra tokens. This session has no persona: give it one first, then start with /life new.",
+            "A life session lets a persona live its own days: it continues on its own schedule, does its own things, and what it notes goes into its memory. Every round is a model request and costs extra tokens. This session has no persona: give it one first, then start with /life new.",
             "This session has no persona, so a new life session cannot be started here: give it a persona first.",
             "This session has no persona, and no persona has a life session.",
         ),
         (
             "ja-JP",
-            "人生セッションでは、ペルソナが自分の日々を過ごします。時間になると自分で目を覚まし、自分のことをして、書き留めたことは記憶に残ります。目を覚ますたびにモデルへのリクエストが1回あり、そのぶんトークンを消費します。このセッションにはペルソナがありません。先にペルソナを選んでから /life new で始めてください。",
+            "人生セッションでは、ペルソナが自分の日々を過ごします。時間になると自分で続け、自分のことをして、書き留めたことは記憶に残ります。一回ごとにモデルへのリクエストが1回あり、そのぶんトークンを消費します。このセッションにはペルソナがありません。先にペルソナを選んでから /life new で始めてください。",
             "このセッションにはペルソナがないため、新しい人生セッションを始められません。先にペルソナを選んでください。",
             "このセッションにはペルソナがなく、人生セッションのあるペルソナもありません。",
         ),

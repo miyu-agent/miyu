@@ -361,7 +361,8 @@ async fn find(core: &Arc<Core>, persona: &str) -> Result<Option<(SessionId, Life
 
 /// 所有人格里没结束的人生会话这一刻的样子（施工 LF-12：`life.list`、光打的 `/life`、不带人格的会话里的 `/life` 都照它）：每个
 /// 人格照 [`find`] 的认法取最新的那一条，结束了的不要；照人格的编号排。一项是 `life.status` 对那个人格的回应，多带 `persona`
-/// （编号）、`name`（给人看的名字，照 `language` 挑；没起的、人格读不出来的写编号）、她这会儿正跑一轮的 `awake: true`。
+/// （编号）、`name`（给人看的名字，照 `language` 挑；没起的、人格读不出来的写编号）、她这会儿正跑一轮的 `busy: true`
+/// （施工 WK-2：原来叫 `awake`）。
 pub(crate) fn lives<'a>(
     core: &'a Arc<Core>,
     language: &'a str,
@@ -386,7 +387,7 @@ pub(crate) fn lives<'a>(
             now["name"] = json!(name(core, &persona, language).await);
             now["persona"] = json!(persona);
             if one.busy {
-                now["awake"] = json!(true);
+                now["busy"] = json!(true);
             }
             lives.push(now);
         }

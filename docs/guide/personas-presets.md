@@ -183,7 +183,7 @@ env-workdir = true
 
 | 什么 | 编号 |
 |---|---|
-| 出厂的工具 | 多数同工具名，例如 `read`、`shell`、`subagent`。不一样的：`web_search` 是 `web-search`，`web_fetch` 是 `web-fetch`，`send_message` 跟 `sessions` 一个功能 `sessions`，`remember`、`memory_search`、`forget` 是 `memory`，五件 `kb_*` 是 `knowledge`，三件 `cron_*` 是 `schedule`，`schedule_wakeup` 是 `loop`，`end_life` 是 `life`，`note_change` 是 `change`。全表见 [AI 能用的工具](tools.md) |
+| 出厂的工具 | 多数同工具名，例如 `read`、`shell`、`subagent`。不一样的：`web_search` 是 `web-search`，`web_fetch` 是 `web-fetch`，`send_message` 跟 `sessions` 一个功能 `sessions`，`remember`、`memory_search`、`forget` 是 `memory`，五件 `kb_*` 是 `knowledge`，三件 `cron_*` 是 `schedule`，`schedule_next` 是 `loop`，`end_life` 是 `life`，`note_change` 是 `change`。全表见 [AI 能用的工具](tools.md) |
 | 不带工具的出厂功能 | 环境信息 `env-time`、`env-workdir`、`env-permission`、`env-session`、`env-model`、`env-harness`、`env-machine`、`env-profile`；自动注入 AGENTS 文档 `project-docs`；命令行调用工具 `clicall`；人设遵循提醒 `roleplay` |
 | 技能 | `skill-<技能名>` |
 | 脚本 | `script-<工具名>` |

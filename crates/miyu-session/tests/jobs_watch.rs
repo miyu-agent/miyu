@@ -50,7 +50,10 @@ async fn three_lines_wake_her_once_and_stderr_does_not() {
         .iter()
         .map(|block| format!("{block:?}"))
         .collect::<String>();
-    assert!(said.contains("Each stdout line wakes you"), "{said}");
+    assert!(
+        said.contains("Each stdout line reaches you right away"),
+        "{said}"
+    );
     let lines = watched(&log);
     let [(event, lines)] = lines[..] else {
         panic!("一下子出的三行合成一批：{log:#?}")

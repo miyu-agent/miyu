@@ -27,7 +27,8 @@ use crate::support::clock::{Hand, core_with_tools};
 use crate::support::*;
 
 /// 人生会话里带话的 `/loop` 的回执。
-const NOT_HERE: &str = "这是人生会话，什么时候醒由 AI 自己定，这里不另开循环；想说什么直接发消息。";
+const NOT_HERE: &str =
+    "这是人生会话，什么时候继续由 AI 自己定，这里不另开循环；想说什么直接发消息。";
 
 /// 暂停了的那一句。
 const PAUSED: &str = "人生会话已暂停，用 /life resume 继续。";
@@ -39,7 +40,7 @@ fn tools(gate: &Arc<Barrier>) -> Catalog {
     Catalog::in_packages([(miyu_schedule::LOOP, looping)]).expect("合写法")
 }
 
-/// 只有循环这个包的工具：会话的工具面上有 `schedule_wakeup`，才认 `/loop`。
+/// 只有循环这个包的工具：会话的工具面上有 `schedule_next`，才认 `/loop`。
 fn looping() -> Catalog {
     let tools = miyu_schedule::loop_tools(&default_resources()).expect("出厂的字");
     Catalog::in_packages([(miyu_schedule::LOOP, tools)]).expect("合写法")
@@ -100,7 +101,7 @@ async fn loop_in_a_life_session_starts_no_second_loop() {
         .expect("在范围里")
         .local_minute(offset());
     let reply = typed(&mut client, "k1", &session, "/loop").await;
-    assert_eq!(said(&reply), format!("人生会话进行中，下次醒来：{next}。"));
+    assert_eq!(said(&reply), format!("人生会话进行中，下次继续：{next}。"));
     for (id, text) in [
         ("k2", "/loop 看看新闻"),
         ("k3", "/loop 5m 看看新闻"),

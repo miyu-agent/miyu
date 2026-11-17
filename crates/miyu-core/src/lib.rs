@@ -233,7 +233,7 @@ fn groups(resources: &ResourceRoot, found: &[Found], kit: &Kit) -> Result<Vec<Bu
         let goal = miyu_goal::tools(resources.path()).map_err(|error| error.to_string())?;
         groups.push((miyu_goal::PACKAGE, goal));
     }
-    // 定时任务、循环、人生三个软件包（施工 J-2、LF-4 下、LF-11，设计 45、70）：`cron_*` 三件、`schedule_wakeup`、`end_life` 和
+    // 定时任务、循环、人生三个软件包（施工 J-2、LF-4 下、LF-11，设计 45、70）：`cron_*` 三件、`schedule_next`、`end_life` 和
     // `note_change`，预设分开开关。
     for (package, tools) in
         miyu_schedule::packages(resources.path()).map_err(|error| error.to_string())?

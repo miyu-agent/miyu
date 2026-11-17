@@ -70,7 +70,7 @@ async fn watching_runs_in_the_background_and_says_how_it_wakes_her() {
     assert!(!done.error, "{}", text(&done));
     assert_eq!(
         text(&done),
-        "Watching j7 in the background. Each stdout line wakes you, so print only lines you must act on. stderr goes only to the output file. It stops after 30 minutes; start it again to keep watching.\n"
+        "Watching j7 in the background. Each stdout line reaches you right away, so print only lines you must act on. stderr goes only to the output file. It stops after 30 minutes; start it again to keep watching.\n"
     );
     let (output, lines) = drain(jobs.take(0)).await;
     assert_eq!(lines.as_deref(), Some("one\ntwo\n"), "只有标准输出");

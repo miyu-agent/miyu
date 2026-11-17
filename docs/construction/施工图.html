@@ -1538,6 +1538,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sLF12"><span class="n">LF-12</span>没有人格的会话也找得到人生；快速跳转<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF13"><span class="n">LF-13</span>人生就是这个会话的循环<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF14"><span class="n">LF-14</span>推演轮数；结束了、还没看过<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sWK2"><span class="n">WK-2</span>不说醒、睡，说继续、下一轮<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sVW1"><span class="n">VW-1</span>主人只读地看场所会话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT1"><span class="n">HT-1</span>内核认得供应商侧工具<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT3"><span class="n">HT-3</span>供应商侧工具画成工具步骤<span class="st">✓</span></a></li>
@@ -59590,6 +59591,61 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/LF-14-推演轮数、结束了没看过.md</code>；蓝图 <code>life.md</code>「推演轮数」「结束了、还没看过」、<code>schedules.md</code>、<code>protocol.md</code>；协议参考 <code>life.md</code>、<code>schedules.md</code>、<code>pushes.md</code> 中英各一份。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sWK2" aria-labelledby="h-sWK2">
+  <div class="sheet-head"><h2 id="h-sWK2"><span class="no">WK-2</span>不说醒、睡，说继续、下一轮</h2><span class="pill done">做完</span></div>
+  <p class="purpose">AI 总说「xx 再醒」，像每一轮都睡下去了。项目主人定：无论什么地方都用「继续」这样中性的词。工具改名、给模型和给人看的字都换；换词的时候拿真模型试出一个坑：把「继续」写成叫她做的动词，她会在一轮里把一整天演完。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">resources · software/loop　software/life　miyu-tool · schedules.rs　miyu-session · actor/persona/face.rs</span><span class="dir-note">WK-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>工具 <code>schedule_wakeup</code> 改名 <code>schedule_next</code>，标签改 <code>&lt;loop-round&gt;</code>、<code>&lt;life-round&gt;</code>，不留旧名</li>
+              <li>循环、人生给模型看的字不再有 wake、sleep；别处的「wake you」也换了</li>
+              <li><code>/life</code> 的回执说「下次继续」「这一轮正在跑」；<code>life.list</code> 的 <code>awake</code> 改 <code>busy</code></li>
+              <li>改名表：快照里是旧名的会话下一轮换到新工具，载入就认 <code>/loop</code></li>
+              <li>快照里每件工具记来处，程序升级拿掉的自带工具认得出来</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">无论什么地方都用「继续」这样中性的词，人生里也不说醒、睡</span><span class="rl">项目主人 2026-11-17 定</span></div>
+          <div class="tile new"><span class="nm">给她的字里不拿 continue 当叫她做的动词；写清一轮在哪结束</span><span class="rl">真模型试出来的</span></div>
+          <div class="tile new"><span class="nm">工具改名走改名表，不是别名：模型只看得到新名</span><span class="rl">核心主会话定</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">WK-2</dd></div>
+        <div><dt>名称</dt><dd>不说醒、睡，说继续、下一轮</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">WK-2</dd></div>
+        <div><dt>验收</dt><dd>字面断言改前红；门禁；真模型跨夜、旧会话换核心各走了一遍</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>循环包的工具只有 <code>schedule_next</code>，出厂目录里没有旧名；循环、人生的字里搜不到 wake、sleep</span></li>
+        <li><span class="ok">✓</span><span>真模型：头一版一轮里连定 7 次；第二版跨夜 9 轮每轮一次，夜里留 7.5 小时，最后一轮写了日记</span></li>
+        <li><span class="ok">✓</span><span>改名前建的会话：载入就认 <code>/loop</code>，下一轮请求里是新工具，旧人生会话定得了下一轮</span></li>
+        <li><span class="ok">✓</span><span>没记来处的老快照照旧留着目录里没有的工具；记了来处、包还在的才拿掉</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/WK-2-换掉醒来的说法.md</code>；登记簿 <code>26-提示词.md</code>；蓝图 <code>life.md</code>、<code>schedules.md</code>、<code>providers.md</code>、<code>policy.md</code>、<code>prompts.md</code>；协议参考、手册中英各一份。</li>
       </ul>
     </div>
   </div>

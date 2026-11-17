@@ -387,7 +387,7 @@
 
 **参数**：`cwd`（照它找项目配置）、`file`（只查这一份）。
 
-**回应**：`{"problems": [...]}`，一处一项：`kind`（`config`、`secrets`、`persona`、`preset`、`package`、`script`、`skill`、`slash`、`mcp`、`schedule`（唤醒表里读不懂的行，`schedule_unreadable`）；包自己的检查照它报的原样交，例如 `venue`）、`file`、`code`、`level`、`message`，有行列的带 `line`、`column`，配置的另带 `key`、`got`、`suggest`、`using`，包自己的检查可以另带 `key`、`rule`、`source`。
+**回应**：`{"problems": [...]}`，一处一项：`kind`（`config`、`secrets`、`persona`、`preset`、`package`、`script`、`skill`、`slash`、`mcp`、`schedule`（定时表里读不懂的行，`schedule_unreadable`）；包自己的检查照它报的原样交，例如 `venue`）、`file`、`code`、`level`、`message`，有行列的带 `line`、`column`，配置的另带 `key`、`got`、`suggest`、`using`，包自己的检查可以另带 `key`、`rule`、`source`。
 
 不写 `file` 的全查：系统配置、`cwd` 的项目配置、密钥文件、每一层的人格和预设、软件包清单、包自己的检查；读不成的、被盖住的、链接指到数据根里不认的地方的脚本、技能、命令模板，撞名没登记上的脚本，和自带命令同名的命令模板，MCP 服务列出来却没登记上的工具、提示词；装好的文件改了、少了。另带 `embedding`：语义模型的状态，不是问题（`model`，用不上的 `model` 是 `null`、带 `why`；后台在补的 `filling`；`memory`、`turns` 每个人格一项 `{persona, have, total}`；`kb` 每个库一项 `{id, name, have, total}`；`no_recall` 是这个模型不自动联想的几样，`memory`、`kb`：门槛表里没有这个模型的不自动联想，搜索照常）。
 

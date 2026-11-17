@@ -16,7 +16,7 @@ Chinese version: [misc.md](misc.md).
 
 **Params**: `session` (the session that started it), `job` (job id, like `j1`).
 
-**Response**: `{}`, once the report is on disk. A background command's whole process group is killed; a subagent stops its turn and what it spawned. Being stopped by a person wakes her, and she knows you stopped it.
+**Response**: `{}`, once the report is on disk. A background command's whole process group is killed; a subagent stops its turn and what it spawned. Being stopped by a person starts a turn for her, and she knows you stopped it.
 
 **Errors**: `unknown_job` (no such job, or it already ended); `bad_params` (malformed id).
 

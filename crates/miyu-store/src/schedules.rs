@@ -46,7 +46,7 @@ pub struct Schedule {
     pub prompt: String,
     /// 跑在哪。
     pub target: Target,
-    /// 是不是循环、哪一种（施工 J-2 的 `/loop`、`schedule_wakeup`）；定时任务没有。
+    /// 是不是循环、哪一种（施工 J-2 的 `/loop`、`schedule_next`）；定时任务没有。
     pub looping: Option<Loop>,
     /// 停着：不到点。
     pub paused: bool,

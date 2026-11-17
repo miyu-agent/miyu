@@ -89,4 +89,9 @@ fn the_life_pair_needs_both_files_and_the_method_reads_as_shipped() {
         repo().loop_autonomous().unwrap(),
         include_str!("../../../../../resources/software/loop/autonomous.txt")
     );
+    // 施工 WK-2：说「下一轮」，不说醒。
+    assert_eq!(
+        repo().loop_autonomous().unwrap().trim_end(),
+        "No new instructions. Continue on your own judgment, then schedule the next round or stop."
+    );
 }

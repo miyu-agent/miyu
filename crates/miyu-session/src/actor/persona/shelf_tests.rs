@@ -122,6 +122,10 @@ fn a_tool_for_groups_only_leaves_a_local_session_alone() {
 fn a_loaded_session_checks_the_catalog_once() {
     let (_scratch, _root, mut refresh) = setup("shelf-loaded", "");
     refresh.seen = None;
+    // 施工 WK-2 以前造的快照：没记包（记了包的见 `a_missing_tool_of_a_builtin_package_still_here_leaves`）。
+    for tool in &mut refresh.snapshot.tools {
+        tool.package = None;
+    }
     assert!(matches!(look_now(&refresh), Seen::Same), "目录和快照对得上");
     // 程序升级拿掉了一件自带的：载入的认不出它是哪来的，照旧留着，调到时暂时不可用（施工 4-2）。
     let fake = |name: &str| -> Arc<dyn Tool> { Fake::new(name, Access::Read, Act::Echo) };
@@ -315,4 +319,163 @@ fn a_builtin_package_installed_or_removed_follows_the_rules() {
         ["read", "remember", "shell"],
         "新装上的包下一个回合进来"
     );
+}
+
+/// 快照里冻着的一件，施工 WK-2 以前造的那样：没记包。
+fn frozen(name: &str) -> miyu_policy::ToolEntry {
+    miyu_policy::ToolEntry {
+        name: name.to_string(),
+        description: format!("{name}, the old way."),
+        parameters: serde_json::from_str::<RawJson>(r#"{"type":"object"}"#).unwrap(),
+        access: Access::Read,
+        clicall: false,
+        runs_commands: false,
+        command_only: false,
+        role: None,
+        package: None,
+    }
+}
+
+/// 载入的会话（不知道快照照的是哪一代），快照里多冻着 `extra`，目录换成 `catalog`。
+fn loaded_with(refresh: &mut Refresh, extra: Vec<miyu_policy::ToolEntry>, catalog: Catalog) {
+    let mut tools = refresh.snapshot.tools.clone();
+    tools.extend(extra);
+    refresh.snapshot = refresh.snapshot.clone().with_tools(tools);
+    refresh.seen = None;
+    refresh
+        .tools
+        .replace(|_| Ok::<_, miyu_tool::CatalogError>(catalog))
+        .expect("登记得上");
+}
+
+/// 基础系统两件、记忆一件，循环这个包是改名以后的 `schedule_next`。
+fn renamed_catalog() -> Catalog {
+    let fake = |name: &str| -> Arc<dyn Tool> { Fake::new(name, Access::Read, Act::Echo) };
+    Catalog::in_packages([
+        ("basesystem", vec![fake("read"), fake("shell")]),
+        ("memory", vec![fake("remember")]),
+        ("loop", vec![fake(miyu_tool::SCHEDULE_NEXT)]),
+    ])
+    .expect("合写法")
+}
+
+/// 改名以前造的会话（施工 WK-2）：快照里冻着 `schedule_wakeup`，载入后第一个回合换成目录里新名字的那件，照现在的目录拿；
+/// 旧名字不留。
+#[test]
+fn a_renamed_tool_moves_to_its_new_name() {
+    let (_scratch, _root, mut refresh) = setup("rename-moves", "");
+    loaded_with(
+        &mut refresh,
+        vec![frozen("schedule_wakeup")],
+        renamed_catalog(),
+    );
+    let snapshot = swap(&mut refresh);
+    assert_eq!(
+        names(&snapshot),
+        ["read", "remember", miyu_tool::SCHEDULE_NEXT, "shell"]
+    );
+    let next = snapshot
+        .tools
+        .iter()
+        .find(|tool| tool.name == miyu_tool::SCHEDULE_NEXT)
+        .expect("有新的");
+    assert_eq!(next.package.as_deref(), Some("loop"), "照现在的目录拿");
+    assert!(matches!(look_now(&refresh), Seen::Same), "换过以后不再换");
+}
+
+/// 改了名、预设现在不给新的那件（施工 WK-2）：旧的新的都没有。
+#[test]
+fn a_renamed_tool_the_preset_no_longer_offers_leaves() {
+    let (_scratch, _root, mut refresh) = setup("rename-off", "[software]\nloop = false\n");
+    loaded_with(
+        &mut refresh,
+        vec![frozen("schedule_wakeup")],
+        renamed_catalog(),
+    );
+    let snapshot = swap(&mut refresh);
+    assert_eq!(names(&snapshot), ["read", "remember", "shell"]);
+}
+
+/// 快照里新旧两个名字都有的（施工 WK-2）：换完只有一件新的，不重。
+#[test]
+fn a_renamed_tool_already_on_the_face_is_not_doubled() {
+    let (_scratch, _root, mut refresh) = setup("rename-twice", "");
+    let both = vec![frozen("schedule_wakeup"), frozen(miyu_tool::SCHEDULE_NEXT)];
+    loaded_with(&mut refresh, both, renamed_catalog());
+    let snapshot = swap(&mut refresh);
+    assert_eq!(
+        names(&snapshot),
+        ["read", "remember", miyu_tool::SCHEDULE_NEXT, "shell"]
+    );
+}
+
+/// 目录里没了、没改过名、快照没记包的（施工 4-2，WK-2 以前造的快照）：照旧留着。新名字不在目录里的改名也不换，同样留着。
+#[test]
+fn a_missing_tool_without_a_package_stays() {
+    let (_scratch, _root, mut refresh) = setup("rename-unknown", "");
+    let extra = vec![frozen("gone_tool"), frozen("schedule_wakeup")];
+    loaded_with(&mut refresh, extra, super::test_support::catalog());
+    match look_now(&refresh) {
+        Seen::Same => {}
+        Seen::Swapped(snapshot, ..) => assert_eq!(
+            names(&snapshot),
+            ["gone_tool", "read", "remember", "schedule_wakeup", "shell"]
+        ),
+        _ => panic!("该是照旧或者换上一样的"),
+    }
+}
+
+/// 快照记着包、那个内置包还在目录里、这件没了的（施工 WK-2）：程序升级拿掉的，拿掉。
+#[test]
+fn a_missing_tool_of_a_builtin_package_still_here_leaves() {
+    let (_scratch, _root, mut refresh) = setup("rename-builtin", "");
+    let shell = refresh
+        .snapshot
+        .tools
+        .iter()
+        .find(|tool| tool.name == "shell");
+    assert_eq!(
+        shell.and_then(|tool| tool.package.as_deref()),
+        Some("basesystem"),
+        "组工具面时记下包"
+    );
+    let fake = |name: &str| -> Arc<dyn Tool> { Fake::new(name, Access::Read, Act::Echo) };
+    let upgraded = Catalog::in_packages([
+        ("basesystem", vec![fake("read")]),
+        ("memory", vec![fake("remember")]),
+    ])
+    .expect("合写法");
+    loaded_with(&mut refresh, Vec::new(), upgraded);
+    let snapshot = swap(&mut refresh);
+    assert_eq!(names(&snapshot), ["read", "remember"]);
+}
+
+/// 快照记着包、可那个包是提供者登记的，或者这件随包卸掉了（施工 WK-2）：照以前的规矩留着（扩展还没登记上来、调到时报已卸载）。
+#[test]
+fn a_missing_tool_of_a_provider_or_a_removed_package_stays() {
+    let (_scratch, _root, mut refresh) = setup("rename-provider", "");
+    provide(
+        &refresh,
+        vec![provided("send", LOCAL), provided("poke", LOCAL)],
+    );
+    let snapshot = swap(&mut refresh);
+    assert_eq!(
+        names(&snapshot),
+        ["poke", "read", "remember", "send", "shell"]
+    );
+    let catalog = refresh
+        .tools
+        .current()
+        .replacing("onebot", vec![provided("send", LOCAL)])
+        .expect("登记得上")
+        .removing("memory");
+    loaded_with(&mut refresh, Vec::new(), catalog);
+    match look_now(&refresh) {
+        Seen::Same => {}
+        Seen::Swapped(snapshot, ..) => assert_eq!(
+            names(&snapshot),
+            ["poke", "read", "remember", "send", "shell"]
+        ),
+        _ => panic!("该是照旧或者换上一样的"),
+    }
 }

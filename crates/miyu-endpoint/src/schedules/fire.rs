@@ -25,7 +25,7 @@ use crate::sessions::Opening;
 
 /// 定时任务的包：她用 `cron_create` 建的看它（施工 J-2 建清单）。
 const SCHEDULE_PACKAGE: &str = "base-schedule";
-/// 循环的包：`/loop`、`schedule_wakeup` 建的看它。
+/// 循环的包：`/loop`、`schedule_next` 建的看它。
 const LOOP_PACKAGE: &str = "base-loop";
 
 /// 交的结果。

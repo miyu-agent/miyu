@@ -270,7 +270,13 @@ impl Catalog {
     /// 叫 `name` 的那一件是经提供者登记的（施工 O-2 中）；没有这件的不是。
     pub fn provided(&self, name: &str) -> bool {
         self.package_of(name)
-            .is_some_and(|package| self.provided.contains(package))
+            .is_some_and(|package| self.registered(package))
+    }
+
+    /// 包 `package` 是经提供者登记过的（施工 WK-2，同 [`Catalog::provided`] 只是照包问）：快照里记着包的工具从目录里没了，
+    /// 只有不是它的才认得出是程序升级拿掉的。
+    pub fn registered(&self, package: &str) -> bool {
+        self.provided.contains(package)
     }
 
     /// 有工具的几个包，照编号排、不重复。

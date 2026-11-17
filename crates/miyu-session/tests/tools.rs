@@ -128,8 +128,10 @@ async fn a_loaded_session_sends_the_tools_from_its_snapshot() {
         Act::Echo,
     );
     let again = Script::new([Play::Says("还在。")]);
+    // `edit` 照样在目录里：快照记着它从基础系统来，目录里没了的会当程序升级拿掉的拿掉（施工 WK-2），这里只看改了说明的。
+    let edit = Fake::new("edit", Access::Write, Act::Echo);
     let loaded = home
-        .load_with(&session, &again, &catalog(&[&changed]))
+        .load_with(&session, &again, &catalog(&[&changed, &edit]))
         .await;
     turn(&loaded, "cmd-2").await;
     let second = again.requests()[0].1.clone();

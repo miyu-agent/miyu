@@ -18,6 +18,7 @@ fn entry(name: &str, access: Access, parameters: &str) -> ToolEntry {
         runs_commands: false,
         command_only: false,
         role: None,
+        package: None,
     }
 }
 
@@ -305,4 +306,31 @@ fn a_role_is_kept_in_the_snapshot_only_when_there_is_one() {
     let (specs, _) = split(&[reader]).expect("拆得开");
     let sent = serde_json::to_string(&specs).expect("写得出");
     assert!(!sent.contains("role"), "不发给模型：{sent}");
+}
+
+/// 从哪个包来的进快照（施工 WK-2）：没记的不写这一格，WK-2 以前的快照字节不变、读回来没有；记了的读回来一样。发给模型的那一份
+/// （tools 数组）只有名字、说明、参数，包不在里面。
+#[test]
+fn a_package_is_kept_in_the_snapshot_only_when_there_is_one() {
+    let plain = entry("glob", Access::Read, r#"{"type":"object"}"#);
+    let text = serde_json::to_string(&plain).expect("写得出");
+    assert!(!text.contains("package"), "{text}");
+    let old: ToolEntry = serde_json::from_str(&text).expect("老的读得懂");
+    assert_eq!(old.package, None);
+    assert_eq!(
+        serde_json::to_string(&old).expect("写得出"),
+        text,
+        "读回来再写字节不变"
+    );
+    let packaged = ToolEntry {
+        package: Some("base-loop".to_string()),
+        ..entry("schedule_next", Access::Read, r#"{"type":"object"}"#)
+    };
+    let text = serde_json::to_string(&packaged).expect("写得出");
+    assert!(text.ends_with(r#","package":"base-loop"}"#), "{text}");
+    let back: ToolEntry = serde_json::from_str(&text).expect("读得懂");
+    assert_eq!(back, packaged);
+    let (specs, _) = split(&[packaged]).expect("拆得开");
+    let sent = serde_json::to_string(&specs).expect("写得出");
+    assert!(!sent.contains("package"), "不发给模型：{sent}");
 }

@@ -167,7 +167,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     let loops = parts
         .face
         .iter()
-        .any(|tool| tool.name == miyu_tool::SCHEDULE_WAKEUP);
+        .any(|tool| tool.name == miyu_tool::SCHEDULE_NEXT);
     let pools = Agents::pools_in(&parts.face);
     let agents_personas = Agents::personas_in(&parts.face);
     let child = lineage.is_some();

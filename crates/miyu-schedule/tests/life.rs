@@ -72,10 +72,7 @@ async fn her_last_words_go_to_the_port_as_written() {
     )
     .await;
     assert!(!done.error);
-    assert_eq!(
-        text(&done),
-        "You have died. This was your last moment awake."
-    );
+    assert_eq!(text(&done), "You have died. This was your last moment.");
     assert_eq!(said(&done), ("software/life/end/ended".to_string(), vec![]));
     let asked = port
         .asked

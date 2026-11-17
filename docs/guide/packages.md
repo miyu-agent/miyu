@@ -315,7 +315,7 @@ miyu pkg remove --purge ocr   # 连配置一起删
 | `base-todowrite` | 待办清单 | 给手上的活列一张待办（`todowrite`） | 任务和定时 |
 | `base-goal` | 长期目标 | 交代一件要做很久的事，AI 自己一轮轮做下去（`/goal`） | 任务和定时 |
 | `base-schedule` | 定时任务 | AI 可以把一句话定在以后发给自己（`cron_create`、`cron_delete`、`cron_list`） | 任务和定时 |
-| `base-loop` | 循环任务 | `/loop` 让一件事反复跑（`schedule_wakeup`） | 任务和定时 |
+| `base-loop` | 循环任务 | `/loop` 让一件事反复跑（`schedule_next`） | 任务和定时 |
 | `base-env` | 注入环境信息 | 告诉 AI 时间、工作目录、权限级别、会话编号、模型信息、Harness 版本、本机系统、用户身份，八项各自开关 | 注入环境信息 |
 | `base-project-docs` | 自动注入 AGENTS 文档 | 每轮开头把仓库里的 AGENTS.md 交给 AI | 注入环境信息 |
 | `base-memory` | 人格记忆 | 记住你说过的事，以后想得起来（`remember`、`memory_search`、`forget`） | 人格 |

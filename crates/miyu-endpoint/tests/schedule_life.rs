@@ -130,7 +130,7 @@ async fn after_it_speaks_a_life_loop_falls_back_to_the_default_gap() {
 async fn her_wakeup_in_the_woken_turn_beats_the_default() {
     let home = Home::new();
     let script = Script::new([
-        Play::calls(&[("schedule_wakeup", r#"{"delay_seconds":600}"#)]),
+        Play::calls(&[("schedule_next", r#"{"delay_seconds":600}"#)]),
         Play::Says("十分钟后再看。"),
     ]);
     let hand = Hand::at(START);
@@ -198,7 +198,7 @@ async fn a_missed_life_loop_wakes_once_on_restart_and_a_dynamic_one_ends() {
 async fn her_schedule_tools_cannot_stop_list_or_delete_a_life_loop() {
     let home = Home::new();
     let script = Script::new([
-        Play::calls(&[("schedule_wakeup", r#"{"stop":true}"#)]),
+        Play::calls(&[("schedule_next", r#"{"stop":true}"#)]),
         Play::calls(&[("cron_delete", r#"{"id":"t1"}"#)]),
         Play::calls(&[("cron_list", "{}")]),
         Play::Says("好。"),
@@ -214,7 +214,7 @@ async fn her_schedule_tools_cannot_stop_list_or_delete_a_life_loop() {
     let row = core.schedules().get(&added.id).expect("那一行还在");
     assert_eq!(row, added, "下一次没动");
     let log = format!("{:?}", home.log(&session));
-    assert!(log.contains("wakeup/unstoppable"), "stop 不收：{log}");
+    assert!(log.contains("next/unstoppable"), "stop 不收：{log}");
     assert!(log.contains("cron/not-found"), "删不了，照没有回：{log}");
     assert!(!log.contains("过日子"), "列表里没有它：{log}");
 }

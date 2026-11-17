@@ -1,2 +1,2 @@
-Call schedule_wakeup to continue the loop.
-</loop-wakeup>
+Call schedule_next to continue the loop.
+</loop-round>

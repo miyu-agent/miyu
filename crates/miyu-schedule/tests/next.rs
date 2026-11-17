@@ -1,4 +1,4 @@
-//! `schedule_wakeup`（施工 J-2）：间隔收边界、原话覆盖、停、没给间隔、没开过循环、没有端口、给人看的说法带理由。
+//! `schedule_next`（施工 J-2）：间隔收边界、原话覆盖、停、没给间隔、没开过循环、没有端口、给人看的说法带理由。
 
 use serde_json::json;
 
@@ -25,7 +25,7 @@ async fn the_delay_is_kept_within_bounds() {
     ] {
         let port = Fake::answering(Ok(woken()));
         run(
-            "schedule_wakeup",
+            "schedule_next",
             Some(&port),
             json!({"delay_seconds": given, "reason": "x"}),
         )
@@ -49,7 +49,7 @@ async fn the_delay_is_kept_within_bounds() {
 async fn a_wakeup_says_when_and_shows_the_reason() {
     let port = Fake::answering(Ok(woken()));
     let done = run(
-        "schedule_wakeup",
+        "schedule_next",
         Some(&port),
         json!({"delay_seconds": 1200, "prompt": "盯 CI", "reason": "CI 大约二十分钟"}),
     )
@@ -67,7 +67,7 @@ async fn a_wakeup_says_when_and_shows_the_reason() {
     assert_eq!(
         said(&done),
         (
-            "software/loop/wakeup/set".to_string(),
+            "software/loop/next/set".to_string(),
             vec![
                 ("next".to_string(), "2026-10-27 09:00".to_string()),
                 ("reason".to_string(), "CI 大约二十分钟".to_string()),
@@ -80,7 +80,7 @@ async fn a_wakeup_says_when_and_shows_the_reason() {
 async fn a_blank_prompt_keeps_the_old_one() {
     let port = Fake::answering(Ok(woken()));
     run(
-        "schedule_wakeup",
+        "schedule_next",
         Some(&port),
         json!({"delay_seconds": 60, "prompt": " "}),
     )
@@ -100,7 +100,7 @@ async fn a_blank_reason_is_not_handed_on() {
     for reason in [json!(" \n "), json!("")] {
         let port = Fake::answering(Ok(woken()));
         run(
-            "schedule_wakeup",
+            "schedule_next",
             Some(&port),
             json!({"delay_seconds": 60, "reason": reason}),
         )
@@ -121,7 +121,7 @@ async fn a_blank_reason_is_not_handed_on() {
 async fn stop_ends_the_loop_and_ignores_the_rest() {
     let port = Fake::answering(Ok(ScheduleAnswer::LoopStopped));
     let done = run(
-        "schedule_wakeup",
+        "schedule_next",
         Some(&port),
         json!({"stop": true, "delay_seconds": 5}),
     )
@@ -134,7 +134,7 @@ async fn stop_ends_the_loop_and_ignores_the_rest() {
 #[tokio::test]
 async fn without_a_delay_it_asks_for_one() {
     let port = Fake::answering(Ok(woken()));
-    let done = run("schedule_wakeup", Some(&port), json!({"reason": "x"})).await;
+    let done = run("schedule_next", Some(&port), json!({"reason": "x"})).await;
     assert!(done.error);
     assert_eq!(
         text(&done),
@@ -146,28 +146,40 @@ async fn without_a_delay_it_asks_for_one() {
 #[tokio::test]
 async fn with_no_loop_running_it_says_so() {
     let port = Fake::answering(Err(ScheduleRefused::NoLoop));
-    let done = run("schedule_wakeup", Some(&port), json!({"delay_seconds": 60})).await;
+    let done = run("schedule_next", Some(&port), json!({"delay_seconds": 60})).await;
     assert!(done.error);
     assert_eq!(text(&done), "No loop is running in this session.");
-    assert_eq!(said(&done).0, "software/loop/wakeup/no-loop");
+    assert_eq!(said(&done).0, "software/loop/next/no-loop");
 }
 
 /// 施工 LF-1：人生循环不收 `stop`，端口拒了照实说一句。
 #[tokio::test]
 async fn stopping_a_life_loop_is_refused_in_words() {
     let port = Fake::answering(Err(ScheduleRefused::Unstoppable));
-    let done = run("schedule_wakeup", Some(&port), json!({"stop": true})).await;
+    let done = run("schedule_next", Some(&port), json!({"stop": true})).await;
     assert!(done.error);
     assert_eq!(
         text(&done),
         "A life loop cannot be stopped. To end this life, use end_life."
     );
-    assert_eq!(said(&done).0, "software/loop/wakeup/unstoppable");
+    assert_eq!(said(&done).0, "software/loop/next/unstoppable");
 }
 
 #[tokio::test]
 async fn without_the_port_it_is_not_available() {
-    let done = run("schedule_wakeup", None, json!({"delay_seconds": 60})).await;
+    let done = run("schedule_next", None, json!({"delay_seconds": 60})).await;
     assert!(done.error);
     assert_eq!(text(&done), "Loops are not available in this session.");
+}
+
+/// 施工 WK-2：循环这个包只有一件，叫 `schedule_next`；旧名 `schedule_wakeup` 不留。
+#[test]
+fn the_loop_package_s_only_tool_is_schedule_next() {
+    let resources = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
+    let names: Vec<String> = miyu_schedule::loop_tools(&resources)
+        .expect("读得出")
+        .iter()
+        .map(|tool| tool.spec().name.clone())
+        .collect();
+    assert_eq!(names, ["schedule_next"]);
 }

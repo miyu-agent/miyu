@@ -368,3 +368,38 @@ fn with_scripts_adds_and_keeps_the_old_ones() {
         "算经提供者登记的：会话下一个回合换上"
     );
 }
+
+/// 照包问是不是经提供者登记的（施工 WK-2）：起来时登记的、装上的内置包不是，`replacing` 过的是，登记成空的也还是。
+#[test]
+fn the_catalog_knows_which_packages_came_from_a_provider() {
+    let catalog = Catalog::in_packages([("basesystem", vec![object("read")])]).unwrap();
+    assert!(!catalog.registered("basesystem"));
+    assert!(!catalog.registered("nothing"), "没有的不是");
+    let provided = catalog.replacing("onebot", vec![object("send")]).unwrap();
+    assert!(provided.registered("onebot"));
+    let placed = provided
+        .placing("memory", vec![object("remember")])
+        .unwrap();
+    assert!(!placed.registered("memory"), "内置的不算");
+    let emptied = placed.replacing("onebot", Vec::new()).unwrap();
+    assert!(emptied.registered("onebot"));
+}
+
+/// 改过名的工具（施工 WK-2）：表里的旧名字认得出现在叫什么，新名字、别的名字没有。
+#[test]
+fn a_renamed_tool_is_found_by_its_old_name_only() {
+    assert_eq!(
+        crate::renamed("schedule_wakeup"),
+        Some(crate::SCHEDULE_NEXT)
+    );
+    assert_eq!(
+        crate::renamed(crate::SCHEDULE_NEXT),
+        None,
+        "新名字不是改过名的"
+    );
+    assert_eq!(crate::renamed("read"), None);
+    for (old, now) in crate::RENAMED {
+        assert_ne!(old, now);
+        assert!(crate::renamed(now).is_none(), "改了又改的直接写到最新的");
+    }
+}

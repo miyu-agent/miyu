@@ -35,7 +35,7 @@
 ```json
 {
   "description": "Execute a command with {shell} and return its output. Every call starts in the working directory, so cd does not carry over to the next call.",
-  "parameters": {"type":"object","properties":{"command":{"type":"string"},"description":{"type":"string","description":"Short title, a few words."},"timeout":{"type":"integer","description":"Milliseconds, up to 600000. Default 120000."},"run_in_background":{"type":"boolean","description":"No timeout. Returns a job id at once."},"watch":{"type":"boolean","description":"Implies run_in_background. Each stdout line wakes you."}},"required":["command","description"]}
+  "parameters": {"type":"object","properties":{"command":{"type":"string"},"description":{"type":"string","description":"Short title, a few words."},"timeout":{"type":"integer","description":"Milliseconds, up to 600000. Default 120000."},"run_in_background":{"type":"boolean","description":"No timeout. Returns a job id at once."},"watch":{"type":"boolean","description":"Implies run_in_background. Each stdout line reaches you right away."}},"required":["command","description"]}
 }
 ```
 
@@ -48,7 +48,7 @@
 | `description` | 是 | 这条命令在做什么的短标题，几个词。前台的不用它跑命令，记在调用里，前端显示用（施工 4-13，2026-09-28 项目主人定；前端随 M8）；后台的是任务的标题，记进 `job.started`（施工 7-3）。没写的，参数不对 |
 | `timeout` | 否 | 毫秒。没给、给了 0，是 120000；大过 600000 的照 600000。要是不小于 0 的整数，负数参数不对。后台的不看它，照样查写法 |
 | `run_in_background` | 否 | 布尔，没写是假。真的放到后台（施工 7-3，下面「后台」）。写成字符串的（`"true"`）内核照参数格式修正成布尔。预设关了「后台运行」的会话工具面上没有这一项（施工 T-1 上，`presets.md`「怎么走」；施工 BS-1 上起照 `Tool::background_parameters` 去掉，不看名字） |
-| `watch` | 否 | 布尔，没写是假。真的：监视，照放到后台走（和 `run_in_background` 一起写、只写它都一样），标准输出每出一批行记一条 `job.lines`、叫醒她（施工 MN-1 上，设计 56，下面「后台」第 9 条）。说明一句 `Implies run_in_background. Each stdout line wakes you.`。和 `run_in_background` 一样只在有后台时给，预设关了「后台运行」的会话工具面上没有 |
+| `watch` | 否 | 布尔，没写是假。真的：监视，照放到后台走（和 `run_in_background` 一起写、只写它都一样），标准输出每出一批行记一条 `job.lines`、叫醒她（施工 MN-1 上，设计 56，下面「后台」第 9 条）。说明一句 `Implies run_in_background. Each stdout line reaches you right away.`。和 `run_in_background` 一样只在有后台时给，预设关了「后台运行」的会话工具面上没有 |
 
 - 别的参数不认，也不报错。施工 D-4 加过一格 `outside_sandbox`（这一次在沙盒外跑、先问人），随「工作区」一级去掉了（`11-权限与沙盒.md` A16，施工 LV-2）：旧会话里带着它的调用照常跑。
 - 不报要碰的路径。权限策略照访问类别判：完全放开放行、不进沙盒；只读时沙盒能用就放行、在只读沙盒里跑，用不了的问人（施工 5-4 上，`session/guard.md`；A16 起只剩这两级，施工 LV-1）。
@@ -222,7 +222,7 @@ Exit code 2
 | firefox 截图写了相对路径（施工 SB-1 修） | `firefox-screenshot.txt` | `Firefox switches to / before it writes --screenshot, so a relative path is dropped without an error. An absolute path such as "$PWD/shot.png" works.` |
 | 到时了 | `timed-out.txt` | `Stopped at the {timeout} ms timeout. timeout can go up to {max}.` |
 | 放到后台了 | `started.txt` | `Started {job} in the background. Its end is reported automatically. jobs output shows its output.` |
-| 监视的放到后台了（施工 MN-1 上） | `started-watch.txt`，字段 `job`、`minutes` | `Watching {job} in the background. Each stdout line wakes you, so print only lines you must act on. stderr goes only to the output file. It stops after {minutes} minutes; start it again to keep watching.` |
+| 监视的放到后台了（施工 MN-1 上） | `started-watch.txt`，字段 `job`、`minutes` | `Watching {job} in the background. Each stdout line reaches you right away, so print only lines you must act on. stderr goes only to the output file. It stops after {minutes} minutes; start it again to keep watching.` |
 | 截在中间 | `omitted.txt` | `[... {count} characters omitted ...]` |
 | 截了，末尾 | `truncated.txt` | `(Showed the start and end of {total} characters. Output saved to a file can be read in full.)` |
 | 执行不了 | `failed.txt` | `Could not run {shell}: {error}.` |

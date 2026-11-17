@@ -101,9 +101,10 @@ pub(super) fn refaced(
 
 /// 目录换了代、预设没改（施工 O-2 中）：照旧快照的先后一件一件对现在的目录 `catalog`。提供者的照现在的登记，不再给这个会话
 /// 的拿掉；自带的照旧快照里的原样，不新加。目录里没有了的：上一次对过的那一代里是提供者的拿掉（扩展关掉了、不再登记它），
-/// 别的照旧留着、调到时暂时不可用（施工 4-2：程序升级拿掉的，载入的会话认不出来的；施工 F-5 中：随包卸掉的，调到时报已卸载）。
-/// 新登记的提供者的工具加进来；新装上的内置包（上一次对过的那一代里这个包一件都没有，施工 F-5 中）的工具也加进来，照样过
-/// 预设；快照照名字排（`miyu_policy` 的工具面）。
+/// 别的照旧留着、调到时暂时不可用（施工 4-2：程序升级拿掉的，载入的会话认不出来的；施工 F-5 中：随包卸掉的，调到时报已卸载）；
+/// 只有两种例外（施工 WK-2）：改了名的（`miyu_tool::RENAMED`）换成新名字的那件、照预设现在给不给；快照里记着包、那个内置包还
+/// 在的（`upgraded_away`）拿掉。新登记的提供者的工具加进来；新装上的内置包（上一次对过的那一代里这个包一件都没有，施工 F-5
+/// 中）的工具也加进来，照样过预设；快照照名字排（`miyu_policy` 的工具面）。
 pub(super) fn followed(
     refresh: &Refresh,
     values: &Values,
@@ -114,6 +115,8 @@ pub(super) fn followed(
     let fresh = offered(refresh, values, catalog, file, reach);
     let basis = refresh.seen.as_ref().map(|seen| &seen.catalog);
     let mut face = Vec::new();
+    // 改了名的换上的新名字（施工 WK-2）：等对完再加，快照里新名字的那件先后在哪都不重。
+    let mut renamed = Vec::new();
     for kept in &refresh.snapshot.tools {
         match catalog.get(&kept.name) {
             Some(tool) if catalog.provided(&kept.name) => {
@@ -124,7 +127,17 @@ pub(super) fn followed(
             // 随包卸掉的提供者的工具照旧留着、调到时报已卸载（施工 F-5 下）；关掉的扩展的拿掉。
             None if basis.is_some_and(|basis| basis.provided(&kept.name))
                 && !catalog.gone(&kept.name) => {}
-            None => face.push(kept.clone()),
+            None => match miyu_tool::renamed(&kept.name).filter(|now| catalog.get(now).is_some()) {
+                // 改了名的（施工 WK-2，`miyu_tool::RENAMED`）：换成新名字的那件，照预设现在给不给；不给的拿掉。
+                Some(now) => renamed.extend(fresh.iter().find(|entry| entry.name == now).cloned()),
+                None if upgraded_away(kept, catalog) => {}
+                None => face.push(kept.clone()),
+            },
+        }
+    }
+    for entry in renamed {
+        if !face.iter().any(|kept| kept.name == entry.name) {
+            face.push(entry);
         }
     }
     // 新装上的内置包：它的包在上一次对过的那一代里一件工具都没有。包里多了一件的（程序升级那种）照旧等预设改了才进来。
@@ -144,4 +157,14 @@ pub(super) fn followed(
         .collect();
     face.extend(added);
     face
+}
+
+/// 目录里没了的 `kept` 是程序升级拿掉的（施工 WK-2）：快照里记着它的包，那个包还在目录里、不是提供者登记的，这件也不是随包
+/// 卸掉的。没记包的（施工 WK-2 以前造的快照）认不出来，照旧留着。
+fn upgraded_away(kept: &ToolEntry, catalog: &Catalog) -> bool {
+    kept.package.as_deref().is_some_and(|package| {
+        catalog.packages().any(|present| present == package)
+            && !catalog.registered(package)
+            && !catalog.gone(&kept.name)
+    })
 }

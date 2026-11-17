@@ -1,17 +1,17 @@
 {
   "tools": {
-    "schedule_wakeup": {
-      "name": "定下次唤醒",
+    "schedule_next": {
+      "name": "定下次继续",
       "subject": "reason",
       "icon": "↻"
     }
   },
   "said": {
-    "wakeup/set": "下次 {next}",
-    "wakeup/stopped": "已停止循环",
-    "wakeup/unstoppable": "人生循环停不了",
-    "wakeup/no-loop": "没有在跑的循环",
-    "wakeup/no-delay": "没给间隔",
+    "next/set": "下次 {next}",
+    "next/stopped": "已停止循环",
+    "next/unstoppable": "人生循环停不了",
+    "next/no-loop": "没有在跑的循环",
+    "next/no-delay": "没给间隔",
     "common/bad-args": "参数不对：{error}",
     "common/off": "此会话不支持循环"
   }

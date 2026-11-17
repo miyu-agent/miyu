@@ -1,6 +1,6 @@
 [package]
 name = "miyu-schedule"
-description = "定时任务、循环这两个软件包：她用来建、删、列定时任务的 cron_*，动态循环定下一次的 schedule_wakeup（施工 J-2，设计 45）"
+description = "定时任务、循环这两个软件包：她用来建、删、列定时任务的 cron_*，动态循环定下一次的 schedule_next（施工 J-2，设计 45）"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

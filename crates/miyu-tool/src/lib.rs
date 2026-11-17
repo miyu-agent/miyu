@@ -91,8 +91,9 @@ pub use run::{
     ShownFile, Target,
 };
 pub use schedules::{
-    CRON_CREATE, CRON_DELETE, CRON_LIST, IN_ALL, PER_SESSION, SCHEDULE_WAKEUP, ScheduleAnswer,
-    ScheduleAnswering, ScheduleAsk, SchedulePort, ScheduleRefused, Scheduled, WAKEUP_MIN,
+    CRON_CREATE, CRON_DELETE, CRON_LIST, IN_ALL, PER_SESSION, RENAMED, SCHEDULE_NEXT,
+    ScheduleAnswer, ScheduleAnswering, ScheduleAsk, SchedulePort, ScheduleRefused, Scheduled,
+    WAKEUP_MIN, renamed,
 };
 pub use sessions::{
     Found, Listing, MainSession, Opening, SESSIONS, SessionsPort, find_session, reaches,

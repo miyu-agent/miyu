@@ -1,4 +1,4 @@
-//! `schedule_wakeup`（施工 J-2，设计 45 第三节第 4 条，照 Claude Code 的 `ScheduleWakeup`）：没写间隔的 `/loop` 是动态循环，她每轮
+//! `schedule_next`（施工 J-2，设计 45 第三节第 4 条，照 Claude Code 的 `ScheduleWakeup`）：没写间隔的 `/loop` 是动态循环，她每轮
 //! 结束调它定下一次多久以后醒。访问类别是读。
 //!
 //! - 间隔短于 [`WAKEUP_MIN`] 的照它，不报错，没有上限（施工 WK-1）；`prompt` 覆盖醒来交进来的话，不写的照旧（照 Claude Code，
@@ -16,7 +16,7 @@ use miyu_kernel::time::UtcOffset;
 use miyu_kernel::tool::Access;
 use miyu_tool::load::{self, LoadError};
 use miyu_tool::{
-    Call, Done, Progress, Running, SCHEDULE_WAKEUP, ScheduleAnswer, ScheduleAsk, ScheduleRefused,
+    Call, Done, Progress, Running, SCHEDULE_NEXT, ScheduleAnswer, ScheduleAsk, ScheduleRefused,
     Spec, Tool, WAKEUP_MIN,
 };
 
@@ -26,7 +26,7 @@ use crate::texts::{Common, Package, clock};
 /// 这个包。
 const PACKAGE: Package = Package { id: LOOP_SOFTWARE };
 
-/// `schedule_wakeup`。
+/// `schedule_next`。
 pub(crate) struct Wakeup {
     spec: Spec,
     common: Common,
@@ -53,10 +53,9 @@ struct Args {
 impl Wakeup {
     /// 照资源目录 `resources` 里的字造。
     pub(crate) fn load(resources: &Path) -> Result<Wakeup, LoadError> {
-        let wakeup =
-            |name: &str, fields: &[&str]| PACKAGE.text(resources, ("wakeup", name), fields);
+        let wakeup = |name: &str, fields: &[&str]| PACKAGE.text(resources, ("next", name), fields);
         Ok(Wakeup {
-            spec: load::spec(resources, LOOP_SOFTWARE, SCHEDULE_WAKEUP, Access::Read)?,
+            spec: load::spec(resources, LOOP_SOFTWARE, SCHEDULE_NEXT, Access::Read)?,
             common: Common::load(resources, PACKAGE)?,
             set: wakeup("set", &["next"])?,
             stopped: wakeup("stopped", &[])?,
@@ -72,9 +71,9 @@ impl Wakeup {
             ScheduleAnswer::Woken(item) => {
                 let next = item.next.map_or_else(String::new, |at| clock(at, offset));
                 Done::ok(crate::texts::line(&self.set, &[("next", &next)]))
-                    .said(PACKAGE.said("wakeup/set", &[("next", &next), ("reason", reason)]))
+                    .said(PACKAGE.said("next/set", &[("next", &next), ("reason", reason)]))
             }
-            ScheduleAnswer::LoopStopped => PACKAGE.ok(&self.stopped, "wakeup/stopped", &[]),
+            ScheduleAnswer::LoopStopped => PACKAGE.ok(&self.stopped, "next/stopped", &[]),
             // 定时任务那几样不是它要的：端口答错了，照用不了说。
             ScheduleAnswer::Created(_) | ScheduleAnswer::Deleted(_) | ScheduleAnswer::Listed(_) => {
                 self.common.off()
@@ -85,9 +84,9 @@ impl Wakeup {
     /// 端口拒了。
     fn refused(&self, refused: ScheduleRefused) -> Done {
         match refused {
-            ScheduleRefused::NoLoop => PACKAGE.error(&self.no_loop, "wakeup/no-loop", &[]),
+            ScheduleRefused::NoLoop => PACKAGE.error(&self.no_loop, "next/no-loop", &[]),
             ScheduleRefused::Unstoppable => {
-                PACKAGE.error(&self.unstoppable, "wakeup/unstoppable", &[])
+                PACKAGE.error(&self.unstoppable, "next/unstoppable", &[])
             }
             ScheduleRefused::Full
             | ScheduleRefused::AllFull
@@ -119,7 +118,7 @@ impl Tool for Wakeup {
                         .clone()
                         .filter(|reason| !reason.trim().is_empty()),
                 },
-                (false, None) => return PACKAGE.error(&self.no_delay, "wakeup/no-delay", &[]),
+                (false, None) => return PACKAGE.error(&self.no_delay, "next/no-delay", &[]),
             };
             let (Some(port), Some(ids)) = (call.schedules.as_ref(), call.ids.as_ref()) else {
                 return self.common.off();

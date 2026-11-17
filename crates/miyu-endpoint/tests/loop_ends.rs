@@ -1,5 +1,5 @@
 //! 她自己定节奏的循环没定下一次就结束（施工 LO-3，项目主人 2026-11-16 定，照 Claude Code「不调就停」）：真核心、手拨的钟。
-//! `/loop <话>` 交进去开的那一轮里她没调 `schedule_wakeup`，那一轮结束时删掉这一行、推 `removed`；调了的留着、下一次是她定的；
+//! `/loop <话>` 交进去开的那一轮里她没调 `schedule_next`，那一轮结束时删掉这一行、推 `removed`；调了的留着、下一次是她定的；
 //! 人插的一轮不算。`/loop clear`、`/loop stop` 同 `/loop off`。以前那一行停着等她定，头上的图标在、循环其实停了。核心在她那一轮
 //! 里停了的，起来时删掉（施工 LO-3补）。
 
@@ -72,7 +72,7 @@ async fn until_removed(watcher: &mut Client, id: &str) {
     }
 }
 
-/// 她这一轮里没调 `schedule_wakeup`：那一轮结束时这一行删了，推了 `removed`。
+/// 她这一轮里没调 `schedule_next`：那一轮结束时这一行删了，推了 `removed`。
 #[tokio::test]
 async fn a_dynamic_loop_ends_when_its_turn_sets_no_next() {
     let home = Home::new();
@@ -86,12 +86,12 @@ async fn a_dynamic_loop_ends_when_its_turn_sets_no_next() {
     assert!(rows(&core).is_empty(), "{:?}", rows(&core));
 }
 
-/// 她这一轮里调了 `schedule_wakeup`：这一行留着，下一次是她定的，到点再跑一轮。
+/// 她这一轮里调了 `schedule_next`：这一行留着，下一次是她定的，到点再跑一轮。
 #[tokio::test]
 async fn a_dynamic_loop_whose_turn_sets_the_next_stays() {
     let home = Home::new();
     let script = Script::new([
-        Play::calls(&[("schedule_wakeup", r#"{"delay_seconds":120}"#)]),
+        Play::calls(&[("schedule_next", r#"{"delay_seconds":120}"#)]),
         Play::Says("两分钟后再报。"),
         Play::Says("又报了一次。"),
     ]);
@@ -110,12 +110,12 @@ async fn a_dynamic_loop_whose_turn_sets_the_next_stays() {
     home.until_turns(&session, 2).await;
 }
 
-/// 循环等着下一次时人插了一轮，她这一轮没调 `schedule_wakeup`：不是循环自己那一轮，不删，下一次照她上次定的。
+/// 循环等着下一次时人插了一轮，她这一轮没调 `schedule_next`：不是循环自己那一轮，不删，下一次照她上次定的。
 #[tokio::test]
 async fn a_turn_a_person_starts_while_the_loop_waits_does_not_end_it() {
     let home = Home::new();
     let script = Script::new([
-        Play::calls(&[("schedule_wakeup", r#"{"delay_seconds":600}"#)]),
+        Play::calls(&[("schedule_next", r#"{"delay_seconds":600}"#)]),
         Play::Says("十分钟后再看。"),
         Play::Says("你好。"),
     ]);
@@ -234,7 +234,7 @@ async fn a_planned_stop_lets_the_resumed_turn_set_the_next() {
     let hand = Hand::at(START);
     let session = stopped_in_its_turn(&home, &hand).await;
     let script = Script::new([
-        Play::calls(&[("schedule_wakeup", r#"{"delay_seconds":120}"#)]),
+        Play::calls(&[("schedule_next", r#"{"delay_seconds":120}"#)]),
         Play::Says("两分钟后再报。"),
     ]);
     let core = core_with_tools(&home, &script, &hand, looping());

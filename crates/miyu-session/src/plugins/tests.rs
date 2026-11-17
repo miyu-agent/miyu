@@ -93,6 +93,7 @@ fn the_face_is_sifted_and_replugged() {
                 runs_commands: false,
                 command_only: false,
                 role: None,
+                package: None,
             })
             .collect()
     };

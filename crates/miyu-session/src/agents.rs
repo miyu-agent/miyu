@@ -298,6 +298,7 @@ impl Agents {
                     runs_commands: tool.is_some_and(|tool| tool.runs_commands()),
                     command_only: tool.is_some_and(|tool| tool.command_only()),
                     role: spec.role,
+                    package: tools.package_of(&spec.name).map(str::to_string),
                 };
                 // 主人写的覆盖（施工 OV-1 上）：换不进的（参数格式里没有那个参数）照出厂的，记一行。
                 if let Some(written) = offers.overrides.get(&spec.name)

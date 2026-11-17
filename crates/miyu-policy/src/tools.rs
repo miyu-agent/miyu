@@ -47,6 +47,11 @@ pub struct ToolEntry {
     /// `miyu-session` 的技能列表那一处。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub role: Option<Role>,
+    /// 从哪个软件包来的（施工 WK-2，`miyu_tool::Catalog::package_of`）：组工具面时照目录写进来，回合开始重筛时目录里没了的这件
+    /// 照它认是不是程序升级拿掉的。不发给模型（`split` 只拿名字、说明、参数格式）。没有的不写，以前造的快照读成没有：字节
+    /// 和以前一样，那些会话照以前的办法留着目录里没了的。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub package: Option<String>,
 }
 
 /// 执行器替工具写给模型的几句（施工 4-2）：快照里有、核心的目录里没有的工具；随包卸掉了的工具（施工 F-5 中）；工具执行时

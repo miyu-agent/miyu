@@ -91,6 +91,7 @@ fn face(catalog: &Catalog, names: &[&str], on: bool) -> Vec<ToolEntry> {
                 runs_commands: false,
                 command_only: false,
                 role: None,
+                package: None,
             }
         })
         .collect();

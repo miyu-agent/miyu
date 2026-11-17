@@ -1,17 +1,17 @@
 {
   "tools": {
-    "schedule_wakeup": {
-      "name": "Next wakeup",
+    "schedule_next": {
+      "name": "Next round",
       "subject": "reason",
       "icon": "↻"
     }
   },
   "said": {
-    "wakeup/set": "Next at {next}",
-    "wakeup/stopped": "Loop stopped",
-    "wakeup/unstoppable": "A life loop cannot be stopped",
-    "wakeup/no-loop": "No loop is running",
-    "wakeup/no-delay": "No delay given",
+    "next/set": "Next at {next}",
+    "next/stopped": "Loop stopped",
+    "next/unstoppable": "A life loop cannot be stopped",
+    "next/no-loop": "No loop is running",
+    "next/no-delay": "No delay given",
     "common/bad-args": "Bad arguments: {error}",
     "common/off": "Loops are not available in this session"
   }

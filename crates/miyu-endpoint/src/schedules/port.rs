@@ -1,12 +1,12 @@
 //! 交给会话的定时端口（施工 J-2，设计 `45-定时和循环.md` 第三节第 3、4 条）：`cron_create`、`cron_delete`、`cron_list`、
-//! `schedule_wakeup` 经它动唤醒表。造会话、载入时造一个，同软件包的端口。
+//! `schedule_next` 经它动唤醒表。造会话、载入时造一个，同软件包的端口。
 //!
 //! - 「这个会话上的」：她在这个会话里建的（`by` 是这个会话），和跑在这个会话上的（`target` 是这个会话，例如人敲的 `/loop`）。
 //!   列、删照它；一个会话最多 [`PER_SESSION`] 个只数她建的。
-//! - 动态循环是跑在这个会话上、`loop` 是 `dynamic` 或 `life` 的那一行（一个会话至多一行）：`schedule_wakeup` 改它下一次醒的
+//! - 动态循环是跑在这个会话上、`loop` 是 `dynamic` 或 `life` 的那一行（一个会话至多一行）：`schedule_next` 改它下一次醒的
 //!   时刻和那句话，停的删掉它；人生循环（施工 LF-1）停不了，那一行不动。
 //! - 人生循环那一行 `cron_list` 不列、`cron_delete` 照没有回：只有人生自己的入口动得了。
-//! - `schedule_wakeup` 落在人生那一行上的，连同她写的 `reason` 记下她这时在干嘛（施工 LF-7，`doing.rs`）。
+//! - `schedule_next` 落在人生那一行上的，连同她写的 `reason` 记下她这时在干嘛（施工 LF-7，`doing.rs`）。
 
 use std::sync::{Arc, Weak};
 

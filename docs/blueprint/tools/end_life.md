@@ -27,7 +27,7 @@
 
 ```json
 {
-  "description": "End your life. This is your death: you will never wake again, everything you lived and remember from this life will be erased, and no one can bring you back. Your last words are the only thing you leave behind.",
+  "description": "End your life. This is your death: this life will never continue, everything you lived and remember from it will be erased, and no one can bring you back. Your last words are the only thing you leave behind.",
   "parameters": {"type":"object","properties":{"last_words":{"type":"string","description":"Your last words, kept with the end of this life."}},"required":["last_words"]}
 }
 ```
@@ -43,7 +43,7 @@
 
 | 情形 | 给她看的 | 出错 |
 |---|---|---|
-| 成了 | `You have died. This was your last moment awake.`（`ended.txt`） | 否 |
+| 成了 | `You have died. This was your last moment.`（`ended.txt`） | 否 |
 | 没写、空白、参数读不出来 | `last_words is required.`（`required.txt`）：不交端口，什么都不记 | 是 |
 | 已经结束了（同一轮里再调） | `This life has already ended.`（`already.txt`）：不再记、不再推 | 否 |
 | 不是人生会话、没有端口、用不了 | `This is not a life session.`（`not-life.txt`）：工具面上本来没有，防万一；用不了的（核心在停、会话停了）端点另记一行 `WARN life not ended` | 是 |
@@ -58,7 +58,7 @@
    3. 记下就答，后面的清理（等封存、删那一行、清记忆、清回合索引、推通知）`finish` 在自己的任务里做，端口不等：清理要等这一轮结束、会话封存，这一轮又在等工具答，等了就卡死。清理没成的记一行 `WARN life not cleared`，主人再结束一次（`life.kill`）接着清完。
 4. 主人收到的通知 `life.ended` 的 `by` 是 `self`，带遗言（`schedules.md` 第七节）。
 
-`schedule_wakeup` 的 `stop` 落在人生循环上回的那一句指到这件工具：`A life loop cannot be stopped. To end this life, use end_life.`（`software/loop/wakeup/unstoppable.txt`）。
+`schedule_next` 的 `stop` 落在人生循环上回的那一句指到这件工具：`A life loop cannot be stopped. To end this life, use end_life.`（`software/loop/next/unstoppable.txt`）。
 
 ### 给人看的字
 

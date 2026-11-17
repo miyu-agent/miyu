@@ -183,7 +183,7 @@ Feature ids:
 
 | What | Id |
 |---|---|
-| Shipped tools | Mostly the same as the tool name, for example `read`, `shell`, `subagent`. The ones that differ: `web_search` is `web-search`, `web_fetch` is `web-fetch`, `send_message` and `sessions` are one feature, `sessions`; `remember`, `memory_search` and `forget` are `memory`; the five `kb_*` are `knowledge`; the three `cron_*` are `schedule`; `schedule_wakeup` is `loop`; `end_life` is `life`; `note_change` is `change`. For the full table see [Tools the AI can use](tools.en.md) |
+| Shipped tools | Mostly the same as the tool name, for example `read`, `shell`, `subagent`. The ones that differ: `web_search` is `web-search`, `web_fetch` is `web-fetch`, `send_message` and `sessions` are one feature, `sessions`; `remember`, `memory_search` and `forget` are `memory`; the five `kb_*` are `knowledge`; the three `cron_*` are `schedule`; `schedule_next` is `loop`; `end_life` is `life`; `note_change` is `change`. For the full table see [Tools the AI can use](tools.en.md) |
 | Shipped features without tools | The environment info items `env-time`, `env-workdir`, `env-permission`, `env-session`, `env-model`, `env-harness`, `env-machine`, `env-profile`; automatic injection of AGENTS docs `project-docs`; calling tools from the command line `clicall`; persona reminders `roleplay` |
 | Skills | `skill-<skill name>` |
 | Scripts | `script-<tool name>` |

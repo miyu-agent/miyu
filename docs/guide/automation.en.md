@@ -69,9 +69,9 @@ When the AI runs a command with `shell`, it can put it in the background: it get
 
 ### Watching the log
 
-When the AI runs a background command, it can ask to "watch" it: every time the command writes a line to standard output, the AI is woken once, which suits waiting for a certain line to show up in a log. Lines that come close together (within 200 milliseconds) are merged into one wake-up. Standard error does not wake the AI; it is only written to the output file.
+When the AI runs a background command, it can ask to "watch" it: every time the command writes a line to standard output, it reaches the AI right away, which suits waiting for a certain line to show up in a log. Lines that come close together (within 200 milliseconds) are merged into one. Standard error does not reach the AI; it is only written to the output file.
 
-If a watched command wakes the AI 120 times within an hour, it is stopped and recorded as "Stopped: output too frequent".
+If a watched command reaches the AI 120 times within an hour, it is stopped and recorded as "Stopped: output too frequent".
 
 ### What you see while it runs
 
@@ -92,7 +92,7 @@ When the core stops or restarts, all running background commands are stopped, re
 |---|---|
 | How long one background command can run at most | `jobs.max_running`, `30m` by default, and it can be `1m` to `2h`. When it is reached, the command is stopped and recorded as "stopped: ran too long" |
 | How much one background command can output at most | 5 GB; when it is reached, the command is stopped and recorded as "stopped: too much output" |
-| How many times a watched command can wake the AI in an hour | 120 |
+| How many times a watched command can reach the AI in an hour | 120 |
 
 To change the longest running time: on the settings page (type `/settings` in the terminal or the web UI), "General → Sessions → Longest background command", or:
 
@@ -189,7 +189,7 @@ The interval is written `30s`, `5m`, `2h` or `1d`, and can also go at the end: `
 /loop Watch the deployment, and look again at the next step
 ```
 
-In each turn, the AI uses `schedule_wakeup` to decide how long until the next run (at least 60 seconds), and can also use it to stop the loop. If in some turn the AI does not set a next run, the loop stops.
+In each turn, the AI uses `schedule_next` to decide how long until the next run (at least 60 seconds), and can also use it to stop the loop. If in some turn the AI does not set a next run, the loop stops.
 
 ### Nothing at all: autonomous loop
 
@@ -197,10 +197,10 @@ In each turn, the AI uses `schedule_wakeup` to decide how long until the next ru
 /loop
 ```
 
-With no specific request, the AI decides what to do and when the next time is, and the reply is "Loop started: the AI decides what to do and when to run next". Like the one with no interval, it runs once right away, uses `schedule_wakeup` each turn to set the next run, and stops if it does not; the only difference is that what is handed to the AI each time is not a message you wrote, but a fixed sentence in English:
+With no specific request, the AI decides what to do and when the next time is, and the reply is "Loop started: the AI decides what to do and when to run next". Like the one with no interval, it runs once right away, uses `schedule_next` each turn to set the next run, and stops if it does not; the only difference is that what is handed to the AI each time is not a message you wrote, but a fixed sentence in English:
 
 ```text
-No new instructions. Continue on your own judgment, then schedule the next wakeup or stop.
+No new instructions. Continue on your own judgment, then schedule the next round or stop.
 ```
 
 The message shown in the terminal sidebar's "Loop" section, and for this loop in the list `miyu schedule` prints, is this sentence too.
@@ -316,7 +316,7 @@ To stop everything:
 | The web UI's schedule says "The session's preset turned this off; skipped" | A task the AI created, and that session's preset has "Scheduled tasks" or "Loop tasks" turned off. Turn it on in the preset |
 | "The session is gone; the task stopped" | The session it was handed to was deleted. Delete this task and create a new one |
 | "Couldn't open a new session; skipped" | The persona, preset or working directory chosen when it was created cannot be used now. Delete it and create it again |
-| "The schedule table was broken; all scheduled tasks are gone" | The wakeup table could not be read, and the core replaced it with an empty one. Create them again |
+| "The schedule table was broken; all scheduled tasks are gone" | The schedule table could not be read, and the core replaced it with an empty one. Create them again |
 | A background command's "Stopped: output too frequent" | A watched command wrote too many lines. Have the AI use something like `grep` to keep only the lines worth seeing |
 | A goal stays at "Waiting for reply" | Say something back, or `/goal resume` |
 | A goal does not move after the core restarts | `/goal resume` |

@@ -42,7 +42,7 @@ impl Handle {
         self
     }
 
-    /// 认不认 `/loop`（施工 J-2）：工具面上有 `schedule_wakeup`。
+    /// 认不认 `/loop`（施工 J-2）：工具面上有 `schedule_next`。
     pub fn loops(&self) -> bool {
         self.loops
     }

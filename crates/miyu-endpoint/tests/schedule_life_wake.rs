@@ -1,6 +1,6 @@
 //! 人生循环醒来那段话（施工 LF-2，设计 `70-推演人生.md` 第三节第 3 条，`schedules.md` 第三节第 4 条）：真核心、手拨的钟。
 //! 交进会话的正文是推演方法、空一行、她上次的留言；推演方法照会话的人格的 `prompts/life.md`，没有、空的、不带人格的用出厂的
-//! 那一段，到点那一刻读。她这一轮调 `schedule_wakeup` 没带 `prompt` 的，留言清成空的；她自己定节奏的循环照旧不动。
+//! 那一段，到点那一刻读。她这一轮调 `schedule_next` 没带 `prompt` 的，留言清成空的；她自己定节奏的循环照旧不动。
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -48,7 +48,7 @@ fn looping(session: &str, looping: Loop, note: &str, first: i64) -> Wanted {
     }
 }
 
-/// 循环那个包的工具：`schedule_wakeup`。
+/// 循环那个包的工具：`schedule_next`。
 fn catalog() -> Catalog {
     let resources = default_resources();
     Catalog::in_packages([(
@@ -221,11 +221,11 @@ async fn a_note_is_kept_only_when_she_writes_one() {
     let home = Home::new();
     let script = Script::new([
         Play::calls(&[(
-            "schedule_wakeup",
+            "schedule_next",
             r#"{"delay_seconds":600,"prompt":"去散步","reason":"在看书"}"#,
         )]),
         Play::Says("十分钟后去散步。"),
-        Play::calls(&[("schedule_wakeup", r#"{"delay_seconds":600}"#)]),
+        Play::calls(&[("schedule_next", r#"{"delay_seconds":600}"#)]),
         Play::Says("回来了。"),
         Play::Says("又醒了。"),
     ]);
@@ -265,7 +265,7 @@ async fn a_dynamic_loop_keeps_its_prompt_and_its_words() {
     let home = Home::new();
     home.write("root/personas/engineer/prompts/life.md", "照我的过法。\n");
     let script = Script::new([
-        Play::calls(&[("schedule_wakeup", r#"{"delay_seconds":600}"#)]),
+        Play::calls(&[("schedule_next", r#"{"delay_seconds":600}"#)]),
         Play::Says("十分钟后再看。"),
     ]);
     let hand = Hand::at(START);

@@ -50,7 +50,7 @@
 
 ## `persona.read`
 
-**参数**：`persona`；`prompt`：`persona`（人设）、`examples`（示范对话）、`reminders`（角色扮演提示）、`life`（推演方法：人生循环每次醒来那段话的开头）。
+**参数**：`persona`；`prompt`：`persona`（人设）、`examples`（示范对话）、`reminders`（角色扮演提示）、`life`（推演方法：人生循环每一轮那段话的开头）。
 
 **回应**：`{"text", "version"}`：叠好的那一份的原文、你家目录那一层这一份的版本（没有的都是 `null`）。上面一层是空文件的，`text` 是空的字。示范对话另带 `pairs: [{"user", "assistant"}…]`。推演方法另带 `default`：出厂的那一份原文（去掉末尾空白），读不出的是 `null`；没写时用的就是它。
 

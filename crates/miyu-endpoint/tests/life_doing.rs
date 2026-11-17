@@ -1,5 +1,5 @@
 //! 别的会话知道她现在在干嘛（施工 LF-7，`docs/blueprint/life.md`「现在在干嘛」）：真核心、手拨的钟。她在人生会话里调
-//! `schedule_wakeup` 写的 `reason`，同人格别的会话下一轮开头多一块，带这一句、写下的时刻、下次醒的时刻；不变的不重交，写了新的
+//! `schedule_next` 写的 `reason`，同人格别的会话下一轮开头多一块，带这一句、写下的时刻、下次醒的时刻；不变的不重交，写了新的
 //! 交新的，没写的清掉；`life.status` 带 `doing`。哪些会话交、停着的、压缩以后、中和、截短、重启以后在 `life_doing_more.rs`。
 
 use std::sync::Arc;

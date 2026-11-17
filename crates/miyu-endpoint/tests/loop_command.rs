@@ -1,7 +1,7 @@
 //! `/loop`（施工 J-2，设计 `45-定时和循环.md` 第三节第 4 条）：真核心、手拨的钟。写了间隔的建一行固定循环、马上交进来跑第一次，
 //! 之后照间隔；没写的建一行动态循环、马上跑一次，之后照她定的下一次（不定就删，施工 LO-3，`loop_ends.rs`）；再敲一次换掉
 //! 原来的；`/loop off` 删掉；工具面上没有
-//! `schedule_wakeup` 的会话里没有这条命令。
+//! `schedule_next` 的会话里没有这条命令。
 
 use std::sync::Arc;
 
@@ -79,7 +79,7 @@ async fn a_self_paced_loop_runs_once_then_waits_for_her_next_and_off_removes_it(
     let home = Home::new();
     // 她定了十分钟以后再看；换成固定循环的那一次也马上跑：剧本多排一句。
     let script = Script::new([
-        Play::calls(&[("schedule_wakeup", r#"{"delay_seconds":600}"#)]),
+        Play::calls(&[("schedule_next", r#"{"delay_seconds":600}"#)]),
         Play::Says("先看一眼。"),
         Play::Says("换了。"),
     ]);
@@ -168,9 +168,9 @@ async fn typed_as(client: &mut Client, id: &str, session: &str, text: &str) -> V
 async fn a_resent_loop_command_does_not_run_twice() {
     let home = Home::new();
     let script = Script::new([
-        Play::calls(&[("schedule_wakeup", r#"{"delay_seconds":600}"#)]),
+        Play::calls(&[("schedule_next", r#"{"delay_seconds":600}"#)]),
         Play::Says("看过了。"),
-        Play::calls(&[("schedule_wakeup", r#"{"delay_seconds":600}"#)]),
+        Play::calls(&[("schedule_next", r#"{"delay_seconds":600}"#)]),
         Play::Says("新编号的一轮。"),
     ]);
     let hand = Hand::at(START);
@@ -237,7 +237,7 @@ fn autonomous() -> &'static str {
 async fn a_bare_loop_runs_now_on_the_fixed_sentence() {
     let home = Home::new();
     let script = Script::new([
-        Play::calls(&[("schedule_wakeup", r#"{"delay_seconds":600}"#)]),
+        Play::calls(&[("schedule_next", r#"{"delay_seconds":600}"#)]),
         Play::Says("我自己看着办。"),
     ]);
     let hand = Hand::at(START);
@@ -271,7 +271,7 @@ async fn a_bare_loop_runs_now_on_the_fixed_sentence() {
 async fn a_bare_loop_s_second_wakeup_keeps_the_prefix() {
     let home = Home::new();
     let script = Script::new([
-        Play::calls(&[("schedule_wakeup", r#"{"delay_seconds":120}"#)]),
+        Play::calls(&[("schedule_next", r#"{"delay_seconds":120}"#)]),
         Play::Says("过两分钟再看。"),
         Play::Says("又看了一眼。"),
     ]);

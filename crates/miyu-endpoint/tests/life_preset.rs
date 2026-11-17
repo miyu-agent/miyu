@@ -1,5 +1,5 @@
 //! 出厂的预设「推演人生」（施工 LF-5 中，LF-4 下起多 `end_life`，`docs/blueprint/presets.md`「出厂的几份」，设计 `70-推演人生.md` 第三节第 7 条）：
-//! `preset.list` 列它、`hidden` 是 `true`；`life.start` 开的会话照它，工具面里有搜索、取网页、记忆三件、`schedule_wakeup`、
+//! `preset.list` 列它、`hidden` 是 `true`；`life.start` 开的会话照它，工具面里有搜索、取网页、记忆三件、`schedule_next`、
 //! `history`，没有命令行、读写文件、定时任务。
 
 use std::sync::Arc;
@@ -43,7 +43,7 @@ fn catalog() -> Catalog {
         "base-memory",
         vec![fake("remember"), fake("memory_search"), fake("forget")],
     ));
-    groups.push((miyu_schedule::LOOP, vec![fake("schedule_wakeup")]));
+    groups.push((miyu_schedule::LOOP, vec![fake("schedule_next")]));
     groups.push((
         miyu_schedule::LIFE,
         vec![fake("end_life"), fake("note_change")],
@@ -100,7 +100,7 @@ async fn the_life_preset_is_listed_hidden_and_gives_only_its_tools() {
             "memory_search",
             "note_change",
             "remember",
-            "schedule_wakeup",
+            "schedule_next",
             "web_fetch",
             "web_search"
         ]

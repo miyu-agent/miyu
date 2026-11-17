@@ -26,7 +26,7 @@ At a set time, hand one line to a session and let it run a turn: a morning brief
 | `paused` | Paused |
 | `loop` | Loops only: `fixed` interval, `dynamic` (the AI sets the pace), or `life` for a life loop (see above) |
 | `persona` | Only on a life loop's row: the id of the persona whose life it is; absent right after the core starts, until it has been worked out |
-| `rounds` | Only on a life loop's row: which round of the life this is (every wake-up that comes due counts as one). It is only recorded, heads do not show it |
+| `rounds` | Only on a life loop's row: which round of the life this is (every round that comes due counts as one). It is only recorded, heads do not show it |
 | `next` | Next time; absent while paused, or while a dynamic loop waits for the AI to set it |
 | `last` | Last run: `{"at", "result", "session"?}`; `result` is `ran`, `queued` (the session was busy; it waits its turn), `sent` (pushed to the extension that added it) or `skipped:<why>` (`session_gone`: the session is gone and the schedule paused; `preset_off`: the AI added it and the session's preset turns it off; `not_opened`: the new session could not be opened; `package_unavailable`: the extension that added it is not running and could not be started) |
 | `created` | When it was added |
@@ -69,7 +69,7 @@ Change one's time or line. The id stays the same; `last`, the creation time, `ta
 | `when` | object, optional | Written and checked as in `schedule.add` |
 | `prompt` | string, optional | Not empty |
 
-Write at least one of `when` and `prompt`; neither gets `bad_params` (no `data.problem`). A new `when` recounts `next` from now; missed ones are not made up. A paused one stays paused, and `resume` counts from the new time. A loop keeps its kind: a `dynamic` one only takes `at` (which sets when it next wakes), a `fixed` one only `every`; anything else gets `bad_params` (`when`). `prompt` can change on both. A bad one changes nothing and gets `bad_params` with the same `data.problem` as `schedule.add` (`when`, `cron`, `past`, `short`, `prompt`, `zone`). Response `{"schedule": <item>}`; `schedules` subscribers get `schedules.changed` as usual.
+Write at least one of `when` and `prompt`; neither gets `bad_params` (no `data.problem`). A new `when` recounts `next` from now; missed ones are not made up. A paused one stays paused, and `resume` counts from the new time. A loop keeps its kind: a `dynamic` one only takes `at` (which sets when the next round starts), a `fixed` one only `every`; anything else gets `bad_params` (`when`). `prompt` can change on both. A bad one changes nothing and gets `bad_params` with the same `data.problem` as `schedule.add` (`when`, `cron`, `past`, `short`, `prompt`, `zone`). Response `{"schedule": <item>}`; `schedules` subscribers get `schedules.changed` as usual.
 
 ```json
 {"jsonrpc": "2.0", "id": "u1", "method": "schedule.update", "params": {"id": "t1", "when": {"every": 1800}}}

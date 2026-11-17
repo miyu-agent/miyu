@@ -315,7 +315,7 @@ When the same id is in several layers, the one you installed wins, then the one 
 | `base-todowrite` | To-do list | Keep a to-do list for the task at hand (`todowrite`) | Tasks and schedules |
 | `base-goal` | Long-running goals | Hand over a long task, and the AI keeps working on it turn after turn (`/goal`) | Tasks and schedules |
 | `base-schedule` | Scheduled tasks | The AI can schedule a message to itself for later (`cron_create`, `cron_delete`, `cron_list`) | Tasks and schedules |
-| `base-loop` | Loop tasks | `/loop` runs a task again and again (`schedule_wakeup`) | Tasks and schedules |
+| `base-loop` | Loop tasks | `/loop` runs a task again and again (`schedule_next`) | Tasks and schedules |
 | `base-env` | Injected environment | Tell the AI the time, working directory, permission level, session id, model information, Harness version, this machine's system and who you are; each of the eight has its own switch | Injected environment |
 | `base-project-docs` | Inject AGENTS docs automatically | Give the AI the repository's AGENTS.md at the start of each turn | Injected environment |
 | `base-memory` | Persona memory | Remember what you said and recall it later (`remember`, `memory_search`, `forget`) | Persona |

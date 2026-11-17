@@ -71,13 +71,13 @@ pub fn core(home: &Home, script: &Script, hand: &Arc<Hand>) -> Arc<Core> {
     core
 }
 
-/// 她调 `schedule_wakeup`：十分钟后醒，`reason` 写了的带上。
+/// 她调 `schedule_next`：十分钟后醒，`reason` 写了的带上。
 pub fn wakeup(reason: Option<&str>) -> Play {
     let args = match reason {
         Some(reason) => serde_json::json!({"delay_seconds": 600, "reason": reason}),
         None => serde_json::json!({"delay_seconds": 600}),
     };
-    Play::calls(&[("schedule_wakeup", &args.to_string())])
+    Play::calls(&[("schedule_next", &args.to_string())])
 }
 
 /// 会话日志里交过的「在干嘛」那几块：原文和记号。

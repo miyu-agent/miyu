@@ -1,17 +1,17 @@
 {
   "tools": {
-    "schedule_wakeup": {
-      "name": "次の起動",
+    "schedule_next": {
+      "name": "次の回",
       "subject": "reason",
       "icon": "↻"
     }
   },
   "said": {
-    "wakeup/set": "次は {next}",
-    "wakeup/stopped": "ループを停止",
-    "wakeup/unstoppable": "人生ループは止められません",
-    "wakeup/no-loop": "動いているループはありません",
-    "wakeup/no-delay": "間隔が指定されていません",
+    "next/set": "次は {next}",
+    "next/stopped": "ループを停止",
+    "next/unstoppable": "人生ループは止められません",
+    "next/no-loop": "動いているループはありません",
+    "next/no-delay": "間隔が指定されていません",
     "common/bad-args": "引数が正しくありません：{error}",
     "common/off": "このセッションではループを使えません"
   }

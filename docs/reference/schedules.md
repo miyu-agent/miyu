@@ -1,6 +1,6 @@
 # 定时任务：`schedule.*`
 
-到点把一句话交给一个会话跑一轮：每天早上 8 点的早报、每小时看一眼服务器。一张唤醒表，存在 `root/schedules.db`，核心重启不丢；核心停着时错过的不补。英文版：[schedules.en.md](schedules.en.md)。
+到点把一句话交给一个会话跑一轮：每天早上 8 点的早报、每小时看一眼服务器。一张定时表，存在 `root/schedules.db`，核心重启不丢；核心停着时错过的不补。英文版：[schedules.en.md](schedules.en.md)。
 
 | 方法 | 做什么 |
 |---|---|
@@ -26,7 +26,7 @@
 | `paused` | 停着 |
 | `loop` | 循环才有：`fixed` 固定间隔、`dynamic` 她自己定节奏、`life` 人生循环（见上） |
 | `persona` | 人生循环那一行才有：它是哪个人格的人生（人格的编号）；核心刚起来、还没认出来的不带 |
-| `rounds` | 人生循环那一行才有：推演到第几轮（每次到点醒来算一轮）。只是记着，头不显示 |
+| `rounds` | 人生循环那一行才有：推演到第几轮（每次到点开始的算一轮）。只是记着，头不显示 |
 | `next` | 下一次的时刻；停着的、她自己定节奏还没定的没有 |
 | `last` | 上一次：`{"at", "result", "session"?}`，`result` 是 `ran`、`queued`（会话正在跑一轮，排在后面）、`sent`（推给了建它的扩展）或 `skipped:<原因>`（`session_gone` 会话没了、任务跟着停了，`preset_off` 她建的而会话的预设关了它，`not_opened` 新会话开不成，`package_unavailable` 建它的扩展没在跑、拉不起来） |
 | `created` | 建的时刻 |
@@ -69,7 +69,7 @@
 | `when` | 对象，可以不写 | 写法、查法同 `schedule.add` |
 | `prompt` | 字符串，可以不写 | 不能是空的 |
 
-`when`、`prompt` 至少写一样，都不写的回 `bad_params`（不带 `data.problem`）。改了 `when` 的照现在重算 `next`，错过的不补；停着的改完还停着，`resume` 时照新的时间算。循环换不了种类：`loop` 是 `dynamic` 的 `when` 只能写 `at`（就是改下一次醒的时刻），`fixed` 的只能写 `every`，写别的回 `bad_params`（`when`）；`prompt` 都能改。写错的什么都不改，回 `bad_params`，`data.problem` 同 `schedule.add`（`when`、`cron`、`past`、`short`、`prompt`、`zone`）。回应 `{"schedule": <一项>}`，订着 `schedules` 的照常收到 `schedules.changed`。
+`when`、`prompt` 至少写一样，都不写的回 `bad_params`（不带 `data.problem`）。改了 `when` 的照现在重算 `next`，错过的不补；停着的改完还停着，`resume` 时照新的时间算。循环换不了种类：`loop` 是 `dynamic` 的 `when` 只能写 `at`（就是改下一轮开始的时刻），`fixed` 的只能写 `every`，写别的回 `bad_params`（`when`）；`prompt` 都能改。写错的什么都不改，回 `bad_params`，`data.problem` 同 `schedule.add`（`when`、`cron`、`past`、`short`、`prompt`、`zone`）。回应 `{"schedule": <一项>}`，订着 `schedules` 的照常收到 `schedules.changed`。
 
 ```json
 {"jsonrpc": "2.0", "id": "u1", "method": "schedule.update", "params": {"id": "t1", "when": {"every": 1800}}}

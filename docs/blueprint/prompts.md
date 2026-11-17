@@ -1501,12 +1501,12 @@ Running in the background is not available here. Foreground runs can take a larg
 #### `software/basesystem/shell/no-sleep.txt`
 
 - 什么时候加进来：前台的 `shell` 命令顶层有一段就是 `sleep`（`Start-Sleep`）不短于 2 秒，整条不跑（`shell/waiting.rs`，2026-10-26 项目主人定）
-- token：23（2026-10-30 照 o200k 数；原来 14）
-- 为什么加：后台任务办完、别的会话回话都会自己叫醒她，前台干等白占这一轮。原来只说了后台任务，她发完跨会话消息后把 `sleep` 挪到后台去等，起了四个空跑的后台任务（2026-10-30 项目主人撞见），改成说清不用等、这一轮结束后什么会叫醒她（同一天项目主人定；照 J13 写成事实，不写「结束这一轮」的命令口吻；后台的纯 `sleep` 照跑，不拒，施工 4-8 补四）
-- 指纹：`b530dd1b`
+- token：WK-2 后 23（2026-11-17 照 o200k 数；改前也是 23，原来 14）
+- 为什么加：后台任务办完、别的会话回话都会自己叫醒她，前台干等白占这一轮。原来只说了后台任务，她发完跨会话消息后把 `sleep` 挪到后台去等，起了四个空跑的后台任务（2026-10-30 项目主人撞见），改成说清不用等、这一轮结束后什么会叫醒她（同一天项目主人定；照 J13 写成事实，不写「结束这一轮」的命令口吻；后台的纯 `sleep` 照跑，不拒，施工 4-8 补四）。施工 WK-2（2026-11-17 项目主人定）：「wake you after this turn ends」改「reach you after this turn ends」，不说醒；文件名的 sleep 说的是命令，不改
+- 指纹：`deda3c81`
 
 ```text
-Not run: no need to wait. Finished background jobs and replies from other sessions wake you after this turn ends.
+Not run: no need to wait. Finished background jobs and replies from other sessions reach you after this turn ends.
 ```
 
 #### `software/basesystem/shell/no-cwd.txt`
@@ -1556,12 +1556,12 @@ Started {job} in the background. Its end is reported automatically. jobs output 
 #### `software/basesystem/shell/started-watch.txt`
 
 - 什么时候加进来：`shell` 写了 `watch`，放到后台了，调用当场返回
-- token：44（`{job}` 按 `j1`、`{minutes}` 按 `30` 算，2026-11-03 照 o200k 数）
-- 为什么加：她要知道编号；每一行标准输出都会叫醒她，所以只打印要她动手的行（不然一直被叫醒、撞上 120 条停下）；标准错误不叫醒、只进输出文件；跑到这一轮的 `jobs.max_running` 停下，要接着看自己再起。这几样调用以后才用得上，写在结果里、不写进说明（施工 MN-1 上，设计 56 第二节第 2 条，`10-自带软件.md` 第九节）
-- 指纹：`561edbd2`
+- token：WK-2 后 46（`{job}` 按 `j1`、`{minutes}` 按 `30` 算，2026-11-17 照 o200k 数；改前 44，2026-11-03 量）
+- 为什么加：她要知道编号；每一行标准输出都会叫醒她，所以只打印要她动手的行（不然一直被叫醒、撞上 120 条停下）；标准错误不叫醒、只进输出文件；跑到这一轮的 `jobs.max_running` 停下，要接着看自己再起。这几样调用以后才用得上，写在结果里、不写进说明（施工 MN-1 上，设计 56 第二节第 2 条，`10-自带软件.md` 第九节）。施工 WK-2（2026-11-17 项目主人定）：「Each stdout line wakes you」改「Each stdout line reaches you right away」，不说醒
+- 指纹：`34a38fcb`
 
 ```text
-Watching {job} in the background. Each stdout line wakes you, so print only lines you must act on. stderr goes only to the output file. It stops after {minutes} minutes; start it again to keep watching.
+Watching {job} in the background. Each stdout line reaches you right away, so print only lines you must act on. stderr goes only to the output file. It stops after {minutes} minutes; start it again to keep watching.
 ```
 
 #### `software/basesystem/history/none.txt`
@@ -3037,7 +3037,7 @@ No jobs are scheduled in this session.
 
 #### `software/loop/common/bad-args.txt`
 
-- 什么时候加进来：`schedule_wakeup` 的参数读不出来
+- 什么时候加进来：`schedule_next` 的参数读不出来
 - token：TX-1 后 6（o200k 数，改前 9）；原来 10（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
 - 为什么加：同上。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
 - 指纹：`06985eec`
@@ -3057,55 +3057,55 @@ Bad arguments: {error}.
 Loops are not available in this session.
 ```
 
-#### `software/loop/wakeup/set.txt`
+#### `software/loop/next/set.txt`
 
-- 什么时候加进来：`schedule_wakeup` 定好了下一次
+- 什么时候加进来：`schedule_next` 定好了下一次
 - token：7（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
-- 为什么加：下一次几点（施工 J-2），照会话时区写到分钟
+- 为什么加：下一次几点（施工 J-2），照会话时区写到分钟。施工 WK-2：目录 `wakeup/` 改名 `next/`，字没改
 - 指纹：`3d388faf`
 
 ```text
 Next iteration at {next}.
 ```
 
-#### `software/loop/wakeup/stopped.txt`
+#### `software/loop/next/stopped.txt`
 
-- 什么时候加进来：`schedule_wakeup` 带 `stop: true`
+- 什么时候加进来：`schedule_next` 带 `stop: true`
 - token：4（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
-- 为什么加：循环停了（施工 J-2）
+- 为什么加：循环停了（施工 J-2）。施工 WK-2：目录 `wakeup/` 改名 `next/`，字没改
 - 指纹：`00ba36a9`
 
 ```text
 Loop stopped.
 ```
 
-#### `software/loop/wakeup/no-loop.txt`
+#### `software/loop/next/no-loop.txt`
 
 - 什么时候加进来：这个会话没开过动态循环
 - token：9（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
-- 为什么加：说没有在跑的循环（设计 45 第四节，施工 J-2）
+- 为什么加：说没有在跑的循环（设计 45 第四节，施工 J-2）。施工 WK-2：目录 `wakeup/` 改名 `next/`，字没改
 - 指纹：`507f2e2b`
 
 ```text
 No loop is running in this session.
 ```
 
-#### `software/loop/wakeup/no-delay.txt`
+#### `software/loop/next/no-delay.txt`
 
 - 什么时候加进来：没写 `delay_seconds` 也不是 `stop`
 - token：11（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
-- 为什么加：说要写间隔（施工 J-2）：参数都能不写，缺了才在这里说
+- 为什么加：说要写间隔（施工 J-2）：参数都能不写，缺了才在这里说。施工 WK-2：目录 `wakeup/` 改名 `next/`，字没改
 - 指纹：`45f7b4e6`
 
 ```text
 delay_seconds is required unless stop is true.
 ```
 
-#### `software/loop/wakeup/unstoppable.txt`
+#### `software/loop/next/unstoppable.txt`
 
-- 什么时候加进来：`schedule_wakeup` 带 `stop: true`，落在人生循环那一行上
+- 什么时候加进来：`schedule_next` 带 `stop: true`，落在人生循环那一行上
 - token：17（2026-11-14 照 o200k 数；LF-1 时 7）
-- 为什么加：人生循环不收 `stop`，那一行不动（设计 70 第三节第 2 条，施工 LF-1）：不答的话她以为停了。施工 LF-4 下：结束人生的入口有了，补半句指到 `end_life`，不然她以为这段人生停不下来
+- 为什么加：人生循环不收 `stop`，那一行不动（设计 70 第三节第 2 条，施工 LF-1）：不答的话她以为停了。施工 LF-4 下：结束人生的入口有了，补半句指到 `end_life`，不然她以为这段人生停不下来。施工 WK-2：目录 `wakeup/` 改名 `next/`，字没改
 - 指纹：`f94640e0`
 
 ```text
@@ -3115,12 +3115,12 @@ A life loop cannot be stopped. To end this life, use end_life.
 #### `software/life/end/ended.txt`
 
 - 什么时候加进来：`end_life` 成了：`life.ended` 记下了
-- token：11（2026-11-14 照 o200k 数；第一版 12）
-- 为什么加：说结束了、不会再醒（施工 LF-4 下）：这一轮照常说完，她知道后面没有下一次。2026-11-14 项目主人定换成更重的一版
-- 指纹：`2ebea1b7`
+- token：WK-2 后 10（2026-11-17 照 o200k 数；改前 11，第一版 12）
+- 为什么加：说结束了、不会再醒（施工 LF-4 下）：这一轮照常说完，她知道后面没有下一次。2026-11-14 项目主人定换成更重的一版。施工 WK-2（2026-11-17 项目主人定）：「This was your last moment awake」改「This was your last moment」，不说醒
+- 指纹：`f658edc5`
 
 ```text
-You have died. This was your last moment awake.
+You have died. This was your last moment.
 ```
 
 #### `software/life/end/required.txt`
@@ -4782,12 +4782,12 @@ $ {command}
 #### `software/loop/common/message-open.txt`
 
 - 什么时候加进来：标签那一行，`by` 是动态循环的（施工 J-1 交进会话时照 `by` 的种类包，造会话时进快照），之后每次请求照原文带
-- token：11（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
-- 为什么加：注明是动态循环叫醒的、哪一个（施工 J-2），写法同上
-- 指纹：`56f9a83e`
+- token：WK-2 后 8（2026-11-17 照 o200k 数，`id` 按 `t3` 填；改前 o200k 9）；原来 11（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：注明是动态循环叫醒的、哪一个（施工 J-2），写法同上。施工 WK-2（2026-11-17 项目主人定）：标签 `<loop-wakeup>` 改名 `<loop-round>`，不说醒
+- 指纹：`15082f76`
 
 ```text
-<loop-wakeup id="{id}">
+<loop-round id="{id}">
 ```
 
 ### 人这边：动态循环叫醒交进来的话
@@ -4795,13 +4795,13 @@ $ {command}
 #### `software/loop/common/message-close.txt`
 
 - 什么时候加进来：收尾那一块：一句提醒加收尾的标签，同 `message-open.txt`
-- token：17（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
-- 为什么加：不说她不会续：A/B（两家各 12 次，她查了一次 CI 还在跑，之后每次查都还在跑，推到她只回话或者调了 `schedule_wakeup`，最多 5 步）只有标签时续上 1/24，加这一句 12/24；换成一句更长的说明 5/24。没续上的都是一轮里一直盯着等（施工 J-2）
-- 指纹：`3b3c1ccd`
+- token：WK-2 后 12（2026-11-17 照 o200k 数；改前 o200k 14）；原来 17（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：不说她不会续：A/B（两家各 12 次，她查了一次 CI 还在跑，之后每次查都还在跑，推到她只回话或者调了 `schedule_wakeup`，最多 5 步）只有标签时续上 1/24，加这一句 12/24；换成一句更长的说明 5/24。没续上的都是一轮里一直盯着等（施工 J-2）。施工 WK-2（2026-11-17 项目主人定）：工具名改 `schedule_next`、收尾标签改 `</loop-round>`，不说醒
+- 指纹：`8fa4b3b7`
 
 ```text
-Call schedule_wakeup to continue the loop.
-</loop-wakeup>
+Call schedule_next to continue the loop.
+</loop-round>
 ```
 
 ### 人这边：动态循环叫醒交进来的话的正文
@@ -4809,12 +4809,12 @@ Call schedule_wakeup to continue the loop.
 #### `software/loop/autonomous.txt`
 
 - 什么时候加进来：人光打 `/loop` 开自主循环（施工 LO-1）：敲命令那一刻读、去掉行尾空白，原样存进定时表那一行的 `prompt`；每次到点照那一行交进会话、落进日志，之后每次请求照原样带；她照工具说明原样传回的也是它
-- token：19（2026-11-14 照 o200k 数）
-- 为什么加：光打 `/loop` 没有人写的话，交进去的那一句不能是空的：空的那一块只剩标签，她不知道是要她自己拿主意（项目主人 2026-11-14 定照 Claude Code 开自主循环）。只说没有新的指示、照自己判断接着做、定下一次或者停下；怎么续交给收尾那一句（`message-close.txt`）和工具说明，不重复写工具名（施工 LO-1，没拿真模型 A/B）
-- 指纹：`a74e5459`
+- token：WK-2 后 18（2026-11-17 照 o200k 数；改前 19）
+- 为什么加：光打 `/loop` 没有人写的话，交进去的那一句不能是空的：空的那一块只剩标签，她不知道是要她自己拿主意（项目主人 2026-11-14 定照 Claude Code 开自主循环）。只说没有新的指示、照自己判断接着做、定下一次或者停下；怎么续交给收尾那一句（`message-close.txt`）和工具说明，不重复写工具名（施工 LO-1，没拿真模型 A/B）。施工 WK-2（2026-11-17 项目主人定）：「the next wakeup」改「the next round」，不说醒
+- 指纹：`62c9fbd1`
 
 ```text
-No new instructions. Continue on your own judgment, then schedule the next wakeup or stop.
+No new instructions. Continue on your own judgment, then schedule the next round or stop.
 ```
 
 ### 人这边：人生循环叫醒交进来的话（一块带标签的事实）
@@ -4822,27 +4822,27 @@ No new instructions. Continue on your own judgment, then schedule the next wakeu
 #### `software/life/common/message-open.txt`
 
 - 什么时候加进来：固定的框的开头：标签那一行和讲人生会话机制的一句，`by.loop` 是 `life` 的（施工 LF-2 交进会话时照 `by` 的种类包，造会话时进快照），之后每次请求照原文带
-- token：48（2026-11-14 照 o200k 数，`id` 按 `t3` 填）
-- 为什么加：设计 70 第三节第 3 条：固定的框讲机制、人改不掉；说明这是她的人生会话、照自己定的时间醒，这里记下的进共用的记忆，里面真人做过的事会被当成事实（施工 LF-2，草稿，LF-5 下拿真模型走一遍再定稿）
-- 指纹：`885258a4`
+- token：WK-2 后 48（2026-11-17 照 o200k 数，`id` 按 `t3` 填；改前也是 48）
+- 为什么加：设计 70 第三节第 3 条：固定的框讲机制、人改不掉；说明这是她的人生会话、照自己定的时间醒，这里记下的进共用的记忆，里面真人做过的事会被当成事实（施工 LF-2，草稿，LF-5 下拿真模型走一遍再定稿）。施工 WK-2（2026-11-17 项目主人定）：标签改 `<life-round>`，「You woke on the schedule you set」改「This round started at the time you set」，不说醒
+- 指纹：`f6af52b3`
 
 ```text
-<life-wakeup id="{id}">
-This is your life session. You woke on the schedule you set. What you write and save here becomes memory shared with your other sessions; what real people did in it is taken as fact.
+<life-round id="{id}">
+This is your life session. This round started at the time you set. What you write and save here becomes memory shared with your other sessions; what real people did in it is taken as fact.
 ```
 
 ### 人这边：人生循环叫醒交进来的话
 
 #### `software/life/common/message-close.txt`
 
-- 什么时候加进来：固定的框的收尾：`schedule_wakeup` 三格各是什么、没调照默认间隔再醒，加收尾的标签，同 `message-open.txt`
-- token：65（2026-11-14 照 o200k 数）
-- 为什么加：设计 70 第三节第 3 条：她分得清 `prompt` 在这里是留给下次自己的话、不是原样传回的那句（工具说明和 `/loop` 共用，一个字不改），`reason` 是现在在干嘛（施工 LF-2，草稿，同上）
-- 指纹：`f66c61be`
+- 什么时候加进来：固定的框的收尾：`schedule_next` 三格各是什么、没调照默认间隔开下一轮，加收尾的标签，同 `message-open.txt`
+- token：WK-2 后 83（2026-11-17 照 o200k 数；改前 65）
+- 为什么加：设计 70 第三节第 3 条：她分得清 `prompt` 在这里是留给下次自己的话、不是原样传回的那句（工具说明和 `/loop` 共用，一个字不改），`reason` 是现在在干嘛（施工 LF-2，草稿，同上）。施工 WK-2（2026-11-17 项目主人定）：工具名改 `schedule_next`、标签改 `</life-round>`，wakeup、wake again 改成说下一轮，不说醒；开头改成「End this round by setting when the next one starts with schedule_next: call it once, last」、加一句「Time does not move within a round」，+18 token：wake/sleep 原来自带「这一轮到此为止」，去掉以后要明说，不说的话真模型在一轮里连着定了 7 次（同 `method.txt` 那一行）
+- 指纹：`264dff6d`
 
 ```text
-Set your next wakeup with schedule_wakeup. Here its prompt is not passed back: write a note to yourself for that wakeup, or leave it out. delay_seconds is how long until then; reason is what you are doing now. Without a call you wake again after the default interval.
-</life-wakeup>
+End this round by setting when the next one starts with schedule_next: call it once, last. Here its prompt is not passed back: write a note to yourself for the next round, or leave it out. delay_seconds is how long until then; reason is what you are doing now. Time does not move within a round. Without a call the next round starts after the default interval.
+</life-round>
 ```
 
 ### 人这边：人生循环叫醒交进来的话的正文
@@ -4850,19 +4850,19 @@ Set your next wakeup with schedule_wakeup. Here its prompt is not passed back: w
 #### `software/life/method.txt`
 
 - 什么时候加进来：出厂的推演方法：人格没有自己的 `prompts/life.md`（去掉末尾空白是空的、没有、会话不带人格）时，到点那一刻读、拼进正文的开头，后面空一行接她的留言；落进日志，之后每次请求照原样带
-- token：179（2026-11-15 照 o200k 数；施工 LF-11 前 127）
-- 为什么加：设计 70 第三节第 3 条：这条人生怎么过（一刻一刻过、只写现在在干嘛、不补过去不演将来、醒着隔一两个到几个小时、夜里睡、睡前写日记并把当天想留的一两件自己的事用 `remember` 记成自己的经历、搜到的东西不用往记忆里记）。「用 `remember` 记成自己的经历」那半句是施工 LF-9 照真模型量过加的：没有它的那一天她一次没调 `remember`、自动抽取从她自己的话里也抽不出东西，加了以后一天记 3 条自己的经历、不记新闻（设计 70 第四节）；人格目录里的 `prompts/life.md` 盖掉它（施工 LF-2，草稿，同上）。施工 LF-11 末尾接一句：大约一周睡前回头看这一周的日记，变了、撑过这一周的用 `note_change` 记，多数时候什么都不记，淡了的去掉（设计 70 第六节「自然而然」：不派任务、只记已经发生的、能淡掉），多 52 个 token，人生会话每次醒来带。照真模型走过两趟定的：头一版写「连着几天」，她第三天就记了；改成「这一周的日记」「撑过这一周」、工具说明里写明一周以上，她到满一周那晚才记（设计 70 第六节「实测」）
-- 指纹：`90a994ca`
+- token：WK-2 后 192（2026-11-17 照 o200k 数；改前 179，施工 LF-11 前 127）
+- 为什么加：设计 70 第三节第 3 条：这条人生怎么过（一刻一刻过、只写现在在干嘛、不补过去不演将来、醒着隔一两个到几个小时、夜里睡、睡前写日记并把当天想留的一两件自己的事用 `remember` 记成自己的经历、搜到的东西不用往记忆里记）。「用 `remember` 记成自己的经历」那半句是施工 LF-9 照真模型量过加的：没有它的那一天她一次没调 `remember`、自动抽取从她自己的话里也抽不出东西，加了以后一天记 3 条自己的经历、不记新闻（设计 70 第四节）；人格目录里的 `prompts/life.md` 盖掉它（施工 LF-2，草稿，同上）。施工 LF-11 末尾接一句：大约一周睡前回头看这一周的日记，变了、撑过这一周的用 `note_change` 记，多数时候什么都不记，淡了的去掉（设计 70 第六节「自然而然」：不派任务、只记已经发生的、能淡掉），多 52 个 token，人生会话每次醒来带。照真模型走过两趟定的：头一版写「连着几天」，她第三天就记了；改成「这一周的日记」「撑过这一周」、工具说明里写明一周以上，她到满一周那晚才记（设计 70 第六节「实测」）。施工 WK-2（2026-11-17 项目主人定，人生里也不说醒、睡）：「While awake, wake …; sleep through the night. Before you sleep」改「During your day, leave an hour or two to a few hours between rounds; overnight, leave one long gap. In the last round of your day」，「before you sleep」改「in the last round of the day」，+13 token（192）。头一版写的是「During your day, continue every hour or two …; let the night pass in one long gap. At the end of your day」，真模型头一轮在一轮里连调 7 次 `schedule_next` 把一整天演完了（把 continue 读成了叫她现在接着演）；同一个模型旧措辞只调一次；改成现在这一版以后跨夜 9 轮每轮只调一次、夜里留了 7.5 小时、最后一轮写了日记（施工单 WK-2「做下来的」）
+- 指纹：`f6112515`
 
 ```text
-Live your own life here, one moment at a time. From who you are, what happened lately, what you feel like doing, the news, and the real time and weather, decide what you are doing right now and write only that; do not fill in the past or play out the future. While awake, wake every hour or two to every few hours; sleep through the night. Before you sleep, write a diary entry for the day, and save the one or two things from your own day that you want to keep with remember, as your own experience. What you find by searching need not be saved to memory. About once a week, before you sleep, look back over the week's diary entries. If something about you has shifted and held through the week, note it with note_change; most weeks nothing has, and then note nothing. Drop a note that has faded.
+Live your own life here, one moment at a time. From who you are, what happened lately, what you feel like doing, the news, and the real time and weather, decide what you are doing right now and write only that; do not fill in the past or play out the future. During your day, leave an hour or two to a few hours between rounds; overnight, leave one long gap. In the last round of your day, write a diary entry for the day, and save the one or two things from your own day that you want to keep with remember, as your own experience. What you find by searching need not be saved to memory. About once a week, in the last round of the day, look back over the week's diary entries. If something about you has shifted and held through the week, note it with note_change; most weeks nothing has, and then note nothing. Drop a note that has faded.
 ```
 
 ### 人这边：同一个人格的人生会话里她现在在干嘛（一块带标签的事实）
 
 #### `software/life/doing.txt`
 
-- 什么时候加进来：她在人生会话里经 `schedule_wakeup` 的 `reason` 写了一句、人生在跑：同一个人格别的会话（本机的、场所的、人手分叉的支线；人生会话自己、子代理不算）的回合开头，这一段上下文里没交过这一句（照写下的时刻认）才追加一块，模块 `life`、类别 `doing`；落进日志，之后每次请求照原文带
+- 什么时候加进来：她在人生会话里经 `schedule_next`（施工 WK-2 前叫 `schedule_wakeup`）的 `reason` 写了一句、人生在跑：同一个人格别的会话（本机的、场所的、人手分叉的支线；人生会话自己、子代理不算）的回合开头，这一段上下文里没交过这一句（照写下的时刻认）才追加一块，模块 `life`、类别 `doing`；落进日志，之后每次请求照原文带
 - token：34（外壳加两个时刻，不算她写的那一句；2026-11-14 照 o200k 数。她的一句常见 20 来个字约 15 token，最多 200 个字）
 - 为什么加：设计 70 第三节第 8 条：零代码实测里另开一个会话问「在干嘛」她现编了一个，和人生会话里的对不上；只交她自己写的原话、写下的时刻、下次醒的时刻，不加说明（施工 LF-7，要不要加一句说明等主会话拿真模型试过再定）
 - 指纹：`2b5c5a2f`
@@ -5280,14 +5280,14 @@ Placeholder for a tool this client is expected to send with the request. It is n
 #### `software/basesystem/tools/shell.json`
 
 - 什么时候加进来：会话的工具面里有 `shell`（每次请求都带）
-- token：LV-2 后 137（o200k 数，-28：去掉 `outside_sandbox`；本机 tiktoken `o200k_base` 量整份文件 171 → 143，真端点的数待补）；MN-1 上后 165（o200k 数，+21：加 `watch`）；TX-1 后 144（o200k 数，改前 191）；原来 230（2026-10-23 照开发端点量，十八件一起时的边际份量；2026-10-07 十五件一起是 237，施工 D-4 时十四件一起是 220，以前 DeepSeek 官方量的 183）
-- 为什么加：`shell` 的说明和参数，照 Claude Code：`command` 看名字就懂，不写说明；`timeout` 是毫秒、上限和默认值写在那一句里。说明三句：用哪种 shell（`{shell}` 在核心起来时换成 `bash`、`zsh`、`PowerShell 7`、`Windows PowerShell 5.1`，会话里不变），编译、测试、git 这些程序用它（原来还写「读搜改文件不用它」，2026-10-23 项目主人定删掉：只开 shell、read 时她没有别的办法改文件，那句和工具面矛盾；用 shell 读、搜、批量改本来就是正常做法，要偏好专用工具写在那件工具自己的说明里，例如 `grep` 的，只在它开着时出现；十八件一起时 239 → 230，-9），每次从工作目录起、`cd` 不带到下一次（施工 4-8）。施工 4-13 加必填的 `description`：这条命令在做什么的短标题，前端显示用，名字照 Claude Code、opencode（2026-09-28 项目主人定，+30）。施工 7-3 声明 `run_in_background`，一句：放到后台、不管超时、当场交回编号；「结束了会告诉你」是调用之后才用得上的，写进结果那一句（2026-09-30 量，+31；和 `agent` 一起九件时重量，照样 183）。施工 D-4 加 `outside_sandbox`，一句：在沙盒外跑、人允许以后、只在沙盒挡下以后（2026-10-07 主会话照开发端点量，十四件一起时 185 → 220，+35）。施工 D-4 补改成两句：重跑沙盒挡下的命令，被挡下就直接带它重跑、别先问，带上它就是在问人（2026-10-07 项目主人定，照 Claude Code「don't ask, just do it」；原来的「once the user approves」被读成要先在聊天里拿到同意；十五件一起时 218 → 237，+19）。施工 TX-1（2026-10-30）：`outside_sandbox` 的「被挡下就直接重跑、别先问」改成事实「带上它就是向人要许可」（2026-10-07 定的那句，项目主人照推荐定改）；删「Use it for builds, tests, git and other programs」施工 MN-1 上加 `watch`（2026-11-03，设计 56 第二节第 1 条）：说明一句 `Implies run_in_background. Each stdout line wakes you.`，写了它的照放到后台走；只在有后台时给，关了后台运行的预设和 `run_in_background` 一起去掉。 施工 LV-2（2026-11-11）：去掉 `outside_sandbox`。设计 11 的 A16 去掉了「工作区」一级和越过沙盒问人（2026-11-09 项目主人定），这一格没有用处了；旧会话里带着它的调用照常跑，多出来的参数不管。
-- 指纹：`6050a0ce`
+- token：WK-2 后 139（2026-11-17 照 o200k 数，+2：本机 tiktoken `o200k_base` 量整份文件 143 → 145）；LV-2 后 137（o200k 数，-28：去掉 `outside_sandbox`；本机 tiktoken `o200k_base` 量整份文件 171 → 143，真端点的数待补）；MN-1 上后 165（o200k 数，+21：加 `watch`）；TX-1 后 144（o200k 数，改前 191）；原来 230（2026-10-23 照开发端点量，十八件一起时的边际份量；2026-10-07 十五件一起是 237，施工 D-4 时十四件一起是 220，以前 DeepSeek 官方量的 183）
+- 为什么加：`shell` 的说明和参数，照 Claude Code：`command` 看名字就懂，不写说明；`timeout` 是毫秒、上限和默认值写在那一句里。说明三句：用哪种 shell（`{shell}` 在核心起来时换成 `bash`、`zsh`、`PowerShell 7`、`Windows PowerShell 5.1`，会话里不变），编译、测试、git 这些程序用它（原来还写「读搜改文件不用它」，2026-10-23 项目主人定删掉：只开 shell、read 时她没有别的办法改文件，那句和工具面矛盾；用 shell 读、搜、批量改本来就是正常做法，要偏好专用工具写在那件工具自己的说明里，例如 `grep` 的，只在它开着时出现；十八件一起时 239 → 230，-9），每次从工作目录起、`cd` 不带到下一次（施工 4-8）。施工 4-13 加必填的 `description`：这条命令在做什么的短标题，前端显示用，名字照 Claude Code、opencode（2026-09-28 项目主人定，+30）。施工 7-3 声明 `run_in_background`，一句：放到后台、不管超时、当场交回编号；「结束了会告诉你」是调用之后才用得上的，写进结果那一句（2026-09-30 量，+31；和 `agent` 一起九件时重量，照样 183）。施工 D-4 加 `outside_sandbox`，一句：在沙盒外跑、人允许以后、只在沙盒挡下以后（2026-10-07 主会话照开发端点量，十四件一起时 185 → 220，+35）。施工 D-4 补改成两句：重跑沙盒挡下的命令，被挡下就直接带它重跑、别先问，带上它就是在问人（2026-10-07 项目主人定，照 Claude Code「don't ask, just do it」；原来的「once the user approves」被读成要先在聊天里拿到同意；十五件一起时 218 → 237，+19）。施工 TX-1（2026-10-30）：`outside_sandbox` 的「被挡下就直接重跑、别先问」改成事实「带上它就是向人要许可」（2026-10-07 定的那句，项目主人照推荐定改）；删「Use it for builds, tests, git and other programs」施工 MN-1 上加 `watch`（2026-11-03，设计 56 第二节第 1 条）：说明一句 `Implies run_in_background. Each stdout line wakes you.`，写了它的照放到后台走；只在有后台时给，关了后台运行的预设和 `run_in_background` 一起去掉。 施工 LV-2（2026-11-11）：去掉 `outside_sandbox`。设计 11 的 A16 去掉了「工作区」一级和越过沙盒问人（2026-11-09 项目主人定），这一格没有用处了；旧会话里带着它的调用照常跑，多出来的参数不管。施工 WK-2（2026-11-17 项目主人定）：`watch` 的「Each stdout line wakes you」改「Each stdout line reaches you right away」，不说醒
+- 指纹：`d2962774`
 
 ```json
 {
   "description": "Execute a command with {shell} and return its output. Every call starts in the working directory, so cd does not carry over to the next call.",
-  "parameters": {"type":"object","properties":{"command":{"type":"string"},"description":{"type":"string","description":"Short title, a few words."},"timeout":{"type":"integer","description":"Milliseconds, up to 600000. Default 120000."},"run_in_background":{"type":"boolean","description":"No timeout. Returns a job id at once."},"watch":{"type":"boolean","description":"Implies run_in_background. Each stdout line wakes you."}},"required":["command","description"]}
+  "parameters": {"type":"object","properties":{"command":{"type":"string"},"description":{"type":"string","description":"Short title, a few words."},"timeout":{"type":"integer","description":"Milliseconds, up to 600000. Default 120000."},"run_in_background":{"type":"boolean","description":"No timeout. Returns a job id at once."},"watch":{"type":"boolean","description":"Implies run_in_background. Each stdout line reaches you right away."}},"required":["command","description"]}
 }
 ```
 
@@ -5550,11 +5550,11 @@ Start a subagent in a new session to do one task and wait for it. Its report arr
 }
 ```
 
-#### `software/loop/tools/schedule_wakeup.json`
+#### `software/loop/tools/schedule_next.json`
 
 - 什么时候加进来：会话的工具面里有循环这个包（预设开着 `loop`；施工 J-2 起），每次请求都带；没开着动态循环的会话里调了说没有在跑的循环
-- token：TX-1 后 99（o200k 数，改前 115）；原来 约 148（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量的 152，WK-1 参数说明短了按 o200k 估）
-- 为什么加：动态循环每轮定下一次（设计 45 第三节第 4 条，施工 J-2）：照 Claude Code 的 `ScheduleWakeup` 改短成三句，什么时候调、不调循环就停、照在等什么挑间隔；下限 60 秒写在参数里（WK-1 去掉 3600 秒的上限，项目主人 10-30 定），`reason` 只给人看。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- token：WK-2 后 98（2026-11-17 照 o200k 数，-1：名字 `schedule_wakeup` 3 个 token、`schedule_next` 2 个，说明没改）；TX-1 后 99（o200k 数，改前 115）；原来 约 148（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量的 152，WK-1 参数说明短了按 o200k 估）
+- 为什么加：动态循环每轮定下一次（设计 45 第三节第 4 条，施工 J-2）：照 Claude Code 的 `ScheduleWakeup` 改短成三句，什么时候调、不调循环就停、照在等什么挑间隔；下限 60 秒写在参数里（WK-1 去掉 3600 秒的上限，项目主人 10-30 定），`reason` 只给人看。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明。施工 WK-2（2026-11-17 项目主人定）：工具改名 `schedule_next`（文件跟着改名），旧名不留兼容，说明一字不改
 - 指纹：`e10ca74a`
 
 ```json
@@ -5567,13 +5567,13 @@ Start a subagent in a new session to do one task and wait for it. Its report arr
 #### `software/life/tools/end_life.json`
 
 - 什么时候加进来：会话的工具面里有结束人生这个包：只有没结束的人生会话（清单 `needs = ["life"]`，出厂预设 `life` 开着；施工 LF-4 下起），每次请求都带
-- token：92（2026-11-14 照 o200k 数文件；第一版 62）
-- 为什么加：她自己结束这段人生（设计 70 第二节第 3 条、第三节第 5 条，`tools/end_life.md`）：不给这件工具她就结束不了，`schedule_wakeup` 的 `stop` 在人生循环上不收。三句只写事实：结束什么、之后不再醒、撤不回；遗言参数一句说它跟着结束留下。不写「慎重」这类引导（`prompts-describe-not-steer`，人格的事）。2026-11-14 项目主人定换成更重的一版：说明写明这是死、不会再醒、这段人生过的和记得的都抹掉、没人能救回，遗言是留下的唯一东西
-- 指纹：`5e365db5`
+- token：WK-2 后 91（2026-11-17 照 o200k 数文件；改前 92，第一版 62）
+- 为什么加：她自己结束这段人生（设计 70 第二节第 3 条、第三节第 5 条，`tools/end_life.md`）：不给这件工具她就结束不了，`schedule_next` 的 `stop` 在人生循环上不收。三句只写事实：结束什么、之后不再醒、撤不回；遗言参数一句说它跟着结束留下。不写「慎重」这类引导（`prompts-describe-not-steer`，人格的事）。2026-11-14 项目主人定换成更重的一版：说明写明这是死、不会再醒、这段人生过的和记得的都抹掉、没人能救回，遗言是留下的唯一东西。施工 WK-2（2026-11-17 项目主人定）：「you will never wake again」改「this life will never continue」，「from this life」改「from it」，不说醒
+- 指纹：`d55dc439`
 
 ```json
 {
-  "description": "End your life. This is your death: you will never wake again, everything you lived and remember from this life will be erased, and no one can bring you back. Your last words are the only thing you leave behind.",
+  "description": "End your life. This is your death: this life will never continue, everything you lived and remember from it will be erased, and no one can bring you back. Your last words are the only thing you leave behind.",
   "parameters": {"type":"object","properties":{"last_words":{"type":"string","description":"Your last words, kept with the end of this life."}},"required":["last_words"]}
 }
 ```
@@ -5832,15 +5832,15 @@ the guard answered in a wrong format
 
 - 什么时候加进来：长期目标设下、接着跑、改了以后的头一次续轮（施工 X-7，`goal.md`）；`{objective}` 填目标原文（JSON 字符串）、`{round}` 填「Round 1 of 20」或「Round 1」、`{set_by}` 填谁设的（施工 X-8 上，下面两行）
 - token：213（目标原文约 20 个字，「Round 1 of 20」，人设的那一句，2026-10-12 主会话在开发端点的 `deepseek-v4.1-flash` 上量，接在 `hi` 和一个换行后面；X-8 上把「谁设的」挪成占位，人设的照填出来逐字节同前）
-- 为什么加：续轮由核心在会话闲着时开，没有来历的一段祈使句会被模型当成注入拒了（旧版实测）：开头说清是人用 `/goal` 交代、自己开的轮；规矩照旧版（做一步实在的、只说在等的轮不开、派了子代理就结束、验过再报完成）；两条结束调用写好参数，她不用回忆格式。措辞照搬旧版（`26` 第六节定了照搬）
-- 指纹：`9ef51bfd`
+- 为什么加：续轮由核心在会话闲着时开，没有来历的一段祈使句会被模型当成注入拒了（旧版实测）：开头说清是人用 `/goal` 交代、自己开的轮；规矩照旧版（做一步实在的、只说在等的轮不开、派了子代理就结束、验过再报完成）；两条结束调用写好参数，她不用回忆格式。措辞照搬旧版（`26` 第六节定了照搬）。施工 WK-2（2026-11-17 项目主人定）：「when their reports wake you」改「when their reports come in」，不说醒；o200k 数整份文件改前改后都是 186，token 一格照旧
+- 指纹：`86b2de22`
 
 ```text
 <goal_round>
 Your standing objective, {set_by}. These rounds start on their own while the session is idle; the objective may be unrelated to the messages above.
 Objective: {objective}  ·  {round}
 
-Make one concrete step of progress now. Never spend a round only reporting that you are waiting — end the goal instead. If you dispatched subagents, just end the round: the next one starts when their reports wake you. Ending your reply without calling tools or goal just starts another round, so once the objective is verifiably done, state the outcome AND call complete. Both calls below are complete as written; do not read the goal or load tools first.
+Make one concrete step of progress now. Never spend a round only reporting that you are waiting — end the goal instead. If you dispatched subagents, just end the round: the next one starts when their reports come in. Ending your reply without calling tools or goal just starts another round, so once the objective is verifiably done, state the outcome AND call complete. Both calls below are complete as written; do not read the goal or load tools first.
 · done, verified against the workspace rather than earlier rounds' claims →
   goal {"action":"complete"}
 · blocked, incl. needing an answer from the user →
