@@ -224,3 +224,63 @@ async fn the_life_row_is_listed_with_its_persona() {
     let next = Timestamp::from_unix_millis(START + GAP).expect("在范围里");
     assert_eq!(row["next"], json!(next), "{row}");
 }
+
+/// 等到一条 `schedules.changed`，它的那一项带不带 `busy` 是 `busy`；别的推送跳过。
+async fn changed(watcher: &mut Client, busy: bool) -> Value {
+    loop {
+        let message = watcher
+            .next_within(Duration::from_secs(60))
+            .await
+            .expect("等得到推送");
+        if message["method"] == "schedules.changed"
+            && (message["params"]["entry"]["busy"] == true) == busy
+        {
+            return message["params"].clone();
+        }
+    }
+}
+
+/// 定时表里人生那一行写得出这一轮在不在跑（施工 LF-15，头的人生卡照它写「这一轮正在跑」）：她停在工具上时列表里那一行带
+/// `busy: true`、推了一次带它的；这一轮结束以后不带、又推一次。会话列表那一项不拿推演方法当预览。
+#[tokio::test]
+async fn the_life_row_says_when_a_round_is_running() {
+    let home = Home::new();
+    let gate = Arc::new(Barrier::new(2));
+    let script = Script::new([
+        Play::Says("醒了。"),
+        Play::calls(&[("look", "{}")]),
+        Play::Says("聊完了。"),
+    ]);
+    let hand = Hand::at(START);
+    let (core, mut client, session) = living(&home, &script, &hand, tools(&gate)).await;
+    let row = |listed: &Value| listed["result"]["schedules"][0].clone();
+    let listed = client.call("q1", "schedule.list", json!({})).await;
+    assert!(row(&listed).get("busy").is_none(), "她睡下了：{listed}");
+    let sessions = client.call("q0", "session.list", json!({})).await;
+    let item = sessions["result"]["sessions"]
+        .as_array()
+        .and_then(|all| all.iter().find(|one| one["session"] == json!(session)))
+        .cloned()
+        .unwrap_or_else(|| panic!("列得出：{sessions}"));
+    assert!(item.get("preview").is_none(), "不拿推演方法当预览：{item}");
+
+    let mut watcher = Client::connect(Arc::clone(&core));
+    watcher.hello().await;
+    watcher
+        .call("s", "subscribe", json!({"stream": "schedules"}))
+        .await;
+    client.say("s1", &session, "在吗").await;
+    until("她停在工具上", || script.requests().len() == 2).await;
+    let on = changed(&mut watcher, true).await;
+    assert_eq!(on["entry"]["loop"], "life", "{on}");
+    let listed = client.call("q2", "schedule.list", json!({})).await;
+    assert_eq!(row(&listed)["busy"], true, "这一轮正在跑：{listed}");
+
+    gate.wait().await;
+    home.until_turns(&session, 2).await;
+    asleep(&mut client, &session).await;
+    let off = changed(&mut watcher, false).await;
+    assert!(off["entry"].get("busy").is_none(), "{off}");
+    let listed = client.call("q3", "schedule.list", json!({})).await;
+    assert!(row(&listed).get("busy").is_none(), "这一轮结束了：{listed}");
+}

@@ -85,3 +85,26 @@ fn a_caught_up_row_writes_its_life_back() {
     assert!(index.put(&listed, Some(&was)).unwrap());
     assert_eq!(row(&index).unwrap(), listed, "补上的几格都写回去了");
 }
+
+/// 人生循环交进来的那段话（施工 LF-15）不当第一句话：它的正文是推演方法，人生会话刚开时列表上那一行原来是「Live your own
+/// life here…」。循环交进来的（`/loop` 的那句是人写的）照旧算；人后来在人生会话里说的第一句照旧算。
+#[test]
+fn a_life_wake_is_not_the_preview() {
+    let wake = |seq: u64, kind: &str| {
+        event(&format!(
+            r#"{{"seq":{seq},"at":"2026-09-25T09:00:00.000Z","kind":"message.user","by":{{"kind":"schedule","schedule":"t1","loop":"{kind}"}},"cause":"c{seq}","body":{{"blocks":[{{"type":"text","text":"Live your own life here, one moment at a time."}}]}}}}"#
+        ))
+    };
+    let mut row = Row::new(id(), &created()).unwrap();
+    row.see(&wake(2, "life"));
+    assert_eq!(row.preview, "", "人生循环交进来的不算");
+    row.see(&said(3, r#"[{"type":"text","text":"在吗"}]"#));
+    assert_eq!(row.preview, "在吗", "人说的第一句照旧算");
+
+    let mut row = Row::new(id(), &created()).unwrap();
+    row.see(&wake(2, "dynamic"));
+    assert_eq!(
+        row.preview, "Live your own life here, one moment at a time.",
+        "循环交进来的照旧算"
+    );
+}

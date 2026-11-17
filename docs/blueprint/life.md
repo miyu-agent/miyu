@@ -144,7 +144,7 @@
 
 人生就是这个会话的循环（项目主人 2026-11-17 定，本机验收第 23 条）：看得见、能停，不能随手结束。和 `/loop` 开的循环用同一张表、同一件 `schedule_next`，以前差在三处，这一步改掉：
 
-1. **看得见**：人生那一行在 `schedule.list`、`schedules` 流里照常列，带 `loop: "life"` 和 `persona`（`schedules.md` 第五节第 8 条）；头在循环图标的位置画下次几点醒。改、删照旧只有 `life.*`。
+1. **看得见**：人生那一行在 `schedule.list`、`schedules` 流里照常列，带 `loop: "life"`、`persona`，这一轮正在跑的再带 `busy: true`（施工 LF-15：头的人生卡照它写「这一轮正在跑」还是「下次继续几点」）（`schedules.md` 第五节第 8 条）；头在循环图标的位置画下次几点醒。改、删照旧只有 `life.*`。
 2. **`/loop` 不另开一行**（`commands/life/here.rs`，照会话认：没结束的人生会话，不经人格找）：
 
    | 打的 | 做什么 | 回执（中文） |
@@ -221,6 +221,6 @@
 | `crates/miyu-endpoint/tests/life_change_more.rs`（施工 LF-11） | 后天第 1、5 条：同一个人格另开的会话常驻那一块里有、别的人格没有；`life.kill`、她自己 `end_life` 以后清掉、别的会话没有，`life.new` 从零条开始 |
 | `crates/miyu-endpoint/tests/life_command.rs`（施工 LF-5 下） | `/life`：没有的只回说明、不开、不带 `session`，结束了的同没有；在跑的说下次几点醒、停着的说停着，带它；`new` 开出来马上醒，再 `new` 旧的人记结束、新的是另一个会话、回应带新的；`pause` 到点不醒、`resume` 接着醒，没有的两个都回没有；`kill` 结束、封存，没有的回没有；在人生会话自己里面看、结束、再开都管用；场所会话、认不出的参数各回各的、什么都不动；英文、日文回执，命令目录里有它和几种写法 |
 | `crates/miyu-endpoint/tests/life_command_bare.rs`（施工 LF-12） | 不带人格的会话里的 `/life`：只有一个人格有人生会话的，光打回它的状态、写上人格的名字、带 `session` 和 `persona`，`pause`、`resume`、`kill` 照它办，结束了的算没有；带人格的会话里回执照旧、回应也带 `persona`；一个都没有的回说明、`new` 不开、停续结束回没有；不止一个的照编号列出来、四种打法都不动；光打的带 `lives`（一条的、几条的照编号、带人格的会话里自己的排最前，停续结束不带，一条都没有的不写），`life.list` 回同一份；英文、日文的回执 |
-| `crates/miyu-endpoint/tests/life_loop.rs`（施工 LF-13） | 人生会话里：`/loop` 光打回状态，带话的、带间隔的回不收的那一句，表里只有人生那一行、她没被多叫醒、留言没被换；`/loop off`、`clear`、`stop` 暂停人生、到点不醒；`/stop` 打断这一轮并暂停人生、没结束没封存；到点时她正在跑一轮的等它结束再醒；`schedule.list` 列得出人生那一行、带 `persona` |
+| `crates/miyu-endpoint/tests/life_loop.rs`（施工 LF-13） | 人生会话里：`/loop` 光打回状态，带话的、带间隔的回不收的那一句，表里只有人生那一行、她没被多叫醒、留言没被换；`/loop off`、`clear`、`stop` 暂停人生、到点不醒；`/stop` 打断这一轮并暂停人生、没结束没封存；到点时她正在跑一轮的等它结束再醒；`schedule.list` 列得出人生那一行、带 `persona`；她停在工具上时那一行带 `busy: true`、推了一次，这一轮结束以后不带、又推一次；会话列表那一项不拿推演方法当预览（施工 LF-15） |
 | `crates/miyu-endpoint/tests/life_rounds.rs`（施工 LF-14） | 推演轮数：开出来 1、到点再醒 2，`life.status`、`life.list`、`schedule.list` 都带，停着不加、续上那一次 3。结束了、还没看过：她自己结束的通知带人格的名字、`ended_unseen` 列它、`lives` 里没有了，另一个头 `session.viewing` 清掉并推 `life.seen`；主人结束的、她结束时有头开着的不记；`life.seen` 清掉、再调照回、编号写法不对的 `bad_params`；`session.delete` 清掉 |
 | `crates/miyu-store/src/schedules/lived/tests.rs`（施工 LF-14） | 轮数一次加一、重开读得回、删那一行跟着删；没看过的照结束的先后列、同一个会话再记不重复、清只清那一个；以前建的库没有这两张表的开的时候补上 |

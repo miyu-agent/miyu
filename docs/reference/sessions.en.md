@@ -118,7 +118,7 @@ Sending the same `id` again returns the session created the first time.
 | `parent` | A child session's parent; `null` for main sessions |
 | `title` | Title; omitted when there is none |
 | `named` | `true`: a person gave the title |
-| `preview` | When there's no title: the first line of the first message, at most 50 characters |
+| `preview` | When there's no title: the first line of the first message, at most 50 characters. In a life session the text the life loop delivers (the life method) does not count as the first message: until a life session has a title or someone has spoken in it, this field is absent and the head shows the persona's name |
 | `pinned` | `true`: pinned |
 | `busy` | `true`: a turn is running |
 | `viewed` | `true`: at least one head has it open ([`session.viewing`](#sessionviewing)); that head shows its background notices |

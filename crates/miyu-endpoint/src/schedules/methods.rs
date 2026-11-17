@@ -157,6 +157,10 @@ fn shown(core: &Core, schedule: &Schedule) -> Value {
         if let Some(persona) = core.schedules().persona_of(session) {
             entry["persona"] = json!(persona);
         }
+        // 这一轮正在跑（施工 LF-15，`round.rs`）：在跑的才写。
+        if core.schedules().in_round(session) {
+            entry["busy"] = json!(true);
+        }
         // 推演到第几轮（施工 LF-14）：给头的数据里有，界面上不写。读不了的不带。
         if let Ok(rounds) = core.schedules().rounds(&schedule.id) {
             entry["rounds"] = json!(rounds);

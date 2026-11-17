@@ -21,6 +21,7 @@ mod next;
 pub(crate) mod notices;
 pub(crate) mod port;
 mod ran;
+mod round;
 mod run;
 mod update;
 
@@ -42,6 +43,7 @@ pub(crate) use doing::{line as doing_line, shown as doing_shown};
 pub use miyu_store::schedules::Doing;
 pub use miyu_store::schedules::{Creator, Last, Loop, Schedule, Target, When};
 pub use next::{MIN_EVERY, parse as parse_cron};
+pub(crate) use round::follow as following;
 
 /// 运行日志的来源。
 const TARGET: &str = "miyu::endpoint";

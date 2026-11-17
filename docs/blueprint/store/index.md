@@ -40,7 +40,7 @@
 | `segment` | 照到哪一段：这一段第一条的序号，就是段的名字 | 写日志的一方、读日志的一方交回的位置 |
 | `bytes` | 这一段照到第几个字节：一整行的末尾，不含后面没写完的半行 | 同上 |
 | `next` | 下一条该是几号 | 同上 |
-| `preview` | 第一句话的第一行（施工 9-5）：空的是还没人说过话、第一句没有字 | 第一条 `message.user` 的头一块文字，跳过开头的空行、去掉前后空白，最多 50 个字（按 Unicode 的字数）；后来的话盖不过它 |
+| `preview` | 第一句话的第一行（施工 9-5）：空的是还没人说过话、第一句没有字 | 第一条 `message.user` 的头一块文字，跳过开头的空行、去掉前后空白，最多 50 个字（按 Unicode 的字数）；后来的话盖不过它。人生循环交进来的那一条（`by` 是定时表、`loop` 是 `life`）不算（施工 LF-15：它的正文是推演方法，算的话人生会话刚开时列表上那一行是「Live your own life here…」） |
 | `venue` | 场所（施工 O-3）：本机的是 `local` | `session.created` 的 `venue`。找回场所会话（`venues.md`）、列会话时跳过场所会话照它 |
 | `persona` | 人格（施工 P-1 下），可以是空的 | `session.created` 的 `persona`；以前的日志没有的是空的 |
 | `preset` | 预设（施工 P-2 上），可以是空的 | `session.created` 的 `preset`；以前的日志没有的是空的 |
@@ -55,7 +55,7 @@
 | `last_spoken` | 人最后一次发话的时刻，毫秒（施工 SX-1，2026-11-16 项目主人定：头的会话列表照它排，只切进去不挪，人亲手发了一句话才挪到顶上）；空的是还没人说过话 | 最后一条 `by` 是人（`By::is_person`：主人、通讯平台上的人）的 `message.user` 的 `at`：开一轮的、回合中途插的、场所里旁听的都算，撤掉的回合里说的也算；定时任务、循环、人生自己醒、长期目标的续轮、回报叫醒、别的会话发来的那几条 `by` 不是人，不算，只动 `last_active`。场所会话的就是群里、私聊里的人最后说话的时刻 |
 
 - 忙不忙不进索引：列会话时从会话表的内存里拿（`protocol.md` 的 `session.list` 第 5 条）。
-- 结构的版本记在 SQLite 的 `user_version` 里，现在是 16（施工 9-5 多了 `preview`、O-3 多了 `venue`、P-1 下多了 `persona`、P-2 上多了 `preset`、3-8 八补多了 `named`、H-2 多了 `project`、9-5 补多了 `tokens`、9-5 再补多了 `context`、`context_model`、D-1 下多了 `dream`、8-33 四补多了 `origin`、A-F 补多了 `forked`、DR-1 多了 `dream_result`、SU-6 上去掉 `owner`、LF-5 中多了 `life`、SX-1 多了 `last_spoken`；老的照版本不对删掉重建）。结构一变就加一；对不上的删掉重建，不写迁移（`07-存储.md` 第六节）。
+- 结构的版本记在 SQLite 的 `user_version` 里，现在是 17（施工 LF-15 列没变、`preview` 的算法变了，以前算出来的要重算；施工 9-5 多了 `preview`、O-3 多了 `venue`、P-1 下多了 `persona`、P-2 上多了 `preset`、3-8 八补多了 `named`、H-2 多了 `project`、9-5 补多了 `tokens`、9-5 再补多了 `context`、`context_model`、D-1 下多了 `dream`、8-33 四补多了 `origin`、A-F 补多了 `forked`、DR-1 多了 `dream_result`、SU-6 上去掉 `owner`、LF-5 中多了 `life`、SX-1 多了 `last_spoken`；老的照版本不对删掉重建）。结构一变就加一；对不上的删掉重建，不写迁移（`07-存储.md` 第六节）。
 - 日志模式是 WAL，`synchronous` 是 `NORMAL`：提交时不同步，断电最多丢最后几次更新，库不会坏。丢了的那几次，照到的位置落在后面，列会话照日志补（下面第 3 条）。闲下来以后写前日志合回主库、截短，`journal_size_limit` 是 0（施工 V-28，`store.md`「怎么走」第 14 条）。
 
 ### 怎么走

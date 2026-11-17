@@ -26,6 +26,7 @@
 | `paused` | 停着 |
 | `loop` | 循环才有：`fixed` 固定间隔、`dynamic` 她自己定节奏、`life` 人生循环（见上） |
 | `persona` | 人生循环那一行才有：它是哪个人格的人生（人格的编号）；核心刚起来、还没认出来的不带 |
+| `busy` | 人生循环那一行才有：这一轮正在跑的写 `true`，别的不写；变了推 `schedules.changed` |
 | `rounds` | 人生循环那一行才有：推演到第几轮（每次到点开始的算一轮）。只是记着，头不显示 |
 | `next` | 下一次的时刻；停着的、她自己定节奏还没定的没有 |
 | `last` | 上一次：`{"at", "result", "session"?}`，`result` 是 `ran`、`queued`（会话正在跑一轮，排在后面）、`sent`（推给了建它的扩展）或 `skipped:<原因>`（`session_gone` 会话没了、任务跟着停了，`preset_off` 她建的而会话的预设关了它，`not_opened` 新会话开不成，`package_unavailable` 建它的扩展没在跑、拉不起来） |

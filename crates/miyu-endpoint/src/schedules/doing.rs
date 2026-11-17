@@ -9,7 +9,7 @@
 //! - 人生会话是哪个人格的：核心起来时在后台只查表里人生那几行指着的会话（[`boot`]，不扫全部会话），`life.start` 开出来时记
 //!   一次。人生会话中途换了人格的，下一次核心起来才认得出（蓝图记的已知）。
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, OnceLock, PoisonError, RwLock};
 
 use miyu_kernel::id::SessionId;
@@ -38,6 +38,8 @@ pub(crate) struct Lives {
 struct Now {
     rows: BTreeMap<String, Lived>,
     names: BTreeMap<SessionId, String>,
+    /// 这一轮正在跑的人生会话（施工 LF-15，`round.rs`）。
+    rounds: BTreeSet<SessionId>,
 }
 
 /// 人生那一行这一刻的样子。
@@ -54,6 +56,31 @@ impl Lives {
 
     fn write(&self) -> std::sync::RwLockWriteGuard<'_, Now> {
         self.now.write().unwrap_or_else(PoisonError::into_inner)
+    }
+}
+
+impl Schedules {
+    /// 人生会话 `session` 这一轮正在跑（`round.rs` 的 `follow` 记的，施工 LF-15）。
+    pub(crate) fn in_round(&self, session: &SessionId) -> bool {
+        self.lives.read().rounds.contains(session)
+    }
+
+    /// 跑在会话 `session` 上的人生那一行的编号：照内存里那一份，没有的不是人生会话。
+    pub(super) fn life_row(&self, session: &SessionId) -> Option<String> {
+        let now = self.lives.read();
+        now.rows
+            .iter()
+            .find(|(_, lived)| lived.session == *session)
+            .map(|(id, _)| id.clone())
+    }
+
+    /// 记下人生会话 `session` 这一刻忙不忙：和记着的不一样的交回真。
+    pub(super) fn round(&self, session: &SessionId, busy: bool) -> bool {
+        let mut now = self.lives.write();
+        match busy {
+            true => now.rounds.insert(session.clone()),
+            false => now.rounds.remove(session),
+        }
     }
 }
 

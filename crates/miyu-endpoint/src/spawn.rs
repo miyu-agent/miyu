@@ -48,6 +48,8 @@ impl SessionPort for Table {
         if let Ok(core) = self.core() {
             // 忙不忙变了也走这里：等这个会话空下来的循环再挑一遍（施工 LO-2）。
             core.schedules().session_changed(&session);
+            // 人生会话这一轮在不在跑（施工 LF-15）：定时表里那一行跟着写、跟着推。
+            crate::schedules::following(&core, session.clone());
             core.listing.changed(&core, session);
         }
     }

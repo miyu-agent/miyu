@@ -1539,6 +1539,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sLF13"><span class="n">LF-13</span>人生就是这个会话的循环<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sLF14"><span class="n">LF-14</span>推演轮数；结束了、还没看过<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sWK2"><span class="n">WK-2</span>不说醒、睡，说继续、下一轮<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sLF15"><span class="n">LF-15</span>人生会话的名字；这一轮在不在跑<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sVW1"><span class="n">VW-1</span>主人只读地看场所会话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT1"><span class="n">HT-1</span>内核认得供应商侧工具<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sHT3"><span class="n">HT-3</span>供应商侧工具画成工具步骤<span class="st">✓</span></a></li>
@@ -59656,6 +59657,58 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/WK-2-换掉醒来的说法.md</code>；登记簿 <code>26-提示词.md</code>；蓝图 <code>life.md</code>、<code>schedules.md</code>、<code>providers.md</code>、<code>policy.md</code>、<code>prompts.md</code>；协议参考、手册中英各一份。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sLF15" aria-labelledby="h-sLF15">
+  <div class="sheet-head"><h2 id="h-sLF15"><span class="no">LF-15</span>人生会话的名字；这一轮在不在跑</h2><span class="pill done">做完</span></div>
+  <p class="purpose">人生会话刚开时，列表上它的名字是那段英文推演方法；人生卡也写不准她这会儿是正在跑一轮还是在等下一轮。这一步两处都补上。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-store · index/row.rs　miyu-endpoint · schedules/round.rs　schedules/methods.rs</span><span class="dir-note">LF-15</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>人生循环交进来的那段话不算会话的「第一句话」，列表上不再拿推演方法当名字</li>
+              <li>会话索引的版本升一级，以前算好的照日志重算</li>
+              <li>定时表里人生那一行在跑的多带 <code>busy: true</code>，忙不忙变了推一次</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">核心不写占位的标题；空着由头照人格的名字写</span><span class="rl">施工单定</span></div>
+          <div class="tile new"><span class="nm">结束人生的工具说明不改：她不肯随手调是有意的</span><span class="rl">项目主人 11-14 定，实测复核</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LF-15</dd></div>
+        <div><dt>名称</dt><dd>人生会话的名字；这一轮在不在跑</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-18</dd></div>
+        <div><dt>提交</dt><dd class="mono">LF-15</dd></div>
+        <div><dt>验收</dt><dd>两条测试改前红；门禁；沙箱里真模型走了一遍</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>人生循环交进来的不算第一句；<code>/loop</code> 的、人说的照旧算</span></li>
+        <li><span class="ok">✓</span><span>她停在工具上时那一行带 <code>busy</code>、推了一次；结束以后不带、又推一次</span></li>
+        <li><span class="ok">✓</span><span>真模型：刚开时列表那一项没有预览，一轮以后是 AI 起的标题</span></li>
+        <li><span class="ok">✓</span><span>以主人的口气直接请她结束，她当轮就调了结束人生的工具</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/LF-15-人生会话的标题和这一轮在不在跑.md</code>；蓝图 <code>store/index.md</code>、<code>schedules.md</code>、<code>life.md</code>；协议参考 <code>sessions.md</code>、<code>schedules.md</code> 中英各一份。</li>
       </ul>
     </div>
   </div>

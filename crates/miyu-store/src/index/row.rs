@@ -7,7 +7,7 @@ use rusqlite::Row as SqlRow;
 use miyu_kernel::block::Block;
 use miyu_kernel::event::{Body, Dream, DreamEnded, Event, MessageUser};
 use miyu_kernel::id::SessionId;
-use miyu_kernel::origin::By;
+use miyu_kernel::origin::{By, ScheduleLoop};
 use miyu_kernel::time::Timestamp;
 
 use super::IndexError;
@@ -200,8 +200,11 @@ impl Row {
         {
             self.preview = first_line(&set.text, PREVIEW_CHARS);
         }
+        // 人生循环交进来的那段话不算（施工 LF-15）：它的正文是推演方法，不是谁说的第一句；算的话人生会话刚开、还没起标题
+        // 时，列表上那一行是「Live your own life here…」。
         if let Body::MessageUser(message) = &event.body
             && self.preview.is_empty()
+            && !life_round(event)
         {
             self.preview = said(message, PREVIEW_CHARS);
         }
@@ -387,6 +390,11 @@ pub fn said(message: &MessageUser, most: usize) -> String {
             })
             .unwrap_or_default(),
     }
+}
+
+/// 人生循环交进会话的那一条（`by` 是定时表、`loop` 是 `life`）。
+fn life_round(event: &Event) -> bool {
+    matches!(&event.by, By::Schedule(schedule) if schedule.looping == Some(ScheduleLoop::Life))
 }
 
 /// `text` 第一行不是空白的，截到 `most` 个字；都是空白的是空的。
