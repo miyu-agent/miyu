@@ -102,7 +102,7 @@ pacman 的写法当别名（设计 `31-软件包.md` 第一节，定了的 A）�
 ```text
 base-memory   人格记忆
 base-mermaid  画 mermaid 图（已卸载）
-base-net      联网搜索
+base-net      网络搜索
 ```
 
 `miyu pkg info im`（没装的，施工 IN-2，照设计 49 第一节；「提供」照索引里有的说）：

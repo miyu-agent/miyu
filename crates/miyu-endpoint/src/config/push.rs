@@ -112,6 +112,7 @@ impl Changed {
 pub(super) fn keys(config: &Config, changed: &[String]) -> Map<String, Value> {
     let shown = |_: Layer| Some(config.file().shown.clone());
     let file = config.file();
+    let values = config.resolved().values();
     let mut listed = Map::new();
     for key in changed {
         let Some(item) = miyu_config::key::item_of(config.items(), key) else {
@@ -119,9 +120,23 @@ pub(super) fn keys(config: &Config, changed: &[String]) -> Map<String, Value> {
         };
         let mut entry = Map::new();
         entry.insert("applies".to_string(), json!(item.applies.as_str()));
+        // 删掉以后借得到的（施工 NS-1）：最终值是 `null`，来源写借来的。
+        if let Some(origin) = config
+            .resolved()
+            .get(key)
+            .is_none()
+            .then(|| super::inherited::origin(key, None, &values))
+            .flatten()
+        {
+            entry.insert("effective".to_string(), Value::Null);
+            entry.insert("origin".to_string(), origin);
+        }
         if let Some((value, origin)) = config.resolved().get(key) {
             entry.insert("effective".to_string(), value.json());
-            entry.insert("origin".to_string(), wire::origin(origin, &shown));
+            entry.insert(
+                "origin".to_string(),
+                wire::origin_of(key, origin, &shown, &values),
+            );
         }
         if let Some(written) = file.parsed.entries.get(key).filter(|entry| entry.counts) {
             entry.insert("value".to_string(), written.value.json());

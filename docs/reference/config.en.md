@@ -46,6 +46,7 @@ Above the three layers sit the environment variables the core was started with, 
 | `layers` | Where it may be written: `system`, `project` |
 | `applies` | When it takes effect: `now`, `next_turn`, `new_session`, `restart`, `head_start` (the head's next start) |
 | `name`, `description` | Display name and description, in the connection's language |
+| `name_en` | The English name: only when the connection's language isn't English, for heads to search with alongside `name` (so typing web in a Chinese UI finds 网络搜索); absent when there is no English one |
 | `page`, `group`, `common`, `control` | Where it goes on the settings screen, whether it's common, which control: `select`, `toggle`, `number`, `text`, `list`, `combo`, `textarea` (a box of several lines), `slider` |
 | `step` | For a `slider`: how much one step is (a whole number for integers) |
 | `suggestions` | `combo` controls: suggested values |
@@ -54,7 +55,7 @@ Above the three layers sit the environment variables the core was started with, 
 | `section` | A package setting declared in a group: which section of that package it is in (the group id, see `sections` under `groups` below); omitted outside groups |
 | `choices_from` | A package's text setting whose choices the package gives at run time: `{"package", "method"}`, which method of which package; omitted when the manifest doesn't write it, see below |
 
-A group: `id`, `name` (in the connection's language), `page`; a group that has a description also has `description` (a sentence or a few, in the connection's language, shown under the group name), and one without it omits the field. When a package groups its settings (its manifest writes `[settings.<group>.<name>]`), that package's group also has `sections`: one `{"id", "name", "shown_when"?}` per section, in manifest order. `name` is in the connection's language, or the group id when the manifest gives no name. `shown_when` is `{"key": "<full key>", "is": ["<value>", …]}`: draw the section only while that setting's current value is one of `is`, which is always an array; without it, always draw it. That setting is an option, or a text with `choices_from` (the strings in `is` need not be among its choices); compare values only. A section that isn't drawn is only not drawn: its settings are still written, read and checked as usual. Packages without groups have no `sections`.
+A group: `id`, `name` (in the connection's language), `name_en` (the English name, only when the connection isn't English), `page`; a group that has a description also has `description` (a sentence or a few, in the connection's language, shown under the group name), and one without it omits the field. When a package groups its settings (its manifest writes `[settings.<group>.<name>]`), that package's group also has `sections`: one `{"id", "name", "shown_when"?}` per section, in manifest order. `name` is in the connection's language, or the group id when the manifest gives no name. `shown_when` is `{"key": "<full key>", "is": ["<value>", …]}`: draw the section only while that setting's current value is one of `is`, which is always an array; without it, always draw it. That setting is an option, or a text with `choices_from` (the strings in `is` need not be among its choices); compare values only. A section that isn't drawn is only not drawn: its settings are still written, read and checked as usual. Packages without groups have no `sections`.
 
 A setting with `choices_from`: its type is still `text`. Draw it as a dropdown and get the choices with `package.call` (params `{"package", "method"}` exactly as given here, no `params`); the package answers `{"choices": [{"value", "name"?, "description"?}]}`: `value` is the text stored in the config, `name` falls back to `value`, `description` is drawn dimmed below. When the call fails (`program_not_running`, `unregistered`, `method_failed`, `method_timeout`), or `choices` is empty or not in this shape, fall back to a text box; a stored value that isn't in the list is still shown. The core never checks the value against the list: what is written is what is stored.
 
@@ -85,6 +86,8 @@ A setting with `choices_from`: its type is still `text`. Draw it as a dropdown a
 ```
 
 A package's "Enabled": `{"origin": {"layer": "package"}, "value": true}`; origin `package` means it lives in no config layer. With `all`, `layers` is `[]`.
+
+Borrowed: `{"origin": {"layer": "inherited", "from": "providers.deepseek.key"}, "value": null}`: no layer sets it and the value of `from` is used (show it as "inherited"). Only `net.search.deepseek.key` does this today: when unset it borrows the key of your official DeepSeek model provider (base URL unset or `api.deepseek.com`), and `from` is that provider's `providers.<id>.key`; a relay is not borrowed from and the origin stays `default`. The value never carries the key. `config.set` replies and `config.changed` pushes write it the same way; changing the provider's key pushes nothing for this item, so read it again when a `config.changed` touches `providers.`.
 
 **Errors**: `unknown_config_key`.
 

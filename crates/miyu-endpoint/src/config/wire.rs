@@ -7,6 +7,18 @@ use miyu_config::Layer;
 use miyu_config::merge::Origin;
 use miyu_config::problem::{Problem, Told, Using};
 
+/// 配置项 `key` 的来源：出厂的、借得到供应商的 key 的写「已继承」（施工 NS-1，[`super::inherited`]），别的同 [`origin`]。
+/// `values` 是这时的最终值。
+pub(super) fn origin_of(
+    key: &str,
+    origin: &Origin,
+    shown: &dyn Fn(Layer) -> Option<String>,
+    values: &miyu_config::Values,
+) -> Value {
+    super::inherited::origin(key, Some(origin), values)
+        .unwrap_or_else(|| self::origin(origin, shown))
+}
+
 /// 来源：`{"file","layer","line"}`、`{"layer":"env","name"}`、`{"layer":"default"}`。文件照 `shown` 找这一层的写法。
 pub(super) fn origin(origin: &Origin, shown: &dyn Fn(Layer) -> Option<String>) -> Value {
     match origin {

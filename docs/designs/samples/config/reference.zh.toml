@@ -148,8 +148,13 @@ max = "5m"
 
 [net.search]
 # 联网服务：AI 搜网页、抓网页用哪一家。自动只用免费额度：搜索照 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；自己抓不下来的网页请 Exa、Firecrawl、Parallel 代抓。这几家都在国外，搜索词和网址会发给它们。选了一家的先用它（选了 DeepSeek 的，抓网页也先交它），它用不了再照自动的试。
-# 能写：auto、deepseek、tavily、brave 或 searxng。只能写在系统配置里。下一轮生效。
+# 能写：auto、exa、anysearch、deepseek、tavily、brave 或 searxng。只能写在系统配置里。下一轮生效。
 source = "auto"
+
+[net.search.anysearch]
+# AnySearch：配了就用你自己的 AnySearch 额度，不配照免费额度（按 IP 每天的额度）。
+# 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置里。下一轮生效。
+# key =
 
 [net.search.brave]
 # Brave Search：联网服务选了 Brave 时要它。
@@ -157,7 +162,7 @@ source = "auto"
 # key =
 
 [net.search.deepseek]
-# DeepSeek：联网服务选了 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。搜索、代抓按次收费。
+# DeepSeek：联网服务选了 DeepSeek 时要它；没填的借用模型那边官方 DeepSeek 供应商的 key（设置里显示「已继承」）。搜索、代抓按次收费。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置里。下一轮生效。
 # key =
 

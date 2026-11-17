@@ -262,9 +262,10 @@ miyu_config::settings! {
 | `show.system_hint` | 开关 | `true` | 系统 | 不能写 | `new_session` | D-5 补二（`tools/show.md`，项目主人 2026-10-24 定）：system 里带不带 show 的那一句；工具面上有 `show` 的才带。造会话时读一次钉进快照（`no_show_hint`），会话中途改了 system 不变。核心替包 `base-show` 声明（`OWNED`，施工 BS-1 上中起；原来是基础系统；施工 PN-3 起包编号和键分开，键照旧是 `show.*`），设置页在「软件包」那一页、展示那一组（组的编号是包编号 `base-show`） |
 | `skills.external.enabled` | 开关 | `false` | Miyu 的配置 | 不能写 | `next_turn` | PT-2 外（`skills.md`「定了的」第 4 条，2026-10-29 项目主人定）：读不读别的目录里的技能。关着的一个都不碰。「高级」页的「技能」一组；网页另画在技能页顶上 |
 | `skills.external.dirs` | 文字的列表，一个最多 4096 个字符：`~`、`~/…` 或绝对路径 | `["~/.agents/skills"]`（静态列表的出厂值：`Value::List` 借代码里写的切片，同 `Value::Text`，PT-2 外） | Miyu 的配置 | 不能写 | `next_turn` | PT-2 外：照先后读，同名的先列的赢。相对路径 `config.set`、`miyu check`、`config.check` 都报 `bad_format`（下面「问题」那张表）；读不到的静默跳过 |
-| `net.search.source` | 选项 `auto`、`deepseek`、`tavily`、`brave`、`searxng`（施工 NF-1 起只剩自动和要 key、要地址的几家；扩展声明的来源接在后面，N-5） | `auto`，自动（免费额度）：照出厂的顺序，只有免费的几家 | 系统 | 不能写 | `next_turn` | N-2 下（设计 36 第三节第 1 条、`tools/web_search.md`），NF-1 改成「联网服务」（项目主人 2026-11-14 定）：选供应商。选了的那一家搜索先用它，能抓页面的（DeepSeek）`web_fetch` 自己抓之前先交它代抓；它用不了（没配 key、限额、余额不足、服务忙、超时、抓回来太短）搜索照自动的顺序兜底，抓网页先自己抓再照自动的名单。自动只用免费的几家，DeepSeek 不进自动的顺序（自动不花钱）。`web_search`、`web_fetch` 照调用带来的这一轮的配置读（`miyu_tool::SettingsPort`）。核心替联网这个内置包声明（`miyu-net` 的 `settings.rs`），包没装的设置页不画；设置页在「软件包」那一页、「联网搜索」那一组 |
+| `net.search.source` | 选项 `auto`、`exa`、`anysearch`、`deepseek`、`tavily`、`brave`、`searxng`（施工 NF-1 起只剩自动和要 key、要地址的几家；施工 NS-1 加上能配 key 的 Exa、AnySearch，没配 key 的照免费额度：项目主人 2026-11-17 定「有免费额度不代表不用它的 key」；扩展声明的来源接在后面，N-5） | `auto`，自动（免费额度）：照出厂的顺序，只有免费的几家 | 系统 | 不能写 | `next_turn` | N-2 下（设计 36 第三节第 1 条、`tools/web_search.md`），NF-1 改成「联网服务」（项目主人 2026-11-14 定）：选供应商。选了的那一家搜索先用它，能抓页面的（DeepSeek）`web_fetch` 自己抓之前先交它代抓；它用不了（没配 key、限额、余额不足、服务忙、超时、抓回来太短）搜索照自动的顺序兜底，抓网页先自己抓再照自动的名单。自动只用免费的几家，DeepSeek 不进自动的顺序（自动不花钱）。`web_search`、`web_fetch` 照调用带来的这一轮的配置读（`miyu_tool::SettingsPort`）。核心替联网这个内置包声明（`miyu-net` 的 `settings.rs`），包没装的设置页不画；设置页在「软件包」那一页、「联网搜索」那一组 |
 | `net.search.exa.key` | 密钥 | 没有：照 Exa 的免费额度 | 系统 | 不能写 | `next_turn` | N-3 上（设计 36 第二节第 1 条）：配了的 Exa 走自己的额度（接在 MCP 地址后面 `exaApiKey`）。下面几项都是「软件包」页「API Key 和地址」组（`net_keys`，终端转来项目主人 2026-10-19 定：和「联网服务」分开画） |
-| `net.search.deepseek.key` | 密钥 | 没有：照用模型那边 DeepSeek 供应商的 key（地址里有 `api.deepseek.com`，或者 `catalog` 是 `deepseek`），也没有的 DeepSeek 不试 | 系统 | 不能写 | `next_turn` | N-3 上；NF-1 起只在联网服务选了 DeepSeek 时用，搜索和代抓都先用它，自动不用（项目主人 2026-11-14 定：自动不花钱）；按次收费 |
+| `net.search.anysearch.key` | 密钥 | 没有：照 AnySearch 的免费额度（按 IP 每天，官方文档 https://www.anysearch.com/docs/auth） | 系统 | 不能写 | `next_turn` | NS-1：配了的 AnySearch 走自己的额度（头里带 `Authorization: Bearer`），自动、选了它都一样 |
+| `net.search.deepseek.key` | 密钥 | 没有：借用模型那边官方 DeepSeek 供应商的 key（认法 `miyu_models::provider_key::serving`：`catalog` 是 `deepseek` 或地址、编号对得上，地址还得是官方的 `api.deepseek.com`，施工 PK-1补），`config.get` 的来源写 `inherited`（施工 NS-1）；也没有的 DeepSeek 不试 | 系统 | 不能写 | `next_turn` | N-3 上；NF-1 起只在联网服务选了 DeepSeek 时用，搜索和代抓都先用它，自动不用（项目主人 2026-11-14 定：自动不花钱）；按次收费 |
 | `net.search.tavily.key` | 密钥 | 没有：Tavily 不试 | 系统 | 不能写 | `next_turn` | N-3 上：只在联网服务选了 Tavily 时用 |
 | `net.search.brave.key` | 密钥 | 没有：Brave 不试 | 系统 | 不能写 | `next_turn` | N-3 上：只在联网服务选了 Brave 时用 |
 | `net.search.searxng.url` | 网址，可以写 `{ env = … }` | 没有：SearXNG 不试 | 系统 | 不能写 | `next_turn` | N-3 上：自己搭的 SearXNG 实例，要开着 JSON 格式；只在联网服务选了 SearXNG 时用 |
@@ -334,7 +335,8 @@ miyu_config::settings! {
 
 | 格 | 是什么 |
 |---|---|
-| `layer` | `default` 默认值、`system` 系统配置、`project` 项目配置、`env` 环境变量（只有带 `env` 的项有） |
+| `layer` | `default` 默认值、`system` 系统配置、`project` 项目配置、`env` 环境变量（只有带 `env` 的项有）、`package` 包的「启用」（施工 UX-1）、`inherited` 借来的（施工 NS-1：哪儿都没写、照别处的值用的，现在只有 `net.search.deepseek.key` 借官方 DeepSeek 供应商的 key，`miyu_models::provider_key::INHERITED` 登记；值照旧是 `null`，不交 key） |
+| `from` | 借的是哪一项，例如 `providers.deepseek.key`，只有 `inherited` 有 |
 | `file` | 哪个文件。数据根里的写成相对数据根的路径。项目配置写成人看的那种路径，家目录下的写成 `~/…`。默认值、环境变量没有 |
 | `line` | 第几行，从 1 数，是这一项的键所在的那一行。默认值、环境变量没有 |
 | `name` | 环境变量的名字，只有 `env` 有 |
@@ -399,7 +401,7 @@ miyu_config::settings! {
 回应：`items` 每一项，照清单登记的先后。`pages`、`groups` 页和组，照第一次出现的先后。例子（`ui.language` 一项，中文）：
 
 ```json
-{"groups":[{"id":"display","name":"显示","page":"general"}],"items":[{"applies":"now","common":true,"control":"select","default":"auto","description":"终端、网页、命令行给你看的字用哪种话。auto 跟着终端或浏览器的语言。","group":"display","key":"ui.language","layers":["system"],"name":"界面语言","options":[{"name":"跟随系统","value":"auto"},{"name":"中文","value":"zh"},{"name":"English","value":"en"},{"name":"日本語","value":"ja"}],"page":"general","type":"option"}],"pages":[{"id":"general","name":"通用"}]}
+{"groups":[{"id":"display","name":"显示","name_en":"Display","page":"general"}],"items":[{"applies":"now","common":true,"control":"select","default":"auto","description":"终端、网页、命令行给你看的字用哪种话。auto 跟着终端或浏览器的语言。","group":"display","key":"ui.language","layers":["system"],"name":"界面语言","name_en":"Interface language","options":[{"name":"跟随系统","value":"auto"},{"name":"中文","value":"zh"},{"name":"English","value":"en"},{"name":"日本語","value":"ja"}],"page":"general","type":"option"}],"pages":[{"id":"general","name":"通用"}]}
 ```
 
 - 每一项的格：`key`、`type`，照类型带 `options`（选项：`value` 和给人看的 `name`，软件包清单里写了说明的另带 `description`（施工 PC-1）；核心查得出的再带 `note`，头接在名字后面暗色写，施工 R-5 再补：`models.embedding` 的 `local` 写内置模型的名字，照核心手里的本机清单的 `id`，本机的那一路用不上的没有，不进给人看的字；`net.search.source` 冷却着的那一家写「冷却到 15:30」（施工 N-2 下：内置包的端口 `Builtins::option_state` 说冷却到什么时候，照连接的语言 `core/config/option-cooling`、核心这台机器的时区拼，只写时、分）；核心查得出用不了的再带 `available: false`，只写 `false`，头照样列着、画成灰的、选不了，为什么用不了的那一句头自己写，施工 R-5 三补：现在只有 `local`，本机的那一路没有时，就是没装内置语义模型的包）、`min`、`max`、`max_chars`、`element`，再是 `default`、`layers`、`tighten`（没有不写）、`env`（没有不写）、`applies`、`name`、`description`、`page`、`group`、`common`、`control`，控件是 `combo` 的再带 `suggestions`（字表里这种语言的建议值，照先后，施工 P-9 补），设置页不画的再带 `hidden: true`（施工 9-1 下：网页的空闲、票据那几项）。包的配置项（页是 `packages`）再带 `package`：归哪个包，就是组的编号（施工 F-6 上，`package-pages.md`）。
@@ -408,6 +410,7 @@ miyu_config::settings! {
 - 选项由包在运行时给（施工 SG-2，2026-11-10 项目主人验收语音助手设置页时提的：麦克风不该让人手填设备名）：清单写了 `choices_from` 的文字项（`packages.md`「配置项」的表）再带 `choices_from`：`{"package": "<包的编号>", "method": "<方法名>"}`，`type` 照旧是 `text`；没写的项不带这一格，回应和原来逐字节一样。头画成下拉，选项调 `package.call {package, method}` 取，包回 `{"choices": [{"value", "name"?, "description"?}]}`；调不到、回空的退回文字框，存着的值不在列表里的照样显示。核心只交出这一格，不调那个方法、不照列表查值（设备拔了不算错）。拼法在 `crates/miyu-endpoint/src/config/choices.rs`，照核心手里装着的包的清单现拼。
 - 写了清单里没有的键：`unknown_config_key`，`data.problems` 里每个不认识的一条：`code` 是 `unknown_key`，`level` 是 `error`（请求写错了，不是文件里的警告），`key`、`message`，有最近的键名的带 `suggest`，没有行列。
 - 名字、说明这种语言里没有的，照英文（`store/resources.md` 第 3 条的退法），英文也没有的名字照键、说明是空的；页、组的名字同样，都没有的照编号。
+- 英文名（施工 NS-1，网页 W-1206 要的：中文界面搜 web 搜不到「网络搜索」）：连接的语言不是英文的，每一项、每一组再带 `name_en`（英文的名字，包的项照清单的英文），头拿它和 `name` 一起搜；英文里也没有的不带；连接是英文的都不带。页不带。
 - 包的「启用」（施工 UX-1，2026-11-17 项目主人定：只留一个开关，`true` 是开）：每个包（施工 UX-1 补：人人有开关，同 `package.list` 的 `enabled`；卸掉了的出厂包也算）各一项 `packages.<编号>.enabled`：`type` 是 `bool`、`control` 是 `toggle`、`applies` 是 `now`，在「软件包」页、这个包那一组（`package` 是它），排在这个包自己的配置项前面，没有别的项的排在最后。名字「启用」/ Enabled / 有効。它不写在配置文件里，不在配置清单里（生成的 Schema、参考文件没有它，配置文件里写了的照不认识的键警告）：值就是这个包真的开没开，`config.set` 改它就是 `package.enable`、`package.disable`。`keys` 写它的照样认；没装的包没有这一项，写了是 `unknown_config_key`。原来的 `packages.<编号>.off`（施工 U23 末上，多用户时「只对你自己关掉」）删了，扩展进程那一面同样认不出它。
 
 **`config.get`**（查询，8-2）：最终值，每个值附上来源。
@@ -1126,8 +1129,13 @@ max = "5m"
 
 [net.search]
 # 联网服务：AI 搜网页、抓网页用哪一家。自动只用免费额度：搜索照 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；自己抓不下来的网页请 Exa、Firecrawl、Parallel 代抓。这几家都在国外，搜索词和网址会发给它们。选了一家的先用它（选了 DeepSeek 的，抓网页也先交它），它用不了再照自动的试。
-# 能写：auto、deepseek、tavily、brave 或 searxng。只能写在系统配置里。下一轮生效。
+# 能写：auto、exa、anysearch、deepseek、tavily、brave 或 searxng。只能写在系统配置里。下一轮生效。
 source = "auto"
+
+[net.search.anysearch]
+# AnySearch：配了就用你自己的 AnySearch 额度，不配照免费额度（按 IP 每天的额度）。
+# 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置里。下一轮生效。
+# key =
 
 [net.search.brave]
 # Brave Search：联网服务选了 Brave 时要它。
@@ -1135,7 +1143,7 @@ source = "auto"
 # key =
 
 [net.search.deepseek]
-# DeepSeek：联网服务选了 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。搜索、代抓按次收费。
+# DeepSeek：联网服务选了 DeepSeek 时要它；没填的借用模型那边官方 DeepSeek 供应商的 key（设置里显示「已继承」）。搜索、代抓按次收费。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置里。下一轮生效。
 # key =
 
@@ -1535,8 +1543,10 @@ currency = "USD"
 | 说明 | AI 搜网页、抓网页用哪一家。自动只用免费额度：搜索照 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；自己抓不下来的网页请 Exa、Firecrawl、Parallel 代抓。这几家都在国外，搜索词和网址会发给它们。选了一家的先用它（选了 DeepSeek 的，抓网页也先交它），它用不了再照自动的试。 | Which service AI uses to search and fetch the web. Auto sticks to free tiers: searches try Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rest any that hit a rate limit, and pages that can't be fetched directly are fetched by Exa, Firecrawl or Parallel. These services are outside China and receive the search terms and addresses. A chosen one is tried first (DeepSeek also fetches pages before AI tries them itself), and Auto takes over when it fails. | AI がウェブ検索とページ取得に使うサービス。自動では無料枠だけを使います。検索は Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。直接取得できないページは Exa、Firecrawl、Parallel に代わりに取得させます。これらは海外のサービスで、検索語と URL が送られます。選んだものを先に使い（DeepSeek はページ取得も先に担当します）、使えなければ自動に切り替えます。 |
 | `net.search.exa.key` 名字（N-3 上） | Exa | Exa | Exa |
 | 说明 | 配了就用你自己的 Exa 额度，不配照免费额度。 | With a key, searches use your own Exa quota; without one, the free quota. | 設定すると自分の Exa の枠を使います。未設定なら無料枠です。 |
+| `net.search.anysearch.key` 名字（NS-1） | AnySearch | AnySearch | AnySearch |
+| 说明 | 配了就用你自己的 AnySearch 额度，不配照免费额度（按 IP 每天的额度）。 | With a key, searches use your own AnySearch quota; without one, the free daily quota per IP. | 設定すると自分の AnySearch の枠を使います。未設定なら IP ごとの1日の無料枠です。 |
 | `net.search.deepseek.key` 名字（N-3 上） | DeepSeek | DeepSeek | DeepSeek |
-| 说明 | 联网服务选了 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。搜索、代抓按次收费。 | Needed when DeepSeek is the web provider; if unset, the key of your DeepSeek model provider is used. Searches and fetched pages are charged per use. | ウェブプロバイダーに DeepSeek を使うときに必要です。未設定ならモデルの DeepSeek プロバイダーのキーを使います。検索とページ取得ごとに課金されます。 |
+| 说明 | 联网服务选了 DeepSeek 时要它；没填的借用模型那边官方 DeepSeek 供应商的 key（设置里显示「已继承」）。搜索、代抓按次收费。 | Needed when DeepSeek is the web provider; if unset, the key of your official DeepSeek model provider is borrowed (shown as inherited). Searches and fetched pages are charged per use. | ウェブプロバイダーに DeepSeek を使うときに必要です。未設定ならモデルの公式 DeepSeek プロバイダーのキーを借ります（「継承」と表示）。検索とページ取得ごとに課金されます。 |
 | `net.search.tavily.key` 名字（N-3 上） | Tavily | Tavily | Tavily |
 | 说明 | 联网服务选了 Tavily 时要它。 | Needed when Tavily is the web provider. | ウェブプロバイダーに Tavily を選んだときに必要です。 |
 | `net.search.brave.key` 名字（N-3 上） | Brave Search | Brave Search | Brave Search |
@@ -1578,7 +1588,7 @@ currency = "USD"
 | 组 `providers`（`models`） | 供应商 | Providers | プロバイダー |
 | 组 `log`（`advanced`） | 运行日志 | Runtime log | 実行ログ |
 | 组 `base-memory`（`packages`，R-6 上；施工 PN-3 起组的编号是包编号，原来是 `memory`，PN-5 起去掉 `miyu-`；包装着的照清单的名字） | 记忆 | Memory | 記憶 |
-| 组 `base-net`（`packages`，施工 N-2 下；施工 PN-3 起是包编号，原来是 `net`，PN-5 起去掉 `miyu-`） | 联网搜索 | Web search | ウェブ検索 |
+| 组 `base-net`（`packages`，施工 N-2 下；施工 PN-3 起是包编号，原来是 `net`，PN-5 起去掉 `miyu-`；施工 NS-1 中文改名，项目主人 2026-11-17 定） | 网络搜索 | Web search | ウェブ検索 |
 | 组 `net_keys`（`packages`，施工 N-2 下） | API Key 和地址 | API keys and addresses | API キーとアドレス |
 
 **命名的规矩**（施工 UX-1，项目主人 2026-11-17 定）：

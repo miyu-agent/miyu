@@ -7,7 +7,7 @@ use miyu_config::package::{Manifest, PackageKind};
 use miyu_store::packages::local::{self, Kind};
 use miyu_store::packages::{Found, Layer, Packages};
 
-use crate::personas::pick;
+use crate::personas::{english, pick};
 
 /// 读成了的几格；没有的不写。
 pub(crate) fn fill(item: &mut Value, id: &str, manifest: &Manifest, language: &str) {
@@ -16,6 +16,10 @@ pub(crate) fn fill(item: &mut Value, id: &str, manifest: &Manifest, language: &s
         item["protocol"] = json!(protocol);
     }
     item["name"] = json!(pick(&manifest.name, language));
+    // 英文名（施工 NS-1）：头拿它一起搜，连接就是英文的不另给。
+    if let Some(name) = english(&manifest.name, language) {
+        item["name_en"] = json!(name);
+    }
     // 归哪几个组（施工 BS-1 下）：头照它把组里的包收在一起。
     if !manifest.groups.is_empty() {
         item["groups"] = json!(manifest.groups);

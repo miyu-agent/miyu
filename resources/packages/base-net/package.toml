@@ -8,7 +8,7 @@ upstream = "https://github.com/miyu-agent/miyu"
 prefix = "net"
 protocol = [1, 1]
 groups = ["research"]
-name = { en = "Web search", zh = "联网搜索", ja = "ウェブ検索" }
+name = { en = "Web search", zh = "网络搜索", ja = "ウェブ検索" }
 
 [features.web-search]
 name = { en = "Web search", zh = "网络搜索", ja = "ウェブ検索" }

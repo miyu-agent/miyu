@@ -24,6 +24,18 @@ use crate::settings::ProviderSettings;
 /// 几家的官方地址：目录里的编号到地址里认的那一段。只放实测过的。
 pub const OFFICIAL: [(&str, &str); 1] = [("deepseek", "api.deepseek.com")];
 
+/// 没写时借模型那边供应商的 key 的配置项（施工 NS-1，项目主人 2026-11-17 定「两处都留，优先用网络搜索里填的；没填、有
+/// 官方的 DeepSeek 供应商的借它，显示为已继承」）：配置项的键到目录里的那一家。联网包照它借（`miyu-net` 的 `settings.rs`），
+/// `config.get` 照它写来源 `inherited`（`miyu-endpoint` 的 `config/inherited.rs`），一处登记两边都认。
+pub const INHERITED: [(&str, &str); 1] = [("net.search.deepseek.key", "deepseek")];
+
+/// 配置项 `key` 没写时借的那一家供应商：编号和 key 的引用（[`serving`]）。不在 [`INHERITED`] 里的、没有能借的没有。只看借得到
+/// 借不到，`key` 自己写没写由调的一方看。
+pub fn inherited(values: &Values, key: &str) -> Option<(String, Reference)> {
+    let (_, catalog) = INHERITED.iter().find(|(item, _)| *item == key)?;
+    serving(values, catalog)
+}
+
 /// 配置 `values` 里算目录里 `catalog` 那一家、写了 key 的第一家供应商（照编号排）：编号和 key 的引用。没有的没有。
 pub fn serving(values: &Values, catalog: &str) -> Option<(String, Reference)> {
     let official = official_host(catalog);

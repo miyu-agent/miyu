@@ -64,10 +64,11 @@ pub(crate) fn rest(
             .unwrap_or_default()
     };
     Some(match kind {
+        // 配了 key 的走自己的额度，没配的照免费额度（施工 NS-1，官方文档 https://www.anysearch.com/docs/auth）。
         Kind::Anysearch => Rest {
             get: false,
             url: url.to_string(),
-            headers: Vec::new(),
+            headers: bearer(),
             // 它的上限是 10 条。
             body: Some(json!({"query": query, "max_results": want.min(10)})),
         },

@@ -1,5 +1,5 @@
-//! 联网服务的选项和出厂的来源对得上（施工 N-2 下，NF-1 改成选供应商）：下拉里能选的是自动和 `search.json` 里要 key、要地址
-//! 的那几家。
+//! 联网服务的选项和出厂的来源对得上（施工 N-2 下，NF-1 改成选供应商）：下拉里能选的是自动和 `search.json` 里能配 key（施工
+//! NS-1）、要 key、要地址的那几家。
 
 use std::path::Path;
 
@@ -24,7 +24,12 @@ fn the_options_are_auto_and_the_sources_that_need_a_key_or_an_address() {
         .as_object()
         .expect("有 sources")
         .iter()
-        .filter(|(_, source)| matches!(source["needs"].as_str(), Some("key" | "address")))
+        .filter(|(_, source)| {
+            matches!(
+                source["needs"].as_str(),
+                Some("key" | "key_optional" | "address")
+            )
+        })
         .map(|(id, _)| id.as_str())
         .collect();
     sources.sort_unstable();
@@ -36,7 +41,7 @@ fn the_options_are_auto_and_the_sources_that_need_a_key_or_an_address() {
     listed.sort_unstable();
     assert_eq!(
         listed, sources,
-        "下拉里是要 key、要地址的几家，免费的几家归自动"
+        "下拉里是能配 key、要 key、要地址的几家，只有免费的几家归自动"
     );
     assert_eq!(options[0], AUTO, "自动排第一，是默认值");
 }

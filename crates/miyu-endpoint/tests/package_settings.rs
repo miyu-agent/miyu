@@ -101,10 +101,9 @@ async fn package_settings_join_the_schema_on_the_packages_page() {
             .contains(&json!({"id": "packages", "name": "软件包"}))
     );
     assert!(
-        schema["groups"]
-            .as_array()
-            .expect("有")
-            .contains(&json!({"id": "clock", "name": "时钟", "page": "packages"}))
+        schema["groups"].as_array().expect("有").contains(
+            &json!({"id": "clock", "name": "时钟", "name_en": "Clock", "page": "packages"})
+        )
     );
 }
 

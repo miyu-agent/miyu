@@ -87,9 +87,14 @@ async fn the_switches_and_their_group_are_named_in_the_language_of_the_connectio
         let reply = client
             .call("c1", "config.schema", json!({"keys": KEYS}))
             .await;
+        // 不是英文的连接多一个英文名（施工 NS-1）。
+        let mut expected = json!({"description": description, "id": "protected", "name": group, "page": "privacy"});
+        if locale != "en" {
+            expected["name_en"] = json!("Protected commands");
+        }
         assert_eq!(
             reply["result"]["groups"],
-            json!([{"description": description, "id": "protected", "name": group, "page": "privacy"}]),
+            json!([expected]),
             "{locale}：{reply}"
         );
         let items = reply["result"]["items"].as_array().expect("有项");
@@ -138,7 +143,7 @@ async fn a_group_without_a_description_has_no_such_field() {
         .collect();
     assert_eq!(
         permission,
-        [&json!({"id": "permission", "name": "权限", "page": "privacy"})],
+        [&json!({"id": "permission", "name": "权限", "name_en": "Permissions", "page": "privacy"})],
         "{reply}"
     );
 }

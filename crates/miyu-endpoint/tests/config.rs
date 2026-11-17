@@ -122,7 +122,7 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
         .await;
     assert_eq!(
         reply["result"],
-        json!({"groups":[{"id":"display","name":"显示","page":"general"}],"items":[{"applies":"now","common":true,"control":"select","default":"auto","description":"终端、网页、命令行给你看的字用哪种话。auto 跟着终端或浏览器的语言。","group":"display","key":"ui.language","layers":["system"],"name":"界面语言","options":[{"name":"跟随系统","value":"auto"},{"name":"中文","value":"zh"},{"name":"English","value":"en"},{"name":"日本語","value":"ja"}],"page":"general","type":"option"}],"pages":[{"id":"general","name":"通用"}]}),
+        json!({"groups":[{"id":"display","name":"显示","name_en":"Display","page":"general"}],"items":[{"applies":"now","common":true,"control":"select","default":"auto","description":"终端、网页、命令行给你看的字用哪种话。auto 跟着终端或浏览器的语言。","group":"display","key":"ui.language","layers":["system"],"name":"界面语言","name_en":"Interface language","options":[{"name":"跟随系统","value":"auto"},{"name":"中文","value":"zh"},{"name":"English","value":"en"},{"name":"日本語","value":"ja"}],"page":"general","type":"option"}],"pages":[{"id":"general","name":"通用"}]}),
         "和图纸的例子一字不差"
     );
     let all = client.call("c2", "config.schema", json!({})).await;
@@ -472,11 +472,12 @@ async fn new_session_settings_share_one_group() {
         let reply = client
             .call("c1", "config.schema", json!({"keys": keys}))
             .await;
-        assert_eq!(
-            reply["result"]["groups"],
-            json!([{"id": "new_session", "name": name, "page": "general"}]),
-            "{reply}"
-        );
+        // 不是英文的连接多一个英文名（施工 NS-1）。
+        let mut group = json!({"id": "new_session", "name": name, "page": "general"});
+        if language != "en" {
+            group["name_en"] = json!("New sessions");
+        }
+        assert_eq!(reply["result"]["groups"], json!([group]), "{reply}");
         for item in reply["result"]["items"].as_array().expect("是一项项") {
             assert_eq!(item["group"], "new_session", "{item}");
         }

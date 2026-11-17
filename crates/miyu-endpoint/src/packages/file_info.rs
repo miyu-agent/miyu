@@ -52,6 +52,10 @@ pub(super) async fn described(
     }
     for (key, value) in [
         ("name", pick(&manifest.name, peer.language)),
+        (
+            "name_en",
+            crate::personas::english(&manifest.name, peer.language),
+        ),
         ("summary", pick(&manifest.summary, peer.language)),
         ("author", manifest.author.clone()),
         ("upstream", manifest.upstream.clone()),

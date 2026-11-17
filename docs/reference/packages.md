@@ -40,6 +40,7 @@
 | `shadowed` | 被上面一层盖住的才有：`{"by", "version", "over", "newer"}`，盖住它的那一层、这一份的版本、认的那一份的版本、这一份是不是更新。不算错，没有 `code` |
 | `kind` | `builtin`（编进核心的）、`process`（扩展）、`worker`（按需拉起的小程序）、`ui`（界面）、`mascot`（吉祥物）、`theme`（外观：终端主题、网页主题，见下面 `theme` 一格）、`bundle`（只带 MCP 服务、技能、脚本这类，不带程序） |
 | `name`、`summary`、`icon` | 名字、一句说明、Lucide 图标名 |
+| `name_en` | 英文名：连接的语言不是英文、清单写了英文名的才有，头拿它一起搜；`package.info` 同 |
 | `logo` | 包自带的图标的版本：清单写了 `[package] logo`、图合规矩的才有，图用 `package.logo` 读 |
 | `author`、`upstream` | 作者、上游源码仓库（`https://` 开头）；清单没写的没有 |
 | `installed_at` | 装的时刻；出厂的没有。头照它排「别的按安装先后」 |

@@ -15,12 +15,13 @@
         "description": "コンテキストがいっぱいに近づくと、古い部分を裏で先に要約しておき、圧縮が必要になった時点で待たずに差し替えます。オフにすると、従来どおり上限に達してから圧縮します。"
       },
       "net.search.exa.key": {"name": "Exa", "description": "設定すると自分の Exa の枠を使います。未設定なら無料枠です。"},
-      "net.search.deepseek.key": {"name": "DeepSeek", "description": "ウェブプロバイダーに DeepSeek を使うときに必要です。未設定ならモデルの DeepSeek プロバイダーのキーを使います。検索とページ取得ごとに課金されます。"},
+      "net.search.anysearch.key": {"name": "AnySearch", "description": "設定すると自分の AnySearch の枠を使います。未設定なら IP ごとの1日の無料枠です。"},
+      "net.search.deepseek.key": {"name": "DeepSeek", "description": "ウェブプロバイダーに DeepSeek を使うときに必要です。未設定ならモデルの公式 DeepSeek プロバイダーのキーを借ります（「継承」と表示）。検索とページ取得ごとに課金されます。"},
       "net.search.tavily.key": {"name": "Tavily", "description": "ウェブプロバイダーに Tavily を選んだときに必要です。"},
       "net.search.brave.key": {"name": "Brave Search", "description": "ウェブプロバイダーに Brave を選んだときに必要です。"},
       "net.internal_domains": {"name": "内部ドメイン", "description": "ほかの人（グループの人、知らない人）に頼まれて AI がウェブを見るときに決して行かないドメインです。サブドメインも含み、どのアドレスに解決されてもプロキシを通すかどうかに関係なく適用されます。あなたは影響を受けません。例：example-corp.com。"},
       "net.search.searxng.url": {"name": "SearXNG のアドレス", "description": "自分で立てた SearXNG（例 http://127.0.0.1:8888）。JSON 形式を有効にしておきます。ウェブプロバイダーに SearXNG を選んだときに使います。"},
-      "net.search.source": {"name": "ウェブプロバイダー", "description": "AI がウェブ検索とページ取得に使うサービス。自動では無料枠だけを使います。検索は Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。直接取得できないページは Exa、Firecrawl、Parallel に代わりに取得させます。これらは海外のサービスで、検索語と URL が送られます。選んだものを先に使い（DeepSeek はページ取得も先に担当します）、使えなければ自動に切り替えます。", "options": {"auto": "自動（無料枠）", "deepseek": "DeepSeek", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG"}},
+      "net.search.source": {"name": "ウェブプロバイダー", "description": "AI がウェブ検索とページ取得に使うサービス。自動では無料枠だけを使います。検索は Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。直接取得できないページは Exa、Firecrawl、Parallel に代わりに取得させます。これらは海外のサービスで、検索語と URL が送られます。選んだものを先に使い（DeepSeek はページ取得も先に担当します）、使えなければ自動に切り替えます。", "options": {"auto": "自動（無料枠）", "exa": "Exa", "anysearch": "AnySearch", "deepseek": "DeepSeek", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG"}},
       "memory.extract_idle": {
         "name": "整理前のアイドル時間",
         "description": "会話がこの時間止まると、新しい部分のうち覚えておく価値のあるものを記憶にまとめます。"

@@ -315,3 +315,59 @@ async fn her_own_try_comes_after_the_provider_fails() {
     assert_eq!(own.hits("/good"), 1);
     assert_eq!(site.hits("/exa"), 0, "自己抓成了，不找免费的几家");
 }
+
+/// 选了 AnySearch 的（施工 NS-1，项目主人 2026-11-17：有免费额度不代表不用它的 key）：配了 key 的头里带 `Bearer`，没配的不带、
+/// 照免费额度；都先问它，免费的几家不问。
+struct Anysearch(Option<&'static str>);
+
+impl SettingsPort for Anysearch {
+    fn values(&self) -> Values {
+        let mut values = Values::defaults(&miyu_net::ITEMS.concat());
+        values.set("net.search.source", ConfigValue::Text("anysearch".into()));
+        if self.0.is_some() {
+            values.set(
+                "net.search.anysearch.key",
+                ConfigValue::Secret(Reference::Secret("as".to_string())),
+            );
+        }
+        values
+    }
+
+    fn secret(&self, reference: &Reference) -> Option<Secret> {
+        (*reference == Reference::Secret("as".to_string()))
+            .then(|| self.0.and_then(|key| Secret::new(key).ok()))
+            .flatten()
+    }
+}
+
+#[tokio::test]
+async fn anysearch_picked_uses_its_key_or_the_free_quota() {
+    for key in [Some("as-key"), None] {
+        let site = Site::start(vec![
+            ("/exa".to_string(), exa()),
+            (
+                "/anysearch".to_string(),
+                reply(
+                    json!({"code": 0, "data": {"results": [{"title": "A", "url": "https://a.example/", "snippet": "s"}]}}),
+                ),
+            ),
+        ])
+        .await;
+        let (search, _) = tools(&site);
+        let settings: Arc<dyn SettingsPort> = Arc::new(Anysearch(key));
+        let call = Call {
+            settings: Some(settings),
+            ..crate::fetch::call(json!({"query": "rust"}))
+        };
+        let found = crate::fetch::run(&search, call).await;
+        assert_eq!(via(&found).as_deref(), Some("AnySearch"), "{key:?}");
+        assert_eq!(site.hits("/exa"), 0, "{key:?}：免费的几家没问");
+        let seen = site.seen();
+        let asked = seen
+            .iter()
+            .find(|seen| seen.target == "/anysearch")
+            .expect("问了 AnySearch");
+        let expected = key.map(|key| format!("Bearer {key}")).unwrap_or_default();
+        assert_eq!(asked.authorization, expected, "{key:?}");
+    }
+}

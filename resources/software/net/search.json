@@ -10,7 +10,7 @@
     "exa": {"name": "Exa", "kind": "exa", "url": "https://mcp.exa.ai/mcp", "needs": "key_optional", "site_operator": false},
     "parallel": {"name": "Parallel", "kind": "parallel", "url": "https://search.parallel.ai/mcp", "needs": "nothing", "site_operator": true},
     "firecrawl": {"name": "Firecrawl", "kind": "firecrawl", "url": "https://mcp.firecrawl.dev/v2/mcp", "needs": "nothing", "site_operator": true},
-    "anysearch": {"name": "AnySearch", "kind": "anysearch", "url": "https://api.anysearch.com/v1/search", "needs": "nothing", "site_operator": false},
+    "anysearch": {"name": "AnySearch", "kind": "anysearch", "url": "https://api.anysearch.com/v1/search", "needs": "key_optional", "site_operator": false},
     "you": {"name": "You.com", "kind": "you", "url": "https://api.you.com/mcp?profile=free", "needs": "nothing", "site_operator": true},
     "deepseek": {"name": "DeepSeek", "kind": "deepseek", "url": "https://api.deepseek.com/v1/tools/search", "fetch_url": "https://api.deepseek.com/v1/tools/fetch", "needs": "key", "site_operator": true},
     "tavily": {"name": "Tavily", "kind": "tavily", "url": "https://api.tavily.com/search", "needs": "key", "site_operator": false},

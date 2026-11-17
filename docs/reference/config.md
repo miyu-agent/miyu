@@ -46,6 +46,7 @@
 | `layers` | 能写在哪几层：`system`、`project` |
 | `applies` | 什么时候生效：`now` 当场、`next_turn` 下一轮、`new_session` 以后开的会话、`restart` 重启核心、`head_start` 头下次启动 |
 | `name`、`description` | 给人看的名字、说明，照连接的语言 |
+| `name_en` | 英文的名字：连接的语言不是英文的才有，头拿它和 `name` 一起搜（中文界面搜 web 搜得到「网络搜索」）；英文里没有的不带 |
 | `page`、`group`、`common`、`control` | 设置页放哪、常不常用、用什么控件：`select`、`toggle`、`number`、`text`、`list`、`combo`、`textarea`（几行的框）、`slider`（滑块） |
 | `step` | 控件是 `slider` 的：一格多少（整数的是整数） |
 | `suggestions` | 控件是 `combo` 的：建议值 |
@@ -54,7 +55,7 @@
 | `section` | 软件包分了组的配置项：在这个包的哪一节（组名，见下面 `groups` 的 `sections`）；不在组里的不写 |
 | `choices_from` | 软件包的文字项，选项由包在运行时给：`{"package", "method"}`，哪个包的哪个方法；清单没写的不带，见下面 |
 
-一组：`id`、`name`（照连接的语言）、`page`；写了说明的组多一格 `description`（一句或几句，照连接的语言，写在组名下面），没写的组不带这一格。软件包分了组的（清单写了 `[settings.<组>.<名字>]`），那个包那一组多一格 `sections`：每一节一个 `{"id", "name", "shown_when"?}`，照清单写的先后。`name` 照连接的语言，清单没写名字的是组名。`shown_when` 是 `{"key": "<完整的键>", "is": ["<值>", …]}`：那一项现在的值是 `is` 里的一个才画这一节，`is` 总是列表；没有的总是画。那一项是选项，或者带 `choices_from` 的文字项（`is` 里的字不一定在它的选项里），都只按值比。不画的节只是不画，里面的项照旧能写、能读、照样查。没分组的包没有 `sections`。
+一组：`id`、`name`（照连接的语言）、`name_en`（英文的名字，连接不是英文的才有）、`page`；写了说明的组多一格 `description`（一句或几句，照连接的语言，写在组名下面），没写的组不带这一格。软件包分了组的（清单写了 `[settings.<组>.<名字>]`），那个包那一组多一格 `sections`：每一节一个 `{"id", "name", "shown_when"?}`，照清单写的先后。`name` 照连接的语言，清单没写名字的是组名。`shown_when` 是 `{"key": "<完整的键>", "is": ["<值>", …]}`：那一项现在的值是 `is` 里的一个才画这一节，`is` 总是列表；没有的总是画。那一项是选项，或者带 `choices_from` 的文字项（`is` 里的字不一定在它的选项里），都只按值比。不画的节只是不画，里面的项照旧能写、能读、照样查。没分组的包没有 `sections`。
 
 带 `choices_from` 的项：类型照旧是 `text`，头把它画成下拉，选项调 `package.call`（参数 `{"package", "method"}`，照这一格原样填，不带 `params`）取，包回 `{"choices": [{"value", "name"?, "description"?}]}`：`value` 是存进配置的字，`name` 没写的照 `value` 画，`description` 暗色写在下面。调不到（`program_not_running`、`unregistered`、`method_failed`、`method_timeout`）、回的 `choices` 是空的或者不是这个样子的，退回文字框；存着的值不在列表里的照样显示。核心不照列表查值，写什么存什么。
 
@@ -85,6 +86,8 @@
 ```
 
 包的「启用」：`{"origin": {"layer": "package"}, "value": true}`，来源 `package` 是说它不在哪一层配置里；`all` 的 `layers` 是 `[]`。
+
+借来的：`{"origin": {"layer": "inherited", "from": "providers.deepseek.key"}, "value": null}`：哪一层都没写、照 `from` 那一项的值用（画成「已继承」）。现在只有 `net.search.deepseek.key`：没填的借模型那边官方 DeepSeek 供应商（地址没写或是 `api.deepseek.com`）的 key，`from` 是那一家的 `providers.<编号>.key`；中转站的不借，来源照旧 `default`。值不交 key。`config.set` 的回应、`config.changed` 推送里同样写；改了供应商的 key 不另推这一项，要画的照 `config.changed` 里有 `providers.` 的再读一次。
 
 **出错**：`unknown_config_key`。
 

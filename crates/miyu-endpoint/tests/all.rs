@@ -70,6 +70,7 @@ mod commands;
 mod compact;
 mod compactable;
 mod config;
+mod config_inherited;
 mod config_lines;
 mod config_one_layer;
 mod config_option_state;

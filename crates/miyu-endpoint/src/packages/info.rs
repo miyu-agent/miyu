@@ -77,6 +77,10 @@ async fn installed(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value, Refu
         // 许可证（施工 PV-3）只在这里加，不放进 `local::info`：她的软件包工具用那一份，不多给她这一格。
         for (key, value) in [
             ("name", pick(&manifest.name, peer.language)),
+            (
+                "name_en",
+                crate::personas::english(&manifest.name, peer.language),
+            ),
             ("summary", pick(&manifest.summary, peer.language)),
             ("license", manifest.license.clone()),
         ] {

@@ -137,6 +137,7 @@ fn the_registered_list_is_well_formed() {
             "show.system_hint",
             "net.search.source",
             "net.search.exa.key",
+            "net.search.anysearch.key",
             "net.search.deepseek.key",
             "net.search.tavily.key",
             "net.search.brave.key",

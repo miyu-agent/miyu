@@ -40,6 +40,7 @@ Manage packages, extension processes and the MCP servers in the system config; l
 | `shadowed` | Only on a copy covered by an upper layer: `{"by", "version", "over", "newer"}`, the covering layer, this copy's version, the version in use, and whether this copy is newer. Not an error, so there is no `code` |
 | `kind` | `builtin` (compiled into the core), `process` (an extension), `worker` (a helper started on demand), `ui` (a user interface), `mascot`, `theme` (a look: terminal theme, web theme, see the `theme` row below), `bundle` (no program; only MCP servers, skills, scripts and the like) |
 | `name`, `summary`, `icon` | Name, one-line summary, Lucide icon name |
+| `name_en` | English name: only when the connection's language isn't English and the manifest has one, for heads to search with; `package.info` too |
 | `logo` | The version of the package's own logo: only when the manifest has `[package] logo` and the picture follows the rules; read the picture with `package.logo` |
 | `author`, `upstream` | Author and upstream source repository (`https://`); absent when the manifest doesn't say |
 | `installed_at` | When it was installed; absent for shipped ones. Heads sort the rest by it |

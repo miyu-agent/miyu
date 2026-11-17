@@ -56,7 +56,7 @@ impl Source {
 pub(crate) enum Needs {
     /// 什么都不要。
     Nothing,
-    /// 不要也能用，配了 key 的走自己的额度（Exa）。
+    /// 不要也能用，配了 key 的走自己的额度（Exa、AnySearch）。
     KeyOptional,
     /// 要 key：没配的跳过。
     Key,

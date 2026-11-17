@@ -98,6 +98,7 @@ async fn grouped_settings_carry_their_section_and_the_group_lists_sections() {
         &json!({
             "id": "say",
             "name": "说话",
+            "name_en": "Say",
             "page": "packages",
             "sections": [
                 {"id": "minimax", "name": "MiniMax 语音",
@@ -118,7 +119,7 @@ async fn a_package_without_groups_keeps_its_old_shape() {
     let (_client, schema) = schema(&home).await;
     assert_eq!(
         find(&schema, "groups", "clock"),
-        &json!({"id": "clock", "name": "时钟", "page": "packages"})
+        &json!({"id": "clock", "name": "时钟", "name_en": "Clock", "page": "packages"})
     );
     let port = find(&schema, "items", "clock.port");
     assert!(port.get("section").is_none(), "{port}");

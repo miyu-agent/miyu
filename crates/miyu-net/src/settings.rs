@@ -12,9 +12,10 @@ use miyu_config::secret::Reference;
 miyu_config::settings! {
     /// 搜索的配置。
     pub struct SearchSettings in "net.search" {
-        /// 联网服务：`auto` 照出厂的顺序用免费的几家，或者先用定的那一家（要 key、要地址的几家）。
+        /// 联网服务：`auto` 照出厂的顺序用免费的几家，或者先用定的那一家（能配 key、要 key、要地址的几家；Exa、AnySearch
+        /// 没配 key 的照免费额度，施工 NS-1）。
         source: String = "auto" {
-            kind: option ["auto", "deepseek", "tavily", "brave", "searxng"],
+            kind: option ["auto", "exa", "anysearch", "deepseek", "tavily", "brave", "searxng"],
             layers: [System],
             applies: next_turn,
             ui: { page: "packages", group: "base-net", package: "base-net", control: select },
@@ -25,6 +26,19 @@ miyu_config::settings! {
 miyu_config::settings! {
     /// Exa 自己的 key（施工 N-3 上）：配了的走自己的额度，不配照免费额度。
     pub struct ExaKey in "net.search.exa" {
+        /// `{ secret = … }` 或 `{ env = … }`。
+        key: Option<Reference> = none {
+            kind: secret,
+            layers: [System],
+            applies: next_turn,
+            ui: { page: "packages", group: "net_keys", package: "base-net", control: text },
+        },
+    }
+}
+
+miyu_config::settings! {
+    /// AnySearch 自己的 key（施工 NS-1）：配了的走自己的额度（`Authorization: Bearer`），不配照免费额度（按 IP 计的每日额度）。
+    pub struct AnysearchKey in "net.search.anysearch" {
         /// `{ secret = … }` 或 `{ env = … }`。
         key: Option<Reference> = none {
             kind: secret,
@@ -101,9 +115,10 @@ miyu_config::settings! {
 }
 
 /// 联网这个包的几组配置项，照声明的先后：核心照它登记（常量，核心的清单是常量数组）。
-pub const ITEMS: [&[miyu_config::Item]; 7] = [
+pub const ITEMS: [&[miyu_config::Item]; 8] = [
     SearchSettings::ITEMS,
     ExaKey::ITEMS,
+    AnysearchKey::ITEMS,
     DeepseekKey::ITEMS,
     TavilyKey::ITEMS,
     BraveKey::ITEMS,
@@ -156,6 +171,7 @@ pub(crate) fn using(settings: &dyn miyu_tool::SettingsPort) -> crate::search::Us
     };
     let keys = [
         ("exa", ExaKey::from(&values).key),
+        ("anysearch", AnysearchKey::from(&values).key),
         ("deepseek", DeepseekKey::from(&values).key),
         ("tavily", TavilyKey::from(&values).key),
         ("brave", BraveKey::from(&values).key),
@@ -179,10 +195,14 @@ pub(crate) fn using(settings: &dyn miyu_tool::SettingsPort) -> crate::search::Us
 }
 
 /// 模型那边配了 DeepSeek 的第一家供应商的 key 引用：认法在 `miyu_models::provider_key`（施工 PK-1 从这里挪过去，批了
-/// `provider.key` 的扩展也照它认）。
+/// `provider.key` 的扩展也照它认）；借哪一项、借哪一家照它的 [`miyu_models::provider_key::INHERITED`]（施工 NS-1，设置页照同一张
+/// 表写「已继承」）。
 fn deepseek_provider(values: &miyu_config::Values) -> Option<Reference> {
-    miyu_models::provider_key::serving(values, "deepseek").map(|(_, key)| key)
+    miyu_models::provider_key::inherited(values, DEEPSEEK_KEY).map(|(_, key)| key)
 }
+
+/// 联网包的 DeepSeek 的 key 这一项。
+const DEEPSEEK_KEY: &str = "net.search.deepseek.key";
 
 /// 来源少配了什么（施工 N-3 上）：设置页的下拉里那一家后面写「要 key」「要地址」。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

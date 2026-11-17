@@ -277,5 +277,12 @@ pub(crate) fn pick(phrases: &miyu_store::personas::Phrases, language: &str) -> O
         .find_map(|language| phrases.get(*language).cloned())
 }
 
+/// 英文的那一句（施工 NS-1，网页 W-1206）：头拿它和照语言挑的（[`pick`]）一起搜。连接就是英文的、没写英文的、和挑的一样的
+/// （这种语言没写、照英文挑的）没有。
+pub(crate) fn english(phrases: &miyu_store::personas::Phrases, language: &str) -> Option<String> {
+    let english = phrases.get("en").filter(|_| !language.starts_with("en"))?;
+    (pick(phrases, language).as_ref() != Some(english)).then(|| english.clone())
+}
+
 #[cfg(test)]
 mod tests;

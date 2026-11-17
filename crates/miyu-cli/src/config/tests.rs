@@ -271,6 +271,15 @@ fn set_and_unset_lines_match_the_blueprint() {
         en.removed("ui.language", "\"auto\"", "default"),
         "removed ui.language, now \"auto\" (default)"
     );
+    // 借来的（施工 NS-1）：删了自己写的 key，照旧借模型那边供应商的。
+    assert_eq!(
+        zh.removed("net.search.deepseek.key", "null", "inherited"),
+        "已删除 net.search.deepseek.key，现在是 null（已继承）"
+    );
+    assert_eq!(
+        en.removed("net.search.deepseek.key", "null", "inherited"),
+        "removed net.search.deepseek.key, now null (inherited)"
+    );
     assert_eq!(
         zh.not_there("ui.language", "system"),
         "系统配置中没有 ui.language，未修改"

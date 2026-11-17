@@ -1589,6 +1589,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sRO3"><span class="n">RO-3</span>完全放开下文件工具不拦数据根<span class="st">…</span></a></li>
         <li><a class="step review" href="#sCS5"><span class="n">CS-5</span>人停的核心不自动拉起<span class="st">…</span></a></li>
         <li><a class="step review" href="#sVS1"><span class="n">VS-1</span>包的命令认版本、转交带数据根<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sNS1"><span class="n">NS-1</span>网络搜索的 key 和名字<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -62317,6 +62318,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/VS-1-包的命令认版本.md</code>；蓝图 <code>cli/main.md</code> 第 0 条、<code>packages.md</code>「转交」；写包的 <code>manifest.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sNS1" aria-labelledby="h-sNS1">
+  <div class="sheet-head"><h2 id="h-sNS1"><span class="no">NS-1</span>网络搜索的 key 和名字</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">包名改「网络搜索」；联网服务能选 Exa、AnySearch，配了 key 用自己的额度；DeepSeek 的 key 没填借官方供应商的、设置里显示「已继承」；设置和包带英文名。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-net · miyu-models/provider_key · miyu-endpoint/config · resources</span><span class="dir-note">NS-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>net.search.source</code> 加 <code>exa</code>、<code>anysearch</code>；新项 <code>net.search.anysearch.key</code>（<code>Bearer</code>）</li>
+              <li><code>provider_key::INHERITED</code> 一处登记：联网包借、<code>config.get</code> 写 <code>inherited</code></li>
+              <li><code>config.schema</code>、<code>package.list</code>、<code>package.info</code> 多 <code>name_en</code></li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">两处都留，填了的先用</span><span class="rl">项目主人 11-17 定：没填的借官方 DeepSeek 供应商，显示「已继承」</span></div>
+          <div class="tile new"><span class="nm">有免费额度也能配 key</span><span class="rl">Exa、AnySearch 没配 key 的照免费额度</span></div>
+          <div class="tile new"><span class="nm">英文名一起搜</span><span class="rl">网页 W-1206：中文界面搜 web 搜得到「网络搜索」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">NS-1</dd></div>
+        <div><dt>名称</dt><dd>网络搜索的 key 和名字</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">NS-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>沙箱：<code>config.get</code> 回 <code>{&quot;layer&quot;:&quot;inherited&quot;,&quot;from&quot;:&quot;providers.deepseek.key&quot;}</code>、值 <code>null</code></span></li>
+        <li><span class="ok">✓</span><span>假 DeepSeek 服务器收到的头是供应商的假 key</span></li>
+        <li><span class="ok">✓</span><span>选 AnySearch、不配 key 真搜一次，结果来自 AnySearch</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/NS-1-网络搜索的key和名字.md</code>；蓝图 <code>config.md</code>、<code>tools/web_search.md</code>、<code>packages.md</code>；协议参考 <code>config.md</code>、<code>packages.md</code>。</li>
       </ul>
     </div>
   </div>
