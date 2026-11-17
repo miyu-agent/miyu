@@ -167,6 +167,10 @@ pub struct PolicyChanged {
     /// `context`）。写在最后一格，以前的日志没有这一格。内核只记不解读，范围协议那一头查过。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub compaction_line: Option<LinePin>,
+    /// 换以前人设的权限（施工 PL-1）：只和 `permission` 一起出现（账本查），两格都写。头读老会话不用往前翻，就知道一页里
+    /// 第一次换级别以前是哪一级。会话造的时候就有权限，所以换级别的总带着它。写在最后一格，以前的日志没有这一格，照没有读。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub from: Option<Permission>,
 }
 
 /// `session.policy_changed` 的 `compaction_line`（施工 CT-1）：会话钉的压缩触发线换成窗口的 `percent`%，`null` 是去掉（跟着配置）。

@@ -309,6 +309,12 @@ impl Ledger {
             {
                 Err("replaced comes only with model".to_string())
             }
+            // 换以前的级别只和换成的那一级一起出现（施工 PL-1）。
+            Body::PolicyChanged(changed)
+                if changed.from.is_some() && changed.permission.is_none() =>
+            {
+                Err("from comes only with permission".to_string())
+            }
             _ => Ok(()),
         }
     }

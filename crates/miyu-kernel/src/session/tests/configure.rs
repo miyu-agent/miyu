@@ -48,6 +48,10 @@ fn a_change_is_recorded_and_answered_once_stored() {
     assert_eq!(appended(&actions), seqs(&[2]));
     assert!(replies(&actions).is_empty(), "落了盘才回应");
     assert_eq!(events[0].body, to("@free"));
+    assert!(
+        !events[0].to_line().contains(r#""from""#),
+        "没换级别的不写换以前的级别（施工 PL-1）"
+    );
     assert_eq!(
         (&events[0].by, &events[0].cause, events[0].turn),
         (&person(), &Some(id(2)), None)

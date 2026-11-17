@@ -1,7 +1,7 @@
 //! 会话事件的测试：图纸上的写法读写一字不差、认得出种类；权限两格都要写；
 //! 不认识的级别原样留着；坏的报错说清是哪一种；子会话带着父会话和第几层（施工 7-1）；会话用哪个模型（施工 8-8）；
 //! 换模型的两格（施工 8-10）；换会话的思考强度（施工 SM-1），8-18 那时带 `model` 的一格照读得进、不算会话的；换会话的上下文
-//! 上限（施工 CTX-1）；钉会话的看图模型（施工 VM-1）；钉会话的压缩触发线（施工 CT-1）。
+//! 上限（施工 CTX-1）；钉会话的看图模型（施工 VM-1）；钉会话的压缩触发线（施工 CT-1）；换级别带上换以前的（施工 PL-1）。
 
 use super::*;
 use crate::event::{Body, Event};
@@ -190,6 +190,44 @@ fn a_policy_change_records_the_model_and_what_it_replaced() {
         let line = event_line("session.policy_changed", wrong);
         rejected::<Event>(&line, "body of session.policy_changed not readable");
     }
+}
+
+/// 换级别带上换以前的（施工 PL-1）：`from` 写在最后，两格都写，读写一字不差；以前的日志没有这一格，照没有读，写回去一个
+/// 字节不变；`null` 当没有；少一格的读不进来。
+#[test]
+fn a_policy_change_records_the_permission_it_switched_from() {
+    let both = r#"{"permission":{"level":"full","read_only":true},"from":{"level":"full","read_only":false}}"#;
+    let line = event_line("session.policy_changed", both);
+    let event = Event::from_line(&line).unwrap();
+    assert_eq!(event.to_line(), line, "一字不差");
+    match event.body {
+        Body::PolicyChanged(changed) => assert_eq!(
+            changed.from,
+            Some(Permission {
+                level: Level::Full,
+                read_only: false
+            })
+        ),
+        other => panic!("{other:?}"),
+    }
+    let old = event_line(
+        "session.policy_changed",
+        r#"{"permission":{"level":"full","read_only":true}}"#,
+    );
+    let event = Event::from_line(&old).unwrap();
+    assert_eq!(event.to_line(), old, "以前的日志写回去一个字节不变");
+    assert!(matches!(
+        event.body,
+        Body::PolicyChanged(PolicyChanged { from: None, .. })
+    ));
+    let nulled = r#"{"permission":{"level":"full","read_only":true},"from":null}"#;
+    let event = Event::from_line(&event_line("session.policy_changed", nulled)).unwrap();
+    assert_eq!(event.to_line(), old, "null 当没有");
+    let half = r#"{"permission":{"level":"full","read_only":true},"from":{"level":"full"}}"#;
+    rejected::<Event>(
+        &event_line("session.policy_changed", half),
+        "body of session.policy_changed not readable",
+    );
 }
 
 /// 换会话的思考强度（施工 SM-1）：`effort` 写在最后，`level` 总是写（回到跟着配置的写 `null`），读写一字不差；和 `model`

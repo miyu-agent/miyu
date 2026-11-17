@@ -40,6 +40,7 @@ fn switched_to(event: &Event) -> &Permission {
             context: None,
             vision: None,
             compaction_line: None,
+            from: _,
         }) => permission,
         body => panic!("应该是只换了权限的 session.policy_changed：{body:?}"),
     }
@@ -84,6 +85,31 @@ fn switching_while_idle_is_recorded_and_injected_when_the_next_turn_opens() {
     let events = appended_events(&actions);
     assert_eq!(appended(&actions), seqs(&[10, 11, 12]));
     assert_eq!(fact_of(&events[2]).text, level_fact("read_only"));
+}
+
+/// 换级别的那一条带上换以前人设的级别（施工 PL-1）：头打开老会话，一页里第一次换级别以前的几句也画得对。头一次换的
+/// 照造会话时的，之后的照上一次换成的；两格都写。
+#[test]
+fn a_switch_records_the_permission_it_switched_from() {
+    let mut session = session();
+    let mut froms = Vec::new();
+    for (n, input) in [read_only(1, true), read_only(2, false)]
+        .into_iter()
+        .enumerate()
+    {
+        let actions = allowing(&mut session, input);
+        let line: serde_json::Value =
+            serde_json::from_str(&appended_events(&actions)[0].to_line()).unwrap();
+        froms.push(line["body"]["from"].clone());
+        allowing(&mut session, stored(n as u64 + 2));
+    }
+    assert_eq!(
+        froms,
+        [
+            serde_json::json!({"level": "full", "read_only": false}),
+            serde_json::json!({"level": "full", "read_only": true}),
+        ]
+    );
 }
 
 #[test]

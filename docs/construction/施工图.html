@@ -1577,6 +1577,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sJB1P"><span class="n">JB-1压</span>后台瞬间就完的命令在 tmpfs 上重压<span class="st">…</span></a></li>
         <li><a class="step review" href="#sFL9"><span class="n">FL-9</span>扩展驱动首字成对比<span class="st">…</span></a></li>
         <li><a class="step review" href="#sMDSNAP"><span class="n">MD-SNAP</span>出厂目录快照换新<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sPL1"><span class="n">PL-1</span>换级别带上换以前的<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -61643,6 +61644,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/MD-SNAP-出厂目录快照换新.md</code>；蓝图 <code>models.md</code> 第二条第 1 条。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sPL1" aria-labelledby="h-sPL1">
+  <div class="sheet-head"><h2 id="h-sPL1"><span class="no">PL-1</span>换级别带上换以前的</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">换权限级别的事件带上换以前的级别：头读老会话不用往前翻，一页里第一次换级别以前的几句也画得对。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates · miyu-kernel/src/event/session.rs、session/permission.rs、ledger.rs</span><span class="dir-note">PL-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>session.policy_changed</code> 加最后一格 <code>from</code></li>
+              <li>切权限时写切以前人设的那一份，两格都写</li>
+              <li>账本查 <code>from</code> 只和 <code>permission</code> 一起</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">切的总带着 from</span><span class="rl">会话造的时候就有权限，头一次切的写造会话时的</span></div>
+          <div class="tile new"><span class="nm">只换别的不写</span><span class="rl">模型、思考强度、人格、快照这些</span></div>
+          <div class="tile new"><span class="nm">老日志照没有读</span><span class="rl">写回不变、重放不变，头照以前的办法补</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">PL-1</dd></div>
+        <div><dt>名称</dt><dd>换级别带上换以前的</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-17</dd></div>
+        <div><dt>提交</dt><dd class="mono">PL-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>沙箱核心切只读、切回：推送和日志各两条，<code>from</code> 依次是开放、只读</span></li>
+        <li><span class="ok">✓</span><span>切成一样的不推不记</span></li>
+        <li><span class="ok">✓</span><span>删掉 <code>from</code> 的老日志照原样补回来；接着切，<code>from</code> 照老日志算回来</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/PL-1-换级别带上换以前的.md</code>；蓝图 <code>kernel/events-bodies.md</code>、<code>kernel/session.md</code>「切权限级别」第 3 条、<code>kernel/history.md</code>、<code>protocol.md</code>。</li>
       </ul>
     </div>
   </div>

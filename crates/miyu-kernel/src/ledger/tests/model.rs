@@ -1,6 +1,6 @@
 //! 模型调用的记录：看到的在它自己之前。回顾的两条（施工 3-8 四补）：不带回合编号，有回合在进行时也收；`session.recapped`
 //! 照到的在它之前；回顾的 `model.called` 不算她听到了排着的话，那几句照样撤得回。施工 3-8 四补从 `tests.rs` 分出来。
-//! 换模型（施工 8-10）：`replaced` 只和 `model` 一起出现。
+//! 换模型（施工 8-10）：`replaced` 只和 `model` 一起出现；换级别（施工 PL-1）：`from` 只和 `permission` 一起出现。
 
 use super::*;
 
@@ -25,6 +25,32 @@ fn replaced_comes_only_with_a_model() {
     let body = r#"{"model":"a/m","replaced":"@free"}"#;
     ledger
         .append(&event(7, Some(3), "session.policy_changed", body))
+        .unwrap();
+}
+
+/// 换级别的 `session.policy_changed`（施工 PL-1）：`from` 只和 `permission` 一起出现；两格都有的、只有 `permission` 的
+/// （以前的日志）都收。
+#[test]
+fn from_comes_only_with_a_permission() {
+    let mut ledger = after(5);
+    let open = r#"{"level":"full","read_only":false}"#;
+    refused(
+        &mut ledger,
+        &event(
+            6,
+            None,
+            "session.policy_changed",
+            &format!(r#"{{"from":{open}}}"#),
+        ),
+        "from comes only with permission",
+    );
+    let body = format!(r#"{{"permission":{{"level":"full","read_only":true}},"from":{open}}}"#);
+    ledger
+        .append(&event(6, None, "session.policy_changed", &body))
+        .unwrap();
+    let old = format!(r#"{{"permission":{open}}}"#);
+    ledger
+        .append(&event(7, Some(3), "session.policy_changed", &old))
         .unwrap();
 }
 

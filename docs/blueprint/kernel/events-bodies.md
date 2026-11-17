@@ -86,10 +86,11 @@
 | `context` | 对象 | 可以没有 | 人换的会话的上下文上限（施工 CTX-1，设计 68）：`{"tokens": 整数或 null}`，`null` 是去掉；记下当场生效，撤掉的回合里的也算。`by` 是人。写在 `effort` 后面。内核记下，交限额时照它把窗口压到不超过它 |
 | `vision` | 字符串 | 可以没有 | 人钉的会话的看图模型（施工 VM-1，`models.md`「事件」）：写法同 `model`，模型 `<供应商>/<模型>` 或池 `@<池>`；空的是去掉，回到跟着 `models.vision`。下一个回合开始时生效，撤掉的回合里的也算，换模型不清它。`by` 是人，`cause` 是 `<session.configure 或 session.create 那条命令>/vision`。写在 `context` 后面。内核只记不解读 |
 | `compaction_line` | 对象 | 可以没有 | 人钉的会话的压缩触发线（施工 CT-1，`compaction.md` 第二条第 2 条）：`{"percent": 整数或 null}`，窗口的百分之几，`percent` 总是写，`null` 是去掉、回到跟着 `compaction.line`。下一个回合开始时会话那一层照它换快照里的数（换了的另记一条只写 `policy` 的），撤掉的回合里的也算，换模型不清它。`by` 是人，`cause` 是 `<session.configure 或 session.create 那条命令>/compaction_line`。写在 `vision` 后面。内核只记不解读，范围协议那一头查过 |
+| `from` | 权限 | 可以没有 | 换以前人设的权限（施工 PL-1，2026-11-17 项目主人定）：内核切权限时写，是切以前那一刻会话的权限（`session.created` 的，或者上一次切成的），两格都写。头读老会话不用往前翻，就知道一页里第一次切以前是哪一级。只和 `permission` 一起出现，账本查（`from comes only with permission`）。会话造的时候就有权限，所以内核切的总带着它。写在 `compaction_line` 后面，以前的日志没有这一格，照没有读（头照以前的办法往前找） |
 
 施工 8-18 记过同一格，多一个 `model`（`{"model": 字符串, "level": 字符串或 null}`，会话给那一个模型记的一档）；8-18（补）去掉了那一层。那时的日志照样读得进、写回去一字不差，带 `model` 的不算会话的一档。
 
-几格都没有的 `{}` 也读得进来。内核切权限时只写 `permission`，换模型时只写 `model`，退回默认时写 `model`、`replaced`（`kernel/session.md`「换模型」），换快照时只写 `policy`（施工 P-1 再补）。换思考强度时只写 `effort`（施工 SM-1），钉看图模型时只写 `vision`（施工 VM-1），钉压缩触发线时只写 `compaction_line`（施工 CT-1）。以前的日志没有 `model`、`replaced`、`effort`，照没有读；带着 8-18 那阵子写的 `effort`（有 `model`）的照样读得进，内核不理它。样本里 137 号是人钉的压缩触发线，139 号是人换的，140 号是人换的思考强度，141 号是人设的上下文上限，142 号是人钉的看图模型，144 号是 143 号回合开始时池没了、退回的。
+几格都没有的 `{}` 也读得进来。内核切权限时写 `permission`、`from`（施工 PL-1），换模型时只写 `model`，退回默认时写 `model`、`replaced`（`kernel/session.md`「换模型」），换快照时只写 `policy`（施工 P-1 再补）。换思考强度时只写 `effort`（施工 SM-1），钉看图模型时只写 `vision`（施工 VM-1），钉压缩触发线时只写 `compaction_line`（施工 CT-1）。以前的日志没有 `model`、`replaced`、`effort`、`from`，照没有读；带着 8-18 那阵子写的 `effort`（有 `model`）的照样读得进，内核不理它。样本里 52、63 号是人切的权限，带着切以前的（施工 PL-1）；137 号是人钉的压缩触发线，139 号是人换的，140 号是人换的思考强度，141 号是人设的上下文上限，142 号是人钉的看图模型，144 号是 143 号回合开始时池没了、退回的。
 
 **`session.meta_changed`**：改了哪项写哪项。
 
@@ -632,7 +633,7 @@
 
 | 测试 | 守哪几种 |
 |---|---|
-| `crates/miyu-kernel/src/event/session/tests.rs` | 会话的四种：图纸上的写法、一次性的写与不写、每一级读成自己那一种、不认识的级别原样留着、权限两格都要写、坏的说是哪一种；子会话的 `parent`、`depth` 读写一字不差，主会话不写这两格（施工 7-1）；`session.recapped` 两格都要写（施工 3-8 四补）；`session.policy_changed` 的 `model`、`replaced` 读写一字不差、以前的日志照读、`null` 当没有、不是字的读不进来（施工 8-10）；以前日志里带 `effort` 的照读得进、内核不理它（施工 8-18 加，8-18（补）去掉） |
+| `crates/miyu-kernel/src/event/session/tests.rs` | 会话的四种：图纸上的写法、一次性的写与不写、每一级读成自己那一种、不认识的级别原样留着、权限两格都要写、坏的说是哪一种；子会话的 `parent`、`depth` 读写一字不差，主会话不写这两格（施工 7-1）；`session.recapped` 两格都要写（施工 3-8 四补）；`session.policy_changed` 的 `model`、`replaced` 读写一字不差、以前的日志照读、`null` 当没有、不是字的读不进来（施工 8-10）；以前日志里带 `effort` 的照读得进、内核不理它（施工 8-18 加，8-18（补）去掉）；`from` 两格都写、读写一字不差，以前的日志照读、写回去一个字节不变，`null` 当没有，少一格的读不进来（施工 PL-1） |
 | `crates/miyu-kernel/src/event/turn/tests.rs` | 回合的四种：图纸上的写法、没有 `trigger` 的不写这一格（施工 6-8）、每种结束原因、不认识的原样留着、坏的说是哪一种 |
 | `crates/miyu-kernel/src/event/message/tests.rs` | `message.assistant` 图纸上的写法、`seen` 必有、`interrupted` 只在是真时写；`message.withdrawn` 的写法和序号从 1 起 |
 | `crates/miyu-kernel/src/event/tool/tests.rs` | `tool.result` 的五种状态、不认识的原样留着、没真执行过的没有用时、说法怎么记；确认的两种：每种决定、没写规则、说明、理由的不写这几格；坏的说是哪一种 |

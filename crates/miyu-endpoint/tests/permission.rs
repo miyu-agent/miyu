@@ -58,6 +58,7 @@ fn switched_to(event: &Event) -> Option<&Permission> {
             context: None,
             vision: None,
             compaction_line: None,
+            from: _,
         }) => Some(permission),
         _ => None,
     }
@@ -70,25 +71,20 @@ async fn switching_over_the_protocol_records_it_and_pushes_it() {
     client.hello().await;
     let session = client.create("c1", "~").await;
     client.subscribe("s1", &session).await;
-    // 开只读、关只读、写着级别再开只读：每一次记一条，推给订阅着的头，推送在回应前面。
+    // 开只读、关只读、写着级别再开只读：每一次记一条，推给订阅着的头，推送在回应前面；带上换以前的级别（施工 PL-1）。
+    let open = json!({"level": "full", "read_only": false});
+    let closed = json!({"level": "full", "read_only": true});
     let steps = [
-        (
-            "c2",
-            json!({"read_only": true}),
-            json!({"level": "full", "read_only": true}),
-        ),
-        (
-            "c3",
-            json!({"read_only": false}),
-            json!({"level": "full", "read_only": false}),
-        ),
+        ("c2", json!({"read_only": true}), &closed, &open),
+        ("c3", json!({"read_only": false}), &open, &closed),
         (
             "c4",
             json!({"level": "full", "read_only": true}),
-            json!({"level": "full", "read_only": true}),
+            &closed,
+            &open,
         ),
     ];
-    for (id, mut params, permission) in steps {
+    for (id, mut params, permission, from) in steps {
         params["session"] = json!(session);
         let (pushed, reply) = switch(&mut client, id, params).await;
         assert_eq!(reply["result"], json!({}), "{reply}");
@@ -97,7 +93,7 @@ async fn switching_over_the_protocol_records_it_and_pushes_it() {
         let event = pushes[0];
         assert_eq!(
             event["body"],
-            json!({ "permission": permission }),
+            json!({ "permission": permission, "from": from }),
             "{event}"
         );
         assert_eq!(event["by"], json!({"kind": "person"}));
