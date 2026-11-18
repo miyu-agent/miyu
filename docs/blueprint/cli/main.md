@@ -67,7 +67,7 @@
    1. 第一个词是某个包 `[command]` 的名字：照那份清单找程序（先找包文件夹的 `bin/`，再找 `miyu` 真实位置旁边的，不找 `PATH`；施工 F-8 上再补），参数（第一个词以后的全部）、环境、标准输入输出原样交给它，Unix 上换成它，Windows 上起它、等它、这期间不理 Ctrl+C；退出码照它的。`help <名字>` 转成 `<程序> --help`。正好是 `<名字> --version`、`<名字> -V`（后面没别的）的不转交，主程序自己在标准输出上印 `miyu <名字> <包的版本>`（清单 `[package] version`，同 `miyu pkg list`；没写版本的只印 `miyu <名字>`），退出码 0（施工 VS-1，项目主人 2026-11-17 报 `miyu im --version` 说未知命令、`miyu tui --version` 印一大段：各家程序认不认、印成什么样不一样）。环境另交 `MIYU_HOME`（找到它的数据根）、`MIYU_RESOURCES`、`MIYU_PROGRAM` 和它的几处，同核心拉起扩展的那一份（`PackageDirs::launch_env`，施工 VS-1：原来不交 `MIYU_HOME`，人没设它的机器上包的命令连不上核心）。程序没找到：标准错误上说没找到、哪一份清单说这个子命令由它跑，退出码 1。
    2. 主程序的帮助页在最后一组命令后面、「选项」那一节前面多一组「软件包加的命令」（`Commands from packages:`），空一行隔开，一个一行，说明和上面的命令从同一列（第 22 列）开始，说明照界面语言挑；没有的不写这一组（施工 AP-1：原来接在「命令」那一节后面）。撞了内置子命令的不转交、不列：内置的优先。`miyu web` 施工 CL-7 起不再内置，由网页包（`webui`）的 `[command]` 加，同 `miyu tui`（项目主人 2026-10-30 定：没装时内置的那一条只会报没装）。
    3. 别的照下面走。
-1. 先照界面语言给主程序和 `ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename`、`memory`（连同它的子命令，施工 R-3 再补）、`pkg`（连同它的子命令，施工 T-3）、`kb`（连同它的子命令，施工 K-7 下）、`schedule`（连同它的子命令，施工 J-3 下）、`config`（连同它的八个子命令）、`provider`（连同它的 `login`、`list`、`logout`）、`setup`、`sandbox`（连同它的 `setup`、`remove`）换上帮助页（clap 的 `override_help`；`rewind` 是 `undo` 的别名，用同一页），再解析参数。施工 HP-1 起照一张表挂（`main.rs` 的 `PAGES`：顶层子命令是哪一页）：每个顶层子命令连同它下面每一层的子命令都印它那一页，不再一个个写子命令的名字，后加的子命令不会漏；`core`（连同 `stop`）也有自己的一页。
+1. 先照界面语言给主程序和 `ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename`、`memory`（连同它的子命令，施工 R-3 再补）、`pkg`（连同它的子命令，施工 T-3）、`kb`（连同它的子命令，施工 K-7 下）、`schedule`（连同它的子命令，施工 J-3 下）、`config`（连同它的八个子命令）、`provider`（连同它的 `login`、`list`、`logout`）、`setup`、`sandbox`（连同它的 `setup`、`remove`）换上帮助页（clap 的 `override_help`；`rewind` 是 `undo` 的别名，用同一页），再解析参数。施工 HLP-1 起照一张表挂（`main.rs` 的 `PAGES`：顶层子命令是哪一页）：每个顶层子命令连同它下面每一层的子命令都印它那一页，不再一个个写子命令的名字，后加的子命令不会漏；`core`（连同 `stop`）也有自己的一页。
 2. 解析参数，不对的：
    1. 不认识的子命令：标准错误上报 `miyu: 未知命令 '<名字>'`，提示运行 `miyu --help`（下面「给人看的字」），退出码 2。不连核心，不拉起，什么都不发。本机存着的软件源索引（`var/cache/packages/sync`，再照名字找 `var/cache/packages/sources/<名字>/`，不验签名，只是提示）里有包提供这个命令（`provides.command`）的，提示换成「软件包 <编号> 提供这个命令，用 'miyu pkg install <编号>' 安装」（施工 CL-7，`crates/miyu-cli/src/packages/offered.rs`）。
    2. `-h`、`--help`、`help`、`help <子命令>`：把那一页原样印在标准输出上，退出码 0。`-V`、`--version`：印 `miyu <版本>`，退出码 0；跟在自己的子命令后面的（`miyu ask --version`）印同一行（施工 VS-1：clap 的 `propagate_version` 原样印 `miyu-ask <版本>`，换成主程序那一行）。
@@ -79,7 +79,7 @@
 5. 拉起核心用的命令：自己这个程序（`std::env::current_exe`，拿不到的用 `miyu`，照 `PATH` 找），加上 `core`。别的参数、环境变量不加；工作目录、标准输入输出、跟终端脱开，由拉起的那一边接（`ipc.md`）。
 6. `core`：跑核心进程，`--idle-seconds <秒>` 是空闲多少秒退出，不写的照系统配置 `core.idle_exit`，默认不退（施工 Z-1 上，`core.md`）。
 
-**帮助页**：自己写的，一种语言十二页（`miyu`、`ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename`、`config`、`provider`、`setup`），编进程序，资源目录找不到也印得出；每页以一个换行结尾，最宽 80 列（中文字算两列）。`ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename` 的七页见 `cli/ask.md`、`cli/undo.md`、`cli/redo.md`、`cli/compact.md`、`cli/recap.md`、`cli/rename.md`，`provider` 那一页见 `cli/login.md`。`help` 子命令、`core` 不列进主程序那一页；`miyu core --help`、`miyu core stop --help` 印 `core` 自己那一页（施工 HP-1，原来是 clap 照代码注释生成的）。没有哪个子命令印 clap 生成的帮助，测试 `every_subcommand_prints_the_page_of_its_command` 守着。
+**帮助页**：自己写的，一种语言十二页（`miyu`、`ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename`、`config`、`provider`、`setup`），编进程序，资源目录找不到也印得出；每页以一个换行结尾，最宽 80 列（中文字算两列）。`ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename` 的七页见 `cli/ask.md`、`cli/undo.md`、`cli/redo.md`、`cli/compact.md`、`cli/recap.md`、`cli/rename.md`，`provider` 那一页见 `cli/login.md`。`help` 子命令、`core` 不列进主程序那一页；`miyu core --help`、`miyu core stop --help` 印 `core` 自己那一页（施工 HLP-1，原来是 clap 照代码注释生成的）。没有哪个子命令印 clap 生成的帮助，测试 `every_subcommand_prints_the_page_of_its_command` 守着。
 
 总表（`miyu`）照用途分组（对话、内容、软件包、设置、系统，软件包加的命令另一组，施工 AP-1），只列命令和全局选项 `-h`、`-V`，`ask` 和会话那几条命令的选项写在各自的页上；用法写 `miyu [<命令>] [<选项>]`，可以不写的整段用方括号，要填的写 `<名字>`，几个选一的写 `<text|json>`；命令那几组的说明从第 22 列开始，同一节里的选项、子命令说明也各自从同一列开始。末尾一句指向 `miyu help <命令>`。`ask` 的页多一节「退出状态」，列 0 到 5（`cli/ask.md`「退出码」）。
 
@@ -244,7 +244,7 @@ Run 'miyu help <command>' for more on a command.
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu/tests/commands.rs` | 不认识的子命令：中文、英文的那一句，退出码 2，不拉起核心、核心没起来过；只敲 `miyu`：退出码 2、说用 `miyu ask`；`-h`、`--help`、`help` 印那一页，中文、英文各和样本一样，退出码 0；`--version` 印 `miyu ` 开头；参数写错的几种，中文、英文各说那一句，退出码 2；主程序换了文件名，说的还是 `miyu`（施工 5-8） |
-| `crates/miyu/src/main.rs` 的 `tests` | 每个子命令（连同下面每一层）的 `-h` 印的是它那个命令的帮助页，两种语言；顶层子命令都在 `PAGES` 里（施工 HP-1） |
+| `crates/miyu/src/main.rs` 的 `tests` | 每个子命令（连同下面每一层）的 `-h` 印的是它那个命令的帮助页，两种语言；顶层子命令都在 `PAGES` 里（施工 HLP-1） |
 | `crates/miyu-cli/src/help/tests.rs` | 每一页列的选项和程序真有的一一对得上（长短写法、值名），最宽 80 列，以一个换行结尾；值名照表换成页里的写法（`<编号>`、`<目录>`）（施工 5-10 上）、`<时长>`（施工 7-9） |
 | `crates/miyu-cli/src/misuse/tests.rs` | 七种错各说哪一句、两种语言；值的连法；控制字符换掉；全部子命令里必写的只有 `ask` 的要说的话；要一起写的选项少了一个、嵌着的子命令写错（施工 5-8）；`--add-dir` 后面不是已经有的目录（施工 5-10 上）；`--timeout` 后面不是时长（施工 7-9）；`--from` 后面是空的、只有空白（施工 7-10）；嵌着的子命令少了必写的照帮助页说怎么写，有必写的子命令在帮助页上都有那一行（施工 K-7 修） |
 | `crates/miyu/tests/ask.rs` | 参数不对退出码 2（什么都不写、`--session` 和 `--continue` 一起写）；`miyu ask --help` 跟着界面语言；没有 key、核心没在跑的不拉起 |

@@ -11,13 +11,13 @@
 
 ### 实测
 
-- `gh api repos/miyu-agent/miyu/private-vulnerability-reporting` 现在回 `{"enabled":false}`：开关还没开，`SECURITY.md` 和手册里那个地址（`…/security/advisories/new`）要等项目主人在仓库设置里点开以后才通。开了以后用另一个账号点一遍「Report a vulnerability」看到表单才算验过，这一步没法替。
+- 写的时候私密漏洞报告的开关还没开（`gh api repos/miyu-agent/miyu/private-vulnerability-reporting` 回 `{"enabled":false}`）。同一天项目主人同意、主会话开了，换仓库以后在新仓库上又开了一次：现在回 `true`，仓库的 Security 页上有「Report a vulnerability」，`…/security/advisories/new` 没登录时跳到登录页。用一个不是维护者的账号点一遍、看到表单，这一步没法替。
 - `packaging/README.md` 只删字：改前改后对比，代码块、反引号里的命令和路径逐个相同。
 - 中英对齐、锚点、链接三个脚本照基线过（38 页，问题 0；链接基线 12 条不变，`../../SECURITY.md` 指得到）。
 
 ### 查到、没改的
 
-- 核心仓库的 Issues 是关着的（`gh issue list` 回 `has disabled issues`），而 `guide/troubleshooting`「还是不行」让人到 `https://github.com/miyu-agent/miyu/issues` 提。开不开 Issues 要项目主人定，已交主会话；定了以后这一句跟着改或者不用改。
+- 核心仓库的 Issues 当时是关着的（`gh issue list` 回 `has disabled issues`），而 `guide/troubleshooting`「还是不行」让人到 `https://github.com/miyu-agent/miyu/issues` 提。同一天项目主人同意打开，现在开着，手册那一句不用改。
 
 ### 蓝图改哪几节
 

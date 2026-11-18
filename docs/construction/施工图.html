@@ -1566,7 +1566,8 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC10"><span class="n">DOC-10</span>手册跟上「启用」开关和设置项改名<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC11"><span class="n">DOC-11</span>数据根那几条补上实测<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC12"><span class="n">DOC-12</span>报告安全问题的渠道、打包说明去施工号<span class="st">…</span></a></li>
-        <li><a class="step review" href="#sHP1"><span class="n">HP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sDOC13"><span class="n">DOC-13</span>换仓库提前做了，设计 59 跟着改<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sHLP1"><span class="n">HLP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
         <li><a class="step review" href="#sRO2"><span class="n">RO-2</span>数据根两种模式都读得到<span class="st">…</span></a></li>
@@ -60970,15 +60971,64 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
     </div>
   </div>
 </section>
-<section class="sheet" id="sHP1" aria-labelledby="h-sHP1">
-  <div class="sheet-head"><h2 id="h-sHP1"><span class="no">HP-1</span>每个子命令的 -h 都印自己写的帮助页</h2><span class="pill done">做完</span></div>
+<section class="sheet" id="sDOC13" aria-labelledby="h-sDOC13">
+  <div class="sheet-head"><h2 id="h-sDOC13"><span class="no">DOC-13</span>换仓库提前做了，设计 59 和一处旧地址跟着改</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">设计 59 第三节第 3 条的换仓库原定发版那天做，项目主人定提前到 2026-11-18 做完。文档里写着「发版那天做」的地方照现状改。只动文档。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">docs/designs　docs/construction</span><span class="dir-note">DOC-13</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>设计 59：第三节第 3 条、第五节第 1 步写明已提前做；第九节记一条做了什么</li>
+              <li>旧版证据索引：旧仓库的地址后面注明现在在哪</li>
+              <li>各仓库里指旧核心地址的逐个核实：迁移包里旧版提示词的原文、同步来的知识库文章不改</li>
+              <li>DOC-12 施工单两处「还没开」改成现状</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">原文、同步来的内容里的旧地址不改，旧网址会跳转</span><span class="rl">施工单「核实」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DOC-13</dd></div>
+        <div><dt>名称</dt><dd>换仓库提前做了，设计 59 和一处旧地址跟着改</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-18</dd></div>
+        <div><dt>提交</dt><dd class="mono">DOC-13</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>旧地址回 301 跳到新仓库；新仓库上 main、legacy-0.7、新旧 Release 都在</span></li>
+        <li><span class="ok">✓</span><span>核心仓库里指旧地址的只剩讲来历的三处，都写明了现状</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/DOC-13-换仓库已做.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sHLP1" aria-labelledby="h-sHLP1">
+  <div class="sheet-head"><h2 id="h-sHLP1"><span class="no">HLP-1</span>每个子命令的 -h 都印自己写的帮助页</h2><span class="pill done">做完</span></div>
   <p class="purpose">外部审计查出、证实后修：12 个子命令的 <code>-h</code> 印的是 clap 照源码注释生成的帮助，中文、带施工号，英文界面下也是。挂帮助页改成一张表，漏不了。</p>
   <figure class="frame">
     <div class="drawing">
       <div class="d01">
         <div class="d01-left">
           <div class="dir">
-            <div class="dir-label"><span class="path">miyu · main.rs　miyu-cli · help.rs、help/{zh,en}/core.txt、misuse</span><span class="dir-note">HP-1</span></div>
+            <div class="dir-label"><span class="path">miyu · main.rs　miyu-cli · help.rs、help/{zh,en}/core.txt、misuse</span><span class="dir-note">HLP-1</span></div>
             <ol class="pipe" aria-label="做了什么">
               <li>全部 87 个子命令逐个敲 <code>-h</code>：<code>pkg pack</code> 等七个、<code>memory dream</code>、<code>memory cards</code>、<code>mcp logout</code>、<code>core</code>、<code>core stop</code> 印源码注释</li>
               <li>主程序照表 <code>PAGES</code> 挂：一个顶层子命令一页，连同它下面每一层的子命令</li>
@@ -60996,10 +61046,10 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
     </div>
     <figcaption class="titleblock">
       <dl>
-        <div><dt>图号</dt><dd class="mono">HP-1</dd></div>
+        <div><dt>图号</dt><dd class="mono">HLP-1</dd></div>
         <div><dt>名称</dt><dd>每个子命令的 -h 都印自己写的帮助页</dd></div>
         <div><dt>日期</dt><dd class="mono">2026-11-18</dd></div>
-        <div><dt>提交</dt><dd class="mono">HP-1</dd></div>
+        <div><dt>提交</dt><dd class="mono">HLP-1</dd></div>
         <div><dt>验收</dt><dd>门禁、Windows 版 clippy、三台 CI 全过</dd></div>
       </dl>
     </figcaption>
@@ -61015,7 +61065,7 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
     <div>
       <h3>图纸</h3>
       <ul>
-        <li>施工单 <code>docs/construction/HP-1-帮助页挂全.md</code>；蓝图 <code>cli/main.md</code> 三处。</li>
+        <li>施工单 <code>docs/construction/HLP-1-帮助页挂全.md</code>；蓝图 <code>cli/main.md</code> 三处。</li>
       </ul>
     </div>
   </div>

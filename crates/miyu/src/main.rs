@@ -187,7 +187,7 @@ fn main() -> ExitCode {
     }
 }
 
-/// 哪个子命令印哪一页（施工 4-11），连同它下面每一层的子命令（施工 HP-1）。`rewind` 是 `undo` 的别名，不另算。
+/// 哪个子命令印哪一页（施工 4-11），连同它下面每一层的子命令（施工 HLP-1）。`rewind` 是 `undo` 的别名，不另算。
 const PAGES: [(&str, Page); 23] = [
     ("ask", Page::Ask),
     ("undo", Page::Undo),
@@ -223,7 +223,7 @@ fn dressed(command: clap::Command, language: Language, help: String) -> clap::Co
         })
 }
 
-/// 这个命令和它下面每一层的子命令都印 `help` 这一页（施工 HP-1）：原来照名单一个个挂，后加的子命令漏了就印 clap 照源码
+/// 这个命令和它下面每一层的子命令都印 `help` 这一页（施工 HLP-1）：原来照名单一个个挂，后加的子命令漏了就印 clap 照源码
 /// 注释生成的那一页。
 fn everywhere(command: clap::Command, help: &'static str) -> clap::Command {
     let names: Vec<String> = command
@@ -329,7 +329,7 @@ mod tests {
 
     #[test]
     fn every_subcommand_prints_the_page_of_its_command() {
-        // 漏挂的印 clap 照源码注释生成的那一页：英文界面里是中文、带施工号（审计 #037，施工 HP-1）。
+        // 漏挂的印 clap 照源码注释生成的那一页：英文界面里是中文、带施工号（审计 #037，施工 HLP-1）。
         for language in [Language::Chinese, Language::English] {
             let command = dressed(Cli::command(), language, String::from("miyu\n"));
             assert_eq!(printed(&command, &[]), "miyu\n");
