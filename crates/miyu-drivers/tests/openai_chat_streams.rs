@@ -337,3 +337,25 @@ fn finished_says_whether_the_finish_reason_came() {
     assert!(decoder.finished());
     assert!(!decoder.done());
 }
+
+/// 审计 #020 第 2 条（施工 AU-P1）：有的兼容层并行的几次调用都写 `index: 0`，靠 `id` 分开。同一个 `index` 来了个不一样的
+/// `id`，是新的一次调用：各开一块，参数不接到一起。只写 `index`、`id` 每片都带同一个的照旧是同一次。
+#[test]
+fn a_new_id_on_the_same_index_is_a_new_call() {
+    let sse = concat!(
+        "data: {\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":\"read\",\"arguments\":\"{\\\"p\\\":\\\"1\\\"}\"}}]}}]}\n\n",
+        "data: {\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_2\",\"type\":\"function\",\"function\":{\"name\":\"read\",\"arguments\":\"{\\\"p\\\":\"}}]}}]}\n\n",
+        "data: {\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_2\",\"function\":{\"arguments\":\"\\\"2\\\"}\"}}]}}]}\n\n",
+        "data: {\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\n\n",
+        "data: [DONE]\n\n",
+    );
+    let got = render(&decode(&[sse.as_bytes()]));
+    assert!(got.contains("start 0 tool_call read\n"), "{got}");
+    assert!(got.contains("start 1 tool_call read\n"), "{got}");
+    assert!(got.contains("text 0 \"{\\\"p\\\":\\\"1\\\"}\"\n"), "{got}");
+    assert!(
+        got.contains("text 1 \"{\\\"p\\\":\"\ntext 1 \"\\\"2\\\"}\"\n"),
+        "{got}"
+    );
+    assert!(got.ends_with("ok\n"), "{got}");
+}

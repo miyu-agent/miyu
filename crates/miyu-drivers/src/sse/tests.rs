@@ -126,3 +126,16 @@ fn an_event_longer_than_the_limit_stops_the_stream() {
         assert!(fed <= MOST + 2 * line.len(), "攒过了上限还在收");
     }
 }
+
+/// 审计 #020 第 1 条（施工 AU-P1）：流开头的 BOM（U+FEFF）照规矩去掉一个，第一条不丢；切在两片之间的也一样。只认流的开头：
+/// 后面的 BOM 照原样是字。
+#[test]
+fn a_leading_bom_is_dropped_once() {
+    assert_eq!(events(&[b"\xEF\xBB\xBFdata: a\n\n"]), data(&["a"]));
+    assert_eq!(events(&[b"\xEF\xBB", b"\xBFdata: a\n\n"]), data(&["a"]));
+    assert_eq!(
+        events(&[b"data: a\n\n\xEF\xBB\xBFdata: b\n\n"]),
+        data(&["a"]),
+        "后面的 BOM 不去：那一行的字段名不是 data"
+    );
+}

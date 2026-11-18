@@ -2,6 +2,7 @@
 //! 事件出。分片从哪里切开都一样。
 //!
 //! - 换行：`\n`、`\r\n`、`\r` 都算；`\r\n` 被切在两片之间，不多出一个空行。
+//! - 流开头的一个 BOM（U+FEFF）去掉（审计 #020 第 1 条，施工 AU-P1）：原来它粘在第一行的字段名前面，第一条丢了。
 //! - 一行收全了才按 UTF-8 解：一个汉字被切在两片之间也不坏。坏的字节换成 U+FFFD，规矩就是这样。
 //! - `data:` 后面的一个空格去掉，几行 `data` 用换行接起来；`event:` 记下名字；`:` 开头的是注释；
 //!   `id:`、`retry:` 和不认识的字段不理。空行结束一条，有 `data` 的才交出来。
@@ -38,6 +39,8 @@ pub struct Sse {
     event: Option<String>,
     /// 攒过了 [`MOST`]：清掉了攒的，再来的都不收。
     overflowed: bool,
+    /// 第一行收全过了：流开头的 BOM 只在第一行去。
+    past_first: bool,
 }
 
 impl Sse {
@@ -86,7 +89,12 @@ impl Sse {
 
     /// 收全了一行。
     fn end_line(&mut self, out: &mut Vec<Event>) {
-        let line = String::from_utf8_lossy(&mem::take(&mut self.line)).into_owned();
+        let mut line = String::from_utf8_lossy(&mem::take(&mut self.line)).into_owned();
+        if !mem::replace(&mut self.past_first, true)
+            && let Some(rest) = line.strip_prefix('\u{feff}')
+        {
+            line = rest.to_string();
+        }
         if line.is_empty() {
             self.dispatch(out);
             return;

@@ -329,10 +329,18 @@ impl Decoder {
     }
 
     /// 这一片属于哪一次调用：先按 `index`，没有再按 `id`，都没有就是最近的那一次。认不出的，
-    /// 是新的一次。
+    /// 是新的一次。同一个 `index` 来了个和那一次不一样的 `id`，也是新的一次（审计 #020 第 2 条，施工 AU-P1：有的兼容层并行的
+    /// 几次都写 `index: 0`，原来参数接成一段坏的 JSON、后一次丢了）；同一个 `index` 的照最近的那一次认。
     fn slot(&mut self, index: Option<u64>, id: Option<&str>) -> usize {
         let found = match (index, id) {
-            (Some(index), _) => self.calls.iter().position(|call| call.index == Some(index)),
+            (Some(index), id) => self
+                .calls
+                .iter()
+                .rposition(|call| call.index == Some(index))
+                .filter(|at| {
+                    let known = self.calls[*at].id.as_deref();
+                    id.is_none_or(|id| known.is_none_or(|known| known == id))
+                }),
             (None, Some(id)) => self
                 .calls
                 .iter()
