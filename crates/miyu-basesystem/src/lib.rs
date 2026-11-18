@@ -86,8 +86,8 @@ pub fn tools(resources: &Path) -> Result<Vec<Arc<dyn Tool>>, LoadError> {
         Arc::new(sessions::Sessions::load(resources, common.clone())?),
         Arc::new(session_usage::SessionUsage::load(resources)?),
         Arc::new(ask_user::AskUser::load(resources, common.clone())?),
-        Arc::new(todowrite::TodoWrite::load(resources, common)?),
-        Arc::new(packages::Packages::load(resources)?),
+        Arc::new(todowrite::TodoWrite::load(resources, common.clone())?),
+        Arc::new(packages::Packages::load(resources, common)?),
         Arc::new(package::Package::load(resources)?),
     ])
 }

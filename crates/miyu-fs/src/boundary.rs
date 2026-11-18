@@ -156,12 +156,16 @@ impl Boundary {
             .filter(|root| path.starts_with(root));
         // 这个人自己的几处（施工 Y-11 上）：在数据根里也照工作区算。
         let own = self.own.iter().any(|root| path.starts_with(root));
-        // 数据根：只有工作区、自己的几处落在数据根里时那一片照工作区算；加进来的目录落进了数据根的（报来以后被换成了链接）照样
-        // 写不进。
+        // 数据根：只有工作区、自己的几处本身落在数据根里时那一片照工作区算（自己的几处同工作区，审计 #030 第 1 条，施工 AU-P1：
+        // 被换成指到家目录这种包住数据根的链接的，原来连密钥、令牌都算能写）；加进来的目录落进了数据根的（报来以后被换成了链接）
+        // 照样写不进。
         if let Some(data_root) = &self.data_root
             && within(path, data_root)
             && !workspace.is_some_and(|root| within(root, data_root))
-            && !own
+            && !self
+                .own
+                .iter()
+                .any(|root| path.starts_with(root) && within(root, data_root))
         {
             return Zone::DataRoot;
         }

@@ -288,3 +288,24 @@ async fn search_gives_the_core_answer_as_it_is() {
     assert_eq!(text(&both), "Give only one of package, path, search.\n");
     assert_eq!(port.asked.load(Ordering::Relaxed), 1, "不问端口");
 }
+
+/// 审计 #036 第 4 条（施工 AU-P1）：参数写错了的（不是对象、该是字的写成了数）说「参数不对」，不当成什么都没写、把整张表列给她。
+/// 端口一次都不问。
+#[tokio::test]
+async fn bad_arguments_are_said_not_listed() {
+    let port = Arc::new(Port::new());
+    for args in [json!({"package": 3}), json!([1]), json!({"search": ["a"]})] {
+        let done = packages(&port, args.clone()).await;
+        assert!(done.error, "{args}");
+        assert!(
+            text(&done).starts_with("Bad arguments: "),
+            "{args}：{}",
+            text(&done)
+        );
+        assert_eq!(
+            done.human.as_ref().map(|said| said.key.as_str()),
+            Some("software/basesystem/common/bad-args")
+        );
+    }
+    assert_eq!(port.asked.load(Ordering::Relaxed), 0, "端口一次都没问");
+}

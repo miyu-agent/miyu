@@ -299,3 +299,19 @@ fn the_data_root_under_a_linked_parent_is_known_whether_it_is_made_or_not() {
     );
     assert_eq!(later.zone(&target("disk/other.txt")), Zone::Outside);
 }
+
+/// 审计 #030 第 1 条（施工 AU-P1）：自己的几处只在它本身落在数据根里时，数据根里的那一块照工作区算（同工作区）。照 XDG 的那几处
+/// 被换成了指到包住数据根的地方（家目录）的链接，数据根别处照旧是数据根那一片，密钥、令牌写不进；它自己里面、数据根外面的照旧
+/// 能写。
+#[test]
+fn an_own_dir_wrapping_the_data_root_does_not_open_it() {
+    let site = Site::new();
+    let boundary = Boundary::new(&Places {
+        own: vec![site.at("")],
+        ..site.places()
+    });
+    assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::DataRoot);
+    assert_eq!(boundary.zone(&site.real("data")), Zone::DataRoot);
+    assert_eq!(boundary.zone(&site.real("home/notes.txt")), Zone::Writable);
+    assert!(boundary.blocks_descent(&site.real("data/run")));
+}

@@ -277,8 +277,15 @@ const SEPARATORS: [char; 5] = ['/', '-', '_', '.', ' '];
 /// 开头多 8 分，和上一个字连着多 5 分；文件名去掉扩展名正好是打的字多 100 分。`query` 是空的都对得上、0 分。
 #[must_use]
 pub fn score(path: &str, query: &str) -> Option<(i64, Vec<usize>)> {
-    let chars: Vec<char> = path.to_lowercase().chars().collect();
-    let want: Vec<char> = query.to_lowercase().chars().collect();
+    // 一个字一个字地小写，只取头一个（审计 #036 第 2 条，施工 AU-P1）：`İ` 整串小写成两个字，后面的位置都错开一格，文件名从哪
+    // 起、交回的标的位置都对不上原来的路径。
+    let lower = |text: &str| -> Vec<char> {
+        text.chars()
+            .map(|c| c.to_lowercase().next().unwrap_or(c))
+            .collect()
+    };
+    let chars = lower(path);
+    let want = lower(query);
     if want.is_empty() {
         return Some((0, Vec::new()));
     }

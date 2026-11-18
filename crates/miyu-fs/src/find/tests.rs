@@ -94,6 +94,9 @@ fn the_scoring_formula_is_pinned_to_exact_numbers() {
 #[test]
 fn query_characters_must_all_appear_in_order_name_hits_segment_starts_and_runs_score_higher() {
     assert!(score("src/lib.rs", "xyz").is_none());
+    // 审计 #036 第 2 条（施工 AU-P1）：小写以后字数会变的字（`İ` 变成两个字）在目录里，文件名从哪个字起照旧对得上，分和标的
+    // 位置同全是 ASCII 的一样。
+    assert_eq!(score("İ/a.txt", "a"), score("x/a.txt", "a"));
     assert!(score("src/lib.rs", "bil").is_none(), "要照先后");
 
     let (_, marks) = score("src/Main.rs", "main").expect("对得上");

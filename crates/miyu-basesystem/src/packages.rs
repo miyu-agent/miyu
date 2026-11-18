@@ -17,7 +17,7 @@ use miyu_tool::{
     Call, Done, PACKAGES, PackageConflict, PackageRefusal, Progress, Running, Spec, Target, Tool,
 };
 
-use crate::common::said;
+use crate::common::{Common, said};
 use crate::load::{self, LoadError, say};
 
 /// `packages`。
@@ -26,9 +26,10 @@ pub(crate) struct Packages {
     texts: Texts,
 }
 
-/// 输出里给她看的几句：`software/basesystem/packages/*.txt`。
+/// 输出里给她看的几句：`software/basesystem/packages/*.txt`，和几件工具共用的。
 #[derive(Clone)]
 struct Texts {
+    common: Common,
     listed: Template,
     off: Template,
     removed: Template,
@@ -57,13 +58,14 @@ struct Args {
 }
 
 impl Packages {
-    /// 照资源目录 `resources` 里的字造。访问类别是读：只看，什么都不改。
-    pub(crate) fn load(resources: &Path) -> Result<Packages, LoadError> {
+    /// 照资源目录 `resources` 里的字造，共用的几句是 `common`。访问类别是读：只看，什么都不改。
+    pub(crate) fn load(resources: &Path, common: Common) -> Result<Packages, LoadError> {
         let text = |name: &str, fields: &[&str]| load::text(resources, PACKAGES, name, fields);
         let row = ["package", "name", "summary"];
         Ok(Packages {
             spec: load::spec(resources, PACKAGES, Access::Read)?,
             texts: Texts {
+                common,
                 listed: text("listed", &row)?,
                 off: text("listed-off", &row)?,
                 removed: text("listed-removed", &["package", "name"])?,
@@ -111,11 +113,11 @@ impl Tool for Packages {
     fn run(&self, call: Call, _progress: Progress) -> Running<'_> {
         let texts = self.texts.clone();
         Box::pin(async move {
-            let args: Args = serde_json::from_str(&call.args).unwrap_or(Args {
-                package: None,
-                path: None,
-                search: None,
-            });
+            // 写错的说参数不对（审计 #036 第 4 条，施工 AU-P1）：原来当成什么都没写，把整张表列给她。
+            let args = match serde_json::from_str::<Args>(&call.args) {
+                Ok(args) => args,
+                Err(error) => return texts.common.bad_args(&error),
+            };
             let Some(port) = call.packages.clone() else {
                 return Done::error(say(&texts.unavailable, &[])).said(said("packages/failed"));
             };
