@@ -1,6 +1,6 @@
 # packaging
 
-给用户的说明见 [安装](../docs/guide/install.md)、[常驻和服务器](../docs/guide/service.md)。
+给用户的说明见 [安装](../docs/zh/guide/install.md)、[常驻和服务器](../docs/zh/guide/service.md)。
 
 安装包、系统要用的文件。个人机器上那四份（systemd 用户服务、XDG 自启动、launchd、Windows 任务计划）也是 `miyu service enable` 写的样子：它照这里的编进程序，换上 `miyu` 的真实位置，改了这里的跟着变。写打包脚本（PKGBUILD、deb、rpm、Homebrew、安装脚本）的那一步照这里装。设计见 `docs/designs/12-进程形态与分发.md` 第二、四节。
 
@@ -73,5 +73,5 @@ sudo systemctl enable --now miyu-web
 - systemd 照 `StateDirectory=miyu`、`CacheDirectory=miyu` 建好 `/var/lib/miyu`、`/var/cache/miyu`，都属于 `miyu`。别的初始化系统（`init/` 下）先自己建好这两个目录、`chown miyu:miyu`、数据根 `chmod 0700`。
 - **沙盒**：命令的沙盒在 Linux 上用 Landlock，不要用户命名空间。systemd 的加固项（`PrivateUsers=`、`ProtectHome=` 这些）没在这里写，要加的先在自己的机器上试过沙盒还起得来。
 - **本机的命令行**：核心只认 `miyu` 这个用户自己连，本机要用命令行的 `sudo -u miyu env MIYU_HOME=/var/lib/miyu miyu …`。
-- **网页软件**默认只听 `127.0.0.1`。系统配置里 `web.listen` 改成 `0.0.0.0` 或这台机器的某个地址就开了局域网，别的设备要访问密码；局域网是明文 HTTP。没有浏览器的服务器先用 ssh 的端口转发进去设访问密码。见 [常驻和服务器](../docs/guide/service.md)。
+- **网页软件**默认只听 `127.0.0.1`。系统配置里 `web.listen` 改成 `0.0.0.0` 或这台机器的某个地址就开了局域网，别的设备要访问密码；局域网是明文 HTTP。没有浏览器的服务器先用 ssh 的端口转发进去设访问密码。见 [常驻和服务器](../docs/zh/guide/service.md)。
 - 日志：`journalctl -u miyu`，核心自己的运行日志在 `/var/lib/miyu/var/log/`。备份、搬家照数据根 `/var/lib/miyu`。

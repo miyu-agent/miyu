@@ -10,7 +10,7 @@
 - 复现的步骤，越短越好；
 - 造成的后果：读到、改到、发出去了什么。
 
-Miyu 挡住什么、没挡住什么，见手册的 [安全](docs/guide/security.md)。
+Miyu 挡住什么、没挡住什么，见手册的 [安全](docs/zh/guide/security.md)。
 
 ## Reporting a security issue
 
@@ -24,4 +24,4 @@ Please include:
 - steps to reproduce, as short as possible;
 - the impact: what could be read, changed or sent out.
 
-What Miyu guards against and what it does not is described in the user guide: [Security](docs/guide/security.en.md).
+What Miyu guards against and what it does not is described in the user guide: [Security](docs/en/guide/security.md).

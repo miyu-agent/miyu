@@ -1568,6 +1568,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC12"><span class="n">DOC-12</span>报告安全问题的渠道、打包说明去施工号<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC13"><span class="n">DOC-13</span>换仓库提前做了，设计 59 跟着改<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC14"><span class="n">DOC-14</span>快速上手换成手写稿<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sDOC15"><span class="n">DOC-15</span>手册按语言分目录，根 README 适配<span class="st">…</span></a></li>
         <li><a class="step review" href="#sHLP1"><span class="n">HLP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
@@ -61072,6 +61073,55 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/DOC-14-快速上手.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sDOC15" aria-labelledby="h-sDOC15">
+  <div class="sheet-head"><h2 id="h-sDOC15"><span class="no">DOC-15</span>用户手册、开发者文档按语言分目录</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">项目主人定：文档目录下按语言分子目录，再往下才是完整的文档。手册和开发者文档搬过去，根 README 跟着适配。只动文档。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">docs/zh　docs/en　README.md　README.en.md　docs/assets</span><span class="dir-note">DOC-15</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>docs/guide、docs/dev 搬成 docs/zh/…、docs/en/…，两边的页一一对应；docs/README.md 改成入口</li>
+              <li>全仓库 Markdown 里的相对链接照新位置改写，593 处</li>
+              <li>根 README：换成项目主人自己写的那一份和五张截图，加语言切换、接上快速上手的链接；另出英文版，各指各的语言</li>
+              <li>docs/authors、docs/reference 接着门禁和测试，没搬，另排</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">用户手册、开发者文档一种语言一个目录，两边的页名一样</span><span class="rl">docs/zh、docs/en</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DOC-15</dd></div>
+        <div><dt>名称</dt><dd>用户手册、开发者文档按语言分目录</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-18</dd></div>
+        <div><dt>提交</dt><dd class="mono">DOC-15</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>中英各 37 页一页对一页，1056 个链接都指得到，不串语言</span></li>
+        <li><span class="ok">✓</span><span>根 README 和项目主人的文件逐行比，只多语言切换和两行链接；中英各指各的语言</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/DOC-15-文档按语言分目录.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>
