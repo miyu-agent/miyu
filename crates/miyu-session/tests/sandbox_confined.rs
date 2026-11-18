@@ -65,13 +65,15 @@ async fn a_confined_command_reads_and_writes_only_its_workspace() {
         };
         let temp = work.join(".tmp");
         assert!(temp.is_dir(), "工作区里的临时目录建好了");
+        // `.tmp` 在工作区里，不单独进名单（施工 AU-001）。
         assert_eq!(
             sandboxed.spec.write,
-            [work.clone(), temp.clone()],
+            std::slice::from_ref(&work),
             "{level:?}"
         );
         let read = sandboxed.spec.read.clone().expect("只准读名单里的");
-        for wanted in [Path::new("/dev"), Path::new("/proc/self"), &work, &temp] {
+        assert!(!read.contains(&temp), "{read:?}");
+        for wanted in [Path::new("/dev"), Path::new("/proc/self"), &work] {
             assert!(
                 read.iter().any(|path| path == wanted),
                 "{wanted:?} 在名单里：{read:?}"

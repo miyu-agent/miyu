@@ -58,6 +58,23 @@ impl DefaultWorkspace {
 }
 
 impl DefaultWorkspace {
+    /// 关起来的会话的一个目录（施工 AU-002）：真实位置 `dir` 宽的（`miyu_fs::broad`：家目录 `home`、根目录、包住数据根
+    /// `data_root` 的、落在数据根里又不在 `workspace/` 里的）是真，几样都要先换成真实的位置。关起来的会话照它退回默认工作区，
+    /// 不照只在 Windows 上算家目录的 [`miyu_fs::too_wide`]：沙盒写了只准读的名单，名单里的一条包住数据根，数据根就藏不住。
+    pub(crate) fn broad(&self, dir: &Path, home: Option<&Path>, data_root: &Path) -> bool {
+        miyu_fs::broad(dir, home, data_root, &real(&self.own))
+    }
+
+    /// 默认工作区建好，交回它真实的位置（施工 AU-002：关起来的会话的工作目录宽的退回它）。
+    ///
+    /// # Errors
+    ///
+    /// 默认工作区建不成。
+    pub(crate) fn made_fallback(&self) -> std::io::Result<PathBuf> {
+        std::fs::create_dir_all(&self.fallback)?;
+        Ok(real(&self.fallback))
+    }
+
     /// 这个会话的默认工作区，没换成真实的位置（施工 5-14 中：头照它认「默认工作区」）。
     pub(crate) fn dir(&self) -> PathBuf {
         self.fallback.clone()

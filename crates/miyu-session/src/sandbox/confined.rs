@@ -102,9 +102,13 @@ fn system_reads() -> Vec<PathBuf> {
 impl Sandbox {
     /// 关起来的会话一次调用的沙盒：关到这一轮的工作区、加进来的目录。
     ///
+    /// 名单里只放命令改不了的路径（施工 AU-001、AU-002）：助手照路径打开、顺着链接走，名单里一条被命令换成了链接，下一条命令
+    /// 就能读写链接指到的地方。工作目录、加进来的目录宽的（[`DefaultWorkspace::broad`](crate::default_workspace::DefaultWorkspace::broad)）
+    /// 不给：只准读的名单里一条包住数据根，数据根就藏不住（写了 `read` 的规格不另挖 `hidden`）。
+    ///
     /// # Errors
     ///
-    /// 工作区里的 `.tmp` 建不成。
+    /// 工作区里的 `.tmp` 建不成；工作目录宽、又没有默认工作区可退，或者默认工作区建不成。
     pub(super) fn confined_call(
         &self,
         permission: &Permission,
@@ -113,16 +117,19 @@ impl Sandbox {
         let home = self.home.as_deref();
         let place =
             |dir: &str| resolve(Path::new(dir), home, dir).unwrap_or_else(|_| PathBuf::from(dir));
-        let cwd = place(cwd);
+        let cwd = self.narrowed(place(cwd))?;
+        let dirs = dirs
+            .iter()
+            .map(|dir| place(dir))
+            .filter(|dir| !self.broad(dir));
+        let mut own: Vec<PathBuf> = std::iter::once(cwd.clone()).chain(dirs).collect();
+        own.dedup();
+        // `.tmp` 在工作目录里，不单独进名单（施工 AU-001）：命令能把它换成链接。
         let temp = cwd.join(".tmp");
-        let mut own: Vec<PathBuf> = std::iter::once(cwd)
-            .chain(dirs.iter().map(|dir| place(dir)))
-            .collect();
-        std::fs::create_dir_all(&temp)?;
+        fresh_dir(&temp)?;
         // 家目录照这一轮的工作目录（施工 MB-1）：不给跑核心的那个用户的家目录，那里读不到（git 这类读 `~/.gitconfig` 的在
         // macOS 上被拒就起不来），名字也透出跑核心的用户（SEC-2）。场所会话的是场所的工作区。
-        let home_dir = own.first().cloned().unwrap_or_else(|| temp.clone());
-        own.push(temp.clone());
+        let home_dir = cwd;
         let mut read = system_reads();
         read.extend(own.iter().cloned());
         // 开着的技能文件夹只读（施工 X-10 中）：在名单里就读得到，比藏起来的数据根深，压得过它。
@@ -147,4 +154,51 @@ impl Sandbox {
             uncached: false,
         })
     }
+
+    /// 真实位置 `dir` 宽不宽（施工 AU-002）：照默认工作区的算法；没交默认工作区的（测试造的）数据根里的一律算宽。
+    fn broad(&self, dir: &Path) -> bool {
+        let home = self.home.as_deref().map(real);
+        let root = real(&self.data_root);
+        match &self.workplace {
+            Some(place) => place.broad(dir, home.as_deref(), &root),
+            None => miyu_fs::broad(dir, home.as_deref(), &root, &root) || dir.starts_with(&root),
+        }
+    }
+
+    /// 工作目录 `cwd`（真实位置）宽的退回默认工作区（施工 AU-002），不宽的照原样。
+    ///
+    /// # Errors
+    ///
+    /// 宽、又没有默认工作区可退；默认工作区建不成。
+    fn narrowed(&self, cwd: PathBuf) -> io::Result<PathBuf> {
+        if !self.broad(&cwd) {
+            return Ok(cwd);
+        }
+        match &self.workplace {
+            Some(place) => place.made_fallback(),
+            None => Err(io::Error::other("working directory too wide")),
+        }
+    }
 }
+
+/// `path` 是一个真的目录（施工 AU-001）：命令换成了链接、文件的先删掉再建，不顺着链接在核心这边建目录。
+///
+/// # Errors
+///
+/// 删不掉、建不成。
+fn fresh_dir(path: &Path) -> io::Result<()> {
+    match std::fs::symlink_metadata(path) {
+        Ok(meta) if meta.is_dir() => return Ok(()),
+        // Windows 上指向目录的链接要按目录删；这里走不到 Windows（关不住读的平台不进这里），照样写全。
+        Ok(meta) if meta.file_type().is_symlink() => {
+            std::fs::remove_file(path).or_else(|_| std::fs::remove_dir(path))?;
+        }
+        Ok(_) => std::fs::remove_file(path)?,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error),
+    }
+    std::fs::create_dir(path)
+}
+
+#[cfg(test)]
+mod tests;

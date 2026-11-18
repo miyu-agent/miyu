@@ -1608,6 +1608,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sVM2"><span class="n">VM-2</span>找回的场所会话也认语音上限<span class="st">…</span></a></li>
         <li><a class="step review" href="#sPR1"><span class="n">PR-1</span>中转站的模型价格照原厂<span class="st">…</span></a></li>
         <li><a class="step review" href="#sUP3"><span class="n">UP-3</span>用量的用途有给人看的名字<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sAUP0"><span class="n">AU-P0</span>外部审计高危核实<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -63286,6 +63287,52 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/UP-3-用量用途的名字.md</code>；蓝图 <code>models.md</code>、<code>packages.md</code>、<code>protocol.md</code>；协议参考 <code>config.md</code>；作者文档 <code>manifest.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sAUP0" aria-labelledby="h-sAUP0">
+  <div class="sheet-head"><h2 id="h-sAUP0"><span class="no">AU-P0</span>外部审计高危核实</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">外部审计报告第一章 P0 逐条二次核实：成立的照改前红修，不成立的写清理由不改。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">外部审计高危核实</span><span class="dir-note">AU-P0</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>沙盒名单只放命令改不了的</li>
+              <li>跳转跨主机不带密钥</li>
+              <li>画图库不 abort、不注入</li>
+              <li>登录不连本机端口</li>
+              <li>装包不拷进数据根的链接</li>
+              <li>几处切字、中和、空闲的小修</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">不成立</span><span class="rl">Windows carve 大小写、本地扫描栈溢出</span></div>
+          <div class="tile new"><span class="nm">私网地址</span><span class="rl">MCP 登录不挡，交项目主人</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">AU-P0</dd></div>
+        <div><dt>名称</dt><dd>外部审计高危核实</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-18</dd></div>
+        <div><dt>提交</dt><dd class="mono">AU-001…AU-019</dd></div>
+        <div><dt>验收</dt><dd>每条成立的都有修前红的测试；沙盒助手真跑两步脚本；本地门禁、Windows 版 clippy；三平台 CI</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>蓝图 <code>session/tools.md</code>、<code>http.md</code>、<code>mcp.md</code>、<code>mermaid.md</code>、<code>fs.md</code>、<code>packages.md</code>、<code>skills.md</code>，施工单 <code>docs/construction/AU-P0-审计高危.md</code>。</li>
       </ul>
     </div>
   </div>
