@@ -55,6 +55,25 @@ fn args_of(spec: &Spec) -> Vec<String> {
     args_marked(spec, false)
 }
 
+/// [`cached_args`] 最多取几次。
+const TRIES: usize = 20;
+
+/// 取 [`args_of`]，直到参数里带上缓存的规则集（`--ruleset`），最多取 [`TRIES`] 次，交回最后一次取到的（施工 FL-12）。
+///
+/// 只取一次不够：指纹从根目录开始，把通向藏起来的目录的每一级上级都列一遍（`/tmp` 也在这条路上）。如果其他进程正好在某一级
+/// 上级目录里新建、删除了东西，建规则集时就对不上指纹，缓存这一次交回「没有」，让助手从头建。这是允许的行为，所以再取一次。
+/// 缓存真的坏了的时候，每一次都取不到 `--ruleset`，调用它的断言仍然会失败。
+fn cached_args(spec: &Spec) -> Vec<String> {
+    let mut args = args_of(spec);
+    for _ in 1..TRIES {
+        if args.iter().any(|arg| arg == "--ruleset") {
+            break;
+        }
+        args = args_of(spec);
+    }
+    args
+}
+
 /// 同 [`args_of`]，`uncached` 是标不标不缓存（施工 V-52）。
 fn args_marked(spec: &Spec, uncached: bool) -> Vec<String> {
     let sandboxed = Sandboxed {
@@ -110,8 +129,8 @@ fn only_landlock_only_specs_with_hidden_paths_get_a_cached_ruleset() {
         want
     };
     let cached = world.spec();
-    let args = args_of(&cached);
     if landlock() {
+        let args = cached_args(&cached);
         assert_eq!(
             args.get(3).map(String::as_str),
             Some("--ruleset"),
@@ -122,7 +141,7 @@ fn only_landlock_only_specs_with_hidden_paths_get_a_cached_ruleset() {
         rest.drain(3..5);
         assert_eq!(rest, plain(&cached));
     } else {
-        assert_eq!(args, plain(&cached));
+        assert_eq!(args_of(&cached), plain(&cached));
     }
     // 标了不缓存的（施工 V-52）：能缓存的规格也和从头建的拼法一样。
     assert_eq!(args_marked(&cached, true), plain(&cached));
@@ -236,12 +255,12 @@ fn the_ruleset_reaches_only_the_helper() {
         return;
     }
     // 命令里看不到它：没有一个描述符是规则集。
-    assert!(args_of(&spec).contains(&"--ruleset".to_string()));
+    assert!(cached_args(&spec).contains(&"--ruleset".to_string()));
     let out = run(&spec, "ls -l /proc/self/fd/ && echo listed");
     assert!(!text(&out.stdout).contains("landlock"), "{out:?}");
     assert!(text(&out.stdout).ends_with("listed\n"), "{out:?}");
     // 缓存着的时候，这个进程别处起的子进程也拿不到。
-    assert!(args_of(&spec).contains(&"--ruleset".to_string()));
+    assert!(cached_args(&spec).contains(&"--ruleset".to_string()));
     let out = Command::new("/bin/sh")
         .args(["-c", "ls -l /proc/self/fd/"])
         .output()

@@ -1723,6 +1723,7 @@ flowchart LR
 | TB-1 | 测试不进真的回收站 | 派工叫 TR-2，撞号改 TB-1。.91 和本机的 `/tmp/.Trash-1000` 攒着门禁留下的 `dog.txt`、`mine`：`miyu-cli` 的 `kb::building_a_base_from_the_shell`、`kb::mounting_a_folder_and_deleting_it_from_the_shell` 造的核心没有家目录，Linux 回收站照规范放进 `/tmp` 那块盘的 `.Trash-1000`。测试夹具多 `Home::with_own_home`（家目录在它自己的临时目录里），两条测试用它、在 Linux 上查东西进了自己的回收站。施工单见 `TB-1-测试不进真的回收站.md` |
 | FL-10 | 扩展收到取消再看 | Linux CI 上 `miyu-endpoint` `provide::an_extension_provides_tools_and_answers_the_calls` 第 171 行没读到扩展收到的 `tool.cancel`：扩展先读、再写进记录，回合结束时可能还没写。改成 `until_line` 等到那一行再看。施工单见 `FL-10-两条偶发测试.md` |
 | FL-11 | fork 走满步数的测试不再反复读日志 | `miyu-session` `fork_subagent::limits::a_fork_stops_at_the_fork_step_limit` 单跑 23.7 秒、等法 60 秒，机器忙时会输。时间大半花在测试自己：`until_logged` 每 5 毫秒从头读一遍整份日志（两千多条事件）。隔多久看一次照等了多久放宽（等过的二十分之一，5～250 毫秒），单跑约 5 秒；这一条另外最多等 300 秒（`until_logged_within`），load 约 28 时 5/5 过。施工单见 `FL-10-两条偶发测试.md` |
+| FL-12 | 沙盒缓存的两条测试不再受上级目录改动影响 | `crates/miyu-sandbox/tests/linux_cache.rs` 里断言参数带 `--ruleset` 的两条测试在门禁上偶发失败。原因是指纹从根目录开始记录每一级上级目录里的兄弟，如果其他进程正好在 `/tmp` 里新建、删除了目录，缓存这一次会按设计交回「没有」，而测试只取一次参数。这一步让这两条测试最多取 20 次，直到参数里出现 `--ruleset`。在上级目录不断改动的情况下，修改之前 30 次失败 27 次，修改之后 30 次全部通过；缓存总是交回「没有」时测试仍然失败。这一步只修改测试，没有修改产品。施工单见 `FL-12-沙盒缓存的两条测试不再受上级目录改动影响.md` |
 | RO-4补 | 挪走只管数据根 | 项目主人 11-18 定：挪走、扔进回收站的命令只在目标是整个数据根或装着它的时问（`delete_data_root`）；`mv /usr …`、挪走工作目录这些照 RO-4 以前，不另拒、不另问；数据根里的单个文件照旧不问。`hazard/paths.rs` 多 `moved_away`，bash、PowerShell 两路挪走的来源都照它判。数据根在家目录里时挪走家目录照删数据根问。施工单见 `RO-4-换个命令删数据根也问.md`「RO-4补」一节 |
 
 ### 四、施工单的格式
