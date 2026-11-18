@@ -48,7 +48,7 @@ protocol = [1, 1]                # 说得了的协议主版本 [最低, 最高]�
 name = { en = "Terminal interface", zh = "终端界面", ja = "ターミナル画面" }
 summary = { en = "…", zh = "…" } # 可以不写
 needs = ["images"]               # 要这个地方有什么才有用（施工 X-25），可以不写；现在只认 images：显示不了图片的会话里整包当没开
-miyu = "2026.11.0"               # 最低要哪一版 Miyu（施工 X-31）：三段数字，可以不写；读清单时先比它，见「出错」的 `needs_newer_miyu`
+miyu = "2026.11.0"               # 最低要哪一版 Miyu（施工 X-31）：三段数字，候选版带 -rc.N（施工 VER-1），可以不写；读清单时先比它，见「出错」的 `needs_newer_miyu`
 targets = ["linux-x86_64"]       # 能装在哪几种系统上（施工 G-1，设计 37 第二节第 3 条），可以不写（哪种都能装）；只认 linux-x86_64、linux-aarch64、macos-aarch64、windows-x86_64，带了本机程序的写它能跑的几种
 systems = ["linux", "macos"]     # 支持哪几种系统（施工 PL-2，项目主人 2026-11-17 定），可以不写（哪种都支持）；只认 linux、macos、windows，不重复；和 targets 都写的，targets 里每一种的系统都要在里面，不然 bad_systems。见下面「支持的系统」
 author = "miyu-agent"              # 作者（施工 F-12，项目主人 2026-10-19 定每个包都写），可以不写；一行，1 到 100 个字
@@ -437,7 +437,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `bad_needs` | `[package] needs` 里有不认识的、重复的词（施工 X-25）：现在只认 `images` |
 | `bad_targets` | `[package] targets` 里有不认识的、重复的系统（施工 G-1） |
 | `bad_miyu` | `[package] miyu` 不是三段数字的版本（施工 X-31） |
-| `needs_newer_miyu` | 要比正在跑的这一版新的 Miyu（施工 X-31）：`detail` 是清单写的版本。装包、读装了的包时（`miyu_config::package::read_for`）第一件事比它，比不过的整份不再往下读，不报新版本才有的格是不认识的键；正在跑的是 `0.0.0`（开发时编的，没发过版）的不比；打包（`miyu pkg pack`）、软件源收录照 `read` 读，不比，只查写法 |
+| `needs_newer_miyu` | 要比正在跑的这一版新的 Miyu（施工 X-31）：`detail` 是清单写的版本。装包、读装了的包时（`miyu_config::package::read_for`）第一件事比它，比不过的整份不再往下读，不报新版本才有的格是不认识的键；正在跑的是 `0.0.0`（开发时编的，没发过版）的不比；打包（`miyu pkg pack`）、软件源收录照 `read` 读，不比，只查写法。版本照 semver 读、照它的先后比（施工 VER-1，`package/semver.rs`，同依赖的下限）：候选版也比，`2026.11.0-rc.2.3` < `2026.11.0-rc.2.4` < `2026.11.0`（原来只认三段数字，候选版的核心读候选版的要求两头都读不成、不比，报成了不认识的表）。正在跑的版本两处（读装了的包 `miyu_store::packages::RUNNING`、从包文件夹装和看一眼 `miyu-endpoint` 的 `packages/folder.rs`）是同一个常量，就是 `miyu --version` 的那一个：整个工作区一个版本号（根目录 `Cargo.toml` 的 `[workspace.package] version`），打候选版只改那一行。从包文件夹装、看一眼时报不认识的表、键（`unknown_table`、`unknown_key`），清单又写了 `[package] miyu` 的，`package_invalid` 那一句后面补「这个包可能要更新的 Miyu」（`core/human` 的 `package-problems/maybe_newer_miyu`，字段 `problem`；`miyu_config::package::maybe_newer`）：开发版、这一版比得过、读不成要求的照旧往下读，碰上新加的表只能这样提醒 |
 | `bad_search` | `[[search]]` 写错了：编号、名字，重了，没声明 `search` 能力（施工 N-5） |
 | `bad_guard` | `[guard]` 写错了：工具名、访问类别、时限（100 到 5000），`tools`、`access` 两样都没写，没声明 `tool.guard` 能力（施工 HK-1） |
 | `bad_driver` | `[[driver]]` 写错了：驱动名、缓存类型、要不要 key、看不看图，重了，和 `model.driver` 能力对不上（写了没声明、声明了没写，施工 MD-1）；`hosted`（会让供应商自己跑的工具名，施工 HT-4，设计 71 第三节第 7 条）不是字的数组、有空的、超过 64 个字节的、带控制字符的、一段里重了的，报在那一段的行上 |

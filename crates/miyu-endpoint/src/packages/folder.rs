@@ -2,10 +2,13 @@
 
 use std::path::{Path, PathBuf};
 
+use miyu_config::Words;
 use miyu_config::package::{self, System, Target};
-use miyu_store::packages::{MANIFEST, Packages};
+use miyu_store::human::Human;
+use miyu_store::packages::{MANIFEST, Packages, RUNNING};
 
 use super::manage::invalid;
+use super::sentence;
 use crate::Core;
 use crate::config::methods::words;
 use crate::hello::Peer;
@@ -43,9 +46,9 @@ pub(super) fn read(
     if let Some(problem) = miyu_store::packages::reserved_id(&id) {
         return Err(invalid(&words, &problem));
     }
-    // 要更新的 Miyu 的照这一版报（施工 X-31）。
-    let manifest = package::read_for(&text, env!("CARGO_PKG_VERSION"))
-        .map_err(|problem| invalid(&words, &problem))?;
+    // 要更新的 Miyu 的照这一版报（施工 X-31）：同读装了的包，照 `miyu --version` 那一个版本号（施工 VER-1）。
+    let manifest =
+        package::read_for(&text, RUNNING).map_err(|problem| refused(&words, &text, &problem))?;
     if !package::fits_here(
         &manifest.systems,
         &manifest.targets,
@@ -54,6 +57,23 @@ pub(super) fn read(
         return Err(Refusal::WRONG_TARGET);
     }
     Ok((folder.to_path_buf(), id, manifest))
+}
+
+/// 清单读不成：照 [`invalid`] 说；可能是这一版 Miyu 太旧的（不认识的表、键，清单又写了 `[package] miyu`，施工 VER-1）在后面补一句
+/// 「这个包可能要更新的 Miyu」（`package-problems/maybe_newer_miyu`，字段 `problem`）。
+fn refused(words: &Human, text: &str, problem: &package::Problem) -> Refusal {
+    let said = sentence(words, problem.code.as_str(), &problem.detail)
+        .unwrap_or_else(|| problem.message.clone());
+    let said = match package::maybe_newer(text, problem) {
+        true => Words::sentence(
+            words,
+            "package-problems/maybe_newer_miyu",
+            &[("problem", &said)],
+        )
+        .unwrap_or(said),
+        false => said,
+    };
+    Refusal::package_invalid(said, problem.line)
 }
 
 /// 包文件夹：写成里面的 `package.toml` 的取它的上一层。

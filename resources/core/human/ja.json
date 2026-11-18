@@ -748,6 +748,7 @@
     "package-problems/bad_provider": "同梱のプロバイダーの書き方が正しくありません：{detail}",
     "package-problems/bad_miyu": "{detail} は 2026.11.0 のような三つの数字のバージョンで書いてください",
     "package-problems/needs_newer_miyu": "このパッケージには Miyu {detail} 以上が必要です。先に Miyu を更新してください",
+    "package-problems/maybe_newer_miyu": "{problem}。このパッケージには新しい Miyu が必要かもしれません",
     "package-problems/page_missing": "{detail} に index.html がありません",
     "package-problems/depends_missing": "依存するパッケージがありません：{detail}",
     "package-problems/logo_missing": "パッケージディレクトリに {detail} がありません",

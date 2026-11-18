@@ -1703,6 +1703,7 @@ flowchart LR
 | UP-3 | 用量的用途有给人看的名字 | 项目主人第 39 条：终端 `/usage` 一行里中英混杂。`usage.query` 照 `purpose` 分组的每一行带 `purpose_name`，照连接的语言：核心自己的照字表 `core/human` 的 `usage/purpose/<用途>`（回顾、起标题、压缩、记忆整理、看图、向量化；`null` 那一行是「主对话」），扩展写的照清单新加的 `[[purpose]]`（`id` 同 `model.call` 的 `purpose`、`name` 分语言，写错 `bad_purpose`；几个包同一个的照编号排第一的，核心的改不了名），都没有的不带。派工时叫 UP-1，撞号改 UP-3。施工单见 `UP-3-用量用途的名字.md` |
 | AU-P0 | 外部审计高危十四条核实 | 项目主人 11-18 转来外部审计报告第一章 P0（#001–#014，加画图库的 #019），二次核实、不能只听一家：关起来的会话的 `.tmp` 链接、宽的工作目录、307/308 带 key 去别的主机、画图库的巨量分配和颜色注入、MCP 登录连本机端口、装包拷链接、`~//`、CLIXML 切在字中间、收尾标签拆两块、Responses 长参数被当空闲、Windows 开浏览器经 `cmd` 这些成立或部分成立的照「改前红」修；Windows `carve` 大小写不成立（走不到），本地扫描栈溢出不成立（`ELOOP`），私网地址交项目主人；#007 等 RO-4。施工单见 `AU-P0-审计高危.md` |
 | RO-4 | 换个命令删数据根也问 | 项目主人定过开放下只有删整个数据根要问；文档会话实测 `gio trash ~/.miyu` 不问、整个数据根进了回收站。`shell` 的高危认法多挪走、扔进回收站的命令（`mv`、`gio trash`/`remove`/`move`/`rename`、`gvfs-trash`、`trash-put`、`trash`、`kioclient move`/`remove`、`rsync --remove-source-files`；PowerShell 的 `Move-Item`、`Rename-Item`，cmd 的 `move`、`ren`），照删来源判；`delete_data_root` 只认整个数据根和装着它的，里面的单个文件同别处（同 `trash` 工具），`Places.workspaces` 随之拿掉。施工单见 `RO-4-换个命令删数据根也问.md` |
+| VER-1 | 候选版照 semver 比 | agy-cli 实测：清单写 `miyu = "2026.11.0-rc.2.4"` 和新表，rc.2.3 的核心报「不认识的表」没先报 `needs_newer_miyu`。根因是比法只认三段数字，候选版两头都读不成、不比。`Semver` 从 `depend.rs` 挪进 `package/semver.rs`，`[package] miyu` 照它读、照它比（候选版比同号正式版低）；正在跑的版本两处都用 `miyu_store::packages::RUNNING`（同 `miyu --version`）；从包文件夹装、看一眼报不认识的表、键，清单写了 `miyu` 的补「这个包可能要更新的 Miyu」（三语）。施工单见 `VER-1-候选版照semver比.md` |
 
 ### 四、施工单的格式
 

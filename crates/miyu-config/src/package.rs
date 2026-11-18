@@ -34,6 +34,7 @@ mod purpose;
 mod reader;
 mod reserved;
 mod search;
+mod semver;
 pub mod settings;
 mod side;
 mod slash;
@@ -71,6 +72,7 @@ pub use slash::{Access, SlashCommand};
 pub use system::{System, fits_here};
 pub use target::Target;
 pub use theme::Theme;
+pub use version::maybe_newer;
 pub use widget::{MOST as WIDGETS_MOST, Place as WidgetPlace, Widget};
 
 use reader::{Reader, line_of};

@@ -20,8 +20,10 @@ use miyu_config::package::{self, Code, Manifest, Problem};
 use crate::resources::ResourceRoot;
 use crate::root::DataRoot;
 
-/// 正在跑的这一版 Miyu（施工 X-31）：读清单时照它比 `[package] miyu`（`miyu_config::package::read_for`）。
-const RUNNING: &str = env!("CARGO_PKG_VERSION");
+/// 正在跑的这一版 Miyu（施工 X-31）：读清单时照它比 `[package] miyu`（`miyu_config::package::read_for`）。同 `miyu --version`：
+/// 整个工作区一个版本号（根目录 `Cargo.toml` 的 `[workspace.package] version`），打候选版只改那一行（施工 VER-1）；从包文件夹装、
+/// 看一眼的也照它比（`miyu-endpoint` 的 `packages/folder.rs`）。
+pub const RUNNING: &str = env!("CARGO_PKG_VERSION");
 
 pub mod conflicts;
 pub mod distro;
