@@ -3,8 +3,9 @@
 //!
 //! 1. 清单：认得的格式版本（比 [`FORMAT`] 新的拒）；每一段、每一个 blob 在包里、字节数和 SHA-256 对得上。清单写了
 //!    `transcript.md` 的它也一样（施工 SE-1 中下中），只核对、不导进来；清单没写的、包里多出来的文件不看。
-//! 2. 每个会话的段：段名是 12 位数字加 `.jsonl`、照名字排；每一行是一整行 JSON、序号从段名那一号起一条接一条；每一行里写成
-//!    内容哈希的字，要么在包里的 blob 里，要么在清单的 `absent` 里。
+//! 2. 每个会话的段：至少一段（审计 #025，施工 AU-P1：一段都没有的导进来只是一个空目录，开日志就是「没有」）；段名是 12 位数字加
+//!    `.jsonl`、照名字排；每一行是一整行 JSON、序号从段名那一号起一条接一条；每一行里写成内容哈希的字，要么在包里的 blob 里，
+//!    要么在清单的 `absent` 里。
 //! 3. 段先写进会话目录旁边的暂存目录（名字点开头，不算会话），全部核对完再一个个改名进位置，各写一份 [`MARKER`]。
 //! 4. 这个数据根里已经有同编号的会话：包里那几段是它日志的开头（一个字节不差）的，当已经导过、跳过；不是的整个拒
 //!    （[`ImportError::Exists`]）。
@@ -203,6 +204,12 @@ fn stage_session(
     dir: &Path,
     referenced: &mut BTreeSet<String>,
 ) -> Result<(), ImportError> {
+    if session.segments.is_empty() {
+        return Err(ImportError::Mismatch(format!(
+            "{}: no segments",
+            session.id
+        )));
+    }
     fs::create_dir(dir)?;
     let mut next: Option<u64> = None;
     for segment in &session.segments {

@@ -67,12 +67,13 @@ impl Group {
         .find(|group| group.name() == name)
     }
 
-    /// 在 SQL 里怎么算：日子先算成天数，读出来再写成日期。
+    /// 在 SQL 里怎么算：日子先算成天数，读出来再写成日期。天数照往下取整算（审计 #028，施工 AU-P1）：SQLite 的整数除法朝 0
+    /// 截，1970 年以前的会和 1970-01-01 并成一天。
     fn column(self) -> &'static str {
         match self {
             Group::Venue => "venue",
             Group::Model => "provider || '/' || model",
-            Group::Day => "(at + ?1) / 86400000",
+            Group::Day => "((at + ?1) - ((at + ?1) % 86400000 + 86400000) % 86400000) / 86400000",
             Group::Session => "session",
             Group::Purpose => "purpose",
             // 子代理先认（它自己的压缩、回顾也算在子代理里）；当场压的摘要请求记在 `summary`，提前压的是 `compaction` 用途。
@@ -242,13 +243,13 @@ fn sum(db: &Connection, query: &Query) -> Result<Vec<Total>, UsageError> {
         let by_day = format!(
             "SELECT {} FROM spent WHERE {filter} AND currency IS NOT NULL{}",
             select(
-                "at / 86400000, currency, SUM(amount), COUNT(*), SUM(parted), \
+                "(at - (at % 86400000 + 86400000) % 86400000) / 86400000, currency, SUM(amount), COUNT(*), SUM(parted), \
                  COUNT(uncached_amount), SUM(uncached_amount), \
                  COUNT(cache_read_amount), SUM(cache_read_amount), \
                  COUNT(cache_write_amount), SUM(cache_write_amount), \
                  COUNT(output_amount), SUM(output_amount)"
             ),
-            group_by("at / 86400000, currency")
+            group_by("(at - (at % 86400000 + 86400000) % 86400000) / 86400000, currency")
         );
         let mut statement = db.prepare(&by_day)?;
         let mut rows = statement.query(params_from_iter(values.iter()))?;

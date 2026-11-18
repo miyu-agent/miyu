@@ -166,20 +166,28 @@ impl RateBook {
         if list.is_empty() {
             return;
         }
-        let book = Arc::clone(self);
-        let asked = list.clone();
+        let landing = Landing {
+            book: Arc::clone(self),
+            asked: list.clone(),
+        };
         source.start(
             list,
             day_of(now),
             Box::new(move |fetched| {
-                book.cache.put(&fetched, now);
-                let mut flying = book.flying.lock().unwrap_or_else(PoisonError::into_inner);
-                for key in &asked {
-                    flying.remove(key);
-                }
-                book.landed.notify_all();
+                // 整个拿进来：叫完这一下，它跟着丢下、拿掉缺口。
+                let landing = landing;
+                landing.book.cache.put(&fetched, now);
             }),
         );
+    }
+
+    /// 取回来了、或者再也不会回来了：`asked` 从在取的里拿掉，叫醒等着的。
+    fn land(&self, asked: &[(Day, String)]) {
+        let mut flying = self.flying.lock().unwrap_or_else(PoisonError::into_inner);
+        for key in asked {
+            flying.remove(key);
+        }
+        self.landed.notify_all();
     }
 
     /// 等到 `missing` 里的都不在取了，最多等 `wait`。
@@ -197,5 +205,19 @@ impl RateBook {
                 .unwrap_or_else(PoisonError::into_inner)
                 .0;
         }
+    }
+}
+
+/// 交给端口的那一次取（审计 #027，施工 AU-P1）：跟着 `done` 走，`done` 丢下时（叫过了、或者端口没叫就丢了：取的任务 panic 了、
+/// 核心停下时被取消了）把这几个缺口从在取的里拿掉。原来只在叫的时候拿：没叫就丢了的一直挂在「在取」里，往后每一次都等满时限、
+/// 也不再取。
+struct Landing {
+    book: Arc<RateBook>,
+    asked: Vec<(Day, String)>,
+}
+
+impl Drop for Landing {
+    fn drop(&mut self) {
+        self.book.land(&self.asked);
     }
 }

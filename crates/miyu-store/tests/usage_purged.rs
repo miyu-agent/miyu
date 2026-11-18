@@ -240,3 +240,52 @@ fn without_a_journal_the_session_is_kept() {
     let kept = root.trashed_sessions().join(session(2).as_str());
     assert!(kept.join(DELETED_AT).exists(), "写不进日志的不删");
 }
+
+/// 审计 #028（施工 AU-P1）：分天照「往下取整」算，1970 年以前的（钟拨错了的机器上记下的）不和 1970-01-01 并成一天。SQLite 的整数
+/// 除法朝 0 截，修以前 1969-12-31 23:00 和 1970-01-01 01:00 都算第 0 天。
+#[test]
+fn a_moment_before_1970_is_on_its_own_day() {
+    let scratch = Scratch::new("usage-1969");
+    let root = root_in(&scratch);
+    let (index, _) = UsageIndex::open(&root);
+    let id = session(2);
+    let mut log = write_log(&root.session_dir(&id), &[]);
+    let moment = |text: &str| miyu_kernel::time::Timestamp::parse(text).expect("写得对");
+    land(
+        &index,
+        &mut log,
+        &id,
+        &who(None),
+        &[
+            created(moment("1969-12-31T22:00:00.000Z"), None),
+            called(
+                2,
+                moment("1969-12-31T23:00:00.000Z"),
+                "deepseek-flash",
+                Some([1, 0, 0, 1]),
+                "",
+                "",
+            ),
+            called(
+                3,
+                moment("1970-01-01T01:00:00.000Z"),
+                "deepseek-flash",
+                Some([1, 0, 0, 1]),
+                "",
+                "",
+            ),
+        ],
+    );
+    drop(log);
+    let days: Vec<(Option<String>, u64)> = rows(&index, &[Group::Day], 0)
+        .iter()
+        .map(|total| (total.keys[0].clone(), total.requests))
+        .collect();
+    assert_eq!(
+        days,
+        [
+            (Some("1969-12-31".to_string()), 1),
+            (Some("1970-01-01".to_string()), 1)
+        ]
+    );
+}

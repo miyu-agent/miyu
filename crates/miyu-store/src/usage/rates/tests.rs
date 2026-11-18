@@ -228,3 +228,40 @@ fn a_broken_cache_is_rebuilt() {
         "删掉重建，照样取、照样记"
     );
 }
+
+/// 一个都不交就丢掉 `done` 的端口：取的任务 panic 了、核心停下时被取消了都是这样。
+struct Dropping {
+    asked: Mutex<usize>,
+}
+
+impl RateSource for Dropping {
+    fn start(
+        &self,
+        _wanted: Vec<(Day, String)>,
+        _today: Day,
+        done: Box<dyn FnOnce(Vec<Fetched>) + Send>,
+    ) {
+        *self.asked.lock().unwrap_or_else(PoisonError::into_inner) += 1;
+        drop(done);
+    }
+}
+
+/// 审计 #027（施工 AU-P1）：端口没叫 `done` 就把它丢了，这个缺口照样算不在取了：等着的马上醒，下一次照样再取。修以前它一直挂在
+/// 「在取」里，往后每一次都等满时限、也不再取。
+#[test]
+fn a_fetch_dropped_without_an_answer_is_asked_again_next_time() {
+    let dir = crate::test_support::Scratch::new();
+    let source = Arc::new(Dropping {
+        asked: Mutex::new(0),
+    });
+    let book = Arc::new(RateBook::open(&dir.rooted().join(FILE)));
+    book.install(Arc::clone(&source) as Arc<dyn RateSource>);
+    let asked = wanted(&[(99, "CNY")]);
+    assert!(book.rates(&asked, NOW, WAIT).is_empty());
+    assert!(book.rates(&asked, NOW, WAIT).is_empty());
+    assert_eq!(
+        *source.asked.lock().unwrap_or_else(PoisonError::into_inner),
+        2,
+        "第二次照样再取"
+    );
+}

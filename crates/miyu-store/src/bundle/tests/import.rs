@@ -186,6 +186,17 @@ fn broken_bundles_leave_nothing_behind() {
             orphan.clone().into_bytes(),
             "mismatch",
         ),
+        // 审计 #025（施工 AU-P1）：一段都没有的会话导进来只是一个空目录，开日志就是「没有」：整个拒。
+        (
+            "empty",
+            serde_json::json!({
+                "format": 1, "miyu": "0.0.0", "exported": "2026-11-04T00:00:00Z", "main": id,
+                "sessions": [{"id": id, "segments": [], "upto": null}],
+                "blobs": [],
+            }),
+            good.clone().into_bytes(),
+            "mismatch",
+        ),
         (
             "new",
             one_segment_manifest(&id, good.as_bytes(), FORMAT + 1),
