@@ -1,5 +1,5 @@
 //! matugen 生成的那份颜色（蓝图 `web.md`「跟着人格的外观」第 5 条，2026-10-11 项目主人定：有它就先照它）：用 matugen 换壁纸的，照仓库给的
-//! 模板（`web/matugen/miyu-web.json`）生成到固定的地方，这里只管找到它、给记号、读出来；里面写的什么由页面认（`src/lib/md3/`）。
+//! 模板（`webui/matugen/miyu-web.json`）生成到固定的地方，这里只管找到它、给记号、读出来；里面写的什么由页面认（`src/lib/md3/`）。
 //!
 //! 固定的地方：Linux、BSD `$XDG_CACHE_HOME/miyu/matugen.json`（没设的 `~/.cache/miyu/`），macOS `~/Library/Caches/miyu/matugen.json`，
 //! Windows `%LOCALAPPDATA%\miyu\matugen.json`。

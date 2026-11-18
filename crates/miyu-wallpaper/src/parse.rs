@@ -219,3 +219,91 @@ fn percent_decode(s: &str) -> Option<String> {
     }
     String::from_utf8(out).ok()
 }
+
+/// macOS 系统自带的航拍壁纸：`Index.plist` 转成 XML 以后，每处 `<key>Configuration</key>` 后面的 `<data>` 是一段 base64 的二进制
+/// plist，里面写 `assetID`（一个 UUID，2026-10-31 macOS 26.6 上看到的：`{'assetID': '03EC0F5E-…'}`）。照出现的先后交每一处的编号
+/// （重复的照样交，挑的时候照次数）；解不出、没有 UUID 的那一处跳过（Macintosh 那张这类）。
+pub fn macos_aerial_ids(xml: &str) -> Vec<String> {
+    xml.split("<key>Configuration</key>")
+        .skip(1)
+        .filter_map(|rest| {
+            let rest = rest.trim_start().strip_prefix("<data>")?;
+            let encoded = rest.split("</data>").next()?;
+            uuid_in(&base64_decode(encoded)?)
+        })
+        .collect()
+}
+
+/// 用哪一个航拍：出现最多、缩略图在的那一个（一样多的照先出现的）；都没有缩略图的是 `None`。
+pub fn pick_aerial(ids: &[String], has_thumbnail: impl Fn(&str) -> bool) -> Option<String> {
+    let mut counted: Vec<(&str, usize)> = Vec::new();
+    for id in ids {
+        match counted.iter_mut().find(|(seen, _)| seen == id) {
+            Some((_, n)) => *n += 1,
+            None => counted.push((id, 1)),
+        }
+    }
+    let mut best: Option<(&str, usize)> = None;
+    for (id, n) in counted {
+        if best.is_none_or(|(_, top)| n > top) && has_thumbnail(id) {
+            best = Some((id, n));
+        }
+    }
+    best.map(|(id, _)| id.to_owned())
+}
+
+/// 字节里第一个 UUID 写法的字（8-4-4-4-12 个十六进制数字，中间是 `-`）。
+fn uuid_in(bytes: &[u8]) -> Option<String> {
+    const SHAPE: [usize; 5] = [8, 4, 4, 4, 12];
+    let fits = |at: &[u8]| -> bool {
+        let mut i = 0;
+        for (n, len) in SHAPE.iter().enumerate() {
+            if n > 0 {
+                if at[i] != b'-' {
+                    return false;
+                }
+                i += 1;
+            }
+            if !at[i..i + len].iter().all(u8::is_ascii_hexdigit) {
+                return false;
+            }
+            i += len;
+        }
+        true
+    };
+    bytes
+        .windows(36)
+        .find(|w| fits(w))
+        .and_then(|w| std::str::from_utf8(w).ok())
+        .map(str::to_owned)
+}
+
+/// 解 base64（标准字母表，`=` 补齐；中间的空白、换行跳过）；写坏了的是 `None`。
+fn base64_decode(text: &str) -> Option<Vec<u8>> {
+    let value = |c: u8| -> Option<u32> {
+        Some(match c {
+            b'A'..=b'Z' => c - b'A',
+            b'a'..=b'z' => c - b'a' + 26,
+            b'0'..=b'9' => c - b'0' + 52,
+            b'+' => 62,
+            b'/' => 63,
+            _ => return None,
+        } as u32)
+    };
+    let mut out = Vec::new();
+    let mut acc = 0u32;
+    let mut bits = 0;
+    for c in text.bytes().filter(|c| !c.is_ascii_whitespace()) {
+        if c == b'=' {
+            break;
+        }
+        acc = (acc << 6) | value(c)?;
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            out.push((acc >> bits) as u8);
+            acc &= (1 << bits) - 1;
+        }
+    }
+    Some(out)
+}

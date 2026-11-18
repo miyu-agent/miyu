@@ -168,16 +168,32 @@ fn image_kind(path: &Path) -> io::Result<Option<(&'static str, bool)>> {
     Ok((cfg!(target_os = "macos") && parse::is_heic(head)).then_some(("image/jpeg", true)))
 }
 
+/// Windows 上拉起的程序不开控制台窗口（`CREATE_NO_WINDOW`）：网页软件在后台跑、自己没有控制台，拉 `reg.exe` 这类不带它，
+/// Windows 11 每次都新开一个终端窗口，人看到一闪的黑框（2026-10-30 桌面端在 Win11 上抓到：一切到 Miyu 窗口就闪）。别的系统什么都不做。
+fn no_console(command: &mut Command) {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = command;
+    }
+}
+
 /// 跑一条命令、读它的标准输出。没装的（找不到程序）、出错退出的是 `None`；超时的杀掉，算错。不定时去看它退没退（2026-10-15 设计 00
 /// 「避免轮询」）：另一个线程把输出读到头（它退了、管子就关了），这边照时限等那一个线程交回。
 pub(crate) fn run(program: &str, args: &[&str]) -> io::Result<Option<String>> {
-    let mut child = match Command::new(program)
+    let mut command = Command::new(program);
+    command
         .args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()
-    {
+        .stderr(Stdio::null());
+    no_console(&mut command);
+    let mut child = match command.spawn() {
         Ok(child) => child,
         Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(None),
         Err(e) => return Err(e),

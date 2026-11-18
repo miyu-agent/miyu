@@ -3,9 +3,9 @@
 use std::path::PathBuf;
 
 use crate::parse::{
-    fehbg, gsettings_uri, hyprpaper_active, is_heic, kde_image, kde_package_pick, macos_index,
-    nitrogen_cfg, osascript_path, path_or_uri, reg_wallpaper, sniff, swaybg_image, swww_query,
-    waypaper_ini, wpaperd_all, xfce_last_image,
+    fehbg, gsettings_uri, hyprpaper_active, is_heic, kde_image, kde_package_pick, macos_aerial_ids,
+    macos_index, nitrogen_cfg, osascript_path, path_or_uri, pick_aerial, reg_wallpaper, sniff,
+    swaybg_image, swww_query, waypaper_ini, wpaperd_all, xfce_last_image,
 };
 use crate::{Wallpaper, image_kind};
 
@@ -349,4 +349,56 @@ fn watch_calls_back_when_listed_files_change_and_only_then() -> std::io::Result<
     drop(watch);
     std::fs::remove_dir_all(&root)?;
     Ok(())
+}
+
+#[test]
+fn macos_aerials_take_the_most_used_one_that_has_a_thumbnail() {
+    // 2026-10-31 macOS 26.6 上主人用的航拍：每处 Configuration 是一段二进制 plist（{'assetID': …}）；Macintosh 那张解不出编号
+    let config = |data: &str, provider: &str| {
+        format!(
+            "<dict><key>Configuration</key>\n\t\t<data>\n\t\t{data}\n\t\t</data>\n<key>Provider</key><string>{provider}</string></dict>"
+        )
+    };
+    let xml = [
+        config(
+            "YnBsaXN0MDDRAQJXYXNzZXRJRF8QJDAzRUMwRjVF
+		LUNDQTgtNEUwQS05RkVDLTVCRDFDRTE1MTE4MggLEwAAAAAAAAEBAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAA6",
+            "com.apple.wallpaper.choice.aerials",
+        ),
+        config(
+            "YnBsaXN0MDDRAQJXYXNzZXRJRF8QJDhDMzFCMDZG
+		LTkxQTQtNEY3Qy05M0VELTU2MTQ2RDdGNDhCOQgLEwAAAAAAAAEBAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAA6",
+            "com.apple.wallpaper.choice.aerials",
+        ),
+        config(
+            "YnBsaXN0MDDRAQJXYXNzZXRJRF8QJDAzRUMwRjVF
+		LUNDQTgtNEUwQS05RkVDLTVCRDFDRTE1MTE4MggLEwAAAAAAAAEBAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAA6",
+            "com.apple.wallpaper.choice.aerials",
+        ),
+        config(
+            "YnBsaXN0MDDRAQJXdW5rbm93bhABCAsTAAAAAAAAAQEAAAAAAAAAAwAAAAAAAAAAAAAAAAAAABU=",
+            "com.apple.wallpaper.choice.macintosh",
+        ),
+    ]
+    .concat();
+    let ids = macos_aerial_ids(&xml);
+    assert_eq!(
+        ids,
+        [
+            "03EC0F5E-CCA8-4E0A-9FEC-5BD1CE151182",
+            "8C31B06F-91A4-4F7C-93ED-56146D7F48B9",
+            "03EC0F5E-CCA8-4E0A-9FEC-5BD1CE151182",
+        ]
+    );
+    // 出现最多的那一个；它没有缩略图的退到下一个；都没有的是 None
+    assert_eq!(
+        pick_aerial(&ids, |_| true).as_deref(),
+        Some("03EC0F5E-CCA8-4E0A-9FEC-5BD1CE151182")
+    );
+    assert_eq!(
+        pick_aerial(&ids, |id| id.starts_with("8C31")).as_deref(),
+        Some("8C31B06F-91A4-4F7C-93ED-56146D7F48B9")
+    );
+    assert_eq!(pick_aerial(&ids, |_| false), None);
+    assert!(macos_aerial_ids("<key>Configuration</key><data>!!!</data>").is_empty());
 }

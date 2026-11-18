@@ -24,19 +24,27 @@ pub fn sources() -> Vec<(&'static str, Ask)> {
     vec![("windows", windows)]
 }
 
-/// macOS：先读系统存壁纸设置的文件（`plutil` 转成 XML 找 `file://`，不用申请权限）；读不到的（老系统、系统自带的动态壁纸）再问
-/// System Events（第一次会问要不要允许，不允许的出错退出，就是读不到）。
+/// macOS：先读系统存壁纸设置的文件（`plutil` 转成 XML 找 `file://`，不用申请权限）；没有 `file://` 的是系统自带的航拍，照系统存的
+/// 缩略图（`aerials/thumbnails/<assetID>.png`，2026-10-31 项目主人选：照缩略图取色，不截屏）；都读不到的（老系统、Macintosh 那张）
+/// 再问 System Events（第一次会问要不要允许，不允许的出错退出，就是读不到）。
 #[cfg(target_os = "macos")]
 fn macos(_dark: bool) -> io::Result<Option<PathBuf>> {
     if let Some(home) = home() {
-        let index = home.join("Library/Application Support/com.apple.wallpaper/Store/Index.plist");
+        let store = home.join("Library/Application Support/com.apple.wallpaper");
+        let index = store.join("Store/Index.plist");
         if index.is_file() {
             let index = index.to_string_lossy().into_owned();
-            if let Some(path) = crate::run("plutil", &["-convert", "xml1", "-o", "-", &index])?
-                .as_deref()
-                .and_then(parse::macos_index)
-            {
-                return Ok(Some(path));
+            if let Some(xml) = crate::run("plutil", &["-convert", "xml1", "-o", "-", &index])? {
+                if let Some(path) = parse::macos_index(&xml) {
+                    return Ok(Some(path));
+                }
+                let thumbnail =
+                    |id: &str| store.join("aerials/thumbnails").join(format!("{id}.png"));
+                if let Some(id) =
+                    parse::pick_aerial(&parse::macos_aerial_ids(&xml), |id| thumbnail(id).is_file())
+                {
+                    return Ok(Some(thumbnail(&id)));
+                }
             }
         }
     }
