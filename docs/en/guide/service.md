@@ -35,7 +35,7 @@ miyu core start
 miyu core status
 ```
 
-`start` only brings the core up, with no interface and no browser, and does nothing if it is already running. `status` says whether it is running, the version and the data root, see [`miyu core`](cli.en.md#miyu-core).
+`start` only brings the core up, with no interface and no browser, and does nothing if it is already running. `status` says whether it is running, the version and the data root, see [`miyu core`](cli.md#miyu-core).
 
 To close only the web UI and leave the core running: `miyu web --stop`.
 
