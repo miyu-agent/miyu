@@ -337,6 +337,7 @@ access = ["execute"]
 | `key` | 要不要 Miyu 交这一家供应商的 key：`none`、`optional`（默认）、`required` |
 | `images` | 看得了图的写 `true`（默认 `false`） |
 | `hosted` | 这个驱动会让供应商自己跑的工具名，例如 `["search_web", "read_url_content"]`（默认空的）：装包时照它给主人看「会让供应商自己跑：…」。每个 1 到 64 个字节、不带控制字符、不重。交上来的名字不在里面的，Miyu 照收、照显示，运行日志里记一行警告；见 [写扩展](extensions.md#供应商自己跑的工具) |
+| `quiet_secs` | 多久没动静才算断，秒，1 到 900（默认照 Miyu 的空闲时限，180 秒起）：等第一个字、两段之间都照它等，比 Miyu 的短的不收紧。供应商不流思考、头一个字常要等一两分钟的驱动写它，例如 `quiet_secs = 300` |
 
 主人在供应商的配置里写 `driver = "<包的编号>/<驱动名>"`，或者你的包用 `[providers.<编号>]` 自带一家指向它（下一节），才用它；模型档案、npm 表、默认永远是内置的几种，装上你的包也接不走主人原来配好的供应商。包没装、没批、驱动名写错的，`miyu check` 报出来，那一家供应商当用不了，不会退回内置驱动。Miyu 怎么调你的驱动（`driver.call`、`driver.delta`、`driver.cancel`）见 [协议参考](../reference/extensions.md#drivercalldriverdeltadrivercancel)。
 

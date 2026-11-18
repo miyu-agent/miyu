@@ -24,6 +24,8 @@ pub struct Declared {
     pub images: bool,
     /// 会让供应商自己跑的工具名（清单的 `hosted`，设计 71 第三节第 7 条）：交上来的不在里面的照收，执行器记一行 `WARN`。
     pub hosted: Vec<String>,
+    /// 多久没动静才算断（清单的 `quiet_secs`，施工 DR-2）：比这一轮的空闲时限长的照它等，等第一个字、两段之间都算；没写的没有。
+    pub quiet: Option<std::time::Duration>,
 }
 
 /// 驱动在，这一刻却连不上（设计 66 第八节第 5 条）：正在退避、等着重新拉起，或者刚拉起、还没握手。执行器当可重试。

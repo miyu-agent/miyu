@@ -99,13 +99,21 @@ async fn in_a_pool_the_extension_member_is_skipped() {
 struct Fake {
     present: Result<Declared, String>,
     params: Mutex<Vec<Value>>,
+    /// 交第一段字之前等多久（施工 DR-2）。
+    first: Duration,
 }
 
 impl Fake {
     fn new(present: Result<Declared, String>) -> Arc<Fake> {
+        Fake::slow(present, Duration::ZERO)
+    }
+
+    /// 同 [`Fake::new`]，每次等 `first` 才交第一段字。
+    fn slow(present: Result<Declared, String>, first: Duration) -> Arc<Fake> {
         Arc::new(Fake {
             present,
             params: Mutex::new(Vec::new()),
+            first,
         })
     }
 
@@ -131,12 +139,14 @@ impl DriverPort for Fake {
             .lock()
             .expect("锁")
             .push(serde_json::from_str(&params).expect("参数是 JSON"));
-        drop(deltas.send(json!([
-            {"start": {"index": 0, "kind": "text"}},
-            {"text": {"index": 0, "text": "hi from ag"}},
-            {"end": {"index": 0}}
-        ])));
-        Ok(Box::pin(async {
+        let first = self.first;
+        Ok(Box::pin(async move {
+            tokio::time::sleep(first).await;
+            drop(deltas.send(json!([
+                {"start": {"index": 0, "kind": "text"}},
+                {"text": {"index": 0, "text": "hi from ag"}},
+                {"end": {"index": 0}}
+            ])));
             Ok(json!({
                 "usage": {"uncached": 7, "cache_read": 0, "cache_write": 0, "output": 3},
                 "sent": format!("sha256:{}", "cd".repeat(32))
@@ -150,6 +160,7 @@ fn declared(key: DriverKey) -> Result<Declared, String> {
         key,
         images: false,
         hosted: Vec::new(),
+        quiet: None,
     })
 }
 
@@ -166,6 +177,15 @@ fn two(ag_key: bool, chat: &str, b_url: &str) -> String {
 
 /// 照 `source` 起一个会话、说一轮，端口是 `fake`：交回会话的家、句柄。
 async fn talk(fake: &Arc<Fake>, source: &str) -> (Home, miyu_session::Handle) {
+    talk_within(fake, source, Duration::from_secs(60)).await
+}
+
+/// 同 [`talk`]，空闲时限是 `idle`。
+async fn talk_within(
+    fake: &Arc<Fake>,
+    source: &str,
+    idle: Duration,
+) -> (Home, miyu_session::Handle) {
     let mut home = Home::new();
     home.configs = configs_with_unknown_drivers(
         source,
@@ -174,7 +194,7 @@ async fn talk(fake: &Arc<Fake>, source: &str) -> (Home, miyu_session::Handle) {
             (Reference::Env("B_KEY".to_string()), "sk-b-secret"),
         ],
     );
-    let routes = routes(json!({}), Duration::from_secs(60));
+    let routes = routes(json!({}), idle);
     routes
         .data
         .on_drivers(Arc::clone(fake) as Arc<dyn DriverPort>);
@@ -269,4 +289,25 @@ async fn an_absent_driver_is_no_model_and_a_pool_moves_on() {
     );
     assert_eq!(b.received().len(), 1, "池里换到了下一个成员");
     assert!(fake.params().is_empty(), "不在的驱动一次都没调");
+}
+
+/// 声明了多久没动静才算断的驱动（施工 DR-2）：比空闲时限晚到的第一个字照等，声明一路交到执行器（端口的 `Declared` → 挑候选
+/// 备下的 → 这一次的时限）。空闲时限 200 毫秒、第一个字晚 600 毫秒到：声明 5 秒的说成了。
+#[tokio::test]
+async fn a_declared_quiet_lets_a_slow_first_token_through() {
+    let unused = Server::start(hellos(1)).await;
+    let mut present = declared(DriverKey::Optional);
+    if let Ok(declared) = &mut present {
+        declared.quiet = Some(Duration::from_secs(5));
+    }
+    let fake = Fake::slow(present, Duration::from_millis(600));
+    let (home, handle) = talk_within(
+        &fake,
+        &two(true, "ag/m", &unused.base_url),
+        Duration::from_millis(200),
+    )
+    .await;
+    let calls = called(&home, &handle);
+    let call = main_request(&calls).expect("有主请求");
+    assert!(call.error.is_none(), "{calls:?}");
 }

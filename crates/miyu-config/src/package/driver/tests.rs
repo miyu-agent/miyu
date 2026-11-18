@@ -136,3 +136,32 @@ fn wrong_hosted_tool_names_are_refused_on_their_line() {
         assert_eq!(problem.line, Some(13), "{why}");
     }
 }
+
+/// 多久没动静才算断（施工 DR-2）：写了的照秒读，1 到 900；不写的没有（照核心的空闲时限）；零、负的、太长的、不是整数的报。
+#[test]
+fn a_driver_may_wait_longer_for_its_first_token() {
+    let declared = "\"model.driver\"";
+    let manifest = read(&extension(declared, &format!("{ONE}quiet_secs = 300\n"))).unwrap();
+    assert_eq!(manifest.drivers[0].quiet_secs, Some(300));
+    assert_eq!(
+        read(&extension(declared, &format!("{ONE}quiet_secs = 900\n")))
+            .unwrap()
+            .drivers[0]
+            .quiet_secs,
+        Some(900),
+        "至多十五分钟"
+    );
+    assert_eq!(
+        read(&extension(declared, ONE)).unwrap().drivers[0].quiet_secs,
+        None
+    );
+    for wrong in ["0", "-1", "901", "1.5", "\"300\""] {
+        let problem = read(&extension(
+            declared,
+            &format!("{ONE}quiet_secs = {wrong}\n"),
+        ))
+        .expect_err(wrong);
+        assert_eq!(problem.code, Code::BadDriver, "{wrong}");
+        assert_eq!(problem.detail, "driver.antigravity.quiet_secs", "{wrong}");
+    }
+}

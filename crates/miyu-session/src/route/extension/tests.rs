@@ -26,6 +26,7 @@ use super::*;
 use crate::route::base::Speaker;
 
 mod hosted;
+mod quiet;
 
 /// 一次调用怎么答。
 #[derive(Debug)]
@@ -70,6 +71,7 @@ impl DriverPort for Fake {
             key: DriverKey::Optional,
             images: true,
             hosted: vec!["search_web".to_string()],
+            quiet: None,
         })
     }
 
@@ -181,6 +183,7 @@ fn ready(fake: &Arc<Fake>, idle: Duration) -> Ready {
                 hosted: vec!["search_web".to_string()],
                 key: Some(Secret::new("sk-ag").expect("key")),
                 base_url: None,
+                quiet: None,
             },
             texts: hosted::texts(),
         })),

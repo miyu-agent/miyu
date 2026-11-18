@@ -1611,6 +1611,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sAUP0"><span class="n">AU-P0</span>外部审计高危核实<span class="st">…</span></a></li>
         <li><a class="step review" href="#sRO4"><span class="n">RO-4</span>换个命令删数据根也问<span class="st">…</span></a></li>
         <li><a class="step review" href="#sVER1"><span class="n">VER-1</span>候选版照 semver 比<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sDR2"><span class="n">DR-2</span>扩展驱动可以等得久一点<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -63434,6 +63435,55 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/VER-1-候选版照semver比.md</code>；蓝图 <code>packages.md</code>；包作者文档 <code>manifest.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sDR2" aria-labelledby="h-sDR2">
+  <div class="sheet-head"><h2 id="h-sDR2"><span class="no">DR-2</span>扩展驱动可以等得久一点</h2><span class="pill review">待验收</span></div>
+  <p class="purpose"><code>[[driver]]</code> 写 <code>quiet_secs</code>（1 到 900 秒），核心对这个驱动的请求照它等第一个字、等两段之间；没写的照 180 秒起的空闲时限。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-config/package/driver.rs · miyu-session/route/extension.rs · miyu-endpoint/models/drivers.rs</span><span class="dir-note">DR-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>清单多 <code>quiet_secs</code>，写错报 <code>bad_driver</code></li>
+              <li>端口的 <code>Declared</code>、候选的 <code>Reach</code> 多 <code>quiet</code></li>
+              <li>这一次的空闲时限取长的，总时限跟着十倍</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">只放宽</span><span class="rl">比核心的短的不收紧</span></div>
+          <div class="tile new"><span class="nm">至多 900 秒</span><span class="rl">总时限照它的十倍</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DR-2</dd></div>
+        <div><dt>名称</dt><dd>扩展驱动可以等得久一点</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-18</dd></div>
+        <div><dt>提交</dt><dd class="mono">DR-2</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改前红：<code>route::extension::tests::quiet</code>（停住时钟，200 秒才出字）</span></li>
+        <li><span class="ok">✓</span><span>端到端：<code>route_extension_driver::a_declared_quiet_lets_a_slow_first_token_through</code></span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/DR-2-扩展驱动可以等得久一点.md</code>；蓝图 <code>extensions.md</code>、<code>models.md</code>、<code>packages.md</code>；协议参考 <code>extensions.md</code>；包作者文档 <code>manifest.md</code>、<code>extensions.md</code>。</li>
       </ul>
     </div>
   </div>

@@ -23,6 +23,9 @@ pub struct DriverDecl {
     /// 会让供应商自己跑的工具名（设计 71 第三节第 7 条）：装包确认屏照它列出来，交上来的不在里面的核心照收、记一行 `WARN`。
     /// 每个 1 到 64 个字节、不带控制字符、不重；没写的是空的。
     pub hosted: Vec<String>,
+    /// 多久没动静才算断，秒（施工 DR-2）：等第一个字、两段之间都照它等，不比核心的空闲时限短（短的不收紧）；1 到
+    /// 900（`QUIET_SECS_MOST`），没写的照核心的。供应商不流思考、头一个字要等一两分钟的驱动写它。
+    pub quiet_secs: Option<u64>,
     /// 这一段写在第几行。
     pub line: Option<usize>,
 }
@@ -37,6 +40,9 @@ impl DriverDecl {
 /// 清单 `hosted` 里一个工具名最多几个字节（设计 71 第三节第 7 条）：供应商的工具名都很短，写长了多半是写错了。执行器记
 /// 「没声明的名字说过没有」也照这个数（更长的一定没声明，不进表）。
 pub const HOSTED_NAME_BYTES: usize = 64;
+
+/// 清单 `quiet_secs` 至多多少秒（施工 DR-2）：十五分钟。总时限照它的十倍，再长的卡住了也要等太久才知道。
+pub(super) const QUIET_SECS_MOST: u64 = 900;
 
 /// 驱动名的写法：同命令名（小写字母开头，小写字母、数字、`-`，最多 32 个）。配置里 `<包编号>/<驱动名>` 的后半照它查（施工 MD-1）。
 pub fn driver_name(name: &str) -> bool {
@@ -137,12 +143,30 @@ pub(super) fn read(reader: &Reader<'_>, node: &Item) -> Result<Vec<DriverDecl>, 
             })?,
         };
         let hosted = hosted(table.get("hosted"), line, &at)?;
+        let quiet_secs = match table.get("quiet_secs") {
+            None => None,
+            Some(item) => Some(
+                item.as_integer()
+                    .and_then(|secs| u64::try_from(secs).ok())
+                    .filter(|secs| (1..=QUIET_SECS_MOST).contains(secs))
+                    .ok_or_else(|| {
+                        bad(
+                            line,
+                            &format!("{at}.quiet_secs"),
+                            format!(
+                                "{at}.quiet_secs must be a whole number of seconds from 1 to {QUIET_SECS_MOST}"
+                            ),
+                        )
+                    })?,
+            ),
+        };
         drivers.push(DriverDecl {
             name,
             cache,
             key,
             images,
             hosted,
+            quiet_secs,
             line,
         });
     }

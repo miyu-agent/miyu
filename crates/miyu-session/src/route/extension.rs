@@ -11,7 +11,7 @@
 //!   只说一次（施工 HT-4，设计 71 第三节第 7 条：核心挡不住供应商那边跑什么，只照实显示）；每个驱动最多列 64 个名字，再有的
 //!   （和长过 64 个字节的）只再记一行 `WARN driver hosted tools undeclared, more not listed`（`extension/wires.rs`）。
 //! - 时限同内置驱动走 HTTP：发出去到第一条增量、两条增量之间、最后一条到回答都不超过空闲时限，整个不超过它的 `TOTAL_FACTOR` 倍；
-//!   超了的不要了，当 `retryable`。连接断了也当 `retryable`。
+//!   超了的不要了，当 `retryable`。连接断了也当 `retryable`。驱动在清单里声明了更长的（`quiet_secs`，施工 DR-2）照它等。
 //! - 回答写坏了的当 `unclassified`，记一行 `WARN driver bad answer`；回答里的 `sent` 随说完了交上去，记进 `model.called`。
 
 use std::borrow::Cow;
@@ -19,6 +19,7 @@ use std::collections::BTreeMap;
 use std::future::Future;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::Duration;
 
 use base64::Engine;
 use serde_json::Value;
@@ -61,13 +62,14 @@ pub(super) use wires::Wires;
 use wire::{Outgoing, Picture, Said};
 
 /// 挑候选时备下的（扩展驱动的那一家）：看不看得了图，这一家的 key（照驱动的声明，`none` 的没有），这一家写的地址，声明了会让
-/// 供应商自己跑的工具名。
+/// 供应商自己跑的工具名，声明了多久没动静才算断的（施工 DR-2）。
 #[derive(Debug, Clone)]
 pub(super) struct Reach {
     pub(super) images: bool,
     pub(super) hosted: Vec<String>,
     pub(super) key: Option<Secret>,
     pub(super) base_url: Option<String>,
+    pub(super) quiet: Option<Duration>,
 }
 
 /// 备好了的扩展驱动：哪一个、经哪个端口、挑候选时备下的，和这个会话冻结的驱动占位（施工 HT-2：别家的供应商侧工具照它写成字）。
@@ -128,6 +130,7 @@ pub(super) fn reach(
         hosted: declared.hosted,
         key,
         base_url: (!base_url.is_empty()).then_some(base_url),
+        quiet: declared.quiet,
     })
 }
 
@@ -197,7 +200,7 @@ pub(super) async fn exchange(
         request: hash.clone(),
         at: std::time::Instant::now(),
     });
-    let idle = ready.idle;
+    let idle = quiet_for(ready.idle, reached.reach.quiet);
     let started = Instant::now();
     let deadline = started + idle * TOTAL_FACTOR;
     let mut last = started;
@@ -238,6 +241,11 @@ pub(super) async fn exchange(
             }
         }
     }
+}
+
+/// 这一次的空闲时限（施工 DR-2）：驱动声明了更长的（清单 `quiet_secs`）照它，短的不收紧；总时限跟着照它的十倍。
+fn quiet_for(idle: Duration, declared: Option<Duration>) -> Duration {
+    declared.map_or(idle, |declared| idle.max(declared))
 }
 
 /// 收下一份增量：读、照累加器查，一条条交出去；查过了的供应商侧工具没声明的照收、说一次（见模块的说明）。

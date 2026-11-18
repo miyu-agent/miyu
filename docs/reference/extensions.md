@@ -398,7 +398,7 @@ access = ["network"]         # 访问类别，可以不写；两样至少一样
 
 多了格、写法不对的回应当 `unclassified`（`the driver sent a bad answer: …`）；回 JSON-RPC 错误的也是（`the driver refused the call: …`）。
 
-**时限**：同内置驱动：发出去到第一条增量、两条增量之间、最后一条到回应，都不能超过空闲时限（180 秒，照思考强度放大），整个不超过它的十倍；超了的当 `retryable`（`the driver went quiet`）。扩展崩了、连接断了，在等的当 `retryable`（`the driver went away`）。你正在退避、等着重新拉起的，这一次当 `retryable`，等多久照 `retry_in`；关着、没批、停下了的不调，这一家当用不了，池里换下一个。
+**时限**：同内置驱动：发出去到第一条增量、两条增量之间、最后一条到回应，都不能超过空闲时限（180 秒，照思考强度放大；清单 `[[driver]]` 写了更长的 `quiet_secs` 的照它），整个不超过它的十倍；超了的当 `retryable`（`the driver went quiet`）。扩展崩了、连接断了，在等的当 `retryable`（`the driver went away`）。你正在退避、等着重新拉起的，这一次当 `retryable`，等多久照 `retry_in`；关着、没批、停下了的不调，这一家当用不了，池里换下一个。
 
 **`driver.cancel`**（核心 → 扩展，通知）：`{"call"}`。人打断、回合被取消、超时、增量不对，核心不等了：别再为这一次发请求，之后的增量、回应都不理。
 

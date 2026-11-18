@@ -57,6 +57,7 @@ impl DriverPort for Drivers {
                     key: declared.key,
                     images: declared.images,
                     hosted: declared.hosted.clone(),
+                    quiet: declared.quiet_secs.map(Duration::from_secs),
                 })
             }
         }
