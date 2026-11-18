@@ -29,7 +29,7 @@ The core is a process with no interface, and it holds all the state. A head only
 | Terminal | `miyu-tui` | You type `miyu` (swapped for that UI package's program according to the config `ui.head`) or `miyu tui` | Local socket |
 | Command line | Subcommands such as `miyu ask` and `miyu config` | You | Local socket |
 | Web server | `miyu-web serve` | `miyu web` hands over to `miyu-web open`, which starts it | Local socket; the browser connects to its `/ws`, which it forwards to the core unchanged |
-| Tray | `miyu-applet` | You, or at login | Local socket for status and notifications; to open the web UI or stop the core it calls `miyu web` and `miyu core stop` |
+| Tray | `miyu-applet` | You, or at login | Local socket for status and notifications; to open the web UI it calls `miyu web`; to stop, it calls `miyu web stop` and then `miyu core stop` |
 | Extension | The package's `bin/<program>` | The core, according to the switch; when the core exits it asks them to exit too | Stdin and stdout, the same protocol |
 | MCP server | The command written in the manifest or config | The core | MCP over stdin and stdout; a server given as a URL starts no process |
 | Sandbox helper | `miyu-sandbox` | The core, one for each command that must be confined | No protocol: it tightens itself according to the spec the core wrote, then turns into that command |

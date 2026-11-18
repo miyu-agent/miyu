@@ -51,8 +51,8 @@ run = [
   ["{miyu}", "config", "set", "providers.bench.key", '{ env = "OPENAI_API_KEY" }'],
   ["{miyu}", "config", "set", "models.chat", "bench/{model}"],
   ["{miyu}", "config", "set", "ui.welcomed", "true"],
-  # 新会话不问人格、预设，照默认的开（终端的 `tui.skip_pick`）：不然首屏是「请选择预设」的框，没有输入框（施工 V-27 查出）。
-  ["{miyu}", "config", "set", "tui.skip_pick", "true"],
+  # 新会话不问人格、预设，照默认的开（终端的 `tui.auto_pick`）：不然首屏是「请选择预设」的框，没有输入框（施工 V-27 查出）。
+  ["{miyu}", "config", "set", "tui.auto_pick", "true"],
 ]
 
 [jcode]

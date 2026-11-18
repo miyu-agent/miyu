@@ -64,11 +64,10 @@ Ed25519 的才核得了，不认的说一句）、核 SHA-256、跑一次新的 
 sudo useradd --system --home-dir /var/lib/miyu --shell /usr/sbin/nologin miyu
 sudo cp systemd/system/miyu.service systemd/system/miyu-web.service /etc/systemd/system/
 sudo systemctl enable --now miyu
-sudo -u miyu env MIYU_HOME=/var/lib/miyu miyu config set web.idle_seconds 0
 sudo systemctl enable --now miyu-web
 ```
 
-网页软件默认空闲 600 秒就退、退出码 0（`miyu web` 用的时候才起它，退了下次再起），当服务跑时服务管理器不会再起它。所以要先在系统配置里写 `idle_seconds = 0`（`[web]` 那一节，不退）再起 `miyu-web`。`miyu-web.service` 跑的是网页软件自己的 `miyu-web serve`。样例里写的 `/usr/bin/miyu-web` 没有哪种装法放在那里，装之前把 `ExecStart` 换成它的真实位置：AUR 装的是 `/usr/share/miyu/packages/webui/bin/miyu-web`，安装脚本装的在 `miyu` 旁边（`~/.local/lib/miyu/miyu-web`）。
+网页软件出厂 `idle_seconds = 0`（`[web]` 那一节），不闲置退出，直接当服务跑。别在系统配置里改成非 0：空闲退出的退出码是 0，当服务跑时服务管理器不会再起它。`miyu-web.service` 跑的是网页软件自己的 `miyu-web serve`。样例里写的 `/usr/bin/miyu-web` 没有哪种装法放在那里，装之前把 `ExecStart` 换成它的真实位置：AUR 装的是 `/usr/share/miyu/packages/webui/bin/miyu-web`，安装脚本装的在 `miyu` 旁边（`~/.local/lib/miyu/miyu-web`）。
 
 - systemd 照 `StateDirectory=miyu`、`CacheDirectory=miyu` 建好 `/var/lib/miyu`、`/var/cache/miyu`，都属于 `miyu`。别的初始化系统（`init/` 下）先自己建好这两个目录、`chown miyu:miyu`、数据根 `chmod 0700`。
 - **沙盒**：命令的沙盒在 Linux 上用 Landlock，不要用户命名空间。systemd 的加固项（`PrivateUsers=`、`ProtectHome=` 这些）没在这里写，要加的先在自己的机器上试过沙盒还起得来。

@@ -89,14 +89,14 @@ max_running = "45m"
 | 字、选项、模型、时长 | 照写，可以加双引号 | `miyu config set jobs.max_running 45m` |
 | 列表 | TOML 的数组，整个用单引号括起来；写的是整份，原来的被换掉 | `miyu config set skills.external.dirs '["~/.agents/skills", "~/my-skills"]'` |
 | 密钥引用 | TOML 的行内表 | `miyu config set providers.acme.key '{ secret = "acme" }'` |
-| 每项几个字段的列表 | 行内表的数组 | `miyu config set tui.footer '[{ part = "usage" }, { part = "model", hidden = true }]'` |
+| 每项几个字段的列表 | 行内表的数组 | `miyu config set tui.footer '[{ part = "usage" }, { part = "model", shown = false }]'` |
 
 列表、行内表照 TOML 读，TOML 的字符串用双引号、单引号都行。PowerShell 里外面用双引号，里面的字用 TOML 的单引号字符串：Windows PowerShell 5.1 把参数交给程序时会吃掉里面的双引号，这样写 5.1 和 PowerShell 7 都能照抄：
 
 ```powershell
 miyu config set skills.external.dirs "['~/.agents/skills', '~/my-skills']"
 miyu config set providers.acme.key "{ secret = 'acme' }"
-miyu config set tui.footer "[{ part = 'usage' }, { part = 'model', hidden = true }]"
+miyu config set tui.footer "[{ part = 'usage' }, { part = 'model', shown = false }]"
 ```
 
 键里有一段带 `.`、`:` 这类字的，那一段加双引号，整个键再用单引号括起来：

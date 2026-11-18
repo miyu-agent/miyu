@@ -10,7 +10,7 @@ Using Miyu in a browser: what each part of the page is and what it does, all on 
 miyu web
 ```
 
-If the web app `miyu-web` is not running, `miyu web` starts it first (and the core too, if that is not running), then hands it to the system browser, and the terminal prints one line: "opened in browser: <url>". The default address is `http://127.0.0.1:8300`.
+If the web app `miyu-web` is not running, `miyu web` starts it in the background first (and the core too, if that is not running), then hands it to the system browser, prints one line in the terminal: "opened in browser: <url>", and returns right away without holding the terminal. The web app keeps running after the browser is closed, so a bookmarked address opens directly. The default address is `http://127.0.0.1:8300`.
 
 What hands it to the browser: on Linux `xdg-open`, on macOS `open`, on Windows `cmd /C start "" <url>`. If that command cannot start, or fails and exits within 3 seconds, the hand-off counts as failed and it prints "miyu: cannot open a browser; open the address above". The address is still printed above it.
 
@@ -24,7 +24,6 @@ What hands it to the browser: on Linux `xdg-open`, on macOS `open`, on Windows `
 | `--package <id>` | Open this package's page under "Dashboards" directly |
 | `--session <id>` | Open this session directly |
 | `--settings [<page>]` | Open Settings directly; `access` opens "Access" under "General" |
-| `--stop` | Stop the web UI; the core keeps running. Must be used on its own |
 | `-h`, `--help` | Print help |
 
 Other ways to open it:
@@ -37,13 +36,13 @@ Ports:
 - If you never set a port and 8300 is taken, it tries 8301 to 8309 in turn and uses the first free one. If all are taken, or the port you set is taken, it reports "port 8300 is in use"; pick another with `--port`.
 - Use `web.port` for a fixed port and `web.listen` for the listen address; see "Access and security" below.
 
-When no browser is connected to the web app and it is not serving files such as images or videos, it exits on its own after `web.idle_seconds` seconds (default `600`), and the next `miyu web` starts it again. It does not exit while LAN access is on. `0` means it never exits; the settings page does not show this item, so change it with a command:
+Once started, the web app keeps running and does not exit when nobody uses it. To save resources you can set `web.idle_seconds`: when no browser is connected and it is not serving files such as images or videos, it exits on its own after that many seconds in a row, and the next `miyu web` starts it again. The shipped value is `0`, which means it never exits; it also does not exit while LAN access is on. The settings page does not show this item, so change it with a command:
 
 ```sh
-miyu config set web.idle_seconds 0
+miyu config set web.idle_seconds 600
 ```
 
-To close only the web UI and keep the core running: `miyu web --stop`. When the web app runs in the foreground (for example `miyu-web serve` started on a server as in [Keeping it running, and servers](../service.md)), press `Ctrl+C` to stop it; on Linux and macOS it also stops on `SIGTERM`.
+To close only the web UI and keep the core running: `miyu web stop`. To see whether the web UI is running and at which address: `miyu web status`. Neither connects to the core; see [command line reference](../cli.md#miyu-web). When the web app runs in the foreground (for example `miyu-web serve` started on a server as in [Keeping it running, and servers](../service.md)), press `Ctrl+C` to stop it; on Linux and macOS it also stops on `SIGTERM`.
 
 ### Phones and other devices
 
@@ -411,7 +410,7 @@ How to make these: see [Putting things on the interface](../../dev/ui-surfaces.m
 |---|---|
 | "port 8300 is in use" | Pick another with `miyu web --port <port>`, or change `web.port` |
 | "miyu: cannot open a browser; open the address above" | Open the printed address yourself; on a machine without a desktop use `miyu web --print`. On Linux the hand-off to the browser relies on `xdg-open`; install it if missing |
-| "Can't reach the web app" "The web app isn't running." | The web app exited after idling; run `miyu web` in a terminal |
+| "Can't reach the web app" "The web app isn't running." | The web app is not running (it was stopped with `miyu web stop` or the tray's "Stop", the computer restarted, or `web.idle_seconds` is set and it exited after idling); run `miyu web` in a terminal |
 | "Still connecting. …" | If this device uses a proxy or VPN, turn it off or let this address connect directly |
 | "Core is outdated" | Upgrade the core, then reload the page |
 | "Wrong access password" | Enter it again; if you forgot it, run `miyu web --reset` on the computer where Miyu is installed |

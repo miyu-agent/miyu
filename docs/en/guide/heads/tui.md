@@ -140,14 +140,14 @@ The sidebar, the footer, the area above the input box and the top of the convers
 | `tui.above` | `todo` |
 | `tui.top` | `prompt` |
 
-Each part is an inline table: `part` is the part name, `hidden = true` hides it, `rows` is the maximum number of rows (`0` for no limit; the footer has only one row and ignores it). The parts you list come in the order you wrote them; the ones you did not list follow in shipped order. An unknown part name is not drawn, and it shows once: "Unknown parts in a slot: …".
+Each part is an inline table: `part` is the part name, `shown = false` hides it (shipped `true`, shown), `rows` is the maximum number of rows (`0` for no limit; the footer has only one row and ignores it). The parts you list come in the order you wrote them; the ones you did not list follow in shipped order. An unknown part name is not drawn, and it shows once: "Unknown parts in a slot: …".
 
 ```toml
 [tui]
 # Recent sessions at the top, at most 5 rows; no avatar
-side = [{ part = "recent", rows = 5 }, { part = "avatar", hidden = true }]
+side = [{ part = "recent", rows = 5 }, { part = "avatar", shown = false }]
 # No model in the footer
-footer = [{ part = "model", hidden = true }]
+footer = [{ part = "model", shown = false }]
 ```
 
 Once saved, it is redrawn at once. If you only want fewer sessions or messages listed, change `tui.sidebar_sessions` or `tui.sidebar_jumps`; `0` hides that block.
@@ -400,7 +400,7 @@ All `tui.*` keys are in [Config key reference](../config-keys.md#terminal).
 | `tui.mascot_home` | `false` | Appearance → Figure | Shows the avatar or mascot above the input box in an empty session |
 | `tui.mascot_sidebar` | `false` | Appearance → Figure | Shows the avatar or mascot at the top of the sidebar |
 | `tui.keys` | `arrows` | General → Interaction | Key mode |
-| `tui.skip_pick` | `false` | General → New sessions | New sessions use the default persona and preset without showing the picker |
+| `tui.auto_pick` | `false` | General → New sessions | New sessions use the default persona and preset without showing the picker |
 | `tui.timeline_fold` | `true` | General → Timeline | Fold steps after a turn ends |
 | `tui.timeline_limit_live` | `true` | General → Timeline | Steps in progress show only their latest lines |
 | `tui.history_rows` | `0` | General | How many entries the `Ctrl+R` history list shows; `0` follows the window height |
@@ -419,7 +419,7 @@ Changes take effect at once.
 
 | Page | What it controls |
 |---|---|
-| General | Display (Interface language, On start, open), New sessions (Default persona, Default preset, Start new sessions read-only, Don't ask for persona and preset in new sessions), Sessions, Shell integration session; the terminal's own timeline, interaction, sidebar counts and history list |
+| General | Display (Interface language, On start, open), New sessions (Default persona, Default preset, Start new sessions read-only, Auto-select persona and preset), Sessions, Shell integration session; the terminal's own timeline, interaction, sidebar counts and history list |
 | Appearance | Theme, Color scheme, Figure, Icons |
 | Providers & models | Three pages: Providers, Default models, Pools; see [Models](../models.md) |
 | User | Profile: preferred name, reply language, additional details |
@@ -525,7 +525,7 @@ In herdr, herdr plays the sound. Notifications and sounds have no switch you can
 ## Multiple sessions
 
 - Whether opening it starts a new session or continues the most recent one depends on "On start, open" (`ui.startup`); see [Sessions](../sessions.md).
-- A new session starts by choosing a persona, then a preset; you can type only after choosing. If you do not want to choose each time, turn on `tui.skip_pick`.
+- A new session starts by choosing a persona, then a preset; you can type only after choosing. If you do not want to choose each time, turn on `tui.auto_pick`.
 - `/sessions` opens the session list, grouped into "Recent", "Past 7 days", "Past 30 days", "Older" and "Archived". Clicking a line in the sidebar's "Recent sessions" also switches.
 - When another session is waiting for your approval or answer, no box pops up here; it shows the hint `"<title>" is asking you · /resume to switch`, that entry in the session list is marked "asking", and its sidebar line starts with a yellow `?`. The box pops up when you switch over.
 - When a turn finishes in another session, a dot appears on its sidebar line and disappears when you switch over.

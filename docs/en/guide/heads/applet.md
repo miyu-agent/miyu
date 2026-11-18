@@ -42,7 +42,7 @@ From top to bottom, with a separator between groups:
 | Menu item | What clicking it does |
 |---|---|
 | Status line (not clickable) | See "Status" below |
-| "Stop" or "Start" | Stop: stops the web UI first, then the core (`miyu web --stop`, then `miyu core stop`). Start: starts the core without opening a browser |
+| "Stop" or "Start" | Stop: stops the web UI first, then the core (`miyu web stop`, then `miyu core stop`). Start: starts the core without opening a browser |
 | "Restart" | Stops the core and starts it again; the web UI keeps running and open pages connect to the new core |
 | "Open Web Interface" | `miyu web`: opens the home page in your browser |
 | "Settings…" | `miyu web --settings`: opens the web UI's settings page in your browser. On macOS, `⌘,` |

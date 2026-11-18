@@ -89,14 +89,14 @@ For how to stop the core and start it again, see [Keeping it running, and server
 | Text, option, model, duration | As is, double quotes allowed | `miyu config set jobs.max_running 45m` |
 | List | A TOML array, wrapped whole in single quotes; you write the whole list and it replaces the old one | `miyu config set skills.external.dirs '["~/.agents/skills", "~/my-skills"]'` |
 | Secret reference | A TOML inline table | `miyu config set providers.acme.key '{ secret = "acme" }'` |
-| List of items with several fields | An array of inline tables | `miyu config set tui.footer '[{ part = "usage" }, { part = "model", hidden = true }]'` |
+| List of items with several fields | An array of inline tables | `miyu config set tui.footer '[{ part = "usage" }, { part = "model", shown = false }]'` |
 
 Lists and inline tables are read as TOML, and TOML strings can use double or single quotes. In PowerShell, use double quotes outside and TOML single-quoted strings inside: Windows PowerShell 5.1 strips the inner double quotes when it passes arguments to a program, and written this way the lines work as is in both 5.1 and PowerShell 7:
 
 ```powershell
 miyu config set skills.external.dirs "['~/.agents/skills', '~/my-skills']"
 miyu config set providers.acme.key "{ secret = 'acme' }"
-miyu config set tui.footer "[{ part = 'usage' }, { part = 'model', hidden = true }]"
+miyu config set tui.footer "[{ part = 'usage' }, { part = 'model', shown = false }]"
 ```
 
 If one part of a key contains characters such as `.` or `:`, put that part in double quotes and wrap the whole key in single quotes:

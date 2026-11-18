@@ -157,7 +157,7 @@ What to back up is `etc/`, `opt/`, `root/` and `var/lib/`, plus the `.miyu-layou
 Stop the web UI and the core before backing up, so you do not back up a half-written file:
 
 ```bash
-miyu web --stop
+miyu web stop
 miyu core stop
 tar -czf ~/miyu-backup-$(date +%F).tar.gz -C ~ \
   --exclude=.miyu/var/cache --exclude=.miyu/var/tmp \
@@ -168,7 +168,7 @@ tar -czf ~/miyu-backup-$(date +%F).tar.gz -C ~ \
 If `MIYU_HOME` is set, replace `-C ~` with its parent directory, and `.miyu` (including the ones in `--exclude`) with its name. In Windows PowerShell, use the `tar` that comes with the system:
 
 ```powershell
-miyu web --stop
+miyu web stop
 miyu core stop
 tar -czf "$HOME\miyu-backup.tar.gz" -C $HOME --exclude=.miyu/var/cache --exclude=.miyu/var/tmp --exclude=.miyu/tmp --exclude=.miyu/run .miyu
 ```

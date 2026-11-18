@@ -37,7 +37,7 @@ miyu core status
 
 `start` 只拉起核心，不开界面、不开浏览器，已经在跑的什么都不做。`status` 说在不在跑、版本、数据根，见 [`miyu core`](cli.md#miyu-core)。
 
-只想关网页、核心照常跑：`miyu web --stop`。
+只想关网页、核心照常跑：`miyu web stop`；看网页在不在跑：`miyu web status`。
 
 ## 开机或登录就起来
 
@@ -189,27 +189,21 @@ echo "$DEEPSEEK_API_KEY" | sudo -u miyu env MIYU_HOME=/var/lib/miyu XDG_CACHE_HO
 
 ### 用 systemd 跑网页
 
-网页软件 `miyu-web` 默认没有浏览器连着、也没有在给媒体文件，连续 600 秒就退出，退出码是 0，服务管理器不会再起它；打开了局域网访问的不退。当服务跑先让它不退：
+网页软件 `miyu-web` 出厂一直跑着不退（`web.idle_seconds` 是 `0`），可以直接当服务跑。当服务跑的别把 `web.idle_seconds` 改成非 0：空闲退出的退出码是 0，服务管理器不会再起它。
 
-1. 关掉空闲退出：
-
-   ```sh
-   sudo -u miyu env MIYU_HOME=/var/lib/miyu XDG_CACHE_HOME=/var/cache miyu config set web.idle_seconds 0
-   ```
-
-2. 取样例：
+1. 取样例：
 
    ```sh
    curl -fsSLO https://raw.githubusercontent.com/miyu-agent/miyu/main/packaging/systemd/system/miyu-web.service
    ```
 
-3. 把 `ExecStart=` 换成 `miyu-web` 的真实位置，后面照旧带 `serve`。AUR 装的是 `/usr/share/miyu/packages/webui/bin/miyu-web`，安装脚本装的在 `miyu` 旁边：
+2. 把 `ExecStart=` 换成 `miyu-web` 的真实位置，后面照旧带 `serve`。AUR 装的是 `/usr/share/miyu/packages/webui/bin/miyu-web`，安装脚本装的在 `miyu` 旁边：
 
    ```ini
    ExecStart=/usr/share/miyu/packages/webui/bin/miyu-web serve
    ```
 
-4. 装上：
+3. 装上：
 
    ```sh
    sudo cp miyu-web.service /etc/systemd/system/
@@ -226,7 +220,7 @@ echo "$DEEPSEEK_API_KEY" | sudo -u miyu env MIYU_HOME=/var/lib/miyu XDG_CACHE_HO
 |---|---|---|
 | `web.listen` | `127.0.0.1` | 听哪个地址。`127.0.0.1` 只有这台电脑能开；`0.0.0.0` 是这台电脑的所有地址；也可以写其中一个 |
 | `web.port` | `8300` | 端口，本机和别的设备都用它，`1` 到 `65535` |
-| `web.idle_seconds` | `600` | 没有浏览器连着、也没有在给媒体文件，连续多少秒后退出，`0` 到 `86400`，`0` 是不退。打开了局域网访问的不退。设置页上不显示 |
+| `web.idle_seconds` | `0` | 没有浏览器连着、也没有在给媒体文件，连续多少秒后退出，`0` 到 `86400`，`0` 是不退。打开了局域网访问的不退。设置页上不显示 |
 
 从别的设备进来都要访问密码。在这台电脑上用 `miyu web` 打开的不用。
 
@@ -313,7 +307,7 @@ PowerShell 里这样设的，这个窗口以后起的都带着它；不要了敲
 | 要停的 | 怎么做 |
 |---|---|
 | 这一次的核心，服务起的也算 | `miyu core stop` |
-| 这一次的网页 | `miyu web --stop` |
+| 这一次的网页 | `miyu web stop` |
 | 自己装的开机启动 | `miyu service disable` |
 | 服务器上的系统服务 | `sudo systemctl disable --now miyu-web miyu`，别的初始化系统照它自己的办法 |
 

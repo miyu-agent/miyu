@@ -29,7 +29,7 @@
 | 终端 | `miyu-tui` | 人敲 `miyu`（照配置 `ui.head` 换成那个界面包的程序）或 `miyu tui` | 本机套接字 |
 | 命令行 | `miyu ask`、`miyu config` 这些子命令 | 人 | 本机套接字 |
 | 网页服务 | `miyu-web serve` | `miyu web` 转交给 `miyu-web open`，由它拉起 | 本机套接字；浏览器连它的 `/ws`，它原样转给核心 |
-| 托盘 | `miyu-applet` | 人、登录时启动 | 本机套接字看状态、收通知；打开网页、停核心调 `miyu web`、`miyu core stop` |
+| 托盘 | `miyu-applet` | 人、登录时启动 | 本机套接字看状态、收通知；打开网页调 `miyu web`，停的时候先调 `miyu web stop` 再调 `miyu core stop` |
 | 扩展 | 软件包的 `bin/<程序>` | 核心，照开关；核心退出时一起请它们退出 | 标准输入输出，同一套协议 |
 | MCP 服务 | 清单或配置写的命令 | 核心 | 标准输入输出说 MCP；写网址的服务不起进程 |
 | 沙盒助手 | `miyu-sandbox` | 核心，每条要关起来的命令一个 | 不说协议：照核心写的规格先收紧自己，再换成那条命令 |

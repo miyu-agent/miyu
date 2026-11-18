@@ -157,7 +157,7 @@ Windows 上设用户环境变量 `setx MIYU_HOME D:\miyu`，之后新开的程�
 备份前先停掉网页和核心，免得备到写了一半的文件：
 
 ```bash
-miyu web --stop
+miyu web stop
 miyu core stop
 tar -czf ~/miyu-backup-$(date +%F).tar.gz -C ~ \
   --exclude=.miyu/var/cache --exclude=.miyu/var/tmp \
@@ -168,7 +168,7 @@ tar -czf ~/miyu-backup-$(date +%F).tar.gz -C ~ \
 设了 `MIYU_HOME` 的，把 `-C ~` 换成它的上一级，`.miyu`（`--exclude` 里的也算）换成它的名字。Windows 的 PowerShell 里用系统带的 `tar`：
 
 ```powershell
-miyu web --stop
+miyu web stop
 miyu core stop
 tar -czf "$HOME\miyu-backup.tar.gz" -C $HOME --exclude=.miyu/var/cache --exclude=.miyu/var/tmp --exclude=.miyu/tmp --exclude=.miyu/run .miyu
 ```

@@ -746,9 +746,11 @@ Exit codes: `2` for bad arguments; `1` when `doctor` finds one thing wrong. See 
 
 ```text
 miyu web [<options>]
+miyu web stop
+miyu web status
 ```
 
-Opens the web interface: if the web UI is not running, it is started first, and then the browser is handed the address.
+Opens the web interface: if the web UI is not running, it is started in the background first, and then the browser is handed the address. It returns right away and does not hold the terminal. The web UI keeps running after the browser is closed.
 
 | Argument | What it does |
 |---|---|
@@ -760,11 +762,16 @@ Opens the web interface: if the web UI is not running, it is started first, and 
 | `--package <id>` | Opens this package's page in "Dashboards" directly |
 | `--session <id>` | Opens this session directly |
 | `--settings [<page>]` | Opens the settings directly; write `access` to open "Access" in "General" |
-| `--stop` | Stops the web UI, and the core keeps running. Can only be given alone |
 | `-h`, `--help` | Prints the help |
+
+- `stop`: stops the web UI, and the core keeps running. It prints to standard error: "stopped the web interface" when it stopped it, "the web interface is not running" when it was not running, both with exit code `0`; "miyu: cannot stop the web interface: <reason>" when it could not stop it, with exit code `1`.
+- `status`: shows whether the web UI is running, printed to standard output: "the web interface is running: <address>" with exit code `0` when it is running; "the web interface is not running" with exit code `3` when it is not (the same codes as `miyu core status`).
+
+Neither of these connects to the core, so they do not start it when it is not running; nothing else may follow them.
 
 ```sh
 miyu web --settings access
+miyu web status
 ```
 
 Bad arguments give exit code `2`. See [Web UI](heads/web.md), [Keeping it running, and servers](service.md#opening-the-web-ui-from-other-machines-and-phones).

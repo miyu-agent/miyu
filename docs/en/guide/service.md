@@ -37,7 +37,7 @@ miyu core status
 
 `start` only brings the core up, with no interface and no browser, and does nothing if it is already running. `status` says whether it is running, the version and the data root, see [`miyu core`](cli.md#miyu-core).
 
-To close only the web UI and leave the core running: `miyu web --stop`.
+To close only the web UI and leave the core running: `miyu web stop`; to see whether the web UI is running: `miyu web status`.
 
 ## Starting at boot or login
 
@@ -189,27 +189,21 @@ For a service installed with `miyu service enable` on your own computer, see [Th
 
 ### Running the web UI with systemd
 
-The web UI program `miyu-web` exits, with exit code 0, after 600 seconds in a row with no browser connected and no media files being served, and the service manager does not start it again; with LAN access on, it does not exit. To run it as a service, first make it stay up:
+The web UI program `miyu-web` keeps running and does not exit as shipped (`web.idle_seconds` is `0`), so it can run as a service as it is. When it runs as a service, do not set `web.idle_seconds` to anything other than 0: an idle exit has exit code 0, and the service manager does not start it again.
 
-1. Turn off the idle exit:
-
-   ```sh
-   sudo -u miyu env MIYU_HOME=/var/lib/miyu XDG_CACHE_HOME=/var/cache miyu config set web.idle_seconds 0
-   ```
-
-2. Get the example:
+1. Get the example:
 
    ```sh
    curl -fsSLO https://raw.githubusercontent.com/miyu-agent/miyu/main/packaging/systemd/system/miyu-web.service
    ```
 
-3. Replace `ExecStart=` with the real location of `miyu-web`, keeping `serve` after it. On the AUR install it is `/usr/share/miyu/packages/webui/bin/miyu-web`; for the install script it is next to `miyu`:
+2. Replace `ExecStart=` with the real location of `miyu-web`, keeping `serve` after it. On the AUR install it is `/usr/share/miyu/packages/webui/bin/miyu-web`; for the install script it is next to `miyu`:
 
    ```ini
    ExecStart=/usr/share/miyu/packages/webui/bin/miyu-web serve
    ```
 
-4. Install it:
+3. Install it:
 
    ```sh
    sudo cp miyu-web.service /etc/systemd/system/
@@ -226,7 +220,7 @@ The web UI's settings can only be written in `~/.miyu/etc/config.toml`:
 |---|---|---|
 | `web.listen` | `127.0.0.1` | Which address to listen on. `127.0.0.1` can be opened only from this computer; `0.0.0.0` is all of this computer's addresses; you can also write one of them |
 | `web.port` | `8300` | The port, used by this computer and by other devices, `1` to `65535` |
-| `web.idle_seconds` | `600` | After how many seconds in a row with no browser connected and no media files being served it exits, `0` to `86400`; `0` means never. It does not exit when LAN access is on. Not shown on the settings page |
+| `web.idle_seconds` | `0` | After how many seconds in a row with no browser connected and no media files being served it exits, `0` to `86400`; `0` means never. It does not exit when LAN access is on. Not shown on the settings page |
 
 Access from other devices always needs the access password. Opening it with `miyu web` on this computer does not.
 
@@ -313,7 +307,7 @@ In PowerShell, a variable set this way stays on for everything started later fro
 | What to stop | How |
 |---|---|
 | This run of the core, including one started by a service | `miyu core stop` |
-| This run of the web UI | `miyu web --stop` |
+| This run of the web UI | `miyu web stop` |
 | A start-at-boot setup you installed | `miyu service disable` |
 | A system service on a server | `sudo systemctl disable --now miyu-web miyu`; for other init systems, use their own way |
 

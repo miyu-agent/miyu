@@ -318,7 +318,7 @@ Settings for the terminal interface package, prefix `tui`.
 |---|---|---|---|---|---|---|
 | `tui.icons` | Option | `"nerd"` | `nerd`, `plain` | Use Nerd Font icons, or the plain characters for when that font is not installed | Immediately | No |
 | `tui.keys` | Option | `"arrows"` | `arrows`, `vim` | Key mode. `vim`: in the session list and the model list, `j` and `k` move up and down, and you press `/` to start a search; `arrows`: typing searches right away, and the arrow keys move up and down | Immediately | No |
-| `tui.skip_pick` | Switch | `false` | | New sessions use the default persona and preset directly, without asking | Immediately | No |
+| `tui.auto_pick` | Switch | `false` | | New sessions use the default persona and preset directly, without asking | Immediately | No |
 | `tui.theme` | Option | `"auto"` | `auto`, `persona`, `wallpaper`, `tokyonight`, `terminal` | Colors. `auto`: if the persona has an avatar, follow the avatar; otherwise follow the desktop wallpaper; otherwise follow the terminal's colors; if none of those is available, use tokyonight | Immediately | No |
 | `tui.theme_seed` | Text | — | At most 7 characters, `#rrggbb` | The main color chosen when following the wallpaper or the terminal colors | Immediately | No |
 | `tui.theme_mode` | Option | `"auto"` | `auto`, `dark`, `light` | Light or dark: follow the terminal's background, or always dark or always light | Immediately | No |
@@ -348,7 +348,7 @@ The last four are not on the settings page; edit the file by hand or use `miyu c
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `part` | Text, at most 100 characters | Required | The part name |
-| `hidden` | Switch | `false` | Hide it |
+| `shown` | Switch | `true` | Show it; `false` hides it |
 | `rows` | Integer, `0` to `200` | `0` | The most lines it can take; `0` is no limit |
 
 The shipped part names, in the shipped order:
@@ -364,7 +364,7 @@ The parts you write go in the order you write them, and the ones you do not ment
 
 ```toml
 [tui]
-side = [{ part = "recent", rows = 5 }, { part = "avatar", hidden = true }]
+side = [{ part = "recent", rows = 5 }, { part = "avatar", shown = false }]
 ```
 
 ## Web UI
@@ -375,7 +375,7 @@ Settings for the web UI package, prefix `web`. To open the web UI from other dev
 |---|---|---|---|---|---|---|
 | `web.port` | Integer | `8300` | `1` to `65535` | The port the web UI listens on; opening it from this machine and from the local network both use it | Immediately | No |
 | `web.listen` | Text | `"127.0.0.1"` | At most 64 characters | Which address to listen on. `127.0.0.1` can be opened only from this computer; `0.0.0.0` is all of this computer's addresses | Immediately | No |
-| `web.idle_seconds` | Integer | `600` | `0` to `86400`, seconds | Exits after this long with no browser connected and no media file being served. `0` never exits. Not on the settings page | After head restart | No |
+| `web.idle_seconds` | Integer | `0` | `0` to `86400`, seconds | Exits after this long with no browser connected and no media file being served. `0` never exits. Not on the settings page | After head restart | No |
 | `web.ticket_idle_seconds` | Integer | `43200` | `1` to `2592000`, seconds | A media file ticket expires after this long unused. Not on the settings page | After head restart | No |
 | `web.most_tickets` | Integer | `4096` | `1` to `1000000` | How many media file tickets there can be at most; when full, the longest unused one is dropped. Not on the settings page | After head restart | No |
 
