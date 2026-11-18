@@ -413,7 +413,7 @@
 2. 它闲置超过 `terminal.idle_new_after` 分钟（0 是不换）：开一个新的，指针挪过去，回应多 `renewed: {"last"}`（旧会话最后一次动静的时刻），旧会话不动。指过去（`session.set_terminal`、新开的）的那一刻也算一次动静：主动切到一个很久没说话的会话，闲置从切过去时算起。
 3. 没指过、指着的删了、不算数的：开一个新的，回应多 `created: true`。
 
-新开的照 `terminal.persona`、`terminal.preset`（没设的跟随 `persona.default`、`preset.default`）。同一时刻几个连接一起要（同一个键），只开一个。键各记最后一次用到的时刻，7 天没用的写指针时顺手清掉，最多留 64 个（最久没用的先清）；清掉的键再来当没指过。
+新开的照 `terminal.persona`、`terminal.preset`（没设的跟随 `persona.default`、`preset.default`）。要新开、而 `cwd` 落在数据根里（不在它的 `workspace/` 里）的不开、不挪指针，拒 `path_forbidden`：带着这个目录的 `session.send` 也是这样拒的；指着的会话还在、不用新开的照旧交回它。同一时刻几个连接一起要（同一个键），只开一个。键各记最后一次用到的时刻，7 天没用的写指针时顺手清掉，最多留 64 个（最久没用的先清）；清掉的键再来当没指过。
 
 **`session.set_terminal`**：参数 `session`：把终端会话指到它（`/sessions` 选中的）；`terminal`（可以不写）：改哪个终端的指针，写法同上。只收本机的主会话，别的拒 `session_not_found`。回应 `{"session"}`。
 

@@ -116,6 +116,16 @@ pub(crate) fn home(core: &Core) -> Option<PathBuf> {
         .and_then(|home| std::fs::canonicalize(home).ok())
 }
 
+/// `cwd` 落在数据根里、又不在 `workspace/` 里：[`checked`] 会拒成 `path_forbidden` 的那一种。换不成真实位置的不算（说不清在哪，
+/// 照 [`checked`] 是读不了，不是这一种）。`session.terminal` 建会话之前照它先查（施工 8-33 五补，`terminal.rs`）。
+pub(crate) fn forbidden(core: &Core, cwd: &str) -> bool {
+    let Ok(real) = miyu_fs::resolve(Path::new("/"), home(core).as_deref(), cwd) else {
+        return false;
+    };
+    let (data_root, own) = roots(core);
+    real.starts_with(&data_root) && !real.starts_with(&own)
+}
+
 /// 查一个人明着要换去的工作目录，交回实际用的：见模块的说明。`/workspace` 也照它查（施工 9-7 下）。
 /// 人明着选的，太宽的照用、标上 `wide`（施工 9-7 补）。`workspace/` 本身换成会话 `handle` 自己的默认
 /// 工作区（施工 5-14 中：网页的「默认工作区」交的是它）。

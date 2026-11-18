@@ -7,6 +7,8 @@
 //!   不算数的开一个新的，回应带 `created: true`。新开的照 `terminal.persona`、`terminal.preset`（没设的跟随默认），在 `cwd`
 //!   （没写的照默认工作区）。同一时刻几个 shell 一起要的只开一个。`fresh: true` 不管指着谁，照新开的规矩开一个、指过去，
 //!   回应带 `created: true`（shellhook 的 `/new`，施工 8-33 再补：怎么开归核心，头不照 `terminal.*` 再拼一遍）。
+//!   要新开、`cwd` 又落在数据根里（不在 `workspace/` 里）的不开、不动指针，回 `path_forbidden`（施工 8-33 五补）：终端集成随后
+//!   带着这个目录的 `session.send` 是要被拒的，先开了就留下一个空的终端会话。指着的还在、不用新开的不查，照旧交回它。
 //! - `session.set_terminal {session}`：指到这个会话（shellhook 的 `/sessions`）。只收本机主会话。
 //! - 指过去（`set_terminal`、新开的）的那一刻记在指针上，算这个终端会话的一次动静：闲置照会话的最后一次动静和它里晚的那个算
 //!   （施工 8-33 三补，2026-10-21 项目主人定：主动切过去的不该再被闲置规则换掉）。
@@ -116,6 +118,11 @@ pub(crate) async fn get(
         voice_max_ms: None,
     };
     let cwd = params.cwd.unwrap_or_else(|| "~".to_string());
+    // 要建了才查（施工 8-33 五补）：终端集成随后的 `session.send` 带着同一个目录，落在数据根里的会被拒（`workspace.rs` 的
+    // `follow`）。先建再拒的话，每拒一次留下一个空的终端会话，指针也指过去了。查不过的不建、不动指针，回同一个原因。
+    if crate::workspace::forbidden(core, &cwd) {
+        return Err(Refusal::PATH_FORBIDDEN);
+    }
     let persona = settings.persona.as_deref().map(Some);
     let created = core
         .sessions

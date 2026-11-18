@@ -1045,6 +1045,7 @@ flowchart LR
 | 8-33 再补 | `/new` 由核心开、闲置默认 3 小时 | `session.terminal` 带 `fresh: true` 照新开的规矩开一个指过去；`terminal.idle_new_after` 默认 180。施工单见 `8-33再补-新开终端会话和闲置3小时.md` |
 | 8-33 三补 | 切过去的不再被闲置换掉 | `terminal.json` 的指针多 `at`（指过去的时刻），`set_terminal`、新开的写上；判闲置照会话最后一次动静和它里晚的那个。施工单见 `8-33三补-切过去重计闲置.md` |
 | 8-33 四补 | 会话列表分得出终端集成开的 | `session.created` 多 `origin`（`session.terminal` 开的写 `terminal`），索引多一列（版本 11），`session.list`、`sessions.changed` 的一项带上。施工单见 `8-33四补-终端会话来源.md` |
+| 8-33 五补 | 在数据根里要终端会话，被拒了不留下空会话 | 终端集成在数据根的目录里说话：`session.terminal` 先建了会话、记了指针，随后带着这个目录的 `session.send` 被拒 `path_forbidden`，每拒一次留下一个空的终端会话、指针也指过去。改成要新建时先查目录，落在数据根里（不在 `workspace/` 里）的不建、不动指针，回同一个 `path_forbidden`。施工单见 `8-33-五补-数据根里要终端会话不留空会话.md` |
 | T-22 | 每个终端各一个终端会话 | `session.terminal`、`session.set_terminal` 多收 `terminal` 键，照「账号 + 键」各记指针（7 天没用的、超过 64 个的清掉）；`session.terminal` 多收 `create: false` 只问不开。施工单见 `T-22-按终端分会话.md` |
 | 8-34 | 供应商改名 | 供应商编号能改：`provider.rename` 一次改完两层配置里的表、引用、池的成员，钉着旧编号的会话下一轮起照新编号，用出来的窗口、模型列表跟着换。施工单见 `8-34-供应商改名.md` |
 | P-8 | 「基础功能」也开写技能 | 项目主人 2026-10-12 照推荐定：出厂预设「基础功能」的软件多 `authoring`，她看得到写技能、写包的两个技能（原来看不到，让她写技能时在本机目录里翻了三十多秒）；每次请求多 137 token，登记过。施工单见 `P-8-基础功能开写技能.md` |

@@ -159,3 +159,57 @@ fn regex_lite_at(text: &str) -> String {
     out.push_str(rest);
     out
 }
+
+/// 在数据根里要终端会话（施工 8-33 五补）：终端集成在数据根的目录里说话，随后 `session.send` 带的这个目录是要被拒的
+/// （`path_forbidden`）。原来 `session.terminal` 先建了会话、记了指针（目录退回默认工作区），那一句再被拒：留下一个空的终端
+/// 会话，指针也指过去了。现在建之前先查，查不过的不建、不动指针，回同一个 `path_forbidden`。`workspace/` 里的照旧能开；已经
+/// 有终端会话的照旧交回它（不建就不查）。
+#[tokio::test]
+async fn a_terminal_session_asked_for_inside_the_data_root_is_refused_and_leaves_nothing() {
+    let home = Home::new();
+    let mut client = Client::connect(home.core(&Script::new([])));
+    client.hello().await;
+    let sessions = |listed: &Value| listed["result"]["sessions"].as_array().map(Vec::len);
+    for (id, inside) in [
+        ("t1", home.root.path().to_path_buf()),
+        ("t2", home.root.run()),
+    ] {
+        let refused = client
+            .call(
+                id,
+                "session.terminal",
+                json!({"cwd": inside.to_string_lossy()}),
+            )
+            .await;
+        assert_eq!(reason(&refused), Some("path_forbidden"), "{refused}");
+    }
+    let listed = client.call("l1", "session.list", json!({})).await;
+    assert_eq!(sessions(&listed), Some(0), "没留下会话：{listed}");
+    assert_eq!(
+        terminal(&mut client, "t3", json!({"create": false})).await,
+        json!({"session": null}),
+        "指针没动"
+    );
+
+    // 数据根里的 `workspace/` 照旧能开。
+    let workspace = home.root.workspace().to_string_lossy().into_owned();
+    let made = terminal(&mut client, "t4", json!({"cwd": workspace})).await;
+    assert_eq!(made["created"], json!(true), "{made}");
+    // 已经有终端会话了：在数据根里再要，交回的还是它，不另建。
+    let inside = home.root.path().to_string_lossy().into_owned();
+    assert_eq!(
+        terminal(&mut client, "t5", json!({"cwd": inside})).await,
+        json!({"session": made["session"]})
+    );
+    // 要新开一个（`fresh`）的照样先查。
+    let refused = client
+        .call(
+            "t6",
+            "session.terminal",
+            json!({"cwd": inside, "fresh": true}),
+        )
+        .await;
+    assert_eq!(reason(&refused), Some("path_forbidden"), "{refused}");
+    let listed = client.call("l2", "session.list", json!({})).await;
+    assert_eq!(sessions(&listed), Some(1), "{listed}");
+}
