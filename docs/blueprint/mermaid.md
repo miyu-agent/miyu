@@ -17,7 +17,7 @@ mermaid 源码画成 SVG 由核心做一次：同一张图，终端和网页看�
 | `crates/miyu-mermaid/src/lib.rs` | `Mermaid`：公开的家底和 `render`；渲染器的主题怎么改（三种记号色、字体） |
 | `crates/miyu-mermaid/src/style.rs` | 读 `style.json` |
 | `crates/miyu-mermaid/src/fonts.rs` | 独立探一次系统的字体库找不找得到字；画图的库记过字体在哪、文件没变的不扫（施工 V-35） |
-| `third_party/mermaid-rs-renderer/` | 画图的库补过的一份（施工 V-35，`third_party/README.md`）：量字宽时字体文件映射进来、只记位置不存副本、扫字体用的整张表用完就放 |
+| `third_party/mermaid-rs-renderer/` | 画图的库补过的一份（施工 V-35，`third_party/README.md`）：量字宽时字体文件映射进来、只记位置不存副本、扫字体用的整张表用完就放；样式值、时序图 `box` 的颜色带引号、尖括号、`&` 的不收（施工 MS-1、AU-005）；`block-beta` 的 `columns` 最多 1024（施工 AU-004：分配失败直接 abort，`catch_unwind` 接不住）；几种反着的括号照空标签画、不 panic（施工 AU-019） |
 | `crates/miyu-endpoint/src/queries.rs` | 可选软件包登记的查询：方法名到怎么答的一张表，`QueryError`（软件包用得上的几种拒绝，不认得 JSON-RPC 的错误码） |
 | `crates/miyu-core/src/packages.rs` | 照编进来的可选软件包（cargo 开关）往查询表里登记；`mermaid.render` 的参数怎么读、`Mermaid` 的结果怎么翻成回应或者 `QueryError` |
 | `resources/software/mermaid/style.json` | 字体、三种记号色、源码的上限、记几张 |
@@ -88,7 +88,7 @@ mermaid 源码画成 SVG 由核心做一次：同一张图，终端和网页看�
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-mermaid/src/tests.rs` | 记号色都换得掉、底和框不填色；同一份源码第二次不重画、满了丢最早的那一张；空的、太长、画不出各说一句（库的原话不是空的）；造出 `Mermaid` 不碰磁盘，第一次调才读 `style.json`、探字体；`style.json` 读不懂当没法画；panic 的几种payload 都翻成字符串；真的 `style.json`、一张流程图一张时序图都画得出 |
+| `crates/miyu-mermaid/src/tests.rs` | 记号色都换得掉、底和框不填色；同一份源码第二次不重画、满了丢最早的那一张；空的、太长、画不出各说一句（库的原话不是空的）；造出 `Mermaid` 不碰磁盘，第一次调才读 `style.json`、探字体；`style.json` 读不懂当没法画；panic 的几种payload 都翻成字符串；真的 `style.json`、一张流程图一张时序图都画得出；时序图 `box` 的颜色写不出元素、正常的颜色照用（施工 AU-005）；`columns 99999999999` 照样画得出、不把进程带走（施工 AU-004）；`[/]`、`]` 在 `[` 前、`)` 在 `(` 前的照画（施工 AU-019） |
 | `crates/miyu-mermaid/src/style/tests.rs` | 读得进来、少一格或者多一格不认的、数是 0 或者字体表是空的都读不了 |
 | `crates/miyu-mermaid/src/fonts/tests.rs` | 这台机器上读得到至少一种字体（真机验，三个平台都该过） |
 | `crates/miyu/tests/mermaid_fonts.rs`（施工 V-35） | 真的核心画一张图：数据根的 `var/cache/mermaid` 里只有几十字节的位置记录、没有拷下来的字体，画图的库默认的 `$XDG_CACHE_HOME/mmdr` 一个字都不写；重起核心照记下的位置再画，SVG 和头一回一字不差 |

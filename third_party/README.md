@@ -15,7 +15,7 @@ exclude` 把它们排除在工作区外（路径依赖照样会被 `cargo fmt --
 `[[bench]]`、`[[example]]` 和开发依赖 `criterion` 跟着删掉。原版自带的单元测试 `include_str!` 了发布包里没有的 `docs/` 文件，
 从 crates.io 下下来本来就编不过，不跑。
 
-改了的只有 `src/text_metrics.rs`（量字宽）、`src/lib.rs`（多导出两个函数）和 `src/parser.rs`（第 6 条，施工 MS-1），`Cargo.toml` 多一个依赖 `memmap2`、开头多一个空的 `[workspace]`（第 7 条）：
+改了的只有 `src/text_metrics.rs`（量字宽）、`src/lib.rs`（多导出两个函数）和 `src/parser.rs`（第 6 条施工 MS-1，第 8 到 10 条施工 AU-P0），`Cargo.toml` 多一个依赖 `memmap2`、开头多一个空的 `[workspace]`（第 7 条）：
 
 1. 字体文件映射进来（`FontData::Mapped`），不整份拷进内存。原版 `data.to_vec()`：中文字体一个文件十几 MB，画过一张图就一直
    常驻。字体不在文件里的（`fontdb::Source::Binary`）照旧拷一份。
@@ -34,6 +34,18 @@ exclude` 把它们排除在工作区外（路径依赖照样会被 `cargo fmt --
 7. `Cargo.toml` 开头加一个空的 `[workspace]`（施工 WS-1）：工作树放在主检出的 `.worktrees/` 底下时，cargo 照它往上找到主检出的
    工作区，那边的 `exclude` 管不到这条路径，`cargo fmt --all` 报「believes it's in a workspace when it's not」。自己当工作区的根就
    不往上找；当依赖用的时候 cargo 不看它。
+
+8. 时序图 `box` 的颜色（施工 AU-005，外部审计 #005）：`parse_sequence_box_line` 读出的颜色同第 6 条原样拼进 `fill="…"`，没过
+   `safe_style_value`。照样过它，带那五个字符的当没写颜色。`crates/miyu-mermaid` 的
+   `a_sequence_box_color_cannot_write_an_element_into_the_svg` 守着。
+
+9. `block-beta` 的列数上限（施工 AU-004，外部审计 #004）：`columns <数>` 原来写多大照收，排版时 `vec![0.0f32; columns]` 一下要几百
+   GB，分配失败直接 abort（不是 panic，`catch_unwind` 接不住，整个核心没了）。解析时最多 1024（`MAX_BLOCK_COLUMNS`）。
+   `a_huge_block_column_count_does_not_take_the_process_down` 守着。
+
+10. 反着的括号不 panic（施工 AU-019，外部审计 #019）：`parse_shape_from_brackets` 等几处 `&trimmed[2..len - 2]` 遇到 `[/]` 这种
+    起止重叠的切出 `2..1`；架构图 `service` 的 `[…]` 标签、`(…)` 图标 `]`、`)` 在前面时同样反着切。换成 `get(..)`，切不出来的当
+    空的。`reversed_brackets_render_instead_of_panicking` 守着。
 
 怎么验：同一批图（中文、英文、带重音的拉丁字母、emoji、时序图、类图、状态图、甘特图、饼图、三十个节点的长图）补前补后画出来的
 SVG 逐字节一样，头一回和照记下的位置画的那一回都比；`crates/miyu/tests/mermaid_fonts.rs` 守着只记位置、不写默认目录、重起以后

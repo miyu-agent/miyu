@@ -221,3 +221,66 @@ fn a_style_value_cannot_write_an_element_into_the_svg() {
         );
     }
 }
+
+/// 修以前：时序图 `box` 的颜色没过 MS-1 的样式值过滤，原样拼进 `fill="…"`，带引号就闭合属性另写元素（审计 #005）。现在同样
+/// 带引号、尖括号、`&` 的整个不收，照没写颜色画。
+#[test]
+fn a_sequence_box_color_cannot_write_an_element_into_the_svg() {
+    let scratch = Scratch::new();
+    scratch.write(&style_json(65536, 64));
+    let mermaid = Mermaid::new(&scratch.0);
+    for source in [
+        "sequenceDiagram\nbox '\"><g id=\"ms1_bypass\" x=\"' Group\nparticipant A\nend\nA->>A: hi",
+        "sequenceDiagram\nbox \"#fff'/><g id='ms1_bypass'\" Group\nparticipant A\nend\nA->>A: hi",
+    ] {
+        let rendered = mermaid.render(source).expect("画得出来");
+        assert!(
+            !rendered.svg.contains("<g id=\"ms1_bypass\""),
+            "{}",
+            rendered.svg
+        );
+        assert!(
+            !rendered.svg.contains("<g id='ms1_bypass'"),
+            "{}",
+            rendered.svg
+        );
+    }
+    let fine = mermaid
+        .render("sequenceDiagram\nbox #abcdef Group\nparticipant A\nend\nA->>A: hi")
+        .expect("画得出来");
+    assert!(fine.svg.contains("fill=\"#abcdef\""), "正常的颜色照用");
+}
+
+/// 修以前：`block-beta` 的 `columns` 写多大照分配多大，`columns 99999999999` 一下要 400 GB，分配失败直接 abort，`catch_unwind`
+/// 接不住，整个核心没了（审计 #004）。现在列数有上限，照样画得出。
+#[test]
+fn a_huge_block_column_count_does_not_take_the_process_down() {
+    let scratch = Scratch::new();
+    scratch.write(&style_json(65536, 64));
+    let mermaid = Mermaid::new(&scratch.0);
+    for source in [
+        "block-beta\ncolumns 99999999999\na",
+        "block-beta\ncolumns 18446744073709551615\na b",
+        "block-beta\ncolumns 99999999999\na:99999999999 b",
+    ] {
+        assert!(mermaid.render(source).is_ok(), "{source}");
+    }
+}
+
+/// 修以前：几种写法切出反着的范围，画图的库 panic（审计 #019：`[/]` 起止重叠，`]` 在 `[` 前面，`)` 在 `(` 前面）。被
+/// `catch_unwind` 接住当画不出；现在照空的标签画。
+#[test]
+fn reversed_brackets_render_instead_of_panicking() {
+    let scratch = Scratch::new();
+    scratch.write(&style_json(65536, 64));
+    let mermaid = Mermaid::new(&scratch.0);
+    for source in [
+        "flowchart TD\nA[/]",
+        "flowchart TD\nA[\\]",
+        "architecture-beta\nservice svc][foo",
+        "architecture-beta\nservice svc)(x[label]",
+    ] {
+        let rendered = mermaid.render(source);
+        assert!(rendered.is_ok(), "{source}: {rendered:?}");
+    }
+}

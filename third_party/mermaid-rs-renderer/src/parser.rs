@@ -1109,6 +1109,11 @@ fn parse_sequence_participant(
     Some((strip_quotes(rest), None, shape))
 }
 
+/// Miyu patch: the most `columns` a block diagram may ask for. Layout allocates one slot
+/// per column up front, so `columns 99999999999` used to request ~400 GB and abort the
+/// whole process (an allocation failure is not a panic `catch_unwind` can stop).
+const MAX_BLOCK_COLUMNS: usize = 1024;
+
 fn is_color_token(token: &str) -> bool {
     let lower = token.trim().to_ascii_lowercase();
     lower == "transparent"
@@ -1158,7 +1163,10 @@ fn parse_sequence_box_line(line: &str) -> Option<(Option<String>, Option<String>
         None
     };
     let label = label.filter(|value| !value.trim().is_empty());
-    let color = color.filter(|value| !value.eq_ignore_ascii_case("transparent"));
+    // Miyu patch: the color lands raw in a `fill="..."` attribute, same as the style values.
+    let color = color
+        .filter(|value| !value.eq_ignore_ascii_case("transparent"))
+        .and_then(safe_style_value);
     Some((color, label))
 }
 
@@ -1944,13 +1952,13 @@ fn parse_mindmap_shape(raw: &str) -> Option<(String, crate::ir::MindmapNodeType)
     let trimmed = raw.trim();
     if trimmed.starts_with("((") && trimmed.ends_with("))") {
         return Some((
-            strip_quotes(&trimmed[2..trimmed.len() - 2]),
+            strip_quotes(trimmed.get(2..trimmed.len() - 2).unwrap_or_default()),
             crate::ir::MindmapNodeType::Circle,
         ));
     }
     if trimmed.starts_with("{{") && trimmed.ends_with("}}") {
         return Some((
-            strip_quotes(&trimmed[2..trimmed.len() - 2]),
+            strip_quotes(trimmed.get(2..trimmed.len() - 2).unwrap_or_default()),
             crate::ir::MindmapNodeType::Hexagon,
         ));
     }
@@ -3855,7 +3863,7 @@ fn parse_block_diagram(input: &str) -> Result<ParseOutput> {
                 && let Ok(cols) = parts[1].parse::<usize>()
                 && cols > 0
             {
-                block.columns = Some(cols);
+                block.columns = Some(cols.min(MAX_BLOCK_COLUMNS));
             }
             continue;
         }
@@ -4185,7 +4193,7 @@ fn parse_architecture_node(
     };
     let label = if let Some(start) = node_part.find('[') {
         if let Some(end) = node_part.rfind(']') {
-            strip_quotes(node_part[start + 1..end].trim())
+            strip_quotes(node_part.get(start + 1..end).unwrap_or_default().trim())
         } else {
             String::new()
         }
@@ -4196,7 +4204,8 @@ fn parse_architecture_node(
     let icon = if let Some(paren_start) = id_part.find('(') {
         id_part
             .find(')')
-            .map(|paren_end| id_part[paren_start + 1..paren_end].trim().to_string())
+            .and_then(|paren_end| id_part.get(paren_start + 1..paren_end))
+            .map(|icon| icon.trim().to_string())
     } else {
         None
     };
@@ -6213,37 +6222,37 @@ fn parse_shape_from_brackets(raw: &str) -> (String, crate::ir::NodeShape) {
     let trimmed = raw.trim();
     if trimmed.starts_with("[/") && trimmed.ends_with("/]") {
         return (
-            strip_quotes(&trimmed[2..trimmed.len() - 2]),
+            strip_quotes(trimmed.get(2..trimmed.len() - 2).unwrap_or_default()),
             crate::ir::NodeShape::Parallelogram,
         );
     }
     if trimmed.starts_with("[\\") && trimmed.ends_with("\\]") {
         return (
-            strip_quotes(&trimmed[2..trimmed.len() - 2]),
+            strip_quotes(trimmed.get(2..trimmed.len() - 2).unwrap_or_default()),
             crate::ir::NodeShape::ParallelogramAlt,
         );
     }
     if trimmed.starts_with("[/") && trimmed.ends_with("\\]") {
         return (
-            strip_quotes(&trimmed[2..trimmed.len() - 2]),
+            strip_quotes(trimmed.get(2..trimmed.len() - 2).unwrap_or_default()),
             crate::ir::NodeShape::Trapezoid,
         );
     }
     if trimmed.starts_with("[\\") && trimmed.ends_with("/]") {
         return (
-            strip_quotes(&trimmed[2..trimmed.len() - 2]),
+            strip_quotes(trimmed.get(2..trimmed.len() - 2).unwrap_or_default()),
             crate::ir::NodeShape::TrapezoidAlt,
         );
     }
     if trimmed.starts_with("[[") && trimmed.ends_with("]]") {
         return (
-            strip_quotes(&trimmed[2..trimmed.len() - 2]),
+            strip_quotes(trimmed.get(2..trimmed.len() - 2).unwrap_or_default()),
             crate::ir::NodeShape::Subroutine,
         );
     }
     if trimmed.starts_with("[(") && trimmed.ends_with(")]") {
         return (
-            strip_quotes(&trimmed[2..trimmed.len() - 2]),
+            strip_quotes(trimmed.get(2..trimmed.len() - 2).unwrap_or_default()),
             crate::ir::NodeShape::Cylinder,
         );
     }
@@ -6270,7 +6279,7 @@ fn parse_shape_from_parens(raw: &str) -> (String, crate::ir::NodeShape) {
     }
     if trimmed.starts_with("((") && trimmed.ends_with("))") {
         return (
-            strip_quotes(&trimmed[2..trimmed.len() - 2]),
+            strip_quotes(trimmed.get(2..trimmed.len() - 2).unwrap_or_default()),
             crate::ir::NodeShape::DoubleCircle,
         );
     }
@@ -6291,7 +6300,7 @@ fn parse_shape_from_braces(raw: &str) -> (String, crate::ir::NodeShape) {
     let trimmed = raw.trim();
     if trimmed.starts_with("{{") && trimmed.ends_with("}}") {
         return (
-            strip_quotes(&trimmed[2..trimmed.len() - 2]),
+            strip_quotes(trimmed.get(2..trimmed.len() - 2).unwrap_or_default()),
             crate::ir::NodeShape::Hexagon,
         );
     }
