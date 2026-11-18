@@ -183,7 +183,7 @@ Every run packs a new archive and adds a new folder, which takes twice the old f
 If it fails part-way, it prints `miyu migrate: <reason>` on standard error and exits with code `1`. What was written before the failure stays; fix the cause and run again, and what was already migrated is skipped. A failed run leaves behind:
 
 - `~/.miyu/root/documents/Old Miyu migration/<time>/`: the archive, without a report. You can delete it once you have checked.
-- `~/.miyu/var/lib/migrate/<time>/`: the unpacked copy used for checking. A successful run deletes it when done; a failed one leaves it, and you can delete it.
+- `~/.miyu/var/lib/migrate/<time>/`: the unpacked copy used for checking, which holds the plain-text keys from the old config. It is deleted on the spot whether the run succeeds or fails, so normally nothing is left; if it cannot be deleted, it prints `cannot remove the unpacked copy of the old data <path> (<reason>); it holds plain-text keys from the old config, delete it by hand`, and you delete it yourself.
 
 ## After migrating
 
@@ -206,3 +206,8 @@ If it fails part-way, it prints `miyu migrate: <reason>` on standard error and e
 | ``run this as `miyu migrate <old folder>`: MIYU_STATE_DIR is not set`` | You ran the program inside the package directly. Use `miyu migrate` |
 | The report says "consolidation failed (…)" | There was no usable model when memories were migrated. After connecting a model, run `miyu memory dream --persona <id>` |
 | In the report, some category is "Not migrated, kept in the archive", and the note says a package is not installed | Install that package and run the line given in the note, or run the migration again |
+| The report says "N link(s) in the skill `<name>` were not copied …" | Links in a skill folder are not followed (they may point outside the skill); they stay in the archive. Copy what you need out of the archive yourself |
+| The report says "The SKILL.md of `<path>` is a link that leads outside the skill folder … the whole skill was not copied" | That skill's `SKILL.md` is a link; it was not followed and the whole skill was not copied; it stays in the archive. Copy what you need out of the archive yourself |
+| The report says "Cannot read the knowledge base list kb_meta.db (…); the documents were not migrated" | The old knowledge base list cannot be read, so the documents stay in the archive. Take out what you need and add it to a knowledge base with `miyu kb add` |
+| The report says "Cannot read the session database (…); the sponsor records were not migrated" | The old session database cannot be read, so the sponsor records stay in the archive |
+| The report says "N sponsor record(s) have an unreadable time and were not migrated" | The time of those sponsor records cannot be read; only they are skipped and the rest are imported; the skipped ones stay in the archive |
