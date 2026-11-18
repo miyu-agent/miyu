@@ -17,14 +17,22 @@ use crate::support::{driver, sample, with_picture};
 
 /// 照 `client` 发 `body` 给 `base_url`，交回「发出去了」报的哈希和收场。
 async fn run(client: &Client, base_url: &str, body: Body) -> (Option<ContentHash>, Outcome) {
-    let endpoint = Endpoint::new(base_url, "sk-test");
-    let driver = driver();
+    run_as(client, &Endpoint::new(base_url, "sk-test"), &driver(), body).await
+}
+
+/// 同 [`run`]，端点、驱动照给的。
+async fn run_as(
+    client: &Client,
+    endpoint: &Endpoint,
+    driver: &dyn miyu_drivers::Driver,
+    body: Body,
+) -> (Option<ContentHash>, Outcome) {
     let mut sent = None;
     let outcome = send(
         Attempt {
             client,
-            endpoint: &endpoint,
-            driver: &driver,
+            endpoint,
+            driver,
             body,
             path: "/chat/completions",
             idle: Duration::from_secs(20),
@@ -105,6 +113,68 @@ async fn crossing_to_another_host_drops_the_authorization() {
         None,
         "端口不一样就是跨了主机"
     );
+}
+
+/// 修以前：跨主机只去掉 `Authorization` 那几样，Anthropic 的 `x-api-key`、端点另配的头照带过去（审计 #003 第 1 条）。现在驱动
+/// 给的认证头、端点另配的头跨了主机都不带。
+#[tokio::test]
+async fn crossing_to_another_host_drops_every_credential_header() {
+    let other = Server::start(vec![answer()]).await;
+    let server = Server::start(vec![moved(
+        307,
+        &format!("{}/chat/completions", other.base_url),
+    )])
+    .await;
+    let client = client(Proxy::Off).expect("造得出客户端");
+    let endpoint = Endpoint::new(&server.base_url, "sk-ant-secret")
+        .with_header("x-relay-token", "relay-secret");
+    run_as(
+        &client,
+        &endpoint,
+        &crate::support::anthropic(),
+        crate::support::BODY.to_vec().into(),
+    )
+    .await;
+    assert_eq!(
+        server.received()[0].header("x-api-key"),
+        Some("sk-ant-secret"),
+        "头一跳照带"
+    );
+    let received = other.received();
+    assert_eq!(received.len(), 1, "跟过去了");
+    assert_eq!(received[0].header("x-api-key"), None);
+    assert_eq!(received[0].header("x-relay-token"), None);
+    assert_eq!(
+        received[0].header("anthropic-version"),
+        Some("2023-06-01"),
+        "不是密钥的照带"
+    );
+}
+
+/// 修以前：每一跳都从原来的头起、只和上一跳比主机，A → B → B 的第二跳又把去掉的 `Authorization` 装回去，发给了 B（审计 #003
+/// 第 2 条）。现在跨过一次主机，后面每一跳都不带。
+#[tokio::test]
+async fn a_second_hop_on_the_other_host_does_not_get_the_key_back() {
+    let other = Server::start(vec![moved(307, "/hop2/chat/completions"), answer()]).await;
+    let server = Server::start(vec![moved(
+        307,
+        &format!("{}/hop1/chat/completions", other.base_url),
+    )])
+    .await;
+    let client = client(Proxy::Off).expect("造得出客户端");
+    let (_, outcome) = run(
+        &client,
+        &server.base_url,
+        crate::support::BODY.to_vec().into(),
+    )
+    .await;
+    assert!(ok(&outcome), "{outcome:?}");
+    let received = other.received();
+    assert_eq!(received.len(), 2, "两跳都到了");
+    assert_eq!(received[1].path, "/hop2/chat/completions");
+    for hop in &received {
+        assert_eq!(hop.header("authorization"), None, "{}", hop.path);
+    }
 }
 
 #[tokio::test]

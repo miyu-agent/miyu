@@ -112,7 +112,7 @@ SSE 分帧共用 `sse.rs`。这一家没有 `[DONE]`：说完是 `response.compl
 | `response.output_item.added` | `item.type` 是 `message` 开正文块；`reasoning` 开思考块；`function_call` 开工具调用块 `ToolCall { name }`，私有数据 `{"driver":"openai-responses","data":{"call_id":<它>}}` |
 | `response.output_text.delta`、`response.refusal.delta` | 正文块的 `Text`（拒答的字也是她说的话，照正文给人看） |
 | `response.reasoning_summary_text.delta`、`response.reasoning_text.delta` | 思考块的 `Text`。一项里第二段摘要开始时（`summary_index` 变了），先交一个空行 `\n\n` 再接着 |
-| `response.function_call_arguments.delta` | 攒着，不当场交（「施工时定的」）；`response.function_call_arguments.done` 的 `arguments` 来了换成它 |
+| `response.function_call_arguments.delta` | 攒着，不当场交（「施工时定的」），攒进了就记下有动静，执行器照 `Decode::stirred` 重新算空闲（施工 AU-013）；`response.function_call_arguments.done` 的 `arguments` 来了换成它 |
 | `response.output_item.done` | 思考项：有 `encrypted_content` 的交私有数据 `{"driver":"openai-responses","data":{"id":<id>,"encrypted_content":<它>}}`；摘要一个字都没流过来、`item.summary` 里有的，照它补上。正文项：一个字都没流过来的（有的网关只在这里给整段），照 `item` 里的补上。工具调用项：参数照 `item.arguments` 交一整段，没有的照攒着的；没等到这一项完了就说完的，收尾时照攒着的交 |
 | `response.completed` | 用量记下，说完了 |
 | `response.incomplete` | 用量记下；`response.incomplete_details.reason` 记下 |

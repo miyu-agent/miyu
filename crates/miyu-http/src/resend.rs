@@ -3,8 +3,9 @@
 //!
 //! - 307、308 跳转（原来是 tower-http 的 `FollowRedirect` 照 reqwest 的 `TowerRedirectPolicy` 做）：`Location` 照当前的地址
 //!   解析，解析不了的照原样交回这个 3xx；最多跟 10 次，第 11 次报「error following redirect: too many redirects」；方法、
-//!   请求体不变，头从原来的那一份起，跨了主机（主机名或端口不一样）的去掉 `Authorization`、`Cookie`、`Cookie2`、
-//!   `Proxy-Authorization`、`WWW-Authenticate`，带上 `Referer`（上一个地址去掉用户名、密码、`#` 后面的；https 跳到 http 的
+//!   请求体不变，头从原来的那一份起，跨过主机（主机名、端口或协议不一样；跨过一次，后面每一跳都算，施工 AU-003）的去掉
+//!   `Authorization`、`Cookie`、`Cookie2`、`Proxy-Authorization`、`WWW-Authenticate` 和标了敏感的（值带着 key 的认证头、
+//!   端点另配的头），带上 `Referer`（上一个地址去掉用户名、密码、`#` 后面的；https 跳到 http 的
 //!   不带）。地址不是 http、https 的，照 reqwest 当场报造不出请求。301、302、303 不用请求体（改成不带请求体的 GET），
 //!   reqwest 照旧自己跟。
 //! - 对方没处理就拒了（原来是 reqwest 默认的 `retry` 策略，`ProtocolNacks`）：h2 上对方发来 `REFUSED_STREAM` 的重置，或者
@@ -17,8 +18,8 @@ use std::error::Error;
 use std::sync::Arc;
 
 use reqwest::header::{
-    AUTHORIZATION, COOKIE, HeaderMap, HeaderValue, LOCATION, PROXY_AUTHORIZATION, REFERER,
-    WWW_AUTHENTICATE,
+    AUTHORIZATION, COOKIE, HeaderMap, HeaderName, HeaderValue, LOCATION, PROXY_AUTHORIZATION,
+    REFERER, WWW_AUTHENTICATE,
 };
 use reqwest::{Client, Request, Response, StatusCode, Url};
 
@@ -46,6 +47,8 @@ pub(crate) async fn deliver(client: &Client, template: Request, replay: &Arc<Rep
     let mut request = template;
     // 跳过的地址，照先后：reqwest 记的那一串。
     let mut previous: Vec<Url> = Vec::new();
+    // 跨过一次主机以后一直是真（施工 AU-003）：每一跳都从原来的头起，只和上一跳比的话，A → B → B 的第二跳又带上了密钥。
+    let mut left = false;
     loop {
         let response = match send(client, &request, replay).await {
             Ok(response) => response,
@@ -68,11 +71,9 @@ pub(crate) async fn deliver(client: &Client, template: Request, replay: &Arc<Rep
         }
         let mut headers = original.clone();
         if let Some(last) = previous.last() {
-            if cross_host(&next, last) {
-                for name in [AUTHORIZATION, COOKIE, PROXY_AUTHORIZATION, WWW_AUTHENTICATE] {
-                    headers.remove(name);
-                }
-                headers.remove("cookie2");
+            left |= crossed(&next, last);
+            if left {
+                strip(&mut headers);
             }
             if let Some(referer) = referer(&next, last) {
                 headers.insert(REFERER, referer);
@@ -115,10 +116,29 @@ fn location(response: &Response, current: &Url) -> Option<Url> {
     Some(next)
 }
 
-/// 跨没跨主机：主机名或者端口（没写的照协议的默认）不一样（reqwest 的 `remove_sensitive_headers`）。
-fn cross_host(next: &Url, previous: &Url) -> bool {
-    next.host_str() != previous.host_str()
+/// 跨没跨主机：主机名或者端口（没写的照协议的默认）不一样（reqwest 的 `remove_sensitive_headers`），或者协议换了（施工
+/// AU-003：同一个端口从 https 换成 http，密钥就明着发出去了）。
+fn crossed(next: &Url, previous: &Url) -> bool {
+    next.scheme() != previous.scheme()
+        || next.host_str() != previous.host_str()
         || next.port_or_known_default() != previous.port_or_known_default()
+}
+
+/// 跨了主机去掉的头：reqwest 去掉的那几样，加上标了敏感的（施工 AU-003：值带着 key 的认证头、端点另配的头，`send.rs` 造请求时标；
+/// Anthropic 的 `x-api-key` 不在 reqwest 那几样里）。
+fn strip(headers: &mut HeaderMap) {
+    for name in [AUTHORIZATION, COOKIE, PROXY_AUTHORIZATION, WWW_AUTHENTICATE] {
+        headers.remove(name);
+    }
+    headers.remove("cookie2");
+    let sensitive: Vec<HeaderName> = headers
+        .iter()
+        .filter(|(_, value)| value.is_sensitive())
+        .map(|(name, _)| name.clone())
+        .collect();
+    for name in sensitive {
+        headers.remove(name);
+    }
 }
 
 /// 带上的 `Referer`：上一个地址去掉用户名、密码、`#` 后面的；https 跳到 http 的不带（reqwest 的 `make_referer`）。
@@ -147,3 +167,6 @@ fn refused(error: &reqwest::Error) -> bool {
     }
     false
 }
+
+#[cfg(test)]
+mod tests;

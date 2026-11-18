@@ -157,7 +157,9 @@ async fn exchange(
         .key()
         .map(|key| driver.auth(key))
         .unwrap_or_default();
-    let auth = match extra_headers(&auth) {
+    // 值里带着 key 的标敏感（施工 AU-003）：跟着跳转跨了主机的不带；`anthropic-version` 这类照带。
+    let key = endpoint.key().unwrap_or_default();
+    let auth = match extra_headers(&auth, |value| !key.is_empty() && value.contains(key)) {
         Ok(auth) => auth,
         Err(_) => {
             let at = Instant::now();
@@ -165,7 +167,8 @@ async fn exchange(
             return misconfigured("认证头");
         }
     };
-    let extra = match extra_headers(&endpoint.headers) {
+    // 另配的头说不清是不是密钥（中转站的令牌常放在这里）：一律标敏感。
+    let extra = match extra_headers(&endpoint.headers, |_| true) {
         Ok(extra) => extra,
         Err(why) => {
             let at = Instant::now();
@@ -246,7 +249,7 @@ async fn exchange(
     }
     let mut decoder = driver.decoder();
     let mut broken = None;
-    // 最近一次解出内容的时刻：保活注释、不带内容的事件不算（施工 AE-2）。
+    // 最近一次解出内容的时刻：保活注释、不带内容的事件不算（施工 AE-2）；攒着还没交的内容算（施工 AU-013）。
     let mut quiet_since = tokio::time::Instant::now();
     loop {
         let next = tokio::select! {
@@ -265,6 +268,10 @@ async fn exchange(
                 for delta in decoder.feed(&bytes) {
                     quiet_since = tokio::time::Instant::now();
                     on(Progress::Delta(delta));
+                }
+                // 攒着还没交成增量的也算有动静（施工 AU-013）。
+                if decoder.stirred() {
+                    quiet_since = tokio::time::Instant::now();
                 }
                 if decoder.done() {
                     break;
@@ -329,13 +336,18 @@ fn failed(driver: &dyn Driver, why: &str) -> Outcome {
     }
 }
 
-/// 端点另配的头，照先后放进一张表；名字、值写得不对的，交回是哪一个（不写值：值也可能是密钥）。
-fn extra_headers(headers: &[(String, String)]) -> Result<HeaderMap, String> {
+/// 端点另配的头（认证头也照它），照先后放进一张表，值合 `sensitive` 的标敏感（施工 AU-003：跟着跳转跨了主机的不带，
+/// `resend.rs`）；名字、值写得不对的，交回是哪一个（不写值：值也可能是密钥）。
+fn extra_headers(
+    headers: &[(String, String)],
+    sensitive: impl Fn(&str) -> bool,
+) -> Result<HeaderMap, String> {
     let mut map = HeaderMap::new();
-    for (name, value) in headers {
+    for (name, text) in headers {
         let key =
             HeaderName::from_bytes(name.as_bytes()).map_err(|error| format!("{name}: {error}"))?;
-        let value = HeaderValue::from_str(value).map_err(|error| format!("{name}: {error}"))?;
+        let mut value = HeaderValue::from_str(text).map_err(|error| format!("{name}: {error}"))?;
+        value.set_sensitive(sensitive(text));
         map.append(key, value);
     }
     Ok(map)

@@ -105,6 +105,12 @@ pub trait Decode: Send {
 
     /// 流完了，或者不再读了：收块的增量、用量、出错。
     fn finish(self: Box<Self>) -> Ending;
+
+    /// 上次问过以后收到过内容、只是攒着还没交成增量（施工 AU-013：Responses 的工具参数），问完清掉。执行器照它重新算空闲，
+    /// 保活注释这类不带内容的不算。照增量交的驱动不用写。
+    fn stirred(&mut self) -> bool {
+        false
+    }
 }
 
 /// OpenAI 兼容的对话接口。
@@ -369,5 +375,9 @@ impl Decode for openai_responses::Decoder {
 
     fn finish(self: Box<Self>) -> Ending {
         openai_responses::Decoder::finish(*self)
+    }
+
+    fn stirred(&mut self) -> bool {
+        openai_responses::Decoder::stirred(self)
     }
 }

@@ -40,6 +40,8 @@ pub struct Decoder {
     ended: Option<End>,
     /// 流里报了错，或者流坏了。
     error: Option<CallError>,
+    /// 上次问过以后攒进了工具参数（施工 AU-013）：攒着不交增量，执行器照它重新算空闲。
+    stirred: bool,
 }
 
 /// 收尾的事件。
@@ -107,6 +109,11 @@ impl Decoder {
     /// 收尾的事件到了：模型说完了。
     pub fn finished(&self) -> bool {
         self.ended.is_some()
+    }
+
+    /// 上次问过以后有没有攒进工具参数，问完清掉（施工 AU-013）：参数攒到这一项完了才交，攒的那一阵没有增量，对方却一直在发。
+    pub fn stirred(&mut self) -> bool {
+        std::mem::take(&mut self.stirred)
     }
 
     /// 流完了，或者不再读了：交出收块的增量、用量、出错。
@@ -213,6 +220,7 @@ impl Decoder {
             "response.function_call_arguments.delta" => {
                 if let Some(opened) = self.block(&value) {
                     opened.arguments.push_str(text("delta"));
+                    self.stirred = true;
                 }
             }
             "response.function_call_arguments.done" => {

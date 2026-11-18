@@ -22,7 +22,22 @@ pub const BODY: &[u8] =
 
 /// OpenAI 兼容的驱动，文字都是占位。
 pub fn driver() -> OpenAiChat {
-    let texts = DriverTexts::new(DriverTextSources {
+    OpenAiChat::new(Compat::default(), texts())
+}
+
+/// Anthropic 的驱动（施工 AU-003：认证头是 `x-api-key`），文字同 [`driver`]。
+pub fn anthropic() -> miyu_drivers::Anthropic {
+    miyu_drivers::Anthropic::new(texts())
+}
+
+/// OpenAI 的 Responses 驱动（施工 AU-013：工具参数攒着不照增量交），文字同 [`driver`]。
+pub fn responses() -> miyu_drivers::OpenAiResponses {
+    miyu_drivers::OpenAiResponses::new(texts())
+}
+
+/// 驱动的占位文字。
+fn texts() -> DriverTexts {
+    DriverTexts::new(DriverTextSources {
         image_omitted: "image\n",
         file_omitted: "file {name} {media_type}\n",
         no_output: "nothing\n",
@@ -36,8 +51,7 @@ pub fn driver() -> OpenAiChat {
         path_only: None,
         hosted_tool: None,
     })
-    .expect("占位用得了");
-    OpenAiChat::new(Compat::default(), texts)
+    .expect("占位用得了")
 }
 
 /// 驱动的流的样本。
