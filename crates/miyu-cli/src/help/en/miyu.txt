@@ -30,6 +30,7 @@ Settings:
   setup               Set up a model provider
 
 System:
+  core <command>      Manage the core
   service <command>   Manage the background service
   upgrade             Upgrade Miyu
   rescue [<args>...]  Fix Miyu with LiteMiyu's rescue mode

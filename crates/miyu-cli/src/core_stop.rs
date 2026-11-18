@@ -89,7 +89,7 @@ fn said(err: &mut dyn Write, language: Language, problem: &Problem) -> u8 {
 }
 
 /// 核心还在跑，照 `run/` 里的连不上它（施工 CS-3）：令牌、套接字的位置不见了。指给人进程号在哪：核心起来那一行记着。
-fn unreachable(root: &DataRoot, language: Language) -> Problem {
+pub(crate) fn unreachable(root: &DataRoot, language: Language) -> Problem {
     let log = root.core_log();
     let log = log.display();
     match language {

@@ -46,7 +46,7 @@
 | `upgrade` | 升级 Miyu 本身：安装脚本装的自己下载、核对、替换，包管理器装的说用哪条命令（施工 RL-4） | `cli/upgrade.md` |
 | `rescue` | 核心坏了时进 LiteMiyu 的应急模式修：不经过核心，照 Miyu 的对话模型填好环境变量，拉起 `litemiyu --rescue`，其余参数原样交过去（施工 RC-1） | `cli/rescue.md` |
 | `call` | 在 AI 跑的命令里调这个会话的工具（施工 M-3，设计 39）：不读清单、不经 clap，`main.rs` 当场交给 `miyu_cli::call`；不写进总帮助，`miyu call -h` 印它自己的那一页 | `cli/call.md` |
-| `core` | 核心进程：由头拉起，平时不用人敲；不写进帮助 | `core.md` |
+| `core` | 不带子命令的是核心进程：由头拉起，不用人敲。`core start`、`core status`、`core stop` 管在后台跑的那一个，写进帮助（施工 CL-8） | `core.md` |
 | `help` | clap 自带：印帮助，`miyu help <子命令>` 印那一条的 | |
 
 | 选项 | 做什么 |
@@ -77,9 +77,9 @@
 4. `ask`、`undo`（`rewind`）、`restore`、`redo`、`compact`、`recap`、`rename`、`session`、`memory`、`pkg`、`kb`、`schedule`、`config`、`provider`、`setup`、`mcp`：交给命令行的头（`cli/ask.md`、`cli/undo.md`、`cli/redo.md`、`cli/compact.md`、`cli/recap.md`、`cli/rename.md`、`cli/session.md`、`cli/memory.md`、`cli/pkg.md`、`cli/kb.md`、`cli/schedule.md`、`cli/config.md`、`cli/login.md`、`cli/setup.md`、`cli/mcp.md`），连同拉起核心用的命令。
    - `rescue`（施工 RC-1，`cli/rescue.md`）：交给命令行的头，不带拉起核心用的命令，交的是照磁盘算对话模型的函数（`miyu_core::rescue::model`）：不连核心、不拉起。
 5. 拉起核心用的命令：自己这个程序（`std::env::current_exe`，拿不到的用 `miyu`，照 `PATH` 找），加上 `core`。别的参数、环境变量不加；工作目录、标准输入输出、跟终端脱开，由拉起的那一边接（`ipc.md`）。
-6. `core`：跑核心进程，`--idle-seconds <秒>` 是空闲多少秒退出，不写的照系统配置 `core.idle_exit`，默认不退（施工 Z-1 上，`core.md`）。
+6. `core`：不带子命令的跑核心进程，`--idle-seconds <秒>` 是空闲多少秒退出，不写的照系统配置 `core.idle_exit`，默认不退（施工 Z-1 上，`core.md`）。`core start` 交给命令行的头（`miyu_cli::core_start`），带上第 5 条那条拉起核心用的命令；`core status`（`miyu_cli::core_status`）、`core stop`（`miyu_cli::core_stop`）只连在跑的，不带（施工 CL-4、CL-8，`core.md`「对外的样子」）。
 
-**帮助页**：自己写的，一种语言十二页（`miyu`、`ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename`、`config`、`provider`、`setup`），编进程序，资源目录找不到也印得出；每页以一个换行结尾，最宽 80 列（中文字算两列）。`ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename` 的七页见 `cli/ask.md`、`cli/undo.md`、`cli/redo.md`、`cli/compact.md`、`cli/recap.md`、`cli/rename.md`，`provider` 那一页见 `cli/login.md`。`help` 子命令、`core` 不列进主程序那一页；`miyu core --help`、`miyu core stop --help` 印 `core` 自己那一页（施工 HLP-1，原来是 clap 照代码注释生成的）。没有哪个子命令印 clap 生成的帮助，测试 `every_subcommand_prints_the_page_of_its_command` 守着。
+**帮助页**：自己写的，一种语言十二页（`miyu`、`ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename`、`config`、`provider`、`setup`），编进程序，资源目录找不到也印得出；每页以一个换行结尾，最宽 80 列（中文字算两列）。`ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename` 的七页见 `cli/ask.md`、`cli/undo.md`、`cli/redo.md`、`cli/compact.md`、`cli/recap.md`、`cli/rename.md`，`provider` 那一页见 `cli/login.md`。`help` 子命令不列进主程序那一页；`core` 列在「系统」一组（施工 CL-8：`start`、`status`、`stop` 是给人敲的），`miyu core --help` 和它三条子命令的 `--help` 印 `core` 自己那一页（施工 HLP-1，原来是 clap 照代码注释生成的），那一页多一节「status 的退出状态」，列 0、1、3。没有哪个子命令印 clap 生成的帮助，测试 `every_subcommand_prints_the_page_of_its_command` 守着。
 
 总表（`miyu`）照用途分组（对话、内容、软件包、设置、系统，软件包加的命令另一组，施工 AP-1），只列命令和全局选项 `-h`、`-V`，`ask` 和会话那几条命令的选项写在各自的页上；用法写 `miyu [<命令>] [<选项>]`，可以不写的整段用方括号，要填的写 `<名字>`，几个选一的写 `<text|json>`；命令那几组的说明从第 22 列开始，同一节里的选项、子命令说明也各自从同一列开始。末尾一句指向 `miyu help <命令>`。`ask` 的页多一节「退出状态」，列 0 到 5（`cli/ask.md`「退出码」）。
 
@@ -118,6 +118,7 @@
   setup               配置模型供应商
 
 系统：
+  core <命令>         管理核心
   service <命令>      管理后台服务
   upgrade             升级 Miyu
   rescue [<参数>...]  用 LiteMiyu 的应急模式修复
@@ -169,6 +170,7 @@ Settings:
   setup               Set up a model provider
 
 System:
+  core <command>      Manage the core
   service <command>   Manage the background service
   upgrade             Upgrade Miyu
   rescue [<args>...]  Fix Miyu with LiteMiyu's rescue mode

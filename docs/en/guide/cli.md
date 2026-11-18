@@ -28,7 +28,7 @@ Every `miyu` subcommand, argument, output and exit code is on this page, for loo
 | Schedules | [`schedule`](#miyu-schedule) | Manages schedules |
 | Service and upgrade | [`service`](#miyu-service) | Starts the core at boot or login |
 | | [`upgrade`](#miyu-upgrade) | Upgrades Miyu |
-| | [`core stop`](#miyu-core-stop) | Stops the running core |
+| | [`core`](#miyu-core) | Starts and stops the core, shows whether it is running |
 | Troubleshooting | [`check`](#miyu-check) | Checks hand-written files for mistakes |
 | | [`rescue`](#miyu-rescue) | Fixes a broken core with LiteMiyu |
 | For scripts | [`call`](#miyu-call) | Calls this session's tools from a command the AI runs |
@@ -604,17 +604,38 @@ miyu upgrade --yes
 
 Exit codes: `0` upgraded, already the latest, should use the package manager, only gave the download address; anything else is `1`. See [Installing, upgrading and uninstalling](install.md#upgrading).
 
-## miyu core stop
+## miyu core
 
 ```text
+miyu core start
+miyu core status [--format <text|json>]
 miyu core stop
 ```
 
-Tells the running core to stop, waits until it has exited and then returns, printing nothing when it works. If the core is not running, it does nothing and the exit code is `0`. If it is refused, cannot connect, or the core has not exited within 60 seconds, the exit code is `1`.
+Manages the core running in the background. Interfaces and commands start the core by themselves when they need it, so it rarely has to be managed by hand; use these three to bring it up ahead of time, see whether it is there, or stop it.
+
+- `start`: starts the core if it is not running, waits until it is ready and then returns, printing nothing when it works; does nothing if it is already running. It only starts the core, with no interface and no browser. If the core cannot start, it says why and the exit code is `1`.
+- `status`: only looks, never starts it. When the core is running it prints three lines: the state, the version (the one the core reports: after an upgrade and before a restart it differs from `miyu --version`) and the data root; when it is not, it prints the state, the data root and a one-line hint.
+- `stop`: tells the running core to stop, waits until it has exited and then returns, printing nothing when it works. If the core is not running, it does nothing and the exit code is `0`. If it is refused, cannot connect, or the core has not exited within 60 seconds, the exit code is `1`.
 
 ```sh
-miyu core stop
+miyu core start
+miyu core status
 ```
+
+```text
+The core is running
+version: 2026.11.0
+data root: /home/alice/.miyu
+```
+
+Exit codes of `status`: `0` running, `3` not running, `1` an error (for example the core is running but cannot be reached). `--format json` prints one line for scripts, with the same exit codes:
+
+| Field | What it is |
+|---|---|
+| `running` | Whether it is running |
+| `version` | The core's version; `null` when it is not running |
+| `data_root` | The absolute path of the data root |
 
 ## miyu check
 

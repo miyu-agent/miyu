@@ -14,6 +14,7 @@ mod compact;
 mod config;
 mod config_keys;
 mod core;
+mod core_start;
 mod core_stopped;
 mod crash;
 mod crash_kept;

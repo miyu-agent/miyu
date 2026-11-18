@@ -28,6 +28,15 @@ miyu core stop
 
 It tells the running core to stop and returns once the core has exited; if no core is running, it does nothing. A turn that is running stops first and picks up again the next time that session is loaded.
 
+To start it by hand and see whether it is there:
+
+```sh
+miyu core start
+miyu core status
+```
+
+`start` only brings the core up, with no interface and no browser, and does nothing if it is already running. `status` says whether it is running, the version and the data root, see [`miyu core`](cli.en.md#miyu-core).
+
 To close only the web UI and leave the core running: `miyu web --stop`.
 
 ## Starting at boot or login

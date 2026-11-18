@@ -79,21 +79,29 @@ enum Command {
     Provider(miyu_cli::Provider),
     /// 第一次接入模型（施工 8-11）。
     Setup(miyu_cli::Setup),
-    /// 核心进程：由头拉起，平时不用人敲。`miyu core stop` 叫在跑的核心停下（施工 CL-4，桌面端的「退出」用）。
-    #[command(hide = true)]
+    /// 核心进程：不带子命令的是跑核心本身，由头拉起，不用人敲。`start`、`status`、`stop` 管在后台跑的那一个（施工 CL-4、
+    /// CL-8，2026-11-18 项目主人定：`miyu core start | status | stop` 只管核心）。
     Core {
         /// 空闲多少秒以后退出。
         #[arg(long, hide = true)]
         idle_seconds: Option<u64>,
-        /// 不写的是跑核心；`stop` 叫在跑的停下。
+        /// 不写的是跑核心；写了的管在跑的那一个。
         #[command(subcommand)]
         action: Option<CoreAction>,
     },
 }
 
-/// `miyu core` 下面的动作（施工 CL-4）。
+/// `miyu core` 下面的动作（施工 CL-4、CL-8）。
 #[derive(Debug, Clone, Copy, Subcommand)]
 enum CoreAction {
+    /// 没在跑就拉起来，等它好了再回；只拉核心，不开界面。
+    Start,
+    /// 在不在跑、哪一版、数据根在哪；只看，不拉起。
+    Status {
+        /// `text` 给人看（默认），`json` 给头、脚本。
+        #[arg(long, value_enum, default_value_t = miyu_cli::Format::Text)]
+        format: miyu_cli::Format,
+    },
     /// 叫在跑的核心停下，等它退了再回；没在跑的什么都不做。
     Stop,
 }
@@ -168,6 +176,14 @@ fn main() -> ExitCode {
         Some(Command::Session(args)) => miyu_cli::session(args, core),
         Some(Command::Provider(args)) => miyu_cli::login(args.into(), core),
         Some(Command::Setup(args)) => miyu_cli::setup(args, core),
+        Some(Command::Core {
+            action: Some(CoreAction::Start),
+            ..
+        }) => miyu_cli::core_start(core),
+        Some(Command::Core {
+            action: Some(CoreAction::Status { format }),
+            ..
+        }) => miyu_cli::core_status(format),
         Some(Command::Core {
             action: Some(CoreAction::Stop),
             ..

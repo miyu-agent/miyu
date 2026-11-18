@@ -28,7 +28,7 @@
 | 定时 | [`schedule`](#miyu-schedule) | 管定时任务 |
 | 服务和升级 | [`service`](#miyu-service) | 让核心开机或登录就起来 |
 | | [`upgrade`](#miyu-upgrade) | 升级 Miyu |
-| | [`core stop`](#miyu-core-stop) | 停掉在跑的核心 |
+| | [`core`](#miyu-core) | 启动、停止核心，看它在不在跑 |
 | 排错 | [`check`](#miyu-check) | 查手写的文件有没有写错 |
 | | [`rescue`](#miyu-rescue) | 核心坏了时用 LiteMiyu 修 |
 | 给脚本用的 | [`call`](#miyu-call) | 在 AI 跑的命令里调这个会话的工具 |
@@ -604,17 +604,38 @@ miyu upgrade --yes
 
 退出码：`0` 升好了、已是最新、该用包管理器、只说了下载地址；别的 `1`。见 [安装、升级、卸载](install.md#升级)。
 
-## miyu core stop
+## miyu core
 
 ```text
+miyu core start
+miyu core status [--format <text|json>]
 miyu core stop
 ```
 
-叫在跑的核心停下，等它退了再回来，成了什么都不印。核心没在跑的什么都不做，退出码 `0`。被拒绝、连不上、60 秒内没退的退出码 `1`。
+管在后台跑的核心。核心平时由界面和命令在用到时自己拉起，不用手动管；要它先起来、看它在不在、把它停掉时用这三条。
+
+- `start`：核心没在跑就拉起来，等它好了再回来，成了什么都不印；已经在跑的什么都不做。只拉核心，不开界面、不开浏览器。起不来的说原因，退出码 `1`。
+- `status`：只看，不拉起。在跑的印三行：状态、版本（核心自己报的：升级以后还没重启的，和 `miyu --version` 不一样）、数据根；没在跑的印状态、数据根和一行提示。
+- `stop`：叫在跑的核心停下，等它退了再回来，成了什么都不印。核心没在跑的什么都不做，退出码 `0`。被拒绝、连不上、60 秒内没退的退出码 `1`。
 
 ```sh
-miyu core stop
+miyu core start
+miyu core status
 ```
+
+```text
+核心正在运行
+版本：2026.11.0
+数据根：/home/alice/.miyu
+```
+
+`status` 的退出码：`0` 在跑，`3` 没在跑，`1` 出错（例如核心还在跑却连不上）。`--format json` 印一行，给脚本用，退出码一样：
+
+| 字段 | 是什么 |
+|---|---|
+| `running` | 在不在跑 |
+| `version` | 核心的版本；没在跑的是 `null` |
+| `data_root` | 数据根的绝对路径 |
 
 ## miyu check
 

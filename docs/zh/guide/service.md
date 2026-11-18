@@ -28,6 +28,15 @@ miyu core stop
 
 它叫在跑的核心停下，等它退了再回来；没在跑的什么都不做。正在跑的这一轮先停下来，下次载入这个会话时接着干。
 
+手动起、看它在不在：
+
+```sh
+miyu core start
+miyu core status
+```
+
+`start` 只拉起核心，不开界面、不开浏览器，已经在跑的什么都不做。`status` 说在不在跑、版本、数据根，见 [`miyu core`](cli.md#miyu-core)。
+
 只想关网页、核心照常跑：`miyu web --stop`。
 
 ## 开机或登录就起来

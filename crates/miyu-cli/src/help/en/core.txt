@@ -1,11 +1,23 @@
-Usage: miyu core stop
+Usage: miyu core <command> [<options>]
 
-The core is started by the interfaces when needed and is not normally run by
-hand.
+Manage the core running in the background. Interfaces and commands start the
+core when needed, so it rarely has to be managed by hand.
 
 Commands:
-  stop  Stop the running core and return once it has exited; does nothing
-        if it isn't running
+  start   Start the core and return once it is ready; does nothing if it is
+          already running
+  status  Show whether the core is running
+  stop    Stop the running core and return once it has exited; does nothing
+          if it isn't running
+
+start only starts the core. It opens no interface and no browser. When the
+core is running, status also shows its version and the data root.
+
+Exit status of status:
+  0  The core is running
+  1  An error, such as a running core that cannot be reached
+  3  The core is not running
 
 Options:
-  -h, --help  Print help
+      --format <text|json>  Output format of status (default: text)
+  -h, --help                Print help

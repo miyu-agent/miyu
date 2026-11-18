@@ -54,7 +54,8 @@ pub enum Page {
     Upgrade,
     /// `miyu rescue -h`（施工 RC-1）：只有 `-h`、`--help` 打头时印它，别的参数原样交给 `litemiyu --rescue`。
     Rescue,
-    /// `miyu core -h`，`miyu core stop -h` 也印它（施工 HLP-1）：`core` 不写进主程序那一页，人敲得到的只有 `stop`。
+    /// `miyu core -h`，`miyu core start -h`、`status -h`、`stop -h` 也印它（施工 HLP-1）。施工 CL-8 起 `core` 写进主程序那一页
+    /// 的「系统」一组：`start`、`status`、`stop` 是给人敲的。
     Core,
 }
 
