@@ -146,7 +146,7 @@
 |---|---|---|---|
 | macOS | `/bin/zsh` | `-f +o nomatch -c <下面那一句>` | `zsh` |
 | Windows，资源目录里有 `pwsh\pwsh.exe`（施工 SW-5：桌面端的安装包带官方的 zip，版本钉住、和沙盒一起试过） | 它 | 同下 | `PowerShell 7` |
-| Windows，`PATH` 里有 `pwsh.exe` | 找到的那一个 | `-NoLogo -NoProfile -NonInteractive -OutputFormat Text -EncodedCommand <编好的命令>`（`-OutputFormat Text` 施工 SW-2；`-EncodedCommand` 起的照样写 CLIXML，施工 SW-4 起输出里认出 `#< CLIXML` 那一段换回错误、警告的原文，`shell/clixml.rs`） | `PowerShell 7` |
+| Windows，`PATH` 里有 `pwsh.exe` | 找到的那一个 | `-NoLogo -NoProfile -NonInteractive -OutputFormat Text -EncodedCommand <编好的命令>`（`-OutputFormat Text` 施工 SW-2；`-EncodedCommand` 起的照样写 CLIXML，施工 SW-4 起输出里认出 `#< CLIXML` 那一段换回错误、警告的原文，`shell/clixml.rs`；`_x` 后面不是四位十六进制加 `_` 的照原样留着，施工 AU-010：原来先照字节切 5 个，落在多字节字中间就 panic） | `PowerShell 7` |
 | Windows，没有 | `%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe`，没设 `SystemRoot` 的是 `powershell.exe` | 同上 | `Windows PowerShell 5.1` |
 | 别的（Linux 等） | `PATH` 里的 `bash`，找不到用 `/bin/bash` | `--noprofile --norc -c <下面那一句>` | `bash` |
 

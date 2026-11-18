@@ -27,3 +27,13 @@ fn chinese_messages_and_several_blocks_both_come_through() {
     let text = "#< CLIXML\n<Objs><S S=\"Error\">找不到路径_x000D__x000A_</S></Objs>\nmiddle\n#< CLIXML\n<Objs><S S=\"Warning\">小心_x000A_</S></Objs>";
     assert_eq!(plain(text), "找不到路径\nmiddle\n小心\n");
 }
+
+/// 修以前：`_x` 后面第 5 个字节正好是一个多字节字的结尾（`_x12中`），先切出 5 个字节成了，再在第 4 个字节切就落在字中间，
+/// panic（审计 #010）。命令自己印的字就能写出这一段。现在不是四位十六进制的照原样留着。
+#[test]
+fn an_escape_cut_inside_a_wide_character_is_left_alone() {
+    for body in ["_x12中文", "_x1中文", "_x中文", "_x123中", "_x"] {
+        let text = format!("#< CLIXML\n<Objs><S S=\"Error\">{body}</S></Objs>");
+        assert_eq!(plain(&text), format!("{body}\n"), "{body}");
+    }
+}

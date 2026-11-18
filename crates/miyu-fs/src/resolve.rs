@@ -79,7 +79,7 @@ pub fn resolve_itself(
     Ok(Some(real.join(name)))
 }
 
-/// `~` 开头的：交回 `~` 后面那一截（去掉紧跟着的分隔符）。只有 `~` 自己，或者 `~` 后面紧跟分隔符的才算：
+/// `~` 开头的：交回 `~` 后面那一截（去掉紧跟着的分隔符，连着几个都去掉）。只有 `~` 自己，或者 `~` 后面紧跟分隔符的才算：
 /// `~alice`、`a/~` 照原样。`\` 只在 Windows 上算分隔符。[`resolve()`] 照它接家目录；自己拼路径的工具也照它，两边
 /// 才对得上（施工 4-6 下：`trash` 的最后一段不跟链接，不能整条交给 [`resolve()`]）。
 #[must_use]
@@ -88,12 +88,10 @@ pub fn tilde(input: &str) -> Option<&str> {
     if rest.is_empty() {
         return Some("");
     }
-    let mut chars = rest.chars();
-    match chars.next() {
-        Some('/') => Some(chars.as_str()),
-        Some('\\') if cfg!(windows) => Some(chars.as_str()),
-        _ => None,
-    }
+    let separator = |c: char| c == '/' || (cfg!(windows) && c == '\\');
+    // 连着几个分隔符都去掉（施工 AU-009）：只去一个的话，`~//etc` 剩下 `/etc`，接到家目录上是绝对路径，家目录整个丢了。
+    rest.starts_with(separator)
+        .then(|| rest.trim_start_matches(separator))
 }
 
 /// 还不存在的路径：从长往短试它的上级目录，最近的、已经存在的那一层换成真实的位置，再接上后面几段。

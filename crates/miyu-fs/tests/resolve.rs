@@ -39,6 +39,27 @@ fn a_tilde_means_home() {
     );
 }
 
+/// 修以前：`~//etc/passwd` 只去掉一个 `/`，剩下的 `/etc/passwd` 是绝对路径，接到家目录上把家目录整个丢了，落在根目录（审计
+/// #009）。shell 里它是家目录下的 `etc/passwd`，这里照 shell：`~` 后面连着几个分隔符都去掉。
+#[test]
+fn several_separators_after_the_tilde_still_mean_home() {
+    let site = Site::new();
+    let (work, home) = (site.real("work"), site.real("home"));
+    for written in ["~//notes.txt", "~///notes.txt"] {
+        assert_eq!(
+            resolve(&work, Some(&home), written).expect("换得了"),
+            home.join("notes.txt"),
+            "{written}"
+        );
+        assert_eq!(miyu_fs::tilde(written), Some("notes.txt"), "{written}");
+    }
+    assert_eq!(resolve(&work, Some(&home), "~//").expect("换得了"), home);
+    assert_eq!(
+        resolve_itself(&work, Some(&home), "~//notes.txt").expect("换得了"),
+        Some(home.join("notes.txt"))
+    );
+}
+
 #[test]
 fn a_missing_file_follows_its_nearest_existing_parent() {
     let site = Site::new();

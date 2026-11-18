@@ -83,9 +83,12 @@ fn unescape(text: &str) -> String {
 
 /// `_x000A_` 这样的一个：交回字和用掉几个字节。
 fn powershell(text: &str) -> Option<(char, usize)> {
-    let hex = text.strip_prefix("_x")?.get(..5)?;
-    let (digits, end) = hex.split_at(4);
-    if end != "_" {
+    // 先认四位十六进制再切（施工 AU-010）：照字节先切 5 个再在第 4 个切，第 5 个字节是多字节字的结尾时切在字中间。
+    let rest = text.strip_prefix("_x")?;
+    let digits = rest
+        .get(..4)
+        .filter(|digits| digits.bytes().all(|byte| byte.is_ascii_hexdigit()))?;
+    if rest.as_bytes().get(4) != Some(&b'_') {
         return None;
     }
     let code = u32::from_str_radix(digits, 16).ok()?;

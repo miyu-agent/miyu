@@ -13,14 +13,17 @@ use miyu_kernel::block::{Block, Text};
 /// 中和提前写出的收尾），末尾没有换行的补一个，再接 `close`。字以外的块（附件）照先后接在这一块后面。一块字都没有的，这一块
 /// 是开头接收尾。
 pub(crate) fn tagged(open: String, blocks: Vec<Block>, close: &str) -> Vec<Block> {
-    let mut text = open;
+    // 几块字先接起来再一起中和（施工 AU-011）：各自中和的话，收尾标签拆在两块里各自都不含它，接起来就成了真的收尾。
+    let mut said = String::new();
     let mut rest = Vec::new();
     for block in blocks {
         match block {
-            Block::Text(said) => text.push_str(&defuse(&said.text, &[close])),
+            Block::Text(one) => said.push_str(&one.text),
             other => rest.push(other),
         }
     }
+    let mut text = open;
+    text.push_str(&defuse(&said, &[close]));
     if !text.ends_with('\n') {
         text.push('\n');
     }

@@ -12,32 +12,15 @@ use miyu_store::root::DataRoot;
 
 use crate::CoreCommand;
 
+mod browser;
 mod unreachable;
+pub use browser::SystemBrowser;
 use unreachable::{not_started, unreachable};
 
 /// 怎么把网址交给浏览器：交出去了的是真。
 pub trait Browser {
     /// 打开 `url`。
     fn open(&self, url: &str) -> bool;
-}
-
-/// 系统的办法：Linux 是 `xdg-open`，macOS 是 `open`，Windows 是 `cmd /C start "" <网址>`。
-pub struct SystemBrowser;
-
-impl Browser for SystemBrowser {
-    fn open(&self, url: &str) -> bool {
-        let mut command = if cfg!(target_os = "macos") {
-            Command::new("open")
-        } else if cfg!(windows) {
-            let mut command = Command::new("cmd");
-            command.args(["/C", "start", ""]);
-            command
-        } else {
-            Command::new("xdg-open")
-        };
-        command.arg(url);
-        handed(command, HAND_OVER)
-    }
 }
 
 /// 交给系统以后最多等多久看它是不是当场失败（施工 WB-1）。
