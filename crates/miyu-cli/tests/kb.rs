@@ -63,9 +63,20 @@ async fn each_home_has_its_own_folder_beside_the_data_root() {
     assert_ne!(a.outside(), b.outside());
 }
 
+/// 往回收站里放的落在这个 Home 自己的家目录里（施工 TB-1）：`<outside>/home/.local/share/Trash/files/<名字>`，同一块盘、一定
+/// 放得进，不进系统临时目录那块盘的回收站（`/tmp/.Trash-<uid>`，门禁一趟留一份）。只看 Linux：macOS、Windows 放进系统的回收站，
+/// 不照交给核心的家目录。
+fn assert_trashed_here(outside: &Path, name: &str, asked: &Asked) {
+    if cfg!(target_os = "linux") {
+        assert_eq!(asked.code, 0, "{}", asked.err);
+        let trashed = outside.join("home/.local/share/Trash/files").join(name);
+        assert!(trashed.exists(), "没进自己的回收站：{}", asked.out);
+    }
+}
+
 #[tokio::test]
 async fn building_a_base_from_the_shell() {
-    let home = Home::new(Arc::new(Script::new([])));
+    let home = Home::with_own_home(Arc::new(Script::new([])));
     let cwd = home.outside();
     std::fs::write(cwd.join("cat.md"), "# 猫\n\n团子是橘猫。\n").expect("写得进");
     std::fs::write(cwd.join("dog.txt"), "阿黄是小狗。\n").expect("写得进");
@@ -150,6 +161,7 @@ async fn building_a_base_from_the_shell() {
             removed.err
         ),
     }
+    assert_trashed_here(&cwd, "dog.txt", &removed);
     let unknown = run(&home, &cwd, &["read", "nope", "a.md"]).await;
     assert_eq!(
         (unknown.code, unknown.err.as_str()),
@@ -159,7 +171,7 @@ async fn building_a_base_from_the_shell() {
 
 #[tokio::test]
 async fn mounting_a_folder_and_deleting_it_from_the_shell() {
-    let home = Home::new(Arc::new(Script::new([])));
+    let home = Home::with_own_home(Arc::new(Script::new([])));
     let cwd = home.outside();
     let notes = cwd.join("notes");
     std::fs::create_dir_all(&notes).expect("建得了");
@@ -192,6 +204,7 @@ async fn mounting_a_folder_and_deleting_it_from_the_shell() {
             deleted.err
         ),
     }
+    assert_trashed_here(&cwd, "mine", &deleted);
     assert_eq!(
         std::fs::read_to_string(notes.join("a.md")).expect("在"),
         "团子\n",

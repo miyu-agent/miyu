@@ -104,6 +104,19 @@ impl Home {
         Home::shaped(models, tools, sandbox, |core, _| core)
     }
 
+    /// 起一个核心，家目录是 [`Home::outside`] 里的 `home`（施工 TB-1）：往回收站里放的（`miyu kb remove`、删库）落在它的
+    /// `.local/share/Trash`，和临时目录同一块盘，不进系统临时目录那块盘的回收站（`/tmp/.Trash-<uid>`）。没给家目录的核心
+    /// 照回收站规范放进那块盘最上面那一层，门禁一趟就往 `/tmp/.Trash-1000` 里留一份。
+    pub fn with_own_home(models: Arc<dyn Models>) -> Home {
+        Home::built(
+            models,
+            Catalog::default(),
+            Availability::Usable(PathBuf::from("miyu-sandbox")),
+            true,
+            |core, _| core,
+        )
+    }
+
     /// 起一个核心，起之前照 `shape` 改一改（施工 G-3 上：认测试的钥匙、读写好的系统配置）；`shape` 拿到数据根。
     pub fn shaped(
         models: Arc<dyn Models>,
@@ -111,14 +124,30 @@ impl Home {
         sandbox: Availability,
         shape: impl FnOnce(Core, &DataRoot) -> Core,
     ) -> Home {
+        Home::built(models, tools, sandbox, false, shape)
+    }
+
+    /// 同 [`Home::shaped`]，`own_home` 的核心照 [`Home::with_own_home`] 给家目录。
+    fn built(
+        models: Arc<dyn Models>,
+        tools: Catalog,
+        sandbox: Availability,
+        own_home: bool,
+        shape: impl FnOnce(Core, &DataRoot) -> Core,
+    ) -> Home {
         let (dir, root) = temp_root();
+        let home = own_home.then(|| {
+            let home = beside(&dir).join("home");
+            std::fs::create_dir_all(&home).expect("建得了");
+            home
+        });
         let opened = miyu_ipc::open(&root, &dirs()).expect("起得来");
         let core = Core::new(
             root.clone(),
             resources(),
             models,
             tools,
-            None,
+            home,
             opened.token.clone(),
         )
         .with_sandbox(sandbox);

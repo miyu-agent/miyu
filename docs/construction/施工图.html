@@ -1612,6 +1612,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sRO4"><span class="n">RO-4</span>换个命令删数据根也问<span class="st">…</span></a></li>
         <li><a class="step review" href="#sVER1"><span class="n">VER-1</span>候选版照 semver 比<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDR2"><span class="n">DR-2</span>扩展驱动可以等得久一点<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sTB1"><span class="n">TB-1</span>测试不进真的回收站<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -63484,6 +63485,55 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/DR-2-扩展驱动可以等得久一点.md</code>；蓝图 <code>extensions.md</code>、<code>models.md</code>、<code>packages.md</code>；协议参考 <code>extensions.md</code>；包作者文档 <code>manifest.md</code>、<code>extensions.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sTB1" aria-labelledby="h-sTB1">
+  <div class="sheet-head"><h2 id="h-sTB1"><span class="no">TB-1</span>测试不进真的回收站</h2><span class="pill review">待验收</span></div>
+  <p class="purpose"><code>miyu-cli</code> 的两条知识库测试给核心一个自己的家目录，删的东西落在测试自己的临时目录里，不再往 <code>/tmp/.Trash-1000</code> 里攒。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-cli/tests/support/mod.rs · tests/kb.rs</span><span class="dir-note">TB-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>夹具多 <code>Home::with_own_home</code></li>
+              <li>回收站落在 <code>&lt;数据根&gt;-outside/home/.local/share/Trash</code></li>
+              <li>Linux 上查东西真在那里</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">只改测试</span><span class="rl">没给家目录的核心照规范放</span></div>
+          <div class="tile new"><span class="nm">派工叫 TR-2</span><span class="rl">撞号改 TB-1</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">TB-1</dd></div>
+        <div><dt>名称</dt><dd>测试不进真的回收站</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-18</dd></div>
+        <div><dt>提交</dt><dd class="mono">TB-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改前红：两条测试红在「没进自己的回收站」</span></li>
+        <li><span class="ok">✓</span><span>门禁跑完 .91 的 <code>/tmp/.Trash-1000</code> 不再多</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/TB-1-测试不进真的回收站.md</code>。</li>
       </ul>
     </div>
   </div>

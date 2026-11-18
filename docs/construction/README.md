@@ -1705,6 +1705,7 @@ flowchart LR
 | RO-4 | 换个命令删数据根也问 | 项目主人定过开放下只有删整个数据根要问；文档会话实测 `gio trash ~/.miyu` 不问、整个数据根进了回收站。`shell` 的高危认法多挪走、扔进回收站的命令（`mv`、`gio trash`/`remove`/`move`/`rename`、`gvfs-trash`、`trash-put`、`trash`、`kioclient move`/`remove`、`rsync --remove-source-files`；PowerShell 的 `Move-Item`、`Rename-Item`，cmd 的 `move`、`ren`），照删来源判；`delete_data_root` 只认整个数据根和装着它的，里面的单个文件同别处（同 `trash` 工具），`Places.workspaces` 随之拿掉。施工单见 `RO-4-换个命令删数据根也问.md` |
 | VER-1 | 候选版照 semver 比 | agy-cli 实测：清单写 `miyu = "2026.11.0-rc.2.4"` 和新表，rc.2.3 的核心报「不认识的表」没先报 `needs_newer_miyu`。根因是比法只认三段数字，候选版两头都读不成、不比。`Semver` 从 `depend.rs` 挪进 `package/semver.rs`，`[package] miyu` 照它读、照它比（候选版比同号正式版低）；正在跑的版本两处都用 `miyu_store::packages::RUNNING`（同 `miyu --version`）；从包文件夹装、看一眼报不认识的表、键，清单写了 `miyu` 的补「这个包可能要更新的 Miyu」（三语）。施工单见 `VER-1-候选版照semver比.md` |
 | DR-2 | 扩展驱动可以等得久一点 | agy-cli 实测 agy medium 档每次 100～150 秒才出第一个字（不流思考），离 180 秒的空闲时限很近。`[[driver]]` 多 `quiet_secs`（整数 1 到 900，写错报 `bad_driver`），端口的 `Declared`、挑候选备下的 `Reach` 多 `quiet`；发的时候空闲时限取这一轮的和它里长的那个（等第一个字、两段之间都算），总时限跟着十倍，短的不收紧。施工单见 `DR-2-扩展驱动可以等得久一点.md` |
+| TB-1 | 测试不进真的回收站 | 派工叫 TR-2，撞号改 TB-1。.91 和本机的 `/tmp/.Trash-1000` 攒着门禁留下的 `dog.txt`、`mine`：`miyu-cli` 的 `kb::building_a_base_from_the_shell`、`kb::mounting_a_folder_and_deleting_it_from_the_shell` 造的核心没有家目录，Linux 回收站照规范放进 `/tmp` 那块盘的 `.Trash-1000`。测试夹具多 `Home::with_own_home`（家目录在它自己的临时目录里），两条测试用它、在 Linux 上查东西进了自己的回收站。施工单见 `TB-1-测试不进真的回收站.md` |
 
 ### 四、施工单的格式
 
