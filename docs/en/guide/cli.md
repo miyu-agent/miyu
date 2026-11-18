@@ -795,9 +795,9 @@ miyu shellhook <subcommand> [<options>]
 
 | Subcommand | What it does |
 |---|---|
-| `install [--shell <fish\|bash\|zsh\|pwsh\|powershell>] [--program <path>]` | Installs into a shell. `pwsh` is PowerShell 7, and `powershell` is the Windows PowerShell 5.1 that comes with Windows. Without `--shell`, it works the shell out by itself: on Linux it looks at the parent process, and at `SHELL` if it cannot recognize that; on macOS it looks at `SHELL`; on Windows it looks at `SHELL`, and if that is absent, it uses `PSModulePath` to tell PowerShell 7 from 5.1 |
+| `install [--shell <fish\|bash\|zsh\|pwsh\|powershell>] [--program <path>]` | Installs into a shell. `pwsh` is PowerShell 7, and `powershell` is the Windows PowerShell 5.1 that comes with Windows. Without `--shell`, it works the shell out by itself: on Linux it looks at the parent process, and at `SHELL` if it cannot recognize that; on macOS it looks at `SHELL`; on Windows it looks at `SHELL`, and if that is absent, it uses `PSModulePath` to tell PowerShell 7 from 5.1. If the old version (0.7.x) left a shell integration in that shell, it is backed up and cleaned up first; see [Terminal UI](heads/tui.md#cleaning-up-the-old-versions-integration) |
 | `uninstall [--shell <fish\|bash\|zsh\|pwsh\|powershell>]` | Removes it from a shell |
-| `status` | Shows which shells it is installed in |
+| `status` | Shows which shells it is installed in, and whether the old version's integration is still there |
 | `doctor` | Checks whether it is installed properly, whether it can reach the core, the terminal's colors and the clipboard |
 
 `--program <path>` is the program the shell calls; without it, it is the `miyu` next to this program.

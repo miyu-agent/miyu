@@ -795,9 +795,9 @@ miyu shellhook <子命令> [<选项>]
 
 | 子命令 | 做什么 |
 |---|---|
-| `install [--shell <fish\|bash\|zsh\|pwsh\|powershell>] [--program <路径>]` | 装进 shell。`pwsh` 是 PowerShell 7，`powershell` 是 Windows 自带的 Windows PowerShell 5.1。不写 `--shell` 时会自动判断：Linux 上看上一层进程，认不出时看 `SHELL`；macOS 上看 `SHELL`；Windows 上看 `SHELL`，没有时根据 `PSModulePath` 区分 PowerShell 7 和 5.1 |
+| `install [--shell <fish\|bash\|zsh\|pwsh\|powershell>] [--program <路径>]` | 装进 shell。`pwsh` 是 PowerShell 7，`powershell` 是 Windows 自带的 Windows PowerShell 5.1。不写 `--shell` 时会自动判断：Linux 上看上一层进程，认不出时看 `SHELL`；macOS 上看 `SHELL`；Windows 上看 `SHELL`，没有时根据 `PSModulePath` 区分 PowerShell 7 和 5.1。如果这种 shell 里还有旧版（0.7.x）装的终端集成，会先备份再清理，见 [终端界面](heads/tui.md#清理旧版的终端集成) |
 | `uninstall [--shell <fish\|bash\|zsh\|pwsh\|powershell>]` | 从 shell 里移除 |
-| `status` | 查看装进了哪几个 shell |
+| `status` | 查看装进了哪几个 shell，以及旧版的终端集成还在不在 |
 | `doctor` | 检查有没有装好、能不能连接核心、终端的颜色和剪贴板 |
 
 `--program <路径>` 是 shell 里调用的程序，不写时是这个程序旁边的 `miyu`。

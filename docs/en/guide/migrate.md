@@ -136,7 +136,12 @@ The following items are not migrated. All of them stay in the archive, and the r
 | Things you shared with others before | Not migrated |
 | Logs, caches, indexes | This version rebuilds them itself |
 
-Things the old version installed outside the data root are not put into the archive. Migration checks only these six places under your home folder: `~/.local/bin/miyu`, `~/.config/fish/conf.d/miyu.fish`, `~/.gemini/config/agents/miyu`, `~/.gemini/antigravity-cli`, `~/.cache/miyu/voice-models`, `~/.local/state/miyu`, and the report's `Outside the data root` section lists which of them exist. On macOS and Windows it also checks only these places under your home folder; things the old version installed elsewhere are not listed in the report, and you need to find and clean them up yourself.
+Things the old version installed outside the data root are not put into the archive. Migration checks only the places below, and the report's `Outside the data root` section lists the ones that exist:
+
+- Six places under your home folder: `~/.local/bin/miyu`, `~/.config/fish/conf.d/miyu.fish` (if `XDG_CONFIG_HOME` is set, the `fish/conf.d/miyu.fish` under it is checked instead), `~/.gemini/config/agents/miyu`, `~/.gemini/antigravity-cli`, `~/.cache/miyu/voice-models`, `~/.local/state/miyu`.
+- The block the old terminal integration wrote into shell startup files: `~/.bashrc`, `~/.bash_profile`, `~/.bash_login`, `~/.profile` and `~/.zshrc` are checked (if `ZDOTDIR` is set, the `.zshrc` under it is checked as well). The report says which lines the block is on, for example ``Lines 3-5, 7-9 were written by the old terminal integration. Migration leaves them alone; running `miyu shellhook install --shell bash` in the new version backs the file up and removes them. If you do not use the terminal integration, you can delete these lines yourself.``
+
+Migration only reads these files and does not change them; for what to do about the old terminal integration, see "After migrating" below. On macOS and Windows it also checks only these places; things the old version installed elsewhere are not listed in the report, and you need to find and clean them up yourself.
 
 ## Reading the report
 
@@ -196,6 +201,7 @@ If the migration fails part-way, it prints `miyu migrate: <reason>` on standard 
 After the migration is done, a few things are left to take care of:
 
 - The old program: after upgrading, the old `miyu` package on the AUR becomes the transitional package `miyu`, which ships no files of its own and only depends on `miyu-agent`; the old program is gone. The new `miyu-core` conflicts with the 0.7-era `miyu`, see [Installing, upgrading and uninstalling](install.md#installing-from-the-aur-arch-linux). If you installed it some other way, go by the report's `Outside the data root` section, and delete things only after confirming they belong to the old version. If `~/.local/bin/miyu` belongs to this version (the link the install script puts there, or an earlier wrapper script), the report says `This is the new miyu, not the old one. Do not delete it.`; in that case, do not delete it.
+- The old terminal integration: migration does not change it, and the report's `Outside the data root` section lists which file and which lines it is in. If you want to use the terminal integration in this version, run `miyu shellhook install --shell <shell>`; installing backs up and cleans up the old version's copy first, see [Terminal UI](heads/tui.md#cleaning-up-the-old-versions-integration). If you do not use the terminal integration, you can delete those lines yourself using the line numbers in the report; the fish copy is `conf.d/miyu.fish`, which you can simply delete.
 - The old folder `~/.miyu-0.7`: migration does not delete it. Once you have confirmed that everything came over and have used this version for a while without problems, delete it yourself.
 - The archive: keep it. If you later want the AI to continue migrating what was not migrated, it needs the archive and `for-agent.json`. When you no longer need them, delete the whole `<time>/` folder.
 - The `migrate` package: when you are done with it, you can run `miyu pkg remove migrate` to uninstall it. The migration folders are in `~/.miyu/root/documents/`, and uninstalling the package does not delete them.

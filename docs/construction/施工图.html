@@ -1574,6 +1574,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC18"><span class="n">DOC-18</span>迁移页跟上迁移包的审计修复<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC19"><span class="n">DOC-19</span>清掉调研记录和旧性能数据<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC20"><span class="n">DOC-20</span>文档的写法定成规矩，逐页改写<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sDOC21"><span class="n">DOC-21</span>跟上旧版终端集成的处理<span class="st">…</span></a></li>
         <li><a class="step review" href="#sHLP1"><span class="n">HLP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
@@ -61371,6 +61372,55 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/DOC-20-文档写法.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sDOC21" aria-labelledby="h-sDOC21">
+  <div class="sheet-head"><h2 id="h-sDOC21"><span class="no">DOC-21</span>迁移页、终端界面页跟上旧版终端集成的处理</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">迁移包 0.1.4 的报告多报旧版终端集成留在 shell 启动文件里的那一段，终端界面安装终端集成时会先备份再清掉旧版的那一份。手册还是原来的说法，照实测改。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">docs/zh　docs/en · heads/tui.md　migrate.md　cli.md</span><span class="dir-note">DOC-21</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>终端界面页加「清理旧版的终端集成」一小节：安装时备份和清理什么、哪两种情况要自己处理；排查问题里那一行改成再安装一次</li>
+              <li>迁移页：检查的位置加上 bash、zsh 的启动文件，报告会写第几行；「迁移完成以后」加一条旧版终端集成怎么处理</li>
+              <li>命令行页 shellhook 的 install、status 两行各补一句</li>
+              <li>终端界面页英文一句报错照现在的字表改（原来抄的是旧字）</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">手册里引的界面文字、程序输出照程序现在实际印出来的抄</span><span class="rl">AGENTS.md「文档的规矩」第 14 条</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DOC-21</dd></div>
+        <div><dt>名称</dt><dd>迁移页、终端界面页跟上旧版终端集成的处理</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">DOC-21</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>终端集成 status、install 在沙箱家目录里真跑过（中英），备份和清理的结果逐个看过</span></li>
+        <li><span class="ok">✓</span><span>迁移包 0.1.4 真跑了中英各一遍，报告列出启动文件里的行号，迁移前后启动文件没变</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/DOC-21-旧版终端集成.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

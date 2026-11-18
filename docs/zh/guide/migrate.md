@@ -136,7 +136,12 @@
 | 以前分享给别人的内容 | 不迁移 |
 | 日志、缓存、索引 | 这一版会自己重建 |
 
-旧版在数据根外面安装过的东西不会放进压缩包。迁移只检查家目录下的这六个位置：`~/.local/bin/miyu`、`~/.config/fish/conf.d/miyu.fish`、`~/.gemini/config/agents/miyu`、`~/.gemini/antigravity-cli`、`~/.cache/miyu/voice-models`、`~/.local/state/miyu`，报告的 `数据根外面` 一节会列出其中哪几处存在。在 macOS、Windows 上也只检查家目录下的这几个位置；旧版装在其他地方的东西，报告里不会列出，需要你自己找出来、自己清理。
+旧版在数据根外面安装过的东西不会放进压缩包。迁移只检查下面这些位置，报告的 `数据根外面` 一节会列出其中存在的那几处：
+
+- 家目录下的六个位置：`~/.local/bin/miyu`、`~/.config/fish/conf.d/miyu.fish`（如果设置了 `XDG_CONFIG_HOME`，检查的是它下面的 `fish/conf.d/miyu.fish`）、`~/.gemini/config/agents/miyu`、`~/.gemini/antigravity-cli`、`~/.cache/miyu/voice-models`、`~/.local/state/miyu`。
+- 旧版终端集成写进 shell 启动文件的那一段：检查 `~/.bashrc`、`~/.bash_profile`、`~/.bash_login`、`~/.profile` 和 `~/.zshrc`（如果设置了 `ZDOTDIR`，也检查它下面的 `.zshrc`）。报告会写明这一段在第几行到第几行，例如 ``第 3～5 行、第 7～9 行是旧版终端集成写的一段，迁移不动它；在新版里跑 `miyu shellhook install --shell bash` 装上 bash 的集成时会先备份再删掉它，不用终端集成的可以自己删这几行。``
+
+迁移只读取这些文件，不会修改它们，旧版终端集成的处理方法见下面的「迁移完成以后」。在 macOS、Windows 上也只检查这些位置；旧版装在其他地方的东西，报告里不会列出，需要你自己找出来、自己清理。
 
 ## 阅读报告
 
@@ -196,6 +201,7 @@
 迁移完成以后，还剩下这几样东西需要处理：
 
 - 旧程序：AUR 上旧的 `miyu` 包升级以后，就换成了过渡包 `miyu`，它自己不带任何文件，只依赖 `miyu-agent`；旧版的程序已经没有了。新版的 `miyu-core` 和 0.7 那一代的 `miyu` 互斥，见 [安装、升级、卸载](install.md#从-aur-安装arch-linux)。如果是用其他方式安装的，按照报告的 `数据根外面` 一节，确认是旧版的东西以后再删除。如果 `~/.local/bin/miyu` 是这一版的（安装脚本放的链接，或者早先的包装脚本），报告里会写 `这是新版的 miyu，不是旧版的，别删。`，这时不要删除它。
+- 旧版的终端集成：迁移不会修改它，报告的 `数据根外面` 一节会列出它在哪个文件、第几行。如果要在这一版里使用终端集成，运行 `miyu shellhook install --shell <shell>`，安装时会先备份再清理旧版的那一份，见 [终端界面](heads/tui.md#清理旧版的终端集成)。如果不使用终端集成，可以按照报告里写的行号自己删除那几行；fish 的那一份是 `conf.d/miyu.fish`，可以直接删除。
 - 旧目录 `~/.miyu-0.7`：迁移不会删除它。确认全部内容都迁移过来、用了一段时间也没有问题以后，再自己删除。
 - 压缩包：保留着。以后想让 AI 接着迁移没有迁移的内容，需要用到它和 `给agent.json`。不再需要时，删除整个 `<时刻>/` 目录。
 - `migrate` 这个软件包：用完以后可以运行 `miyu pkg remove migrate` 卸载。迁移的目录在 `~/.miyu/root/documents/` 里，卸载软件包时不会删除。

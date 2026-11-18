@@ -495,6 +495,26 @@ miyu shellhook uninstall          # 关闭：从 shell 里移除
 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 ```
 
+### 清理旧版的终端集成
+
+旧版 Miyu（0.7.x）也在 shell 里装过一份终端集成。如果两份同时存在，它们都会接管回车，你输入的一句话会被发送两遍。所以安装时会先清理旧版的那一份，并且只清理你正在安装的那种 shell，例如 `miyu shellhook install --shell fish` 不会修改 `~/.bashrc`：
+
+| 旧版留下的内容 | 安装时的处理 |
+|---|---|
+| bash：`~/.bashrc`、`~/.bash_profile`、`~/.bash_login`、`~/.profile` 里从 `# >>> miyu bash hook >>>` 到 `# <<< miyu bash hook <<<` 的一段 | 先把整个文件备份成同一个目录下的 `<文件名>.miyu-old-hook.bak`，再删掉这一段，其他行保持不变。输出 `已清掉旧版装在 ~/.bashrc 第 3–5 行的那一段，原文件备份在 ~/.bashrc.miyu-old-hook.bak` |
+| zsh：`~/.zshrc`（如果设置了 `ZDOTDIR`，也检查它下面的 `.zshrc`）里从 `# >>> miyu zsh hook >>>` 到 `# <<< miyu zsh hook <<<` 的一段 | 处理方式和 bash 相同 |
+| fish：`~/.config/fish/conf.d/miyu.fish`（如果设置了 `XDG_CONFIG_HOME`，就在它下面），是一个普通文件 | 改名成同一个目录下的 `miyu.fish.miyu-old-hook.bak`，fish 不会再读取它。输出 `已把旧版的 ~/.config/fish/conf.d/miyu.fish 改名成 ~/.config/fish/conf.d/miyu.fish.miyu-old-hook.bak` |
+| fish：`miyu.fish` 是一个链接 | 只删除链接本身，它指向的文件保持不变。输出 `已删掉旧版的链接 ~/.config/fish/conf.d/miyu.fish（原来指到 …）` |
+
+如果备份的名字已经存在，不会覆盖它，而是依次使用 `.bak.1`、`.bak.2`。确认 shell 工作正常以后，备份文件可以自己删除。
+
+下面两种情况安装时不会修改，需要你自己处理：
+
+- `conf.d/miyu.fish` 不是旧版写的：提示 `~/.config/fish/conf.d/miyu.fish 也在，不像是旧版写的，没动它：要是它也接管回车，一句话会交两遍；用不着就删掉它`。
+- 启动文件里只有旧版那一段的开头，没有结尾：提示 `~/.zshrc 第 1 行是旧版那一段的开头，却没有结尾，没动它：要是它也接管回车，一句话会交两遍；请自己删掉那一段`。
+
+`miyu shellhook status` 和 `miyu shellhook doctor` 只报告旧版的那一份在哪个文件、第几行，例如 `旧版装的那一段还在 ~/.zshrc 第 2–4 行：两份都会接管回车，一句话会交两遍；装上 zsh 的终端集成时会先备份再清掉`，不会删除任何内容。`miyu shellhook uninstall` 不处理旧版的那一份。旧版没有在 Windows 上装过终端集成，所以 Windows 上不检查。
+
 ### 使用方法
 
 1. 新开一个 shell。
@@ -593,7 +613,7 @@ AI 启动的后台任务完成后，会在你回到提示符时输出出来。�
 | `无法读取剪贴板：请使用终端的粘贴（kitty 为 Ctrl+Shift+V）` | Linux：安装 `wl-paste`（Wayland 下）、`xclip`、`xsel` 中的一个；粘贴图片、复制的文件需要 `wl-paste` 或 `xclip`。macOS：读取剪贴板用的是系统自带的 `pbpaste`，读取不到时使用终端自己的粘贴。Windows：读取剪贴板需要启动 Windows PowerShell（`powershell`），3 秒内没有读完就算读取失败，这时使用终端自己的粘贴 |
 | 提示 `已复制 … 个字符`，剪贴板里却没有内容 | 终端不支持 OSC 52，所以复制不进去。需要换一个支持 OSC 52 的终端 |
 | `核心未运行：设置 MIYU_CORE_BIN 指向 miyu`、`连不上核心：…` | 用 `miyu` 或 `miyu tui` 打开，不要直接运行 `miyu-tui`；如果还是不行，见 [排查问题](../troubleshooting.md#核心无法启动或无法连接) |
-| 在 shell 里说的一句话被发送了两遍 | 运行 `miyu shellhook status`，它会提示旧版的 `conf.d/miyu.fish` 也还在，删掉这个文件 |
+| 在 shell 里说的一句话被发送了两遍 | 旧版的终端集成还在。运行 `miyu shellhook status` 查看它在哪个文件里，然后再运行一次 `miyu shellhook install --shell <shell>`，安装时会先备份再清理旧版的那一份；提示 `没动它` 的需要自己删除，见上面的「清理旧版的终端集成」 |
 | 终端界面崩溃，提示 `调用栈已保存到 …` | 崩溃记录在缓存目录下的 `tui/crash.log`，见上面的「缓存里的文件」 |
 
 如果安装了 shell 集成，先运行 `miyu shellhook doctor`，它会逐条告诉你哪里有问题、怎么修复。

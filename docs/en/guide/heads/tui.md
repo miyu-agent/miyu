@@ -495,6 +495,26 @@ If PowerShell's execution policy is `Restricted` or `AllSigned`, PowerShell does
 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 ```
 
+### Cleaning up the old version's integration
+
+The old Miyu (0.7.x) also installed a shell integration. If both are present, both take over Enter, and each message you type is sent twice. So installing first cleans up the old version's copy, and only for the shell you are installing into; for example, `miyu shellhook install --shell fish` does not change `~/.bashrc`:
+
+| What the old version left | What installing does |
+|---|---|
+| bash: the block from `# >>> miyu bash hook >>>` to `# <<< miyu bash hook <<<` in `~/.bashrc`, `~/.bash_profile`, `~/.bash_login` or `~/.profile` | Backs up the whole file as `<file name>.miyu-old-hook.bak` in the same directory, then removes the block and leaves every other line as it was. It prints `Removed the old version's block from ~/.bashrc, lines 2–4; the original file is backed up at ~/.bashrc.miyu-old-hook.bak` |
+| zsh: the block from `# >>> miyu zsh hook >>>` to `# <<< miyu zsh hook <<<` in `~/.zshrc` (if `ZDOTDIR` is set, the `.zshrc` under it is checked as well) | Handled the same way as bash |
+| fish: `~/.config/fish/conf.d/miyu.fish` (under `XDG_CONFIG_HOME` if that is set), as a regular file | Renames it to `miyu.fish.miyu-old-hook.bak` in the same directory, so fish no longer reads it. It prints `Renamed the old version's ~/.config/fish/conf.d/miyu.fish to ~/.config/fish/conf.d/miyu.fish.miyu-old-hook.bak` |
+| fish: `miyu.fish` is a link | Removes only the link itself and leaves the file it points to as it was. It prints `Removed the old version's link ~/.config/fish/conf.d/miyu.fish (it pointed to …)` |
+
+If the backup name already exists, it is not overwritten; `.bak.1`, `.bak.2` and so on are used instead. Once you have confirmed that the shell works, you can delete the backup files yourself.
+
+In the following two cases installing changes nothing, and you need to deal with it yourself:
+
+- `conf.d/miyu.fish` was not written by the old version: it prints `~/.config/fish/conf.d/miyu.fish is also there but doesn't look like the old version's, so it was left alone: if it also takes over Enter, each message is sent twice; delete it if you don't need it`.
+- The startup file has the start of the old version's block but no end: it prints `Line 1 of ~/.zshrc starts the old version's block, but the block never ends, so it was left alone: if it also takes over Enter, each message is sent twice; remove that block yourself`.
+
+`miyu shellhook status` and `miyu shellhook doctor` only report which file and which lines the old version's copy is in, for example `The old version's block is still in ~/.bashrc, lines 2–4: both would take over Enter and send each message twice; installing the bash hook backs up the file and removes it`, and delete nothing. `miyu shellhook uninstall` does not touch the old version's copy. The old version never installed a shell integration on Windows, so nothing is checked on Windows.
+
 ### Using it
 
 1. Open a new shell.
@@ -592,8 +612,8 @@ The files the terminal UI uses in the cache folder:
 | Pressing `Shift+Enter` sent the message | The terminal cannot report `Shift+Enter`, so use `Alt+Enter` or `Ctrl+J` for a new line |
 | `Can't read the clipboard: use your terminal's own paste (Ctrl+Shift+V in kitty)` | Linux: install one of `wl-paste` (under Wayland), `xclip`, `xsel`; pasting images and copied files needs `wl-paste` or `xclip`. macOS: the clipboard is read with the built-in `pbpaste`; if that fails, use the terminal's own paste. Windows: reading the clipboard has to start Windows PowerShell (`powershell`), and if reading does not finish within 3 seconds it counts as failed; in that case, use the terminal's own paste |
 | It shows `Copied … character(s)`, but the clipboard is empty | The terminal does not support OSC 52, so nothing was copied. You need to switch to a terminal that supports OSC 52 |
-| `The core isn't running: set MIYU_CORE_BIN to the remake's miyu when starting`, `Can't connect to the core: …` | Open it with `miyu` or `miyu tui`; do not run `miyu-tui` directly. If that does not help, see [Troubleshooting](../troubleshooting.md#the-core-will-not-start-or-cannot-connect) |
-| A sentence typed in the shell was sent twice | Run `miyu shellhook status`; it will tell you the old `conf.d/miyu.fish` is still there. Delete that file |
+| `The core isn't running: when starting, set MIYU_CORE_BIN to the miyu program`, `Can't connect to the core: …` | Open it with `miyu` or `miyu tui`; do not run `miyu-tui` directly. If that does not help, see [Troubleshooting](../troubleshooting.md#the-core-will-not-start-or-cannot-connect) |
+| A sentence typed in the shell was sent twice | The old version's shell integration is still there. Run `miyu shellhook status` to see which file it is in, then run `miyu shellhook install --shell <shell>` again; installing backs up and cleans up the old version's copy first. Anything reported as `left alone` you need to delete yourself; see "Cleaning up the old version's integration" above |
 | The terminal UI crashed, showing `Stack trace saved to …` | The crash record is `tui/crash.log` in the cache folder; see "Files in the cache" above |
 
 If you installed shell integration, run `miyu shellhook doctor` first; it tells you, item by item, what is wrong and how to fix it.
