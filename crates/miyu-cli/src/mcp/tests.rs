@@ -62,3 +62,16 @@ fn the_words_follow_the_command_line_rules() {
         "logged out of notes, log in again to use it"
     );
 }
+
+/// 审计 #034（施工 AU-P1）：打开网址的程序退了就收走，不在等回调的十分钟里一直留着一个僵尸进程。
+#[cfg(target_os = "linux")]
+#[test]
+fn the_opener_is_reaped_once_it_exits() {
+    let pid = handed(Command::new("true")).expect("起得来");
+    let proc = std::path::PathBuf::from(format!("/proc/{pid}"));
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    while proc.exists() && std::time::Instant::now() < deadline {
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+    assert!(!proc.exists(), "退了以后收走了");
+}

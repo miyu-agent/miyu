@@ -206,13 +206,23 @@ fn state<'a>(listed: &'a Value, service: &str) -> Option<&'a str> {
 /// 用系统的办法打开 `url`：打开得了的交回 `true`。不等浏览器退出。
 pub(crate) fn opened(url: &str) -> bool {
     let (program, args) = opener(url);
-    Command::new(program)
-        .args(args)
+    let mut command = Command::new(program);
+    command.args(args);
+    handed(command).is_some()
+}
+
+/// 起 `command`，标准流都接空：交回进程号，起不来的没有。另一个线程等它退、收走（审计 #034，施工 AU-P1）：原来丢下就不管，
+/// Unix 上它退了以后在等回调的十分钟里一直是僵尸进程。
+fn handed(mut command: Command) -> Option<u32> {
+    let mut child = command
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .is_ok()
+        .ok()?;
+    let pid = child.id();
+    std::thread::spawn(move || drop(child.wait()));
+    Some(pid)
 }
 
 /// 打开网址的程序和参数：Linux 这类 `xdg-open`，macOS `open`，Windows 经 `rundll32` 交给默认浏览器（`cmd /c start` 会把网址里的

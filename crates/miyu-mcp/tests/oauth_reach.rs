@@ -101,3 +101,44 @@ async fn a_silent_server_times_out() {
     held.abort();
     assert!(matches!(found, Err(Trouble::Unreachable(_))), "{found:?}");
 }
+
+/// 审计 #018（施工 AU-P1）：浏览器常先多开一条连接放着不发（预连接），真正的回调走另一条。修以前听回调的一条一条读，先接下的
+/// 那条不发东西就一直卡着，带授权码的那条排在后面，等满登录的时限才算失败。现在每条各读各的。
+#[tokio::test]
+async fn an_idle_preconnect_does_not_hold_up_the_real_callback() {
+    let listener = miyu_mcp::oauth::listen(None).await.expect("听得了");
+    let port = listener.port();
+    let idle = tokio::net::TcpStream::connect(("127.0.0.1", port))
+        .await
+        .expect("连得上");
+    let browser = tokio::spawn(async move {
+        // 让听的那一头先接下空着的那条。
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        let mut real = tokio::net::TcpStream::connect(("127.0.0.1", port))
+            .await
+            .expect("连得上");
+        real.write_all(b"GET /callback?code=c1&state=s1 HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n")
+            .await
+            .expect("写得出");
+        let mut answer = Vec::new();
+        drop(real.read_to_end(&mut answer).await);
+        answer
+    });
+    let got = tokio::time::timeout(Duration::from_secs(5), listener.next())
+        .await
+        .expect("空着的连接没把回调卡住")
+        .expect("听得了");
+    assert!(
+        matches!(&got.0, miyu_mcp::oauth::Callback::Code { code, .. } if code == "c1"),
+        "{:?}",
+        got.0
+    );
+    got.1.send(true, "ok").await;
+    let answer = browser.await.expect("浏览器那头没出错");
+    assert!(
+        answer.starts_with(b"HTTP/1.1 200"),
+        "{}",
+        String::from_utf8_lossy(&answer)
+    );
+    drop(idle);
+}
