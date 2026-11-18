@@ -1613,6 +1613,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sVER1"><span class="n">VER-1</span>候选版照 semver 比<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDR2"><span class="n">DR-2</span>扩展驱动可以等得久一点<span class="st">…</span></a></li>
         <li><a class="step review" href="#sTB1"><span class="n">TB-1</span>测试不进真的回收站<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sFL10"><span class="n">FL-10、11</span>两条偶发测试<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -63534,6 +63535,54 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/TB-1-测试不进真的回收站.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sFL10" aria-labelledby="h-sFL10">
+  <div class="sheet-head"><h2 id="h-sFL10"><span class="no">FL-10、11</span>两条偶发测试</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">扩展收到 <code>tool.cancel</code> 的那条等到那一行再看；fork 子代理走满 500 步的那条不再每 5 毫秒读一遍整份日志，忙机器上也稳。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint/tests/provide.rs · miyu-session/tests/support/logs.rs</span><span class="dir-note">FL-10、11</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>FL-10：<code>until_line</code> 等 <code>tool.cancel</code> 落进记录</li>
+              <li>FL-11：<code>until_logged</code> 隔多久看一次照等了多久放宽（5～250 毫秒），走满 500 步的那条等 300 秒</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">只改测试</span><span class="rl">产品不动</span></div>
+          <div class="tile new"><span class="nm">单跑 23.7 → 5 秒</span><span class="rl">load 28 下 5/5 过，这一条最多等 300 秒</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">FL-10、11</dd></div>
+        <div><dt>名称</dt><dd>两条偶发测试</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-18</dd></div>
+        <div><dt>提交</dt><dd class="mono">FL-10、11</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>FL-10：扩展记那一行前睡 2 秒，改前红在 171 行、改后过</span></li>
+        <li><span class="ok">✓</span><span>FL-11：12 个核上 24 个死循环（load 约 28），5/5 过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/FL-10-两条偶发测试.md</code>。</li>
       </ul>
     </div>
   </div>

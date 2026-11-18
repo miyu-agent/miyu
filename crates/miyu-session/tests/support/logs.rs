@@ -14,17 +14,45 @@ pub async fn until_logged(
     session: &SessionId,
     done: impl Fn(&[Event]) -> bool,
 ) -> Vec<Event> {
-    let waited = tokio::time::timeout(WAIT, async {
+    until_logged_within(home, session, WAIT, done).await
+}
+
+/// 同 [`until_logged`]，最多等 `wait`（施工 FL-11）：一轮就要走几百步的测试用，机器忙的时候光是一步步排着轮到 CPU 就过了一分钟。
+///
+/// 每看一次都从头读整份日志：隔多久看一次照等了多久放宽（[`pause`]），等得久的长日志不再每 5 毫秒读一遍。
+pub async fn until_logged_within(
+    home: &Home,
+    session: &SessionId,
+    wait: std::time::Duration,
+    done: impl Fn(&[Event]) -> bool,
+) -> Vec<Event> {
+    let started = tokio::time::Instant::now();
+    let waited = tokio::time::timeout(wait, async {
         loop {
             let log = home.log(session);
             if done(&log) {
                 return log;
             }
-            tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+            tokio::time::sleep(pause(started.elapsed())).await;
         }
     })
     .await;
-    waited.unwrap_or_else(|_| panic!("六十秒内磁盘上没等到：{:?}", kinds(&home.log(session))))
+    waited.unwrap_or_else(|_| {
+        panic!(
+            "{} 秒内磁盘上没等到：{:?}",
+            wait.as_secs(),
+            kinds(&home.log(session))
+        )
+    })
+}
+
+/// 等了 `waited` 以后隔多久再看一次（施工 FL-11）：等过的二十分之一，至少 5 毫秒、至多 250 毫秒。原来一直 5 毫秒：fork 子代理
+/// 走满 500 步的那条测试（两千多条事件）光反复读日志，单跑就从约 5.5 秒拖到 23.7 秒；晚看到的至多多等二十分之一。
+fn pause(waited: std::time::Duration) -> std::time::Duration {
+    (waited / 20).clamp(
+        std::time::Duration::from_millis(5),
+        std::time::Duration::from_millis(250),
+    )
 }
 
 /// 事件的种类，照先后。

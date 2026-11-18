@@ -158,6 +158,9 @@ async fn a_fork_at_the_depth_limit_starts_no_subagent() {
     stop(&parent).await;
 }
 
+/// 走满出厂步数的那一轮最多等多久（施工 FL-11）。
+const FULL_RUN: std::time::Duration = std::time::Duration::from_secs(300);
+
 /// 步数上限（施工 AE-1）：fork 子代理的快照是父会话那一份（有人看着、人开的回合不限），载入以后照 fork 的出厂数
 /// [`miyu_policy::steps::FORK_STEPS`] 停：父会话交代开的那一轮请求到第 500 次结束，`step_limit`。
 #[tokio::test]
@@ -194,7 +197,9 @@ async fn a_fork_stops_at_the_fork_step_limit() {
     within("交代的回应", branch.command(id, by, command))
         .await
         .expect("子会话在跑");
-    let child_log = until_logged(&home, &child, |log| {
+    // 一轮走满 500 步：单跑约 5 秒，机器忙的时候（CI 并着跑、两个核挤 6 个死循环）一步步排着轮到 CPU 就过了一分钟，多等一会儿
+    // （施工 FL-11）。
+    let child_log = until_logged_within(&home, &child, FULL_RUN, |log| {
         log.iter()
             .filter(|event| matches!(event.body, Body::TurnEnded(_)))
             .count()

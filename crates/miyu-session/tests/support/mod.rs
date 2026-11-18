@@ -23,7 +23,7 @@ pub mod table;
     unused_imports,
     reason = "挪进 logs.rs 的几样：每个测试程序用到的不一样"
 )]
-pub use logs::{LogDir, kinds, until_logged};
+pub use logs::{LogDir, kinds, until_logged, until_logged_within};
 pub use opening::{Lines, Opening};
 #[allow(
     unused_imports,

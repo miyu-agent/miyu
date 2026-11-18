@@ -156,7 +156,9 @@ async fn an_extension_provides_tools_and_answers_the_calls() {
     // 本机的会话：是主人本人要的（施工 O-2 下）。
     assert_eq!(call["params"]["by"]["kind"], "person", "{call}");
     assert_eq!(call["params"]["owner"], json!(true), "{call}");
-    // 超时的那一次发了 tool.cancel，照那一次的编号。
+    // 超时的那一次发了 tool.cancel，照那一次的编号。扩展收到一行先写进文件、再读下一行：回合结束时它可能还没写下
+    // （施工 FL-10，Linux CI 偶发），等到那一行再看。
+    crate::support::mcp::until_line(&path, r#""method":"tool.cancel""#).await;
     let silent: Value = serde_json::from_str(
         read(&path)
             .lines()
