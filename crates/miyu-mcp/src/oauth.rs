@@ -190,7 +190,7 @@ pub enum Problem {
     Issuer,
     /// 不认 PKCE 的 `S256`。
     NoS256,
-    /// 几个端点不是 `https`（本机的例外）。
+    /// 几个地址不能连（[`reachable_from`]）：不是 `https`，或者别的机器上的指到本机。
     Insecure,
     /// 少了一格。
     Missing(&'static str),
@@ -198,8 +198,19 @@ pub enum Problem {
     Resource,
 }
 
+/// 从服务 `server` 那里一路找过来的网址 `url` 能不能连（施工 AU-006）：别处的只认 `https`；本机的只在服务自己就在本机时认
+/// （`http` 也行，给本机起的服务、测试）。别的机器上的服务指到本机的一律不认，`https` 的也不认：不然远处的服务能在挑战、元数据
+/// 里写本机的地址，让核心去连本机的任意端口。
+pub fn reachable_from(server: &str, url: &str) -> bool {
+    match miyu_http::is_loopback_url(url) {
+        true => miyu_http::is_loopback_url(server),
+        false => url.starts_with("https://"),
+    }
+}
+
 /// 读授权服务器的元数据：`issuer` 必须和拼网址用的 `issuer` 一模一样（RFC 8414 第 3.3 节）；`code_challenge_methods_supported`
-/// 里要有 `S256`，没写的当不支持、不降级；授权页、换令牌、注册几个端点只认 `https`（本机的地址例外，给测试）。
+/// 里要有 `S256`，没写的当不支持、不降级；授权页、换令牌、注册几个端点照 [`reachable_from`] 查（施工 AU-006：本机的地址只在授权
+/// 服务器自己就在本机时认，给测试）。
 ///
 /// # Errors
 ///
@@ -231,7 +242,7 @@ pub fn authorization(doc: &Value, issuer: &str) -> Result<Authorization, Problem
         text("authorization_endpoint").ok_or(Problem::Missing("authorization_endpoint"))?;
     let token_endpoint = text("token_endpoint").ok_or(Problem::Missing("token_endpoint"))?;
     let registration_endpoint = text("registration_endpoint");
-    let secure = |url: &str| url.starts_with("https://") || miyu_http::is_loopback_url(url);
+    let secure = |url: &str| reachable_from(issuer, url);
     if ![
         Some(&authorization_endpoint),
         Some(&token_endpoint),

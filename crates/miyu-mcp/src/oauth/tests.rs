@@ -136,6 +136,32 @@ fn authorization_metadata_must_name_the_same_issuer_and_support_s256() {
     );
 }
 
+/// 修以前：本机的端点不管授权服务器在哪都认，别的机器上的授权服务器写 `http://127.0.0.1:<端口>/register`，核心就往本机的
+/// 那个端口发注册（审计 #006）。现在本机的端点只在授权服务器自己就在本机时认。
+#[test]
+fn a_remote_authorization_server_cannot_name_endpoints_on_this_machine() {
+    for endpoint in [
+        "http://127.0.0.1:9/register",
+        "https://127.0.0.1:9/register",
+        "http://localhost:9/r",
+    ] {
+        let mut pointing = metadata();
+        pointing["registration_endpoint"] = json!(endpoint);
+        assert_eq!(
+            authorization(&pointing, "https://auth.example.com"),
+            Err(Problem::Insecure),
+            "{endpoint}"
+        );
+    }
+    let mut local = metadata();
+    local["issuer"] = json!("http://127.0.0.1:8080");
+    local["token_endpoint"] = json!("http://127.0.0.1:8080/token");
+    assert!(
+        authorization(&local, "http://127.0.0.1:8080").is_ok(),
+        "本机的授权服务器照旧认本机的端点"
+    );
+}
+
 #[test]
 fn the_s256_challenge_follows_rfc_7636() {
     assert_eq!(
@@ -268,4 +294,18 @@ fn the_scope_follows_the_challenge_then_the_resource_metadata() {
         Some("offline_access x"),
         "已经有的不重复加"
     );
+}
+
+/// 从服务一路找过来的网址（施工 AU-006）：别处的只认 https；本机的只在服务自己就在本机时认。
+#[test]
+fn what_a_server_may_point_the_login_at() {
+    let remote = "https://mcp.example.com/mcp";
+    let local = "http://127.0.0.1:3000/mcp";
+    assert!(reachable_from(remote, "https://auth.example.com"));
+    assert!(!reachable_from(remote, "http://auth.example.com"));
+    assert!(!reachable_from(remote, "http://127.0.0.1:9/prm"));
+    assert!(!reachable_from(remote, "https://localhost:9/prm"));
+    assert!(reachable_from(local, "http://127.0.0.1:9/prm"));
+    assert!(reachable_from(local, "https://auth.example.com"));
+    assert!(!reachable_from(local, "http://auth.example.com"));
 }

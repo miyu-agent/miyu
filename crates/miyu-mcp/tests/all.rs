@@ -6,6 +6,7 @@ mod calls;
 mod era;
 mod listen;
 mod oauth;
+mod oauth_reach;
 mod prompts;
 mod resources;
 mod tools;

@@ -266,7 +266,7 @@
 
 **回应**：`{"url"}`：授权页的地址，头打开它。核心在本机 `127.0.0.1` 上等回调，最多 10 分钟；同一个服务又登录的，上一次在等的停掉。
 
-**出错**：`unknown_server`：没有这个服务；`bad_params`：不是网址的服务，或者这张表自己写了令牌（`bearer`、`headers` 里的 `Authorization`）；`oauth_unregistered`：没有客户端、授权服务器又不认动态注册，要人去服务那边注册、把 `client_id` 写进这张表；`oauth_failed`：找不到、用不了授权服务器，或者它拒了，`data.why` 说为什么（授权服务器的原话截过）。
+**出错**：`unknown_server`：没有这个服务；`bad_params`：不是网址的服务，或者这张表自己写了令牌（`bearer`、`headers` 里的 `Authorization`）；`oauth_unregistered`：没有客户端、授权服务器又不认动态注册，要人去服务那边注册、把 `client_id` 写进这张表；`oauth_failed`：找不到、用不了授权服务器（一路上的地址只认 `https`，`127.0.0.1` 这类本机地址只在服务自己就在本机时认），或者它拒了，`data.why` 说为什么（授权服务器的原话截过）。
 
 登录以后：令牌快过期的、服务回 `401` 的，核心自己拿 `refresh_token` 续，续期写回密钥不重起服务；续不成的、服务说范围不够（`403 insufficient_scope`）的，服务停在 `needs_login`，再 `mcp.login` 一次（要的范围是以前的加上这一次要的）。
 

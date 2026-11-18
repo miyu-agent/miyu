@@ -31,7 +31,7 @@ testkit = ["tokio/net"]
 
 [dev-dependencies]
 miyu-mcp = { path = ".", features = ["testkit"] }
-tokio = { version = "1", features = ["io-util", "macros", "net", "rt", "rt-multi-thread", "sync", "time"] }
+tokio = { version = "1", features = ["io-util", "macros", "net", "rt", "rt-multi-thread", "sync", "test-util", "time"] }
 
 [lints]
 workspace = true

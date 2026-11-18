@@ -2,17 +2,25 @@
 //! （RFC 7591，规范标成了旧办法、现在的服务多半还认），授权码换令牌，续期（施工 X-42 下）。授权服务器回的错误说明是不可信的字：
 //! 截到 200 个字符。
 
+use std::time::Duration;
+
 use serde_json::{Value, json};
 
 use miyu_http::Client;
 
 use super::{
     Authorization, Challenge, Problem, authorization, authorization_metadata_urls, canonical,
-    resource_metadata_urls, scope,
+    reachable_from, resource_metadata_urls, scope,
 };
 
 /// 授权服务器回的错误说明最多留几个字符。
 const DESCRIPTION_LIMIT: usize = 200;
+
+/// 一次往来最多等多久，从发出去到读完回答（施工 AU-006）：对方收了不回，登录不能一直挂着。
+const ANSWER_WAIT: Duration = Duration::from_secs(30);
+
+/// 回答最多读多少字节（施工 AU-006）：元数据、令牌都是几 KiB 的 JSON。
+const ANSWER_LIMIT: usize = 1024 * 1024;
 
 /// 发现的结果：给令牌的 `resource`、授权服务器、第一次登录要的范围。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -85,12 +93,19 @@ pub async fn discover(
         Some(url) => vec![url.clone()],
         None => resource_metadata_urls(server),
     };
+    // 挑战、元数据里的网址是服务写的（施工 AU-006）：连之前照 [`reachable_from`] 查。
+    if !urls.iter().all(|url| reachable_from(server, url)) {
+        return Err(Trouble::Metadata(Problem::Insecure));
+    }
     let resource = first_json(http, &urls).await?.ok_or(Trouble::NoMetadata)?;
     let issuer = resource["authorization_servers"]
         .as_array()
         .and_then(|servers| servers.iter().find_map(Value::as_str))
         .ok_or(Trouble::NoAuthorizationServer)?
         .to_string();
+    if !reachable_from(server, &issuer) {
+        return Err(Trouble::Metadata(Problem::Insecure));
+    }
     let authorization = authorization_of(http, &issuer).await?;
     let resource_scopes: Vec<String> = resource["scopes_supported"]
         .as_array()
@@ -280,13 +295,14 @@ async fn first_json(http: &Client, urls: &[String]) -> Result<Option<Value>, Tro
         let response = http
             .get(url)
             .header("Accept", "application/json")
+            .timeout(ANSWER_WAIT)
             .send()
             .await
             .map_err(|error| Trouble::Unreachable(error.without_url().to_string()))?;
         if !response.status().is_success() {
             continue;
         }
-        if let Ok(bytes) = response.bytes().await
+        if let Ok(bytes) = capped(response).await?
             && let Ok(found) = serde_json::from_slice::<Value>(&bytes)
             && found.is_object()
         {
@@ -299,15 +315,13 @@ async fn first_json(http: &Client, urls: &[String]) -> Result<Option<Value>, Tro
 /// 发一个请求，交回 JSON 的回答：`2xx` 的照收；别的照 OAuth 的错误回答读 `error`、`error_description`（说明截过）。
 async fn send(request: miyu_http::RequestBuilder) -> Result<Value, Trouble> {
     let response = request
+        .timeout(ANSWER_WAIT)
         .send()
         .await
         .map_err(|error| Trouble::Unreachable(error.without_url().to_string()))?;
     let ok = response.status().is_success();
     let status = response.status().as_u16();
-    let bytes = response
-        .bytes()
-        .await
-        .map_err(|error| Trouble::Unreachable(error.without_url().to_string()))?;
+    let bytes = capped(response).await?.map_err(Trouble::Unreachable)?;
     let answer: Value = serde_json::from_slice(&bytes).unwrap_or(Value::Null);
     if ok {
         return Ok(answer);
@@ -320,5 +334,24 @@ async fn send(request: miyu_http::RequestBuilder) -> Result<Value, Trouble> {
                 .map(|text| text.chars().take(DESCRIPTION_LIMIT).collect()),
         }),
         None => Err(Trouble::Unreachable(format!("HTTP {status}"))),
+    }
+}
+
+/// 读回答，最多 [`ANSWER_LIMIT`] 个字节（施工 AU-006）。超了的当场停、报连不上；读到一半出错的交回错的原话，照各自的路处理。
+///
+/// # Errors
+///
+/// 超过上限：[`Trouble::Unreachable`]，原话 `answer too large`。
+async fn capped(mut response: miyu_http::Response) -> Result<Result<Vec<u8>, String>, Trouble> {
+    let mut bytes = Vec::new();
+    loop {
+        match response.chunk().await {
+            Ok(Some(chunk)) if bytes.len() + chunk.len() > ANSWER_LIMIT => {
+                return Err(Trouble::Unreachable("answer too large".to_string()));
+            }
+            Ok(Some(chunk)) => bytes.extend_from_slice(&chunk),
+            Ok(None) => return Ok(Ok(bytes)),
+            Err(error) => return Ok(Err(error.without_url().to_string())),
+        }
     }
 }

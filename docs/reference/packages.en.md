@@ -266,7 +266,7 @@ For a URL MCP server that answered `401` and needs a browser login (`reason` is 
 
 **Response**: `{"url"}`: the authorization page for the head to open. The core waits for the callback on `127.0.0.1`, up to 10 minutes; logging in again to the same server stops the earlier wait.
 
-**Errors**: `unknown_server`: no such server; `bad_params`: not a URL server, or its table has its own token (`bearer`, or `Authorization` in `headers`); `oauth_unregistered`: no client, and the authorization server doesn't take dynamic registration, so register a client with the service and put its `client_id` in the table; `oauth_failed`: the authorization server can't be found or used, or it refused; `data.why` says why (the server's own words, shortened).
+**Errors**: `unknown_server`: no such server; `bad_params`: not a URL server, or its table has its own token (`bearer`, or `Authorization` in `headers`); `oauth_unregistered`: no client, and the authorization server doesn't take dynamic registration, so register a client with the service and put its `client_id` in the table; `oauth_failed`: the authorization server can't be found or used (every address on the way must be `https`; a loopback address such as `127.0.0.1` only counts when the server itself is on this machine), or it refused; `data.why` says why (the server's own words, shortened).
 
 After logging in: when the token is about to expire or the server answers `401`, the core renews it with the `refresh_token` itself, and writing the renewed token back doesn't restart the server. If renewing fails, or the server says the scope isn't enough (`403 insufficient_scope`), the server stops at `needs_login`; call `mcp.login` again (it asks for the earlier scope plus the new one).
 
