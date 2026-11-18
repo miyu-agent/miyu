@@ -320,7 +320,6 @@ miyu pkg remove --purge ocr   # 连配置一起删
 | `base-project-docs` | 自动注入 AGENTS 文档 | 每轮开头把仓库里的 AGENTS.md 交给 AI | 注入环境信息 |
 | `base-memory` | 人格记忆 | 记住你说过的事，以后想得起来（`remember`、`memory_search`、`forget`） | 人格 |
 | `base-roleplay` | 人设遵循提醒 | 隔几轮把人设提醒短语再给 AI 看一遍 | 人格 |
-| `base-life` | 结束人生 | 人生会话里 AI 可以自己结束这段人生（`end_life`），记下自己变了什么（`note_change`） | 人格 |
 | `base-net` | 网络搜索 | 网络搜索、抓取网页（`web_search`、`web_fetch`） | 查资料 |
 | `base-knowledge` | 知识库 | 查你放进来的笔记和文档（`kb_search`、`kb_read`、`kb_save`、`kb_edit`、`kb_delete`） | 查资料 |
 | `base-authoring` | 写技能和包 | 两个技能：`skill-creator`（写技能）、`package-creator`（写脚本和包） | 不在组里 |

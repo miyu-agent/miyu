@@ -58,7 +58,7 @@ fn a_turn_opened_on_the_web_says_so() {
 #[test]
 fn a_turn_opened_by_a_schedule_says_nobody_is_there() {
     let mut session = session_with(with_channels());
-    let looped = r#"{"kind":"schedule","schedule":"t1","loop":"life"}"#;
+    let looped = r#"{"kind":"schedule","schedule":"t1","loop":"dynamic"}"#;
     let actions = session.handle(said_by(1, looped));
     assert_eq!(channel_facts(&actions), ["<c>nobody</c>"]);
 }

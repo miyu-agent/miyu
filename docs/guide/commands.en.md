@@ -23,7 +23,7 @@ When both sides have the same name (`/clear`, `/stop`, `/context`, `/workspace` 
 | Command | Alias | Arguments | What it does | Details |
 |---|---|---|---|---|
 | `/clear` | `/reset` | | Clears the context; the session stays | [Sessions](sessions.en.md) |
-| `/stop` | | | Interrupts this turn, keeps queued messages without sending them, and stops this session's background commands, subagents and loop; in a life session it also pauses the life | [Sessions](sessions.en.md) |
+| `/stop` | | | Interrupts this turn, keeps queued messages without sending them, and stops this session's background commands, subagents and loop | [Sessions](sessions.en.md) |
 | `/workspace` | | `<path>` | Changes this session's working directory. Without a path, it says what the current one is. Only you can use it | [Sessions](sessions.en.md) |
 | `/context` | | `[<value> \| unset]` | With a value, sets this session's context limit, for example `128k` or `1m`; `unset` or `off` removes it; without one, it says the current limit and the compaction line | [Sessions](sessions.en.md) |
 | `/todo` | | `[clear]` | Lists the todos; `clear` empties them | [Sessions](sessions.en.md) |
@@ -32,9 +32,8 @@ When both sides have the same name (`/clear`, `/stop`, `/context`, `/workspace` 
 | `/clear-memory` | `/reset-memory` | | Clears the memories recorded in this session | [Memory](memory.en.md) |
 | `/goal` | | `[[--rounds <rounds>] <goal> \| pause \| resume \| clear]` | Without arguments, shows progress; with a goal, sets a goal, or changes the existing one, and `--rounds` sets the maximum number of rounds; `pause` pauses, `resume` continues, `clear` removes it | [Letting the AI keep working on its own](automation.en.md) |
 | `/loop` | | `[[<interval>] <text> \| off]` | Says the text once every interval, written as `5m` or `2h`; without an interval, the AI decides when the next one is; with nothing at all, the AI decides what to do and when; `off` stops this session's loop. With an interval but no text, it replies with the usage | [Letting the AI keep working on its own](automation.en.md) |
-| `/life` | | `[new \| pause \| resume \| kill]` | Without arguments, shows the life session; `new` starts a new one, ending the current one first if there is one; `pause` pauses, `resume` continues, `kill` ends it | [Simulated life](life.en.md) |
 
-`/todo`, `/remember`, `/dream`, `/clear-memory`, `/goal` and `/loop` follow their packages: if the package is not installed, or the session's preset has that feature off, the command is not listed. `/life` is always listed; typed in a session with no persona, it looks across all personas: when only one persona has a life, that is the one, when several do it lists them, and `/life new` needs the session to have a persona first; `/life new` and `/life kill` do not ask first in the terminal and pop up a confirmation card in the web UI; the memories of the life that ended are cleared.
+`/todo`, `/remember`, `/dream`, `/clear-memory`, `/goal` and `/loop` follow their packages: if the package is not installed, or the session's preset has that feature off, the command is not listed.
 
 In the web UI, a core command typed in a new session that has not been opened yet does not open a session; it says one line on the spot. `/goal <goal>` and `/loop <text>` are the exceptions: like a first message, they open the session first. Typing just `/loop` does not open a session and shows the hint "Type what to say on each loop"; to start an autonomous loop, send a first message to open the session and then type it.
 

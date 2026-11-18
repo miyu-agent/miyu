@@ -12,9 +12,6 @@ pub(crate) struct Reads {
     /// 测试里让每次读先慢这么多毫秒（`testkit` 的 [`super::Memory::slow_reads`]）：0 是不慢。
     #[cfg(feature = "testkit")]
     slow: std::sync::atomic::AtomicU64,
-    /// 测试里把会话等这几次读的时限换成这么多毫秒（`testkit` 的 [`super::Memory::wait_reads`]）：0 是照出厂的。
-    #[cfg(feature = "testkit")]
-    wait: std::sync::atomic::AtomicU64,
 }
 
 /// 登记着的一次读：放下时读完了。
@@ -46,26 +43,6 @@ impl Reads {
         self.count
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
-    }
-
-    /// 会话等这几次读的时限：测试里换过的（`testkit` 才有的 `Reads::patient`）照换的，别的没有、照出厂的（`actor/model/hooks.rs` 的 `HOOKS`）。
-    pub(crate) fn wait(&self) -> Option<std::time::Duration> {
-        #[cfg(feature = "testkit")]
-        {
-            let millis = self.wait.load(std::sync::atomic::Ordering::Relaxed);
-            if millis > 0 {
-                return Some(std::time::Duration::from_millis(millis));
-            }
-        }
-        None
-    }
-
-    /// 测试里把会话等这几次读的时限换成 `limit`。
-    #[cfg(feature = "testkit")]
-    pub(crate) fn patient(&self, limit: std::time::Duration) {
-        let millis = u64::try_from(limit.as_millis()).unwrap_or(u64::MAX);
-        self.wait
-            .store(millis, std::sync::atomic::Ordering::Relaxed);
     }
 
     /// 测试里让往后每次读先慢 `by`。

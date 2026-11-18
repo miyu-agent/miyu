@@ -93,7 +93,7 @@
 
 - `audio`、`text` 二选一；给 `text` 的先照 `synthesize` 合成。
 - 同时来几个照先后排队放，不互相打断；被 `tts.stop` 停的回 `{"finished": false}`。
-- 核心自己也调：本机会话里没人开口的一轮（到点的定时任务、循环、人生）出了一段语音（工具结果 `sent` 里的 `voice`），这时又没有一个头开着这个会话，核心交 `{"audio": <blob>}`，不带 `language`。
+- 核心自己也调：本机会话里没人开口的一轮（到点的定时任务、循环）出了一段语音（工具结果 `sent` 里的 `voice`），这时又没有一个头开着这个会话，核心交 `{"audio": <blob>}`，不带 `language`。
 - 出错：`bad_audio`、`no_speaker`，和 `synthesize` 的那几个。
 
 ### `tts.stop`

@@ -1,5 +1,5 @@
 //! 人最后一次发话（施工 SX-1，`store/index.md`「一行记什么」的 `last_spoken`）：只认 `by` 是人的 `message.user`，主人、通讯平台
-//! 上的人都算；定时、循环、人生自己醒、内核续跑、别的会话发来的、模型的回复都不动它，只动 `last_active`。写进表里读得回来；
+//! 上的人都算；定时、循环、内核续跑、别的会话发来的、模型的回复都不动它，只动 `last_active`。写进表里读得回来；
 //! 列会话照日志补的那一行写回去也带着它。
 
 use super::*;
@@ -31,7 +31,6 @@ fn only_what_a_person_says_moves_it() {
         spoken(4, r#"{"kind":"schedule","schedule":"t1"}"#),
         spoken(5, r#"{"kind":"schedule","schedule":"t2","loop":"fixed"}"#),
         spoken(6, r#"{"kind":"schedule","schedule":"t3","loop":"dynamic"}"#),
-        spoken(7, r#"{"kind":"schedule","schedule":"t4","loop":"life"}"#),
         spoken(8, r#"{"kind":"kernel"}"#),
         spoken(
             9,

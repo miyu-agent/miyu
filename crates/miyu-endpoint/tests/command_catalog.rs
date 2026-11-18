@@ -58,13 +58,6 @@ async fn without_a_session_every_command_is_listed_in_the_connections_language()
                 {"form": "/goal resume", "summary": "继续"},
                 {"form": "/goal clear", "summary": "清除"},
             ]},
-            {"name": "life", "aliases": [], "summary": "人生会话", "argument": "[new | pause | resume | kill]", "usage": [
-                {"form": "/life", "summary": "看人生会话"},
-                {"form": "/life new", "summary": "开始新的人生会话；有一个就先结束它"},
-                {"form": "/life pause", "summary": "暂停"},
-                {"form": "/life resume", "summary": "继续"},
-                {"form": "/life kill", "summary": "结束"},
-            ]},
             {"name": "loop", "aliases": [], "summary": "循环执行", "argument": "[[<间隔>] <要说的话> | off]", "usage": [
                 {"form": "/loop", "summary": "不给具体要求，由 AI 自己定做什么、什么时候"},
                 {"form": "/loop <间隔> <要说的话>", "summary": "每隔一段时间说一次，例如 5m、2h"},
@@ -119,7 +112,7 @@ async fn with_a_session_only_what_would_be_accepted_is_listed() {
         .await;
     assert_eq!(
         names(&reply),
-        ["clear", "context", "life", "stop", "todo", "workspace"],
+        ["clear", "context", "stop", "todo", "workspace"],
         "这个会话没开记忆"
     );
 
@@ -137,7 +130,6 @@ async fn with_a_session_only_what_would_be_accepted_is_listed() {
             "clear-memory",
             "context",
             "dream",
-            "life",
             "remember",
             "stop",
             "todo",

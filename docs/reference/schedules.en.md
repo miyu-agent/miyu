@@ -11,7 +11,7 @@ At a set time, hand one line to a session and let it run a turn: a morning brief
 | [`schedule.resume`](#scheduleresume) | Resume |
 | [`schedule.update`](#scheduleupdate) | Change the time or the line |
 
-**Who may call**: people; extensions need an approved `sessions.drive`, otherwise `needs_approval`. What an extension adds is recorded as added by its package, and it sees, cancels, pauses, resumes and updates only those: touching one it did not add is `unknown_schedule`. The row of a life loop (`loop` is `life`, the one a persona keeps running) can be seen by people but not changed: it is in the list and the `schedules` stream, with an extra `persona` field (whose life it is); `cancel`, `pause`, `resume` and `update` on it get `life_schedule`, and pausing, resuming and ending go through [`life.pause`, `life.resume` and `life.kill`](life.en.md). Extensions do not see it. To keep up, subscribe to the `schedules` stream ([connection](connection.en.md)); `schedules.changed` follows ([pushes](pushes.en.md)).
+**Who may call**: people; extensions need an approved `sessions.drive`, otherwise `needs_approval`. What an extension adds is recorded as added by its package, and it sees, cancels, pauses, resumes and updates only those: touching one it did not add is `unknown_schedule`. To keep up, subscribe to the `schedules` stream ([connection](connection.en.md)); `schedules.changed` follows ([pushes](pushes.en.md)).
 
 ## An item
 
@@ -24,10 +24,7 @@ At a set time, hand one line to a session and let it run a turn: a morning brief
 | `by` | Who added it: a person `{"kind": "person"}`, the AI in a session `{"kind": "model", "session"}`, a package `{"kind": "package", "package"}` |
 | `recurring` | Whether it stays after running: `false` for `at`, `true` for `every`, as written for `cron` |
 | `paused` | Paused |
-| `loop` | Loops only: `fixed` interval, `dynamic` (the AI sets the pace), or `life` for a life loop (see above) |
-| `persona` | Only on a life loop's row: the id of the persona whose life it is; absent right after the core starts, until it has been worked out |
-| `busy` | Only on a life loop's row: `true` while a round is in progress, absent otherwise; `schedules.changed` is pushed when it changes |
-| `rounds` | Only on a life loop's row: which round of the life this is (every round that comes due counts as one). It is only recorded, heads do not show it |
+| `loop` | Loops only: `fixed` interval or `dynamic` (the AI sets the pace) |
 | `next` | Next time; absent while paused, or while a dynamic loop waits for the AI to set it |
 | `last` | Last run: `{"at", "result", "session"?}`; `result` is `ran` (a turn started), `queued` (the session was busy; it waits its turn), `held` (the prompt was recorded in the session without starting a turn, and is seen the next time someone speaks there: this is what happens to schedules the AI added and to loops in a session opened by `miyu ask` that no head has open; schedules you added still start a turn there), `sent` (pushed to the extension that added it) or `skipped:<why>` (`session_gone`: the session is gone and the schedule paused; `preset_off`: the AI added it and the session's preset turns it off; `not_opened`: the new session could not be opened; `package_unavailable`: the extension that added it is not running and could not be started) |
 | `created` | When it was added |

@@ -4,7 +4,6 @@
 mod checks;
 pub mod clock;
 pub mod deleting;
-pub mod doing;
 mod elsewhere;
 pub mod embedding;
 pub mod extensions;

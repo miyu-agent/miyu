@@ -39,20 +39,18 @@ A persona whose files are wrong has only `persona` and `problem` (what's wrong, 
 
 | Name | Notes |
 |---|---|
-| `prompts` | `{"persona", "reminders", "life"}`: whether the character prompt, roleplay reminders and life method have text (booleans; whitespace only counts as none; a persona with no life method text uses the built-in one); read the text with `persona.read` |
+| `prompts` | `{"persona", "reminders"}`: whether the character prompt and roleplay reminders have text (booleans); read the text with `persona.read` |
 | `examples` | How many example exchanges |
 | `subagent` | Whether it can be picked when spawning a subagent |
-| `life_context` | Context cap of the life session (tokens); `null` if not written, then the built-in number applies |
-| `life_context_default` | The built-in context cap: 100000 |
 | `remove` | What deleting does: `restore` (back to the built-in version), `delete` (gone; also for a persona like the built-in Software Engineer that goes with its package), `null` (nothing to delete) |
 
 **Errors**: `unknown_persona`; `persona_invalid` (its files are wrong: `data.problem`, `data.message`, `data.line`).
 
 ## `persona.read`
 
-**Params**: `persona`; `prompt`: `persona` (character prompt), `examples` (example dialogue), `reminders` (roleplay reminders), `life` (life method: the opening of what the life loop hands her in each round).
+**Params**: `persona`; `prompt`: `persona` (character prompt), `examples` (example dialogue), `reminders` (roleplay reminders).
 
-**Response**: `{"text", "version"}`: the stacked text, and the version of this file in your home layer (both `null` when none). When the layer on top is an empty file, `text` is an empty string. Example dialogue also has `pairs: [{"user", "assistant"}…]`. The life method also has `default`: the built-in text (trailing whitespace removed), `null` if it can't be read; it's what's used when none is written.
+**Response**: `{"text", "version"}`: the stacked text, and the version of this file in your home layer (both `null` when none). Example dialogue also has `pairs: [{"user", "assistant"}…]`.
 
 Editors edit the text and send `version` back as `expect` in `persona.set`.
 
@@ -64,8 +62,8 @@ Editors edit the text and send `version` back as `expect` in `persona.set`.
 |---|---|---|
 | `persona` | string | Id; omitted creates a new one, and the core picks `persona-<n>` |
 | `new` | boolean | Create with the ID you wrote (needs `persona`): an ID that already exists (built-in, from a package or yours) is refused with `persona_exists` instead of editing that one |
-| `changes` | array | Changes to `persona.toml`, written like `config.set`'s `changes`; keys are `persona.name`, `persona.summary`, `persona.subagent`, `appearance.seed`, `life.context` (context cap of the life session, a positive whole number) |
-| `prompts` | object | Prompt name (`persona`, `examples`, `reminders`, `life`) → `{"text": <whole>}` or `{"unset": true}`; examples may also be `{"pairs": [{"user", "assistant"}…]}`; each may carry `"expect": <version>` or `null` (doesn't exist yet) |
+| `changes` | array | Changes to `persona.toml`, written like `config.set`'s `changes`; keys are `persona.name`, `persona.summary`, `persona.subagent`, `appearance.seed` |
+| `prompts` | object | Prompt name (`persona`, `examples`, `reminders`) → `{"text": <whole>}` or `{"unset": true}`; examples may also be `{"pairs": [{"user", "assistant"}…]}`; each may carry `"expect": <version>` or `null` (doesn't exist yet) |
 | `avatar`, `background` | object | `{"blob": <hash>}` uses the uploaded image, `{"unset": true}` removes yours; may carry `expect` |
 | `seed` | string or `{"unset": true}` | Theme color `#rrggbb` |
 | `background_opacity` | 0 to 100 or `{"unset": true}` | How much the background shows |
@@ -73,8 +71,6 @@ Editors edit the text and send `version` back as `expect` in `persona.set`.
 | `background_blur` | 1 to 100 or `{"unset": true}` | How much the background is blurred; unset means no blur |
 
 **Response**: as `persona.get`, the stacked result. Everything is checked together and nothing is written on error. Parts equal to your layer aren't written.
-
-When `life.context` changes (a new number or `unset`) and the persona has a life that has not ended (running or paused), that session's context cap is set to the new one before the answer (100000 when not written; the least the current model needs, if that is more). This is the place to change a life session's cap; a cap set inside the life session with `context` in `session.configure` also stays, and whichever is changed last counts. Editing `persona.toml` by hand only applies to the next life.
 
 **Errors**
 
@@ -100,13 +96,13 @@ When `life.context` changes (a new number or `unset`) and the persona has a life
 
 ## `preset.list`, `preset.get`
 
-**`preset.list`**: no params. Response `{"presets": [...]}`, by id: `preset`, `icon` (a Lucide icon name, `null` when none), `hidden` (boolean: when `true`, leave it out of the list for picking a preset for a new session, but keep it on the preset management page; `false` when not written. The core still lists it and still opens sessions with it; hiding it is up to the client), `name`, `summary`, `tokens` (how many tokens the system prompt and tool definitions take in a new session opened with it, persona not counted, estimated locally; absent when it cannot be worked out). Broken ones have only `preset`, `problem`, `line`. The shipped "Nothing" preset (`none`) is an ordinary preset with every switch off, and it can be edited. No tools (`preset: null`) is not in the list; you can still pass `preset: null` when opening a session or switching presets.
+**`preset.list`**: no params. Response `{"presets": [...]}`, by id: `preset`, `icon` (a Lucide icon name, `null` when none), `name`, `summary`, `tokens` (how many tokens the system prompt and tool definitions take in a new session opened with it, persona not counted, estimated locally; absent when it cannot be worked out). Broken ones have only `preset`, `problem`, `line`. The shipped "Nothing" preset (`none`) is an ordinary preset with every switch off, and it can be edited. No tools (`preset: null`) is not in the list; you can still pass `preset: null` when opening a session or switching presets.
 
 **`preset.get`**: param `preset`. Response:
 
 | Name | Notes |
 |---|---|
-| `preset`, `name`, `summary`, `icon`, `hidden` | As above |
+| `preset`, `name`, `summary`, `icon` | As above |
 | `unlisted` | `on` or `off` after stacking: whether features it doesn't list are on |
 | `unattended_steps` | The number `[limits]` gives after stacking: at most how many model requests one turn makes when nobody is watching; `null` when no layer gives one, meaning the built-in 500 |
 | `features` | Each feature: `{"id", "name", "summary", "package", "on", "by", "installed", "tools"}`; `package` is the package it belongs to, for grouping; look its name up in [`package.list`](packages.en.md) (your own scripts, MCP servers and command templates say `~home`; skills outside packages and uninstalled ones have none); `by` says who decided `on`: `preset` (the preset says so), `global` (the preset says nothing and the global switch of a skill, script or MCP server does, see [`feature.set`](packages.en.md#featureset); only in presets whose `unlisted` is `on`), `default` (follows `unlisted`: everything a preset with `unlisted` `off` leaves out, even when its global switch is on); `tools` are its tools, `{"name", "label", "on"}`; `label` is the name for people (an MCP server's `title` when it gives one, otherwise the tool name without `mcp__<server>__`). Ones it names that aren't installed come last with `installed: false`. For a package that connects a platform (its manifest has `[connection]`), only what local sessions can get is listed: a feature with no tool whose `venues` include `local` is left out, and a listed feature shows only its tools with `local`; the same goes for `sections` |
@@ -125,7 +121,7 @@ When `life.context` changes (a new number or `unset`) and the persona has a life
 |---|---|---|
 | `preset` | string | Id; omitted creates a new one, and the core picks `preset-<n>` |
 | `new` | boolean | Create with the ID you wrote (needs `preset`): an ID that already exists (built-in, from a package or yours) is refused with `preset_exists` instead of editing that one |
-| `changes` | array, required, not empty | Each `{"key", "value" | "unset": true, "expect"?}`; keys are `preset.name`, `preset.summary`, `preset.unlisted`, `preset.hidden` (`true` or `false`; `unset` goes back to the layer below, `false` when none writes it), `features.<feature>`, `tools.<tool>`, `limits.unattended_steps` (a positive whole number) |
+| `changes` | array, required, not empty | Each `{"key", "value" | "unset": true, "expect"?}`; keys are `preset.name`, `preset.summary`, `preset.unlisted`, `features.<feature>`, `tools.<tool>`, `limits.unattended_steps` (a positive whole number) |
 
 **Response**: as `preset.get`. An empty string as the summary means "no summary" (covering the built-in one); `unset` goes back to the built-in one.
 

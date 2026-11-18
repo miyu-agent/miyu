@@ -3,10 +3,8 @@
 //!
 //! - 「这个会话上的」：她在这个会话里建的（`by` 是这个会话），和跑在这个会话上的（`target` 是这个会话，例如人敲的 `/loop`）。
 //!   列、删照它；一个会话最多 [`PER_SESSION`] 个只数她建的。
-//! - 动态循环是跑在这个会话上、`loop` 是 `dynamic` 或 `life` 的那一行（一个会话至多一行）：`schedule_next` 改它下一次醒的
-//!   时刻和那句话，停的删掉它；人生循环（施工 LF-1）停不了，那一行不动。
-//! - 人生循环那一行 `cron_list` 不列、`cron_delete` 照没有回：只有人生自己的入口动得了。
-//! - `schedule_next` 落在人生那一行上的，连同她写的 `reason` 记下她这时在干嘛（施工 LF-7，`doing.rs`）。
+//! - 动态循环是跑在这个会话上、`loop` 是 `dynamic` 的那一行（一个会话至多一行）：`schedule_next` 改它下一次的时刻和那句话，
+//!   停的删掉它。
 
 use std::sync::{Arc, Weak};
 
@@ -24,25 +22,18 @@ use crate::Core;
 pub(crate) fn port(core: &Arc<Core>) -> Arc<dyn SchedulePort> {
     Arc::new(Port {
         core: Arc::downgrade(core),
-        life: crate::life::Ending::new(core),
     })
 }
 
 /// 核心那一头：她建的记在唤醒表里。
 struct Port {
     core: Weak<Core>,
-    /// 人生会话的端口（施工 LF-4 下）：`end_life` 经它结束人生。
-    life: crate::life::Ending,
 }
 
 impl SchedulePort for Port {
     fn schedule(&self, session: &SessionId, ask: ScheduleAsk) -> ScheduleAnswering<'_> {
         let answered = self.answer(session, ask);
         Box::pin(async move { answered })
-    }
-
-    fn life(&self) -> Option<&dyn miyu_tool::LifePort> {
-        Some(&self.life)
     }
 }
 
@@ -89,23 +80,16 @@ impl Port {
             ScheduleAsk::Delete { id } => {
                 let one = here
                     .iter()
-                    .find(|one| one.id == id && !life(one))
+                    .find(|one| one.id == id)
                     .ok_or(ScheduleRefused::NotFound)?;
                 let gone = shown(one);
                 schedules.cancel(&id).map_err(refused)?;
                 Ok(ScheduleAnswer::Deleted(gone))
             }
             ScheduleAsk::List => Ok(ScheduleAnswer::Listed(
-                here.iter()
-                    .filter(|one| !life(one))
-                    .map(|one| shown(one))
-                    .collect(),
+                here.iter().map(|one| shown(one)).collect(),
             )),
-            ScheduleAsk::Wakeup {
-                delay,
-                prompt,
-                reason,
-            } => {
+            ScheduleAsk::Wakeup { delay, prompt } => {
                 let looping = dynamic(&here, session).ok_or(ScheduleRefused::NoLoop)?;
                 let millis = i64::try_from(delay.saturating_mul(1000)).unwrap_or(i64::MAX);
                 // 没有上限（施工 WK-1）：写不下的照最晚的时刻。
@@ -116,19 +100,10 @@ impl Port {
                 let woken = schedules
                     .set_next(&looping.id, Some(next), prompt)
                     .map_err(refused)?;
-                // 人生那一行记下她这时在干嘛（施工 LF-7）；她自己定节奏的不记。记不下的不碍她定好的下一次。
-                if life(looping)
-                    && let Err(error) = schedules.set_doing(&looping.id, reason.as_deref(), next)
-                {
-                    tracing::warn!(target: "miyu::endpoint", schedule = %looping.id, error = %error, "life doing not saved");
-                }
                 Ok(ScheduleAnswer::Woken(shown(&woken)))
             }
             ScheduleAsk::StopLoop => {
                 let looping = dynamic(&here, session).ok_or(ScheduleRefused::NoLoop)?;
-                if life(looping) {
-                    return Err(ScheduleRefused::Unstoppable);
-                }
                 schedules.cancel(&looping.id).map_err(refused)?;
                 Ok(ScheduleAnswer::LoopStopped)
             }
@@ -147,17 +122,12 @@ fn made_in(one: &Schedule, session: &SessionId) -> bool {
     matches!(&one.by, Creator::Model { session: by } if by == session)
 }
 
-/// 跑在这个会话上、下一次由她每轮定的循环那一行：她自己定节奏的、人生（施工 LF-1）。
+/// 跑在这个会话上的动态循环那一行。
 fn dynamic<'a>(here: &[&'a Schedule], session: &SessionId) -> Option<&'a Schedule> {
     here.iter().copied().find(|one| {
-        matches!(one.looping, Some(Loop::Dynamic | Loop::Life))
+        one.looping == Some(Loop::Dynamic)
             && matches!(&one.target, Target::Session { session: target } if target == session)
     })
-}
-
-/// 人生循环那一行（施工 LF-1）：定时工具列不出、删不掉。
-fn life(one: &Schedule) -> bool {
-    one.looping == Some(Loop::Life)
 }
 
 /// 给她看的那几样。
@@ -177,7 +147,6 @@ fn shown(one: &Schedule) -> Scheduled {
         kind: one.looping.map(|looping| match looping {
             Loop::Fixed => "fixed",
             Loop::Dynamic => "dynamic",
-            Loop::Life => "life",
         }),
         next: one.next,
         paused: one.paused,

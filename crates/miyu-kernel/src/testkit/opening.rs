@@ -209,7 +209,6 @@ impl Stage {
             presents: Vec::new(),
             saids: Vec::new(),
             speakers: Vec::new(),
-            openers: Vec::new(),
             held_model: None,
             hold_wakes: false,
             held_wake: None,

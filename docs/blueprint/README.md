@@ -60,8 +60,6 @@
 | `tools/ask_user.md` | 问人一组题、等回答（施工 D-2） |
 | `tools/todowrite.md` | 这个会话的待办清单，每次整份换（施工 D-3） |
 | `tools/goal.md` | 长期目标的工具：看、设、报完成、报卡住（施工 X-8 上） |
-| `tools/end_life.md` | 她自己结束这段人生，只在没结束的人生会话里有（施工 LF-4 下） |
-| `tools/note_change.md` | 她在人生会话里记下、改、去掉自己的一处变化（类 `change`），只在没结束的人生会话里有（施工 LF-11） |
 | `cli/ask.md`、`cli/undo.md`、`cli/redo.md`、`cli/compact.md`、`cli/recap.md`、`cli/rename.md`、`cli/session.md`、`cli/config.md`、`cli/login.md`、`cli/setup.md`、`cli/kb.md`、`cli/dev.md`、`cli/rescue.md`、`cli/main.md` | 每条命令一页（`cli/kb.md` 施工 K-7 下，`cli/rescue.md` 施工 RC-1，`cli/dev.md` 施工 MD-3，`cli/compact.md` 施工 6-8，`cli/redo.md` 施工 4-7 再补，`cli/recap.md` 施工 3-8 四补，`cli/rename.md` 施工 3-8 五补，`cli/config.md` 施工 8-2，`cli/login.md` 施工 8-5，`cli/setup.md` 施工 8-11）；主程序 |
 | `sandbox.md` | 沙盒：规格、助手 `miyu-sandbox`、探测、找助手（施工 5-1 起） |
 | `sandbox/linux.md` | 沙盒在 Linux 上怎么收紧：只用 Landlock，整盘能读、只管写（施工 5-2 起，5-3 改成只管写） |
@@ -82,7 +80,6 @@
 | `widgets.md` | 界面块：清单的 `[[widget]]`、扩展能力 `widgets`、程序推内容、头订阅 `widgets`、整页的命令：图纸，2026-10-15 起草，X-15 照它施工 |
 | `skills.md` | 技能和脚本：技能照公开格式、她用 `read` 读正文；脚本照旧版开头注释接成工具（草稿，等项目主人过） |
 | `schedules.md` | 定时和循环：唤醒表、什么时候跑、到点交进会话（施工 J-1 上起，设计 `45-定时和循环.md`） |
-| `life.md` | 人生会话：身份记在日志里、会话索引那一格、`life.*`、出厂预设「推演人生」（施工 LF-5 中起，设计 `70-推演人生.md`） |
 | `projects.md` | 项目：会话的分组，`projects.json`、`project.*`、`projects` 流（施工 H-1 起，设计 `38-项目.md`） |
 | `presets.md` | 预设：在哪、格式、三层怎么叠、默认预设、找人格的先后、`preset.list`、`preset.get`（施工 P-2 上起） |
 | `web-module.md` | 网页界面这个软件和核心给它的通用方法：网页软件 `miyu-web`（端口、页面、WebSocket 照转、一次性登录、媒体地址），核心给所有头的 `human.get`、`fs.*`、`mermaid.render`、分块传和读 blob、`link.preview`：图纸，2026-10-01 项目主人批准；W-1 到 W-7 现在做，身份、网页软件等用户系统 |

@@ -30,7 +30,6 @@ mod goals;
 mod hooks;
 mod jobs;
 mod knowledge;
-mod life;
 pub mod load;
 mod log;
 mod memory;
@@ -63,8 +62,8 @@ pub use goals::{
     BLOCKED_AFTER, GOAL, GoalAnswering, GoalAsk, GoalNow, GoalPort, GoalRefused, GoalSeen,
 };
 pub use hooks::{
-    AfterNote, AfterOutcome, DoingLine, GuardAsk, Guarded, Guarding, HooksPort, Inject, Injecting,
-    TurnAsk, Where,
+    AfterNote, AfterOutcome, GuardAsk, Guarded, Guarding, HooksPort, Inject, Injecting, TurnAsk,
+    Where,
 };
 pub use jobs::{
     Asking, BACKGROUND, Background, Exit, JobError, JobPort, Listed, Output, Process,
@@ -74,12 +73,10 @@ pub use knowledge::{
     KB_DELETE, KB_EDIT, KB_HITS, KB_READ, KB_SAVE, KB_SEARCH, KbHit, KbPage, KbRefused, KbSave,
     KbTrashed, KbWritten, KnowledgePort,
 };
-pub use life::{END_LIFE, LifeEnding, LifePort, LifeRefused};
 pub use log::{Log, ReadLog};
 pub use memory::{
     CARDS, FORGET, FoundCard, FoundMemory, FoundTurn, Line, MEMORIES, MEMORY_SEARCH, MemoryLines,
-    MemoryPort, NOTE_CHANGE, Note, NoteRefused, Pending, REMEMBER, Refused, Remember, Searched,
-    TEXT_CHARS, TURNS,
+    MemoryPort, Pending, REMEMBER, Refused, Remember, Searched, TEXT_CHARS, TURNS,
 };
 pub use messages::{Delivered, MessagePort, NotSent, Recipient, SEND_MESSAGE, Sending};
 pub use nested::{Calling, Hold, Nested, NestedPort, Schema, Settled};

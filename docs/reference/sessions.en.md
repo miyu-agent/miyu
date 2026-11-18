@@ -51,7 +51,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 | `session_read_only` | A line in the middle of the session log is broken: what came before it can still be read with `view.page`, but the session can't be loaded or continued; start a new session to go on. `data.segment` is which segment (file name only), `data.line` which line |
 | `session_unavailable` | The session can't be read right now: an I/O error while reading its log. The log is intact; try again later |
 | `session_stopped` | The session stopped (couldn't write, a bug); sending again reloads it |
-| `session_sealed` | A forked session ran its turns and was sealed, or a life session ended (see [Life sessions](life.en.md)); commands that change the conversation are refused |
+| `session_sealed` | A forked session ran its turns and was sealed; commands that change the conversation are refused |
 | `restoring` | A command arrived while an undo is still finishing (normally unreachable) |
 
 ## `session.create`
@@ -113,12 +113,12 @@ Sending the same `id` again returns the session created the first time.
 | `session` | Id |
 | `cwd` | Working directory as a person sees it |
 | `last_active` | Time of the last event |
-| `last_spoken` | Time a person last spoke: the latest message from a person (the owner on a head, or someone on a chat platform); turns started by loops, schedules, a life continuing on its own, reports or resumes don't count. Heads sort the session list by it, so opening a session doesn't move it, a person speaking does. Omitted until a person has spoken |
+| `last_spoken` | Time a person last spoke: the latest message from a person (the owner on a head, or someone on a chat platform); turns started by loops, schedules, reports or resumes don't count. Heads sort the session list by it, so opening a session doesn't move it, a person speaking does. Omitted until a person has spoken |
 | `oneshot` | Whether it's one-shot |
 | `parent` | A child session's parent; `null` for main sessions |
 | `title` | Title; omitted when there is none |
 | `named` | `true`: a person gave the title |
-| `preview` | When there's no title: the first line of the first message, at most 50 characters. In a life session the text the life loop delivers (the life method) does not count as the first message: until a life session has a title or someone has spoken in it, this field is absent and the head shows the persona's name |
+| `preview` | When there's no title: the first line of the first message, at most 50 characters |
 | `pinned` | `true`: pinned |
 | `busy` | `true`: a turn is running |
 | `viewed` | `true`: at least one head has it open ([`session.viewing`](#sessionviewing)); that head shows its background notices |
@@ -129,7 +129,6 @@ Sending the same `id` again returns the session created the first time.
 | `kind`, `dream` | Only on consolidation sessions (the sessions memory consolidation runs in): `kind` is `"dream"`, `dream` is `{"persona"?, "session"?, "manual"?, "from"?}`: whose memory (the persona; `session` only appears on older sessions), `manual: true` when a person asked for it, `from` the session it was asked from; a finished run adds `result`: `{"given", "revised", "retired", "summary", "stopped"?}`, how many memories it added, revised and retired, whether it wrote the summary, `stopped: true` when it was stopped; a run that did not finish has none. A main session list usually leaves them out (pass `dream: false`); a memory page lists those of its memory by `dream` |
 | `forked` | Only on forked subagent sessions: `true`. Heads show a fork icon for it. Ordinary subagents and main sessions don't have it |
 | `archived` | Only on imported read-only archives: `true`. Heads list them in their own section and replace the input box with a line saying it's an archive |
-| `life` | Only on life sessions: `true` (see [Life sessions](life.en.md)); the log holds `life.started`. Other sessions don't have it |
 | `origin` | Where it was opened: `"terminal"` on sessions the shell integration opened (`session.terminal`), which heads show as "shell" in the session list; `"advisor"` on advisor sessions she opened by asking the advisor (child sessions, with `parent`). Other and older ones don't have it |
 
 Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [Venues](venues.en.md)). To keep up to date, subscribe to the `sessions` stream ([Connection](connection.en.md)).

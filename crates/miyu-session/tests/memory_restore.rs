@@ -29,7 +29,6 @@ async fn it_can_be_restored_anywhere() {
         who: None,
         people: Vec::new(),
         place: None,
-        why: None,
         imported: None,
     };
     log.append(now(), stranger(), None, &MemoryEvent::Saved(saved))

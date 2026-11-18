@@ -122,9 +122,7 @@ Chinese version: [errors.md](errors.md).
 | `reason` | When | `data` |
 |---|---|---|
 | `unknown_schedule` | No such schedule: `schedule.cancel`, `schedule.pause`, `schedule.resume`, `schedule.update` | |
-| `life_schedule` | The row is a life loop, which these four methods cannot change: use `life.pause`, `life.resume`, `life.kill`, see [Life sessions](life.en.md) | |
 | `too_many_schedules` | There are already 200 schedules (added by people, the AI and packages together; a safety limit): `schedule.add`. Remove some first; existing ones keep running | |
-| `life_exists`, `no_life`, `life_ended` | Life sessions: the persona already has one (`life.start`); the persona has none (`life.pause`, `life.resume`, `life.kill`); the persona's latest life has ended (`life.pause`, `life.resume`), see [Life sessions](life.en.md) | `session` for `life_exists` and `life_ended` |
 | `unknown_project` | No such project: the project methods, and `project` in `session.create` and `session.set_meta` | |
 
 ## Packages, extensions, commands
@@ -171,7 +169,6 @@ Chinese version: [errors.md](errors.md).
 | `memory_busy`, `dream_failed` | Already organizing; organizing failed | `message` |
 | `not_dreaming` | `/dream stop`, `memory.dream_stop`: nothing is organizing | |
 | `unknown_memory`, `memory_not_current` | No such memory; already changed, retired or cleared | |
-| `change_note` | `memory.update` names a change she noted herself in her life session: a person cannot edit it, only retire or restore it | |
 | `memory_too_long` | Over 120 characters | `chars`, `limit` |
 | `unknown_kb`, `unknown_document` | No such knowledge base or document | |
 | `kb_exists`, `document_exists`, `kb_read_only`, `kb_packaged` | Already exists; mounted ones can't be added to or removed from; ones from packages can't be changed | |

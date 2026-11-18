@@ -485,10 +485,8 @@ fn kind(name: &str) -> FactKind {
     FactKind::parse(name).expect("内核自己用的类别名合写法")
 }
 
-mod opener;
 mod speakers;
 
-pub use opener::opener;
 pub use speakers::{Speaker, speakers};
 
 #[cfg(test)]

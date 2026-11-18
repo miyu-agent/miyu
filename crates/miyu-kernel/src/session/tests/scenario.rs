@@ -25,7 +25,6 @@ mod models;
 mod nested;
 mod nested_asking;
 mod nested_command;
-mod opener;
 mod overflow;
 mod path_only;
 mod peers;

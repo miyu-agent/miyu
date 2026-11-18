@@ -77,11 +77,7 @@ impl Slash for GoalCommand {
                 call.rest,
             )
             .await?;
-            Ok(Ran {
-                events,
-                said,
-                life: None,
-            })
+            Ok(Ran { events, said })
         })
     }
 }

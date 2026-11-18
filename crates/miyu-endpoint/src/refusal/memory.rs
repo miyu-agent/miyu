@@ -28,13 +28,6 @@ impl Refusal {
         reason: "memory_not_current",
         data: None,
     };
-    /// 那一条是她在人生会话里记下的自己的变化（施工 LF-11，设计 `70-推演人生.md` 第六节）：人经协议改不了
-    /// （`memory.update`），只能作废、恢复。
-    pub(crate) const CHANGE_NOTE: Refusal = Refusal {
-        code: REFUSED,
-        reason: "change_note",
-        data: None,
-    };
     /// 这一间正在整理（施工 R-7 补，`memory.md` 第七条第 9 款）：定时的那一次在合，或者别的人先叫了 `memory.dream`、`/dream`。
     /// 过一会儿再叫。
     pub(crate) const MEMORY_BUSY: Refusal = Refusal {

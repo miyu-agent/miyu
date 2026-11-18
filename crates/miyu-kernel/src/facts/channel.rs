@@ -1,5 +1,5 @@
 //! 这一轮的话从哪来（施工 VN-1，项目主人 2026-11-17 本机验收第 16 条）：本机会话里，人在终端界面、网页、命令行、终端集成上说
-//! 的话，到点的定时任务、循环、人生叫醒的（没有人在场），她分不清，在网页上要她念一句，她合成了文件发到 QQ 群里。回合开始照
+//! 的话，到点的定时任务、循环叫醒的（没有人在场），她分不清，在网页上要她念一句，她合成了文件发到 QQ 群里。回合开始照
 //! 开这一轮的那句话的 `by`（[`crate::origin::Person::head`]、[`By::Schedule`]）挑一句，和有效历史里同一类的最近一块逐字节相同的
 //! 不注入：换了地方说话才追加一块新的，前面的缓存不动（`08-上下文投影.md` C10，同环境那一块）。
 //!
@@ -25,7 +25,7 @@ pub struct Channels {
     pub heads: BTreeMap<String, String>,
     /// 不在 [`Channels::heads`] 里的头、没报种类的（`core/facts/channel/other.txt`）。
     pub other: String,
-    /// 到点的定时任务、循环、人生叫醒的，没有人在场（`core/facts/channel/nobody.txt`）。
+    /// 到点的定时任务、循环叫醒的，没有人在场（`core/facts/channel/nobody.txt`）。
     pub nobody: String,
 }
 

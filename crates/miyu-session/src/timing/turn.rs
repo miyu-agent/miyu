@@ -1,7 +1,7 @@
 //! 回合开始的挂接点每一段等了多久（施工 PF-3，`docs/blueprint/session/actor.md`「运行日志」的 `turn start timed`）：CPU 被抢
 //! 时回合开始 93 毫秒到 5.5 秒（施工 PF-2 第 4 条），日志里分不出慢在哪一跳。`actor/model.rs` 的 `turn_start` 串着冻结配置
-//! → 刷新人格和找技能（并着）→ 压缩线 → 她现在在干嘛（施工 LF-7）→ 记忆、知识库、扩展、项目指令一起等最慢的那一个，每一段用
-//! [`Lap::run`] 套着量，回合开始的输入交给内核之前记一行（[`TurnStart::log`]）。
+//! → 刷新人格和找技能（并着）→ 压缩线 → 记忆、知识库、扩展、项目指令一起等最慢的那一个，每一段用 [`Lap::run`] 套着量，
+//! 回合开始的输入交给内核之前记一行（[`TurnStart::log`]）。
 //!
 //! 每一段还量它里面 `crate::blocking::blocking` 来回等的：交给阻塞线程到那边开始做，加上那边做完到这一头接着跑，不算那边
 //! 做活的时间（[`Waited`]）。被抢 CPU 时一跳排队多久就看这一格。只算这一段自己等的 `blocking`：派到别的任务里的不算。
@@ -71,15 +71,13 @@ fn add(slot: &mut Option<u64>, us: u64) {
     *slot = Some(slot.unwrap_or(0).saturating_add(us));
 }
 
-/// 记忆那个挂接点里的四件（`actor/model/hooks.rs` 的 `remember`）：摘要和卡并着，再新记的（施工 LF-6），再联想。
+/// 记忆那个挂接点里的三件（`actor/model/hooks.rs` 的 `remember`）：摘要和卡并着，再联想。
 #[derive(Debug, Default)]
 pub(crate) struct Remember {
     /// 常驻的摘要。
     pub(crate) summary: Lap,
     /// 和她说话的那个人的卡。
     pub(crate) card: Lap,
-    /// 人生循环叫醒时新记的（施工 LF-6）；别的回合一问就回，也量。
-    pub(crate) fresh: Lap,
     /// 联想。
     pub(crate) recall: Lap,
 }
@@ -89,9 +87,9 @@ pub(crate) struct Remember {
 pub(crate) struct Hooks {
     /// 知识库自动想起。
     pub(crate) knowledge: Lap,
-    /// 记忆整个那一件：摘要、卡、新记的、联想。
+    /// 记忆整个那一件：摘要、卡、联想。
     pub(crate) memory: Lap,
-    /// 记忆里的四件。
+    /// 记忆里的三件。
     pub(crate) remember: Remember,
 }
 
@@ -108,8 +106,6 @@ pub(crate) struct TurnStart {
     pub(crate) skills: Lap,
     /// 压缩触发线。
     pub(crate) line: Lap,
-    /// 同一个人格的人生里她现在在干嘛（施工 LF-7，`actor/model/doing.rs`）：只查内存。
-    pub(crate) doing: Lap,
     /// 记忆、知识库两个挂接点。
     pub(crate) hooks: Hooks,
     /// 问扩展。
@@ -148,14 +144,11 @@ impl TurnStart {
             skills_wait_us = self.skills.wait_us,
             line_us = self.line.us,
             line_wait_us = self.line.wait_us,
-            doing_us = self.doing.us,
             memory_us = memory.us,
             summary_us = remember.summary.us,
             summary_wait_us = remember.summary.wait_us,
             card_us = remember.card.us,
             card_wait_us = remember.card.wait_us,
-            fresh_us = remember.fresh.us,
-            fresh_wait_us = remember.fresh.wait_us,
             recall_us = remember.recall.us,
             recall_wait_us = remember.recall.wait_us,
             knowledge_us = knowledge.us,

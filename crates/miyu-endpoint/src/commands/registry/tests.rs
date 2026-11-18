@@ -38,7 +38,6 @@ fn the_built_in_commands_are_registered_in_name_order() {
             "context",
             "dream",
             "goal",
-            "life",
             "loop",
             "remember",
             "stop",

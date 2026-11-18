@@ -92,7 +92,7 @@ The core repository's workspace members are `crates/*` and `xtask`. The crates f
 | `miyu-net` | Optional package `net`: fetches web pages for link cards, the tool `web_fetch` | 3 executors |
 | `miyu-memory` | The memory tools: `remember`, `forget`, `memory_search` | 3 executors |
 | `miyu-goal` | The goal tool `goal` | 3 executors |
-| `miyu-schedule` | The tools for schedules and loops: `cron_*`, `schedule_wakeup`, `end_life` | 3 executors |
+| `miyu-schedule` | The tools for schedules and loops: `cron_*`, `schedule_next` | 3 executors |
 | `miyu-client` | The facade for heads and components: connecting to the core, finding the data root, the types in the protocol, text for people | 3 executors |
 | `miyu-heap` | The process heap: limits arenas on glibc, returns memory when idle; memory accounting | 3 executors |
 | `miyu-mcp` | The MCP client: speaks MCP over stdin and stdout, lists and calls tools | 3 executors |

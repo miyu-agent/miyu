@@ -288,7 +288,7 @@ impl Session {
     /// 读回日志的时候回报到不了这里：后台命令结束先放着，子会话的回报照别的命令拒绝。
     fn can_wake(&self, waker: &Waker) -> bool {
         self.attended(waker)
-            && !self.ledger.closed()
+            && !self.ledger.sealed()
             && !self.restarting
             && self.ledger.last_reverted().is_none()
     }

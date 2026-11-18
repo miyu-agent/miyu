@@ -226,7 +226,6 @@ pub(crate) async fn session(
         group: (params.kind == Kind::Group).then_some(miyu_session::GroupSettings { recent }),
         profile: params.profile,
         images: params.images,
-        life: false,
         titles: params.titles,
         origin: None,
         confined,

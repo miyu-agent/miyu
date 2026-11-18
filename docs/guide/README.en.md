@@ -33,7 +33,6 @@ For people who use Miyu. If this is your first time, read the [quick start](quic
 | [Knowledge base](knowledge.en.md) | Handing documents to the AI to look things up in |
 | [Letting the AI keep working on its own](automation.en.md) | Subagents, background commands, schedules, loops, goals |
 | [Web search and fetching pages](web-search.en.md) | Web providers, keys, limits on the AI going online |
-| [Simulated life](life.en.md) | Letting a persona live out its days on its own |
 
 ## Adding things
 

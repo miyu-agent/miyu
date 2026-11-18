@@ -9,7 +9,6 @@ mod edits;
 mod export;
 mod goal;
 mod knowledge;
-mod life;
 mod line;
 mod memory;
 mod message;

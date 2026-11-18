@@ -87,7 +87,6 @@ pub(crate) async fn new_session(
         group: None,
         profile: false,
         images: true,
-        life: false,
         titles: true,
         origin: None,
         confined: false,

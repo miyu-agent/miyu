@@ -10,18 +10,14 @@
 mod busy;
 pub(crate) mod changes;
 mod clock;
-mod doing;
 mod ended;
 mod fire;
 mod hold;
-mod life;
-mod lived;
 pub(crate) mod methods;
 mod next;
 pub(crate) mod notices;
 pub(crate) mod port;
 mod ran;
-mod round;
 mod run;
 mod update;
 
@@ -38,12 +34,8 @@ use miyu_store::sqlite::DbError;
 use miyu_tool::IN_ALL;
 
 pub use clock::{Clock, Sleep, SystemClock};
-pub use doing::MOST as DOING_MOST;
-pub(crate) use doing::{line as doing_line, shown as doing_shown};
-pub use miyu_store::schedules::Doing;
 pub use miyu_store::schedules::{Creator, Last, Loop, Schedule, Target, When};
 pub use next::{MIN_EVERY, parse as parse_cron};
-pub(crate) use round::follow as following;
 
 /// 运行日志的来源。
 const TARGET: &str = "miyu::endpoint";
@@ -103,8 +95,6 @@ pub struct Schedules {
     changes: tokio::sync::broadcast::Sender<String>,
     /// 给人的通知（`notices.rs`，施工 J-3 下）。
     notices: notices::Notices,
-    /// 人生那几行和她写的「现在在干嘛」，内存里的一份（`doing.rs`，施工 LF-7）：只在 [`Schedules::notify`] 跟着表变。
-    lives: doing::Lives,
 }
 
 impl crate::Core {
@@ -133,7 +123,6 @@ impl Schedules {
             waiting: busy::Waiting::default(),
             changes: tokio::sync::broadcast::channel(changes::CHANGES).0,
             notices: notices::Notices::default(),
-            lives: doing::Lives::default(),
         }
     }
 
@@ -240,26 +229,21 @@ impl Schedules {
         })
     }
 
-    /// 续上一个：照现在算下一次（错过的不补）。没停的照旧重算。人生那一行（施工 LF-5 中，`life.resume`）的下一次就是现在：
-    /// 它的「什么时候」是建的那一刻、早就过了，照它算不出；续上马上醒，同核心起来时补醒那一次。
+    /// 续上一个：照现在算下一次（错过的不补）。没停的照旧重算。
     ///
     /// # Errors
     ///
     /// 没有，算不出下一次（某个时刻一次的已经过了），表用不了、写不了。
     pub fn resume(&self, id: &str) -> Result<Schedule, ScheduleError> {
         self.edit(id, |schedule, now| {
-            schedule.next = match schedule.looping {
-                Some(Loop::Life) => Some(now),
-                _ => Some(next::first(&schedule.when, now, &zone()).ok_or(ScheduleError::NoNext)?),
-            };
+            schedule.next =
+                Some(next::first(&schedule.when, now, &zone()).ok_or(ScheduleError::NoNext)?);
             schedule.paused = false;
             Ok(())
         })
     }
 
-    /// 改下一次（她自己定节奏的循环每轮定一次，施工 J-2）：`next` 没有的是停着等；`prompt` 写了的换掉那句话。人生那一行
-    /// （施工 LF-2，`schedules.md` 第四节）的 `prompt` 是她留给下次自己的话：没写的清成空的，不把旧的再念一遍；她自己定节奏的
-    /// 循环没写的不动。
+    /// 改下一次（她自己定节奏的循环每轮定一次，施工 J-2）：`next` 没有的是停着等；`prompt` 写了的换掉那句话。
     ///
     /// # Errors
     ///
@@ -272,10 +256,8 @@ impl Schedules {
     ) -> Result<Schedule, ScheduleError> {
         self.edit(id, |schedule, _| {
             schedule.next = next;
-            match prompt {
-                Some(prompt) => schedule.prompt = prompt,
-                None if schedule.looping == Some(Loop::Life) => schedule.prompt.clear(),
-                None => {}
+            if let Some(prompt) = prompt {
+                schedule.prompt = prompt;
             }
             Ok(())
         })

@@ -122,7 +122,6 @@ impl Setup {
             group: who.group,
             confined: who.confined,
             images: who.images,
-            life: who.life,
             titles: who.titles,
             dream: None,
             origin: who.origin.clone(),

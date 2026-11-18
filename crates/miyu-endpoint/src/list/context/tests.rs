@@ -34,7 +34,6 @@ fn listed(context: Option<u64>, model: Option<&str>) -> Listed {
         forked: false,
         archived: false,
         dream_result: None,
-        life: miyu_store::index::Life::Not,
     }
 }
 

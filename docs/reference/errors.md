@@ -122,9 +122,7 @@
 | `reason` | 什么时候 | `data` |
 |---|---|---|
 | `unknown_schedule` | 没有这个定时任务：`schedule.cancel`、`schedule.pause`、`schedule.resume`、`schedule.update` | |
-| `life_schedule` | 这一行是人生循环，这四个方法改不了它：用 `life.pause`、`life.resume`、`life.kill`，见[人生会话](life.md) | |
 | `too_many_schedules` | 定时任务已经有 200 个（人建、她建、包建合计，熔断性质的安全上限）：`schedule.add`。先删几个，已有的照跑 | |
-| `life_exists`、`no_life`、`life_ended` | 人生会话：这个人格已经有一个（`life.start`）；这个人格没有（`life.pause`、`life.resume`、`life.kill`）；这个人格最近的那一段人生已经结束了（`life.pause`、`life.resume`），见[人生会话](life.md) | `life_exists`、`life_ended` 的带 `session` |
 | `unknown_project` | 没有这个项目：项目的方法，`session.create`、`session.set_meta` 写的 `project` | |
 
 ## 软件包、扩展、命令
@@ -171,7 +169,6 @@
 | `memory_busy`、`dream_failed` | 正在整理；整理没成 | `message` |
 | `not_dreaming` | `/dream stop`、`memory.dream_stop`：没有正在跑的整理 | |
 | `unknown_memory`、`memory_not_current` | 没有这一条；已经改掉、作废、清掉了 | |
-| `change_note` | `memory.update` 指着她在人生会话里自己记下的变化：人改不了，只能作废、恢复 | |
 | `memory_too_long` | 超过 120 个字 | `chars`、`limit` |
 | `unknown_kb`、`unknown_document` | 没有这个库、这个文档 | |
 | `kb_exists`、`document_exists`、`kb_read_only`、`kb_packaged` | 已经有了；挂进来的库不能加删；软件包带来的库不能改 | |

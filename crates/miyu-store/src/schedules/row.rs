@@ -177,7 +177,6 @@ impl Cells {
             looping: schedule.looping.map(|looping| match looping {
                 Loop::Fixed => "fixed",
                 Loop::Dynamic => "dynamic",
-                Loop::Life => "life",
             }),
             next: schedule.next.map(Timestamp::unix_millis),
             last_at: schedule.last.as_ref().map(|last| last.at.unix_millis()),

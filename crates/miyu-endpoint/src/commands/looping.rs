@@ -13,8 +13,6 @@
 //! - 一个会话同时只有一个循环：再敲一次 `/loop` 换掉原来的（主会话 2026-10-27 定，技术题）。人敲的记成你建的
 //!   （`by: person`），跑在这个会话上；到点交进会话、她每轮定下一次都是唤醒表的事（施工 J-1 上、`schedules/port.rs`）。
 //!
-//! 没结束的人生会话里不另开循环（施工 LF-13，`life/here.rs`）：光打的回人生的状态，`off` 是暂停人生，带话的不收。
-//!
 //! 只在工具面上有 `schedule_next` 的会话里认（循环这个包装了、预设开着）；别的会话照「没有这条命令」答，命令菜单里也不列。
 
 use std::sync::Arc;
@@ -84,10 +82,6 @@ impl Slash for LoopCommand {
             let Ok(asked) = parse(call.rest) else {
                 return Err(usage::refused(call.core, call.peer, self).await);
             };
-            // 人生会话自己就是这个会话的循环（施工 LF-13）：不另建一行。
-            if super::life::living(call.handle()).await? {
-                return super::life::looped(&call, &asked).await;
-            }
             // 自主的那句先读：读不出的什么都不动，原来的循环还在。
             let autonomous = match asked {
                 Asked::Autonomous => Some(autonomous(call.core).await?),
@@ -135,7 +129,6 @@ impl Slash for LoopCommand {
                 }
             };
             Ok(Ran {
-                life: None,
                 events: Vec::new(),
                 said,
             })
@@ -157,7 +150,6 @@ async fn autonomous(core: &Core) -> Result<String, Refusal> {
 }
 
 /// 删掉跑在这个会话上的循环（固定的、动态的）：删了的交回真，一个都没有的交回假。`/loop off`、`/stop`（施工 LO-2）共用。
-/// 人生那一行不删：只有人生自己的入口动得了它（同 `schedules/port.rs`）。
 pub(super) fn stop(core: &Core, session: &SessionId) -> Result<bool, Refusal> {
     let schedules = core.schedules();
     let rows = schedules.list().map_err(|_| Refusal::INTERNAL)?;

@@ -332,10 +332,6 @@ async fn read_all<R: AsyncRead + Unpin>(
                 let result = crate::viewing::requested(&core, request.params.clone())
                     .await
                     .map(|session| {
-                        // 打开了一段结束了、还没看过的人生：算看过了（施工 LF-14）。
-                        if let Some(session) = &session {
-                            crate::life::seen(&core, session);
-                        }
                         seat.view(session);
                         json!({})
                     });

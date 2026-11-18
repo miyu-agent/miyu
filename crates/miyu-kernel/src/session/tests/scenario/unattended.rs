@@ -42,7 +42,6 @@ fn a_task_a_person_made_opens_a_turn_though_nobody_watches() {
     s.model([Line::says("看过了，没事。")]);
     let id = s.says_as(hers_by_a_person(), "看一眼磁盘。");
     assert_eq!(s.turns().len(), 1, "人建的到点一律开一轮：{:#?}", story(&s));
-    assert_eq!(s.openers(), [Some(hers_by_a_person())]);
     assert_eq!(replied(&s, &id), 2, "回应附上那一句和由它开的那一轮");
 }
 

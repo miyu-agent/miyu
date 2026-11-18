@@ -42,7 +42,6 @@
 name = "开发"                   # 一句字（施工 P-3 补）；以前的语言表照样认
 summary = "只开写代码必需的"
 unlisted = "off"               # 没列在 [software] 里的软件开不开：on、off
-hidden = true                  # 不列进「新建会话选哪个预设」：true、false（施工 LF-5 上）
 
 [features]                     # 功能的编号 = 开不开（施工 F-3 上，设计 30 第三节）
 commands = false
@@ -63,11 +62,10 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 2. 没有 `default_persona`（施工 P-4 上撤了，2026-10-08 项目主人：「人格、记忆、预设相互之间耦合了」，只去掉预设的默认人格）。以前写了的不再另外认（施工 AUD-3，2026-11-13 项目主人定：还没发版，旧兼容的都去掉）：文件里写着它、`preset.set` 写它，都同别的不认识的键（`unknown_key`，`preset.set` 回 `preset_invalid`）。P-3 上那几个小时里写进去的 `base` 同样。
 3. `unlisted`：几层都没写的照 `on`。功能全开是默认，`[tools]` 里只关一两件的写法也是建在「其余都开」上的。
 4. `[features]`（施工 F-3 上）的键是功能的编号（设计 30 第三节第 6 条那十五个，加上装了的包自己声明的），写法同包的编号，值是开关。一个功能开不开的先后：`[features]` 写了的；没写的照 `[software]`，先认功能的编号、再认它所在的包的编号、再认包所在的组（施工 BS-1 上中：`basesystem = true` 开组里没单独写的包；组照出厂清单的 `groups`，找预设时放进 `PresetFile::groups`，不进指纹）；都没写的照全局开关（下面「全局开关」，只管技能、脚本、MCP 服务，只在 `unlisted` 开着的预设里算，施工 X-27）；再没有的照 `unlisted`（`PresetFile::opens_in`、`decided`）。`decided` 同时说是谁定的（`By`）：写了功能编号的是 `Preset`，写了它所在的包或组的是 `Group`（施工 FG-1 拆出来，`preset.get` 的 `sections` 照它分；原来那一格 `features[].by` 照旧把组算 `preset`，`By::as_flat_str`），全局开关的 `Global`，`unlisted` 的 `Default`。只知道功能编号的地方（`PresetFile::opens`：记忆、后台运行、脚本调工具、长期目标）先照 `PresetFile::homes` 找功能所在的包（施工 PN-2：功能编号到包编号，照装着的清单，找预设时放进来、不进指纹；包改名以后功能编号不变），找不到的照功能编号算。写了没装的不报错。关着的包（`switched_off`，施工 U23 末上起；施工 UX-1 补起照包的开关算，`extensions.json` 的 `on`，会话经 `PresetPlaces::off` 每回合取一次，原来照配置项 `packages.<编号>.off`）整包不开，同场所扣下的包；不同的是它的功能算进没开的那几个，快照记的跟着变，开着的会话下一个回合换上工具面、技能。
-   以前的 `[software]`（施工 F-3 上起照认，新写的用 `[features]`）：键是软件的编号，写法同包的编号。现在装了的：基础系统组 `basesystem`（施工 BS-1 上中起是组，写它就是写组里没单独写的包；施工 FG-1 起组里十六个包，待办、定时、循环挪进组 `tasks`，项目文档挪进组 `environment`，记忆、人设遵循提醒、结束人生（施工 LF-4 下）是组 `persona`，联网、知识库是组 `research`，`packages.md` 文件表 `groups.toml` 那一行）、记忆 `base-memory`（三件工具和回合开始的召回）、知识库 `base-knowledge`（两件工具，施工 K-1 下）、角色扮演 `base-roleplay`（人格的角色扮演提示和风格锁）、联网 `base-net`、长期目标 `base-goal`，和清单装的 `process` 包（桥）。出厂的包施工 PN-3 起叫 `base-*`（设计 48），功能编号还是改名前的短名，`[software]` 里写短名的照「先认功能的编号」认得：`memory = false` 关的是功能 `memory`；功能编号和短名不同的包（联网的 `web-search`、`web-fetch`，注入环境信息的 `env-*`，写技能和包的两个技能），写短名（`net`、`env`、`authoring`）哪个都认不上，要写包编号或者功能编号。写了没装的不报错（这台机器上以后可能装），`preset.get` 的 `software` 里标 `installed: false`（施工 P-3 补）。
+   以前的 `[software]`（施工 F-3 上起照认，新写的用 `[features]`）：键是软件的编号，写法同包的编号。现在装了的：基础系统组 `basesystem`（施工 BS-1 上中起是组，写它就是写组里没单独写的包；施工 FG-1 起组里十六个包，待办、定时、循环挪进组 `tasks`，项目文档挪进组 `environment`，记忆、人设遵循提醒是组 `persona`，联网、知识库是组 `research`，`packages.md` 文件表 `groups.toml` 那一行）、记忆 `base-memory`（三件工具和回合开始的召回）、知识库 `base-knowledge`（两件工具，施工 K-1 下）、角色扮演 `base-roleplay`（人格的角色扮演提示和风格锁）、联网 `base-net`、长期目标 `base-goal`，和清单装的 `process` 包（桥）。出厂的包施工 PN-3 起叫 `base-*`（设计 48），功能编号还是改名前的短名，`[software]` 里写短名的照「先认功能的编号」认得：`memory = false` 关的是功能 `memory`；功能编号和短名不同的包（联网的 `web-search`、`web-fetch`，注入环境信息的 `env-*`，写技能和包的两个技能），写短名（`net`、`env`、`authoring`）哪个都认不上，要写包编号或者功能编号。写了没装的不报错（这台机器上以后可能装），`preset.get` 的 `software` 里标 `installed: false`（施工 P-3 补）。
 5. `[tools]` 的键是工具名：字母、数字、`-`、`_`，最多 64 个。单件打开某个包里的一件先不做（走查 C1），写 `true` 报错。
 6. 权限级别、压缩模板、强调色这些配置值随 P-2（下）（D1、C3）。
-7. `[limits]`（施工 AE-1，2026-10-30 项目主人定）只有 `unattended_steps`：没人看着时一个回合最多请求几次模型，正整数（0、负数、小数、字报 `bad_limit`，别的键报 `unknown_key`，写明第几行）。上一层写了的盖住下面的；几层都没写的照出厂的 500。管没人看着的主会话的每一轮、有人看着的会话里不是人开的回合（定时任务、长期目标续轮、重启接着干、回报叫醒……），回报叫醒的连着几轮合起来也照它（审计 R3E-2，`policy.md`「步数上限」第 8 条）；有人看着的会话里人开的回合不限，子代理照自己的出厂数（800、fork 500），都不看它（`policy.md`「步数上限」）。写了才进叠好的文件的指纹，没写的指纹和以前一字不差：以前造的快照照旧对得上；改了它，开着的会话下一个回合换上新的数（下面「改了文件」）。出厂的只有推演人生写它（15，施工 LF-5 中），别的四份不写。
-8. `hidden`（施工 LF-5 上，设计 `70-推演人生.md` 第三节第 7 条）：只收 `true`、`false`，别的（字、数……）报 `not_bool`，写明第几行。上一层写了的盖住下面的（同 `icon`），几层都没写的是 `false`。是 `true` 的，头在「新建会话选哪个预设」里不列，预设管理页照列、照改；核心不拦拿它开会话，`preset.list` 照旧列出它、只带上这一格（不列是头的事）。它不影响会话：不进叠好的文件的指纹（`PresetFile::digest`）、不进快照，改了它开着的会话不换快照、不断缓存（同 `icon`；以前造的快照照旧对得上）。出厂的只有推演人生写 `true`（施工 LF-5 中），别的四份不写。
+7. `[limits]`（施工 AE-1，2026-10-30 项目主人定）只有 `unattended_steps`：没人看着时一个回合最多请求几次模型，正整数（0、负数、小数、字报 `bad_limit`，别的键报 `unknown_key`，写明第几行）。上一层写了的盖住下面的；几层都没写的照出厂的 500。管没人看着的主会话的每一轮、有人看着的会话里不是人开的回合（定时任务、长期目标续轮、重启接着干、回报叫醒……），回报叫醒的连着几轮合起来也照它（审计 R3E-2，`policy.md`「步数上限」第 8 条）；有人看着的会话里人开的回合不限，子代理照自己的出厂数（800、fork 500），都不看它（`policy.md`「步数上限」）。写了才进叠好的文件的指纹，没写的指纹和以前一字不差：以前造的快照照旧对得上；改了它，开着的会话下一个回合换上新的数（下面「改了文件」）。出厂的四份不写它。
 
 **出厂的三个**（Y6、Y7，`10-自带软件.md` 第四节；极简开发是施工 P-16 上加的）：
 
@@ -76,11 +74,10 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 | `full` | 全部功能 | `unlisted = "on"`：装了的全开，以后新装的也开。`preset.default` 出厂是它 |
 | `dev` | 常规开发 | `unlisted = "off"`，开组 `basesystem`、组 `environment`（注入环境信息和自动注入 AGENTS 文档，施工 ENV-1、FG-1）、`base-net`、组 `tasks`（待办、长期目标、定时任务、循环任务：施工 FG-1 起不在基础系统组里，另写上，开的功能和改前一样；定时、循环是施工 J-2）、`base-memory`（人格记忆，2026-10-20 项目主人定，施工 P-15）、`base-authoring`（写技能、写包的两个技能，施工 P-8，2026-10-12 项目主人照推荐定：不开她要写技能时看不到，只能在本机目录里翻） |
 | `minimal` | 极简开发 | `unlisted = "off"`，`[software]` 只开 `base-read`、`base-write`、`base-edit`、`base-shell` 四个包（施工 BS-1 上中起一件一个包，不用再一件件关）。基础系统组以后新加的包照 `unlisted` 关着（「命令行调用工具」`base-clicall` 就是，施工 M-6）。环境那七个（施工 C-11，下面「环境那几块」）和「用户身份」（施工 ENV-1）照旧开着，`[features]` 写明了 |
-| `life` | 推演人生 | `life.start` 开的人生会话用（施工 LF-5 中，设计 `70-推演人生.md` 第三节第 7 条，`life.md`）。`hidden = true`（不列进新建会话的选择，核心不拦拿它开别的会话），`unlisted = "off"`，`[software]` 开 `base-env`（环境那八块，不带项目文档）、`base-net`（搜索、取网页）、`base-memory`（人格记忆三件）、`base-loop`（`schedule_next`）、`base-life`（`end_life`，施工 LF-4 下；`note_change`，功能「后天」`change`，施工 LF-11，能单独关；都只在没结束的人生会话里有，拿它开的普通会话没有）、`base-roleplay`（角色扮演提示）、`base-history`（`history`）；没有命令行、读写文件、定时任务。不写 `[limits]`（2026-11-14 项目主人定不另设步数上限，照出厂的 500） |
 | `none` | 无功能 | `unlisted = "off"`，什么都不写：菜单里能开关的全关，以后新装的也关（施工 P-17，下面「无功能」） |
 
-- 名字三种语言：全部功能、Everything、すべての機能；常规开发、Development、開発（2026-10-20 项目主人改名，原来是基础功能、Basics、基本機能，施工 P-15）；极简开发、Minimal、ミニマル開発；无功能、Nothing、機能なし（施工 P-17）；推演人生、Life Simulation、人生シミュレーション（施工 LF-5 中）。图标 `boxes`、`box`、`square-terminal`、`circle-off`、`sprout`（推演人生）。编号照旧 `full`、`dev`、`minimal`，加 `none`、`life`，只在核心和配置 `preset.default` 里用，界面上不露。
-- 说明三种语言（施工 P-16 上，2026-10-23 项目主人定；原来出厂的不写说明，施工 P-4 下）：全部功能「开放全部工具。」，常规开发「在极简开发的基础上增加记忆、网络搜索、子代理、Agent间交流等开发常用工具。」，极简开发「只提供运行命令和读写文件的工具。」（2026-11-09 项目主人改），无功能「不开启任何功能。」（施工 P-17），推演人生「人生会话用：联网、人格记忆、循环、角色扮演，没有命令行和文件。」（施工 LF-5 中）。给人看的，不发给模型。
+- 名字三种语言：全部功能、Everything、すべての機能；常规开发、Development、開発（2026-10-20 项目主人改名，原来是基础功能、Basics、基本機能，施工 P-15）；极简开发、Minimal、ミニマル開発；无功能、Nothing、機能なし（施工 P-17）。图标 `boxes`、`box`、`square-terminal`、`circle-off`。编号照旧 `full`、`dev`、`minimal`，加 `none`，只在核心和配置 `preset.default` 里用，界面上不露。
+- 说明三种语言（施工 P-16 上，2026-10-23 项目主人定；原来出厂的不写说明，施工 P-4 下）：全部功能「开放全部工具。」，常规开发「在极简开发的基础上增加记忆、网络搜索、子代理、Agent间交流等开发常用工具。」，极简开发「只提供运行命令和读写文件的工具。」（2026-11-09 项目主人改），无功能「不开启任何功能。」（施工 P-17）。给人看的，不发给模型。
 
 **环境那几块**（施工 C-11，2026-10-23 项目主人定：拆成能开关的功能，群聊里用不上的能关掉；设计 30 第三节第 6 条）：七个功能，都没有工具，照功能的规矩开关（`unlisted = "off"`、又没写它们的预设里是关的）。关了的回合开始不再注入那一块事实，system 里跟着它的那一行不拼（`miyu_policy::shown`）：
 
@@ -150,7 +147,6 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
    - 人设遵循提醒：`roleplay` 没开的、没装的（施工 F-3 上），快照里没有提醒短语、system 没有风格锁。
    - 装了没开的那一行：2026-10-23 删掉（设计 16 Y8，施工 P-OFF）。新会话的 system 不提预设关掉的软件；以前造的快照里拼好的照旧发。快照里的 `preset.off` 照旧记全部没开的功能（`preset.get`、设置页照它）。以前造的快照记的是包的编号，换快照时照现在的功能读（是装了的包、又不是功能编号的换成它的全部功能），一样的算没改，不换（`PresetPin::means_the_same`）。
    - 场所显示不了图片的会话（施工 X-25，`venues.md`「`venue.session`」的 `images`）：清单写了 `needs = ["images"]` 的包整包扣下，和预设关了一样不进工具面、回合开始不问、`system.append` 那一段不拼；不列进上面那一行（那一行是说换个预设就有，这里换了也没有），不进预设的指纹、快照的 `preset.off`。换快照时照旧扣着（`PresetFile::withheld`，施工 IM-4 起照 `Chosen::situated` 定）。
-   - 不是没结束的人生会话的（施工 LF-4 下，`life.md`「结束」，`tools/end_life.md`）：清单写了 `needs = ["life"]` 的包同样整包扣下，不进工具面、不列进上面那一行、不进指纹和 `preset.off`（`Chosen::living`，接在 `Chosen::situated` 后面）。是不是人生会话：造会话时由 `life.start` 明说（`Opening` 的 `life`，那时日志里还没有 `life.started`）；回合开始重算工具面、换人格换预设时照日志问「有 `life.started`、没有 `life.ended`」（`Session::living`，`persona/recast.rs` 的 `Wanted`）。人生会话从第一轮起工具面不变；拿预设 `life` 开的普通会话、别的预设开了 `base-life` 的都没有。载入时放开技能文件夹那一处（`PresetPlaces::file`）不看它：只给人生会话的包现在都不带技能。
    - 接平台的包在自己平台的场所会话里（施工 IM-4，接入通讯平台设计 06 第 4.6 节第 3 样）：清单 `[connection] platform` 里有场所平台（场所编号第一个 `:` 前面那段）的包整包开着，`[features]`、`[software]`、`[tools]`、全局开关、`unlisted` 都不管它，回合开始照问、`system.append` 照拼、技能照放开；不算进没开的，不进指纹。别的几道筛照旧：显示不了图片扣下的、关着的包照旧不开，场所、子会话、能不能确认那几条照工具面自己的规矩。本机的会话、别的平台的场所照预设。平台包在自己平台的群里替她干活，开关在平台自己的后台（im 的功能开关、O-60 的场所插件），预设管的是基础那一层。记在 `PresetFile::own`，同 `withheld`，不是文件里写的、不叠层（`Features::connected_to` 照清单算）。
    - 扩展交的功能（施工 IM-6，`feature.offer`，`extensions.md`「怎么走」第 11 条）：算装了的功能，接在装了的后面（`Features::offering`），列出来的工具归它、不归包自己的功能（`Features::of_tool` 先认它）；开不开同别的功能，照 `[features]`、`[software]`、`unlisted`（出厂「全部功能」开，别的出厂预设关）。会话的 `PresetPlaces::offers` 每回合开始取一次，开着的会话下一个回合照新的算；没交的照原样借出去、不拷。`preset.get` 照交了的列，写法同包自己的功能。
    - 快照记 `preset`：编号、没开的软件和文件的指纹（`policy.md`「拼」第 6 条）。
@@ -159,15 +155,14 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
    - 记忆不跟着换：开不开记忆在开会话时定（L3），新预设里 `memory` 改了也照开会话时的。
    - 角色扮演、装了没开的那一行照新的重新算。
    - 找不着、写错了的照旧用原来的，记一行运行日志；P-2（中）造的快照没有指纹，不换。撤掉换快照那一轮不换回去。
-7. **`preset.list`**：几层里所有的编号，照编号排，一个一个找；名字、说明照这个连接的语言挑（挑法同 `persona.list`）；写错了的只带 `problem`（照这个连接的语言说）和知道第几行的 `line`（施工 P-3 再补）。读得出的带 `hidden`（施工 LF-5 上，「格式」第 8 条）：叠好以后的，布尔，几层都没写的是 `false`；是 `true` 的照旧列出来，不列是头的事。读得出的带 `tokens`（施工 DM-4，2026-11-09 发版前检查第 4 条：新建会话时头在右下角写选的预设占多少）：照不写会话、无人格的 `session.context` 那一份备、估，只备不造；数的是 system 里人设、场所说明、群聊格式以外的几块，加上工具的说明和参数格式，即各块估了加起来（同那一份的 `estimated_total`，不照整份估摊）。每次列都现算、不存：release 下一个预设 1～2 ms（2026-11-09 量），存了要管配置、装的包、工具架子换代以后作废。备不出来的不带。
+7. **`preset.list`**：几层里所有的编号，照编号排，一个一个找；名字、说明照这个连接的语言挑（挑法同 `persona.list`）；写错了的只带 `problem`（照这个连接的语言说）和知道第几行的 `line`（施工 P-3 再补）。读得出的带 `tokens`（施工 DM-4，2026-11-09 发版前检查第 4 条：新建会话时头在右下角写选的预设占多少）：照不写会话、无人格的 `session.context` 那一份备、估，只备不造；数的是 system 里人设、场所说明、群聊格式以外的几块，加上工具的说明和参数格式，即各块估了加起来（同那一份的 `estimated_total`，不照整份估摊）。每次列都现算、不存：release 下一个预设 1～2 ms（2026-11-09 量），存了要管配置、装的包、工具架子换代以后作废。备不出来的不带。
    - 预览只备不造（施工 DM-4 顺手修）：`session.tools`、`session.context` 不写会话的、`preset.list` 备的新会话照这个会话自己的默认工作区写工作目录、不建。原来照 `workspace/` 本身挑、建好，每预览一次在 `workspace/` 下留一个空目录（主人的数据根里一天攒了 50 个）。
-8. **`preset.get {preset}`**：叠好的各格（施工 P-3 补：只给人要看的）；`sections` 是分好组的同一些功能（施工 FG-1，上面「功能分组」）；名字、说明一句字；`unlisted` 是叠好以后的（几层都没写的是 `on`）；`unattended_steps` 是叠好以后 `[limits]` 写的数，几层都没写的是 `null`（照出厂的 500，施工 AE-1）；`hidden` 同 `preset.list`（施工 LF-5 上）；`features` 是一个个功能（施工 F-3 下，原来的 `software`、`tools` 换成它）：装了的照清单读的先后，各带开不开和归它的工具（每件的显示名、开不开）；接着是登记上的脚本，一个脚本一个功能 `script-<工具名>`（施工 X-12 中）：名字、说明照脚本开头给人看的几格（`显示名称`、`Display name`、`描述`）挑这个连接的语言，没写名字的照工具名，`tools` 是它那一件；再接着是用得上的技能，一个技能一个功能 `skill-<名字>`（施工 X-11 上，`skills.md`）：名字、说明照技能写在 `metadata` 里给人看的 `display_name`、`summary`，没写名字的照技能的名字，`tools` 是空的；再接着是用得上的命令模板，一条一个功能 `command-<名字>`（施工 X-14 上，`slash.md`「找、盖住、开关」第 3 条）：名字是 `/<名字>`，说明照模板的、照连接的语言挑，`tools` 是空的；写了没装的接在后面（`installed: false`，界面写「没安装」，16 第五节）；每个功能带 `by`：`preset`（预设里写了）、`global`（照全局开关）、`default`（都没写，照 `unlisted`）（施工 X-27），格子见 `protocol.md`「`preset.get`」；`remove` 是删了会怎样（`restore`、`delete`、`null`）。来自哪几层不给。头照它一个功能一个开关画，展开能逐件关（2026-10-09 项目主人定：一个开关下面还能逐件关工具）。
+8. **`preset.get {preset}`**：叠好的各格（施工 P-3 补：只给人要看的）；`sections` 是分好组的同一些功能（施工 FG-1，上面「功能分组」）；名字、说明一句字；`unlisted` 是叠好以后的（几层都没写的是 `on`）；`unattended_steps` 是叠好以后 `[limits]` 写的数，几层都没写的是 `null`（照出厂的 500，施工 AE-1）；`features` 是一个个功能（施工 F-3 下，原来的 `software`、`tools` 换成它）：装了的照清单读的先后，各带开不开和归它的工具（每件的显示名、开不开）；接着是登记上的脚本，一个脚本一个功能 `script-<工具名>`（施工 X-12 中）：名字、说明照脚本开头给人看的几格（`显示名称`、`Display name`、`描述`）挑这个连接的语言，没写名字的照工具名，`tools` 是它那一件；再接着是用得上的技能，一个技能一个功能 `skill-<名字>`（施工 X-11 上，`skills.md`）：名字、说明照技能写在 `metadata` 里给人看的 `display_name`、`summary`，没写名字的照技能的名字，`tools` 是空的；再接着是用得上的命令模板，一条一个功能 `command-<名字>`（施工 X-14 上，`slash.md`「找、盖住、开关」第 3 条）：名字是 `/<名字>`，说明照模板的、照连接的语言挑，`tools` 是空的；写了没装的接在后面（`installed: false`，界面写「没安装」，16 第五节）；每个功能带 `by`：`preset`（预设里写了）、`global`（照全局开关）、`default`（都没写，照 `unlisted`）（施工 X-27），格子见 `protocol.md`「`preset.get`」；`remove` 是删了会怎样（`restore`、`delete`、`null`）。来自哪几层不给。头照它一个功能一个开关画，展开能逐件关（2026-10-09 项目主人定：一个开关下面还能逐件关工具）。
 9. **`miyu check`**（`cli/check.md`）：每一层里每一份预设各查各的，上面一层盖住了照样报，种类 `preset`；给人看的那一句照 `preset-problems/<code>`。写了文件的，某一层 `presets/` 下的 `<编号>.toml` 认作预设（两边换成真的路径比），还没有的报读不了。
 
 ### 改（施工 P-3 中）
 
 - `preset.set {"preset", "changes"}`、`preset.delete {"preset"}`（`protocol.md`）：只写你那一层（数据根的 `root/presets/`）的 `<编号>.toml`。不写编号的是新建，编号由核心起 `preset-<n>`（施工 P-3 补，2026-10-08 项目主人定：新建不填编号；新建的什么开关都不写就是全开），改出厂的、包带的就是建同名覆盖、只写改了的项（16 第四节 Y3）。删掉你那一层，下面几层还有的回到它们的样子。
-- 键照文件写：`preset.hidden`（施工 LF-5 上）同别的格，写 `true`、`false`，`unset` 去掉你那一层的这一格、回到下面那一层的（都没写的是 `false`）；写成别的同文件里写错，`preset_invalid`。
 - 一项项在原来的字上改（`miyu_config::edit::apply`），注释、顺序照原样，P-3 上写进去的 `[preset] base` 顺手去掉（施工 P-3 再补：读的时候认出来当没写）；新开的一组在文件末尾另起一张表（`[preset.name]`）。`expect` 照 `miyu_config::plain::json_at` 读的你那一层现在的值比。
 - 写之前查：改完的一份照规矩读一遍，再照它叠一遍（`Presets::find_with`：你那一层照改完的字算，不读盘），写错的整条不收，拒绝里带照连接语言的一句（`data.message`，施工 P-3 补）。
 - 写盘照配置文件的规矩（`miyu_store::config_file`）：顺着链接写、先写临时文件再替换、替换之前再读一次本体，撞上手改的从头再来，三次还不行的 `preset_conflict`。写成了记一行运行日志 `INFO preset saved`，删了 `INFO preset deleted`；不进配置的留痕日志。
@@ -190,7 +185,7 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 | `unknown_table`、`not_a_table`、`unknown_key` | `[preset]`、`[features]`、`[software]`、`[tools]`、`[limits]` 以外的表；这几样不是表；`[preset]`、`[limits]` 里别的键 |
 | `not_phrases`、`unknown_language`、`empty_phrase` | 「语言到一句话」那一格写错 |
 | `bad_unlisted` | `unlisted` 不是 `on`、`off`（`bad_persona` 随 `default_persona` 施工 P-4 上撤了） |
-| `bad_feature`、`bad_software`、`not_bool` | `[features]` 的键不合功能编号的写法（施工 F-3 上）；`[software]` 的键不合包编号的写法；值不是开关（`[preset] hidden` 不是开关的也是 `not_bool`，施工 LF-5 上） |
+| `bad_feature`、`bad_software`、`not_bool` | `[features]` 的键不合功能编号的写法（施工 F-3 上）；`[software]` 的键不合包编号的写法；值不是开关 |
 | `bad_tool`、`not_false` | `[tools]` 的键不是工具名的写法；值不是 `false` |
 | `bad_limit` | `[limits] unattended_steps` 不是正整数（施工 AE-1） |
 
@@ -199,7 +194,6 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 | 测试 | 守什么 |
 |---|---|
 | `crates/miyu-policy/src/preset/tests.rs` 的 `the_icon_is_read_layered_and_left_out_of_the_digest`、`crates/miyu-endpoint/tests/persona_avatar.rs` 的 `presets_carry_their_icons_and_one_can_be_changed`（施工 P-5） | 图标的读法、层叠、不进指纹、写错报错；列出来、改、回到出厂的 |
-| `crates/miyu-policy/src/preset/tests/hidden.rs`、`crates/miyu-endpoint/tests/preset_hidden.rs`（施工 LF-5 上） | `hidden` 读得出 `true`、`false`，没写的是 `false`，写成字、数的报 `not_bool` 带行号；上一层的盖下面的；不进指纹、快照；`preset.list`、`preset.get` 带它，出厂四个是 `false`，`preset.set` 能写能去掉，带它的照旧能开会话 |
 | `crates/miyu-policy/src/preset/tests.rs` | 每一格读对；空文件什么都没有、`unlisted` 照 `on`；逐格叠；每一种写错报对代码和行；工具名的写法；以前撤掉的 `base`、`default_persona` 是不认识的键（施工 AUD-3） |
 | `crates/miyu-store/src/presets/tests.rs` | 三层逐格叠；包那一层在出厂和你的中间、一个编号只认一份（施工 P-11 上）；一层也行、空文件也算；没有的、编号不合写法的、写错的写明哪一层；编号照文件名、不重复、照编号排；`check` 每一层各查、写了文件的认得出；出厂两份读得出、零问题、三种语言齐；每一种代码三种语言都有给人看的一句 |
 | `crates/miyu-store/src/index/tests.rs` | 索引里存得下、读得回人格和预设 |
@@ -209,7 +203,6 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 | `crates/miyu-endpoint/src/connection/tests.rs`（施工 P-3 中） | 扩展进程调了回 `local_only` 的名单 |
 | `crates/miyu-kernel/src/facts/tests/gates.rs`、`crates/miyu-policy/src/shown/tests.rs`、`crates/miyu-policy/src/compose/tests.rs` 的 `a_preset_can_leave_out_each_core_line`（施工 C-11） | 环境那几块：都开着的逐字节一样；只关时间、只关工作目录照拆开的写法，都关了不注入；权限、编号、模型各自关得掉；拆开的写法要不了另一半；照预设没开的功能编号读；system 那几行跟着开关 |
 | `crates/miyu-endpoint/tests/env_package.rs`、`crates/miyu-policy/src/shown/tests.rs` 的 `absent_*`（施工 ENV-1） | 真核心：全部功能的快照 system 有「关于你」；只关「用户身份」的快照没有「关于你」、别的一字不变；八个都关的连环境那几行也不拼；`package.disable base-env` 以后新会话的 system 和开关（`Shown`）跟八个都关的一字不差；没装的功能和关了的一样算关，记成 `absent` |
-| `crates/miyu-endpoint/tests/life_preset.rs`（施工 LF-5 中） | 出厂的推演人生：`preset.list` 列它、`hidden` 是 `true`、图标 `sprout`，`unattended_steps` 没写；`life.start` 开的会话工具面正好是搜索、取网页、记忆三件、`schedule_next`、`history`，没有命令行、读写文件、定时任务 |
 | `crates/miyu-endpoint/tests/presets.rs` | 不写预设照默认、指定的压着默认；找人格的先后；没有的、编号不对的、写错的拒绝、什么都不造，默认预设指着没有的也拒；会话列表、`subscribe` 写 `preset`，以前的日志不写；`venue.session` 带预设造、找回时不看；`preset.list`、`preset.get`；`check` 查预设 |
 | `crates/miyu-endpoint/tests/preset_tokens.rs`（施工 DM-4） | 读得出的预设带 `tokens`，同无人格的新会话预览的 `estimated_total`，工具多的多，写错的不带；列预设、预览上下文、预览工具面都不在 `workspace/` 下留会话目录 |
 | `crates/miyu-session/tests/spawn.rs` | 子会话照父会话的预设，父会话载入以后也照 |

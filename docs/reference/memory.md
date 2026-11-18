@@ -43,7 +43,7 @@
 | 名字 | 说明 |
 |---|---|
 | `id` | `m<序号>` |
-| `class` | `user`（关于主人）、`feedback`（人对她的要求）、`episode`（发生过的事）、`reference`（资料在哪）、`person`（她认识的别人，界面上叫「认识的人」）；`change`（她在人生会话里记下的自己的一处变化，只有人生会话里的她自己记得了、改得了，人只能看、作废、恢复；`memory.remember`、`memory.import` 不收这一类） |
+| `class` | `user`（关于主人）、`feedback`（人对她的要求）、`episode`（发生过的事）、`reference`（资料在哪）、`person`（她认识的别人，界面上叫「认识的人」） |
 | `text` | 那一条，最多 120 个字 |
 | `by` | `person`（人记的）或 `tool`（她记的） |
 | `at` | 记下的时刻 |
@@ -60,7 +60,7 @@
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `memory.list` | `class`、`from`（会话编号：出处在它里面的）、`forgotten`（布尔，连作废的一起）、`limit`（1 到 500，默认 50） | `{"memories": [...]}`，新的在前。类是 `change` 的那一条（她在人生里记下的自己的变化）写了为什么变的多一格 `why`，别的条目没有这一格 |
+| `memory.list` | `class`、`from`（会话编号：出处在它里面的）、`forgotten`（布尔，连作废的一起）、`limit`（1 到 500，默认 50） | `{"memories": [...]}`，新的在前 |
 | `memory.search` | `query`（必写）、`forgotten`、`limit`（1 到 500，默认 10） | `{"memories": [...]}`，最相关的在前 |
 
 ## `memory.turns`
@@ -88,7 +88,6 @@
 | `memory_too_long` | 正文超过 120 个字、关键词超过 200 个字，`data.chars`、`data.limit`，`data.field` 是 `text` 或 `keywords` |
 | `unknown_memory` | 没有这一条 |
 | `memory_not_current` | 那一条已经改掉、作废、清掉了 |
-| `change_note` | `memory.update` 指着一条 `change`：那是她自己记下的变化，人改不了，只能作废、恢复 |
 
 ## `memory.import`
 

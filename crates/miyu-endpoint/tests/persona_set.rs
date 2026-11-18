@@ -67,7 +67,7 @@ async fn a_new_persona_is_made_in_one_call_with_its_prompts() {
             "name": "我的",
             "summary": null,
             "subagent": false,
-            "prompts": {"persona": true, "reminders": true, "life": false},
+            "prompts": {"persona": true, "reminders": true},
             "examples": 2,
             "avatar": null,
             "background": null,
@@ -76,8 +76,6 @@ async fn a_new_persona_is_made_in_one_call_with_its_prompts() {
             "background_opacity": null,
             "background_focus": null,
             "background_blur": null,
-            "life_context": null,
-            "life_context_default": 100_000,
             "remove": "delete",
         }),
         "{made}"

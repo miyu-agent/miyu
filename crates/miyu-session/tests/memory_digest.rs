@@ -49,7 +49,6 @@ fn save(home: &Home, text: &str, by: By, replaces: Option<MemoryId>) -> MemoryId
             who: None,
             people: Vec::new(),
             place: None,
-            why: None,
             imported: None,
         }),
     )

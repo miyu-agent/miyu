@@ -1,5 +1,4 @@
-//! 记忆的端口的实现（施工 R-3 中，`docs/blueprint/memory.md`「工具」、第二条、第九条）：三件工具经它记、忘、搜；人生会话里的
-//! `note_change` 经它记、改、去掉她自己的变化（施工 LF-11）。
+//! 记忆的端口的实现（施工 R-3 中，`docs/blueprint/memory.md`「工具」、第二条、第九条）：三件工具经它记、忘、搜。
 //!
 //! 每个主会话一份 [`Calls`]（这一间、这个会话、听众），每次调用照它造一个端口，带上这一轮和这次调用：记下的出处是这一轮、
 //! `by` 是这次调用。怎么记、怎么挑在 [`Keeper`]（施工 R-3 补挪出去，协议也用）；碰磁盘的在阻塞线程里做。听众：本机的会话
@@ -15,8 +14,8 @@ use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_recall::{MemoryId, Source};
 use miyu_store::recall::Room;
 use miyu_tool::{
-    CARDS, FoundCard, FoundMemory, MEMORIES, MemoryPort, Note, NoteRefused, Pending, Refused,
-    Remember, Searched, TURNS,
+    CARDS, FoundCard, FoundMemory, MEMORIES, MemoryPort, Pending, Refused, Remember, Searched,
+    TURNS,
 };
 
 use crate::blocking::blocking;
@@ -146,31 +145,6 @@ impl Calls {
         .await
     }
 
-    /// 回合开始等这个会话的记忆最多多久：测试里换过的照换的（施工 LF-6 修，`testkit` 才有的 `Memory::wait_reads`），别的没有、照出厂的。
-    pub(crate) fn wait(&self) -> Option<std::time::Duration> {
-        self.keeper.memory.read_wait()
-    }
-
-    /// 人生循环叫醒的这一轮多交的那一块（施工 LF-6，`fresh.rs`）：开这一轮的那条消息 `opener` 不是人生循环发的，不读、没有；
-    /// `present` 连同这一轮常驻那一块，日期照会话的时区 `offset`，在阻塞线程里读，读的时候登记着（同上）。
-    pub(crate) async fn fresh(
-        &self,
-        opener: Option<&miyu_kernel::origin::By>,
-        offset: UtcOffset,
-        present: &[Present],
-    ) -> Option<Injection> {
-        if !super::fresh::woken_by_life(opener) {
-            return None;
-        }
-        let (keeper, reading) = (self.keeper.clone(), self.keeper.reading());
-        let (session, present) = (self.session.clone(), present.to_vec());
-        blocking(move || {
-            reading.pace();
-            keeper.fresh(offset, &present, &session)
-        })
-        .await
-    }
-
     /// 这一轮联想带什么（施工 R-8，`recall.rs`）：场所会话里也联想，挑法照谁在听（施工 R-13 下）；`said` 是这一轮人说的话，照意思找照这一轮的配置 `config`
     /// （`models.embedding`），日期照会话的时区 `offset`。
     pub(crate) async fn recall(
@@ -228,35 +202,10 @@ impl MemoryPort for Port {
         Box::pin(async move { blocking(move || inner.save(remember)).await })
     }
 
-    /// 她的 `forget`：她记下的自己的变化拒（施工 LF-11，[`Keeper::forget`]）。
     fn retire<'a>(&'a self, id: MemoryId, why: String) -> Pending<'a, Result<(), Refused>> {
         let inner = Arc::clone(&self.0);
         Box::pin(async move {
-            blocking(move || inner.calls.keeper.forget(inner.stamp(), id, why)).await
-        })
-    }
-
-    fn note<'a>(&'a self, note: Note) -> Pending<'a, Result<MemoryId, NoteRefused>> {
-        let inner = Arc::clone(&self.0);
-        Box::pin(async move {
-            blocking(move || {
-                let noted = inner.calls.keeper.note(
-                    inner.stamp(),
-                    (note.text, note.why),
-                    note.replaces,
-                    inner.sources(),
-                )?;
-                inner.calls.keeper.fill(&inner.using);
-                Ok(noted)
-            })
-            .await
-        })
-    }
-
-    fn drop_note<'a>(&'a self, id: MemoryId, why: String) -> Pending<'a, Result<(), NoteRefused>> {
-        let inner = Arc::clone(&self.0);
-        Box::pin(async move {
-            blocking(move || inner.calls.keeper.drop_note(inner.stamp(), id, why)).await
+            blocking(move || inner.calls.keeper.retire(inner.stamp(), id, why)).await
         })
     }
 
@@ -294,24 +243,18 @@ impl Inner {
         }
     }
 
-    /// 出处：这一轮；没有在跑的回合的没有。
-    fn sources(&self) -> Vec<Source> {
-        self.turn
+    /// 出处是这一轮。记下了的在后台补它的向量（施工 R-5 五补：不等下一次搜）。
+    fn save(&self, remember: Remember) -> Result<MemoryId, Refused> {
+        let sources = self
+            .turn
             .map(|turn| {
                 vec![Source {
                     session: self.calls.session.clone(),
                     turn,
                 }]
             })
-            .unwrap_or_default()
-    }
-
-    /// 出处是这一轮。记下了的在后台补它的向量（施工 R-5 五补：不等下一次搜）。
-    fn save(&self, remember: Remember) -> Result<MemoryId, Refused> {
-        let saved = self
-            .calls
-            .keeper
-            .save(self.stamp(), remember, self.sources())?;
+            .unwrap_or_default();
+        let saved = self.calls.keeper.save(self.stamp(), remember, sources)?;
         self.calls.keeper.fill(&self.using);
         Ok(saved)
     }

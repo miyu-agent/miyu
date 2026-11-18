@@ -155,7 +155,6 @@ impl Sessions {
             group: None,
             confined: advice.confined,
             images: advice.images,
-            life: false,
             titles: false,
             dream: None,
             origin: Some(ADVISOR_ORIGIN.to_string()),

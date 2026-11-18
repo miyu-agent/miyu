@@ -1,6 +1,6 @@
 //! 睡到点（施工 J-1 上）：一个后台任务，只睡到最早的那一次；表改了被叫醒、重算。到点的一个一个交进会话
-//! （`fire.rs`），先把下一次写进表再交：她在那一轮里改下一次（`schedule_next`，施工 J-2）不会被这里盖掉。人生循环（施工
-//! LF-1）先写的是现在加默认间隔：她这一轮没定也照它再醒；交过以后只记上一次那几格（`record`），不带着旧的下一次写回去。
+//! （`fire.rs`），先把下一次写进表再交：她在那一轮里改下一次（`schedule_next`，施工 J-2）不会被这里盖掉。交过以后只记上一次
+//! 那几格（`record`），不带着旧的下一次写回去。
 
 use std::sync::{Arc, Weak};
 
@@ -16,8 +16,6 @@ impl Core {
         self.schedules.recall();
         // 她自己定节奏的停在那儿的（核心在她那一轮里停了、错过了的）：接着干的接着盯，别的删掉（施工 LO-3补，`ended.rs`）。
         super::ended::boot(self);
-        // 人生那几行、她写的「现在在干嘛」照表铺回（施工 LF-7）。
-        super::doing::boot(self);
         tokio::spawn(run(Arc::downgrade(self)))
     }
 }
@@ -93,14 +91,12 @@ async fn fire(core: &Arc<Core>, table: &Table, schedule: Schedule, now: Timestam
     if super::fire::waits(core, &schedule).await {
         return;
     }
-    let once = next::once(&schedule.when) && !paced(schedule.looping);
+    let once = next::once(&schedule.when) && schedule.looping != Some(Loop::Dynamic);
     let mut ahead = schedule.clone();
     ahead.next = match schedule.looping {
         // 她自己定节奏的：交进去以后清掉，她这一轮里定（施工 J-2）；没定的那一轮结束时删掉这一行（施工 LO-3，`ended.rs`）。
         Some(Loop::Dynamic) => None,
-        // 人生：没定也照默认间隔再醒（施工 LF-1）；她在这一轮里定了的经 `set_next` 盖掉它。
-        Some(Loop::Life) => next::plus(now, next::LIFE_GAP),
-        Some(Loop::Fixed) | None => next::after(&schedule.when, due, now, &zone()),
+        _ => next::after(&schedule.when, due, now, &zone()),
     };
     // 错过的这一次推的时候一起报了（施工 J-4）：清零。
     if let Target::Package { missed } = &mut ahead.target {
@@ -125,20 +121,7 @@ async fn fire(core: &Arc<Core>, table: &Table, schedule: Schedule, now: Timestam
         result = %delivered.result,
         "schedule fired"
     );
-    // 人生又推演了一轮（施工 LF-14）：交进了会话的才算（当场开轮的、排进去的），跳过的不算。只在这里加：重启以后接着干的
-    // 那一轮不再到点一次，不会多算。
-    if schedule.looping == Some(Loop::Life)
-        && matches!(delivered.result.as_str(), "ran" | "queued")
-        && let Err(error) = table.add_round(&schedule.id)
-    {
-        tracing::warn!(target: TARGET, schedule = %schedule.id, error = %error, "life round not counted");
-    }
-    if delivered.remove {
-        // 人生结束了的那一行（施工 LF-4 上）：删掉，不记上一次。
-        if let Err(error) = table.remove(&schedule.id) {
-            tracing::warn!(target: TARGET, schedule = %schedule.id, error = %error, "schedule not removed");
-        }
-    } else if !once {
+    if !once {
         let last = miyu_store::schedules::Last {
             at: now,
             result: delivered.result,
@@ -153,7 +136,7 @@ async fn fire(core: &Arc<Core>, table: &Table, schedule: Schedule, now: Timestam
 }
 
 /// 核心起来时已经过了的一个（错过的不补）：跑完就没了的删掉，她自己定节奏的清掉下一次（跳完以后照「没定下一次」收尾，施工
-/// LO-3补，`ended.rs`），人生的下一次写成现在、马上补醒一次（停了多久都只这一次，施工 LF-1），别的照现在算下一次；记一行。
+/// LO-3补，`ended.rs`），别的照现在算下一次；记一行。
 /// 推给扩展的记下错过了几次，下一次推的时候报（施工 J-4）。
 pub(super) fn skip(table: &Table, mut schedule: Schedule, now: Timestamp) {
     let due = schedule.next;
@@ -161,25 +144,16 @@ pub(super) fn skip(table: &Table, mut schedule: Schedule, now: Timestamp) {
     if let (Target::Package { missed }, Some(due)) = (&mut schedule.target, due) {
         *missed = missed.saturating_add(next::missed(&schedule.when, due, now, &zone()));
     }
-    let written = if next::once(&schedule.when) && !paced(schedule.looping) {
+    let written = if next::once(&schedule.when) && schedule.looping != Some(Loop::Dynamic) {
         table.remove(&schedule.id).map(|_| ())
     } else {
         schedule.next = match (schedule.looping, due) {
-            (Some(Loop::Life), _) => Some(now),
             (Some(Loop::Dynamic), _) | (_, None) => None,
-            (Some(Loop::Fixed) | None, Some(due)) => next::after(&schedule.when, due, now, &zone()),
+            (_, Some(due)) => next::after(&schedule.when, due, now, &zone()),
         };
         table.put(&schedule).map(|_| ())
     };
     if let Err(error) = written {
         tracing::warn!(target: TARGET, schedule = %schedule.id, error = %error, "schedule not advanced");
-    }
-}
-
-/// 下一次由她每轮定的循环（她自己定节奏的、人生）：「什么时候」是某个时刻也不是跑完就删。
-fn paced(looping: Option<Loop>) -> bool {
-    match looping {
-        Some(Loop::Dynamic | Loop::Life) => true,
-        Some(Loop::Fixed) | None => false,
     }
 }

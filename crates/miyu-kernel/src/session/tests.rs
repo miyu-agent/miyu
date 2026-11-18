@@ -28,7 +28,6 @@ mod hosted;
 mod idle;
 mod interrupt;
 mod landed;
-mod life_end;
 mod limits;
 mod line_pin;
 mod listing;

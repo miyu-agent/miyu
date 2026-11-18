@@ -10,7 +10,6 @@ mod cards;
 mod dreaming;
 mod extract;
 mod follow;
-mod fresh;
 mod her;
 mod keeper;
 mod known;
@@ -197,18 +196,6 @@ impl Memory {
     #[cfg(feature = "testkit")]
     pub fn slow_reads(&self, by: std::time::Duration) {
         self.reads.slow(by);
-    }
-
-    /// 测试里把会话在回合开始等记忆的时限换成 `limit`（施工 LF-6 修）：出厂的是几百毫秒，断言「这一轮带了那一块」的测试拿真的
-    /// 磁盘去赛它，慢的机器上（Windows 的 CI）会输。测试场地换成很长的；测「读得慢的不挡回合」的换成很短的。
-    #[cfg(feature = "testkit")]
-    pub fn wait_reads(&self, limit: std::time::Duration) {
-        self.reads.patient(limit);
-    }
-
-    /// 回合开始等记忆的时限：测试里换过的照换的，别的没有（照出厂的）。
-    pub(crate) fn read_wait(&self) -> Option<std::time::Duration> {
-        self.reads.wait()
     }
 
     /// 接上照意思找的那一路（施工 R-5 下）：核心起来、找好小程序和缓存目录以后接一次；接过的再接不算，交回 `false`。

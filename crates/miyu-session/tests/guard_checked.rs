@@ -221,15 +221,6 @@ impl miyu_tool::HooksPort for Asking {
         Box::pin(async { Vec::new() })
     }
 
-    fn doing(
-        &self,
-        _persona: &str,
-        _session: &str,
-        _offset: miyu_kernel::time::UtcOffset,
-    ) -> Option<miyu_tool::DoingLine> {
-        None
-    }
-
     fn guards(&self, tool: &str, _access: &str) -> bool {
         tool == "read"
     }

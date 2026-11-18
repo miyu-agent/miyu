@@ -145,7 +145,6 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         group: _,
         confined: shut_in,
         images,
-        life: _,
         titles,
         dream,
         origin,

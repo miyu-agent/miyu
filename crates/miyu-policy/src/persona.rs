@@ -11,7 +11,7 @@ use toml_edit::{Document, Item};
 
 mod tables;
 pub use tables::{blur, color, percent};
-use tables::{read_appearance, read_knowledge, read_life};
+use tables::{read_appearance, read_knowledge};
 
 /// `persona.toml` 在人格目录里的名字。
 pub const TOML: &str = "persona.toml";
@@ -42,8 +42,6 @@ pub struct PersonaFile {
     pub background_focus: Option<[u8; 2]>,
     /// 背景图模糊多少（`[appearance] background_blur`，施工 P-7 补）：1 到 100；没写的是没有，不模糊。
     pub background_blur: Option<u8>,
-    /// 人生会话的上下文上限，token 数（`[life] context`，施工 LF-10，设计 70 第四节）：正整数；没写的是没有，照出厂的数。
-    pub life_context: Option<u64>,
 }
 
 impl PersonaFile {
@@ -58,7 +56,6 @@ impl PersonaFile {
         lower.background_opacity = self.background_opacity.or(lower.background_opacity);
         lower.background_focus = self.background_focus.or(lower.background_focus);
         lower.background_blur = self.background_blur.or(lower.background_blur);
-        lower.life_context = self.life_context.or(lower.life_context);
         lower
     }
 }
@@ -138,8 +135,6 @@ pub enum Code {
     BadBackgroundFocus,
     /// `[appearance]` 的 `background_blur` 不是 1 到 100 的整数（施工 P-7 补）。
     BadBackgroundBlur,
-    /// `[life]` 的 `context` 不是正整数（施工 LF-10）。
-    BadLifeContext,
     /// 示范对话第一行不是人说的。
     FirstLine,
     /// 示范对话没有一问一答交替。
@@ -167,7 +162,6 @@ impl Code {
             Code::BadBackgroundOpacity => "bad_background_opacity",
             Code::BadBackgroundFocus => "bad_background_focus",
             Code::BadBackgroundBlur => "bad_background_blur",
-            Code::BadLifeContext => "bad_life_context",
             Code::FirstLine => "first_line",
             Code::TakeTurns => "take_turns",
             Code::LastLine => "last_line",
@@ -177,7 +171,7 @@ impl Code {
 
     /// 全部，照先后：给人看的字的门禁照它查三种语言都有（`miyu-store` 的 `every_persona_problem_is_said_in_three_languages`）。
     /// 列全了由测试 `all_lists_every_code_in_order` 守（施工 FX-4：P-7 加的背景三种原来没进表）。
-    pub const ALL: [Code; 18] = [
+    pub const ALL: [Code; 17] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -191,7 +185,6 @@ impl Code {
         Code::BadBackgroundOpacity,
         Code::BadBackgroundFocus,
         Code::BadBackgroundBlur,
-        Code::BadLifeContext,
         Code::FirstLine,
         Code::TakeTurns,
         Code::LastLine,
@@ -211,8 +204,7 @@ impl fmt::Display for Problem {
 /// 读 `persona.toml`：`[persona]` 一张表，里面只有 `name`、`summary`，各是一张语言到一句话的表（`zh`、`en`、`ja`），话不能是
 /// 空的，和 `subagent`（`true`、`false`，施工 P-10 补）；`[knowledge]` 一张表，里面只有 `bases`
 /// （一列知识库的编号，施工 K-1 下）；`[appearance]` 一张表，里面只有 `seed`
-/// （`#rrggbb`，大小写都认，施工 P-6）和背景图的三格；`[life]` 一张表，里面只有 `context`（正整数，施工 LF-10）。整个文件、
-/// 这几张表、每一格都可以没有。
+/// （`#rrggbb`，大小写都认，施工 P-6）。整个文件、这几张表、每一格都可以没有。
 ///
 /// # Errors
 ///
@@ -238,10 +230,6 @@ pub fn read_toml(text: &str) -> Result<PersonaFile, Problem> {
             file.background_opacity = appearance.background_opacity;
             file.background_focus = appearance.background_focus;
             file.background_blur = appearance.background_blur;
-            continue;
-        }
-        if key == "life" {
-            file.life_context = read_life(item, &at)?;
             continue;
         }
         if key != "persona" {

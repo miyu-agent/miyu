@@ -252,37 +252,6 @@ fn a_cell_of_the_wrong_type_only_spoils_its_row() {
     assert!(table.unreadable().unwrap().is_empty());
 }
 
-/// 施工 LF-1：人生循环的一行写进去、重开读得回原样，表里那一格写成 `life`。
-#[test]
-fn a_life_loop_row_reads_back_the_same() {
-    let scratch = Scratch::new();
-    let root = root(&scratch);
-    let written = {
-        let table = opened(&root);
-        table
-            .add(
-                NewSchedule {
-                    when: When::At { at: at(2_000) },
-                    looping: Some(Loop::Life),
-                    ..every_minute(2_000)
-                },
-                at(1_000),
-            )
-            .unwrap()
-    };
-    assert_eq!(written.looping, Some(Loop::Life));
-    let (table, _) = Schedules::open(&root);
-    let table = table.unwrap();
-    assert_eq!(table.list().unwrap(), [written]);
-    let cell: String = rusqlite::Connection::open(path(&root))
-        .unwrap()
-        .query_row("SELECT loop FROM schedules WHERE id = 't1'", [], |row| {
-            row.get(0)
-        })
-        .unwrap();
-    assert_eq!(cell, "life");
-}
-
 /// 施工 LO-3：她自己定节奏的那一行没定下一次、没停着才删；定了的、停着的、别的种类不删。
 #[test]
 fn an_unpaced_dynamic_loop_ends_and_nothing_else_does() {

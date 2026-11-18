@@ -1,6 +1,5 @@
-//! 循环、人生给模型看的字不说醒、睡（施工 WK-2，2026-11-17 项目主人定）：她不是每一轮之间睡下去了，一轮接一轮说「继续」
-//! 「下一轮」。查 `resources/software/loop`、`resources/software/life` 下所有的 `.txt` 和 `tools/*.json`，给人看的
-//! `human/` 不在里头。
+//! 循环给模型看的字不说醒、睡（施工 WK-2，2026-11-17 项目主人定）：她不是每一轮之间睡下去了，一轮接一轮说「继续」
+//! 「下一轮」。查 `resources/software/loop` 下所有的 `.txt` 和 `tools/*.json`，给人看的 `human/` 不在里头。
 
 use std::path::{Path, PathBuf};
 
@@ -29,13 +28,11 @@ fn model_facing(dir: &Path, found: &mut Vec<PathBuf>) {
 }
 
 #[test]
-fn loop_and_life_texts_never_say_wake_or_sleep() {
+fn loop_texts_never_say_wake_or_sleep() {
     let software = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources/software");
     let mut files = Vec::new();
-    for package in ["loop", "life"] {
-        model_facing(&software.join(package), &mut files);
-    }
-    assert!(files.len() > 10, "找到了出厂的字：{files:?}");
+    model_facing(&software.join("loop"), &mut files);
+    assert!(files.len() > 5, "找到了出厂的字：{files:?}");
     for path in files {
         let text = std::fs::read_to_string(&path)
             .expect("读得了")

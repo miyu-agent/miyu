@@ -56,6 +56,11 @@ mod tests;
 /// 第一次造会话时，从最新的这么多个会话的 `session.created` 里补回来（施工 4-9 再补三上）。
 const REMEMBERED: usize = 1024;
 
+/// 放在堆上的一步（施工 LF-12 修；那一步里最深的一条路施工 RM-1 拆了，新开会话、命令分发这几步照旧装箱）：新开会话
+/// 的状态很大，写成普通的 `async fn` 的话，调的一方那一帧里要先放下整份状态；调试版里每一处 `.await` 各占一份，从连接一路
+/// 叠下来新开会话本身就要 800 KiB 上下的栈。交回装好箱的，调的一方只拿一个指针。
+pub(crate) type Heaped<'a, T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + Send + 'a>>;
+
 /// 会话表。
 #[derive(Debug)]
 pub(crate) struct Sessions {
@@ -142,7 +147,7 @@ impl Sessions {
         cwd: String,
         dirs: Vec<String>,
         who: Opening,
-    ) -> crate::life::Heaped<'a, Result<Created, Refusal>> {
+    ) -> Heaped<'a, Result<Created, Refusal>> {
         Box::pin(async move {
             check_dirs(core, &dirs)?;
             let mut open = self.open.lock().await;
@@ -337,7 +342,6 @@ impl Sessions {
             group: None,
             confined: child.confined,
             images: child.images,
-            life: false,
             titles: true,
             dream: None,
             origin: None,

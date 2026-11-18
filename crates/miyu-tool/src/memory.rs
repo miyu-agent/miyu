@@ -20,9 +20,6 @@ pub const REMEMBER: &str = "remember";
 pub const FORGET: &str = "forget";
 /// 搜记忆的那件工具的名字。
 pub const MEMORY_SEARCH: &str = "memory_search";
-/// 她在人生会话里记下、改、去掉自己的一处变化的那件工具的名字（施工 LF-11，设计 `70-推演人生.md` 第六节）：在包 `base-life`
-/// 里，只在没结束的人生会话的工具面上；经 [`MemoryPort::note`]、[`MemoryPort::drop_note`] 记。
-pub const NOTE_CHANGE: &str = "note_change";
 
 /// `memory_search` 最多给几条记下的：端口照它挑（出厂值只在这一处，以后要改再进配置）。
 pub const MEMORIES: usize = 10;
@@ -43,16 +40,8 @@ pub trait MemoryPort: Send + Sync {
     /// 记一条：出处是这一轮，听众是这一轮的，`by` 是这次调用；写了 `replaces` 的是改那一条。交回它的编号。
     fn save<'a>(&'a self, remember: Remember) -> Pending<'a, Result<MemoryId, Refused>>;
 
-    /// 作废一条：她的 `forget`。她记下的自己的变化（`miyu_recall::CHANGE`）拒成 [`Refused::Change`]（施工 LF-11）。
+    /// 作废一条。
     fn retire<'a>(&'a self, id: MemoryId, why: String) -> Pending<'a, Result<(), Refused>>;
-
-    /// 记一条她自己的变化（施工 LF-11，`note_change` 给了 `text`）：类是 `miyu_recall::CHANGE`，出处是这一轮，`by` 是这次调用；
-    /// 写了 `replaces` 的是改那一条，它得是现在算数的一条变化。新记的（没写 `replaces`）在现在算数的已经有
-    /// `miyu_recall::CHANGES` 条时拒。交回它的编号。
-    fn note<'a>(&'a self, note: Note) -> Pending<'a, Result<MemoryId, NoteRefused>>;
-
-    /// 去掉一条她自己的变化（施工 LF-11，`note_change` 给了 `drop`）：它得是现在算数的一条变化；`why` 记进作废的原因。
-    fn drop_note<'a>(&'a self, id: MemoryId, why: String) -> Pending<'a, Result<(), NoteRefused>>;
 
     /// 搜记下的和以前的对话。`forgotten` 时连作废的一起。只交现在算数的、出处还活着的、听众合的，最多 [`MEMORIES`] 条记下的、
     /// [`TURNS`] 段以前的对话（这个会话自己的不算），最相关的在前。
@@ -88,39 +77,8 @@ pub enum Refused {
     NoSuch(MemoryId),
     /// 这一条已经被改掉、作废了。
     NotCurrent(MemoryId),
-    /// 这一条是她记下的自己的变化（`miyu_recall::CHANGE`，施工 LF-11）：只有人生会话里的 `note_change` 改得了、去得掉；她的
-    /// `remember` 的 `replaces`、`forget`，人经协议改一条都拒成它。
-    Change(MemoryId),
     /// 写不进、读不了：为什么。
     Failed(String),
-}
-
-/// 记一条她自己的变化要的（施工 LF-11，[`MemoryPort::note`]）。
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Note {
-    /// 正文：工具查过长度（[`TEXT_CHARS`]）。
-    pub text: String,
-    /// 改的是哪一条。
-    pub replaces: Option<MemoryId>,
-    /// 为什么变的：她写了的记在这一条上，给人看。
-    pub why: Option<String>,
-}
-
-/// 她自己的变化记不下、去不掉（施工 LF-11）：几种照记忆的，另加两种。
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum NoteRefused {
-    /// 照记忆的几种：没有这一条、已经不算了、写不进。
-    Memory(Refused),
-    /// `replaces`、`drop` 指着的那一条不是她记下的变化。
-    NotANote(MemoryId),
-    /// 现在算数的已经有这么多条（`miyu_recall::CHANGES`）：新记一条得先改一条、去掉一条。
-    Full(usize),
-}
-
-impl From<Refused> for NoteRefused {
-    fn from(refused: Refused) -> NoteRefused {
-        NoteRefused::Memory(refused)
-    }
 }
 
 /// 搜到的。

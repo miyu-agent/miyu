@@ -9,7 +9,6 @@
   "said": {
     "next/set": "下次 {next}",
     "next/stopped": "已停止循环",
-    "next/unstoppable": "人生循环停不了",
     "next/no-loop": "没有在跑的循环",
     "next/no-delay": "没给间隔",
     "common/bad-args": "参数不对：{error}",

@@ -39,7 +39,6 @@ fn listed(n: u8, persona: &str, busy: bool) -> Listed {
         forked: false,
         archived: false,
         dream_result: None,
-        life: miyu_store::index::Life::Not,
     }
 }
 

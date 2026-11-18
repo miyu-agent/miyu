@@ -23,15 +23,10 @@ fn installed(resources: &ResourceRoot, without: &[&str]) -> Vec<Found> {
 }
 
 /// 原来基础系统组里的包：`miyu-basesystem` 的十八个，加上定时、循环两个（施工 J-2，它们的代码在 `miyu-schedule`）。施工 FG-1 起
-/// 待办、定时、循环进了任务和定时组，项目文档进了注入环境信息组，这里照旧一起卸。同在 `miyu-schedule` 的结束人生（施工 LF-4 下）
-/// 也一起卸。
+/// 待办、定时、循环进了任务和定时组，项目文档进了注入环境信息组，这里照旧一起卸。
 fn group() -> Vec<&'static str> {
     let mut group = miyu_basesystem::PACKAGES.to_vec();
-    group.extend([
-        miyu_schedule::SCHEDULE,
-        miyu_schedule::LOOP,
-        miyu_schedule::LIFE,
-    ]);
+    group.extend([miyu_schedule::SCHEDULE, miyu_schedule::LOOP]);
     group
 }
 
@@ -57,7 +52,6 @@ fn the_catalog_has_the_base_system() {
             "cron_delete",
             "cron_list",
             "edit",
-            "end_life",
             "forget",
             "glob",
             "goal",
@@ -70,7 +64,6 @@ fn the_catalog_has_the_base_system() {
             "kb_save",
             "kb_search",
             "memory_search",
-            "note_change",
             "package",
             "packages",
             "read",
@@ -110,13 +103,6 @@ fn a_builtin_without_its_manifest_brings_no_tools() {
         !names_without(&[GOAL]).contains(&"goal".to_string()),
         "没装长期目标，没有 goal"
     );
-    let without_life = names_without(&[miyu_schedule::LIFE]);
-    for tool in ["end_life", "note_change"] {
-        assert!(
-            !without_life.contains(&tool.to_string()),
-            "没装人生这个包，没有 {tool}（施工 LF-4 下、LF-11）"
-        );
-    }
     let without_knowledge = names_without(&[KNOWLEDGE]);
     for tool in ["kb_search", "kb_read", "kb_save", "kb_edit", "kb_delete"] {
         assert!(

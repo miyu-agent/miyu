@@ -337,14 +337,14 @@ Run a slash command: the head passes along exactly what the person typed; the co
 | `as` | object | Venue sessions: speaking for a person on the platform, as in `session.send` |
 | `prefix` | `"keep"` or `"compact"` | For commands that start a turn (templates, MCP prompts, setting or resuming `/goal`): the person's choice when the prefix is changing, as in `session.send` (**Prefix changing**) |
 
-**Response**: `{"command", "events", "said"}`: the canonical name (aliases resolved), the events appended, and the reply line (in the connection's language, shown to the person as-is). A command that opens a page returns `{"command", "opens": {"package", "widget"}, "said": ""}` and the head opens that page. `/life` adds `session`, the life session's id (only when there is one), so the head can jump to it, and with it `persona`, the id of the persona whose life it is. `/life` typed alone also adds `lives`: every persona's life session that has not ended (same shape as [`life.list`](life.en.md#lifelist), with this session's persona first), so the head can offer them to jump to; it is absent when there is none.
+**Response**: `{"command", "events", "said"}`: the canonical name (aliases resolved), the events appended, and the reply line (in the connection's language, shown to the person as-is). A command that opens a page returns `{"command", "opens": {"package", "widget"}, "said": ""}` and the head opens that page.
 
 **Commands the core knows**:
 
 | Command | What it does |
 |---|---|
 | `/clear` (`/reset`) | Clear the context and the to-do list, like `session.clear` |
-| `/stop` | Remove this session's loop, interrupt this turn and stop the background commands and subagents this session spawned, and its organizing. In a life session it also pauses the life (it does not end it); the reply says to continue with `/life resume` |
+| `/stop` | Remove this session's loop, interrupt this turn and stop the background commands and subagents this session spawned, and its organizing |
 | `/workspace <path>` | Change the working directory; without a path, say where it is |
 | `/context <tokens>`, `/context unset` (or `off`), `/context` | Set this session's context limit (`128000`, `128k` and `1m` all work), like `context` in `session.configure`; remove it; say the limit and compaction line right now |
 | `/todo`, `/todo clear` | Show the to-do list; clear it |
@@ -352,14 +352,13 @@ Run a slash command: the head passes along exactly what the person typed; the co
 | `/dream`, `/dream stop` | Organize memory now (answered in the background); stop the organizing in progress, keeping what's merged |
 | `/clear-memory` (`/reset-memory`) | Clear what this session remembered |
 | `/goal` family | Show, set, pause, resume, edit, clear the standing goal |
-| `/life`, `/life new`, `/life pause`, `/life resume`, `/life kill` | For this session's persona: say how its life session is doing (with none, nothing is started: the reply explains what a life session is and how to start one); start a new one (ending the current one first), pause, resume, end it, like `life.new`, `life.pause`, `life.resume`, `life.kill`. Local sessions only. In a session with no persona it looks across all personas: when only one persona has a life session it acts on that one (the reply names the persona), when several do it lists them and changes nothing; `/life new` starts nothing and says to pick a persona first |
-| `/loop <interval> <prompt>`, `/loop <prompt>`, `/loop`, `/loop off` | Send it at a fixed interval; let the AI pick when to run next (if its turn sets no next run, the loop ends and its row is removed); let the AI decide what to do and when (an autonomous loop); stop this session's loops (`/loop clear` and `/loop stop` do the same). One loop per session, typing it again replaces the old one; typed (or due) while the session is in a turn, it waits for that turn to end instead of joining it; absent when the session's preset has loops off. A life session is its own loop and no other is started: typed alone it says how the life is doing, `/loop off` pauses the life, and one with a prompt is not accepted and gets a one-line reply |
+| `/loop <interval> <prompt>`, `/loop <prompt>`, `/loop`, `/loop off` | Send it at a fixed interval; let the AI pick when to run next (if its turn sets no next run, the loop ends and its row is removed); let the AI decide what to do and when (an autonomous loop); stop this session's loops (`/loop clear` and `/loop stop` do the same). One loop per session, typing it again replaces the old one; typed (or due) while the session is in a turn, it waits for that turn to end instead of joining it; absent when the session's preset has loops off. |
 
 Anything else is looked up, in order, among your own command templates (`commands/<name>.md`), commands extensions declare (the core forwards them, `command.call`), and templates in packages. A template expands into a message sent as if the person said it: the response's `events` is that message and `said` is empty.
 
 A name of the form `<server>:<prompt>` (exactly one `:`) is an MCP server's prompt: the core fetches it with `prompts/get`, splitting the words that follow on whitespace (a pair of English double quotes makes one word, without the quotes) and matching them to the prompt's declared arguments in order, the last argument taking the rest. The text and images that come back are sent as one message from this person, as with a template. Only in local sessions; it is switched with the server's feature `mcp-<server>`.
 
-**Who can use them**: anyone in local sessions; in venue sessions, the owner and managers. The system setting `commands.<name>.access` can change that to `anyone` or `off` (disabled). `/workspace` and `/life` are for the owner only; in venue sessions `/life` is an `unknown_command`.
+**Who can use them**: anyone in local sessions; in venue sessions, the owner and managers. The system setting `commands.<name>.access` can change that to `anyone` or `off` (disabled). `/workspace` is for the owner only.
 
 The same `id` sent again counts once: with the same parameters you get the first reply back (the `events` and `said` from then) and the command isn't run again; with different parameters it is refused with `id_reused` and the command isn't run. The core remembers the last 1024 and forgets them on restart, after which the command runs again. Refused ones are not remembered; sending again is judged again.
 

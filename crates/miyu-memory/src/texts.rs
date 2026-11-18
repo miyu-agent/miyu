@@ -22,8 +22,6 @@ pub(crate) struct All {
     pub(crate) failed: Template,
     pub(crate) no_such: Template,
     pub(crate) not_current: Template,
-    /// 那一条是她记下的自己的变化（施工 LF-11）：`remember` 的 `replaces`、`forget` 指着它。
-    pub(crate) change: Template,
     pub(crate) saved: Template,
     pub(crate) replaced: Template,
     pub(crate) too_long: Template,
@@ -51,7 +49,6 @@ impl Texts {
             failed: text("common", "failed", &["error"])?,
             no_such: text("common", "no-such", &["id"])?,
             not_current: text("common", "not-current", &["id"])?,
-            change: text("common", "change", &["id"])?,
             saved: text("remember", "saved", &["id"])?,
             replaced: text("remember", "replaced", &["id", "old"])?,
             too_long: text("remember", "too-long", &["chars", "limit"])?,
@@ -108,9 +105,6 @@ impl Texts {
                 "common/not-current",
                 &[("id", &id.to_string())],
             ),
-            Refused::Change(id) => {
-                self.error(&self.0.change, "common/change", &[("id", &id.to_string())])
-            }
             Refused::Failed(error) => {
                 self.error(&self.0.failed, "common/failed", &[("error", error)])
             }

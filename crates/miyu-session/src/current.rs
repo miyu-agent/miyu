@@ -47,12 +47,6 @@ pub struct Current {
     /// 会话钉的压缩触发线，窗口的百分之几（施工 CT-1）：内核照日志算的，刚钉了、还没开回合的也是钉的；没钉的（跟着
     /// `compaction.line`）没有。`view.status` 的 `compaction_line` 照它写。
     pub compaction_line: Option<u64>,
-    /// 封存了没有（施工 LF-4 上）：人生结束照它等封存了再清。
-    pub sealed: bool,
-    /// 人生结束了没有（施工 LF-4 上）：日志里有过 `life.ended`。
-    pub life_ended: bool,
-    /// 是不是人生会话（施工 LF-4 下）：日志里有过 `life.started`，结束了的也是。她的 `end_life` 照它认。
-    pub life: bool,
 }
 
 /// 这个会话累计的：用量、金额照用量汇总的口径，另数压缩、缓存断了几次。

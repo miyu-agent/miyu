@@ -58,9 +58,6 @@ use miyu_store::root::DataRoot;
 use miyu_store::usage::UsageIndex;
 use miyu_tool::{Catalog, Log};
 
-/// 测试场地里回合开始等记忆多久（施工 LF-6 修）：很长，不拿真的磁盘去赛出厂的几百毫秒（Windows 的 CI 上输过）；测过了时限的先换成很短的，那一轮过去再换回它。
-pub const PATIENT: std::time::Duration = std::time::Duration::from_secs(60);
-
 /// 一个临时的数据根，建好了骨架；源码树里的资源目录；一个假的系统家目录（施工 4-3 下）。
 pub struct Home {
     pub scratch: Scratch,
@@ -126,8 +123,6 @@ impl Home {
             &root,
             Some(SummaryTexts::load(&resources).expect("读得到摘要的字")),
         );
-        // 回合开始等记忆等得很长（施工 LF-6 修，为什么见 `PATIENT`）。
-        memory.wait_reads(PATIENT);
         Home {
             knowledge: Arc::new(
                 miyu_store::knowledge::Knowledge::new(&root).with_extractor(extractor()),
@@ -233,7 +228,6 @@ impl Home {
             }),
             confined: lines.confined,
             images: lines.images,
-            life: false,
             titles: true,
             dream: None,
             origin: None,

@@ -27,7 +27,6 @@ use super::Memory;
 use super::listener::Listener;
 use super::vectors::{Query, Target, Using, Vectors};
 
-mod change;
 mod heard;
 mod import;
 mod search;
@@ -105,7 +104,7 @@ impl Keeper {
     ///
     /// # Errors
     ///
-    /// `replaces` 没有这一条（听众不合的也当没有）、是她记下的变化（施工 LF-11）、已经不算了；记忆日志开不了、写不进。
+    /// `replaces` 没有这一条（听众不合的也当没有）、已经不算了；记忆日志开不了、写不进。
     pub fn save(
         &self,
         stamp: Stamp,
@@ -117,7 +116,6 @@ impl Keeper {
         // E-1 修四：她的工具不收涉及谁）；这个会话没听到过群名的，在哪个群照旧的（施工 E-4 上）。
         let (carried, carried_who, carried_people, carried_place) = match remember.replaces {
             Some(old) => {
-                self.not_a_change(&log, old)?;
                 let old = self.current(&log, old)?;
                 (old.keywords, old.who, old.people, old.place)
             }
@@ -154,7 +152,6 @@ impl Keeper {
             who,
             people,
             place: self.place().or(carried_place),
-            why: None,
             imported: None,
         };
         self.append(&log, stamp, &MemoryEvent::Saved(saved))
@@ -227,7 +224,6 @@ impl Keeper {
                 who: candidate.who,
                 people: candidate.people,
                 place: places.get(&candidate.turn).cloned(),
-                why: None,
                 imported: None,
             };
             let stamp = Stamp {
@@ -315,7 +311,8 @@ impl Keeper {
             .collect())
     }
 
-    /// `since` 以后忘掉的（作废的、改掉的旧版本）：听众合、没清掉的、不是她记下的变化的（施工 LF-11），新的在前最多 `limit` 条（施工 R-6 修，`memory.md` 第六条第 4 款）。抽取照它告诉模型这些别再记。
+    /// `since` 以后忘掉的（作废的、改掉的旧版本）：听众合、没清掉的，新的在前最多 `limit` 条（施工 R-6 修，
+    /// `memory.md` 第六条第 4 款）。抽取照它告诉模型这些别再记。
     ///
     /// # Errors
     ///
@@ -334,7 +331,7 @@ impl Keeper {
                 })
                 .collect()
         });
-        dropped.retain(|(_, entry)| !entry.cleared && entry.class != miyu_recall::CHANGE);
+        dropped.retain(|(_, entry)| !entry.cleared);
         // 同一个时刻忘掉的照编号：后记的在前。
         dropped.sort_by(|a, b| b.0.cmp(&a.0).then(b.1.id.cmp(&a.1.id)));
         Ok(dropped

@@ -386,8 +386,7 @@ fn read<T: DeserializeOwned>(params: &Value) -> Result<T, Refusal> {
     serde_json::from_value(params.clone()).map_err(|_| Refusal::BAD_PARAMS)
 }
 
-/// 在阻塞线程里做，[`Refused`] 写成拒绝：没有的、听众不合的 `unknown_memory`，不算了的 `memory_not_current`，她记下的自己的
-/// 变化 `change_note`（施工 LF-11），磁盘上出的错
+/// 在阻塞线程里做，[`Refused`] 写成拒绝：没有的、听众不合的 `unknown_memory`，不算了的 `memory_not_current`，磁盘上出的错
 /// 记一行、是内部出错。
 async fn blocking<T: Send + 'static>(
     work: impl FnOnce() -> Result<T, Refused> + Send + 'static,
@@ -396,7 +395,6 @@ async fn blocking<T: Send + 'static>(
         Ok(Ok(done)) => Ok(done),
         Ok(Err(Refused::NoSuch(_))) => Err(Refusal::UNKNOWN_MEMORY),
         Ok(Err(Refused::NotCurrent(_))) => Err(Refusal::MEMORY_NOT_CURRENT),
-        Ok(Err(Refused::Change(_))) => Err(Refusal::CHANGE_NOTE),
         Ok(Err(Refused::Failed(error))) => {
             tracing::warn!(target: "miyu::endpoint", error = %error, "memory failed");
             Err(Refusal::INTERNAL)

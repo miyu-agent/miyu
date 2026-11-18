@@ -20,8 +20,6 @@ A memory is one sentence of at most 120 characters. It has an id, written as `m`
 
 A memory can carry an extra line of keywords, separated by commas, at most 200 characters. Keywords are only used to find the memory; the AI does not see this line.
 
-There is one more class, `change`: the AI's own notes of how it has changed in a simulated life. Only the AI in a life session can write it, automatic saving and organizing leave it alone, and you can only retire and restore it, see [Simulated life](life.en.md#change-over-life).
-
 Besides the individual memories there are two more things, both written when memories are organized:
 
 - What it knows about you: a short summary.

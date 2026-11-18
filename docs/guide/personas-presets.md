@@ -19,7 +19,6 @@
 | 常规开发 | `dev` | 基础系统、注入环境信息、任务和定时三组，网络搜索，人格记忆，写技能和软件包的两个技能。别的不开，以后新装的也不开 | 写代码，不要扩展、MCP 服务这些额外的东西 |
 | 极简开发 | `minimal` | 只有读文件、新建文件、编辑文件、运行命令四件工具，和环境信息的八样 | 想让 AI 照模型自己会的做，工具越少越好 |
 | 无功能 | `none` | 什么都不开，以后新装的也不开 | 只聊天；或者以它为底，自己打开几样 |
-| 推演人生 | `life` | 注入环境信息、网络搜索、人格记忆、循环任务、结束人生、后天、人设遵循提醒、翻查本会话。没有命令和文件 | 推演人生的会话用，见 [推演人生](life.md)。网页里选预设的地方（新会话、换预设、默认预设、项目、定时任务）不列它，设置的「预设」页照列；终端的选择框照列 |
 
 出厂的默认预设是 `full`。
 
@@ -78,8 +77,7 @@ miyu config set preset.default dev
 └── prompts/
     ├── persona.md        # 人设
     ├── examples.md       # 示范对话
-    ├── reminders.md      # 人设提醒短语
-    └── life.md           # 推演人生时这条人生怎么过
+    └── reminders.md      # 人设提醒短语
 ```
 
 每样都可以没有，空文件夹也算一个人格。放进去以后新开的会话就能选。
@@ -100,9 +98,6 @@ seed = "#2f6f9f"                # 主题色
 background_opacity = 40         # 背景图露出多少，0 到 100
 background_focus = [50, 30]     # 背景图对准哪一处，横、竖各 0 到 100
 background_blur = 10            # 背景图模糊多少，1 到 100
-
-[life]
-context = 128000                # 推演人生时人生会话的上下文上限（token）
 ```
 
 | 格 | 说明 |
@@ -115,7 +110,6 @@ context = 128000                # 推演人生时人生会话的上下文上限�
 | `appearance.background_opacity` | 0 到 100 的整数 |
 | `appearance.background_focus` | 两个 0 到 100 的整数 |
 | `appearance.background_blur` | 1 到 100 的整数，不写是不模糊 |
-| `life.context` | 正整数，人生会话的上下文上限（token）。不写是 `100000`。手改文件只管以后开的人生；在网页人格页改的，当场管这个人格没结束的人生会话。见 [推演人生](life.md#花费) |
 
 只认这几张表、这几格，写了别的报错。
 
@@ -133,7 +127,6 @@ context = 128000                # 推演人生时人生会话的上下文上限�
   ```
 
 - `reminders.md`：人设提醒短语，一小段提醒 AI 别出戏的话。预设开着「人设遵循提醒」时，每 3 轮给 AI 再看一遍，系统提示词末尾另加一句要 AI 调完工具也保持人设的话。不想要的，删掉这个文件，或者在预设里关掉「人设遵循提醒」（出厂的「常规开发」「极简开发」就没开）。
-- `life.md`：推演人生时这条人生怎么过，见 [推演人生](life.md)。网页人格页的「推演方法」写的就是它。
 
 头像放 `avatar.png`、`avatar.jpg` 或 `avatar.webp`，背景图放 `background.png`、`background.jpg` 或 `background.webp`。在界面里换的，头像最大 1 MiB、宽高不超过 1024，背景图最大 5 MiB、宽高不超过 4096。
 
@@ -166,7 +159,6 @@ env-workdir = true
 | `summary` | 一句说明，给你看，不发给模型 |
 | `icon` | 图标，写 [Lucide](https://lucide.dev) 的图标名 |
 | `unlisted` | 没写到的功能开不开：`on` 开，`off` 关。以后新装的也照它。不写是 `on` |
-| `hidden` | `true`：不列进新会话选预设的列表，设置页里照样能改 |
 
 别的几张：
 
@@ -183,7 +175,7 @@ env-workdir = true
 
 | 什么 | 编号 |
 |---|---|
-| 出厂的工具 | 多数同工具名，例如 `read`、`shell`、`subagent`。不一样的：`web_search` 是 `web-search`，`web_fetch` 是 `web-fetch`，`send_message` 跟 `sessions` 一个功能 `sessions`，`remember`、`memory_search`、`forget` 是 `memory`，五件 `kb_*` 是 `knowledge`，三件 `cron_*` 是 `schedule`，`schedule_next` 是 `loop`，`end_life` 是 `life`，`note_change` 是 `change`。全表见 [AI 能用的工具](tools.md) |
+| 出厂的工具 | 多数同工具名，例如 `read`、`shell`、`subagent`。不一样的：`web_search` 是 `web-search`，`web_fetch` 是 `web-fetch`，`send_message` 跟 `sessions` 一个功能 `sessions`，`remember`、`memory_search`、`forget` 是 `memory`，五件 `kb_*` 是 `knowledge`，三件 `cron_*` 是 `schedule`，`schedule_next` 是 `loop`。全表见 [AI 能用的工具](tools.md) |
 | 不带工具的出厂功能 | 环境信息 `env-time`、`env-workdir`、`env-permission`、`env-session`、`env-model`、`env-harness`、`env-machine`、`env-profile`；自动注入 AGENTS 文档 `project-docs`；命令行调用工具 `clicall`；人设遵循提醒 `roleplay` |
 | 技能 | `skill-<技能名>` |
 | 脚本 | `script-<工具名>` |
@@ -197,7 +189,7 @@ env-workdir = true
 | `basesystem` | 基础系统 | 读文件、新建文件、编辑文件、找文件、搜内容、删到回收站、运行命令、后台运行、命令行调用工具、子代理、求助旗舰模型、提问、展示给用户、跨会话消息、翻查本会话、用量查询、软件包 |
 | `tasks` | 任务和定时 | 待办清单、长期目标、定时任务、循环任务 |
 | `environment` | 注入环境信息 | 环境信息的八样、自动注入 AGENTS 文档 |
-| `persona` | 人格 | 人格记忆、人设遵循提醒、结束人生、后天 |
+| `persona` | 人格 | 人格记忆、人设遵循提醒 |
 | `research` | 查资料 | 网络搜索、知识库 |
 
 在出厂的基础上改一点，只写改了的。例如全部功能里关掉网络搜索，文件叫 `full.toml`：
@@ -217,7 +209,7 @@ web-search = false
 ## 在界面里建和改
 
 - 终端：设置页（`/settings`）主菜单的「人格」「预设」两项。列表里 `a` 新建，填名字，编号可以留空让 Miyu 起；`Enter` 打开一个来改。人格能改名字、简单描述、子代理可选、头像、具体人格提示词、示范对话、人设提醒短语，提示词按 `Enter` 进编辑窗写，或者按 `Ctrl+G` 交给外部编辑器（`$VISUAL`，没有的用 `$EDITOR`，都没有的用 `vi`）；Windows 上没有外部编辑器这一条，在编辑窗里写或者粘贴进去。预设能改名字、描述和每个功能、每件工具的开关，`Space`、`Tab` 或 `Enter` 切，`Ctrl+A` 全切；改一项存一项。窗里按 `d` 删除；出厂的、软件包带的改过的，`d` 是恢复出厂设置。新会话的选择框里按 `e`、`a` 也进同样的窗。
-- 网页：设置里的「人格」「预设」两页，能新建、改、删。人格页还有「推演人生」开关，开着时下面露出「推演方法」「人生会话上下文窗口」，见 [推演人生](life.md#在网页的人格设置里开)。开着的会话里，点左上角的会话标题，「人格」那一行的笔是「编辑这个人格」。
+- 网页：设置里的「人格」「预设」两页，能新建、改、删。开着的会话里，点左上角的会话标题，「人格」那一行的笔是「编辑这个人格」。
 
 在界面里改出厂的、软件包带的，存进你那一层，只写你改了的。删掉的人格进回收站，留 7 天；删掉的预设找不回。
 

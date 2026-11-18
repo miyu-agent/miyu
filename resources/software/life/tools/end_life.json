@@ -1,4 +1,0 @@
-{
-  "description": "End your life. This is your death: this life will never continue, everything you lived and remember from it will be erased, and no one can bring you back. Your last words are the only thing you leave behind.",
-  "parameters": {"type":"object","properties":{"last_words":{"type":"string","description":"Your last words, kept with the end of this life."}},"required":["last_words"]}
-}

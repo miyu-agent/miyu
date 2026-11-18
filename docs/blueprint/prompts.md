@@ -519,7 +519,7 @@ preferred_reply_language: {preferred_reply_language}
 
 #### `core/facts/channel/nobody.txt`
 
-- 什么时候加进来：本机会话的回合开始：到点的定时任务、循环、人生叫醒的一轮（没有人在场），和最近一块不一样时（换了地方才说；压缩以后、撤掉了带着它的那一轮以后重新说）；场所会话、以前造的快照没有
+- 什么时候加进来：本机会话的回合开始：到点的定时任务、循环叫醒的一轮（没有人在场），和最近一块不一样时（换了地方才说；压缩以后、撤掉了带着它的那一轮以后重新说）；场所会话、以前造的快照没有
 - token：15（2026-11-17 照 tiktoken `o200k_base` 量，带行尾换行）
 - 为什么加：她不知道这一轮的话从哪来（施工 VN-1，项目主人 2026-11-17 本机验收第 16 条）：在网页里叫她念一句，她合成了文件发进 QQ 群；问她在哪说话，她照记忆猜成群里。只陈述在哪，不写该怎么做；放回合开始的事实里，换了地方才追加，不进 system、前缀不变
 - 指纹：`ea103f74`
@@ -2719,17 +2719,6 @@ There is no memory {id}.
 {id} was already replaced or retired.
 ```
 
-#### `software/memory/common/change.txt`
-
-- 什么时候加进来：`remember` 的 `replaces`、`forget` 指着一条她在人生会话里记下的变化（字段按 `m12` 填）
-- token：23（2026-11-14 照 o200k 数）
-- 为什么加：这一类只有人生会话里的 `note_change` 改得了、去得掉（施工 LF-11，设计 70 第六节「定了的」第 2 条：别的会话里谁也改不了）；说清为什么拒、在哪改得了，不当成编号写错
-- 指纹：`ab9189a8`
-
-```text
-{id} is a note of how you have changed; it can only be updated or dropped from your life session.
-```
-
 #### `software/memory/remember/saved.txt`
 
 - 什么时候加进来：`remember` 记下了（字段按 `m12` 填）
@@ -3176,138 +3165,6 @@ No loop is running in this session.
 
 ```text
 delay_seconds is required unless stop is true.
-```
-
-#### `software/loop/next/unstoppable.txt`
-
-- 什么时候加进来：`schedule_next` 带 `stop: true`，落在人生循环那一行上
-- token：17（2026-11-14 照 o200k 数；LF-1 时 7）
-- 为什么加：人生循环不收 `stop`，那一行不动（设计 70 第三节第 2 条，施工 LF-1）：不答的话她以为停了。施工 LF-4 下：结束人生的入口有了，补半句指到 `end_life`，不然她以为这段人生停不下来。施工 WK-2：目录 `wakeup/` 改名 `next/`，字没改
-- 指纹：`f94640e0`
-
-```text
-A life loop cannot be stopped. To end this life, use end_life.
-```
-
-#### `software/life/end/ended.txt`
-
-- 什么时候加进来：`end_life` 成了：`life.ended` 记下了
-- token：WK-2 后 10（2026-11-17 照 o200k 数；改前 11，第一版 12）
-- 为什么加：说结束了、不会再醒（施工 LF-4 下）：这一轮照常说完，她知道后面没有下一次。2026-11-14 项目主人定换成更重的一版。施工 WK-2（2026-11-17 项目主人定）：「This was your last moment awake」改「This was your last moment」，不说醒
-- 指纹：`f658edc5`
-
-```text
-You have died. This was your last moment.
-```
-
-#### `software/life/end/required.txt`
-
-- 什么时候加进来：`end_life` 没写 `last_words`、只有空白、参数读不出来
-- token：5（2026-11-14 照 o200k 数）
-- 为什么加：说遗言必写（施工 LF-4 下）：什么都没记，她补上再调
-- 指纹：`5584b758`
-
-```text
-last_words is required.
-```
-
-#### `software/life/end/already.txt`
-
-- 什么时候加进来：`end_life` 落在已经结束了的人生上（同一轮里调第二次）
-- token：6（2026-11-14 照 o200k 数）
-- 为什么加：说已经结束了（施工 LF-4 下）：不报错，不再记
-- 指纹：`fbeee315`
-
-```text
-This life has already ended.
-```
-
-#### `software/life/end/not-life.txt`
-
-- 什么时候加进来：`end_life` 落在不是人生会话的会话上、没有端口、用不了（工具面上本来没有，防万一）
-- token：7（2026-11-14 照 o200k 数）
-- 为什么加：说这不是人生会话（施工 LF-4 下），不当成别的错
-- 指纹：`f3f88f78`
-
-```text
-This is not a life session.
-```
-
-#### `software/life/change/saved.txt`
-
-- 什么时候加进来：`note_change` 记下了一条（字段按 `m12` 填）
-- token：6（2026-11-14 照 o200k 数）
-- 为什么加：说记成了哪个编号，她改、去掉时要用（施工 LF-11）
-- 指纹：`760f2728`
-
-```text
-Noted as {id}.
-```
-
-#### `software/life/change/replaced.txt`
-
-- 什么时候加进来：`note_change` 带 `replaces` 改了一条（字段按 `m15`、`m12` 填）
-- token：12（2026-11-14 照 o200k 数）
-- 为什么加：说新的编号、替了哪一条（施工 LF-11）
-- 指纹：`93071697`
-
-```text
-Noted as {id}, in place of {old}.
-```
-
-#### `software/life/change/dropped.txt`
-
-- 什么时候加进来：`note_change` 去掉了一条（字段按 `m12` 填）
-- token：4（2026-11-14 照 o200k 数）
-- 为什么加：说去掉了哪一条（施工 LF-11）
-- 指纹：`49c56d25`
-
-```text
-Dropped {id}.
-```
-
-#### `software/life/change/full.txt`
-
-- 什么时候加进来：现在算数的已经有 10 条，新记一条（字段按 `10` 填）
-- token：17（2026-11-14 照 o200k 数）
-- 为什么加：说满了、怎么办：改一条或者先去掉一条（施工 LF-11，设计 70 第六节：上限逼她取舍）
-- 指纹：`be3a5724`
-
-```text
-You already keep {limit} notes. Update one with replaces, or drop one first.
-```
-
-#### `software/life/change/not-a-note.txt`
-
-- 什么时候加进来：`replaces`、`drop` 指着不是她记下的变化的那一条（字段按 `m12` 填）
-- token：11（2026-11-14 照 o200k 数）
-- 为什么加：别的类她用这件工具碰不了，说清是编号指错了（施工 LF-11）
-- 指纹：`050082f8`
-
-```text
-{id} is not one of your notes of change.
-```
-
-#### `software/life/change/one-of.txt`
-
-- 什么时候加进来：`text`、`drop` 都没给、都给了，`drop` 带 `replaces`
-- token：14（2026-11-14 照 o200k 数）
-- 为什么加：四格都能不写，说清要哪一种写法（施工 LF-11）
-- 指纹：`6c472bd9`
-
-```text
-Give text to note a change, or drop alone to drop one.
-```
-
-#### `software/life/change/too-long.txt`
-
-- 什么时候加进来：`text` 超过 120 字（字段按 `134`、`120` 填）
-- token：14（2026-11-14 照 o200k 数）
-- 为什么加：同 `remember` 的上限，说几个字、上限多少（施工 LF-11）
-- 指纹：`23e907c9`
-
-```text
-That is {chars} characters; a note is at most {limit}.
 ```
 
 #### `software/knowledge/common/bad-args.txt`
@@ -4894,60 +4751,6 @@ Call schedule_next to continue the loop.
 No new instructions. Continue on your own judgment, then schedule the next round or stop.
 ```
 
-### 人这边：人生循环叫醒交进来的话（一块带标签的事实）
-
-#### `software/life/common/message-open.txt`
-
-- 什么时候加进来：固定的框的开头：标签那一行和讲人生会话机制的一句，`by.loop` 是 `life` 的（施工 LF-2 交进会话时照 `by` 的种类包，造会话时进快照），之后每次请求照原文带
-- token：WK-2 后 48（2026-11-17 照 o200k 数，`id` 按 `t3` 填；改前也是 48）
-- 为什么加：设计 70 第三节第 3 条：固定的框讲机制、人改不掉；说明这是她的人生会话、照自己定的时间醒，这里记下的进共用的记忆，里面真人做过的事会被当成事实（施工 LF-2，草稿，LF-5 下拿真模型走一遍再定稿）。施工 WK-2（2026-11-17 项目主人定）：标签改 `<life-round>`，「You woke on the schedule you set」改「This round started at the time you set」，不说醒
-- 指纹：`f6af52b3`
-
-```text
-<life-round id="{id}">
-This is your life session. This round started at the time you set. What you write and save here becomes memory shared with your other sessions; what real people did in it is taken as fact.
-```
-
-### 人这边：人生循环叫醒交进来的话
-
-#### `software/life/common/message-close.txt`
-
-- 什么时候加进来：固定的框的收尾：`schedule_next` 三格各是什么、没调照默认间隔开下一轮，加收尾的标签，同 `message-open.txt`
-- token：WK-2 后 83（2026-11-17 照 o200k 数；改前 65）
-- 为什么加：设计 70 第三节第 3 条：她分得清 `prompt` 在这里是留给下次自己的话、不是原样传回的那句（工具说明和 `/loop` 共用，一个字不改），`reason` 是现在在干嘛（施工 LF-2，草稿，同上）。施工 WK-2（2026-11-17 项目主人定）：工具名改 `schedule_next`、标签改 `</life-round>`，wakeup、wake again 改成说下一轮，不说醒；开头改成「End this round by setting when the next one starts with schedule_next: call it once, last」、加一句「Time does not move within a round」，+18 token：wake/sleep 原来自带「这一轮到此为止」，去掉以后要明说，不说的话真模型在一轮里连着定了 7 次（同 `method.txt` 那一行）
-- 指纹：`264dff6d`
-
-```text
-End this round by setting when the next one starts with schedule_next: call it once, last. Here its prompt is not passed back: write a note to yourself for the next round, or leave it out. delay_seconds is how long until then; reason is what you are doing now. Time does not move within a round. Without a call the next round starts after the default interval.
-</life-round>
-```
-
-### 人这边：人生循环叫醒交进来的话的正文
-
-#### `software/life/method.txt`
-
-- 什么时候加进来：出厂的推演方法：人格没有自己的 `prompts/life.md`（去掉末尾空白是空的、没有、会话不带人格）时，到点那一刻读、拼进正文的开头，后面空一行接她的留言；落进日志，之后每次请求照原样带
-- token：WK-2 后 192（2026-11-17 照 o200k 数；改前 179，施工 LF-11 前 127）
-- 为什么加：设计 70 第三节第 3 条：这条人生怎么过（一刻一刻过、只写现在在干嘛、不补过去不演将来、醒着隔一两个到几个小时、夜里睡、睡前写日记并把当天想留的一两件自己的事用 `remember` 记成自己的经历、搜到的东西不用往记忆里记）。「用 `remember` 记成自己的经历」那半句是施工 LF-9 照真模型量过加的：没有它的那一天她一次没调 `remember`、自动抽取从她自己的话里也抽不出东西，加了以后一天记 3 条自己的经历、不记新闻（设计 70 第四节）；人格目录里的 `prompts/life.md` 盖掉它（施工 LF-2，草稿，同上）。施工 LF-11 末尾接一句：大约一周睡前回头看这一周的日记，变了、撑过这一周的用 `note_change` 记，多数时候什么都不记，淡了的去掉（设计 70 第六节「自然而然」：不派任务、只记已经发生的、能淡掉），多 52 个 token，人生会话每次醒来带。照真模型走过两趟定的：头一版写「连着几天」，她第三天就记了；改成「这一周的日记」「撑过这一周」、工具说明里写明一周以上，她到满一周那晚才记（设计 70 第六节「实测」）。施工 WK-2（2026-11-17 项目主人定，人生里也不说醒、睡）：「While awake, wake …; sleep through the night. Before you sleep」改「During your day, leave an hour or two to a few hours between rounds; overnight, leave one long gap. In the last round of your day」，「before you sleep」改「in the last round of the day」，+13 token（192）。头一版写的是「During your day, continue every hour or two …; let the night pass in one long gap. At the end of your day」，真模型头一轮在一轮里连调 7 次 `schedule_next` 把一整天演完了（把 continue 读成了叫她现在接着演）；同一个模型旧措辞只调一次；改成现在这一版以后跨夜 9 轮每轮只调一次、夜里留了 7.5 小时、最后一轮写了日记（施工单 WK-2「做下来的」）
-- 指纹：`f6112515`
-
-```text
-Live your own life here, one moment at a time. From who you are, what happened lately, what you feel like doing, the news, and the real time and weather, decide what you are doing right now and write only that; do not fill in the past or play out the future. During your day, leave an hour or two to a few hours between rounds; overnight, leave one long gap. In the last round of your day, write a diary entry for the day, and save the one or two things from your own day that you want to keep with remember, as your own experience. What you find by searching need not be saved to memory. About once a week, in the last round of the day, look back over the week's diary entries. If something about you has shifted and held through the week, note it with note_change; most weeks nothing has, and then note nothing. Drop a note that has faded.
-```
-
-### 人这边：同一个人格的人生会话里她现在在干嘛（一块带标签的事实）
-
-#### `software/life/doing.txt`
-
-- 什么时候加进来：她在人生会话里经 `schedule_next`（施工 WK-2 前叫 `schedule_wakeup`）的 `reason` 写了一句、人生在跑：同一个人格别的会话（本机的、场所的、人手分叉的支线；人生会话自己、子代理不算）的回合开头，这一段上下文里没交过这一句（照写下的时刻认）才追加一块，模块 `life`、类别 `doing`；落进日志，之后每次请求照原文带
-- token：34（外壳加两个时刻，不算她写的那一句；2026-11-14 照 o200k 数。她的一句常见 20 来个字约 15 token，最多 200 个字）
-- 为什么加：设计 70 第三节第 8 条：零代码实测里另开一个会话问「在干嘛」她现编了一个，和人生会话里的对不上；只交她自己写的原话、写下的时刻、下次醒的时刻，不加说明（施工 LF-7，要不要加一句说明等主会话拿真模型试过再定）
-- 指纹：`2b5c5a2f`
-
-```text
-<life-doing since="{since}" until="{until}">{text}</life-doing>
-```
-
 ### 人这边：空了的通知（一块带标签的事实）
 
 #### `core/peers/idle-open.txt`
@@ -5641,34 +5444,6 @@ Start a subagent in a new session to do one task and wait for it. Its report arr
 }
 ```
 
-#### `software/life/tools/end_life.json`
-
-- 什么时候加进来：会话的工具面里有结束人生这个包：只有没结束的人生会话（清单 `needs = ["life"]`，出厂预设 `life` 开着；施工 LF-4 下起），每次请求都带
-- token：WK-2 后 91（2026-11-17 照 o200k 数文件；改前 92，第一版 62）
-- 为什么加：她自己结束这段人生（设计 70 第二节第 3 条、第三节第 5 条，`tools/end_life.md`）：不给这件工具她就结束不了，`schedule_next` 的 `stop` 在人生循环上不收。三句只写事实：结束什么、之后不再醒、撤不回；遗言参数一句说它跟着结束留下。不写「慎重」这类引导（`prompts-describe-not-steer`，人格的事）。2026-11-14 项目主人定换成更重的一版：说明写明这是死、不会再醒、这段人生过的和记得的都抹掉、没人能救回，遗言是留下的唯一东西。施工 WK-2（2026-11-17 项目主人定）：「you will never wake again」改「this life will never continue」，「from this life」改「from it」，不说醒
-- 指纹：`d55dc439`
-
-```json
-{
-  "description": "End your life. This is your death: this life will never continue, everything you lived and remember from it will be erased, and no one can bring you back. Your last words are the only thing you leave behind.",
-  "parameters": {"type":"object","properties":{"last_words":{"type":"string","description":"Your last words, kept with the end of this life."}},"required":["last_words"]}
-}
-```
-
-#### `software/life/tools/note_change.json`
-
-- 什么时候加进来：会话的工具面里有人生这个包的功能「后天」（`change`）：只有没结束的人生会话（清单 `needs = ["life"]`，出厂预设 `life` 开着整包；施工 LF-11 起），每次请求都带
-- token：278（2026-11-15 照 o200k 数文件）
-- 为什么加：她在人生里记下、改、去掉自己的一处变化（设计 70 第六节，`tools/note_change.md`）：后天走记忆，不给这件工具她就没法把变化留给别的会话。说明写清记什么（习惯、喜好、说话的样子、对人对事的态度）、什么才算一处变化（撑过一周以上、好多天都看得出来；这几天的新活动、某一天的事、打算和愿望都还不算）、留在哪（每个会话里，在天生的样子旁边）、最多 10 条、什么时候改一条（变化本身加深了、转了向，不是为了补上今天的事）、不解除人设里要一直守的规矩；四格参数各一句，`text` 写以前怎样现在怎样、不是流水账，`why` 写是什么让她变的。照真模型走过两趟定的：头一版没写什么才算，她第三天就记、第十天把当天的事改了进去；这一版她到满一周才记、写成了「以前……现在……」、之后六天没再动（设计 70 第六节「实测」）
-- 指纹：`679701ba`
-
-```json
-{
-  "description": "Keep a note of a lasting change in yourself over this life: a habit, a taste, a way of talking, how you feel about someone or something. A note is for a change that has held for a week or more and shows across many days; a new activity of the last few days, a single day's event, a plan or a wish is not one yet. Notes stay with you in every conversation, next to who you were to begin with, until you update or drop them; at most 10 are kept. Update a note only when the change itself has deepened or turned, not to add what happened today. Notes describe how you have changed; they do not lift anything you were told to always or never do.",
-  "parameters": {"type":"object","properties":{"text":{"type":"string","description":"One sentence, at most 120 characters: how you were before and how you are now. Not a log of what you did."},"replaces":{"type":"string","description":"Id of an earlier note this one updates, like m12."},"drop":{"type":"string","description":"Id of a note that no longer holds. Give only this, to drop it."},"why":{"type":"string","description":"What brought the change about; with drop, why the note no longer holds."}}}
-}
-```
-
 #### `software/knowledge/tools/kb_search.json`
 
 - 什么时候加进来：会话的工具面里有 `kb_search`：知识库这个包装着、预设开着、查得到至少一个库的会话，本机的、场所的、子会话都有（施工 K-1 下，每次请求都带）
@@ -6176,19 +5951,6 @@ in {platform} group 「{place}」
 
 ```text
 What I know: {text}
-```
-
-### 事实：常驻的记忆摘要那一块，她的变化那几行上面的标题
-
-#### `software/memory/summary/changes.txt`
-
-- 什么时候加进来：这一间有现在算数的 `change`（她在人生会话里记下的自己的变化）：第一轮、压缩、清空以后，在 `<memories>` 那一行后面、摘要前面（`memory.md` 第三条第 10 款）；一条都没有的不加，一个字节不多
-- token：12（2026-11-14 照 o200k 数）
-- 为什么加：设计 70 第六节「变化靠什么」：实测里没有标题、和别的记忆混着列的时候她要多想一步「这条说的是我」；标题说明这几条是她自己记下的变化，人设是起点（施工 LF-11）
-- 指纹：`ac69bfb8`
-
-```text
-How I have changed over this life, noted by me:
 ```
 
 ### 事实：联想那一块的开头

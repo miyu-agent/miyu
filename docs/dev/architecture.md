@@ -92,7 +92,7 @@
 | `miyu-net` | 可选软件包 `net`：抓网页做链接卡片、工具 `web_fetch` | 3 执行器 |
 | `miyu-memory` | 记忆的工具：`remember`、`forget`、`memory_search` | 3 执行器 |
 | `miyu-goal` | 长期目标的工具 `goal` | 3 执行器 |
-| `miyu-schedule` | 定时任务、循环的工具：`cron_*`、`schedule_wakeup`、`end_life` | 3 执行器 |
+| `miyu-schedule` | 定时任务、循环的工具：`cron_*`、`schedule_next` | 3 执行器 |
 | `miyu-client` | 给头和组件用的门面：连核心、找数据根、协议里的类型、给人看的字 | 3 执行器 |
 | `miyu-heap` | 进程的堆：glibc 上限制 arena、空闲时还内存；内存记账 | 3 执行器 |
 | `miyu-mcp` | MCP 的客户端：经标准输入输出说 MCP，列工具、调工具 | 3 执行器 |

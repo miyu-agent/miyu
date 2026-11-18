@@ -171,7 +171,7 @@
 | `blocks` | 给模型看的内容块：`{"type": "text", "text"}`、`{"type": "image", "blob", …}`。图先 `blob.put` |
 | `error` | 这次调用算出错 |
 | `end_turn` | 这一步的结果都到了以后，不再请求模型，这一轮结束 |
-| `sent` | 她「发出去」的东西，不给模型看；头画在正文里，聊天平台照它发。图至多 4 张：`{"blob", "media_type", "width", "height", "name"?, "alt"?, "sticker"?}`；语音至多一段：`{"blob", "media_type", "voice": true, "duration_ms"?, "name"?}`，`media_type` 是 `audio/` 开头的（`audio/mpeg`、`audio/wav`、`audio/ogg`），blob 至多 10 MiB。多了、写法不对的整份当出错，原话给她；语音大了的不交，回她一句「没交出去、超过 10 MB」。头照这一轮是谁开的放不放（见 [视图流](view.md) 的 `voice`）；本机会话里没人开口的一轮（到点的定时任务、循环、人生）出了语音、这时又没有头开着这个会话的，核心经总线调 `tts.play {"audio": <blob>}` 从这台电脑的音箱放；场所会话由桥发成语音消息 |
+| `sent` | 她「发出去」的东西，不给模型看；头画在正文里，聊天平台照它发。图至多 4 张：`{"blob", "media_type", "width", "height", "name"?, "alt"?, "sticker"?}`；语音至多一段：`{"blob", "media_type", "voice": true, "duration_ms"?, "name"?}`，`media_type` 是 `audio/` 开头的（`audio/mpeg`、`audio/wav`、`audio/ogg`），blob 至多 10 MiB。多了、写法不对的整份当出错，原话给她；语音大了的不交，回她一句「没交出去、超过 10 MB」。头照这一轮是谁开的放不放（见 [视图流](view.md) 的 `voice`）；本机会话里没人开口的一轮（到点的定时任务、循环）出了语音、这时又没有头开着这个会话的，核心经总线调 `tts.play {"audio": <blob>}` 从这台电脑的音箱放；场所会话由桥发成语音消息 |
 | `detail` | 给头看的结构化结果，照下面三种通用形状写一种；不给模型看。形状不对的、`error` 是真的，核心丢掉这一格、结果照常 |
 | `data` | 给脚本的结构化结果，任意 JSON：AI 在命令里用 `miyu call` 调到的（`clicall`），印成一行 JSON 交给脚本；不给模型看，不记进 `tool.result`。`error` 是真的不交 |
 | `state` | 你这个包在这个会话里的一份状态，写法见下面「`session.set_state`、`session.state`」：核心照会话记最新一份，撤销、清空上下文跟着走。写坏了整份丢掉、结果照常；`null` 当没写，清掉写 `{}`；`error` 是真的不收 |

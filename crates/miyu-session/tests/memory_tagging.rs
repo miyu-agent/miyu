@@ -113,7 +113,6 @@ fn save_in_group(home: &Home, text: &str, place: &str) {
         who: None,
         people: Vec::new(),
         place: Some(place.into()),
-        why: None,
         imported: None,
     };
     log.append(now(), alice(), None, &MemoryEvent::Saved(saved))
@@ -135,7 +134,6 @@ fn save_tagged(home: &Home, text: &str, keywords: &str) {
         who: None,
         people: Vec::new(),
         place: None,
-        why: None,
         imported: None,
     };
     log.append(now(), alice(), None, &MemoryEvent::Saved(saved))

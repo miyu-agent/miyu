@@ -37,8 +37,6 @@ pub struct Entry {
     pub people: Vec<String>,
     /// 在哪个群（施工 E-4 上）：记下那一刻的群名；没有的没有。
     pub place: Option<String>,
-    /// 为什么变的（施工 LF-11）：她记下的自己的变化那一类才有，她记的时候写的原因；没有的没有。
-    pub why: Option<String>,
     /// 记下的时刻。
     pub at: Timestamp,
     /// 谁记的。
@@ -135,18 +133,12 @@ impl MemoryBook {
         self.stale
     }
 
-    /// 编号 `id` 的那一条合进了现在的摘要：它变了，摘要就不算了。她记下的自己的变化（[`super::CHANGE`]，施工 LF-11）不进
-    /// 摘要，改它、作废它、恢复它都不碰摘要：照被动到的那一条（改一条时是被改的旧的那一条）的类看。
+    /// 编号 `id` 的那一条合进了现在的摘要：它变了，摘要就不算了。
     fn touch(&mut self, id: MemoryId) {
-        let change = self
-            .entries
-            .get(&id)
-            .is_some_and(|entry| entry.class == super::CHANGE);
-        if !change
-            && self
-                .summary
-                .as_ref()
-                .is_some_and(|(_, upto)| id.seq() <= *upto)
+        if self
+            .summary
+            .as_ref()
+            .is_some_and(|(_, upto)| id.seq() <= *upto)
         {
             self.summary = None;
             self.stale = true;
@@ -230,7 +222,6 @@ impl MemoryBook {
                         who: saved.who,
                         people: saved.people,
                         place: saved.place,
-                        why: saved.why.map(|why| why.0),
                         replaces: saved.replaces,
                         // 导进来的照原来记下的时刻（施工 MI-1）。
                         at: saved

@@ -8,8 +8,6 @@
 //! - 什么时候、跑在哪、谁建的照 JSON 存成一格：形状在 [`When`]、[`Target`]、[`Creator`]，加种类不改表。
 //! - 到点怎么算、怎么交进会话不在这里（端点的 `schedules`）：这里只存取。
 
-mod doing;
-mod lived;
 mod open;
 mod row;
 #[cfg(test)]
@@ -27,8 +25,6 @@ use miyu_kernel::time::Timestamp;
 use crate::root::DataRoot;
 use crate::sqlite::{DbError, idle};
 
-pub use doing::Doing;
-pub use lived::Unseen;
 pub use open::Opened;
 
 /// 一个任务。
@@ -145,9 +141,6 @@ pub enum Loop {
     Fixed,
     /// 她每轮结束自己定下一次。
     Dynamic,
-    /// 人生（施工 LF-1，设计 `70-推演人生.md` 第三节第 2 条）：同 `Dynamic` 她每轮自己定下一次，另有三处不同：这一轮没定的照
-    /// 默认间隔再醒，核心起来时错过的马上补醒一次，`stop` 不收。通用的定时入口碰不到它，只有人生自己的入口动得了。
-    Life,
 }
 
 /// 上一次跑的结果。
@@ -318,15 +311,8 @@ impl Schedules {
     ///
     /// 写不了库。
     pub fn remove(&self, id: &str) -> Result<bool, DbError> {
-        let mut db = self.lock();
-        let tx = db.transaction()?;
-        let removed = tx.execute("DELETE FROM schedules WHERE id = ?1", params![id])? > 0;
-        // 她在这一行上写的「现在在干嘛」跟着删（施工 LF-7）。
-        doing::write(&tx, id, None)?;
-        // 推演到第几轮也跟着删（施工 LF-14）。
-        lived::forget_rounds(&tx, id)?;
-        tx.commit()?;
-        Ok(removed)
+        let db = self.lock();
+        Ok(db.execute("DELETE FROM schedules WHERE id = ?1", params![id])? > 0)
     }
 
     /// 她自己定节奏的循环（`loop` 是 `dynamic`）那一轮结束时没定下一次（施工 LO-3）：只在那一行还在、没定下一次、没停着时删，
@@ -342,71 +328,6 @@ impl Schedules {
             params![id],
         )?;
         Ok(removed > 0)
-    }
-
-    /// 任务 `id` 上她写的「现在在干嘛」（施工 LF-7，只有人生那一行有）；没写过的、清掉了的没有。
-    ///
-    /// # Errors
-    ///
-    /// 读不了库。
-    pub fn doing(&self, id: &str) -> Result<Option<Doing>, DbError> {
-        let db = self.lock();
-        doing::read(&db, id)
-    }
-
-    /// 任务 `id` 上她写的「现在在干嘛」换成 `doing`，没有的清掉（施工 LF-7）。不看有没有这个任务：调的一方刚改过那一行。
-    ///
-    /// # Errors
-    ///
-    /// 写不了库。
-    pub fn set_doing(&self, id: &str, doing: Option<&Doing>) -> Result<(), DbError> {
-        let db = self.lock();
-        doing::write(&db, id, doing)
-    }
-
-    /// 任务 `id` 又推演了一轮（施工 LF-14，只有人生那一行记）：加一，交回加完是第几轮。
-    ///
-    /// # Errors
-    ///
-    /// 写不了库。
-    pub fn add_round(&self, id: &str) -> Result<u64, DbError> {
-        lived::add_round(&self.lock(), id)
-    }
-
-    /// 任务 `id` 推演到第几轮；一轮都没有的是 0。
-    ///
-    /// # Errors
-    ///
-    /// 读不了库。
-    pub fn rounds(&self, id: &str) -> Result<u64, DbError> {
-        lived::rounds(&self.lock(), id)
-    }
-
-    /// 她自己结束了、还没人看过的那几段人生（施工 LF-14），结束得早的在前。
-    ///
-    /// # Errors
-    ///
-    /// 读不了库。
-    pub fn unseen(&self) -> Result<Vec<Unseen>, DbError> {
-        lived::unseen(&self.lock())
-    }
-
-    /// 记下一段还没人看过的人生。
-    ///
-    /// # Errors
-    ///
-    /// 写不了库。
-    pub fn mark_unseen(&self, one: &Unseen) -> Result<(), DbError> {
-        lived::mark(&self.lock(), one)
-    }
-
-    /// 会话 `session` 的那一段看过了（或者会话删了）：清掉，原来记着的交回真。
-    ///
-    /// # Errors
-    ///
-    /// 写不了库。
-    pub fn seen(&self, session: &SessionId) -> Result<bool, DbError> {
-        lived::seen(&self.lock(), session)
     }
 
     /// 最早的下一次（停着的不算）；一个都没有的没有。

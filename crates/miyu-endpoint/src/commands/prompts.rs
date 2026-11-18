@@ -138,7 +138,7 @@ pub(super) fn run<'a>(
     id: &'a CommandId,
     params: &'a RunParams,
     (name, rest): (&'a str, &'a str),
-) -> crate::life::Heaped<'a, Result<Value, Refusal>> {
+) -> crate::sessions::Heaped<'a, Result<Value, Refusal>> {
     Box::pin(async move {
         let session = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
         let found = core.sessions.get(core, &session).await?;

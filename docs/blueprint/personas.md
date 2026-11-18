@@ -34,8 +34,7 @@ personas/<编号>/                 你的（数据根下）
 └── prompts/
     ├── persona.md               人设
     ├── examples.md              示范对话
-    ├── reminders.md             角色扮演提示（施工 P-1 补）
-    └── life.md                  推演方法（施工 LF-2）
+    └── reminders.md             角色扮演提示（施工 P-1 补）
 ```
 
 1. 编号就是目录名：小写字母开头，小写字母、数字、`-`、`_`，最多 64 个（和配置里的名字一个写法）；不能是 Windows 的设备名（`con`、`prn`、`aux`、`nul`、`com1`～`com9`、`lpt1`～`lpt9`，`miyu_fs::windows_reserved`，施工 WN-1）：Windows 上建不出来，编号要能跨机器用，三个系统一律拦。
@@ -43,7 +42,6 @@ personas/<编号>/                 你的（数据根下）
 3. 每样都可以没有：测试用的样本（软件工程师，`docs/designs/samples/personas/engineer/`）只有 `persona.toml` 的名字和 `prompts/persona.md`。
 4. `prompts/reminders.md`（施工 P-1 补）：整份是一条提示，照原样（例如旧版 Miyu 的 `miyu.hint.md`）；去掉末尾空白是空的，算没有。有它的人格每 3 轮在触发的那句后面多一块提示，system 最后多一句风格锁（`26-提示词.md` J10、第四节第 7 块）。
 5. 资源目录里没有 `personas/`（施工 P-4 下，2026-10-08 项目主人：「软件默认不自带任何人格，人格允许为空」，`16-人格与预设.md` Y11 改了）：原来出厂的软件工程师 `engineer`、空人格 `none` 撤掉了。施工 PE-1（2026-10-31 项目主人定，Y11 再改）起出厂带一个软件工程师 `software-engineer`，住在出厂包 `base-persona-engineer` 里（「软件包带的」第 3 条），人设见登记簿（`26-提示词.md` 第十节）；它不算进第一次引导，引导照常带人建自己的人格，`persona.default` 出厂照旧不设。软件工程师挪成测试用的样本 `docs/designs/samples/personas/engineer/`：要人格的测试把它装进临时数据根的 `root/personas/`（`miyu_session::testkit::install_sample_persona`），照旧用编号 `engineer`。以前造的、钉着 `engineer`、`none` 的会话照快照里冻结的接着用（「怎么走」第 6 条）。
-6. `prompts/life.md`（施工 LF-2，设计 `70-推演人生.md` 第三节第 3 条）：推演方法，这条人生怎么过，什么语言都行。照第 2 条同名替换（上面一层的空文件也盖住下面的），`miyu_store::personas::Found` 的 `life`。不进快照：人生循环每次醒来那一刻读，拼进交进会话的正文开头（`schedules.md` 第三节第 4 条）；去掉末尾空白是空的、哪一层都没有的用出厂的 `resources/software/life/method.txt`。经协议读写同别的提示词（施工 LF-8 上，名字 `life`，见「改」）：`persona.get` 的 `prompts.life` 是叠好以后有没有字（去掉空白不是空的），`persona.read` 另带出厂的那一份 `default`，`persona.set` 写你那一层的这个文件；写了的下一次醒来就用新的，不动在跑的会话。`Found` 的 `life_from` 记它来自哪一层，`persona.read` 照它找原文。
 
 **`persona.toml`**：
 
@@ -63,7 +61,6 @@ bases = ["notes"]
 - `[persona]` 里只有 `name`、`summary`、`subagent`（P-3 上那几个小时里写进去的 `base` 不再另外认，同别的不认识的键，施工 AUD-3，2026-11-13 项目主人定：还没发版，旧兼容的都去掉）：各是一句字（施工 P-3 补，2026-10-08 项目主人定：名字只存一份、不分语言）。名字去掉前后空白不能是空的；说明可以是空的字，就是没有说明，盖住下面那一层的（施工 P-3 再补，2026-10-08 项目主人：「为什么说明不让为空？」），`*.get`、`*.list` 给 `null`，要回到下面那一层的照 `unset`。以前写成语言到一句话的表（`zh`、`en`、`ja`）的照样认，照连接的语言挑；出厂的几个照旧这么写，界面照连接的语言显示。上一层写了的整格换掉。界面上 `summary` 叫「简单描述」（2026-10-17 项目主人定，不另加字段），详细的写进人设 `prompts/persona.md`（界面上叫「具体人格提示词」）；派子代理挑人格时名字和它一起给模型看（施工 P-10，`tools/subagent.md`）。
 - 没有 `[memory]` 了：施工 R-3 下加的 `[memory] scope`（记忆的默认范围）施工 FH-1 去掉（设计 55 第六节第 3 条），记忆一律跟着人格、开会话时能关；写了的照不认识的表报 `unknown table [memory]`，不做旧版兼容。
 - `[knowledge]` 里只有 `bases`（施工 K-1 下，`knowledge.md`「怎么走」第六条，19 N11）：用这个人格的会话只查得到列着的、在的那几个知识库，一列知识库的编号（写法同人格的编号）；写了空的列表一个都查不到。不写是查全部。上一层写了的整格换掉。写错的报 `bad_knowledge_bases`（不是一列、编号不合写法）。
-- `[life]` 里只有 `context`（施工 LF-10，设计 `70-推演人生.md` 第四节，2026-11-14 项目主人定：一个人格一个数，跟着人格走，不加全局配置项）：这个人格的人生会话的上下文上限，正整数，token 数。上一层写了的盖下面的；没写的照出厂的数（`life.rs` 的 `CONTEXT`，100000）。太小、照模型算不出压缩线的不在这里拒（要看用的时候的模型），用的时候抬到最少要的（`life.md`「上下文上限」）。写错的报 `bad_life_context`（0、负数、小数、不是数），`[life]` 里多了别的键报 `unknown_key`，`life` 不是表报 `not_a_table`。只是一个数：开没开人生不写进人格文件，装上这个人格的人不会因为它自己花钱。
 
 别的表、别的键、别的值报错，写明第几行：`unknown table [<表>]`、`unknown key <表>.<键>`、`knowledge must be a table`、`persona.name must be text`。声音、知识库随它们的软件包，到时候再加。
 
@@ -100,16 +97,14 @@ assistant: 8640
 6. **钉在会话上**：`session.created` 记下人格的编号（施工 P-1 下），会话列表、`subscribe` 的回应照它写 `persona`，头显示用的是谁；拼好的快照存成 blob，载入照快照，不再读人格目录。文件改了，以后造的会话用新的；已经开着的会话下一个回合换上（施工 P-1 再补，K3，`kernel/session.md`「换策略快照」）：每个回合开始，执行器照人格的编号把几层重新找一遍，人设、示范对话、角色扮演提示的指纹和快照里的不一样，就照新的重拼、换上，日志里一条内核记的带 `policy` 的 `session.policy_changed`，前缀在这一轮断一次。名字、说明不进快照，记忆的范围钉在会话上，都不跟着换。人格写错了的照旧用原来的，记一行运行日志；人格的文件没了的（以前钉着出厂人格、后来撤掉了的）照快照里的接着用，不报（施工 P-4 上）；P-1 再补以前造的快照没有指纹、程序升级过核心的字的会话，也照旧（新开的会话照新的）。
    - **人中途换人格**（施工 P-13，设计 16 Y5）：`session.configure` 的 `persona`，先压缩一轮，下一个回合照新人格重拼快照；会话列表、`subscribe` 的回应照换成的写。记忆、知识库照新人格（`memory.md`「换了人格」），细节见 `protocol.md` 的 `session.configure` 第 6 条。
 7. **`persona.list`**：几层里所有的编号（目录名不合写法的、不是目录的不算），照编号排，一个一个找；名字、说明照这个连接的语言挑，这种语言没写的照 `en`、`zh`、`ja` 的先后，都没写的是 `null`；写错了的只带 `problem`（照这个连接的语言说）和知道第几行的 `line`（施工 P-3 再补）。
-8. **`persona.get {persona}`**：叠好的样子，只给人要看的（施工 P-3 补）：名字、说明照连接的语言挑，`prompts` 是人设、角色扮演提示、推演方法（施工 LF-8 上）各有没有字，示范对话几轮，外观那几格，人生会话的上下文上限（施工 LF-10：`life_context` 是叠好以后写的数，没写的 `null`；`life_context_default` 是出厂的数 100000，头照它当占位显示），删了会怎样（`remove`）。`persona.list` 不带上限这两格。来自哪一层不往外给；提示词原文经 `persona.read` 读（原来写的「各种语言原样给、来自哪一层、原文不经协议交出去」是 P-3 补以前的样子，施工 LF-8 上照代码改过来）。
+8. **`persona.get {persona}`**：叠好的 `persona.toml` 各种语言原样给，人设、示范对话、角色扮演提示来自哪一层（没有的是 `null`，角色扮演提示施工 P-1 补），示范对话几轮。提示词原文不经协议交出去。
 9. **`miyu check`**（施工 8-30，`cli/check.md`）：每一层里每个人格的 `persona.toml`、`prompts/examples.md` 各查各的，上面一层盖住了照样报；给人看的那一句照 `persona-problems/<code>`，照连接的语言。
 
 ### 改（施工 P-3 下、P-3 补）
 
-- `persona.set`、`persona.read`、`persona.delete`（`protocol.md`）：只写你那一层的人格目录。不写编号的是新建，编号由核心起 `persona-<n>`（2026-10-08 项目主人定：新建不填编号），一次带上名字、人设、示范对话、角色扮演提示、推演方法；改出厂的、包带的就是建同名覆盖、只写改了的（16 第四节 Y3）。
+- `persona.set`、`persona.read`、`persona.delete`（`protocol.md`）：只写你那一层的人格目录。不写编号的是新建，编号由核心起 `persona-<n>`（2026-10-08 项目主人定：新建不填编号），一次带上名字、人设、示范对话、角色扮演提示；改出厂的、包带的就是建同名覆盖、只写改了的（16 第四节 Y3）。
 - 只给人要看的（2026-10-08 项目主人：「什么来自、基于，都是毫无意义的设计，你设计的时候必须考虑用户需要什么」）：名字、说明一句字，人设、角色扮演提示有没有字，示范对话几轮、一对一对的原文，删了会怎样（`remove`）。来自哪一层、以谁为底都不往协议上露；层只留在核心里，`miyu check` 照旧分层报。
-- `persona.toml` 照 `changes` 改（`crate::toml_changes`，同预设）；提示词整份换，`unset` 删你那一层的，空的字就是这一段是空的；提示词名认 `persona`、`examples`、`reminders`、`life`（推演方法，施工 LF-8 上），`pairs` 只给示范对话；示范对话另收一对一对的（`persona::write_examples` 写成文件的写法，写了读不回原样的拒绝）。写之前照改完的叠一遍（`Personas::find_with`：你那一层的几份照改完的算，删掉的当没有，没改的读盘），写错的什么都不写，拒绝里带照连接语言的一句（`data.message`）。
-- `changes` 的 `life.context`（施工 LF-10）：写一个正整数，或者 `unset` 删掉你那一层的；只查是不是正整数（照上面写错了的规矩，`persona_invalid`）。你那一层的这一格这一次确实变了、几份都写成了的，回应以前当场改这个人格没结束的人生会话（在跑的、停着的）的上限（`life.md`「上下文上限」，`crate::life::follow`）；没变的、别的改动不去找人生会话。改不成的记一行 `WARN life context not set`，`persona.set` 照样算成。
-- `persona.read {prompt: "life"}` 另带 `default`：出厂的推演方法（`resources/software/life/method.txt`，经 `ResourceRoot::life_method` 读）去掉末尾空白，读不出的是 `null`、不算错；头照它显示「没写时用的是这一份」。别的名字不带它（施工 LF-8 上）。
+- `persona.toml` 照 `changes` 改（`crate::toml_changes`，同预设）；提示词整份换，`unset` 删你那一层的，空的字就是这一段是空的；示范对话另收一对一对的（`persona::write_examples` 写成文件的写法，写了读不回原样的拒绝）。写之前照改完的叠一遍（`Personas::find_with`：你那一层的几份照改完的算，删掉的当没有，没改的读盘），写错的什么都不写，拒绝里带照连接语言的一句（`data.message`）。
 - 提示词防覆盖（终端的会话要的）：`persona.read` 给原文和你那一层这一份的版本，`persona.set` 带回来当 `expect`。写盘照配置文件的规矩，一份一份写，只试一次：几份里写到一半撞上手改的，前面写了的不撤、回 `persona_conflict`（重来时前面那几份已经是改完的样子，不再写）。
 - 删：整个目录挪进 `trash/personas/<编号>.<删的时刻，毫秒>/`（`miyu_store::trash::personas`），里面多一个 `deleted_at`；核心起来时和会话一起清，满 7 天的真删。开着的会话照旧用快照里的；默认人格指着它的，以后开会话照旧拒（不悄悄换）。你那一层没有、只住在一个只带它的出厂包里的，删它是卸那个包（「软件包带的」第 3 条，施工 PE-1；在 `crates/miyu-endpoint/src/personas/delete.rs`），开着的会话、默认人格照同样的规矩。
 - 运行日志 `INFO persona saved`、`persona deleted`。不推 `persona.changed`：两个头都是每次打开重新读。
@@ -182,9 +177,7 @@ assistant: 8640
 | `crates/miyu-endpoint/src/personas/delete/tests.rs`（施工 PE-1） | 只带这一个人格的包才算（带图标的也算）；带技能、带两个人格、带程序的不算；装上的包、你那一层也有的、没有的都不连包卸 |
 | `crates/miyu-endpoint/tests/persona_set.rs`（施工 P-3 下、补、再补） | 不写编号新建、读原文和版本、一对一对的示范对话、防覆盖、空的字、删提示词、写错的什么都不写还带一句、参数不对、删了挪进回收处（`protocol.md` 测试表）；写错的一项（旧的 `base` 也是，施工 AUD-3）列表里照连接的语言说、带行，改它的整条不收、文件不动 |
 | `crates/miyu-store/src/trash/personas/tests.rs`（施工 P-3 下） | 挪进回收处整个目录不变、多 `deleted_at`、原处没了、同一个编号删两次各是各的、不在的报错；清的时候正好满的删、没满的留、读不出删的时刻的留并报出来、没有回收处什么都不做 |
-| `crates/miyu-store/src/personas/tests.rs` | 三层逐项、逐文件叠、包那一层在出厂和你的中间、出厂的和排在前面的包盖住别的包（施工 P-11 上）、来自哪一层；空目录也算有这一层；没有的、编号不合写法的、是文件不是目录的；写错的写明哪一层；列编号不重复、照编号排；推演方法 `prompts/life.md` 照层同名替换、原样，空文件也盖住下面的（施工 LF-2），记下来自哪一层（施工 LF-8 上） |
-| `crates/miyu-endpoint/tests/persona_life.rs`（施工 LF-8 上） | `persona.read` 的 `life`：哪一层都没有的、下面那一层带的（用装着的包那一层验）、你那一层空文件（空的字不是 `null`、`prompts.life` 是 false）、你那一层写了的，都带出厂的 `default`，读不出出厂那一份的是 `null`；别的名字不带 `default`；`persona.set` 写你那一层、防覆盖、`unset` 回到下面的；`prompts.life` 有字才是 true、`persona.set` 的回应也是、新建时能带；带 `pairs` 的拒绝且什么都不写 |
-| `crates/miyu-endpoint/tests/schedule_life_wake.rs` 的 `a_method_set_through_the_protocol_is_used_on_the_next_wakeup`（施工 LF-8 上） | 经 `persona.set` 写的推演方法，这一次醒来就用它，再改了下一次用新的 |
+| `crates/miyu-store/src/personas/tests.rs` | 三层逐项、逐文件叠、包那一层在出厂和你的中间、出厂的和排在前面的包盖住别的包（施工 P-11 上）、来自哪一层；空目录也算有这一层；没有的、编号不合写法的、是文件不是目录的；写错的写明哪一层；列编号不重复、照编号排 |
 | `crates/miyu-endpoint/src/personas/tests.rs` | 名字照语言挑、退回的先后 |
 | `crates/miyu-endpoint/src/personas/glance/tests.rs`（施工 V-16） | 看一次记在盘上、换个进程照记下的给（图读不了也给）；大小变了、大小没变修改时刻变了都重算；先只要版本、后来要候选主色的补算；图不在的没有 |
 | `crates/miyu-endpoint/tests/personas.rs` | 你那一层的人格进 system、示范对话排在前面；不写人格照默认；没有的、编号不对的、写错的拒绝，默认人格指着没有的也拒，什么都不造；场所会话带人格造、找回时不看、新场所指着没有的不造；`persona.list`、`persona.get`；角色扮演提示排在人说的那句后面、第二轮不再注入、system 带风格锁，软件工程师都没有（施工 P-1 补） |

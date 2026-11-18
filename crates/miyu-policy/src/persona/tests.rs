@@ -107,7 +107,6 @@ fn an_upper_layer_replaces_what_it_writes() {
         background_opacity: None,
         background_focus: None,
         background_blur: None,
-        life_context: None,
     };
     let mine = PersonaFile {
         name: one("我的工程师"),
@@ -118,7 +117,6 @@ fn an_upper_layer_replaces_what_it_writes() {
         background_opacity: None,
         background_focus: None,
         background_blur: None,
-        life_context: None,
     };
     let merged = mine.over(shipped);
     assert_eq!(merged.name, one("我的工程师"), "写了的整格换掉");
@@ -395,14 +393,13 @@ fn all_lists_every_code_in_order() {
         Code::BadBackgroundOpacity => 10,
         Code::BadBackgroundFocus => 11,
         Code::BadBackgroundBlur => 12,
-        Code::BadLifeContext => 13,
-        Code::FirstLine => 14,
-        Code::TakeTurns => 15,
-        Code::LastLine => 16,
-        Code::EmptyLine => 17,
+        Code::FirstLine => 13,
+        Code::TakeTurns => 14,
+        Code::LastLine => 15,
+        Code::EmptyLine => 16,
     };
     let places: Vec<usize> = Code::ALL.iter().map(|code| place(*code)).collect();
-    assert_eq!(places, (0..=17).collect::<Vec<_>>());
+    assert_eq!(places, (0..=16).collect::<Vec<_>>());
 }
 
 #[test]

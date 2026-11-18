@@ -320,7 +320,6 @@ When the same id is in several layers, the one you installed wins, then the one 
 | `base-project-docs` | Inject AGENTS docs automatically | Give the AI the repository's AGENTS.md at the start of each turn | Injected environment |
 | `base-memory` | Persona memory | Remember what you said and recall it later (`remember`, `memory_search`, `forget`) | Persona |
 | `base-roleplay` | Persona reminders | Every few turns, show the AI the persona's reminder phrases again | Persona |
-| `base-life` | End of life | In a life session, the AI can end this life itself (`end_life`) and note how it has changed (`note_change`) | Persona |
 | `base-net` | Web search | Web search and fetching pages (`web_search`, `web_fetch`) | Research |
 | `base-knowledge` | Knowledge base | Look things up in the notes and documents you put in (`kb_search`, `kb_read`, `kb_save`, `kb_edit`, `kb_delete`) | Research |
 | `base-authoring` | Authoring | Two skills: `skill-creator` (writes skills), `package-creator` (writes scripts and packages) | Not in a group |

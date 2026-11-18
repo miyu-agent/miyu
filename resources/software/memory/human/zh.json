@@ -30,7 +30,6 @@
     "common/off": "这个会话没开记忆",
     "common/failed": "记忆现在用不了：{error}",
     "common/no-such": "没有 {id}",
-    "common/not-current": "{id} 已经改掉或忘掉了",
-    "common/change": "{id} 是推演人生里记下的变化，只能在人生会话里改"
+    "common/not-current": "{id} 已经改掉或忘掉了"
   }
 }

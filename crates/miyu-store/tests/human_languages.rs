@@ -236,7 +236,7 @@ fn japanese_turns_into_japanese() {
     );
 }
 
-/// 给人看的字不说「她」（设计 47 第三节第 8 条，施工 T-10；施工 FX-4 查出人生会话的几句漏了）：中文不写「她」，英文不写
+/// 给人看的字不说「她」（设计 47 第三节第 8 条，施工 T-10）：中文不写「她」，英文不写
 /// she、her、hers、herself，日文不写「彼女」。说人格的照「这个人格」、人格的名字，或者换个说法不提。
 #[test]
 fn nothing_for_people_calls_the_ai_she() {

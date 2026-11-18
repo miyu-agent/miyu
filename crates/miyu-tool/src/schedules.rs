@@ -69,11 +69,8 @@ pub enum ScheduleAsk {
         delay: u64,
         /// 醒来交进来的话，覆盖原来的；不写的照旧。
         prompt: Option<String>,
-        /// 现在在干嘛（她写的 `reason`，空白的当没写）：落在人生那一行上的记下，给同一个人格别的会话看（施工 LF-7）；她自己定
-        /// 节奏的循环不看。
-        reason: Option<String>,
     },
-    /// 停掉这个会话的动态循环；人生循环不收（[`ScheduleRefused::Unstoppable`]）。
+    /// 停掉这个会话的动态循环。
     StopLoop,
 }
 
@@ -88,7 +85,7 @@ pub struct Scheduled {
     pub prompt: String,
     /// 是不是循环。
     pub recurring: bool,
-    /// 循环的哪一种：`fixed`、`dynamic`、`life`（施工 LF-1）；不是 `/loop` 建的没有。
+    /// 循环的哪一种：`fixed`、`dynamic`；不是 `/loop` 建的没有。
     pub kind: Option<&'static str>,
     /// 下一次的时刻；停着的（动态循环醒过、她还没定下一次）没有。
     pub next: Option<Timestamp>,
@@ -124,8 +121,6 @@ pub enum ScheduleRefused {
     NotFound,
     /// 这个会话没开着动态循环。
     NoLoop,
-    /// 这个会话上跑的是人生循环（施工 LF-1）：`stop` 不收，那一行不动。
-    Unstoppable,
     /// 唤醒表用不了、会话停了：没办成。
     Unavailable,
 }
@@ -138,11 +133,6 @@ pub type ScheduleAnswering<'a> =
 pub trait SchedulePort: Send + Sync {
     /// 在会话 `session` 上办 `ask`。
     fn schedule(&self, session: &SessionId, ask: ScheduleAsk) -> ScheduleAnswering<'_>;
-
-    /// 人生会话的端口（施工 LF-4 下，[`crate::LifePort`]）：`end_life` 经它结束人生。没有的（测试里的假端口）是空的。
-    fn life(&self) -> Option<&dyn crate::LifePort> {
-        None
-    }
 }
 
 impl fmt::Debug for dyn SchedulePort {

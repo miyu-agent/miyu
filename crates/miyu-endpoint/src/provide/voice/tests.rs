@@ -62,7 +62,7 @@ fn only_a_turn_nobody_opened_is_unattended() {
     let by = |json: &str| serde_json::from_str::<By>(json).expect("合写法");
     assert!(unattended(None), "没有触发的那句");
     assert!(unattended(Some(&by(
-        r#"{"kind":"schedule","schedule":"t1","loop":"life"}"#
+        r#"{"kind":"schedule","schedule":"t1","loop":"dynamic"}"#
     ))));
     for spoken in [
         r#"{"kind":"person","head":"web"}"#,

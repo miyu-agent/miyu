@@ -282,11 +282,6 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "not_dreaming" => ("没有正在进行的整理。", "No memory organizing in progress."),
         "unknown_memory" => ("记忆不存在。", "Memory not found."),
         "memory_not_current" => ("记忆已失效。", "Memory no longer current."),
-        // 施工 LF-11：AI 在人生会话里记下的自己的变化，人改不了。
-        "change_note" => (
-            "这是 AI 在推演人生里自己记下的变化，只能作废或恢复。",
-            "This is a change the AI noted about itself in its life; it can only be retired or restored.",
-        ),
         "memory_too_long" => ("记忆过长。", "Memory too long."),
         "unknown_kb" => ("知识库不存在。", "Knowledge base not found."),
         "unknown_document" => ("文档不存在。", "Document not found."),
@@ -326,17 +321,6 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "此会话不支持长期目标。",
             "Goals are not available in this session.",
         ),
-        // 施工 LF-5 中（`life.md`「出错」）。
-        "life_exists" => (
-            "这个人格已经有人生会话了。",
-            "This persona already has a life session.",
-        ),
-        "no_life" => (
-            "这个人格没有人生会话。",
-            "This persona has no life session.",
-        ),
-        // 施工 LF-4 上。
-        "life_ended" => ("这段人生已经结束了。", "This life has ended."),
         // 施工 D-1：`session.answer` 碰得到的四个（`unknown_decision` 协议上碰不到，`protocol.md`「出错」）。
         "not_asking" => ("不在等待回答。", "Not waiting for an answer."),
         "no_rule" => ("只能允许本次或拒绝。", "Only allow once or deny."),
@@ -400,10 +384,6 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         ),
         // 施工 CLI-SAID-1：下面这些原来没有话，头和命令行只印得出「已拒绝。」。
         "unknown_schedule" => ("没有这个定时任务。", "No such schedule."),
-        "life_schedule" => (
-            "这是人生会话的循环，不能当定时任务改：暂停、继续、结束请用 /life。",
-            "This is a life session's loop and can't be changed as a schedule. Use /life to pause, resume or end it.",
-        ),
         "too_many_schedules" => (
             "定时任务已经有 200 个，先删掉几个再加。",
             "There are already 200 schedules. Delete a few before adding more.",

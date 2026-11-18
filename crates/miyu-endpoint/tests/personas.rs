@@ -291,7 +291,7 @@ async fn personas_are_listed_and_read() {
     assert_eq!(
         listed["result"]["personas"],
         json!([
-            {"persona": "broken", "problem": "不认识的表 [voice]：persona.toml 里只能有 [persona]、[knowledge]、[appearance]、[life]", "line": 1},
+            {"persona": "broken", "problem": "不认识的表 [voice]：persona.toml 里只能有 [persona]、[memory]、[appearance]", "line": 1},
             {"persona": "engineer", "name": "软件工程师", "summary": "我的工程师", "avatar": null, "background": null, "seed": null, "seeds": null, "background_opacity": null, "background_focus": null, "background_blur": null},
             {"persona": "miyu", "name": "美羽", "summary": "Mine.", "avatar": null, "background": null, "seed": null, "seeds": null, "background_opacity": null, "background_focus": null, "background_blur": null},
             // 出厂带的软件工程师（施工 PE-1）。
@@ -309,7 +309,7 @@ async fn personas_are_listed_and_read() {
             "name": "美羽",
             "summary": "Mine.",
             "subagent": false,
-            "prompts": {"persona": false, "reminders": true, "life": false},
+            "prompts": {"persona": false, "reminders": true},
             "examples": 2,
             "avatar": null,
             "background": null,
@@ -318,8 +318,6 @@ async fn personas_are_listed_and_read() {
             "background_opacity": null,
             "background_focus": null,
             "background_blur": null,
-            "life_context": null,
-            "life_context_default": 100_000,
             "remove": "delete",
         })
     );
@@ -328,7 +326,7 @@ async fn personas_are_listed_and_read() {
         .await;
     assert_eq!(
         got["result"]["prompts"],
-        json!({"persona": true, "reminders": true, "life": false})
+        json!({"persona": true, "reminders": true})
     );
     let got = client
         .call("g3", "persona.get", json!({"persona": "nobody"}))

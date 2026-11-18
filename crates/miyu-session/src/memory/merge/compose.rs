@@ -180,9 +180,7 @@ impl MergeJob {
         match found {
             Ok(found) => found
                 .into_iter()
-                // 她记下的自己的变化不当相关的交（施工 LF-11）。
                 .filter(|one| !fresh.contains(&one.id) && !given.contains(&one.id))
-                .filter(|one| one.class != miyu_recall::CHANGE)
                 .take(RELATED)
                 .collect(),
             Err(error) => {

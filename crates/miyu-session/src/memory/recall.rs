@@ -198,8 +198,7 @@ impl Keeper {
         let entries: Vec<Entry> = log.book(|book| {
             ids.iter()
                 .filter_map(|id| book.get(*id).cloned())
-                // 她记下的自己的变化不联想（施工 LF-11）：常驻那一块里已经有。
-                .filter(|entry| self.shown(entry, false) && entry.class != miyu_recall::CHANGE)
+                .filter(|entry| self.shown(entry, false))
                 .take(KEYWORDS)
                 .collect()
         });

@@ -30,6 +30,7 @@ mod recall_stamps;
 mod recall_turns_eval;
 mod recall_uses;
 mod recall_vectors;
+mod removed_life;
 mod snapshot;
 mod usage;
 mod usage_convert;

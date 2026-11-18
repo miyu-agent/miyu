@@ -1,2 +1,0 @@
-<life-round id="{id}">
-This is your life session. This round started at the time you set. What you write and save here becomes memory shared with your other sessions; what real people did in it is taken as fact.

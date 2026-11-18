@@ -61,7 +61,7 @@ The first time you open the web UI, first-run setup covers the whole page, one s
 1. Welcome: "Miyu". Click "Start".
 2. Interface language: 中文, English, 日本語, or "Follow system".
 3. Model: "Select a model provider". Pick one, fill in the key, "Test connection", pick the default model. How to fill these in: see [Models](../models.en.md).
-4. Persona: "Create persona". Fill in the name, avatar and detailed prompt; you can turn on "Simulated life" (see [Simulated life](../life.en.md)). You can "Skip"; if you skip, no persona is used.
+4. Persona: "Create persona". Fill in the name, avatar and detailed prompt. You can "Skip"; if you skip, no persona is used.
 5. Appearance: "Appearance". Choose light or dark, main color, color scheme and theme. If you skipped the persona in the previous step, this step is skipped too.
 6. About you: "How the AI knows you". Fill in "What should the AI call you" and "More about you (optional)". If both are empty, the button is "Skip".
 7. Preset: "Select preset". Click one; "Custom" lets you tick features yourself.
@@ -88,8 +88,8 @@ On a wide screen there are three columns: the left column, the conversation area
 From top to bottom:
 
 - Avatar and name: the persona of the session you are viewing, with "Online", "Connecting" or "Offline" under the name. Click the avatar to open this persona's edit card.
-- Three rows: "New session", "All sessions", "Projects". When a package adds an entry, a "More" row appears below; click it for a pop-up menu. The shipped "Simulated life" lives here; click it to list each persona's life sessions, see [Simulated life](../life.en.md).
-- Three sections: "Pinned", "Projects", "Sessions". Click a section header to fold or unfold it. "Sessions" is grouped by time: Recent, Past 7 days, Past 30 days, Older. Sessions opened by shell integration form their own group "Terminal integration"; imported archives form their own group "Archived". At most 20 are listed; "View all" below goes to the all-sessions page. Life sessions are not listed here.
+- Three rows: "New session", "All sessions", "Projects". When a package adds an entry, a "More" row appears below; click it for a pop-up menu.
+- Three sections: "Pinned", "Projects", "Sessions". Click a section header to fold or unfold it. "Sessions" is grouped by time: Recent, Past 7 days, Past 30 days, Older. Sessions opened by shell integration form their own group "Terminal integration"; imported archives form their own group "Archived". At most 20 are listed; "View all" below goes to the all-sessions page.
 - The bottom row: the gear opens Settings, and the button next to it switches between light and dark.
 
 One session per row. The mark on the left says its current state: a spinner while running, "Waiting for you", "Interrupted, waiting for input", and a dot for unread. Subagent sessions hang under the session that dispatched them; finished ones fold into "N done".
@@ -295,7 +295,7 @@ The "Sessions" page:
 
 - Top: search, "Select", "New session", "Import session…".
 - Filters: "All", "Running", "Unread". On the right, "Recent activity"; click it to switch to "Date created".
-- The list is grouped by time. Sessions in projects are not listed here; see them on the project page. Life sessions are not listed either; open them from "More → Simulated life" in the left column.
+- The list is grouped by time. Sessions in projects are not listed here; see them on the project page.
 - Multi-select works as in the left column: tick, `Shift` for a range, select all, delete.
 - "Import session…" takes an exported `.zip`; imported sessions go into the last group, "Archived". Archives are read-only; opening one says "This is an archive. You can read it but not continue it". How to export: see [Sessions](../sessions.en.md).
 
@@ -312,7 +312,7 @@ The settings page is a dialog in the middle of the page. Open it with the gear a
 | Privacy & security | Permissions and protected commands; see [Permissions and sandbox](../permissions.en.md) |
 | Models | Three tabs, "Providers", "Default models", "Model pools"; see [Models](../models.en.md) |
 | Usage | Usage and cost, by day, by model, by session, by use; today, 7 days, 30 days, all, custom |
-| Presets, Personas | Create, change, delete; see [Personas and presets](../personas-presets.en.md). For the "Simulated life" switch on the persona page and the "Life method" and "Life session context window" under it, see [Simulated life](../life.en.md#turning-it-on-in-the-persona-settings-in-the-web-ui) |
+| Presets, Personas | Create, change, delete; see [Personas and presets](../personas-presets.en.md) |
 | Memory | View, change and tidy what the AI remembers; see [Memory](../memory.en.md) |
 | Knowledge | Search, read the original, add documents, attach folders; see [Knowledge base](../knowledge.en.md) |
 | Scheduled tasks | View, create, stop and delete scheduled tasks; see [Letting the AI keep working on its own](../automation.en.md) |

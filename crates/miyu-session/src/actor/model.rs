@@ -2,8 +2,8 @@
 //! 收场（`28-运行日志.md` 第三节）。辅助请求（施工 3-8 四补的回顾、五补的起标题）也在这里：同一个端口，回报另走一路。
 //! 说完了跟着端口的限额（施工 8-9，[`Actor::follow_limits`]）：变了交给内核，模型变了推 `model.changed`。回合开始时叫端口照
 //! 这一轮的配置重新解析会话的引用（施工 8-10，[`Actor::turn_start`]）：限额变了交给内核，头看得到的变了推 `model.changed`。
-//! 思考强度（施工 8-18）给头看的那一档也算头看得到的一格。回合开始还问挂接点（施工 R-4 上，`hooks`），交同一个人格的人生里她在干嘛
-//! （施工 LF-7，`doing.rs`）。替看不了图的模型看图也在这里交给端口（施工 8-17）。人换了模型、思考强度当场照预演的报给头（施工
+//! 思考强度（施工 8-18）给头看的那一档也算头看得到的一格。回合开始还问挂接点（施工 R-4 上，`hooks`）。
+//! 替看不了图的模型看图也在这里交给端口（施工 8-17）。人换了模型、思考强度当场照预演的报给头（施工
 //! MC-1，`foresee.rs`）。
 
 use std::sync::Arc;
@@ -32,7 +32,6 @@ use crate::settings::CompactionSettings;
 use crate::shown::Shown;
 use crate::timing::turn::TurnStart;
 
-mod doing;
 mod foresee;
 mod hooks;
 mod line;
@@ -143,13 +142,12 @@ impl Actor {
         turn: TurnId,
         reference: Option<String>,
         present: Vec<Present>,
-        (said, speakers, opener): (Option<String>, Vec<Speaker>, Option<By>),
+        said: Option<String>,
+        speakers: Vec<Speaker>,
     ) -> Input {
-        // 这一轮开口的是不是主人记在这一轮上，派工具时交给脚本（施工 X-43）；记忆照说话的人带他的卡（施工 E-1 补）。
-        self.tools.round_started(turn, &speakers);
         // 放到堆上（施工 PF-3）：分段计时每段多套一层 future，这一大块原样嵌在 actor 跑的 future 里，debug 编的测试在 2 MiB
         // 的线程栈上溢出（`memory_lanes` 几个测试）。一个回合多一次分配。
-        Box::pin(self.begin(turn, reference, present, (said, speakers, opener))).await
+        Box::pin(self.begin(turn, reference, present, said, speakers)).await
     }
 
     /// [`Actor::turn_start`] 做的事。
@@ -158,7 +156,8 @@ impl Actor {
         turn: TurnId,
         reference: Option<String>,
         present: Vec<Present>,
-        (said, speakers, opener): (Option<String>, Vec<Speaker>, Option<By>),
+        said: Option<String>,
+        speakers: Vec<Speaker>,
     ) -> Input {
         let mut laps = TurnStart::start();
         let cwd = self.session.cwd().to_string();
@@ -199,26 +198,13 @@ impl Actor {
         self.project_docs_look();
         let config = Arc::clone(self.config.current());
         let knowledge = self.recalling();
-        // 同一个人格的人生里她这时在干嘛（施工 LF-7，`model/doing.rs`）：只查内存，排在记忆后面；用时记一段 `doing`。
-        let child = self.persona.as_ref().is_none_or(|refresh| refresh.child);
-        let doing = laps
-            .doing
-            .run(async {
-                doing::doing(
-                    self.tools.hooks(),
-                    (self.session.persona(), child),
-                    self.tools.offset(),
-                    &present,
-                )
-            })
-            .await;
         // 扩展和记忆、知识库一起问：各有各的限时，这一轮只等慢的那一个（施工 X-16）。
         let extensions = self.extension_injections(said.clone());
         let (mut injected, extended, docs) = tokio::join!(
             hooks::hooks(
                 self.tools.memory(),
                 knowledge,
-                (present, speakers, opener),
+                (present, speakers),
                 said,
                 config,
                 &mut laps.hooks
@@ -227,7 +213,6 @@ impl Actor {
             laps.project.run(docs)
         );
         let skills = self.skills_take(skills);
-        injected.extend(doing);
         injected.extend(extended);
         injected.extend(skills);
         injected.extend(docs);

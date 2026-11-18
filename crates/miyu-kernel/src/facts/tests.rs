@@ -5,11 +5,9 @@
 mod channel;
 mod gates;
 mod model;
-mod opener;
 mod permission;
 mod preset;
 mod reminder;
-mod said;
 mod speakers;
 
 use super::*;

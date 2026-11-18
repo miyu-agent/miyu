@@ -174,7 +174,6 @@ async fn related_old_memories_come_along_from_anywhere_and_retired_ones_do_not()
         who: None,
         people: Vec::new(),
         place: None,
-        why: None,
         imported: None,
     };
     log.append(long_ago, alice(), None, &MemoryEvent::Saved(elsewhere))
@@ -321,7 +320,6 @@ async fn a_later_extraction_still_waits_for_the_interval_and_revisions_keep_the_
         who: Some("qq:2".into()),
         people: Vec::new(),
         place: Some("周末摄影群".into()),
-        why: None,
         imported: None,
     };
     log.append(

@@ -39,20 +39,18 @@
 
 | 名字 | 说明 |
 |---|---|
-| `prompts` | `{"persona", "reminders", "life"}`：人设、角色扮演提示、推演方法有没有字（布尔，去掉空白是空的算没有；推演方法没有字的人格用出厂的那一份）；原文用 `persona.read` 读 |
+| `prompts` | `{"persona", "reminders"}`：人设、角色扮演提示有没有字（布尔）；原文用 `persona.read` 读 |
 | `examples` | 示范对话几轮 |
 | `subagent` | 派子代理时能不能挑它 |
-| `life_context` | 人生会话的上下文上限（token），没写的 `null`，照出厂的数 |
-| `life_context_default` | 出厂的上下文上限：100000 |
 | `remove` | 删了会怎样：`restore`（回到出厂的样子）、`delete`（就没了；出厂带的软件工程师这类连包卸掉的也是它）、`null`（没什么可删） |
 
 **出错**：`unknown_persona`；`persona_invalid`（文件写错了：`data.problem`、`data.message`、`data.line`）。
 
 ## `persona.read`
 
-**参数**：`persona`；`prompt`：`persona`（人设）、`examples`（示范对话）、`reminders`（角色扮演提示）、`life`（推演方法：人生循环每一轮那段话的开头）。
+**参数**：`persona`；`prompt`：`persona`（人设）、`examples`（示范对话）、`reminders`（角色扮演提示）。
 
-**回应**：`{"text", "version"}`：叠好的那一份的原文、你家目录那一层这一份的版本（没有的都是 `null`）。上面一层是空文件的，`text` 是空的字。示范对话另带 `pairs: [{"user", "assistant"}…]`。推演方法另带 `default`：出厂的那一份原文（去掉末尾空白），读不出的是 `null`；没写时用的就是它。
+**回应**：`{"text", "version"}`：叠好的那一份的原文、你家目录那一层这一份的版本（没有的都是 `null`）。示范对话另带 `pairs: [{"user", "assistant"}…]`。
 
 编辑器照它在原文上改，存的时候把 `version` 当 `expect` 带回 `persona.set`。
 
@@ -64,8 +62,8 @@
 |---|---|---|
 | `persona` | 字符串 | 编号；不写是新建，核心起一个 `persona-<n>` |
 | `new` | 布尔 | 同 `preset.set` 的：编号已经有了拒 `persona_exists` |
-| `changes` | 数组 | 改 `persona.toml`，写法同 `config.set` 的 `changes`；键是 `persona.name`、`persona.summary`、`persona.subagent`、`appearance.seed`、`life.context`（人生会话的上下文上限，正整数） |
-| `prompts` | 对象 | 提示词名（`persona`、`examples`、`reminders`、`life`）→ `{"text": <整份>}` 或 `{"unset": true}`；示范对话另可写 `{"pairs": [{"user", "assistant"}…]}`；都可带 `"expect": <版本>` 或 `null`（还没有） |
+| `changes` | 数组 | 改 `persona.toml`，写法同 `config.set` 的 `changes`；键是 `persona.name`、`persona.summary`、`persona.subagent`、`appearance.seed` |
+| `prompts` | 对象 | 提示词名（`persona`、`examples`、`reminders`）→ `{"text": <整份>}` 或 `{"unset": true}`；示范对话另可写 `{"pairs": [{"user", "assistant"}…]}`；都可带 `"expect": <版本>` 或 `null`（还没有） |
 | `avatar`、`background` | 对象 | `{"blob": <哈希>}` 换成传上来的那一张，`{"unset": true}` 删掉你那一层的；可带 `expect` |
 | `seed` | 字符串或 `{"unset": true}` | 主题色 `#rrggbb` |
 | `background_opacity` | 0 到 100 或 `{"unset": true}` | 背景图露出多少 |
@@ -73,8 +71,6 @@
 | `background_blur` | 1 到 100 或 `{"unset": true}` | 背景图模糊多少，删掉就是不模糊 |
 
 **回应**：同 `persona.get`，改完叠好的样子。几样一起查，有错什么都不写。和你那一层现在一样的不写。
-
-改了 `life.context`（写了新的数或者 `unset`）的，这个人格有没结束的人生会话（在跑的、停着的）的，回应以前把它的上下文上限当场改成新的（没写的照 100000，比这时的模型最少要的小的照最少要的）。改人生会话的上限就在这里改；在人生会话里经 `session.configure` 的 `context` 改的也一直管用，两处后改的算数。直接改 `persona.toml` 文件的只管下一段人生。
 
 **出错**
 
@@ -100,13 +96,13 @@
 
 ## `preset.list`、`preset.get`
 
-**`preset.list`**：没有参数。回应 `{"presets": [...]}`，照编号排：`preset`、`icon`（Lucide 图标名，没有的 `null`）、`hidden`（布尔：是 `true` 的不列进「新建会话选哪个预设」，预设管理页照列；没写的是 `false`。核心照旧列出它、照旧能拿它开会话，不列是头的事）、`name`、`summary`、`tokens`（照它开新会话、不算人格时 system 和工具说明占多少 token，本地估的；算不出来的没有）。写错的只有 `preset`、`problem`、`line`。出厂的「无功能」（`none`）是一份普通预设：菜单里能开关的全关着，能编辑。「无工具」（`preset: null`）不在列表里；开会话、换预设照样能交 `preset: null`。
+**`preset.list`**：没有参数。回应 `{"presets": [...]}`，照编号排：`preset`、`icon`（Lucide 图标名，没有的 `null`）、`name`、`summary`、`tokens`（照它开新会话、不算人格时 system 和工具说明占多少 token，本地估的；算不出来的没有）。写错的只有 `preset`、`problem`、`line`。出厂的「无功能」（`none`）是一份普通预设：菜单里能开关的全关着，能编辑。「无工具」（`preset: null`）不在列表里；开会话、换预设照样能交 `preset: null`。
 
 **`preset.get`**：参数 `preset`。回应：
 
 | 名字 | 说明 |
 |---|---|
-| `preset`、`name`、`summary`、`icon`、`hidden` | 同上 |
+| `preset`、`name`、`summary`、`icon` | 同上 |
 | `unlisted` | 叠好以后的 `on` 或 `off`：没列出来的功能默认开不开 |
 | `unattended_steps` | 叠好以后 `[limits]` 写的数：没人看着时一个回合最多请求几次模型；几层都没写的是 `null`，照出厂的 500 |
 | `features` | 一个个功能：`{"id", "name", "summary", "package", "on", "by", "installed", "tools"}`；`package` 是它归哪个包，按包分组用，包名照 [`package.list`](packages.md) 查（自己放的脚本、MCP 服务、模板命令是 `~home`，不归包的技能和没装的没有）；`by` 是开不开谁定的：`preset`（预设里写了）、`global`（预设没写，照技能、脚本、MCP 服务的全局开关，见 [`feature.set`](packages.md#featureset)；只在 `unlisted` 是 `on` 的预设里有）、`default`（照 `unlisted`：`unlisted` 是 `off` 的预设没写的都是它，全局开关打开的也不开）；`tools` 是归它的工具 `{"name", "label", "on"}`，`label` 是给人看的名字（MCP 服务给了 `title` 的照它，没给的是去掉 `mcp__<服务名>__` 的工具名）。写了、没装的接在后面，`installed: false`。接平台的包（清单写了 `[connection]`）只列本机会话拿得到的：一件 `venues` 带 `local` 的工具都没有的功能不列，列出来的只列带 `local` 的工具；`sections` 也一样 |
@@ -125,7 +121,7 @@
 |---|---|---|
 | `preset` | 字符串 | 编号；不写是新建，核心起一个 `preset-<n>` |
 | `new` | 布尔 | 新建、编号自己写（要和 `preset` 一起写）：这个编号已经有了（出厂的、包带的、你那一层的）拒 `preset_exists`，不去改那一份 |
-| `changes` | 数组，必写、不能是空的 | 每项 `{"key", "value" | "unset": true, "expect"?}`；键是 `preset.name`、`preset.summary`、`preset.unlisted`、`preset.hidden`（`true`、`false`；`unset` 回到下面那一层的，都没写的是 `false`）、`features.<功能>`、`tools.<工具>`、`limits.unattended_steps`（正整数） |
+| `changes` | 数组，必写、不能是空的 | 每项 `{"key", "value" | "unset": true, "expect"?}`；键是 `preset.name`、`preset.summary`、`preset.unlisted`、`features.<功能>`、`tools.<工具>`、`limits.unattended_steps`（正整数） |
 
 **回应**：同 `preset.get`。说明写空的字就是没有说明（盖住出厂的那句），`unset` 才回到出厂的。
 

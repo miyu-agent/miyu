@@ -99,7 +99,6 @@ fn remember(home: &Home, memories: &[&Memory], ids: &mut BTreeMap<String, Memory
             who: None,
             people: Vec::new(),
             place: None,
-            why: None,
             imported: None,
         };
         let appended = log

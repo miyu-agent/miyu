@@ -9,7 +9,6 @@
   "said": {
     "next/set": "次は {next}",
     "next/stopped": "ループを停止",
-    "next/unstoppable": "人生ループは止められません",
     "next/no-loop": "動いているループはありません",
     "next/no-delay": "間隔が指定されていません",
     "common/bad-args": "引数が正しくありません：{error}",

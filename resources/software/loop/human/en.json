@@ -9,7 +9,6 @@
   "said": {
     "next/set": "Next at {next}",
     "next/stopped": "Loop stopped",
-    "next/unstoppable": "A life loop cannot be stopped",
     "next/no-loop": "No loop is running",
     "next/no-delay": "No delay given",
     "common/bad-args": "Bad arguments: {error}",

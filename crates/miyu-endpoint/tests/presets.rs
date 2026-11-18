@@ -318,11 +318,10 @@ async fn presets_are_listed_and_read_by_layer() {
         listed["result"]["presets"],
         json!([
             {"preset": "broken", "problem": "不认识的表 [colors]：预设文件里只能有 [preset]、[features]、[software]、[tools]、[limits]", "line": 1},
-            {"preset": "dev", "name": "我的开发", "summary": "在极简开发的基础上增加记忆、网络搜索、子代理、Agent间交流等开发常用工具。", "icon": "box", "hidden": false},
-            {"preset": "full", "name": "全部功能", "summary": "开放全部工具。", "icon": "boxes", "hidden": false},
-            {"preset": "life", "name": "推演人生", "summary": "人生会话用：联网、人格记忆、循环、角色扮演，没有命令行和文件。", "icon": "sprout", "hidden": true},
-            {"preset": "minimal", "name": "极简开发", "summary": "只提供运行命令和读写文件的工具。", "icon": "square-terminal", "hidden": false},
-            {"preset": "none", "name": "无功能", "summary": "不开启任何功能。", "icon": "circle-off", "hidden": false},
+            {"preset": "dev", "name": "我的开发", "summary": "在极简开发的基础上增加记忆、网络搜索、子代理、Agent间交流等开发常用工具。", "icon": "box"},
+            {"preset": "full", "name": "全部功能", "summary": "开放全部工具。", "icon": "boxes"},
+            {"preset": "minimal", "name": "极简开发", "summary": "只提供运行命令和读写文件的工具。", "icon": "square-terminal"},
+            {"preset": "none", "name": "无功能", "summary": "不开启任何功能。", "icon": "circle-off"},
         ]),
         "照连接的语言挑"
     );
@@ -372,9 +371,6 @@ async fn presets_are_listed_and_read_by_layer() {
             ("history", "翻查本会话", true, true),
             ("jobs", "后台运行", true, true),
             ("knowledge", "知识库", false, true),
-            ("life", "结束人生", false, true),
-            // 同一个包的第二个功能（施工 LF-11）。
-            ("change", "后天", false, true),
             ("loop", "循环任务", true, true),
             ("memory", "人格记忆", true, true),
             ("web-search", "网络搜索", true, true),

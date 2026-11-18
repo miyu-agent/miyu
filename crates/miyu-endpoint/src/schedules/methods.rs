@@ -4,10 +4,6 @@
 //!
 //! 施工 J-4：扩展也能调（要批过 `sessions.drive`），建的记成包建的；它只看得到、改得了自己建的，别的编号一样 `unknown_schedule`。
 //! 只有扩展能写「跑在哪」是 `package`（到点推 `schedule.fired` 给它自己，`fire.rs`）。
-//!
-//! 施工 LF-13：人生循环那一行人看得到（列表、流都列，多带 `persona`），改不了（`life_schedule`）；扩展照旧看不到。以前
-//! 施工 LF-1：人生循环那一行谁都看不到、改不了（列表、流不列，改的照没有这个编号回 `unknown_schedule`）：只有人生自己的入口动得
-//! 了，不然删一行定时就绕开了「只有有意的结束」。
 
 use std::sync::Arc;
 
@@ -53,7 +49,7 @@ pub(crate) async fn call(
                         matches!(&schedule.target, Target::Session { session: on } if on == session)
                     })
                 })
-                .map(|schedule| shown(core, schedule))
+                .map(entry)
                 .collect();
             Ok(json!({"schedules": listed}))
         }
@@ -95,8 +91,7 @@ pub(crate) async fn call(
     }
 }
 
-/// 这个连接看得到的：人看得到全部，人生循环那一行也在内（施工 LF-13：头照它画下次几点醒，以前谁都看不到）；扩展只看得到包
-/// `package` 建的（施工 J-4），人生那一行是人建的，它照旧看不到。
+/// 这个连接看得到的：人看得到全部，扩展只看得到包 `package` 建的（施工 J-4）。
 fn mine(package: Option<&str>, schedule: &Schedule) -> bool {
     match (package, &schedule.by) {
         (None, _) => true,
@@ -105,36 +100,27 @@ fn mine(package: Option<&str>, schedule: &Schedule) -> bool {
     }
 }
 
-/// 只改得了看得到的（[`mine`]）：扩展只改得了自己建的（施工 J-4），别的、没有的都是 `unknown_schedule`；谁都改不了人生循环
-/// （施工 LF-1：删一行定时不能绕开「人生只有有意的结束」）：人看得到它，回 `life_schedule`，说清要用 `life.*`（施工 LF-13）。
-/// 人的只在读得出、又是人生那一行时拒：读不出的（没有的编号、读不懂的行）放过去，交给后面的方法自己判，读不懂的行人照旧
-/// 删得掉（`schedules.md` 第一节第 3 条，施工 AE-4）。
+/// 扩展只改得了自己建的（施工 J-4）：别的、没有的都是 `unknown_schedule`。人的不查。
 fn own(core: &Core, package: Option<&str>, id: &str) -> Result<(), Refusal> {
-    let found = core.schedules().get(id);
-    if package.is_none() && matches!(&found, Ok(schedule) if schedule.looping == Some(Loop::Life)) {
-        return Err(Refusal::LIFE_SCHEDULE);
+    if package.is_none() {
+        return Ok(());
     }
-    let visible = match (package, found) {
-        (None, Ok(schedule)) => mine(None, &schedule),
-        (None, Err(_)) => true,
-        (Some(_), found) => mine(package, &found.map_err(refusal)?),
-    };
-    if visible {
+    let schedule = core.schedules().get(id).map_err(refusal)?;
+    if mine(package, &schedule) {
         Ok(())
     } else {
         Err(Refusal::UNKNOWN_SCHEDULE)
     }
 }
 
-/// 订阅 `schedules` 的回应：这一刻的全部（只给人）。
+/// 订阅 `schedules` 的回应：这一刻的全部。
 pub(crate) fn listed(core: &Core) -> Result<Value, Refusal> {
     let listed: Vec<Value> = core
         .schedules()
         .list()
         .map_err(refusal)?
         .iter()
-        .filter(|schedule| mine(None, schedule))
-        .map(|schedule| shown(core, schedule))
+        .map(entry)
         .collect();
     Ok(json!({"schedules": listed}))
 }
@@ -142,31 +128,10 @@ pub(crate) fn listed(core: &Core) -> Result<Value, Refusal> {
 /// 推送里的一项：任务 `id` 这一刻的样子，没有了的是删了；表读不成的没有（不推）。
 pub(crate) fn changed(core: &Core, id: &str) -> Option<Value> {
     match core.schedules().get(id) {
-        Ok(schedule) if !mine(None, &schedule) => None,
-        Ok(schedule) => Some(json!({"id": id, "entry": shown(core, &schedule)})),
+        Ok(schedule) => Some(json!({"id": id, "entry": entry(&schedule)})),
         Err(ScheduleError::Unknown) => Some(json!({"id": id, "removed": true})),
         Err(_) => None,
     }
-}
-
-/// 列表、推送里的一项：[`entry`]，人生那一行多带 `rounds`（施工 LF-14）和 `persona`（施工 LF-13）：它是哪个人格的人生，头的卡片照它写名字、调
-/// `life.pause`、`life.resume`、`life.kill`。还不知道的（核心刚起来、还没查完那一行指着的会话）不带。
-fn shown(core: &Core, schedule: &Schedule) -> Value {
-    let mut entry = entry(schedule);
-    if let (Some(Loop::Life), Target::Session { session }) = (schedule.looping, &schedule.target) {
-        if let Some(persona) = core.schedules().persona_of(session) {
-            entry["persona"] = json!(persona);
-        }
-        // 这一轮正在跑（施工 LF-15，`round.rs`）：在跑的才写。
-        if core.schedules().in_round(session) {
-            entry["busy"] = json!(true);
-        }
-        // 推演到第几轮（施工 LF-14）：给头的数据里有，界面上不写。读不了的不带。
-        if let Ok(rounds) = core.schedules().rounds(&schedule.id) {
-            entry["rounds"] = json!(rounds);
-        }
-    }
-    entry
 }
 
 /// `schedule.add` 的参数。
@@ -380,7 +345,7 @@ fn usable(core: &Core, cwd: &str) -> bool {
 }
 
 /// 建、改出的错照协议说。
-pub(crate) fn refusal(error: ScheduleError) -> Refusal {
+fn refusal(error: ScheduleError) -> Refusal {
     match error {
         ScheduleError::Cron(_) => Refusal::bad_schedule("cron"),
         ScheduleError::NoNext => Refusal::bad_schedule("past"),
@@ -441,7 +406,6 @@ pub(crate) fn entry(schedule: &Schedule) -> Value {
         entry["loop"] = json!(match looping {
             Loop::Fixed => "fixed",
             Loop::Dynamic => "dynamic",
-            Loop::Life => "life",
         });
     }
     if let Some(next) = schedule.next {
