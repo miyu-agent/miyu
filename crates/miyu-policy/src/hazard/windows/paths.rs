@@ -15,7 +15,6 @@ pub(super) struct Tidy {
     pub(super) cwd: String,
     home: Option<String>,
     data_root: String,
-    workspaces: String,
 }
 
 impl Tidy {
@@ -26,7 +25,6 @@ impl Tidy {
             cwd: tidied(places.cwd),
             home: places.home.and_then(tidy),
             data_root: tidied(places.data_root),
-            workspaces: tidied(places.workspaces),
         }
     }
 
@@ -36,7 +34,6 @@ impl Tidy {
             cwd: &self.cwd,
             home: self.home.as_deref(),
             data_root: &self.data_root,
-            workspaces: &self.workspaces,
         }
     }
 

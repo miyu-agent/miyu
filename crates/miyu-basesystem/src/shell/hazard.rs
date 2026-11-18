@@ -29,21 +29,10 @@ impl Shell {
             .as_deref()
             .map(|root| root.to_string_lossy().into_owned())
             .unwrap_or_default();
-        let workspaces = call
-            .data_root
-            .as_deref()
-            .map(|root| {
-                miyu_store::root::DataRoot::at(root.to_path_buf())
-                    .workspace()
-                    .to_string_lossy()
-                    .into_owned()
-            })
-            .unwrap_or_default();
         let places = Places {
             cwd: &cwd,
             home: home.as_deref(),
             data_root: &data_root,
-            workspaces: &workspaces,
         };
         let assessed = match self.program.kind.posix() {
             true => assess(&args.command, &places),

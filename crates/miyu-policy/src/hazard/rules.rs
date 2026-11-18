@@ -193,8 +193,16 @@ fn one(
         {
             found.push(Kind::Power);
         }
-        // 容器把宿主交出去（施工 5-17 三补）。
-        name => found.extend(super::container::container(name, rest)),
+        name => match super::moves::sources(name, rest) {
+            // 挪走、扔进回收站的照删来源认（施工 RO-4），不当整个往下删。
+            Some(sources) => {
+                for word in sources.iter().filter(|word| !here.1.covers(word)) {
+                    found.extend(target(&here.0.expand(word), places, here.2, false));
+                }
+            }
+            // 容器把宿主交出去（施工 5-17 三补）。
+            None => found.extend(super::container::container(name, rest)),
+        },
     }
 }
 

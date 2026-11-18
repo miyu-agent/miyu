@@ -40,9 +40,9 @@ pub(super) fn judge(path: &str, places: &Places<'_>, drives: bool) -> Option<Kin
     {
         return Some(Kind::DeleteHome);
     }
-    if !in_workspace(&path, places.workspaces)
-        && (inside(&path, places.data_root) || inside(places.data_root, &path))
-    {
+    // 只有数据根自己和装着它的（施工 RO-4，2026-11-18 项目主人定「开放下数据根不特殊」）：里面的单个文件、目录同别处，
+    // 和 `trash` 那件工具一个口径。原来连 `rm ~/.miyu/x.log` 也问。
+    if inside(&path, places.data_root) {
         return Some(Kind::DeleteDataRoot);
     }
     if depth == root + 1 {
@@ -95,14 +95,6 @@ fn widest(path: &str, places: &Places<'_>) -> String {
         .flatten()
         .find_map(below)
         .unwrap_or_else(|| path.to_string())
-}
-
-/// 落在放工作区的目录 `workspaces` 里面（不是它本身：规整过的路径不以 `/` 结尾）。
-fn in_workspace(path: &str, workspaces: &str) -> bool {
-    !workspaces.is_empty()
-        && path
-            .strip_prefix(&format!("{}/", workspaces.trim_end_matches('/')))
-            .is_some()
 }
 
 /// 照字面换成绝对路径，去掉 `.`、`..`、多余的 `/`：`~`、`$HOME`、`${HOME}` 开头的接家目录，相对的接 `cwd`（空的交回空的）。

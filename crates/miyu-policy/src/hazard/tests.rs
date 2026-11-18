@@ -5,13 +5,13 @@ use super::*;
 mod audit;
 mod fresh;
 mod groups;
+mod moves;
 mod windows;
 
 const PLACES: Places<'static> = Places {
     cwd: "/home/me/proj",
     home: Some("/home/me"),
     data_root: "/home/me/.miyu",
-    workspaces: "/home/me/.miyu/workspace",
 };
 
 /// 判下来要管的那一种：拒的是那一种，问的是最先认出的。
@@ -52,13 +52,14 @@ fn deleting_the_big_places_is_refused() {
 }
 
 /// 删数据根（施工 RO-3补，2026-11-17 项目主人定「问你，不是拦」）：照旧认出来，改成问人、归删除那一类，设置页「受保护的命令」
-/// 的删除那一项管得到。
+/// 的删除那一项管得到。只认整个数据根和装着它的（施工 RO-4），里面的单个文件不问（`tests/moves.rs`）。
 #[test]
 fn deleting_the_data_root_asks_as_a_delete() {
     for command in [
         "rm -rf ~/.miyu",
-        "rm ~/.miyu/sessions/s1/log.jsonl",
-        "shred -u ~/.miyu/token",
+        "rm -r /home/me/.miyu/",
+        "rm -rf ~/.miyu/*",
+        "find ~/.miyu -delete",
     ] {
         assert_eq!(kind(command), Some("delete_data_root"), "{command}");
         let found = first(command, &PLACES).expect("认得出");
@@ -213,25 +214,16 @@ fn the_corners_of_reading_a_command() {
     // 数据根不在家目录里：删它上面那一层也算删它。
     let places = Places {
         data_root: "/srv/miyu/data",
-        workspaces: "/srv/miyu/data/workspace",
         ..PLACES
     };
     assert_eq!(
         first("rm -rf /srv/miyu", &places).map(Kind::code),
         Some("delete_data_root")
     );
-    // 放工作区的目录照给的认（施工 FH-2：调的一方照数据根的布局给），不照数据根下面的 `workspace/` 猜。
-    let moved = Places {
-        workspaces: "/home/me/.miyu/root/workspace",
-        ..PLACES
-    };
+    // 数据根里面的（默认工作区、别的目录）同别处（施工 RO-4）。
     assert_eq!(
-        first("rm -rf ~/.miyu/root/workspace/s1/build", &moved).map(Kind::code),
+        first("rm -rf ~/.miyu/root/workspace/s1/build", &PLACES).map(Kind::code),
         None
-    );
-    assert_eq!(
-        first("rm -rf ~/.miyu/workspace/s1/build", &moved).map(Kind::code),
-        Some("delete_data_root")
     );
 }
 

@@ -4,7 +4,8 @@
 //!
 //! 认的（同 bash 那一路的哪一种）：
 //! - 删除：`Remove-Item` 和别名、cmd 的 `rd`、`del`（`delete.rs`），目标照 Windows 的写法判（`paths.rs`）：删盘符根、家目录、
-//!   盘符下一级（`C:\Windows`、`C:\Users`）、数据根拒，删工作目录、目标说不清的整个目录往下删问；
+//!   盘符下一级（`C:\Windows`、`C:\Users`）拒，删数据根、工作目录、目标说不清的整个目录往下删问；挪走的 `Move-Item`、
+//!   `Rename-Item` 和 cmd 的 `move`、`ren` 照删来源认（施工 RO-4）；
 //! - git、容器：和 bash 那一路同一份规则（`git.exe`、`docker.exe` 照名字认）；
 //! - 格式化：`Format-Volume`、`Clear-Disk`、`Remove-Partition`、cmd 的 `format <盘符>:`，拒；
 //! - 关机、重启：`Stop-Computer`、`Restart-Computer`、`shutdown`（`/a` 取消关机的不算），问；
@@ -132,6 +133,7 @@ fn one(
             look(&script.join(" "), Shell::PowerShell, tidy, depth + 1, found);
         }
         name if delete::deletes(name) => delete::deleting(rest, fed, tidy, cwd, found),
+        name if delete::moves(name) => delete::moving(rest, tidy, cwd, found),
         "git" => git(rest, found),
         "format-volume" | "clear-disk" | "remove-partition" => found.push(Kind::DiskFormat),
         "format" if lower.iter().any(|arg| drive_letter(arg)) => found.push(Kind::DiskFormat),

@@ -5,6 +5,9 @@
 //!
 //! 管道喂进来的（`Get-ChildItem … | Remove-Item`）照 bash 的 `find … -delete`：删那几个起点；前面不是列目录的、目标说不清的
 //! 整个目录往下删，照 `xargs rm -rf` 问。
+//!
+//! 挪走的（施工 RO-4，同 bash 那一路的 `mv`）：`Move-Item`（`mi`、`mv`、`move`）、`Rename-Item`（`rni`、`ren`），cmd 的 `move`、
+//! `ren`，照删来源认、不当整个往下删。来源是 `-Path`、`-LiteralPath`，没写的是第一个不带名字的参数（第二个是去处、新名字）。
 
 use super::super::Kind;
 use super::super::lex::{Simple, Word};
@@ -17,6 +20,59 @@ pub(super) fn deletes(name: &str) -> bool {
         name,
         "remove-item" | "rm" | "del" | "erase" | "rd" | "rmdir" | "ri"
     )
+}
+
+/// 挪走的程序名（已经小写、去掉 `.exe`，施工 RO-4）。
+pub(super) fn moves(name: &str) -> bool {
+    matches!(
+        name,
+        "move-item" | "mi" | "mv" | "move" | "rename-item" | "rni" | "ren"
+    )
+}
+
+/// 挪走的那一个命令（施工 RO-4）：来源照删认，不当整个往下删；带 `-WhatIf` 的不判。
+pub(super) fn moving(rest: &[Word], tidy: &Tidy, cwd: Option<&str>, found: &mut Vec<Kind>) {
+    if rest
+        .iter()
+        .any(|word| parameter(&word.text).is_some_and(|(name, _)| names(&name, "whatif", 2)))
+    {
+        return;
+    }
+    let mut named = Vec::new();
+    let mut loose = Vec::new();
+    let mut words = rest.iter();
+    while let Some(word) = words.next() {
+        if switch(&word.text) {
+            continue;
+        }
+        let Some((name, value)) = parameter(&word.text) else {
+            loose.push(word.clone());
+            continue;
+        };
+        let source = path_parameter(&name);
+        match value {
+            Some(value) if source => named.push(Word {
+                text: value.to_string(),
+                ..word.clone()
+            }),
+            Some(_) => {}
+            None if source => named.extend(words.next().cloned()),
+            // 去处、新名字和别的带值的：值不是来源。
+            None if names(&name, "destination", 2)
+                || names(&name, "newname", 1)
+                || valued_parameter(&name) =>
+            {
+                words.next();
+            }
+            None => {}
+        }
+    }
+    if named.is_empty() {
+        named.extend(loose.into_iter().take(1));
+    }
+    for word in &named {
+        found.extend(target(word, tidy, cwd, false));
+    }
 }
 
 /// `-名字`、`-名字:值`：小写的名字和 `:` 后面的值。不是 `-` 打头的交回空的。

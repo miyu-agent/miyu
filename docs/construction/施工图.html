@@ -1609,6 +1609,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sPR1"><span class="n">PR-1</span>中转站的模型价格照原厂<span class="st">…</span></a></li>
         <li><a class="step review" href="#sUP3"><span class="n">UP-3</span>用量的用途有给人看的名字<span class="st">…</span></a></li>
         <li><a class="step review" href="#sAUP0"><span class="n">AU-P0</span>外部审计高危核实<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sRO4"><span class="n">RO-4</span>换个命令删数据根也问<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -63333,6 +63334,56 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>蓝图 <code>session/tools.md</code>、<code>http.md</code>、<code>mcp.md</code>、<code>mermaid.md</code>、<code>fs.md</code>、<code>packages.md</code>、<code>skills.md</code>，施工单 <code>docs/construction/AU-P0-审计高危.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sRO4" aria-labelledby="h-sRO4">
+  <div class="sheet-head"><h2 id="h-sRO4"><span class="no">RO-4</span>换个命令删数据根也问</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">挪走、扔进回收站整个数据根的命令（<code>gio trash</code>、<code>trash-put</code>、<code>mv</code>……）照删数据根问人；数据根里面的单个文件同别处，不再问。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-policy/hazard/moves.rs · hazard/paths.rs · hazard/windows/delete.rs</span><span class="dir-note">RO-4</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>mv</code>、<code>gio trash|remove|move|rename</code>、<code>trash-put</code>、<code>trash</code>、<code>kioclient move|remove</code>、<code>rsync --remove-source-files</code> 照删来源认</li>
+              <li>PowerShell 的 <code>Move-Item</code>、<code>Rename-Item</code>、cmd 的 <code>move</code>、<code>ren</code> 同样</li>
+              <li>只认整个数据根和装着它的，里面的同别处</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">挪走就是删</span><span class="rl">口径同 rm：大地方拒、数据根问</span></div>
+          <div class="tile new"><span class="nm">数据根不特殊</span><span class="rl">里面的文件不问，同 trash 工具</span></div>
+          <div class="tile new"><span class="nm">说不清的不报</span><span class="rl">不当整个往下删</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">RO-4</dd></div>
+        <div><dt>名称</dt><dd>换个命令删数据根也问</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-18</dd></div>
+        <div><dt>提交</dt><dd class="mono">RO-4</dd></div>
+        <div><dt>验收</dt><dd>门禁、长跑随机、Windows 版 clippy 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改前红：<code>hazard::tests::moves</code> 三条、<code>windows::deleting_the_data_root_asks</code></span></li>
+        <li><span class="ok">✓</span><span>真模型实测：<code>gio trash &lt;沙箱数据根&gt;</code> 回「需要确认」</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/RO-4-换个命令删数据根也问.md</code>；蓝图 <code>session/guard.md</code>、<code>tools/shell.md</code>；协议参考 <code>sessions.md</code>。</li>
       </ul>
     </div>
   </div>

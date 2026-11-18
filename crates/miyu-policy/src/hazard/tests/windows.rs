@@ -6,7 +6,6 @@ const WINDOWS: Places<'static> = Places {
     cwd: r"C:\Users\me\proj",
     home: Some(r"C:\Users\me"),
     data_root: r"C:\Users\me\.miyu",
-    workspaces: r"C:\Users\me\.miyu\workspace",
 };
 
 fn kind(command: &str) -> Option<&'static str> {
@@ -61,10 +60,23 @@ fn deleting_the_big_places_is_refused() {
 fn deleting_the_data_root_asks() {
     for command in [
         r"Remove-Item -LiteralPath C:\Users\me\.miyu -Recurse",
-        r"del C:\Users\me\.miyu\etc\config.toml",
+        r"Move-Item C:\Users\me\.miyu D:\old",
+        r"mv -Path C:\Users\me\.miyu -Destination D:\old",
+        r"Move-Item -Destination D:\old ~\.miyu",
+        r"Rename-Item ~\.miyu old-miyu",
+        r"cmd /c move C:\Users\me\.miyu D:\old",
     ] {
         assert_eq!(kind(command), Some("delete_data_root"), "{command}");
         assert!(!refused(command), "{command}");
+    }
+    // 里面的单个文件同别处（施工 RO-4），挪进数据根的、只说会做什么的不报。
+    for command in [
+        r"del C:\Users\me\.miyu\etc\config.toml",
+        r"Move-Item C:\Users\me\.miyu\a.txt D:\",
+        r"Move-Item notes.md C:\Users\me\.miyu",
+        r"Move-Item C:\Users\me\.miyu D:\old -WhatIf",
+    ] {
+        assert_eq!(kind(command), None, "{command}");
     }
 }
 
@@ -231,7 +243,6 @@ fn places_in_the_extended_length_form_are_read() {
         cwd: r"\\?\C:\Users\me\proj",
         home: Some(r"\\?\C:\Users\me"),
         data_root: r"\\?\C:\Users\me\.miyu",
-        workspaces: r"\\?\C:\Users\me\.miyu\workspace",
     };
     assert_eq!(
         kind_at("Remove-Item -Recurse ~", &extended),

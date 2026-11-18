@@ -12,6 +12,7 @@
 mod container;
 mod fresh;
 mod lex;
+mod moves;
 mod paths;
 mod rules;
 mod vars;
@@ -193,11 +194,9 @@ pub struct Places<'a> {
     pub cwd: &'a str,
     /// 系统的家目录：`~`、`$HOME` 照它接。
     pub home: Option<&'a str>,
-    /// Miyu 的数据根。
+    /// Miyu 的数据根：删它自己、装着它的问人；里面的同别处（施工 RO-4：原来另交放默认工作区的目录，那里面的不算，随里面的都
+    /// 不算拿掉了）。
     pub data_root: &'a str,
-    /// 数据根里放各会话默认工作区的目录：它下面的不算删数据根（施工 5-14 起会话的默认工作区都在数据根里；施工 FH-2：调的一方
-    /// 照 `DataRoot::workspace` 给，这一层不认数据根的布局）。
-    pub workspaces: &'a str,
 }
 
 #[cfg(test)]
