@@ -1,7 +1,5 @@
 # Quick start
 
-Chinese version: [中文](../../zh/guide/quickstart.md).
-
 ## Quick install
 
 A quick install gives you the Miyu bundle: the core, the basic features, the terminal interface (`tui`), the web interface (`webui`) and the system tray (`applet`). On Mac and Linux it also installs the extremely light `litemiyu` as a spare and for emergencies.

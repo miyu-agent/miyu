@@ -1,7 +1,5 @@
 # 快速上手
 
-英文版：[English](../../en/guide/quickstart.md)。
-
 ## 快速安装
 
 快速安装会帮你装上 Miyu 的整合包，包含核心、基本功能、终端界面（`tui`）、网页界面（`webui`）和系统托盘（`applet`）。Mac 和 Linux 还会装上极其轻量的`litemiyu`备用和救急。

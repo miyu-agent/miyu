@@ -1,44 +1,46 @@
-# 出了问题怎么查
+# 排查问题
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-Miyu 起不来、连不上、没反应、报了看不懂的错，从这一页查起。各功能自己特有的报错写在各页的「出了问题」里，这里收总的。英文版：[English](../../en/guide/troubleshooting.md)。
+如果 Miyu 无法启动、连不上、没有反应，或者报了看不懂的错，就从这一页开始查。每个功能自己特有的报错写在那个功能的页面的「出了问题」一节里，这一页收集的是通用的问题。
 
-## 先跑 miyu check
+## 先运行 miyu check
+
+`miyu check` 会检查你手写的、Miyu 会读取的文件，是排查问题的第一步。运行：
 
 ```sh
 miyu check
 ```
 
-它查你手写的、Miyu 读的文件，照磁盘上现在的字查：刚改完、核心还没重读的也查得到。不写文件的查下面全部：
+它检查的是磁盘上文件现在的内容，所以刚改完、核心还没有重新读取的文件也能查到。不写文件名时，它会检查下面的全部内容：
 
 | 查什么 | 在哪 |
 |---|---|
 | 系统配置 | `~/.miyu/etc/config.toml` |
 | 当前目录的项目配置 | 从当前目录往上找到的 `.miyu/config.toml` |
-| 密钥文件，和配置里引用了却取不到的密钥、环境变量 | `~/.miyu/etc/private/secrets.toml` |
-| 配置里写的人格、预设、知识库、供应商、池存不存在 | 系统配置 |
-| 已经卸掉的软件包留在配置里的设置 | 系统配置 |
+| 密钥文件，以及配置里引用了却取不到的密钥和环境变量 | `~/.miyu/etc/private/secrets.toml` |
+| 配置里写的人格、预设、知识库、供应商、池是否存在 | 系统配置 |
+| 已经卸载的软件包留在配置里的设置 | 系统配置 |
 | 每个人格的 `persona.toml`、`prompts/examples.md` | 人格目录 |
 | 每一份预设 | 预设目录 |
-| 每个软件包的清单，出厂的和你装的 | 软件包目录 |
+| 每个软件包的清单，包括出厂的和你安装的 | 软件包目录 |
 | 软件包自己带的检查 | 软件包声明的程序 |
-| 没加载上的脚本、技能、斜杠命令模板，和被同名的盖住的 | 软件包、`~/.miyu/root/` 下的 |
-| MCP 服务写错的、列出来却没登记上的工具 | 系统配置、软件包清单 |
+| 没有加载上的脚本、技能、斜杠命令模板，以及被同名的盖住的 | 软件包、`~/.miyu/root/` 下 |
+| 写错的 MCP 服务，以及列出来却没有登记上的工具 | 系统配置、软件包清单 |
 | 定时任务表里读不懂的行 | 定时任务表 |
-| 写坏了的工具说明、提示词的覆盖 | 覆盖文件 |
-| 扩展提供的模型驱动：软件包没批、该配 key 的没配 | 系统配置 |
-| 装好的软件包文件被改过、少了 | 软件包目录 |
+| 写坏了的工具说明、提示词覆盖 | 覆盖文件 |
+| 扩展提供的模型驱动：软件包没有批准，或者该配置的 key 没有配置 | 系统配置 |
+| 安装好的软件包文件被修改过或者缺失 | 软件包目录 |
 
-上面的 `~/.miyu` 是数据根（默认 `~/.miyu`，Windows 上是 `%USERPROFILE%\.miyu`），设了环境变量 `MIYU_HOME` 的是它。只查一份的，把它写在后面：
+上面的 `~/.miyu` 指的是数据根（默认是 `~/.miyu`，Windows 上是 `%USERPROFILE%\.miyu`）；如果设置了环境变量 `MIYU_HOME`，就是它指向的目录。如果只想检查一份文件，就把它写在命令后面：
 
 ```sh
 miyu check ~/.miyu/root/personas/miyu/prompts/examples.md
 ```
 
-### 结果怎么读
+### 读懂检查结果
 
-一处问题一行：文件、行、列，「错误」或「警告」，说的是什么。倒数第一段是合计，再往下是语义模型的状态：
+每处问题占一行，依次是文件、行、列，`错误` 或 `警告`，以及问题的说明。问题之后的一行是合计，再往下是语义模型的状态。例如：
 
 ```text
 ~/.miyu/etc/config.toml:3:9 错误：log.level 只能是 error、warn、info、debug、trace 或 off，写的是 verbose
@@ -50,40 +52,42 @@ miyu check ~/.miyu/root/personas/miyu/prompts/examples.md
   知识库：handbook 30/42
 ```
 
-- 「错误」：写法不对，这一处不算数；TOML 本身读不懂的，整份文件都不算。有错误的，退出码 `1`。
-- 「警告」：不认识的键，引用的密钥、环境变量、人格、预设、知识库还没有这类。Miyu 照样跑，这几处没用上。只有警告的，退出码 `0`。
-- 什么都没有的印「没有问题」。
-- 语义模型那几行不算问题：用的哪个模型，记忆、以前的对话、知识库各有几条建好了索引（建好的/总共）。没装的印「语义模型：未安装，仅按关键词搜索」，提示 `miyu pkg install embed`；关了的印「语义模型：已关闭（models.embedding = "off"），仅按关键词搜索」。换成远程模型的，末尾多一行「不自动联想：记忆、知识库（这个模型没有测过门槛，搜索照常）」：只有内置的模型会自动想起记忆和知识库，别的模型只在搜索时用到。
+- `错误`：写法不对，这一处的设置不生效；如果 TOML 本身就读不懂，整份文件都不生效。有错误时，退出码是 `1`。
+- `警告`：不认识的键，或者引用的密钥、环境变量、人格、预设、知识库还不存在。Miyu 照常运行，只是这几处设置没有用上。只有警告时，退出码是 `0`。
+- 没有任何问题时，会显示 `没有问题`。
+- 语义模型那几行不算问题，它们说明正在使用哪个模型，以及记忆、以前的对话、知识库各有多少条建好了索引（建好的/总共）。没有安装语义模型时显示 `语义模型：未安装，仅按关键词搜索`，并提示运行 `miyu pkg install embed`；关闭了语义模型时显示 `语义模型：已关闭（models.embedding = "off"），仅按关键词搜索`。如果换成了远程模型，末尾会多一行 `不自动联想：记忆、知识库（这个模型没有测过门槛，搜索照常）`，因为只有内置的模型会自动想起记忆和知识库，其他模型只在搜索时用到。
 
-`--format json` 印一行 `{"problems": […]}`，每一处带 `kind`、`file`、`code`、`level`、`message`，有行列的带 `line`、`column`；查全部时另带 `embedding`。
+加上 `--format json` 时会输出一行 `{"problems": […]}`，每一处问题带 `kind`、`file`、`code`、`level`、`message`，有行列的还带 `line`、`column`；检查全部内容时另外带 `embedding`。
 
-`miyu check` 要连核心，核心没在跑的先拉起来。核心起不来的，它也跑不了：先看下面「核心起不来、连不上」，还不行用 [应急修复](rescue.md)。
+`miyu check` 需要连接核心，如果核心没有在运行，它会先启动核心。因此核心无法启动时，`miyu check` 也无法运行：这种情况先看下面的「核心无法启动或无法连接」，还解决不了就使用 [应急修复](rescue.md)。
 
 ## 日志
 
+出了问题时，日志里通常记着原因。各个程序的日志位置如下：
+
 | 谁的 | 在哪 |
 |---|---|
-| 核心 | `~/.miyu/var/log/core.log`，满 10 MB 换一份，留 `core.log.1` 到 `core.log.5` |
-| 软件包、扩展 | `~/.miyu/var/log/<编号>/`；扩展程序往标准错误写的，核心记在这里的 `stderr` |
-| 网页 | `~/.miyu/var/log/webui/web.log` |
-| 托盘 | `~/.miyu/var/log/miyu-applet.log` |
-| 终端崩溃 | 缓存目录下的 `tui/crash.log`：Linux `~/.cache/miyu/tui/crash.log`（设了 `XDG_CACHE_HOME` 的在它下面），macOS `~/Library/Caches/Miyu/tui/crash.log`，Windows `%LOCALAPPDATA%\Miyu\cache\tui\crash.log` |
+| 核心 | `~/.miyu/var/log/core.log`，写满 10 MB 换一份，保留 `core.log.1` 到 `core.log.5` |
+| 软件包、扩展 | `~/.miyu/var/log/<编号>/`；扩展程序往标准错误写的内容，核心记在这个目录的 `stderr` 里 |
+| 网页界面 | `~/.miyu/var/log/webui/web.log` |
+| 系统托盘 | `~/.miyu/var/log/miyu-applet.log` |
+| 终端界面崩溃 | 缓存目录下的 `tui/crash.log`：Linux 上是 `~/.cache/miyu/tui/crash.log`（设置了 `XDG_CACHE_HOME` 时在它下面），macOS 上是 `~/Library/Caches/Miyu/tui/crash.log`，Windows 上是 `%LOCALAPPDATA%\Miyu\cache\tui\crash.log` |
 
-看最近的几十行：
+查看最近的几十行，运行：
 
 ```sh
 tail -n 50 ~/.miyu/var/log/core.log
 ```
 
-Windows PowerShell 里：`Get-Content -Tail 50 $HOME\.miyu\var\log\core.log`。
+在 Windows PowerShell 里运行：`Get-Content -Tail 50 $HOME\.miyu\var\log\core.log`。
 
-核心的日志一行一条，英文，不记对话内容和 key。核心每次起来记一行 `starting`，带版本和进程号。要记得更细，调 `log.level`：
+核心的日志一行一条，用英文写，不记录对话内容和 key。核心每次启动时会记一行 `starting`，带着版本和进程号。如果要记录得更详细，就调整 `log.level`：
 
 ```sh
 miyu config set log.level debug
 ```
 
-能写 `error`、`warn`、`info`（出厂）、`debug`、`trace`、`off`，改了当场生效。只想这一次记得细的，先 `miyu core stop`，再这样打开：拉起的核心这一次照 `debug` 记，压过 `log.level`。
+`log.level` 可以写 `error`、`warn`、`info`（出厂默认）、`debug`、`trace`、`off`，修改后立即生效。如果只想让这一次记录得详细一些，先运行 `miyu core stop`，再用下面的方式打开 Miyu：这样启动的核心这一次按 `debug` 记录，优先于 `log.level`。
 
 ```bash
 MIYU_LOG=debug miyu
@@ -94,46 +98,46 @@ $env:MIYU_LOG = 'debug'
 miyu
 ```
 
-见 [常驻和服务器](service.md#日志)。
+更多内容见 [常驻和服务器](service.md#日志)。
 
-## 核心起不来、连不上
+## 核心无法启动或无法连接
 
-头和命令行打开时先连核心，连不上就拉起一个，最多等 60 秒。一个数据根同时只跑一个核心，它占着 `~/.miyu/run/core.lock`。
+界面和命令行打开时会先连接核心，连不上就启动一个核心，最多等待 60 秒。一个数据根同一时间只运行一个核心，这个核心占着 `~/.miyu/run/core.lock`。
 
 | 看到的 | 原因 | 怎么办 |
 |---|---|---|
-| 「核心起不来：…」 | 核心起来时出了错，冒号后面是它说的原因 | 照原因改。原因看不懂的，看 `core.log` 最后几行 |
-| 「核心没起来，也没说为什么：…」 | 核心没说就退了 | 看 `~/.miyu/var/log/core.log` 最后几行 |
-| 「等核心起来等了太久」 | 60 秒还没起好，多半是磁盘忙 | 再试一次；还不行看 `core.log` |
-| 「别的程序正在拉起核心，等了太久」 | 另一个头在拉起核心，60 秒还没好 | 同上 |
-| 「拉不起核心：…」 | 找不到程序、没权限跑 | 重装 Miyu，见 [安装、升级、卸载](install.md) |
-| 「… 认不出是 Miyu 的数据根 …」 | 数据根的位置上有别的东西。0.7 旧版的数据目录也报这一句 | 是 0.7 旧版的数据目录的，照这句话后半说的挪开、装迁移软件包、迁，见 [从 0.7 旧版迁过来](migrate.md)；不是的把 `MIYU_HOME` 设成一个空目录 |
-| 「… 是旧版 Miyu 的数据根，新版不认 …」 | 发版前的开发版留下的数据根 | 把 `MIYU_HOME` 设成一个空目录 |
-| 「… 的布局不是这一版的 …」 | 更新版本的 Miyu 写过这个数据根 | 用写它的那一版，或者换一个数据根 |
-| 「… 不是自己的，或者别人也能进：不连」（Linux、macOS）；「命名管道 … 另一头不是自己的进程：不连」（Windows） | Linux、macOS：放套接字的目录不归你、或者别的用户也能进，Miyu 不往里连。Windows：命名管道另一头的程序不是你这个用户的 | Linux、macOS：把那个目录改成只有你能进，例如 `chmod 700 <目录>`。Windows：关掉占着这个管道的程序再打开 |
-| 「核心起不来：套接字的路径 … 太长，临时目录下也放不下」（Linux、macOS） | 数据根的路径太长 | 换一个短一点的 `MIYU_HOME`，或者把 `TMPDIR` 设成短的目录 |
-| 「核心起不来：… 上有别的东西：不是套接字的文件，或者别的程序正在听。不动它」（Linux、macOS）；「核心起不来：命名管道 … 已经被别的程序占了。不动它」（Windows） | Linux、macOS：套接字的位置被别的文件、程序占了。Windows：命名管道的名字被别的程序占了 | 不是 Miyu 的就挪走、关掉它 |
-| 「与核心的连接已断开」 | 核心中途退了或者崩了 | 看 `core.log`，再打开一次 |
+| `核心起不来：…` | 核心启动时出了错，冒号后面是核心给出的原因。 | 按照原因修改。如果看不懂原因，就看 `core.log` 的最后几行。 |
+| `核心没起来，也没说为什么：…` | 核心没有给出原因就退出了。 | 查看 `~/.miyu/var/log/core.log` 的最后几行。 |
+| `等核心起来等了太久` | 核心 60 秒后还没有启动完成，多半是因为磁盘繁忙。 | 再试一次；还不行就查看 `core.log`。 |
+| `别的程序正在拉起核心，等了太久` | 另一个界面正在启动核心，60 秒后还没有完成。 | 和上一行一样：再试一次，还不行就查看 `core.log`。 |
+| `拉不起核心：…` | 找不到核心程序，或者没有运行它的权限。 | 重新安装 Miyu，见 [安装、升级、卸载](install.md)。 |
+| `… 认不出是 Miyu 的数据根 …` | 数据根的位置上已经有其他东西。0.7 旧版的数据目录也会报这一句。 | 如果是 0.7 旧版的数据目录，按照这句话后半部分说的把它挪开、安装迁移软件包、进行迁移，见 [从 0.7 旧版迁过来](migrate.md)；如果不是，就把 `MIYU_HOME` 设成一个空目录。 |
+| `… 是旧版 Miyu 的数据根，新版不认 …` | 这是正式发布之前的开发版留下的数据根。 | 把 `MIYU_HOME` 设成一个空目录。 |
+| `… 的布局不是这一版的 …` | 更新版本的 Miyu 写过这个数据根。 | 使用写过它的那个版本，或者换一个数据根。 |
+| `… 不是自己的，或者别人也能进：不连`（Linux、macOS）；`命名管道 … 另一头不是自己的进程：不连`（Windows） | Linux、macOS：存放套接字的目录不属于你，或者其他用户也能进入，所以 Miyu 不连接这个目录里的套接字。Windows：命名管道另一头的程序不是你这个用户运行的。 | Linux、macOS：把那个目录改成只有你能进入，例如运行 `chmod 700 <目录>`。Windows：关掉占着这个管道的程序，再重新打开 Miyu。 |
+| `核心起不来：套接字的路径 … 太长，临时目录下也放不下`（Linux、macOS） | 数据根的路径太长。 | 换一个短一点的 `MIYU_HOME`，或者把 `TMPDIR` 设成路径短的目录。 |
+| `核心起不来：… 上有别的东西：不是套接字的文件，或者别的程序正在听。不动它`（Linux、macOS）；`核心起不来：命名管道 … 已经被别的程序占了。不动它`（Windows） | Linux、macOS：套接字的位置被其他文件或程序占用了。Windows：命名管道的名字被其他程序占用了。 | 如果占用它的不是 Miyu，就把那个文件挪走，或者关掉那个程序。 |
+| `与核心的连接已断开` | 核心中途退出或者崩溃了。 | 查看 `core.log`，然后重新打开 Miyu。 |
 
-套接字的位置：
+套接字在各个系统上的位置：
 
 | 系统 | 在哪 |
 |---|---|
-| Linux | 设了 `XDG_RUNTIME_DIR` 的是 `$XDG_RUNTIME_DIR/miyu-<指纹>/core.sock`，别的是 `~/.miyu/run/core.sock`；路径太长时退到 `$TMPDIR/miyu-<uid>/` |
+| Linux | 设置了 `XDG_RUNTIME_DIR` 时是 `$XDG_RUNTIME_DIR/miyu-<指纹>/core.sock`，否则是 `~/.miyu/run/core.sock`；路径太长时退到 `$TMPDIR/miyu-<uid>/` |
 | macOS | `~/.miyu/run/core.sock`；路径太长时退到 `$TMPDIR/miyu-<uid>/` |
 | Windows | 命名管道 `\\.\pipe\miyu-<指纹>`，只对你这个用户开放 |
 
-### 旧核心还在跑
+### 旧版核心仍在运行
 
-升级以后，已经在跑的核心还是旧版，新的头连上去可能报「协议版本不兼容，请升级到同一版本。」。停掉它，下次打开拉起的就是新版：
+升级以后，已经在运行的核心仍然是旧版，新版的界面连接上去时可能报 `协议版本不兼容，请升级到同一版本。`。此时先停掉旧核心，下次打开 Miyu 时启动的就是新版核心。运行：
 
 ```sh
 miyu core stop
 ```
 
-装了开机启动服务、要服务接着管的，再敲 `miyu service enable`，见 [常驻和服务器](service.md#让服务马上接手)。
+如果你安装了开机启动服务，并且希望继续由服务管理核心，再运行一次 `miyu service enable`，见 [常驻和服务器](service.md#让服务立即接管)。
 
-`miyu core stop` 说「核心还在跑，但连不上它：数据根 run/ 里的令牌或套接字位置不见了」的，是 `~/.miyu/run/` 被删了，核心还开着。照提示到 `core.log` 里找最后一行 `starting` 的进程号，结束这个进程：
+如果 `miyu core stop` 提示 `核心还在跑，但连不上它：数据根 run/ 里的令牌或套接字位置不见了`，说明 `~/.miyu/run/` 被删除了，而核心还在运行。按照提示到 `core.log` 里找最后一行 `starting` 记下的进程号，然后结束这个进程：
 
 ```bash
 kill <进程号>
@@ -143,57 +147,65 @@ kill <进程号>
 Stop-Process -Id <进程号>
 ```
 
-### 坏到头都打不开
+### 所有界面都打不开
 
-核心坏了、头打不开时，用 `miyu rescue` 进 LiteMiyu 的应急模式修，它不经过核心。LiteMiyu 只有 Linux x86_64 的版本，macOS、Windows 上没有。见 [应急修复](rescue.md)。
+如果核心坏了、所有界面都打不开，就用 `miyu rescue` 进入 LiteMiyu 的应急模式来修复，应急模式不经过核心。LiteMiyu 只有 Linux x86_64 的版本，macOS、Windows 上没有。详细的见 [应急修复](rescue.md)。
 
-## 没配模型、key 不对
+## 没有配置模型或 key 不对
+
+Miyu 需要配置好模型和 key 才能对话。常见的提示和处理方法如下：
 
 | 看到的 | 怎么办 |
 |---|---|
-| 「未配置模型」，提示运行 `miyu setup`；`miyu ask` 退出码 `5` | 跑 `miyu setup`，见 [模型](models.md) |
-| `miyu check` 警告「… 引用的密钥 … 还没设」 | `miyu provider login <名字>` 把 key 存进去 |
-| `miyu check` 警告「… 引用的环境变量 … 核心起来时没有设」 | 核心是在设这个变量以前起来的。`miyu core stop`，在设了变量的 shell 里再打开。开机启动服务起的核心看不到 shell 里的变量，见 [常驻和服务器](service.md#服务和环境变量) |
-| 「模型请求失败。」、认证失败 | key 填错了或者过期了，重新 `miyu provider login <名字>` |
+| `未配置模型`，提示运行 `miyu setup`；`miyu ask` 的退出码是 `5` | 运行 `miyu setup`，见 [模型](models.md)。 |
+| `miyu check` 警告 `… 引用的密钥 … 还没设` | 运行 `miyu provider login <名字>`，把 key 存进去。 |
+| `miyu check` 警告 `… 引用的环境变量 … 核心起来时没有设` | 核心是在设置这个变量之前启动的。运行 `miyu core stop`，再在设置了这个变量的 shell 里重新打开 Miyu。开机启动服务启动的核心看不到 shell 里的变量，见 [常驻和服务器](service.md#服务和环境变量)。 |
+| `模型请求失败。`、认证失败 | key 填错了或者已经过期，重新运行 `miyu provider login <名字>`。 |
 
-## 模型一直报错
+## 模型持续报错
 
-「模型冷却中，请稍后重试。」「没有可用的模型。」是供应商限流、额度用完、连不上，Miyu 把这个模型先放一阵。重试多少次、冷却多久、怎么用池换别的模型，见 [模型](models.md#限流额度用完时)。
+`模型冷却中，请稍后重试。` 和 `没有可用的模型。` 说明供应商限流了、额度用完了或者连不上，于是 Miyu 把这个模型暂时搁置一段时间。重试多少次、冷却多久、怎么用池换用其他模型，见 [模型](models.md#限流额度用完时)。
 
-## 命令被拒、一直等确认
+## 命令被拒绝或一直等待确认
+
+AI 运行的命令可能被权限设置拦下，或者停在等待确认的状态。常见的情况如下：
 
 | 看到的 | 原因 |
 |---|---|
-| 「只读模式，未执行」 | 会话是只读的，写不了 |
-| 确认框一直在等 | 要你点允许或不允许，到时没人点的自动拒绝：「无人确认，已自动拒绝」 |
-| 「需要确认，无人确认」；`miyu ask` 退出码 `4` | `miyu ask`、通讯平台上没人能当场确认，要确认的那几步不做 |
+| `只读模式，未执行` | 会话是只读的，不能写入。 |
+| 确认框一直在等待 | 它在等你点击允许或不允许；到时间没有人点击就会自动拒绝，并显示 `无人确认，已自动拒绝`。 |
+| `需要确认，无人确认`；`miyu ask` 的退出码是 `4` | 在 `miyu ask` 和通讯平台上没有人能当场确认，所以需要确认的那几步不会执行。 |
 
-切级别、哪些命令要确认、怎么关，见 [权限和沙盒](permissions.md)。
+怎么切换权限级别、哪些命令需要确认、怎么关闭确认，见 [权限和沙盒](permissions.md)。
 
-## 软件包装不上、扩展起不来
+## 软件包无法安装或扩展无法启动
 
-| 看到的 | 怎么办 |
-|---|---|
-| 「清单有误，无法安装。」 | `miyu pkg info <包目录>` 只看不装，说清单哪里不对 |
-| 「缺少依赖的软件包。」 | 先装它依赖的，`miyu pkg info <编号>` 看依赖 |
-| 「不支持本机的系统。」 | 这个包没有给你这种系统的版本 |
-| 「软件源连不上。」「软件包下载失败。」 | 查网络，过一会儿 `miyu pkg update` 再试 |
-| 「没找到 <程序>：清单 … 说 miyu <名字> 由它跑。重装这个软件包再试。」 | `miyu pkg install <编号>` 重装 |
-| 「界面 'tui' 没有安装」 | `miyu pkg install tui` 装回来 |
-| 扩展停了 | 看 `~/.miyu/var/log/<编号>/stderr`，那是扩展自己报的错 |
-
-`miyu pkg check` 查装好的文件有没有被改过。详细见 [软件包](packages.md)。
-
-## 终端显示乱
+安装软件包或者启动扩展失败时，常见的提示和处理方法如下：
 
 | 看到的 | 怎么办 |
 |---|---|
-| 图标是方块、问号 | 字体里没有 Nerd Font 的图标。装一个 Nerd Font，或者 `miyu config set tui.icons plain` 改用普通字符 |
-| 颜色不对、太刺眼 | 设置页「外观 → 配色方案」里的「配色」「明暗」「铺底色」，键是 `tui.theme`、`tui.theme_mode`、`tui.theme_background` |
-| 命令行的输出里有乱码一样的颜色符号 | 设环境变量 `NO_COLOR=1` |
-| 终端崩了 | 崩溃记录在 `tui/crash.log`，位置见上面「日志」 |
+| `清单有误，无法安装。` | 运行 `miyu pkg info <包目录>`，它只查看、不安装，会说明清单哪里不对。 |
+| `缺少依赖的软件包。` | 先安装它依赖的软件包，可以用 `miyu pkg info <编号>` 查看依赖。 |
+| `不支持本机的系统。` | 这个软件包没有适合你这种系统的版本。 |
+| `软件源连不上。` `软件包下载失败。` | 检查网络，过一会儿运行 `miyu pkg update` 再试。 |
+| `没找到 <程序>：清单 … 说 miyu <名字> 由它跑。重装这个软件包再试。` | 运行 `miyu pkg install <编号>` 重新安装。 |
+| `界面 'tui' 没有安装` | 运行 `miyu pkg install tui` 重新装回来。 |
+| 扩展停了 | 查看 `~/.miyu/var/log/<编号>/stderr`，那里是扩展自己报的错。 |
 
-装了 shell 集成的，`miyu shellhook doctor` 先列出装进了哪几个 shell，再一条条查核心、终端、剪贴板：
+`miyu pkg check` 可以检查安装好的文件有没有被修改过。详细的见 [软件包](packages.md)。
+
+## 终端界面显示异常
+
+终端界面显示不正常时，常见的情况和处理方法如下：
+
+| 看到的 | 怎么办 |
+|---|---|
+| 图标显示成方块、问号 | 字体里没有 Nerd Font 的图标。安装一个 Nerd Font，或者运行 `miyu config set tui.icons plain` 改用普通字符。 |
+| 颜色不对、太刺眼 | 在设置页 `外观 → 配色方案` 里调整 `配色`、`明暗`、`铺底色`，对应的配置键是 `tui.theme`、`tui.theme_mode`、`tui.theme_background`。 |
+| 命令行的输出里有像乱码一样的颜色符号 | 设置环境变量 `NO_COLOR=1`。 |
+| 终端界面崩溃了 | 崩溃记录在 `tui/crash.log` 里，位置见上面的「日志」。 |
+
+如果安装了 shell 集成，可以运行 `miyu shellhook doctor`，它会先列出装进了哪几个 shell，再逐条检查核心、终端、剪贴板。输出类似这样：
 
 ```text
 ✓ 连得上核心
@@ -202,103 +214,109 @@ Stop-Process -Id <进程号>
 ✓ Ctrl+V 读剪贴板用 wl-paste
 ```
 
-这是 Linux 上 Wayland 桌面里的样子。最后一行在别处写的是：
+这是 Linux 上 Wayland 桌面里的输出。在其他环境里，最后一行是：
 
 | 系统 | 最后一行 |
 |---|---|
-| Linux，没有 Wayland | 「Ctrl+V 读剪贴板用 xclip」或「… 用 xsel」 |
-| macOS | 「Ctrl+V 读剪贴板用 pbpaste」 |
-| Windows | 「Ctrl+V 读剪贴板用 powershell」 |
+| Linux，没有 Wayland | `Ctrl+V 读剪贴板用 xclip` 或 `… 用 xsel` |
+| macOS | `Ctrl+V 读剪贴板用 pbpaste` |
+| Windows | `Ctrl+V 读剪贴板用 powershell` |
 
-一个都找不到的写「✗ 找不到读剪贴板的命令（…）：Ctrl+V 只能用终端自己的粘贴」，括号里是这台机器上试的那几个命令。
+如果一个读剪贴板的命令都找不到，会显示 `✗ 找不到读剪贴板的命令（…）：Ctrl+V 只能用终端自己的粘贴`，括号里是在这台机器上试过的那几个命令。
 
-终端的设置见 [终端](heads/tui.md)。
+终端界面的设置见 [终端](heads/tui.md)。
 
-## 网页打不开
+## 网页界面无法打开
+
+网页界面打不开或者登录不了时，常见的提示和处理方法如下：
 
 | 看到的 | 怎么办 |
 |---|---|
-| 「端口 8300 已被占用」，提示用 `miyu web --port <端口>` 换一个 | 换一个端口。没写过端口的，8300 被占时会依次试 8301 到 8309，都占了才报 |
-| 「无法打开浏览器，请手动打开上面的地址」 | 照印出来的地址自己打开。没有桌面的机器用 `miyu web --print` |
-| 登录页写「访问密码错误」 | 忘了的，在这台电脑上敲 `miyu web --reset`，打开的页面里重设 |
-| 整屏写「还没设访问密码」 | 在跑 Miyu 的电脑上 `miyu web --settings access` 设 |
-| 「尝试次数过多，N 秒后再试」 | 等它写的秒数过了再试 |
+| `端口 8300 已被占用`，提示用 `miyu web --port <端口>` 换一个 | 换一个端口。如果从来没有指定过端口，8300 被占用时 Miyu 会依次尝试 8301 到 8309，全都被占用才报这个错。 |
+| `无法打开浏览器，请手动打开上面的地址` | 按照输出的地址自己在浏览器里打开。没有桌面的机器使用 `miyu web --print`。 |
+| 登录页显示 `访问密码错误` | 如果忘了密码，在这台电脑上运行 `miyu web --reset`，在打开的页面里重新设置。 |
+| 整个页面显示 `还没设访问密码` | 在运行 Miyu 的电脑上运行 `miyu web --settings access` 设置密码。 |
+| `尝试次数过多，N 秒后再试` | 等提示里的秒数过去之后再试。 |
 
-网页自己的日志在 `~/.miyu/var/log/webui/web.log`。从别的设备、反向代理打开的，见 [常驻和服务器](service.md#从别的机器手机打开网页)。
+网页界面自己的日志在 `~/.miyu/var/log/webui/web.log`。如果要从其他设备或者通过反向代理打开网页界面，见 [常驻和服务器](service.md#从其他电脑和手机打开网页界面)。
 
-## 配置写错了
+## 配置文件写错
 
-- `miyu ask` 开头说「配置中有 N 处错误」，提示运行 `miyu check` 查看。照 `miyu check` 印的行号改。
-- 核心起来时整份读不进来的，那一份照空的算，核心照样起。核心开着时你手改坏了的，接着用上一次读好的那一份。
-- 文件读不进来时 `miyu config set` 不改，报「配置文件有误，请先修复。」。`miyu config edit` 存之前先检查。
-- 某一项不生效的，`miyu config explain <键>` 列出每一层写的什么、哪一层算数、写了不算的为什么。
-- 「项目配置 … 尚未信任，本次没有使用」：在那个目录里 `miyu config trust` 看过再决定。
+配置文件写错时，Miyu 的处理方式如下：
 
-见 [配置](config.md)。
+- `miyu ask` 开头提示 `配置中有 N 处错误`，并提示运行 `miyu check` 查看。按照 `miyu check` 输出的行号修改即可。
+- 如果核心启动时某一份配置整份读不进来，这一份按空的处理，核心照常启动。如果核心运行时你手动把配置改坏了，核心会继续使用上一次成功读取的那一份。
+- 文件读不进来时，`miyu config set` 不会修改它，而是报 `配置文件有误，请先修复。`。`miyu config edit` 在保存之前会先检查。
+- 如果某一项设置不生效，运行 `miyu config explain <键>`，它会列出每一层写了什么、哪一层生效，以及写了却不生效的原因。
+- 如果提示 `项目配置 … 尚未信任，本次没有使用`，就在那个目录里运行 `miyu config trust`，看过内容之后再决定是否信任。
 
-## 只在某个系统上出现的
+详细的见 [配置](config.md)。
+
+## 特定系统上的问题
+
+有些问题只在某个系统上出现，下表按提示列出：
 
 | 看到的 | 系统 | 原因 | 怎么办 |
 |---|---|---|---|
-| `miyu ask` 开头「沙盒不可用：内核没有可用的 Landlock」，下一行「提示：需要 Linux 5.13 或更新，并在启动参数 lsm= 里启用 Landlock」 | Linux | 内核旧于 5.13，或者启动参数 `lsm=` 里没有 `landlock` | 照提示换内核、改启动参数。在那之前只读下的命令改成问你 |
-| `miyu ask` 开头「沙盒不可用：无法应用 Seatbelt 配置，Miyu 可能运行在另一个沙盒里」 | macOS | Seatbelt 配置装不上 | 不在别的沙盒里跑 Miyu。在那之前只读下的命令改成问你 |
-| `miyu ask` 开头「沙盒不可用：这台 Windows 起不了 MXC 的基础容器」 | Windows | 沙盒要的基础容器在这台 Windows 上起不来 | 只读下的命令改成问你 |
-| 只读下命令的输出是 `miyu-sandbox: cannot confine: no desktop session, programs in the sandbox cannot start here; use Miyu from the desktop, or turn the sandbox off`，退出码 `125` | Windows | 核心不在桌面会话里，例如经 SSH 连进来起的 | 从登录的桌面用 Miyu，或者切到开放权限，见 [常驻和服务器](service.md#windows-上的只读会话) |
-| 只读下命令的输出是 `miyu-sandbox: cannot confine: this Windows has no base container (MXC tier …)` | Windows | 这台 Windows 起不了沙盒要的基础容器 | 切到开放权限再跑 |
-| 只读下命令输出后面跟着 `The sandbox blocks WMI. Commands that need it work outside the sandbox.` | Windows | 这条命令要用 WMI，沙盒里连不上 | 切到开放权限再让 AI 跑，见 [权限和沙盒](permissions.md#三个平台) |
-| 「无法安装服务：Windows 任务计划无法携带 MIYU_HOME」，下一行「提示：取消设置 MIYU_HOME 后重试」；终端设置页「开机启动核心」那一项写「设了 MIYU_HOME 时 Windows 上装不了」 | Windows | 任务计划带不了环境变量 | 用默认的数据根装服务；要用别的数据根的，用托盘的「开机时启动」，见 [数据和备份](data.md#换一个位置) |
-| `core.log` 里有 `catalog cache unavailable`，原因写 `no LOCALAPPDATA` | Windows | 环境变量 `LOCALAPPDATA` 没有，或者不是绝对路径，缓存目录算不出来 | 把 `LOCALAPPDATA` 设成绝对路径，再 `miyu core stop`、重新打开 |
-| 「未找到 litemiyu」，下一行「提示：暂只支持 Linux」 | macOS、Windows | LiteMiyu 只有 Linux x86_64 的版本，`miyu rescue` 用不了 | 照这一页上面「核心起不来、连不上」查，见 [应急修复](rescue.md#别的系统) |
-| 「无法升级：没有这种系统的发行包」，下一行「提示：发行包只有 Linux x86_64、aarch64，macOS Apple 芯片，Windows x86_64；别的系统到 … 下载源码自己编译」 | Intel 芯片的 Mac、ARM 的 Windows 这类 | Miyu 没给这种系统出发行包 | 照提示到发行页下载源码自己编译，见 [安装、升级、卸载](install.md#哪些系统能装) |
-| 「不支持本机的系统。」 | 看包，例如 `im` 没有 Linux aarch64 的版本 | 这个软件包没给你这种系统打包 | 换这个包支持的系统，或者等它出这种系统的版本 |
-| `miyu call … --json '…'` 报 `--json takes one JSON object.`，后面一句 `Its double quotes were lost on the way, as Windows PowerShell 5.1 does. Pipe the JSON instead: '<json>' \| miyu call <tool> --json -` | Windows | Windows PowerShell 5.1 交给程序时吃掉了参数里的双引号 | 照它说的从管道传：`'<json>' \| miyu call <工具> --json -`，见 [命令行](cli.md) |
-| `miyu shellhook install` 说「PowerShell 的执行策略是 …，不加载启动文件，装了也不生效：在 PowerShell 里执行 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned 再开新窗口」 | Windows | 这个执行策略下 PowerShell 不加载 `$PROFILE`，shell 集成写进去也不生效 | 照它说的执行一次，开新窗口，见 [终端](heads/tui.md#shell-集成) |
-| 终端里「Linux 控制台显示不了中文：可在设置里把界面语言换成英文」 | Linux | 在 Linux 的文字控制台（`TERM=linux`）里打开终端 | 设置页里把界面语言换成英文，或者在图形桌面的终端程序里用 |
-| 卸载脚本报「删不掉 …（…）：还有 Miyu 的程序开着的，关掉再卸」 | Windows | 还有 Miyu 的程序开着，安装目录删不掉 | 关掉终端、网页这些 Miyu 的程序再卸，见 [安装、升级、卸载](install.md#卸载) |
-| `old Miyu is still running; stop it first` | Windows | 迁移时旧版 Miyu 还开着 | 关掉旧版 Miyu 再迁，见 [从 0.7 旧版迁过来](migrate.md) |
+| `miyu ask` 开头显示 `沙盒不可用：内核没有可用的 Landlock`，下一行是 `提示：需要 Linux 5.13 或更新，并在启动参数 lsm= 里启用 Landlock` | Linux | 内核版本低于 5.13，或者启动参数 `lsm=` 里没有 `landlock`。 | 按照提示更换内核、修改启动参数。在那之前，只读模式下的命令改为询问你。 |
+| `miyu ask` 开头显示 `沙盒不可用：无法应用 Seatbelt 配置，Miyu 可能运行在另一个沙盒里` | macOS | Seatbelt 配置无法应用。 | 不要在其他沙盒里运行 Miyu。在那之前，只读模式下的命令改为询问你。 |
+| `miyu ask` 开头显示 `沙盒不可用：这台 Windows 起不了 MXC 的基础容器` | Windows | 沙盒需要的基础容器在这台 Windows 上无法启动。 | 只读模式下的命令改为询问你。 |
+| 只读模式下命令的输出是 `miyu-sandbox: cannot confine: no desktop session, programs in the sandbox cannot start here; use Miyu from the desktop, or turn the sandbox off`，退出码 `125` | Windows | 核心不在桌面会话里，例如核心是通过 SSH 连进来以后启动的。 | 从已登录的桌面使用 Miyu，或者切换到开放权限，见 [常驻和服务器](service.md#windows-上的只读会话)。 |
+| 只读模式下命令的输出是 `miyu-sandbox: cannot confine: this Windows has no base container (MXC tier …)` | Windows | 这台 Windows 无法启动沙盒需要的基础容器。 | 切换到开放权限再运行。 |
+| 只读模式下命令的输出后面跟着 `The sandbox blocks WMI. Commands that need it work outside the sandbox.` | Windows | 这条命令需要用到 WMI，而沙盒里连不上 WMI。 | 切换到开放权限，再让 AI 运行一次，见 [权限和沙盒](permissions.md#三个平台)。 |
+| `无法安装服务：Windows 任务计划无法携带 MIYU_HOME`，下一行是 `提示：取消设置 MIYU_HOME 后重试`；终端界面设置页的 `开机启动核心` 一项显示 `设了 MIYU_HOME 时 Windows 上装不了` | Windows | 任务计划无法携带环境变量。 | 用默认的数据根安装服务；如果要使用其他数据根，就使用系统托盘的 `开机时启动`，见 [数据和备份](data.md#更换数据根的位置)。 |
+| `core.log` 里有 `catalog cache unavailable`，原因写的是 `no LOCALAPPDATA` | Windows | 环境变量 `LOCALAPPDATA` 不存在，或者不是绝对路径，因此算不出缓存目录。 | 把 `LOCALAPPDATA` 设成绝对路径，然后运行 `miyu core stop`，再重新打开 Miyu。 |
+| `未找到 litemiyu`，下一行是 `提示：暂只支持 Linux` | macOS、Windows | LiteMiyu 只有 Linux x86_64 的版本，所以 `miyu rescue` 无法使用。 | 按照这一页上面的「核心无法启动或无法连接」排查，见 [应急修复](rescue.md#其他系统)。 |
+| `无法升级：没有这种系统的发行包`，下一行是 `提示：发行包只有 Linux x86_64、aarch64，macOS Apple 芯片，Windows x86_64；别的系统到 … 下载源码自己编译` | Intel 芯片的 Mac、ARM 的 Windows 这类系统 | Miyu 没有为这种系统发布发行包。 | 按照提示到发行页下载源码自己编译，见 [安装、升级、卸载](install.md#选择安装方式)。 |
+| `不支持本机的系统。` | 取决于软件包，例如 `im` 没有 Linux aarch64 的版本 | 这个软件包没有为你这种系统打包。 | 换到这个软件包支持的系统，或者等它发布这种系统的版本。 |
+| `miyu call … --json '…'` 报 `--json takes one JSON object.`，后面一句是 `Its double quotes were lost on the way, as Windows PowerShell 5.1 does. Pipe the JSON instead: '<json>' \| miyu call <tool> --json -` | Windows | Windows PowerShell 5.1 把参数交给程序时吃掉了参数里的双引号。 | 按照提示改用管道传入：`'<json>' \| miyu call <工具> --json -`，见 [命令行](cli.md)。 |
+| `miyu shellhook install` 提示 `PowerShell 的执行策略是 …，不加载启动文件，装了也不生效：在 PowerShell 里执行 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned 再开新窗口` | Windows | 在这个执行策略下，PowerShell 不加载 `$PROFILE`，所以 shell 集成即使写进去也不生效。 | 按照提示执行一次那条命令，然后打开新窗口，见 [终端](heads/tui.md#shell-集成)。 |
+| 终端界面里显示 `Linux 控制台显示不了中文：可在设置里把界面语言换成英文` | Linux | 终端界面是在 Linux 的文字控制台（`TERM=linux`）里打开的。 | 在设置页里把界面语言换成英文，或者在图形桌面的终端程序里使用。 |
+| 卸载脚本报 `删不掉 …（…）：还有 Miyu 的程序开着的，关掉再卸` | Windows | 还有 Miyu 的程序开着，所以安装目录删不掉。 | 关掉终端界面、网页界面这些 Miyu 的程序之后再卸载，见 [安装、升级、卸载](install.md#卸载)。 |
+| `old Miyu is still running; stop it first` | Windows | 迁移时旧版 Miyu 还开着。 | 关掉旧版 Miyu 之后再迁移，见 [从 0.7 旧版迁过来](migrate.md)。 |
 
 ## 原因码
 
-核心拒绝一件事时给一个原因码和一句话。界面、命令行显示那句话；直接连协议的程序看 `data.reason`。常碰到的：
+核心拒绝执行一件事时，会给出一个原因码和一句说明。界面和命令行显示的是那句说明；直接通过协议连接核心的程序读取 `data.reason`。常见的原因码如下：
 
 | 原因码 | 显示的话 | 怎么办 |
 |---|---|---|
-| `no_model` | 没有可用的模型。 | `miyu setup`，或者 `models.chat` 写一个能用的 |
-| `cooling` | 模型冷却中，请稍后重试。 | 等，或者配一个池，见 [模型](models.md) |
-| `model_failed` | 模型请求失败。 | 看界面上的详情；认证失败的重存 key |
-| `unknown_model` | 模型或模型池不存在。 | 写成 `供应商/模型` 或 `@池`，供应商要配好 |
-| `unknown_provider` | 供应商不存在。 | 先配这一家，见 [模型](models.md) |
-| `unknown_secret` | 密钥不存在。 | `miyu provider login <名字>` |
-| `session_not_found` | 会话不存在。 | 编号写全；删了的会话找不回来 |
-| `turn_running` | 回合进行中。 | 等这一轮结束或先打断，再撤销、压缩、删除 |
-| `archived` | 这是存档，不能继续对话。 | 不带 `--archive` 再导一次 |
-| `session_read_only` | 会话日志坏了，只能看到坏的地方以前的内容，不能接着聊。要继续请新开一个会话。 | 新开一个会话 |
-| `session_unavailable` | 会话暂时无法读取，请稍后重试。 | 过一会儿再试；常见于磁盘出错、打开的文件太多 |
-| `dir_too_wide` | 目录范围过大。 | 换一个小一点的目录 |
-| `attachment_too_big` | 附件过大（最大 20 MiB，图片 5 MiB、8000 像素）。 | 缩小，或者只给路径 |
-| `attachment_in_data_root` | 不能附加数据目录里的文件。 | 复制到数据根外面再附 |
-| `export_exists` | 文件已存在。 | 换个文件名，导出不覆盖 |
-| `unknown_config_key` | 配置项不存在。 | `miyu config get` 看有哪些键 |
-| `config_invalid` | 配置有误，未保存。 | 照报错改值，`miyu config explain <键>` 看能写什么 |
-| `config_file_broken` | 配置文件有误，请先修复。 | `miyu check` |
-| `unknown_package` | 软件包不存在。 | `miyu pkg search` 找编号 |
-| `package_invalid` | 清单有误，无法安装。 | `miyu pkg info <包目录>` 看哪里不对 |
-| `depends_missing` | 缺少依赖的软件包。 | 先装依赖 |
-| `extension_off` | 扩展已停用。 | 在软件包页打开它 |
-| `bad_password` | 访问密码错误。 | `miyu web --reset` |
-| `protocol_mismatch` | 协议版本不兼容，请升级到同一版本。 | 头和核心升到同一版，`miyu core stop` |
-| `internal_error` | 内部错误，详见运行日志。 | 看 `core.log`，照下面报问题 |
+| `no_model` | 没有可用的模型。 | 运行 `miyu setup`，或者在 `models.chat` 里写一个能用的模型。 |
+| `cooling` | 模型冷却中，请稍后重试。 | 等待一段时间，或者配置一个池，见 [模型](models.md)。 |
+| `model_failed` | 模型请求失败。 | 查看界面上的详情；如果是认证失败，就重新保存 key。 |
+| `unknown_model` | 模型或模型池不存在。 | 写成 `供应商/模型` 或 `@池`，并且供应商要配置好。 |
+| `unknown_provider` | 供应商不存在。 | 先配置这一家供应商，见 [模型](models.md)。 |
+| `unknown_secret` | 密钥不存在。 | 运行 `miyu provider login <名字>`。 |
+| `session_not_found` | 会话不存在。 | 把会话编号写完整；已经删除的会话无法找回。 |
+| `turn_running` | 回合进行中。 | 等这一轮结束，或者先打断它，再撤销、压缩或删除。 |
+| `archived` | 这是存档，不能继续对话。 | 不带 `--archive` 重新导出一次。 |
+| `session_read_only` | 会话日志坏了，只能看到坏的地方以前的内容，不能接着聊。要继续请新开一个会话。 | 新开一个会话。 |
+| `session_unavailable` | 会话暂时无法读取，请稍后重试。 | 过一会儿再试；这种情况常见于磁盘出错、打开的文件太多。 |
+| `dir_too_wide` | 目录范围过大。 | 换一个范围小一点的目录。 |
+| `attachment_too_big` | 附件过大（最大 20 MiB，图片 5 MiB、8000 像素）。 | 缩小附件，或者只提供路径。 |
+| `attachment_in_data_root` | 不能附加数据目录里的文件。 | 把文件复制到数据根外面，再作为附件添加。 |
+| `export_exists` | 文件已存在。 | 换一个文件名，因为导出不会覆盖已有的文件。 |
+| `unknown_config_key` | 配置项不存在。 | 运行 `miyu config get` 查看有哪些键。 |
+| `config_invalid` | 配置有误，未保存。 | 按照报错修改值，可以用 `miyu config explain <键>` 查看能写什么。 |
+| `config_file_broken` | 配置文件有误，请先修复。 | 运行 `miyu check`。 |
+| `unknown_package` | 软件包不存在。 | 运行 `miyu pkg search` 查找软件包的编号。 |
+| `package_invalid` | 清单有误，无法安装。 | 运行 `miyu pkg info <包目录>` 查看哪里不对。 |
+| `depends_missing` | 缺少依赖的软件包。 | 先安装依赖的软件包。 |
+| `extension_off` | 扩展已停用。 | 在软件包页面里打开它。 |
+| `bad_password` | 访问密码错误。 | 运行 `miyu web --reset`。 |
+| `protocol_mismatch` | 协议版本不兼容，请升级到同一版本。 | 把界面和核心升级到同一个版本，然后运行 `miyu core stop`。 |
+| `internal_error` | 内部错误，详见运行日志。 | 查看 `core.log`，再按照下面的方法报告问题。 |
 
 全部原因码见 [协议参考：出错](../../reference/errors.md)。
 
-## 报问题
+## 报告问题
 
-到核心仓库提：<https://github.com/miyu-agent/miyu/issues>。附上：
+如果按照上面的方法解决不了，就到核心仓库提交问题：<https://github.com/miyu-agent/miyu/issues>。提交时附上：
 
-1. `miyu --version` 印的版本。
-2. 系统和版本，例如 Arch Linux、macOS 15、Windows 11；终端里的问题加上终端程序的名字。
+1. `miyu --version` 输出的版本。
+2. 系统和系统版本，例如 Arch Linux、macOS 15、Windows 11；如果是终端界面的问题，再加上终端程序的名字。
 3. `miyu check` 的输出。
-4. 出问题那一刻前后 `core.log` 里的几行；软件包的问题附 `~/.miyu/var/log/<编号>/` 里的；终端崩了附 `crash.log` 里的那一段。
-5. 怎么做能再出一次。
+4. 出问题那一刻前后 `core.log` 里的几行；如果是软件包的问题，附上 `~/.miyu/var/log/<编号>/` 里的日志；如果终端界面崩溃了，附上 `crash.log` 里的那一段。
+5. 怎样操作能让问题再出现一次。
 
-贴之前自己看一遍。日志、`miyu check` 的输出里有你的路径、用户名、会话编号、软件包名；导出的会话原样带着对话、命令输出和文件内容，不打码。不要贴 `~/.miyu/etc/private/secrets.toml`。
+贴出来之前，先自己看一遍。日志和 `miyu check` 的输出里有你的路径、用户名、会话编号、软件包名；导出的会话会原样带着对话、命令输出和文件内容，不会打码。不要贴出 `~/.miyu/etc/private/secrets.toml`。

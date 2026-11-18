@@ -2,26 +2,26 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-英文版：[English](../en/README.md)。
+可以按你的情况选择从哪里读起：
 
 | 你是 | 读 |
 |---|---|
-| 头一次用 Miyu | [快速上手](guide/quickstart.md) |
-| 在用 Miyu，要查一件事怎么做 | [用户手册](guide/README.md) |
-| 要写技能、脚本、软件包、扩展 | [作者教程](../authors/README.md) |
-| 要写一个头，或者让别的程序连上核心 | [协议参考](../reference/README.md)、[写一个头](dev/head.md) |
-| 要弄懂 Miyu 的架构，或者给它提改动 | [开发者文档](dev/README.md) |
+| 第一次使用 Miyu | [快速上手](guide/quickstart.md) |
+| 正在使用 Miyu，想查一件事怎么做 | [用户手册](guide/README.md) |
+| 想编写技能、脚本、软件包、扩展 | [作者教程](../authors/README.md) |
+| 想写一个头（连接核心的界面程序），或者让其他程序连接核心 | [协议参考](../reference/README.md)、[写一个头](dev/head.md) |
+| 想弄懂 Miyu 的架构，或者给它提交改动 | [开发者文档](dev/README.md) |
 
 ## docs 目录里有什么
 
 | 目录 | 是什么 | 给谁 |
 |---|---|---|
-| `zh/guide/`、`en/guide/` | 用户手册：安装、各个界面、会话、模型、权限、软件包、配置、排错 | 用 Miyu 的人 |
-| `authors/` | 作者教程：写软件包、扩展、脚本、技能，接 MCP 服务，清单的格式 | 给 Miyu 写东西的人 |
-| `reference/` | 协议参考：核心的每个方法、参数、回应、出错 | 写头、写扩展的人 |
-| `zh/dev/`、`en/dev/` | 开发者文档：架构、写一个头、主题和皮肤、往界面上放东西、贡献代码 | 接入 Miyu、改 Miyu 的人 |
-| `blueprint/`、`designs/`、`construction/` | 项目内部的图纸、设计、施工记录 | 维护者。用 Miyu、给它写东西都不用看；各是什么见 [贡献代码](dev/contributing.md#先读什么) |
+| `zh/guide/`、`en/guide/` | 用户手册：安装、各个界面、会话、模型、权限、软件包、配置和排错。 | 使用 Miyu 的人 |
+| `authors/` | 作者教程：编写软件包、扩展、脚本、技能，接入 MCP 服务，以及清单的格式。 | 给 Miyu 编写东西的人 |
+| `reference/` | 协议参考：核心的每个方法，以及它的参数、回应和错误。 | 写头、写扩展的人 |
+| `zh/dev/`、`en/dev/` | 开发者文档：架构、写一个头、主题和皮肤、往界面上放东西、贡献代码。 | 接入 Miyu、修改 Miyu 的人 |
+| `blueprint/`、`designs/`、`construction/` | 项目内部的图纸、设计和施工记录。 | 维护者。使用 Miyu、给 Miyu 编写东西都不需要看这些目录；它们各是什么，见 [贡献代码](dev/contributing.md#先读什么)。 |
 
-用户手册、开发者文档一种语言一个目录：`zh/` 是中文（正本），`en/` 是英文，两边的页一一对应。作者教程、协议参考两种语言放在同一个目录里，英文的文件名是 `<页>.en.md`。
+用户手册和开发者文档每种语言一个目录：`zh/` 是中文（正本），`en/` 是英文，两边的页面一一对应。作者教程和协议参考的两种语言放在同一个目录里，英文的文件名是 `<页>.en.md`。
 
-`guide/`、`authors/`、`reference/`、`dev/` 用 Apache-2.0（仓库根目录 `LICENSES/Apache-2.0.txt`）：照着写东西、转载、翻译，用什么许可证都行。
+`guide/`、`authors/`、`reference/`、`dev/` 使用 Apache-2.0 许可证（见仓库根目录的 `LICENSES/Apache-2.0.txt`）：你可以照着它们编写东西、转载或者翻译，使用什么许可证都可以。

@@ -1573,6 +1573,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC17"><span class="n">DOC-17</span>权限页跟上只有整个数据根才问<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC18"><span class="n">DOC-18</span>迁移页跟上迁移包的审计修复<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC19"><span class="n">DOC-19</span>清掉调研记录和旧性能数据<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sDOC20"><span class="n">DOC-20</span>文档的写法定成规矩，逐页改写<span class="st">…</span></a></li>
         <li><a class="step review" href="#sHLP1"><span class="n">HLP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
@@ -61321,6 +61322,55 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/DOC-19-清掉调研和旧性能数据.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sDOC20" aria-labelledby="h-sDOC20">
+  <div class="sheet-head"><h2 id="h-sDOC20"><span class="no">DOC-20</span>文档的写法定成规矩，面向用户的文档照它改写一遍</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">项目主人定：写文档要有规范；除了他手写的仓库首页和快速上手，现在的文档都太口语化，面向用户的必须修正。规范照他手写的文档定，记进 AGENTS.md，再照它把 36 页中英文档改写一遍。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">AGENTS.md　docs/zh　docs/en</span><span class="dir-note">DOC-20</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>AGENTS.md 加「文档的规矩」一节：放在哪、照谁的写法、段落和句子怎么写、不要的写法、格式、署名</li>
+              <li>docs/zh、docs/en 下 36 页（中英各一份）逐页改写：省略的短句写成完整的陈述句，界面文字换成反引号，口语的小标题换掉，63 处锚点跟着改</li>
+              <li>每页开头指到另一种语言的那一句去掉（74 处）：语言在仓库首页选好了</li>
+              <li>改写时回程序里核对出的错处一并改正：卸载软件包留下什么、哪几家能查额度、托盘停核心等多久、Apache-2.0 管哪些目录，和七处引用的程序原话</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">面向用户的文档照项目主人手写的写法：完整的陈述句，先说做什么再给命令，界面文字写在反引号里</span><span class="rl">AGENTS.md「文档的规矩」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DOC-20</dd></div>
+        <div><dt>名称</dt><dd>文档的写法定成规矩，面向用户的文档照它改写一遍</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">DOC-20</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>72 页和改写前全量比对：代码块、链接、反引号里的原文、数字都没变</span></li>
+        <li><span class="ok">✓</span><span>中英 37 页一页对一页，986 个链接都指得到，没有指到另一种语言的</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/DOC-20-文档写法.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

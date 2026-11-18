@@ -2,147 +2,149 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-让核心开机就起来、放在没有桌面的服务器上跑、从别的机器和手机打开网页、看日志、停掉，都在这一页。怎么装见 [安装、升级、卸载](install.md)。英文版：[English](../../en/guide/service.md)。
+这一页说明怎么让核心开机自动启动、怎么在没有桌面的服务器上运行、怎么从其他电脑和手机打开网页界面，以及怎么查看日志、停止核心。安装方法可以看 [安装、升级、卸载](install.md)。
 
-## 核心平时怎么跑
+## 核心的运行方式
 
-核心是 `miyu` 在后台跑的样子，会话、模型、定时任务都在它里面。终端、网页、托盘这些头只是连上它。
+核心就是 `miyu` 在后台运行时的状态，会话、模型、定时任务都在核心里。终端界面、网页界面、系统托盘这些界面只是连接到核心。
 
-- 打开头时连不上核心，头就拉起一个，等它说好了再连。不装服务也能用。
-- 一个数据根（默认 `~/.miyu`，Windows 上是 `%USERPROFILE%\.miyu`；设了 `MIYU_HOME` 的是它）同时只跑一个核心。
-- 核心默认一直开着，头都关了也不退。
+- 打开界面时如果连接不上核心，界面会自己启动一个核心，等核心准备好以后再连接。所以不安装服务也可以正常使用。
+- 一个数据根（默认是 `~/.miyu`，Windows 上是 `%USERPROFILE%\.miyu`；如果设置了 `MIYU_HOME`，就是它指向的目录）同一时间只运行一个核心。
+- 核心默认一直运行，所有界面都关掉了也不会退出。
 
-要它空闲了自己退出，在设置页（终端、网页里敲 `/settings`）「高级 → 核心 → 空闲退出时间」里填分钟数，或者：
+如果想让核心空闲时自己退出，可以在设置页（在终端界面或网页界面里输入 `/settings`）的 `高级 → 核心 → 空闲退出时间` 里填写分钟数，或者运行：
 
 ```sh
 miyu config set core.idle_exit 30
 ```
 
-没有连接、也没有在跑的一轮，连续这么多分钟以后退出。`0` 是一直开着（默认），能写 `0` 到 `525600`。改了当场生效，只能写在 `~/.miyu/etc/config.toml`。
+设置之后，如果连续这么多分钟没有任何连接，也没有正在进行的一轮对话，核心就会退出。`0` 表示一直运行（默认值），可以填写的范围是 `0` 到 `525600`。修改后立即生效，这一项只能写在 `~/.miyu/etc/config.toml` 里。
 
-手动停：
+手动停止核心，运行：
 
 ```sh
 miyu core stop
 ```
 
-它叫在跑的核心停下，等它退了再回来；没在跑的什么都不做。正在跑的这一轮先停下来，下次载入这个会话时接着干。
+这条命令会通知正在运行的核心停下，等核心退出以后再返回；如果核心没有在运行，就什么都不做。正在进行的那一轮对话会先停下来，下次载入这个会话时再继续。
 
-手动起、看它在不在：
+手动启动核心、查看核心是否在运行，可以使用：
 
 ```sh
 miyu core start
 miyu core status
 ```
 
-`start` 只拉起核心，不开界面、不开浏览器，已经在跑的什么都不做。`status` 说在不在跑、版本、数据根，见 [`miyu core`](cli.md#miyu-core)。
+`start` 只启动核心，不打开界面，也不打开浏览器；如果核心已经在运行，就什么都不做。`status` 会显示核心是否在运行、版本和数据根，详细的见 [`miyu core`](cli.md#miyu-core)。
 
-只想关网页、核心照常跑：`miyu web stop`；看网页在不在跑：`miyu web status`。
+如果只想关掉网页界面、让核心继续运行，可以运行 `miyu web stop`；查看网页界面是否在运行，可以运行 `miyu web status`。
 
-## 开机或登录就起来
+## 开机或登录时启动核心
 
-装了服务，开机或登录时核心就起来，通讯平台、定时任务不用等你打开头。
+安装服务之后，核心会在开机或登录时自动启动，这样通讯平台和定时任务就不需要等你打开界面才开始工作。运行：
 
 ```sh
 miyu service enable
 ```
 
-| 命令 | 做什么 |
+| 命令 | 作用 |
 |---|---|
-| `miyu service enable` | 写好服务文件、交给系统的服务管理器 |
-| `miyu service disable` | 停掉服务、从服务管理器里拿掉、删掉服务文件 |
-| `miyu service status` | 看装没装、开没开着 |
+| `miyu service enable` | 写好服务文件，交给系统的服务管理器 |
+| `miyu service disable` | 停止服务，从服务管理器里移除，并删除服务文件 |
+| `miyu service status` | 查看服务是否已安装、是否已启用 |
 
-三个命令都能加 `--format json`，印一行 `{"installed", "on", "file", "manager"}`，出错的是 `{"error", …}`。
+三个命令都可以加 `--format json`，此时会输出一行 `{"installed", "on", "file", "manager"}`；出错时输出 `{"error", …}`。
 
-服务跑的是你现在敲的这个 `miyu`（链接解开后的真实位置）。设了 `MIYU_HOME` 的，一并写进服务。换了 `miyu` 的位置、换了数据根的，再敲一次 `miyu service enable` 重写。
+服务运行的是你现在运行的这个 `miyu`（解析链接之后的真实位置）。如果设置了 `MIYU_HOME`，它也会一起写进服务。如果之后移动了 `miyu` 的位置，或者换了数据根，需要再运行一次 `miyu service enable` 重写服务文件。
 
-各系统用的办法：
+各个系统使用的方式如下：
 
-| 系统 | 用什么 | 写哪个文件 | 什么时候起 |
+| 系统 | 使用的方式 | 写入的文件 | 启动的时机 |
 |---|---|---|---|
-| Linux，有 systemd 用户会话 | systemd 用户服务 | `~/.config/systemd/user/miyu.service` | 马上起，以后登录时起 |
+| Linux，有 systemd 用户会话 | systemd 用户服务 | `~/.config/systemd/user/miyu.service` | 立即启动，以后每次登录时启动 |
 | Linux，没有 systemd 用户会话 | 桌面自启动 | `~/.config/autostart/miyu.desktop` | 下次登录桌面时 |
-| macOS | launchd 用户代理 | `~/Library/LaunchAgents/io.github.miyu-agent.core.plist` | 马上起，以后登录时起 |
-| Windows | 任务计划，名字 `Miyu` | `%USERPROFILE%\AppData\Local\Miyu\miyu-task.xml` | 下次登录时 |
+| macOS | launchd 用户代理 | `~/Library/LaunchAgents/io.github.miyu-agent.core.plist` | 立即启动，以后每次登录时启动 |
+| Windows | 任务计划，名字是 `Miyu` | `%USERPROFILE%\AppData\Local\Miyu\miyu-task.xml` | 下次登录时 |
 
-Linux 上设了 `XDG_CONFIG_HOME` 的，前两个文件写在它下面。
+在 Linux 上，如果设置了 `XDG_CONFIG_HOME`，前两个文件会写在它下面。
 
-`miyu service enable` 成了说「已启用并启动 …」（systemd、launchd）、「已启用 …，下次登录桌面时启动」（桌面自启动）或「已启用 …，下次登录时启动」（任务计划）。`status` 说「已安装，已启用：…」「已安装，未启用：…」「已安装，登录桌面时启动：…」或者「未安装」。它问服务管理器用的命令：
+`miyu service enable` 成功时会提示 `已启用并启动 …`（systemd、launchd）、`已启用 …，下次登录桌面时启动`（桌面自启动）或 `已启用 …，下次登录时启动`（任务计划）。`status` 会显示 `已安装，已启用：…`、`已安装，未启用：…`、`已安装，登录桌面时启动：…` 或者 `未安装`。`status` 向服务管理器查询时使用的命令是：
 
 | 系统 | 命令 |
 |---|---|
-| systemd | `systemctl --user is-active miyu.service`（看的是现在跑没跑着） |
-| launchd | `launchctl print gui/<你的 uid>/io.github.miyu-agent.core`（看的是登记了没有） |
-| 任务计划 | `schtasks /Query /TN Miyu`（看的是登记了没有） |
-| 桌面自启动 | 问不了，只看文件在不在 |
+| systemd | `systemctl --user is-active miyu.service`（查的是核心现在是否在运行） |
+| launchd | `launchctl print gui/<你的 uid>/io.github.miyu-agent.core`（查的是是否已登记） |
+| 任务计划 | `schtasks /Query /TN Miyu`（查的是是否已登记） |
+| 桌面自启动 | 无法查询，只检查文件是否存在 |
 
-### 几个系统各自要知道的
+### 各系统的差异
+
+不同系统的服务管理器在核心退出、没有人登录等情况下的行为不一样：
 
 | | systemd 用户服务 | 桌面自启动 | launchd | 任务计划 |
 |---|---|---|---|---|
-| 核心退了 | 异常退出的 5 秒后重起，正常退出的不重起 | 不重起，下次打开头时头把它拉起来 | 退出码不是 `0` 的重起，是 `0` 的不重起 | 失败时每隔 1 分钟重试，最多 3 次 |
-| 没人登录时 | 登录时起、注销后停；敲 `sudo loginctl enable-linger $USER` 以后没人登录也开着 | 不跑 | 不跑 | 不跑 |
-| 设了 `MIYU_HOME` | 写进服务文件 | 写进服务文件 | 写进服务文件 | 装不了 |
+| 核心退出后 | 异常退出 5 秒后重新启动，正常退出不重新启动 | 不重新启动，下次打开界面时由界面启动核心 | 退出码不是 `0` 时重新启动，是 `0` 时不重新启动 | 失败时每隔 1 分钟重试一次，最多 3 次 |
+| 没有人登录时 | 登录时启动、注销后停止；运行 `sudo loginctl enable-linger $USER` 之后，没有人登录也会一直运行 | 不运行 | 不运行 | 不运行 |
+| 设置了 `MIYU_HOME` | 写进服务文件 | 写进服务文件 | 写进服务文件 | 无法安装 |
 
-- macOS、Windows 上没有让核心在没人登录时也开着的做法。Linux 上另可以照 [放到服务器上](#放到服务器上) 装成系统服务。
-- 任务计划不要管理员，只在你登录时起。
-- Windows 上设了 `MIYU_HOME` 的，`miyu service enable` 说「无法安装服务：Windows 任务计划无法携带 MIYU_HOME」，下一行「提示：取消设置 MIYU_HOME 后重试」。要用别的数据根又要登录时起的，用托盘的「开机时启动」，见 [数据和备份](data.md#换一个位置)。
+- 在 macOS 和 Windows 上，没有办法让核心在没有人登录时也保持运行。在 Linux 上，还可以按照 [部署到服务器](#部署到服务器) 安装成系统服务。
+- 任务计划不需要管理员权限，只在你登录时启动核心。
+- 在 Windows 上，如果设置了 `MIYU_HOME`，`miyu service enable` 会提示 `无法安装服务：Windows 任务计划无法携带 MIYU_HOME`，下一行是 `提示：取消设置 MIYU_HOME 后重试`。如果既想使用其他数据根，又想在登录时启动，可以使用系统托盘的 `开机时启动`，详细的见 [数据和备份](data.md#更换数据根的位置)。
 
-### 让服务马上接手
+### 让服务立即接管
 
-已经有一个头拉起的核心在跑时，服务起的那个看到有核心在跑就正常退出（退出码 `0`），不会顶掉它。要服务马上接手：
+如果已经有一个由界面启动的核心在运行，服务启动的核心发现已经有核心在运行，就会正常退出（退出码 `0`），不会替换掉正在运行的那个。想让服务立即接管核心：
 
-1. 停掉在跑的核心：`miyu core stop`。
-2. 再装一次服务：`miyu service enable`。它照现在的 `miyu` 位置和 `MIYU_HOME` 重写服务文件，再交给服务管理器。
+1. 停止正在运行的核心：`miyu core stop`。
+2. 再安装一次服务：`miyu service enable`。它会按照现在的 `miyu` 位置和 `MIYU_HOME` 重写服务文件，再交给服务管理器。
 
-| 系统 | 第 2 步以后 |
+| 系统 | 第 2 步之后 |
 |---|---|
-| Linux（systemd 用户服务）、macOS | 服务当场把核心起来 |
-| Linux（桌面自启动）、Windows | 只重新登记，下次登录才由服务起；在那之前打开头时，头照常拉起一个核心 |
+| Linux（systemd 用户服务）、macOS | 服务立即启动核心 |
+| Linux（桌面自启动）、Windows | 只是重新登记，下次登录时才由服务启动核心；在那之前打开界面时，界面照常会自己启动一个核心 |
 
-升级以后让核心换成新版，也是这两步。
+升级之后想让核心换成新版，也是这两步。
 
 ### 服务和环境变量
 
-服务起的核心看不到你在 shell 里设的变量。`miyu service enable` 写的服务文件里只带 `MIYU_HOME`（设了的话），别的变量一个都不带；Windows 的任务计划连 `MIYU_HOME` 也不带。
+服务启动的核心看不到你在 shell 里设置的变量。`miyu service enable` 写的服务文件里只带 `MIYU_HOME`（如果设置了的话），不带其他任何变量；Windows 的任务计划连 `MIYU_HOME` 也不带。
 
-配置里 `{ env = "变量" }` 这样写的 key，核心照它自己起来时的环境取，不认你 shell 里的。要服务起的核心用得上，改用密钥文件：`miyu provider login` 把 key 存进去，配置里写 `{ secret = "名字" }`，核心从密钥文件取，不靠环境变量。
+配置里写成 `{ env = "变量" }` 的 key，核心会从它自己启动时的环境里读取，读不到你 shell 里的变量。如果想让服务启动的核心用上这个 key，需要改用密钥文件：用 `miyu provider login` 把 key 存进密钥文件，配置里写 `{ secret = "名字" }`，这样核心会从密钥文件读取，不依赖环境变量。
 
-一定要用环境变量的：
+如果一定要使用环境变量：
 
-- systemd 用户服务：`systemctl --user edit miyu` 加 `Environment=` 那一行（写法见 [环境变量里的 key](#环境变量里的-key)）。直接改 `miyu.service` 的，下次 `miyu service enable` 会盖掉。
-- launchd 的 plist、桌面自启动的 `miyu.desktop`：手改的，下次 `miyu service enable` 同样会盖掉。
+- systemd 用户服务：运行 `systemctl --user edit miyu`，加上 `Environment=` 那一行（写法见 [环境变量里的 key](#环境变量里的-key)）。如果直接修改 `miyu.service`，下次运行 `miyu service enable` 时修改会被覆盖。
+- launchd 的 plist 和桌面自启动的 `miyu.desktop`：手动修改的内容，同样会在下次运行 `miyu service enable` 时被覆盖。
 
-装了托盘的，也可以用托盘菜单里的「开机时启动」让托盘登录时起，见 [托盘](heads/applet.md)。
+如果安装了系统托盘，也可以使用托盘菜单里的 `开机时启动`，让系统托盘在登录时启动，详细的见 [系统托盘](heads/applet.md)。
 
-## 放到服务器上
+## 部署到服务器
 
-这一节只适用 Linux。macOS、Windows 上没有服务器的样例，要核心常驻用上一节的 `miyu service enable`。
+这一节只适用于 Linux。macOS 和 Windows 上没有服务器的样例，想让核心常驻，可以使用上一节的 `miyu service enable`。
 
-服务器上用一个专门的系统用户跑核心，数据根放在 `/var/lib/miyu`，不挂在某个人的家目录下。`miyu service` 只管你自己这个用户，系统级的服务要照下面手动装。
+在服务器上，用一个专门的系统用户运行核心，数据根放在 `/var/lib/miyu`，而不是放在某个人的家目录下。由于 `miyu service` 只管理你自己这个用户，系统级的服务需要按照下面的步骤手动安装。
 
-Miyu 仓库的 `packaging/` 里有现成的样例，都以 `miyu` 用户跑 `/usr/bin/miyu core`，数据根 `/var/lib/miyu`，缓存 `/var/cache/miyu`：
+Miyu 仓库的 `packaging/` 目录里有现成的样例，它们都以 `miyu` 用户运行 `/usr/bin/miyu core`，数据根是 `/var/lib/miyu`，缓存是 `/var/cache/miyu`：
 
-| 初始化系统 | 样例 | 装到哪 |
+| 初始化系统 | 样例 | 安装位置 |
 |---|---|---|
 | systemd | `packaging/systemd/system/miyu.service` | `/etc/systemd/system/` |
-| systemd，网页 | `packaging/systemd/system/miyu-web.service` | `/etc/systemd/system/` |
-| OpenRC | `packaging/init/openrc/miyu` | `/etc/init.d/miyu`，加执行权限 |
-| runit | `packaging/init/runit/miyu/run` | 整个目录放进 `/etc/sv/miyu`，`run` 加执行权限，再链进服务目录 |
+| systemd，网页界面 | `packaging/systemd/system/miyu-web.service` | `/etc/systemd/system/` |
+| OpenRC | `packaging/init/openrc/miyu` | `/etc/init.d/miyu`，加上执行权限 |
+| runit | `packaging/init/runit/miyu/run` | 把整个目录放进 `/etc/sv/miyu`，给 `run` 加上执行权限，再链接到服务目录 |
 | dinit | `packaging/init/dinit/miyu` | `/etc/dinit.d/miyu`，环境变量写进 `/etc/dinit.d/miyu.env` |
 
-`miyu` 不在 `/usr/bin` 的（安装脚本装的），把样例里的路径换成它的位置。
+如果 `miyu` 不在 `/usr/bin`（例如用安装脚本安装的），把样例里的路径换成它实际的位置。
 
-### 用 systemd 起核心
+### 用 systemd 启动核心
 
-1. 建系统用户：
+1. 创建系统用户：
 
    ```sh
    sudo useradd --system --home-dir /var/lib/miyu --shell /usr/sbin/nologin miyu
    ```
 
-2. 取样例、装上：
+2. 下载样例并安装：
 
    ```sh
    curl -fsSLO https://raw.githubusercontent.com/miyu-agent/miyu/main/packaging/systemd/system/miyu.service
@@ -150,19 +152,19 @@ Miyu 仓库的 `packaging/` 里有现成的样例，都以 `miyu` 用户跑 `/us
    sudo systemctl enable --now miyu
    ```
 
-   systemd 照样例里的 `StateDirectory`、`CacheDirectory` 建好 `/var/lib/miyu`、`/var/cache/miyu`，属于 `miyu`，数据根权限 `0700`。OpenRC 的样例每次启动前自己建这两个目录；runit、dinit 的要你先建好、`chown miyu:miyu`、数据根 `chmod 0700`。
+   systemd 会按照样例里的 `StateDirectory`、`CacheDirectory` 创建 `/var/lib/miyu` 和 `/var/cache/miyu`，属主是 `miyu`，数据根的权限是 `0700`。OpenRC 的样例每次启动前会自己创建这两个目录；runit 和 dinit 则需要你先创建好这两个目录，运行 `chown miyu:miyu`，并对数据根运行 `chmod 0700`。
 
-3. 看它起来没有：`sudo systemctl status miyu`。
+3. 确认核心已经启动：运行 `sudo systemctl status miyu`。
 
-### 在服务器上敲命令
+### 在服务器上运行命令
 
-核心只认和它同一个系统用户、同一个数据根的命令行。在服务器上敲 `miyu` 的命令都要这样套一层：
+核心只接受和它是同一个系统用户、使用同一个数据根的命令行。因此在服务器上运行的每一条 `miyu` 命令都要像这样套一层：
 
 ```sh
 sudo -u miyu env MIYU_HOME=/var/lib/miyu XDG_CACHE_HOME=/var/cache miyu config get models.chat
 ```
 
-接模型（见 [模型](models.md)）也这样，key 从管道读：
+接入模型（见 [模型](models.md)）也是同样的写法，key 从管道读取：
 
 ```sh
 echo "$DEEPSEEK_API_KEY" | sudo -u miyu env MIYU_HOME=/var/lib/miyu XDG_CACHE_HOME=/var/cache miyu provider login deepseek
@@ -170,126 +172,128 @@ echo "$DEEPSEEK_API_KEY" | sudo -u miyu env MIYU_HOME=/var/lib/miyu XDG_CACHE_HO
 
 ### 环境变量里的 key
 
-配置里写 `{ env = "变量" }` 的 key，核心照它自己起来时的环境取，不认你登录 shell 里的。服务起的核心要把变量写进服务：
+配置里写成 `{ env = "变量" }` 的 key，核心会从它自己启动时的环境里读取，读不到你登录 shell 里的变量。所以如果核心是由服务启动的，要把变量写进服务里：
 
-- systemd：`sudo systemctl edit miyu`，加
+- systemd：运行 `sudo systemctl edit miyu`，加上：
 
   ```ini
   [Service]
   Environment=DEEPSEEK_API_KEY=sk-example
   ```
 
-  或者 `EnvironmentFile=` 指一个只有 root 能读的文件。改完 `sudo systemctl restart miyu`。
+  或者用 `EnvironmentFile=` 指向一个只有 root 能读取的文件。修改完成后运行 `sudo systemctl restart miyu`。
 - dinit：写进 `/etc/dinit.d/miyu.env`。
-- OpenRC、runit：在样例里 `export` 那一行旁边加。
+- OpenRC、runit：加在样例里 `export` 那一行旁边。
 
-不想把 key 放进服务文件的，用 `miyu provider login` 存进密钥文件，配置里写 `{ secret = "名字" }`。
+如果不想把 key 放进服务文件，可以用 `miyu provider login` 把 key 存进密钥文件，配置里写 `{ secret = "名字" }`。
 
-自己这台电脑上用 `miyu service enable` 装的服务见 [服务和环境变量](#服务和环境变量)。
+如果是在自己的电脑上用 `miyu service enable` 安装的服务，可以看 [服务和环境变量](#服务和环境变量)。
 
-### 用 systemd 跑网页
+### 用 systemd 运行网页界面
 
-网页软件 `miyu-web` 出厂一直跑着不退（`web.idle_seconds` 是 `0`），可以直接当服务跑。当服务跑的别把 `web.idle_seconds` 改成非 0：空闲退出的退出码是 0，服务管理器不会再起它。
+网页界面的程序 `miyu-web` 出厂设置是一直运行、不会自己退出（`web.idle_seconds` 是 `0`），所以可以直接作为服务运行。作为服务运行时，不要把 `web.idle_seconds` 改成非 0 的值：因为空闲退出的退出码是 0，服务管理器不会再重新启动它。
 
-1. 取样例：
+1. 下载样例：
 
    ```sh
    curl -fsSLO https://raw.githubusercontent.com/miyu-agent/miyu/main/packaging/systemd/system/miyu-web.service
    ```
 
-2. 把 `ExecStart=` 换成 `miyu-web` 的真实位置，后面照旧带 `serve`。AUR 装的是 `/usr/share/miyu/packages/webui/bin/miyu-web`，安装脚本装的在 `miyu` 旁边：
+2. 把 `ExecStart=` 里的路径换成 `miyu-web` 的真实位置，后面仍然带上 `serve`。从 AUR 安装时路径是 `/usr/share/miyu/packages/webui/bin/miyu-web`，用安装脚本安装时在 `miyu` 旁边：
 
    ```ini
    ExecStart=/usr/share/miyu/packages/webui/bin/miyu-web serve
    ```
 
-3. 装上：
+3. 安装服务：
 
    ```sh
    sudo cp miyu-web.service /etc/systemd/system/
    sudo systemctl enable --now miyu-web
    ```
 
-起网页服务时连带起核心服务，核心服务停了它跟着停。网页默认只听服务器本机的 `127.0.0.1`，从别的机器怎么打开见下一节。
+启动网页界面的服务时会连带启动核心的服务；核心的服务停止时，网页界面的服务也会跟着停止。网页界面默认只监听服务器本机的 `127.0.0.1`，从其他电脑打开的方法见下一节。
 
-## 从别的机器、手机打开网页
+## 从其他电脑和手机打开网页界面
 
-网页的几项配置都只能写在 `~/.miyu/etc/config.toml`：
+想从其他设备打开网页界面，需要修改网页界面的几项配置，这几项都只能写在 `~/.miyu/etc/config.toml` 里：
 
-| 键 | 默认 | 说明 |
+| 键 | 默认值 | 说明 |
 |---|---|---|
-| `web.listen` | `127.0.0.1` | 听哪个地址。`127.0.0.1` 只有这台电脑能开；`0.0.0.0` 是这台电脑的所有地址；也可以写其中一个 |
-| `web.port` | `8300` | 端口，本机和别的设备都用它，`1` 到 `65535` |
-| `web.idle_seconds` | `0` | 没有浏览器连着、也没有在给媒体文件，连续多少秒后退出，`0` 到 `86400`，`0` 是不退。打开了局域网访问的不退。设置页上不显示 |
+| `web.listen` | `127.0.0.1` | 监听的地址。`127.0.0.1` 表示只有这台电脑能打开；`0.0.0.0` 表示这台电脑的所有地址；也可以写其中某一个地址 |
+| `web.port` | `8300` | 端口，这台电脑和其他设备都使用这个端口，范围是 `1` 到 `65535` |
+| `web.idle_seconds` | `0` | 没有浏览器连接、也没有在提供媒体文件的状态持续多少秒后退出，范围是 `0` 到 `86400`，`0` 表示不退出。打开了局域网访问时不会退出。设置页上不显示这一项 |
 
-从别的设备进来都要访问密码。在这台电脑上用 `miyu web` 打开的不用。
+从其他设备访问时都需要输入访问密码；在这台电脑上用 `miyu web` 打开时不需要。
 
-### 局域网
+### 局域网访问
 
-1. 在这台电脑上敲 `miyu web --settings access`，打开「设置 → 通用 → 访问」。
-2. 打开「允许局域网访问」。还没设访问密码的，先弹「设置访问密码」，设好就打开。
-3. 设置页上列出别的设备用的网址，还有一个二维码，手机扫码、敲访问密码就能进。
+1. 在这台电脑上运行 `miyu web --settings access`，打开 `设置 → 通用 → 访问`。
+2. 打开 `允许局域网访问`。如果还没有设置访问密码，会先弹出 `设置访问密码`，设置好之后开关就会打开。
+3. 设置页上会列出其他设备使用的网址，还有一个二维码。用手机扫码，输入访问密码就可以进入。
 
-地址、端口在设置页里改、用 `miyu config set` 改、手改配置文件，网页都当场换过去。`miyu config set` 这时印的「重启后生效」不准。
+无论是在设置页里修改地址和端口、用 `miyu config set` 修改，还是手动修改配置文件，网页界面都会立即切换过去。此时 `miyu config set` 输出的 `重启后生效` 并不准确。
 
-局域网访问是明文 HTTP，同一个网络里的人看得到访问密码、登录令牌和对话内容。只在自己家这样信得过的网络里开。在外面用，先用 Tailscale、WireGuard 这类加密的隧道连回这个网络，再开局域网的网址。macOS 上别的设备打不开的，到「系统设置 → 网络 → 防火墙 → 选项」里允许 `miyu-web` 的传入连接。
+> 局域网访问使用的是明文 HTTP，同一个网络里的人可以看到访问密码、登录令牌和对话内容。所以只在自己家这样信得过的网络里打开。在外面使用时，先用 Tailscale、WireGuard 这类加密隧道连回这个网络，再打开局域网的网址。在 macOS 上，如果其他设备打不开，到 `系统设置 → 网络 → 防火墙 → 选项` 里允许 `miyu-web` 的传入连接。
 
-忘了访问密码：在这台电脑上敲 `miyu web --reset`，打开的页面里重设。要所有浏览器都重新登录：`miyu web --logout`。
+如果忘了访问密码，在这台电脑上运行 `miyu web --reset`，在打开的页面里重新设置即可。如果想让所有浏览器都重新登录，运行 `miyu web --logout`。
 
 ### 没有桌面的服务器
 
-服务器上没有浏览器，先从你自己的电脑经 SSH 端口转发进去设访问密码：
+服务器上没有浏览器，所以要先从你自己的电脑通过 SSH 端口转发连进去，设置访问密码：
 
-1. 在你的电脑上敲（两边端口要一样，都写服务器的 `web.port`）：
+1. 在你的电脑上运行（两边的端口要一样，都写服务器的 `web.port`）：
 
    ```sh
    ssh -L 8300:127.0.0.1:8300 you@server.example
    ```
 
-2. 在你的电脑上用浏览器打开 `http://127.0.0.1:8300`。网页把这条连接当成服务器自己，不要密码就进得去。
-3. 到「设置 → 通用 → 访问」设好访问密码，要局域网的再打开「允许局域网访问」。
+2. 在你的电脑上用浏览器打开 `http://127.0.0.1:8300`。网页界面会把这条连接当成服务器本机，不需要密码就能进入。
+3. 到 `设置 → 通用 → 访问` 设置访问密码；如果需要局域网访问，再打开 `允许局域网访问`。
 
-经 `ssh -L`、`socat` 这类不加头的转发进来的人，网页一律当成服务器本机：不要密码，能读服务器上的文件，能不带旧密码改掉访问密码。这条路只给你自己用。
+> 通过 `ssh -L`、`socat` 这类不添加转发头的方式连进来的人，网页界面一律当成服务器本机：不需要密码，可以读取服务器上的文件，还可以不输入旧密码就改掉访问密码。所以这条路只给你自己用。
 
 ### 反向代理
 
-经同一台机器上的 nginx、cloudflared 这类反向代理打开的，网页当成别的设备：要访问密码，只在本机能用的功能（选服务器上的目录、读它的文件）用不了。
+如果通过同一台机器上的 nginx、cloudflared 这类反向代理打开网页界面，网页界面会把访问者当成其他设备：需要访问密码，只在本机能用的功能（选择服务器上的目录、读取服务器上的文件）无法使用。
 
-- 代理一定要加上转发的头：`Forwarded`、`X-Forwarded-For`、`X-Real-IP` 这类，有一个就行。不加的，网页把代理转来的人当成服务器本机。
-- 网页只认 `Host` 是 `127.0.0.1:<端口>`、`localhost:<端口>`、`[::1]:<端口>` 的请求；听局域网时也认这台电脑的 IP 加端口。不认域名。
-- 对话走 `/ws` 的 WebSocket，只接 `Origin` 是 `http://` 加上面这些地址的。代理用自己的域名或 HTTPS 给出页面时，这条连接会被拒（403）。
+- 代理一定要加上转发头：`Forwarded`、`X-Forwarded-For`、`X-Real-IP` 这类，有其中一个就可以。如果不加，网页界面会把代理转发来的人当成服务器本机。
+- 网页界面只接受 `Host` 是 `127.0.0.1:<端口>`、`localhost:<端口>`、`[::1]:<端口>` 的请求；监听局域网时，也接受这台电脑的 IP 加端口。不接受域名。
+- 对话通过 `/ws` 的 WebSocket 进行，只接受 `Origin` 是 `http://` 加上面这些地址的连接。如果代理用自己的域名或者 HTTPS 提供页面，这条连接会被拒绝（403）。
 
-网页怎么用见 [网页](heads/web.md)。
+网页界面的用法可以看 [网页界面](heads/web.md)。
 
 ## 日志
 
-| 谁的 | 在哪 |
+出问题时可以查看日志。各个部分的日志位置如下：
+
+| 日志 | 位置 |
 |---|---|
-| 核心 | `~/.miyu/var/log/core.log`，满 10 MB 换一份，留 `core.log.1` 到 `core.log.5` |
-| 网页 | `~/.miyu/var/log/webui/web.log` |
-| 托盘 | `~/.miyu/var/log/miyu-applet.log` |
+| 核心 | `~/.miyu/var/log/core.log`，满 10 MB 后换一个新文件，保留 `core.log.1` 到 `core.log.5` |
+| 网页界面 | `~/.miyu/var/log/webui/web.log` |
+| 系统托盘 | `~/.miyu/var/log/miyu-applet.log` |
 | 软件包 | `~/.miyu/var/log/<编号>/` |
 
-Linux 服务器上把 `~/.miyu` 换成 `/var/lib/miyu`。
+在 Linux 服务器上，把 `~/.miyu` 换成 `/var/lib/miyu`。
 
-核心的 `core.log` 是核心自己写的，三个平台都有，服务起的、头拉起的都写在这里。systemd 管着的核心，另外能用 `journalctl --user -u miyu`（服务器上的系统服务是 `journalctl -u miyu`）看 systemd 给这个服务记的输出。launchd 的 plist、任务计划都没有设输出写到哪，只有 `core.log`。
+`core.log` 是核心自己写的，三个平台都有；无论核心是由服务启动的还是由界面启动的，日志都写在这里。如果核心由 systemd 管理，还可以用 `journalctl --user -u miyu`（服务器上的系统服务用 `journalctl -u miyu`）查看 systemd 为这个服务记录的输出。launchd 的 plist 和任务计划都没有设置输出的位置，所以只有 `core.log`。
 
-核心的日志一行一条，英文，不记对话内容和 key。记到哪一级用 `log.level` 调，设置页「高级 → 运行日志 → 运行日志的级别」，或者：
+核心的日志一行一条，用英文记录，不记录对话内容和 key。日志的详细程度用 `log.level` 调整，可以在设置页的 `高级 → 运行日志 → 运行日志的级别` 里修改，或者运行：
 
 ```sh
 miyu config set log.level debug
 ```
 
-| 值 | 记什么 |
+| 值 | 记录的内容 |
 |---|---|
-| `error` | 只记错误 |
+| `error` | 只记录错误 |
 | `warn` | 错误和警告 |
-| `info` | 常规（默认） |
-| `debug` | 详细，排查用 |
+| `info` | 常规信息（默认） |
+| `debug` | 详细信息，排查问题时使用 |
 | `trace` | 最详细 |
-| `off` | 不记 |
+| `off` | 不记录 |
 
-改了当场生效，只能写在 `~/.miyu/etc/config.toml`。设了环境变量 `MIYU_LOG` 的，那一次启动照它。先 `miyu core stop`，再在设了它的窗口里打开头：
+修改后立即生效，这一项只能写在 `~/.miyu/etc/config.toml` 里。如果设置了环境变量 `MIYU_LOG`，那一次启动会按照它的值记录。先运行 `miyu core stop`，再在设置了这个变量的窗口里打开界面：
 
 ```bash
 MIYU_LOG=debug miyu
@@ -300,21 +304,23 @@ $env:MIYU_LOG = 'debug'
 miyu
 ```
 
-PowerShell 里这样设的，这个窗口以后起的都带着它；不要了敲 `Remove-Item Env:MIYU_LOG`。
+在 PowerShell 里这样设置以后，这个窗口之后启动的程序都会带着这个变量；不需要时运行 `Remove-Item Env:MIYU_LOG` 即可。
 
-## 停掉
+## 停止核心和服务
 
-| 要停的 | 怎么做 |
+根据想停止的对象，使用不同的命令：
+
+| 要停止的对象 | 方法 |
 |---|---|
-| 这一次的核心，服务起的也算 | `miyu core stop` |
-| 这一次的网页 | `miyu web stop` |
-| 自己装的开机启动 | `miyu service disable` |
-| 服务器上的系统服务 | `sudo systemctl disable --now miyu-web miyu`，别的初始化系统照它自己的办法 |
+| 这一次运行的核心，包括服务启动的 | `miyu core stop` |
+| 这一次运行的网页界面 | `miyu web stop` |
+| 自己安装的开机启动 | `miyu service disable` |
+| 服务器上的系统服务 | `sudo systemctl disable --now miyu-web miyu`，其他初始化系统按照各自的方法操作 |
 
-`miyu core stop` 停下的核心是正常退出（退出码 `0`）。systemd 用户服务、launchd 只在异常退出时重起，这时不再起它；systemd 的 `miyu service status` 跟着变成「已安装，未启用」，launchd 问的是登记了没有，照旧是「已安装，已启用」。下次登录时服务照常起。
+用 `miyu core stop` 停下的核心属于正常退出（退出码 `0`）。由于 systemd 用户服务和 launchd 只在异常退出时重新启动核心，所以此时不会再启动它；systemd 的 `miyu service status` 会随之变成 `已安装，未启用`，而 launchd 查询的是是否已登记，所以仍然显示 `已安装，已启用`。下次登录时，服务照常启动核心。
 
-`miyu service disable` 从服务管理器里拿掉、删掉服务文件，systemd 用户服务（`disable --now`）、launchd（`launchctl bootout`）同时停掉服务起的核心。任务计划、桌面自启动的，Miyu 只拿掉登记、删掉文件，不另去停核心，要停再敲 `miyu core stop`。
+`miyu service disable` 会从服务管理器里移除服务并删除服务文件；对于 systemd 用户服务（`disable --now`）和 launchd（`launchctl bootout`），还会同时停止服务启动的核心。对于任务计划和桌面自启动，Miyu 只移除登记、删除文件，不会另外停止核心，想停止的话再运行 `miyu core stop`。
 
 ## Windows 上的只读会话
 
-Windows 的沙盒要有桌面会话。核心不在桌面会话里时（例如经 SSH 连进来起的），只读的会话里每条命令都跑不了，输出 `miyu-sandbox: cannot confine: no desktop session, programs in the sandbox cannot start here; use Miyu from the desktop, or turn the sandbox off`，退出码 `125`。从登录的桌面用 Miyu，或者切到开放权限。见 [权限和沙盒](permissions.md)。
+Windows 的沙盒需要有桌面会话。如果核心不在桌面会话里（例如通过 SSH 连接进来启动的），只读会话里的每一条命令都无法运行，会输出 `miyu-sandbox: cannot confine: no desktop session, programs in the sandbox cannot start here; use Miyu from the desktop, or turn the sandbox off`，退出码是 `125`。解决方法是从已登录的桌面使用 Miyu，或者切换到开放权限。详细的见 [权限和沙盒](permissions.md)。
