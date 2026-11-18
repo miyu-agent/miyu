@@ -77,6 +77,8 @@ pub enum Refused {
     NoSuch(MemoryId),
     /// 这一条已经被改掉、作废了。
     NotCurrent(MemoryId),
+    /// 记成认识的人那一类（`person`）又不知道是谁：没写 `who`，改的那一条也没有可带的（审计 #029，施工 AU-P1）。
+    NoWho,
     /// 写不进、读不了：为什么。
     Failed(String),
 }

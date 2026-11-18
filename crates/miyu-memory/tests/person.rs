@@ -25,6 +25,16 @@ async fn a_person_says_who() {
         text(&done),
         "A person memory needs who: their name, or an id like qq:10086 when known."
     );
+    // 审计 #029（施工 AU-P1）：`replaces` 写成空串、`null` 的当没写，照样要写是谁。
+    for replaces in ["", "null"] {
+        let done = call(
+            Some(Arc::clone(&port)),
+            "remember",
+            serde_json::json!({"class":"person","text":"小林用 RX 7800 XT","replaces":replaces}),
+        )
+        .await;
+        assert!(done.error, "replaces 写成 {replaces:?} 也要写是谁");
+    }
     for (args, expect) in [
         (
             serde_json::json!({"class":"person","text":"小林用 RX 7800 XT","who":" qq:2 "}),

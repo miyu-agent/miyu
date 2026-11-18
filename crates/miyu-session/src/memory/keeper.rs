@@ -104,7 +104,7 @@ impl Keeper {
     ///
     /// # Errors
     ///
-    /// `replaces` 没有这一条（听众不合的也当没有）、已经不算了；记忆日志开不了、写不进。
+    /// `replaces` 没有这一条（听众不合的也当没有）、已经不算了；认识的人不知道是谁（[`Refused::NoWho`]，AU-029）；记忆日志开不了、写不进。
     pub fn save(
         &self,
         stamp: Stamp,
@@ -124,6 +124,9 @@ impl Keeper {
         let who = (remember.class == PERSON)
             .then(|| remember.who.filter(|who| !who.is_empty()).or(carried_who))
             .flatten();
+        if remember.class == PERSON && who.is_none() {
+            return Err(Refused::NoWho);
+        }
         // 记的认识的人是她自己的（施工 E-1 修）：改记成关于她自己的事，不写是谁。
         let (class, who) = match &who {
             Some(name) if super::her::is_her(&self.her(), name) => {

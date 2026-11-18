@@ -302,3 +302,35 @@ async fn extraction_keeps_what_she_wrote_in_the_first_person_as_an_episode() {
     }
     stop(&handle).await;
 }
+
+/// 审计 #029（施工 AU-P1）：改一条不是认识的人的旧记忆、新的写成认识的人又没写是谁（旧的也没有可带的），不记，拒成
+/// [`miyu_tool::Refused::NoWho`]。修以前照样落盘一条没有 `who` 的 `person`。
+#[test]
+fn a_person_replacing_a_memory_without_who_is_refused() {
+    let home = Home::new();
+    let stamp = || Stamp {
+        at: now(),
+        by: tool(),
+        cause: None,
+    };
+    let remember = |class: &str, replaces, who: Option<&str>| Remember {
+        class: class.into(),
+        text: "小林换了 9070".into(),
+        replaces,
+        keywords: None,
+        who: who.map(str::to_string),
+    };
+    let old = keeper(&home)
+        .save(stamp(), remember("user", None, None), Vec::new())
+        .expect("记得下");
+    let got = keeper(&home).save(stamp(), remember("person", Some(old), None), Vec::new());
+    assert_eq!(got, Err(miyu_tool::Refused::NoWho));
+    assert_eq!(saved(&home).len(), 1, "没写进去");
+    keeper(&home)
+        .save(
+            stamp(),
+            remember("person", Some(old), Some("小林")),
+            Vec::new(),
+        )
+        .expect("写了是谁的照记");
+}

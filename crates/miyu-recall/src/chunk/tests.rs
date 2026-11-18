@@ -69,3 +69,15 @@ fn a_paragraph_too_long_is_cut_at_char_boundaries_and_keeps_its_heading() {
     }
     assert_eq!(body, long, "截在字的边界上，一个字都不丢");
 }
+
+/// 审计 #036 第 1 条（施工 AU-P1）：四个反引号开的代码块里写着三个反引号的（教人写 Markdown 的文档常这样）不算合上，里面的
+/// `#` 照旧不是标题；同样的四个才合上。
+#[test]
+fn a_longer_fence_is_not_closed_by_a_shorter_one() {
+    let source = "# 写法\n\n````md\n```\n# 不是标题\n```\n````\n\n## 下一节\n\n正文\n";
+    let headings: Vec<String> = markdown(source)
+        .into_iter()
+        .map(|chunk| chunk.heading)
+        .collect();
+    assert_eq!(headings, ["写法", "写法 › 下一节"]);
+}

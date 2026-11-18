@@ -395,6 +395,8 @@ async fn blocking<T: Send + 'static>(
         Ok(Ok(done)) => Ok(done),
         Ok(Err(Refused::NoSuch(_))) => Err(Refusal::UNKNOWN_MEMORY),
         Ok(Err(Refused::NotCurrent(_))) => Err(Refusal::MEMORY_NOT_CURRENT),
+        // 协议上记认识的人先查过要写是谁（`write.rs`），走到这里的是改一条时没写、旧的也没有：同没写。
+        Ok(Err(Refused::NoWho)) => Err(Refusal::BAD_PARAMS),
         Ok(Err(Refused::Failed(error))) => {
             tracing::warn!(target: "miyu::endpoint", error = %error, "memory failed");
             Err(Refusal::INTERNAL)

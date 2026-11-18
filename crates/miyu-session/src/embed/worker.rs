@@ -192,7 +192,8 @@ impl Worker {
         self.talk.ask(text, ANSWER).await
     }
 
-    /// 关掉：关它的标准输入，它读完就退出；等 [`GRACE`]，没退的杀掉。
+    /// 关掉：关它的标准输入，它读完就退出；等 [`GRACE`]，没退的杀掉，杀了也等它退完才返回（审计 #033，施工 AU-P1，同扩展的
+    /// `finish`）：`Embedder::shut` 说好退完才返回，Windows 上调完马上删模型文件不会被占着。
     pub(super) async fn stop(self) {
         let Worker {
             mut child,
@@ -201,10 +202,14 @@ impl Worker {
             _kept,
         } = self;
         drop(talk);
-        if tokio::time::timeout(GRACE, child.wait()).await.is_err()
-            && let Err(error) = child.start_kill()
-        {
+        if tokio::time::timeout(GRACE, child.wait()).await.is_ok() {
+            return;
+        }
+        if let Err(error) = child.start_kill() {
             tracing::warn!(target: crate::TARGET, error = %error, "embedder not killed");
+        }
+        if let Err(error) = child.wait().await {
+            tracing::warn!(target: crate::TARGET, error = %error, "embedder not reaped");
         }
     }
 }

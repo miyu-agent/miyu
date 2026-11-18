@@ -74,8 +74,13 @@ impl Tool for Remember {
                 .map(str::trim)
                 .filter(|who| !who.is_empty() && !matches!(*who, "null" | "undefined"))
                 .map(str::to_string);
+            // 「没传」的几种写法（空串、`null`）当没传：照基础系统的 `given`。先认它再查是谁（审计 #029，施工 AU-P1：原来空串的
+            // `replaces` 躲过了「要写是谁」）。
+            let replaces = args
+                .replaces
+                .filter(|old| !matches!(old.as_str(), "" | "null" | "undefined"));
             let person = args.class == PERSON;
-            if person && who.is_none() && args.replaces.is_none() {
+            if person && who.is_none() && replaces.is_none() {
                 return texts.error(&all.no_who, "remember/no-who", &[]);
             }
             let chars = args.text.chars().count();
@@ -87,11 +92,7 @@ impl Tool for Remember {
                     &[("chars", &chars), ("limit", &limit)],
                 );
             }
-            // 「没传」的几种写法（空串、`null`）当没传：照基础系统的 `given`。
-            let replaces = match args
-                .replaces
-                .filter(|old| !matches!(old.as_str(), "" | "null" | "undefined"))
-            {
+            let replaces = match replaces {
                 None => None,
                 Some(old) => match memory_id(&old) {
                     Ok(old) => Some(old),

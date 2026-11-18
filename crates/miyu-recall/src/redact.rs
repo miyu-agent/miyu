@@ -56,13 +56,16 @@ impl KeyShapes {
     }
 }
 
-/// 把 `text` 里的 `secrets`（密钥的原文，短于 8 个字节的不管）和照 `shapes` 认得出的 key 换成 [`REDACTED`]。
+/// 把 `text` 里的 `secrets`（密钥的原文，短于 8 个字节的不管）和照 `shapes` 认得出的 key 换成 [`REDACTED`]。长的密钥先换（审计
+/// #030 第 2 条，施工 AU-P1）：一个是另一个的开头时，短的先换会把长的切开，后半截照原样留在字里。
 pub fn redact(text: &str, secrets: &[String], shapes: &KeyShapes) -> String {
     let mut text = text.to_string();
-    for secret in secrets
+    let mut secrets: Vec<&String> = secrets
         .iter()
         .filter(|secret| secret.len() >= SHORTEST_SECRET)
-    {
+        .collect();
+    secrets.sort_by_key(|secret| std::cmp::Reverse(secret.len()));
+    for secret in secrets {
         text = text.replace(secret.as_str(), REDACTED);
     }
     let mut out = String::with_capacity(text.len());

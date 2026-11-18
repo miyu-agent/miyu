@@ -105,6 +105,7 @@ impl Texts {
                 "common/not-current",
                 &[("id", &id.to_string())],
             ),
+            Refused::NoWho => self.error(&self.0.no_who, "remember/no-who", &[]),
             Refused::Failed(error) => {
                 self.error(&self.0.failed, "common/failed", &[("error", error)])
             }

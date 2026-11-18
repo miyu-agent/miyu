@@ -118,3 +118,30 @@ async fn a_wrong_id_garbage_an_exit_or_silence_means_it_is_broken() {
     let (mut talk, _input, _out) = pair();
     broken(talk.ask("猫", SHORT).await, "no answer after 0.2 seconds");
 }
+
+/// 审计 #033（施工 AU-P1）：关掉时等满了还没退的杀掉，杀完也等它退完才返回（`Embedder::shut` 说好的：Windows 上调完马上删模型
+/// 文件不会被占着）。修以前只发了杀的信号就返回，进程还在（Linux 上至少是没收走的僵尸）。对面是不理标准输入的 `sleep`；时钟
+/// 停住，等满的那几秒不用真等。
+#[cfg(target_os = "linux")]
+#[tokio::test(start_paused = true)]
+async fn a_worker_that_will_not_exit_is_killed_and_reaped() {
+    let mut child = tokio::process::Command::new("sleep")
+        .arg("60")
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .kill_on_drop(true)
+        .spawn()
+        .expect("起得来");
+    let pid = child.id().expect("有进程号");
+    let (input, output) = (child.stdin.take().unwrap(), child.stdout.take().unwrap());
+    let worker = super::Worker {
+        child,
+        talk: Conversation::new(BufReader::new(output), input),
+        _kept: miyu_sandbox::lifeline::Kept::default(),
+    };
+    worker.stop().await;
+    assert!(
+        !std::path::Path::new(&format!("/proc/{pid}")).exists(),
+        "返回时进程已经收走了"
+    );
+}

@@ -1,8 +1,9 @@
 //! 切块（施工 K-1 上，`docs/blueprint/knowledge.md`「怎么走」第二条）：把知识库的一篇文档切成一块块，每块带着它的标题路径。
 //! 调研（《记忆知识库embedding调研》（2026-10-07）第五节第 7 条）：200～400 token 一块的递归切分就够好。
 //!
-//! - Markdown 照标题（`#` 到 `######`）切：一节一块，标题路径是上面各级标题照层级连起来；代码块（三个反引号或波浪线起止）里
-//!   的 `#` 不算标题。
+//! - Markdown 照标题（`#` 到 `######`）切：一节一块，标题路径是上面各级标题照层级连起来；代码块（三个以上反引号或波浪线起止）里
+//!   的 `#` 不算标题。合上代码块的要是同一种字、不比开的短（审计 #036 第 1 条，施工 AU-P1：四个反引号开的块里写着三个反引号的
+//!   原来当成合上了）。
 //! - 纯文本照段落：空行分段，连着的几段合成一块。
 //! - 每块最多 [`LIMIT`] 字节：一节、一段太长的照段落再切，一段自己就超过的照字切（截在字的边界上）；切开的每块都带着同样
 //!   的标题路径。只有空白的不要。
@@ -31,13 +32,16 @@ pub fn markdown(source: &str) -> Vec<Chunk> {
     let mut chunks = Vec::new();
     let mut path: Vec<(usize, String)> = Vec::new();
     let mut body: Vec<&str> = Vec::new();
-    let mut fenced = false;
+    let mut open: Option<(char, usize)> = None;
     for line in source.lines() {
-        let trimmed = line.trim_start();
-        if trimmed.starts_with("```") || trimmed.starts_with("~~~") {
-            fenced = !fenced;
+        if let Some((mark, count)) = fence(line) {
+            match open {
+                None => open = Some((mark, count)),
+                Some((opened, length)) if mark == opened && count >= length => open = None,
+                Some(_) => {}
+            }
         }
-        match heading(line).filter(|_| !fenced) {
+        match heading(line).filter(|_| open.is_none()) {
             Some((level, title)) => {
                 section(&path, &body, &mut chunks);
                 body.clear();
@@ -60,6 +64,14 @@ pub fn plain(source: &str) -> Vec<Chunk> {
     let lines: Vec<&str> = source.lines().collect();
     section(&[], &lines, &mut chunks);
     chunks
+}
+
+/// 一行是不是围栏：去掉开头的空白，三个以上同样的反引号或波浪线；交回哪一种、几个。
+fn fence(line: &str) -> Option<(char, usize)> {
+    let trimmed = line.trim_start();
+    let mark = trimmed.chars().next().filter(|c| *c == '`' || *c == '~')?;
+    let count = trimmed.chars().take_while(|c| *c == mark).count();
+    (count >= 3).then_some((mark, count))
 }
 
 /// 一行是不是标题：`#` 到 `######` 后面跟空白和字；交回层级和去掉前后 `#`、空白的标题。

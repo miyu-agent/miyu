@@ -45,3 +45,20 @@ fn a_wrong_shape_file_says_where() {
         assert!(error.contains(says), "{text:?}：{error}");
     }
 }
+
+/// 审计 #030 第 2 条（施工 AU-P1）：一个密钥是另一个的开头时，长的先换：短的先换会把长的切开，后半截照原样留在字里。
+#[test]
+fn a_longer_secret_is_replaced_before_a_shorter_one_inside_it() {
+    let secrets = vec![
+        "sk-secret-1234".to_string(),
+        "sk-secret-1234-production-9999".to_string(),
+    ];
+    assert_eq!(
+        redact(
+            "token=sk-secret-1234-production-9999 and sk-secret-1234",
+            &secrets,
+            &KeyShapes::default()
+        ),
+        "token=[REDACTED] and [REDACTED]"
+    );
+}
