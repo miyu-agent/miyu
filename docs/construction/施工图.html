@@ -1565,6 +1565,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC9"><span class="n">DOC-9</span>手册跟上警告、英文报错、循环、迁移包<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC10"><span class="n">DOC-10</span>手册跟上「启用」开关和设置项改名<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC11"><span class="n">DOC-11</span>数据根那几条补上实测<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sHP1"><span class="n">HP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
         <li><a class="step review" href="#sRO2"><span class="n">RO-2</span>数据根两种模式都读得到<span class="st">…</span></a></li>
@@ -60914,6 +60915,56 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/DOC-11-数据根实测.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sHP1" aria-labelledby="h-sHP1">
+  <div class="sheet-head"><h2 id="h-sHP1"><span class="no">HP-1</span>每个子命令的 -h 都印自己写的帮助页</h2><span class="pill done">做完</span></div>
+  <p class="purpose">外部审计查出、证实后修：12 个子命令的 <code>-h</code> 印的是 clap 照源码注释生成的帮助，中文、带施工号，英文界面下也是。挂帮助页改成一张表，漏不了。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu · main.rs　miyu-cli · help.rs、help/{zh,en}/core.txt、misuse</span><span class="dir-note">HP-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>全部 87 个子命令逐个敲 <code>-h</code>：<code>pkg pack</code> 等七个、<code>memory dream</code>、<code>memory cards</code>、<code>mcp logout</code>、<code>core</code>、<code>core stop</code> 印源码注释</li>
+              <li>主程序照表 <code>PAGES</code> 挂：一个顶层子命令一页，连同它下面每一层的子命令</li>
+              <li>加 <code>core</code> 一页（中英）；主程序那一页照旧不列它</li>
+              <li><code>miyu mcp logout</code> 少了参数：照帮助页说「用法：miyu mcp logout &lt;服务&gt;」</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">帮助页照命令挂，不照子命令的名单挂</span><span class="rl"><code>everywhere</code></span></div>
+          <div class="tile new"><span class="nm">没有哪个子命令印 clap 生成的帮助</span><span class="rl">测试走整棵命令树</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">HP-1</dd></div>
+        <div><dt>名称</dt><dd>每个子命令的 -h 都印自己写的帮助页</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-18</dd></div>
+        <div><dt>提交</dt><dd class="mono">HP-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy、三台 CI 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>走命令树的测试改前红，列出的正是那 12 个；改后绿</span></li>
+        <li><span class="ok">✓</span><span>编出来的程序在中英界面下把全部子命令的 <code>-h</code>、<code>--help</code> 再敲一遍（332 次），没有印源码注释的</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/HP-1-帮助页挂全.md</code>；蓝图 <code>cli/main.md</code> 三处。</li>
       </ul>
     </div>
   </div>

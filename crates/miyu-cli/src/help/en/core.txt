@@ -1,0 +1,11 @@
+Usage: miyu core stop
+
+The core is started by the interfaces when needed and is not normally run by
+hand.
+
+Commands:
+  stop  Stop the running core and return once it has exited; does nothing
+        if it isn't running
+
+Options:
+  -h, --help  Print help

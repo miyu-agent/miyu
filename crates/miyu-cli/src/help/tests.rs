@@ -285,6 +285,8 @@ fn each_page_is_its_own_file() {
             (Page::Schedule, "schedule"),
             (Page::Session, "session"),
             (Page::Rescue, "rescue"),
+            (Page::Mcp, "mcp"),
+            (Page::Core, "core"),
         ] {
             let file = dir.join(code).join(format!("{name}.txt"));
             let on_disk = std::fs::read_to_string(&file).expect("有这一页");
@@ -329,6 +331,8 @@ fn pages_fit_in_eighty_columns_and_end_with_one_newline() {
             Page::Kb,
             Page::Schedule,
             Page::Rescue,
+            Page::Mcp,
+            Page::Core,
         ] {
             let text = page(language, which);
             assert!(

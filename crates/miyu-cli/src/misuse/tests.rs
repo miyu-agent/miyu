@@ -5,7 +5,7 @@ use clap::{Args, Command};
 use super::{listed, misuse, misuse_offering, synopsis};
 use crate::help::Page;
 use crate::language::Language;
-use crate::{Ask, Config, Kb, Memory, Pkg, Service, Session, Undo};
+use crate::{Ask, Config, Kb, Mcp, Memory, Pkg, Service, Session, Undo};
 
 /// 和主程序一样的几条子命令。
 fn miyu() -> Command {
@@ -16,6 +16,7 @@ fn miyu() -> Command {
         .subcommand(Session::augment_args(Command::new("session")))
         .subcommand(Memory::augment_args(Command::new("memory")))
         .subcommand(Kb::augment_args(Command::new("kb")))
+        .subcommand(Mcp::augment_args(Command::new("mcp")))
 }
 
 /// 敲 `miyu <args>`：clap 报的错说成的那几行，连成一段。
@@ -215,7 +216,7 @@ fn a_blank_from_has_its_sentence() {
 fn a_missing_word_of_a_nested_command_shows_how_it_is_written() {
     // 施工 K-7 修（验收手册待定 1）：嵌着的子命令少了必写的，照这个命令的帮助页说它怎么写，同 `ask` 那一句；原来一律说成
     // `ask` 的那一句。
-    let cases: [(&[&str], &str, &str); 3] = [
+    let cases: [(&[&str], &str, &str); 4] = [
         (
             &["kb", "read", "notes"],
             "miyu: 缺少参数\n提示：用法：miyu kb read <库> <文档>",
@@ -231,6 +232,11 @@ fn a_missing_word_of_a_nested_command_shows_how_it_is_written() {
             "miyu: 缺少参数\n提示：用法：miyu kb search <词>",
             "miyu: missing arguments\nhint: usage: miyu kb search <words>",
         ),
+        (
+            &["mcp", "logout"],
+            "miyu: 缺少参数\n提示：用法：miyu mcp logout <服务>",
+            "miyu: missing arguments\nhint: usage: miyu mcp logout <server>",
+        ),
     ];
     for (args, chinese, english) in cases {
         assert_eq!(said(args, Language::Chinese), chinese, "{args:?}");
@@ -241,11 +247,12 @@ fn a_missing_word_of_a_nested_command_shows_how_it_is_written() {
 #[test]
 fn every_nested_command_with_required_words_is_on_its_help_page() {
     // 嵌着的子命令有必写的，帮助页的「命令」那一节就得有它那一行：少了参数时照它说（`synopsis`）。
-    let tops: [(Command, Page); 4] = [
+    let tops: [(Command, Page); 5] = [
         (Memory::augment_args(Command::new("memory")), Page::Memory),
         (Kb::augment_args(Command::new("kb")), Page::Kb),
         (Pkg::augment_args(Command::new("pkg")), Page::Pkg),
         (Config::augment_args(Command::new("config")), Page::Config),
+        (Mcp::augment_args(Command::new("mcp")), Page::Mcp),
     ];
     for (top, page) in tops {
         for sub in top.get_subcommands() {
