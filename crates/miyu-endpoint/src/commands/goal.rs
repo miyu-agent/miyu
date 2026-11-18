@@ -52,6 +52,10 @@ impl Slash for GoalCommand {
         &[
             ("", "commands/usage/goal/show"),
             ("commands/placeholder/goal", "commands/usage/goal/set"),
+            (
+                "commands/placeholder/goal-rounds",
+                "commands/usage/goal/rounds",
+            ),
             ("pause", "commands/usage/goal/pause"),
             ("resume", "commands/usage/goal/resume"),
             ("clear", "commands/usage/goal/clear"),
