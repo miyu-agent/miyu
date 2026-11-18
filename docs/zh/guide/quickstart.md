@@ -59,7 +59,15 @@
 
 ### 向局域网开放
 
+> 仅 webui
+
 `webui` 可以选择向局域网开放，同一个局域网的其他设备可以访问部署了 Miyu 的机器。配合`tailscale`、`easytier`之类的虚拟组网程序，可以在外出时也能访问 `webui`。
+
+### 无缝集成到终端
+
+> 仅 tui
+
+可以选择安装 shellhook 到 `bash`、fish、zsh 之类的 shell 中，安装后终端就是 Harness 本身，可以直接打字对话，可以直接运行 Harness 命令，并且不影响 shell 的正常使用。
 
 ## 软件包
 

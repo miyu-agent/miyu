@@ -59,7 +59,15 @@ The semantic model greatly improves retrieval, so memory and knowledge base sear
 
 ### Open to the local network
 
+> webui only
+
 `webui` can be opened to the local network, so other devices on the same network can reach the machine Miyu runs on. Together with a virtual networking tool such as `tailscale` or `easytier`, you can reach `webui` when you are away as well.
+
+### Seamless integration into the terminal
+
+> tui only
+
+You can choose to install the shellhook into shells such as `bash`, fish and zsh. Once installed, the terminal is the harness itself: you can type to talk directly and run harness commands directly, without affecting normal use of the shell.
 
 ## Packages
 
