@@ -3,8 +3,8 @@
 # 不要手改；全零的 sha256 表示还没有发过带 macOS 包的版本。
 class Miyu < Formula
   desc "Anime girl living in your terminal: open-source AI assistant"
-  homepage "https://github.com/SHORiN-KiWATA/miyu-agent"
-  url "https://github.com/SHORiN-KiWATA/miyu-agent/releases/download/v0.7.4/miyu-0.7.4-1-aarch64-apple-darwin.tar.gz"
+  homepage "https://github.com/miyu-agent/miyu"
+  url "https://github.com/miyu-agent/miyu/releases/download/v0.7.4/miyu-0.7.4-1-aarch64-apple-darwin.tar.gz"
   version "0.7.4"
   sha256 "1cfb73800d883a06aaedfed8c93ade067803cde0fa43464bf9947b2b224c61f3"
   license all_of: ["MIT", "OFL-1.1"]

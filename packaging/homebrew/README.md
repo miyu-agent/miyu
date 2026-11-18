@@ -1,6 +1,6 @@
 # homebrew-miyu
 
-[Miyu](https://github.com/SHORiN-KiWATA/miyu-agent) 的 Homebrew tap。只支持 Apple Silicon（M 系列）、macOS 15 及更新。
+[Miyu](https://github.com/miyu-agent/miyu) 的 Homebrew tap。只支持 Apple Silicon（M 系列）、macOS 15 及更新。
 
 ## 安装
 
@@ -25,7 +25,7 @@ brew uninstall miyu
 
 - 依赖 `chafa`（终端里显示图片）、`ripgrep`（搜索）和 `onnxruntime`（本地语义检索），装 Miyu 时 Homebrew 会一起装上。
 - Release 页面上的 `miyu-<版本>-<修订>-aarch64-apple-darwin.tar.gz` 就是这个 formula 下载的包。它没有签名，用浏览器直接下载会被 Gatekeeper 拦下，请用 Homebrew 安装。
-- 这个仓库由发布流程自动同步，`Formula/miyu.rb` 的真相源在 miyu-agent 仓库的 `packaging/homebrew/`。问题请到 [miyu-agent 的 Issues](https://github.com/SHORiN-KiWATA/miyu-agent/issues) 反馈。
+- 这个仓库由发布流程自动同步，`Formula/miyu.rb` 的真相源在 miyu-agent 仓库的 `packaging/homebrew/`。问题请到 [miyu-agent 的 Issues](https://github.com/miyu-agent/miyu/issues) 反馈。
 
 ---
 
