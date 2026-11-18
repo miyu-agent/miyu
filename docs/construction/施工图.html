@@ -1570,6 +1570,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC14"><span class="n">DOC-14</span>快速上手换成手写稿<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC15"><span class="n">DOC-15</span>手册按语言分目录，根 README 适配<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC16"><span class="n">DOC-16</span>快速上手跟上新稿<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sDOC17"><span class="n">DOC-17</span>权限页跟上只有整个数据根才问<span class="st">…</span></a></li>
         <li><a class="step review" href="#sHLP1"><span class="n">HLP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
@@ -61172,6 +61173,55 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/DOC-16-快速上手更新.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sDOC17" aria-labelledby="h-sDOC17">
+  <div class="sheet-head"><h2 id="h-sDOC17"><span class="no">DOC-17</span>权限页、安全页跟上「只有整个数据根才问」</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">核心的 RO-4、RO-4补 以后：挪走、扔进回收站整个数据根也先问，数据根里面的文件、目录不再问。手册中英两份照实测改。只动文档。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">docs/zh/guide　docs/en/guide</span><span class="dir-note">DOC-17</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>权限页讲数据根的一段、「递归删除」一行：只有整个数据根或者装着它的目录才问，删、挪走、扔进回收站都算</li>
+              <li>数据根里面的文件、目录同别处，不问</li>
+              <li>Windows 那张表加上 Move-Item、Rename-Item；安全页那一行同样改</li>
+              <li>先在挡住真家目录的隔离环境里用真模型实测九条，再改</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">带删除的真模型实测：真的家目录整个挡在外面，提示里写沙箱的绝对路径</span><span class="rl">施工单「实测」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DOC-17</dd></div>
+        <div><dt>名称</dt><dd>权限页、安全页跟上「只有整个数据根才问」</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-18</dd></div>
+        <div><dt>提交</dt><dd class="mono">DOC-17</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>数据根里面的 rm、mv 不问；整个数据根的 mv、gio trash、rm -rf 都要确认，数据根还在</span></li>
+        <li><span class="ok">✓</span><span>改过的页中英一页对一页，链接都指得到</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/DOC-17-权限页跟RO-4.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>
