@@ -59,7 +59,7 @@ Linux 上助手怎么照规格收紧自己。各平台共用的（规格、助�
    3. 读：根目录放「列目录、执行」。再从根目录起一级级走：这一级目录里的每一样，是藏起来的，跳过；是通向藏起来的那条路上的目录，走进去接着看；是链接，跳过；别的放「读取文件」（它下面都带上）。没有藏起来的，就是根目录整个放「读」。打开了却查不了它是什么的（断开的 FUSE 挂载，`fstat` 报 ENOTCONN 这类），跳过这一条：它本来就读不了，不跳过的话整个规则集加不上、沙盒起不来（施工 5-4 补）。
    4. 每条 `write` 加「全部」的规则，`/dev/null` 加「写」的规则。打不开的：不在的跳过，别的拒绝。
    5. 设 `no_new_privs`，收紧自己（助手这时只有一个线程）。
-   6. 关起来的会话（规格写了 `read`，施工 MB-1）：内核的 Landlock 管不住连 Unix 套接字的（连路径上的要第 9 版、抽象的要第 6 版，两样缺一样都算），或者助手的环境里 `MIYU_SANDBOX_SECCOMP=force`（测试在新内核上量这一路，只会更严），再装一个 seccomp 过滤（`seccomp.rs`）：`socket(AF_UNIX, …)` 回 `EACCES`，`socketpair` 照放；x86_64 上 32 位的照它的号挡 `socket`、整个挡 `socketcall`，x32 的、认不出的架构一律回 `EACCES`；aarch64 上 32 位的同样照它的号。装不上的说 `cannot confine: seccomp: …`、退出 125、不跑。要不要装在收紧之前问（收紧以后建不了规则集）。
+   6. 关起来的会话（规格写了 `read`，施工 MB-1）：内核的 Landlock 管不住连 Unix 套接字的（连路径上的要第 9 版、抽象的要第 6 版，两样缺一样都算），或者助手的环境里 `MIYU_SANDBOX_SECCOMP=force`（测试在新内核上量这一路，只会更严），再装一个 seccomp 过滤（`seccomp.rs`）：`socket(AF_UNIX, …)` 回 `EACCES`，`socketpair` 照放；`io_uring_setup`（各架构都是 425）也回 `EACCES`（审计 #015，施工 AU-P1：io_uring 的 `IORING_OP_SOCKET` 不经 `socket` 就能建套接字，过滤看不到它，整个不准建，同 Docker 的默认规则）；x86_64 上 32 位的照它的号挡 `socket`、`io_uring_setup`，整个挡 `socketcall`，x32 的、认不出的架构一律回 `EACCES`；aarch64 上 32 位的同样照它的号。装不上的说 `cannot confine: seccomp: …`、退出 125、不跑。要不要装在收紧之前问（收紧以后建不了规则集）。
    7. 换成命令（`unix.rs`）。
 2. **核心按规格缓存规则集**（施工 V-47，2026-11-03 项目主人批「规则集缓存带失效检查：做；常驻沙盒派生进程：不做」）：只有 Landlock
    的那一路，第 1 条那样每条命令从头建要一级级列目录、给几千条规则各开一个描述符、加一条规则（V-40 那份规格 1575 条，助手系统态约 8 ms）。
@@ -98,7 +98,8 @@ Linux 上助手怎么照规格收紧自己。各平台共用的（规格、助�
 |---|---|
 | `crates/miyu-sandbox/tests/linux.rs` | 真跑助手：规格外的哪儿都读得了（家目录、系统目录），写不了、删不了；能写的读得了、写得了、跨目录改名和硬链接得了；一条能写的都没有时哪儿都写不了，只有 `/dev/null` 写得进；藏起来的读不了、写不了，名字看得到；藏起来的落在能写的里面不挖洞（那一层新建、删除照常，里面的读得到、写得进，施工 5-14 改；施工 5-15 起一级级绕开过）；能写的落在藏起来的里面照样能写；放开只读的落在藏起来的里面读得到、列得出、写不进，旁边的照旧藏着（施工 X-10 中）；一级级放行时的链接不跟过去；不在的路径跳过；设了 `no_new_privs`；核心关了透明大页，命令里恢复了（施工 YC-12，缓存的规则集、从头建的都测）；规格外路径上的 Unix 套接字连不上（内核 7.1 起），沙盒外建的抽象套接字连不上（6.12 起），更老的内核上照连得上测；内核启用了 Landlock 的，探测报它。内核没有 Landlock 的机器上，只测拒绝执行；CI 上（设了 `CI`）必须探测到 Landlock。和核心一样经 `miyu_sandbox::command` 起（施工 V-47）：有藏起来的规格走缓存的规则集 |
 | `crates/miyu-sandbox/tests/linux_sockets.rs`（施工 MB-1 从 `linux.rs` 拆出来：规格外的套接字、脚本调工具的通道两条随它搬过来）的 `a_confined_command_reaches_no_unix_socket_on_any_kernel` | 关起来的规格：路径上的、抽象的 Unix 套接字在哪种内核上都连不上；强制走 seccomp 时能写的地方的也连不上（分得出走的哪一路）；`socketpair` 照常；两样都没有的机器上不跑 |
-| `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/seccomp/tests.rs` | 过滤的每一条跳都落在里面，交回的只有放行和 `EACCES` |
+| `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/seccomp/tests.rs` | 过滤的每一条跳都落在里面，交回的只有放行和 `EACCES`；照内核的规矩跑一遍过滤，`io_uring_setup`（这个架构的、32 位的）、`socket(AF_UNIX)`、`socketcall`、x32、认不出的架构回 `EACCES`，别的放行（施工 AU-P1） |
+| `crates/miyu-sandbox/tests/linux_sockets.rs` 的 `a_confined_command_under_seccomp_cannot_set_up_io_uring` | 关起来的规格强制走 seccomp：`python3` 照系统调用号建 io_uring 建不成（施工 AU-P1） |
 | `crates/miyu-sandbox/tests/linux_aliases.rs`、`src/linux/aliases/tests.rs`、（施工 SEC-3） | 在 `unshare -rm` 的命名空间里把家目录 bind 到别处再跑助手：藏起来的从原路径、别名都读不到，别名里别的照旧读得到（不让普通用户建命名空间的机器上跳过）；挂载表的转义、读不懂的行；bind 过来的家目录、btrfs 顶层另挂、藏起来的里面一块挂到别处、叠着挂认最后挂的；挂载表说是别名、其实不是同一个文件的不藏 |
 | `crates/miyu-sandbox/src/linux/reads/tests.rs` | 一级级放行：在一个临时目录里摆出几层，看放了哪些、跳过了哪些（藏起来的、链接、通向藏起来的那条路） |
 | `crates/miyu-sandbox/src/linux/reads/tests/same.rs`（施工 V-46） | 排成树以后和原来每一样都和每一条藏起来的整条比的写法（照抄在里面）交回的逐项一样、报的错一字不差：照种子造目录树（互为开头的名字、只差大小写、带点、不是 UTF-8 的名字、各种链接、列不出来的目录）和藏起来的（尾斜杠、`//`、`.`、`..`、经链接给的、名字只是别的名字开头的、不在的、树本身、根目录、树外、相对、重复），从树里各处和照 `plan` 从根目录走起比；平时 300 棵，`MIYU_V46_SEEDS` 改 |

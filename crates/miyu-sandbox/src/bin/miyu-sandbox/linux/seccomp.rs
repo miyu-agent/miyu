@@ -2,7 +2,8 @@
 //! 套接字（第 6 版起）的机器上，关起来的会话（规格写了 `read`）的命令不准新建 AF_UNIX 套接字：`socket(AF_UNIX, …)` 回
 //! `EACCES`。路径上的、抽象的都连不上：跑核心的用户的 D-Bus 会话总线、Docker、ssh-agent 这类能替命令在沙盒外读写的系统服务挡住。
 //! `socketpair` 照放（Python 的多进程、node 的管道要它，连不到外面）。域名解析照常：nss 连 systemd-resolved 的套接字连不上，
-//! 回退到 DNS。
+//! 回退到 DNS。`io_uring_setup` 也回 `EACCES`（审计 #015，施工 AU-P1）：io_uring 的 `IORING_OP_SOCKET`（5.19 起）不经 `socket`
+//! 就能新建套接字，过滤只看得到系统调用号，看不到它，整个不准建（同 Docker 的默认规则）。
 //!
 //! 过滤只认这个架构的系统调用号：x86_64 上 32 位的（i386）照它自己的号挡 `socket`、整个挡 `socketcall`（参数在内存里，
 //! 看不到是哪一种），x32 的（号带 `0x40000000`）一律回 `EACCES`；aarch64 上 32 位的（arm）同样照它的号。认不出的架构一律
@@ -45,6 +46,9 @@ const NATIVE: (u32, u32) = (0xC000_003E, 41);
 #[cfg(target_arch = "aarch64")]
 const NATIVE: (u32, u32) = (0xC000_00B7, 198);
 
+/// `io_uring_setup` 的号：5.1 起新加的系统调用各架构同号，x86_64、aarch64 和它们的 32 位都是 425。
+const IO_URING_SETUP: u32 = 425;
+
 /// 同一台机器上 32 位的：审计用的架构号、`socketcall` 的号、`socket` 的号。
 #[cfg(target_arch = "x86_64")]
 const COMPAT: (u32, u32, u32) = (0x4000_0003, 102, 359);
@@ -61,18 +65,20 @@ fn program() -> Vec<libc::sock_filter> {
     let deny = RET_ERRNO | EACCES;
     vec![
         /* 0 */ op(LD_ABS, 0, 0, ARCH),
-        /* 1 */ op(JEQ, 0, 3, NATIVE.0), // 不是这个架构的去 5
+        /* 1 */ op(JEQ, 0, 4, NATIVE.0), // 不是这个架构的去 6
         /* 2 */ op(LD_ABS, 0, 0, NR),
-        /* 3 */ op(JGE, 8, 0, X32), // x32 的去 12
-        /* 4 */ op(JEQ, 4, 6, NATIVE.1), // socket 去 9，别的去 11
-        /* 5 */ op(JEQ, 0, 6, COMPAT.0), // 认不出的架构去 12
-        /* 6 */ op(LD_ABS, 0, 0, NR),
-        /* 7 */ op(JEQ, 4, 0, COMPAT.1), // socketcall 去 12
-        /* 8 */ op(JEQ, 0, 2, COMPAT.2), // socket 去 9，别的去 11
-        /* 9 */ op(LD_ABS, 0, 0, ARG0),
-        /* 10 */ op(JEQ, 1, 0, AF_UNIX), // Unix 域的去 12
-        /* 11 */ op(RET, 0, 0, RET_ALLOW),
-        /* 12 */ op(RET, 0, 0, deny),
+        /* 3 */ op(JGE, 10, 0, X32), // x32 的去 14
+        /* 4 */ op(JEQ, 6, 0, NATIVE.1), // socket 去 11
+        /* 5 */ op(JEQ, 8, 7, IO_URING_SETUP), // io_uring_setup 去 14，别的去 13
+        /* 6 */ op(JEQ, 0, 7, COMPAT.0), // 认不出的架构去 14
+        /* 7 */ op(LD_ABS, 0, 0, NR),
+        /* 8 */ op(JEQ, 5, 0, COMPAT.1), // socketcall 去 14
+        /* 9 */ op(JEQ, 4, 0, IO_URING_SETUP), // io_uring_setup 去 14
+        /* 10 */ op(JEQ, 0, 2, COMPAT.2), // socket 去 11，别的去 13
+        /* 11 */ op(LD_ABS, 0, 0, ARG0),
+        /* 12 */ op(JEQ, 1, 0, AF_UNIX), // Unix 域的去 14
+        /* 13 */ op(RET, 0, 0, RET_ALLOW),
+        /* 14 */ op(RET, 0, 0, deny),
     ]
 }
 
@@ -92,7 +98,7 @@ pub(super) fn available() -> bool {
     result == -1 && std::io::Error::last_os_error().raw_os_error() == Some(libc::EFAULT)
 }
 
-/// 装上过滤：之后这个进程和它起的命令都不能新建 AF_UNIX 套接字。先设 `no_new_privs`（Landlock 收紧时设过，这里再设一次不
+/// 装上过滤：之后这个进程和它起的命令都不能新建 AF_UNIX 套接字、不能建 io_uring。先设 `no_new_privs`（Landlock 收紧时设过，这里再设一次不
 /// 依赖它）。
 pub(super) fn deny_unix_sockets() -> Result<(), String> {
     let filter = program();

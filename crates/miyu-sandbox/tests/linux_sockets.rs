@@ -211,3 +211,42 @@ fn a_confined_command_reaches_no_unix_socket_on_any_kernel() {
         );
     }
 }
+
+/// 审计 #015（施工 AU-P1）：关起来的会话的命令建不了 io_uring（`IORING_OP_SOCKET` 能不经 `socket` 建 AF_UNIX 套接字）。走
+/// seccomp 的一路照过滤回错；Landlock 管得住的一路连接照 Landlock 挡，io_uring 照常。机器上没有 `python3` 的不跑；内核、容器自己
+/// 关了 io_uring 的，两路都建不成，照样算过。
+#[test]
+fn a_confined_command_under_seccomp_cannot_set_up_io_uring() {
+    let _serial = serial();
+    let work = Dir::new();
+    let mut confined = spec(&[work.path()], &[]);
+    confined.read = Some(
+        [
+            "/usr",
+            "/bin",
+            "/lib",
+            "/lib64",
+            "/etc",
+            "/dev",
+            "/proc/self",
+        ]
+        .into_iter()
+        .map(std::path::PathBuf::from)
+        .chain([work.path().to_path_buf()])
+        .collect(),
+    );
+    if refused_without_landlock(&confined)
+        || !mechanisms()
+            .iter()
+            .any(|name| name == "seccomp" || name == "landlock-sockets")
+    {
+        return;
+    }
+    // 交给 io_uring_setup 一块 120 字节的 io_uring_params（全 0）：建成了印 fd、退出 0，建不成印 errno、退出 3。
+    let script = "command -v python3 >/dev/null || exit 77; python3 -c 'import ctypes, os, sys; libc = ctypes.CDLL(None, use_errno=True); p = ctypes.create_string_buffer(120); fd = libc.syscall(425, 4, p); print(fd, ctypes.get_errno()); sys.exit(0 if fd >= 0 else 3)'";
+    let out = run_with(&confined, script, &[("MIYU_SANDBOX_SECCOMP", "force")]);
+    if out.status.code() == Some(77) {
+        return;
+    }
+    assert_eq!(out.status.code(), Some(3), "建成了 io_uring：{out:?}");
+}
