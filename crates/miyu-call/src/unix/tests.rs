@@ -347,3 +347,37 @@ async fn the_extension_is_handed_the_same_endpoint_token_and_bin() {
         json!({"sock": handed.sock, "token": handed.token, "bin": bin})
     );
 }
+
+/// 审计 #016（施工 AU-P1）：临时目录几个用户共用，`miyu-call-<进程号>` 猜得到。叫这个名字的已经在了：是链接的（别人预先放好、
+/// 指到别处的）不跟过去、不改指到的那个目录的权限，交回出错；是自己的目录的收紧成 `0700` 照用；没有的新建成 `0700`。
+#[test]
+fn a_private_directory_is_never_taken_over_through_a_link() {
+    use std::os::unix::fs::PermissionsExt;
+    let base = std::env::temp_dir().join(format!("miyu-call-claim-test-{}", std::process::id()));
+    drop(std::fs::remove_dir_all(&base));
+    std::fs::create_dir_all(&base).unwrap();
+    let mode = |path: &Path| std::fs::metadata(path).unwrap().permissions().mode() & 0o777;
+    // 链接：指到一个敞开的目录。
+    let elsewhere = base.join("elsewhere");
+    std::fs::create_dir(&elsewhere).unwrap();
+    std::fs::set_permissions(&elsewhere, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let link = base.join("linked");
+    std::os::unix::fs::symlink(&elsewhere, &link).unwrap();
+    assert!(create_private(&link).is_err(), "链接不当成自己的目录");
+    assert_eq!(mode(&elsewhere), 0o755, "指到的目录权限不动");
+    // 自己的、权限宽的：收紧照用。
+    let mine = base.join("mine");
+    std::fs::create_dir(&mine).unwrap();
+    std::fs::set_permissions(&mine, std::fs::Permissions::from_mode(0o755)).unwrap();
+    create_private(&mine).expect("自己的目录照用");
+    assert_eq!(mode(&mine), 0o700);
+    // 没有的：新建。
+    let fresh = base.join("fresh");
+    create_private(&fresh).expect("建得了");
+    assert_eq!(mode(&fresh), 0o700);
+    // 是文件的：不是目录，出错。
+    let file = base.join("file");
+    std::fs::write(&file, "x").unwrap();
+    assert!(create_private(&file).is_err());
+    std::fs::remove_dir_all(&base).unwrap();
+}

@@ -112,3 +112,50 @@ fn json_that_lost_its_quotes_says_to_pipe_it() {
         "没花括号的照旧"
     );
 }
+
+/// 审计 #017（施工 AU-P1）：端点回的长度头是乱的（`0xFFFFFFFF`，或者连错了地方读到 `HTTP`）时，不照它一下子要 4 GiB（要不到
+/// 整个进程 abort），读到多少算多少，没读够照「所属的命令结束了」说。在子进程里量：同一个测试程序只跑这一条，`ulimit -v`
+/// 把地址空间压到 2 GiB，设好端点的两个变量（测试进程自己不设，别的测试不受影响）。
+#[cfg(target_os = "linux")]
+#[test]
+fn a_garbage_reply_length_is_not_allocated_up_front() {
+    const CHILD: &str = "MIYU_CALL_TEST_GARBAGE_LENGTH";
+    if std::env::var_os(CHILD).is_some() {
+        assert_eq!(
+            exchange(&serde_json::json!({"v": VERSION})),
+            Err(Lost::Ended)
+        );
+        return;
+    }
+    let dir = std::env::temp_dir().join(format!("miyu-call-garbage-{}", std::process::id()));
+    drop(std::fs::remove_dir_all(&dir));
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("t.sock");
+    let listener = std::os::unix::net::UnixListener::bind(&path).unwrap();
+    let server = std::thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        let mut head = [0u8; 4];
+        stream.read_exact(&mut head).unwrap();
+        let mut body = vec![0u8; u32::from_be_bytes(head) as usize];
+        stream.read_exact(&mut body).unwrap();
+        stream.write_all(&[0xFF; 4]).unwrap();
+    });
+    let exe = std::env::current_exe().unwrap();
+    let out = std::process::Command::new("sh")
+        .arg("-c")
+        .arg("ulimit -v 2097152 && exec \"$0\" \"$@\"")
+        .arg(&exe)
+        .args([
+            "--exact",
+            "call::tests::a_garbage_reply_length_is_not_allocated_up_front",
+            "--test-threads=1",
+        ])
+        .env(CHILD, "1")
+        .env(SOCK, &path)
+        .env("MIYU_CALL_TOKEN", "t")
+        .output()
+        .unwrap();
+    server.join().unwrap();
+    std::fs::remove_dir_all(&dir).unwrap();
+    assert!(out.status.success(), "{out:?}");
+}

@@ -226,8 +226,17 @@ pub(crate) fn exchange(request: &Value) -> Result<Map<String, Value>, Lost> {
     stream.write_all(body.as_bytes()).map_err(|_| Lost::Ended)?;
     let mut head = [0u8; 4];
     stream.read_exact(&mut head).map_err(|_| Lost::Ended)?;
-    let mut reply = vec![0u8; u32::from_be_bytes(head) as usize];
-    stream.read_exact(&mut reply).map_err(|_| Lost::Ended)?;
+    // 照来的长度边读边长（审计 #017，施工 AU-P1）：长度头是乱的（`0xFFFFFFFF`、连错了地方读到的 `HTTP`）也不一下子要那么多，
+    // 要不到整个进程 abort；读到多少算多少，没读够的照断了算。
+    let len = u64::from(u32::from_be_bytes(head));
+    let mut reply = Vec::new();
+    (&mut stream)
+        .take(len)
+        .read_to_end(&mut reply)
+        .map_err(|_| Lost::Ended)?;
+    if reply.len() as u64 != len {
+        return Err(Lost::Ended);
+    }
     match serde_json::from_slice::<Value>(&reply) {
         Ok(Value::Object(reply)) => Ok(reply),
         _ => Err(Lost::Ended),

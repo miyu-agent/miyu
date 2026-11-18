@@ -117,13 +117,31 @@ fn home() -> io::Result<PathBuf> {
     .ok_or_else(|| io::Error::other("no private directory for miyu call"))
 }
 
-/// 建目录，权限 `0700`。
+/// 建目录，权限 `0700`；上一级要已经在。
+///
+/// 临时目录几个用户共用，`miyu-call-<进程号>` 猜得到（审计 #016，施工 AU-P1）：叫这个名字的已经在了，不跟链接、属主是自己的
+/// 目录才照用（收紧成 `0700`）；是链接的（别人预先放好、指到别处的）、别人的、不是目录的交回出错，这一回没有通道，命令照旧跑。
+/// 原来照「建好了或者已经有了」算，跟着链接把指到的目录改成 `0700`、往里放套接字。
+///
+/// # Errors
+///
+/// 建不成；已经在的不是自己的目录。
 fn create_private(dir: &Path) -> io::Result<()> {
-    use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
-    std::fs::DirBuilder::new()
-        .recursive(true)
-        .mode(0o700)
-        .create(dir)?;
+    use std::os::unix::fs::{DirBuilderExt, MetadataExt, PermissionsExt};
+    match std::fs::DirBuilder::new().mode(0o700).create(dir) {
+        Ok(()) => {}
+        Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {
+            let meta = std::fs::symlink_metadata(dir)?;
+            let me = rustix::process::getuid().as_raw();
+            if !meta.file_type().is_dir() || meta.uid() != me {
+                return Err(io::Error::new(
+                    io::ErrorKind::PermissionDenied,
+                    "miyu call directory is not ours",
+                ));
+            }
+        }
+        Err(error) => return Err(error),
+    }
     std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700))
 }
 
