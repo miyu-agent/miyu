@@ -7,11 +7,11 @@
 //! 整个目录往下删，照 `xargs rm -rf` 问。
 //!
 //! 挪走的（施工 RO-4，同 bash 那一路的 `mv`）：`Move-Item`（`mi`、`mv`、`move`）、`Rename-Item`（`rni`、`ren`），cmd 的 `move`、
-//! `ren`，照删来源认、不当整个往下删。来源是 `-Path`、`-LiteralPath`，没写的是第一个不带名字的参数（第二个是去处、新名字）。
+//! `ren`，只管数据根（施工 RO-4补）：来源是整个数据根或装着它的问，别的不报。来源是 `-Path`、`-LiteralPath`，没写的是第一个不带名字的参数（第二个是去处、新名字）。
 
 use super::super::Kind;
 use super::super::lex::{Simple, Word};
-use super::paths::{Tidy, target};
+use super::paths::{Tidy, moved_away, target};
 use super::{base, words};
 
 /// 删除的程序名（已经小写、去掉 `.exe`）。
@@ -71,7 +71,7 @@ pub(super) fn moving(rest: &[Word], tidy: &Tidy, cwd: Option<&str>, found: &mut 
         named.extend(loose.into_iter().take(1));
     }
     for word in &named {
-        found.extend(target(word, tidy, cwd, false));
+        found.extend(moved_away(word, tidy, cwd));
     }
 }
 

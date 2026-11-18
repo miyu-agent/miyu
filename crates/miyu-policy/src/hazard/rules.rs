@@ -3,7 +3,7 @@
 
 use super::fresh::Fresh;
 use super::lex::{Simple, Word, parse};
-use super::paths::{absolute, target};
+use super::paths::{absolute, moved_away, target};
 use super::vars::{Vars, after_keywords};
 use super::{Kind, Places};
 
@@ -194,10 +194,10 @@ fn one(
             found.push(Kind::Power);
         }
         name => match super::moves::sources(name, rest) {
-            // 挪走、扔进回收站的照删来源认（施工 RO-4），不当整个往下删。
+            // 挪走、扔进回收站的只管数据根（施工 RO-4、RO-4补）：来源是整个数据根或装着它的问，别的照不报。
             Some(sources) => {
                 for word in sources.iter().filter(|word| !here.1.covers(word)) {
-                    found.extend(target(&here.0.expand(word), places, here.2, false));
+                    found.extend(moved_away(&here.0.expand(word), places, here.2));
                 }
             }
             // 容器把宿主交出去（施工 5-17 三补）。

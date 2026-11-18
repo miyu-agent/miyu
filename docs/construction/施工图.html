@@ -1617,6 +1617,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDR2"><span class="n">DR-2</span>扩展驱动可以等得久一点<span class="st">…</span></a></li>
         <li><a class="step review" href="#sTB1"><span class="n">TB-1</span>测试不进真的回收站<span class="st">…</span></a></li>
         <li><a class="step review" href="#sFL10"><span class="n">FL-10、11</span>两条偶发测试<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sRO4B"><span class="n">RO-4补</span>挪走只管数据根<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -63732,6 +63733,52 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/FL-10-两条偶发测试.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sRO4B" aria-labelledby="h-sRO4B">
+  <div class="sheet-head"><h2 id="h-sRO4B"><span class="no">RO-4补</span>挪走只管数据根</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">挪走、扔进回收站的命令只在目标是整个数据根或装着它的时问；挪走系统目录、工作目录这些照 RO-4 以前，不另拒、不另问。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-policy/hazard/paths.rs · rules.rs · windows/paths.rs · windows/delete.rs</span><span class="dir-note">RO-4补</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>来源照 <code>moved_away</code> 判：数据根或装着它的报 <code>delete_data_root</code></li>
+              <li>别的不再走删除的整套判法</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">只管数据根</span><span class="rl">2026-11-18 项目主人定</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">RO-4补</dd></div>
+        <div><dt>名称</dt><dd>挪走只管数据根</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-18</dd></div>
+        <div><dt>提交</dt><dd class="mono">RO-4补</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy、三平台 CI</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改前红：<code>trashing_or_moving_only_the_data_root_asks</code>、<code>windows::deleting_the_data_root_asks</code></span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/RO-4-换个命令删数据根也问.md</code>「RO-4补」一节；蓝图 <code>tools/shell.md</code>。</li>
       </ul>
     </div>
   </div>

@@ -23,13 +23,27 @@ pub(super) fn target(
     judge(&path, places, false)
 }
 
+/// 挪走、扔进回收站一个来源（施工 RO-4补，2026-11-18 项目主人定「只管数据根」）：照字面换成绝对路径（通配的照它挪得到的最大的
+/// 那一个），是数据根自己或装着它的报删数据根，别的（家目录、根、系统目录、工作目录也在内）不报，同 RO-4 以前。说不清的不报。
+pub(super) fn moved_away(word: &Word, places: &Places<'_>, cwd: Option<&str>) -> Option<Kind> {
+    let path = absolute(word, places, cwd)?;
+    holds_data_root(&path, places).then_some(Kind::DeleteDataRoot)
+}
+
+/// 规整过的绝对路径 `path`（通配的照它的最大的那一个）是数据根自己或装着它的。
+pub(super) fn holds_data_root(path: &str, places: &Places<'_>) -> bool {
+    inside(&widest(path, places), places.data_root)
+}
+
+/// `of` 是 `dir` 自己或在它里面。
+fn inside(dir: &str, of: &str) -> bool {
+    of == dir || of.starts_with(&format!("{}/", dir.trim_end_matches('/')))
+}
+
 /// 照 [`Places`] 判一个规整过的绝对路径 `path`（`/` 分隔，不以 `/` 结尾）：通配的先照它删得到的最大的那一个算。`drives` 是
 /// Windows 的写法（施工 WN-1，`windows/paths.rs`）：第一段是盘符（`/c:/users/me`），盘符本身算根目录，盘符下一级算系统目录。
 pub(super) fn judge(path: &str, places: &Places<'_>, drives: bool) -> Option<Kind> {
     let path = widest(path, places);
-    let inside = |dir: &str, of: &str| {
-        of == dir || of.starts_with(&format!("{}/", dir.trim_end_matches('/')))
-    };
     let depth = path.split('/').filter(|part| !part.is_empty()).count();
     let root = usize::from(drives);
     if depth <= root {

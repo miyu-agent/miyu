@@ -7,7 +7,7 @@
 //! 别的变量说不清；网络路径（`\\server\share`）、注册表这类别的提供程序（`HKLM:\…`）不是这台机器的盘，不判。
 
 use super::super::lex::Word;
-use super::super::paths::judge;
+use super::super::paths::{holds_data_root, judge};
 use super::super::{Kind, Places};
 
 /// 规整过的 [`Places`]：都照 [`tidy`] 写。
@@ -52,6 +52,14 @@ pub(super) enum Where {
     Unknown,
     /// 不是这台机器的盘（网络路径、注册表这类别的提供程序）：不判。
     Elsewhere,
+}
+
+/// 挪走一个来源（施工 RO-4补）：落在盘上的、是数据根自己或装着它的报删数据根，别的不报。
+pub(super) fn moved_away(word: &Word, tidy: &Tidy, cwd: Option<&str>) -> Option<Kind> {
+    match absolute(word, tidy, cwd) {
+        Where::Path(path) => holds_data_root(&path, &tidy.places()).then_some(Kind::DeleteDataRoot),
+        Where::Unknown | Where::Elsewhere => None,
+    }
 }
 
 /// 删一个目标：落在盘上的照判法判，说不清的整个目录往下删才问，不是盘上的不判。

@@ -45,17 +45,39 @@ fn trashing_or_moving_the_whole_data_root_asks_as_deleting_it() {
     );
 }
 
-/// 挪走、扔进回收站的口径同 `rm`：家目录、根、系统目录拒，工作目录问。
+/// 挪走、扔进回收站只管数据根（施工 RO-4补，2026-11-18 项目主人定）：目标是整个数据根或装着它的才问，别的照 RO-4 以前，
+/// 不因为挪走另拒、另问。数据根不在家目录里的时候，挪走家目录、系统目录、工作目录都不报（根总是装着数据根的）。
 #[test]
-fn trashing_or_moving_the_big_places_is_judged_like_deleting_them() {
-    for (command, expected) in [
-        ("gio trash ~", "delete_home"),
-        ("trash-put /home/me", "delete_home"),
-        ("mv /usr /usr.old", "delete_system"),
-        ("gio trash .", "delete_working_dir"),
-        ("mv ../proj ../proj2", "delete_working_dir"),
+fn trashing_or_moving_only_the_data_root_asks() {
+    let elsewhere = Places {
+        data_root: "/srv/miyu/data",
+        ..PLACES
+    };
+    for command in [
+        "mv /usr /tmp/x",
+        "mv /usr /usr.old",
+        "mv -t /tmp /etc",
+        "gio trash ~",
+        "trash-put /home/me",
+        "gio trash .",
+        "mv ../proj ../proj2",
     ] {
-        assert_eq!(kind(command), Some(expected), "{command}");
+        assert_eq!(
+            first(command, &elsewhere).map(Kind::code),
+            None,
+            "{command}"
+        );
+    }
+    // 数据根在家目录里（`~/.miyu`）：挪走家目录、根就是挪走装着数据根的，照删数据根问；系统目录、工作目录照旧不报。
+    for (command, expected) in [
+        ("gio trash ~", Some("delete_data_root")),
+        ("trash-put /home/me", Some("delete_data_root")),
+        ("kioclient6 remove /", Some("delete_data_root")),
+        ("mv /usr /tmp/x", None),
+        ("gio trash .", None),
+        ("mv ../proj ../proj2", None),
+    ] {
+        assert_eq!(kind(command), expected, "{command}");
     }
 }
 

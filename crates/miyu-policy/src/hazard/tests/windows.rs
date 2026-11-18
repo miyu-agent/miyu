@@ -75,9 +75,17 @@ fn deleting_the_data_root_asks() {
         r"Move-Item C:\Users\me\.miyu\a.txt D:\",
         r"Move-Item notes.md C:\Users\me\.miyu",
         r"Move-Item C:\Users\me\.miyu D:\old -WhatIf",
+        // 只管数据根（施工 RO-4补）：系统目录、工作目录照旧不报。
+        r"Move-Item C:\Windows D:\old",
+        r"Move-Item . ..\proj2",
     ] {
         assert_eq!(kind(command), None, "{command}");
     }
+    assert_eq!(
+        kind(r"Move-Item C:\Users\me D:\old"),
+        Some("delete_data_root"),
+        "装着数据根的家目录照删数据根问"
+    );
 }
 
 #[test]
