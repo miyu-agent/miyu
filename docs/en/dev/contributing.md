@@ -13,8 +13,6 @@ For developers who want to propose a change to the core or to a head: what to re
 | `docs/blueprint/` | Blueprints: what Miyu looks like now, one page per part, including formats, every cell of the UI, the text shown to the model, which code it lives in and which tests guard it | Before changing a part, read its page first |
 | `docs/designs/` | Design documents: what was decided, why, and what was not chosen; read them by number, starting with `00-设计理念.md` | You want to know why something is done a certain way, or want to change a settled approach |
 | `docs/construction/` | Work orders: how one change is made, which blueprint sections it changes, how it is accepted; `README.md` is the master table and the work order format | You want to see which step added a feature and how it was verified then |
-| `docs/perf/` | Raw data from the measuring tool and the tables compared against budgets | A change may affect the speed of startup, memory or requests |
-| `docs/reviews/` | Records of reviews, surveys and walkthroughs | Checking whether someone has looked at a problem before |
 | `docs/reference/`, `docs/authors/` | The protocol reference and the author guides, in Chinese and English, with the Chinese authoritative | You changed the protocol or how packages are written |
 
 Development goes "blueprint → work order → code": if the design changes, change the blueprint page first, then the code; when merged, the code and the blueprint must match.
@@ -181,7 +179,7 @@ Other subcommands:
 | `cargo xtask methods` | Registers protocol methods newly added in the code into `docs/reference/methods-v1.txt`, only adding and never deleting |
 | `cargo xtask prompts` | Regenerates `docs/blueprint/prompts.md` from the ledger and the resources |
 | `cargo xtask notices` | Regenerates `THIRD-PARTY-LICENSES.txt` |
-| `cargo xtask perf [measuring tool args]` | Builds the release `miyu`, `miyu-sandbox` and the measuring tool `miyu-perf`, and measures startup, memory, requests on a long session and binary size, writing the result into `docs/perf/`; the remaining arguments go to the measuring tool unchanged, for example `--runs 3`. Memory can only be measured on Linux; on macOS and Windows those cells in the table say "not measured" |
+| `cargo xtask perf [measuring tool args]` | Builds the release `miyu`, `miyu-sandbox` and the measuring tool `miyu-perf`, and measures startup, memory, requests on a long session and binary size, writing the result into `target/perf-out/`; the remaining arguments go to the measuring tool unchanged, for example `--runs 3`. Memory can only be measured on Linux; on macOS and Windows those cells in the table say "not measured" |
 | `cargo xtask dist [--target <os>] [--out <dir>]` | Builds the command-line archive for the system you are on: takes the terminal and web UI according to `heads.toml`, builds the release `miyu`, `miyu-sandbox`, `miyu-extract`, `miyu-tui` and `miyu-web`, and packs them as `miyu-<version>-<os>.tar.gz` (`.zip` on Windows), by default under `dist/` in the target directory; `--target` can only name the system you are on |
 | `cargo xtask dist-check <archive>` | Checks an archive before release: the name, the programs, the licenses, and the resources compared byte by byte; runs `miyu --version` and `miyu check` from the archive |
 | `cargo xtask packaging <tag> --sums <SHA256SUMS> [--applet <tray tag> --applet-sums <tray SHA256SUMS>] [--out <dir>]` | Fills in the AUR `PKGBUILD` and the Homebrew formula from a release's `SHA256SUMS` |
@@ -195,7 +193,7 @@ Other subcommands:
 - Tests of the measuring-tool kind are marked `#[ignore]`, and they assert on results, not on timing.
 - Test toward the bad: edge cases, odd combinations, breaking it on purpose.
 
-The core's CI (`.github/workflows/ci.yml`) runs `cargo xtask check` once on each of `ubuntu-24.04`, `macos-latest` and `windows-latest`; it also runs the long runs on Linux (random `#[ignore]` tests whose names end in `for_longer`) and the measuring tool, and going over the budget in the measuring tool also turns it red. CI runs on pushes to `main` and to branches starting with `step/`, and on PRs to `main`, including PRs from forks; it does not run when the change touches only `docs/construction/`, `docs/authors/`, `docs/reviews/` or `docs/designs/` (except `01-架构.md`, `23-性能预算.md` and `26-提示词.md`). For changes that touch paths, the file system, subprocesses or the terminal, merge only after all three platforms are green.
+The core's CI (`.github/workflows/ci.yml`) runs `cargo xtask check` once on each of `ubuntu-24.04`, `macos-latest` and `windows-latest`; it also runs the long runs on Linux (random `#[ignore]` tests whose names end in `for_longer`) and the measuring tool, and going over the budget in the measuring tool also turns it red. CI runs on pushes to `main` and to branches starting with `step/`, and on PRs to `main`, including PRs from forks; it does not run when the change touches only `docs/construction/`, `docs/authors/` or `docs/designs/` (except `01-架构.md`, `23-性能预算.md` and `26-提示词.md`). For changes that touch paths, the file system, subprocesses or the terminal, merge only after all three platforms are green.
 
 ## Code rules
 

@@ -219,7 +219,7 @@
 
 ### 导出成 Markdown（施工 SE-1 中下上、中下中、中下下）
 
-`session.export {format: "markdown"}`（`protocol.md`「`session.export`」）复用投影：整个会话喂一台投影（`view/whole.rs`），条目交给 `miyu_view::markdown` 渲染，界面上有的导出里才有，不另写「显示什么」（调研 `docs/reviews/2026-09-30-会话导出调研.md` 第四节第 3 条）。条目里没有的原文照事件记（`Sources`）：条目只带前面一段的工具结果（`output_cut`）取她当时看到的全文，压缩那一条取检查点的摘要，回复里的块照 `seen` 找回那条回复，脚本里调的工具照父级记了结的 `tool.nested`。
+`session.export {format: "markdown"}`（`protocol.md`「`session.export`」）复用投影：整个会话喂一台投影（`view/whole.rs`），条目交给 `miyu_view::markdown` 渲染，界面上有的导出里才有，不另写「显示什么」（调研《会话导出调研》（2026-09-30）第四节第 3 条）。条目里没有的原文照事件记（`Sources`）：条目只带前面一段的工具结果（`output_cut`）取她当时看到的全文，压缩那一条取检查点的摘要，回复里的块照 `seen` 找回那条回复，脚本里调的工具照父级记了结的 `tool.nested`。
 
 **三个预设**（调研第五节第 2 条；`for` 定预设，写了的 `range`、`thinking`、`tools` 盖过它）：
 

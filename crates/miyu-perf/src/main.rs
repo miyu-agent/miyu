@@ -1,6 +1,6 @@
 //! 量尺（施工 V-1，`docs/designs/23-性能预算.md` 第一节，`docs/blueprint/perf.md`）：拉起 release 构建的真 `miyu`，
 //! 模型是同一个进程里的假服务，数据根是沙盒；量核心这一边的启动、内存、长会话上的请求、追加并同步、二进制大小，
-//! 原始数据和对照预算的表写进 `docs/perf/`。
+//! 原始数据和对照预算的表写进 `--out` 给的目录（`cargo xtask perf` 给的是 `target/perf-out/`，不入库）。
 //!
 //! 工具 crate，不属于任何一层，谁都不许依赖它（`01-架构.md` 第九节规则 5）。`cargo xtask perf` 编好再跑它。
 

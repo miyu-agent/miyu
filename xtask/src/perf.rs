@@ -1,5 +1,5 @@
 //! `cargo xtask perf [量尺的参数…]`（施工 V-1，`docs/blueprint/perf.md`）：编 release 的 `miyu`、`miyu-sandbox`，
-//! 再编量尺 `miyu-perf`、跑它，结果写进 `docs/perf/`。
+//! 再编量尺 `miyu-perf`、跑它，结果写进 target 目录下的 `perf-out/`（不入库）。
 //!
 //! 两次分开编：量的二进制只照它自己的依赖编，别的包（测试夹具打开的开关）混不进去。沙盒放在 `target/perf/` 下：要在
 //! 真的磁盘上，同步才算数。后面跟的参数原样交给量尺（`--runs 3` 这些）；带 `--render <原始数据>` 的只编量尺，照现在的预算
@@ -50,7 +50,7 @@ pub fn run(cargo: &str, root: &Path, extra: &[String]) -> ExitCode {
         .arg("--work")
         .arg(target.join("perf"))
         .arg("--out")
-        .arg(root.join("docs/perf"))
+        .arg(target.join("perf-out"))
         .arg("--tree")
         .arg(root.join("crates"))
         .args(extra)

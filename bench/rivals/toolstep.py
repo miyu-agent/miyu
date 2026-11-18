@@ -9,7 +9,7 @@
   真家目录（Miyu 的审计 AUD-5 补上）。不调真模型。只在 Linux 上、有 systemd 用户会话时能量。
 
     python3 bench/rivals/toolstep.py --miyu target/release/miyu --jcode <jcode> --samples 20 --cpus 4-7 \\
-        --into docs/perf --tag v29
+        --into target/perf-out --tag v29
 
 只用标准库。
 """

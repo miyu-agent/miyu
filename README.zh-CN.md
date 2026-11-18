@@ -1,7 +1,7 @@
 <p align="center">🚧 施工中</p>
 
 <p align="center">
-  <img src="docs/assets/miyu-logo.png" alt="Miyu" width="180">
+  <img src="assets/miyu-logo.png" alt="Miyu" width="180">
 </p>
 
 <p align="center">
@@ -23,11 +23,11 @@ Miyu 是一个简单易上手，界面简洁美观，极致轻量，性能表现
 
 **网页 · 对话中**
 
-![网页 · 对话中](docs/assets/web-use.webp)
+![网页 · 对话中](assets/web-use.webp)
 
 **终端 · 对话中**
 
-![终端 · 对话中](docs/assets/tui-use.webp)
+![终端 · 对话中](assets/tui-use.webp)
 
 <details>
 <summary>更多截图（新会话、设置）</summary>
@@ -35,15 +35,15 @@ Miyu 是一个简单易上手，界面简洁美观，极致轻量，性能表现
 
 **网页 · 新会话**
 
-![网页 · 新会话](docs/assets/web-new.webp)
+![网页 · 新会话](assets/web-new.webp)
 
 **终端 · 新会话**
 
-![终端 · 新会话](docs/assets/tui-new.webp)
+![终端 · 新会话](assets/tui-new.webp)
 
 **网页 · 设置**
 
-![网页 · 设置](docs/assets/web-settings.webp)
+![网页 · 设置](assets/web-settings.webp)
 
 </details>
 

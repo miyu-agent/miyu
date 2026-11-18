@@ -3,14 +3,14 @@
 # dependencies = ["pyte"]
 # ///
 """三家对比（施工 V-7，蓝图 `docs/blueprint/perf.md`「三家对比」）：同一台机器、同一个模型端点、各自干净的沙箱家目录，
-量 Miyu、jcode、codex 的 CPU、内存、读写、硬盘。发版前跑一次，结果写进 `docs/perf/`。
+量 Miyu、jcode、codex 的 CPU、内存、读写、硬盘。发版前跑一次，结果写进 `target/perf-out/`。
 
-    uv run bench/rivals/main.py --tui <终端仓库> all --into docs/perf
+    uv run bench/rivals/main.py --tui <终端仓库> all --into target/perf-out
 
 端点、key、模型名照环境变量 OPENAI_BASE_URL、OPENAI_API_KEY、MIYU_BENCH_MODEL。经本机转发的（施工 V-27）：
 
     uv run bench/rivals/main.py --tui <终端仓库> --upstream https://opencode.ai/zen/go/v1 \
-        --upstream-key-env OPENCODE_GO_API_KEY all --into docs/perf --tag <名>
+        --upstream-key-env OPENCODE_GO_API_KEY all --into target/perf-out --tag <名>
 
 这时只要 MIYU_BENCH_MODEL 和真 key 的那个变量。
 """
@@ -60,7 +60,7 @@ def parse(argv):
     g.add_argument("--runs", type=int, default=5)
     sub.add_parser("disk", help="硬盘")
     m = sub.add_parser("summary", help="汇成表")
-    m.add_argument("--into", help="再写一份进这个目录（例如 docs/perf）")
+    m.add_argument("--into", help="再写一份进这个目录（例如 target/perf-out）")
     m.add_argument("--tag", help="文件名后缀，例如 v0.8.0")
     a = sub.add_parser(
         "all", parents=[timing], help="从头量一遍：homes、screen、task、long gen、long open、disk、summary"

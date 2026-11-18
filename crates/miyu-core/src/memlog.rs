@@ -35,7 +35,7 @@ pub struct Timing {
 }
 
 impl Default for Timing {
-    /// 一分钟采一次，涨 32 MiB 多采：打开一个一万条事件的大会话约涨 20 MB（`docs/perf`），比它大的才算涨得快。以前两次之间
+    /// 一分钟采一次，涨 32 MiB 多采：打开一个一万条事件的大会话约涨 20 MB（量尺实测），比它大的才算涨得快。以前两次之间
     /// 每五秒看一眼 RSS（施工 V-4），空闲的核心每秒因此醒一次多，施工 V-6 下改成安静下来时看。
     fn default() -> Timing {
         Timing {

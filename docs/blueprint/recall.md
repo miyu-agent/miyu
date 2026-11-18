@@ -11,7 +11,7 @@
 
 库都是派生的：真相在会话日志、记忆日志、知识库的文件里，库随时能删掉照真相重建（`07-存储.md` S1、S3）。
 
-状态：图纸（2026-10-07 起草，照 `docs/reviews/2026-10-07-记忆知识库embedding调研.md` 第八、九节项目主人的拍板）。每一节标着由哪一步做，步子见 `memory.md`「施工步子」。做完一步，这一页照做好的样子改写那几节。
+状态：图纸（2026-10-07 起草，照《记忆知识库embedding调研》（2026-10-07）第八、九节项目主人的拍板）。每一节标着由哪一步做，步子见 `memory.md`「施工步子」。做完一步，这一页照做好的样子改写那几节。
 
 做好了的：R-1 切词、检索库（第一、二条，「对外的样子」照做好的写；FTS5 那一列叫 `words`）。R-2（上）检索库多 `marks` 表（版本 2）、`apply`、`mark`、`forget`；R-2（下）`apply` 照到的位置不往回挪。R-3（上）多墓碑表 `buried`（版本 3）、`Edit::Bury`、`Unbury`、`bury`、`is_buried`。K-1（上）多指纹表 `stamps`、`replace`、`drop_source`、`stamps`。
 
@@ -273,7 +273,7 @@ R-1 做好的：
 - 删掉 bge（2026-10-19 项目主人：「bge可以直接删除了，不要做成软件包了」，`docs/construction/R-18-删掉bge.md`）：门槛表里那三行、它的 Release 都删了，bge-m3 也不再当以后的可选包。
 - Release `models-granite-embedding-97m-multilingual-r2`（S-7 下起在 `miyu-agent/miyu-embed`，核心仓库的那一份留着不动）的文件来自 Hugging Face 的 `ibm-granite/granite-embedding-97m-multilingual-r2`（commit `835ad140`）：模型照 `tools/quantize_q4.py` 量化，词表、合并照 `tools/bpe_files.py` 转，`NOTICE` 写明；`miyu-embed` 仓库的 `tests/fixtures/real.json`、`granite-tokens.json` 照 `make_bpe.py` 生成（`docs/construction/R-5-换成granite（七补）.md`）。换模型的取舍（八个候选、真数据上判过的召回和代价）见 `docs/blueprint/memory/eval.md`「换模型」。
 - 原来的 Release `models-bge-small-zh-v1.5`（R-18 删了）的文件来自 Hugging Face 的 `Xenova/bge-small-zh-v1.5`（commit `75c43b06`，`BAAI/bge-small-zh-v1.5` commit `7999e1d3` 转的 ONNX），原样转发；`miyu-embed` 仓库 `tests/fixtures/` 的标准答案照那里的 `make.py` 生成（`docs/construction/R-5-本机embedding的小程序（上）.md`）。
-- `docs/reviews/2026-10-07-记忆知识库embedding调研.md` 第三节（选型和实测）、第五节末尾（技术细节照推荐定）、第八节（项目主人的拍板：本机 embedding 用 bge-small-zh、模型从 Miyu 的 GitHub Release 下、做成可更换的）。
+- 《记忆知识库embedding调研》（2026-10-07）第三节（选型和实测）、第五节末尾（技术细节照推荐定）、第八节（项目主人的拍板：本机 embedding 用 bge-small-zh、模型从 Miyu 的 GitHub Release 下、做成可更换的）。
 - `17-记忆.md` 第四节、`19-知识库.md` N3：关键词加向量、两路合并、索引在 SQLite 里。
 - `10-自带软件.md`、`tools/history.md`：混合召回以关键词为主、向量为辅（2026-09-29 项目主人定）。
 

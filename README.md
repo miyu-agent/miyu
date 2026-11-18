@@ -1,7 +1,7 @@
 <p align="center">🚧 Under construction</p>
 
 <p align="center">
-  <img src="docs/assets/miyu-logo.png" alt="Miyu" width="180">
+  <img src="assets/miyu-logo.png" alt="Miyu" width="180">
 </p>
 
 <p align="center">
@@ -23,11 +23,11 @@ Miyu is an Agent Harness that is simple and easy to pick up, clean and good-look
 
 **Web · in a conversation**
 
-![Web · in a conversation](docs/assets/web-use.webp)
+![Web · in a conversation](assets/web-use.webp)
 
 **Terminal · in a conversation**
 
-![Terminal · in a conversation](docs/assets/tui-use.webp)
+![Terminal · in a conversation](assets/tui-use.webp)
 
 <details>
 <summary>More screenshots (new session, settings)</summary>
@@ -35,15 +35,15 @@ Miyu is an Agent Harness that is simple and easy to pick up, clean and good-look
 
 **Web · new session**
 
-![Web · new session](docs/assets/web-new.webp)
+![Web · new session](assets/web-new.webp)
 
 **Terminal · new session**
 
-![Terminal · new session](docs/assets/tui-new.webp)
+![Terminal · new session](assets/tui-new.webp)
 
 **Web · settings**
 
-![Web · settings](docs/assets/web-settings.webp)
+![Web · settings](assets/web-settings.webp)
 
 </details>
 

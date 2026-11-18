@@ -4,7 +4,7 @@
 
 ### 是什么
 
-一个量性能的小程序 `miyu-perf`：照 `23-性能预算.md` 第一节的量法量核心这一边，原始数据和对照预算的表写进 `docs/perf/`。它是工具 crate，不属于任何一层，谁都不许依赖它（`01-架构.md` 第九节规则 5）。
+一个量性能的小程序 `miyu-perf`：照 `23-性能预算.md` 第一节的量法量核心这一边，原始数据和对照预算的表写进 `target/perf-out/`。它是工具 crate，不属于任何一层，谁都不许依赖它（`01-架构.md` 第九节规则 5）。
 
 ### 在哪
 
@@ -46,7 +46,7 @@
 | `--streams` | 10 | 流式一轮（施工 V-22）：大会话上说几轮 |
 | `--pieces` | 300 | 流式一轮：回答切成几块 |
 | `--idle-wait` | 200 | 不订阅大会话以后等几秒再量内存 |
-| `--out` | `docs/perf` | 结果写到哪 |
+| `--out` | `target/perf-out` | 结果写到哪 |
 | `--render` | 不写 | 不量：照这一份原始数据（`.json`）、照 23 现在的预算重出同名的 `.md`，原始数据不动。只编量尺，不编 `miyu` |
 | `--gate` | 不写 | 闸门的倍数（施工 V-3）：量完、表写好以后，有预算的哪一行时间超过预算的这么多倍、内存超过预算，报出来、退出码 1。不写的只出表 |
 | `--tools` | 不写 | 工具一步（施工 V-29）：写了的只量这一场，每种调用量这么多次（另加头一次不计），别的几场不量 |
@@ -54,9 +54,9 @@
 | `--tools-log` | 不写 | 工具一步：核心的 `MIYU_LOG`；拆得更细写 `debug`（记日志本身也花一点，主数照不写的那一次） |
 | `--tag` | 不写 | 工具一步：结果的文件名后面接 `-<标签>` |
 
-结果：`docs/perf/<日期>-<系统>-<架构>.json`（原始数据）和同名的 `.md`（条件、表）。日期是 UTC。同一天再量一次，盖掉同名的。
+结果：`target/perf-out/<日期>-<系统>-<架构>.json`（原始数据）和同名的 `.md`（条件、表）。日期是 UTC。同一天再量一次，盖掉同名的。
 
-预算改了（23 F1：实测后校准），用 `cargo xtask perf --render docs/perf/<那一份>.json` 重出表。
+预算改了（23 F1：实测后校准），用 `cargo xtask perf --render target/perf-out/<那一份>.json` 重出表。
 
 ### 怎么走
 
@@ -108,13 +108,13 @@
 5. 量哪几种（工具名、参数照 `resources/software/basesystem/tools/*.json`，`tools/calls.rs`）：`read` 小文件、8 MB 文件的末尾 200 行、列目录（`read` 读目录）；`write` 4 KB（同一个文件一次次盖）；`edit` 一处；`grep` 在树里搜（默认只列文件、带行两种）；`glob` 在树里找；`shell` 的 `true`、`echo`、`cat` 小文件，在工作区这一级（关进沙盒）和完全放开（沙盒关着）各一遍，两边一比是沙盒的开销。最后一种是挂着一个立即答的守卫的「read 小文件」（施工 HK-1，设计 65 第六节，目标多 1 毫秒以内）：核心起来以前往沙盒的数据根装一个扩展包 `perf-guard`（`[guard] tools = ["read"]`，开关关着，前面那几种不问它；程序是拷过去的量尺本身，带参数 `guard-extension` 起来只握手、每个 `tool.guard` 当场答 `allow`），别的几种量完打开它（`extension.enable` 带 `approve`）、等它在跑，再量这一种；和头一种一比就是守卫的开销。守卫那一种前面还有一种：挂着一个慢的 `tool.after` 收件人的「read 小文件」（施工 HK-2，设计 65 第六节：慢的收件人不拖回合）：另装一个扩展包 `perf-after`（`[after] tools = ["read"]`，开关关着；程序同样是量尺本身，带参数 `after-extension` 起来只握手、之后每读一行睡 200 毫秒），量完前面那几种打开它（`approve` `events.read`），量完关掉再开守卫；和头一种一比看回合等不等它。
 6. 「什么都不做」的对照：同样一句回答不带调用，这一轮结束，量尺收到 `turn.ended` 当场再说一句；量回答写完到下一个请求头，拆成写完到收到 `turn.ended`、再说一句到核心落了盘回应、回应到请求头三段。这是核心收一轮、来回一趟、组装下一次请求的底子；工具一步减去它，大致是工具本身加上判权限、派、收回来的那几跳。
 7. 拆段（`tools/split.rs`，不改核心）：停了核心以后读会话日志、运行日志，每一处取它在一步里头一回出现的时刻减去回答写完的那一刻，几十步取平均。会话日志：带这次调用的 `message.assistant`（actor 收到「说完了」）、这次的 `tool.result`（结果交进内核）；运行日志：`running`（判过权限、派之前）、`ran`（actor 收到做完）、`request`（交给请求模型的端口），`--tools-log debug` 另有每条输入、每个动作一行。时刻只到毫秒。顺手查每次调用的结果都是 `ok`，不是的报出来不白量。
-8. 结果：`docs/perf/<日期>-tools-<系统>-<架构>[-<标签>].json`（每一步的毫秒和两种 CPU、对照、拆段）和同名的 `.md`。条件另记量之前、量完的 `/proc/loadavg`、握手回应里的 `sandbox`。没有 `--render`：表只照这一份数出。
+8. 结果：`target/perf-out/<日期>-tools-<系统>-<架构>[-<标签>].json`（每一步的毫秒和两种 CPU、对照、拆段）和同名的 `.md`。条件另记量之前、量完的 `/proc/loadavg`、握手回应里的 `sandbox`。没有 `--render`：表只照这一份数出。
 
 **和 jcode 比**（`bench/rivals/toolstep.py`、`toolfake.py`、`toolkinds.py`）
 
 1. 同一个假模型（Python，回法同上：提到记号、带工具表的请求才归剧本，起标题这些辅助请求回一句话不记），两家各收到同样意思的调用，工具名、参数照各家自己给模型的工具表（`toolkinds.py`：jcode v0.99.1 的 `read`、`write`、`edit`、`agentgrep`、`bash`；它的表里没有 `ls`，列目录不比；`agentgrep` 的 `find` 是照名字排出最像的前几个、带理由，和 `glob` 列全的口径不同）。
 2. Miyu：核心放进自己的 scope 起着，每种跑一次 `miyu ask --no-memory`（沙盒关着的几种加 `--permission full`），CPU 只算核心那个 scope。jcode：每种跑一次 `jcode run`，整个进程放进自己的 scope；它的命令不进沙盒。家目录都在 `--out` 下，两家的 `HOME`、`XDG_*` 都指进去（施工 AUD-5：Miyu 原来只指了数据根和缓存，`HOME` 是宿主的真家目录），不碰本机的 `~/.jcode`；不调真模型。
-3. `--into docs/perf --tag <名>` 写 `docs/perf/<日期>-toolstep-<名>.json`、`.md`。只在有 systemd 用户会话的 Linux 上量。
+3. `--into target/perf-out --tag <名>` 写 `target/perf-out/<日期>-toolstep-<名>.json`、`.md`。只在有 systemd 用户会话的 Linux 上量。
 
 ### 闸门（施工 V-3，23 F4）
 
@@ -155,19 +155,19 @@
 **怎么跑**
 
 ```
-OPENAI_BASE_URL=… OPENAI_API_KEY=… MIYU_BENCH_MODEL=… uv run bench/rivals/main.py --tui <终端仓库> all --into docs/perf --tag v<版本>
+OPENAI_BASE_URL=… OPENAI_API_KEY=… MIYU_BENCH_MODEL=… uv run bench/rivals/main.py --tui <终端仓库> all --into target/perf-out --tag v<版本>
 ```
 
 经本机转发（施工 V-27，上游要每段对话带会话头的，例如 opencode）：
 
 ```
-MIYU_BENCH_MODEL=… uv run bench/rivals/main.py --tui <终端仓库> --upstream https://opencode.ai/zen/go/v1 --upstream-key-env OPENCODE_GO_API_KEY all --into docs/perf --tag v<版本>
+MIYU_BENCH_MODEL=… uv run bench/rivals/main.py --tui <终端仓库> --upstream https://opencode.ai/zen/go/v1 --upstream-key-env OPENCODE_GO_API_KEY all --into target/perf-out --tag v<版本>
 ```
 
 1. 端点、key、模型名只从环境变量来，三家用同一个。key 留在环境变量里交给各家：Miyu 的配置写成 `{ env = "OPENAI_API_KEY" }`，codex、jcode 照它们自己认的变量名去读，不写进任何文件、不打印；结果里只记模型名，不记地址。用转发的（`--upstream`）：真 key 只在 `--upstream-key-env` 那个变量里，测具只把它交给转发进程，各家的环境里去掉这个变量，`OPENAI_BASE_URL` 换成转发上这一家的路径、`OPENAI_API_KEY` 换成假的；这时不用设 `OPENAI_BASE_URL`、`OPENAI_API_KEY`。
 2. 核心照 `--core`（默认这个仓库），终端界面照 `--tui`（终端界面的仓库，里面有装成软件包的 `tui/` 和编好的 `target/release/miyu-tui`；包的目录和编号同名，设计 48，2026-11-12 以前叫 `miyu-tui/`，旧的仓库一开始就报），都要先 `cargo build --release`。jcode、codex 照 `--jcode`、`--codex`，不写的照 `PATH` 找。`--only` 只量几家，`--cpus` 绑到几个核上。
 3. 子命令可以分开跑：`homes`（做模板）、`screen`、`task`、`long gen`、`long open`、`disk`、`summary`；`all` 照这个先后全跑。`--runs`（默认 5）、`--settle`（默认 13 秒）、`--idle`（默认 60 秒）。
-4. 家目录、模板、工作目录、原始结果都在 `--out`（默认 `target/rivals/`）下。`summary --into docs/perf --tag <名>` 再写一份 `docs/perf/<日期>-rivals-<名>.md`、同名 `.json`（汇总的数，加每一轮的原始结果 `runs`；命令输出的最后几行带着本机路径，不入库）。
+4. 家目录、模板、工作目录、原始结果都在 `--out`（默认 `target/rivals/`）下。`summary --into target/perf-out --tag <名>` 再写一份 `target/perf-out/<日期>-rivals-<名>.md`、同名 `.json`（汇总的数，加每一轮的原始结果 `runs`；命令输出的最后几行带着本机路径，不入库）。
 5. 只在 Linux 上量：CPU、内存照 cgroup v2 和 `/proc` 读，要 systemd 的用户会话。别的系统上一开始就说清楚、退出码 2。
 
 **怎么走**
@@ -194,7 +194,7 @@ MIYU_BENCH_MODEL=… uv run bench/rivals/main.py --tui <终端仓库> --upstream
 
 1. 核心照要发的那个提交编 release；终端界面照 `heads.toml` 的 `rev` 检出、编 release。
 2. 照上面「怎么跑」跑 `all`，`--tag` 写要发的版本。
-3. 和上一份 `docs/perf/*-rivals-*.md` 比：Miyu 哪一项比上次差了，先查清楚再发。
+3. 和上一次发版前量的那一份比（结果不入库，自己留着上一份）：Miyu 哪一项比上次差了，先查清楚再发。
 4. 两份结果和发版的提交一起入库；`target/rivals/` 整个删掉（别家的家目录里可能存着 key）。
 
 ### 守着它的

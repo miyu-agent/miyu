@@ -12,7 +12,7 @@
 //! - [`chunk`]、[`kb`]：知识库的文档怎么切块、`kb.toml` 怎么读（施工 K-1 上）。
 //!
 //! 中文、日文没有空格，SQLite 自带的 `unicode61` 会把一整句当一个词，`trigram` 搜不到两个字的词，所以连着的汉字、假名
-//! 照 Lucene 的 CJKBigram 两两切（`docs/reviews/2026-10-07-记忆知识库embedding调研.md` 第三节）。
+//! 照 Lucene 的 CJKBigram 两两切（《记忆知识库embedding调研》（2026-10-07）第三节）。
 
 pub mod associate;
 pub mod chunk;

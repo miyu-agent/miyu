@@ -20,7 +20,7 @@ Chinese version: [中文](../zh/README.md).
 | `authors/` | Author guide: writing packages, extensions, scripts and skills, hooking up MCP servers, the manifest format | People who write things for Miyu |
 | `reference/` | Protocol reference: every core method, its parameters, replies and errors | People who write heads and extensions |
 | `zh/dev/`, `en/dev/` | Developer docs: architecture, writing a head, themes and skins, putting things on the interface, contributing code | People who integrate with Miyu or change it |
-| `blueprint/`, `designs/`, `construction/`, `perf/`, `reviews/` | The project's internal blueprints, designs, construction records, performance data and research | Maintainers. You do not need them to use Miyu or write things for it; what each one is is in [Contributing code](dev/contributing.md#what-to-read-first) |
+| `blueprint/`, `designs/`, `construction/` | The project's internal blueprints, designs and construction records | Maintainers. You do not need them to use Miyu or write things for it; what each one is is in [Contributing code](dev/contributing.md#what-to-read-first) |
 
 The user guide and the developer docs have one directory per language: `zh/` is Chinese (the authoritative text) and `en/` is English, with the same pages on both sides. The author guide and the protocol reference keep both languages in one directory; the English file names are `<page>.en.md`.
 

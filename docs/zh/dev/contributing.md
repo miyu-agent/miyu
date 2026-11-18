@@ -13,8 +13,6 @@
 | `docs/blueprint/` | 蓝图：Miyu 现在长什么样，一个部件一页，连格式、界面上的每一格、给模型看的字、在哪些代码里、由哪些测试守着 | 改一个部件之前，先读它那一页 |
 | `docs/designs/` | 设计：定了什么、为什么、没选什么，按编号读，从 `00-设计理念.md` 开始 | 想知道一处为什么这样做、想改一个已定的做法 |
 | `docs/construction/` | 施工单：一次改动怎么做、改蓝图哪几节、怎么验收；`README.md` 是总表和施工单的格式 | 想看某个功能是哪一步加的、当时怎么验的 |
-| `docs/perf/` | 量尺跑出来的原始数据和对照预算的表 | 改动可能影响启动、内存、请求的快慢 |
-| `docs/reviews/` | 审阅、调研、走查的记录 | 查一个问题以前有没有人看过 |
 | `docs/reference/`、`docs/authors/` | 协议参考、作者教程，中英两份，中文是正本 | 改了协议或包的写法 |
 
 开发照「蓝图 → 施工单 → 代码」走：设计要变，先改蓝图那一页，再改代码；合进去时代码和蓝图要对得上。
@@ -181,7 +179,7 @@ cargo xtask check
 | `cargo xtask methods` | 把代码里新加的协议方法登记进 `docs/reference/methods-v1.txt`，只加不删 |
 | `cargo xtask prompts` | 照登记簿和资源重新生成 `docs/blueprint/prompts.md` |
 | `cargo xtask notices` | 重新生成 `THIRD-PARTY-LICENSES.txt` |
-| `cargo xtask perf [量尺的参数]` | 编 release 的 `miyu`、`miyu-sandbox` 和量尺 `miyu-perf`，量启动、内存、长会话上的请求、二进制大小，结果写进 `docs/perf/`；后面的参数原样交给量尺，例如 `--runs 3`。内存只在 Linux 上量得到，macOS、Windows 上表里那几格写「不量」 |
+| `cargo xtask perf [量尺的参数]` | 编 release 的 `miyu`、`miyu-sandbox` 和量尺 `miyu-perf`，量启动、内存、长会话上的请求、二进制大小，结果写进 `target/perf-out/`；后面的参数原样交给量尺，例如 `--runs 3`。内存只在 Linux 上量得到，macOS、Windows 上表里那几格写「不量」 |
 | `cargo xtask dist [--target <系统>] [--out <目录>]` | 打本机那一种系统的命令行版压缩包：照 `heads.toml` 取终端、网页，编 release 的 `miyu`、`miyu-sandbox`、`miyu-extract`、`miyu-tui`、`miyu-web`，打成 `miyu-<版本>-<系统>.tar.gz`（Windows 是 `.zip`），默认放在 target 目录的 `dist/` 下；`--target` 只能写本机 |
 | `cargo xtask dist-check <压缩包>` | 发布前查包：名字、程序、许可证、资源逐字节比，跑包里的 `miyu --version` 和 `miyu check` |
 | `cargo xtask packaging <标签> --sums <SHA256SUMS> [--applet <托盘的标签> --applet-sums <托盘的 SHA256SUMS>] [--out <目录>]` | 照一次发布的 `SHA256SUMS` 填出 AUR 的 `PKGBUILD` 和 Homebrew 的 formula |
@@ -195,7 +193,7 @@ cargo xtask check
 - 量尺类的测试标 `#[ignore]`，断言结果，不断言耗时。
 - 往坏里测：边界情况、奇怪的组合、故意弄坏它。
 
-核心的 CI（`.github/workflows/ci.yml`）在 `ubuntu-24.04`、`macos-latest`、`windows-latest` 上各跑一遍 `cargo xtask check`；另在 Linux 上跑长跑（名字以 `for_longer` 结尾的 `#[ignore]` 随机测试）和量尺，量尺超过预算也算红。CI 在推到 `main` 和 `step/` 开头的分支时跑，往 `main` 提的 PR 也跑，从分叉提的一样；只改了 `docs/construction/`、`docs/authors/`、`docs/reviews/`、`docs/designs/`（`01-架构.md`、`23-性能预算.md`、`26-提示词.md` 除外）的不跑。碰路径、文件系统、子进程、终端的改动，三个平台都绿了再合。
+核心的 CI（`.github/workflows/ci.yml`）在 `ubuntu-24.04`、`macos-latest`、`windows-latest` 上各跑一遍 `cargo xtask check`；另在 Linux 上跑长跑（名字以 `for_longer` 结尾的 `#[ignore]` 随机测试）和量尺，量尺超过预算也算红。CI 在推到 `main` 和 `step/` 开头的分支时跑，往 `main` 提的 PR 也跑，从分叉提的一样；只改了 `docs/construction/`、`docs/authors/`、`docs/designs/`（`01-架构.md`、`23-性能预算.md`、`26-提示词.md` 除外）的不跑。碰路径、文件系统、子进程、终端的改动，三个平台都绿了再合。
 
 ## 代码的规矩
 

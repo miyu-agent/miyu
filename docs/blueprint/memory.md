@@ -9,7 +9,7 @@
 - **想起来**：三层。常驻的记忆摘要（第一轮、压缩以后注入一次）、她的工具（搜、记、忘）、每轮的联想（过门槛的两三条，R-8 单独一步）。
 - **整理**：会话闲了几分钟、缓存还热的时候，对新的一段发一次抽取请求；隔一段时间合并一次，重写摘要。
 
-状态：图纸（2026-10-07 起草，照 `docs/reviews/2026-10-07-记忆知识库embedding调研.md` 第八、九节项目主人的拍板）。每一节标着由哪一步做，步子见末尾「施工步子」。做完一步，这一页照做好的样子改写那几节。检索的底子另见 `recall.md`。
+状态：图纸（2026-10-07 起草，照《记忆知识库embedding调研》（2026-10-07）第八、九节项目主人的拍板）。每一节标着由哪一步做，步子见末尾「施工步子」。做完一步，这一页照做好的样子改写那几节。检索的底子另见 `recall.md`。
 
 做好了的：R-2（下）补齐旧会话（第一条第 9 款）：人格那一间的回合库新建、重建以后后台补齐旧会话（`miyu-session/src/memory/backfill.rs`），检索库照到的位置不往回挪。做好了的：R-3（再补）命令行 `miyu memory`（`cli/memory.md`）：`list`、`search`、`add`、`edit`、`forget`、`clear session`、`clear me`，一条一行只印编号、日期、正文。做好了的：R-3（补）协议和清空：`memory.*` 五个方法（`miyu-endpoint/src/memory.rs`），`ext.memory.cleared` 和底账的清掉、记忆库删字，`/remember`；记、改、忘、清空、搜、列挪成一处 `Keeper`（`miyu-session/src/memory/keeper.rs`），她的工具和协议共用，`Handle::memory_room` 交出会话那一间。做好了的：R-3（下）范围：`MemoryScope`（`miyu-policy/src/memory.rs`）记进快照的 `memory`，`persona.toml` 的 `[memory] scope`，`session.create` 的 `memory`，`miyu ask --no-memory`；记忆放在哪一间照 `Room`（`miyu-store/src/recall/room.rs`），两份登记都照它开；听众照会话关不关、放在哪照人格。做好了的：R-3（中）三件工具：软件包 `miyu-memory`（`remember`、`forget`、`memory_search`，字在 `resources/software/memory/`），端口 `miyu_tool::MemoryPort`（每次调用由执行器照这个会话、这一轮、人格、听众造，`miyu-session/src/memory/port.rs`），读工具字的函数挪进 `miyu_tool::load`；工具面上只给本机的主会话；核心的工具目录登记它们，会话表交 `Memory`（两份登记）。听众照人比：主人、平台上的照平台身份（主人在平台私聊里说的带 `via`，还是主人本人）。做好了的：R-3（上）记忆日志和底账：`miyu-recall` 的 `Saved`、`Retired`、`Source`、`MemoryId`、`to_event`、`from_event`、`MemoryBook`；`miyu-store` 的 `MemoryLogs`（一份一把锁，第一次开交回 `Report`：记忆库开得怎么样、补没补上、读不懂的几条），追加交回 `Appended`（记忆库没写上的说出来，不挡追加）；回合库的墓碑（第二条第 4 款），`RecallIndexes::alive`。还没有人往里写：R-3（中）的工具第一个用。R-2（上）回合索引（第一条第 1 到 8 款）：`miyu-recall` 的 `TurnFeed`、`replay`、`key`；检索库的 `marks`、`apply`、`mark`、`forget`，回合库的登记 `RecallIndexes`（`miyu-store/src/recall/indexes.rs`）；会话的接线 `miyu-session/src/memory.rs`（`Indexed` 每落一批交给它，载入时铺回、补上）；核心一份登记，删会话时拿掉（`miyu-endpoint/src/sessions/delete.rs`）。
 
@@ -311,7 +311,7 @@
 4. **给出去**：`memory.list`、`memory.search` 的一条多 `used`（用到几次，没用过的是 0）、`used_at`（最近一次的时刻，没用过的是 `null`）。「最近想起的」「从没用过的」头照它排，核心不另给方法。
 5. **不做**（2026-10-11 项目主人定，原来的第八条）：照多久没用到（半衰期 30 天）、用到几次、类算分；分低的不自动想起；联想的疲劳（第四条第 8 款）。为什么：有了摘要以后常驻那一块是摘要加新记的（第三条第 2 款），排名几乎用不上；联想一段上下文里不重复带；照时间衰减反而让久没提的细节不再自动想起，没有实测证明需要。真用出问题再开（例如常驻那一块常常放不下、她老想起不相干的旧事），起点照原来的几个数。
 
-**九、谁在听**（R-3 起；R-13 上照「记忆只有一份」重写，2026-10-11 项目主人定，`docs/reviews/2026-10-11-群聊里的记忆.md`；R-29 照「记忆是一个整体」再改，2026-10-21 项目主人定）
+**九、谁在听**（R-3 起；R-13 上照「记忆只有一份」重写，2026-10-11 项目主人定，《群聊里的记忆》（2026-10-11）；R-29 照「记忆是一个整体」再改，2026-10-21 项目主人定）
 
 1. **记忆只有一份，AI 的记忆是一个整体，就像人类一样**（2026-10-21 项目主人原话）：一个人格一间（`Room::persona`），终端、群、QQ 私聊的会话都记进同一间，在哪儿都想得起全部。不问「这一条算谁的」「谁问才给」「私聊里的进不进群」；说不说全凭她自己，不另加规矩（2026-10-21 项目主人：「什么都不加」）。
 2. **谁在听**（`Listener`，`memory/listener.rs`）只管记下时写什么：没关在沙盒里的会话（本机的会话、主人自己的 QQ 私聊、人经协议碰记忆）是主人；关着的场所会话（群、别人的私聊）是这个场所（会话的 `venue`）。照 `session.created` 的 `confined` 认；中途换人格照原来的接着听。
@@ -428,7 +428,7 @@
 ### 出处
 
 - `17-记忆.md`（L1 到 L7，以及 2026-10-07 补的决定）。
-- `docs/reviews/2026-10-07-记忆知识库embedding调研.md`：旧版的实测和坑（第一节）、别家的做法（第二、七节）、拍板（第八节、第九节末尾）。
+- 《记忆知识库embedding调研》（2026-10-07）：旧版的实测和坑（第一节）、别家的做法（第二、七节）、拍板（第八节、第九节末尾）。
 - `18-通讯平台.md` 第八节、第十五节：支线照主线召回、群里的听众。
 
 ### 还没有的

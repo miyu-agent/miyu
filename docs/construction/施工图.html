@@ -1572,6 +1572,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC16"><span class="n">DOC-16</span>快速上手跟上新稿<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC17"><span class="n">DOC-17</span>权限页跟上只有整个数据根才问<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC18"><span class="n">DOC-18</span>迁移页跟上迁移包的审计修复<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sDOC19"><span class="n">DOC-19</span>清掉调研记录和旧性能数据<span class="st">…</span></a></li>
         <li><a class="step review" href="#sHLP1"><span class="n">HLP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
@@ -61271,6 +61272,55 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/DOC-18-迁移页跟审计修复.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sDOC19" aria-labelledby="h-sDOC19">
+  <div class="sheet-head"><h2 id="h-sDOC19"><span class="no">DOC-19</span>清掉调研记录和旧性能数据，截图目录挪到顶层</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">项目主人定整理文档：docs 里没用的清掉。这是头一步，只做不用等空档的：删调研记录和旧性能数据，截图目录挪到顶层。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">docs　assets　xtask · perf.rs　miyu-perf · args.rs　.github · ci.yml</span><span class="dir-note">DOC-19</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>删 docs/reviews（调研、走查记录 18 个文件）和 docs/perf（10 月的性能数据 34 个文件）</li>
+              <li>量尺的结果不再入库：cargo xtask perf 改成写到 target 下的 perf-out/</li>
+              <li>docs/assets 挪到顶层 assets/，两份根 README 的图片路径跟着改</li>
+              <li>指到调研记录的 30 多处改成只写名字和日期；CI 的路径规则、两份总目录跟着改</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">量尺、对比测试的结果不入库，写在 target 下面</span><span class="rl">蓝图 perf.md</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DOC-19</dd></div>
+        <div><dt>名称</dt><dd>清掉调研记录和旧性能数据，截图目录挪到顶层</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">DOC-19</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>全仓库（不算施工单）搜不到 docs/reviews、docs/perf、docs/assets</span></li>
+        <li><span class="ok">✓</span><span>门禁全过；两份根 README 的图片都指得到</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/DOC-19-清掉调研和旧性能数据.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>
