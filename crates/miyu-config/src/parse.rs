@@ -3,7 +3,8 @@
 //!
 //! - TOML 写法不对：整份的问题 `syntax`，行、列照 `toml_edit` 报的位置，为什么只取它的原话，不带它印出来的那一行
 //!   原文（原文可能很长，密钥文件里更不能印）。
-//! - 不在清单里的键：`unknown_key`，警告，原样留在文件里，不进最终值；拼错的给出离得最近的键名。以前登记过、后来拆掉的键
+//! - 不在清单里的键：`unknown_key`，警告，原样留在文件里，不进最终值；拼错的给出离得最近的键名。不认识的一张表往里走、一项
+//!   一条；值写成行内表的（`key = { secret = … }`）是一个值，报这个键一次、不往里钻（施工 AUD-6）。以前登记过、后来拆掉的键
 //!   （`loading.tools.<name>` 这些）也是不认识的键，照样报（施工 AUD-2：还没发版，不留「退役的键不报」那张表）。
 //! - 一组键（`ui`）下面写成了一个值：`wrong_type`，期望一张表。
 //! - 这一层不能写的：`wrong_layer`；值写得对的照样记下来（不算），`miyu config explain` 列得出它。
@@ -96,6 +97,11 @@ pub fn why(message: &str) -> String {
         .to_string()
 }
 
+/// 这一格的值是一张行内表（`key = { … }`）：写在一行里的一个值，不是表头、点号连着写出来的那种表。
+fn inline(node: &Node) -> bool {
+    node.as_value().is_some_and(TomlValue::is_inline_table)
+}
+
 /// 读的时候手里的几样。
 struct Reader<'a> {
     items: &'a [Item],
@@ -164,8 +170,9 @@ impl Reader<'_> {
             problem.name = Some(path[last].clone());
             problem.why = Some(placeholder.to_string());
             self.parsed.problems.push(problem);
-        } else if let Some(table) = node.as_table_like() {
+        } else if let Some(table) = node.as_table_like().filter(|_| !inline(node)) {
             // 不认识的一张表：往里走，每一项照整个键报，离得最近的键名才找得准（`uii.language` 找得到 `ui.language`）。
+            // 行内表不算（施工 AUD-6）：它是写在一行里的一个值（引用密钥、环境变量就这样写），落到下面当一个值报这个键一次。
             self.table(table, path, inner(table));
         } else {
             let raw = self.raw(node, key);

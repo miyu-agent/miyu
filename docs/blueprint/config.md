@@ -22,7 +22,7 @@
 | `crates/miyu-config/src/list.rs` | 查清单写得对不对：键不重复、不互为前缀、合写法，默认值过自己的校验，选项至少两个 | 8-1 |
 | `crates/miyu-config/src/words.rs` | 给人看的字：`Words`（读资源的那一层实现）、资源里 `config` 那一格的样子 `ConfigWords`、查它和清单对不对得上；几个里的一个怎么连（「a、b 或 c」）、一项说明后面那几句 | 8-1 |
 | `crates/miyu-config/src/schema.rs`、`reference.rs` | 生成 JSON Schema、参考文件 | 8-1 |
-| `crates/miyu-config/src/parse.rs` | 读一份配置的字：解析 TOML，记下每一项在第几行，照清单查类型、层；写错的那一项报问题、不收，不认识的键报警告 | 8-2 |
+| `crates/miyu-config/src/parse.rs` | 读一份配置的字：解析 TOML，记下每一项在第几行，照清单查类型、层；写错的那一项报问题、不收，不认识的键报警告（如果不认识的是一张表，就逐层进入，每一项报一条；如果值写成行内表 `key = { … }`，就把它当成一个值，只报这个键一次，施工 AUD-6） | 8-2 |
 | `crates/miyu-config/src/merge.rs` | 分层合出最终值和来源（`Origin`）。项目配置只认信任过的、收紧的；环境变量最后盖上；一项在它那一层下面合出来的（`below`，报错的「现在照什么用着」）；每一层写的（`explain`） | 8-2 |
 | `crates/miyu-config/src/problem.rs`、`problem/tell.rs` | 报错：原因码、行列、收到的原文、离得最近的键名（`problem.rs`）；照一种语言说成话：期望、改法、现在照什么用着（`tell.rs`） | 8-2 |
 | `crates/miyu-config/src/edit.rs` | 改一项、删一项：照 `toml_edit` 记下的位置只换那一段字，别的字节一个不变；新文件第一行 `#:schema`；人敲的字、协议上 JSON 的值照类型读（`input`、`from_json`） | 8-3 |
