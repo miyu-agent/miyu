@@ -110,9 +110,12 @@ type Native = notify::ReadDirectoryChangesWatcher;
 ))]
 type Native = notify::KqueueWatcher;
 
-/// 盯着的：清单（照真实路径写的，见 [`resolve`]）、真在盯的目录（照清单算出来的，见 [`plan`]）。
+/// 盯着的：清单原样（`wanted`）、照它算的真实路径（`targets`，见 [`resolve`]）、真在盯的目录（照真实路径算出来的，见
+/// [`plan`]）。原样的那一份留着（审计 #022 第 1 条，施工 AU-P1）：清单里是链接的，改指别处以后照它重算真实路径；原来一开始就
+/// 换成了真实路径，重算的还是旧的那一张。
 struct State {
     watcher: Native,
+    wanted: Vec<PathBuf>,
     targets: Vec<PathBuf>,
     armed: BTreeMap<PathBuf, RecursiveMode>,
 }
@@ -141,6 +144,7 @@ impl Watch {
     pub fn set(&self, targets: Vec<PathBuf>) -> io::Result<()> {
         let mut state = self.state.lock().map_err(|_| poisoned())?;
         state.targets = targets.iter().map(|t| resolve(t)).collect();
+        state.wanted = targets;
         rearm(&mut state)
     }
 }
@@ -178,6 +182,7 @@ fn start_native(targets: Vec<PathBuf>, changed: impl Fn() + Send + 'static) -> i
     let state = Arc::new(Mutex::new(State {
         watcher,
         targets: targets.iter().map(|t| resolve(t)).collect(),
+        wanted: targets,
         armed: BTreeMap::new(),
     }));
     {
@@ -215,8 +220,8 @@ fn listen(
         }
         let Some(state) = state.upgrade() else { return };
         if let Ok(mut s) = state.lock() {
-            // 链接换了指向的，真实路径跟着变
-            s.targets = s.targets.iter().map(|t| resolve(t)).collect();
+            // 链接换了指向的，照清单原样重算，真实路径跟着变
+            s.targets = s.wanted.iter().map(|t| resolve(t)).collect();
             // 全部放掉重盯：换成了别的文件（先写临时文件再改名）、删了再建的，系统盯的还是原来那一个；盯不了的（删了）不算错
             let armed: Vec<PathBuf> = s.armed.keys().cloned().collect();
             for path in armed {

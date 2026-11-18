@@ -166,7 +166,9 @@ fn clean(name: &str) -> String {
     let stem: String = stem.chars().take(room).collect();
     let stem = stem.trim_end_matches([' ', '.']);
     let reserved = ["CON", "PRN", "AUX", "NUL"];
-    let upper = stem.to_ascii_uppercase();
+    // Windows 照第一个点以前认设备名（审计 #021 第 2 条，施工 AU-P1）：`CON.tar.gz` 也是 `CON`。
+    let device = stem.split('.').next().unwrap_or(stem).trim_end_matches(' ');
+    let upper = device.to_ascii_uppercase();
     let numbered = (upper.starts_with("COM") || upper.starts_with("LPT"))
         && upper.len() == 4
         && upper.as_bytes()[3].is_ascii_digit();

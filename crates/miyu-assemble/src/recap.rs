@@ -81,7 +81,8 @@ fn exchanges(history: &History, texts: &Texts, turns: usize) -> Option<Vec<Excha
 
 /// 同 [`exchanges`]，照交进来的几段数（施工 TT-1：重起标题的请求先去掉没走完的那一轮的回答，`title.rs`）。
 pub(crate) fn exchanges_of(entries: &[Entry], turns: usize) -> Option<Vec<Exchange>> {
-    if !entries.iter().any(|entry| entry.assistant) {
+    // 最多 0 轮的什么都不取（审计 #032，施工 AU-P1）：下面先数了一轮再比，数到的永远不等于 0。
+    if turns == 0 || !entries.iter().any(|entry| entry.assistant) {
         return None;
     }
     let mut exchanges = Vec::new();

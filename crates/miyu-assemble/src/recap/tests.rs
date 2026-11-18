@@ -340,3 +340,14 @@ fn the_recap_request_keeps_its_bytes() {
         r#"{"tools":[],"system":"","messages":[{"role":"user","blocks":[{"type":"text","text":"<recap>\nU: 看看 src\n\nA: src 下有两个文件。\n\nU: 再看看 tests\n\nA: tests 下有一个。"}]}],"stable":0}"#
     );
 }
+
+/// 审计 #032（施工 AU-P1）：最多 0 轮的什么都不取。修以前先数了一轮再比，数到的永远不等于 0，整场会话一轮不落全取了。
+#[test]
+fn zero_turns_take_nothing() {
+    let mut log = Log::new();
+    turn(&mut log, "一", "答一");
+    turn(&mut log, "二", "答二");
+    let entries = entries(log.history(), &texts());
+    assert!(exchanges_of(&entries, 0).is_none());
+    assert_eq!(exchanges_of(&entries, 1).map(|turns| turns.len()), Some(1));
+}

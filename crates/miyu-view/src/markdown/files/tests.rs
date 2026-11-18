@@ -18,6 +18,11 @@ fn names_are_safe_on_every_platform() {
         ("a<b>:c\"d|e?f*.md", "a_b__c_d_e_f_.md"),
         ("  .hidden.  ", "hidden"),
         ("CON.txt", "_CON.txt"),
+        // 审计 #021 第 2 条（施工 AU-P1）：Windows 照第一个点以前认设备名，几个点的也是。
+        ("CON.tar.gz", "_CON.tar.gz"),
+        ("nul.a.b", "_nul.a.b"),
+        ("Com3.x.y", "_Com3.x.y"),
+        ("CONNECT.tar.gz", "CONNECT.tar.gz"),
         ("lpt1", "_lpt1"),
         ("COMMON.txt", "COMMON.txt"),
         ("tab\there.png", "tab_here.png"),

@@ -59,24 +59,26 @@ pub(super) fn quote(text: &str) -> String {
 }
 
 /// 一段正文原样：没合上的代码块在末尾替它合上，后面的标题、旁白才不会被吞进代码块。`in_details` 的（放进折叠块里的）另把
-/// 代码块外面的 `</details` 写成 `&lt;/details`：一行 `</details>` 会把折叠块提前合上。
+/// 代码块外面的 `</details` 写成 `&lt;/details`：一行 `</details>` 会把折叠块提前合上。照这一行真开、真合了代码块认围栏：开头
+/// 三个反引号、后面的字里又有反引号的那一行不是围栏，照普通的一行中和（审计 #021 第 1 条，施工 AU-P1）。
 pub(super) fn prose(text: &str, in_details: bool) -> String {
     let mut out = String::with_capacity(text.len());
     let mut open: Option<(char, usize)> = None;
     for line in text.split_inclusive('\n') {
-        let fence = fence_of(line);
-        match (open, fence) {
+        let fenced = match (open, fence_of(line)) {
             (Some((mark, length)), Some((found, count, rest)))
                 if found == mark && count >= length && rest.trim().is_empty() =>
             {
                 open = None;
+                true
             }
             (None, Some((found, count, rest))) if found == '~' || !rest.contains('`') => {
                 open = Some((found, count));
+                true
             }
-            _ => {}
-        }
-        if in_details && open.is_none() && fence.is_none() {
+            _ => false,
+        };
+        if in_details && open.is_none() && !fenced {
             out.push_str(&escape_details(line));
         } else {
             out.push_str(line);
@@ -190,3 +192,6 @@ pub(super) fn head_and_tail(text: &str, most: usize) -> Cow<'_, str> {
         &text[tail..]
     ))
 }
+
+#[cfg(test)]
+mod tests;

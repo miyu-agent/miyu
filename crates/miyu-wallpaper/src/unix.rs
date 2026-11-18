@@ -51,11 +51,19 @@ pub fn sources() -> Vec<(&'static str, Ask)> {
     out
 }
 
-/// 配置目录：`$XDG_CONFIG_HOME`，没设的 `~/.config`。
+/// 配置目录：`$XDG_CONFIG_HOME`，没设的、设成空的（XDG 的规矩，同 `watch.rs`；审计 #022 第 2 条，施工 AU-P1）`~/.config`。
 fn config_dir() -> Option<PathBuf> {
-    std::env::var_os("XDG_CONFIG_HOME")
+    config_dir_from(std::env::var_os("XDG_CONFIG_HOME"), home())
+}
+
+/// 同 [`config_dir`]，`XDG_CONFIG_HOME` 的值是 `xdg`、家目录是 `home`。
+pub(crate) fn config_dir_from(
+    xdg: Option<std::ffi::OsString>,
+    home: Option<PathBuf>,
+) -> Option<PathBuf> {
+    xdg.filter(|v| !v.is_empty())
         .map(PathBuf::from)
-        .or_else(|| home().map(|h| h.join(".config")))
+        .or_else(|| home.map(|h| h.join(".config")))
 }
 
 /// XFCE：`xfce4-desktop.xml` 里的 `last-image`。

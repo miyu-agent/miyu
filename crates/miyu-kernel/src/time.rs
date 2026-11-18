@@ -170,7 +170,8 @@ impl Timestamp {
     }
 
     /// `offset` 那个时区的某年某月某日某时某分，换回时刻（施工 6-4，`history` 读 `since`、`until`）。日期不存在的、
-    /// 钟点不在 0:00 到 23:59 之间的、出了 0000 年到 9999 年的，没有。
+    /// 钟点不在 0:00 到 23:59 之间的、出了 0000 年到 9999 年的，没有。年份先挡，再拿去乘（审计 #023，施工 AU-P1：原来大得离谱的
+    /// 年份乘法溢出，debug 下 panic、release 下绕回去）。
     pub fn from_local(
         year: i64,
         month: i64,
@@ -179,7 +180,8 @@ impl Timestamp {
         minute: i64,
         offset: UtcOffset,
     ) -> Option<Timestamp> {
-        let exists = (1..=12).contains(&month)
+        let exists = (0..=9999).contains(&year)
+            && (1..=12).contains(&month)
             && (1..=days_in_month(year, month)).contains(&day)
             && (0..24).contains(&hour)
             && (0..60).contains(&minute);

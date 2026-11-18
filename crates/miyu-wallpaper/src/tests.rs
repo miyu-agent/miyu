@@ -402,3 +402,67 @@ fn macos_aerials_take_the_most_used_one_that_has_a_thumbnail() {
     assert_eq!(pick_aerial(&ids, |_| false), None);
     assert!(macos_aerial_ids("<key>Configuration</key><data>!!!</data>").is_empty());
 }
+
+/// 审计 #022 第 2 条（施工 AU-P1）：`XDG_CONFIG_HOME` 设成空的照没设算（XDG 的规矩，`watch.rs` 也这样认），不当成相对的空路径。
+#[cfg(all(unix, not(target_os = "macos")))]
+#[test]
+fn an_empty_xdg_config_home_means_the_default() {
+    let home = PathBuf::from("/home/someone");
+    assert_eq!(
+        crate::unix::config_dir_from(Some("".into()), Some(home.clone())),
+        Some(home.join(".config"))
+    );
+    assert_eq!(
+        crate::unix::config_dir_from(Some("/x/conf".into()), Some(home.clone())),
+        Some(PathBuf::from("/x/conf"))
+    );
+    assert_eq!(
+        crate::unix::config_dir_from(None, Some(home.clone())),
+        Some(home.join(".config"))
+    );
+}
+
+/// 审计 #022 第 1 条（施工 AU-P1）：清单里是链接的（`~/wall.png` 指到 `a/a.png`），盯的照真实位置，但清单记着链接本身：链接改
+/// 指 `b/b.png` 以后，下一次有动静（这里是清单里别的文件改了）重算真实位置、改盯 `b/b.png`，之后它变了照样叫。修以前清单一开始
+/// 就换成了真实位置，重算的还是 `a/a.png`，`b/b.png` 怎么改都不叫。
+#[cfg(unix)]
+#[test]
+fn a_linked_target_follows_where_the_link_points_now() -> std::io::Result<()> {
+    use std::sync::mpsc;
+    use std::time::Duration;
+    let root = watch_root("link")?;
+    std::fs::create_dir_all(root.join("a"))?;
+    std::fs::create_dir_all(root.join("b"))?;
+    std::fs::write(root.join("a/a.png"), "a")?;
+    std::fs::write(root.join("b/b.png"), "b")?;
+    let link = root.join("wall.png");
+    std::os::unix::fs::symlink(root.join("a/a.png"), &link)?;
+    let config = root.join("config.ini");
+    std::fs::write(&config, "1")?;
+    let (tx, rx) = mpsc::channel();
+    let watch = crate::watch::Watch::start(vec![link.clone(), config.clone()], move || {
+        let _sent = tx.send(());
+    })?;
+    let settle = || {
+        std::thread::sleep(Duration::from_millis(700));
+        while rx.try_recv().is_ok() {}
+    };
+    // 改指向：先建新链接再改名盖上（`ln -sfn` 的做法）。
+    let fresh = root.join("wall.png.new");
+    std::os::unix::fs::symlink(root.join("b/b.png"), &fresh)?;
+    std::fs::rename(&fresh, &link)?;
+    std::fs::write(&config, "2")?;
+    assert!(
+        rx.recv_timeout(Duration::from_secs(10)).is_ok(),
+        "清单里的文件改了：该叫"
+    );
+    settle();
+    std::fs::write(root.join("b/b.png"), "b2")?;
+    assert!(
+        rx.recv_timeout(Duration::from_secs(10)).is_ok(),
+        "链接现在指着的那一张变了：该叫"
+    );
+    drop(watch);
+    std::fs::remove_dir_all(&root)?;
+    Ok(())
+}

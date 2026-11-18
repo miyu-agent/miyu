@@ -65,7 +65,7 @@ pub(crate) fn keep(
                 std::thread::sleep(std::time::Duration::from_millis(300));
             }
             let text = catalog.digest(&of);
-            let temp = cache.join(format!("{FILE}.{}.tmp", std::process::id()));
+            let temp = cache.join(temp_name());
             let written = std::fs::create_dir_all(&cache)
                 .and_then(|()| std::fs::write(&temp, text))
                 .and_then(|()| std::fs::rename(&temp, cache.join(FILE)));
@@ -75,3 +75,14 @@ pub(crate) fn keep(
         })
         .ok()
 }
+
+/// 先写到旁边的那个文件的名字：进程号加一个进程内的计数（审计 #031 第 3 条，施工 AU-P1）。目录刷了两次、两个写盘的线程
+/// 同时在写的，各写各的，不往同一个文件里交替写、再把写了一半的换过去。
+fn temp_name() -> String {
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    format!("{FILE}.{}.{n}.tmp", std::process::id())
+}
+
+#[cfg(test)]
+mod tests;

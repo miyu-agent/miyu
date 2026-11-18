@@ -239,6 +239,12 @@ fn a_local_date_and_time_turns_back_into_the_moment() {
     assert_eq!(back(2026, 9, 29, 24, 0, 0), None);
     assert_eq!(back(2026, 9, 29, 12, 60, 0), None);
     assert_eq!(back(10_000, 1, 1, 0, 0, 0), None);
+    // 审计 #023（施工 AU-P1）：出了 0000 到 9999 年的先挡掉，不拿去乘（修以前 debug 下乘法溢出 panic、release 下绕回去）。
+    assert_eq!(back(300_000_000, 1, 1, 0, 0, 0), None);
+    assert_eq!(back(i64::MAX, 1, 1, 0, 0, 0), None);
+    assert_eq!(back(i64::MIN, 12, 31, 23, 59, 0), None);
+    assert_eq!(back(-1, 1, 1, 0, 0, 0), None);
+    assert_eq!(back(0, 1, 1, 0, 0, 0), Some(at("0000-01-01T00:00:00.000Z")));
     // 写回去一样。
     let t = Timestamp::from_local(2026, 9, 29, 14, 3, offset(540)).unwrap();
     assert_eq!(t.local_minute(offset(540)), "2026-09-29 14:03");
