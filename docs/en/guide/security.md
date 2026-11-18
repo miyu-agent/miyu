@@ -125,7 +125,7 @@ When you connect the AI to group chats on a chat platform, the recommended setti
 
 1. Sessions in a group are already locked down, so you do not need to set permissions separately.
 2. Give the group a tightened preset and choose it under `Group defaults` on the im backstage page: turn off persona memory, turn off `kb_save`, `kb_edit` and `kb_delete`, and keep only the tools the group needs.
-3. In `Who you are`, enter only your own account.
+3. In `Settings → Bind → Your platform IDs` on the dashboard page, enter only your own account.
 4. By default, groups and people not on the lists are only recorded and not replied to; do not casually turn on `Reply` for `Other groups` or `Other private chats`.
 5. If NapCat and im are on the same computer, change the connection's listen address to `127.0.0.1`. The default is `0.0.0.0`, where only the token keeps others out.
 6. If you have internal domain names, put them in `net.internal_domains`, so that the AI does not visit them when someone has it fetch a page.

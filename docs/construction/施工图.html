@@ -1575,6 +1575,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC19"><span class="n">DOC-19</span>清掉调研记录和旧性能数据<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC20"><span class="n">DOC-20</span>文档的写法定成规矩，逐页改写<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC21"><span class="n">DOC-21</span>跟上旧版终端集成的处理<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sDOC22"><span class="n">DOC-22</span>界面原文对字表核一遍<span class="st">…</span></a></li>
         <li><a class="step review" href="#sHLP1"><span class="n">HLP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
@@ -61421,6 +61422,55 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/DOC-21-旧版终端集成.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sDOC22" aria-labelledby="h-sDOC22">
+  <div class="sheet-head"><h2 id="h-sDOC22"><span class="no">DOC-22</span>手册里引的界面文字、程序输出对各仓库现在的字表核一遍</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">手册里引的界面文字、程序输出有一千三百多处，程序改了字、手册没跟上的会过时。把各组件仓库最新的字表导出来，逐句核对，对不上的照现在的字改。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">docs/zh　docs/en（26 个文件）</span><span class="dir-note">DOC-22</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>写三个脚本：导出各仓库的字表和源码、到里面找手册引的每一句、给找不到的列出最像的原文；找不到的 170 来处逐条人工看</li>
+              <li>改掉十几组旧引用：不支持该系统、首次引导和形象开关的名字、局域网访问、输出样式、确认框按钮、应急模式输入框上的字等，中英一起</li>
+              <li>两处不是程序原话的不再当原话引；安全页一处指的是小节名，换成界面上那一项的名字</li>
+              <li>应急修复页跟上精简版现在的命令行：provider import、doctor 已经没有了，改成在配置界面里导入</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">界面文字和报错照程序实际显示的抄；发版前拿手册对各仓库的字表重核一遍</span><span class="rl">AGENTS.md「文档的规矩」第 14 条</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DOC-22</dd></div>
+        <div><dt>名称</dt><dd>手册里引的界面文字、程序输出对各仓库现在的字表核一遍</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">DOC-22</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>每一条都在对应仓库 origin/main 的字表、清单或源码里看到现在的写法再改</span></li>
+        <li><span class="ok">✓</span><span>改完重跑扫描，剩下找不到的都是示例值、前缀、命令示例</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/DOC-22-界面原文对字表.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

@@ -16,7 +16,7 @@
 - 迁移没有「先看看、不动手」的模式。动手之前，它会检查旧版有没有停止、磁盘空间够不够；只要有一项不满足，就什么都不写。
 - 迁移可以重新运行。已经迁移过的内容不会多出一份，详细的见下面的「重新运行和中途失败」。
 
-迁移支持 Linux x86_64、macOS（M 系列）和 Windows x86_64。Linux aarch64 上没有这个软件包，运行 `miyu pkg install migrate` 会报 `不支持本机的系统`。
+迁移支持 Linux x86_64、macOS（M 系列）和 Windows x86_64。Linux aarch64 上没有这个软件包，运行 `miyu pkg install migrate` 会报 `不支持该系统。`。
 
 ## 步骤
 

@@ -16,7 +16,7 @@ Before migrating, be aware of the following:
 - Migration has no "look first, change nothing" mode. Before it changes anything, it checks whether the old version has stopped and whether there is enough disk space; if either is not met, it writes nothing.
 - Migration can be run again. What was already migrated is not duplicated; for details, see "Running again and failures part-way" below.
 
-Migration is supported on Linux x86_64, macOS (M series) and Windows x86_64. There is no such package for Linux aarch64, and running `miyu pkg install migrate` there reports `Not available for this system.`
+Migration is supported on Linux x86_64, macOS (M series) and Windows x86_64. There is no such package for Linux aarch64, and running `miyu pkg install migrate` there reports `Not supported on this system.`
 
 ## Steps
 

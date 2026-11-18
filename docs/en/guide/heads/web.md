@@ -249,7 +249,7 @@ When the AI needs you to confirm something or asks you a question, the whole inp
 
 Confirmation: the first line says what the AI wants to do (for example `Run command`, `Write N file(s)`, `Install or remove a package`), and protected commands are marked `Dangerous command`. Below are two choices:
 
-1. `Allow this time`
+1. `Allow once`
 2. `Don't allow`: you can write a sentence under `Reason (optional)`, and the AI sees it.
 
 Press `↑` `↓` to choose and `Enter` to confirm. If there is a timeout, it shows `Auto-deny in …`.
@@ -275,7 +275,7 @@ A project groups sessions together and gives the new sessions in the group a pre
    | Workspace folder | Sessions created in the project work in this folder; if you do not choose one, it is `Default workspace`. |
    | Persona, Preset | Choosing `Default` uses the default from Settings. |
    | Extra instructions | Every session in this project gets these instructions, at most 8000 characters. |
-   | Messages | The switch `Can message sessions outside this project`, off by default. |
+   | Messages | The switch `Can message sessions outside the project`, off by default. |
 
 3. Click `Create`.
 
@@ -337,7 +337,7 @@ The last section of `Packages` on the settings page, `Web`, lists the web interf
 
 The appearance settings sit at the top of `General` on the settings page, in two groups:
 
-- Theme: the `Mascot` row picks `None`, `Deniro`, or a mascot that comes with an appearance package. When other themes are installed, an extra `Theme` row appears, a drop-down for shapes and materials (rounded corners, shadows, borders, fonts); the shipped one is `Default theme`. When another timeline or answer style is turned on, an extra `AI output style` row appears.
+- Theme: the `Mascot` row picks `None`, `Deniro`, or a mascot that comes with an appearance package. When other themes are installed, an extra `Theme` row appears, a drop-down for shapes and materials (rounded corners, shadows, borders, fonts); the shipped one is `Default theme`. When another timeline or answer style is turned on, an extra `Output style` row appears.
 - Color scheme: `Mode` picks `Follow system`, `Light` or `Dark`; below it, each card is one color scheme; `Main color` picks from candidate colors.
 
 The shipped color schemes are:
@@ -372,7 +372,7 @@ Pages opened on this computer with `miyu web`, or by opening `http://127.0.0.1:<
 
 The access settings are in the `Access` card at the very bottom of `General` on the settings page (`miyu web --settings access` goes straight there):
 
-- The `Allow local network access` switch, with `On` or `This computer only` next to it. If you turn it on before setting an access password, `Set an access password` pops up first; set the password and click `Set and turn on`.
+- The `Local network access` switch, with `On` or `This computer only` next to it. If you turn it on before setting an access password, `Set an access password` pops up first; set the password and click `Set and turn on`.
 - While the switch is on, there are a few more rows below it:
   - `Listen address and port`: `0.0.0.0` means every address of this computer, and you can also enter just one of them. The port is used both on this computer and on the LAN. When you change it, the web interface moves over on the spot; when the port changes, it says `The port is now …; this page stays connected`.
   - `Access password`: click `Set` or `Change`. Changing it from another device first asks for the `Current access password`.
@@ -385,7 +385,7 @@ The sign-in page on other devices is `Sign in to Miyu`: enter the access passwor
 The following work only on the computer where Miyu is installed, and are not available on other devices:
 
 - Choosing files with `@`, and choosing a working directory for a session or project.
-- Buttons such as `Open folder`, which copy the path instead on other devices.
+- Buttons that open a folder, which copy the path instead on other devices.
 - The `Follow wallpaper` color scheme.
 - Files over the attachment limits that are handed over as paths only.
 - Attaching folders to the knowledge base, and adding MCP servers that run local commands.

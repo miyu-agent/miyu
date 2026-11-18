@@ -75,7 +75,7 @@ LiteMiyu 能识别的参数有三个，写了的参数会覆盖环境变量：`-
 - AI 只有五个工具：`read`、`write`、`edit`、`shell`、`jobs`。没有联网、子代理、记忆、技能和 MCP。
 - AI 没有关于 Miyu 的专门说明，所以要修什么、文件在哪里，需要你在第一句话里说清楚。
 - 没有可以切换的权限级别，文件和命令都会直接执行，Miyu 的数据根也可以修改。危险命令的识别方式和 Miyu 相同（见 [权限和沙盒](permissions.md#要确认的命令)）：会被直接拒绝的那几类照样拒绝；需要确认的那几类会先问你，只能选择允许这一次或者拒绝，没有开关可以调整。
-- 输入框上边框的右侧显示 `应急 · 不落盘`。命令列表里没有 `/sessions`、`/config`、`/loop`、`/model`、`/effort`；`Ctrl+G` 的外部编辑器无法使用。
+- 输入框上边框的右侧显示 `应急模式`。命令列表里没有 `/sessions`、`/config`、`/loop`、`/model`、`/effort`；`Ctrl+G` 的外部编辑器无法使用。
 
 ## 修复示例
 
@@ -87,7 +87,7 @@ LiteMiyu 能识别的参数有三个，写了的参数会覆盖环境变量：`-
    miyu rescue
    ```
 
-   屏幕会切换到 LiteMiyu 的全屏界面，输入框上显示 `应急 · 不落盘`。
+   屏幕会切换到 LiteMiyu 的全屏界面，输入框上显示 `应急模式`。
 
 2. 把情况告诉 AI，例如：
 
@@ -114,7 +114,7 @@ LITEMIYU_RESCUE_API_KEY=sk-example miyu rescue --base-url https://api.deepseek.c
 
 没有写 `--api` 时按 `openai-chat` 处理。没有提供 key 时照样会进入界面，界面上会提示 `没给 key（LITEMIYU_RESCUE_API_KEY），请求不带认证`。
 
-如果想以后不用手动输入这些：趁 Miyu 还正常的时候，运行一次 `litemiyu provider import`，把 Miyu 的供应商、key 和默认模型导入 LiteMiyu 自己的配置即可。
+如果想以后不用手动输入这些：趁 Miyu 还正常的时候，运行 `litemiyu config` 打开配置界面，在添加供应商的地方选择 `从 Miyu 导入…`，把 Miyu 的供应商和 key 导入 LiteMiyu 自己的配置，再选好主对话的模型即可。环境变量和参数都没有提供模型时，应急模式会使用 LiteMiyu 自己配置里的模型。
 
 如果 `miyu` 这个程序本身坏了、无法运行，可以直接运行 `litemiyu --rescue`，模型按照上面的方法通过环境变量和参数提供。
 
@@ -154,13 +154,13 @@ miyu: 未找到 litemiyu
 litemiyu            # 开对话
 litemiyu -c         # 打开最近的会话
 litemiyu config     # 进配置界面
-litemiyu doctor     # 自检：配置、模型、目录、Miyu、终端
+litemiyu ask "…"    # 说一句话并输出回答，不进入全屏界面
 ```
 
 - 第一次运行时会先进入引导：接入一家供应商（如果电脑上装有 Miyu，`从 Miyu 导入…` 会排在最前面）、选择主对话使用的模型、选择按键模式和明暗主题。
 - 按键：`Enter` 发送，`Alt+Enter` 或 `Ctrl+J` 换行，`@` 补全文件路径，`Ctrl+C` 在 AI 回答时打断，`Ctrl+D` 在输入框为空时退出。输入 `/help` 可以查看全部按键和命令。
-- `litemiyu doctor` 检查出任何一项有问题时，退出码是 `1`。如果它报告找得到 Miyu、能导入几家供应商，就可以使用 `litemiyu provider import`。
-- 每条命令都有 `--help`，例如 `litemiyu provider --help`。
+- 供应商、模型和会话都在全屏界面里管理（`/config`、`/sessions` 等命令），命令行里只有上面这几条命令。
+- 每条命令都有 `--help`，例如 `litemiyu ask --help`。
 
 ## 修复失败时
 

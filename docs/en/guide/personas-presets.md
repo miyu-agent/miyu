@@ -241,6 +241,6 @@ Packages can also provide personas and presets; for how to make them, see [Thing
 
 | What you see | What to do |
 |---|---|
-| You cannot start a new session, and `miyu ask` reports `preset not found`; `miyu check` warns `preset.default names preset …, which doesn't exist yet; it works once the preset is created.` | The default preset was deleted or renamed. Change `preset.default` to a preset that exists, or choose a preset when you start the session |
+| You cannot start a new session, and `miyu ask` reports `preset not found`; `miyu check` warns `preset.default names preset …, which doesn't exist yet; it works once the preset is created` | The default preset was deleted or renamed. Change `preset.default` to a preset that exists, or choose a preset when you start the session |
 | A persona or preset is marked with an error in the list and cannot be chosen | Use `miyu check` to see which line of which file is wrong |
 | When switching persona or preset, it shows `A reply is in progress: stop it or wait for it to finish` | Wait for this turn to finish, or stop it first |

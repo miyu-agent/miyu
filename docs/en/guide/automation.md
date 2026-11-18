@@ -94,7 +94,7 @@ You can stop background commands in the following ways:
 - In the terminal UI's `Background` panel, press `x`; in the web UI, click `Stop`.
 - `/stop` stops all of this session's background commands and subagents.
 
-When the core stops or restarts, all running background commands are stopped and recorded as `stopped when the core restarted`.
+When the core stops or restarts, all running background commands are stopped and recorded as `stopped by core restart`.
 
 ### Limits and defaults
 
@@ -182,7 +182,7 @@ When a schedule comes due, it is handled as follows:
 
 After a schedule runs, you can see the results in these places:
 
-- When a session opened anew each time finishes, the terminal UI and the system tray pop up a system notification, `Scheduled task done` (in the tray, `Scheduled task finished`) or `Scheduled task didn't finish`, and clicking it opens that session. Whether the terminal UI can pop one up depends on the terminal and the system: on Windows, only a terminal that recognizes notification sequences itself, such as WezTerm, can do it, see [Terminal UI](heads/tui.md#notifications). The system tray pops up notifications on all three systems, see [System tray](heads/applet.md#notifications).
+- When a session opened anew each time finishes, the terminal UI and the system tray pop up a system notification, `Scheduled task finished` or `Scheduled task didn't finish`, and clicking it opens that session. Whether the terminal UI can pop one up depends on the terminal and the system: on Windows, only a terminal that recognizes notification sequences itself, such as WezTerm, can do it, see [Terminal UI](heads/tui.md#notifications). The system tray pops up notifications on all three systems, see [System tray](heads/applet.md#notifications).
 - Those sessions are in the session list like any other session, and you can open one to see its timeline.
 - On the web UI's `Scheduled tasks` page, click a task to see its last result; if a run was skipped, the reason is given, for example `The session is gone; the task stopped`.
 
@@ -259,7 +259,7 @@ Loops and schedules are recorded in the same table, and `miyu schedule` lists lo
 
 - A loop runs only in the session where you typed `/loop`, and a session can have only one loop at a time; typing `/loop` again replaces the old loop.
 - When the session is deleted, the loop stops with it.
-- Only sessions whose preset has `Loop tasks` turned on have the `/loop` command; otherwise it answers `No such command`.
+- Only sessions whose preset has `Loop tasks` turned on have the `/loop` command; otherwise it is not in the command list.
 
 Like schedules, loops are run by the core, so the terminal UI or the web UI does not need to stay open; runs missed while the core is stopped are not made up.
 
@@ -339,4 +339,4 @@ To stop everything, you can use:
 | A background command shows `Stopped: output too frequent` | A watched command wrote too many lines. Have the AI use a command like `grep` to keep only the lines worth seeing |
 | A goal stays at `Waiting for reply` | Reply with something, or run `/goal resume` |
 | A goal does not move after the core restarts | Run `/goal resume` |
-| `/loop` answers that there is no such command | This session's preset does not have `Loop tasks` turned on |
+| `/loop` is not in the command list | This session's preset does not have `Loop tasks` turned on |

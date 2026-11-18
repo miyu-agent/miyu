@@ -83,7 +83,7 @@ The welcome page says `Welcome to Miyu` and `Take a minute to set up a model and
 5. Which currency amounts should be shown in: the list has twenty common currencies, and on the last line, `Other…`, you can enter a three-letter currency code. Your choice is written to `usage.currency`, and costs are converted into that currency at recent exchange rates.
 6. Create a persona: you can fill in a name (required), a short description, an avatar, a detailed persona prompt, example dialogs and a roleplay reminder. For the longer fields, press `Enter` to open an editing window, or `Ctrl+G` to write in an external editor; on Windows there is no external editor option, so write in the editing window or paste into it. Choosing `Next` creates the persona and makes it the default persona; choosing `Skip` creates no persona. For details, see [Personas and presets](../personas-presets.md).
 7. Color scheme: choose the mode (auto, dark, light) and the colors (auto, follow the avatar, follow the wallpaper, terminal colors); whichever one you move the cursor to, the interface changes to it at once. If the persona has no avatar, there is an extra field, `Figure`, where you choose whether to show the mascot (`Uses more CPU and slows startup when on`). With follow the avatar or follow the wallpaper there is an extra field, `Accent`. There is also a field `Background`. If you skipped the persona in the previous step, this step is skipped too.
-8. How the AI knows you: this step has three fields, `What language should the AI reply in`, `What should the AI call you` and `More about you (optional)`. All of them are optional, and you can also choose `Skip`.
+8. How the AI knows you: this step has three fields, `Reply language`, `Preferred name` and `Additional details (optional)`. All of them are optional, and you can also choose `Skip`.
 9. Choose a preset: each preset is shown as a block; press Space to see its details, and `Enter` to pick it and make it the default preset. The last block is `Custom`, where you name the preset and tick features yourself.
 10. Turn on the built-in semantic model?: this step appears only if the package source has a semantic model package. Choosing `Yes` downloads and installs it right away; choosing `No` uses keyword search only. For details, see [Memory](../memory.md).
 11. Done: the page shows `Model … · Persona … · Preset …`; press `Enter` to start chatting. The new session that opens right after uses the persona and preset you chose here.
@@ -92,7 +92,7 @@ If you want to change any of these settings later, you can do it on the settings
 
 ## Screen layout
 
-An empty session shows the home page: the input box is in the middle of the screen, with the home page items above it (and an avatar or the mascot if `Show the figure on the home screen` is on). After you send your first message, the screen looks like this:
+An empty session shows the home page: the input box is in the middle of the screen, with the home page items above it (and an avatar or the mascot if `Home screen figure` is on). After you send your first message, the screen looks like this:
 
 ```text
 ┌──────────────────── Main column ────────────────────┐│┌── Sidebar ──┐
@@ -121,7 +121,7 @@ The sidebar is made of the parts below, in this order as shipped:
 
 | Part name | What it shows | What clicking does |
 |---|---|---|
-| `avatar` | The persona's avatar, or the mascot if the persona has none. This part is controlled by `Show the figure in the sidebar` (`tui.mascot_sidebar`, off as shipped); when it is off, a persona's avatar is still shown if it has one | |
+| `avatar` | The persona's avatar, or the mascot if the persona has none. This part is controlled by `Sidebar figure` (`tui.mascot_sidebar`, off as shipped); when it is off, a persona's avatar is still shown if it has one | |
 | `session` | The session name, below it `#short id`, and below that the persona and preset | Clicking the short id copies the full session id |
 | `cwd` | `Workspace`: this session's working directory | |
 | `context` | `Context`: how much is used / how big the window is · percent | |

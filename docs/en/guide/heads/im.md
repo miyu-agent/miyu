@@ -6,7 +6,7 @@ This page explains how to connect Miyu to QQ or Telegram and talk to the AI in p
 
 ## What is Connect Messaging?
 
-The package `im` is called `Connect Messaging` in the interface. It is an extension that keeps running in the background, and it has its own dashboard page (a web page). The `miyu im` command exists only after this package is installed. It can be installed on `linux-x86_64`, `macos-aarch64` and `windows-x86_64`; there is no build for Linux aarch64, and running `miyu pkg install im` there reports `Not available for this system.`.
+The package `im` is called `Connect Messaging` in the interface. It is an extension that keeps running in the background, and it has its own dashboard page (a web page). The `miyu im` command exists only after this package is installed. It can be installed on `linux-x86_64`, `macos-aarch64` and `windows-x86_64`; there is no build for Linux aarch64, and running `miyu pkg install im` there reports `Not supported on this system.`.
 
 | Platform | How it connects | What you need to prepare |
 |---|---|---|

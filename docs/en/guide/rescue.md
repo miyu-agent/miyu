@@ -75,7 +75,7 @@ In the following cases where the variables cannot be filled in, `miyu rescue` fi
 - The AI has only five tools: `read`, `write`, `edit`, `shell` and `jobs`. There is no web access, no subagents, no memory, no skills and no MCP.
 - The AI has no special instructions about Miyu, so you need to say clearly in your first message what to fix and where the files are.
 - There is no permission level to switch; files and commands are acted on directly, and Miyu's data root can be changed too. Dangerous commands are recognized the same way as in Miyu (see [Permissions and sandbox](permissions.md#commands-that-need-confirmation)): the kinds that are refused outright are still refused; the kinds that need confirmation ask you first, and you can only allow this one time or refuse, with no switch to change that.
-- The right side of the input box's top border shows `rescue · nothing saved`. The command list has no `/sessions`, `/config`, `/loop`, `/model` or `/effort`, and the external editor on `Ctrl+G` cannot be used.
+- The right side of the input box's top border shows `rescue mode`. The command list has no `/sessions`, `/config`, `/loop`, `/model` or `/effort`, and the external editor on `Ctrl+G` cannot be used.
 
 ## A repair example
 
@@ -87,7 +87,7 @@ Here is an example of a complete repair: after you edit `~/.miyu/etc/config.toml
    miyu rescue
    ```
 
-   The screen switches to LiteMiyu's full-screen interface, and the input box shows `rescue · nothing saved`.
+   The screen switches to LiteMiyu's full-screen interface, and the input box shows `rescue mode`.
 
 2. Tell the AI what is going on, for example:
 
@@ -114,7 +114,7 @@ LITEMIYU_RESCUE_API_KEY=sk-example miyu rescue --base-url https://api.deepseek.c
 
 When `--api` is not given, `openai-chat` is used. When no key is given, it still enters the interface, and the interface shows `No key given (LITEMIYU_RESCUE_API_KEY); requests go without authentication`.
 
-If you do not want to type these by hand next time: while Miyu is still working, run `litemiyu provider import` once to import Miyu's providers, keys and default model into LiteMiyu's own config.
+If you do not want to type these by hand next time: while Miyu is still working, run `litemiyu config` to open the settings screen, choose `Import from Miyu…` where providers are added to import Miyu's providers and keys into LiteMiyu's own config, and then pick the model for the main conversation. When neither environment variables nor arguments give a model, rescue mode uses the model in LiteMiyu's own config.
 
 If the `miyu` program itself is broken and cannot run, you can run `litemiyu --rescue` directly, and give it the model through environment variables and arguments as described above.
 
@@ -154,13 +154,13 @@ Running it without `--rescue` gives you normal mode, in which sessions and confi
 litemiyu            # start a conversation
 litemiyu -c         # open the most recent session
 litemiyu config     # open the settings screen
-litemiyu doctor     # self-check: config, model, directories, Miyu, terminal
+litemiyu ask "…"    # say one thing and print the answer, without the full-screen interface
 ```
 
 - The first time you run it, it starts with a setup guide: connect a provider (if Miyu is installed on the computer, `Import from Miyu…` is listed first), choose the model for the main conversation, and choose the key mode and a light or dark theme.
 - Keys: `Enter` sends, `Alt+Enter` or `Ctrl+J` starts a new line, `@` completes a file path, `Ctrl+C` interrupts while the AI is answering, and `Ctrl+D` quits when the input box is empty. Type `/help` to see all keys and commands.
-- `litemiyu doctor` exits with code `1` if any item has a problem. If it reports that Miyu can be found and how many providers can be imported, you can use `litemiyu provider import`.
-- Every command has `--help`, for example `litemiyu provider --help`.
+- Providers, models and sessions are all managed in the full-screen interface (commands such as `/config` and `/sessions`); the command line has only the commands above.
+- Every command has `--help`, for example `litemiyu ask --help`.
 
 ## When the repair fails
 

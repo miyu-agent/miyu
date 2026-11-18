@@ -13,7 +13,7 @@ In the paths below, `~/.miyu` is the data root (by default `~/.miyu`, and on Win
 | `render` | Render | The tool `render_image`, and long replies turned into images on chat platforms. | Linux x86_64, macOS (M series), Windows x86_64 |
 | `memes` | Memes | Five `meme_*` tools, a dashboard page and a chat platform plugin. | Linux x86_64, macOS (M series), Windows x86_64 |
 
-On a system not listed in the table, installing reports `Not available for this system`.
+On a system not listed in the table, installing reports `Not supported on this system.`.
 
 ## Built-in semantic model (embed)
 

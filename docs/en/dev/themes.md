@@ -230,7 +230,7 @@ model = "mascot.json"
 
 - `model` is a JSON object of at most 256 KiB, laid over the mascot built into the terminal, which is defined in `resources/mascot.json` in the terminal repository. Every field may be left out. The fields you can write are `cols`, `rows`, `radius`, `center_row`, `ramp`, `light`, `ambient`, `shapes`, `face`, `mouth`, `idle`, `gaze` and `colors`; `face`, `mouth`, `idle` and `gaze` are laid over field by field, and the others are replaced whole. If the file has any other field, or goes over a limit (`cols` 1 to 36, `rows` 1 to 18, `shapes` 1 to 32 entries), it is not used at all, and the terminal shows `Mascot package unreadable, using the built-in mascot`.
 - After installing, pick it on the settings page under `Appearance` → `Figure` → `Mascot`, or run `miyu config set tui.mascot <package id>`.
-- Whether the home screen and the sidebar draw a mascot is decided by two other switches, both off as shipped: "Show the figure on the home screen" and "Show the figure in the sidebar" in the same group. If the session's persona has an avatar, the avatar is what gets drawn.
+- Whether the home screen and the sidebar draw a mascot is decided by two other switches, both off as shipped: `Home screen figure` and `Sidebar figure` in the same group. If the session's persona has an avatar, the avatar is what gets drawn.
 - Miyu ships no mascot packages.
 
 **Web UI**: pick the web UI's mascot on the settings page under `General` → the `Theme` group → `Mascot`; `Deniro` is there as shipped. An appearance package can also mount a mascot into the web UI (at the position `mascot.characters`), but the interface it has to implement hasn't been documented yet.

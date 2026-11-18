@@ -229,7 +229,7 @@ Access from other devices always requires the access password; opening it with `
 ### LAN access
 
 1. On this computer, run `miyu web --settings access` to open `Settings → General → Access`.
-2. Turn on `Allow local network access`. If no access password is set yet, `Set an access password` pops up first; once the password is set, the switch turns on.
+2. Turn on `Local network access`. If no access password is set yet, `Set an access password` pops up first; once the password is set, the switch turns on.
 3. The settings page lists the addresses for other devices to use, plus a QR code. Scan it with your phone and enter the access password to get in.
 
 Whether you change the address and port on the settings page, with `miyu config set`, or by editing the config file by hand, the web UI switches over immediately. The `takes effect after restart` that `miyu config set` prints in this case is not accurate.
@@ -249,7 +249,7 @@ A server has no browser, so you first connect in from your own computer through 
    ```
 
 2. On your computer, open `http://127.0.0.1:8300` in a browser. The web UI treats this connection as the server itself and lets you in without a password.
-3. Go to `Settings → General → Access` and set the access password; if you need LAN access, also turn on `Allow local network access`.
+3. Go to `Settings → General → Access` and set the access password; if you need LAN access, also turn on `Local network access`.
 
 > Anyone who connects through `ssh -L`, `socat` or other forwarding that adds no forwarding headers is treated by the web UI as the server itself: no password is needed, they can read files on the server, and they can change the access password without entering the old one. So keep this path for yourself only.
 

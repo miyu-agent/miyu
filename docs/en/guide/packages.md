@@ -421,7 +421,7 @@ Official packages come from repositories under `miyu-agent`, and from repositori
 | `office` | Office documents | Lets the AI write, read and edit Word, PowerPoint and Excel files, render them as images and export PDF; Python and the LibreOffice engine are bundled, so it works once installed; it is a skill. |
 | `travel-planner` | Travel planner | Plans a trip with sources, works out the budget, and looks up flight and hotel prices; it is a skill. |
 
-Packages that bring a program are built separately for each system, and only the systems below have builds. Installing on any other system reports `Not available for this system.`:
+Packages that bring a program are built separately for each system, and only the systems below have builds. Installing on any other system reports `Not supported on this system.`:
 
 | Id | Linux x86_64 | Linux aarch64 | macOS (M series) | Windows x86_64 |
 |---|---|---|---|---|
@@ -472,7 +472,7 @@ Errors are printed on standard error, and they start with `miyu: `.
 | `package '<id>' not found`, `Package not found` | The id is wrong, or the index is too old: run `miyu pkg update` and search again. To install a folder in the current directory, write `./<folder>`. |
 | `Package source unreachable` | The network is down or the address is wrong. Check `packages.source`; if the official package source cannot be reached, you can add `packages.mirrors`. |
 | `Package download failed` | The download failed from every address, or the hash of the downloaded file does not match. Try again in a while, or switch to another mirror. |
-| `Not available for this system` | This package has no build for your system. |
+| `Not supported on this system.` | This package has no build for your system. |
 | `cannot install <what you wrote>: package.toml:<line>: …` | The manifest is wrong; fix the line the error names. If you did not write the package, you need to contact the author. |
 | `cannot install <what you wrote>: <kind> <name> exists in <package>` | A tool, skill, command, MCP server or the like that it brings has the same name as one in another installed package, with one line per clash. Remove that other package, or ask the author to rename. |
 | `Id conflicts with a built-in package` | A package on this machine uses the id of a shipped package; you need to rename the folder. |
