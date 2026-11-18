@@ -5,8 +5,8 @@
 - Miyu：核心（`miyu core`）放进自己的 scope 起着，每种调用跑一次 `miyu ask`（关记忆；沙盒关着的几种 `--permission full`）。
   CPU 只算核心那个 scope（核心和它拉起的沙盒、命令），`miyu ask` 这个头不算。
 - jcode：每种调用跑一次 `jcode run`，整个进程放进自己的 scope。jcode 的命令不进沙盒（它的代码里没有 bwrap、Landlock）。
-- 每种调 `--samples` 次另加头一次（不计），两家挨着量。家目录、工作区都在 `--out` 下，jcode 的 HOME、XDG_* 都指进去，不碰本机的
-  `~/.jcode`。不调真模型。只在 Linux 上、有 systemd 用户会话时能量。
+- 每种调 `--samples` 次另加头一次（不计），两家挨着量。家目录、工作区都在 `--out` 下，两家的 HOME、XDG_* 都指进去，不碰本机的
+  真家目录（Miyu 的审计 AUD-5 补上）。不调真模型。只在 Linux 上、有 systemd 用户会话时能量。
 
     python3 bench/rivals/toolstep.py --miyu target/release/miyu --jcode <jcode> --samples 20 --cpus 4-7 \\
         --into docs/perf --tag v29
@@ -76,6 +76,30 @@ def steps_of(records, samples):
     return steps
 
 
+def miyu_env(out):
+    """Miyu 的环境：数据根是 `out/miyu-home`。HOME、XDG_* 指进另一格 `out/miyu-user`（建好；审计 AUD-5：从宿主继承的，核心和它
+    跑的命令能读写本机真家目录）：不和数据根同一格，数据根要先是空的才认（见 `Miyu` 起核心那一段）。"""
+    user = out / "miyu-user"
+    user.mkdir(parents=True)
+    return clean_env({"MIYU_HOME": str(out / "miyu-home"), "MIYU_RESOURCES": str(REPO / "resources"),
+                      "MIYU_CATALOG_UPDATE": "false", "XDG_CACHE_HOME": str(out / "miyu-cache"),
+                      "HOME": str(user), "XDG_CONFIG_HOME": f"{user}/.config", "XDG_DATA_HOME": f"{user}/.local/share",
+                      "XDG_STATE_HOME": f"{user}/.local/state", "MIYU_PERF_KEY": "perf"})
+
+
+def jcode_env(out, base_url):
+    """jcode 的环境：家目录 `out/jcode-home`（建好），HOME、XDG_* 都指进去。"""
+    home = out / "jcode-home"
+    home.mkdir(parents=True)
+    return clean_env({
+        "HOME": str(home), "XDG_CONFIG_HOME": f"{home}/.config", "XDG_DATA_HOME": f"{home}/.local/share",
+        "XDG_CACHE_HOME": f"{home}/.cache", "XDG_STATE_HOME": f"{home}/.local/state",
+        "JCODE_NO_TELEMETRY": "1", "DO_NOT_TRACK": "1", "JCODE_NO_AUTO_UPDATE": "1", "JCODE_CHECK_UPDATES": "0",
+        "JCODE_PROVIDER": "openai-compatible", "JCODE_OPENAI_COMPAT_API_BASE": base_url,
+        "JCODE_OPENAI_COMPAT_DEFAULT_MODEL": "perf-model", "JCODE_OPENAI_COMPAT_API_KEY_NAME": "OPENAI_API_KEY",
+        "OPENAI_API_KEY": "fake"})
+
+
 class Miyu:
     name = "miyu"
 
@@ -83,9 +107,7 @@ class Miyu:
         self.program, self.cpus = program, cpus
         self.home = out / "miyu-home"
         self.home.mkdir(parents=True)
-        self.env = clean_env({"MIYU_HOME": str(self.home), "MIYU_RESOURCES": str(REPO / "resources"),
-                              "MIYU_CATALOG_UPDATE": "false", "XDG_CACHE_HOME": str(out / "miyu-cache"),
-                              "MIYU_PERF_KEY": "perf"})
+        self.env = miyu_env(out)
         # 空的家目录先让核心起一次、建好数据根（有别的东西的目录它不认），停了再写配置。
         boot = self.start(None)
         boot.terminate()
@@ -133,15 +155,7 @@ class Jcode:
 
     def __init__(self, program, out, base_url, cpus):
         self.program, self.cpus = program, cpus
-        home = out / "jcode-home"
-        home.mkdir(parents=True)
-        self.env = clean_env({
-            "HOME": str(home), "XDG_CONFIG_HOME": f"{home}/.config", "XDG_DATA_HOME": f"{home}/.local/share",
-            "XDG_CACHE_HOME": f"{home}/.cache", "XDG_STATE_HOME": f"{home}/.local/state",
-            "JCODE_NO_TELEMETRY": "1", "DO_NOT_TRACK": "1", "JCODE_NO_AUTO_UPDATE": "1", "JCODE_CHECK_UPDATES": "0",
-            "JCODE_PROVIDER": "openai-compatible", "JCODE_OPENAI_COMPAT_API_BASE": base_url,
-            "JCODE_OPENAI_COMPAT_DEFAULT_MODEL": "perf-model", "JCODE_OPENAI_COMPAT_API_KEY_NAME": "OPENAI_API_KEY",
-            "OPENAI_API_KEY": "fake"})
+        self.env = jcode_env(out, base_url)
 
     def tool(self, kind):
         return kind.jcode_tool

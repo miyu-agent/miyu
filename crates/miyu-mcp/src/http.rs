@@ -43,7 +43,7 @@ mod answer;
 mod headers;
 mod params;
 
-use answer::{Stream, body, rpc_error};
+use answer::{Stream, body, json_messages, rpc_error};
 use headers::{header_value, standard_headers};
 
 /// 内存管道的缓冲：够放几条大的回应，放不下的写的一头等着读。
@@ -343,8 +343,7 @@ impl Remote {
             );
         }
         // 走到这里的是 JSON：SSE 的成功回应上面边读边拆了。
-        let messages = body.trim().lines().map(str::to_string).collect();
-        Answered::Lines(self.handled(messages, listing))
+        Answered::Lines(self.handled(json_messages(&body), listing))
     }
 
     /// 边读边拆一段 SSE 回应（施工 PT-1 下）：凑齐的事件经 `answers` 马上写回去，交回读完以后剩下的。读断了、太长的照对方回错

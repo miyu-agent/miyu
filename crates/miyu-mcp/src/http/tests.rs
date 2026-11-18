@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use serde_json::json;
 
-use super::answer::{Stream, events};
+use super::answer::{Stream, events, json_messages};
 use super::{Expired, Log, header_value, open, rpc_error, standard_headers};
 use crate::testkit::http::HttpServer;
 use crate::{Client, Era, Failed, Hello, Waits};
@@ -52,7 +52,7 @@ async fn connect(server: &HttpServer, log: Log) -> (Result<Client, Failed>, Expi
 #[test]
 fn server_sent_events_split_into_messages() {
     let body = "event: message\ndata: {\"a\":1}\n\n: comment\ndata: {\"b\":\r\ndata: 2}\r\n\r\ndata: {\"c\":3}";
-    assert_eq!(events(body), ["{\"a\":1}", "{\"b\":\n2}", "{\"c\":3}"]);
+    assert_eq!(events(body), ["{\"a\":1}", "{\"b\":2}", "{\"c\":3}"]);
 }
 
 #[tokio::test]
@@ -262,6 +262,7 @@ async fn a_401_keeps_its_challenge() {
 }
 
 mod credentials;
+mod pretty;
 
 /// 只认别的版本的新版服务（施工 PT-1 上）：`400` 回来的 `-32022` 原样交回，探时代的认出是新版、没有共同的版本就说清楚，不退回老
 /// 握手（规范：认得出的新版错误不许退回 `initialize`）。

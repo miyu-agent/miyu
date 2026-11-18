@@ -206,6 +206,7 @@ fn left(language: Language, why: Leaving, waited: bool) -> String {
         err: &mut err,
         gray: false,
         live: false,
+        out_terminal: false,
     };
     let mut follow = Follow::new("s1", "ask-4", &plan);
     follow.waits();

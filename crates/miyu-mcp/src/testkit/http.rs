@@ -75,6 +75,8 @@ struct State {
     header_tools: AtomicBool,
     /// 慢的调用答之前客户端先断开了几次（施工 PT-1 中：取消就是断开）。
     hung_up: std::sync::atomic::AtomicUsize,
+    /// 老时代的回应排成多行（审计 AUD-5）：JSON 的照 `to_string_pretty` 写，SSE 的一行一个 `data:`。
+    pretty: AtomicBool,
 }
 
 impl HttpServer {
@@ -116,6 +118,7 @@ impl HttpServer {
             discover_400: AtomicBool::new(false),
             header_tools: AtomicBool::new(false),
             hung_up: std::sync::atomic::AtomicUsize::new(0),
+            pretty: AtomicBool::new(false),
         });
         let serving = Arc::clone(&state);
         let task = tokio::spawn(async move {
@@ -198,6 +201,12 @@ impl HttpServer {
     /// `Mcp-Param-Region`，不然回 `400` 和 `-32020`；`broken` 的标记写在 `items` 里，不合规矩。
     pub fn header_tools(&self) {
         self.state.header_tools.store(true, Ordering::Relaxed);
+    }
+
+    /// 老时代的回应排成多行（审计 AUD-5）：JSON 的照 `serde_json::to_string_pretty` 缩进着写，SSE 的一个事件拆成一行一个
+    /// `data:`（规范许可的写法，接收方用换行接回去）。
+    pub fn pretty(&self) {
+        self.state.pretty.store(true, Ordering::Relaxed);
     }
 
     /// 慢的调用答之前客户端先断开了几次（施工 PT-1 中）。
@@ -401,10 +410,18 @@ fn reply(state: &State, request: &Received) -> (u16, String, String) {
         Ok(result) => json!({"jsonrpc": "2.0", "id": id, "result": result}),
         Err(error) => json!({"jsonrpc": "2.0", "id": id, "error": error}),
     };
-    let text = if state.sse {
-        format!("event: message\ndata: {answer}\n\n")
-    } else {
-        answer.to_string()
+    let pretty = || serde_json::to_string_pretty(&answer).unwrap_or_default();
+    let text = match (state.sse, state.pretty.load(Ordering::Relaxed)) {
+        (false, false) => answer.to_string(),
+        (false, true) => pretty(),
+        (true, false) => format!("event: message\ndata: {answer}\n\n"),
+        (true, true) => {
+            let data: String = pretty()
+                .lines()
+                .map(|line| format!("data: {line}\n"))
+                .collect();
+            format!("event: message\n{data}\n")
+        }
     };
     (200, extra, text)
 }

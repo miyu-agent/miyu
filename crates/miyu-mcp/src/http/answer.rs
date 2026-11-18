@@ -54,7 +54,22 @@ pub(super) async fn body(mut response: miyu_http::Response) -> Result<String, St
     Ok(String::from_utf8_lossy(&bytes).into_owned())
 }
 
-/// SSE 的正文拆成一条条消息：空行分开一个事件，一个事件里的几行 `data:` 接起来；`\r\n` 也算换行。
+/// JSON 的回应体拆成一条条消息，一行一条交给客户端（它照一行一条读）。整段是一个 JSON 值的（缩进着写的、批量回应的数组）就是
+/// 一条，紧凑地写成一行（审计 AUD-5：原来按行拆，排了版的回应每一行都解不出，握手失败）；整段解不出的照原来按行拆（一行一条
+/// 写着几条的照旧能过，解不出的那几行由客户端照原来那样报错）。
+pub(super) fn json_messages(body: &str) -> Vec<String> {
+    let body = body.trim();
+    if body.contains('\n')
+        && let Ok(whole) = serde_json::from_str::<Value>(body)
+    {
+        return vec![whole.to_string()];
+    }
+    body.lines().map(str::to_string).collect()
+}
+
+/// SSE 的正文拆成一条条消息：空行分开一个事件，一个事件里的几行 `data:` 照规范用换行接起来；`\r\n` 也算换行。接出来带换行
+/// 的，解成 JSON 再紧凑地写成一行（审计 AUD-5：下游一行一条，带换行的一条会被拆坏）；解不出的照接起来的原样交出去，由客户端
+/// 照原来那样报错。
 pub(super) fn events(body: &str) -> Vec<String> {
     let mut out = Vec::new();
     let mut data: Vec<&str> = Vec::new();
@@ -62,7 +77,7 @@ pub(super) fn events(body: &str) -> Vec<String> {
         let line = line.strip_suffix('\r').unwrap_or(line);
         if line.is_empty() {
             if !data.is_empty() {
-                out.push(data.join("\n"));
+                out.push(one_line(data.join("\n")));
                 data.clear();
             }
         } else if let Some(rest) = line.strip_prefix("data:") {
@@ -70,6 +85,14 @@ pub(super) fn events(body: &str) -> Vec<String> {
         }
     }
     out
+}
+
+/// 一条带换行的消息：是 JSON 的紧凑地写成一行，不是的照原样。
+fn one_line(message: String) -> String {
+    if !message.contains('\n') {
+        return message;
+    }
+    serde_json::from_str::<Value>(&message).map_or(message, |value| value.to_string())
 }
 
 /// SSE 回应边读边拆（施工 PT-1 下）：攒着收到的字节，到空行就是凑齐了一个事件，马上交出去，进度、订阅推来的通知不用等整段读完。

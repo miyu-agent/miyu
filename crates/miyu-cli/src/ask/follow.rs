@@ -33,7 +33,7 @@ use super::steps::{self, Drawn, Steps};
 use super::usage::Sum;
 use super::{Output, Plan, Screen, exit};
 use crate::diagnostic::{self, Level, Problem};
-use crate::shown::{GRAY, Ink, Line, RESET, write};
+use crate::shown::{GRAY, Ink, Line, RESET, keep_lines, write};
 use crate::undo::{Direction, UndoPlan, redo_lines};
 
 pub(crate) use ending::Leaving;
@@ -326,9 +326,10 @@ impl<'p> Follow<'p> {
                 if !self.thinking {
                     self.paragraph(screen);
                 }
+                let shown = keep_lines(text, screen.live);
                 match screen.gray {
-                    true => write(screen.err, &format!("{GRAY}{text}{RESET}")),
-                    false => write(screen.err, text),
+                    true => write(screen.err, &format!("{GRAY}{shown}{RESET}")),
+                    false => write(screen.err, &shown),
                 }
                 self.err_ends_line = text.ends_with('\n');
                 self.aside = true;
@@ -337,7 +338,7 @@ impl<'p> Follow<'p> {
             }
             Some("text") => {
                 self.part(screen, "\n");
-                write(screen.out, text);
+                write(screen.out, &keep_lines(text, screen.out_terminal));
                 self.blank = false;
                 self.answered = true;
                 self.answer_ends_line = text.ends_with('\n');

@@ -176,12 +176,7 @@ impl Home {
             undo_on(connection, &token, plan, &mut out, &mut err),
         )
         .await;
-        Asked {
-            code,
-            out: tape.text(|err| !err),
-            err: tape.text(|err| err),
-            screen: tape.text(|_| true),
-        }
+        tape.asked(code)
     }
 
     /// 在真的套接字上连上核心，照 `plan` 手动压缩一次（施工 6-8），不按 Ctrl+C。
@@ -200,18 +195,14 @@ impl Home {
             err: &mut err,
             gray: false,
             live: false,
+            out_terminal: false,
         };
         let code = within(
             "压完",
             compact_on(connection, &token, plan, &mut screen, presses),
         )
         .await;
-        Asked {
-            code,
-            out: tape.text(|err| !err),
-            err: tape.text(|err| err),
-            screen: tape.text(|_| true),
-        }
+        tape.asked(code)
     }
 
     /// 在真的套接字上连上核心，照 `plan` 重做一次（施工 4-7 再补），不按 Ctrl+C。
@@ -225,18 +216,14 @@ impl Home {
             err: &mut err,
             gray: false,
             live: false,
+            out_terminal: false,
         };
         let code = within(
             "重做完",
             redo_on(connection, &token, plan, &mut screen, presses),
         )
         .await;
-        Asked {
-            code,
-            out: tape.text(|err| !err),
-            err: tape.text(|err| err),
-            screen: tape.text(|_| true),
-        }
+        tape.asked(code)
     }
 
     /// 照 `plan` 说一句，不按 Ctrl+C。
@@ -429,14 +416,10 @@ pub async fn ask_onto(
         err: &mut err,
         gray: false,
         live: false,
+        out_terminal: false,
     };
     let code = within("说完", talk(connection, &token, plan, &mut screen, presses)).await;
-    Asked {
-        code,
-        out: tape.text(|err| !err),
-        err: tape.text(|err| err),
-        screen: tape.text(|_| true),
-    }
+    tape.asked(code)
 }
 
 /// 一个没有核心的临时数据根，用完就删：测试自己在它的套接字上当核心。

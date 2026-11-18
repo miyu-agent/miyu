@@ -26,6 +26,7 @@ fn feed_redo(plan: &Plan, gray: bool, messages: &[Value]) -> Fed {
         err: &mut err,
         gray,
         live: gray,
+        out_terminal: gray,
     };
     let mut follow = Follow::new("s1", "ask-4", plan);
     follow.redoing();

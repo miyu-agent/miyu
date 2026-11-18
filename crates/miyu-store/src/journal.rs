@@ -84,7 +84,15 @@ pub fn append(path: &Path, entry: Entry) -> io::Result<Seq> {
         }
     };
     let existed = path.exists();
-    let mut file = OpenOptions::new().append(true).create(true).open(path)?;
+    let mut options = OpenOptions::new();
+    options.append(true).create(true);
+    // 新建的只给自己读写（施工 AUD-5）：同数据根里别的日志；已经有的不动它的权限。
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    let mut file = options.open(path)?;
     if !existed {
         sync_dir(dir)?;
     }

@@ -382,6 +382,17 @@ class Sandbox(unittest.TestCase):
                 cache = env.get("XDG_CACHE_HOME") or env.get("CODEX_HOME")
                 self.assertTrue(cache and cache.startswith(str(r.home)), f"{r.name} 的缓存不在沙箱里：{cache}")
 
+    def test_every_rival_gets_a_home_inside_its_sandbox(self):
+        # 审计 AUD-5：HOME 从宿主继承的，被测的程序能读写本机真家目录；每一家的 HOME、XDG_* 都指进它自己的沙箱家目录。
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, {"HOME": "/host/home"}):
+            where = fake_places(Path(tmp))
+            for r in rival.load(where):
+                env = r.env()
+                for name in ("HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME", "XDG_STATE_HOME"):
+                    value = env.get(name)
+                    self.assertTrue(value and value.startswith(str(r.home)), f"{r.name} 的 {name} 不在沙箱里：{value}")
+                self.assertNotEqual(env["HOME"], "/host/home", r.name)
+
 
 class Summary(unittest.TestCase):
     def test_a_table_comes_out_with_dashes_for_what_was_not_measured(self):

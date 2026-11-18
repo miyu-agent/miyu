@@ -160,6 +160,60 @@ fn a_stretch_between_two_lines_reads_like_picking_from_the_whole() {
     assert_eq!(read_line_near(&dir, &crooked, seq(7)).unwrap(), None);
 }
 
+#[test]
+fn a_stretch_whose_last_segment_is_gone_is_an_error() {
+    // 施工 AUD-5：`to` 落在一段的中间、末尾，那一段没了，读的时候日志变了，不能少读一截还交回读成了。
+    let scratch = Scratch::new();
+    let dir = scratch.path().join("s");
+    write(
+        &dir,
+        &[(1, lines(1, 40)), (41, lines(41, 70)), (71, lines(71, 110))],
+    );
+    let got = scanned(&dir, None).unwrap();
+    let past = Mark {
+        segment: 111,
+        bytes: 0,
+        next: seq(111),
+    };
+    fs::remove_file(dir.join("000000000071.jsonl")).unwrap();
+    // 终点所在的是最后一段。
+    for to in [70, 75, 109] {
+        assert!(
+            matches!(between(&dir, &got[0].2, &got[to].3), Err(OpenError::Io(_))),
+            "..={to}"
+        );
+    }
+    // 终点所在的那一段后面还有段。
+    write(&dir, &[(71, lines(71, 110))]);
+    fs::remove_file(dir.join("000000000041.jsonl")).unwrap();
+    for to in [40, 50, 69] {
+        assert!(
+            matches!(between(&dir, &got[0].2, &got[to].3), Err(OpenError::Io(_))),
+            "..={to}"
+        );
+    }
+    // 终点是一段的开头（长 0）：那一段还没有也是合法的末尾，前面的照旧读全。
+    fs::remove_file(dir.join("000000000071.jsonl")).unwrap();
+    write(&dir, &[(41, lines(41, 70))]);
+    let end = Mark {
+        segment: 71,
+        bytes: 0,
+        next: seq(71),
+    };
+    assert_eq!(
+        between(&dir, &got[0].2, &end).unwrap(),
+        read_events(&dir).unwrap()
+    );
+    write(&dir, &[(71, lines(71, 110))]);
+    assert_eq!(between(&dir, &got[0].2, &past).unwrap().len(), 110);
+    // 中间缺了一段：后一段的序号接不上，报坏了。
+    fs::remove_file(dir.join("000000000041.jsonl")).unwrap();
+    assert!(matches!(
+        between(&dir, &got[0].2, &got[80].3),
+        Err(OpenError::Broken { .. })
+    ));
+}
+
 /// 一段里第 `k` 行（从 1 数）换成 `with`。
 fn replace_line(bytes: &[u8], k: usize, with: &str) -> Vec<u8> {
     let mut out = Vec::new();

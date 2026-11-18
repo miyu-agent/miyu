@@ -113,7 +113,7 @@
 **和 jcode 比**（`bench/rivals/toolstep.py`、`toolfake.py`、`toolkinds.py`）
 
 1. 同一个假模型（Python，回法同上：提到记号、带工具表的请求才归剧本，起标题这些辅助请求回一句话不记），两家各收到同样意思的调用，工具名、参数照各家自己给模型的工具表（`toolkinds.py`：jcode v0.99.1 的 `read`、`write`、`edit`、`agentgrep`、`bash`；它的表里没有 `ls`，列目录不比；`agentgrep` 的 `find` 是照名字排出最像的前几个、带理由，和 `glob` 列全的口径不同）。
-2. Miyu：核心放进自己的 scope 起着，每种跑一次 `miyu ask --no-memory`（沙盒关着的几种加 `--permission full`），CPU 只算核心那个 scope。jcode：每种跑一次 `jcode run`，整个进程放进自己的 scope；它的命令不进沙盒。家目录都在 `--out` 下，jcode 的 `HOME`、`XDG_*` 都指进去，不碰本机的 `~/.jcode`；不调真模型。
+2. Miyu：核心放进自己的 scope 起着，每种跑一次 `miyu ask --no-memory`（沙盒关着的几种加 `--permission full`），CPU 只算核心那个 scope。jcode：每种跑一次 `jcode run`，整个进程放进自己的 scope；它的命令不进沙盒。家目录都在 `--out` 下，两家的 `HOME`、`XDG_*` 都指进去（施工 AUD-5：Miyu 原来只指了数据根和缓存，`HOME` 是宿主的真家目录），不碰本机的 `~/.jcode`；不调真模型。
 3. `--into docs/perf --tag <名>` 写 `docs/perf/<日期>-toolstep-<名>.json`、`.md`。只在有 systemd 用户会话的 Linux 上量。
 
 ### 闸门（施工 V-3，23 F4）

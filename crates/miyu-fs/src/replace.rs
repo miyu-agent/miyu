@@ -67,15 +67,25 @@ fn by_path(dir: &Path, real: &Path, bytes: &[u8]) -> io::Result<()> {
     Ok(())
 }
 
+/// 一个文件名最长几个字节：Linux、macOS 是 255 个字节，Windows 是 255 个 UTF-16 单位（一个字 UTF-8 的字节数不比
+/// UTF-16 的单位数少，照字节算两边都不超）。
+const NAME_MAX: usize = 255;
+
 /// 临时文件的名字：以点开头，照原来的名字 `name` 起，带进程号和这个进程里的序号。
+///
+/// 总长不超过 [`NAME_MAX`]（施工 AUD-5）：后缀比原名多二十来个字节，原名接近上限的会超、建不了，这个文件就写不了。超了的
+/// 把原名那一截从后面截短，截在字的边界上（不是 UTF-8 的名字照 `to_string_lossy` 换成的字截）；后缀带进程号和序号，截短
+/// 了也不撞，撞上了 `temp_in` 照旧换一个。
 fn temp_name(name: &std::ffi::OsStr) -> String {
     static NEXT: AtomicU64 = AtomicU64::new(0);
     let n = NEXT.fetch_add(1, Ordering::Relaxed);
-    format!(
-        ".{}.{}-{n}.miyu-tmp",
-        name.to_string_lossy(),
-        std::process::id()
-    )
+    let tail = format!(".{}-{n}.miyu-tmp", std::process::id());
+    let name = name.to_string_lossy();
+    let mut keep = name.len().min(NAME_MAX - 1 - tail.len());
+    while !name.is_char_boundary(keep) {
+        keep -= 1;
+    }
+    format!(".{}{tail}", &name[..keep])
 }
 
 /// 在 `dir` 里建一个新的临时文件，名字照 `real` 起，撞上了就换。

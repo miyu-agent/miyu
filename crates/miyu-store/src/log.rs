@@ -164,7 +164,7 @@ impl SessionLog {
             self.segment = first.seq.get();
             self.size = 0;
         }
-        self.file.write_all(&bytes)?;
+        put(&mut self.file, &bytes, (&self.dir, self.segment), self.size)?;
         self.size += bytes.len() as u64;
         self.next = expected;
         Ok(())
@@ -196,6 +196,27 @@ pub fn abandon(dir: &Path) -> io::Result<bool> {
     Ok(true)
 }
 
+/// 把拼好的一批 `bytes` 写进会话目录里的一段（`at` 是目录和段名，`out` 是它开着的追加句柄），写之前它长 `size`。
+///
+/// 写到一半出错的（盘满这类，施工 AUD-5），文件里已经落了前半截、可能停在一行中间，`size`、下一条的序号却没往前走：
+/// 不截掉的话下一批接在半行后面，日志中间多一行坏的。所以先截回 `size`；句柄是追加的，下一批照旧落在截短以后的末尾，
+/// 刚换的段（`size` 是 0）截回空的。截另开一个能写的句柄：Windows 上只能追加的打开方式改不了长短（同 `journal.rs`）。
+/// 截不回去的交回的照旧是写的错，截的错不盖住它。
+#[expect(
+    clippy::let_underscore_must_use,
+    reason = "截不回去的只能放着：交回的是写的错，这一批照没写成处理"
+)]
+fn put(out: &mut impl Write, bytes: &[u8], at: (&Path, u64), size: u64) -> io::Result<()> {
+    let Err(error) = out.write_all(bytes) else {
+        return Ok(());
+    };
+    let _ = OpenOptions::new()
+        .write(true)
+        .open(at.0.join(segment_name_of(at.1)))
+        .and_then(|file| file.set_len(size));
+    Err(error)
+}
+
 /// 段文件的名字：这一段第一条的序号，补零到 12 位（07 第三节「段怎么存」）。
 fn segment_name(first: Seq) -> String {
     segment_name_of(first.get())
@@ -206,12 +227,17 @@ fn segment_name_of(first: u64) -> String {
     format!("{first:012}.jsonl")
 }
 
-/// 建一段新的，只许新建；建好了同步所在目录，新文件本身才算落盘。
+/// 建一段新的，只许新建；建好了同步所在目录，新文件本身才算落盘。新建的只给自己读写（施工 AUD-5）：里面是人和她说的话，
+/// 同数据根里别的日志；已经在的段不动它的权限。
 fn new_segment(dir: &Path, first: Seq) -> io::Result<File> {
-    let file = OpenOptions::new()
-        .append(true)
-        .create_new(true)
-        .open(dir.join(segment_name(first)))?;
+    let mut options = OpenOptions::new();
+    options.append(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    let file = options.open(dir.join(segment_name(first)))?;
     sync_dir(dir)?;
     Ok(file)
 }

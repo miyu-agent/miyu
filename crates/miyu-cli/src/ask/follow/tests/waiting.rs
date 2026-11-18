@@ -142,6 +142,7 @@ fn waiting(
         err: &mut err,
         gray: false,
         live,
+        out_terminal: live,
     };
     let mut follow = Follow::new("s1", "ask-4", plan);
     follow.waits();

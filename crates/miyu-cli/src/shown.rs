@@ -2,6 +2,7 @@
 //! 灰的、红的、绿的几段，[`Line::paint`] 照上不上色写成字；路径在工作目录里的写相对的、在家目录里的写 `~/…`；太长的
 //! 截断；别人给的字里的控制字符怎么处理。上不上色照 [`colored`]。
 
+use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::io::Write;
 use std::path::{MAIN_SEPARATOR, Path};
@@ -122,6 +123,19 @@ pub(crate) fn tilde(path: &str, home: Option<&Path>) -> String {
 /// 文件、输出，才对得齐）。
 pub(crate) fn keep_tabs(row: &str) -> String {
     row.chars().map(defused).collect()
+}
+
+/// 模型给的一段字（回答、思考）写到 `terminal` 的那一路上（审计 AUD-5）：接着终端的，控制字符换成 `�`，换行、制表符照留，
+/// 回车去掉（不然能回到行首盖掉前面的字）；接管道、重定向进文件的原样交出去。逐个字洗：ESC 换掉以后序列剩下的只是普通字，
+/// 一段序列被切在两段增量里也一样洗得掉。
+pub(crate) fn keep_lines(text: &str, terminal: bool) -> Cow<'_, str> {
+    if !terminal {
+        return Cow::Borrowed(text);
+    }
+    text.chars()
+        .filter(|c| *c != '\r')
+        .map(|c| if c == '\n' { c } else { defused(c) })
+        .collect()
 }
 
 /// 命令输出里的一行写成给人看的（施工 4-11）：终端的控制序列里，CSI（改颜色、挪光标）、OSC（改标题、写剪贴板）两种

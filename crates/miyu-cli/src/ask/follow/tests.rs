@@ -172,6 +172,7 @@ fn feed_after(
         err: &mut err,
         gray,
         live: gray,
+        out_terminal: gray,
     };
     let mut follow = Follow::new("s1", "ask-4", plan);
     if let Some(reason) = unsandboxed {
@@ -426,6 +427,7 @@ fn resubscribing_asks_for_what_came_after_the_last_seq_it_saw() {
         err: &mut err,
         gray: false,
         live: false,
+        out_terminal: false,
     };
     let subscribe = json!({"session": "s1", "stream": "events"});
     let mut follow = Follow::new("s1", "ask-4", &plan);
@@ -452,6 +454,7 @@ fn resubscribing_asks_for_what_came_after_the_last_seq_it_saw() {
 mod asides;
 mod blocks;
 mod compaction;
+mod escapes;
 mod joining;
 mod redo;
 mod sample;

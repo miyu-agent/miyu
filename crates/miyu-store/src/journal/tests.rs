@@ -81,6 +81,27 @@ fn someone_elses_entries_are_counted_on_from() {
     assert_eq!(append(&path, entry(1)).unwrap().get(), 8);
 }
 
+/// 新建的日志只给自己读写（施工 AUD-5）：同数据根里别的日志。0600 不受常见的 umask（022、077 这类只收不放）影响，
+/// 测试不改进程的 umask（并着跑的别的测试也看它）。
+#[cfg(unix)]
+#[test]
+fn a_new_journal_is_private() {
+    use std::os::unix::fs::PermissionsExt;
+    let temp = Scratch::new();
+    let path = temp.path().join(FILE);
+    append(&path, entry(1)).unwrap();
+    let mode = fs::metadata(&path).unwrap().permissions().mode();
+    assert_eq!(mode & 0o777, 0o600, "{mode:o}");
+    // 已经有的不动它的权限。
+    let other = temp.path().join("other").join(FILE);
+    fs::create_dir_all(other.parent().unwrap()).unwrap();
+    fs::write(&other, "").unwrap();
+    fs::set_permissions(&other, fs::Permissions::from_mode(0o640)).unwrap();
+    append(&other, entry(1)).unwrap();
+    let mode = fs::metadata(&other).unwrap().permissions().mode();
+    assert_eq!(mode & 0o777, 0o640, "{mode:o}");
+}
+
 #[test]
 fn a_broken_last_line_stops_the_write() {
     let temp = Scratch::new();

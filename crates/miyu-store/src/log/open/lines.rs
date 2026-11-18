@@ -262,6 +262,12 @@ pub(super) fn between(
     else {
         return Err(changed().into());
     };
+    // 终点落在一段的中间、末尾的，那一段非在不可（施工 AUD-5）：没了的话下面一段段读到它以前就走完了，少读一截还交回读成了。
+    // 终点是一段的开头（长 0）的，那一段可以还没有：它前面的段照旧读全。中间缺了一段的不用另查：后一段的头一行序号接不上，
+    // 照旧报坏了。
+    if to.bytes > 0 && !segments.iter().any(|(first, _)| *first == to.segment) {
+        return Err(changed().into());
+    }
     let mut next = from.next;
     for (first, path) in &segments[k..] {
         if *first > to.segment {

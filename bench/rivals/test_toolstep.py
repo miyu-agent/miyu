@@ -1,11 +1,13 @@
 """工具一步和 jcode 比（施工 V-29）不跑别家的那几条：剧本怎么认、怎么回，每一步怎么算，两家的调用都对得上。"""
 
 import json
+import os
 import socket
 import tempfile
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import toolfake
 import toolkinds
@@ -61,6 +63,18 @@ class Steps(unittest.TestCase):
         self.assertEqual([s["ms"] for s in steps], [9.0, 9.0])
         self.assertEqual([s["cpu_ms"] for s in steps], [0.5, 0.5])
         self.assertEqual(toolstep.spread([3.0, 1.0, 2.0]), {"p50": 2.0, "p95": 3.0})
+
+
+class Sandbox(unittest.TestCase):
+    def test_both_rivals_get_a_home_inside_the_out_dir(self):
+        # 审计 AUD-5：HOME 从宿主继承的，被测的程序能读写本机真家目录；两家的 HOME、XDG_* 都指进 `--out` 下面。
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, {"HOME": "/host/home"}):
+            out = Path(tmp)
+            for name, env in (("miyu", toolstep.miyu_env(out)), ("jcode", toolstep.jcode_env(out, "http://x"))):
+                for var in ("HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME", "XDG_STATE_HOME"):
+                    value = env.get(var)
+                    self.assertTrue(value and value.startswith(tmp), f"{name} 的 {var} 不在沙箱里：{value}")
+                self.assertTrue(Path(env["HOME"]).is_dir(), f"{name} 的 HOME 建好了")
 
 
 class Kinds(unittest.TestCase):

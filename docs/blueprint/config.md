@@ -32,7 +32,7 @@
 | `crates/miyu-store/src/config_file.rs` | 读配置文件：没有的是空的、上限、开头的 BOM、UTF-8、版本（8-2），记下有没有 BOM（8-3）。写（`write`）：顺着链接、先写临时文件再替换、同步、替换前再读一次、Windows 上重试（8-3）。临时文件的名字和生成的文件共用 `durable.rs` 的 `temp_name` | 8-2、8-3 |
 | `crates/miyu-store/src/generated.rs` | 核心生成的派生文件：和磁盘上的逐字节比，一样的不写，不一样的先写临时文件再替换；`var/cache/config` 照 `write_inside` 写，数据根被删了的不建回来（`store.md`「怎么走」第四条） | 8-1、TMP-1 |
 | `crates/miyu-store/src/human.rs` | 给人看的字多一格 `config`，读好的字照 `Words` 交给配置清单 | 8-1 |
-| `crates/miyu-store/src/journal.rs` | 日志 `journal.jsonl`：每追加一条都重新打开、截半行、读最后一行接着数 `seq`、追加、同步 | 8-3 |
+| `crates/miyu-store/src/journal.rs` | 日志 `journal.jsonl`：每追加一条都重新打开、截半行、读最后一行接着数 `seq`、追加、同步；Unix 上新建的是 0600，已经在的不动（施工 AUD-5） | 8-3 |
 | `crates/miyu-store/src/watch.rs` | 监视几份文件所在的目录（`notify`），照真实的位置和文件名认，只读的动静不理，一份 200 毫秒没有新的变动了才交出去；系统的监视起不来的退回轮询，交回原因。往下递归看的（`watch_tree`，OV-1 下）交变了的那个文件；新建、挪进来的目录交里面已经有的每一个文件（OV-1 补：系统的递归监视报了新目录才去看它，在那之前写进去的报不出来） | 8-4、OV-1 |
 | `crates/miyu-store/src/secrets.rs` | 密钥文件（8-5）：照配置文件的规矩读，另看组、别人读不读得到（`Stored::open`）；照配置文件的规矩写，Unix 上一律 0600，临时文件建的时候就是（`config_file::write_with` 的 `Mode::Private`、`durable::create_temp_with`） | 8-5 |
 | `crates/miyu-endpoint/src/config.rs`、`config/` | 配置服务：手里的几份文件、当前的最终值（8-2）；改、重读（8-3）；推送、推送的订阅（8-4）。它住在核心家底的一把锁里（`Core::config`）。`config/observe.rs` 监视看到手改、`config.set` 写之前的重读（8-4），`config/hub.rs` 换上新的一份交给会话、核心，推给订阅着的连接（8-4），`config/push.rs` 的 `config.changed`（8-4），`config/file.rs` 一份文件读好的样子（8-3 起连同字和 BOM），`config/project.rs` 往上找项目配置，`config/effort.rs` 模型的 `effort` 不在档位里的（8-18），`config/methods.rs` 三个查询，`config/set.rs` 的 `config.set`（8-3），`config/journal.rs` 留痕（8-3），`config/wire.rs` 协议上的写法 | 8-2 起 |

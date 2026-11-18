@@ -257,6 +257,8 @@ pub struct Screen<'a> {
     pub gray: bool,
     /// 标准错误是终端：压缩的进度在一行里原地刷新（施工 6-3 下）；不是的只印结果那一行。
     pub live: bool,
+    /// 标准输出是终端（审计 AUD-5）：回答里的控制字符照它洗，接管道、重定向进文件的原样交出去。思考在标准错误上，照 `live` 洗。
+    pub out_terminal: bool,
 }
 
 /// 跑一次 `miyu ask`，交回退出码。`start` 给出拉起核心的命令：主程序自己加上 `core`。
@@ -325,12 +327,14 @@ async fn run(args: Ask, text: String, start: impl FnOnce() -> Command, language:
     let mut out = io::stdout();
     let mut err = io::stderr();
     let live = err.is_terminal();
+    let out_terminal = out.is_terminal();
     let gray = shown::colored(live, std::env::var_os("NO_COLOR").as_deref());
     let mut screen = Screen {
         out: &mut out,
         err: &mut err,
         gray,
         live,
+        out_terminal,
     };
     talk(connection, &token, &plan, &mut screen, presses).await
 }

@@ -158,3 +158,19 @@ fn the_temporary_file_is_never_more_open_than_the_original() {
         0o600
     );
 }
+
+/// 名字接近上限的文件照样写得进（施工 AUD-5）：临时文件的名字比原名长二十来个字节，原名 255 字节（多字节的字凑到刚好不超）
+/// 的时候临时名超了系统的上限，建不了。截短落在多字节的字中间的也要截在字的边界上（第二个名字）。Windows 上限是 255 个
+/// UTF-16 单位，这两个名字是 254、127 个，一样合法。
+#[test]
+fn a_name_at_the_limit_is_written() {
+    for name in [format!("{}é", "a".repeat(253)), "é".repeat(127)] {
+        assert!(name.len() >= 254);
+        let scratch = Scratch::new();
+        let file = scratch.0.join(&name);
+        replace(&file, b"one").unwrap();
+        replace(&file, b"two").unwrap();
+        assert_eq!(fs::read(&file).unwrap(), b"two");
+        assert_eq!(scratch.names(), [name], "没留下临时文件");
+    }
+}

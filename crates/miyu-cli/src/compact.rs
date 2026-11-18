@@ -91,12 +91,14 @@ async fn run(args: Compact, start: impl FnOnce() -> Command) -> u8 {
     let mut out = io::stdout();
     let mut err = io::stderr();
     let live = err.is_terminal();
+    let out_terminal = out.is_terminal();
     let gray = shown::colored(live, std::env::var_os("NO_COLOR").as_deref());
     let mut screen = Screen {
         out: &mut out,
         err: &mut err,
         gray,
         live,
+        out_terminal,
     };
     compact_on(connection, &token, &plan, &mut screen, presses()).await
 }

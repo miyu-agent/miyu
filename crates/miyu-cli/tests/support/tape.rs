@@ -33,6 +33,16 @@ impl Tape {
         }
     }
 
+    /// 说完一句、退出码是 `code`：照这一卷交回看到的（审计 AUD-5 挪过来：`mod.rs` 又到了 500 行）。
+    pub fn asked(&self, code: u8) -> super::Asked {
+        super::Asked {
+            code,
+            out: self.text(|err| !err),
+            err: self.text(|err| err),
+            screen: self.text(|_| true),
+        }
+    }
+
     /// 照 `pick` 挑出来的字节，写成字。
     pub fn text(&self, pick: impl Fn(bool) -> bool) -> String {
         let tape = self.0.lock().expect("没 panic");

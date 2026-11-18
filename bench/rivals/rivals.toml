@@ -36,9 +36,15 @@ install = [
 ]
 
 # 缓存跟 XDG_CACHE_HOME 走、不跟 MIYU_HOME 走（store.md）：也指进沙箱，不然读写本机真实的缓存（模型目录、终端的）。
+# HOME、别的 XDG_* 也指进沙箱家目录（审计 AUD-5）：从宿主继承的，被测的程序和它起的命令能读写本机真家目录。
+# 数据根就是 {home}：每条 miyu 命令先建好数据根再干别的，家目录里后写的东西不挡它认数据根。
 [miyu.env]
 MIYU_HOME = "{home}"
+HOME = "{home}"
+XDG_CONFIG_HOME = "{home}/.config"
+XDG_DATA_HOME = "{home}/.local/share"
 XDG_CACHE_HOME = "{home}/.cache"
+XDG_STATE_HOME = "{home}/.local/state"
 MIYU_RESOURCES = "{core}/resources"
 MIYU_CORE_BIN = "{miyu}"
 
@@ -109,8 +115,14 @@ caches = [".cache"]
 # 装的是一个目录（程序在它的 bin/ 下，旁边是它带的 rg、bwrap）。
 install = [["codex（整个安装目录）", "{codex_dir}/.."]]
 
+# HOME、XDG_* 也指进沙箱家目录（审计 AUD-5）：CODEX_HOME 只管 codex 自己的那一份，它起的命令、别的工具照 HOME 找。
 [codex.env]
 CODEX_HOME = "{home}"
+HOME = "{home}"
+XDG_CONFIG_HOME = "{home}/.config"
+XDG_DATA_HOME = "{home}/.local/share"
+XDG_CACHE_HOME = "{home}/.cache"
+XDG_STATE_HOME = "{home}/.local/state"
 
 # codex 的自定义供应商只认写死的地址：写进沙箱家目录，不进仓库；key 照样从环境变量读。工作目录先信任上，不然首屏是问信不信任。
 [[codex.files]]

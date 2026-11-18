@@ -124,6 +124,7 @@ fn feed(language: Language, live: bool, messages: &[Value]) -> Fed {
         err: &mut to_err,
         gray: live,
         live,
+        out_terminal: live,
     };
     let printing = printing(language);
     let mut follow = Follow::new("s1", "compact-1", &printing);
