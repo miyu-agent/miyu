@@ -112,6 +112,20 @@ pub fn find(
             let dir = entry.real.clone().unwrap_or_else(|| at.clone());
             let link = entry.real.is_some().then(|| at.clone());
             let file = dir.join(FILE);
+            // `SKILL.md` 自己是链接的，照同一道篱笆查（施工 AU-008）：只查文件夹的话，指到数据根别处的一份照读。
+            if let Ok(real) = std::fs::canonicalize(&file)
+                && !fence.admits(&real)
+            {
+                let why = format!(
+                    "links to {} inside the data root, outside the folders you keep things in",
+                    real.display()
+                );
+                skipped.push(Skipped {
+                    outside: Some(real),
+                    ..Skipped::new(at.join(FILE), why)
+                });
+                continue;
+            }
             let head = match head(&file, &entry.name) {
                 None => continue,
                 Some(Ok(head)) => Ok(head),

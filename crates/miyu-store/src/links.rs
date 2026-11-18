@@ -60,7 +60,7 @@ impl Fence {
     }
 
     /// 真实位置 `real` 认不认：数据根外面的认，里面的只认那几处下面。
-    fn admits(&self, real: &Path) -> bool {
+    pub(crate) fn admits(&self, real: &Path) -> bool {
         self.root.as_ref().is_none_or(|root| {
             !real.starts_with(root) || self.own.iter().any(|dir| real.starts_with(dir))
         })

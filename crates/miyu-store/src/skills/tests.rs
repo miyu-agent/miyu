@@ -295,3 +295,22 @@ fn external_folders_come_after_miyu_s_own_in_their_order() {
         .collect();
     assert_eq!(names, ["mine", "pdf"], "没交的不碰");
 }
+
+/// 修以前：只查 `skills/<名字>` 这一层的真实位置，里面的 `SKILL.md` 是指到数据根别处的链接照读、照列（审计 #008 第 2 条）。
+/// 现在 `SKILL.md` 自己的真实位置也照同一道篱笆查，跳过的说指到了哪。
+#[test]
+fn a_skill_file_linked_into_the_data_root_is_skipped() {
+    let places = Places::new();
+    places.write("data/keys/SKILL.md", &skill("keys", "Not mine."));
+    let dir = places.root.path().join("root/skills/keys");
+    fs::create_dir_all(&dir).unwrap();
+    let target = places.root.path().join("keys/SKILL.md");
+    if !link(&target, &dir.join("SKILL.md")) {
+        return;
+    }
+    let (skills, skipped) = places.found();
+    assert!(skills.is_empty(), "{skills:?}");
+    assert_eq!(skipped.len(), 1, "{skipped:?}");
+    assert_eq!(skipped[0].path, dir.join("SKILL.md"));
+    assert_eq!(skipped[0].outside, fs::canonicalize(&target).ok());
+}

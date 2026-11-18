@@ -46,16 +46,21 @@ impl Placed {
     }
 }
 
-/// 把包文件夹 `source` 装成家目录 `home` 里的包 `id`。
+/// 把包文件夹 `source` 装成家目录 `home` 里的包 `id`；数据根是 `root`：链接照它指的拷，走到数据根里（包文件夹自己以外）的
+/// 整个不装（施工 AU-008）。
 ///
 /// # Errors
 ///
-/// 建不了目录、拷不了、换不进去；出了错的不留暂存。
-pub fn place(home: &Path, id: &str, source: &Path) -> io::Result<Placed> {
+/// 建不了目录、拷不了、换不进去，包文件夹里有走到数据根里的链接；出了错的不留暂存。
+pub fn place(home: &Path, id: &str, source: &Path, root: &Path) -> io::Result<Placed> {
     fs::create_dir_all(home)?;
     let staged = home.join(format!(".{id}.new"));
     remove_dir_if_there(&staged)?;
-    if let Err(error) = copy_dir(source, &staged) {
+    let fence = Fence {
+        root: real(root),
+        own: real(source),
+    };
+    if let Err(error) = copy_dir(source, &staged, &fence) {
         discard(&staged);
         return Err(error);
     }
@@ -192,14 +197,43 @@ fn aside(path: &Path, to: PathBuf) -> io::Result<Option<PathBuf>> {
     Ok(Some(to))
 }
 
-/// 一层层拷目录 `from` 到 `to`：文件照内容拷，链接照它指的拷。
-fn copy_dir(from: &Path, to: &Path) -> io::Result<()> {
+/// 装包时拷得进来的地方（施工 AU-008）：数据根以外的，和包文件夹自己里面的（包文件夹放在数据根的工作区里时，里面的链接
+/// 指到自己别处）。
+struct Fence {
+    /// 数据根的真实位置。
+    root: PathBuf,
+    /// 包文件夹的真实位置。
+    own: PathBuf,
+}
+
+impl Fence {
+    /// 真实位置 `real` 拷不拷得进来。
+    fn admits(&self, real: &Path) -> bool {
+        !real.starts_with(&self.root) || real.starts_with(&self.own)
+    }
+}
+
+/// 一层层拷目录 `from` 到 `to`：文件照内容拷，链接照它指的拷（施工 F-8 上：自己写包时把程序链接进来）。链接走到 `fence` 以外的
+/// 当场停（施工 AU-008，审计 #008）：照它指的拷会把数据根里的密钥文件变成 `opt/` 里的普通文件，模型、关起来的会话照技能文件夹
+/// 读得到；指到包住数据根的目录（家目录）的，走下去一样进数据根，所以每一项都照真实位置查，不只查链接本身。
+fn copy_dir(from: &Path, to: &Path, fence: &Fence) -> io::Result<()> {
     fs::create_dir_all(to)?;
     for entry in fs::read_dir(from)? {
         let entry = entry?;
         let target = to.join(entry.file_name());
+        let real = fs::canonicalize(entry.path())?;
+        if !fence.admits(&real) {
+            return Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                format!(
+                    "{} leads into the data root ({})",
+                    entry.path().display(),
+                    real.display()
+                ),
+            ));
+        }
         if fs::metadata(entry.path())?.is_dir() {
-            copy_dir(&entry.path(), &target)?;
+            copy_dir(&entry.path(), &target, fence)?;
         } else {
             fs::copy(entry.path(), &target)?;
         }
@@ -219,4 +253,9 @@ fn remove_dir_if_there(path: &Path) -> io::Result<()> {
         Err(error) if error.kind() != io::ErrorKind::NotFound => Err(error),
         _ => Ok(()),
     }
+}
+
+/// 换成真实的位置；换不成的照原样。
+fn real(path: &Path) -> PathBuf {
+    fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
 }

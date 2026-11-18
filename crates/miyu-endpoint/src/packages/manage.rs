@@ -173,7 +173,8 @@ pub(super) async fn from_path(
     let all = refs(&before);
     let without = leaving(&all, &id);
     core.switch_packages(&all, &without).await;
-    let placed = blocking(move || install::place(&home, &target, &source)).await;
+    let data_root = core.root.path().to_path_buf();
+    let placed = blocking(move || install::place(&home, &target, &source, &data_root)).await;
     let placed: Placed = match placed {
         Ok(placed) => placed,
         Err(refusal) => {
