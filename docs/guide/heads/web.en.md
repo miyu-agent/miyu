@@ -63,7 +63,7 @@ The first time you open the web UI, first-run setup covers the whole page, one s
 3. Model: "Select a model provider". Pick one, fill in the key, "Test connection", pick the default model. How to fill these in: see [Models](../models.en.md).
 4. Persona: "Create persona". Fill in the name, avatar and detailed prompt. You can "Skip"; if you skip, no persona is used.
 5. Appearance: "Appearance". Choose light or dark, main color, color scheme and theme. If you skipped the persona in the previous step, this step is skipped too.
-6. About you: "How the AI knows you". Fill in "What should the AI call you" and "More about you (optional)". If both are empty, the button is "Skip".
+6. About you: "How the AI knows you". Fill in "Preferred name" and "Additional details (optional)"; above them is a "Reply language (optional)" row. If both are empty, the button is "Skip".
 7. Preset: "Select preset". Click one; "Custom" lets you tick features yourself.
 8. Semantic model: "Turn on the built-in semantic model?". "Yes (recommended)" downloads and installs it; "No" uses keyword search only. If the package source does not have this package and it is not installed, this step is absent.
 9. Other devices: "Use on other devices". Choosing "Open" first asks you to set an access password; once set, it shows the address and QR code for other devices. Choosing "Don't open" means only this computer can open it. A page not opened through `miyu web` does not have this step.
