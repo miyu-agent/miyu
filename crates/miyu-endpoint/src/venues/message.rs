@@ -18,16 +18,12 @@ const ID: usize = 128;
 const NAME: usize = 64;
 /// 文件名、表情的字最长几个字符。
 const MEDIA_NAME: usize = 200;
-/// 合并转发最多套几层（施工 O-34）：`venue.forwards` 是第一层。
-const FORWARD_DEPTH: usize = 3;
-/// 一个合并转发最多几条（施工 O-34）。
-const FORWARD_NODES: usize = 100;
-/// 合并转发里一条的正文最多几个字节（施工 O-34）。
-const FORWARD_TEXT: usize = 4096;
-/// 一条场所消息里所有转发（连套在里面的）合起来最多几条（施工 O-34，核心审形状时定的第 1 条）。
-const ALL_NODES: usize = 100;
-/// 一条场所消息里所有转发的名字和正文合起来最多几个字节（同上）。
-const ALL_BYTES: usize = 16 * 1024;
+/// 合并转发最多套几层（施工 O-34）：`venue.forwards` 是第一层。只为防栈（施工 O-34 补）：这里和后面渲染都是一层套一层递归
+/// 走的，套得太深会把栈用光；原来是 3，抬到 8，正常的转发碰不到。
+const FORWARD_DEPTH: usize = 8;
+// 一个转发里几条、整条消息合起来的条数和字节数、转发里一条正文的字节数，都不另设上限（施工 O-34 补，2026-11-19 项目主人
+// 定：合并转发不设影响体验的上限，这不是要熔断保护的地方）。原来是一个转发 100 条、合起来 100 条、名字和正文 16 KiB、一条
+// 正文 4096 字节，超了整条拒收。剩下的天花板是连接上一行 1 MiB（`protocol.md`）。
 /// 戳一戳的后缀最长几个字符（施工 VP-1：im 截到 64）。
 const POKE_TEXT: usize = 64;
 
@@ -148,16 +144,14 @@ impl VenueMessageParams {
         if self.quoted.is_some() && self.reply_to.is_none() {
             return Err(Refusal::BAD_PARAMS);
         }
-        let mut tally = Tally::default();
         let forwards = match self.forwards {
-            Some(forwards) => forwarded(forwards, 1, &mut tally)?,
+            Some(forwards) => forwarded(forwards, 1)?,
             None => Vec::new(),
         };
         let quoted = self
             .quoted
-            .map(|quoted| node(quoted, 1, &mut tally).map(Box::new))
+            .map(|quoted| node(quoted, 1).map(Box::new))
             .transpose()?;
-        tally.within()?;
         // 戳一戳只写 `true`；后缀只跟着它来（施工 VP-1）。
         let poke = match (self.poke, &self.poke_text) {
             (Some(false), _) | (None, Some(_)) => return Err(Refusal::BAD_PARAMS),
@@ -220,49 +214,22 @@ impl MediaParams {
     }
 }
 
-/// 一条消息里的转发合起来有多少（施工 O-34）：条数，名字和正文的字节数。
-#[derive(Debug, Default)]
-struct Tally {
-    nodes: usize,
-    bytes: usize,
-}
-
-impl Tally {
-    /// 合起来超没超整条消息的上限：超了的 `bad_params`，`data.limit` 说是哪一样（`forward_nodes`、`forward_bytes`）。
-    fn within(&self) -> Result<(), Refusal> {
-        if self.nodes > ALL_NODES {
-            return Err(Refusal::bad_params_about("forward_nodes"));
-        }
-        if self.bytes > ALL_BYTES {
-            return Err(Refusal::bad_params_about("forward_bytes"));
-        }
-        Ok(())
-    }
-}
-
-/// 第 `depth` 层的几个转发（施工 O-34）：不是空的列表，不超过 [`FORWARD_DEPTH`] 层；每个 1 到 [`FORWARD_NODES`] 条、`more`
-/// 写了就大于 0；每条照 [`node`] 查。条数、字节数记进 `tally`。
-fn forwarded(
-    forwards: Vec<ForwardParams>,
-    depth: usize,
-    tally: &mut Tally,
-) -> Result<Vec<Forward>, Refusal> {
+/// 第 `depth` 层的几个转发（施工 O-34）：不是空的列表，不超过 [`FORWARD_DEPTH`] 层；每个至少 1 条、`more` 写了就大于 0；
+/// 每条照 [`node`] 查。
+fn forwarded(forwards: Vec<ForwardParams>, depth: usize) -> Result<Vec<Forward>, Refusal> {
     if forwards.is_empty() || depth > FORWARD_DEPTH {
         return Err(Refusal::BAD_PARAMS);
     }
     forwards
         .into_iter()
         .map(|forward| {
-            if forward.nodes.is_empty()
-                || forward.nodes.len() > FORWARD_NODES
-                || forward.more == Some(0)
-            {
+            if forward.nodes.is_empty() || forward.more == Some(0) {
                 return Err(Refusal::BAD_PARAMS);
             }
             let nodes = forward
                 .nodes
                 .into_iter()
-                .map(|one| node(one, depth + 1, tally))
+                .map(|one| node(one, depth + 1))
                 .collect::<Result<_, _>>()?;
             Ok(Forward {
                 nodes,
@@ -272,16 +239,14 @@ fn forwarded(
         .collect()
 }
 
-/// 一条（转发里的、引用的那一条，施工 O-34、QT-1）：名字同发的人的名字，正文最多 [`FORWARD_TEXT`] 字节（换行这些照收，渲染时
-/// 转义），带的东西同 `media`、不能写 `shown`（施工 O-35）。套在里面的转发是第 `depth` 层。条数、字节数记进 `tally`。
-fn node(node: NodeParams, depth: usize, tally: &mut Tally) -> Result<ForwardNode, Refusal> {
+/// 一条（转发里的、引用的那一条，施工 O-34、QT-1）：名字同发的人的名字，正文多长都收（换行这些照收，渲染时转义；施工 O-34 补
+/// 起不设上限），带的东西同 `media`、不能写 `shown`（施工 O-35）。套在里面的转发是第 `depth` 层。
+fn node(node: NodeParams, depth: usize) -> Result<ForwardNode, Refusal> {
     // 转发里的东西没有当原图交进来的（施工 O-35）：写了 `shown` 的是写错了。
-    if node.text.len() > FORWARD_TEXT || node.media.iter().any(|item| item.shown) {
+    if node.media.iter().any(|item| item.shown) {
         return Err(Refusal::BAD_PARAMS);
     }
     let name = words(node.name, NAME)?;
-    tally.nodes += 1;
-    tally.bytes += name.len() + node.text.len();
     Ok(ForwardNode {
         name,
         text: node.text,
@@ -291,7 +256,7 @@ fn node(node: NodeParams, depth: usize, tally: &mut Tally) -> Result<ForwardNode
             .map(MediaParams::checked)
             .collect::<Result<_, _>>()?,
         forwards: match node.forwards {
-            Some(inner) => forwarded(inner, depth, tally)?,
+            Some(inner) => forwarded(inner, depth)?,
             None => Vec::new(),
         },
     })

@@ -1,6 +1,6 @@
 //! 场所消息带被引用的那一条的内容（施工 QT-1，`docs/construction/QT-1-场所消息带引用的内容.md`）：`venue.quoted` 和转发里的一条
-//! 同一个形状，原样记进 `message.user`；写法不对的、没写 `reply_to` 的、里面的转发套到第 4 层的 `bad_params`；条数、字节数算进
-//! 整条消息合起来的上限，超了的照 `forwards` 的 `data.limit` 拒；都什么都不记。
+//! 同一个形状，原样记进 `message.user`；写法不对的、没写 `reply_to` 的、里面的转发套到第 9 层的 `bad_params`，什么都不记；条数、
+//! 字节数同 `forwards` 不另设上限（施工 O-34 补）。
 
 use serde_json::{Value, json};
 
@@ -84,8 +84,7 @@ async fn bad_quotes_record_nothing() {
     let replying = |quoted: Value| json!({"reply_to": "7000", "quoted": quoted});
     for (n, venue) in [
         json!({"quoted": node("阿杰", "嗯")}),
-        replying(json!({"name": "阿杰", "text": "[forward]", "forwards": nested(4)})),
-        replying(node("阿杰", &"字".repeat(1366))),
+        replying(json!({"name": "阿杰", "text": "[forward]", "forwards": nested(9)})),
         replying(node("  ", "嗯")),
         replying(json!({"name": "阿杰"})),
         replying(json!({"name": "阿杰", "text": "嗯", "forwards": []})),
@@ -107,44 +106,28 @@ async fn bad_quotes_record_nothing() {
     assert_eq!(home.log(&session).len(), before, "什么都没记");
 }
 
-/// 引用的那一条和它里面的转发算进整条消息的上限：100 条、名字和正文 16 KiB，超了照 `forwards` 的 `data.limit` 拒。
+/// 引用的那一条和它里面的转发同样不另设上限（施工 O-34 补）：原来算进整条消息的 100 条、16 KiB，正文最多 4096 字节。
 #[tokio::test]
-async fn a_quote_counts_toward_the_whole_message_limits() {
+async fn a_quote_has_no_caps_on_count_or_size() {
     let home = Home::new();
     let (mut client, session) = owners_chat(&home).await;
     let block = |count: usize, text: &str| json!({"nodes": (0..count).map(|_| node("阿杰", text)).collect::<Vec<_>>()});
-    // 转发 99 条，加上引用的那一条：100 条，收。
-    let fits =
-        json!({"reply_to": "7000", "quoted": node("阿杰", "嗯"), "forwards": [block(99, "嗯")]});
-    let reply = client
-        .call("w1", "session.send", said(&session, fits))
-        .await;
-    assert!(reply.get("error").is_none(), "{reply}");
-    let before = home.log(&session).len();
-    // 名字「阿杰」6 字节：4 条各 4090 字节的正文合起来 16384 字节正好，引用的那一条再多一个字节就超。
-    let exactly = "a".repeat(4096 - 6);
-    for (n, venue, limit) in [
-        (
-            2,
-            json!({"reply_to": "7000", "quoted": node("阿杰", "嗯"), "forwards": [block(100, "嗯")]}),
-            "forward_nodes",
-        ),
-        (
-            3,
-            json!({"reply_to": "7000", "quoted": {"name": "阿杰", "text": "", "forwards": [block(100, "嗯")]}}),
-            "forward_nodes",
-        ),
-        (
-            4,
-            json!({"reply_to": "7000", "quoted": node("x", ""), "forwards": [block(4, &exactly)]}),
-            "forward_bytes",
-        ),
-    ] {
+    let long = "字".repeat(7000);
+    for (n, venue) in [
+        json!({"reply_to": "7000", "quoted": node("阿杰", "嗯"), "forwards": [block(100, "嗯")]}),
+        json!({"reply_to": "7000", "quoted": {"name": "阿杰", "text": "", "forwards": [block(100, "嗯"), block(100, "嗯")]}}),
+        json!({"reply_to": "7000", "quoted": node("阿杰", &long)}),
+        json!({"reply_to": "7000", "quoted": node("x", ""), "forwards": [block(10, &"a".repeat(4096))]}),
+        json!({"reply_to": "7000", "quoted": {"name": "阿杰", "text": "[forward]", "forwards": nested(8)}}),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let before = home.log(&session).len();
         let reply = client
             .call(&format!("w{n}"), "session.send", said(&session, venue))
             .await;
-        assert_eq!(reason(&reply), Some("bad_params"), "{n}：{reply}");
-        assert_eq!(reply["error"]["data"]["limit"], limit, "{n}：{reply}");
+        assert!(reply.get("error").is_none(), "{n}：{reply}");
+        assert!(home.log(&session).len() > before, "{n}：记下了");
     }
-    assert_eq!(home.log(&session).len(), before, "什么都没记");
 }

@@ -1,7 +1,6 @@
 //! 场所消息里的合并转发（施工 O-34，`docs/construction/O-34-合并转发.md`，核心审形状时定的五条）：`venue.forwards` 原样记进
-//! `message.user`，只有转发、正文空的照旧 `empty_message`；写法不对的、单层超了的（套 4 层、一个转发 101 条、一条正文超过
-//! 4 KiB、名字超过 64 个字符或带换行、空列表、`more` 写 0、空的 `nodes`、多写格）`bad_params`；整条消息合起来超了的（101 条、名字和正文 16 KiB 以上）
-//! `bad_params`，`data.limit` 说是哪一样；都什么都不记。
+//! `message.user`，只有转发、正文空的照旧 `empty_message`；写法不对的、单层不合的（套 9 层、名字超过 64 个字符或带换行、空列表、`more` 写 0、空的 `nodes`、多写格）
+//! `bad_params`，什么都不记；整条消息合起来的条数、字节数不另设上限（施工 O-34 补）。
 
 use serde_json::{Value, json};
 
@@ -91,15 +90,12 @@ async fn bad_forwards_record_nothing() {
     let (mut client, session) = owners_chat(&home).await;
     let before = home.log(&session).len();
     let one = |nodes: Value| json!([{"nodes": nodes}]);
-    let many = |count: usize| Value::Array((0..count).map(|_| node("阿杰", "嗯")).collect());
     for (n, forwards) in [
         json!([]),
-        nested(4),
+        nested(9),
         one(json!([])),
-        one(many(101)),
         json!([{"nodes": [node("阿杰", "嗯")], "more": 0}]),
         json!([{"nodes": [node("阿杰", "嗯")], "more": -1}]),
-        one(json!([node("阿杰", &"字".repeat(1366))])),
         one(json!([node(&"名".repeat(65), "嗯")])),
         one(json!([node("阿杰\n老板", "嗯")])),
         one(json!([node("  ", "嗯")])),
@@ -128,55 +124,44 @@ async fn bad_forwards_record_nothing() {
     assert_eq!(home.log(&session).len(), before, "什么都没记");
 }
 
-/// 整条消息合起来的上限：条数、名字和正文的字节数，`data.limit` 说是哪一样；正好在上限上的收。
+/// 整条消息合起来不另设上限（施工 O-34 补，2026-11-19 项目主人定：合并转发不设影响体验的上限，这不是要熔断保护的地方）：
+/// 原来所有转发合起来最多 100 条、名字和正文合起来 16 KiB、一条正文 4096 字节，超了整条拒收。现在都收，原样记下；剩下的
+/// 天花板是连接上一行 1 MiB。套的层数留一个只防栈的上限 8：正常的转发碰不到。
 #[tokio::test]
-async fn the_whole_message_has_its_own_limits() {
+async fn forwards_have_no_caps_on_count_or_size() {
     let home = Home::new();
     let (mut client, session) = owners_chat(&home).await;
     let block = |count: usize, text: &str| json!({"nodes": (0..count).map(|_| node("阿杰", text)).collect::<Vec<_>>()});
-    // 两个转发各 50 条、共 100 条：收。再多一条：超了。
-    let fits = json!([block(50, "嗯"), block(50, "嗯")]);
-    let reply = client
-        .call("w1", "session.send", said(&session, "看", fits))
-        .await;
-    assert!(reply.get("error").is_none(), "{reply}");
-    let before = home.log(&session).len();
-    // 名字「阿杰」6 字节：4 条各 4090 字节的正文合起来 16384 字节正好，多一个字节就超。
-    let exactly = "a".repeat(4096 - 6);
-    for (n, forwards, limit) in [
-        (
-            2,
-            json!([block(50, "嗯"), block(51, "嗯")]),
-            "forward_nodes",
-        ),
-        (
-            3,
-            json!([{"nodes": [{"name": "阿杰", "text": "[forward]", "forwards": [block(100, "嗯")]}]}]),
-            "forward_nodes",
-        ),
-        (
-            4,
-            json!([block(4, &exactly), {"nodes": [node("x", "")]}]),
-            "forward_bytes",
-        ),
-    ] {
+    let long = "字".repeat(7000);
+    for (n, forwards) in [
+        // 一个转发 250 条：一个转发里几条也不设上限。
+        json!([block(250, "嗯")]),
+        // 三个转发各 100 条：合起来 300 条。
+        json!([block(100, "嗯"), block(100, "嗯"), block(100, "嗯")]),
+        // 套在里面的 100 条，连外面那一条 101 条。
+        json!([{"nodes": [{"name": "阿杰", "text": "[forward]", "forwards": [block(100, "嗯")]}]}]),
+        // 一条正文 21000 字节。
+        json!([{"nodes": [node("阿杰", &long)]}]),
+        // 名字和正文合起来 40 KiB 以上。
+        json!([block(10, &"a".repeat(4096))]),
+        // 套 8 层。
+        nested(8),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let before = home.log(&session).len();
         let reply = client
             .call(
                 &format!("w{n}"),
                 "session.send",
-                said(&session, "看", forwards),
+                said(&session, "看", forwards.clone()),
             )
             .await;
-        assert_eq!(reason(&reply), Some("bad_params"), "{n}：{reply}");
-        assert_eq!(reply["error"]["data"]["limit"], limit, "{n}：{reply}");
+        assert!(reply.get("error").is_none(), "{n}：{reply}");
+        let log = home.log(&session);
+        assert!(log.len() > before, "{n}：记下了");
+        let kept = serde_json::to_value(log.last().expect("有一条")).expect("写得成 JSON");
+        assert_eq!(kept["body"]["venue"]["forwards"], forwards, "{n}：原样记下");
     }
-    assert_eq!(home.log(&session).len(), before, "什么都没记");
-    let reply = client
-        .call(
-            "w5",
-            "session.send",
-            said(&session, "看", json!([block(4, &exactly)])),
-        )
-        .await;
-    assert!(reply.get("error").is_none(), "正好 16 KiB 的收：{reply}");
 }
