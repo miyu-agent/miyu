@@ -144,4 +144,4 @@ See [Packages](packages.en.md#capabilities).
 
 ## Found a security issue
 
-Do not paste details of how to exploit it in a public issue. First say only "I found a security issue and would like to report it privately", and wait for the project to reply with a way to contact it.
+Do not post details of how to exploit it anywhere public. Report it privately with **Report a vulnerability** on the core repository's Security tab ([open it directly](https://github.com/miyu-agent/miyu/security/advisories/new); you need to be signed in to GitHub); only you and the maintainers can see it. Issues in the other repositories are reported there too. What to include is in [SECURITY.md](../../SECURITY.md#reporting-a-security-issue).

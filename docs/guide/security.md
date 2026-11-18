@@ -144,4 +144,4 @@ Miyu 没有遥测：不往任何地方报告你的用法、对话、报错，也
 
 ## 发现安全问题
 
-不要在公开的 issue 里贴怎么利用的细节。先只说「发现了一个安全问题，想私下报告」，等项目回复联系的办法。
+不要在公开的地方贴怎么利用的细节。在核心仓库的 Security 页点 **Report a vulnerability** 私下报告（[直接打开](https://github.com/miyu-agent/miyu/security/advisories/new)，要登录 GitHub），只有你和维护者看得到。别的仓库的问题也报到这里。报告里写什么见 [SECURITY.md](../../SECURITY.md)。

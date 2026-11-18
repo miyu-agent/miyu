@@ -1565,6 +1565,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC9"><span class="n">DOC-9</span>手册跟上警告、英文报错、循环、迁移包<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC10"><span class="n">DOC-10</span>手册跟上「启用」开关和设置项改名<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC11"><span class="n">DOC-11</span>数据根那几条补上实测<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sDOC12"><span class="n">DOC-12</span>报告安全问题的渠道、打包说明去施工号<span class="st">…</span></a></li>
         <li><a class="step review" href="#sHP1"><span class="n">HP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
@@ -60915,6 +60916,56 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/DOC-11-数据根实测.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sDOC12" aria-labelledby="h-sDOC12">
+  <div class="sheet-head"><h2 id="h-sDOC12"><span class="no">DOC-12</span>报告安全问题的渠道，打包说明去掉施工号</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">项目主人定的两件：开私密漏洞报告、加 SECURITY.md；打包说明发版前清掉施工号。只动文档。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">SECURITY.md　docs/guide　packaging/README.md</span><span class="dir-note">DOC-12</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>SECURITY.md：私下报告，去仓库的 Security 页点 Report a vulnerability；中文在前、英文在后</li>
+              <li>手册安全页「发现安全问题」中英改成去哪里报</li>
+              <li>packaging/README.md 去掉 13 处施工号和讲来历的话，命令、路径不动</li>
+              <li>DOC-2 施工单里一处示例加反引号</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">没定的事不写进政策：多久回复、怎么公告都没写</span><span class="rl">施工单「改了什么」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DOC-12</dd></div>
+        <div><dt>名称</dt><dd>报告安全问题的渠道，打包说明去掉施工号</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-18</dd></div>
+        <div><dt>提交</dt><dd class="mono">DOC-12</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>packaging/README.md 里搜不到「施工」，命令和路径逐个没变</span></li>
+        <li><span class="ok">✓</span><span>改过的页中英行数、标题、表格、代码块个数相等，链接指得到</span></li>
+        <li><span class="ok">…</span><span>私密漏洞报告的开关开了以后，地址打得开（等项目主人点）</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/DOC-12-安全渠道和打包说明.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

@@ -7,7 +7,7 @@
 `docs/guide/`、`docs/dev/` 和文档首页有了英文版，和 `authors/`、`reference/` 一样一页一份 `<页>.en.md`。做成以后：
 
 - `docs/guide/` 31 页、`docs/dev/` 6 页、`docs/README.md`，各有一份 `.en.md`，共 38 页；
-- 中文页头一段末尾加回「英文版：[<页>.en.md](<页>.en.md)。」，英文页同一处写「Chinese version」；
+- 中文页头一段末尾加回 `英文版：[<页>.en.md](<页>.en.md)。`，英文页同一处写「Chinese version」；
 - `docs/README.md`、`docs/dev/README.md` 里「只有 `authors/`、`reference/` 有英文」的说法改成四处都有；
 - 译的时候对出的中文页的四处错跟着改（见下）。
 
