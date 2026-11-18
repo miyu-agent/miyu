@@ -72,3 +72,22 @@ fn redirects_are_written_targets() {
     let words: Vec<&str> = simple.words.iter().map(|word| word.text.as_str()).collect();
     assert_eq!(words, ["echo", "x"], "文件描述符、读进来的都不是参数");
 }
+
+/// `$'…'` 里 `\'` 不收尾，`$( )` 里双引号中的 `\"` 不收尾（施工 AU-007，外部审计 #007）：原来引号在这里失步，后面那条命令
+/// 整个进了前一个词。
+#[test]
+fn escaped_quotes_do_not_lose_track_of_the_line() {
+    assert_eq!(
+        words("echo $'\\'' 'b'; rm -rf /"),
+        vec![
+            vec![vec!["echo".to_string(), "$'".to_string(), "b".to_string()]],
+            vec![vec!["rm".to_string(), "-rf".to_string(), "/".to_string()]],
+        ]
+    );
+    let parsed = parse("echo \"$(printf \"%s\" \"a\\\"b\")\"; shutdown -h now");
+    assert_eq!(parsed.inner, ["printf \"%s\" \"a\\\"b\""]);
+    assert_eq!(parsed.pipelines.len(), 2);
+    let inside = parse("x $(echo $'it\\'s )'); rm -rf ~");
+    assert_eq!(inside.pipelines.len(), 2, "{:?}", inside.inner);
+    assert_eq!(parse("echo `a \\` b`; rm x").pipelines.len(), 2);
+}

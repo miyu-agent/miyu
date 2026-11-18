@@ -111,3 +111,30 @@ fn audit_recursive_deletes_fed_by_xargs_are_not_safe() {
         assert!(kind(command).is_some(), "{command}");
     }
 }
+
+/// 外部审计（2026-11-18，施工 AU-007）：引号状态失步，后面的删除、关机整段被当成字。修以前三种都判成安全。
+#[test]
+fn audit_quotes_that_used_to_swallow_the_rest_of_the_line() {
+    for (command, expected) in [
+        // `$'…'` 里 `\'` 是一个撇号，不收尾：原来当普通单引号，在 `\'` 处收、在下一个 `'` 处又开，`; rm -rf /` 进了字里。
+        ("echo $'\\'' 'benign'; rm -rf /", "delete_root"),
+        // `$( )` 里双引号中的 `\"` 不收尾：原来当收尾，`)` 被吞，后面整段进了外层的字。
+        (
+            "echo \"$(printf \"%s\" \"a\\\"b\")\"; shutdown -h now",
+            "power",
+        ),
+        // 不在引号里的 `\)` 不是收尾的括号。
+        ("echo $(echo \\)); rm -rf ~", "delete_home"),
+        // 反引号里 `\`` 不收尾。
+        ("echo `echo \\`x`; rm -rf ~", "delete_home"),
+    ] {
+        assert_eq!(kind(command), Some(expected), "{command}");
+    }
+}
+
+/// `$'…'` 里的转义到运行时才知道是什么（`$'\x2f'` 就是 `/`）：带转义的词说不清，删它照说不清的判，不当成安全的字。
+#[test]
+fn audit_ansi_c_escapes_are_not_taken_as_plain_text() {
+    assert_ne!(kind("rm -rf $'\\x2f'"), None);
+    assert_eq!(kind("echo $'plain'"), None);
+}

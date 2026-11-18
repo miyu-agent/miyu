@@ -112,6 +112,11 @@ impl Lexer {
                     }
                 }
                 '\'' => self.single(),
+                // `$'…'`（施工 AU-007）：里面 `\'` 是一个撇号、不收尾，照普通单引号读会在这里失步，后面整段吞进字里。
+                '$' if self.peek(1) == Some('\'') => {
+                    self.at += 1;
+                    self.ansi_c();
+                }
                 '"' => self.double(),
                 '`' => {
                     let inner = self.until_backtick();
@@ -237,6 +242,35 @@ impl Lexer {
         }
     }
 
+    /// `$'…'`（施工 AU-007）：反斜杠转义下一个字（`\'` 不收尾）。带转义的词说不清（`$'\x2f'` 到运行时才是 `/`），
+    /// 转义的地方同变量一样留一个 `$`，后面照字面留下转义后面那个字。
+    fn ansi_c(&mut self) {
+        self.at += 1;
+        self.word.get_or_insert_with(Word::default);
+        loop {
+            match self.peek(0) {
+                None => return,
+                Some('\'') => {
+                    self.at += 1;
+                    return;
+                }
+                Some('\\') => {
+                    self.at += 1;
+                    if let Some(next) = self.peek(0) {
+                        self.at += 1;
+                        // 同变量一样记一个 `$`：照字面换变量的那一步（`vars.rs`）认得出它说不清。
+                        self.mark('$');
+                        self.push(next);
+                    }
+                }
+                Some(c) => {
+                    self.at += 1;
+                    self.push(c);
+                }
+            }
+        }
+    }
+
     fn double(&mut self) {
         self.at += 1;
         self.word.get_or_insert_with(Word::default);
@@ -281,14 +315,17 @@ impl Lexer {
         let start = self.at;
         while let Some(c) = self.peek(0) {
             self.at += 1;
-            if c == '`' {
-                return self.chars[start..self.at - 1].iter().collect();
+            match c {
+                // `\`` 不收尾（施工 AU-007）。
+                '\\' if self.peek(0).is_some() => self.at += 1,
+                '`' => return self.chars[start..self.at - 1].iter().collect(),
+                _ => {}
             }
         }
         self.chars[start..].iter().collect()
     }
 
-    /// `(` 已经吃掉了，到配上的 `)`：交回里面的原文。里面的引号照样认，免得引号里的括号算数；heredoc 的正文跳过，正文里的
+    /// `(` 已经吃掉了，到配上的 `)`：交回里面的原文。里面的引号、反斜杠照样认，免得引号里的括号算数；heredoc 的正文跳过，正文里的
     /// 撇号不当引号（施工 AS-9）。
     fn until_close(&mut self) -> String {
         let start = self.at;
@@ -296,9 +333,22 @@ impl Lexer {
         let mut quote: Option<char> = None;
         while let Some(c) = self.peek(0) {
             self.at += 1;
+            // 反斜杠转义下一个字：不在引号里、双引号里、`$'…'` 里都是（施工 AU-007：`"a\"b"` 的 `\"` 原来当成收尾，
+            // `)` 被吞，后面整段进了外层的字）。`$'…'` 记成 `$`。
             match (quote, c) {
+                (None | Some('"' | '$'), '\\') => {
+                    if self.peek(0).is_some() {
+                        self.at += 1;
+                    }
+                }
+                (Some('$'), '\'') => quote = None,
+                (Some('$'), _) => {}
                 (Some(q), c) if c == q => quote = None,
                 (Some(_), _) => {}
+                (None, '$') if self.peek(0) == Some('\'') => {
+                    self.at += 1;
+                    quote = Some('$');
+                }
                 (None, '\'' | '"') => quote = Some(c),
                 (None, '<') if self.peek(0) == Some('<') && self.peek(1) != Some('<') => {
                     self.at += 1;
