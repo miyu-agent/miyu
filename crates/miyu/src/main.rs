@@ -129,130 +129,7 @@ fn main() -> ExitCode {
     }
     let section = miyu_cli::packages::help_section(language, &added);
     let help = miyu_cli::packages::with_section(page(language, Page::Miyu), &section);
-    // 帮助页换成自己写的（施工 4-11）：`-h`、`--help`、`miyu help <子命令>` 都印它们，clap 生成的一个字都不印。
-    let command = Cli::command()
-        .override_help(help.clone())
-        .mut_subcommand("ask", |ask| ask.override_help(page(language, Page::Ask)))
-        .mut_subcommand("undo", |undo| {
-            undo.override_help(page(language, Page::Undo))
-        })
-        .mut_subcommand("restore", |restore| {
-            restore.override_help(page(language, Page::Restore))
-        })
-        .mut_subcommand("redo", |redo| {
-            redo.override_help(page(language, Page::Redo))
-        })
-        .mut_subcommand("compact", |compact| {
-            compact.override_help(page(language, Page::Compact))
-        })
-        .mut_subcommand("recap", |recap| {
-            recap.override_help(page(language, Page::Recap))
-        })
-        .mut_subcommand("rename", |rename| {
-            rename.override_help(page(language, Page::Rename))
-        })
-        .mut_subcommand("provider", |provider| {
-            let help = page(language, Page::Provider);
-            ["login", "list", "logout"]
-                .into_iter()
-                .fold(provider.override_help(help), |provider, name| {
-                    provider.mut_subcommand(name, |sub| sub.override_help(help))
-                })
-        })
-        .mut_subcommand("setup", |setup| {
-            setup.override_help(page(language, Page::Setup))
-        })
-        .mut_subcommand("check", |check| {
-            check.override_help(page(language, Page::Check))
-        })
-        .mut_subcommand("config", |config| {
-            let help = page(language, Page::Config);
-            ["get", "explain", "path", "set", "unset", "edit", "trust"]
-                .into_iter()
-                .fold(config.override_help(help), |config, name| {
-                    config.mut_subcommand(name, |sub| sub.override_help(help))
-                })
-        })
-        .mut_subcommand("memory", |memory| {
-            let help = page(language, Page::Memory);
-            let memory = ["list", "search", "add", "edit", "forget"]
-                .into_iter()
-                .fold(memory.override_help(help), |memory, name| {
-                    memory.mut_subcommand(name, |sub| sub.override_help(help))
-                });
-            memory.mut_subcommand("clear", |clear| {
-                clear
-                    .override_help(help)
-                    .mut_subcommand("session", |session| session.override_help(help))
-                    .mut_subcommand("me", |me| me.override_help(help))
-            })
-        })
-        .mut_subcommand("pkg", |pkg| {
-            let help = page(language, Page::Pkg);
-            [
-                "list", "install", "remove", "info", "files", "owns", "check", "query",
-            ]
-            .into_iter()
-            .fold(pkg.override_help(help), |pkg, name| {
-                pkg.mut_subcommand(name, |sub| sub.override_help(help))
-            })
-        })
-        .mut_subcommand("dev", |dev| {
-            let help = page(language, Page::Dev);
-            dev.override_help(help)
-                .mut_subcommand("driver-check", |sub| sub.override_help(help))
-        })
-        .mut_subcommand("bus", |bus| {
-            let help = page(language, Page::Bus);
-            bus.override_help(help)
-                .mut_subcommand("list", |sub| sub.override_help(help))
-        })
-        .mut_subcommand("kb", |kb| {
-            let help = page(language, Page::Kb);
-            [
-                "list", "search", "read", "new", "edit", "add", "remove", "mount", "delete",
-                "reindex",
-            ]
-            .into_iter()
-            .fold(kb.override_help(help), |kb, name| {
-                kb.mut_subcommand(name, |sub| sub.override_help(help))
-            })
-        })
-        .mut_subcommand("schedule", |schedule| {
-            let help = page(language, Page::Schedule);
-            ["list", "add", "rm", "pause", "resume"]
-                .into_iter()
-                .fold(schedule.override_help(help), |schedule, name| {
-                    schedule.mut_subcommand(name, |sub| sub.override_help(help))
-                })
-        })
-        .mut_subcommand("session", |session| {
-            let help = page(language, Page::Session);
-            ["export", "import"]
-                .into_iter()
-                .fold(session.override_help(help), |session, name| {
-                    session.mut_subcommand(name, |sub| sub.override_help(help))
-                })
-        })
-        .mut_subcommand("mcp", |mcp| {
-            let help = page(language, Page::Mcp);
-            mcp.override_help(help)
-                .mut_subcommand("login", |login| login.override_help(help))
-        })
-        .mut_subcommand("service", |service| {
-            let help = page(language, Page::Service);
-            service
-                .override_help(help)
-                .mut_subcommand("enable", |enable| enable.override_help(help))
-                .mut_subcommand("disable", |disable| disable.override_help(help))
-                .mut_subcommand("status", |status| status.override_help(help))
-        })
-        .mut_subcommand("upgrade", |upgrade| {
-            upgrade.override_help(page(language, Page::Upgrade))
-        })
-        .mut_subcommand("rescue", |rescue| {
-            rescue.override_help(page(language, Page::Rescue))
-        });
+    let command = dressed(Cli::command(), language, help.clone());
     let cli = match command
         .try_get_matches()
         .and_then(|matches| Cli::from_arg_matches(&matches))
@@ -310,6 +187,56 @@ fn main() -> ExitCode {
     }
 }
 
+/// 哪个子命令印哪一页（施工 4-11），连同它下面每一层的子命令（施工 HP-1）。`rewind` 是 `undo` 的别名，不另算。
+const PAGES: [(&str, Page); 23] = [
+    ("ask", Page::Ask),
+    ("undo", Page::Undo),
+    ("restore", Page::Restore),
+    ("redo", Page::Redo),
+    ("compact", Page::Compact),
+    ("recap", Page::Recap),
+    ("rename", Page::Rename),
+    ("provider", Page::Provider),
+    ("setup", Page::Setup),
+    ("check", Page::Check),
+    ("config", Page::Config),
+    ("memory", Page::Memory),
+    ("pkg", Page::Pkg),
+    ("dev", Page::Dev),
+    ("bus", Page::Bus),
+    ("kb", Page::Kb),
+    ("schedule", Page::Schedule),
+    ("session", Page::Session),
+    ("mcp", Page::Mcp),
+    ("service", Page::Service),
+    ("upgrade", Page::Upgrade),
+    ("rescue", Page::Rescue),
+    ("core", Page::Core),
+];
+
+/// 帮助页换成自己写的（施工 4-11）：`-h`、`--help`、`miyu help <子命令>` 都印它们，clap 生成的一个字都不印。
+fn dressed(command: clap::Command, language: Language, help: String) -> clap::Command {
+    PAGES
+        .into_iter()
+        .fold(command.override_help(help), |command, (name, which)| {
+            command.mut_subcommand(name, |sub| everywhere(sub, page(language, which)))
+        })
+}
+
+/// 这个命令和它下面每一层的子命令都印 `help` 这一页（施工 HP-1）：原来照名单一个个挂，后加的子命令漏了就印 clap 照源码
+/// 注释生成的那一页。
+fn everywhere(command: clap::Command, help: &'static str) -> clap::Command {
+    let names: Vec<String> = command
+        .get_subcommands()
+        .map(|sub| sub.get_name().to_owned())
+        .collect();
+    names
+        .into_iter()
+        .fold(command.override_help(help), |command, name| {
+            command.mut_subcommand(name, |sub| everywhere(sub, help))
+        })
+}
+
 /// 标准输入、标准输出都是终端（施工 9-3）：只有这时才拉起界面。
 fn terminal() -> bool {
     use std::io::IsTerminal;
@@ -359,6 +286,64 @@ fn refused(error: clap::Error, language: Language) -> ExitCode {
                 eprintln!("{line}");
             }
             ExitCode::from(USAGE)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use clap::CommandFactory;
+
+    use super::*;
+
+    /// 敲 `miyu <path…> -h` 印出来的字。
+    fn printed(command: &clap::Command, path: &[String]) -> String {
+        let words = std::iter::once("miyu")
+            .chain(path.iter().map(String::as_str))
+            .chain(std::iter::once("-h"));
+        let error = command
+            .clone()
+            .try_get_matches_from(words)
+            .expect_err("印帮助");
+        assert_eq!(error.kind(), ErrorKind::DisplayHelp, "{path:?}");
+        error.to_string()
+    }
+
+    /// `at` 和它下面每一层的子命令里，`-h` 印的不是 `help` 这一页的，照 `miyu pkg pack` 这样记进 `wrong`。
+    fn differing(
+        command: &clap::Command,
+        at: &clap::Command,
+        path: &[String],
+        help: &str,
+        wrong: &mut Vec<String>,
+    ) {
+        if printed(command, path) != help {
+            wrong.push(format!("miyu {}", path.join(" ")));
+        }
+        for sub in at.get_subcommands() {
+            let mut path = path.to_vec();
+            path.push(sub.get_name().to_owned());
+            differing(command, sub, &path, help, wrong);
+        }
+    }
+
+    #[test]
+    fn every_subcommand_prints_the_page_of_its_command() {
+        // 漏挂的印 clap 照源码注释生成的那一页：英文界面里是中文、带施工号（审计 #037，施工 HP-1）。
+        for language in [Language::Chinese, Language::English] {
+            let command = dressed(Cli::command(), language, String::from("miyu\n"));
+            assert_eq!(printed(&command, &[]), "miyu\n");
+            let mut wrong = Vec::new();
+            for top in command.get_subcommands() {
+                let path = [top.get_name().to_owned()];
+                match PAGES.iter().find(|(name, _)| *name == top.get_name()) {
+                    Some((_, which)) => {
+                        differing(&command, top, &path, page(language, *which), &mut wrong);
+                    }
+                    None => wrong.push(format!("miyu {}（没有帮助页）", path[0])),
+                }
+            }
+            assert_eq!(wrong, Vec::<String>::new(), "{language:?}");
         }
     }
 }
