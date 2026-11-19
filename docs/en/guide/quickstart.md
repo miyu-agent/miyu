@@ -33,7 +33,7 @@ Decides which language the interface is shown in. With the first option, `Follow
 
 Set up an AI provider and pick a model; custom providers are supported.
 
-###  Create persona
+### Create persona
 
 A "persona" is who the AI you talk to is, and it decides the AI's memory. Different sessions can use different personas.
 
@@ -75,7 +75,7 @@ Once the guide is finished you can use the basic features for agent work. Most o
 
 In `webui`, click the gear icon at the bottom of the left sidebar to open the settings page and go to the `Get software` page; in `tui`, run `/config` in the input box and go to the `Packages` page of the settings menu; you can also use the `miyu pkg` command, see `miyu pkg --help` for how.
 
- ### Changing settings
+### Changing settings
 
 An extension package's settings are mainly in two places. Go to the installed packages page, find the installed package and open its details page to see its settings. A package can also bring its own dashboard; besides opening it from the package's details page, the `Dashboards` page of the settings menu collects these dashboards for quick access.
 
