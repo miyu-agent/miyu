@@ -132,8 +132,8 @@ fn a_dangling_reference_is_said_in_words() {
     assert_eq!(
         said,
         [
-            "uses.chat 指的供应商 b 没有配。",
-            "uses.fixed 指的池 paid 没有配。"
+            "uses.chat 指向的供应商 b 没有配置。",
+            "uses.fixed 指向的池 paid 没有配置。"
         ]
     );
 }

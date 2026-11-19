@@ -23,7 +23,7 @@ impl Language {
                 let mut lines = vec![
                     pick(format!("已升级 Miyu {from} → {to}"), format!("upgraded Miyu {from} → {to}")),
                     pick(
-                        "提示：已经在跑的核心还是旧版：运行 'miyu core stop'，下次打开就是新版".to_string(),
+                        "提示：正在运行的核心仍然是旧版：运行 'miyu core stop'，下次打开就是新版".to_string(),
                         "hint: a core that is already running is still the old version: run 'miyu core stop' and the next start uses the new one".to_string(),
                     ),
                 ];
@@ -33,7 +33,7 @@ impl Language {
                     let more = kept.len() > 5;
                     lines.push(pick(
                         format!(
-                            "提示：安装目录里还有 {} 样不是 Miyu 的，原样留着：{}{}",
+                            "提示：安装目录里还有 {} 项不属于 Miyu 的内容，已原样保留：{}{}",
                             kept.len(),
                             shown.join("、"),
                             if more { "……" } else { "" }
@@ -105,7 +105,7 @@ impl Language {
                 ("无法升级：没有这种系统的发行包", "cannot upgrade: no release is built for this system"),
             )
             .hint(pick(
-                format!("发行包只有 Linux x86_64、aarch64，macOS Apple 芯片，Windows x86_64；别的系统到 {page} 下载源码自己编译"),
+                format!("发行包只有 Linux x86_64、aarch64，macOS Apple 芯片，Windows x86_64；其他系统到 {page} 下载源码自行编译"),
                 format!("releases are built for Linux x86_64 and aarch64, macOS on Apple silicon and Windows x86_64; on other systems build from the source at {page}"),
             )),
             Said::Net(NetError::Offline(why)) => Problem::new(pick(
@@ -171,7 +171,7 @@ impl Language {
                 format!("cannot upgrade: no write permission for {}", shown(dir)),
             ))
             .hint(pick(
-                "Miyu 不会提权；装在系统目录里的请用安装它的方式升级".to_string(),
+                "Miyu 不会提权；如果安装在系统目录里，请用安装时的方式升级".to_string(),
                 "Miyu does not raise its privileges; upgrade a system-wide install the way it was installed".to_string(),
             )),
             Said::Failed(step, why) => Problem::new(pick(

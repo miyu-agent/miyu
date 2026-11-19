@@ -113,10 +113,10 @@ fn what_was_left_in_the_install_folder_is_said_with_at_most_five_names() {
     let zh = said(kept.clone(), Language::Chinese);
     let line = zh
         .iter()
-        .find(|l| l.contains("不是 Miyu 的"))
+        .find(|l| l.contains("不属于 Miyu 的内容"))
         .expect("说了");
     assert!(
-        line.contains("还有 7 样")
+        line.contains("还有 7 项")
             && line.contains("a、b、c、d、e")
             && !line.contains("f")
             && line.ends_with("……"),
@@ -131,7 +131,7 @@ fn what_was_left_in_the_install_folder_is_said_with_at_most_five_names() {
     assert!(
         !said(Vec::new(), Language::Chinese)
             .iter()
-            .any(|l| l.contains("不是 Miyu 的")),
+            .any(|l| l.contains("不属于 Miyu 的内容")),
         "没有的不说"
     );
 }

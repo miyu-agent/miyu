@@ -3,44 +3,44 @@
     "items": {
       "jobs.max_running": {
         "name": "后台命令最长运行时间",
-        "description": "AI 放到后台跑的命令最多跑这么久，到了就停掉并告诉 AI。最长 2 小时。"
+        "description": "AI 放到后台运行的命令最多运行这么久，到时间就会被停止，并通知 AI。最长 2 小时。"
       },
       "show.system_hint": {"name": "展示提示", "description": "让 AI 把做出来或拿到的图片、网页、文档、音视频用「展示」直接给你看，而不只是给一个路径。"},
       "compaction.line": {
         "name": "压缩触发线",
-        "description": "上下文用到窗口的百分之几时自动压缩。窗口小的模型要给回答留出地方，实际可能更早压。20 万的窗口调到 85 以上不起作用，百万的窗口才到得了 95。"
+        "description": "上下文用到窗口的百分之几时自动压缩。窗口小的模型要给回答留出空间，实际可能更早压缩。20 万的窗口调到 85 以上不起作用，百万的窗口才能调到 95。"
       },
       "compaction.prepare": {
         "name": "预压缩",
-        "description": "上下文快满时，在后台先把旧的那一段压成摘要，到了要压缩的时候直接换上，不用停下来等。关掉的话，照旧到线再压。"
+        "description": "上下文快满时，在后台先把旧的那一段压成摘要，到了要压缩的时候直接换上，不用停下来等。关闭后，到了压缩触发线才开始压缩。"
       },
-      "net.search.exa.key": {"name": "Exa", "description": "配了就用你自己的 Exa 额度，不配照免费额度。"},
-      "net.search.anysearch.key": {"name": "AnySearch", "description": "配了就用你自己的 AnySearch 额度，不配照免费额度（按 IP 每天的额度）。"},
-      "net.search.deepseek.key": {"name": "DeepSeek", "description": "联网服务选了 DeepSeek 时要它；没填的借用模型那边官方 DeepSeek 供应商的 key（设置里显示「已继承」）。搜索、代抓按次收费。"},
-      "net.search.tavily.key": {"name": "Tavily", "description": "联网服务选了 Tavily 时要它。"},
-      "net.search.brave.key": {"name": "Brave Search", "description": "联网服务选了 Brave 时要它。"},
-      "net.internal_domains": {"name": "内部域名", "description": "别人（群里的人、陌生人）让 AI 上网时一律不去的域名，子域名也算，不管解析成什么地址、走不走代理；你自己不受影响。写法例如 example-corp.com。"},
-      "net.search.searxng.url": {"name": "SearXNG 的地址", "description": "你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。联网服务选了 SearXNG 时用它。"},
-      "net.search.source": {"name": "联网服务", "description": "AI 搜网页、抓网页用哪一家。自动只用免费额度：搜索照 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；自己抓不下来的网页请 Exa、Firecrawl、Parallel 代抓。这几家都在国外，搜索词和网址会发给它们。选了一家的先用它（选了 DeepSeek 的，抓网页也先交它），它用不了再照自动的试。", "options": {"auto": "自动（免费额度）", "exa": "Exa", "anysearch": "AnySearch", "deepseek": "DeepSeek", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG"}},
+      "net.search.exa.key": {"name": "Exa", "description": "填写后使用你自己的 Exa 额度，不填写时使用免费额度。"},
+      "net.search.anysearch.key": {"name": "AnySearch", "description": "填写后使用你自己的 AnySearch 额度，不填写时使用免费额度（按 IP 计算的每日额度）。"},
+      "net.search.deepseek.key": {"name": "DeepSeek", "description": "联网服务选择 DeepSeek 时需要这个密钥。不填写时使用模型供应商里官方 DeepSeek 的密钥（设置里显示「已继承」）。搜索和代抓按次收费。"},
+      "net.search.tavily.key": {"name": "Tavily", "description": "联网服务选择 Tavily 时需要这个密钥。"},
+      "net.search.brave.key": {"name": "Brave Search", "description": "联网服务选择 Brave 时需要这个密钥。"},
+      "net.internal_domains": {"name": "内部域名", "description": "其他人（群成员、陌生人）让 AI 上网时，AI 不会访问这些域名和它们的子域名，无论域名解析到什么地址、是否经过代理。你自己不受影响。写法例如 example-corp.com。"},
+      "net.search.searxng.url": {"name": "SearXNG 的地址", "description": "你自己搭建的 SearXNG 的地址，例如 http://127.0.0.1:8888，需要开启 JSON 格式。联网服务选择 SearXNG 时使用。"},
+      "net.search.source": {"name": "联网服务", "description": "AI 搜索网页、抓取网页使用哪一家服务。「自动」只使用免费额度：搜索时依次尝试 Exa、Parallel、Firecrawl、AnySearch、You.com，被限额的服务会暂停一段时间；Miyu 自己抓取失败的网页交给 Exa、Firecrawl、Parallel 代抓。这几家服务都在国外，搜索词和网址会发送给它们。如果选择了其中一家，就优先使用它（选择 DeepSeek 时，抓取网页也优先交给它）；它不可用时再按「自动」的顺序尝试。", "options": {"auto": "自动（免费额度）", "exa": "Exa", "anysearch": "AnySearch", "deepseek": "DeepSeek", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG"}},
       "memory.extract_idle": {
         "name": "整理前的空闲时间",
-        "description": "聊完闲了这么久，AI 把新聊的内容里值得记的整理成记忆。"
+        "description": "对话停下这么久之后，AI 把新对话里值得记住的内容整理成记忆。"
       },
       "memory.extract_turns": {
         "name": "整理间隔（轮）",
-        "description": "上次整理以后至少聊了这么多轮才整理。"
+        "description": "距离上次整理至少对话这么多轮，才会再次整理。"
       },
       "memory.extract_max_turns": {
         "name": "连续对话时的整理间隔（轮）",
-        "description": "群里一直有人说话、总闲不下来时，上次整理以后聊满这么多轮就不等闲，在后台整理。"
+        "description": "群里一直有人说话、对话停不下来时，距离上次整理满这么多轮就直接在后台整理。"
       },
       "memory.extract_max_wait": {
         "name": "连续对话时的最长等待",
-        "description": "群里一直有人说话、总闲不下来时，最早没整理的那一轮过了这么久就不等闲，在后台整理。"
+        "description": "群里一直有人说话、对话停不下来时，最早一轮未整理的对话超过这么久就直接在后台整理。"
       },
       "memory.merge_every": {
         "name": "归纳间隔",
-        "description": "隔这么久，AI 把新记的和以前的放在一起理一遍：重复的合掉，过时的作废，写一段对你的了解。"
+        "description": "每隔这么久，AI 把新记忆和旧记忆放在一起整理一遍：合并重复的，作废过时的，并写一段对你的了解。"
       },
       "memory.dream_keep": {
         "name": "保留的整理记录数",
@@ -48,15 +48,15 @@
       },
       "core.idle_exit": {
         "name": "空闲退出时间",
-        "description": "没有连接、也没有在跑的回合，连续这么多分钟以后核心退出。0 表示一直开着（默认）；头连不上核心时会自己拉起。"
+        "description": "没有连接、也没有正在运行的回合时，连续这么多分钟后核心退出。0 表示一直运行（默认）。界面连不上核心时会自动启动核心。"
       },
       "core.workers": {
         "name": "核心的工作线程数",
-        "description": "核心用几个线程处理连接、会话和请求。0 表示照 CPU 的核数（默认）；写 1 的照 2 个。"
+        "description": "核心用几个线程处理连接、会话和请求。0 表示使用 CPU 的核数（默认）；填 1 时按 2 个线程运行。"
       },
       "log.level": {
         "name": "运行日志的级别",
-        "description": "运行日志记到哪一级。排查问题时调成 debug。设了环境变量 MIYU_LOG 的，那一次启动照它。",
+        "description": "运行日志记录到哪一级。排查问题时可以调成 debug。如果设置了环境变量 MIYU_LOG，那一次启动以环境变量为准。",
         "options": {
           "error": "只记错误",
           "warn": "错误和警告",
@@ -68,7 +68,7 @@
       },
       "ui.language": {
         "name": "界面语言",
-        "description": "终端、网页、命令行给你看的字用哪种话。auto 跟着终端或浏览器的语言。",
+        "description": "终端界面、网页界面和命令行显示的文字使用哪种语言。auto 表示跟随终端或浏览器的语言。",
         "options": {
           "auto": "跟随系统",
           "zh": "中文",
@@ -78,7 +78,7 @@
       },
       "usage.currency": {
         "name": "显示的币种",
-        "description": "用量的金额照每一笔那天的汇率换成这一种显示，取不到汇率的不显示金额。三个大写字母，例如 USD、CNY。"
+        "description": "用量的金额按每一笔当天的汇率换算成这个币种显示；取不到汇率时不显示金额。填三个大写字母，例如 USD、CNY。"
       },
       "ui.startup": {
         "name": "启动时打开",
@@ -90,15 +90,15 @@
       },
       "ui.head": {
         "name": "默认界面",
-        "description": "直接敲 miyu 时打开哪个界面。"
+        "description": "直接运行 miyu 时打开哪个界面。"
       },
       "ui.welcomed": {
         "name": "已完成首次引导",
-        "description": "已经走完第一次引导，终端、网页不再打开引导。"
+        "description": "已经完成首次引导，终端界面和网页界面不再打开引导。"
       },
       "persona.default": {
         "name": "默认人格",
-        "description": "新会话默认用哪个人格。不设的话，新会话不使用人格，记忆单独一份。"
+        "description": "新会话默认用哪个人格。不设置时，新会话不使用人格，记忆单独保存一份。"
       },
       "preset.default": {
         "name": "默认预设",
@@ -110,7 +110,7 @@
       },
       "profile.about": {
         "name": "更多描述",
-        "description": "想让 AI 知道的关于你的事，可以空。通讯平台的群聊里不带。"
+        "description": "你想让 AI 了解的关于你的信息，可以留空。通讯平台的群聊里不会带上这些内容。"
       },
       "profile.preferred_reply_language": {
         "name": "回复语言",
@@ -119,7 +119,7 @@
       },
       "commands.<id>.access": {
         "name": "使用权限",
-        "description": "这条斜杠命令谁能用：你和群管理员，或者群里随便哪个人也行，或者停用、谁都不行。不写的照命令自带的设置，没有的是你和群管理员。",
+        "description": "谁可以使用这条斜杠命令：你和群管理员，群里的所有人，或者停用（所有人都不能使用）。不填写时使用命令自带的设置；命令没有自带设置时，只有你和群管理员可以使用。",
         "options": {
           "admin": "你和群管理员",
           "anyone": "所有人",
@@ -152,11 +152,11 @@
       },
       "skills.external.enabled": {
         "name": "读取其他目录的 Skills",
-        "description": "开着时，「其他技能目录」里的技能也能用：Codex、opencode 这些别的应用装的技能常放在 ~/.agents/skills。同名的照 Miyu 自己的；这些技能 Miyu 不删。"
+        "description": "开启后，「其他技能目录」里的技能也可以使用：Codex、opencode 等其他应用安装的技能通常放在 ~/.agents/skills。如果有同名的技能，使用 Miyu 自己的那一个。Miyu 不会删除这些目录里的技能。"
       },
       "skills.external.dirs": {
         "name": "其他技能目录",
-        "description": "「读取其他目录的 Skills」开着时读的目录，照先后，同名的先列的赢。写成 ~/… 或绝对路径。"
+        "description": "「读取其他目录的 Skills」开启时读取的目录，按填写的先后顺序读取；如果有同名的技能，使用排在前面的目录里的那一个。路径写成 ~/… 或绝对路径。"
       },
       "permission.start_read_only": {
         "name": "新会话开局只读",
@@ -164,28 +164,28 @@
       },
       "clicall.tools.<name>": {
         "name": "允许脚本调用",
-        "description": "开着的话，AI 在命令里用 miyu call 也能调这件工具，结果交给脚本；关着的只能直接调。不写的照它自己登记的（MCP 服务、脚本工具默认能调，自带的只有搜索、抓网页、搜记忆、知识库几件能调，扩展的默认不能）。写入、发消息这类工具开了也调不成。"
+        "description": "开启后，AI 在命令里也可以用 miyu call 调用这件工具，结果交给脚本处理；关闭后只能直接调用。不填写时使用工具自己登记的设置：MCP 服务和脚本工具默认可以调用，自带工具里只有搜索、抓取网页、搜索记忆、知识库几件可以调用，扩展的工具默认不能调用。写入、发消息这类工具即使开启也不能用 miyu call 调用。"
       },
       "clicall.mcp.<id>": {
         "name": "允许脚本调用",
-        "description": "开着的话，这个服务的工具在 miyu call 里都能调；关着的只能直接调。单件工具另写了的照那一件的。"
+        "description": "开启后，这个服务的工具都可以用 miyu call 调用；关闭后只能直接调用。如果单件工具另有设置，以那一件工具的设置为准。"
       },
-      "packages.<id>.enabled": {"name": "启用", "description": "这个包开没开。关掉以后它带来的工具、技能、命令、内容都不在，扩展和它带的服务停下，出厂的内置包卸掉。随时能开回来。"},
+      "packages.<id>.enabled": {"name": "启用", "description": "是否启用这个软件包。关闭后，它提供的工具、技能、命令和内容都不可用，扩展和它带的服务会停止，出厂的内置包会被卸载。可以随时重新启用。"},
       "features.<name>": {
         "name": "启用",
-        "description": "默认全开的预设照它开关这个技能、脚本或 MCP 服务，预设里单独写了开或关的照预设。默认关的预设不照它。"
+        "description": "在默认全部开启的预设里，这个技能、脚本或 MCP 服务是否启用由这一项决定；如果预设里单独设置了开或关，以预设为准。默认全部关闭的预设不使用这一项。"
       },
       "terminal.persona": {
         "name": "终端集成会话的人格",
-        "description": "新开的终端集成会话用哪个人格。不设的话跟随默认人格。已经在用的终端集成会话不变。"
+        "description": "新建的终端集成会话使用哪个人格。不设置时跟随默认人格。已经在使用的终端集成会话不受影响。"
       },
       "terminal.preset": {
         "name": "终端集成会话的预设",
-        "description": "新开的终端集成会话用哪个预设。不设的话跟随默认预设。"
+        "description": "新建的终端集成会话使用哪个预设。不设置时跟随默认预设。"
       },
       "terminal.idle_new_after": {
         "name": "闲置后新建会话",
-        "description": "上一次说话以后闲置超过这么多分钟，下一句开一个新的终端集成会话，旧会话保留。0 表示不开新的。"
+        "description": "距离上一次对话超过这么多分钟后，下一句话会新建一个终端集成会话，旧会话保留。0 表示不新建。"
       },
       "models.chat": {
         "name": "主对话的模型",
@@ -197,7 +197,7 @@
       },
       "models.embedding": {
         "name": "语义模型",
-        "description": "提高记忆、知识库等内容的检索质量。只有内置模型会自动联想记忆和知识库，换成别的模型后只在搜索时用到。",
+        "description": "提高记忆、知识库等内容的检索质量。只有内置模型会自动联想记忆和知识库，换成其他模型后只在搜索时使用。",
         "options": {
           "local": "内置模型",
           "off": "关"
@@ -209,28 +209,28 @@
       },
       "pools.<id>.strategy": {
         "name": "分配策略",
-        "description": "一个会话一直用一个成员，还是每次请求换下一个，还是每次从第一个排起（主力加备用，出错才用后面的）。不写的：成员全是按次计费的轮换，别的钉住。",
+        "description": "一个会话始终使用同一个成员（钉住），每次请求换下一个成员（轮换），或者每次从第一个成员开始（按先后：前面的成员出错时才使用后面的）。不填写时，如果成员全部按次计费就轮换，否则钉住。",
         "options": {
           "pin": "钉住",
           "rotate": "轮换",
-          "ordered": "照先后"
+          "ordered": "按先后"
         }
       },
       "pools.<id>.subagent": {
         "name": "子代理可用",
-        "description": "打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。"
+        "description": "开启后，新会话里 AI 派子代理时可以选择这个池。池里有成员时才会列出。"
       },
       "pools.lite.subagent": {
         "name": "子代理可用",
-        "description": "打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。"
+        "description": "开启后，新会话里 AI 派子代理时可以选择这个池。池里有成员时才会列出。"
       },
       "pools.normal.subagent": {
         "name": "子代理可用",
-        "description": "打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。"
+        "description": "开启后，新会话里 AI 派子代理时可以选择这个池。池里有成员时才会列出。"
       },
       "pools.flagship.subagent": {
         "name": "子代理可用",
-        "description": "打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。"
+        "description": "开启后，新会话里 AI 派子代理时可以选择这个池。池里有成员时才会列出。"
       },
       "pools.<id>.description": {
         "name": "说明",
@@ -238,7 +238,7 @@
       },
       "providers.<id>.driver": {
         "name": "驱动",
-        "description": "怎么和这家说话。认得出的供应商可以不写。",
+        "description": "和这家供应商通信使用的接口。Miyu 能识别的供应商可以不填写。",
         "options": {
           "openai-chat": "OpenAI 兼容的对话接口",
           "anthropic": "Anthropic 消息接口",
@@ -247,19 +247,19 @@
       },
       "providers.<id>.base_url": {
         "name": "地址",
-        "description": "这家的接口地址，路径由驱动接在后面。认得出的供应商可以不写。"
+        "description": "这家供应商的接口地址，驱动会在后面接上路径。Miyu 能识别的供应商可以不填写。"
       },
       "providers.<id>.key": {
-        "name": "key",
-        "description": "写 { secret = \"名字\" }（用 miyu provider login 存）或 { env = \"环境变量\" }。一家一个，几份额度一起用的配成几家、放进池里。不写的不带认证头。"
+        "name": "密钥",
+        "description": "写成 { secret = \"名字\" }（用 miyu provider login 保存）或 { env = \"环境变量\" }。一家供应商只有一个密钥；如果要同时使用几份额度，把它们配置成几家供应商，再放进同一个池。不填写时请求不带认证头。"
       },
       "providers.<id>.name": {
         "name": "显示名",
-        "description": "界面上给人看的名字。编号只用来引用模型；不写的照资料里那一家的名字，再没有的照编号。"
+        "description": "界面上显示的名字。编号只用来引用模型。不填写时使用模型目录里这家供应商的名字；模型目录里没有时使用编号。"
       },
       "providers.<id>.catalog": {
         "name": "目录中的供应商",
-        "description": "这家对应资料里的哪一家，例如只转 DeepSeek 的中转写 deepseek。"
+        "description": "这家供应商对应模型目录里的哪一家。例如只转发 DeepSeek 的中转服务填 deepseek。"
       },
       "providers.<id>.models.<model>.window": {
         "name": "上下文窗口",
@@ -267,25 +267,25 @@
       },
       "providers.<id>.price_multiplier": {
         "name": "倍率",
-        "description": "这家的价格照它乘，不写是 1。模型上写的盖过它。"
+        "description": "这家供应商的价格乘以这个倍率，不填写时是 1。模型上填写的倍率优先。"
       },
       "providers.<id>.local": {
         "name": "本地服务",
-        "description": "本机跑的模型服务，价格当 0。不写的照地址：在本机的是。"
+        "description": "在本机运行的模型服务，价格按 0 计算。不填写时根据地址判断：地址在本机就是本地服务。"
       },
-      "providers.<id>.package": {"name": "所属软件包", "description": "这一家是哪个软件包带的。写了的，这里的几项盖在那个包带的供应商上；没写的是你自己的供应商，包带的同编号那一家不出现。改包带的供应商时自动写上。"},
+      "providers.<id>.package": {"name": "所属软件包", "description": "这家供应商由哪个软件包提供。填写后，这里的设置会覆盖软件包提供的同一家供应商的对应项；不填写时，它是你自己的供应商，软件包提供的同编号供应商不会出现。修改软件包提供的供应商时，这一项会自动填上。"},
       "providers.<id>.cache": {
         "name": "缓存类别",
-        "description": "这家的缓存怎么算钱。现在只用来定池不写分法时怎么分。不写照驱动的默认。",
+        "description": "这家供应商的缓存怎么计费。目前只在池没有填写分配策略时用来决定策略。不填写时使用驱动的默认值。",
         "options": {
-          "contract": "照前缀计费",
+          "contract": "按前缀计费",
           "best_effort": "尽量命中",
           "per_request": "按次计费"
         }
       },
       "providers.<id>.models.<model>.catalog": {
         "name": "目录中的模型",
-        "description": "照 models.dev 目录里的哪一个：<供应商>/<模型>。不写的照名字找。"
+        "description": "对应 models.dev 目录里的哪一个模型，写成 <供应商>/<模型>。不填写时按名字查找。"
       },
       "providers.<id>.models.<model>.max_output": {
         "name": "最大输出",
@@ -304,7 +304,7 @@
       },
       "providers.<id>.models.<model>.tools": {
         "name": "工具调用",
-        "description": "这个模型能不能调工具。"
+        "description": "这个模型能不能调用工具。"
       },
       "providers.<id>.models.<model>.reasoning": {
         "name": "可选的思考程度",
@@ -312,93 +312,93 @@
       },
       "providers.<id>.models.<model>.effort": {
         "name": "思考程度",
-        "description": "这个模型默认的思考程度，写它的一档，例如 high；能关思考的写 off。不写的照供应商的默认。"
+        "description": "这个模型默认的思考程度，填它支持的一档，例如 high；能关闭思考的模型可以填 off。不填写时使用供应商的默认值。"
       },
       "providers.<id>.models.<model>.temperature": {
         "name": "默认的温度",
-        "description": "这个模型默认的温度，0 到 2，越高回答越随意。不写的照供应商的默认；这个模型不收温度的不发。"
+        "description": "这个模型默认的温度，范围 0 到 2，数值越高回答越随意。不填写时使用供应商的默认值；如果这个模型不接受温度参数，请求里不会带上它。"
       },
       "providers.<id>.models.<model>.price_multiplier": {
         "name": "倍率",
-        "description": "这个模型的价格照它乘，盖过供应商上写的。"
+        "description": "这个模型的价格乘以这个倍率，优先于供应商上填写的倍率。"
       },
       "providers.<id>.models.<model>.price.input": {
         "name": "输入价",
-        "description": "每一百万输入 token 的价。写了价格就整份用手写的。"
+        "description": "每一百万输入 token 的价格。填写了价格后，这个模型的价格全部使用你填写的数值。"
       },
       "providers.<id>.models.<model>.price.output": {
         "name": "输出价",
-        "description": "每一百万输出 token 的价。"
+        "description": "每一百万输出 token 的价格。"
       },
       "providers.<id>.models.<model>.price.cache_read": {
         "name": "读缓存的价",
-        "description": "每一百万读缓存 token 的价。"
+        "description": "每一百万读缓存 token 的价格。"
       },
       "providers.<id>.models.<model>.price.cache_write": {
         "name": "写缓存的价",
-        "description": "每一百万写缓存 token 的价。"
+        "description": "每一百万写缓存 token 的价格。"
       },
       "providers.<id>.models.<model>.price.currency": {
         "name": "币种",
-        "description": "价格的币种，三个大写字母，例如 USD、CNY。不写是 USD。"
+        "description": "价格的币种，三个大写字母，例如 USD、CNY。不填写时是 USD。"
       },
       "providers.<id>.quota.url": {
         "name": "额度接口地址",
-        "description": "查这家额度的完整地址，盖过资料里的。资料里没写额度接口的供应商写了也不查。DeepSeek 这类认得出官方地址的，供应商的地址不是官方的也不查。"
+        "description": "查询这家供应商额度的完整地址，优先于模型目录里的地址。如果模型目录里这家供应商没有额度接口，填写了也不会查询。对于 DeepSeek 这类能识别官方地址的供应商，接口地址不是官方地址时同样不会查询。"
       },
       "models.catalog.update": {
         "name": "后台更新目录",
-        "description": "在后台去 models.dev 拉新的模型目录。关掉只用安装包带的和已经拉过的。"
+        "description": "在后台从 models.dev 获取最新的模型目录。关闭后只使用安装包自带的目录和已经获取过的目录。"
       },
-      "packages.source": {"name": "软件源地址", "description": "从这里查、下载软件包。默认是官方的软件源；换了地址，那边的内容也得是官方签过名的。"},
-      "packages.mirrors": {"name": "镜像", "description": "官方的软件源连不上或者慢的时候，先照先后试这几个地址。内容照样验签名、比哈希，镜像改不了。"},
-      "packages.hold": {"name": "不升级的包", "description": "升级时跳过这几个包（写编号），照旧用装着的那一版。"},
+      "packages.source": {"name": "软件源地址", "description": "从这个地址查询和下载软件包。默认是官方软件源；更换地址后，那里的内容仍然必须有官方的签名。"},
+      "packages.mirrors": {"name": "镜像", "description": "官方软件源连接不上或者速度慢时，按填写的先后顺序先尝试这几个地址。下载的内容仍然会验证签名和哈希，所以镜像无法篡改内容。"},
+      "packages.hold": {"name": "不升级的包", "description": "升级时跳过这几个软件包（填编号），继续使用已安装的版本。"},
       "packages.other_systems": {"name": "其他系统的软件包", "description": "软件源的列表里也列出不支持本机系统的软件包，并标注「不支持该系统」。这些包无法安装。"},
-      "packages.sources.<id>.url": {"name": "别的软件源的地址", "description": "放索引的那一层目录。和公钥一起写才算一个源，加了就是信任它；写在系统配置里。"},
-      "packages.sources.<id>.key": {"name": "别的软件源的公钥", "description": "签它的索引的 Ed25519 公钥（base64）。索引照它验，验不过的不收。"},
+      "packages.sources.<id>.url": {"name": "其他软件源的地址", "description": "存放索引的那一层目录的地址。地址和公钥都填写后才算一个软件源；添加一个软件源就表示你信任它。这一项写在系统配置里。"},
+      "packages.sources.<id>.key": {"name": "其他软件源的公钥", "description": "给这个软件源的索引签名的 Ed25519 公钥（base64）。索引用它验证，验证失败的索引不会被使用。"},
       "models.catalog.url": {
         "name": "目录的地址",
-        "description": "从哪拉模型目录。"
+        "description": "从哪个地址获取模型目录。"
       },
       "models.catalog.every": {
         "name": "更新间隔",
-        "description": "缓存的目录旧过这么久才再拉。"
+        "description": "缓存的目录超过这么久之后才会重新获取。"
       },
       "models.cooldown.rate_limited.base": {
         "name": "限速冷却（初始）",
-        "description": "一个端点被限速，第一次停用这么久，连着再被限速就翻倍。"
+        "description": "一个端点被限速时，第一次停用这么久；连续被限速时每次翻倍。"
       },
       "models.cooldown.rate_limited.max": {
         "name": "限速冷却（上限）",
-        "description": "限速的冷却翻倍到这么久为止，供应商说要等更久的也不超过它。"
+        "description": "限速的冷却时间最多翻倍到这么久；即使供应商要求等待更久，也不会超过它。"
       },
       "models.cooldown.retryable.base": {
         "name": "出错冷却（初始）",
-        "description": "连不上、服务端出错，第一次停用这么久，连着再出错就翻倍。"
+        "description": "连接失败或服务端出错时，第一次停用这么久；连续出错时每次翻倍。"
       },
       "models.cooldown.retryable.max": {
         "name": "出错冷却（上限）",
-        "description": "这类错的冷却翻倍到这么久为止。"
+        "description": "这类错误的冷却时间最多翻倍到这么久。"
       },
       "models.cooldown.auth.base": {
         "name": "认证失败停用（初始）",
-        "description": "池里的一个模型认证失败时，第一次停用这么久，连着再失败就翻倍。"
+        "description": "池里的一个模型认证失败时，第一次停用这么久；连续失败时每次翻倍。"
       },
       "models.cooldown.auth.max": {
         "name": "认证失败停用（上限）",
-        "description": "认证失败的停用翻倍到这么久为止。"
+        "description": "认证失败的停用时间最多翻倍到这么久。"
       },
       "models.cooldown.quota.base": {
         "name": "额度用完停用（初始）",
-        "description": "池里的一个模型额度、余额用完，供应商又没说什么时候恢复时，第一次停用这么久。说了的照它说的，最多一天。"
+        "description": "池里的一个模型额度或余额用完，而供应商没有说明恢复时间时，第一次停用这么久。供应商说明了恢复时间时，按它说明的时间停用，最多一天。"
       },
       "models.cooldown.quota.max": {
         "name": "额度用完停用（上限）",
-        "description": "没说什么时候恢复的，连着再用完就翻倍，到这么久为止。"
+        "description": "供应商没有说明恢复时间时，连续用完每次翻倍，最多到这么久。"
       },
       "external.bindings.<external>": {
         "name": "平台账号",
-        "description": "通讯平台上哪几个号是你本人。键写平台上的身份（例如 qq:10001），值写 owner。私聊里，这个号就是你。"
+        "description": "通讯平台上哪几个账号是你本人。键填平台上的身份（例如 qq:10001），值填 owner。在私聊里，这个账号就代表你。"
       }
     },
     "pages": {
@@ -421,7 +421,7 @@
       "log": "运行日志",
       "skills": "技能",
       "sessions": "会话",
-      "clicall": "脚本调工具",
+      "clicall": "脚本调用工具",
       "features": "功能开关",
       "terminal": "终端集成会话",
       "profile": "个人资料",
@@ -432,16 +432,16 @@
       "cooldown": "冷却",
       "external": "平台账号",
       "base-net": "网络搜索",
-      "net_keys": "API Key 和地址",
+      "net_keys": "API 密钥和地址",
       "source": "软件源"
     },
     "group_descriptions": {
-      "protected": "下面几类命令在完全放开时也会先问你，关掉就不再问。另有几类永远拒绝、不能关：删根目录、家目录、系统目录，格式化磁盘、往裸设备写，容器拿走整个宿主。"
+      "protected": "下面几类命令即使在完全放开时也会先询问你，关闭后不再询问。另外有几类命令始终拒绝，不能关闭：删除根目录、家目录、系统目录，格式化磁盘，向裸设备写入，容器接管整个宿主。"
     }
   },
   "said": {
     "loading/loaded": "加载了 {tools}",
-    "loading/bad-args": "没写要加载哪几件工具",
+    "loading/bad-args": "没有写明要加载哪几件工具",
     "tool-results/unknown": "工具不存在",
     "tool-results/not-an-object": "参数格式错误",
     "tool-results/cancelled-before": "已取消",
@@ -464,13 +464,13 @@
     "tool-results/crashed": "内部错误，可能已部分执行",
     "sessions/retitle-failed": "更改标题失败",
     "permissions/unresolvable": "说不清它指向哪里：{reason}",
-    "permissions/not-in-venue": "只能在群聊、私聊里用",
+    "permissions/not-in-venue": "只能在群聊或私聊里使用",
     "permissions/outside-workspace": "工作区外，未执行",
     "permissions/no-commands": "这里不能执行命令",
     "guard/denied": "{package} 拦下了",
     "guard/denied-with-reason": "{package} 拦下了：{reason}",
     "guard/timed-out": "{package} 没及时答，已拦下",
-    "guard/not-running": "{package} 没在运行，已拦下",
+    "guard/not-running": "{package} 没有在运行，已拦下",
     "guard/failed": "{package} 出错了，已拦下",
     "guard/malformed": "{package} 答得不对，已拦下",
     "commands/cleared": "已清空上下文。",
@@ -542,7 +542,7 @@
     "commands/placeholder/goal-rounds": "--rounds <轮数> <目标>",
     "commands/usage/goal/show": "看进度",
     "commands/usage/goal/set": "设定长期目标；已经有一个就改它",
-    "commands/usage/goal/rounds": "设定或改的时候定最多跑几轮；0 是不限",
+    "commands/usage/goal/rounds": "设定或修改时指定最多运行几轮；0 表示不限",
     "commands/usage/goal/pause": "暂停",
     "commands/usage/goal/resume": "继续",
     "commands/usage/goal/clear": "清除",
@@ -580,8 +580,8 @@
     "preset-sections/extensions": "扩展",
     "extensions/capabilities/tools": "提供工具",
     "extensions/capabilities/tools/summary": "给 AI 加能调用的工具",
-    "extensions/capabilities/tools.commands": "工具会跑命令",
-    "extensions/capabilities/tools.commands/summary": "它提供的工具会跑命令，命令里能以当前会话的身份调用 AI 的工具",
+    "extensions/capabilities/tools.commands": "工具会运行命令",
+    "extensions/capabilities/tools.commands/summary": "它提供的工具会运行命令，命令里能以当前会话的身份调用 AI 的工具",
     "extensions/capabilities/commands": "提供命令",
     "extensions/capabilities/commands/summary": "加斜杠命令",
     "extensions/capabilities/widgets": "在界面上显示内容",
@@ -600,15 +600,15 @@
     "extensions/capabilities/events.write/summary": "往会话里追加它自己的记录",
     "extensions/capabilities/sessions.drive": "操作会话",
     "extensions/capabilities/sessions.drive/summary": "在会话里发消息、开新会话",
-    "extensions/capabilities/packages.call": "调别的软件",
-    "extensions/capabilities/packages.call/summary": "调别的软件包给出来的方法",
+    "extensions/capabilities/packages.call": "调用其他软件包",
+    "extensions/capabilities/packages.call/summary": "调用其他软件包提供的方法",
     "extensions/capabilities/search": "提供联网服务",
-    "extensions/capabilities/search/summary": "在联网服务里列出来，选了它的，搜索词会交给它",
+    "extensions/capabilities/search/summary": "它会出现在联网服务的选项里；选择它之后，搜索词会交给它",
     "extensions/capabilities/model.driver": "提供模型驱动",
     "extensions/capabilities/model.driver/summary": "用它的模型时，发给模型的全部对话都经过它",
-    "extensions/capabilities/provider.key": "使用模型供应商的 key",
-    "extensions/capabilities/provider.key/summary": "会拿到你在模型那边配好的某一家供应商的 key",
-    "extensions/capabilities/provider.key/named": "这个包会拿到你 {provider} 的 key",
+    "extensions/capabilities/provider.key": "使用模型供应商的密钥",
+    "extensions/capabilities/provider.key/summary": "会拿到你为某一家模型供应商配置的密钥",
+    "extensions/capabilities/provider.key/named": "这个软件包会拿到你 {provider} 的密钥",
     "extensions/capabilities/act_for_external": "代平台用户发言",
     "extensions/capabilities/act_for_external/summary": "替聊天平台上的人发消息、命令",
     "extensions/capabilities/login.page": "替本机页面换登录票",
@@ -630,7 +630,7 @@
     "packages/notice/file": "这个包来自本机文件，没有经过官方审核，可能存在风险。",
     "packages/notice/file/named": "{packages} 来自本机文件，没有经过官方审核，可能存在风险。",
     "packages/notice/separator": "、",
-    "persona-problems/syntax": "读不成 TOML：{detail}",
+    "persona-problems/syntax": "无法读取 TOML：{detail}",
     "persona-problems/unknown_table": "不认识的表 [{detail}]：persona.toml 里只能有 [persona]、[memory]、[appearance]",
     "persona-problems/not_a_table": "{detail} 要写成一张表 [{detail}]",
     "persona-problems/unknown_key": "不认识的键 {detail}",
@@ -647,8 +647,8 @@
     "persona-problems/take_turns": "user 和 assistant 要一问一答交替",
     "persona-problems/last_line": "最后一句要是 assistant 的",
     "persona-problems/empty_line": "这一句是空的",
-    "persona-problems/pair_clash": "第 {pair} 对里有一行以 user: 或 assistant: 开头，存不进去",
-    "preset-problems/syntax": "读不成 TOML：{detail}",
+    "persona-problems/pair_clash": "第 {pair} 对里有一行以 user: 或 assistant: 开头，无法保存",
+    "preset-problems/syntax": "无法读取 TOML：{detail}",
     "preset-problems/unknown_table": "不认识的表 [{detail}]：预设文件里只能有 [preset]、[features]、[software]、[tools]、[limits]",
     "preset-problems/not_a_table": "{detail} 要写成一张表 [{detail}]",
     "preset-problems/unknown_key": "不认识的键 {detail}",
@@ -663,7 +663,7 @@
     "preset-problems/bad_feature": "功能编号的写法不对：{detail}",
     "preset-problems/bad_icon": "{detail} 要写 Lucide 的图标名：小写字母开头，只有小写字母、数字、-",
     "preset-problems/bad_limit": "{detail} 要写正整数",
-    "package-problems/syntax": "读不成 TOML：{detail}",
+    "package-problems/syntax": "无法读取 TOML：{detail}",
     "package-problems/unknown_table": "不认识的表 [{detail}]：清单里只能有 [package]、[ui]、[process]、[builtin]、[worker]、[mascot]、[theme]、[command]、[check]、[settings]、[features]、[connection]、[depends]、[recommends]、[page]",
     "package-problems/not_a_table": "{detail} 要写成一张表 [{detail}]",
     "package-problems/unknown_key": "不认识的键 {detail}",
@@ -682,10 +682,10 @@
     "package-problems/bad_start": "{detail} 只能是 manual 或 always",
     "package-problems/bad_page": "{detail} 里的页名只用小写字母、数字、- 和 _",
     "package-problems/bad_pages_dir": "{detail} 要写资源目录里的相对目录，不能有 .. 和开头的 /",
-    "package-problems/command_taken": "子命令 {detail} 已经被别的包占了，这一份不算",
-    "package-problems/shadowed": "被{by}的那一份盖住了（这一份 {version}，用的是 {over}），这一份不加载",
+    "package-problems/command_taken": "子命令 {detail} 已经被其他软件包占用，这一份不生效",
+    "package-problems/shadowed": "被{by}的那一份覆盖了（这一份 {version}，使用的是 {over}），这一份不加载",
     "package-problems/shadowed_newer": "这一份比用的那份新：要换回这一份，运行 'miyu pkg remove {id}'。",
-    "package-problems/shadowed_newer_distro": "这一份比用的那份新：要换回这一份，用系统的包管理器卸掉 {id}。",
+    "package-problems/shadowed_newer_distro": "这一份比使用的那份新：要换回这一份，用系统的包管理器卸载 {id}。",
     "package-layers/shipped": "出厂",
     "package-layers/distro": "系统包管理器装",
     "package-layers/home": "装上",
@@ -709,7 +709,7 @@
     "package-problems/bad_tool": "工具名写法不对，或者在这个包里列了两次：{detail}",
     "package-problems/bad_platform": "{detail} 的写法不对",
     "package-problems/bad_dependency": "依赖的包编号写法不对，或者写了两遍：{detail}",
-    "package-problems/feature_taken": "功能 {detail} 已经被别的包占了，这一份不算",
+    "package-problems/feature_taken": "功能 {detail} 已经被其他软件包占用，这一份不生效",
     "package-problems/not_built_in": "这一份核心没有内置包 {detail} 的代码",
     "package-problems/bad_icon": "{detail} 要写 Lucide 的图标名：小写字母开头，只有小写字母、数字、-",
     "package-problems/bad_logo": "{detail} 要写包目录里一张 .png 或 .webp 的相对路径",
@@ -724,13 +724,13 @@
     "package-problems/bad_search": "搜索来源的写法不对：{detail}",
     "package-problems/bad_guard": "守卫的写法不对：{detail}",
     "package-problems/bad_driver": "模型驱动的写法不对：{detail}",
-    "package-problems/bad_provider_key": "要哪一家供应商的 key 写法不对：{detail}",
+    "package-problems/bad_provider_key": "需要哪一家供应商的密钥写法不对：{detail}",
     "package-problems/driver_unapproved": "供应商 {provider} 用的模型驱动 {driver}：那个包还没批「提供模型驱动」，这一家在批了以前用不了",
-    "package-problems/driver_key_missing": "供应商 {provider} 用的模型驱动 {driver} 要 key，这一家没配",
-    "package-problems/driver_key_unused": "供应商 {provider} 用的模型驱动 {driver} 不要 key：配了的不交给它",
-    "package-problems/provider_shadowed": "软件包 {package} 带的供应商 {provider} 没有加上：配置里已经有你自己的 {provider}。要用包带的，删掉配置里的 [providers.{provider}]",
-    "package-problems/provider_taken": "软件包 {package} 带的供应商 {provider} 没有加上：软件包 {by} 已经带了同编号的",
-    "package-problems/provider_foreign": "软件包 {package} 带的供应商 {provider} 没有加上：驱动是别的软件包的",
+    "package-problems/driver_key_missing": "供应商 {provider} 用的模型驱动 {driver} 需要密钥，这家供应商没有配置",
+    "package-problems/driver_key_unused": "供应商 {provider} 用的模型驱动 {driver} 不需要密钥：配置的密钥不会交给它",
+    "package-problems/provider_shadowed": "软件包 {package} 带的供应商 {provider} 没有加上：配置里已经有你自己的 {provider}。要使用软件包带的供应商，删掉配置里的 [providers.{provider}]",
+    "package-problems/provider_taken": "软件包 {package} 带的供应商 {provider} 没有加上：软件包 {by} 已经带了同编号的供应商",
+    "package-problems/provider_foreign": "软件包 {package} 带的供应商 {provider} 没有加上：驱动属于其他软件包",
     "package-problems/provider_invalid": "软件包 {package} 带的供应商 {provider} 有几项不对，已忽略：{keys}",
     "package-problems/bad_after": "工具调用后通知的写法不对：{detail}",
     "package-problems/bad_side": "旁路请求的写法不对：{detail}",
@@ -740,11 +740,11 @@
     "package-problems/bad_upstream": "上游仓库的网址不对：{detail}",
     "package-problems/bad_license": "许可证的写法不对：{detail}",
     "package-problems/bad_widget": "界面块的写法不对：{detail}",
-    "package-problems/bad_content": "给别的包带的内容写法不对：{detail}",
+    "package-problems/bad_content": "给其他软件包带的内容写法不对：{detail}",
     "package-problems/bad_needs": "要求的写法不对，现在只认 images：{detail}",
     "package-problems/bad_group": "组名写法不对、重复了，或者出厂没有这个组：{detail}",
     "package-problems/bad_prefix": "前缀的写法不像包编号：{detail}",
-    "package-problems/prefix_taken": "前缀 {detail} 已经被别的包占了，这一份不算",
+    "package-problems/prefix_taken": "前缀 {detail} 已经被其他软件包占用，这一份不生效",
     "package-problems/bad_targets": "系统的写法不对，只认 linux-x86_64、linux-aarch64、macos-aarch64、windows-x86_64，不能重复：{detail}",
     "package-problems/bad_systems": "系统的写法不对，只认 linux、macos、windows，不能重复，targets 里每一种的系统都要写上：{detail}",
     "package-problems/bad_provider": "自带的供应商写法不对：{detail}",
@@ -762,49 +762,49 @@
     "package-problems/theme_too_big": "{detail} 超过 256 KiB",
     "package-problems/mascot_not_json": "{detail} 不是 JSON 对象",
     "package-problems/theme_not_json": "{detail} 不是 JSON 对象",
-    "package-problems/check_failed": "这个包自己的检查没跑完：{detail}",
-    "package-problems/check_unavailable": "没找到 {detail}，这个包自己的检查没跑",
-    "package-problems/check_output": "这个包自己的检查印了 {detail} 行看不懂的，跳过了",
-    "package-problems/files_modified": "有 {detail} 个文件和装的时候不一样",
-    "package-problems/files_missing": "装的时候有的文件少了 {detail} 个",
-    "package-problems/prompt_override_bad": "这个提示词的覆盖没用上，照下一层或者出厂的：{detail}",
-    "package-problems/override_bad": "这个工具说明的覆盖没用上，照出厂的：{detail}",
+    "package-problems/check_failed": "这个软件包自己的检查没有运行完：{detail}",
+    "package-problems/check_unavailable": "没找到 {detail}，这个软件包自己的检查没有运行",
+    "package-problems/check_output": "这个软件包自己的检查输出了 {detail} 行无法识别的内容，已跳过",
+    "package-problems/files_modified": "有 {detail} 个文件和安装时不一样",
+    "package-problems/files_missing": "安装时带的文件少了 {detail} 个",
+    "package-problems/prompt_override_bad": "这个提示词的覆盖没有生效，改用下一层或者出厂的：{detail}",
+    "package-problems/override_bad": "这个工具说明的覆盖没有生效，改用出厂的：{detail}",
     "package-problems/script_skipped": "跳过了这个脚本：{detail}",
     "package-problems/script_link_outside": "这个脚本是链接，指到数据根里的 {detail}，不在你放东西的那几个文件夹里，跳过了",
-    "package-problems/script_state_left": "有这个脚本的状态目录（{detail}），可现在没有这个脚本了；用不上的话自己删掉这个目录",
-    "package-problems/schedule_unreadable": "这个定时任务读不懂，到点不会跑，别的照常（{detail}）；用不上的话照编号删掉",
-    "package-problems/script_clashed": "脚本 {detail} 和别的工具重名，没登记上",
+    "package-problems/script_state_left": "这个脚本的状态目录（{detail}）还在，但脚本已经不存在；不需要的话可以删除这个目录",
+    "package-problems/schedule_unreadable": "这个定时任务无法读取，到时间不会运行，其他定时任务不受影响（{detail}）；不需要的话可以按编号删掉",
+    "package-problems/script_clashed": "脚本 {detail} 和其他工具重名，没有登记上",
     "package-problems/script_not_made": "这个脚本没登记上：{detail}",
     "package-problems/script_not_loaded": "核心还没读到脚本 {detail}；过一会儿再查，一直这样就重启核心",
-    "package-problems/mcp_tool_skipped": "MCP 服务列出来的工具、提示词有几件没登记上：{detail}（提示词写成 /名字）。name_taken 是名字被占了（截短、清理以后撞了，或者别的工具已经叫这个），name 是名字不合写法，parameters 是参数格式不对",
+    "package-problems/mcp_tool_skipped": "MCP 服务列出来的工具、提示词有几件没登记上：{detail}（提示词写成 /名字）。name_taken 是名字被占了（截短、清理以后撞了，或者其他工具已经叫这个），name 是名字不合写法，parameters 是参数格式不对",
     "package-problems/skill_skipped": "跳过了这个技能：{detail}",
     "package-problems/skill_link_outside": "这个技能文件夹是链接，指到数据根里的 {detail}，不在你放东西的那几个文件夹里，跳过了",
-    "package-problems/skill_name_mismatch": "写的名字和文件夹不同名，照写的名字 {detail} 用",
-    "package-problems/skill_name_from_folder": "名字没写或者不合写法（1 到 64 个小写字母、数字、单个连字符），照文件夹的名字 {detail} 用",
-    "package-problems/skill_yaml_lenient": "开头不是合法的 YAML：照「没加引号的值当一整句字」重读才读成，值里有冒号的请加上引号",
+    "package-problems/skill_name_mismatch": "写的名字和文件夹不同名，使用写的名字 {detail}",
+    "package-problems/skill_name_from_folder": "名字没写或者不合写法（1 到 64 个小写字母、数字、单个连字符），使用文件夹的名字 {detail}",
+    "package-problems/skill_yaml_lenient": "开头不是合法的 YAML：把没加引号的值当成一整句文字重新读取才成功，值里有冒号时请加上引号",
     "package-problems/skill_description_cut": "说明超过 1024 个字，后面截掉了",
     "package-problems/skill_compatibility": "compatibility 应是不超过 500 个字的一句话",
     "package-problems/skill_metadata": "metadata 应是字到字的表（值不能是数字、列表或者嵌套的表）",
-    "package-problems/script_covered": "和 {detail} 同名，被它盖住了，这一份不用",
-    "package-problems/mcp_covered": "和 {detail} 同名，被它盖住了，这一份不用",
-    "package-problems/skill_covered": "和 {detail} 同名，被它盖住了，这一份不用",
-    "package-problems/persona_covered": "和 {detail} 同名，被它盖住了，这一份不用",
-    "package-problems/preset_covered": "和 {detail} 同名，被它盖住了，这一份不用",
-    "package-problems/persona_left": "软件包 {detail} 已经卸了，这一份是它留下的改动",
-    "package-problems/preset_left": "软件包 {detail} 已经卸了，这一份是它留下的改动",
+    "package-problems/script_covered": "和 {detail} 同名，被它覆盖了，这一份不使用",
+    "package-problems/mcp_covered": "和 {detail} 同名，被它覆盖了，这一份不使用",
+    "package-problems/skill_covered": "和 {detail} 同名，被它覆盖了，这一份不使用",
+    "package-problems/persona_covered": "和 {detail} 同名，被它覆盖了，这一份不使用",
+    "package-problems/preset_covered": "和 {detail} 同名，被它覆盖了，这一份不使用",
+    "package-problems/persona_left": "软件包 {detail} 已经卸载，这一份是它留下的改动",
+    "package-problems/preset_left": "软件包 {detail} 已经卸载，这一份是它留下的改动",
     "package-problems/slash_skipped": "跳过了这个斜杠命令：{detail}",
     "package-problems/slash_link_outside": "这个命令模板是链接，指到数据根里的 {detail}，不在你放东西的那几个文件夹里，跳过了",
-    "package-problems/slash_covered": "和 {detail} 同名，被它盖住了，这一份不用",
+    "package-problems/slash_covered": "和 {detail} 同名，被它覆盖了，这一份不使用",
     "package-problems/slash_builtin": "和 Miyu 自带的 /{detail} 同名，这一份不用",
-    "config/reference-header": "Miyu 的全部配置项和默认值。这份是生成的，改它没有用。",
+    "config/reference-header": "Miyu 的全部配置项和默认值。这份文件是自动生成的，修改它不会生效。",
     "config/reference-where": "配置写在数据根的 config.toml。",
     "config/reference-item": "{name}：{description}",
     "config/facts": "能写：{values}。只能写在{layers}里。{applies}。",
     "config/schema-description": "{description}{facts}",
     "config/layer/system": "系统配置",
     "config/applies/now": "立即生效",
-    "config/option-needs-key": "要 key",
-    "config/option-needs-address": "要地址",
+    "config/option-needs-key": "需要密钥",
+    "config/option-needs-address": "需要地址",
     "config/option-cooling": "冷却到 {time}",
     "config/or": "{rest}或{last}",
     "config/or-values": "{rest} 或 {last}",
@@ -815,33 +815,33 @@
     "config/applies/new_session": "新会话生效",
     "config/applies/head_start": "重启后生效",
     "config/applies/restart": "重启核心后生效",
-    "config/secrets-header": "Miyu 的密钥：只经 Miyu 写入、替换、删除。不要把这份文件贴给别人。",
-    "config/unknown-secret": "{key} 引用的密钥 {name} 还没设",
-    "config/env-not-set": "{key} 引用的环境变量 {name} 核心起来时没有设",
-    "config/no-provider": "{key} 指的供应商 {name} 没有配",
-    "config/no-pool": "{key} 指的池 {name} 没有配",
-    "config/unknown-effort": "{key} 写的 {name} 不是这个模型现在有的一档：请求照没写发",
-    "config/temperature-unsupported": "{key}：这个模型不收温度，请求照没写发",
-    "config/temperature-too-high": "{key} 写的 {got} 超过了这个模型的上限 {max}：请求照没写发",
+    "config/secrets-header": "Miyu 的密钥：只经 Miyu 写入、替换、删除。不要把这份文件发给其他人。",
+    "config/unknown-secret": "{key} 引用的密钥 {name} 还没有设置",
+    "config/env-not-set": "{key} 引用的环境变量 {name} 在核心启动时没有设置",
+    "config/no-provider": "{key} 指向的供应商 {name} 没有配置",
+    "config/no-pool": "{key} 指向的池 {name} 没有配置",
+    "config/unknown-effort": "{key} 写的 {name} 不是这个模型现在支持的一档：请求按没有填写发送",
+    "config/temperature-unsupported": "{key}：这个模型不接受温度参数，请求按没有填写发送",
+    "config/temperature-too-high": "{key} 写的 {got} 超过了这个模型的上限 {max}：请求按没有填写发送",
     "config/bad-secret-name": "{key} 不能当密钥的名字：小写字母开头，只有小写字母、数字、-、_，最长 64 个字符",
     "config/bad-secret-value": "{key} 的值要写成带引号的字，不能是空的",
     "config/trust-header": "Miyu 记着的项目配置的信任：哪个仓库、哪一份内容、信不信任。",
     "config/unreadable": "读不了这份文件：{why}",
     "config/too-big": "这份文件超过 1 MiB，不读",
-    "config/settings-left": "有 {count} 项是已经卸掉的 {package} 留下的设置：重装 {package} 会照原样生效；不要了用 miyu pkg remove {package} --purge 删掉",
+    "config/settings-left": "有 {count} 项是已经卸载的 {package} 留下的设置：重装 {package} 后它们会原样生效；不需要的话用 miyu pkg remove {package} --purge 删掉",
     "config/not-utf8": "这份文件不是 UTF-8",
     "config/syntax": "TOML 写法不对：{why}",
     "config/unknown-key": "没有 {key} 这一项。是不是想写 {suggest}？",
     "config/unknown-key-plain": "没有 {key} 这一项",
     "config/wrong-type": "{key} 要写 {expected}，写的是 {got}",
     "config/not-an-option": "{key} 只能是 {options}，写的是 {got}",
-    "config/wrong-layer": "{key} 只能写在{layers}里，写在{layer}里不算",
-    "config/not-tightening": "项目配置只能让限制更严。{key} 现在是 {current}，这里写的 {got} 更宽，不算",
+    "config/wrong-layer": "{key} 只能写在{layers}里，写在{layer}里不生效",
+    "config/not-tightening": "项目配置只能让限制更严。{key} 现在是 {current}，这里写的 {got} 更宽，不生效",
     "config/untrusted-project": "项目配置未信任，已忽略",
     "config/bad-dir-path": "{got} 写法不对：要写成 ~/… 或绝对路径",
-    "config/source-reserved": "official 是官方软件源的名字，别的源不能用",
+    "config/source-reserved": "official 是官方软件源的名字，其他软件源不能使用",
     "config/source-incomplete": "软件源 {name} 要同时写 url 和 key 才能用",
-    "config/source-key": "软件源 {name} 的 key 读不成：要写 base64 的 Ed25519 公钥",
+    "config/source-key": "软件源 {name} 的 key 无法读取：要写 base64 的 Ed25519 公钥",
     "config/fix-example": "改成其中一个，例如 {example}",
     "config/fix-write": "改成 {example}",
     "config/fix-move": "挪到{layers}里去",
@@ -877,42 +877,42 @@
     "config/expected/persona": "人格的编号",
     "config/expected/knowledge": "知识库的编号",
     "config/expected/preset": "预设的编号",
-    "config/unknown-persona": "{key} 写的人格 {name} 现在没有：建了这个人格以后就能用",
-    "config/unknown-knowledge": "{key} 写的知识库 {name} 现在没有：建了这个知识库以后就能用",
-    "config/unknown-preset": "{key} 写的预设 {name} 现在没有：建了这个预设以后就能用",
-    "config/unknown-driver": "{key} 写的模型驱动 {name} 现在没有：装上提供它的包、批了以后才能用，这一家供应商在那之前用不了",
-    "start/data_root_not_ours": "{path} 里有别的东西，认不出是 Miyu 的数据根，没有动它。是 0.7 版的数据目录的话，先 mv {path} {path}-0.7，再 miyu pkg install migrate、miyu migrate {path}-0.7；不是的话把 MIYU_HOME 设成一个空目录",
-    "start/data_root_old_layout": "{path} 是旧版 Miyu 的数据根，新版不认，没有动它。把 MIYU_HOME 设成一个空目录",
-    "start/data_root_other_layout": "{path} 的布局不是这一版的，没有动它",
+    "config/unknown-persona": "{key} 写的人格 {name} 现在不存在：创建这个人格之后就可以使用",
+    "config/unknown-knowledge": "{key} 写的知识库 {name} 现在不存在：创建这个知识库之后就可以使用",
+    "config/unknown-preset": "{key} 写的预设 {name} 现在不存在：创建这个预设之后就可以使用",
+    "config/unknown-driver": "{key} 写的模型驱动 {name} 现在没有：安装提供它的软件包并批准之后才能使用，在那之前这家供应商不可用",
+    "start/data_root_not_ours": "{path} 里有其他内容，无法确认它是 Miyu 的数据根，没有修改它。如果它是 0.7 版的数据目录，先 mv {path} {path}-0.7，再 miyu pkg install migrate、miyu migrate {path}-0.7；如果不是，把 MIYU_HOME 设成一个空目录",
+    "start/data_root_old_layout": "{path} 是旧版 Miyu 的数据根，新版不能使用，没有修改它。把 MIYU_HOME 设成一个空目录",
+    "start/data_root_other_layout": "{path} 的布局不是这一版的，没有修改它",
     "start/miyu_home_relative": "MIYU_HOME 要写绝对路径，写的是 {path}",
     "start/no_home": "找不到家目录",
     "start/no_local_app_data": "找不到 LOCALAPPDATA，或者它不是绝对路径",
-    "start/not_running": "核心没在跑",
-    "start/not_private_socket": "{path} 不是自己的，或者别人也能进：不连",
-    "start/not_private_pipe": "命名管道 {path} 另一头不是自己的进程：不连",
-    "start/refused": "核心起不来：{reason}",
-    "start/silent": "核心没起来，也没说为什么：看数据根的 {log}",
-    "start/timeout": "等核心起来等了太久",
-    "start/busy": "别的程序正在拉起核心，等了太久",
+    "start/not_running": "核心没有在运行",
+    "start/not_private_socket": "{path} 不属于当前用户，或者其他用户也能访问：不连接",
+    "start/not_private_pipe": "命名管道 {path} 另一头不是当前用户的进程：不连接",
+    "start/refused": "核心无法启动：{reason}",
+    "start/silent": "核心没有启动，也没有给出原因：查看数据根的 {log}",
+    "start/timeout": "等待核心启动超时",
+    "start/busy": "其他程序正在启动核心，等待超时",
     "start/stopped_by_user": "核心已停止",
-    "start/spawn_failed": "拉不起核心：{error}",
-    "start/data_root_failed": "核心起不来：建不了数据根：{reason}",
-    "start/lock_failed": "核心起不来：拿不到数据根的锁：{reason}",
-    "start/log_failed": "核心起不来：运行日志写不了：{reason}",
-    "start/resources_relative": "核心起不来：MIYU_RESOURCES 要写绝对路径，现在是 {reason}",
-    "start/resources_missing": "核心起不来：MIYU_RESOURCES 指的 {reason} 不是一个目录",
-    "start/resources_not_found": "核心起不来：找不到资源目录，找过 {reason}。开发时设 MIYU_RESOURCES 指到源码树的 resources/",
-    "start/resources_unknown": "核心起不来：找不到资源目录：不知道程序在哪。开发时设 MIYU_RESOURCES 指到源码树的 resources/",
-    "start/runtime_failed": "核心起不来：建不了运行时：{reason}",
-    "start/socket_too_long": "核心起不来：套接字的路径 {reason} 太长，临时目录下也放不下",
-    "start/socket_not_private": "核心起不来：{reason} 不是自己的，或者别人也能进：套接字不放在这里",
-    "start/socket_occupied": "核心起不来：{reason} 上有别的东西：不是套接字的文件，或者别的程序正在听。不动它",
-    "start/pipe_occupied": "核心起不来：命名管道 {reason} 已经被别的程序占了。不动它",
-    "start/socket_failed": "核心起不来：开不了套接字：{reason}",
-    "start/home_failed": "核心起不来：数据根里的目录建不了：{reason}",
-    "start/models_failed": "核心起不来：模型的资源读不了：{reason}",
-    "start/tools_failed": "核心起不来：工具的资源读不了：{reason}",
-    "config/missing-field": "{key} 没写：这个字段没有默认值，要写",
+    "start/spawn_failed": "无法启动核心：{error}",
+    "start/data_root_failed": "核心无法启动：无法创建数据根：{reason}",
+    "start/lock_failed": "核心无法启动：拿不到数据根的锁：{reason}",
+    "start/log_failed": "核心无法启动：无法写入运行日志：{reason}",
+    "start/resources_relative": "核心无法启动：MIYU_RESOURCES 要写绝对路径，现在是 {reason}",
+    "start/resources_missing": "核心无法启动：MIYU_RESOURCES 指向的 {reason} 不是一个目录",
+    "start/resources_not_found": "核心无法启动：找不到资源目录，找过 {reason}。开发时设 MIYU_RESOURCES 指到源码树的 resources/",
+    "start/resources_unknown": "核心无法启动：找不到资源目录：不知道程序在哪。开发时设 MIYU_RESOURCES 指到源码树的 resources/",
+    "start/runtime_failed": "核心无法启动：无法创建运行时：{reason}",
+    "start/socket_too_long": "核心无法启动：套接字的路径 {reason} 太长，临时目录下也放不下",
+    "start/socket_not_private": "核心无法启动：{reason} 不属于当前用户，或者其他用户也能访问：套接字不放在这里",
+    "start/socket_occupied": "核心无法启动：{reason} 上有其他内容：不是套接字的文件，或者其他程序正在监听。没有修改它",
+    "start/pipe_occupied": "核心无法启动：命名管道 {reason} 已经被其他程序占用。没有修改它",
+    "start/socket_failed": "核心无法启动：无法打开套接字：{reason}",
+    "start/home_failed": "核心无法启动：无法创建数据根里的目录：{reason}",
+    "start/models_failed": "核心无法启动：无法读取模型的资源：{reason}",
+    "start/tools_failed": "核心无法启动：无法读取工具的资源：{reason}",
+    "config/missing-field": "{key} 没有填写：这个字段没有默认值，必须填写",
     "config/unknown-field": "{key} 不是这一项的字段",
     "config/expected/id": "小写字母开头，只有小写字母、数字、-、_，最长 32 个字符",
     "config/expected/model-name": "1 到 128 个字节，没有控制字符",
@@ -987,7 +987,7 @@
     "export/summary": "摘要",
     "export/cleared": "上下文清空了",
     "export/paused": "自动压缩暂停了",
-    "export/job/done": "后台命令跑完了：{title}",
+    "export/job/done": "后台命令运行完了：{title}",
     "export/job/failed": "后台命令失败了：{title}",
     "export/job/stopped": "后台命令停了：{title}",
     "export/agent/stopped": "子代理没做完就停了",
@@ -1003,12 +1003,12 @@
     "export/end/interrupted": "这一轮被打断了",
     "export/end/step-limit": "这一轮走到了步数上限",
     "export/end/aborted": "核心停了，这一轮没走完",
-    "export/shell/running": "还在跑",
+    "export/shell/running": "还在运行",
     "export/shell/exit": "退出码 {code}",
     "export/shell/signal": "信号 {signal}",
     "export/shell/timed-out": "到时被停了",
     "export/shell/interrupted": "被打断了",
-    "export/shell/aborted": "核心停了，没跑完",
+    "export/shell/aborted": "核心停了，没有运行完",
     "export/head/estimate": "token 估算：约 {count}",
     "export/omitted": "前面省掉了 {count} 轮",
     "export/approval": "要确认（{access}）：{decision}",
@@ -1027,7 +1027,7 @@
     "export/decision/none": "没等到决定",
     "export/decision/reason": "{decision}，理由：{reason}",
     "export/state/needs-approval": "要确认",
-    "export/state/running": "还在跑",
+    "export/state/running": "还在运行",
     "export/nested": "脚本里调了 {count} 个工具",
     "export/answered/line": "回答了提问：{answers}",
     "commands/failed/missing-arguments": "缺少参数：{names}",

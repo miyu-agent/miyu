@@ -237,9 +237,9 @@ fn an_unreadable_config_fills_nothing_and_still_launches() {
         assert_eq!(said.status.code(), Some(7), "照常拉起：{said:?}");
         let stderr = String::from_utf8_lossy(&said.stderr);
         assert!(
-            stderr.starts_with("miyu: 警告：读不了 Miyu 的配置：")
+            stderr.starts_with("miyu: 警告：无法读取 Miyu 的配置：")
                 && stderr.contains(why)
-                && stderr.ends_with("，交给 litemiyu 自己找模型\n")
+                && stderr.ends_with("，由 litemiyu 自己查找模型\n")
                 && stderr.lines().count() == 1,
             "{stderr}"
         );
@@ -267,7 +267,7 @@ fn an_extension_driver_fills_nothing_and_still_launches() {
     assert_eq!(said.status.code(), Some(7), "照常拉起：{said:?}");
     assert_eq!(
         String::from_utf8_lossy(&said.stderr),
-        "miyu: 警告：对话模型用的是扩展驱动 pi/ag，litemiyu 认不了，交给它自己找模型\n"
+        "miyu: 警告：对话模型使用扩展驱动 pi/ag，litemiyu 不支持，由它自己查找模型\n"
     );
     let unset: Vec<String> = VARS.iter().map(|name| format!("{name}=<unset>")).collect();
     assert_eq!(seen(&seen_file)[1..], unset[..]);

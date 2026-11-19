@@ -28,7 +28,7 @@ impl Language {
     pub(crate) fn rescue_unconfigured(&self, why: &str) -> Problem {
         let why = clean(why);
         Problem::new(match self {
-            Language::Chinese => format!("读不了 Miyu 的配置：{why}，交给 litemiyu 自己找模型"),
+            Language::Chinese => format!("无法读取 Miyu 的配置：{why}，由 litemiyu 自己查找模型"),
             Language::English => {
                 format!(
                     "cannot read Miyu's configuration: {why}; litemiyu will find a model itself"
@@ -42,7 +42,7 @@ impl Language {
         let driver = clean(driver);
         Problem::new(match self {
             Language::Chinese => {
-                format!("对话模型用的是扩展驱动 {driver}，litemiyu 认不了，交给它自己找模型")
+                format!("对话模型使用扩展驱动 {driver}，litemiyu 不支持，由它自己查找模型")
             }
             Language::English => format!(
                 "the chat model uses the extension driver {driver}, which litemiyu cannot use; litemiyu will find a model itself"

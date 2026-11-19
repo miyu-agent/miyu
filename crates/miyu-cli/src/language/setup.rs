@@ -117,7 +117,7 @@ impl Language {
     /// 模型照目录列的。
     pub(crate) fn listed_from_catalog(&self) -> &'static str {
         match self {
-            Language::Chinese => "· 供应商列不出模型，下面照 models.dev 的目录列。",
+            Language::Chinese => "· 供应商无法列出模型，下面按 models.dev 的目录列出。",
             Language::English => {
                 "· The provider listed no models; the list below is from the models.dev catalog."
             }

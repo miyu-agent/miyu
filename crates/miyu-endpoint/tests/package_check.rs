@@ -45,7 +45,7 @@ async fn a_missing_program_is_one_warning() {
             "file": "opt/ghost/package.toml",
             "code": "check_unavailable",
             "level": "warning",
-            "message": "没找到 miyu-no-such-program-anywhere，这个包自己的检查没跑",
+            "message": "没找到 miyu-no-such-program-anywhere，这个软件包自己的检查没有运行",
         })]
     );
 }
@@ -112,8 +112,8 @@ async fn a_package_check_reports_its_problems_after_the_cores_own() {
         from_packages,
         [
             &json!({"kind":"venue","file":"system/venues.d/x.toml","line":2,"level":"error","message":"bad rule"}),
-            &json!({"kind":"package","file":"opt/bridge/package.toml","code":"check_output","level":"warning","message":"这个包自己的检查印了 1 行看不懂的，跳过了"}),
-            &json!({"kind":"package","file":"opt/broken/package.toml","code":"check_failed","level":"warning","message":"这个包自己的检查没跑完：exit code 7"}),
+            &json!({"kind":"package","file":"opt/bridge/package.toml","code":"check_output","level":"warning","message":"这个软件包自己的检查输出了 1 行无法识别的内容，已跳过"}),
+            &json!({"kind":"package","file":"opt/broken/package.toml","code":"check_failed","level":"warning","message":"这个软件包自己的检查没有运行完：exit code 7"}),
         ],
         "照编号的先后，接在核心自己查的后面"
     );

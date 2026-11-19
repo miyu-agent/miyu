@@ -61,7 +61,7 @@ fn an_upgrade_says_what_it_replaces_carries_needs_and_weighs() {
         plan(&hosted, Doing::Install, &Language::Chinese)[1..3],
         [
             "包含：扩展程序、模型驱动 ag、模型驱动 lite",
-            "      模型驱动 ag 会让供应商自己跑：search_web、read_url_content",
+            "      模型驱动 ag 会让供应商自己运行：search_web、read_url_content",
         ]
     );
     assert_eq!(
@@ -80,7 +80,7 @@ fn an_upgrade_says_what_it_replaces_carries_needs_and_weighs() {
     let source = json!({"package": "gravity", "version": "1.0", "hosted": {"ag": ["search_web"]}});
     assert_eq!(
         plan(&source, Doing::Install, &Language::Chinese)[1],
-        "      模型驱动 ag 会让供应商自己跑：search_web"
+        "      模型驱动 ag 会让供应商自己运行：search_web"
     );
     let back = json!({"package": "net", "version": "1", "program": "builtin", "restores": true});
     assert_eq!(

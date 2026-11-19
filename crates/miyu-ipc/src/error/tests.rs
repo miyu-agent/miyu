@@ -10,11 +10,11 @@ fn a_pipe_is_called_a_named_pipe() {
     for said in [occupied(pipe, true), not_private(pipe, true)] {
         assert!(said.contains("命名管道"), "{said}");
         assert!(!said.contains("套接字"), "{said}");
-        assert!(!said.contains("别人也能进"), "{said}");
+        assert!(!said.contains("其他用户也能访问"), "{said}");
     }
     let socket = Path::new("/run/user/1000/miyu-x/core.sock");
     assert!(occupied(socket, false).contains("套接字"));
-    assert!(not_private(socket, false).contains("别人也能进"));
+    assert!(not_private(socket, false).contains("其他用户也能访问"));
 }
 
 /// 连不上、起不来的八句都交说法（施工 EN-1），三种语言都取得出字；英文不再是中文原话。

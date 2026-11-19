@@ -100,7 +100,7 @@ start_read_only = true
 例子：`secrets.toml`：
 
 ```toml
-# Miyu 的密钥：只经 Miyu 写入、替换、删除。不要把这份文件贴给别人。
+# Miyu 的密钥：只经 Miyu 写入、替换、删除。不要把这份文件发给其他人。
 deepseek = "sk-…"
 bigmodel-2 = "…"
 ```
@@ -263,7 +263,7 @@ miyu_config::settings! {
 | `skills.external.enabled` | 开关 | `false` | Miyu 的配置 | 不能写 | `next_turn` | PT-2 外（`skills.md`「定了的」第 4 条，2026-10-29 项目主人定）：读不读别的目录里的技能。关着的一个都不碰。「高级」页的「技能」一组；网页另画在技能页顶上 |
 | `skills.external.dirs` | 文字的列表，一个最多 4096 个字符：`~`、`~/…` 或绝对路径 | `["~/.agents/skills"]`（静态列表的出厂值：`Value::List` 借代码里写的切片，同 `Value::Text`，PT-2 外） | Miyu 的配置 | 不能写 | `next_turn` | PT-2 外：照先后读，同名的先列的赢。相对路径 `config.set`、`miyu check`、`config.check` 都报 `bad_format`（下面「问题」那张表）；读不到的静默跳过 |
 | `net.search.source` | 选项 `auto`、`exa`、`anysearch`、`deepseek`、`tavily`、`brave`、`searxng`（施工 NF-1 起只剩自动和要 key、要地址的几家；施工 NS-1 加上能配 key 的 Exa、AnySearch，没配 key 的照免费额度：项目主人 2026-11-17 定「有免费额度不代表不用它的 key」；扩展声明的来源接在后面，N-5） | `auto`，自动（免费额度）：照出厂的顺序，只有免费的几家 | 系统 | 不能写 | `next_turn` | N-2 下（设计 36 第三节第 1 条、`tools/web_search.md`），NF-1 改成「联网服务」（项目主人 2026-11-14 定）：选供应商。选了的那一家搜索先用它，能抓页面的（DeepSeek）`web_fetch` 自己抓之前先交它代抓；它用不了（没配 key、限额、余额不足、服务忙、超时、抓回来太短）搜索照自动的顺序兜底，抓网页先自己抓再照自动的名单。自动只用免费的几家，DeepSeek 不进自动的顺序（自动不花钱）。`web_search`、`web_fetch` 照调用带来的这一轮的配置读（`miyu_tool::SettingsPort`）。核心替联网这个内置包声明（`miyu-net` 的 `settings.rs`），包没装的设置页不画；设置页在「软件包」那一页、「联网搜索」那一组 |
-| `net.search.exa.key` | 密钥 | 没有：照 Exa 的免费额度 | 系统 | 不能写 | `next_turn` | N-3 上（设计 36 第二节第 1 条）：配了的 Exa 走自己的额度（接在 MCP 地址后面 `exaApiKey`）。下面几项都是「软件包」页「API Key 和地址」组（`net_keys`，终端转来项目主人 2026-10-19 定：和「联网服务」分开画） |
+| `net.search.exa.key` | 密钥 | 没有：照 Exa 的免费额度 | 系统 | 不能写 | `next_turn` | N-3 上（设计 36 第二节第 1 条）：配了的 Exa 走自己的额度（接在 MCP 地址后面 `exaApiKey`）。下面几项都是「软件包」页「API 密钥和地址」组（`net_keys`，终端转来项目主人 2026-10-19 定：和「联网服务」分开画） |
 | `net.search.anysearch.key` | 密钥 | 没有：照 AnySearch 的免费额度（按 IP 每天，官方文档 https://www.anysearch.com/docs/auth） | 系统 | 不能写 | `next_turn` | NS-1：配了的 AnySearch 走自己的额度（头里带 `Authorization: Bearer`），自动、选了它都一样 |
 | `net.search.deepseek.key` | 密钥 | 没有：借用模型那边官方 DeepSeek 供应商的 key（认法 `miyu_models::provider_key::serving`：`catalog` 是 `deepseek` 或地址、编号对得上，地址还得是官方的 `api.deepseek.com`，施工 PK-1补），`config.get` 的来源写 `inherited`（施工 NS-1）；也没有的 DeepSeek 不试 | 系统 | 不能写 | `next_turn` | N-3 上；NF-1 起只在联网服务选了 DeepSeek 时用，搜索和代抓都先用它，自动不用（项目主人 2026-11-14 定：自动不花钱）；按次收费 |
 | `net.search.tavily.key` | 密钥 | 没有：Tavily 不试 | 系统 | 不能写 | `next_turn` | N-3 上：只在联网服务选了 Tavily 时用 |
@@ -403,7 +403,7 @@ miyu_config::settings! {
 回应：`items` 每一项，照清单登记的先后。`pages`、`groups` 页和组，照第一次出现的先后。例子（`ui.language` 一项，中文）：
 
 ```json
-{"groups":[{"id":"display","name":"显示","name_en":"Display","page":"general"}],"items":[{"applies":"now","common":true,"control":"select","default":"auto","description":"终端、网页、命令行给你看的字用哪种话。auto 跟着终端或浏览器的语言。","group":"display","key":"ui.language","layers":["system"],"name":"界面语言","name_en":"Interface language","options":[{"name":"跟随系统","value":"auto"},{"name":"中文","value":"zh"},{"name":"English","value":"en"},{"name":"日本語","value":"ja"}],"page":"general","type":"option"}],"pages":[{"id":"general","name":"通用"}]}
+{"groups":[{"id":"display","name":"显示","name_en":"Display","page":"general"}],"items":[{"applies":"now","common":true,"control":"select","default":"auto","description":"终端界面、网页界面和命令行显示的文字使用哪种语言。auto 表示跟随终端或浏览器的语言。","group":"display","key":"ui.language","layers":["system"],"name":"界面语言","name_en":"Interface language","options":[{"name":"跟随系统","value":"auto"},{"name":"中文","value":"zh"},{"name":"English","value":"en"},{"name":"日本語","value":"ja"}],"page":"general","type":"option"}],"pages":[{"id":"general","name":"通用"}]}
 ```
 
 - 每一项的格：`key`、`type`，照类型带 `options`（选项：`value` 和给人看的 `name`，软件包清单里写了说明的另带 `description`（施工 PC-1）；核心查得出的再带 `note`，头接在名字后面暗色写，施工 R-5 再补：`models.embedding` 的 `local` 写内置模型的名字，照核心手里的本机清单的 `id`，本机的那一路用不上的没有，不进给人看的字；`net.search.source` 冷却着的那一家写「冷却到 15:30」（施工 N-2 下：内置包的端口 `Builtins::option_state` 说冷却到什么时候，照连接的语言 `core/config/option-cooling`、核心这台机器的时区拼，只写时、分）；核心查得出用不了的再带 `available: false`，只写 `false`，头照样列着、画成灰的、选不了，为什么用不了的那一句头自己写，施工 R-5 三补：现在只有 `local`，本机的那一路没有时，就是没装内置语义模型的包）、`min`、`max`、`max_chars`、`element`，再是 `default`、`layers`、`tighten`（没有不写）、`env`（没有不写）、`applies`、`name`、`description`、`page`、`group`、`common`、`control`，控件是 `combo` 的再带 `suggestions`（字表里这种语言的建议值，照先后，施工 P-9 补），设置页不画的再带 `hidden: true`（施工 9-1 下：网页的空闲、票据那几项）。包的配置项（页是 `packages`）再带 `package`：归哪个包，就是组的编号（施工 F-6 上，`package-pages.md`）。
@@ -843,7 +843,7 @@ miyu_config::settings! {
 $ miyu check
 ~/.miyu/etc/config.toml:7:1 警告：没有 ui.langauge 这一项。是不是想写 ui.language？这一行先不管，原样留着。
 ~/.miyu/etc/config.toml:2:9 错误：log.level 只能是 error、warn、info、debug、trace 或 off，写的是 "verbose"。改成其中一个，例如 log.level = "info"。暂用 "info"（默认值）。
-~/src/app/.miyu/config.toml:3:19 错误：项目配置只能让限制更严。permission.start_read_only 现在是 true，这里写的 false 更宽，不算。
+~/src/app/.miyu/config.toml:3:19 错误：项目配置只能让限制更严。permission.start_read_only 现在是 true，这里写的 false 更宽，不生效。
 2 处错误，1 处警告
 ```
 
@@ -862,7 +862,7 @@ $ miyu check
 ```text
 ~/.miyu/etc/config.toml:4:12 错误：TOML 写法不对：invalid basic string。这份文件先照上一次读进来的用着。
 ~/.miyu/etc/config.toml:4:12 error: Not valid TOML: invalid basic string. Using what was read from this file last time.
-~/src/app/.miyu/config.toml:2:9 错误：log.level 只能写在系统配置里，写在项目配置里不算。挪到系统配置里去。
+~/src/app/.miyu/config.toml:2:9 错误：log.level 只能写在系统配置里，写在项目配置里不生效。挪到系统配置里去。
 ~/src/app/.miyu/config.toml:2:9 error: log.level belongs in the system config. It does not count in a project config. Move it to the system config.
 ~/.miyu/etc/config.toml:5:19 错误：permission.start_read_only 要写 true 或 false，写的是 "yes"。改成 permission.start_read_only = true。暂用 false（默认值）。
 ~/.miyu/etc/config.toml:5:19 error: permission.start_read_only needs true or false, not "yes". Write permission.start_read_only = true. Using false (the default) for now.
@@ -874,7 +874,7 @@ $ miyu check
 
 ```text
 $ miyu config explain ui.language
-界面语言（ui.language）：终端、网页、命令行给你看的字用哪种话。auto 跟着终端或浏览器的语言。当场生效。
+界面语言（ui.language）：终端界面、网页界面和命令行显示的文字使用哪种语言。auto 表示跟随终端或浏览器的语言。当场生效。
   "zh"    系统配置  ~/.miyu/etc/config.toml:3  ← 生效
   "auto"  默认值
 ```
@@ -981,59 +981,59 @@ $ miyu provider logout bigmodel-2
 样本 `docs/designs/samples/config/reference.zh.toml`（参考文件，中文）：
 
 ```toml
-# Miyu 的全部配置项和默认值。这份是生成的，改它没有用。
+# Miyu 的全部配置项和默认值。这份文件是自动生成的，修改它不会生效。
 # 配置写在数据根的 config.toml。
 
 [clicall.mcp]
-# 允许脚本调用：开着的话，这个服务的工具在 miyu call 里都能调；关着的只能直接调。单件工具另写了的照那一件的。
+# 允许脚本调用：开启后，这个服务的工具都可以用 miyu call 调用；关闭后只能直接调用。如果单件工具另有设置，以那一件工具的设置为准。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # "<id>" =
 
 [clicall.tools]
-# 允许脚本调用：开着的话，AI 在命令里用 miyu call 也能调这件工具，结果交给脚本；关着的只能直接调。不写的照它自己登记的（MCP 服务、脚本工具默认能调，自带的只有搜索、抓网页、搜记忆、知识库几件能调，扩展的默认不能）。写入、发消息这类工具开了也调不成。
+# 允许脚本调用：开启后，AI 在命令里也可以用 miyu call 调用这件工具，结果交给脚本处理；关闭后只能直接调用。不填写时使用工具自己登记的设置：MCP 服务和脚本工具默认可以调用，自带工具里只有搜索、抓取网页、搜索记忆、知识库几件可以调用，扩展的工具默认不能调用。写入、发消息这类工具即使开启也不能用 miyu call 调用。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # "<name>" =
 
 [commands."<id>"]
-# 使用权限：这条斜杠命令谁能用：你和群管理员，或者群里随便哪个人也行，或者停用、谁都不行。不写的照命令自带的设置，没有的是你和群管理员。
+# 使用权限：谁可以使用这条斜杠命令：你和群管理员，群里的所有人，或者停用（所有人都不能使用）。不填写时使用命令自带的设置；命令没有自带设置时，只有你和群管理员可以使用。
 # 能写：admin、anyone 或 off。只能写在系统配置里。立即生效。
 # access =
 
 [compaction]
-# 压缩触发线：上下文用到窗口的百分之几时自动压缩。窗口小的模型要给回答留出地方，实际可能更早压。20 万的窗口调到 85 以上不起作用，百万的窗口才到得了 95。
+# 压缩触发线：上下文用到窗口的百分之几时自动压缩。窗口小的模型要给回答留出空间，实际可能更早压缩。20 万的窗口调到 85 以上不起作用，百万的窗口才能调到 95。
 # 能写：20 到 95 之间的整数。只能写在系统配置里。下一轮生效。
 line = 85
 
-# 预压缩：上下文快满时，在后台先把旧的那一段压成摘要，到了要压缩的时候直接换上，不用停下来等。关掉的话，照旧到线再压。
+# 预压缩：上下文快满时，在后台先把旧的那一段压成摘要，到了要压缩的时候直接换上，不用停下来等。关闭后，到了压缩触发线才开始压缩。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 prepare = true
 
 [core]
-# 空闲退出时间：没有连接、也没有在跑的回合，连续这么多分钟以后核心退出。0 表示一直开着（默认）；头连不上核心时会自己拉起。
+# 空闲退出时间：没有连接、也没有正在运行的回合时，连续这么多分钟后核心退出。0 表示一直运行（默认）。界面连不上核心时会自动启动核心。
 # 能写：0 到 525600 之间的整数。只能写在系统配置里。立即生效。
 idle_exit = 0
 
-# 核心的工作线程数：核心用几个线程处理连接、会话和请求。0 表示照 CPU 的核数（默认）；写 1 的照 2 个。
+# 核心的工作线程数：核心用几个线程处理连接、会话和请求。0 表示使用 CPU 的核数（默认）；填 1 时按 2 个线程运行。
 # 能写：0 到 64 之间的整数。只能写在系统配置里。重启核心后生效。
 workers = 0
 
 [external.bindings]
-# 平台账号：通讯平台上哪几个号是你本人。键写平台上的身份（例如 qq:10001），值写 owner。私聊里，这个号就是你。
+# 平台账号：通讯平台上哪几个账号是你本人。键填平台上的身份（例如 qq:10001），值填 owner。在私聊里，这个账号就代表你。
 # 能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置里。立即生效。
 # "<external>" =
 
 [features]
-# 启用：默认全开的预设照它开关这个技能、脚本或 MCP 服务，预设里单独写了开或关的照预设。默认关的预设不照它。
+# 启用：在默认全部开启的预设里，这个技能、脚本或 MCP 服务是否启用由这一项决定；如果预设里单独设置了开或关，以预设为准。默认全部关闭的预设不使用这一项。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # "<name>" =
 
 [jobs]
-# 后台命令最长运行时间：AI 放到后台跑的命令最多跑这么久，到了就停掉并告诉 AI。最长 2 小时。
+# 后台命令最长运行时间：AI 放到后台运行的命令最多运行这么久，到时间就会被停止，并通知 AI。最长 2 小时。
 # 能写：1m 到 2h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。下一轮生效。
 max_running = "30m"
 
 [log]
-# 运行日志的级别：运行日志记到哪一级。排查问题时调成 debug。设了环境变量 MIYU_LOG 的，那一次启动照它。
+# 运行日志的级别：运行日志记录到哪一级。排查问题时可以调成 debug。如果设置了环境变量 MIYU_LOG，那一次启动以环境变量为准。
 # 能写：error、warn、info、debug、trace 或 off。只能写在系统配置里。立即生效。
 level = "info"
 
@@ -1042,23 +1042,23 @@ level = "info"
 # 能写：0 到 1000 之间的整数。只能写在系统配置里。下一轮生效。
 dream_keep = 20
 
-# 整理前的空闲时间：聊完闲了这么久，AI 把新聊的内容里值得记的整理成记忆。
+# 整理前的空闲时间：对话停下这么久之后，AI 把新对话里值得记住的内容整理成记忆。
 # 能写：1m 到 1h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。下一轮生效。
 extract_idle = "30m"
 
-# 连续对话时的整理间隔（轮）：群里一直有人说话、总闲不下来时，上次整理以后聊满这么多轮就不等闲，在后台整理。
+# 连续对话时的整理间隔（轮）：群里一直有人说话、对话停不下来时，距离上次整理满这么多轮就直接在后台整理。
 # 能写：2 到 500 之间的整数。只能写在系统配置里。下一轮生效。
 extract_max_turns = 20
 
-# 连续对话时的最长等待：群里一直有人说话、总闲不下来时，最早没整理的那一轮过了这么久就不等闲，在后台整理。
+# 连续对话时的最长等待：群里一直有人说话、对话停不下来时，最早一轮未整理的对话超过这么久就直接在后台整理。
 # 能写：10m 到 24h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。下一轮生效。
 extract_max_wait = "1h"
 
-# 整理间隔（轮）：上次整理以后至少聊了这么多轮才整理。
+# 整理间隔（轮）：距离上次整理至少对话这么多轮，才会再次整理。
 # 能写：1 到 100 之间的整数。只能写在系统配置里。下一轮生效。
 extract_turns = 2
 
-# 归纳间隔：隔这么久，AI 把新记的和以前的放在一起理一遍：重复的合掉，过时的作废，写一段对你的了解。
+# 归纳间隔：每隔这么久，AI 把新记忆和旧记忆放在一起整理一遍：合并重复的，作废过时的，并写一段对你的了解。
 # 能写：1h 到 720h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。下一轮生效。
 merge_every = "16h"
 
@@ -1067,7 +1067,7 @@ merge_every = "16h"
 # 能写：<供应商>/<模型> 或 @<池>。只能写在系统配置里。新会话生效。
 # chat =
 
-# 语义模型：提高记忆、知识库等内容的检索质量。只有内置模型会自动联想记忆和知识库，换成别的模型后只在搜索时用到。
+# 语义模型：提高记忆、知识库等内容的检索质量。只有内置模型会自动联想记忆和知识库，换成其他模型后只在搜索时使用。
 # 能写：local、off 或 <供应商>/<模型>。只能写在系统配置里。下一轮生效。
 # embedding =
 
@@ -1076,100 +1076,100 @@ merge_every = "16h"
 # vision =
 
 [models.catalog]
-# 更新间隔：缓存的目录旧过这么久才再拉。
+# 更新间隔：缓存的目录超过这么久之后才会重新获取。
 # 能写：1h 到 720h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。立即生效。
 every = "24h"
 
-# 后台更新目录：在后台去 models.dev 拉新的模型目录。关掉只用安装包带的和已经拉过的。
+# 后台更新目录：在后台从 models.dev 获取最新的模型目录。关闭后只使用安装包自带的目录和已经获取过的目录。
 # 能写：true 或 false。只能写在系统配置里。立即生效。
 update = true
 
-# 目录的地址：从哪拉模型目录。
+# 目录的地址：从哪个地址获取模型目录。
 # 能写：http:// 或 https:// 开头的网址 或 { env = "…" }。只能写在系统配置里。立即生效。
 url = "https://models.dev/api.json"
 
 [models.cooldown.auth]
-# 认证失败停用（初始）：池里的一个模型认证失败时，第一次停用这么久，连着再失败就翻倍。
+# 认证失败停用（初始）：池里的一个模型认证失败时，第一次停用这么久；连续失败时每次翻倍。
 # 能写：1s 到 1h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。立即生效。
 base = "10m"
 
-# 认证失败停用（上限）：认证失败的停用翻倍到这么久为止。
+# 认证失败停用（上限）：认证失败的停用时间最多翻倍到这么久。
 # 能写：1s 到 24h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。立即生效。
 max = "2h"
 
 [models.cooldown.quota]
-# 额度用完停用（初始）：池里的一个模型额度、余额用完，供应商又没说什么时候恢复时，第一次停用这么久。说了的照它说的，最多一天。
+# 额度用完停用（初始）：池里的一个模型额度或余额用完，而供应商没有说明恢复时间时，第一次停用这么久。供应商说明了恢复时间时，按它说明的时间停用，最多一天。
 # 能写：1s 到 24h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。立即生效。
 base = "30m"
 
-# 额度用完停用（上限）：没说什么时候恢复的，连着再用完就翻倍，到这么久为止。
+# 额度用完停用（上限）：供应商没有说明恢复时间时，连续用完每次翻倍，最多到这么久。
 # 能写：1s 到 24h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。立即生效。
 max = "30m"
 
 [models.cooldown.rate_limited]
-# 限速冷却（初始）：一个端点被限速，第一次停用这么久，连着再被限速就翻倍。
+# 限速冷却（初始）：一个端点被限速时，第一次停用这么久；连续被限速时每次翻倍。
 # 能写：1s 到 1h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。立即生效。
 base = "30s"
 
-# 限速冷却（上限）：限速的冷却翻倍到这么久为止，供应商说要等更久的也不超过它。
+# 限速冷却（上限）：限速的冷却时间最多翻倍到这么久；即使供应商要求等待更久，也不会超过它。
 # 能写：1s 到 24h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。立即生效。
 max = "10m"
 
 [models.cooldown.retryable]
-# 出错冷却（初始）：连不上、服务端出错，第一次停用这么久，连着再出错就翻倍。
+# 出错冷却（初始）：连接失败或服务端出错时，第一次停用这么久；连续出错时每次翻倍。
 # 能写：1s 到 1h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。立即生效。
 base = "10s"
 
-# 出错冷却（上限）：这类错的冷却翻倍到这么久为止。
+# 出错冷却（上限）：这类错误的冷却时间最多翻倍到这么久。
 # 能写：1s 到 24h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。立即生效。
 max = "5m"
 
 [net]
-# 内部域名：别人（群里的人、陌生人）让 AI 上网时一律不去的域名，子域名也算，不管解析成什么地址、走不走代理；你自己不受影响。写法例如 example-corp.com。
+# 内部域名：其他人（群成员、陌生人）让 AI 上网时，AI 不会访问这些域名和它们的子域名，无论域名解析到什么地址、是否经过代理。你自己不受影响。写法例如 example-corp.com。
 # 能写：最多 253 个字的文字 的列表。只能写在系统配置里。下一轮生效。
 # internal_domains =
 
 [net.search]
-# 联网服务：AI 搜网页、抓网页用哪一家。自动只用免费额度：搜索照 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；自己抓不下来的网页请 Exa、Firecrawl、Parallel 代抓。这几家都在国外，搜索词和网址会发给它们。选了一家的先用它（选了 DeepSeek 的，抓网页也先交它），它用不了再照自动的试。
+# 联网服务：AI 搜索网页、抓取网页使用哪一家服务。「自动」只使用免费额度：搜索时依次尝试 Exa、Parallel、Firecrawl、AnySearch、You.com，被限额的服务会暂停一段时间；Miyu 自己抓取失败的网页交给 Exa、Firecrawl、Parallel 代抓。这几家服务都在国外，搜索词和网址会发送给它们。如果选择了其中一家，就优先使用它（选择 DeepSeek 时，抓取网页也优先交给它）；它不可用时再按「自动」的顺序尝试。
 # 能写：auto、exa、anysearch、deepseek、tavily、brave 或 searxng。只能写在系统配置里。下一轮生效。
 source = "auto"
 
 [net.search.anysearch]
-# AnySearch：配了就用你自己的 AnySearch 额度，不配照免费额度（按 IP 每天的额度）。
+# AnySearch：填写后使用你自己的 AnySearch 额度，不填写时使用免费额度（按 IP 计算的每日额度）。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置里。下一轮生效。
 # key =
 
 [net.search.brave]
-# Brave Search：联网服务选了 Brave 时要它。
+# Brave Search：联网服务选择 Brave 时需要这个密钥。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置里。下一轮生效。
 # key =
 
 [net.search.deepseek]
-# DeepSeek：联网服务选了 DeepSeek 时要它；没填的借用模型那边官方 DeepSeek 供应商的 key（设置里显示「已继承」）。搜索、代抓按次收费。
+# DeepSeek：联网服务选择 DeepSeek 时需要这个密钥。不填写时使用模型供应商里官方 DeepSeek 的密钥（设置里显示「已继承」）。搜索和代抓按次收费。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置里。下一轮生效。
 # key =
 
 [net.search.exa]
-# Exa：配了就用你自己的 Exa 额度，不配照免费额度。
+# Exa：填写后使用你自己的 Exa 额度，不填写时使用免费额度。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置里。下一轮生效。
 # key =
 
 [net.search.searxng]
-# SearXNG 的地址：你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。联网服务选了 SearXNG 时用它。
+# SearXNG 的地址：你自己搭建的 SearXNG 的地址，例如 http://127.0.0.1:8888，需要开启 JSON 格式。联网服务选择 SearXNG 时使用。
 # 能写：http:// 或 https:// 开头的网址 或 { env = "…" }。只能写在系统配置里。下一轮生效。
 # url =
 
 [net.search.tavily]
-# Tavily：联网服务选了 Tavily 时要它。
+# Tavily：联网服务选择 Tavily 时需要这个密钥。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置里。下一轮生效。
 # key =
 
 [packages]
-# 不升级的包：升级时跳过这几个包（写编号），照旧用装着的那一版。
+# 不升级的包：升级时跳过这几个软件包（填编号），继续使用已安装的版本。
 # 能写：最多 64 个字的文字 的列表。只能写在系统配置里。立即生效。
 # hold =
 
-# 镜像：官方的软件源连不上或者慢的时候，先照先后试这几个地址。内容照样验签名、比哈希，镜像改不了。
+# 镜像：官方软件源连接不上或者速度慢时，按填写的先后顺序先尝试这几个地址。下载的内容仍然会验证签名和哈希，所以镜像无法篡改内容。
 # 能写：http:// 或 https:// 开头的网址 或 { env = "…" } 的列表。只能写在系统配置里。立即生效。
 mirrors = []
 
@@ -1177,16 +1177,16 @@ mirrors = []
 # 能写：true 或 false。只能写在系统配置里。立即生效。
 other_systems = false
 
-# 软件源地址：从这里查、下载软件包。默认是官方的软件源；换了地址，那边的内容也得是官方签过名的。
+# 软件源地址：从这个地址查询和下载软件包。默认是官方软件源；更换地址后，那里的内容仍然必须有官方的签名。
 # 能写：http:// 或 https:// 开头的网址 或 { env = "…" }。只能写在系统配置里。立即生效。
 source = "https://miyu-agent.github.io/packages/"
 
 [packages.sources."<id>"]
-# 别的软件源的公钥：签它的索引的 Ed25519 公钥（base64）。索引照它验，验不过的不收。
+# 其他软件源的公钥：给这个软件源的索引签名的 Ed25519 公钥（base64）。索引用它验证，验证失败的索引不会被使用。
 # 能写：最多 64 个字的文字。只能写在系统配置里。立即生效。
 # key =
 
-# 别的软件源的地址：放索引的那一层目录。和公钥一起写才算一个源，加了就是信任它；写在系统配置里。
+# 其他软件源的地址：存放索引的那一层目录的地址。地址和公钥都填写后才算一个软件源；添加一个软件源就表示你信任它。这一项写在系统配置里。
 # 能写：http:// 或 https:// 开头的网址 或 { env = "…" }。只能写在系统配置里。立即生效。
 # url =
 
@@ -1221,7 +1221,7 @@ power = true
 timeout = 300
 
 [persona]
-# 默认人格：新会话默认用哪个人格。不设的话，新会话不使用人格，记忆单独一份。
+# 默认人格：新会话默认用哪个人格。不设置时，新会话不使用人格，记忆单独保存一份。
 # 能写：人格的编号。只能写在系统配置里。新会话生效。
 # default =
 
@@ -1234,26 +1234,26 @@ timeout = 300
 # 能写：<供应商>/<模型> 的列表。只能写在系统配置里。下一轮生效。
 # models =
 
-# 分配策略：一个会话一直用一个成员，还是每次请求换下一个，还是每次从第一个排起（主力加备用，出错才用后面的）。不写的：成员全是按次计费的轮换，别的钉住。
+# 分配策略：一个会话始终使用同一个成员（钉住），每次请求换下一个成员（轮换），或者每次从第一个成员开始（按先后：前面的成员出错时才使用后面的）。不填写时，如果成员全部按次计费就轮换，否则钉住。
 # 能写：pin、rotate 或 ordered。只能写在系统配置里。下一轮生效。
 # strategy =
 
-# 子代理可用：打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。
+# 子代理可用：开启后，新会话里 AI 派子代理时可以选择这个池。池里有成员时才会列出。
 # 能写：true 或 false。只能写在系统配置里。新会话生效。
 subagent = false
 
 [pools.flagship]
-# 子代理可用：打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。
+# 子代理可用：开启后，新会话里 AI 派子代理时可以选择这个池。池里有成员时才会列出。
 # 能写：true 或 false。只能写在系统配置里。新会话生效。
 subagent = true
 
 [pools.lite]
-# 子代理可用：打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。
+# 子代理可用：开启后，新会话里 AI 派子代理时可以选择这个池。池里有成员时才会列出。
 # 能写：true 或 false。只能写在系统配置里。新会话生效。
 subagent = true
 
 [pools.normal]
-# 子代理可用：打开以后，新会话里 AI 派子代理时能选这个池。池里有成员才列出来。
+# 子代理可用：开启后，新会话里 AI 派子代理时可以选择这个池。池里有成员时才会列出。
 # 能写：true 或 false。只能写在系统配置里。新会话生效。
 subagent = true
 
@@ -1263,7 +1263,7 @@ subagent = true
 default = "full"
 
 [profile]
-# 更多描述：想让 AI 知道的关于你的事，可以空。通讯平台的群聊里不带。
+# 更多描述：你想让 AI 了解的关于你的信息，可以留空。通讯平台的群聊里不会带上这些内容。
 # 能写：最多 2000 个字的文字，可以分行。只能写在系统配置里。新会话生效。
 # about =
 
@@ -1276,48 +1276,48 @@ default = "full"
 # preferred_reply_language =
 
 [providers."<id>"]
-# 地址：这家的接口地址，路径由驱动接在后面。认得出的供应商可以不写。
+# 地址：这家供应商的接口地址，驱动会在后面接上路径。Miyu 能识别的供应商可以不填写。
 # 能写：http:// 或 https:// 开头的网址 或 { env = "…" }。只能写在系统配置里。下一轮生效。
 # base_url =
 
-# 缓存类别：这家的缓存怎么算钱。现在只用来定池不写分法时怎么分。不写照驱动的默认。
+# 缓存类别：这家供应商的缓存怎么计费。目前只在池没有填写分配策略时用来决定策略。不填写时使用驱动的默认值。
 # 能写：contract、best_effort 或 per_request。只能写在系统配置里。下一轮生效。
 # cache =
 
-# 目录中的供应商：这家对应资料里的哪一家，例如只转 DeepSeek 的中转写 deepseek。
+# 目录中的供应商：这家供应商对应模型目录里的哪一家。例如只转发 DeepSeek 的中转服务填 deepseek。
 # 能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置里。下一轮生效。
 # catalog =
 
-# 驱动：怎么和这家说话。认得出的供应商可以不写。
+# 驱动：和这家供应商通信使用的接口。Miyu 能识别的供应商可以不填写。
 # 能写：openai-chat、anthropic 或 openai-responses。只能写在系统配置里。下一轮生效。
 # driver =
 
-# key：写 { secret = "名字" }（用 miyu provider login 存）或 { env = "环境变量" }。一家一个，几份额度一起用的配成几家、放进池里。不写的不带认证头。
+# 密钥：写成 { secret = "名字" }（用 miyu provider login 保存）或 { env = "环境变量" }。一家供应商只有一个密钥；如果要同时使用几份额度，把它们配置成几家供应商，再放进同一个池。不填写时请求不带认证头。
 # 能写：{ secret = "…" } 或 { env = "…" }。只能写在系统配置里。下一轮生效。
 # key =
 
-# 本地服务：本机跑的模型服务，价格当 0。不写的照地址：在本机的是。
+# 本地服务：在本机运行的模型服务，价格按 0 计算。不填写时根据地址判断：地址在本机就是本地服务。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # local =
 
-# 显示名：界面上给人看的名字。编号只用来引用模型；不写的照资料里那一家的名字，再没有的照编号。
+# 显示名：界面上显示的名字。编号只用来引用模型。不填写时使用模型目录里这家供应商的名字；模型目录里没有时使用编号。
 # 能写：最多 64 个字的文字。只能写在系统配置里。立即生效。
 # name =
 
-# 所属软件包：这一家是哪个软件包带的。写了的，这里的几项盖在那个包带的供应商上；没写的是你自己的供应商，包带的同编号那一家不出现。改包带的供应商时自动写上。
+# 所属软件包：这家供应商由哪个软件包提供。填写后，这里的设置会覆盖软件包提供的同一家供应商的对应项；不填写时，它是你自己的供应商，软件包提供的同编号供应商不会出现。修改软件包提供的供应商时，这一项会自动填上。
 # 能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置里。立即生效。
 # package =
 
-# 倍率：这家的价格照它乘，不写是 1。模型上写的盖过它。
+# 倍率：这家供应商的价格乘以这个倍率，不填写时是 1。模型上填写的倍率优先。
 # 能写：0 到 1000 之间的数。只能写在系统配置里。下一轮生效。
 # price_multiplier =
 
 [providers."<id>".models."<model>"]
-# 目录中的模型：照 models.dev 目录里的哪一个：<供应商>/<模型>。不写的照名字找。
+# 目录中的模型：对应 models.dev 目录里的哪一个模型，写成 <供应商>/<模型>。不填写时按名字查找。
 # 能写：最多 256 个字的文字。只能写在系统配置里。下一轮生效。
 # catalog =
 
-# 思考程度：这个模型默认的思考程度，写它的一档，例如 high；能关思考的写 off。不写的照供应商的默认。
+# 思考程度：这个模型默认的思考程度，填它支持的一档，例如 high；能关闭思考的模型可以填 off。不填写时使用供应商的默认值。
 # 能写：最多 32 个字的文字。只能写在系统配置里。下一轮生效。
 # effort =
 
@@ -1329,7 +1329,7 @@ default = "full"
 # 能写：1 到 100000000 之间的整数。只能写在系统配置里。下一轮生效。
 # max_output =
 
-# 倍率：这个模型的价格照它乘，盖过供应商上写的。
+# 倍率：这个模型的价格乘以这个倍率，优先于供应商上填写的倍率。
 # 能写：0 到 1000 之间的数。只能写在系统配置里。下一轮生效。
 # price_multiplier =
 
@@ -1337,11 +1337,11 @@ default = "full"
 # 能写：最多 32 个字的文字 的列表。只能写在系统配置里。下一轮生效。
 # reasoning =
 
-# 默认的温度：这个模型默认的温度，0 到 2，越高回答越随意。不写的照供应商的默认；这个模型不收温度的不发。
+# 默认的温度：这个模型默认的温度，范围 0 到 2，数值越高回答越随意。不填写时使用供应商的默认值；如果这个模型不接受温度参数，请求里不会带上它。
 # 能写：0 到 2 之间的数。只能写在系统配置里。下一轮生效。
 # temperature =
 
-# 工具调用：这个模型能不能调工具。
+# 工具调用：这个模型能不能调用工具。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # tools =
 
@@ -1350,28 +1350,28 @@ default = "full"
 # window =
 
 [providers."<id>".models."<model>".price]
-# 读缓存的价：每一百万读缓存 token 的价。
+# 读缓存的价：每一百万读缓存 token 的价格。
 # 能写：0 到 1000000 之间的数。只能写在系统配置里。下一轮生效。
 # cache_read =
 
-# 写缓存的价：每一百万写缓存 token 的价。
+# 写缓存的价：每一百万写缓存 token 的价格。
 # 能写：0 到 1000000 之间的数。只能写在系统配置里。下一轮生效。
 # cache_write =
 
-# 币种：价格的币种，三个大写字母，例如 USD、CNY。不写是 USD。
+# 币种：价格的币种，三个大写字母，例如 USD、CNY。不填写时是 USD。
 # 能写：最多 3 个字的文字。只能写在系统配置里。下一轮生效。
 # currency =
 
-# 输入价：每一百万输入 token 的价。写了价格就整份用手写的。
+# 输入价：每一百万输入 token 的价格。填写了价格后，这个模型的价格全部使用你填写的数值。
 # 能写：0 到 1000000 之间的数。只能写在系统配置里。下一轮生效。
 # input =
 
-# 输出价：每一百万输出 token 的价。
+# 输出价：每一百万输出 token 的价格。
 # 能写：0 到 1000000 之间的数。只能写在系统配置里。下一轮生效。
 # output =
 
 [providers."<id>".quota]
-# 额度接口地址：查这家额度的完整地址，盖过资料里的。资料里没写额度接口的供应商写了也不查。DeepSeek 这类认得出官方地址的，供应商的地址不是官方的也不查。
+# 额度接口地址：查询这家供应商额度的完整地址，优先于模型目录里的地址。如果模型目录里这家供应商没有额度接口，填写了也不会查询。对于 DeepSeek 这类能识别官方地址的供应商，接口地址不是官方地址时同样不会查询。
 # 能写：http:// 或 https:// 开头的网址 或 { env = "…" }。只能写在系统配置里。下一轮生效。
 # url =
 
@@ -1381,33 +1381,33 @@ default = "full"
 system_hint = true
 
 [skills.external]
-# 其他技能目录：「读取其他目录的 Skills」开着时读的目录，照先后，同名的先列的赢。写成 ~/… 或绝对路径。
+# 其他技能目录：「读取其他目录的 Skills」开启时读取的目录，按填写的先后顺序读取；如果有同名的技能，使用排在前面的目录里的那一个。路径写成 ~/… 或绝对路径。
 # 能写：最多 4096 个字的文字 的列表。只能写在系统配置里。下一轮生效。
 dirs = ["~/.agents/skills"]
 
-# 读取其他目录的 Skills：开着时，「其他技能目录」里的技能也能用：Codex、opencode 这些别的应用装的技能常放在 ~/.agents/skills。同名的照 Miyu 自己的；这些技能 Miyu 不删。
+# 读取其他目录的 Skills：开启后，「其他技能目录」里的技能也可以使用：Codex、opencode 等其他应用安装的技能通常放在 ~/.agents/skills。如果有同名的技能，使用 Miyu 自己的那一个。Miyu 不会删除这些目录里的技能。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 enabled = false
 
 [terminal]
-# 闲置后新建会话：上一次说话以后闲置超过这么多分钟，下一句开一个新的终端集成会话，旧会话保留。0 表示不开新的。
+# 闲置后新建会话：距离上一次对话超过这么多分钟后，下一句话会新建一个终端集成会话，旧会话保留。0 表示不新建。
 # 能写：0 到 525600 之间的整数。只能写在系统配置里。立即生效。
 idle_new_after = 180
 
-# 终端集成会话的人格：新开的终端集成会话用哪个人格。不设的话跟随默认人格。已经在用的终端集成会话不变。
+# 终端集成会话的人格：新建的终端集成会话使用哪个人格。不设置时跟随默认人格。已经在使用的终端集成会话不受影响。
 # 能写：人格的编号。只能写在系统配置里。新会话生效。
 # persona =
 
-# 终端集成会话的预设：新开的终端集成会话用哪个预设。不设的话跟随默认预设。
+# 终端集成会话的预设：新建的终端集成会话使用哪个预设。不设置时跟随默认预设。
 # 能写：预设的编号。只能写在系统配置里。新会话生效。
 # preset =
 
 [ui]
-# 默认界面：直接敲 miyu 时打开哪个界面。
+# 默认界面：直接运行 miyu 时打开哪个界面。
 # 能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置里。重启后生效。
 head = "tui"
 
-# 界面语言：终端、网页、命令行给你看的字用哪种话。auto 跟着终端或浏览器的语言。
+# 界面语言：终端界面、网页界面和命令行显示的文字使用哪种语言。auto 表示跟随终端或浏览器的语言。
 # 能写：auto、zh、en 或 ja。只能写在系统配置里。立即生效。
 language = "auto"
 
@@ -1415,12 +1415,12 @@ language = "auto"
 # 能写：new 或 recent。只能写在系统配置里。重启后生效。
 startup = "new"
 
-# 已完成首次引导：已经走完第一次引导，终端、网页不再打开引导。
+# 已完成首次引导：已经完成首次引导，终端界面和网页界面不再打开引导。
 # 能写：true 或 false。只能写在系统配置里。立即生效。
 welcomed = false
 
 [usage]
-# 显示的币种：用量的金额照每一笔那天的汇率换成这一种显示，取不到汇率的不显示金额。三个大写字母，例如 USD、CNY。
+# 显示的币种：用量的金额按每一笔当天的汇率换算成这个币种显示；取不到汇率时不显示金额。填三个大写字母，例如 USD、CNY。
 # 能写：最多 3 个字的文字。只能写在系统配置里。立即生效。
 currency = "USD"
 ```
@@ -1474,22 +1474,22 @@ currency = "USD"
 | 键 | 中文 | 英文 | 日文 |
 |---|---|---|---|
 | `ui.language` 名字 | 界面语言 | Interface language | 表示言語 |
-| 说明 | 终端、网页、命令行给你看的字用哪种话。auto 跟着终端或浏览器的语言。 | The language terminals, the web page and the command line use for you. auto follows the terminal or browser. | 端末、ウェブ、コマンドラインで表示する言語です。auto は端末やブラウザの言語に合わせます。 |
+| 说明 | 终端界面、网页界面和命令行显示的文字使用哪种语言。auto 表示跟随终端或浏览器的语言。 | The language terminals, the web page and the command line use for you. auto follows the terminal or browser. | 端末、ウェブ、コマンドラインで表示する言語です。auto は端末やブラウザの言語に合わせます。 |
 | 选项 | `auto` 跟随系统、`zh` 中文、`en` English、`ja` 日本語 | `auto` Follow the system，别的同左 | `auto` システムに合わせる，别的同左 |
 | `log.level` 名字 | 运行日志的级别 | Runtime log level | 実行ログのレベル |
-| 说明 | 运行日志记到哪一级。排查问题时调成 debug。设了环境变量 MIYU_LOG 的，那一次启动照它。 | How much the runtime log records. Set debug when chasing a problem. MIYU_LOG, when set, wins for that launch. | 実行ログにどこまで記録するかです。問題を調べるときは debug にします。環境変数 MIYU_LOG があれば、その起動ではそちらが優先されます。 |
+| 说明 | 运行日志记录到哪一级。排查问题时可以调成 debug。如果设置了环境变量 MIYU_LOG，那一次启动以环境变量为准。 | How much the runtime log records. Set debug when chasing a problem. MIYU_LOG, when set, wins for that launch. | 実行ログにどこまで記録するかです。問題を調べるときは debug にします。環境変数 MIYU_LOG があれば、その起動ではそちらが優先されます。 |
 | 选项（8-28 改了 `info`、`debug`、`trace` 三个：照多少排，一眼看出哪个更细） | `error` 只记错误、`warn` 错误和警告、`info` 常规、`debug` 详细，排查用、`trace` 最详细、`off` 不记 | Errors only、Errors and warnings、Normal、Detailed, for debugging、Most detailed、Nothing | エラーのみ、エラーと警告、通常、詳細（調査用）、最も詳細、記録しない |
 | `permission.start_read_only` 名字 | 新会话开局只读 | Start new sessions read-only | 新しいセッションを読み取り専用で始める |
-| 说明 | 打开以后，新会话一开始就是只读。她只能查、写计划，要改文件时你再关掉只读。项目配置里只能把它打开。 | When on, new sessions begin read-only. She can look around and plan, and you turn read-only off when files should change. A project config can only turn it on. | オンにすると、新しいセッションは読み取り専用で始まります。調査と計画だけを行い、ファイルを変更するときに読み取り専用をオフにします。プロジェクト設定ではオンにすることしかできません。 |
+| 说明 | 打开以后，新会话一开始就是只读。AI 只能查、写计划，要改文件时你再关掉只读。项目配置里只能把它打开。 | When on, new sessions begin read-only. The AI can look around and plan, and you turn read-only off when files should change. A project config can only turn it on. | オンにすると、新しいセッションは読み取り専用で始まります。調査と計画だけを行い、ファイルを変更するときに読み取り専用をオフにします。プロジェクト設定ではオンにすることしかできません。 |
 | `profile.name` 名字（P-9；UX-1 改名） | 称呼 | Preferred name | 呼び名 |
 | 说明 | AI 平时怎么叫你，例如名字、昵称。 | How the AI addresses you, such as your name or a nickname. | AI があなたを呼ぶときの名前やニックネームです。 |
 | `profile.about` 名字（P-9；UX-1 改名） | 更多描述 | Additional details | 補足 |
-| 说明 | 想让 AI 知道的关于你的事，可以空。通讯平台的群聊里不带。 | Anything you want the AI to know about you; can be left empty. Not included in group chats on messaging platforms. | AI に知っておいてほしいことです。空でもかまいません。メッセージングのグループチャットでは使われません。 |
+| 说明 | 你想让 AI 了解的关于你的信息，可以留空。通讯平台的群聊里不会带上这些内容。 | Anything you want the AI to know about you; can be left empty. Not included in group chats on messaging platforms. | AI に知っておいてほしいことです。空でもかまいません。メッセージングのグループチャットでは使われません。 |
 | `profile.preferred_reply_language` 名字（P-9 补；2026-10-17 改名、排到「用户」页第一；UX-1 改名） | 回复语言 | Reply language | 返信の言語 |
 | 说明 | AI 默认用哪种语言回复，对话里可以随时让它换。 | The language the AI replies in by default. You can ask it to switch at any time. | AI が既定で返信に使う言語です。会話の中でいつでも切り替えを頼めます。 |
 | 建议值（先后照这种语言） | 简体中文、繁體中文、English、日本語、한국어、Français、Deutsch、Español、Português、Italiano、Русский、Tiếng Việt、ไทย、Bahasa Indonesia、العربية | English、简体中文、繁體中文、日本語、한국어，后面同中文 | 日本語、English、简体中文、繁體中文、한국어，后面同中文 |
 | `commands.<id>.access` 名字（O-6 六补；UX-1 改名） | 使用权限 | Access | 使用権限 |
-| 说明 | 这条斜杠命令谁能用：你和群管理员，或者群里随便哪个人也行，或者停用、谁都不行。不写的照命令自带的设置，没有的是你和群管理员。 | Who can use this slash command: you and group admins, anyone in the chat, or off for no one. When unset, the command's own setting applies, otherwise you and group admins. | このスラッシュコマンドを使える人。あなたとグループの管理者、チャットの誰でも、または無効（誰も使えない）。設定しない場合はコマンド自身の設定、それもなければあなたとグループの管理者です。 |
+| 说明 | 谁可以使用这条斜杠命令：你和群管理员，群里的所有人，或者停用（所有人都不能使用）。不填写时使用命令自带的设置；命令没有自带设置时，只有你和群管理员可以使用。 | Who can use this slash command: you and group admins, anyone in the chat, or off for no one. When unset, the command's own setting applies, otherwise you and group admins. | このスラッシュコマンドを使える人。あなたとグループの管理者、チャットの誰でも、または無効（誰も使えない）。設定しない場合はコマンド自身の設定、それもなければあなたとグループの管理者です。 |
 | 选项 | `admin` 你和群管理员、`anyone` 所有人、`off` 停用 | You and group admins、Everyone、Off | あなたとグループの管理者、全員、無効 |
 | `permission.confirm.git` 名字（HZ-1） | 破坏性 git 操作 | Destructive git operations | 破壊的な git 操作 |
 | 说明 | 强制推送、reset --hard、clean -f、丢弃改动、删除 stash 前先问。 | Ask before a force push, reset --hard, clean -f, discarding changes or dropping a stash. | 強制プッシュ、reset --hard、clean -f、変更の破棄、stash の削除の前に確認します。 |
@@ -1504,7 +1504,7 @@ currency = "USD"
 | `permission.confirm.timeout` 名字（CD-1） | 确认超时 | Confirmation timeout | 確認のタイムアウト |
 | 说明 | 等你确认超过这么多秒就自动拒绝。0 为一直等。 | Anything waiting for your confirmation is denied after this many seconds. 0 waits forever. | 確認待ちがこの秒数を過ぎると自動で拒否します。0 はずっと待ちます。 |
 | 组 `protected`（`privacy`，HZ-1） | 受保护的命令 | Protected commands | 保護されたコマンド |
-| 组 `protected` 的说明（`config.group_descriptions`，HZ-1） | 下面几类命令在完全放开时也会先问你，关掉就不再问。另有几类永远拒绝、不能关：删根目录、家目录、系统目录，格式化磁盘、往裸设备写，容器拿走整个宿主。 | These kinds of commands ask you first even with full access. Turn one off to stop asking. Some are always refused and can't be turned off: deleting the root, home or system directories, formatting a disk or writing to a raw device, and giving a container the whole host. | 次の種類のコマンドは、フルアクセスでも実行前に確認します。オフにすると確認しません。常に拒否され、オフにできないものもあります：ルート、ホーム、システムディレクトリの削除、ディスクのフォーマット、raw デバイスへの書き込み、コンテナへのホスト全体の引き渡し。 |
+| 组 `protected` 的说明（`config.group_descriptions`，HZ-1） | 下面几类命令即使在完全放开时也会先询问你，关闭后不再询问。另外有几类命令始终拒绝，不能关闭：删除根目录、家目录、系统目录，格式化磁盘，向裸设备写入，容器接管整个宿主。 | These kinds of commands ask you first even with full access. Turn one off to stop asking. Some are always refused and can't be turned off: deleting the root, home or system directories, formatting a disk or writing to a raw device, and giving a container the whole host. | 次の種類のコマンドは、フルアクセスでも実行前に確認します。オフにすると確認しません。常に拒否され、オフにできないものもあります：ルート、ホーム、システムディレクトリの削除、ディスクのフォーマット、raw デバイスへの書き込み、コンテナへのホスト全体の引き渡し。 |
 | `net.internal_domains` 名字（MB-2） | 内部域名 | Internal domains | 内部ドメイン |
 | `skills.external.enabled` 名字（PT-2 外） | 读取其他目录的 Skills | Read skills from other folders | ほかのフォルダのスキルを読む |
 | `skills.external.dirs` 名字（PT-2 外） | 其他技能目录 | Other skill folders | ほかのスキルフォルダ |
@@ -1513,7 +1513,7 @@ currency = "USD"
 | 说明（8-28 改成不点名哪个头） | 打开终端界面或网页时，开一个新会话，还是接着最近的那一个。 | Whether a terminal interface or the web page opens a new session or picks up the most recent one. | 端末画面やウェブを開いたときに、新しいセッションを始めるか、最近のセッションを続けるかです。 |
 | 选项 | `new` 新会话、`recent` 最近的会话 | A new session、The most recent session | 新しいセッション、最近のセッション |
 | `ui.head` 名字（9-3，主会话定） | 默认界面 | Default interface | 既定の画面 |
-| 说明 | 直接敲 miyu 时打开哪个界面。 | The interface plain miyu opens. | miyu だけを打ったときに開く画面。 |
+| 说明 | 直接运行 miyu 时打开哪个界面。 | The interface plain miyu opens. | miyu だけを打ったときに開く画面。 |
 | `persona.default` 名字（P-1 上，主会话定） | 默认人格 | Default persona | 既定のペルソナ |
 | 说明（2026-10-07 项目主人定：只留一句，选人格照 `persona.list` 的下拉，谁优先人用不到） | 新会话默认用哪个人格。 | The persona new sessions use. | 新しいセッションで使うペルソナ。 |
 | `preset.default` 名字（P-2 上，主会话定） | 默认预设 | Default preset | 既定のプリセット |
@@ -1521,48 +1521,48 @@ currency = "USD"
 | `models.chat` 名字（8-6，主会话定） | 主对话的模型 | Chat model | 会話のモデル |
 | 说明（8-8 加了能写池那一句） | 新会话默认用的模型，写成 供应商/模型，例如 deepseek/deepseek-flash；也能写 @池。 | The model new sessions use, written as provider/model, for example deepseek/deepseek-flash, or @pool. | 新しいセッションが使うモデル。プロバイダー/モデル の形で書きます。例：deepseek/deepseek-flash。@プール でもかまいません。 |
 | `providers.<id>.driver` 名字（8-6） | 驱动 | Driver | ドライバー |
-| 说明 | 怎么和这家说话。认得出的供应商可以不写。 | How to talk to this provider. Known providers can leave it out. | このプロバイダーとの話し方。知っているプロバイダーなら書かなくてもかまいません。 |
+| 说明 | 和这家供应商通信使用的接口。Miyu 能识别的供应商可以不填写。 | How to talk to this provider. Known providers can leave it out. | このプロバイダーとの話し方。知っているプロバイダーなら書かなくてもかまいません。 |
 | 选项 | `openai-chat` OpenAI 兼容的对话接口、`anthropic` Anthropic 消息接口、`openai-responses` OpenAI Responses 接口 | OpenAI-compatible chat、Anthropic Messages、OpenAI Responses | OpenAI 互換のチャット、Anthropic Messages、OpenAI Responses |
 | `providers.<id>.base_url` 名字（8-6） | 地址 | Address | アドレス |
-| 说明 | 这家的接口地址，路径由驱动接在后面。认得出的供应商可以不写。 | The address of this provider's API; the driver adds the path. Known providers can leave it out. | このプロバイダーの API のアドレス。パスはドライバーが付けます。知っているプロバイダーなら書かなくてもかまいません。 |
-| `providers.<id>.key` 名字（8-6，8-25 从 `keys` 改） | key | Key | キー |
+| 说明 | 这家供应商的接口地址，驱动会在后面接上路径。Miyu 能识别的供应商可以不填写。 | The address of this provider's API; the driver adds the path. Known providers can leave it out. | このプロバイダーの API のアドレス。パスはドライバーが付けます。知っているプロバイダーなら書かなくてもかまいません。 |
+| `providers.<id>.key` 名字（8-6，8-25 从 `keys` 改；施工 WD-1 中文改成「密钥」） | 密钥 | Key | キー |
 | 说明 | 写 { secret = "名字" }（用 miyu provider login 存）或 { env = "环境变量" }，一个会话钉在其中一个上。空的不带认证头。 | Write { secret = "name" } (saved with miyu provider login) or { env = "VARIABLE" }. Each session sticks to one of them. Empty means no auth header. | { secret = "名前" }（miyu provider login で保存）か { env = "環境変数" } を書きます。セッションはそのうちの一つを使い続けます。空なら認証ヘッダーを付けません。 |
 | `providers.<id>.catalog` 名字（8-6；UX-1 改名） | 目录中的供应商 | Catalog provider | カタログのプロバイダー |
-| 说明 | 这家对应资料里的哪一家，例如只转 DeepSeek 的中转写 deepseek。 | Which provider in the model data this one is, for example deepseek for a relay that only forwards DeepSeek. | モデル資料のどのプロバイダーに当たるか。DeepSeek だけを中継するなら deepseek と書きます。 |
+| 说明 | 这家供应商对应模型目录里的哪一家。例如只转发 DeepSeek 的中转服务填 deepseek。 | Which provider in the model data this one is, for example deepseek for a relay that only forwards DeepSeek. | モデル資料のどのプロバイダーに当たるか。DeepSeek だけを中継するなら deepseek と書きます。 |
 | `providers.<id>.models.<model>.window` 名字（8-6） | 上下文窗口 | Context window | コンテキストウィンドウ |
 | 说明 | 这个模型的上下文窗口，单位 token。 | The context window of this model, in tokens. | このモデルのコンテキストウィンドウ。単位はトークン。 |
 | `models.vision` 名字（8-8） | 看图的模型 | Vision model | 画像を見るモデル |
 | 说明 | 主对话的模型看不了图时，替它看图的模型。写法同主对话的模型。 | Looks at images for the chat model when it cannot. Written like the chat model. | 会話のモデルが画像を見られないとき、代わりに見るモデル。書き方は会話のモデルと同じです。 |
 | `models.embedding` 名字（R-5 下；R-5 再补改名，2026-10-09 项目主人定） | 语义模型 | Semantic model | 意味モデル |
-| 说明 | 提高记忆、知识库等内容的检索质量。只有内置模型会自动联想记忆和知识库，换成别的模型后只在搜索时用到。（后一句施工 FX-4 加：门槛表里没有的模型不联想，原来换了远程的模型以后联想不出来、没有任何提示） | Improves search quality for memories, knowledge bases and more. Only the built-in model recalls memories and knowledge on its own; other models are used for search only. | 記憶やナレッジベースなどの検索の質を高めます。記憶とナレッジを自動で思い出すのは内蔵モデルだけで、ほかのモデルは検索にだけ使います。 |
+| 说明 | 提高记忆、知识库等内容的检索质量。只有内置模型会自动联想记忆和知识库，换成其他模型后只在搜索时使用。（后一句施工 FX-4 加：门槛表里没有的模型不联想，原来换了远程的模型以后联想不出来、没有任何提示） | Improves search quality for memories, knowledge bases and more. Only the built-in model recalls memories and knowledge on its own; other models are used for search only. | 記憶やナレッジベースなどの検索の質を高めます。記憶とナレッジを自動で思い出すのは内蔵モデルだけで、ほかのモデルは検索にだけ使います。 |
 | 选项 | `local` 内置模型、`off` 关 | Built-in model、Off | 内蔵モデル、オフ |
 | `memory.extract_idle` 名字（R-6 上；UX-1 改名） | 整理前的空闲时间 | Idle time before organizing | 整理前のアイドル時間 |
 | 说明 | 聊完闲了这么久，她把新聊的内容里值得记的整理成记忆。 | Once the conversation has been quiet this long, she turns what is worth keeping from the new part into memories. | 会話がこの時間止まると、新しい部分のうち覚えておく価値のあるものを記憶にまとめます。 |
 | `memory.extract_turns` 名字（R-6 上；UX-1 改名） | 整理间隔（轮） | Organizing interval (turns) | 整理の間隔（ターン） |
-| 说明 | 上次整理以后至少聊了这么多轮才整理。 | She organizes only after at least this many turns since the last time. | 前回の整理からこのターン数以上話したときだけ整理します。 |
+| 说明 | 距离上次整理至少对话这么多轮，才会再次整理。 | She organizes only after at least this many turns since the last time. | 前回の整理からこのターン数以上話したときだけ整理します。 |
 | `memory.extract_max_turns` 名字（E-5；UX-1 改名） | 连续对话时的整理间隔（轮） | Organizing interval in continuous chats (turns) | 連続した会話での整理の間隔（ターン） |
-| 说明 | 群里一直有人说话、总闲不下来时，上次整理以后聊满这么多轮就不等闲，在后台整理。 | When a chat never goes quiet, the AI organizes in the background once this many turns have passed since the last time, without waiting for a pause. | グループで誰かが話し続けて会話が止まらないとき、前回の整理からこのターン数に達したら、止まるのを待たずに裏で整理します。 |
+| 说明 | 群里一直有人说话、对话停不下来时，距离上次整理满这么多轮就直接在后台整理。 | When a chat never goes quiet, the AI organizes in the background once this many turns have passed since the last time, without waiting for a pause. | グループで誰かが話し続けて会話が止まらないとき、前回の整理からこのターン数に達したら、止まるのを待たずに裏で整理します。 |
 | `memory.extract_max_wait` 名字（E-5；UX-1 改名） | 连续对话时的最长等待 | Longest wait in continuous chats | 連続した会話での最長待ち時間 |
-| 说明 | 群里一直有人说话、总闲不下来时，最早没整理的那一轮过了这么久就不等闲，在后台整理。 | When a chat never goes quiet, the AI organizes in the background once the earliest unorganized turn is this old, without waiting for a pause. | グループで誰かが話し続けて会話が止まらないとき、まだ整理していない最初のターンからこの時間がたったら、止まるのを待たずに裏で整理します。 |
+| 说明 | 群里一直有人说话、对话停不下来时，最早一轮未整理的对话超过这么久就直接在后台整理。 | When a chat never goes quiet, the AI organizes in the background once the earliest unorganized turn is this old, without waiting for a pause. | グループで誰かが話し続けて会話が止まらないとき、まだ整理していない最初のターンからこの時間がたったら、止まるのを待たずに裏で整理します。 |
 | 说明 | 整理记忆时用的模型，照用量算钱。没选的用主对话的模型。 | The model used to organize memories, billed by usage. If none is chosen, the chat model is used. | 記憶の整理に使うモデルです。使った分だけ料金がかかります。選ばなければ会話のモデルを使います。 |
 | `memory.merge_every` 名字（R-7 上；UX-1 改名） | 归纳间隔 | Consolidation interval | 統合の間隔 |
 | 说明 | 隔这么久，她把新记的和以前的放在一起理一遍：重复的合掉，过时的作废，写一段对你的了解。 | After this long she goes over new and older memories together: drops repeats and outdated ones, and writes a summary of what she knows about you. | この間隔で、新しい記憶と以前の記憶を見直します：重複や古くなったものを除き、あなたについての要約を書きます。 |
 | `memory.dream_keep` 名字（D-1 下；UX-1 改名） | 保留的整理记录数 | Organizing records kept | 保持する整理記録の数 |
 | 说明 | 每份记忆只保留最近这么多次整理记忆的过程，更早的移到回收处。0 是整理完就删。 | Keep only this many of the latest consolidation runs for each memory. Older ones go to the trash. 0 deletes each run when it ends. | 記憶ごとに、最新のこの回数分の整理の経過だけを残します。古いものはゴミ箱へ移します。0 は整理が終わるたびに削除します。 |
 | `net.search.source` 名字（N-2 下，NF-1 改名） | 联网服务 | Web provider | ウェブプロバイダー |
-| 说明 | AI 搜网页、抓网页用哪一家。自动只用免费额度：搜索照 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；自己抓不下来的网页请 Exa、Firecrawl、Parallel 代抓。这几家都在国外，搜索词和网址会发给它们。选了一家的先用它（选了 DeepSeek 的，抓网页也先交它），它用不了再照自动的试。 | Which service AI uses to search and fetch the web. Auto sticks to free tiers: searches try Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rest any that hit a rate limit, and pages that can't be fetched directly are fetched by Exa, Firecrawl or Parallel. These services are outside China and receive the search terms and addresses. A chosen one is tried first (DeepSeek also fetches pages before AI tries them itself), and Auto takes over when it fails. | AI がウェブ検索とページ取得に使うサービス。自動では無料枠だけを使います。検索は Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。直接取得できないページは Exa、Firecrawl、Parallel に代わりに取得させます。これらは海外のサービスで、検索語と URL が送られます。選んだものを先に使い（DeepSeek はページ取得も先に担当します）、使えなければ自動に切り替えます。 |
+| 说明 | AI 搜索网页、抓取网页使用哪一家服务。「自动」只使用免费额度：搜索时依次尝试 Exa、Parallel、Firecrawl、AnySearch、You.com，被限额的服务会暂停一段时间；Miyu 自己抓取失败的网页交给 Exa、Firecrawl、Parallel 代抓。这几家服务都在国外，搜索词和网址会发送给它们。如果选择了其中一家，就优先使用它（选择 DeepSeek 时，抓取网页也优先交给它）；它不可用时再按「自动」的顺序尝试。 | Which service AI uses to search and fetch the web. Auto sticks to free tiers: searches try Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rest any that hit a rate limit, and pages that can't be fetched directly are fetched by Exa, Firecrawl or Parallel. These services are outside China and receive the search terms and addresses. A chosen one is tried first (DeepSeek also fetches pages before AI tries them itself), and Auto takes over when it fails. | AI がウェブ検索とページ取得に使うサービス。自動では無料枠だけを使います。検索は Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。直接取得できないページは Exa、Firecrawl、Parallel に代わりに取得させます。これらは海外のサービスで、検索語と URL が送られます。選んだものを先に使い（DeepSeek はページ取得も先に担当します）、使えなければ自動に切り替えます。 |
 | `net.search.exa.key` 名字（N-3 上） | Exa | Exa | Exa |
-| 说明 | 配了就用你自己的 Exa 额度，不配照免费额度。 | With a key, searches use your own Exa quota; without one, the free quota. | 設定すると自分の Exa の枠を使います。未設定なら無料枠です。 |
+| 说明 | 填写后使用你自己的 Exa 额度，不填写时使用免费额度。 | With a key, searches use your own Exa quota; without one, the free quota. | 設定すると自分の Exa の枠を使います。未設定なら無料枠です。 |
 | `net.search.anysearch.key` 名字（NS-1） | AnySearch | AnySearch | AnySearch |
-| 说明 | 配了就用你自己的 AnySearch 额度，不配照免费额度（按 IP 每天的额度）。 | With a key, searches use your own AnySearch quota; without one, the free daily quota per IP. | 設定すると自分の AnySearch の枠を使います。未設定なら IP ごとの1日の無料枠です。 |
+| 说明 | 填写后使用你自己的 AnySearch 额度，不填写时使用免费额度（按 IP 计算的每日额度）。 | With a key, searches use your own AnySearch quota; without one, the free daily quota per IP. | 設定すると自分の AnySearch の枠を使います。未設定なら IP ごとの1日の無料枠です。 |
 | `net.search.deepseek.key` 名字（N-3 上） | DeepSeek | DeepSeek | DeepSeek |
-| 说明 | 联网服务选了 DeepSeek 时要它；没填的借用模型那边官方 DeepSeek 供应商的 key（设置里显示「已继承」）。搜索、代抓按次收费。 | Needed when DeepSeek is the web provider; if unset, the key of your official DeepSeek model provider is borrowed (shown as inherited). Searches and fetched pages are charged per use. | ウェブプロバイダーに DeepSeek を使うときに必要です。未設定ならモデルの公式 DeepSeek プロバイダーのキーを借ります（「継承」と表示）。検索とページ取得ごとに課金されます。 |
+| 说明 | 联网服务选择 DeepSeek 时需要这个密钥。不填写时使用模型供应商里官方 DeepSeek 的密钥（设置里显示「已继承」）。搜索和代抓按次收费。 | Needed when DeepSeek is the web provider; if unset, the key of your official DeepSeek model provider is borrowed (shown as inherited). Searches and fetched pages are charged per use. | ウェブプロバイダーに DeepSeek を使うときに必要です。未設定ならモデルの公式 DeepSeek プロバイダーのキーを借ります（「継承」と表示）。検索とページ取得ごとに課金されます。 |
 | `net.search.tavily.key` 名字（N-3 上） | Tavily | Tavily | Tavily |
-| 说明 | 联网服务选了 Tavily 时要它。 | Needed when Tavily is the web provider. | ウェブプロバイダーに Tavily を選んだときに必要です。 |
+| 说明 | 联网服务选择 Tavily 时需要这个密钥。 | Needed when Tavily is the web provider. | ウェブプロバイダーに Tavily を選んだときに必要です。 |
 | `net.search.brave.key` 名字（N-3 上） | Brave Search | Brave Search | Brave Search |
-| 说明 | 联网服务选了 Brave 时要它。 | Needed when Brave is the web provider. | ウェブプロバイダーに Brave を選んだときに必要です。 |
+| 说明 | 联网服务选择 Brave 时需要这个密钥。 | Needed when Brave is the web provider. | ウェブプロバイダーに Brave を選んだときに必要です。 |
 | `net.search.searxng.url` 名字（N-3 上） | SearXNG 的地址 | SearXNG address | SearXNG のアドレス |
-| 说明 | 你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。联网服务选了 SearXNG 时用它。 | Your own SearXNG instance, for example http://127.0.0.1:8888, with the JSON format enabled. Used when SearXNG is the web provider. | 自分で立てた SearXNG（例 http://127.0.0.1:8888）。JSON 形式を有効にしておきます。ウェブプロバイダーに SearXNG を選んだときに使います。 |
+| 说明 | 你自己搭建的 SearXNG 的地址，例如 http://127.0.0.1:8888，需要开启 JSON 格式。联网服务选择 SearXNG 时使用。 | Your own SearXNG instance, for example http://127.0.0.1:8888, with the JSON format enabled. Used when SearXNG is the web provider. | 自分で立てた SearXNG（例 http://127.0.0.1:8888）。JSON 形式を有効にしておきます。ウェブプロバイダーに SearXNG を選んだときに使います。 |
 | `pools.<id>.models` 名字（8-8） | 池的成员 | Pool members | プールのメンバー |
 | 说明 | 几个模型编成一组，每个写成 供应商/模型。 | A group of models, each written as provider/model. | いくつかのモデルをひとまとめにします。それぞれ プロバイダー/モデル の形で書きます。 |
 | `pools.<id>.strategy` 名字（8-8；UX-1 改名） | 分配策略 | Allocation strategy | 割り当て方式 |
@@ -1573,14 +1573,14 @@ currency = "USD"
 | `pools.<id>.description` 名字（8-8 补；UX-1 改名） | 说明 | Description | 説明 |
 | 说明 | 她派子代理时看到的一句，接在池名后面。用英文写，一行。 | One line she sees after the pool name when she starts a subagent. Write it in English. | サブエージェントを出すときに、プール名のあとに見える一行です。英語で書きます。 |
 | `providers.<id>.cache` 名字（8-8） | 缓存类别 | Cache class | キャッシュの種類 |
-| 说明 | 这家的缓存怎么算钱。现在只用来定池不写分法时怎么分。不写照驱动的默认。 | How this provider bills its cache. For now it only decides how a pool without a strategy splits. Left out, it follows the driver. | このプロバイダーのキャッシュの課金のしかた。いまは分け方を書いていないプールの分け方を決めるだけです。書かなければドライバーの既定に従います。 |
-| 选项 | `contract` 照前缀计费、`best_effort` 尽量命中、`per_request` 按次计费 | Billed by prefix、Best effort、Per request | 前置きで課金、できるだけ当てる、リクエストごと |
+| 说明 | 这家供应商的缓存怎么计费。目前只在池没有填写分配策略时用来决定策略。不填写时使用驱动的默认值。 | How this provider bills its cache. For now it only decides how a pool without a strategy splits. Left out, it follows the driver. | このプロバイダーのキャッシュの課金のしかた。いまは分け方を書いていないプールの分け方を決めるだけです。書かなければドライバーの既定に従います。 |
+| 选项 | `contract` 按前缀计费、`best_effort` 尽量命中、`per_request` 按次计费 | Billed by prefix、Best effort、Per request | 前置きで課金、できるだけ当てる、リクエストごと |
 | `providers.<id>.quota.url` 名字（QU-1，说明 QU-2 补） | 额度接口地址 | Quota address | 利用枠の取得先 |
-| 说明 | 查这家额度的完整地址，盖过资料里的。资料里没写额度接口的供应商写了也不查。DeepSeek 这类认得出官方地址的，供应商的地址不是官方的也不查。 | Full address for checking this provider's quota, replacing the bundled one. Providers without a quota interface in the bundled data are not checked even if set. For a provider with a known official address such as DeepSeek, nothing is checked unless the provider's own address is the official one. | このプロバイダーの利用枠を確認する完全なアドレス。同梱のものより優先します。同梱データに利用枠の取得先がないプロバイダーは、書いても確認しません。DeepSeek のように公式アドレスが分かるプロバイダーは、プロバイダーのアドレスが公式のものでなければ確認しません。 |
+| 说明 | 查询这家供应商额度的完整地址，优先于模型目录里的地址。如果模型目录里这家供应商没有额度接口，填写了也不会查询。对于 DeepSeek 这类能识别官方地址的供应商，接口地址不是官方地址时同样不会查询。 | Full address for checking this provider's quota, replacing the bundled one. Providers without a quota interface in the bundled data are not checked even if set. For a provider with a known official address such as DeepSeek, nothing is checked unless the provider's own address is the official one. | このプロバイダーの利用枠を確認する完全なアドレス。同梱のものより優先します。同梱データに利用枠の取得先がないプロバイダーは、書いても確認しません。DeepSeek のように公式アドレスが分かるプロバイダーは、プロバイダーのアドレスが公式のものでなければ確認しません。 |
 | `providers.<id>.models.<model>.effort` 名字（8-18） | 思考程度 | Thinking effort | 思考の程度 |
 | 说明 | 这个模型默认的思考强度，写它的一档，例如 high；能关思考的写 off。不写的照供应商的默认。 | The reasoning effort this model uses by default: one of its levels, for example high, or off where thinking can be turned off. Left out, the provider decides. | このモデルが既定で使う思考の強さ。段階のひとつを書きます（例：high）。思考を切れるモデルは off。書かなければプロバイダーの既定に従います。 |
 | `providers.<id>.models.<model>.temperature` 名字（8-22） | 默认的温度 | Default temperature | 既定の温度 |
-| 说明 | 这个模型默认的温度，0 到 2，越高回答越随意。不写的照供应商的默认；这个模型不收温度的不发。 | The temperature this model uses by default, from 0 to 2; higher gives looser answers. Left out, the provider decides. Not sent to models that do not take one. | このモデルが既定で使う温度。0 から 2 で、高いほど答えが自由になります。書かなければプロバイダーの既定に従います。温度を受け付けないモデルには送りません。 |
+| 说明 | 这个模型默认的温度，范围 0 到 2，数值越高回答越随意。不填写时使用供应商的默认值；如果这个模型不接受温度参数，请求里不会带上它。 | The temperature this model uses by default, from 0 to 2; higher gives looser answers. Left out, the provider decides. Not sent to models that do not take one. | このモデルが既定で使う温度。0 から 2 で、高いほど答えが自由になります。書かなければプロバイダーの既定に従います。温度を受け付けないモデルには送りません。 |
 
 页和组（`config.pages`、`config.groups`，编号到名字；组的说明另有一格 `config.group_descriptions`，编号到说明，可以不写，施工 HZ-1；资源里只放清单用到的，`permissions`、`sessions` 随 8-2 加，页 `permissions` 2026-10-10 并进通用页去掉了（施工 F-4 再补，项目主人定）；8-3 加过页 `interface`（界面）、组 `tui`（终端界面），8-28 `ui.startup` 挪进通用页以后没有项用它们，去掉了）：
 
@@ -1599,7 +1599,7 @@ currency = "USD"
 | 组 `log`（`advanced`） | 运行日志 | Runtime log | 実行ログ |
 | 组 `base-memory`（`packages`，R-6 上；施工 PN-3 起组的编号是包编号，原来是 `memory`，PN-5 起去掉 `miyu-`；包装着的照清单的名字） | 记忆 | Memory | 記憶 |
 | 组 `base-net`（`packages`，施工 N-2 下；施工 PN-3 起是包编号，原来是 `net`，PN-5 起去掉 `miyu-`；施工 NS-1 中文改名，项目主人 2026-11-17 定） | 网络搜索 | Web search | ウェブ検索 |
-| 组 `net_keys`（`packages`，施工 N-2 下） | API Key 和地址 | API keys and addresses | API キーとアドレス |
+| 组 `net_keys`（`packages`，施工 N-2 下） | API 密钥和地址 | API keys and addresses | API キーとアドレス |
 
 **命名的规矩**（施工 UX-1，项目主人 2026-11-17 定）：
 
@@ -1608,11 +1608,18 @@ currency = "USD"
 - 说明可以是句子，要短、说事实；单用户（施工 10-28 拆了多用户），不写「只对你自己」「别人照旧」「每个人」。
 - 门禁：`miyu-core` 的 `tests/settings_names.rs` 照 `miyu_config::naming` 查核心登记的项、包的「启用」、出厂的包的项在中英日三份字表里的名字，只拦一眼看得出的几样（开关的键、句子里才有的字、开关名字里反着说的字），名词短语靠人审。别人做的包照它自己的写法，不拦。
 
+**用词的规矩**（施工 WD-1，项目主人 2026-11-19 定）：
+
+- 中文字表里说到 API 密钥时一律写「密钥」，不写「key」。命令行的参数名、配置里的键名仍然是 `key`；句子里指的是键名本身时可以保留（软件源的 `url` 和 `key`）。
+- 称呼 AI 时写「AI」，不用「她」「他」。
+- 说明写完整的句子，保持简短。不写省略了条件的短句：例如「不写的照默认」写成「不填写时使用默认值」。不用口语里的词和内部的说法，写法以仓库 `AGENTS.md` 的「文档的规矩」为准。
+- 门禁：`miyu-core` 的 `tests/human_wording.rs` 检查中文字表：除了上面说的两句键名，不出现单独成词的 `key`；不出现「她」，也不出现「其他」以外的「他」。句子是否完整、用词是否口语由人审。
+
 **生成的文件要的几句**（`core/human/<语言>.json` 的 `said`，编号前面加 `core/`，8-1）。日文照中文写，用词照终端界面的日文（施工 4-5 补），句子里用全角的「：」：
 
 | 编号 | 字段 | 中文 | 英文 | 日文 |
 |---|---|---|---|---|
-| `config/reference-header` | | Miyu 的全部配置项和默认值。这份是生成的，改它没有用。 | Every Miyu setting and its default. This file is generated. Editing it has no effect. | Miyu のすべての設定項目と既定値です。このファイルは生成されたもので、編集しても効果はありません。 |
+| `config/reference-header` | | Miyu 的全部配置项和默认值。这份文件是自动生成的，修改它不会生效。 | Every Miyu setting and its default. This file is generated. Editing it has no effect. | Miyu のすべての設定項目と既定値です。このファイルは生成されたもので、編集しても効果はありません。 |
 | `config/reference-where` | | 配置写在数据根的 config.toml。 | Write the config in config.toml in the data root. | 設定はデータルートの config.toml に書きます。 |
 | `config/reference-item` | `name`、`description` | {name}：{description} | {name}: {description} | {name}：{description} |
 | `config/facts` | `values`、`layers`、`applies` | 能写：{values}。只能写在{layers}里。{applies}。 | Allowed: {values}. Only in {layers}. {applies}. | 書ける値：{values}。{layers}にだけ書けます。{applies}。 |
@@ -1639,15 +1646,15 @@ currency = "USD"
 | `config/wrong-type` | `key`、`expected`、`got` | {key} 要写 {expected}，写的是 {got} | {key} needs {expected}, not {got} |
 | `config/not-an-option` | `key`、`options`、`got` | {key} 只能是 {options}，写的是 {got} | {key} must be {options}, not {got} |
 | `config/out-of-range` | `key`、`min`、`max`、`got` | {key} 要在 {min} 到 {max} 之间，写的是 {got} | {key} must be between {min} and {max}, not {got} |
-| `config/wrong-layer` | `key`、`layers`、`layer` | {key} 只能写在{layers}里，写在{layer}里不算 | {key} belongs in {layers}. It does not count in {layer} |
-| `config/not-tightening` | `key`、`current`、`got` | 项目配置只能让限制更严。{key} 现在是 {current}，这里写的 {got} 更宽，不算 | A project config can only make limits stricter. {key} is {current}, and {got} here is looser, so it does not count |
-| `config/unknown-secret` | `key`、`name` | {key} 引用的密钥 {name} 还没设 | {key} refers to the secret {name}, which is not set |
+| `config/wrong-layer` | `key`、`layers`、`layer` | {key} 只能写在{layers}里，写在{layer}里不生效 | {key} belongs in {layers}. It does not count in {layer} |
+| `config/not-tightening` | `key`、`current`、`got` | 项目配置只能让限制更严。{key} 现在是 {current}，这里写的 {got} 更宽，不生效 | A project config can only make limits stricter. {key} is {current}, and {got} here is looser, so it does not count |
+| `config/unknown-secret` | `key`、`name` | {key} 引用的密钥 {name} 还没有设置 | {key} refers to the secret {name}, which is not set |
 | `config/untrusted-project` | | 项目配置未信任，已忽略 | Project config not trusted, ignored |
 | `config/sentence` | `text` | {text}。 | {text}. |
 | `config/then` | `rest`、`next` | {rest}{next} | {rest} {next} |
 | `config/stops` | | 。？！ | .?! |
 | `config/untrusted` | | 还没信任 | not trusted yet |
-| `config/env-not-set` | `key`、`name` | {key} 引用的环境变量 {name} 核心起来时没有设 | {key} refers to {name}, which was not set when the core started |
+| `config/env-not-set` | `key`、`name` | {key} 引用的环境变量 {name} 在核心启动时没有设置 | {key} refers to {name}, which was not set when the core started |
 | `config/bad-secret-name`（8-5） | `key` | {key} 不能当密钥的名字：小写字母开头，只有小写字母、数字、-、_，最长 64 个字符 | {key} is not a valid secret name: start with a lowercase letter and use only lowercase letters, digits, - and _, up to 64 characters |
 | `config/bad-secret-value`（8-5） | `key` | {key} 的值要写成带引号的字，不能是空的 | The value of {key} must be quoted text, not empty |
 | `config/fix-example` | `example` | 改成其中一个，例如 {example} | Write one of them, e.g. {example} |
@@ -1660,7 +1667,7 @@ currency = "USD"
 | `config/layer/default`、`project`、`env`（`system` 8-1 就有；编号照层的写法） | | 默认值、项目配置、环境变量 | the default、a project config、the environment |
 | `config/expected/bool`、`option`、`int`、`float`、`text`、`list`、`table` | | true 或 false、其中一个、整数、数、带引号的字、列表、一张表 | true or false、one of them、a whole number、a number、quoted text、a list、a table |
 | `config/applies/new_session`、`head_start`、`next_turn`、`restart`（`now` 8-1 就有；编号照 `applies` 的写法，程序照它拼） | | 以后开的会话生效、这个程序下次启动时生效、下一轮生效、重启核心后生效 | Applies to sessions opened from now on、Takes effect the next time the program starts、Takes effect next turn、Takes effect after the core restarts |
-| `config/secrets-header` | | Miyu 的密钥：只经 Miyu 写入、替换、删除。不要把这份文件贴给别人。 | Miyu's secrets: written, replaced and deleted only through Miyu. Do not share this file. |
+| `config/secrets-header` | | Miyu 的密钥：只经 Miyu 写入、替换、删除。不要把这份文件发给其他人。 | Miyu's secrets: written, replaced and deleted only through Miyu. Do not share this file. |
 | `config/trust-header` | | Miyu 记着的项目配置的信任：哪个仓库、哪一份内容、信不信任。 | Which project configs Miyu trusts: the repository, the exact content, and the answer. |
 | `config/bad-format`（8-6） | `key`、`expected`、`got` | {key} 要写 {expected}，写的是 {got} | {key} needs {expected}, not {got} |
 | `config/bad-segment`（8-6） | `key`、`name`、`expected` | {key} 里的 {name} 不能当名字：{expected} | {name} in {key} cannot be a name: {expected} |
@@ -1668,11 +1675,11 @@ currency = "USD"
 | `config/expected/url`、`name`、`reference`（8-6） | | http:// 或 https:// 开头的网址、小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符、<供应商>/<模型> 或 @<池> | an address starting with http:// or https://、a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters、<provider>/<model> or @<pool> |
 | `config/expected/list`（8-6，带元素） | `item` | {item} 的列表 | a list of {item} |
 | `config/expected/model`（8-8，池的成员） | | <供应商>/<模型> | <provider>/<model> |
-| `config/no-provider`（8-8，`bad_reference`） | `key`、`name` | {key} 指的供应商 {name} 没有配 | {key} points at the provider {name}, which is not configured |
-| `config/no-pool`（8-8，`bad_reference`） | `key`、`name` | {key} 指的池 {name} 没有配 | {key} points at the pool {name}, which is not configured |
-| `config/unknown-effort`（8-18，`unknown_effort`） | `key`、`name` | {key} 写的 {name} 不是这个模型现在有的一档：请求照没写发 | {key} is {name}, which is not one of this model's levels now. Requests go out as if it were not set |
-| `config/temperature-unsupported`（8-22，`unusable_temperature`） | `key` | {key}：这个模型不收温度，请求照没写发 | {key}: this model does not take a temperature. Requests go out as if it were not set |
-| `config/temperature-too-high`（8-22，`unusable_temperature`） | `key`、`got`、`max` | {key} 写的 {got} 超过了这个模型的上限 {max}：请求照没写发 | {key} is {got}, above this model's limit of {max}. Requests go out as if it were not set |
+| `config/no-provider`（8-8，`bad_reference`） | `key`、`name` | {key} 指向的供应商 {name} 没有配置 | {key} points at the provider {name}, which is not configured |
+| `config/no-pool`（8-8，`bad_reference`） | `key`、`name` | {key} 指向的池 {name} 没有配置 | {key} points at the pool {name}, which is not configured |
+| `config/unknown-effort`（8-18，`unknown_effort`） | `key`、`name` | {key} 写的 {name} 不是这个模型现在支持的一档：请求按没有填写发送 | {key} is {name}, which is not one of this model's levels now. Requests go out as if it were not set |
+| `config/temperature-unsupported`（8-22，`unusable_temperature`） | `key` | {key}：这个模型不接受温度参数，请求按没有填写发送 | {key}: this model does not take a temperature. Requests go out as if it were not set |
+| `config/temperature-too-high`（8-22，`unusable_temperature`） | `key`、`got`、`max` | {key} 写的 {got} 超过了这个模型的上限 {max}：请求按没有填写发送 | {key} is {got}, above this model's limit of {max}. Requests go out as if it were not set |
 | `config/expected/float`（8-7，带范围） | `min`、`max` | {min} 到 {max} 之间的数 | a number from {min} to {max} |
 | `config/expected/text`（8-7） | `max` | 最多 {max} 个字的文字 | text of at most {max} characters |
 | `config/expected/lines`（P-9 三补） | `max` | 最多 {max} 个字的文字，可以分行 | text of at most {max} characters; line breaks allowed |

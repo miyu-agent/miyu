@@ -40,7 +40,7 @@ pub(super) fn write(
     }
 }
 
-/// 怎么结束的、用了多久：还在跑的只写「还在跑」；异常结束的先写原因，再写退出码或信号。
+/// 怎么结束的、用了多久：还在跑的只写「还在运行」；异常结束的先写原因，再写退出码或信号。
 fn ended(shell: &Shell, say: &Say<'_>) -> Vec<String> {
     if shell.running {
         return vec![say.say("shell/running", &[])];

@@ -406,7 +406,7 @@ async fn trust_lists_problems_and_refuses_a_version_that_changed_while_looking()
         asked.out,
         format!(
             "{0} 会修改以下设置（项目配置只能收紧限制）：\n  permission.start_read_only = true  新会话开局只读\n\
-             {0}:4:12 错误：ui.language 只能写在系统配置里，写在项目配置里不算。挪到系统配置里去。\n",
+             {0}:4:12 错误：ui.language 只能写在系统配置里，写在项目配置里不生效。挪到系统配置里去。\n",
             shown(&file)
         ),
         "不能写的那一项不列，照报错一行印在后面"

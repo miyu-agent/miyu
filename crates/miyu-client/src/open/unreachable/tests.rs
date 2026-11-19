@@ -31,7 +31,7 @@ fn an_unreachable_core_is_said_in_the_machine_language() {
     );
     assert_eq!(
         spoken(log.said(), &log, None),
-        "核心起不来（log_failed）：File exists (os error 17)",
+        "核心无法启动（log_failed）：File exists (os error 17)",
         "取不到字的照原话"
     );
     assert_eq!(language("ja_JP.UTF-8"), "ja");

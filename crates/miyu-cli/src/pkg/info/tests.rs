@@ -148,7 +148,7 @@ fn an_installed_package_says_where_it_came_from_and_admits_when_it_does_not_know
     };
     assert_eq!(
         origin_row(home(Some("unknown"))),
-        "来源        : github.com/a/x（不知道）"
+        "来源        : github.com/a/x（未知）"
     );
     assert_eq!(
         origin_row(home(Some("official"))),
@@ -161,7 +161,7 @@ fn an_installed_package_says_where_it_came_from_and_admits_when_it_does_not_know
     );
     let distro = json!({"package": "x", "layer": "distro", "from": "distro", "source": "distro",
         "files": 1, "size": 1});
-    assert_eq!(origin_row(distro), "来源        : 系统装的");
+    assert_eq!(origin_row(distro), "来源        : 系统的包管理器安装");
 }
 
 #[test]
@@ -273,7 +273,7 @@ fn hosted_tools_follow_provides_one_driver_a_line() {
         shown[at..at + 2],
         [
             "提供    : 命令 miyu gravity",
-            "          模型驱动 ag 会让供应商自己跑：search_web、read_url_content",
+            "          模型驱动 ag 会让供应商自己运行：search_web、read_url_content",
         ]
     );
     let installed = json!({

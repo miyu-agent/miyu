@@ -220,7 +220,7 @@ fn an_extension_driver_is_warned_about() {
     };
     assert_eq!(
         line(Language::Chinese),
-        "miyu: 警告：对话模型用的是扩展驱动 pi/ag，litemiyu 认不了，交给它自己找模型"
+        "miyu: 警告：对话模型使用扩展驱动 pi/ag，litemiyu 不支持，由它自己查找模型"
     );
     assert_eq!(
         line(Language::English),

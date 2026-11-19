@@ -92,7 +92,7 @@ impl Language {
     /// 模型驱动 `driver` 会让供应商自己跑的工具（施工 HT-4，设计 71 第三节第 7 条）：`names` 是连好的名字，印在「包含」下面。
     pub(crate) fn hosted_by(&self, driver: &str, names: &str) -> String {
         match self {
-            Language::Chinese => format!("模型驱动 {driver} 会让供应商自己跑：{names}"),
+            Language::Chinese => format!("模型驱动 {driver} 会让供应商自己运行：{names}"),
             Language::English => {
                 format!("model driver {driver} has the provider run on its own: {names}")
             }

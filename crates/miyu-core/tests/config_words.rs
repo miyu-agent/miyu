@@ -104,9 +104,9 @@ fn chinese_says_what_the_blueprint_shows() {
         [
             "没有 ui.langauge 这一项。是不是想写 ui.language？已忽略此行。",
             "log.level 只能是 error、warn、info、debug、trace 或 off，写的是 \"verbose\"。改成其中一个，例如 log.level = \"info\"。暂用 \"info\"（默认值）。",
-            "项目配置只能让限制更严。permission.start_read_only 现在是 true，这里写的 false 更宽，不算。",
+            "项目配置只能让限制更严。permission.start_read_only 现在是 true，这里写的 false 更宽，不生效。",
             "TOML 写法不对：invalid basic string。暂用上次的有效配置。",
-            "log.level 只能写在系统配置里，写在项目配置里不算。挪到系统配置里去。",
+            "log.level 只能写在系统配置里，写在项目配置里不生效。挪到系统配置里去。",
             "permission.start_read_only 要写 true 或 false，写的是 \"yes\"。改成 permission.start_read_only = true。暂用 false（默认值）。",
         ]
     );

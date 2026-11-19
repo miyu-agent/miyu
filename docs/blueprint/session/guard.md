@@ -194,7 +194,7 @@ A16 起只剩这两级（`11-权限与沙盒.md` A16，施工 LV-1），代码�
 |---|---|---|
 | `core/permissions/unresolvable` | 说不清它指向哪里：{reason} | can't tell where it points: {reason} |
 | `core/tool-results/read-only` | 只读模式，未执行 | Read-only mode, not run |
-| `core/permissions/not-in-venue`（施工 O-31 前） | 只能在群聊、私聊里用 | Only works in a group or private chat |
+| `core/permissions/not-in-venue`（施工 O-31 前） | 只能在群聊或私聊里使用 | Only works in a group or private chat |
 | `core/permissions/outside-workspace`（施工 5-12） | 工作区外，未执行 | Outside the workspace, not run |
 | `core/permissions/no-commands`（施工 5-12） | 这里不能执行命令 | Commands are not available here |
 

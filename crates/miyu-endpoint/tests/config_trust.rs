@@ -177,7 +177,7 @@ async fn get_with_a_directory_shows_the_project_and_its_trust() {
     assert_eq!(problem["code"], "not_tightening");
     assert_eq!(
         problem["message"],
-        "项目配置只能让限制更严。permission.start_read_only 现在是 true，这里写的 false 更宽，不算。"
+        "项目配置只能让限制更严。permission.start_read_only 现在是 true，这里写的 false 更宽，不生效。"
     );
     let layers = &reply["result"]["items"]["permission.start_read_only"]["layers"];
     assert_eq!(layers[0]["problem"], "not_tightening");

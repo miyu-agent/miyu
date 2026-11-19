@@ -10,7 +10,7 @@ use miyu_store::root::DataRoot;
 /// 核心起不来。
 #[derive(Debug)]
 pub enum OpenError {
-    /// 这个数据根上已经有一个核心在跑：`run/core.lock` 在它手里。
+    /// 这个数据根上已经有一个核心在运行：`run/core.lock` 在它手里。
     Running,
     /// 套接字的路径太长：本该放的位置、临时目录下都放不下。带着本该放的位置。
     TooLong(PathBuf),
@@ -26,7 +26,7 @@ pub enum OpenError {
 impl fmt::Display for OpenError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            OpenError::Running => write!(f, "这个数据根上已经有一个核心在跑"),
+            OpenError::Running => write!(f, "这个数据根上已经有一个核心在运行"),
             OpenError::TooLong(path) => write!(
                 f,
                 "套接字的路径太长，放不下：{}；临时目录下也放不下",
@@ -34,7 +34,7 @@ impl fmt::Display for OpenError {
             ),
             OpenError::NotPrivate(dir) => write!(
                 f,
-                "{} 不是自己的，或者别人也能进：套接字不放在这里",
+                "{} 不属于当前用户，或者其他用户也能访问：套接字不放在这里",
                 dir.display()
             ),
             OpenError::Occupied(path) => f.write_str(&occupied(path, cfg!(windows))),
@@ -49,9 +49,9 @@ impl std::error::Error for OpenError {}
 /// （施工 WN-1：原来 Windows 上也说「不是套接字的文件」）。
 fn occupied(path: &Path, pipe: bool) -> String {
     match pipe {
-        true => format!("命名管道 {} 已经被别的程序占了。不动它", path.display()),
+        true => format!("命名管道 {} 已经被其他程序占用。没有修改它", path.display()),
         false => format!(
-            "{} 上有别的东西：不是套接字的文件，或者别的程序正在听。不动它",
+            "{} 上有其他内容：不是套接字的文件，或者其他程序正在监听。没有修改它",
             path.display()
         ),
     }
@@ -61,8 +61,14 @@ fn occupied(path: &Path, pipe: bool) -> String {
 /// （施工 WN-1：原来 Windows 上也说「别人也能进」）。
 fn not_private(place: &Path, pipe: bool) -> String {
     match pipe {
-        true => format!("命名管道 {} 另一头不是自己的进程：不连", place.display()),
-        false => format!("{} 不是自己的，或者别人也能进：不连", place.display()),
+        true => format!(
+            "命名管道 {} 另一头不是当前用户的进程：不连接",
+            place.display()
+        ),
+        false => format!(
+            "{} 不属于当前用户，或者其他用户也能访问：不连接",
+            place.display()
+        ),
     }
 }
 
@@ -87,7 +93,7 @@ pub enum ConnectError {
 impl fmt::Display for ConnectError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ConnectError::NotRunning => write!(f, "核心没在跑"),
+            ConnectError::NotRunning => write!(f, "核心没有在运行"),
             ConnectError::NotPrivate(place) => f.write_str(&not_private(place, cfg!(windows))),
             ConnectError::Io(error) => error.fmt(f),
         }
@@ -156,19 +162,19 @@ impl fmt::Display for StartError {
             StartError::Refused {
                 code: Some(code),
                 reason,
-            } => write!(f, "核心起不来（{code}）：{reason}"),
-            StartError::Refused { reason, .. } => write!(f, "核心起不来：{reason}"),
+            } => write!(f, "核心无法启动（{code}）：{reason}"),
+            StartError::Refused { reason, .. } => write!(f, "核心无法启动：{reason}"),
             // 照数据根取的相对位置（施工 FX-4：原来写死 `state/logs/core.log`，FH-3 挪到 `var/log/` 以后指错了地方）。
             StartError::Silent => write!(
                 f,
-                "核心没起来，也没说为什么：看数据根的 {}",
+                "核心没有启动，也没有给出原因：查看数据根的 {}",
                 DataRoot::at(PathBuf::new()).core_log().display()
             ),
-            StartError::Timeout => write!(f, "等核心起来等了太久"),
-            StartError::Busy => write!(f, "别的程序正在拉起核心，等了太久"),
+            StartError::Timeout => write!(f, "等待核心启动超时"),
+            StartError::Busy => write!(f, "其他程序正在启动核心，等待超时"),
             StartError::StoppedByUser => write!(f, "核心已停止"),
             StartError::Connect(error) => error.fmt(f),
-            StartError::Io(error) => write!(f, "拉不起核心：{error}"),
+            StartError::Io(error) => write!(f, "无法启动核心：{error}"),
         }
     }
 }

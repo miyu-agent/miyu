@@ -54,7 +54,7 @@
    - 别的：标准输入是终端的，问「粘贴 <编号> 的密钥（不显示）：」，关掉回显读一行（和 `miyu provider login` 同一条：自己管终端的设置，按了 `Ctrl+C`、或者还没贴一个字时按了 `Ctrl+D`，说「已取消，未保存」，退出码 130，整个 `miyu setup` 照取消办，配置一个字都不写，施工 8-5 补）；不是终端的，整份读标准输入，没有取消这一条。去掉前后空白是空的：报「miyu: 未收到密钥」，退出码 1。
 7. **试**：说「正在测试 <名字>…」，`provider.test`：配好了的带 `provider`；自定义的带 `candidate`，`driver`、`base_url` 是填的；别的带 `candidate`，`catalog` 是这一家的编号；`key` 照上一步（贴的照 `{value}` 交，空的不带）；写了 `--model` 的带 `model`。
    - 核心说要模型名（`need_model`，列不出模型、又不是认证错）、没写 `--model`、在终端里的（施工 8-11 再补、五补）：照告警写「miyu: 警告：无法获取模型列表，目录里也没有这一家的模型：<分类>: <原话>」（施工 ST-2：说清为什么要填；施工 ST-1 起目录里有这一家的模型就照推荐挑一个试，走到这一步的是目录里也挑不出的），问「模型名：」，拿它（去掉前后空白）带 `model` 再试一次。直接回车、读到头：「未选择」，退出码 1。
-   - 成了：只列了模型的（`checked` 是 `list`，施工 8-11 五补）灰字「已连通：列出 <n> 个模型」；发了一句的灰字「已连通：测试 <模型>，<n> 毫秒收到第一个字」；`listed` 是 `catalog` 的再一行灰字「· 供应商列不出模型，下面照 models.dev 的目录列。」。
+   - 成了：只列了模型的（`checked` 是 `list`，施工 8-11 五补）灰字「已连通：列出 <n> 个模型」；发了一句的灰字「已连通：测试 <模型>，<n> 毫秒收到第一个字」；`listed` 是 `catalog` 的再一行灰字「· 供应商无法列出模型，下面按 models.dev 的目录列出。」。
    - 没成：报「miyu: 连接失败（<哪一步>）：<分类>：<原话>」（没有原话的不写第二个冒号以后；HTTP 状态在原话里，驱动写的 `HTTP 401: …`，和 `miyu ask` 出错那一行一样）。哪一步：`config` 是「配置」，`list` 是「列模型」，`request` 是「发请求」；分类照 `cli/ask.md` 出错那一行的说法。在终端里的先问「仍然保存？[y/N]」（施工 8-11 五补，2026-10-13 项目主人定：测不通也能接着走，不卡死）：`y`、`yes`（不分大小写）照填的往下走：还没有模型的先问「模型名：」（直接回车、读到头：「未选择」，退出码 1），贴的 key 照样存（第 8 条），选模型那一步就用它。别的、直接回车回到上一步：贴的 key（自定义的也是）回到贴 key，别的回到第 3 条选一家（写了 `--provider` 的没有上一步，退出码 1）。不在终端里的不问，退出码 1。
 8. **存 key**（贴的 key 试通了，或者人说仍然保存）：`secret.set`，`name` 是这一家在配置里的编号（第 10 条）。成了：灰字照 `miyu provider login` 说「已保存 <编号> 的密钥」或「已替换 <编号> 的密钥」。被拒绝的：印核心的原话（加 `miyu: `、去掉句末句号），退出码 1。
 9. **选模型**（没写 `--model`、没在第 7 条填模型名）：`provider.test` 列出的模型，试的那一个排第一、后面接「（推荐）」，别的照列出的先后。标准错误上一行头「选主对话的模型：」，一个一行 `  编号  模型`，全部列出（施工 ST-2，项目主人 10-29：只列 20 个、说「还有几个」不合理）。问「选一个编号，直接回车用推荐的：」。敲的是编号、列出来的模型名（列了的、没列的都算）：就是它；直接回车：推荐的；读到头：「未选择」，退出码 1；别的：说「<敲的> 不在列表里」，再问。不在终端里的不问，用推荐的。
@@ -240,7 +240,7 @@ Outside a terminal, give --provider and pipe the key in:
 | 试 | 正在测试 {name}… | testing {name}… |
 | 通了 | 已连通：测试 {model}，{ms} 毫秒收到第一个字 | connected: tested {model}, first token in {ms} ms |
 | 只列了模型就算通了 | 已连通：列出 {n} 个模型 | connected: listed {n} models |
-| 照目录列 | · 供应商列不出模型，下面照 models.dev 的目录列。 | · The provider listed no models; the list below is from the models.dev catalog. |
+| 照目录列 | · 供应商无法列出模型，下面按 models.dev 的目录列出。 | · The provider listed no models; the list below is from the models.dev catalog. |
 | 不通 | miyu: 连接失败（{哪一步}）：{分类}：{原话} | miyu: connection failed ({stage}): {class}: {message} |
 | 哪一步 | 配置；列模型；发请求 | config; listing models; request |
 | 选模型的头一行 | 选主对话的模型： | Pick the model for chat: |

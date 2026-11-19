@@ -121,7 +121,7 @@ async fn a_core_that_lost_its_run_files_is_not_called_stopped() {
     let code = core_stop_on(&root, Language::Chinese, &mut err).await;
     let said = String::from_utf8_lossy(&err);
     assert_eq!(code, exit::ERROR, "{said}");
-    assert!(said.starts_with("miyu: 核心还在跑，但连不上它"), "{said}");
+    assert!(said.starts_with("miyu: 核心还在运行，但无法连接"), "{said}");
     assert!(said.contains("core.log"), "{said}");
     drop(opened);
     std::fs::remove_dir_all(root.path()).expect("删得掉临时目录");

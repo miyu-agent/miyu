@@ -65,7 +65,7 @@ impl Language {
         match self {
             Language::Chinese => {
                 format!(
-                    "提示：{id} 是系统的包管理器装的，文件还在，Miyu 不再加载它；要删用系统的包管理器"
+                    "提示：{id} 由系统的包管理器安装，文件仍然保留，Miyu 不再加载它；要删除文件，使用系统的包管理器"
                 )
             }
             Language::English => format!(
@@ -77,7 +77,7 @@ impl Language {
     /// `check`：系统的包管理器装的包没问题（施工 SD-1）：文件归它管，不比哈希。
     pub(crate) fn checked_distro(&self, id: &str) -> String {
         match self {
-            Language::Chinese => format!("{id}：正常（系统的包管理器装的，文件归它管）"),
+            Language::Chinese => format!("{id}：正常（由系统的包管理器安装，文件由它管理）"),
             Language::English => {
                 format!("{id}: OK (installed by the system package manager, which owns its files)")
             }
@@ -87,7 +87,7 @@ impl Language {
     /// `check`：系统的包管理器装的包清单读不成（施工 SD-1）：`why` 是问题的代码或 `unreadable`。
     pub(crate) fn checked_manifest(&self, id: &str, why: &str) -> String {
         match self {
-            Language::Chinese => format!("{id}：清单读不成（{why}）"),
+            Language::Chinese => format!("{id}：无法读取清单（{why}）"),
             Language::English => format!("{id}: manifest unreadable ({why})"),
         }
     }

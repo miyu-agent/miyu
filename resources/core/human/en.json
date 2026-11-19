@@ -48,7 +48,7 @@
       },
       "core.idle_exit": {
         "name": "Idle exit time",
-        "description": "Minutes with no connection and no running turn before the core exits. 0 keeps it running (the default); a head starts the core again when it can't reach it."
+        "description": "Minutes with no connection and no running turn before the core exits. 0 keeps it running (the default); an interface starts the core again when it can't reach it."
       },
       "core.workers": {
         "name": "Core worker threads",

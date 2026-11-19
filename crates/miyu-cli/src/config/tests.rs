@@ -117,7 +117,7 @@ fn language_item() -> (serde_json::Value, serde_json::Value) {
     let said = |name: &str, description: &str| json!({"applies": "now", "description": description, "key": "ui.language", "name": name});
     let chinese = said(
         "界面语言",
-        "终端、网页、命令行给你看的字用哪种话。auto 跟着终端或浏览器的语言。",
+        "终端界面、网页界面和命令行显示的文字使用哪种语言。auto 表示跟随终端或浏览器的语言。",
     );
     (item, chinese)
 }
@@ -134,7 +134,7 @@ fn explain_lines_up_the_layers_like_the_blueprint() {
     assert_eq!(
         lines.concat(),
         format!(
-            "界面语言（ui.language）：终端、网页、命令行给你看的字用哪种话。auto 跟着终端或浏览器的语言。立即生效。\n\
+            "界面语言（ui.language）：终端界面、网页界面和命令行显示的文字使用哪种语言。auto 表示跟随终端或浏览器的语言。立即生效。\n\
              \x20 \"zh\"    系统配置  {system}:5  ← 生效\n\
              \x20 \"auto\"  默认值\n"
         )

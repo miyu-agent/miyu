@@ -386,7 +386,7 @@ capabilities = ["provider.key"]
 catalog = "deepseek"
 ```
 
-装的那一屏写「这个包会拿到你 DeepSeek 的 key」，人批了才交。Miyu 照主人的供应商配置认哪一家是它：写了 `catalog` 的照它；没写的看地址里有没有那一家的官方地址（现在只认 DeepSeek 的 `api.deepseek.com`）；两样都没写的看供应商的编号。认出来、写了 key 的第一家（照编号排），它的 key 交给你；别家的 key 一律不交。怎么拿见 [写扩展](extensions.md)「握手和配置」。
+装的那一屏写「这个软件包会拿到你 DeepSeek 的密钥」，人批了才交。Miyu 照主人的供应商配置认哪一家是它：写了 `catalog` 的照它；没写的看地址里有没有那一家的官方地址（现在只认 DeepSeek 的 `api.deepseek.com`）；两样都没写的看供应商的编号。认出来、写了 key 的第一家（照编号排），它的 key 交给你；别家的 key 一律不交。怎么拿见 [写扩展](extensions.md)「握手和配置」。
 
 ## `[after]`
 

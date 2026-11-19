@@ -99,7 +99,7 @@ async fn a_model_or_item_lists_its_words() {
         (
             Some("语义模型"),
             Some(
-                "提高记忆、知识库等内容的检索质量。只有内置模型会自动联想记忆和知识库，换成别的模型后只在搜索时用到。"
+                "提高记忆、知识库等内容的检索质量。只有内置模型会自动联想记忆和知识库，换成其他模型后只在搜索时使用。"
             )
         )
     );
@@ -122,7 +122,7 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
         .await;
     assert_eq!(
         reply["result"],
-        json!({"groups":[{"id":"display","name":"显示","name_en":"Display","page":"general"}],"items":[{"applies":"now","common":true,"control":"select","default":"auto","description":"终端、网页、命令行给你看的字用哪种话。auto 跟着终端或浏览器的语言。","group":"display","key":"ui.language","layers":["system"],"name":"界面语言","name_en":"Interface language","options":[{"name":"跟随系统","value":"auto"},{"name":"中文","value":"zh"},{"name":"English","value":"en"},{"name":"日本語","value":"ja"}],"page":"general","type":"option"}],"pages":[{"id":"general","name":"通用"}]}),
+        json!({"groups":[{"id":"display","name":"显示","name_en":"Display","page":"general"}],"items":[{"applies":"now","common":true,"control":"select","default":"auto","description":"终端界面、网页界面和命令行显示的文字使用哪种语言。auto 表示跟随终端或浏览器的语言。","group":"display","key":"ui.language","layers":["system"],"name":"界面语言","name_en":"Interface language","options":[{"name":"跟随系统","value":"auto"},{"name":"中文","value":"zh"},{"name":"English","value":"en"},{"name":"日本語","value":"ja"}],"page":"general","type":"option"}],"pages":[{"id":"general","name":"通用"}]}),
         "和图纸的例子一字不差"
     );
     let all = client.call("c2", "config.schema", json!({})).await;

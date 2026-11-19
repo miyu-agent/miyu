@@ -93,8 +93,8 @@ pub(crate) fn unreachable(root: &DataRoot, language: Language) -> Problem {
     let log = root.core_log();
     let log = log.display();
     match language {
-        Language::Chinese => Problem::new("核心还在跑，但连不上它：数据根 run/ 里的令牌或套接字位置不见了")
-            .hint(format!("照进程号结束它：{log} 里最后一行 starting 的 pid")),
+        Language::Chinese => Problem::new("核心还在运行，但无法连接：数据根 run/ 里的令牌或套接字位置文件已经不存在")
+            .hint(format!("按进程号结束核心：进程号是 {log} 里最后一行 starting 的 pid")),
         Language::English => Problem::new(
             "the core is still running but cannot be reached: the token or socket location in the data root's run/ is gone",
         )

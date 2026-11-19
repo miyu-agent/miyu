@@ -63,7 +63,7 @@ fn a_missing_program_is_named_with_its_manifest() {
         (
             &["help", "tui"][..],
             Language::Chinese,
-            "没找到 miyu-no-such-program-anywhere：清单 /data/packages/tui/package.toml 说 miyu tui 由它跑",
+            "没有找到 miyu-no-such-program-anywhere：清单 /data/packages/tui/package.toml 写明 miyu tui 由它运行",
         ),
     ] {
         let mut err = Vec::new();

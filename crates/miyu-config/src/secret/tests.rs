@@ -288,8 +288,8 @@ fn missing_secrets_and_variables_are_warnings() {
     assert_eq!(
         said,
         BTreeSet::from([
-            "providers.demo 引用的密钥 deepseek 还没设。".to_string(),
-            "providers.other 引用的环境变量 DEMO_KEY 核心起来时没有设。".to_string(),
+            "providers.demo 引用的密钥 deepseek 还没有设置。".to_string(),
+            "providers.other 引用的环境变量 DEMO_KEY 在核心启动时没有设置。".to_string(),
         ])
     );
     let all_set = missing(

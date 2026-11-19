@@ -81,7 +81,7 @@ impl Language {
         if !unrecalled.is_empty() {
             lines.push(match chinese {
                 true => format!(
-                    "  不自动联想：{}（这个模型没有测过门槛，搜索照常）",
+                    "  不自动联想：{}（这个模型没有测试过门槛，搜索不受影响）",
                     unrecalled.join("、")
                 ),
                 false => format!(
@@ -145,7 +145,7 @@ mod tests {
             [
                 "语义模型：openai/text-embedding-3-small",
                 "  记忆：engineer 3/3",
-                "  不自动联想：记忆、知识库（这个模型没有测过门槛，搜索照常）",
+                "  不自动联想：记忆、知识库（这个模型没有测试过门槛，搜索不受影响）",
             ]
         );
         assert_eq!(

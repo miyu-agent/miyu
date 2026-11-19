@@ -10,6 +10,7 @@ mod catalog_recall;
 mod config_words;
 mod embed_package;
 mod embedding_names;
+mod human_wording;
 mod logos;
 mod packages;
 mod packaging;

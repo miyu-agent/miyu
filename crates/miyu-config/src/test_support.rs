@@ -113,11 +113,11 @@ pub(crate) fn words(items: &[Item]) -> Fake {
         ),
         (
             "config/wrong-layer",
-            "{key} 只能写在{layers}里，写在{layer}里不算",
+            "{key} 只能写在{layers}里，写在{layer}里不生效",
         ),
         (
             "config/not-tightening",
-            "项目配置只能让限制更严。{key} 现在是 {current}，这里写的 {got} 更宽，不算",
+            "项目配置只能让限制更严。{key} 现在是 {current}，这里写的 {got} 更宽，不生效",
         ),
         ("config/untrusted-project", "项目配置未信任，已忽略"),
         (
@@ -175,10 +175,13 @@ pub(crate) fn words(items: &[Item]) -> Fake {
         ),
         ("config/then", "{rest}{next}"),
         ("config/stops", "。？！"),
-        ("config/unknown-secret", "{key} 引用的密钥 {name} 还没设"),
+        (
+            "config/unknown-secret",
+            "{key} 引用的密钥 {name} 还没有设置",
+        ),
         (
             "config/env-not-set",
-            "{key} 引用的环境变量 {name} 核心起来时没有设",
+            "{key} 引用的环境变量 {name} 在核心启动时没有设置",
         ),
         (
             "config/bad-secret-name",
@@ -188,19 +191,19 @@ pub(crate) fn words(items: &[Item]) -> Fake {
             "config/bad-secret-value",
             "{key} 的值要写成带引号的字，不能是空的",
         ),
-        ("config/no-provider", "{key} 指的供应商 {name} 没有配"),
-        ("config/no-pool", "{key} 指的池 {name} 没有配"),
+        ("config/no-provider", "{key} 指向的供应商 {name} 没有配置"),
+        ("config/no-pool", "{key} 指向的池 {name} 没有配置"),
         (
             "config/unknown-effort",
-            "{key} 写的 {name} 不是这个模型现在有的一档：请求照没写发",
+            "{key} 写的 {name} 不是这个模型现在支持的一档：请求按没有填写发送",
         ),
         (
             "config/temperature-unsupported",
-            "{key}：这个模型不收温度，请求照没写发",
+            "{key}：这个模型不接受温度参数，请求按没有填写发送",
         ),
         (
             "config/temperature-too-high",
-            "{key} 写的 {got} 超过了这个模型的上限 {max}：请求照没写发",
+            "{key} 写的 {got} 超过了这个模型的上限 {max}：请求按没有填写发送",
         ),
     ];
     Fake {

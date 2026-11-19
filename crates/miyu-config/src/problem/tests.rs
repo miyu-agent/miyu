@@ -210,7 +210,7 @@ fn the_wrong_layer_says_where_to_move_it() {
     let using = Using::Value(text("info"), Origin::Default);
     assert_eq!(
         said(&problem, Some(&using)).message,
-        "log.level 只能写在系统配置里，写在项目配置里不算。挪到系统配置里去。"
+        "log.level 只能写在系统配置里，写在项目配置里不生效。挪到系统配置里去。"
     );
     let project = Problem::item(
         Code::WrongLayer,
@@ -221,7 +221,7 @@ fn the_wrong_layer_says_where_to_move_it() {
     );
     assert_eq!(
         said(&project, None).message,
-        "ui.language 只能写在系统配置里，写在项目配置里不算。挪到系统配置里去。"
+        "ui.language 只能写在系统配置里，写在项目配置里不生效。挪到系统配置里去。"
     );
 }
 
@@ -237,7 +237,7 @@ fn a_looser_project_value_says_what_is_in_force() {
     problem.current = Some(Value::Bool(true));
     assert_eq!(
         said(&problem, None).message,
-        "项目配置只能让限制更严。permission.start_read_only 现在是 true，这里写的 false 更宽，不算。"
+        "项目配置只能让限制更严。permission.start_read_only 现在是 true，这里写的 false 更宽，不生效。"
     );
 }
 

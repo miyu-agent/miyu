@@ -61,7 +61,7 @@ impl Language {
             // Windows 上的沙盒是 MXC 的基础容器（施工 5-9 改上）：探不出基础容器的机器手段是空的（施工 WN-1 改：原来说「此版本还
             // 不能」，和现状对不上）。
             (Unusable::NoMechanism, Platform::Windows, true) => {
-                ("这台 Windows 起不了 MXC 的基础容器", None)
+                ("这台 Windows 无法启动 MXC 的基础容器", None)
             }
             (Unusable::NoMechanism, Platform::Windows, false) => {
                 ("this Windows cannot start an MXC base container", None)

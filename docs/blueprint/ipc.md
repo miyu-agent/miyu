@@ -126,7 +126,7 @@
 5. 等它写来一行，最多 60 秒，最多读 4096 字节：
    - `ready`：连它；连不上的照连不上说。
    - `running`：已经有一个核心在跑，可能刚拿到锁、还没开始等连接。每 50 毫秒连一次，最多 60 秒，连上为止；到时还是没在跑：`NotRunning`。
-   - `error <原因>`：`Refused`，原因照原样。认不出的一行也当起不来，原因就是这一行。带代码的（`error <代码>: <原因>`，施工 LC-1；施工 EN-2 起核心每一步都带）`Refused` 多带 `code`，头照 `core/start/<代码>` 取给人看的字，原因换进 `{reason}`（数据根认不出的那几种原因是数据根的位置，字里是 `{path}`；`StartError::said` 两个字段都给），照自己的语言说；没有代码的照原因说。取不到字的 `Display` 是「核心起不来（<代码>）：<原因>」。
+   - `error <原因>`：`Refused`，原因照原样。认不出的一行也当起不来，原因就是这一行。带代码的（`error <代码>: <原因>`，施工 LC-1；施工 EN-2 起核心每一步都带）`Refused` 多带 `code`，头照 `core/start/<代码>` 取给人看的字，原因换进 `{reason}`（数据根认不出的那几种原因是数据根的位置，字里是 `{path}`；`StartError::said` 两个字段都给），照自己的语言说；没有代码的照原因说。取不到字的 `Display` 是「核心无法启动（<代码>）：<原因>」。
    - 什么都没写就退了：`Silent`。
    - 60 秒没等到：`Timeout`。
 6. 拉起锁一直拿到交回为止（连上了，或者出了错）。
@@ -155,20 +155,20 @@
 
 | 情形 | 什么时候 | 说的话 |
 |---|---|---|
-| `OpenError::Running` | 已经有一个核心拿着锁 | 这个数据根上已经有一个核心在跑 |
+| `OpenError::Running` | 已经有一个核心拿着锁 | 这个数据根上已经有一个核心在运行 |
 | `OpenError::TooLong` | 套接字哪里都放不下 | 套接字的路径太长，放不下：<本该放的位置>；临时目录下也放不下 |
-| `OpenError::NotPrivate` | 套接字要放的目录不是自己的，或者别人也能进 | <目录> 不是自己的，或者别人也能进：套接字不放在这里 |
-| `OpenError::Occupied` | 位置上有别的东西；Windows 上管道名被占了 | <位置> 上有别的东西：不是套接字的文件，或者别的程序正在听。不动它 |
+| `OpenError::NotPrivate` | 套接字要放的目录不是自己的，或者别人也能进 | <目录> 不属于当前用户，或者其他用户也能访问：套接字不放在这里 |
+| `OpenError::Occupied` | 位置上有别的东西；Windows 上管道名被占了 | <位置> 上有其他内容：不是套接字的文件，或者其他程序正在监听。没有修改它 |
 | `OpenError::Io` | 读写出错 | 系统的原话 |
-| `ConnectError::NotRunning` | 核心没在跑 | 核心没在跑 |
-| `ConnectError::NotPrivate` | 套接字的目录别人也能进；Windows 上管道另一头不是自己的进程 | <目录或管道> 不是自己的，或者别人也能进：不连 |
+| `ConnectError::NotRunning` | 核心没在跑 | 核心没有在运行 |
+| `ConnectError::NotPrivate` | 套接字的目录别人也能进；Windows 上管道另一头不是自己的进程 | <目录或管道> 不属于当前用户，或者其他用户也能访问：不连接 |
 | `ConnectError::Io` | 读写出错，`run/socket` 写的不是绝对路径 | 系统的原话；`run/socket 写的不是绝对路径：<路径>` |
-| `StartError::Refused` | 核心说了起不来 | 核心起不来：<原因> |
-| `StartError::Silent` | 核心什么都没写就退了 | 核心没起来，也没说为什么：看数据根的 var/log/core.log |
-| `StartError::Timeout` | 60 秒没等到那一行 | 等核心起来等了太久 |
-| `StartError::Busy` | 60 秒没拿到拉起锁 | 别的程序正在拉起核心，等了太久 |
+| `StartError::Refused` | 核心说了起不来 | 核心无法启动：<原因> |
+| `StartError::Silent` | 核心什么都没写就退了 | 核心没有启动，也没有给出原因：查看数据根的 var/log/core.log |
+| `StartError::Timeout` | 60 秒没等到那一行 | 等待核心启动超时 |
+| `StartError::Busy` | 60 秒没拿到拉起锁 | 其他程序正在启动核心，等待超时 |
 | `StartError::Connect` | 连不上 | 照 `ConnectError` 的话 |
-| `StartError::Io` | 读写出错，例如找不到程序、拉不起来 | 拉不起核心：<系统的原话> |
+| `StartError::Io` | 读写出错，例如找不到程序、拉不起来 | 无法启动核心：<系统的原话> |
 
 - 上面是原话（`Display`，中文），日志和取不到字的时候用。`ConnectError`、`StartError` 另交说法 `said()`（施工 EN-1）：内核 `human/` 里三种语言的 `start/not_running`、`start/not_private_socket`、`start/not_private_pipe`（`{path}`）、`start/refused`（`{reason}`，核心的原话；带代码的头另可照 `start/<代码>` 说）、`start/silent`（`{log}`，数据根里的相对位置）、`start/timeout`、`start/busy`、`start/stopped_by_user`（施工 CS-5）、`start/spawn_failed`（`{error}`）；`Io` 的没有，照系统的原话。命令行照握手以前的界面语言取字（`miyu-cli` 的 `startup.rs`），印在标准错误上，退出码 1；`miyu ask` 没有 key、核心又没在跑的另说，退出码 5（`cli/ask.md`）。
 - 运行日志（目标 `miyu::ipc`）：核心里记 `INFO listening socket=…`、`INFO stale socket removed socket=…`、`WARN XDG_RUNTIME_DIR not usable, using run/ dir=…`、`DEBUG socket file not removed error=…`（删套接字文件没删成）。头里发的 `DEBUG core not reaped error=…`（替拉起的核心收尸没收成）记不下来：头不装运行日志。

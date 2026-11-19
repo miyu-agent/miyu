@@ -249,7 +249,7 @@ core.close()
 
 自己写一件跑命令的工具（换掉内置的 `shell`、在容器或远程机器上跑），想让 AI 在它跑的命令里也能 `miyu call` 调工具，和内置的 `shell` 一样：
 
-1. 清单 `[process] capabilities` 加上 `tools.commands`（装的时候人会看到「工具会跑命令」这一项），规格里写 `"runs_commands": true`，`access` 照实写（一般是 `execute`）。AI 看到的说明后面会自动接上 `miyu call` 怎么用那一段，你不用自己写。
+1. 清单 `[process] capabilities` 加上 `tools.commands`（装的时候人会看到「工具会运行命令」这一项），规格里写 `"runs_commands": true`，`access` 照实写（一般是 `execute`）。AI 看到的说明后面会自动接上 `miyu call` 怎么用那一段，你不用自己写。
 2. 会话里有 AI 能在脚本里调的工具时，`tool.call` 多一格 `channel`：`{"sock", "token", "bin"}`。给这次调用起命令时设上环境变量：
 
    ```python

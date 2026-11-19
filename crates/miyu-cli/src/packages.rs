@@ -278,7 +278,7 @@ fn no_dirs(one: &Added, root: &DataRoot, error: &std::io::Error, language: Langu
     let state = state.display();
     match language {
         Language::Chinese => format!(
-            "没能转交 miyu {}：建不了它的目录 {state} 这些（{error}）。",
+            "无法转交 miyu {}：无法创建它的目录 {state} 等（{error}）。",
             one.name
         ),
         Language::English => format!(
@@ -293,7 +293,7 @@ fn not_installed(one: &Added, language: Language) -> String {
     let manifest = one.manifest.display();
     match language {
         Language::Chinese => format!(
-            "没找到 {}：清单 {manifest} 说 miyu {} 由它跑。重装这个软件包再试。",
+            "没有找到 {}：清单 {manifest} 写明 miyu {} 由它运行。重新安装这个软件包后再试。",
             one.program, one.name
         ),
         Language::English => format!(

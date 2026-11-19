@@ -429,7 +429,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 {"ok":true,"checked":"request","models":["deepseek-flash"],"listed":"catalog","model":"my-model","first_token_ms":812}
 {"ok":false,"stage":"list","need_model":true,"error":{"class":"other","status":404,"message":"not found"}}
 {"ok":false,"stage":"request","error":{"class":"auth","status":401,"message":"Authentication Fails (no such user)"}}
-{"ok":false,"stage":"config","error":{"class":"no_model","message":"providers.deepseek.key 引用的密钥 deepseek-mv29vzu7 还没设"}}
+{"ok":false,"stage":"config","error":{"class":"no_model","message":"providers.deepseek.key 引用的密钥 deepseek-mv29vzu7 还没有设置"}}
 {"ok":false,"stage":"config","error":{"class":"no_model","message":"provider \"candidate\" needs base_url: it matches nothing in the catalog"}}
 ```
 

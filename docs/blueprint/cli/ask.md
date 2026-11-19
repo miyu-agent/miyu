@@ -385,7 +385,7 @@ C 也查完了。
 | 沙盒用不了（一行：括号里的原因，接着那半句后果） | `· 沙盒用不了（<原因>）：执行命令要你确认，miyu ask 里确认不了` | `· Sandbox unavailable (<reason>): commands need your approval, which cannot be given in miyu ask` |
 | 原因：Linux 上没有手段 | 内核没有能用的 Landlock：要 Linux 5.13 起，启动参数的 lsm= 里开着 | the kernel has no usable Landlock: Linux 5.13 or later, enabled in the lsm= boot parameter |
 | 原因：macOS 上没有手段 | 装不上 Seatbelt 配置，Miyu 可能跑在别的沙盒里 | the Seatbelt profile cannot be applied; Miyu may be running inside another sandbox |
-| 原因：Windows 上没有手段（探不出 MXC 的基础容器，施工 WN-1 改） | 这台 Windows 起不了 MXC 的基础容器 | this Windows cannot start an MXC base container |
+| 原因：Windows 上没有手段（探不出 MXC 的基础容器，施工 WN-1 改） | 这台 Windows 无法启动 MXC 的基础容器 | this Windows cannot start an MXC base container |
 | 原因：别的系统上没有手段 | 这个系统上没有能用的沙盒 | no sandbox is available on this system |
 | 原因：找不到助手 | 主程序旁边没有 miyu-sandbox：重装一次 Miyu | miyu-sandbox is missing beside the main program: reinstall Miyu |
 | 原因：助手跑不起来 | miyu-sandbox 跑不起来：重装一次 Miyu | miyu-sandbox does not run: reinstall Miyu |

@@ -474,7 +474,7 @@ async fn core_stop_says_so_when_the_running_core_lost_its_run_dir() {
     .expect("没 panic");
     assert_eq!(stopped.status.code(), Some(1), "{stopped:?}");
     assert!(
-        String::from_utf8_lossy(&stopped.stderr).contains("连不上"),
+        String::from_utf8_lossy(&stopped.stderr).contains("无法连接"),
         "{stopped:?}"
     );
     assert!(alive(&pid), "核心还在，没被说成停了");

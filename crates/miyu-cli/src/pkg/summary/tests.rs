@@ -120,7 +120,7 @@ fn a_driver_that_lets_the_provider_run_tools_says_so_under_its_capabilities() {
         [
             "需要的能力  : 提供模型驱动：用它的模型时，发给模型的全部对话都经过它",
             "              联网：访问网络、开端口",
-            "              模型驱动 antigravity 会让供应商自己跑：search_web",
+            "              模型驱动 antigravity 会让供应商自己运行：search_web",
         ]
     );
 }
@@ -246,7 +246,7 @@ fn an_older_core_is_printed_and_asked_as_before() {
             "软件包 (1)  im-0.2.1",
             "",
             "下载大小    : 12.3 MiB",
-            "来源        : friend，签名已验证，没人审过",
+            "来源        : friend，签名已验证，未经审核",
             "需要的能力  : 联网",
             "              替主人说话",
         ]

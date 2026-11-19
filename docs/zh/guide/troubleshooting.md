@@ -45,7 +45,7 @@ miyu check ~/.miyu/root/personas/miyu/prompts/examples.md
 ```text
 ~/.miyu/etc/config.toml:3:9 错误：log.level 只能是 error、warn、info、debug、trace 或 off，写的是 verbose
 ~/.miyu/etc/config.toml:12:1 警告：没有 models.chatt 这一项。是不是想写 models.chat？
-~/.miyu/etc/config.toml:20:7 警告：providers.acme.key 引用的密钥 acme 还没设
+~/.miyu/etc/config.toml:20:7 警告：providers.acme.key 引用的密钥 acme 还没有设置
 1 处错误，2 处警告
 语义模型：local:granite-embedding-97m-multilingual-r2，正在建立索引
   记忆：engineer 120/120
@@ -55,7 +55,7 @@ miyu check ~/.miyu/root/personas/miyu/prompts/examples.md
 - `错误`：写法不对，这一处的设置不生效；如果 TOML 本身就读不懂，整份文件都不生效。有错误时，退出码是 `1`。
 - `警告`：不认识的键，或者引用的密钥、环境变量、人格、预设、知识库还不存在。Miyu 照常运行，只是这几处设置没有用上。只有警告时，退出码是 `0`。
 - 没有任何问题时，会显示 `没有问题`。
-- 语义模型那几行不算问题，它们说明正在使用哪个模型，以及记忆、以前的对话、知识库各有多少条建好了索引（建好的/总共）。没有安装语义模型时显示 `语义模型：未安装，仅按关键词搜索`，并提示运行 `miyu pkg install embed`；关闭了语义模型时显示 `语义模型：已关闭（models.embedding = "off"），仅按关键词搜索`。如果换成了远程模型，末尾会多一行 `不自动联想：记忆、知识库（这个模型没有测过门槛，搜索照常）`，因为只有内置的模型会自动想起记忆和知识库，其他模型只在搜索时用到。
+- 语义模型那几行不算问题，它们说明正在使用哪个模型，以及记忆、以前的对话、知识库各有多少条建好了索引（建好的/总共）。没有安装语义模型时显示 `语义模型：未安装，仅按关键词搜索`，并提示运行 `miyu pkg install embed`；关闭了语义模型时显示 `语义模型：已关闭（models.embedding = "off"），仅按关键词搜索`。如果换成了远程模型，末尾会多一行 `不自动联想：记忆、知识库（这个模型没有测试过门槛，搜索不受影响）`，因为只有内置的模型会自动想起记忆和知识库，其他模型只在搜索时用到。
 
 加上 `--format json` 时会输出一行 `{"problems": […]}`，每一处问题带 `kind`、`file`、`code`、`level`、`message`，有行列的还带 `line`、`column`；检查全部内容时另外带 `embedding`。
 
@@ -108,15 +108,15 @@ miyu
 |---|---|---|
 | `核心起不来：…` | 核心启动时出了错，冒号后面是核心给出的原因。 | 按照原因修改。如果看不懂原因，就看 `core.log` 的最后几行。 |
 | `核心没起来，也没说为什么：…` | 核心没有给出原因就退出了。 | 查看 `~/.miyu/var/log/core.log` 的最后几行。 |
-| `等核心起来等了太久` | 核心 60 秒后还没有启动完成，多半是因为磁盘繁忙。 | 再试一次；还不行就查看 `core.log`。 |
-| `别的程序正在拉起核心，等了太久` | 另一个界面正在启动核心，60 秒后还没有完成。 | 和上一行一样：再试一次，还不行就查看 `core.log`。 |
+| `等待核心启动超时` | 核心 60 秒后还没有启动完成，多半是因为磁盘繁忙。 | 再试一次；还不行就查看 `core.log`。 |
+| `其他程序正在启动核心，等待超时` | 另一个界面正在启动核心，60 秒后还没有完成。 | 和上一行一样：再试一次，还不行就查看 `core.log`。 |
 | `拉不起核心：…` | 找不到核心程序，或者没有运行它的权限。 | 重新安装 Miyu，见 [安装、升级、卸载](install.md)。 |
 | `… 认不出是 Miyu 的数据根 …` | 数据根的位置上已经有其他东西。0.7 旧版的数据目录也会报这一句。 | 如果是 0.7 旧版的数据目录，按照这句话后半部分说的把它挪开、安装迁移软件包、进行迁移，见 [从 0.7 旧版迁过来](migrate.md)；如果不是，就把 `MIYU_HOME` 设成一个空目录。 |
 | `… 是旧版 Miyu 的数据根，新版不认 …` | 这是正式发布之前的开发版留下的数据根。 | 把 `MIYU_HOME` 设成一个空目录。 |
 | `… 的布局不是这一版的 …` | 更新版本的 Miyu 写过这个数据根。 | 使用写过它的那个版本，或者换一个数据根。 |
-| `… 不是自己的，或者别人也能进：不连`（Linux、macOS）；`命名管道 … 另一头不是自己的进程：不连`（Windows） | Linux、macOS：存放套接字的目录不属于你，或者其他用户也能进入，所以 Miyu 不连接这个目录里的套接字。Windows：命名管道另一头的程序不是你这个用户运行的。 | Linux、macOS：把那个目录改成只有你能进入，例如运行 `chmod 700 <目录>`。Windows：关掉占着这个管道的程序，再重新打开 Miyu。 |
-| `核心起不来：套接字的路径 … 太长，临时目录下也放不下`（Linux、macOS） | 数据根的路径太长。 | 换一个短一点的 `MIYU_HOME`，或者把 `TMPDIR` 设成路径短的目录。 |
-| `核心起不来：… 上有别的东西：不是套接字的文件，或者别的程序正在听。不动它`（Linux、macOS）；`核心起不来：命名管道 … 已经被别的程序占了。不动它`（Windows） | Linux、macOS：套接字的位置被其他文件或程序占用了。Windows：命名管道的名字被其他程序占用了。 | 如果占用它的不是 Miyu，就把那个文件挪走，或者关掉那个程序。 |
+| `… 不属于当前用户，或者其他用户也能访问：不连接`（Linux、macOS）；`命名管道 … 另一头不是当前用户的进程：不连接`（Windows） | Linux、macOS：存放套接字的目录不属于你，或者其他用户也能进入，所以 Miyu 不连接这个目录里的套接字。Windows：命名管道另一头的程序不是你这个用户运行的。 | Linux、macOS：把那个目录改成只有你能进入，例如运行 `chmod 700 <目录>`。Windows：关掉占着这个管道的程序，再重新打开 Miyu。 |
+| `核心无法启动：套接字的路径 … 太长，临时目录下也放不下`（Linux、macOS） | 数据根的路径太长。 | 换一个短一点的 `MIYU_HOME`，或者把 `TMPDIR` 设成路径短的目录。 |
+| `核心无法启动：… 上有其他内容：不是套接字的文件，或者其他程序正在监听。没有修改它`（Linux、macOS）；`核心无法启动：命名管道 … 已经被其他程序占用。没有修改它`（Windows） | Linux、macOS：套接字的位置被其他文件或程序占用了。Windows：命名管道的名字被其他程序占用了。 | 如果占用它的不是 Miyu，就把那个文件挪走，或者关掉那个程序。 |
 | `与核心的连接已断开` | 核心中途退出或者崩溃了。 | 查看 `core.log`，然后重新打开 Miyu。 |
 
 套接字在各个系统上的位置：
@@ -137,7 +137,7 @@ miyu core stop
 
 如果你安装了开机启动服务，并且希望继续由服务管理核心，再运行一次 `miyu service enable`，见 [常驻和服务器](service.md#让服务立即接管)。
 
-如果 `miyu core stop` 提示 `核心还在跑，但连不上它：数据根 run/ 里的令牌或套接字位置不见了`，说明 `~/.miyu/run/` 被删除了，而核心还在运行。按照提示到 `core.log` 里找最后一行 `starting` 记下的进程号，然后结束这个进程：
+如果 `miyu core stop` 提示 `核心还在运行，但无法连接：数据根 run/ 里的令牌或套接字位置文件已经不存在`，说明 `~/.miyu/run/` 被删除了，而核心还在运行。按照提示到 `core.log` 里找最后一行 `starting` 记下的进程号，然后结束这个进程：
 
 ```bash
 kill <进程号>
@@ -158,8 +158,8 @@ Miyu 需要配置好模型和 key 才能对话。常见的提示和处理方法�
 | 看到的 | 怎么办 |
 |---|---|
 | `未配置模型`，提示运行 `miyu setup`；`miyu ask` 的退出码是 `5` | 运行 `miyu setup`，见 [模型](models.md)。 |
-| `miyu check` 警告 `… 引用的密钥 … 还没设` | 运行 `miyu provider login <名字>`，把 key 存进去。 |
-| `miyu check` 警告 `… 引用的环境变量 … 核心起来时没有设` | 核心是在设置这个变量之前启动的。运行 `miyu core stop`，再在设置了这个变量的 shell 里重新打开 Miyu。开机启动服务启动的核心看不到 shell 里的变量，见 [常驻和服务器](service.md#服务和环境变量)。 |
+| `miyu check` 警告 `… 引用的密钥 … 还没有设置` | 运行 `miyu provider login <名字>`，把 key 存进去。 |
+| `miyu check` 警告 `… 引用的环境变量 … 在核心启动时没有设置` | 核心是在设置这个变量之前启动的。运行 `miyu core stop`，再在设置了这个变量的 shell 里重新打开 Miyu。开机启动服务启动的核心看不到 shell 里的变量，见 [常驻和服务器](service.md#服务和环境变量)。 |
 | `模型请求失败。`、认证失败 | key 填错了或者已经过期，重新运行 `miyu provider login <名字>`。 |
 
 ## 模型持续报错
@@ -260,14 +260,14 @@ AI 运行的命令可能被权限设置拦下，或者停在等待确认的状�
 |---|---|---|---|
 | `miyu ask` 开头显示 `沙盒不可用：内核没有可用的 Landlock`，下一行是 `提示：需要 Linux 5.13 或更新，并在启动参数 lsm= 里启用 Landlock` | Linux | 内核版本低于 5.13，或者启动参数 `lsm=` 里没有 `landlock`。 | 按照提示更换内核、修改启动参数。在那之前，只读模式下的命令改为询问你。 |
 | `miyu ask` 开头显示 `沙盒不可用：无法应用 Seatbelt 配置，Miyu 可能运行在另一个沙盒里` | macOS | Seatbelt 配置无法应用。 | 不要在其他沙盒里运行 Miyu。在那之前，只读模式下的命令改为询问你。 |
-| `miyu ask` 开头显示 `沙盒不可用：这台 Windows 起不了 MXC 的基础容器` | Windows | 沙盒需要的基础容器在这台 Windows 上无法启动。 | 只读模式下的命令改为询问你。 |
+| `miyu ask` 开头显示 `沙盒不可用：这台 Windows 无法启动 MXC 的基础容器` | Windows | 沙盒需要的基础容器在这台 Windows 上无法启动。 | 只读模式下的命令改为询问你。 |
 | 只读模式下命令的输出是 `miyu-sandbox: cannot confine: no desktop session, programs in the sandbox cannot start here; use Miyu from the desktop, or turn the sandbox off`，退出码 `125` | Windows | 核心不在桌面会话里，例如核心是通过 SSH 连进来以后启动的。 | 从已登录的桌面使用 Miyu，或者切换到开放权限，见 [常驻和服务器](service.md#windows-上的只读会话)。 |
 | 只读模式下命令的输出是 `miyu-sandbox: cannot confine: this Windows has no base container (MXC tier …)` | Windows | 这台 Windows 无法启动沙盒需要的基础容器。 | 切换到开放权限再运行。 |
 | 只读模式下命令的输出后面跟着 `The sandbox blocks WMI. Commands that need it work outside the sandbox.` | Windows | 这条命令需要用到 WMI，而沙盒里连不上 WMI。 | 切换到开放权限，再让 AI 运行一次，见 [权限和沙盒](permissions.md#三个平台)。 |
 | `无法安装服务：Windows 任务计划无法携带 MIYU_HOME`，下一行是 `提示：取消设置 MIYU_HOME 后重试`；终端界面设置页的 `开机启动核心` 一项显示 `设了 MIYU_HOME 时 Windows 上装不了` | Windows | 任务计划无法携带环境变量。 | 用默认的数据根安装服务；如果要使用其他数据根，就使用系统托盘的 `开机时启动`，见 [数据和备份](data.md#更换数据根的位置)。 |
 | `core.log` 里有 `catalog cache unavailable`，原因写的是 `no LOCALAPPDATA` | Windows | 环境变量 `LOCALAPPDATA` 不存在，或者不是绝对路径，因此算不出缓存目录。 | 把 `LOCALAPPDATA` 设成绝对路径，然后运行 `miyu core stop`，再重新打开 Miyu。 |
 | `未找到 litemiyu`，下一行是 `提示：暂只支持 Linux` | macOS、Windows | LiteMiyu 只有 Linux x86_64 的版本，所以 `miyu rescue` 无法使用。 | 按照这一页上面的「核心无法启动或无法连接」排查，见 [应急修复](rescue.md#其他系统)。 |
-| `无法升级：没有这种系统的发行包`，下一行是 `提示：发行包只有 Linux x86_64、aarch64，macOS Apple 芯片，Windows x86_64；别的系统到 … 下载源码自己编译` | Intel 芯片的 Mac、ARM 的 Windows 这类系统 | Miyu 没有为这种系统发布发行包。 | 按照提示到发行页下载源码自己编译，见 [安装、升级、卸载](install.md#选择安装方式)。 |
+| `无法升级：没有这种系统的发行包`，下一行是 `提示：发行包只有 Linux x86_64、aarch64，macOS Apple 芯片，Windows x86_64；其他系统到 … 下载源码自行编译` | Intel 芯片的 Mac、ARM 的 Windows 这类系统 | Miyu 没有为这种系统发布发行包。 | 按照提示到发行页下载源码自己编译，见 [安装、升级、卸载](install.md#选择安装方式)。 |
 | `不支持该系统。` | 取决于软件包，例如 `im` 没有 Linux aarch64 的版本 | 这个软件包没有为你这种系统打包。 | 换到这个软件包支持的系统，或者等它发布这种系统的版本。 |
 | `miyu call … --json '…'` 报 `--json takes one JSON object.`，后面一句是 `Its double quotes were lost on the way, as Windows PowerShell 5.1 does. Pipe the JSON instead: '<json>' \| miyu call <tool> --json -` | Windows | Windows PowerShell 5.1 把参数交给程序时吃掉了参数里的双引号。 | 按照提示改用管道传入：`'<json>' \| miyu call <工具> --json -`，见 [命令行](cli.md)。 |
 | `miyu shellhook install` 提示 `PowerShell 的执行策略是 …，不加载启动文件，装了也不生效：在 PowerShell 里执行 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned 再开新窗口` | Windows | 在这个执行策略下，PowerShell 不加载 `$PROFILE`，所以 shell 集成即使写进去也不生效。 | 按照提示执行一次那条命令，然后打开新窗口，见 [终端](heads/tui.md#shell-集成)。 |

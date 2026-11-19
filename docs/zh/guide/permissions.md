@@ -134,7 +134,7 @@ Windows 上 AI 用 PowerShell 运行命令（见 [工具](tools.md#shell)）。�
 |---|---|---|
 | Linux | `内核没有可用的 Landlock` | 内核版本低于 5.13，或者启动参数 `lsm=` 里没有 `landlock`。 |
 | macOS | `无法应用 Seatbelt 配置，Miyu 可能运行在另一个沙盒里` | Seatbelt 配置装不上。 |
-| Windows | `这台 Windows 起不了 MXC 的基础容器` | 沙盒需要的基础容器在这台 Windows 上无法启动。 |
+| Windows | `这台 Windows 无法启动 MXC 的基础容器` | 沙盒需要的基础容器在这台 Windows 上无法启动。 |
 
 工作目录的范围太大时：根目录在三个平台上都算范围太大；在 Windows 上，家目录本身和包含数据根的目录也算。范围太大的目录照样可以作为工作目录，命令从那里开始运行；用 `/workspace` 切换到这样的目录时，回执会显示 `工作区已切换到 …（范围较大）。`。
 

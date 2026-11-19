@@ -171,7 +171,7 @@ async fn slips_in_a_skill_come_with_warnings_in_the_people_language() {
     assert!(
         pdf["warnings"][1]["message"]
             .as_str()
-            .is_some_and(|said| said.contains("照写的名字 pdf 用")),
+            .is_some_and(|said| said.contains("使用写的名字 pdf")),
         "照连接的语言：{pdf}"
     );
     assert!(named(&skills, "notes").get("warnings").is_none());
