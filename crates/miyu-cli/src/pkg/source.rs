@@ -235,3 +235,6 @@ pub(super) async fn update(
     }
     if failed { Err(exit::ERROR) } else { Ok(()) }
 }
+
+#[cfg(test)]
+mod tests;

@@ -354,8 +354,8 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 清单 `[package] systems` 说作者支持哪几种操作系统（`linux`、`macos`、`windows`），`targets` 说带了本机程序的包有哪几种包文件（操作系统加处理器）：两回事，前者不带程序的脚本、扩展也能写（例如没做 Windows 适配的写 `["linux", "macos"]`）。「平台」在清单里说的是通讯平台，这里叫「系统」。
 
 1. **本机支不支持**（`miyu_config::package::fits_here`，索引那一头 `miyu_source::index::Entry::fits_here`）：写了 `systems` 的要有本机的系统；写了 `targets` 的（索引里是 `files[].target`）要有本机这一种。没写 `systems` 的就照 `targets` 推，两样都没写的哪里都支持。本机认不出的（不在那几种里的），写了就不支持。照索引就算得出来，不用下载包文件。
-2. **列表**：`package.search`（`miyu pkg search`、头的软件源列表、她的 `package` 工具都照它）默认不列不支持本机的包；配置 `packages.other_systems`（「其他系统的软件包」，布尔，默认关，「软件包」页「软件源」那一组）开着的照列，那一行带 `unsupported: true`，`miyu pkg search` 接「（不支持该系统）」。`package.info` 查软件源的那一份不支持的带 `unsupported: true`。推荐的包不支持本机的不提（照旧挑不出文件）。
-3. **装**：从软件源装（`miyu pkg install`、协议 `package.install {"source"}`、升级）照索引先拒 `wrong_target`，不下载；从文件夹、包文件装照清单拒 `wrong_target`。给人看的话「不支持该系统。」/「Not supported on this system.」。
+2. **列表**：`package.search`（`miyu pkg search`、头的软件源列表、她的 `package` 工具都照它）默认不列不支持本机的包；配置 `packages.other_systems`（「其他系统的软件包」，布尔，默认关，「软件包」页「软件源」那一组）开着的照列，那一行带 `unsupported: true`，`miyu pkg search` 接「（不支持当前系统）」。`package.info` 查软件源的那一份不支持的带 `unsupported: true`。推荐的包不支持本机的不提（照旧挑不出文件）。
+3. **装**：从软件源装（`miyu pkg install`、协议 `package.install {"source"}`、升级）照索引先拒 `wrong_target`，不下载；从文件夹、包文件装照清单拒 `wrong_target`。给人看的话「不支持当前系统。」/「Not supported on this system.」。
 4. 名字照 UX-1 的命名规矩（`config.md`「命名的规矩」）：开关的名字不带「不」「隐藏」，所以叫「其他系统的软件包」，说明里写清是不支持本机系统的那些。
 
 ### 本地库（施工 F-8 中上，设计 `31-软件包.md` 第四节）

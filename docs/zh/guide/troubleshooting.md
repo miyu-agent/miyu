@@ -186,7 +186,7 @@ AI 运行的命令可能被权限设置拦下，或者停在等待确认的状�
 |---|---|
 | `清单有误，无法安装。` | 运行 `miyu pkg info <包目录>`，它只查看、不安装，会说明清单哪里不对。 |
 | `缺少依赖的软件包。` | 先安装它依赖的软件包，可以用 `miyu pkg info <编号>` 查看依赖。 |
-| `不支持该系统。` | 这个软件包没有适合你这种系统的版本。 |
+| `不支持当前系统。` | 这个软件包没有适合你这种系统的版本。 |
 | `软件源连不上。` `软件包下载失败。` | 检查网络，过一会儿运行 `miyu pkg update` 再试。 |
 | `没找到 <程序>：清单 … 说 miyu <名字> 由它跑。重装这个软件包再试。` | 运行 `miyu pkg install <编号>` 重新安装。 |
 | `界面 'tui' 没有安装` | 运行 `miyu pkg install tui` 重新装回来。 |
@@ -268,7 +268,7 @@ AI 运行的命令可能被权限设置拦下，或者停在等待确认的状�
 | `core.log` 里有 `catalog cache unavailable`，原因写的是 `no LOCALAPPDATA` | Windows | 环境变量 `LOCALAPPDATA` 不存在，或者不是绝对路径，因此算不出缓存目录。 | 把 `LOCALAPPDATA` 设成绝对路径，然后运行 `miyu core stop`，再重新打开 Miyu。 |
 | `未找到 litemiyu`，下一行是 `提示：暂只支持 Linux` | macOS、Windows | LiteMiyu 只有 Linux x86_64 的版本，所以 `miyu rescue` 无法使用。 | 按照这一页上面的「核心无法启动或无法连接」排查，见 [应急修复](rescue.md#其他系统)。 |
 | `无法升级：没有这种系统的发行包`，下一行是 `提示：发行包只有 Linux x86_64、aarch64，macOS Apple 芯片，Windows x86_64；其他系统到 … 下载源码自行编译` | Intel 芯片的 Mac、ARM 的 Windows 这类系统 | Miyu 没有为这种系统发布发行包。 | 按照提示到发行页下载源码自己编译，见 [安装、升级、卸载](install.md#选择安装方式)。 |
-| `不支持该系统。` | 取决于软件包，例如 `im` 没有 Linux aarch64 的版本 | 这个软件包没有为你这种系统打包。 | 换到这个软件包支持的系统，或者等它发布这种系统的版本。 |
+| `不支持当前系统。` | 取决于软件包，例如 `im` 没有 Linux aarch64 的版本 | 这个软件包没有为你这种系统打包。 | 换到这个软件包支持的系统，或者等它发布这种系统的版本。 |
 | `miyu call … --json '…'` 报 `--json takes one JSON object.`，后面一句是 `Its double quotes were lost on the way, as Windows PowerShell 5.1 does. Pipe the JSON instead: '<json>' \| miyu call <tool> --json -` | Windows | Windows PowerShell 5.1 把参数交给程序时吃掉了参数里的双引号。 | 按照提示改用管道传入：`'<json>' \| miyu call <工具> --json -`，见 [命令行](cli.md)。 |
 | `miyu shellhook install` 提示 `PowerShell 的执行策略是 …，不加载启动文件，装了也不生效：在 PowerShell 里执行 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned 再开新窗口` | Windows | 在这个执行策略下，PowerShell 不加载 `$PROFILE`，所以 shell 集成即使写进去也不生效。 | 按照提示执行一次那条命令，然后打开新窗口，见 [终端](heads/tui.md#shell-集成)。 |
 | 终端界面里显示 `Linux 控制台显示不了中文：可在设置里把界面语言换成英文` | Linux | 终端界面是在 Linux 的文字控制台（`TERM=linux`）里打开的。 | 在设置页里把界面语言换成英文，或者在图形桌面的终端程序里使用。 |

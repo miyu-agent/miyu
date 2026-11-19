@@ -353,7 +353,7 @@
       "packages.source": {"name": "软件源地址", "description": "从这个地址查询和下载软件包。默认是官方软件源；更换地址后，那里的内容仍然必须有官方的签名。"},
       "packages.mirrors": {"name": "镜像", "description": "官方软件源连接不上或者速度慢时，按填写的先后顺序先尝试这几个地址。下载的内容仍然会验证签名和哈希，所以镜像无法篡改内容。"},
       "packages.hold": {"name": "不升级的包", "description": "升级时跳过这几个软件包（填编号），继续使用已安装的版本。"},
-      "packages.other_systems": {"name": "其他系统的软件包", "description": "软件源的列表里也列出不支持本机系统的软件包，并标注「不支持该系统」。这些包无法安装。"},
+      "packages.other_systems": {"name": "其他系统的软件包", "description": "软件源的列表里也列出不支持本机系统的软件包，并标注「不支持当前系统」。这些包无法安装。"},
       "packages.sources.<id>.url": {"name": "其他软件源的地址", "description": "存放索引的那一层目录的地址。地址和公钥都填写后才算一个软件源；添加一个软件源就表示你信任它。这一项写在系统配置里。"},
       "packages.sources.<id>.key": {"name": "其他软件源的公钥", "description": "给这个软件源的索引签名的 Ed25519 公钥（base64）。索引用它验证，验证失败的索引不会被使用。"},
       "models.catalog.url": {

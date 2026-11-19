@@ -113,7 +113,7 @@
 | `package_exists` | 和出厂的同编号 |
 | `package_file_bad` | 包文件解不开；从软件源装的，包里的编号和索引那一条对不上 |
 | `download_failed` | 从软件源装时包文件哪一处都没下成（大小、哈希对不上也算），`data.why` 是每一处的原因 |
-| `wrong_target` | 不支持该系统：清单写了 `targets`，里面没有本机这一种；或者写了 `systems`，里面没有本机的系统。从软件源装的照索引就拒，不下载 |
+| `wrong_target` | 不支持当前系统：清单写了 `targets`，里面没有本机这一种；或者写了 `systems`，里面没有本机的系统。从软件源装的照索引就拒，不下载 |
 | `depends_missing` | 依赖的包没装、装着的版本比清单写的下限低，`data.missing`：缺的那几个，照清单写的原样（带下限的是 `"onebot>=1.2.0"`） |
 | `package_depended` | 别的装着的包依赖它，`data.by` |
 | `unknown_package` | 没装的、没卸过的 |

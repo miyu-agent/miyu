@@ -103,7 +103,7 @@ async fn packages_for_other_systems_are_hidden_until_the_setting_is_on() {
             .call("n", "package.install", json!({"source": id}))
             .await;
         assert_eq!(reason(&refused), Some("wrong_target"), "{id}：{refused}");
-        assert_eq!(refused["error"]["message"], "不支持该系统。", "{refused}");
+        assert_eq!(refused["error"]["message"], "不支持当前系统。", "{refused}");
     }
 }
 
