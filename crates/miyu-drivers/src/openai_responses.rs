@@ -8,6 +8,7 @@
 
 mod decode;
 mod effort;
+mod hosted;
 mod input;
 mod kept;
 mod usage;

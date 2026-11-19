@@ -97,6 +97,8 @@ async fn a_reply_comes_back_from_the_server() {
             cache_write: 0,
             output: 3,
             reasoning: None,
+            searches: None,
+            fetches: None,
         })
     );
     assert_eq!(

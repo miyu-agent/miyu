@@ -66,7 +66,7 @@ pub struct Call {
     /// 收、不超过驱动的上限。没有的什么都不加，请求和以前一个字节不差。
     pub temperature: Option<f64>,
     /// 这一次接在工具面末尾的供应商那边的工具声明（设计 72，施工 DSR-3）：只有名字，照先后写。路由照档案的 `search`
-    /// 交（`miyu_models::provider_search`），例如 DeepSeek 官方 Responses 接口的 `deepseek_web_search`、`deepseek_read_url`。
+    /// 交（`miyu_models::provider_search`），例如 DeepSeek 官方 Responses 接口的 `deepseek_web_search`。
     /// 只有 openai-responses 写它：每个名字写成一项 `{"type":<名字>}`，接在函数工具后面；没有函数工具的也照样写 `tools`。
     /// openai-chat、anthropic 不认，有没有都编出同样的字节。空的什么都不加，请求和以前一个字节不差。
     pub hosted: Vec<String>,

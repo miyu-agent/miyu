@@ -218,6 +218,8 @@ fn sum(db: &Connection, query: &Query) -> Result<Vec<Total>, UsageError> {
                 cache_write: count(3)?,
                 output: count(4)?,
                 reasoning: None,
+                searches: None,
+                fetches: None,
             },
             amounts: Vec::new(),
             unpriced: count(5)?,

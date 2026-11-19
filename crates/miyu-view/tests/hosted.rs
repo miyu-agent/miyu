@@ -268,6 +268,44 @@ fn known_names_borrow_the_core_tool_and_unknown_ones_stay_raw() {
     );
 }
 
+/// DeepSeek 的两件（施工 DSR-4）：搜索照核心的网络搜索画，对象是 `queries` 的第一句；读网页照核心的读网页画，对象是
+/// `url`。
+#[test]
+fn deepseek_search_and_read_borrow_the_core_tools() {
+    let (_, entries) = run(vec![
+        start(0, "deepseek_web_search"),
+        text(
+            0,
+            r#"{"type":"search","queries":["rust 1.93","rust blog"]}"#,
+        ),
+        outcome(0, "Rust - https://blog.rust-lang.org/", false),
+        end(0),
+        start(1, "deepseek_read_url"),
+        text(
+            1,
+            r#"{"type":"open_page","url":"https://blog.rust-lang.org/"}"#,
+        ),
+        outcome(1, "https://blog.rust-lang.org/", false),
+        end(1),
+        text_start(2),
+        text(2, "好。"),
+        end(2),
+    ]);
+    let tools = tools(&entries);
+    assert_eq!(tools[0]["title"]["name"], "Web search", "{}", tools[0]);
+    assert_eq!(
+        tools[0]["title"]["object"], "rust 1.93",
+        "数组取第一句：{}",
+        tools[0]
+    );
+    assert_eq!(tools[1]["title"]["name"], "Fetch page", "{}", tools[1]);
+    assert_eq!(
+        tools[1]["title"]["object"], "https://blog.rust-lang.org/",
+        "{}",
+        tools[1]
+    );
+}
+
 #[test]
 fn a_hosted_search_counts_as_a_web_search() {
     let (_, entries) = run(vec![

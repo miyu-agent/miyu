@@ -143,6 +143,8 @@ impl Remote {
             cache_write: 0,
             output: 0,
             reasoning: None,
+            searches: None,
+            fetches: None,
         };
         let tariff = self.data.with(|knowledge| {
             let (facts, _) = facts(&self.config.resolved, knowledge, provider, &self.model);

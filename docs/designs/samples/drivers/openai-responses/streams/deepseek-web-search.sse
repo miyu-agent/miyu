@@ -1,0 +1,1986 @@
+event: response.created
+data: {"type":"response.created","response":{"id":"ea2e4535-643f-4fb7-b4c6-389965b061d3","object":"response","created_at":1795073281,"status":"in_progress","background":false,"completed_at":null,"content_filters":null,"error":null,"frequency_penalty":0.0,"incomplete_details":null,"instructions":null,"max_output_tokens":600,"max_tool_calls":null,"model":"deepseek-flash","moderation":null,"output":[],"parallel_tool_calls":true,"presence_penalty":0.0,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":null,"reasoning":{"effort":"high","summary":null},"safety_identifier":null,"service_tier":"default","store":false,"temperature":1.0,"text":{"format":{"type":"text"},"verbosity":null},"tool_choice":"auto","tools":[{"type":"function","name":"echo","description":"Echo the text back.","parameters":{"type":"object","properties":{"text":{"type":"string"}},"required":["text"]},"strict":false}],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":null,"user":null,"metadata":{}},"sequence_number":0}
+
+event: response.in_progress
+data: {"type":"response.in_progress","response":{"id":"ea2e4535-643f-4fb7-b4c6-389965b061d3","object":"response","created_at":1795073281,"status":"in_progress","background":false,"completed_at":null,"content_filters":null,"error":null,"frequency_penalty":0.0,"incomplete_details":null,"instructions":null,"max_output_tokens":600,"max_tool_calls":null,"model":"deepseek-flash","moderation":null,"output":[],"parallel_tool_calls":true,"presence_penalty":0.0,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":null,"reasoning":{"effort":"high","summary":null},"safety_identifier":null,"service_tier":"default","store":false,"temperature":1.0,"text":{"format":{"type":"text"},"verbosity":null},"tool_choice":"auto","tools":[{"type":"function","name":"echo","description":"Echo the text back.","parameters":{"type":"object","properties":{"text":{"type":"string"}},"required":["text"]},"strict":false}],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":null,"user":null,"metadata":{}},"sequence_number":1}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","item":{"type":"reasoning","id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","status":"in_progress","content":[],"summary":[]},"output_index":0,"sequence_number":2}
+
+event: response.content_part.added
+data: {"type":"response.content_part.added","content_index":0,"item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"part":{"type":"reasoning_text","text":""},"sequence_number":3}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"The","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":4}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" user","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":5}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" asks","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":6}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":":","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":7}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" latest","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":8}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" stable","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":9}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" version","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":10}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" of","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":11}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Rust","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":12}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" and","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":13}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" release","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":14}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" date","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":15}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":16}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Search","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":17}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" the","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":18}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" web","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":19}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":20}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" I","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":21}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" need","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":22}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" to","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":23}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" use","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":24}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" the","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":25}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" search","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":26}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" tool","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":27}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".\n\n","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":28}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"Let","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":29}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" me","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":30}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" search","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":31}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":32}
+
+event: response.reasoning_text.done
+data: {"type":"response.reasoning_text.done","content_index":0,"item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"sequence_number":33,"text":"The user asks: latest stable version of Rust and release date. Search the web. I need to use the search tool.\n\nLet me search."}
+
+event: response.content_part.done
+data: {"type":"response.content_part.done","content_index":0,"item_id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","output_index":0,"part":{"type":"reasoning_text","text":"The user asks: latest stable version of Rust and release date. Search the web. I need to use the search tool.\n\nLet me search."},"sequence_number":34}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","item":{"type":"reasoning","id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","status":"completed","content":[{"type":"reasoning_text","text":"The user asks: latest stable version of Rust and release date. Search the web. I need to use the search tool.\n\nLet me search."}],"summary":[]},"output_index":0,"sequence_number":35}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","item":{"type":"web_search_call","id":"srvtoolu_ds_00_6aefe1bb08ee4009a903826d426bbd07","status":"in_progress","kind":"deep_search","action":{"type":"search","queries":["latest stable Rust version release date 2025","Rust blog announce Rust 1.90 stable release"]}},"output_index":1,"sequence_number":36}
+
+event: response.web_search_call.in_progress
+data: {"type":"response.web_search_call.in_progress","item_id":"srvtoolu_ds_00_6aefe1bb08ee4009a903826d426bbd07","output_index":1,"sequence_number":37}
+
+event: response.web_search_call.searching
+data: {"type":"response.web_search_call.searching","item_id":"srvtoolu_ds_00_6aefe1bb08ee4009a903826d426bbd07","output_index":1,"sequence_number":38}
+
+event: response.web_search_call.completed
+data: {"type":"response.web_search_call.completed","item_id":"srvtoolu_ds_00_6aefe1bb08ee4009a903826d426bbd07","output_index":1,"sequence_number":39}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","item":{"type":"web_search_call","id":"srvtoolu_ds_00_6aefe1bb08ee4009a903826d426bbd07","status":"completed","kind":"deep_search","action":{"type":"search","queries":["latest stable Rust version release date 2025","Rust blog announce Rust 1.90 stable release"],"sources":[{"type":"url","url":"https://blog.rust-lang.org/releases/","title":"The Rust Release Announcements","snippet":"Releases in 2025 Dec. 11 | Announcing Rust 1.92.0 Nov. 10 | Announcing Rust 1.91.1 Oct. 30 | Announcing Rust 1.91.0","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org"},{"type":"url","url":"https://blog.rust-lang.org/2025/10/30/Rust-1.91.0/?via=dailydev#contributors-to-1-91-0","title":"Announcing Rust 1.91.0 | Rust Blog","snippet":"Announcing Rust 1.91.0 Oct. 30, 2025 · The Rust Release Team The Rust team is happy to announce a new version of Rust, 1.91.0.","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org","published_at":"2025-10-29T16:00:00+00:00"},{"type":"url","url":"https://blog.rust-lang.org/2025/05/15/Rust-1.87.0/?source=-----01746ef589ae---------------------------------------#asm-jumps-to-rust-code","title":"Announcing Rust 1.87.0 and ten years of Rust! | Rust Blog","snippet":"1.87.0 and ten years of Rust! May 15, 2025 · The Rust Release Team Live from the 10 Years of Rust celebration in Utrecht, Netherlands, the Rust team is happy to announce a new version of Rust...","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org","published_at":"2025-05-14T16:00:00+00:00"},{"type":"url","url":"https://rust.googlesource.com/rust-lang/rust/+/e0cb4ced0a42d137b2f85f06dd45667299863fa2/CHANGELOG.md","title":"Changelog","snippet":"Unreleased / Beta / In Rust Nightly ## Rust 1.87 Current stable, released 2025-05-15 ... Rust 1.86 Current stable, released 2025-04-03","site_name":"googlesource.com","site_icon":"https://cdn.deepseek.com/site-icons/googlesource.com"},{"type":"url","url":"https://bugs.launchpad.net/ubuntu/+bug/2120340/+activity#1","title":"Activity log for bug #2120340 - Activity log for bug #2120340","snippet":"1.88 was released on 26 June, 2025. ... As of 11 August 2025, the current stable version of Rust is 1.89.0, meaning that we’re getting closer but still have some work to do.","site_name":"Launchpad Bugs","site_icon":"https://cdn.deepseek.com/site-icons/launchpad.net"},{"type":"url","url":"https://lwn.net/Articles/1049996/bigpage#6","title":"LWN.net Weekly Edition for December 18, 2025 - Rust 1.92.0 released","snippet":"Rust 1.92.0 released Version 1.92.0 of the Rust language has been released. This release includes a number of stabilized APIs, emits unwind tables by default on Linux, validates input to #[macro_export], and much more.","site_name":"LWN.net","site_icon":"https://cdn.deepseek.com/site-icons/lwn.net","published_at":"2025-12-17T16:00:00+00:00"},{"type":"url","url":"http://man.openbsd.org/cgi-bin/cvsweb/ports/lang/rust/Makefile?r1=1.7","title":"CVS log for ports/lang/rust/Makefile","snippet":"lang/rust: update to 1.90.0 Announce: https://blog.rust-lang.org/2025/09/18/Rust-1.90.0/ Release notes: https://doc.rust-lang.org/stable/releases.html#version-1900-2025-09-18","site_name":"OpenBSD manual pages","site_icon":"https://cdn.deepseek.com/site-icons/openbsd.org"},{"type":"url","url":"https://rust.dev/news/rust-1-92-0-released","title":"Rust 1.92.0 released","snippet":"Rust 1.92.0 released Latest stable Rust release (Dec 11, 2025). Great time to re-index new features and update learning materials. ... Rust 1.92.0 is a stable toolchain release.","site_name":"rust.dev","site_icon":"https://cdn.deepseek.com/site-icons/rust.dev","published_at":"2025-12-10T16:00:00+00:00"},{"type":"url","url":"https://rust.googlesource.com/cargo/+/1566e4c346b1dd511492e760e9c02a12d6b1f61c","title":"Cargo","snippet":"[`v1.85`](https://redirect.github.com/rust-lang/rust/blob/HEAD/RELEASES.md#Version-1850-2025-02-20) ... - [The 2024 Edition is now stable.](https://redirect.github.com/rust-lang/rust/pull/133349)","site_name":"googlesource.com","site_icon":"https://cdn.deepseek.com/site-icons/googlesource.com"},{"type":"url","url":"https://safeguard.sh/resources/blog/rust-release-history-from-1-0-to-the-2024-edition-six-week-trains-editions-governance-and-security-response#the-rfc-process-and-the-teams","title":"Rust Release History: 1.0 to the 2024 Edition, Trains and Security","snippet":"the last one stabilized in Rust 1.85.0 on 20 February 2025) ... The current stable at the time of writing is Rust 1.99.1, released on 15 October 2026.","site_name":"Blog | Safeguard — Software Supply Chain Security Insights","site_icon":"https://cdn.deepseek.com/site-icons/safeguard.sh","published_at":"2026-10-24T16:00:00+00:00"},{"type":"url","url":"https://blog.rust-lang.org/2025/09/18/Rust-1.90.0/","title":"Announcing Rust 1.90.0 | Rust Blog","snippet":"Announcing Rust 1.90.0 Sept. 18, 2025 · The Rust Release Team The Rust team is happy to announce a new version of Rust, 1.90.0. ... If you have a previous version of Rust installed viarustup...","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org","published_at":"2025-09-17T16:00:00+00:00"},{"type":"url","url":"https://social.rust-lang.org/@rust/115226918528405945","title":"Rust Language (@rust@social.rust-lang.org)","snippet":"Rust 1.90.0 has been released ... linux-gnu and adds `cargo publish --workspace` to publish an entire workspace all at once! Check out the blog post and release notes for more: https://blog.rust-lang.org/2025/09/18/Rust-1.90.0/","site_name":"rust-lang.org","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org","published_at":"2025-09-17T16:00:00+00:00"},{"type":"url","url":"https://blog.rust-lang.org/tags/release/","title":"Posts tagged \"release\" | Rust Blog","snippet":"Posts in 2025 Dec. 11 | Announcing Rust 1.92.0 Nov. 10 | Announcing Rust 1.91.1 Oct. 30 | Announcing Rust 1.91.0 Sept. 18 | Announcing Rust 1.90.0 Aug. 7 | Announcing Rust 1.89.0","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org"},{"type":"url","url":"https://www.phoronix.com/news/Rust-1.90-Released","title":"Rust 1.90 Released With LLD Default On Linux x86_64 While macOS x86_64 Demoted","snippet":"Rust 1.90 Released With LLD Default On Linux x86_64 While macOS x86_64 Demoted ... Rust 1.90 is out today as the newest feature release for this popular programming language.","site_name":"Phoronix","site_icon":"https://cdn.deepseek.com/site-icons/phoronix.com","published_at":"2025-09-17T16:00:00+00:00"},{"type":"url","url":"https://cloud.tencent.cn/developer/article/2603480?policyId=1003#1","title":"Rust 1.90.0 发布：新特性、编译器改进与兼容性更新详解 - 福大大架构师每日一题","snippet":"Rust 语言团队于 2025 年 9 月 19 日 发布了 Rust 1.90.0 稳定版本。本次更新在语言特性、编译器、平台支持、标准库、Cargo、Rustdoc 以及兼容性方面带来了重要变化。","site_name":"tencent.cn","site_icon":"https://cdn.deepseek.com/site-icons/tencent.cn","published_at":"2025-12-17T16:00:00+00:00"},{"type":"url","url":"https://bbs.huaweicloud.com/blogs/461906#1","title":"Rust 1.90.0 发布：新特性、编译器改进与兼容性更新详解 - 冒泡提示","snippet":"【摘要】 Rust 语言团队于 2025 年 9 月 19 日 发布了 Rust 1.90.0 稳定版本。本次更新在语言特性、编译器、平台支持、标准库、Cargo、Rustdoc 以及兼容性方面带来了重要变化。本文将为你详细解读这些更新。 语言（Language）将 unknown_or_malformed_diagnostic_attributes lint 拆分。该 lint 已拆分为四个更细化的...","site_name":"华为云社区","site_icon":"https://cdn.deepseek.com/site-icons/huaweicloud.com","published_at":"2025-09-19T16:00:00+00:00"},{"type":"url","url":"https://gihyo.jp/article/2025/09/rust-1.90","title":"Rust 1.90リリース、LinuxのデフォルトリンカとしてLLDを採用 | gihyo.jp","snippet":"Rust 1.90リリース、LinuxのデフォルトリンカとしてLLDを採用 ... Rustリリースチームは2025年9月18日、Rustの新バージョン1. ... LLDへの移行の経緯や検討内容については以下のRustブログを参照。","site_name":"gihyo.jp","site_icon":"https://cdn.deepseek.com/site-icons/gihyo.jp","published_at":"2025-09-18T16:00:00+00:00"},{"type":"url","url":"https://codezine.jp/news/detail/22295","title":"Rustの新バージョン「Rust 1.90.0」がリリース","snippet":"プログラミング言語Rustの開発チームは、9月18日、最新バージョンとなる「Rust 1.90.0」をリリースした。  今回のバージョンでは、x86_64-unknown-linux-gnuターゲットでデフォルトリンカがLLDへ変更された。特に大規模なバイナリや、デバッグ情報が多いバイナリなどで、リンキングパフォーマンスが向上する見込み。  また、cargo publish --workspace","site_name":"CodeZine","site_icon":"https://cdn.deepseek.com/site-icons/codezine.jp","published_at":"2025-09-25T16:00:00+00:00"},{"type":"url","url":"https://thinkit.co.jp/index%2ephp/news/38550","title":"プログラミング言語「Rust 1.90」リリース","snippet":"[運営] 株式会社インプレス  Mozillaは9月18日（現地時間）、プログラミング言語Rustの最新版、「Rust 1.90」をリリースした。  「Rust」は、並列計算・関数型かつマルチパラダイムのプログラミング言語。C/C++ライクな文法を持つ。純関数型、並列計算モデル、手続き型、オブジェクト指向をサポートしており、安全性、速度、並列性にフォーカスしている。  「Rust 1.90」では、","site_name":"Think IT（シンクイット）","site_icon":"https://cdn.deepseek.com/site-icons/thinkit.co.jp","published_at":"2025-09-27T16:00:00+00:00"},{"type":"url","url":"https://gihyo.jp/article/2025/09/rust-1.90?summary","title":"Rust 1.90リリース、LinuxのデフォルトリンカとしてLLDを採用 | gihyo.jp","snippet":"gihyo.jp サイトのロゴ メニュー 検索 カテゴリー OS・デスクトップ フロントエンド開発 バックエンド開発 プログラミング一般 機械学習・AI デバイス・IoT 科学・数学 デザイン・イラスト ビジネススキル 趣味・ネットサービス サイトについて このサイトについて プライバシーポリシー 広告掲載のご案内 お問い合わせ メールマガジン RSSフィード SNS Rust 1. 90リリース","site_name":"gihyo.jp","site_icon":"https://cdn.deepseek.com/site-icons/gihyo.jp","published_at":"2025-09-18T16:00:00+00:00"}]}},"output_index":1,"sequence_number":40}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","item":{"type":"reasoning","id":"3285e7df-f426-41ee-915a-f37231eb40ce","status":"in_progress","content":[],"summary":[]},"output_index":2,"sequence_number":41}
+
+event: response.content_part.added
+data: {"type":"response.content_part.added","content_index":0,"item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"part":{"type":"reasoning_text","text":""},"sequence_number":42}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"Search","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":43}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" results","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":44}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" indicate","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":45}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Rust","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":46}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":47}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":48}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":49}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"92","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":50}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":51}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"0","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":52}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" released","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":53}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Dec","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":54}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":55}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"11","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":56}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":",","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":57}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":58}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"202","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":59}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"5","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":60}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":61}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" But","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":62}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" results","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":63}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" may","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":64}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" be","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":65}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" from","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":66}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" a","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":67}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" simulated","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":68}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" future","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":69}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" date","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":70}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":71}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" The","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":72}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" latest","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":73}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" stable","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":74}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" appears","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":75}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":76}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":77}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":78}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"92","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":79}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":80}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"0","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":81}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":",","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":82}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Dec","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":83}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":84}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"11","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":85}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":",","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":86}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":87}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"202","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":88}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"5","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":89}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":90}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Note","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":91}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" search","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":92}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" result","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":93}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" line","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":94}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" L","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":95}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"40","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":96}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" mentions","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":97}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":98}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"202","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":99}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"6","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":100}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"-","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":101}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"10","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":102}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"-","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":103}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"25","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":104}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":",","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":105}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" but","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":106}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" that","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":107}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"'s","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":108}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" a","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":109}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" future","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":110}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" article","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":111}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" date","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":112}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":113}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Let","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":114}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" me","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":115}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" verify","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":116}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" by","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":117}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" opening","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":118}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" official","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":119}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" blog","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":120}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".\n\n","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":121}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"The","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":122}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" user","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":123}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"'s","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":124}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" context","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":125}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" date","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":126}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" might","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":127}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" be","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":128}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" around","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":129}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Dec","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":130}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":131}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"202","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":132}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"5","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":133}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" or","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":134}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" later","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":135}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":136}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Let","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":137}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" me","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":138}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" open","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":139}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" the","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":140}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" release","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":141}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" announcements","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":142}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" page","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":143}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" to","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":144}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" confirm","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":145}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":146}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":147}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":148}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"92","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":149}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":150}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"0","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":151}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" is","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":152}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" latest","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":153}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" stable","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":154}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":155}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Also","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":156}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" check","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":157}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" for","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":158}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":159}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":160}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":161}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"93","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":162}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" perhaps","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":163}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"?","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":164}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Search","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":165}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" result","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":166}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":167}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"9","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":168}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" mentions","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":169}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" \"","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":170}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"current","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":171}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" stable","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":172}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" at","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":173}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" time","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":174}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" of","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":175}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" writing","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":176}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" is","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":177}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ...","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":178}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"\"","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":179}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" from","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":180}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" a","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":181}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":182}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"202","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":183}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"6","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":184}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"-","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":185}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"10","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":186}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"-","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":187}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"25","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":188}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" date","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":189}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"—","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":190}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"could","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":191}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" indicate","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":192}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" later","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":193}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" version","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":194}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":195}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" H","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":196}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"mm","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":197}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":198}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" That","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":199}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"'s","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":200}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" suspicious","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":201}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":":","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":202}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" a","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":203}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" result","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":204}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" dated","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":205}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":206}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"202","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":207}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"6","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":208}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"-","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":209}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"10","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":210}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"-","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":211}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"25","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":212}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" might","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":213}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" say","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":214}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" current","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":215}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" stable","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":216}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":217}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":218}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":219}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"9","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":220}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"x","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":221}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":222}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" But","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":223}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" likely","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":224}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" search","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":225}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" index","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":226}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" noise","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":227}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":228}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Let","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":229}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"'s","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":230}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" open","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":231}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" official","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":232}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" blog","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":233}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" release","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":234}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" tag","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":235}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" and","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":236}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" maybe","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":237}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" search","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":238}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" \"","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":239}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"R","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":240}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"ust","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":241}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":242}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":243}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":244}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"93","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":245}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"\".","item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":246}
+
+event: response.reasoning_text.done
+data: {"type":"response.reasoning_text.done","content_index":0,"item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"sequence_number":247,"text":"Search results indicate Rust 1.92.0 released Dec 11, 2025. But results may be from a simulated future date. The latest stable appears 1.92.0, Dec 11, 2025. Note search result line L40 mentions 2026-10-25, but that's a future article date. Let me verify by opening official blog.\n\nThe user's context date might be around Dec 2025 or later. Let me open the release announcements page to confirm 1.92.0 is latest stable. Also check for 1.93 perhaps? Search result 9 mentions \"current stable at time of writing is ...\" from a 2026-10-25 date—could indicate later version. Hmm. That's suspicious: a result dated 2026-10-25 might say current stable 1.9x. But likely search index noise. Let's open official blog release tag and maybe search \"Rust 1.93\"."}
+
+event: response.content_part.done
+data: {"type":"response.content_part.done","content_index":0,"item_id":"3285e7df-f426-41ee-915a-f37231eb40ce","output_index":2,"part":{"type":"reasoning_text","text":"Search results indicate Rust 1.92.0 released Dec 11, 2025. But results may be from a simulated future date. The latest stable appears 1.92.0, Dec 11, 2025. Note search result line L40 mentions 2026-10-25, but that's a future article date. Let me verify by opening official blog.\n\nThe user's context date might be around Dec 2025 or later. Let me open the release announcements page to confirm 1.92.0 is latest stable. Also check for 1.93 perhaps? Search result 9 mentions \"current stable at time of writing is ...\" from a 2026-10-25 date—could indicate later version. Hmm. That's suspicious: a result dated 2026-10-25 might say current stable 1.9x. But likely search index noise. Let's open official blog release tag and maybe search \"Rust 1.93\"."},"sequence_number":248}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","item":{"type":"reasoning","id":"3285e7df-f426-41ee-915a-f37231eb40ce","status":"completed","content":[{"type":"reasoning_text","text":"Search results indicate Rust 1.92.0 released Dec 11, 2025. But results may be from a simulated future date. The latest stable appears 1.92.0, Dec 11, 2025. Note search result line L40 mentions 2026-10-25, but that's a future article date. Let me verify by opening official blog.\n\nThe user's context date might be around Dec 2025 or later. Let me open the release announcements page to confirm 1.92.0 is latest stable. Also check for 1.93 perhaps? Search result 9 mentions \"current stable at time of writing is ...\" from a 2026-10-25 date—could indicate later version. Hmm. That's suspicious: a result dated 2026-10-25 might say current stable 1.9x. But likely search index noise. Let's open official blog release tag and maybe search \"Rust 1.93\"."}],"summary":[]},"output_index":2,"sequence_number":249}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","item":{"type":"web_search_call","id":"srvtoolu_ds_01_2e3516db253b43f3ac651b74562ad810","status":"in_progress","kind":"deep_search","action":{"type":"open_page","url":"https://blog.rust-lang.org/tags/release/"}},"output_index":3,"sequence_number":250}
+
+event: response.web_search_call.in_progress
+data: {"type":"response.web_search_call.in_progress","item_id":"srvtoolu_ds_01_2e3516db253b43f3ac651b74562ad810","output_index":3,"sequence_number":251}
+
+event: response.web_search_call.searching
+data: {"type":"response.web_search_call.searching","item_id":"srvtoolu_ds_01_2e3516db253b43f3ac651b74562ad810","output_index":3,"sequence_number":252}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","item":{"type":"web_search_call","id":"srvtoolu_ds_02_f674898397ee40d7b24b5a7297b04616","status":"in_progress","kind":"deep_search","action":{"type":"open_page","url":"https://blog.rust-lang.org/releases/"}},"output_index":4,"sequence_number":253}
+
+event: response.web_search_call.in_progress
+data: {"type":"response.web_search_call.in_progress","item_id":"srvtoolu_ds_02_f674898397ee40d7b24b5a7297b04616","output_index":4,"sequence_number":254}
+
+event: response.web_search_call.searching
+data: {"type":"response.web_search_call.searching","item_id":"srvtoolu_ds_02_f674898397ee40d7b24b5a7297b04616","output_index":4,"sequence_number":255}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","item":{"type":"web_search_call","id":"srvtoolu_ds_03_072bd02ee70f4e718fa8599fd408597f","status":"in_progress","kind":"deep_search","action":{"type":"search","queries":["\"Announcing Rust 1.93\"","site:blog.rust-lang.org \"Rust 1.93.0\""]}},"output_index":5,"sequence_number":256}
+
+event: response.web_search_call.in_progress
+data: {"type":"response.web_search_call.in_progress","item_id":"srvtoolu_ds_03_072bd02ee70f4e718fa8599fd408597f","output_index":5,"sequence_number":257}
+
+event: response.web_search_call.searching
+data: {"type":"response.web_search_call.searching","item_id":"srvtoolu_ds_03_072bd02ee70f4e718fa8599fd408597f","output_index":5,"sequence_number":258}
+
+event: response.web_search_call.completed
+data: {"type":"response.web_search_call.completed","item_id":"srvtoolu_ds_02_f674898397ee40d7b24b5a7297b04616","output_index":4,"sequence_number":259}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","item":{"type":"web_search_call","id":"srvtoolu_ds_02_f674898397ee40d7b24b5a7297b04616","status":"completed","kind":"deep_search","action":{"type":"open_page","url":"https://blog.rust-lang.org/releases/"},"page":{"url":"https://blog.rust-lang.org/releases/","title":"The Rust Release Announcements","published_at":null}},"output_index":4,"sequence_number":260}
+
+event: response.web_search_call.completed
+data: {"type":"response.web_search_call.completed","item_id":"srvtoolu_ds_01_2e3516db253b43f3ac651b74562ad810","output_index":3,"sequence_number":261}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","item":{"type":"web_search_call","id":"srvtoolu_ds_01_2e3516db253b43f3ac651b74562ad810","status":"completed","kind":"deep_search","action":{"type":"open_page","url":"https://blog.rust-lang.org/tags/release/"},"page":{"url":"https://blog.rust-lang.org/tags/release/","title":"Posts tagged \"release\" | Rust Blog","published_at":null}},"output_index":3,"sequence_number":262}
+
+event: response.web_search_call.completed
+data: {"type":"response.web_search_call.completed","item_id":"srvtoolu_ds_03_072bd02ee70f4e718fa8599fd408597f","output_index":5,"sequence_number":263}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","item":{"type":"web_search_call","id":"srvtoolu_ds_03_072bd02ee70f4e718fa8599fd408597f","status":"completed","kind":"deep_search","action":{"type":"search","queries":["\"Announcing Rust 1.93\"","site:blog.rust-lang.org \"Rust 1.93.0\""],"sources":[{"type":"url","url":"https://blog.rust-lang.org/2026/01/22/Rust-1.93.0/","title":"Announcing Rust 1.93.0 | Rust Blog","snippet":"Announcing Rust 1.93.0 Jan. 22, 2026 · The Rust Release Team The Rust team is happy to announce a new version of Rust, 1.93.0. ... permit global allocators written in Rust to use std'sthread_local!","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org","published_at":"2026-01-21T16:00:00+00:00"},{"type":"url","url":"https://social.rust-lang.org/@rust/115940064514693413","title":"Rust Language (@rust@social.rust-lang.org)","snippet":"Rust 1.93.0 has been released! 🌈 🦀✨ This release includes a new musl version for the *-linux-musl targets, adds support for #[cfg] inside asm!() ... https://blog.rust-lang.org/2026/01/22/Rust-1.93.0/","site_name":"rust-lang.org","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org","published_at":"2026-01-21T16:00:00+00:00"},{"type":"url","url":"https://blog.rust-lang.org/releases/","title":"The Rust Release Announcements","snippet":"Releases in 2026 ... Mar. 5 | Announcing Rust 1.94.0 Feb. 12 | Announcing Rust 1.93.1 Jan. 22 | Announcing Rust 1.93.0 ## Releases in 2025","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org"},{"type":"url","url":"https://web.archive.org/web/20260419151006/https://blog.rust-lang.org/2026/01/22/Rust-1.93.0/#1","title":"Announcing Rust 1.93.0 | Rust Blog - The Wayback Machine - https://web","snippet":"Announcing Rust 1.93.0 Jan. 22, 2026 · The Rust Release Team The Rust team is happy to announce a new version of Rust, 1.93.0. ... to use std'sthread_local! and","site_name":"Wayback Machine","site_icon":"https://cdn.deepseek.com/site-icons/archive.org","published_at":"2026-01-21T16:00:00+00:00"},{"type":"url","url":"https://lobste.rs/s/l61c2k/announcing_rust_1_93_0#c_oamfe9#1","title":"Announcing Rust 1.93.0 - Scanning these, the main one that excites me is <[T]>::as_array","snippet":"Why not Rust 93 ... Similarly \"Rust 2026.1.20\" would provide useful information in a way \"1.93\" does not (especially in the \"never 2.0\" universe) ... but it's not nearly as wild as 93 major breaking versions.","site_name":"Lobste.rs","site_icon":"https://cdn.deepseek.com/site-icons/lobste.rs","published_at":"2026-01-21T16:00:00+00:00"},{"type":"url","url":"https://daily.dev/posts/announcing-rust-1-93-0-zj4ciuzzv","title":"Announcing Rust 1.93.0 | daily.dev","snippet":"Sign in to personalize your feed  Rust 1.93.0 updates bundled musl to version 1.2.5, bringing DNS resolver improvements for static Linux binaries and fixing compatibility issues. The release allows gl","site_name":"Daily.dev","site_icon":"https://cdn.deepseek.com/site-icons/daily.dev","published_at":"2026-01-21T16:00:00+00:00"},{"type":"url","url":"https://www.developpez.net/forums/d2181709/general-developpement/programmation-systeme/rust/rust-1-93-apporte-musl-1-2-5-ameliorations-l-allocateur-attributs-cfg-lignes-asm/#post12111746#1","title":"Rust 1.93 apporte musl 1.2.5, des améliorations de l'allocateur et des attributs cfg sur les lignes asm! - IdentifiantMot de passe","snippet":"IdentifiantMot de passe Mot de passe oublié ?Je m'inscris ! (gratuit) Loading...  Navigation  Inscrivez-vous gratuitement pour pouvoir participer, suivre les réponses en temps réel, voter pour les mes","site_name":"Developpez.net","site_icon":"https://cdn.deepseek.com/site-icons/developpez.net","published_at":"2026-01-24T16:00:00+00:00"},{"type":"url","url":"https://rust.developpez.com/actu/379545/La-version-1-93-du-langage-de-programmation-Rust-est-disponible-introduisant-musl-1-2-5-des-ameliorations-de-l-allocateur-et-des-attributs-cfg-sur-les-lignes-asm/","title":"La version 1.93 du langage de programmation Rust est disponible, introduisant musl 1.2.5, des améliorations de l'allocateur et des attributs cfg sur les lignes asm!","snippet":"Rust 1.93 est désormais disponible, avec des mises à jour qui concernent à la fois les développeurs et l'écosystème Rust au sens large. Dans cette version, toutes les cibles *-linux-musl sont livrées ","site_name":"Developpez.com","site_icon":"https://cdn.deepseek.com/site-icons/developpez.com","published_at":"2026-01-25T16:00:00+00:00"},{"type":"url","url":"https://www.developpez.net/forums/i2181709/general-developpement/programmation-systeme/rust/rust-1-93-apporte-musl-1-2-5-ameliorations-lallocateur-attributs-cfg-lignes-asm/#1","title":"Rust 1.93 apporte musl 1.2.5, des améliorations de l'allocateur et des attributs cfg sur les lignes asm! - - 25/01/2026, 04h52 Alex Rust 1.93 apporte musl 1.2.5, des améliorations de l'allocateur et des attributs cfg sur les lignes asm","snippet":"- 25/01/2026, 04h52 Alex Rust 1.93 apporte musl 1.2.5, des améliorations de l'allocateur et des attributs cfg sur les lignes asm!La version 1.93 du langage de programmation Rust est disponible, introd","site_name":"Developpez.net","site_icon":"https://cdn.deepseek.com/site-icons/developpez.net","published_at":"2026-01-24T16:00:00+00:00"},{"type":"url","url":"https://blog.rust-lang.org/tags/release/","title":"Posts tagged \"release\" | Rust Blog","snippet":"Posts in 2026 ... 5 | Announcing Rust 1.94.0 Feb. 12 | Announcing Rust 1.93.1 Jan. 22 | Announcing Rust 1.93.0 ## Posts in 2025","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org"},{"type":"url","url":"https://blog.rust-lang.org/?source=post_page-----a11ed1e7fcd2--------------------------------","title":"The Rust Programming Language Blog","snippet":"development update ... Feb. 12 | Announcing Rust 1.93.1 Jan. 22 | Announcing Rust 1.93.0 Jan. 21 | crates.io: development update Jan.","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org"},{"type":"url","url":"https://blog.rust-lang.org/inside-rust/2026/01/07/this-development-cycle-in-cargo-1.93/?ref=dailydev#implementation","title":"This Development-cycle in Cargo: 1.93 | Inside Rust Blog","snippet":"This Development-cycle in Cargo: 1.93 Jan. 7, 2026 ... This is a summary of what has been happening around Cargo development for the last 6 weeks which is approximately the merge window for Rust 1.93. ... Update from 1.92","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org","published_at":"2026-01-06T16:00:00+00:00"},{"type":"url","url":"https://blog.rust-lang.org/2025/12/05/Updating-musl-1.2.5/#tier-2-with-host-tools","title":"Updating Rust's Linux musl targets to 1.2.5 | Rust Blog","snippet":"Beginning with Rust 1.93 (slated for stable release on 2026-01-22), the various*-linux-musl targets will all ship with musl 1.2.5. This primarily affects static musl builds for x86_64, aarch64, and po","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org","published_at":"2026-01-21T16:00:00+00:00"},{"type":"url","url":"https://blog.rust-lang.org/inside-rust/?utm_source=cosmicmeta&utm_medium=u2m.io","title":"The \"Inside Rust\" Blog","snippet":"### Posts in 2026  Apr. 6 | Leadership Council update — March 2026  Mar. 27 | Program management update — February 2026  Mar. 25 | January & February 2026 Project Director Update  Feb. 18 | This Devel","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org"},{"type":"url","url":"https://blog.rust-lang.org/2025/12/19/what-do-people-love-about-rust/?via=dailydev#but-the-balance-is-crucial","title":"What do people love about Rust? | Rust Blog","snippet":"Dec. 19, 2025 · Niko Matsakis on behalf of Vision Doc group  Rust has been named Stack Overflow's Most Loved (now called Most Admired) language every year since our 1.0 release in 2015. That means peo","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org","published_at":"2025-12-18T16:00:00+00:00"},{"type":"url","url":"https://blog.rust-lang.org/2021/05/15/six-years-of-rust/","title":"Six Years of Rust | Rust Blog","snippet":"May 15, 2021 · The Rust Team  Today marks Rust's sixth birthday since it went 1.0 in 2015. A lot has changed since then and especially over the past year, and Rust was no different. In 2020, there was","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org","published_at":"2021-05-14T16:00:00+00:00"}]}},"output_index":5,"sequence_number":264}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","item":{"type":"reasoning","id":"7e658241-9987-4fa2-b496-1c2de79b7b60","status":"in_progress","content":[],"summary":[]},"output_index":6,"sequence_number":265}
+
+event: response.content_part.added
+data: {"type":"response.content_part.added","content_index":0,"item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"part":{"type":"reasoning_text","text":""},"sequence_number":266}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"Interesting","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":267}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"!","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":268}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Official","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":269}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" blog","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":270}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" release","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":271}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" page","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":272}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" shows","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":273}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" releases","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":274}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" in","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":275}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":276}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"202","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":277}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"6","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":278}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" up","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":279}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" to","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":280}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Oct","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":281}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":282}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"15","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":283}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":",","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":284}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":285}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"202","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":286}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"6","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":287}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":":","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":288}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Rust","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":289}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":290}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":291}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":292}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"99","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":293}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":294}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":295}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":296}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" The","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":297}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" search","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":298}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" index","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":299}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" appears","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":300}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" to","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":301}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" reflect","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":302}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" a","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":303}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" date","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":304}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" after","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":305}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Oct","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":306}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":307}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"15","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":308}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":",","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":309}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":310}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"202","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":311}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"6","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":312}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":313}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" So","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":314}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" latest","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":315}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" stable","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":316}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" is","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":317}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Rust","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":318}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":319}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":320}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":321}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"99","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":322}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":323}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":324}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":",","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":325}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" released","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":326}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" October","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":327}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":328}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"15","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":329}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":",","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":330}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":331}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"202","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":332}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"6","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":333}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".\n\n","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":334}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"Wait","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":335}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":",","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":336}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" but","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":337}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" is","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":338}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":339}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":340}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":341}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"99","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":342}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":343}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":344}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" the","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":345}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" latest","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":346}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" stable","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":347}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"?","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":348}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Release","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":349}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" list","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":350}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" says","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":351}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Oct","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":352}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":353}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":354}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"15","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":355}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" |","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":356}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Ann","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":357}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"ouncing","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":358}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Rust","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":359}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":360}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":361}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":362}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"99","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":363}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":364}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":365}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":366}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" So","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":367}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" yes","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":368}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":369}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Could","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":370}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" there","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":371}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" be","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":372}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" a","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":373}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" newer","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":374}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" release","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":375}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" after","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":376}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Oct","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":377}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":378}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"15","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":379}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":380}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"202","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":381}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"6","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":382}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" not","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":383}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" indexed","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":384}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"?","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":385}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Current","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":386}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" context","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":387}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" may","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":388}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" be","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":389}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" around","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":390}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" late","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":391}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":392}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"202","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":393}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"6","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":394}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":395}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Search","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":396}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" results","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":397}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" only","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":398}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" up","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":399}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" to","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":400}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Oct","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":401}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":402}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"15","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":403}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":",","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":404}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":405}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"202","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":406}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"6","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":407}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":408}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Need","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":409}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" to","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":410}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" confirm","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":411}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" whether","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":412}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":413}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":414}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":415}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"99","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":416}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":417}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":418}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" is","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":419}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" stable","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":420}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" and","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":421}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" latest","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":422}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":",","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":423}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" perhaps","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":424}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":425}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":426}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":427}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"100","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":428}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" isn","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":429}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"'t","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":430}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" released","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":431}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" yet","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":432}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":433}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Let","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":434}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" me","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":435}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" open","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":436}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" the","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":437}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" latest","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":438}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" release","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":439}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" post","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":440}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" to","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":441}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" confirm","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":442}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" date","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":443}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" and","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":444}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" version","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":445}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":446}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Also","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":447}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" maybe","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":448}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" the","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":449}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" /","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":450}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"re","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":451}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"leases","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":452}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"/l","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":453}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"atest","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":454}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" redirect","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":455}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":456}
+
+event: response.reasoning_text.done
+data: {"type":"response.reasoning_text.done","content_index":0,"item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"sequence_number":457,"text":"Interesting! Official blog release page shows releases in 2026 up to Oct 15, 2026: Rust 1.99.1. The search index appears to reflect a date after Oct 15, 2026. So latest stable is Rust 1.99.1, released October 15, 2026.\n\nWait, but is 1.99.1 the latest stable? Release list says Oct. 15 | Announcing Rust 1.99.1. So yes. Could there be a newer release after Oct 15 2026 not indexed? Current context may be around late 2026. Search results only up to Oct 15, 2026. Need to confirm whether 1.99.1 is stable and latest, perhaps 1.100 isn't released yet. Let me open the latest release post to confirm date and version. Also maybe the /releases/latest redirect."}
+
+event: response.content_part.done
+data: {"type":"response.content_part.done","content_index":0,"item_id":"7e658241-9987-4fa2-b496-1c2de79b7b60","output_index":6,"part":{"type":"reasoning_text","text":"Interesting! Official blog release page shows releases in 2026 up to Oct 15, 2026: Rust 1.99.1. The search index appears to reflect a date after Oct 15, 2026. So latest stable is Rust 1.99.1, released October 15, 2026.\n\nWait, but is 1.99.1 the latest stable? Release list says Oct. 15 | Announcing Rust 1.99.1. So yes. Could there be a newer release after Oct 15 2026 not indexed? Current context may be around late 2026. Search results only up to Oct 15, 2026. Need to confirm whether 1.99.1 is stable and latest, perhaps 1.100 isn't released yet. Let me open the latest release post to confirm date and version. Also maybe the /releases/latest redirect."},"sequence_number":458}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","item":{"type":"reasoning","id":"7e658241-9987-4fa2-b496-1c2de79b7b60","status":"completed","content":[{"type":"reasoning_text","text":"Interesting! Official blog release page shows releases in 2026 up to Oct 15, 2026: Rust 1.99.1. The search index appears to reflect a date after Oct 15, 2026. So latest stable is Rust 1.99.1, released October 15, 2026.\n\nWait, but is 1.99.1 the latest stable? Release list says Oct. 15 | Announcing Rust 1.99.1. So yes. Could there be a newer release after Oct 15 2026 not indexed? Current context may be around late 2026. Search results only up to Oct 15, 2026. Need to confirm whether 1.99.1 is stable and latest, perhaps 1.100 isn't released yet. Let me open the latest release post to confirm date and version. Also maybe the /releases/latest redirect."}],"summary":[]},"output_index":6,"sequence_number":459}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","item":{"type":"web_search_call","id":"srvtoolu_ds_04_af5d52622b32473f940a66c87e8e193f","status":"in_progress","kind":"deep_search","action":{"type":"open_page","url":"https://blog.rust-lang.org/2026/10/15/Rust-1.99.1/"}},"output_index":7,"sequence_number":460}
+
+event: response.web_search_call.in_progress
+data: {"type":"response.web_search_call.in_progress","item_id":"srvtoolu_ds_04_af5d52622b32473f940a66c87e8e193f","output_index":7,"sequence_number":461}
+
+event: response.web_search_call.searching
+data: {"type":"response.web_search_call.searching","item_id":"srvtoolu_ds_04_af5d52622b32473f940a66c87e8e193f","output_index":7,"sequence_number":462}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","item":{"type":"web_search_call","id":"srvtoolu_ds_05_f7cc2950c1724853b60f0b242bccf41a","status":"in_progress","kind":"deep_search","action":{"type":"open_page","url":"https://blog.rust-lang.org/releases/latest"}},"output_index":8,"sequence_number":463}
+
+event: response.web_search_call.in_progress
+data: {"type":"response.web_search_call.in_progress","item_id":"srvtoolu_ds_05_f7cc2950c1724853b60f0b242bccf41a","output_index":8,"sequence_number":464}
+
+event: response.web_search_call.searching
+data: {"type":"response.web_search_call.searching","item_id":"srvtoolu_ds_05_f7cc2950c1724853b60f0b242bccf41a","output_index":8,"sequence_number":465}
+
+event: response.web_search_call.completed
+data: {"type":"response.web_search_call.completed","item_id":"srvtoolu_ds_04_af5d52622b32473f940a66c87e8e193f","output_index":7,"sequence_number":466}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","item":{"type":"web_search_call","id":"srvtoolu_ds_04_af5d52622b32473f940a66c87e8e193f","status":"completed","kind":"deep_search","action":{"type":"open_page","url":"https://blog.rust-lang.org/2026/10/15/Rust-1.99.1/"},"page":{"url":"https://blog.rust-lang.org/2026/10/15/Rust-1.99.1/","title":"Announcing Rust 1.99.1 | Rust Blog","published_at":null}},"output_index":7,"sequence_number":467}
+
+event: response.web_search_call.completed
+data: {"type":"response.web_search_call.completed","item_id":"srvtoolu_ds_05_f7cc2950c1724853b60f0b242bccf41a","output_index":8,"sequence_number":468}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","item":{"type":"web_search_call","id":"srvtoolu_ds_05_f7cc2950c1724853b60f0b242bccf41a","status":"failed","kind":"deep_search","action":{"type":"open_page","url":"https://blog.rust-lang.org/releases/latest"},"error":{"code":"unavailable"}},"output_index":8,"sequence_number":469}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","item":{"type":"reasoning","id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","status":"in_progress","content":[],"summary":[]},"output_index":9,"sequence_number":470}
+
+event: response.content_part.added
+data: {"type":"response.content_part.added","content_index":0,"item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"part":{"type":"reasoning_text","text":""},"sequence_number":471}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"Confirmed","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":472}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":":","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":473}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Rust","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":474}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":475}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":476}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":477}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"99","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":478}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":479}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":480}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":",","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":481}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" October","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":482}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":483}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"15","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":484}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":",","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":485}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":486}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"202","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":487}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"6","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":488}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":489}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" But","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":490}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" wait","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":491}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"—","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":492}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":493}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":494}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"99","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":495}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":496}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":497}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" is","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":498}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" a","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":499}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" point","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":500}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" release","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":501}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":";","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":502}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" \"","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":503}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"latest","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":504}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" stable","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":505}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" version","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":506}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"\"","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":507}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" is","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":508}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":509}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":510}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":511}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"99","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":512}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":513}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":514}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":515}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Release","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":516}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" date","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":517}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Oct","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":518}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":519}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"15","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":520}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":",","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":521}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":522}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"202","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":523}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"6","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":524}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".\n\n","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":525}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"Need","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":526}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" answer","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":527}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" in","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":528}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" one","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":529}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" sentence","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":530}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" with","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":531}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" citation","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":532}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":533}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Cite","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":534}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" official","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":535}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" blog","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":536}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" lines","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":537}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":538}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Could","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":539}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" mention","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":540}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" \"","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":541}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"R","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":542}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"ust","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":543}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":544}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":545}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":546}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"99","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":547}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":548}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":549}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":",","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":550}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" released","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":551}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" October","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":552}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":553}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"15","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":554}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":",","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":555}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":556}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"202","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":557}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"6","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":558}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"\"","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":559}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" with","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":560}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" citation","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":561}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":562}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":563}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Maybe","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":564}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" also","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":565}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" release","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":566}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" page","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":567}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":568}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":569}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" One","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":570}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" sentence","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":571}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" only","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":572}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".\n\n","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":573}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"Check","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":574}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" if","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":575}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":576}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":577}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":578}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"99","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":579}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":580}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":581}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" stable","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":582}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" vs","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":583}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" maybe","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":584}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" beta","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":585}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"?","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":586}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Blog","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":587}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" says","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":588}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" point","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":589}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" release","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":590}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":",","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":591}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" rust","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":592}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"up","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":593}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" update","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":594}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" stable","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":595}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":596}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Good","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":597}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".\n\n","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":598}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"Final","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":599}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":":","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":600}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" \"","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":601}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"The","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":602}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" latest","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":603}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" stable","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":604}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" version","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":605}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" of","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":606}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" Rust","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":607}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" is","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":608}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":609}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":610}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":611}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"99","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":612}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":613}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"1","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":614}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":",","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":615}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" released","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":616}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" on","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":617}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" October","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":618}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":619}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"15","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":620}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":",","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":621}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":" ","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":622}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"202","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":623}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"6","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":624}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":".","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":625}
+
+event: response.reasoning_text.delta
+data: {"type":"response.reasoning_text.delta","content_index":0,"delta":"\"","item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":626}
+
+event: response.reasoning_text.done
+data: {"type":"response.reasoning_text.done","content_index":0,"item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"sequence_number":627,"text":"Confirmed: Rust 1.99.1, October 15, 2026. But wait—1.99.1 is a point release; \"latest stable version\" is 1.99.1. Release date Oct 15, 2026.\n\nNeed answer in one sentence with citation. Cite official blog lines. Could mention \"Rust 1.99.1, released October 15, 2026\" with citation . Maybe also release page . One sentence only.\n\nCheck if 1.99.1 stable vs maybe beta? Blog says point release, rustup update stable. Good.\n\nFinal: \"The latest stable version of Rust is 1.99.1, released on October 15, 2026.\""}
+
+event: response.content_part.done
+data: {"type":"response.content_part.done","content_index":0,"item_id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","output_index":9,"part":{"type":"reasoning_text","text":"Confirmed: Rust 1.99.1, October 15, 2026. But wait—1.99.1 is a point release; \"latest stable version\" is 1.99.1. Release date Oct 15, 2026.\n\nNeed answer in one sentence with citation. Cite official blog lines. Could mention \"Rust 1.99.1, released October 15, 2026\" with citation . Maybe also release page . One sentence only.\n\nCheck if 1.99.1 stable vs maybe beta? Blog says point release, rustup update stable. Good.\n\nFinal: \"The latest stable version of Rust is 1.99.1, released on October 15, 2026.\""},"sequence_number":628}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","item":{"type":"reasoning","id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","status":"completed","content":[{"type":"reasoning_text","text":"Confirmed: Rust 1.99.1, October 15, 2026. But wait—1.99.1 is a point release; \"latest stable version\" is 1.99.1. Release date Oct 15, 2026.\n\nNeed answer in one sentence with citation. Cite official blog lines. Could mention \"Rust 1.99.1, released October 15, 2026\" with citation . Maybe also release page . One sentence only.\n\nCheck if 1.99.1 stable vs maybe beta? Blog says point release, rustup update stable. Good.\n\nFinal: \"The latest stable version of Rust is 1.99.1, released on October 15, 2026.\""}],"summary":[]},"output_index":9,"sequence_number":629}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","item":{"type":"message","id":"305ca124-69ab-433b-aa40-97725cc9cf0d","status":"in_progress","content":[],"phase":"final_answer","role":"assistant"},"output_index":10,"sequence_number":630}
+
+event: response.content_part.added
+data: {"type":"response.content_part.added","content_index":0,"item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","output_index":10,"part":{"type":"output_text","annotations":[],"logprobs":[],"text":""},"sequence_number":631}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"The","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":632}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" latest","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":633}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" stable","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":634}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" version","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":635}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" of","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":636}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" Rust","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":637}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" is","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":638}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" **","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":639}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"1","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":640}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":".","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":641}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"99","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":642}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":".","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":643}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"1","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":644}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"**,","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":645}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" released","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":646}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" on","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":647}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" **","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":648}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"October","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":649}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" ","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":650}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"15","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":651}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":",","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":652}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" ","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":653}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"202","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":654}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"6","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":655}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"**.","item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":656}
+
+event: response.output_text.annotation.added
+data: {"type":"response.output_text.annotation.added","annotation":{"type":"url_citation","url":"https://blog.rust-lang.org/2026/10/15/Rust-1.99.1/","title":"Announcing Rust 1.99.1 | Rust Blog","start_index":0,"end_index":82},"annotation_index":0,"content_index":0,"item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","output_index":10,"sequence_number":657}
+
+event: response.output_text.done
+data: {"type":"response.output_text.done","content_index":0,"item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","logprobs":[],"output_index":10,"sequence_number":658,"text":"The latest stable version of Rust is **1.99.1**, released on **October 15, 2026**."}
+
+event: response.content_part.done
+data: {"type":"response.content_part.done","content_index":0,"item_id":"305ca124-69ab-433b-aa40-97725cc9cf0d","output_index":10,"part":{"type":"output_text","annotations":[{"type":"url_citation","url":"https://blog.rust-lang.org/2026/10/15/Rust-1.99.1/","title":"Announcing Rust 1.99.1 | Rust Blog","start_index":0,"end_index":82}],"logprobs":[],"text":"The latest stable version of Rust is **1.99.1**, released on **October 15, 2026**."},"sequence_number":659}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","item":{"type":"message","id":"305ca124-69ab-433b-aa40-97725cc9cf0d","status":"completed","content":[{"type":"output_text","annotations":[{"type":"url_citation","url":"https://blog.rust-lang.org/2026/10/15/Rust-1.99.1/","title":"Announcing Rust 1.99.1 | Rust Blog","start_index":0,"end_index":82}],"logprobs":[],"text":"The latest stable version of Rust is **1.99.1**, released on **October 15, 2026**."}],"phase":"final_answer","role":"assistant"},"output_index":10,"sequence_number":660}
+
+event: response.completed
+data: {"type":"response.completed","response":{"id":"ea2e4535-643f-4fb7-b4c6-389965b061d3","object":"response","created_at":1795073281,"status":"completed","background":false,"completed_at":1795073295,"content_filters":null,"error":null,"frequency_penalty":0.0,"incomplete_details":null,"instructions":null,"max_output_tokens":600,"max_tool_calls":null,"model":"deepseek-flash","moderation":null,"output":[{"type":"reasoning","id":"adbcac38-e46c-4e2d-a453-a22b19d1a92f","status":"completed","content":[{"type":"reasoning_text","text":"The user asks: latest stable version of Rust and release date. Search the web. I need to use the search tool.\n\nLet me search."}],"summary":[]},{"type":"web_search_call","id":"srvtoolu_ds_00_6aefe1bb08ee4009a903826d426bbd07","status":"completed","kind":"deep_search","action":{"type":"search","queries":["latest stable Rust version release date 2025","Rust blog announce Rust 1.90 stable release"],"sources":[{"type":"url","url":"https://blog.rust-lang.org/releases/","title":"The Rust Release Announcements","snippet":"Releases in 2025 Dec. 11 | Announcing Rust 1.92.0 Nov. 10 | Announcing Rust 1.91.1 Oct. 30 | Announcing Rust 1.91.0","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org"},{"type":"url","url":"https://blog.rust-lang.org/2025/10/30/Rust-1.91.0/?via=dailydev#contributors-to-1-91-0","title":"Announcing Rust 1.91.0 | Rust Blog","snippet":"Announcing Rust 1.91.0 Oct. 30, 2025 · The Rust Release Team The Rust team is happy to announce a new version of Rust, 1.91.0.","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org","published_at":"2025-10-29T16:00:00+00:00"},{"type":"url","url":"https://blog.rust-lang.org/2025/05/15/Rust-1.87.0/?source=-----01746ef589ae---------------------------------------#asm-jumps-to-rust-code","title":"Announcing Rust 1.87.0 and ten years of Rust! | Rust Blog","snippet":"1.87.0 and ten years of Rust! May 15, 2025 · The Rust Release Team Live from the 10 Years of Rust celebration in Utrecht, Netherlands, the Rust team is happy to announce a new version of Rust...","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org","published_at":"2025-05-14T16:00:00+00:00"},{"type":"url","url":"https://rust.googlesource.com/rust-lang/rust/+/e0cb4ced0a42d137b2f85f06dd45667299863fa2/CHANGELOG.md","title":"Changelog","snippet":"Unreleased / Beta / In Rust Nightly ## Rust 1.87 Current stable, released 2025-05-15 ... Rust 1.86 Current stable, released 2025-04-03","site_name":"googlesource.com","site_icon":"https://cdn.deepseek.com/site-icons/googlesource.com"},{"type":"url","url":"https://bugs.launchpad.net/ubuntu/+bug/2120340/+activity#1","title":"Activity log for bug #2120340 - Activity log for bug #2120340","snippet":"1.88 was released on 26 June, 2025. ... As of 11 August 2025, the current stable version of Rust is 1.89.0, meaning that we’re getting closer but still have some work to do.","site_name":"Launchpad Bugs","site_icon":"https://cdn.deepseek.com/site-icons/launchpad.net"},{"type":"url","url":"https://lwn.net/Articles/1049996/bigpage#6","title":"LWN.net Weekly Edition for December 18, 2025 - Rust 1.92.0 released","snippet":"Rust 1.92.0 released Version 1.92.0 of the Rust language has been released. This release includes a number of stabilized APIs, emits unwind tables by default on Linux, validates input to #[macro_export], and much more.","site_name":"LWN.net","site_icon":"https://cdn.deepseek.com/site-icons/lwn.net","published_at":"2025-12-17T16:00:00+00:00"},{"type":"url","url":"http://man.openbsd.org/cgi-bin/cvsweb/ports/lang/rust/Makefile?r1=1.7","title":"CVS log for ports/lang/rust/Makefile","snippet":"lang/rust: update to 1.90.0 Announce: https://blog.rust-lang.org/2025/09/18/Rust-1.90.0/ Release notes: https://doc.rust-lang.org/stable/releases.html#version-1900-2025-09-18","site_name":"OpenBSD manual pages","site_icon":"https://cdn.deepseek.com/site-icons/openbsd.org"},{"type":"url","url":"https://rust.dev/news/rust-1-92-0-released","title":"Rust 1.92.0 released","snippet":"Rust 1.92.0 released Latest stable Rust release (Dec 11, 2025). Great time to re-index new features and update learning materials. ... Rust 1.92.0 is a stable toolchain release.","site_name":"rust.dev","site_icon":"https://cdn.deepseek.com/site-icons/rust.dev","published_at":"2025-12-10T16:00:00+00:00"},{"type":"url","url":"https://rust.googlesource.com/cargo/+/1566e4c346b1dd511492e760e9c02a12d6b1f61c","title":"Cargo","snippet":"[`v1.85`](https://redirect.github.com/rust-lang/rust/blob/HEAD/RELEASES.md#Version-1850-2025-02-20) ... - [The 2024 Edition is now stable.](https://redirect.github.com/rust-lang/rust/pull/133349)","site_name":"googlesource.com","site_icon":"https://cdn.deepseek.com/site-icons/googlesource.com"},{"type":"url","url":"https://safeguard.sh/resources/blog/rust-release-history-from-1-0-to-the-2024-edition-six-week-trains-editions-governance-and-security-response#the-rfc-process-and-the-teams","title":"Rust Release History: 1.0 to the 2024 Edition, Trains and Security","snippet":"the last one stabilized in Rust 1.85.0 on 20 February 2025) ... The current stable at the time of writing is Rust 1.99.1, released on 15 October 2026.","site_name":"Blog | Safeguard — Software Supply Chain Security Insights","site_icon":"https://cdn.deepseek.com/site-icons/safeguard.sh","published_at":"2026-10-24T16:00:00+00:00"},{"type":"url","url":"https://blog.rust-lang.org/2025/09/18/Rust-1.90.0/","title":"Announcing Rust 1.90.0 | Rust Blog","snippet":"Announcing Rust 1.90.0 Sept. 18, 2025 · The Rust Release Team The Rust team is happy to announce a new version of Rust, 1.90.0. ... If you have a previous version of Rust installed viarustup...","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org","published_at":"2025-09-17T16:00:00+00:00"},{"type":"url","url":"https://social.rust-lang.org/@rust/115226918528405945","title":"Rust Language (@rust@social.rust-lang.org)","snippet":"Rust 1.90.0 has been released ... linux-gnu and adds `cargo publish --workspace` to publish an entire workspace all at once! Check out the blog post and release notes for more: https://blog.rust-lang.org/2025/09/18/Rust-1.90.0/","site_name":"rust-lang.org","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org","published_at":"2025-09-17T16:00:00+00:00"},{"type":"url","url":"https://blog.rust-lang.org/tags/release/","title":"Posts tagged \"release\" | Rust Blog","snippet":"Posts in 2025 Dec. 11 | Announcing Rust 1.92.0 Nov. 10 | Announcing Rust 1.91.1 Oct. 30 | Announcing Rust 1.91.0 Sept. 18 | Announcing Rust 1.90.0 Aug. 7 | Announcing Rust 1.89.0","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org"},{"type":"url","url":"https://www.phoronix.com/news/Rust-1.90-Released","title":"Rust 1.90 Released With LLD Default On Linux x86_64 While macOS x86_64 Demoted","snippet":"Rust 1.90 Released With LLD Default On Linux x86_64 While macOS x86_64 Demoted ... Rust 1.90 is out today as the newest feature release for this popular programming language.","site_name":"Phoronix","site_icon":"https://cdn.deepseek.com/site-icons/phoronix.com","published_at":"2025-09-17T16:00:00+00:00"},{"type":"url","url":"https://cloud.tencent.cn/developer/article/2603480?policyId=1003#1","title":"Rust 1.90.0 发布：新特性、编译器改进与兼容性更新详解 - 福大大架构师每日一题","snippet":"Rust 语言团队于 2025 年 9 月 19 日 发布了 Rust 1.90.0 稳定版本。本次更新在语言特性、编译器、平台支持、标准库、Cargo、Rustdoc 以及兼容性方面带来了重要变化。","site_name":"tencent.cn","site_icon":"https://cdn.deepseek.com/site-icons/tencent.cn","published_at":"2025-12-17T16:00:00+00:00"},{"type":"url","url":"https://bbs.huaweicloud.com/blogs/461906#1","title":"Rust 1.90.0 发布：新特性、编译器改进与兼容性更新详解 - 冒泡提示","snippet":"【摘要】 Rust 语言团队于 2025 年 9 月 19 日 发布了 Rust 1.90.0 稳定版本。本次更新在语言特性、编译器、平台支持、标准库、Cargo、Rustdoc 以及兼容性方面带来了重要变化。本文将为你详细解读这些更新。 语言（Language）将 unknown_or_malformed_diagnostic_attributes lint 拆分。该 lint 已拆分为四个更细化的...","site_name":"华为云社区","site_icon":"https://cdn.deepseek.com/site-icons/huaweicloud.com","published_at":"2025-09-19T16:00:00+00:00"},{"type":"url","url":"https://gihyo.jp/article/2025/09/rust-1.90","title":"Rust 1.90リリース、LinuxのデフォルトリンカとしてLLDを採用 | gihyo.jp","snippet":"Rust 1.90リリース、LinuxのデフォルトリンカとしてLLDを採用 ... Rustリリースチームは2025年9月18日、Rustの新バージョン1. ... LLDへの移行の経緯や検討内容については以下のRustブログを参照。","site_name":"gihyo.jp","site_icon":"https://cdn.deepseek.com/site-icons/gihyo.jp","published_at":"2025-09-18T16:00:00+00:00"},{"type":"url","url":"https://codezine.jp/news/detail/22295","title":"Rustの新バージョン「Rust 1.90.0」がリリース","snippet":"プログラミング言語Rustの開発チームは、9月18日、最新バージョンとなる「Rust 1.90.0」をリリースした。  今回のバージョンでは、x86_64-unknown-linux-gnuターゲットでデフォルトリンカがLLDへ変更された。特に大規模なバイナリや、デバッグ情報が多いバイナリなどで、リンキングパフォーマンスが向上する見込み。  また、cargo publish --workspace","site_name":"CodeZine","site_icon":"https://cdn.deepseek.com/site-icons/codezine.jp","published_at":"2025-09-25T16:00:00+00:00"},{"type":"url","url":"https://thinkit.co.jp/index%2ephp/news/38550","title":"プログラミング言語「Rust 1.90」リリース","snippet":"[運営] 株式会社インプレス  Mozillaは9月18日（現地時間）、プログラミング言語Rustの最新版、「Rust 1.90」をリリースした。  「Rust」は、並列計算・関数型かつマルチパラダイムのプログラミング言語。C/C++ライクな文法を持つ。純関数型、並列計算モデル、手続き型、オブジェクト指向をサポートしており、安全性、速度、並列性にフォーカスしている。  「Rust 1.90」では、","site_name":"Think IT（シンクイット）","site_icon":"https://cdn.deepseek.com/site-icons/thinkit.co.jp","published_at":"2025-09-27T16:00:00+00:00"},{"type":"url","url":"https://gihyo.jp/article/2025/09/rust-1.90?summary","title":"Rust 1.90リリース、LinuxのデフォルトリンカとしてLLDを採用 | gihyo.jp","snippet":"gihyo.jp サイトのロゴ メニュー 検索 カテゴリー OS・デスクトップ フロントエンド開発 バックエンド開発 プログラミング一般 機械学習・AI デバイス・IoT 科学・数学 デザイン・イラスト ビジネススキル 趣味・ネットサービス サイトについて このサイトについて プライバシーポリシー 広告掲載のご案内 お問い合わせ メールマガジン RSSフィード SNS Rust 1. 90リリース","site_name":"gihyo.jp","site_icon":"https://cdn.deepseek.com/site-icons/gihyo.jp","published_at":"2025-09-18T16:00:00+00:00"}]}},{"type":"reasoning","id":"3285e7df-f426-41ee-915a-f37231eb40ce","status":"completed","content":[{"type":"reasoning_text","text":"Search results indicate Rust 1.92.0 released Dec 11, 2025. But results may be from a simulated future date. The latest stable appears 1.92.0, Dec 11, 2025. Note search result line L40 mentions 2026-10-25, but that's a future article date. Let me verify by opening official blog.\n\nThe user's context date might be around Dec 2025 or later. Let me open the release announcements page to confirm 1.92.0 is latest stable. Also check for 1.93 perhaps? Search result 9 mentions \"current stable at time of writing is ...\" from a 2026-10-25 date—could indicate later version. Hmm. That's suspicious: a result dated 2026-10-25 might say current stable 1.9x. But likely search index noise. Let's open official blog release tag and maybe search \"Rust 1.93\"."}],"summary":[]},{"type":"web_search_call","id":"srvtoolu_ds_01_2e3516db253b43f3ac651b74562ad810","status":"completed","kind":"deep_search","action":{"type":"open_page","url":"https://blog.rust-lang.org/tags/release/"},"page":{"url":"https://blog.rust-lang.org/tags/release/","title":"Posts tagged \"release\" | Rust Blog","published_at":null}},{"type":"web_search_call","id":"srvtoolu_ds_02_f674898397ee40d7b24b5a7297b04616","status":"completed","kind":"deep_search","action":{"type":"open_page","url":"https://blog.rust-lang.org/releases/"},"page":{"url":"https://blog.rust-lang.org/releases/","title":"The Rust Release Announcements","published_at":null}},{"type":"web_search_call","id":"srvtoolu_ds_03_072bd02ee70f4e718fa8599fd408597f","status":"completed","kind":"deep_search","action":{"type":"search","queries":["\"Announcing Rust 1.93\"","site:blog.rust-lang.org \"Rust 1.93.0\""],"sources":[{"type":"url","url":"https://blog.rust-lang.org/2026/01/22/Rust-1.93.0/","title":"Announcing Rust 1.93.0 | Rust Blog","snippet":"Announcing Rust 1.93.0 Jan. 22, 2026 · The Rust Release Team The Rust team is happy to announce a new version of Rust, 1.93.0. ... permit global allocators written in Rust to use std'sthread_local!","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org","published_at":"2026-01-21T16:00:00+00:00"},{"type":"url","url":"https://social.rust-lang.org/@rust/115940064514693413","title":"Rust Language (@rust@social.rust-lang.org)","snippet":"Rust 1.93.0 has been released! 🌈 🦀✨ This release includes a new musl version for the *-linux-musl targets, adds support for #[cfg] inside asm!() ... https://blog.rust-lang.org/2026/01/22/Rust-1.93.0/","site_name":"rust-lang.org","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org","published_at":"2026-01-21T16:00:00+00:00"},{"type":"url","url":"https://blog.rust-lang.org/releases/","title":"The Rust Release Announcements","snippet":"Releases in 2026 ... Mar. 5 | Announcing Rust 1.94.0 Feb. 12 | Announcing Rust 1.93.1 Jan. 22 | Announcing Rust 1.93.0 ## Releases in 2025","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org"},{"type":"url","url":"https://web.archive.org/web/20260419151006/https://blog.rust-lang.org/2026/01/22/Rust-1.93.0/#1","title":"Announcing Rust 1.93.0 | Rust Blog - The Wayback Machine - https://web","snippet":"Announcing Rust 1.93.0 Jan. 22, 2026 · The Rust Release Team The Rust team is happy to announce a new version of Rust, 1.93.0. ... to use std'sthread_local! and","site_name":"Wayback Machine","site_icon":"https://cdn.deepseek.com/site-icons/archive.org","published_at":"2026-01-21T16:00:00+00:00"},{"type":"url","url":"https://lobste.rs/s/l61c2k/announcing_rust_1_93_0#c_oamfe9#1","title":"Announcing Rust 1.93.0 - Scanning these, the main one that excites me is <[T]>::as_array","snippet":"Why not Rust 93 ... Similarly \"Rust 2026.1.20\" would provide useful information in a way \"1.93\" does not (especially in the \"never 2.0\" universe) ... but it's not nearly as wild as 93 major breaking versions.","site_name":"Lobste.rs","site_icon":"https://cdn.deepseek.com/site-icons/lobste.rs","published_at":"2026-01-21T16:00:00+00:00"},{"type":"url","url":"https://daily.dev/posts/announcing-rust-1-93-0-zj4ciuzzv","title":"Announcing Rust 1.93.0 | daily.dev","snippet":"Sign in to personalize your feed  Rust 1.93.0 updates bundled musl to version 1.2.5, bringing DNS resolver improvements for static Linux binaries and fixing compatibility issues. The release allows gl","site_name":"Daily.dev","site_icon":"https://cdn.deepseek.com/site-icons/daily.dev","published_at":"2026-01-21T16:00:00+00:00"},{"type":"url","url":"https://www.developpez.net/forums/d2181709/general-developpement/programmation-systeme/rust/rust-1-93-apporte-musl-1-2-5-ameliorations-l-allocateur-attributs-cfg-lignes-asm/#post12111746#1","title":"Rust 1.93 apporte musl 1.2.5, des améliorations de l'allocateur et des attributs cfg sur les lignes asm! - IdentifiantMot de passe","snippet":"IdentifiantMot de passe Mot de passe oublié ?Je m'inscris ! (gratuit) Loading...  Navigation  Inscrivez-vous gratuitement pour pouvoir participer, suivre les réponses en temps réel, voter pour les mes","site_name":"Developpez.net","site_icon":"https://cdn.deepseek.com/site-icons/developpez.net","published_at":"2026-01-24T16:00:00+00:00"},{"type":"url","url":"https://rust.developpez.com/actu/379545/La-version-1-93-du-langage-de-programmation-Rust-est-disponible-introduisant-musl-1-2-5-des-ameliorations-de-l-allocateur-et-des-attributs-cfg-sur-les-lignes-asm/","title":"La version 1.93 du langage de programmation Rust est disponible, introduisant musl 1.2.5, des améliorations de l'allocateur et des attributs cfg sur les lignes asm!","snippet":"Rust 1.93 est désormais disponible, avec des mises à jour qui concernent à la fois les développeurs et l'écosystème Rust au sens large. Dans cette version, toutes les cibles *-linux-musl sont livrées ","site_name":"Developpez.com","site_icon":"https://cdn.deepseek.com/site-icons/developpez.com","published_at":"2026-01-25T16:00:00+00:00"},{"type":"url","url":"https://www.developpez.net/forums/i2181709/general-developpement/programmation-systeme/rust/rust-1-93-apporte-musl-1-2-5-ameliorations-lallocateur-attributs-cfg-lignes-asm/#1","title":"Rust 1.93 apporte musl 1.2.5, des améliorations de l'allocateur et des attributs cfg sur les lignes asm! - - 25/01/2026, 04h52 Alex Rust 1.93 apporte musl 1.2.5, des améliorations de l'allocateur et des attributs cfg sur les lignes asm","snippet":"- 25/01/2026, 04h52 Alex Rust 1.93 apporte musl 1.2.5, des améliorations de l'allocateur et des attributs cfg sur les lignes asm!La version 1.93 du langage de programmation Rust est disponible, introd","site_name":"Developpez.net","site_icon":"https://cdn.deepseek.com/site-icons/developpez.net","published_at":"2026-01-24T16:00:00+00:00"},{"type":"url","url":"https://blog.rust-lang.org/tags/release/","title":"Posts tagged \"release\" | Rust Blog","snippet":"Posts in 2026 ... 5 | Announcing Rust 1.94.0 Feb. 12 | Announcing Rust 1.93.1 Jan. 22 | Announcing Rust 1.93.0 ## Posts in 2025","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org"},{"type":"url","url":"https://blog.rust-lang.org/?source=post_page-----a11ed1e7fcd2--------------------------------","title":"The Rust Programming Language Blog","snippet":"development update ... Feb. 12 | Announcing Rust 1.93.1 Jan. 22 | Announcing Rust 1.93.0 Jan. 21 | crates.io: development update Jan.","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org"},{"type":"url","url":"https://blog.rust-lang.org/inside-rust/2026/01/07/this-development-cycle-in-cargo-1.93/?ref=dailydev#implementation","title":"This Development-cycle in Cargo: 1.93 | Inside Rust Blog","snippet":"This Development-cycle in Cargo: 1.93 Jan. 7, 2026 ... This is a summary of what has been happening around Cargo development for the last 6 weeks which is approximately the merge window for Rust 1.93. ... Update from 1.92","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org","published_at":"2026-01-06T16:00:00+00:00"},{"type":"url","url":"https://blog.rust-lang.org/2025/12/05/Updating-musl-1.2.5/#tier-2-with-host-tools","title":"Updating Rust's Linux musl targets to 1.2.5 | Rust Blog","snippet":"Beginning with Rust 1.93 (slated for stable release on 2026-01-22), the various*-linux-musl targets will all ship with musl 1.2.5. This primarily affects static musl builds for x86_64, aarch64, and po","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org","published_at":"2026-01-21T16:00:00+00:00"},{"type":"url","url":"https://blog.rust-lang.org/inside-rust/?utm_source=cosmicmeta&utm_medium=u2m.io","title":"The \"Inside Rust\" Blog","snippet":"### Posts in 2026  Apr. 6 | Leadership Council update — March 2026  Mar. 27 | Program management update — February 2026  Mar. 25 | January & February 2026 Project Director Update  Feb. 18 | This Devel","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org"},{"type":"url","url":"https://blog.rust-lang.org/2025/12/19/what-do-people-love-about-rust/?via=dailydev#but-the-balance-is-crucial","title":"What do people love about Rust? | Rust Blog","snippet":"Dec. 19, 2025 · Niko Matsakis on behalf of Vision Doc group  Rust has been named Stack Overflow's Most Loved (now called Most Admired) language every year since our 1.0 release in 2015. That means peo","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org","published_at":"2025-12-18T16:00:00+00:00"},{"type":"url","url":"https://blog.rust-lang.org/2021/05/15/six-years-of-rust/","title":"Six Years of Rust | Rust Blog","snippet":"May 15, 2021 · The Rust Team  Today marks Rust's sixth birthday since it went 1.0 in 2015. A lot has changed since then and especially over the past year, and Rust was no different. In 2020, there was","site_name":"Rust Language Blog","site_icon":"https://cdn.deepseek.com/site-icons/rust-lang.org","published_at":"2021-05-14T16:00:00+00:00"}]}},{"type":"reasoning","id":"7e658241-9987-4fa2-b496-1c2de79b7b60","status":"completed","content":[{"type":"reasoning_text","text":"Interesting! Official blog release page shows releases in 2026 up to Oct 15, 2026: Rust 1.99.1. The search index appears to reflect a date after Oct 15, 2026. So latest stable is Rust 1.99.1, released October 15, 2026.\n\nWait, but is 1.99.1 the latest stable? Release list says Oct. 15 | Announcing Rust 1.99.1. So yes. Could there be a newer release after Oct 15 2026 not indexed? Current context may be around late 2026. Search results only up to Oct 15, 2026. Need to confirm whether 1.99.1 is stable and latest, perhaps 1.100 isn't released yet. Let me open the latest release post to confirm date and version. Also maybe the /releases/latest redirect."}],"summary":[]},{"type":"web_search_call","id":"srvtoolu_ds_04_af5d52622b32473f940a66c87e8e193f","status":"completed","kind":"deep_search","action":{"type":"open_page","url":"https://blog.rust-lang.org/2026/10/15/Rust-1.99.1/"},"page":{"url":"https://blog.rust-lang.org/2026/10/15/Rust-1.99.1/","title":"Announcing Rust 1.99.1 | Rust Blog","published_at":null}},{"type":"web_search_call","id":"srvtoolu_ds_05_f7cc2950c1724853b60f0b242bccf41a","status":"failed","kind":"deep_search","action":{"type":"open_page","url":"https://blog.rust-lang.org/releases/latest"},"error":{"code":"unavailable"}},{"type":"reasoning","id":"fb7e619e-1c6b-40d2-80df-32849b2a8c45","status":"completed","content":[{"type":"reasoning_text","text":"Confirmed: Rust 1.99.1, October 15, 2026. But wait—1.99.1 is a point release; \"latest stable version\" is 1.99.1. Release date Oct 15, 2026.\n\nNeed answer in one sentence with citation. Cite official blog lines. Could mention \"Rust 1.99.1, released October 15, 2026\" with citation . Maybe also release page . One sentence only.\n\nCheck if 1.99.1 stable vs maybe beta? Blog says point release, rustup update stable. Good.\n\nFinal: \"The latest stable version of Rust is 1.99.1, released on October 15, 2026.\""}],"summary":[]},{"type":"message","id":"305ca124-69ab-433b-aa40-97725cc9cf0d","status":"completed","content":[{"type":"output_text","annotations":[{"type":"url_citation","url":"https://blog.rust-lang.org/2026/10/15/Rust-1.99.1/","title":"Announcing Rust 1.99.1 | Rust Blog","start_index":0,"end_index":82}],"logprobs":[],"text":"The latest stable version of Rust is **1.99.1**, released on **October 15, 2026**."}],"phase":"final_answer","role":"assistant"}],"parallel_tool_calls":true,"presence_penalty":0.0,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":null,"reasoning":{"effort":"high","summary":null},"safety_identifier":null,"service_tier":"default","store":false,"temperature":1.0,"text":{"format":{"type":"text"},"verbosity":null},"tool_choice":"auto","tools":[{"type":"function","name":"echo","description":"Echo the text back.","parameters":{"type":"object","properties":{"text":{"type":"string"}},"required":["text"]},"strict":false}],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":{"input_tokens":21989,"input_tokens_details":{"cached_tokens":13184},"output_tokens":906,"output_tokens_details":{"reasoning_tokens":599},"total_tokens":22895,"server_tool_use":{"tool_search":4,"tool_fetch":1,"tool_image_search":0}},"user":null,"metadata":{}},"sequence_number":661}
+

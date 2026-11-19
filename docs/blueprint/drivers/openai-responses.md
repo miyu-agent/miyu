@@ -18,7 +18,8 @@
 | `crates/miyu-drivers/src/openai_responses/effort.rs` | 思考强度换成 `reasoning`、`include` |
 | `crates/miyu-drivers/src/openai_responses/wire.rs` | 线上的 JSON 结构、工具面（施工 DSR-3 起也写接在末尾的供应商工具声明） |
 | `crates/miyu-drivers/src/openai_responses/decode.rs` | 解码：事件、每一项开一块、加密的思考、收尾 |
-| `crates/miyu-drivers/src/openai_responses/usage.rs` | 用量归成四项 |
+| `crates/miyu-drivers/src/openai_responses/hosted.rs` | 供应商那边跑的搜索（`web_search_call`，施工 DSR-4）：工具名、参数原文、结果的字 |
+| `crates/miyu-drivers/src/openai_responses/usage.rs` | 用量归成四项，另记思考、搜索、抓取 |
 | `crates/miyu-drivers/src/media.rs` | 图片、文件发不了时换成的字、要哪些 blob，三个驱动共用（`drivers/anthropic.md`「在哪」）；8-13 起 user 的字照 openai-chat 拼的那一步（`join`）也挪进来，openai-chat 的样本一个字节不变 |
 | `crates/miyu-drivers/src/sse.rs`、`classify.rs`、`texts.rs`、`text_file.rs`、`base64.rs` | 和 openai-chat 共用 |
 | `crates/miyu-drivers/src/openai_chat/models.rs` | 列模型：OpenAI 的 `/models` 写法一样，共用 `parse_models` |
@@ -60,6 +61,7 @@
 4. **assistant**：照块的先后，写成几项，相邻的同种块合成一项：
    - 正文：连着的几块直接接上，写一项 `{"role":"assistant","content":<字>}`。空的不写。
    - 供应商侧工具（施工 HT-2）：在它原来的位置写成一段字，和前后连着的正文合成一项，不另开；前后各自另起一行，同 openai-chat 第 4 条（`join_hosted`）；那一段字照 openai-chat 第 4 条（`DriverTexts::hosted_tool`）。
+   - 这个驱动解出来的搜索（施工 DSR-4，「解码」第 5 条）也写成上面那段字，不把 `web_search_call` 原样写回。原因是 2026-11-19 的实测：DeepSeek 接受原样带回的 `web_search_call`，但是不把它放进上下文（带回 6 项时输入只有 1,366 token），下一轮模型回答自己没有搜索过；写成那段字以后（输入 3,487 token），模型能列出上一轮的搜索词和打开的网页。
    - 思考：私有数据是这个驱动的、里面有 `encrypted_content` 的，写 `{"type":"reasoning","id":<id>,"summary":[{"type":"summary_text","text":<字>}],"encrypted_content":<它>}`，字是空的写 `"summary":[]`。一块思考一项，不合。别家的、没有加密内容的不写：没有它，这一家认不出这一项（`store` 是假的，服务端没存）。
    - 工具调用：一次一项 `{"type":"function_call","call_id":…,"name":…,"arguments":…}`，不写 `id`（服务端没存，写了会去找）。`call_id`：私有数据是这个驱动的、里面有字符串 `call_id` 的用它，没有的用内核分的 `call_<序号>_<第几个>`。`arguments` 是一个字符串：参数原文是一个 JSON 对象的照原文，别的写 `{}`。
 5. **tool**：`{"type":"function_call_output","call_id":…,"output":…}`。
@@ -69,7 +71,7 @@
    - 统一的请求里的 `error` 不发：这一家的结果没有出错的标记，出错写在内容里。
 6. **接着写**：不会。这一家没有前缀续写。带记号的照原样发，靠提示。
 7. **工具面**：`[{"type":"function","name":…,"description":…,"parameters":<原样>,"strict":false}]`，照统一的请求的先后。`strict` 一定写假的：这一家的 function 默认是严格的，严格模式要求每个参数都必填、不许多出字段，我们的参数格式不是这样写的。工具面是空的、历史里也没有工具调用的，不发 `tools`；历史里有调用的，发 `[]`。
-   - **供应商那边的工具声明**（设计 72，施工 DSR-3）：`Call.hosted` 里的每个名字写成一项 `{"type":<名字>}`，按 `hosted` 的顺序接在函数工具后面，例如 DeepSeek 官方的 `…,"strict":false},{"type":"deepseek_web_search"},{"type":"deepseek_read_url"}]`。名字按 JSON 的规则转义。如果没有函数工具、历史里也没有调用，但是 `hosted` 不是空的，仍然发 `tools`，里面只有这几项。`hosted` 是空的时候不加任何字节，请求和以前一样。交哪几件、什么时候交，由路由根据档案的 `search` 决定（`models.md` 档案那一段，`miyu_models::provider_search`）。
+   - **供应商那边的工具声明**（设计 72，施工 DSR-3）：`Call.hosted` 里的每个名字写成一项 `{"type":<名字>}`，按 `hosted` 的顺序接在函数工具后面，例如 DeepSeek 官方的 `…,"strict":false},{"type":"deepseek_web_search"}]`。名字按 JSON 的规则转义。如果没有函数工具、历史里也没有调用，但是 `hosted` 不是空的，仍然发 `tools`，里面只有这几项。`hosted` 是空的时候不加任何字节，请求和以前一样。交哪几件、什么时候交，由路由根据档案的 `search` 决定（`models.md` 档案那一段，`miyu_models::provider_search`）。
 8. **`Encoded.messages`**：`input` 里每一项在 `body` 里的起止，照先后。
 
 ### 缓存
@@ -107,22 +109,28 @@ SSE 分帧共用 `sse.rs`。这一家没有 `[DONE]`：说完是 `response.compl
 
 1. 已经出了错、或者见到了收尾的事件（`response.completed`、`response.incomplete`、`response.failed`），以后的都不理，`done()` 是真；`finished()` 也是这时候变真。
 2. `data` 解成 JSON；解不开的照 openai-chat（`retryable` 或 `bad_stream`）。
-3. 一项开一块，照项第一次出现的先后编号，从 0 数起；线上的 `output_index`、`item_id` 只拿来找是哪一块。不认的项（服务端工具这些）不占编号，它的增量不理。
+3. 一项开一块，照项第一次出现的先后编号，从 0 数起；线上的 `output_index`、`item_id` 只拿来找是哪一块。不认的项不占编号，它的增量不理。
 
 | 事件 | 怎么办 |
 |---|---|
-| `response.output_item.added` | `item.type` 是 `message` 开正文块；`reasoning` 开思考块；`function_call` 开工具调用块 `ToolCall { name }`，私有数据 `{"driver":"openai-responses","data":{"call_id":<它>}}` |
+| `response.output_item.added` | `item.type` 是 `message` 开正文块；`reasoning` 开思考块；`function_call` 开工具调用块 `ToolCall { name }`，私有数据 `{"driver":"openai-responses","data":{"call_id":<它>}}`；`web_search_call` 开供应商侧工具块，见第 5 条 |
 | `response.output_text.delta`、`response.refusal.delta` | 正文块的 `Text`（拒答的字也是她说的话，照正文给人看） |
 | `response.reasoning_summary_text.delta`、`response.reasoning_text.delta` | 思考块的 `Text`。一项里第二段摘要开始时（`summary_index` 变了），先交一个空行 `\n\n` 再接着 |
 | `response.function_call_arguments.delta` | 攒着，不当场交（「施工时定的」），攒进了就记下有动静，执行器照 `Decode::stirred` 重新算空闲（施工 AU-013）；`response.function_call_arguments.done` 的 `arguments` 来了换成它 |
-| `response.output_item.done` | 思考项：有 `encrypted_content` 的交私有数据 `{"driver":"openai-responses","data":{"id":<id>,"encrypted_content":<它>}}`；摘要一个字都没流过来、`item.summary` 里有的，照它补上。正文项：一个字都没流过来的（有的网关只在这里给整段），照 `item` 里的补上。工具调用项：参数照 `item.arguments` 交一整段，没有的照攒着的；没等到这一项完了就说完的，收尾时照攒着的交 |
+| `response.output_item.done` | 搜索项（`web_search_call`）：交结果并收块，见第 5 条。思考项：有 `encrypted_content` 的交私有数据 `{"driver":"openai-responses","data":{"id":<id>,"encrypted_content":<它>}}`；摘要一个字都没流过来、`item.summary` 里有的，照它补上。正文项：一个字都没流过来的（有的网关只在这里给整段），照 `item` 里的补上。工具调用项：参数照 `item.arguments` 交一整段，没有的照攒着的；没等到这一项完了就说完的，收尾时照攒着的交 |
 | `response.completed` | 用量记下，说完了 |
 | `response.incomplete` | 用量记下；`response.incomplete_details.reason` 记下 |
 | `response.failed` | 出错：照「出错分类」分，用的是 `Failure::stream(<data 里的 response 那个对象>)`：共用的读法先找 `error` 一格，`response` 对象里正好有（整段 `data` 交进去找不到，原话会是整段 JSON） |
 | `error` | 出错，照「出错分类」分，用的是 `Failure::stream(data)` |
-| 别的（`response.created`、`…in_progress`、`…content_part.*`、`…done` 这些） | 不理 |
+| 别的（`response.created`、`…in_progress`、`…content_part.*`、`…done`、`response.web_search_call.*`、`response.output_text.annotation.added` 这些） | 不理。搜索的几步（`in_progress`、`searching`、`completed`）不用交增量，因为块在项开始时开、项完了时收；正文上的引用（`url_citation`）也不理，因为搜到了什么已经在搜索那一块的结果里，正文按字留下 |
 
 4. 思考块没有字也没有加密内容的，内核不留（`accumulate.rs`）；有加密内容、没有字的留着，下一次照样回传。
+5. **供应商那边跑的搜索**（施工 DSR-4，设计 72 第二节第 4 条）：输出里一项 `web_search_call` 是供应商替模型跑的一次搜索或读网页，开一块供应商侧工具（`kernel/blocks.md` 的 `hosted_tool`，设计 71）。
+   - **工具名**：项带着 `kind`（DeepSeek 的项）时按 `action.type` 取名：打开网页、在网页里查找（`open_page`、`find_in_page`）是 `deepseek_read_url`，其他是 `deepseek_web_search`。深度搜索（`kind` 是 `deep_search`）里打开网页的项也叫 `deepseek_read_url`，这样界面把它画成读网页、标题写网址。项没有 `kind` 时是 `web_search`（OpenAI 自己的项没有这一格）。
+   - **参数**（块的字）：开块的那一条事件里 `item.action` 的原文，一个字节不改，例如 `{"type":"search","queries":["…","…"]}`、`{"type":"open_page","url":"…"}`。`response.output_item.added` 里已经有 `action`，所以项开始时就交参数，头可以马上画出「正在搜索什么」；项完了时 `action` 多出来的 `sources` 是结果，不进参数。只在 `done` 给这一项的网关，按 `done` 里的 `action` 交参数。
+   - **结果**（`Outcome`，内核截到 64 KiB）：`status` 是 `failed` 时，`failed` 写真，字是 `error.code`（例如 `unavailable`）。搜索（`action.type` 是 `search`）的 `action.sources` 一条一行，写成 `<标题> - <网址>`，和 Anthropic 搜索结果的写法相同。读网页（`open_page`）写 `<网址>`，有标题时下一行写 `<标题>`，网址先取 `page.url`，没有时取 `action.url`；在网页里查找（`find_in_page`）再加一行 `pattern: <查找的字>`。其他情形、缺了需要的格时，字是整项原文。
+   - **私有数据**：不交。下一次请求把这一块写成供应商侧工具的那段字（「编码」第 4 条），不需要整项原文，日志里也不用为每一项多存一份。读链接的项带着的 `signature`（加密的网页正文）因此不保存：出厂的档案不声明 `deepseek_read_url`（`models.md` 档案那一段），这种项在 Miyu 的请求里不会出现。
+   - **先后**：`response.output_item.added` 交 `Start`、参数的 `Text`；`response.output_item.done` 交 `Outcome`、`End`，当场收块，收尾时不再收。几项可以同时开着，例如先全部 `added`、再逐个完成，块的编号按 `added` 的先后。
 
 **收尾**（`finish`）：
 
@@ -146,6 +154,8 @@ SSE 分帧共用 `sse.rs`。这一家没有 `[DONE]`：说完是 `response.compl
 | 没命中 `uncached` | `input_tokens` 减去命中，最少 0 |
 | 输出 `output` | `output_tokens`（含思考，思考不另算钱） |
 | 思考 `reasoning` | `output_tokens_details.reasoning_tokens`（施工 2-3 再补）；没有的、0 的不写 |
+| 搜索 `searches` | `server_tool_use.tool_search`（施工 DSR-4，DeepSeek 报）：供应商替模型跑的搜索次数，不是 token；没有的、0 的不写 |
+| 抓取 `fetches` | `server_tool_use.tool_fetch`（施工 DSR-4）：供应商替模型读网页的次数，不是 token；没有的、0 的不写 |
 
 没有 `input_tokens` 的不算用量；只认非负整数。
 
@@ -182,7 +192,7 @@ SSE 分帧共用 `sse.rs`。这一家没有 `[DONE]`：说完是 `response.compl
 
 探针的每一次请求编码以后的样子：`docs/designs/samples/probe/terminal/openai-responses/`（模型 `gpt-5.4`，没有输出上限、没有思考强度）。
 
-**流**，样本在同一目录的 `streams/` 下：`text`、`reasoning-summary`（两段摘要、加密内容）、`reasoning-encrypted-only`、`function-calls`（两次并行）、`done-only`（只在 `output_item.done` 给整段）、`refusal`、`incomplete-max-tokens`、`incomplete-content-filter`、`failed`、`error-event`、`unknown-item`、`cut-off`、`bad-json`、`no-completed`（没等到收尾的事件）、`arguments-dropped`（增量丢了字，整段是对的）。
+**流**，样本在同一目录的 `streams/` 下：`text`、`reasoning-summary`（两段摘要、加密内容）、`reasoning-encrypted-only`、`function-calls`（两次并行）、`done-only`（只在 `output_item.done` 给整段）、`refusal`、`incomplete-max-tokens`、`incomplete-content-filter`、`failed`、`error-event`、`unknown-item`（不认的项 `image_generation_call`，施工 DSR-4 起 `web_search_call` 认得了，样本换成它）、`cut-off`、`bad-json`、`no-completed`（没等到收尾的事件）、`arguments-dropped`（增量丢了字，整段是对的）。另有 `deepseek-web-search.sse`（施工 DSR-4）：2026-11-19 从 DeepSeek 官方 Responses 接口录下的真实的流，声明了 `deepseek_web_search`，里面有 6 项 `web_search_call`（两次搜索、四次读网页，其中一次失败）、穿插的思考、带 `url_citation` 的正文和 `server_tool_use` 用量；只有公开的搜索结果。它有 19 万字节，所以不进上面那一份逐字节比对和逐字节切开的名单，由 `openai_responses_web_search.rs` 单独断言。
 
 **给模型看的几句**：没有新的，照 `DriverTexts`；`tool-attachments.txt`、`tool-attachments-only.txt` 这一家不用。
 
@@ -206,6 +216,7 @@ SSE 分帧共用 `sse.rs`。这一家没有 `[DONE]`：说完是 `response.compl
 | `crates/miyu-drivers/tests/openai_responses_reasoning.rs` | 加密的思考回传、空摘要、别家的和没有加密内容的不写；思考强度两种写法接在最后，没写的一个字节不加 |
 | `crates/miyu-drivers/tests/openai_responses_media.rs` | 图片、PDF、不能收的占位；工具结果里的图、PDF；文本文件、带名字的图片、替它看的图和 openai-chat 一样；缺 blob 报错 |
 | `crates/miyu-drivers/tests/hosted_tool.rs`（施工 HT-2，三个驱动共用一份） | 供应商侧工具在它原来的位置写成那一段字，和样本 `hosted-tool.json` 一字不差；先后、转义、截在字的边界上、以前造的快照不写它（`drivers/openai-chat.md`「守着它的」） |
+| `crates/miyu-drivers/tests/openai_responses_web_search.rs`（施工 DSR-4） | 真实的流解出来：块的先后、工具名（搜索两块、打开网页四块）、参数是 `action` 原文、结果的字（含失败的那一项）、不带私有数据、思考和正文不变、用量的搜索 4 次抓取 1 次；切开喂一样；编码回去六块都写成那段字、接进上一轮的正文，没有原样带回的项，留着历史的编码和整份编码一字不差；没有 `kind` 的叫 `web_search`，打开网页、在网页里查找的叫 `deepseek_read_url` |
 | `crates/miyu-drivers/tests/openai_responses_streams.rs` | 流的样本；从哪里切开喂都一样；解出来的编码回去：`call_id`、加密内容原样；驱动的接口走一遍；`finished()` 在收尾事件以后才说是 |
 | `crates/miyu-assemble/tests/probe.rs`、`random_logs.rs`、`tests/support` | 加 Responses 的脸：每个探针、每段随机日志的每一次请求编码以后是上一次的前缀延伸；主会话（`terminal`）的存档多 `openai-responses/` |
 | `crates/miyu-session/tests/route_responses.rs` | 路由照供应商的 `driver` 造驱动：发到 `/responses`、带 `Bearer`；输出上限不替它填、写了的照它；思考强度照这一家的写法；回来的流照这一家解 |
@@ -254,7 +265,8 @@ SSE 分帧共用 `sse.rs`。这一家没有 `[DONE]`：说完是 `response.compl
 
 ### 还没有的
 
-- `prompt_cache_key`、连接预热（Responses 的 WebSocket，`15-模型与供应商.md` 第五节）、服务端工具、`previous_response_id`。
+- `prompt_cache_key`、连接预热（Responses 的 WebSocket，`15-模型与供应商.md` 第五节）、`previous_response_id`。
+- 服务端工具里，只认得 `web_search_call`（施工 DSR-4）；其他种类的项（`file_search_call`、`code_interpreter_call` 这些）仍然不认。
 - 一张图的官方公式（`ImagePrice`）：现在照策略的固定数。
 - 列模型的窗口：官方的列表不报，照目录。
 

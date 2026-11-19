@@ -11,6 +11,8 @@
   },
   "session_arg": "session",
   "hosted": {
+    "deepseek_web_search": {"as": "web_search", "subject": "queries"},
+    "deepseek_read_url": {"as": "web_fetch", "subject": "url"},
     "search_web": {"as": "web_search", "subject": "query"},
     "web_search": {"as": "web_search", "subject": "query"},
     "WebSearch": {"as": "web_search", "subject": "query"},

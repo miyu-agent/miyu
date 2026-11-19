@@ -230,7 +230,7 @@
 | `session` | 会话编号 | 只跟着 `side`：用不上档位池时照这个会话这一刻的模型；不写的照 `models.chat`。不是自己的会话 `session_not_found` |
 | `max_tokens` | 正整数 | 最多输出多少 token |
 
-**回应**：`{"text", "provider", "model", "usage"}`。`usage` 是 `uncached`、`cache_read`、`cache_write`、`output`，报了思考的多 `reasoning`；没报的是 `null`。在后台答，不挡这个连接别的请求。
+**回应**：`{"text", "provider", "model", "usage"}`。`usage` 是 `uncached`、`cache_read`、`cache_write`、`output`，报了思考的多 `reasoning`；如果供应商替模型搜索、抓取过网页，还会多 `searches`、`fetches`，它们是次数，不是 token。没报的是 `null`。在后台答，不挡这个连接别的请求。
 
 ```json
 {"text":"A cat on a red sofa.","provider":"deepseek","model":"deepseek-flash","usage":{"uncached":812,"cache_read":0,"cache_write":0,"output":9}}

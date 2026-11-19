@@ -1,8 +1,8 @@
 event: response.output_item.added
-data: {"type":"response.output_item.added","output_index":0,"item":{"id":"ws_1","type":"web_search_call","status":"in_progress"}}
+data: {"type":"response.output_item.added","output_index":0,"item":{"id":"ig_1","type":"image_generation_call","status":"in_progress"}}
 
 event: response.output_item.done
-data: {"type":"response.output_item.done","output_index":0,"item":{"id":"ws_1","type":"web_search_call","status":"completed"}}
+data: {"type":"response.output_item.done","output_index":0,"item":{"id":"ig_1","type":"image_generation_call","status":"completed"}}
 
 event: response.output_item.added
 data: {"type":"response.output_item.added","output_index":1,"item":{"id":"msg_9","type":"message","role":"assistant","content":[]}}

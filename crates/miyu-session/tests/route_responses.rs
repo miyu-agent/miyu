@@ -58,6 +58,8 @@ async fn a_call_goes_to_responses_with_a_bearer_and_is_decoded() {
                 cache_write: 0,
                 output: 3,
                 reasoning: None,
+                searches: None,
+                fetches: None,
             }),
         })
     );

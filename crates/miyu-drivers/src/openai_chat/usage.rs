@@ -22,6 +22,8 @@ pub(super) fn usage(value: &Value) -> Option<Usage> {
         output: number(value, "/completion_tokens").unwrap_or(0),
         reasoning: number(value, "/completion_tokens_details/reasoning_tokens")
             .filter(|reasoning| *reasoning > 0),
+        searches: None,
+        fetches: None,
     })
 }
 

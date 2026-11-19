@@ -392,7 +392,7 @@ List the names of provider-run tools in the driver's `hosted` in the manifest ([
 
 **Response** `{"usage"?, "error"?, "sent"?}`, after all of the call's `driver.delta`:
 
-- `usage`: `{"uncached", "cache_read", "cache_write", "output", "reasoning"?}`. Left out means not reported; nothing is estimated.
+- `usage`: `{"uncached", "cache_read", "cache_write", "output", "reasoning"?, "searches"?, "fetches"?}`. Left out means not reported; nothing is estimated. `searches` and `fetches` are how many web searches and page fetches the provider ran for the model, not tokens; reporting 0 is the same as not reporting.
 - `error`: `{"class", "message", "retry_after_ms"?}`. `class` is one of `retryable`, `stalled` (stuck: nothing new for a long time; the kernel stops retrying after two in a row), `rate_limited`, `context_too_long`, `auth`, `quota`, `content_policy`, `unclassified`; anything else counts as `unclassified`. `retry_after_ms` is read only for `rate_limited`. `message` is cut to 500 characters and only shown to people. Don't retry a call yourself once you have sent deltas (the reply would repeat); Miyu retries, cools down and fails over by class.
 - `sent`: the SHA-256 of the bytes you actually sent, as `sha256:<64 hex digits>`, recorded in `model.called`. If the same request is sent again (a retry) and your `sent` differs, your encoding looked at something besides the params and the cached prefix can't hit; Miyu logs a `WARN` (once per driver per run).
 

@@ -392,7 +392,7 @@ access = ["network"]         # 访问类别，可以不写；两样至少一样
 
 **回应** `{"usage"?, "error"?, "sent"?}`，在这一次所有的 `driver.delta` 之后：
 
-- `usage`：`{"uncached", "cache_read", "cache_write", "output", "reasoning"?}`；没报的记成没报，不估。
+- `usage`：`{"uncached", "cache_read", "cache_write", "output", "reasoning"?, "searches"?, "fetches"?}`；没报的记成没报，不估。`searches`、`fetches` 是供应商替模型运行搜索、抓取网页的次数，不是 token；报 0 和不报一样。
 - `error`：`{"class", "message", "retry_after_ms"?}`，`class` 是 `retryable`、`stalled`（卡住了：一直没动静，内核连着两次就不再来）、`rate_limited`、`context_too_long`、`auth`、`quota`、`content_policy`、`unclassified` 之一，不认识的当 `unclassified`；`retry_after_ms` 只认 `rate_limited` 的；`message` 截到 500 个字，只给人看。交了一半的不要自己重试（回复会重），Miyu 照分类重试、冷却、换池。
 - `sent`：这一次真发出去的字节的 SHA-256，写成 `sha256:<64 位十六进制>`，记进 `model.called`。同样的请求再发一次（重试）报的 `sent` 不一样的，说明编码看了参数以外的东西、缓存前缀命中不了，Miyu 记一行 `WARN`（每个驱动每次运行一次）。
 

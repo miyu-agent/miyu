@@ -1,8 +1,9 @@
 //! 解码（`docs/blueprint/drivers/openai-responses.md`「怎么走：解码」）：SSE 流解成内核的四种增量，说完时交出收块的增量、
 //! 用量和出错。
 //!
-//! 一项开一块，照项第一次出现的先后编号，从 0 数起；线上的 `output_index` 只拿来找是哪一块，不认的项（服务端工具这些）不占
-//! 编号。这一家没有 `[DONE]`：说完是 `response.completed`、`response.incomplete`、`response.failed`。一项里一个字都没流过来的
+//! 一项开一块，照项第一次出现的先后编号，从 0 数起；线上的 `output_index` 只拿来找是哪一块，不认的项不占编号。供应商那边
+//! 跑的搜索（`web_search_call`，施工 DSR-4，[`super::hosted`]）开一块供应商侧工具，项完了当场交结果并收块。
+//! 这一家没有 `[DONE]`：说完是 `response.completed`、`response.incomplete`、`response.failed`。一项里一个字都没流过来的
 //! （有的网关只在 `response.output_item.done` 给整段），照那里的整段补上。
 //!
 //! 工具调用的参数不照增量交，攒到这一项完了照整段交：先照 `output_item.done` 的 `arguments`，再照
@@ -21,6 +22,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use super::FAMILY;
+use super::hosted;
 use super::usage::usage;
 use crate::Ending;
 use crate::classify::{Failure, classify};
@@ -79,6 +81,8 @@ enum ItemKind {
     Reasoning,
     /// `function_call`：工具调用。
     FunctionCall,
+    /// `web_search_call`：供应商那边跑的一次搜索（施工 DSR-4）。
+    Hosted,
 }
 
 impl Decoder {
@@ -210,7 +214,7 @@ impl Decoder {
         let text = |field: &str| value.get(field).and_then(Value::as_str).unwrap_or_default();
         match name {
             "response.output_item.added" => {
-                self.opened(&value, out);
+                self.opened(&value, data, out);
             }
             "response.output_text.delta" | "response.refusal.delta" => {
                 if let Some(opened) = self.block(&value) {
@@ -245,7 +249,7 @@ impl Decoder {
                     push(out, opened, text("delta"));
                 }
             }
-            "response.output_item.done" => self.item_done(&value, out),
+            "response.output_item.done" => self.item_done(&value, data, out),
             "response.completed" | "response.incomplete" => {
                 self.usage = value.pointer("/response/usage").and_then(usage);
                 self.ended = Some(match name {
@@ -268,6 +272,8 @@ impl Decoder {
                 self.stream_error(&failed);
             }
             "error" => self.stream_error(data.as_bytes()),
+            // 搜索的几步（`response.web_search_call.*`）不用交增量：块在项开始时开、项完了时收。正文上的引用
+            // （`response.output_text.annotation.added`）也不理：搜到了什么在搜索那一块的结果里，正文照字留着。
             _ => {}
         }
     }
@@ -284,8 +290,8 @@ impl Decoder {
         self.blocks.get_mut(&at)?.as_mut()
     }
 
-    /// 照 `item.type` 开一块；开过的、不认的不再开。交回这一块。
-    fn opened(&mut self, value: &Value, out: &mut Vec<Delta>) -> Option<&mut Opened> {
+    /// 照 `item.type` 开一块；开过的、不认的不再开。交回这一块。`data` 是这一条事件的原文：搜索的参数要原文（施工 DSR-4）。
+    fn opened(&mut self, value: &Value, data: &str, out: &mut Vec<Delta>) -> Option<&mut Opened> {
         let at = value.get("output_index").and_then(Value::as_u64)?;
         if !self.blocks.contains_key(&at) {
             let item = &value["item"];
@@ -297,6 +303,12 @@ impl Decoder {
                     ItemKind::FunctionCall,
                     Kind::ToolCall {
                         name: field("name").to_string(),
+                    },
+                ),
+                hosted::ITEM => (
+                    ItemKind::Hosted,
+                    Kind::HostedTool {
+                        name: hosted::name(item).to_string(),
                     },
                 ),
                 _ => {
@@ -318,27 +330,49 @@ impl Decoder {
                     }),
                 });
             }
-            self.blocks.insert(
-                at,
-                Some(Opened {
-                    index,
-                    item: kind,
-                    streamed: false,
-                    summary: None,
-                    arguments: String::new(),
-                    settled: false,
-                }),
-            );
+            let mut opened = Opened {
+                index,
+                item: kind,
+                streamed: false,
+                summary: None,
+                arguments: String::new(),
+                settled: false,
+            };
+            if kind == ItemKind::Hosted {
+                push(
+                    out,
+                    &mut opened,
+                    hosted::item_text(data).map_or("", hosted::args),
+                );
+            }
+            self.blocks.insert(at, Some(opened));
         }
         self.blocks.get_mut(&at)?.as_mut()
     }
 
-    /// `response.output_item.done`：一个字都没流过来的照整段补上；思考有加密内容的交私有数据。
-    fn item_done(&mut self, value: &Value, out: &mut Vec<Delta>) {
+    /// `response.output_item.done`：一个字都没流过来的照整段补上；思考有加密内容的交私有数据；搜索交结果并收块
+    /// （施工 DSR-4）。
+    fn item_done(&mut self, value: &Value, data: &str, out: &mut Vec<Delta>) {
         let item = value["item"].clone();
-        let Some(opened) = self.opened(value, out) else {
+        let Some(opened) = self.opened(value, data, out) else {
             return;
         };
+        if opened.item == ItemKind::Hosted {
+            let index = opened.index;
+            let raw = hosted::item_text(data).unwrap_or("null");
+            let (text, failed) = hosted::outcome(&item, raw);
+            out.push(Delta::Outcome {
+                index,
+                text,
+                failed,
+            });
+            out.push(Delta::End { index });
+            // 收了：收尾时不再收。`opened` 找得到，`output_index` 一定在。
+            if let Some(at) = value.get("output_index").and_then(Value::as_u64) {
+                self.blocks.insert(at, None);
+            }
+            return;
+        }
         let texts = |list: &str, field: &str| -> Vec<String> {
             item.get(list)
                 .and_then(Value::as_array)
@@ -361,7 +395,7 @@ impl Decoder {
             ItemKind::Reasoning if !opened.streamed => {
                 push(out, opened, &texts("summary", "text").join("\n\n"));
             }
-            ItemKind::Message | ItemKind::Reasoning => {}
+            ItemKind::Message | ItemKind::Reasoning | ItemKind::Hosted => {}
         }
         if opened.item == ItemKind::Reasoning
             && let (Some(id), Some(encrypted)) = (

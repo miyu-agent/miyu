@@ -199,7 +199,7 @@ pub struct BlockSpan {
     pub end_ms: u64,
 }
 
-/// 用量，四项都是 token 数；思考占了多少另记一格（施工 2-3 再补）。
+/// 用量，四项都是 token 数；思考占了多少另记一格（施工 2-3 再补），供应商那边替模型搜索、抓取的次数另记两格（施工 DSR-4）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Usage {
     /// 没命中缓存的输入。
@@ -214,6 +214,14 @@ pub struct Usage {
     /// （Anthropic 的思考算在输出里不另报）、以前的日志没有这一格；没有的不写，旧日志读进来再写出去一字不差。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reasoning: Option<u64>,
+    /// 供应商那边替模型跑的搜索的次数（供应商报的；不是 token，施工 DSR-4）：例如 DeepSeek Responses 接口的
+    /// `usage.server_tool_use.tool_search`。报了、不是 0 才有；没有的不写，旧日志读进来再写出去一字不差。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub searches: Option<u64>,
+    /// 供应商那边替模型跑的抓取的次数（供应商报的；不是 token，施工 DSR-4）：例如 DeepSeek Responses 接口的
+    /// `usage.server_tool_use.tool_fetch`。规矩同 [`Usage::searches`]。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fetches: Option<u64>,
 }
 
 impl Usage {
@@ -229,7 +237,7 @@ impl Usage {
         self.input().saturating_add(self.output)
     }
 
-    /// 两份各项加起来，封顶不溢出；思考两份都没报的照旧没有。
+    /// 两份各项加起来，封顶不溢出；思考、搜索、抓取两份都没报的照旧没有。
     #[must_use]
     pub fn plus(&self, more: &Usage) -> Usage {
         Usage {
@@ -237,11 +245,18 @@ impl Usage {
             cache_read: self.cache_read.saturating_add(more.cache_read),
             cache_write: self.cache_write.saturating_add(more.cache_write),
             output: self.output.saturating_add(more.output),
-            reasoning: match (self.reasoning, more.reasoning) {
-                (None, None) => None,
-                (a, b) => Some(a.unwrap_or(0).saturating_add(b.unwrap_or(0))),
-            },
+            reasoning: either(self.reasoning, more.reasoning),
+            searches: either(self.searches, more.searches),
+            fetches: either(self.fetches, more.fetches),
         }
+    }
+}
+
+/// 两份可选的数加起来：两份都没报的照旧没有，只报了一份的另一份当 0。
+fn either(a: Option<u64>, b: Option<u64>) -> Option<u64> {
+    match (a, b) {
+        (None, None) => None,
+        (a, b) => Some(a.unwrap_or(0).saturating_add(b.unwrap_or(0))),
     }
 }
 

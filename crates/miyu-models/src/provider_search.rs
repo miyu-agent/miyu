@@ -4,7 +4,7 @@
 //! 档案的写法（`resources/models/profiles.toml` 的 `[providers.deepseek]`）：
 //!
 //! ```toml
-//! search = { setting = "deepseek-responses", driver = "openai-responses", effort = "high", replaces = [["web_search", "deepseek_web_search"], ["web_fetch", "deepseek_read_url"]] }
+//! search = { setting = "deepseek-responses", driver = "openai-responses", effort = "high", replaces = [["web_search", "deepseek_web_search"]] }
 //! ```
 //!
 //! 意思是：配置项 `net.search.source` 的值是 `setting`，并且这一家在官方地址上、这个模型真走的驱动是 `driver`、思考没有关闭时，

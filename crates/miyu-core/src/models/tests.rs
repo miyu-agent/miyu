@@ -101,10 +101,7 @@ fn the_shipped_profiles_give_deepseek_its_own_search() {
             setting: "deepseek-responses".to_string(),
             driver: "openai-responses".to_string(),
             effort: "high".to_string(),
-            replaces: vec![
-                pair("web_search", "deepseek_web_search"),
-                pair("web_fetch", "deepseek_read_url"),
-            ],
+            replaces: vec![pair("web_search", "deepseek_web_search")],
         })
     );
     for (id, profile) in &profiles.providers {

@@ -1082,7 +1082,7 @@ driver = "openai-chat"
 base_url = "https://api.deepseek.com"
 image_tokens = "deepseek"
 compat = { reasoning = { replay = "reasoning_content", always = true }, continuation = { field = "prefix", path = "/beta/chat/completions" }, toggle = { field = "thinking", on = { type = "enabled" }, off = { type = "disabled" } } }
-search = { setting = "deepseek-responses", driver = "openai-responses", effort = "high", replaces = [["web_search", "deepseek_web_search"], ["web_fetch", "deepseek_read_url"]] }
+search = { setting = "deepseek-responses", driver = "openai-responses", effort = "high", replaces = [["web_search", "deepseek_web_search"]] }
 
 [providers.opencode-go]
 headers = { "x-opencode-session" = "ses_{session_digest}" }

@@ -28,6 +28,8 @@ fn the_drawing_round_trips() {
             cache_write: 0,
             output: 26,
             reasoning: None,
+            searches: None,
+            fetches: None,
         })
     );
     assert_eq!(called.first_difference, None);
@@ -112,6 +114,27 @@ fn reasoning_tokens_round_trip_and_old_logs_without_them_still_read() {
     let old = called(CALLED);
     assert_eq!(old.usage.and_then(|usage| usage.reasoning), None);
     assert_eq!(serde_json::to_string(&old).unwrap(), CALLED);
+}
+
+/// 供应商那边替模型搜索、抓取的次数（施工 DSR-4）：带着的读写一字不差；加起来时两份都没报的照旧没有，只报了一份的照那
+/// 一份算。
+#[test]
+fn provider_search_counts_round_trip_and_add_like_reasoning() {
+    let body = CALLED.replace(
+        r#""output":26}"#,
+        r#""output":26,"searches":4,"fetches":1}"#,
+    );
+    let searched = called(&body);
+    let usage = searched.usage.expect("有用量");
+    assert_eq!((usage.searches, usage.fetches), (Some(4), Some(1)));
+    assert_eq!(serde_json::to_string(&searched).unwrap(), body);
+    let plain = called(CALLED).usage.expect("有用量");
+    let both = plain.plus(&usage);
+    assert_eq!((both.searches, both.fetches), (Some(4), Some(1)));
+    let neither = plain.plus(&plain);
+    assert_eq!((neither.searches, neither.fetches), (None, None));
+    let twice = usage.plus(&usage);
+    assert_eq!((twice.searches, twice.fetches), (Some(8), Some(2)));
 }
 
 #[test]

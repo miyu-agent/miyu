@@ -26,6 +26,7 @@ mod openai_responses_hosted;
 mod openai_responses_media;
 mod openai_responses_reasoning;
 mod openai_responses_streams;
+mod openai_responses_web_search;
 mod path_only;
 mod robust_streams;
 mod tail;

@@ -9,7 +9,7 @@ use miyu_drivers::{Anthropic, Call, Driver, Inputs, Memo, OpenAiChat, OpenAiResp
 use miyu_kernel::request::{Message, Request};
 use serde_json::{Value, json};
 
-/// DeepSeek 官方 Responses 接口的那两件。
+/// 两件供应商那边的工具声明：DeepSeek 官方 Responses 接口的两个名字（出厂的档案只声明前一件，这里用两件看先后）。
 fn deepseek_hosted() -> Vec<String> {
     vec![
         "deepseek_web_search".to_string(),

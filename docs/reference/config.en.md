@@ -230,7 +230,7 @@ Call a model once and get the whole answer and usage. Not part of any session an
 | `session` | session id | Only with `side`: when the tier's pool can't be used, follow this session's current model; without it, `models.chat`. Someone else's session is `session_not_found` |
 | `max_tokens` | positive integer | Most output tokens |
 
-**Response**: `{"text", "provider", "model", "usage"}`. `usage` has `uncached`, `cache_read`, `cache_write`, `output`, plus `reasoning` when reported; unreported ones are `null`. Answered in the background, so other requests on the connection aren't blocked.
+**Response**: `{"text", "provider", "model", "usage"}`. `usage` has `uncached`, `cache_read`, `cache_write`, `output`, plus `reasoning` when reported; when the provider ran web searches or page fetches for the model, it also has `searches` and `fetches`, which are counts, not tokens. Unreported ones are `null`. Answered in the background, so other requests on the connection aren't blocked.
 
 ```json
 {"text":"A cat on a red sofa.","provider":"deepseek","model":"deepseek-flash","usage":{"uncached":812,"cache_read":0,"cache_write":0,"output":9}}

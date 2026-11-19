@@ -85,8 +85,8 @@ pub(crate) fn of(
 }
 
 /// 供应商侧工具那一步的标题（施工 HT-3，`docs/blueprint/view.md`「标题那一句」）：`core/view.json` 的 `hosted` 表对得上的照
-/// 核心那件工具的显示名、对象照表里说的参数；对不上的写原名、没有对象。`via` 是谁跑的（写这条回复的供应商，照
-/// [`via`] 挑好的），准备中也带。没有结果那一句：供应商不报给人看的一句。
+/// 核心那件工具的显示名、对象照表里说的参数（是数组的取第一个）；对不上的写原名、没有对象。`via` 是谁跑的（写这条回复的
+/// 供应商，照 [`via`] 挑好的），准备中也带。没有结果那一句：供应商不报给人看的一句。
 pub(crate) fn hosted(
     name: &str,
     args: &Value,
@@ -117,7 +117,7 @@ pub(crate) fn hosted(
     let object = mapped
         .and_then(|mapped| mapped.subject.as_deref())
         .and_then(|key| args.get(key))
-        .and_then(Value::as_str)
+        .and_then(first_text)
         .filter(|value| !value.is_empty())
         .map(|value| home_short(value, texts.home.as_deref()));
     Title {
@@ -126,6 +126,13 @@ pub(crate) fn hosted(
         via,
         ..Title::default()
     }
+}
+
+/// 对象那一格的字：是字符串的照它；是数组的取第一个（施工 DSR-4：DeepSeek 的搜索一次带几句 `queries`，标题写第一句）。
+fn first_text(value: &Value) -> Option<&str> {
+    value
+        .as_str()
+        .or_else(|| value.as_array()?.first()?.as_str())
 }
 
 /// 供应商 `provider` 给人看的名字：交进来的显示名，没有的照编号。

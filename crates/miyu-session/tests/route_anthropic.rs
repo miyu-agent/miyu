@@ -57,6 +57,8 @@ async fn a_call_goes_to_messages_with_the_anthropic_headers_and_is_decoded() {
                 cache_write: 1200,
                 output: 12,
                 reasoning: None,
+                searches: None,
+                fetches: None,
             }),
         })
     );
