@@ -91,7 +91,7 @@ pub struct Spent {
     pub requests: u64,
     /// 有用量、没金额的几次。
     pub unpriced: u64,
-    /// 用量，四项加起来；没报的是 0。
+    /// 用量，四项加起来，没报的是 0；供应商报了搜索、抓取次数的带着（施工 DSR-7），思考那一格不记。
     pub usage: Usage,
     /// 金额和币种；没有的没有。
     pub amount: Option<(String, f64)>,
@@ -192,9 +192,9 @@ pub(crate) fn insert(db: &Connection, rows: &[Spent]) -> Result<(), UsageError> 
     let mut insert = db.prepare_cached(
         "INSERT OR IGNORE INTO spent (source, seq, at, venue, session, parent, purpose, summary, \
          provider, model, requests, unpriced, uncached, cache_read, cache_write, output, amount, currency, \
-         parted, uncached_amount, cache_read_amount, cache_write_amount, output_amount) \
+         parted, uncached_amount, cache_read_amount, cache_write_amount, output_amount, searches, fetches) \
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, \
-         ?19, ?20, ?21, ?22, ?23)",
+         ?19, ?20, ?21, ?22, ?23, ?24, ?25)",
     )?;
     for row in rows {
         let usage = &row.usage;
@@ -222,6 +222,9 @@ pub(crate) fn insert(db: &Connection, rows: &[Spent]) -> Result<(), UsageError> 
             part(row.parts.and_then(|parts| parts.cache_read)),
             part(row.parts.and_then(|parts| parts.cache_write)),
             part(row.parts.and_then(|parts| parts.output)),
+            // 搜索、抓取的次数（施工 DSR-7）：没报的记 0，查的时候 0 的不带。
+            integer(usage.searches.unwrap_or(0), "usage")?,
+            integer(usage.fetches.unwrap_or(0), "usage")?,
         ])?;
     }
     Ok(())
