@@ -40,7 +40,9 @@ DeepSeek 官方的接口自带两个联网工具：`deepseek_web_search`（搜�
 - 发给 DeepSeek 的请求里，在 `tools` 数组末尾按固定顺序加上 `{"type": "deepseek_web_search"}` 和 `{"type": "deepseek_read_url"}`；
 - 工具面里去掉 Miyu 自己的网络搜索（`web_search`）和抓取网页（`web_fetch`）两个工具，避免两边都搜。
 
-没有激活时（比如换成了别家模型、用的是中转站、或者手动把接口改成了 chat），按「自动」的顺序使用别家搜索服务，AI 照样能搜索。
+没有激活时（比如换成了别家模型、用的是中转站、或者 DeepSeek 供应商走的是 OpenAI 兼容接口），按「自动」的顺序使用别家搜索服务，AI 照样能搜索。
+
+**选这个选项时弹一句提示**：在终端或网页里选「DeepSeek Responses 接口内置」时，不检查当前的供应商设置，直接弹出一句提示「这个搜索服务只适用于 DeepSeek 官方的 Responses 接口」，只有一个「知道了」按钮。选项照常保存。DeepSeek 供应商的接口要不要改成 Responses，由用户自己到编辑供应商里改。
 
 预设里关掉了「网络搜索」时，这一项不起作用，两种搜索都不会发给模型。
 
@@ -65,22 +67,15 @@ DeepSeek 官方的接口自带两个联网工具：`deepseek_web_search`（搜�
 ### 5. 界面
 
 - 搜索步骤画成和 Miyu 自己的搜索一样的工具步骤，带「供应商」标记，例如「搜索 · DeepSeek」。点开能看到搜了哪些关键词、找到哪些网址。
-- 「联网服务」选了「DeepSeek Responses 接口内置」、但当前模型不满足激活条件时，设置页顶上显示一行：「当前对话模型不是走 Responses 接口的 DeepSeek 官方地址，按自动顺序使用其他搜索服务。」
+- 选「DeepSeek Responses 接口内置」时弹出那句提示（见第二节第 2 条），不另外检查、不另外显示提示行。
 
-## 三、前置的一步：DeepSeek 官方默认走 Responses 接口
+## 三、DeepSeek 官方的默认接口不变
 
-现在 DeepSeek 的档案（`resources/models/profiles.toml`）写的是 `driver = "openai-chat"`，接口选「自动」时走 chat completions。要让「自动」时就能用上这个功能，DeepSeek 官方的默认驱动改成 `openai-responses`。
+DeepSeek 的档案（`resources/models/profiles.toml`）照旧写 `driver = "openai-chat"`，接口选「自动」时仍然走 OpenAI 兼容的 chat completions，不改。想用「DeepSeek Responses 接口内置」的人，自己在编辑供应商里把接口选成 Responses（项目主人 2026-11-19 定）。
 
 已有的证据：项目主人在配置里手动选了 Responses 接口，11-19 下午那个会话 23 次请求、调用工具 13 次、思考开着，缓存命中率 87.5%，没有报错。带工具时思考回传不对 DeepSeek 会返回 400，没有报错说明 Responses 接口上的思考回传是对的。
 
-改之前要实测两件事：
-
-1. **缓存命中率**：在沙箱里用同一段多轮、带工具的对话，chat 接口和 Responses 接口各跑一遍，比较 `cache_read`，Responses 不能明显更差。
-2. **续写**：回答写到长度上限时，Miyu 现在在 chat 接口上用 `prefix` 让模型接着写（发到 `/beta/chat/completions`）。查 DeepSeek 的 Responses 文档有没有对应的写法并实测；没有的话，写清楚 Responses 接口上续写的退路。
-
-另外核对一件：2026-11-19 实测，Responses 接口只有 `deepseek-flash` 真的处理图片（读出了测试图上的字和颜色），`deepseek-v4-pro` 不看图（回答「无法查看这张图片」，图片没有算进输入 token）。改默认驱动之前，确认 Miyu 的模型资料把 `deepseek-v4-pro` 标成不收图，这样发图时会交给看图模型转成文字，而不是让 v4-pro 假装看不见。
-
-都没问题再改档案。改了以后，经过中转站使用 DeepSeek 的不受影响，因为中转站的驱动照它自己的档案或配置。
+要核对的一件：2026-11-19 实测，Responses 接口只有 `deepseek-flash` 真的处理图片（读出了测试图上的字和颜色），`deepseek-v4-pro` 不看图（回答「无法查看这张图片」，图片没有算进输入 token）。确认 Miyu 的模型资料把走 Responses 接口的 `deepseek-v4-pro` 当成不收图，这样发图时会交给看图模型转成文字。
 
 ## 四、有哪些限制
 
@@ -88,20 +83,19 @@ DeepSeek 官方的接口自带两个联网工具：`deepseek_web_search`（搜�
 - 深度思考搜索时，模型最多调用约 20 次工具再作答。
 - `deepseek_read_url` 只读最后一条用户消息里的链接，最多前 10 个不同的网址。AI 想读其他网址时读不到，这一点比 Miyu 自己的抓取网页弱。
 - 搜到的网页内容会放进上下文，每次搜索多用约一万个 token。
-- 只有 DeepSeek 官方地址、Responses 接口生效。
+- 只有 DeepSeek 官方地址、Responses 接口生效；DeepSeek 默认走 OpenAI 兼容接口，要用户自己改成 Responses。
 
 ## 五、施工分几步
 
-1. **实测**：第三节的两件事（缓存命中率对比、续写），结果写进第三节。
-2. **默认驱动**：实测通过后，DeepSeek 档案的默认驱动改成 `openai-responses`。
-3. **设置**：`net.search.source` 加 `deepseek-responses`，字表中英日三种语言。
-4. **组装请求**：激活条件判断、工具面替换（换模型时重新判断，改设置时下个会话生效），缓存守卫测试（同一会话两次请求的 `tools` 数组逐字节相同）。
-5. **驱动**：`openai-responses` 驱动接住 `web_search_call`、私有数据原样带回、用量记次数。
-6. **界面**：终端和网页「联网服务」的新选项和提示行。
-7. **实测**：用 DeepSeek 官方密钥在沙箱里跑一整轮：搜索、读链接、下一轮接着问刚才的网页、换到别家模型再问。
+1. **核对**：第三节那件（v4-pro 走 Responses 时当成不收图）。
+2. **设置**：`net.search.source` 加 `deepseek-responses`，字表中英日三种语言。
+3. **组装请求**：激活条件判断、工具面替换（换模型时重新判断，改设置时下个会话生效），缓存守卫测试（同一会话两次请求的 `tools` 数组逐字节相同）。
+4. **驱动**：`openai-responses` 驱动接住 `web_search_call`、私有数据原样带回、用量记次数。
+5. **界面**：终端和网页「联网服务」的新选项；选它时弹出那句提示。
+6. **实测**：用 DeepSeek 官方密钥在沙箱里跑一整轮：搜索、读链接、下一轮接着问刚才的网页、换到别家模型再问。
 
 ## 六、决定
 
-- 项目主人 2026-11-19 定：做成「联网服务」里的一个选项「DeepSeek Responses 接口内置」，出厂仍是自动；只在 DeepSeek 官方地址、Responses 接口时激活，其余情况自动退回；不另加供应商开关，不做通用的能力声明；群聊这类场所会话不另做保护；DeepSeek 官方「自动」时默认走 Responses 接口（实测通过以后）。
+- 项目主人 2026-11-19 定：做成「联网服务」里的一个选项「DeepSeek Responses 接口内置」，出厂仍是自动；只在 DeepSeek 官方地址、Responses 接口时激活，其余情况自动退回；不另加供应商开关，不做通用的能力声明；群聊这类场所会话不另做保护；DeepSeek 官方的默认接口不改，仍走 OpenAI 兼容接口；选这个搜索服务时直接弹一句提示「这个搜索服务只适用于 DeepSeek 官方的 Responses 接口」，不检查设置。
 - 没选：给所有供应商做通用的「等价服务端工具」能力声明（太复杂，先只给 DeepSeek 做）；无论预设开不开都加工具（预设会管不住、会悄悄多花钱）；在网络搜索包或 DeepSeek 工具包里做特判（层次不对）。
 - 重新讨论的条件：其他供应商也要接服务端搜索时，再考虑做成通用机制。
