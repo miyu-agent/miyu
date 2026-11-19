@@ -392,9 +392,9 @@ Tokyo Night is only the fallback when `Auto` finds nothing. It is not listed in 
 
 When follow the avatar, follow the wallpaper or terminal colors has several candidate main colors, you can pick one in `Appearance → Color scheme → Main color` on the settings page. A pick for follow the wallpaper or terminal colors is written to `tui.theme_seed`; a pick for follow the avatar is written back to that persona.
 
-Light or dark (`tui.theme_mode`): auto follows the terminal's background, and counts as dark if the background cannot be queried; you can also choose to always use dark or light.
+Color mode (`tui.theme_mode`): auto follows the terminal's background, and counts as dark if the background cannot be queried; you can also choose to always use dark or light.
 
-Paint the background (`tui.theme_background`, on as shipped): the whole interface is painted in the scheme's background color. Terminal colors do not paint the background, and the settings page does not list this item for them.
+Background fill (`tui.theme_background`, on as shipped): the whole interface is painted in the scheme's background color. Terminal colors do not paint the background, and the settings page does not list this item for them.
 
 ### Icons, theme, language
 
@@ -409,8 +409,8 @@ All `tui.*` keys are in [Config key reference](../config-keys.md#terminal). The 
 | Key | Default | Settings page | What it controls |
 |---|---|---|---|
 | `tui.theme` | `auto` | Appearance → Color scheme → Colors | Colors |
-| `tui.theme_mode` | `auto` | Appearance → Color scheme → Light or dark | Light or dark |
-| `tui.theme_background` | `true` | Appearance → Color scheme → Paint the background | Whether the background is painted |
+| `tui.theme_mode` | `auto` | Appearance → Color scheme → Color mode | Light or dark |
+| `tui.theme_background` | `true` | Appearance → Color scheme → Background fill | Whether the background is painted |
 | `tui.theme_seed` | — | Appearance → Color scheme → Main color | The main color used when following the wallpaper or terminal colors, in the form `#rrggbb` |
 | `tui.look` | — | Appearance → Theme | Theme package |
 | `tui.icons` | `nerd` | Appearance → Icons | `nerd` or `plain` |

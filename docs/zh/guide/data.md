@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-这一页说明 Miyu 把你的会话、设置、key 和记忆放在哪里，哪些需要备份、哪些可以删除，以及怎么迁移到另一台电脑或者换一个存放位置。
+这一页说明 Miyu 把你的会话、设置、密钥和记忆放在哪里，哪些需要备份、哪些可以删除，以及怎么迁移到另一台电脑或者换一个存放位置。
 
 ## 数据根的位置
 
@@ -100,7 +100,7 @@ $env:MIYU_HOME = 'D:\miyu'
 | 位置 | 内容 | 手动修改 | 删除后 | 需要备份 |
 |---|---|---|---|---|
 | `etc/config.toml` | 系统配置，见 [配置](config.md) | 可以 | 设置回到出厂状态 | 需要 |
-| `etc/private/secrets.toml` | 密钥，由 `miyu provider login` 写入 | 可以 | 保存的 key 全部丢失 | 需要 |
+| `etc/private/secrets.toml` | 密钥，由 `miyu provider login` 写入 | 可以 | 保存的密钥全部丢失 | 需要 |
 | `etc/private/access.json` | 网页界面访问密码的哈希 | 不要 | 访问密码丢失，需要重新设置 | 需要 |
 | `etc/private/logins.json` | 各个浏览器登录用的令牌的哈希 | 不要 | 其他设备都需要重新登录 | 需要 |
 | `etc/trust.toml` | 信任过哪些项目配置 | 用 `miyu config trust` | 项目配置需要重新信任 | 需要 |
@@ -179,7 +179,7 @@ tar -czf "$HOME\miyu-backup.tar.gz" -C $HOME --exclude=.miyu/var/cache --exclude
 
 `miyu core stop` 停止核心时，通讯平台这类扩展也会跟着停止。备份完成后，打开 `miyu` 或网页界面，核心就会重新启动；如果安装了开机启动服务，并且希望服务继续管理核心，再运行 `miyu service enable`，详细的见 [常驻和服务器](service.md#让服务立即接管)。
 
-> 备份里有明文的 key（`etc/private/secrets.toml`），以及全部的对话和记忆。把备份放到别处之前，先自己加密，例如 `gpg -c miyu-backup-2026-11-14.tar.gz`。
+> 备份里有明文的密钥（`etc/private/secrets.toml`），以及全部的对话和记忆。把备份放到别处之前，先自己加密，例如 `gpg -c miyu-backup-2026-11-14.tar.gz`。
 
 如果只想迁移一两个会话，可以使用会话导出，详细的见 [会话](sessions.md#导出导入)。
 
@@ -261,7 +261,7 @@ Get-ChildItem $HOME\.miyu\*\* -Directory | ForEach-Object { [pscustomobject]@{ M
 
 ## 在同一台电脑上使用多个数据根
 
-如果想把工作和私人用途分开，可以各用一个数据根，它们互不影响：会话、设置、key、记忆和安装的软件包都是各自独立的，各自运行自己的核心。在 bash 里可以这样设置：
+如果想把工作和私人用途分开，可以各用一个数据根，它们互不影响：会话、设置、密钥、记忆和安装的软件包都是各自独立的，各自运行自己的核心。在 bash 里可以这样设置：
 
 ```bash
 alias miyu-work='MIYU_HOME=$HOME/miyu-work miyu'

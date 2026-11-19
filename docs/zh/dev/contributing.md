@@ -58,7 +58,7 @@
 
    在 PowerShell 里用 `$env:` 设置的变量只留在这个窗口里，所以后面几步要在同一个窗口里接着做。
 
-   这条命令会在 `$HOME/miyu-dev` 建好骨架，并写入 `etc/config.toml`：一家供应商 `dev`（驱动是 `openai-chat`），默认模型是 `dev/example-chat`。地址从环境变量 `MIYU_DEV_BASE_URL` 读取，key 从 `MIYU_DEV_API_KEY` 读取，两样都不写进文件。可以用 `MIYU_DEV_WINDOW` 另外指定上下文窗口。如果目录里已经有配置，不会覆盖它。
+   这条命令会在 `$HOME/miyu-dev` 建好骨架，并写入 `etc/config.toml`：一家供应商 `dev`（驱动是 `openai-chat`），默认模型是 `dev/example-chat`。地址从环境变量 `MIYU_DEV_BASE_URL` 读取，密钥从 `MIYU_DEV_API_KEY` 读取，两样都不写进文件。可以用 `MIYU_DEV_WINDOW` 另外指定上下文窗口。如果目录里已经有配置，不会覆盖它。
 
 3. 运行：
 
@@ -77,7 +77,7 @@
 
    在设置了 `MIYU_HOME` 的窗口里，之后运行的 `miyu` 都会使用开发数据根。
 
-   `MIYU_RESOURCES` 指向源码树里的 `resources/`，因为 `target/debug/` 旁边没有资源目录。地址和 key 只有出现在启动核心的那个进程的环境里才有效，核心启动以后再修改变量不会生效。
+   `MIYU_RESOURCES` 指向源码树里的 `resources/`，因为 `target/debug/` 旁边没有资源目录。地址和密钥只有出现在启动核心的那个进程的环境里才有效，核心启动以后再修改变量不会生效。
 
 4. 停掉这个数据根的核心：
 
@@ -110,7 +110,7 @@ $env:MIYU_CORE_BIN = '<核心检出>\target\debug\miyu.exe'
 cargo run
 ```
 
-`miyu pkg install` 会启动核心并让它留着运行，所以地址和 key 的变量要写在这一条命令上。终端界面启动核心时只认 `MIYU_CORE_BIN`，不会去 `PATH` 里找 `miyu`；如果核心已经在运行，不设置这个变量也能连上。
+`miyu pkg install` 会启动核心并让它留着运行，所以地址和密钥的变量要写在这一条命令上。终端界面启动核心时只认 `MIYU_CORE_BIN`，不会去 `PATH` 里找 `miyu`；如果核心已经在运行，不设置这个变量也能连上。
 
 网页界面：在 `miyu-web` 仓库根目录编译演示用的桥，它负责提供页面文件，并把浏览器的 `/ws` 转给核心：
 

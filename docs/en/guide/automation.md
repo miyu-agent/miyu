@@ -100,8 +100,8 @@ When the core stops or restarts, all running background commands are stopped and
 
 | Limit | Value |
 |---|---|
-| How long one background command can run at most | Set by `jobs.max_running`, `30m` by default, and it can be set from `1m` to `2h`. When the time is up, the command is stopped and recorded as `stopped: ran too long` |
-| How much one background command can output at most | 5 GB; when it is reached, the command is stopped and recorded as `stopped: too much output` |
+| How long one background command can run at most | Set by `jobs.max_running`, `30m` by default, and it can be set from `1m` to `2h`. When the time is up, the command is stopped and recorded as `stopped: time limit` |
+| How much one background command can output at most | 5 GB; when it is reached, the command is stopped and recorded as `stopped: output too large` |
 | How many times a watched command can reach the AI within an hour | 120 |
 
 To change the longest running time, change it in `General → Sessions → Longest background command` on the settings page (type `/settings` in the terminal UI or the web UI to open it), or run:

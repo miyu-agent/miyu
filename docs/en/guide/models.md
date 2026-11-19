@@ -249,7 +249,7 @@ For a pool with `subagent = true`, the AI can pick it when it dispatches a subag
 
 In the web interface, pools are on the `Model pools` tab of the `Models` settings page, with one card per pool, and the last row of each card is the `Available to subagents` switch. Click `+ New model pool` below the cards and enter a name; an `Available to subagents` switch appears under the name (off by default), and pressing Enter creates the pool. Changes are saved straight into `~/.miyu/etc/config.toml`.
 
-In the terminal interface, go to the `Pools` page of the `Providers & models` settings page and open a pool or create a new one. The field below `Strategy` is `Subagents can pick it`; choose `On` or `Off`. A new pool starts at `Off`.
+In the terminal interface, go to the `Pools` page of the `Providers & models` settings page and open a pool or create a new one. The field below `Strategy` is `Available to subagents`; choose `On` or `Off`. A new pool starts at `Off`.
 
 ## Switching models temporarily
 

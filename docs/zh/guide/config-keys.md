@@ -157,7 +157,7 @@
 | `providers.<编号>.name` | 字 | — | 最多 64 个字 | 界面上显示的名字。没有写时使用模型目录里那一家的名字，目录里也没有时使用编号。 | 立即 | 不能 |
 | `providers.<编号>.driver` | 选项 | — | `openai-chat`、`anthropic`、`openai-responses`，装了的扩展提供的 `<包>/<驱动名>` | 使用的驱动。认得出的供应商可以不写；认不出的供应商不写时按 `openai-chat` 处理。 | 下一轮 | 不能 |
 | `providers.<编号>.base_url` | 网址 | — | | 接口地址，驱动会把路径接在它后面。认得出的供应商可以不写。 | 下一轮 | 不能 |
-| `providers.<编号>.key` | 密钥引用 | — | | 这一家的 key。没有写时，请求不带认证头。 | 下一轮 | 不能 |
+| `providers.<编号>.key` | 密钥引用 | — | | 这一家的密钥。没有写时，请求不带认证头。 | 下一轮 | 不能 |
 | `providers.<编号>.catalog` | 名字 | — | 模型目录里一家的编号 | 这一家对应模型目录里的哪一家。 | 下一轮 | 不能 |
 | `providers.<编号>.price_multiplier` | 小数 | — | `0` 到 `1000` | 价格倍率，没有写时是 1。 | 下一轮 | 不能 |
 | `providers.<编号>.local` | 开关 | — | | 表示这是本机的服务，价格按 0 计算。没有写时根据地址判断。 | 下一轮 | 不能 |
@@ -249,11 +249,11 @@
 | 键 | 类型 | 默认 | 能写 | 说明 | 生效 | 项目配置 |
 |---|---|---|---|---|---|---|
 | `net.search.source` | 选项 | `"auto"` | `auto`、`exa`、`anysearch`、`deepseek`、`tavily`、`brave`、`searxng`，装了的扩展提供的 `<包>/<编号>` | 联网服务，也就是 AI 搜索网页、抓取网页时先使用哪一家。`auto` 只使用免费额度，搜索时按出厂的先后尝试 7 家；选了某一家时先使用它，用不了再按 `auto` 的顺序尝试；选了 `deepseek` 时，抓取网页也先交给它。见[联网搜索和抓网页](web-search.md)。 | 下一轮 | 不能 |
-| `net.search.exa.key` | 密钥引用 | — | | Exa 的 key。没有配置时使用免费额度。 | 下一轮 | 不能 |
-| `net.search.anysearch.key` | 密钥引用 | — | | AnySearch 的 key。配置了就使用你自己的额度，没有配置时使用免费额度。 | 下一轮 | 不能 |
-| `net.search.deepseek.key` | 密钥引用 | — | | DeepSeek 搜索和代为抓取网页使用的 key。没有配置时使用模型那边 DeepSeek 供应商的 key。 | 下一轮 | 不能 |
-| `net.search.tavily.key` | 密钥引用 | — | | Tavily 的 key。 | 下一轮 | 不能 |
-| `net.search.brave.key` | 密钥引用 | — | | Brave Search 的 key。 | 下一轮 | 不能 |
+| `net.search.exa.key` | 密钥引用 | — | | Exa 的密钥。没有配置时使用免费额度。 | 下一轮 | 不能 |
+| `net.search.anysearch.key` | 密钥引用 | — | | AnySearch 的密钥。配置了就使用你自己的额度，没有配置时使用免费额度。 | 下一轮 | 不能 |
+| `net.search.deepseek.key` | 密钥引用 | — | | DeepSeek 搜索和代为抓取网页使用的密钥。没有配置时使用模型那边 DeepSeek 供应商的密钥。 | 下一轮 | 不能 |
+| `net.search.tavily.key` | 密钥引用 | — | | Tavily 的密钥。 | 下一轮 | 不能 |
+| `net.search.brave.key` | 密钥引用 | — | | Brave Search 的密钥。 | 下一轮 | 不能 |
 | `net.search.searxng.url` | 网址 | — | | 你自己搭建的 SearXNG 的地址，这个 SearXNG 需要打开 JSON 格式。 | 下一轮 | 不能 |
 | `net.internal_domains` | 列表（字） | — | 每项最多 253 个字，例如 `example-corp.com` | 别人让 AI 上网时，AI 一律不访问这些域名，子域名也算在内。你自己使用时不受影响。 | 下一轮 | 不能 |
 

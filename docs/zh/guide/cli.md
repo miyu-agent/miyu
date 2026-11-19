@@ -19,7 +19,7 @@
 | 会话 | [`rename`](#miyu-rename) | 修改会话的名字 |
 | | [`session`](#miyu-session) | 导出、导入会话 |
 | 模型和配置 | [`setup`](#miyu-setup) | 接入第一个模型 |
-| | [`provider`](#miyu-provider) | 存储、列出、删除供应商的 key |
+| | [`provider`](#miyu-provider) | 存储、列出、删除供应商的密钥 |
 | | [`config`](#miyu-config) | 查看、修改配置，信任项目配置 |
 | 软件包 | [`pkg`](#miyu-pkg) | 安装、卸载、查询软件包 |
 | | [`mcp`](#miyu-mcp) | 登录、登出需要浏览器授权的 MCP 服务 |
@@ -110,7 +110,7 @@ miyu: 'miyu kb' 没有子命令 'ls'
 | `3` | 被打断（`Ctrl+C`），或者到了 `--timeout` 设定的时间 | `ask`、`redo`、`compact`、`memory dream`、`call` |
 | `4` | 这一轮结束了，但有几步需要人确认，因为没有人能确认，这几步没有执行 | `ask`、`redo`、`call` |
 | `5` | 没有可用的模型：没有配置模型，或者模型都在冷却 | `ask`、`redo`、`compact`、`recap` |
-| `130` | 粘贴 key 时取消了：按了 `Ctrl+C`；在 Linux、macOS 上一个字都没有输入时按 `Ctrl+D` 也算取消 | `setup`、`provider login` |
+| `130` | 粘贴密钥时取消了：按了 `Ctrl+C`；在 Linux、macOS 上一个字都没有输入时按 `Ctrl+D` 也算取消 | `setup`、`provider login` |
 
 因为在 `miyu ask` 里没有人能当场确认，所以需要确认的步骤一律不执行，退出码是 `4`。这类操作需要到终端界面或网页界面里完成，见 [权限和沙盒](permissions.md)。
 
@@ -121,8 +121,8 @@ miyu: 'miyu kb' 没有子命令 'ls'
 | 命令 | 读什么 |
 |---|---|
 | `miyu ask` | 如果没有写要说的话，就把读到的整段内容当作要说的话；如果话里有一个词正好是 `-`，就把读到的内容接在后面 |
-| `miyu setup --provider <编号>` | 不在终端里运行时，从管道读取 key |
-| `miyu provider login` | 从管道读取 key |
+| `miyu setup --provider <编号>` | 不在终端里运行时，从管道读取密钥 |
+| `miyu provider login` | 从管道读取密钥 |
 | `miyu call <工具> --json -` | 从管道读取参数的 JSON |
 | `miyu pkg`、`miyu upgrade` | 需要确认时读取一行回答。如果标准输入是关闭的，就不执行操作，此时需要加上 `--yes` |
 
@@ -299,15 +299,15 @@ miyu session export --md --for agent --last 20 -o -
 miyu setup [--provider <编号>] [--env <变量>] [--model <模型>]
 ```
 
-`miyu setup` 用来接入第一个模型：选择一家供应商，粘贴 key，测试连接，选择模型，然后写进系统配置。
+`miyu setup` 用来接入第一个模型：选择一家供应商，粘贴密钥，测试连接，选择模型，然后写进系统配置。
 
 | 参数 | 做什么 |
 |---|---|
 | `--provider <编号>` | 使用模型目录里的这一家供应商，不再让你选择 |
-| `--env <变量>` | 从核心环境里的这个变量读取 key，不再让你粘贴 |
+| `--env <变量>` | 从核心环境里的这个变量读取密钥，不再让你粘贴 |
 | `--model <模型>` | 使用这个模型，不再让你选择 |
 
-不在终端里运行时，必须写 `--provider`，key 从管道读取：
+不在终端里运行时，必须写 `--provider`，密钥从管道读取：
 
 ```bash
 echo "$KEY" | miyu setup --provider deepseek
@@ -317,9 +317,9 @@ echo "$KEY" | miyu setup --provider deepseek
 $key | miyu setup --provider deepseek
 ```
 
-在终端里粘贴 key 时不会显示内容，按 `Ctrl+C` 可以取消；在 Linux、macOS 上，一个字都没有输入时按 `Ctrl+D` 也会取消。
+在终端里粘贴密钥时不会显示内容，按 `Ctrl+C` 可以取消；在 Linux、macOS 上，一个字都没有输入时按 `Ctrl+D` 也会取消。
 
-退出码：`0` 表示已经写进配置；`1` 表示没有选择、没有收到 key、测试连接失败，或者核心拒绝了请求；`2` 表示参数不对，或者不在终端里运行却没有写 `--provider`；`130` 表示粘贴 key 时取消了。见 [模型](models.md#快速配置miyu-setup)。
+退出码：`0` 表示已经写进配置；`1` 表示没有选择、没有收到密钥、测试连接失败，或者核心拒绝了请求；`2` 表示参数不对，或者不在终端里运行却没有写 `--provider`；`130` 表示粘贴密钥时取消了。见 [模型](models.md#快速配置miyu-setup)。
 
 ## miyu provider
 
@@ -329,13 +329,13 @@ miyu provider list [--format <text|json>]
 miyu provider logout [<名字>]
 ```
 
-`miyu provider` 用来存储、列出和删除 key：
+`miyu provider` 用来存储、列出和删除密钥：
 
 | 子命令 | 做什么 |
 |---|---|
-| `login [<名字>]` | 存储一个 key。不写名字时，在终端里从配置用到的、已经存过的名字里选择。粘贴时不显示内容，也可以从管道读取 |
-| `list` | 列出已经存储的 key，以及配置里用到了但还没有存储的 key（显示为灰色）。不显示 key 的内容 |
-| `logout [<名字>]` | 删除一个 key。不写名字时，在终端里从已经存过的名字里选择 |
+| `login [<名字>]` | 存储一个密钥。不写名字时，在终端里从配置用到的、已经存过的名字里选择。粘贴时不显示内容，也可以从管道读取 |
+| `list` | 列出已经存储的密钥，以及配置里用到了但还没有存储的密钥（显示为灰色）。不显示密钥的内容 |
+| `logout [<名字>]` | 删除一个密钥。不写名字时，在终端里从已经存过的名字里选择 |
 
 例如：
 
@@ -347,9 +347,9 @@ echo "$KEY" | miyu provider login acme
 $key | miyu provider login acme
 ```
 
-粘贴 key 时取消的方法和 `miyu setup` 相同。
+粘贴密钥时取消的方法和 `miyu setup` 相同。
 
-退出码：`0` 表示成功；`1` 表示核心拒绝了请求、没有收到 key、没有选择，或者要删除的 key 没有存过；`2` 表示名字不符合写法，或者没有写名字又不在终端里运行；`130` 表示粘贴 key 时取消了。见 [模型](models.md#存放-key)。
+退出码：`0` 表示成功；`1` 表示核心拒绝了请求、没有收到密钥、没有选择，或者要删除的密钥没有存过；`2` 表示名字不符合写法，或者没有写名字又不在终端里运行；`130` 表示粘贴密钥时取消了。见 [模型](models.md#存放密钥)。
 
 ## miyu config
 

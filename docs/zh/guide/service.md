@@ -109,11 +109,11 @@ miyu service enable
 
 服务启动的核心看不到你在 shell 里设置的变量。`miyu service enable` 写的服务文件里只带 `MIYU_HOME`（如果设置了的话），不带其他任何变量；Windows 的任务计划连 `MIYU_HOME` 也不带。
 
-配置里写成 `{ env = "变量" }` 的 key，核心会从它自己启动时的环境里读取，读不到你 shell 里的变量。如果想让服务启动的核心用上这个 key，需要改用密钥文件：用 `miyu provider login` 把 key 存进密钥文件，配置里写 `{ secret = "名字" }`，这样核心会从密钥文件读取，不依赖环境变量。
+配置里写成 `{ env = "变量" }` 的密钥，核心会从它自己启动时的环境里读取，读不到你 shell 里的变量。如果想让服务启动的核心用上这个密钥，需要改用密钥文件：用 `miyu provider login` 把密钥存进密钥文件，配置里写 `{ secret = "名字" }`，这样核心会从密钥文件读取，不依赖环境变量。
 
 如果一定要使用环境变量：
 
-- systemd 用户服务：运行 `systemctl --user edit miyu`，加上 `Environment=` 那一行（写法见 [环境变量里的 key](#环境变量里的-key)）。如果直接修改 `miyu.service`，下次运行 `miyu service enable` 时修改会被覆盖。
+- systemd 用户服务：运行 `systemctl --user edit miyu`，加上 `Environment=` 那一行（写法见 [环境变量里的密钥](#环境变量里的密钥)）。如果直接修改 `miyu.service`，下次运行 `miyu service enable` 时修改会被覆盖。
 - launchd 的 plist 和桌面自启动的 `miyu.desktop`：手动修改的内容，同样会在下次运行 `miyu service enable` 时被覆盖。
 
 如果安装了系统托盘，也可以使用托盘菜单里的 `开机时启动`，让系统托盘在登录时启动，详细的见 [系统托盘](heads/applet.md)。
@@ -164,15 +164,15 @@ Miyu 仓库的 `packaging/` 目录里有现成的样例，它们都以 `miyu` �
 sudo -u miyu env MIYU_HOME=/var/lib/miyu XDG_CACHE_HOME=/var/cache miyu config get models.chat
 ```
 
-接入模型（见 [模型](models.md)）也是同样的写法，key 从管道读取：
+接入模型（见 [模型](models.md)）也是同样的写法，密钥从管道读取：
 
 ```sh
 echo "$DEEPSEEK_API_KEY" | sudo -u miyu env MIYU_HOME=/var/lib/miyu XDG_CACHE_HOME=/var/cache miyu provider login deepseek
 ```
 
-### 环境变量里的 key
+### 环境变量里的密钥
 
-配置里写成 `{ env = "变量" }` 的 key，核心会从它自己启动时的环境里读取，读不到你登录 shell 里的变量。所以如果核心是由服务启动的，要把变量写进服务里：
+配置里写成 `{ env = "变量" }` 的密钥，核心会从它自己启动时的环境里读取，读不到你登录 shell 里的变量。所以如果核心是由服务启动的，要把变量写进服务里：
 
 - systemd：运行 `sudo systemctl edit miyu`，加上：
 
@@ -185,7 +185,7 @@ echo "$DEEPSEEK_API_KEY" | sudo -u miyu env MIYU_HOME=/var/lib/miyu XDG_CACHE_HO
 - dinit：写进 `/etc/dinit.d/miyu.env`。
 - OpenRC、runit：加在样例里 `export` 那一行旁边。
 
-如果不想把 key 放进服务文件，可以用 `miyu provider login` 把 key 存进密钥文件，配置里写 `{ secret = "名字" }`。
+如果不想把密钥放进服务文件，可以用 `miyu provider login` 把密钥存进密钥文件，配置里写 `{ secret = "名字" }`。
 
 如果是在自己的电脑上用 `miyu service enable` 安装的服务，可以看 [服务和环境变量](#服务和环境变量)。
 
@@ -278,7 +278,7 @@ echo "$DEEPSEEK_API_KEY" | sudo -u miyu env MIYU_HOME=/var/lib/miyu XDG_CACHE_HO
 
 `core.log` 是核心自己写的，三个平台都有；无论核心是由服务启动的还是由界面启动的，日志都写在这里。如果核心由 systemd 管理，还可以用 `journalctl --user -u miyu`（服务器上的系统服务用 `journalctl -u miyu`）查看 systemd 为这个服务记录的输出。launchd 的 plist 和任务计划都没有设置输出的位置，所以只有 `core.log`。
 
-核心的日志一行一条，用英文记录，不记录对话内容和 key。日志的详细程度用 `log.level` 调整，可以在设置页的 `高级 → 运行日志 → 运行日志的级别` 里修改，或者运行：
+核心的日志一行一条，用英文记录，不记录对话内容和密钥。日志的详细程度用 `log.level` 调整，可以在设置页的 `高级 → 运行日志 → 运行日志的级别` 里修改，或者运行：
 
 ```sh
 miyu config set log.level debug

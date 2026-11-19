@@ -1577,6 +1577,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC21"><span class="n">DOC-21</span>跟上旧版终端集成的处理<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC22"><span class="n">DOC-22</span>界面原文对字表核一遍<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC23"><span class="n">DOC-23</span>改掉快速上手里的笔误<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sDOC24"><span class="n">DOC-24</span>正文里的 key 统一成密钥<span class="st">…</span></a></li>
         <li><a class="step review" href="#sHLP1"><span class="n">HLP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
@@ -61520,6 +61521,54 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/DOC-23-快速上手笔误.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sDOC24" aria-labelledby="h-sDOC24">
+  <div class="sheet-head"><h2 id="h-sDOC24"><span class="no">DOC-24</span>手册正文里的「key」统一成「密钥」，引的界面原话跟上各仓库改过的中文说法</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">项目主人定中文界面统一写「密钥」。核心和终端界面、网页界面、通讯平台、精简版都改了一批中文说法，手册正文里的「key」和引的界面原话要跟上。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">docs/zh（19 页）　docs/en（4 页）　AGENTS.md</span><span class="dir-note">DOC-24</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>中文页正文里指 API 密钥的「key」换成「密钥」，155 处；四个小标题和指到它们的锚点跟着改</li>
+              <li>AGENTS.md「文档的规矩」里把这个术语写明：参数名、配置键、环境变量名里的 key 照原样</li>
+              <li>重新导出各仓库的字表再核一遍，四十来处引的界面原话照现在的字改：通讯平台的令牌和判断结果、终端集成的几句、核心的启动报错、背景填充和子代理可用等改了名的设置项</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">模型供应商发的 API key 在中文里写「密钥」，不写「key」</span><span class="rl">AGENTS.md「文档的规矩」第 17 条</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DOC-24</dd></div>
+        <div><dt>名称</dt><dd>手册正文里的「key」统一成「密钥」，引的界面原话跟上各仓库改过的中文说法</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">DOC-24</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>正文里的「key」换完重扫一处不剩；界面原话每一句都在对应仓库看到现在的写法再改</span></li>
+        <li><span class="ok">✓</span><span>改完重跑扫描，找不到原文的回到各仓库改字之前的数目，都是逐条看过的示例值、前缀、命令示例</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/DOC-24-正文里的密钥.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

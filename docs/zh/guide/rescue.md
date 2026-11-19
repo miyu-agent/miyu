@@ -12,7 +12,7 @@ LiteMiyu 的文件放在它自己的目录里，和 Miyu 的数据根（默认�
 
 | 内容 | 位置 |
 |---|---|
-| 配置 `config.toml`、key `secrets.toml` | `~/.config/litemiyu/` |
+| 配置 `config.toml`、密钥 `secrets.toml` | `~/.config/litemiyu/` |
 | 会话、记忆 | `~/.local/share/litemiyu/` |
 | 缓存 | `~/.cache/litemiyu/` |
 | 运行日志、输入历史 | `~/.local/state/litemiyu/` |
@@ -44,7 +44,7 @@ miyu rescue [<参数>…]
 
 这条命令不连接核心，也不启动核心，而是做下面这几件事：
 
-1. 根据 Miyu 的系统配置 `~/.miyu/etc/config.toml` 和密钥文件，算出默认模型（`models.chat`）连接哪一家供应商、使用哪个模型、什么接口、什么 key。
+1. 根据 Miyu 的系统配置 `~/.miyu/etc/config.toml` 和密钥文件，算出默认模型（`models.chat`）连接哪一家供应商、使用哪个模型、什么接口、什么密钥。
 2. 把这四项放进四个环境变量，交给 LiteMiyu。如果其中某个变量你自己已经设置了，就保留你设置的值。
 
    | 环境变量 | 内容 |
@@ -52,13 +52,13 @@ miyu rescue [<参数>…]
    | `LITEMIYU_RESCUE_BASE_URL` | 供应商的地址 |
    | `LITEMIYU_RESCUE_MODEL` | 模型名 |
    | `LITEMIYU_RESCUE_API` | 接口：`openai-chat`、`anthropic`、`openai-responses` |
-   | `LITEMIYU_RESCUE_API_KEY` | key；如果默认模型没有 key，就不设置这个变量 |
+   | `LITEMIYU_RESCUE_API_KEY` | 密钥；如果默认模型没有密钥，就不设置这个变量 |
 
 3. 运行 `litemiyu --rescue`，把你写的参数原样接在后面传过去。退出码就是 LiteMiyu 的退出码。
 
 Miyu 的数据根在哪里不会传给 LiteMiyu，所以修复时需要你告诉 AI。
 
-LiteMiyu 能识别的参数有三个，写了的参数会覆盖环境变量：`--base-url <地址>`、`--model <名字>`、`--api <种类>`。key 只能通过环境变量传入。
+LiteMiyu 能识别的参数有三个，写了的参数会覆盖环境变量：`--base-url <地址>`、`--model <名字>`、`--api <种类>`。密钥只能通过环境变量传入。
 
 在下面几种无法填写的情况下，`miyu rescue` 会先输出一行警告，四个变量一个都不填，照样启动 LiteMiyu，由 LiteMiyu 使用它自己的配置：
 
@@ -79,7 +79,7 @@ LiteMiyu 能识别的参数有三个，写了的参数会覆盖环境变量：`-
 
 ## 修复示例
 
-下面用一个例子演示完整的修复过程：你手动修改了 `~/.miyu/etc/config.toml` 之后，运行 `miyu` 时报错 `核心起不来：…`。
+下面用一个例子演示完整的修复过程：你手动修改了 `~/.miyu/etc/config.toml` 之后，运行 `miyu` 时报错 `核心无法启动：…`。
 
 1. 运行：
 
@@ -92,7 +92,7 @@ LiteMiyu 能识别的参数有三个，写了的参数会覆盖环境变量：`-
 2. 把情况告诉 AI，例如：
 
    ```text
-   Miyu 的核心起不来。它的数据根是 ~/.miyu，系统配置是 ~/.miyu/etc/config.toml，核心日志是 ~/.miyu/var/log/core.log。
+   Miyu 的核心无法启动。它的数据根是 ~/.miyu，系统配置是 ~/.miyu/etc/config.toml，核心日志是 ~/.miyu/var/log/core.log。
    看日志最后几十行找出原因，把配置改好，告诉我改了哪里。
    ```
 
@@ -100,21 +100,21 @@ LiteMiyu 能识别的参数有三个，写了的参数会覆盖环境变量：`-
 4. 按 `Ctrl+D`（输入框为空时）或者输入 `/exit` 退出。
 5. 运行 `miyu`，确认核心能否正常启动。
 
-如果配置文件整份都无法解析，第 1 步会先输出 `读不了 Miyu 的配置` 的警告。如果 LiteMiyu 自己也没有配置模型，它不会进入界面，而是输出缺少的内容和用法后退出（退出码 `2`），第一行是：
+如果配置文件整份都无法解析，第 1 步会先输出 `无法读取 Miyu 的配置` 的警告。如果 LiteMiyu 自己也没有配置模型，它不会进入界面，而是输出缺少的内容和用法后退出（退出码 `2`），第一行是：
 
 ```text
 litemiyu --rescue：没有能用的模型，缺 LITEMIYU_RESCUE_BASE_URL、LITEMIYU_RESCUE_MODEL。
 ```
 
-此时需要你自己把模型告诉它（把地址和模型名换成你的供应商的，示例里的 key 是假的）：
+此时需要你自己把模型告诉它（把地址和模型名换成你的供应商的，示例里的密钥是假的）：
 
 ```sh
 LITEMIYU_RESCUE_API_KEY=sk-example miyu rescue --base-url https://api.deepseek.com/v1 --model deepseek-chat
 ```
 
-没有写 `--api` 时按 `openai-chat` 处理。没有提供 key 时照样会进入界面，界面上会提示 `没给 key（LITEMIYU_RESCUE_API_KEY），请求不带认证`。
+没有写 `--api` 时按 `openai-chat` 处理。没有提供密钥时照样会进入界面，界面上会提示 `未提供密钥（LITEMIYU_RESCUE_API_KEY），请求不带认证`。
 
-如果想以后不用手动输入这些：趁 Miyu 还正常的时候，运行 `litemiyu config` 打开配置界面，在添加供应商的地方选择 `从 Miyu 导入…`，把 Miyu 的供应商和 key 导入 LiteMiyu 自己的配置，再选好主对话的模型即可。环境变量和参数都没有提供模型时，应急模式会使用 LiteMiyu 自己配置里的模型。
+如果想以后不用手动输入这些：趁 Miyu 还正常的时候，运行 `litemiyu config` 打开配置界面，在添加供应商的地方选择 `从 Miyu 导入…`，把 Miyu 的供应商和密钥导入 LiteMiyu 自己的配置，再选好主对话的模型即可。环境变量和参数都没有提供模型时，应急模式会使用 LiteMiyu 自己配置里的模型。
 
 如果 `miyu` 这个程序本身坏了、无法运行，可以直接运行 `litemiyu --rescue`，模型按照上面的方法通过环境变量和参数提供。
 

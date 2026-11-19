@@ -75,7 +75,7 @@ max_running = "45m"
 | 输出 | 意思 | 例如 |
 |---|---|---|
 | `立即生效` | 修改之后马上使用新的值 | `ui.language`、`log.level`、`core.idle_exit`、模型的冷却 |
-| `下一轮生效` | 开着的会话从下一轮开始使用新的值，正在运行的这一轮仍然使用原来的值 | 供应商的地址和 key、受保护的命令、压缩 |
+| `下一轮生效` | 开着的会话从下一轮开始使用新的值，正在运行的这一轮仍然使用原来的值 | 供应商的地址和密钥、受保护的命令、压缩 |
 | `新会话生效` | 以后开始的会话使用新的值，已经开着的会话不变 | `models.chat`、`persona.default`、`permission.start_read_only` |
 | `重启后生效` | 界面（终端界面、网页界面）下次启动时才会读取 | `ui.startup`，以及软件包里没有写生效时机的键 |
 | `重启核心后生效` | 核心下次启动时才会读取 | `core.workers` |
@@ -187,12 +187,12 @@ Miyu 从会话的工作目录开始，一层层往上找 `.miyu/config.toml`，�
 
 ## 密钥
 
-配置里不写 key 本身，只写引用：
+配置里不写密钥本身，只写引用：
 
-- `{ secret = "名字" }`：从密钥文件 `~/.miyu/etc/private/secrets.toml` 里读取。Linux、macOS 上，Miyu 每次写这个文件都会把权限设成 `0600`，只有你能读写；Windows 上不另外设置权限，沿用数据根继承的访问控制。三个平台都不使用系统的钥匙串，key 以原文写在这个文件里。
+- `{ secret = "名字" }`：从密钥文件 `~/.miyu/etc/private/secrets.toml` 里读取。Linux、macOS 上，Miyu 每次写这个文件都会把权限设成 `0600`，只有你能读写；Windows 上不另外设置权限，沿用数据根继承的访问控制。三个平台都不使用系统的钥匙串，密钥以原文写在这个文件里。
 - `{ env = "变量" }`：从核心启动时的环境变量里读取，不写进任何文件。由服务启动的核心看不到你 shell 里的变量，见 [常驻和服务器](service.md)。
 
-存储、查看、删除密钥都使用 `miyu provider`。它不只管理模型供应商的 key，任何名字的密钥都可以存：
+存储、查看、删除密钥都使用 `miyu provider`。它不只管理模型供应商的密钥，任何名字的密钥都可以存：
 
 | 命令 | 做什么 |
 |---|---|
@@ -200,7 +200,7 @@ Miyu 从会话的工作目录开始，一层层往上找 `.miyu/config.toml`，�
 | `miyu provider list [--format text\|json]` | 列出已经存储的密钥，以及配置里用到了但还没有存储的密钥，并标出谁在使用。不显示值 |
 | `miyu provider logout [<名字>]` | 删除一个密钥 |
 
-名字以小写字母开头，只包含小写字母、数字、`-` 和 `_`，最长 64 个字符。例如给网络搜索存储 Tavily 的 key：
+名字以小写字母开头，只包含小写字母、数字、`-` 和 `_`，最长 64 个字符。例如给网络搜索存储 Tavily 的密钥：
 
 ```bash
 echo "$TAVILY_KEY" | miyu provider login tavily
@@ -222,7 +222,7 @@ miyu config set net.search.tavily.key "{ secret = 'tavily' }"
 | `providers.<编号>.base_url`、`models.catalog.url`、`net.search.searxng.url`、`packages.source`、`packages.sources.<编号>.url` | 不能 | 能 |
 | MCP 服务的 `env`、`bearer`、`headers` 里的值 | 能 | 能 |
 
-如果密钥类型的键写成了明文，会报类型不对，这一项不算数。如果引用的密钥还没有存储，或者环境变量没有设置，只会报警告，用到这一项时它没有 key。
+如果密钥类型的键写成了明文，会报类型不对，这一项不算数。如果引用的密钥还没有存储，或者环境变量没有设置，只会报警告，用到这一项时它没有密钥。
 
 ## 环境变量
 

@@ -201,7 +201,7 @@ When the terminal UI does not display correctly, the common cases and what to do
 | What you see | What to do |
 |---|---|
 | Icons show as boxes or question marks | The font has no Nerd Font icons. Install a Nerd Font, or run `miyu config set tui.icons plain` to use plain characters. |
-| The colors are wrong or too harsh | On the settings page, adjust `Colors`, `Light or dark` and `Paint the background` under `Appearance → Color scheme`; the matching config keys are `tui.theme`, `tui.theme_mode` and `tui.theme_background`. |
+| The colors are wrong or too harsh | On the settings page, adjust `Colors`, `Color mode` and `Background fill` under `Appearance → Color scheme`; the matching config keys are `tui.theme`, `tui.theme_mode` and `tui.theme_background`. |
 | The command line's output has color codes that look like garbage | Set the environment variable `NO_COLOR=1`. |
 | The terminal UI crashed | The crash record is in `tui/crash.log`; for its location see "Logs" above. |
 

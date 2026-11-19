@@ -29,7 +29,7 @@ miyu check
 | 写错的 MCP 服务，以及列出来却没有登记上的工具 | 系统配置、软件包清单 |
 | 定时任务表里读不懂的行 | 定时任务表 |
 | 写坏了的工具说明、提示词覆盖 | 覆盖文件 |
-| 扩展提供的模型驱动：软件包没有批准，或者该配置的 key 没有配置 | 系统配置 |
+| 扩展提供的模型驱动：软件包没有批准，或者该配置的密钥没有配置 | 系统配置 |
 | 安装好的软件包文件被修改过或者缺失 | 软件包目录 |
 
 上面的 `~/.miyu` 指的是数据根（默认是 `~/.miyu`，Windows 上是 `%USERPROFILE%\.miyu`）；如果设置了环境变量 `MIYU_HOME`，就是它指向的目录。如果只想检查一份文件，就把它写在命令后面：
@@ -81,7 +81,7 @@ tail -n 50 ~/.miyu/var/log/core.log
 
 在 Windows PowerShell 里运行：`Get-Content -Tail 50 $HOME\.miyu\var\log\core.log`。
 
-核心的日志一行一条，用英文写，不记录对话内容和 key。核心每次启动时会记一行 `starting`，带着版本和进程号。如果要记录得更详细，就调整 `log.level`：
+核心的日志一行一条，用英文写，不记录对话内容和密钥。核心每次启动时会记一行 `starting`，带着版本和进程号。如果要记录得更详细，就调整 `log.level`：
 
 ```sh
 miyu config set log.level debug
@@ -106,11 +106,11 @@ miyu
 
 | 看到的 | 原因 | 怎么办 |
 |---|---|---|
-| `核心起不来：…` | 核心启动时出了错，冒号后面是核心给出的原因。 | 按照原因修改。如果看不懂原因，就看 `core.log` 的最后几行。 |
-| `核心没起来，也没说为什么：…` | 核心没有给出原因就退出了。 | 查看 `~/.miyu/var/log/core.log` 的最后几行。 |
+| `核心无法启动：…` | 核心启动时出了错，冒号后面是核心给出的原因。 | 按照原因修改。如果看不懂原因，就看 `core.log` 的最后几行。 |
+| `核心没有启动，也没有给出原因：查看数据根的 …` | 核心没有给出原因就退出了。 | 查看 `~/.miyu/var/log/core.log` 的最后几行。 |
 | `等待核心启动超时` | 核心 60 秒后还没有启动完成，多半是因为磁盘繁忙。 | 再试一次；还不行就查看 `core.log`。 |
 | `其他程序正在启动核心，等待超时` | 另一个界面正在启动核心，60 秒后还没有完成。 | 和上一行一样：再试一次，还不行就查看 `core.log`。 |
-| `拉不起核心：…` | 找不到核心程序，或者没有运行它的权限。 | 重新安装 Miyu，见 [安装、升级、卸载](install.md)。 |
+| `无法启动核心：…` | 找不到核心程序，或者没有运行它的权限。 | 重新安装 Miyu，见 [安装、升级、卸载](install.md)。 |
 | `… 认不出是 Miyu 的数据根 …` | 数据根的位置上已经有其他东西。0.7 旧版的数据目录也会报这一句。 | 如果是 0.7 旧版的数据目录，按照这句话后半部分说的把它挪开、安装迁移软件包、进行迁移，见 [从 0.7 旧版迁过来](migrate.md)；如果不是，就把 `MIYU_HOME` 设成一个空目录。 |
 | `… 是旧版 Miyu 的数据根，新版不认 …` | 这是正式发布之前的开发版留下的数据根。 | 把 `MIYU_HOME` 设成一个空目录。 |
 | `… 的布局不是这一版的 …` | 更新版本的 Miyu 写过这个数据根。 | 使用写过它的那个版本，或者换一个数据根。 |
@@ -151,16 +151,16 @@ Stop-Process -Id <进程号>
 
 如果核心坏了、所有界面都打不开，就用 `miyu rescue` 进入 LiteMiyu 的应急模式来修复，应急模式不经过核心。LiteMiyu 只有 Linux x86_64 的版本，macOS、Windows 上没有。详细的见 [应急修复](rescue.md)。
 
-## 没有配置模型或 key 不对
+## 没有配置模型或密钥不对
 
-Miyu 需要配置好模型和 key 才能对话。常见的提示和处理方法如下：
+Miyu 需要配置好模型和密钥才能对话。常见的提示和处理方法如下：
 
 | 看到的 | 怎么办 |
 |---|---|
 | `未配置模型`，提示运行 `miyu setup`；`miyu ask` 的退出码是 `5` | 运行 `miyu setup`，见 [模型](models.md)。 |
-| `miyu check` 警告 `… 引用的密钥 … 还没有设置` | 运行 `miyu provider login <名字>`，把 key 存进去。 |
+| `miyu check` 警告 `… 引用的密钥 … 还没有设置` | 运行 `miyu provider login <名字>`，把密钥存进去。 |
 | `miyu check` 警告 `… 引用的环境变量 … 在核心启动时没有设置` | 核心是在设置这个变量之前启动的。运行 `miyu core stop`，再在设置了这个变量的 shell 里重新打开 Miyu。开机启动服务启动的核心看不到 shell 里的变量，见 [常驻和服务器](service.md#服务和环境变量)。 |
-| `模型请求失败。`、认证失败 | key 填错了或者已经过期，重新运行 `miyu provider login <名字>`。 |
+| `模型请求失败。`、认证失败 | 密钥填错了或者已经过期，重新运行 `miyu provider login <名字>`。 |
 
 ## 模型持续报错
 
@@ -188,7 +188,7 @@ AI 运行的命令可能被权限设置拦下，或者停在等待确认的状�
 | `缺少依赖的软件包。` | 先安装它依赖的软件包，可以用 `miyu pkg info <编号>` 查看依赖。 |
 | `不支持当前系统。` | 这个软件包没有适合你这种系统的版本。 |
 | `软件源连不上。` `软件包下载失败。` | 检查网络，过一会儿运行 `miyu pkg update` 再试。 |
-| `没找到 <程序>：清单 … 说 miyu <名字> 由它跑。重装这个软件包再试。` | 运行 `miyu pkg install <编号>` 重新安装。 |
+| `没有找到 <程序>：清单 … 写明 miyu <名字> 由它运行。重新安装这个软件包后再试。` | 运行 `miyu pkg install <编号>` 重新安装。 |
 | `界面 'tui' 没有安装` | 运行 `miyu pkg install tui` 重新装回来。 |
 | 扩展停了 | 查看 `~/.miyu/var/log/<编号>/stderr`，那里是扩展自己报的错。 |
 
@@ -201,7 +201,7 @@ AI 运行的命令可能被权限设置拦下，或者停在等待确认的状�
 | 看到的 | 怎么办 |
 |---|---|
 | 图标显示成方块、问号 | 字体里没有 Nerd Font 的图标。安装一个 Nerd Font，或者运行 `miyu config set tui.icons plain` 改用普通字符。 |
-| 颜色不对、太刺眼 | 在设置页 `外观 → 配色方案` 里调整 `配色`、`明暗`、`铺底色`，对应的配置键是 `tui.theme`、`tui.theme_mode`、`tui.theme_background`。 |
+| 颜色不对、太刺眼 | 在设置页 `外观 → 配色方案` 里调整 `配色`、`明暗`、`背景填充`，对应的配置键是 `tui.theme`、`tui.theme_mode`、`tui.theme_background`。 |
 | 命令行的输出里有像乱码一样的颜色符号 | 设置环境变量 `NO_COLOR=1`。 |
 | 终端界面崩溃了 | 崩溃记录在 `tui/crash.log` 里，位置见上面的「日志」。 |
 
@@ -264,7 +264,7 @@ AI 运行的命令可能被权限设置拦下，或者停在等待确认的状�
 | 只读模式下命令的输出是 `miyu-sandbox: cannot confine: no desktop session, programs in the sandbox cannot start here; use Miyu from the desktop, or turn the sandbox off`，退出码 `125` | Windows | 核心不在桌面会话里，例如核心是通过 SSH 连进来以后启动的。 | 从已登录的桌面使用 Miyu，或者切换到开放权限，见 [常驻和服务器](service.md#windows-上的只读会话)。 |
 | 只读模式下命令的输出是 `miyu-sandbox: cannot confine: this Windows has no base container (MXC tier …)` | Windows | 这台 Windows 无法启动沙盒需要的基础容器。 | 切换到开放权限再运行。 |
 | 只读模式下命令的输出后面跟着 `The sandbox blocks WMI. Commands that need it work outside the sandbox.` | Windows | 这条命令需要用到 WMI，而沙盒里连不上 WMI。 | 切换到开放权限，再让 AI 运行一次，见 [权限和沙盒](permissions.md#三个平台)。 |
-| `无法安装服务：Windows 任务计划无法携带 MIYU_HOME`，下一行是 `提示：取消设置 MIYU_HOME 后重试`；终端界面设置页的 `开机启动核心` 一项显示 `设了 MIYU_HOME 时 Windows 上装不了` | Windows | 任务计划无法携带环境变量。 | 用默认的数据根安装服务；如果要使用其他数据根，就使用系统托盘的 `开机时启动`，见 [数据和备份](data.md#更换数据根的位置)。 |
+| `无法安装服务：Windows 任务计划无法携带 MIYU_HOME`，下一行是 `提示：取消设置 MIYU_HOME 后重试`；终端界面设置页的 `开机启动核心` 一项显示 `设置了 MIYU_HOME 时，Windows 上不能设为开机启动` | Windows | 任务计划无法携带环境变量。 | 用默认的数据根安装服务；如果要使用其他数据根，就使用系统托盘的 `开机时启动`，见 [数据和备份](data.md#更换数据根的位置)。 |
 | `core.log` 里有 `catalog cache unavailable`，原因写的是 `no LOCALAPPDATA` | Windows | 环境变量 `LOCALAPPDATA` 不存在，或者不是绝对路径，因此算不出缓存目录。 | 把 `LOCALAPPDATA` 设成绝对路径，然后运行 `miyu core stop`，再重新打开 Miyu。 |
 | `未找到 litemiyu`，下一行是 `提示：暂只支持 Linux` | macOS、Windows | LiteMiyu 只有 Linux x86_64 的版本，所以 `miyu rescue` 无法使用。 | 按照这一页上面的「核心无法启动或无法连接」排查，见 [应急修复](rescue.md#其他系统)。 |
 | `无法升级：没有这种系统的发行包`，下一行是 `提示：发行包只有 Linux x86_64、aarch64，macOS Apple 芯片，Windows x86_64；其他系统到 … 下载源码自行编译` | Intel 芯片的 Mac、ARM 的 Windows 这类系统 | Miyu 没有为这种系统发布发行包。 | 按照提示到发行页下载源码自己编译，见 [安装、升级、卸载](install.md#选择安装方式)。 |
@@ -283,7 +283,7 @@ AI 运行的命令可能被权限设置拦下，或者停在等待确认的状�
 |---|---|---|
 | `no_model` | 没有可用的模型。 | 运行 `miyu setup`，或者在 `models.chat` 里写一个能用的模型。 |
 | `cooling` | 模型冷却中，请稍后重试。 | 等待一段时间，或者配置一个池，见 [模型](models.md)。 |
-| `model_failed` | 模型请求失败。 | 查看界面上的详情；如果是认证失败，就重新保存 key。 |
+| `model_failed` | 模型请求失败。 | 查看界面上的详情；如果是认证失败，就重新保存密钥。 |
 | `unknown_model` | 模型或模型池不存在。 | 写成 `供应商/模型` 或 `@池`，并且供应商要配置好。 |
 | `unknown_provider` | 供应商不存在。 | 先配置这一家供应商，见 [模型](models.md)。 |
 | `unknown_secret` | 密钥不存在。 | 运行 `miyu provider login <名字>`。 |
