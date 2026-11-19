@@ -259,3 +259,43 @@ fn the_own_dirs_in_the_data_root_are_writable_even_before_they_exist() {
     assert!(!boundary.blocks_descent(&data), "通得到它");
     assert!(boundary.blocks_descent(&data.join("run")));
 }
+
+/// 数据根的上级目录是链接（macOS 的临时目录在 `/var` 下，`/var` 是到 `/private/var` 的链接；Linux 上 `~/.config` 这类被链到
+/// 别处）：记下的是真实位置，目标照 `resolve` 换成真实位置以后落在数据根那一片。数据根还没建的也一样：照最近的、已经存在的
+/// 上级换，不因为换不成就不算这一片（LiteMiyu 上撞见过同一类问题：记的是原样的路径，目标是真实位置，两边对不上就拦不住）。
+#[cfg(unix)]
+#[test]
+fn the_data_root_under_a_linked_parent_is_known_whether_it_is_made_or_not() {
+    let site = Site::new();
+    std::fs::create_dir_all(site.at("disk/made/etc")).expect("建得了");
+    std::os::unix::fs::symlink(site.at("disk"), site.at("link")).expect("建得了链接");
+    let target = |path: &str| miyu_fs::resolve(&site.scratch.0, None, path).expect("换得成");
+    // 建好的：照链接说的、照真实位置说的都算。
+    let made = Boundary::new(&Places {
+        data_root: site.at("link/made"),
+        ..site.places()
+    });
+    assert_eq!(
+        made.zone(&target("link/made/etc/secrets.toml")),
+        Zone::DataRoot
+    );
+    assert_eq!(
+        made.zone(&target("disk/made/etc/secrets.toml")),
+        Zone::DataRoot
+    );
+    // 还没建的：目标换成的真实位置在链接指到的那一边，记的也得是那一边。
+    let later = Boundary::new(&Places {
+        data_root: site.at("link/later"),
+        ..site.places()
+    });
+    assert!(!site.at("disk/later").exists());
+    assert_eq!(
+        later.zone(&target("link/later/etc/secrets.toml")),
+        Zone::DataRoot
+    );
+    assert_eq!(
+        later.zone(&target("disk/later/etc/secrets.toml")),
+        Zone::DataRoot
+    );
+    assert_eq!(later.zone(&target("disk/other.txt")), Zone::Outside);
+}

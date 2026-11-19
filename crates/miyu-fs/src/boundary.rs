@@ -111,7 +111,7 @@ pub fn system_dirs() -> Vec<PathBuf> {
         .collect()
 }
 
-/// 边界表：每一片都换成了真实的位置；不存在的那一片不算。
+/// 边界表：每一片都换成了真实的位置；不存在的那一片不算，数据根、这个人自己的几处除外（还没建的照最近的、已经存在的上级换）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Boundary {
     workspace: Option<PathBuf>,
@@ -126,19 +126,19 @@ pub struct Boundary {
 
 impl Boundary {
     /// 照 `places` 造：每一片都换成真实的位置，不存在的（例如这台机器上没有 `/lib32`）不算。
+    ///
+    /// 数据根还没建的照样算（施工 SEC-4）：照最近的、已经存在的上级换，同 [`crate::resolve()`] 换目标的办法。放开的那几片
+    /// 不存在就不算，漏掉的只是少放开一处；数据根是往回收的那一片，不算它，底下的路径就落到别的片里去了。只 `canonicalize`
+    /// 也不够：上级目录里有链接（macOS 的 `/var`）、数据根又还没建时，原样的路径和目标的真实位置对不上。
     pub fn new(places: &Places) -> Boundary {
         Boundary {
             workspace: real(&places.workspace),
             dirs: places.dirs.iter().filter_map(|dir| real(dir)).collect(),
-            data_root: real(&places.data_root),
+            data_root: resolved(&places.data_root),
             temp: real(&places.temp),
             readable: places.readable.iter().filter_map(|dir| real(dir)).collect(),
             shelves: places.shelves.iter().filter_map(|dir| real(dir)).collect(),
-            own: places
-                .own
-                .iter()
-                .filter_map(|path| crate::resolve(path, None, &path.to_string_lossy()).ok())
-                .collect(),
+            own: places.own.iter().filter_map(|dir| resolved(dir)).collect(),
         }
     }
 
@@ -202,6 +202,12 @@ impl Boundary {
 /// 换成真实的位置；不存在、读不了的不算。
 fn real(path: &Path) -> Option<PathBuf> {
     std::fs::canonicalize(path).ok()
+}
+
+/// 换成真实的位置，还没建的照最近的、已经存在的上级换（[`crate::resolve()`]）；换不成的（空的路径、上级里有指向不存在处的
+/// 链接）不算。
+fn resolved(path: &Path) -> Option<PathBuf> {
+    crate::resolve(path, None, &path.to_string_lossy()).ok()
 }
 
 /// 真实的位置 `path` 在不在目录 `root` 里（`root` 自己也算）：大小写不分的平台上不分大小写，免得换个大小写就
