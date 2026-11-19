@@ -210,7 +210,7 @@
 
 | 看到的现象 | 怎么办 |
 |---|---|
-| 这一版启动不了，提示 `… 认不出是 Miyu 的数据根 …` 或 `… 是旧版 Miyu 的数据根，新版不认 …` | 旧目录还在 `~/.miyu`。按照上面的第 2 步把它挪开 |
+| 这一版启动不了，提示 `… 无法确认它是 Miyu 的数据根 …` 或 `… 是旧版 Miyu 的数据根，新版不能使用 …` | 旧目录还在 `~/.miyu`。按照上面的第 2 步把它挪开 |
 | `old Miyu is still running (pid <进程号>); stop it first` | 旧版还在运行。关闭旧版，或者运行 `kill <进程号>`（Linux、macOS） |
 | `old Miyu is still running; stop it first` | 旧版还在运行，但是迁移找不到它的进程号。Windows 上报的都是这一句。关闭旧版 Miyu 的窗口和后台程序以后再迁移；在 Windows 上，可以在任务管理器里找到它并结束 |
 | `<路径> is not an old Miyu data folder` | 这个目录不是旧版的数据目录。检查一下是不是写错了路径 |

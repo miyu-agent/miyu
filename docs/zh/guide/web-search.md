@@ -24,7 +24,8 @@ AI 上网靠下面两个工具：
 | 选项 | 需要什么 | 配置键 | 作用 |
 |---|---|---|---|
 | `auto`（`自动（免费额度）`） | 不需要 | | 搜索时按照下面几家免费服务的顺序依次尝试；自己抓取不下来的网页，请 Exa、Firecrawl、Parallel 代为抓取。 |
-| `deepseek`（DeepSeek） | 密钥。如果没有单独配置，会使用模型那边 DeepSeek 供应商的密钥。搜索和代抓都按次收费。 | `net.search.deepseek.key` | 搜索和抓取网页都先交给它。 |
+| `deepseek`（`DeepSeek 搜索接口`） | 密钥。如果没有单独配置，会使用模型那边 DeepSeek 供应商的密钥。搜索和代抓都按次收费。 | `net.search.deepseek.key` | 搜索和抓取网页都先交给它。 |
+| `deepseek-responses`（`DeepSeek Responses 接口内置`） | 不需要另外的密钥，但对话使用的模型要满足几个条件，见下面的 [使用 DeepSeek Responses 接口内置的搜索](#使用-deepseek-responses-接口内置的搜索)。 | | 由 DeepSeek 在它自己的服务器上搜索。条件不满足时和自动模式相同。 |
 | `exa`（Exa） | 可以不配置密钥：配置了就使用你自己的额度，不配置就使用免费额度。 | `net.search.exa.key` | 搜索先交给它，抓取网页和自动模式相同。 |
 | `anysearch`（AnySearch） | 可以不配置密钥：配置了就使用你自己的额度，不配置就使用免费额度（按 IP 每天计算）。 | `net.search.anysearch.key` | 搜索先交给它，抓取网页和自动模式相同。 |
 | `tavily`（Tavily） | 密钥 | `net.search.tavily.key` | 搜索先交给它，抓取网页和自动模式相同。 |
@@ -45,7 +46,7 @@ AI 上网靠下面两个工具：
 | 6 | DuckDuckGo | 不需要 |
 | 7 | Bing | 不需要 |
 
-自动模式不使用 DeepSeek，即使模型那边配置了 DeepSeek 也不使用；如果要使用 DeepSeek，需要选择它。
+自动模式不使用 DeepSeek，即使模型那边配置了 DeepSeek 也不使用；如果要使用 DeepSeek，需要选择 `DeepSeek 搜索接口` 或者 `DeepSeek Responses 接口内置`。
 
 搜索的顺序和回退规则如下：
 
@@ -93,7 +94,7 @@ AI 上网靠下面两个工具：
 
 ### 使用 DeepSeek
 
-如果模型那边已经配置了 DeepSeek 供应商，直接选择 DeepSeek 即可，密钥会使用那一家供应商的密钥：
+这一小节讲的是 `DeepSeek 搜索接口`：Miyu 的搜索工具调用 DeepSeek 的搜索和抓取接口，按次收费。如果模型那边已经配置了 DeepSeek 供应商，直接选择它即可，密钥会使用那一家供应商的密钥：
 
 ```sh
 miyu config set net.search.source deepseek
@@ -102,6 +103,43 @@ miyu config set net.search.source deepseek
 如果想给联网功能单独使用一个密钥，按照上面 Tavily 的做法存好密钥，再设置 `net.search.deepseek.key`。
 
 「模型那边的 DeepSeek 供应商」按照下面的规则识别：如果 `[providers.<编号>]` 写了 `catalog`，只有 `catalog` 是 `deepseek` 时才算；如果没有写 `catalog`，只有 `base_url` 的主机是 `api.deepseek.com` 时才算（写成 `{ env = "…" }` 的不算）；如果两样都没有写，只有编号是 `deepseek` 时才算。识别出来以后，地址还必须是官方的，才会借用它的密钥：没有写 `base_url`，或者 `base_url` 的主机就是 `api.deepseek.com`。写了 `catalog = "deepseek"`、地址却指向中转站的供应商，不会借用它的密钥，以免把中转站的密钥发给 DeepSeek 官方。如果有几家都符合，使用编号排在最前面、并且写了密钥的那一家。
+
+### 使用 DeepSeek Responses 接口内置的搜索
+
+DeepSeek 官方的 Responses 接口自带联网搜索：DeepSeek 在它自己的服务器上搜索网页、打开网页，再把回答交回来。选择这一项以后，一次提问里 DeepSeek 可以搜索好几轮、打开好几个网页，搜索得更深入。
+
+> 这一项是“搜索得更深”的选项，不是省钱的选项。DeepSeek 不按次收取搜索的费用，但搜索到的网页内容会算进输入 token，带搜索的一次提问会用掉 2 万到 9 万个输入 token。
+
+设置的方法是在设置页的 `联网服务` 里选择 `DeepSeek Responses 接口内置`，或者运行：
+
+```sh
+miyu config set net.search.source deepseek-responses
+```
+
+在设置页里选中时会弹出一句提示 `这个搜索服务只适用于 DeepSeek 官方的 Responses 接口`，点击 `知道了` 即可，选项照常保存。
+
+这一项只有同时满足下面四个条件时才会生效：
+
+1. 对话使用的模型来自 DeepSeek 官方的供应商，地址是 `https://api.deepseek.com`。通过中转站使用的 DeepSeek 不算。
+2. 这家供应商的驱动是 `OpenAI Responses 接口`（`openai-responses`）。DeepSeek 默认使用 OpenAI 兼容的对话接口，需要你自己修改：在设置页里编辑这家供应商，或者运行 `miyu config set providers.deepseek.driver openai-responses`。
+3. 这个模型的思考没有关闭。
+4. 如果对话使用的是模型池，池里的每个成员都要满足上面三条。
+
+条件不满足时不会报错，AI 会按照自动模式的顺序使用其他搜索服务，照样可以搜索。
+
+生效以后有这些变化：
+
+- 搜索由 DeepSeek 完成，Miyu 自己的 `web_search` 不再提供给 AI。时间线上会显示标着 DeepSeek 的搜索步骤，点开可以看到搜索词和打开过的网址。
+- 你给出一个具体的网址时，AI 仍然使用 Miyu 自己的 `web_fetch` 读取。
+- 用量里会多出搜索和抓取的次数。
+
+使用时需要注意：
+
+- 是否搜索由模型自己决定，不能强制它搜索。
+- 搜索时打开的网页内容只在当次回答里有效。到了下一轮，AI 只记得搜索词、网页的标题和网址；如果你追问网页里的细节，它会重新搜索，或者用 `web_fetch` 重新读取那个网址。
+- 修改这一项以后，新会话才会生效。正在进行的会话不会改变，等这个会话切换模型时才一起生效。
+
+Linux、macOS、Windows 上没有差别。
 
 ### 自建的 SearXNG
 
@@ -137,8 +175,8 @@ miyu config set net.search.source searxng
 
 `web_fetch` 按照下面的顺序抓取网页：
 
-1. 如果联网服务选择了 DeepSeek，并且配置了密钥，先交给 DeepSeek 抓取，而不是先自己抓取。以下几类不会交给它：下面「碰不到的地址」里的那些地址、通讯平台上别人让 AI 抓取的内部域名，以及本机解析不出来、名字又像内网的主机名（只有一个词，或者以 `local`、`lan`、`internal`、`intranet`、`corp`、`home`、`home.arpa`、`localdomain` 结尾）。超过 8192 个字的网址、带有用户名和密码的网址也不会交给它。
-2. 自己抓取。如果没有选择 DeepSeek，从这一步开始。
+1. 如果联网服务选择了 `DeepSeek 搜索接口`，并且配置了密钥，先交给 DeepSeek 抓取，而不是先自己抓取。以下几类不会交给它：下面「碰不到的地址」里的那些地址、通讯平台上别人让 AI 抓取的内部域名，以及本机解析不出来、名字又像内网的主机名（只有一个词，或者以 `local`、`lan`、`internal`、`intranet`、`corp`、`home`、`home.arpa`、`localdomain` 结尾）。超过 8192 个字的网址、带有用户名和密码的网址也不会交给它。
+2. 自己抓取。如果没有选择 `DeepSeek 搜索接口`，从这一步开始。
 3. 自己抓取不下来时，依次请 Exa、Firecrawl、Parallel 代为抓取。「抓取不下来」指的是：遇到人机验证页，返回 `401`、`403`、`429`、`451`、`503`，连接不上，一个字都没有，或者内容短得像登录页（少于 200 个字）。如果第 1 步已经问过 DeepSeek，就不会再问它。
 
 代抓最多返回 20 万个字，超时时间是 45 秒，抓回来少于 200 个字时当作没有抓到。代抓成功时，时间线上会写明是哪一家抓的。如果都没有成功，会报告自己抓取时遇到的那个原因。
@@ -230,7 +268,7 @@ miyu core stop
 使用这两个工具时，以下内容会发送给其他服务：
 
 - 你搜索的词会发给你选择的联网服务；这一家用不了时，会发给自动模式尝试的几家。自动模式尝试的几家服务都在国外。
-- 如果选择了 DeepSeek，AI 要抓取的网址会先发给 DeepSeek，自己能抓取下来的网页也一样。
+- 如果选择了 `DeepSeek 搜索接口`，AI 要抓取的网址会先发给 DeepSeek，自己能抓取下来的网页也一样。
 - 自己抓取不下来的网页，网址会发给 Exa、Firecrawl 或 Parallel 代为抓取。只有你的内网才能识别的主机名，连接不上时网址也同样会发出去。
 - 搜索到的结果和抓取到的网页内容会进入这个会话的上下文，和对话一起发给你的模型供应商。
 

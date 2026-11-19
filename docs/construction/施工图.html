@@ -1578,6 +1578,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC22"><span class="n">DOC-22</span>界面原文对字表核一遍<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC23"><span class="n">DOC-23</span>改掉快速上手里的笔误<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC24"><span class="n">DOC-24</span>正文里的 key 统一成密钥<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sDOC25"><span class="n">DOC-25</span>DeepSeek Responses 接口内置的搜索<span class="st">…</span></a></li>
         <li><a class="step review" href="#sHLP1"><span class="n">HLP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
@@ -61569,6 +61570,55 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/DOC-24-正文里的密钥.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sDOC25" aria-labelledby="h-sDOC25">
+  <div class="sheet-head"><h2 id="h-sDOC25"><span class="no">DOC-25</span>手册写进「DeepSeek Responses 接口内置」的联网搜索</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">联网服务多了一个选项「DeepSeek Responses 接口内置」：由 DeepSeek 在自己的服务器上搜索，搜得更深、也更费 token。核心和两个界面都合了，手册还没有这一项。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">docs/zh　docs/en · web-search.md　models.md　config-keys.md</span><span class="dir-note">DOC-25</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>网络搜索页加一小节：是什么、怎么设置、生效的四个条件、不满足时照自动模式、生效以后的变化和三点注意；联网服务的表加一行，原来的 DeepSeek 一行改名「DeepSeek 搜索接口」</li>
+              <li>模型页讲驱动的地方加一句指过来；配置键全表的取值和说明跟着加</li>
+              <li>原来只说「DeepSeek」的几处写明指的是哪一个选项</li>
+              <li>顺带把核心另外几句改了的中文原话照最新字表改掉</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">选了「DeepSeek Responses 接口内置」只在 DeepSeek 官方地址、Responses 接口、思考没关时生效，不满足时照自动模式</span><span class="rl">设计 72</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DOC-25</dd></div>
+        <div><dt>名称</dt><dd>手册写进「DeepSeek Responses 接口内置」的联网搜索</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-19</dd></div>
+        <div><dt>提交</dt><dd class="mono">DOC-25</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>每一条对过设计 72；选项名、提示、按钮名对过核心和两个界面的中英字表</span></li>
+        <li><span class="ok">✓</span><span>实测的 token 数是做功能的会话量的，施工单里写明没有另外实测</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/DOC-25-DeepSeek-Responses-搜索.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

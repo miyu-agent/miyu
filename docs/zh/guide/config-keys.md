@@ -248,7 +248,7 @@
 
 | 键 | 类型 | 默认 | 能写 | 说明 | 生效 | 项目配置 |
 |---|---|---|---|---|---|---|
-| `net.search.source` | 选项 | `"auto"` | `auto`、`exa`、`anysearch`、`deepseek`、`tavily`、`brave`、`searxng`，装了的扩展提供的 `<包>/<编号>` | 联网服务，也就是 AI 搜索网页、抓取网页时先使用哪一家。`auto` 只使用免费额度，搜索时按出厂的先后尝试 7 家；选了某一家时先使用它，用不了再按 `auto` 的顺序尝试；选了 `deepseek` 时，抓取网页也先交给它。见[联网搜索和抓网页](web-search.md)。 | 下一轮 | 不能 |
+| `net.search.source` | 选项 | `"auto"` | `auto`、`exa`、`anysearch`、`deepseek`、`deepseek-responses`、`tavily`、`brave`、`searxng`，装了的扩展提供的 `<包>/<编号>` | 联网服务，也就是 AI 搜索网页、抓取网页时先使用哪一家。`auto` 只使用免费额度，搜索时按出厂的先后尝试 7 家；选了某一家时先使用它，用不了再按 `auto` 的顺序尝试；选了 `deepseek` 时，抓取网页也先交给它；选了 `deepseek-responses` 并且对话的模型满足条件时，由 DeepSeek 自己搜索，从新会话开始生效。见[联网搜索和抓网页](web-search.md)。 | 下一轮 | 不能 |
 | `net.search.exa.key` | 密钥引用 | — | | Exa 的密钥。没有配置时使用免费额度。 | 下一轮 | 不能 |
 | `net.search.anysearch.key` | 密钥引用 | — | | AnySearch 的密钥。配置了就使用你自己的额度，没有配置时使用免费额度。 | 下一轮 | 不能 |
 | `net.search.deepseek.key` | 密钥引用 | — | | DeepSeek 搜索和代为抓取网页使用的密钥。没有配置时使用模型那边 DeepSeek 供应商的密钥。 | 下一轮 | 不能 |

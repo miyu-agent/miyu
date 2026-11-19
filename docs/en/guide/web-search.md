@@ -24,7 +24,8 @@ The web provider decides which service the AI uses to search and fetch web pages
 | Option | What it needs | Config key | What it does |
 |---|---|---|---|
 | `auto` (`Auto (free tiers)`) | Nothing | | Search tries the free services below in turn; pages it cannot fetch itself are fetched by Exa, Firecrawl and Parallel on its behalf. |
-| `deepseek` (DeepSeek) | A key. If you have not set a separate one, the key of the DeepSeek provider on the model side is used. Search and fetching on its behalf are both charged per use. | `net.search.deepseek.key` | Search and fetching pages both go to it first. |
+| `deepseek` (`DeepSeek search API`) | A key. If you have not set a separate one, the key of the DeepSeek provider on the model side is used. Search and fetching on its behalf are both charged per use. | `net.search.deepseek.key` | Search and fetching pages both go to it first. |
+| `deepseek-responses` (`DeepSeek Responses API built-in`) | No separate key, but the model the conversation uses has to meet several conditions; see [Using the search built into DeepSeek's Responses API](#using-the-search-built-into-deepseeks-responses-api) below. | | DeepSeek searches on its own servers. When the conditions are not met, it works the same as auto. |
 | `exa` (Exa) | A key is optional: with one, your own quota is used; without one, the free quota. | `net.search.exa.key` | Search goes to it first; fetching pages works the same as in auto. |
 | `anysearch` (AnySearch) | A key is optional: with one, your own quota is used; without one, the free quota (counted per IP per day). | `net.search.anysearch.key` | Search goes to it first; fetching pages works the same as in auto. |
 | `tavily` (Tavily) | A key | `net.search.tavily.key` | Search goes to it first; fetching pages works the same as in auto. |
@@ -45,7 +46,7 @@ Auto uses the services that cost nothing. You cannot choose one of them on its o
 | 6 | DuckDuckGo | Nothing |
 | 7 | Bing | Nothing |
 
-Auto does not use DeepSeek, even if DeepSeek is configured on the model side; to use DeepSeek, you need to choose it.
+Auto does not use DeepSeek, even if DeepSeek is configured on the model side; to use DeepSeek, you need to choose `DeepSeek search API` or `DeepSeek Responses API built-in`.
 
 The search order and fallback work like this:
 
@@ -93,7 +94,7 @@ These config keys are read only from `~/.miyu/etc/config.toml` (the data root is
 
 ### Using DeepSeek
 
-If a DeepSeek provider is already configured on the model side, just choose DeepSeek, and the key of that provider is used:
+This subsection is about `DeepSeek search API`: Miyu's search tools call DeepSeek's search and fetch APIs, charged per use. If a DeepSeek provider is already configured on the model side, just choose it, and the key of that provider is used:
 
 ```sh
 miyu config set net.search.source deepseek
@@ -102,6 +103,43 @@ miyu config set net.search.source deepseek
 If you want web access to use a key of its own, store the key as in the Tavily steps above, then set `net.search.deepseek.key`.
 
 "The DeepSeek provider on the model side" is recognized by these rules: if `[providers.<id>]` has `catalog` written, it counts only if `catalog` is `deepseek`; if it has no `catalog`, it counts only if the host of `base_url` is `api.deepseek.com` (one written as `{ env = "…" }` does not count); if it has neither, it counts only if the id is `deepseek`. Once a provider is recognized, its key is borrowed only if the address is also the official one: no `base_url` written, or a `base_url` whose host is `api.deepseek.com`. A provider with `catalog = "deepseek"` whose address points at a relay is not borrowed from, so that a relay's key is never sent to DeepSeek's official service. If several providers count, the one whose id comes first and that has a key is used.
+
+### Using the search built into DeepSeek's Responses API
+
+DeepSeek's official Responses API comes with web search: DeepSeek searches the web and opens pages on its own servers, and then hands back the answer. With this option chosen, DeepSeek can run several rounds of searches and open several pages for a single question, so the search goes deeper.
+
+> This is the option for searching deeper, not for saving money. DeepSeek does not charge per search, but the content of the pages it finds counts as input tokens, and a single question with search uses 20,000 to 90,000 input tokens.
+
+To set it, choose `DeepSeek Responses API built-in` under `Web provider` on the settings page, or run:
+
+```sh
+miyu config set net.search.source deepseek-responses
+```
+
+When you choose it on the settings page, a notice pops up: `This search service only works with DeepSeek's official Responses API`. Click `Got it`, and the option is saved as usual.
+
+This option takes effect only when all four of the following conditions are met:
+
+1. The model the conversation uses comes from DeepSeek's official provider, whose address is `https://api.deepseek.com`. DeepSeek used through a relay does not count.
+2. That provider's driver is `OpenAI Responses` (`openai-responses`). DeepSeek uses the OpenAI-compatible chat interface by default, so you need to change it yourself: edit the provider on the settings page, or run `miyu config set providers.deepseek.driver openai-responses`.
+3. Thinking is not turned off for the model.
+4. If the conversation uses a model pool, every member of the pool has to meet the three conditions above.
+
+When the conditions are not met, nothing is reported as an error; the AI uses the other search services in the order of auto mode and can still search.
+
+Once it is in effect, these things change:
+
+- DeepSeek does the searching, and Miyu's own `web_search` is no longer offered to the AI. The timeline shows search steps marked DeepSeek, and you can open one to see the search terms and the addresses that were opened.
+- When you give a specific address, the AI still reads it with Miyu's own `web_fetch`.
+- Usage additionally shows the number of searches and fetches.
+
+Things to keep in mind:
+
+- Whether to search is up to the model; you cannot force it to search.
+- The content of pages opened during a search is available only for that answer. In the next turn, the AI remembers only the search terms and the titles and addresses of the pages; if you ask about details on a page, it searches again or reads that address again with `web_fetch`.
+- After you change this option, it takes effect in new sessions. A session in progress does not change until it switches models, and then the option takes effect along with the switch.
+
+There is no difference between Linux, macOS and Windows.
 
 ### A SearXNG you host yourself
 
@@ -137,8 +175,8 @@ If a page's structure is too large (more than 200 thousand nodes) or too deeply 
 
 `web_fetch` fetches pages in the following order:
 
-1. If the web provider is DeepSeek and a key is configured, the page goes to DeepSeek first, before the core tries fetching it itself. These are not handed to DeepSeek: the addresses in "Addresses it cannot reach" below, internal domains that someone else asked the AI to fetch on a chat platform, and host names that cannot be resolved on this machine and look internal (a single word, or ending in `local`, `lan`, `internal`, `intranet`, `corp`, `home`, `home.arpa` or `localdomain`). URLs longer than 8192 characters, and URLs with a user name and password, are not handed to it either.
-2. The core fetches the page itself. If DeepSeek was not chosen, fetching starts from this step.
+1. If the web provider is `DeepSeek search API` and a key is configured, the page goes to DeepSeek first, before the core tries fetching it itself. These are not handed to DeepSeek: the addresses in "Addresses it cannot reach" below, internal domains that someone else asked the AI to fetch on a chat platform, and host names that cannot be resolved on this machine and look internal (a single word, or ending in `local`, `lan`, `internal`, `intranet`, `corp`, `home`, `home.arpa` or `localdomain`). URLs longer than 8192 characters, and URLs with a user name and password, are not handed to it either.
+2. The core fetches the page itself. If `DeepSeek search API` was not chosen, fetching starts from this step.
 3. If the core cannot fetch the page itself, Exa, Firecrawl and Parallel are asked in turn to fetch it on its behalf. "Cannot fetch" means: it hit a human verification page, got `401`, `403`, `429`, `451` or `503`, could not connect, got not a single character, or got something so short it looks like a login page (fewer than 200 characters). If DeepSeek was already asked in step 1, it is not asked again.
 
 Fetching on its behalf returns at most 200 thousand characters, with a 45-second timeout, and a result with fewer than 200 characters counts as not fetched. When one of these services succeeds, the timeline says which one fetched the page. If none succeeds, the reason from the core's own fetch is reported.
@@ -230,7 +268,7 @@ For how to change presets, see [Personas and presets](personas-presets.md).
 When these two tools are used, the following is sent to other services:
 
 - The words you search for are sent to the web provider you chose; when that provider cannot be used, they are sent to the services that auto tries. The services that auto tries are all abroad.
-- If DeepSeek is chosen, the URLs the AI wants to fetch are sent to DeepSeek first, including pages the core could have fetched itself.
+- If `DeepSeek search API` is chosen, the URLs the AI wants to fetch are sent to DeepSeek first, including pages the core could have fetched itself.
 - For pages the core cannot fetch itself, the URL is sent to Exa, Firecrawl or Parallel to fetch on its behalf. For a host name that only your internal network knows, the URL is sent out in the same way when the core cannot connect.
 - The search results and the content of fetched pages go into the context of this session, and are sent together with the conversation to your model provider.
 
