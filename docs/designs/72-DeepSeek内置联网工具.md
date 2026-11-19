@@ -77,6 +77,15 @@ DeepSeek 的档案（`resources/models/profiles.toml`）照旧写 `driver = "ope
 
 要核对的一件：2026-11-19 实测，Responses 接口只有 `deepseek-flash` 真的处理图片（读出了测试图上的字和颜色），`deepseek-v4-pro` 不看图（回答「无法查看这张图片」，图片没有算进输入 token）。确认 Miyu 的模型资料把走 Responses 接口的 `deepseek-v4-pro` 当成不收图，这样发图时会交给看图模型转成文字。
 
+**核对的结果**（2026-11-19，施工 DSR-1）：
+
+- 模型能收什么输入由模型资料决定，和供应商走哪种接口无关。在沙箱里把 DeepSeek 供应商的接口设成 Responses 之后，核心报告 `deepseek-v4-pro` 的输入只有文字，`deepseek-flash` 是文字和图片；出厂的模型目录和当天从 models.dev 取到的目录写的都是这样。所以把图发给 `deepseek-v4-pro` 时，Miyu 会交给看图模型转成文字，不需要修改。
+
+**直接调用接口时发现的两个限制**（2026-11-19，用 DeepSeek 官方接口实测，每次只发几十个 token）：
+
+1. **普通工具和联网工具一起声明时，必须开着思考。** 请求里同时有 `function` 工具和 `deepseek_web_search`、`deepseek_read_url`，并且 `reasoning.effort` 是 `none` 时，DeepSeek 返回 400：`client tools can only be used together with deepseek_web_search in thinking mode`。`deepseek-flash` 和 `deepseek-v4-pro` 都是这样。不写 `reasoning`，或者 `effort` 是 `low`、`high` 时，请求成功，模型也能照常调用 `function` 工具。Miyu 的请求总是带着自己的工具，所以激活时要保证思考没有关闭。目前 DeepSeek 的模型资料里思考只有 `low`、`high`、`max` 三档，Responses 接口上选不到「关」；只有在配置里手写 `effort = "off"` 才会发出 `none`。
+2. **声明了联网工具时，`input` 不能以 assistant 的内容结尾。** 这时最后一项是 assistant 的 `message`、`reasoning` 或 `web_search_call`，DeepSeek 返回 400：`continuing a reply is not supported on the Responses API`。没有声明联网工具时，以 assistant 的消息结尾的请求会成功，模型接着半截往下写。Miyu 的 `openai-responses` 驱动在接着写被打断的回复时，最后一项本来就是带提示的 user 消息，不以 assistant 的内容结尾，所以不受影响。
+
 ## 四、有哪些限制
 
 - 是否搜索由模型自己决定。DeepSeek 不允许强制调用这两个工具，指定了会返回 400。
