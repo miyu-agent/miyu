@@ -210,6 +210,11 @@ async fn exchange(
         Ok(Delivered::Failed(error)) if error.is_builder() => {
             return misconfigured(&chain(&error.without_url()));
         }
+        // 证书不被信任：重来也一样，当场报错、不重试（施工 TLS-1：原来没有状态的失败一律交给驱动分类，落成可以重试，
+        // 内核照它重来五次，三十秒以后才报）。
+        Ok(Delivered::Failed(error)) if untrusted(&error) => {
+            return unrecoverable(format!("证书不被信任：{}", chain(&error.without_url())));
+        }
         Ok(Delivered::Failed(error)) => return failed(driver, &chain(&error.without_url())),
         Ok(Delivered::TooManyRedirects) => {
             return failed(driver, "error following redirect: too many redirects");
@@ -355,12 +360,17 @@ fn extra_headers(
 
 /// 地址、另配的头写得不对：造不出请求，重来也一样，出错 `other`，不重试（施工 4-9 再补三下）。
 fn misconfigured(why: &str) -> Outcome {
+    unrecoverable(format!("地址或者头写得不对：{why}"))
+}
+
+/// 重来也一样的错：出错 `other`，不重试，`message` 是给人看的那一句。
+fn unrecoverable(message: String) -> Outcome {
     Outcome::Ended {
         usage: None,
         error: Some(Classified {
             error: CallError {
                 class: ErrorClass::Unclassified,
-                message: format!("地址或者头写得不对：{why}"),
+                message,
                 status: None,
                 retry_after_ms: None,
             },
@@ -368,6 +378,32 @@ fn misconfigured(why: &str) -> Outcome {
             limit: None,
         }),
     }
+}
+
+/// 对方的证书没通过校验（施工 TLS-1）：rustls 的 `InvalidCertificate`，不认识的签发者、过期、主机名不对都在里面。rustls 的错
+/// 被包在 `io::Error` 里（实际包了两层），而 `io::Error::source` 交的是它包着的那个错的来由、跳过那个错本身，所以碰到
+/// `io::Error` 往它包着的那一个走，别的照来由走。
+fn untrusted(error: &reqwest::Error) -> bool {
+    let mut next = error.source();
+    while let Some(cause) = next {
+        if matches!(
+            cause.downcast_ref::<rustls::Error>(),
+            Some(rustls::Error::InvalidCertificate(_))
+        ) {
+            return true;
+        }
+        let wrapped = cause
+            .downcast_ref::<std::io::Error>()
+            .and_then(std::io::Error::get_ref);
+        next = match wrapped {
+            Some(inner) => {
+                let inner: &(dyn Error + 'static) = inner;
+                Some(inner)
+            }
+            None => cause.source(),
+        };
+    }
+    false
 }
 
 /// 总时限到了还没说完（施工 AE-2）：算可重试的错，同空闲超时。

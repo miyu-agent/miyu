@@ -12,7 +12,7 @@ use miyu_kernel::event::ErrorClass;
 use miyu_kernel::id::ContentHash;
 
 /// 发一次，收集交出来的和收场。
-async fn run(
+pub(crate) async fn run(
     endpoint: &Endpoint,
     idle: Duration,
     cancel: impl std::future::Future<Output = ()> + Send,
@@ -36,7 +36,7 @@ async fn run(
     (progress, outcome)
 }
 
-fn never() -> std::future::Pending<()> {
+pub(crate) fn never() -> std::future::Pending<()> {
     std::future::pending()
 }
 

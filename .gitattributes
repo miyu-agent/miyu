@@ -2,3 +2,5 @@
 * text=auto eol=lf
 # 流的样本原样存字节：有的故意用 CRLF 换行，查分帧认不认得（施工 3-4 下）。
 *.sse -text
+# 测试用的证书、私钥原样存字节（施工 TLS-1）。
+*.der binary
