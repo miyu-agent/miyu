@@ -171,6 +171,16 @@ pub trait ModelPort: Send + Sync {
     /// 换快照了（施工 P-1 三补）：驱动的占位换成新快照的 `texts`，以后的请求照它写。测试的端口不管。
     fn retext(&self, _texts: DriverTexts) {}
 
+    /// 供应商自己的联网工具这一刻给不给得了（设计 72，施工 DSR-3）：会话钉着的引用指到的模型（池是每一个成员）都是档案写了
+    /// `search` 的那一家、走档案写的驱动、地址是官方的、思考没关，才交档案里的那一份；别的、不知道的（测试的端口）没有。
+    /// 回合开始解析过引用以后问，actor 照它和快照里钉的判断要不要换工具面（`actor/persona/search.rs`）。
+    fn search_offer(&self) -> Option<miyu_policy::SearchOffer> {
+        None
+    }
+
+    /// 换快照了、载入了（设计 72）：要声明的供应商侧工具换成 `hosted`，发给满足条件的端点时接在 `tools` 末尾。
+    fn declare(&self, _hosted: Vec<String>) {}
+
     /// 替看不了图的模型看图（施工 8-17，`docs/blueprint/models.md`「怎么走」第十三条第 4 条）：照这一轮的配置 `config` 把
     /// `request` 经一次性入口发给会话钉的看图模型（施工 VM-1，回合开始交的），没钉的发给 `models.vision`，说完了交给 `sight`。马上返回，在别的任务里发，带上当前的 span。没有一次性
     /// 入口的（测试的端口）当场交没成。

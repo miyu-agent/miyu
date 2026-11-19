@@ -1,6 +1,5 @@
-//! 扩展驱动这一支（施工 MD-2，设计 66 第五、八节）：假端口按剧本交增量、回答，直接走 [`exchange`]。正常一段；交了一半断了；
-//! 乱序的增量；没动静（空闲时限、总时限）；被叫停；回答写坏了、被拒；连不上的带等多久；回答之前到的增量一条不丢；别家的私有数据
-//! 不交、自己家的照交；看得了图的交图。
+//! 扩展驱动这一支（施工 MD-2，设计 66 第五、八节）：假端口按剧本交增量、回答，直接走 [`exchange`]。正常一段；交了一半断了；乱序的增量；
+//! 没动静（空闲时限、总时限）；被叫停；回答写坏了、被拒；连不上的带等多久；回答之前到的增量一条不丢；别家的私有数据不交、自己家的照交；看得了图的交图。
 
 use std::collections::VecDeque;
 use std::sync::Mutex;
@@ -193,6 +192,7 @@ fn ready(fake: &Arc<Fake>, idle: Duration) -> Ready {
             inputs: Inputs::default(),
             effort: None,
             temperature: None,
+            hosted: Vec::new(),
         },
         idle,
         learn: Learn {
@@ -207,6 +207,7 @@ fn ready(fake: &Arc<Fake>, idle: Duration) -> Ready {
         },
         tariff: None,
         placeholders: Vec::new(),
+        search: None,
     }
 }
 
@@ -357,8 +358,7 @@ async fn a_bad_delta_drops_the_call() {
     );
 }
 
-/// 时钟停着、只在都等着的时候往前跳（施工 RB-1）：段间隔、空闲时限、总时限都照假的时钟算，机器忙不忙都一样；用真的时钟时，
-/// 机器忙得某两段之间隔过了空闲时限，就先按卡住结束了。
+/// 时钟停着、只在都等着的时候往前跳（施工 RB-1）：几种时限都照假的时钟算；用真的时钟时，机器忙得两段之间隔过了空闲时限就先按卡住结束了。
 #[tokio::test(start_paused = true)]
 async fn a_quiet_driver_times_out_but_a_trickling_one_does_not() {
     let fake = scripted(vec![Plan::Hang(vec![hello()[0].clone()])]);

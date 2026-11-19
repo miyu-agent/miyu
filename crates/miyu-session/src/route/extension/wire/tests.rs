@@ -35,6 +35,7 @@ fn params_put_the_request_first_and_skip_what_is_not_there() {
         inputs: Inputs::default(),
         effort: Some("high".to_string()),
         temperature: Some(0.5),
+        hosted: Vec::new(),
     };
     let blobs = BTreeMap::new();
     let fingerprint = request.fingerprint();

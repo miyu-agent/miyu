@@ -35,6 +35,7 @@ use crate::headers;
 use crate::knowledge::Knowledge;
 use crate::matching::Recognized;
 use crate::profile::ImageTokens;
+use crate::provider_search::ProviderSearch;
 use crate::quota::Quota;
 use crate::settings::{ProviderSettings, UseSettings};
 
@@ -168,6 +169,8 @@ pub struct Provider {
     /// 查额度的接口（施工 QU-1）：档案写了的，地址照配置的 `[providers.<id>.quota]` 盖；认得出官方地址的那一家，供应商的地址
     /// 不是官方的没有（施工 QU-2，[`crate::quota::settled`]）。
     pub quota: Option<Quota>,
+    /// 档案写的供应商自带的联网搜索（施工 DSR-3）：这一次能不能用照 [`crate::provider_search::offered`]。
+    pub search: Option<ProviderSearch>,
 }
 
 impl Provider {
@@ -431,6 +434,7 @@ pub fn provider(values: &Values, knowledge: &Knowledge<'_>, id: &str) -> Result<
         quota,
         headers: profile.headers,
         placeholders: profile.placeholder_tools,
+        search: profile.search,
     })
 }
 

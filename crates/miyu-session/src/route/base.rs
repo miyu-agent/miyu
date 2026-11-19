@@ -67,6 +67,9 @@ pub(super) struct Ready {
     pub(super) tariff: Option<Tariff>,
     /// 占位工具（施工 8-14 补）：档案点名的名字 + 给模型看的说明。工具面里缺哪件补哪件（`placeholder.rs`）；空的不动。
     pub(super) placeholders: Vec<(String, String)>,
+    /// 这个端点给得了供应商自己的联网工具（设计 72，施工 DSR-3，`search.rs`）：会话的主请求照它带上快照钉着要声明的。里面
+    /// 是档案写的那一档思考强度：声明了、这一次又没有定强度的照它明着写。给不了的没有。
+    pub(super) search: Option<String>,
 }
 
 /// 这一次谁来编、谁来发（施工 MD-2）。
@@ -156,6 +159,8 @@ impl Routes {
         };
         Ok(Ready {
             client,
+            search: miyu_models::provider_search::offered(&speaking, effort.as_deref())
+                .map(|search| search.effort.clone()),
             model: model_of(target),
             endpoint,
             // 占位工具（施工 8-14 补）：档案点名了哪几件，说明是资源目录里那一句。
@@ -191,6 +196,7 @@ impl Routes {
                 effort,
                 // 温度照这个模型配置的默认（施工 8-22），已经查过这个模型收、不超过它走的驱动的上限。
                 temperature: facts.temperature.value,
+                hosted: Vec::new(),
             },
             learn: Learn {
                 data: Arc::clone(&self.data),

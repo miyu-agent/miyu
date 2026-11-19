@@ -305,6 +305,13 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
     });
     // 重启以后接着干的那一轮，发主请求之前就知道限额（施工 6-3 上）；给头看的限额同上（施工 6-3 补）。检查点重读过的
     // 文件，内核在载入吐出来的动作里第一个要回原文（施工 6-9），actor 起来先做它。
+    // 快照钉着要声明的供应商侧工具（设计 72，施工 DSR-3）：重启以后接着发的请求照旧带着。
+    let pinned = snapshot.provider_search.as_ref();
+    model.declare(
+        pinned
+            .map(miyu_policy::SearchPin::names)
+            .unwrap_or_default(),
+    );
     let mut limits = model.limits();
     crate::snapshot::stamp_preset(&mut limits, snapshot.preset.as_ref());
     session.handle(Input::Limits(limits));

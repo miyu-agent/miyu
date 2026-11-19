@@ -50,5 +50,6 @@ fn call(model: &str, max_output: Option<u32>) -> Call {
         inputs: Inputs::default(),
         effort: None,
         temperature: None,
+        hosted: Vec::new(),
     }
 }

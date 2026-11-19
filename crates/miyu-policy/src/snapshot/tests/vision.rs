@@ -66,6 +66,7 @@ fn written(snapshot: &Snapshot) -> String {
         inputs: Inputs::default(),
         effort: None,
         temperature: None,
+        hosted: Vec::new(),
     };
     let texts = snapshot.driver_texts().unwrap();
     let body = encode(

@@ -285,17 +285,23 @@ fn extends(now: &Request, before: &Request) -> Result<(), String> {
     }
 }
 
+/// 探针的一次调用：模型 `model`、输出上限 `max_output`，别的都不带。
+fn call(model: &str, max_output: Option<u32>) -> Call {
+    Call {
+        model: ModelName::parse(model).expect("模型名合写法"),
+        max_output,
+        inputs: Inputs::default(),
+        effort: None,
+        temperature: None,
+        hosted: Vec::new(),
+    }
+}
+
 /// 编码成 OpenAI 兼容接口的字节，用 DeepSeek 那一套（驱动出厂的 `Compat::deepseek`）：模型
 /// `deepseek-v4`，输出上限 8192，每条 assistant 都带 `reasoning_content`，会接着写。探针的线上存档
 /// 也是它。
 pub fn wire(request: &Request) -> Encoded {
-    let call = Call {
-        model: ModelName::parse("deepseek-v4").expect("模型名合写法"),
-        max_output: Some(8192),
-        inputs: Inputs::default(),
-        effort: None,
-        temperature: None,
-    };
+    let call = call("deepseek-v4", Some(8192));
     openai_chat::encode(
         request,
         &call,
@@ -309,13 +315,7 @@ pub fn wire(request: &Request) -> Encoded {
 /// 编码成 Anthropic 消息接口的字节（施工 8-12）：模型 `claude-opus-5`，输出上限 8192，没有思考强度。这一家不会接着写，带着
 /// 接着写记号的照原样发，所以不另找比的那一份。
 pub fn anthropic_wire(request: &Request) -> Encoded {
-    let call = Call {
-        model: ModelName::parse("claude-opus-5").expect("模型名合写法"),
-        max_output: Some(8192),
-        inputs: Inputs::default(),
-        effort: None,
-        temperature: None,
-    };
+    let call = call("claude-opus-5", Some(8192));
     anthropic::encode(request, &call, &driver_texts(), &BTreeMap::new())
         .expect("探针里没有图片、文件，不要 blob")
 }
@@ -323,13 +323,7 @@ pub fn anthropic_wire(request: &Request) -> Encoded {
 /// 编码成 Responses 接口的字节（施工 8-13）：模型 `gpt-5.4`，没有输出上限、没有思考强度。这一家不会接着写，带着接着写
 /// 记号的照原样发。
 pub fn responses_wire(request: &Request) -> Encoded {
-    let call = Call {
-        model: ModelName::parse("gpt-5.4").expect("模型名合写法"),
-        max_output: None,
-        inputs: Inputs::default(),
-        effort: None,
-        temperature: None,
-    };
+    let call = call("gpt-5.4", None);
     openai_responses::encode(request, &call, &driver_texts(), &BTreeMap::new())
         .expect("探针里没有图片、文件，不要 blob")
 }

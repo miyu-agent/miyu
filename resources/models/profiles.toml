@@ -21,6 +21,11 @@ base_url = "https://api.deepseek.com"
 image_tokens = "deepseek"
 compat = { reasoning = { replay = "reasoning_content", always = true }, continuation = { field = "prefix", path = "/beta/chat/completions" }, toggle = { field = "thinking", on = { type = "enabled" }, off = { type = "disabled" } } }
 quota = { url = "https://api.deepseek.com/user/balance", format = "deepseek-balance" }
+# 官方 Responses 接口自带的联网工具（设计 72、施工 DSR-3）：「联网服务」选中 deepseek-responses，并且这一家在官方地址上、模型走
+# openai-responses、思考没有关闭时，Miyu 的 web_search、web_fetch 换成 deepseek_web_search、deepseek_read_url 两件声明，照这个先后接在工具面末尾。
+# effort：声明了这两件、这一次又没有定思考强度时，请求里明着写这一档。DeepSeek 默认就是 high，可是普通工具和联网工具一起声明时不明着
+# 写，服务端不会真去搜索（2026-11-19 实测）。
+search = { setting = "deepseek-responses", driver = "openai-responses", effort = "high", replaces = [["web_search", "deepseek_web_search"], ["web_fetch", "deepseek_read_url"]] }
 
 # Ollama 本机的服务（施工 8-11）：目录里没有（目录里的 ollama-cloud 是云端的），只为第一次接入找现成的本机服务。
 [providers.ollama]

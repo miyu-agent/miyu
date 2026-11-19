@@ -190,7 +190,11 @@ impl Routes {
 }
 
 /// 池里一个成员这一轮发给谁：那一家这一轮的样子、模型名。
-fn target(data: &ModelData, values: &Values, member: &Member) -> Result<Target, NoModel> {
+pub(super) fn target(
+    data: &ModelData,
+    values: &Values,
+    member: &Member,
+) -> Result<Target, NoModel> {
     let provider =
         data.with(|knowledge| provider::provider(values, knowledge, &member.provider))?;
     Ok(Target {

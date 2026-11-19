@@ -19,12 +19,13 @@ use std::sync::Arc;
 use miyu_config::Values;
 use miyu_kernel::id::{ModelName, ProviderId};
 use miyu_kernel::origin::Model;
-use miyu_kernel::session::Replaced;
+use miyu_kernel::session::{Limits, Replaced};
+use miyu_models::facts::facts;
 use miyu_models::pools::Member;
-use miyu_models::provider;
+use miyu_models::provider::{self, Target};
 use miyu_models::reference::{Resolved, resolve};
 
-use super::{ModelData, Route, nothing};
+use super::{ModelData, Route, Routes, images, nothing};
 use crate::TARGET;
 use crate::config::TurnConfig;
 
@@ -72,6 +73,10 @@ impl Route {
         // 池不用会话记的那一档（SM-1 补）：成员各照各的配置；换回模型又用上。
         let effort = effort.filter(|_| !matches!(resolved, Some(Resolved::Pool(_))));
         pinned.effort = effort.map(str::to_string);
+        // 供应商自己的联网工具这一刻给不给得了（设计 72，`search.rs`）：actor 回合开始接着问。
+        let offer = resolved.as_ref();
+        self.search
+            .offer(offer.and_then(|resolved| self.shared.search_offer(config, resolved, effort)));
         let (member, mut limits) = match resolved {
             Some(Resolved::Model(target)) => (None, self.shared.limits(config, &target)),
             Some(Resolved::Pool(pool)) => {
@@ -140,4 +145,21 @@ fn model_of(member: &Member) -> Option<Model> {
         endpoint: ProviderId::parse(&member.provider).ok()?,
         model: ModelName::parse(&member.model).ok()?,
     })
+}
+
+impl Routes {
+    /// 发给 `target` 的限额：窗口、最大输出照模型资料，一张图怎么算照档案。
+    pub(super) fn limits(&self, config: &TurnConfig, target: &Target) -> Limits {
+        let (facts, _) = self
+            .data
+            .with(|knowledge| facts(&config.resolved, knowledge, &target.provider, &target.model));
+        Limits {
+            model: super::model_of(target),
+            window: facts.window.value,
+            max_output: facts.max_output.value,
+            images: images(target.provider.images),
+            blind: !facts.driver_inputs().images,
+            identity: Some(super::identity::identity(config, target, &facts.effort)),
+        }
+    }
 }

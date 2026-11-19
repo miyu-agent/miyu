@@ -7,7 +7,8 @@ use miyu_kernel::raw::RawJson;
 use miyu_kernel::request::{Message, Request};
 use serde::Serialize;
 
-use crate::fragments::Inline;
+use crate::Fragments;
+use crate::fragments::{Builder, Inline};
 
 /// `input` 里的一项：带角色的消息，或者带种类的一项。
 #[derive(Debug, Serialize)]
@@ -119,29 +120,58 @@ pub(super) struct Tool<'a> {
     strict: bool,
 }
 
-/// 工具面：没有工具、历史里也没有工具调用的不发；历史里有调用的，没有工具也发一个空的。
-pub(super) fn tools(request: &Request) -> Option<Vec<Tool<'_>>> {
-    if !listed(request) {
-        return None;
-    }
-    Some(
-        request
-            .tools
-            .iter()
-            .map(|tool| Tool {
-                kind: "function",
-                name: &tool.name,
-                description: &tool.description,
-                parameters: &tool.parameters,
-                strict: false,
-            })
-            .collect(),
-    )
+/// 供应商那边的一件工具声明（设计 72，施工 DSR-3）：只有种类，`{"type":<名字>}`。
+#[derive(Debug, Serialize)]
+struct HostedTool<'a> {
+    /// 声明的名字，例如 `deepseek_web_search`。
+    #[serde(rename = "type")]
+    kind: &'a str,
 }
 
-/// 发不发工具面（[`tools`] 的条件）：有工具，或者历史里有工具调用。
-pub(super) fn listed(request: &Request) -> bool {
-    !request.tools.is_empty() || calls_tools(request)
+/// 函数工具那一截：照统一的请求的先后，没有工具的是空的。
+pub(super) fn tools(request: &Request) -> Vec<Tool<'_>> {
+    request
+        .tools
+        .iter()
+        .map(|tool| Tool {
+            kind: "function",
+            name: &tool.name,
+            description: &tool.description,
+            parameters: &tool.parameters,
+            strict: false,
+        })
+        .collect()
+}
+
+/// 发不发工具面：有工具、历史里有工具调用，或者这一次要接供应商那边的工具声明（`hosted` 不是空的）。都没有的不发；
+/// 历史里有调用的，没有工具也发一个空的。
+pub(super) fn listed(request: &Request, hosted: &[String]) -> bool {
+    !request.tools.is_empty() || calls_tools(request) || !hosted.is_empty()
+}
+
+/// 写 `,"tools":` 和工具面：`functions` 是函数工具那一截编好的 `[…]`（整份编码当场编，留着的历史用留着的那一份），`hosted`
+/// 接在它后面。`hosted` 是空的只写 `functions`，字节和以前一样；不是空的去掉 `functions` 收尾的 `]`，一件一件接上
+/// `{"type":<名字>}` 再收尾。供应商那边的这一截每次照这一次的 `hosted` 写、不留着：前后两次的 `hosted` 不一样时不会用上旧的。
+pub(super) fn write_tools(
+    body: &mut Builder,
+    functions: &Fragments,
+    any_function: bool,
+    hosted: &[String],
+) {
+    body.extend_from_slice(b",\"tools\":");
+    body.append(functions);
+    if hosted.is_empty() {
+        return;
+    }
+    // 工具面里没有图片、文件，`[…]` 的最后一个字节一定是字 `]`。
+    body.pop();
+    for (index, name) in hosted.iter().enumerate() {
+        if any_function || index > 0 {
+            body.push(b',');
+        }
+        body.json(&HostedTool { kind: name });
+    }
+    body.push(b']');
 }
 
 /// 历史里有没有工具调用。

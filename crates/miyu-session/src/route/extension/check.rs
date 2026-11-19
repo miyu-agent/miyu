@@ -214,6 +214,7 @@ fn params(driver: &str, request: &Request) -> String {
         inputs: Inputs::default(),
         effort: None,
         temperature: None,
+        hosted: Vec::new(),
     };
     wire::params(&Outgoing {
         call: "check",

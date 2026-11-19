@@ -61,6 +61,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `crates/miyu-kernel/src/event/` | `session.created`（8-8 多 `model`）、`session.policy_changed`、`model.called` 多的几格（8-15 的 `cost` 在 `event/cost.rs`：`Cost`、`Prices`、照位比相等的 `Real`）；内核收 `ModelEnded`、`AsideEnded` 的 `cost` 原样记下（`session/call.rs`、`session/aside.rs`），这时的上下文用量 `Session::context_used()`（`session/limits.rs`） | 8-8、8-10、8-15 |
 | `crates/miyu-drivers/src/driver.rs` | 驱动接口多的两样：认证头、列模型 | 8-6、8-7 |
 | `crates/miyu-drivers/src/lib.rs`、`openai_chat/effort.rs` | 调用多一格 `Call.effort`；`openai-chat` 照它发 `reasoning_effort` 或档案写的开关（`Compat.toggle`），没有的什么都不加（8-18） | 8-18 |
+| `crates/miyu-models/src/provider_search.rs`、`crates/miyu-drivers/src/lib.rs`、`openai_responses/wire.rs` | 档案的 `search` 读成 `ProviderSearch`，`offered` 判断这一次能不能用；调用多一格 `Call.hosted`，openai-responses 把它接在工具面末尾（设计 72） | DSR-3 |
 | `crates/miyu-endpoint/src/config/effort.rs` | 配置里写的 `effort` 不在档位里的：读进来以后另查，报 `unknown_effort`（照 `bad_reference` 的办法，目录读完以前不查，8-18） | 8-18 |
 | `crates/miyu-http/src/get.rs` | 一次 GET：拉目录、拉模型列表、探本机的服务（8-7）；`get_full` 出错时另交回状态码、响应头、最多 64 KiB 的响应体，`provider.test` 列模型失败时照驱动分类（8-11） | 8-7、8-11 |
 | `crates/miyu-store/src/usage/rates.rs`、`rates/`、`usage/convert.rs`、`usage/parts.rs`、`crates/miyu-session/src/rates.rs`（施工 UC-1、UP-1） | 换算：汇率的缓存 `var/cache/rates.db`、缺的并成一次取最多等两秒（`RateBook`）、取汇率的端口（`RateSource`，会话层用 HTTP 实现、核心起来时装上）、照每一笔那天的汇率换成一个数（`convert`）；金额分四种（`Parts`：照那一次记下的价格算、跟着那一行存，UP-1） | UC-1、UP-1 |
@@ -71,7 +72,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `crates/miyu-cli/src/ask.rs`、`ask/talk.rs` | `miyu ask --model`：新开的会话 `session.create` 带上，接着的先 `session.configure`（`talk.rs` 的「找会话」） | 8-10 |
 | `xtask/src/dev_home.rs` | `cargo xtask dev-home`：开发时照环境变量造一个带配置的数据根；测试在 `crates/miyu/tests/dev_home.rs`（原样编进去） | 8-6 |
 | `resources/models/models-dev.json`、`models-dev.meta.json`、`models-dev.LICENSE` | 安装包带的完整目录快照，原样的 `api.json`，和它是什么时候拉的；models.dev 的 MIT 许可证原文（`licenses.md`） | 8-7 |
-| `resources/models/profiles.toml` | 驱动怎么认（`[npm]`：包名 → 驱动，8-7），认得出的供应商的档案：开关、另配的头、占位工具、找 key 的环境变量、本机服务探哪里。现在有 `[npm]`、`[providers.deepseek]`：驱动、地址、开关（8-18 多开关思考的 `toggle`）、一张图怎么算（「能收哪些输入」8-7 拿掉，照模型资料）；`[providers.ollama]`：名字、驱动、地址，只为「找现成的」（8-11，档案多一格 `name`）；`anthropic`、`openai` 两段（8-12、8-13）；`[providers.opencode-go]`：另配的头（8-14，档案多一格 `headers`）、查额度的接口（QU-1，档案多一格 `quota`）；`[providers.opencode]`：另配的头（`User-Agent` 也在里头）+ `placeholder_tools`（8-14 补，第八条） | 8-6 起 |
+| `resources/models/profiles.toml` | 驱动怎么认（`[npm]`：包名 → 驱动，8-7），认得出的供应商的档案：开关、另配的头、占位工具、找 key 的环境变量、本机服务探哪里。现在有 `[npm]`、`[providers.deepseek]`：驱动、地址、开关（8-18 多开关思考的 `toggle`）、一张图怎么算（「能收哪些输入」8-7 拿掉，照模型资料）、官方 Responses 接口自带的联网搜索（DSR-3，档案多一格 `search`，见「样子」档案那一段后面的说明）；`[providers.ollama]`：名字、驱动、地址，只为「找现成的」（8-11，档案多一格 `name`）；`anthropic`、`openai` 两段（8-12、8-13）；`[providers.opencode-go]`：另配的头（8-14，档案多一格 `headers`）、查额度的接口（QU-1，档案多一格 `quota`）；`[providers.opencode]`：另配的头（`User-Agent` 也在里头）+ `placeholder_tools`（8-14 补，第八条） | 8-6 起 |
 | `crates/miyu-models/src/headers.rs` | 另配的头的模板：只认 `{session_digest}`，读档案时查、发之前照种子换（8-14） | 8-14 |
 | `crates/miyu-models/src/quota.rs` | 供应商的额度（QU-1，「怎么走」第十七条）：档案的 `quota` 一格（地址、格式 `QuotaFormat`），配置的 `[providers.<id>.quota]` 盖地址（`settled`；认得出官方地址的一家，供应商地址不是官方的没有，QU-2），读回应成几个窗口或者余额（`read`，交 `Reading`） | QU-1、QU-2 |
 | `crates/miyu-models/src/quota/balance.rs` | DeepSeek 官方的余额（QU-2，「怎么走」第十七条第 8 条）：读 `is_available`、`balance_infos`，金额、币种照原样 | QU-2 |
@@ -604,6 +605,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 12. 接着写被打断的回复：一个开关，实测过的才开（`05-内核接口.md` 第七节）。
 13. **思考强度**（8-18）：`Call.effort` 是这一次要的一档，规整过的名字（`off`、`on`，或者目录里的档位名）；没有的什么都不加，请求和以前一个字节不差。openai-chat 照档案的 `compat`：档位发 `reasoning_effort`；`off` 档案写了开关（`toggle`）的发开关的「关」（DeepSeek 是 `"thinking":{"type":"disabled"}`），没写的发 `"reasoning_effort":"none"`（目录写 `none` 的那种）；`on` 写了开关的发开关的「开」，没写的什么都不加。两样都接在请求最后。Anthropic（8-12）：开关是接口自带的；档位写 `"thinking":{"type":"adaptive","display":"summarized"}` 加 `"output_config":{"effort":"<档位>"}`，`off` 写 `"thinking":{"type":"disabled"}`，`on` 写 `adaptive` 那一格，都接在最后（`drivers/anthropic.md`「思考强度」）；换了思考设置，前面对话的缓存作废（system、工具的照旧），这是人自己改的，认这一次的钱。Responses（8-13）：没有开关；档位写 `"reasoning":{"effort":"<档位>","summary":"auto"}` 加 `"include":["reasoning.encrypted_content"]`（要摘要给人看、要加密的思考好回传），`off` 写 `"reasoning":{"effort":"none"}`，`on` 什么都不加，没有的不加（`drivers/openai-responses.md`「思考强度」）。
 14. **温度**（8-22）：`Call.temperature` 是这一次的温度，路由已经查过这个模型收、不超过驱动的上限；没有的什么都不加，请求和以前一个字节不差。三种驱动都写顶层 `"temperature":<数>`，数照最短的十进制（`0.7`、`1`），接在输出上限后面、思考强度那几样前面。Anthropic 开着思考（这一次的强度是档位或 `on`）不带：它的接口开着思考只能用默认的温度，带了别的整个请求被拒；`off`、没有的照带（`drivers/anthropic.md`「温度」）。
+15. **供应商那边的工具声明**（设计 72，施工 DSR-3）：`Call.hosted` 是这一次接在工具面末尾的供应商工具声明的名字，按先后顺序排列。只有 openai-responses 写它：每个名字写成一项 `{"type":<名字>}`，接在函数工具后面，没有函数工具的也发 `tools`（`drivers/openai-responses.md`「编码」第 7 条）。openai-chat、anthropic 不认它，有没有都编出同样的字节。`hosted` 是空的时候什么都不加，请求和以前一个字节不差。
 
 ### 怎么走
 
@@ -1080,6 +1082,7 @@ driver = "openai-chat"
 base_url = "https://api.deepseek.com"
 image_tokens = "deepseek"
 compat = { reasoning = { replay = "reasoning_content", always = true }, continuation = { field = "prefix", path = "/beta/chat/completions" }, toggle = { field = "thinking", on = { type = "enabled" }, off = { type = "disabled" } } }
+search = { setting = "deepseek-responses", driver = "openai-responses", effort = "high", replaces = [["web_search", "deepseek_web_search"], ["web_fetch", "deepseek_read_url"]] }
 
 [providers.opencode-go]
 headers = { "x-opencode-session" = "ses_{session_digest}" }
@@ -1097,6 +1100,8 @@ base_url = "http://127.0.0.1:11434/v1"
 ```
 
 出厂的档案现在是上面几段（8-7、8-11、8-12、8-13、8-14）：DeepSeek 的驱动、地址留在档案里（目录推得出，留着是为了目录读不了时照样能用，「施工时定的」8-7），`image_tokens` 是 8-6 加的一格；8-6 加的 `inputs` 8-7 拿掉了，照模型资料。`ollama` 那一段 8-11 加了（档案多一格 `name`）；`anthropic` 那一段 8-12 加了：目录里这一家没写地址，档案补上驱动和地址 `https://api.anthropic.com/v1`，没有开关。`openai` 那一段 8-13 加了：目录里这一家也没写地址，档案补上驱动 `openai-responses` 和地址 `https://api.openai.com/v1`。`opencode-go` 那一段 8-14 加了：驱动、地址照目录，只多一个头（第八条第 1 条）。`ollama` 目录里没有（目录里的 `ollama-cloud` 是云端的），档案补上，只为「找现成的」。
+
+DeepSeek 那一段的 `search` 是施工 DSR-3 加的一格（设计 72），写的是官方 Responses 接口自带的联网搜索：`setting` 是配置项 `net.search.source` 选中它时的值，`driver` 是要求的驱动，`effort` 是声明了供应商工具、这一次又没有定思考强度时请求里明着写的那一档，`replaces` 每一对是 Miyu 自己的工具名和供应商工具声明的名字。如果 `net.search.source` 的值是 `setting`，这一家在官方地址上（和交 key、查余额用同一个判断，`provider_key::official_address`），这个模型真走的驱动是 `driver`，并且这一次的思考强度不是 `off`，那么 `miyu_models::provider_search::offered` 交回这一格，路由就把每一对前一个名字的工具换成后一个名字的声明，声明按 `replaces` 的顺序交给 `Call.hosted`（「驱动要守的约定」第 15 条）。思考关着时不交，因为 DeepSeek 同时收到函数工具和联网工具、思考又关着时会回 400（设计 72 第三节）。这一次没有定思考强度时，路由把 `Call.effort` 设成 `effort` 写的那一档：DeepSeek 默认的强度本来就是 `high`，但是函数工具和联网工具一起声明时，请求里不明着写强度，服务端就不会真去搜索（2026-11-19 实测）。官方地址表里没有的一家，档案写了 `search` 也不会交。`search` 的每一格都不能是空的字，同一个名字在每一对的同一边只能出现一次，写坏的档案读不进来。
 
 `vendors.toml`（例子）：
 

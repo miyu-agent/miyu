@@ -16,7 +16,7 @@
 | `crates/miyu-drivers/src/driver.rs` | `OpenAiResponses` 和它的 `impl Driver`、`impl Decode` |
 | `crates/miyu-drivers/src/openai_responses/input.rs` | 统一的请求里的消息写成 `input` 里的一项项 |
 | `crates/miyu-drivers/src/openai_responses/effort.rs` | 思考强度换成 `reasoning`、`include` |
-| `crates/miyu-drivers/src/openai_responses/wire.rs` | 线上的 JSON 结构、工具面 |
+| `crates/miyu-drivers/src/openai_responses/wire.rs` | 线上的 JSON 结构、工具面（施工 DSR-3 起也写接在末尾的供应商工具声明） |
 | `crates/miyu-drivers/src/openai_responses/decode.rs` | 解码：事件、每一项开一块、加密的思考、收尾 |
 | `crates/miyu-drivers/src/openai_responses/usage.rs` | 用量归成四项 |
 | `crates/miyu-drivers/src/media.rs` | 图片、文件发不了时换成的字、要哪些 blob，三个驱动共用（`drivers/anthropic.md`「在哪」）；8-13 起 user 的字照 openai-chat 拼的那一步（`join`）也挪进来，openai-chat 的样本一个字节不变 |
@@ -35,7 +35,7 @@
 | `blobs_needed(请求, Call)` | 同 openai-chat 第 11 条 |
 | `encode(请求, Call, blob)` | 编码，交回 `Encoded`：`path` 是 `/responses`；`messages` 是 `input` 里每一项的位置，照先后（system 写在 `instructions`，不算） |
 | `blobs_whole`、`fragments` | 同 openai-chat（施工 V-38）：照原样发的图片、PDF 只要大小、base64 记成一段 `Fragment::Base64`，发的时候才读出来编；`encode` 是它拼起来的整份字节 |
-| `fragments_memo` | 同 openai-chat（施工 V-42，`openai-chat.md`「留着编好的历史」）：一条消息留它写成的几项，照先后接上；system（`instructions`）、工具面照字比 |
+| `fragments_memo` | 同 openai-chat（施工 V-42，`openai-chat.md`「留着编好的历史」）：一条消息留它写成的几项，照先后接上；system（`instructions`）、工具面照字比。留着的工具面只是函数工具那一截，`Call.hosted` 每次按这一次的值接在后面（施工 DSR-3，第 7 条） |
 | `decoder()` | 一次响应一个解码器 |
 | `classify(Failure)` | 共用 `classify::classify` |
 | `auth(key)` | `Authorization: Bearer <key>` |
@@ -44,7 +44,7 @@
 
 `OpenAiResponses::new(DriverTexts)`：没有开关。
 
-**`Call`** 照旧。`max_output` 有才写，路由照旧不替它填。
+**`Call`** 照旧。`max_output` 有才写，路由照旧不替它填。`hosted`（施工 DSR-3）只有这个驱动写，见「编码」第 7 条。
 
 常量：`FAMILY` = `openai-responses`，`PATH` = `/responses`。
 
@@ -69,6 +69,7 @@
    - 统一的请求里的 `error` 不发：这一家的结果没有出错的标记，出错写在内容里。
 6. **接着写**：不会。这一家没有前缀续写。带记号的照原样发，靠提示。
 7. **工具面**：`[{"type":"function","name":…,"description":…,"parameters":<原样>,"strict":false}]`，照统一的请求的先后。`strict` 一定写假的：这一家的 function 默认是严格的，严格模式要求每个参数都必填、不许多出字段，我们的参数格式不是这样写的。工具面是空的、历史里也没有工具调用的，不发 `tools`；历史里有调用的，发 `[]`。
+   - **供应商那边的工具声明**（设计 72，施工 DSR-3）：`Call.hosted` 里的每个名字写成一项 `{"type":<名字>}`，按 `hosted` 的顺序接在函数工具后面，例如 DeepSeek 官方的 `…,"strict":false},{"type":"deepseek_web_search"},{"type":"deepseek_read_url"}]`。名字按 JSON 的规则转义。如果没有函数工具、历史里也没有调用，但是 `hosted` 不是空的，仍然发 `tools`，里面只有这几项。`hosted` 是空的时候不加任何字节，请求和以前一样。交哪几件、什么时候交，由路由根据档案的 `search` 决定（`models.md` 档案那一段，`miyu_models::provider_search`）。
 8. **`Encoded.messages`**：`input` 里每一项在 `body` 里的起止，照先后。
 
 ### 缓存
@@ -79,8 +80,9 @@
 2. 工具调用的 `call_id`、加密的思考原样回传：同样的历史出同样的字节。
 3. 不发会变的东西：时间、随机数、`user`、`metadata` 都不发；`store`、`stream` 每次一样。
 4. `instructions` 在 `input` 前面：system 不变，它就一直在前缀里。
-5. 断在哪：工具面、system 变了，换了模型，换了 key 而它在别的组织。历史里存着的加密思考不管这一次强度是什么都照样回传，所以换强度不改历史的字节；服务端会不会因为换了强度不认前缀，要实测确认。
-6. 守着它：请求形状探针多一张 Responses 的脸（`docs/designs/samples/probe/terminal/openai-responses/`），每次请求是上一次的前缀延伸，照 openai-chat 那一套直接比（没有打点要去掉）。
+5. 断在哪：工具面（包括 `Call.hosted` 接上的供应商工具声明）、system 变了，换了模型，换了 key 而它在别的组织。历史里存着的加密思考不管这一次强度是什么都照样回传，所以换强度不改历史的字节；服务端会不会因为换了强度不认前缀，要实测确认。
+6. 留着编好的历史（`fragments_memo`）时，工具面拿函数工具的原样比较，相同时接着用留着的 `[…]`；`Call.hosted` 不进留着的那一份，每次去掉 `[…]` 收尾的 `]`，按这一次的 `hosted` 接上声明再收尾（`wire::write_tools`，施工 DSR-3）。所以前后两次的 `hosted` 不一样时，各自编出和整份编码一样的字节，不会用上旧的那一截。
+7. 守着它：请求形状探针多一张 Responses 的脸（`docs/designs/samples/probe/terminal/openai-responses/`），每次请求是上一次的前缀延伸，照 openai-chat 那一套直接比（没有打点要去掉）。
 
 `prompt_cache_key` 不发（「还没有的」）。
 
@@ -200,6 +202,7 @@ SSE 分帧共用 `sse.rs`。这一家没有 `[DONE]`：说完是 `response.compl
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu-drivers/tests/openai_responses.rs` | 只有文字；顶层的先后；`instructions` 空的不发；工具面三种情形、`strict:false`；工具调用的编号、参数兜底、没有输出的占位；assistant 的几项照块的先后；每一项的位置 |
+| `crates/miyu-drivers/tests/openai_responses_hosted.rs`（施工 DSR-3） | 供应商工具声明按顺序接在函数工具后面；没有函数工具的也写 `tools`；名字转义；留着历史的编码和整份编码一字不差，前后两次 `hosted` 不一样时各是各的；空的不加字节；openai-chat、anthropic 有没有 `hosted` 都编出同样的字节 |
 | `crates/miyu-drivers/tests/openai_responses_reasoning.rs` | 加密的思考回传、空摘要、别家的和没有加密内容的不写；思考强度两种写法接在最后，没写的一个字节不加 |
 | `crates/miyu-drivers/tests/openai_responses_media.rs` | 图片、PDF、不能收的占位；工具结果里的图、PDF；文本文件、带名字的图片、替它看的图和 openai-chat 一样；缺 blob 报错 |
 | `crates/miyu-drivers/tests/hosted_tool.rs`（施工 HT-2，三个驱动共用一份） | 供应商侧工具在它原来的位置写成那一段字，和样本 `hosted-tool.json` 一字不差；先后、转义、截在字的边界上、以前造的快照不写它（`drivers/openai-chat.md`「守着它的」） |

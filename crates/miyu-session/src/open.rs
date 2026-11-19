@@ -229,6 +229,13 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         context: None,
         vision: None,
     });
+    // 分叉出来的会话沿用来源的快照：钉着要声明的供应商侧工具照旧带着（设计 72，施工 DSR-3）。新造的没有钉。
+    let pinned = snapshot.provider_search.as_ref();
+    model.declare(
+        pinned
+            .map(miyu_policy::SearchPin::names)
+            .unwrap_or_default(),
+    );
     let mut clock = Clock::default();
     let upstream = Upstream::of(
         sessions.as_ref(),

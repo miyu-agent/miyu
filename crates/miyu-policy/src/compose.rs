@@ -106,6 +106,7 @@ pub fn compose(persona: Option<&str>, sources: Sources, attended: bool) -> Snaps
         appended: BTreeMap::new(),
         bare: false,
         plugin_tools: Vec::new(),
+        provider_search: None,
     }
     // 步数上限照有没有人看着给出厂的（施工 AE-1）：子代理、预设写了的由造会话的一方再盖（[`Snapshot::with_steps`]）。
     .with_steps(StepLimits::of(Watched::of(attended), None))

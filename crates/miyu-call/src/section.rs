@@ -4,7 +4,7 @@
 //!
 //! - `describe.txt`：怎么用，`{tools}` 换成能调的名单；
 //! - `example.txt`：`Example: {example}`，`{example}` 照跑命令的 shell 挑 `example-*.txt` 里的一行，造工具时挑一次；都用不上的
-//!   不带这一行；
+//!   不带这一行；例子里调的那件工具不在能调的名单里的也不带（施工 DSR-3：照着例子去调一件调不了的工具，只会白白失败一次）；
 //! - `shapes.txt`：`{shapes}` 换成有结构化结果的那几件的样子，一件都没有的不带这一行。
 //!
 //! 换进去的都是登记来的字（工具名、工具自己写的样子、资源文件），照原样，不转义：转了引号，样子就看不懂了（同 `--schema`）。
@@ -20,9 +20,13 @@ use miyu_tool::load::LoadError;
 /// 那一段的几句，和这台机器上挑好的例子。
 pub struct Section {
     describe: Template,
-    example: Option<String>,
+    /// 例子那一行，和它调的那件工具的名字（`miyu call` 后面的那个词）。
+    example: Option<(String, String)>,
     shapes: Template,
 }
+
+/// 例子里的命令开头：后面接的那个词是它调的工具。
+const CALL: &str = "miyu call ";
 
 /// 例子用哪一行：PowerShell 的用自带的；bash、zsh 的有 `jq` 用它，没有、有 `python3` 用 Python；都没有的不带（设计第九节第 2 条）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -69,7 +73,12 @@ impl Section {
             Some(example) => {
                 let line = crate::raw(resources, example.file())?;
                 let template = text("example", &["example"])?;
-                Some(fill(&template, "example", line.trim_end()))
+                let called = line
+                    .split_once(CALL)
+                    .and_then(|(_, rest)| rest.split_whitespace().next())
+                    .unwrap_or_default()
+                    .to_string();
+                Some((fill(&template, "example", line.trim_end()), called))
             }
             None => None,
         };
@@ -80,10 +89,17 @@ impl Section {
         })
     }
 
-    /// 接在说明后面的那一段：`tools` 是能调的名单，`shapes` 是结果的样子（空的不带那一行）。一行一句，例子、样子各一行。
+    /// 接在说明后面的那一段：`tools` 是能调的名单（`, ` 隔开），`shapes` 是结果的样子（空的不带那一行）。一行一句，例子、
+    /// 样子各一行；例子调的那件工具不在名单里的不带例子。
     pub fn render(&self, tools: &str, shapes: &str) -> String {
         let mut lines = vec![fill(&self.describe, "tools", tools)];
-        lines.extend(self.example.clone());
+        let listed = |called: &str| tools.split(", ").any(|name| name == called);
+        lines.extend(
+            self.example
+                .iter()
+                .filter(|(_, called)| listed(called))
+                .map(|(line, _)| line.clone()),
+        );
         if !shapes.is_empty() {
             lines.push(fill(&self.shapes, "shapes", shapes));
         }

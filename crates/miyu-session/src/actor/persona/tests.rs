@@ -22,6 +22,7 @@ fn seen(refresh: &Refresh) -> Seen {
         &Values::default(),
         &refresh.tools.edition(),
         Default::default(),
+        None,
     )
 }
 

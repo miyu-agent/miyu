@@ -42,6 +42,7 @@ impl Actor {
                     &values,
                     &now,
                     (asked, project, wanted, edited, false),
+                    None,
                 ) {
                     Seen::Swapped(snapshot, ..) => offered(&snapshot),
                     _ => offered(&refresh.snapshot),

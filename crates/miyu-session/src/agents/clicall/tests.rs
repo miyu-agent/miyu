@@ -261,3 +261,55 @@ fn an_old_snapshot_face_is_stamped_from_the_catalog() {
     assert_eq!(stamped, fresh);
     assert!(tells(&stamped));
 }
+
+/// 工具面换了（设计 72，施工 DSR-3：供应商自己的联网工具换掉了 Miyu 的搜索工具）：跑命令的工具说明末尾的名单照新的工具面
+/// 重写，补回来以后写回去；说明末尾认不出来的照原样。
+#[test]
+fn a_changed_face_rewrites_the_section_and_leaves_what_it_cannot_recognise() {
+    let catalog = catalog();
+    let mut before = face(
+        &catalog,
+        &[SHELL, "web_search", "web_fetch", "mcp__notes__find"],
+        true,
+    );
+    describe(&catalog, &mut before);
+    // 拿掉两件搜索工具：名单里只剩那一件 MCP 的，样子没有了。
+    let mut after: Vec<ToolEntry> = before
+        .iter()
+        .filter(|entry| !entry.name.starts_with("web_"))
+        .cloned()
+        .collect();
+    redescribe(&catalog, &before, &mut after);
+    assert_eq!(
+        shell_description(&after),
+        "shell does things.\n\n[mcp__notes__*|]"
+    );
+    // 补回来：和一开始的一样。
+    let mut back: Vec<ToolEntry> = after
+        .iter()
+        .cloned()
+        .chain(
+            before
+                .iter()
+                .filter(|entry| entry.name.starts_with("web_"))
+                .cloned(),
+        )
+        .collect();
+    redescribe(&catalog, &after, &mut back);
+    assert_eq!(shell_description(&back), shell_description(&before));
+    // 能调的一件都不剩：那一段整个拿掉。
+    let mut alone: Vec<ToolEntry> = after
+        .iter()
+        .filter(|entry| entry.name == SHELL)
+        .cloned()
+        .collect();
+    redescribe(&catalog, &after, &mut alone);
+    assert_eq!(shell_description(&alone), "shell does things.");
+    // 说明末尾不是照旧名单写出来的那一段（以前的程序写的、主人覆盖过的）：照原样。
+    let mut odd = after.clone();
+    odd[0].description = "shell, written by hand.".to_string();
+    let mut changed = odd.clone();
+    changed.retain(|entry| entry.name == SHELL);
+    redescribe(&catalog, &odd, &mut changed);
+    assert_eq!(shell_description(&changed), "shell, written by hand.");
+}

@@ -49,7 +49,7 @@ use miyu_kernel::accumulate::Delta;
 use miyu_kernel::event::{CallError, Usage};
 use miyu_kernel::id::{ContentHash, ModelName};
 
-/// 一次调用要定的：发给哪个模型、输出的上限、模型能收哪些输入、思考强度、温度（施工 8-22）。
+/// 一次调用要定的：发给哪个模型、输出的上限、模型能收哪些输入、思考强度、温度（施工 8-22）、供应商那边的工具声明（施工 DSR-3）。
 #[derive(Debug, Clone, PartialEq)]
 pub struct Call {
     /// 模型名，照供应商那边的叫法。
@@ -65,6 +65,11 @@ pub struct Call {
     /// 这一次的温度（施工 8-22，`docs/blueprint/models.md`「驱动要守的约定」第 14 条）：路由照模型资料交，已经查过这个模型
     /// 收、不超过驱动的上限。没有的什么都不加，请求和以前一个字节不差。
     pub temperature: Option<f64>,
+    /// 这一次接在工具面末尾的供应商那边的工具声明（设计 72，施工 DSR-3）：只有名字，照先后写。路由照档案的 `search`
+    /// 交（`miyu_models::provider_search`），例如 DeepSeek 官方 Responses 接口的 `deepseek_web_search`、`deepseek_read_url`。
+    /// 只有 openai-responses 写它：每个名字写成一项 `{"type":<名字>}`，接在函数工具后面；没有函数工具的也照样写 `tools`。
+    /// openai-chat、anthropic 不认，有没有都编出同样的字节。空的什么都不加，请求和以前一个字节不差。
+    pub hosted: Vec<String>,
 }
 
 /// 温度写成一个顶层字段 `,"temperature":<数>`（施工 8-22），接在思考强度那几样的前面。数照最短的十进制写（`0.7`、`1`）。

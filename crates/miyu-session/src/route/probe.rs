@@ -289,6 +289,7 @@ async fn ask(
         inputs: Inputs::default(),
         effort: None,
         temperature,
+        hosted: Vec::new(),
     };
     let encoded = driver
         .fragments(&request, &call, &BTreeMap::new())

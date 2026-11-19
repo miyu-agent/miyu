@@ -55,6 +55,7 @@ mod pool;
 mod probe;
 mod quota;
 mod retire;
+mod search;
 mod send;
 pub(crate) mod shared;
 mod side;
@@ -169,6 +170,7 @@ impl Models for Routes {
                 config: session.config,
             })),
             memo: Arc::new(Mutex::new(Memo::new())),
+            search: search::Held::default(),
         })
     }
 
@@ -190,23 +192,6 @@ impl Models for Routes {
     }
 }
 
-impl Routes {
-    /// 发给 `target` 的限额：窗口、最大输出照模型资料，一张图怎么算照档案。
-    fn limits(&self, config: &TurnConfig, target: &Target) -> Limits {
-        let (facts, _) = self
-            .data
-            .with(|knowledge| facts(&config.resolved, knowledge, &target.provider, &target.model));
-        Limits {
-            model: model_of(target),
-            window: facts.window.value,
-            max_output: facts.max_output.value,
-            images: images(target.provider.images),
-            blind: !facts.driver_inputs().images,
-            identity: Some(identity::identity(config, target, &facts.effort)),
-        }
-    }
-}
-
 /// 一个会话的路由。
 struct Route {
     /// 自己（施工 Q-2）：旁路请求在派出去的任务里换人、退会话的模型，要带着整个路由走。
@@ -216,6 +201,8 @@ struct Route {
     seed: SessionId,
     /// 驱动的占位：取自会话的策略快照，换快照时跟着换（施工 P-1 三补）。
     texts: RwLock<DriverTexts>,
+    /// 供应商自己的联网工具（设计 72，`search.rs`）：模型这边给不给得了、快照钉着要声明的。
+    search: search::Held,
     blobs: Blobs,
     /// 钉着的：引用、池里的成员、上一次解析出来的模型、限额、换过去的 key、要接着说的那一个。发出去的任务说完了也要改它
     /// （成了才钉，施工 8-9），所以放在 `Arc` 里。
@@ -251,6 +238,14 @@ struct Pinned {
 impl ModelPort for Route {
     fn retext(&self, texts: DriverTexts) {
         *self.texts.write().unwrap_or_else(PoisonError::into_inner) = texts;
+    }
+
+    fn search_offer(&self) -> Option<miyu_policy::SearchOffer> {
+        self.search.offered()
+    }
+
+    fn declare(&self, hosted: Vec<String>) {
+        self.search.declare(hosted);
     }
 
     fn model(&self) -> Model {
@@ -415,7 +410,7 @@ impl Route {
             .clone();
         let ready = routes.ready(config, &picked.choice, texts, None, effort.as_deref())?;
         Ok(send::Chosen {
-            ready,
+            ready: self.search.declared_on(ready, routes.idle),
             blobs: self.blobs.clone(),
             memo: main.then(|| Arc::clone(&self.memo)),
             tried: send::Tried {

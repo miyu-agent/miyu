@@ -1,7 +1,8 @@
 //! openai-responses 留着的编好的历史（施工 V-42，[`crate::Memo`]）。
 //!
 //! 一条消息留它写成的几项（[`input::Writer::one`]），每项单独编好。这一家的项和前后无关，照先后接上就是。system（写在
-//! `instructions`）、工具面照字、照工具面原样比，一样的用留着的那一截；头尾每次照这一次的写。
+//! `instructions`）、工具面照字、照工具面原样比，一样的用留着的那一截；头尾每次照这一次的写。工具面留着的只是函数工具那一截，
+//! 供应商那边的工具声明（`Call.hosted`，施工 DSR-3）每次照这一次的接在后面（`wire::write_tools`），不进留着的那一份。
 
 use miyu_kernel::request::{Request, ToolSpec};
 
@@ -90,18 +91,16 @@ pub(super) fn fragments(
         ranges.push(start..body.len());
     }
     body.push(b']');
-    if wire::listed(request) {
+    if wire::listed(request, &call.hosted) {
         if kept
             .tools
             .as_ref()
             .is_none_or(|(tools, _)| *tools != request.tools)
         {
-            let tools = wire::tools(request).unwrap_or_default();
-            kept.tools = Some((request.tools.clone(), piece(&tools)));
+            kept.tools = Some((request.tools.clone(), piece(&wire::tools(request))));
         }
         if let Some((_, tools)) = &kept.tools {
-            body.extend_from_slice(b",\"tools\":");
-            body.append(tools);
+            wire::write_tools(&mut body, tools, !request.tools.is_empty(), &call.hosted);
         }
     }
     rest(&mut body, call);

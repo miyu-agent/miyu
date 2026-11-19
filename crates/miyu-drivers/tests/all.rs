@@ -22,6 +22,7 @@ mod openai_chat_image_names;
 mod openai_chat_media;
 mod openai_chat_streams;
 mod openai_responses;
+mod openai_responses_hosted;
 mod openai_responses_media;
 mod openai_responses_reasoning;
 mod openai_responses_streams;

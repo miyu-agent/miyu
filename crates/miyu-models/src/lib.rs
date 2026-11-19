@@ -6,6 +6,7 @@
 //!   模板（施工 8-14）；
 //! - [`provider`]：一家供应商照这一轮的配置、档案、目录合出来的样子，一个引用这一轮发给谁，没有模型时说什么；
 //!   [`provider_key`]：配的哪一家是目录里的某一家、它的 key 是哪一把（施工 PK-1）；
+//!   [`provider_search`]：供应商自带的联网搜索这一次能不能用（施工 DSR-3）；
 //! - [`pools`]：池的成员、怎么分、指针怎么走（施工 8-8），派子代理能选哪几个（施工 8-8 补）；
 //! - [`cooldown`]：出错以后的冷却：按分类、翻倍、封顶、成功清零（施工 8-9）；
 //! - [`catalog`]：models.dev 的目录（施工 8-7）；[`matching`]：四层对目录、规整、认原厂；
@@ -39,6 +40,7 @@ pub mod price;
 pub mod profile;
 pub mod provider;
 pub mod provider_key;
+pub mod provider_search;
 pub mod quota;
 pub mod reference;
 pub mod settings;

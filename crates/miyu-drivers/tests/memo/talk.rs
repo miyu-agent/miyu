@@ -164,6 +164,7 @@ impl Talk {
                 },
                 effort: None,
                 temperature: None,
+                hosted: Vec::new(),
             },
             retexted: false,
             seq: 1,

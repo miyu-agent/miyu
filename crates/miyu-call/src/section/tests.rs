@@ -88,6 +88,20 @@ fn no_example_and_no_shapes_leave_out_their_lines() {
     assert!(text.ends_with("Tools that work with miyu call: web_fetch."));
 }
 
+/// 例子调的那件工具不在能调的名单里（施工 DSR-3）：不带例子那一行，免得照着例子去调一件调不了的。
+#[test]
+fn an_example_calling_a_tool_that_is_not_listed_is_left_out() {
+    let section = Section::load(&resources(), Some(Example::Jq)).expect("读得出");
+    let text = section.render("kb_read, web_fetch", "");
+    assert_eq!(text.lines().count(), 1, "{text}");
+    assert!(!text.contains("Example:"), "{text}");
+    // 名字只是别的名字的一截的不算在名单里。
+    let text = section.render("kb_read, web_search_plus", "");
+    assert!(!text.contains("Example:"), "{text}");
+    let text = section.render("kb_read, web_search", "");
+    assert!(text.contains("Example: miyu call web_search "), "{text}");
+}
+
 #[test]
 fn every_example_loads_and_powershell_keeps_its_braces() {
     for example in [Example::PowerShell, Example::Jq, Example::Python] {

@@ -190,6 +190,7 @@ pub(super) fn look_now(refresh: &Refresh) -> Seen {
         &Values::default(),
         &refresh.tools.edition(),
         Default::default(),
+        None,
     )
 }
 

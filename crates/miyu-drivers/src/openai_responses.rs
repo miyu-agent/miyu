@@ -23,7 +23,7 @@ use miyu_kernel::request::Request;
 
 pub use crate::{EncodeError, Encoded};
 
-use crate::fragments::Builder;
+use crate::fragments::{Builder, piece};
 use crate::{BlobBytes, Call, DriverTexts, Fragments, Memo, media};
 
 /// 驱动家族：私有数据里写的是它的，才是这个驱动的（`03-事件模型.md` 第九节）。
@@ -33,8 +33,8 @@ pub const FAMILY: &str = "openai-responses";
 pub const PATH: &str = "/responses";
 
 /// 编码：顶层照 `model`、`instructions`、`input`、`tools`、`"store":false`、`"stream":true`、`max_output_tokens`、思考强度的
-/// 先后写，别的字段一概不发。带着接着写记号的照原样发（这一家没有前缀续写），发到 [`PATH`]。请求体整份写成字节
-/// （[`fragments`] 拼起来）。
+/// 先后写，别的字段一概不发。`tools` 里函数工具在前，`call.hosted` 的供应商工具声明接在后面（施工 DSR-3）。带着接着写
+/// 记号的照原样发（这一家没有前缀续写），发到 [`PATH`]。请求体整份写成字节（[`fragments`] 拼起来）。
 ///
 /// # Errors
 ///
@@ -84,9 +84,14 @@ pub fn fragments(
         ranges.push(start..body.len());
     }
     body.push(b']');
-    if let Some(tools) = wire::tools(request) {
-        body.extend_from_slice(b",\"tools\":");
-        body.json(&tools);
+    if wire::listed(request, &call.hosted) {
+        let functions = piece(&wire::tools(request));
+        wire::write_tools(
+            &mut body,
+            &functions,
+            !request.tools.is_empty(),
+            &call.hosted,
+        );
     }
     rest(&mut body, call);
     Ok(Encoded {

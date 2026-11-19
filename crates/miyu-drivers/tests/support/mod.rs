@@ -98,6 +98,7 @@ pub fn call(inputs: Inputs, max_output: Option<u32>) -> Call {
         inputs,
         effort: None,
         temperature: None,
+        hosted: Vec::new(),
     }
 }
 
@@ -173,6 +174,7 @@ pub fn gpt(inputs: Inputs, max_output: Option<u32>) -> Call {
         inputs,
         effort: None,
         temperature: None,
+        hosted: Vec::new(),
     }
 }
 
@@ -184,6 +186,7 @@ pub fn claude(inputs: Inputs, max_output: Option<u32>) -> Call {
         inputs,
         effort: None,
         temperature: None,
+        hosted: Vec::new(),
     }
 }
 

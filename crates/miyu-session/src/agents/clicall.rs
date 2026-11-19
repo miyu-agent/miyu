@@ -45,11 +45,12 @@ pub(crate) fn tells(face: &[ToolEntry]) -> bool {
     scriptable(face).next().is_some()
 }
 
-/// 有能调的，照 `catalog` 给跑命令的工具的说明接上那一段：名单照名字排、一个 MCP 服务的并成一项；有结构化结果的列出样子。
-pub(crate) fn describe(catalog: &Catalog, face: &mut [ToolEntry]) {
+/// 工具面 `face` 上能调的名单和结果的样子：名单照名字排、一个 MCP 服务的并成一项，`, ` 隔开；有结构化结果的列出样子，`; `
+/// 隔开。一件能调的都没有的没有。
+fn lists(catalog: &Catalog, face: &[ToolEntry]) -> Option<(String, String)> {
     let names: BTreeSet<String> = scriptable(face).map(|entry| listed(&entry.name)).collect();
     if names.is_empty() {
-        return;
+        return None;
     }
     let shapes: Vec<String> = scriptable(face)
         .filter_map(|entry| {
@@ -62,14 +63,45 @@ pub(crate) fn describe(catalog: &Catalog, face: &mut [ToolEntry]) {
         .map(String::as_str)
         .collect::<Vec<_>>()
         .join(", ");
-    let shapes = shapes.join("; ");
+    Some((tools, shapes.join("; ")))
+}
+
+/// 跑命令的工具 `name` 照名单 `lists` 接在说明后面的那一段；没有名单的、这件工具不接的没有。
+fn section(catalog: &Catalog, name: &str, lists: Option<&(String, String)>) -> Option<String> {
+    let (tools, shapes) = lists?;
+    catalog.get(name)?.clicall_section(tools, shapes)
+}
+
+/// 有能调的，照 `catalog` 给跑命令的工具的说明接上那一段：名单照名字排、一个 MCP 服务的并成一项；有结构化结果的列出样子。
+pub(crate) fn describe(catalog: &Catalog, face: &mut [ToolEntry]) {
+    let lists = lists(catalog, face);
     for entry in face.iter_mut().filter(|entry| entry.runs_commands) {
-        if let Some(section) = catalog
-            .get(&entry.name)
-            .and_then(|tool| tool.clicall_section(&tools, &shapes))
-        {
+        if let Some(section) = section(catalog, &entry.name, lists.as_ref()) {
             entry.description = format!("{}\n\n{section}", entry.description.trim_end());
         }
+    }
+}
+
+/// 工具面从 `before` 换成了 `face`（设计 72，施工 DSR-3：供应商自己的联网工具换掉、补回了 Miyu 的搜索工具）：跑命令的工具
+/// 说明末尾那一段照新的名单重写，不然她照旧的名单去调已经拿掉的那几件。说明末尾不是照 `before` 写出来的那一段的（以前的
+/// 程序写的、主人覆盖过的）认不出来，照原样。
+pub(crate) fn redescribe(catalog: &Catalog, before: &[ToolEntry], face: &mut [ToolEntry]) {
+    let (was, now) = (lists(catalog, before), lists(catalog, face));
+    if was == now {
+        return;
+    }
+    for entry in face.iter_mut().filter(|entry| entry.runs_commands) {
+        let base = match section(catalog, &entry.name, was.as_ref()) {
+            Some(old) => match entry.description.strip_suffix(&format!("\n\n{old}")) {
+                Some(base) => base.to_string(),
+                None => continue,
+            },
+            None => entry.description.clone(),
+        };
+        entry.description = match section(catalog, &entry.name, now.as_ref()) {
+            Some(new) => format!("{}\n\n{new}", base.trim_end()),
+            None => base,
+        };
     }
 }
 

@@ -89,6 +89,29 @@ fn the_shipped_profiles_keep_what_was_in_the_code() {
     }
 }
 
+/// 施工 DSR-3：出厂的档案里只有 DeepSeek 写了自带的联网搜索，设置的值、驱动、换哪几件和先后都照设计 72。
+#[test]
+fn the_shipped_profiles_give_deepseek_its_own_search() {
+    let profiles = profiles(include_str!("../../../../resources/models/profiles.toml"))
+        .expect("出厂的档案读得进来");
+    let pair = |own: &str, theirs: &str| (own.to_string(), theirs.to_string());
+    assert_eq!(
+        profiles.providers["deepseek"].search,
+        Some(miyu_models::provider_search::ProviderSearch {
+            setting: "deepseek-responses".to_string(),
+            driver: "openai-responses".to_string(),
+            effort: "high".to_string(),
+            replaces: vec![
+                pair("web_search", "deepseek_web_search"),
+                pair("web_fetch", "deepseek_read_url"),
+            ],
+        })
+    );
+    for (id, profile) in &profiles.providers {
+        assert!(id == "deepseek" || profile.search.is_none(), "{id}");
+    }
+}
+
 #[test]
 fn toml_becomes_json_and_bad_profiles_say_so() {
     let read =

@@ -12,6 +12,7 @@ fn look_wanting(refresh: &Refresh, wanted: Wanted) -> Seen {
         &Values::default(),
         &refresh.tools.edition(),
         (Default::default(), None, wanted, false, false),
+        None,
     )
 }
 

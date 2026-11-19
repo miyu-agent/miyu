@@ -29,16 +29,22 @@ DeepSeek 官方的接口自带两个联网工具：`deepseek_web_search`（搜�
 
 ### 2. 什么时候激活
 
-选了「DeepSeek Responses 接口内置」以后，下面三条同时满足才激活：
+选了「DeepSeek Responses 接口内置」以后，下面四条同时满足才激活：
 
 1. 当前对话的模型用的是 DeepSeek 这一家供应商；
 2. 这家供应商的地址是 DeepSeek 官方地址（`https://api.deepseek.com`），经过中转站的不算；
-3. 这家供应商走的是 Responses 接口（`openai-responses` 驱动）。
+3. 这家供应商走的是 Responses 接口（`openai-responses` 驱动）；
+4. 这个模型的思考没有设成关。普通工具和联网工具一起声明时，DeepSeek 要求开着思考，否则返回 400（见第三节的实测）。
+
+模型是模型池时，池里每个成员都满足上面几条才算满足。
 
 激活以后：
 
 - 发给 DeepSeek 的请求里，在 `tools` 数组末尾按固定顺序加上 `{"type": "deepseek_web_search"}` 和 `{"type": "deepseek_read_url"}`；
+- 请求里明确写出思考强度。会话或配置里没有定思考强度时，请求写 `"reasoning": {"effort": "high"}`（DeepSeek 默认的强度）。不明确写的话，DeepSeek 不会执行搜索（见第三节的实测）；
+- `shell` 工具说明末尾「脚本里可以调用哪些工具」的名单跟着去掉这两个工具，名单里举例用的 `miyu call web_search` 那一行也不再出现，避免 AI 去调用已经换掉的工具；
 - 工具面里去掉 Miyu 自己的网络搜索（`web_search`）和抓取网页（`web_fetch`）两个工具，避免两边都搜。
+- 替换是一对一的：工具面里原本有 `web_search` 时才声明 `deepseek_web_search`，原本有 `web_fetch` 时才声明 `deepseek_read_url`。预设只关掉其中一个功能时，另一个照常替换。
 
 没有激活时（比如换成了别家模型、用的是中转站、或者 DeepSeek 供应商走的是 OpenAI 兼容接口），按「自动」的顺序使用别家搜索服务，AI 照样能搜索。
 
@@ -52,6 +58,8 @@ DeepSeek 官方的接口自带两个联网工具：`deepseek_web_search`（搜�
 
 - **换模型时当场重新判断**。换模型本来就会让缓存断掉：供应商的缓存是按模型存的，新模型那边没有这段对话的缓存。所以在换模型的那一刻顺便换工具，不会多断一次。
 - **会话中途改了「联网服务」设置**：从下一个新会话开始生效，或者等这个会话下次换模型时一起生效。正在进行的会话，工具列表不变。
+- **判断结果钉在策略快照里**（施工 DSR-3）。快照记下判断时的模型引用、当时「联网服务」有没有选这一项、换掉了哪几件工具，所以重新载入会话不会改变工具面。除了换模型，模型这边满不满足条件发生变化时也会重新判断：思考被设成关，或者你在编辑供应商里改了接口或地址。不重新判断的话，请求会直接失败，或者两种搜索都用不了。
+- 新会话在第一轮开始时判断，这时还没有发过请求，不影响缓存。
 
 ### 4. 驱动接住搜索记录
 
@@ -81,10 +89,12 @@ DeepSeek 的档案（`resources/models/profiles.toml`）照旧写 `driver = "ope
 
 - 模型能收什么输入由模型资料决定，和供应商走哪种接口无关。在沙箱里把 DeepSeek 供应商的接口设成 Responses 之后，核心报告 `deepseek-v4-pro` 的输入只有文字，`deepseek-flash` 是文字和图片；出厂的模型目录和当天从 models.dev 取到的目录写的都是这样。所以把图发给 `deepseek-v4-pro` 时，Miyu 会交给看图模型转成文字，不需要修改。
 
-**直接调用接口时发现的两个限制**（2026-11-19，用 DeepSeek 官方接口实测，每次只发几十个 token）：
+**直接调用接口时发现的三个限制**（2026-11-19，用 DeepSeek 官方接口实测；第 1、3 条每次只发几十个 token，第 2 条的三次请求里有两次真的搜索了）：
 
 1. **普通工具和联网工具一起声明时，必须开着思考。** 请求里同时有 `function` 工具和 `deepseek_web_search`、`deepseek_read_url`，并且 `reasoning.effort` 是 `none` 时，DeepSeek 返回 400：`client tools can only be used together with deepseek_web_search in thinking mode`。`deepseek-flash` 和 `deepseek-v4-pro` 都是这样。不写 `reasoning`，或者 `effort` 是 `low`、`high` 时，请求成功，模型也能照常调用 `function` 工具。Miyu 的请求总是带着自己的工具，所以激活时要保证思考没有关闭。目前 DeepSeek 的模型资料里思考只有 `low`、`high`、`max` 三档，Responses 接口上选不到「关」；只有在配置里手写 `effort = "off"` 才会发出 `none`。
-2. **声明了联网工具时，`input` 不能以 assistant 的内容结尾。** 这时最后一项是 assistant 的 `message`、`reasoning` 或 `web_search_call`，DeepSeek 返回 400：`continuing a reply is not supported on the Responses API`。没有声明联网工具时，以 assistant 的消息结尾的请求会成功，模型接着半截往下写。Miyu 的 `openai-responses` 驱动在接着写被打断的回复时，最后一项本来就是带提示的 user 消息，不以 assistant 的内容结尾，所以不受影响。
+2. **普通工具和联网工具一起声明时，思考强度必须明确写在请求里，搜索才会执行。** 同一个要搜索的问题发三次：请求里有 `function` 工具和两个联网工具、不写 `reasoning` 时，模型只回答「我去搜索一下」就结束了，没有任何搜索；加上 `"reasoning": {"effort": "high"}` 以后，同样的请求里模型搜索了 2 次，`usage.server_tool_use` 是 `{"tool_search": 2}`；只声明联网工具、不写 `reasoning` 时也会搜索。所以激活时如果没有定思考强度，请求里要明确写上一档（施工 DSR-3 写 `high`，数据在供应商档案的 `search.effort`）。在 Miyu 里实测也是这样：不写时 AI 回答「我没有自带的联网搜索工具」，写了以后一次请求就搜索并答出了当天的版本号和官方公告的网址。
+
+3. **声明了联网工具时，`input` 不能以 assistant 的内容结尾。** 这时最后一项是 assistant 的 `message`、`reasoning` 或 `web_search_call`，DeepSeek 返回 400：`continuing a reply is not supported on the Responses API`。没有声明联网工具时，以 assistant 的消息结尾的请求会成功，模型接着半截往下写。Miyu 的 `openai-responses` 驱动在接着写被打断的回复时，最后一项本来就是带提示的 user 消息，不以 assistant 的内容结尾，所以不受影响。
 
 ## 四、有哪些限制
 

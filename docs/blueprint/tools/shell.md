@@ -136,7 +136,7 @@
 9. 关：丢掉端点就掐掉服务、删掉套接字，令牌跟着作废，等着的 `miyu call` 读到结尾（退出码 3）。前台的命令结束时丢。
 10. 给她看的字（施工 M-4，设计 `39-脚本调工具.md` 第九节）：组工具面时（`Agents::face`，`agents/clicall.rs`），工具面上有跑命令的工具（`Tool::runs_commands`，施工 BS-1 上起不看名字；出厂的就是 `shell`）、有脚本里能调的工具（`clicall` 开着、`Access::scriptable`；预设关了「脚本调工具」的一件都不算，施工 M-6）的，跑命令的工具（`shell`，施工 XG-1 下起还有扩展声明了 `runs_commands` 的）的说明末尾空一行接上 `Tool::clicall_section` 交回的那一段（`miyu-call` 的 `section.rs`，字在 `core/call/`），system 里带 `core/clicall.txt`（`policy.md` 的 `with_clicall`）；一件都没有的两样都不带，说明、system 一字不变。那一段一行一句：
     - `call/describe.txt`：怎么用，`{tools}` 换成能调的名单，照名字排，一个 MCP 服务的几件并成 `mcp__<服务>__*`。
-    - `call/example.txt`：`Example: {example}`，核心起来时和 `{shell}` 一起挑一次：PowerShell 的用 `call/example-powershell.txt`；bash、zsh 的 `PATH` 上有 `jq` 用 `example-jq.txt`，没有、有 `python3` 用 `example-python.txt`；都没有的不带这一行。
+    - `call/example.txt`：`Example: {example}`（例子里 `miyu call` 后面的那件工具不在能调的名单里时不带这一行，施工 DSR-3：按例子去调一件调不了的工具只会失败一次），核心起来时和 `{shell}` 一起挑一次：PowerShell 的用 `call/example-powershell.txt`；bash、zsh 的 `PATH` 上有 `jq` 用 `example-jq.txt`，没有、有 `python3` 用 `example-python.txt`；都没有的不带这一行。
     - `call/shapes.txt`：能调的工具里写了 `result` 的（`tools/interface.md`），`{shapes}` 换成 `名字 样子`、`; ` 隔开；一件都没有的不带这一行。
     - 换进去的都是登记来的字，照原样、不转义（同 `--schema`）。工具面在一个会话里不变，这一段也不变；人改了预设、装了包，下一个回合工具面重算时一起换。
 

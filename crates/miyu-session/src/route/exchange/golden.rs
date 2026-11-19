@@ -114,6 +114,7 @@ pub(super) fn cases(media: &Media) -> Vec<Setup> {
                 },
                 effort: Some(EFFORT_ON.to_string()),
                 temperature: Some(0.7),
+                hosted: Vec::new(),
             },
             chat("openai-chat"),
             placeholders.clone(),
@@ -126,6 +127,7 @@ pub(super) fn cases(media: &Media) -> Vec<Setup> {
                 inputs: Inputs::default(),
                 effort: None,
                 temperature: None,
+                hosted: Vec::new(),
             },
             chat("openai-chat"),
             Vec::new(),
@@ -141,6 +143,7 @@ pub(super) fn cases(media: &Media) -> Vec<Setup> {
                 },
                 effort: None,
                 temperature: Some(1.0),
+                hosted: Vec::new(),
             },
             request(
                 media,
@@ -162,6 +165,7 @@ pub(super) fn cases(media: &Media) -> Vec<Setup> {
                 },
                 effort: None,
                 temperature: None,
+                hosted: Vec::new(),
             },
             request(
                 media,
@@ -204,6 +208,7 @@ pub(super) fn ready(
         },
         tariff: None,
         placeholders,
+        search: None,
     }
 }
 

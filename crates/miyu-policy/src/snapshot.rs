@@ -135,6 +135,11 @@ pub struct Snapshot {
     /// 给了的场所插件工具（施工 O-60）：工具面上带 `plugin` 的那几件的名字，照名字排。没有的不写，字节和以前一样。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub plugin_tools: Vec<String>,
+    /// 供应商自己的联网工具换掉 Miyu 的搜索工具的判断结果（设计 72，施工 DSR-3，[`crate::provider_search`]）：模型这边满足
+    /// 条件时回合开始钉下，换掉的几件不在 `tools` 里；会话中途只改「联网服务」的不变，换了模型才重新判断。模型这边不满足
+    /// 的没有：不写，字节和以前一样。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider_search: Option<crate::provider_search::SearchPin>,
 }
 
 /// 随核心附带的字（`resources/core/`），原文照抄，行尾的换行也算（`26-提示词.md` 第八节）。
