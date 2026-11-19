@@ -101,6 +101,30 @@ fn words_for_things_not_in_the_list_are_problems() {
     );
 }
 
+/// 选中选项时弹的提示（施工 DSR-2）：可以不写；写了的要写给这一项有的选项，不是空的。
+#[test]
+fn an_option_notice_must_belong_to_an_option_and_say_something() {
+    let mut words = good();
+    if let Some(said) = words.items.get_mut("log.level") {
+        said.option_notices
+            .insert("off".to_string(), "关了以后排查不了问题".to_string());
+    }
+    assert_eq!(check(&items(), &words), Vec::<String>::new());
+    if let Some(said) = words.items.get_mut("log.level") {
+        said.option_notices
+            .insert("verbose".to_string(), "没有这个选项".to_string());
+        said.option_notices
+            .insert("off".to_string(), "  ".to_string());
+    }
+    assert_eq!(
+        check(&items(), &words),
+        vec![
+            "log.level：选项 off 的提示是空的",
+            "log.level：提示写给了没有的选项 verbose",
+        ]
+    );
+}
+
 #[test]
 fn every_page_and_group_in_use_needs_a_name() {
     let mut words = good();

@@ -519,12 +519,13 @@
             },
             "source": {
               "default": "auto",
-              "description": "AI 搜索网页、抓取网页使用哪一家服务。「自动」只使用免费额度：搜索时依次尝试 Exa、Parallel、Firecrawl、AnySearch、You.com，被限额的服务会暂停一段时间；Miyu 自己抓取失败的网页交给 Exa、Firecrawl、Parallel 代抓。这几家服务都在国外，搜索词和网址会发送给它们。如果选择了其中一家，就优先使用它（选择 DeepSeek 时，抓取网页也优先交给它）；它不可用时再按「自动」的顺序尝试。能写：auto、exa、anysearch、deepseek、tavily、brave 或 searxng。只能写在系统配置里。下一轮生效。",
+              "description": "AI 搜索网页、抓取网页使用哪一家服务。「自动」只使用免费额度：搜索时依次尝试 Exa、Parallel、Firecrawl、AnySearch、You.com，被限额的服务会暂停一段时间；Miyu 自己抓取失败的网页交给 Exa、Firecrawl、Parallel 代抓。这几家服务都在国外，搜索词和网址会发送给它们。如果选择了其中一家，就优先使用它（选择「DeepSeek 搜索接口」时，抓取网页也优先交给它）；它不可用时再按「自动」的顺序尝试。能写：auto、exa、anysearch、deepseek、deepseek-responses、tavily、brave 或 searxng。只能写在系统配置里。下一轮生效。",
               "enum": [
                 "auto",
                 "exa",
                 "anysearch",
                 "deepseek",
+                "deepseek-responses",
                 "tavily",
                 "brave",
                 "searxng"

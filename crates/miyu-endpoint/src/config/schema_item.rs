@@ -35,6 +35,10 @@ pub(super) fn schema_item(
                 {
                     named["description"] = json!(description);
                 }
+                // 选中时弹的提示（设计 72，施工 DSR-2）：头在人选中这个选项时弹出来。
+                if let Some(notice) = said.and_then(|said| said.option_notices.get(*option)) {
+                    named["notice"] = json!(notice);
+                }
                 if let Some(note) = notes(option) {
                     named["note"] = json!(note);
                 }

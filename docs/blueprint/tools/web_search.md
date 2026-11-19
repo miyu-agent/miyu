@@ -62,7 +62,7 @@ Waits on multiple concurrent branches, ……
 
 1. 读参数：读不懂、`query` 是空的：参数不对。
 2. 第一次搜读 `search.json`，读不懂的记一条 `WARN web search not ready`，这个核心的生命周期里不再试，每次回 `not-ready`。
-3. 照 `order` 一家家试（出厂 Exa → Parallel → Firecrawl → AnySearch → You.com，设计 36 第二节第 2 条）。设置「联网服务」选了一家的（`net.search.source`，施工 N-2 下，设计 36 第二节第 3 条；施工 NF-1 起选项只有 `auto` 和要 key、要地址的 DeepSeek、Tavily、Brave、SearXNG；施工 NS-1 加上能配 key 的 Exa、AnySearch，没配 key 的照免费额度），它排在最前、出厂顺序里不再问第二遍：它没配 key、限额、余额不足、服务忙、超时的，照自动的顺序接着试（项目主人 2026-11-14 定）；`auto`、挑的不是出厂有的、调用没带这一轮配置的（测试里的假调用）照出厂的顺序。这一轮的配置照调用带来的 `settings`（`miyu_tool::SettingsPort`，会话 actor 回合开始冻结的那一份）读：
+3. 照 `order` 一家家试（出厂 Exa → Parallel → Firecrawl → AnySearch → You.com，设计 36 第二节第 2 条）。设置「联网服务」选了一家的（`net.search.source`，施工 N-2 下，设计 36 第二节第 3 条；施工 NF-1 起选项只有 `auto` 和要 key、要地址的 DeepSeek、Tavily、Brave、SearXNG；施工 NS-1 加上能配 key 的 Exa、AnySearch，没配 key 的照免费额度），它排在最前、出厂顺序里不再问第二遍：它没配 key、限额、余额不足、服务忙、超时的，照自动的顺序接着试（项目主人 2026-11-14 定）；`auto`、挑的不是出厂有的（包括设计 72 的 `deepseek-responses`：由模型在供应商那边自己搜索，这里按自动处理）、调用没带这一轮配置的（测试里的假调用）照出厂的顺序。这一轮的配置照调用带来的 `settings`（`miyu_tool::SettingsPort`，会话 actor 回合开始冻结的那一份）读：
    - 冷却着的跳过。
    - 成了的（哪怕一条都没有）清零冷却，就用它，后面的不问。
    - 报限额的（HTTP 429、402 余额不足；或者原话里有 rate limit、too many requests、quota、credit、usage limit、limit reached、HTTP 429）进冷却：台阶 30 分钟、1 小时、2 小时，最多 6 小时（`cooldown_minutes`），记 `WARN web search source limited source=… minutes=…`，换下一家。

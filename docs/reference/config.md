@@ -39,7 +39,7 @@
 | 名字 | 说明 |
 |---|---|
 | `key`、`type` | 键、类型：`bool`、`option`、`int`、`float`、`text`、`duration`、`path`、`url`、`name`、`reference`、`model`、`model_or`、`english`、`secret`、`list`、`table`，软件包的项还有 `persona`、`knowledge`、`preset`（选人格、选知识库、选预设；选模型的是 `reference`）。键里人起的名字那一段写成占位 `<id>`、`<model>`、`<external>`、`<name>`，例如 `providers.<id>.base_url` |
-| `options` | 选项：`value`、给人看的 `name`；软件包清单里写了说明的带 `description`（暗色写在下面）；核心查得出的带 `note`（暗色写在名字后面）、`available: false`（用不了，画成灰的） |
+| `options` | 选项：`value`、给人看的 `name`；写了说明的带 `description`（暗色写在下面）；带 `notice` 的选项在被选中时弹出这一句提示，提示只有一个确认按钮，选项仍然保存；核心查得出的带 `note`（暗色写在名字后面）、`available: false`（用不了，画成灰的） |
 | `min`、`max`、`max_chars`、`element` | 范围、长度、列表元素的类型（`record` 是每一项一组字段） |
 | `title`、`fields` | 元素是 `record` 的：拿哪个字段当每一项的标题（没有的照「第几项」写）；每个字段一项，格同这张表（`key` 是字段名） |
 | `default` | 默认值 |

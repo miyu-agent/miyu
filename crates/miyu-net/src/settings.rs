@@ -13,9 +13,12 @@ miyu_config::settings! {
     /// 搜索的配置。
     pub struct SearchSettings in "net.search" {
         /// 联网服务：`auto` 照出厂的顺序用免费的几家，或者先用定的那一家（能配 key、要 key、要地址的几家；Exa、AnySearch
-        /// 没配 key 的照免费额度，施工 NS-1）。
+        /// 没配 key 的照免费额度，施工 NS-1）。`deepseek-responses` 是「DeepSeek Responses 接口内置」（设计 72，施工 DSR-2）：
+        /// 对话模型是 DeepSeek 官方、走 Responses 接口时，由模型在供应商那边自己搜索网页、读取链接。它不是 `search.json`
+        /// 里的一家：`web_search`、`web_fetch` 碰到它照自动的顺序（`Ready::order` 只认出厂有的来源），不需要密钥和地址
+        /// （[`missing`]）。
         source: String = "auto" {
-            kind: option ["auto", "exa", "anysearch", "deepseek", "tavily", "brave", "searxng"],
+            kind: option ["auto", "exa", "anysearch", "deepseek", "deepseek-responses", "tavily", "brave", "searxng"],
             layers: [System],
             applies: next_turn,
             ui: { page: "packages", group: "base-net", package: "base-net", control: select },

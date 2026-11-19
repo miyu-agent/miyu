@@ -39,7 +39,7 @@ Above the three layers sit the environment variables the core was started with, 
 | Name | Notes |
 |---|---|
 | `key`, `type` | Key and type: `bool`, `option`, `int`, `float`, `text`, `duration`, `path`, `url`, `name`, `reference`, `model`, `model_or`, `english`, `secret`, `list`, `table`; package settings also have `persona`, `knowledge` and `preset` (pick a persona, a knowledge base or a preset; picking a model is `reference`). A segment a person names is written as a placeholder `<id>`, `<model>`, `<external>`, `<name>`, e.g. `providers.<id>.base_url` |
-| `options` | Options: `value` and a display `name`; `description` (shown dimmed below) when the package manifest wrote one; `note` (shown dimmed after the name) and `available: false` (shown greyed out) when the core can tell |
+| `options` | Options: `value` and a display `name`; `description` (shown dimmed below) when one was written; an option with `notice` pops that sentence up when it is picked, with a single confirm button, and the option is still saved; `note` (shown dimmed after the name) and `available: false` (shown greyed out) when the core can tell |
 | `min`, `max`, `max_chars`, `element` | Range, length, list element type (`record`: each entry is a set of fields) |
 | `title`, `fields` | When the element is `record`: which field titles each entry (without it, entries are numbered); one entry per field, shaped like this table (`key` is the field name) |
 | `default` | Default value |

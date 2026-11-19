@@ -74,6 +74,7 @@ pub(crate) fn said(name: &str, description: &str, options: &[&str]) -> ItemWords
             .map(|option| (option.to_string(), option.to_uppercase()))
             .collect(),
         option_descriptions: std::collections::BTreeMap::new(),
+        option_notices: std::collections::BTreeMap::new(),
         fields: std::collections::BTreeMap::new(),
         suggestions: Vec::new(),
     }

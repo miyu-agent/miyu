@@ -55,6 +55,10 @@ pub struct ItemWords {
     /// 没写的选项不在里面。
     #[serde(default)]
     pub option_descriptions: BTreeMap<String, String>,
+    /// 选中选项时弹的提示（设计 72，施工 DSR-2）：选项到一句话，`config.schema` 照它带 `notice`，头在人选中这个选项时弹出来，
+    /// 只有一个「知道了」。没写的选项不在里面。
+    #[serde(default)]
+    pub option_notices: BTreeMap<String, String>,
     /// 一组字段的列表（施工 PC-2）：每个字段的字，字段名到它的名字、说明、选项名。别的类型没有。
     #[serde(default)]
     pub fields: BTreeMap<String, ItemWords>,
@@ -110,6 +114,15 @@ pub fn check(items: &[Item], words: &ConfigWords) -> Vec<String> {
         for option in said.options.keys() {
             if !options.contains(&option.as_str()) {
                 problems.push(format!("{key}：资源里多了选项 {option}"));
+            }
+        }
+        // 选中时弹的提示（施工 DSR-2）：写给这一项有的选项，不是空的。
+        for (option, notice) in &said.option_notices {
+            if !options.contains(&option.as_str()) {
+                problems.push(format!("{key}：提示写给了没有的选项 {option}"));
+            }
+            if notice.trim().is_empty() {
+                problems.push(format!("{key}：选项 {option} 的提示是空的"));
             }
         }
         // 下拉加手写（施工 P-9 补）：要有建议值、一个都不空；别的控件不写。

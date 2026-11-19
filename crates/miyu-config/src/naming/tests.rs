@@ -34,6 +34,7 @@ fn words(names: &[(&str, &str)]) -> ConfigWords {
                 description: String::new(),
                 options: Default::default(),
                 option_descriptions: Default::default(),
+                option_notices: Default::default(),
                 fields: Default::default(),
                 suggestions: Vec::new(),
             },

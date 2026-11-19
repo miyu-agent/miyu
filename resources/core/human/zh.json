@@ -21,7 +21,7 @@
       "net.search.brave.key": {"name": "Brave Search", "description": "联网服务选择 Brave 时需要这个密钥。"},
       "net.internal_domains": {"name": "内部域名", "description": "其他人（群成员、陌生人）让 AI 上网时，AI 不会访问这些域名和它们的子域名，无论域名解析到什么地址、是否经过代理。你自己不受影响。写法例如 example-corp.com。"},
       "net.search.searxng.url": {"name": "SearXNG 的地址", "description": "你自己搭建的 SearXNG 的地址，例如 http://127.0.0.1:8888，需要开启 JSON 格式。联网服务选择 SearXNG 时使用。"},
-      "net.search.source": {"name": "联网服务", "description": "AI 搜索网页、抓取网页使用哪一家服务。「自动」只使用免费额度：搜索时依次尝试 Exa、Parallel、Firecrawl、AnySearch、You.com，被限额的服务会暂停一段时间；Miyu 自己抓取失败的网页交给 Exa、Firecrawl、Parallel 代抓。这几家服务都在国外，搜索词和网址会发送给它们。如果选择了其中一家，就优先使用它（选择 DeepSeek 时，抓取网页也优先交给它）；它不可用时再按「自动」的顺序尝试。", "options": {"auto": "自动（免费额度）", "exa": "Exa", "anysearch": "AnySearch", "deepseek": "DeepSeek", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG"}},
+      "net.search.source": {"name": "联网服务", "description": "AI 搜索网页、抓取网页使用哪一家服务。「自动」只使用免费额度：搜索时依次尝试 Exa、Parallel、Firecrawl、AnySearch、You.com，被限额的服务会暂停一段时间；Miyu 自己抓取失败的网页交给 Exa、Firecrawl、Parallel 代抓。这几家服务都在国外，搜索词和网址会发送给它们。如果选择了其中一家，就优先使用它（选择「DeepSeek 搜索接口」时，抓取网页也优先交给它）；它不可用时再按「自动」的顺序尝试。", "options": {"auto": "自动（免费额度）", "exa": "Exa", "anysearch": "AnySearch", "deepseek": "DeepSeek 搜索接口", "deepseek-responses": "DeepSeek Responses 接口内置", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG"}, "option_descriptions": {"deepseek": "Miyu 的搜索工具调用 DeepSeek 的搜索和抓取接口，按次计费。", "deepseek-responses": "对话模型是 DeepSeek 官方、使用 Responses 接口时，由模型自己搜索网页、读取链接。搜索更深入，但每次搜索会多用约一万个 token。"}, "option_notices": {"deepseek-responses": "这个搜索服务只适用于 DeepSeek 官方的 Responses 接口"}},
       "memory.extract_idle": {
         "name": "整理前的空闲时间",
         "description": "对话停下这么久之后，AI 把新对话里值得记住的内容整理成记忆。"

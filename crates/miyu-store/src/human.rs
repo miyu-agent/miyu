@@ -404,6 +404,7 @@ fn setting_words(
         description: pick(&setting.description).unwrap_or_default(),
         options: said(|choice| &choice.name),
         option_descriptions: said(|choice| &choice.description),
+        option_notices: BTreeMap::new(),
         fields,
         suggestions: Vec::new(),
     }

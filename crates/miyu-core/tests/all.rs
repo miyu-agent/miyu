@@ -14,6 +14,7 @@ mod human_wording;
 mod logos;
 mod packages;
 mod packaging;
+mod search_source;
 mod serve;
 mod settings;
 mod settings_names;

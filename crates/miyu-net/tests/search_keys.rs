@@ -114,6 +114,26 @@ async fn a_picked_keyed_source_carries_its_key_and_is_skipped_without_one() {
     assert_eq!(site.hits("/tavily"), 1, "没配 key 的那一次没去问");
 }
 
+/// 挑了「DeepSeek Responses 接口内置」（设计 72，施工 DSR-2）：它不是这里的一家，`web_search` 照自动的顺序搜；配了 DeepSeek 的
+/// key 也不去问 DeepSeek 的搜索接口。
+#[tokio::test]
+async fn deepseek_responses_searches_in_the_automatic_order() {
+    let site = Site::start(vec![
+        ("/exa".to_string(), exa()),
+        ("/deepseek".to_string(), results(json!({"results": []}))),
+    ])
+    .await;
+    let search = search(&site);
+    let found = ask(
+        &search,
+        &Using::picked("deepseek-responses").with_key("deepseek", "sk-1"),
+    )
+    .await
+    .expect("搜成了");
+    assert_eq!(found.source, "Exa", "照自动的顺序，第一家是 Exa");
+    assert_eq!(site.hits("/deepseek"), 0, "没有去问 DeepSeek 的搜索接口");
+}
+
 /// DeepSeek 不进自动的顺序（施工 NF-1：自动不花钱）：有 key 的自动也不问它，挑了它才问，key 放在 `Authorization` 里。
 #[tokio::test]
 async fn deepseek_is_asked_only_when_picked() {

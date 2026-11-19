@@ -8,6 +8,9 @@ use miyu_config::{Value, Values};
 
 use super::{AUTO, ITEMS, Missing, SearchSettings, missing, using};
 
+/// 「DeepSeek Responses 接口内置」这个选项（设计 72）。
+const DEEPSEEK_RESPONSES: &str = "deepseek-responses";
+
 #[test]
 fn the_options_are_auto_and_the_sources_that_need_a_key_or_an_address() {
     let item = &SearchSettings::ITEMS[0];
@@ -36,7 +39,7 @@ fn the_options_are_auto_and_the_sources_that_need_a_key_or_an_address() {
     let mut listed: Vec<&str> = options
         .iter()
         .copied()
-        .filter(|option| *option != AUTO)
+        .filter(|option| *option != AUTO && *option != DEEPSEEK_RESPONSES)
         .collect();
     listed.sort_unstable();
     assert_eq!(
@@ -44,6 +47,31 @@ fn the_options_are_auto_and_the_sources_that_need_a_key_or_an_address() {
         "下拉里是能配 key、要 key、要地址的几家，只有免费的几家归自动"
     );
     assert_eq!(options[0], AUTO, "自动排第一，是默认值");
+}
+
+/// 「DeepSeek Responses 接口内置」（设计 72，施工 DSR-2）在下拉里，接在 DeepSeek 搜索接口后面；它不是 `search.json` 里的一家，
+/// 不需要密钥和地址。
+#[test]
+fn the_deepseek_responses_option_is_listed_and_is_not_a_shipped_source() {
+    let miyu_config::Kind::Option(options) = SearchSettings::ITEMS[0].kind else {
+        panic!("是选项");
+    };
+    let at = |name: &str| options.iter().position(|option| *option == name);
+    assert_eq!(
+        at(DEEPSEEK_RESPONSES),
+        at("deepseek").map(|at| at + 1),
+        "{options:?}"
+    );
+    let text = std::fs::read_to_string(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources/software/net/search.json"),
+    )
+    .expect("读得了");
+    let shipped: serde_json::Value = serde_json::from_str(&text).expect("是 JSON");
+    assert!(shipped["sources"].get(DEEPSEEK_RESPONSES).is_none());
+    assert_eq!(
+        missing(DEEPSEEK_RESPONSES, &Values::defaults(&ITEMS.concat())),
+        None
+    );
 }
 
 /// 「少配了什么」和 `search.json` 里每家的 `needs` 一致（施工 N-3 上）：什么都没配时，要 key 的说要 key，要地址的说要地址，
