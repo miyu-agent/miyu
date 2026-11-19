@@ -185,5 +185,6 @@ fn parts_for(refresh: &super::Refresh, old: &Snapshot) -> Option<Parts> {
         plugin_tools: old.plugin_tools.clone(),
         local: old.core.facts.channel.is_some(),
         steps: old.steps(),
+        search: old.provider_search.clone(),
     })
 }

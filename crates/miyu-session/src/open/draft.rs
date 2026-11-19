@@ -113,6 +113,7 @@ pub(super) async fn draft(
             },
             preset.and_then(|chosen| chosen.file.unattended_steps),
         ),
+        search: None,
     };
     let parts = blocking(move || -> Result<Parts, CreateError> {
         let skills =

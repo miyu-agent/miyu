@@ -380,13 +380,13 @@ fn look(
         local: old.core.facts.channel.is_some(),
         // 步数上限照这一刻的预设重算（施工 AE-1）：改了 `[limits]` 下一轮生效。
         steps: steps::restepped(old, refresh.child, &preset),
+        search: hosted,
     };
     let mut new = match build(&refresh.resources, parts) {
         Ok(new) => new,
         Err(error) => return Seen::Kept(error.to_string()),
     };
     new.no_tools = matches!(preset, Preset::NoTools { .. });
-    new.provider_search = hosted;
     new = new.with_line(old.line_percent()); // 压缩线照旧快照的（施工 CT-1）。
     // 目录换了代、这个会话的工具面没变的（只给群的、预设关着的），什么都不记。直接比两份快照（施工 V-24补）：快照没有跳过不写的
     // 字段、没有浮点、没有 JSON 值，一样就是字节一样；以前两份各写一遍 JSON、各算一遍 SHA-256 再比。步数照预设重算的

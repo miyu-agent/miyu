@@ -444,6 +444,7 @@ mod channel;
 mod drivers;
 mod fork;
 mod goal;
+mod hosted;
 mod mcp_tools;
 mod memory;
 mod overlay;

@@ -1,0 +1,1 @@
+Web search is `deepseek_web_search`: it runs on the provider side and is not in the function list. `web_fetch` reads one known URL.

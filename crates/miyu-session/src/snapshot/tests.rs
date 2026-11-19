@@ -32,6 +32,7 @@ fn built(local: bool) -> Snapshot {
         plugin_tools: Vec::new(),
         local,
         steps: StepLimits::of(Watched::Attended, None),
+        search: None,
     };
     build(&resources, parts).expect("拼得成")
 }

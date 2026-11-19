@@ -211,3 +211,40 @@ fn a_look_without_the_port_keeps_what_is_pinned() {
     );
     assert!(matches!(seen, Seen::Same));
 }
+
+/// 换成的那一件有说明的（`core/hosted/deepseek_web_search.txt`），说明跟着钉的结果进出 system（施工 DSR-4补）：没激活的
+/// 会话 system 一个字节不变，会话中途只改「联网服务」的也不变。
+#[test]
+fn the_hosted_note_is_in_the_system_only_while_swapped() {
+    const NOTE: &str = "Web search is `deepseek_web_search`: it runs on the provider side and is not in the function list. `web_fetch` reads one known URL.";
+    let (_scratch, _root, mut refresh) = setup_in("search-note", "", catalog());
+    let plain = refresh.snapshot.system.clone();
+    assert!(!plain.contains("deepseek_web_search"));
+    // 给得了、没选：钉下「没选」，system 一个字节不变。
+    assert!(step(&mut refresh, &picked("auto"), &now(FLASH, true)));
+    assert_eq!(refresh.snapshot.system, plain);
+    // 中途选上：这个会话不变。
+    assert!(!step(
+        &mut refresh,
+        &picked("deepseek-responses"),
+        &now(FLASH, true)
+    ));
+    assert_eq!(refresh.snapshot.system, plain);
+    // 换了模型：重新判断，换上，说明进 system，只一次；读链接那一件没有说明，不带。
+    let pro = "deepseek/deepseek-v4-pro";
+    assert!(step(
+        &mut refresh,
+        &picked("deepseek-responses"),
+        &now(pro, true)
+    ));
+    let swapped = refresh.snapshot.system.clone();
+    assert_eq!(swapped.matches(NOTE).count(), 1, "{swapped}");
+    assert!(!swapped.contains("deepseek_read_url"));
+    assert!(swapped.contains(&format!("\n\n{NOTE}")), "单成一段");
+    // 下一轮、中途改回自动：一个字节不变。
+    assert!(!step(&mut refresh, &picked("auto"), &now(pro, true)));
+    assert_eq!(refresh.snapshot.system, swapped);
+    // 模型这边给不了了：说明跟着拿掉，system 回到原来的字节。
+    assert!(step(&mut refresh, &picked("auto"), &now(pro, false)));
+    assert_eq!(refresh.snapshot.system, plain);
+}

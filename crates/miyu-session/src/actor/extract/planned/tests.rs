@@ -79,6 +79,7 @@ fn assembler(scratch: &Scratch, group: bool) -> Arc<dyn Assembler + Send + Sync>
         plugin_tools: Vec::new(),
         local: true,
         steps: miyu_policy::steps::StepLimits::of(miyu_policy::steps::Watched::Unattended, None),
+        search: None,
     };
     let snapshot = build(&resources, parts).expect("拼得成");
     snapshot.policy().expect("造得出策略").assembler

@@ -89,6 +89,7 @@
 | `Snapshot::with_venue(说明)` | 带上场所说明：system 的第二块，接在人设后面（施工 7-5）。子会话有 |
 | `Snapshot::with_group(说明, GroupChat)` | 带上群会话（施工 O-13 中）：格式说明照 `with_venue` 接在人设后面（`core/venues/group.txt`），快照记下 `group` |
 | `Snapshot::with_core_lines(&CoreLines, os)` | 带上核心的几行（施工 2-7 补）：system 的第三块，所以在 `with_tools`、`with_venue` 以后调。`CoreLines` 有这几格：`permission`（`permission-rule.txt`）、`local_paths`（`local-paths-rule.txt`）、`machine`（`machine.txt`，施工 2-7 再补，`{os}` 换成 `os`）、`harness`（`agent-version.txt`，施工 E-M，读的时候 `{version}` 已换好，接在最后、工具面空的也带）、`style_lock`（`style-lock.txt`，施工 P-1 补，交给 `with_style_lock`）、`clicall`（`core/clicall.txt`，施工 M-4，交给 `with_clicall`）。一行一句，先权限、再路径、最后本机是什么系统；工具面是空的不带权限、系统那两句 |
+| `Snapshot::with_provider_search(pin, note)` | 钉上供应商自己的联网工具的判断结果（第 11 条的 `provider_search`），并带上换成的供应商侧工具的说明（施工 DSR-4补）。`note` 是会话那一层从 `core/hosted/<工具名>.txt` 读好的说明，接在核心的几行后面单成一段，所以在 `with_core_lines` 以后调。没有说明时 system 一字不变 |
 | `Snapshot::with_clicall(&CoreLines, tells)` | 什么时候写成调工具的程序的那一段（施工 M-4，设计 39 第九节）：`tells` 是工具面上有跑命令的工具（`ToolEntry::runs_commands`，施工 BS-1 上）、有脚本里能调的工具（会话那一层照 `clicall`、`Access::scriptable` 算），接在核心的几行后面单成一段；没有的不带，system 一字不变 |
 | `Snapshot::swappable(新的)` | 能不能换成 `新的`（施工 P-1 再补）：除了 `system`、`demos`、`tools`、`reminder`、`persona_digest`、`preset`（后两格施工 P-2 下：换预设时工具面重新筛过，留着的那几件是原样），别的格都一样 |
 | `Snapshot::with_knowledge(那一块)` | 带上她查得到的知识库那一块（施工 K-1 补，`knowledge.md`「列出来的那一块」）：system 第 4 块（`26-提示词.md` 第四节），记进快照的 `knowledge`。在 `with_core_lines` 以后、`with_preset` 以前调；没有的 system 一字不变 |
@@ -127,7 +128,7 @@
 8. `foreground`（施工 T-1 上）：后台运行关着的会话是真（预设关了 `basesystem` 的 `background`，设计 30 第三节第 7 条）：执行器不给任务端口，工具面上 `shell` 没有放到后台那一项。开着的、以前造的不写，字节和以前一样。
 9. `knowledge`（施工 K-1 补）：她查得到的知识库那一块拼好的原文（`with_knowledge`，已经拼进 `system`）。回合开始时执行器照这一刻重拼、和它比，不一样就换快照（`knowledge.md`「怎么走」第六条第 3 款）。它变了算改过、照换（`swappable` 照旧比它，变了的已经算改过，用不上）。没有库、没有知识库那两件工具的、以前造的不写，字节和以前一样。
 10. `plugin_tools`（施工 O-60，`venues.md`「场所插件」）：场所会话的工具面上给了的场所插件工具（写了 `plugin` 的），照名字排。回合开始时执行器照这一刻那个场所开着的场所插件重筛工具面，筛出来的和工具面上现有的那几件不一样就换快照。没有的、本机会话、以前造的不写，字节和以前一样。
-11. `provider_search`（设计 72，施工 DSR-3，`crates/miyu-policy/src/provider_search.rs`）：供应商自己的联网工具换掉 Miyu 的搜索工具的判断结果。模型这边满足条件时（供应商的档案写了 `search`、地址是官方地址、模型走档案写的驱动、思考没有设成关；模型池要每个成员都满足），回合开始钉下三样：`model` 是判断时会话的模型引用，`active` 是当时「联网服务」有没有选档案写的那个值，`declared` 是换掉的几件（`tool` 是 Miyu 的工具名，`with` 是换成的供应商侧工具名，按档案的顺序；工具面里原本有的才换，没有换掉任何一件时不写）。换掉的工具不在 `tools` 里。判断的规则：模型这边不满足时不钉；满足并且 `model` 和现在的引用一样时沿用钉着的 `active`，所以会话中途只改「联网服务」不会改变工具面；引用变了或者原来没有钉时，读这一轮的「联网服务」重新判断。模型这边不满足的会话没有这一格，快照的字节和以前一样。
+11. `provider_search`（设计 72，施工 DSR-3，`crates/miyu-policy/src/provider_search.rs`）：供应商自己的联网工具换掉 Miyu 的搜索工具的判断结果。模型这边满足条件时（供应商的档案写了 `search`、地址是官方地址、模型走档案写的驱动、思考没有设成关；模型池要每个成员都满足），回合开始钉下三样：`model` 是判断时会话的模型引用，`active` 是当时「联网服务」有没有选档案写的那个值，`declared` 是换掉的几件（`tool` 是 Miyu 的工具名，`with` 是换成的供应商侧工具名，按档案的顺序；工具面里原本有的才换，没有换掉任何一件时不写）。换掉的工具不在 `tools` 里。判断的规则：模型这边不满足时不钉；满足并且 `model` 和现在的引用一样时沿用钉着的 `active`，所以会话中途只改「联网服务」不会改变工具面；引用变了或者原来没有钉时，读这一轮的「联网服务」重新判断。模型这边不满足的会话没有这一格，快照的字节和以前一样。换成的供应商侧工具有说明时（`resources/core/hosted/<工具名>.txt`，施工 DSR-4补），说明拼进 `system`，和这一格一起钉下：`declared` 不变，`system` 里的这一段就不变；`declared` 变成空的或者这一格没有了，这一段跟着拿掉。
 5. `persona_digest`（施工 P-1 再补）：人格三份字（人设、示范对话、角色扮演提示，叠好的）的 SHA-256（`PersonaTexts::digest`，三样写成一个 JSON 数组再算）。回合开始时执行器照它认出人格的文件改了（`session/actor.md`「换快照」）。以前造的快照没有，读成没有、不写：那些会话不换。
 
 **字节和哈希**

@@ -126,6 +126,7 @@ fn without_a_persona_a_changed_preset_still_swaps() {
         plugin_tools: Vec::new(),
         local: true,
         steps: miyu_policy::steps::StepLimits::of(miyu_policy::steps::Watched::Attended, None),
+        search: None,
     };
     refresh.snapshot = build(&refresh.resources, parts).expect("拼得成");
     assert_eq!(

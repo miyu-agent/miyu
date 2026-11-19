@@ -47,6 +47,17 @@ Carry on from where the summary leaves off, without redoing work it records as d
 
 ### system，核心的几行后面单成一段
 
+#### `core/hosted/deepseek_web_search.txt`
+
+- 什么时候加进来：工具面里的 `web_search` 换成了供应商侧的 `deepseek_web_search` 的会话，每次请求：「联网服务」选了 `deepseek-responses`，并且对话模型是 DeepSeek 官方地址、走 Responses 接口、思考没有关闭（设计 72 第二节，施工 DSR-4补起）。这一段接在核心的几行后面、`core/clicall.txt` 那一段前面，和判断结果一起钉在策略快照里，所以会话中途只改「联网服务」时 system 一个字节不变。没有激活的会话、以前造的快照不带这一段，一个字节不变
+- token：34（2026-11-19 用 DeepSeek 官方 `deepseek-flash` 量：同一份带 23 件工具的真实请求，这一段接在 system 末尾空一行，输入从 4,861 变成 4,895）
+- 为什么加：供应商侧的搜索不在函数工具的名单里，不说明的话模型多半用 `web_fetch` 或者 `shell` 运行 `curl` 自己抓网页。2026-11-19 把抓到的两份真实请求（「搜索一下：Rust 1.100 有哪些新特性」「今天有什么科技新闻」）直接发给 DeepSeek，看第一步用不用供应商的搜索：不加是 0/5、0/5；只加第一句是 0/5、5/5；两句都加是 2/3、3/3；去掉 `web_fetch` 不加说明是 0/3、0/3。两句都只陈述事实：搜索是哪一件、在哪里运行，`web_fetch` 读一个已知的网址。项目主人 2026-11-19 同意加这两句。一件供应商侧工具一份文件，文件名是工具名，没有这份文件的工具不带说明
+- 指纹：`19461b12`
+
+```text
+Web search is `deepseek_web_search`: it runs on the provider side and is not in the function list. `web_fetch` reads one known URL.
+```
+
 #### `core/clicall.txt`
 
 - 什么时候加进来：工具面上有跑命令的工具（出厂的是 `shell`，施工 BS-1 上起照 `Tool::runs_commands` 认）、有脚本里能调的工具的会话，每次请求（施工 M-4 起；没有的、以前造的快照不带，一个字节不变）

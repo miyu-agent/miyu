@@ -130,3 +130,26 @@ fn the_pin_round_trips_and_omits_an_empty_list() {
         r#"{"model":"deepseek/deepseek-flash","active":false}"#
     );
 }
+
+/// 钉上结果、带上说明（施工 DSR-4补）：说明单成一段接在 system 后面；没有说明的 system 一字不变。
+#[test]
+fn the_pin_carries_its_note_into_the_system() {
+    let pin = SearchPin::judged(
+        None,
+        "m",
+        Some(&offer()),
+        "deepseek-responses",
+        &face(&["web_search"]),
+    );
+    let base = crate::test_support::engineer();
+    let persona = base.system.clone();
+    let noted = base
+        .clone()
+        .with_provider_search(pin.clone(), Some("Web search is hosted.\n"));
+    assert_eq!(noted.system, format!("{persona}\n\nWeb search is hosted."));
+    assert_eq!(noted.provider_search, pin);
+    let plain = base.clone().with_provider_search(pin.clone(), None);
+    assert_eq!(plain.system, persona);
+    assert_eq!(plain.provider_search, pin);
+    assert_eq!(base.clone().with_provider_search(None, None), base);
+}

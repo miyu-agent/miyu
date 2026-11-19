@@ -6,7 +6,8 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::ToolEntry;
+use crate::compose::system;
+use crate::{Snapshot, ToolEntry};
 
 /// 模型这边给得了的（供应商档案里写的，`resources/models/profiles.toml` 的 `search`）：「联网服务」选了 `setting` 才用，
 /// `replaces` 是「Miyu 的工具、换成的供应商侧工具」，照档案的先后。
@@ -87,6 +88,23 @@ impl SearchPin {
             .iter()
             .map(|replaced| replaced.with.clone())
             .collect()
+    }
+}
+
+impl Snapshot {
+    /// 钉上判断结果 `pin`，带上换成的供应商侧工具的说明 `note`（施工 DSR-4补）：说明接在核心的几行后面单成一段，所以在
+    /// [`Snapshot::with_core_lines`] 以后调。说明和 `pin` 一起钉在快照里：会话中途只改「联网服务」的，system 一个字节不变。
+    /// 没有说明的（没激活、换成的工具没有说明）system 一字不变。
+    ///
+    /// 为什么要这一段：供应商侧的工具不在函数工具的名单里。2026-11-19 实测，不说的话模型多半自己用 `web_fetch`、`curl`
+    /// 去抓网页，不用供应商的搜索（设计 72 第四节）。
+    #[must_use]
+    pub fn with_provider_search(mut self, pin: Option<SearchPin>, note: Option<&str>) -> Snapshot {
+        self.provider_search = pin;
+        if let Some(note) = note {
+            self.system = system(&[&self.system, note]);
+        }
+        self
     }
 }
 

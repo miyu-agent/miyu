@@ -42,6 +42,7 @@ DeepSeek 官方的接口自带两个联网工具：`deepseek_web_search`（搜�
 
 - 发给 DeepSeek 的请求里，在 `tools` 数组末尾加上 `{"type": "deepseek_web_search"}`；
 - 请求里明确写出思考强度。会话或配置里没有定思考强度时，请求写 `"reasoning": {"effort": "high"}`（DeepSeek 默认的强度）。不明确写的话，DeepSeek 不会执行搜索（见第三节的实测）；
+- 系统提示词里多一段说明（施工 DSR-4补）：``Web search is `deepseek_web_search`: it runs on the provider side and is not in the function list. `web_fetch` reads one known URL.`` 这一段只在激活时加，和工具面一起钉在策略快照里。原因见第四节第 1 条：不说明的话，模型多半不使用内置搜索；
 - `shell` 工具说明末尾「脚本里可以调用哪些工具」的名单跟着去掉 `web_search`，名单里举例用的 `miyu call web_search` 那一行也不再出现，避免 AI 去调用已经换掉的工具；
 - 工具面里去掉 Miyu 自己的网络搜索（`web_search`），避免两边都搜。抓取网页（`web_fetch`）保留：你给出一个网址时，AI 用它读取，读到的内容留在上下文里，下一轮可以接着问。
 - 替换是一对一的：工具面里原本有 `web_search` 时才声明 `deepseek_web_search`。替换表写在供应商档案的 `search.replaces` 里，现在只有这一对。
@@ -103,7 +104,7 @@ DeepSeek 的档案（`resources/models/profiles.toml`）照旧写 `driver = "ope
 
 ## 四、有哪些限制
 
-- 是否搜索由模型自己决定。DeepSeek 不允许强制调用这两个工具，指定了会返回 400。实测里模型经常不使用内置搜索，而是用 `web_fetch` 或者 `shell` 运行 `curl` 自己抓网页：2026-11-19 在 Miyu 里问了 10 个需要联网的问题，只有 3 次用了内置搜索（施工 DSR-4 的施工单有对照数据）。
+- 是否搜索由模型自己决定。DeepSeek 不允许强制调用这两个工具，指定了会返回 400。实测里模型经常不使用内置搜索，而是用 `web_fetch` 或者 `shell` 运行 `curl` 自己抓网页：2026-11-19 在 Miyu 里问了 10 个需要联网的问题，只有 3 次用了内置搜索（施工 DSR-4 的施工单有对照数据）。所以激活时系统提示词里多一段说明（第二节第 2 条，施工 DSR-4补）：加上以后，同样的问题里完成的 7 个都用了内置搜索。
 - 深度思考搜索时，模型最多调用约 20 次工具再作答。
 - 不使用 `deepseek_read_url`（第三节的第 4 条限制）。指定的网址由 Miyu 自己的抓取网页读取；深度搜索过程中 DeepSeek 自己打开的网页，内容不交给 Miyu，下一轮也不在上下文里。
 - 搜到的网页内容会放进上下文，每次搜索多用约一万个 token。
@@ -122,6 +123,7 @@ DeepSeek 的档案（`resources/models/profiles.toml`）照旧写 `driver = "ope
 
 - 项目主人 2026-11-19 定：做成「联网服务」里的一个选项「DeepSeek Responses 接口内置」，出厂仍是自动；只在 DeepSeek 官方地址、Responses 接口时激活，其余情况自动退回；不另加供应商开关，不做通用的能力声明；群聊这类场所会话不另做保护；DeepSeek 官方的默认接口不改，仍走 OpenAI 兼容接口；选这个搜索服务时直接弹一句提示「这个搜索服务只适用于 DeepSeek 官方的 Responses 接口」，不检查设置。
 - 2026-11-19 改了两处（施工 DSR-4，会话按实测提出，主会话同意）。第一，只声明 `deepseek_web_search`、只替换 `web_search`，`web_fetch` 保留。原来的设计同时声明 `deepseek_read_url` 并去掉 `web_fetch`，实测发现 `deepseek_read_url` 不能和普通工具一起使用，声明了它以后，提问里带网址时两个联网工具都不执行（第三节的第 4 条限制）。第二，搜索记录在下一轮写成文字带回，驱动不保存私有数据。原来的设计是把每一项原样放回 `input`，实测发现 DeepSeek 不把原样带回的项放进上下文，模型不记得自己搜索过（第三节的第 5 条限制）。
+- 项目主人 2026-11-19 同意：激活时在系统提示词里加两句说明，告诉模型搜索是 `deepseek_web_search`、在供应商那边运行、不在函数列表里，`web_fetch` 读一个已知的网址（施工 DSR-4补）。原因是不说明时模型多数不使用内置搜索；对照数据在施工单 `DSR-4补-内置搜索的说明.md`。
 - 没选：`web_fetch` 也去掉、读网址全部交给深度搜索（深度搜索打开的网页内容下一轮不在上下文里，接着问时需要重新打开）；保留原样带回、只给带 `signature` 的读链接项用（不声明 `deepseek_read_url` 以后这种项不会出现，这段代码用不到）。
 - 没选：给所有供应商做通用的「等价服务端工具」能力声明（太复杂，先只给 DeepSeek 做）；无论预设开不开都加工具（预设会管不住、会悄悄多花钱）；在网络搜索包或 DeepSeek 工具包里做特判（层次不对）。
 - 重新讨论的条件：其他供应商也要接服务端搜索时，再考虑做成通用机制。

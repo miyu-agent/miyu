@@ -5,7 +5,7 @@
 use std::ops::Range;
 
 use miyu_policy::steps::StepLimits;
-use miyu_policy::{PersonaTexts, PresetPin, Snapshot, ToolEntry, compose};
+use miyu_policy::{PersonaTexts, PresetPin, SearchPin, Snapshot, ToolEntry, compose};
 use miyu_store::resources::{ResourceRoot, SourceError};
 
 use crate::SystemPart;
@@ -49,6 +49,9 @@ pub(crate) struct Parts {
     pub(crate) local: bool,
     /// 步数上限（施工 AE-1，`miyu_policy::steps`）：造会话时照会话的种类、预设算好；换快照时照它重算或者照旧。
     pub(crate) steps: StepLimits,
+    /// 供应商自己的联网工具的判断结果（设计 72，快照里那一格的原样）：换成的那几件有说明的，说明拼进 system（施工
+    /// DSR-4补）。造会话时没有，第一轮开始才判断。
+    pub(crate) search: Option<SearchPin>,
 }
 
 /// 照 `parts` 拼一份快照，随核心附带的字从 `resources` 读这一刻的。
@@ -108,8 +111,10 @@ pub(crate) fn laid(
     let lines = resources.core_lines()?;
     let os = miyu_store::env::os_name();
     let shown = miyu_policy::shown::Shown::of(parts.preset.as_ref());
+    let note = search_note(resources, parts.search.as_ref())?;
     snapshot = ruler.step(SystemPart::Core, snapshot, |it| {
         it.with_core_lines(&lines, os, shown)
+            .with_provider_search(parts.search, note.as_deref())
     });
     snapshot = ruler.step(SystemPart::Clicall, snapshot, |it| {
         it.with_clicall(&lines, tells)
@@ -139,6 +144,21 @@ pub(crate) fn laid(
         let layout = ruler.layout();
         (snapshot, layout)
     })
+}
+
+/// `pin` 换成的那几件供应商侧工具的说明（施工 DSR-4补，`core/hosted/<工具名>.txt`），一件一行、照声明的先后；没钉的、
+/// 一件都没换的、换成的工具都没有说明的没有。
+fn search_note(
+    resources: &ResourceRoot,
+    pin: Option<&SearchPin>,
+) -> Result<Option<String>, SourceError> {
+    let mut notes = Vec::new();
+    for name in pin.map(SearchPin::names).unwrap_or_default() {
+        if let Some(note) = resources.hosted_note(&name)? {
+            notes.push(note.trim_end().to_string());
+        }
+    }
+    Ok((!notes.is_empty()).then(|| notes.join("\n")))
 }
 
 /// 量拼的每一步多了哪一截（施工 CX-1 下）。拼 system 只往后接：哪一步不是往后接的（以后改了拼法），整份不交。
