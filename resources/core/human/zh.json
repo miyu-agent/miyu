@@ -750,7 +750,7 @@
     "package-problems/bad_provider": "自带的供应商写法不对：{detail}",
     "package-problems/bad_miyu": "{detail} 要写成三段数字的版本，例如 2026.11.0",
     "package-problems/needs_newer_miyu": "这个包要 Miyu {detail} 以上，先更新 Miyu",
-    "package-problems/maybe_newer_miyu": "{problem}。这个包可能要更新的 Miyu",
+    "package-problems/maybe_newer_miyu": "{problem}。这个包可能需要更新版本的 Miyu",
     "package-problems/page_missing": "{detail} 里没有 index.html",
     "package-problems/depends_missing": "缺少依赖的软件包：{detail}",
     "package-problems/logo_missing": "包目录里没有 {detail}",

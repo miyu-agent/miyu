@@ -68,7 +68,7 @@ pub(super) fn required(text: &str, running: &str) -> Result<(), Problem> {
 }
 
 /// 读不成的这一处可能是这一版 Miyu 太旧（施工 VER-1）：报的是不认识的表、键，清单又写了 `[package] miyu`（比得过的、开发版不比
-/// 的都算：新加的表、键旧核心不认识）。调的一方在报错后面补一句「这个包可能要更新的 Miyu」。
+/// 的都算：新加的表、键旧核心不认识）。调的一方在报错后面补一句「这个包可能需要更新版本的 Miyu」。
 pub fn maybe_newer(text: &str, problem: &Problem) -> bool {
     matches!(problem.code, Code::UnknownTable | Code::UnknownKey)
         && Document::parse(text).is_ok_and(|document| {

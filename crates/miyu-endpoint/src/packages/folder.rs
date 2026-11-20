@@ -60,7 +60,7 @@ pub(super) fn read(
 }
 
 /// 清单读不成：照 [`invalid`] 说；可能是这一版 Miyu 太旧的（不认识的表、键，清单又写了 `[package] miyu`，施工 VER-1）在后面补一句
-/// 「这个包可能要更新的 Miyu」（`package-problems/maybe_newer_miyu`，字段 `problem`）。
+/// 「这个包可能需要更新版本的 Miyu」（`package-problems/maybe_newer_miyu`，字段 `problem`）。
 fn refused(words: &Human, text: &str, problem: &package::Problem) -> Refusal {
     let said = sentence(words, problem.code.as_str(), &problem.detail)
         .unwrap_or_else(|| problem.message.clone());

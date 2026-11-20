@@ -85,6 +85,23 @@ fn chinese_words_say_miyao_and_never_she() {
     assert_eq!(wrong, Vec::<String>::new());
 }
 
+/// 「要更新的 X」读得成「需要更新版本的 X」，也读得成「将要被更新的 X」（施工 WD-3：`package-problems/maybe_newer_miyu` 原来
+/// 写「这个包可能要更新的 Miyu」）：中文字表里不这样写，写「需要更新版本的」。
+#[test]
+fn chinese_words_do_not_say_the_ambiguous_yao_gengxin_de() {
+    let file = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources/core/human/zh.json");
+    let json: Value =
+        serde_json::from_str(&std::fs::read_to_string(&file).expect("读得到")).expect("是 JSON");
+    let mut all = Vec::new();
+    texts(&json, "", &mut all);
+    let wrong: Vec<String> = all
+        .iter()
+        .filter(|(_, text)| text.contains("要更新的"))
+        .map(|(path, text)| format!("{path}：{text}"))
+        .collect();
+    assert_eq!(wrong, Vec::<String>::new());
+}
+
 #[test]
 fn the_word_checks_catch_what_they_should() {
     for text in ["要 key", "API Key 和地址", "{provider} 的 key", "几个 keys"] {
