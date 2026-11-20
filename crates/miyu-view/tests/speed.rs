@@ -53,8 +53,6 @@ fn rewrite(called: &mut ModelCalled, output: Option<u64>, first: Option<u64>, wh
                 cache_write: 0,
                 output,
                 reasoning: None,
-                searches: None,
-                fetches: None,
             });
         }
         None => called.usage = None,

@@ -35,4 +35,3 @@ mod snapshot;
 mod usage;
 mod usage_convert;
 mod usage_purged;
-mod usage_searches;

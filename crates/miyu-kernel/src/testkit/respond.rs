@@ -212,8 +212,6 @@ impl Stage {
                     cache_write: 0,
                     output: 10,
                     reasoning: None,
-                    searches: None,
-                    fetches: None,
                 })
             }),
             cost: None,

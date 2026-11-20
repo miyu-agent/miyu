@@ -38,8 +38,6 @@ impl Reported {
             cache_write: self.cache_write.unwrap_or(0),
             output: self.output.unwrap_or(0),
             reasoning: None,
-            searches: None,
-            fetches: None,
         })
     }
 }

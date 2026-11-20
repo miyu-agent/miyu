@@ -56,15 +56,14 @@ pub const ONESHOT: &str = "usage.oneshot";
 pub const PURGED: &str = "usage.purged";
 
 /// 表的结构的版本，记在 SQLite 的 `user_version` 里：结构一变就加一，对不上的删掉重建。施工 SU-6 上去掉 `owner`，是 2；
-/// 施工 UP-1 加分四种的金额，是 3（重建时照日志里记下的价格算，删掉的会话照 `usage.purged` 里有的）。施工 DSR-7 加搜索、
-/// 抓取的次数，是 4（重建时照日志里 `model.called` 的用量、`usage.purged` 里的合计）。
-const VERSION: i64 = 4;
+/// 施工 UP-1 加分四种的金额，是 3（重建时照日志里记下的价格算，删掉的会话照 `usage.purged` 里有的）。4 是施工 DSR-7 多的
+/// 搜索、抓取次数两列；施工 DSR-8 撤掉这两列，是 5，列和 3 的一样。
+const VERSION: i64 = 5;
 
 /// 建表。时刻存成毫秒；金额存成双精度，币种另一格。
 ///
 /// - `spent.source`：会话的请求是会话编号，一次性调用是 `journal`，删掉的会话的合计是 `purged:<会话编号>`；
 ///   `seq` 是 `model.called` 的序号、日志里那一条的序号、合计的第几格。
-/// - `searches`、`fetches`：供应商替模型运行的搜索、抓取的次数（施工 DSR-7），没报的是 0。
 /// - `parted`：这一行的金额分了四种（施工 UP-1）；`uncached_amount` 这四格是分好的，价格不知道的那一种空着。老的合计
 ///   （没记四种的 `usage.purged`）是 0，四格都空着。
 /// - `marks.source`：会话编号，或者 `journal`；会话的 `segment`、`bytes`、`next` 是 [`crate::log::Mark`]，日志的
@@ -93,8 +92,6 @@ const SCHEMA: &str = "CREATE TABLE spent (
     cache_read_amount REAL,
     cache_write_amount REAL,
     output_amount REAL,
-    searches INTEGER NOT NULL,
-    fetches INTEGER NOT NULL,
     PRIMARY KEY (source, seq)
 ) WITHOUT ROWID;
 CREATE INDEX spent_session ON spent (session);

@@ -1,5 +1,7 @@
 ## 施工单 DSR-4：`openai-responses` 驱动接住 DeepSeek 的搜索记录
 
+> 这一步里「用量多两格 `searches`、`fetches`」的部分由施工 DSR-8 撤掉了（2026-11-20 项目主人定）。其他部分仍然有效。
+
 状态：做完了，等合并（分支 `step/DSR-4`，接在 `step/DSR-3` 后面）。设计 `72-DeepSeek内置联网工具.md` 第五节第 4 步。
 
 ### 为什么

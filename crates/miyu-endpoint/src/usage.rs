@@ -310,8 +310,6 @@ fn empty() -> Total {
             cache_write: 0,
             output: 0,
             reasoning: None,
-            searches: None,
-            fetches: None,
         },
         amounts: Vec::new(),
         unpriced: 0,

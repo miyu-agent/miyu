@@ -204,7 +204,6 @@ fn a_search_opens_at_added_and_closes_at_done() {
     assert!(matches!(of_one[3], Delta::End { .. }));
     assert_eq!(of_one.len(), 4, "不交私有数据");
     let usage = ending.usage.expect("有用量");
-    assert_eq!((usage.searches, usage.fetches), (Some(4), Some(1)));
     assert_eq!(usage.reasoning, Some(599));
     assert_eq!((usage.cache_read, usage.uncached), (13184, 21989 - 13184));
     // 从哪里切开喂都一样（整份 19 万字节，挑几处切）。
@@ -386,8 +385,4 @@ fn names_follow_the_action_and_pages_say_url_and_title() {
     let outcome = block.outcome.expect("有");
     assert!(outcome.failed, "失败了、没有错误码的写整项原文");
     assert_eq!(outcome.text, image.to_string());
-    // 报的次数是 0 的当没报。
-    let (_, ending) = decode(&[&one_item(&openai, true)]);
-    let usage = ending.usage.expect("有用量");
-    assert_eq!((usage.searches, usage.fetches), (None, None));
 }

@@ -19,7 +19,7 @@
 | `crates/miyu-drivers/src/openai_responses/wire.rs` | 线上的 JSON 结构、工具面（施工 DSR-3 起也写接在末尾的供应商工具声明） |
 | `crates/miyu-drivers/src/openai_responses/decode.rs` | 解码：事件、每一项开一块、加密的思考、收尾 |
 | `crates/miyu-drivers/src/openai_responses/hosted.rs` | 供应商那边跑的搜索（`web_search_call`，施工 DSR-4）：工具名、参数原文、结果的字 |
-| `crates/miyu-drivers/src/openai_responses/usage.rs` | 用量归成四项，另记思考、搜索、抓取 |
+| `crates/miyu-drivers/src/openai_responses/usage.rs` | 用量归成四项 |
 | `crates/miyu-drivers/src/media.rs` | 图片、文件发不了时换成的字、要哪些 blob，三个驱动共用（`drivers/anthropic.md`「在哪」）；8-13 起 user 的字照 openai-chat 拼的那一步（`join`）也挪进来，openai-chat 的样本一个字节不变 |
 | `crates/miyu-drivers/src/sse.rs`、`classify.rs`、`texts.rs`、`text_file.rs`、`base64.rs` | 和 openai-chat 共用 |
 | `crates/miyu-drivers/src/openai_chat/models.rs` | 列模型：OpenAI 的 `/models` 写法一样，共用 `parse_models` |
@@ -154,8 +154,6 @@ SSE 分帧共用 `sse.rs`。这一家没有 `[DONE]`：说完是 `response.compl
 | 没命中 `uncached` | `input_tokens` 减去命中，最少 0 |
 | 输出 `output` | `output_tokens`（含思考，思考不另算钱） |
 | 思考 `reasoning` | `output_tokens_details.reasoning_tokens`（施工 2-3 再补）；没有的、0 的不写 |
-| 搜索 `searches` | `server_tool_use.tool_search`（施工 DSR-4，DeepSeek 报）：供应商替模型跑的搜索次数，不是 token；没有的、0 的不写 |
-| 抓取 `fetches` | `server_tool_use.tool_fetch`（施工 DSR-4）：供应商替模型读网页的次数，不是 token；没有的、0 的不写 |
 
 没有 `input_tokens` 的不算用量；只认非负整数。
 
@@ -216,7 +214,7 @@ SSE 分帧共用 `sse.rs`。这一家没有 `[DONE]`：说完是 `response.compl
 | `crates/miyu-drivers/tests/openai_responses_reasoning.rs` | 加密的思考回传、空摘要、别家的和没有加密内容的不写；思考强度两种写法接在最后，没写的一个字节不加 |
 | `crates/miyu-drivers/tests/openai_responses_media.rs` | 图片、PDF、不能收的占位；工具结果里的图、PDF；文本文件、带名字的图片、替它看的图和 openai-chat 一样；缺 blob 报错 |
 | `crates/miyu-drivers/tests/hosted_tool.rs`（施工 HT-2，三个驱动共用一份） | 供应商侧工具在它原来的位置写成那一段字，和样本 `hosted-tool.json` 一字不差；先后、转义、截在字的边界上、以前造的快照不写它（`drivers/openai-chat.md`「守着它的」） |
-| `crates/miyu-drivers/tests/openai_responses_web_search.rs`（施工 DSR-4） | 真实的流解出来：块的先后、工具名（搜索两块、打开网页四块）、参数是 `action` 原文、结果的字（含失败的那一项）、不带私有数据、思考和正文不变、用量的搜索 4 次抓取 1 次；切开喂一样；编码回去六块都写成那段字、接进上一轮的正文，没有原样带回的项，留着历史的编码和整份编码一字不差；没有 `kind` 的叫 `web_search`，打开网页、在网页里查找的叫 `deepseek_read_url` |
+| `crates/miyu-drivers/tests/openai_responses_web_search.rs`（施工 DSR-4） | 真实的流解出来：块的先后、工具名（搜索两块、打开网页四块）、参数是 `action` 原文、结果的字（含失败的那一项）、不带私有数据、思考和正文不变；切开喂一样；编码回去六块都写成那段字、接进上一轮的正文，没有原样带回的项，留着历史的编码和整份编码一字不差；没有 `kind` 的叫 `web_search`，打开网页、在网页里查找的叫 `deepseek_read_url` |
 | `crates/miyu-drivers/tests/openai_responses_streams.rs` | 流的样本；从哪里切开喂都一样；解出来的编码回去：`call_id`、加密内容原样；驱动的接口走一遍；`finished()` 在收尾事件以后才说是 |
 | `crates/miyu-assemble/tests/probe.rs`、`random_logs.rs`、`tests/support` | 加 Responses 的脸：每个探针、每段随机日志的每一次请求编码以后是上一次的前缀延伸；主会话（`terminal`）的存档多 `openai-responses/` |
 | `crates/miyu-session/tests/route_responses.rs` | 路由照供应商的 `driver` 造驱动：发到 `/responses`、带 `Bearer`；输出上限不替它填、写了的照它；思考强度照这一家的写法；回来的流照这一家解 |

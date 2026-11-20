@@ -112,7 +112,7 @@ pub struct Total {
     pub keys: Vec<Option<String>>,
     /// 发出去的请求数。
     pub requests: u64,
-    /// 用量，四项各自加起来；这一组里供应商替模型搜索、抓取过的，带着加起来的次数（施工 DSR-7）。
+    /// 用量，四项各自加起来。
     pub usage: Usage,
     /// 有金额的照币种各加各的，照币种代码的字母先后；一个都没有的是空的。
     pub amounts: Vec<(String, f64)>,
@@ -184,8 +184,7 @@ fn sum(db: &Connection, query: &Query) -> Result<Vec<Total>, UsageError> {
     let sums = format!(
         "SELECT {} FROM spent WHERE {filter}{}",
         select(
-            "SUM(requests), SUM(uncached), SUM(cache_read), SUM(cache_write), SUM(output), SUM(unpriced), \
-             SUM(searches), SUM(fetches)"
+            "SUM(requests), SUM(uncached), SUM(cache_read), SUM(cache_write), SUM(output), SUM(unpriced)"
         ),
         group_by("")
     );
@@ -220,9 +219,6 @@ fn sum(db: &Connection, query: &Query) -> Result<Vec<Total>, UsageError> {
                 cache_write: count(3)?,
                 output: count(4)?,
                 reasoning: None,
-                // 搜索、抓取的次数（施工 DSR-7）：这一组一次都没有的不带，同 `model.called` 里「0 的不写」。
-                searches: Some(count(6)?).filter(|n| *n > 0),
-                fetches: Some(count(7)?).filter(|n| *n > 0),
             },
             amounts: Vec::new(),
             unpriced: count(5)?,
