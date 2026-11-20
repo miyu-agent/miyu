@@ -65,7 +65,7 @@ Venue sessions (group chats and private chats on a chat platform) have a few mor
 | `cwd` | string | The head's working directory, written the way a person sees it, for example `~/src/miyu`. When it is omitted, the session uses its own default workspace; remote connections can't give this parameter |
 | `persona` | string or `null` | Which persona to use; `null` means no persona; when it is omitted, the `persona.default` setting is used |
 | `preset` | string or `null` | Which preset to use; when it is omitted, `preset.default` is used, and `full` when neither is set; `null` means no tools, so the session gets no tools at all (this is the old way to say it and is still accepted; when a new session picks "Nothing", it is written `none`) |
-| `model` | string | `<provider>/<model>` or `@<pool>`; when it is omitted, `models.chat` is recorded as it is right now (a pool is recorded as the pool), and later changes to `models.chat` don't affect this session |
+| `model` | string | `<provider>/<model>` or `@<pool>`; when it is omitted, `models.chat` is recorded as it is right now (a pool is recorded as the pool), and later changes to `models.chat` don't affect this session. An empty fixed pool (`@lite`, `@normal`, `@flagship`) is treated as omitted |
 | `vision` | string | Which model describes images for this session, written the same way as `model`; when it is omitted, the session follows the configured `models.vision`. Once the session is created, a `session.policy_changed` is recorded, the same as `vision` in `session.configure` |
 | `compaction_line` | integer | This session's compaction line, a percentage of the window from 20 to 95; when it is omitted, the session follows the configured `compaction.line`. Once the session is created, a `session.policy_changed` is recorded, the same as `compaction_line` in `session.configure` |
 | `memory` | `persona`, `off` | `persona` means memory follows the persona, and `off` means memory is off; when it is omitted, memory follows the persona. Any other value (including the old `session`) returns `bad_params` |
@@ -99,7 +99,7 @@ If you send the same `id` again, the core returns the session it created the fir
 | `bad_params` (`-32602`) | The persona or preset id is malformed; `memory` is not `persona` or `off`; `model` or `vision` is not a string; `compaction_line` is not an integer from 20 to 95 |
 | `unknown_persona`, `persona_invalid` | There is no such persona, or the persona's files are wrong (`data.problem` says which layer, which file and which line) |
 | `unknown_preset`, `preset_invalid` | The same as the row above, for presets |
-| `unknown_model` | `model` or `vision` can't be resolved: it is malformed, the provider doesn't exist, or the pool doesn't exist |
+| `unknown_model` | `model` or `vision` can't be resolved: it is malformed, the provider doesn't exist, the pool doesn't exist, or the pool is empty (an empty fixed pool given as `model` doesn't count; it is treated as omitted) |
 | `dir_too_wide` | An entry in `dirs` is too wide (the home directory, the root, or a directory that contains the data directory) |
 | `internal_error` (`-32603`) | The core couldn't create the session |
 
@@ -452,7 +452,7 @@ A head tells the core which session it is showing right now: send this on switch
 Changes the session's model, vision model, persona, preset, reasoning effort or compaction line, which take effect from the next turn, or its context limit, which takes effect from the next request. A model or effort change shows at once, and requests use it from the next turn: `model` in the `subscribe` response and in `view.status` shows the new value right away, and it is also new after switching to another session and back, or after reconnecting.
 
 **Params**: `session`; give at least one of the seven below:
-- `model`: `<provider>/<model>` or `@<pool>`; `null` stops pinning a model and goes back to following the configured `models.chat` (read every turn from the config at that time, so a config change is followed).
+- `model`: `<provider>/<model>` or `@<pool>`; `null` stops pinning a model and goes back to following the configured `models.chat` (read every turn from the config at that time, so a config change is followed). One of the three fixed pools (`@lite`, `@normal`, `@flagship`) given while it is empty is the same as `null`.
 - `vision`: the model that describes images, written the same way as `model`: `<provider>/<model>` or `@<pool>`; `null` stops pinning one and goes back to following the configured `models.vision`. When the session's model can't view images, the core has this model turn each image into text (without a pin, `models.vision` is used). If the pinned model later can't be resolved (its provider or pool was removed), that image counts as not turned into text; the core does not fall back to `models.vision`.
 - `persona`: a persona id; `null` means no persona.
 - `preset`: a preset id; `null` switches to no tools.

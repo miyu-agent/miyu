@@ -166,7 +166,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `memory/organize` | `normal` | 整理记忆：抽取、合并、写关键词、整理会话都是它；要读懂一整段对话 |
 
 1. 池有成员的，照池的分法挑一个发；旁路请求短、不靠缓存，不粘、不动会话钉着的成员。
-2. 池是空的（一个成员都认不出）：用会话的模型（请求属于哪个会话就是那个会话这一刻的引用；没有会话的照 `models.chat`），不算退。
+2. 池是空的（一个成员都认不出）：用会话的模型（请求属于哪个会话就是那个会话这一刻的引用；没有会话的照 `models.chat`），不算退。会话这一刻的引用是一个空的固定池时，按没有写处理，使用 `models.chat`（施工 SIDE-1，`miyu_models::reference::empty_fixed_pool`，`route/once.rs`），运行日志记一行 `INFO empty pool fallback pool=<池名>`。
 3. 池里挑出来的、还没收到增量就出了会冷却的错（限速、可重试、认证失败）：换下一个。挑到这一次试过的、全在冷却挑不出的：退到会话的模型发一次（项目主人 2026-10-21 定），记一行 `INFO side fallback`，`model.called` 写 `fell_back: true`（一次性入口不写 `model.called`，只记那一行）。回退只在出字以前（第五条第 4 条）。
 4. 会话的模型本身就是这个池的：不再退，照池的规矩报（免得来回退）。
 5. 回顾、压缩摘要不登记：复用会话前缀的缓存，换个模型要整段原价重算（设计 43 第六节第 2 条）。识图、向量是「用途」，照旧单配。
@@ -449,7 +449,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `session` | 会话编号，可以不写 | 只跟着 `side`（施工 Q-3）：档位池用不上时退到这个会话这一刻的引用；不写的照 `models.chat`。不是自己的会话在连接那一道当作没有（`session_not_found`） |
 
 1. `messages`：`system` 最多一条，只能在最前面；后面至少一条，最后一条是 `user`。`text` 必写：`system`、`assistant` 的不能是空的，`user` 的字、图至少有一样。`images` 只有 `user` 能写，是存处里的 blob（先用 `blob.put` 传）：一条消息里先字后图，和 `session.send` 一样。不认识的格不理。
-2. 不对的照先后拒：参数的写法不对、`purpose` 不合写法、`messages` 不是上面的样子、`max_tokens` 是 0 或者太大：`bad_params`。图的 blob 存处里没有：`unknown_attachment`；有、不是图：`bad_params`。`model` 解析不出（写法不对、没有这家供应商、没有这个池、池是空的）：`unknown_model`，原话记一行 `DEBUG unknown model`。`model`、`use` 一起写的、`use` 不是那两个的：`bad_params`。`use` 是 `vision`、`models.vision` 没配的：`no_model`，原话 `no vision model configured: set models.vision`（同第十三条替看图）。`side` 和 `model`、`use` 同写的，`session` 不跟着 `side` 的，`side` 不是这个扩展自己包里登记过的（人的连接没有包，一律不认；记一行 `DEBUG unknown side request`），`session` 不合写法的：`bad_params`（施工 Q-3）。
+2. 不对的照先后拒：参数的写法不对、`purpose` 不合写法、`messages` 不是上面的样子、`max_tokens` 是 0 或者太大：`bad_params`。图的 blob 存处里没有：`unknown_attachment`；有、不是图：`bad_params`。`model` 写的是三个固定池之一、这个池又是空的时，按没有写处理，使用 `models.chat`（施工 SIDE-1，设计 43 第三节第 3 条），运行日志记一行 `INFO empty pool fallback pool=<池名>`。`model` 解析不出（写法不对、没有这家供应商、没有这个池、人自己建的池是空的）：`unknown_model`，原话记一行 `DEBUG unknown model`。`model`、`use` 一起写的、`use` 不是那两个的：`bad_params`。`use` 是 `vision`、`models.vision` 没配的：`no_model`，原话 `no vision model configured: set models.vision`（同第十三条替看图）。`side` 和 `model`、`use` 同写的，`session` 不跟着 `side` 的，`side` 不是这个扩展自己包里登记过的（人的连接没有包，一律不认；记一行 `DEBUG unknown side request`），`session` 不合写法的：`bad_params`（施工 Q-3）。
 3. 请求出错的照第十二条第 5 条：`no_model`（`data.message`）、`cooling`（`data.message`、`data.wait_ms`）、`model_failed`（`data.class`、`data.status`（有状态码的才写）、`data.message`，和 `model.called` 的 `error` 一样）。
 4. 不进任何会话的日志，不推送。
 
@@ -505,7 +505,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 
 | 原因码 | 什么时候 |
 |---|---|
-| `unknown_model` | `session.create`、`session.configure`、`model.call`（8-20）的 `model` 解析不出：写法不对（连同以前的挡位名）、没有这家供应商、没有这个池、池是空的 |
+| `unknown_model` | `session.create`、`session.configure`、`model.call`（8-20）的 `model` 解析不出：写法不对（连同以前的挡位名）、没有这家供应商、没有这个池、人自己建的池是空的。三个固定池是空的时不算（施工 SIDE-1）：`model.call` 使用 `models.chat`，`session.create` 按没有写处理，`session.configure` 和写 `null` 相同 |
 | `unknown_provider` | `model.list`、`provider.test` 的 `provider` 不是配好了的（`provider.test` 的 8-11 起） |
 | `no_model` | `model.call` 没有能用的模型：没写 `model`、`models.chat` 也没配；那一家用不了、key 一个都取不到（8-20）。`data.message` 是原话 |
 | `cooling` | `model.call` 的候选不止一个、全在冷却，没发（8-20）。`data.message` 是原话，`data.wait_ms` 是最早恢复的那一个还要多久 |
@@ -925,7 +925,7 @@ opencode 有两个端点：Zen（按量付费）和 Console Go（订阅）。两
 
    | 哪一种 | 什么时候 | 带什么 |
    |---|---|---|
-   | `unknown_model` | 写了的引用解析不出：写法不对、没有这家供应商、没有这个池、池是空的 | 原话 |
+   | `unknown_model` | 写了的引用解析不出：写法不对、没有这家供应商、没有这个池、人自己建的池是空的（三个固定池是空的时按没有写处理，使用 `models.chat`，施工 SIDE-1） | 原话 |
    | `no_model` | 没写引用、`models.chat` 也没配（`no model configured: set models.chat`）；`models.chat` 指的解析不出；那一家用不了、地址或 key 一个都取不到（第一条第 2、5 条的原话） | 原话 |
    | `cooling` | 候选不止一个、全在冷却，没发（第五条第 6 条） | 原话、最早恢复的那一个还要多久 |
    | `model_failed` | 发了、出错了：换不了、换够了；模型不收图；增量对不上（`bad_stream`）；编码要的 blob 取不出来 | 分类、HTTP 状态、原话，和 `model.called` 的一样 |
@@ -1243,9 +1243,9 @@ mimo = ["xiaomi"]
 | `crates/miyu-session/src/route/shared/tests.rs`（施工 V-26） | 后台拉一家有间隔、别的家照拉；换上的列表头一次、变了（连先后变了）才交「这一家变了」，只差拉的时刻的不交 | V-26 |
 | `crates/miyu-endpoint/tests/models.rs` 的 `a_whole_list_refetches_once_a_minute_and_announces_a_change`（施工 V-26） | 列整份的 `model.list` 后台拉、推 `models.changed` 给订着配置的连接；一分钟里再列整份、只要几个都不再拉；人按刷新拉回来一样的不推 | V-26 |
 | `crates/miyu-models/src/side/tests.rs`（Q-2） | 档位对上三个固定池，出厂的照编号排；池是空的落到会话的模型，有成员的落到池；清单认的档位就是三个固定池、照池名认得回来（Q-3） |
-| `crates/miyu-endpoint/tests/model_call_side.rs`（Q-3） | 扩展经真的路由调 `model.call`：登记了的 `side` 照档位从 `lite` 池取；没登记的、和 `model`、`use` 同写的、`session` 不跟着 `side` 的、人的连接写 `side` 的 `bad_params`，都没发；池是空的，写了会话的照会话的模型、没写的照 `models.chat`；`model.list` 的 `side` 列出 `<包>/<编号>`、名字说明照清单、`resolved` 跟着池 |
+| `crates/miyu-endpoint/tests/model_call_side.rs`（Q-3） | 扩展经真的路由调 `model.call`：登记了的 `side` 照档位从 `lite` 池取；没登记的、和 `model`、`use` 同写的、`session` 不跟着 `side` 的、人的连接写 `side` 的 `bad_params`，都没发；池是空的，写了会话的照会话的模型、没写的照 `models.chat`；固定池明写成空的（`[pools.lite] models = []`）时，`model.call` 写 `@lite` 的发给 `models.chat`、`session.create` 和 `session.configure` 写 `@lite` 的都收、旁路请求带上这样建的会话照样答得成，没有的池仍然 `unknown_model`（施工 SIDE-1）；`model.list` 的 `side` 列出 `<包>/<编号>`、名字说明照清单、`resolved` 跟着池 |
 | `crates/miyu-session/tests/route_side.rs`（Q-2） | 起标题照 `lite` 池、主请求照会话的模型；池是空的用会话的模型、不算退；池里出错退回会话的模型、记 `fell_back`；会话钉在 `lite` 池上的不再往下退 |
-| `crates/miyu-session/tests/once_side.rs`（Q-2） | 一次性入口照登记：发给 `normal` 池；池是空的照后备（会话的、`models.chat`）；池里出错、成员取不到 key 退一次；后备就是这个池的不再退 |
+| `crates/miyu-session/tests/once_side.rs`（Q-2） | 一次性入口照登记：发给 `normal` 池；池是空的照后备（会话的、`models.chat`）；池里出错、成员取不到 key 退一次；后备就是这个池的不再退；后备是一个空的固定池时照 `models.chat`（施工 SIDE-1） |
 | `crates/miyu-models/src/reference/tests.rs` | 两种写法的先后、切在第一个 `/`、哪里能写哪几种、报的原话、配置收的和 `models.chat` 那一处认的一样（8-6）；池的成员配置收的和 `PoolMember` 那一处认的一样，造会话记下的引用和解析不出的几种，一个引用这一轮指到模型还是池、池的认不出的成员跳过（8-8；一个引用发给谁 8-8 从 `provider/tests.rs` 挪来）；以前的挡位名哪里都不认、点名的模型不算挡位（8-8 补） | 8-6、8-8 |
 | `crates/miyu-models/src/provider/tests.rs`、`profile/tests.rs` | 认得出的一家只写 key、手写的压过档案、档案照 `catalog` 找、没有档案的照驱动的默认、推不出来的和还没有的驱动说清楚、档案认得也要配了才算；引用发给谁、池和不在的供应商、没配的原话；窗口手写的压过模型资料、模型名里有点的；档案的几格读法、一格格盖在默认上、多了不认识的格读不进来、DeepSeek 那一套和 `Compat::deepseek()` 一样（8-25 删了 `keys/tests.rs`：key 照会话编号的算式那几条） | 8-6 |
 | `crates/miyu-models/src/catalog/tests.rs` | 真目录裁出来的一份（`crates/miyu-models/testdata/models-dev-trimmed.json`，另加了一个坏模型）读得进、坏的模型和坏的一家跳过、不认识的格不理、`limit.input` 比 `context` 小的取小的、思考强度、分档的价、两份索引、整份坏的读不了 | 8-7 |

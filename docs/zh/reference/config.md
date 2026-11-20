@@ -224,9 +224,9 @@
 |---|---|---|
 | `purpose` | 字符串，必写 | 用途，由 1 到 32 个小写字母、数字、`-` 组成，例如 `vision` |
 | `messages` | 数组，必写 | `{"role": "system"|"user"|"assistant", "text", "images"?}`。`system` 最多一条，并且只能放在最前面；最后一条是 `user`；只有 `user` 能带 `images`，它是 blob 的哈希（用 `blob.put` 存入的），不存在的 blob 返回 `unknown_attachment` |
-| `model` | 字符串 | `<供应商>/<模型>` 或 `@<池>`；不填写时使用 `models.chat` |
+| `model` | 字符串 | `<供应商>/<模型>` 或 `@<池>`；不填写时使用 `models.chat`。三个固定的池（`@lite`、`@normal`、`@flagship`）是空的时，按没有填写处理，同样使用 `models.chat` |
 | `use` | `chat` 或 `vision` | 不知道人配置了哪个模型时使用：分别对应 `models.chat` 或 `models.vision`；和 `model` 最多填写一个 |
-| `side` | 字符串 | 扩展的旁路请求：填写自己软件包的清单里 `[[side]]` 登记的编号（不带包名）。核心按登记的档位从同名的池（`lite`、`normal`、`flagship`）里取模型；池是空的、池里的模型全都在冷却或者都出错了时，使用会话的模型。不能和 `model`、`use` 同时填写；人的连接填写这一项，或者填写的编号没有登记过，返回 `bad_params` |
+| `side` | 字符串 | 扩展的旁路请求：填写自己软件包的清单里 `[[side]]` 登记的编号（不带包名）。核心按登记的档位从同名的池（`lite`、`normal`、`flagship`）里取模型；池是空的、池里的模型全都在冷却或者都出错了时，使用会话的模型；会话的模型也是一个空的固定池时，使用 `models.chat`。不能和 `model`、`use` 同时填写；人的连接填写这一项，或者填写的编号没有登记过，返回 `bad_params` |
 | `session` | 会话编号 | 只和 `side` 一起使用：用不上档位池时，使用这个会话这一刻的模型；不填写时使用 `models.chat`。填写的不是自己的会话时返回 `session_not_found` |
 | `max_tokens` | 正整数 | 最多输出多少 token |
 
@@ -242,7 +242,7 @@
 |---|---|
 | `bad_params`（`-32602`） | 参数的写法不对；图片的 blob 不是图片；`side` 不是这个扩展登记过的编号 |
 | `unknown_attachment` | 不存在这个图片的 blob |
-| `unknown_model` | 无法解析 `model` |
+| `unknown_model` | 无法解析 `model`：写法不对、没有这家供应商、没有这个池，或者自己建的池是空的 |
 | `no_model` | 没有能使用的模型（没有配置，或者取不到密钥），说明在 `data.message` 里 |
 | `cooling` | 候选的模型全都在冷却，见 `data.message`、`data.wait_ms` |
 | `model_failed` | 请求已经发送，但是出错了：见 `data.class`、`data.status`、`data.message` |

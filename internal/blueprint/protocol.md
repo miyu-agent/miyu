@@ -1669,7 +1669,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `unknown_secret` | -32010 | `secret.delete` 删的密钥没有（施工 8-5） |
 | `unknown_provider` | -32010 | `model.list`、`provider.test` 的 `provider` 不是配好了的（施工 8-7、8-11） |
 | `provider_exists` | -32010 | `provider.rename` 的 `to` 已经有了（施工 8-34） |
-| `unknown_model` | -32010 | `session.create`、`session.configure` 的 `model` 解析不出：写法不对（连同以前的挡位名）、没有这家供应商、没有这个池、池是空的（施工 8-8、8-8 补）；`model.call` 的 `model` 解析不出（施工 8-20） |
+| `unknown_model` | -32010 | `session.create`、`session.configure` 的 `model` 解析不出：写法不对（连同以前的挡位名）、没有这家供应商、没有这个池、人自己建的池是空的（施工 8-8、8-8 补；三个固定池是空的时按没有写处理，施工 SIDE-1）；`model.call` 的 `model` 解析不出（施工 8-20） |
 | `no_model` | -32010 | `model.call` 没有能用的模型：没写 `model`、`models.chat` 也没配，那一家用不了、key 取不到；`data.message` 是原话（施工 8-20） |
 | `cooling` | -32010 | `model.call` 的候选全在冷却，没发；`data.message` 是原话，`data.wait_ms` 是最早恢复的那一个还要多久（施工 8-20） |
 | `model_failed` | -32010 | `model.call` 发了、出错了：`data.class`、`data.status`（有状态码的才写）、`data.message`，和 `model.called` 的 `error` 一样（施工 8-20） |

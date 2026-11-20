@@ -25,10 +25,12 @@ pub(super) async fn create(
         params.preset = params.preset.or_else(|| project.preset.clone().map(Some));
     }
     // 解析不出、不在范围里的什么都不造（施工 8-8；看图模型施工 VM-1，压缩触发线施工 CT-1）。
+    // 写的是空的固定池的当成没写（施工 SIDE-1）。
     let model = params
         .model
-        .map(|text| models::record(core, &text))
-        .transpose()?;
+        .map(|text| models::record_or_none(core, &text))
+        .transpose()?
+        .flatten();
     let vision = models::vision::command(core, params.vision.as_deref().map(Some))?;
     let line = models::line::command(params.compaction_line.map(Some))?;
     let memory = params

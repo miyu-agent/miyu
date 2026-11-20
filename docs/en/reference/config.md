@@ -224,9 +224,9 @@ Calls a model once and returns the whole answer and the usage. The call is not p
 |---|---|---|
 | `purpose` | string, required | What the call is for: 1 to 32 lowercase letters, digits and `-`, for example `vision` |
 | `messages` | array, required | `{"role": "system"|"user"|"assistant", "text", "images"?}`. There is at most one `system` message, and only as the first; the last one is `user`; only `user` messages may carry `images`, which are blob hashes stored with `blob.put` (a missing one gives `unknown_attachment`) |
-| `model` | string | `<provider>/<model>` or `@<pool>`; when it is omitted, `models.chat` is used |
+| `model` | string | `<provider>/<model>` or `@<pool>`; when it is omitted, `models.chat` is used. An empty fixed pool (`@lite`, `@normal`, `@flagship`) is treated as omitted, so `models.chat` is used as well |
 | `use` | `chat` or `vision` | Use it when you don't know which model the person configured: it follows `models.chat` or `models.vision`. Give at most one of `model` and `use` |
-| `side` | string | An extension's side request: an id registered in your own package's `[[side]]` (without the package name). A model is taken from the pool named after its tier (`lite`, `normal`, `flagship`); when that pool is empty, or every member is cooling down or has failed, the session's model is used. It can't be combined with `model` or `use`; from a person's connection, or with an id that isn't registered, it gets `bad_params` |
+| `side` | string | An extension's side request: an id registered in your own package's `[[side]]` (without the package name). A model is taken from the pool named after its tier (`lite`, `normal`, `flagship`); when that pool is empty, or every member is cooling down or has failed, the session's model is used; when the session's model is itself an empty fixed pool, `models.chat` is used. It can't be combined with `model` or `use`; from a person's connection, or with an id that isn't registered, it gets `bad_params` |
 | `session` | session id | Only together with `side`: when the tier's pool can't be used, this session's current model is used; without it, `models.chat` is used. Someone else's session gets `session_not_found` |
 | `max_tokens` | positive integer | The maximum number of output tokens |
 
@@ -242,7 +242,7 @@ Calls a model once and returns the whole answer and the usage. The call is not p
 |---|---|
 | `bad_params` (`-32602`) | The params are malformed; an image blob isn't an image; or `side` isn't one this extension registered |
 | `unknown_attachment` | There is no such image blob |
-| `unknown_model` | `model` can't be resolved |
+| `unknown_model` | `model` can't be resolved: it is malformed, the provider doesn't exist, the pool doesn't exist, or a pool you created yourself is empty |
 | `no_model` | No model can be used (none is configured, or its key can't be obtained); see `data.message` |
 | `cooling` | Every candidate is cooling down; see `data.message` and `data.wait_ms` |
 | `model_failed` | The request was sent and failed; see `data.class`, `data.status` and `data.message` |

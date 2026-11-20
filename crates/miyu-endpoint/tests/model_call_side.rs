@@ -215,3 +215,58 @@ async fn an_empty_tier_pool_falls_to_the_session_model_or_models_chat() {
         "{split}"
     );
 }
+
+/// 明写的固定池是空的，当成没写模型（施工 SIDE-1，2026-11-20 项目主人定）。池子照撞见的那份配置：`lite` 写了、是空的，
+/// `normal`、`flagship` 各一个。`model.call` 直接写 `@lite` 的发给 `models.chat`；`session.create` 写 `@lite` 的建得成，
+/// 旁路请求带上它照样答得成；换模型换到 `@lite` 的也收。没有的池、有成员的池照旧。
+#[tokio::test]
+async fn an_explicitly_empty_fixed_pool_counts_as_no_model_written() {
+    let server = Server::start((0..6).map(|n| said(&format!("r{n}"))).collect()).await;
+    let home = Home::new();
+    home.write(
+        "etc/config.toml",
+        &config(
+            &server,
+            "[pools.lite]\nmodels = []\n\n[pools.normal]\nmodels = [\"a/normal-m\"]\n\n[pools.flagship]\nmodels = [\"a/flag-m\"]\n",
+        ),
+    );
+    let program = Program::new();
+    let (path, step) = record(&home, "bot");
+    let script = steps(&[
+        &step,
+        "hello",
+        r#"ask:session.create:{}"#,
+        &asked(&json!({"side": "judge", "session": "{session}"})),
+        r#"ask:session.create:{"model":"@lite"}"#,
+        &asked(&json!({"side": "judge", "session": "{session}"})),
+        &asked(&json!({"model": "@lite"})),
+        &asked(&json!({"model": "@normal"})),
+        &asked(&json!({"model": "@nope"})),
+        r#"ask:session.configure:{"session":"{session}","model":"@lite"}"#,
+        "wait",
+    ]);
+    install_bot(&home, &program.name(), &script);
+    let _core = routed_serving(&home, data(profiles(json!({}))));
+    let read = replies(&path, 9).await;
+    assert!(read[1]["result"]["session"].is_string(), "{:?}", read[1]);
+    assert_eq!(read[2]["result"]["text"], "r0", "{:?}", read[2]);
+    assert!(
+        read[3]["result"]["session"].is_string(),
+        "写了空的固定池照样建得成：{:?}",
+        read[3]
+    );
+    assert_eq!(read[4]["result"]["text"], "r1", "{:?}", read[4]);
+    assert_eq!(read[5]["result"]["text"], "r2", "{:?}", read[5]);
+    assert_eq!(read[6]["result"]["text"], "r3", "{:?}", read[6]);
+    assert_eq!(
+        read[7]["error"]["data"]["reason"], "unknown_model",
+        "没有的池照旧拒：{:?}",
+        read[7]
+    );
+    assert!(read[8].get("error").is_none(), "{:?}", read[8]);
+    assert_eq!(
+        models(&server),
+        ["chat-m", "chat-m", "chat-m", "normal-m"],
+        "空的固定池都照 models.chat，有成员的池照旧"
+    );
+}

@@ -17,9 +17,9 @@ pub(in crate::methods) async fn configure(
     let session = session(&params.session)?;
     let recast = recast::checked(core, &session, params.recast()).await?;
     let found = core.sessions.get(core, &session).await?;
-    // 写 `null` 的回到跟着 `models.chat`：内核记空的（施工 8-10 再补）。
+    // 写 `null` 的回到跟着 `models.chat`：内核记空的（施工 8-10 再补）。写的是空的固定池的同写 `null`（施工 SIDE-1）。
     let model = match text {
-        Some(Some(text)) => Some(models::record(core, text)?),
+        Some(Some(text)) => Some(models::record_or_none(core, text)?.unwrap_or_default()),
         Some(None) => Some(String::new()),
         None => None,
     };

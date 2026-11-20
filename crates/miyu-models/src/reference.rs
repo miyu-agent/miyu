@@ -135,6 +135,18 @@ pub fn record(values: &Values, text: &str) -> Result<String, NoModel> {
     Ok(reference.to_string())
 }
 
+/// 明写的引用 `text` 是三个固定池之一（[`pools::FIXED`]），这一轮又是空的（成员没写、一个都认不出）：交回池名。
+///
+/// 这种引用当成没写模型（施工 SIDE-1，设计 43 第三节第 3 条，2026-11-20 项目主人定）：固定池永远在、可以是空的，人把一处的
+/// 模型指到它、后来又把它清空，不该让那一处从此被拒。别的池（人自己建的）、没有的池、写错的引用照旧算解析不出。
+pub fn empty_fixed_pool(values: &Values, text: &str) -> Option<&'static str> {
+    let Ok(Reference::Pool(name)) = Reference::parse(text) else {
+        return None;
+    };
+    let fixed = pools::FIXED.into_iter().find(|fixed| *fixed == name)?;
+    pools::pool(values, fixed).is_err().then_some(fixed)
+}
+
 /// 一个引用这一轮指到哪（施工 8-8）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Resolved {

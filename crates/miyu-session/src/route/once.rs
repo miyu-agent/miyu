@@ -30,7 +30,7 @@ use miyu_kernel::request::{Message, Request};
 use miyu_models::pools::Member;
 use miyu_models::price::Tariff;
 use miyu_models::provider::{self, NOT_CONFIGURED, NoModel, Target};
-use miyu_models::reference::record;
+use miyu_models::reference::{empty_fixed_pool, record};
 use miyu_store::blob::Blobs;
 use miyu_store::usage::OneShotCall;
 
@@ -274,7 +274,17 @@ impl OneShot {
         };
         routes.data.wait().await;
         let values = config.resolved.values();
-        let text = match ask.model {
+        // 明写的固定池是空的，当成没写（施工 SIDE-1）：照 `models.chat`。只记一行运行日志。
+        let asked = ask
+            .model
+            .filter(|text| match empty_fixed_pool(&values, text) {
+                Some(pool) => {
+                    tracing::info!(target: TARGET, pool, "empty pool fallback");
+                    false
+                }
+                None => true,
+            });
+        let text = match asked {
             Some(text) => {
                 record(&values, &text).map_err(|NoModel(why)| Unanswered::UnknownModel(why))?;
                 text

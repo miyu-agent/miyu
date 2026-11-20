@@ -93,6 +93,20 @@ async fn a_fallback_on_the_same_pool_does_not_fall_back_again() {
     assert!(session.received().is_empty(), "没往别处退");
 }
 
+/// 后备的引用是一个空的固定池（施工 SIDE-1：请求所属的会话钉着 `@normal`、`@lite`，池后来清空了）：当成没写，照 `models.chat`。
+/// 原来照写错了引用报 `unknown_model`。
+#[tokio::test]
+async fn a_fallback_that_is_an_empty_fixed_pool_goes_to_the_chat_model() {
+    for fallback in ["@normal", "@lite"] {
+        let (session, pool) = (
+            Server::start(hellos(2)).await,
+            Server::start(Vec::new()).await,
+        );
+        let answered = organize(&config(&session, &pool, ""), Some(fallback)).await;
+        assert_eq!(answered, Ok("a/m".to_string()), "{fallback}");
+    }
+}
+
 /// 池里的成员这时备不好（key 取不到，「没有能用的模型」）：同样退到后备。
 #[tokio::test]
 async fn a_pool_member_without_a_key_falls_back_too() {

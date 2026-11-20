@@ -316,8 +316,23 @@ pub(crate) fn next(next: &Next) -> Option<Value> {
     Some(Value::Object(written))
 }
 
-/// `session.create` 的 `model`（施工 8-8）：照这时的配置查过，交回会话记下的引用（模型或 `@池`）。照不算项目配置的最终值：
-/// 模型这一块项目配置里本来就不能写。
+/// `session.create`、`session.configure` 的 `model`（施工 SIDE-1）：同 [`record`]，只是写的是一个空的固定池时当成没写模型
+/// （设计 43 第三节第 3 条，2026-11-20 项目主人定），交回没有，记一行 `INFO empty pool fallback`。
+///
+/// # Errors
+///
+/// 同 [`record`]。
+pub(crate) fn record_or_none(core: &Core, text: &str) -> Result<Option<String>, Refusal> {
+    let values = core.config().resolved().values();
+    if let Some(pool) = miyu_models::reference::empty_fixed_pool(&values, text) {
+        tracing::info!(target: "miyu::endpoint", pool, "empty pool fallback");
+        return Ok(None);
+    }
+    record(core, text).map(Some)
+}
+
+/// 钉成的引用（看图模型，施工 VM-1；`session.create` 的 `model` 经 [`record_or_none`]，施工 8-8）：照这时的配置查过，交回记下的
+/// 引用（模型或 `@池`）。照不算项目配置的最终值：模型这一块项目配置里本来就不能写。
 ///
 /// # Errors
 ///

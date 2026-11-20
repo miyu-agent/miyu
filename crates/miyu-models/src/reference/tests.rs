@@ -152,6 +152,25 @@ fn named_models_come_from_the_uses_and_the_pools() {
     assert_eq!(named, ["a/main", "b/big", "a/x", "gone/y", "b/z"]);
 }
 
+/// 空的固定池（施工 SIDE-1）：三个固定池里这一轮没有认得出的成员的认得出来；有成员的、人自己建的池、没有的池、模型、
+/// 写错的都不算。
+#[test]
+fn only_a_fixed_pool_without_members_counts_as_an_empty_fixed_pool() {
+    let source = format!(
+        "{CONFIG}\n[pools.lite]\nmodels = []\n\n[pools.normal]\nmodels = [\"gone/y\"]\n\n[pools.flagship]\nmodels = [\"a/x\"]\n\n[pools.mine]\nmodels = []\n"
+    );
+    let values = values(&source);
+    assert_eq!(empty_fixed_pool(&values, "@lite"), Some("lite"));
+    assert_eq!(
+        empty_fixed_pool(&values, "@normal"),
+        Some("normal"),
+        "成员一个都认不出的也是空的"
+    );
+    for text in ["@flagship", "@mine", "@nope", "a/main", "lite", ""] {
+        assert_eq!(empty_fixed_pool(&values, text), None, "{text:?}");
+    }
+}
+
 #[test]
 fn a_session_records_the_model_or_pool_a_reference_resolves_to_now() {
     let values = values(CONFIG);
