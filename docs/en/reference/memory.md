@@ -4,217 +4,217 @@
 
 | Method | What it does |
 |---|---|
-| [`memory.list`, `memory.search`](#memorylist-memorysearch) | List and search memories |
-| [`memory.turns`](#memoryturns) | Search past conversations |
-| [`memory.remember`, `memory.update`, `memory.forget`, `memory.restore`](#memoryremember-memoryupdate-memoryforget-memoryrestore) | Remember, change, retire or clear, restore |
-| [`memory.import`](#memoryimport) | Import memories from elsewhere in batches (such as migrating from the old version) |
-| [`memory.cards`, `memory.card_update`, `memory.card_forget`](#person-cards-memorycards-memorycard_update-memorycard_forget) | Cards of the people she knows: list, change, retire |
-| [`memory.dream`](#memorydream) | Organize memory now |
-| [`memory.dream_stop`](#memorydream_stop) | Stop the organizing in progress |
-| [`kb.list`, `kb.search`, `kb.read`, `kb.documents`](#kblist-kbsearch-kbread-kbdocuments) | List knowledge bases, search, read a page, list the documents in one |
-| [`kb.create`, `kb.update`, `kb.mount`, `kb.delete`, `kb.add`, `kb.remove`, `kb.reindex`](#managing-knowledge-bases) | Manage knowledge bases |
+| [`memory.list`, `memory.search`](#memorylist-memorysearch) | Lists memories and searches them |
+| [`memory.turns`](#memoryturns) | Searches past conversations |
+| [`memory.remember`, `memory.update`, `memory.forget`, `memory.restore`](#memoryremember-memoryupdate-memoryforget-memoryrestore) | Remembers, changes, retires or clears, and restores memories |
+| [`memory.import`](#memoryimport) | Imports memories from elsewhere in batches (for example, when migrating from the old version) |
+| [`memory.cards`, `memory.card_update`, `memory.card_forget`](#person-cards-memorycards-memorycard_update-memorycard_forget) | Cards for the people the AI knows: lists, changes and retires them |
+| [`memory.dream`](#memorydream) | Organizes memory now |
+| [`memory.dream_stop`](#memorydream_stop) | Stops the organizing in progress |
+| [`kb.list`, `kb.search`, `kb.read`, `kb.documents`](#kblist-kbsearch-kbread-kbdocuments) | Lists knowledge bases, searches them, reads a page, and lists the documents in one base |
+| [`kb.create`, `kb.update`, `kb.mount`, `kb.delete`, `kb.add`, `kb.remove`, `kb.reindex`](#managing-knowledge-bases) | Manages knowledge bases |
 
-**Who can call**: people, extensions; extensions writing (remembering, importing, changing, forgetting, restoring, consolidating, changing and retiring person cards; adding, changing, mounting, removing and reindexing knowledge bases) need the `memory.write` capability. People going through the protocol are on the owner's side: everything can be listed, searched and changed.
+**Who can call**: people and extensions can both call these methods. An extension that writes (remembering, importing, changing, forgetting, restoring, consolidating, changing and retiring person cards; adding, changing, mounting, removing and reindexing knowledge bases) needs the `memory.write` capability. People who call through the protocol act on the owner's side: they can list, search and change everything.
 
 ## Which memory
 
-Memories are kept in separate places: one per persona (shared by all sessions with that persona), and one more for sessions without a persona. Every `memory.*` method takes one of these to say which (a session means that session's persona's place):
+Memories are kept in separate places: each persona has one (shared by all sessions that use that persona), and sessions without a persona share one more. Every `memory.*` method takes one of the two parameters below to say which place it means (when you give a session, it means the place of that session's persona):
 
 | Name | Notes |
 |---|---|
-| `persona` | That persona's memory; `_none` is the one for sessions without a persona (not in the persona list; list it yourself) |
-| `session` | The memory that session uses |
+| `persona` | That persona's memory; `_none` means the memory of sessions without a persona (it is not in the persona list, so your interface has to list it itself) |
+| `session` | The memory that this session uses |
 
-With neither, the default persona's. To follow changes, subscribe to the `memory` stream ([Connection](connection.md)).
+When you give neither, the default persona's memory is used. To keep following the changes to a memory, subscribe to the `memory` stream (see [Connection](connection.md)).
 
 **Common errors**
 
 | `data.reason` | When |
 |---|---|
-| `memory_not_installed` | The memory package isn't installed (once installed, everything remembered before is there) |
-| `memory_unavailable` | No memory here: the session's scope is `off`, or a venue session |
-| `unknown_persona`, `session_not_found` | No such persona or session |
-| `bad_params` (`-32602`) | Both given |
+| `memory_not_installed` | The memory package isn't installed (once you install it, everything remembered before is still there) |
+| `memory_unavailable` | There is no memory here: the session's scope is `off`, or it is a venue session |
+| `unknown_persona`, `session_not_found` | The persona or session can't be found |
+| `bad_params` (`-32602`) | Both parameters were given |
 
 ## A memory
 
-`{"id", "class", "text", "by", "at", "sources", "retired", "used", "used_at", "venue", "keywords", "who"}`:
+A memory is `{"id", "class", "text", "by", "at", "sources", "retired", "used", "used_at", "venue", "keywords", "who"}`, with these fields:
 
 | Name | Notes |
 |---|---|
-| `id` | `m<number>` |
-| `class` | `user` (about the owner), `feedback` (what the person wants from her), `episode` (something that happened), `reference` (where to find something), `person` (someone else she knows, shown as "people you know") |
-| `text` | The memory, at most 120 characters |
-| `by` | `person` (a person remembered it) or `tool` (she did) |
+| `id` | Written as `m<number>` |
+| `class` | `user` (about the owner), `feedback` (what the person wants from the AI), `episode` (something that happened), `reference` (where to find something), `person` (someone else the AI knows, shown as "people you know") |
+| `text` | The text of the memory, at most 120 characters |
+| `by` | `person` (a person remembered it) or `tool` (the AI remembered it) |
 | `at` | When it was remembered |
-| `sources` | Where it came from `[{"session", "turn"}]` |
-| `retired` | Why it was retired, `null` if it wasn't |
-| `used`, `used_at` | How many times it was used, the last time |
-| `venue` | Which venue it was said in, `null` for local |
-| `keywords` | Words used only to find it (one line, comma-separated, at most 200 characters), `null` if none: searches and recall match them, she never sees this line |
-| `who` | Who a `person` memory is about: a platform id (`qq:10086`) or a name; `null` for other classes |
-| `people` | Who an `episode` involves: a list of platform ids or names (never her or the owner); empty when there are none and for other classes |
-| `place` | Which group it was in: the group's name when it was saved (as the bridge passed it); `null` for private chats, local sessions, memories people saved through the protocol and older memories. A group renamed later keeps the old name on older memories |
+| `sources` | Where it came from, written as `[{"session", "turn"}]` |
+| `retired` | Why it was retired; `null` if it wasn't retired |
+| `used`, `used_at` | How many times it has been used, and when it was last used |
+| `venue` | Which venue it was said in; `null` when it was said in a local session |
+| `keywords` | Words used only to find it (one line, comma-separated, at most 200 characters); `null` when there are none. Searches and recall can find the memory through them, but the AI never sees this line |
+| `who` | Who a `person` memory is about: a platform id (such as `qq:10086`) or a name; `null` for the other classes |
+| `people` | Who an `episode` involves: a list of platform ids or names (never the AI itself or the owner); an empty list when nobody else is involved, and for the other classes |
+| `place` | Which group it was in: the group's name at the moment it was saved (as the bridge passed it); `null` for private chats, local sessions, memories people saved through the protocol, and older memories. When a group is renamed later, older memories keep the name it had then |
 
 ## `memory.list`, `memory.search`
 
 | Method | Params | Response |
 |---|---|---|
-| `memory.list` | `class`, `from` (a session id: sourced in it), `forgotten` (boolean, include retired), `limit` (1 to 500, default 50) | `{"memories": [...]}`, newest first |
+| `memory.list` | `class`, `from` (a session id: only memories sourced in that session), `forgotten` (boolean: whether to include retired ones), `limit` (1 to 500, default 50) | `{"memories": [...]}`, newest first |
 | `memory.search` | `query` (required), `forgotten`, `limit` (1 to 500, default 10) | `{"memories": [...]}`, most relevant first |
 
 ## `memory.turns`
 
-Search this memory's past conversations: one entry per turn a person started, matched by keywords and meaning.
+This method searches the past conversations of this memory: each turn a person started is one entry, matched by keywords and by meaning.
 
-**Params**: `query` (required), `limit` (1 to 500, default 10). **Response**: `{"turns": [{"session", "turn", "at", "text"}…]}`: `text` is what the person said, a blank line, and her last answer. Undone turns and deleted sessions aren't included.
+**Params**: `query` (required), `limit` (1 to 500, default 10). **Response**: `{"turns": [{"session", "turn", "at", "text"}…]}`: `text` is what the person said, then a blank line, then the AI's last answer. Undone turns and deleted sessions aren't included.
 
 ## `memory.remember`, `memory.update`, `memory.forget`, `memory.restore`
 
 | Method | Params | Response |
 |---|---|---|
-| `memory.remember` | `class`, `text` (both required); optional `keywords`; `who`, required when `class` is `person` and ignored otherwise | `{"id"}` |
-| `memory.update` | `id`, and at least one of `text`, `keywords`, `who` | `{"id"}`: with `text`, the new version (the old one is retired; without `keywords` or `who` they carry over); with only `keywords`, the same memory, same id; empty `keywords` removes them; with only `who`, a new version with the same text |
-| `memory.forget` | `id` (optionally `why`); or `clear`: `session` (clear what this session remembered; `session` is then required), `me` (clear the whole memory) | `{}` when retiring, `{"cleared": <count>}` when clearing |
-| `memory.restore` | `id` | `{}`: a retired memory counts again |
+| `memory.remember` | `class`, `text` (both required); `keywords` is optional; `who` is required when `class` is `person` and ignored for the other classes | `{"id"}` |
+| `memory.update` | `id`, and at least one of `text`, `keywords`, `who` | `{"id"}`: with `text`, it is the new version (the old one is retired, and `keywords` or `who` you leave out carry over); with only `keywords`, it is the same memory with the same id; an empty `keywords` removes them; with only `who`, it is a new version with the same text |
+| `memory.forget` | `id` (optionally with `why`); or `clear`: `session` (clears what this session remembered; `session` is then required), `me` (clears the whole memory) | `{}` when retiring, `{"cleared": <count>}` when clearing |
+| `memory.restore` | `id` | `{}`: the retired memory counts again |
 
-Answered once on disk. The same request `id` sent again counts once, also after a core restart. Cleared memories can't be recovered and never show up again.
+The response comes only after the change is on disk. The same request `id` sent again counts only once, even after a core restart. Cleared memories can't be recovered and never show up anywhere again.
 
 **Errors**
 
 | `data.reason` | When |
 |---|---|
-| `bad_params` (`-32602`) | Empty text; wrong `class`; `person` without `who`; malformed `id`; not exactly one of `id` and `clear`; `memory.update` with none of `text`, `keywords`, `who` |
-| `memory_too_long` | Text over 120 characters or keywords over 200, `data.chars`, `data.limit`, `data.field` is `text` or `keywords` |
-| `unknown_memory` | No such memory |
-| `memory_not_current` | Already changed, retired or cleared |
+| `bad_params` (`-32602`) | The text is empty; `class` is wrong; a `person` memory has no `who`; the `id` is malformed; not exactly one of `id` and `clear` was given; `memory.update` was given none of `text`, `keywords`, `who` |
+| `memory_too_long` | The text is over 120 characters or the keywords are over 200; the error has `data.chars` and `data.limit`, and `data.field` is `text` or `keywords` |
+| `unknown_memory` | There is no such memory |
+| `memory_not_current` | The memory has already been changed, retired or cleared |
 
 ## `memory.import`
 
-Imports memories from elsewhere in batches, keeping when each was first noted (for example, migrating from the old Miyu). An imported memory is like one a person remembered: `by` is `person`, with no sources.
+This method imports memories from elsewhere in batches and keeps the time each one was first noted (for example, when migrating from the old Miyu). An imported memory is treated like one a person remembered: `by` is `person`, and it has no sources.
 
-**Parameters**: `items`, 1 to 500 of them, each:
+**Parameters**: `items`, 1 to 500 of them, each with these fields:
 
 | Name | Meaning |
 |---|---|
-| `at` | When it was first noted, RFC 3339 with an offset (`2026-10-21T10:53:22+08:00`, `…Z`), not in the future. Required |
-| `class` | As in `memory.remember`. Required |
+| `at` | When it was first noted, in RFC 3339 with an offset (such as `2026-10-21T10:53:22+08:00` or `…Z`), and not in the future. Required |
+| `class` | The same as in `memory.remember`. Required |
 | `text` | The text, at most 120 characters. Required |
-| `origin` | Which one it was where it came from, 1 to 200 characters, unique within the batch (such as `legacy:default:facts:57`). Required |
-| `who` | Required when `class` is `person`, refused otherwise |
-| `people` | Who was involved (a list of strings), only when `class` is `episode` |
-| `keywords` | Keywords used only for search, at most 200 characters, optional |
+| `origin` | Which entry it was in the place it came from, 1 to 200 characters, unique within the batch (such as `legacy:default:facts:57`). Required |
+| `who` | Required when `class` is `person`, and refused for the other classes |
+| `people` | Who was involved (a list of strings); allowed only when `class` is `episode` |
+| `keywords` | Keywords used only for search, at most 200 characters; optional |
 
-**Result**: `{"ids": [...], "imported": <count>, "skipped": <count>}`. `ids` lines up with `items`: an id for each one kept, `null` for each one skipped.
+**Result**: `{"ids": [...], "imported": <count>, "skipped": <count>}`. `ids` lines up with `items`: each item that was kept gets its id, and each item that was skipped gets `null`.
 
-- Everything is checked first: if one item is wrong, nothing is written and the reply is `bad_params` with `data.index` (which item, from 0; absent for a problem with the whole batch) and `data.field` (`items`, `item`, `at`, `class`, `text`, `origin`, `who`, `people` or `keywords`).
-- Duplicates: an item whose `origin` was imported into this memory before is skipped, even if it was since retired, changed or cleared, so running a migration again never brings deleted ones back. Sending the same `id` again works the same way: everything is skipped.
-- `at` in lists and searches is the original time; ids follow the import order and count as newly remembered.
-- Keywords for items without them are written in the background after the reply; when at least one was imported, organizing follows the usual interval (a memory never organized before is organized right away). To remove duplicates right away, call `memory.dream` next.
+- Everything is checked before anything is written: if one item is wrong, nothing is written and the reply is `bad_params`, with `data.index` (which item, counting from 0; absent when the problem is with the whole batch) and `data.field` (`items`, `item`, `at`, `class`, `text`, `origin`, `who`, `people` or `keywords`).
+- Duplicates: an item whose `origin` was already imported into this memory is skipped, even if that memory has since been retired, changed or cleared, so running a migration again never brings deleted memories back. Sending the same `id` again follows the same rule: everything is skipped.
+- In lists and search results, `at` is the original time; ids follow the import order, and the memories count as newly remembered.
+- For items without `keywords`, keywords are written in the background after the reply; when at least one item was imported, organizing follows the usual interval (a memory that has never been organized is organized right away). To remove duplicates right away, call `memory.dream` next.
 
 ## Person cards: `memory.cards`, `memory.card_update`, `memory.card_forget`
 
-She keeps one card per person she knows: her impression of them (who they are, what they are like, how they are with her, with their interests and how they are doing summed up), plus birthday and contacts, at most 400 characters. Organizing memory writes it from the memories about them in that batch (`class` `person`); people can change it too. A card:
+The AI keeps one card for each person it knows: its impression of them (who they are, what they are like, how they treat the AI, with their interests and how they are doing summed up), plus their birthday and contacts, at most 400 characters. When memory is organized, the card is written from the memories about that person in the batch (those whose `class` is `person`); people can change the card too. A card has these fields:
 
 | Name | Meaning |
 |---|---|
-| `who` | Who it is: a platform id (`qq:10086`) or a name, as a memory's `who` |
-| `text` | The card, at most 400 characters |
-| `names` | What they are called (group nicknames, aliases), at most 8; searchable, never used to tell people apart |
-| `at` | When it was written |
-| `by` | `module` (written by organizing) or `person` (changed by a person) |
-| `retired` | Why it was retired; `null` if it wasn't |
+| `who` | Who the card is about: a platform id (such as `qq:10086`) or a name, the same as a memory's `who` |
+| `text` | The text of the card, at most 400 characters |
+| `names` | What the person is called (group nicknames, aliases), at most 8; they can be searched, but they are never used to tell people apart |
+| `at` | When the card was written |
+| `by` | `module` (written while organizing) or `person` (changed by a person) |
+| `retired` | Why the card was retired; `null` if it wasn't retired |
 
 | Method | Params | Response |
 |---|---|---|
-| `memory.cards` | `forgotten` (boolean, include retired ones) | `{"cards": [...]}`, sorted by `who`, one per person (the latest) |
-| `memory.card_update` | `who`, `text` (both required), `names` optional | `{}`: writes a new card that counts for this person, a retired one counts again |
-| `memory.card_forget` | `who`, optionally `why` | `{}`: the card is retired; an already retired one writes nothing |
+| `memory.cards` | `forgotten` (boolean: whether to include retired ones) | `{"cards": [...]}`, sorted by `who`, one per person (the latest card) |
+| `memory.card_update` | `who`, `text` (both required); `names` is optional | `{}`: a new card is written and counts for this person; if the person's card was retired, it counts again |
+| `memory.card_forget` | `who`, optionally with `why` | `{}`: the card is retired; for a card that is already retired, nothing is written |
 
-Clearing the whole room (`memory.forget` with `clear: me`) removes the cards too; clearing one session leaves them. Answers come after the write hits disk; the same request id counts once.
+Clearing the whole memory (`memory.forget` with `clear: me`) removes the cards too; clearing one session leaves the cards alone. The response comes only after the change is on disk, and the same request id sent again counts only once.
 
 **Errors**
 
 | `data.reason` | When |
 |---|---|
-| `bad_params` (`-32602`) | `who` or `text` is empty; a name is empty, over 40 characters, or there are more than 8 |
-| `memory_too_long` | The text is over 400 characters; `data.chars`, `data.limit`, `data.field` is `text` |
-| `unknown_memory` | `memory.card_forget`: this person has no card |
+| `bad_params` (`-32602`) | `who` or `text` is empty; one of the names is empty or over 40 characters, or there are more than 8 names |
+| `memory_too_long` | The text is over 400 characters; the error has `data.chars` and `data.limit`, and `data.field` is `text` |
+| `unknown_memory` | For `memory.card_forget`: this person has no card |
 
 ## `memory.dream`
 
-Organize now: with `session`, first extract what that session hasn't had extracted yet, then merge the new with the old (duplicates merged, outdated ones retired, a summary of the person written). Answered in the background; takes a few seconds to a dozen or so.
+This method organizes memory now: with `session`, it first extracts whatever that session hasn't had extracted yet, then merges the new memories with the old ones (duplicates are merged, outdated ones are retired, and a summary of the person is written). It answers in the background, which takes from a few seconds to a dozen or so.
 
-**Params**: only `persona` or `session`. **Response**: `{"given", "retired", "revised", "summary"}`: how many were handed in, retired, revised, and whether the summary changed (boolean). With no memories at all, all are zero and no model is called; with nothing new it still looks over the older memories whose turn it is. If it's stopped ([`memory.dream_stop`](#memorydream_stop), or for one asked from a session that session's `/dream stop` or `/stop`), it still answers, with the counts merged before the stop and `"stopped": true`: the batch being merged is dropped and merged next time; finished batches stay.
+**Params**: only `persona` or `session`. **Response**: `{"given", "retired", "revised", "summary"}`: how many memories were handed in, retired and revised, and whether the summary changed (boolean). When there are no memories at all, all four are zero and no model is called; when there is nothing new, it still looks over the older memories whose turn it is. If the organizing is stopped ([`memory.dream_stop`](#memorydream_stop), or, for organizing asked from a session, that session's `/dream stop` or `/stop`), it still answers, with the counts merged before the stop and `"stopped": true`: the batch being merged is dropped and merged next time, and finished batches stay.
 
-**Errors**: `memory_busy` (already organizing); `dream_failed` (merging failed, `data.message`).
+**Errors**: `memory_busy` (this memory is already being organized); `dream_failed` (merging failed; the error has `data.message`).
 
-**Progress and what it did**: read it from the memory log (subscribe to the `memory` stream). Organizing merges batch by batch; both a requested one and one in the background are written:
+**Progress and what it did**: you can read these from the memory log (subscribe to the `memory` stream). Organizing merges batch by batch, and both organizing a person asked for and organizing in the background are written to the log:
 
 | `kind` | `body` | What it is |
 |---|---|---|
-| `ext.memory.merging` | `upto`, `fresh`, `left`, `manual`, `given` | A batch starts: how many new memories in it, how many are left including it, whether a person asked |
-| `ext.memory.saved` | with `replaces` | A memory revised: the new text; the old one is the `replaces` memory |
-| `ext.memory.retired` | `id`, `why`, `kind`, `kept` | A memory removed: `kind` is `outdated` (superseded by a later one), `repeat` (a duplicate) or `worthless` (not needed later); `kept` is the one kept instead (none for `worthless`). A person's removal has no `kind` or `kept` |
+| `ext.memory.merging` | `upto`, `fresh`, `left`, `manual`, `given` | A batch starts: how many new memories it has, how many are left including this batch, and whether a person asked for it |
+| `ext.memory.saved` | with `replaces` | A memory was revised: this is the new text, and the old one is the `replaces` memory |
+| `ext.memory.retired` | `id`, `why`, `kind`, `kept` | A memory was removed: `kind` is `outdated` (superseded by a later one), `repeat` (a duplicate) or `worthless` (not needed later); `kept` is the memory kept instead (there is none for `worthless`). A removal by a person has no `kind` or `kept` |
 | `ext.memory.summary` | `text` | The new summary about the person |
-| `ext.memory.card` | `who`, `text`, `names`? | A card merged for someone in this batch (not written when it equals the current one); a person's change is this event too, with `by` that person |
+| `ext.memory.card` | `who`, `text`, `names`? | The card merged for someone in this batch (not written when it equals the current card); a change by a person is also this event, with `by` set to that person |
 | `ext.memory.card_retired` | `who`, `why` | A person retired a card |
-| `ext.memory.tagged` | `id`, `keywords` | Keywords filled in: after the batch's `merged` |
-| `ext.memory.merged` | `upto`, `given`, `revised`, `retired`, `failed`? | The batch is done (`failed`: three failures in a row, skipped) |
-| `ext.memory.merge_failed` | `upto`, `why`, `tries`? | The batch failed this time; `why` `interrupted` means the core stopped midway, `stopped` that the person stopped it; neither has `tries` |
-| `ext.memory.swept` | `upto`, `count` | How many older memories were looked over again, and up to which one: after the batch's `merged` |
+| `ext.memory.tagged` | `id`, `keywords` | Keywords were filled in; this comes after the batch's `merged` |
+| `ext.memory.merged` | `upto`, `given`, `revised`, `retired`, `failed`? | The batch is done (`failed` means it failed three times in a row and was skipped) |
+| `ext.memory.merge_failed` | `upto`, `why`, `tries`? | The batch failed this time; `why` `interrupted` means the core stopped midway, and `stopped` means the person stopped it; neither of these has `tries` |
+| `ext.memory.swept` | `upto`, `count` | How many older memories were looked over again, and up to which one; this comes after the batch's `merged` |
 
-- A `merging` and the `merged` or `merge_failed` that ends it carry the same `upto`; the revisions, removals and summary between them whose `by` is the memory module are what the batch did (another session may be extracting or a person editing at the same time; `by` tells them apart). One not yet ended is in progress.
-- Progress: the first batch's `left` is the total; the `fresh` of the ended batches adds up to what is done. There is no finer progress within a batch.
-- To show what she is writing during a requested organize: `merging`'s `given` lists the memories handed in for the batch, so they can drift by while waiting; and a push that isn't logged, `memory.dreaming`: one each time she finishes a revision (`kind: revised`, `id`, `text`) or a removal (`kind: retired`, `id`, `retire`, `kept`, `why`), and for the summary every 20 more characters and when done (`kind: summary`, `chars`, `done`), all with the batch's `upto`. It's what she wrote at that moment; what lands is checked as a whole and may have fewer, so trust the log. Missed ones aren't replayed.
-- Each run, the first batch with room also looks over up to 20 older memories in turn (by id, starting over after the last), and revisions or removals of them count as the batch's. A requested run with nothing new still looks them over: that batch's `fresh` and `left` are 0.
-- When a session asks, what is extracted first (`ext.memory.saved` by the memory module, with sources) comes before the first `merging`, followed by `ext.memory.extracted`.
+- A `merging` and the `merged` or `merge_failed` that ends it carry the same `upto`; the revisions, removals and summary between them whose `by` is the memory module are what the batch did (another session may be remembering or a person editing at the same time, and `by` tells them apart). A batch that hasn't ended yet is in progress.
+- Progress: the first batch's `left` is the total, and the `fresh` of the ended batches adds up to how much is done. There is no finer progress within a batch.
+- To show "what the AI is writing" during organizing a person asked for: `merging`'s `given` lists the memories handed to the model for the batch, so you can let them drift by while waiting. There is also a push that isn't written to disk, `memory.dreaming`: one each time the AI finishes a revision (`kind: revised`, `id`, `text`) or a removal (`kind: retired`, `id`, `retire`, `kept`, `why`), and for the summary one every 20 more characters and one when it is done (`kind: summary`, `chars`, `done`), all with the batch's `upto`. The push shows what the AI wrote at that moment; what is written to disk is checked as a whole and may have fewer entries, so trust the log. Missed pushes aren't replayed.
+- On each run, the first batch with room also looks over up to 20 older memories whose turn it is (by id, starting over after the last one), and revisions or removals of them count as that batch's work. A run a person asked for with nothing new still looks them over: that batch's `fresh` and `left` are 0.
+- When a session asks for organizing, the memories extracted first (`ext.memory.saved` with `by` set to the memory module, with sources) come before the first `merging`, followed by `ext.memory.extracted`.
 
 ## `memory.dream_stop`
 
-Stop the organizing a person asked for in this room, however it was asked (`memory.dream`, or `/dream` in a session); background organizing isn't stopped. Finished batches stay; the batch being merged is dropped and merged next time, and the memory log gets an `ext.memory.merge_failed` with `why: stopped`. The stopped `memory.dream` still answers, with `"stopped": true`. `memory.dream` is answered in the background, so send this on the same connection.
+This method stops the organizing a person asked for in this memory right now, however it was asked for (`memory.dream`, or `/dream` in a session); organizing in the background isn't stopped. Finished batches stay; the batch being merged is dropped and merged the next time memory is organized, and the memory log gets an `ext.memory.merge_failed` with `why: stopped`. The `memory.dream` that was stopped still answers, with `"stopped": true`. Because `memory.dream` answers in the background, you can send this method on the same connection.
 
 **Params**: only `persona` or `session`, as for `memory.dream`. **Response**: `{"stopped": true}`.
 
-**Errors**: `not_dreaming` (nothing a person asked for is organizing in this room).
+**Errors**: `not_dreaming` (no organizing that a person asked for is running in this memory right now).
 
 ## `kb.list`, `kb.search`, `kb.read`, `kb.documents`
 
-Knowledge bases live under `root/kb/` in the data root; each is a folder of documents (Markdown, PDF, web pages…) that the core indexes for search. Whether the knowledge base package is installed doesn't matter here: the files are the person's.
+Knowledge bases live under `root/kb/` in the data root. Each base is a folder of documents (Markdown, PDF, web pages…), and the core indexes them for search. These methods don't care whether the knowledge base package is installed, because the files belong to the person.
 
 | Method | Params | Response |
 |---|---|---|
-| `kb.list` | none | `{"bases": [{"id", "name", "description", "documents", "chunks", "auto"}…]}`, by id; `auto` is whether automatic recall is on; unreadable ones have `error`, ones from packages have `package`, mounted ones have `mount` (the folder as written); `indexing` is whether it is being built right now (one being built elsewhere is not waited for; it is listed as the index stands), and one built before has `indexed_at` (when it last finished); subscribe to the `kb` stream for build progress |
-| `kb.search` | `query` (required), `kb` (only this one), `limit` (1 to 50, default 10) | `{"hits": [{"kb", "path", "chunk", "heading", "text", "at"}…]}`, most relevant first; PDF hits also have `page` |
-| `kb.read` | `kb`, `path` (required), `page` (from 1, default 1) | `{"text", "page", "pages"}`: 32 KiB per page; PDFs use their own pages |
-| `kb.documents` | `kb` (required) | `{"documents": [{"path", "kind", "size", "at", "chunks"}…], "folders": [{"path", "reason", "why"}…]}`, by path: every document in the base; ones that couldn't be read this time also have `reason` and `why` |
+| `kb.list` | none | `{"bases": [{"id", "name", "description", "documents", "chunks", "auto"}…]}`, sorted by id; `auto` is whether automatic recall is on; bases that can't be read have `error`, bases from packages have `package`, and mounted bases have `mount` (the folder as it was written); `indexing` is whether the index is being built right now (a build in progress elsewhere is not waited for, and the base is listed as the index stands), and a base that has been built before has `indexed_at` (when the last build finished); subscribe to the `kb` stream for build progress |
+| `kb.search` | `query` (required), `kb` (search only this base), `limit` (1 to 50, default 10) | `{"hits": [{"kb", "path", "chunk", "heading", "text", "at"}…]}`, most relevant first; hits in PDFs also have `page` |
+| `kb.read` | `kb`, `path` (required), `page` (from 1, default 1) | `{"text", "page", "pages"}`: a page is 32 KiB; PDFs use their own pages |
+| `kb.documents` | `kb` (required) | `{"documents": [{"path", "kind", "size", "at", "chunks"}…], "folders": [{"path", "reason", "why"}…]}`, sorted by path: every document in the base; documents that couldn't be read this time also have `reason` and `why` |
 
-`heading` is the heading path (`Grammar › te-form`); `at` is when the document changed.
+`heading` is the heading path (such as `Grammar › te-form`), and `at` is when the document was changed.
 
-In `kb.documents`, `kind` is `markdown`, `text`, `pdf` or `html`; `size` is in bytes; `chunks` is how many pieces are in the index (an unreadable document that was indexed before keeps its old ones). `reason` is one of `too_large`, `not_utf8`, `no_text` (a PDF with no text: scanned or only pictures), `no_extractor` (PDFs and web pages need `miyu-extract`), `extract_failed`, `unreadable`; show your own words for it, `why` is an English sentence for logs. `folders` are subfolders that couldn't be read (common in mounted ones). Files that aren't documents aren't listed. A mounted folder that's gone: `folder_unavailable`.
+In `kb.documents`, `kind` is `markdown`, `text`, `pdf` or `html`; `size` is in bytes; `chunks` is how many pieces of the document are in the index (a document that can't be read but was indexed before keeps its old pieces). `reason` is one of `too_large`, `not_utf8`, `no_text` (a PDF with no text: scanned, or pictures only), `no_extractor` (PDFs and web pages need `miyu-extract`), `extract_failed` and `unreadable`; the head (an interface program that connects to the core, such as the terminal interface or the web interface) shows its own words for it, and `why` is an English sentence for logs. `folders` are subfolders that couldn't be read (common in mounted bases). Files that aren't documents aren't listed. When a mounted folder is gone, the reason is `folder_unavailable`.
 
-**Errors**: `bad_params` (`page` 0 or past `pages`); `unknown_kb`; `unknown_document`; `internal_error` (a broken PDF, a file over 64 MiB).
+**Errors**: `bad_params` (`page` is 0 or past `pages`); `unknown_kb`; `unknown_document`; `internal_error` (a broken PDF, or a file over 64 MiB).
 
 ## Managing knowledge bases
 
 | Method | Params | Response |
 |---|---|---|
-| `kb.create` | `kb` (required), `name`, `description`, `auto` | A knowledge base |
-| `kb.update` | `kb`; at least one of `name`, `description`, `auto` (empty string or `false` removes) | A knowledge base |
-| `kb.mount` | `kb`, `folder` (absolute or `~/`); `name`, `description`, `auto` | A knowledge base: mounts an existing folder |
-| `kb.delete` | `kb` | `{"trash"}`: where it went in the system trash; a mounted one only loses its registration, the folder stays |
-| `kb.add` | `kb`, `path`, `blob` (from `blob.put`), `replace` (boolean) | `{}`: add a document. `path` must end in `.md`, `.markdown`, `.txt`, `.pdf`, `.html` or `.htm` (any case); anything else is `bad_params` |
-| `kb.remove` | `kb`, and `path` (one) or `paths` (several): a document, or a folder (a path inside the base; the whole folder goes) | With `path`, `{"trash"}`; with `paths`, `{"trash": [...]}` in order. If any one is missing, nothing is removed; both or neither given, repeats, or one inside another: `bad_params` |
-| `kb.reindex` | `kb` | A knowledge base: the index is deleted and rebuilt from the files |
+| `kb.create` | `kb` (required), `name`, `description`, `auto` | Returns a knowledge base |
+| `kb.update` | `kb`; at least one of `name`, `description`, `auto` (an empty string or `false` removes it) | Returns a knowledge base |
+| `kb.mount` | `kb`, `folder` (an absolute path, or one starting with `~/`); `name`, `description`, `auto` | Returns a knowledge base: an existing folder is mounted |
+| `kb.delete` | `kb` | `{"trash"}`: where the base went in the system trash; a mounted base only loses its registration, and the folder stays as it is |
+| `kb.add` | `kb`, `path`, `blob` (upload it first with `blob.put`), `replace` (boolean) | `{}`: a document is added. `path` must end in `.md`, `.markdown`, `.txt`, `.pdf`, `.html` or `.htm` (in any case); any other ending is `bad_params` |
+| `kb.remove` | `kb`, and `path` (one) or `paths` (several): a document, or a folder (a path inside the base; the whole folder is removed) | With `path`, `{"trash"}`; with `paths`, `{"trash": [...]}` in order. If any one of them is missing, nothing is removed; giving both or neither, repeating one, or giving one inside another is `bad_params` |
+| `kb.reindex` | `kb` | Returns a knowledge base: the index is deleted and rebuilt from the files |
 
 **Errors**
 
 | `data.reason` | When |
 |---|---|
-| `kb_exists`, `document_exists` | Already exists (adding without `replace`) |
-| `kb_read_only` | Adding to or removing from a mounted one |
-| `kb_packaged` | Changing one that came with a package (only `auto` can change) |
-| `folder_unavailable` | The folder to mount can't be used, or for `kb.documents` a mounted folder is gone, `data.message` |
-| `trash_failed` | Couldn't move it to the trash, `data.message` |
-| `unknown_attachment` | `blob` doesn't exist |
+| `kb_exists`, `document_exists` | It already exists (when adding a document without `replace`) |
+| `kb_read_only` | Adding documents to or removing them from a mounted base |
+| `kb_packaged` | Changing a base that came with a package (only `auto` can be changed) |
+| `folder_unavailable` | The folder to mount can't be used, or, for `kb.documents`, the folder a mounted base points to is gone; the error has `data.message` |
+| `trash_failed` | It couldn't be moved to the trash; the error has `data.message` |
+| `unknown_attachment` | The `blob` doesn't exist |
 | `unknown_kb`, `unknown_document`, `bad_params` | As above |

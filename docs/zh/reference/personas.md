@@ -2,118 +2,118 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-人格是「她是谁」：人设、示范对话、角色扮演提示、头像、主题色。预设是「她能用什么」：开哪些功能、关哪几件工具。两样都是文件，几层叠起来：出厂的、软件包带的、你的（数据根下的 `root/personas/`、`root/presets/`）；改只写你的那一层，同名的盖住下面的。
+人格说的是「AI 是谁」：人设、示范对话、角色扮演提示、头像、主题色。预设说的是「AI 能用什么」：打开哪些功能、关掉哪几件工具。两样都是文件，分几层叠在一起：出厂的、软件包带的、你自己的（数据根下的 `root/personas/`、`root/presets/`）；修改时只写入你自己的那一层，同名的文件会盖住下面几层的。
 
 | 方法 | 做什么 |
 |---|---|
-| [`persona.list`、`persona.get`](#personalistpersonaget) | 列出人格、读一个人格叠好的样子 |
-| [`persona.read`](#personaread) | 读一份提示词的原文和版本 |
-| [`persona.set`](#personaset) | 新建、改一个人格 |
-| [`persona.delete`](#personadelete) | 删掉你那一层 |
-| [`persona.avatar`、`persona.background`](#personaavatarpersonabackground) | 读头像、背景图 |
-| [`preset.list`、`preset.get`](#presetlistpresetget) | 列出预设、读一个预设叠好的样子 |
-| [`preset.set`](#presetset) | 新建、改一个预设 |
-| [`preset.delete`](#presetdelete) | 删掉你那一层 |
+| [`persona.list`、`persona.get`](#personalistpersonaget) | 列出人格；读取一个人格叠好以后的样子 |
+| [`persona.read`](#personaread) | 读取一份提示词的原文和版本 |
+| [`persona.set`](#personaset) | 新建或修改一个人格 |
+| [`persona.delete`](#personadelete) | 删除你自己的那一层 |
+| [`persona.avatar`、`persona.background`](#personaavatarpersonabackground) | 读取头像、背景图 |
+| [`preset.list`、`preset.get`](#presetlistpresetget) | 列出预设；读取一个预设叠好以后的样子 |
+| [`preset.set`](#presetset) | 新建或修改一个预设 |
+| [`preset.delete`](#presetdelete) | 删除你自己的那一层 |
 
-**谁能调**：读的人、扩展都能调；`persona.set`、`persona.delete`、`preset.set`、`preset.delete` 只给人，扩展调回 `local_only`。
+**谁能调用**：读取类的方法人和扩展都能调用；`persona.set`、`persona.delete`、`preset.set`、`preset.delete` 只给人调用，扩展调用时返回 `local_only`。
 
-**编号**：小写字母开头，只有小写字母、数字、`-`、`_`，最长 64 个字符；不合的回 `bad_params`。
+**编号**：编号以小写字母开头，只能包含小写字母、数字、`-`、`_`，最长 64 个字符；不符合这些要求时返回 `bad_params`。
 
-**名字和说明**（`name`、`summary`）照这个连接的语言挑一句。
+**名字和说明**（`name`、`summary`）按这个连接的语言挑选一句。
 
 ## `persona.list`、`persona.get`
 
-**`persona.list`**：没有参数。回应 `{"personas": [...]}`，照编号排。一项：
+**`persona.list`**：没有参数。回应是 `{"personas": [...]}`，按编号排序。每一项的字段如下：
 
 | 名字 | 说明 |
 |---|---|
-| `persona` | 编号 |
-| `name`、`summary` | 名字、一句说明 |
-| `avatar`、`background` | 头像、背景图的版本，没有的 `null` |
-| `seed` | 主题色，小写的 `#rrggbb`，没有的 `null` |
-| `seeds` | 从头像里挑的候选主色，最多 4 个，没有头像的 `null` |
-| `background_opacity`、`background_focus` | 背景图露出多少（0 到 100）、焦点 `[x, y]`，没有的 `null` |
-| `background_blur` | 背景图模糊多少（1 到 100），没有的 `null`，不模糊 |
+| `persona` | 人格的编号 |
+| `name`、`summary` | 名字和一句话的说明 |
+| `avatar`、`background` | 头像、背景图的版本，没有时是 `null` |
+| `seed` | 主题色，写法是小写的 `#rrggbb`，没有时是 `null` |
+| `seeds` | 从头像里挑出的候选主色，最多 4 个，没有头像时是 `null` |
+| `background_opacity`、`background_focus` | 背景图露出多少（0 到 100）、背景图的焦点 `[x, y]`，没有时是 `null` |
+| `background_blur` | 背景图模糊多少（1 到 100），没有时是 `null`，表示不模糊 |
 
-文件写错了的那一个只有 `persona`、`problem`（照连接的语言说哪里错了），知道第几行的另带 `line`。
+文件写错了的人格只有 `persona`、`problem`（按连接的语言说明哪里写错了）两项，知道错在第几行时另外带上 `line`。
 
-**`persona.get`**：参数 `persona`。回应：上面那些，另有：
+**`persona.get`**：参数是 `persona`。回应包含上面那些字段，另外还有：
 
 | 名字 | 说明 |
 |---|---|
-| `prompts` | `{"persona", "reminders"}`：人设、角色扮演提示有没有字（布尔）；原文用 `persona.read` 读 |
-| `examples` | 示范对话几轮 |
-| `subagent` | 派子代理时能不能挑它 |
-| `remove` | 删了会怎样：`restore`（回到出厂的样子）、`delete`（就没了；出厂带的软件工程师这类连包卸掉的也是它）、`null`（没什么可删） |
+| `prompts` | `{"persona", "reminders"}`：人设、角色扮演提示里有没有文字（布尔值）；原文需要用 `persona.read` 读取 |
+| `examples` | 示范对话有几轮 |
+| `subagent` | 派子代理时能不能选择这个人格 |
+| `remove` | 删除以后会怎样：`restore`（回到出厂的样子）、`delete`（删除以后就没有了；出厂带的软件工程师这类会连同软件包一起卸载的人格也是这个值）、`null`（没有可以删除的内容） |
 
-**出错**：`unknown_persona`；`persona_invalid`（文件写错了：`data.problem`、`data.message`、`data.line`）。
+**出错**：`unknown_persona`；`persona_invalid`（文件写错了，附带 `data.problem`、`data.message`、`data.line`）。
 
 ## `persona.read`
 
-**参数**：`persona`；`prompt`：`persona`（人设）、`examples`（示范对话）、`reminders`（角色扮演提示）。
+**参数**：`persona`；`prompt` 是要读取的那一份：`persona`（人设）、`examples`（示范对话）、`reminders`（角色扮演提示）。
 
-**回应**：`{"text", "version"}`：叠好的那一份的原文、你家目录那一层这一份的版本（没有的都是 `null`）。示范对话另带 `pairs: [{"user", "assistant"}…]`。
+**回应**：`{"text", "version"}`：分别是叠好的那一份的原文，和你家目录那一层里这一份的版本（没有时都是 `null`）。示范对话另外带 `pairs: [{"user", "assistant"}…]`。
 
-编辑器照它在原文上改，存的时候把 `version` 当 `expect` 带回 `persona.set`。
+编辑器根据它在原文上修改，保存时把 `version` 作为 `expect` 带回 `persona.set`。
 
 ## `persona.set`
 
-**参数**（`persona` 以外至少写一样）
+**参数**（除了 `persona` 以外至少填写一项）
 
 | 名字 | 类型 | 说明 |
 |---|---|---|
-| `persona` | 字符串 | 编号；不写是新建，核心起一个 `persona-<n>` |
-| `new` | 布尔 | 同 `preset.set` 的：编号已经有了拒 `persona_exists` |
-| `changes` | 数组 | 改 `persona.toml`，写法同 `config.set` 的 `changes`；键是 `persona.name`、`persona.summary`、`persona.subagent`、`appearance.seed` |
-| `prompts` | 对象 | 提示词名（`persona`、`examples`、`reminders`）→ `{"text": <整份>}` 或 `{"unset": true}`；示范对话另可写 `{"pairs": [{"user", "assistant"}…]}`；都可带 `"expect": <版本>` 或 `null`（还没有） |
-| `avatar`、`background` | 对象 | `{"blob": <哈希>}` 换成传上来的那一张，`{"unset": true}` 删掉你那一层的；可带 `expect` |
-| `seed` | 字符串或 `{"unset": true}` | 主题色 `#rrggbb` |
+| `persona` | 字符串 | 人格的编号；不填写时新建一个人格，核心为它起一个 `persona-<n>` 的编号 |
+| `new` | 布尔 | 和 `preset.set` 的这一项相同：编号已经存在时拒绝，返回 `persona_exists` |
+| `changes` | 数组 | 修改 `persona.toml`，写法和 `config.set` 的 `changes` 相同；键是 `persona.name`、`persona.summary`、`persona.subagent`、`appearance.seed` |
+| `prompts` | 对象 | 从提示词名（`persona`、`examples`、`reminders`）映射到 `{"text": <整份>}` 或 `{"unset": true}`；示范对话还可以写成 `{"pairs": [{"user", "assistant"}…]}`；每一份都可以带 `"expect": <版本>` 或 `null`（表示还没有这一份） |
+| `avatar`、`background` | 对象 | `{"blob": <哈希>}` 表示换成上传的那一张图片，`{"unset": true}` 表示删除你那一层的图片；可以带 `expect` |
+| `seed` | 字符串或 `{"unset": true}` | 主题色，写法是 `#rrggbb` |
 | `background_opacity` | 0 到 100 或 `{"unset": true}` | 背景图露出多少 |
-| `background_focus` | `[x, y]` 或 `{"unset": true}` | 背景图的焦点，各 0 到 100 |
-| `background_blur` | 1 到 100 或 `{"unset": true}` | 背景图模糊多少，删掉就是不模糊 |
+| `background_focus` | `[x, y]` 或 `{"unset": true}` | 背景图的焦点，两个值各是 0 到 100 |
+| `background_blur` | 1 到 100 或 `{"unset": true}` | 背景图模糊多少，删除这一项就是不模糊 |
 
-**回应**：同 `persona.get`，改完叠好的样子。几样一起查，有错什么都不写。和你那一层现在一样的不写。
+**回应**：和 `persona.get` 相同，内容是修改以后叠好的样子。几项修改会一起检查，只要有一项出错，就什么都不写入。和你那一层现在的内容相同的项不会写入。
 
 **出错**
 
 | `data.reason` | 什么时候 |
 |---|---|
-| `bad_params`（`-32602`） | 编号写法不对；一样都没写；提示词名不认识；一份里 `text`、`unset`、`pairs` 不是正好一个；示范对话有一句是空的 |
-| `persona_invalid` | 改完的文件写错了：`data.problem`、`data.message`、`data.line` |
-| `persona_conflict` | `expect` 对不上（`data.current` 是现在的样子或版本）；写到一半撞上有人手改（不带 `data.current`，重读再来） |
-| `avatar_not_image`、`background_not_image` | 不是 PNG、JPEG、WebP |
-| `avatar_too_big`、`background_too_big` | 头像超过 1 MiB 或 1024 像素，背景图超过 5 MiB 或 4096 像素；`data` 带量到的和上限 |
-| `unknown_attachment` | `blob` 不在 |
-| `local_only` | 扩展调了 |
+| `bad_params`（`-32602`） | 编号的写法不对；一项都没有填写；提示词名不能识别；一份提示词里 `text`、`unset`、`pairs` 不是正好有一个；示范对话里有一句是空的 |
+| `persona_invalid` | 修改以后的文件有错误：附带 `data.problem`、`data.message`、`data.line` |
+| `persona_conflict` | `expect` 对不上（`data.current` 是现在的样子或版本）；或者写到一半时碰上有人手动修改了文件（这时不带 `data.current`，需要重新读取再试一次） |
+| `avatar_not_image`、`background_not_image` | 图片不是 PNG、JPEG、WebP 格式 |
+| `avatar_too_big`、`background_too_big` | 头像超过 1 MiB 或 1024 像素，背景图超过 5 MiB 或 4096 像素；`data` 里带有量到的大小和上限 |
+| `unknown_attachment` | `blob` 不存在 |
+| `local_only` | 调用的一方是扩展 |
 
 ## `persona.delete`
 
-**参数**：`persona`。**回应**：`{"remains"}`：`true` 下面还有出厂、软件包带的，回到它们的样子（界面写「恢复出厂」）；`false` 这个人格就没了。你的那一份挪进回收处，留 7 天。出厂带的软件工程师这类只住在一个出厂包里的人格，你那一层没有时删它就是卸那个包（同 `package.remove`），回 `false`；用 `package.install {"package": "<包编号>"}` 装回来。
+**参数**：`persona`。**回应**：`{"remains"}`：`true` 表示下面还有出厂的、软件包带的层，人格回到它们的样子（界面上写「恢复出厂」）；`false` 表示这个人格就没有了。你的那一份会挪进回收处，保留 7 天。出厂带的软件工程师这类只存在于一个出厂包里的人格，在你那一层没有它的情况下，删除它就是卸载那个软件包（和 `package.remove` 相同），返回 `false`；可以用 `package.install {"package": "<包编号>"}` 重新安装回来。
 
-**出错**：`nothing_to_delete`（你那一层本来就没有，也不是能连包卸掉的）；`package_depended`（连包卸时，那个包被别的包依赖着）；`local_only`。
+**出错**：`nothing_to_delete`（你那一层本来就没有这个人格，它也不是能连同软件包一起卸载的人格）；`package_depended`（连同软件包卸载时，那个软件包正被其他软件包依赖着）；`local_only`。
 
 ## `persona.avatar`、`persona.background`
 
-**参数**：`persona`。**回应**：`{"avatar" 或 "background", "media_type", "data"}`：版本、媒体类型、图片的 base64；没有的都是 `null`。
+**参数**：`persona`。**回应**：`{"avatar" 或 "background", "media_type", "data"}`：分别是版本、媒体类型、图片的 base64；没有图片时都是 `null`。
 
 ## `preset.list`、`preset.get`
 
-**`preset.list`**：没有参数。回应 `{"presets": [...]}`，照编号排：`preset`、`icon`（Lucide 图标名，没有的 `null`）、`name`、`summary`、`tokens`（照它开新会话、不算人格时 system 和工具说明占多少 token，本地估的；算不出来的没有）。写错的只有 `preset`、`problem`、`line`。出厂的「无功能」（`none`）是一份普通预设：菜单里能开关的全关着，能编辑。「无工具」（`preset: null`）不在列表里；开会话、换预设照样能交 `preset: null`。
+**`preset.list`**：没有参数。回应是 `{"presets": [...]}`，按编号排序，每一项有 `preset`、`icon`（Lucide 图标名，没有时是 `null`）、`name`、`summary`、`tokens`（用这个预设开新会话时，不算人格，system 和工具说明占多少 token，这个数在本地估算；算不出来时没有这一项）。写错了的预设只有 `preset`、`problem`、`line`。出厂的「无功能」（`none`）是一份普通的预设：菜单里能开关的功能全都关着，可以编辑。「无工具」（`preset: null`）不在列表里；开会话、换预设时仍然可以交 `preset: null`。
 
-**`preset.get`**：参数 `preset`。回应：
+**`preset.get`**：参数是 `preset`。回应的字段如下：
 
 | 名字 | 说明 |
 |---|---|
-| `preset`、`name`、`summary`、`icon` | 同上 |
-| `unlisted` | 叠好以后的 `on` 或 `off`：没列出来的功能默认开不开 |
-| `unattended_steps` | 叠好以后 `[limits]` 写的数：没人看着时一个回合最多请求几次模型；几层都没写的是 `null`，照出厂的 500 |
-| `features` | 一个个功能：`{"id", "name", "summary", "package", "on", "by", "installed", "tools"}`；`package` 是它归哪个包，按包分组用，包名照 [`package.list`](packages.md) 查（自己放的脚本、MCP 服务、模板命令是 `~home`，不归包的技能和没装的没有）；`by` 是开不开谁定的：`preset`（预设里写了）、`global`（预设没写，照技能、脚本、MCP 服务的全局开关，见 [`feature.set`](packages.md#featureset)；只在 `unlisted` 是 `on` 的预设里有）、`default`（照 `unlisted`：`unlisted` 是 `off` 的预设没写的都是它，全局开关打开的也不开）；`tools` 是归它的工具 `{"name", "label", "on"}`，`label` 是给人看的名字（MCP 服务给了 `title` 的照它，没给的是去掉 `mcp__<服务名>__` 的工具名）。写了、没装的接在后面，`installed: false`。接平台的包（清单写了 `[connection]`）只列本机会话拿得到的：一件 `venues` 带 `local` 的工具都没有的功能不列，列出来的只列带 `local` 的工具；`sections` 也一样 |
-| `sections` | 同一些功能分好组、排好先后，界面照它画，不用自己翻译、排序、认编号。每组 `{"kind", "id", "name", "on", "total", "items"}`：`kind` 是 `group`（出厂的组：基础系统、任务和定时、注入环境信息、人格、查资料，`id` 是组名）、`package`（装的扩展带几个功能的，各自一组，`id` 是包编号）、`extensions`（装的扩展只带一个功能的合进这一组，一个扩展一行、名字是包名；没有的不列）、`skills`、`scripts`、`mcp`（没有的也列，`total` 是 0），照这个先后；`on`、`total` 是开着的、全部的功能几个。`items` 每项 `{"kind": "feature", "id", "name", "on", "by"}`，同一组里重名的带包名；`by` 多一种 `group`（预设写的是它所在的包或组，`preset` 是写了功能本身）；带几件工具的另带 `tools: [{"id", "name", "on"}]`，一件的不带 |
-| `remove` | 同 `persona.get` |
+| `preset`、`name`、`summary`、`icon` | 和上面相同 |
+| `unlisted` | 叠好以后的 `on` 或 `off`：表示没有列出来的功能默认是否打开 |
+| `unattended_steps` | 叠好以后 `[limits]` 里写的数：没有人看着时，一个回合最多请求几次模型；几层都没有写时是 `null`，按出厂的 500 计算 |
+| `features` | 每一个功能是 `{"id", "name", "summary", "package", "on", "by", "installed", "tools"}`；`package` 是这个功能归属的软件包，用来按软件包分组，软件包的名字用 [`package.list`](packages.md) 查询（你自己放的脚本、MCP 服务、模板命令是 `~home`，不归属软件包的技能和没有安装的功能没有这一项）；`by` 表示功能是否打开是由谁决定的：`preset`（预设里写了）、`global`（预设没有写，按技能、脚本、MCP 服务的全局开关决定，见 [`feature.set`](packages.md#featureset)；只出现在 `unlisted` 是 `on` 的预设里）、`default`（按 `unlisted` 决定：`unlisted` 是 `off` 的预设里没有写的功能都是这个值，即使全局开关打开了也不打开）；`tools` 是归属这个功能的工具 `{"name", "label", "on"}`，`label` 是给人看的名字（MCP 服务给了 `title` 时使用它，没有给时是去掉 `mcp__<服务名>__` 的工具名）。预设里写了、但是没有安装的功能接在后面，带 `installed: false`。接入平台的软件包（清单里写了 `[connection]`）只列出本机会话拿得到的内容：一件 `venues` 里带 `local` 的工具都没有的功能不会列出，列出来的功能也只列出带 `local` 的工具；`sections` 也是这样 |
+| `sections` | 把同样这些功能分好组、排好先后，界面按它画出来即可，不需要自己翻译、排序、识别编号。每组是 `{"kind", "id", "name", "on", "total", "items"}`：`kind` 是 `group`（出厂的组：基础系统、任务和定时、注入环境信息、人格、查资料，`id` 是组名）、`package`（安装的扩展带了几个功能时，各自成为一组，`id` 是包编号）、`extensions`（安装的扩展只带一个功能时合进这一组，一个扩展占一行，名字是包名；没有这样的扩展时不列出）、`skills`、`scripts`、`mcp`（没有内容时也会列出，`total` 是 0），按这个先后排列；`on`、`total` 分别是开着的功能和全部功能的个数。`items` 的每一项是 `{"kind": "feature", "id", "name", "on", "by"}`，同一组里重名的项会带上包名；`by` 多出一种取值 `group`（表示预设里写的是功能所在的软件包或组，而 `preset` 表示预设里写的是功能本身）；带几件工具的功能另外带 `tools: [{"id", "name", "on"}]`，只带一件工具的不带 |
+| `remove` | 和 `persona.get` 相同 |
 
-`features[].id` 是 `preset.set` 写 `features.<id>` 用的，`tools[].name` 是写 `tools.<name>` 用的，别露在界面上。
+`features[].id` 用于在 `preset.set` 里写 `features.<id>`，`tools[].name` 用于写 `tools.<name>`；不要把它们显示在界面上。
 
-**出错**：`unknown_preset`；`preset_invalid`（`data.message`、`data.line`）。
+**出错**：`unknown_preset`；`preset_invalid`（附带 `data.message`、`data.line`）。
 
 ## `preset.set`
 
@@ -121,16 +121,16 @@
 
 | 名字 | 类型 | 说明 |
 |---|---|---|
-| `preset` | 字符串 | 编号；不写是新建，核心起一个 `preset-<n>` |
-| `new` | 布尔 | 新建、编号自己写（要和 `preset` 一起写）：这个编号已经有了（出厂的、包带的、你那一层的）拒 `preset_exists`，不去改那一份 |
-| `changes` | 数组，必写、不能是空的 | 每项 `{"key", "value" | "unset": true, "expect"?}`；键是 `preset.name`、`preset.summary`、`preset.unlisted`、`features.<功能>`、`tools.<工具>`、`limits.unattended_steps`（正整数） |
+| `preset` | 字符串 | 预设的编号；不填写时新建一个预设，核心为它起一个 `preset-<n>` 的编号 |
+| `new` | 布尔 | 新建一个预设并自己写编号（需要和 `preset` 一起填写）：如果这个编号已经存在（出厂的、软件包带的、你那一层的），就拒绝并返回 `preset_exists`，不会去修改那一份 |
+| `changes` | 数组，必写、不能是空的 | 每一项是 `{"key", "value" | "unset": true, "expect"?}`；键是 `preset.name`、`preset.summary`、`preset.unlisted`、`features.<功能>`、`tools.<工具>`、`limits.unattended_steps`（正整数） |
 
-**回应**：同 `preset.get`。说明写空的字就是没有说明（盖住出厂的那句），`unset` 才回到出厂的。
+**回应**：和 `preset.get` 相同。说明写成空字符串就表示没有说明（会盖住出厂的那一句），只有 `unset` 才会回到出厂的说明。
 
-**出错**：`bad_params`；`preset_invalid`；`preset_conflict`（`expect` 对不上，`data.current`）；`local_only`。
+**出错**：`bad_params`；`preset_invalid`；`preset_conflict`（`expect` 对不上，附带 `data.current`）；`local_only`。
 
 ## `preset.delete`
 
-**参数**：`preset`。**回应**：`{"remains"}`，同 `persona.delete`。开着的会话照旧用它开会话时的那一份。
+**参数**：`preset`。**回应**：`{"remains"}`，和 `persona.delete` 相同。已经开着的会话仍然使用开会话时的那一份预设。
 
 **出错**：`nothing_to_delete`；`local_only`。

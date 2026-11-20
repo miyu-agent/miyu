@@ -131,7 +131,6 @@ miyu config set net.search.source deepseek-responses
 
 - 搜索由 DeepSeek 完成，Miyu 自己的 `web_search` 不再提供给 AI。时间线上会显示标着 DeepSeek 的搜索步骤，点开可以看到搜索词和打开过的网址。
 - 你给出一个具体的网址时，AI 仍然使用 Miyu 自己的 `web_fetch` 读取。
-- 用量里会多出搜索和抓取的次数。
 
 使用时需要注意：
 

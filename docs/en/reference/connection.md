@@ -4,63 +4,63 @@
 
 | Method | What it does |
 |---|---|
-| [`hello`](#hello) | Handshake: who you are, your credentials |
-| [`subscribe`, `unsubscribe`](#subscribe-unsubscribe) | Subscribe to or leave a push stream |
-| [`account.setup_code`, `account.setup`, `account.logout`](#accountsetup_code-accountsetup-accountlogout) | Access password: the one-time code for setting it from the web, setting and changing it, revoking devices |
+| [`hello`](#hello) | The handshake: says who you are and shows your credentials |
+| [`subscribe`, `unsubscribe`](#subscribe-unsubscribe) | Subscribes to a push stream, or unsubscribes from one |
+| [`account.setup_code`, `account.setup`, `account.logout`](#accountsetup_code-accountsetup-accountlogout) | Access password: the one-time code for setting it from the web the first time; setting and changing it; revoking devices |
 | [`account.set_avatar`, `account.avatar`](#your-avatar) | Your avatar |
-| [`notices.claim`](#noticesclaim) | Claim: this connection shows background notices |
-| [`core.stop`](#corestop) | Ask the core to stop |
+| [`notices.claim`](#noticesclaim) | Claims background notices, so that this connection shows them |
+| [`core.stop`](#corestop) | Asks the core to stop |
 
 ## Connecting
 
-- **Local heads**: the core listens on a local socket only you can reach. Its path is in `run/socket` under the data root (one line, the path as-is) and the local token is in `run/token` (64 lowercase hex digits). Linux and macOS use a Unix domain socket, Windows a named pipe `\\.\pipe\miyu-<fingerprint>`. If no core is running, the head starts `miyu core` itself.
-- **Extensions**: programs the core launches from a package manifest speak the same protocol over stdin and stdout, with no credentials (any given in `hello` are ignored).
-- **Web**: the browser talks to the web app, which connects to the core like a local head. For a connection it opens on behalf of a remote person, the web app first writes the notification `{"jsonrpc":"2.0","method":"connection.remote","params":{"from":<address>}}` before the hello, then passes the browser's bytes through: that connection is remote. It only goes one way: once marked it never becomes local again, and the notification is ignored after the hello.
-- **Local machine only**: reading files on the core's machine, handing over local paths and picking local folders are for local connections only; a remote one gets `local_machine_only` and nothing happens: `fs.*`, `session.terminal`, `session.set_terminal`, `account.setup_code`, `core.stop`; `blob.put` and `package.install` with `path`, `kb.mount` with `folder`, `mcp.set` with `command`, `check` with `file` or `cwd`, `config.trust` and `config.get` with `cwd`; a session's `cwd` and `dirs`, an attachment's `path`, `command.run`'s `cwd` and `/workspace <path>`, a project's `workspace`. A session created without `cwd` works in its own default workspace. Remote connections get no `host` in the hello reply.
+- **Local heads**: the core listens on a local socket for heads (interface programs that connect to the core, such as the terminal interface or the web interface), and only you can reach it. The socket's path is in `run/socket` under the data root (one line, the path as-is), and the local token is in `run/token` (64 lowercase hex digits). Linux and macOS use a Unix domain socket, and Windows uses a named pipe `\\.\pipe\miyu-<fingerprint>`. If no core is running, the head starts `miyu core` itself.
+- **Extensions**: extensions are programs the core launches from a package manifest; they speak the same protocol over stdin and stdout and need no credentials (any given in `hello` are ignored).
+- **Web**: the browser talks to the web app, which connects to the core the same way as a local head. For a connection it opens on behalf of a remote person, the web app first writes the notification `{"jsonrpc":"2.0","method":"connection.remote","params":{"from":<address>}}` before the hello and then passes the browser's bytes through, which makes that connection remote. The mark only goes one way: once a connection is marked, it never becomes local again, and the notification is ignored after the hello.
+- **Local machine only**: operations that read files on the core's machine, hand over local paths or pick local folders are only for local connections; a remote connection gets `local_machine_only` and nothing happens. These are: `fs.*`, `session.terminal`, `session.set_terminal`, `account.setup_code`, `core.stop`; `blob.put` and `package.install` with `path`, `kb.mount` with `folder`, `mcp.set` with `command`, `check` with `file` or `cwd`, `config.trust` and `config.get` with `cwd`; a session's `cwd` and `dirs`, an attachment's `path`, `command.run`'s `cwd` and `/workspace <path>`, and a project's `workspace`. A session created without `cwd` works in its own default workspace. Remote connections get no `host` in the hello reply.
 
 ## One message per line
 
-- Each message is one line of JSON, UTF-8, ending in `\n` (`\r\n` is accepted when reading). At most 1 MiB per line; a longer line gets `line_too_long` (`data.limit` is the limit; `id` is the one found at the start of the line, `null` when none is found) and is skipped; the connection stays open. Check the limit before sending and put large content in an attachment (`blob.put`).
-- The core writes compact JSON with object fields sorted by name.
+- Each message is one line of JSON in UTF-8, ending in `\n` (`\r\n` is also accepted when reading). A line is at most 1 MiB; a longer line gets `line_too_long` (`data.limit` is the limit, and `id` is the one found at the start of the line, or `null` when none is found). Only that line is refused, and the connection stays open. Check the limit before sending, and put large content in an attachment (`blob.put`).
+- The core writes compact JSON, with object fields sorted by name.
 
-**Requests** are JSON-RPC 2.0: `jsonrpc` is `"2.0"`, `method` the method name, `params` an object (omitted means `{}`, an array gets `bad_params`), `id` a string of 1 to 128 bytes with no control characters. A message without `id` is a notification and the core ignores it, except `connection.remote` before the hello (see **Web** above). Unknown params are ignored; `null` means omitted.
+**Requests** are JSON-RPC 2.0: `jsonrpc` is `"2.0"`, `method` is the method name, `params` is an object (omitted means `{}`, and an array gets `bad_params`), and `id` is a string of 1 to 128 bytes with no control characters. A message without `id` is a notification, and the core ignores it, except `connection.remote` before the hello (see **Web** above). Unknown params are ignored, and `null` means the same as omitted.
 
 **Just one person**: Miyu is for the one person who installed it (the owner); there are no accounts, members or admin mode. A `"scope"` that old heads put in the request envelope is accepted and ignored.
 
-**Responses**: success in `result`; refusal in `error`: `code` is the error code, `message` a sentence for people (in the connection's language), `data.reason` the reason code for programs, sometimes with more fields.
+**Responses**: a success carries `result`, and a refusal carries `error`: `code` is the error code, `message` is a sentence for people (in the connection's language), and `data.reason` is the reason code for programs; some errors carry more fields.
 
 ```json
 {"id":"c7","jsonrpc":"2.0","result":{"events":[41]}}
 {"error":{"code":-32010,"data":{"reason":"session_not_found"},"message":"Session not found."},"id":"c7","jsonrpc":"2.0"}
 ```
 
-**Pushes** are notifications from the core: `{"jsonrpc":"2.0","method":<name>,"params":{…}}`, no `id`. See [Pushes](pushes.md) for what each stream pushes.
+**Pushes** are notifications from the core: `{"jsonrpc":"2.0","method":<name>,"params":{…}}`, with no `id`. What each stream pushes is described in [Pushes](pushes.md).
 
 **Ordering**:
 
-1. Requests on one connection are handled one at a time: the next line is read after the previous one is answered. A few slow ones are answered in the background without blocking later requests, matched by `id`: `model.call`, `memory.dream`, `link.preview`, `job.stop`, `fs.find` and `job.output` with `wait`, and the slow cases of `command.run` (such as `/dream`).
-2. Results before responses: the pushes a command causes always arrive before its response.
-3. Sending the same `id` again (within a session's last 1024): you get the previous response and nothing is done twice. Refused ones are not remembered; sending again is judged again. This is for resending after a dropped connection, and it **does not depend on the connection**: a new connection that reuses an `id` used before with the same parameters is treated as a resend, gets the earlier response, and nothing happens; with different parameters it is refused with `id_reused` (after a core restart parameters aren't compared, so it again gets the earlier response and nothing happens, for example `session.send` answers, but the message never reaches the session). So every connection's `id`s must differ from all earlier ones; the simplest way is a random prefix per connection followed by an increasing number. `session.create` also recognizes resends by `id`: creating again with the same `id` gets back the session made the first time, even after the core restarts; changing any parameter other than `cwd` and `dirs` is refused with `id_reused`.
+1. Requests on one connection are handled one at a time: the next line is read only after the previous one is answered. A few slow requests are answered in the background without blocking later ones, and their responses are matched by `id`: `model.call`, `memory.dream`, `link.preview`, `job.stop`, `fs.find` and `job.output` with `wait`, and the slow cases of `command.run` (such as `/dream`).
+2. Results come before responses: the pushes a command causes always arrive before its response.
+3. When you send the same `id` again (within a session's last 1024), you get the previous response and nothing is done twice. Refused requests are not remembered, so sending one again is judged again. This is for resending after a dropped connection, and it **does not depend on the connection**: a new connection that reuses an `id` used before with the same parameters is treated as a resend, gets the earlier response, and nothing happens; with different parameters it is refused with `id_reused` (after a core restart the parameters aren't compared, so it again gets the earlier response and nothing happens; for example, `session.send` answers, but the message never reaches the session). So every connection's `id`s must differ from all earlier ones; the simplest way is a random prefix per connection followed by an increasing number. `session.create` also recognizes resends by `id`: creating again with the same `id` returns the session created the first time, even after the core restarts; changing any parameter other than `cwd` and `dirs` is refused with `id_reused`.
 
 ## `hello`
 
-The handshake. It must be the first message; before it every other method gets `hello_first`. A connection that hasn't completed the handshake within 10 seconds is closed.
+The handshake. It must be the first message on a connection; before it, every other method gets `hello_first`. A connection that hasn't completed the handshake within 10 seconds is closed.
 
-**Who can call**: people, extensions.
+**Who can call**: people and extensions.
 
 **Params**
 
 | Name | Type | Notes |
 |---|---|---|
-| `protocol` | `[lowest, highest]`, required | The protocol major versions you support; the core only has `1` |
-| `head` | `{"kind", "version"}`, required | What you are and which version; logged. `kind` is also recorded on what the person says and the commands they type on this connection (`by.head` of the events, see [Events](events.md)), so she knows where a turn's words came from. The terminal UI writes `tui`, the web UI `web`, the command line (`miyu ask`) `cli` and the shell integration `shellhook`: each of these gets its own line for her; any other kind reads as "in a Miyu app". It starts with a lowercase letter and uses lowercase letters, digits, `-` and `_`, at most 32; one written otherwise still connects, it just isn't recorded |
-| `locale` | string | Your system's language (`zh-CN`, `en_US.UTF-8` both work). Sets the connection's language when the `ui.language` setting is `auto` |
-| `caps` | object | `input` (boolean): whether you can let a person type. `prefix_ask` (boolean): you ask the person when changed files are about to change the prefix (see **Prefix changing** under [`session.send`](sessions.md#sessionsend)) |
+| `protocol` | `[lowest, highest]`, required | The range of protocol major versions you support; the core only has `1` |
+| `head` | `{"kind", "version"}`, required | What you are and which version; it is written to the run log. `kind` is also recorded on what the person says and the commands they type on this connection (`by.head` of the events, see [Events](events.md)), so the AI knows where a turn's words came from. The terminal UI writes `tui`, the web UI `web`, the command line (`miyu ask`) `cli`, and the shell integration `shellhook`: for each of these the AI sees its own line, and any other kind reads to the AI as "in a Miyu app". `kind` starts with a lowercase letter and uses lowercase letters, digits, `-` and `_`, at most 32 of them; a `kind` written otherwise still connects, it just isn't recorded |
+| `locale` | string | Your system's language (both `zh-CN` and `en_US.UTF-8` work). When the `ui.language` setting is `auto`, it sets the connection's language |
+| `caps` | object | `input` (boolean): whether you can let a person type. `prefix_ask` (boolean): you ask the person first when changed files are about to change the prefix (see **Prefix changing** under [`session.send`](sessions.md#sessionsend)) |
 | `token` | string | The local token |
-| `code` | string | A one-time code (setting the access password from the web the first time) |
-| `login` | string | A device token (a remembered web login) |
-| `password` | string | The access password, for connecting from the local network |
-| `ticket` | string | A hand-off ticket (from `login.ticket`) brought over by another page; it is exchanged for a device token on the spot |
+| `code` | string | A one-time code, used when setting the access password from the web for the first time |
+| `login` | string | A device token (a login the web app remembered) |
+| `password` | string | The access password, used when connecting from the local network |
+| `ticket` | string | A hand-off ticket (from `login.ticket`) brought over by another page; it is exchanged for a device token on the spot, and the connection is made with it |
 
 Give exactly one kind of credential: `token`, `code`, `login`, `ticket` or `password`. Extensions give none. A remote connection passed on by the web software (`connection.remote`) that gives no credential while no access password is set gets `password_not_set`.
 
@@ -70,83 +70,83 @@ Give exactly one kind of credential: `token`, `code`, `login`, `ticket` or `pass
 |---|---|
 | `protocol` | The chosen major version: `1` |
 | `core` | `{"version"}`: the core's version |
-| `avatar` | The version of your avatar, only when it has one: heads use it to refresh their cache and fetch the picture with `account.avatar` |
-| `host` | `{"home", "platform", "workspace", "dirs"}`: the system home directory (`null` if unknown), `linux`/`macos`/`windows`, the workspace root (`root/workspace/` in the data root; each session's default workspace is `<session id>/` under it), and the XDG-style folders `{"pictures", "videos", "documents", "downloads"}` (the real path when it exists and as is otherwise; on Windows without the `\\?\` prefix). Not given to remote connections; extensions get no `dirs` |
-| `language` | `zh`, `en` or `ja`: the language for text from now on. If the setting changes, the next message follows it without a new handshake |
+| `avatar` | The version of your avatar, present only when you have one: heads use it to refresh their cache, and fetch the picture with `account.avatar` |
+| `host` | `{"home", "platform", "workspace", "dirs"}`: the system home directory (`null` if it can't be read), the platform (`linux`/`macos`/`windows`), the workspace root (`root/workspace/` in the data root; each session's default workspace is `<session id>/` under it), and the XDG-style folders `{"pictures", "videos", "documents", "downloads"}` (the real path when a folder exists, and the path as is when it hasn't been created yet; on Windows without the `\\?\` prefix). Remote connections don't get this field at all, and extensions get no `dirs` |
+| `language` | `zh`, `en` or `ja`: the language used for text for people from now on. If the setting changes the language, the next message follows it without a new handshake |
 | `view` | The view projection version, currently `1` (see `view.page` in [Sessions](sessions.md)) |
-| `sandbox` | `{"usable": true}`, or `{"usable": false, "reason"}`: `helper_missing`, `helper_failed`, `no_mechanism` |
-| `config_errors` | How many errors the config has right now; omitted when none |
-| `config` | Extensions only: the final values of this package's own settings (secrets as real values). Later changes arrive as `extension.config` |
-| `setup` | `true`: connected with a one-time code; can only set the access password |
-| `password_set` | Whether an access password is set (boolean): heads decide from it whether "allow LAN access" can be turned on |
-| `login` | `{"expires", "token"}`: only when connected with the access password or a hand-off ticket; the web app keeps it for next time. A ticket used this way is spent |
+| `sandbox` | `{"usable": true}`, or `{"usable": false, "reason"}` with `reason` being `helper_missing`, `helper_failed` or `no_mechanism` |
+| `config_errors` | How many errors the config has right now; omitted when there are none |
+| `config` | Extensions only: the final values of this package's own settings (secrets as their real values). Later changes arrive as `extension.config` |
+| `setup` | `true` when the connection was made with a one-time code; such a connection can only set the access password |
+| `password_set` | Whether an access password has been set (boolean): heads use it to decide whether "allow LAN access" can be turned on |
+| `login` | `{"expires", "token"}`: present only when the connection was made with the access password or a hand-off ticket; the web app keeps it for next time. A ticket used this way is spent on the spot |
 
 ```json
 → {"jsonrpc":"2.0","id":"h1","method":"hello","params":{"protocol":[1,1],"head":{"kind":"tui","version":"0.1.0"},"locale":"en-US","token":"3f9a…"}}
 ← {"id":"h1","jsonrpc":"2.0","result":{"core":{"version":"0.0.1"},"host":{"home":"/home/me","platform":"linux","workspace":"/home/me/.miyu/root/workspace"},"language":"en","protocol":1,"sandbox":{"usable":true},"view":1}}
 ```
 
-Sending `hello` again after the handshake is fine: if it passes, the new language and capabilities apply; if it is refused and the connection stays open, the previous ones stay.
+Sending `hello` again after the handshake is allowed: if it passes, the new language and capabilities apply; if it is refused and the connection stays open, the previous ones still apply.
 
-**Errors** (those marked "closes" close the connection after answering)
+**Errors** (for errors marked "closes", the core closes the connection after answering)
 
 | `data.reason` | When |
 |---|---|
-| `bad_params` (`-32602`) | A required field is missing or has the wrong type; more than one kind of credential (closes) |
-| `protocol_mismatch` | `1` is not in your range (closes) |
-| `bad_token` | No credential, or a wrong local token (closes) |
-| `bad_code`, `bad_login`, `bad_password` | Wrong one-time code, device token or access password (closes) |
-| `password_not_set` | No access password yet: a `password` was given, or a remote connection gave nothing (closes). Set one on this computer first |
-| `bad_ticket` | No such hand-off ticket, expired, or already used (closes) |
-| `login_throttled` | Five wrong passwords from the same place within 60 seconds, or 30 tries from all places together; wait a while (closes). `data.retry_after_ms` says how long. A place is an address without its port; IPv6 addresses in the same /64 count as one |
-| `hello_first` | Another method before the handshake (does not close) |
-| `setup_first` | Connected with a one-time code and called something other than `human.get` and `account.setup` |
+| `bad_params` (`-32602`) | A required field is missing or has the wrong type; or more than one kind of credential was given (closes) |
+| `protocol_mismatch` | `1` is not in the range you gave (closes) |
+| `bad_token` | No credential was given, or the local token is wrong (closes) |
+| `bad_code`, `bad_login`, `bad_password` | The one-time code, device token or access password is wrong (closes) |
+| `password_not_set` | No access password has been set yet: a `password` was given, or a remote connection gave no credential (closes). Set one on this computer first |
+| `bad_ticket` | The hand-off ticket doesn't exist, has expired, or was already used (closes) |
+| `login_throttled` | Five wrong passwords came from the same source within 60 seconds, or 30 tries came from all sources together; wait a while (closes). `data.retry_after_ms` says how long to wait. A source is an address without its port, and IPv6 addresses in the same /64 count as one source |
+| `hello_first` | Another method was called before the handshake (does not close) |
+| `setup_first` | A connection made with a one-time code called a method other than `human.get` and `account.setup` |
 
 ## `subscribe`, `unsubscribe`
 
-Subscribe to a push stream: from now on its pushes go to this connection.
+Subscribes to a push stream: from then on, the stream's pushes go to this connection.
 
-**Who can call**: people, extensions; extensions need the `events.read` capability for the `events`, `view` and `sessions` streams, and the `projects`, `schedules`, `notices`, `package` and `prefs` streams are for people only (`local_only`).
+**Who can call**: people and extensions. Extensions need the `events.read` capability for the `events`, `view` and `sessions` streams, and the `projects`, `schedules`, `notices`, `package` and `prefs` streams are for people only (an extension gets `local_only`).
 
 **Params**
 
 | Name | Type | Notes |
 |---|---|---|
-| `stream` | string, required | Which stream, see below |
-| `session` | string | Required for `events` and `view`; not allowed for `config` and `sessions`; optional for `memory` (that session's memory) |
-| `persona` | string | `memory` only: this persona's memory |
+| `stream` | string, required | Which stream to subscribe to; see the table below |
+| `session` | string | Required for `events` and `view`; not allowed for `config` and `sessions`; optional for `memory` (it selects that session's memory) |
+| `persona` | string | Only for `memory`: it selects this persona's memory |
 | `package` | string | Required for `package` and `prefs`: which package |
-| `after` | non-negative integer | `events` and `memory` only: first replay everything with a higher sequence number; `0` means from the start |
+| `after` | non-negative integer | Only for `events` and `memory`: everything with a higher sequence number is replayed first; `0` means from the start |
 
 | `stream` | Pushes | `subscribe` response |
 |---|---|---|
-| `events` | A session's events, as-is | The session's state right now: `model`, `limits`, `permission`, `usage`, `jobs`, `workspace`, `default_workspace` (the session's default workspace), `compactable` (whether there is anything to compact right now, that is, whether `session.compact` would answer `nothing_to_compact`; changes are pushed as `compactable.changed`), and when present `compaction_line` (the session's pinned compaction trigger), `persona`, `preset`, `todos`, `goal`, `vision` (the session's pinned vision model), `nested` (running `miyu call`s: `[{id, name, args, at}]`, `at` being when each started), `title` (the session's title, only when it has one); with `after` also `upto` |
-| `view` | A session's view projection (entries ready to draw) | The above, plus the latest page of entries and the full session `status` |
+| `events` | A session's events, as-is | The session's state right now: `model`, `limits`, `permission`, `usage`, `jobs`, `workspace`, `default_workspace` (the session's default workspace), `compactable` (whether there is anything to compact right now, that is, whether `session.compact` would answer `nothing_to_compact`; changes are pushed as `compactable.changed`), and when present `compaction_line` (the session's pinned compaction trigger), `persona`, `preset`, `todos`, `goal`, `vision` (the session's pinned vision model), `nested` (running `miyu call`s: `[{id, name, args, at}]`, with `at` being when each started) and `title` (the session's title, only when it has one); with `after`, also `upto` |
+| `view` | A session's view projection (entries ready to draw) | The same as above, plus the latest page of entries and the full session `status` |
 | `config` | Config changes | `{}` |
-| `sessions` | One item of the session list changed | `{"sessions": [<item>…]}`, all of them |
+| `sessions` | One item of the session list changed | `{"sessions": [<item>…]}`, with all sessions |
 | `extensions` | An extension's status changed | `{"extensions": […]}` |
 | `packages` | One item of the package list changed | `{"packages": […]}` |
-| `projects` | A project changed | `{"projects": […]}`, all of them |
-| `bus` | Names on the bus or their readiness changed ([`bus.list`](bus.md#buscall-buslist)) | `{"names": […]}`, all of them |
-| `schedules` | A schedule changed or ran | `{"schedules": […]}`, all of them |
-| `notices` | Notices for people: a new-session schedule's run has ended, the schedule table broke and was replaced by an empty one. Heads show system notifications from it | `{}`, plus `claimed: true` while a connection has claimed background notices ([`notices.claim`](#noticesclaim)); earlier ones are not replayed |
-| `prefs` | With `package`: another connection changed that UI package's settings (see [A head's own settings](prefs.md)). Not a UI package that is installed: `unknown_package`, `not_a_ui_package` | `{"values": {…}}`, the whole object at that moment |
-| `package` | With `package`: what that package pushes to people; its pages update from it instead of polling. A package that isn't installed gets `unknown_package` | `{}`; earlier ones are not replayed |
-| `kb` | Index-building progress of knowledge bases: `kb.indexing`, `kb.indexed` | `{}`: the current state comes from `kb.list` |
+| `projects` | A project changed | `{"projects": […]}`, with all projects |
+| `bus` | Names on the bus, or their readiness, changed ([`bus.list`](bus.md#buscall-buslist)) | `{"names": […]}`, with all names |
+| `schedules` | A schedule changed or ran | `{"schedules": […]}`, with all schedules |
+| `notices` | Notices for people: a new-session schedule's run has ended, or the schedule table broke and was replaced by an empty one. Heads show system notifications from it | `{}`, plus `claimed: true` while a connection has claimed background notices ([`notices.claim`](#noticesclaim)); earlier notices are not replayed |
+| `package` | With `package`: what that package pushes to people; its pages update from these pushes instead of polling. A package that isn't installed gets `unknown_package` | `{}`; earlier pushes are not replayed |
+| `prefs` | With `package`: another connection changed that UI package's own settings (see [A head's own settings](prefs.md)). A package that isn't installed gets `unknown_package`, and one that isn't a UI package gets `not_a_ui_package` | `{"values": {…}}`, the whole object at that moment |
+| `kb` | Index-building progress of knowledge bases: `kb.indexing`, `kb.indexed` | `{}`; the current state comes from `kb.list` |
 | `memory` | One memory's log | `{"upto": <last sequence number at that moment>}` |
 | `widgets` | Widgets | See [Packages and commands](packages.md) |
 
-`model` in the `events` response is what the session asks next: `ref` (its model or `@pool`), `endpoint` and `model` (who gets the next request; a rotating pool has neither), and `effort` `{"level", "from"}`: the reasoning effort that model uses, `from` being `session` (set with `session.configure`) or `system` (the config). A rotating pool, or a request that carries no effort, has no `effort`.
+`model` in the `events` response describes what the session asks next: `ref` (its model or `@pool`), `endpoint` and `model` (who gets the next request; a rotating pool has neither), and `effort` `{"level", "from"}`: the reasoning effort that model uses, with `from` being `session` (set with `session.configure`) or `system` (the config). A rotating pool, or a request that carries no effort, has no `effort`.
 
-Top-level `compaction_line` in the `events` response is the compaction trigger pinned on the session, as a percentage of the window (set with `session.configure`), and `vision` is the session's pinned vision model (a model or `@pool`). They match the same fields in `view.status`: absent when nothing is pinned (the config applies), and they change with the pushed `session.policy_changed`. `limits.compaction_line` shares the name but means something else: the compaction line in effect, in tokens, which follows a new pin only when the next turn starts.
+The top-level `compaction_line` in the `events` response is the compaction trigger pinned on the session, as a percentage of the window (set with `session.configure`), and `vision` is the session's pinned vision model (a model or `@pool`). They match the same fields in `view.status`: they are absent when nothing is pinned (the config applies), and they change with the pushed `session.policy_changed`. `limits.compaction_line` shares the name but means something else: it is the compaction line in effect, in tokens, which follows a new pin only when the next turn starts.
 
-What each stream pushes is in [Pushes](pushes.md).
+What each stream pushes is described in [Pushes](pushes.md).
 
 1. A connection has one subscription per session (`events` and `view` count as the same); subscribing again replaces it. `sessions`, `config`, `extensions`, `packages`, `projects`, `bus`, `schedules`, `notices`, `kb` and `widgets` are one each per connection; `package` and `prefs` are one per package.
-2. **Replay**: with `after`, the events with a higher sequence number that were on disk when you subscribed are pushed one by one, then the response (with `upto`), then everything from `upto + 1` on, with nothing lost or repeated. If a model request is streaming at that moment, its deltas so far (`model.delta`) are pushed once more after the replay so the live ones that follow line up. Transient events without sequence numbers are not replayed.
-3. **Falling behind**: if you read too slowly, a session keeps at most 1024 pushes per subscription (16 for config, 64 for memory); beyond that it pushes `resync` and the subscription stops. A stopped session also pushes `resync`. Subscribe again, with the last sequence number you saw as `after`, to catch up.
-4. Being subscribed to a session counts as watching it: in a session nobody is watching, a subagent's report is recorded without starting a turn for her.
-5. `unsubscribe`: same `stream` and `session`/`persona`/`package`; stops forwarding and returns `{}`, also when you weren't subscribed.
+2. **Replay**: with `after`, the events with a higher sequence number that were on disk when you subscribed are pushed one by one, then the response (with `upto`), and then everything from `upto + 1` on, with nothing lost or repeated. If a model request is streaming at that moment, its deltas so far (`model.delta`) are pushed once more after the replay, so that the live ones that follow line up. Transient events without sequence numbers are not replayed.
+3. **Falling behind**: if you read too slowly, a session keeps at most 1024 pushes per subscription (16 for config, 64 for memory); beyond that, it pushes `resync` and the subscription stops. A stopped session also pushes `resync`. Subscribe again, with the last sequence number you saw as `after`, to catch up.
+4. Being subscribed to a session counts as watching it: in a session nobody is watching, a subagent's report is only recorded, and no turn is started for the AI.
+5. `unsubscribe`: give the same `stream` and `session`/`persona`/`package` as when subscribing; the core stops forwarding and returns `{}`, also when you weren't subscribed.
 
 ```json
 → {"jsonrpc":"2.0","id":"s1","method":"subscribe","params":{"session":"01a14aca-…","stream":"events","after":30}}
@@ -158,39 +158,39 @@ What each stream pushes is in [Pushes](pushes.md).
 
 | `data.reason` | When |
 |---|---|
-| `bad_params` (`-32602`) | Unknown `stream`; `session` or `package` missing where required, or given where not allowed; `after` not a non-negative integer, or not accepted by this stream |
+| `bad_params` (`-32602`) | The `stream` is unknown; `session` or `package` is missing where required, or given where not allowed; or `after` is not a non-negative integer, or this stream doesn't accept it |
 | `local_only` | An extension subscribed to a stream that is for people only |
-| `needs_approval` | An extension subscribed to `events`, `view` or `sessions` without declaring `events.read`; `data.capabilities` names it |
+| `needs_approval` | An extension subscribed to `events`, `view` or `sessions` without declaring `events.read`; `data.capabilities` names the missing one |
 | `unknown_package` | `package` and `prefs` streams: that package isn't installed |
 | `not_a_ui_package` | `prefs` stream: that package is installed but isn't a UI package |
-| `session_not_found`, `session_broken`, `session_unavailable`, `session_read_only`, `session_stopped` | The session doesn't exist, its log doesn't parse, it can't be read right now (try again later), a line in the middle of its log is broken (read what came before through `view.page`, see [`errors`](errors.md)), or it stopped (subscribing again reloads it) |
+| `session_not_found`, `session_broken`, `session_unavailable`, `session_read_only`, `session_stopped` | In order: the session doesn't exist; its log doesn't parse; it can't be read right now (try again later); a line in the middle of its log is broken (read what came before through `view.page`, see [`errors`](errors.md)); or it stopped (subscribing again reloads it) |
 | `memory_not_installed`, `memory_unavailable` | `memory` stream: memory isn't installed, or that place has no memory |
 
 ## `account.setup_code`, `account.setup`, `account.logout`
 
-The access password is only needed to connect from the local network (a phone, a browser on another computer); local heads use the local token. Sign in once from the network with the access password and the browser keeps a device token for 30 days.
+The access password is only needed to connect from the local network (a phone, or a browser on another computer); local heads use the local token and need no password. After you sign in once from the network with the access password, the browser keeps a device token for 30 days.
 
-**Who can call**: people. `account.setup_code` only on a connection made with the local token; `account.setup` and `account.logout` on any (a device-token connection changing the access password must give the current one, see below).
+**Who can call**: people. `account.setup_code` can only be called on a connection made with the local token; `account.setup` and `account.logout` can be called on any connection (a device-token connection that changes the access password must give the current one, see below).
 
 | Method | Params | Result |
 |---|---|---|
 | `account.setup_code` | none | `{"code", "expires", "first"}`: the one-time code, when it expires, and whether no access password has been set yet |
-| `account.setup` | `password`, `old`? | `{}` on a local-token connection; otherwise `{"login": {"expires", "token"}}`: a new device token, which this connection goes by from then on |
-| `account.logout` | `all` (boolean, default `false`) | `{"revoked": <how many>}`: revokes this device token, or all of them with `all` |
+| `account.setup` | `password`, `old`? | `{}` on a local-token connection; on any other connection `{"login": {"expires", "token"}}`: a new device token, which this connection goes by from then on |
+| `account.logout` | `all` (boolean, default `false`) | `{"revoked": <how many>}`: revokes this device token, or all device tokens with `all` |
 
-A one-time code works once. Setting or changing the access password revokes every device and closes their connections (except the one making the change). The password is at most 1024 bytes and must not be empty or only whitespace; there is no minimum length. A device-token connection from another device on the LAN (brought in by the web server with `connection.remote`) must give the current password as `old` once one is set; it is throttled by source, the same as password login. Before a password is set it needn't. Connections from this machine never need it: local-token and one-time-code connections, and the device token of a page opened by `miyu web` on this machine.
+A one-time code works only once. Setting or changing the access password revokes every device and closes their connections (except the connection making the change). The password is at most 1024 bytes and must not be empty or only whitespace; there is no minimum length. A device-token connection from another device on the LAN (brought in by the web server with `connection.remote`) must give the current password as `old` once one is set; this is throttled by source, the same as password login. Before a password is set, it doesn't need to give one. Connections from this machine never need it: local-token and one-time-code connections, and the device token of a page that `miyu web` opened on this machine.
 
 **Errors**
 
 | `data.reason` | When |
 |---|---|
-| `bad_params` (`-32602`) | Wrong params; the password is not acceptable; a device-token connection from the LAN changing the access password without `old` |
-| `bad_password`, `login_throttled` | A device-token connection changing the access password gave the wrong `old`; this source got it wrong 5 times within 60 seconds, or all sources together tried 30 times (`data.retry_after_ms`) |
-| `local_only` | An extension called it; `account.setup_code` not on a local-token connection |
+| `bad_params` (`-32602`) | The params are wrong; the password is not acceptable; or a device-token connection from the LAN changed the access password without `old` |
+| `bad_password`, `login_throttled` | A device-token connection changing the access password gave the wrong `old`; or this source got it wrong 5 times within 60 seconds, or all sources together tried 30 times (`data.retry_after_ms`) |
+| `local_only` | An extension called one of these methods; or `account.setup_code` was called on a connection not made with the local token |
 
 ## `notices.claim`
 
-Claim background notices: a head such as the tray, which opens no session and still has to pop system notifications after the browser is closed, calls it once on connecting to say "I pop the notices for sessions no head has open (no `viewed` on their session-list item) finishing, asking or needing approval, and the `notices` stream's notices". The core keeps it per connection and releases it when the connection drops; calling it again on the same connection changes nothing.
+Claims background notices: a head such as the tray, which opens no session but still has to pop system notifications after the browser is closed, calls it once when it connects, to say "I pop the notices for sessions no head has open (no `viewed` on their session-list item) finishing, asking or needing approval, and the `notices` stream's notices". The core keeps the claim per connection and releases it when the connection drops; calling it again on the same connection changes nothing.
 
 **Who can call**: people; an extension gets `local_only`.
 
@@ -198,74 +198,74 @@ Claim background notices: a head such as the tray, which opens no session and st
 |---|---|---|
 | `notices.claim` | none | `{}` |
 
-Other heads learn whether anyone has claimed from the `notices` stream: the subscribe response is `{"claimed": true}` while someone has, and still `{}` otherwise; when that changes, `notices.claimed {"claimed": <bool>}` is pushed (two connections claiming and one leaving pushes nothing). While someone has claimed, other heads stop popping system notifications for sessions nobody has open and for `notice`; a head that has a session open still pops that one's. Once the claimer leaves and `claimed: false` is pushed, they go back to popping as before.
+Other heads learn whether anyone has claimed from the `notices` stream: the subscribe response is `{"claimed": true}` while someone has claimed, and still `{}` otherwise; when that changes, `notices.claimed {"claimed": <bool>}` is pushed (when two connections have claimed and one leaves, nothing is pushed). While someone has claimed, other heads stop popping system notifications for sessions nobody has open and for `notice`; a head that has a session open still pops the notifications for that session. Once the claimer leaves and `claimed: false` is pushed, the other heads go back to popping as before.
 
-**Errors**: `bad_params`: params were given.
+**Errors**: `bad_params` when params were given.
 
 ## `core.stop`
 
-Asks the core to stop: the desktop app's tray "Quit" uses it to close the core too.
+Asks the core to stop: the "Quit" item in the desktop app's tray uses it to close the core too.
 
-**Who can call**: people, only on a connection made with the local token; a remote one gets `local_machine_only`.
+**Who can call**: people, and only on a connection made with the local token; a remote connection gets `local_machine_only`.
 
 | Method | Params | Result |
 |---|---|---|
-| `core.stop` | none | `{}`: once the reply is out, the core stops as on a stop signal: a turn halfway through is recorded as restarted and carries on next time it loads, running background commands are recorded `restarted` and then killed, extensions exit, and the socket is let go. The run log says `stopped reason=request` |
+| `core.stop` | none | `{}`: once the reply is out, the core stops the same way as on a stop signal: a turn halfway through is recorded as restarted and carries on the next time the session loads, running background commands are recorded `restarted` and then killed, extensions exit, and the socket is let go. The run log says `stopped reason=request` |
 
-When the core stops, every connection closes. Before replying, the core leaves a mark `stopped` in the data root's `run/`: a core a person stopped is not started again when a head reconnects on its own.
+When the core stops, every connection closes. Before replying, the core leaves a mark `stopped` in the data root's `run/`, which means a person stopped the core, so it is not started again when a head reconnects on its own.
 
-**How a head starts the core** (Rust heads through `miyu-client`):
+**How a head starts the core** (Rust heads do it through `miyu-client`):
 
 | When | Use | A core a person stopped |
 |---|---|---|
-| A person wants it: typing a command, a head just opening, clicking "Start" | `connect::connect_or_start`, `connect_or_start_bare`, `open::Core::connect` | Started as usual |
+| A person wants to use it: typing a command, a head just opening, or clicking "Start" | `connect::connect_or_start`, `connect_or_start_bare`, `open::Core::connect` | Started as usual |
 | A head reconnecting on its own after losing the connection | `connect::reconnect_or_start`, `reconnect_or_start_bare`, `open::Core::reconnect` | Not started: you get `StartError::StoppedByUser` (`Core::reconnect` gives a `Refused` whose `reason` is `stopped_by_user`) |
 
-- `StoppedByUser` has the wording `core/start/stopped_by_user` ("The core was stopped"). Show a "core stopped" card with a "Start" button; clicking it starts the core the way the first row does.
-- A core that crashed, exited when idle or stopped on a signal leaves no mark, and reconnecting starts it again as before.
-- However the core starts, it removes the mark once it holds the data root's lock.
+- `StoppedByUser` has the wording `core/start/stopped_by_user` ("The core was stopped"). The head shows a "core stopped" card with a "Start" button, and clicking it starts the core the same way as the first row.
+- A core that crashed, exited when idle, or stopped on a signal leaves no mark, so reconnecting starts it again as before.
+- However the core is started, it removes the mark once it holds the data root's lock.
 - Heads not written in Rust: before reconnecting on your own, check whether `run/stopped` exists, and don't start the core if it does.
 
 **Errors**
 
 | `data.reason` | When |
 |---|---|
-| `local_only` | An extension called it; a connection not made with the local token (device token, access password, handoff ticket) called it |
+| `local_only` | An extension called it; or a connection not made with the local token (device token, access password, handoff ticket) called it |
 | `local_machine_only` | A remote connection called it |
 
 ## Your avatar
 
-One PNG, JPEG or WebP, at most 1 MiB and 1024 pixels wide or tall (as for persona avatars).
+The avatar is one PNG, JPEG or WebP picture, at most 1 MiB and at most 1024 pixels wide or tall (the same as for persona avatars).
 
 | Method | Params | Result |
 |---|---|---|
-| `account.set_avatar` | `blob` (upload with `blob.put` first) or `unset: true`, optionally `expect` (the version you last read, `null` for none) | `{"avatar": <version or null>}`; a mismatched `expect` gets `avatar_conflict` (`data` carries the current version); not a picture `avatar_not_image`, too big `avatar_too_big` |
-| `account.avatar` | none | `{"avatar", "media_type", "data"}` (version, media type, base64), or `null` when there is none |
+| `account.set_avatar` | `blob` (upload it with `blob.put` first) or `unset: true`, and optionally `expect` (the version you last read, `null` for none) | `{"avatar": <version or null>}`; a mismatched `expect` gets `avatar_conflict` (`data` carries the current version); a file that isn't a picture gets `avatar_not_image`, and one that is too big gets `avatar_too_big` |
+| `account.avatar` | none | `{"avatar", "media_type", "data"}` (version, media type, base64), or `null` when there is no avatar |
 
 ## `login.ticket`, `login.redeem`
 
-Hand-off tickets: a signed-in person jumps from one page to another program's page (from the web app to the messaging page, or `miyu web` opening the web app) without signing in again. Before the jump, ask for a ticket and put it in the URL; the other side connects with it in one of two ways:
+Hand-off tickets let a signed-in person jump from one page to another program's page (from the web app to the messaging page, or `miyu web` opening the web app) without signing in again. Before the jump, the page asks for a ticket and puts it in the URL; the other side connects with it in one of two ways:
 
-- Give `ticket` in the handshake (see the credentials above): connected in one step; the reply carries the new device token. Pages that connect to the core straight from the browser use this.
-- Redeem it with `login.redeem` for a device token and connect to the core with that token (`connect_login` in `miyu-client`, over the local socket, `login` in the handshake; a page's own sign-in form uses `connect_password`, which returns the login token it got). The older way; it still works.
+- Give `ticket` in the handshake (see the credentials above): the connection is made in one step, and the reply carries the new device token. Pages that connect to the core straight from the browser use this.
+- Redeem the ticket with `login.redeem` for a device token, and connect to the core with that token (`connect_login` in `miyu-client`, over the local socket, with `login` in the handshake; a page's own sign-in form uses `connect_password`, which returns the login token it got). This is the older way, and it still works.
 
-**Who can call**: `login.ticket` is for people (connected with the local token, as the terminal does, or a device token, a password or a hand-off ticket). Extensions started by the core may only ask with `via` `"page"`, and need the capability `login.page` approved (see [Extensions](extensions.md), "Signing in pages on this machine"): without it they get `needs_approval`; without `via`, or with another one, `local_only`. Anyone holding a ticket can call `login.redeem`.
+**Who can call**: `login.ticket` is for people: connections made with the local token (as the terminal does), a device token, a password or a hand-off ticket can all ask. Extensions started by the core may only ask with `via` `"page"`, and need the capability `login.page` approved (see "Signing in pages on this machine" in [Extensions](extensions.md)): without it they get `needs_approval`, and without `via`, or with another value, they get `local_only`. Anyone holding a ticket can call `login.redeem`.
 
 | Method | Params | Result |
 |---|---|---|
-| `login.ticket` | optional `via`: `"page"` (the web service or an extension asking for a page opened on this machine) or `"open"` (`miyu web`) | `{"ticket", "expires"}`: a 64-hex-digit ticket, valid for 60 seconds. `via` goes into the core's run log, with how the connection was recognised; a `"page"` ticket only works on this machine (below), whether a person or an extension asked for it, while `"open"` and no `via` work anywhere. Other values or fields get `bad_params` |
+| `login.ticket` | optional `via`: `"page"` (used by the web service or an extension asking for a page opened on this machine) or `"open"` (used by `miyu web`) | `{"ticket", "expires"}`: a 64-hex-digit ticket, valid for 60 seconds. `via` goes into the core's run log, together with how the connection was recognised. A `"page"` ticket only works on this machine (see below), whether a person or an extension asked for it, while `"open"` tickets and tickets without `via` work anywhere. Other values or fields get `bad_params` |
 | `login.redeem` | `ticket` | `{"login": {"expires", "token"}}`: a new device token (30 days) |
 
-A ticket works once, whether given in a handshake or redeemed. At most 16 exist at a time; the oldest is dropped. Tickets live only in the core's memory and die with a restart.
+A ticket works only once, whether it is given in a handshake or redeemed. At most 16 tickets exist at a time; beyond that, the oldest is dropped. Tickets live only in the core's memory, so a restart invalidates all of them.
 
-A ticket with `via` `"page"` only works on this machine (asked for by an extension, or by a person, such as the web software asking for a page opened on this machine): a remote connection passed on by the web software (one that sent `connection.remote` before the hello, whatever address it named, including a loopback address from a reverse proxy on this machine) gets `bad_ticket` for it, in the handshake or with `login.redeem`, and the ticket is spent. Tickets people ask for with `"open"` or without `via` still work anywhere.
+A ticket with `via` `"page"` only works on this machine (asked for by an extension, or by a person, such as the web software asking for a page opened on this machine): a remote connection passed on by the web software (one that sent `connection.remote` before the hello, whatever address it named, including a loopback address from a reverse proxy on this machine) gets `bad_ticket` for it, whether it gives the ticket in the handshake or redeems it with `login.redeem`, and the ticket is spent. Tickets that people ask for with `"open"` or without `via` still work anywhere.
 
 **Errors**
 
 | `data.reason` | When |
 |---|---|
-| `bad_params` (`-32602`) | `login.redeem` without `ticket` |
-| `local_only` | An extension asked for a ticket without `via`, or with one other than `"page"` |
+| `bad_params` (`-32602`) | `login.redeem` was called without `ticket` |
+| `local_only` | An extension asked for a ticket without `via`, or with a `via` other than `"page"` |
 | `needs_approval` | An extension asked for a `page` ticket without `login.page` approved (`data.capabilities` is `["login.page"]`) |
-| `bad_ticket` | No such ticket, expired, or already used; or a `page` ticket used on a remote connection |
+| `bad_ticket` | The ticket doesn't exist, has expired, or was already used; or a `page` ticket was used on a remote connection |
 

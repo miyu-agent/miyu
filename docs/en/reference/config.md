@@ -4,64 +4,64 @@
 
 | Method | What it does |
 |---|---|
-| [`config.schema`](#configschema) | The settings list: each setting's name, description, type, where it can be written |
-| [`config.get`](#configget) | Final values and where they come from; all current problems |
-| [`config.set`](#configset) | Change or reset one or more settings, or replace a whole file |
-| [`config.check`](#configcheck) | Check some text as a config layer without applying it |
-| [`config.trust`](#configtrust) | Trust or reject a project config |
-| [`secret.set`, `secret.delete`, `secret.list`](#secretset-secretdelete-secretlist) | Store and delete secrets; list secret names |
-| [`model.list`](#modellist) | Configured providers and models, pools, the catalog in use |
-| [`provider.detect`](#providerdetect) | Find what's already there: keys in the environment, local model servers |
-| [`provider.catalog`](#providercatalog) | Search the provider catalog |
-| [`provider.test`](#providertest) | Check whether a provider works |
-| [`provider.rename`](#providerrename) | Change a provider's ID |
-| [`model.call`](#modelcall) | Call a model once, outside any session |
-| [`model.embed`](#modelembed) | Compute embeddings for some texts |
-| [`usage.query`](#usagequery) | Query usage and cost |
-| [`usage.convert`](#usageconvert) | Convert amounts you recorded yourself to `usage.currency` |
+| [`config.schema`](#configschema) | Gets the settings list: each setting's name, description, type, and the layers it can be written in |
+| [`config.get`](#configget) | Gets the final values and where they come from, plus all current config problems |
+| [`config.set`](#configset) | Changes or resets one or more settings, or replaces a whole file |
+| [`config.check`](#configcheck) | Checks some text as a config layer without applying it |
+| [`config.trust`](#configtrust) | Trusts or distrusts a project config |
+| [`secret.set`, `secret.delete`, `secret.list`](#secretset-secretdelete-secretlist) | Stores and deletes secrets, and lists secret names |
+| [`model.list`](#modellist) | Lists the configured providers and models, the pools, and the catalog in use |
+| [`provider.detect`](#providerdetect) | Finds what's already there: keys set in the environment and model servers running on this machine |
+| [`provider.catalog`](#providercatalog) | Searches the provider catalog |
+| [`provider.test`](#providertest) | Checks whether a provider works |
+| [`provider.rename`](#providerrename) | Changes a provider's ID |
+| [`model.call`](#modelcall) | Calls a model once, outside any session |
+| [`model.embed`](#modelembed) | Computes embeddings for a batch of texts |
+| [`usage.query`](#usagequery) | Queries usage and cost |
+| [`usage.convert`](#usageconvert) | Converts amounts you recorded yourself to `usage.currency` |
 
 ## The layers
 
-Settings stack from the bottom up: built-in defaults → system config (`config.toml`, where all your settings go) → project config (`.miyu/config.toml` in a repository; only counts once trusted, and can only tighten). Which layers a setting may be written in is in the settings list (`layers`). Secrets live in `secrets.toml`; a setting refers to one with `{ secret = "<name>" }`, or to an environment variable with `{ env = "<variable>" }`.
+Settings stack from the bottom up: built-in defaults → system config (`config.toml`, where all your settings go) → project config (`.miyu/config.toml` in a repository, which only takes effect once it is trusted and can only tighten settings). The settings list says, in `layers`, which layers each setting may be written in. Secrets are stored separately in `secrets.toml`; a setting refers to one with `{ secret = "<name>" }`, or to an environment variable with `{ env = "<variable>" }`.
 
-Above the three layers sit the environment variables the core was started with, and only two settings read one: `log.level` reads `MIYU_LOG`, `models.catalog.update` reads `MIYU_CATALOG_UPDATE`. When set and understood, the variable wins, and `origin`'s `layer` is `env`; options are matched case-insensitively and switches take only `true` or `false` (any case); a value that isn't understood is ignored and the config applies.
+Above the three layers sit the environment variables the core was started with, and only two settings read one: `log.level` reads `MIYU_LOG`, and `models.catalog.update` reads `MIYU_CATALOG_UPDATE`. When the variable is set and its value is understood, the variable wins, and `origin`'s `layer` is `env`. Options are matched case-insensitively, and switches take only `true` or `false` (in any case). A value that isn't understood is ignored, and the config value applies.
 
-**Problems**: every issue found while reading, checking or changing config is one item: `level` (`error` or `warning`), `code`, `file`, `line`, `column`, `key`, `expected`, `got`, `suggest` (the nearest key for a misspelled one), `using` (what's in use instead), `message` (a full sentence for people, in the connection's language). Fields that don't apply are omitted. `got` quotes what was received, up to 80 characters; for items of type secret (and secret fields inside a list), and for unknown keys and fields or a single value written where a group of keys belongs, it is never quoted: `got` and `message` only describe what was given, e.g. "a string of 24 characters", so the value never appears in a response.
+**Problems**: every issue found while reading, checking or changing config is reported as one item with these fields: `level` (`error` or `warning`), `code`, `file`, `line`, `column`, `key`, `expected`, `got`, `suggest` (the nearest key when a key is misspelled), `using` (what is in use instead), and `message` (a full sentence for people, in the connection's language). Fields that don't apply are omitted. `got` quotes what was received, up to 80 characters. It is never quoted for settings of type secret (and secret fields inside a list), for unknown keys and fields, or for a single value written where a group of keys belongs: in those cases `got` and `message` only describe what was given, for example "a string of 24 characters", so the value never appears in a response.
 
-**Who can call**: the read methods (`config.schema`, `config.get`, `config.check`, `secret.list`, `model.list`, `provider.*`, `model.call`, `model.embed`, `usage.query`, `usage.convert`) are open to people and extensions. The write methods (`config.trust`, `secret.set`, `secret.delete`) are for people only; extensions get `local_only`. `config.set` lets an extension change, one key at a time, only system settings its own manifest declares, that aren't secrets and aren't written as references.
+**Who can call**: people and extensions can call the read methods (`config.schema`, `config.get`, `config.check`, `secret.list`, `model.list`, `provider.*`, `model.call`, `model.embed`, `usage.query`, `usage.convert`). The write methods (`config.trust`, `secret.set`, `secret.delete`) are for people only, and an extension that calls them gets `local_only`. With `config.set`, an extension can change only the system settings its own manifest declares, one key at a time, and only those that aren't secrets and aren't written as references.
 
 ## `config.schema`
 
-**Params**: `keys` (array of strings): only these; all when omitted.
+**Params**: `keys` (array of strings): only these settings are returned; when it is omitted, all of them are.
 
-**Response**: `items` (each setting, in list order), `pages`, `groups` (pages and groups of the settings screen). An item:
+**Response**: `items` (each setting, in the order of the settings list), `pages` and `groups` (the pages and groups of the settings screen). An item has:
 
 | Name | Notes |
 |---|---|
-| `key`, `type` | Key and type: `bool`, `option`, `int`, `float`, `text`, `duration`, `path`, `url`, `name`, `reference`, `model`, `model_or`, `english`, `secret`, `list`, `table`; package settings also have `persona`, `knowledge` and `preset` (pick a persona, a knowledge base or a preset; picking a model is `reference`). A segment a person names is written as a placeholder `<id>`, `<model>`, `<external>`, `<name>`, e.g. `providers.<id>.base_url` |
-| `options` | Options: `value` and a display `name`; `description` (shown dimmed below) when one was written; an option with `notice` pops that sentence up when it is picked, with a single confirm button, and the option is still saved; `note` (shown dimmed after the name) and `available: false` (shown greyed out) when the core can tell |
-| `min`, `max`, `max_chars`, `element` | Range, length, list element type (`record`: each entry is a set of fields) |
-| `title`, `fields` | When the element is `record`: which field titles each entry (without it, entries are numbered); one entry per field, shaped like this table (`key` is the field name) |
-| `default` | Default value |
-| `layers` | Where it may be written: `system`, `project` |
-| `applies` | When it takes effect: `now`, `next_turn`, `new_session`, `restart`, `head_start` (the head's next start) |
-| `name`, `description` | Display name and description, in the connection's language |
-| `name_en` | The English name: only when the connection's language isn't English, for heads to search with alongside `name` (so typing web in a Chinese UI finds 网络搜索); absent when there is no English one |
-| `page`, `group`, `common`, `control` | Where it goes on the settings screen, whether it's common, which control: `select`, `toggle`, `number`, `text`, `list`, `combo`, `textarea` (a box of several lines), `slider` |
-| `step` | For a `slider`: how much one step is (a whole number for integers) |
-| `suggestions` | `combo` controls: suggested values |
-| `hidden` | Not drawn on the settings screen |
-| `package` | A package's setting: which package |
-| `section` | A package setting declared in a group: which section of that package it is in (the group id, see `sections` under `groups` below); omitted outside groups |
-| `choices_from` | A package's text setting whose choices the package gives at run time: `{"package", "method"}`, which method of which package; omitted when the manifest doesn't write it, see below |
+| `key`, `type` | The key and the type. The types are `bool`, `option`, `int`, `float`, `text`, `duration`, `path`, `url`, `name`, `reference`, `model`, `model_or`, `english`, `secret`, `list`, `table`; package settings can also have `persona`, `knowledge` and `preset` (which pick a persona, a knowledge base or a preset; a setting that picks a model is `reference`). A key segment that a person names is written as a placeholder `<id>`, `<model>`, `<external>`, `<name>`, for example `providers.<id>.base_url` |
+| `options` | The options: each has a `value` and a display `name`, plus `description` (shown dimmed below it) when one was written. When an option with `notice` is picked, that sentence pops up with a single confirm button, and the option is still saved. When the core can tell, an option also has `note` (shown dimmed after the name) and `available: false` (it can't be used and is shown greyed out) |
+| `min`, `max`, `max_chars`, `element` | The range, the length, and the type of list elements (`record` means each entry is a set of fields) |
+| `title`, `fields` | When the element is `record`: `title` is the field that titles each entry (without it, entries are numbered), and `fields` has one entry per field, shaped like this table (`key` is the field name) |
+| `default` | The default value |
+| `layers` | The layers it may be written in: `system`, `project` |
+| `applies` | When it takes effect: `now`, `next_turn`, `new_session`, `restart`, or `head_start` (the next start of the head, the interface program that connects to the core, such as the terminal interface or the web interface) |
+| `name`, `description` | The display name and description, in the connection's language |
+| `name_en` | The English name. It is present only when the connection's language isn't English, so that heads can search with it alongside `name` (typing web in a Chinese UI then finds 网络搜索); it is absent when there is no English name |
+| `page`, `group`, `common`, `control` | Where the setting goes on the settings screen, whether it is common, and which control draws it: `select`, `toggle`, `number`, `text`, `list`, `combo`, `textarea` (a box of several lines) or `slider` |
+| `step` | For a `slider`: how much one step is (a whole number for integer settings) |
+| `suggestions` | For a `combo` control: the suggested values |
+| `hidden` | The setting is not drawn on the settings screen |
+| `package` | For a package's setting: the package it belongs to |
+| `section` | For a package setting declared in a group: the section of that package it is in (the group id, see `sections` under `groups` below); omitted for settings outside groups |
+| `choices_from` | For a package's text setting whose choices the package gives at run time: `{"package", "method"}`, which method of which package to call; omitted when the manifest doesn't write it, see below |
 
-A group: `id`, `name` (in the connection's language), `name_en` (the English name, only when the connection isn't English), `page`; a group that has a description also has `description` (a sentence or a few, in the connection's language, shown under the group name), and one without it omits the field. When a package groups its settings (its manifest writes `[settings.<group>.<name>]`), that package's group also has `sections`: one `{"id", "name", "shown_when"?}` per section, in manifest order. `name` is in the connection's language, or the group id when the manifest gives no name. `shown_when` is `{"key": "<full key>", "is": ["<value>", …]}`: draw the section only while that setting's current value is one of `is`, which is always an array; without it, always draw it. That setting is an option, or a text with `choices_from` (the strings in `is` need not be among its choices); compare values only. A section that isn't drawn is only not drawn: its settings are still written, read and checked as usual. Packages without groups have no `sections`.
+A group has `id`, `name` (in the connection's language), `name_en` (the English name, only when the connection's language isn't English) and `page`. A group that has a description also has `description` (one sentence or a few, in the connection's language, shown under the group name); a group without one omits the field. When a package groups its settings (its manifest writes `[settings.<group>.<name>]`), that package's group also has `sections`: one `{"id", "name", "shown_when"?}` per section, in manifest order. `name` is in the connection's language, or is the group id when the manifest gives no name. `shown_when` is `{"key": "<full key>", "is": ["<value>", …]}`: the section is drawn only while that setting's current value is one of `is`, which is always an array; a section without it is always drawn. That setting is either an option or a text setting with `choices_from` (the strings in `is` need not be among its choices), and in both cases only the values are compared. A section that isn't drawn is only hidden: its settings are still written, read and checked as usual. Packages without groups have no `sections`.
 
-A setting with `choices_from`: its type is still `text`. Draw it as a dropdown and get the choices with `package.call` (params `{"package", "method"}` exactly as given here, no `params`); the package answers `{"choices": [{"value", "name"?, "description"?}]}`: `value` is the text stored in the config, `name` falls back to `value`, `description` is drawn dimmed below. When the call fails (`program_not_running`, `unregistered`, `method_failed`, `method_timeout`), or `choices` is empty or not in this shape, fall back to a text box; a stored value that isn't in the list is still shown. The core never checks the value against the list: what is written is what is stored.
+A setting with `choices_from` still has the type `text`. The head draws it as a dropdown and gets the choices with `package.call` (params `{"package", "method"}` exactly as given here, without `params`), and the package answers `{"choices": [{"value", "name"?, "description"?}]}`: `value` is the text stored in the config, `name` falls back to `value` when it is missing, and `description` is drawn dimmed below. When the call fails (`program_not_running`, `unregistered`, `method_failed`, `method_timeout`), or `choices` is empty or not in this shape, the head falls back to a text box; a stored value that isn't in the list is still shown. The core never checks the value against the list: whatever is written is stored.
 
-**A package's "Enabled"** (UX-1): every package (each has a switch, the `enabled` of `package.list`) has one item `packages.<id>.enabled`: `type` `bool`, `control` `toggle`, `applies` `now`, `page` `packages`, `group` and `package` the package, placed before the package's own settings. `true` means on. It is the switch of `package.enable` and `package.disable` and is not stored in the config file. The former `packages.<id>.off` (turning a package off for one person) is gone and not recognized anywhere.
+**A package's "Enabled"**: every package (each has a switch, the same as the `enabled` of `package.list`) has one item `packages.<id>.enabled`, with `type` `bool`, `control` `toggle`, `applies` `now`, `page` `packages`, and `group` and `package` set to that package; it is placed before the package's own settings. `true` means on. It is the switch that `package.enable` and `package.disable` flip, and it is not stored in the config file. The former `packages.<id>.off` (which turned a package off for one person) has been removed and is not recognized anywhere.
 
-**Errors**: `unknown_config_key`: `keys` has keys not in the list; `data.problems` has one item each, with the nearest key as `suggest`.
+**Errors**: `unknown_config_key` when `keys` has keys that aren't in the list; `data.problems` has one item for each, with the nearest key as `suggest`.
 
 ## `config.get`
 
@@ -69,27 +69,27 @@ A setting with `choices_from`: its type is still `text`. Draw it as a dropdown a
 
 | Name | Type | Notes |
 |---|---|---|
-| `keys` | array of strings | Only these; all when omitted |
-| `cwd` | string | Look for a project config from this directory and include it; omitted ignores project config |
-| `all` | boolean, default `false` | Also list every layer that sets each key |
+| `keys` | array of strings | Only these settings are returned; when it is omitted, all of them are |
+| `cwd` | string | The project config is looked up from this directory and included in the final values; when it is omitted, no project config is included |
+| `all` | boolean, default `false` | Whether to also list every layer that sets each key |
 
 **Response**
 
 | Name | Notes |
 |---|---|
-| `items` | key → `{value, origin}`: final value and where it comes from (`origin` has `layer`, `file`, `line`). With `all`, also `layers`: each layer top-down `{origin, value, used}`; layers not in effect carry `problem` |
-| `files` | Each layer's file: `system`, `project` (`file`, `version`; the project also has `trusted`: `true`, `false` or `null` not asked yet), `secrets` (only `file`) |
+| `items` | Maps each key to `{value, origin}`: the final value and where it comes from (`origin` has `layer`, `file`, `line`). With `all`, each item also has `layers`: one `{origin, value, used}` per layer from the top down, and layers that aren't in effect carry `problem` |
+| `files` | Each layer's file: `system` and `project` (with `file` and `version`; the project also has `trusted`, which is `true`, `false`, or `null` when the person hasn't been asked yet), and `secrets` (only `file`) |
 | `problems` | All current problems in these files |
 
 ```json
 {"files":{"secrets":{"file":"secrets.toml"},"system":{"file":"config.toml","version":"sha256:…"}},"items":{"ui.language":{"origin":{"file":"config.toml","layer":"system","line":3},"value":"en"}},"problems":[]}
 ```
 
-A package's "Enabled": `{"origin": {"layer": "package"}, "value": true}`; origin `package` means it lives in no config layer. With `all`, `layers` is `[]`.
+A package's "Enabled" comes back as `{"origin": {"layer": "package"}, "value": true}`; the origin `package` means it lives in no config layer. With `all`, its `layers` is `[]`.
 
-Entries of a provider a package brings (the manifest's `[providers.<id>]`): `{"origin": {"layer": "package", "package": "<package>"}, "value": …}`, above the defaults and below the config file, never written to the file; they go away when the package is removed or turned off. Changing one writes it to the config file, overriding the package (the core adds `providers.<id>.package = "<package>"` along the way); a provider with the same id already in the config file without `package` is the owner's own, and the package's one is not added at all. When the package layer changes, `config.changed` is pushed with `via` `package`.
+The settings of a provider that a package brings (the manifest's `[providers.<id>]`) come back as `{"origin": {"layer": "package", "package": "<package>"}, "value": …}`. This layer sits above the defaults and below the config file, and it is never written to the file; its settings go away when the package is removed or turned off. When a person changes one of them, the change is written to the config file and overrides the package (the core also adds `providers.<id>.package = "<package>"` along the way). If the config file already has a provider with the same id and no `package`, that provider is the owner's own, and the package's provider doesn't appear at all. When the package layer changes, `config.changed` is pushed with `via` set to `package`.
 
-Borrowed: `{"origin": {"layer": "inherited", "from": "providers.deepseek.key"}, "value": null}`: no layer sets it and the value of `from` is used (show it as "inherited"). Only `net.search.deepseek.key` does this today: when unset it borrows the key of your official DeepSeek model provider (base URL unset or `api.deepseek.com`), and `from` is that provider's `providers.<id>.key`; a relay is not borrowed from and the origin stays `default`. The value never carries the key. `config.set` replies and `config.changed` pushes write it the same way; changing the provider's key pushes nothing for this item, so read it again when a `config.changed` touches `providers.`.
+A borrowed value comes back as `{"origin": {"layer": "inherited", "from": "providers.deepseek.key"}, "value": null}`: no layer sets it, and the value of `from` is used (show it as "inherited"). Only `net.search.deepseek.key` does this today: when it is unset, it borrows the key of your official DeepSeek model provider (one whose base URL is unset or is `api.deepseek.com`), and `from` is that provider's `providers.<id>.key`. A relay's key is not borrowed, and the origin then stays `default`. The value never carries the key. `config.set` replies and `config.changed` pushes write it the same way. Changing the provider's key pushes nothing for this item, so a head that shows it reads it again when a `config.changed` touches `providers.`.
 
 **Errors**: `unknown_config_key`.
 
@@ -99,46 +99,46 @@ Borrowed: `{"origin": {"layer": "inherited", "from": "providers.deepseek.key"}, 
 
 | Name | Type | Notes |
 |---|---|---|
-| `layer` | `system`, optional | Which layer: only the system config (anything else gets `bad_params`) |
-| `changes` | array | Change some settings, see below |
-| `text` | string | Replace the whole file with this text |
-| `version` | string or `null` | Required with `text`: the version of the file you read; `null` means it didn't exist then |
+| `layer` | `system`, optional | Which layer to change: only the system config is allowed (anything else gets `bad_params`) |
+| `changes` | array | The settings to change; see below for how each change is written |
+| `text` | string | The whole file is replaced with this text |
+| `version` | string or `null` | Required with `text`: the version of the file you read, or `null` if the file didn't exist then |
 
-Give exactly one of `changes` and `text`. Each change: `key` (required; a list whose element is `record` is replaced whole and can't be written as `<key>[0].<field>`); one of `value` (a JSON value; for a `record` list, an array of objects whose secret fields take only `{"secret": …}` or `{"env": …}`: plain text refuses the whole change, with the problem's `key` as `<key>[entry].<field>`), `input` (what a person typed, read by the setting's type), `unset: true` (reset to default); `expect` (optional): what this setting currently is in this layer, `{"value": …}` or `{}` (not set); refused if it doesn't match.
+Give exactly one of `changes` and `text`. Each change has `key` (required; a list whose element is `record` is replaced whole and can't be written as `<key>[0].<field>`) and exactly one of `value` (a JSON value; for a `record` list, an array of objects whose secret fields take only `{"secret": …}` or `{"env": …}`, and plain text there refuses the whole change, with the problem's `key` written as `<key>[entry].<field>`), `input` (what a person typed, read according to the setting's type) and `unset: true` (reset to the default). It can also have `expect` (optional): what this setting currently is in this layer, either `{"value": …}` or `{}` (not set); the change is refused if it doesn't match.
 
-**Response**: `{"keys", "version"}`. `keys` has each setting that changed: `value` (now in this layer; omitted when removed), `effective`, `origin` (final value and source counting the other layers), `applies`. If nothing changed, `keys` is empty and nothing is written.
+**Response**: `{"keys", "version"}`. `keys` has each setting that changed, with `value` (its value now in this layer, omitted when it was removed), `effective` and `origin` (the final value and its source, counting the other layers), and `applies`. If nothing changed, `keys` is empty and nothing is written.
 
 ```json
 → {"jsonrpc":"2.0","id":"s1","method":"config.set","params":{"changes":[{"key":"ui.language","value":"en"}]}}
 ← {"id":"s1","jsonrpc":"2.0","result":{"keys":{"ui.language":{"applies":"now","effective":"en","origin":{"file":"config.toml","layer":"system","line":3},"value":"en"}},"version":"sha256:…"}}
 ```
 
-All changes are checked and written together: one bad item refuses the whole request. The response comes after the file is written and `config.changed` is pushed.
+All changes are checked and written together, so one bad item refuses the whole request. The response comes only after the file is written and `config.changed` is pushed.
 
-Changing a package's "Enabled" (`packages.<id>.enabled`) switches that package, as `package.enable` (without `approve`) and `package.disable` do: nothing is written to the config file and no `config.changed` is pushed; its entry in `keys` is `{"applies": "now", "effective": <on now>, "origin": {"layer": "package"}, "value": <same as effective>}`; `miyu config set` does not report origin `package` as overridden. Only `value` `true` or `false`, or `input`, is taken; `unset` is `bad_params` and `expect` is ignored. Other changes in the same request are written first, then the packages are switched; one that cannot be turned on returns the `package.enable` reason (`needs_approval`, `program_missing`, ...), and what was written stays. An extension changing it gets `local_only`.
+Changing a package's "Enabled" (`packages.<id>.enabled`) switches that package, the same as `package.enable` (without `approve`) and `package.disable` do: nothing is written to the config file and no `config.changed` is pushed, and its entry in `keys` is `{"applies": "now", "effective": <on now>, "origin": {"layer": "package"}, "value": <same as effective>}`. Because the origin is `package`, `miyu config set` does not report it as overridden. Only a `value` of `true` or `false`, or an `input`, is accepted; `unset` gets `bad_params`, and `expect` is ignored. Other changes in the same request are written to the config first, and then the packages are switched; if a package cannot be turned on, the request returns the `package.enable` reason (`needs_approval`, `program_missing`, ...), and the changes already written stay. An extension that changes it gets `local_only`.
 
 **Errors**
 
 | `data.reason` | When |
 |---|---|
-| `bad_params` (`-32602`) | Not exactly one of `changes` and `text`; a change without exactly one of `value`, `input`, `unset`; the same key twice; `text` without `version` |
-| `unknown_config_key` | A key not in the list, `data.problems` |
-| `config_invalid` | A bad value, or not allowed in this layer; `data.problems` lists each |
-| `config_conflict` | `expect` doesn't match (`data.current`); `version` doesn't match or someone keeps editing by hand (`data.version`) |
-| `config_file_broken` | The file can't be read right now, so single settings can't be changed; `data.problems` |
-| `local_only` | An extension changed something it may not |
+| `bad_params` (`-32602`) | There isn't exactly one of `changes` and `text`; a change doesn't have exactly one of `value`, `input`, `unset`; the same key appears twice; or `text` was given without `version` |
+| `unknown_config_key` | A key isn't in the list; see `data.problems` |
+| `config_invalid` | A value is wrong, or isn't allowed in this layer; `data.problems` lists each one |
+| `config_conflict` | `expect` doesn't match (see `data.current`); or `version` doesn't match, or someone keeps editing the file by hand (see `data.version`) |
+| `config_file_broken` | The file can't be read right now, so single settings can't be changed; see `data.problems` |
+| `local_only` | An extension changed something it isn't allowed to change |
 
 ## `config.check`
 
-**Params**: `layer` (`system`, `project`, required), `text` (required). **Response**: `{"problems": [...]}`, empty when fine; problems carry no `file`.
+**Params**: `layer` (`system` or `project`, required) and `text` (required). **Response**: `{"problems": [...]}`, which is empty when there are no problems; these problems carry no `file`.
 
 ## `config.trust`
 
-**Params**: `cwd` (required; the project config is looked up from it), `version` (required; the version the person looked at: `config.get`'s `files.project.version`), `trust` (boolean, required).
+**Params**: `cwd` (required; the project config is looked up from it), `version` (required; the version the person looked at, which is `config.get`'s `files.project.version`) and `trust` (boolean, required).
 
 **Response**: `{"file", "trusted"}`. Only the version the person looked at can be trusted.
 
-**Errors**: `no_project_config`; `config_conflict` (it changed since they looked; `data.version` is the current one).
+**Errors**: `no_project_config`; `config_conflict` (the file changed after the person looked at it; `data.version` is the current version).
 
 ## `secret.set`, `secret.delete`, `secret.list`
 
@@ -148,28 +148,28 @@ Changing a package's "Enabled" (`packages.<id>.enabled`) switches that package, 
 | `secret.delete` | `name` | `{}` |
 | `secret.list` | none | `{"secrets": [{"name", "set", "used_by"}…]}` |
 
-The value is stored with surrounding whitespace removed. `secret.list` never returns values: it lists secrets that are set and those referenced by config but not set; `used_by` is the setting keys that refer to each.
+The value is stored with surrounding whitespace removed. `secret.list` never returns values: it lists the secrets that are set, and those that the config refers to but that aren't set yet; `used_by` is the setting keys that refer to each one.
 
-There is one secrets file: `secrets.toml`.
+All secrets are kept in one file: `secrets.toml`.
 
-**Errors**: `bad_params` (malformed name; value empty, with control characters, or over 16 KiB); `unknown_secret` (deleting one that doesn't exist); `config_file_broken` (the secrets file can't be read); `local_only` (an extension calling the write ones).
+**Errors**: `bad_params` (the name is malformed, or the value is empty, contains control characters, or is over 16 KiB); `unknown_secret` (the secret to delete doesn't exist); `config_file_broken` (the secrets file can't be read); `local_only` (an extension called one of the two write methods, `secret.set` or `secret.delete`).
 
 ## `model.list`
 
-**Params**: `provider` (only this one), `refresh` (boolean; fetch providers' model lists first, then answer), `models` (array; only these `<provider>/<model>`).
+**Params**: `provider` (only this provider), `refresh` (boolean; fetch the providers' model lists first, then answer) and `models` (array; only these `<provider>/<model>`).
 
-Without `refresh`, the answer uses the lists at hand and fetches in the background: without `models`, each provider at most once a minute; with `models`, only providers with no list yet or one older than a day. If a fetched list changed, connections subscribed to the `config` stream get [`models.changed`](pushes.md).
+Without `refresh`, the core answers from the lists it already has and fetches in the background: without `models`, each provider is fetched at most once a minute; with `models`, only providers that have no list yet, or a list older than a day, are fetched. If a fetched list changed, connections subscribed to the `config` stream get [`models.changed`](pushes.md).
 
 **Response**
 
 | Name | Notes |
 |---|---|
-| `providers` | Configured providers by id. Each: `id`, `name` (`{value, from, key}`), `driver`, `base_url`, `key` (`{ref, set, state}`, never the value), `catalog` (which catalog entry it matched), `logo` (`{svg, tint}` or `null`), `models`; unusable ones also have `problem` |
-| each of `models` | `model`, `ref`, `listed` (where it was listed: `config`, `provider`, `catalog`), `facts` (window, max output, input kinds, tools, reasoning, price, name… each with `value` and source), `state` (`ok`, `cooling` with `until`/`class`, `no_key`); embedding models have `embedding: true` |
-| `pools` | Each pool: `name`, `strategy`, `models`, `usable`, `subagent`, `description`, `fixed` (`true` for the three fixed pools `lite`, `normal` and `flagship`: they always exist and are listed even when the configuration does not mention them, cannot be deleted or renamed, and default to `subagent = true`) |
-| `side` | Side requests (model requests outside the conversation), one entry each: `id` (`core/title` for titles, `memory/organize` for memory organizing), `tier` (which tier it asks for: `lite`, `normal` or `flagship`), `name` and `summary` (in the connection's language), and `resolved` (where it would go right now: the pool name when that tier's pool has members, `session` when it is empty and the session's model is used), and `package` (the package that registered it, for those extensions register; built-in ones have no such field). When every member of the pool is cooling down or has failed, the request also falls back to the session's model. Side requests extensions register in their manifest's `[[side]]` are listed here too, with `id` as `<package>/<id>` and the name and summary from their manifest |
-| `uses` | The references set for `chat` and `vision`, `null` when not set |
-| `catalog` | The catalog in use: `source`, `fetched`; `null` when none can be read |
+| `providers` | The configured providers, sorted by id. Each one has `id`, `name` (`{value, from, key}`), `driver`, `base_url`, `key` (`{ref, set, state}`, never the value), `catalog` (the catalog entry it matched), `logo` (`{svg, tint}` or `null`) and `models`; providers that can't be used also have `problem` |
+| each of `models` | `model`, `ref`, `listed` (where it was listed: `config`, `provider`, `catalog`), `facts` (window, max output, input kinds, tool use, reasoning, price, name…, each with a `value` and its source) and `state` (`ok`, `cooling` with `until`/`class`, or `no_key`); models that produce embeddings have `embedding: true` |
+| `pools` | Each pool has `name`, `strategy`, `models`, `usable`, `subagent`, `description` and `fixed` (`true` for the three fixed pools `lite`, `normal` and `flagship`: they always exist and are listed even when the configuration does not mention them, cannot be deleted or renamed, and default to `subagent = true`) |
+| `side` | The registered side requests (model requests outside the conversation), one entry each: `id` (`core/title` writes titles, `memory/organize` organizes memory), `tier` (the tier it asks for: `lite`, `normal` or `flagship`), `name` and `summary` (in the connection's language), `resolved` (where it would go right now: the pool name when that tier's pool has members, or `session` when the pool is empty and the session's model is used), and `package` (for side requests an extension registered, the package that registered it; built-in ones have no such field). When every member of the pool is cooling down or has failed, the request also falls back to the session's model. Side requests that extensions register in their manifest's `[[side]]` are listed here too, with `id` as `<package>/<id>` and the name and summary taken from their manifest |
+| `uses` | The references set for `chat` and `vision`; `null` when one isn't set |
+| `catalog` | The catalog in use, with `source` and `fetched`; `null` when no catalog can be read |
 
 **Errors**: `unknown_provider`; `bad_params` (malformed `models`).
 
@@ -179,23 +179,23 @@ Without `refresh`, the answer uses the lists at hand and fetches in the backgrou
 
 | Name | Notes |
 |---|---|
-| `keys` | Keys set in the core's environment: `env`, `provider`, `name`, `driver`, `supported`; `configured` when already configured. Never the value |
-| `local` | Model servers running on this machine: `provider`, `name`, `base_url`, `models`; `configured` when already configured |
-| `looked_for` | The names of the environment variables looked at |
+| `keys` | Keys set in the core's environment, each with `env`, `provider`, `name`, `driver` and `supported`, plus `configured` when it is already configured. The value is never returned |
+| `local` | Model servers running on this machine, each with `provider`, `name`, `base_url` and `models`, plus `configured` when it is already configured |
+| `looked_for` | The names of the environment variables that were looked at |
 
 ## `provider.catalog`
 
-**Params**: `query` (id or name contains this), `limit` (default 50), `featured` (boolean; only the common ones, with domestic or international ones picked by the connection's language).
+**Params**: `query` (providers whose id or name contains this text), `limit` (default 50) and `featured` (boolean; only the common providers, with domestic or international ones picked by the connection's language).
 
-**Response**: `{"providers": [...]}`, each with `id`, `name`, `driver`, `base_url`, `env`, `doc`, `models` (how many), `supported`, `local` (runs on this machine, no key needed), `logo`. Usable ones first.
+**Response**: `{"providers": [...]}`, each with `id`, `name`, `driver`, `base_url`, `env`, `doc`, `models` (how many models it has), `supported`, `local` (it runs on this machine and needs no key) and `logo`. Usable providers come first.
 
 ## `provider.test`
 
-**Params**: `provider` (a configured one) or `candidate` (not yet in the config: `driver`, `base_url`, `key` (`{secret}`, `{env}` or `{value}`; `value` is used once and not stored), `catalog`), exactly one; `model` (which model to try).
+**Params**: exactly one of `provider` (a configured provider) and `candidate` (a provider not yet in the config: `driver`, `base_url`, `key` (`{secret}`, `{env}` or `{value}`; `value` is used only this once and not stored) and `catalog`); and `model` (the model to try).
 
-Being able to list models counts as working, with no request sent; only when listing fails (not because of the key) or the given model isn't listed is one message sent, which costs a little. When listing fails and no model was given, a recommended one from this provider's models in the catalog is sent to; only a provider missing from the catalog answers with `need_model`.
+If the models can be listed, the provider counts as working and no request is sent. A message is sent only when listing fails (for a reason other than the key) or the given model isn't in the list, and then it costs a little. When listing fails and no model was given, a message is sent to a recommended model from this provider's models in the catalog; only a provider that is missing from the catalog too gets `need_model`.
 
-**Response**: success `{"ok": true, "checked", "models", "listed", "model"}`, plus `first_token_ms` when a message was sent; failure `{"ok": false, "stage", "error": {"class", "status"?, "message"}}`, `stage` being `list`, `request` or `config`; `need_model: true` when naming a model would allow another try.
+**Response**: on success `{"ok": true, "checked", "models", "listed", "model"}`, plus `first_token_ms` when a message was sent; on failure `{"ok": false, "stage", "error": {"class", "status"?, "message"}}`, with `stage` being `list`, `request` or `config`, and `need_model: true` when naming a model would allow another try.
 
 ```json
 {"ok":true,"checked":"list","models":["deepseek-flash","deepseek-v4-pro"],"listed":"provider","model":"deepseek-flash"}
@@ -206,31 +206,31 @@ Being able to list models counts as working, with no request sent; only when lis
 
 ## `provider.rename`
 
-Changes a provider's ID in one go: in the config the `[providers.<from>]` table (with its subtables and key reference) becomes `<to>`, and every `<from>/<model>` in `models.chat`, `models.vision`, `models.embedding` and pool members becomes `<to>/<model>`. Sessions pinned to the old ID use the new one from their next turn. People only.
+Changes a provider's ID in one go: in the config, the `[providers.<from>]` table (with its subtables and key reference) becomes `<to>`, and every `<from>/<model>` in `models.chat`, `models.vision`, `models.embedding` and pool members becomes `<to>/<model>`. Sessions pinned to the old ID use the new one from their next turn. Only people can call it.
 
-**Params**: `from`, `to`. `to` follows the ID rule: starts with a lowercase letter; lowercase letters, digits, `-`, `_`; at most 32.
+**Params**: `from`, `to`. `to` follows the ID rule: it starts with a lowercase letter, uses lowercase letters, digits, `-` and `_`, and is at most 32 characters long.
 
-**Response**: `{}`; each changed layer pushes [`config.changed`](pushes.md).
+**Response**: `{}`; each layer that changed pushes [`config.changed`](pushes.md).
 
-**Errors**: `bad_params` (`to` malformed or equal to `from`); `unknown_provider` (no `from`); `provider_exists` (`to` already exists). If the second layer can't be written, the first stays changed and that layer's error is returned (`config_conflict`, `config_file_broken`); calling again finishes the rest.
+**Errors**: `bad_params` (`to` is malformed or equal to `from`); `unknown_provider` (there is no `from`); `provider_exists` (`to` already exists). If the second of the two layers can't be written, the first layer stays changed and the second layer's error is returned (`config_conflict`, `config_file_broken`); calling again changes the rest.
 
 ## `model.call`
 
-Call a model once and get the whole answer and usage. Not part of any session and nothing is pushed; it costs money and is counted in usage.
+Calls a model once and returns the whole answer and the usage. The call is not part of any session and pushes nothing; it costs money and is counted in usage.
 
 **Params**
 
 | Name | Type | Notes |
 |---|---|---|
-| `purpose` | string, required | What it's for: 1 to 32 lowercase letters, digits, `-`, e.g. `vision` |
-| `messages` | array, required | `{"role": "system"|"user"|"assistant", "text", "images"?}`. At most one `system`, first only; the last one is `user`; only `user` may carry `images` (blob hashes stored with `blob.put`; a missing one gives `unknown_attachment`) |
-| `model` | string | `<provider>/<model>` or `@<pool>`; omitted follows `models.chat` |
-| `use` | `chat` or `vision` | When you don't know which model the person configured: follows `models.chat` or `models.vision`; at most one of `model` and `use` |
-| `side` | string | An extension's side request: an id registered in your own package's `[[side]]` (without the package name). A model is taken from the pool named after its tier (`lite`, `normal`, `flagship`); when that pool is empty, or every member is cooling down or failed, the session's model is used. Can't be combined with `model` or `use`; from a person's connection, or with an unregistered id, it's `bad_params` |
-| `session` | session id | Only with `side`: when the tier's pool can't be used, follow this session's current model; without it, `models.chat`. Someone else's session is `session_not_found` |
-| `max_tokens` | positive integer | Most output tokens |
+| `purpose` | string, required | What the call is for: 1 to 32 lowercase letters, digits and `-`, for example `vision` |
+| `messages` | array, required | `{"role": "system"|"user"|"assistant", "text", "images"?}`. There is at most one `system` message, and only as the first; the last one is `user`; only `user` messages may carry `images`, which are blob hashes stored with `blob.put` (a missing one gives `unknown_attachment`) |
+| `model` | string | `<provider>/<model>` or `@<pool>`; when it is omitted, `models.chat` is used |
+| `use` | `chat` or `vision` | Use it when you don't know which model the person configured: it follows `models.chat` or `models.vision`. Give at most one of `model` and `use` |
+| `side` | string | An extension's side request: an id registered in your own package's `[[side]]` (without the package name). A model is taken from the pool named after its tier (`lite`, `normal`, `flagship`); when that pool is empty, or every member is cooling down or has failed, the session's model is used. It can't be combined with `model` or `use`; from a person's connection, or with an id that isn't registered, it gets `bad_params` |
+| `session` | session id | Only together with `side`: when the tier's pool can't be used, this session's current model is used; without it, `models.chat` is used. Someone else's session gets `session_not_found` |
+| `max_tokens` | positive integer | The maximum number of output tokens |
 
-**Response**: `{"text", "provider", "model", "usage"}`. `usage` has `uncached`, `cache_read`, `cache_write`, `output`, plus `reasoning` when reported; unreported ones are `null`. Answered in the background, so other requests on the connection aren't blocked.
+**Response**: `{"text", "provider", "model", "usage"}`. `usage` has `uncached`, `cache_read`, `cache_write` and `output`, plus `reasoning` when the provider reports it. Fields that aren't reported are `null`. The call is answered in the background, so other requests on the connection aren't blocked.
 
 ```json
 {"text":"A cat on a red sofa.","provider":"deepseek","model":"deepseek-flash","usage":{"uncached":812,"cache_read":0,"cache_write":0,"output":9}}
@@ -240,20 +240,20 @@ Call a model once and get the whole answer and usage. Not part of any session an
 
 | `data.reason` | When |
 |---|---|
-| `bad_params` (`-32602`) | Malformed params; an image blob that isn't an image; a `side` this extension didn't register |
-| `unknown_attachment` | No such image blob |
+| `bad_params` (`-32602`) | The params are malformed; an image blob isn't an image; or `side` isn't one this extension registered |
+| `unknown_attachment` | There is no such image blob |
 | `unknown_model` | `model` can't be resolved |
-| `no_model` | No usable model (not configured, key unavailable), `data.message` |
-| `cooling` | Every candidate is cooling down, `data.message`, `data.wait_ms` |
-| `model_failed` | Sent and failed: `data.class`, `data.status`, `data.message` |
+| `no_model` | No model can be used (none is configured, or its key can't be obtained); see `data.message` |
+| `cooling` | Every candidate is cooling down; see `data.message` and `data.wait_ms` |
+| `model_failed` | The request was sent and failed; see `data.class`, `data.status` and `data.message` |
 
 ## `model.embed`
 
-**Params**: `texts`: 1 to 64 texts, 1 to 8000 characters each. Uses `models.embedding` (the built-in local model or a remote provider).
+**Params**: `texts`: 1 to 64 texts, each 1 to 8000 characters long. The embeddings are computed with `models.embedding` (the built-in local model or a remote provider).
 
-**Response**: `{"model", "vectors"}`. `model` is the model id (`local:<id>` or `<provider>/<model>`): vectors from different models can't be compared. `vectors` are in order and normalized.
+**Response**: `{"model", "vectors"}`. `model` is the model id (`local:<id>` or `<provider>/<model>`); vectors from different models can't be compared. `vectors` are in the same order as the texts and are normalized.
 
-**Errors**: `bad_params`; `embedding_off` (off, or local requested but no built-in model installed); `embedding_failed` (one couldn't be computed or timed out, `data.why`).
+**Errors**: `bad_params`; `embedding_off` (embeddings are off, or the local model was requested but no built-in model is installed); `embedding_failed` (a text couldn't be computed or timed out; see `data.why`).
 
 ## `usage.query`
 
@@ -261,12 +261,12 @@ Call a model once and get the whole answer and usage. Not part of any session an
 
 | Name | Type | Notes |
 |---|---|---|
-| `from`, `until` | time | Only this range, start inclusive, end exclusive |
-| `group` | array | Group by: `venue`, `model`, `day`, `session`, `purpose`, `use` (what for: `main` conversation, `compaction`, `subagent`, `recap`, `title`, `memory`, `other`); one total row when omitted |
-| `session` | string | Only this session; `tree: true` includes the child sessions it spawned |
-| `offset` | time zone, e.g. `+09:00` | Which time zone splits days; the core machine's when omitted |
+| `from`, `until` | time | Only this time range is counted, with the start included and the end excluded |
+| `group` | array | What to group by: `venue`, `model`, `day`, `session`, `purpose`, `use` (what the request was for: `main` conversation, `compaction`, `subagent`, `recap`, `title`, `memory`, `other`); when it is omitted, there is one total row |
+| `session` | string | Only this session is counted; with `tree: true`, the child sessions it spawned are included |
+| `offset` | time zone, e.g. `+09:00` | The time zone used to split days; when it is omitted, the time zone of the core's machine is used |
 
-**Response**: `{"rows": [...]}`. A row: the grouped fields (grouped by `purpose`, a row also has `purpose_name`: the purpose's name for people, in the connection's language; the core's own purposes use the core's wording, the row whose `purpose` is `null` is the main conversation, an extension's use what its manifest declares in `[[purpose]]`, and a purpose with no name has no `purpose_name`, so show `purpose` as is), `requests`, `usage` (the four counts added up), `amounts` (per currency, as recorded), `unpriced` (requests with usage but no known price), `converted` (one amount in `usage.currency`: each charge converted at its own day's rate, `{"currency","amount"}`; charges without a rate go in its `rest`, written like `amounts`; left out when nothing could be converted), `converted_parts` (the converted charges split four ways: `{"uncached","cache_read","cache_write","output"}`, in the currency of `converted`; when all four are present they add up to `converted.amount`; a kind with zero usage is an exact 0; a kind that some charge used without a known price is left out; the whole field is left out when the row holds old charges recorded without the split, or when there is no `converted`). Each kind is computed from that request's own recorded prices and stored with it, so later price changes do not alter it. All sessions are counted. Amounts are ordered by and converted to the configured `usage.currency`. When rates from open.er-api.com were used, the reply also carries `rates` (source and link), and the UI must credit it.
+**Response**: `{"rows": [...]}`. A row has the grouped fields (when grouped by `purpose`, a row also has `purpose_name`: the purpose's name for people, in the connection's language; the core's own purposes use the core's wording, the row whose `purpose` is `null` is the main conversation, and an extension's purposes use what its manifest declares in `[[purpose]]`; a purpose with no name has no `purpose_name`, so show `purpose` as is), `requests`, `usage` (the four counts added up), `amounts` (per currency, as recorded), `unpriced` (requests with usage but no known price), `converted` (one amount in `usage.currency`: each charge is converted at its own day's rate, written `{"currency","amount"}`; charges without a rate go in its `rest`, written like `amounts`; left out when nothing could be converted), and `converted_parts` (the converted charges split four ways: `{"uncached","cache_read","cache_write","output"}`, in the currency of `converted`; when all four are present, they add up to `converted.amount`; a kind with zero usage is an exact 0; a kind that some charge used without a known price is left out; the whole field is left out when the row holds old charges recorded without the split, or when there is no `converted`). Each kind is computed from that request's own recorded prices and stored with it, so later price changes do not alter it. All sessions are counted. Amounts are ordered by and converted to the configured `usage.currency`. When rates from open.er-api.com were used, the reply also carries `rates` (source and link) at the top level, and the UI must credit it.
 
 ```json
 {"rows":[{"purpose":"vision","purpose_name":"Vision","model":"deepseek/deepseek-flash","requests":2,"usage":{"uncached":1624,"cache_read":0,"cache_write":0,"output":18},"amounts":[{"currency":"USD","amount":0.0002544}],"unpriced":0,"converted":{"currency":"CNY","amount":0.00181896},"converted_parts":{"uncached":0.00174174,"cache_read":0,"cache_write":0,"output":0.00007722}}]}
@@ -278,20 +278,20 @@ The cache-write price of this row is unknown, but its usage is zero, so `cache_w
 
 ## `usage.convert`
 
-Hands amounts you recorded yourself, by day and currency, to the core to convert to `usage.currency`. For extensions that keep their own books (per person, for example): the core fetches and caches the rates, and converts the same way as `converted` in `usage.query`.
+Hands amounts you recorded yourself, by day and currency, to the core so that it converts them to `usage.currency`. Extensions that keep their own books (per person, for example) use it: the core fetches and caches the rates, and converts the same way as `converted` in `usage.query`.
 
 **Params**
 
 | Name | Type | Notes |
 |---|---|---|
-| `groups` | array of arrays | A group holds the charges to add up into one amount; it may be empty. At most 1000 groups and 20000 charges in total |
+| `groups` | array of arrays | A group holds the charges to add up into one amount, and it may be empty. There are at most 1000 groups and 20000 charges in total |
 
-A charge:
+A charge has:
 
 | Name | Type | Notes |
 |---|---|---|
-| `day` | string | The UTC day of this charge, written `2026-11-10`; converted at that day's rate |
-| `currency` | string | Currency code, three letters, e.g. `USD` |
+| `day` | string | The UTC day of this charge, written like `2026-11-10`; the charge is converted at that day's rate |
+| `currency` | string | The currency code, three letters, for example `USD` |
 | `amount` | number | The amount |
 
 **Response**: `{"currency", "converted"}`. `currency` is `usage.currency` at this moment; `converted` has one entry per group, in the order of `groups`, written like `converted` in a `usage.query` row (`{"currency","amount"}`; charges without a rate go in `rest`; `rates` is present when rates from open.er-api.com were used, and the UI must credit it); a group where nothing could be converted (an empty group included) is `null`. Missing rates are fetched on the spot, waiting at most two seconds.
@@ -304,4 +304,4 @@ A charge:
 {"currency":"CNY","converted":[{"currency":"CNY","amount":1.3544},null]}
 ```
 
-**Errors**: `bad_params` (a malformed day or currency, an amount that is not a number, over the limits).
+**Errors**: `bad_params` (a day or currency is malformed, an amount isn't a number, or a limit is exceeded).

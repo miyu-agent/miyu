@@ -4,21 +4,21 @@
 
 | Method | What it does |
 |---|---|
-| [`job.stop`](#jobstop) | Stop a background command or subagent |
-| [`job.output`](#joboutput) | Read a background command's output |
-| [`human.get`](#humanget) | Text for people: how tools look, message templates |
-| [`link.preview`](#linkpreview) | A card for a link |
-| [`mermaid.render`](#mermaidrender) | Render Mermaid source to SVG |
+| [`job.stop`](#jobstop) | Stops a background command or subagent |
+| [`job.output`](#joboutput) | Reads a background command's output |
+| [`human.get`](#humanget) | Gets the text for people: how tools look, and message templates |
+| [`link.preview`](#linkpreview) | Gets a card for a link |
+| [`mermaid.render`](#mermaidrender) | Renders Mermaid source to SVG |
 
-**Who can call**: people, extensions; extensions need the `events.read` capability for `job.output` and `network` for `link.preview`.
+**Who can call**: people and extensions can both call these methods; an extension needs the `events.read` capability for `job.output` and the `network` capability for `link.preview`.
 
 ## `job.stop`
 
-**Params**: `session` (the session that started it), `job` (job id, like `j1`).
+**Params**: `session` (the session that started the job), `job` (the job id, for example `j1`).
 
-**Response**: `{}`, once the report is on disk. A background command's whole process group is killed; a subagent stops its turn and what it spawned. Being stopped by a person starts a turn for her, and she knows you stopped it.
+**Response**: `{}`, returned only once the job's report is on disk. A background command's whole process group is killed; a subagent stops its current turn, together with what it spawned. When a person stops a job, a turn is started for the AI, so the AI knows that you stopped it.
 
-**Errors**: `unknown_job` (no such job, or it already ended); `bad_params` (malformed id).
+**Errors**: `unknown_job` (there is no such job, or it has already ended); `bad_params` (the id is malformed).
 
 ## `job.output`
 
@@ -26,61 +26,61 @@
 
 | Name | Type | Notes |
 |---|---|---|
-| `session` | string, required | The session that started it |
-| `job` | string, required | Job id |
-| `tail` | 1 to 2000, default 200 | The last this many lines |
-| `after` | non-negative integer | You already have this many bytes; only what comes after. Only one of `after` and `tail` |
-| `wait` | boolean, default `false` | With `after`: if nothing new and still running, answer when there's something new or it ends (answered in the background) |
+| `session` | string, required | The session that started the job |
+| `job` | string, required | The job id |
+| `tail` | 1 to 2000, default 200 | How many of the last lines to return |
+| `after` | non-negative integer | You already have this many bytes, and want only what comes after them. Give only one of `after` and `tail` |
+| `wait` | boolean, default `false` | With `after`: if there is nothing new and the command is still running, the answer waits until there is something new or the command ends (answered in the background) |
 
 **Response**
 
-- Without `after`: `{"lines", "output", "running", "size", "truncated"}`: total lines, the last `tail` lines, whether it's still running, bytes read, whether earlier output was left out.
-- With `after`: `{"more", "output", "running", "size"}`: pass `size` as the next `after`; `more` means there's more after this that the limit cut off.
+- Without `after`: `{"lines", "output", "running", "size", "truncated"}`: the total number of lines, the last `tail` lines, whether the command is still running, the number of bytes read, and whether earlier output was left out.
+- With `after`: `{"more", "output", "running", "size"}`: pass `size` as the next `after`; `more` means there is more output after this that the limit cut off.
 
-At most 128 KiB per answer. To follow along: once without `after`, then with `after` and `wait`.
+One answer carries at most 128 KiB. If a head (an interface program that connects to the core, such as the terminal interface or the web interface) wants to follow the output, it reads once without `after`, and then with `after` and `wait`.
 
 ```json
 {"id":"o1","jsonrpc":"2.0","result":{"lines":2,"output":"building\nhalf\n","running":true,"size":14,"truncated":false}}
 ```
 
-**Errors**: `unknown_job`; `not_a_command` (it's a subagent: subscribe to its child session instead); `bad_params`.
+**Errors**: `unknown_job`; `not_a_command` (the job is a subagent: subscribe to its child session instead); `bad_params`.
 
 ## `human.get`
 
-Text for drawing tools and hints in the UI, per language.
+This method returns the text used to draw tools and build hints in the UI, per language.
 
-**Params**: `language` (the connection's when omitted).
+**Params**: `language` (when omitted, the connection's language is used).
 
-**Response**: `{"language", "said", "tools", "packages"}`:
+**Response**: `{"language", "said", "tools", "packages"}`, with these fields:
 
 | Name | Notes |
 |---|---|
-| `said` | Message id → template text (the head fills in fields like `{name}`) |
-| `tools` | Tool name → `{"name", "icon"?, "subject"?}`: display name, icon, which argument's value follows the name |
-| `packages` | Tool name → which package it belongs to |
+| `said` | Maps a message id to its template text (the head fills in fields like `{name}`) |
+| `tools` | Maps a tool name to `{"name", "icon"?, "subject"?}`: the display name, the icon, and which argument's value follows the name |
+| `packages` | Maps a tool name to the package it belongs to |
 
-Read fresh every time, so resource changes during development need no restart. After installing or removing packages, or switching MCP servers, heads receive `package.changed`/`mcp.changed` and fetch it again.
+The core reads these fresh every time, so resource changes during development need no restart. After packages are installed or removed, or MCP servers are switched on or off, heads receive `package.changed`/`mcp.changed` and fetch the text again.
 
 ```json
 {"id":"h1","jsonrpc":"2.0","result":{"language":"en","said":{"core/tool-results/unattended":"Needs approval, nobody to approve"},"tools":{"read":{"icon":"→","name":"Read","subject":"file_path"}}}}
 ```
 
-**Errors**: `bad_params` (malformed `language`).
+**Errors**: `bad_params` (the `language` is malformed).
 
 ## `link.preview`
 
-Only when the networking package (`base-net`) is compiled in; otherwise `unknown_method`. Answered in the background.
+This method exists only when the networking package (`base-net`) is compiled in; otherwise the call gets `unknown_method`. It answers in the background.
 
 **Params**: `url`.
 
-**Response**: `{"card": {"url", "title", "description", "site", "kind", "image", "icon", "author"?, "duration"?}}`: `kind` is `video`, `article` or `page`; `image` and `icon` are `{"blob", "media_type"}` or `null` (read with `blob.get`); `duration` is in seconds. When no card can be made: `{"card": null, "why"}` with `not_a_url`, `unsupported_scheme`, `no_preview` or `unreachable`; that isn't an error.
+**Response**: `{"card": {"url", "title", "description", "site", "kind", "image", "icon", "author"?, "duration"?}}`: `kind` is `video`, `article` or `page`; `image` and `icon` are `{"blob", "media_type"}` or `null` (read them with `blob.get`); `duration` is in seconds. When no card can be made, the response is `{"card": null, "why"}` with `not_a_url`, `unsupported_scheme`, `no_preview` or `unreachable`; that isn't an error.
 
 ## `mermaid.render`
 
-Only when the Mermaid package is compiled in; otherwise `unknown_method`.
+This method exists only when the Mermaid package is compiled in; otherwise the call gets `unknown_method`.
 
-**Params**: `source`: Mermaid source.
+**Params**: `source`: the Mermaid source.
 
-**Response**: `{"svg", "marks": {"text", "line", "label"}}`: the SVG text, and the three marker colors used for text, lines and edge-label backgrounds, which heads replace with their own theme's colors.
+**Response**: `{"svg", "marks": {"text", "line", "label"}}`: the SVG text, and the three marker colors used for text, lines and edge-label backgrounds in the SVG, which heads replace with their own theme's colors.
 
-**Errors**: `mermaid_too_long` (source over 64 KiB); `mermaid_failed` (couldn't render, `data.detail` has the library's message).
+**Errors**: `mermaid_too_long` (the source is over 64 KiB); `mermaid_failed` (the diagram couldn't be rendered; `data.detail` has the library's message).

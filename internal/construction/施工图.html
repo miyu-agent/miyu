@@ -1582,6 +1582,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC26"><span class="n">DOC-26</span>内部文档挪到顶层 internal/<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC27"><span class="n">DOC-27</span>协议参考搬进语言目录<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC28"><span class="n">DOC-28</span>作者教程并进开发者文档<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sDOC29"><span class="n">DOC-29</span>协议参考和教程照规范改写<span class="st">…</span></a></li>
         <li><a class="step review" href="#sHLP1"><span class="n">HLP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
@@ -61772,6 +61773,55 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/DOC-28-作者教程并进开发者文档.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sDOC29" aria-labelledby="h-sDOC29">
+  <div class="sheet-head"><h2 id="h-sDOC29"><span class="no">DOC-29</span>协议参考和并进来的教程照「文档的规矩」改写</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">DOC-20 改写手册时，协议参考（20 页）和从作者教程并进来的 5 页不在语言目录里，没有改：还是省略的短句，称 AI 用「她」。规范管所有面向用户和开发者的文档，这一步补上。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">docs/zh/reference　docs/en/reference　docs/zh/dev　docs/en/dev（50 个文件）</span><span class="dir-note">DOC-29</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>25 页中英各一份逐页改写：省略的短句写成完整的陈述句，口语词换掉，「她」和 she/her 全部换成 AI，「头」第一次出现时解释</li>
+              <li>标题、表头、反引号里的名字、代码、链接目标都不动（门禁和测试拿它们和代码对）</li>
+              <li>改写时查出并核实的五处改正：残留的语言跳转、中英两行先后相反、权限级别只有一种、英文少的半句、一句旧的界面原话</li>
+              <li>AGENTS.md 和 base-authoring 清单里「见 README 许可证」改成指到蓝图 licenses.md（项目主人定首页不加那一段）</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">面向用户和开发者的文档称 AI 为「AI」，不用「她」；用完整的陈述句</span><span class="rl">AGENTS.md「文档的规矩」第 6、8 条</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DOC-29</dd></div>
+        <div><dt>名称</dt><dd>协议参考和并进来的教程照「文档的规矩」改写</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-20</dd></div>
+        <div><dt>提交</dt><dd class="mono">DOC-29</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>50 个文件和改写前逐页比：标题、代码块、反引号片段、链接目标一致；没有「她」和 she/her</span></li>
+        <li><span class="ok">✓</span><span>门禁全过：协议参考的条目和锚点、清单每一格、MCP 每一格、脚本环境变量、出错原话的测试都读这些页</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/DOC-29-参考和教程照规范改写.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

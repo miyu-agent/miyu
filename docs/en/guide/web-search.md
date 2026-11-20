@@ -131,7 +131,6 @@ Once it is in effect, these things change:
 
 - DeepSeek does the searching, and Miyu's own `web_search` is no longer offered to the AI. The timeline shows search steps marked DeepSeek, and you can open one to see the search terms and the addresses that were opened.
 - When you give a specific address, the AI still reads it with Miyu's own `web_fetch`.
-- Usage additionally shows the number of searches and fetches.
 
 Things to keep in mind:
 
