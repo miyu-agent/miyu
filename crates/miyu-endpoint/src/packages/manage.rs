@@ -6,7 +6,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use serde_json::Value;
+use serde_json::{Value, json};
 
 use miyu_config::package;
 use miyu_store::packages::conflicts::conflicts;
@@ -246,14 +246,17 @@ pub(super) async fn from_path(
         .iter()
         .find(|one| one.id == id)
         .ok_or(Refusal::INTERNAL)?;
-    Ok(listed(
-        core,
-        mine,
-        (&places, &now),
-        &words,
-        peer.language,
-        false,
-    ))
+    let mut answer = listed(core, mine, (&places, &now), &words, peer.language, false);
+    // 工具说明里不是各家都收的参数写法（施工 FX-10）：照装，回应里带上警告，命令行印出来。
+    let dir = mine.files_dir();
+    let found = blocking(move || Ok(miyu_tool::portable::scan(&dir)))
+        .await
+        .unwrap_or_default();
+    let warned = super::portable::said(&words, found);
+    if !warned.is_empty() {
+        answer["warnings"] = json!(warned);
+    }
+    Ok(answer)
 }
 
 /// 把卸掉的出厂的包 `id` 装回来：删掉 `etc/removed/` 里记的那一笔。

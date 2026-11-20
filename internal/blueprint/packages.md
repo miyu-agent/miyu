@@ -245,7 +245,7 @@ window = 1000000
 | `removed` | 卸掉了的出厂的、系统加装的包（施工 F-5 上、SD-1） | `true`，接在后面；同一个编号两层都有的列盖得住的那一份 |
 | `code`、`problem`、`line` | 写错的、撞了的、读不了的、协议版本对不上的 | 代码；给人看的一句（照连接的语言，`core/human` 的 `package-problems/<code>`，读不了的是 `config/unreadable`）；第几行，有的才有。写错的、撞了的、读不了的只有 `package`、`layer` 和这几格；协议版本对不上的（`code` 是 `protocol_mismatch`）照样带全，头自己决定用不用 |
 
-**`miyu check`**（`cli/check.md`）：多查三层里每一份清单，种类 `package`，写法同人格；协议版本对不上的是警告，写了后台页、目录里没有 `index.html` 的也是警告 `page_missing`（施工 F-6 上）。被上面一层盖住的是警告 `shadowed`（施工 SD-1，SD-1补 改名）：说被哪一层盖住、两边的版本；这一份更新的接一句怎么换回来：盖它的是装上的，`miyu pkg remove <编号>` 卸掉上面那份；是系统加装的，用系统的包管理器卸（卸掉的记号照编号记，会连这一份一起藏起来）。写了文件的，某一层下的 `<编号>/package.toml` 认作清单（两边换成真的路径比，施工 F-8 上），还没有的报读不了；包目录里别的文件不认。
+**`miyu check`**（`cli/check.md`）：多查三层里每一份清单，种类 `package`，写法同人格；协议版本对不上的是警告，写了后台页、目录里没有 `index.html` 的也是警告 `page_missing`（施工 F-6 上）。包文件夹里的工具说明有不是各家都收的参数写法的，一份一条警告 `tool_not_portable`（施工 FX-10，下面「工具说明的参数写法」）。被上面一层盖住的是警告 `shadowed`（施工 SD-1，SD-1补 改名）：说被哪一层盖住、两边的版本；这一份更新的接一句怎么换回来：盖它的是装上的，`miyu pkg remove <编号>` 卸掉上面那份；是系统加装的，用系统的包管理器卸（卸掉的记号照编号记，会连这一份一起藏起来）。写了文件的，某一层下的 `<编号>/package.toml` 认作清单（两边换成真的路径比，施工 F-8 上），还没有的报读不了；包目录里别的文件不认。
 
 ### 怎么走
 
@@ -392,6 +392,28 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
    - **说清来源和能力**（施工 PK-3 上，设计 `61-装包说清来源和能力.md` 第二节，端点的 `packages/source/glance.rs`、`preview.rs`、`notice.rs`）：`package.install` 看一眼的 `source` 是这个包从哪来：从软件源装的 `official`（条目的 `official` 是真、又是官方那个源）、`community`（官方源里社区收录的，配置里自己加的源里的一律算社区：加源是信那把钥匙，包里的东西还是没人审过），从本机包文件夹、包文件装的 `file`（从软件源缓存里拿 `.miyu` 手装的也是：核心看不出它原来是哪一条），装回的 `shipped`、`distro`（照装回来那一份的层）。原来那一格源的名字改叫 `feed`，和本地库 `desc` 同名，从软件源装的都写（官方的写 `official`）。能力的名字、说明只用核心的字（`extensions/capabilities/<编号>`），作者不能写自己的说法；这一刻批过、装完照旧留着的标 `held: true`（只在来路没变时有，第 9 条）。社区的、本机文件的另给 `notice`：一句一个字符串，照连接的语言挑好：社区的「这是个社区包，没有经过官方审核，可能存在风险。」（几个包的写出是哪几个：「weather 是社区包，没有经过官方审核，可能存在风险。」，`packages/notice/unreviewed`、`…/named`），本机文件的「这个包来自本机文件，没有经过官方审核，可能存在风险。」（「kit 来自本机文件，……」，`packages/notice/file`、`…/named`：本机文件不是社区收录的，不叫社区包），两样都有的先社区后本机文件各一句（施工 CM-1，2026-11-12 项目主人定字；原来带程序、MCP 服务、脚本的另一句「不在沙盒里」去掉：扩展沙盒（设计 62）暂缓，现在没有那层沙盒）；推荐的另给 `recommends_notice`。`package.upgrade` 看一眼同样带（照从软件源装那一条一个一个看），另多一起装的新依赖 `with`。
 
 9. **装的时候批能力**（施工 PK-3 上，设计 `61-装包说清来源和能力.md` 第四节，端点的 `packages/approve.rs`）：`package.install`、`package.upgrade` 的 `approve`（`{编号: [能力…]}`）是这一次装上的每个包各批哪几样。能力名不是能力表里的（`Capability::ALL`）、编号写法不对的 `bad_params`；清单没声明的、编号不是这一次装的不理；不写的照旧装上不批。`from_path` 拷文件之前读出本地库旧的 `desc`；拷进去、重读通过、本地库记好以后，在 `switch_packages` 拉起扩展**之前**拿扩展开关那把锁（`one_at_a_time`）读、改、写 `extensions.json` 的 `approved`：「接着用 = 来路没变时旧的 `approved[编号]`，不然空的；新的 = (接着用 ∪ `approve[编号]`) ∩ 这一份清单声明的」，照名字排、不重，空的不写，没变的不写。来路没变是装之前 `desc` 记的和这一次一样都是从软件源装的、`feed`、`origin` 都一样；本机文件装的、换了源的、换了来源仓库的、本地库没记的都算变了。所以 `start = "always"` 的带着批准装上就当场拉起，清单不再要的从 `approved` 里去掉、以后加回来要重新批。从软件源装的把 `feed`、`origin` 交给 `from_path`，跟本地库一起记（原来装完另补 `set_origin`）。装不成、撤回的不写；写不进的记一行 `WARN extension approval not recorded`，装照算成，这个包照旧停在「要批准」，打开时再批。装回出厂的、系统加装的不经这里，不写（出厂的算全批过，`login.page`、`provider.key` 除外，施工 LP-1、PK-1；系统加装的照旧打开时批，设计 61 定了的 8）。打开时批（`extension.enable`、`package.enable` 的 `approve`）照旧留着当兜底，也照这个算法记。不做撤销入口：卸掉就是撤销（定了的 7）。
+
+### 工具说明的参数写法（施工 FX-10，2026-11-20 项目主人定「工具的参数写法要各家都收」）
+
+一件工具的参数格式里有一处某家模型供应商不收的写法，那一家会拒绝整个请求，不只是这件工具用不了：接入通讯平台的 `qq_activity_ranking` 写了 `"days": {"type": "integer", "enum": [1, 7, 30]}`，用 Antigravity（Gemini）时每一轮都被拒。
+
+1. **查什么**（`miyu_tool::portable`）：`enum` 写在不是字符串的类型上（`integer`、`number`、`boolean`），或者 `enum` 里有不是字符串的值。只走 schema 的位置（`properties` 的每个值、`items`、`additionalProperties`、`anyOf`、`oneOf`、`allOf` 的每一项）。位置照 JSON Pointer 写，例如 `/properties/days`。
+2. **查哪里**：包文件夹里每一份 `tools/<名字>.json`、里面有 `parameters` 的（同 `miyu_tool::load::spec_in` 读的写法，自己带着工具说明的扩展照它放），不跟符号链接；读不了、不是 JSON 的跳过。扩展运行时经 `provide` 交的工具不在这里查。
+3. **打包**（`miyu pkg pack`）：有一处就无法打包，说是哪一份、哪几处、怎么改。
+4. **装包**（`package.install` 的 `path`、`source`，`from_path` 装好以后）：照装，回应多一格 `warnings`：`[{"code": "tool_not_portable", "level": "warning", "message"}]`，一份一条；命令行在标准错误上一条一句。没有的不带这一格。
+5. **`miyu check`**：读成了的每个包照第 2 条查，一份一条警告 `tool_not_portable`，说法 `core/human` 的 `package-problems/tool_not_portable`，字段 `detail` 是「那一份 那几处」。
+6. 出厂的工具说明（`resources/` 下每一份 `tools/<名字>.json`）由 `miyu-tool` 的单元测试照第 1 条严格查，核心自己写错了照样红。
+
+各家官方文档里别的不收的写法（2026-11-21 查的，只拦第 1 条，别的不拦）：
+
+| 写法 | 谁不收 | 为什么不拦 |
+|---|---|---|
+| 不是字符串的 `enum` | Gemini 的函数声明 `parameters`（OpenAPI 的 Schema，`enum`：「Possible values of the element of Type.STRING with enum format」） | 拦（上面第 1 条） |
+| `additionalProperties`、`const`、`oneOf`、`allOf`、`$ref`、`$defs`、`patternProperties`、`type` 写成数组 | Gemini 的 `parameters` 只认 `type`、`format`、`title`、`description`、`nullable`、`enum`、`items`、`maxItems`、`minItems`、`properties`、`required`、`minProperties`、`maxProperties`、`minimum`、`maximum`、`minLength`、`maxLength`、`pattern`、`example`、`anyOf`、`propertyOrdering`、`default` | 驱动发请求时剔掉认不得的键就行（Antigravity 那个扩展已经这样做）；`enum` 剔掉会改了参数的意思，所以只拦它 |
+| `allOf`、`not`、`if`/`then`/`else`、`dependentRequired`、`dependentSchemas`；对象要写 `additionalProperties: false`、全部字段必填 | OpenAI 的严格模式（Structured Outputs） | Miyu 发工具不开严格模式 |
+| `oneOf`、`not`、数字和字符串的上下限、`additionalProperties` 不是 `false` | Anthropic 的严格模式（strict tool use） | 同上，不开严格模式 |
+
+出处：Gemini API 参考 `FunctionDeclaration` 的 Schema；OpenAI「Structured Outputs」的 Supported schemas；Anthropic「Structured outputs」的 JSON Schema limitations。
 
 ### 冲突（施工 F-8 六补，设计 `31-软件包.md` 第四节最后两条、定了的 I、J）
 

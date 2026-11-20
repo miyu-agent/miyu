@@ -751,6 +751,7 @@
     "package-problems/bad_miyu": "{detail} 要写成三段数字的版本，例如 2026.11.0",
     "package-problems/needs_newer_miyu": "这个包要 Miyu {detail} 以上，先更新 Miyu",
     "package-problems/maybe_newer_miyu": "{problem}。这个包可能需要更新版本的 Miyu",
+    "package-problems/tool_not_portable": "工具说明 {detail} 把 enum 写在了不是字符串的类型上，有的模型供应商会拒绝整个请求",
     "package-problems/page_missing": "{detail} 里没有 index.html",
     "package-problems/depends_missing": "缺少依赖的软件包：{detail}",
     "package-problems/logo_missing": "包目录里没有 {detail}",

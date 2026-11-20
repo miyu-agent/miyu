@@ -751,6 +751,7 @@
     "package-problems/bad_miyu": "{detail} は 2026.11.0 のような三つの数字のバージョンで書いてください",
     "package-problems/needs_newer_miyu": "このパッケージには Miyu {detail} 以上が必要です。先に Miyu を更新してください",
     "package-problems/maybe_newer_miyu": "{problem}。このパッケージには新しい Miyu が必要かもしれません",
+    "package-problems/tool_not_portable": "ツールの説明 {detail} が文字列ではない型に enum を書いています。一部のモデルプロバイダーはリクエスト全体を拒否します",
     "package-problems/page_missing": "{detail} に index.html がありません",
     "package-problems/depends_missing": "依存するパッケージがありません：{detail}",
     "package-problems/logo_missing": "パッケージディレクトリに {detail} がありません",

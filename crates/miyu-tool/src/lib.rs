@@ -16,6 +16,7 @@
 //!   认她写的会话编号；
 //! - [`UsagePort`]：查这个会话的用量、金额、上下文（施工 8-15），`session_usage` 用；
 //! - [`GoalPort`]：看、设、结束这个会话的长期目标（施工 X-8 上），`goal` 用；
+//! - [`portable`]：参数格式里不是各家模型供应商都收的写法（施工 FX-10）：打包、装包、`miyu check` 照它查。
 //! - [`picture`]：什么算一张图（施工 4-13 定，3-9 三补挪来）：`read` 读到的、人附上的，都照它认。
 //! - [`attachment`]：一个附件是什么（施工 3-9 三补定，C-9 挪来）：人附上的、她带给别的会话的，都照它认。
 
@@ -38,6 +39,7 @@ mod nested;
 mod packages;
 mod person;
 pub mod picture;
+pub mod portable;
 mod questions;
 mod run;
 mod schedules;

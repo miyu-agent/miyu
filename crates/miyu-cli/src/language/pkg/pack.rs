@@ -91,6 +91,21 @@ impl Language {
         }
     }
 
+    /// 工具说明里有不是各家都收的参数写法（施工 FX-10）：`file` 是相对包文件夹的那一份，`at` 是参数格式里的几处，用 `、`、`, `
+    /// 连好的。
+    pub(crate) fn tool_not_portable(&self, file: &str, at: &str) -> Problem {
+        match self {
+            Language::Chinese => Problem::new(format!(
+                "无法打包：{file} 的参数在 {at} 把 enum 写在了不是字符串的类型上，有的模型供应商会拒绝整个请求"
+            ))
+            .hint("enum 只写在 \"type\": \"string\" 上，数字的选项改成字符串，或者去掉 enum、写进说明"),
+            Language::English => Problem::new(format!(
+                "cannot pack: the parameters in {file} put enum on a type that is not a string at {at}, and some model providers reject the whole request"
+            ))
+            .hint("put enum only on \"type\": \"string\"; turn numeric choices into strings, or drop enum and say them in the description"),
+        }
+    }
+
     /// 清单没写版本。
     pub(crate) fn no_version(&self) -> Problem {
         match self {

@@ -755,6 +755,7 @@
     "package-problems/bad_miyu": "{detail} must be a version of three numbers, such as 2026.11.0",
     "package-problems/needs_newer_miyu": "This package needs Miyu {detail} or newer: update Miyu first",
     "package-problems/maybe_newer_miyu": "{problem}. This package may need a newer Miyu",
+    "package-problems/tool_not_portable": "the tool description {detail} puts enum on a type that is not a string, and some model providers reject the whole request",
     "package-problems/page_missing": "{detail} has no index.html",
     "package-problems/depends_missing": "Missing required packages: {detail}",
     "package-problems/logo_missing": "{detail} is not in the package directory",

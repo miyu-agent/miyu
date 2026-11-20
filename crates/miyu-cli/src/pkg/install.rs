@@ -132,6 +132,11 @@ async fn one(
         .filter(|version| !version.is_empty());
     let installed = version.map_or_else(|| id.to_string(), |version| format!("{id} {version}"));
     say(out, &language.installed(&installed));
+    // 核心查出的警告（施工 FX-10：工具说明里有不是各家都收的参数写法）：照装好了，标准错误上一条一句。
+    for warning in result["warnings"].as_array().into_iter().flatten() {
+        let message = warning["message"].as_str().unwrap_or_default();
+        diagnostic::warning(err, *language, &diagnostic::Problem::new(message));
+    }
     lines(out, said);
     if !open::wanted(&result, shown) {
         return Ok(done);

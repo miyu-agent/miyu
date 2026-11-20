@@ -94,6 +94,16 @@ fn packed(wanted: &Wanted<'_>, cwd: &Path, language: &Language) -> Result<Made, 
     let manifest =
         package::read(&text).map_err(|problem| language.cannot_pack(&problem.to_string()))?;
     let version = manifest.version.ok_or_else(|| language.no_version())?;
+    // 工具说明里不是各家都收的参数写法（施工 FX-10）：打包时就拦，不让它进软件源。
+    if let Some(found) = miyu_tool::portable::scan(&folder).first() {
+        let at = found
+            .at
+            .iter()
+            .map(|at| if at.is_empty() { "/" } else { at.as_str() })
+            .collect::<Vec<_>>()
+            .join(", ");
+        return Err(language.tool_not_portable(&found.file, &at));
+    }
     let target = target(&manifest.targets, wanted.target, language)?;
     let dir = wanted
         .out

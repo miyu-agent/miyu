@@ -117,3 +117,31 @@ fn a_missing_or_broken_logo_stops_the_packing() {
     );
     std::fs::remove_dir_all(&dir).expect("删得掉");
 }
+
+/// 工具说明里把 `enum` 写在整数上的打不成包（施工 FX-10）：说是哪一份、哪一处、怎么改；改成字符串的照打。
+#[test]
+fn a_tool_with_an_enum_on_an_integer_is_not_packed() {
+    let dir = scratch("enum");
+    std::fs::write(dir.join("kit/art/logo.png"), png(64, 64)).expect("写得进");
+    let spec = |kind: &str, values: &str| {
+        format!(
+            r#"{{"description":"Rank.","parameters":{{"type":"object","properties":{{"days":{{"type":"{kind}","enum":{values}}}}}}}}}"#
+        )
+    };
+    std::fs::create_dir_all(dir.join("kit/data/qq/tools")).expect("建得了");
+    let file = dir.join("kit/data/qq/tools/ranking.json");
+    std::fs::write(&file, spec("integer", "[1,7,30]")).expect("写得进");
+    let (code, _, err) = run(&dir);
+    assert_eq!(code, exit::ERROR);
+    assert!(
+        err.starts_with(
+            "miyu: cannot pack: the parameters in data/qq/tools/ranking.json put enum on a type that is not a string at /properties/days"
+        ),
+        "{err}"
+    );
+    assert!(err.contains("\"type\": \"string\""), "{err}");
+    std::fs::write(&file, spec("string", r#"["1","7","30"]"#)).expect("写得进");
+    let (code, _, err) = run(&dir);
+    assert_eq!(code, exit::OK, "{err}");
+    std::fs::remove_dir_all(&dir).expect("删得掉");
+}

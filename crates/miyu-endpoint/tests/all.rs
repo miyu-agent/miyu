@@ -226,6 +226,7 @@ mod packages_info_path;
 mod packages_install;
 mod packages_live;
 mod packages_local;
+mod packages_portable;
 mod packages_preview;
 mod packages_programs;
 mod packages_provides;

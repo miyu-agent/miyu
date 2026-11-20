@@ -84,7 +84,7 @@
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `package.install` | `path`：本机一个软件包文件夹的绝对路径（文件夹名就是编号），或者其中那份 `package.toml` 的路径，或者一个包文件 `.miyu` 的路径 | 和 `package.list` 的一项相同 |
+| `package.install` | `path`：本机一个软件包文件夹的绝对路径（文件夹名就是编号），或者其中那份 `package.toml` 的路径，或者一个包文件 `.miyu` 的路径 | 和 `package.list` 的一项相同；包里的工具说明有不是各家模型供应商都收的参数写法时，多一个 `warnings`：`[{"code": "tool_not_portable", "level": "warning", "message"}]`，一份工具说明一条，软件包照样安装（见 [写扩展](../dev/extensions.md)） |
 | `package.install` | `package`：如果是出厂的、系统加装的编号，就是把卸载的软件包装回来；其他编号和 `source` 相同，从软件源安装 | 同上 |
 | `package.install` | `source`：从软件源安装这个编号的软件包（缺少的依赖一起安装，先安装依赖；依赖写了版本下限时按下限挑选版本，已安装的版本不够时一起升级）；先全部下载完，再逐个核对，再逐个安装，每一个阶段都向这个连接推送 `package.progress`（见下文）。`from`（可以不写）：从哪个软件源安装（`official` 或者配置里加的源的名字），不写时按先后查找 | 同上；一起安装了依赖时多一个 `with` |
 | `package.install` | `package`：如果是组名（`package.list` 顶层的 `groups`，例如 `basesystem`），就是把组里卸载了的出厂包一起装回来 | `{"group", "packages": [<同 `package.list` 的一项>…]}`，一个都没有卸载过时是空的 |

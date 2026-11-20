@@ -38,6 +38,7 @@ mod notice;
 pub(crate) mod off;
 pub(crate) mod own;
 pub(crate) mod port;
+pub(crate) mod portable;
 pub(crate) mod preview;
 pub(crate) mod progress;
 pub(crate) mod providers;
