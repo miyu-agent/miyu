@@ -1,4 +1,4 @@
-//! 工具调用前的守卫（施工 HK-1，设计 `65-工具挂接点.md` 第三节，`docs/reference/extensions.md` 的 `tool.guard`）：真核心拉起
+//! 工具调用前的守卫（施工 HK-1，设计 `65-工具挂接点.md` 第三节，`docs/zh/reference/extensions.md` 的 `tool.guard`）：真核心拉起
 //! 测试扩展走一遍。
 //!
 //! - 两个守卫一个拒一个放：拒绝，`by` 是拒的那个包，写给她的是 `Blocked by <包>: <理由>`，工具没跑；两个都被问到，问的照第三节

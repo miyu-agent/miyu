@@ -197,7 +197,7 @@
 | `persona.list`、`persona.get` | 列出人格、读一个人格叠好的样子（施工 P-1 上，`personas.md`） |
 | `preset.list`、`preset.get` | 列出预设、读一个预设叠好的样子（施工 P-2 上，`presets.md`） |
 | `preset.set`、`preset.delete` | 新建、改一个预设（只写你那一层），删掉你那一层（施工 P-3 中，`presets.md`「改」） |
-| `schedule.add`、`schedule.list`、`schedule.cancel`、`schedule.pause`、`schedule.resume`、`schedule.update` | 定时任务：建、列、删、停、续、改（改的施工 J-5），照唤醒表（施工 J-1 下，`schedules.md` 第五节，协议参考 `docs/reference/schedules.md`） |
+| `schedule.add`、`schedule.list`、`schedule.cancel`、`schedule.pause`、`schedule.resume`、`schedule.update` | 定时任务：建、列、删、停、续、改（改的施工 J-5），照唤醒表（施工 J-1 下，`schedules.md` 第五节，协议参考 `docs/zh/reference/schedules.md`） |
 | `persona.set`、`persona.read`、`persona.delete` | 新建、改一个人格（只写你那一层），读一份提示词的原文和版本，删掉你那一层（挪进回收处）；你那一层没有、只有只带它的出厂包带的，删它是卸那个包（施工 P-3 下，PE-1，`personas.md`「改」） |
 | `persona.avatar` | 读一个人格的头像：`{"avatar", "media_type", "data"}`，没有的 `null`（施工 P-5，`personas.md`「头像」） |
 | `persona.background` | 读一个人格的背景图：`{"background", "media_type", "data"}`，没有的 `null`（施工 P-6，`personas.md`「主题色、背景图」） |
@@ -239,7 +239,7 @@
 | `blob.put` | 传一个附件，存成 blob（施工 3-9 三补） |
 | `account.setup_code` | 要一个一次性码：网页第一次设访问密码；只给出示本机令牌的连接（施工 W-8） |
 | `core.stop` | 叫核心停下：回应 `{}` 写出去以后照收到停的信号那样停（`core.md`「停下」第 10 条）；回应以前留下人停的记号 `run/stopped`，头自己重连不再拉起（施工 CS-5，`ipc.md`）；只给出示本机令牌的连接，别的回 `local_only`，远程的回 `local_machine_only`（施工 DT-4 下：桌面端托盘里的「退出」连核心一起关） |
-| `login.ticket`、`login.redeem` | 交接票（施工 W-8 补，接入通讯平台要的）：人要一张 60 秒、一次性的票（本机令牌、设备令牌、密码、交接票连上的都能要）；接的一方握手交 `ticket`（施工 LT-1），或者 `login.redeem` 换一个设备令牌。要票时可以写 `via`（`page`、`open`，施工 LT-2），进运行日志；人要的 `page` 票（网页软件 `/ticket` 替本机页面要的）也只在本机换（施工 LP-2，同下面扩展的），`open`、不写的哪儿都能换。扩展（施工 LP-1，项目主人 2026-11-06 定只给本机免密）只能要 `via: "page"` 的，要批过能力 `login.page`（出厂的也要人批），没批的 `needs_approval`，不写、别的 `via` `local_only`；它要的票记成只在本机换：远程的连接（说过 `connection.remote` 的，不管地址）握手交它、`login.redeem` 它都回 `bad_ticket`，票当场作废（`login/ticket.rs` 的 `Reach`）。详见 `docs/reference/connection.md`、`docs/reference/extensions.md`「替本机页面换登录票」 |
+| `login.ticket`、`login.redeem` | 交接票（施工 W-8 补，接入通讯平台要的）：人要一张 60 秒、一次性的票（本机令牌、设备令牌、密码、交接票连上的都能要）；接的一方握手交 `ticket`（施工 LT-1），或者 `login.redeem` 换一个设备令牌。要票时可以写 `via`（`page`、`open`，施工 LT-2），进运行日志；人要的 `page` 票（网页软件 `/ticket` 替本机页面要的）也只在本机换（施工 LP-2，同下面扩展的），`open`、不写的哪儿都能换。扩展（施工 LP-1，项目主人 2026-11-06 定只给本机免密）只能要 `via: "page"` 的，要批过能力 `login.page`（出厂的也要人批），没批的 `needs_approval`，不写、别的 `via` `local_only`；它要的票记成只在本机换：远程的连接（说过 `connection.remote` 的，不管地址）握手交它、`login.redeem` 它都回 `bad_ticket`，票当场作废（`login/ticket.rs` 的 `Reach`）。详见 `docs/zh/reference/connection.md`、`docs/zh/reference/extensions.md`「替本机页面换登录票」 |
 | `account.setup` | 设、改访问密码（施工 W-8）：`{"password"}`，本机令牌连上的回 `{}`，别的换一个设备令牌；以前的设备全部作废、连着的断开。设备令牌连上的（施工 SU-1 补）设过的要带对现在的 `old`，照来源限流同密码登录 |
 | `account.logout` | 作废设备令牌：这一个，或者 `all` 全部（施工 W-8） |
 | `account.set_avatar`、`account.avatar` | 你的头像（施工 AV-1，`login/avatar.rs`）：放在数据根 `avatar.<扩展名>`，查法、写法、上限同人格头像（`personas/picture.rs` 的 `check`、`replace`、`encoded`）；握手回应带版本 |
@@ -252,8 +252,8 @@
 | `fs.read` | 分块读本机的一份文件：数据根只有默认工作区能读（施工 W-6） |
 | `session.set_meta` | 改标题、置顶（施工 3-8 三补） |
 | `session.retitle` | 让模型照现在的对话重起一个标题（施工 TT-1） |
-| `session.viewing` | 头告诉核心自己开着哪个会话（`null` 是没开），核心照连接记、断了就忘；会话列表那一项照它写 `viewed`（施工 HV-1，`docs/reference/sessions.md`） |
-| `notices.claim` | 头认领发后台通知（`{}`，只给人的头）：核心照连接记、断了就放；`notices` 流的订阅回应有人认领时写 `claimed: true`，有没有人认领变了推 `notices.claimed`（施工 TR-1，托盘 `miyu-applet` 用，`docs/reference/connection.md`「`notices.claim`」） |
+| `session.viewing` | 头告诉核心自己开着哪个会话（`null` 是没开），核心照连接记、断了就忘；会话列表那一项照它写 `viewed`（施工 HV-1，`docs/zh/reference/sessions.md`） |
+| `notices.claim` | 头认领发后台通知（`{}`，只给人的头）：核心照连接记、断了就放；`notices` 流的订阅回应有人认领时写 `claimed: true`，有没有人认领变了推 `notices.claimed`（施工 TR-1，托盘 `miyu-applet` 用，`docs/zh/reference/connection.md`「`notices.claim`」） |
 | `prefs.get`、`prefs.set` | 界面包自己的设置（皮肤、配色这些），存在数据根里、跟着人走：读整份；照顶层的键并、`null` 删，交回整份，推给别的连接（施工 HP-1，下面「头自己的设置」） |
 | `session.set_workspace` | 换会话在哪个目录干活（施工 9-7 上） |
 | `session.configure` | 换模型、人格、预设、思考强度、钉的看图模型、钉的压缩触发线，下一个回合开始生效、换模型和思考强度给头看的当场换（施工 MC-1）（施工 8-10，`models.md`「协议」；人格、预设施工 P-13；思考强度施工 SM-1；看图模型施工 VM-1；压缩触发线施工 CT-1）；会话的上下文上限，当场生效（施工 CTX-1） |
@@ -308,7 +308,7 @@
 1. 编号是 UUIDv7：前 48 位是造的这一刻（毫秒），同一个核心造的照先后排。
 2. 场所是 `local`，权限从「工作区」开始，只读照 `permission.start_read_only` 的最终值：照实际干活的目录算，带上信任着的项目配置（施工 8-2，`config.md` 第二条第 9 条），没写的是不只读；有没有人能确认，照这个连接握手时的 `caps.input`；环境是核心所在机器此刻的时区偏移（到分钟）和实际干活的目录。
 3. `session.created` 落了盘才回应。
-4. 同一个命令编号再发：记着最近 1024 个造会话的编号，是其中之一的，交回上一次造的那一个，不再造；`cwd` 照这一次报的算。除了 `cwd`、`dirs`，别的参数（人格、预设、模型、`memory` 这些）和上一次不一样的：拒绝，`id_reused`，什么都不造（施工 YC-7）；比的是这次运行里记在内存里的指纹，重启以后补回来的编号没有指纹，照旧交回上一次那一个。核心重启以后，第一次造会话时，从最新的 1024 个会话的 `session.created` 里把编号补回来（`cause` 就是造会话的命令编号，施工 4-9 再补三上），在阻塞线程里读。去重不分连接：头每个连接的编号要和以前的都不一样（随机前缀），不然新连接的造会话、说话都被当成重发（`docs/reference/connection.md`「先后」第 3 条）。
+4. 同一个命令编号再发：记着最近 1024 个造会话的编号，是其中之一的，交回上一次造的那一个，不再造；`cwd` 照这一次报的算。除了 `cwd`、`dirs`，别的参数（人格、预设、模型、`memory` 这些）和上一次不一样的：拒绝，`id_reused`，什么都不造（施工 YC-7）；比的是这次运行里记在内存里的指纹，重启以后补回来的编号没有指纹，照旧交回上一次那一个。核心重启以后，第一次造会话时，从最新的 1024 个会话的 `session.created` 里把编号补回来（`cause` 就是造会话的命令编号，施工 4-9 再补三上），在阻塞线程里读。去重不分连接：头每个连接的编号要和以前的都不一样（随机前缀），不然新连接的造会话、说话都被当成重发（`docs/zh/reference/connection.md`「先后」第 3 条）。
 5. `memory` 不是这三种字符串之一（大小写也算）：`bad_params`，什么都不造（施工 R-3 下）。`model` 不是字符串：`bad_params`。解析不出（写法不对、没有这家供应商、没有这个池、池里一个成员都认不出）：`unknown_model`，什么都不造（施工 8-8，`models.md`「协议」）。先解析再找同一个命令编号造过的。
 6. 人格的编号不合写法（小写英文字母开头，只有小写字母、数字、`-`、`_`，最长 64 字节）：`bad_params`。三层（出厂、包带的、你的，`personas.md`）都没有这个人格：`unknown_persona`，默认人格指着没有的也一样，不悄悄换。人格的文件写错了：`persona_invalid`，`data.problem` 写明哪一层、哪个文件第几行（施工 P-1 上）。预设照同样的规矩，先于人格找（施工 P-2 上，`presets.md`）：编号不合写法 `bad_params`，三层都没有（默认预设指着没有的也一样，Y12）`unknown_preset`，文件写错 `preset_invalid`（`data.problem` 写明哪一层、哪个文件第几行），都不造。人格的文件、随核心附带的 `core/` 下的字读不了（安装坏了）：`internal_error`（施工 4-9 再补三上）。别的造不成（策略造不出来、磁盘上建不成、`session.created` 没落盘）：`internal_error`，原因记进运行日志。
 
@@ -1449,7 +1449,7 @@ Markdown 的回应 `{"path" | "text", "bytes", "tokens", "upto", "redacted", "ch
 - `mcp.restart {"name"}`：停下、再起，连续失败从零数，工具留在目录里、起好列完照新的换（同 `package.restart`）。回应是那一项。系统配置里没有这个名字的 `unknown_server`。
 - `mcp.set {"name", "command", "args"?, "env"?, "venues"?, "timeout_ms"?, "clicall"?}`（施工 X-26，网页设置页要的编辑页；以前的 `need_load` 施工 AUD-2 起不认，同别的不认识的格 `bad_params`）：在系统配置里加上一张 `[mcp.<名字>]`，或者整条换掉同名的那一张；`command` 是程序，`args` 接在后面，写成 TOML 的 `command` 数组；`env` 的值是字，或者 `{"secret": …}`、`{"env": …}`；没交的格子不写（照读服务表时的默认），只有 `clicall` 没交的照原来写的 `clicall = false` 留着（施工 M-2：网页的编辑页还不认这一格）。写之前照读服务表的规矩查这一张（名字的写法、命令不空、给哪种会话、时限），写错的 `mcp_invalid`（`data.problem` 照连接的语言说哪里不对，同装包时清单写错的说法）；写法照 `config.set`（拿着配置服务的锁先重读、带版本替换、撞上手改从头再来，写成了记日志、推 `config.changed`，`keys` 是空的）。系统配置里没写这个名字、有包带着同名服务的 `server_from_package`：随包来的不经它改。新写的一张接在文件末尾；换掉的放在原来表头的位置，连同它的子表一起换，别的字节不动。系统配置读不进来、`mcp` 写成了值、行内表、`[[mcp]]` 的 `config_file_broken`。回应 `{"name"}`，服务随后照「系统配置手改了」那条路换（`mcp.md`「系统配置里的一张表」第 6 条），状态变了推 `mcp.changed`。
 - `script.list {}`（施工 X-27，`skills.md`「脚本」；人、扩展都能调）：回应 `{"scripts": [...], "dir"}`（`dir` 是你自己放脚本的文件夹，数据根的 `root/scripts/`，还没建的也照写、家目录下的写成 `~/…`，网页「打开目录」用，施工 X-27 补；`skill.list` 同样多 `dir`，是数据根的 `root/skills/`），登记上的脚本照工具名排，一项 `{"tool", "display_name"?, "description"?, "from", "package"?, "path", "timeout", "on"}`：`display_name`、`description` 是脚本开头给人看的一槽，照连接的语言挑（同 `skill.list`）；`from`、`package`、`path` 同 `skill.list`；`timeout` 是秒；`on` 是全局开关 `features.script-<工具名>`，没写的是 `true`。`skill.list` 每项同样多 `on`（`features.skill-<名字>`）。
-- 改加载方式的 `tool.set_loading`（施工 X-27）没有了（施工 AUD-2，2026-11-13 项目主人定：还没发版，不背旧兼容）：施工 FL-1 起工具一律全量，它成了什么都不改的空方法，两个头早已不调；从协议 1 的方法清单 `docs/reference/methods-v1.txt` 里拿掉，再调是 `unknown_method`。
+- 改加载方式的 `tool.set_loading`（施工 X-27）没有了（施工 AUD-2，2026-11-13 项目主人定：还没发版，不背旧兼容）：施工 FL-1 起工具一律全量，它成了什么都不改的空方法，两个头早已不调；从协议 1 的方法清单 `internal/blueprint/methods-v1.txt` 里拿掉，再调是 `unknown_method`。
 - `feature.set {"feature", "on": true|false|null}`（施工 X-27）：写系统配置的 `features.<功能编号>`，`null` 删掉；只收 `skill-`、`script-`、`mcp-` 开头的，别的 `bad_params`。写法照 `config.set` 改一项（带版本、撞上手改从头再来、推 `config.changed`），回应 `{}`；写不进键的、少了 `on` 的 `bad_params`，别的同 `config.set`。只给人。
 - `mcp.remove {"name"}`（施工 X-26）：从系统配置里删掉这一张（连同子表、后面的空行；在文件末尾的连前面的空行），回应 `{}`；没写这个名字的 `unknown_server`。
 

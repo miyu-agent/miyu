@@ -47,7 +47,7 @@ LV-1 把级别收成只读、完全放开两级以后，几样东西还留在代
 | `crates/miyu-tool/src/lib.rs`、`testkit.rs` | `Tool::prefix` 和假工具的实现 |
 | `crates/miyu-basesystem/src/shell.rs` | `Tool::prefix` 的实现 |
 | `crates/miyu-policy/src/hazard/prefix.rs`、`prefix/tests.rs`、`hazard.rs` 里的导出 | 整个模块（取命令前缀，只给越过沙盒的规则用） |
-| `docs/reference/sessions.md`、`sessions.en.md` | 「选 `session` 记住的是什么」里讲命令越过沙盒、`prefix` 的那几句 |
+| `docs/zh/reference/sessions.md`、`sessions.en.md` | 「选 `session` 记住的是什么」里讲命令越过沙盒、`prefix` 的那几句 |
 
 不删、还走得到的：文件工具的放行规则（`tool.approval_requested` 的 `rule`、内核的 `Grants`、`Action::GuardTool` 的 `grants`、`guard/asking.rs` 的 `granted`）。只读时读私密目录照旧问人，人选「本会话都允许」照旧记这条规则。
 
@@ -58,7 +58,7 @@ LV-1 把级别收成只读、完全放开两级以后，几样东西还留在代
 | 文件 | 删什么 |
 |---|---|
 | `docs/authors/scripts-skills.md`、`.en.md` | 「非在沙盒外跑不可的脚本」一节 |
-| `docs/reference/packages.md`、`.en.md` | `check` 条目里 `sandbox.tools` 那半句 |
+| `docs/zh/reference/packages.md`、`.en.md` | `check` 条目里 `sandbox.tools` 那半句 |
 
 老配置里留着 `sandbox.tools.<名字>` 的：照不在清单里的键报 `unknown_key`（警告，原样留在文件里，不进最终值）。加一条测试守着是警告不是错误。
 

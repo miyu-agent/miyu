@@ -1,11 +1,11 @@
-//! 每一个原因码都有给人看的整句（施工 CLI-SAID-1）：协议参考 `docs/reference/errors.md` 里列着的、内核会拒的（`Reason::code`），
+//! 每一个原因码都有给人看的整句（施工 CLI-SAID-1）：协议参考 `docs/zh/reference/errors.md` 里列着的、内核会拒的（`Reason::code`），
 //! 中文、英文都不是兜底的那一句。新加原因码忘了写话的，头和命令行只印得出「已拒绝。」。
 
 use super::of;
 
 /// 协议参考里列着的原因码：每张表第一格里反引号括着的（一格可以列几个），表头的 `reason` 不算。
 fn documented() -> Vec<&'static str> {
-    let page = include_str!("../../../../../docs/reference/errors.md");
+    let page = include_str!("../../../../../docs/zh/reference/errors.md");
     let mut codes = Vec::new();
     for line in page.lines().filter(|line| line.starts_with("| `")) {
         let first = line.split('|').nth(1).unwrap_or_default();

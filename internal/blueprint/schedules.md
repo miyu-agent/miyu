@@ -71,7 +71,7 @@
 
 协议 `schedule.*` 和推送照第五节（施工 J-1 下）。
 
-### 五、协议（施工 J-1 下，形状 2026-10-26 主会话审过；协议参考 `docs/reference/schedules.md`）
+### 五、协议（施工 J-1 下，形状 2026-10-26 主会话审过；协议参考 `docs/zh/reference/schedules.md`）
 
 只有一份表，没有的编号 `unknown_schedule`。
 

@@ -122,7 +122,7 @@ Makes it an extension; needs `[command]`.
 | `context.system` | Putting a section at the end of the system prompt |
 | `packages.call` | Calling methods other packages export, over the bus (`bus.call`) |
 | `act_for_external` | Speaking for people on a chat platform: for platform bridges only |
-| `login.page` | Getting sign-in tickets for pages opened on this machine (`login.ticket {"via": "page"}`); the ticket only turns into a device token over a connection from this machine. Shipped packages need approval for it too. Only ask for pages you have checked come from this machine; pages from elsewhere always sign in with the access password, see [the extensions reference](../reference/extensions.en.md), "Signing in pages on this machine" |
+| `login.page` | Getting sign-in tickets for pages opened on this machine (`login.ticket {"via": "page"}`); the ticket only turns into a device token over a connection from this machine. Shipped packages need approval for it too. Only ask for pages you have checked come from this machine; pages from elsewhere always sign in with the access password, see [the extensions reference](../en/reference/extensions.md), "Signing in pages on this machine" |
 | `sessions.drive` | Driving sessions: creating, sending, interrupting, reverting, compacting, forking, running slash commands |
 | `events.read` | Reading sessions: subscribing to events, reading history and background command output; notices after tool calls (`[after]`) |
 | `events.write` | Recording your own events in a session |
@@ -339,7 +339,7 @@ Provides a model driver, one per entry; `capabilities` must include `model.drive
 | `hosted` | Tools this driver has the provider run on its own, such as `["search_web", "read_url_content"]` (default empty): the install screen shows the owner "the provider runs on its own: …" from it. Each 1 to 64 bytes, no control characters, no repeats. A name you send that isn't listed is still taken and shown, with a warning in the run log; see [Writing extensions](extensions.en.md#tools-the-provider-runs-on-its-own) |
 | `quiet_secs` | How long the driver may stay silent before the call counts as dropped, in seconds, 1 to 900 (default: Miyu's idle limit, 180 seconds and up): applies to the wait for the first token and between deltas, and a value shorter than Miyu's doesn't tighten it. For drivers whose provider doesn't stream reasoning and often takes a minute or two before the first token, such as `quiet_secs = 300` |
 
-It's used only when the owner writes `driver = "<package id>/<driver name>"` in a provider's settings, or your package brings a provider pointing at it with `[providers.<id>]` (next section); model profiles, the npm table and the default are always the built-in drivers, so installing your package can't take over a provider the owner already set up. If the package isn't installed, isn't approved or the driver name is wrong, `miyu check` reports it and that provider can't be used; it never falls back to a built-in driver. How Miyu calls your driver (`driver.call`, `driver.delta`, `driver.cancel`) is in the [protocol reference](../reference/extensions.en.md#drivercall-driverdelta-drivercancel).
+It's used only when the owner writes `driver = "<package id>/<driver name>"` in a provider's settings, or your package brings a provider pointing at it with `[providers.<id>]` (next section); model profiles, the npm table and the default are always the built-in drivers, so installing your package can't take over a provider the owner already set up. If the package isn't installed, isn't approved or the driver name is wrong, `miyu check` reports it and that provider can't be used; it never falls back to a built-in driver. How Miyu calls your driver (`driver.call`, `driver.delta`, `driver.cancel`) is in the [protocol reference](../en/reference/extensions.md#drivercall-driverdelta-drivercancel).
 
 ## `[providers.<id>]`
 
@@ -454,7 +454,7 @@ A block of your own content in the terminal and web UIs; `capabilities` must inc
 | `title` | Required for sidebar and page |
 | `scope` | `global` (default); `session` follows the session, one per session; sidebar only |
 | `command` | Pages only: typing this slash command opens the page |
-| `state` | `true`: this widget's content comes from your package's state in the session (a tool result's `state` or `session.set_state`, see [Extensions](../reference/extensions.en.md)), and stays there even when your program is not running; only for `scope = "session"` widgets |
+| `state` | `true`: this widget's content comes from your package's state in the session (a tool result's `state` or `session.set_state`, see [Extensions](../en/reference/extensions.md)), and stays there even when your program is not running; only for `scope = "session"` widgets |
 
 Your program pushes the content; see [Writing an extension](extensions.en.md).
 

@@ -1,38 +1,41 @@
-//! 参考里的锚点（施工 DC-1）：`docs/reference/` 里写的 `[…](#锚点)`、`[…](别的页.md#锚点)`，那一页要有照这个锚点的标题。
+//! 参考里的锚点（施工 DC-1）：`docs/zh/reference/`、`docs/en/reference/` 里写的 `[…](#锚点)`、`[…](别的页.md#锚点)`，那一页要有照这个锚点的标题。
 //! 中文的 `connection.md` 目录里一直链着 `#subscribeunsubscribe`，那一节在 SU-1 时误删了，没人看得出来：方法的检查只认
 //! `xxx.yyy` 这样带点的名字，`subscribe` 不带点。
 //!
 //! 锚点照 GitHub 的算法：标题的字转小写，字母、数字（连中文）、`-`、`_` 留下，空格换成 `-`，别的去掉；同一页同样的标题第二个起
-//! 加 `-1`、`-2`。代码块里的 `#` 开头的行不是标题。链到 `docs/reference/` 以外的不查。
+//! 加 `-1`、`-2`。代码块里的 `#` 开头的行不是标题。链到同一个目录以外的不查。
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
-use crate::reference::PATH;
+use crate::reference::{PATH, PATH_EN};
 
 /// 查参考里的锚点，交回问题。
 pub fn check(root: &Path) -> Vec<String> {
-    let dir = root.join(PATH);
-    let mut pages = BTreeMap::new();
-    let entries = match std::fs::read_dir(&dir) {
-        Ok(entries) => entries,
-        Err(e) => return vec![format!("读不了 {PATH}：{e}")],
-    };
-    for entry in entries.flatten() {
-        let name = entry.file_name().to_string_lossy().into_owned();
-        if !name.ends_with(".md") {
-            continue;
-        }
-        match std::fs::read_to_string(entry.path()) {
-            Ok(text) => pages.insert(name, text),
-            Err(e) => return vec![format!("读不了 {PATH}/{name}：{e}")],
+    let mut found = Vec::new();
+    for path in [PATH, PATH_EN] {
+        let mut pages = BTreeMap::new();
+        let entries = match std::fs::read_dir(root.join(path)) {
+            Ok(entries) => entries,
+            Err(e) => return vec![format!("读不了 {path}：{e}")],
         };
+        for entry in entries.flatten() {
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if !name.ends_with(".md") {
+                continue;
+            }
+            match std::fs::read_to_string(entry.path()) {
+                Ok(text) => pages.insert(name, text),
+                Err(e) => return vec![format!("读不了 {path}/{name}：{e}")],
+            };
+        }
+        found.extend(problems(path, &pages));
     }
-    problems(&pages)
+    found
 }
 
-/// 每一页（名字到内容）里断了的锚点。
-fn problems(pages: &BTreeMap<String, String>) -> Vec<String> {
+/// 目录 `path` 的每一页（名字到内容）里断了的锚点。
+fn problems(path: &str, pages: &BTreeMap<String, String>) -> Vec<String> {
     let anchors: BTreeMap<&str, BTreeSet<String>> = pages
         .iter()
         .map(|(name, text)| (name.as_str(), headings(text)))
@@ -46,7 +49,7 @@ fn problems(pages: &BTreeMap<String, String>) -> Vec<String> {
             };
             if !found.contains(anchor) {
                 problems.push(format!(
-                    "{PATH}/{name}：链到 {page}#{anchor}，那一页没有这个标题"
+                    "{path}/{name}：链到 {page}#{anchor}，那一页没有这个标题"
                 ));
             }
         }

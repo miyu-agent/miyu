@@ -307,7 +307,7 @@ When the core refuses to do something, it gives a reason code and one sentence. 
 | `protocol_mismatch` | Protocol version mismatch. Upgrade to the same release. | Upgrade the interface and the core to the same version, then run `miyu core stop`. |
 | `internal_error` | Internal error. See the runtime log. | Read `core.log`, then report the problem as described below. |
 
-For all reason codes see [Protocol reference: errors](../../reference/errors.en.md).
+For all reason codes see [Protocol reference: errors](../reference/errors.md).
 
 ## Reporting a problem
 

@@ -172,7 +172,7 @@ miyu config set render.font "Noto Serif CJK SC"
 
 ### For use by other packages
 
-`render`'s name on the bus is `render`, and its method is `render.markdown`: another package hands it Markdown and an optional color scheme, and gets back images page by page. If you write packages, see [the bus](../../reference/bus.en.md).
+`render`'s name on the bus is `render`, and its method is `render.markdown`: another package hands it Markdown and an optional color scheme, and gets back images page by page. If you write packages, see [the bus](../reference/bus.md).
 
 The command `miyu render` is for the core to start the package's program; if you run it yourself, it prints only `usage: miyu-render serve`.
 
@@ -260,7 +260,7 @@ A change takes effect at once, for example:
 miyu config set memes.reminder_probability 10
 ```
 
-The command `miyu memes` is for the core to start the package's program; if you run it yourself, it prints only `usage: miyu-memes serve`. Other packages save into the library and search it through the name `memes` on the bus (`memes.add`, `memes.search`); see [the bus](../../reference/bus.en.md).
+The command `miyu memes` is for the core to start the package's program; if you run it yourself, it prints only `usage: miyu-memes serve`. Other packages save into the library and search it through the name `memes` on the bus (`memes.add`, `memes.search`); see [the bus](../reference/bus.md).
 
 ### Troubleshooting
 

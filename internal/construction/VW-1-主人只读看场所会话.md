@@ -69,5 +69,5 @@
 - `crates/miyu-endpoint/tests/owner_views_venue.rs`：
   - 接 QQ 的桥开一个群、以群友身份发一张图；人的头订阅（`after: 0` 补来群友那一句）、`view.page` 读到条目、带会话 `blob.get` 取到原图；`session.send`、`session.redo`、`session.configure` 回 `session_not_found`，群会话日志一条不多。
   - 主人在 `tg:` 上的私聊：接 QQ 的桥 `view.page`、订阅回 `session_not_found`，`blob.get` 回 `unknown_blob`。
-  - 方法表全覆盖：`docs/reference/methods-v1.txt` 冻结的每一个方法（门禁照代码查它全不全），加上 `subscribe`、`unsubscribe`，都带上群会话的编号调：白名单里的不回 `session_not_found`，别的一律回；群会话日志一条不多。测试里的白名单写一份同 `READS`，两边要一起改：表多了、少了，或者以后加的方法绕过了这一道，都报红。
+  - 方法表全覆盖：`internal/blueprint/methods-v1.txt` 冻结的每一个方法（门禁照代码查它全不全），加上 `subscribe`、`unsubscribe`，都带上群会话的编号调：白名单里的不回 `session_not_found`，别的一律回；群会话日志一条不多。测试里的白名单写一份同 `READS`，两边要一起改：表多了、少了，或者以后加的方法绕过了这一道，都报红。
 - `bridge_venues.rs`、`audit_sec_1030.rs`（头往群里排定时任务那一条的前提）原来断言人的头订不到群，改成断言人的头说不了话，`schedule.add` 照旧被拒；`blob_session.rs` 人的头取群里的图从 `unknown_blob` 改成取得到。

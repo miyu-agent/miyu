@@ -1,4 +1,4 @@
-//! 协议找得到无人格那一间（施工 R-12 再补，`docs/reference/memory.md`）：`persona` 写 `_none` 的，一个无人格的会话都没开过也列得出、
+//! 协议找得到无人格那一间（施工 R-12 再补，`docs/zh/reference/memory.md`）：`persona` 写 `_none` 的，一个无人格的会话都没开过也列得出、
 //! 记得下；无人格的会话里记的照 `_none` 看得到、照人格看不到，照 `_none` 记的无人格的会话看得到；`null` 照旧是没写（照默认人格）。
 
 use serde_json::json;

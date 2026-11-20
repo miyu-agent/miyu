@@ -8,7 +8,7 @@
 
 ### 蓝图改哪几节
 
-`personas.md`「目录」第 6 条（去掉「编辑它的协议、界面随后面的步子做，现在人直接放文件」，换成怎么读写）、讲 `persona.get`、`persona.read`、`persona.set` 的那几条；协议参考 `docs/reference/personas.md`、`personas.en.md` 三处跟着改：
+`personas.md`「目录」第 6 条（去掉「编辑它的协议、界面随后面的步子做，现在人直接放文件」，换成怎么读写）、讲 `persona.get`、`persona.read`、`persona.set` 的那几条；协议参考 `docs/zh/reference/personas.md`、`personas.en.md` 三处跟着改：
 
 | 方法 | 多了什么 |
 |---|---|

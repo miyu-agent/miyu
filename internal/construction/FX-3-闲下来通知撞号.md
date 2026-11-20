@@ -14,7 +14,7 @@
 - `session/tools.md`「1c2. 订、计时、再订」第 2 条。
 - `session/actor.md`「被等的名单」第 1、2、4 条。
 
-协议参考（`docs/reference/`）没写这个编号的形状，不用改。
+协议参考（`docs/zh/reference/`）没写这个编号的形状，不用改。
 
 ### 证实
 

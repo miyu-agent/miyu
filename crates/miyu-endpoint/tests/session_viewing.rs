@@ -1,4 +1,4 @@
-//! 哪个头开着哪个会话（施工 HV-1，`docs/reference/sessions.md`「`session.viewing`」）：一个头说开着某个会话，订阅列表的另一个头
+//! 哪个头开着哪个会话（施工 HV-1，`docs/zh/reference/sessions.md`「`session.viewing`」）：一个头说开着某个会话，订阅列表的另一个头
 //! 收到那一项多 `viewed: true`，`session.list` 也带；改成没开、连接断了，再推一次、`viewed` 没了。写法不对的 `bad_params`，没有
 //! 这个会话的 `session_not_found`。
 

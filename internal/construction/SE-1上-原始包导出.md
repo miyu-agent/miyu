@@ -22,4 +22,4 @@
 
 ## 文档
 
-`docs/reference/sessions.md`、`sessions.en.md`、`errors.md`、`errors.en.md`、`methods-v1.txt`；`internal/blueprint/protocol.md`「`session.export`」；`internal/blueprint/store.md`「原始包」；设计 58 第六节照「命令行挪到中」改。
+`docs/zh/reference/sessions.md`、`sessions.en.md`、`errors.md`、`errors.en.md`、`methods-v1.txt`；`internal/blueprint/protocol.md`「`session.export`」；`internal/blueprint/store.md`「原始包」；设计 58 第六节照「命令行挪到中」改。

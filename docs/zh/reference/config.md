@@ -1,0 +1,307 @@
+# 配置、密钥、模型：`config.*`、`secret.*`、`provider.*`、`model.*`、`usage.*`
+
+> <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
+
+| 方法 | 做什么 |
+|---|---|
+| [`config.schema`](#configschema) | 配置清单：每一项的名字、说明、类型、能写在哪 |
+| [`config.get`](#configget) | 最终值和来源，现在的全部问题 |
+| [`config.set`](#configset) | 改一项或几项、恢复默认，或者整份换掉 |
+| [`config.check`](#configcheck) | 把一段字当成一层配置查，不生效 |
+| [`config.trust`](#configtrust) | 信任、不信任一份项目配置 |
+| [`secret.set`、`secret.delete`、`secret.list`](#secretsetsecretdeletesecretlist) | 存、删密钥，列密钥的名字 |
+| [`model.list`](#modellist) | 配好的供应商和模型、池、在用的目录 |
+| [`provider.detect`](#providerdetect) | 找现成的：环境里设了的 key、本机跑着的模型服务 |
+| [`provider.catalog`](#providercatalog) | 搜供应商目录 |
+| [`provider.test`](#providertest) | 试一家供应商通不通 |
+| [`provider.rename`](#providerrename) | 改一家供应商的编号 |
+| [`model.call`](#modelcall) | 叫一次模型，不进任何会话 |
+| [`model.embed`](#modelembed) | 算一批字的向量 |
+| [`usage.query`](#usagequery) | 查用量和金额 |
+| [`usage.convert`](#usageconvert) | 把自己记的金额换算成 `usage.currency` |
+
+## 配置的三层
+
+配置从下往上叠：出厂默认值 → 系统配置（`config.toml`，你的设置都写在这里）→ 项目配置（仓库里的 `.miyu/config.toml`，要信任过才算、只能收紧）。每一项能写在哪几层写在清单里（`layers`）。密钥另放 `secrets.toml`，配置里写 `{ secret = "<名字>" }` 引用它，或者写 `{ env = "<环境变量>" }`。
+
+三层上面还压着这一次启动的环境变量，只有两项认：`log.level` 认 `MIYU_LOG`，`models.catalog.update` 认 `MIYU_CATALOG_UPDATE`。设了、读得懂的就用它，`origin` 的 `layer` 是 `env`；选项不分大小写，开关只认 `true`、`false`（不分大小写），读不懂的不算，照配置。
+
+**问题**：读、查、改配置时发现的每一处写成一条：`level`（`error` 或 `warning`）、`code`（原因码）、`file`、`line`、`column`、`key`、`expected`、`got`、`suggest`（拼错的键最近的那个）、`using`（现在照什么用着）、`message`（整句给人看的话，照连接的语言）。没有的格不写。`got` 照抄收到的原文，最多 80 个字符；类型是密钥的项（和列表里的密钥字段）、不认识的键和字段、一组键写成的一个值不照抄，`got` 和 `message` 里只说写的是什么样的，例如「24 个字符的字」，原值不会出现在回应里。
+
+**谁能调**：读的（`config.schema`、`config.get`、`config.check`、`secret.list`、`model.list`、`provider.*`、`model.call`、`model.embed`、`usage.query`、`usage.convert`）人、扩展都能调。改的（`config.trust`、`secret.set`、`secret.delete`）只给人，扩展调回 `local_only`。`config.set` 扩展只能逐项改系统配置里自己清单声明的、不是密钥、不写成引用的项。
+
+## `config.schema`
+
+**参数**：`keys`（字符串数组）：只要这几项，不写是全部。
+
+**回应**：`items`（每一项，照清单的先后）、`pages`、`groups`（设置页的页和组）。一项：
+
+| 名字 | 说明 |
+|---|---|
+| `key`、`type` | 键、类型：`bool`、`option`、`int`、`float`、`text`、`duration`、`path`、`url`、`name`、`reference`、`model`、`model_or`、`english`、`secret`、`list`、`table`，软件包的项还有 `persona`、`knowledge`、`preset`（选人格、选知识库、选预设；选模型的是 `reference`）。键里人起的名字那一段写成占位 `<id>`、`<model>`、`<external>`、`<name>`，例如 `providers.<id>.base_url` |
+| `options` | 选项：`value`、给人看的 `name`；写了说明的带 `description`（暗色写在下面）；带 `notice` 的选项在被选中时弹出这一句提示，提示只有一个确认按钮，选项仍然保存；核心查得出的带 `note`（暗色写在名字后面）、`available: false`（用不了，画成灰的） |
+| `min`、`max`、`max_chars`、`element` | 范围、长度、列表元素的类型（`record` 是每一项一组字段） |
+| `title`、`fields` | 元素是 `record` 的：拿哪个字段当每一项的标题（没有的照「第几项」写）；每个字段一项，格同这张表（`key` 是字段名） |
+| `default` | 默认值 |
+| `layers` | 能写在哪几层：`system`、`project` |
+| `applies` | 什么时候生效：`now` 当场、`next_turn` 下一轮、`new_session` 以后开的会话、`restart` 重启核心、`head_start` 头下次启动 |
+| `name`、`description` | 给人看的名字、说明，照连接的语言 |
+| `name_en` | 英文的名字：连接的语言不是英文的才有，头拿它和 `name` 一起搜（中文界面搜 web 搜得到「网络搜索」）；英文里没有的不带 |
+| `page`、`group`、`common`、`control` | 设置页放哪、常不常用、用什么控件：`select`、`toggle`、`number`、`text`、`list`、`combo`、`textarea`（几行的框）、`slider`（滑块） |
+| `step` | 控件是 `slider` 的：一格多少（整数的是整数） |
+| `suggestions` | 控件是 `combo` 的：建议值 |
+| `hidden` | 设置页不画 |
+| `package` | 软件包的配置项：归哪个包 |
+| `section` | 软件包分了组的配置项：在这个包的哪一节（组名，见下面 `groups` 的 `sections`）；不在组里的不写 |
+| `choices_from` | 软件包的文字项，选项由包在运行时给：`{"package", "method"}`，哪个包的哪个方法；清单没写的不带，见下面 |
+
+一组：`id`、`name`（照连接的语言）、`name_en`（英文的名字，连接不是英文的才有）、`page`；写了说明的组多一格 `description`（一句或几句，照连接的语言，写在组名下面），没写的组不带这一格。软件包分了组的（清单写了 `[settings.<组>.<名字>]`），那个包那一组多一格 `sections`：每一节一个 `{"id", "name", "shown_when"?}`，照清单写的先后。`name` 照连接的语言，清单没写名字的是组名。`shown_when` 是 `{"key": "<完整的键>", "is": ["<值>", …]}`：那一项现在的值是 `is` 里的一个才画这一节，`is` 总是列表；没有的总是画。那一项是选项，或者带 `choices_from` 的文字项（`is` 里的字不一定在它的选项里），都只按值比。不画的节只是不画，里面的项照旧能写、能读、照样查。没分组的包没有 `sections`。
+
+带 `choices_from` 的项：类型照旧是 `text`，头把它画成下拉，选项调 `package.call`（参数 `{"package", "method"}`，照这一格原样填，不带 `params`）取，包回 `{"choices": [{"value", "name"?, "description"?}]}`：`value` 是存进配置的字，`name` 没写的照 `value` 画，`description` 暗色写在下面。调不到（`program_not_running`、`unregistered`、`method_failed`、`method_timeout`）、回的 `choices` 是空的或者不是这个样子的，退回文字框；存着的值不在列表里的照样显示。核心不照列表查值，写什么存什么。
+
+**包的「启用」**（UX-1）：每个包（同 `package.list` 的 `enabled`，人人有开关）各一项 `packages.<编号>.enabled`：`type` 是 `bool`、`control` 是 `toggle`、`applies` 是 `now`，`page` 是 `packages`、`group` 和 `package` 是这个包，排在这个包自己的配置项前面。`true` 是开。它就是 `package.enable`、`package.disable` 那个开关，不写在配置文件里。以前的 `packages.<编号>.off`（只对某个人关掉）删了，哪儿都不认。
+
+**出错**：`unknown_config_key`：`keys` 里有清单里没有的，`data.problems` 每个一条，带最近的键名 `suggest`。
+
+## `config.get`
+
+**参数**
+
+| 名字 | 类型 | 说明 |
+|---|---|---|
+| `keys` | 字符串数组 | 只要这几项，不写是全部 |
+| `cwd` | 字符串 | 照这个目录找项目配置、算进最终值；不写不算 |
+| `all` | 布尔，默认 `false` | 每一项再列出写了它的每一层 |
+
+**回应**
+
+| 名字 | 说明 |
+|---|---|
+| `items` | 键 → `{value, origin}`：最终值和来源（`origin` 有 `layer`、`file`、`line`）。`all` 的多 `layers`：从上往下每一层 `{origin, value, used}`，没生效的带 `problem` |
+| `files` | 每一层的文件：`system`、`project`（`file`、`version`；项目的多 `trusted`：`true`、`false` 或 `null` 还没问过），`secrets`（只有 `file`） |
+| `problems` | 这几份文件现在的全部问题 |
+
+```json
+{"files":{"secrets":{"file":"secrets.toml"},"system":{"file":"config.toml","version":"sha256:…"}},"items":{"ui.language":{"origin":{"file":"config.toml","layer":"system","line":3},"value":"zh"}},"problems":[]}
+```
+
+包的「启用」：`{"origin": {"layer": "package"}, "value": true}`，来源 `package` 是说它不在哪一层配置里；`all` 的 `layers` 是 `[]`。
+
+软件包带的供应商（清单的 `[providers.<编号>]`）的几项：`{"origin": {"layer": "package", "package": "<包>"}, "value": …}`，在默认值之上、配置文件之下，不写配置文件；包卸了、关了就没有。人改它写进配置文件、盖住包给的（核心顺手写上 `providers.<编号>.package = "<包>"`）；配置文件里原来就有同编号、没写 `package` 的是人自己的供应商，包带的那一家整家不出现。包这一层变了推 `config.changed`，`via` 是 `package`。
+
+借来的：`{"origin": {"layer": "inherited", "from": "providers.deepseek.key"}, "value": null}`：哪一层都没写、照 `from` 那一项的值用（画成「已继承」）。现在只有 `net.search.deepseek.key`：没填的借模型那边官方 DeepSeek 供应商（地址没写或是 `api.deepseek.com`）的 key，`from` 是那一家的 `providers.<编号>.key`；中转站的不借，来源照旧 `default`。值不交 key。`config.set` 的回应、`config.changed` 推送里同样写；改了供应商的 key 不另推这一项，要画的照 `config.changed` 里有 `providers.` 的再读一次。
+
+**出错**：`unknown_config_key`。
+
+## `config.set`
+
+**参数**
+
+| 名字 | 类型 | 说明 |
+|---|---|---|
+| `layer` | `system`，可以不写 | 改哪一层：只有系统配置（写别的 `bad_params`） |
+| `changes` | 数组 | 改几项，每项见下 |
+| `text` | 字符串 | 整份换成这段字 |
+| `version` | 字符串或 `null` | 写了 `text` 的必写：你读到的这份文件的版本，`null` 是那时还没有这份文件 |
+
+`changes` 和 `text` 正好写一个。`changes` 每一项：`key`（必写；元素是 `record` 的列表整条一起换，不能写成 `<键>[0].<字段>`）；`value`（JSON 的值；`record` 的列表是对象的数组，密钥字段只收 `{"secret": …}`、`{"env": …}`，写明文的整条拒、问题的 `key` 是 `<键>[第几项].<字段>`）、`input`（人敲的字，照这一项的类型读）、`unset: true`（恢复默认）三选一；`expect`（可不写）：这一层这一项现在应当是 `{"value": …}` 或 `{}`（没写），对不上就拒。
+
+**回应**：`{"keys", "version"}`。`keys` 是变了的每一项：`value`（这一层现在的值，删掉的不写）、`effective`、`origin`（算上别的层以后的最终值、来源）、`applies`。一项都没变的 `keys` 是空的，什么都不写。
+
+```json
+→ {"jsonrpc":"2.0","id":"s1","method":"config.set","params":{"changes":[{"key":"ui.language","value":"zh"}]}}
+← {"id":"s1","jsonrpc":"2.0","result":{"keys":{"ui.language":{"applies":"now","effective":"zh","origin":{"file":"config.toml","layer":"system","line":3},"value":"zh"}},"version":"sha256:…"}}
+```
+
+几项一起查、一起写：有一项不对整条不收。写盘、推 `config.changed` 以后才回应。
+
+改包的「启用」（`packages.<编号>.enabled`）就是开关这个包，同 `package.enable`（不带 `approve`）、`package.disable`：不写配置文件、不推 `config.changed`，`keys` 里那一项是 `{"applies": "now", "effective": <这时开没开>, "origin": {"layer": "package"}, "value": <同 effective>}`；`miyu config set` 照来源 `package` 不报「被上面一层压着」。只收 `value` 写 `true`、`false`，或者 `input`；`unset` 是 `bad_params`，`expect` 不看。和别的项写在同一条里的，别的项先写进配置，再开关包；开不起来的回 `package.enable` 的原因（`needs_approval`、`program_missing`……），已经写进配置的留着。扩展改它回 `local_only`。
+
+**出错**
+
+| `data.reason` | 什么时候 |
+|---|---|
+| `bad_params`（`-32602`） | `changes`、`text` 不是正好一个；一项里 `value`、`input`、`unset` 不是正好一个；同一个键写两次；写了 `text` 没写 `version` |
+| `unknown_config_key` | 清单里没有的键，`data.problems` |
+| `config_invalid` | 值不对、不能写在这一层，`data.problems` 是每一处 |
+| `config_conflict` | `expect` 对不上（`data.current`）；`version` 对不上，或者一直有人在手改（`data.version`） |
+| `config_file_broken` | 这份文件现在读不进来，没法只改几项，`data.problems` |
+| `local_only` | 扩展改了不许它改的 |
+
+## `config.check`
+
+**参数**：`layer`（`system`、`project`，必写）、`text`（必写）。**回应**：`{"problems": [...]}`，没问题是空数组；问题不带 `file`。
+
+## `config.trust`
+
+**参数**：`cwd`（必写，照它找项目配置）、`version`（必写，人看过的那一份的版本：`config.get` 的 `files.project.version`）、`trust`（布尔，必写）。
+
+**回应**：`{"file", "trusted"}`。只能信任人看过的那一份。
+
+**出错**：`no_project_config`；`config_conflict`（看过以后它又变了，`data.version` 是现在的）。
+
+## `secret.set`、`secret.delete`、`secret.list`
+
+| 方法 | 参数 | 回应 |
+|---|---|---|
+| `secret.set` | `name`、`value`（都必写） | `{"replaced": <原来有没有>}` |
+| `secret.delete` | `name` | `{}` |
+| `secret.list` | 没有 | `{"secrets": [{"name", "set", "used_by"}…]}` |
+
+存的是去掉前后空白的值。`secret.list` 从不交出值：列设了的和配置里引用了、还没设的，`used_by` 是引用它的配置键。
+
+密钥只有一份：`secrets.toml`。
+
+**出错**：`bad_params`（名字不合写法；值是空的、有控制字符、超过 16 KiB）；`unknown_secret`（删的没有）；`config_file_broken`（密钥文件读不进来）；`local_only`（扩展调了改的两个）。
+
+## `model.list`
+
+**参数**：`provider`（只看这一家）、`refresh`（布尔，先去拉一遍供应商的模型列表再答）、`models`（字符串数组，只要这几个 `<供应商>/<模型>`）。
+
+不写 `refresh` 的照手头的列表答，在后台拉：不写 `models` 的每家最多一分钟拉一次，写了的只拉还没有列表、旧过一天的。拉到的变了，订着 `config` 流的连接收到 [`models.changed`](pushes.md)。
+
+**回应**
+
+| 名字 | 说明 |
+|---|---|
+| `providers` | 配好的供应商，照编号排。每家：`id`、`name`（`{value, from, key}`）、`driver`、`base_url`、`key`（`{ref, set, state}`，从不交值）、`catalog`（对上了目录里哪一家）、`logo`（`{svg, tint}` 或 `null`）、`models`；用不了的另带 `problem` |
+| `models` 里每个 | `model`、`ref`、`listed`（从哪几处列出：`config`、`provider`、`catalog`）、`facts`（窗口、最大输出、输入种类、能不能用工具、思考、价格、名字……每格 `value` 和来源）、`state`（`ok`、`cooling` 带 `until`/`class`、`no_key`），能出向量的带 `embedding: true` |
+| `pools` | 每个池：`name`、`strategy`、`models`、`usable`、`subagent`、`description`、`fixed`（`lite`、`normal`、`flagship` 三个固定池是 `true`：永远在，配置里没写也列出来，不能删、不能改名，`subagent` 默认 `true`） |
+| `side` | 旁路请求（不在对话里的那些模型请求）的登记，每条：`id`（`core/title` 起标题、`memory/organize` 整理记忆）、`tier`（要哪一档：`lite`、`normal`、`flagship`）、`name`、`summary`（照连接的语言）、`resolved`（这一刻会落到哪：档位池有成员的是池名，空的是 `session`，用会话的模型）、`package`（扩展登记的写是哪个包登记的，出厂的没有这一格）。池里全在冷却、都出错了的，也退到会话的模型。扩展在清单 `[[side]]` 里登记的也在这里，`id` 是 `<包>/<编号>`，名字、说明照它清单里写的 |
+| `uses` | `chat`、`vision` 各配的引用，没配的是 `null` |
+| `catalog` | 在用的目录：`source`、`fetched`，读不了是 `null` |
+
+**出错**：`unknown_provider`；`bad_params`（`models` 写法不对）。
+
+## `provider.detect`
+
+**参数**：没有。**回应**：
+
+| 名字 | 说明 |
+|---|---|
+| `keys` | 核心的环境里设了的 key：`env`、`provider`、`name`、`driver`、`supported`，已经配了的带 `configured`。不交值 |
+| `local` | 本机跑着的模型服务：`provider`、`name`、`base_url`、`models`，已经配了的带 `configured` |
+| `looked_for` | 找了哪些环境变量的名字 |
+
+## `provider.catalog`
+
+**参数**：`query`（编号、名字里有这一截的）、`limit`（默认 50）、`featured`（布尔，只要常用的几家，照连接的语言挑国内外）。
+
+**回应**：`{"providers": [...]}`，每家 `id`、`name`、`driver`、`base_url`、`env`、`doc`、`models`（几个模型）、`supported`、`local`（地址在本机、不要 key）、`logo`。能用的排前面。
+
+## `provider.test`
+
+**参数**：`provider`（配好了的）或 `candidate`（还没写进配置的：`driver`、`base_url`、`key`（`{secret}`、`{env}` 或 `{value}`，`value` 只用这一次、不存）、`catalog`），正好写一个；`model`（拿哪个试）。
+
+列得出模型就算通，不发请求；列不出（不是 key 错）、写的模型不在列表里时才发一句，那时会花一点额度。列不出又没写模型的，照目录里这一家的模型挑一个推荐的去发；目录里也没有这一家的才回 `need_model`。
+
+**回应**：成了 `{"ok": true, "checked", "models", "listed", "model"}`，发了一句的多 `first_token_ms`；没成 `{"ok": false, "stage", "error": {"class", "status"?, "message"}}`，`stage` 是 `list`、`request`、`config`，给一个模型名就能再试的带 `need_model: true`。
+
+```json
+{"ok":true,"checked":"list","models":["deepseek-flash","deepseek-v4-pro"],"listed":"provider","model":"deepseek-flash"}
+{"ok":false,"stage":"request","error":{"class":"auth","status":401,"message":"Authentication Fails (no such user)"}}
+```
+
+**出错**：`bad_params`；`unknown_provider`。
+
+## `provider.rename`
+
+改一家供应商的编号，一次改完：配置里 `[providers.<from>]` 那张表（连同子表、密钥的引用）换成 `<to>`，`models.chat`、`models.vision`、`models.embedding`、池的成员这些 `<from>/<模型>` 换成 `<to>/<模型>`；钉着旧编号的会话下一轮起照新编号。只给人。
+
+**参数**：`from`、`to`。`to` 照编号的写法：小写字母开头，小写字母、数字、`-`、`_`，最多 32 个。
+
+**回应**：`{}`；改了的那几层照 [`config.changed`](pushes.md) 推。
+
+**出错**：`bad_params`（`to` 写法不对、和 `from` 一样）；`unknown_provider`（没有 `from`）；`provider_exists`（已经有 `to`）。两层里后一层写不成的，前一层改了的不撤，照那一层的错回（`config_conflict`、`config_file_broken`），再调一次照剩下的改。
+
+## `model.call`
+
+叫一次模型，拿整段回答和用量。不进任何会话、不推送；会花额度，记进用量。
+
+**参数**
+
+| 名字 | 类型 | 说明 |
+|---|---|---|
+| `purpose` | 字符串，必写 | 用途，1 到 32 个小写字母、数字、`-`，例如 `vision` |
+| `messages` | 数组，必写 | `{"role": "system"|"user"|"assistant", "text", "images"?}`。`system` 至多一条、只能在最前；最后一条是 `user`；`images` 只有 `user` 能带，是 blob 的哈希（`blob.put` 存的），没有的 `unknown_attachment` |
+| `model` | 字符串 | `<供应商>/<模型>` 或 `@<池>`；不写照 `models.chat` |
+| `use` | `chat` 或 `vision` | 不知道人配了哪个模型时用：照 `models.chat` 或 `models.vision`；和 `model` 至多写一个 |
+| `side` | 字符串 | 扩展的旁路请求：写自己包里清单 `[[side]]` 登记的编号（不带包名）。照登记的档位从同名的池（`lite`、`normal`、`flagship`）取；池是空的、池里全在冷却或者都出错了，用会话的模型。和 `model`、`use` 不能同写；人的连接、没登记的编号 `bad_params` |
+| `session` | 会话编号 | 只跟着 `side`：用不上档位池时照这个会话这一刻的模型；不写的照 `models.chat`。不是自己的会话 `session_not_found` |
+| `max_tokens` | 正整数 | 最多输出多少 token |
+
+**回应**：`{"text", "provider", "model", "usage"}`。`usage` 是 `uncached`、`cache_read`、`cache_write`、`output`，报了思考的多 `reasoning`；如果供应商替模型搜索、抓取过网页，还会多 `searches`、`fetches`，它们是次数，不是 token。没报的是 `null`。在后台答，不挡这个连接别的请求。
+
+```json
+{"text":"A cat on a red sofa.","provider":"deepseek","model":"deepseek-flash","usage":{"uncached":812,"cache_read":0,"cache_write":0,"output":9}}
+```
+
+**出错**
+
+| `data.reason` | 什么时候 |
+|---|---|
+| `bad_params`（`-32602`） | 参数写法不对；图的 blob 不是图；`side` 不是这个扩展登记过的 |
+| `unknown_attachment` | 没有这个图的 blob |
+| `unknown_model` | `model` 解析不出 |
+| `no_model` | 没有能用的模型（没配、key 取不到），`data.message` |
+| `cooling` | 候选全在冷却，`data.message`、`data.wait_ms` |
+| `model_failed` | 发了、出错了：`data.class`、`data.status`、`data.message` |
+
+## `model.embed`
+
+**参数**：`texts`：1 到 64 条字，每条 1 到 8000 个字。照 `models.embedding` 算（本机的内置模型或远程的一家）。
+
+**回应**：`{"model", "vectors"}`。`model` 是模型编号（`local:<id>` 或 `<供应商>/<模型>`）：换了模型的向量不能和以前的比。`vectors` 照先后，归一化过。
+
+**出错**：`bad_params`；`embedding_off`（关着，或者要本机的却没装内置模型）；`embedding_failed`（有一条算不出、等不到，`data.why`）。
+
+## `usage.query`
+
+**参数**
+
+| 名字 | 类型 | 说明 |
+|---|---|---|
+| `from`、`until` | 时刻 | 只算这一段，左闭右开 |
+| `group` | 数组 | 照这几样分组：`venue`、`model`、`day`、`session`、`purpose`、`use`（用途：`main` 主对话、`compaction` 压缩、`subagent` 子代理、`recap`、`title`、`memory`、`other`）；不写是一行总计 |
+| `session` | 字符串 | 只算这个会话；`tree: true` 连它派的子会话 |
+| `offset` | 时区，例如 `+09:00` | 分天照哪个时区，不写是核心所在机器的 |
+
+**回应**：`{"rows": [...]}`。一行：分组的那几格（照 `purpose` 分组的另带 `purpose_name`：这个用途给人看的名字，照连接的语言；核心自己的用途照核心的说法，`purpose` 是 `null` 的那一行是主对话，扩展写的照它清单 `[[purpose]]` 声明的，都没有的不带，照 `purpose` 原样显示），`requests`（请求数）、`usage`（四项加起来；这一组里供应商替模型搜索、抓取过网页时，还会带 `searches`、`fetches`，它们是加起来的次数，不是 token，没有搜索、抓取过的一组不带）、`amounts`（照币种各加各的，原样）、`unpriced`（有用量、算不出金额的次数）、`converted`（换算成 `usage.currency` 的一个数：每一笔照它那天的汇率换，`{"currency","amount"}`；取不到汇率的那几笔在它的 `rest` 里，写法同 `amounts`；一笔都没换成的不写）、`converted_parts`（换成的那几笔分四种各多少：`{"uncached","cache_read","cache_write","output"}`，币种同 `converted`，四种都在时加起来就是 `converted.amount`；用量是 0 的那一种是准的 0，有一笔那一种用了、价格又不知道的，那一种不写；这一行里有老的、没分四种的账，整个不写；没有 `converted` 的也不写）。每一种照那一次请求自己记下的价格算好，跟着那一次记账，以后改价格不变。所有会话都记账。金额照配置的 `usage.currency` 排、换算。用到了 open.er-api.com 的汇率时，回应顶上多 `rates`（来源和链接），界面要注明来源。
+
+```json
+{"rows":[{"purpose":"vision","purpose_name":"看图","model":"deepseek/deepseek-flash","requests":2,"usage":{"uncached":1624,"cache_read":0,"cache_write":0,"output":18},"amounts":[{"currency":"USD","amount":0.0002544}],"unpriced":0,"converted":{"currency":"CNY","amount":0.00181896},"converted_parts":{"uncached":0.00174174,"cache_read":0,"cache_write":0,"output":0.00007722}}]}
+```
+
+这一行写缓存的价格不知道，可它的用量是 0，`cache_write` 照样是 0；四种加起来就是 `converted.amount`。
+
+**出错**：`bad_params`。
+
+## `usage.convert`
+
+把自己照日子、币种记的金额交给核心换算成 `usage.currency`。扩展自己记账（例如照人记）时用：汇率由核心取、缓存，换法和 `usage.query` 的 `converted` 一样。
+
+**参数**
+
+| 名字 | 类型 | 说明 |
+|---|---|---|
+| `groups` | 数组的数组 | 一组是要合成一个数的那几笔，可以是空的。最多 1000 组，合计最多 20000 笔 |
+
+一笔：
+
+| 名字 | 类型 | 说明 |
+|---|---|---|
+| `day` | 字符串 | 这一笔是哪个 UTC 日子，`2026-11-10` 这样写；照这一天的汇率换 |
+| `currency` | 字符串 | 币种代码，三个字母，例如 `USD` |
+| `amount` | 数 | 金额 |
+
+**回应**：`{"currency", "converted"}`。`currency` 是这一刻的 `usage.currency`；`converted` 照 `groups` 的先后一组一项，写法同 `usage.query` 一行里的 `converted`（`{"currency","amount"}`，取不到汇率的那几笔在 `rest` 里，用到了 open.er-api.com 的汇率的带 `rates`，界面要注明来源）；一笔都没换成的组（连同空的组）是 `null`。缺的汇率当场去取，最多等两秒。
+
+```json
+{"groups":[[{"day":"2026-11-09","currency":"USD","amount":0.12},{"day":"2026-11-10","currency":"CNY","amount":0.5}],[]]}
+```
+
+```json
+{"currency":"CNY","converted":[{"currency":"CNY","amount":1.3544},null]}
+```
+
+**出错**：`bad_params`（日子、币种写法不对，金额不是数，超了上限）。

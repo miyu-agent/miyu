@@ -13,7 +13,7 @@
 - `kernel/events-bodies.md`：`session.policy_changed` 多 `vision` 一格。
 - `kernel/session.md`：`configure.rs` 那一行；「换思考强度」后面多「钉看图模型」一节。
 - `view.md`：「会话状态」多 `vision` 一格。
-- 参考文档 `docs/reference/` 中英两份：`sessions`（`session.create`、`session.configure`）、`view`（会话状态）、`events`（`session.policy_changed`）。样本 `session.policy_changed.jsonl` 加一条。
+- 参考文档 `docs/zh/reference/` 中英两份：`sessions`（`session.create`、`session.configure`）、`view`（会话状态）、`events`（`session.policy_changed`）。样本 `session.policy_changed.jsonl` 加一条。
 
 ### 协议
 

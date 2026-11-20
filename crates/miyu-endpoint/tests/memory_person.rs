@@ -1,4 +1,4 @@
-//! 认识的人经协议（施工 E-1 上，设计 42，`docs/reference/memory.md`）：`memory.remember` 的 `person` 要写 `who`，没写的参数
+//! 认识的人经协议（施工 E-1 上，设计 42，`docs/zh/reference/memory.md`）：`memory.remember` 的 `person` 要写 `who`，没写的参数
 //! 不对；一条记忆交 `who`，照类列得出；`memory.update` 只写 `who` 的照旧文新记一条、换是谁，只改正文的带上旧的是谁；别的类
 //! 写了 `who` 也不收。
 

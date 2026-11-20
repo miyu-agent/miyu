@@ -11,7 +11,7 @@
 - `kernel/session.md`「起标题」第 9 条：记的两条不再写「`by` 内核」；多一条「起好的标题算要它的人起的」：`session.meta_changed` 的 `by` 是 `Retitle` 命令的 `by`，`model.called` 照旧是内核的，并进自动起的那一次的、只有续轮拿目标原文的也是；「守着它的」那一行。
 - `kernel/events-bodies.md` 的 `session.meta_changed`「谁改的看 `by`」：人要求重起的 `by` 是要它的人。
 - `protocol.md`：`session.list` 的 `named` 那一句、`session.retitle` 第 2 条、「守着它的」`retitle.rs` 那一行。`store/index.md` 的 `named` 那一格补一句。`cli/rename.md`「守着它的」。
-- `docs/reference/sessions.md`、`sessions.en.md` 的 `session.retitle` 回应那一段。`internal/designs/04-核心协议.md` 第九节「自动起标题」那一条补一句。
+- `docs/zh/reference/sessions.md`、`sessions.en.md` 的 `session.retitle` 回应那一段。`internal/designs/04-核心协议.md` 第九节「自动起标题」那一条补一句。
 
 ### 怎么改的
 

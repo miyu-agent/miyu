@@ -1,4 +1,4 @@
-//! 提供者的工具带给脚本的结构化结果（施工 X-33，`providers.md`、`docs/reference/extensions.md` 的 `tool.call`）：脚本里调到的
+//! 提供者的工具带给脚本的结构化结果（施工 X-33，`providers.md`、`docs/zh/reference/extensions.md` 的 `tool.call`）：脚本里调到的
 //! 拿到原样的 `data`；出错的不交；直接调用的 `tool.result` 里没有它。
 
 use std::sync::Arc;

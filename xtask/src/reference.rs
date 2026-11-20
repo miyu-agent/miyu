@@ -1,4 +1,4 @@
-//! 协议参考（`docs/reference/`，施工 A-1）：代码里分发的、核心发给扩展的每一个方法，中文、英文两份参考里都要有条目；参考里
+//! 协议参考（`docs/zh/reference/`、`docs/en/reference/`，施工 A-1）：代码里分发的、核心发给扩展的每一个方法，中文、英文两份参考里都要有条目；参考里
 //! 当标题写的方法，代码里要有。算在「文档」那一项里。
 //!
 //! 代码这一头照字面找，不跑核心：端点和核心的非测试代码里，样子是 `xxx.yyy` 的字符串字面量，出现在分发的位置——`match` 的
@@ -8,8 +8,11 @@
 use std::collections::BTreeSet;
 use std::path::Path;
 
-/// 参考在仓库里的位置。
-pub const PATH: &str = "docs/reference";
+/// 中文参考（正本）在仓库里的位置。
+pub const PATH: &str = "docs/zh/reference";
+
+/// 英文参考在仓库里的位置：页名和中文的相同。
+pub const PATH_EN: &str = "docs/en/reference";
 
 /// 找方法的代码目录。
 pub const SOURCES: [&str; 2] = ["crates/miyu-endpoint/src", "crates/miyu-core/src"];
@@ -22,10 +25,15 @@ pub fn check(root: &Path) -> Vec<String> {
             return vec![format!("读不了 {dir}：{e}")];
         }
     }
-    let (zh, en, headings) = match documented(&root.join(PATH)) {
+    let (zh, mut headings) = match documented(root, PATH) {
         Ok(found) => found,
         Err(e) => return vec![format!("读不了 {PATH}：{e}")],
     };
+    let (en, more) = match documented(root, PATH_EN) {
+        Ok(found) => found,
+        Err(e) => return vec![format!("读不了 {PATH_EN}：{e}")],
+    };
+    headings.extend(more);
     let mut problems = Vec::new();
     for name in &code {
         if !zh.contains(name) {
@@ -33,13 +41,13 @@ pub fn check(root: &Path) -> Vec<String> {
         }
         if !en.contains(name) {
             problems.push(format!(
-                "{PATH}：代码里有 {name}，英文参考（*.en.md）里没有它的条目"
+                "{PATH_EN}：代码里有 {name}，英文参考里没有它的条目"
             ));
         }
     }
     for (name, file) in headings {
         if !code.contains(&name) {
-            problems.push(format!("{PATH}/{file}：标题里的 {name} 代码里没有"));
+            problems.push(format!("{file}：标题里的 {name} 代码里没有"));
         }
     }
     problems
@@ -116,17 +124,13 @@ fn dispatched(text: &str, at: usize, close: usize, listing: bool, sent: bool) ->
         || (listing && alone && after.starts_with(",\n"))
 }
 
+/// 一个目录的参考里有条目的方法，和当标题写的方法各在哪一页。
+type Documented = (BTreeSet<String>, BTreeSet<(String, String)>);
+
 /// 参考里写了条目的方法：中文的、英文的，和标题里写的（方法、文件）。
-#[allow(clippy::type_complexity)]
-fn documented(
-    dir: &Path,
-) -> std::io::Result<(
-    BTreeSet<String>,
-    BTreeSet<String>,
-    BTreeSet<(String, String)>,
-)> {
-    let (mut zh, mut en, mut headings) = (BTreeSet::new(), BTreeSet::new(), BTreeSet::new());
-    let mut files: Vec<_> = std::fs::read_dir(dir)?.collect::<Result<_, _>>()?;
+fn documented(root: &Path, dir: &str) -> std::io::Result<Documented> {
+    let (mut set, mut headings) = (BTreeSet::new(), BTreeSet::new());
+    let mut files: Vec<_> = std::fs::read_dir(root.join(dir))?.collect::<Result<_, _>>()?;
     files.sort_by_key(std::fs::DirEntry::file_name);
     for file in files {
         let name = file.file_name().to_string_lossy().into_owned();
@@ -134,11 +138,6 @@ fn documented(
             continue;
         }
         let text = std::fs::read_to_string(file.path())?;
-        let set = if name.ends_with(".en.md") {
-            &mut en
-        } else {
-            &mut zh
-        };
         for line in text.lines() {
             let heading = line.starts_with("## ");
             if !(heading || line.starts_with("| `") || line.starts_with("| [`")) {
@@ -151,13 +150,13 @@ fn documented(
             };
             for method in quoted(cell) {
                 if heading {
-                    headings.insert((method.clone(), name.clone()));
+                    headings.insert((method.clone(), format!("{dir}/{name}")));
                 }
                 set.insert(method);
             }
         }
     }
-    Ok((zh, en, headings))
+    Ok((set, headings))
 }
 
 /// 一行里反引号括起来、样子是方法名的。

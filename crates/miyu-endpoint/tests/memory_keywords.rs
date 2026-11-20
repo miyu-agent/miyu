@@ -1,4 +1,4 @@
-//! 记忆的关键词经协议（施工 R-15 上，`docs/reference/memory.md`）：`memory.remember` 带关键词、一条记忆交 `keywords`，照关键词搜得到；
+//! 记忆的关键词经协议（施工 R-15 上，`docs/zh/reference/memory.md`）：`memory.remember` 带关键词、一条记忆交 `keywords`，照关键词搜得到；
 //! `memory.update` 只写 `keywords` 的编号不变、写了 `text` 的换新编号、关键词带过去（空的是去掉）；太长的拒、说是哪一格；两样都
 //! 没写的参数不对。
 

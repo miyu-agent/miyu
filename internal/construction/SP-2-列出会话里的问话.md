@@ -23,7 +23,7 @@
    - 权限、报错同 `view.page`：扩展要 `events.read`；编号不合写法、多写了格 `bad_params`，没有这个会话 `session_not_found`，日志读不了 `session_broken`（记 `WARN log not read`）。
 2. **读法**（`crates/miyu-endpoint/src/asked.rs`）：只读日志、不载入、不落缓存、不常驻。照 `read_range_only` 只全解 `message.user`（有效历史照种类认的那几种它自己也全解，回复、请求只解 `seen` 那几格，别的种类只认外壳），一遍读下来，事件照先后交给真的 `History::whole`，谁都碰不到的那一截收下问话就放；撤销、撤回比放掉的还早的照骨架算的下界再读一遍，骨架认不得的整份读到头一遍读到的那一条。
 3. **共用**：判官的「边读边过有效历史」（V-39 上的 `venues/records/pass.rs` 里放的那一套、`bones.rs`）挪到 `crates/miyu-endpoint/src/sweep.rs`、`sweep/bones.rs`，泛成 `Sweep<S: Settle>`：怎么放、骨架、再读一遍的计划都在那里，判官只留它收下的那几样（`Kept`），问话列表收它的（`Asked`）。判官的逻辑一行没改，只是挪了地方、换了字段的路径。
-4. 文档：`protocol.md`（方法表、一节、文件表、`bad_params` 那一行），`docs/reference/sessions.md`、`sessions.en.md`（方法表、谁能调、一节），`methods-v1.txt` 登记，`venues.md` 判官那一行的文件。
+4. 文档：`protocol.md`（方法表、一节、文件表、`bad_params` 那一行），`docs/zh/reference/sessions.md`、`sessions.en.md`（方法表、谁能调、一节），`methods-v1.txt` 登记，`venues.md` 判官那一行的文件。
 
 ### 不做什么
 

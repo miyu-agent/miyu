@@ -61,7 +61,7 @@ title = { zh = "时间", en = "Time" }
 
 每推送一次，整块内容都会被替换。内容只保存在核心的内存里：核心或者你的程序重启以后，内容都从空的开始，等下一次 `widget.watch` 时再推送。你的程序停止以后，它的块会全部清空，头会显示 `<软件名> 没有运行`（网页显示 `未运行`）。同一块推给同一个头，最快 250 毫秒一次，中间的推送只保留最新的一次。
 
-方法的每个字段和出错情况见 [扩展参考](../../reference/extensions.md#widgetsetwidgetclearwidgetwatchwidgetunwatch)。
+方法的每个字段和出错情况见 [扩展参考](../reference/extensions.md#widgetsetwidgetclearwidgetwatchwidgetunwatch)。
 
 ### 内容
 
@@ -147,7 +147,7 @@ title = { zh = "时间", en = "Time" }
 
 - 只有扩展能写这种后台页。用 `package.methods` 登记一个 `status` 方法，在回应里写上 `web`，值是服务实际监听的端口（还没有开始监听时不写）。
 - 头和 `miyu pkg page` 会根据它打开 `http://127.0.0.1:<端口>/#miyu=<…>`：`#` 后面是一段用 base64url（不带 `=`）编码的 JSON `{"v": 1, "ticket", "lang"}`，其中 `ticket` 是一张有效期 60 秒、只能用一次的登录票。你的服务要拿它换设备令牌：在扩展的连接上调用 `login.redeem {"ticket"}`，核心回 `{"login": {"token", "expires"}}`，之后用这个设备令牌（握手凭据 `login`）替页面连接核心。
-- 如果你要自己申请登录票（例如页面过期以后重新打开）：声明能力 `login.page`，在扩展连接上调用 `login.ticket {"via": "page"}`。这种票只能在本机的连接上兑换；只能为核实过是从本机来的请求申请和兑换登录票，从别处来的页面一律使用访问密码。要遵守的几条规则见 [扩展参考](../../reference/extensions.md) 的「替本机页面换登录票」。
+- 如果你要自己申请登录票（例如页面过期以后重新打开）：声明能力 `login.page`，在扩展连接上调用 `login.ticket {"via": "page"}`。这种票只能在本机的连接上兑换；只能为核实过是从本机来的请求申请和兑换登录票，从别处来的页面一律使用访问密码。要遵守的几条规则见 [扩展参考](../reference/extensions.md) 的「替本机页面换登录票」。
 - 例子：接入通讯平台的 `im` 包（清单是 `im/package.toml`）。
 
 ## 托盘菜单里的一行

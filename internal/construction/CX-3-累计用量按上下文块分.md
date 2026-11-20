@@ -18,7 +18,7 @@
 ### 蓝图改哪几节
 
 - `protocol.md`：方法表、`session.usage_parts` 一节。
-- `docs/reference/sessions.md`、`sessions.en.md`。
+- `docs/zh/reference/sessions.md`、`sessions.en.md`。
 
 ### 做了什么
 

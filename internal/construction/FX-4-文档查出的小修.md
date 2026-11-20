@@ -88,7 +88,7 @@
 
 ### 十二、协议参考里新加的「她」
 
-**证实**：VW-1 到 LF-10 这几步在 `docs/reference/` 加的行里，`life.md`（LF-10）、`packages.md`（LO-1 的 `/loop`）、`view.md`（HT-3 改过的 `tool` 一行）、`venues.md`（QT-1 的 `quoted`、回顾的回应）写了「她」，英文那几行写了 she、her。协议参考给人和扩展作者看。
+**证实**：VW-1 到 LF-10 这几步在 `docs/zh/reference/` 加的行里，`life.md`（LF-10）、`packages.md`（LO-1 的 `/loop`）、`view.md`（HT-3 改过的 `tool` 一行）、`venues.md`（QT-1 的 `quoted`、回顾的回应）写了「她」，英文那几行写了 she、her。协议参考给人和扩展作者看。
 
 **修法**：改成「模型」「会话日志」或者不提主语，中英两份一起改。更早的行、给模型看的提示词、人格侧的字不在这一次。
 

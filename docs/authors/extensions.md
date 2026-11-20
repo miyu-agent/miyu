@@ -1,6 +1,6 @@
 # 写扩展
 
-扩展是一个独立的程序，什么语言写都行。核心拉起它，经标准输入输出说 JSON-RPC 2.0，一行一条。扩展先握手，再把自己的工具登记进来；AI 调到这些工具时，核心反过来请扩展去做。英文版：[extensions.en.md](extensions.en.md)。每个方法的完整说明在 [协议参考：扩展](../reference/extensions.md)。
+扩展是一个独立的程序，什么语言写都行。核心拉起它，经标准输入输出说 JSON-RPC 2.0，一行一条。扩展先握手，再把自己的工具登记进来；AI 调到这些工具时，核心反过来请扩展去做。英文版：[extensions.en.md](extensions.en.md)。每个方法的完整说明在 [协议参考：扩展](../zh/reference/extensions.md)。
 
 ## 一个最小的扩展
 
@@ -212,7 +212,7 @@ core.close()
 - 画出来、生成的图存到哪：会话里的调用多一格 `pictures`，是数据根里放图的目录（真实位置，可能还没建，写之前自己建好），存在这里人在终端、网页里找得到；没有这一格的（会话外面的调用、群和私聊这类场所会话、老的核心）照旧存工作区：场所会话只碰得到自己的工作区，存到别处她就读不到、发不出去。
 - 失败的照样回结果、`error` 写 `true`，把原因写给模型看；回 JSON-RPC 的错误也算失败。
 - 想让她「发出去」一张图（表情包这类，画在正文里，聊天平台当图发）：回答里加 `"sent": [{"blob", "media_type", "width", "height", "alt"?, "sticker"?}]`，至多 4 张。`sent` 不给 AI 看。
-- 想让头把结果画成卡片：回答里加 `detail`，照三种通用形状写一种：链接列表 `{"kind": "links", "links": [{"title", "url", "snippet"?}]}`、表格 `{"kind": "table", "columns": [...], "rows": [[...]]}`、图片 `{"kind": "images", "images": [{"blob", "media_type", "caption"?}]}`。`detail` 不给 AI 看；形状不对的核心丢掉这一格，运行日志里记一行 `tool detail dropped`。写法和上限见 [协议参考](../reference/extensions.md#toolcalltoolcancel)。
+- 想让头把结果画成卡片：回答里加 `detail`，照三种通用形状写一种：链接列表 `{"kind": "links", "links": [{"title", "url", "snippet"?}]}`、表格 `{"kind": "table", "columns": [...], "rows": [[...]]}`、图片 `{"kind": "images", "images": [{"blob", "media_type", "caption"?}]}`。`detail` 不给 AI 看；形状不对的核心丢掉这一格，运行日志里记一行 `tool detail dropped`。写法和上限见 [协议参考](../zh/reference/extensions.md#toolcalltoolcancel)。
 - 写了 `clicall` 的工具，想让脚本拿到结构化的结果：回答里加 `data`，任意 JSON（比如 `{"items": [...]}`；搜不到的也交同一个样子，列表是空的，脚本照 JSON 解析不会崩）。AI 在命令里 `miyu call` 调到时，脚本拿到它的一行 JSON，没有 `data` 的拿到 `blocks` 里的字。`data` 不给 AI 看，`error` 是真的不交。
 - 同一时间可能来好几个 `tool.call`，照 `id` 对着回。
 - 过了 `timeout_ms`、人打断了，核心发通知 `tool.cancel {"session", "call_id"}`：放下那一件。
@@ -309,7 +309,7 @@ hosted = ["search_web"] # 会让供应商自己跑的工具（见下面「供应
 
 **列模型**（可选）：实现 `driver.models`（参数 `{"driver", "key"?, "base_url"?}`），回 `{"models": [{"id", "window"?, "max_output"?, "tools"?, "vision"?}]}`，主人的模型列表里就有了，窗口、最大输出、能不能调工具、看不看得了图照你报的算（主人手写的压过你的）；不实现的，主人手写模型名。
 
-每个参数、增量、出错的细节见 [协议参考](../reference/extensions.md#drivercalldriverdeltadrivercancel)。
+每个参数、增量、出错的细节见 [协议参考](../zh/reference/extensions.md#drivercalldriverdeltadrivercancel)。
 
 ### 供应商自己跑的工具
 
@@ -380,9 +380,9 @@ def on_tool_after(params):
 [{"type":"heading","text":"本周"},{"type":"text","text":{"zh":"晴 23°C","en":"Sunny 23°C"},"tone":"accent"},{"type":"pairs","items":[{"label":"湿度","value":"40%"}]},{"type":"progress","value":0.4,"text":"索引 40%"},{"type":"list","items":[{"title":"构建 #128","right":"3m","state":"doing","action":{"call":"build.open","params":{"id":128}}}]},{"type":"buttons","items":[{"label":"刷新","action":{"call":"refresh"}}]}]
 ```
 
-只有字：不认 Markdown、HTML、颜色码。整页（`place = "page"`）另能放可以改的表单（`sections`、`form`）。段、表单的每一格见 [协议参考：界面块](../reference/extensions.md#widgetsetwidgetclearwidgetwatchwidgetunwatch)。
+只有字：不认 Markdown、HTML、颜色码。整页（`place = "page"`）另能放可以改的表单（`sections`、`form`）。段、表单的每一格见 [协议参考：界面块](../zh/reference/extensions.md#widgetsetwidgetclearwidgetwatchwidgetunwatch)。
 
-**让别的包调你、你调别的包**：走总线，照名字，不写对方的包名（[总线](../reference/bus.md)）。给别人调的方法写进清单 `[export] methods`，再在 `[export]` 里声明名字：`provides = ["stt"]` 是你提供（一个名字只有一家），`plugs = ["tts.engine"]` 是你接进（可以多家，用的一方挑）；方法照名字带前缀（`stt.transcribe`），照样要 `package.methods` 登记，登记全了 `bus.list` 才报你 `ready`。别人调到时 `method.call` 多一格 `from`（调的包的编号，冒充不了）。要调别人的，声明 `packages.call`，发 `bus.call {"name", "method", "params"}`（`method` 写短名 `transcribe`；`plugs` 的名字另写 `package` 挑哪家）。照包编号调不到别的包：扩展发 `package.call` 写了别的包的编号回 `own_package_only`；清单 `methods` 里不在你声明的名字底下的方法读不成（`bad_export`）。公认的名字（`stt`、`tts` 这些）的形状在参考文档里，照它答、照它调；`miyu bus list` 看这台机器上谁提供了什么。
+**让别的包调你、你调别的包**：走总线，照名字，不写对方的包名（[总线](../zh/reference/bus.md)）。给别人调的方法写进清单 `[export] methods`，再在 `[export]` 里声明名字：`provides = ["stt"]` 是你提供（一个名字只有一家），`plugs = ["tts.engine"]` 是你接进（可以多家，用的一方挑）；方法照名字带前缀（`stt.transcribe`），照样要 `package.methods` 登记，登记全了 `bus.list` 才报你 `ready`。别人调到时 `method.call` 多一格 `from`（调的包的编号，冒充不了）。要调别人的，声明 `packages.call`，发 `bus.call {"name", "method", "params"}`（`method` 写短名 `transcribe`；`plugs` 的名字另写 `package` 挑哪家）。照包编号调不到别的包：扩展发 `package.call` 写了别的包的编号回 `own_package_only`；清单 `methods` 里不在你声明的名字底下的方法读不成（`bad_export`）。公认的名字（`stt`、`tts` 这些）的形状在参考文档里，照它答、照它调；`miyu bus list` 看这台机器上谁提供了什么。
 
 **读别的包给你带的内容**：别的包在清单里写 `[content.<你的编号>] dir = "…"` 就是给你带了一个目录。调 `content.list {}` 看谁带了，`content.read {"package", "path", "offset"?}` 分块读；装、卸、升级以后核心推 `content.changed`。
 

@@ -172,7 +172,7 @@ miyu config set render.font "Noto Serif CJK SC"
 
 ### 供其他软件包调用
 
-`render` 在总线上的名字是 `render`，方法是 `render.markdown`：其他软件包交给它 Markdown 和可选的配色，拿回一页一页的图片。写软件包的作者可以看 [总线](../../reference/bus.md)。
+`render` 在总线上的名字是 `render`，方法是 `render.markdown`：其他软件包交给它 Markdown 和可选的配色，拿回一页一页的图片。写软件包的作者可以看 [总线](../reference/bus.md)。
 
 `miyu render` 这条命令是给核心启动包里的程序用的，你手动运行它只会输出 `usage: miyu-render serve`。
 
@@ -260,7 +260,7 @@ miyu pkg page memes
 miyu config set memes.reminder_probability 10
 ```
 
-`miyu memes` 这条命令是给核心启动包里的程序用的，你手动运行它只会输出 `usage: miyu-memes serve`。其他软件包通过总线上的名字 `memes`（`memes.add`、`memes.search`）往库里存图、在库里搜索，见 [总线](../../reference/bus.md)。
+`miyu memes` 这条命令是给核心启动包里的程序用的，你手动运行它只会输出 `usage: miyu-memes serve`。其他软件包通过总线上的名字 `memes`（`memes.add`、`memes.search`）往库里存图、在库里搜索，见 [总线](../reference/bus.md)。
 
 ### 常见问题
 

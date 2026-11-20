@@ -19,7 +19,7 @@
 
 ### 没搬的，和为什么
 
-`docs/authors/`（作者教程）、`docs/reference/`（协议参考）照旧是两种语言放在一个目录、英文叫 `<页>.en.md`。它们接着门禁和测试：`xtask` 的 `reference.rs`、`anchors.rs`、`frozen.rs` 写死了 `docs/reference`，五处测试 `include_str!` 着这两处的文件，CI 的路径规则里有 `docs/authors/**`；别的会话每加一个协议方法都要改 `docs/reference` 两份。要搬得连门禁的代码一起改、挑一个没人在改的空档，已交主会话排。
+`docs/authors/`（作者教程）、`docs/zh/reference/`（协议参考）照旧是两种语言放在一个目录、英文叫 `<页>.en.md`。它们接着门禁和测试：`xtask` 的 `reference.rs`、`anchors.rs`、`frozen.rs` 写死了 `docs/zh/reference`，五处测试 `include_str!` 着这两处的文件，CI 的路径规则里有 `docs/authors/**`；别的会话每加一个协议方法都要改 `docs/zh/reference` 两份。要搬得连门禁的代码一起改、挑一个没人在改的空档，已交主会话排。
 
 ### 核实
 

@@ -1,4 +1,4 @@
-//! 工具调用后的通知（施工 HK-2，设计 `65-工具挂接点.md` 第四节，`docs/reference/extensions.md` 的 `tool.after`）：真核心拉起
+//! 工具调用后的通知（施工 HK-2，设计 `65-工具挂接点.md` 第四节，`docs/zh/reference/extensions.md` 的 `tool.after`）：真核心拉起
 //! 测试扩展走一遍。
 //!
 //! - 结果落了盘以后收到一条，九格照第四节第 3 条：`args` 是模型写的原文，`blocks`、`by` 同日志里那一条；表里没有的工具不发；

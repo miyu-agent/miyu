@@ -61,7 +61,7 @@ Your program handles widgets as follows:
 
 Each push replaces the whole block. The content lives only in the core's memory: after the core or your program restarts, everything starts empty and waits for the next `widget.watch` to push again. When your program stops, all its blocks are cleared, and heads show `<software name> is not running` (the web UI shows `Not running`). For the same block to the same head, pushes go out at most once every 250 milliseconds, and in between only the latest one is kept.
 
-For every field of these methods and their errors, see the [extension reference](../../reference/extensions.en.md#widgetset-widgetclear-widgetwatch-widgetunwatch).
+For every field of these methods and their errors, see the [extension reference](../reference/extensions.md#widgetset-widgetclear-widgetwatch-widgetunwatch).
 
 ### Content
 
@@ -147,7 +147,7 @@ A static backstage page can be opened from these places: the web UI settings pag
 
 - Only extensions can have this kind of backstage page. Register a `status` method with `package.methods`, and put `web` in the reply: the port the server is actually listening on (leave it out if it isn't listening yet).
 - Heads and `miyu pkg page` open `http://127.0.0.1:<port>/#miyu=<…>` from it: after the `#` is JSON `{"v": 1, "ticket", "lang"}` encoded as base64url (without `=`), and `ticket` is a one-time login ticket valid for 60 seconds. Your server exchanges it for a device token: on the extension's connection, call `login.redeem {"ticket"}`, which replies `{"login": {"token", "expires"}}`; from then on, the server connects to the core on the page's behalf with this device token (the handshake credential `login`).
-- To get a ticket yourself (for example to reopen a page that has expired): declare the capability `login.page` and call `login.ticket {"via": "page"}` on the extension connection. This kind of ticket can only be exchanged on a connection from this machine; ask for and exchange tickets only for requests you have checked came from this machine, and pages from elsewhere always use the access password. The rules to follow are in "Signing in pages on this machine" in the [extension reference](../../reference/extensions.en.md).
+- To get a ticket yourself (for example to reopen a page that has expired): declare the capability `login.page` and call `login.ticket {"via": "page"}` on the extension connection. This kind of ticket can only be exchanged on a connection from this machine; ask for and exchange tickets only for requests you have checked came from this machine, and pages from elsewhere always use the access password. The rules to follow are in "Signing in pages on this machine" in the [extension reference](../reference/extensions.md).
 - Example: the `im` package that connects chat platforms (its manifest is `im/package.toml`).
 
 ## A row in the tray menu

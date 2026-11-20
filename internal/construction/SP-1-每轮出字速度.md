@@ -1,6 +1,6 @@
 ## 施工单 SP-1：每一轮的出字速度
 
-状态：已合（2026-10-26）。主会话派的（2026-10-26），网页要的：项目主人定了每秒多少 token 挪到每轮回答末尾那一行。图纸 `internal/blueprint/view.md`「条目」的 `end`、「会话状态」的 `speed`，协议参考 `docs/reference/view.md`（中英两份）。
+状态：已合（2026-10-26）。主会话派的（2026-10-26），网页要的：项目主人定了每秒多少 token 挪到每轮回答末尾那一行。图纸 `internal/blueprint/view.md`「条目」的 `end`、「会话状态」的 `speed`，协议参考 `docs/zh/reference/view.md`（中英两份）。
 
 ### 为什么
 

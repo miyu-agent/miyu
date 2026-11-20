@@ -13,7 +13,7 @@
 - `kernel/session.md`：命令表多 `Retitle`；原因码表多 `nothing_to_title`；「起标题」多第 9 条「人要求重起」；封存了照收的命令多它；「守着它的」多一行。
 - `kernel/events-bodies.md`：`session.meta_changed` 内核起的那一种，注明人要求重起的也是它。
 - `cli/rename.md`：标题可以不写、第 5 到 7 步、帮助页样本、退出码、守着它的。`cli/main.md`：主帮助页样本的 `rename [<标题>]`。
-- `docs/reference/sessions.md`、`sessions.en.md`：方法表、谁能调、`session.retitle` 一节；`methods-v1.txt` 多一行。
+- `docs/zh/reference/sessions.md`、`sessions.en.md`：方法表、谁能调、`session.retitle` 一节；`methods-v1.txt` 多一行。
 - `internal/designs/04-核心协议.md` 第九节：方法表、「自动起标题」那一条补一句。
 
 ### 怎么改的

@@ -35,31 +35,37 @@ fn a_hash_line_in_a_code_block_is_not_a_heading() {
 
 #[test]
 fn a_link_to_a_missing_heading_is_named() {
-    let found = problems(&pages(&[
-        (
-            "connection.md",
-            "| [`subscribe`](#subscribeunsubscribe) | 订阅 |\n| [`hello`](#hello) | 握手 |\n\n## `hello`\n",
-        ),
-        (
-            "pushes.md",
-            "见[连接](connection.md#hello)、[没有的](connection.md#nope)。\n",
-        ),
-    ]));
+    let found = problems(
+        crate::reference::PATH,
+        &pages(&[
+            (
+                "connection.md",
+                "| [`subscribe`](#subscribeunsubscribe) | 订阅 |\n| [`hello`](#hello) | 握手 |\n\n## `hello`\n",
+            ),
+            (
+                "pushes.md",
+                "见[连接](connection.md#hello)、[没有的](connection.md#nope)。\n",
+            ),
+        ]),
+    );
     assert_eq!(
         found,
         [
-            "docs/reference/connection.md：链到 connection.md#subscribeunsubscribe，那一页没有这个标题",
-            "docs/reference/pushes.md：链到 connection.md#nope，那一页没有这个标题",
+            "docs/zh/reference/connection.md：链到 connection.md#subscribeunsubscribe，那一页没有这个标题",
+            "docs/zh/reference/pushes.md：链到 connection.md#nope，那一页没有这个标题",
         ]
     );
 }
 
 #[test]
 fn links_elsewhere_are_not_checked() {
-    let found = problems(&pages(&[(
-        "a.md",
-        "[网址](https://example.com/x#y)、[蓝图](../blueprint/protocol.md#nope)、[整页](b.md)、[空的](#)\n",
-    )]));
+    let found = problems(
+        crate::reference::PATH,
+        &pages(&[(
+            "a.md",
+            "[网址](https://example.com/x#y)、[蓝图](../blueprint/protocol.md#nope)、[整页](b.md)、[空的](#)\n",
+        )]),
+    );
     assert_eq!(found, Vec::<String>::new());
 }
 

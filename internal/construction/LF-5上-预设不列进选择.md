@@ -11,7 +11,7 @@
 - `presets.md`「格式」那一段的样例和第 1 到 7 条：加 `hidden`，只收 `true`、`false`，别的报错写明第几行；几层叠起来照 `icon` 的叠法（上一层写了的盖下面的）；没写的是 `false`。
 - `presets.md` 讲 `preset.list`、`preset.get`、`preset.set` 的几条：一项多一格 `hidden`（布尔，没写的给 `false`）；`preset.set` 能写、能去掉。
 - 它不影响会话：不进叠好的文件的指纹、不进策略快照（照 `icon` 现在的处理核对；`icon` 要是进了指纹，`hidden` 也不许进，写清为什么）。
-- 协议参考 `docs/reference/personas.md`、`personas.en.md` 的 `preset.list`、`preset.get`、`preset.set`。
+- 协议参考 `docs/zh/reference/personas.md`、`personas.en.md` 的 `preset.list`、`preset.get`、`preset.set`。
 
 ### 不做什么
 

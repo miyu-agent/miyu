@@ -16,7 +16,7 @@
 - 第五节第 2、3、3a、5、6 条：`schedule.list`、`schedules` 流的回应和推送不列 `life` 行；`schedule.cancel`、`pause`、`resume`、`update` 落在 `life` 行上照没有这个编号回 `unknown_schedule`（同扩展只看得到自己建的那套）。
 - 第六节：`life` 的这一步先用循环那一对标签（LF-2 换成它自己的）。
 - `tools/` 里 `schedule_wakeup` 那一页：跑在这个会话上的 `life` 那一行同样改下一次；`stop` 在 `life` 上不收，答一句（字登记进提示词登记簿）。`cron_list` 不列 `life` 行，`cron_delete` 删不了它（照没有回）。
-- 协议参考 `docs/reference/schedules.md`、`schedules.en.md`：`loop` 的取值多 `life`。
+- 协议参考 `docs/zh/reference/schedules.md`、`schedules.en.md`：`loop` 的取值多 `life`。
 
 ### 不做什么
 

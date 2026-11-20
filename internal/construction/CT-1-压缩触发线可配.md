@@ -30,7 +30,7 @@
 - `protocol.md`：方法表的 `session.configure`，`session.create`、`session.configure` 的参数表。
 - `view.md`：「会话状态」多 `compaction_line` 一格。
 - `config.md`：嵌着的参考文件样本（生成的）。
-- 参考文档 `docs/reference/` 中英两份：`sessions`、`view`、`events`。
+- 参考文档 `docs/zh/reference/` 中英两份：`sessions`、`view`、`events`。
 
 ### 改了什么
 

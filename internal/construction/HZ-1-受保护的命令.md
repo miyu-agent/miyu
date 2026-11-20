@@ -13,7 +13,7 @@ A16 以后本人的会话默认完全放开：命令不进沙盒、什么都不�
 - `store/resources.md`：`human/<语言>.json` 的 `config` 多一格 `group_descriptions`。
 - `tools/shell.md`「高危」第 3、6 条和「在哪」：看不透的单列一种；问人的全交回、带归的类；这一段挪到 `shell/hazard.rs`。
 - `policy.md`：`hazard.rs` 那一行。
-- 参考 `docs/reference/config.md`、`config.en.md`：组的 `description`。
+- 参考 `docs/zh/reference/config.md`、`config.en.md`：组的 `description`。
 - 设计 `11-权限与沙盒.md`：加 A18；A16 里把 `mkfs`、`dd` 写设备列成问人的那一句改正。
 
 ### 定了的

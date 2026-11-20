@@ -13,7 +13,7 @@ This page is for developers who want to propose a change to the core or to a hea
 | `internal/blueprint/` | Blueprints: what Miyu looks like now, one page per part, including formats, every cell of the UI, the text shown to the model, and which code it lives in and which tests guard it | Before changing a part, read its page first |
 | `internal/designs/` | Design documents: what was decided, why, and what was not chosen; read them by number, starting with `00-设计理念.md` | When you want to know why something is done a certain way, or want to change a settled approach |
 | `internal/construction/` | Work orders: how one change is made, which blueprint sections it changes, and how it is accepted; `README.md` is the master table and the work order format | When you want to see which step added a feature and how it was verified at the time |
-| `docs/reference/`, `docs/authors/` | The protocol reference and the author guides, in Chinese and English, with the Chinese authoritative | When you changed the protocol or how packages are written |
+| `docs/zh/reference/`, `docs/en/reference/`, `docs/authors/` | The protocol reference and the author guides, in Chinese and English, with the Chinese authoritative | When you changed the protocol or how packages are written |
 
 Development follows the order "blueprint → work order → code": when the design changes, change the blueprint page first, then the code; when merged, the code and the blueprint must match.
 
@@ -165,9 +165,9 @@ Local acceptance and the three-platform CI both run this same command. It runs t
 | Docs: prompts page | `internal/blueprint/prompts.md` agrees with the ledger and the resources | Run `cargo xtask prompts` to regenerate it |
 | Docs: sample blocks | A code block in a blueprint marked `样本` ("sample") is identical, character for character, to the file it points to | Change both sides together |
 | Docs: `heads.toml` | Exactly two tables, `tui` and `webui`, each with only `repo` and `rev`; the repository is under `miyu-agent`; `rev` is a full commit id or a tag starting with `v` | Write it that way |
-| Docs: protocol reference | Every method the code dispatches has an entry in both the Chinese and the English reference; every method written as a heading in the reference exists in the code; every `#anchor` in `docs/reference/` finds a matching heading | Add the reference entry, in both languages |
+| Docs: protocol reference | Every method the code dispatches has an entry in both the Chinese and the English reference; every method written as a heading in the reference exists in the code; every `#anchor` in `docs/zh/reference/` and `docs/en/reference/` finds a matching heading | Add the reference entry, in both languages |
 | Docs: what extensions can call | Every method the code dispatches is listed in the table in `crates/miyu-endpoint/src/connection/rights.rs`, stating whether extensions may call it | Add a row to the table |
-| Docs: the frozen method list | `docs/reference/methods-v1.txt` matches the code: it reports methods that are in the snapshot but gone from the code (deleted or renamed), and it also reports methods newly added to the code | For a new method, run `cargo xtask methods` to register it; an existing method cannot be deleted or renamed |
+| Docs: the frozen method list | `internal/blueprint/methods-v1.txt` matches the code: it reports methods that are in the snapshot but gone from the code (deleted or renamed), and it also reports methods newly added to the code | For a new method, run `cargo xtask methods` to register it; an existing method cannot be deleted or renamed |
 | Layers | Every crate is registered in the code layering table in `internal/designs/01-架构.md`, and depends only on its own layer or a lower one; the external dependencies of the two pure-logic layers must come from an allowlist | Register a new crate in the table; move the dependency to the right layer |
 | Pure logic | The `src/` of the kernel and module layers has no files, network, subprocesses, environment variables, threads, clocks or standard I/O, and uses no `HashMap` or `HashSet` | Move the I/O to the executor layer; use `BTreeMap` and `BTreeSet` instead |
 | Line count | No `.rs` file is over 500 lines, test files included | Split the file |
@@ -182,7 +182,7 @@ Local acceptance and the three-platform CI both run this same command. It runs t
 |---|---|
 | `cargo xtask dev-home <dir>` | Creates a development data root with a config (see step 2 of "Build and run" above) |
 | `cargo xtask logs` | Runs only the "Logs" item of the gate |
-| `cargo xtask methods` | Registers protocol methods newly added in the code into `docs/reference/methods-v1.txt`, only adding and never deleting |
+| `cargo xtask methods` | Registers protocol methods newly added in the code into `internal/blueprint/methods-v1.txt`, only adding and never deleting |
 | `cargo xtask prompts` | Regenerates `internal/blueprint/prompts.md` from the ledger and the resources |
 | `cargo xtask notices` | Regenerates `THIRD-PARTY-LICENSES.txt` |
 | `cargo xtask perf [measuring tool args]` | Builds the release `miyu`, `miyu-sandbox` and the measuring tool `miyu-perf`, and measures startup, memory, requests on a long session and binary size, writing the result into `target/perf-out/`; the remaining arguments go to the measuring tool unchanged, for example `--runs 3`. Memory can only be measured on Linux; on macOS and Windows those cells in the table say `not measured` |
@@ -222,7 +222,7 @@ When you change something in the left column, also update the places in the righ
 
 | You changed | Also change |
 |---|---|
-| A protocol method, params, reply, error or push | Both the Chinese and English pages in `docs/reference/`; for a new method, run `cargo xtask methods`, and state in the table in `rights.rs` whether extensions can call it |
+| A protocol method, params, reply, error or push | Both `docs/zh/reference/` and `docs/en/reference/`; for a new method, run `cargo xtask methods`, and state in the table in `rights.rs` whether extensions can call it |
 | How packages, extensions, scripts, skills or MCP are written | Both the Chinese and English pages in `docs/authors/` |
 | Text the model sees in `resources/` | Add a row to the ledger or change its row, then run `cargo xtask prompts` |
 | Dependencies | Run `cargo xtask notices` |

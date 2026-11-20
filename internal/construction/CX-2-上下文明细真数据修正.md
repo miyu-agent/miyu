@@ -19,7 +19,7 @@
 
 - `protocol.md`「`session.context`」：system 逐块认、`messages.reports`。
 - `compaction.md` 第一条第 2 条：本地估算算上回报。
-- `docs/reference/sessions.md`、`sessions.en.md` 跟着改。
+- `docs/zh/reference/sessions.md`、`sessions.en.md` 跟着改。
 
 ### 做了什么
 

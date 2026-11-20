@@ -15,7 +15,7 @@
 ### 蓝图改哪几节
 
 - `protocol.md`「`session.context`」：参数同 `session.tools`、system 的块、摊法、出错。
-- `docs/reference/sessions.md`、`sessions.en.md` 跟着改。
+- `docs/zh/reference/sessions.md`、`sessions.en.md` 跟着改。
 
 ### 做了什么
 

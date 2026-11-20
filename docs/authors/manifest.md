@@ -122,7 +122,7 @@ place = "status"
 | `context.system` | 往系统提示词末尾放一段 |
 | `packages.call` | 经总线调别的包导出的方法（`bus.call`） |
 | `act_for_external` | 代表聊天平台上的人说话：只给平台的桥 |
-| `login.page` | 替这台电脑上打开的页面换登录票（`login.ticket {"via": "page"}`），换到的票只在本机的连接上换得成设备令牌。出厂的包也要人批。只给核过是本机来的页面要票，远处来的页面一律走访问密码，见 [扩展参考](../reference/extensions.md)「替本机页面换登录票」 |
+| `login.page` | 替这台电脑上打开的页面换登录票（`login.ticket {"via": "page"}`），换到的票只在本机的连接上换得成设备令牌。出厂的包也要人批。只给核过是本机来的页面要票，远处来的页面一律走访问密码，见 [扩展参考](../zh/reference/extensions.md)「替本机页面换登录票」 |
 | `sessions.drive` | 驱动会话：开会话、说话、打断、撤销、压缩、分叉、发斜杠命令 |
 | `events.read` | 读会话：订阅事件、读历史、读后台命令的输出；收工具调用后的通知（`[after]`） |
 | `events.write` | 往会话里记自己的事件 |
@@ -339,7 +339,7 @@ access = ["execute"]
 | `hosted` | 这个驱动会让供应商自己跑的工具名，例如 `["search_web", "read_url_content"]`（默认空的）：装包时照它给主人看「会让供应商自己跑：…」。每个 1 到 64 个字节、不带控制字符、不重。交上来的名字不在里面的，Miyu 照收、照显示，运行日志里记一行警告；见 [写扩展](extensions.md#供应商自己跑的工具) |
 | `quiet_secs` | 多久没动静才算断，秒，1 到 900（默认照 Miyu 的空闲时限，180 秒起）：等第一个字、两段之间都照它等，比 Miyu 的短的不收紧。供应商不流思考、头一个字常要等一两分钟的驱动写它，例如 `quiet_secs = 300` |
 
-主人在供应商的配置里写 `driver = "<包的编号>/<驱动名>"`，或者你的包用 `[providers.<编号>]` 自带一家指向它（下一节），才用它；模型档案、npm 表、默认永远是内置的几种，装上你的包也接不走主人原来配好的供应商。包没装、没批、驱动名写错的，`miyu check` 报出来，那一家供应商当用不了，不会退回内置驱动。Miyu 怎么调你的驱动（`driver.call`、`driver.delta`、`driver.cancel`）见 [协议参考](../reference/extensions.md#drivercalldriverdeltadrivercancel)。
+主人在供应商的配置里写 `driver = "<包的编号>/<驱动名>"`，或者你的包用 `[providers.<编号>]` 自带一家指向它（下一节），才用它；模型档案、npm 表、默认永远是内置的几种，装上你的包也接不走主人原来配好的供应商。包没装、没批、驱动名写错的，`miyu check` 报出来，那一家供应商当用不了，不会退回内置驱动。Miyu 怎么调你的驱动（`driver.call`、`driver.delta`、`driver.cancel`）见 [协议参考](../zh/reference/extensions.md#drivercalldriverdeltadrivercancel)。
 
 ## `[providers.<编号>]`
 
@@ -454,7 +454,7 @@ name = { en = "Join review", zh = "入群审核" }
 | `title` | 侧边栏、整页必写 |
 | `scope` | `global`（默认）；`session` 跟着会话、一个会话一份，只给侧边栏 |
 | `command` | 只给整页：打了这个斜杠命令就打开这一页 |
-| `state` | `true`：这一块的内容来自你这个包在会话里的状态（工具结果的 `state`、`session.set_state`，见 [扩展](../reference/extensions.md)），你的程序没在跑也照样有；只给 `scope = "session"` 的块 |
+| `state` | `true`：这一块的内容来自你这个包在会话里的状态（工具结果的 `state`、`session.set_state`，见 [扩展](../zh/reference/extensions.md)），你的程序没在跑也照样有；只给 `scope = "session"` 的块 |
 
 内容由你的程序推，见 [写扩展](extensions.md)。
 

@@ -307,7 +307,7 @@ AI 运行的命令可能被权限设置拦下，或者停在等待确认的状�
 | `protocol_mismatch` | 协议版本不兼容，请升级到同一版本。 | 把界面和核心升级到同一个版本，然后运行 `miyu core stop`。 |
 | `internal_error` | 内部错误，详见运行日志。 | 查看 `core.log`，再按照下面的方法报告问题。 |
 
-全部原因码见 [协议参考：出错](../../reference/errors.md)。
+全部原因码见 [协议参考：出错](../reference/errors.md)。
 
 ## 报告问题
 

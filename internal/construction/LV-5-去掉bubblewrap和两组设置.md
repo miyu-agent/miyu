@@ -86,7 +86,7 @@ A16 以后本人的会话只在只读时进沙盒、能写的范围恒为空，�
 
 **六、文档**
 
-设计 11 加 A17，开头那一段写明 5-16 的 bubblewrap、5-17 的只禁写名单以 A17 为准；蓝图见上；`docs/reference/config.md`、`config.en.md`；设计样本 `internal/designs/samples/config/`（照 `MIYU_SAMPLE_WRITE=1` 重新生成）；`internal/designs/samples/sandbox/spec.json` 没有 `mount`，不动；施工单 `5-16-可选的bubblewrap.md`、`5-17下-只禁写.md` 开头标已撤；`README.md` 加 LV-5 一行。
+设计 11 加 A17，开头那一段写明 5-16 的 bubblewrap、5-17 的只禁写名单以 A17 为准；蓝图见上；`docs/zh/reference/config.md`、`config.en.md`；设计样本 `internal/designs/samples/config/`（照 `MIYU_SAMPLE_WRITE=1` 重新生成）；`internal/designs/samples/sandbox/spec.json` 没有 `mount`，不动；施工单 `5-16-可选的bubblewrap.md`、`5-17下-只禁写.md` 开头标已撤；`README.md` 加 LV-5 一行。
 
 ### 不做什么
 

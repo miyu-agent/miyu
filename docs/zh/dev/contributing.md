@@ -13,7 +13,7 @@
 | `internal/blueprint/` | 蓝图：Miyu 现在是什么样子，一个部件一页，包括格式、界面上的每一格、给模型看的文字，以及它们在哪些代码里、由哪些测试守着 | 改一个部件之前，先读它那一页 |
 | `internal/designs/` | 设计：定了什么、为什么这样定、没有选什么，按编号读，从 `00-设计理念.md` 开始 | 想知道某处为什么这样做，或者想改一个已经定下的做法时 |
 | `internal/construction/` | 施工单：一次改动怎么做、改蓝图的哪几节、怎么验收；`README.md` 是总表和施工单的格式 | 想知道某个功能是哪一步加进来的、当时是怎么验收的时 |
-| `docs/reference/`、`docs/authors/` | 协议参考、作者教程，有中文、英文两份，中文是正本 | 改了协议或者软件包的写法时 |
+| `docs/zh/reference/`、`docs/en/reference/`、`docs/authors/` | 协议参考、作者教程，有中文、英文两份，中文是正本 | 改了协议或者软件包的写法时 |
 
 开发按照「蓝图 → 施工单 → 代码」的顺序进行：设计要变时，先改蓝图的那一页，再改代码；合并时代码和蓝图要对得上。
 
@@ -165,9 +165,9 @@ cargo xtask check
 | 文档：提示词页 | `internal/blueprint/prompts.md` 和登记簿、资源一致 | 运行 `cargo xtask prompts` 重新生成 |
 | 文档：样本块 | 蓝图里标着 `样本` 的代码块和它指向的文件一字不差 | 两边一起修改 |
 | 文档：`heads.toml` | 正好有 `tui`、`webui` 两张表，每张表只有 `repo`、`rev`，仓库在 `miyu-agent` 下，`rev` 是完整的提交号或者以 `v` 开头的标签 | 按照这个要求写 |
-| 文档：协议参考 | 代码里分发的每个方法，在中文、英文两份参考里都有条目；参考里作为标题写出的方法在代码里都存在；`docs/reference/` 里的 `#锚点` 都能找到对应的标题 | 补上参考的条目，两份一起补 |
+| 文档：协议参考 | 代码里分发的每个方法，在中文、英文两份参考里都有条目；参考里作为标题写出的方法在代码里都存在；`docs/zh/reference/`、`docs/en/reference/` 里的 `#锚点` 都能找到对应的标题 | 补上参考的条目，两份一起补 |
 | 文档：扩展能调什么 | 代码里分发的每个方法，都在 `crates/miyu-endpoint/src/connection/rights.rs` 的表里写明扩展能不能调用 | 在表里加一行 |
-| 文档：冻结的方法表 | `docs/reference/methods-v1.txt` 和代码对得上：快照里有、代码里没有了的方法（删掉了或改了名）会报错，代码里新加的方法也会报错 | 新方法运行 `cargo xtask methods` 登记进去；已有的方法不能删除，也不能改名 |
+| 文档：冻结的方法表 | `internal/blueprint/methods-v1.txt` 和代码对得上：快照里有、代码里没有了的方法（删掉了或改了名）会报错，代码里新加的方法也会报错 | 新方法运行 `cargo xtask methods` 登记进去；已有的方法不能删除，也不能改名 |
 | 分层 | 每个 crate 都登记在 `internal/designs/01-架构.md`「代码的分层」那张表里，并且只依赖同一层或更低的层；纯逻辑两层的外部依赖只能从白名单里选 | 把新 crate 登记进表里；把依赖挪到正确的层 |
 | 纯逻辑 | 内核、模块两层的 `src/` 里没有文件、网络、子进程、环境变量、线程、时钟、标准输入输出，也不使用 `HashMap`、`HashSet` | 把 I/O 挪到执行器那一层；改用 `BTreeMap`、`BTreeSet` |
 | 行数 | 每个 `.rs` 文件不超过 500 行，测试文件也算在内 | 拆分文件 |
@@ -182,7 +182,7 @@ cargo xtask check
 |---|---|
 | `cargo xtask dev-home <目录>` | 创建一个带配置的开发数据根（见上面「编译和运行」的第 2 步） |
 | `cargo xtask logs` | 只运行门禁的「日志」那一项 |
-| `cargo xtask methods` | 把代码里新加的协议方法登记进 `docs/reference/methods-v1.txt`，只增加不删除 |
+| `cargo xtask methods` | 把代码里新加的协议方法登记进 `internal/blueprint/methods-v1.txt`，只增加不删除 |
 | `cargo xtask prompts` | 根据登记簿和资源重新生成 `internal/blueprint/prompts.md` |
 | `cargo xtask notices` | 重新生成 `THIRD-PARTY-LICENSES.txt` |
 | `cargo xtask perf [量尺的参数]` | 编译 release 版的 `miyu`、`miyu-sandbox` 和量尺 `miyu-perf`，测量启动、内存、长会话上的请求、二进制大小，结果写进 `target/perf-out/`；后面的参数原样交给量尺，例如 `--runs 3`。内存只能在 Linux 上测量，macOS、Windows 上表里那几格写的是 `不量` |
@@ -222,7 +222,7 @@ cargo xtask check
 
 | 改了 | 还要改 |
 |---|---|
-| 协议的方法、参数、回应、出错、推送 | `docs/reference/` 里中文、英文两份；新方法要运行 `cargo xtask methods`，并在 `rights.rs` 的表里写明扩展能不能调用 |
+| 协议的方法、参数、回应、出错、推送 | `docs/zh/reference/`、`docs/en/reference/` 两份；新方法要运行 `cargo xtask methods`，并在 `rights.rs` 的表里写明扩展能不能调用 |
 | 软件包、扩展、脚本、技能、MCP 的写法 | `docs/authors/` 里中文、英文两份 |
 | `resources/` 里给模型看的文字 | 在登记簿里加一行或者改那一行，然后运行 `cargo xtask prompts` |
 | 依赖 | 运行 `cargo xtask notices` |

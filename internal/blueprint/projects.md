@@ -1,6 +1,6 @@
 ## 项目
 
-状态：施工 H-1 做了项目这一样东西（存、`project.*`、`projects` 流）；H-2 做了会话在项目里（进出、新会话照项目的默认、删项目挪出来）；H-3 做了附加提示词进她的 system、留言照项目筛。协议见 `docs/reference/projects.md`。
+状态：施工 H-1 做了项目这一样东西（存、`project.*`、`projects` 流）；H-2 做了会话在项目里（进出、新会话照项目的默认、删项目挪出来）；H-3 做了附加提示词进她的 system、留言照项目筛。协议见 `docs/zh/reference/projects.md`。
 
 ### 在哪
 

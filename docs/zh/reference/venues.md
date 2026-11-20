@@ -1,0 +1,148 @@
+# 场所：通讯平台上的会话
+
+> <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
+
+场所是会话发生的地方：本机（`local`），或者通讯平台上的一个私聊、一个群。接入通讯平台的桥（例如接入QQ）是一个扩展，清单 `[connection] platform` 写着它接的平台。场所会话都归主人：私聊的对方在主人对应表里的（主人本人）照本机会话待，群和陌生人的私聊关在沙盒里。这一页列桥要用的方法。
+
+| 方法 | 做什么 |
+|---|---|
+| [`venue.session`](#venuesession) | 找回或者造一个场所的主线会话 |
+| [`venue.sessions`](#venuesessions) | 列出这个桥的全部场所会话 |
+| [`venue.binding`](#venuebinding) | 问一个平台身份是不是主人 |
+| [`venue.plugins`](#venueplugins) | 说一个场所开着哪些场所插件 |
+| [`session.send` 的 `as`、`venue`](#sessionsend-的-asvenue) | 代表平台上的人说话 |
+| [`session.respond`](#sessionrespond) | 照旁听记下的几条开一轮 |
+| [`session.note`](#sessionnote) | 只记几块事实，不开回合 |
+| [`venue.records`](#venuerecords) | 判官看的群聊记录 |
+| [`events.append` 的 `venue.*`](#eventsappend-的-venue) | 记撤回、记她发出去的话 |
+
+**谁能调**：`venue.sessions`、`venue.binding`、`venue.plugins` 和关进沙盒的 `venue.session`（群、陌生人的私聊）只给平台桥（核心拉起的、清单写了 `[connection] platform`、批了 `act_for_external` 的扩展），别的回 `needs_approval`（`data.capabilities` 是 `["act_for_external"]`）。主人本人的私聊主人这边的连接也开得了。桥只碰得到它接的平台的场所会话（场所编号的平台前缀）。代表平台上的人说话（带 `as` 的 `session.send`、`command.run`）、`session.note`、`venue.*`、记 `venue.*` 事件都要能力 `act_for_external`。
+
+**主人看场所会话**：关在沙盒里的场所会话（群、陌生人的私聊）只有接这个平台的桥能往里说话、改它、删它；主人这边的连接（人的头）只读地看得到它，读的方法照常，写的回 `session_not_found`，同没有这个会话：
+
+- 读的：`subscribe`、`unsubscribe`（`events`、`view` 流，`after` 补发照常）、`view.page`、`view.detail`、`session.prompts`、`session.tools`、`session.context`、`session.usage_parts`、`session.quota`、`job.output`、带 `session` 的 `blob.get`、`session.shown`。
+- 别的带 `session` 的一律 `session_not_found`：说话、`command.run`、重做、撤销、打断、压缩、清空、换配置、`set_*`、分叉、改标题、删这些。
+- 扩展、平台桥不受这一条影响：桥照旧只碰得到它的平台的场所会话，读的也一样。
+
+**场所编号**：桥自己定的短名字（1 到 128 字节，没有控制字符），例如 `qq:private:10001`、`qq:group:123456`。核心不解读，只认第一个 `:` 前面的平台前缀。
+
+**主人对应表**：系统配置 `[external.bindings]`，写了的平台身份就是主人（只有一个主人，值写什么都算，空的不算）：
+
+```toml
+[external.bindings]
+"qq:10001" = "owner"
+```
+
+私聊里这个号就是主人本人；群里这个号是主人。
+
+语音助手那头的 `voice:owner` 不用写进对应表，天然是主人：只在平台是 `voice` 的场所里算，别的平台的桥报这个号照外人。
+
+## `venue.session`
+
+**参数**
+
+| 名字 | 类型 | 说明 |
+|---|---|---|
+| `venue` | 字符串，必写 | 场所编号 |
+| `kind` | `private` 或 `group`，必写 | 私聊还是群 |
+| `peer` | 字符串 | 私聊的对方，`private` 必写，`group` 不能写 |
+| `persona` | 字符串或 `null` | 造的时候用哪个人格（桥照自己的规则算好）；`null` 是不用人格 |
+| `preset` | 字符串 | 造的时候用哪个预设 |
+| `profile` | 布尔 | 造的时候带不带主人写的「关于你」：主人自己的私聊才写 `true` |
+| `images` | 布尔，默认 `true` | 这个场所显示得了图片吗 |
+| `voice_max_ms` | 正整数 | 这个平台一段语音至多多少毫秒：语音有上限的平台才写。记进 `session.created`，这个会话的工具调用带上（扩展的 `tool.call` 的 `voice_max_ms`），`say` 合成长了的回出错让她重说。找回已有的会话时也看：和记过的不一样的另记一条 `session.policy_changed`（`voice_max_ms`），之后的调用带新的；不写的照记过的。写 `0` 的 `bad_params`（`data.field` 是 `voice_max_ms`） |
+| `titles` | 布尔，默认 `true` | 这个会话自动起标题吗：`false` 的从此不自动起，人手改照旧改得了。找回已有的会话时不看 |
+| `cwd` | 字符串 | 造的时候的工作目录，不写是这个会话的默认工作区 |
+| `recent` | 整数，1 到 1000 | 只给群：开一轮时群聊近况最多带几条（从最新往前），字节预算照旧做上限、两个取少的；不写的只照字节预算。造的时候钉死 |
+| `fresh` | 布尔，默认 `false` | 不找已有的，直接造一个新的：最新的那个会话日志坏了（`session_read_only`）时桥照它另开一个；之后照常找回的是新的，旧的照旧在、看得到 |
+
+造的时候用的几格，找回的不看。
+
+**回应**：`{"session", "created"}`：会话编号、是不是新造的。照「场所加关不关沙盒」找：私聊的对方后来写进了对应表，原来关着的那一个不接着用，另开一个不关的。
+
+场所会话没有人能确认：要确认的一律拒绝。同一个 `id` 再发交回同一个。
+
+**出错**：`needs_approval`；`unknown_persona`、`unknown_preset`、`preset_invalid`；`bad_params`。
+
+## `venue.sessions`
+
+**参数**：没有。**回应**：`{"sessions": [{"session", "venue"}…]}`，从新到旧。列的是这个桥接的平台的场所会话（照清单 `[connection] platform` 认平台，能写几个），桥自己开的本机会话不列。一个场所只列最新的那一个。桥起来时照它订阅。
+
+## `venue.binding`
+
+**参数**：`id`：平台身份。**回应**：`{"owner": true|false}`：是不是主人（在主人对应表里）。照这一刻的配置答。桥挡「只给主人」的动作时用：动谁之前先认目标。
+
+## `venue.plugins`
+
+**参数**：`venue`：场所；`on`：开着的场所插件的名字（同 `provide` 的 `plugin`），不写或空的是全不给。**回应**：`{}`。
+
+整份替换。写了 `plugin` 的工具在这个场所的会话里只有开着才给，下一轮生效；这一轮里刚关掉的再调回「暂时不可用」。核心只在内存里记，重启以后哪个场所都不给：桥连上以后对每个场所发一次。只管自己平台的场所（照清单 `[connection] platform`，能写几个），别的平台的 `bad_params`（`data.field` 是 `venue`），名字写法不对的 `bad_params`（`data.field` 是 `on`）。
+
+## `session.send` 的 `as`、`venue`
+
+场所会话只收带 `as` 的话（不带的回 `venue_session`），本机的会话写了 `as` 是 `bad_params`。
+
+**`as`**：`{"external": <平台身份>, "role": "manager" | "member"}`。`role` 默认 `member`，斜杠命令照它判谁能用；主人不靠 `role` 认，照对应表认。
+
+**`venue`**：一条平台消息的那几格，原样记下：
+
+| 名字 | 说明 |
+|---|---|
+| `msg` | 平台的消息编号，必写 |
+| `reply_to` | 引用的那一条的编号 |
+| `name` | 发的人此刻在这里叫什么（群名片，没有的用昵称），最多 64 个字 |
+| `my_name` | 她此刻在这里叫什么（群名片，空的用昵称；私聊也是昵称），最多 64 个字。记忆照它和人格的名字认她：说的是这个名字的事记成她自己的，不当成认识的人 |
+| `place` | 这个群此刻叫什么（群名），最多 64 个字；私聊不写。只给记忆：群里记下的记忆带上它，她看到的话里没有它 |
+| `mentions` | @ 了谁（平台身份的列表） |
+| `mentions_me`、`mentions_all` | @ 了她；@ 了全体成员 |
+| `media` | 带的东西 `[{"kind", "id", "name"?, "size"?, "shown"?}]`：`kind` 是 `image`、`file`、`voice`、`video`、`sticker`；`id` 是平台的编号（不下载）；`shown` 表示这一样的原图已经当附件交进来了 |
+| `forwards` | 合并转发：`[{"nodes": [{"name", "text", "media"?, "forwards"?}], "more"?}]`，`media` 同上，每样另可以带 `index`（正整数，桥给的编号，渲染成 `[image #3]`，照它取；只在转发里能写，写在外面的 `media` 里回 `bad_params`），转发最多可以套 8 层；一个转发里的条数、整条消息合起来的条数、名字和正文的长度都没有另外的上限，只受一行最多 1 MiB 的限制（见[连接](connection.md)）。正文里要有占位（例如 `[forward]`） |
+| `quoted` | 引用的那一条的内容（这一条引用了一条时带，群聊、私聊都收）：`{"name", "text", "media"?, "forwards"?}`，和 `forwards` 里的一条完全一样，里面的转发最多 8 层；条数和长度与 `forwards` 一样，没有另外的上限。要带着 `reply_to`。带了的一律写在引用那一行下面（会话日志里有没有那一条都写）；没带的只写编号。私聊也写引用那一行，单独一块 |
+| `poke` | 戳一戳（QQ 的拍一拍、戳一戳：双击她的头像），只写 `true`（写 `false` 是 `bad_params`）。桥当成戳的人发来的一条：`text` 可以是空的；她看到的是一句 `<名字> poked you (a QQ nudge: they double-clicked your avatar)`，平台名照场所的平台，名字照 `name`（没有的照平台身份）。别的规矩（旁听、判官、并行支线）照一条普通的话 |
+| `poke_text` | 戳一戳的后缀：平台上那个人自己设的半句（例如「的小脑袋」），转义后接在那一句后面。只跟着 `poke` 来（单写它是 `bad_params`），不是空白、最多 64 个字、没有控制字符 |
+| `ambient` | 旁听：只记下，不开回合 |
+| `asleep` | 睡着时收到的 |
+| `backfill` | 补拉回来的（桥断线时漏掉、从平台补回来的）：只进聊天记录，不进群聊近况、判官看的记录；要带着 `ambient` |
+| `sent` | 平台给的时刻，写法同事件的 `at`（`2026-10-20T04:30:00.000Z`）；`history` 照它显示。日志照记下的先后，序号不往前挪 |
+| `show_ids` | 渲染这一条时写不写发的人的平台身份 |
+
+**记成谁**：私聊里对应表认出的本人是 `{"kind": "person", "via"}`；别的是 `{"kind": "external", "venue", "id", "role"}`，群里的主人另带 `"owner": true`。
+
+**命令编号**：桥照「平台、登录的账号、消息编号、平台给的时刻」拼 `id`，断线重发、平台重发都只生效一次。
+
+## `session.respond`
+
+照旁听记下的几条开一轮（群里判了要回的时候）；不写 `to` 的照几块事实开一轮（例如到点看一眼私聊）。
+
+**参数**：`session`；`to`：可不写，那几条 `message.user` 的序号，最多 64 条；`facts`：可不写，几块事实 `[{"kind", "text"}]`（`text` 最多 4 KiB），排在触发前面。`to`、`facts` 至少有一样不空。不写 `to` 的，事实先记下，由最后一块开这一轮；扩展这样调要 `act_for_external`。`tail`：可不写，一句字（最多 2 KiB，空的当没写），开出来的这一轮每次请求模型都把它接在最末尾（在最新的消息、工具结果后面），不进历史、不进视图和导出、不进压缩，下一轮没有；适合每一轮都要带的一句固定提示。
+
+**回应**：`{"events": [...]}`。正在跑一轮的并进这一轮，下一步就听到；带了 `tail` 的换掉这一轮原来的那一句，没带的不动。
+
+**出错**：`not_ambient`（`to` 里有不是旁听记下的，`data.messages`）；`already_answered`（已经当过触发的，`data.messages`）；`bad_params`（`tail` 不是字符串、超过 2 KiB 的，`data.field` 是 `tail`）。
+
+## `session.note`
+
+只记几块事实，不开回合、不打断、不让空闲的她接着跑（例如她的话发不出去，下一步要知道）。
+
+**参数**：`session`；`facts`：1 到 16 块 `{"kind", "text"}`。**回应**：`{"events": [...]}`。正在跑一轮的跟着这一轮，下一次请求就看到；空闲的下一轮开头看到。
+
+## `venue.records`
+
+判官（判群里这一条要不要回的那个小请求）看的群聊记录，和她看到的一行同一个写法。
+
+**参数**：`session`；`msg`：要判的那一条的序号（带 `venue` 的 `message.user`）；`count`：1 到 100；`grow`：可选，起点对齐的步长，至少 1，`count + grow` 不过 100。写了 `grow` 的，起点停在 `grow` 的倍数上（`(之前的条数 − count) / grow × grow`，不到 0 的从头），条数在 `count` 到 `count + grow − 1` 之间：起点一段时间不动，判官的请求前缀稳，缓存命中得上。
+
+**回应**：`{"records": "<之前的几条，一行一条>", "current": "<那一条>", "count": <之前的记录有几条>}`。模型回过的话写成 `[you]` 行；撤回的照样标。`current` 引用了别的，编号后面写引用的那条的发的人和内容（`reply-to: msg=8805 小林: @Miyu 在吗`）；日志里没有那一条的只写编号；带了 `quoted` 的在下面缩进写出它（日志里有那一条的两样都写）；之前的记录里的行同样：带了 `quoted` 的写出它。
+
+**出错**：`bad_params`；`session_not_found`。
+
+## `events.append` 的 `venue.*`
+
+除了自己的 `ext.<前缀>.*`（见 [扩展](extensions.md#eventsappend)），桥还能往场所会话里记两种：
+
+| `kind` | `body` | 是什么 |
+|---|---|---|
+| `venue.recalled` | `{"msg", "by"}` | 有人撤回了一条：平台编号、谁撤的 |
+| `venue.delivered` | `{"line", "turn", "to", "msg", "text", "images"?}` | 她的话发出去了：哪个会话、哪一轮、回给谁（平台身份的列表）、平台编号、正文、图的哈希 |
+
+这两种只收场所会话的，写法不对的 `bad_params`。她之后看到的群聊里，撤回的标出来，`[you]` 行是她说过的话。

@@ -86,9 +86,10 @@ async fn group(home: &Home, then: &[&str]) -> Group {
     }
 }
 
-/// 协议的方法：`docs/reference/methods-v1.txt` 冻结的那一份（门禁照代码查它全不全），加上连接上办的订阅、退订。
+/// 协议的方法：`internal/blueprint/methods-v1.txt` 冻结的那一份（门禁照代码查它全不全），加上连接上办的订阅、退订。
 fn methods() -> BTreeSet<String> {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/reference/methods-v1.txt");
+    let path =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../internal/blueprint/methods-v1.txt");
     let text = std::fs::read_to_string(&path).expect("读得到方法表");
     text.lines()
         .map(str::trim)

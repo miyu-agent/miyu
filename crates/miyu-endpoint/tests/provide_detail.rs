@@ -1,4 +1,4 @@
-//! 提供者的工具带给头看的结构化结果（施工 W-11 补，`providers.md`、`docs/reference/extensions.md` 的 `tool.call`）：合通用形状的
+//! 提供者的工具带给头看的结构化结果（施工 W-11 补，`providers.md`、`docs/zh/reference/extensions.md` 的 `tool.call`）：合通用形状的
 //! 原样记进结果的 `detail`；形状不对的、出错时带的丢掉，结果照常。
 
 use std::sync::Arc;

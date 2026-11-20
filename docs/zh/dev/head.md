@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-头（head）是连接核心的界面程序，人通过它和 AI 对话，例如终端界面、网页界面，这两个是出厂自带的头。这一页带你从零开始写一个自己的头（例如编辑器插件、手机端或者其他界面），并把它做成软件包安装。协议里每个方法的全部参数都在 [协议参考](../../reference/README.md) 里，这一页只把要走的步骤串起来。
+头（head）是连接核心的界面程序，人通过它和 AI 对话，例如终端界面、网页界面，这两个是出厂自带的头。这一页带你从零开始写一个自己的头（例如编辑器插件、手机端或者其他界面），并把它做成软件包安装。协议里每个方法的全部参数都在 [协议参考](../reference/README.md) 里，这一页只把要走的步骤串起来。
 
 ## 一个头要做的几步
 
@@ -175,7 +175,7 @@ python tiny-head 用一句话介绍你自己
 | `caps.prefix_ask` | 声明在文件改动、下一轮请求的前缀要变化时，你会先问人（见下面的「前缀要变」）。 |
 | `token` | 本机令牌。 |
 
-回应里你会用到这几个字段：`language`（之后给人看的文字使用 `zh`、`en`、`ja` 中的哪一种）、`host.workspace`（会话没有指定工作目录时使用的默认工作区）和 `sandbox.usable`。握手的每一个字段见 [连接](../../reference/connection.md#hello)。
+回应里你会用到这几个字段：`language`（之后给人看的文字使用 `zh`、`en`、`ja` 中的哪一种）、`host.workspace`（会话没有指定工作目录时使用的默认工作区）和 `sandbox.usable`。握手的每一个字段见 [连接](../reference/connection.md#hello)。
 
 ### 打开会话、订阅视图流
 
@@ -224,7 +224,7 @@ AI 回答时，核心会推送下面这些消息：
 - `open: true` 表示这一条还在写。工具运行时的 `progress`（最新一行进度）和 `retitle_failed` 旁白只在视图流里推送，翻页或者重新订阅时拿不到。
 - 一轮结束时，核心会加一条 `kind` 为 `end` 的条目，同时会话状态 `status.state` 回到 `idle`。
 
-每种条目的字段、`notice` 的每种 `what`、会话状态的每个字段，详细的见 [视图流](../../reference/view.md)。
+每种条目的字段、`notice` 的每种 `what`、会话状态的每个字段，详细的见 [视图流](../reference/view.md)。
 
 ### 掉队和重新连接
 
@@ -232,7 +232,7 @@ AI 回答时，核心会推送下面这些消息：
 
 连接断开以后，重新连接、重新握手、重新订阅。往上翻看历史用 `view.page`。
 
-视图流是给界面画图用的；如果要原始事件（例如自己保存日志），就订阅 `stream: "events"`，可以带上 `after` 补上漏掉的事件，详细的见 [事件](../../reference/events.md)。
+视图流是给界面画图用的；如果要原始事件（例如自己保存日志），就订阅 `stream: "events"`，可以带上 `after` 补上漏掉的事件，详细的见 [事件](../reference/events.md)。
 
 ## 确认和提问
 
@@ -248,7 +248,7 @@ AI 要做受保护的操作时（例如开放权限下的危险命令、只读�
 - 那一步的条目里有 `questions`：每道题有 `question`、可选的 `header`、`options`（包含 `label`、`description`、`preview`）和 `multiple`。提问会一直等待，不会超时。
 - 回答用 `session.answer {"session", "call", "answers"}`，按题目的先后顺序一题一项，写成 `{"picked": [选的选项的 label…], "text": <自己写的>}`。
 
-如果 `waiting` 里的一项带有 `nested`（表示 AI 在命令里通过 `miyu call` 调用的工具需要确认），回答时要把它原样写上。几个头同时打开同一个会话时，以最先回答的为准，后回答的会收到 `not_asking`。每个字段和出错情况见 [会话](../../reference/sessions.md#sessionanswer)。
+如果 `waiting` 里的一项带有 `nested`（表示 AI 在命令里通过 `miyu call` 调用的工具需要确认），回答时要把它原样写上。几个头同时打开同一个会话时，以最先回答的为准，后回答的会收到 `not_asking`。每个字段和出错情况见 [会话](../reference/sessions.md#sessionanswer)。
 
 没有人看着的头（例如定时运行的脚本、只推送通知的程序）握手时不写 `caps.input`，或者写成 `false`。这样它打开的会话里，需要确认的操作不会执行，提问会直接得到「没人能回答」的结果，AI 会根据这个结果继续工作，不会卡住等人。
 
@@ -277,7 +277,7 @@ AI 要做受保护的操作时（例如开放权限下的危险命令、只读�
 | 导出 | `session.export`：`format` 写 `bundle`（原始包）或 `markdown` |
 | 删除 | `session.delete` |
 
-多数方法只回 `{}` 或几条事件的序号，变化本身会通过推送到达。每个方法详细的见 [会话](../../reference/sessions.md)。
+多数方法只回 `{}` 或几条事件的序号，变化本身会通过推送到达。每个方法详细的见 [会话](../reference/sessions.md)。
 
 **前缀要变**：如果头在握手时写了 `caps.prefix_ask: true`，开始新一轮的请求（`session.send`、`session.redo`、会开始一轮的 `command.run`）可能会回 `prefix_changing`，意思是人格、预设、提示词这些文件改了，下一轮的缓存会失效。`data.files` 列出了改过的文件。这时要问人选择 `直接发送`、`压缩上下文并发送` 还是 `取消`，再根据选择带上 `"prefix": "keep"` 或 `"compact"` 重新发送一次。没有声明的头仍然直接发送。
 
@@ -289,13 +289,13 @@ AI 要做受保护的操作时（例如开放权限下的危险命令、只读�
 - 执行：把人输入的整行交给 `command.run {"session", "text"}`，回应里的 `said` 是回执，原样显示给人看。如果回应带有 `opens`，表示要打开一个扩展的整页（见 [往界面上放东西](ui-surfaces.md)）。
 - 头自己的命令（例如 `/help`、换主题）由头自己识别、自己处理，并拼进同一个菜单。
 
-核心能识别的命令和出错情况见 [软件包与命令](../../reference/packages.md#commandrun)。
+核心能识别的命令和出错情况见 [软件包与命令](../reference/packages.md#commandrun)。
 
 ## 头自己的设置
 
 头的设置分为几种，存放的位置各不相同：
 
-- 皮肤、配色这类跟着人走的设置存进核心：用 `prefs.get {"package"}` 读取、`prefs.set {"package", "values"}` 写入，`package` 是你这个头的软件包编号，整份最多 64 KiB。其他头改了以后会推送 `prefs.changed`（需要订阅 `prefs` 流，带上 `package`）。只有安装成界面包（见下文）的头才能使用，其他的会回 `unknown_package` 或 `not_a_ui_package`。详细的见 [头自己的设置](../../reference/prefs.md)。
+- 皮肤、配色这类跟着人走的设置存进核心：用 `prefs.get {"package"}` 读取、`prefs.set {"package", "values"}` 写入，`package` 是你这个头的软件包编号，整份最多 64 KiB。其他头改了以后会推送 `prefs.changed`（需要订阅 `prefs` 流，带上 `package`）。只有安装成界面包（见下文）的头才能使用，其他的会回 `unknown_package` 或 `not_a_ui_package`。详细的见 [头自己的设置](../reference/prefs.md)。
 - 只和这台设备有关的设置（例如窗口大小、输入历史）存在头自己那里。
 - 核心的配置用 `config.get` 读取；订阅 `config` 流以后，配置变化时会推送 `config.changed`。头需要遵照的几项是：`ui.language`（界面语言）和 `ui.startup`（打开头时是开新会话 `new`，还是接着最近的会话 `recent`）。
 - 你自己的配置项写进清单的 `[settings.<名字>]`，键是 `<前缀>.<名字>`，设置页会根据它画出设置项（见 [清单](../../authors/manifest.md)）。
@@ -417,13 +417,13 @@ about = { zh = "打开小头", en = "Open the tiny head" }
 
 要做网页类的头，有两种做法：
 
-- **自己启动一个本机服务做转发**，做法和上面一样。如果转发的是从其他机器来的连接，要在握手之前先替它写一行 `{"jsonrpc":"2.0","method":"connection.remote","params":{"from":"<来源地址>"}}`：这样这个连接就按远程连接处理，读取本机文件、传本机路径的方法一律回 `local_machine_only`，凭据要用访问密码。详细的见 [连接](../../reference/connection.md#怎么连)。
+- **自己启动一个本机服务做转发**，做法和上面一样。如果转发的是从其他机器来的连接，要在握手之前先替它写一行 `{"jsonrpc":"2.0","method":"connection.remote","params":{"from":"<来源地址>"}}`：这样这个连接就按远程连接处理，读取本机文件、传本机路径的方法一律回 `local_machine_only`，凭据要用访问密码。详细的见 [连接](../reference/connection.md#怎么连)。
 - **往出厂的网页界面里加东西**：见 [往界面上放东西](ui-surfaces.md)。
 
 ## 注意事项
 
 - 协议 1 是冻结的：已有的方法、字段不会删除、改名或者改变意思，只会增加。老版本的核心收到新方法会回 `unknown_method`，收到新字段会忽略；使用新的方法、字段之前，先看握手回应里核心的版本，或者在收到 `unknown_method` 时退回旧的做法。
-- 判断出了什么错要看 `error.data.reason`，不要看 `error.message`：`error.message` 是按照连接的语言写给人看的一句话。全部原因码见 [出错](../../reference/errors.md)。
-- 每条消息占一行，最长 1 MiB。大的内容通过 `blob.put` 传，超过上传上限的文件只传路径（见 [会话](../../reference/sessions.md#sessionsend)）。
+- 判断出了什么错要看 `error.data.reason`，不要看 `error.message`：`error.message` 是按照连接的语言写给人看的一句话。全部原因码见 [出错](../reference/errors.md)。
+- 每条消息占一行，最长 1 MiB。大的内容通过 `blob.put` 传，超过上传上限的文件只传路径（见 [会话](../reference/sessions.md#sessionsend)）。
 - 每个连接上请求的 `id` 都要和以前用过的不一样：核心根据 `id` 识别断线后的重发，如果和旧的 `id` 重复，拿到的是上一次的回应，核心什么都不会做。做法是每次连接取一个随机前缀，后面接上递增的数字。
 - 你的头不是唯一的头。终端、网页、托盘可能同时打开同一个会话：别人发的话、别人回答的确认、别人改的设置，都要根据推送来更新，不要假设只有你在修改。

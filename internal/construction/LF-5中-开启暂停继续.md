@@ -22,7 +22,7 @@
 6. **谁能调**：只给人（本机的头）；扩展 `local_only` 同别的只给人的方法。
 7. **出厂预设** `resources/presets/life.toml`：名字「推演人生」（Life Simulation、人生シミュレーション），`hidden = true`，`unlisted = "off"`，开着环境信息、联网、人格记忆、循环任务、角色扮演提示、`history`；不写 `[limits]`（起草时写了每轮最多 15 步，2026-11-14 项目主人定去掉）。`presets.md` 出厂的那张表加一行。
 
-协议参考新开 `docs/reference/life.md`、`life.en.md`，`methods-v1.txt` 加上四个方法；出错的原因码进 `errors.md`、`errors.en.md`。
+协议参考新开 `docs/zh/reference/life.md`、`life.en.md`，`methods-v1.txt` 加上四个方法；出错的原因码进 `errors.md`、`errors.en.md`。
 
 ### 要拍板的（技术细节，施工的人先查先例、写出建议，主会话定了再做）
 

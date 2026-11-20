@@ -11,7 +11,7 @@
    - 写错的、超上限的回 `bad_params`。
 2. 谁能调同 `usage.query`：人、扩展都能调；不在后台答。
 3. 代码在 `crates/miyu-endpoint/src/usage/convert.rs`；存储层没动。
-4. 协议参考 `docs/reference/config.md`、`config.en.md` 多 `usage.convert` 一节，方法快照 `methods-v1.txt` 登记。
+4. 协议参考 `docs/zh/reference/config.md`、`config.en.md` 多 `usage.convert` 一节，方法快照 `methods-v1.txt` 登记。
 
 ### 二、不做什么
 

@@ -1,4 +1,4 @@
-//! 谁来发后台通知（施工 TR-1，`docs/reference/connection.md`「`notices.claim`」）：托盘这样的头调 `notices.claim` 说「后台通知我来
+//! 谁来发后台通知（施工 TR-1，`docs/zh/reference/connection.md`「`notices.claim`」）：托盘这样的头调 `notices.claim` 说「后台通知我来
 //! 发」，核心照连接记、断了就忘。订阅 `notices` 的回应带这一刻有没有人认领（`claimed: true`，没有的不写），有没有变了推
 //! `notices.claimed {claimed}`；两个认领的走了一个照样算有。
 

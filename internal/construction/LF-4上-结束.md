@@ -23,7 +23,7 @@
 5. **定时那一行的自愈**（`schedules.md`）：人生那一行到点、会话已经结束的，删掉这一行、记 `skipped:life_ended`，不叫醒她。
 6. **协议**：找「这个人格的人生会话」取最新的一个，开着的、结束了的都算。`life.kill {persona}`：在跑、暂停着的照第 3 条结束；结束了的把清理剩下的几步再走一遍、原样回成功；没有的 `no_life`。回 `{"state": "ended", "session"}`。`life.new {persona}`：在跑、暂停着的先结束，结束了的先补齐清理，再照 `life.start` 开；回 `{"session", "ended"?}`。`life.status` 多一种 `ended`，带那个会话。`life.start` 碰上结束了的：先补齐清理，开一条新的。`life.pause`、`life.resume` 碰上结束了的：拒 `life_ended`，带 `data.session`。只给人调。
 
-协议参考 `docs/reference/life.md`、`life.en.md`、`methods-v1.txt`、`errors.*`、`pushes.*`、`events.*` 跟着改。
+协议参考 `docs/zh/reference/life.md`、`life.en.md`、`methods-v1.txt`、`errors.*`、`pushes.*`、`events.*` 跟着改。
 
 ### 定了（主会话 2026-11-14）
 

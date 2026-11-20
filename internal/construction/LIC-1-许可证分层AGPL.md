@@ -10,7 +10,7 @@ Miyu 以后主要是在服务器上给人连着用（远程是主入口），GPL
 
 - `LICENSE` 换成自由软件基金会发的 AGPL-3.0 原文（34523 字节，sha256 `0d96a4ff…`）；新加 `LICENSES/Apache-2.0.txt`（Apache 软件基金会原文，11358 字节，sha256 `cfc7749b…`）。
 - `Cargo.toml` 的 `license = "AGPL-3.0-or-later"`（每个 crate 照工作区）。
-- Apache-2.0 的几处：`docs/authors/`、`docs/reference/`、`resources/packages/authoring/`；各自开头写明。README「许可证」一节写清分层，并写明只经协议和 Miyu 说话的程序（扩展、软件包、脚本、MCP 服务器、另写的头）是独立的作品。
+- Apache-2.0 的几处：`docs/authors/`、`docs/zh/reference/`、`resources/packages/authoring/`；各自开头写明。README「许可证」一节写清分层，并写明只经协议和 Miyu 说话的程序（扩展、软件包、脚本、MCP 服务器、另写的头）是独立的作品。
 - `AGENTS.md` 依赖那条、蓝图 `licenses.md`、设计 12 R15、门禁的「许可证」那一项的说法（能用的许可证那张表不变：能和 GPL-3.0 合的宽松许可证也都能和 AGPL-3.0 合，MPL-2.0 把 AGPL 列为次要许可证）。
 
 ### 别的仓库（各自的会话改，主会话 10-26 通知）

@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-这一页写给要接入 Miyu 或者给 Miyu 改代码的开发者，讲 Miyu 由哪些进程和仓库组成，一句话从输入到模型回答经过了哪些部件，以及你要修改、要接入的那一块在哪里。协议的每个方法可以查 [协议参考](../../reference/README.md)，写软件包可以看 [作者教程](../../authors/README.md)。
+这一页写给要接入 Miyu 或者给 Miyu 改代码的开发者，讲 Miyu 由哪些进程和仓库组成，一句话从输入到模型回答经过了哪些部件，以及你要修改、要接入的那一块在哪里。协议的每个方法可以查 [协议参考](../reference/README.md)，写软件包可以看 [作者教程](../../authors/README.md)。
 
 ## 进程
 
@@ -118,7 +118,7 @@
 
 | 东西 | 在哪 | 格式在哪定 |
 |---|---|---|
-| 会话 | `~/.miyu/root/sessions/<会话编号>/`：事件日志，只追加，分段存成 JSONL | `miyu-kernel` 的 `event`；参考 [事件](../../reference/events.md) |
+| 会话 | `~/.miyu/root/sessions/<会话编号>/`：事件日志，只追加，分段存成 JSONL | `miyu-kernel` 的 `event`；参考 [事件](../reference/events.md) |
 | 大内容 | `~/.miyu/root/blobs/`，按内容哈希存放 | `miyu-store` 的 `blob` |
 | 配置 | `~/.miyu/etc/config.toml`；密钥在 `~/.miyu/etc/private/secrets.toml` | 各模块用 `miyu-config` 的 `settings!` 声明配置项，核心据此生成 JSON Schema，写到 `~/.miyu/var/cache/config/config.schema.json` |
 | 软件包 | 安装的软件包在 `~/.miyu/opt/<编号>/`，软件包的状态在 `~/.miyu/var/lib/<编号>/` | [清单](../../authors/manifest.md) |
@@ -130,7 +130,7 @@
 
 ## 协议
 
-头和扩展使用同一套协议：JSON-RPC 2.0，一行一条消息，UTF-8 编码，一行最长 1 MiB。连接以后的第一条消息是 `hello`，带着协议版本 `[最低, 最高]`。协议版本 1 是冻结的：它的方法列在 [methods-v1.txt](../../reference/methods-v1.txt) 里，以后只增加，不修改也不删除；要删除方法、改名或者改变含义，只能升级到协议 2。核心主动发出的消息叫推送，推送没有 `id`，只发给订阅了那条流的连接：`view`（给界面绘制的条目和会话状态）、`events`（原样的事件）、`config`（配置变了、模型列表变了），另外还有会话列表、软件包、扩展、定时任务这些流。每个方法、每种推送的说明见 [协议参考](../../reference/README.md)。
+头和扩展使用同一套协议：JSON-RPC 2.0，一行一条消息，UTF-8 编码，一行最长 1 MiB。连接以后的第一条消息是 `hello`，带着协议版本 `[最低, 最高]`。协议版本 1 是冻结的：它的方法列在 [methods-v1.txt](../../../internal/blueprint/methods-v1.txt) 里，以后只增加，不修改也不删除；要删除方法、改名或者改变含义，只能升级到协议 2。核心主动发出的消息叫推送，推送没有 `id`，只发给订阅了那条流的连接：`view`（给界面绘制的条目和会话状态）、`events`（原样的事件）、`config`（配置变了、模型列表变了），另外还有会话列表、软件包、扩展、定时任务这些流。每个方法、每种推送的说明见 [协议参考](../reference/README.md)。
 
 ## 软件包
 
@@ -184,7 +184,7 @@ miyu-sdk ──── miyu-ocr
 各个仓库和文档使用的许可证如下：
 
 - 核心仓库自己写的代码和资源使用 AGPL-3.0-or-later。终端、网页、托盘、im、migrate、embed、render、ocr、memes、litemiyu 也使用 AGPL-3.0-or-later。
-- 核心仓库的 `docs/reference/`、`docs/authors/`、`resources/packages/base-authoring/` 使用 Apache-2.0（`LICENSES/Apache-2.0.txt`）；`miyu-sdk` 使用 Apache-2.0；`miyu-package-template` 使用 MIT。
+- 核心仓库的 `docs/zh/reference/`、`docs/en/reference/`、`docs/authors/`、`resources/packages/base-authoring/` 使用 Apache-2.0（`LICENSES/Apache-2.0.txt`）；`miyu-sdk` 使用 Apache-2.0；`miyu-package-template` 使用 MIT。
 - 只通过协议和 Miyu 通信的程序是独立的作品：扩展、软件包、脚本、MCP 服务、另外写的头，可以使用任何许可证。
 - 不是仓库自己写的东西沿用各自原来的许可证，原文合并在各个仓库的 `THIRD-PARTY-LICENSES.txt` 里。
 

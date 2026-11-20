@@ -1,5 +1,5 @@
 //! 协议版本 1 冻结（施工 Y-5 末下，Y-5 施工单第五节第 4 条）：协议的方法——头和扩展调核心的、核心发给扩展的——在
-//! `docs/reference/methods-v1.txt` 里一行一个，照字母排。冻结以后只加不改不删：代码里没了快照里还有的（删了、改了名）报红，
+//! `internal/blueprint/methods-v1.txt` 里一行一个，照字母排。冻结以后只加不改不删：代码里没了快照里还有的（删了、改了名）报红，
 //! 破坏性的改动只能升到协议 2（握手照 `[最低, 最高]` 谈）；代码里新加的也报，要登记进快照（`cargo xtask methods` 只往里加，
 //! 不删）。算在「文档」那一项里。找方法照协议参考那一套（`reference.rs`，连核心发出去的一起）。
 
@@ -9,7 +9,7 @@ use std::path::Path;
 use crate::reference;
 
 /// 快照在仓库里的位置。
-pub const PATH: &str = "docs/reference/methods-v1.txt";
+pub const PATH: &str = "internal/blueprint/methods-v1.txt";
 
 /// 快照开头的说明，`#` 开头的行不算方法。
 const HEADER: &str = "# 协议版本 1 冻结的方法（施工 Y-5 末下）：只加不改不删。删、改名、改意思的要升到协议 2。\n# Methods frozen in protocol 1: add only; removing, renaming or changing one needs protocol 2.\n";

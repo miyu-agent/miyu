@@ -9,7 +9,7 @@ Choose where to start reading based on who you are:
 | Using Miyu for the first time | [Quick start](guide/quickstart.md) |
 | Already using Miyu and looking up how to do something | [User guide](guide/README.md) |
 | Writing skills, scripts, packages or extensions | [Author guide](../authors/README.en.md) |
-| Writing a head (an interface program that connects to the core), or connecting another program to the core | [Protocol reference](../reference/README.en.md), [Writing a head](dev/head.md) |
+| Writing a head (an interface program that connects to the core), or connecting another program to the core | [Protocol reference](reference/README.md), [Writing a head](dev/head.md) |
 | Trying to understand Miyu's architecture, or proposing changes to it | [Developer docs](dev/README.md) |
 
 ## Where the docs are
@@ -18,11 +18,11 @@ Choose where to start reading based on who you are:
 |---|---|---|
 | `zh/guide/`, `en/guide/` | The user guide: installing, each interface, sessions, models, permissions, packages, configuration and troubleshooting. | People who use Miyu |
 | `authors/` | The author guide: writing packages, extensions, scripts and skills, connecting MCP servers, and the manifest format. | People who write things for Miyu |
-| `reference/` | The protocol reference: every core method, with its parameters, replies and errors. | People who write heads and extensions |
+| `zh/reference/`, `en/reference/` | The protocol reference: every core method, with its parameters, replies and errors. | People who write heads and extensions |
 | `zh/dev/`, `en/dev/` | The developer docs: architecture, writing a head, themes and skins, putting things on the interface, and contributing code. | People who integrate with Miyu or change it |
 
 The folders in the table above are all under `docs/` in the repository. The project's internal blueprints, designs and construction records are not in `docs/`; they are under `internal/` at the repository root (`blueprint/`, `designs/`, `construction/`) and are for maintainers: you do not need them to use Miyu or to write things for it. For what each one is, see [Contributing code](dev/contributing.md#what-to-read-first).
 
-The user guide and the developer docs have one folder per language: `zh/` is Chinese (the authoritative text) and `en/` is English, and the pages on both sides match one to one. The author guide and the protocol reference keep both languages in the same folder, and the English file names are `<page>.en.md`.
+The user guide, the developer docs and the protocol reference have one folder per language: `zh/` is Chinese (the authoritative text) and `en/` is English, and the pages on both sides match one to one. The author guide keeps both languages in the same folder, and the English file names are `<page>.en.md`.
 
 `guide/`, `authors/`, `reference/` and `dev/` are licensed under Apache-2.0 (see `LICENSES/Apache-2.0.txt` at the repository root): you can write things based on them, republish them or translate them, under any license you like.

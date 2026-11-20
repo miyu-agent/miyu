@@ -1,4 +1,4 @@
-//! 人卡经协议（施工 E-1 下，设计 42，`docs/reference/memory.md`）：`memory.card_update` 写一张（去空白；正文太长的
+//! 人卡经协议（施工 E-1 下，设计 42，`docs/zh/reference/memory.md`）：`memory.card_update` 写一张（去空白；正文太长的
 //! `memory_too_long`，空的、叫法不合的参数不对），`memory.cards` 一人一张照最新的列；`memory.card_forget` 作废，没有这个人的
 //! `unknown_memory`，作废的只在 `forgotten` 时列出来；同一个命令编号再来不重写。
 
