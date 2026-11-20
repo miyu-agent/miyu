@@ -1,4 +1,4 @@
-//! 扩展驱动的那个窄口子（施工 MD-1，项目主人 11-07 定 A）：只对 `providers.<id>.driver`、只对 `<包编号>/<驱动名>`，不在选项里的照留、
+//! 扩展驱动的那个窄口子（施工 MD-1，评审 11-07 定 A）：只对 `providers.<id>.driver`、只对 `<包编号>/<驱动名>`，不在选项里的照留、
 //! 记警告 `unknown_driver`；在选项里的照常；别的写法、别的格照旧 `not_an_option`。
 
 use super::{PROVIDER_DRIVER, extension, with_installed};

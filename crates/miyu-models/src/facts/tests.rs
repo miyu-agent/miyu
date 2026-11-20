@@ -260,7 +260,7 @@ fn the_window_goes_written_learned_listed_catalog() {
     ));
 }
 
-/// 扩展驱动的列表还报最大输出、能不能调工具、看不看得了图（施工 MD-4，项目主人 11-07 定）：没写的照列表，来源是这一份列表；手写的
+/// 扩展驱动的列表还报最大输出、能不能调工具、看不看得了图（施工 MD-4，评审 11-07 定）：没写的照列表，来源是这一份列表；手写的
 /// 照旧压过它；看不了图、没说的不改输入种类。
 #[test]
 fn a_list_can_tell_max_output_tools_and_vision() {

@@ -1,16 +1,37 @@
 //! 私密路径门禁（施工 SCRUB-1）：仓库是公开的，被 git 跟踪的文本里（`docs/`、`internal/` 除外）不许出现开发机上真实用户的痕迹：
-//! `/home/<名字>`、`/tmp/claude-<数字>`、`-home-<名字>-Documents`（后者是按工作目录起的会话存档目录名）。
+//! `/home/<名字>`、macOS 的 `/Users/<名字>`、Windows 的 `C:\Users\<名字>`（`/`、`\\` 的写法也算）、`/tmp/claude-<数字>`、
+//! `-home-<名字>-Documents`（后者是按工作目录起的会话存档目录名）。
 //!
 //! 测试里要用家目录的，写 [`FICTIONAL`] 里的虚构名字。这里不写任何具体的人名、机器名、地址：规则只认形状。
 
 use std::path::Path;
 use std::process::Command;
 
-/// 允许出现在 `/home/<名字>` 里的虚构名字（测试夹具、文档样例用的）。名字里 `.`、`-`、`_` 之前的那一段在表里也算
-/// （`ai.old`、`ai_2` 这类同一个夹具的变体）。
+/// 允许出现在用户目录里的名字（测试夹具、文档样例、系统自带的目录名），不分大小写，整段名字相等才放过：
+/// `a-zhangsan` 这类只是开头像的不算。`ai.old`、`ai_2`、`ai-2` 是仓库里同一个夹具的几个写法。
 const FICTIONAL: &[&str] = &[
-    "a", "u", "w", "me", "ai", "aim", "alice", "alicex", "bob", "admin", "builder", "someone",
-    "user", "example", "test",
+    "a",
+    "u",
+    "w",
+    "me",
+    "ai",
+    "ai.old",
+    "ai_2",
+    "ai-2",
+    "aim",
+    "alice",
+    "alicex",
+    "bob",
+    "admin",
+    "builder",
+    "someone",
+    "user",
+    "example",
+    "test",
+    "runneradmin",
+    "public",
+    "default",
+    "shared",
 ];
 
 /// 不扫的目录前缀（相对仓库根）。
@@ -26,10 +47,10 @@ pub fn scan(label: &str, text: &str) -> Vec<String> {
     let mut found = Vec::new();
     for (index, line) in text.lines().enumerate() {
         let at = index + 1;
-        for name in names_after(line, "/home/") {
-            if !allowed(name) {
+        for (shown, name) in user_dirs(line) {
+            if !allowed(&name) {
                 found.push(format!(
-                    "{label}:{at}：`/home/{name}` 像真实用户的家目录，测试里换成虚构的名字（见 xtask/src/privacy.rs）"
+                    "{label}:{at}：`{shown}{name}` 像真实用户的家目录，测试里换成虚构的名字（见 xtask/src/privacy.rs）"
                 ));
             }
         }
@@ -55,21 +76,47 @@ pub fn scan(label: &str, text: &str) -> Vec<String> {
 /// `line` 里每个 `marker` 后面紧跟着的一串名字字符。
 fn names_after<'a>(line: &'a str, marker: &str) -> Vec<&'a str> {
     line.match_indices(marker)
-        .map(|(i, m)| {
-            let rest = &line[i + m.len()..];
-            let end = rest.find(|c: char| !is_name(c)).unwrap_or(rest.len());
-            &rest[..end]
-        })
+        .map(|(i, m)| name_at(&line[i + m.len()..]))
         .collect()
 }
 
-/// 名字空的（`/home/` 后面是 `$`、`<`、`{`、`*` 这类占位）、点开头的（`/home/.config`）和虚构名字都放过。
+/// 一行里每个用户目录的（写法，名字）：`/home/`、`/Users/` 和 Windows 的 `X:\Users\`，`\` 和 `\\` 都当 `/`。
+/// 前面紧挨着名字字符或 `.` 的是路径中间的一段（`pages/home/`、`foo/Users/`、`/api/users/42`），不算；
+/// 盘符和 `/mnt/c` 这类 WSL 的挂载点除外。
+fn user_dirs(line: &str) -> Vec<(&'static str, String)> {
+    // `/home/` 只认正斜杠：`/home\134x` 这类转义（挂载表里的空格写法）不是路径分隔。Windows 的写法才把反斜杠当 `/`。
+    let flat = line.replace("\\\\", "/").replace('\\', "/");
+    let mut found = Vec::new();
+    for (shown, marker, text) in [
+        ("/home/", "/home/", line),
+        ("/Users/", "/users/", flat.as_str()),
+    ] {
+        for (i, m) in text.to_ascii_lowercase().match_indices(marker) {
+            let before = &text[..i];
+            let mount = before.ends_with(':')
+                || before
+                    .rsplit_once("/mnt/")
+                    .is_some_and(|(_, drive)| drive.len() == 1);
+            if mount || !before.ends_with(is_name) {
+                found.push((shown, name_at(&text[i + m.len()..]).to_string()));
+            }
+        }
+    }
+    found
+}
+
+/// 开头的一串名字字符。
+fn name_at(rest: &str) -> &str {
+    &rest[..rest.find(|c: char| !is_name(c)).unwrap_or(rest.len())]
+}
+
+/// 名字空的（后面是 `$`、`<`、`{`、`*` 这类占位）、点开头的（`/home/.config`）和虚构名字（整段相等）都放过。
+/// 句末的 `.`、`-` 不算名字的一部分。
 fn allowed(name: &str) -> bool {
-    let base = name.split(['.', '-', '_']).next().unwrap_or("");
+    let name = name.trim_end_matches(['.', '-']);
     name.is_empty()
         || name.starts_with('.')
-        || FICTIONAL.contains(&name)
-        || FICTIONAL.contains(&base)
+        || FICTIONAL.iter().any(|f| f.eq_ignore_ascii_case(name))
 }
 
 /// 门禁结果表里的一行。
@@ -175,6 +222,55 @@ mod tests {
             "/ho".to_string() + "me/",
         ]
         .join("\n");
+        assert_eq!(scan("a.rs", &text), Vec::<String>::new());
+    }
+
+    #[test]
+    fn a_name_only_starting_like_a_fictional_one_is_caught() {
+        for name in ["a-zhangsan", "u_zhangsan", "alice.zhangsan", "me-zhangsan"] {
+            assert_eq!(scan("a.rs", &home(name)).len(), 1, "{name}");
+        }
+    }
+
+    #[test]
+    fn mac_and_windows_user_dirs_are_caught_in_every_spelling() {
+        let mac = ["/Us", "ers/zhangsan/x"].concat();
+        let win = ["C:", "\\Us", "ers\\zhangsan"].concat();
+        let win_slash = ["c:/us", "ers/zhangsan"].concat();
+        let win_escaped = ["C:", "\\\\Us", "ers\\\\zhangsan"].concat();
+        let wsl = ["/mnt/c/Us", "ers/zhangsan"].concat();
+        for text in [mac, win, win_slash, win_escaped, wsl] {
+            assert_eq!(scan("a.rs", &text).len(), 1, "{text}");
+        }
+    }
+
+    #[test]
+    fn fictional_mac_and_windows_dirs_and_routes_pass() {
+        let text = [
+            ["/Us", "ers/me/x"].concat(),
+            ["C:", "\\Us", "ers\\ALICE"].concat(),
+            ["c:/us", "ers/runneradmin"].concat(),
+            ["C:", "\\\\Us", "ers\\\\a"].concat(),
+            "GET /api/users/zhangsan and /users/{id}".to_string(),
+        ]
+        .join("\n");
+        assert_eq!(scan("a.rs", &text), Vec::<String>::new());
+    }
+
+    #[test]
+    fn a_home_or_users_in_the_middle_of_a_path_is_not_a_user_dir() {
+        let text = [
+            ["pages", "/ho", "me/zhangsan"].concat(),
+            ["foo", "/Us", "ers/zhangsan"].concat(),
+            ["./Us", "ers/zhangsan"].concat(),
+        ]
+        .join("\n");
+        assert_eq!(scan("a.rs", &text), Vec::<String>::new());
+    }
+
+    #[test]
+    fn a_backslash_escape_after_home_is_not_a_separator() {
+        let text = ["\"/ho", "me\\\\134x\""].concat();
         assert_eq!(scan("a.rs", &text), Vec::<String>::new());
     }
 

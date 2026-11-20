@@ -127,7 +127,7 @@ impl Session {
             }),
         );
         if let Some(turn) = self.turn.as_mut() {
-            // 带了的换掉这一轮的；没带的不动：并进同一轮的消息不该把提示抹掉（项目主人 11-07 定）。
+            // 带了的换掉这一轮的；没带的不动：并进同一轮的消息不该把提示抹掉（评审 11-07 定）。
             if tail.is_some() {
                 turn.tail = tail;
             }

@@ -247,7 +247,7 @@ fn an_unreadable_config_fills_nothing_and_still_launches() {
     }
 }
 
-/// 对话模型走扩展驱动（没装那个包也照写法认）：LiteMiyu 认不了，一个变量都不填，警告一行，照常拉起（项目主人 2026-11-13 定）。
+/// 对话模型走扩展驱动（没装那个包也照写法认）：LiteMiyu 认不了，一个变量都不填，警告一行，照常拉起（评审 2026-11-13 定）。
 #[cfg(unix)]
 #[test]
 fn an_extension_driver_fills_nothing_and_still_launches() {

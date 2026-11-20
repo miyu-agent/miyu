@@ -1,6 +1,6 @@
 //! 扩展驱动的模型列表（施工 MD-4，设计 66 第四节第 4 条）：拉供应商的列表时（`route/lists.rs`）驱动是扩展的，不走 HTTP，经端口发
 //! `driver.models`（可选），读回 `{"models": [{"id", "window"?, "max_output"?, "tools"?, "vision"?, "reasoning"?}]}`，交给列表那一层
-//! 照常存、照常查：名字、窗口、最大输出、能不能调工具、看不看得了图都用上，思考照收不用（项目主人 11-07 照推荐定）。没实现的、连不上的、写坏了的照拉不到办（列表照旧用上一份，主人手写）。key、地址照挑候选时的规矩交
+//! 照常存、照常查：名字、窗口、最大输出、能不能调工具、看不看得了图都用上，思考照收不用（评审 11-07 照推荐定）。没实现的、连不上的、写坏了的照拉不到办（列表照旧用上一份，主人手写）。key、地址照挑候选时的规矩交
 //! （[`super::reach`]）；不交增量，不发 `driver.cancel`。
 
 use std::time::Duration;
@@ -84,7 +84,7 @@ fn models(result: Value) -> Result<Vec<ListedModel>, String> {
         .models
         .into_iter()
         .map(|entry| {
-            // 思考照收不用（项目主人 11-07 定）：资料里要的是档位表，开关推不出档位。
+            // 思考照收不用（评审 11-07 定）：资料里要的是档位表，开关推不出档位。
             let _ = entry.reasoning;
             ListedModel {
                 id: entry.id,

@@ -197,7 +197,7 @@ fn drivers_map_to_the_same_names_and_an_extension_fills_nothing() {
         name: "ag".to_string(),
     });
     assert_eq!(api(&extension), None);
-    // 扩展的驱动：一个都不填，交回驱动的写法（项目主人 2026-11-13 定）。
+    // 扩展的驱动：一个都不填，交回驱动的写法（评审 2026-11-13 定）。
     let (vars, unfilled) = filled(&|_| false, || Ok(direct(extension, Some("sk-x"))));
     assert!(vars.is_empty(), "{vars:?}");
     assert_eq!(unfilled, Some(Unfilled::Extension("pi/ag".to_string())));

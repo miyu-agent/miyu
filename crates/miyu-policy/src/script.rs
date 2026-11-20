@@ -165,7 +165,7 @@ pub fn read(file_name: &str, text: &str) -> Result<ScriptHead, ScriptProblem> {
                 head.scope = serde_json::from_value(Value::String(value.to_string()))
                     .map_err(|_| ScriptProblem::BadScope(value.to_string()))?;
             }
-            // 键名写错的（施工 XG-2补，项目主人 2026-11-06）：原来照不认识的静默跳过，范围变回 `any`，往放宽那边失败。认得出的报，
+            // 键名写错的（施工 XG-2补，评审 2026-11-06）：原来照不认识的静默跳过，范围变回 `any`，往放宽那边失败。认得出的报，
             // 整份不收。
             key if near(key, "Role") => return Err(ScriptProblem::BadRole(key.to_string())),
             key if near(key, "Scope") => return Err(ScriptProblem::BadScope(key.to_string())),

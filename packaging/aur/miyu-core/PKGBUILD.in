@@ -5,9 +5,9 @@
 #
 # 整层放进 /usr/lib/miyu/（程序照自己真实位置的旁边找 resources/），/usr/bin/miyu 链过去；旁边写 install.toml
 # （channel = "aur"，`miyu upgrade` 照它说用包管理器升级）。终端、网页是另外的包，装在 /usr/share/miyu/packages/。
-# 旧的 miyu（0.7.x 那一代）是另一套程序：这里只写 conflicts、不写 replaces，装的人要明白自己在换掉它（项目主人 11-05 定）。
+# 旧的 miyu（0.7.x 那一代）是另一套程序：这里只写 conflicts、不写 replaces，装的人要明白自己在换掉它（评审 11-05 定）。
 # 只挡 0.7.x 那一代（`miyu<2026`），不挡 AUR 上新的过渡包 `miyu`（2026 起，依赖合集），也不再 provides miyu：真有一个叫
-# miyu 的包了，不冒充它（施工 RL-5补2，项目主人 2026-11-06 定）。
+# miyu 的包了，不冒充它（施工 RL-5补2，评审 2026-11-06 定）。
 
 pkgname=miyu-core
 _version=@VERSION@

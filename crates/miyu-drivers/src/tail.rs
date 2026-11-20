@@ -1,4 +1,4 @@
-//! 接在整份 messages 最末尾的那一句（施工 RT-1，[`Request::tail`]，项目主人 11-07 照推荐定）：内核放在请求的一格里，不进 messages、
+//! 接在整份 messages 最末尾的那一句（施工 RT-1，[`Request::tail`]，评审 11-07 照推荐定）：内核放在请求的一格里，不进 messages、
 //! 不进指纹；驱动编码前照统一的写法接上，三家照各自的规矩编：
 //!
 //! - 最后一条是 user 的，并进那一条做最后一块（openai-chat、responses 全是字的照现成的拼法接在后面，anthropic 多一个 text 块；
@@ -13,7 +13,7 @@ use std::borrow::Cow;
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::request::{Message, Request};
 
-/// 照 `request` 接上那一句交回编码用的请求，和接上了没有：没有、空的、`skip`（openai-chat 前缀续写的那一次，项目主人 11-07 定）
+/// 照 `request` 接上那一句交回编码用的请求，和接上了没有：没有、空的、`skip`（openai-chat 前缀续写的那一次，评审 11-07 定）
 /// 的照原样借着用。
 pub(crate) fn tailed(request: &Request, skip: bool) -> (Cow<'_, Request>, bool) {
     let Some(tail) = request

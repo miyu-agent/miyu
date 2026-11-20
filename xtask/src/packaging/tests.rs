@@ -234,7 +234,7 @@ fn the_core_conflicts_with_the_old_miyu_only_and_nothing_replaces_it() {
         let text = read(&root().join("packaging").join(template)).unwrap();
         assert!(
             !text.contains("replaces="),
-            "{template} 不写 replaces（项目主人 11-05）"
+            "{template} 不写 replaces（评审 11-05）"
         );
     }
     // 只挡 0.7.x 那一代、不冒充过渡包 `miyu`（施工 RL-5补2）：`-git` 也一样。

@@ -49,7 +49,7 @@ async fn switched_off_in_the_config_it_compacts_at_the_line() {
     assert_eq!(summaries, ["当场压的摘要"]);
 }
 
-/// 提前压的摘要不受辅助请求的总时限管（施工 TT-3，项目主人 2026-11-13 定）：剧本把总时限设成 100 毫秒，摘要 400 毫秒才写完，
+/// 提前压的摘要不受辅助请求的总时限管（施工 TT-3，评审 2026-11-13 定）：剧本把总时限设成 100 毫秒，摘要 400 毫秒才写完，
 /// 照常说完、到线换上，不再请求。
 #[tokio::test]
 async fn a_prepared_summary_slower_than_the_aside_limit_still_lands() {
