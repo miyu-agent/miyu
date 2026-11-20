@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-如果你写了一个扩展，想让它出现在终端界面、网页界面这些“头”（连接核心的界面程序）上，例如侧边栏里的一块状态、首页上的一段内容、底栏的一小格、一整页可以修改的设置、一个自己的后台网页，或者托盘菜单里的一行，这一页讲每一种的做法。扩展本身怎么写见 [写扩展](../../authors/extensions.md)。
+如果你写了一个扩展，想让它出现在终端界面、网页界面这些“头”（连接核心的界面程序）上，例如侧边栏里的一块状态、首页上的一段内容、底栏的一小格、一整页可以修改的设置、一个自己的后台网页，或者托盘菜单里的一行，这一页讲每一种的做法。扩展本身怎么写见 [写扩展](extensions.md)。
 
 ## 几种放置位置
 
@@ -116,7 +116,7 @@ title = { zh = "时间", en = "Time" }
 
 写了 `command` 的整页块，它的命令会列进 `command.catalog`（带有 `opens`）。人输入这个命令以后，`command.run` 会回 `{"command", "opens": {"package", "widget"}, "said": ""}`，头就打开那一页；这个命令不会进入会话日志。通讯平台上的群聊、私聊里不列出、也不识别这种命令。
 
-如果斜杠命令只需要回一句话，就写 `[[slash]]`：人输入命令以后，核心调用你的 `command.call`，你回 `{"said": "<回执>"}` 即可，详细的见 [写扩展](../../authors/extensions.md)。
+如果斜杠命令只需要回一句话，就写 `[[slash]]`：人输入命令以后，核心调用你的 `command.call`，你回 `{"said": "<回执>"}` 即可，详细的见 [写扩展](extensions.md)。
 
 ## 后台页
 
@@ -170,7 +170,7 @@ name = { zh = "打开时钟后台", en = "Open Clock" }
 
 ## 例子：侧边栏里的时钟
 
-下面写一个扩展，在侧边栏放一块 `时间`，显示现在的时刻和日期，每分钟更新一次。它用 Python 开发包 `miyu_ext` 写（见 [写扩展](../../authors/extensions.md#用开发包写)）。
+下面写一个扩展，在侧边栏放一块 `时间`，显示现在的时刻和日期，每分钟更新一次。它用 Python 开发包 `miyu_ext` 写（见 [写扩展](extensions.md#用开发包写)）。
 
 1. 建立目录，把开发包里的 `miyu_ext.py` 复制到 `bin/` 里：
 
@@ -248,7 +248,7 @@ name = { zh = "打开时钟后台", en = "Open Clock" }
            sys.exit(2)
    ```
 
-   在 Windows 上这份文件同样可以用：核心找不到 `bin/miyu-clock.exe` 时，会根据第一行的 `#!` 用 `PATH` 里的 `python` 启动它，不需要执行权限。文件名按照清单的 `program` 写成 `miyu-clock`，不加 `.py`；需要先安装好 Python 3，并且能在 `PATH` 里找到 `python`。详细的见 [写一个 Miyu 软件包：三个平台](../../authors/README.md#三个平台)。
+   在 Windows 上这份文件同样可以用：核心找不到 `bin/miyu-clock.exe` 时，会根据第一行的 `#!` 用 `PATH` 里的 `python` 启动它，不需要执行权限。文件名按照清单的 `program` 写成 `miyu-clock`，不加 `.py`；需要先安装好 Python 3，并且能在 `PATH` 里找到 `python`。详细的见 [写一个 Miyu 软件包：三个平台](packages.md#三个平台)。
 
 4. 安装：`miyu pkg install ./clock`。安装时屏幕上会列出它要的能力 `widgets`，输入 `Y`；询问 `现在启用 'clock'？[Y/n]` 时也回答是。
 5. 查看效果：

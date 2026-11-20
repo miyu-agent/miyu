@@ -20,7 +20,7 @@
 5. 不动的：
    - tokio 的阻塞线程池、自己开的线程。
    - glibc 的 arena（`miyu_heap::ARENAS`，8 个）：它不照工作线程数算，对的是读日志分块的那几块（`miyu-store` 的 `MOST`，8 个）；`tune` 要在起任何线程以前调，那时还没读配置。工作线程多了以后共用 arena 抢不抢锁，等 bm 复测量了再定。
-6. 蓝图：`core.md`「起来的先后」第 7 条和文件表，`config.md`（文件表、生效时机那张表、第八条第 1 条、`miyu config set` 那一行、「还没有的」，里面嵌着的参考文件样本），`heap.md` 的 `ARENAS`，`packages.md` 的 `applies`。参考：`docs/authors/manifest.md` 中英两份的 `applies`。样本 `internal/designs/samples/config/` 重新生成。
+6. 蓝图：`core.md`「起来的先后」第 7 条和文件表，`config.md`（文件表、生效时机那张表、第八条第 1 条、`miyu config set` 那一行、「还没有的」，里面嵌着的参考文件样本），`heap.md` 的 `ARENAS`，`packages.md` 的 `applies`。参考：`docs/zh/dev/manifest.md` 中英两份的 `applies`。样本 `internal/designs/samples/config/` 重新生成。
 
 ### 空闲占用前后
 

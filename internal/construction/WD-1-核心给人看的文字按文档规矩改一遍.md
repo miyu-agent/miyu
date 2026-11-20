@@ -30,7 +30,7 @@
 
 - 蓝图 `config.md`「给人看的字」增加「用词的规矩」一段，并把表里引用的说明换成新的文字；`ipc.md`、`cli/pkg.md`、`cli/rescue.md`、`cli/check.md`、`packages.md` 等页里引用的原话一起更新。
 - 配置的两份样本（`internal/designs/samples/config/` 下的中文参考文件和中文 Schema）重新生成。
-- 手册 `docs/zh/guide/` 里引用程序原话的地方（故障排查、数据、软件包、联网服务等页）换成新的文字；`docs/authors/` 里引用确认屏文字的两处同样更新。
+- 手册 `docs/zh/guide/` 里引用程序原话的地方（故障排查、数据、软件包、联网服务等页）换成新的文字；`docs/zh/dev/` 里引用确认屏文字的两处同样更新。
 - 断言这些文字的测试改成新的文字。
 
 ### 不做什么

@@ -237,7 +237,7 @@ bases = ["sea-charts", "handbook"]
 miyu pkg install kb-shorinwiki
 ```
 
-想自己做一个，可以看 [放文件就能用的](../../authors/scripts-skills.md#知识库)。
+想自己做一个，可以看 [放文件就能用的](../dev/scripts-skills.md#知识库)。
 
 ## 界面
 

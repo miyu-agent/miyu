@@ -57,7 +57,7 @@ LV-1 把级别收成只读、完全放开两级以后，几样东西还留在代
 
 | 文件 | 删什么 |
 |---|---|
-| `docs/authors/scripts-skills.md`、`.en.md` | 「非在沙盒外跑不可的脚本」一节 |
+| `docs/zh/dev/scripts-skills.md`、`.en.md` | 「非在沙盒外跑不可的脚本」一节 |
 | `docs/zh/reference/packages.md`、`.en.md` | `check` 条目里 `sandbox.tools` 那半句 |
 
 老配置里留着 `sandbox.tools.<名字>` 的：照不在清单里的键报 `unknown_key`（警告，原样留在文件里，不进最终值）。加一条测试守着是警告不是错误。

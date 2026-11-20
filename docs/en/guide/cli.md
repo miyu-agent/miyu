@@ -480,7 +480,7 @@ For details, see [Packages](packages.md).
 miyu dev driver-check <id>
 ```
 
-`miyu dev` is for people who write packages: `driver-check` checks whether the model driver encoding that this package provides is steady. The check restarts the package's extension, so it does not run while a session is using it. The exit code is `0` when all checks pass, and `1` when some do not. See [Writing a Miyu package](../../authors/README.en.md).
+`miyu dev` is for people who write packages: `driver-check` checks whether the model driver encoding that this package provides is steady. The check restarts the package's extension, so it does not run while a session is using it. The exit code is `0` when all checks pass, and `1` when some do not. See [Writing a Miyu package](../dev/packages.md).
 
 ## miyu memory
 

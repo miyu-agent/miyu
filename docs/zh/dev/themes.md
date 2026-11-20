@@ -39,7 +39,7 @@ dir = "web"             # 网页的部分：包文件夹里的相对目录
 - 外观包只能写 `[package]`、`[theme]`、`[depends]`、`[recommends]`；如果写了 `protocol`、`[command]` 这类别的表，会报 `wrong_kind`。外观包没有程序、开关和配置项。
 - `miyu check` 会检查终端主题文件（文件要存在、内容是 JSON 对象、大小不超过 256 KiB）和网页目录是否存在。
 
-每个字段详细的见 [清单](../../authors/manifest.md#theme)。
+每个字段详细的见 [清单](manifest.md#theme)。
 
 ## 终端的主题
 
@@ -239,8 +239,8 @@ model = "mascot.json"
 
 起名和发布的方法如下：
 
-- 编号的规则和其他软件包相同（见 [写一个软件包](../../authors/README.md)）。软件源里已有的网页外观包都叫 `webui-theme-<名字>`，终端出厂的默认主题包叫 `tui-theme-default`；你的包也按这个样子起名，一看就知道是给哪个头用的。
-- 打包和发布到软件源的方法见 [写一个软件包](../../authors/README.md#发到软件源)。
+- 编号的规则和其他软件包相同（见 [写一个软件包](packages.md)）。软件源里已有的网页外观包都叫 `webui-theme-<名字>`，终端出厂的默认主题包叫 `tui-theme-default`；你的包也按这个样子起名，一看就知道是给哪个头用的。
+- 打包和发布到软件源的方法见 [写一个软件包](packages.md#发到软件源)。
 
 ## 发布前的检查
 

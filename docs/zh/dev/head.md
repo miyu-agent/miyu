@@ -298,7 +298,7 @@ AI 要做受保护的操作时（例如开放权限下的危险命令、只读�
 - 皮肤、配色这类跟着人走的设置存进核心：用 `prefs.get {"package"}` 读取、`prefs.set {"package", "values"}` 写入，`package` 是你这个头的软件包编号，整份最多 64 KiB。其他头改了以后会推送 `prefs.changed`（需要订阅 `prefs` 流，带上 `package`）。只有安装成界面包（见下文）的头才能使用，其他的会回 `unknown_package` 或 `not_a_ui_package`。详细的见 [头自己的设置](../reference/prefs.md)。
 - 只和这台设备有关的设置（例如窗口大小、输入历史）存在头自己那里。
 - 核心的配置用 `config.get` 读取；订阅 `config` 流以后，配置变化时会推送 `config.changed`。头需要遵照的几项是：`ui.language`（界面语言）和 `ui.startup`（打开头时是开新会话 `new`，还是接着最近的会话 `recent`）。
-- 你自己的配置项写进清单的 `[settings.<名字>]`，键是 `<前缀>.<名字>`，设置页会根据它画出设置项（见 [清单](../../authors/manifest.md)）。
+- 你自己的配置项写进清单的 `[settings.<名字>]`，键是 `<前缀>.<名字>`，设置页会根据它画出设置项（见 [清单](manifest.md)）。
 
 ## 用 Rust 写：`miyu-client`
 
@@ -407,9 +407,9 @@ about = { zh = "打开小头", en = "Open the tiny head" }
 3. 设成默认：`miyu config set ui.head tiny-head`。之后在终端里直接运行 `miyu` 就会打开它（只在标准输入、标准输出都是终端时才这样）。安装了两个以上界面时，设置页的 `通用` 里也有 `默认界面` 这一项。
 
 - 清单里有 `[ui]` 这张表，就是界面包。`opens` 写你能处理的页，例如 `opens = ["config"]`：人运行 `miyu config` 时，核心会打开你的头，并带上 `--page config`；如果没有写，`miyu config` 不会打开你的头。
-- `[command]` 的每个字段、`[settings]` 的写法见 [清单](../../authors/manifest.md)。`[ui]` 这张表只给界面包使用，不在那一页列出的冻结格式里，以后可能会改：升级核心以后要先核对一遍。
-- 在 Windows 上，核心会先找 `bin/tiny-head.exe`；如果没有，就根据 `bin/tiny-head` 第一行的 `#!` 找解释器，`#!/usr/bin/env python3` 找的是 `PATH` 里的 `python`。所以这个包在三个平台上都能用，文件名不加 `.py`；在 Windows 上要先安装好 Python，并且能在 `PATH` 里找到 `python`。详细的见 [写一个 Miyu 软件包：三个平台](../../authors/README.md#三个平台)。
-- 如果包里带有编译出来的程序，要写 `targets`，一种系统打一个包；打包和发布到软件源的方法见 [写一个软件包](../../authors/README.md)。
+- `[command]` 的每个字段、`[settings]` 的写法见 [清单](manifest.md)。`[ui]` 这张表只给界面包使用，不在那一页列出的冻结格式里，以后可能会改：升级核心以后要先核对一遍。
+- 在 Windows 上，核心会先找 `bin/tiny-head.exe`；如果没有，就根据 `bin/tiny-head` 第一行的 `#!` 找解释器，`#!/usr/bin/env python3` 找的是 `PATH` 里的 `python`。所以这个包在三个平台上都能用，文件名不加 `.py`；在 Windows 上要先安装好 Python，并且能在 `PATH` 里找到 `python`。详细的见 [写一个 Miyu 软件包：三个平台](packages.md#三个平台)。
+- 如果包里带有编译出来的程序，要写 `targets`，一种系统打一个包；打包和发布到软件源的方法见 [写一个软件包](packages.md)。
 
 ## 网页类的头
 

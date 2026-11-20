@@ -24,7 +24,7 @@
 ### 留下的
 
 - 短标签改了名、而旧名字在别处还有的，扫描查不出来，等界面实测时再看。
-- `docs/authors/`、`docs/zh/reference/` 里的「key」等并进语言目录那一步一起改。
+- `docs/zh/dev/`、`docs/zh/reference/` 里的「key」等并进语言目录那一步一起改。
 
 ### 验收
 

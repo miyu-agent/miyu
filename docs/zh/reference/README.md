@@ -37,4 +37,4 @@
 | [其他](misc.md) | `job.*`、`human.get`、`link.preview`、`mermaid.render` |
 | [出错](errors.md) | 全部原因码 |
 
-写软件包、扩展、脚本、技能的教程在 [`docs/authors/`](../../authors/README.md)。
+写软件包、扩展、脚本、技能的教程在 [开发者文档](../dev/README.md)。

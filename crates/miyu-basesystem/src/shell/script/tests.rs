@@ -1,4 +1,4 @@
-//! 脚本拿到的环境变量都写进了作者文档（施工 X-47）：中英两份 `docs/authors/scripts-skills` 里每一个都有。加了变量没写文档的，这里
+//! 脚本拿到的环境变量都写进了作者文档（施工 X-47）：`docs/zh/dev/scripts-skills.md`、`docs/en/dev/scripts-skills.md` 两份里每一个都有。加了变量没写文档的，这里
 //! 当场报红。
 //!
 //! 不写给作者的（内部用的，不进这张表）：`MIYU_CALL_SOCK`、`MIYU_CALL_TOKEN`（`miyu call` 自己读，作者照 `miyu call` 的用法写就行，
@@ -9,12 +9,12 @@ use super::*;
 /// 中文、英文两份作者文档。
 const DOCS: [(&str, &str); 2] = [
     (
-        "scripts-skills.md",
-        include_str!("../../../../../docs/authors/scripts-skills.md"),
+        "zh/dev/scripts-skills.md",
+        include_str!("../../../../../docs/zh/dev/scripts-skills.md"),
     ),
     (
-        "scripts-skills.en.md",
-        include_str!("../../../../../docs/authors/scripts-skills.en.md"),
+        "en/dev/scripts-skills.md",
+        include_str!("../../../../../docs/en/dev/scripts-skills.md"),
     ),
 ];
 

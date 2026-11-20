@@ -298,7 +298,7 @@ A head's settings come in several kinds, and each kind is stored in a different 
 - Settings that follow the person, such as skin and colors, are stored in the core: read them with `prefs.get {"package"}` and write them with `prefs.set {"package", "values"}`, where `package` is the package id of your head and the whole set is at most 64 KiB. When another head changes them, `prefs.changed` is pushed (you need to subscribe to the `prefs` stream with `package`). Only a head installed as a UI package (see below) can use this; others get `unknown_package` or `not_a_ui_package`. For details, see [A head's own settings](../reference/prefs.md).
 - Settings that only concern this device (for example window size and input history) are stored by the head itself.
 - Read the core's config with `config.get`; after you subscribe to the `config` stream, `config.changed` is pushed when the config changes. A head needs to follow these items: `ui.language` (the interface language) and `ui.startup` (whether opening the head starts a new session, `new`, or picks up the most recent one, `recent`).
-- Your own config items go in the manifest under `[settings.<name>]`, with the key `<prefix>.<name>`, and the settings page draws them from there (see [The manifest](../../authors/manifest.en.md)).
+- Your own config items go in the manifest under `[settings.<name>]`, with the key `<prefix>.<name>`, and the settings page draws them from there (see [The manifest](manifest.md)).
 
 ## Writing it in Rust: `miyu-client`
 
@@ -407,9 +407,9 @@ about = { zh = "打开小头", en = "Open the tiny head" }
 3. Set it as the default: `miyu config set ui.head tiny-head`. After that, running plain `miyu` in a terminal opens it (only when both stdin and stdout are a terminal). When two or more interfaces are installed, the settings page also has a `Default interface` item under `General`.
 
 - A manifest that has the `[ui]` table makes a UI package. `opens` lists the pages you handle, for example `opens = ["config"]`: when the person runs `miyu config`, the core opens your head with `--page config`; if it isn't listed, `miyu config` doesn't open your head.
-- Every field of `[command]` and how to write `[settings]` are in [The manifest](../../authors/manifest.en.md). The `[ui]` table is only for UI packages and is not among the frozen formats listed on that page, so it may change later: after upgrading the core, you must check it again first.
-- On Windows, the core looks for `bin/tiny-head.exe` first; if there isn't one, it finds an interpreter from the `#!` on the first line of `bin/tiny-head`, and `#!/usr/bin/env python3` finds `python` in `PATH`. So this package works on all three platforms, and the file name doesn't end in `.py`; on Windows, Python must be installed first, with `python` findable in `PATH`. For details, see [Writing a Miyu package: three platforms](../../authors/README.en.md#three-platforms).
-- If the package ships compiled programs, you must write `targets`, with one package per system; for packing and publishing to a package source, see [Writing a package](../../authors/README.en.md).
+- Every field of `[command]` and how to write `[settings]` are in [The manifest](manifest.md). The `[ui]` table is only for UI packages and is not among the frozen formats listed on that page, so it may change later: after upgrading the core, you must check it again first.
+- On Windows, the core looks for `bin/tiny-head.exe` first; if there isn't one, it finds an interpreter from the `#!` on the first line of `bin/tiny-head`, and `#!/usr/bin/env python3` finds `python` in `PATH`. So this package works on all three platforms, and the file name doesn't end in `.py`; on Windows, Python must be installed first, with `python` findable in `PATH`. For details, see [Writing a Miyu package: three platforms](packages.md#three-platforms).
+- If the package ships compiled programs, you must write `targets`, with one package per system; for packing and publishing to a package source, see [Writing a package](packages.md).
 
 ## Web-type heads
 

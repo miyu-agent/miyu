@@ -6,12 +6,12 @@ use super::*;
 /// 中文、英文两份作者文档。
 const DOCS: [(&str, &str); 2] = [
     (
-        "manifest.md",
-        include_str!("../../../../../docs/authors/manifest.md"),
+        "zh/dev/manifest.md",
+        include_str!("../../../../../docs/zh/dev/manifest.md"),
     ),
     (
-        "manifest.en.md",
-        include_str!("../../../../../docs/authors/manifest.en.md"),
+        "en/dev/manifest.md",
+        include_str!("../../../../../docs/en/dev/manifest.md"),
     ),
 ];
 
@@ -67,10 +67,13 @@ fn every_table_and_key_is_in_the_authors_docs() {
 
 /// 接 MCP 服务的中英两份作者文档（施工 X-48）。
 const MCP_DOCS: [(&str, &str); 2] = [
-    ("mcp.md", include_str!("../../../../../docs/authors/mcp.md")),
     (
-        "mcp.en.md",
-        include_str!("../../../../../docs/authors/mcp.en.md"),
+        "zh/dev/mcp.md",
+        include_str!("../../../../../docs/zh/dev/mcp.md"),
+    ),
+    (
+        "en/dev/mcp.md",
+        include_str!("../../../../../docs/en/dev/mcp.md"),
     ),
 ];
 

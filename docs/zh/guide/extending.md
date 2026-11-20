@@ -407,7 +407,7 @@ miyu provider login acme-docs
 
 ## 想做得更多
 
-如果你需要一个一直运行的程序、自己的界面或者后台页，或者想把这些东西发给别人用，就把它们做成软件包：可以看 [写一个 Miyu 软件包](../../authors/README.md) 和 [写扩展](../../authors/extensions.md)。技能、脚本、模板分别放进软件包文件夹的 `skills/`、`scripts/`、`commands/`，格式和这一页讲的一样。
+如果你需要一个一直运行的程序、自己的界面或者后台页，或者想把这些东西发给别人用，就把它们做成软件包：可以看 [写一个 Miyu 软件包](../dev/packages.md) 和 [写扩展](../dev/extensions.md)。技能、脚本、模板分别放进软件包文件夹的 `skills/`、`scripts/`、`commands/`，格式和这一页讲的一样。
 
 也可以让 AI 帮你写。出厂的「写技能和包」带了两个技能：
 

@@ -237,7 +237,7 @@ One ready-made knowledge base in the package source is `kb-shorinwiki`. Run the 
 miyu pkg install kb-shorinwiki
 ```
 
-To make one yourself, see [Things that work as files](../../authors/scripts-skills.en.md#knowledge-bases).
+To make one yourself, see [Things that work as files](../dev/scripts-skills.md#knowledge-bases).
 
 ## Interface
 

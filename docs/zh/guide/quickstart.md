@@ -81,7 +81,7 @@
 
 ### 制作自己的扩展
 
-如果你想要创建并上传自己的软件包，可以阅读：[写一个 Miyu 软件包](../../authors/README.md)，或者从[软件包模板](https://github.com/miyu-agent/miyu-package-template)开始。
+如果你想要创建并上传自己的软件包，可以阅读：[写一个 Miyu 软件包](../dev/packages.md)，或者从[软件包模板](https://github.com/miyu-agent/miyu-package-template)开始。
 
 ## 接入通讯平台
 

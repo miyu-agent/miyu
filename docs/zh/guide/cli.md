@@ -480,7 +480,7 @@ miyu bus list render
 miyu dev driver-check <编号>
 ```
 
-`miyu dev` 供编写软件包的人使用：`driver-check` 检查这个软件包提供的模型驱动的编码是否稳定。检查时会重启它的扩展，如果有会话正在使用，就不进行检查。全部通过时退出码是 `0`，有没通过的项时退出码是 `1`。见 [写一个 Miyu 软件包](../../authors/README.md)。
+`miyu dev` 供编写软件包的人使用：`driver-check` 检查这个软件包提供的模型驱动的编码是否稳定。检查时会重启它的扩展，如果有会话正在使用，就不进行检查。全部通过时退出码是 `0`，有没通过的项时退出码是 `1`。见 [写一个 Miyu 软件包](../dev/packages.md)。
 
 ## miyu memory
 

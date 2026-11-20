@@ -37,4 +37,4 @@ For programs that talk to the core: "heads" such as the terminal and web UIs, an
 | [Other](misc.md) | `job.*`, `human.get`, `link.preview`, `mermaid.render` |
 | [Errors](errors.md) | Every reason code |
 
-Tutorials for writing packages, extensions, scripts and skills are in [`docs/authors/`](../../authors/README.en.md).
+Tutorials for writing packages, extensions, scripts and skills are in the [developer docs](../dev/README.md).

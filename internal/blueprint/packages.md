@@ -13,7 +13,7 @@
 | `crates/miyu-config/src/package.rs`、`package/reader.rs` | 一份清单读成样子：每一格的写法，写错的报第一处，带代码、第几行（纯逻辑）；`reader.rs` 一张表一张表地读 |
 | `crates/miyu-config/src/package/settings.rs` | `[settings]` 的读法；拼成配置清单的项（施工 9-1 下）。`layers`、`applies` 两格在 `settings/scope.rs`（施工 CPU-1 分出来） |
 | `crates/miyu-config/src/package/features.rs` | `[features]` 的读法；没写的照包算一个（`Manifest::features_of`，施工 F-1） |
-| `crates/miyu-config/src/package/fields.rs` | 清单格式的真相源（施工 Y-5 末上，冻结）：认的 22 张表、每张表认的格；读的各处照它挡，`fields/tests.rs` 拿中英作者文档 `docs/authors/manifest*` 对它。以后只加不改不删，新格写进这里和两份作者文档，用到的包写 `[package] miyu` |
+| `crates/miyu-config/src/package/fields.rs` | 清单格式的真相源（施工 Y-5 末上，冻结）：认的 22 张表、每张表认的格；读的各处照它挡，`fields/tests.rs` 拿中英作者文档 `docs/zh/dev/manifest*` 对它。以后只加不改不删，新格写进这里和两份作者文档，用到的包写 `[package] miyu` |
 | `crates/miyu-config/src/package/links.rs` | `[connection]`、`[depends]`、`[recommends]`、`[worker]` 的读法（施工 F-1） |
 | `crates/miyu-config/src/package/depend.rs` | 依赖、推荐的一项（施工 PK-2）：`<编号>` 或 `<编号>>=<版本>` 的写法，版本照 semver 比（`Dependency`）；读索引也照它 |
 | `crates/miyu-config/src/package/purpose.rs` | `[[purpose]]` 的读法：扩展声明的用量用途的名字（施工 UP-3）；用途的写法 `purpose_written`（`model.call` 的 `purpose` 同一个规矩） |

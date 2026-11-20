@@ -19,7 +19,7 @@
   - 开发者文档目录页：Apache-2.0 管的是 `reference/`、`authors/`（原来把 `dev/`、`guide/` 也写进去了，和蓝图 `licenses.md` 对不上）。
   - 引用的程序原话七处照字表改：`从 Miyu 导入…`、`整理没成（…）`、`超时，挪到后台了：…`、`Recursive deletes`、`No one can answer questions here.`、`Color mode`、`Enable 'clock' now? [Y/n]`；英文命令行页一句提示里写死的 `(web, gui)` 换成占位。
 
-没改的：`docs/authors/`、`docs/zh/reference/` 等并进 `zh/`、`en/` 的那一步一起改写；蓝图、设计、施工单不改。
+没改的：`docs/zh/dev/`、`docs/zh/reference/` 等并进 `zh/`、`en/` 的那一步一起改写；蓝图、设计、施工单不改。
 
 ### 怎么做的
 

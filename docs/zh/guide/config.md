@@ -272,7 +272,7 @@ $env:MIYU_LOG = 'debug'
 | `MIYU_SESSION_LOG` | 只在 AI 运行的命令里有：这个会话的日志目录 |
 | `MIYU_CALL_SOCK`、`MIYU_CALL_TOKEN` | 只在 AI 运行的命令里有：`miyu call` 连回这个会话时使用的地址和令牌 |
 
-每个变量的用法见 [写一个 Miyu 软件包](../../authors/README.md)。
+每个变量的用法见 [写一个 Miyu 软件包](../dev/packages.md)。
 
 ## 编辑器补全
 

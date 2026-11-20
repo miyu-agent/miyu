@@ -9,7 +9,7 @@
 - `docs/guide/`：用户手册 30 页（安装、各个界面、会话、模型、权限、软件包、配置、排错等），加目录页和快速上手的位置；
 - `docs/dev/`：开发者文档 6 页，补 `authors/`、`reference/` 没有的（架构、贡献代码、写一个头、写主题和外观、往界面上放东西）；
 - `docs/README.md`：文档首页，照读者分流，并说明哪几个目录是内部记录；
-- `docs/zh/reference/`、`docs/authors/`：清掉遗留的施工号和来历，改掉七处和代码对不上的；
+- `docs/zh/reference/`、`docs/zh/dev/`：清掉遗留的施工号和来历，改掉七处和代码对不上的；
 - `README.md`、`packaging/README.md`：改成现状，指到上面这些。
 
 手册和开发者文档 Linux、macOS、Windows 三个平台同等对待（2026-11-14 项目主人定）：路径、命令行示例、常驻、沙盒、按键、通知这些，三个平台不一样的都分别写出来，某个平台没有的明写没有；用到 shell 语法的示例 bash、PowerShell 各一份。
@@ -36,7 +36,7 @@
 1. `cargo xtask check` 全过（「文档」一项查参考里的方法条目和锚点）。
 2. `docs/guide/`、`docs/dev/`、`docs/README.md` 里的站内链接指到的页和小节都在。
 3. 新写的页里没有施工号、设计编号、「她」；每页标题下面有生成者的署名。
-4. `docs/zh/reference/`、`docs/authors/` 的小标题和方法条目标题一个没动。
+4. `docs/zh/reference/`、`docs/zh/dev/` 的小标题和方法条目标题一个没动。
 5. 每一页里只照一个平台写的地方都补成三个平台：逐页对过平台差异清单（照代码、打包脚本、各个头的 main 列的），带 shell 语法的示例 bash、PowerShell 都有。
 
 ### 风险

@@ -4,7 +4,7 @@
 
 ### 一、查了什么
 
-- `docs/authors/` 下中英十份：README、manifest、scripts-skills、extensions、mcp。
+- `docs/zh/dev/` 下中英十份：README、manifest、scripts-skills、extensions、mcp。
 - 对照的真相源：蓝图 `packages.md`（清单格式、出错、冲突、内容包、依赖）、`crates/miyu-config/src/package/`（`fields.rs` 认的表和格、`mcp.rs`、`capability.rs`）、`crates/miyu-endpoint/src/provide.rs`（扩展登记工具认的格）、`crates/miyu-policy/src/script.rs`（脚本开头认的键）、蓝图 `knowledge.md`「软件包带来的」（K-8）、`personas.md`、`presets.md`、`session/guard.md` 判法表、设计 `11` 的 A16、A17（权限只剩只读、完全放开）、`FL-1-工具一律全量.md`、设计 `48-包的命名.md`；软件源仓库 `miyu-agent/packages` 的 README、`pack.yml`、`collect.yml`、`sources.toml`，收录代码 `crates/miyu-source/src/collect.rs`、`collect/topic.rs`。
 - 实际跑：用验收包里的核心（2026.11.0，比 main 旧）和一份临时数据根，照文档从零做包、`miyu pkg pack`、`miyu pkg info <目录>`、`miyu pkg install`、`miyu pkg list`、`miyu kb list`；文档里的每一份清单例子都拿出来读一遍。旧核心读不过的先对照 main 的代码确认是不是文档错。
 - 改完跑了 `miyu-config` 里对作者文档的三条测试（`package::fields::tests`：每张表、每一格、每项能力、MCP 每一格都在中英两份里），全过；脚本环境变量那条（`miyu-basesystem` 的 `every_variable_a_script_gets_is_in_the_authors_docs`）照它的名单逐个查过，一个没少。

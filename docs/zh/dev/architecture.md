@@ -2,7 +2,7 @@
 
 > <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
 
-这一页写给要接入 Miyu 或者给 Miyu 改代码的开发者，讲 Miyu 由哪些进程和仓库组成，一句话从输入到模型回答经过了哪些部件，以及你要修改、要接入的那一块在哪里。协议的每个方法可以查 [协议参考](../reference/README.md)，写软件包可以看 [作者教程](../../authors/README.md)。
+这一页写给要接入 Miyu 或者给 Miyu 改代码的开发者，讲 Miyu 由哪些进程和仓库组成，一句话从输入到模型回答经过了哪些部件，以及你要修改、要接入的那一块在哪里。协议的每个方法可以查 [协议参考](../reference/README.md)，写软件包可以看 [作者教程](packages.md)。
 
 ## 进程
 
@@ -121,7 +121,7 @@
 | 会话 | `~/.miyu/root/sessions/<会话编号>/`：事件日志，只追加，分段存成 JSONL | `miyu-kernel` 的 `event`；参考 [事件](../reference/events.md) |
 | 大内容 | `~/.miyu/root/blobs/`，按内容哈希存放 | `miyu-store` 的 `blob` |
 | 配置 | `~/.miyu/etc/config.toml`；密钥在 `~/.miyu/etc/private/secrets.toml` | 各模块用 `miyu-config` 的 `settings!` 声明配置项，核心据此生成 JSON Schema，写到 `~/.miyu/var/cache/config/config.schema.json` |
-| 软件包 | 安装的软件包在 `~/.miyu/opt/<编号>/`，软件包的状态在 `~/.miyu/var/lib/<编号>/` | [清单](../../authors/manifest.md) |
+| 软件包 | 安装的软件包在 `~/.miyu/opt/<编号>/`，软件包的状态在 `~/.miyu/var/lib/<编号>/` | [清单](manifest.md) |
 | 索引 | 会话列表的索引在 `~/.miyu/var/cache/index/`；用量汇总、检索库也是 SQLite | 都是派生出来的，删掉以后会根据日志重建 |
 | 运行时 | `~/.miyu/run/`：锁、套接字的位置（套接字本身在哪里见下面的 [三个平台](#三个平台)）、本机令牌 | `miyu-ipc` |
 | 运行日志 | `~/.miyu/var/log/` | `miyu-log` |
@@ -134,7 +134,7 @@
 
 ## 软件包
 
-一个文件夹就是一个软件包，文件夹名是软件包的编号，清单是 `package.toml`。核心从三层位置查找软件包：出厂的软件包在资源目录的 `packages/<编号>/`，系统包管理器安装的在系统加装的那几个位置，你自己安装的在数据根的 `opt/<编号>/`；如果同一个编号在几层里都有，你安装的优先于系统加装的，系统加装的优先于出厂的。扩展在清单的 `[process] capabilities` 里声明它需要的能力，人在安装、打开扩展的时候批准，批准过的记录在 `~/.miyu/etc/extensions.json` 里；出厂的软件包算作已经批准，但 `login.page`、`provider.key` 两项除外。核心启动扩展时，会给它 `MIYU_APP_DIR`、`MIYU_STATE_DIR` 这些目录；扩展发出的第一条消息是 `hello`，接着发送 `provide` 登记工具；标准输入读到结尾就表示核心请它退出，退出码 `1` 表示「重启也没用」。怎么写软件包见 [写一个 Miyu 软件包](../../authors/README.md)、[写扩展](../../authors/extensions.md)、[清单](../../authors/manifest.md)。
+一个文件夹就是一个软件包，文件夹名是软件包的编号，清单是 `package.toml`。核心从三层位置查找软件包：出厂的软件包在资源目录的 `packages/<编号>/`，系统包管理器安装的在系统加装的那几个位置，你自己安装的在数据根的 `opt/<编号>/`；如果同一个编号在几层里都有，你安装的优先于系统加装的，系统加装的优先于出厂的。扩展在清单的 `[process] capabilities` 里声明它需要的能力，人在安装、打开扩展的时候批准，批准过的记录在 `~/.miyu/etc/extensions.json` 里；出厂的软件包算作已经批准，但 `login.page`、`provider.key` 两项除外。核心启动扩展时，会给它 `MIYU_APP_DIR`、`MIYU_STATE_DIR` 这些目录；扩展发出的第一条消息是 `hello`，接着发送 `provide` 登记工具；标准输入读到结尾就表示核心请它退出，退出码 `1` 表示「重启也没用」。怎么写软件包见 [写一个 Miyu 软件包](packages.md)、[写扩展](extensions.md)、[清单](manifest.md)。
 
 ## 仓库
 
@@ -184,7 +184,7 @@ miyu-sdk ──── miyu-ocr
 各个仓库和文档使用的许可证如下：
 
 - 核心仓库自己写的代码和资源使用 AGPL-3.0-or-later。终端、网页、托盘、im、migrate、embed、render、ocr、memes、litemiyu 也使用 AGPL-3.0-or-later。
-- 核心仓库的 `docs/zh/reference/`、`docs/en/reference/`、`docs/authors/`、`resources/packages/base-authoring/` 使用 Apache-2.0（`LICENSES/Apache-2.0.txt`）；`miyu-sdk` 使用 Apache-2.0；`miyu-package-template` 使用 MIT。
+- 核心仓库的 `docs/zh/dev/`、`docs/en/dev/`、`docs/zh/reference/`、`docs/en/reference/`、`resources/packages/base-authoring/` 使用 Apache-2.0（`LICENSES/Apache-2.0.txt`）；`miyu-sdk` 使用 Apache-2.0；`miyu-package-template` 使用 MIT。
 - 只通过协议和 Miyu 通信的程序是独立的作品：扩展、软件包、脚本、MCP 服务、另外写的头，可以使用任何许可证。
 - 不是仓库自己写的东西沿用各自原来的许可证，原文合并在各个仓库的 `THIRD-PARTY-LICENSES.txt` 里。
 

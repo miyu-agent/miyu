@@ -81,7 +81,7 @@ An extension package's settings are mainly in two places. Go to the installed pa
 
 ### Making your own extension
 
-If you want to create and publish your own package, you can read: [Writing a Miyu package](../../authors/README.en.md), or start from the [package template](https://github.com/miyu-agent/miyu-package-template).
+If you want to create and publish your own package, you can read: [Writing a Miyu package](../dev/packages.md), or start from the [package template](https://github.com/miyu-agent/miyu-package-template).
 
 ## Connecting chat platforms
 

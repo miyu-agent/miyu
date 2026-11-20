@@ -141,7 +141,7 @@ key = { secret = "acme" }
 
 DeepSeek 官方的供应商默认使用 `openai-chat`。如果想使用 DeepSeek 自己的联网搜索，需要把它的 `driver` 改成 `openai-responses`，见 [联网搜索和抓取网页](web-search.md#使用-deepseek-responses-接口内置的搜索)。
 
-软件包也可以带驱动，这时 `driver` 写成 `<包编号>/<驱动名>`。例如社区的软件包 `antigravity`（只支持 Linux、macOS）带有驱动 `antigravity/antigravity`，它把请求交给本机的 Antigravity CLI，使用你在 Antigravity CLI 里的登录；安装和配置的方法见这个软件包自己的说明（`miyu pkg info antigravity` 输出里 `上游` 那一行）。想自己写一个驱动，可以看[写一个模型驱动](../../authors/extensions.md#写一个模型驱动)。
+软件包也可以带驱动，这时 `driver` 写成 `<包编号>/<驱动名>`。例如社区的软件包 `antigravity`（只支持 Linux、macOS）带有驱动 `antigravity/antigravity`，它把请求交给本机的 Antigravity CLI，使用你在 Antigravity CLI 里的登录；安装和配置的方法见这个软件包自己的说明（`miyu pkg info antigravity` 输出里 `上游` 那一行）。想自己写一个驱动，可以看[写一个模型驱动](../dev/extensions.md#写一个模型驱动)。
 
 模型不需要一个个列出来。Miyu 会向供应商请求模型列表（`<地址>/models`），再加上模型目录里对应那一家的模型和配置里写到的模型，合在一起给你选择。引用里的模型名不会被检查，所以列表里没有的模型也可以使用。
 

@@ -122,7 +122,7 @@ Miyu 拉起来的程序（扩展、包带的命令和程序、脚本、MCP 服�
 - 核心拉起程序之前把给出去的目录都建好（Windows 沙盒要求，第五节），程序拿到的一定已经存在。交的是真实位置，Windows 上能用普通写法表示的不带 `\\?\`（cmd 的 `cd` 和不少老工具认不了；超长、有保留名的照原样，`miyu_fs::usable`）。
 - 旧名字 `MIYU_PACKAGE_STATE`、`MIYU_PACKAGE_DIR`、`MIYU_SCRIPT_STATE_DIR`、`MIYU_SCRIPT_CACHE_DIR`、`MIYU_SCRIPT_IMAGES_DIR` 去掉。施工期间（FH-3 到 FH-6）核心新旧两套一起给、旧名字指到新位置，等各包发了新版再删（FH-6），不留到发版。
 - 以后多用户，个人那一格另加变量（例如 `MIYU_USER_STATE_DIR`），现有的不改名、不改义。
-- 给包作者的文档（`docs/authors/`）写这一张表，替掉 im 文档里「`<数据根>/state/logs/<你的包>.stderr`」那种写法。
+- 给包作者的文档（`docs/zh/dev/`）写这一张表，替掉 im 文档里「`<数据根>/state/logs/<你的包>.stderr`」那种写法。
 
 ### 五、Windows 沙盒
 

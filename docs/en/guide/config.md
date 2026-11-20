@@ -272,7 +272,7 @@ The variables below are what Miyu passes to extensions, package commands, script
 | `MIYU_SESSION_LOG` | Only in commands the AI runs: this session's log folder |
 | `MIYU_CALL_SOCK`, `MIYU_CALL_TOKEN` | Only in commands the AI runs: the address and token `miyu call` uses to connect back to this session |
 
-For how each variable is used, see [Writing a Miyu package](../../authors/README.en.md).
+For how each variable is used, see [Writing a Miyu package](../dev/packages.md).
 
 ## Editor completion
 

@@ -138,7 +138,7 @@ FH-3 换布局时只改 `DataRoot` 的方法体（和程序目录那一处），
 - [x] `internal/blueprint/store.md`「数据根里有什么」整棵树换成设计 55 第二节，方法表跟上。
 - [x] `07-存储.md` 第二节「目录布局」：改成指向设计 55，留两条归属规则和「数据里存相对路径」（附件、工作区的例外写进去，设计 55 第六节第 4 条）。
 - [x] 各蓝图、参考文档里写着旧路径的（`config.md`、`packages.md`、`knowledge.md`、`memory.md`、`personas.md`、`log.md`、`ipc.md`、`sandbox/*.md`、`cli/*.md`、`reference/*`），照 `git grep` 旧名字逐个改。
-- [x] 给包作者的文档（`docs/authors/`，中英两份）：环境变量那一节换成设计 55 第四节那张表；写明「不拿 `MIYU_HOME` 拼路径」，`var/log/<编号>/` 下的 `stderr`、`stderr.old` 是核心的。
+- [x] 给包作者的文档（`docs/zh/dev/`，中英两份）：环境变量那一节换成设计 55 第四节那张表；写明「不拿 `MIYU_HOME` 拼路径」，`var/log/<编号>/` 下的 `stderr`、`stderr.old` 是核心的。
 - [x] 施工记录（`internal/construction/README.md`）各步一行；施工图跟上。
 
 （`docs/perf/` 是测量记录、别的设计文档讲当时的决定，照历史留着；`架构全图.html` 是更早的布局，不改。）
@@ -153,7 +153,7 @@ FH-3 换布局时只改 `DataRoot` 的方法体（和程序目录那一处），
 
 | 仓库 | 改什么 | 量 |
 |---|---|---|
-| miyu-im（含 miyu-im-sponsor） | 状态目录改读 `MIYU_STATE_DIR`（`status_file.rs:39`、`rules/cards/store.rs:23`、`site/home_cards.rs:22` 三处自己拼的）；日志改 `MIYU_LOG_DIR`（`program.rs:220`、`logs.rs:37`、`site/methods.rs:75`）；读核心记的 stderr 改成 `MIYU_LOG_DIR/stderr`；`venues.d/`（`rules.rs:259`）、`moderation.txt`（`rules.rs:287`）进 `MIYU_CONFIG_DIR`；`MIYU_PACKAGE_DIR` 改 `MIYU_APP_DIR`；sponsor 的 `sponsors.json` 改读 `MIYU_STATE_DIR`，不靠工作目录；测试 53 个文件约 126 行；`docs/authors/README.md:115` 那句；换钉 | 最大 |
+| miyu-im（含 miyu-im-sponsor） | 状态目录改读 `MIYU_STATE_DIR`（`status_file.rs:39`、`rules/cards/store.rs:23`、`site/home_cards.rs:22` 三处自己拼的）；日志改 `MIYU_LOG_DIR`（`program.rs:220`、`logs.rs:37`、`site/methods.rs:75`）；读核心记的 stderr 改成 `MIYU_LOG_DIR/stderr`；`venues.d/`（`rules.rs:259`）、`moderation.txt`（`rules.rs:287`）进 `MIYU_CONFIG_DIR`；`MIYU_PACKAGE_DIR` 改 `MIYU_APP_DIR`；sponsor 的 `sponsors.json` 改读 `MIYU_STATE_DIR`，不靠工作目录；测试 53 个文件约 126 行；`docs/zh/dev/packages.md:115` 那句；换钉 | 最大 |
 | miyu-web | `run/web.lock`、`run/web`、`run/open/`（`serve.rs:135,212,418,440`、`open.rs:214,290`）改 `MIYU_RUNTIME_DIR`：`run/miyu-webui/lock`、`address`、`open/`（2026-11-03 定）；`web.log`（`main.rs:125`）改 `MIYU_LOG_DIR`；文档里过时的 `home/<账号>/`、`system/`；换钉 | 中 |
 | miyu-tui | 删 `build.rs:42` 输入历史的搬家兜底；文档 `tui.md:1344`；测试约 50 行；换钉 | 小 |
 | miyu-memes | `library.db` 改读 `MIYU_STATE_DIR` | 小 |

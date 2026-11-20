@@ -1,6 +1,8 @@
 # 接 MCP 服务
 
-现成的 MCP 服务（Model Context Protocol）能直接接进 Miyu：核心拉起服务的进程，经标准输入输出说 MCP；只给一个网址的服务（Streamable HTTP），核心直接连那个网址。服务的工具登记给 AI 用。两种接法：写进配置（只给自己用，最快），或者做成一个包（发给别人）。英文版：[mcp.en.md](mcp.en.md)。
+> <sub>本文档由 Anthropic 的 Claude Fable 5.2 生成。</sub>
+
+现成的 MCP 服务（Model Context Protocol）能直接接进 Miyu：核心拉起服务的进程，经标准输入输出说 MCP；只给一个网址的服务（Streamable HTTP），核心直接连那个网址。服务的工具登记给 AI 用。两种接法：写进配置（只给自己用，最快），或者做成一个包（发给别人）。
 
 ## 最快：写进配置
 

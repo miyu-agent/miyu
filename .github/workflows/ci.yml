@@ -6,12 +6,11 @@ name: CI
 on:
   push:
     branches: [main, "step/**"]
-    # 只改了门禁不读的文档不跑（2026-10-16 项目主人同意，施工单 0-3 四补）：施工单、作者说明、评审、设计文档。门禁读的
+    # 只改了门禁不读的文档不跑（2026-10-16 项目主人同意，施工单 0-3 四补）：施工单、设计文档（作者教程并进开发者文档以后有测试读它，照跑）。门禁读的
     # 照跑：蓝图（样本块、提示词）、设计 01、23、26（层、性能预算、提示词登记簿）。后写的盖先写的。
     paths:
       - "**"
       - "!internal/construction/**"
-      - "!docs/authors/**"
       - "!internal/designs/**"
       - "internal/designs/01-架构.md"
       - "internal/designs/23-性能预算.md"
@@ -23,7 +22,6 @@ on:
     paths:
       - "**"
       - "!internal/construction/**"
-      - "!docs/authors/**"
       - "!internal/designs/**"
       - "internal/designs/01-架构.md"
       - "internal/designs/23-性能预算.md"

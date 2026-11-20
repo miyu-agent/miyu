@@ -235,7 +235,7 @@ Personas and presets both have three layers, from the bottom up:
 
 If the same id exists in several layers, the upper layer overrides the lower one: a persona's `persona.toml` and a preset's `[preset]` are overridden field by field, so a field you wrote replaces the one below and a field you did not write keeps the value from below; files in a persona's `prompts/`, the avatar and the background image are replaced whole when the name is the same; a preset's `[features]` and `[software]` are overridden entry by entry. If you delete your own layer, you are back to what the layer below has. If a package-provided one has the same id as a shipped one, the shipped one is used; if several packages provide the same id, only one of them is used, and `miyu check` reports the ones that were overridden.
 
-Packages can also provide personas and presets; for how to make them, see [Things that work as files](../../authors/scripts-skills.en.md).
+Packages can also provide personas and presets; for how to make them, see [Things that work as files](../dev/scripts-skills.md).
 
 ## Troubleshooting
 

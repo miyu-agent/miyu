@@ -25,7 +25,7 @@ README 那一节（例子）：
 
 核心（这个仓库自己写的代码和资源）用 AGPL-3.0-or-later，见 `LICENSE`：改过的 Miyu 拿去给别人用，包括只在网上提供服务，要把改过的源码交给用它的人。
 
-给别人照着写东西用的这几处用 Apache-2.0（`LICENSES/Apache-2.0.txt`）：`docs/authors/`（写软件包、扩展、脚本、技能、MCP 服务的说明、模板和例子）、`docs/zh/reference/` 和 `docs/en/reference/`（协议参考）、`resources/packages/base-authoring/`（教 AI 写软件包、技能的那两份技能）。开发包 `miyu-sdk` 也用 Apache-2.0。
+给别人照着写东西用的这几处用 Apache-2.0（`LICENSES/Apache-2.0.txt`）：`docs/zh/dev/` 和 `docs/en/dev/`（开发者文档：写软件包、扩展、脚本、技能、MCP 服务、头、主题的说明、模板和例子，连架构、贡献代码两页；2026-11-20 项目主人定整个目录都算，原来只有作者教程那几页）、`docs/zh/reference/` 和 `docs/en/reference/`（协议参考）、`resources/packages/base-authoring/`（教 AI 写软件包、技能的那两份技能）。开发包 `miyu-sdk` 也用 Apache-2.0。
 
 只经协议和 Miyu 说话的程序是独立的作品：扩展、软件包、脚本、MCP 服务器、另写的终端或网页，用什么许可证都行，AGPL 管不到它们。
 

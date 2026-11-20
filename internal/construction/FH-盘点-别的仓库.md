@@ -169,7 +169,7 @@ im **不直接读会话日志**（产品代码里查不到 `sessions/`、`.jsonl
 
 | 文件:行 | 写的 |
 |---|---|
-| `docs/authors/README.md:115` | 给包作者：`<数据根>/state/logs/<你的包>.stderr`（**面向第三方作者**，要跟着改）；这一份也没提 `MIYU_PACKAGE_STATE` |
+| `docs/zh/dev/packages.md:115` | 给包作者：`<数据根>/state/logs/<你的包>.stderr`（**面向第三方作者**，要跟着改）；这一份也没提 `MIYU_PACKAGE_STATE` |
 | `docs/blueprint/onebot.md:26, 271, 286, 851` | 状态文件 `state/packages/miyu-im/status.json`；工作目录是 `state/packages/miyu-im/` |
 | `docs/blueprint/onebot.md:187, 310` | `state/logs/miyu-im.log`、`state/logs/onebot.stderr`（后者连包名都是旧的） |
 | `docs/blueprint/onebot.md:638, 644-646, 651, 655, 899, 904, 906, 1354` | `venues.d/`、`modules/miyu-im/moderation.txt`（638、899 还写着 `system/modules/onebot/`，**已经过时**） |

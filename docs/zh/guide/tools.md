@@ -10,7 +10,7 @@ AI 能用的工具有下面几种来源：
 
 - 出厂软件包自带的工具：见下面的全表。
 - 你安装的软件包、扩展带的工具：见它们各自的说明。通讯平台的 `qq_*`、`tg_*` 见 [接入通讯平台](heads/im.md)；表情包的 `meme_*`，以及 `render_image`、`ocr` 这些工具见 [附加软件](addons.md)。
-- 脚本：数据根（默认是 `~/.miyu`，Windows 上是 `%USERPROFILE%\.miyu`）的 `~/.miyu/root/scripts/` 里，一个文件就是一件工具，工具名就是文件名。脚本的写法见 [放文件就能用的](../../authors/scripts-skills.md)。
+- 脚本：数据根（默认是 `~/.miyu`，Windows 上是 `%USERPROFILE%\.miyu`）的 `~/.miyu/root/scripts/` 里，一个文件就是一件工具，工具名就是文件名。脚本的写法见 [放文件就能用的](../dev/scripts-skills.md)。
 - MCP 服务：工具名是 `mcp__<服务名>__<工具名>`，工具名里字母、数字、`_`、`-` 以外的字符会换成 `_`，整个名字最长 64 个字符。声明了资源的服务还会多出两件工具 `mcp__<服务名>__list_resources`、`mcp__<服务名>__read_resource`，用来列出和读取它的资源。接入 MCP 服务的方法见 [扩展 Miyu](extending.md)。
 
 一个会话里有哪些工具，由这个会话的预设决定（见 [人格和预设](personas-presets.md)）。除此之外还有几道筛选：

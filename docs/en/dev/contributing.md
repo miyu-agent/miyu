@@ -13,7 +13,7 @@ This page is for developers who want to propose a change to the core or to a hea
 | `internal/blueprint/` | Blueprints: what Miyu looks like now, one page per part, including formats, every cell of the UI, the text shown to the model, and which code it lives in and which tests guard it | Before changing a part, read its page first |
 | `internal/designs/` | Design documents: what was decided, why, and what was not chosen; read them by number, starting with `00-设计理念.md` | When you want to know why something is done a certain way, or want to change a settled approach |
 | `internal/construction/` | Work orders: how one change is made, which blueprint sections it changes, and how it is accepted; `README.md` is the master table and the work order format | When you want to see which step added a feature and how it was verified at the time |
-| `docs/zh/reference/`, `docs/en/reference/`, `docs/authors/` | The protocol reference and the author guides, in Chinese and English, with the Chinese authoritative | When you changed the protocol or how packages are written |
+| `docs/zh/reference/`, `docs/en/reference/`, `docs/zh/dev/`, `docs/en/dev/` | The protocol reference and the developer docs (including the tutorials for writing packages and extensions), in Chinese and English, with the Chinese authoritative | When you changed the protocol or how packages are written |
 
 Development follows the order "blueprint → work order → code": when the design changes, change the blueprint page first, then the code; when merged, the code and the blueprint must match.
 
@@ -201,7 +201,7 @@ Tests follow these rules:
 - Tests of the measuring-tool kind are marked `#[ignore]`, and they assert on results, not on timing.
 - Test toward the bad cases: edge cases, odd combinations, breaking it on purpose.
 
-The core's CI (`.github/workflows/ci.yml`) runs `cargo xtask check` once on each of `ubuntu-24.04`, `macos-latest` and `windows-latest`; it also runs the long runs on Linux (random `#[ignore]` tests whose names end in `for_longer`) and the measuring tool, and going over the budget in the measuring tool also counts as a failure. CI runs on pushes to `main` and to branches starting with `step/`, and on PRs to `main`, including PRs from forks; it does not run when the change touches only `internal/construction/`, `docs/authors/` or `internal/designs/` (except `01-架构.md`, `23-性能预算.md` and `26-提示词.md`). For changes that touch paths, the file system, subprocesses or the terminal, merge only after all three platforms pass.
+The core's CI (`.github/workflows/ci.yml`) runs `cargo xtask check` once on each of `ubuntu-24.04`, `macos-latest` and `windows-latest`; it also runs the long runs on Linux (random `#[ignore]` tests whose names end in `for_longer`) and the measuring tool, and going over the budget in the measuring tool also counts as a failure. CI runs on pushes to `main` and to branches starting with `step/`, and on PRs to `main`, including PRs from forks; it does not run when the change touches only `internal/construction/`, `docs/zh/dev/` or `internal/designs/` (except `01-架构.md`, `23-性能预算.md` and `26-提示词.md`). For changes that touch paths, the file system, subprocesses or the terminal, merge only after all three platforms pass.
 
 ## Code rules
 
@@ -223,7 +223,7 @@ When you change something in the left column, also update the places in the righ
 | You changed | Also change |
 |---|---|
 | A protocol method, params, reply, error or push | Both `docs/zh/reference/` and `docs/en/reference/`; for a new method, run `cargo xtask methods`, and state in the table in `rights.rs` whether extensions can call it |
-| How packages, extensions, scripts, skills or MCP are written | Both the Chinese and English pages in `docs/authors/` |
+| How packages, extensions, scripts, skills or MCP are written | Both `docs/zh/dev/` and `docs/en/dev/` (tests check that `manifest.md`, `mcp.md` and `scripts-skills.md` cover every field) |
 | Text the model sees in `resources/` | Add a row to the ledger or change its row, then run `cargo xtask prompts` |
 | Dependencies | Run `cargo xtask notices` |
 | A part's behavior, format or UI | Its page in the blueprints |

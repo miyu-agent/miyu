@@ -39,7 +39,7 @@ dir = "web"             # the web part: a relative directory inside the package 
 - An appearance package may only have `[package]`, `[theme]`, `[depends]` and `[recommends]`; if you write other tables such as `protocol` or `[command]`, you get `wrong_kind`. An appearance package has no program, switches or config items.
 - `miyu check` checks the terminal theme file (it must exist, be a JSON object, and be at most 256 KiB) and whether the web directory exists.
 
-For details on every field, see [The manifest](../../authors/manifest.en.md#theme).
+For details on every field, see [The manifest](manifest.md#theme).
 
 ## Terminal themes
 
@@ -239,8 +239,8 @@ model = "mascot.json"
 
 Name and release your package as follows:
 
-- The rules for ids are the same as for other packages (see [Writing a package](../../authors/README.en.md)). The web appearance packages already in the package source are all named `webui-theme-<name>`, and the terminal's shipped default theme package is named `tui-theme-default`; name yours in the same pattern, so that it is clear at a glance which head it is for.
-- For packing and publishing to a package source, see [Writing a package](../../authors/README.en.md#publishing-to-the-package-source).
+- The rules for ids are the same as for other packages (see [Writing a package](packages.md)). The web appearance packages already in the package source are all named `webui-theme-<name>`, and the terminal's shipped default theme package is named `tui-theme-default`; name yours in the same pattern, so that it is clear at a glance which head it is for.
+- For packing and publishing to a package source, see [Writing a package](packages.md#publishing-to-the-package-source).
 
 ## Checking before release
 

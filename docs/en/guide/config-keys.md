@@ -297,7 +297,7 @@ This key controls the runtime log. It is on the settings page under `Advanced â†
 
 ## MCP servers
 
-`mcp.<server name>.*` configures the MCP servers you connect, with one table per server. These keys are not in the registered list, so you cannot change them with `miyu config set`; you need to edit the config file by hand, and the change takes effect as soon as you save. A server name starts with a lowercase letter and contains only lowercase letters, digits and `-`, 1 to 32 characters. For the details of each field, see [Connecting MCP servers](../../authors/mcp.en.md).
+`mcp.<server name>.*` configures the MCP servers you connect, with one table per server. These keys are not in the registered list, so you cannot change them with `miyu config set`; you need to edit the config file by hand, and the change takes effect as soon as you save. A server name starts with a lowercase letter and contains only lowercase letters, digits and `-`, 1 to 32 characters. For the details of each field, see [Connecting MCP servers](../dev/mcp.md).
 
 | Key | Type | Default | Allowed values | Description | Project config |
 |---|---|---|---|---|---|

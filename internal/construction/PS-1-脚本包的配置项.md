@@ -12,7 +12,7 @@
 
 - `packages.md`：种类那张表 `bundle` 一行多 `[settings]`；「配置项」开头写明 `bundle` 也能写，第 5 条脚本包。
 - `skills.md`「脚本」第 3 条：`MIYU_SETTINGS_JSON` 给谁、是什么、什么时候取。
-- 作者文档 `docs/authors/scripts-skills.md` 中英：「怎么跑」里一段脚本包的配置项，带例子。
+- 作者文档 `docs/zh/dev/scripts-skills.md` 中英：「怎么跑」里一段脚本包的配置项，带例子。
 
 ## 怎么做
 

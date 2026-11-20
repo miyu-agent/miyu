@@ -13,7 +13,7 @@
 | `internal/blueprint/` | 蓝图：Miyu 现在是什么样子，一个部件一页，包括格式、界面上的每一格、给模型看的文字，以及它们在哪些代码里、由哪些测试守着 | 改一个部件之前，先读它那一页 |
 | `internal/designs/` | 设计：定了什么、为什么这样定、没有选什么，按编号读，从 `00-设计理念.md` 开始 | 想知道某处为什么这样做，或者想改一个已经定下的做法时 |
 | `internal/construction/` | 施工单：一次改动怎么做、改蓝图的哪几节、怎么验收；`README.md` 是总表和施工单的格式 | 想知道某个功能是哪一步加进来的、当时是怎么验收的时 |
-| `docs/zh/reference/`、`docs/en/reference/`、`docs/authors/` | 协议参考、作者教程，有中文、英文两份，中文是正本 | 改了协议或者软件包的写法时 |
+| `docs/zh/reference/`、`docs/en/reference/`、`docs/zh/dev/`、`docs/en/dev/` | 协议参考、开发者文档（包括写软件包、扩展的教程），有中文、英文两份，中文是正本 | 改了协议或者软件包的写法时 |
 
 开发按照「蓝图 → 施工单 → 代码」的顺序进行：设计要变时，先改蓝图的那一页，再改代码；合并时代码和蓝图要对得上。
 
@@ -201,7 +201,7 @@ cargo xtask check
 - 量尺类的测试标上 `#[ignore]`，断言结果，不断言耗时。
 - 往坏的方向测：边界情况、奇怪的组合、故意把它弄坏。
 
-核心的 CI（`.github/workflows/ci.yml`）在 `ubuntu-24.04`、`macos-latest`、`windows-latest` 上各运行一遍 `cargo xtask check`；另外在 Linux 上运行长跑（名字以 `for_longer` 结尾的 `#[ignore]` 随机测试）和量尺，量尺超出预算也算失败。推送到 `main` 和以 `step/` 开头的分支时会运行 CI，向 `main` 提交的 PR 也会运行，从分叉提交的 PR 一样会运行；如果只改了 `internal/construction/`、`docs/authors/`、`internal/designs/`（`01-架构.md`、`23-性能预算.md`、`26-提示词.md` 除外），就不运行。涉及路径、文件系统、子进程、终端的改动，要等三个平台都通过以后再合并。
+核心的 CI（`.github/workflows/ci.yml`）在 `ubuntu-24.04`、`macos-latest`、`windows-latest` 上各运行一遍 `cargo xtask check`；另外在 Linux 上运行长跑（名字以 `for_longer` 结尾的 `#[ignore]` 随机测试）和量尺，量尺超出预算也算失败。推送到 `main` 和以 `step/` 开头的分支时会运行 CI，向 `main` 提交的 PR 也会运行，从分叉提交的 PR 一样会运行；如果只改了 `internal/construction/`、`docs/zh/dev/`、`internal/designs/`（`01-架构.md`、`23-性能预算.md`、`26-提示词.md` 除外），就不运行。涉及路径、文件系统、子进程、终端的改动，要等三个平台都通过以后再合并。
 
 ## 代码的规矩
 
@@ -223,7 +223,7 @@ cargo xtask check
 | 改了 | 还要改 |
 |---|---|
 | 协议的方法、参数、回应、出错、推送 | `docs/zh/reference/`、`docs/en/reference/` 两份；新方法要运行 `cargo xtask methods`，并在 `rights.rs` 的表里写明扩展能不能调用 |
-| 软件包、扩展、脚本、技能、MCP 的写法 | `docs/authors/` 里中文、英文两份 |
+| 软件包、扩展、脚本、技能、MCP 的写法 | `docs/zh/dev/`、`docs/en/dev/` 两份（`manifest.md`、`mcp.md`、`scripts-skills.md` 有测试核对每一格都写了） |
 | `resources/` 里给模型看的文字 | 在登记簿里加一行或者改那一行，然后运行 `cargo xtask prompts` |
 | 依赖 | 运行 `cargo xtask notices` |
 | 一个部件的行为、格式、界面 | 蓝图里它的那一页 |

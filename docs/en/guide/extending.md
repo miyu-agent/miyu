@@ -407,7 +407,7 @@ The read-only mark: if the server marks a tool `readOnlyHint: true`, you are not
 
 ## Doing more
 
-If you need a program that keeps running, an interface or dashboard page of your own, or you want to give these things to other people, make them into a package: see [Writing a Miyu package](../../authors/README.en.md) and [Writing an extension](../../authors/extensions.en.md). Put skills, scripts and templates in the package folder's `skills/`, `scripts/` and `commands/` respectively; the format is the same as described on this page.
+If you need a program that keeps running, an interface or dashboard page of your own, or you want to give these things to other people, make them into a package: see [Writing a Miyu package](../dev/packages.md) and [Writing an extension](../dev/extensions.md). Put skills, scripts and templates in the package folder's `skills/`, `scripts/` and `commands/` respectively; the format is the same as described on this page.
 
 You can also have the AI help you write them. The shipped "Authoring" package brings two skills:
 

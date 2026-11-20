@@ -10,7 +10,7 @@ The tools the AI can use come from the following places:
 
 - Tools from the shipped packages: see the full tables below.
 - Tools from packages and extensions you install: see their own descriptions. For `qq_*` and `tg_*` on chat platforms, see [Connecting chat platforms](heads/im.md); for the stickers' `meme_*`, and tools such as `render_image` and `ocr`, see [Add-ons](addons.md).
-- Scripts: in `~/.miyu/root/scripts/` under the data root (by default `~/.miyu`, on Windows `%USERPROFILE%\.miyu`), each file is one tool, and the tool is named after the file. For how to write a script, see [Things that work as files](../../authors/scripts-skills.en.md).
+- Scripts: in `~/.miyu/root/scripts/` under the data root (by default `~/.miyu`, on Windows `%USERPROFILE%\.miyu`), each file is one tool, and the tool is named after the file. For how to write a script, see [Things that work as files](../dev/scripts-skills.md).
 - MCP servers: the tool name is `mcp__<server name>__<tool name>`; characters other than letters, digits, `_` and `-` in the tool name are replaced with `_`, and the whole name is at most 64 characters long. A server that declares resources gets two more tools, `mcp__<server name>__list_resources` and `mcp__<server name>__read_resource`, which list and read its resources. For how to connect an MCP server, see [Extending Miyu](extending.md).
 
 Which tools a session has is decided by the session's preset (see [Personas and presets](personas-presets.md)). On top of that, a few more filters apply:

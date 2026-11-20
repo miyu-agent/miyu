@@ -9,7 +9,7 @@
 
 ### 做什么
 
-作者文档 `docs/authors/README.md`、`README.en.md` 的「发到软件源」后面另起一节「经系统源发」，原来那段并进来：
+作者文档 `docs/zh/dev/packages.md`、`README.en.md` 的「发到软件源」后面另起一节「经系统源发」，原来那段并进来：
 
 1. 装到哪：Linux 照 `XDG_DATA_DIRS`（系统包装进 `/usr/share/miyu/packages/<编号>/`），Linuxbrew 要用户把它的 `share` 写进去；
    macOS 照 Homebrew 前缀；Windows 没有。
