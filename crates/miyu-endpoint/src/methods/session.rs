@@ -31,7 +31,7 @@ pub(super) async fn create(
         .map(|text| models::record_or_none(core, &text))
         .transpose()?
         .flatten();
-    let vision = models::vision::command(core, params.vision.as_deref().map(Some))?;
+    let vision = models::vision::created(core, params.vision.as_deref())?;
     let line = models::line::command(params.compaction_line.map(Some))?;
     let memory = params
         .memory

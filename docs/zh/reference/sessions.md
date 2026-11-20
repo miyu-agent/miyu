@@ -66,7 +66,7 @@
 | `persona` | 字符串或 `null` | 使用哪个人格；`null` 表示不使用人格；不填写时使用配置项 `persona.default` |
 | `preset` | 字符串或 `null` | 使用哪个预设；不填写时使用 `preset.default`，两者都没有时使用 `full`；`null` 表示无工具，即一件工具都不给（这是以前的写法，仍然接受；新开的会话选「无功能」时写 `none`） |
 | `model` | 字符串 | `<供应商>/<模型>` 或 `@<池>`；不填写时记下此刻的 `models.chat`（如果它是池，就记下池），以后修改 `models.chat` 不会影响这个会话。三个固定的池（`@lite`、`@normal`、`@flagship`）是空的时，按没有填写处理 |
-| `vision` | 字符串 | 这个会话用哪个模型来看图，写法和 `model` 相同；不填写时跟随配置的 `models.vision`。会话创建好以后会记一条 `session.policy_changed`，和 `session.configure` 的 `vision` 相同 |
+| `vision` | 字符串 | 这个会话用哪个模型来看图，写法和 `model` 相同；不填写时跟随配置的 `models.vision`；填写空的固定池时也按没有填写处理。填写了并且解析得出时，会话创建好以后会记一条 `session.policy_changed`，和 `session.configure` 的 `vision` 相同 |
 | `compaction_line` | 整数 | 这个会话的压缩触发线，是窗口的百分比，取值 20 到 95；不填写时跟随配置的 `compaction.line`。会话创建好以后会记一条 `session.policy_changed`，和 `session.configure` 的 `compaction_line` 相同 |
 | `memory` | `persona`、`off` | `persona` 表示记忆跟随人格，`off` 表示不使用记忆；不填写时跟随人格。其他值（包括以前的 `session`）返回 `bad_params` |
 | `dirs` | 字符串的数组 | 另外加入的目录，和工作目录一样可以读写 |
@@ -99,7 +99,7 @@
 | `bad_params`（`-32602`） | 人格或预设的编号写法不对；`memory` 不是 `persona`、`off` 之一；`model`、`vision` 不是字符串；`compaction_line` 不是 20 到 95 之间的整数 |
 | `unknown_persona`、`persona_invalid` | 没有这个人格；或者人格的文件写错了（`data.problem` 说明是哪一层、哪个文件的第几行） |
 | `unknown_preset`、`preset_invalid` | 和上一行相同，只是对象换成预设 |
-| `unknown_model` | 无法解析 `model`、`vision`：写法不对、没有这家供应商、没有这个池，或者池是空的（`model` 填写空的固定池时不算，按没有填写处理） |
+| `unknown_model` | 无法解析 `model`、`vision`：写法不对、没有这家供应商、没有这个池，或者自己建的池是空的（三个固定的池是空的时不算，按没有填写处理） |
 | `dir_too_wide` | `dirs` 里有一项太宽（家目录、根目录，或者包含数据目录的目录） |
 | `internal_error`（`-32603`） | 核心无法创建会话 |
 
@@ -453,7 +453,7 @@ AI 做需要确认的事情时会停下来询问（推送 `tool.approval_request
 
 **参数**：`session`；下面七项至少写一项：
 - `model`：`<供应商>/<模型>` 或 `@<池>`；`null` 表示不再固定使用某一个模型，回到跟随配置的 `models.chat`（每一轮按那时的配置，配置改了就跟着改）。填写三个固定的池（`@lite`、`@normal`、`@flagship`）之一、这个池又是空的时，和 `null` 相同。
-- `vision`：用来看图的模型，写法和 `model` 相同：`<供应商>/<模型>` 或 `@<池>`；`null` 表示不再固定，回到跟随配置的 `models.vision`。会话的模型不能看图时，核心用这个模型把图片转成文字（没有固定时使用 `models.vision`）；如果固定的模型后来解析不出来（供应商或池被删除了），那张图片按没有转成文字处理，不会退回使用 `models.vision`。
+- `vision`：用来看图的模型，写法和 `model` 相同：`<供应商>/<模型>` 或 `@<池>`；`null` 表示不再固定，回到跟随配置的 `models.vision`；填写三个固定的池之一、这个池又是空的时，和 `null` 相同。会话的模型不能看图时，核心用这个模型把图片转成文字（没有固定时使用 `models.vision`）；如果固定的模型后来解析不出来（供应商或池被删除了），那张图片按没有转成文字处理，不会退回使用 `models.vision`。
 - `persona`：人格编号；`null` 表示无人格。
 - `preset`：预设编号；`null` 表示换成无工具。
 - `effort`：思考强度的一档，按这个会话此刻所用模型的档位检查（即 `model.list` 的 `facts.reasoning`；如果同一次调用还换了模型，就按换成的模型检查）。使用池的会话不能设置这一项，写了会返回 `bad_params`（`data.field` 是 `effort`），池里的每个成员按它自己的配置；`null` 表示回到跟随配置。这一项只影响这个会话：配置里的 `providers.<id>.models.<model>.effort` 是新会话的默认值。换到没有这一档的模型时使用配置，换回来以后又会用上这一档。

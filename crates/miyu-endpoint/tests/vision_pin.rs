@@ -210,6 +210,36 @@ async fn session_create_takes_vision_as_well() {
     );
 }
 
+/// 看图模型写了一个空的固定池，当成没写（施工 SIDE-2，同 `model`，设计 43 第三节第 3 条）：`session.configure` 的同写 `null`，
+/// 去掉钉着的、回到跟着 `models.vision`；`session.create` 的照没写 `vision`，建得成、一条都不记。没有的池照旧拒。
+#[tokio::test]
+async fn an_empty_fixed_pool_as_the_vision_model_counts_as_not_written() {
+    let home = Home::new();
+    let (core, _servers) = three(&home, 0).await;
+    let mut client = client(&core).await;
+    let session = client
+        .create_with("c1", json!({"cwd": "~", "titles": false}))
+        .await;
+    let reply = pin(&mut client, "c2", &session, json!("c/w")).await;
+    assert_eq!(reply["result"], json!({}), "{reply}");
+    let reply = pin(&mut client, "c3", &session, json!("@lite")).await;
+    assert_eq!(reply["result"], json!({}), "空的固定池同 null：{reply}");
+    assert!(status(&core, &session).await.get("vision").is_none());
+    assert_eq!(
+        pins(&home, &session),
+        [json!({"vision": "c/w"}), json!({"vision": ""})]
+    );
+    let reply = pin(&mut client, "c4", &session, json!("@nope")).await;
+    assert_eq!(reason(&reply), Some("unknown_model"), "{reply}");
+    let params = json!({"cwd": "~", "titles": false, "vision": "@flagship"});
+    let reply = client.call("c5", "session.create", params).await;
+    let made = reply["result"]["session"]
+        .as_str()
+        .unwrap_or_else(|| panic!("写了空的固定池照样建得成：{reply}"));
+    assert!(pins(&home, made).is_empty(), "照没写，一条都不记");
+    assert!(status(&core, made).await.get("vision").is_none());
+}
+
 /// 事件流订阅的回应也带钉的看图模型（施工 CT-1补，终端照它画会话设置）：没钉的不写；钉了以后、核心重启照日志载入以后都是
 /// `c/w`。带不带 `after` 都一样。
 #[tokio::test]

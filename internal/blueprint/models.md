@@ -319,7 +319,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 
 **`session.create`** 多一个参数 `model`（字符串，可以不写，写 `null` 等于没写，8-8）：照「两种写法」，照这时不算项目配置的最终值解析（第三条第 1 条，`miyu_models::reference::record`）：模型要那一家配了（模型名不查），池要至少有一个认得出的成员。记下的写进 `session.created` 的 `model`。不是字符串的：`bad_params`。解析不出：`unknown_model`，什么都不造，原话记一行 `DEBUG unknown model`。同一个命令编号重发的，照样先解析再找上一次造的。
 
-`session.create` 另多一个参数 `vision`（字符串，可以不写，写 `null` 等于没写，施工 VM-1）：写法、解析同 `model`，解析不出 `unknown_model`、什么都不造。造好以后照 `session.configure` 的 `vision` 记一条 `session.policy_changed`（命令编号是这条请求的接 `/vision`），回应的 `events` 多它，排在 `project` 那一条后面。
+`session.create` 另多一个参数 `vision`（字符串，可以不写，写 `null` 等于没写，施工 VM-1）：写法、解析同 `model`，解析不出 `unknown_model`、什么都不造；写的是空的固定池时按没有写处理，不记这一条（施工 SIDE-2）。造好以后照 `session.configure` 的 `vision` 记一条 `session.policy_changed`（命令编号是这条请求的接 `/vision`），回应的 `events` 多它，排在 `project` 那一条后面。
 
 **`session.configure`**（命令，8-10）
 
@@ -338,7 +338,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 1. 一格都没写、不是字符串也不是 `null`、是空字（`""`）：`bad_params`，不找会话。先找会话，找不到的回的是找不到。再解析 `model`，解析不出：`unknown_model`，什么都不记，原话记一行 `DEBUG unknown model`。
 2. 照这时不算项目配置的最终值解析（`record`，和 `session.create` 的 `model` 一样）：模型要那一家配了，池要至少一个认得出的成员，解析出的交给内核（`Configure`）。
 3. `effort` 照会话这时的模型的档位查（`models/effort.rs`）：同一条换了模型的是换成的那个（`null` 的是这一刻的 `models.chat`），没换的是会话记着的引用（`Handle::current` 的 `model`，SM-1 补：原来照 `subscribe` 的 `model.ref`，刚换了模型、还没开回合的那还是上一轮的；没记的照这一刻的 `models.chat`）。模型照它自己的档位（「怎么走」第十一条第 1 条），池一档都没有，写了就 `bad_params`（SM-1 补，项目主人 10-30：「池子不应该能设置思考强度」），用着池的会话以前记的那一档也不用，池里每个成员照它自己的配置，换回模型又用上。名字先规整（`none`、`disabled` 读成 `off`），不在里面的：`bad_params`，`data.field` 是 `effort`，原话记一行 `DEBUG unknown effort`，什么都不记（一起写的模型也不换）。`null` 不查。查过的交给内核（`SetEffort`），命令编号是这条请求的接 `/effort`。
-4. 和会话现在记着的一样：什么都不记，照样回 `{}`。不一样的，内核记一条 `session.policy_changed`，落了盘才回应；订阅着的先收到推送。模型、思考强度、人格和预设各记各的一条，照这个先后。`vision`（施工 VM-1）同 `model` 先解析（解析不出的 `unknown_model`，什么都不记，一起写的模型也不换），交给内核 `SetVision`，命令编号是这条请求的接 `/vision`，排在上下文上限后面、人格和预设前面。`view.status` 照会话这一刻的写 `vision`，钉了当场推，没钉的不写；`subscribe` 回应、`model.changed` 不带它。
+4. 和会话现在记着的一样：什么都不记，照样回 `{}`。不一样的，内核记一条 `session.policy_changed`，落了盘才回应；订阅着的先收到推送。模型、思考强度、人格和预设各记各的一条，照这个先后。`vision`（施工 VM-1）同 `model` 先解析（解析不出的 `unknown_model`，什么都不记，一起写的模型也不换；写的是空的固定池时和写 `null` 相同，施工 SIDE-2），交给内核 `SetVision`，命令编号是这条请求的接 `/vision`，排在上下文上限后面、人格和预设前面。`view.status` 照会话这一刻的写 `vision`，钉了当场推，没钉的不写；`subscribe` 回应、`model.changed` 不带它。
 5. 以后别的临时开关（`04-核心协议.md` 第九节）加进来也是这个方法。
 
 **`subscribe`** 的回应多一格 `model`（8-10）：`{"ref":…,"endpoint":…,"model":…}`，是会话接下来请求的。轮换的池没有 `endpoint`、`model`。一个模型都没有的不写这一格。8-18 多一格 `effort`：`{"ref":…,"endpoint":…,"model":…,"effort":{"level":"high","from":"session"}}`，接下来那个模型真用的一档和从哪来：`session` 是会话记的那一档（施工 SM-1），`system` 是配置（照 `config.get` 说的来源，「怎么走」第十一条第 4 条）；请求里什么都不带的、轮换的池不写。会话刚换的一档、刚换的模型当场照预演的写（施工 MC-1，「怎么走」第六条第 3 条第 5 款；原来下一个回合开始才算进来），请求照旧下一个回合开始照它。
@@ -505,7 +505,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 
 | 原因码 | 什么时候 |
 |---|---|
-| `unknown_model` | `session.create`、`session.configure`、`model.call`（8-20）的 `model` 解析不出：写法不对（连同以前的挡位名）、没有这家供应商、没有这个池、人自己建的池是空的。三个固定池是空的时不算（施工 SIDE-1）：`model.call` 使用 `models.chat`，`session.create` 按没有写处理，`session.configure` 和写 `null` 相同 |
+| `unknown_model` | `session.create`、`session.configure`、`model.call`（8-20）的 `model` 解析不出：写法不对（连同以前的挡位名）、没有这家供应商、没有这个池、人自己建的池是空的。三个固定池是空的时不算（施工 SIDE-1；`vision` 同样，施工 SIDE-2）：`model.call` 使用 `models.chat`，`session.create` 按没有写处理，`session.configure` 和写 `null` 相同 |
 | `unknown_provider` | `model.list`、`provider.test` 的 `provider` 不是配好了的（`provider.test` 的 8-11 起） |
 | `no_model` | `model.call` 没有能用的模型：没写 `model`、`models.chat` 也没配；那一家用不了、key 一个都取不到（8-20）。`data.message` 是原话 |
 | `cooling` | `model.call` 的候选不止一个、全在冷却，没发（8-20）。`data.message` 是原话，`data.wait_ms` 是最早恢复的那一个还要多久 |

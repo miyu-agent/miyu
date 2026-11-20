@@ -24,7 +24,7 @@
 | `session.configure` 的 `model` | `unknown_model`，不更换 | 和写 `null` 相同，回到跟随 `models.chat` |
 
 - 核心在运行日志里记一行 `INFO empty pool fallback pool=<池名>`，方便以后查。不告诉模型，不在界面和群里提示。
-- 没有变化的：人自己建的池是空的、池不存在、引用写错，仍然是 `unknown_model`；`vision`（看图模型）写了空的固定池仍然是 `unknown_model`；会话已经记下的引用在回合开始时解析不出，仍然按原来的规矩退回 `models.chat` 并记 `session.policy_changed`。
+- 没有变化的：人自己建的池是空的、池不存在、引用写错，仍然是 `unknown_model`；`vision`（看图模型）写了空的固定池在这一步仍然是 `unknown_model`（施工 SIDE-2 改成同一个规矩）；会话已经记下的引用在回合开始时解析不出，仍然按原来的规矩退回 `models.chat` 并记 `session.policy_changed`。
 
 蓝图 `models.md`（旁路请求第 2 条、`model.call` 第 2 条、出错的两张表、测试表）、`protocol.md` 的原因码表，设计 43 第三节和第六节，协议参考 `config.md`、`sessions.md` 中英文一起修改。
 

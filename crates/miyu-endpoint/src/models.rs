@@ -2,7 +2,7 @@
 //! 模型，每个模型每一格资料的值和来源、状态（思考强度的那一格多 `key`，施工 8-18（补））；在用的目录。池、用途的 `vision`
 //! （施工 8-8）：池写的成员和怎么分，派子代理能不能选、给模型看的说明（施工 8-8 补），两种用途各配的引用，没配的是
 //! `null`。8-8 的 `tiers` 8-8 补去掉了。模型、key 的冷却（施工 8-9）照核心一份的冷却表，照这一刻说。`session.create` 的
-//! `model` 怎么解析也在这里（[`record`]，施工 8-8）。`session.configure` 的参数（[`ConfigureParams`]，施工 8-10；`effort`
+//! `model` 怎么解析也在这里（[`record_or_none`]，施工 8-8）。`session.configure` 的参数（[`ConfigureParams`]，施工 8-10；`effort`
 //! 施工 SM-1 加回来，照会话这时的模型的档位查在 `models/effort.rs`；钉的看图模型 `vision` 施工 VM-1，`models/vision.rs`）、
 //! `subscribe` 回应的 `model`（[`next`]，施工 8-10；8-18 多 `effort`，从哪来是会话或者配置的哪一层，8-18（补）、SM-1）也在这里。
 //! `model.call` 经一次性入口叫一次模型（`models/call.rs`，施工 8-20）。能出向量的模型多一格 `embedding`（施工 R-5 再补，照资源
@@ -316,33 +316,26 @@ pub(crate) fn next(next: &Next) -> Option<Value> {
     Some(Value::Object(written))
 }
 
-/// `session.create`、`session.configure` 的 `model`（施工 SIDE-1）：同 [`record`]，只是写的是一个空的固定池时当成没写模型
-/// （设计 43 第三节第 3 条，2026-11-20 项目主人定），交回没有，记一行 `INFO empty pool fallback`。
+/// `session.create`、`session.configure` 的 `model`（施工 8-8）、`vision`（施工 VM-1）：照这时的配置查过，交回会话记下的引用
+/// （模型或 `@池`）。照不算项目配置的最终值：模型这一块项目配置里本来就不能写。写的是一个空的固定池时当成没写（施工
+/// SIDE-1、SIDE-2，设计 43 第三节第 3 条，2026-11-20 项目主人定），交回没有，记一行 `INFO empty pool fallback`。
 ///
 /// # Errors
 ///
-/// 同 [`record`]。
+/// 解析不出：写法不对（连同以前的挡位名）、没有这家供应商、没有这个池、人自己建的池是空的（`unknown_model`，原话记一行
+/// `DEBUG`）。
 pub(crate) fn record_or_none(core: &Core, text: &str) -> Result<Option<String>, Refusal> {
     let values = core.config().resolved().values();
     if let Some(pool) = miyu_models::reference::empty_fixed_pool(&values, text) {
         tracing::info!(target: "miyu::endpoint", pool, "empty pool fallback");
         return Ok(None);
     }
-    record(core, text).map(Some)
-}
-
-/// 钉成的引用（看图模型，施工 VM-1；`session.create` 的 `model` 经 [`record_or_none`]，施工 8-8）：照这时的配置查过，交回记下的
-/// 引用（模型或 `@池`）。照不算项目配置的最终值：模型这一块项目配置里本来就不能写。
-///
-/// # Errors
-///
-/// 解析不出：写法不对（连同以前的挡位名）、没有这家供应商、没有这个池、池是空的（`unknown_model`，原话记一行 `DEBUG`）。
-pub(crate) fn record(core: &Core, text: &str) -> Result<String, Refusal> {
-    let values = core.config().resolved().values();
-    miyu_models::reference::record(&values, text).map_err(|NoModel(why)| {
-        tracing::debug!(target: "miyu::endpoint", why = %why, "unknown model");
-        Refusal::UNKNOWN_MODEL
-    })
+    miyu_models::reference::record(&values, text)
+        .map(Some)
+        .map_err(|NoModel(why)| {
+            tracing::debug!(target: "miyu::endpoint", why = %why, "unknown model");
+            Refusal::UNKNOWN_MODEL
+        })
 }
 
 /// 抄一份这一刻的配置：每个用得到的引用（key，和地址是环境变量的引用时，施工 8-6b）都先取好值，拉列表、`model.list`

@@ -7,7 +7,7 @@
 //! 再带上它在哪（`untrusted_project`，施工 8-2）。查配置的三个方法在 `config/methods.rs`（施工 8-2），改配置的 `config.set`、
 //! 信任项目配置的 `config.trust` 在 `config/set.rs`、`config/trusting.rs`（施工 8-3）。密钥的 `secret.set`、`secret.delete`、
 //! `secret.list` 在 `secrets.rs`（施工 8-5）。`model.list` 在 `models.rs`（施工 8-7）。`session.create` 带 `model` 的照这时的
-//! 配置解析好再造，解析不出的回 `unknown_model`、什么都不造（施工 8-8，`models::record`）。换模型 `session.configure`：先查
+//! 配置解析好再造，解析不出的回 `unknown_model`、什么都不造（施工 8-8，`models::record_or_none`）。换模型 `session.configure`：先查
 //! 参数、再找会话、再照这时的配置解析，交给内核，回 `{}`（施工 8-10）。给人看的字 `human.get` 在 `human.rs`（施工 W-1）。
 //! 列文件、找文件、换真实位置、分块读 `fs.list`、`fs.find`、`fs.realpath`、`fs.read` 在 `files.rs`
 //! （施工 W-2、W-3、W-6）。第一次接入的
