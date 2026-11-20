@@ -3,9 +3,19 @@
 use std::time::Duration;
 
 use miyu_kernel::event::{Transient, TransientBody};
-use miyu_kernel::request::{Difference, Role};
+use miyu_kernel::request::{Difference, Request, Role};
 
 use crate::TARGET;
+
+/// 请求的工具面写成一格（施工 FX-8）：工具名照请求里的先后、用逗号连起来；没有工具的没有这一格。工具名是英文的编号，不是对话的字。
+pub(crate) fn tool_names(request: &Request) -> Option<String> {
+    let names: Vec<&str> = request
+        .tools
+        .iter()
+        .map(|tool| tool.name.as_str())
+        .collect();
+    (!names.is_empty()).then(|| names.join(","))
+}
 
 /// 前缀第一处不同在哪，写成一个词：`tools`、`system`，或者 `message:<第几条，从 0 数起>:<角色>`。
 pub(crate) fn where_(changed: &Difference) -> String {

@@ -232,10 +232,15 @@ impl Chosen {
         }
     }
 
-    /// 换预设时记忆照开会话时的（施工 P-2 下，L3）：人格记忆开不开改成 `open`，没开的那几个照 `features` 重新算，指纹不变。
+    /// 换预设、改了预设文件时的记忆（施工 P-2 下，L3；施工 FX-8 改）：开会话时没开记忆的（`open` 是假）照旧不开，开了的照这个
+    /// 预设开不开。没开的那几个照 `features` 重新算，指纹不变。原来开了记忆的会话换到没开记忆的预设也照开着，记忆、联想、名片
+    /// 照样每轮注入（项目主人的群会话 2026-11-20 换到「无功能」以后撞见）。
     #[must_use]
     pub fn keeping_memory(mut self, open: bool, features: &Features) -> Chosen {
-        self.file.features.insert(MEMORY.to_string(), open);
+        let wanted = !self.off.iter().any(|feature| feature == MEMORY);
+        self.file
+            .features
+            .insert(MEMORY.to_string(), open && wanted);
         self.off = off(&self.file, features);
         self
     }

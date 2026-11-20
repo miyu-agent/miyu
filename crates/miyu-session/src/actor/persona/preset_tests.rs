@@ -1,4 +1,5 @@
-//! 改了预设，下一个回合换上（施工 P-2 下）：工具面照新的预设重新筛，以前就有的照旧快照里的原样；记忆照开会话时的；装了没开
+//! 改了预设，下一个回合换上（施工 P-2 下）：工具面照新的预设重新筛，以前就有的照旧快照里的原样；记忆开会话时开了的照预设开关
+//! （施工 FX-8），开会话时没开的照旧不开；装了没开
 //! 的那一行跟着变；写错了的照旧；P-2（中）造的没有指纹的不换。
 
 use super::test_support::{look_now, names, setup, setup_in, write_preset};
@@ -46,8 +47,9 @@ fn a_changed_preset_refilters_the_face_and_keeps_old_entries() {
     assert!(!snapshot.system.contains(OFF));
 }
 
+/// 记忆（施工 FX-8 改）：开会话时开了的，预设改成关了就关，范围照旧；开会话时没开的，预设改成开了也照旧关着。
 #[test]
-fn memory_stays_as_it_was_when_the_session_was_made() {
+fn memory_follows_the_preset_only_if_the_session_was_made_with_it() {
     let (_scratch, root, refresh) = setup("preset-memory", "");
     write_preset(
         &root,
@@ -56,13 +58,16 @@ fn memory_stays_as_it_was_when_the_session_was_made() {
     let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
         panic!("改了要换");
     };
-    assert_eq!(
-        names(&snapshot),
-        ["read", "remember"],
-        "记忆照开会话时的开着"
-    );
+    assert_eq!(names(&snapshot), ["read"], "预设关了记忆，工具跟着拿掉");
     assert!(!snapshot.system.contains(OFF), "记忆也不进那一行");
-    assert_eq!(snapshot.memory.as_deref(), Some("persona"));
+    assert_eq!(snapshot.memory.as_deref(), Some("persona"), "范围照旧");
+    assert!(
+        snapshot
+            .preset
+            .as_ref()
+            .is_some_and(|pin| pin.off.iter().any(|id| id == "memory")),
+        "快照记着记忆没开，回合开始照它不问记忆"
+    );
     let (_scratch, root, refresh) = setup("preset-memory-off", "[software]\nmemory = false\n");
     assert_eq!(names(&refresh.snapshot), ["read", "shell"]);
     write_preset(&root, "");

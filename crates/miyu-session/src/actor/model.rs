@@ -39,7 +39,8 @@ mod overdue;
 
 impl Actor {
     /// 请求模型：交给端口，记下叫停它的那一头和这一刻。前缀和上一次比变了的，运行日志里写上第一处不同在哪
-    /// （施工 3-9 下）：缓存没命中时，一看就知道是不是我们的前缀变了。
+    /// （施工 3-9 下）：缓存没命中时，一看就知道是不是我们的前缀变了。工具面上的工具名照请求里的先后、用逗号连起来一起记
+    /// （施工 FX-8）：只记名字，事后照它核对这一次请求给了模型哪些工具；没有工具的不记这一格。
     pub(super) fn call(&mut self, seen: Seq, request: Request, changed: Option<Difference>) {
         let model = self.model.model();
         tracing::info!(
@@ -48,6 +49,7 @@ impl Actor {
             endpoint = model.endpoint.as_str(),
             model = model.model.as_str(),
             changed = changed.map(|changed| where_(&changed)),
+            tools = crate::lines::tool_names(&request),
             "request"
         );
         let (stop, cancel) = oneshot::channel();
@@ -202,7 +204,7 @@ impl Actor {
         let extensions = self.extension_injections(said.clone());
         let (mut injected, extended, docs) = tokio::join!(
             hooks::hooks(
-                self.tools.memory(),
+                self.remembering(),
                 knowledge,
                 (present, speakers),
                 said,
@@ -226,6 +228,17 @@ impl Actor {
             injected,
             replaced,
         }
+    }
+
+    /// 回合开始问不问记忆（施工 FX-8）：接了记忆的端口、快照里的预设也开着记忆的。中途换到没开记忆的预设（例如「无功能」），
+    /// 端口还接着（换回来时接着用），这里不再问：常驻的摘要、名片、联想都不再注入，已经注入过的照旧在历史里。
+    fn remembering(&self) -> Option<(crate::memory::Calls, miyu_kernel::time::UtcOffset)> {
+        let off = self
+            .persona
+            .as_ref()
+            .and_then(|refresh| refresh.snapshot.preset.as_ref())
+            .is_some_and(|pin| pin.off.iter().any(|id| id == miyu_policy::preset::MEMORY));
+        self.tools.memory().filter(|_| !off)
     }
 
     /// 自动想起问谁（施工 K-6 下，`knowledge.md` 第九条）：会话这一刻的工具面上有 `kb_search` 的（知识库这个包装着、预设开着、

@@ -223,10 +223,22 @@ fn chosen_lists_installed_features_that_are_off_in_order() {
     );
     let full = Chosen::new("full".to_string(), PresetFile::default(), &installed());
     assert!(full.off.is_empty());
+    // 记忆（施工 FX-8）：开会话时开了的，照这个预设开不开；开会话时没开的照旧不开。
     let kept = Chosen::new("dev".to_string(), read(DEV).unwrap(), &installed())
         .keeping_memory(true, &installed());
-    assert_eq!(kept.off, ["qq", "roleplay"], "记忆照开会话时的");
+    assert_eq!(
+        kept.off,
+        ["memory", "qq", "roleplay"],
+        "预设没开记忆的，开会话时开了也关"
+    );
     assert_eq!(kept.digest, chosen.digest, "指纹照找到的那一份");
+    let full = || Chosen::new("full".to_string(), PresetFile::default(), &installed());
+    assert!(full().keeping_memory(true, &installed()).off.is_empty());
+    assert_eq!(
+        full().keeping_memory(false, &installed()).off,
+        ["memory"],
+        "开会话时没开的照旧不开"
+    );
 }
 
 /// 以前的快照记的是包的编号（施工 F-3 上）：照现在的功能读一样的，算同一回事，不换快照。

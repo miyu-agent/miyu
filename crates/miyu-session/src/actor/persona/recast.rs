@@ -1,6 +1,6 @@
 //! 中途换人格、预设（施工 P-13，`internal/designs/16-人格与预设.md` Y5）：内核记下要换成的（`Session::persona`、
 //! `Session::preset`），压缩那一轮照旧；下一个回合开始照它们重拼快照：人格的字换成新人格的，预设照新的重新筛工具面（记忆
-//! 开不开照开会话时的）。跟着人格的记忆挪到新人格那一间，从换的那一条起算（`memory/recast.rs`）；知识库照新人格查。
+//! 开会话时开了、新预设也开着的才开，施工 FX-8）。跟着人格的记忆挪到新人格那一间，从换的那一条起算（`memory/recast.rs`）；知识库照新人格查。
 //! 新人格、新预设找不着的照旧，记一行，下一个回合再试。
 
 use std::sync::Arc;
@@ -62,7 +62,7 @@ pub(super) fn texts(refresh: &Refresh, persona: Option<&str>) -> Result<PersonaT
     }
 }
 
-/// 新预设 `id`：照现在的几层找；记忆开不开照开会话时的（快照里的范围），场所显示不了图片的照旧扣下要图的包；全局开关照这一轮
+/// 新预设 `id`：照现在的几层找；记忆开会话时开了（快照里的范围）、新预设也开着的才开（施工 FX-8），场所显示不了图片的照旧扣下要图的包；全局开关照这一轮
 /// 的配置 `values`（施工 X-27）。
 pub(super) fn preset(refresh: &Refresh, id: &str, values: &Values) -> Result<Chosen, String> {
     let places = refresh

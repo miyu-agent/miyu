@@ -7,13 +7,17 @@
 
 mod support;
 
+use std::sync::Arc;
 use std::time::Duration;
 
 use miyu_kernel::event::{Body, ErrorClass};
 use miyu_kernel::session::{Command, Outcome};
+use miyu_kernel::tool::Access;
 use miyu_log::{LevelFilter, Memory};
 use miyu_session::testkit::{Play, Script};
 use miyu_session::{Pushed, Stopped};
+use miyu_tool::testkit::{Act, Fake};
+use miyu_tool::{Catalog, Tool};
 use support::{Home, ask, say, stop, until_turn_ends, watch};
 
 /// 一行去掉时刻，用时换成 `_`：这两样每次不一样。
@@ -86,8 +90,13 @@ async fn the_log_says_what_happened_and_nothing_that_was_said() {
     let s = session.as_str();
     wait_for(&memory, &format!("session  {s} closed")).await;
 
-    // 另一个会话：端口一叫就 panic。
-    let broken = home.create(&Script::new([Play::Panics])).await;
+    // 另一个会话：端口一叫就 panic。它有两件工具：请求那一行照请求里的先后记工具名（施工 FX-8）。
+    let tools = Catalog::new([
+        Fake::new("read", Access::Read, Act::Echo) as Arc<dyn Tool>,
+        Fake::new("shell", Access::Execute, Act::Echo),
+    ])
+    .expect("合写法");
+    let broken = home.create_with(&Script::new([Play::Panics]), &tools).await;
     let b = broken.id().as_str().to_string();
     // 这句话落了盘就回应了，请求模型时端口才 panic。回应扣着等后台同步的，actor 退出时再同步一次照接受交出去（施工 V-19）。
     let said = ask(&broken, "cmd-1", say("早上好")).await;
@@ -139,10 +148,11 @@ async fn the_log_says_what_happened_and_nothing_that_was_said() {
     assert_eq!(theirs.len(), 3, "{theirs:#?}");
     assert_eq!(
         theirs[0],
-        format!("INFO  session  {b} created persona=engineer venue=local tools=0")
+        format!("INFO  session  {b} created persona=engineer venue=local tools=2")
     );
     assert!(
-        theirs[1].starts_with(&format!("INFO  session  {b} request seen=")),
+        theirs[1].starts_with(&format!("INFO  session  {b} request seen="))
+            && theirs[1].ends_with(" tools=read,shell"),
         "{theirs:#?}"
     );
     assert_eq!(theirs[2], format!("ERROR session  {b} panicked, stopped"));

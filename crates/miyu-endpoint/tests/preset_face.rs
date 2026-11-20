@@ -20,7 +20,7 @@ use crate::support::venues::configured_core;
 use crate::support::*;
 
 /// 基础系统两件、记忆三件，照包登记。
-fn catalog() -> Catalog {
+pub(crate) fn catalog() -> Catalog {
     let fake = |name: &str| -> Arc<dyn Tool> { Fake::new(name, Access::Read, Act::Echo) };
     Catalog::in_packages([
         // 施工 BS-1 上中起一件一个包。
