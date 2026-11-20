@@ -27,7 +27,7 @@
 | [`session.retitle`](#sessionretitle) | 让模型重新起一个标题 |
 | [`session.viewing`](#sessionviewing) | 头告诉核心自己正在显示哪个会话 |
 | [`session.terminal`、`session.set_terminal`](#sessionterminalsessionset_terminal) | 获取终端会话，或者把终端会话指向其他会话 |
-| [`session.configure`](#sessionconfigure) | 更换模型、看图模型、人格、预设、思考强度、压缩触发线 |
+| [`session.configure`](#sessionconfigure) | 更换模型、多模态模型、人格、预设、思考强度、压缩触发线 |
 | [`session.fork`](#sessionfork) | 从一个会话分叉出子会话 |
 | [`session.delete`](#sessiondelete) | 删除会话 |
 | [`session.prompts`](#sessionprompts) | 列出会话里问过的话 |
@@ -449,11 +449,11 @@ AI 做需要确认的事情时会停下来询问（推送 `tool.approval_request
 
 ## `session.configure`
 
-更换这个会话使用的模型、看图模型、人格、预设、思考强度、压缩触发线，这些从下一轮开始生效；上下文上限从下一次请求开始生效。更换模型、思考强度时，显示当场变化，请求从下一轮开始变化：`subscribe` 回应和 `view.status` 里的 `model` 当场按换成的值写，切换到其他会话再切回来、重新连接以后也是新的值。
+更换这个会话使用的模型、多模态模型、人格、预设、思考强度、压缩触发线，这些从下一轮开始生效；上下文上限从下一次请求开始生效。更换模型、思考强度时，显示当场变化，请求从下一轮开始变化：`subscribe` 回应和 `view.status` 里的 `model` 当场按换成的值写，切换到其他会话再切回来、重新连接以后也是新的值。
 
 **参数**：`session`；下面七项至少写一项：
 - `model`：`<供应商>/<模型>` 或 `@<池>`；`null` 表示不再固定使用某一个模型，回到跟随配置的 `models.chat`（每一轮按那时的配置，配置改了就跟着改）。填写三个固定的池（`@lite`、`@normal`、`@flagship`）之一、这个池又是空的时，和 `null` 相同。
-- `vision`：用来看图的模型，写法和 `model` 相同：`<供应商>/<模型>` 或 `@<池>`；`null` 表示不再固定，回到跟随配置的 `models.vision`；填写三个固定的池之一、这个池又是空的时，和 `null` 相同。会话的模型不能看图时，核心用这个模型把图片转成文字（没有固定时使用 `models.vision`）；如果固定的模型后来解析不出来（供应商或池被删除了），那张图片按没有转成文字处理，不会退回使用 `models.vision`。
+- `vision`：多模态模型，写法和 `model` 相同：`<供应商>/<模型>` 或 `@<池>`；`null` 表示不再固定，回到跟随配置的 `models.vision`；填写三个固定的池之一、这个池又是空的时，和 `null` 相同。会话的模型不能看图时，核心用这个模型把图片转成文字（没有固定时使用 `models.vision`）；如果固定的模型后来解析不出来（供应商或池被删除了），那张图片按没有转成文字处理，不会退回使用 `models.vision`。
 - `persona`：人格编号；`null` 表示无人格。
 - `preset`：预设编号；`null` 表示换成无工具。
 - `effort`：思考强度的一档，按这个会话此刻所用模型的档位检查（即 `model.list` 的 `facts.reasoning`；如果同一次调用还换了模型，就按换成的模型检查）。使用池的会话不能设置这一项，写了会返回 `bad_params`（`data.field` 是 `effort`），池里的每个成员按它自己的配置；`null` 表示回到跟随配置。这一项只影响这个会话：配置里的 `providers.<id>.models.<model>.effort` 是新会话的默认值。换到没有这一档的模型时使用配置，换回来以后又会用上这一档。
@@ -462,7 +462,7 @@ AI 做需要确认的事情时会停下来询问（推送 `tool.approval_request
 
 更换人格、预设时会先压缩一轮：核心马上用旧人格把前面的对话压缩成摘要，下一轮换上新的人格或预设，从摘要接着对话。跟随人格的记忆从这一轮开始记在新人格的那一间里，以前的记忆留在原来那一间里。
 
-**回应**：`{}`。变化时推送 `session.policy_changed`；更换模型、思考强度时，还会当场推送一条 `model.changed`（`why` 是 `turn`）：换成模型时带 `endpoint`、`model`，`effort` 能算出来时才带；换成池时只有 `ref`，窗口、压缩线保持原样；下一轮开始真正换过去时，如果和刚才推送的一样，就不再推送，如果不一样（池固定了某个成员、窗口变了），就再推送一条。更换上下文上限时，`subscribe` 回应和 `view.status` 里的 `limits` 当场更换（`window` 是生效的窗口，`context` 是上限，没有设置时不写）。此后 `subscribe` 回应和 `model.changed` 里的 `model.effort` 是 `{"level", "from"}`：`from` 为 `session` 表示这是会话记下的那一档，为 `system` 表示来自配置。`session.list`、`subscribe` 回应里的 `persona`、`preset` 马上按换成的值写（换成无工具时写 `preset: null`、`no_tools: true`）。固定了看图模型时，`view.status` 马上带上 `vision`，去掉以后不写；固定了压缩触发线时，同样马上带上 `compaction_line`，并且从下一轮开始，`limits.compaction_line` 按它更换。
+**回应**：`{}`。变化时推送 `session.policy_changed`；更换模型、思考强度时，还会当场推送一条 `model.changed`（`why` 是 `turn`）：换成模型时带 `endpoint`、`model`，`effort` 能算出来时才带；换成池时只有 `ref`，窗口、压缩线保持原样；下一轮开始真正换过去时，如果和刚才推送的一样，就不再推送，如果不一样（池固定了某个成员、窗口变了），就再推送一条。更换上下文上限时，`subscribe` 回应和 `view.status` 里的 `limits` 当场更换（`window` 是生效的窗口，`context` 是上限，没有设置时不写）。此后 `subscribe` 回应和 `model.changed` 里的 `model.effort` 是 `{"level", "from"}`：`from` 为 `session` 表示这是会话记下的那一档，为 `system` 表示来自配置。`session.list`、`subscribe` 回应里的 `persona`、`preset` 马上按换成的值写（换成无工具时写 `preset: null`、`no_tools: true`）。固定了多模态模型时，`view.status` 马上带上 `vision`，去掉以后不写；固定了压缩触发线时，同样马上带上 `compaction_line`，并且从下一轮开始，`limits.compaction_line` 按它更换。
 
 **出错**：`bad_params`（一项都没有写、写了空字符串、类型不对；子代理更换人格、预设时，`data.field` 是那一项；`effort` 不在此刻所用模型的档位里时，`data.field` 是 `effort`，什么都不更换；`context` 不是非负整数；`context` 太小时，`data.field` 是 `context`、`data.min` 是最少需要多少，什么都不更换；`compaction_line` 不是整数，或者不在 20 到 95 之间时，`data.field` 是 `compaction_line`，什么都不更换）；`unknown_model`：无法解析 `model`、`vision`，什么都不更换；`unknown_persona`；`unknown_preset`；`turn_running`：更换人格、预设时有回合正在进行（需要等这一轮完成）。
 

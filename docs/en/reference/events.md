@@ -27,7 +27,7 @@ The exact shape of each kind is in the repository's `internal/designs/samples/ev
 | `kind` | Meaning |
 |---|---|
 | `session.created` | The session was created. This is the session's event 1, and it records the venue, working directory, persona, preset, model and so on. |
-| `session.policy_changed` | The session's settings changed: the permissions (`permission: {"level", "read_only"}`, with `from` holding the settings before the change in the same two fields; older logs have no `from`), the model, the reasoning effort (`effort: {"level"}`, where `null` goes back to following the config), the context limit (`context: {"tokens"}`, where `null` removes it), the vision model (`vision`, empty when removed), the compaction line (`compaction_line: {"percent"}`, where `null` removes it), or the whole policy. |
+| `session.policy_changed` | The session's settings changed: the permissions (`permission: {"level", "read_only"}`, with `from` holding the settings before the change in the same two fields; older logs have no `from`), the model, the reasoning effort (`effort: {"level"}`, where `null` goes back to following the config), the context limit (`context: {"tokens"}`, where `null` removes it), the multimodal model (`vision`, empty when removed), the compaction line (`compaction_line: {"percent"}`, where `null` removes it), or the whole policy. |
 | `session.workspace_changed` | The working directory changed. |
 | `session.meta_changed` | The title, pin or project changed (`project` is the project id, empty when the session was moved out); the titles the kernel gives unnamed sessions are recorded with this event too. |
 | `session.recapped` | A one-line recap of the session, which doesn't enter the AI's context. |
@@ -52,7 +52,7 @@ The exact shape of each kind is in the repository's `internal/designs/samples/ev
 | `job.lines` | A watched background command (`shell` with `watch`) printed a batch of lines. It has `job`, `text` (at most 4000 characters; a cut one has a line in the middle saying how many were left out), `lines`, `omitted`. This event carries no `turn`. |
 | `child.reported` | A report sent back by a subagent. |
 | `peer.idle` | A session being waited on went idle, or can no longer be waited on. |
-| `image.described` | A description of an image: the vision model looked at it for a model that can't see images. |
+| `image.described` | A description of an image: the multimodal model looked at it for a model that can't see images. |
 | `todos.cleared` | The to-do list was cleared. |
 | `package.state` | A package's program set its state in this session directly (`{"package", "state"}`; see [Extensions](extensions.md)). |
 | `goal.set`, `goal.changed`, `goal.paused`, `goal.resumed`, `goal.ended` | A standing goal was set, changed, paused, resumed or ended. |

@@ -269,7 +269,7 @@ The other common session actions in an interface, and the methods behind them, a
 | Undo, restore | `session.revert`, `session.unrevert` |
 | Redo the last turn | `session.redo` |
 | Compact, clear the context | `session.compact`, `session.clear` |
-| Change persona, preset, model, vision model, thinking effort | `session.configure` |
+| Change persona, preset, model, multimodal model, thinking effort | `session.configure` |
 | Switch to read-only, switch back to full access | `session.set_permission_level`, with `{"read_only": true}` or `false` |
 | Change the working directory | `session.set_workspace` |
 | Change the title, pin | `session.set_meta`; to have the model pick a new title, use `session.retitle` |

@@ -269,7 +269,7 @@ AI 要做受保护的操作时（例如开放权限下的危险命令、只读�
 | 撤销、恢复 | `session.revert`、`session.unrevert` |
 | 重做最后一轮 | `session.redo` |
 | 压缩、清空上下文 | `session.compact`、`session.clear` |
-| 更换人格、预设、模型、看图模型、思考强度 | `session.configure` |
+| 更换人格、预设、模型、多模态模型、思考强度 | `session.configure` |
 | 切换到只读、切回开放权限 | `session.set_permission_level`，写 `{"read_only": true}` 或 `false` |
 | 更换工作目录 | `session.set_workspace` |
 | 修改标题、置顶 | `session.set_meta`；如果要让模型重新起标题，用 `session.retitle` |

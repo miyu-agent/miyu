@@ -196,7 +196,7 @@ Miyu uses models for three purposes, and each purpose is set by one key:
 | Key | What it controls | Allowed values |
 |---|---|---|
 | `models.chat` | The model new sessions use by default | `provider/model`, `@pool` |
-| `models.vision` | When the chat model cannot look at images, this model looks at them for it | `provider/model`, `@pool` |
+| `models.vision` | Provides multimodal abilities when the chat model doesn't support them | `provider/model`, `@pool` |
 | `models.embedding` | Computes vectors, used when searching memories and the knowledge base | `local` (the default, `miyu-embed` on this machine), `off` (search by keywords only), `provider/model` |
 
 ```toml

@@ -80,7 +80,7 @@ Each entry is one object, with the common fields `id`, `kind`, `turn` (which tur
 | `preparing` | Compaction is being prepared ahead of time in the background: `{seen, since}` |
 | `usage` | This session's total usage, written like a row of `usage.query` (including `converted` and `converted_parts`) |
 | `model`, `permission`, `todos`, `workspace`, `persona`, `preset` | The same as in the subscription response; a persona or preset changed mid-session is pushed. A no-tools session has `preset: null` plus `no_tools: true`, the same as in the session list |
-| `vision` | The vision model pinned for the session (`vision` in `session.configure`): a model or `@pool`, as written; pushed as soon as it is pinned, and absent when nothing is pinned (the session then follows `models.vision`) |
+| `vision` | The multimodal model pinned for the session (`vision` in `session.configure`): a model or `@pool`, as written; pushed as soon as it is pinned, and absent when nothing is pinned (the session then follows `models.vision`) |
 | `compaction_line` | The compaction line pinned for the session (`compaction_line` in `session.configure`): a percentage of the window; pushed as soon as it is pinned, and absent when nothing is pinned (the session then follows `compaction.line`). The line in effect is `context.compaction_line` |
 | `todos_done` | When the to-do list was cleared because everything was done, this is the list from before the clearing (heads tick everything, pause, and then collapse it) |
 | `goal` | The standing goal: `{text, limit, state, reason, round, since, usage}`, with `state` being `running`, `paused`, `completed`, `blocked` or `waiting` |

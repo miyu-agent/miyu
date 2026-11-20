@@ -1071,7 +1071,7 @@ merge_every = "16h"
 # 能写：local、off 或 <供应商>/<模型>。只能写在系统配置里。下一轮生效。
 # embedding =
 
-# 看图的模型：主对话的模型看不了图时，替它看图的模型。写法同主对话的模型。
+# 多模态模型：在对话模型不支持多模态时提供多模态能力。
 # 能写：<供应商>/<模型> 或 @<池>。只能写在系统配置里。下一轮生效。
 # vision =
 
@@ -1531,8 +1531,8 @@ currency = "USD"
 | 说明 | 这家供应商对应模型目录里的哪一家。例如只转发 DeepSeek 的中转服务填 deepseek。 | Which provider in the model data this one is, for example deepseek for a relay that only forwards DeepSeek. | モデル資料のどのプロバイダーに当たるか。DeepSeek だけを中継するなら deepseek と書きます。 |
 | `providers.<id>.models.<model>.window` 名字（8-6） | 上下文窗口 | Context window | コンテキストウィンドウ |
 | 说明 | 这个模型的上下文窗口，单位 token。 | The context window of this model, in tokens. | このモデルのコンテキストウィンドウ。単位はトークン。 |
-| `models.vision` 名字（8-8） | 看图的模型 | Vision model | 画像を見るモデル |
-| 说明 | 主对话的模型看不了图时，替它看图的模型。写法同主对话的模型。 | Looks at images for the chat model when it cannot. Written like the chat model. | 会話のモデルが画像を見られないとき、代わりに見るモデル。書き方は会話のモデルと同じです。 |
+| `models.vision` 名字（8-8；施工 FX-9 改名，项目主人 2026-11-20 验收时定「看图」改叫「多模态」） | 多模态模型 | Multimodal model | マルチモーダルモデル |
+| 说明 | 在对话模型不支持多模态时提供多模态能力。 | Provides multimodal abilities when the chat model doesn't support them. | 会話のモデルがマルチモーダルに対応していないとき、マルチモーダルの機能を提供します。 |
 | `models.embedding` 名字（R-5 下；R-5 再补改名，2026-10-09 项目主人定） | 语义模型 | Semantic model | 意味モデル |
 | 说明 | 提高记忆、知识库等内容的检索质量。只有内置模型会自动联想记忆和知识库，换成其他模型后只在搜索时使用。（后一句施工 FX-4 加：门槛表里没有的模型不联想，原来换了远程的模型以后联想不出来、没有任何提示） | Improves search quality for memories, knowledge bases and more. Only the built-in model recalls memories and knowledge on its own; other models are used for search only. | 記憶やナレッジベースなどの検索の質を高めます。記憶とナレッジを自動で思い出すのは内蔵モデルだけで、ほかのモデルは検索にだけ使います。 |
 | 选项 | `local` 内置模型、`off` 关 | Built-in model、Off | 内蔵モデル、オフ |
@@ -1553,7 +1553,7 @@ currency = "USD"
 | 说明 | AI 搜索网页、抓取网页使用哪一家服务。「自动」只使用免费额度：搜索时依次尝试 Exa、Parallel、Firecrawl、AnySearch、You.com，被限额的服务会暂停一段时间；Miyu 自己抓取失败的网页交给 Exa、Firecrawl、Parallel 代抓。这几家服务都在国外，搜索词和网址会发送给它们。如果选择了其中一家，就优先使用它（选择「DeepSeek 搜索接口」时，抓取网页也优先交给它）；它不可用时再按「自动」的顺序尝试。 | Which service AI uses to search and fetch the web. Auto sticks to free tiers: searches try Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rest any that hit a rate limit, and pages that can't be fetched directly are fetched by Exa, Firecrawl or Parallel. These services are outside China and receive the search terms and addresses. A chosen one is tried first (the DeepSeek search API also fetches pages before AI tries them itself), and Auto takes over when it fails. | AI がウェブ検索とページ取得に使うサービス。自動では無料枠だけを使います。検索は Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。直接取得できないページは Exa、Firecrawl、Parallel に代わりに取得させます。これらは海外のサービスで、検索語と URL が送られます。選んだものを先に使い（「DeepSeek 検索 API」はページ取得も先に担当します）、使えなければ自動に切り替えます。 |
 | 选项的名字（设计 72，施工 DSR-2：`deepseek` 从「DeepSeek」改成「DeepSeek 搜索接口」，加 `deepseek-responses`） | `auto` 自动（免费额度）、`exa` Exa、`anysearch` AnySearch、`deepseek` DeepSeek 搜索接口、`deepseek-responses` DeepSeek Responses 接口内置、`tavily` Tavily、`brave` Brave、`searxng` SearXNG | `auto` Auto (free tiers)、`exa` Exa、`anysearch` AnySearch、`deepseek` DeepSeek search API、`deepseek-responses` DeepSeek Responses API built-in、`tavily` Tavily、`brave` Brave、`searxng` SearXNG | `auto` 自動（無料枠）、`exa` Exa、`anysearch` AnySearch、`deepseek` DeepSeek 検索 API、`deepseek-responses` DeepSeek Responses API 内蔵、`tavily` Tavily、`brave` Brave、`searxng` SearXNG |
 | `deepseek` 的说明（`option_descriptions`，DSR-2） | Miyu 的搜索工具调用 DeepSeek 的搜索和抓取接口，按次计费。 | Miyu's search tools call DeepSeek's search and fetch APIs, billed per call. | Miyu の検索ツールが DeepSeek の検索・取得 API を呼び出します。呼び出しごとに課金されます。 |
-| `deepseek-responses` 的说明（`option_descriptions`，DSR-2） | 对话模型是 DeepSeek 官方、使用 Responses 接口时，由模型自己搜索网页、读取链接。搜索更深入，但每次搜索会多用约一万个 token。 | When the chat model is DeepSeek's official service on the Responses API, the model searches the web and reads links itself. Searches go deeper, but each one uses about ten thousand more tokens. | 対話モデルが DeepSeek 公式で Responses API を使うとき、モデル自身がウェブを検索し、リンクを読みます。より深く検索しますが、検索のたびに約 1 万トークン多く使います。 |
+| `deepseek-responses` 的说明（`option_descriptions`，DSR-2；施工 FX-9 去掉后一句「搜索更深入……」，项目主人 2026-11-20 验收时定） | 对话模型是 DeepSeek 官方、使用 Responses 接口时，由模型自己搜索网页、读取链接。 | When the chat model is DeepSeek's official service on the Responses API, the model searches the web and reads links itself. | 対話モデルが DeepSeek 公式で Responses API を使うとき、モデル自身がウェブを検索し、リンクを読みます。 |
 | `deepseek-responses` 选中时弹的提示（`option_notices`，DSR-2） | 这个搜索服务只适用于 DeepSeek 官方的 Responses 接口 | This search service only works with DeepSeek's official Responses API | この検索サービスは DeepSeek 公式の Responses API でのみ使えます |
 | `net.search.exa.key` 名字（N-3 上） | Exa | Exa | Exa |
 | 说明 | 填写后使用你自己的 Exa 额度，不填写时使用免费额度。 | With a key, searches use your own Exa quota; without one, the free quota. | 設定すると自分の Exa の枠を使います。未設定なら無料枠です。 |

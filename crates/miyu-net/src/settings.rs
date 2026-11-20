@@ -207,7 +207,8 @@ fn deepseek_provider(values: &miyu_config::Values) -> Option<Reference> {
 /// 联网包的 DeepSeek 的 key 这一项。
 const DEEPSEEK_KEY: &str = "net.search.deepseek.key";
 
-/// 来源少配了什么（施工 N-3 上）：设置页的下拉里那一家后面写「需要密钥」「需要地址」。
+/// 来源少配了什么（施工 N-3 上）。原来设置页的下拉里照它在那一家后面写「需要密钥」「需要地址」，施工 FX-9 起不写了（项目主人
+/// 2026-11-20 验收时定）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Missing {
     /// 要 key，没配。

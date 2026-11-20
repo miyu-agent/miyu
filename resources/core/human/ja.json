@@ -21,7 +21,7 @@
       "net.search.brave.key": {"name": "Brave Search", "description": "ウェブプロバイダーに Brave を選んだときに必要です。"},
       "net.internal_domains": {"name": "内部ドメイン", "description": "ほかの人（グループの人、知らない人）に頼まれて AI がウェブを見るときに決して行かないドメインです。サブドメインも含み、どのアドレスに解決されてもプロキシを通すかどうかに関係なく適用されます。あなたは影響を受けません。例：example-corp.com。"},
       "net.search.searxng.url": {"name": "SearXNG のアドレス", "description": "自分で立てた SearXNG（例 http://127.0.0.1:8888）。JSON 形式を有効にしておきます。ウェブプロバイダーに SearXNG を選んだときに使います。"},
-      "net.search.source": {"name": "ウェブプロバイダー", "description": "AI がウェブ検索とページ取得に使うサービス。自動では無料枠だけを使います。検索は Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。直接取得できないページは Exa、Firecrawl、Parallel に代わりに取得させます。これらは海外のサービスで、検索語と URL が送られます。選んだものを先に使い（「DeepSeek 検索 API」はページ取得も先に担当します）、使えなければ自動に切り替えます。", "options": {"auto": "自動（無料枠）", "exa": "Exa", "anysearch": "AnySearch", "deepseek": "DeepSeek 検索 API", "deepseek-responses": "DeepSeek Responses API 内蔵", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG"}, "option_descriptions": {"deepseek": "Miyu の検索ツールが DeepSeek の検索・取得 API を呼び出します。呼び出しごとに課金されます。", "deepseek-responses": "対話モデルが DeepSeek 公式で Responses API を使うとき、モデル自身がウェブを検索し、リンクを読みます。より深く検索しますが、検索のたびに約 1 万トークン多く使います。"}, "option_notices": {"deepseek-responses": "この検索サービスは DeepSeek 公式の Responses API でのみ使えます"}},
+      "net.search.source": {"name": "ウェブプロバイダー", "description": "AI がウェブ検索とページ取得に使うサービス。自動では無料枠だけを使います。検索は Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。直接取得できないページは Exa、Firecrawl、Parallel に代わりに取得させます。これらは海外のサービスで、検索語と URL が送られます。選んだものを先に使い（「DeepSeek 検索 API」はページ取得も先に担当します）、使えなければ自動に切り替えます。", "options": {"auto": "自動（無料枠）", "exa": "Exa", "anysearch": "AnySearch", "deepseek": "DeepSeek 検索 API", "deepseek-responses": "DeepSeek Responses API 内蔵", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG"}, "option_descriptions": {"deepseek": "Miyu の検索ツールが DeepSeek の検索・取得 API を呼び出します。呼び出しごとに課金されます。", "deepseek-responses": "対話モデルが DeepSeek 公式で Responses API を使うとき、モデル自身がウェブを検索し、リンクを読みます。"}, "option_notices": {"deepseek-responses": "この検索サービスは DeepSeek 公式の Responses API でのみ使えます"}},
       "memory.extract_idle": {
         "name": "整理前のアイドル時間",
         "description": "会話がこの時間止まると、新しい部分のうち覚えておく価値のあるものを記憶にまとめます。"
@@ -192,8 +192,8 @@
         "description": "新しいセッションが使うモデル。プロバイダー/モデル の形で書きます。例：deepseek/deepseek-flash。@プール でもかまいません。"
       },
       "models.vision": {
-        "name": "画像を見るモデル",
-        "description": "会話のモデルが画像を見られないとき、代わりに見るモデル。書き方は会話のモデルと同じです。"
+        "name": "マルチモーダルモデル",
+        "description": "会話のモデルがマルチモーダルに対応していないとき、マルチモーダルの機能を提供します。"
       },
       "models.embedding": {
         "name": "意味モデル",
@@ -803,8 +803,6 @@
     "config/schema-description": "{description}{facts}",
     "config/layer/system": "システム設定",
     "config/applies/now": "すぐに反映",
-    "config/option-needs-key": "キーが必要",
-    "config/option-needs-address": "アドレスが必要",
     "config/option-cooling": "{time} まで休止",
     "config/or": "{rest}または{last}",
     "config/or-values": "{rest} または {last}",

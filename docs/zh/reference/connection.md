@@ -120,7 +120,7 @@
 
 | `stream` | 推什么 | `subscribe` 的回应 |
 |---|---|---|
-| `events` | 一个会话的事件，原样推送 | 会话这时的状态：`model`、`limits`、`permission`、`usage`、`jobs`、`workspace`、`default_workspace`（会话的默认工作区）、`compactable`（这时有没有可以压缩的内容，也就是 `session.compact` 会不会返回 `nothing_to_compact`；变化时推送 `compactable.changed`），有的话还有 `compaction_line`（会话钉住的压缩触发线）、`persona`、`preset`、`todos`、`goal`、`vision`（会话钉住的看图模型）、`nested`（正在运行的 `miyu call`：`[{id, name, args, at}]`，`at` 是各自开始的时刻）、`title`（会话的标题，起过标题的会话才有）；填写了 `after` 时还有 `upto` |
+| `events` | 一个会话的事件，原样推送 | 会话这时的状态：`model`、`limits`、`permission`、`usage`、`jobs`、`workspace`、`default_workspace`（会话的默认工作区）、`compactable`（这时有没有可以压缩的内容，也就是 `session.compact` 会不会返回 `nothing_to_compact`；变化时推送 `compactable.changed`），有的话还有 `compaction_line`（会话钉住的压缩触发线）、`persona`、`preset`、`todos`、`goal`、`vision`（会话钉住的多模态模型）、`nested`（正在运行的 `miyu call`：`[{id, name, args, at}]`，`at` 是各自开始的时刻）、`title`（会话的标题，起过标题的会话才有）；填写了 `after` 时还有 `upto` |
 | `view` | 一个会话的视图投影（处理好、可以直接显示的条目） | 和上面相同，另外加上最新一页条目和完整的会话 `status` |
 | `config` | 配置的变化 | `{}` |
 | `sessions` | 会话列表里有一项变化了 | `{"sessions": [<项>…]}`，包含全部会话 |
@@ -138,7 +138,7 @@
 
 `events` 回应里的 `model` 表示会话下一次请求哪个模型：`ref`（会话的模型或 `@池`）、`endpoint` 和 `model`（下一次请求发给谁；轮换的池两样都没有），还有 `effort` `{"level", "from"}`：那个模型使用的思考深度，`from` 是 `session`（由 `session.configure` 设置）或 `system`（来自配置）。轮换的池，以及请求不带思考深度的情况，没有 `effort`。
 
-`events` 回应顶层的 `compaction_line` 是会话钉住的压缩触发线，是窗口的百分之几（由 `session.configure` 设置）；`vision` 是会话钉住的看图模型（模型或 `@池`）。它们和 `view.status` 里的同名两格相同：没有钉住（跟随配置）时不写，之后根据推送过来的 `session.policy_changed` 更新。`limits.compaction_line` 名字一样，但是意思不同：它是正在生效的压缩线，单位是 token 数，钉住新的值以后要到下一个回合开始时才更新。
+`events` 回应顶层的 `compaction_line` 是会话钉住的压缩触发线，是窗口的百分之几（由 `session.configure` 设置）；`vision` 是会话钉住的多模态模型（模型或 `@池`）。它们和 `view.status` 里的同名两格相同：没有钉住（跟随配置）时不写，之后根据推送过来的 `session.policy_changed` 更新。`limits.compaction_line` 名字一样，但是意思不同：它是正在生效的压缩线，单位是 token 数，钉住新的值以后要到下一个回合开始时才更新。
 
 每一条流推送什么，详细的见[推送](pushes.md)。
 

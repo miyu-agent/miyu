@@ -134,7 +134,7 @@ These keys decide which model each use goes to. They are on the settings page un
 | Key | Type | Default | Allowed values | Description | Takes effect | Project config |
 |---|---|---|---|---|---|---|
 | `models.chat` | Model reference | — | `provider/model`, `@pool` | The default model, that is, the model new sessions use. Without it you cannot chat. | New sessions | No |
-| `models.vision` | Model reference | — | `provider/model`, `@pool` | When the chat model cannot look at images, this model looks at them for it. | Next turn | No |
+| `models.vision` | Model reference | — | `provider/model`, `@pool` | Provides multimodal abilities when the chat model doesn't support them. | Next turn | No |
 | `models.embedding` | Text | — | `local`, `off`, `provider/model` | The model that computes vectors, used when searching memories and the knowledge base. If it is not set, `local` (`miyu-embed` on this machine) is used; with `off`, searches use keywords only. | Next turn | No |
 
 ## Models: pools

@@ -223,7 +223,7 @@ When the library has images that can be sent, a dice roll happens before each of
   ```
 
   This is a ready-made set of images (38). The images go into the library once the pack is installed, and are removed from it when the pack is removed. On the dashboard page, the source of an image pack is shown as `Sticker pack`.
-- The AI saves them in a chat: ask the AI to save one (for example, "save that last image as a sticker"), and it calls `meme_save`. If the AI saw the image itself, it writes the description and usage itself; if it did not write them, they are left to the model that looks at images (`models.vision`), which also judges whether the image is a sticker: screenshots, photos, documents and charts are not taken. If `models.vision` is not set, the AI cannot save an image unless it wrote the description itself.
+- The AI saves them in a chat: ask the AI to save one (for example, "save that last image as a sticker"), and it calls `meme_save`. If the AI saw the image itself, it writes the description and usage itself; if it did not write them, they are left to the multimodal model (`models.vision`), which also judges whether the image is a sticker: screenshots, photos, documents and charts are not taken. If `models.vision` is not set, the AI cannot save an image unless it wrote the description itself.
 
 An image already in the library is not saved twice, and the original id is given back. A single image over the limit is shrunk before it is saved; animated images are not shrunk, and one over the limit is not taken.
 
@@ -239,7 +239,7 @@ miyu pkg page memes
 
 - The top row has: a `Search` box; a source filter (`All sources`, `Saved by AI`, `Uploaded`, `Sticker pack`, `Other apps`: images saved in through the bus by other packages); `Show disabled`; `Rebuild search index`; and `Upload`.
 - Below is a grid; click an image to see its details: the big image, the `Description` and `Usage` you can change, and `Source`, `Reason`, `Uses` and `Size`. The buttons are `Save`, `Disable` (for a disabled image it is `Enable`), `Delete` and `Describe again`.
-- `Describe again` and `Let AI write` use the model that looks at images to write the text and fill in the boxes; you look it over before clicking `Save`. If no vision model is set, it says `No vision model configured`.
+- `Describe again` and `Let AI write` use the multimodal model to write the text and fill in the boxes; you look it over before clicking `Save`. If no multimodal model is set, it says `No vision model configured`.
 - `Delete` deletes the image for good, and asks `Delete this sticker permanently?` first. The AI's `meme_delete` only disables an image.
 
 ### Using it on chat platforms
@@ -267,7 +267,7 @@ The command `miyu memes` is for the core to start the package's program; if you 
 | What you see | What to do |
 |---|---|
 | `Not saved: no vision model could describe it (…)` | Set `models.vision` (see [Models](models.md#the-three-uses)), or have the AI look at the image and write the description and usage itself. |
-| `Not saved: it is a screenshot, photo, document or chart, not a sticker.` | The model that looks at images judged that this is not a sticker. If you really want to save it, upload it yourself on the dashboard page. |
+| `Not saved: it is a screenshot, photo, document or chart, not a sticker.` | The multimodal model judged that this is not a sticker. If you really want to save it, upload it yourself on the dashboard page. |
 | `msg works only in a chat.` | `msg` works only in a session on a chat platform; in a session on this machine, use `path`. |
 | The dashboard page shows `This image cannot be shrunk small enough to upload (animations are not shrunk)` | Use a smaller image, or raise `memes.max_size_mb`. |
 | The dashboard page shows `The vision model does not accept images. Choose another in settings` | The model set in `models.vision` cannot take images; switch to another model. |

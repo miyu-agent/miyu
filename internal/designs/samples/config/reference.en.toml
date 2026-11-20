@@ -88,7 +88,7 @@ merge_every = "16h"
 # Allowed: local, off or <provider>/<model>. Only in the system config. Takes effect next turn.
 # embedding =
 
-# Vision model: Looks at images for the chat model when it cannot. Written like the chat model.
+# Multimodal model: Provides multimodal abilities when the chat model doesn't support them.
 # Allowed: <provider>/<model> or @<pool>. Only in the system config. Takes effect next turn.
 # vision =
 

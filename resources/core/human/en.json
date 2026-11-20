@@ -21,7 +21,7 @@
       "net.search.brave.key": {"name": "Brave Search", "description": "Needed when Brave is the web provider."},
       "net.internal_domains": {"name": "Internal domains", "description": "Domains the AI never visits on behalf of others (people in group chats, strangers), subdomains included, whatever they resolve to and whether or not a proxy is used; you are not affected. For example example-corp.com."},
       "net.search.searxng.url": {"name": "SearXNG address", "description": "Your own SearXNG instance, for example http://127.0.0.1:8888, with the JSON format enabled. Used when SearXNG is the web provider."},
-      "net.search.source": {"name": "Web provider", "description": "Which service AI uses to search and fetch the web. Auto sticks to free tiers: searches try Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rest any that hit a rate limit, and pages that can't be fetched directly are fetched by Exa, Firecrawl or Parallel. These services are outside China and receive the search terms and addresses. A chosen one is tried first (the DeepSeek search API also fetches pages before AI tries them itself), and Auto takes over when it fails.", "options": {"auto": "Auto (free tiers)", "exa": "Exa", "anysearch": "AnySearch", "deepseek": "DeepSeek search API", "deepseek-responses": "DeepSeek Responses API built-in", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG"}, "option_descriptions": {"deepseek": "Miyu's search tools call DeepSeek's search and fetch APIs, billed per call.", "deepseek-responses": "When the chat model is DeepSeek's official service on the Responses API, the model searches the web and reads links itself. Searches go deeper, but each one uses about ten thousand more tokens."}, "option_notices": {"deepseek-responses": "This search service only works with DeepSeek's official Responses API"}},
+      "net.search.source": {"name": "Web provider", "description": "Which service AI uses to search and fetch the web. Auto sticks to free tiers: searches try Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rest any that hit a rate limit, and pages that can't be fetched directly are fetched by Exa, Firecrawl or Parallel. These services are outside China and receive the search terms and addresses. A chosen one is tried first (the DeepSeek search API also fetches pages before AI tries them itself), and Auto takes over when it fails.", "options": {"auto": "Auto (free tiers)", "exa": "Exa", "anysearch": "AnySearch", "deepseek": "DeepSeek search API", "deepseek-responses": "DeepSeek Responses API built-in", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG"}, "option_descriptions": {"deepseek": "Miyu's search tools call DeepSeek's search and fetch APIs, billed per call.", "deepseek-responses": "When the chat model is DeepSeek's official service on the Responses API, the model searches the web and reads links itself."}, "option_notices": {"deepseek-responses": "This search service only works with DeepSeek's official Responses API"}},
       "memory.extract_idle": {
         "name": "Idle time before organizing",
         "description": "Once the conversation has been quiet this long, the AI turns what is worth keeping from the new part into memories."
@@ -192,8 +192,8 @@
         "description": "The model new sessions use, written as provider/model, for example deepseek/deepseek-flash, or @pool."
       },
       "models.vision": {
-        "name": "Vision model",
-        "description": "Looks at images for the chat model when it cannot. Written like the chat model."
+        "name": "Multimodal model",
+        "description": "Provides multimodal abilities when the chat model doesn't support them."
       },
       "models.embedding": {
         "name": "Semantic model",
@@ -807,8 +807,6 @@
     "config/schema-description": "{description} {facts}",
     "config/layer/system": "the system config",
     "config/applies/now": "Takes effect immediately",
-    "config/option-needs-key": "Needs a key",
-    "config/option-needs-address": "Needs an address",
     "config/option-cooling": "Resting until {time}",
     "config/or": "{rest} or {last}",
     "config/or-values": "{rest} or {last}",

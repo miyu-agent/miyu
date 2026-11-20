@@ -27,7 +27,7 @@
 | `kind` | 是什么 |
 |---|---|
 | `session.created` | 会话创建了，这是会话的第 1 条事件，记录场所、工作目录、人格、预设、模型等。 |
-| `session.policy_changed` | 会话的设置变了：可能是权限（`permission: {"level", "read_only"}`，`from` 是更换以前的设置，同样是这两个字段；以前的日志没有 `from`）、模型、思考强度（`effort: {"level"}`，`null` 表示回到跟随配置）、上下文上限（`context: {"tokens"}`，`null` 表示去掉上限）、看图模型（`vision`，空值表示去掉）、压缩触发线（`compaction_line: {"percent"}`，`null` 表示去掉），也可能是整份策略。 |
+| `session.policy_changed` | 会话的设置变了：可能是权限（`permission: {"level", "read_only"}`，`from` 是更换以前的设置，同样是这两个字段；以前的日志没有 `from`）、模型、思考强度（`effort: {"level"}`，`null` 表示回到跟随配置）、上下文上限（`context: {"tokens"}`，`null` 表示去掉上限）、多模态模型（`vision`，空值表示去掉）、压缩触发线（`compaction_line: {"percent"}`，`null` 表示去掉），也可能是整份策略。 |
 | `session.workspace_changed` | 工作目录更换了。 |
 | `session.meta_changed` | 标题、置顶或者项目改了（`project` 是项目编号，空值表示移出项目）；没有起名的会话由内核自己起标题时，记录的也是这条事件。 |
 | `session.recapped` | 会话的一句回顾，不进入 AI 的上下文。 |
@@ -52,7 +52,7 @@
 | `job.lines` | 被监视的后台命令（`shell` 写了 `watch`）输出了一批行：带 `job`、`text`（最多 4000 个字，截过的中间有一行写明省略了多少）、`lines`、`omitted`。这条事件不带 `turn`。 |
 | `child.reported` | 子代理发回的回报。 |
 | `peer.idle` | 正在等待的那个会话空闲下来了，或者已经等不到了。 |
-| `image.described` | 一张图片的转述：看不了图片的模型，由看图模型替它看过。 |
+| `image.described` | 一张图片的转述：看不了图片的模型，由多模态模型替它看过。 |
 | `todos.cleared` | 待办清单清空了。 |
 | `package.state` | 软件包的程序直接换上了它在这个会话里的一份状态（`{"package", "state"}`，见 [扩展](extensions.md)）。 |
 | `goal.set`、`goal.changed`、`goal.paused`、`goal.resumed`、`goal.ended` | 长期目标设下、修改、暂停、继续、结束。 |

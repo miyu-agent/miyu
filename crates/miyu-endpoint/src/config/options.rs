@@ -33,7 +33,7 @@ pub(super) fn noted(
 }
 
 /// 选项后面暗字写的另一种（施工 N-2 下、N-3 上）：内置包照配置的最终值 `values` 说的这一刻的状态
-/// （`Builtins::option_state`），照连接的语言 `words`、核心这台机器的时区拼成一句，例如搜索来源的「冷却到 15:30」「需要密钥」。
+/// （`Builtins::option_state`），照连接的语言 `words`、核心这台机器的时区拼成一句，例如搜索来源的「冷却到 15:30」。
 /// 配置的锁由调的一方拿着（`config.schema`），这里不再拿。没装内置包端口的核心（测试里造的）、没有要说的没有。
 fn state(
     core: &crate::Core,
@@ -53,8 +53,6 @@ fn state(
             let clock = at.local_clock(crate::sessions::offset());
             Said::new("core/config/option-cooling").with("time", clock)
         }
-        OptionState::NeedsKey => Said::new("core/config/option-needs-key"),
-        OptionState::NeedsAddress => Said::new("core/config/option-needs-address"),
     };
     words.say(&said)
 }

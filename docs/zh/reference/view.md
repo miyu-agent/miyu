@@ -80,7 +80,7 @@
 | `preparing` | 后台正在提前压缩：`{seen, since}` |
 | `usage` | 本会话累计的用量，写法和 `usage.query` 的一行相同（连同 `converted`、`converted_parts`） |
 | `model`、`permission`、`todos`、`workspace`、`persona`、`preset` | 和订阅回应里的那几个字段相同；会话中途换了人格、预设时会跟着推送。无工具的会话 `preset` 是 `null`，另外带 `no_tools: true`，和会话列表相同 |
-| `vision` | 会话钉住的看图模型（`session.configure` 的 `vision`）：模型或 `@池`，原样保存；钉住以后马上推送，没有钉住（跟着 `models.vision`）时不写 |
+| `vision` | 会话钉住的多模态模型（`session.configure` 的 `vision`）：模型或 `@池`，原样保存；钉住以后马上推送，没有钉住（跟着 `models.vision`）时不写 |
 | `compaction_line` | 会话钉住的压缩触发线（`session.configure` 的 `compaction_line`）：是窗口的百分之几；钉住以后马上推送，没有钉住（跟着 `compaction.line`）时不写。生效的压缩线要看 `context.compaction_line` |
 | `todos_done` | 待办全部做完而被清空时，这一项是清空前的那一份（头先打勾、停一下再收起） |
 | `goal` | 长期目标：`{text, limit, state, reason, round, since, usage}`，`state` 是 `running`、`paused`、`completed`、`blocked`、`waiting` |

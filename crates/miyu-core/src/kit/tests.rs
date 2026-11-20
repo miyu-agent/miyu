@@ -40,12 +40,12 @@ async fn the_search_source_option_tells_when_a_limited_source_comes_back() {
             .only(&["deepseek"]),
     );
     let kit = Kit::with_search(&resources, Arc::clone(&search));
-    // 什么都没配的最终值（施工 N-3 上）：要 key、要地址的几家照它说。
+    // 什么都没配的最终值：没配 key 的不说（施工 FX-9）。
     let values = miyu_config::Values::defaults(&miyu_net::ITEMS.concat());
     assert_eq!(
         kit.option_state("net.search.source", "deepseek", &values),
-        Some(OptionState::NeedsKey),
-        "还没搜过：不写冷却，只说没配 key"
+        None,
+        "还没搜过：不写冷却"
     );
 
     let before = SystemTime::now();
@@ -82,17 +82,17 @@ async fn the_search_source_option_tells_when_a_limited_source_comes_back() {
     );
 }
 
-/// 要 key、要地址没配的几家说少了什么（施工 N-3 上）；配了的、免 key 的不说。
+/// 要 key、要地址没配的几家什么都不说（施工 FX-9：原来写「需要密钥」「需要地址」，项目主人 2026-11-20 验收时定去掉）。
 #[test]
-fn sources_missing_a_key_or_an_address_say_so() {
+fn sources_missing_a_key_or_an_address_say_nothing() {
     let resources = ResourceRoot::at(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources"));
     let kit = Kit::new(&resources);
     let mut values = miyu_config::Values::defaults(&miyu_net::ITEMS.concat());
     let state = |values: &miyu_config::Values, option: &str| {
         kit.option_state("net.search.source", option, values)
     };
-    assert_eq!(state(&values, "tavily"), Some(OptionState::NeedsKey));
-    assert_eq!(state(&values, "searxng"), Some(OptionState::NeedsAddress));
+    assert_eq!(state(&values, "tavily"), None, "要 key 没配的不说");
+    assert_eq!(state(&values, "searxng"), None, "要地址没配的不说");
     assert_eq!(state(&values, "parallel"), None, "免 key 的不说");
     assert_eq!(state(&values, "exa"), None, "Exa 不配 key 也能用");
     values.set(
