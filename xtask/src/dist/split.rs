@@ -8,7 +8,7 @@
 //!   清单照原样，程序在包文件夹的 `bin/`（系统加装那一层照它找程序），带各自的 `LICENSE`、第三方清单；包管理器原样拷到
 //!   `share/miyu/packages/<编号>/`。版本照头自己清单写的。
 //!
-//! 只在 Linux、macOS 上打：Windows 没有系统源（不做 scoop，core1 11-05 定）。
+//! 只在 Linux、macOS 上打：Windows 没有系统源（不做 scoop，项目主人 11-05 定）。
 
 use std::path::{Path, PathBuf};
 

@@ -115,7 +115,7 @@ jobs:
           rustup toolchain list
       # 第三方依赖的编译产物：照 Cargo.lock、工具链、这台机器的系统分开存；只有 main 上的那一次存，分支照 main 的取，
       # 缓存不随分支越攒越多。工作区自己的 crate 每次照旧编。
-      # 键照 rust-cache 默认的那一套（施工 CI-3，core1 11-05 定）：前一半是项名、系统、工具链的版本和 CARGO_ 等开头的环境
+      # 键照 rust-cache 默认的那一套（施工 CI-3，项目主人 11-05 定）：前一半是项名、系统、工具链的版本和 CARGO_ 等开头的环境
       # 变量，后一半是 Cargo.lock 和各个 Cargo.toml 的哈希。原来关了它（0-3 再补，`add-rust-environment-hash-key: false`），
       # 这个开关把后一半也一起关了，键里只剩项名和系统；GitHub 的缓存一个键只能存一次，键不变就再也不存新的，main 一直命中
       # 10-10 存的那一份。现在改了 Cargo.lock 的，按前一半退回到最近的一份，只重编变了的依赖，跑完照新键存一份。

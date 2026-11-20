@@ -14,7 +14,7 @@ impl Refusal {
         data: None,
     };
 
-    /// `driver.check` 要重启扩展，这一刻却有会话正经它的驱动调模型（施工 MD-3，core1 11-07 定）：`data.running` 是没答完的几次，等它们
+    /// `driver.check` 要重启扩展，这一刻却有会话正经它的驱动调模型（施工 MD-3，项目主人 11-07 定）：`data.running` 是没答完的几次，等它们
     /// 跑完再查。
     pub(crate) fn driver_busy(running: usize) -> Refusal {
         Refusal::with("driver_busy", "running", serde_json::json!(running))

@@ -27,6 +27,7 @@ mod logs;
 mod notices;
 mod packaging;
 mod perf;
+mod privacy;
 mod prompts;
 mod purity;
 mod reference;
@@ -408,6 +409,7 @@ fn gates(cargo: &str, root: &Path) -> Vec<Outcome> {
             name: "日志",
             problems: logged,
         },
+        privacy::outcome(root),
     ]
 }
 
@@ -452,11 +454,7 @@ fn test_crates(cargo: &str, root: &Path) -> Vec<String> {
 
 /// 一个 crate 的 `src/`，相对仓库根。
 fn src_of(root: &Path, package: &Package) -> PathBuf {
-    relative(root, &package.dir.join("src"))
-}
-
-fn relative(root: &Path, path: &Path) -> PathBuf {
-    path.strip_prefix(root).unwrap_or(path).to_path_buf()
+    files::relative(root, &package.dir.join("src"))
 }
 
 /// `dir` 下面每个 `.rs` 文件的相对路径和内容。读不了的记进 `problems`。
@@ -470,7 +468,7 @@ fn sources(root: &Path, dir: &Path, problems: &mut Vec<String>) -> Vec<(String, 
     };
     let mut out = Vec::new();
     for path in files {
-        let label = relative(root, &path).display().to_string();
+        let label = files::relative(root, &path).display().to_string();
         match std::fs::read_to_string(&path) {
             Ok(text) => out.push((label, text)),
             Err(e) => problems.push(format!("读不了 {label}：{e}")),

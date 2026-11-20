@@ -99,7 +99,7 @@ fn a_link_is_removed_without_following_it() {
     assert!(kept.is_file(), "链接那头一点没动");
 }
 
-/// `var/`、`var/tmp/` 是指到数据根外面的链接（施工 FH-3下，core1 审 FH-3上 时提的）：整趟不清、交回错，外面的一样都不删。
+/// `var/`、`var/tmp/` 是指到数据根外面的链接（施工 FH-3下，评审 FH-3上 时提的）：整趟不清、交回错，外面的一样都不删。
 #[test]
 fn a_linked_var_or_var_tmp_is_not_swept() {
     for linked in ["var", "var/tmp"] {
@@ -136,7 +136,7 @@ fn a_linked_tmp_is_not_cleared_through() {
     assert!(outside.is_file(), "链接那头一样都没删");
 }
 
-/// 清的路上只认普通的一层（施工 FH-4，core1 审 FH-3下 时提的）：拼进 `..`、`.` 的不清、交回错。包编号上游校验过，这里自己也
+/// 清的路上只认普通的一层（施工 FH-4，评审 FH-3下 时提的）：拼进 `..`、`.` 的不清、交回错。包编号上游校验过，这里自己也
 /// 守住。
 #[test]
 fn a_path_with_dot_dot_clears_nothing() {

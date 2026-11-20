@@ -375,7 +375,7 @@ async fn a_chat_model_already_written_is_replaced() {
     ])])
     .await;
     let home = Home::onboarding(
-        "[models]\nchat = \"magpie/old-model\"\n",
+        "[models]\nchat = \"relay/old-model\"\n",
         &[("DEEPSEEK_API_KEY", FAKE)],
         deepseek_at(&server),
     );
@@ -389,7 +389,7 @@ async fn a_chat_model_already_written_is_replaced() {
         written.contains("chat = \"deepseek/deepseek-flash\""),
         "换成新选的：{written}"
     );
-    assert!(!written.contains("magpie/old-model"), "{written}");
+    assert!(!written.contains("relay/old-model"), "{written}");
 }
 
 /// 列出来的模型全列（施工 ST-2，项目主人 10-29 在虚拟机里接 OpenCode Go：只列 20 个、说「还有 17 个」）：第 25 个也有编号，选得上。

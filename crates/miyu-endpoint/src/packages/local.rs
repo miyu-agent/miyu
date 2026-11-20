@@ -60,7 +60,7 @@ pub(super) fn record(
 /// - 没有来源仓库、记了从哪个路径装的：本机文件；
 /// - 都没有（核心起来时补记的）：不知道。
 ///
-/// 官方索引最多读一次、验一次签名（core1 2026-11-05：算进起来那段的耗时），一个都不用推的不读。
+/// 官方索引最多读一次、验一次签名（项目主人 2026-11-05：算进起来那段的耗时），一个都不用推的不读。
 pub(crate) fn infer(places: &Packages, official: &Path, keys: &[miyu_source::sign::PublicKey]) {
     let root = places.local_root();
     let mut index: Option<Option<miyu_source::index::Index>> = None;

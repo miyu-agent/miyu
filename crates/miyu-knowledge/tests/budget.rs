@@ -1,7 +1,7 @@
 //! 知识库这个软件包的工具面预算（`docs/designs/10-自带软件.md` 第九节，施工 K-1 下、K-3）：`resources/software/knowledge/tools/`
 //! 下的五份说明加起来不超过 [`BUDGET`] 字节。
 //!
-//! 照记忆那个包的办法：2026-10-12 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量，二十五件（基础系统十六件、
+//! 照记忆那个包的办法：2026-10-12 照中转网关的 `relay/deepseek-v4.1-flash` 量，二十五件（基础系统十六件、
 //! 记忆三件、长期目标一件加这五件）一起时的边际份量 `kb_search` 75、`kb_read` 87、`kb_save` 139、`kb_edit` 93、`kb_delete`
 //! 63，合计 457 个 token，说明合计 1506 字节；预算是实测加一成，503 个 token，合 1660 字节（K-1 下两件时是 600）。加工具、
 //! 改说明超了，重新量过再改这里和设计。

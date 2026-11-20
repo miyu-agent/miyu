@@ -116,7 +116,7 @@ async fn a_script_with_a_wrong_role_or_scope_is_skipped_and_checked() {
     assert!(skipped[1].1.contains("writer"), "说是哪一行：{skipped:?}");
 }
 
-/// 注释头里 `Role`、`Scope` 这两格的名字写错的（施工 XG-2补，core1 2026-11-06 定）：原来照别的不认识的行静默跳过，范围变回
+/// 注释头里 `Role`、`Scope` 这两格的名字写错的（施工 XG-2补，项目主人 2026-11-06 定）：原来照别的不认识的行静默跳过，范围变回
 /// `any`，比值写错（整份不收）宽。改成认得出就报 `BadRole`、`BadScope`，整份不收、`check` 报 `script_skipped`。
 ///
 /// 认到什么程度（照它做）：行的键和 `Role`、`Scope` 不分大小写比，Damerau 编辑距离（增、删、改一个字，或者相邻两个字对调，

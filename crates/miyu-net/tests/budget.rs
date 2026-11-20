@@ -1,6 +1,6 @@
 //! 联网这个软件包的工具面预算（设计 36，施工 N-1、N-2 上）：`resources/software/net/tools/` 下的说明加起来不超过 [`BUDGET`] 字节。
 //!
-//! 照知识库那个包的办法：2026-10-18 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量，和 `trash` 一起时的边际份量
+//! 照知识库那个包的办法：2026-10-18 照中转网关的 `relay/deepseek-v4.1-flash` 量，和 `trash` 一起时的边际份量
 //! `web_fetch` 84、`web_search` 107 个 token，说明 257、346 字节，合计 603；预算是实测加一成，663 字节（N-1 一件时是 283）。
 //! 加工具、改说明超了，重新量过再改这里和设计。
 

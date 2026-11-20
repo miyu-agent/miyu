@@ -211,7 +211,7 @@ fn end_speed(projector: &Projector) -> Option<(u64, u64)> {
 
 #[test]
 fn a_reply_that_arrived_in_one_burst_has_no_speed() {
-    // 施工 SP-3（项目主人 2026-11-11：magpie 上 haiku 5.5 写出 1249500 tok/s）：网关把整段攒齐了一次发过来，首字和结束只差几毫秒，
+    // 施工 SP-3（项目主人 2026-11-11：某中转站上 haiku 5.5 写出 1249500 tok/s）：网关把整段攒齐了一次发过来，首字和结束只差几毫秒，
     // 算出来的不是出字的速度。首字到结束不到 100 毫秒的、算出来每秒超过 5000 个的，这一次不算，别的照算。
     let stage = two_calls();
     let burst = project(

@@ -2,6 +2,11 @@
 
 use std::path::{Path, PathBuf};
 
+/// `path` 相对 `root` 的路径；不在 `root` 下面的原样。
+pub fn relative(root: &Path, path: &Path) -> PathBuf {
+    path.strip_prefix(root).unwrap_or(path).to_path_buf()
+}
+
 /// `dir` 下面所有的 `.rs` 文件，跳过 `target/`，按路径排好。
 pub fn rust_files(dir: &Path) -> Result<Vec<PathBuf>, String> {
     let mut files = Vec::new();

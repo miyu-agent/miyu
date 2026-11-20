@@ -1,4 +1,4 @@
-//! 中转站的价格照原厂借（施工 PR-1）：magpie 网关的 `marvis/deepseek-v4-1-flash-261017` 对到 byteplus 的同名条目，价格照 DeepSeek
+//! 中转站的价格照原厂借（施工 PR-1）：中转网关的 `relay/deepseek-v4-1-flash-261017` 对到 byteplus 的同名条目，价格照 DeepSeek
 //! 官方的同一个模型借；原厂没列这个版本的照家族借段对得最多的；没价格的不挑；认不出原厂、原厂里什么都对不上的不借。
 
 use serde_json::{Value, json};
@@ -39,7 +39,7 @@ fn a_relay_model_borrows_the_vendor_s_same_model() {
         }},
     }));
     assert_eq!(
-        borrowed(&catalog, "marvis/deepseek-v4-1-flash-261017"),
+        borrowed(&catalog, "relay/deepseek-v4-1-flash-261017"),
         (
             "byteplus/deepseek-v4-1-flash-261017".to_string(),
             priced("deepseek", "deepseek-v4.1-flash")
@@ -60,7 +60,7 @@ fn without_the_version_the_family_member_sharing_most_segments_lends_it() {
         }},
     }));
     assert_eq!(
-        borrowed(&catalog, "marvis/deepseek-v4-1-flash-261017").1,
+        borrowed(&catalog, "relay/deepseek-v4-1-flash-261017").1,
         priced("deepseek", "deepseek-v4-flash"),
         "段对得一样多的取字节序在前的；家族不同的、没价格的不挑"
     );
@@ -84,7 +84,7 @@ fn nothing_is_borrowed_without_a_vendor_or_a_match() {
         }},
     }));
     assert_eq!(
-        borrowed(&unrelated, "marvis/deepseek-v4-1-flash-261017").1,
+        borrowed(&unrelated, "relay/deepseek-v4-1-flash-261017").1,
         None,
         "原厂里名字、家族都对不上"
     );

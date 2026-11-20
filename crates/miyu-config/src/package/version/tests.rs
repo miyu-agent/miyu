@@ -83,7 +83,7 @@ fn a_year_month_floor_compares_by_number() {
     }
 }
 
-/// agy-cli 实测（施工 VER-1）：清单写 `miyu = "2026.11.0-rc.2.4"` 和一张新表，rc.2.3 的核心报了「不认识的表」，没先报要更新。
+/// 实测（施工 VER-1）：清单写 `miyu = "2026.11.0-rc.2.4"` 和一张新表，rc.2.3 的核心报了「不认识的表」，没先报要更新。
 /// 候选版照 semver 一段一段比；写法查得过候选版的要求。
 #[test]
 fn a_candidate_build_compares_with_a_candidate_requirement() {

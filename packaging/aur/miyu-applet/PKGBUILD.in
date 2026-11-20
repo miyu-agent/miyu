@@ -6,7 +6,7 @@
 # 别手改填出来的那份。
 #
 # 压缩包里一层 miyu-applet-<版本>-linux-<架构>/，照 /usr 摆好（bin/、share/applications/、share/icons/、share/licenses/），整层拷进
-# /usr。托盘的完整包（deb、rpm，带核心）和 miyu-core 冲突，AUR 上不发那种，这里不写 conflicts（core1 11-05）。
+# /usr。托盘的完整包（deb、rpm，带核心）和 miyu-core 冲突，AUR 上不发那种，这里不写 conflicts（项目主人 11-05）。
 
 pkgname=miyu-applet
 _version=@VERSION@

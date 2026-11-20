@@ -114,7 +114,7 @@ pub(crate) fn send(core: &Core, note: &AfterNote) {
                     && super::approval::holds(core, &entry.package, manifest, &switches)
                         .contains(&Capability::EventsRead)
             });
-        // 场所会话照订事件流的规矩（第四节第 5 条，core1 2026-11-07 照推荐定）。
+        // 场所会话照订事件流的规矩（第四节第 5 条，项目主人 2026-11-07 照推荐定）。
         if !held
             || !crate::sessions::reaches(core, Some(&entry.package), &note.venue, note.confined)
         {

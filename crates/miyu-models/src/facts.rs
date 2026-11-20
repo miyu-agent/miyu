@@ -257,7 +257,7 @@ pub fn facts(
             written
                 .texts(&["inputs"])
                 .or_else(|| {
-                    // 列表说看得了图的（施工 MD-4，core1 11-07 定）：文字加图；说不能的、没说的照目录。
+                    // 列表说看得了图的（施工 MD-4，项目主人 11-07 定）：文字加图；说不能的、没说的照目录。
                     let (_, fetched) = on_list.filter(|(found, _)| found.vision == Some(true))?;
                     let inputs = vec!["text".to_string(), "image".to_string()];
                     Some((inputs, Source::Provider { fetched }))

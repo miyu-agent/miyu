@@ -37,7 +37,7 @@ impl Language {
         })
     }
 
-    /// 对话模型走扩展驱动（`driver` 是 `<包>/<驱动名>`）：LiteMiyu 认不了，一个变量都不填，照常拉起（core1 2026-11-13 定）。
+    /// 对话模型走扩展驱动（`driver` 是 `<包>/<驱动名>`）：LiteMiyu 认不了，一个变量都不填，照常拉起（项目主人 2026-11-13 定）。
     pub(crate) fn rescue_extension(&self, driver: &str) -> Problem {
         let driver = clean(driver);
         Problem::new(match self {

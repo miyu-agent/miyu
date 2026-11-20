@@ -1,4 +1,4 @@
-//! 供应商的驱动写成扩展的那一种（施工 MD-1，设计 66 第四节第 5 条，core1 11-07 照推荐定 A）：`providers.<id>.driver` 的选项是内置的三种，
+//! 供应商的驱动写成扩展的那一种（施工 MD-1，设计 66 第四节第 5 条，项目主人 11-07 照推荐定 A）：`providers.<id>.driver` 的选项是内置的三种，
 //! 核心起来时接上装着、声明了 `[[driver]]` 的包的 `<包编号>/<驱动名>`（N-5 搜索来源的做法）。这一格另开一个窄口子：写法是
 //! `<包编号>/<驱动名>`、这时不在选项里的（没装、写错了驱动名），不丢，照原样留下，记一条警告 `unknown_driver`；运行时这家供应商当
 //! 用不了，绝不退回内置驱动：主人给扩展配的 key、地址不能拿去走别的协议。别的格、别的写法照旧 `not_an_option`。读、`config.set`
@@ -38,7 +38,7 @@ pub fn with_installed(item: &Item, extra: &[String]) -> Item {
 }
 
 /// 选项表要活到进程结束（[`crate::Kind`] 拿的是 `&'static`）：照内容找已经留着的那一份，没有才另留一份。装了又卸、卸了又装，
-/// 同样的列表只留一次，不会每装卸一回多攒一份（core1 11-07 提的，施工 MD-2）。留下的份数是见过的不同列表数，很小。
+/// 同样的列表只留一次，不会每装卸一回多攒一份（评审 11-07 提的，施工 MD-2）。留下的份数是见过的不同列表数，很小。
 fn kept(all: &[&str]) -> &'static [&'static str] {
     static KEPT: Mutex<Vec<&'static [&'static str]>> = Mutex::new(Vec::new());
     let mut kept = KEPT.lock().unwrap_or_else(PoisonError::into_inner);

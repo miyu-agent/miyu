@@ -292,7 +292,7 @@ async fn a_removed_shipped_package_is_known_by_its_manifest() {
     );
 }
 
-/// 下面一层有同编号的不用记号（施工 PK-5补，sub1 第 2 条）：系统加装的 `xcfg` 被你装的盖住，卸掉你装的那一份不写
+/// 下面一层有同编号的不用记号（施工 PK-5补，评审第 2 条）：系统加装的 `xcfg` 被你装的盖住，卸掉你装的那一份不写
 /// `etc/leftover/`，系统加装的顶上来，配置里的键照它的清单认、照原样生效，`check` 什么都不说。
 #[tokio::test]
 async fn removing_a_copy_that_covers_a_lower_one_needs_no_mark() {

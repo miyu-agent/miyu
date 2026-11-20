@@ -51,7 +51,7 @@ async fn a_declared_scope_narrows_by_kind_of_session_not_by_name() {
         Fake::scoped("note_here", Access::Write, Scope::Local, Act::Echo),
         Fake::scoped("plan_here", Access::Write, Scope::LocalMain, Act::Echo),
         Fake::new("anywhere", Access::Read, Act::Echo),
-        // 第三方声明 any 的写工具，只给本机：场所会话里照旧没有（范围不放宽，core1 2026-11-05）。
+        // 第三方声明 any 的写工具，只给本机：场所会话里照旧没有（范围不放宽，项目主人 2026-11-05）。
         Fake::in_venues(
             "home_only",
             Access::Write,
