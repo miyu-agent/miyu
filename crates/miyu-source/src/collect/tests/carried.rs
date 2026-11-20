@@ -1,5 +1,6 @@
 //! 收录时写进索引条目的知识库、许可证（施工 PV-3）：`provides` 列出包里 `kb/` 下编号写法对的目录（`kb.toml` 可以没有，同
-//! 核心认包里的库），`license` 照清单原样；没带库的没有 `knowledge`，没写许可证的这一格不出。
+//! 核心认包里的库），`license` 照清单原样；没带库的没有 `knowledge`，没写许可证的这一格不出。最低要的 Miyu（施工 FX-7）同
+//! `license`：`miyu` 照清单原样，没写的不出。
 
 use super::*;
 use crate::test_support::put;
@@ -33,7 +34,10 @@ fn an_entry_lists_the_knowledge_bases_and_the_license_of_its_package() {
     let mut net = Net::default();
     net.release(
         "miyu-agent/lore",
-        &[with_kb(scratch.path(), "license = \" CC-BY-SA-4.0 \"")],
+        &[with_kb(
+            scratch.path(),
+            "license = \" CC-BY-SA-4.0 \"\nmiyu = \"2026.11.0\"",
+        )],
     );
     net.release(
         "miyu-agent/plain",
@@ -62,6 +66,8 @@ fn an_entry_lists_the_knowledge_bases_and_the_license_of_its_package() {
     assert_eq!(entry("lore").license.as_deref(), Some("CC-BY-SA-4.0"));
     assert!(!entry("plain").provides.contains_key("knowledge"));
     assert_eq!(entry("plain").license, None);
+    assert_eq!(entry("lore").miyu.as_deref(), Some("2026.11.0"));
+    assert_eq!(entry("plain").miyu, None);
     let written = serde_json::to_value(&got.index).expect("写得成");
     let plain = written["packages"]
         .as_array()
@@ -70,6 +76,7 @@ fn an_entry_lists_the_knowledge_bases_and_the_license_of_its_package() {
         .find(|one| one["id"] == "plain")
         .expect("在");
     assert!(plain.get("license").is_none(), "没写的不出这一格");
+    assert!(plain.get("miyu").is_none(), "没写的不出这一格");
     let back = Index::parse(&serde_json::to_vec(&got.index).expect("写得成")).expect("读得回去");
     assert_eq!(back, got.index);
 }

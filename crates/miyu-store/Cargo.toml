@@ -45,13 +45,10 @@ zip = { version = "9.3", default-features = false, features = ["deflate-flate2-z
 windows-version = "0.1.7"
 
 [features]
-# 别的 crate 的测试用的（施工 TMP-1）：删测试的临时目录，删到一半撞上后台写入的过一会儿再删（`src/testkit.rs`）；这个 crate
-# 自己的集成测试用的只给测试的函数（施工 AU-P1d）。
+# 别的 crate 的测试用的（施工 TMP-1）：删测试的临时目录，删到一半撞上后台写入的过一会儿再删（`src/testkit.rs`）。
 testkit = []
 
 [dev-dependencies]
-# 集成测试要的只给测试的函数（施工 AU-P1d：`Human::with_dir`）。
-miyu-store = { path = ".", features = ["testkit"] }
 # 测试里拿执行器替身跑一段真会话，写进日志、读回来、载入（施工 3-2）。
 miyu-kernel = { path = "../miyu-kernel", features = ["testkit"] }
 # 测试里拼工具的参数格式。

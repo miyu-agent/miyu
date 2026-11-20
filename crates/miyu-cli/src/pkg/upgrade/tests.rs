@@ -3,7 +3,7 @@
 
 use serde_json::{Value, json};
 
-use super::{question, rows};
+use super::{notices, question, rows};
 use crate::language::Language;
 
 /// 盘点：app 1.0 → 2.0，old 1.0 → 1.1。
@@ -88,5 +88,35 @@ fn an_upgrade_with_nothing_new_asks_as_before() {
     assert_eq!(
         question(&survey(), &older, &Language::Chinese),
         "升级 2 个软件包？[Y/n] "
+    );
+}
+
+/// 新版要更新的 Miyu 的（施工 FX-7）：标准错误上一个一句，说软件源里的版本和要的 Miyu；跟在别的几种后面。
+#[test]
+fn a_package_needing_a_newer_miyu_is_said_and_skipped() {
+    let survey = json!({
+        "upgrades": [],
+        "held": ["pinned"],
+        "needs_newer_miyu": [{"package": "tui", "to": "2026.11.0", "miyu": "2026.11.0"}],
+    });
+    let said = |language: Language| -> Vec<String> {
+        notices(&survey, &language)
+            .iter()
+            .map(|problem| problem.what().to_string())
+            .collect()
+    };
+    assert_eq!(
+        said(Language::Chinese),
+        [
+            "跳过设为不升级的 pinned",
+            "tui 2026.11.0 需要 Miyu 2026.11.0，跳过"
+        ]
+    );
+    assert_eq!(
+        said(Language::English),
+        [
+            "skipping held package pinned",
+            "skipping tui 2026.11.0: needs Miyu 2026.11.0"
+        ]
     );
 }

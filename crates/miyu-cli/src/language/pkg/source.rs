@@ -157,4 +157,12 @@ impl Language {
             Language::English => Problem::new(format!("skipping held package {id}")),
         }
     }
+
+    /// 新版要更新的 Miyu：跳过，别的照升（施工 FX-7）。`to` 是软件源里的版本，`miyu` 是它要的 Miyu。
+    pub(crate) fn upgrade_needs_newer_miyu(&self, id: &str, to: &str, miyu: &str) -> Problem {
+        match self {
+            Language::Chinese => Problem::new(format!("{id} {to} 需要 Miyu {miyu}，跳过")),
+            Language::English => Problem::new(format!("skipping {id} {to}: needs Miyu {miyu}")),
+        }
+    }
 }

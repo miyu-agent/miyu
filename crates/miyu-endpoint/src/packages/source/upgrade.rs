@@ -1,6 +1,10 @@
 //! 升级（施工 G-5，设计 `37-软件源.md` 第四节第 6、7 条，照 pacman 的 `-Su`）：`package.upgrades` 盘点、`package.upgrade` 换。
 //!
-//! - 只碰从软件源装的：本地库记了来源仓库的（施工 G-4 上）；从本机文件夹、包文件装的不碰（照 pacman 的 `-Qm`）。
+//! - 只碰从软件源装的：认的那一份在家目录这一层、本地库记了来源仓库的（施工 G-4 上）；从本机文件夹、包文件装的不碰（照 pacman
+//!   的 `-Qm`）。出厂的、系统的包管理器装的（`distro`）不碰，本地库里留着同编号的旧记录也不碰（施工 FX-7：它们归各自的安装方式
+//!   升级；项目主人本机 pacman 装的终端、网页被当成能升的，装的时候要更新的 Miyu、整次失败）。
+//! - 索引那一条写了最低要的 Miyu、正在跑的这一版用不了的（施工 FX-7，`miyu_config::package::needs_newer`）不算能升，进
+//!   `needs_newer_miyu`，别的照升。
 //! - 索引里那一版和装着的不一样就升（不比大小：作者撤回新版也跟着回去）；来源仓库和装的时候不一样的不升，报一句；
 //!   `packages.hold` 里的跳过；软件源里没有了的、被拉黑的照用，报一句（第 5 条，装着的人自己定卸不卸）。
 //! - 换就是照从软件源装那一条重装这一个（[`super::fetch`]）：缺的新依赖一起装，设置、状态、开关都留着；批过的能力照「来路没变、
@@ -16,6 +20,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use miyu_source::index::Index;
+use miyu_store::packages::{Layer, RUNNING};
 
 use super::super::approve::Approve;
 use super::super::notice::{self, Item};
@@ -28,10 +33,12 @@ use crate::refusal::Refusal;
 use crate::reverse::Peer as Reverse;
 use crate::settings::SourceSettings;
 
-/// 装着的一个：编号、清单写的版本、来源仓库（从软件源装的才有）、从哪个软件源装的（官方的没有，施工 U23 下下）。
+/// 装着的一个：编号、认的那一份在哪一层（施工 FX-7）、清单写的版本、来源仓库（从软件源装的才有）、从哪个软件源装的（官方的没有，
+/// 施工 U23 下下）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Installed {
     id: String,
+    layer: Layer,
     version: Option<String>,
     origin: Option<String>,
     feed: Option<String>,
@@ -53,6 +60,8 @@ struct Survey {
     blocked: Vec<(String, String)>,
     /// `packages.hold` 跳过的。
     held: Vec<String>,
+    /// 新版要更新的 Miyu、不升的（施工 FX-7）：编号、索引里的版本、要的 Miyu。
+    needs_newer_miyu: Vec<(String, String, String)>,
 }
 
 /// `package.upgrade` 的参数。
@@ -85,7 +94,7 @@ impl UpgradeParams {
     }
 }
 
-/// `package.upgrades`：回 `{"upgrades", "moved", "gone", "blocked", "held", "generated", "stale"?}`。
+/// `package.upgrades`：回 `{"upgrades", "moved", "gone", "blocked", "held", "needs_newer_miyu", "generated", "stale"?}`。
 pub(crate) async fn upgrades(core: &Arc<Core>) -> Result<Value, Refusal> {
     let synced = super::sync::sync(core, false).await?;
     let indexes = indexes(core, &synced.index).await;
@@ -226,23 +235,24 @@ async fn survey_core(
     core: &Arc<Core>,
     indexes: &Indexes,
 ) -> Result<(Survey, BTreeMap<String, Option<String>>), Refusal> {
-    let found: Vec<(String, Option<String>)> = core
+    let found: Vec<(String, Layer, Option<String>)> = core
         .system_packages()
         .iter()
         .map(|found| {
             let version = found.read.as_ref().ok().and_then(|m| m.version.clone());
-            (found.id.clone(), version)
+            (found.id.clone(), found.layer, version)
         })
         .collect();
     let root = packages(core).local_root();
     let installed = tokio::task::spawn_blocking(move || {
         found
             .into_iter()
-            .map(|(id, version)| {
+            .map(|(id, layer, version)| {
                 let desc = miyu_store::packages::local::read(&root, &id).map(|(desc, _)| desc);
                 let (origin, feed) = desc.map_or((None, None), |desc| (desc.origin, desc.feed));
                 Installed {
                     id,
+                    layer,
                     version,
                     origin,
                     feed,
@@ -259,14 +269,15 @@ async fn survey_core(
         .iter()
         .map(|one| (one.id.clone(), one.feed.clone()))
         .collect();
-    Ok((survey(&installed, indexes, &hold), feeds))
+    Ok((survey(&installed, indexes, &hold, RUNNING), feeds))
 }
 
-/// 盘点：只看记了来源仓库的，照它装的时候那个源的索引比（施工 U23 下下）；那个源这一层用不了的进 `gone`。
-fn survey(installed: &[Installed], indexes: &Indexes, hold: &[String]) -> Survey {
+/// 盘点：只看家目录这一层、记了来源仓库的，照它装的时候那个源的索引比（施工 U23 下下）；那个源这一层用不了的进 `gone`。新版要
+/// 比正在跑的 `running` 更新的 Miyu 的进 `needs_newer_miyu`（施工 FX-7）。
+fn survey(installed: &[Installed], indexes: &Indexes, hold: &[String], running: &str) -> Survey {
     let mut survey = Survey::default();
     for one in installed {
-        let Some(origin) = &one.origin else {
+        let (Layer::Home, Some(origin)) = (one.layer, &one.origin) else {
             continue;
         };
         let Some(index) = indexes.get(one.feed.as_deref().unwrap_or(OFFICIAL)) else {
@@ -290,6 +301,14 @@ fn survey(installed: &[Installed], indexes: &Indexes, hold: &[String]) -> Survey
         } else if one.version.as_deref() == Some(entry.version.as_str()) {
         } else if hold.contains(&one.id) {
             survey.held.push(one.id.clone());
+        } else if let Some(miyu) = entry
+            .miyu
+            .as_ref()
+            .filter(|miyu| miyu_config::package::needs_newer(running, miyu))
+        {
+            survey
+                .needs_newer_miyu
+                .push((one.id.clone(), entry.version.clone(), miyu.clone()));
         } else {
             survey
                 .upgrades
@@ -307,6 +326,7 @@ fn shown(survey: &Survey) -> Value {
         "gone": survey.gone,
         "blocked": survey.blocked.iter().map(|(id, reason)| json!({"package": id, "reason": reason})).collect::<Vec<_>>(),
         "held": survey.held,
+        "needs_newer_miyu": survey.needs_newer_miyu.iter().map(|(id, to, miyu)| json!({"package": id, "to": to, "miyu": miyu})).collect::<Vec<_>>(),
     })
 }
 

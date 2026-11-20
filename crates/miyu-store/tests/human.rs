@@ -354,12 +354,48 @@ fn config_words_go_to_the_settings_list_with_the_core_prefix() {
         None,
         "少了字段"
     );
-    // 配置那一格写错了：说是哪一份。
+    // 配置那一格类型写错了：说是哪一份。
     let scratch = Scratch::new();
-    scratch.file("core/human/zh.json", r#"{"config":{"item":{}}}"#);
-    let error = Human::load(&ResourceRoot::at(&scratch.0), "zh").expect_err("不认识的格");
+    scratch.file("core/human/zh.json", r#"{"config":{"items":[]}}"#);
+    let error = Human::load(&ResourceRoot::at(&scratch.0), "zh").expect_err("类型不对");
     assert!(error.file.ends_with("core/human/zh.json"), "{error}");
-    assert!(error.why.contains("item"), "{error}");
+}
+
+/// 字表里这一版不认识的格不管（施工 FX-7）：扩展、头钉着旧核心，读的是新核心装好的字表，新核心加了格（例如施工 DSR-2 的
+/// `option_notices`）也照样读得出认识的那些。四处都试：最外层、工具的样子、`config` 那一格、一项的字；资源目录读的、从包文件夹
+/// 补读的（`with_dir`）一样。出厂的字表写错了格由 `miyu-store` 自己的单元测试拦（`human/tests.rs`）。
+#[test]
+fn fields_this_version_does_not_know_are_skipped() {
+    let newer = r#"{
+        "tools": {"t": {"name": "T", "badge": "new"}},
+        "said": {"a": "A"},
+        "config": {
+            "items": {"log.level": {"name": "级别", "description": "说明", "options": {"info": "常规"},
+                                    "option_hints": {"info": "新的一格"}}},
+            "pages": {"advanced": "高级"},
+            "page_icons": {"advanced": "gear"}
+        },
+        "layout": {"columns": 2}
+    }"#;
+    let scratch = Scratch::new();
+    scratch.file("core/human/zh.json", newer);
+    scratch.file("own/human/zh.json", newer);
+    let human = Human::load(&ResourceRoot::at(&scratch.0), "zh").expect("不认识的格不管");
+    assert_eq!(human.tool("t").map(|face| face.name.as_str()), Some("T"));
+    assert_eq!(human.say(&Said::new("core/a")).as_deref(), Some("A"));
+    let level = Words::item(&human, "log.level").expect("有 log.level");
+    assert_eq!(
+        (
+            level.name.as_str(),
+            level.options.get("info").map(String::as_str)
+        ),
+        ("级别", Some("常规"))
+    );
+    assert_eq!(human.page("advanced"), Some("高级"));
+    let own = Human::default()
+        .with_dir(&scratch.0.join("own"), "software/own", "zh")
+        .expect("补读的也不管");
+    assert_eq!(own.say(&Said::new("software/own/a")).as_deref(), Some("A"));
 }
 
 /// 碰到旧数据根说的话（施工 FX-4）：不带施工号；认不出的那一句（0.7 版的数据目录也在 `~/.miyu`、没有标记，落在这一种）照

@@ -206,7 +206,7 @@ window = 1000000
 - Windows：没有这一层。
 - 和出厂那一层是同一个目录的（真实路径一样）去掉，同一处列了两次的只留第一次。
 
-核心起来时照环境算一次（`miyu-core` 的 `distro_dirs`），交给 `Core::with_distro`，装卸以后重读照它；测试里造的核心没有这一层，要的自己指一处。命令行转交子命令、找界面照 `Packages::system` 现算。这一层只归系统的包管理器：程序照包文件夹的 `bin/` 找（同装上的），能力照装上的一样要人批（只有出厂的自动批），本地库不记它、`package.check` 不比哈希（下面「本地库」）；卸它只是记一笔不再加载（下面「装卸」）。
+核心起来时照环境算一次（`miyu-core` 的 `distro_dirs`），交给 `Core::with_distro`，装卸以后重读照它；测试里造的核心没有这一层，要的自己指一处。命令行转交子命令、找界面照 `Packages::system` 现算。这一层只归系统的包管理器：程序照包文件夹的 `bin/` 找（同装上的），能力照装上的一样要人批（只有出厂的自动批），本地库不记它、`package.check` 不比哈希（下面「本地库」）；卸它只是记一笔不再加载（下面「装卸」）；从软件源升级的盘点不看它，本地库里哪怕留着同编号的旧记录（例如家目录里那一份被手删了）也不看（施工 FX-7：项目主人本机终端、网页是系统的包管理器装的，盘点照留着的记录把它们当成能升的，装的时候要更新的 Miyu、整次升级失败）。
 
 **用得到的那一份**：核心手里的 `Core::system_packages` 是出厂的、装上的全部，进程、扩展、MCP 服务、装卸照它；会话看得到、用得到的（工具面里预设的功能、技能、脚本列表、命令模板、包带的人格预设、投影里技能的显示名、知识库、给别的包带的内容）照 `Core::packages_of`：全部去掉关着的（下面「关掉某个包」，施工 UX-1 补起照包的开关算，原来照配置项 `packages.<编号>.off`），用到时造一份留着，装卸了清掉。装、卸、升级人的连接、不关的会话做得了（`packages/may_manage.rs`），关起来的会话回 `not_permitted`。
 
@@ -348,6 +348,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 9. **软件源索引里的 `license`**（施工 PV-3）：每个包另有可选的 `license`，清单 `[package] license` 的原样（读清单时已去掉前后空白）；没写的不写，索引照旧是 `version` 1，以前的索引读成没有，旧客户端照略过。`package.info` 没装的那一份、`package.search` 每一行照它带。
 10. **软件源索引里的 `hosted`**（施工 RB-1，同 HT-4 装包预览的那一格）：每个包另有可选的 `hosted`，模型驱动会让供应商自己跑的工具 `{"<驱动名>": ["<工具名>", …]}`，收录时照清单 `[[driver]] hosted` 原样写，没写 `hosted` 的驱动不列，一个都没写的不写这一格；索引照旧是 `version` 1，以前的索引读成空的，旧客户端照略过。从软件源装之前看一眼、`package.info` 没装的那一份照它带 `hosted`（`protocol.md`），`miyu pkg install` 的确认屏、`miyu pkg info` 的「提供」照它印「模型驱动 <名字> 会让供应商自己运行：…」（`cli/pkg.md`）；以前的索引没有的照旧不印。
 11. **软件源索引里的 `systems`**（施工 PL-2）：每个包另有可选的 `systems`，清单 `[package] systems` 的原样；没写的不写，索引照旧是 `version` 1，以前的索引读成空的（哪种都支持），旧客户端照略过。见下面「支持的系统」。
+12. **软件源索引里的 `miyu`**（施工 FX-7）：每个包另有可选的 `miyu`，清单 `[package] miyu` 的原样（这个包最低要哪一版 Miyu，下面「问题的代码」`needs_newer_miyu`）；没写的不写，索引照旧是 `version` 1，以前的索引读成没有，旧客户端照略过。升级的盘点照它把正在跑的这一版比不过的放进 `needs_newer_miyu`、不算能升的（`protocol.md`「`package.upgrades`、`package.upgrade`」）：不然要先下载、解开才知道装不上，整次升级失败，别的包也没升。写法读不成的照没写。软件源要用这一版以后的 `miyu-index` 重新生成索引才有这一格，没有时照旧算能升，装的时候照旧报 `needs_newer_miyu`。
 
 ### 支持的系统（施工 PL-2，项目主人 2026-11-17 定「默认藏，可打开看」）
 
@@ -486,6 +487,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `crates/miyu-endpoint/tests/packages_preview.rs`（施工 F-8 下补） | 看一眼：装的说带了什么、要什么能力、几个文件多大，升级的说换下哪个版本，写错的、撞了出厂的照真装一样拒；卸的说哪一层、写了的设置键、状态目录在哪多大（施工 PK-4：链接不跟进去，没有的不写；状态目录自己是链接的算 0，只在 Unix 上）、配置目录留不留（施工 PK-5：不在的、空的不写，`kept` 照 `purge`；本身是链接的照写，只在 Unix 上）；装回出厂的；都什么都不动 |
 | `crates/miyu-endpoint/tests/packages_provides.rs`（施工 PV-2） | `package.list` 每一项的 `provides`：装上的带技能、脚本、MCP 服务的各自对，装的回应、`package.changed` 推的那一项同样有；出厂的 `base-authoring` 的技能、`base-persona-engineer` 的人格、`base-shell` 的功能；什么都没带的是 `{}`；知识库（施工 PV-3）：`kb/` 下编号写法对的目录列进 `provides`、`package.info` 的 `contains`（装着的、带 `path` 的），写法不对的、文件不列；`license` 装着的、带 `path` 的照清单交，没写的没有 |
 | `crates/miyu-config/src/package/credits/tests.rs`（施工 F-12、PV-3）、`crates/miyu-source/src/collect/tests/carried.rs`、`crates/miyu-endpoint/tests/packages_info.rs`、`packages_search.rs`（施工 PV-3） | 作者、上游、许可证写了的读出来、没写的没有；许可证去掉前后空白、不查 SPDX，空的、不是字的、两行的、超过 100 个字的报 `bad_license`；收录把 `kb/` 下的库列进 `provides.knowledge`、`license` 抄进索引，没写的这一格不出；`package.info` 没装的、`package.search` 照索引带 `license` |
+| `crates/miyu-endpoint/src/packages/source/upgrade/tests.rs` 的 `distro_packages_are_left_alone_and_a_newer_miyu_is_skipped_not_failed`、`crates/miyu-config/src/package/version/tests.rs` 的 `the_index_can_say_a_package_needs_a_newer_miyu`、`crates/miyu-source/src/collect/tests/carried.rs`（施工 FX-7） | 升级的盘点：系统加装的、出厂的本地库留着记录也不看；索引写了更新的 Miyu 的进 `needs_newer_miyu`、别的照升，正式版、开发版用得了的照升；比法同清单（候选版也比，读不成的不比）；收录时 `miyu` 照清单原样写进索引，没写的不出这一格 |
 | `crates/miyu-endpoint/tests/packages_push.rs`（施工 F-8 三补） | 订阅的回应是整份列表；别的连接装上、卸掉装上的、卸掉和装回出厂的，各推变了的那一项，照这个连接的语言，卸没了的是 `null`；取消了不推；没握手、带 `after` 的拒 |
 | `crates/miyu-endpoint/tests/packages_settings_left.rs`（施工 PK-5补） | 照 `miyu-core` 拼配置清单的真核心：不带 `purge` 卸的设置项原样留着、不生效、`check` 只说一句 `settings_left`、重启也一样，你装的记 `etc/leftover/<编号>.toml`，重装照原样生效、记号删掉；自己写的前缀照记的认，重装换了前缀以新清单为准；没装的带 `purge` 看一眼、只删留下的三样，不带的、什么都没留的 `unknown_package`；卸掉的出厂包不记、照资源目录的清单认；下面一层有同编号的不用记号 |
 | `crates/miyu-endpoint/tests/packages_approve.rs`、`packages_approve_source.rs`（施工 PK-3 上） | 本机文件夹装的看一眼 `source: "file"`、没有 `held`、`notice` 是本机文件那一句（不叫社区包、没有沙盒那句，施工 CM-1）；`approve` 写法不对的 `bad_params`、什么都不装；没声明的、别的编号的不理，表里没盖住的照旧没批；本机文件盖同编号的不接着用以前批的，不带 `approve` 的整项去掉；`always` 的带着批准装上当场跑，`manual` 的打开不用再批，没带的打开照旧 `needs_approval`；装回出厂的 `source: "shipped"`、不写 `approved`；开关文件写不进的装照算成、记 `WARN extension approval not recorded`。从软件源装的：官方的、官方源里社区收录的，依赖、推荐带 `source`、`feed`、能力，社区的有 `notice`、`recommends_notice`（几个包的写出是哪几个，施工 CM-1）；照 `approve` 装上就批，`held` 只在来路没变时有，本机文件盖过去就没了；升级照来路没变留着，新版不要的去掉、加回来要重新批，看一眼带来源、能力、一起装的新依赖 |

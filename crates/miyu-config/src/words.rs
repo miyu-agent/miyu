@@ -8,7 +8,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::item::{Control, Item, Kind};
 
@@ -22,8 +22,11 @@ pub trait Words {
 }
 
 /// 资源里 `config` 那一格：一种语言的名字和说明。
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
-#[serde(deny_unknown_fields)]
+///
+/// 不认识的格不管（施工 FX-7，`internal/blueprint/store/resources.md`「怎么走」第 3 条）：扩展、头钉着旧的核心 crate，读的是
+/// 新核心装好的字表，新核心加一格不能让旧的读法整份读不成。出厂的字表写错了格由 `miyu-store` 的单元测试拦（读一遍、照读到的
+/// 样子写回去比，所以这里带 `Serialize`）。
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
 pub struct ConfigWords {
     /// 每一项：键到它的名字、说明、选项名。
     #[serde(default)]
@@ -40,9 +43,9 @@ pub struct ConfigWords {
     pub group_descriptions: BTreeMap<String, String>,
 }
 
-/// 一项给人看的字。
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(deny_unknown_fields)]
+/// 一项给人看的字。不认识的格不管，同 [`ConfigWords`]（施工 FX-7：接入通讯平台钉着旧核心，读到施工 DSR-2 加的
+/// `option_notices` 起不来）。
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct ItemWords {
     /// 名字，例如「界面语言」。
     pub name: String,

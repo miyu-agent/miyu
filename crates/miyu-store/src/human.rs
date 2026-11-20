@@ -40,6 +40,8 @@ use miyu_kernel::template::Template;
 use crate::resources::ResourceRoot;
 
 mod shelf;
+#[cfg(test)]
+mod tests;
 
 pub use shelf::Shelf;
 
@@ -64,9 +66,8 @@ struct Phrase {
     template: Template,
 }
 
-/// 一件工具给人看的样子。
+/// 一件工具给人看的样子。不认识的格不管，同整份字表（施工 FX-7）。
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
 pub struct Face {
     /// 显示名，例如「读取」。
     pub name: String,
@@ -92,8 +93,12 @@ pub enum Block {
 }
 
 /// `human/<语言>.json` 的样子。
+///
+/// 不认识的格不管（施工 FX-7，`store/resources.md`「怎么走」第 3 条）：扩展、头钉着旧的核心 crate，经 [`Human::load`]、
+/// [`Human::with_dir`] 读的是新核心装好的字表，新核心加一格不能让它们整份读不成。出厂的字表写错了格照样拦，拦在这个模块的
+/// 测试里（`human/tests.rs`：读一遍、照读到的样子写回去，原文多出来的格就是不认识的）。
 #[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(test, derive(Serialize))]
 struct File {
     #[serde(default)]
     tools: BTreeMap<String, Face>,
@@ -156,7 +161,6 @@ impl Human {
     /// # Errors
     ///
     /// 那一份读得到、却读不懂（不是 JSON、写法不对、模板坏了），说是哪一份。
-    #[cfg(any(test, feature = "testkit"))]
     pub fn with_dir(
         mut self,
         dir: &Path,

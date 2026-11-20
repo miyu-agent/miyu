@@ -266,6 +266,7 @@ fn read_package(
         official,
     );
     entry.installed = Some(unpacked.bytes);
+    entry.miyu = package::wanted_miyu(&text);
     let (mut logo, mut note) = (None, None);
     match logo_of(&manifest, &unpacked.folder) {
         Ok(Some((at, bytes))) => {
@@ -383,6 +384,8 @@ fn entry_of(
         author: manifest.author.clone(),
         upstream: manifest.upstream.clone(),
         license: manifest.license.clone(),
+        // 最低要的 Miyu（施工 FX-7）：清单读成的样子里没有这一格，照原文另取（[`read_package`]）。
+        miyu: None,
         systems: manifest
             .systems
             .iter()

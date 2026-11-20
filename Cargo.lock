@@ -2438,7 +2438,6 @@ dependencies = [
  "miyu-kernel",
  "miyu-policy",
  "miyu-recall",
- "miyu-store",
  "notify",
  "rusqlite",
  "serde",

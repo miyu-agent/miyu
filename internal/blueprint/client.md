@@ -18,7 +18,7 @@
 | `open_files` | `raise`、`Raised`：常驻的头、扩展起来时把打开文件数的软上限调高（施工 YC-1） | `miyu-ipc` |
 | `open` | `Core`、`Browser`、`SystemBrowser`（Linux `xdg-open`、macOS `open`、Windows `rundll32 url.dll,FileProtocolHandler`，网址整个是一个参数、不经过 shell；施工 AU-014，原来 Windows 是 `cmd /C start ""`，`&` 后面的被当成另一条命令，`open/browser.rs`）、`locale`；连不上、拉不起核心的 `Refused`（`unreachable`）原话照 `locale` 的语言从资源目录取字（施工 EN-2，`open/unreachable.rs`），取不到的照底层的原话 | 本 crate |
 | `places` | `DataRoot`、`ResourceRoot`、`Env`、`Platform`、`locale`、`cache_root`；施工 S-6 上补 `write`（生成的文件，`generated`）、`config_file`（读配置文件那一层）、`Packages`、`Issue`（两层的软件包清单） | `miyu-store` |
-| `texts` | `Human`、`Face`、`clean`；施工 S-6 上补 `HumanError` | `miyu-store` 的 `human` |
+| `texts` | `Human`、`Face`、`clean`；施工 S-6 上补 `HumanError`。`Human::with_dir`（从包文件夹补读一份字）是正式接口，接入通讯平台起来时用它把自己 `data/human/` 的字并进核心的字（施工 FX-7 恢复：施工 AU-P1d 只看了核心仓库，把它放到了 `testkit` 后面）。读字表时不认识的格不管（施工 FX-7，`store/resources.md`「怎么走」第 3 条第 3 款）：头、扩展钉着旧核心，读的是新核心装好的字表 | `miyu-store` 的 `human` |
 | `protocol` | `SessionId`、`Said`、`Template` | `miyu-kernel` |
 | `manifest` | `read`、`Value` | `miyu-config` |
 | `log` | `install`、`LevelFilter` | `miyu-log` |
@@ -40,3 +40,4 @@
 1. **代码不搬**：转出去的留在原来的 crate，门面只 `pub use`；`open` 是唯一挪进来的，因为它本来就只给头用。
 2. **门面的样子是协议的一部分**：加、改、拿掉门面上的东西，照改协议的做法告诉两个头（提交号、改了什么）；两个头 2026-10-11 报的用法是这一版的全部。施工 S-6 上照接入QQ（桥和群聊内核）2026-10-16 数的用法多 `ids`、`time`、`events`、`tooltext`、`settings`、`http` 六组，补 `places`、`texts`（设计 32 第九节第 1 条）：接入QQ 拆出去以前，桥只依赖门面；`events` 的 `Block`、`tooltext` 的 `Access` 是桥用到、施工单没数到的，一起转出。
 3. **层序**：第 3 层（`01-架构.md` 第九节），只引同层、下层。
+4. **钉核心的仓库也是调用方**（施工 FX-7，2026-11-20 主会话定）：核心的 crate 不止门面有人用，接入通讯平台、终端、网页这些仓库照 git 依赖钉着核心的某一个提交，连同 `miyu-store`、`miyu-core` 这些。判一个公开的函数「只有测试用」、要放到 `testkit` 后面以前，先在这些仓库里也查一遍：施工 AU-P1d 只查了核心仓库，把接入通讯平台正式在用的 `Human::with_dir` 放到了 `testkit` 后面，终端的测试用的 `Packaged::as_released` 也是，施工 FX-7 恢复。它们读的资源目录又是装着的那一版核心带的，所以读资源的结构遇到不认识的格不管（上面 `texts` 那一行）。

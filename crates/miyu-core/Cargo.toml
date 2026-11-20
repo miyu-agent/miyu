@@ -15,7 +15,7 @@ autotests = false
 default = ["mermaid", "net"]
 mermaid = ["dep:miyu-mermaid"]
 net = ["dep:miyu-net"]
-# 只有这个 crate 自己的集成测试用的几个函数（施工 AU-P1d）：`builtin_tools`、`Packaged::as_released`，不编进正式程序。
+# 只有这个 crate 自己的集成测试用的函数（施工 AU-P1d）：`builtin_tools`，不编进正式程序。
 testkit = []
 
 [dependencies]

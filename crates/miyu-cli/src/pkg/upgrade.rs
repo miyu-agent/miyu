@@ -1,5 +1,5 @@
 //! `miyu pkg upgrade`（施工 G-5，设计 `37-软件源.md` 第四节第 6、7 条，pacman 的 `-Su`、`-Syu`）：先盘点（`package.upgrades`），
-//! 软件源里没了的、被拉黑的、来源仓库变了的、`packages.hold` 跳过的在标准错误上各说一句；有要升的照 pacman 印「将升级」几行、
+//! 软件源里没了的、被拉黑的、来源仓库变了的、`packages.hold` 跳过的、新版要更新的 Miyu 的（施工 FX-7）在标准错误上各说一句；有要升的照 pacman 印「将升级」几行、
 //! 下多大，问一句，再升（`package.upgrade`），升好了一个一行。没有要升的说一句、退出码 0。
 //!
 //! 施工 PK-3 下（设计 `61-装包说清来源和能力.md` 定了的 5、6）：一律先看一眼（`--yes` 也看：新多要的能力要照它批），每个包下面
@@ -161,6 +161,13 @@ fn notices(survey: &Value, language: &Language) -> Vec<Problem> {
     }
     for id in items("held") {
         said.push(language.upgrade_held(id.as_str().unwrap_or_default()));
+    }
+    for row in items("needs_newer_miyu") {
+        said.push(language.upgrade_needs_newer_miyu(
+            &text(&row, "package"),
+            &text(&row, "to"),
+            &text(&row, "miyu"),
+        ));
     }
     said
 }

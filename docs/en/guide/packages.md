@@ -230,10 +230,10 @@ miyu pkg clean     # clear the cache
 ```
 
 - `update`: prints one line per package source, `updated <source>: N packages (<time>)`. You do not have to run it by hand: when you search, install or upgrade and the index on this machine is more than 24 hours old, it is fetched automatically. If the package source cannot be reached, the copy on this machine keeps being used, and searching shows `cannot reach the package source, using the local index (<time>)`.
-- `upgrade`: upgrades only packages installed from the package source. Packages installed from a folder or package file on this machine are not upgraded; shipped packages are upgraded together with Miyu itself (`miyu upgrade`). A package is upgraded whenever the version in the package source differs from the installed one, so if the author withdraws a new version, the package goes back too. The confirmation screen shows one line per package, `Will upgrade <id> <old version> → <new version>`; capabilities the new version needs in addition are listed below it under `New: `, and then it asks `Upgrade '<id>' and approve the new capabilities? [Y/n]`. Settings, state, switches and capabilities you approved before are all kept. If you do not approve the extra capabilities of the new version, you are asked again when you turn the package on.
+- `upgrade`: upgrades only packages installed from the package source. Packages installed from a folder or package file on this machine are not upgraded; shipped packages are upgraded together with Miyu itself (`miyu upgrade`); packages installed with the system package manager (for example `pacman` or Homebrew) are upgraded by the system package manager, and `miyu pkg upgrade` leaves them alone. A package is upgraded whenever the version in the package source differs from the installed one, so if the author withdraws a new version, the package goes back too. The confirmation screen shows one line per package, `Will upgrade <id> <old version> → <new version>`; capabilities the new version needs in addition are listed below it under `New: `, and then it asks `Upgrade '<id>' and approve the new capabilities? [Y/n]`. Settings, state, switches and capabilities you approved before are all kept. If you do not approve the extra capabilities of the new version, you are asked again when you turn the package on.
 - `clean`: deletes package files in the cache that are not the installed version, and prints `removed N package files, freed <size>`.
 
-In the following four cases the package is not upgraded; the command prints one sentence about each on standard error, and the installed version keeps being used:
+In the following five cases the package is not upgraded; the command prints one sentence about each on standard error, the installed version keeps being used, and the other packages are upgraded as usual:
 
 | Message | Reason |
 |---|---|
@@ -241,6 +241,7 @@ In the following four cases the package is not upgraded; the command prints one 
 | `<id> is no longer in the package source, keeping the installed version` | The package is gone from the package source, or the package source it was installed from has been removed from the config. |
 | `<id> is blocked: <reason>` | The package source blocked it. Whether to remove it is up to you, and the hint explains how. |
 | `<id> now comes from <repository>, not upgraded` | The id changed its source repository. A new source means a different person you have to trust, so it is not upgraded automatically. |
+| `skipping <id> <version>: needs Miyu <version>` | The new version in the package source needs a newer Miyu. Update Miyu first, then run `miyu pkg upgrade` again. |
 
 If you want to pin a package so that it is not upgraded, run:
 

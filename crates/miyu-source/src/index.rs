@@ -90,6 +90,10 @@ pub struct Entry {
     /// 许可证（施工 PV-3）：清单 `[package] license` 的原样；没写的、以前生成的索引没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub license: Option<String>,
+    /// 最低要哪一版 Miyu（施工 FX-7）：清单 `[package] miyu` 的原样。升级的盘点照它把正在跑的这一版用不了的分出去，不用先下载
+    /// （`miyu_config::package::needs_newer`）。没写的、以前生成的索引没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub miyu: Option<String>,
     /// 这一版第一次进这个软件源的时刻（施工 DL-1，设计 54 第一节），RFC 3339：生成索引时照上一份沿用，编号、版本变了的写这一次
     /// 生成的时刻。以前生成的没有；写法不对的读成没有（`time_or_none`），这一条照收。
     #[serde(

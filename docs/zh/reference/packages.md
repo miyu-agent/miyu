@@ -147,11 +147,11 @@
 
 ## `package.upgrades`、`package.upgrade`
 
-这两个方法从软件源升级软件包。它们只处理从软件源安装的软件包；从文件夹、包文件安装的软件包不处理。核心不比较版本的大小，只要索引里的版本和已安装的不一样就升级。
+这两个方法从软件源升级软件包。它们只处理从软件源安装到数据根里的软件包；从文件夹、包文件安装的软件包不处理，出厂的和系统的包管理器安装的（`distro`）软件包也不处理，因为它们由 Miyu 自己的安装方式和系统的包管理器升级。核心不比较版本的大小，只要索引里的版本和已安装的不一样就升级。如果索引里的新版要求比正在运行的更新的 Miyu（清单的 `[package] miyu`），这个软件包不算可以升级，放进 `needs_newer_miyu`。
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `package.upgrades` | 无 | `{"upgrades": [{"package", "from", "to"}], "moved": [{"package", "was", "now"}], "gone", "blocked": [{"package", "reason"}], "held", "generated", "stale"?}`：依次是可以升级的；来源仓库变了、因此不升级的；软件源里已经没有的；被拉黑的；被系统配置 `packages.hold` 跳过的 |
+| `package.upgrades` | 无 | `{"upgrades": [{"package", "from", "to"}], "moved": [{"package", "was", "now"}], "gone", "blocked": [{"package", "reason"}], "held", "needs_newer_miyu": [{"package", "to", "miyu"}], "generated", "stale"?}`：依次是可以升级的；来源仓库变了、因此不升级的；软件源里已经没有的；被拉黑的；被系统配置 `packages.hold` 跳过的；新版要求更新的 Miyu、因此不升级的（`to` 是索引里的版本，`miyu` 是它要求的 Miyu 版本） |
 | `package.upgrade` | `packages`（可以不写，写了时只升级这几个）、`preview`、`approve`（和 `package.install` 相同） | 预览时返回 `{"upgrades", "download", "with", "notice"?}`：`upgrades` 的每一项多 `source`、`feed`、`capabilities`（新版声明的能力，带 `held`），`with` 是一起安装的新依赖（和 `package.install` 预览的那一格相同）；真正升级时返回 `{"upgraded": [{"package", "from", "to"}]}`，下载时和 `package.install {"source"}` 一样推送进度 |
 
 ## `package.enable`、`package.disable`、`package.restart`

@@ -72,7 +72,7 @@ pub use slash::{Access, SlashCommand};
 pub use system::{System, fits_here};
 pub use target::Target;
 pub use theme::Theme;
-pub use version::maybe_newer;
+pub use version::{maybe_newer, needs_newer, wanted as wanted_miyu};
 pub use widget::{MOST as WIDGETS_MOST, Place as WidgetPlace, Widget};
 
 use reader::{Reader, line_of};

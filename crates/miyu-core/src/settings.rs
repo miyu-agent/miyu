@@ -130,9 +130,8 @@ impl Packaged {
         Packaged::with(found, &|one| !miyu_endpoint::packages::absent(one))
     }
 
-    /// 照发行包的样子拼：程序都在 `miyu` 旁边（施工 F-6 上）。生成配置的样本、测出厂的清单用：不照跑的这台机器。只有测试用
-    /// （施工 AU-P1d，`testkit` 特性）。
-    #[cfg(any(test, feature = "testkit"))]
+    /// 照发行包的样子拼：程序都在 `miyu` 旁边（施工 F-6 上）。生成配置的样本、测出厂的清单用：不照跑的这台机器。核心自己只有
+    /// 测试用，终端仓库的测试也用它拼出厂的配置项（施工 FX-7 恢复成正式接口：施工 AU-P1d 只查了核心仓库）。
     pub fn as_released(found: &mut [Found]) -> Packaged {
         Packaged::with(found, &|_| true)
     }

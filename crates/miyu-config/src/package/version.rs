@@ -67,6 +67,27 @@ pub(super) fn required(text: &str, running: &str) -> Result<(), Problem> {
     })
 }
 
+/// 正在跑的 `running` 用不了要 `wanted` 的包（施工 FX-7：升级的盘点照软件源索引的 `miyu` 比，不用先下载）：比法同读清单时的
+/// `needs_newer_miyu`，开发版都用得了；两边有一个读不成 semver 的不比，当用得了（装的时候读清单再拦）。
+pub fn needs_newer(running: &str, wanted: &str) -> bool {
+    match (Semver::parse(running), Semver::parse(wanted)) {
+        (Some(running), Some(wanted)) => !fits(&running, &wanted),
+        _ => false,
+    }
+}
+
+/// 清单 `text` 的 `[package] miyu`（施工 FX-7：收录进软件源索引时照它写）：写了、又是 semver 写法的原样交回，别的是空的。
+pub fn wanted(text: &str) -> Option<String> {
+    let document = Document::parse(text).ok()?;
+    let wanted = document
+        .as_table()
+        .get("package")
+        .and_then(Item::as_table_like)
+        .and_then(|package| package.get("miyu"))
+        .and_then(Item::as_str)?;
+    Semver::parse(wanted).map(|_| wanted.to_string())
+}
+
 /// 读不成的这一处可能是这一版 Miyu 太旧（施工 VER-1）：报的是不认识的表、键，清单又写了 `[package] miyu`（比得过的、开发版不比
 /// 的都算：新加的表、键旧核心不认识）。调的一方在报错后面补一句「这个包可能需要更新版本的 Miyu」。
 pub fn maybe_newer(text: &str, problem: &Problem) -> bool {

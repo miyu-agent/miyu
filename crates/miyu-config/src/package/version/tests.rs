@@ -1,4 +1,4 @@
-use super::{Semver, fits, maybe_newer, required};
+use super::{Semver, fits, maybe_newer, needs_newer, required, wanted};
 use crate::package::{Code, read, read_for};
 
 fn version(text: &str) -> Semver<'_> {
@@ -129,4 +129,21 @@ fn an_unknown_table_hints_at_a_newer_miyu_only_when_the_manifest_names_one() {
     let wrong = "[package]\nname = { en = \"N\" }\nmiyu = \"2026.11.0\"\nprotocol = \"x\"\n";
     let problem = read_for(wrong, "0.0.0").expect_err("写错");
     assert!(!maybe_newer(wrong, &problem), "写错的不提：{problem}");
+}
+
+/// 升级的盘点照索引比（施工 FX-7）：同读清单的比法，候选版也比，开发版都用得了，读不成的不比；收录时照原样取清单写的那一版。
+#[test]
+fn the_index_can_say_a_package_needs_a_newer_miyu() {
+    assert!(needs_newer("2026.11.0-rc.2.4", "2026.11.0"));
+    assert!(!needs_newer("2026.11.0", "2026.11.0"));
+    assert!(!needs_newer("2026.12.0", "2026.11.0"));
+    assert!(!needs_newer("0.0.0", "2099.1.0"), "开发版都用得了");
+    assert!(!needs_newer("2026.11.0", "1.2"), "读不成的不比");
+    assert_eq!(
+        wanted("[package]\nname = \"x\"\nmiyu = \"2026.11.0\"\n").as_deref(),
+        Some("2026.11.0")
+    );
+    assert_eq!(wanted("[package]\nmiyu = \"1.2\"\n"), None);
+    assert_eq!(wanted("[package]\nname = \"x\"\n"), None);
+    assert_eq!(wanted("not toml ["), None);
 }
