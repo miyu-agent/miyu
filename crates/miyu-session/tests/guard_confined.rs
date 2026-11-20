@@ -62,13 +62,24 @@ fn one(tool: &str, path: &str) -> Play {
 async fn session(home: &Home, script: &Script, kit: &Kit, venue: &str, unconfined: bool) -> Handle {
     std::fs::create_dir_all(home.scratch.0.join("work")).expect("建得了工作区");
     std::fs::create_dir_all(home.scratch.0.join("elsewhere")).expect("建得了别处");
+    session_at(home, script, kit, (venue, unconfined), &at(home, "work")).await
+}
+
+/// 同 [`session`]，工作区是 `cwd`。
+async fn session_at(
+    home: &Home,
+    script: &Script,
+    kit: &Kit,
+    (venue, unconfined): (&str, bool),
+    cwd: &str,
+) -> Handle {
     let opening = Opening {
         permission: Permission {
             level: Level::Full,
             read_only: false,
         },
         attended: false,
-        cwd: at(home, "work"),
+        cwd: cwd.to_string(),
         dirs: Vec::new(),
         sandbox: None,
     };
@@ -166,6 +177,86 @@ async fn a_group_session_only_touches_its_workspace_and_runs_no_command() {
         Some("core/permissions/outside-workspace")
     );
     assert_eq!(text(&all[4]), shipped("no-commands.txt"));
+}
+
+/// 数据根在关起来的会话里读写都拒（施工 SEC-5）。权限策略照工具报的路径判，不看是哪件工具：内置的文件工具、声明了 `paths`
+/// 的扩展工具（`miyu-endpoint` 的 `provide/declared.rs` 把声明换成同样的路径）走的是这同一条。完全放开下本人的会话读写得了
+/// 数据根（施工 RO-3），关起来的会话不行：密钥文件、自带的技能、别的场所的工作区，一处都碰不到。
+#[tokio::test]
+async fn a_confined_session_touches_nothing_in_the_data_root() {
+    let home = Home::new();
+    let kit = Kit::new();
+    let root = home.root.path();
+    let inside = |path: &str| {
+        let file = root.join(path);
+        std::fs::create_dir_all(file.parent().expect("有上级")).expect("建得了");
+        std::fs::write(&file, "x").expect("写得进");
+        file.to_string_lossy().into_owned()
+    };
+    let secrets = inside("etc/private/secrets.toml");
+    let skill = inside("root/skills/notes/SKILL.md");
+    let script = Script::new([
+        one("read", &secrets),
+        one("write", &secrets),
+        one("read", &skill),
+        one("write", &skill),
+        Play::Says("好。"),
+    ]);
+    let handle = session(&home, &script, &kit, "qq:group:1", false).await;
+    let log = turn(&home, &handle).await;
+    assert!(kit.read.calls().is_empty(), "数据根里的读一律拒：{log:#?}");
+    assert!(kit.write.calls().is_empty(), "数据根里的写一律拒");
+    let statuses: Vec<ToolStatus> = results(&log)
+        .iter()
+        .map(|result| result.status.clone())
+        .collect();
+    assert_eq!(statuses, vec![ToolStatus::Denied; 4]);
+}
+
+/// 场所会话的默认工作区自己就在数据根里（`root/workspace/…`）：它只碰得到自己那一处，数据根别处、别的场所的工作区照样拒
+/// （施工 SEC-5）。
+#[tokio::test]
+async fn a_confined_session_working_inside_the_data_root_stays_in_its_own_place() {
+    let home = Home::new();
+    let kit = Kit::new();
+    let root = home.root.path();
+    let own = root.join("root/workspace/qq-group-1");
+    let other = root.join("root/workspace/qq-group-2");
+    for dir in [&own, &other, &root.join("etc/private")] {
+        std::fs::create_dir_all(dir).expect("建得了");
+    }
+    let path = |file: &std::path::Path| file.to_string_lossy().into_owned();
+    let mine = path(&own.join("notes.md"));
+    let theirs = path(&other.join("notes.md"));
+    let secrets = path(&root.join("etc/private/secrets.toml"));
+    let script = Script::new([
+        one("read", &mine),
+        one("write", &mine),
+        one("read", &theirs),
+        one("write", &theirs),
+        one("read", &secrets),
+        one("write", &secrets),
+        Play::Says("好。"),
+    ]);
+    let handle = session_at(&home, &script, &kit, ("qq:group:1", false), &path(&own)).await;
+    let log = turn(&home, &handle).await;
+    let statuses: Vec<ToolStatus> = results(&log)
+        .iter()
+        .map(|result| result.status.clone())
+        .collect();
+    assert_eq!(
+        statuses,
+        [
+            ToolStatus::Ok,
+            ToolStatus::Ok,
+            ToolStatus::Denied,
+            ToolStatus::Denied,
+            ToolStatus::Denied,
+            ToolStatus::Denied
+        ],
+        "{log:#?}"
+    );
+    assert_eq!((kit.read.calls().len(), kit.write.calls().len()), (1, 1));
 }
 
 #[tokio::test]
