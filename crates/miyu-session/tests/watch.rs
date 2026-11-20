@@ -62,15 +62,22 @@ async fn a_while() {
     tokio::time::sleep(Duration::from_millis(300)).await;
 }
 
-/// 订的那条结果：它的序号、时刻。
+/// 订的那一次：那条结果的序号，起算时刻是带着那次调用的回复的时刻（施工 FX-6）。
 fn watched(log: &[Event]) -> PeerWatching {
-    let event = log
+    let at = log
         .iter()
-        .find(|event| matches!(&event.body, Body::ToolResult(result) if !result.effects.is_empty()))
+        .position(
+            |event| matches!(&event.body, Body::ToolResult(result) if !result.effects.is_empty()),
+        )
         .expect("订了");
+    let replied = log[..at]
+        .iter()
+        .rev()
+        .find(|event| matches!(event.body, Body::MessageAssistant(_)))
+        .expect("结果前面有带调用的回复");
     PeerWatching {
-        seq: event.seq,
-        since: event.at,
+        seq: log[at].seq,
+        since: replied.at,
     }
 }
 
@@ -100,7 +107,7 @@ async fn the_watch_is_placed_once_its_effect_is_on_disk() {
     assert_eq!(
         table.placed(),
         [(sid(OTHER), handle.id().clone(), watched(&log))],
-        "订的是落了盘的那条结果：它的序号、时刻"
+        "订的是落了盘的那条结果：它的序号，起算时刻是带调用的那条回复的"
     );
     assert!(
         table
@@ -369,7 +376,7 @@ async fn the_notice_id_follows_the_watch_not_the_moment() {
 /// 八十年多一点，照小时：日志往后挪这么多，会话的时钟就停在 2100 年以后（`clock.rs`：会话里的时刻不往回走）。
 const FAR: i64 = 80 * 366 * 24;
 
-/// 施工 FX-5，等的这一边：会话的时钟停在前头时（日志里的时刻在未来，系统时间往回拨了），订的那条结果的时刻是未来的那一刻。
+/// 施工 FX-5，等的这一边：会话的时钟停在前头时（日志里的时刻在未来，系统时间往回拨了），订的起算时刻是未来的那一刻。
 /// 交给被等的那一边的起算时刻得照系统时间：两个会话的钟不能互相比。原来原样交过去，被等的那一边拿它和自己记的忙完时刻比，
 /// 订在它忙完以前的被当成订在以后，通知不来。
 #[tokio::test]

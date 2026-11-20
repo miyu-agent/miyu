@@ -306,7 +306,7 @@
 | | `foreground`，可以没有 | 前台跑的子代理（施工 T-1 下）：后台运行关着的会话派的，内核记结果时照策略填，派它的那一步等它报回来、回报不叫醒；后台的、以前的日志不写 |
 | | `fork`，可以没有 | fork 子代理（施工 A-F 补，`agents.md`「一补、fork 子代理」）：`subagent` 写了 `fork` 派出去的，写 `true`，头照它换图标；普通子代理、后台命令、以前的日志不写 |
 | `job.messaged` | `job`，必有 | 给这个任务编号的子代理留了言（施工 7-7，`agents.md` 第六条）：`send_message` 那次调用报一条，它欠一份回报。对得上这个会话派的一个子代理，由账本查 |
-| `peer.watch` | `session`，必有 | 订了别的会话的「空了告诉我」（施工 C-1，`cross-session.md`「效果 peer.watch」）：被等的会话的整个编号。`send_message` 写 `notify_when_idle` 的那次调用报一条（施工 C-6），这就是订的记录，账本照它算在等哪几个会话、从这条结果的时刻算起；不是这个会话自己，由账本查 |
+| `peer.watch` | `session`，必有 | 订了别的会话的「空了告诉我」（施工 C-1，`cross-session.md`「效果 peer.watch」）：被等的会话的整个编号。`send_message` 写 `notify_when_idle` 的那次调用报一条（施工 C-6），这就是订的记录，账本照它算在等哪几个会话、从带着这次调用的那条回复（`message.assistant`）的时刻算起（施工 FX-6，原来是这条结果的时刻）；不是这个会话自己，由账本查 |
 | `todo.written` | `todos`，必有：照先后的每一项 `{"content": 一句话, "status": "pending"、"in_progress"、"completed"}`，不认识的状态原样留着 | `todowrite` 换上的整份待办（施工 D-3，`tools/todowrite.md`）：全部做完、清空的是空列表。`done`，可以没有（施工 D-3 补）：因为全部做完而清空的，清空前那一份，写法同 `todos`；空的不写。有效历史另记一张表，当前的清单是最近一份没撤掉的（`kernel/session.md`「待办」）；不发给模型 |
 | `package.state` | `package`，必有；`state`，可以没有（没有的当 `{}`） | 扩展的工具结果带的包的会话状态（施工 TW-1）：写法同事件 `package.state` 的 `body`。有效历史照每个包最近一份没撤掉的算（`history/states.rs`），交给头、压缩时把 `note` 写进检查点 |
 | `file.shown` | `path`、`name`、`media_type`、`size`，必有；`modified`、`title`、`language`、`width`、`height`，可以没有（`modified` 施工 SW-1 起都写，以前记的没有） | `show` 给人看了一个文件（施工 D-5，`tools/show.md`）：施工 SW-1 起不存内容，只记真实路径、展示那一刻的大小和修改时间，头照这几格选怎么显示、照 `path` 或 `session.shown` 读，同一个 `path` 再来一条换掉那一张；以前记的多一格 `blob`，照样读得进（不认、不写出去）；不发给模型，内核不读 |

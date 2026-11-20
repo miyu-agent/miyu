@@ -36,9 +36,16 @@ fn idle_at(s: &Stage, n: u64) -> &PeerIdle {
     }
 }
 
-/// 订的那条结果的时刻。
+/// 订的起算时刻：订的那条结果（8 号）前面最近一条回复的时刻（施工 FX-6）。
 fn since(s: &Stage) -> i64 {
-    event(s, 8).at.unix_millis()
+    s.log()
+        .iter()
+        .take(7)
+        .rev()
+        .find(|event| matches!(event.body, Body::MessageAssistant(_)))
+        .expect("结果前面有带调用的回复")
+        .at
+        .unix_millis()
 }
 
 /// 毫秒数的时刻。

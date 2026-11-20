@@ -1,8 +1,9 @@
 //! 账本里跨会话的几条（施工 C-1，`internal/blueprint/kernel/history.md`「账本查的规矩」，`cross-session.md`「效果
 //! peer.watch」「事件 peer.idle」）：在等哪几个会话的通知，`peer.idle` 只认在等的。
 //!
-//! 订的记录是工具结果的效果 `peer.watch`：一次订记一项，在哪一轮、那条结果的序号（这一次订的身份，施工 FX-3）、从那条
-//! 结果的时刻算起。算不算在等照回合看，撤销、恢复不动这些记录：订它的那一轮撤掉了就不算，恢复了又算。又订了一次的从新
+//! 订的记录是工具结果的效果 `peer.watch`：一次订记一项，在哪一轮、那条结果的序号（这一次订的身份，施工 FX-3）、从带着
+//! 这次调用的那条回复（`message.assistant`）的时刻算起（施工 FX-6：原来从结果的时刻算。带话又订的，话在工具执行时就送到
+//! 了，对方可能赶在结果记下以前就忙完一轮，照结果的时刻比就成了「订在它忙完以后」，通知不来）。算不算在等照回合看，撤销、恢复不动这些记录：订它的那一轮撤掉了就不算，恢复了又算。又订了一次的从新
 //! 的时刻算，撤掉后订的那一轮，回到前一次的时刻。
 //! 收到 `peer.idle`，那个会话以前订的都了结、清掉，再订从新的算起。账本随订的次数长，收到通知时清掉那个会话的。
 //!
@@ -33,6 +34,9 @@ pub(super) struct Peers {
     said: BTreeMap<SessionId, Vec<Said>>,
     /// 还没听到的别的会话的话（施工 C-2）：主对话的请求、回复看到了就清掉。
     unheard: BTreeSet<Seq>,
+    /// 最近一条回复（`message.assistant`）的时刻（施工 FX-6）：工具结果总跟在带着那次调用的回复后面、下一条回复以前，
+    /// 订的从它算起。
+    replied: Option<Timestamp>,
 }
 
 /// 收下的一句别的会话的话：时刻、字的哈希。
@@ -51,14 +55,15 @@ struct Watch {
     cause: Option<CommandId>,
 }
 
-/// 算数的一次订（施工 FX-3，`cross-session.md`「起草时定的」第 67 条）：记下它的那条工具结果的序号，和从那条结果的时刻
-/// 算起。序号是这一次订的身份：一个会话里不重、不跳号，载入、恢复撤销以后还是同一个，执行器照它认新多出来的，被等的那一边
+/// 算数的一次订（施工 FX-3，`cross-session.md`「起草时定的」第 67 条）：记下它的那条工具结果的序号，和从带着这次调用的那条
+/// 回复的时刻算起（施工 FX-6，第 69 条）。序号是这一次订的身份：一个会话里不重、不跳号，载入、恢复撤销以后还是同一个，执行器照它认新多出来的，被等的那一边
 /// 发的通知的命令编号带着它。时钟停住时（日志里的时刻在未来、系统时间往回拨了）两次订的起算时刻一样，序号不一样。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PeerWatching {
     /// 记下这次订的那条工具结果的序号。
     pub seq: Seq,
-    /// 从哪一刻算起：那条结果的时刻。作废照它加上 `peers.watch_hours` 算。
+    /// 从哪一刻算起：带着这次调用的那条回复的时刻，早于工具开始执行（施工 FX-6）；老日志里找不到那条回复的照结果的时刻。
+    /// 作废照它加上 `peers.watch_hours` 算。
     pub since: Timestamp,
 }
 
@@ -164,7 +169,7 @@ impl Peers {
         }
     }
 
-    /// 记下查过的这一条带来的变化：订的记下在哪一轮、这条的序号、从这条的时刻算起；收到通知，那个会话以前订的都了结。
+    /// 记下查过的这一条带来的变化：订的记下在哪一轮、这条的序号、从带着那次调用的回复的时刻算起（施工 FX-6）；收到通知，那个会话以前订的都了结。
     /// `peer` 是这一条是别的会话发来的话时，发话的那个会话（施工 C-2，账本照 [`Ledger::is_peer`] 认好交来）：记下时刻、
     /// 哈希，算没听到。
     /// 主对话的请求、回复看到了的，不再算没听到。
@@ -194,6 +199,7 @@ impl Peers {
             }
             Body::MessageAssistant(reply) => {
                 self.unheard.retain(|unheard| *unheard > reply.seen);
+                self.replied = Some(event.at);
             }
             // 查过了：工具结果带着正在进行的回合。
             Body::ToolResult(result) => {
@@ -206,7 +212,7 @@ impl Peers {
                                 turn,
                                 at: PeerWatching {
                                     seq: event.seq,
-                                    since: event.at,
+                                    since: self.replied.unwrap_or(event.at),
                                 },
                                 cause: event.cause.clone(),
                             });

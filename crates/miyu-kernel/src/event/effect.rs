@@ -162,7 +162,7 @@ pub struct JobMessaged {
 }
 
 /// `peer.watch`：`send_message` 订了「空了告诉我」，那次调用报一条（施工 C-1，`cross-session.md`「效果 peer.watch」）。
-/// 这就是订的记录，不另记事件：账本照它算在等哪几个会话、从这条结果的时刻算起；订的不是这个会话自己，也由账本查
+/// 这就是订的记录，不另记事件：账本照它算在等哪几个会话、从带着这次调用的那条回复的时刻算起（施工 FX-6）；订的不是这个会话自己，也由账本查
 /// （`kernel/history.md`）。被等的那一边不记。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PeerWatch {
