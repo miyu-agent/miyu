@@ -60,8 +60,10 @@ pub fn scan(label: &str, text: &str) -> Vec<String> {
                 "{label}:{at}：出现了开发机上会话的临时目录 `/tmp/claude-<数字>`，删掉或换成占位"
             ));
         }
+        // `-home-<名字>-Documents-…`：名字取到第一个 `-` 为止，后面的目录名长短不论。
         for name in names_after(line, "-home-") {
-            if name.ends_with("-Documents") && name.len() > "-Documents".len() {
+            let user = name.split('-').next().unwrap_or("");
+            if name[user.len()..].starts_with("-Documents") && !allowed(user) {
                 found.push(format!(
                     "{label}:{at}：出现了按工作目录起的会话存档目录名 `-home-…-Documents`，删掉或换成占位"
                 ));
@@ -286,6 +288,15 @@ mod tests {
         let problems = check(&dir);
         std::fs::remove_dir_all(&dir).expect("删得掉");
         assert_eq!(problems.len(), 2, "{problems:?}");
+    }
+
+    #[test]
+    fn a_full_session_archive_name_is_caught_by_its_user_segment() {
+        let full = ["-ho", "me-zhangsan-Documents-github-proj"].concat();
+        let fictional = ["-ho", "me-alice-Documents-github-proj"].concat();
+        assert_eq!(scan("a.md", &full).len(), 1);
+        assert!(scan("a.md", &fictional).is_empty());
+        assert!(scan("a.md", "-home-zhangsan-notes").is_empty());
     }
 
     #[test]

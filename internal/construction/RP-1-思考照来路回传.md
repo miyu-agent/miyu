@@ -7,7 +7,7 @@
 终端 agent 对比（`~/Projects/miyu-remake-benchmark`，2026-10-26）：同一个模型（经中转的 `deepseek-v4.1-flash`），同一个任务，Miyu 每次任务的思考 token 中位数 2336，pi 1083。
 
 - pi 把以前每一步的思考原样带回去（`reasoning_details`）；Miyu 一个字都不带。
-- Miyu 的驱动会回传，可开关照档案、照目录的 `interleaved` 定。经中转站的模型名（`clinepass/cline-pass/deepseek-v4.1-flash`）目录里认不出，照默认 `Drop`：工具循环里她每一步都丢了上一步的思路，重新想一遍。
+- Miyu 的驱动会回传，可开关照档案、照目录的 `interleaved` 定。经中转站的模型名（`cline-pass/deepseek-v4.1-flash`）目录里认不出，照默认 `Drop`：工具循环里她每一步都丢了上一步的思路，重新想一遍。
 - 手写 `catalog = "opencode/deepseek-v4.1-flash"` 打开回传以后重测：思考中位数 2336 → 1445（−38%，14 次对 11 次，单侧置换检验 p ≈ 0.006），整次花费从 pi 的 1.22 倍降到 1.09 倍，质量分不降（97.8 → 99.0）。
 
 ### 做什么
