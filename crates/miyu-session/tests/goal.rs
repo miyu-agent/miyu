@@ -1,4 +1,4 @@
-//! 长期目标的样子随会话载入回来（施工 X-6，`docs/blueprint/goal.md`）：会话层照整份日志算，`Current` 交给头；之后每落一批
+//! 长期目标的样子随会话载入回来（施工 X-6，`internal/blueprint/goal.md`）：会话层照整份日志算，`Current` 交给头；之后每落一批
 //! 加上这一批（`src/goal/tests.rs` 守一批批和从头算的一样）。
 
 use miyu_kernel::event::Event;

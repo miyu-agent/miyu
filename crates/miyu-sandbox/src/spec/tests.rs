@@ -4,8 +4,8 @@ use super::*;
 
 /// 蓝图 `sandbox.md` 里的例子：门禁拿它和蓝图里的那一块逐字节比。
 fn sample() -> String {
-    let path =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/designs/samples/sandbox/spec.json");
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../internal/designs/samples/sandbox/spec.json");
     std::fs::read_to_string(path).expect("读得出")
 }
 

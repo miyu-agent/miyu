@@ -1,4 +1,4 @@
-//! `schedule.update`（施工 J-5，`docs/blueprint/schedules.md` 第五节第 3a 条）：改时间、改那句话，编号不变、上一次留着；改了
+//! `schedule.update`（施工 J-5，`internal/blueprint/schedules.md` 第五节第 3a 条）：改时间、改那句话，编号不变、上一次留着；改了
 //! 时间照现在重算下一次，睡着的那个当场照新的醒；停着的改完还停着；循环换不了种类；写错的照 `schedule.add` 的一样拒、什么都
 //! 不改；没有的编号 `unknown_schedule`。扩展碰别人建的在 `schedule_package.rs`。
 

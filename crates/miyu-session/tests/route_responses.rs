@@ -1,4 +1,4 @@
-//! 路由接上 OpenAI 的 Responses 接口（`docs/blueprint/drivers/openai-responses.md`、`models.md`「驱动要守的约定」第 2、11、13
+//! 路由接上 OpenAI 的 Responses 接口（`internal/blueprint/drivers/openai-responses.md`、`models.md`「驱动要守的约定」第 2、11、13
 //! 条，施工 8-13）：驱动照供应商的 `driver` 造，发到 `/responses`，带 `Bearer`；输出上限照旧不替它填；思考强度照这一家的写法；
 //! 回来的流照这一家解。
 //!
@@ -17,7 +17,7 @@ use serde_json::json;
 /// Responses 说「你好！」的流，`n` 份。
 fn hellos(n: usize) -> Vec<Reply> {
     let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/drivers/openai-responses/streams/text.sse");
+        .join("../../internal/designs/samples/drivers/openai-responses/streams/text.sse");
     let bytes = std::fs::read(&path).expect("样本读得到");
     (0..n)
         .map(|_| Reply::stream(vec![Piece::Bytes(bytes.clone())]))

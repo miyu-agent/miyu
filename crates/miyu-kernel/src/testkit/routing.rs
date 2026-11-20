@@ -1,5 +1,5 @@
 //! 替身那一头的路由（施工 8-10）：回合开始时内核交来的引用照先后记下；测试说哪个引用解析不出了，照这一轮的 `models.chat`
-//! 退回，交回 `replaced`，和真的路由一样（`docs/blueprint/models.md`「怎么走」第六条第 3、4 条）。`models.chat` 也解析不出
+//! 退回，交回 `replaced`，和真的路由一样（`internal/blueprint/models.md`「怎么走」第六条第 3、4 条）。`models.chat` 也解析不出
 //! 的不交。
 
 use super::Stage;

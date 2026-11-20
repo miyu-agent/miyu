@@ -1,4 +1,4 @@
-//! `history` 读别的会话，执行器这一头（施工 C-4，`docs/blueprint/cross-session.md` 第二条、第九条）：真的会话
+//! `history` 读别的会话，执行器这一头（施工 C-4，`internal/blueprint/cross-session.md` 第二条、第九条）：真的会话
 //! actor，`session` 参数认出来的另一个会话，读的是它磁盘上真实的日志，不载入它、在跑的也读得到；子会话没有列会话的
 //! 端口，写了 `session` 直接拒。脚本里经 `miyu call` 调的照样读得到（施工 C-10）。
 

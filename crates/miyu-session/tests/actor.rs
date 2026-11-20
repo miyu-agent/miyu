@@ -1,4 +1,4 @@
-//! 会话 actor（`docs/construction/3-7-会话actor（中）.md` 验收第 2 条）：造会话、说一句、重试、打断、
+//! 会话 actor（`internal/construction/3-7-会话actor（中）.md` 验收第 2 条）：造会话、说一句、重试、打断、
 //! 停下再载入、同一个命令来两次。请求模型照剧本回，磁盘是临时的数据根。
 
 use std::time::{Duration, Instant};

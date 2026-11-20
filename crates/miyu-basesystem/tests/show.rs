@@ -1,4 +1,4 @@
-//! `show`（施工 D-5，`docs/blueprint/tools/show.md`）：认种类、报 `file.shown` 的每一格，她只收到一句；标题去空白；过了 20 MiB
+//! `show`（施工 D-5，`internal/blueprint/tools/show.md`）：认种类、报 `file.shown` 的每一格，她只收到一句；标题去空白；过了 20 MiB
 //! 照常展示（施工 SW-1）；目录、没有的照共用的几句；链接照真实的位置。
 
 use serde_json::json;

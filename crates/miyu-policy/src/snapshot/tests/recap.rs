@@ -1,4 +1,4 @@
-//! 回顾进快照（施工 3-8 四补，`docs/blueprint/policy.md`「`CoreTexts`」）：出厂的快照带着回顾的五份字和两个数，造出的组装器
+//! 回顾进快照（施工 3-8 四补，`internal/blueprint/policy.md`「`CoreTexts`」）：出厂的快照带着回顾的五份字和两个数，造出的组装器
 //! 回顾得出来；字、数少了哪一样都不回顾；以前造的快照没有这两格，读进来再写出去一字不差，不回顾。
 
 use miyu_kernel::event::Event;

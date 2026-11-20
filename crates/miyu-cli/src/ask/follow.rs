@@ -173,13 +173,13 @@ impl<'p> Follow<'p> {
         }
     }
 
-    /// 等子代理、后台命令（施工 7-9、AP-4，`docs/blueprint/cli/ask.md`「等子代理」）：`miyu ask` 才等，`miyu redo`、`miyu compact`
+    /// 等子代理、后台命令（施工 7-9、AP-4，`internal/blueprint/cli/ask.md`「等子代理」）：`miyu ask` 才等，`miyu redo`、`miyu compact`
     /// 跟完一轮就走。
     pub(crate) fn waits(&mut self) {
         self.waits = true;
     }
 
-    /// 跟的是 `session.redo` 开的那一轮（施工 4-7 再补，`docs/blueprint/cli/redo.md`）：回应到了先印撤掉了哪一轮。
+    /// 跟的是 `session.redo` 开的那一轮（施工 4-7 再补，`internal/blueprint/cli/redo.md`）：回应到了先印撤掉了哪一轮。
     pub(crate) fn redoing(&mut self) {
         self.redo = Some(Vec::new());
     }

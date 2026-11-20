@@ -1,4 +1,4 @@
-//! 定时任务的拒绝（施工 J-1 下，`docs/blueprint/schedules.md` 第五节）。
+//! 定时任务的拒绝（施工 J-1 下，`internal/blueprint/schedules.md` 第五节）。
 
 use super::{REFUSED, Refusal};
 

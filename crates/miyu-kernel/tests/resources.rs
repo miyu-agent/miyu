@@ -1,4 +1,4 @@
-//! 出厂的英文资源（`resources/core/`）读得进来：内核替工具写给模型的几句（`docs/designs/02-内核.md`
+//! 出厂的英文资源（`resources/core/`）读得进来：内核替工具写给模型的几句（`internal/designs/02-内核.md`
 //! 第六节「工具怎么调、下一步怎么走」「打断和急着插话」）。资源在编译时拿进来，纯逻辑门禁
 //! 只扫 `src/`，集成测试可以。
 
@@ -110,7 +110,7 @@ fn the_permission_rule_is_one_plain_line() {
 #[test]
 fn the_sample_denial_is_the_sentence_with_the_reason() {
     let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/events/tool.result.jsonl");
+        .join("../../internal/designs/samples/events/tool.result.jsonl");
     let samples = std::fs::read_to_string(&path).expect("读得了样本");
     let line = samples
         .lines()

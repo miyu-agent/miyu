@@ -1,4 +1,4 @@
-//! 回合开始的挂接点每一段等了多久的那一行（施工 PF-3，`docs/blueprint/session/actor.md`「运行日志」的 `turn start timed`）：
+//! 回合开始的挂接点每一段等了多久的那一行（施工 PF-3，`internal/blueprint/session/actor.md`「运行日志」的 `turn start timed`）：
 //! `DEBUG` 开着，每个回合一行，几段都是数；`INFO` 时不记。
 //!
 //! 只有这一个测试，自己一个进程：`tracing` 的调用点第一次被碰到时记下谁在听，别的测试同时碰到，

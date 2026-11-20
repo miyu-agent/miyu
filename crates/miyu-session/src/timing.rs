@@ -1,4 +1,4 @@
-//! 一次模型请求每一段用了多久（施工 YC-14，`docs/blueprint/session/actor.md`「运行日志」的 `request timed`）：长会话里每一步
+//! 一次模型请求每一段用了多久（施工 YC-14，`internal/blueprint/session/actor.md`「运行日志」的 `request timed`）：长会话里每一步
 //! 核心自己花的时间跟着上下文涨（压测 2026-11-10：请求体 700 KB 时「工具结束到出 `call_model`」3.67 毫秒、「`call_model` 到
 //! HTTP 发出去」2.33 毫秒），要看慢在哪一段。回合开始的挂接点各等了多久在 [`turn`]（施工 PF-3）。
 //!

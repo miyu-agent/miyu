@@ -1,4 +1,4 @@
-//! 真跑 `miyu pkg` 装回、卸掉整个组（施工 BS-1 下中，`docs/blueprint/cli/pkg.md`，照 pacman 写组名）：卸 `basesystem` 先印要卸
+//! 真跑 `miyu pkg` 装回、卸掉整个组（施工 BS-1 下中，`internal/blueprint/cli/pkg.md`，照 pacman 写组名）：卸 `basesystem` 先印要卸
 //! 哪几个、问一句，答了一个一行说卸掉了谁；装回来同样；组里没有要动的说一句。
 
 use crate::support::cli::{run, stdout};

@@ -1,4 +1,4 @@
-//! 检索的纯逻辑（`docs/blueprint/recall.md`，施工 R-1）：记忆、以后的知识库按关键词找东西用的底子。
+//! 检索的纯逻辑（`internal/blueprint/recall.md`，施工 R-1）：记忆、以后的知识库按关键词找东西用的底子。
 //!
 //! 第 2 层，纯逻辑，不碰 I/O：库在 `miyu-store` 的 `recall` 里，这里只管一段字怎么切成词。
 //!

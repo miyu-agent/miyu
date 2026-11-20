@@ -1,4 +1,4 @@
-//! 斜杠命令 `/clear-memory`（别名 `/reset-memory`，施工 R-3 五补，`docs/blueprint/protocol.md`「`command.run`」第 12 条）：真
+//! 斜杠命令 `/clear-memory`（别名 `/reset-memory`，施工 R-3 五补，`internal/blueprint/protocol.md`「`command.run`」第 12 条）：真
 //! 核心、真记忆日志。清掉这个会话产生的记忆（出处全在这个会话里的），别的会话来的、人记的不动；不先问，回执说清了几条，一条
 //! 都没有的说没有；记一条 `command.ran`，不请求模型。记忆没开的回 `memory_unavailable`。
 

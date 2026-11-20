@@ -1,11 +1,11 @@
-//! 主程序 `miyu`（`docs/designs/12-进程形态与分发.md` 第三节，施工 3-9）：一个程序，像 busybox 那样按子命令
+//! 主程序 `miyu`（`internal/designs/12-进程形态与分发.md` 第三节，施工 3-9）：一个程序，像 busybox 那样按子命令
 //! 分发。`miyu ask` 是最薄的头（施工 3-9 下）；`miyu undo`（`miyu rewind`）、`miyu restore` 撤掉最后一轮、恢复（施工 4-7 下，改名施工 4-7 补）；
 //! `miyu redo` 重做最后一轮（施工 4-7 再补）；
 //! `miyu compact` 手动压缩（施工 6-8）；`miyu recap` 一句话回顾（施工 3-8 四补）；`miyu rename` 给会话起名（施工 3-8 五补）；`miyu config` 看配置（施工 8-2）；`miyu provider` 管供应商的 key（施工 8-5）；`miyu setup` 接上第一个模型（施工 8-11）；`miyu rescue` 拉起 LiteMiyu 的应急模式（施工 RC-1）；`miyu core` 是核心进程，由头拉起，
 //! 不写进帮助。
 //!
 //! 不认识的子命令就报错，退出码 2，绝不当成对话发给核心（R4，`22-命令行.md` 第二节）。帮助页、参数写错时说的
-//! 那一句都是自己写的，跟着界面语言（施工 4-11，`docs/blueprint/cli/main.md`）。
+//! 那一句都是自己写的，跟着界面语言（施工 4-11，`internal/blueprint/cli/main.md`）。
 
 use std::ffi::OsString;
 use std::path::PathBuf;

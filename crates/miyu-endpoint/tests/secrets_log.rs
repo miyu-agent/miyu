@@ -1,4 +1,4 @@
-//! 密钥的运行日志（施工 8-5，`docs/blueprint/config.md`「出错」）：写、换、删、手改被看到的各记一条
+//! 密钥的运行日志（施工 8-5，`internal/blueprint/config.md`「出错」）：写、换、删、手改被看到的各记一条
 //! `INFO secret changed`，只有名字；Unix 上组、别人读得到的记 `WARN secrets readable by others`；把能走的路都走一遍
 //! （写、换、删、列、查、手改、改坏了再写），整份运行日志里搜不到 key，`TRACE` 也搜不到。配置里一个网址的 MCP 服务引用着
 //! 这个密钥（施工 X-32 补）：密钥变了它停下再起，记一行 `mcp restarted`，只有名字；令牌经它发出去的那一路也搜不到 key。

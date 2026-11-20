@@ -1,4 +1,4 @@
-//! 回合开始时重新解析（`docs/blueprint/models.md`「怎么走」第六条，`session/actor.md` 第 8 条，施工 8-10）：换了模型的下一轮
+//! 回合开始时重新解析（`internal/blueprint/models.md`「怎么走」第六条，`session/actor.md` 第 8 条，施工 8-10）：换了模型的下一轮
 //! 发给新的、推 `model.changed`（`why` 是 `turn`）、限额和给头看的跟着换；钉着的没了退回这一轮的 `models.chat`，内核记一条、
 //! 以后钉在它上面；`models.chat` 也没有的不记、当场 `no_model`；只改了窗口的下一轮用上；换成轮换的池推的没有端点；载入
 //! 以后照换过的说。换了模型给头看的当场是新的（施工 MC-1）：`Handle::next`、`model.changed` 当场照会话记着的，请求照旧下一轮发给

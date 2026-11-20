@@ -1,4 +1,4 @@
-//! 核心起来时写配置的两份 JSON Schema 和参考文件（`docs/blueprint/config.md`「怎么走」第一条，施工 8-1），真的
+//! 核心起来时写配置的两份 JSON Schema 和参考文件（`internal/blueprint/config.md`「怎么走」第一条，施工 8-1），真的
 //! `miyu core`：照系统的语言写进 `state/config/`，和样本逐字节一样；一样的不重写（修改时间不变），改坏了的写回来；
 //! 写不成的记 `WARN`，照样起来。
 
@@ -16,10 +16,10 @@ const FILES: [(&str, &str); 2] = [
     ("reference.toml", "reference.{}.toml"),
 ];
 
-/// 样本：`docs/designs/samples/config/` 下这种语言的那一份。
+/// 样本：`internal/designs/samples/config/` 下这种语言的那一份。
 fn sample_path(pattern: &str, language: &str) -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/config")
+        .join("../../internal/designs/samples/config")
         .join(pattern.replace("{}", language))
 }
 

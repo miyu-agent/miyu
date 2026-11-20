@@ -1,4 +1,4 @@
-//! `session.shown` 的拒绝（施工 SW-1，`docs/blueprint/protocol.md` 的 `session.shown`）。
+//! `session.shown` 的拒绝（施工 SW-1，`internal/blueprint/protocol.md` 的 `session.shown`）。
 
 use super::{REFUSED, Refusal};
 

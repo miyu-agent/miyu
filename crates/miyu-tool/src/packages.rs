@@ -1,4 +1,4 @@
-//! 看软件包的端口（施工 F-10 上，设计 `31-软件包.md` 第六节，`docs/blueprint/tools/packages.md`）：`packages` 这件工具只拿它，
+//! 看软件包的端口（施工 F-10 上，设计 `31-软件包.md` 第六节，`internal/blueprint/tools/packages.md`）：`packages` 这件工具只拿它，
 //! 不认识软件包清单和核心。协议端点造会话、载入时交进来，执行器交给每一次调用（[`crate::Call::packages`]）。
 //!
 //! 交回的是协议上那几样回应的样子（`package.list` 的一项、`package.info`、`package.install` 带 `preview` 的），名字、说明、
@@ -15,7 +15,7 @@ use serde_json::Value;
 /// 看软件包的那件工具的名字。
 pub const PACKAGES: &str = "packages";
 
-/// 装、卸软件包的那件工具的名字（施工 F-10 下，`docs/blueprint/tools/package.md`）。
+/// 装、卸软件包的那件工具的名字（施工 F-10 下，`internal/blueprint/tools/package.md`）。
 pub const PACKAGE: &str = "package";
 
 /// 看装了的软件包、看一个包文件夹；装、卸（施工 F-10 下）。

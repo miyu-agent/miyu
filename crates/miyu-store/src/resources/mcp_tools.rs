@@ -1,4 +1,4 @@
-//! MCP 服务的资源那两件工具的说明和参数格式（施工 X-41，`docs/blueprint/mcp.md`「怎么走」第七条）：`core/mcp/list_resources.json`、
+//! MCP 服务的资源那两件工具的说明和参数格式（施工 X-41，`internal/blueprint/mcp.md`「怎么走」第七条）：`core/mcp/list_resources.json`、
 //! `core/mcp/read_resource.json`，写法同内置工具的说明文件。不进快照：同 MCP 服务自己的工具，随登记进目录。
 
 use std::io;

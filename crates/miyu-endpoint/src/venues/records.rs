@@ -1,4 +1,4 @@
-//! `venue.records {session, msg, count}`（施工 O-24，`docs/construction/O-24-判官看的群聊记录.md`）：判官看的群聊记录，回应
+//! `venue.records {session, msg, count}`（施工 O-24，`internal/construction/O-24-判官看的群聊记录.md`）：判官看的群聊记录，回应
 //! `{"records": "…", "current": "…"}`。照会话日志读（同 `view.page`，不载入会话），留着一切的有效历史（撤掉的、撤回的不算，压缩
 //! 换出去的照样算），照会话快照里钉下的时区和字渲染（群会话）；快照里没有的（私聊）照核心这时的时区和出厂的字。
 //! `count` 1 到 100；`msg` 不是带 `venue` 的 `message.user` 的 `bad_params`。写了 `grow`（施工 O-44）的，起点照步长对齐，条数在

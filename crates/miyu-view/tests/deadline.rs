@@ -1,4 +1,4 @@
-//! 确认的截止时刻（施工 CD-1，`docs/blueprint/view.md` 的 `approval`）：要人确认的那一步照请求原样带 `expires_at`，头照它画倒计时；
+//! 确认的截止时刻（施工 CD-1，`internal/blueprint/view.md` 的 `approval`）：要人确认的那一步照请求原样带 `expires_at`，头照它画倒计时；
 //! 到时内核替人拒的，`decision` 是 `deny`、`by` 是内核，`expires_at` 照旧留着，翻页和视图流一样。没配等多久的不带。
 
 use miyu_kernel::id::ModuleId;

@@ -1,4 +1,4 @@
-//! `events.append {session, kind, body}`（施工 O-13 上，`docs/blueprint/chat.md` 第七条第 3 条第 2 项）：往会话里记一条不带回合
+//! `events.append {session, kind, body}`（施工 O-13 上，`internal/blueprint/chat.md` 第七条第 3 条第 2 项）：往会话里记一条不带回合
 //! 编号的事件，回应 `{"seq": n}`。任何时候都收（回合中途也行），不开回合、不打断。只收两类：
 //!
 //! - `ext.<包>.<名字>`：扩展自己命名空间的，`<名字>` 一段或几段、点隔开，每段照短名字的写法（小写字母开头，小写字母、数字、

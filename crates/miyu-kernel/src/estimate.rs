@@ -1,4 +1,4 @@
-//! 用量和压缩线（`docs/blueprint/compaction.md`「怎么走」第一、二条，`docs/designs/09-压缩.md` Z3，施工 6-1）。
+//! 用量和压缩线（`internal/blueprint/compaction.md`「怎么走」第一、二条，`internal/designs/09-压缩.md` Z3，施工 6-1）。
 //!
 //! 用量 = 锚 + 锚以后新增内容的本地估算。锚是最近一次主请求时供应商报的真实用量（[`anchor`]）；
 //! 本地估算照 codex，UTF-8 字节数除以 4（[`message`]）。只估锚之后那一截，估偏了也落在余量里，

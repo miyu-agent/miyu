@@ -1,4 +1,4 @@
-//! 摘要请求说完了（`docs/blueprint/compaction.md` 第三条第 6、7 条）：取出摘要交给压缩那一步；取不出来的、调了工具的怎么
+//! 摘要请求说完了（`internal/blueprint/compaction.md` 第三条第 6、7 条）：取出摘要交给压缩那一步；取不出来的、调了工具的怎么
 //! 记。
 
 use super::Session;

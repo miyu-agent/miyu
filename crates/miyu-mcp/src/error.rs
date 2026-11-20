@@ -1,4 +1,4 @@
-//! 说不成的几种（`docs/blueprint/mcp.md`「出错」）。
+//! 说不成的几种（`internal/blueprint/mcp.md`「出错」）。
 
 use std::fmt;
 

@@ -1,4 +1,4 @@
-//! 扩展能调什么的表（施工 X-30，`docs/blueprint/extensions.md`「谁能调」）：代码里分发的每个方法都要在
+//! 扩展能调什么的表（施工 X-30，`internal/blueprint/extensions.md`「谁能调」）：代码里分发的每个方法都要在
 //! `crates/miyu-endpoint/src/connection/rights.rs` 的表里写明扩展能不能调；表里写了、代码里没有的也报。算在「文档」那一项里。
 //!
 //! 代码这一头照协议参考那一套找（`reference.rs`），不算核心发出去的推送；表这一头认 `rights.rs` 里样子是方法名的字符串字面量。

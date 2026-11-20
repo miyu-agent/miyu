@@ -1,4 +1,4 @@
-//! 场景：到点的定时任务交进没人看着的一次性会话（施工 SC-1，`docs/blueprint/kernel/session.md`「定时交进来的话」）。人建的
+//! 场景：到点的定时任务交进没人看着的一次性会话（施工 SC-1，`internal/blueprint/kernel/session.md`「定时交进来的话」）。人建的
 //! 定时任务到点一律开一轮；她自己在那种会话里建的、循环照旧只记下。回应里附不附 `turn.started`，核心照它记这一次开没开轮。
 
 use super::reports::last_request;

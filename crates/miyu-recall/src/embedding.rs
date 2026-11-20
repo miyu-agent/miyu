@@ -1,4 +1,4 @@
-//! 本机 embedding 模型的清单（施工 R-5 上写在 `miyu-embed` 里，R-5 中挪进来，`docs/blueprint/recall.md` 第四条第 2 款）：一份
+//! 本机 embedding 模型的清单（施工 R-5 上写在 `miyu-embed` 里，R-5 中挪进来，`internal/blueprint/recall.md` 第四条第 2 款）：一份
 //! TOML 写一个本机模型叫什么、几维、怎么取向量、最长几个词，和它的几个文件（SHA-256、多大）。它放在内置模型那个小程序包的
 //! 目录里（`model.toml`，施工 R-5 三补）：换模型就是换包。
 //!

@@ -1,4 +1,4 @@
-//! OpenAI Responses 接口的编码（`docs/blueprint/drivers/openai-responses.md`「怎么走：编码」，施工 8-13）：每一种写法一个样本，
+//! OpenAI Responses 接口的编码（`internal/blueprint/drivers/openai-responses.md`「怎么走：编码」，施工 8-13）：每一种写法一个样本，
 //! 逐字节比对。思考在 `openai_responses_reasoning.rs`，图片、文件在 `openai_responses_media.rs`。
 
 use std::collections::BTreeMap;

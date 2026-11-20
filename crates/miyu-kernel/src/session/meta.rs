@@ -1,4 +1,4 @@
-//! 改标题、置顶、在哪个项目（施工 3-8 三补、H-2，`docs/blueprint/kernel/session.md`「改标题、置顶」）：人改，内核记；和现在一样的
+//! 改标题、置顶、在哪个项目（施工 3-8 三补、H-2，`internal/blueprint/kernel/session.md`「改标题、置顶」）：人改，内核记；和现在一样的
 //! 不记，只写改了的那几格。会话现在的标题、置顶、项目从日志里的 `session.meta_changed` 一路算，载入时照样算回来。
 
 use super::action::Action;

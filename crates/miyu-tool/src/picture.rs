@@ -1,5 +1,5 @@
 //! 什么算一张图（施工 4-13 定在 `read` 里，施工 3-9 三补挪到这里共用）：工具读到的、人附上的，都照这一套认
-//! （`docs/blueprint/tools/read.md`「读图片」，`docs/blueprint/protocol.md` 的 `blob.put`）。
+//! （`internal/blueprint/tools/read.md`「读图片」，`internal/blueprint/protocol.md` 的 `blob.put`）。
 //!
 //! 看开头的字节认格式，不看扩展名；只认 DeepSeek 收的四种。量宽高只看文件头，不解码。上限取几家接口里最严的：图跟着
 //! 对话每次都发出去，一张被供应商拒掉的图，会让这个会话以后的请求都失败，所以超了的进来时就处理：施工 I-S 起先缩到上限以内

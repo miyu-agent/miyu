@@ -1,4 +1,4 @@
-//! 同一个命令编号换了参数再来的拒绝（施工 YC-7，`docs/blueprint/protocol.md`「同一个命令编号」）。
+//! 同一个命令编号换了参数再来的拒绝（施工 YC-7，`internal/blueprint/protocol.md`「同一个命令编号」）。
 
 use super::{REFUSED, Refusal};
 

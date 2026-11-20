@@ -1,4 +1,4 @@
-//! 从一张图挑主题色的候选（施工 P-6 补，`docs/blueprint/personas.md`「主题色、背景图」第 4 条）：照 MD3 的做法缩图、量化、打分，
+//! 从一张图挑主题色的候选（施工 P-6 补，`internal/blueprint/personas.md`「主题色、背景图」第 4 条）：照 MD3 的做法缩图、量化、打分，
 //! 最多挑 4 个，打分最高的排第一，和 Android 选壁纸色一样。
 //!
 //! 核心拿它算人格头像的候选（`persona.list`、`persona.get` 的 `seeds`）；两个头经门面 `miyu-client` 拿它算壁纸的候选。

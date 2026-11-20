@@ -1,4 +1,4 @@
-//! 场所消息里的合并转发（施工 O-34，`docs/construction/O-34-合并转发.md`，核心审形状时定的五条）：`venue.forwards` 原样记进
+//! 场所消息里的合并转发（施工 O-34，`internal/construction/O-34-合并转发.md`，核心审形状时定的五条）：`venue.forwards` 原样记进
 //! `message.user`，只有转发、正文空的照旧 `empty_message`；写法不对的、单层不合的（套 9 层、名字超过 64 个字符或带换行、空列表、`more` 写 0、空的 `nodes`、多写格）
 //! `bad_params`，什么都不记；整条消息合起来的条数、字节数不另设上限（施工 O-34 补）。
 

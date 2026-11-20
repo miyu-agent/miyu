@@ -1,4 +1,4 @@
-//! 头自己的设置（施工 HP-1，`docs/blueprint/protocol.md`「头自己的设置」）：`prefs.get` 交整份，没有的是 `{}`；`prefs.set` 照
+//! 头自己的设置（施工 HP-1，`internal/blueprint/protocol.md`「头自己的设置」）：`prefs.get` 交整份，没有的是 `{}`；`prefs.set` 照
 //! 顶层的键并进去、`null` 删掉，交回并好的整份，存在那个包的状态目录里的 `prefs.json`；写成 JSON 超过 64 KiB 的
 //! `prefs_too_big`，什么都不改；订了这个包的别的连接收到 `prefs.changed`，改的那一个不收。只有装着的界面包有。
 

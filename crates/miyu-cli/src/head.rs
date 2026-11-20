@@ -1,4 +1,4 @@
-//! 打开默认的界面（施工 9-3，`docs/blueprint/cli/main.md`「怎么走」第 3 条，`packages.md`「入口」）：直接敲 `miyu`、`miyu
+//! 打开默认的界面（施工 9-3，`internal/blueprint/cli/main.md`「怎么走」第 3 条，`packages.md`「入口」）：直接敲 `miyu`、`miyu
 //! config` 时，连上核心（没在跑就拉起，界面本来就要它）问 `config.get` 拿 `ui.head`，照清单找这个编号的界面包，程序照
 //! 9-2 的找法（包文件夹的 `bin/`、`miyu` 旁边的，施工 F-8 上再补），换成它。`miyu config` 带 `--page config`，界面的清单 `[ui] opens` 里没有这一页的不拉起。
 //! 只在标准输入、标准输出都是终端时才走到这里（主程序先看）。

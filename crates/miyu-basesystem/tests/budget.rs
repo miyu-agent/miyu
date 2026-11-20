@@ -1,4 +1,4 @@
-//! 工具面的预算（`docs/designs/10-自带软件.md` 第九节，施工 4-10）：`resources/software/basesystem/tools/` 下的几份
+//! 工具面的预算（`internal/designs/10-自带软件.md` 第九节，施工 4-10）：`resources/software/basesystem/tools/` 下的几份
 //! 说明加起来不超过 [`BUDGET`] 字节。
 //!
 //! 仓库里没有分词器，预算照实测换成字节：2026-09-28 用 DeepSeek `deepseek-flash` 量，七件的边际份量合计 1076 个

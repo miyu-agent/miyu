@@ -1,4 +1,4 @@
-//! 路上一层链接都不跟地打开（`docs/blueprint/fs.md` 第四节，施工 5-10 下）：交进来的是换过的真实位置，路上本来没有
+//! 路上一层链接都不跟地打开（`internal/blueprint/fs.md` 第四节，施工 5-10 下）：交进来的是换过的真实位置，路上本来没有
 //! 链接；有了，就是检查完以后被换过，不开，报 `ELOOP`。
 //!
 //! Linux 用 `openat2` 带 `RESOLVE_NO_SYMLINKS`，内核没有它、被容器挡掉的退回一层一层打开；macOS 用 `O_NOFOLLOW_ANY`；

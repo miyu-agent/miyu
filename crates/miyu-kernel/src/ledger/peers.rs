@@ -1,4 +1,4 @@
-//! 账本里跨会话的几条（施工 C-1，`docs/blueprint/kernel/history.md`「账本查的规矩」，`cross-session.md`「效果
+//! 账本里跨会话的几条（施工 C-1，`internal/blueprint/kernel/history.md`「账本查的规矩」，`cross-session.md`「效果
 //! peer.watch」「事件 peer.idle」）：在等哪几个会话的通知，`peer.idle` 只认在等的。
 //!
 //! 订的记录是工具结果的效果 `peer.watch`：一次订记一项，在哪一轮、那条结果的序号（这一次订的身份，施工 FX-3）、从那条

@@ -1,5 +1,5 @@
-//! 驱动的几句占位（`resources/core/drivers/`，`docs/blueprint/policy.md` 的 `CoreTexts`）：策略快照 `core.drivers` 那一格，
-//! 读成驱动的占位（`docs/blueprint/drivers/openai-chat.md`）。施工 3-9 四补从 `snapshot.rs` 挪出来：那一份到了行数上限。
+//! 驱动的几句占位（`resources/core/drivers/`，`internal/blueprint/policy.md` 的 `CoreTexts`）：策略快照 `core.drivers` 那一格，
+//! 读成驱动的占位（`internal/blueprint/drivers/openai-chat.md`）。施工 3-9 四补从 `snapshot.rs` 挪出来：那一份到了行数上限。
 
 use miyu_drivers::{DriverTextSources, DriverTexts};
 use miyu_kernel::template::TemplateError;

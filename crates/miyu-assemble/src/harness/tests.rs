@@ -1,4 +1,4 @@
-//! 别的 harness 发来的话（施工 7-10，`docs/blueprint/kernel/request.md`「别的 harness 发来的话」）：出厂的字渲染出来和两份
+//! 别的 harness 发来的话（施工 7-10，`internal/blueprint/kernel/request.md`「别的 harness 发来的话」）：出厂的字渲染出来和两份
 //! 样本逐字节一样（名字照规矩转义）；附件接在标签那一块后面；开这一轮的那条挪到回合开始的地方，排在事实后面；回合中途到
 //! 的排在那一步的工具结果后面；旧快照没有标签的和人的话一字不差；别人发的原样。
 
@@ -12,10 +12,11 @@ use super::*;
 use crate::test_support::{Log, shape, text_json, texts};
 use crate::{DefaultAssembler, Stable, Texts};
 
-/// 样本 `docs/designs/samples/harness/message.txt`。
-const SAMPLE: &str = include_str!("../../../../docs/designs/samples/harness/message.txt");
-/// 样本 `docs/designs/samples/harness/message-escaped.txt`。
-const ESCAPED: &str = include_str!("../../../../docs/designs/samples/harness/message-escaped.txt");
+/// 样本 `internal/designs/samples/harness/message.txt`。
+const SAMPLE: &str = include_str!("../../../../internal/designs/samples/harness/message.txt");
+/// 样本 `internal/designs/samples/harness/message-escaped.txt`。
+const ESCAPED: &str =
+    include_str!("../../../../internal/designs/samples/harness/message-escaped.txt");
 
 /// 出厂的标签：资源目录里的真文件。
 fn shipped() -> HarnessTexts {

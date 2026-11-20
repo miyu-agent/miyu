@@ -1,4 +1,4 @@
-//! 删掉的会话的用量（施工 8-15，`docs/designs/07-存储.md` 第六节「删掉的会话，用量照样留在统计里」，`docs/blueprint/models.md`
+//! 删掉的会话的用量（施工 8-15，`internal/designs/07-存储.md` 第六节「删掉的会话，用量照样留在统计里」，`internal/blueprint/models.md`
 //! 「怎么走」第九条第 5 条）：回收处清掉一个会话之前，照它的日志算好合计，往 `journal.jsonl` 追加一条 `usage.purged`，
 //! 写进去了才删目录（`crate::trash::purge`）。
 //!

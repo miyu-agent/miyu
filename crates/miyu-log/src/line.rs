@@ -1,4 +1,4 @@
-//! 一行怎么写（`docs/designs/28-运行日志.md` 第二节，LG1）：
+//! 一行怎么写（`internal/designs/28-运行日志.md` 第二节，LG1）：
 //!
 //! ```text
 //! 2026-09-27 21:03:15.284 INFO  core     started version=0.0.0 root=~/.miyu

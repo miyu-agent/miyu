@@ -1,4 +1,4 @@
-//! MCP 服务的资源（施工 X-41，`docs/construction/X-41-MCP资源.md`）：真核心真起 `miyu-test-mcp`。声明了 `resources` 的服务跟着
+//! MCP 服务的资源（施工 X-41，`internal/construction/X-41-MCP资源.md`）：真核心真起 `miyu-test-mcp`。声明了 `resources` 的服务跟着
 //! 它的工具多两件 `list_resources`、`read_resource`，没声明的没有；列的一次一页、第一页带模板；读的字原样、图成图、别的二进制
 //! 一行、没有的照服务的原话；只开放资源的服务说明照带；服务自己有同名工具的，服务的赢；预设关了这个服务的两件都没有；照缓存先
 //! 登记的那一回也有。

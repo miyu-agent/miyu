@@ -1,6 +1,6 @@
-//! 请求形状探针：有别的 harness 来话的会话（施工 7-10，`docs/blueprint/kernel/request.md`「别的 harness 发来的话」）。
+//! 请求形状探针：有别的 harness 来话的会话（施工 7-10，`internal/blueprint/kernel/request.md`「别的 harness 发来的话」）。
 //! 真内核照剧本跑：人问一句；Claude Code 闲着时说一句，开了第二轮；人再问，她读文件的时候 Claude Code 又说一句，排在那一步的
-//! 工具结果后面。每一次请求和存档（`docs/designs/samples/probe/harness/`）逐字节比，查五条性质；和同一份剧本里换成人说的
+//! 工具结果后面。每一次请求和存档（`internal/designs/samples/probe/harness/`）逐字节比，查五条性质；和同一份剧本里换成人说的
 //! 比，每一次请求只多标签那两段。
 
 use crate::support::{check, files, matches_the_archive, sent, stage};

@@ -1,4 +1,4 @@
-//! 读别的目录里的技能（施工 PT-2 外，`docs/blueprint/skills.md`「找」，2026-10-29 项目主人定）：总开关
+//! 读别的目录里的技能（施工 PT-2 外，`internal/blueprint/skills.md`「找」，2026-10-29 项目主人定）：总开关
 //! `skills.external.enabled`（出厂关），一张目录表 `skills.external.dirs`（出厂一项 `~/.agents/skills`，agentskills.io 的约定：
 //! Codex、opencode 这些装的技能放这里）。只写在 Miyu 的配置里，项目配置不收；下一轮生效，同技能本来的时机（造会话找一次，
 //! 回合开始再找一遍）。

@@ -1,4 +1,4 @@
-//! 第一次接入的纯逻辑（`docs/blueprint/models.md`「怎么走」第七条，施工 8-11）：协议的 `provider.detect`、`provider.catalog`、
+//! 第一次接入的纯逻辑（`internal/blueprint/models.md`「怎么走」第七条，施工 8-11）：协议的 `provider.detect`、`provider.catalog`、
 //! `provider.test` 和 `miyu setup` 要用的几样，不碰文件、网络、环境变量。
 //!
 //! - [`listed`]：目录和档案里的每一家合起来，名字、驱动、地址、能不能用（`listing.rs`）；[`key_vars`]、[`looked_for`]：找哪些

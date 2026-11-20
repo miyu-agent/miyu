@@ -1,4 +1,4 @@
-//! 一次模型请求每一段用了多久的那一行（施工 YC-14，`docs/blueprint/session/actor.md`「运行日志」的 `request timed`）：`DEBUG`
+//! 一次模型请求每一段用了多久的那一行（施工 YC-14，`internal/blueprint/session/actor.md`「运行日志」的 `request timed`）：`DEBUG`
 //! 开着，每发一次主请求记一行，格都在；`INFO` 时不记。
 //!
 //! 只有这一个测试，自己一个进程：`tracing` 的调用点第一次被碰到时记下谁在听，别的测试同时碰到，

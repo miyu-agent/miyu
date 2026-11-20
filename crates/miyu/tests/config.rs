@@ -1,4 +1,4 @@
-//! 真核心带着配置起来（施工 8-2，`docs/blueprint/config.md`「守着它的」，SU-3 起只有系统配置一层）：`log.level` 照系统配置换、运行日志记从哪来、
+//! 真核心带着配置起来（施工 8-2，`internal/blueprint/config.md`「守着它的」，SU-3 起只有系统配置一层）：`log.level` 照系统配置换、运行日志记从哪来、
 //! 有问题的文件记一条；`miyu config get`、`explain` 印出的来源对，`check`、`path` 照样子印，握手以后照 `ui.language`
 //! 说话；`miyu ask` 起头说配置有错、项目配置没信任（施工 8-3）；帮助页跟着界面语言；参数不对退出码 2；核心没在跑
 //! 的拉起来（施工 8-6）。改、信任（施工 8-3）：`set`、`unset`、`trust` 经真核心写进文件，`edit` 不在终端里、`set --project` 连核心以前就拦下。

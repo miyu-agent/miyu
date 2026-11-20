@@ -1,4 +1,4 @@
-//! 人管理知识库（施工 K-7 上，`docs/blueprint/knowledge.md`「怎么走」第八条）：建库、改名字说明、挂目录、加文档、删库、重建
+//! 人管理知识库（施工 K-7 上，`internal/blueprint/knowledge.md`「怎么走」第八条）：建库、改名字说明、挂目录、加文档、删库、重建
 //! 索引。人经协议用；她的写照旧在 `write.rs`（她删不了整个库，19 N14）。
 //!
 //! - `kb.toml` 照配置的那一套只改那一格（`miyu_config::edit`）：注释、别的格（`mount`）照原样。

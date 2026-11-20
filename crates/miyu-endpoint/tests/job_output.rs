@@ -1,4 +1,4 @@
-//! 协议上读后台命令的输出（施工 7-4 补，`docs/blueprint/protocol.md` 的 `job.output`）：真核心走一遍，后台命令用假的
+//! 协议上读后台命令的输出（施工 7-4 补，`internal/blueprint/protocol.md` 的 `job.output`）：真核心走一遍，后台命令用假的
 //! （`miyu_tool::testkit::Held`，三个平台一样）。跑着的读到这时为止的、`running` 是真；结束了的读存下的那一份、`running` 是假，
 //! 和她用 `jobs` 读到的一样；只交最后 `tail` 行，`lines` 数一共几行，前面还有没交的 `truncated`；超了上限的从前面按整行去掉；
 //! 空的；没有这个任务、编号不合写法、`tail` 不对、是子代理的各一种拒绝，中文、英文。

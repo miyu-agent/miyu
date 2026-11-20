@@ -1,4 +1,4 @@
-//! 模型默认的思考强度不在档位里的（`docs/blueprint/config.md`「报错」的 `unknown_effort`，`models.md`「怎么走」第十一条第
+//! 模型默认的思考强度不在档位里的（`internal/blueprint/config.md`「报错」的 `unknown_effort`，`models.md`「怎么走」第十一条第
 //! 2 条，施工 8-18）：照 `bad_reference` 的办法，读进来以后另查、只报不丢，请求照没写发。
 //!
 //! 档位照核心一份的模型资料算（档案、目录、手写的 `reasoning`），和请求时同一个算法（`miyu_models::facts`）。目录读完以前

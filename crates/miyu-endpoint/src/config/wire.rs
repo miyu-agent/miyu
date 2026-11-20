@@ -1,4 +1,4 @@
-//! 配置在协议上的几种写法（`docs/blueprint/config.md`「最终值和来源」「报错」）：来源、一条问题、现在照什么用着。
+//! 配置在协议上的几种写法（`internal/blueprint/config.md`「最终值和来源」「报错」）：来源、一条问题、现在照什么用着。
 //! 对象的格照名字的字母先后排：`serde_json` 的 `Map` 本来就这样排。
 
 use serde_json::{Map, Value, json};

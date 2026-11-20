@@ -1,4 +1,4 @@
-//! 接平台的包在预设菜单里（施工 PS-2，`docs/blueprint/presets.md`「功能分组」）：清单写了 `[connection]` 的包，`[features]` 里一件
+//! 接平台的包在预设菜单里（施工 PS-2，`internal/blueprint/presets.md`「功能分组」）：清单写了 `[connection]` 的包，`[features]` 里一件
 //! `venues` 带 `local` 的工具都没有的功能不列，列出来的只列带 `local` 的工具；`sections`、`features` 两处一样。没写 `[connection]`
 //! 的包照旧全列。预设里存着的、对藏掉的功能和工具的开关不报错、不碰别的项。
 

@@ -1,4 +1,4 @@
-//! 一行一条的 JSON-RPC 2.0（`docs/designs/04-核心协议.md` 第三节同样的分帧，MCP 的标准输入输出也是这样）：读一行、认它是
+//! 一行一条的 JSON-RPC 2.0（`internal/designs/04-核心协议.md` 第三节同样的分帧，MCP 的标准输入输出也是这样）：读一行、认它是
 //! 回应、请求还是通知。
 
 use serde_json::{Map, Value, json};

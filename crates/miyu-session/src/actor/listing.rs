@@ -1,4 +1,4 @@
-//! 推送和会话列表的那一项（施工 9-5，`docs/blueprint/session/actor.md`「推送和订阅」第 7 条，`protocol.md`「会话列表的推送」）：
+//! 推送和会话列表的那一项（施工 9-5，`internal/blueprint/session/actor.md`「推送和订阅」第 7 条，`protocol.md`「会话列表的推送」）：
 //! 推给订阅了的头的时候顺手看一眼，推过 `session.created`、`session.meta_changed`、`turn.started`、`turn.ended`、换人格或预设的
 //! `session.policy_changed`（施工 P-16 下补）、人说的 `message.user`（施工 SX-1）的记下；
 //! 每批送完写「有没有在跑的回合」时，记下的、忙不忙变了的，经会话表的端口报一声。只报「变了」，那一项由会话表照索引算。

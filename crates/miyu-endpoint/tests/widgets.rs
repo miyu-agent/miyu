@@ -1,4 +1,4 @@
-//! 界面块（施工 X-15 上，`docs/blueprint/widgets.md`「清单」）：真核心读清单声明的块，`package.list` 列出来（标题照连接的
+//! 界面块（施工 X-15 上，`internal/blueprint/widgets.md`「清单」）：真核心读清单声明的块，`package.list` 列出来（标题照连接的
 //! 语言挑）；扩展能力 `widgets` 的名字、说明照语言给；整页的命令名和内置的同名，`miyu check` 报 `slash_builtin`。
 
 use serde_json::{Value, json};

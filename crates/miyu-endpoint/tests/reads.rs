@@ -1,4 +1,4 @@
-//! 分块读 `blob.get`、`fs.read`（施工 W-6，`docs/blueprint/web-module.md`「七、分块读」）：读一段、读到结尾就
+//! 分块读 `blob.get`、`fs.read`（施工 W-6，`internal/blueprint/web-module.md`「七、分块读」）：读一段、读到结尾就
 //! 停、`offset` 过了结尾是空的、`length` 写 0 只问大小；没有这个 blob `unknown_blob`；`fs.read` 的路径落在
 //! 数据根里 `path_forbidden`、工作区里能读、相对的 `bad_params`、`~` 接家目录、不是普通文件或者没有
 //! `path_unreadable`；`length` 超过 512 KiB `bad_params`。

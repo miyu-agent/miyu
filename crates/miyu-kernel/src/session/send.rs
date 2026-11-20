@@ -1,4 +1,4 @@
-//! 发一条消息（`docs/blueprint/kernel/session.md`「发一条消息」；施工 8-10 从 `session.rs` 挪出来，那边放不下了）：
+//! 发一条消息（`internal/blueprint/kernel/session.md`「发一条消息」；施工 8-10 从 `session.rs` 挪出来，那边放不下了）：
 //! 空的拒绝；别处来的照回报的规矩到（`messages.rs`）；空闲时记下、同一批开一个回合，回合进行中记下、排进队。场所里旁听的
 //! 只记下（施工 O-13 上）。`events.append` 记的也在这里：不带回合编号，不开回合。
 

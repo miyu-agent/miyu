@@ -1,4 +1,4 @@
-//! 网址的服务登录（施工 X-42 上，`docs/blueprint/mcp.md`「怎么走」第八条）：服务回 `401` 要登录、这张表又没写令牌的，看管的一头
+//! 网址的服务登录（施工 X-42 上，`internal/blueprint/mcp.md`「怎么走」第八条）：服务回 `401` 要登录、这张表又没写令牌的，看管的一头
 //! 停在 `needs_login`（`Reason::NeedsLogin`），挑战记在看管那一格；人经 `mcp.login` 登录（`flow.rs`），令牌存进密钥文件的
 //! `mcp-oauth-<服务名>`（一段 JSON），连的时候当 `bearer` 带上。密钥变了照 X-32 补那一路重起服务。
 //!

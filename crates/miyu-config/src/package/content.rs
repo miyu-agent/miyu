@@ -1,4 +1,4 @@
-//! `[content.<包>]`（施工 X-22，设计 `34-表情包.md` 第三节「内容包」、`docs/blueprint/packages.md`「给别的包带的内容」）：这个包
+//! `[content.<包>]`（施工 X-22，设计 `34-表情包.md` 第三节「内容包」、`internal/blueprint/packages.md`「给别的包带的内容」）：这个包
 //! 给另一个包带了一个目录的东西（表情包的图、人设卡这些），`dir` 是包目录里的相对目录，写法同 `[page] dir`。被带的那个包的扩展经
 //! `content.list`、`content.read` 读，核心不认里面是什么。一张表一个包，照包的编号排；只有 `bundle`、扩展包能写。
 

@@ -1,4 +1,4 @@
-//! models.dev 的目录（`docs/blueprint/models.md`「怎么走」第二条第 1、2 条，施工 8-7）：安装包带的、缓存里拉的都是原样的
+//! models.dev 的目录（`internal/blueprint/models.md`「怎么走」第二条第 1、2 条，施工 8-7）：安装包带的、缓存里拉的都是原样的
 //! `api.json`，读的时候只读用得上的格，不认识的格不理。
 //!
 //! - 供应商：`id`、`name`、`env`、`npm`、`api`、`doc`、`models`；

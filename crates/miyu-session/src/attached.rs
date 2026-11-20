@@ -1,6 +1,6 @@
-//! 她带的附件存成 blob、造成块（施工 C-9，`docs/blueprint/tools/send_message.md`「附件」）：`send_message` 的话、`subagent`
+//! 她带的附件存成 blob、造成块（施工 C-9，`internal/blueprint/tools/send_message.md`「附件」）：`send_message` 的话、`subagent`
 //! 的交代都经它。blob 只有一份：她发得到的别的会话、她派的子会话都读得到。块的样子同人附的
-//! （`docs/blueprint/protocol.md` 的 `session.send` 第 4 条）：图片带名字，两种都带原来的路径。
+//! （`internal/blueprint/protocol.md` 的 `session.send` 第 4 条）：图片带名字，两种都带原来的路径。
 
 use std::path::Path;
 

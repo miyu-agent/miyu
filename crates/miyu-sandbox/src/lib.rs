@@ -1,5 +1,5 @@
-//! 沙盒（`docs/blueprint/sandbox.md`，施工 5-1 起）：核心给每条要关起来的命令写一份规格（[`Spec`]），小程序
-//! `miyu-sandbox` 照规格先把自己收紧，再换成那条命令。助手是单独的一个小程序（`docs/designs/11-权限与沙盒.md` 第六节
+//! 沙盒（`internal/blueprint/sandbox.md`，施工 5-1 起）：核心给每条要关起来的命令写一份规格（[`Spec`]），小程序
+//! `miyu-sandbox` 照规格先把自己收紧，再换成那条命令。助手是单独的一个小程序（`internal/designs/11-权限与沙盒.md` 第六节
 //! A7）。
 //!
 //! - [`Spec`]：规格；[`Sandboxed`]：一次调用带的，助手在哪、规格是什么；

@@ -1,4 +1,4 @@
-//! 后台命令（施工 7-3，`docs/blueprint/tools/shell.md`「后台」，`agents.md` 第四条）：照前台一样起（同一个 shell、同一份
+//! 后台命令（施工 7-3，`internal/blueprint/tools/shell.md`「后台」，`agents.md` 第四条）：照前台一样起（同一个 shell、同一份
 //! 环境变量、同一个沙盒，自成一组），起来了交给任务端口，调用当场返回。进程活过这一次调用：读输出、等它结束、整组杀，
 //! 由任务表经这里的 [`Process`] 做。
 //!

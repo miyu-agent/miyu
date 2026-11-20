@@ -1,4 +1,4 @@
-//! `miyu ask` 等子代理（施工 7-9，`docs/blueprint/cli/ask.md`「等子代理」）：在进程里起一个核心，工具是出厂的，替身模型在
+//! `miyu ask` 等子代理（施工 7-9，`internal/blueprint/cli/ask.md`「等子代理」）：在进程里起一个核心，工具是出厂的，替身模型在
 //! 主会话、子会话里各答各的。等子代理都回报过、被回报叫醒的几轮也结束了才退出，这期间每一轮都印；会话有头跟着时回报
 //! 叫醒她，头走了只记下。
 
@@ -86,7 +86,7 @@ async fn it_waits_for_both_reports_and_prints_every_turn_like_the_sample() {
         "派出去了，等它们回来。\nA 查完了。\nB 也查完了，都齐了。\n"
     );
     let sample = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/cli/ask-agents-text.txt");
+        .join("../../internal/designs/samples/cli/ask-agents-text.txt");
     let drawn = std::fs::read_to_string(&sample).expect("有样本");
     assert_eq!(screen, drawn, "和样本逐字节一样");
 }
@@ -278,7 +278,7 @@ async fn a_subagent_from_before_is_waited_for_once_messaged_like_the_sample() {
     assert_eq!(code, 0, "{err}");
     assert_eq!(out, "转给 A 了，C 也派出去了。\nA 改好了。\nC 也查完了。\n");
     let sample = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/cli/ask-agents-messaged-text.txt");
+        .join("../../internal/designs/samples/cli/ask-agents-messaged-text.txt");
     let drawn = std::fs::read_to_string(&sample).expect("有样本");
     assert_eq!(screen, drawn, "和样本逐字节一样");
 }

@@ -1,4 +1,4 @@
-//! 目录不常驻（施工 V-25 下，`docs/blueprint/models.md`「怎么走」第二条第 2 条）：用到的模型第一次从整份目录查一次，答
+//! 目录不常驻（施工 V-25 下，`internal/blueprint/models.md`「怎么走」第二条第 2 条）：用到的模型第一次从整份目录查一次，答
 //! （`miyu_models::catalog::Recalled`）记下来、存进 `state/models/catalog.json`，以后每一轮、核心重启都只照记下的答。整份
 //! models.dev 目录平时不在内存里，只在这几种时候临时读、用完放：
 //!

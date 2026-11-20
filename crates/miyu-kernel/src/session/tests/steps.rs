@@ -1,4 +1,4 @@
-//! 步数上限照开轮的是谁（施工 AE-1，`docs/blueprint/kernel/session.md`「步数上限」）：有人看着的会话里人开的回合不限；定时任务、
+//! 步数上限照开轮的是谁（施工 AE-1，`internal/blueprint/kernel/session.md`「步数上限」）：有人看着的会话里人开的回合不限；定时任务、
 //! 长期目标（模块）开的回合照「自己开的回合」那个数停；两个都有的取小的；换策略时这一轮照新的那一份重算。
 
 use std::collections::VecDeque;

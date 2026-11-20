@@ -1,4 +1,4 @@
-//! 扩展声明的用量用途（施工 UP-3，`docs/blueprint/packages.md`「清单的格式」）：`[[purpose]]` 一段一条，读成 [`UsagePurpose`]：
+//! 扩展声明的用量用途（施工 UP-3，`internal/blueprint/packages.md`「清单的格式」）：`[[purpose]]` 一段一条，读成 [`UsagePurpose`]：
 //! 包调 `model.call` 写的 `purpose` 叫什么，`usage.query` 照 `purpose` 分组时给人看的 `purpose_name` 照它给。只查写法：编号、名字。
 //! 只有扩展包能写（`kinds::tables`）；不另要能力。
 

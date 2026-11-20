@@ -1,4 +1,4 @@
-//! `miyu schedule`（施工 J-3 下，`docs/blueprint/cli/schedule.md`）：在进程里起一个核心，每个子命令走一遍：印什么、退出码；`cron`
+//! `miyu schedule`（施工 J-3 下，`internal/blueprint/cli/schedule.md`）：在进程里起一个核心，每个子命令走一遍：印什么、退出码；`cron`
 //! 交本机的时区、`--zone` 手写的照它；`--cwd` 照当前目录接成真实的位置；核心拒的照原话说，参数错的接上是哪一样；时刻、间隔读不懂
 //! 的不连核心就说、退出码 2。
 

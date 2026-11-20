@@ -1,4 +1,4 @@
-//! `miyu check [文件]`（施工 8-30，`docs/blueprint/cli/check.md`）：查人手写的、Miyu 读的文件有没有写错。核心照磁盘上现在的
+//! `miyu check [文件]`（施工 8-30，`internal/blueprint/cli/check.md`）：查人手写的、Miyu 读的文件有没有写错。核心照磁盘上现在的
 //! 字查（`check` 方法：配置、密钥文件、人格），这里只印。
 //!
 //! - 标准输出上一处一行 `<文件>:<行>:<列> <级别>：<那一句>`，最后一行合计；一处都没有的印「没有问题」。`--format json`：

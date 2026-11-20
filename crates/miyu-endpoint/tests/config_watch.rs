@@ -1,4 +1,4 @@
-//! 监视与推送（施工 8-4，`docs/blueprint/config.md`「协议」的订阅配置的推送、`config.changed`，「怎么走」第七、八条）：
+//! 监视与推送（施工 8-4，`internal/blueprint/config.md`「协议」的订阅配置的推送、`config.changed`，「怎么走」第七、八条）：
 //! 手改推 `config.changed`（`via: file`）、记日志；核心自己写的不重推；改坏了推问题、改好了推空的；删了这一层变空；
 //! 订阅、取消订阅、参数不对、掉队推 `resync`；`config.set` 发的那个连接先见推送、后见回应；改了 `ui.language` 连接下一句
 //! 就照新的说；手改信任的记录记 `trust.changed`。

@@ -1,4 +1,4 @@
-//! 门禁的「许可证」一项（施工 4-12，`docs/blueprint/licenses.md`）：仓库是 AGPL-3.0-or-later，发布的四个平台上用得到的
+//! 门禁的「许可证」一项（施工 4-12，`internal/blueprint/licenses.md`）：仓库是 AGPL-3.0-or-later，发布的四个平台上用得到的
 //! 第三方依赖，许可证都要能和它合在一起发。照每个包 `license` 里的 SPDX 表达式算，自己算，不加依赖。
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -7,7 +7,7 @@ use std::process::Command;
 
 use serde_json::Value;
 
-/// 发布的四个平台（`docs/designs/12-进程形态与分发.md` R11）。
+/// 发布的四个平台（`internal/designs/12-进程形态与分发.md` R11）。
 pub const PLATFORMS: [&str; 4] = [
     "x86_64-unknown-linux-gnu",
     "aarch64-unknown-linux-gnu",

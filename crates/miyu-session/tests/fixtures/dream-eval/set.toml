@@ -1,4 +1,4 @@
-# 整理的测评集（施工 R-16，`docs/blueprint/memory/eval.md`「整理」）：一个虚构的用户林夏，40 条记忆，每条标好整理时该怎么处理；
+# 整理的测评集（施工 R-16，`internal/blueprint/memory/eval.md`「整理」）：一个虚构的用户林夏，40 条记忆，每条标好整理时该怎么处理；
 # 8 个只靠摘要回答的问题。全是造的，不是谁的记忆。量尺 `memory_dream_eval.rs`。
 #
 # label：keep 留着；old 被后记的推翻（by 是推翻它的那一条）；dup 和另一条重复（of 是那一条，删哪一条都行）；date 该改成绝对

@@ -1,4 +1,4 @@
-//! 值（`docs/blueprint/config.md`「配置清单」）：一项的值 [`Value`]，写成 TOML、写成协议上的 JSON；一份最终值
+//! 值（`internal/blueprint/config.md`「配置清单」）：一项的值 [`Value`]，写成 TOML、写成协议上的 JSON；一份最终值
 //! [`Values`]。
 //!
 //! 现在有字（选项、网址、名字、引用、文字、时长写成字）、开关（施工 8-2）、密钥的引用（施工 8-5）、整数和列表（施工 8-6）、

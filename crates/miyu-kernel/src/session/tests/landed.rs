@@ -1,5 +1,5 @@
 //! 落了盘的最后一条（施工 3-8 六补）：`Stored` 送进来、推送了才往前走；追加了还没落盘的不算。载入的是日志里最后一条。
-//! 会话 actor 订阅时照它定补到哪一条（`docs/blueprint/session/actor.md` 第 6 条）。
+//! 会话 actor 订阅时照它定补到哪一条（`internal/blueprint/session/actor.md` 第 6 条）。
 
 use super::load::{Logged, load};
 use super::*;

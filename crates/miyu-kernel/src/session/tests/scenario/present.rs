@@ -1,4 +1,4 @@
-//! 场景：压缩以后挂接点看到的 `present`（施工 R-4 上，`docs/blueprint/kernel/session.md` 的 `RunTurnStartHooks`）。模块
+//! 场景：压缩以后挂接点看到的 `present`（施工 R-4 上，`internal/blueprint/kernel/session.md` 的 `RunTurnStartHooks`）。模块
 //! 交的一块在被压掉的那一段里，压完的下一轮不在，模块再交；在留下的那一截里（压的那一轮开头交的），压完照样在。
 
 use super::compaction::{compacting, line};

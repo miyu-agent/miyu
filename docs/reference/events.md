@@ -18,7 +18,7 @@
 | `cause` | 哪条命令引起的：请求的 `id` |
 | `body` | 这一种自己的格 |
 
-每一种的完整样子在仓库的 `docs/designs/samples/events/<种类>.jsonl`，一种一个文件，就是真实的一行。
+每一种的完整样子在仓库的 `internal/designs/samples/events/<种类>.jsonl`，一种一个文件，就是真实的一行。
 
 ## 落盘的事件
 
@@ -62,7 +62,7 @@
 
 ## 瞬时事件
 
-不落盘、没有 `seq`，只推给当时订阅着的头，补发不补（例外：订阅时正在流的那一次模型请求，会补一遍到目前为止的 `model.delta`）。样子在 `docs/designs/samples/transient/`。
+不落盘、没有 `seq`，只推给当时订阅着的头，补发不补（例外：订阅时正在流的那一次模型请求，会补一遍到目前为止的 `model.delta`）。样子在 `internal/designs/samples/transient/`。
 
 | `kind` | 是什么 |
 |---|---|

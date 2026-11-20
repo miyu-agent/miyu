@@ -1,4 +1,4 @@
-//! 场所会话与外部身份（施工 O-3，`docs/blueprint/venues.md`）：主人对应表 `external.bindings` 怎么查，扩展经 `venue.binding`
+//! 场所会话与外部身份（施工 O-3，`internal/blueprint/venues.md`）：主人对应表 `external.bindings` 怎么查，扩展经 `venue.binding`
 //! 问一个平台身份对着谁（施工 O-31 前）；`venue.session` 找回或者造
 //! 一个场所的主线会话，`venue.sessions` 列出平台桥那个平台的（施工 O-32 前，`sessions`）；`session.send` 的 `as` 记成谁。核心不认识 QQ：场所编号不解读，是不是私聊、对方是谁，桥照实报。
 

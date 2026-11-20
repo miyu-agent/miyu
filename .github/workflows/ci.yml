@@ -1,6 +1,6 @@
 # 三平台 CI：每台机器跑 cargo xtask check，和本地验收是同一条命令；另有长跑、量尺两项，只在 Linux 上。
-# 为什么这样定，见 docs/construction/0-3-三平台CI.md；2026-10-08 提速（缓存、长跑只编有长跑测试的两个 crate）见
-# docs/construction/0-3-三平台CI（补）.md。
+# 为什么这样定，见 internal/construction/0-3-三平台CI.md；2026-10-08 提速（缓存、长跑只编有长跑测试的两个 crate）见
+# internal/construction/0-3-三平台CI（补）.md。
 name: CI
 
 on:
@@ -10,24 +10,24 @@ on:
     # 照跑：蓝图（样本块、提示词）、设计 01、23、26（层、性能预算、提示词登记簿）。后写的盖先写的。
     paths:
       - "**"
-      - "!docs/construction/**"
+      - "!internal/construction/**"
       - "!docs/authors/**"
-      - "!docs/designs/**"
-      - "docs/designs/01-架构.md"
-      - "docs/designs/23-性能预算.md"
-      - "docs/designs/26-提示词.md"
+      - "!internal/designs/**"
+      - "internal/designs/01-架构.md"
+      - "internal/designs/23-性能预算.md"
+      - "internal/designs/26-提示词.md"
   # 往 main 提的 PR 也跑（施工 FX-4）：外面的人从自己的分叉提的 PR 不推 step/**，原来一项都不跑。只读权限、拿不到密钥，缓存照
   # 下面的 save-if 只有 main 存。不跑的文档同上。
   pull_request:
     branches: [main]
     paths:
       - "**"
-      - "!docs/construction/**"
+      - "!internal/construction/**"
       - "!docs/authors/**"
-      - "!docs/designs/**"
-      - "docs/designs/01-架构.md"
-      - "docs/designs/23-性能预算.md"
-      - "docs/designs/26-提示词.md"
+      - "!internal/designs/**"
+      - "internal/designs/01-架构.md"
+      - "internal/designs/23-性能预算.md"
+      - "internal/designs/26-提示词.md"
   workflow_dispatch:
 
 permissions:
@@ -135,7 +135,7 @@ jobs:
   # 只编有长跑测试的 crate、只跑名字以 for_longer 结尾的（2026-10-08）：原来 release 编整个工作区要 38 分钟，
   # 测试本身不到 2 分钟；别的 #[ignore] 是量尺、要外网、要虚拟机的，在这里跑了也白跑。新加长跑测试照这个名字、
   # 放在别的 crate 里的，把 crate 加进下面的 CRATES。
-  # 新旧对照的全量也在这一项跑（施工 CI-2，docs/construction/CI-2-测试分流.md）：check 里只跑够快的几份种子。
+  # 新旧对照的全量也在这一项跑（施工 CI-2，internal/construction/CI-2-测试分流.md）：check 里只跑够快的几份种子。
   randomized:
     needs: tested
     timeout-minutes: 45
@@ -207,7 +207,7 @@ jobs:
 
   # 量尺（施工 V-3，23 F4）：照 23 第二节的预算量核心这一边，表贴进这一次跑的摘要和日志。只在 Linux 上：预算照 Linux 定的。
   # 不等会话闲够了退下（--idle-wait 0）：那一项没有预算，等它要多三分多钟。闸门：时间、内存超过预算本身就红（施工 V-5 下，以前时间放到 1.5 倍）
-  # （倍数照这台机器实测定，见 docs/blueprint/perf.md「闸门」）。
+  # （倍数照这台机器实测定，见 internal/blueprint/perf.md「闸门」）。
   perf:
     needs: tested
     timeout-minutes: 45

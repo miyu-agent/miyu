@@ -1,4 +1,4 @@
-//! 瞬时事件的样本（`docs/designs/samples/transient/`，`03-事件模型.md` 第五节「瞬时事件的外壳」）：
+//! 瞬时事件的样本（`internal/designs/samples/transient/`，`03-事件模型.md` 第五节「瞬时事件的外壳」）：
 //! 除了 `model.delta` 的几种（`model.delta` 的在 `delta_sample.rs`）。
 //!
 //! - 45 号回复里那次 `read` 执行中的一段输出（`tool.progress`）；
@@ -30,7 +30,7 @@ use miyu_kernel::time::Timestamp;
 
 /// 样本目录：这个 crate 的目录往上两级是仓库根。
 fn samples() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/designs/samples")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../internal/designs/samples")
 }
 
 /// 一份样本的每一行，去掉行尾的换行。

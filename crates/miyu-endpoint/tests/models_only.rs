@@ -1,4 +1,4 @@
-//! `model.list` 只要几个模型（施工 V-6 上，`docs/blueprint/models.md`「协议」`model.list`）：终端的底栏只要现在用的那个，
+//! `model.list` 只要几个模型（施工 V-6 上，`internal/blueprint/models.md`「协议」`model.list`）：终端的底栏只要现在用的那个，
 //! 不用整份。照 `<供应商>/<模型>` 筛，没配的供应商、没有的模型就不在里面；写法不对的 `bad_params`。
 
 use serde_json::json;

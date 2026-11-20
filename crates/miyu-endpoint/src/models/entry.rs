@@ -1,4 +1,4 @@
-//! `model.list` 里的一家（`docs/blueprint/models.md`「协议」`model.list` 那张表，施工 8-7）：驱动、地址、key、对上了目录里的
+//! `model.list` 里的一家（`internal/blueprint/models.md`「协议」`model.list` 那张表，施工 8-7）：驱动、地址、key、对上了目录里的
 //! 哪一家、模型。
 //!
 //! - 列哪些模型：供应商的列表里的、目录里对上的那一家的、配置里手写了的、用途池里点名的（施工 8-8），合在一起去重，

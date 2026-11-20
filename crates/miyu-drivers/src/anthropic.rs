@@ -1,4 +1,4 @@
-//! Anthropic 的消息接口（`docs/blueprint/drivers/anthropic.md`，施工 8-12）：Anthropic 官方、opencode Zen 上的 Claude 和走这种
+//! Anthropic 的消息接口（`internal/blueprint/drivers/anthropic.md`，施工 8-12）：Anthropic 官方、opencode Zen 上的 Claude 和走这种
 //! 写法的兼容接口都说这一种。
 //!
 //! 统一的请求照那一页写成一个 JSON：顶层照 `model`、`max_tokens`、`system`、`tools`、`messages`、`stream`、思考强度的先后，

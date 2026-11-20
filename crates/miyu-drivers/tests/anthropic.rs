@@ -1,4 +1,4 @@
-//! Anthropic 消息接口的编码（`docs/blueprint/drivers/anthropic.md`「怎么走：编码」，施工 8-12）：每一种写法一个样本，
+//! Anthropic 消息接口的编码（`internal/blueprint/drivers/anthropic.md`「怎么走：编码」，施工 8-12）：每一种写法一个样本，
 //! 逐字节比对。打点在 `anthropic_marks.rs`，思考在 `anthropic_thinking.rs`，图片、文件在 `anthropic_media.rs`。
 
 use std::collections::BTreeMap;

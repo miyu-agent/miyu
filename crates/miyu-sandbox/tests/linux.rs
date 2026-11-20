@@ -1,4 +1,4 @@
-//! Linux 上真跑助手（`docs/blueprint/sandbox/linux.md`，施工 5-2、5-3）：整盘能读，只管写；一条能写的都没有时只有
+//! Linux 上真跑助手（`internal/blueprint/sandbox/linux.md`，施工 5-2、5-3）：整盘能读，只管写；一条能写的都没有时只有
 //! `/dev/null` 写得进；藏起来的读写都不行，名字看得到；能写的落在藏起来的里面照样能写；藏起来的落在能写的里面
 //! 不挖洞（施工 5-14 改，照 dsh；施工 5-15 到 5-14 改之间一级级绕开）；一级级放行时的链接不跟过去；不在的路径跳过；设了 `no_new_privs`；探测报 `landlock`。系统服务的套接字在 `linux_sockets.rs`（施工 MB-1 拆出去）。
 //! 内核没有 Landlock 的机器上，只测拒绝执行。

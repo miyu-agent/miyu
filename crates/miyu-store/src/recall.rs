@@ -1,7 +1,7 @@
-//! 检索库（施工 R-1，`docs/blueprint/recall.md`「怎么走」第二条）：一个 SQLite 文件，`items` 一条一行，contentless 的 FTS5
+//! 检索库（施工 R-1，`internal/blueprint/recall.md`「怎么走」第二条）：一个 SQLite 文件，`items` 一条一行，contentless 的 FTS5
 //! `terms` 只存倒排索引，rowid 就是 `items.id`。照关键词找，bm25 最相关的在前。
 //!
-//! 库是派生的：真相在会话日志、记忆日志、知识库的文件里，库随时能删掉重建（`docs/designs/07-存储.md` S1、S3）。怎么开、坏了
+//! 库是派生的：真相在会话日志、记忆日志、知识库的文件里，库随时能删掉重建（`internal/designs/07-存储.md` S1、S3）。怎么开、坏了
 //! 和版本不对怎么删掉重建，和会话列表的索引、用量汇总共用（[`crate::sqlite`]）。一个库一个核心开两个连接、一直开着，各拿各的锁
 //! 护着：写的一个，读的一个（`conn.rs`，施工 V-14）。同一个进程里在 SQLite 外面开了又关同一个库文件会丢掉它的文件锁（07 第六节），
 //! 两个连接都由 SQLite 开、一直开着，不碰这一条。

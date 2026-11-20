@@ -1,4 +1,4 @@
-//! `config.schema` 里包的分节（施工 SG-1，`docs/blueprint/config.md`「协议」、`packages.md`「配置项」第 1 条）：组里的项带
+//! `config.schema` 里包的分节（施工 SG-1，`internal/blueprint/config.md`「协议」、`packages.md`「配置项」第 1 条）：组里的项带
 //! `section`（组名），这个包那一组带 `sections`（每一节的编号、名字、`shown_when`，照清单写的先后）。照装着的包的清单现拼，
 //! 名字照连接的语言挑，同一项的名字。没分组的包两样都不写，`config.schema` 的字节和原来一样。
 //!

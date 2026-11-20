@@ -1,4 +1,4 @@
-//! `miyu session`（施工 SE-1 中上、中下下，`docs/blueprint/cli/session.md`，设计 `58-会话导出和导入.md`）：会话的原始包、
+//! `miyu session`（施工 SE-1 中上、中下下，`internal/blueprint/cli/session.md`，设计 `58-会话导出和导入.md`）：会话的原始包、
 //! Markdown。
 //!
 //! - `miyu session export [<会话>] [-o <文件>]`：交 `session.export {format: "bundle"}`，核心写到那个文件；不写会话的是上一次

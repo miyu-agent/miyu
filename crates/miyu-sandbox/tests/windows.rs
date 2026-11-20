@@ -1,4 +1,4 @@
-//! Windows 上真跑助手（施工 5-9 改上，`docs/blueprint/sandbox/windows.md`）：MXC 的基础容器里，能写的写得进、别处写不了；藏起来
+//! Windows 上真跑助手（施工 5-9 改上，`internal/blueprint/sandbox/windows.md`）：MXC 的基础容器里，能写的写得进、别处写不了；藏起来
 //! 的读不到；别处照设计 11 A4 读得到；退出码、标准输入照原样。没有桌面会话、起不了基础容器的机器上（CI 的 Windows 多半如此）
 //! 探测不报手段，助手照实拒绝，说为什么。
 

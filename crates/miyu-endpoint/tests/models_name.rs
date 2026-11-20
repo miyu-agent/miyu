@@ -1,4 +1,4 @@
-//! 供应商的显示名（施工 8-21，`docs/blueprint/models.md`「对外的样子」`name`、「协议」`model.list`）：`model.list` 每一家
+//! 供应商的显示名（施工 8-21，`internal/blueprint/models.md`「对外的样子」`name`、「协议」`model.list`）：`model.list` 每一家
 //! 多一格 `name`。写了的照写的，带文件、行、层；只有空白的当没写；没写的、对上了目录的照目录里那一家的名字；都没有的照
 //! 编号；用不了的那一家也有。`key` 是完整的配置键名，头照抄它发 `config.set`。改了当场就照新的答。
 

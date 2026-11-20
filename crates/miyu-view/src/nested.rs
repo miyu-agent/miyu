@@ -1,4 +1,4 @@
-//! 点开那次 `shell`、那个任务时的整份嵌套调用（施工 M-5 上，`docs/blueprint/view.md`「`view.detail`」）：照日志里了结的
+//! 点开那次 `shell`、那个任务时的整份嵌套调用（施工 M-5 上，`internal/blueprint/view.md`「`view.detail`」）：照日志里了结的
 //! `tool.nested` 和会话这一刻在跑的，挑出挂在这个父级下面的，照序号排。纯逻辑：日志、在跑的、字都由外面交进来。
 
 use std::collections::BTreeMap;

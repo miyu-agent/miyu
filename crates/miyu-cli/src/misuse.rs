@@ -1,4 +1,4 @@
-//! 参数写错时说的话（施工 4-11，`docs/blueprint/cli/main.md`「参数写错时」，设计 47）：照 clap 报的错分几种，每种
+//! 参数写错时说的话（施工 4-11，`internal/blueprint/cli/main.md`「参数写错时」，设计 47）：照 clap 报的错分几种，每种
 //! `miyu: ` 打头一行、能照着改的另起 `hint:`，跟着界面语言，不带 clap 的用法和提示。主程序把它印在标准错误上，退出码 2。
 
 use clap::error::{ContextKind, ContextValue, ErrorKind};

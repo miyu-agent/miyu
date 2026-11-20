@@ -1,4 +1,4 @@
-//! 报错（`docs/blueprint/config.md`「报错」、「怎么走」第四条，G8，施工 8-2）：读、校验配置时发现的每一处写成一条
+//! 报错（`internal/blueprint/config.md`「报错」、「怎么走」第四条，G8，施工 8-2）：读、校验配置时发现的每一处写成一条
 //! [`Problem`]：原因码、在哪、哪一项、收到了什么、离得最近的键名。
 //!
 //! 这里的问题还没说成话：说成哪种语言由连接定，同一条问题要照几种语言说（[`tell()`]）。文件在哪也不在
@@ -294,7 +294,7 @@ pub fn got(raw: &str) -> String {
 /// 不超过 3、也不超过 `key` 长度的三分之一的才给；几个一样近的，取排在前面的。
 ///
 /// 收一串名字，不只收清单的项：配置清单交 `items.iter().map(|item| item.key)`，群聊内核的场所规则交它自己的属性名
-/// （`docs/blueprint/chat.md` 第一条施工时定的第 3 条旁边那一句，施工 O-12），一份算法两处用。
+/// （`internal/blueprint/chat.md` 第一条施工时定的第 3 条旁边那一句，施工 O-12），一份算法两处用。
 pub fn nearest<'a>(names: impl IntoIterator<Item = &'a str>, key: &str) -> Option<&'a str> {
     let written: Vec<char> = key.chars().collect();
     let mut best: Option<(usize, &'a str)> = None;

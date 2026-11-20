@@ -1,4 +1,4 @@
-//! `fs.list`、`fs.find`（施工 W-2，`docs/blueprint/web-module.md`「三、列文件、找文件」、`protocol.md`
+//! `fs.list`、`fs.find`（施工 W-2，`internal/blueprint/web-module.md`「三、列文件、找文件」、`protocol.md`
 //! 「`fs.list`」「`fs.find`」）：真核心上数据根不列不找、工作区照样列；清单没建完先给一部分、`building`；
 //! `fresh` 隔一段时间才重建；最多记几份、多了丢最久没用的；`path` 一律用 `/`。
 

@@ -1,4 +1,4 @@
-//! 本会话放行过的（施工 D-1，`docs/blueprint/kernel/asking.md`「本会话放行过的」）：人选了「本会话都允许」，以后交给链的
+//! 本会话放行过的（施工 D-1，`internal/blueprint/kernel/asking.md`「本会话放行过的」）：人选了「本会话都允许」，以后交给链的
 //! 都带上那条规则；只认这一项；载入以后照日志算回来；撤销不收回。
 
 use super::approval::{answer as decide, permissions, raw};

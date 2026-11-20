@@ -1,4 +1,4 @@
-//! 搜以前的对话（施工 R-12 下，`docs/blueprint/memory.md`「协议」，`protocol.md` 的 `memory.turns`）：真核心、真回合库。
+//! 搜以前的对话（施工 R-12 下，`internal/blueprint/memory.md`「协议」，`protocol.md` 的 `memory.turns`）：真核心、真回合库。
 //!
 //! 搜得到以前那一轮：会话、轮、时刻、人的话加她的回答；`limit`；另一间的搜不到；空的、写错的 `bad_params`，没装的
 //! `memory_not_installed`。

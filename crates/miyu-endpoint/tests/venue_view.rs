@@ -1,4 +1,4 @@
-//! 场所会话的「查看会话」（施工 VW-2，`docs/construction/VW-2-场所会话的查看会话.md`）：视图流里场所的人说的话 `from` 带
+//! 场所会话的「查看会话」（施工 VW-2，`internal/construction/VW-2-场所会话的查看会话.md`）：视图流里场所的人说的话 `from` 带
 //! `name`；桥分出去的并行支线作为主线会话状态 `jobs` 里的一项（`what: agent`、`fork: true`、`session` 是支线），跑完了照样列、
 //! `state` 是 `done`，订阅以后分出去的跟着推；订阅回应、会话状态带标题，改了推一条新的 `view.status`。
 

@@ -1,4 +1,4 @@
-//! 远程的 embedding（施工 R-5 补，`docs/blueprint/recall.md` 第四条第 1 款）：`models.embedding` 写 `<供应商>/<模型>`，假服务器
+//! 远程的 embedding（施工 R-5 补，`internal/blueprint/recall.md` 第四条第 1 款）：`models.embedding` 写 `<供应商>/<模型>`，假服务器
 //! 当那一家，执行器替身照剧本调 `memory_search`。那一家回的向量都是 `[3, 4, 0, 0]`（没归一化过，什么都挺像）。
 //!
 //! 照它算问句、补向量，关键词对不上的照意思找得到；向量照 `<供应商>/<模型>` 存、归一化过；请求带着认证、模型名、档案另配的头

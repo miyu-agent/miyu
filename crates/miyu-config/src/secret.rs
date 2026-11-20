@@ -1,4 +1,4 @@
-//! 密钥（`docs/blueprint/config.md`「怎么走」第九条，G9，施工 8-5）：密钥的名字、配置里引用密钥的写法
+//! 密钥（`internal/blueprint/config.md`「怎么走」第九条，G9，施工 8-5）：密钥的名字、配置里引用密钥的写法
 //! （`{ secret = "<名字>" }`、`{ env = "<变量>" }`），密钥文件 `secrets.toml` 的字怎么读、怎么改一行。
 //!
 //! 取出来的密钥是单独的类型 [`Secret`]：`Debug` 只印 `Secret(…)`，没有 `Display`，不能序列化，所以它不会顺手进了日志、

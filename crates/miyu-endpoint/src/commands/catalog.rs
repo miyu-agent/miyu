@@ -1,4 +1,4 @@
-//! `command.catalog`（施工 O-6 补，`docs/blueprint/protocol.md`「`command.catalog`」）：核心认的斜杠命令列给头的命令菜单、
+//! `command.catalog`（施工 O-6 补，`internal/blueprint/protocol.md`「`command.catalog`」）：核心认的斜杠命令列给头的命令菜单、
 //! `/help`。不写会话的列全部；写了的只列这个连接在这个会话里打了不会被拒的，和 `command.run` 同一份判法（[`super::allowed`]）。
 //! 只收本机的会话：场所会话的命令由桥代表外部的人说，桥自己知道。列表不推送，头换会话、打开菜单时问。
 //!

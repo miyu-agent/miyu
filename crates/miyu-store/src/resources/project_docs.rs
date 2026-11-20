@@ -1,4 +1,4 @@
-//! 项目指令那一块的几份（施工 P-14，`docs/blueprint/project-docs.md`），都在 `core/project-docs/` 下。
+//! 项目指令那一块的几份（施工 P-14，`internal/blueprint/project-docs.md`），都在 `core/project-docs/` 下。
 
 use super::{ResourceRoot, SourceError};
 

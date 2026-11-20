@@ -1,4 +1,4 @@
-//! 找助手（`docs/blueprint/sandbox.md`「怎么走」第 1 条）：主程序旁边有的找得到；没有的、是目录的找不到。
+//! 找助手（`internal/blueprint/sandbox.md`「怎么走」第 1 条）：主程序旁边有的找得到；没有的、是目录的找不到。
 
 mod support;
 

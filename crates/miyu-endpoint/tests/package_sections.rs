@@ -1,4 +1,4 @@
-//! 包的设置分节（施工 SG-1，`docs/blueprint/packages.md`「配置项」第 1 条、`config.md`「协议」）：真核心走一遍。组里的项带
+//! 包的设置分节（施工 SG-1，`internal/blueprint/packages.md`「配置项」第 1 条、`config.md`「协议」）：真核心走一遍。组里的项带
 //! `section`，这个包那一组带 `sections`（名字照连接的语言，`shown_when` 的键写全、值总是列表）；没分组的包两样都不写。
 //! 藏着的那一节照旧能写、能读：核心不看 `shown_when`。
 

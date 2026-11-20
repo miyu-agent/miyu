@@ -1,4 +1,4 @@
-//! `miyu memory`（`docs/blueprint/cli/memory.md`，施工 R-3 再补）：在 shell 里看她记了你什么，搜、记、改、忘、清空，现在就
+//! `miyu memory`（`internal/blueprint/cli/memory.md`，施工 R-3 再补）：在 shell 里看她记了你什么，搜、记、改、忘、清空，现在就
 //! 整理（`dream`，施工 R-7 补）。连上
 //! 核心（照 `miyu rename`：没在跑就拉起来），照子命令发 `memory.*`（`protocol.md`），照回应印一句或者一行一条。
 //!

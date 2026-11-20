@@ -57,7 +57,7 @@ impl Tool for Search {
                 Ok(hits) => hits,
                 Err(refused) => return texts.refused(&refused),
             };
-            // 给头看的那一份（施工 W-11，`docs/blueprint/knowledge.md`「她的工具」）：没有标题的、不是 PDF 的不写那一格。
+            // 给头看的那一份（施工 W-11，`internal/blueprint/knowledge.md`「她的工具」）：没有标题的、不是 PDF 的不写那一格。
             let detail = serde_json::json!({"hits": hits.iter().map(|hit| {
                 let mut item = serde_json::json!({"kb": hit.kb, "path": hit.path, "snippet": hit.text.trim_end()});
                 if !hit.heading.is_empty() {

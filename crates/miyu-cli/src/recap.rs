@@ -1,4 +1,4 @@
-//! `miyu recap`（`docs/blueprint/cli/recap.md`，施工 3-8 四补）：连上核心（回顾要请求模型，照 `miyu ask` 的规矩拉起），找
+//! `miyu recap`（`internal/blueprint/cli/recap.md`，施工 3-8 四补）：连上核心（回顾要请求模型，照 `miyu ask` 的规矩拉起），找
 //! 当前会话（和 `miyu undo` 一样，最新的那个一次性会话；`--session` 指定别的），发 `session.recap`，把那一句印在标准输出上。
 //!
 //! 不订阅、不跟回合：回顾不开回合，回应里就是那一句。印出来的只有那一句，好接进管道；给人看的字只有出错的那几句，照核心、

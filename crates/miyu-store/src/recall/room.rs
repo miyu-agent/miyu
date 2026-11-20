@@ -1,4 +1,4 @@
-//! 一处记忆（「房间」，施工 R-3 下，`docs/blueprint/memory.md`「范围」）：一个范围的记忆日志、回合库、记忆库放在哪。
+//! 一处记忆（「房间」，施工 R-3 下，`internal/blueprint/memory.md`「范围」）：一个范围的记忆日志、回合库、记忆库放在哪。
 //!
 //! - 跟着人格的：`modules/memory/<人格>/`、`index/recall/turns-<人格>.db`、`index/recall/memory-<人格>.db`。
 //!   无人格的会话（施工 P-12，2026-10-17 项目主人定）也跟着「人格」走，编号写 [`NO_PERSONA`]：单独一间，无人格的会话

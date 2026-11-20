@@ -1,4 +1,4 @@
-//! 沙盒的助手 `miyu-sandbox`（`docs/blueprint/sandbox.md`「助手的命令行」）：照规格先把自己收紧，再换成那条命令。
+//! 沙盒的助手 `miyu-sandbox`（`internal/blueprint/sandbox.md`「助手的命令行」）：照规格先把自己收紧，再换成那条命令。
 //!
 //! - `miyu-sandbox run --spec <规格的 JSON> -- <程序> [参数…]`：Unix 上换成它（`exec`），Windows 上起它、等它。
 //! - `miyu-sandbox probe`：印一行 JSON，说这台机器能收紧到什么程度。

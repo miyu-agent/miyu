@@ -30,7 +30,7 @@ pub struct Catalog {
 /// 基础系统的编号（`10-自带软件.md` 第三节）：只交一串工具的老写法，全算它。
 pub const BASESYSTEM: &str = "basesystem";
 
-/// MCP 服务的工具名的开头（施工 X-3 上，`docs/blueprint/mcp.md`「对外的样子」第 1 条）：`mcp__<服务名>__<工具名>`。包自己
+/// MCP 服务的工具名的开头（施工 X-3 上，`internal/blueprint/mcp.md`「对外的样子」第 1 条）：`mcp__<服务名>__<工具名>`。包自己
 /// 登记的工具不许用它（`provide` 拦下）。
 pub const MCP_PREFIX: &str = "mcp__";
 
@@ -142,7 +142,7 @@ impl Catalog {
         (catalog, skipped)
     }
 
-    /// 换上这一刻的脚本（施工 X-12 中，`docs/blueprint/skills.md`「脚本」）：原来登记的脚本工具全拿掉，照 `scripts`（包的
+    /// 换上这一刻的脚本（施工 X-12 中，`internal/blueprint/skills.md`「脚本」）：原来登记的脚本工具全拿掉，照 `scripts`（包的
     /// 编号和一个脚本的工具，数据根里自己放的是 `~home`）一件件登记；查法同 [`Catalog::new`]，查不过的那一件不登记、别的照登记，
     /// 一并交回没登记的（撞了别的工具的名字的这种）。脚本所在的包算经提供者登记的：会话下一个回合照现在的换。
     pub fn replacing_scripts(

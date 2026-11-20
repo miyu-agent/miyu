@@ -1,4 +1,4 @@
-//! 经驱动和 HTTP 请求模型（`docs/construction/3-7-会话actor（下）.md` 验收第 2 条）：本机的假服务器照样本
+//! 经驱动和 HTTP 请求模型（`internal/construction/3-7-会话actor（下）.md` 验收第 2 条）：本机的假服务器照样本
 //! 的流回；限速了等够再请求；打断了断开连接；编码要的 blob 取不出来，出错、不发。
 
 use std::path::PathBuf;
@@ -37,7 +37,7 @@ fn models(home: &mut Home, server: &Server, inputs: Inputs, continues: bool) -> 
 /// 驱动的流的样本：说「你好！」，用量 80 + 1920（命中）+ 3。
 fn said_hello() -> Reply {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/drivers/openai-chat/streams/openai-text.sse");
+        .join("../../internal/designs/samples/drivers/openai-chat/streams/openai-text.sse");
     let bytes = std::fs::read(&path).unwrap_or_else(|e| panic!("读不了 {}：{e}", path.display()));
     Reply::stream(vec![Piece::Bytes(bytes)])
 }

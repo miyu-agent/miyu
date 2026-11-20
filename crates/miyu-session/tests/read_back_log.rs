@@ -1,4 +1,4 @@
-//! 撤掉压缩时日志读不回来（施工 6-9，`docs/blueprint/session/actor.md` 第 4 条）：会话停下，这个撤销收到「会话停了」，
+//! 撤掉压缩时日志读不回来（施工 6-9，`internal/blueprint/session/actor.md` 第 4 条）：会话停下，这个撤销收到「会话停了」，
 //! 运行日志记一行 `read back failed, stopped`，和写不进去一样。
 //!
 //! 只有这一个测试，自己一个进程：`tracing` 的调用点第一次被碰到时记下谁在听，别的测试同时碰到，这里装的订阅者可能

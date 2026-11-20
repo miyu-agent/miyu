@@ -1,4 +1,4 @@
-//! 还没写进配置的一家（`docs/blueprint/models.md`「协议」`provider.test` 的 `candidate`，施工 8-11）：照写进配置以后的样子
+//! 还没写进配置的一家（`internal/blueprint/models.md`「协议」`provider.test` 的 `candidate`，施工 8-11）：照写进配置以后的样子
 //! 写成一份最终值，交给和会话的路由同一个 [`crate::provider::provider`] 推，试的和写进去以后真用的不会不一样。
 //!
 //! - 编号是 `catalog`（`miyu setup` 写配置时用的就是它），没写的是 [`CANDIDATE`]。`catalog` 不另写成一格：编号就是它。

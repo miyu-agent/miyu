@@ -1,5 +1,5 @@
-//! 图片、文件发不了时换成的字（`docs/blueprint/drivers/openai-chat.md` 第 9 条，施工 8-12 从 `openai_chat/messages.rs`
-//! 挪出来，几个驱动共用，`docs/blueprint/drivers/anthropic.md`「在哪」）：
+//! 图片、文件发不了时换成的字（`internal/blueprint/drivers/openai-chat.md` 第 9 条，施工 8-12 从 `openai_chat/messages.rs`
+//! 挪出来，几个驱动共用，`internal/blueprint/drivers/anthropic.md`「在哪」）：
 //!
 //! - 不能看图的：有转述、快照里有那三句标签的写成带标签的转述（施工 8-17），别的写占位那一句，带名字的写上名字；
 //! - 能看图的、带名字的图片前后各一段标签（施工 3-9 四补）；

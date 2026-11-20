@@ -1,4 +1,4 @@
-//! 查用量，执行器这一头（施工 8-15，`docs/blueprint/session/tools.md`「查用量」、`models.md`「怎么走」第九条第 7 条）：交给
+//! 查用量，执行器这一头（施工 8-15，`internal/blueprint/session/tools.md`「查用量」、`models.md`「怎么走」第九条第 7 条）：交给
 //! `session_usage` 的端口（[`miyu_tool::UsagePort`]）。
 //!
 //! - 上下文：派出去那一刻向内核要一份（`Session::context_used()`，和压缩线同一个算法），连同窗口、压缩线（[`asked`]）。工具在

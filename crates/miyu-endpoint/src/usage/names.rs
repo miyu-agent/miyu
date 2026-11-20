@@ -1,4 +1,4 @@
-//! 用途给人看的名字（施工 UP-3，`docs/blueprint/models.md`「协议」`usage.query`）：`usage.query` 照 `purpose` 分组时每一行带
+//! 用途给人看的名字（施工 UP-3，`internal/blueprint/models.md`「协议」`usage.query`）：`usage.query` 照 `purpose` 分组时每一行带
 //! `purpose_name`，照连接的语言。
 //!
 //! - 核心自己的用途照字表 `core/human` 的 `usage/purpose/<用途>` 给（有哪几种就看字表里有哪几条，不另列名单）；没写用途的那一行

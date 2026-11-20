@@ -1,4 +1,4 @@
-//! 思考强度在协议上的样子（施工 8-18；会话那一层 8-18（补）去掉、SM-1 加回来，`docs/blueprint/models.md`「协议」「怎么走」
+//! 思考强度在协议上的样子（施工 8-18；会话那一层 8-18（补）去掉、SM-1 加回来，`internal/blueprint/models.md`「协议」「怎么走」
 //! 第十一条）：`session.configure` 的 `effort` 照会话这时的模型的档位查过记一条，不在里面的 `bad_params`；`subscribe` 的
 //! `model` 多 `effort`，`from` 是会话或者配置的哪一层；`model.list` 的 `facts` 多 `effort`，带着完整的配置键名 `key`；配置里写的
 //! 不在档位里的报 `unknown_effort`、算进 `config_errors`。

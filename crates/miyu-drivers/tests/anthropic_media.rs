@@ -1,4 +1,4 @@
-//! Anthropic 的图片、文件（`docs/blueprint/drivers/anthropic.md`「怎么走：编码」第 4、6、9 条，施工 8-12）：能收的写成
+//! Anthropic 的图片、文件（`internal/blueprint/drivers/anthropic.md`「怎么走：编码」第 4、6、9 条，施工 8-12）：能收的写成
 //! `image`、`document` 块，媒体类型不对的、不能收的换成字；工具结果里的图、PDF 放在 `tool_result` 里面；文本文件、带名字的
 //! 图片、替它看的图照 openai-chat 一样换成字（`media.rs` 共用）；缺 blob 报错。
 

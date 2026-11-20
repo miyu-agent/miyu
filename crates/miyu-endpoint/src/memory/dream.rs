@@ -1,4 +1,4 @@
-//! 现在就整理记忆（施工 R-7 补，`docs/blueprint/memory.md` 第七条第 9 款，`protocol.md` 的 `memory.dream`、`/dream`）：带
+//! 现在就整理记忆（施工 R-7 补，`internal/blueprint/memory.md` 第七条第 9 款，`protocol.md` 的 `memory.dream`、`/dream`）：带
 //! `session` 的叫那个会话先把还没抽的抽了再合（[`Handle::dream`]），带 `persona`、都不写的照那一间直接合
 //! （[`miyu_session::Keeper::dream`]）。交回几样数；这一间正在合的 `memory_busy`，没合成的 `dream_failed`。几秒到十几秒，
 //! 在后台答（`methods::answered_later`）。`memory.dream_stop` 叫停这一间人叫的那一趟（施工 R-23），照顺序答。

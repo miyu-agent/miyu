@@ -1,4 +1,4 @@
-//! 软件包带来的知识库（施工 K-8，`docs/blueprint/knowledge.md`）：真会话、真目录。装了的包里的库她搜得到，开了 `auto` 的
+//! 软件包带来的知识库（施工 K-8，`internal/blueprint/knowledge.md`）：真会话、真目录。装了的包里的库她搜得到，开了 `auto` 的
 //! 提到标题名自动想起；写进去拒，说清是随包来的、写到别的库里。
 
 use miyu_kernel::block::{Block, Text};

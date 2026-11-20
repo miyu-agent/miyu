@@ -1,4 +1,4 @@
-//! 派子代理的端口（`docs/blueprint/agents.md` 第一条，`tools/interface.md`，施工 7-5）：`subagent` 这件工具只拿它，不认识
+//! 派子代理的端口（`internal/blueprint/agents.md` 第一条，`tools/interface.md`，施工 7-5）：`subagent` 这件工具只拿它，不认识
 //! 会话表。执行器照父会话抄好场所、工作目录、权限、能不能确认，领一个任务编号，造子会话、把交代送进去，交回编号和
 //! 子会话的编号。
 //!
@@ -53,7 +53,7 @@ pub trait AgentPort: Send + Sync {
     /// 派一个子代理。子会话造好、交代送进去（它的第一轮开了）才交回，不等它做完。
     fn spawn<'a>(&'a self, order: Order<'a>) -> Spawning<'a>;
 
-    /// 这个会话能选的池（施工 8-8 补，`docs/blueprint/models.md`「工具」）：会话开局时拼进工具面的 `pool` 的 `enum`，照快照
+    /// 这个会话能选的池（施工 8-8 补，`internal/blueprint/models.md`「工具」）：会话开局时拼进工具面的 `pool` 的 `enum`，照快照
     /// 读回，整个会话不变。一个都没列的是空的。
     fn pools(&self) -> &[String];
 

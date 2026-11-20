@@ -1,4 +1,4 @@
-//! 发给别的会话，执行器这一头（施工 C-5，`docs/blueprint/cross-session.md` 第三条）：命令编号、`by` 照这个会话；没人看着
+//! 发给别的会话，执行器这一头（施工 C-5，`internal/blueprint/cross-session.md` 第三条）：命令编号、`by` 照这个会话；没人看着
 //! 的一次性会话交回 `held`；三种拒绝（限速、一模一样、对方没看的太多）对上三句。运行日志只记 `to`、不带话的字这一条，
 //! 父子之间、别的会话走的是同一行代码，由 `messages_log.rs` 守着，这里不重复。两个主会话之间真的来回收发由
 //! `crates/miyu-endpoint/tests/peers.rs` 守着，这里只测执行器自己翻译的那一段。

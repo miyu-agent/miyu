@@ -1,4 +1,4 @@
-//! `goal` 工具交来的事（施工 X-8 上，`docs/blueprint/tools/goal.md`，`tools/goals.rs`）：看的照会话状态当场答；设、报完成、
+//! `goal` 工具交来的事（施工 X-8 上，`internal/blueprint/tools/goal.md`，`tools/goals.rs`）：看的照会话状态当场答；设、报完成、
 //! 报卡住交内核 `Goal` 命令，`by` 是这次调用，记下等它的回应、把等的口子交回工具。续轮开的那一轮里报卡住，目标开过的轮数
 //! 不到 [`BLOCKED_AFTER`] 的当场拒（`goal.md`「照旧版留下的」第 3 条：人开的那一轮、人插过话的这一次运行不管，人说停就停）。
 

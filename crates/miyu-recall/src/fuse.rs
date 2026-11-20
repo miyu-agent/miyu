@@ -1,4 +1,4 @@
-//! 两路合并（施工 R-5 下，`docs/blueprint/recall.md` 第三条第 3 款）：关键词一路、向量一路各交一串名次，照名次合，不照分数
+//! 两路合并（施工 R-5 下，`internal/blueprint/recall.md` 第三条第 3 款）：关键词一路、向量一路各交一串名次，照名次合，不照分数
 //! （bm25 和余弦的尺度对不上）：`分 = Σ 权重 / (60 + 名次 + 1)`，名次从 0 数。关键词为主、向量为辅（2026-09-29 项目主人定）：
 //! 关键词一路权重 1，向量一路 0.5；只有向量一路找到的，相似度还要过 [`FLOOR`]。几个数是起点，测评集上再定。
 
@@ -23,7 +23,7 @@ pub fn fuse<Key: Ord + Clone>(keyword: &[Key], vector: &[(Key, f32)]) -> Vec<Key
     fuse_above(keyword, vector, FLOOR)
 }
 
-/// 同 [`fuse`]，只有向量一路找到的照 `floor`（施工 K-2 修：知识库照模型交下限，`docs/blueprint/knowledge.md` 第四条）。
+/// 同 [`fuse`]，只有向量一路找到的照 `floor`（施工 K-2 修：知识库照模型交下限，`internal/blueprint/knowledge.md` 第四条）。
 pub fn fuse_above<Key: Ord + Clone>(
     keyword: &[Key],
     vector: &[(Key, f32)],

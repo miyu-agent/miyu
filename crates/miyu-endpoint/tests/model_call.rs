@@ -1,4 +1,4 @@
-//! `model.call`（施工 8-20，`docs/blueprint/models.md`「协议」`model.call`、「怎么走」第十二条）：经一次性入口叫本机回环上
+//! `model.call`（施工 8-20，`internal/blueprint/models.md`「协议」`model.call`、「怎么走」第十二条）：经一次性入口叫本机回环上
 //! 的假服务器。回应的形状；不造会话、不进会话日志；参数校验；图照 blob 认；几种出错的 `data`；照剧本回的核心
 //! 没有一次性入口，答 `no_model`。
 

@@ -1,4 +1,4 @@
-//! 技能、脚本、MCP 三页要的协议（施工 X-27，`docs/blueprint/skills.md`「脚本」、`presets.md`「全局开关」）：`script.list`
+//! 技能、脚本、MCP 三页要的协议（施工 X-27，`internal/blueprint/skills.md`「脚本」、`presets.md`「全局开关」）：`script.list`
 //! 列出登记上的脚本，给人看的两格照连接的语言挑；改加载方式的 `tool.set_loading` 没有了（施工 AUD-2，工具一律全量）；
 //! `feature.set` 改全局开关，没写这个功能的预设照它、明写了的照预设，`preset.get`
 //! 每一项说是谁定的；写错的拒，什么都不写。

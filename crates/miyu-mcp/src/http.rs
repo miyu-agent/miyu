@@ -1,4 +1,4 @@
-//! 网址的服务（施工 X-32 上，`docs/blueprint/mcp.md`「网址的服务怎么说话」）：把一行一条的 JSON-RPC 接到 Streamable HTTP 上，
+//! 网址的服务（施工 X-32 上，`internal/blueprint/mcp.md`「网址的服务怎么说话」）：把一行一条的 JSON-RPC 接到 Streamable HTTP 上，
 //! 交回一对读写，[`crate::Client::connect`] 照常用，认时代、列工具、调工具、取消都不用改。
 //!
 //! - 客户端写出的每一行 POST 到网址，几条同时在路上的各发各的；`Accept` 两种都要，带上服务给过的 `Mcp-Session-Id`、协议版本

@@ -1,4 +1,4 @@
-//! 别的 harness 发来的话（施工 7-10，`docs/blueprint/tools/history.md`「哪些算一条」）：找、读的「谁」那一格写
+//! 别的 harness 发来的话（施工 7-10，`internal/blueprint/tools/history.md`「哪些算一条」）：找、读的「谁」那一格写
 //! `agent "<名字>"`，名字照模板的规矩转义；筛 `user` 时在里面，筛 `assistant`、`tool` 时不在。
 
 use super::*;

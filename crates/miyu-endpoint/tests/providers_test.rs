@@ -1,4 +1,4 @@
-//! `provider.test`（施工 8-11、8-11 五补，`docs/blueprint/models.md`「协议」、「怎么走」第七条第 4 条）：对本机回环上的假
+//! `provider.test`（施工 8-11、8-11 五补，`internal/blueprint/models.md`「协议」、「怎么走」第七条第 4 条）：对本机回环上的假
 //! 服务器试。列得出模型就算通、不发请求（`checked: list`）；写的模型不在列表里、列不出又不是认证错的才发一句（`checked:
 //! request`，交 `first_token_ms`、收到第一段正文就停）；列不出、没写模型的要模型名（`need_model`）；配好的存列表、候选不存；
 //! 认证失败交分类、状态、原话；推荐的模型；推不出的 `config`，引用取不到的照连接的语言说；参数不对、`unknown_provider`；配了
@@ -428,7 +428,7 @@ async fn wrong_params_and_unknown_providers_are_refused() {
 async fn the_probe_speaks_through_the_model_driver_with_the_profile_headers() {
     let anthropic = std::fs::read(
         std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../docs/designs/samples/drivers/anthropic/streams/text.sse"),
+            .join("../../internal/designs/samples/drivers/anthropic/streams/text.sse"),
     )
     .expect("样本读得到");
     let server = Server::start(vec![

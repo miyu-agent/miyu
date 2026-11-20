@@ -1,5 +1,5 @@
-//! 别的会话发来的话，内核这一头（施工 C-2，`docs/blueprint/cross-session.md` 第四条、第五条第 1 到 3 款，
-//! `docs/blueprint/kernel/session.md`「别的会话发来的话」）。
+//! 别的会话发来的话，内核这一头（施工 C-2，`internal/blueprint/cross-session.md` 第四条、第五条第 1 到 3 款，
+//! `internal/blueprint/kernel/session.md`「别的会话发来的话」）。
 //!
 //! 认：命令 `Send`，`by` 是一个会话，它既不是这个会话的父会话，也不是这个会话派的子代理的子会话（账本的
 //! [`crate::ledger::Ledger::is_peer`]）。过了防刷屏的，照「别的 harness 发来的话」收（`messages.rs`）：它是别处来的，不带

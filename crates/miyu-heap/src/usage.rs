@@ -1,4 +1,4 @@
-//! 进程这时占了多少内存（`docs/designs/23-性能预算.md` F4，施工 V-4）：核心定时采样自己记账用。Linux 上读
+//! 进程这时占了多少内存（`internal/designs/23-性能预算.md` F4，施工 V-4）：核心定时采样自己记账用。Linux 上读
 //! `/proc/self/smaps_rollup`（采样那一次）、`/proc/self/status`（中间看一眼涨没涨，便宜）；macOS 上问内核 `proc_pid_rusage`
 //! （施工 V-4 补：RSS 和活动监视器里的「内存」那一列）；Windows 还没定怎么量，交回没有。
 

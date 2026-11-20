@@ -1,4 +1,4 @@
-//! 只解要的种类的行为差别（施工 V-49，`docs/construction/V-49-history只解要的种类.md`）：照种子造的会话写成真段文件、经存储读
+//! 只解要的种类的行为差别（施工 V-49，`internal/construction/V-49-history只解要的种类.md`）：照种子造的会话写成真段文件、经存储读
 //! （执行器、会话表交给 `history` 的就是这条路），一行写坏三样，新的（只解要的种类）和以前的读法（全解，`old.rs`）比：
 //!
 //! - 不要的种类（注入的事实、会话的标题、命令、审批、目标、待办、包的状态……，`model.called` 不解的那几格）正文合 JSON、不合那一种
@@ -96,7 +96,7 @@ const BROKEN: u64 = 12;
 /// `MIYU_HISTORY_FULL=1` 跑几份。
 const BROKEN_FULL: u64 = 1500;
 
-/// `history` 不要、正文不解的种类，合写法的正文（照 `docs/designs/samples/events/`）。`model.called` 另造（[`vary`]）。
+/// `history` 不要、正文不解的种类，合写法的正文（照 `internal/designs/samples/events/`）。`model.called` 另造（[`vary`]）。
 const UNWANTED: [(&str, &str); 10] = [
     ("session.meta_changed", r#"{"title":"整理 omega"}"#),
     ("command.ran", r#"{"text":"/omega","command":"omega"}"#),

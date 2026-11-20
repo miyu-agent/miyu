@@ -1,4 +1,4 @@
-//! 常用的几家（施工 8-11 再补，2026-10-08 项目主人定，`docs/blueprint/models.md`「怎么走」第七条）：资源目录的
+//! 常用的几家（施工 8-11 再补，2026-10-08 项目主人定，`internal/blueprint/models.md`「怎么走」第七条）：资源目录的
 //! `models/featured.toml`，`miyu setup` 和头的第一次引导先列它们。核心读好原文交进来，这里只认写法。
 
 use miyu_config::phrases::{Label, read_label};

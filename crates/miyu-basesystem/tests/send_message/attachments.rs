@@ -1,4 +1,4 @@
-//! 带附件（施工 C-9，`docs/blueprint/tools/send_message.md`「附件」）：照这一轮的工作目录读、照内容认，连同那句话交给端口；
+//! 带附件（施工 C-9，`internal/blueprint/tools/send_message.md`「附件」）：照这一轮的工作目录读、照内容认，连同那句话交给端口；
 //! 执行前的链照 `targets` 查读哪几个；有一个读不成、太大的，整句不发，端口一次都不问；只订不发的不能带。
 
 use serde_json::json;

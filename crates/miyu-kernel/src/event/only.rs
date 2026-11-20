@@ -1,4 +1,4 @@
-//! 只解要的种类（施工 V-39 上补，`docs/construction/V-39上补-判官只解析要的种类.md`）：判官读群会话日志时用
+//! 只解要的种类（施工 V-39 上补，`internal/construction/V-39上补-判官只解析要的种类.md`）：判官读群会话日志时用
 //! （[`Event::from_line_only`](crate::event::Event::from_line_only)）。外壳照旧全解（序号、时刻、种类、回合、谁、命令编号），`body` 分三样：
 //!
 //! - 调的一方要的种类，和有效历史照种类认的那几种（[`HISTORY`]）：全解，同 [`Event::from_line`](crate::event::Event::from_line)。

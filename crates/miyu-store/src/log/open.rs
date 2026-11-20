@@ -1,4 +1,4 @@
-//! 打开会话日志时的自检（`docs/designs/07-存储.md` 第四节「打开日志时自检三件事」）：最后一行完整、
+//! 打开会话日志时的自检（`internal/designs/07-存储.md` 第四节「打开日志时自检三件事」）：最后一行完整、
 //! 每一行都能解析、序号连续。只截最后一段末尾那半行：它一定从未被确认过。别的不对一律报错，写明
 //! 是哪一段第几行，不自动修：日志是真相，修错了就是丢了。
 
@@ -57,7 +57,7 @@ impl fmt::Display for OpenError {
 
 impl std::error::Error for OpenError {}
 
-/// 日志坏在哪（施工 YC-6，`docs/construction/YC-6-日志坏一行只读打开.md`）：给头看的那几样。
+/// 日志坏在哪（施工 YC-6，`internal/construction/YC-6-日志坏一行只读打开.md`）：给头看的那几样。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BrokenAt {
     /// 哪一段：只是文件名，不带目录（目录里带着会话编号，同 [`OpenError`] 写进运行日志的那一句）。
@@ -241,7 +241,7 @@ pub fn read_range(
 }
 
 /// 同 [`read_range`]，只是每一行照 [`Event::from_line_only`] 只解 `only` 里的种类（施工 V-39 上补：判官用，
-/// `docs/construction/V-39上补-判官只解析要的种类.md`）：外壳、`only` 里的、留着一切的有效历史照种类认的全解，别的种类的
+/// `internal/construction/V-39上补-判官只解析要的种类.md`）：外壳、`only` 里的、留着一切的有效历史照种类认的全解，别的种类的
 /// `body` 只过一遍。自检照旧（最后一段末尾的半行、序号连着、段名、每一行都是合法的 JSON），读不成的报的错（哪一段、第几行、
 /// 为什么）同 [`read_range`]；只有不要的种类的 `body` 合 JSON、不合那一种的写法的不报（2026-11-03 项目主人拍板接受）。
 ///

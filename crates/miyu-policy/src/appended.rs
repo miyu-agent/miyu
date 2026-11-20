@@ -1,4 +1,4 @@
-//! 扩展放在系统提示词尾部的那几段（施工 X-20，`docs/designs/34-表情包.md` 第五节第 5 条）：扩展经 `system.append` 交来，每个包
+//! 扩展放在系统提示词尾部的那几段（施工 X-20，`internal/designs/34-表情包.md` 第五节第 5 条）：扩展经 `system.append` 交来，每个包
 //! 一段，原文照抄（外壳、转义扩展自己做），照包的编号排，接在整段 system 的最后，记进快照。只插不改人格原文。
 
 use std::collections::BTreeMap;

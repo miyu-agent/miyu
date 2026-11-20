@@ -1,4 +1,4 @@
-//! 核心接上本机 embedding 的小程序（施工 R-5 中；R-5 三补改成照包，`docs/blueprint/recall.md` 第四条第 3、4 款）：手造的小模型
+//! 核心接上本机 embedding 的小程序（施工 R-5 中；R-5 三补改成照包，`internal/blueprint/recall.md` 第四条第 3、4 款）：手造的小模型
 //! （`tests/fixtures/embed-tiny/`）放进一份包目录（模型清单 `model.toml` 加两个文件），测试用的小程序 `miyu-test-embed`（施工
 //! S-7 上，手算小模型；cargo 编在测试程序旁边），都在临时目录里。不联网：没有下载那一条路了。
 //!

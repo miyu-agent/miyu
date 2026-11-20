@@ -1,11 +1,11 @@
-//! 有效历史：投影要用的那一段（`docs/designs/03-事件模型.md` 第七节「有效历史」）。
+//! 有效历史：投影要用的那一段（`internal/designs/03-事件模型.md` 第七节「有效历史」）。
 //!
 //! 从最近一次压缩算起，去掉撤销掉的回合。账本（[`crate::ledger`]）查过的事件才交给这里，
 //! 这里只留还要发给模型的那些。压缩一次就丢掉更早的；撤销一次，撤掉的先放在一边，下一轮开始、
 //! 压缩了才丢（`history/undo.rs`）。所以占的内存随上下文窗口走，不随日志走（`07-存储.md` 第七节）。
 //!
 //! 撤销能撤掉压缩（施工 6-9）：更早的那一段从日志读回来，从留着一切的一份（[`History::whole`]）收起，收完落到
-//! 检查点上（[`History::settle`]，`docs/blueprint/kernel/history.md`「从日志的一段重建」）。载入也这样重建。
+//! 检查点上（[`History::settle`]，`internal/blueprint/kernel/history.md`「从日志的一段重建」）。载入也这样重建。
 //!
 //! 压缩以后多出来的容量放掉（施工 V-37 上）：不然压缩以前长到多少条，就一直占着多少条的地方。
 
@@ -123,7 +123,7 @@ impl History {
         self.jobs.childs_own(seq)
     }
 
-    /// 会话 `session` 发来的话是别的会话发来的（施工 C-2，`docs/blueprint/cross-session.md` 第四条第 1 款）：它不是这个
+    /// 会话 `session` 发来的话是别的会话发来的（施工 C-2，`internal/blueprint/cross-session.md` 第四条第 1 款）：它不是这个
     /// 会话的父会话，也不是这个会话派的子代理（派它的那一轮撤掉了的也算派过）。渲染、`history` 照它写标签、「谁」。
     pub fn is_peer(&self, session: &SessionId) -> bool {
         !self.jobs.is_parent(session) && self.jobs.in_session(session).is_none()

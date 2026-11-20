@@ -1,4 +1,4 @@
-//! 照规格把一条命令包成交给助手的样子（`docs/blueprint/sandbox.md`「怎么走」第 3 条）：
+//! 照规格把一条命令包成交给助手的样子（`internal/blueprint/sandbox.md`「怎么走」第 3 条）：
 //! `<助手> run --spec <规格的 JSON> -- <程序> <参数…>`。工作目录、环境变量、标准输入输出由起命令的一方照旧设。
 //!
 //! Linux 上只有 Landlock 的那一路（施工 V-47）：[`command`] 带上核心按规格缓存的规则集，参数多一段 `--ruleset <号码>`，
@@ -10,7 +10,7 @@ use std::process::Command;
 
 use crate::Spec;
 
-/// 一次调用带的沙盒：助手在哪，规格是什么，要给命令设的环境变量（`docs/blueprint/tools/interface.md`「一次调用交给
+/// 一次调用带的沙盒：助手在哪，规格是什么，要给命令设的环境变量（`internal/blueprint/tools/interface.md`「一次调用交给
 /// 工具的」）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Sandboxed {

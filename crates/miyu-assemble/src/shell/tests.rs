@@ -111,14 +111,14 @@ fn the_shipped_texts_read_like_the_samples() {
     assert_eq!(
         super::block("git status --short", Some(&exited), &jobs).as_deref(),
         Some(include_str!(
-            "../../../../docs/designs/samples/reports/shell.txt"
+            "../../../../internal/designs/samples/reports/shell.txt"
         ))
     );
     let timed = ran(None, Some(ShellReason::TimedOut), "Compiling miyu v0.1.0\n");
     assert_eq!(
         super::block("cargo build", Some(&timed), &jobs).as_deref(),
         Some(include_str!(
-            "../../../../docs/designs/samples/reports/shell-timed-out.txt"
+            "../../../../internal/designs/samples/reports/shell-timed-out.txt"
         ))
     );
 }

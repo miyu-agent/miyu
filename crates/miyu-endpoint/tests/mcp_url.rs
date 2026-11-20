@@ -1,4 +1,4 @@
-//! 网址的 MCP 服务（施工 X-32 上，`docs/blueprint/mcp.md`「网址的服务怎么说话」）：配置里写 `url` 的服务，核心不起进程，经
+//! 网址的 MCP 服务（施工 X-32 上，`internal/blueprint/mcp.md`「网址的服务怎么说话」）：配置里写 `url` 的服务，核心不起进程，经
 //! Streamable HTTP 连上、列出工具、会话里调得到；令牌发成 `Authorization: Bearer`、别的请求头照写的带；`mcp.list` 带 `url`、没有
 //! `pid`。`http://` 不是本机地址的不连，停下、日志里说清。
 

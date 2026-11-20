@@ -1,4 +1,4 @@
-//! 用量汇总在协议这一头（施工 8-15，`docs/blueprint/models.md`「协议」`usage.query`、「怎么走」第九条第 6 条）：核心起来时开
+//! 用量汇总在协议这一头（施工 8-15，`internal/blueprint/models.md`「协议」`usage.query`、「怎么走」第九条第 6 条）：核心起来时开
 //! `state/usage.db`（[`open`]），`usage.query` 先补再查（[`query`]）。
 //!
 //! - 参数：`from`、`until` 是时刻（左闭右开），`group` 是 `venue`、`model`、`day`、`session`、`purpose`、`use` 里的几样，

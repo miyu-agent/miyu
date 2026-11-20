@@ -1,4 +1,4 @@
-//! 内核眼里的工具（`docs/designs/05-内核接口.md` 第六节）：访问类别、参数格式；执行之前的
+//! 内核眼里的工具（`internal/designs/05-内核接口.md` 第六节）：访问类别、参数格式；执行之前的
 //! 参数修正；内核替工具写给模型的几句见 [`ToolTexts`]。
 //!
 //! 工具由软件包提供，内核不内置（`10-自带软件.md` 第一节）。内核只要知道两样：能不能和别的
@@ -31,7 +31,7 @@ text_enum!(
         /// 权限策略放行、不问人；本机的会话里拒绝，工具的 `venues` 有 `local` 的照 [`Access::Outbound`] 判（施工 O-31 补）。谁能叫、
         /// 能动谁由提供者照 `by`、`owner` 自己挡（`providers.md`）。
         Venue = "venue",
-        /// 改这台机器上装了什么（施工 F-10 下，`docs/blueprint/tools/package.md`）：装、卸软件包，打开扩展。算写入；权限策略
+        /// 改这台机器上装了什么（施工 F-10 下，`internal/blueprint/tools/package.md`）：装、卸软件包，打开扩展。算写入；权限策略
         /// 照级别判：完全放开放行，工作区每次问人，只读拒绝。
         Install = "install",
     }
@@ -52,7 +52,7 @@ impl Access {
     }
 }
 
-/// 一件工具的职能（施工 XG-2 上，`docs/designs/64-工具职能.md` 第四节）：核心要找「哪件是干这个的」时照它认，不照工具的名字，
+/// 一件工具的职能（施工 XG-2 上，`internal/designs/64-工具职能.md` 第四节）：核心要找「哪件是干这个的」时照它认，不照工具的名字，
 /// 第三方的工具声明了同样的职能同样认。内核自己不看它；放在这里是因为工具的规格（`miyu-tool`）和快照的工具面（`miyu-policy`）
 /// 两边都要。取值是一张封闭的表：认不得的读不进（自带的说明文件报错、扩展交的拒 `bad_params`），要加职能就加一项。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
@@ -71,7 +71,7 @@ impl Role {
     }
 }
 
-/// 一件工具给哪种会话（施工 XG-2 上，`docs/designs/64-工具职能.md` 第五节）：组工具面（`miyu-session` 的 `face()`）时照它多拿掉，
+/// 一件工具给哪种会话（施工 XG-2 上，`internal/designs/64-工具职能.md` 第五节）：组工具面（`miyu-session` 的 `face()`）时照它多拿掉，
 /// 不让一件工具出现在它本来出现不了的会话里。取值是封闭的，写在说明文件里认不得的读不进。
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]

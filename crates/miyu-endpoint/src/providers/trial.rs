@@ -1,4 +1,4 @@
-//! `provider.test`（`docs/blueprint/models.md`「协议」、「怎么走」第七条第 4 条，施工 8-11、8-11 五补）：试一家配好了的
+//! `provider.test`（`internal/blueprint/models.md`「协议」、「怎么走」第七条第 4 条，施工 8-11、8-11 五补）：试一家配好了的
 //! 供应商（`provider`），或者还没写进配置的一家（`candidate`）。列得出模型就算通，不发请求；列不出的、写的模型不在列表里的
 //! 才发一句，会花一点额度。
 //!

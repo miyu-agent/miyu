@@ -1,4 +1,4 @@
-//! 压缩触发线可配（施工 CT-1，`docs/blueprint/compaction.md` 第二条第 2 条）：系统配置 `compaction.line` 改了，没钉的会话下一个
+//! 压缩触发线可配（施工 CT-1，`internal/blueprint/compaction.md` 第二条第 2 条）：系统配置 `compaction.line` 改了，没钉的会话下一个
 //! 回合照新的压；会话钉的（`Command::SetCompactionLine`）压过配置，下一个回合生效，去掉的回到跟着配置。换了的那一轮记一条换快照的
 //! `session.policy_changed`，给头看的压缩线跟着换。
 //!

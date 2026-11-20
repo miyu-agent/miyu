@@ -1,4 +1,4 @@
-//! 抽到哪（施工 R-6 上，`docs/blueprint/memory.md` 第六条）：记忆日志里的 `ext.memory.extracted` 照会话记最大的那个 `upto`，
+//! 抽到哪（施工 R-6 上，`internal/blueprint/memory.md` 第六条）：记忆日志里的 `ext.memory.extracted` 照会话记最大的那个 `upto`，
 //! 重开还在；它不是一条记忆，底账、记忆库里都没有它。
 
 use miyu_kernel::id::{Seq, SessionId};

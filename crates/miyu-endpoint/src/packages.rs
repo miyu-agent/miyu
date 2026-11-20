@@ -1,4 +1,4 @@
-//! 软件包清单（施工 9-1 上，`docs/blueprint/packages.md`）：核心起来时读一次（[`load`]），`package.list` 照它答；装、卸、
+//! 软件包清单（施工 9-1 上，`internal/blueprint/packages.md`）：核心起来时读一次（[`load`]），`package.list` 照它答；装、卸、
 //! 改了清单要重启核心才认。`miyu check` 照磁盘上现在的查（`check.rs`）。名字、说明照连接的语言挑，挑法同 `persona.list`；
 //! 写错的、撞了的、协议版本对不上的带代码和给人看的一句。
 

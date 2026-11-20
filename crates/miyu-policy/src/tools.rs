@@ -42,7 +42,7 @@ pub struct ToolEntry {
     /// 不写，以前造的快照读成上工具面：以前的会话照旧带着这几件，字节不变。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub command_only: bool,
-    /// 职能（施工 XG-2 上，`docs/designs/64-工具职能.md` 第四节、第七节）：组工具面时照规格写进来，技能列表每回合照快照里的工具面
+    /// 职能（施工 XG-2 上，`internal/designs/64-工具职能.md` 第四节、第七节）：组工具面时照规格写进来，技能列表每回合照快照里的工具面
     /// 找有没有 [`Role::ReadFile`]。没有的不写，以前造的快照读成没有：字节和以前一样；以前的快照一件都没写，照名字认的退路在
     /// `miyu-session` 的技能列表那一处。
     #[serde(default, skip_serializing_if = "Option::is_none")]

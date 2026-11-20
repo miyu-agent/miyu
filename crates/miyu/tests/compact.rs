@@ -1,4 +1,4 @@
-//! 真跑 `miyu compact`（施工 6-8，`docs/blueprint/cli/compact.md`）：说明跟着界面语言；核心在跑的，压上一次 `miyu ask`
+//! 真跑 `miyu compact`（施工 6-8，`internal/blueprint/cli/compact.md`）：说明跟着界面语言；核心在跑的，压上一次 `miyu ask`
 //! 开的那个会话（说得短的没有能压的），`-s` 和 `--session` 压的是写的那个；核心没配模型的，照 `miyu ask` 说没有可用的模型，退出码 5。
 
 use std::path::{Path, PathBuf};

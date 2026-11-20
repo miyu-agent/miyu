@@ -1,4 +1,4 @@
-//! 让核心一直开着的几份托管写法（施工 Z-1 上，`docs/designs/12-进程形态与分发.md` 第二节）：`packaging/` 里每一份读得成，
+//! 让核心一直开着的几份托管写法（施工 Z-1 上，`internal/designs/12-进程形态与分发.md` 第二节）：`packaging/` 里每一份读得成，
 //! 跑的是 `miyu core`（网页软件那一份是 `miyu web serve`）；服务器的样例用专门的用户 `miyu`、数据根 `/var/lib/miyu`。
 
 use std::path::{Path, PathBuf};

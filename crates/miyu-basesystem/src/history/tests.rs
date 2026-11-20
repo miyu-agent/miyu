@@ -2,7 +2,7 @@
 //! 不对；读不了日志；叫停。找在 `tests/find.rs`，读在 `tests/read.rs`，人切权限级别在 `tests/permission.rs`（施工 2-7 补），
 //! 读别的会话在 `tests/other.rs`（施工 C-4）。
 //!
-//! 日志用样本会话（`docs/designs/samples/events/`）第 86 条以前的：第 42 轮撤掉了、第 54 条压缩、第 59 条撤回、
+//! 日志用样本会话（`internal/designs/samples/events/`）第 86 条以前的：第 42 轮撤掉了、第 54 条压缩、第 59 条撤回、
 //! 第 76 轮撤了又恢复。还算数的是 52、54、55、63、64、67、71、72、75、77、81、82；52、63 是人切权限级别（施工 2-7 补）。
 
 mod find;
@@ -52,7 +52,7 @@ impl ReadLog for Segments {
 
 /// 样本会话第 86 条以前的事件，照序号排，切成三段。
 fn sample() -> Vec<Vec<Event>> {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/designs/samples/events");
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../internal/designs/samples/events");
     let mut events: Vec<Event> = std::fs::read_dir(dir)
         .expect("样本目录在")
         .flat_map(|entry| {

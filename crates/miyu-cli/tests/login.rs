@@ -1,4 +1,4 @@
-//! `miyu provider login`、`list`、`logout`（施工 8-5，`docs/blueprint/config.md`「怎么走」第十一条、「样子」）：在进程里起一个核心，
+//! `miyu provider login`、`list`、`logout`（施工 8-5，`internal/blueprint/config.md`「怎么走」第十一条、「样子」）：在进程里起一个核心，
 //! 在真的套接字上走一遍。人那一头是照剧本回的假终端：在不在终端里、敲什么、贴的 key。
 //!
 //! 写了名字的直接贴、不写的选（编号、新名字、直接回车、写错的、一个都没有），贴 key 走关掉回显的那一条（假终端记着

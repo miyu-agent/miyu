@@ -1,4 +1,4 @@
-//! 停掉派出去的任务（施工 7-4，`docs/blueprint/session/actor.md`「停掉任务」，`agents.md` 第五条）：人用 `job.stop` 停一个，
+//! 停掉派出去的任务（施工 7-4，`internal/blueprint/session/actor.md`「停掉任务」，`agents.md` 第五条）：人用 `job.stop` 停一个，
 //! 父会话停下这个会话时连它派的全停。她自己用 `jobs` 停的不经这里，走任务端口（`jobs/query.rs`）。撤销停掉那几轮派出去的
 //! 也在这里（施工 7-8，`agents.md` 第七条第 1 条）：回报记 `undone`，撤销的回应不等它们。
 //!

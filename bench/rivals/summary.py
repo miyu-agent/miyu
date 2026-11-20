@@ -204,7 +204,7 @@ def markdown(summary, names):
             if c.get("load_before")
             else []
         ),
-        "- 量法：`docs/blueprint/perf.md`「三家对比」。数是中位数，括号里是最小到最大；"
+        "- 量法：`internal/blueprint/perf.md`「三家对比」。数是中位数，括号里是最小到最大；"
         "每一轮的原始数据在同名的 `.json` 的 `runs` 里。",
         "",
     ]

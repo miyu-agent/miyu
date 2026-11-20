@@ -1,4 +1,4 @@
-//! 问顾问，真核心走一遍（设计 `69-旗舰顾问.md`，施工 ADV-1、ADV-2，`docs/blueprint/tools/advisor.md`）：她在主会话里调
+//! 问顾问，真核心走一遍（设计 `69-旗舰顾问.md`，施工 ADV-1、ADV-2，`internal/blueprint/tools/advisor.md`）：她在主会话里调
 //! `advisor`，会话表造出顾问会话（无工具、无人格、钉 `@flagship`、system 是 `core/advisor/system.txt`），问题作为主会话发来的
 //! 话开它的一轮，替身模型答完，回答原文当工具结果交回。旗舰池里没有可用模型的不造、不发；`continue` 接着最近的那一个，
 //! 不写的新开。

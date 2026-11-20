@@ -1,4 +1,4 @@
-//! 她带的附件（施工 C-9，`docs/blueprint/tools/send_message.md`「附件」）：`send_message`、`subagent` 的 `attachments`。
+//! 她带的附件（施工 C-9，`internal/blueprint/tools/send_message.md`「附件」）：`send_message`、`subagent` 的 `attachments`。
 //! 执行前的链照 [`targets`] 查过（工作区以外的问过人、只读的数据根碰不到），这里照这次调用的工作目录读、照内容认
 //! （[`miyu_tool::attachment::kind`]，和人附的同一份），交给端口存成 blob、造成块。有一个读不成、太大的，整句不发：
 //! 她改了路径再发一次，那边不会收到缺了一个附件的半句。

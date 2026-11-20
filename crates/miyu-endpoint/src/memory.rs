@@ -1,4 +1,4 @@
-//! 人经协议碰记忆（施工 R-3 补，`docs/blueprint/memory.md`「协议」、第二条、第九条；`protocol.md` 的 `memory.*`）：列、搜、
+//! 人经协议碰记忆（施工 R-3 补，`internal/blueprint/memory.md`「协议」、第二条、第九条；`protocol.md` 的 `memory.*`）：列、搜、
 //! 记、改、忘和清空，恢复作废的（施工 R-12 下）。怎么记、怎么挑在会话那一层的 [`Keeper`]，她的工具也用它；这里只管找哪一间、
 //! 读参数、写回应。现在就整理（`memory.dream`、`/dream`，施工 R-7 补）在 `memory/dream.rs`，搜以前的对话（`memory.turns`，
 //! 施工 R-12 下）在 `memory/turns.rs`。

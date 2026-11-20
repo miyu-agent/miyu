@@ -1,4 +1,4 @@
-//! 协议上的 `config.trust`（`docs/blueprint/config.md`「协议」、「怎么走」第三条第 3 条，G3，施工 8-3）：信任、不信任一份
+//! 协议上的 `config.trust`（`internal/blueprint/config.md`「协议」、「怎么走」第三条第 3 条，G3，施工 8-3）：信任、不信任一份
 //! 项目配置。
 //!
 //! 1. 缺了格、类型不对：`bad_params`。这个目录找不到项目配置：`no_project_config`。

@@ -1,4 +1,4 @@
-//! 键里有人起的名字那一段的项（`docs/blueprint/config.md`「类型」，`models.md`「对外的样子」，施工 8-6）：真的键怎么拆、
+//! 键里有人起的名字那一段的项（`internal/blueprint/config.md`「类型」，`models.md`「对外的样子」，施工 8-6）：真的键怎么拆、
 //! 怎么接，合并时只合写了的真的键，引用取不到的警告、`used_by`。类型怎么查、改一项、生成 Schema 和参考文件、说成话在
 //! `named_kinds_tests.rs`（施工 8-6b：网址也能是环境变量的引用）；清单、`Shop`、`items`/`text`/`problems` 两份共用这里的。
 

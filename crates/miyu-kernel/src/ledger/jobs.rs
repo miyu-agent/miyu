@@ -1,4 +1,4 @@
-//! 账本里任务的几条（施工 7-1，`docs/blueprint/kernel/history.md`「账本查的规矩」，`agents.md`「对外的样子」）：
+//! 账本里任务的几条（施工 7-1，`internal/blueprint/kernel/history.md`「账本查的规矩」，`agents.md`「对外的样子」）：
 //! 派出去的后台命令和子代理，编号整份日志里不重复；两种回报对得上派出去的任务；子会话的 `session.created` 带着父会话
 //! 和第几层。
 //!

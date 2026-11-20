@@ -23,7 +23,7 @@ impl Session {
         self.policy.tools.values().any(|rule| rule.command_only)
     }
 
-    /// 在跑的嵌套调用，照编号（施工 M-1，`docs/blueprint/protocol.md` 的订阅）：头断了重连时照它接着画 `#序号 显示名`。纯查询。
+    /// 在跑的嵌套调用，照编号（施工 M-1，`internal/blueprint/protocol.md` 的订阅）：头断了重连时照它接着画 `#序号 显示名`。纯查询。
     pub fn nested_running(&self) -> Vec<NestedRunning> {
         let mut running: Vec<NestedRunning> = self
             .nested

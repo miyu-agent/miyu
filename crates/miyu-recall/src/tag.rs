@@ -1,4 +1,4 @@
-//! 写关键词交回来的怎么读（施工 R-15 下，`docs/blueprint/memory.md` 第二条）：模型交回一个 JSON 对象
+//! 写关键词交回来的怎么读（施工 R-15 下，`internal/blueprint/memory.md` 第二条）：模型交回一个 JSON 对象
 //! `{"keywords": [{"id", "keywords"}]}`。纯逻辑：调的一方把这一次交进去的编号交进来。
 //!
 //! - 照规矩取：从第一个 `{` 到最后一个 `}`，前后多说的话不管；读不成 JSON 对象的、没有 `keywords` 列表的，整次算失败。

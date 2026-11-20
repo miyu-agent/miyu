@@ -1,4 +1,4 @@
-//! 人格的图：头像（施工 P-5，`docs/blueprint/personas.md`「头像」，设计 `16-人格与预设.md` Y13）和背景图（施工 P-6，「主题色、
+//! 人格的图：头像（施工 P-5，`internal/blueprint/personas.md`「头像」，设计 `16-人格与预设.md` Y13）和背景图（施工 P-6，「主题色、
 //! 背景图」，Y15）。一张 PNG、JPEG、WebP，存在人格目录里，照层叠走。`persona.set` 的 `avatar`、`background` 换、删你那一层的；`persona.avatar`、`persona.background` 读；`persona.list`、`persona.get` 带它们的版本，头照版本换缓存。两种只差
 //! 名字和上限（[`Picture`]）。
 

@@ -1,4 +1,4 @@
-//! HTTP 的日志带上会话编号（`docs/construction/3-7-会话actor（下）.md` 验收第 2 条）：请求在派出去的任务里
+//! HTTP 的日志带上会话编号（`internal/construction/3-7-会话actor（下）.md` 验收第 2 条）：请求在派出去的任务里
 //! 发，任务带着会话的 span，`sent`、`ended` 两行写在会话编号后面。
 //!
 //! 只有这一个测试，自己一个进程：`tracing` 的调用点第一次被碰到时记下谁在听，别的测试同时碰到，
@@ -21,7 +21,7 @@ async fn the_http_lines_carry_the_session() {
         None,
     ));
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/drivers/openai-chat/streams/openai-text.sse");
+        .join("../../internal/designs/samples/drivers/openai-chat/streams/openai-text.sse");
     let bytes = std::fs::read(&path).unwrap_or_else(|e| panic!("读不了 {}：{e}", path.display()));
     let server = Server::start(vec![Reply::stream(vec![Piece::Bytes(bytes)])]).await;
     let (models, configs) = support::routing::served(&server.base_url, serde_json::json!({}), "");

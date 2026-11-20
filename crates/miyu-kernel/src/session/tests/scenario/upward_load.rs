@@ -1,4 +1,4 @@
-//! 向上回报：载入、崩了、重启、打断（施工 7-6，`docs/blueprint/kernel/session.md`「向上回报」，`agents.md` 第八条）。崩在
+//! 向上回报：载入、崩了、重启、打断（施工 7-6，`internal/blueprint/kernel/session.md`「向上回报」，`agents.md` 第八条）。崩在
 //! 那一轮里的，载入时补 `aborted`；报了、还没送到就崩了的，载入时最后报的那一份再交一次，父会话照命令编号认出重的；
 //! 被重启打断的接着干、做完再报，没接着干的照 `aborted` 报；被打断的等下一轮。
 

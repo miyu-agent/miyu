@@ -1,4 +1,4 @@
-//! 什么时候抽、这一段从哪来（施工 R-6 上，`docs/blueprint/memory.md` 第六条第 1 款；抽本身在 `memory/extract.rs`）。
+//! 什么时候抽、这一段从哪来（施工 R-6 上，`internal/blueprint/memory.md` 第六条第 1 款；抽本身在 `memory/extract.rs`）。
 //!
 //! 1. 会话从忙到闲那一刻（`watchers.rs` 的 `after_batch`）上一个闹钟，`memory.extract_idle` 以后响；忙起来就撤掉。只给记忆
 //!    开着、核心交过抽取要的几样的会话（本机的主会话：别的没有记忆的端口）。响的时候人格记忆没装的不抽（施工 R-10）：没装时上

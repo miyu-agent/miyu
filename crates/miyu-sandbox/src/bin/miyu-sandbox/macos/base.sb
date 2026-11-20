@@ -1,4 +1,4 @@
-; macOS 的沙盒配置的底子（docs/blueprint/sandbox/macos.md）：不看规格，每条命令都一样。
+; macOS 的沙盒配置的底子（internal/blueprint/sandbox/macos.md）：不看规格，每条命令都一样。
 ; 照规格生成的规则接在它后面。同一件事，写得细的规则压过笼统的（file-read-data 压过 file-read*、file*），
 ; 写得一样细的，后面的压过前面的。
 ; sysctl 和系统服务的名单参考 OpenAI Codex 的 seatbelt_base_policy.sbpl、seatbelt_network_policy.sbpl

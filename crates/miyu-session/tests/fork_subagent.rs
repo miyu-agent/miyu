@@ -1,4 +1,4 @@
-//! fork 子代理，执行器这一头（施工 A-F 中，`docs/blueprint/agents.md`「fork 子代理」）：`subagent` 写 `fork` 的，经会话表从
+//! fork 子代理，执行器这一头（施工 A-F 中，`internal/blueprint/agents.md`「fork 子代理」）：`subagent` 写 `fork` 的，经会话表从
 //! 这次调用那一步分叉（假的会话表真去分叉），交代前面接上外壳；子会话的快照就是父会话那一份、回合开始不换，请求前缀照父会话的
 //! 接着往下，向上回报；写了池、人格的，fork 出来的再 fork 的，拒。
 

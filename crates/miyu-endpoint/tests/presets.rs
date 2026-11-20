@@ -1,4 +1,4 @@
-//! 预设（施工 P-2 上，`docs/blueprint/presets.md`）：真核心走一遍。造会话照「开会话时指定、配置」找预设，指着
+//! 预设（施工 P-2 上，`internal/blueprint/presets.md`）：真核心走一遍。造会话照「开会话时指定、配置」找预设，指着
 //! 没有的、写错的不造；人格照「指定、`persona.default`」找，预设不再管（施工 P-4 上）；`session.created`、会话列表、`subscribe` 带上预设；
 //! `venue.session` 带预设；`preset.list`、`preset.get`；`check` 查预设。
 

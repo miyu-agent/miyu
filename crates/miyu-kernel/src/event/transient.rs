@@ -1,4 +1,4 @@
-//! 瞬时事件：不落库，只推给正在连接的头，用于实时显示（`docs/designs/03-事件模型.md`
+//! 瞬时事件：不落库，只推给正在连接的头，用于实时显示（`internal/designs/03-事件模型.md`
 //! 第五节「瞬时事件的外壳」）。
 //!
 //! 外壳和持久事件同一种写法，只少了 `seq`：它不进日志。`cause` 留着，一个命令引起的事，
@@ -49,7 +49,7 @@ pub enum TransientBody {
     /// `model.changed`：会话接下来请求的模型、限额变了（施工 8-9，`models.md`「瞬时事件」）。会话 actor 造，内核不推。装在
     /// 盒子里：它比别的种类大出一截，推送的队列里每一份都照最大的那一种占地方（clippy 的 `large_enum_variant`）。
     ModelChanged(Box<ModelChanged>),
-    /// `todos.changed`：当前的待办变了（施工 D-3，`docs/blueprint/kernel/session.md`「待办」）：写了、撤销、恢复。
+    /// `todos.changed`：当前的待办变了（施工 D-3，`internal/blueprint/kernel/session.md`「待办」）：写了、撤销、恢复。
     TodosChanged(TodosChanged),
     /// `package.state_changed`：一个包在这个会话里的状态变了（施工 TW-1，设计 46）：写了、清了、撤销、恢复、清空上下文。
     PackageStateChanged(PackageStateChanged),
@@ -57,7 +57,7 @@ pub enum TransientBody {
     NestedStarted(NestedStarted),
     /// `compactable.changed`：有没有能压的变了（施工 W-12 补，终端要的）。会话 actor 每落一批盘重算，变了推；内核不推。
     CompactableChanged(CompactableChanged),
-    /// `session.retitle_failed`：人要求的重起标题没起成（施工 TT-3，`docs/blueprint/kernel/session.md`「起标题」第 11 条）。
+    /// `session.retitle_failed`：人要求的重起标题没起成（施工 TT-3，`internal/blueprint/kernel/session.md`「起标题」第 11 条）。
     RetitleFailed(RetitleFailed),
 }
 

@@ -1,4 +1,4 @@
-//! 密钥（`docs/blueprint/config.md`「协议」`secret.*`、「怎么走」第九条，G9，施工 8-5）：协议上的 `secret.set`、
+//! 密钥（`internal/blueprint/config.md`「协议」`secret.*`、「怎么走」第九条，G9，施工 8-5）：协议上的 `secret.set`、
 //! `secret.delete`、`secret.list`，手改密钥文件被看到的，留痕。
 //!
 //! 只能写、删、列名字，从不交出值：值不进回应、推送、运行日志、报错的话、系统日志（`07-存储.md` 第九节）。`secret.set` 的

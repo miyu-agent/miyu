@@ -1,4 +1,4 @@
-//! 用途、池在协议上的样子（施工 8-8，`docs/blueprint/models.md`「协议」）：`model.list` 多 `pools`（施工 8-8 补多 `subagent`、
+//! 用途、池在协议上的样子（施工 8-8，`internal/blueprint/models.md`「协议」）：`model.list` 多 `pools`（施工 8-8 补多 `subagent`、
 //! `description`，没有 `tiers`），`uses` 多 `vision`，用途池里点名的模型也列；`session.create` 的 `model` 照这时的配置查过记进
 //! `session.created`，解析不出的（连同以前的挡位名）`unknown_model`、什么都不造；派子代理时子会话照 `pool`、父会话记下的；引用
 //! 的供应商、池没配的，配置的问题里报 `bad_reference`、算进 `config_errors`。换模型（施工 8-10）：`session.configure` 照这时的配置解析好交给内核，一样的不记，

@@ -1,4 +1,4 @@
-//! 看守查回报（施工 7-2，`docs/blueprint/kernel/session.md`「回报」，`agents.md` 第三条）：
+//! 看守查回报（施工 7-2，`internal/blueprint/kernel/session.md`「回报」，`agents.md` 第三条）：
 //!
 //! - 对不上的：子会话的回报拒绝，`unknown_job`；后台命令结束不理；都什么都不记；
 //! - 对得上的：记一条，不带回合编号，`by`、`cause` 照交来的（子会话的回报 `cause` 是那个命令）；

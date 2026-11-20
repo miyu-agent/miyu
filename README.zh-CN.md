@@ -68,7 +68,7 @@ Miyu 在交互速度、CPU 占用、内存占用、硬盘开销等方面均优�
 
 AGPL-3.0-or-later，见 `LICENSE`。
 
-仓库里收的第三方数据清单和各自的许可证见 `docs/blueprint/licenses.md`中的`资源里的第三方数据`；发行包里带的字体、ONNX Runtime 这些照各自的许可证，随包附上原文。
+仓库里收的第三方数据清单和各自的许可证见 `internal/blueprint/licenses.md`中的`资源里的第三方数据`；发行包里带的字体、ONNX Runtime 这些照各自的许可证，随包附上原文。
 
 供应商、模型的名称和图标是各自所有者的商标，归各自所有者。Miyu 只在运行时从 models.dev、lobe-icons 取来缓存在本机，不随包发；用到它们不表示这些所有者认可或赞助 Miyu。
 

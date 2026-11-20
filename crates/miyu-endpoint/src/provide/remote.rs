@@ -1,4 +1,4 @@
-//! 提供者的一件工具（施工 O-2 上，`docs/blueprint/providers.md`「怎么走」第 3 条）：执行时照包查提供者表，没有连接的交回「暂时
+//! 提供者的一件工具（施工 O-2 上，`internal/blueprint/providers.md`「怎么走」第 3 条）：执行时照包查提供者表，没有连接的交回「暂时
 //! 不可用」；有的，反向调用 `tool.call {session, call_id, tool, args, cwd, by, owner}`，照回应 `{blocks, error}` 交回结果。回应是
 //! 错误的、写法不对的，算出错，原话写进结果；等着时连接断了，也是暂时不可用。到了登记时写的时限没回的，交回「没在 N 秒内答完」；
 //! 超时、叫它停、掐掉（这个 future 被丢掉）时发一次 `tool.cancel {session, call_id}`，回应先到的不发（施工 O-2 下）。

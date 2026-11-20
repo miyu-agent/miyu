@@ -1,4 +1,4 @@
-//! 想起过什么（施工 R-4 下，`docs/blueprint/memory.md` 第八条，`protocol.md` 的 `memory.*` 第 1 条）：真核心、真回合库。
+//! 想起过什么（施工 R-4 下，`internal/blueprint/memory.md` 第八条，`protocol.md` 的 `memory.*` 第 1 条）：真核心、真回合库。
 //! `memory.list`、`memory.search` 的一条带用到几次、最近一次；常驻那一块带过的算一次，没用过的是 0、`null`。
 
 use std::time::Duration;

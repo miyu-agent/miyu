@@ -1,4 +1,4 @@
-//! 替身交任务的回报（施工 7-2，`docs/blueprint/kernel/session.md`「回报」）：子会话交来的回报（命令 `Report`，发命令的
+//! 替身交任务的回报（施工 7-2，`internal/blueprint/kernel/session.md`「回报」）：子会话交来的回报（命令 `Report`，发命令的
 //! 是那个子会话），执行器交来的后台命令结束（输入 `JobEnded`），会话 actor 交的有没有头订阅着（输入 `Watched`）。派任务
 //! 照剧本回：[`super::Play::starts_command`]、[`super::Play::starts_agent`]。子会话交出来的向上回报记下来（施工 7-6）。子会话
 //! 发来的留言（施工 7-7）。

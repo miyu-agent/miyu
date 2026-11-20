@@ -1,4 +1,4 @@
-//! 用量归成内核的四项（`docs/blueprint/drivers/anthropic.md`「怎么走：解码」的用量那张表）：`message_start` 的
+//! 用量归成内核的四项（`internal/blueprint/drivers/anthropic.md`「怎么走：解码」的用量那张表）：`message_start` 的
 //! `message.usage` 先记，`message_delta` 的 `usage` 里有哪项盖哪项。`input_tokens` 报的就是没命中的那一截，不用减；输出含思考。
 
 use miyu_kernel::event::Usage;

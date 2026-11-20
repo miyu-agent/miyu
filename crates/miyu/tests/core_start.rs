@@ -1,4 +1,4 @@
-//! `miyu core start`、`miyu core status`（施工 CL-8，`docs/blueprint/core.md`「对外的样子」）：真的主程序、真的核心。
+//! `miyu core start`、`miyu core status`（施工 CL-8，`internal/blueprint/core.md`「对外的样子」）：真的主程序、真的核心。
 
 use serde_json::json;
 

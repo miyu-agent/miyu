@@ -1,4 +1,4 @@
-//! 超长的超了多少 token（`docs/blueprint/drivers/openai-chat.md`「出错怎么分」第 7 条，施工 6-6 中）：从找说法的字里
+//! 超长的超了多少 token（`internal/blueprint/drivers/openai-chat.md`「出错怎么分」第 7 条，施工 6-6 中）：从找说法的字里
 //! 解析，交给内核截短摘要请求（`compaction.md` 第三条第 10 条）。报了的上限另交出来（施工 8-7）：执行器照它记下用出来的
 //! 窗口（`models.md`「怎么走」第二条第 9 条）。纯逻辑层没有正则，照几家常见的写法一段一段找。
 

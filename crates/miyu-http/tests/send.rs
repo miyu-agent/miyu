@@ -1,4 +1,4 @@
-//! 发一次请求（`docs/designs/05-内核接口.md` 第七节「HTTP 执行器」）：照剧本回的假服务器，查发出去的、
+//! 发一次请求（`internal/designs/05-内核接口.md` 第七节「HTTP 执行器」）：照剧本回的假服务器，查发出去的、
 //! 读回来的、空闲超时、打断、连不上、说到一半断开。
 
 use std::time::{Duration, Instant};

@@ -1,4 +1,4 @@
-//! `config.schema` 里选项的两样另说的（施工 R-5 再补、三补，`docs/blueprint/config.md`「协议」）：后面暗字写什么（`note`）、现在
+//! `config.schema` 里选项的两样另说的（施工 R-5 再补、三补，`internal/blueprint/config.md`「协议」）：后面暗字写什么（`note`）、现在
 //! 用不用得了（`available`）。只有核心查得出的才有，不进给人看的字；现在只有语义模型的「内置模型」。
 
 use miyu_session::EMBED_LOCAL;

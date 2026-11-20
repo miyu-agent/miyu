@@ -1,4 +1,4 @@
-//! 起标题（施工 3-8 五补，`docs/blueprint/kernel/session.md`「起标题」）：没起名的会话一轮答完，内核自己照这一刻落了盘的
+//! 起标题（施工 3-8 五补，`internal/blueprint/kernel/session.md`「起标题」）：没起名的会话一轮答完，内核自己照这一刻落了盘的
 //! 有效历史组装一次单独的辅助请求（`Assembler::title`，`kernel/request.md`「起标题的请求」），说完了记 `model.called`
 //! （`purpose` 是 `title`）和 `session.meta_changed`（`by` 是内核）。照 Claude Code：人手动起名以外，没起名的它自己起
 //! （2026-10-01 项目主人定）。

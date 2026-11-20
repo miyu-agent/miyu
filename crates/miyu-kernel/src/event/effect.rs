@@ -1,4 +1,4 @@
-//! 效果（`docs/designs/10-自带软件.md` 第五节、`03-事件模型.md` 第三节，施工 4-6 上）：随 `tool.result` 记进
+//! 效果（`internal/designs/10-自带软件.md` 第五节、`03-事件模型.md` 第三节，施工 4-6 上）：随 `tool.result` 记进
 //! 日志，给内核和头看，不发给模型。diff、撤销、改之前的核对、压缩后的工作集都照它们算。
 //!
 //! 认识的六种读成对应的类型；不认识的（第三方的工具报来的）整块原样留着，内核不解读。`job.started` 是派出去一个
@@ -38,7 +38,7 @@ pub enum Effect {
     /// 换上了一整份待办（施工 D-3）。
     #[serde(rename = "todo.written")]
     TodoWritten(TodoWritten),
-    /// 给人看了一个文件（施工 D-5，`docs/blueprint/tools/show.md`）。
+    /// 给人看了一个文件（施工 D-5，`internal/blueprint/tools/show.md`）。
     #[serde(rename = "file.shown")]
     FileShown(FileShown),
     /// 工具结果顺手带上的包的会话状态（施工 TW-1，设计 46）。
@@ -170,7 +170,7 @@ pub struct PeerWatch {
     pub session: SessionId,
 }
 
-/// `todo.written`：`todowrite` 换上的整份待办（施工 D-3，`docs/blueprint/tools/todowrite.md`）。全部做完的清空，是空列表。
+/// `todo.written`：`todowrite` 换上的整份待办（施工 D-3，`internal/blueprint/tools/todowrite.md`）。全部做完的清空，是空列表。
 /// 有效历史照最近一份没撤掉的算当前的清单（`history/todos.rs`），交给头、压缩时写进检查点。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TodoWritten {

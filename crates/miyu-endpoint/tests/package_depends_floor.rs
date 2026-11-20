@@ -1,4 +1,4 @@
-//! 依赖的版本下限（施工 PK-2，`docs/blueprint/packages.md`「依赖」）：真核心走一遍。`[depends] packages` 写 `<编号>>=<版本>`，
+//! 依赖的版本下限（施工 PK-2，`internal/blueprint/packages.md`「依赖」）：真核心走一遍。`[depends] packages` 写 `<编号>>=<版本>`，
 //! 装着的版本照 semver 比；不够的装不上（`data.missing` 照写的原样），装着的不够了列表、`miyu check` 同缺了；从软件源装的照
 //! 下限挑、装着的不够一起升；不写版本的照旧。
 

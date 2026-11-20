@@ -1,6 +1,6 @@
-//! 样本会话组装出样本请求（`docs/designs/08-上下文投影.md` 第四节「默认的组装怎么写」）：
-//! 事件的样本（`docs/designs/samples/events/`）讲的是同一个会话，喂进有效历史，
-//! 组装出来的请求逐字节等于请求的样本（`docs/designs/samples/requests/`）。
+//! 样本会话组装出样本请求（`internal/designs/08-上下文投影.md` 第四节「默认的组装怎么写」）：
+//! 事件的样本（`internal/designs/samples/events/`）讲的是同一个会话，喂进有效历史，
+//! 组装出来的请求逐字节等于请求的样本（`internal/designs/samples/requests/`）。
 //!
 //! - 喂到 47 号为止，是 42 号回合里工具结果回来以后的那一次请求（`second-step.json`）。46 号是
 //!   第一次请求的 `model.called`，不渲染；
@@ -130,7 +130,7 @@ fn root() -> PathBuf {
 
 /// 样本会话的全部事件，照序号排好。
 fn events() -> Vec<Event> {
-    let dir = root().join("docs/designs/samples/events");
+    let dir = root().join("internal/designs/samples/events");
     let entries =
         fs::read_dir(&dir).unwrap_or_else(|e| panic!("读不了样本目录 {}：{e}", dir.display()));
     let mut events = Vec::new();
@@ -154,7 +154,7 @@ fn events() -> Vec<Event> {
 
 /// 请求的样本，去掉行尾的换行。
 fn sample(name: &str) -> String {
-    let path = root().join("docs/designs/samples/requests").join(name);
+    let path = root().join("internal/designs/samples/requests").join(name);
     let text =
         fs::read_to_string(&path).unwrap_or_else(|e| panic!("读不了 {}：{e}", path.display()));
     text.strip_suffix('\n')

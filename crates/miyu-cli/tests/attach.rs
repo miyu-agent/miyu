@@ -1,4 +1,4 @@
-//! `miyu ask --file`（施工 3-9 三补，`docs/blueprint/cli/ask.md`「附件」）：在进程里起一个核心，在真的套接字上走一遍：
+//! `miyu ask --file`（施工 3-9 三补，`internal/blueprint/cli/ask.md`「附件」）：在进程里起一个核心，在真的套接字上走一遍：
 //! 附件照写的先后传上去、跟着这一句发出去；传不上的说是哪个文件、为什么，不发话、不留下空的会话，退出码 1。
 
 use std::sync::Arc;

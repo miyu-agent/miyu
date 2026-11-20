@@ -1,4 +1,4 @@
-//! 配置清单（`docs/blueprint/config.md`「怎么走」第一、二条，施工 8-1、8-2）：各模块在自己的 crate 里声明自己的几项，
+//! 配置清单（`internal/blueprint/config.md`「怎么走」第一、二条，施工 8-1、8-2）：各模块在自己的 crate 里声明自己的几项，
 //! 这里登记成一张表；核心起来时读配置（[`read`]），照最终值定运行日志的级别（[`log_level`]），再生成两份 JSON Schema
 //! 和参考文件，放在 `state/config/`（[`generate`]）。
 //!
@@ -41,7 +41,7 @@ const TARGET: &str = "miyu::config";
 /// 权限、模型、高级（施工 8-2、8-3、8-6）；模型那一页先「用途」、再「供应商」、再「目录」（施工 8-7），「池」排在「用途」
 /// 后面（施工 8-8；「挡位」8-8 补去掉了），「冷却」排在「目录」后面（施工 8-9）；高级那一页先「压缩」再「运行日志」（施工
 /// 6-11 上）。施工 O-8 到 O-20 最后还有通讯平台的桥的几项（`OnebotSettings`）：O-20 挪进桥自己的清单 `[settings]`
-/// （`docs/blueprint/onebot.md` 第一条「软件包清单」），在「软件包」那一页。
+/// （`internal/blueprint/onebot.md` 第一条「软件包清单」），在「软件包」那一页。
 const MODULES: [&[Item]; 41] = [
     UiSettings::ITEMS,
     PersonaSettings::ITEMS,

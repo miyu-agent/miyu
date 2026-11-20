@@ -1,4 +1,4 @@
-//! 恢复误删（施工 R-12 下，`docs/blueprint/memory.md` 第二条第 6 款，`protocol.md` 的 `memory.restore`）：真核心、真记忆日志。
+//! 恢复误删（施工 R-12 下，`internal/blueprint/memory.md` 第二条第 6 款，`protocol.md` 的 `memory.restore`）：真核心、真记忆日志。
 //!
 //! 忘了的恢复以后照常列出、`retired` 是 `null`、搜得到；同一个编号只算一次，本来就算数的回 `{}`、不写；订阅着的补得到
 //! `ext.memory.restored`；改掉的、清掉的 `memory_not_current`，没有的 `unknown_memory`，写错的 `bad_params`，没装的

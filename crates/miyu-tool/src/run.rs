@@ -113,7 +113,7 @@ pub struct CallIds {
 /// 内容哈希。读过的（读了哪一段都算）、自己写过的都算。
 pub type Seen = BTreeMap<PathBuf, ContentHash>;
 
-/// 这次调用认出来的高危（施工 5-17，`docs/designs/11-权限与沙盒.md` 第四节「高危命令照规则拦」）：灭顶的直接拒；别的问人，本人的
+/// 这次调用认出来的高危（施工 5-17，`internal/designs/11-权限与沙盒.md` 第四节「高危命令照规则拦」）：灭顶的直接拒；别的问人，本人的
 /// 会话里设置页「受保护的命令」关掉的那几类不问（施工 HZ-1，设计 11 的 A18，权限策略判）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Hazard {

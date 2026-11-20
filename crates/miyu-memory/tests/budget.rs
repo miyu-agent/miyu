@@ -1,4 +1,4 @@
-//! 记忆这个软件包的工具面预算（`docs/designs/10-自带软件.md` 第九节，施工 R-3 中）：`resources/software/memory/tools/` 下的
+//! 记忆这个软件包的工具面预算（`internal/designs/10-自带软件.md` 第九节，施工 R-3 中）：`resources/software/memory/tools/` 下的
 //! 三份说明加起来不超过 [`BUDGET`] 字节。
 //!
 //! 照基础系统的办法：2026-10-07 照中转网关的 `relay/deepseek-v4.1-flash` 量，十八件（基础系统十五件加这三件）一起时

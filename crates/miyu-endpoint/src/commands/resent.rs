@@ -1,4 +1,4 @@
-//! `command.run` 重发先查编号（施工 YC-7补，`docs/blueprint/protocol.md`「`command.run`」第 7 条）。
+//! `command.run` 重发先查编号（施工 YC-7补，`internal/blueprint/protocol.md`「`command.run`」第 7 条）。
 //!
 //! 斜杠命令先做事（`/loop off` 删循环、换工作目录这些）、再把 `<编号>/ran` 交给内核记：只靠内核照编号去重，重发的那一条
 //! 已经又做了一遍。所以协议这一层自己记最近执行了的 `command.run`：会话、编号、参数的指纹、当时的回应。同一个编号再来，

@@ -1,4 +1,4 @@
-//! 脚本里调的工具（施工 M-5 上，`docs/blueprint/view.md`「`tool` 的 `nested`」）：开始了的瞬时事件 `tool.nested_started`、
+//! 脚本里调的工具（施工 M-5 上，`internal/blueprint/view.md`「`tool` 的 `nested`」）：开始了的瞬时事件 `tool.nested_started`、
 //! 了结的 `tool.nested` 照编号认出父级：前台那次调用的那一步条目、后台任务的那一行，带上个数和最近一个；任务了结那条旁白
 //! 带最后那一份。订阅时会话这一刻在跑的另照 [`Projector::nested_running`] 补上（头重连）。
 

@@ -1,4 +1,4 @@
-//! `MIYU_LOG` 的值怎么读（`docs/designs/28-运行日志.md` 第三节，LG2）：`error`、`warn`、`info`、
+//! `MIYU_LOG` 的值怎么读（`internal/designs/28-运行日志.md` 第三节，LG2）：`error`、`warn`、`info`、
 //! `debug`、`trace`、`off`，不分大小写；没设、空的是 `info`；读不懂的也照 `info`，交回读不懂的值，
 //! 由装日志的地方记一条 `WARN`。配置项 `log.level` 等配置那一步。
 

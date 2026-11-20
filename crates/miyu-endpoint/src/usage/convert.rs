@@ -1,4 +1,4 @@
-//! `usage.convert`（施工 UC-3，`docs/blueprint/models.md`「协议」`usage.convert`）：扩展自己照日子、币种记的金额交给核心换算。
+//! `usage.convert`（施工 UC-3，`internal/blueprint/models.md`「协议」`usage.convert`）：扩展自己照日子、币种记的金额交给核心换算。
 //!
 //! - 参数 `groups`：一组是要合成一个数的那几笔，一笔是 `day`（UTC 日子 `2026-11-10`）、`currency`（三个字母的币种代码）、
 //!   `amount`（数）。最多 [`MAX_GROUPS`] 组、合计最多 [`MAX_ENTRIES`] 笔；写错的、超了的都是 `bad_params`。

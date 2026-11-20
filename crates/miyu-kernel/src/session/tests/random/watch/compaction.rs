@@ -1,4 +1,4 @@
-//! 看守查压缩（`docs/blueprint/compaction.md` 第三条，施工 6-2 上）：
+//! 看守查压缩（`internal/blueprint/compaction.md` 第三条，施工 6-2 上）：
 //!
 //! - 摘要请求：替身的组装最后一条写着 `summarize`；照的是有效历史到第 N 条；N 看守自己照规矩算（这一轮要回应的话都在
 //!   它后面，比上一次压缩的 `upto` 晚）；不算步数；

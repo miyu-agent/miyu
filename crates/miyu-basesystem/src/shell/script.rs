@@ -1,4 +1,4 @@
-//! 脚本当工具（施工 X-12 上，`docs/blueprint/skills.md`「脚本」第 2、3 条）：一个脚本一件工具，名字、说明、参数照开头注释
+//! 脚本当工具（施工 X-12 上，`internal/blueprint/skills.md`「脚本」第 2、3 条）：一个脚本一件工具，名字、说明、参数照开头注释
 //! （`miyu_policy::script`）。起进程、看门、截输出和 `shell` 同一套（[`super::process`]、[`super::Results`]）。
 //!
 //! - 照开头的 `#!` 起程序：`#!/usr/bin/env python3` 起 `/usr/bin/env`，参数是 `python3` 和脚本；没有 `#!` 的直接起脚本本身。

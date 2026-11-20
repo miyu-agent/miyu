@@ -1,4 +1,4 @@
-//! 嵌套调用和执行器之间的几样（施工 M-1，`docs/blueprint/kernel/session.md`「嵌套调用」）：执行器交来的回报，交给执行器的
+//! 嵌套调用和执行器之间的几样（施工 M-1，`internal/blueprint/kernel/session.md`「嵌套调用」）：执行器交来的回报，交给执行器的
 //! 动作，答脚本那头的话。
 
 use serde::Serialize;

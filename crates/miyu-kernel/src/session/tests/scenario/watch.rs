@@ -1,4 +1,4 @@
-//! 空了的通知（施工 C-6，`docs/blueprint/cross-session.md` 第六条，`docs/blueprint/kernel/session.md`「空了的通知」）：
+//! 空了的通知（施工 C-6，`internal/blueprint/cross-session.md` 第六条，`internal/blueprint/kernel/session.md`「空了的通知」）：
 //! 在等的记一条 `peer.idle`、照回报的规矩叫醒她；不在等的拒绝 `unknown_watch`、什么都不记；撤掉订它的那一轮就不等了，
 //! 恢复了又等；作废只在到点以后（含正好那一刻）、只记下不叫醒；`gone` 只记下；又订从新的时刻算；「空了」要子代理都报完、
 //! 后台命令不算；通知带的那一行怎么截；它开的那一轮重做不了；还能恢复撤销时记在一边、载入以后恢复了接着开。

@@ -1,4 +1,4 @@
-//! `miyu redo`（`docs/blueprint/cli/redo.md`，施工 4-7 再补；2026-09-30 项目主人定：核心一个命令，只重做最后一轮）：连上核心
+//! `miyu redo`（`internal/blueprint/cli/redo.md`，施工 4-7 再补；2026-09-30 项目主人定：核心一个命令，只重做最后一轮）：连上核心
 //! （重做要请求模型，照 `miyu ask` 的规矩拉起），找当前会话（和 `miyu undo` 一样，最新的那个一次性会话；`--session` 指定
 //! 别的），订阅，发 `session.redo`（写了话的换掉开那一轮的那一句），先照 `miyu undo` 印撤掉了哪一轮，再照 `miyu ask`
 //! 跟着新的一轮边收边打。

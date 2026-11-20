@@ -1,4 +1,4 @@
-//! 会话钉的看图模型（施工 VM-1，`docs/blueprint/models.md`「协议」、「怎么走」第十三条第 4 条）：`session.configure`、
+//! 会话钉的看图模型（施工 VM-1，`internal/blueprint/models.md`「协议」、「怎么走」第十三条第 4 条）：`session.configure`、
 //! `session.create` 的 `vision` 共用的查法和发法。
 //!
 //! 写法、解析同 `model`（[`super::record`]：照这时不算项目配置的最终值，解析不出的 `unknown_model`），`null` 是去掉、回到

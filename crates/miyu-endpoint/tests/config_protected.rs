@@ -1,4 +1,4 @@
-//! 设置页「受保护的命令」（施工 HZ-1，设计 `11-权限与沙盒.md` 的 A18，`docs/blueprint/config.md`）：`config.schema` 里五个开关和
+//! 设置页「受保护的命令」（施工 HZ-1，设计 `11-权限与沙盒.md` 的 A18，`internal/blueprint/config.md`）：`config.schema` 里五个开关和
 //! 那一组的名字、说明照连接的语言，组带 `description`；没写说明的组不多出这一格。`config.set` 写得进，`config.check`
 //! （`miyu check` 同一条路）不报。
 

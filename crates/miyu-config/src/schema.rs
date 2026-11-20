@@ -1,4 +1,4 @@
-//! 生成 JSON Schema（`docs/blueprint/config.md`「怎么走」第一条第 9 条，G10）：手改配置文件时编辑器照它补全、
+//! 生成 JSON Schema（`internal/blueprint/config.md`「怎么走」第一条第 9 条，G10）：手改配置文件时编辑器照它补全、
 //! 查错，配置文件第一行的 `#:schema` 指向它。
 //!
 //! draft-07。键照 `.` 分段，前几段是一层层的表（`type: object`；人起的名字那一段是 `additionalProperties`，施工 8-6），

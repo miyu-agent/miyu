@@ -1,4 +1,4 @@
-//! 人格（施工 P-1 上，`docs/blueprint/personas.md`）：真核心走一遍。家目录里的人格叠在出厂的上面，人设进 system、示范对话
+//! 人格（施工 P-1 上，`internal/blueprint/personas.md`）：真核心走一遍。家目录里的人格叠在出厂的上面，人设进 system、示范对话
 //! 排在 system 后面历史前面；没写人格的照 `persona.default`；`venue.session` 带人格造、找回时不看；
 //! 没有的 `unknown_persona`，编号不合写法的参数不对，写错了的 `persona_invalid` 带问题；`persona.list`、`persona.get`；
 //! 角色扮演提示排在人说的那句后面、system 带风格锁（施工 P-1 补）。

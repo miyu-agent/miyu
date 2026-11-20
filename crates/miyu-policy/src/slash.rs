@@ -1,4 +1,4 @@
-//! 斜杠命令模板（施工 X-14 上，`docs/blueprint/slash.md`「模板」）：一个 Markdown 文件，文件名是命令名，正文照参数展开成
+//! 斜杠命令模板（施工 X-14 上，`internal/blueprint/slash.md`「模板」）：一个 Markdown 文件，文件名是命令名，正文照参数展开成
 //! 一段话发给 AI，照 Claude Code 的 custom slash commands。开头可以有一段 `---` 包起来的 YAML：
 //!
 //! - `description`：一句说明，命令菜单里给人看的（算 `en`，也是别的语言没写时退回的那一份）；
@@ -132,7 +132,7 @@ pub fn expand(body: &str, arguments: &str) -> String {
     out.trim().to_string()
 }
 
-/// 切词（施工 X-40，`docs/blueprint/slash.md`「切词」）：去掉开头的空白，切出第一个词，交回它和剩下的（开头的空白去掉）；没字了
+/// 切词（施工 X-40，`internal/blueprint/slash.md`「切词」）：去掉开头的空白，切出第一个词，交回它和剩下的（开头的空白去掉）；没字了
 /// 的没有。英文双引号开头、后面还有一个的，两个引号中间是一个词（可以是空的，里面的空白照留）；别的到下一个空白为止，词中间的
 /// 引号、开头没有配对的引号照原样。不做转义，中文引号照普通的字。命令模板的 `$ARGUMENTS[N]`、MCP 提示词的参数都照它切。
 pub fn next_word(text: &str) -> Option<(&str, &str)> {

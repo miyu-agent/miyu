@@ -1,4 +1,4 @@
-//! `miyu ask` 的对话（`docs/construction/3-9-miyu-ask（下）.md`）：在进程里起一个核心，在真的套接字上走一遍：
+//! `miyu ask` 的对话（`internal/construction/3-9-miyu-ask（下）.md`）：在进程里起一个核心，在真的套接字上走一遍：
 //! 新开一次性会话、边收边打、用量一行；`--continue`、`--session`；没有模型；`--model`（施工 8-10）；Ctrl+C。
 
 use std::sync::Arc;

@@ -1,4 +1,4 @@
-//! `miyu memory` 给人看的字（施工 R-3 再补，`docs/blueprint/cli/memory.md`「给人看的字」；CL-2 补照设计 47 第三节改：结果行
+//! `miyu memory` 给人看的字（施工 R-3 再补，`internal/blueprint/cli/memory.md`「给人看的字」；CL-2 补照设计 47 第三节改：结果行
 //! 动词打头、不带句号，报错交 [`Problem`]）。
 
 use super::Language;

@@ -1,4 +1,4 @@
-//! 远程的 embedding（施工 R-5 补，`docs/blueprint/recall.md` 第四条第 1 款）：`models.embedding` 写 `<供应商>/<模型>` 的，
+//! 远程的 embedding（施工 R-5 补，`internal/blueprint/recall.md` 第四条第 1 款）：`models.embedding` 写 `<供应商>/<模型>` 的，
 //! 照那一家 OpenAI 兼容的 `/embeddings` 一次算一句。
 //!
 //! - 端点照 [`reach`]（和 `provider.test` 同一段）：照调的一方手里的配置拼地址、key、另配的头，不走路由、池、冷却。认证头

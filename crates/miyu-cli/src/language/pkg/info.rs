@@ -1,4 +1,4 @@
-//! `miyu pkg info` 的字（施工 IN-2，设计 `49-装包照pacman.md` 第一节，`docs/blueprint/cli/pkg.md`「给人看的字」）：每一行前面
+//! `miyu pkg info` 的字（施工 IN-2，设计 `49-装包照pacman.md` 第一节，`internal/blueprint/cli/pkg.md`「给人看的字」）：每一行前面
 //! 的键（英文照 pacman）、没有依赖时写的「无」、来源的几种说法、哪儿都没有的报错；`-Qi`、`-Si` 接了路径的报错（施工 IN-4）。
 
 use super::super::Language;

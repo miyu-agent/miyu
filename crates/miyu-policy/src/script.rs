@@ -1,4 +1,4 @@
-//! 脚本的开头注释（施工 X-12 上，`docs/blueprint/skills.md`「脚本」第 1、2 条）：照旧版的写法读，旧版的脚本照搬就能用。
+//! 脚本的开头注释（施工 X-12 上，`internal/blueprint/skills.md`「脚本」第 1、2 条）：照旧版的写法读，旧版的脚本照搬就能用。
 //!
 //! 文件开头连成一段的注释行（`#` 或 `//` 开头，第一行的 `#!` 也算在里面）是开头，第一行不是注释的地方结束。认这几个键（冒号全角、
 //! 半角都行）：
@@ -58,7 +58,7 @@ pub struct ScriptHead {
     pub clicall: bool,
     /// 给哪种会话（`Venues`，施工 X-43）：照写的先后；没写的没有，哪种会话都有。
     pub venues: Option<Vec<String>>,
-    /// 职能（`Role`，施工 XG-2 下，`docs/designs/64-工具职能.md` 第四节）：写法同出厂的说明文件（`read_file`）；没写的没有。
+    /// 职能（`Role`，施工 XG-2 下，`internal/designs/64-工具职能.md` 第四节）：写法同出厂的说明文件（`read_file`）；没写的没有。
     pub role: Option<Role>,
     /// 范围（`Scope`，施工 XG-2 下，设计 64 第五节）：写法同出厂的说明文件（`local`、`local_main`……），只能收窄，`Venues`
     /// 照旧管；没写的是 `any`。

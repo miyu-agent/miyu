@@ -1,6 +1,6 @@
-//! 请求形状探针：带角色扮演提示的人格聊五轮（施工 P-1 补，`docs/blueprint/kernel/request.md`「事实」、「组装」第 6 条）。
+//! 请求形状探针：带角色扮演提示的人格聊五轮（施工 P-1 补，`internal/blueprint/kernel/request.md`「事实」、「组装」第 6 条）。
 //! 真内核照剧本跑：第 1、4 轮开头注入一块提示，排在人说的那句后面，这一轮的请求以它结尾；system 以风格锁结尾。每一次请求
-//! 和存档（`docs/designs/samples/probe/reminder/`）逐字节比，查五条性质；和同一份剧本在不带提示的策略上跑的比，每一次请求
+//! 和存档（`internal/designs/samples/probe/reminder/`）逐字节比，查五条性质；和同一份剧本在不带提示的策略上跑的比，每一次请求
 //! 只差风格锁和提示那几块：去掉它们就一字不差。
 
 use crate::support::reminder::{STYLE_LOCK, block};

@@ -1,4 +1,4 @@
-//! 回顾的请求也记收场的那几行（施工 3-8 四补，`docs/blueprint/session/actor.md` 第 7 条）：交给端口前一行 `recap request`，
+//! 回顾的请求也记收场的那几行（施工 3-8 四补，`internal/blueprint/session/actor.md` 第 7 条）：交给端口前一行 `recap request`，
 //! 说完了一行 `recap ended`，没写成的一行 `recap failed`，名字都是它照到的那一条；和主请求的几行一样，不写对话的字。
 //!
 //! 只有这一个测试，自己一个进程：`tracing` 的调用点第一次被碰到时记下谁在听，别的测试同时碰到，这里装的订阅者可能漏听

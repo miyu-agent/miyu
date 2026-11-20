@@ -1,4 +1,4 @@
-//! 读到的文字不合图纸上的写法（`docs/designs/03-事件模型.md` 第二节）。
+//! 读到的文字不合图纸上的写法（`internal/designs/03-事件模型.md` 第二节）。
 
 use std::fmt;
 

@@ -1,4 +1,4 @@
-//! 会话状态（施工 9-8 补上，`docs/blueprint/view.md`「会话状态」）：喂事件时顺手记下在等什么、正在做什么、上下文用了多少、
+//! 会话状态（施工 9-8 补上，`internal/blueprint/view.md`「会话状态」）：喂事件时顺手记下在等什么、正在做什么、上下文用了多少、
 //! 最近一次的速度、都在冷却到几时、任务表；[`Projector::status`] 照它们和在跑的这一轮交出整份。
 
 use miyu_kernel::accumulate::Kind;

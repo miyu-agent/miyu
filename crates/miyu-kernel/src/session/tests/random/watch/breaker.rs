@@ -1,4 +1,4 @@
-//! 看守查熔断（`docs/blueprint/compaction.md` 第十条、第二条第 5 条，施工 6-6 上），照看守自己记下的日志算，不看会话：
+//! 看守查熔断（`internal/blueprint/compaction.md` 第十条、第二条第 5 条，施工 6-6 上），照看守自己记下的日志算，不看会话：
 //!
 //! - 摘要请求的 `model.called` 带 `compaction: auto`，主请求的不带；
 //! - 自动压缩出错结束的回合，最近一次压缩以后数到 3，出错的那条和 `turn.ended` 中间夹一条暂停（`failures` 3）；

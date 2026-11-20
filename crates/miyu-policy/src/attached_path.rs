@@ -1,4 +1,4 @@
-//! 看不了的附件带上原来的路径的两句（施工 3-9 五补，`docs/blueprint/drivers/openai-chat.md` 第 9 条）：随核心附带的字，存进
+//! 看不了的附件带上原来的路径的两句（施工 3-9 五补，`internal/blueprint/drivers/openai-chat.md` 第 9 条）：随核心附带的字，存进
 //! 策略快照的 `core.drivers.attached_path`；以前造的快照里没有，读成没有，照旧不带路径。
 
 use miyu_drivers::AttachedPathSources;

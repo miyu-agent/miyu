@@ -1,4 +1,4 @@
-//! 改了人格的文件，下一个回合换上（施工 P-1 再补，`docs/blueprint/kernel/session.md`「换策略快照」）：真核心走一遍。改了人设
+//! 改了人格的文件，下一个回合换上（施工 P-1 再补，`internal/blueprint/kernel/session.md`「换策略快照」）：真核心走一遍。改了人设
 //! 下一轮的 system 就是新的，日志里一条内核记的、带 `policy` 的 `session.policy_changed`；新人格带了角色扮演提示的这一轮就
 //! 有；没改的不记；写错了的照旧用原来的；重启以后照换上的那一份。
 

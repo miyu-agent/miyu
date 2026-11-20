@@ -1,4 +1,4 @@
-//! 供应商改名（施工 8-34，`docs/blueprint/models.md`「供应商改名」）：一层配置的字里，把 `[providers.<from>]` 那张表（连同
+//! 供应商改名（施工 8-34，`internal/blueprint/models.md`「供应商改名」）：一层配置的字里，把 `[providers.<from>]` 那张表（连同
 //! 子表）换成 `<to>`，再找出指着 `<from>/<模型>` 的引用、模型的列表。
 //!
 //! - 表的名字照 `toml_edit` 的可改文档换（[`rename_table`]）：表头、点号连着的键、行内表都认，子表跟着走；别处的字照原样

@@ -1,4 +1,4 @@
-//! 汇率（施工 UC-1，`docs/blueprint/models.md`「怎么走」第九条第 8 条）：金额照它换成 `usage.currency`。以美元为中转：一天
+//! 汇率（施工 UC-1，`internal/blueprint/models.md`「怎么走」第九条第 8 条）：金额照它换成 `usage.currency`。以美元为中转：一天
 //! 一个币种存一个「1 美元换多少」，A 换 B 是 `金额 ÷ USD→A × USD→B`，美元自己是 1；同一笔照它发生那天（UTC）的汇率换。
 //!
 //! - 缓存（`cache.rs`）：`state/rates.db`，派生的：坏了、版本不对删掉重建，重取就是。

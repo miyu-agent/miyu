@@ -1,4 +1,4 @@
-//! 扩展能力的审批（施工 9-4 下上，`docs/blueprint/extensions.md`「能力」）：你装的包声明了能力，开的那一下要批；
+//! 扩展能力的审批（施工 9-4 下上，`internal/blueprint/extensions.md`「能力」）：你装的包声明了能力，开的那一下要批；
 //! 批过的记在开关的文件里，能力多了只问多的；`always` 的没批不拉起、不拦空闲；出厂的包算批过的，`login.page` 除外（施工 LP-1）。
 
 use std::sync::Arc;

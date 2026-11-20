@@ -1,4 +1,4 @@
-//! 设置页「受保护的命令」在核心登记的清单里的位置（施工 HZ-1，设计 `11-权限与沙盒.md` 的 A18，`docs/blueprint/config.md`）。
+//! 设置页「受保护的命令」在核心登记的清单里的位置（施工 HZ-1，设计 `11-权限与沙盒.md` 的 A18，`internal/blueprint/config.md`）。
 
 use std::path::Path;
 

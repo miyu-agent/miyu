@@ -1,4 +1,4 @@
-//! Windows 上关掉回显读一行（施工 8-5 补，`docs/blueprint/cli/login.md`「怎么走」第 4 条）：控制台模式关
+//! Windows 上关掉回显读一行（施工 8-5 补，`internal/blueprint/cli/login.md`「怎么走」第 4 条）：控制台模式关
 //! `ENABLE_ECHO_INPUT`（回显）、`ENABLE_LINE_INPUT`（行缓冲）、`ENABLE_PROCESSED_INPUT`（系统替你处理
 //! `Ctrl+C`），自己一个字节一个字节读（[`read_line`]）。
 //!

@@ -1,4 +1,4 @@
-//! 文本文件照字放进消息的三句（施工 3-9 三补，`docs/blueprint/drivers/openai-chat.md` 第 9 条）：随核心附带的字，存进
+//! 文本文件照字放进消息的三句（施工 3-9 三补，`internal/blueprint/drivers/openai-chat.md` 第 9 条）：随核心附带的字，存进
 //! 策略快照的 `core.drivers.text_file`；以前造的快照里没有，读成没有，文本文件照别的文件写占位。
 
 use miyu_drivers::TextFileSources;

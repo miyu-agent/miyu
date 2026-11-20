@@ -1,4 +1,4 @@
-//! 列会话的端口（`docs/blueprint/cross-session.md` 第一条，`tools/sessions.md`，施工 C-3）：`sessions` 这件工具只拿它，不认识
+//! 列会话的端口（`internal/blueprint/cross-session.md` 第一条，`tools/sessions.md`，施工 C-3）：`sessions` 这件工具只拿它，不认识
 //! 会话表。执行器照这个会话抄好它自己的编号，经会话表列出本机的主会话。
 //!
 //! 端口由下层定义、上层装（`00-设计理念.md` 第四节「依赖与接口的规矩」）：这里只定义形状，执行器（`miyu-session`）照

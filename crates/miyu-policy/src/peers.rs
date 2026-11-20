@@ -1,4 +1,4 @@
-//! 别的会话发来的话（施工 C-2，`docs/blueprint/cross-session.md`「对外的样子」「样子」）：防刷屏的数装进快照（`peers`），
+//! 别的会话发来的话（施工 C-2，`internal/blueprint/cross-session.md`「对外的样子」「样子」）：防刷屏的数装进快照（`peers`），
 //! 标签的两份原文装进快照（`core.peers`，`resources/core/peers/` 下）。
 //!
 //! 以前造的快照里没有数的，照出厂的数：防刷屏不能因为会话旧就不管。没有标签的，读成没有：那种话照人的话原样渲染。

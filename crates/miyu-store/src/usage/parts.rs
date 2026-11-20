@@ -1,4 +1,4 @@
-//! 金额分四种（施工 UP-1，`docs/blueprint/models.md`「怎么走」第九条第 8 条「分四种」）：没命中的输入、读缓存、写缓存、输出各花了多少。
+//! 金额分四种（施工 UP-1，`internal/blueprint/models.md`「怎么走」第九条第 8 条「分四种」）：没命中的输入、读缓存、写缓存、输出各花了多少。
 //!
 //! - 照这一次请求自己记下的价格算（`model.called`、`usage.oneshot` 的 `cost.price`、`cost.multiplier`）：和那一次的金额同一份
 //!   价格、同一个算法（`miyu_models::price`），以后目录更新、人改倍率，算出来的不变。不照现在的价格重算。

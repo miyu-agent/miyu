@@ -1,4 +1,4 @@
-//! 送进会话的输入，和输入里的命令（`docs/designs/02-内核.md` 第四节「输入、动作、命令怎么写」）。
+//! 送进会话的输入，和输入里的命令（`internal/designs/02-内核.md` 第四节「输入、动作、命令怎么写」）。
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -189,7 +189,7 @@ pub enum Input {
         /// 到的时刻，取自执行器的时钟。
         at: Timestamp,
     },
-    /// 后台命令结束了（施工 7-2，`docs/blueprint/kernel/session.md`「回报」）：执行器交来，记一条 `job.reported`，不带回合
+    /// 后台命令结束了（施工 7-2，`internal/blueprint/kernel/session.md`「回报」）：执行器交来，记一条 `job.reported`，不带回合
     /// 编号。对不上一个还没结束的后台命令的，不理。
     JobEnded {
         /// 到的时刻，取自执行器的时钟。
@@ -268,7 +268,7 @@ pub enum Input {
         /// 真发出去的字节的哈希（施工 MD-2）：同 [`Input::ModelEnded`] 的。
         sent: Option<ContentHash>,
     },
-    /// 订的「空了告诉我」等不到了（施工 C-6，`docs/blueprint/cross-session.md` 第六条第 8、9 款）：执行器交，到点了是
+    /// 订的「空了告诉我」等不到了（施工 C-6，`internal/blueprint/cross-session.md` 第六条第 8、9 款）：执行器交，到点了是
     /// `expired`，订的时候那个会话不在了是 `gone`。内核照账本还在等、`expired` 的确实到了点的，记一条 `peer.idle`，`by` 是
     /// 内核，只记下、不叫醒；别的不理。读回日志的时候到的先放着。
     WatchEnded {
@@ -285,7 +285,7 @@ pub enum Input {
         /// 有头订阅着。
         watched: bool,
     },
-    /// 替它看图回来了（施工 8-17，`docs/blueprint/kernel/session.md`「替它看图」）：[`super::Action::Describe`] 的回报。成了的
+    /// 替它看图回来了（施工 8-17，`internal/blueprint/kernel/session.md`「替它看图」）：[`super::Action::Describe`] 的回报。成了的
     /// 内核记一条 `image.described`；不是在路上的那一张的不理；读回日志的时候到的先放着。
     Described {
         /// 到的时刻，取自执行器的时钟。
@@ -295,7 +295,7 @@ pub enum Input {
         /// 成了的：替它看的端点和模型、转述的原文（去掉了前后空白，不是空的）。没成的没有：原因执行器记在运行日志里。
         seen: Option<(Model, String)>,
     },
-    /// 嵌套调用的回报（施工 M-1，`docs/blueprint/kernel/session.md`「嵌套调用」）：来了、链判完了、跑完了。
+    /// 嵌套调用的回报（施工 M-1，`internal/blueprint/kernel/session.md`「嵌套调用」）：来了、链判完了、跑完了。
     Nested(super::NestedInput),
     /// 执行前的链判完了（`02-内核.md` 第六节「确认怎么走」）。
     ToolGuarded {
@@ -306,7 +306,7 @@ pub enum Input {
         /// 链的结论。
         verdict: Verdict,
     },
-    /// 等人确认等到了截止的时刻（施工 CD-1，`docs/blueprint/kernel/asking.md`「到时没人确认」）：[`super::Action::ExpireApproval`]
+    /// 等人确认等到了截止的时刻（施工 CD-1，`internal/blueprint/kernel/asking.md`「到时没人确认」）：[`super::Action::ExpireApproval`]
     /// 到时候了。这件还在等确认的，内核替人拒绝，`by` 是内核；人已经定了、有了结果、不在等的，不理。
     ApprovalExpired {
         /// 到的时刻，取自执行器的时钟。
@@ -382,7 +382,7 @@ pub struct Limits {
     pub max_output: Option<u64>,
     /// 一张图怎么算，驱动交的（施工 6-3 上）；没有的照策略里的固定数。
     pub images: Option<Arc<dyn ImagePrice>>,
-    /// 看不了图（施工 8-17，`docs/blueprint/models.md`「怎么走」第十三条第 1 条）：池里有一个成员看不了就算。是真的，请求里有
+    /// 看不了图（施工 8-17，`internal/blueprint/models.md`「怎么走」第十三条第 1 条）：池里有一个成员看不了就算。是真的，请求里有
     /// 还没转述过的图就先转述。不知道的（测试的端口）是假的。
     pub blind: bool,
     /// 这一轮发给谁（施工 E-M）：供应商、模型、思考强度、预设，写进模型那一块事实；没交的（测试的端口）不写。

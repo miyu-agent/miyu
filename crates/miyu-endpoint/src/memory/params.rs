@@ -1,4 +1,4 @@
-//! `memory.*` 的参数（施工 R-3 补，`docs/blueprint/memory.md`「协议」）：参数里不认识的格不理（`protocol.md`「请求」），
+//! `memory.*` 的参数（施工 R-3 补，`internal/blueprint/memory.md`「协议」）：参数里不认识的格不理（`protocol.md`「请求」），
 //! 写了 `as` 的不收（代表外部的人碰记忆随 O 线）。
 
 use serde::Deserialize;

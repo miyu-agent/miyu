@@ -1,6 +1,6 @@
-//! 跟着重做开的那一轮（施工 4-7 再补，`docs/blueprint/cli/redo.md`）：回应到了先照 `miyu undo` 印撤掉了哪一轮，第一行接
+//! 跟着重做开的那一轮（施工 4-7 再补，`internal/blueprint/cli/redo.md`）：回应到了先照 `miyu undo` 印撤掉了哪一轮，第一行接
 //! 「，重新做」，不说怎么恢复；会话在哪个目录里干活照回应的换上，不说目录太宽；被拒绝的照核心的话说。照样本的场景喂一轮，
-//! 屏幕和 `docs/designs/samples/cli/redo-text.txt` 逐字节一样；蓝图里的那一块，门禁和同一份文件比。
+//! 屏幕和 `internal/designs/samples/cli/redo-text.txt` 逐字节一样；蓝图里的那一块，门禁和同一份文件比。
 
 use std::path::{MAIN_SEPARATOR, Path};
 
@@ -106,8 +106,8 @@ fn the_screen_is_the_sample_of_the_drawing() {
     ];
     let Fed { step, screen, .. } = feed_redo(&printing(Language::Chinese), false, &messages);
     assert_eq!(step, Step::Done(exit::OK));
-    let sample =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/designs/samples/cli/redo-text.txt");
+    let sample = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../internal/designs/samples/cli/redo-text.txt");
     let drawn = std::fs::read_to_string(&sample).expect("有样本");
     // 样本照 Unix 的路径写。
     assert_eq!(screen.replace(MAIN_SEPARATOR, "/"), drawn);

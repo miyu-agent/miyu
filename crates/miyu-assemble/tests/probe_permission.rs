@@ -1,6 +1,6 @@
-//! 请求形状探针：人切了权限级别的会话（施工 2-7 补，`docs/blueprint/kernel/request.md`「事实」第 2 条）。真内核照剧本跑：
+//! 请求形状探针：人切了权限级别的会话（施工 2-7 补，`internal/blueprint/kernel/request.md`「事实」第 2 条）。真内核照剧本跑：
 //! 第一轮只读（A16 起只剩两级，施工 LV-1）；空闲时关掉只读切到完全放开，第二轮开头用切换那一份告诉她；第三轮工具在跑时开了
-//! 只读又关掉，不注入；第四轮工具在跑时开只读，这一轮下一次请求之前告诉她。每一次请求和存档（`docs/designs/samples/probe/permission/`）逐字节比，查五条性质；
+//! 只读又关掉，不注入；第四轮工具在跑时开只读，这一轮下一次请求之前告诉她。每一次请求和存档（`internal/designs/samples/probe/permission/`）逐字节比，查五条性质；
 //! 和同一份剧本在以前造的快照（没有切换那一份）上跑的比，每一次请求只差切换那几块：换回平常那一份就一字不差。
 
 use crate::support::{check, files, matches_the_archive, policy, sent, stage, stage_with};

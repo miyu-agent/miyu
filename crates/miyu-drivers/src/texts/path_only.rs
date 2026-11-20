@@ -1,4 +1,4 @@
-//! 只有路径的附件写成的那一句（施工 AT-1，`docs/blueprint/drivers/openai-chat.md` 第 9 条）：超过上传上限的文件，头只把它在
+//! 只有路径的附件写成的那一句（施工 AT-1，`internal/blueprint/drivers/openai-chat.md` 第 9 条）：超过上传上限的文件，头只把它在
 //! 核心那台机器上的路径交上来（`kernel/blocks.md` 的 `path` 块），请求里没有内容可发，写一句说明附了什么、在哪、内容
 //! 没带上。和模型能看什么无关：哪个模型都是这一句。
 //!

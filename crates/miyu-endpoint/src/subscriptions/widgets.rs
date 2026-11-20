@@ -1,4 +1,4 @@
-//! 界面块的订阅（施工 X-15 中，`docs/blueprint/widgets.md`「头」）：一个连接至多一个，再订阅换一个新的；回应经它写出去
+//! 界面块的订阅（施工 X-15 中，`internal/blueprint/widgets.md`「头」）：一个连接至多一个，再订阅换一个新的；回应经它写出去
 //! （[`Target::Widgets`](super::Target::Widgets)），排在之后的推送前面。转发任务在 `widgets/head.rs`。
 
 use std::sync::Arc;

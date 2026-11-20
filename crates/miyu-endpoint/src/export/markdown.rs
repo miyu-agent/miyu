@@ -1,5 +1,5 @@
 //! `session.export {format: "markdown"}`（施工 SE-1 中下上、中下中、中下下，设计 `58-会话导出和导入.md` 第一节，调研第五节第
-//! 2、3、6、7 条，`docs/blueprint/protocol.md`「`session.export`」）：整个会话喂投影（`view/whole.rs`），照预设和开关用
+//! 2、3、6、7 条，`internal/blueprint/protocol.md`「`session.export`」）：整个会话喂投影（`view/whole.rs`），照预设和开关用
 //! `miyu_view::markdown` 渲染，写到人给的文件或者放进回应。
 //!
 //! - 参数（`export/params.rs`）：`for` 定预设，`range`、`thinking`、`tools` 写了的盖过预设；`children`、`assets` 两种写法。

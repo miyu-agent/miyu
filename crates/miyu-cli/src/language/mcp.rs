@@ -1,4 +1,4 @@
-//! `miyu mcp` 给人看的字（施工 X-42 上，`docs/blueprint/cli/mcp.md`；CL-2 下照设计 47 第三节改：结果行动词打头、不带句号，
+//! `miyu mcp` 给人看的字（施工 X-42 上，`internal/blueprint/cli/mcp.md`；CL-2 下照设计 47 第三节改：结果行动词打头、不带句号，
 //! 报错交 [`Problem`]）。
 
 use super::Language;

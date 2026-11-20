@@ -1,4 +1,4 @@
-//! 驱动写给模型的几句（`core/drivers/` 下，`docs/blueprint/policy.md`「`CoreTexts`」的 `drivers`）：施工 HT-2 从 `resources.rs`
+//! 驱动写给模型的几句（`core/drivers/` 下，`internal/blueprint/policy.md`「`CoreTexts`」的 `drivers`）：施工 HT-2 从 `resources.rs`
 //! 拆出来，那边到了行数上限。
 
 use miyu_policy::{

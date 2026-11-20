@@ -1,4 +1,4 @@
-//! 整页的命令（施工 X-15 下，`docs/blueprint/widgets.md`「整页的命令」）：清单 `[[widget]]` 里整页写的 `command`，打了只叫头打开
+//! 整页的命令（施工 X-15 下，`internal/blueprint/widgets.md`「整页的命令」）：清单 `[[widget]]` 里整页写的 `command`，打了只叫头打开
 //! 那一页：不碰会话、不记日志、不归预设管。装着、开着的扩展的才算；场所会话里不认（通讯平台开不了页）。自己放的同名模板盖住它。
 
 use serde_json::{Value, json};

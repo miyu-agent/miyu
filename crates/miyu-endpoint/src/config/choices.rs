@@ -1,4 +1,4 @@
-//! `config.schema` 里选项由包在运行时给的项（施工 SG-2，`docs/blueprint/config.md`「协议」、`packages.md`「配置项」的表）：清单写了
+//! `config.schema` 里选项由包在运行时给的项（施工 SG-2，`internal/blueprint/config.md`「协议」、`packages.md`「配置项」的表）：清单写了
 //! `choices_from` 的文字项带 `choices_from: {"package", "method"}`，头调 `package.call` 向那个包要选项、画成下拉。照装着的包的
 //! 清单现拼；没写的项不带这一格，`config.schema` 的字节和原来一样。
 //!

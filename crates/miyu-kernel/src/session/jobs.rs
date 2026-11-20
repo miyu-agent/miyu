@@ -1,4 +1,4 @@
-//! 回报到了（施工 7-2，`docs/blueprint/agents.md` 第三条，`docs/blueprint/kernel/session.md`「回报」）：子会话交来的回报
+//! 回报到了（施工 7-2，`internal/blueprint/agents.md` 第三条，`internal/blueprint/kernel/session.md`「回报」）：子会话交来的回报
 //! （命令 `Report`，记 `child.reported`），执行器交来的后台命令结束（输入 `JobEnded`，记 `job.reported`）。
 //!
 //! 回报不带回合编号（2026-09-30 定）：它不属于哪一轮，撤哪一轮都不会跟着拿走（别处来的留着）。回合中途到的，照它在
@@ -52,7 +52,7 @@ impl Session {
         self.ledger.running_started()
     }
 
-    /// 还有没报过结束的后台命令（施工 X-7 再补）：长期目标的续轮等它们报完再开（`docs/blueprint/goal.md`「照旧版留下的」第 8 条）。
+    /// 还有没报过结束的后台命令（施工 X-7 再补）：长期目标的续轮等它们报完再开（`internal/blueprint/goal.md`「照旧版留下的」第 8 条）。
     /// 子代理不算，等子代理在 [`Session::vacant`] 里。纯查询。
     pub fn commands_running(&self) -> bool {
         !self.ledger.running_commands().is_empty()

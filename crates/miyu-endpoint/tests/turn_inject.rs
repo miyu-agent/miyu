@@ -1,4 +1,4 @@
-//! 回合开始问扩展要加的字（施工 X-16，`docs/blueprint/extensions.md`「回合开始的挂接点」）：声明了 `context.inject`、在跑、
+//! 回合开始问扩展要加的字（施工 X-16，`internal/blueprint/extensions.md`「回合开始的挂接点」）：声明了 `context.inject`、在跑、
 //! 工具面上有它的工具的扩展被问，交回的记成 `context.injected`、`by` 是这个包，排在人说的话后面（施工 X-16 补，`user.append`）；没声明的、工具不在这个会话的
 //! 工具面上的不问；超时、回错误、写法不对、交多了的当没交，这一轮照常走完。等多久照扩展的 `Timing::answer`：测试里给 3 秒，
 //! 过 600 毫秒才答的也收（CI 上忙的时候扩展过了 300 毫秒才轮到，2026-10-19 Windows 上偶发红）。

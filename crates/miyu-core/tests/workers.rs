@@ -1,4 +1,4 @@
-//! 工作线程数这一项（施工 CPU-1，`docs/blueprint/core.md`「起来的先后」第 7 条）：`core.workers` 在核心登记的清单里、
+//! 工作线程数这一项（施工 CPU-1，`internal/blueprint/core.md`「起来的先后」第 7 条）：`core.workers` 在核心登记的清单里、
 //! `config.schema` 里，整数 0 到 64，默认 0（照核数），只在系统那一层，改了重启核心生效；写进去的回应也说要重启。
 //! 取数和夹住见 `src/workers/tests.rs`。
 

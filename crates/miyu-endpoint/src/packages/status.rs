@@ -1,4 +1,4 @@
-//! 软件包的状态、开关、后台页（施工 F-6 上，`docs/blueprint/package-pages.md`，设计 `30-插件框架.md` 第十三节）：`package.list`
+//! 软件包的状态、开关、后台页（施工 F-6 上，`internal/blueprint/package-pages.md`，设计 `30-插件框架.md` 第十三节）：`package.list`
 //! 每一项多的 `status`、`enabled`、`page` 照这里算；程序不在的扩展、小程序当没装（配置项、功能都不算），也照这里认。
 
 use std::path::{Path, PathBuf};

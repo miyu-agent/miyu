@@ -1,4 +1,4 @@
-//! `send_message`（`docs/blueprint/tools/send_message.md`，施工 7-7、C-5）：只声明 `to`、`message`；`parent` 发给父会话，任务
+//! `send_message`（`internal/blueprint/tools/send_message.md`，施工 7-7、C-5）：只声明 `to`、`message`；`parent` 发给父会话，任务
 //! 编号发给自己派的子代理，别的当会话编号认（和 `sessions`、`history` 同一个认法），经端口原样送出去；送到了说一句，是没人
 //! 看着的一次性会话只说存下了；给子代理的报 `job.messaged`；别的都拒，每一种说清为什么：没有父、不是她派的（写法都不对的
 //! 端口不问）、被停掉了、送不到、没有端口、找不到会话、撞了、是她自己、这个会话不能发给别的会话、太长、限速、一模一样的

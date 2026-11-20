@@ -1,4 +1,4 @@
-//! 查供应商的额度（施工 QU-1，`docs/blueprint/models.md`「怎么走」第十七条）：档案写了 `quota` 的一家 GET 那个地址，key 在
+//! 查供应商的额度（施工 QU-1，`internal/blueprint/models.md`「怎么走」第十七条）：档案写了 `quota` 的一家 GET 那个地址，key 在
 //! `Authorization` 里，另配的头照固定的种子换；读成三个窗口；60 秒内再问不再发；档案没写的不发；404、500、乱码当没有、不报错；
 //! 配置能改地址；会话一轮结束在后台查一次。
 //!

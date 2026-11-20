@@ -1,4 +1,4 @@
-//! Linux 上的收紧（`docs/blueprint/sandbox/linux.md`）：只用 Landlock（施工 5-2 起；5-3 照 DeepSeek 的 dsh 改成整盘能
+//! Linux 上的收紧（`internal/blueprint/sandbox/linux.md`）：只用 Landlock（施工 5-2 起；5-3 照 DeepSeek 的 dsh 改成整盘能
 //! 读、只管写）。不要命名空间、不要 AppArmor（2026-09-29 项目主人定）。
 //!
 //! Landlock 只能放行，不能在放行的范围里再挖掉一块：「除了藏起来的都能读」是一级级放行做出来的（库里的

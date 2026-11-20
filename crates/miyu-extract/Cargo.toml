@@ -1,6 +1,6 @@
 [package]
 name = "miyu-extract"
-description = "知识库抽字的小程序 miyu-extract：一次抽一份 PDF 或网页里的字，交回去就退（施工 K-5，docs/blueprint/knowledge.md 第二条）"
+description = "知识库抽字的小程序 miyu-extract：一次抽一份 PDF 或网页里的字，交回去就退（施工 K-5，internal/blueprint/knowledge.md 第二条）"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

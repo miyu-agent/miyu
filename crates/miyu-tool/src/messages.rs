@@ -1,4 +1,4 @@
-//! 发话的端口（`docs/blueprint/cross-session.md` 第三条，`docs/blueprint/agents.md` 第六条，`tools/interface.md`，施工
+//! 发话的端口（`internal/blueprint/cross-session.md` 第三条，`internal/blueprint/agents.md` 第六条，`tools/interface.md`，施工
 //! 7-7、C-5）：`send_message` 这件工具只拿它，不认识会话表。执行器照这一次调用抄好这个会话的父会话、它派出去的子代理，
 //! 把话作为这个会话发来的话送过去，对方不是子代理、父会话的，照会话编号认（`cross-session.md` 第三条第 1 款）。
 //!

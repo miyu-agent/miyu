@@ -1,4 +1,4 @@
-//! 给头看的限额（施工 6-3 补，`docs/blueprint/kernel/session.md` 的 `context_limits()`、`protocol.md` 的 `subscribe`）：
+//! 给头看的限额（施工 6-3 补，`internal/blueprint/kernel/session.md` 的 `context_limits()`、`protocol.md` 的 `subscribe`）：
 //! 会话实际用的模型的窗口，和内核自己判到线用的那一条压缩线；推 `model.changed` 要的在跑的回合（施工 8-9）；这时的上下文
 //! 用量（施工 8-15，`context_used()`）；还算数的最近一次压缩、清空替代到哪（施工 R-13 补，`compacted_upto()`）。只读，不出动作。
 
@@ -44,7 +44,7 @@ impl Session {
         self.policy.compaction.as_ref()?.least_window(max_output)
     }
 
-    /// 这时的上下文用量（施工 8-15，`docs/blueprint/models.md`「怎么走」第九条第 7 条）：照有效历史组装这时的请求，用和压缩线
+    /// 这时的上下文用量（施工 8-15，`internal/blueprint/models.md`「怎么走」第九条第 7 条）：照有效历史组装这时的请求，用和压缩线
     /// 同一个算法估（`compaction.md` 第一条：锚加上锚以后的本地估算）。她自己查用量的工具（`session_usage`）派出去时，执行器
     /// 向内核要一份。策略里没有压缩、没交过限额的算不了，没有。只读，不出动作。
     pub fn context_used(&self) -> Option<u64> {

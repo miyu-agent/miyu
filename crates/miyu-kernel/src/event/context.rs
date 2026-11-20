@@ -1,4 +1,4 @@
-//! 上下文的事件（`docs/designs/03-事件模型.md` 第三节「上下文的事件怎么写」）。
+//! 上下文的事件（`internal/designs/03-事件模型.md` 第三节「上下文的事件怎么写」）。
 
 use serde::{Deserialize, Serialize};
 

@@ -1,4 +1,4 @@
-//! 知识库（施工 K-1 上，`docs/blueprint/knowledge.md`）：一个知识库是 `kb/<编号>/` 这个目录，里面是文档，外加一份
+//! 知识库（施工 K-1 上，`internal/blueprint/knowledge.md`）：一个知识库是 `kb/<编号>/` 这个目录，里面是文档，外加一份
 //! 派生的索引 `index/kb/<编号>.db`（检索库，`recall.md`）。真相是目录里的文件，索引随时能删掉照文件重建。
 //!
 //! - 列、搜之前先照文件补这个库（`knowledge/catch_up.rs`）：新的、变了的整份重切，没了的拿掉，没变的（指纹一样）不重读。
@@ -38,7 +38,7 @@ pub use read::Page;
 pub use watch::IndexWatch;
 pub use write::Written;
 
-/// 包文件夹 `dir` 带的库的编号（施工 F-8 六补：装之前查冲突，`docs/blueprint/packages.md`「冲突」），照编号排。
+/// 包文件夹 `dir` 带的库的编号（施工 F-8 六补：装之前查冲突，`internal/blueprint/packages.md`「冲突」），照编号排。
 pub fn carried(dir: &std::path::Path) -> Vec<String> {
     place::carried_in(dir)
         .into_iter()

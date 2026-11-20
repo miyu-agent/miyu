@@ -1,4 +1,4 @@
-//! 主程序和拉起核心（`docs/construction/3-9-主程序和拉起核心（上）.md` 验收第 2 条）：头拉起真的 `miyu core`，
+//! 主程序和拉起核心（`internal/construction/3-9-主程序和拉起核心（上）.md` 验收第 2 条）：头拉起真的 `miyu core`，
 //! 等它说好了再连；再连不再拉起；两个头同时连只拉起一个；起不来的说原因；已经在跑的说一声就走；空闲了
 //! 自己走，运行日志里记着起来、停了；起来时清一次回收处（施工 3-8 三补）。
 
@@ -351,7 +351,7 @@ async fn the_core_does_not_hold_the_heads_directory() {
     home.until_stopped().await;
 }
 
-/// 起来时清一次回收处（施工 3-8 三补，`docs/blueprint/core.md`「起来的先后」第 14 条）：删了满 7 天的会话真删，没满的留着；
+/// 起来时清一次回收处（施工 3-8 三补，`internal/blueprint/core.md`「起来的先后」第 14 条）：删了满 7 天的会话真删，没满的留着；
 /// 在后台清，核心走之前清完。
 #[tokio::test]
 async fn the_core_empties_week_old_sessions_from_the_trash_when_it_starts() {

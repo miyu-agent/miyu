@@ -1,4 +1,4 @@
-//! `session.note`（施工 O-14 补，`docs/construction/O-14-记几块事实（补）.md`）：只记几块事实、不开回合。空闲的不带回合编号，
+//! `session.note`（施工 O-14 补，`internal/construction/O-14-记几块事实（补）.md`）：只记几块事实、不开回合。空闲的不带回合编号，
 //! 下一轮的请求里排在触发前面；正在跑一轮的带这一轮的回合编号；写错的、空的、太多的什么都不记；同一个请求编号再发只算一次。
 
 use serde_json::{Value, json};

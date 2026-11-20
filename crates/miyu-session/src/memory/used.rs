@@ -1,4 +1,4 @@
-//! 想起过什么（施工 R-4 下，`docs/blueprint/memory.md` 第八条）：这一间的记忆用到几次、最近一次，照回合库里记着的读（会话
+//! 想起过什么（施工 R-4 下，`internal/blueprint/memory.md` 第八条）：这一间的记忆用到几次、最近一次，照回合库里记着的读（会话
 //! 落盘时顺手写，`memory.rs` 的 `Turns`）。
 
 use std::collections::BTreeMap;

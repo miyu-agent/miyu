@@ -1,4 +1,4 @@
-//! 配置清单（`docs/blueprint/config.md`，`docs/designs/14-配置.md` G1、G9、G10，施工 8-1）：第 2 层的纯逻辑，不碰磁盘，
+//! 配置清单（`internal/blueprint/config.md`，`internal/designs/14-配置.md` G1、G9、G10，施工 8-1）：第 2 层的纯逻辑，不碰磁盘，
 //! 进来的是字，出去的是字。
 //!
 //! 每个配置项只在清单里声明一次：模块在自己的 crate 里用 [`settings!`] 写一个设置类型，宏生成这几项的清单

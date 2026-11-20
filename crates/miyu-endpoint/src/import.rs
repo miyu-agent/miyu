@@ -1,4 +1,4 @@
-//! `session.import {blob | path, archive?}`（施工 SE-1 下，设计 `58-会话导出和导入.md` 第二、三节，`docs/blueprint/protocol.md`
+//! `session.import {blob | path, archive?}`（施工 SE-1 下，设计 `58-会话导出和导入.md` 第二、三节，`internal/blueprint/protocol.md`
 //! 「`session.import`」）：把 `session.export` 打的原始包导进这个数据根。
 //!
 //! - 包从哪来：头先 `blob.put` 传上来交 `blob`；本机的头（命令行）直接给 `path`（绝对路径）。两样只写一样。

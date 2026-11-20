@@ -1,4 +1,4 @@
-//! 第一次接入的三个方法（施工 8-11，`docs/blueprint/models.md`「协议」、「怎么走」第七条）：`provider.detect` 照交进来的
+//! 第一次接入的三个方法（施工 8-11，`internal/blueprint/models.md`「协议」、「怎么走」第七条）：`provider.detect` 照交进来的
 //! 环境找、值不交，本机的服务几家一起探、300 毫秒没回的当没有；`provider.catalog` 搜、排；`provider.test` 在
 //! `providers_test.rs`。目录是真目录裁出来的一份，本机的服务是本机回环上的假服务器。
 

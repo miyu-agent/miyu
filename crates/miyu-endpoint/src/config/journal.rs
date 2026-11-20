@@ -1,4 +1,4 @@
-//! 留痕（`docs/blueprint/config.md`「怎么走」第六条，施工 8-3）：改动落了盘，照事件的外壳往日志 `journal.jsonl` 追加
+//! 留痕（`internal/blueprint/config.md`「怎么走」第六条，施工 8-3）：改动落了盘，照事件的外壳往日志 `journal.jsonl` 追加
 //! 一条：配置的改动、项目配置的信任都进这一份（施工 SU-5 上）。
 //!
 //! 先写配置，后写日志：配置文件是真相，日志是留痕。日志写不进去的记一条 `WARN journal not written`，配置照改、照回应。

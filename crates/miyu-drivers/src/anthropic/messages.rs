@@ -1,4 +1,4 @@
-//! 统一的请求里的消息写成线上的消息（`docs/blueprint/drivers/anthropic.md`「怎么走：编码」第 3 到 6 条）。
+//! 统一的请求里的消息写成线上的消息（`internal/blueprint/drivers/anthropic.md`「怎么走：编码」第 3 到 6 条）。
 //!
 //! - user、tool 都写成线上的 `user`，assistant 写成 `assistant`；相邻两条线上的角色一样的合成一条，后一条的块接在前一条
 //!   后面；一块都没有的不发。所以一串 tool 合成一条 user，tool 后面跟着的 user 也合进去，接在结果后面。

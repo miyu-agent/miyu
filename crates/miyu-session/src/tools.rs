@@ -120,7 +120,7 @@ pub(crate) struct Tools {
     backs: mpsc::UnboundedSender<Back>,
 }
 
-/// 派一次调用要的：内核的「执行一次工具调用」动作里的几样（`docs/blueprint/kernel/session.md`）。
+/// 派一次调用要的：内核的「执行一次工具调用」动作里的几样（`internal/blueprint/kernel/session.md`）。
 #[derive(Debug)]
 pub(crate) struct Dispatch {
     /// 哪一次调用。

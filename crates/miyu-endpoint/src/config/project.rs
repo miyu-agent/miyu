@@ -1,4 +1,4 @@
-//! 找项目配置（`docs/blueprint/config.md`「怎么走」第三条第 1 条，G3）：从目录起往上一层层找 `.miyu/config.toml`，
+//! 找项目配置（`internal/blueprint/config.md`「怎么走」第三条第 1 条，G3）：从目录起往上一层层找 `.miyu/config.toml`，
 //! 最近的那一份就是，只认一份，不叠。
 //!
 //! - 找到有 `.git`（目录、文件都算）的那一层就停：那是仓库的根。

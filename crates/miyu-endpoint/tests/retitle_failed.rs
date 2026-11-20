@@ -1,4 +1,4 @@
-//! 辅助请求的总时限和人要求的重起标题没起成（施工 TT-3，`docs/blueprint/kernel/session.md`「起标题」第 11 条、
+//! 辅助请求的总时限和人要求的重起标题没起成（施工 TT-3，`internal/blueprint/kernel/session.md`「起标题」第 11 条、
 //! `session/actor.md` 第 8 条）：起标题、回顾从交给端口起最多等总时限（出厂 180 秒，这里的剧本设短的），到时没说完照出错了结；
 //! 人要的重起超时、出错，事件流推 `session.retitle_failed`（`by` 是要它的人）、视图流出一条 `retitle_failed` 旁白（字照连接的
 //! 语言），标题不动；起成了的、没超时的照常，不推。

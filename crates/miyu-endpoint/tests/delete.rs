@@ -1,4 +1,4 @@
-//! 删除会话（施工 3-8 三补，`docs/blueprint/protocol.md` 的 `session.delete`）：空闲的会话挪进回收处
+//! 删除会话（施工 3-8 三补，`internal/blueprint/protocol.md` 的 `session.delete`）：空闲的会话挪进回收处
 //! `trash/sessions/<会话编号>/`，写下 `deleted_at`，回应 `{}`；删了的列不出来，再发命令是会话不存在。有回合在
 //! 进行的拒绝、什么都不动。没在跑的会话不载入就删：被重启打断的那一轮不接着干。子会话的几种在 `delete_children.rs`。
 

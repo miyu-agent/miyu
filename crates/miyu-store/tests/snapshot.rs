@@ -1,4 +1,4 @@
-//! 策略快照存进去、读回来（`docs/construction/3-6-策略快照（上）.md` 验收第 2 条）：从源码树的资源
+//! 策略快照存进去、读回来（`internal/construction/3-6-策略快照（上）.md` 验收第 2 条）：从源码树的资源
 //! 目录拼出软件工程师的快照，存成 blob，照哈希取回来重建；两份策略跑同一个剧本，每一次请求逐字节一样。
 
 use std::path::{Path, PathBuf};
@@ -77,8 +77,9 @@ fn a_stored_snapshot_reads_back_and_gives_the_same_requests() {
         resources()
             .sources_with(miyu_policy::PersonaTexts {
                 persona: std::fs::read_to_string(
-                    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                        .join("../../docs/designs/samples/personas/engineer/prompts/persona.md"),
+                    std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(
+                        "../../internal/designs/samples/personas/engineer/prompts/persona.md",
+                    ),
                 )
                 .expect("样本人格读得出来"),
                 ..miyu_policy::PersonaTexts::default()

@@ -46,7 +46,7 @@ impl Language {
         }
     }
 
-    /// `miyu redo` 的第一行（施工 4-7 再补，`docs/blueprint/cli/redo.md`）：照撤销一轮的那一行，接「，重新做」。`said` 是撤掉的
+    /// `miyu redo` 的第一行（施工 4-7 再补，`internal/blueprint/cli/redo.md`）：照撤销一轮的那一行，接「，重新做」。`said` 是撤掉的
     /// 那一轮原来那一句，没有的写「最后一轮」。
     pub(crate) fn redo_header(&self, said: Option<&str>) -> String {
         match (self, said) {

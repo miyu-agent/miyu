@@ -1,4 +1,4 @@
-//! 卸包留下的设置项（施工 PK-5补，`docs/blueprint/packages.md`「装卸」第 7 条）：照 pacman，不带 `purge` 卸包时 `etc/config.toml`
+//! 卸包留下的设置项（施工 PK-5补，`internal/blueprint/packages.md`「装卸」第 7 条）：照 pacman，不带 `purge` 卸包时 `etc/config.toml`
 //! 里它的设置项原样留着，重装同编号照原样生效。
 //!
 //! - [`left`]：这时哪些前缀是已卸的包留下的（读配置时照它跳过，`config/left.rs`）。

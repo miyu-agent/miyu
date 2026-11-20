@@ -1,4 +1,4 @@
-//! 清单里的 `[settings]`（施工 9-1 下，`docs/blueprint/packages.md`「配置项」，`05-内核接口.md` 第二节）：一项一张表
+//! 清单里的 `[settings]`（施工 9-1 下，`internal/blueprint/packages.md`「配置项」，`05-内核接口.md` 第二节）：一项一张表
 //! `[settings.<名字>]`，或者多一层组 `[settings.<组>.<名字>]`（施工 9-1 再补；组的名字、什么时候画见 `section`，施工 SG-1），读成 [`Setting`]；核心起来时照它们拼成配置项（[`items`]），键是 `<包的编号>.<名字>`，挂在设置页的
 //! 「软件包」那一页、这个包那一组。
 //!

@@ -1,4 +1,4 @@
-//! 装、卸之前印的那一份和问的那一句（施工 F-8 下补，`docs/blueprint/cli/pkg.md`「怎么走」第 3 步，照 pacman）：核心看一眼的
+//! 装、卸之前印的那一份和问的那一句（施工 F-8 下补，`internal/blueprint/cli/pkg.md`「怎么走」第 3 步，照 pacman）：核心看一眼的
 //! 回应（`package.install`、`package.remove` 带 `preview`）印成几行，空一行问「继续？[Y/n]」，读一行答：空的、`y`、`yes`
 //! 接着做，别的不做；标准输入关着的（脚本里）也不做，提示用 `--yes`。
 

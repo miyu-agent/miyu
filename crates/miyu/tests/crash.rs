@@ -1,4 +1,4 @@
-//! 核心崩了，命令跟着没（施工 7-8，`docs/blueprint/core.md`「子进程随核心退出」；Unix 上前台、监视的、人跑的几行和看门的是谁
+//! 核心崩了，命令跟着没（施工 7-8，`internal/blueprint/core.md`「子进程随核心退出」；Unix 上前台、监视的、人跑的几行和看门的是谁
 //! 是施工 V-48 补的）：真的 `miyu core`，模型是本机回环上的假服务器（照 DeepSeek 的写法回一次调 `shell`、再说一句）。命令是
 //! 一个心跳：一个子 shell 在后台每 0.1 秒往文件里写一行（Unix 上它是命令起的孙进程，命令自己和它的组也记下；Windows 上是
 //! PowerShell 自己）。心跳跑起来以后硬杀核心（Unix 上 `SIGKILL`，Windows 上结束进程，不连子进程），心跳要在几秒内停下：Unix

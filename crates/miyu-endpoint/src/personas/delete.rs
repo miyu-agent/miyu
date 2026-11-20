@@ -1,4 +1,4 @@
-//! 删人格（施工 P-3 下，`docs/blueprint/personas.md`「改」；施工 PE-1 从 `write.rs` 挪出来）：你那一层有的，整个目录挪进回收处
+//! 删人格（施工 P-3 下，`internal/blueprint/personas.md`「改」；施工 PE-1 从 `write.rs` 挪出来）：你那一层有的，整个目录挪进回收处
 //! （`miyu_store::trash::personas`），回到下面那一层。你那一层没有、只有出厂包带的，那个出厂包又只带这一个人格的（施工 PE-1，
 //! 2026-10-31 项目主人定：出厂的软件工程师能删），删它就是卸这个包，同 `package.remove`（`etc/removed/<编号>`），
 //! `package.install` 写包编号装回来。装上的包带的、包里还有别的的照旧删不掉。

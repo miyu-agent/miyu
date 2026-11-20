@@ -1,4 +1,4 @@
-//! 网址的服务登录（施工 X-42 上，`docs/blueprint/mcp.md`「待定（施工 X-42）」）：照 MCP 规范 2026-07-28 的 Authorization
+//! 网址的服务登录（施工 X-42 上，`internal/blueprint/mcp.md`「待定（施工 X-42）」）：照 MCP 规范 2026-07-28 的 Authorization
 //! （OAuth 2.1、RFC 9728 受保护资源元数据、RFC 8414 / OIDC 发现、RFC 8707 `resource`、RFC 9207 `iss`、RFC 7636 PKCE）。
 //! 这里是不碰网络的那一半：读 `WWW-Authenticate`、规范网址、两种 well-known 的先后、校验授权服务器的元数据、PKCE、拼授权页、
 //! 读回调、判 `iss`、挑 `scope`。

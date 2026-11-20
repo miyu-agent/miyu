@@ -1,4 +1,4 @@
-//! 回顾的请求（施工 3-8 四补，`docs/blueprint/kernel/request.md`「回顾的请求」）：照 codex 的做法（`codex-rs/tui/src/app/
+//! 回顾的请求（施工 3-8 四补，`internal/blueprint/kernel/request.md`「回顾的请求」）：照 codex 的做法（`codex-rs/tui/src/app/
 //! recap_history.rs`、`context-fragments/src/recap_prompt.rs`，2026-10-01 看过源码后定），单独一次辅助请求，不接主对话的前缀、
 //! 不带 system 和工具面：长会话也不用把整段上下文再读一遍，快满窗口时也不会超长。
 //!

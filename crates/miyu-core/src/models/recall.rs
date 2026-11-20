@@ -1,4 +1,4 @@
-//! 目录不常驻，核心这一头（施工 V-25 下，`docs/blueprint/models.md`「怎么走」第二条第 2 条）：记下的那份
+//! 目录不常驻，核心这一头（施工 V-25 下，`internal/blueprint/models.md`「怎么走」第二条第 2 条）：记下的那份
 //! （模型目录拉到的那一处的 `catalog.json`，`miyu_session::ModelData` 管怎么记、怎么换）认哪一份目录、起来时读不读整份目录、临时怎么读。
 //!
 //! - 版本串 `of`（[`Version::of`]）：整理好的目录现成的指纹（`super::digest::fingerprint`：哪一份、原文多大、什么时候改的、

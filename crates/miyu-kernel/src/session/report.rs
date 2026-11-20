@@ -1,4 +1,4 @@
-//! 向上回报（施工 7-6，`docs/blueprint/agents.md` 第二条、第八条，`docs/blueprint/kernel/session.md`「向上回报」）：子会话
+//! 向上回报（施工 7-6，`internal/blueprint/agents.md` 第二条、第八条，`internal/blueprint/kernel/session.md`「向上回报」）：子会话
 //! 的一轮结束时要不要报给父会话、报什么。内核只交出动作 [`Action::Report`]，执行器经端口交给父会话（命令 `Report`）。
 //!
 //! 欠不欠着一份回报，从日志一条条算（[`Duty`]）：活着时每追加一条记一次，载入时照日志再走一遍，算出来的一样。

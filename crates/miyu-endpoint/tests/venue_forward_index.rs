@@ -1,4 +1,4 @@
-//! 转发里带的东西的编号（施工 O-61，`docs/blueprint/venues.md`「场所的格」）：`venue.forwards` 里每样可选的 `index`（正整数）
+//! 转发里带的东西的编号（施工 O-61，`internal/blueprint/venues.md`「场所的格」）：`venue.forwards` 里每样可选的 `index`（正整数）
 //! 原样记，没写的不写；写在 `venue.media` 里的、写 0 的、不是整数的整条 `bad_params`，什么都不记。
 
 use serde_json::{Value, json};

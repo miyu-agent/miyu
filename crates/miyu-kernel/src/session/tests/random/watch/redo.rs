@@ -1,4 +1,4 @@
-//! 看守查重做（`docs/blueprint/kernel/history.md`「重做」，施工 4-7 再补）：
+//! 看守查重做（`internal/blueprint/kernel/history.md`「重做」，施工 4-7 再补）：
 //!
 //! - 有回合在进行的，`turn_running`；一轮都没有、最后一轮不是人说的话开的，`not_redoable`；换过的那一句一块都不剩的，
 //!   `empty_message`；

@@ -1,4 +1,4 @@
-//! `model.delta` 的样本（`docs/designs/samples/transient/model.delta.jsonl`，`03-事件模型.md` 第五节）：从
+//! `model.delta` 的样本（`internal/designs/samples/transient/model.delta.jsonl`，`03-事件模型.md` 第五节）：从
 //! `transient_sample.rs` 拆出来的（那边到了行数上限）。
 //!
 //! - 样本会话里 44 号请求的回复，一段段推给头的样子：代码里造出同样的几条，写出去和样本一字不差；

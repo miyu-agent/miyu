@@ -1,4 +1,4 @@
-//! `usage.convert`（施工 UC-3，`docs/blueprint/models.md`「协议」`usage.convert`）：扩展自己照日子、币种记的金额交给核心换算。
+//! `usage.convert`（施工 UC-3，`internal/blueprint/models.md`「协议」`usage.convert`）：扩展自己照日子、币种记的金额交给核心换算。
 //! 一组换成一个数，照组的先后交回；同币种的不用汇率；空的组、一笔都没换成的是 `null`；取不到汇率的那一笔在 `rest`；
 //! 回应的 `currency` 跟着配置；参数写错、超上限的 `bad_params`。汇率从假的汇率服务器取。
 

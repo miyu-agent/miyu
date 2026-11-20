@@ -1,4 +1,4 @@
-//! 配置换了交给谁（`docs/blueprint/config.md`「怎么走」第八条，施工 8-4）：配置服务每换上一份新的，
+//! 配置换了交给谁（`internal/blueprint/config.md`「怎么走」第八条，施工 8-4）：配置服务每换上一份新的，
 //!
 //! - 交给会话：往 `tokio::sync::watch` 里放一份，会话在下一个回合开始时从里面取（[`Hub::configs`]）；
 //! - 交给核心：同一个 `watch`，核心照它当场换运行日志的级别、重写生成的文件（[`Hub::current`]）；

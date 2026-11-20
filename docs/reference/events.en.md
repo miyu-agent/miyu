@@ -18,7 +18,7 @@ A session's truth is an append-only event log. Heads subscribed to the `events` 
 | `cause` | Which command caused it: the request `id` |
 | `body` | Fields of this kind |
 
-The exact shape of each kind is in the repository's `docs/designs/samples/events/<kind>.jsonl`, one file per kind, each a real line.
+The exact shape of each kind is in the repository's `internal/designs/samples/events/<kind>.jsonl`, one file per kind, each a real line.
 
 ## Recorded events
 
@@ -62,7 +62,7 @@ Undo, compaction and clearing never delete events: heads work out what's in effe
 
 ## Transient events
 
-Not recorded, no `seq`, only pushed to heads subscribed at that moment, never replayed (except that a model request streaming when you subscribe gets its `model.delta`s so far replayed once). Their shapes are in `docs/designs/samples/transient/`.
+Not recorded, no `seq`, only pushed to heads subscribed at that moment, never replayed (except that a model request streaming when you subscribe gets its `model.delta`s so far replayed once). Their shapes are in `internal/designs/samples/transient/`.
 
 | `kind` | Meaning |
 |---|---|

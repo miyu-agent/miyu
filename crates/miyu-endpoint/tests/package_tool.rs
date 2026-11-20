@@ -1,4 +1,4 @@
-//! 她装、卸软件包（施工 F-10 下，`docs/blueprint/tools/package.md`，设计 `31-软件包.md` 第六节）：真核心的会话调 `package`；
+//! 她装、卸软件包（施工 F-10 下，`internal/blueprint/tools/package.md`，设计 `31-软件包.md` 第六节）：真核心的会话调 `package`；
 //! 施工 BS-1 中起它不上工具面，她跑的命令里的 `miyu pkg` 经通道调（`support::pkg`），确认请求带着那一次的序号。
 //! 每次都问人（A16 起完全放开也问，施工 LV-1：装扩展等于跑别人的程序，归高危），确认请求的说明里带着看一眼的那一份（装的同
 //! `package.install` 带 `preview`，卸的同 `package.remove` 带 `preview`）；允许了才装、卸。清单写错的不问，当场照拒绝交回她。

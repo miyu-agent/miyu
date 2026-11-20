@@ -68,7 +68,7 @@ Read the following articles for a quick look at how to install Miyu and the basi
 
 AGPL-3.0-or-later, see `LICENSE`.
 
-The list of third-party data kept in the repository and their licenses is in "资源里的第三方数据" in `docs/blueprint/licenses.md`; the fonts, ONNX Runtime and the like shipped in release packages keep their own licenses, with the original text included in the package.
+The list of third-party data kept in the repository and their licenses is in "资源里的第三方数据" in `internal/blueprint/licenses.md`; the fonts, ONNX Runtime and the like shipped in release packages keep their own licenses, with the original text included in the package.
 
 The names and logos of providers and models are trademarks of their respective owners. Miyu only fetches them from models.dev and lobe-icons at run time and caches them on your machine; they are not shipped in the package, and using them does not mean those owners endorse or sponsor Miyu.
 

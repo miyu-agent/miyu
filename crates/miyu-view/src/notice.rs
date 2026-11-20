@@ -1,4 +1,4 @@
-//! 旁白（`docs/blueprint/view.md`「`notice` 的 `what`」）：只给结构，字由头写；出错说明照连接的语言给。
+//! 旁白（`internal/blueprint/view.md`「`notice` 的 `what`」）：只给结构，字由头写；出错说明照连接的语言给。
 
 use serde::{Deserialize, Serialize};
 

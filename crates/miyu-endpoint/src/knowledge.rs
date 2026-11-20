@@ -1,4 +1,4 @@
-//! 人经协议查知识库（施工 K-1 上，`docs/blueprint/knowledge.md`「对外的样子」，`protocol.md` 的 `kb.*`）：列、搜、读。怎么补
+//! 人经协议查知识库（施工 K-1 上，`internal/blueprint/knowledge.md`「对外的样子」，`protocol.md` 的 `kb.*`）：列、搜、读。怎么补
 //! 索引、怎么搜在 `miyu_store::knowledge`，这里只管读参数、在阻塞线程里调、写回应、把跳过的文档记一行运行日志。
 //! 不看知识库这个软件包装没装：文件是人的，人随时看得到。
 

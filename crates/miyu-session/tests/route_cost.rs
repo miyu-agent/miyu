@@ -1,4 +1,4 @@
-//! 会话的请求记金额（施工 8-15，`docs/blueprint/models.md`「怎么走」第九条第 2、3 条）：路由照真发的那个模型手写的价格、
+//! 会话的请求记金额（施工 8-15，`internal/blueprint/models.md`「怎么走」第九条第 2、3 条）：路由照真发的那个模型手写的价格、
 //! 供应商的倍率算好，`model.called` 带 `cost`，出处写配置那一层和第几行；没价格的不写。
 
 use std::sync::Arc;
@@ -12,7 +12,7 @@ use miyu_kernel::event::{Body, ModelCalled, Prices, Real};
 /// 说「你好！」：报 2000 输入（其中 1920 命中）、3 输出。
 fn hello() -> Reply {
     let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/drivers/openai-chat/streams/openai-text.sse");
+        .join("../../internal/designs/samples/drivers/openai-chat/streams/openai-text.sse");
     Reply::stream(vec![Piece::Bytes(
         std::fs::read(&path).expect("样本读得到"),
     )])

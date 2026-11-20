@@ -27,9 +27,10 @@ const HISTORY: &[&str] = &[
 /// 有效历史撤销时只看几格的。
 const SEEN: &[&str] = &["message.assistant", "model.called"];
 
-/// 样本里的每一行（`docs/designs/samples/events`，每一种都有，`tests/samples.rs` 查着）。
+/// 样本里的每一行（`internal/designs/samples/events`，每一种都有，`tests/samples.rs` 查着）。
 fn samples() -> Vec<String> {
-    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/designs/samples/events");
+    let dir =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../internal/designs/samples/events");
     let mut lines = Vec::new();
     let mut files: Vec<PathBuf> = std::fs::read_dir(dir)
         .expect("有样本")

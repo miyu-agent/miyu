@@ -1,4 +1,4 @@
-//! 扩展声明的斜杠命令（施工 X-14 下，`docs/blueprint/slash.md`「扩展的命令」）：清单 `[[slash]]` 写的，人敲了核心反向调用那个
+//! 扩展声明的斜杠命令（施工 X-14 下，`internal/blueprint/slash.md`「扩展的命令」）：清单 `[[slash]]` 写的，人敲了核心反向调用那个
 //! 扩展的 `command.call {command, argument, text, session, by, owner, language}`，扩展答 `{"said"}`（一段文字，可以多行），核心记
 //! 一条 `command.ran`、把它当回执交回去。扩展没连上、断了、到时没答的 `command_unavailable`；答了错、写法不对的
 //! `command_failed`，`data.why` 是它的原话。和核心登记的撞名的不算（内置的赢）。

@@ -1,4 +1,4 @@
-//! 事件的样本文件（`docs/designs/03-事件模型.md` 第三节「样本文件」）：内核认识的每种事件
+//! 事件的样本文件（`internal/designs/03-事件模型.md` 第三节「样本文件」）：内核认识的每种事件
 //! 都有一份；一份里的每一行读进来再写出去一字不差、认得出种类、种类和文件名对得上；
 //! 几份样本讲的是同一个会话，序号不重复，时间跟着序号不往回走：一条输入产生的几条事件，时刻相同
 //! （`02-内核.md` 第六节「回合怎么开、请求怎么发」第 3 条）。只有带 `parent` 的那一条 `session.created` 例外：它是
@@ -16,7 +16,7 @@ use miyu_kernel::origin::By;
 
 /// 样本所在的目录：这个 crate 的目录往上两级是仓库根。
 fn samples_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/designs/samples/events")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../internal/designs/samples/events")
 }
 
 /// 目录里每一份样本的每一行：种类名（文件名去掉 `.jsonl`）和日志里的那一行（去掉行尾的换行）。
@@ -69,7 +69,7 @@ fn every_known_kind_has_a_sample() {
     for kind in Body::KINDS {
         assert!(
             kinds.iter().any(|k| k == kind),
-            "{kind} 没有样本，要加一份 docs/designs/samples/events/{kind}.jsonl"
+            "{kind} 没有样本，要加一份 internal/designs/samples/events/{kind}.jsonl"
         );
     }
 }

@@ -1,4 +1,4 @@
-//! `miyu provider login` 在真的伪终端里（施工 8-5 补，`docs/blueprint/cli/login.md`「怎么走」第 4 条）：贴 key 的时候按
+//! `miyu provider login` 在真的伪终端里（施工 8-5 补，`internal/blueprint/cli/login.md`「怎么走」第 4 条）：贴 key 的时候按
 //! `Ctrl+C`，进程以 130 退出、印了取消那一句，结束后终端设置和开始前一样（回显开着）；送正常的 key 加回车，读到的对，
 //! 终端设置也照原样。只在 Unix 上跑：Windows 没有伪终端，`Guard`、控制台模式的读写写在一个单元测试里，在
 //! `crates/miyu-cli/src/config/console/windows.rs`。

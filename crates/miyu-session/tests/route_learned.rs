@@ -1,4 +1,4 @@
-//! 用出来的窗口（施工 8-7，`docs/blueprint/models.md`「怎么走」第二条第 9 条）：请求报上下文超长、说了上限、比手头的
+//! 用出来的窗口（施工 8-7，`internal/blueprint/models.md`「怎么走」第二条第 9 条）：请求报上下文超长、说了上限、比手头的
 //! 窗口小的，记进 `state/models/learned.json`、记一行 `INFO learned window`，新造的会话用上；比手头的大的不记。
 //!
 //! 只有这一个测试，自己一个进程：要接住阻塞线程里发的运行日志（见 `blocking_log.rs`）。
@@ -29,7 +29,7 @@ fn too_long(limit: u64) -> Reply {
 /// 说「你好！」。
 fn hello() -> Reply {
     let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/drivers/openai-chat/streams/openai-text.sse");
+        .join("../../internal/designs/samples/drivers/openai-chat/streams/openai-text.sse");
     Reply::stream(vec![Piece::Bytes(
         std::fs::read(&path).expect("样本读得到"),
     )])

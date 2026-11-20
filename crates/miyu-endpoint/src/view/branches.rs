@@ -1,4 +1,4 @@
-//! 场所会话的并行支线（施工 VW-2，`docs/blueprint/view.md`「会话状态」的 `jobs`）：桥照 `session.fork {seal_after: 1}` 从主线
+//! 场所会话的并行支线（施工 VW-2，`internal/blueprint/view.md`「会话状态」的 `jobs`）：桥照 `session.fork {seal_after: 1}` 从主线
 //! 分出去、只跑一轮的那几条，像子代理一样作为主线会话状态 `jobs` 里的一项出来，头的右侧边栏现成画它、点得开。
 //!
 //! - 主线的日志里没有分叉的记录：照子会话日志的第一条 `session.created` 认（父会话是它、`forked` 写着从它分出来、不是 fork

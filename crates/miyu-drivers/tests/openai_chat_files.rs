@@ -1,4 +1,4 @@
-//! 人附的文件怎么进请求（施工 3-9 三补，`docs/blueprint/drivers/openai-chat.md` 第 9 条）：文本文件照字放进消息，带着
+//! 人附的文件怎么进请求（施工 3-9 三补，`internal/blueprint/drivers/openai-chat.md` 第 9 条）：文本文件照字放进消息，带着
 //! 文件名，最多 64 KiB，截过的写明；二进制的、发不了的 PDF 写一句占位，带大小；以前造的快照里没有那三句的，文本文件
 //! 也写占位。
 

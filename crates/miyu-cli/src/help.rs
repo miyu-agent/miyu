@@ -1,4 +1,4 @@
-//! 帮助页（施工 4-11，`docs/blueprint/cli/main.md`「帮助页」）：自己写的，一种语言十五页（施工 3-8 四补加了 `recap`，五补加了 `rename`，施工 8-2 加了 `config`，施工 8-5 加了 `login`、`logout`（Y-13 上并成 `provider`），施工 8-11 加了 `setup`，施工 W-9 加了 `web`，施工 8-30 加了 `check`，施工 R-3 再补加了 `memory`，施工 K-7 下加了 `kb`，施工 J-3 下加了 `schedule`，施工 RC-1 加了 `rescue`，施工 HLP-1 加了 `core`），编进程序，资源目录找不到
+//! 帮助页（施工 4-11，`internal/blueprint/cli/main.md`「帮助页」）：自己写的，一种语言十五页（施工 3-8 四补加了 `recap`，五补加了 `rename`，施工 8-2 加了 `config`，施工 8-5 加了 `login`、`logout`（Y-13 上并成 `provider`），施工 8-11 加了 `setup`，施工 W-9 加了 `web`，施工 8-30 加了 `check`，施工 R-3 再补加了 `memory`，施工 K-7 下加了 `kb`，施工 J-3 下加了 `schedule`，施工 RC-1 加了 `rescue`，施工 HLP-1 加了 `core`），编进程序，资源目录找不到
 //! 也印得出。主程序把它们交给 clap 的 `override_help`：`-h`、`--help`、`miyu help <子命令>` 印的都是这几页。
 
 use crate::language::Language;

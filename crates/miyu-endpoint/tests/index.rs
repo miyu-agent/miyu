@@ -1,4 +1,4 @@
-//! 会话列表的索引（施工 3-8 七补，`docs/blueprint/store/index.md`）：造会话、说话、改标题、置顶以后，索引里那一行和日志对得上，
+//! 会话列表的索引（施工 3-8 七补，`internal/blueprint/store/index.md`）：造会话、说话、改标题、置顶以后，索引里那一行和日志对得上，
 //! 照到的就是日志的末尾；删会话删掉那一行。
 
 use serde_json::json;

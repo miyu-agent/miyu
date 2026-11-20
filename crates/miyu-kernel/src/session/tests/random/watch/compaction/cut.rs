@@ -1,4 +1,4 @@
-//! 看守照规矩算的切法（`docs/blueprint/compaction.md` 第三条第 2 条）：切得开的地方、留尾巴。施工 6-8 从 `compaction.rs`
+//! 看守照规矩算的切法（`internal/blueprint/compaction.md` 第三条第 2 条）：切得开的地方、留尾巴。施工 6-8 从 `compaction.rs`
 //! 挪出来。
 
 use super::*;

@@ -1,4 +1,4 @@
-//! 脚本调工具的通道（施工 M-3，设计 `39-脚本调工具.md` 第五节，`docs/blueprint/tools/shell.md`「脚本调工具」）：直接调的
+//! 脚本调工具的通道（施工 M-3，设计 `39-脚本调工具.md` 第五节，`internal/blueprint/tools/shell.md`「脚本调工具」）：直接调的
 //! `shell` 拿到了端口（[`miyu_tool::Call::nested`]）的，起命令前开一个只给这条命令的端点，命令里的 `miyu call` 连上来调工具。
 //! 端点、协议、认人在 `miyu-call`（施工 XG-1 下挪过去，扩展声明了 `runs_commands` 的工具也用它）；这里只管 `shell` 这一头：照
 //! 这条命令的进程组、作业对象认人（[`miyu_call::Kin::command`]），环境变量、沙盒的规格照它加上。

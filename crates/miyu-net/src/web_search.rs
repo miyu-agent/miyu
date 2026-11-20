@@ -1,4 +1,4 @@
-//! `web_search`（施工 N-2 上，设计 36 第一节第 2 条，`docs/blueprint/tools/web_search.md`）：搜网页，交回几条标题、网址、
+//! `web_search`（施工 N-2 上，设计 36 第一节第 2 条，`internal/blueprint/tools/web_search.md`）：搜网页，交回几条标题、网址、
 //! 日期、摘录。
 //!
 //! 给她看的一条是 `[1] 标题` 一行、网址（有日期的接在后面）一行，下面接摘录原样，条和条之间空一行；结果里不写是哪一家

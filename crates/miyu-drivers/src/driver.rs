@@ -1,4 +1,4 @@
-//! 驱动的接口（`docs/designs/05-内核接口.md` 第七节「驱动的规格」）：执行器照着它调，不用知道是
+//! 驱动的接口（`internal/designs/05-内核接口.md` 第七节「驱动的规格」）：执行器照着它调，不用知道是
 //! 哪一家。编码、解码、分类都是纯函数；真正发请求的是执行器。
 //!
 //! 认证头（[`Driver::auth`]）随施工 8-6；列模型（[`Driver::models_path`]、[`Driver::parse_models`]）随施工 8-7；`cache`
@@ -200,7 +200,7 @@ impl Decode for Decoder {
     }
 }
 
-/// Anthropic 的消息接口（施工 8-12，`docs/blueprint/drivers/anthropic.md`）：写法只有一套，没有开关，只带占位的几句。
+/// Anthropic 的消息接口（施工 8-12，`internal/blueprint/drivers/anthropic.md`）：写法只有一套，没有开关，只带占位的几句。
 #[derive(Debug, Clone)]
 pub struct Anthropic {
     texts: DriverTexts,
@@ -292,7 +292,7 @@ impl Decode for anthropic::Decoder {
     }
 }
 
-/// OpenAI 的 Responses 接口（施工 8-13，`docs/blueprint/drivers/openai-responses.md`）：写法只有一套，没有开关，只带占位的几句。
+/// OpenAI 的 Responses 接口（施工 8-13，`internal/blueprint/drivers/openai-responses.md`）：写法只有一套，没有开关，只带占位的几句。
 #[derive(Debug, Clone)]
 pub struct OpenAiResponses {
     texts: DriverTexts,

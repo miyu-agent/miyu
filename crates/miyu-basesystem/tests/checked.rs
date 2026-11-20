@@ -1,4 +1,4 @@
-//! 工具只碰判过的位置（施工 5-18，`docs/blueprint/tools/interface.md`「判过的位置」）：调用带着权限策略判过的真实位置，工具
+//! 工具只碰判过的位置（施工 5-18，`internal/blueprint/tools/interface.md`「判过的位置」）：调用带着权限策略判过的真实位置，工具
 //! 换出来的是其中一个才碰；不在里面的（判完以后路径上的链接被换过）一律不碰，说路径在判过以后变了。往下走目录的只核搜的
 //! 那个目录。附件（`send_message`）的在 `send_message/attachments.rs`。
 

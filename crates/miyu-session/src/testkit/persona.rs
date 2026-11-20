@@ -1,4 +1,4 @@
-//! 测试用的人格样本（施工 P-4 下：出厂不带人格）：`docs/designs/samples/personas/engineer/`，原来出厂的软件工程师。要人格的
+//! 测试用的人格样本（施工 P-4 下：出厂不带人格）：`internal/designs/samples/personas/engineer/`，原来出厂的软件工程师。要人格的
 //! 测试把它装进数据根，照旧用编号 `engineer`。
 
 use std::path::{Path, PathBuf};
@@ -11,7 +11,7 @@ pub const SAMPLE_PERSONA: &str = "engineer";
 
 /// 样本人格的目录。
 pub fn sample_persona_dir() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/designs/samples/personas/engineer")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../internal/designs/samples/personas/engineer")
 }
 
 /// 样本的字：人设那一句，没有示范对话、角色扮演提示。

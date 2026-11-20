@@ -1,4 +1,4 @@
-//! 一页怎么写（`docs/blueprint/tools/history.md`「怎么走」第 4、5 条，施工 6-4）：「找」一条一行，新的在前；「读」照
+//! 一页怎么写（`internal/blueprint/tools/history.md`「怎么走」第 4、5 条，施工 6-4）：「找」一条一行，新的在前；「读」照
 //! 先后，一条头一行、下面是原文。整页最多 [`PAGE`] 个字，和 `shell` 一样。
 
 use miyu_kernel::template::Template;

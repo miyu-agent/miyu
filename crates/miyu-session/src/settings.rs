@@ -1,4 +1,4 @@
-//! 会话这一块的配置项（`docs/blueprint/compaction.md` 第十五条第 7 条，施工 6-11 上）：提前压好 `compaction.prepare`；压缩
+//! 会话这一块的配置项（`internal/blueprint/compaction.md` 第十五条第 7 条，施工 6-11 上）：提前压好 `compaction.prepare`；压缩
 //! 触发线 `compaction.line`（施工 CT-1，第二条第 2 条）。
 //!
 //! 会话 actor 在回合开始冻结这一轮的配置时读它们（`actor/model.rs` 的 `turn_start`），跟着 `TurnStartHooksDone` 交给内核：

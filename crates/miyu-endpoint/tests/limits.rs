@@ -1,4 +1,4 @@
-//! 订阅的回应带会话的限额（施工 6-3 补，`docs/blueprint/protocol.md` 的 `subscribe`）：窗口、压缩线，没有的不写。
+//! 订阅的回应带会话的限额（施工 6-3 补，`internal/blueprint/protocol.md` 的 `subscribe`）：窗口、压缩线，没有的不写。
 //! 头每一种接进来的时候都拿得到：造完会话、别的连接中途接进来、订阅着再订阅、核心重启以后载入。回应还带会话接下来请求的
 //! 模型（施工 8-10）：替身的是 deepseek 的 deepseek-v4，没配 `models.chat` 的会话没有引用。
 //!

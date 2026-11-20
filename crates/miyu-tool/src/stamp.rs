@@ -1,4 +1,4 @@
-//! 文件的修改时间换成内核的时刻（施工 SW-1，`docs/blueprint/tools/show.md`「怎么走」第 3 条）：`show` 记进 `file.shown`，
+//! 文件的修改时间换成内核的时刻（施工 SW-1，`internal/blueprint/tools/show.md`「怎么走」第 3 条）：`show` 记进 `file.shown`，
 //! `session.shown` 读之前照它核对文件变没变。两头照同一个函数算，精度同事件的时刻（毫秒），不会因为取整不同对不上。
 
 use std::fs::Metadata;

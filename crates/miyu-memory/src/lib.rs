@@ -1,5 +1,5 @@
-//! 记忆这个软件包（施工 R-3 中，`docs/blueprint/memory.md`「工具」）：她用来碰自己的记忆的三件工具。不放进基础系统：记忆是
-//! 可选、能关的软件包（`docs/designs/10-自带软件.md` 第三节）。
+//! 记忆这个软件包（施工 R-3 中，`internal/blueprint/memory.md`「工具」）：她用来碰自己的记忆的三件工具。不放进基础系统：记忆是
+//! 可选、能关的软件包（`internal/designs/10-自带软件.md` 第三节）。
 //!
 //! - [`remember`]：记一条，或者改一条（`replaces`）；
 //! - [`forget`]：作废一条；

@@ -1,4 +1,4 @@
-//! 命令的回应什么时候回（`docs/blueprint/kernel/session.md`「命令和回应」第 3、4、8 条；施工 3-8 四补从 `session.rs` 挪出来，
+//! 命令的回应什么时候回（`internal/blueprint/kernel/session.md`「命令和回应」第 3、4、8 条；施工 3-8 四补从 `session.rs` 挪出来，
 //! 那边放不下了）：接受的记下编号、等它的事件落了盘；接受过的编号再来，照上一次回；回顾的结局不是「接受了」，也照这一套等。
 
 use super::Session;

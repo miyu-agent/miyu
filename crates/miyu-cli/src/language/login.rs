@@ -1,4 +1,4 @@
-//! `miyu provider login`、`list`、`logout` 给人看的字（施工 8-5，`docs/blueprint/config.md`「给人看的字」的「命令行」那张表、「样子」；
+//! `miyu provider login`、`list`、`logout` 给人看的字（施工 8-5，`internal/blueprint/config.md`「给人看的字」的「命令行」那张表、「样子」；
 //! 图纸没写到的几句 2026-10-01 主会话照施工员的推荐定；CL-2 下照设计 47 第三节改：结果行动词打头、不带句号，报错交
 //! [`Problem`]，建议另起一行）。key 从不出现在这里的任何一句里。
 

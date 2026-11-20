@@ -1,4 +1,4 @@
-//! 清空上下文（`docs/blueprint/compaction.md` 第十四条，施工 6-8 补）：`session.clear` 空闲时才收，单开一轮，压成一个空的
+//! 清空上下文（`internal/blueprint/compaction.md` 第十四条，施工 6-8 补）：`session.clear` 空闲时才收，单开一轮，压成一个空的
 //! 检查点。
 //!
 //! 和手动压缩（`manual.rs`）一样单开一轮、`turn.started` 没有触发，只是不请求模型：开头、检查点、结束三条同一批追加。检查点

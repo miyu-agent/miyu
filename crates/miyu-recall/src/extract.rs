@@ -1,4 +1,4 @@
-//! 抽取交回来的怎么读（施工 R-6 上，`docs/blueprint/memory.md` 第六条第 4 款）：模型交回一个 JSON 对象
+//! 抽取交回来的怎么读（施工 R-6 上，`internal/blueprint/memory.md` 第六条第 4 款）：模型交回一个 JSON 对象
 //! `{"memories": [{"class", "text", "turn", "about", "who", "people"}]}`，零条是常态（`who` 是认识的人那一类说的是谁，施工 E-1 上；
 //! `people` 是发生过的事那一类涉及谁，施工 E-1 修四）。纯逻辑：调的一方把这一段有哪几轮、一条最多几个字交进来。
 //!

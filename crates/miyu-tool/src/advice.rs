@@ -1,4 +1,4 @@
-//! 问顾问的形状（设计 `69-旗舰顾问.md` 第三节，施工 ADV-1、ADV-2，`docs/blueprint/tools/advisor.md`）：`advisor` 这件工具经
+//! 问顾问的形状（设计 `69-旗舰顾问.md` 第三节，施工 ADV-1、ADV-2，`internal/blueprint/tools/advisor.md`）：`advisor` 这件工具经
 //! 派子代理的端口（[`crate::AgentPort::advise`]）问旗舰池里的模型。端口同步等顾问答完，交回回答原文和顾问会话的编号。
 //!
 //! 和派子代理不同：派子代理是派活，当场交回编号、它在后台跑；问顾问是问主意，等它这一轮答完才交回（设计 69 第二节「同步、

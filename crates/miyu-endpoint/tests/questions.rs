@@ -1,4 +1,4 @@
-//! 回答提问（施工 D-2，`docs/blueprint/protocol.md` 的 `session.answer`，`tools/ask_user.md`）：真核心、真的 `ask_user`。
+//! 回答提问（施工 D-2，`internal/blueprint/protocol.md` 的 `session.answer`，`tools/ask_user.md`）：真核心、真的 `ask_user`。
 //! 她问一道题，日志里有 `question.asked`（选项带 `preview`）；`session.answer` 交回答（带 `notes`），回应列出事件，她收到的
 //! 结果一道一行；选了题目里没有的是 `bad_answer`，什么都没记。
 

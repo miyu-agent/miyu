@@ -1,6 +1,6 @@
 [package]
 name = "miyu-mcp"
-description = "MCP 的客户端：经标准输入输出说 MCP，两个时代都认，列工具、调工具（施工 X-1，docs/blueprint/mcp.md）"
+description = "MCP 的客户端：经标准输入输出说 MCP，两个时代都认，列工具、调工具（施工 X-1，internal/blueprint/mcp.md）"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

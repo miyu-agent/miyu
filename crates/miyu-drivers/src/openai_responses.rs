@@ -1,4 +1,4 @@
-//! OpenAI 的 Responses 接口（`docs/blueprint/drivers/openai-responses.md`，施工 8-13）：OpenAI 官方、opencode Zen 上的 GPT
+//! OpenAI 的 Responses 接口（`internal/blueprint/drivers/openai-responses.md`，施工 8-13）：OpenAI 官方、opencode Zen 上的 GPT
 //! 说这一种。
 //!
 //! 不存对话：每次请求带全部历史、`"store":false`，不用 `previous_response_id`，对话的真相只在我们的日志里。统一的请求照那一页

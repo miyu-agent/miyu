@@ -1,4 +1,4 @@
-//! 头叫核心停下（施工 DT-4 下，`docs/blueprint/protocol.md` 方法表的 `core.stop`、`core.md`「停下」）：只给出示本机令牌连上的，
+//! 头叫核心停下（施工 DT-4 下，`internal/blueprint/protocol.md` 方法表的 `core.stop`、`core.md`「停下」）：只给出示本机令牌连上的，
 //! 回应 `{}` 写出去以后核心才收到叫停；设备令牌连上的回 `local_only`，远程的回 `local_machine_only`，核心照旧在跑。
 
 use std::sync::Arc;

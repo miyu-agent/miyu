@@ -1,4 +1,4 @@
-//! 私聊里带的东西的记号要用的字（施工 O-35，`docs/blueprint/kernel/request.md`「群里的一行」私聊那一条）：语音那一句
+//! 私聊里带的东西的记号要用的字（施工 O-35，`internal/blueprint/kernel/request.md`「群里的一行」私聊那一条）：语音那一句
 //! （`core/venues/voice.txt`，O-33 冻进群会话的同一份），造会话时冻结在策略快照的 `core.private_media`。放在 `core` 这一层：
 //! 私聊会话的快照没有 `group`（同 `core.forward`，施工 O-34）。它也是「O-35 起造的会话」的标志：有它的私聊，带了东西的那条
 //! 写出 `[msg=…]` 和记号那一行；以前造的快照里没有，读成没有，私聊照以前渲染，一个字节不变。

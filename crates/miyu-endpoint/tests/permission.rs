@@ -1,4 +1,4 @@
-//! 切权限级别（施工 3-8 再补，`docs/blueprint/protocol.md` 的 `session.set_permission_level`）：协议上切到完全放开、
+//! 切权限级别（施工 3-8 再补，`internal/blueprint/protocol.md` 的 `session.set_permission_level`）：协议上切到完全放开、
 //! 开只读、两样一起换，各记一条 `session.policy_changed`、推给订阅着的头，回应是 `{}`；和现在一样的什么都不记；两格都
 //! 不写、格的值不对是参数不对；没有的会话是找不到，停了的会话是停了。回合进行中收紧成只读，这一步里等着的写入当场拦下：
 //! 真核心走一遍。

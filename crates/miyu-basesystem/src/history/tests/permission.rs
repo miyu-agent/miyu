@@ -1,4 +1,4 @@
-//! 人切权限级别（施工 2-7 补，`docs/blueprint/tools/history.md`「哪些算一条」）：带 `permission` 的 `session.policy_changed`
+//! 人切权限级别（施工 2-7 补，`internal/blueprint/tools/history.md`「哪些算一条」）：带 `permission` 的 `session.policy_changed`
 //! 算一条，「谁」是 `user`，原文写切成了哪一级；找、读都有；筛 `user` 时在，筛 `assistant`、`tool` 时不在。撤销不改现在的
 //! 权限，撤掉的回合里切的照样列；只换了策略快照的不算。
 

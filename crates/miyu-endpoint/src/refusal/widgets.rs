@@ -1,4 +1,4 @@
-//! 界面块的两种拒绝（施工 X-15 中，`docs/blueprint/widgets.md`「程序发给核心」）。
+//! 界面块的两种拒绝（施工 X-15 中，`internal/blueprint/widgets.md`「程序发给核心」）。
 
 use super::Refusal;
 

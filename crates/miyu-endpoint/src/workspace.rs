@@ -1,4 +1,4 @@
-//! 换会话在哪个目录干活（施工 9-7 上，`docs/blueprint/protocol.md`「`session.set_workspace`」）：工作区是会话的属性，只有人
+//! 换会话在哪个目录干活（施工 9-7 上，`internal/blueprint/protocol.md`「`session.set_workspace`」）：工作区是会话的属性，只有人
 //! 明确换才变（网页里选、`/workspace`），一个头换了别的头跟着变（订阅着的收到 `session.workspace_changed`，会话列表那一项的
 //! `cwd` 跟着变）。头每句话报的目录不再换它。
 //!

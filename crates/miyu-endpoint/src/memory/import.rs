@@ -1,4 +1,4 @@
-//! 人经协议把别处的记忆导进来（`memory.import`，施工 MI-1，`docs/blueprint/memory.md`「协议」）：旧版的迁移包照它把知识点
+//! 人经协议把别处的记忆导进来（`memory.import`，施工 MI-1，`internal/blueprint/memory.md`「协议」）：旧版的迁移包照它把知识点
 //! 导成新的记忆，保住原来记下的时刻。一批先全查，一条不对整批不写，`bad_params` 的 `data` 说是第几条、哪一项；查过的交给
 //! [`Keeper::import`] 照 `origin` 去重、记下，导进了的在后台写关键词、补向量、照 E-9 看一眼够不够整理。
 //!

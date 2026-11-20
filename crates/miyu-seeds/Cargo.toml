@@ -1,6 +1,6 @@
 [package]
 name = "miyu-seeds"
-description = "从一张图挑主题色的候选：核心算人格的头像，两个头算壁纸，同一份解码、缩图、量化、打分（施工 P-6 补，docs/blueprint/personas.md）"
+description = "从一张图挑主题色的候选：核心算人格的头像，两个头算壁纸，同一份解码、缩图、量化、打分（施工 P-6 补，internal/blueprint/personas.md）"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

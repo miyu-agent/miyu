@@ -1,4 +1,4 @@
-//! 她用得上的技能（施工 X-10 上，`docs/blueprint/skills.md`「技能」第 2、3 条）：找、system 里列出来的那一块、权限策略单独
+//! 她用得上的技能（施工 X-10 上，`internal/blueprint/skills.md`「技能」第 2、3 条）：找、system 里列出来的那一块、权限策略单独
 //! 放开只读的文件夹。
 //!
 //! 造会话时照这一刻装了的软件包和数据根里的找（`miyu_store::skills`），拼好的一块钉进快照，会话中途不改（列表变了的走
@@ -22,7 +22,7 @@ use crate::TARGET;
 use crate::path_text::path_text;
 
 /// XG-2 以前的快照里读文件那件工具的名字（基本系统的 `read`）：那时的快照里一件都没写职能，照它认（[`reads_files`]）。
-/// 只给老快照用，以后不再加别的名字（`docs/designs/64-工具职能.md` 第七节）。
+/// 只给老快照用，以后不再加别的名字（`internal/designs/64-工具职能.md` 第七节）。
 const LEGACY_READ: &str = "read";
 
 /// 工具面 `face` 上有没有一件读文件的（声明了 [`Role::ReadFile`] 的，施工 XG-2 上）：没有的，列出来她也读不了，不列技能。

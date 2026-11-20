@@ -1,4 +1,4 @@
-//! 查和停（施工 7-4，`docs/blueprint/session/tools.md`「查和停」）：任务端口的 `list`、`output`、`stop`，和 actor 替人停、替
+//! 查和停（施工 7-4，`internal/blueprint/session/tools.md`「查和停」）：任务端口的 `list`、`output`、`stop`，和 actor 替人停、替
 //! 父会话停下时用的几样。都照 [`super::Roster`] 查是什么、结束了没有。头经协议读后台命令的输出（施工 7-4 补）也在这里，
 //! 读的和 `jobs` 是同一份（[`Shared::output`]）。
 

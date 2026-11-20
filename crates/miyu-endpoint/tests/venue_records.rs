@@ -1,4 +1,4 @@
-//! 场所的格、事件和 `events.append`（施工 O-13 上，`docs/construction/O-13-场所的格、事件和 events.append（上）.md`）：
+//! 场所的格、事件和 `events.append`（施工 O-13 上，`internal/construction/O-13-场所的格、事件和 events.append（上）.md`）：
 //! `session.send` 带 `venue` 原样记进 `message.user`、旁听的不开回合、写错的什么都不记；`events.append` 记扩展自己的
 //! `ext.*` 和核心认得的 `venue.recalled`、`venue.delivered`，不带回合编号、回应交序号；种类、大小、格不对的拒。带的东西的
 //! `size`（施工 O-33）原样记，不是非负整数的拒。

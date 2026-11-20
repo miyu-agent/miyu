@@ -1,4 +1,4 @@
-//! 查目录的两个切口（施工 V-25 上，`docs/blueprint/models.md`「怎么走」第二条第 4 条）：路由每一轮读目录，最后只落到这两处——
+//! 查目录的两个切口（施工 V-25 上，`internal/blueprint/models.md`「怎么走」第二条第 4 条）：路由每一轮读目录，最后只落到这两处——
 //! 认一家配好的供应商、取目录里那一家的几格（[`provider_side`]），对一个模型、取目录里那一条（[`model_side`]）。合资料
 //! （[`crate::provider::provider`]、[`crate::facts::facts`]）只经 [`CatalogLookup`] 取这两样，不再直接碰目录。
 //!

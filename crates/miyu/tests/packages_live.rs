@@ -1,4 +1,4 @@
-//! 装卸以后生成的文件当场跟着换（施工 F-5 补，`docs/blueprint/packages.md`「配置项」第 2 条）：真的 `miyu core`，经协议装上
+//! 装卸以后生成的文件当场跟着换（施工 F-5 补，`internal/blueprint/packages.md`「配置项」第 2 条）：真的 `miyu core`，经协议装上
 //! 一个声明了配置项的包，`state/config/` 的参考文件照新的清单重写、有它那一组（包的配置项的字照核心这时的清单）；卸掉又没了。
 
 use std::time::Duration;

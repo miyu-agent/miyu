@@ -1,4 +1,4 @@
-//! 熔断装进快照的数（`docs/blueprint/compaction.md` 第十条，施工 6-6 上）：连续失败几次、几个回合内又到线算快、连着快
+//! 熔断装进快照的数（`internal/blueprint/compaction.md` 第十条，施工 6-6 上）：连续失败几次、几个回合内又到线算快、连着快
 //! 几次就暂停自动压缩。以前造的快照里没有，读成没有：那些会话不熔断。
 
 use miyu_kernel::session::Pause;

@@ -1,4 +1,4 @@
-//! 用量汇总（施工 8-15，`docs/designs/07-存储.md` 第六节、S3，`docs/blueprint/models.md`「怎么走」第九条第 4 到 6 条）：
+//! 用量汇总（施工 8-15，`internal/designs/07-存储.md` 第六节、S3，`internal/blueprint/models.md`「怎么走」第九条第 4 到 6 条）：
 //! `state/usage.db`，一个核心一份 SQLite，一个连接一直开着（和会话列表的索引一样，[`crate::sqlite`]）。它是派生的：真相是
 //! 会话的日志（`model.called`）和日志 `journal.jsonl` 里的 `usage.purged`、`usage.oneshot`，表随时可以删掉照它们重建。
 //!

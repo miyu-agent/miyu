@@ -1,4 +1,4 @@
-"""工具一步和 jcode 比（施工 V-29，蓝图 `docs/blueprint/perf.md`「工具一步」）：同一个假模型（`toolfake.py`），两家各收到
+"""工具一步和 jcode 比（施工 V-29，蓝图 `internal/blueprint/perf.md`「工具一步」）：同一个假模型（`toolfake.py`），两家各收到
 同样意思的工具调用（工具名、参数照各家自己给模型的工具表），量假模型写完带调用的回答（`[DONE]`）到读全带着结果的
 下一个请求头，和这一段那一家的 cgroup 花的 CPU（含子进程）。
 

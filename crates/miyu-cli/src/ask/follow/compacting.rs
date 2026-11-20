@@ -13,7 +13,7 @@ use crate::ask::usage::thousands;
 use crate::language::Language;
 use crate::shown::{Ink, Line, write};
 
-/// 内核在摘要请求调了工具、接着改走隔离式时，原话末尾写的（`docs/blueprint/compaction.md` 第三条第 7 条）。
+/// 内核在摘要请求调了工具、接着改走隔离式时，原话末尾写的（`internal/blueprint/compaction.md` 第三条第 7 条）。
 const ISOLATING: &str = "trying again without tools";
 
 /// 正在压缩的那一次。

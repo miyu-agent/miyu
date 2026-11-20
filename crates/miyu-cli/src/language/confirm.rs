@@ -1,4 +1,4 @@
-//! `miyu pkg install`、`remove` 做之前印的那一份、问的那一句（施工 F-8 下补，`docs/blueprint/cli/pkg.md`「给人看的字」；CL-2 补
+//! `miyu pkg install`、`remove` 做之前印的那一份、问的那一句（施工 F-8 下补，`internal/blueprint/cli/pkg.md`「给人看的字」；CL-2 补
 //! 照设计 47 第三节改：问的一句是「<动作> '<对象>'？[Y/n]」，没得答的是报错带建议）。
 
 use super::Language;

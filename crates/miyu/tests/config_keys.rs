@@ -1,4 +1,4 @@
-//! 真核心上 `miyu config` 认人敲的键（施工 8-3 补，`docs/blueprint/cli/config.md`「怎么走」第 8 条）：带多余引号的模型键
+//! 真核心上 `miyu config` 认人敲的键（施工 8-3 补，`internal/blueprint/cli/config.md`「怎么走」第 8 条）：带多余引号的模型键
 //! 照核心的写法规整，`set`、`explain`、`unset` 找得到回应；模型那一块是 `next_turn`，说「下一轮生效」。
 
 use crate::support::cli::{run, stderr, stdout};

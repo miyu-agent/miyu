@@ -1,4 +1,4 @@
-//! 列表上的开关（施工 F-6 上，`docs/blueprint/package-pages.md`「开关」）：头只发 `package.enable`、`package.disable`，怎么做照
+//! 列表上的开关（施工 F-6 上，`internal/blueprint/package-pages.md`「开关」）：头只发 `package.enable`、`package.disable`，怎么做照
 //! 种类定。扩展开关进程（同 `extension.enable`、`extension.disable`）；出厂的内置包关是卸掉（在家目录记一笔）、开是装回来；
 //! 别的包（施工 UX-1 补：人人有开关）只记在 `extensions.json` 的 `on`。关着的包带来的一切都不在（`off.rs`），开关以后
 //! 知识库、给别的包带的内容、本机的向量模型照开着的包重算（[`Core::follow_switches`]）。`package.restart`（施工 X-4）重启扩展的进程和带的 MCP 服务、`bundle` 带的服务。

@@ -1,4 +1,4 @@
-//! 长期目标（施工 X-8 上，`docs/blueprint/tools/goal.md`）：执行器这一头的目标端口。
+//! 长期目标（施工 X-8 上，`internal/blueprint/tools/goal.md`）：执行器这一头的目标端口。
 //!
 //! - 一次调用一个端口，只给本机的主会话（[`port`]，`Agents::lists_sessions`）：工具面上的 `goal` 也只有它们有。
 //! - 工具交来要做的 → 经回传的通道送回 actor（[`Back::Goal`]）→ 看的当场答；改的交内核 `Goal` 命令、记下等它的回应，把等的口子

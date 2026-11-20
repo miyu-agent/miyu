@@ -1,4 +1,4 @@
-//! 场景：脚本里的 `miyu call`（施工 M-1，`docs/blueprint/kernel/session.md`「嵌套调用」）。前台 `shell` 下面几次调用照
+//! 场景：脚本里的 `miyu call`（施工 M-1，`internal/blueprint/kernel/session.md`「嵌套调用」）。前台 `shell` 下面几次调用照
 //! 队派、先记完再记父调用的结果；父级先结束的收尾；链的几种结论；查不过的不记；两道上限；后台任务下面的在回合外记、任务
 //! 报告之前收齐；打断、崩了。
 

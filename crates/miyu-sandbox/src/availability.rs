@@ -1,4 +1,4 @@
-//! 这台机器上的沙盒能不能用、为什么（`docs/blueprint/sandbox.md`「能不能用」，施工 5-4 下）：核心起来时探一次得出来，
+//! 这台机器上的沙盒能不能用、为什么（`internal/blueprint/sandbox.md`「能不能用」，施工 5-4 下）：核心起来时探一次得出来，
 //! 交给协议端点。能用的带着助手的路径，造会话、载入时交给会话；用不了的带着原因，握手时报给头。
 
 use std::path::{Path, PathBuf};
@@ -41,7 +41,7 @@ impl Unusable {
         Unusable::NoMechanism,
     ];
 
-    /// 协议上的写法（`docs/blueprint/protocol.md` 握手的回应）。
+    /// 协议上的写法（`internal/blueprint/protocol.md` 握手的回应）。
     pub const fn code(self) -> &'static str {
         match self {
             Unusable::HelperMissing => "helper_missing",

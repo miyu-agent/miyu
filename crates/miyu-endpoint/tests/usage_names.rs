@@ -1,4 +1,4 @@
-//! 用途给人看的名字（施工 UP-3，`docs/blueprint/models.md`「协议」`usage.query`）：照 `purpose` 分组的每一行带 `purpose_name`，
+//! 用途给人看的名字（施工 UP-3，`internal/blueprint/models.md`「协议」`usage.query`）：照 `purpose` 分组的每一行带 `purpose_name`，
 //! 照连接的语言：核心自己的照字表（没写用途的主请求是「主对话」），扩展写的照包清单 `[[purpose]]` 声明的（几个包声明同一个的
 //! 照包的编号排第一的，核心自己有的扩展改不了名），都没有的不写。不照 `purpose` 分组的不带。
 

@@ -1,4 +1,4 @@
-//! 斜杠命令模板（施工 X-14 上，`docs/blueprint/slash.md`）：真核心走一遍。家目录、装了的包里的 `commands/<名字>.md` 照参数展开
+//! 斜杠命令模板（施工 X-14 上，`internal/blueprint/slash.md`）：真核心走一遍。家目录、装了的包里的 `commands/<名字>.md` 照参数展开
 //! 成一句发出去：日志里 `blocks` 是展开的那段、`command` 是人敲的那一行，视图、撤销照那一行；不另回执、不记 `command.ran`。
 //! 自己放的盖住包里的，内置的赢；预设关了的拒 `command_not_allowed`、说清哪个预设；`command.catalog`、`preset.get` 列出来。
 

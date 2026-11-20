@@ -1,4 +1,4 @@
-//! 别的会话发来的话（施工 C-2，`docs/blueprint/tools/history.md`「哪些算一条」，`cross-session.md` 第二条第 4 款）：找、读的
+//! 别的会话发来的话（施工 C-2，`internal/blueprint/tools/history.md`「哪些算一条」，`cross-session.md` 第二条第 4 款）：找、读的
 //! 「谁」那一格写 `session <短编号>`；筛 `user` 时在里面，筛 `assistant`、`tool` 时不在。父会话的话照旧是 `user`。
 
 use super::*;

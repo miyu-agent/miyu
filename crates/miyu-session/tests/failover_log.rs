@@ -1,4 +1,4 @@
-//! 换端点的两行运行日志（`docs/blueprint/models.md`「出错」运行时那张表、`log.md`，施工 8-9）：记冷却的
+//! 换端点的两行运行日志（`internal/blueprint/models.md`「出错」运行时那张表、`log.md`，施工 8-9）：记冷却的
 //! `endpoint cooling`，换到池里别的成员的 `failover`（从哪个到哪个），都带会话编号；key 的值不进日志。施工 8-25 起一家一个
 //! key，换端点只在池的成员之间。
 //!

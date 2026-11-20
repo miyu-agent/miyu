@@ -1,4 +1,4 @@
-//! 包和别处的几条连线（施工 F-1，设计 `30-插件框架.md` 第五节、第六节，`docs/blueprint/packages.md`「格式」）：平台接入
+//! 包和别处的几条连线（施工 F-1，设计 `30-插件框架.md` 第五节、第六节，`internal/blueprint/packages.md`「格式」）：平台接入
 //! `[connection]`、依赖的包 `[depends]`、`[recommends]`（施工 F-11 起什么种类都行，PK-2 起能带版本下限）、小程序自己的 `[worker]`。
 
 use toml_edit::{Item, TableLike};

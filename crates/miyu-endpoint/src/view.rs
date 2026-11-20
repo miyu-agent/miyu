@@ -1,7 +1,7 @@
-//! `view.page`：历史按页读（施工 9-6 下，`docs/blueprint/protocol.md`「`view.page`」）；`view.detail`：一次调用的完整差异
+//! `view.page`：历史按页读（施工 9-6 下，`internal/blueprint/protocol.md`「`view.page`」）；`view.detail`：一次调用的完整差异
 //! （施工 9-6 三补，`view/detail.rs`）。头接一个老会话时先拿最新一页画出来，
 //! 再 `subscribe {"after": last}` 只接新的；往上翻到顶拿这一页的 `first` 当 `before` 要更早的一页。页里是原始事件，写法同补发；
-//! 写了 `view: true` 的换成视图投影算好的条目（施工 9-8 中，`view/project.rs`，`docs/blueprint/view.md`）；视图流订阅时
+//! 写了 `view: true` 的换成视图投影算好的条目（施工 9-8 中，`view/project.rs`，`internal/blueprint/view.md`）；视图流订阅时
 //! 照同一个切法拿最新一页（施工 9-8 下，[`newest`]）。怎么切在 `view/page.rs`。
 //!
 //! 只读地读会话目录里的日志，不为翻历史载入会话：读的时候会话照常跑，正在写的那半行不算。只读一页要的那一截（施工 V-41

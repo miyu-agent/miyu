@@ -1,4 +1,4 @@
-//! 场景：确认到时没人确认（施工 CD-1，`docs/blueprint/kernel/asking.md`「到时没人确认」）。执行器替身记下内核交出的截止时刻，
+//! 场景：确认到时没人确认（施工 CD-1，`internal/blueprint/kernel/asking.md`「到时没人确认」）。执行器替身记下内核交出的截止时刻，
 //! 测试照它送「到时了」：直接调用的、脚本里调的都由内核替人拒绝，`by` 是内核；排在后面的那一件接着过链；人先答了的不理。
 
 use super::nested::{SHELL, answered, nested, running_shell, settled};

@@ -1,4 +1,4 @@
-//! 读一份配置的字（`docs/blueprint/config.md`「怎么走」第二条第 3 条，施工 8-2）：用 `toml_edit` 解析，照清单一项项认，
+//! 读一份配置的字（`internal/blueprint/config.md`「怎么走」第二条第 3 条，施工 8-2）：用 `toml_edit` 解析，照清单一项项认，
 //! 记下每一项在第几行；类型、层不对的那一项报问题、不收，别的照收（G8：只丢写错的那一项）。
 //!
 //! - TOML 写法不对：整份的问题 `syntax`，行、列照 `toml_edit` 报的位置，为什么只取它的原话，不带它印出来的那一行
@@ -381,7 +381,7 @@ fn node_value(kind: Kind, node: &Node) -> Option<Value> {
 ///
 /// 只认 TOML 的形状，不查值合不合类型：读出来的还要过 [`Kind::check`]（范围、选项、写法）。读不成的是空的，调用的一方照
 /// `wrong_type` 报。公开给别的 crate 读自己的 TOML 时照配置清单的类型认（施工 O-1：群聊内核的场所规则，
-/// `docs/blueprint/chat.md`「在哪」）。
+/// `internal/blueprint/chat.md`「在哪」）。
 pub fn read(kind: Kind, value: &TomlValue) -> Option<Value> {
     match (kind, value) {
         (

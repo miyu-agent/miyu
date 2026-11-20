@@ -1,4 +1,4 @@
-//! 交给 MXC 的禁止路径先挑一遍（施工 SW-1，`docs/blueprint/sandbox/windows-run.md`「怎么走」第 2 条第 4 款）：MXC 把禁止路径
+//! 交给 MXC 的禁止路径先挑一遍（施工 SW-1，`internal/blueprint/sandbox/windows-run.md`「怎么走」第 2 条第 4 款）：MXC 把禁止路径
 //! 原样交给系统的 `CreateProcessSecurityEnvironment`，系统要一条条打开它们；正被别的进程独占打开的文件（用户登录着时的
 //! `NTUSER.DAT`、`UsrClass.dat`）打不开，整个安全环境建不成（`0x80070020` 共享冲突），这一条命令就跑不了。这样的文件谁都
 //! 读不到，跳过它不少挡什么，照样跑；目录、不在的、别的错照旧交上去。

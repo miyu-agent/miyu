@@ -1,4 +1,4 @@
-//! 等人确认到时自动拒（施工 CD-1，`docs/blueprint/kernel/asking.md`「到时没人确认」，配置 `permission.confirm.timeout`）：会话
+//! 等人确认到时自动拒（施工 CD-1，`internal/blueprint/kernel/asking.md`「到时没人确认」，配置 `permission.confirm.timeout`）：会话
 //! actor 照这一轮的配置把等多久交给内核，内核记请求时写上截止的时刻、交出到时叫醒，actor 起定时的任务，到时送回去。没人确认
 //! 的，内核替人拒绝，她拿到那一句接着干；人先答了的照常跑；配 `0` 的一直等；没配的等 5 分钟。
 //!

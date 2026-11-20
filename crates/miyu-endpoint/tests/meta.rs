@@ -1,4 +1,4 @@
-//! 改标题、置顶（施工 3-8 三补，`docs/blueprint/protocol.md` 的 `session.set_meta`）：改名、去标题、置顶、两样一起改，
+//! 改标题、置顶（施工 3-8 三补，`internal/blueprint/protocol.md` 的 `session.set_meta`）：改名、去标题、置顶、两样一起改，
 //! 各记一条 `session.meta_changed`（只写改了的那几格）、推给订阅着的头，回应是 `{}`；和现在一样的什么都不记；两格都不写、
 //! 标题空的、太长的、格的值不对是参数不对；没有的会话是找不到。`session.list` 每一项带上标题、置顶，核心重启以后照样。
 

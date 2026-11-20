@@ -1,4 +1,4 @@
-//! 会话的路由里的池（`docs/blueprint/models.md`「守着它的」`route.rs` 那一行 8-8 的一半，施工 8-8）：两台假服务器各是一家。
+//! 会话的路由里的池（`internal/blueprint/models.md`「守着它的」`route.rs` 那一行 8-8 的一半，施工 8-8）：两台假服务器各是一家。
 //! 钉住的池一个会话一直发给一个成员，新会话照指针分开；载入时照最近一条发出去了的 `model.called` 认回钉着的；指针写进
 //! `state/models/pools.json`；轮换的每次请求换下一个；这时用不了的成员跳过、钉到下一个；池没了退回 `models.chat`；限额照
 //! 钉着的成员，轮换的取小的；`session.created` 记下会话的引用，没写的照那一刻的 `models.chat`，之后改它不影响（施工 SM-1）。

@@ -1,4 +1,4 @@
-//! 温度在协议上的样子（施工 8-22，`docs/blueprint/models.md`「协议」「怎么走」第十四条）：`model.list` 的 `facts` 多
+//! 温度在协议上的样子（施工 8-22，`internal/blueprint/models.md`「协议」「怎么走」第十四条）：`model.list` 的 `facts` 多
 //! `temperature`（配置的默认，带完整的配置键名 `key`）和 `takes_temperature`（目录说的能不能调）；配置里写的这个模型
 //! 用不了的（目录说不收的、超过 Anthropic 的上限 1 的）报 `unusable_temperature`、算进 `config_errors`，`config.check`
 //! 照新的字查；`config.set` 写温度下一轮生效，超出 0 到 2 的照清单拒。

@@ -1,4 +1,4 @@
-//! 装、卸（施工 F-5 上，设计 `30-插件框架.md` 第九节，`docs/blueprint/packages.md`「装卸」）：`package.install`、
+//! 装、卸（施工 F-5 上，设计 `30-插件框架.md` 第九节，`internal/blueprint/packages.md`「装卸」）：`package.install`、
 //! `package.remove` 改你装的那一层（照请求分在 `asked.rs`，施工 U23 下上；磁盘上
 //! 怎么做在 `miyu_store::packages::install`），做完照两层重读、当场换掉核心手里的清单（[`Core::reload_packages`]）：
 //! `package.list`、预设的功能、开着的会话下一个回合都照新的。一次只做一件。

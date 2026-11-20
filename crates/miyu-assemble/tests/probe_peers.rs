@@ -1,7 +1,7 @@
-//! 请求形状探针：有别的会话来话、有空了的通知的会话（施工 C-2、C-6，`docs/blueprint/kernel/request.md`「别的会话发来的话」
+//! 请求形状探针：有别的会话来话、有空了的通知的会话（施工 C-2、C-6，`internal/blueprint/kernel/request.md`「别的会话发来的话」
 //! 「空了的通知」）。真内核照剧本跑：人问一句；别的会话（短编号 `22334455`）闲着时说一句，开了第二轮；人再问，她读文件的
 //! 时候它又说一句，排在那一步的工具结果后面；人让她订另一个会话（短编号 `9f03b21c`）「空了告诉我」，她订了；那个会话空下来，
-//! 通知开了一轮。每一次请求和存档（`docs/designs/samples/probe/peers/`）逐字节比，查五条性质；和同一份剧本里换成人说的比，
+//! 通知开了一轮。每一次请求和存档（`internal/designs/samples/probe/peers/`）逐字节比，查五条性质；和同一份剧本里换成人说的比，
 //! 每一次请求只多标签那两段（通知两边都有）。
 
 use crate::support::{check, files, matches_the_archive, sent, stage};

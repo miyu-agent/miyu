@@ -1,4 +1,4 @@
-//! `provide {tools}`（施工 O-2 上，`docs/blueprint/providers.md`）：核心拉起的扩展把它现在提供的全部工具登记进核心的工具目录，
+//! `provide {tools}`（施工 O-2 上，`internal/blueprint/providers.md`）：核心拉起的扩展把它现在提供的全部工具登记进核心的工具目录，
 //! 归它的包，换掉它上一次登记的；记下这个包现在由这个连接提供（[`Provided`]）。连接断了，工具照旧留在目录里，被调到时回
 //! 「暂时不可用」。登记缓存在磁盘上，核心起来、开扩展时先照缓存登记；关掉扩展，它的工具出目录（施工 O-2 中，[`cache`]）。
 
@@ -130,7 +130,7 @@ struct ToolParams {
     /// 照旧。1 到 64 个字，写法同包的编号（小写字母开头，小写字母、数字、`-`）；别的写法 `bad_tool`，`problem` 是 `plugin`。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     plugin: Option<Value>,
-    /// 职能（施工 XG-2 下，`docs/designs/64-工具职能.md` 第四节）：核心要找「哪件是干这个的」时照它认，不照名字。取值同出厂的说明
+    /// 职能（施工 XG-2 下，`internal/designs/64-工具职能.md` 第四节）：核心要找「哪件是干这个的」时照它认，不照名字。取值同出厂的说明
     /// 文件（`read_file`）；别的写法 `bad_tool`，`problem` 是 `role`。不写的没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     role: Option<Value>,
@@ -138,7 +138,7 @@ struct ToolParams {
     /// 管。别的写法 `bad_tool`，`problem` 是 `scope`。不写的是 `any`。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     scope: Option<Value>,
-    /// 哪几个参数是路径（施工 XG-1 上，`docs/designs/63-扩展工具的效果和声明.md` 第二、三节）：`[{"parameter", "write"?}]`，核心
+    /// 哪几个参数是路径（施工 XG-1 上，`internal/designs/63-扩展工具的效果和声明.md` 第二、三节）：`[{"parameter", "write"?}]`，核心
     /// 照它报要碰的路径、过权限链，回应里的文件效果只收过了链的。写法见 [`declared::paths`]；不对的 `bad_tool`，`problem` 是
     /// `paths`。不写的没有：调用不报路径，文件效果一条都不收。
     #[serde(default, skip_serializing_if = "Option::is_none")]

@@ -84,8 +84,8 @@ struct Repo(std::path::PathBuf);
 impl Repo {
     fn new(name: &str) -> Repo {
         let dir = std::env::temp_dir().join(format!("xtask-{name}-{}", std::process::id()));
-        std::fs::create_dir_all(dir.join("docs/designs")).unwrap();
-        std::fs::create_dir_all(dir.join("docs/blueprint")).unwrap();
+        std::fs::create_dir_all(dir.join("internal/designs")).unwrap();
+        std::fs::create_dir_all(dir.join("internal/blueprint")).unwrap();
         std::fs::create_dir_all(dir.join("resources/core")).unwrap();
         std::fs::create_dir_all(dir.join("resources/tools")).unwrap();
         std::fs::write(dir.join(crate::ledger::PATH), LEDGER).unwrap();

@@ -1,4 +1,4 @@
-//! 配置里的 MCP 服务（施工 F-9 上，`docs/blueprint/mcp.md`「系统配置里的一张表」）：写错的照行报，`code` 同清单的
+//! 配置里的 MCP 服务（施工 F-9 上，`internal/blueprint/mcp.md`「系统配置里的一张表」）：写错的照行报，`code` 同清单的
 //! （`bad_mcp`、`unknown_key`）；盖住了包里同名服务的，报在那个包的清单上（`mcp_covered`，说被谁盖住，同 `script_covered`）。
 //! 列出来却没登记的工具（施工 X-37，[`skipped`]）：配置里的、包带的服务，这一次列完有没登记的，各报一条 `mcp_tool_skipped`。
 

@@ -1,4 +1,4 @@
-//! 叫停人叫的整理（施工 R-22，`docs/blueprint/memory.md` 第七条第 13 款）：会话的 `/stop`、`/dream stop` 停这个会话叫的那一趟，
+//! 叫停人叫的整理（施工 R-22，`internal/blueprint/memory.md` 第七条第 13 款）：会话的 `/stop`、`/dream stop` 停这个会话叫的那一趟，
 //! 协议的 `memory.dream_stop` 停这一间人叫的那一趟，不管是哪一路叫的（施工 R-23）。合完了的批留着，正在合的那一批放弃、下次
 //! 整理再合，不回退。定时的听不见。
 

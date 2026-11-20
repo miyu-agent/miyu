@@ -1,4 +1,4 @@
-//! 蓝图里标着「样本」的块（`docs/blueprint/README.md` 第三节，施工 4-9 三补）：块前一行以 `` 样本 `<路径>` `` 开头，
+//! 蓝图里标着「样本」的块（`internal/blueprint/README.md` 第三节，施工 4-9 三补）：块前一行以 `` 样本 `<路径>` `` 开头，
 //! 块里的字加一个换行，就是那份文件的全部字节。门禁照着逐字节比，只改一边，另一边就红。算在「文档」那一项里。
 
 use std::path::Path;
@@ -6,7 +6,7 @@ use std::path::Path;
 use crate::drawing;
 
 /// 蓝图在仓库里的位置。
-const BLUEPRINT: &str = "docs/blueprint";
+const BLUEPRINT: &str = "internal/blueprint";
 
 /// 样本块前面那一行的开头。
 const MARK: &str = "样本 ";

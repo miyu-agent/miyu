@@ -1,9 +1,9 @@
-//! 空闲的会话退下，把手这一头（施工 V-2 再补，`docs/designs/07-存储.md` 第七节「会话按需载入」第 3 条，
-//! `docs/blueprint/session/actor.md`「退下」）：会话表拿着表的锁问，actor 照自己的账答（`actor/life.rs`）。
+//! 空闲的会话退下，把手这一头（施工 V-2 再补，`internal/designs/07-存储.md` 第七节「会话按需载入」第 3 条，
+//! `internal/blueprint/session/actor.md`「退下」）：会话表拿着表的锁问，actor 照自己的账答（`actor/life.rs`）。
 //!
 //! 封存了的会话退得下了告诉会话表（施工 V-51，[`Bell`]）：会话表当场来问，不等隔一阵问的那一遍（最多 3 分钟）。
 //!
-//! 内存紧时会话表照 [`Retiring::Tight`] 问（施工 MEM-3，`docs/blueprint/protocol.md`「会话表」第 10 条）：不等闲够，排着、还没
+//! 内存紧时会话表照 [`Retiring::Tight`] 问（施工 MEM-3，`internal/blueprint/protocol.md`「会话表」第 10 条）：不等闲够，排着、还没
 //! 开始的事（记忆抽取的闹钟）不算还有事；还有事的答是哪一样（[`Hold`]），会话表照它分原因记日志。
 
 use std::fmt;

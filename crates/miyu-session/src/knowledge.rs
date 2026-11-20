@@ -1,4 +1,4 @@
-//! 她查知识库（施工 K-1 下，`docs/blueprint/knowledge.md`「怎么走」第六条）：查得到哪几个库、知识库的端口；她的 system 里
+//! 她查知识库（施工 K-1 下，`internal/blueprint/knowledge.md`「怎么走」第六条）：查得到哪几个库、知识库的端口；她的 system 里
 //! 列出来的那一块（施工 K-1 补，「列出来的那一块」）；她写知识库在 `knowledge/write.rs`（施工 K-3，第七条）。
 //!
 //! 查核心一份的全部库，人格的 `persona.toml` 写了

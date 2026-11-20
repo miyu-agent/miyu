@@ -1,4 +1,4 @@
-//! 等子代理（施工 7-9，`docs/blueprint/cli/ask.md`「等子代理」）：终端里等的那一行原地刷新、别的来了先擦掉；报回来了那一行；
+//! 等子代理（施工 7-9，`internal/blueprint/cli/ask.md`「等子代理」）：终端里等的那一行原地刷新、别的来了先擦掉；报回来了那一行；
 //! 叫醒的几轮照常印，用量加起来最后一行；不等了、到时间了；英文；不等子代理的（`miyu redo`、`miyu compact`）跟完一轮就走。
 
 use serde_json::{Value, json};

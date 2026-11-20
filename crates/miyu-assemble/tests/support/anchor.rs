@@ -1,4 +1,4 @@
-//! 锚盖住的正好是锚那次请求加上它的回复（施工 6-1，`docs/blueprint/compaction.md`「怎么走」第一条）：用出厂的组装跑出来
+//! 锚盖住的正好是锚那次请求加上它的回复（施工 6-1，`internal/blueprint/compaction.md`「怎么走」第一条）：用出厂的组装跑出来
 //! 的真会话，每一次请求都照它发出时的有效历史挑一遍锚，查「请求只追加」这个前提在锚上成立。
 
 use miyu_kernel::estimate::{self, Flat};

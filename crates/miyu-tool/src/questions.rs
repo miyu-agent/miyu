@@ -1,4 +1,4 @@
-//! 提问的端口（施工 D-2，`docs/blueprint/tools/ask_user.md`，`tools/interface.md`）：`ask_user` 这件工具只拿它，不认识内核。
+//! 提问的端口（施工 D-2，`internal/blueprint/tools/ask_user.md`，`tools/interface.md`）：`ask_user` 这件工具只拿它，不认识内核。
 //! 执行器照每一次调用造一个：工具交一组题，执行器交给内核记 `question.asked`、等人回答，回答落了盘再送回来。
 //!
 //! 端口由下层定义、上层装（`00-设计理念.md` 第四节「依赖与接口的规矩」）：这里只定义形状，执行器（`miyu-session`）照

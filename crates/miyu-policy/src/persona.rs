@@ -1,4 +1,4 @@
-//! 人格目录里的两份字怎么读（施工 P-1 上，`docs/blueprint/personas.md`）：`persona.toml` 的名字、说明，`prompts/examples.md`
+//! 人格目录里的两份字怎么读（施工 P-1 上，`internal/blueprint/personas.md`）：`persona.toml` 的名字、说明，`prompts/examples.md`
 //! 的示范对话。纯逻辑：进来的是文件里的字，出去的是读好的样子，或者写明哪个文件第几行错在哪。找哪几层、读盘由存储做。
 
 use std::fmt;

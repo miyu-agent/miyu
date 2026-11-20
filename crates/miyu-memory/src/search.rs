@@ -148,7 +148,7 @@ impl Tool for Search {
     }
 }
 
-/// 给头看的那一份（施工 W-11，`docs/blueprint/memory.md`「工具」）：记忆、对话片段照给她看的先后，日期照会话的时区 `offset`；
+/// 给头看的那一份（施工 W-11，`internal/blueprint/memory.md`「工具」）：记忆、对话片段照给她看的先后，日期照会话的时区 `offset`；
 /// 作废的带 `forgotten`，对话片段是原文（不截、不换行），会话写整个编号；有卡的多 `cards`（是谁、叫法、日期、原文，施工 E-3）。
 fn detail(found: &Searched, offset: UtcOffset) -> serde_json::Value {
     let memories: Vec<serde_json::Value> = found

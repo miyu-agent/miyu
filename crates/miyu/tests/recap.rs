@@ -1,4 +1,4 @@
-//! 真跑 `miyu recap`（施工 3-8 四补，`docs/blueprint/cli/recap.md`）：说明跟着界面语言；核心在跑的，回顾上一次 `miyu ask`
+//! 真跑 `miyu recap`（施工 3-8 四补，`internal/blueprint/cli/recap.md`）：说明跟着界面语言；核心在跑的，回顾上一次 `miyu ask`
 //! 开的那个会话（没配模型的核心那一轮没回复，没有可回顾的），`-s` 和 `--session` 回顾的是写的那个；核心没配
 //! 模型的，照 `miyu ask` 说没有可用的模型，退出码 5。
 

@@ -1,4 +1,4 @@
-//! 核心没了，它拉起的长住的子进程跟着走（施工 XH-1，`docs/blueprint/core.md`「子进程随核心退出」）：真的 `miyu core` 拉起
+//! 核心没了，它拉起的长住的子进程跟着走（施工 XH-1，`internal/blueprint/core.md`「子进程随核心退出」）：真的 `miyu core` 拉起
 //! 扩展（`miyu-test-extension`，三个平台）、命令型 MCP 服务（`miyu-test-mcp`，Unix）、语义模型小程序（`miyu-test-embed`，
 //! Unix），各自再起一个睡着的子进程（核心的孙进程），记下两个进程号；硬杀核心（Unix 上 `SIGKILL`，Windows 上结束进程，不连
 //! 子进程），两个都要在几秒内没了：Unix 上组里看门的杀了整组，Windows 上核心所在的作业对象跟着关。

@@ -1,4 +1,4 @@
-//! 替身的提前压好（施工 6-11 上，`docs/blueprint/compaction.md` 第十五条）：回合开始交给内核的开关，提前压的请求怎么回、
+//! 替身的提前压好（施工 6-11 上，`internal/blueprint/compaction.md` 第十五条）：回合开始交给内核的开关，提前压的请求怎么回、
 //! 停住的放行。和起标题一样是内核自己要的旁路请求：没排剧本的只记下、不回（一直在路上），不管它的测试不用替它排。
 
 use std::collections::VecDeque;

@@ -1,4 +1,4 @@
-//! 会话导出成 Markdown（施工 SE-1 中下上，`docs/blueprint/protocol.md`「`session.export`」）：真核心跑几轮（调工具、思考、
+//! 会话导出成 Markdown（施工 SE-1 中下上，`internal/blueprint/protocol.md`「`session.export`」）：真核心跑几轮（调工具、思考、
 //! 手动压缩）以后导到文件、放进回应，两份一字不差；配了的密钥换成占位、报几处；照参数换语言；放进回应超了上限的拒；写错的
 //! 参数拒 `bad_params`，写文件的规矩同原始包。三个预设、范围、原始包里的 `transcript.md` 见 `session_export_presets.rs`；
 //! `children: append`、`assets: files` 见 `session_export_attached.rs`。

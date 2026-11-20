@@ -200,7 +200,7 @@ fn choices(
     Ok(choices)
 }
 
-/// `choices_from`（施工 SG-2，`docs/blueprint/packages.md`「配置项」的表）：选项由这个包自己登记的方法在运行时给，交回方法名；
+/// `choices_from`（施工 SG-2，`internal/blueprint/packages.md`「配置项」的表）：选项由这个包自己登记的方法在运行时给，交回方法名；
 /// 没写的没有。只有普通的文字项能写：几行字、列表的元素（`kind` 是列表）、一组字段的字段（`field`）不行；名字写法同
 /// `package.methods` 登记的。别的类型不认这一格，读类型时就照不认识的键拒了，到不了这里。核心不查这个方法登记了没有
 /// （运行时才登记），也不拿它的回应查值。

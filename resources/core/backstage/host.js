@@ -1,4 +1,4 @@
-// 核心按需起的后台页服务的宿主页（施工 BP-3，docs/blueprint/package-pages.md「不靠网页打开软件后台」第 3 条）：照网页「框和网页之间怎么说」那一套。
+// 核心按需起的后台页服务的宿主页（施工 BP-3，internal/blueprint/package-pages.md「不靠网页打开软件后台」第 3 条）：照网页「框和网页之间怎么说」那一套。
 // 框第一次载入完交一条 MessageChannel（只交这一次）；框的请求原样 POST 给 /r/<票>，核心照票认包、只答那四样；/e/<票> 推来的照原样转进框。
 // 深浅照系统：`context` 补上 `theme`，系统换了深浅推 `theme.changed`。不带颜色。
 

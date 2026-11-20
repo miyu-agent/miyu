@@ -1,4 +1,4 @@
-//! 有没有头看着（施工 7-9，`docs/blueprint/session/actor.md`「收件箱」第 4 条）：会话 actor 在有头订阅、全都退订时交内核
+//! 有没有头看着（施工 7-9，`internal/blueprint/session/actor.md`「收件箱」第 4 条）：会话 actor 在有头订阅、全都退订时交内核
 //! `Watched`。一次性的会话有头订阅着，后台命令结束叫醒她；几个头走了一个，照样叫醒；订阅都放下了，只记下。造会话以后
 //! 没人订阅过的，当没人看着。假的后台命令（`miyu_tool::testkit::Held`）什么时候结束由测试定。
 

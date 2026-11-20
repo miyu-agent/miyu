@@ -1,4 +1,4 @@
-//! 监视的后台命令（施工 MN-1 上，设计 56，`docs/blueprint/agents.md` 第四条）：真的 `shell` 写了 `watch`，三个平台都跑。
+//! 监视的后台命令（施工 MN-1 上，设计 56，`internal/blueprint/agents.md` 第四条）：真的 `shell` 写了 `watch`，三个平台都跑。
 //! 一下子出的三行合成一批、记一条 `job.lines`、叫醒她一次；标准错误不叫醒、只在 `jobs/<编号>.out` 里；结束了照常报。
 
 use miyu_kernel::event::{Body, Event, JobLines, JobReason};

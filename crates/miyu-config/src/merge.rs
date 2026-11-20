@@ -1,4 +1,4 @@
-//! 分层合出最终值和来源（`docs/blueprint/config.md`「最终值和来源」、「怎么走」第二条第 5 条、第三条第 4 条，G2、G3，
+//! 分层合出最终值和来源（`internal/blueprint/config.md`「最终值和来源」、「怎么走」第二条第 5 条、第三条第 4 条，G2、G3，
 //! 施工 8-2）。
 //!
 //! 从下往上，上面的盖掉下面的：默认值、包这一层（施工 PV-4：装着、开着的包带来的，[`Packaged`]）、系统配置、项目配置，最后是
@@ -70,7 +70,7 @@ pub struct Layers<'a> {
     pub project: Option<(&'a Parsed, Trust)>,
 }
 
-/// 包这一层（施工 PV-4，`docs/blueprint/config.md`「最终值和来源」）：装着、开着的包带来的项，在默认值之上、系统配置之下。哪个包
+/// 包这一层（施工 PV-4，`internal/blueprint/config.md`「最终值和来源」）：装着、开着的包带来的项，在默认值之上、系统配置之下。哪个包
 /// 带什么、和系统配置怎么对由用的一方算（核心的 `config/provided.rs`），这里只照它合。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Packaged {

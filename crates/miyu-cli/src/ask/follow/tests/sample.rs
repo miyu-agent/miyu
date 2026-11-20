@@ -1,5 +1,5 @@
 //! 蓝图 `cli/ask.md` 的样本（施工 4-9 三补；施工 4-11 加了执行命令、编辑那两块）：照样本的场景喂一轮，标准输出、
-//! 标准错误照先后交错，和 `docs/designs/samples/cli/ask-text.txt` 逐字节一样；蓝图里的那一块，门禁和同一份文件比。
+//! 标准错误照先后交错，和 `internal/designs/samples/cli/ask-text.txt` 逐字节一样；蓝图里的那一块，门禁和同一份文件比。
 
 use std::path::{MAIN_SEPARATOR, Path};
 
@@ -113,8 +113,8 @@ fn the_screen_is_the_sample_of_the_drawing() {
     // 新会话：目录太宽那一句是造会话的回应说的（施工 9-7 上起说话的回应不说它）。
     let Fed { step, screen, .. } = feed_after(&plan, false, None, Some(&used), &messages);
     assert_eq!(step, Step::Done(exit::UNATTENDED));
-    let sample =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/designs/samples/cli/ask-text.txt");
+    let sample = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../internal/designs/samples/cli/ask-text.txt");
     let drawn = std::fs::read_to_string(&sample).expect("有样本");
     // 样本照 Unix 的路径写。
     assert_eq!(screen.replace(MAIN_SEPARATOR, "/"), drawn);

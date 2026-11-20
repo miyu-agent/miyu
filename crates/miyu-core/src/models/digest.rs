@@ -1,4 +1,4 @@
-//! 整理好的目录放在缓存目录里（施工 V-5 中，`docs/blueprint/models.md`「怎么走」第二条第 1 条）：原文现解约 22 ms，核心
+//! 整理好的目录放在缓存目录里（施工 V-5 中，`internal/blueprint/models.md`「怎么走」第二条第 1 条）：原文现解约 22 ms，核心
 //! 每次起来都要解，又正赶上头连上来载入会话、和读日志抢 CPU。解过一次就把整理好的一份（`miyu_models::catalog::Catalog::
 //! digest`）写进缓存目录，下次照它读，约 7 ms。
 //!

@@ -1,4 +1,4 @@
-//! `venue.plugins {venue, on}`（施工 O-60，`docs/blueprint/venues.md`「场所插件」）：通讯平台的桥说一个场所开着哪些场所插件，
+//! `venue.plugins {venue, on}`（施工 O-60，`internal/blueprint/venues.md`「场所插件」）：通讯平台的桥说一个场所开着哪些场所插件，
 //! 整份替换，空的是全不给。核心在内存里记（[`miyu_session::VenuePlugins`]），那个场所的会话下一个回合开始照它重筛工具面；
 //! 这一轮里刚关掉的再调回「暂时不可用」。核心、桥刚重启、桥还没说过的场所一件都不给：桥连上以后对每个场所发一次。
 //!

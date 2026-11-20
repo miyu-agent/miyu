@@ -1,4 +1,4 @@
-//! 键（`docs/blueprint/config.md`「配置清单」，施工 8-6）：清单里的键可以有一段是人起的名字，例如
+//! 键（`internal/blueprint/config.md`「配置清单」，施工 8-6）：清单里的键可以有一段是人起的名字，例如
 //! `providers.<id>.base_url`、`providers.<id>.models.<model>.window`（`models.md`「对外的样子」）。
 //!
 //! - 清单里写的是「样子」：每一段用 `.` 隔开，人起的名字那一段写成占位 [`ID`]、[`MODEL`]、[`EXTERNAL`] 或 [`NAME`]。

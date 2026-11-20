@@ -1,4 +1,4 @@
-//! 一项的类型（`docs/blueprint/config.md`「类型」）：能写什么、怎么查、环境变量里的怎么读。
+//! 一项的类型（`internal/blueprint/config.md`「类型」）：能写什么、怎么查、环境变量里的怎么读。
 
 use std::borrow::Cow;
 use std::collections::BTreeMap;

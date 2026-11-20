@@ -1,4 +1,4 @@
-//! 给别的包带的内容（施工 X-22，`docs/blueprint/packages.md`「给别的包带的内容」）：清单写了 `[content.<包>] dir` 的包，给那个
+//! 给别的包带的内容（施工 X-22，`internal/blueprint/packages.md`「给别的包带的内容」）：清单写了 `[content.<包>] dir` 的包，给那个
 //! 包带了一个目录的东西。被带的那个包的扩展（核心拉起的，`caller.package` 是它）经 `content.list` 看谁给它带了，经
 //! `content.read` 分块读，只读得到那个目录里的；别的连接 `not_a_provider`。不要能力：东西是别的包写明了给它的。
 //!

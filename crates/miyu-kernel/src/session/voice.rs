@@ -1,4 +1,4 @@
-//! 场所一段语音的上限（施工 VM-2，`docs/blueprint/venues.md`「`venue.session`」）：造场所会话时记在 `session.created` 的
+//! 场所一段语音的上限（施工 VM-2，`internal/blueprint/venues.md`「`venue.session`」）：造场所会话时记在 `session.created` 的
 //! `voice_max_ms`；桥找回会话时报的和现在的不一样（含造的时候没报的），记一条只写 `voice_max_ms` 的 `session.policy_changed`。
 //!
 //! 照日志算（`configure.rs` 的 `Reference`）：后来的盖掉前面的，撤掉的回合里的也算（这是场所的事实，不是对话的一部分）。

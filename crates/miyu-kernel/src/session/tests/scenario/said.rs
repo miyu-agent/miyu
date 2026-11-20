@@ -1,4 +1,4 @@
-//! 场景：回合开始交给挂接点的 `said`（施工 R-8，`docs/blueprint/kernel/session.md` 的 `RunTurnStartHooks`，`memory.md`
+//! 场景：回合开始交给挂接点的 `said`（施工 R-8，`internal/blueprint/kernel/session.md` 的 `RunTurnStartHooks`，`memory.md`
 //! 第四条）：人开的一轮是触发它的那句话的字（几块字照先后用换行连、去掉前后空白）；只有附件的、别的 harness 说的、别的会话
 //! 说的、回报开的都没有；排着的几句一起开的一轮只取触发的那一句（最后一句，有意的：同回合索引）。
 

@@ -1,4 +1,4 @@
-//! MCP 服务的提示词当斜杠命令（施工 X-39 之二，`docs/construction/X-39-MCP的说明和提示词.md`）：真核心真起 `miyu-test-mcp`。
+//! MCP 服务的提示词当斜杠命令（施工 X-39 之二，`internal/construction/X-39-MCP的说明和提示词.md`）：真核心真起 `miyu-test-mcp`。
 //! `command.catalog` 列出 `<服务名>:<提示词名>`、参数照必填可选拼，名字清理以后撞了的不登记、软件包列表的 `skipped` 里有它；
 //! `command.run` 照先后对上参数、最后一个拿剩下的，取回来的字、图并成这个人说的一句（`assistant` 的照原文并进来），时间线是人敲
 //! 的那一行；缺必填的 `command_failed`，说缺哪几个照连接的语言（施工 X-39 补），服务回错的 `command_failed` 带原话，没列出的、

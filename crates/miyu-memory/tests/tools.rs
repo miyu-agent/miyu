@@ -1,4 +1,4 @@
-//! 记忆的三件工具（施工 R-3 中，`docs/blueprint/memory.md`「工具」）：参数、长度、类、编号，端口交回的几种，结果的句子逐字节
+//! 记忆的三件工具（施工 R-3 中，`internal/blueprint/memory.md`「工具」）：参数、长度、类、编号，端口交回的几种，结果的句子逐字节
 //! 比，给人看的说法。端口是假的：真的在 `miyu-session` 里测。
 
 use std::path::Path;

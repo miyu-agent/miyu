@@ -1,4 +1,4 @@
-//! `check` 带语义模型的状态（施工 R-25，`docs/blueprint/protocol.md` 的 `check`）：真核心接上本机的小模型（手造的、真的
+//! `check` 带语义模型的状态（施工 R-25，`internal/blueprint/protocol.md` 的 `check`）：真核心接上本机的小模型（手造的、真的
 //! `miyu-embed`），记一条记忆、放一个知识库，`embedding` 写着用哪个模型、每个人格那一间和每个库补到了哪；关着的、没装的
 //! 写为什么；没接照意思那一路的核心（测试里）不带；只查一份的不带。
 

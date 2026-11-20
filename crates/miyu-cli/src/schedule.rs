@@ -1,4 +1,4 @@
-//! `miyu schedule`（`docs/blueprint/cli/schedule.md`，施工 J-3 下，设计 45 第三节第 3 条、第五节第 3 条）：在 shell 里管定时任务：
+//! `miyu schedule`（`internal/blueprint/cli/schedule.md`，施工 J-3 下，设计 45 第三节第 3 条、第五节第 3 条）：在 shell 里管定时任务：
 //! 列、建、删、停、续。连上核心（照 `miyu kb`：没在跑就拉起来），照子命令发 `schedule.*`（`docs/reference/schedules.md`），照回应印。
 //! 建 `cron` 的交本机的时区（IANA 名），`--zone` 手写的照它；`--at` 不带偏移的照本机时区换算；时刻都换成核心认的写法再交。
 //!

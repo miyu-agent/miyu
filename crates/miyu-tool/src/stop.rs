@@ -1,4 +1,4 @@
-//! 叫停的旗（`docs/blueprint/tools/interface.md`「叫停」，施工 4-9 再补一）：执行器「叫它停」时举起来，工具的 future
+//! 叫停的旗（`internal/blueprint/tools/interface.md`「叫停」，施工 4-9 再补一）：执行器「叫它停」时举起来，工具的 future
 //! 被丢掉时也举起来。在阻塞线程里干活的工具自己看旗：走目录、搜内容的每一步看一眼；改文件的真正改之前看一眼。
 
 use std::sync::Arc;

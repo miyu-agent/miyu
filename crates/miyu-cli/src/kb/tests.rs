@@ -1,4 +1,4 @@
-//! `miyu kb` 印的样子（`docs/blueprint/cli/kb.md`「样子」）：库一行一个、编号对齐、名字和编号一样的不写、用不了的接上为什么；
+//! `miyu kb` 印的样子（`internal/blueprint/cli/kb.md`「样子」）：库一行一个、编号对齐、名字和编号一样的不写、用不了的接上为什么；
 //! 搜到的一块一段、PDF 说第几页；读的不止一页的末尾说第几页。
 
 use std::collections::BTreeMap;

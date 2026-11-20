@@ -1,4 +1,4 @@
-//! 工具面上一件的一个参数，照会话开局时的配置填上能选的几个（施工 8-8 补，`docs/blueprint/models.md`「工具」、
+//! 工具面上一件的一个参数，照会话开局时的配置填上能选的几个（施工 8-8 补，`internal/blueprint/models.md`「工具」、
 //! `tools/subagent.md`「会话开局时拼 `pool`」）：现在只有 `subagent` 的 `pool`，执行器造会话时调。
 //!
 //! 填好的进快照，整个会话照它发；读回能选的几个也照快照（[`ToolEntry::offered`]），载入不重拼。

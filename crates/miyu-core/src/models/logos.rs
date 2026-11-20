@@ -1,4 +1,4 @@
-//! 供应商的图标拉到本机（施工 8-31，`docs/blueprint/models.md`「图标」）：头不连外网，也不让外网知道用的是哪一家，所以核心
+//! 供应商的图标拉到本机（施工 8-31，`internal/blueprint/models.md`「图标」）：头不连外网，也不让外网知道用的是哪一家，所以核心
 //! 把目录里每一家的都拉下来，存进缓存目录 `<缓存目录>/models/logos/`，交给 [`ModelData`]，`provider.catalog`、`model.list`
 //! 照它带上 `logo`。
 //!

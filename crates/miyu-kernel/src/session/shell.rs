@@ -1,4 +1,4 @@
-//! 人在头的输入框里用 `!` 打的命令（施工 SH-1 上，设计 57 第三节，`docs/blueprint/kernel/session.md`「人跑的命令」）：
+//! 人在头的输入框里用 `!` 打的命令（施工 SH-1 上，设计 57 第三节，`internal/blueprint/kernel/session.md`「人跑的命令」）：
 //! `message.user` 写了 `shell` 的那一句，核心在她听到它的那一刻跑，不是收到时跑。
 //!
 //! 听到的那一刻是这一轮的「准备好」（`turn.rs` 的 `advance`）：开轮的挂接点跑完了、两步之间问模型以前、回合结束接着开的

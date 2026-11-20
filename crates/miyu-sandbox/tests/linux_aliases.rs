@@ -1,4 +1,4 @@
-//! 藏起来的另有挂载别名（施工 SEC-3，外部审计 M-1，`docs/blueprint/sandbox/linux.md`「怎么走」第 1 条）：同一片文件 bind 到了
+//! 藏起来的另有挂载别名（施工 SEC-3，外部审计 M-1，`internal/blueprint/sandbox/linux.md`「怎么走」第 1 条）：同一片文件 bind 到了
 //! 另一处，Landlock 的规则跟着目录本身走、不认路径，一级级放行把别名那一处整个放了的话，藏起来的从哪条路都读得到。在
 //! `unshare -rm` 造的用户、挂载命名空间里 bind 一个别名再跑助手，不动真系统；这台机器不让普通用户建命名空间的（Ubuntu
 //! 24.04 的 AppArmor 默认不让）跳过。

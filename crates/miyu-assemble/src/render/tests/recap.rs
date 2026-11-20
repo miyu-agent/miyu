@@ -1,4 +1,4 @@
-//! 回顾（施工 3-8 四补，`docs/blueprint/kernel/request.md`「组装」）：回顾的 `model.called`、`session.recapped` 不进上下文，也
+//! 回顾（施工 3-8 四补，`internal/blueprint/kernel/request.md`「组装」）：回顾的 `model.called`、`session.recapped` 不进上下文，也
 //! 不改别的怎么排。它们不带回合编号，可以落在回合开始的那几块中间：那一轮开始时注入的事实照样挪到触发前面，前缀接得上。
 
 use super::*;

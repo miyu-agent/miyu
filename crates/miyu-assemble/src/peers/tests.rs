@@ -1,4 +1,4 @@
-//! 别的会话发来的话（施工 C-2，`docs/blueprint/kernel/request.md`「别的会话发来的话」）：出厂的字渲染出来和样本逐字节一样；
+//! 别的会话发来的话（施工 C-2，`internal/blueprint/kernel/request.md`「别的会话发来的话」）：出厂的字渲染出来和样本逐字节一样；
 //! 附件接在标签那一块后面；开这一轮的那条挪到回合开始的地方，排在事实后面；回合中途到的排在那一步的工具结果后面；旧快照
 //! 没有标签的和人的话一字不差；父会话、派的子代理、人发的不包这一层。
 //!
@@ -14,15 +14,16 @@ use crate::test_support::{KERNEL, Log, quoted, shape, text_json, texts};
 use crate::{DefaultAssembler, Stable, Texts};
 use miyu_kernel::event::PeerIdle;
 
-/// 样本 `docs/designs/samples/peers/message.txt`。
-const SAMPLE: &str = include_str!("../../../../docs/designs/samples/peers/message.txt");
+/// 样本 `internal/designs/samples/peers/message.txt`。
+const SAMPLE: &str = include_str!("../../../../internal/designs/samples/peers/message.txt");
 /// 发话的会话：短编号 `22334455`。
 const PEER: &str = "0192f3a0-1111-7abc-8def-001122334455";
 /// 父会话。
 const PARENT: &str = "01a0d75d-2180-7a3c-9e41-5b7d2c8f6a10";
-/// 样本 `docs/designs/samples/peers/idle.txt`、`idle-expired.txt`（施工 C-6）。
-const IDLE: &str = include_str!("../../../../docs/designs/samples/peers/idle.txt");
-const IDLE_EXPIRED: &str = include_str!("../../../../docs/designs/samples/peers/idle-expired.txt");
+/// 样本 `internal/designs/samples/peers/idle.txt`、`idle-expired.txt`（施工 C-6）。
+const IDLE: &str = include_str!("../../../../internal/designs/samples/peers/idle.txt");
+const IDLE_EXPIRED: &str =
+    include_str!("../../../../internal/designs/samples/peers/idle-expired.txt");
 /// 等的会话：短编号 `9f03b21c`。
 const WATCHED: &str = "0192f3a0-2222-7abc-8def-55669f03b21c";
 

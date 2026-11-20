@@ -1,4 +1,4 @@
-//! 查模型资料要的几份（`docs/blueprint/models.md`「怎么走」第一、二条，施工 8-7）：档案、认原厂的表、在用的目录、怎么查
+//! 查模型资料要的几份（`internal/blueprint/models.md`「怎么走」第一、二条，施工 8-7）：档案、认原厂的表、在用的目录、怎么查
 //! 目录（施工 V-25 上）、用出来的、供应商的列表。核心一份，执行器拿着；查的时候借一份 [`Knowledge`] 进来，这一层不碰文件。
 
 use std::collections::BTreeMap;

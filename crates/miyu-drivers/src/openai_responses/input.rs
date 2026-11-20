@@ -1,4 +1,4 @@
-//! 统一的请求里的消息写成 `input` 里的一项项（`docs/blueprint/drivers/openai-responses.md`「怎么走：编码」第 3 到 5 条）。
+//! 统一的请求里的消息写成 `input` 里的一项项（`internal/blueprint/drivers/openai-responses.md`「怎么走：编码」第 3 到 5 条）。
 //!
 //! - user：`{"role":"user","content":…}`，全是文字的拼成一个字符串（照 openai-chat 的拼法，[`crate::media::join`]），有能发
 //!   的图片、文件的分成几段；发不了的照 [`crate::media`] 换成字。

@@ -1,4 +1,4 @@
-//! 真跑 `miyu redo`（施工 4-7 再补，`docs/blueprint/cli/redo.md`）：帮助页跟着界面语言，是重做那一页、不是恢复那一页；核心在跑的，
+//! 真跑 `miyu redo`（施工 4-7 再补，`internal/blueprint/cli/redo.md`）：帮助页跟着界面语言，是重做那一页、不是恢复那一页；核心在跑的，
 //! 重做上一次 `miyu ask` 的那一轮，先说撤掉了哪一轮，`-s` 和 `--session` 重做的是写的那个；核心没配模型的，照 `miyu ask` 说没有
 //! 可用的模型，退出码 5。
 

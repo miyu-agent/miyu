@@ -1,4 +1,4 @@
-//! `model.list`（施工 8-7，`docs/blueprint/models.md`「协议」）：形状、每一格的来源、状态；供应商的列表拉完再答、在后台拉；
+//! `model.list`（施工 8-7，`internal/blueprint/models.md`「协议」）：形状、每一格的来源、状态；供应商的列表拉完再答、在后台拉；
 //! `provider` 只看一家、不是配好了的 `unknown_provider`。目录是真目录裁出来的一份，供应商是本机的假服务器。地址是环境变量
 //! 的引用时（施工 8-6b）：`model.list`、`config.get` 都照写的样子交引用，不交解出来的地址。
 

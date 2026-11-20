@@ -1,0 +1,2026 @@
+## 核心协议
+
+### 是什么
+
+头和核心之间说的话：一个连接上一行一条 JSON-RPC 2.0。连上先握手，之后能造会话、列出会话、传附件、说话（可以带附件）、打断、撤销、恢复、重做、手动压缩、切权限级别、清空上下文、要一句回顾、停掉派出去的任务、读后台命令的输出、改标题、置顶、删除会话，订阅会话的事件流（能补发订阅以前的事件），查配置（施工 8-2）、改配置、信任项目配置（施工 8-3），叫一次模型、不进任何会话（`model.call`，施工 8-20），查用量和金额（`usage.query`，施工 8-15），要一个链接的卡片（`link.preview`，施工 W-7）。连接从哪来不管：本机的套接字、命名管道（`ipc.md`），测试里的内存管道。
+
+撤销、恢复、重做的回应另写一页：`protocol/undo.md`。配置的五个方法写在 `config.md`「协议」，这一页只列进方法表、出错表。
+
+### 在哪
+
+| 代码 | 管什么 |
+|---|---|
+| `crates/miyu-endpoint/src/lib.rs` | `Core`：核心的家底（数据根、资源目录、请求模型的端口、工具目录、系统的家目录、沙盒的助手（施工 5-4 上）、本机令牌、会话表、配置（施工 8-2））；空不空闲；停下全部会话 |
+| `crates/miyu-endpoint/src/timing.rs` | `Core` 等多久的几样（握手、文件清单、分块上传、一次性码、扩展进程和 MCP 服务）：测试里设短的（施工 X-16 从 `lib.rs` 挪出来） |
+| `crates/miyu-endpoint/src/listen.rs` | `run`：在监听器上一个个接连接 |
+| `crates/miyu-endpoint/src/activity.rs` | 数着几个连接（`Connected`）；来请求了的信号 `Activity`：连接每读到一个请求叫一声，核心照它安静下来以后还内存（施工 V-5 中，`heap.md` 第 2 条） |
+| `crates/miyu-endpoint/src/connection.rs` | `serve`：一个连接，读写分开；握手以前拦住；登记成在后台答的查询交给这个连接的一组后台任务，连接断了一起停（施工 W-7）；`subscribe`（回应带会话的限额、接下来请求的模型（施工 8-10）、钉的压缩触发线和看图模型（施工 CT-1补）；带 `after` 的先补发，施工 3-8 六补）、`unsubscribe`；订阅哪一个流、订阅会话的事件流在 `connection/streams.rs`（施工 9-4 补挪出来） |
+| `crates/miyu-endpoint/src/connection/outbox.rs`（施工 V-22） | 写的一头：写队列里排着的几行一起写、只冲一次，字节和先后同一行行写的一样（「一个连接」第 2 条） |
+| `crates/miyu-endpoint/src/connection/reach.rs` | 连接从哪来（`Reach`：本机、远程）、握手之前的 `connection.remote`、本机才能用的方法（`local_machine_only`）、远程的握手回应不给 `host`（施工 Y-1 下） |
+| `crates/miyu-endpoint/src/wire.rs` | 读一行、认成请求、回应写成一行 |
+| `crates/miyu-endpoint/src/hello.rs` | 握手 |
+| `crates/miyu-endpoint/src/methods.rs` | 握手以后的方法 |
+| `crates/miyu-endpoint/src/job_output.rs` | `job.output`：取最后几行、量上限（施工 7-4 补） |
+| `crates/miyu-endpoint/src/meta.rs` | `session.set_meta` 的参数：标题去掉前后空白、量长短，`null` 是去掉标题（施工 3-8 三补）；`session.retitle`（施工 TT-1） |
+| `crates/miyu-endpoint/src/sessions.rs` | 会话表：造会话、找会话；工作目录照人走、太宽的标上（施工 5-14）；造子会话（施工 7-5） |
+| `crates/miyu-endpoint/src/sessions/found.rs` | 找会话、载入（施工 7-8 从 `sessions.rs` 挪出来：表的锁在调的一方手里）：在跑的直接交回，没在跑的照 `DataRoot::session_dir` 从磁盘载入；载入交回要认的（施工 V-37 上），在后台收掉派到一半的空子会话 |
+| `crates/miyu-endpoint/src/sessions/opening.rs` | 造会话时定下的几样（施工 P-9 从 `sessions.rs` 挪出来）：`Opening`，带不带「关于你」（施工 P-9）；开局的级别一律是完全放开（施工 LV-1），写在 `sessions/setup.rs` |
+| `crates/miyu-endpoint/src/sessions/orphans.rs` | 载入时收掉派到一半的空子会话（施工 7-8，「会话表」第 8 条） |
+| `crates/miyu-endpoint/src/sessions/idle.rs` | 闲够了的会话退下：看空闲的任务、问退不退、从表里拿掉（施工 V-2 再补，「会话表」第 9 条；`retire_all` 内存紧时照 `Retiring::Tight` 问、没退的照原因计数，施工 MEM-2、MEM-3；一批至多 `BATCH` 个一起问、问完一批放一次锁，施工 MEM-5）；封存了的报了退得下，任务当场醒来只问报了的那几个（`retirable`、`retire_due`，施工 V-51）；`Core::with_session_idle`（测试里设短的）、`Core::loaded`（这时载入着几个会话） |
+| `crates/miyu-endpoint/src/sessions/delete.rs` | 会话表删会话：认出它派的子会话、停下、挪进回收处（施工 3-8 三补）；删子会话照人停掉它、父会话记回报，都在表的锁里（施工 7-8） |
+| `crates/miyu-endpoint/src/sessions/pressure.rs`（施工 MEM-2） | 内存紧时把闲着的会话卸出内存：判紧不紧（`judge`、门槛 `threshold`：`FLOOR_PERCENT` 5、`SPARE_PERCENT` 10、`SPARE_CAP` 2 GiB，施工 MEM-4；`MOSTLY_MINE` 50）、隔 10 秒看一眼的任务（近线时隔 1 秒，`NEAR_EVERY`，施工 MEM-4）、开会话时叫的那一声（`opened`）、判成紧记的那一行和它的限速（`REPEAT`，施工 MEM-3）（「会话表」第 10 条）；`Core::with_memory_probe`（测试里换读法、设隔多久） |
+| `crates/miyu-endpoint/src/sessions/held.rs`（施工 MEM-3） | 问了一遍以后没退下的照原因各几个（`Held`）：内存紧时那一行的 `held` |
+| `crates/miyu-endpoint/src/from.rs` | `session.send` 的 `from`：去掉控制字符、截到 128 字节，记成 `harness`（施工 7-10） |
+| `crates/miyu-endpoint/src/spawn.rs` | 会话表交给会话的端口：造子会话、给会话发命令（施工 7-5，`session/tools.md`「派子代理」）；停下子会话、照日志看它（施工 7-4）；列主会话（施工 C-3） |
+| `crates/miyu-endpoint/src/list.rs` | `session.list`：标题、置顶照日志算（施工 3-8 三补）；工作目录、最近一次动静、忙不忙（施工 C-3）；读会话列表的索引、照日志补，起来时打开它，删会话删行（施工 3-8 七补，`store/index.md`）。她用 `sessions` 列会话也是这一个 `scan`（`tools/sessions.md`） |
+| `crates/miyu-endpoint/src/import.rs`（施工 SE-1 下） | `session.import`：导入原始包，导完在后台接进回合库；改只读存档的方法照它拒 `archived`（「`session.import`」） |
+| `crates/miyu-endpoint/src/export.rs`（施工 SE-1 上） | `session.export`：一个会话连着后代、分叉来源打成原始包，写到人给的路径（「`session.export`」）；包里放一份 `read` 预设的 `transcript.md`（施工 SE-1 中下中） |
+| `crates/miyu-endpoint/src/export/markdown.rs`、`export/params.rs`、`export/assets.rs`（施工 SE-1 中下上、中下中、中下下） | `session.export {format: "markdown"}`：参数照预设和开关读（`params.rs`），整份喂投影、记原文、要的算有效历史、取 blob，渲染、写文件或放进回应；`children: append` 照任务编号一个个渲染子会话、接在后面；`assets: files` 查 blob、拷进旁边的文件夹（`assets.rs`）；原始包的 `transcript.md` 也照它 |
+| `crates/miyu-endpoint/src/asked.rs`、`asked/tests.rs`（施工 SP-2） | `session.prompts`：一个会话里主人问过的话，照有效历史，只读日志、一遍读完（「`session.prompts`」）；新旧对照平时 300 份，`MIYU_ASKED_FULL` 三千份（CI 的 randomized 那一项设，施工 CI-2） |
+| `crates/miyu-store/src/sweep.rs`、`sweep/bones.rs`（施工 V-39 上起头，SP-2 挪出来，V-43 挪到 `miyu-store`、端点照旧叫它 `crate::sweep`，`store.md` 第 7 条） | 读一遍、边读边过有效历史：事件照先后交给真的 `History::whole`，谁都碰不到的那一截交给调的一方收下就放；放早了的照骨架算的下界再读一遍，认不得的调的一方整份读。判官的记录、问话列表、记忆抽取、`history` 工具（施工 V-45）共用 |
+| `crates/miyu-endpoint/src/subscriptions.rs` | 订阅：每个订阅一个转发任务，先写补发的（施工 3-8 六补；读的时候照 `event_lines` 写好的行，施工 V-37 下），再推 `event`、`resync`；换掉一个订阅时等它写完 |
+| `crates/miyu-endpoint/src/subscriptions/later.rs` | 在后台答的回应照办完那一刻的会话订阅走（施工 R-7 补）：会话订阅交回应的通道由它开、开时记下弱引用，换订阅、取消订阅不等它 |
+| `crates/miyu-endpoint/src/subscriptions/config.rs` | 配置的订阅（施工 8-4，`config.md`「协议」）：推 `config.changed`、掉队推 `resync`，`config.set` 的回应排在推送后面 |
+| `crates/miyu-endpoint/src/knowledge.rs` | `kb.list`、`kb.search`、`kb.read`（施工 K-1 上，「`kb.*`」）、`kb.documents`（施工 K-10）：读参数、在阻塞线程里调 `miyu_store::knowledge`、写回应，跳过的文档记一行 |
+| `crates/miyu-endpoint/src/subscriptions/memory.rs` | 记忆日志的订阅（施工 R-12 上，「记忆日志的推送」）：一间一个转发任务，先写补的、再写回应、再推 `memory.event`、整理时的 `memory.dreaming`（施工 R-21），掉队推 `resync`；找哪一间、补什么在 `memory.rs` 的 `follow` |
+| `crates/miyu-endpoint/src/prefs.rs`、`subscriptions/prefs.rs`，`crates/miyu-store/src/prefs.rs` | 头自己的设置（施工 HP-1，下面「头自己的设置」）：`prefs.get`、`prefs.set` 认包、照顶层的键并、量上限、写那个包状态目录里的 `prefs.json`、推给别的连接；`prefs` 流的转发任务（先写回应、跳过改的那个连接）；`prefs.json` 的读写 |
+| `crates/miyu-endpoint/src/undo.rs` | 撤销、恢复、重做的回应里给人看的几样（`protocol/undo.md`） |
+| `crates/miyu-endpoint/src/attach.rs` | 附件（施工 3-9 三补）：`blob.put` 读、存；`session.send`、`session.redo` 的附件变成内容块；认是什么、文件名和媒体类型怎么查、存好了怎么拼回应，和分块上传共用（施工 W-5）；`model.call` 的图照哈希变成图片块（`attach/look.rs` 的 `images`，施工 8-20；人格头像的 `picture` 也在那里）：照存处找 |
+| `crates/miyu-tool/src/attachment.rs` | 认一个附件是什么：图片、PDF、别的文件，媒体类型（施工 C-9 从 `miyu-endpoint/src/attach/kind.rs` 挪来，她发话、派子代理带的附件共用） |
+| `crates/miyu-endpoint/src/shown.rs`（施工 SW-1） | `session.shown`：照会话加调用编号找那次 `file.shown`（从调用编号里的助手消息读起，只解 `tool.result`）、照打开的句柄核对大小和修改时间、读一段；谁读得到照 `attach/reach.rs` 的 `reachable`（同带 `session` 的 `blob.get`） |
+| `crates/miyu-endpoint/src/uploads.rs` | `blob.open`、`blob.write`、`blob.close`：跟着连接走的上传表，60 秒不写、连接断了都作废（施工 W-5） |
+| `crates/miyu-endpoint/src/refusal.rs`、`refusal/` | 拒绝：错误码、原因码、中英文的话；改人格、预设的两种在 `refusal/edits.rs`，人碰记忆的几种在 `refusal/memory.rs`（施工 R-3 补；R-7 补多了整理的两种），知识库的两种在 `refusal/knowledge.rs`（施工 K-1 上） |
+| `crates/miyu-endpoint/src/settings.rs` | 端点的配置项：界面语言 `ui.language`，`auto` 照系统的语言算出 `zh`、`en`、`ja`（施工 8-1 声明，8-2 握手时用）；新会话开局只读 `permission.start_read_only`（施工 8-2） |
+| `crates/miyu-endpoint/src/config.rs`、`config/` | 配置服务：起来时读的几份配置、最终值，照目录找项目配置、认信不信任；`config.schema`、`config.get`、`config.check`（施工 8-2，`config.md`）；`config.set`、`config.trust`，住在核心家底的一把锁里（施工 8-3）；监视配置文件、推 `config.changed`（施工 8-4）；密钥文件也住在这里（施工 8-5） |
+| `crates/miyu-endpoint/src/secrets.rs`、`secrets/` | `secret.set`、`secret.delete`、`secret.list`：只能写、删、列名字，从不交出值；手改密钥文件被看到的、留痕（施工 8-5，`config.md` 第九条） |
+| `crates/miyu-endpoint/src/models.rs`、`models/` | `model.list`：配好的供应商、模型、每一格资料的值和来源（施工 8-7，`models.md`「协议」），池、用途（施工 8-8；挡位 8-8 补去掉了），模型和 key 的冷却（施工 8-9），`facts.effort` 多 `key`（8-18（补））；`session.create`、`session.configure` 的 `model` 怎么解析（`record`，施工 8-8、8-10）；`session.configure` 的参数（`ConfigureParams`）、`subscribe` 回应的 `model`（施工 8-10）；`subscribe` 的 `model` 多 `effort`（施工 8-18，`from` 是配置的哪一层，8-18（补）起；会话的 `session`，施工 SM-1）；`session.configure` 的 `effort` 照会话这时的模型的档位查（`models/effort.rs`，施工 SM-1）；`session.configure`、`session.create` 的 `vision` 同 `model` 解析、造好的会话另发一条（`models/vision.rs`，施工 VM-1）；`model.call`（`models/call.rs`，施工 8-20）：读参数、认图、调一次性入口（`miyu_session::OneShot`）、出错写成拒绝；8-15 起一次性调用记成用量 |
+| `crates/miyu-endpoint/src/usage.rs` | `usage.query`（施工 8-15，`models.md`「协议」）：读参数（`usage/tests.rs` 守着）、先补再查用量汇总、照 `usage.currency` 排金额、写成 `rows`；核心起来时开 `var/cache/usage.db`（`open`） |
+| `crates/miyu-endpoint/src/usage/names.rs` | `usage.query` 照 `purpose` 分组的每一行的 `purpose_name`（施工 UP-3，`models.md`「协议」）：核心的照字表，扩展的照清单 `[[purpose]]`，照连接的语言 |
+| `crates/miyu-endpoint/src/usage/convert.rs` | `usage.convert`（施工 UC-3，`models.md`「协议」）：读参数（日子、币种、上限）、几组一起换算、照 `usage.query` 的 `converted` 写 |
+| `crates/miyu-endpoint/src/providers.rs`、`providers/trial.rs` | 第一次接入的 `provider.detect`、`provider.catalog`、`provider.test`（施工 8-11，`models.md`「协议」、「怎么走」第七条）；探本机、试一次在会话那一层（`miyu_session::find_local`、`probe`） |
+| `crates/miyu-endpoint/src/providers/rename.rs`（施工 8-34） | `provider.rename`：照 `config.set` 的规矩改写（`config/rewrite.rs`），再叫模型资料换编号、记改名 |
+| `crates/miyu-endpoint/src/queries.rs` | 可选软件包登记的查询：方法名到怎么答的一张表，`QueryError`；`mermaid.render` 经它接进来（施工 W-4，`mermaid.md`）；在后台答的一种登记 `register_background`，`link.preview` 照它接进来（施工 W-7，`net.md`） |
+
+### 对外的样子
+
+#### 一行一条
+
+- 每条消息是一行 JSON，以 `\n` 结尾。读的时候 `\r\n` 也认；连接关之前最后没带换行的那一行也认。
+- 一行最长 1 MiB（1,048,576 字节，不算最后的 `\n`；`\r\n` 结尾的，`\r` 算在里面）。太长的那一行回 `line_too_long`（`data.limit` 是上限；`id` 照这一行开头 4 KiB 里最外层的那一格 `id`，认不出的是 `null`，施工 YC-5：原来回 `parse_error`、`id` 一律 `null`，头对不上是哪一条），剩下的读到换行丢掉、不攒在内存里，连接照旧，下一行照常读（施工 FX-1：以前是断开，扩展读到头当成断线退出、被记成失败）。太长的那一行是对方答核心的一条回应的（认出来的 `id` 对得上核心发给这个连接、还在等的一条请求 `core-<n>`，施工 YC-5补）：除了照旧回 `line_too_long`，等这条回应的一方当场了结，当作对方回了错误 `{"code": -32010, "message": <line_too_long 的英文那一句>, "data": {"code": "line_too_long", "limit"}}`，各处照自己「对方回了错」的路走（`package.call` 是 `method_failed`，`data.code` 是 `line_too_long`；工具调用是这一次工具出错）；以前没人告诉等的一方，一直等到各自的时限。`id` 认不出、对不上的照旧只回、只记。
+- 核心写出的每一行是紧凑的 JSON，加 `\n`。回应里各层对象的格照名字的字母先后排（例如 `id`、`jsonrpc`、`result`）；推送的外层照 `jsonrpc`、`method`、`params` 的先后，`params` 里先写 `session`（下面「推送」）。
+- 会话命令说「落了盘才回」的：它产生的事件都已经推过来了，也都同步到了磁盘，才回（施工 V-19，`session/actor.md` 第 5 条第 10 款）。会话不等回应就往下走，后面的事件（例如下一次请求的增量、工具的结果）可能排在回应前面推过来。
+
+#### 请求
+
+读到的一行照这个先后认，先对上的算：
+
+| 这一行 | 结局 |
+|---|---|
+| 不是 JSON | `parse_error` |
+| 是 JSON，不是对象 | `invalid_request` |
+| `method` 没有，或者不是字符串 | `invalid_request` |
+| `jsonrpc` 不是 `"2.0"` | `invalid_request` |
+| `params` 写了，不是对象也不是数组 | `invalid_request` |
+| 没有 `id` | 通知：不回应；只认握手之前的 `connection.remote`（下面「本机和远程」），别的不理 |
+| `id` 不是字符串（数字、`null`……） | `invalid_request` |
+| `id` 不合命令编号的写法：1 到 128 字节，不含控制字符 | `invalid_request` |
+| 别的 | 一条请求：`id` 就是命令编号；没写 `params` 的当空对象 |
+
+- 认不成请求的，回应里的 `id`：这一行的 `id` 是字符串或数字的照原样带回，别的（没有、`null`、对象……）写 `null`。
+- 头发来的通知只认一种：握手之前的 `connection.remote`（施工 Y-1 下）。
+- `params` 是数组的：`bad_params`（施工 4-9 再补三上）。方法都照名字取参数；照位置读的话，回应找不到该交给哪个订阅，破了「先见结果，后见回应」。
+- **只有一个人**（施工 SU-1，项目主人 2026-10-28 定）：连上来的都是主人。外壳里多写的格（以前的 `"scope"` 也是）核心不看。
+- 参数里不认识的格不理。标着「可以不写」的格，写 `null` 等于没写；标着「不写是……」的格写 `null`，是 `bad_params`。
+
+#### 回应
+
+接受的，`result` 里是这个方法的回应：
+
+```json
+{"id":"c7","jsonrpc":"2.0","result":{"cwd":"~/src/miyu","events":[41]}}
+```
+
+拒绝的，`code` 是 JSON-RPC 的错误码，`message` 照握手时的语言写，`data.reason` 是给程序看的原因码（「出错」一节）：
+
+```json
+{"error":{"code":-32010,"data":{"reason":"session_not_found"},"message":"会话不存在。"},"id":"c7","jsonrpc":"2.0"}
+```
+
+有的拒绝在 `data` 里多几格，和 `reason` 排在一起（施工 8-2 起：`unknown_config_key` 多 `problems`；施工 8-3：`config_invalid`、`config_file_broken` 多 `problems`，`config_conflict` 多 `current` 或 `version`）。
+
+#### 本机和远程（施工 Y-1 下）
+
+一个连接从哪来（`connection/reach.rs` 的 `Reach`）：
+
+| 来处 | 怎么来 | 本机才能用的方法 |
+|---|---|---|
+| 本机（`Local`） | 主入口（只有核心的主人连得上的本机套接字、命名管道）、核心拉起的扩展 | 能用 |
+| 远程（`Remote { from }`） | 网页软件替远程的人开的连接：握手之前先写一行通知 `connection.remote {from}`（来自哪个地址），再原样转浏览器的字节 | 拒 |
+
+1. `connection.remote` 只在握手之前收、只能往下标：本机的标成远程，标了就变不回本机；远程的再说一次照旧是第一次说的地址；握手以后说的不理。标了记一行运行日志 `connection marked remote`（不记地址）。
+2. 本机才能用的（`reach.rs` 的 `local_machine_only`，照 2026-10-22 的代码盘的；主会话同一天定带本机路径参数的整条拒、只在回应里带本机路径的这一步不动）：`fs.list`、`fs.find`、`fs.realpath`、`fs.read`、`session.terminal`、`session.set_terminal`、`account.setup_code`、`core.stop`；带 `path` 的 `blob.put`、`package.install`，带 `folder` 的 `kb.mount`，带 `command` 的 `mcp.set`，带 `file`、`cwd` 的 `check`，带 `cwd` 的 `config.trust`、`config.get`；`session.create`、`session.set_workspace` 带 `cwd` 或非空的 `dirs`，`session.send` 带 `cwd`、非空的 `dirs` 或附件带 `path`，`session.redo` 附件带 `path`，`command.run` 带 `cwd` 或原文是 `/workspace <路径>`，`project.create`、`project.update` 带 `workspace`，`schedule.add` 的 `target.new` 带 `cwd`（施工 J-1 下）。`mcp.login` 远程也能调（施工 X-42 下补，主会话 2026-10-22 定）：回调照旧听核心的 `127.0.0.1`，远程的头在它自己那边打开授权页，跳到打不开的地址以后照 `mcp.login_finish` 贴回来。
+3. 不是本机来的调这些：回 `local_machine_only`（「只能在核心所在的机器上用。」），什么都不做，参数都不看。闸在分发的最前面那一段（`connection.rs`，扩展的能力闸旁边），后台答的（`fs.find` 带 `wait`）、`login.*`、`account.*`、`subscribe` 都过它。
+4. 握手回应：不是本机来的不给 `host`。
+5. 只在回应里带本机路径的（`session.list` 的 `cwd`、`skill.list` 的 `dir`、`config.get` 的 `files` 这些）这一步不动：路径本身不是能力。
+6. 网页的选目录、打开本机文件夹（`reveal`）不是核心的方法，是网页软件的 HTTP 端点：网页软件照它的连接是不是本机决定开不开。
+
+#### 握手 `hello`
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `protocol` | 两个非负整数 `[最低, 最高]` | 头支持的主版本范围，必写 |
+| `head` | `{"kind": 字符串, "version": 字符串}` | 头的种类和版本，必写，只记进运行日志 |
+| `locale` | 字符串，可以不写 | 头所在系统的语言（BCP 47 或者 `LANG` 的写法都行）。`ui.language` 是 `auto` 时照它定这个连接的语言：`zh` 开头的（区分大小写）是 `zh`，`ja` 开头的是 `ja`，别的、没写的是 `en`（施工 8-2） |
+| `caps` | 对象，不写是 `{}` | `input`（布尔，不写是 `false`）：这个头能不能让人输入。`prefix_ask`（布尔，不写是 `false`，施工 OV-1 下）：文件改了、前缀要变时，开新一轮之前先问人（`session.send` 第 9 条）。别的格不理 |
+| `token` | 字符串，可以不写 | 本机令牌（`ipc.md`）；本机的头出示它 |
+| `code` | 字符串，可以不写 | 一次性码：64 位小写十六进制（施工 W-8，`web-module.md`「怎么走」第一条） |
+| `login` | 字符串，可以不写 | 设备令牌（登录令牌）：64 位小写十六进制（施工 W-8） |
+| `password` | 字符串，可以不写 | 访问密码：从局域网连时用（施工 W-8） |
+
+回应：
+
+| 格 | 值 |
+|---|---|
+| `protocol` | 选定的主版本：`1`，核心只支持这一个 |
+| `core` | `{"version": <核心的版本号>}` |
+| `host` | `{"home": <系统的家目录>, "platform": "linux" 或 "macos" 或 "windows", "workspace": <默认工作区>, "dirs": <照 XDG 的几处>}`（施工 W-3，`web-module.md`「四、路径」）：`home` 是核心起来时拿到的系统的家目录，照原样，读不出来的是 `null`；`platform` 是核心所在的平台；`workspace` 是默认工作区，换成真实的位置（核心起来时就建好了，握手不另外建）。远程的连接整个没有，扩展的没有 `dirs` |
+| `language` | `zh`、`en`、`ja` 之一：这个连接给人看的字用哪种（施工 8-2，`config.md` 第二条第 8 条）。`ui.language` 的最终值（默认值、系统配置）定了的就是它，`auto` 的照 `locale`。`ui.language` 改了，连接下一句就照新的说，不用再握手（施工 8-4）：回应里这一格只是握手那一刻的。核心拒绝时的话只有中文、英文，`ja` 的照英文；配置的名字、说明、报错的话有日文 |
+| `view` | 视图投影的版本，现在是 `1`（施工 9-8 中，`view.md`「握手」）：有它的核心能在 `view.page` 交条目；没有的是旧核心，头照旧照事件自己算。条目的格只加不改，改了已有的格才加一 |
+| `config_errors` | 系统配置、密钥文件（施工 8-5）里现在有几处错误（不算警告，施工 8-2）。没有的不写 |
+| `config` | 只有核心拉起的扩展的连接有（施工 9-4 下下，`extensions.md`「配置」）：这个包自己的配置项的最终值，密钥是真值；之后变了推 `extension.config`（`{"keys": {键: 新值或 null}}`） |
+| `setup` | `true`：用一次性码连上的，只能设访问密码（施工 W-8）。别的不写 |
+| `password_set` | 设过访问密码没有（施工 SU-1 补）：头照它决定「允许局域网访问」开不开得了 |
+| `login` | `{"expires": <时刻>, "token": <设备令牌>}`：用访问密码、交接票连上的才有（施工 W-8） |
+| `sandbox` | 这台机器上的沙盒能不能用（核心起来时探的，`sandbox.md`）：`{"usable": true}`，或者 `{"usable": false, "reason": <原因>}`。原因是 `helper_missing`（主程序旁边没有助手）、`helper_failed`（助手跑不起来、超时、说的读不懂、和核心不是同一份源码编的）、`no_mechanism`（探成了，这台机器上却没有能用的手段）之一（施工 5-4 下） |
+
+1. 参数读不成（缺了必写的格、哪一格类型不对）：`bad_params`，连接不断。
+2. `1` 不在 `[最低, 最高]` 里：`protocol_mismatch`，回完断开。
+3. 凭据正好写一种（施工 W-8）：`token`，`code`，`login`，`ticket`（交接票，施工 LT-1），`password`。写了不止一种：`bad_params`，回完断开。一种都没写、本机令牌不对：`bad_token`，回完断开；网页软件转来的远程连接（`connection.remote`）一种都没写、又还没设访问密码的回 `password_not_set`。本机令牌长短要一样，每个字节都比，比到哪一个不一样都用一样长的时间。另外几种怎么验、被拒回什么（`bad_code`、`bad_login`、`bad_password`、`password_not_set`、`login_throttled`，都回完断开）照 `web-module.md`「怎么走」第一条：密码登录照来源（`connection.remote` 的地址，本机来的算一份；去掉端口，IPv6 照前 64 位算一份）60 秒错 5 次先拒，所有来源合起来 60 秒 30 次也先拒（施工 AS-4，发布前审计 10-30、项目主人同一天定；`login/throttle.rs`，过了窗口的记录清掉）。用一次性码连上的只能调 `hello`、`human.get`、`account.setup`，别的回 `setup_first`。
+4. 过了：连上来的人就是主人。他发的命令都记成他发的（`by` 是 `{"kind":"person"}`），命令引起的事件，`cause` 是请求的 `id`（`kernel/events.md`）。
+5. 握手以前：别的方法一律 `hello_first`，连接不断；读不懂的行照「请求」的表回；通知不理。
+6. 握手以前的拒绝说英文；`hello` 本身被拒的，话照这一次报的 `locale` 说（读得出来的话，施工 4-9 再补三上）。过了的，话照回应的 `language` 说（施工 8-2）：`ui.language` 定成 `en` 的，报 `zh-CN` 的头也听英文。握手以后再发 `hello`：照样从第 1 条查起；过了，换成这一次算出的语言和能力；这一次被拒的，话照这一次报的语言说，没断开的还是上一次握手的语言和能力。
+7. 握手的时限：连上 10 秒还没握手成的，断开（施工 4-9 再补三上）。不然一个连上不说话的本机进程，能让核心一直不空闲退出。
+
+#### 方法
+
+握手以后认这几个，别的方法回 `unknown_method`：
+
+| 方法 | 做什么 |
+|---|---|
+| `session.create` | 造会话 |
+| `venue.session` | 找回或者造一个通讯平台场所的主线会话：收到一条消息时找它（施工 O-3，`venues.md`） |
+| `venue.sessions` | 列出桥接的平台的场所会话，一个场所一个：桥起来时照它订阅（施工 O-32 前，`venues.md`「列场所会话」） |
+| `venue.plugins` | `{venue, on}`：说这个场所开着哪些场所插件，整份替换，回应 `{}`；只管自己平台的场所（施工 O-60，`venues.md`「场所插件」） |
+| `session.respond` | 照已经旁听记下的几条开一轮，带几块事实（施工 O-14 上，`venues.md`「照记下的几条开一轮」）；不写 `to` 的照事实开（施工 O-64）；`tail` 是这一轮每次请求接在最末尾的一句（施工 RT-1，`kernel/request.md`「组装」第 8 条） |
+| `session.fork` | 从一个主会话分叉出子会话：历史引用它到分叉点为止的有效历史，前缀和它逐字节一样（施工 C-8 上，`session/fork.md`） |
+| `session.note` | 只记几块事实，不开回合（施工 O-14 补，`venues.md`「记几块事实」） |
+| `system.append` | 声明了 `context.system` 的扩展往 system 尾部放一段（施工 X-20，`extensions.md`「放在 system 尾部的」）：`{content, session?}`，`content` 是原文（1 到 4000 个字）或 `null`（去掉这一层），不写 `session` 的管全部会话、写了的只管那一个、优先；回应 `{}`。不是核心拉起的扩展 `not_a_provider`，没声明的 `needs_approval`（`data.capabilities` 是 `["context.system"]`），写法不对的 `bad_params` |
+| `content.list`、`content.read` | 核心拉起的扩展读别的包给它带的内容（施工 X-22，`packages.md`「给别的包带的内容」）：`content.list {}` 回 `{"packages": [{"package", "version"?}]}`，照编号排；`content.read {package, path, offset?}` 分块读那个包 `[content.<它>] dir` 目录里的一份，回应同 `package.file`。不要能力；别的连接 `not_a_provider`，没有这个包、没给它带的 `unknown_package`，路径空的、写错的 `bad_params`，没有这一份、经链接指出目录的 `not_found`。核心每重读一次清单，给它带内容的包前后有一个就推 `content.changed`（`{}`），它再列一遍 |
+| `provide` | 核心拉起的扩展登记它提供的工具（施工 O-2 上，`providers.md`）；核心照登记反向调用 `tool.call`，超时、打断时发通知 `tool.cancel`（施工 O-2 下）；人敲了扩展声明的斜杠命令，核心反向调用 `command.call`（施工 X-14 下，`command.run` 第 14 条）；声明了 `context.inject` 的，回合开始核心反向调用 `user.append`（施工 X-16，X-16 补改名，`extensions.md`「回合开始的挂接点」） |
+| `venue.binding` | 问一个平台身份是不是主人（在主人对应表里），只给平台桥（施工 O-31 前，`venues.md`「问对应表」） |
+| `venue.records` | 判官看的群聊记录：要判的那一条和它之前的几条，一行一条，和她看到的同一个写法（施工 O-24，`venues.md`「判官看的群聊记录」） |
+| `events.append` | 往会话里记一条不带回合编号的事件：扩展自己的 `ext.*`、场所的 `venue.recalled`、`venue.delivered`（施工 O-13 上，`venues.md`） |
+| `session.list` | 列出会话 |
+| `session.send` | 说一句话 |
+| `session.interrupt` | 打断在进行的回合 |
+| `session.withdraw` | 不打断，退回一条排着队、她还没听到的消息（施工 Q-W） |
+| `session.tools` | 她下一次请求会拿到的工具，照发的先后、带来处；不写会话的照新会话会拿到的算（施工 S-T） |
+| `session.context` | 这个会话这时的上下文一块块的：system、工具说明、示范对话、检查点摘要、对话各占多少，用量和压缩线（施工 CX-1 上）；不写会话的照新会话会拿到的算（CX-1 下） |
+| `session.usage_parts` | 这个会话（可连子代理）累计用了多少，照上下文的块分开：每次主请求的输入照那一刻各块的比例摊，输出单成一块（施工 CX-3） |
+| `session.quota` | 这个会话接下来请求的那一家的额度：几个窗口各用了百分之几、什么时候重置（施工 QU-1），或者账户余额（施工 QU-2，DeepSeek 官方）；只有档案写了查额度接口的供应商有 |
+| `session.revert`、`session.unrevert` | 撤销、恢复最近一次撤销（`protocol/undo.md`） |
+| `session.redo` | 重做最后一轮：撤掉它，把开它的话再发一次（施工 4-7 再补） |
+| `session.compact` | 手动压缩：单开一轮只做压缩（施工 6-8） |
+| `session.set_permission_level` | 切权限级别：开关只读，改常用的那一级（施工 3-8 再补） |
+| `session.clear` | 清空上下文：单开一轮压成一个空的检查点，不请求模型（施工 6-8 补） |
+| `session.recap` | 要一句回顾：这个会话在做什么、做完了什么、卡在哪（施工 3-8 四补） |
+| `persona.list`、`persona.get` | 列出人格、读一个人格叠好的样子（施工 P-1 上，`personas.md`） |
+| `preset.list`、`preset.get` | 列出预设、读一个预设叠好的样子（施工 P-2 上，`presets.md`） |
+| `preset.set`、`preset.delete` | 新建、改一个预设（只写你那一层），删掉你那一层（施工 P-3 中，`presets.md`「改」） |
+| `schedule.add`、`schedule.list`、`schedule.cancel`、`schedule.pause`、`schedule.resume`、`schedule.update` | 定时任务：建、列、删、停、续、改（改的施工 J-5），照唤醒表（施工 J-1 下，`schedules.md` 第五节，协议参考 `docs/reference/schedules.md`） |
+| `persona.set`、`persona.read`、`persona.delete` | 新建、改一个人格（只写你那一层），读一份提示词的原文和版本，删掉你那一层（挪进回收处）；你那一层没有、只有只带它的出厂包带的，删它是卸那个包（施工 P-3 下，PE-1，`personas.md`「改」） |
+| `persona.avatar` | 读一个人格的头像：`{"avatar", "media_type", "data"}`，没有的 `null`（施工 P-5，`personas.md`「头像」） |
+| `persona.background` | 读一个人格的背景图：`{"background", "media_type", "data"}`，没有的 `null`（施工 P-6，`personas.md`「主题色、背景图」） |
+| `package.list` | 列出起来时读到的软件包清单（施工 9-1 上，`packages.md`）；装卸以后当场照新的，卸掉的出厂的带 `removed`（施工 F-5 上） |
+| `package.install`、`package.remove` | 装、卸软件包，当场生效（施工 F-5 上，`packages.md`「装卸」） |
+| `package.sync` | 从软件源拿索引（施工 G-3 上，设计 `37-软件源.md` 第四节第 1、2 条） |
+| `package.search` | 在软件源里搜（施工 G-3 下，设计 `37-软件源.md` 第四节第 3 条） |
+| `package.clean` | 清掉缓存里不是装着那一版的包文件（施工 G-4 下，设计 `37-软件源.md` 第四节第 5 条） |
+| `package.upgrades`、`package.upgrade` | 盘点能升级的、照软件源升级（施工 G-5，设计 `37-软件源.md` 第四节第 6、7 条） |
+| `package.info`、`package.files` | 一个包的信息、装了哪些文件（施工 F-8 中上，`packages.md`「本地库」） |
+| `package.logo` | 读一个装着的包自带的图标：`{"package", "logo", "media_type", "data"}`，没写、不合规矩的 `null`（施工 F-18 上，`package-pages.md`「`package.logo`」）；写了 `from` 的读那个软件源里的（施工 F-18 下） |
+| `package.owns`、`package.check` | 一个路径归哪个包；装好的文件改了、少了、多了（施工 F-8 中下，`packages.md`「本地库」） |
+| `package.enable`、`package.disable` | 软件包列表上的开关：照种类开关扩展的进程、`bundle` 带的 MCP 服务（施工 X-3 上），或者卸掉、装回来出厂的内置包（施工 F-6 上，`package-pages.md`「开关」） |
+| `package.restart` | 重启扩展的进程和它带的 MCP 服务、`bundle` 带的服务（施工 X-4，`package-pages.md`「开关」） |
+| `mcp.list`、`mcp.restart` | 系统配置里的 MCP 服务：这时的状态、重启一个（施工 F-9 补，下面「`mcp.*`」，`mcp.md`「系统配置里的一张表」） |
+| `mcp.set`、`mcp.remove` | 系统配置里加上或整条换掉、删掉一个 MCP 服务（施工 X-26，下面「`mcp.*`」） |
+| `skill.list` | 列出核心这一刻用得上的技能：名字、给人看的名字和说明、从哪来、`SKILL.md` 在哪（施工 X-26，`skills.md`「技能」）；全局开关 `on`（施工 X-27） |
+| `skill.remove` | 删你自己放的技能，几个一起，整个文件夹挪进回收站；随包来的不能删（施工 W-13，网页的技能页） |
+| `script.list` | 列出登记上的脚本：工具名、给人看的名字和说明、从哪来、文件在哪、时限、全局开关（施工 X-27，`skills.md`「脚本」） |
+| `feature.set` | 改全局开关（`features.<功能编号>`），`null` 删掉；只给人（施工 X-27，`presets.md`「全局开关」）。改加载方式的 `tool.set_loading` 施工 AUD-2 拿掉了 |
+| `package.file`、`package.call` | 读一个包的后台页里的文件（吉祥物包读它的模型文件，施工 F-7）；调它的程序登记的方法，核心反向发 `method.call`，在后台答（施工 F-6 中，`package-pages.md`） |
+| `package.page` | 不靠网页打开后台页：核心按需起本机的后台页服务，回宿主页的 `{"url"}`；只给人（施工 BP-3，`package-pages.md`「不靠网页打开软件后台」第 3 条） |
+| `bus.call`、`bus.list` | 用户态总线（施工 BUS-2，设计 67）：照名字找到提供的包、拼上前缀转过去（同 `package.call`，在后台答，参数里的 blob 交给被调的一方）；列出总线上的名字、可不可用、每一家登记上了哪几个方法（`methods`，施工 BUS-3补）。`bus` 流推 `bus.changed`，带整份名字 |
+| `package.methods` | 核心拉起的扩展登记它的后台页要调的方法（施工 F-6 中，`package-pages.md`） |
+| `extension.status`、`extension.enable`、`extension.disable`、`extension.restart` | 核心拉起的扩展：列状态、开、关、重启（施工 9-4 上，`extensions.md`） |
+| `check` | 查人手写的文件：配置、密钥文件、人格，照磁盘上现在的字（施工 8-30，`cli/check.md`） |
+| `memory.list`、`memory.search`、`memory.remember`、`memory.update`、`memory.forget` | 人不经过她列、搜、记、改、忘和清空记忆（施工 R-3 补，`memory.md`「协议」） |
+| `memory.turns`、`memory.restore` | 搜以前的对话；恢复作废的一条（施工 R-12 下，`memory.md`「协议」） |
+| `memory.import` | 把别处的记忆成批导进来，保住原来记下的时刻，照 `origin` 去重（施工 MI-1，`memory.md`「协议」） |
+| `memory.dream` | 现在就整理记忆：先抽、再合，回几样数；在后台答（施工 R-7 补，`memory.md` 第七条第 9 款） |
+| `memory.dream_stop` | 叫停这一间这时人叫的整理（施工 R-23，`memory.md` 第七条第 13 款） |
+| `memory.cards`、`memory.card_update`、`memory.card_forget` | 认识的人的卡：列、人写一张、作废一张（施工 E-1 下，`memory.md` 第七条第 15 款） |
+| `kb.list`、`kb.search`、`kb.read`、`kb.documents` | 列知识库、搜、读一个文档的一页、列一个库里的文档（施工 K-1 上，K-10；`knowledge.md`「对外的样子」） |
+| `command.run` | 执行一条斜杠命令：头把人打的原文交过来，核心认、判谁能用、执行（施工 O-6）；登记表里没有的照命令模板展开成一句发给 AI（施工 X-14 上，`slash.md`） |
+| `command.catalog` | 列核心认的斜杠命令（连命令模板），给头的命令菜单、`/help`；带会话的只列这个会话里真能用的（施工 O-6 补、X-14 上） |
+| `session.answer` | 回答一次确认（允许这一次、本会话都允许、拒绝），或者一组题（施工 D-1） |
+| `job.stop` | 停掉一个后台命令或者子代理（施工 7-4） |
+| `job.output` | 读一条后台命令到这时为止的输出（施工 7-4 补）；带 `after` 只要新长出来的、带 `wait` 等它长了再答（施工 V-6 上） |
+| `blob.put` | 传一个附件，存成 blob（施工 3-9 三补） |
+| `account.setup_code` | 要一个一次性码：网页第一次设访问密码；只给出示本机令牌的连接（施工 W-8） |
+| `core.stop` | 叫核心停下：回应 `{}` 写出去以后照收到停的信号那样停（`core.md`「停下」第 10 条）；回应以前留下人停的记号 `run/stopped`，头自己重连不再拉起（施工 CS-5，`ipc.md`）；只给出示本机令牌的连接，别的回 `local_only`，远程的回 `local_machine_only`（施工 DT-4 下：桌面端托盘里的「退出」连核心一起关） |
+| `login.ticket`、`login.redeem` | 交接票（施工 W-8 补，接入通讯平台要的）：人要一张 60 秒、一次性的票（本机令牌、设备令牌、密码、交接票连上的都能要）；接的一方握手交 `ticket`（施工 LT-1），或者 `login.redeem` 换一个设备令牌。要票时可以写 `via`（`page`、`open`，施工 LT-2），进运行日志；人要的 `page` 票（网页软件 `/ticket` 替本机页面要的）也只在本机换（施工 LP-2，同下面扩展的），`open`、不写的哪儿都能换。扩展（施工 LP-1，项目主人 2026-11-06 定只给本机免密）只能要 `via: "page"` 的，要批过能力 `login.page`（出厂的也要人批），没批的 `needs_approval`，不写、别的 `via` `local_only`；它要的票记成只在本机换：远程的连接（说过 `connection.remote` 的，不管地址）握手交它、`login.redeem` 它都回 `bad_ticket`，票当场作废（`login/ticket.rs` 的 `Reach`）。详见 `docs/reference/connection.md`、`docs/reference/extensions.md`「替本机页面换登录票」 |
+| `account.setup` | 设、改访问密码（施工 W-8）：`{"password"}`，本机令牌连上的回 `{}`，别的换一个设备令牌；以前的设备全部作废、连着的断开。设备令牌连上的（施工 SU-1 补）设过的要带对现在的 `old`，照来源限流同密码登录 |
+| `account.logout` | 作废设备令牌：这一个，或者 `all` 全部（施工 W-8） |
+| `account.set_avatar`、`account.avatar` | 你的头像（施工 AV-1，`login/avatar.rs`）：放在数据根 `avatar.<扩展名>`，查法、写法、上限同人格头像（`personas/picture.rs` 的 `check`、`replace`、`encoded`）；握手回应带版本 |
+| `blob.open`、`blob.write`、`blob.close` | 分块传一个附件，最后存成 blob，回应和 `blob.put` 一样；跟着连接走，60 秒不写、连接断了都作废（施工 W-5） |
+| `blob.get` | 分块读一个 blob：照存处给；写了 `session` 的照那个会话引用过的（施工 W-6、W-6 补）；扩展只读得到它拿得到的（施工 W-6 三补）。它不走「关着的场所会话只给桥」那一道，拒的一律 `unknown_blob`，免得拿两种拒绝的说法探编号 |
+| `session.shown` | 分段读她展示过的一个文件（施工 SW-1）：照会话加调用编号找那次 `show` 记下的路径，大小、修改时间对上了才读；谁读得到同带 `session` 的 `blob.get`，也不走「关着的场所会话只给桥」那一道，拒的一律 `unknown_shown` |
+| `fs.list` | 列一层目录：数据根只有默认工作区能列（施工 W-2） |
+| `fs.find` | 在一个目录里模糊找文件：数据根只有默认工作区能找（施工 W-2）；带 `wait` 等清单建完再答（施工 V-6 上） |
+| `fs.realpath` | 一个路径换成真实的位置：不查边界，落在数据根里的照样换（施工 W-3） |
+| `fs.read` | 分块读本机的一份文件：数据根只有默认工作区能读（施工 W-6） |
+| `session.set_meta` | 改标题、置顶（施工 3-8 三补） |
+| `session.retitle` | 让模型照现在的对话重起一个标题（施工 TT-1） |
+| `session.viewing` | 头告诉核心自己开着哪个会话（`null` 是没开），核心照连接记、断了就忘；会话列表那一项照它写 `viewed`（施工 HV-1，`docs/reference/sessions.md`） |
+| `notices.claim` | 头认领发后台通知（`{}`，只给人的头）：核心照连接记、断了就放；`notices` 流的订阅回应有人认领时写 `claimed: true`，有没有人认领变了推 `notices.claimed`（施工 TR-1，托盘 `miyu-applet` 用，`docs/reference/connection.md`「`notices.claim`」） |
+| `prefs.get`、`prefs.set` | 界面包自己的设置（皮肤、配色这些），存在数据根里、跟着人走：读整份；照顶层的键并、`null` 删，交回整份，推给别的连接（施工 HP-1，下面「头自己的设置」） |
+| `session.set_workspace` | 换会话在哪个目录干活（施工 9-7 上） |
+| `session.configure` | 换模型、人格、预设、思考强度、钉的看图模型、钉的压缩触发线，下一个回合开始生效、换模型和思考强度给头看的当场换（施工 MC-1）（施工 8-10，`models.md`「协议」；人格、预设施工 P-13；思考强度施工 SM-1；看图模型施工 VM-1；压缩触发线施工 CT-1）；会话的上下文上限，当场生效（施工 CTX-1） |
+| `session.delete` | 删除会话：挪进回收处，留 7 天（施工 3-8 三补） |
+| `config.schema` | 配置清单，名字和说明照这个连接的语言（施工 8-2，`config.md`「协议」）；选项可以带 `note`：只有核心查得出的才有，头接在名字后面暗色写（施工 R-5 再补）；可以带 `available: false`：核心查得出用不了的才有，头画成灰的、选不了（施工 R-5 三补）（施工 5-15 再补的 `ticks` 随私密目录去掉了，施工 PV-RM） |
+| `config.get` | 最终值和来源，每一份文件在哪、版本，现在的全部问题；带 `cwd` 的算上那个目录的项目配置（施工 8-2）。`files` 多 `secrets`，只有 `file`；问题里有密钥文件的、引用取不到的（施工 8-5） |
+| `config.check` | 把一段字当成一层的配置查，不生效（施工 8-2） |
+| `config.set` | 在系统配置里改一项或几项、恢复默认，或者整份换掉；只动那几项，落了盘、记了日志才回应（施工 8-3）；扩展进程调回 `local_only`（施工 T-9），只有系统配置里自己包编号开头、不是密钥、不写成引用的几项能逐项改，留痕记成这个包（施工 T-9 补，`config.md`「协议」） |
+| `config.trust` | 信任、不信任一份项目配置，带人看过的那一份的版本（施工 8-3）；扩展进程调回 `local_only`（施工 T-9） |
+| `secret.set` | 写入或者换掉一个密钥（`name`、`value`），落了盘、记了日志才回应 `{"replaced"}`（施工 8-5，`config.md`「协议」）；扩展进程调回 `local_only`（施工 T-9） |
+| `secret.delete` | 删掉一个密钥（`name`），回应 `{}`（施工 8-5）；扩展进程调回 `local_only`（施工 T-9） |
+| `secret.list` | 密钥的名字、设没设、谁在用（`used_by`），从不交出值（施工 8-5） |
+| `model.list` | 配好的供应商和模型，每一格资料的值和来源、状态，在用的目录（施工 8-7）；池、两种用途（施工 8-8：`pools`、`uses` 多 `vision`；8-8 补去掉 `tiers`，池多 `subagent`、`description`）；模型、key 的状态多 `cooling`，带 `until`、`class`（施工 8-9）；每个模型的 `facts` 多 `effort`（施工 8-18），多一格 `key`（8-18（补））。参数 `provider`（只看这一家）、`refresh`（先拉一遍供应商的模型列表）、`models`（只要这几个，施工 V-6 上）都可以不写；形状照 `models.md`「协议」`model.list` |
+| `provider.detect` | 找现成的：核心的环境里设了的 key（不交值）、本机跑着的模型服务、找了哪些环境变量（施工 8-11）；形状照 `models.md`「协议」 |
+| `provider.catalog` | 搜目录和档案里的供应商：`query`、`limit` 都可以不写；每一家能不能用、在不在本机（施工 8-11）；`featured` 只要常用的几家（施工 8-11 再补）；每一家的图标 `logo`（施工 8-31，`models.md`「图标」，`model.list` 每一家也有） |
+| `provider.test` | 试一家：配好了的（`provider`）或者还没写进配置的（`candidate`）。列得出模型就算通（施工 8-11 五补）；列不出、写的模型不在列表里的才真发一句，收到第一段正文就停，那时会花一点额度；交回成没成、哪一步、出错，要模型名的带 `need_model`（施工 8-11） |
+| `provider.rename` | 改一家供应商的编号：配置里的表、引用、池的成员一次改完，钉着旧编号的会话下一轮照新的（施工 8-34，`models.md`「怎么走」第十六条）；只给人 |
+| `model.call` | 经一次性入口叫一次模型或池，拿整段回答和用量；不进任何会话；会花额度（施工 8-20，`models.md`「协议」、「怎么走」第十二条）。8-15 起每发出去一次记一笔账：`journal.jsonl`、用量汇总 |
+| `model.embed` | 照配置的 `models.embedding`（本机的内置模型、远程那一家）算一批字的向量（施工 X-17，给扩展按意思搜）：`{texts}`，1 到 64 条、每条 1 到 8000 个字；回应 `{model, vectors}`，`model` 是模型编号（`local:<id>`、`<供应商>/<模型>`，换了模型的向量不能和以前的比），`vectors` 照先后、归一化过的。一条一条算，每条至多等 30 秒，有一条算不出整批不交。远程的用量照记。不另设能力（同 `model.call`）。拒绝：写法不对的 `bad_params`；关着、要本机的却没装的 `embedding_off`；算不出、等不到的 `embedding_failed` |
+| `usage.query` | 查用量和金额：照人、场所、模型、天、会话、用途分组，金额照币种各加各的；先补再查（施工 8-15，`models.md`「协议」、「怎么走」第九条） |
+| `usage.convert` | 替扩展换算金额：扩展自己照日子、币种记的金额，一组换成 `usage.currency` 的一个数，写法同 `usage.query` 的 `converted`（施工 UC-3，`models.md`「协议」`usage.convert`） |
+| `human.get` | 给人看的字：工具的样子、说法的模板原文，照这个连接的语言；不带 `config`（施工 W-1） |
+| `mermaid.render` | mermaid 源码画成 SVG。编进了 `base-mermaid` 包才有，没编进来回 `unknown_method`（施工 W-4，`mermaid.md`） |
+| `link.preview` | 一个链接的卡片：标题、简介、图（存成 blob）。编进了 `base-net` 包才有，没编进来回 `unknown_method`；在后台答（施工 W-7，`net.md`） |
+| `subscribe`、`unsubscribe` | 订阅、取消订阅会话的事件流；配置、会话列表、扩展的状态的推送 |
+| `session.prompts` | 一个会话里主人问过的所有话：序号、回合、时刻、第一行（照有效历史；施工 SP-2，网页的「问话跳转」用） |
+| `session.export` | 一个会话打成原始包写到人给的路径（施工 SE-1 上，设计 58）；只给人的头 |
+| `session.import` | 导入原始包，可以导成只读存档（施工 SE-1 下，设计 58）；只给人的头 |
+| `view.page` | 历史按页读：从末尾一页页往前，页的边界落在回合之间（施工 9-6 下）；写了 `view: true` 的交视图投影的条目（施工 9-8 中） |
+| `view.detail` | 一次调用的完整差异和结果原文（施工 9-6 三补、9-8 中）；一次压缩的摘要原文（施工 9-8 中） |
+
+带 `session` 的，它要合会话编号的写法：UUID 的标准写法，小写十六进制，8-4-4-4-12；不合的 `bad_params`。找会话照下面「会话表」。
+
+**`session.create`**
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `persona` | 字符串或 `null`，可以不写 | 照哪个人格造；写 `null` 的明着无人格，不写的照这时的 `persona.default`（施工 P-1 上，`personas.md`），没设的、指着没有的无人格（施工 P-4 上：预设不再管默认人格，出厂不设默认人格）。无人格的会话 system 里没有人设；记忆照样有，跟着人格的落在无人格那一间（施工 P-12） |
+| `preset` | 字符串，可以不写 | 照哪个预设造（施工 P-2 上，`presets.md`）：不写、写 `null` 的照这时的 `preset.default`，都没写是出厂的 `full`。记进 `session.created` 的 `preset`，以后不改 |
+| `cwd` | 字符串，可以不写 | 头的工作目录，人看到的那种写法，例如 `~/src/miyu`。不写的照这个会话自己的默认工作区（施工 Y-1 下：远程连进来的不能写，「本机和远程」） |
+| `oneshot` | 布尔，不写是 `false` | 一次性的：`miyu ask` 开的写 `true`，记进 `session.created` |
+| `images` | 布尔，不写是 `true` | 这个头显示得了图片吗（施工 X-25，同 `venue.session` 的 `images`，`venues.md`）：以后的语音头写 `false`；终端、网页不写（终端在不支持图片的终端里也不写：同一个会话换个地方就看得了） |
+| `titles` | 布尔，不写是 `true` | 这个会话自动起标题吗（施工 O-43，同 `venue.session` 的 `titles`，`venues.md`）：`false` 的记进 `session.created`，从此不自动起 |
+| `dirs` | 字符串的数组，可以不写 | 加进来的目录：和工作区一样能读能写（「加进来的目录」（施工 5-10 上））。不写是没有 |
+| `model` | 字符串，可以不写 | 用哪个模型：模型 `<供应商>/<模型>` 或池 `@<池>`（施工 8-8，`models.md`「两种写法」；挡位 8-8 补去掉了）。照这时的配置查过，记进 `session.created` 的 `model`；不写、写 `null` 的照这时的 `models.chat` 原样记（写的是池就记池），以后改 `models.chat` 这个会话照旧（施工 SM-1，设计 51 第一节），那也没配的不写（照旧跟着以后的 `models.chat`） |
+| `vision` | 字符串，可以不写 | 钉哪个看图模型（施工 VM-1，`models.md`「协议」）：写法、解析同 `model`，解析不出的 `unknown_model`、什么都不造；不写、写 `null` 的跟着 `models.vision`。造好以后照 `session.configure` 的 `vision` 记一条 `session.policy_changed`（命令编号接 `/vision`），回应的 `events` 多它，排在 `project` 那一条后面 |
+| `compaction_line` | 整数，可以不写 | 钉会话的压缩触发线（施工 CT-1，`compaction.md` 第二条第 2 条）：窗口的百分之几，20 到 95（照配置项 `compaction.line` 的范围），不在范围里、不是整数的 `bad_params`（`data.field` 是 `compaction_line`）、什么都不造；不写、写 `null` 的跟着 `compaction.line`。造好以后照 `session.configure` 的 `compaction_line` 记一条 `session.policy_changed`（命令编号接 `/compaction_line`），回应的 `events` 多它，排在 `vision` 那一条后面；第一个回合开始换上 |
+| `memory` | 字符串，可以不写 | 记忆的范围（施工 R-3 下，`memory.md`「范围」）：`persona`（跟着人格）、`off`（不召回也不记）。记进策略快照，以后不改。不写、写 `null` 的是 `persona`。别的值 `bad_params`：原来的 `session`（只在这个会话里）施工 FH-1 去掉了，旧头再发它也回 `bad_params`，什么都不造 |
+
+回应：`session` 新会话的编号；`events` 是 `[1]`，就是 `session.created` 那一条；`cwd` 是会话实际在哪个目录里干活（「工作目录太宽」）；`wide`：太宽、照人选的用着的才有，是 `true`（施工 9-7 补）；`untrusted_project`：这个目录找得到项目配置、又还没问过信不信任（`trust.toml` 里没有这个仓库，或者记的内容和现在的不一样），写它在哪，写法同配置来源的 `file`（家目录下的写成 `~/…`）。信任着的、选了不信任的、没有项目配置的不写（施工 8-2，`config.md` 第三条第 2 条）。
+
+1. 编号是 UUIDv7：前 48 位是造的这一刻（毫秒），同一个核心造的照先后排。
+2. 场所是 `local`，权限从「工作区」开始，只读照 `permission.start_read_only` 的最终值：照实际干活的目录算，带上信任着的项目配置（施工 8-2，`config.md` 第二条第 9 条），没写的是不只读；有没有人能确认，照这个连接握手时的 `caps.input`；环境是核心所在机器此刻的时区偏移（到分钟）和实际干活的目录。
+3. `session.created` 落了盘才回应。
+4. 同一个命令编号再发：记着最近 1024 个造会话的编号，是其中之一的，交回上一次造的那一个，不再造；`cwd` 照这一次报的算。除了 `cwd`、`dirs`，别的参数（人格、预设、模型、`memory` 这些）和上一次不一样的：拒绝，`id_reused`，什么都不造（施工 YC-7）；比的是这次运行里记在内存里的指纹，重启以后补回来的编号没有指纹，照旧交回上一次那一个。核心重启以后，第一次造会话时，从最新的 1024 个会话的 `session.created` 里把编号补回来（`cause` 就是造会话的命令编号，施工 4-9 再补三上），在阻塞线程里读。去重不分连接：头每个连接的编号要和以前的都不一样（随机前缀），不然新连接的造会话、说话都被当成重发（`docs/reference/connection.md`「先后」第 3 条）。
+5. `memory` 不是这三种字符串之一（大小写也算）：`bad_params`，什么都不造（施工 R-3 下）。`model` 不是字符串：`bad_params`。解析不出（写法不对、没有这家供应商、没有这个池、池里一个成员都认不出）：`unknown_model`，什么都不造（施工 8-8，`models.md`「协议」）。先解析再找同一个命令编号造过的。
+6. 人格的编号不合写法（小写英文字母开头，只有小写字母、数字、`-`、`_`，最长 64 字节）：`bad_params`。三层（出厂、包带的、你的，`personas.md`）都没有这个人格：`unknown_persona`，默认人格指着没有的也一样，不悄悄换。人格的文件写错了：`persona_invalid`，`data.problem` 写明哪一层、哪个文件第几行（施工 P-1 上）。预设照同样的规矩，先于人格找（施工 P-2 上，`presets.md`）：编号不合写法 `bad_params`，三层都没有（默认预设指着没有的也一样，Y12）`unknown_preset`，文件写错 `preset_invalid`（`data.problem` 写明哪一层、哪个文件第几行），都不造。人格的文件、随核心附带的 `core/` 下的字读不了（安装坏了）：`internal_error`（施工 4-9 再补三上）。别的造不成（策略造不出来、磁盘上建不成、`session.created` 没落盘）：`internal_error`，原因记进运行日志。
+
+**`session.fork`**（施工 C-8 上，`session/fork.md`）
+
+- 参数 `{"session", "seal_after"?}`：父会话，得是主会话；`seal_after`（1 起的整数，施工 C-8 下）是跑完几轮封存，支线写 `1`，不写的不封存。回应 `{"session": <子会话编号>, "upto": <分叉点的序号>}`。
+- 分叉点由核心定：父会话在跑一轮的，是这一轮 `turn.started` 之前那一条；闲着的是最后一条。子会话的场所、工作目录、权限、策略快照、钉住的模型照父会话那一刻的；它的日志从 `upto + 1` 起，第一条 `session.created` 带 `forked: {from, upto, seal_after?}`、`parent`、`depth`。
+- 封存（施工 C-8 下）：跑满 `seal_after` 轮、这一轮结束、没有接着开的，记一条 `session.sealed`，订阅着的照常收到。跑的时候发来的、并进来的、被有计划的重启打断以后接着干的，算同一轮。封存以后 `session.send`、`session.respond`、`session.note`、`events.append`、`session.redo`、`session.compact`、`session.clear`、`session.revert`、`session.unrevert`、`session.configure`、`session.set_permission`、`session.set_workspace`、斜杠命令拒 `session_sealed`；改标题置顶、打断、回答、回顾照常。封存了的没人订阅、没事了就从内存里卸下，日志留在磁盘上。
+- 子会话照普通会话用：`session.send`、`session.respond`（`to` 可以是分叉点以前在父会话里旁听记下、还没当过触发的序号）、订阅。记成谁同 `events.append`。
+- 拒绝：没有的 `session_not_found`；父会话是子代理、分叉出来的，编号写法不对、`seal_after` 不是 1 起的整数的 `bad_params`。
+
+**`session.list`**
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `oneshot` | 布尔，不写是 `false` | `true` 只要一次性的 |
+| `dream` | 布尔，可以不写 | 整理会话（施工 D-1 下，设计 41 DS7）：`true` 只要它们，`false` 不要它们，不写都列 |
+| `limit` | 非负整数，可以不写 | 最多几个；不写是全部，`0` 是一个都不要 |
+
+只列本机会话。
+
+回应：`{"sessions":[{"busy":true,"cwd":"<工作目录>","last_active":"<时刻>","oneshot":<布尔>,"parent":<编号或 null>,"pinned":true,"session":"<编号>","title":"<标题>"}, …]}`。没有标题、说过话的多一格 `preview`：第一句话的第一行，最多 50 个字（命令模板展开成的那一句照人敲的那一行，施工 X-14 上；只在空会话里 `/goal` 开的照目标原文的第一行，施工 X-8 补修：第一句是续轮消息，以前露出 `<goal_round>` 标签），有标题就不带（施工 9-5，网页的侧边栏照它显示没起名的会话，`store/index.md`「一行记什么」）。`parent` 是子会话的父会话，主会话写 `null`（施工 7-5，`agents.md`）。在等人确认、回答的（这一步有调用在等确认、在问人，或者命令里脚本调的工具在等确认，口径同视图流会话状态的 `state: waiting`）多一格 `waiting: true`，不等的不写；会话列表的推送里那一项一样，变了照 `busy` 那样推（施工 SL-1，终端侧边栏照它画黄色「?」）。至少一个头开着的（`session.viewing`，施工 HV-1）多一格 `viewed: true`，没人开着的不写；变了照 `busy` 那样推，后台会话的通知由开着它的头出，别的头照它不另弹。fork 子代理的会话多一格 `forked: true`（施工 A-F 补，`agents.md`「一补、fork 子代理」），头照它换图标；别的不写，字节不变。`default_workspace` 是这个会话的默认工作区（施工 5-14 中）：主会话是它自己的 `<数据根>/root/workspace/<会话编号>/`，子会话、分叉出来的顺着 `parent` 一路追到主会话的那一个（同 `session.created` 的 `workspace_from`），绝对路径；头拿 `cwd` 和它比，一样的写「默认工作区」（`list/defaults.rs`）。`title`、`pinned` 照日志里的 `session.meta_changed` 算（施工 3-8 三补）：有标题的才写 `title`，置顶的才写 `pinned`（写 `true`），没有的不写；标题是人起的（最后一条写了标题的 `session.meta_changed` 的 `by` 是人，去掉标题的不算；人用 `session.retitle` 要模型重起的也是，施工 TT-2）再写 `named`（写 `true`，施工 3-8 八补：终端只把人用 `/rename` 起的标题写进输入框的边框，切过去时改名那一条常在 `view.page` 的页外）。`cwd`、`last_active` 总有，`busy` 忙的才写（写 `true`）（施工 C-3，`cross-session.md`）。`last_spoken` 是人最后一次发话的时刻（施工 SX-1，2026-11-16 项目主人定：头的会话列表照它排，只切进去不挪，人亲手发了一句话才挪到顶上），写法同 `last_active`；还没人说过话的不写，字节不变。`persona` 是会话用哪个人格（施工 P-1 下，`session.created` 的那一格），`preset` 是用哪个预设（施工 P-2 上，同样照 `session.created`），以前的日志没有的不写。整理会话（施工 D-1 下，设计 41）多 `kind: "dream"` 和 `dream`（`session.created` 的那一格原样：`persona`、`session`、`manual`、`from`；跑完了的再多 `result`，最后一条 `dream.ended` 的 `body` 原样，施工 DR-1），别的会话不写；她的 `sessions` 工具不列它们。会话列表的推送 `sessions.changed` 的一项同样带这些： 终端集成开的会话多一格 `origin: "terminal"`（施工 8-33 四补，`session.created` 的 `origin`），`advisor` 开的顾问会话多一格 `origin: "advisor"`（施工 ADV-1，`tools/advisor.md`，它是子会话、带 `parent`），别的没有。
+
+```json
+{"busy":true,"cwd":"~/src/miyu","last_active":"2026-10-01T06:03:12.345Z","oneshot":false,"parent":null,"session":"0192f3a0-2222-7abc-8def-5566778899aa","title":"修 CI"}
+```
+
+1. 只列本机会话（通讯平台的场所会话不列，施工 O-3，`venues.md`），从新到旧：照编号倒着排，编号照造的先后。子会话也列，和主会话排在一起。删了的（挪进了回收处）不列。
+2. 读每个会话日志的第一条，只读不写。跳过：目录名不合会话编号写法的、没有日志的（第一行还没写完的也算没有）、第一条读不出来的（记一条运行日志）、第一条不是 `session.created` 的。
+3. 列进去的，再只读地把整份日志读一遍（`store.md` 第 7 条），`session.meta_changed` 一条条盖上去：写了 `title` 的换成它（空的是去掉），写了 `pinned` 的换成它；撤掉的回合里改的也算，改名不是对话的一部分。后面读不下去的（日志坏了）：记一条运行日志，照坏的那一段以前的算（一段查过了才交出来，只有一段的就当没有），照样列。
+   - 第 2 到 4 条照日志算的，读会话列表的索引（施工 3-8 七补，`store/index.md`「怎么走」第 3 条）：索引里有这一行、照到的就是日志现在的末尾的，直接用，不读第一条、不整份读；日志比它长的只读多出来的那一截；没有这一行、对不上的（日志比记的短了、段对不上），这一个会话照上面整份读，读完写进索引。结果和整份读的一字不差。
+   - 带 `limit` 的（施工 YC-13）：照放会话的目录从新到旧走，够数就停，后面的会话一个都不读；索引的行也只读走得到的那一截，一批批照编号问，不把整张表解出来（`store/index.md`「怎么走」第 3 条第 1 款）。列出来的就是不带 `limit` 的头几个，一字不差，只是做的事跟着 `limit` 走、不跟着会话总数走。`default_workspace`、连同子孙的 `tokens` 要认父子，另读一遍每一行的父会话、token 两格。
+4. 同一遍里再算两样（施工 C-3）：`cwd` 是日志里最后一条带 `cwd` 的 `turn.started` 的，没有就照 `session.created` 的，都没有（很早以前的日志）写 `~`，和「会话表」第 5 条同一个认法（同一个函数）；头报来的写法，不换成真实的位置。`last_active` 是日志最后一条事件的 `at`，哪种事件都算，只有 `tool.nested` 不算（施工 M-1，`store/index.md`）；读不下去的照坏的那一段以前的，只有一段、它坏了的是 `session.created` 的时刻。`last_spoken` 是最后一条 `by` 是人（`By::is_person`：主人、通讯平台上的人）的 `message.user` 的 `at`，回合中途插的、场所里旁听的都算；定时任务、循环、长期目标的续轮、回报叫醒、重启接着干开的那几轮是内核、定时表记的，不算；撤掉的回合里说的照样算（施工 SX-1，`store/index.md`）。
+5. `busy`（施工 C-3）：列之前拿着会话表的锁看一眼，在表里、这时有回合在进行的（和「空闲和停下」看的是同一样：内核说不空闲，结束了 `turn.ended` 还没落盘、在等人确认、等人回答的都算）写 `true`。没载入的都是闲。
+6. 她用 `sessions` 列会话（`tools/sessions.md`）是这同一个函数，只要主会话、不含她自己，排法不同：两边的字对得上。
+7. `limit` 数的是列进去的。
+8. 读不了放会话的目录：`internal_error`。
+
+**`session.send`**
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+| `text` | 字符串，必写 | 要说的话，照原样成一块文字；空的一块都没有 |
+| `urgent` | 布尔，不写是 `false` | 急着插话 |
+| `shell` | 布尔，不写是 `false` | 人在头的输入框里用 `!` 打的一条命令（施工 SH-1 上，设计 57）：`text` 是命令行，原样跑。照第 10 条 |
+| `prefix` | `"keep"`、`"compact"`，可以不写 | 前缀要变时人选的（第 9 条）：直接发送、压缩上下文并发送 |
+| `cwd`、`dirs` | 可以不写 | 施工 9-7 上起照收不理：工作区是会话的属性，换它走 `session.set_workspace`。一个连接第一次收到带它们的，记一行运行日志 `WARN session.send cwd ignored`，看得出谁还在发 |
+| `attachments` | 数组，可以不写 | 附件（施工 3-9 三补）：`blob.put` 的回应，照先后。每一项要 `blob`、`name`、`media_type`；可以另写 `path`：这个附件原来在本机的哪儿，就是 `blob.put` 传的那个路径（施工 3-9 五补，剪贴板贴的、传 `data` 的不写），绝对路径（`/`、`~/`、Windows 的盘符或 `\\` 开头）、没有控制字符、最多 4096 字节，不对的 `bad_params`；核心只查写法、不碰磁盘，记进块里，模型看不了这个附件时占位那一句带上它。没写 `path` 的（施工 3-9 六补）：核心把它拷成会话目录 `attachments/` 里的一个文件（`store.md`「会话目录」），块里记那个路径；她读得到（`fs.md` 第一节第 2 行），删会话时跟着走。别的格不看。也可以是只给路径的一项 `{"path", "name", "size"?}`，没有 `blob`（施工 AT-1，下面第 4、5 条） |
+| `from` | 字符串，可以不写 | 别的 harness 报的自己的名字（施工 7-10，`agents.md` 第十一条第 4 条）：写了的，这一句是它说的，不是本人。核心拉起的扩展不能写（`bad_params`，冒充不了）：它不带 `as` 说的话记成 `harness`、名字是包的编号，组装照「别的 harness 发来的话」告诉她这不是人说的（施工 X-30，`04-核心协议.md` 第四节；不用 `By::Module`：它当一句人话的作者要动内核的追加检查和组装） |
+| `as` | 对象，可以不写 | 代表通讯平台上的人（施工 O-3，`venues.md`）：`{"external": <平台身份>, "role": "manager"|"member"}`。只给场所会话，场所会话也只收带它的（不带的回 `venue_session`）；和 `from` 不能一起写 |
+| `venue` | 对象，可以不写 | 通讯平台上的一条消息的那几格（施工 O-13 上，`venues.md`「场所的格」）：只跟着 `as` 来，原样记进 `message.user` 的 `venue`；`my_name` 是她此刻在这个场所里叫什么（施工 E-1 修三，记忆照它和人格的名字认她）；`place` 是这个群此刻叫什么（施工 E-4 上，只给记忆，请求里没有它）；`ambient` 的只记下，不开回合，回合进行中也不排进这一轮。可选的 `forwards` 是合并转发的内容（施工 O-34）：`[{nodes: [{name, text, media?, forwards?}], more?}]`，转发最多可以套 8 层，这个上限只用来保护栈；一个转发里的条数、整条消息合起来的条数和字节数、一条正文的字节数都没有另外的上限（施工 O-34 补，`venues.md`「场所的格」），只受一行最多 1 MiB 的限制。不带 `as` 的、格写错的 `bad_params`，什么都不记 |
+
+回应：`events` 是 `[<这一句 message.user 的序号>]`；`cwd` 是会话现在实际在哪个目录里干活；`untrusted_project` 照 `session.create` 的写法，照这时实际干活的目录找（施工 8-2）。
+
+1. 没有回合在进行的，这一句开一轮；有的，排队，`urgent` 的插进下一步（`kernel/session.md`）。带 `from` 的照第 7 条。
+2. 开的那一轮，`turn.started` 的 `cause` 是这一条的 `id`：头照它认出自己的那一轮。
+3. `text` 是空的、又没有附件、也没带场所的东西（`venue.media`）：`empty_message`。先找会话，找不到的回的是找不到。只有附件、`text` 是空的，也是一句话；只有 `venue.media` 的场所消息也是（施工 O-13 补：群里只发一张图、一个表情）。`venue.forwards` 不算内容：带合并转发的消息正文里要有占位（桥写 `[forward]`），只有转发、`text` 是空的照旧 `empty_message`（施工 O-34，核心审时定）。`venue.media` 里交了原图的那几样（`shown`）也不算：原图要当附件交进来，全是交了原图的、`text` 又是空的、没有附件的 `empty_message`（施工 O-35）。
+4. 附件变成内容块，照先后接在文字那一块后面（施工 3-9 三补）：核心照 blob 的内容照 `blob.put` 第 4 条再认一遍，同一份代码。图片是图片块，宽、高、媒体类型照这一次量的，头交回来的 `kind`、`width`、`height` 不算，`name` 照交回来的（施工 3-9 四补：一句话附了几张图，她分得清哪张是哪个文件）；文件是文件块，`name` 照交回来的，媒体类型照交回来的再过一遍第 4 条（内容是 PDF 的写 `application/pdf`，交回来写成 PDF、图片而内容不是的照内容认）。只给路径的一项（施工 AT-1）变成一块 `path`（`kernel/blocks.md`）：不读 blob，`name`、`path`、`size` 照头写的；和有 `blob` 的混着发，先后照写的。
+5. 附件先查，再找会话：一项缺了格、格不合写法（`kernel/ids.md`）：`bad_params`；blob 不在存处里：`unknown_attachment`；读不出来（坏了、读不了）：`internal_error`，记一条运行日志；是超了上限的图（不是 `blob.put` 传的 blob 才会有）：`attachment_too_big`。拒了的，会话里什么都不送。
+   - 只给路径的一项（施工 AT-1；2026-11-11 项目主人定：上传上限 20 MiB 不动，超限的文件头照常显示在附件栏里，只把它在核心那台机器上的路径交给她，不拷内容）：没写 `blob`（写 `null` 等于没写）、写了 `path` 和 `name` 的就是。`path` 照 `SourcePath`（`kernel/ids.md`：绝对路径、没有控制字符、最多 4096 字节），`name` 照文件名，`size` 是字节数、可以不写，写了的是不带小数的非负整数；别的格不看。读参数时就分开：有 `blob` 的缺 `name`、`media_type`，没有 `blob` 的缺 `path`、`name`，都读不进；格不合写法的在这一条查：都是 `bad_params`，不带 `data`。有 `blob` 的项一格都不变。
+   - 核心不读它、不 stat、不查它在不在：等于人在话里写了一个路径，她要看，照路径用工具读，读的时候照权限策略判。不落成会话附件目录里的文件（施工 3-9 六补只管有 blob 的）。一句话里几项不另设上限（有 `blob` 的本来也没有）。
+   - 谁能发：只有本机的会话里 `session.send`、`session.redo` 收。带 `as` 的（场所会话，平台桥代表平台上的人说的）`bad_params`，什么都不送；`session.answer` 的附件照旧每一项要 `blob`。远程的连接带 `path` 的附件照旧整条拒 `local_machine_only`（施工 Y-1 下，`connection/reach.rs`），这一步没动它。
+6. `from`（施工 7-10）：写了的，这条 `message.user` 的 `by` 记成 `{"kind":"harness","name":<名字>}`；不写的、写 `null` 的照旧记成本人。名字照短名字的规矩收（`kernel/ids.md`）：先去掉控制字符（Unicode 的 Cc 类），再截到 128 字节以内，不截断一个字；剩下是空的，`bad_params`。不是字符串的（数字、数组……）也是 `bad_params`。名字不核对，照它报的记；给模型看之前照不可信的文本转义（`kernel/request.md`「别的 harness 发来的话」）。它先查，查在附件前面：拒了的什么都不送。
+7. 带 `from` 的这一句是别处来的，内核照「别的 harness 发来的话」收（`kernel/session.md`，和子代理的留言一样）：她闲着开一轮，`turn.started` 的 `cause` 是这一条的 `id`；正忙的，下一步看到；不带回合编号，打断时不撤回，不作废在等本人答的题。`urgent` 不看。附件照收，和本人附的一样。
+8. 只有 `session.send` 收 `from`：`session.create`、`session.redo` 写了也不理（「请求」最后一条）。会话照旧是本人造的；重做的撤销记成发重做的人，重发的只有人说的话（`by` 照原来的），别的 harness 发来的话开的那一轮重做不了（`session.redo` 第 3 条）。
+9. 前缀要变了先问人（施工 OV-1 下，项目主人 10-26 定的交互，`internal/construction/OV-1-同名覆盖工具说明和提示词.md` 第十节）：
+   - 核心盯数据根的 `tools/`、`prompts/`、`personas/`、`presets/`，往下递归，新建、挪进来的子文件夹里已经有的文件都算（施工 OV-1 补，`prefix_ask.rs` 的 `an_override_in_a_new_folder_is_asked_too` 守着；`skills/` 不盯，施工 PT-2 上：技能那一块钉在快照里，中途变了走尾巴注入、前缀不变，原来盯它是误报，`tests/prefix_ask.rs` 的 `an_edited_skill_does_not_ask_because_the_prefix_stays` 守着），变一下号加一，只在内存里。会话记着最后一次拼快照时看到的号，回合开始比号，变了照现在的文件重拼，字节不一样的换（`session.policy_changed`）。
+   - 只问握手 `caps.prefix_ask: true` 的头。开新一轮的三个入口：`session.send`、`session.redo`、开轮的 `command.run`（模板、MCP 提示词、`/goal` 设定和继续）。会话空着、是本机会话、号比会话照着拼过的和人放行过的都新的，先叫会话照回合开始那一套把它的快照干算一遍（施工 PX-1，`Handle::check_prefix`，`miyu-session` 的 `actor/persona/check.rs`；只看文件带来的变化，工具目录照上次拼快照时那一代、扩展插的字照钉的）：它的前缀不变的不问（改的是别的人格、头像背景这些图片、它用不到的覆盖），会话看到的号对到这一次；变了的，不带 `prefix` 就拒 `prefix_changing`，`data.files` 是这以后改了的、真进它前缀的文件（它用的人格的文件、图片不算，它的预设，它工具面上那几件工具的覆盖，提示词的覆盖；一个都挑不出来的照全部列；照数据根写的相对路径，先后、不重，最多 20 个；多的、太早挪出表的数进 `data.more`）。`session.configure` 换人格、换预设以后记成放行到这一刻：已经先压缩过，不再问第二次（施工 PX-1）。快照等下一个回合才换，会话在那一刻照当时的文件把下一个回合要用的那一份干算一遍、记成基准（施工 PX-1补，`Handle::settle_prefix`）；在那之后、下一轮之前的干算照基准比，不和还没换下来的旧快照比：一样的（别的人格的头像）不问、放行到这一次，不一样的才问，`data.files` 照下一个回合要用的人格、预设挑；回合开始换上了就不要基准了。
+   - `"keep"`：放行到这个号，照常说。`"compact"`：先手动压缩（同 `session.compact`，不带要求），开了才放行再说这一句，这一句排在压缩那一轮后面；压不了的回压缩自己的拒绝（`nothing_to_compact` 等），这句不发，不退回直接发。
+   - 放行照会话记，之后有新的改动再问。正在跑一轮时说的、场所会话、回合开始不换快照的会话（fork 子代理、整理记忆）、定时和 `/loop`、长期目标自己续的轮不问；没声明的头照旧直接发，下一轮换上。
+10. `shell: true`（施工 SH-1 上，设计 57）：人在头里亲手打的一条命令，不判权限、不进沙盒、不弹确认，所有登录了的头都能用。
+   - 只收人：带 `from` 的、核心拉起的扩展说的、带 `as` 的拒 `shell_not_allowed`；场所会话也拒 `shell_not_allowed`（不是 `venue_session`）。和 `attachments`、`venue` 一起写的 `bad_params`。这几样先查、再找会话，拒了的什么都不记。
+   - 核心的工具目录里没有给人跑命令的工具（`Tool::serves_person`，只有内置 `shell` 是，扩展声明了 `runs_commands` 的不算，施工 XG-1 下；`tools/interface.md`「给人跑一条」；包没装、关了）的拒 `shell_unavailable`。预设只管她的工具面，不管人的命令：工具面上没有 `shell` 也照跑。
+   - `text` 去掉首尾空白是空的：`empty_message`。别的照第 1、2 条和 `urgent`、`prefix`、`cwd`：记成写了 `shell` 的 `message.user`、落了盘就回，不等跑完；在她听到它的那一刻照会话那时的工作目录跑（`kernel/session.md`「人跑的命令」），结果记 `shell.ran`，她接着回。排着的照普通消息退回（`session.withdraw`、打断的 `queued: "return"`），退回的不跑。
+
+**`blob.put`**（施工 3-9 三补，`04-核心协议.md` 第九节）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `path` | 字符串，可以不写 | 本机的文件：绝对路径，或者 `~`、`~/…`；核心自己读 |
+| `data` | 字符串，可以不写 | 文件的内容，base64（RFC 4648 的标准字母表，末尾补 `=`）：远程的头用 |
+| `name` | 字符串，可以不写 | 文件名，只是名字（`kernel/ids.md` 的写法）。不写的取 `path` 的最后一段；传 `data` 的必写 |
+| `media_type` | 字符串，可以不写 | 媒体类型（`kernel/ids.md` 的写法）。不写的照内容认 |
+
+回应：`blob`（内容哈希）、`name`、`media_type`、`kind`（`image` 或 `file`）；图片另带 `width`、`height`（像素）。例子（格照名字的字母先后排）：
+
+```json
+{"id":"c3","jsonrpc":"2.0","result":{"blob":"sha256:…","height":600,"kind":"image","media_type":"image/png","name":"shot.png","width":800}}
+```
+
+1. `path`、`data` 正好写一个；两个都写、都不写（写 `null` 算没写）：`bad_params`。`path` 是相对的（没有工作目录可接，头自己接成绝对的）、`~别人/…`：`bad_params`。`data` 不是 base64、传 `data` 没写 `name`、`name` 不合文件名的写法、`media_type` 不合媒体类型的写法：`bad_params`。
+2. 读 `path`，在阻塞线程里：照 `fs.md` 换成真实的位置（链接照指向的地方算），照边界表（默认工作区、数据根、这台机器的临时目录和系统目录，`fs.md` 第一节）落在数据根那一片（数据根里、默认工作区以外）：`attachment_in_data_root`；调的是扩展、真实位置在它自己的包目录（清单所在的那一层，`MIYU_APP_DIR`）里的除外，包里的链接指到外面的照真实位置判、照旧拒（施工 W-6 四补，终端报的：包带的图原来只能读出来再传 base64）。别的地方都能读，和她读文件一样（`session/guard.md`：读哪儿都不问）。换不成真实的位置、打不开（没有、不是普通文件、没有权限）：`attachment_unreadable`。照 `fs.md` 第四节打开，路上一层链接都不跟。
+3. 一个最多 20 MiB（20,971,520 字节），多的 `attachment_too_big`；读到上限多一个字节就停，不整份读进来。`data` 放在一行 JSON 里，一行最长 1 MiB（「一行一条」），所以最多七百多 KiB，大的传 `path`；更大的（或者远程的头想一块一块传）用 `blob.open`、`blob.write`、`blob.close`（施工 W-5，下面）。
+4. 认是什么，照内容，不看扩展名：
+   1. 开头是四种图之一（PNG、JPEG、GIF、WebP）、量得出宽高的：图片，媒体类型照认出的，`media_type` 写了也不算。超过 5 MiB、哪一边超过 8000 像素的存之前缩到上限以内（施工 I-S，同 `read`），回应的宽高、媒体类型照缩完的；缩不了的（解不开、缩到最小还超）`attachment_too_big`，正好在线上的收。分块上传的照同样缩，缩过的照缩完的内容另存、编号照它，原来的暂存文件作废。认法和上限和 `read` 读图片是同一份代码（`crates/miyu-tool/src/picture.rs`，`tools/read.md`「读图片」）：图跟着对话每次都发，被供应商拒掉的图会让这个会话以后的请求都失败。
+   2. 别的都是文件。开头是 `%PDF-` 的，媒体类型是 `application/pdf`，`media_type` 写了也不算。
+   3. 别的：`media_type` 写了的照写的，只是写成 `application/pdf`、`image/…` 的不算（驱动照它们把内容当 PDF、当图发，内容不是，供应商会拒）；没写、不算的，整份是 UTF-8、没有 NUL 字节的是 `text/plain`（和驱动认文本文件是同一条，`drivers/openai-chat.md` 第 9 条），别的 `application/octet-stream`。扩展名不认：头知道得更准的（例如浏览器给的类型）自己写 `media_type`（施工 3-9 三补定：扩展名的表是一份写死的名单，驱动给模型看的只有文件名和内容，用不上它）。
+5. 存成 blob（`store.md` 第九条；扩展传的也在同一个存处），落了盘才回应；同一份内容再传，还是那一个 blob。存不下来：`internal_error`，记一条运行日志。
+6. 不碰会话，没有命令编号的去重：内容一样，存几次都是同一个。传了没发的留在 blob 里，随存储的回收那一步清。
+
+**`blob.open`、`blob.write`、`blob.close`**（施工 W-5，`web-module.md`「六、分块上传」）：分块传一个附件，最后存成 blob，回应和 `blob.put` 一样。
+
+| 方法 | 参数 | 回应 |
+|---|---|---|
+| `blob.open` | `name`（必写，照 `blob.put` 第 1 条）、`media_type`（可以不写，照 `blob.put` 第 1 条）、`size`（必写，非负整数：一共几个字节） | `{"upload": <上传编号>}` |
+| `blob.write` | `upload`、`offset`（非负整数，从 0 数）、`data`（base64，一块最多 512 KiB） | `{"received": <一共收到几个字节>}` |
+| `blob.close` | `upload` | 照 `blob.put` 的回应：`blob`、`name`、`media_type`、`kind`，图片另有 `width`、`height` |
+
+1. `blob.open`：`name`、`media_type` 照 `blob.put` 第 1 条的写法查；`size` 超过 20 MiB（20,971,520 字节）当场 `attachment_too_big`。这个连接同时开着 4 个的：`too_many_uploads`。成了交回上传编号（16 位小写十六进制），在 `blobs/tmp/` 里建暂存文件 `upload-<编号>`。
+2. `blob.write`：`offset` 要正好等于已经收到的字节数，不对回 `upload_offset`，`data.received` 写已经收到几个，头从那里接着传。`data` 不是 base64、解出来超过 512 KiB、加上它超过 `size`：`bad_params`。写进暂存文件，边写边算 SHA-256。
+3. `blob.close`：收到的不够 `size`：`upload_incomplete`（`data.received`）。够了：照 `blob.put` 第 4 条认是什么、查图片的上限，照第 5 条存：暂存文件改名进位置，同一份内容已经有了的，删掉暂存的，还是那一个 blob。
+4. 上传跟着连接走：编号只认开它的那个连接，别的连接拿来用回 `upload_unknown`。连接断了，它开的上传全部作废、删掉暂存文件。60 秒没有 `blob.write` 的，也作废。`close` 以后编号作废。
+5. 同一个连接上的请求本来就一条条办（「一个连接」第 1 条），一个上传不会同时写两块。一个附件拆成 40 块左右，一块一个来回。
+6. 核心起来时清掉 `blobs/tmp/` 里的 `upload-*`：崩了、被杀留下的。
+7. 不碰会话，不进会话的日志，和 `blob.put` 第 6 条一样。附件的大小上限和 `blob.put` 同一个数，一处定义（`crates/miyu-endpoint/src/attach.rs` 的 `LIMIT`）。
+
+**`fs.list`**（施工 W-2，`web-module.md`「三、列文件、找文件」）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `cwd` | 字符串，必写 | 相对的路径照它接：绝对路径，或者 `~`、`~/…`，头报的那种写法 |
+| `dir` | 字符串，不写是 `""` | 打的那一截目录：`~` 打头的照家目录，绝对的照原样，别的照 `cwd` |
+| `prefix` | 字符串，不写是 `""` | 名字的开头 |
+
+回应 `{"items": […], "partial": <布尔>}`：`items` 每一条 `{"dir": <布尔>, "full": <绝对路径>, "marks": [<第几个字>…], "path": <列表上写的>, "size": <字节数>}`，`size` 只有文件才有；`partial` 列没列全。
+
+```json
+{"building":false,"items":[{"dir":false,"full":"<家目录>/src/miyu/src/main.rs","marks":[4,5,6,7],"path":"src/main.rs","size":2048}],"partial":false}
+```
+
+1. `cwd` 照 `fs.md` 换成真实的位置（`~` 照家目录接），要是一个目录。换不成、不在、不是目录：`path_unreadable`。落在数据根里、又不在默认工作区里：`path_forbidden`。
+2. `dir` 照上面的参数表接好、换成真实的位置，只读那一层；同样要是一个目录、同样落进数据根那一片（`DataRoot`）的 `path_forbidden`。
+3. 名字照开头对 `prefix`，大小写不论。点开头的藏起来，`prefix` 以 `.` 开头才列。目录在前、文件在后，各照名字排（大小写不论）。目录的 `path` 后面带 `/`。最多 50 条，多了截掉、`partial` 是 `true`。`marks` 是 `path` 的前几个字，`prefix` 有几个字就几个。
+4. 这一层里有东西落进了数据根那一片（`DataRoot`）的（例如往上列到数据根的上级，列出来的一层恰好含着数据根自己），单单那一条不列，旁边的照样列。
+5. `full` 照平台的写法（Windows 上是 `C:\…`）；`size` 照文件现在的大小，读不出来的不写。
+
+**`fs.find`**（施工 W-2，`web-module.md`「三、列文件、找文件」）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `cwd` | 字符串，必写 | 在哪个目录里找，写法同上 |
+| `query` | 字符串，不写是 `""` | 打的字 |
+| `fresh` | 布尔，不写是 `false` | 头开列表时写 `true`：清单建好 10 秒以上的重建 |
+| `wait` | 布尔，不写是 `false` | 清单还在建的，建完再答（施工 V-6 上） |
+
+回应同 `fs.list`，另有 `building`：清单还在建。
+
+1. `cwd` 照 `fs.list` 第 1 条换、查边界。
+2. 在 `cwd` 里建一份清单：`ignore` 库，和核心的 `glob`、`grep` 同一套，认 `.gitignore`（不要求是 git 仓库），跳过隐藏目录和出厂名单里的 `node_modules`、`target`，跳过数据根（工作区除外，工作区常常就在数据根里面），不跟链接；最深 8 层，最多 20000 个，收满就停、`partial` 是 `true`。`path` 是相对 `cwd` 的，用 `/` 连，目录后面带 `/`。
+3. 清单在后台线程里建，不挡别的请求。还没建完，照已经建好的那一部分答，`building` 是 `true`。头要整份的再发一次带 `wait: true` 的（施工 V-6 上，以前头隔 200 毫秒再问，直到 `false`）：建完了再答，`building` 一定是 `false`。带 `wait` 的在后台答（这个连接别的请求照答）；等是睡着等，建清单的线程走完、收满、崩了都叫醒（`miyu_fs::Index::wait`），不隔一阵再看。连接断了的，等着的那一条跟着丢掉。
+4. 什么时候重建：这个目录还没有清单；`fresh` 是 `true`、清单建好 10 秒以上。核心最多记 4 个目录的清单，多了丢最久没用的。同一个目录同时来两次，第二次拿到第一次那一份。
+5. 怎么排：打的字照先后都在 `path` 里（大小写不论）才列。先试整个落在文件名里，落不下再从路径开头找；每个字对上 1 分，落在文件名里多 3 分，在一段的开头（路径的头一个字，或者前面是 `/`、`-`、`_`、`.`、空格）多 8 分，和上一个字连着多 5 分；文件名去掉扩展名正好是打的字多 100 分。分高的在前，一样的路径短的在前，再一样的照字排。最多 50 条，对得上的比截出来的还多也算 `partial`。`query` 是空的都对得上、0 分。
+6. 建清单时读不了一层目录的（没有权限这类），跳过它接着建，不算整份失败。
+
+**`fs.realpath`**（施工 W-3，`web-module.md`「四、路径」）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `path` | 字符串，必写 | 要换的路径：绝对的，或者 `~`、`~/…`；相对的要配 `cwd` |
+| `cwd` | 字符串，可以不写 | `path` 是相对的才要：接在它前面，写法同 `fs.list` 的 `cwd` |
+
+回应 `{"path": <真实的位置>}`。
+
+1. `~` 照家目录接；绝对的照原样；相对的接在 `cwd` 上，`cwd` 自己也可能是 `~`、相对的写法，照同一条路换。都不是的（相对、又没给 `cwd`）：`bad_params`。
+2. 从它自己往上找第一层在的，那一层换成真实的位置，后面几段原样接上：还没建出来的目录，建出来以后就是这个位置。一层都不在（Windows 上盘符都没有）：`path_unreadable`。
+3. 不查边界，只说位置、不读内容：落在数据根里的照样换。
+
+**`blob.get`**（施工 W-6，`web-module.md`「七、分块读」）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `blob` | 字符串，必写 | 内容哈希 |
+| `offset` | 非负整数，不写是 0 | 从第几个字节起读 |
+| `length` | 非负整数，不写是 512 KiB（524288） | 最多读几个字节，最多 512 KiB；写 0 只问大小 |
+| `session` | 字符串，可以不写 | 照这个会话引用过的找（施工 W-6 补） |
+
+回应 `{"data": <这一段的 base64>, "size": <一共几个字节>}`。
+
+```json
+{"id":"g1","jsonrpc":"2.0","result":{"data":"MzQ1Ng==","size":10}}
+```
+
+1. 不写 `session` 的照存处给：没有这个 blob，`unknown_blob`。扩展的连接（核心拉起的包）不写 `session` 的只读得到它拿得到的（施工 W-6 三补）：它自己 `blob.put`、分块上传存的，它经 `bus.call` 调别的包（施工 BUS-5 以前也能经 `package.call`）、回应里出现的哈希里答的那个包自己拿得到的（只转答的包拿得到的：不然一个包把别处看来的哈希写进回应，就替调它的包开了门）；别的一律 `unknown_blob`。它自己存的那一种另落盘（施工 BG-1：表情包这样的包把图只存在 blob 里、自己只记哈希，核心重起以后手里没有内容，没法再存一次）：`var/lib/blob-grants/<包的编号>`，纯文本、一行一个哈希、只追加（`miyu_store::blob::grants`：同 `journal.jsonl` 每追加一行都重新打开、追加、同步；同一个哈希只写一次；写不进的记一行 `WARN`，存照算成、这一次起来照旧读得到），核心起来时读回（读不懂的行跳过、记一行 `WARN`）。落盘以前（施工 BG-1 之前）存的另补一次（施工 BG-1补，端点的 `attach/grants/backfill.rs`）：数据根里还没有 `var/lib/blob-grants/` 这个目录的那一次起来（升级后第一次、全新的数据根），拉起扩展之前，照装着的每个包扫它自己的状态目录 `var/lib/<编号>/`（`miyu_store::blob::grants::scan`：照字节找哈希，不跟链接、不出目录，一份文件 64 MiB、一个包 20000 份、16 层为限，没扫完的记一行 `WARN`），找到的里面存处确实有的登记给它、落盘，记一行 `INFO`（`blob grants backfilled`，哪个包、找到几个、登记几个），各包的那一份先写进暂存目录 `var/lib/.blob-grants.new/`、再一次改名成 `var/lib/blob-grants/`（`blob::grants::seed`；中途被杀的只剩暂存目录，下次起来先删掉、整个重做），哪怕一个都没补到；目录在了不再做：包以前能把哈希记进自己的状态，说明它当时拿得到，以后的许可都落盘了，要是每次起来都扫，包往自己目录里写别处看来的哈希就给自己开了门。一个包扫不了的记一行、接着扫别的，补登记失败不拦核心起来。经 `package.call` 拿回来的、别人交来的只记在核心的内存里，核心重起就没了：那是一次调用里临时给的。包卸了它那一份扔掉、文件删掉，装回来从空的开始。人的连接照旧。
+   写了 `session` 的照那个会话给（施工 W-6 补，2026-10-17 接入QQ 的会话要的）：会话编号不合写法 `bad_params`。谁读得到：人的连接读得到本机会话、不关沙盒的场所会话（主人本人的私聊）的，关着的场所会话也只读地读得到（施工 VW-1，「怎么走」第 4 条）；平台桥只读得到它的平台的场所会话（同 `venue.sessions` 列给它的，照场所编号的平台前缀）里引用过的 blob，引用照结构认：消息、工具结果的图片块、文件块，她经工具发出去的图（`tool.result` 的 `sent`，施工 W-6 再补，接入QQ 发表情包要读主人私聊里的），不在正文里搜（桥能以外部身份往主人的私聊里发字，照原文搜就能写一句带哈希的话读走主人别的 blob）。不合的一律 `unknown_blob`，不说是哪一样不对。扩展的连接也一样（施工 W-6 三补）：它要的 blob 得是那个会话结构里引用过的，写上随便一个会话读不到存处里别的 blob。
+2. 从 `offset` 起读 `length` 个字节，读到结尾就停；`offset` 过了结尾的，`data` 是空的。`size` 是打开那一刻的大小。`length` 写 0 只回 `size`，`data` 是空的。`length` 超过 512 KiB：`bad_params`。
+3. 不重新核对整份内容的哈希：核对在核心自己用整份内容的时候（`store.md` 第十条）。
+4. 在阻塞线程里读。
+
+**`fs.read`**（施工 W-6，`web-module.md`「七、分块读」）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `path` | 字符串，必写 | 绝对路径，或者 `~`、`~/…`；相对的 `bad_params` |
+| `offset` | 非负整数，不写是 0 | 同 `blob.get` |
+| `length` | 非负整数，不写是 512 KiB（524288） | 同 `blob.get` |
+
+回应同 `blob.get`。
+
+1. `path` 照 `fs.md` 换成真实的位置，`~` 照家目录接；相对的（没有 `cwd` 可接）：`bad_params`。落在数据根里、又不在默认工作区里：`path_forbidden`。
+2. 照 `fs.md` 第四节安全地打开，路上一层链接都不跟；换不成真实的位置、没有、不是普通文件、没有权限：`path_unreadable`。
+3. 读法同 `blob.get` 第 2、3、4 条。
+
+**`session.shown`**（施工 SW-1，2026-11-12 项目主人定：展示的文件不拷进核心、不限大小，局域网的头经核心边读边传）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 会话编号 |
+| `call` | 字符串，必写 | 展示的那一次调用的编号：视图工具卡的 `call`、`tool.result` 的 `call_id` |
+| `offset` | 非负整数，不写是 0 | 同 `blob.get` |
+| `length` | 非负整数，不写是 512 KiB（524288） | 同 `blob.get` |
+
+回应同 `blob.get`：`{"data": <这一段的 base64>, "size": <一共几个字节>}`。
+
+1. 别的格不认：写了的（例如 `path`）`bad_params`。核心不收路径，只读这次展示在日志里记下的那一个。`session`、`call` 写法不对的 `bad_params`。
+2. 谁读得到：同带 `session` 的 `blob.get` 第 1 条的会话那一半（`attach/reach.rs` 的 `reachable`）：人的连接读得到本机会话、不关沙盒的场所会话，关着的场所会话也只读地读得到（施工 VW-1）；平台桥只读得到它的平台的场所会话；扩展要那个会话是它看得到的。文件就是那个会话展示过的，不另查引用。会话没有、读不到、日志里找不到这次调用的结果、结果里没有 `file.shown` 的一律 `unknown_shown`，不说是哪一样（同 `unknown_blob`）。不走「关着的场所会话只给桥」那一道（「怎么走」第 4 条）。
+3. 找法：调用编号里带着发起它的助手消息的序号，从那一条读起（`miyu_store::log::read_range_only`，只解 `tool.result`），找到这次调用的结果就停，取它的第一个 `file.shown`。不整份翻日志：视频拖进度一段段来读，每次只读那一小截。撤掉的那一轮里展示过的照样读得到（同 `blob.get` 照会话找 blob 不看撤没撤）。
+4. 核对：照记下的 `path` 安全地打开（`miyu_fs::open_file`，不跟最后一层链接），照打开的那个句柄取大小和修改时间（`miyu_tool::modified_at`），和记的 `size`、`modified` 都对上才读；对不上的 `file_changed`（以前记的没有 `modified`，也是这一句）；没有、不是普通文件了 `file_gone`；别的打不开、读不了的 `internal_error`，记一行 `WARN`。
+5. 读法同 `blob.get` 第 2、4 条，`size` 就是核对过的那个数。本机的头（握手回应带 `host`）不用它，照 `path` 直接读硬盘；核心不替头截，预览多少、怎么边传边放是头的事。
+
+**`session.interrupt`**
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+| `queued` | `"send"`、`"return"` 或 `"keep"`，必写 | 排着队的消息：打断以后马上发，退回来，还是留着（留在日志里、不撤回、不接着开新的一轮，施工 O-6） |
+
+回应：`events`，这一次追加的全部事件的序号。没有回合在进行：`not_running`。
+
+**`session.withdraw`**（施工 Q-W，2026-10-22 项目主人定终端的做法：点排队的那条撤回，`/undo` 有排队的先逐条撤）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+| `message` | 整数，可以不写 | 退哪一条：那句话的 `message.user` 的序号；不写的退回最新的一条 |
+
+不打断，内核追加一条 `message.withdrawn`（`by` 是退的人，`cause` 是这个命令，`messages` 只有这一条），这一轮照跑（`kernel/session.md`「排队的消息」）。回应：`events`，那一条的序号，落了盘才回。写的那一条不在队里（请求已经带上了、由它接着开了一轮、退过了）：`already_heard`；没写、又没有排着的：`nothing_queued`。权限同 `session.interrupt`（`sessions.drive`）。
+
+**`session.tools`**（施工 S-T，2026-10-22 项目主人要的 `/tool-list`）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，可以不写 | 哪个会话；不写的照新会话会拿到的算 |
+| `persona` | 字符串或 `null`，可以不写 | 不写 `session` 时：新会话用的人格，同 `session.create`（`null` 是无人格，不写的照 `persona.default`） |
+| `preset` | 字符串或 `null`，可以不写 | 不写 `session` 时：新会话用的预设，同 `session.create`（`null` 是无工具，CX-2 补） |
+
+回应 `{"tools": [{"name", "source": {"kind", "id", "name"}, "summary"?}]}`，照发给模型的先后（名字的字节序）。`source.kind` 是 `builtin`（内置的包）、`package`、`mcp`、`script`；`source.name` 是包名、服务名、脚本的显示名，照连接的语言挑。`summary` 只有脚本有（脚本的 `# 描述：` 那一槽）。工具一律全量（施工 FL-1），以前只露名字的那一格 `loaded: false` 不再出现。
+
+1. 写了 `session` 的：会话照回合开始换快照那一套看一遍（人格、预设、工具目录、知识库换了的照换了以后的），只看不换。
+2. 没写的：和 `session.create` 照同一份拼（找预设、人格，拼工具面），只拼不造。
+3. 写了 `session` 又写了 `persona`、`preset` 的，`session` 写法不对的：`bad_params`；没有这个会话：`session_not_found`。权限同 `session.recap`。
+
+**`session.context`**（施工 CX-1 上、下，2026-10-23 项目主人要的「上下文明细」，形状和协调会话对过）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，可以不写 | 哪个会话；不写的照新会话会拿到的算（CX-1 下） |
+| `persona` | 字符串或 `null`，可以不写 | 不写 `session` 时：新会话用的人格，同 `session.create` |
+| `preset` | 字符串或 `null`，可以不写 | 不写 `session` 时：新会话用的预设，同 `session.create`（`null` 是无工具，CX-2 补） |
+
+回应 `{"window"?, "line"?, "used"?, "basis", "anchor"?, "estimated_total", "parts": [...]}`：
+
+- `window`、`line`：上下文窗口、压缩线，同订阅的 `limits`（`window`、`compaction_line`）；没交过限额的不写。
+- `used`：这时用了多少，口径同终端底栏：有锚的是锚加上锚以后的本地估算，没有的整份估；算不了的不写。`basis` 是 `measured`（照锚起算）或 `estimated`（全是估的：没答过、换了模型）。`anchor` 是 `measured` 时那一下供应商报的（最近一次主请求的四项用量之和）。
+- `parts`：一块一个 `{"part", "label", "tokens", "children"?}`，照下面的先后，是 0 的块不交。`part` 是稳定的编号，给头认；`label` 照连接的语言（`core/human/<语言>.json` 的 `context/part/<编号>`），包、MCP 服务的照原名。各块用同一个本地估算器（和压缩线同一个）估，有 `used` 的由核心照它摊好（CX-1 下，2026-10-23 主会话定：估算器中文多估约两成半、英文少估约一成半，`compaction.md` 第一条第 2 条，一份逻辑不让头各写一遍）：叶子照比例摊，取整差的那几个照小数部分从大到小补，加起来正好是 `used`，上一层是下面的和，摊成 0 的不交；`estimated_total` 是摊之前各块估的和。没有 `used` 的交原值。
+
+| `part` | 是什么 |
+|---|---|
+| `system` | system 一整段，下面照拼的先后：`system.persona`（人设）、`system.venue`（子代理的场所说明）、`system.group`（群聊说明）、`system.profile`（关于你）、`system.project`（项目说明）、`system.core`（核心的几行：权限、本机文件的路径、本机系统、跑的是哪一版）、`system.clicall`（什么时候写成调工具的程序）、`system.show`（show 的那一句）、`system.skills`（技能目录）、`system.knowledge`（知识库那一块）、`system.style_lock`（风格锁）、`system.appended:<包>`（扩展追加的，`label` 是包名）。拼的时候每一步量多了哪一截，拼出来的字不变；已有的会话照快照原来的料重拼一遍（人设照这时的文件），和快照逐字节一样的照它拆；对不上的（旧核心造的、人设改过，CX-2）逐块到快照的 system 里照先后找原文，找得到的各成一块，找不到的、改过的那几截并成 `system.other`。人设文件没了拼不出来的，只拆快照里单存了原文的几块（技能、知识库、关于你、项目说明、扩展追加的），其余的是 `system.other` |
+| `tools` | 工具的说明和参数格式；下面 `tools.builtin`、`tools.package:<包>`、`tools.mcp:<服务>`（`label` 是包名、服务名）、`tools.scripts`（以前的 `tools.deferred` 施工 FL-1 起没有了） |
+| `demos` | 示范对话 |
+| `summary` | 检查点的摘要 |
+| `messages` | 对话；下面 `messages.user`（人说的，场所里旁听的不进上下文、不算）、`messages.assistant`（她说的：回复、思考、工具调用）、`messages.memory`（记忆，下面 `messages.memory.resident` 常驻的、`messages.memory.recall` 召回的）、`messages.knowledge`（知识库想起的）、`messages.facts`（别的事实）、`messages.project_docs`（仓库里的 AGENTS.md，施工 P-14）、`messages.reports`（子代理、后台命令交回的回报，CX-2）、`messages.tool_results` |
+
+1. 只在被问时算：会话照有效历史组装一次请求、各块估一次，只看不动，不碰回合的热路径（`session/actor.md`）。
+2. 不写 `session` 的（CX-1 下）：和 `session.create` 照同一份拼（找预设、人格，拼工具面、快照，会用的模型的限额），只拼不造、不写盘；没有对话，`basis` 是 `estimated`。
+3. 写了 `session` 又写了 `persona`、`preset` 的，`session` 写法不对的：`bad_params`；没有这个会话：`session_not_found`；新会话拼不出来（人格读不出来）：`internal`。权限同 `session.recap`。
+
+**`session.usage_parts`**（施工 CX-3，2026-10-23 项目主人要「本会话累计包含上下文明细里所有项目」，口径主会话定）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+| `tree` | 布尔，不写是 `false` | 连它派的子会话一起算，同 `usage.query` 的 `tree` |
+
+回应 `{"requests", "input", "output", "parts": [...]}`：`requests` 是主请求有几次，`input` 是报的输入（没命中、命中、写缓存）加起来，`output` 是输出加起来；`parts` 的块、编号、`label` 同 `session.context`，最后多一块 `output`（AI 输出）。`parts` 加起来正好是 `input + output`，上一层是下面的和，是 0 的块不交。
+
+1. 只算主请求：同 `usage.query` 分组 `use` 的 `main`，连子会话的是 `subagent`；压缩、回顾、起标题、记忆这些照用途查 `usage.query`，不进块。报没报用量都算一次，没报的（被打断的）不摊。三处核得上：`requests`、`input`、`output` 和 `usage.query` 同一个会话（连子会话的照 `tree`）主请求那几行一样；只有一次请求的会话，`input + output` 就是 `session.context` 的 `anchor`。
+2. 怎么摊：照日志回放有效历史，每次主请求在它看到的那一条（`model.called` 的 `seen`）算那一刻各块的估值（同 `session.context`：system、工具、示范对话照那一刻用的快照，换了策略的到下一个回合开始才换；对话照谁放进去的），把它报的输入照比例摊开（叶子照比例、余数照小数部分补），再照编号加起来。
+3. v1 命中、没命中不分开摊，只摊输入总数（主会话定）：命中多半是前缀（system、工具、老对话），照比例摊会把一部分命中算到新内容（最近的对话、工具结果）头上，新内容的块偏大、前缀的块偏小；总数不受影响。估算器在各块上的偏差（中文、代码、看不到的思考）照 `session.context` 一样带着。
+4. 只在被问时读盘算，不碰回合：会话在阻塞线程里读自己的日志回放，一份快照只备一次。读不出来的子会话（删了、坏了）不算。
+5. `session` 写法不对、有别的参数：`bad_params`；没有这个会话：`session_not_found`。权限同 `session.recap`。
+
+**`session.quota`**（施工 QU-1，2026-11-14 项目主人定：用量框里显示 opencode Go 的三个额度窗口，只在当前会话用的是它时出现；查法见 `models.md`「怎么走」第十七条）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+
+回应 `{"windows": [...]}`，一个窗口一项，照 `rolling`、`weekly`、`monthly` 的先后，供应商没报的窗口不交：
+
+| 格 | 说明 |
+|---|---|
+| `id` | `rolling`（5 小时滚动）、`weekly`、`monthly`，头照它认 |
+| `label` | 给人看的名字，照连接的语言：「5 小时」「每周」「每月」 |
+| `percent` | 用了百分之几，供应商报的数原样（可能带小数） |
+| `status` | 供应商说的状态，原样（实测见过 `ok`） |
+| `resets_at` | 什么时候重置，时刻的写法（UTC；供应商写了时区偏移的换算过来） |
+
+```json
+{"windows":[{"id":"rolling","label":"5 小时","percent":4,"status":"ok","resets_at":"2026-11-14T08:31:28.000Z"},{"id":"weekly","label":"每周","percent":12,"status":"ok","resets_at":"2026-11-17T00:00:00.000Z"},{"id":"monthly","label":"每月","percent":30,"status":"ok","resets_at":"2026-12-01T00:00:00.000Z"}]}
+```
+
+1. 照会话接下来请求的那一家（`subscribe` 的 `model.endpoint`，`Handle::next`）。刚 `session.configure` 换了模型、还没开回合的，那里当场就是换成的那一家（施工 MC-1 起 `subscribe` 当场照会话记着的引用预演，`session.configure` 第 4 条；QU-2修 在这里另算的一份收进了它）；换成了池的，下一个回合开始钉了成员才有。那一家的档案没写查额度的接口、轮换的池（没有 `endpoint`）、这一家用不了、查不到（连不上、超时、不是 2xx、格式不对）的，回 `{}`，不报错。
+2. 选方法、不随用量推送（主会话 QU-1 定）：额度不属于会话、只有一家有，推进 `view.status` 要每个会话的状态多一格、查完了还得另找时机推；头的用量框本来就是打开时问几次 `usage.query`，多问一次最顺。会话每轮结束核心在后台查过一次，60 秒内照它答，打开用量框多半不用等；过了 60 秒的当场查，最多等 10 秒，在后台答，不挡这个连接别的请求。
+3. `session` 写法不对、有别的参数：`bad_params`；没有这个会话：`session_not_found`。权限同 `session.recap`；关着的场所会话人的头只读地也能问（`sessions/peek.rs` 的 `READS`）。
+4. **余额**（施工 QU-2，2026-11-16 项目主人定：用 DeepSeek 官方供应商时用量面板里显示余额；头画一行「余额 ¥12.34」，有赠送的后面暗字「含赠送 ¥2.00」，不可用时整行变红，不画条）：回应多一格 `balance`，没查到的不带这一格。`windows`、`balance` 各是各的，一家只交其中一样，有了哪一格不影响另一格。只认官方地址的 DeepSeek 供应商（没写地址，或者字面地址的主机就是 `api.deepseek.com`）：经中转站跑 DeepSeek 模型的、地址是环境变量引用的不查，配置改了查余额的地址也一样（`models.md`「怎么走」第十七条第 8 条）。
+
+| 格 | 说明 |
+|---|---|
+| `balance.available` | 能不能用，官方的 `is_available` 原样（余额够不够调用） |
+| `balance.items` | 每种币一项，照官方的先后；一种都没有的是空的 |
+| `items[].currency` | 币种，官方写的原样（`CNY`、`USD`） |
+| `items[].total` | 一共多少，官方的 `total_balance` 原样的字符串 |
+| `items[].granted` | 赠送的，`granted_balance` 原样的字符串 |
+| `items[].topped_up` | 充值的，`topped_up_balance` 原样的字符串 |
+
+```json
+{"balance":{"available":true,"items":[{"currency":"CNY","total":"12.34","granted":"2.00","topped_up":"10.34"}]}}
+```
+
+5. **是哪一家**（施工 QU-3，2026-11-17 终端会话要的，本机验收第 6、34 条：头照自己记的当前模型猜是哪家，换了模型、池里换了成员就写错）：有 `windows` 或 `balance` 的回应另带 `provider`：`{"id", "name"}`，`id` 是配置里那一家的编号（`model.endpoint` 的那一家），`name` 给人看：配置写了 `providers.<id>.name` 的照它（去掉两头空白），没写的照目录里对上的那一家的名字，再没有的照编号（同 `model.list` 的 `name`，施工 8-21）。头写「{供应商} 额度情况」「{供应商} 余额」。回 `{}` 的不带。写法在 `crates/miyu-endpoint/src/quota.rs`。
+
+**`session.redo`**（施工 4-7 再补，`kernel/history.md`「重做」）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+| `text` | 字符串，可以不写 | 开这一轮的那一句里的字换成这句话，写法照 `session.send` 的 `text`：照原样成一块文字，空的是不要字。不写的字照原来的 |
+| `attachments` | 数组，可以不写 | 开这一轮的那一句里的附件换成这几个，写法照 `session.send` 的 `attachments`；空的是不要附件。不写的附件照原来的 |
+| `prefix` | `"keep"`、`"compact"`，可以不写 | 前缀要变时人选的，同 `session.send` 第 9 条（施工 OV-1 下） |
+
+回应照撤销的（`protocol/undo.md`）：`events` 照先后是 `turn.reverted`、重发的每一句 `message.user` 的序号；`cwd`、`turns`、`said`、`compactions`、`clears`、`jobs` 照撤销写（施工 U-1 拿掉了 `files`、`commands`），`said` 是撤掉的那一轮原来那一句的第一行。重发的都落了盘才回，和 `session.send` 一样不等新的一轮做完。
+
+1. 只重做最后一轮：撤掉它，把开它的那几句人的话（排着接过来的几句，和开这一轮的那一句）照先后再发一次，开新的一轮；附件照带。`text`、`attachments` 两样都不写的原样重发；写了的只换开这一轮的那一句：写了 `text` 的换字、写了 `attachments` 的换附件，没写的那一样照原来的，字在前、附件在后（2026-09-30 项目主人定：网页里编辑上一句也走这里；换附件主会话定）。
+2. 新的一轮，`turn.started` 的 `cause` 是这一条的 `id`：头照它认出自己的那一轮，和 `session.send` 一样。重发的几句 `by` 照原来的，`cause` 也是这一条的 `id`。
+3. 最后一轮不是人说的话开的（回报叫醒的、别的 harness 发来的话开的（施工 7-10）、别的会话发来的话开的（施工 C-2）、空了的通知开的（施工 C-6）、手动压缩、清空、重启以后接着干的），或者一轮都没有：`not_redoable`，头把它那一句当一条提示通知显示。有回合在进行：`turn_running`。换过的那一句一块都不剩（原来只有字、`text` 是空的，原来只有附件、`attachments` 是空的）：`empty_message`。正在读回日志：`restoring`。附件照 `session.send` 第 5 条先查、再找会话：`bad_params`、`unknown_attachment`、`internal_error`、`attachment_too_big`，拒了的什么都不送。只给路径的附件（施工 AT-1）照收；场所会话里的找到会话以后拒 `bad_params`。先找会话，找不到的回的是找不到。
+4. 重做以后恢复不了：新的一轮开了（`session.unrevert` 回 `nothing_to_unrevert`）。
+5. `text` 不是字符串（数字、数组……）、`attachments` 不是数组：`bad_params`；写 `null` 等于没写（「请求」最后一条）。不收 `cwd`、`dirs`：新的一轮照会话现在的环境，和 `session.revert` 一样（「会话表」第 5 条）。
+
+**`session.compact`**（施工 6-8，`compaction.md` 第七条）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+| `instructions` | 字符串，可以不写 | 人附的要求，例如「重点保留数据库设计的讨论」，原样交给内核；去掉前后空白是空的，当没写 |
+
+回应：`events` 是 `[<那一轮 turn.started 的序号>]`，它落了盘就回，和 `session.send` 一样不等这一轮做完。压好了没有，看推送里的 `compaction.progress`、`compaction.done`、`context.compacted`、`turn.ended`。手里有一份提前压好的、没附要求的，直接换上：没有 `compaction.progress`，`compaction.done` 带 `prepared: true`（施工 6-11 上，`compaction.md` 第十五条）。
+
+1. 开的那一轮，`turn.started` 的 `cause` 是这一条的 `id`，没有 `trigger`：头照 `cause` 认出自己的那一轮。
+2. 有回合在进行：`turn_running`。没有能压的：`nothing_to_compact`（`compaction.md` 第七条第 2 条）。正在读回日志：`restoring`。先找会话，找不到的回的是找不到。
+3. `instructions` 不是字符串（数字、数组……）：`bad_params`。
+
+**`session.set_permission_level`**（施工 3-8 再补，`kernel/session.md`「切权限级别」）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+| `level` | `"full"`，可以不写（以前的 `"workspace"` 施工 AUD-4 起不收，`bad_params`） | 常用的那一级：完全放开（A16 起只有这一级） |
+| `read_only` | 布尔，可以不写 | 只读开关 |
+
+回应：`{}`。切了没有、切成了什么，看推送里的 `session.policy_changed`。
+
+1. 改哪样写哪样，没写的那一格照旧。两格都不写（写 `null` 也算没写）：`bad_params`，不找会话。
+2. `level` 只认这两种，别的（`read_only`、大写的、不是字符串的）：`bad_params`，和 `queued`、`stream` 一样。内核的 `unknown_level` 因此从协议上碰不到。
+3. 和现在一样的：什么都不记，照样回 `{}`。
+4. 不一样的：记一条 `session.policy_changed`，`permission` 两格都写，`from` 是切以前的那一份（施工 PL-1，头照它画这一条以前的几句，不用往前翻），`by` 取自连接（人的是主人），`cause` 是这一条的 `id`，回合进行中切的带上这个回合；落了盘才回应。收紧的当场生效：收紧成只读的，这一步里还没跑的写入当场补 `denied`，和它同一批落盘、推送；放宽的下一次请求才生效（`kernel/session.md`「切权限级别」第 4、5 条）。
+5. 改成完全放开之前请人确认一次，是头的事（`04-核心协议.md` 第九节），核心不问。
+6. 先找会话，找不到的回的是找不到。
+
+**`session.answer`**（施工 D-1，`kernel/asking.md`「回答」，`session/guard.md`「判一次调用」第 7 条）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+| `call` | 字符串，必写 | 回答的是哪一次调用：`tool.approval_requested`、`question.asked` 里的 `call_id` |
+| `decision` | `"once"`、`"session"` 或 `"deny"`，可以不写 | 回答确认：允许这一次、本会话都允许、拒绝 |
+| `reason` | 字符串，可以不写 | 拒绝的理由，她看得到；只有拒绝能带 |
+| `attachments` | 数组，可以不写 | 拒绝时附的图、文件（施工 Q-A），写法同 `session.send`；只有拒绝能带 |
+| `answers` | 数组，可以不写 | 回答提问：照题目的先后一道一条 `{"picked": [选项的标题], "text": 自己写的, "notes": 备注, "attachments": [同上]}`，几格都可以不写（`picked`、`text`、`attachments` 都没有的这道没答） |
+| `nested` | 正整数，可以不写 | 回答的是脚本里调的那一件（施工 M-7 上）：`tool.approval_requested` 里的 `nested`。不写的，这次调用自己没在等确认，就答它下面正在问的那一件（一次只有一件），旧的头照常答得到 |
+
+回应：`{"events": [序号]}`，这一次追加的事件（决定、拒绝时的工具结果，回答）都落了盘才回。
+
+1. 先查参数，再找会话：`decision`、`answers` 两样都写、都不写；回答提问却带了 `reason`、外面的 `attachments`；`call` 不合调用编号的写法；`nested` 不是正整数，或者回答提问时写了；`decision` 不是这三种（`workspace`、大写的也算）：`bad_params`。「这个工作区以后都允许」以后再加（2026-09-28 项目主人定），协议先不认：内核的 `unknown_decision` 因此从协议上碰不到。
+   附件（施工 Q-A，2026-10-22 项目主人：「回答的时候用户需要图片辅助表达自己的信息」）照 `session.send` 那一套：找会话之前换成块（`unknown_attachment`、`attachment_too_big`、写法不对的 `bad_params`，什么都不送），找到会话以后没有本机路径的落成会话里的文件；只给路径的一项（施工 AT-1）这里不收，照旧每一项要 `blob`。拒绝的附件记在 `tool.approval_decided` 的 `attachments`，接在理由后面进 `denied` 的结果；回答的附件记在 `question.answered` 那一道的 `attachments`，`ask_user` 在那道的回答后面写一句附了几个（`ask_user/attached.txt`），东西照题目的先后跟在结果的字后面。给她的办法同用户消息的附件：看不了图的模型照旧替看。
+2. 交给内核（`Command::Answer`），`by` 取自连接（人的是主人），`cause` 是这一条的 `id`。内核拒的：这个调用没在等回答（答过了、了结了、不是这一种，过了请求的 `expires_at` 已经被内核替人拒了的也是，施工 CD-1），`not_asking`；请求没提放行规则却选了本会话都允许，`no_rule`；允许却带了理由、附件，`unexpected_reason`；回答和题目对不上，`bad_answer`（`kernel/asking.md`）。空的理由当没写。
+3. 允许的，决定落了盘这个调用才跑；本会话都允许的，这个会话以后落在同一个范围里的写入不再问（`session/guard.md`「判一次调用」第 7 条）。命令的确认请求不带 `rule`（施工 LV-2：越过沙盒问人和它的 `prefix` 随「工作区」一级去掉了）。拒绝的，再记一条 `denied` 的结果，写了理由的带上，她接着干（`11-权限与沙盒.md` A13）。
+4. 头收起抽屉照推送：这个调用有了结果（`tool.result`），或者回答落了盘（`tool.approval_decided`、`question.answered`）。
+
+**`session.clear`**（施工 6-8 补，`compaction.md` 第十四条）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+
+回应照 `session.compact`：`events` 是 `[<那一轮 turn.started 的序号>]`。那一轮的开头、空的检查点、结束同一批，都落了盘才回：回应到的时候，推送里已经有这三条（`turn.started` 没有 `trigger`，`context.compacted` 的 `trigger` 是 `clear`、`summary` 是空的，`turn.ended` 是 `completed`），没有 `compaction.progress`、`compaction.done`。
+
+1. 开的那一轮，三条的 `cause` 都是这一条的 `id`：头照它认出自己的那一轮。
+2. 有回合在进行：`turn_running`。上下文本来就是空的：`nothing_to_clear`（`compaction.md` 第十四条第 2 条），头把它那一句当一条提示通知显示。正在读回日志：`restoring`。先找会话，找不到的回的是找不到。
+3. 撤掉那一轮（`session.revert`）上下文回到清空以前，回应里 `clears` 数它一次、`compactions` 不算它、没有 `said`（`protocol/undo.md`）。
+
+**`command.run`**（施工 O-6，`venues.md`「斜杠命令」）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+| `text` | 字符串，必写 | 人打的原文，例如 `/stop` |
+| `as` | 对象，可以不写 | 代表通讯平台上的人，同 `session.send` 的 `as`：只给场所会话，场所会话也只收带它的 |
+| `cwd` | 字符串，可以不写 | 头所在的目录，绝对的或者 `~` 开头的：只用来接 `/workspace` 后面相对的路径（施工 9-7 下） |
+| `prefix` | `"keep"`、`"compact"`，可以不写 | 开新一轮的命令（模板、MCP 提示词、`/goal` 设定和继续）前缀要变时人选的，同 `session.send` 第 9 条（施工 OV-1 下）；别的命令不看 |
+
+回应 `{"command": "clear"|"stop"|"workspace"|"remember"|"dream"|"clear-memory"|"goal", "events": [...], "said": "<回执>"}`：`command` 是正名（别名换成了正名），`events` 是这一次追加的全部事件的序号、最后一条是记下的 `command.ran`，`said` 是回执那一句，照这个连接的语言（`ui.language`），头原样发给人。
+
+1. 认法：开头的空白不算，原文要以 `/` 开头（不是的回 `bad_params`），名字紧跟着 `/`、到空白为止，后面跟的字去掉前后空白，只有 `/workspace`、`/remember`、`/goal`、`/todo` 用。认得的：`clear`（别名 `reset`）、`stop`、`workspace`（施工 9-7 下）、`remember`（施工 R-3 补）、`dream`（施工 R-7 补）、`clear-memory`（别名 `reset-memory`，施工 R-3 五补）、`goal`（施工 X-8 下）、`todo`（施工 D-3 再补）。登记表、命令模板（第 13 条）里都没有的回 `unknown_command`，`/` 后面是空白的也是。`cwd` 不是绝对的、也不是 `~` 开头的回 `bad_params`。
+2. 谁能用：本机的会话（本机的头就是主人本人）；场所会话里主人对应表认出的本人（记成带 `via` 的本人）、对应表里有的外部身份（群里的主人，`owner`）、`role` 是 `manager` 的。别人回 `command_not_allowed`。这是 `admin` 那一档；每条命令能另配（施工 O-6 六补，接入QQ 的会话 2026-10-17 要的）：系统配置 `commands.<名字>.access` 写 `anyone` 的谁都过这一关，写 `off` 的谁都不过（`command_not_allowed`，`data.why`「/<名字> 已停用。」），没写的照扩展清单 `[[slash]]` 的 `access`，也没有的是 `admin`（`slash.md`「谁能用」）。命令自己的限制照旧（`/workspace` 只给主人本人，记忆、长期目标要开着）。`/workspace` 动的是沙盒能写的地方，只有主人本人能用（本机的会话、对应表认出的本人、群里的主人），管理的人回 `owner_only`。先查参数、再找会话、再判身份。
+3. `/clear` 同 `session.clear`：内核拒的照原因回（`turn_running`、`nothing_to_clear`、`restoring`）。
+4. `/stop` 全停：先删掉跑在这个会话上的循环（`fixed`、`dynamic`，同 `/loop off`；施工 LO-2），再打断这一轮，排着的照 `keep` 留着；没有回合在进行的照样往下走。再停掉这个会话派出去的后台命令和子代理（同 `job.stop`，停的人记成说命令的人），和这个会话正在跑的整理（同 `/dream stop`，第 9 条，施工 R-22）。
+5. `/workspace <路径>` 同 `session.set_workspace` 只换工作目录，加进来的目录照旧（施工 9-7 下）：绝对的、`~` 开头的照原样；相对的照 `cwd` 接成真实的位置（`/workspace .` 就是头所在的目录），没带 `cwd` 的照会话现在的工作区接；路径里的空白照留，不认引号。写错的照那几种原因拒绝（`path_unreadable`、`not_a_directory`、`path_forbidden`，核心读不出家目录时的 `~` 也是读不了）；太宽的照人选的用，回执说一声范围大（「工作区换到了 ~（范围很大）。」，施工 9-7 补，原来退回默认工作区）；和现在一样的不记换，照样记下命令。不带路径的什么都不换，回执说现在在哪。
+6. 执行了的记一条 `command.ran`（`kernel/events-bodies.md`），`cause` 是 `<id>/ran`；被拒的什么都不记。它不进模型的请求。
+7. 同一个 `id` 再发只算一次（施工 YC-7补，`commands/resent.rs`）。命令是先做事（删循环、换工作目录）、再把 `<id>/ran` 交内核记的，所以协议这一层在认命令之前先查：核心记着最近执行了的 1024 条 `command.run`（所有会话合着算，照会话和 `id` 认，只在内存里），连着参数的指纹（`session`、`text`、`as`、`cwd`、`prefix` 全算）和当时的回应。执行过、参数一样的：原样交回当时的回应（`command`、`events`、`said` 都是头一次的，`said` 照头一次那个连接的语言），不再执行；参数不一样的：`id_reused`，不执行。同一个 `id` 同时来两条的，后到的等先到的完再照这几条判。被拒的不记，再发重新判。核心重启以后、挤出了 1024 条的：照老规矩，命令再跑一遍，内核照编号去重它交的那几条。
+8. `/remember <话>`（施工 R-3 补，`memory.md`「协议」）：名字后面跟的字是那一条，类 `user`，记进这个会话那一间，`by` 是打命令的人，出处空，听众是这个人；回执说记下了那句话（`commands/remembered`：「记下了：用户喜欢猫」，那句话里的换行、制表换成空格），不露编号（施工 R-3 四补，2026-10-10 项目主人定）。不请求模型。场所会话、范围 `off`、人格记忆没装的（施工 R-10）回 `memory_unavailable`，`data.why` 是照连接语言说的为什么（施工 O-6 再补：没装人格记忆的「人格记忆未安装。」，先于别的，施工 R-10；没有人格的「没有人格的会话记忆不生效」，预设没开记忆的带上预设的名字，字在 `core/human/<语言>.json` 的 `commands/unavailable/…`，别的照拒绝的那一句）；空的 `bad_params`，超过 120 字的 `memory_too_long`。先判身份，再查这个会话有没有记忆，再查字。同一个 `id` 再发只记一次（记忆事件的 `cause`，`memory.*` 第 5 条）。
+9. `/dream`（施工 R-7 补，`memory.md` 第七条第 9 款）：不带字。能不能用照 `/remember`（同第 8 条的判法和 `data.why`）；做的就是带这个会话的 `memory.dream`（`memory.*` 第 6 条），拒绝照它的。回执照几样数说：「整理完成：检查 1 条，没有要改的，摘要已更新，用时 4s。」（`commands/dreamed`，是 0 的不写、都是 0 的说没有要改的、摘要换了的多一段、末尾写用时，施工 R-22 再补），什么都没交进去的「无需整理，用时 2s。」（`commands/dreamed-nothing`）。在后台答（「一个连接」第 1 条）：只有它，别的命令照旧按顺序答。同一个 `id` 再发照第 7 条只记一次 `command.ran`，整理照样再做一次（多半没有要整理的）。叫停了的（`/dream stop`、`/stop`，施工 R-22，`memory.md` 第七条第 13 款）照样回应：「整理已中断：检查 3 条，修改 1 条，用时 12s，其余下次再整理。」（`commands/dreamed-stopped`，数是叫停以前合完了的），一批都没合完的「整理已中断，用时 2s，下次再整理。」（`commands/dreamed-stopped-nothing`）。`/dream stop` 叫停这个会话正在跑的整理，回执「已停止整理。」（`commands/dream-stopped`），没有在跑的回 `not_dreaming`（定时的、别处叫的不算）；跟别的字的参数不对。
+10. `/goal`（施工 X-8 下，`goal.md`）：交代、看、停、继续、改、清掉长期目标。`/goal` 看：回执是「原文 · 在哪一步 · 第几轮」（`commands/goal-is`：「把测试修绿 · 等待回复 · 第 1/3 轮」；在哪一步照会话状态的 `goal.state`，卡住的带原因「受阻：…」；有上限的写「第 1/3 轮」，不限的「第 1 轮」；原文、原因里的换行写成空格），没有目标的「无长期目标。」，什么都不记、只记 `command.ran`。`/goal <目标>` 设一个（同她的 `goal` 工具，当场算授权过，会话闲着就开续轮）；`/goal pause`、`/goal resume`、`/goal clear` 后面没字的才是子命令，带字的整句当目标；`/goal edit <目标>` 改原文。设、改都能在目标前面写 `--rounds N` 定轮数上限，`0` 是不限，改的时候不写的照原来的。已经有一个没完成的，`/goal <目标>` 就是改它（施工 X-8 再补，`goal.md` 第 6 条）：停着、卡住的改完接着跑，回执「已修改长期目标：…」。`edit` 后面没字、`--rounds` 后面不是非负整数、只写了上限的回 `bad_params`。卡住的照停着办：`resume` 接着跑（轮数照数），`edit` 改，`clear` 清掉；再设拒 `goal_exists`，停拒 `goal_paused`。改了的记对应的 `goal.*`（`by` 是打命令的人），回执「已设定长期目标：…」「已暂停长期目标。」「已继续长期目标。」「已修改长期目标：…」「已清除长期目标。」；内核拒的照原因回（`goal_exists`、`no_goal`、`goal_paused`、`goal_running`、`empty_message`）。这个会话没有长期目标的回 `goal_unavailable`（工具面上没有 `goal`：群里、私聊、子代理的会话，长期目标没装、预设关了的；照造会话、载入时的工具面判），`data.why` 说具体：没装的「长期目标未安装。」，本机主会话预设关了的「预设「…」未启用长期目标。」，别的照拒绝的那一句。续轮那条 `message.user`（`by` 是 `{"kind":"module","id":"goal"}`）的 `cause` 照约定写 `goal-<第几轮>-<UUIDv7>`（施工 X-8 补，`miyu_kernel::event::round_command`、`round_of` 一处造一处读；后一段每一轮新造，施工 FX-2 以前是毫秒，会话时钟停住时会重）：头照它知道这是第几轮，补发、翻页时也一样，不翻提示词；视图条目已经读好写在 `round`。目标现在的样子照订阅回应的 `goal` 和推过来的 `goal.changed`（「订阅」）。
+11. **登记表**（施工 O-6 三补，`commands/registry.rs`）：认哪些命令照登记表，中心不写名字。一条命令一个 `Slash`，在管它的模块里写：名字、别名、`summary` 和 `argument` 的字键（跟字的才有 `argument`）、在不在后台答（`later`，现在只有 `/dream`）、身份以外谁能用（`allowed`：`/workspace` 只给主人本人，`/remember`、`/dream`、`/clear-memory` 要开着记忆，`/goal` 要有长期目标）、怎么执行（交回追加的序号和回执）。核心起来时登记：核心自己的 `/clear`、`/stop`、`/workspace`（`commands/basic.rs`）、`/todo`（`commands/todo.rs`），记忆的 `/remember`、`/dream`、`/clear-memory`（`memory/slash.rs`），长期目标的 `/goal`（`commands/goal.rs`）。名字和别名在同一个名字空间里，照原样比；撞了是内置命令写错了，登记时就 `panic`，测试当场拦（`registry/tests.rs`）。别名不一样的不算撞：`/reset-memory` 和 `/reset` 是两个词。登记表里没有的名字照命令模板认（第 13 条）。
+12. `/clear-memory`（别名 `/reset-memory`，施工 R-3 五补，2026-10-15 项目主人定名字、不先问、回执说清了几条）：清掉这个会话产生的记忆。不带字（跟了的不看）。能不能用照 `/remember`（同第 8 条的判法和 `data.why`）；做的就是带这个会话的 `memory.forget`、`clear: "session"`（`memory.*`、`memory.md` 第二条第 5 款）：出处全在这个会话里的清掉，别的会话也是出处的、人记的（没有出处）不动，会话那一间清的就是整间；清掉的哪里都不出来、找不回来，不先问。`by` 是打命令的人。回执说清了几条：「清掉了这个会话记下的 3 条记忆。」（`commands/cleared-memory`，一条的发 `commands/cleared-memory/one`，英文说单数），一条都没清掉的「这个会话没有记下的记忆。」（`commands/cleared-memory-none`）。不请求模型，照顺序答。
+13. **命令模板**（施工 X-14 上，`slash.md`）：名字不在登记表里的，照数据根的 `root/commands/`、装了的包的 `commands/` 找 `<名字>.md`（和内置的撞名的不算，内置的赢）。先找会话、认说话的人（`as`），再找模板：找不到的 `unknown_command`（谁打的都是：场所里的桥照它把话当平常说的记下）；找到了再判身份（同第 2 条）；会话的预设关了这条（功能 `command-<名字>`）的 `command_not_allowed`，`data.why` 说「预设「<名字>」未启用 /<命令>。」。照参数展开成一块文字，当这个人说的一句发出去（同 `session.send`，不急着插话），`message.user` 带 `command: {"name", "text"}`，`text` 是人敲的那一行；展开完是空的照内核拒 `empty_message`。回应 `{"command": "<名字>", "events": [<这一句的序号>], "said": ""}`：没有回执，不记 `command.ran`（时间线上就是人敲的那一行）。
+14. `/todo`（施工 D-3 再补，2026-10-17 项目主人定）：看、清掉她的待办，谁能用同 `/clear`，归基础系统。`/todo` 看：每项「内容 · 做到哪了」（`commands/todo-is`，做到哪了是「未开始」「进行中」「已完成」，内容里的换行写成空格），用这种语言的分隔（`commands/todo-separator`，中文「；」）连成一行；没有的「无待办。」；什么都不记、只记 `command.ran`。`/todo clear` 交内核 `ClearTodos`：记一条 `todos.cleared`，回执「已清空待办。」，头照推过来的 `todos.changed` 收起清单；没有待办的「无待办。」，只记 `command.ran`。后面跟别的字的回 `bad_params`。`/clear` 也连待办一起清（`compaction.md` 第十四条第 10 条）。
+14. **扩展声明的命令**（施工 X-14 下，`slash.md`「扩展的命令」）：清单 `[[slash]]` 写的。认的先后：登记表、自己放的模板、扩展声明的、包里的模板（包里的两种装包时查过、撞不上）；身份、预设同第 13 条。核心反向调用那个扩展（它 `provide` 过的那个连接）`command.call {"command", "argument", "text", "session", "by", "language"}`：`argument` 是名字后面跟的字（去掉前后空白），`text` 是人敲的那一行，`by` 同 `tool.call`，`language` 是这个连接的语言。扩展答 `{"said": "<一段话，可以多行>"}`：记一条 `command.ran`，回应 `{"command", "events": [<command.ran 的序号>], "said": <它答的>}`。扩展没连上、断了、一分钟没答的拒 `command_unavailable`；答了 JSON-RPC 错误的拒 `command_failed`，`data.why` 是它的 `message`；答的没有 `said` 的也是 `command_failed`。都不记 `command.ran`。在后台答（「一个连接」第 1 条）。
+16. `/loop`（施工 J-2，`schedules.md` 第五节第 9 条）：`/loop <间隔> <话>` 固定间隔，`/loop <话>` 她自己定节奏，光打 `/loop` 开自主循环（施工 LO-1：同她自己定节奏的，交进去的是出厂的一句英文），`/loop off` 删掉，单独一个 `clear`、`stop` 同它（施工 LO-3，大小写不论）。她自己定节奏的那一轮里她没定下一次的，那一轮结束时那一行删掉、推 `removed`（施工 LO-3，`schedules.md` 第三节第 10 条）。写错了的（只写了间隔、没写话）回 `bad_params`，`data.why` 是照连接的语言写的用法：「参数不对。用法：」（`commands/bad-usage`），下面一行一种写法（`commands/usage-line`：写法、全角空格、做什么那一句；英文两个空格），写法和做什么那一句同 `command.catalog` 的 `usage`（`commands/usage.rs` 共用一份）。
+
+**`command.catalog`**（施工 O-6 补，网页的会话要的，终端也用）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，可以不写 | 哪个会话：写了只列这个连接在这个会话里打了不会被拒的；不写的列全部，只是跟着包的核心命令（`/loop`、`/goal`、`/todo`）照默认预设筛：默认预设没开那个包的不列，开会话的话敲了是 `unknown_command`（施工 CC-1，`presets::package_on`）。模板、扩展声明的命令不写会话的照旧都列 |
+
+回应 `{"commands": [{"name": "clear", "aliases": ["reset"], "summary": "清空上下文"}, {"name": "workspace", "aliases": [], "summary": "切换工作区", "argument": "<路径>"}, …]}`：照名字排；`summary`、`argument` 照这个连接的语言，字在 `core/human/<语言>.json` 的 `commands/summary/<名字>`、`commands/argument/<名字>`；名字后面要跟字的（`workspace`、`remember`）才有 `argument`。
+
+有几种写法的命令多一格 `usage`（施工 O-6 四补，2026-10-17 项目主人看终端的命令菜单时提的：`/goal` 只写了设定和看进度，停、继续、清除都没列）：`[{"form": "/goal pause", "summary": "暂停"}, …]`，照先后，`form` 是一整条写法（名字后面跟字的那一段照 `argument` 写），`summary` 照这个连接的语言（`commands/usage/<名字>/<哪一种>`）。只有一种写法的不写这一格，头照 `summary`、`argument` 显示；有这一格的，`/help` 照它一行一种列出来，不自己拼说明；命令菜单照旧一条命令一行，名字后面照 `argument` 写（施工 O-6 五补，2026-10-17 项目主人看了网页的菜单定的：菜单照 shell 命令的语法提要写一行，比如 `/goal [<目标> | pause | resume | clear]`；有几种写法的命令，`argument` 就写成这样的提要，`usage` 里占位的那一段是 `commands/placeholder/<名字>`）。现在有它的是 `/goal`、`/todo`（`/todo` 看、`/todo clear` 清空，提要 `[clear]`）：`/goal` 看进度、`/goal <目标>` 设定（已经有一个就改它，施工 X-8 再补）、`/goal --rounds <轮数> <目标>` 设定或改的时候定最多跑几轮（施工 X-8 三补：原来提要和几种写法里都没有它，头的参数提示照这一格画，人不知道能写；占位的那一段是 `commands/placeholder/goal-rounds`）、`/goal pause`、`/goal resume`、`/goal clear`；`/goal edit` 照旧认、不列。提要是 `[[--rounds <轮数>] <目标> | pause | resume | clear]`。
+
+1. 不写 `session`：列核心认的全部（头还没造会话、`/help` 列全部时用）。
+2. 写了：只列这个连接在这个会话里打了不会被拒的，和 `command.run` 第 2、8、10、12 条同一份判法（谁能用；`/workspace` 只给主人本人；`/remember`、`/dream` 要这个会话开着记忆；`/goal` 要这个会话有长期目标）。用不了的不列（2026-10-09 项目主人定）：人打了菜单里没有的命令，头照样交给 `command.run`，照拒绝的 `data.why` 说为什么，不自己说「没有这个命令」。
+3. 命令模板（施工 X-14 上，`slash.md`「找、盖住、开关」第 5 条）照名字排在一起：一项 `{"name", "aliases": [], "summary", "argument"?}`，`summary` 照模板的说明、照连接的语言挑，没写的照正文第一行不是空白的那一行；写了 `argument-hint` 的带 `argument`（照原样）。写了会话的只列预设开着的；和内置同名的不列。
+4. 能点名用的技能（施工 PT-2 下；SN-1 起另列在回应顶层的 `skills`，`skills.md`「技能」第 6 条）：一项 `{"name", "summary"}`，`summary` 照技能 `metadata` 里给人看的那一句、照连接的语言挑，一种都没写的照给模型的说明；`user-invocable: false` 的不列；写了会话的只列预设开着的。头照它做 `$` 菜单，点名的交 `session.send` 的 `skills`；`command.run` 不再认技能名。
+5. 不推送：头换会话、打开命令菜单时问一次。头自己的命令（`help`、`theme` 这些）、软件包登记的同名命令由头自己拼、自己去重；核心这份里没有只有头懂的命令。
+
+**`check`**（施工 8-30，`cli/check.md`）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `cwd` | 字符串，可以不写 | 头现在的工作目录：照它找项目配置，相对的 `file` 照它接 |
+| `file` | 字符串，可以不写 | 只查这一份 |
+
+回应 `{"problems": [...]}`（不写 `file` 的另带 `embedding`，第 5 条），一处一格：`kind`（`config`、`secrets`、`persona`、`preset`（施工 P-2 上）、`package`（施工 9-1 上）、`script`、`skill`（施工 X-12 下）、`mcp`（系统配置里的 MCP 服务写错了、盖住了包里同名的，施工 F-9 上）、`schedule`（唤醒表里读不懂的行 `schedule_unreadable`，`file` 是 `root/schedules.db`，`message` 带编号和哪一格，施工 AE-4））、`file`（照 `config.get` 的写法：数据根里的相对数据根，项目配置 `~/…`，出厂的人格写真的路径）、`code`、`level`（`error`、`warning`）、`message`（照这个连接的语言，带改法）；有行列的带 `line`、`column`（人格的只有 `line`），配置的另带 `key`、`got`、`suggest`、`using`，和 `config.get` 的问题一样。
+
+1. 不写 `file`：系统配置、`cwd` 的项目配置（没写 `cwd` 的不查）照磁盘上现在的字查（还没有的跳过，读不了的报 `unreadable`、`too_big`、`not_utf8`）；密钥文件照核心手里的问题（字是密钥，不另读）；三层里每个人格的 `persona.toml`、`prompts/examples.md`、每一份预设（施工 P-2 上）各层各查各的，上面一层盖住了照样报；软件包清单（施工 9-1 上）；有 `[check]` 的包自己的检查（施工 9-2，`packages.md`「怎么走」第 6 条：核心照起来时读到的清单跑包里的程序，收它一行一个的问题；跑坏了、程序没找到、印了看不懂的行各报一条警告 `check_failed`、`check_unavailable`、`check_output`）。照这个先后：配置、密钥、人格（层、路径）、预设（层、路径）、清单、包自己的检查（包的编号）。
+2. 写了 `file`：照它的真实位置认是哪一种、只查那一份；某个目录下的 `.miyu/config.toml` 当项目配置查（不在 `cwd` 下面也行）；人格目录里写了文件、某一层 `presets/` 下的 `<编号>.toml`（施工 P-2 上），文件还没有的报 `unreadable`。认不出的：`unknown_file`。
+3. 人格的代码：`syntax`、`unknown_table`、`not_a_table`、`unknown_key`、`not_phrases`、`unknown_language`、`empty_phrase`、`first_line`、`take_turns`、`last_line`、`empty_line`；给人看的那一句在 `core/human/<语言>.json` 的 `persona-problems/<code>`，照 `detail`（表名、键、`persona.<格>.<语言>`，读不成 TOML 的是它的原话）填。
+4. 预设的代码（施工 P-2 上）：`syntax`、`unknown_table`、`not_a_table`、`unknown_key`、`not_phrases`、`unknown_language`、`empty_phrase`、`bad_persona`、`bad_unlisted`、`bad_software`、`not_bool`、`bad_tool`、`not_false`；给人看的那一句在 `preset-problems/<code>`，照 `detail`（表名、`<表>.<键>`、`preset.<格>.<语言>`）填。
+5. 语义模型的状态（施工 R-25，`cli/check.md`）：不写 `file`、核心接了照意思那一路的，回应另带 `embedding`（不是问题，不进 `problems`）。用得上的 `{"model", "filling", "memory", "turns", "kb", "no_recall"}`：`model` 是照这时的配置用的模型编号（`local:<id>`、`<供应商>/<模型>`），`filling` 是后台这时有没有在补哪一份库；`memory`、`turns` 是每个人格那一间的记忆、以前的对话（回合库），一格 `{"persona", "have", "total"}`（有这个模型的向量的条数、一共几条；作废的记忆也在里面，补的时候也补它们），照人格编号排，无人格的那一间编号是 `_none`；`kb` 是每个知识库，一格 `{"id", "name", "have", "total"}`（块数）。只数不补：人格那一间照记忆日志的目录、回合库的文件在的数，开的是核心一直开着的那一份，没有的不建；知识库照索引现有的数，不照文件补。用不上的 `{"model": null, "why"}`：`off`（`models.embedding` 关着）、`not_installed`（要本机的却没装内置语义模型的包）。用得上的另带 `no_recall`（施工 FX-4）：这个模型不自动联想的几样，照 `memory`（记忆的联想）、`kb`（知识库的自动想起）的先后，都联想的是空的：门槛表（`core/memory/recall.toml`、`core/knowledge/recall.toml`）里没有这个模型的不联想（`memory.md` 第四条第 2 款），读不出来的同样列上。
+6. 已经卸掉的包留在系统配置里的设置项（施工 PK-5补，`packages.md`「装卸」第 7 条）：不报 `unknown_key`，一个包一条警告 `settings_left`（`kind: "config"`、`file` 是系统配置，不带行列），`message` 说有几项、是哪个包留下的、重装照原样生效、不要了用 `miyu pkg remove <编号> --purge` 删（`config/settings-left`，照连接的语言）。`config.check` 也不报这几个键。
+
+**`persona.list`**（施工 P-1 上，`personas.md`「怎么走」第 7 条）
+
+没有参数。回应 `{"personas": [...]}`，照编号排，一个人格一格：`persona` 编号，`avatar` 头像的版本（没有的 `null`，施工 P-5），`background` 背景图的版本、`seed` 主题色（小写的 `#rrggbb`），没有的 `null`（施工 P-6），`seeds` 头像的候选主色（最多 4 个小写的 `#rrggbb`，打分最高的排第一；没有头像、解不开的 `null`，施工 P-6 补，`personas.md`「主题色、背景图」第 4 条），`background_opacity` 背景图露出多少（0 到 100）、`background_focus` 焦点（`[x, y]`，各 0 到 100），没有的 `null`（施工 P-7），`background_blur` 背景图模糊多少（1 到 100），没有的 `null`、不模糊（施工 P-7 补），`name`、`summary` 一句字（施工 P-3 补：写成一句的就是它；以前写成语言表的、出厂的几个照这个连接的语言挑，这种语言没写的照 `en`、`zh`、`ja` 的先后，都没写的是 `null`；说明写成空的字的也是 `null`，施工 P-3 再补）。来自哪几层不给（施工 P-3 补，2026-10-08 项目主人：人看的是名字）。文件写错的只有 `persona`、`problem` 和知道第几行的 `line`：`problem` 照这个连接的语言说哪里写错了，同 `persona.*` 里 `persona_invalid` 的 `data.message`、`data.line`（施工 P-3 再补：原来是给排查看的英文原话，项目主人看不懂）。
+
+**`preset.list`**（施工 P-2 上，`presets.md`「协议」）
+
+没有参数。回应 `{"presets": [...]}`，照编号排，一个预设一格：`preset` 编号，`icon` 图标（Lucide 名字，没写的 `null`，施工 P-5），`name`、`summary` 一句字（挑法同 `persona.list`），`tokens` 是照它开新会话、不算人格时占多少 token（施工 DM-4，`presets.md`「协议」第 7 条；备不出来的没有）。文件写错的只有 `preset`、`problem` 和知道第几行的 `line`，写法同 `persona.list`（施工 P-3 再补）。出厂的「无功能」`none` 照编号列（施工 P-17）；原来末尾拼的编号是 `null` 的「无工具」不再列。
+
+**`preset.get`**（施工 P-2 上，`presets.md`「协议」）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `preset` | 字符串，必写 | 预设的编号 |
+
+回应 `{"preset", "name", "summary", "icon", "unlisted", "unattended_steps", "features", "sections", "remove"}`（`icon` 施工 P-5；`sections` 施工 FG-1；`unattended_steps` 施工 AE-1）（施工 P-3 补：只给人要看的；`default_persona` 施工 P-4 上撤了；施工 F-3 下 `software`、`tools` 换成 `features`）：`name`、`summary` 一句字（挑法同 `persona.list`）；`unlisted` 是叠好以后的 `on`、`off`（几层都没写的是 `on`）；`unattended_steps` 是叠好以后 `[limits]` 写的数，几层都没写的是 `null`（照出厂的 500，`presets.md`「格式」第 7 条）；`remove` 是删了会怎样：`restore`（有你那一层、下面还有：删了回到出厂的样子）、`delete`（只有你那一层：删了就没了）、`null`（没有你那一层，没什么可删）。
+- `features` 是一个个功能（施工 F-3 下，设计 `30-插件框架.md` 第三节、第四节）：装了的照清单读的先后（包照编号，包里照写的先后），每个 `{"id", "name", "summary", "package", "on", "by", "installed": true, "tools"}`：`name`、`summary` 照它的清单、照这个连接的语言挑，没说明的没有 `summary`；`package` 是它归哪个包（施工 ENV-1，头照它按包分组，包名照 `package.list` 查），同预设 `[software]` 认的编号：你自己放的脚本、MCP 服务、模板命令是 `~home`，不归包的技能没有这一格；`on` 是叠好以后开不开；`by` 是谁定的（施工 X-27，`presets.md`「全局开关」）：`preset` 预设里写了，`global` 预设没写、照技能、脚本、MCP 服务的全局开关（只在 `unlisted` 是 `on` 的预设里算，2026-10-20 项目主人定），`default` 照 `unlisted`（`unlisted = "off"` 的预设没写的都是它）；写了没装的那几项也带 `by`；`tools` 是归它的、工具目录里现在有的工具，照名字排，每件 `{"name", "label", "on"}`，`label` 是给人看的显示名：给人看的字里的，工具自己登记的（MCP 服务给的 `title`、扩展、脚本写的）照连接的语言挑，都没有的 MCP 工具去掉 `mcp__<服务名>__`（施工 X-27 再补），别的是工具名；功能关着的都是 `false`，开着的照 `[tools]` 关没关。预设的 `[features]`、`[software]` 里写了、没装的接在后面，照编号排：`{"id", "name", "on", "installed": false, "tools": []}`，名字照给人看的字 `software/<编号>`，没有的是编号；写的是装了的包的编号的不另列。`id` 是 `preset.set` 写 `features.<id>` 用的，`tools[].name` 是写 `tools.<name>` 用的，不往界面上露。头照它一个功能一个开关画，展开能逐件关。
+- `sections` 是同一些功能分好组、排好先后（施工 FG-1，设计 `52-功能分组.md` 第三节，`presets.md`「功能分组」），头照它画预设页、引导页，不翻译、不排序、不认编号；`features` 照旧一格不动。每组 `{"kind", "id", "name", "on", "total", "items"}`：`kind` 是 `group`（出厂的组，`id` 是组名，照 `resources/packages/groups.toml` 的先后）、`package`（没进组、带几个功能的扩展包，`id` 是包编号，名字是包名，照包编号排）、`extensions`（没进组、只带一个功能的扩展包合成一组，`id` 是 `extensions`，一个扩展一行、`name` 是包名；一个都没有的不列）、`skills`、`scripts`、`mcp`（`id` 同 `kind`，排在最后，没有的也列、`total` 是 0）；先后就是这样：出厂的组、带几个功能的扩展包、`extensions`、技能、脚本、MCP 服务。`name` 照连接的语言；`on`、`total` 是这一组开着的、全部的功能几个。`items` 一项一个功能 `{"kind": "feature", "id", "name", "on", "by"}`：组里照组的 `order`（包的先后），包里照清单写的先后；包带的技能、脚本、MCP 服务归末尾那三组；模板命令、扩展声明的命令归 `skills`；写了没装的不列；同一组里名字一样的后面括号带包名（包名就是这一行名字的写包编号）。`by` 比 `features[].by` 多分一种：`preset`（预设写了这个功能的编号）、`group`（写的是它所在的包或组）、`global`、`default`。带几件工具的另带 `tools: [{"id", "name", "on"}]`（`id` 是工具名，`name` 是显示名，`on` 同 `features[].tools[].on`），照清单 `[features.<编号>] tools` 写的先后、没写到的接在后面；一件工具的不带。
+- 编号不合写法的 `bad_params`，没有的 `unknown_preset`，写错的 `preset_invalid`（`data.message` 照这个连接的语言说一句、`data.line` 第几行，施工 P-3 补）。
+
+**`preset.set`**（施工 P-3 中，`presets.md`「改」）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `preset` | 字符串，可以不写 | 预设的编号；不写的是新建，编号由核心起 `preset-<n>`（几层里都还没有的最小的 n，施工 P-3 补，2026-10-08 项目主人定：新建不填编号） |
+| `changes` | 数组，必写、不能是空的 | 每一项 `{"key", "value" \| "unset": true, "expect"?}`，照 `config.set` 的 `changes`：`key` 是文件里的键（`preset.name`、`preset.summary`、`preset.unlisted`、`features.<功能>`（施工 F-3 下，编号照 `preset.get` 的 `features[].id`；以前的 `software.<包>` 照认）、`tools.<工具>`、`limits.unattended_steps`（正整数，施工 AE-1）；施工 P-4 上撤掉的 `preset.default_persona` 同别的不认识的键，`preset_invalid`，施工 AUD-3），`value` 是字、开关、数，`expect` 是你那一层里这一项现在应当是什么（`{"value": …}` 或者 `{}` 没写） |
+
+回应同 `preset.get`：改完叠好的样子（带着编号）。只写你那一层的 `<编号>.toml`：改出厂的、包带的就是建同名覆盖，只写改了的项。名字、说明写成一句字（施工 P-3 补，2026-10-08 项目主人：不分语言），以前写成语言表的整格换成一句。说明能写空的字（`"value": ""`）：就是没有说明，盖住出厂的那句，`unset` 才回到出厂的（施工 P-3 再补）；名字照旧不收空的。人格同样。新建的什么开关都不写，就是全开（`unlisted` 没写是开）。
+
+1. 一项项在原来的字上改，注释、顺序、别的字节照原样；你那一层本来就是这个值的、本来就没写又要删的不动。一项都没变的不写。
+2. 改完的一份照预设的规矩读一遍、连同叠好以后再查：有错整条不收、什么都不写，`preset_invalid`，`data.problem` 是头一处（写法同 `preset.get`），`data.message`、`data.line` 照连接的语言说（施工 P-3 补）。
+3. `expect` 对不上：`preset_conflict`，`data.current` 是你那一层里这一项现在的样子，什么都不写。写的那一瞬间有人手改、重来三次还不行：`preset_conflict`，不带 `data.current`。
+4. 编号不合写法、`changes` 是空的、同一个键写了两次、一项里 `value` 和 `unset` 不是正好一个、`unset` 不是 `true`、`value` 不是字开关数、`expect` 不是那两种、新建的一项都不写（只删）：`bad_params`。
+5. 新建：挑一个没用过的编号写一份新文件，写的那一瞬间别处占了这个编号的换下一个。
+6. 写盘照配置文件的规矩：顺着链接写、先写临时文件再替换。开着的会话下一个回合照新的（P-2 下）。扩展进程调回 `local_only`。
+
+**`preset.delete`**（施工 P-3 中，`presets.md`「改」）：`{"preset"}` → `{"remains": <下面几层还有没有>}`。删掉你那一层的文件：下面还有出厂、包带的回到它们的样子（`true`，界面写「恢复出厂」），没有了的这个预设就没了（`false`）。你那一层本来就没有的 `nothing_to_delete`；编号不合写法的 `bad_params`；扩展进程调回 `local_only`。会话钉着的、默认指着的也能删：开着的会话照旧用快照里的，默认指着没有的照旧拒开会话（Y12）。
+
+**`persona.set`**（施工 P-3 下，`personas.md`「改」）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `persona` | 字符串，可以不写 | 人格的编号；不写的是新建，编号由核心起 `persona-<n>`（同 `preset.set`，施工 P-3 补） |
+| `changes` | 数组，可以不写 | 改 `persona.toml`，写法同 `preset.set` 的 `changes`；键是 `persona.name`、`persona.summary`、`appearance.seed`（`memory.scope` 施工 FH-1 去掉，写了的 `persona_invalid`：`unknown table [memory]`）（施工 P-6；写的值照 `[appearance]` 的规矩查，写错的 `persona_invalid`） |
+| `prompts` | 对象，可以不写 | 提示词名（`persona`、`examples`、`reminders`）到 `{"text": "<整份>"}`、`{"unset": true}`，示范对话另可写 `{"pairs": [{"user", "assistant"}, …]}`（施工 P-3 补）；都可带 `"expect": "<版本>" \| null`（照 `persona.read` 给的） |
+| `avatar` | 对象，可以不写 | 头像（施工 P-5，`personas.md`「头像」）：`{"blob": <内容哈希>}` 换成传上来的那一张，`{"unset": true}` 删掉你那一层的；可带 `"expect": "<版本>" \| null` |
+| `background` | 对象，可以不写 | 背景图（施工 P-6，`personas.md`「主题色、背景图」），写法同 `avatar` |
+| `seed` | 字符串或对象，可以不写 | 主题色（施工 P-6）：`"#rrggbb"`（大小写都认，写成小写）写进你那一层的 `[appearance] seed`，`{"unset": true}` 删掉你那一层的；写错的、`changes` 里也改了 `appearance.seed` 的 `bad_params` |
+| `background_opacity` | 整数或对象，可以不写 | 背景图露出多少（施工 P-7）：0 到 100，写进你那一层的 `[appearance] background_opacity`，`{"unset": true}` 删掉你那一层的；写错的、`changes` 里也改了这一项的 `bad_params` |
+| `background_focus` | 数组或对象，可以不写 | 背景图的焦点（施工 P-7）：`[x, y]`，各 0 到 100（同 CSS 的 `background-position`），写进 `[appearance] background_focus`；`unset`、写错同上 |
+| `background_blur` | 整数或对象，可以不写 | 背景图模糊多少（施工 P-7 补）：1 到 100（0 不收，不模糊就是删掉），写进 `[appearance] background_blur`；`unset`、写错同上 |
+
+`changes`、`prompts`、`avatar`、`background`、`seed`、`background_opacity`、`background_focus`、`background_blur` 至少写一样（只写 `avatar`、`background` 的要写 `persona`；只写 `seed`、`background_opacity`、`background_focus`、`background_blur` 的可以新建）。回应同 `persona.get`：改完叠好的样子（带着编号）。只写你那一层：改出厂的、包带的就是建同名覆盖，提示词整份换你那一层的那一份，`unset` 删掉你那一层的、回到下面的；空的字（`{"text": ""}`）就是这一段是空的（空的人设不进 system，空的角色扮演提示等于没有）。
+
+1. 几样一起查：`persona.toml` 改完的一份、示范对话、连同叠好以后；有错什么都不写，`persona_invalid`，`data.problem` 是头一处（写法同 `persona.get`），`data.message`、`data.line` 照连接的语言说（施工 P-3 补）。和你那一层现在一样的不写，一样都没变的什么都不写。
+2. `pairs`（施工 P-3 补：界面里一对一对地编，格式留在核心）：核心写成 `user:` / `assistant:` 开头、对与对之间空一行的写法；一句里的空行去掉；空的 `pairs` 等于删掉。每一句去掉前后空白不能是空的（`bad_params`）；一句里有一行看起来像 `user:`、`assistant:` 开头、写了读不回原样的，`persona_invalid`（`data.message` 说是第几对）。
+3. `changes` 的 `expect` 对不上、提示词的 `expect` 和你那一层这一份现在的版本对不上（`null` 是「还没有」）：`persona_conflict`，`data.current` 是 `{"value": …}`/`{}`（`changes` 的）或者现在的版本、`null`（提示词的），什么都不写。几份一份一份地写，只试一次：写到一半撞上有人手改的，前面写了的不撤，`persona_conflict`、不带 `data.current`，头重读再来。
+4. 编号不合写法、两样都没写、提示词名不认识、一份里 `text`、`unset`、`pairs` 不是正好一个、`pairs` 写在示范对话以外、`unset` 不是 `true`、`expect` 不是字也不是 `null`、新建的一样都不写（只删），`changes` 同 `preset.set` 的那几种：`bad_params`。扩展进程调回 `local_only`。
+5. 新建：挑一个没用过的编号、先建它的目录占住（别处同时建了同一个的换下一个），再照常写；写不成的把空目录删掉。
+
+**`persona.read`**（施工 P-3 下）：`{"persona", "prompt": "persona" | "examples" | "reminders"}` → `{"text", "version"}`。`text` 是叠好的那一份的原文，`version` 是你那一层这一份的版本（`sha256:…`，照 `config.get` 的写法）；没有的都是 `null`。示范对话另带 `pairs: [{"user", "assistant"}, …]`（读好的一对一对，施工 P-3 补）。来自哪一层不给（施工 P-3 补）。编辑器照它在原文上改，存的时候把 `version` 当 `expect` 带回去。编号、名字不对的 `bad_params`，没有这个人格的 `unknown_persona`，写错的 `persona_invalid`（带 `data.message`、`data.line`）。
+
+**`persona.delete`**（施工 P-3 下）：`{"persona"}` → `{"remains"}`，同 `preset.delete`；你那一层这个人格的整个目录挪进回收处 `trash/personas/<编号>.<删的时刻，毫秒>/`，留 7 天（同会话）。你那一层没有、只有出厂包带的，那个包又只带这一个人格的（施工 PE-1，出厂的软件工程师），卸掉那个包（同 `package.remove`，记 `etc/removed/<编号>`），回 `{"remains": false}`；装回来用 `package.install {"package": "<包编号>"}`。卸包被拒的照 `package.remove` 的拒绝（`package_depended`）。装上的包带的、包里还有别的的照旧 `nothing_to_delete`。`persona.get` 的 `remove` 照它给 `delete`。
+
+**`package.list`**（施工 9-1 上，`packages.md`「协议」）
+
+不带参数。回应 `{"packages": [...]}`：核心手里这时的三层清单（出厂的、系统加装的、装上的，施工 SD-1），照编号排，同一个编号认的那一份在前、被盖住的带 `shadowed` 接在后面（施工 SD-1补 由 `covered` 改名）。每一项的格子见 `packages.md` 的表：读成了的有 `kind`、`protocol`、`name`、`state`，写了的有 `version`、`summary`、`command`、`opens`、`pages_dir`、`process`、`check`；施工 F-1 起，必需的有 `required`，内置包、扩展包有 `features`（没写的照包算一个），写了的有 `connection`、`depends`、`recommends`、`worker`，`kind` 多 `builtin`、`worker`；施工 F-7 起 `kind` 多 `mascot`（吉祥物包），这一种没有 `protocol`、多 `mascot: {"model"}`（`packages.md`「吉祥物包」）；`theme`（外观包，施工 F-16），同样没有 `protocol`、多 `theme`，施工 TH-1 起是 `{"tui"?: {"file"}, "web"?: {"dir"}}`（`packages.md`「外观包」）；施工 F-8 上补起清单不写种类，`kind` 照带的表推出来，形状不变，带程序的包多带了吉祥物的照程序那一种、另有 `mascot`；施工 X-2 起 `kind` 多 `bundle`（不带程序、带 MCP 服务的包，不说协议），带 MCP 服务的（扩展包、`bundle`）多 `mcp: [{"name", "command", "venues", "state", "failures", …}]`（施工 X-4 起每一格同 `extension.status` 的一项带这个服务这时的状态：`state`、`failures`，在跑的 `pid`，在等的 `retry_in`，停下的 `reason`、`stderr`；状态变了推 `package.changed`；施工 F-9 补起被系统配置里同名的服务盖住的那一格带 `covered: true`，`state` 照旧是 `off`，服务全被盖住的包那一项也带 `covered: true`），`features` 里每个服务一个 `mcp-<服务名>`（`packages.md`「MCP 服务」）；写错的、撞了的、读不了的只有 `package`、`layer`、`code`、`problem`（照连接的语言）和有的话 `line`；协议版本对不上的照样带全，多 `code: "protocol_mismatch"` 和 `problem`。名字、说明照连接的语言挑。经 `package.install`、`package.remove` 装卸的当场换（施工 F-5）；手改了磁盘上的清单的要重启核心才认。施工 F-6 上起每一项多 `icon`（写了的）、`page`（有后台页的）、`status`、`enabled`（有开关的），见 `package-pages.md`；施工 F-18 上起写了图标、合规矩的多 `logo`（图标的版本，图用 `package.logo` 读）。施工 PV-2 起读成了的每一项多 `provides`（2026-11-12 项目主人定，终端、网页的「已安装」照它标「技能」「脚本」）：带了哪几样，写法同软件源索引那一格（下面 `package.search` 的 `provides`：种类到名字，空的种类不写，什么都没带的是 `{}`），照清单和包文件夹现算，同收录用的同一个函数；`package.changed` 推的那一项、回应「同 `package.list` 的一项」的同样有。
+
+回应顶上多一格 `groups`（施工 BS-1 下，设计 44 第三节第 2 条）：出厂组表 `resources/packages/groups.toml` 里的每个组 `{"id", "name", "summary"?}`，名字、说明照连接的语言挑；每一项多一格 `groups`（清单写的组，只有出厂的内置包有），头照它把组里的包收在一起。
+
+不替主人干活的会话（关起来的场所会话，经软件包端口）拿到的每一项去掉只给主人的那几格（施工 U23-R修起照黑名单）：这台机器上的路径（`state`、`pages_dir`）、程序和参数（`command`、`commands`、`process`、`worker`、`check`）、MCP 服务的写法、读坏了的原话（`problem`、`line`）；`package.info` 也不给它 `path`（施工 PK-6 以前叫 `source`）：那是这台电脑上的路径。关没关一个包照配置读（`config.get`），列表里不写。
+
+**`package.info`、`package.files`**（施工 F-8 中上，`packages.md`「本地库」）：参数是 `{"package"}`（`package.info` 另可写 `source`，施工 IN-2），多写的格 `bad_params`，没装的（或者卸掉了的出厂包）`unknown_package`。
+
+- `package.info`：`source` 写 `true` 的只查软件源（pacman 的 `-Si`），`false` 的只查装着的（`-Qi`），不写的先查装着的、没装的再查软件源（施工 IN-2，设计 `49-装包照pacman.md` 第三节第 2 条；老的头不写，装着的照旧答）。不写 `package`、写 `path` 的（施工 IN-4，照 pacman 的 `-Qip`）看本机一个包目录、包文件：同 `package.install` 带 `preview` 的那一套查、什么都不装，回应照装着的那一份的样子、`from` 是 `file`，另带写的那个 `path`（`packages.md`「本地库」第 4 条）；两个都写、都没写、带 `path` 又写 `source` 的 `bad_params`；扩展带 `path` 调的 `local_only`（`connection/rights.rs`）。
+  - 装着的：`package`、`layer`（`home`、`shipped`）、`from`（`shipped`、`official`、`local`，同 `package.list`）、`source`、`feed`（施工 PK-6，同 `package.list`）、`files`（几个文件）、`size`（一共多少字节）；写了的有 `version`、`author`、`upstream`、`license`（清单写的许可证，施工 PV-3；她的软件包工具不带）；装上的本地库记了的有 `installed`（装的时刻）、`path`（从哪个路径装的，只给主人，核心起来时补的没有；施工 PK-6 以前这一格叫 `source`）。出厂的照现在的文件现算。施工 IN-2 加的几格，没有的不写：`name`、`summary`（清单写的，照连接的语言挑）、`depends`、`recommends`（照清单写的原样的数组：编号，或带版本下限的 `<编号>>=<版本>`，施工 PK-2）、`contains`（带了什么，同装之前看一眼的「包含」那几格，施工 CM-1 起不叫 `provides`：`provides` 只是软件源索引那一种形状：`program`、`command`、`commands`、`page`、`mascot`、`theme`、`connection`、`settings`、`mcp`、`skills`、`scripts`、`slash`、`personas`、`presets`、`knowledge`（包里的知识库编号，施工 PV-3））、`capabilities`（扩展声明的，`[{"id", "name", "summary"}]`，同看一眼）、`required_by`（装着的包里依赖它的，照编号）、`origin`（从软件源装的来源仓库）、`tools`（施工 PV-1：装上以后模型会多的工具，`[{"name", "title"?, "from"}]`：`name` 是她看到的工具名，`title` 是给人看的显示名 `{"zh"?, "en"?}`（脚本开头的「显示名称」「Display name」，没写的语言不出），`from` 是 `script` 或 `extension`；脚本照包里 `scripts/` 那一层的普通文件、照核心登记时同一份解析读，扩展照清单里各功能写明的工具名，MCP 的、要跑起来才知道的不列；照名字排；带 `path` 看的同样有）。
+  - 没装的照软件源（照从软件源装的找法：先拿索引，照先后找官方的、配置里加的源，找到第一个就用）：`from: "source"`、`source`（源的名字；装着的那一份的 `source` 是本机路径，两样东西，看 `from` 分）、`package`、`version`、`depends`、`recommends`、`provides`（索引原样：种类到名字）、`capabilities`（照索引的编号，写法同装着的）、`origin`、`official`（别的源里的一律是假的）；有的才写 `name`、`summary`、`author`、`upstream`、`license`（施工 PV-3，索引原样）、`download`（本机能用的那份文件多少字节）、`installed_size`（索引的 `installed`）、`tools`（索引那一格原样，写法同装着的）、`hosted`（施工 RB-1，索引那一格原样，写法同装之前看一眼的）；用的是本机旧索引的带 `stale`（同 `package.search`）。
+  - 两处都没有的 `unknown_package`：不写 `source` 的软件源拿不成也算没有；只查软件源的照 `package.search` 拒（`source_unreachable`）。
+  - 她的软件包工具（`packages {"package"}`）照旧只拿装着的、施工 IN-2 以前那几格。
+- `package.files`：`dir`（包目录的绝对路径，施工 F-8 下）、`files`，每个 `{"path", "sha256", "size"}`：`path` 相对 `dir`、用 `/` 分开，照路径排。
+- `package.owns {"path"}`（施工 F-8 中下）：`path` 是绝对路径（相对的 `bad_params`），换成真实的位置，看在哪个包的目录里（两层都找）。回应 `{"package": 编号}` 加 `layer`、`path`（相对包目录）、`recorded`（本地库里有没有记它，出厂的总是假）；哪个包都不在的 `{"package": null}`。
+- `package.check {"package"?}`（施工 F-8 中下）：本地库记了的包，照记的一个个比哈希：`{"packages": [{"package", "modified", "missing", "extra"}]}`，三格都是相对包目录的路径，照编号排；没记的、出厂的不在里面。认的那一份是系统加装的（施工 SD-1）另有一项，多 `"layer": "distro"`、不比哈希：清单读不成的多 `manifest`（问题的代码或 `unreadable`），清单写的程序不在 `bin/` 的进 `missing`。写了 `package` 的只查它，没装的 `unknown_package`。
+
+**`package.install`、`package.remove`**（施工 F-5 上，`packages.md`「装卸」）
+
+写组名（施工 BS-1 下中，设计 44 第三节第 2 条，照 pacman）：`package` 是组表里的组、又不是哪个出厂包的编号的，`package.install` 把组里卸掉了的出厂包一个个装回来，回 `{"group", "packages": [<列表那一项>…]}`；`package.remove` 把组里装着的一个个卸掉（组里互相依赖的先卸依赖别人的），回 `{"group", "removed": [<编号>…]}`，组外装着的包依赖组里的整个拒 `package_depended`、什么都不卸。带 `preview` 的回 `{"group", "packages": [<编号>…]}`：这一次会装回、会卸掉的那几个，一个都没有的是空的。卸组也收 `purge`（施工 PK-5），照单个卸的传给组里每个包；装回组写了 `purge` 的 `bad_params`。
+
+- `package.install {"path"}`：`path` 是本机一个包目录的绝对路径（文件夹名就是编号，里面有 `package.toml`），写成包目录里那份 `package.toml` 的路径也认（施工 F-8 上）；整个文件夹拷进去。也可以是一个包文件（`.miyu`，施工 G-1，设计 `37-软件源.md` 第二节）的绝对路径：解进数据根里点开头的暂存处再照包目录装，本地库记的来源（`package.info` 的 `source`）是那个文件，暂存处用完就删；看一眼也认。装、卸、升级人的连接都做得了；关起来的会话经软件包端口要装、卸、升级的回 `not_permitted`。同一个编号已经装上的换成新的。回应同 `package.list` 的一项。
+- `package.install {"package"}`：编号是出厂包的、系统加装的（施工 SD-1补），把卸掉的装回来（没卸的 `unknown_package`；两层都有的装回系统加装那份，装回时去掉 `etc/removed/<编号>`）；两层都没有的照软件源装，同下一条 `{"source"}`（施工 G-4 下：装只有一个动词，核心判断走哪条路）。回应同 `package.list` 的一项。
+- `package.install {"source"}`（施工 G-4 上，设计 `37-软件源.md` 第四节第 4 条）：从软件源装索引里编号是 `source` 的包。先照 `package.sync` 不带 `force` 那样拿索引；缺的依赖（`[depends]` 里装着的包里没有的、装着的版本不够下限的，施工 PK-2）从索引里一起装，先装依赖（深度优先，成环的停得下）；带下限的照先后找第一个那一版够的源，装着的不够的就是一起升（`packages.md`「依赖」第 7 条）；每个包挑本机能用的文件（写了本机这一种系统的先，不分系统的其次）。照 pacman 分三段（施工 IN-3，设计 `49-装包照pacman.md` 第三节第 4 条）：先一个一个下完：照镜像的 `<镜像>files/<文件名>`、索引写的地址的先后，边下边算 SHA-256，超过索引写的大小就停，大小、哈希都对上才算成；下好的放 `var/cache/packages/downloads/<文件名>`，缓存里已有、哈希对得上的不再下。再一个一个核对：照签过名的索引重算一遍 SHA-256。最后一个一个照装包文件那一条装，包文件里的编号（最上层文件夹的名字）和索引那一条的对不上的 `package_file_bad`、什么都不装（施工 AS-1：不然写着 `foo` 的条目能装进来另一个已装的 `bar`，盖掉它、接着用它的开关和批过的能力），本地库的 `desc` 多记来源仓库 `origin`。每一段往发起的这个连接推 `package.progress`（见下面「`package.progress`」）。回应同 `package.list` 的一项，一起装了依赖的多 `with`（依赖的编号，照装的先后）。一次只装一件（同别的装卸）。从哪个软件源（施工 U23 下下）：写了 `from` 的（源的名字、`official`）只照那一个，没有的 `unknown_source`；不写的照先后找第一个有这个编号的（官方、系统配置加的、设置里加的）。依赖先在同一个源里找，找不到的照官方的。别的源的包文件照索引写的地址下（没有镜像）；本地库的 `desc` 另记源名 `feed`（官方的不记），看一眼的回应多源名（施工 PK-3 上起这一格叫 `feed`，`source` 改说从哪来）。
+  - 看一眼（`preview: true`）只照索引说，不下载：`{"package", "version", "official", "source", "feed", "origin", "capabilities", "provides", "download", "with", "recommends", "installed"?, "replaces"?, "notice"?, "recommends_notice"?, "hosted"?}`：`hosted` 照索引那一格原样（施工 RB-1，写法同从包文件夹装的那一份，以前的索引没有的不写），`download` 是要下的字节数（连依赖），`with` 是一起装的依赖 `[{"package", "version", "source", "feed", "capabilities"?}]`，同编号已经装着的带 `replaces: {"version"}`。施工 PK-3 上起（设计 `61-装包说清来源和能力.md` 第二节）：`source` 是这个包从哪来，`official`（官方源里官方的条目）或 `community`（官方源里社区收录的；配置里自己加的源里的一律算社区：加源是信那把钥匙，包里的东西还是没人审过）；原来那一格源的名字改叫 `feed`（官方的写 `official`）；`with`、`recommends` 每一项同样带 `source`、`feed`，声明了能力的带 `capabilities`（顶上那一个照旧总有这一格，没声明的是空的）；能力每一项这一刻批过、装完照旧留着的多 `held: true`（来路没变才算，见下面「装的时候批」）；`notice` 是这一次要装的（顶上的和 `with`）里有社区的时候要给人看的话，`recommends_notice` 是推荐的里有的时候，都是照连接的语言挑好的一句一个字符串（核心的字，见下面「注意」），没有的不写。只照索引说：能力照索引条目的 `capabilities`。施工 IN-3 起多两格：`recommends` 是这一次要装的包（连依赖）推荐的、还没装的、这一次也不装的，去重，照要装的先后、各自写的先后，每一项 `{"package", "version", "download", "installed_size"?}`（照索引；索引里找不到的、没有本机能用的文件的不列，没有的是空的）；`installed` 是这一次要装的全部包（不含推荐的）照索引的 `installed` 加起来的字节数，有一个没写的不写这一格。`capabilities` 施工 IN-3 起同从包目录装的那一格（`{"id", "name", "summary"}`，名字照连接的语言；以前只有 `name`，写的是编号）。
+  - 拒绝：编号不合写法的 `bad_params`；`approve` 写法不对的 `bad_params`（见下面「装的时候批」）；索引里没有的 `unknown_package`；索引里也找不到的依赖、哪个源的那一版都不够下限的 `depends_missing`（`data.missing`，照写的原样）；没有本机能用的文件 `wrong_target`；哪一处都没下成、核对时哈希对不上 `download_failed`（`data.why` 是每一处的原因，英文，照先后用 `; ` 接起来；施工 IN-3 起全下完才装，下不成的一个都不装；装到一半出错的，前面已经装好的依赖留着）；拿不到索引的同 `package.sync`；装的时候的拒绝同装包文件。
+- **装的时候批**（施工 PK-3 上，设计 `61-装包说清来源和能力.md` 第四节）：`package.install`（`path`、`source` 两种）、`package.upgrade` 多一个参数 `approve`：`{"<编号>": ["<能力>", …], …}`，这一次装上的每个包（要装的、一起装的依赖、升级的）各写各的。能力名不是能力表里的（`Capability::ALL`）、编号写法不对的 `bad_params`；是能力、但装上的这一份清单没声明的不理（看一眼和真装之间清单、索引可能变了，照表批，表里没有的就是没批）；编号不是这一次装的不理。不写的照旧：装上，不批，打开时再批（`extension.enable`、`package.enable` 的 `approve` 照旧留着当兜底）。批不完不拒装。装成以后、拉起扩展之前重算这个包在 `etc/extensions.json` 的 `approved`（形状不变）：「(来路没变时旧的 ∪ `approve` 里它的那几样) ∩ 这一份清单声明的」，空的不写；来路没变是装之前本地库 `desc` 记的和这一次一样都是从软件源装的、`origin`、`feed` 都一样，本机文件夹、包文件装的、换了源的、换了来源仓库的、本地库没记的都算变了，前面批过的不接着用；清单不再要的从 `approved` 里去掉，以后加回来要重新批。所以 `start = "always"` 的扩展带着 `approve` 装上就当场拉起。写不进 `extensions.json` 的装照算成，记一行 `WARN extension approval not recorded`，这个包照旧停在要批准。装回出厂的、系统加装的不写（出厂的本来算全批过，`login.page`、`provider.key` 除外，施工 LP-1、PK-1；系统加装的照旧打开时批）。`extension.enable`、`package.enable` 批的时候也照这个算法记（结果照旧是声明的全部）。
+- **从哪来、注意**（施工 PK-3 上）：看一眼的 `source` 一共五种：`official`、`community`（从软件源装的，见上）、`file`（`package.install {"path"}` 的，本机文件夹、包文件都是；从软件源缓存里拿 `.miyu` 手装的也是）、`shipped`、`distro`（装回卸掉的出厂的、系统加装的，`restores: true` 的那一种）。`notice` 是社区的、本机文件的那几个要给人看的话（施工 CM-1 改字）：社区的「这是个社区包，没有经过官方审核，可能存在风险。」，本机文件的「这个包来自本机文件，没有经过官方审核，可能存在风险。」；只装一个包的说「这个包」，几个的写出是哪几个（「weather 是社区包，……」「kit 来自本机文件，……」），两样都有的先社区后本机文件各一句。字在 `resources/core/human/<语言>.json` 的 `packages/notice/*`，中、英、日三份。官方的、出厂的、系统加装的没有这一格。头照它排版，前面的「注意：」这类是头自己的字。
+- `package.remove {"package", "purge"?}`：装上的删掉；出厂的、系统加装的（施工 SD-1）记一笔，文件不动。回应 `{"package", "removed": true, "layer"}`，`layer` 是卸的那一份在哪一层（施工 SD-1 加）。配置目录 `etc/<编号>/`、系统配置里这个包的设置项照 pacman 默认留下、重装同编号照旧用（施工 PK-5、PK-5补）；`purge: true`（布尔，默认 `false`）的连它们一起删（目录不跟符号链接，同状态目录）。留下的是空目录的删掉。留下的设置项不生效、不报不认识（`check` 说一句 `settings_left`）。状态目录、别的几处照旧删（`packages.md`「装卸」第 7 条）。没装、但还留着设置项、`etc/<编号>/` 或 `etc/leftover/<编号>.toml` 的编号，带 `purge: true` 的只删这三样、回应 `{"package", "removed": true}`（不带 `layer`，施工 PK-5补）；不带 `purge` 的、什么都没留的照旧 `unknown_package`。
+- 带 `preview: true` 的只看一眼、什么都不动（施工 F-8 下补，`packages.md`「装卸」第 8 条）：拒绝照真做的那一样。`package.install` 回 `package`、写了的 `version`，同编号已经装了的 `replaces: {"version"}`（原来没写版本的是 `null`），装回出厂的、系统加装的 `restores: true`；从哪来 `source`（施工 PK-3 上：从路径装的 `file`，装回的 `shipped`、`distro`）；从路径装的另有 `notice`（同上）；带了什么：`program`（`ui`、`process`、`worker`、`builtin`，只带吉祥物的、`bundle` 没有）、`mcp`（带的 MCP 服务的名字，施工 X-2）、`command`（子命令名）、`page`、`mascot`、`theme`、`connection`（平台名）、`settings`（几项）、`capabilities`（同 `extension.status` 那一格）；从路径装的另有 `files`（几个文件）、`size`（字节）。没有的不写。`package.remove` 回 `package`、`layer`、写了的 `version`，装上的 `files`、`size`；`settings` 是系统配置里写了的这个包的键（要一并删掉的：施工 PK-5补起只有 `purge` 的列，不 `purge` 的是 `[]`）；`state` 是会一并删掉的状态目录 `{"path", "size"}`（施工 PK-4，`packages.md`「装卸」第 8 条）：`path` 是 `var/lib/<编号>/` 的位置，`size` 是底下普通文件的字节数（不跟符号链接），没有状态目录的不写。PK-4 以前这一格是 `true`/`false`，照 `state == true` 判的头要改成看有没有这一格。`config` 是配置目录和设置项 `{"path"?, "kept", "settings"?}`（施工 PK-5、PK-5补）：`path` 是 `etc/<编号>/` 的位置，不在的、空的（是普通文件的也算不在）不写，`purge` 的也一样，本身是符号链接的照写（留的、删的都只是链接）；`settings` 是系统配置里写了的这个包的设置项有几项，0 的不写；`kept` 是 `true` 两样都留下（没写 `purge`）、`false` 都删掉（`purge: true`）。`path`、`settings` 都没有的不写这一格。没装的编号带 `purge` 的看一眼回 `{"package", "settings", "config"?}`（`settings` 是要删的键）。
+- 从包目录、包文件真装的（施工 IN-3）：查清单、冲突之前往发起的连接推一次 `package.progress {"package", "stage": "verify", "index": 1, "count": 1}`，拷进去之前推一次 `stage: "install"`；没有下载那一段。编号照文件夹名，路径认不出编号的不推核对。
+- 拒绝：参数不对、两个都写、路径不是绝对的 `.toml` 的 `bad_params`；读不了的 `path_unreadable`；写错的、拷进去以后读坏了的 `package_invalid`（`data.problem` 照连接的语言说一句，知道第几行的带 `data.line`，什么都不留）；带的名字和装着的别的包撞了的 `package_conflict`（施工 F-8 六补，`packages.md`「冲突」：`data.conflicts` 一处一条 `{"kind", "name", "package"}`，`kind` 是 `persona`、`preset`（施工 P-11 下：人格、预设还和出厂、你那一层有的比，撞了那一层的这一条不写 `package`、写 `layer`：`shipped`、`home`）、`command`、`feature`、`tool`、`skill`、`mcp`、`knowledge`、`slash`（斜杠命令模板，施工 X-14 上补）、`prefix`（前缀，施工 PN-1），什么都不动；看一眼、装回出厂的也查）；和出厂的同编号的 `package_exists`；包文件解不开的（不是 zstd 压的 tar、有链接、路径跑到外面、不止一个最上层文件夹、太大）`package_file_bad`（施工 G-1）；清单写了 `targets`、里面没有本机这一种的 `wrong_target`（施工 G-1，包目录、包文件一样）；没装的、没卸过的 `unknown_package`（施工 BS-1 上中起没有必需的包，`package_required` 删了）。扩展自己调回 `local_only`。
+
+**`package.progress`**（推送，施工 G-4 上起，IN-3 带阶段，设计 `49-装包照pacman.md` 第三节第 4 条）
+
+`package.install` 真装（`package.upgrade` 照它重装的也一样）的时候往发起的这个连接推，不落盘、不补；她的工具经端口装的没有连接，不推。`{"package", "stage", "index", "count", "done"?, "total"?}`：
+
+- `stage` 是 `download`（下载，带 `done`、`total` 字节：开始、结束各一次，中间最多 200 毫秒一次）、`verify`（核对 SHA-256 之前推一次）、`install`（装之前推一次）。从软件源装的先推完全部下载，再推全部核对，再推全部安装。
+- `index`、`count`：这是这一次要装的第几个（从 1 数）、一共几个，照装的先后（依赖在前）。从包目录、包文件装的只有 `verify`、`install` 各一次，`1`、`1`。
+- 施工 IN-3 以前只推 `{"package", "done", "total"}`：头照没写 `stage` 的当 `download`。
+
+**`package.sync`**（施工 G-3 上，设计 `37-软件源.md` 第四节第 1、2 条、第五节）
+
+- 参数 `{"force"?}`：`true` 不管本机那份新不新都去拿（`miyu pkg update`）；不写的本机那份不到 24 小时（照存的 `fetched`）直接用，不碰网络。核心不设定时器，用到软件源的时候才拿。
+- 照系统配置的 `packages.mirrors`、`packages.source` 的先后试（写 `{ env = … }` 的照核心的环境取，取不到的跳过；都补上结尾的 `/`），每一处拿 `index.json`、`index.json.sig`（各有大小上限），照编进来的官方公钥验签（测试换成自己的钥匙，`Core::with_source_keys`），读不成、签名不对、比本机那份旧（`generated` 早）的都算这一处不成，试下一处。本机地址不走代理。
+- 拿成了的照收到的字节存进 `var/cache/packages/sync`（`index.json`、`index.json.sig`，另写拿到的时刻 `fetched`；先写临时文件再换过去）。本机存的那份每次读都再验一遍签名，验不过的当没有。
+- 回应 `{"generated", "fetched", "packages", "stale"?}`：一处都没拿成、用的是本机那份的带 `stale`，是最后一处的原因（英文原话，带地址）。
+- 别的软件源（施工 U23 下下，设计 37 第五节，配置 `packages.sources.<名字>` 的 `url`、`key`）：官方的拿完，再拿系统配置、设置里加的（同名的认系统配置的），各照各的公钥验、存在各自的目录 `var/cache/packages/sources/<名字>/`。回应多 `sources: [{"source", "generated", "fetched", "packages", "stale"?}]`，拿不成、本机也没有的那一项是 `{"source", "error": "source_unreachable"}`，不耽误官方那一份；配置里没有别的源的不带这一格。
+- 拒绝：参数不对 `bad_params`；官方的一处都没拿成、本机也没有 `source_unreachable`（`data.why` 是最后一处的原因）。扩展调回 `local_only`。
+
+**`package.search`**（施工 G-3 下，设计 `37-软件源.md` 第四节第 3 条）
+
+- 参数 `{"query"?}`：几个词，空白分开；每个词都得出现在编号、名字、说明（索引里哪种语言都算）里，不分大小写；不写、空的列出全部。先照 `package.sync` 不带 `force` 那样拿索引。
+- 回应 `{"packages": [...], "generated", "stale"?}`，照索引的先后（编号），每一项 `{"package", "version", "name", "summary", "official", "installed", "blocked", "contents", "provides", "depends", "kind"?, "icon"?, "logo"?, "license"?}`：名字、说明照连接的语言挑，挑法同 `package.list`；`installed` 是装着的那一份清单写的版本（装着、没写版本的是空的字），没装的 `null`；`blocked` 是索引里拉黑的理由（编号或来源仓库对上的），没有的 `null`；`contents` 是给哪几个包带了内容（索引 `provides` 的 `content`，施工 G-9：im 的商城只列 im 的插件），没带的是空数组；`provides`、`depends` 是索引里的原样（施工 G-10，网页的软件市场照种类筛）：带了哪几样（种类到名字，空的种类不写）、依赖的包的编号；`kind` 是包的种类，索引里的原样（施工 G-11，网页的软件市场照它筛；索引照清单的 `[package] kind` 写，以前生成的没有这一格，不写）；`source` 是哪个软件源的（施工 U23 下下：官方的是 `official`，别的是配置里起的名字），别的源里的 `official` 一律是假的，同编号的各列各的；`icon`、`logo` 是 Lucide 图标名、包自带图标的版本（施工 F-18 下，索引里有的才写，图用 `package.logo {"from"}` 读，`package-pages.md`「软件源里的图标」）；`license` 是清单写的许可证，索引里有的才写（施工 PV-3）；官方的照先后在前，再照 `package.sync` 的先后接别的源（拿不成的跳过）。`generated`、`stale` 照官方的。只放人要的（2026-10-08 的规矩）：来源仓库、文件、哈希不给。
+- 不支持本机的包（施工 PL-2，`packages.md`「支持的系统」）默认不列；配置 `packages.other_systems` 开着的照列，那一行多 `unsupported: true`。
+- 拒绝、谁能调同 `package.sync`。
+
+**`package.clean`**（施工 G-4 下，设计 `37-软件源.md` 第四节第 5 条，照 pacman 的 `-Sc`）
+
+- 没有参数。`var/cache/packages/downloads` 里不是装着那一版（`<编号>-<版本>.miyu`、`<编号>-<版本>-<系统>.miyu`，照装着的包的清单写的版本）的包文件删掉，下了一半没换过去的也删。和装卸同一把锁，不删正在装的。
+- 回应 `{"removed", "freed"}`：删了几个文件、几个字节。只给人。
+
+**`package.upgrades`、`package.upgrade`**（施工 G-5，设计 `37-软件源.md` 第四节第 6、7 条，照 pacman 的 `-Su`）
+
+- 照装的时候的软件源比（施工 U23 下下，本地库的 `feed`，没记的是官方的）：那个源从配置里删了的进 `gone`，不换到别的源上同名的包；升照那个源装。
+- 只碰从软件源装的：本地库 `desc` 记了来源仓库 `origin` 的；从本机文件夹、包文件装的不碰（照 pacman 的 `-Qm`）。先照 `package.sync` 不带 `force` 那样拿索引。
+- `package.upgrades`（没有参数）盘点：被拉黑的（编号或来源仓库对上）进 `blocked`；索引里没有了的进 `gone`；来源仓库和装的时候不一样的进 `moved`，不升；版本和索引的一样的不动；系统配置 `packages.hold` 里的进 `held`；别的进 `upgrades`。回应 `{"upgrades": [{"package", "from", "to"}], "moved": [{"package", "was", "now"}], "gone": [...], "blocked": [{"package", "reason"}], "held": [...], "generated", "stale"?}`。版本不比大小：索引的那一版和装着的不一样就升，作者撤回新版也跟着回去。
+- `package.upgrade {"packages"?, "preview"?, "approve"?}`：升 `upgrades` 里的（写了 `packages` 的只升列着的）；看一眼回 `{"upgrades", "download", "with", "notice"?}`（`download` 是要下多少字节），真升回 `{"upgraded": [{"package", "from", "to"}]}`。施工 PK-3 上起看一眼的 `upgrades` 每一项多 `source`、`feed`、`capabilities`（新版声明的，带 `held`；没声明的不写），`with` 是这一次一起装的新依赖（不是本来就升的那几个，去重，形状同 `package.install` 看一眼的 `with`），`notice` 同 `package.install`；照索引看不成的那一项（缺依赖之类，真升时照旧拒）只有编号和版本。升一个就是照 `package.install {"source"}` 重装它（缺的新依赖一起装，下载进度照推）：设置、状态、开关都留着；`approve` 同 `package.install`（升级一定是来路没变，批过的接着用，新版不要的去掉，新多要的照 `approve` 批，没批的打开时再批）。没有能升的回空的列表。只给人。
+
+**`package.enable`、`package.disable`**（施工 F-6 上，`package-pages.md`「开关」）
+
+- 参数 `{"package"}`，`package.enable` 另可带 `approve`（同 `extension.enable`）。回应同 `package.list` 的一项。
+- 扩展：同 `extension.enable`、`extension.disable`。`bundle`（施工 X-3 上）：开是起它带的 MCP 服务，关是停下、它们的工具出目录；开关和扩展记在同一份 `extensions.json`，没写的关着。出厂的、不是必需的内置包：关是卸掉（同 `package.remove`，在 `packages/` 记一笔），开是装回来（同 `package.install {"package"}`）。卸掉了的出厂扩展，开时先装回来再开。关着的再关、开着的再开，什么都不动。
+- 拒绝：没有的 `unknown_package`（施工 UX-1 补起每个包都有开关，`not_switchable` 删了）；程序没找到的（包文件夹的 `bin/`、`miyu` 旁边都没有）开不了，`program_missing`；扩展要的能力还有没批的照 `extension.enable` 回 `needs_approval`。扩展自己调回 `local_only`。
+
+**`package.restart`**（施工 X-4，`package-pages.md`「开关」、`mcp.md`）
+
+- 参数 `{"package"}`。回应同 `package.list` 的一项。
+- 扩展：同 `extension.restart`，再重启它带的 MCP 服务；`bundle`：重启它带的服务。请它们退出、等它们退出，再起，连续失败从零数；服务的工具留在目录里，起好、列完照新的换。
+- 拒绝：没有的 `unknown_package`；关着的（卸掉了的出厂包也算）`package_off`；内置包、界面、小程序、吉祥物包没有能重启的，`not_restartable`；扩展要的能力还有没批的照 `extension.restart` 回 `needs_approval`。扩展自己调回 `local_only`。
+
+**`package.file`、`package.methods`、`package.call`**（施工 F-6 中，`package-pages.md`）
+
+- `package.file {"package", "path", "offset"?}`：回应 `{"data", "size", "eof"}`，一次最多 512 KiB。拒绝：路径写法不对 `bad_params`；没有的包 `unknown_package`；没有后台页 `no_page`；没有、跑出目录、不是普通文件 `not_found`。扩展调回 `local_only`。
+- `package.methods {"methods": [{"name", "timeout_ms"?}]}`：只给核心拉起的扩展，别的连接 `not_an_extension`；换掉这个包上一次登记的，回应 `{"methods": 个数}`；写法不对的 `bad_params`。
+- `package.call {"package", "method", "params"?}`：核心发 `method.call {"method", "params", "from"?, "language"?}` 给那个扩展（`language` 是调的连接这一刻的界面语言，施工 ML-1），回什么交回什么；在后台答。人的连接哪个包登记了的都调得到，不带 `from`。扩展照包编号只调得到自己（施工 BUS-5，设计 67 B5；原来施工 X-18 让它调别的包导出的）：`package` 不是它自己的回 `own_package_only`（`data.package` 是它写的编号；先于找包，那个包在不在、方法导没导出都是这一句），跨包走 `bus.call`；调自己要声明 `packages.call`，只调得到自己清单 `[export]` 里的，转过去带 `from`（它自己的编号）。拒绝：`unknown_package`、`program_not_running`、`unregistered`（`data.method`）、`method_failed`（`data.message`、`data.code`）、`method_timeout`；扩展调的另有 `own_package_only`、`needs_approval`（`data.capabilities` 是 `["packages.call"]`）、`not_exported`（`data.method`）。
+
+**`extension.status`、`extension.enable`、`extension.disable`、`extension.restart`**（施工 9-4 上，`extensions.md`「对外的样子」）
+
+`status` 不带参数，回应 `{"extensions": [...]}`，照编号排，只列读成了的 `process` 包；`disable`、`restart` 带 `{"package"}`，`enable` 带 `{"package", "approve"?}`（批的能力名，施工 9-4 下上），回应是那一个。一个的格子见 `extensions.md` 的表：`package`、`name`（照连接的语言挑）、`start`、`on`、`state`（`off`、`starting`、`running`、`waiting`、`stopped`）、`failures`，在跑的带 `pid`，在等的带 `retry_in`，停下的带 `reason` 和标准错误的最后几行 `stderr`；声明了能力的带 `capabilities`（`[{id, name, summary}]`），还有没批的带 `unapproved`（施工 9-4 下上）。`enable`、`disable` 先写开关再动进程；`restart` 关着的回 `extension_off`；要的能力还有没批的，`enable` 没盖住、`restart` 回 `needs_approval`（`data.capabilities`）。没有这个包、清单读不成的 `unknown_package`，界面包 `not_an_extension`。扩展自己调回 `local_only`。
+
+**`persona.get`**（施工 P-1 上，`personas.md`「怎么走」第 8 条）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `persona` | 字符串，必写 | 人格的编号 |
+
+回应 `{"persona", "name", "summary", "subagent", "prompts": {"persona", "reminders"}, "examples", "avatar", "background", "seed", "seeds", "background_opacity", "background_focus", "background_blur", "remove"}`（施工 P-3 补：只给人要看的；`avatar` 施工 P-5：头像的版本，图的字节的 SHA-256 前 16 位十六进制，没有的 `null`，图用 `persona.avatar` 读；`background` 施工 P-6：背景图的版本，写法同 `avatar`，图用 `persona.background` 读；`seed` 施工 P-6：主题色，小写的 `#rrggbb`，没有的 `null`，头用 `seeds` 的第一个；`seeds` 施工 P-6 补：头像的候选主色，同 `persona.list`；`background_opacity`、`background_focus` 施工 P-7：背景图露出多少、焦点，没有的 `null`，头照自己的默认画；`background_blur` 施工 P-7 补：模糊多少，没有的 `null`，不模糊）：`name`、`summary` 一句字（挑法同 `persona.list`）；`prompts` 里是人设、角色扮演提示有没有字（`true`、`false`）；`subagent` 是派子代理时能不能挑它（施工 P-10 补，叠好的 `[persona] subagent`，没写的 `false`），改用 `changes` 的 `persona.subagent`；`examples` 是示范对话几轮；`remove` 是删了会怎样（同 `preset.get`；你那一层没有、删它是连包卸掉的也是 `delete`，施工 PE-1）。原文照 `persona.read` 给。编号不合写法的 `bad_params`，没有的 `unknown_persona`，写错的 `persona_invalid`（带 `data.message`、`data.line`）。
+
+**`memory.*`**（施工 R-3 补，`memory.md`「协议」）
+
+人格记忆这个软件包没装的，十二个方法都回 `memory_not_installed`，先于别的检查（施工 R-10，`memory.md` 第十一条）。十二个方法都收 `persona`（字符串）或 `session`（会话编号）指哪一间，最多写一个，都不写照默认人格（同 `session.create`），没设默认人格的 `memory_unavailable`（不带人格记忆不生效）；人格编号的写法、找不到的照 `session.create` 第 6 条，会话找不到的 `session_not_found`，这个会话用不了记忆（范围 `off`、不带人格、场所会话）的 `memory_unavailable`；带 `session` 的指的是那个会话的人格那一间。写了 `as` 的 `bad_params`。人经协议是主人那边：全部列得出、搜得到、改得了（施工 R-13 上，`memory.md` 第九条；施工 R-29 起哪儿都是全部）。听众是主人，记下的 `by` 是人；人格照几层找，`_none` 是无人格那一间；带 `session` 的照「办之前过的几道」。
+
+| 方法 | 参数 | 回应 |
+|---|---|---|
+| `memory.list` | `class`（字符串）、`from`（会话编号：出处在它里面的）、`forgotten`（布尔，不写是 `false`）、`limit`（1 到 500，不写 50），都可以不写 | `{"memories": [...]}`，新的在前 |
+| `memory.search` | `query`（字符串，必写、不能是空白）、`forgotten`、`limit`（1 到 500，不写 10） | `{"memories": [...]}`，最相关的在前 |
+| `memory.turns` | `query`（字符串，必写、不能是空白）、`limit`（1 到 500，不写 10）（施工 R-12 下） | `{"turns": [{"at", "session", "text", "turn"}…]}`，最相关的在前（第 7 条） |
+| `memory.remember` | `class`（`user`、`feedback`、`episode`、`reference`、`person`，必写；`person` 施工 E-1 上）、`text`（必写）、`keywords`（施工 R-15 上）、`who`（`person` 必写，别的类不收，施工 E-1 上） | `{"id": "m<序号>"}` |
+| `memory.import` | `items`：1 到 500 条，每条 `at`（RFC 3339 带时区，不晚于现在）、`class`、`text`、`origin`（1 到 200 字，一批里不重复）必写，`who`（`person` 必写，别的类不收）、`people`（只有 `episode`）、`keywords` 可以写（施工 MI-1） | `{"ids": [<"m<序号>"> 或 null…], "imported", "skipped"}`（第 11 条） |
+| `memory.update` | `id` 必写；`text`、`keywords`、`who` 至少一个（施工 R-15 上、E-1 上） | `{"id"}`：新记的那一条（只写 `keywords` 的是原来那一条） |
+| `memory.forget` | `id`（可以带 `why`，不写是空的）；或者 `clear`：`session`（这时 `session` 必写）、`me` | 作废的 `{}`，清空的 `{"cleared": <几条>}` |
+| `memory.restore` | `id`，必写（施工 R-12 下） | `{}`（第 8 条） |
+| `memory.dream` | 只有 `persona`、`session`（施工 R-7 补） | `{"given", "retired", "revised", "summary"}`：交进去几条、作废几条、改了几条（整数），摘要换没换（布尔）；叫停了的多 `"stopped": true`（施工 R-22）；跑在整理会话里的多 `"session"`（这一趟的整理会话，施工 D-2 上） |
+| `memory.dream_stop` | 只有 `persona`、`session`（施工 R-23） | `{"stopped": true}` |
+| `memory.cards` | `forgotten`（布尔，不写是 `false`）（施工 E-1 下） | `{"cards": [{"at", "by", "names", "retired", "text", "who"}…]}`，照 `who` 排（第 10 条） |
+| `memory.card_update` | `who`、`text` 必写，`names`（字符串的列表）可以不写（施工 E-1 下） | `{}`（第 10 条） |
+| `memory.card_forget` | `who` 必写，`why` 可以不写（施工 E-1 下） | `{}`（第 10 条） |
+
+1. 一条：`{"at", "by", "class", "id", "retired", "sources", "text", "used", "used_at", "venue"}`（照名字排）：`by` 是 `person` 或 `tool`，`sources` 是 `[{"session", "turn"}]`，`retired` 是作废的原因、没作废的 `null`，`at` 是记下的时刻；`used` 是用到几次（没用过的是 0），`used_at` 是最近一次的时刻（没用过的是 `null`），施工 R-4 下，`memory.md` 第八条；`venue` 是在哪个场所说的（本机的是 `null`），施工 R-13 上；另有 `keywords`、`who`（施工 R-15 上、E-1 上），`people` 是发生过的事涉及谁（平台编号或名字的列表，没有的是空列表），施工 E-1 修四；`place` 是在哪个群（记下那一刻的群名，没有的是 `null`），施工 E-4 上。
+2. `text` 去掉前后空白再记；空的 `bad_params`，超过 120 字（数 Unicode 字符）的 `memory_too_long`，`data.chars`、`data.limit`。`class` 不是那四种、`id` 不合 `m<序号>` 的写法、`limit` 出了范围、`id` 和 `clear` 都写或都不写、`clear` 不是那两种：`bad_params`。
+3. `id` 没有这一条、听众不合：`unknown_memory`；已经改掉、作废、清掉了：`memory_not_current`（恢复的是已经改掉、清掉了）。
+4. 记、改、作废、清空、恢复落了盘才回应；写不进记忆日志的 `internal_error`，原因记一行 `WARN memory failed`。
+5. 记、改、作废、清空、恢复，同一个 `id` 再发只算一次，核心重启以后也是：回应和头一次一样（编号记在记忆事件的 `cause` 里，`memory.md`）。先认编号，再查参数。清空的 `cleared` 不算改掉的旧版本。
+6. `memory.dream`（施工 R-7 补，`memory.md` 第七条第 9 款）：带 `session` 的叫那个会话先把还没抽的那一段抽了，再合；不带的照那一间直接合。不看定时的条件，放不下的接着合完；一条记忆都没有的回四样是零，不请求模型；没有新记的照样重看轮到的旧记忆（施工 R-19，`memory.md` 第七条第 11 款）。这一间正在整理（定时的那一次、别人先叫的）回 `memory_busy`，不排队；没合成的回 `dream_failed`（`data.message` 是英文的一句为什么），之前合成的几次照样记下了；带 `session` 的叫那个会话 `/stop`、`/dream stop` 叫停了照样回，几样数是叫停以前合完了的，多 `"stopped": true`（施工 R-22，`memory.md` 第七条第 13 款）；核心没有整理要的几样（请求模型照剧本回的端口没有一次性入口）回 `memory_unavailable`。不认编号：同一个 `id` 再发再整理一次。在后台答（「一个连接」第 1 条），几秒到十几秒。人叫的、后台的整理都跑在一个整理会话里（施工 D-2 上，设计 41，`memory.md` 第七条第 14 款）：回应的 `session` 是这一趟的会话，头照它跳到那个会话的时间线；没有要整理的、核心没接会话表的不写。记忆日志的 `ext.memory.merging` 也带它。
+7. `memory.turns`（施工 R-12 下，`memory.md`「协议」）：搜这一间的以前的对话（回合索引，人开的一轮一段），照关键词找，有照意思那一路的再照意思找，两路照名次合，同她的 `memory_search` 搜以前的对话那一路，只是不跳过哪个会话。一段：`session`、`turn` 是哪个会话的哪一轮（`turn` 写法同 `sources`），`at` 是那一轮的时刻，`text` 是人的话、空一行、她最后的回答。撤销了的一轮、删了的会话不在里面。会话那一间（范围 `session`）有自己的回合库，只有那个会话的。
+8. `memory.restore`（施工 R-12 下，`memory.md` 第二条第 6 款）：作废了的那一条追加 `ext.memory.restored`，它不算作废了，列、搜、摘要、联想照常用它。本来就算数的回 `{}`、什么都不写；改掉的旧版本、清掉的 `memory_not_current`。
+9. `memory.dream_stop`（施工 R-23，`memory.md` 第七条第 13 款）：照参数找哪一间（同 `memory.*`），叫停这一间这时人叫的整理，不管是哪一路叫的（带 `persona`、`session` 的 `memory.dream`，会话里的 `/dream`）；定时的不停。合完了的批留着，正在合的那一批放弃（记 `merge_failed`，`why: stopped`）、下次再合；被叫停的那条 `memory.dream` 照样回应，带 `"stopped": true`。回 `{"stopped": true}`；这时没有人叫的整理（定时的在合也算没有）回 `not_dreaming`。照顺序答：`memory.dream` 在后台答，同一条连接上接着发它就行。
+10. 人卡（施工 E-1 下，`memory.md` 第七条第 15 款）：一人一张，照最新的那一张；`memory.cards` 不写 `forgotten` 的不列作废的，整间清空以前的没有。一张：`who`（平台编号或名字）、`text`、`names`、`at`（写下的时刻）、`by`（`module` 是整理写的，`person` 是人写的）、`retired`（作废的原因，没作废的 `null`）。`memory.card_update` 去掉前后空白再写一张 `ext.memory.card`（作废了的也重新算数）：`who`、`text` 空的，叫法有空的、超过 40 字的、超过 8 个的 `bad_params`；正文超过 400 字的 `memory_too_long`（`data.field` 是 `text`）。`memory.card_forget` 追加 `ext.memory.card_retired`：没有这个人的卡 `unknown_memory`，已经作废了的回 `{}`、什么都不写。同一个 `id` 再发只算一次（第 5 条）。
+11. `memory.import`（施工 MI-1，`memory.md`「协议」）：先全查后写，一条不对整批不写，回 `bad_params`，`data.index` 是第几条（从 0 数，整批的毛病没有）、`data.field` 是哪一项（`items`、`item`、`at`、`class`、`text`、`origin`、`who`、`people`、`keywords`；正文超长也是 `bad_params`，不是 `memory_too_long`）。照 `items` 的先后一条一个 `ext.memory.saved`（带 `noted`、`origin`），`by` 是人、出处空、听众是主人；这一间导进来过同一个 `origin` 的（作废、改掉、清掉了的也算）跳过，`ids` 里是 `null`。不认编号（同 `memory.dream`）：同一个 `id` 再发照 `origin` 全跳过。中途写不进的回 `internal_error`，写进去了的照留。一条的 `at` 是原来的时刻，编号照先后。导进了一条以上的回应以后在后台写关键词、补向量、照间隔看要不要整理。
+
+**`kb.*`**（施工 K-1 上，`knowledge.md`「对外的样子」）
+
+数据根 `root/kb/` 下的全部知识库。不看知识库这个软件包装没装：文件是人的，人随时看得到。查询四个（`kb.documents` 施工 K-10），按顺序答；管理的七个是命令（施工 K-7 上）。`kb.` 开头的别的方法 `unknown_method`。
+
+| 方法 | 参数 | 回应 |
+|---|---|---|
+| `kb.list` | 没有 | `{"bases": [{"id", "name", "description", "documents", "chunks", "auto"}…]}`（`auto` 是自动想起开着没有，施工 K-6 下），照编号排；读 `kb.toml` 出错的、挂的目录用不了的（施工 K-4，数照索引里现有的）多一格 `error`（英文的一句为什么）；软件包带来的（施工 K-8）多一格 `package`：包的编号（名字照 `package.list`）；挂进来的（施工 K-10）多一格 `mount`：`kb.toml` 里写的目录，照原样。`kb.search` 跳过挂的目录用不了的库 |
+| `kb.search` | `query`（字符串，必写、不能是空白）、`kb`（只搜这一个，可以不写）、`limit`（1 到 50，不写 10） | `{"hits": [{"kb", "path", "chunk", "heading", "text", "at"}…]}`，最相关的在前；PDF 的那一块多 `page`（施工 K-5） |
+| `kb.documents` | `kb`，必写（施工 K-10） | `{"documents": [{"path", "kind", "size", "at", "chunks"}…], "folders": [{"path", "reason", "why"}…]}`，照路径排：`kind` 是 `markdown`、`text`、`pdf`、`html`，`size` 字节数，`at` 文件改的时刻，`chunks` 索引里几块；这一回读不了的多 `reason`（`too_large`、`not_utf8`、`no_text`、`no_extractor`、`extract_failed`、`unreadable`）、`why`（英文的一句）；`folders` 是读不了的子目录。不是文档的文件不列。挂的目录用不了的 `folder_unavailable` |
+| `kb.read` | `kb`、`path`（文档的相对路径，照 `/` 分），必写；`page`（从 1 起，不写 1） | `{"text", "page", "pages"}`：文档原文的那一页；PDF 是它的第几页抽出来的字，网页是换出来的字（施工 K-5） |
+| `kb.create` | `kb`，必写；`name`、`description`、`auto`（布尔，施工 K-6 下）（可以不写） | 一个库（同 `kb.list` 的一项） |
+| `kb.update` | `kb`，必写；`name`、`description`、`auto`（至少写一个，空字符串、`false` 是拿掉；软件包带来的只收 `auto`，施工 K-8） | 一个库 |
+| `kb.mount` | `kb`、`folder`（绝对路径或 `~/` 开头），必写；`name`、`description`、`auto` | 一个库（照挂的目录补完的） |
+| `kb.delete` | `kb` | `{"trash"}`：整个库目录在回收站里的位置 |
+| `kb.add` | `kb`、`path`、`blob`（`blob.put`、分块上传交回的），必写；`replace`（布尔，不写 `false`） | `{}` |
+| `kb.remove` | `kb`，`path` 一样或者 `paths` 几样（施工 W-14：一篇文档或者一个文件夹，文件夹整个删） | `path` 的回 `{"trash"}`：在回收站里的位置；`paths` 的回 `{"trash": [...]}`，照先后。先全查一遍，有一样不在就一样都不删；两样都写或都没写、重了、一样在另一样里面的 `bad_params` |
+| `kb.reindex` | `kb` | 一个库（删掉照文件重建完的） |
+
+1. `kb.list`、`kb.search` 先照文件补要用的库（`knowledge.md`「怎么走」第三条），`documents`、`chunks` 是补完以后的数；跳过的文档记一行 `WARN knowledge document skipped`，不进回应。
+2. 一块：哪个库、哪个文档、第几块（从 0 起）、标题路径（`语法 › て形`，没有标题的是空字符串）、这一块的字（不带标题那一行）、文档改的时刻；PDF 的那一块多 `page`：第几页，从 1 起（施工 K-5），别的不写这一格。几个库的照名次轮流合（`knowledge.md`「怎么走」第四条）。
+3. `kb.read` 照路径读目录里的文件，不读索引；一页 32 KiB，截在字的边界上，空文档是一页空的。PDF 照它自己的页，`pages` 是 PDF 的页数；网页读换出来的字（施工 K-5，`knowledge.md`「怎么走」第五条）。抽不出来的（坏的 PDF、文件超过 64 MiB）：`internal_error`。
+4. 出错：参数写错、`query` 空白、`limit` 出了范围、编号不合写法（`knowledge.md`「对外的样子」）、`page` 是 0 或超过 `pages`：`bad_params`。没有这个库：`unknown_kb`。库里没有这个文档（不是文档的、不在库里的、`..` 跑出去的都算）：`unknown_document`。读不了目录、索引：`internal_error`，记一行 `WARN knowledge failed`。
+5. 管理的七个（施工 K-7 上，`knowledge.md`「怎么走」第八条）：建库、挂目录写 `kb.toml`；改名字说明只改那一格，空字符串拿掉；加文档照上传好的 blob，什么格式都行，已经有的只在 `replace` 时换；删文档、删库挪进系统回收站，挂进来的库只拿掉登记、挂的目录不动；重建删掉索引照文件补。出错：`kb_exists`（要建、要挂的已经有了）、`document_exists`（要加的已经有了）、`kb_read_only`（往挂进来的库里加、删）、`kb_packaged`（改软件包带来的库的名字、说明，加、删文档，删它，施工 K-8）、`folder_unavailable`（要挂的目录用不了，`data.message`）、`trash_failed`（挪不进回收站，`data.message`）、`unknown_attachment`（`blob` 不在）；`bad_params`：编号、路径不合写法，`kb.update` 两格都没写，`folder`、`blob`、`replace` 写在不该写的方法上或该写的没写，多写了不认识的格。不认请求编号去重。
+
+**`session.recap`**（施工 3-8 四补，`04-核心协议.md` 第九节，`kernel/session.md`「回顾」）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+
+回应 `{"cached": <布尔>, "text": "<那一句>", "upto": <序号>}`：
+
+| 格 | 是什么 |
+|---|---|
+| `text` | 那一句：她写的，去掉了前后空白 |
+| `upto` | 照到第几条：喂进回顾请求的最新那一条消息的序号 |
+| `cached` | 是交回的上一句：上一次回顾以后没有新内容，没有请求 |
+
+1. 回顾照 codex 的做法单独发一次辅助请求，只喂最近几轮的对话正文，不接主对话的前缀、不带工具面，用会话自己的模型（`kernel/request.md`「回顾的请求」）。什么时候要、要来了怎么显示是头的事：头可以做成 `/recap` 命令，也可以离开几分钟以后自动要（2026-10-01 项目主人定）。
+2. 有回合在进行时照收：照这一刻落了盘的有效历史。
+3. 写成了的，推送里先有这两条，再是回应（先见结果，后见回应）：`model.called`（`purpose` 是 `recap`）、`session.recapped`（`text`、`upto`），都不带 `turn`，`cause` 是这一条的 `id`（在路上又来的几条并进去，照第一条的）。订阅着这个会话的头都收到，别的头看得到别人要的回顾。`session.recapped` 不进她的上下文。
+4. 上一次回顾以后没有新内容（有效历史里最近一条 `session.recapped` 的 `upto` 就是这一次照到的）：交回它，`cached` 是真，不请求，什么都不推。改标题、工具结果这些不算新内容：照到的是最新那一条消息。
+5. 一次只有一个在路上：路上又来的并进去，一起回，只请求一次。
+6. 她一个带正文的回复都还没有（没什么可回顾的）：`nothing_to_recap`，什么都不写。请求出了错、回复里没有正文：`recap_failed`，推送里有那一条出错的 `model.called`，不再来：头要再要一次就是。正在读回日志：`restoring`。先找会话，找不到的回的是找不到。
+7. 回顾不记编号：同一个 `id` 再来就是再要一次，没有新内容的照样交回上一句（`kernel/session.md`「命令和回应」第 4 条）。
+
+**`job.stop`**（施工 7-4，`agents.md` 第五条第 5 条）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话派出去的 |
+| `job` | 字符串，必写 | 任务编号，`j1` 这样 |
+
+回应：空对象 `{}`，这个任务的回报落了盘才回（先见结果，后见回应）。
+
+1. 后台命令：整组杀掉，记 `job.reported`（`stopped`，`by` 是人，`cause` 是这一条的 `id`）；子代理：停掉它这一轮连它派的，父会话记 `child.reported`（`stopped`，`by` 是子会话）。两种都不带 `by_model`：人停的叫醒她（`agents.md` 第三条第 4 条）。
+2. 没有这个任务、已经结束了（回报到了，子代理报过 `done` 也算；正好自己退出了的只认先到的）：`unknown_job`，什么都没写。先找会话，找不到的回的是找不到。
+3. `job` 不合任务编号的写法（`j` 加一段或几段不带前导零的正整数，段之间用 `.`，`kernel/ids.md`）、不是字符串：`bad_params`。
+
+**`job.output`**（施工 7-4 补，`tools/jobs.md` 第 3 条，`session/tools.md` 第 6 条第 3 款）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话派出去的 |
+| `job` | 字符串，必写 | 任务编号，`j1` 这样 |
+| `tail` | 整数，不写是 200 | 要最后几行：1 到 2000 |
+| `after` | 整数，可以不写 | 头已经有了前几个字节（UTF-8），只要后面的（施工 V-6 上）。和 `tail` 只能写一个 |
+| `wait` | 布尔，不写是 `false` | 带 `after` 的：没有新的、命令还在跑，就等到有新的或者它结束再答（施工 V-6 上） |
+
+回应：`lines` 一共几行、`output` 交的字、`running` 还在不在跑、`size` 读到的一共多少字节（施工 V-6 上补：头接着带 `after` 读从这里起；命令还在跑、末尾是半个字的不算那半个字，那半个字也不交）、`truncated` 前面还有没有没交的。带 `after` 的回应换成另一个样子，见第 9 条。查询，不改会话：什么都不写，不推送。例子（格照名字的字母先后排）：
+
+```json
+{"id":"o1","jsonrpc":"2.0","result":{"lines":2,"output":"building\nhalf\n","running":true,"size":14,"truncated":false}}
+```
+
+1. 读的和她用 `jobs` 读的是同一份，执行器同一个函数交出来（`Handle::job_output`，`session/tools.md` 第 6 条第 3 款）：这条命令到这时为止的输出，标准输出、标准错误照写进去的先后合在一起；结束了、输出存成了 blob 的读 blob，别的读会话目录下的 `jobs/<编号>.out`（跑着的读到这时的，载入时补 `aborted` 的读到崩的那一刻的）；开不了的当是空的。`running` 是它的回报（`job.reported`）还没落盘。
+2. `output` 只交最后 `tail` 行，照原样接起来：每一行带着它的换行，最后一段没有换行的照样没有；解不开的字节换成 `�`，和 `jobs` 一样。`lines` 照 `jobs` 的数法数一共几行：照换行切，最后一段没有换行的也算一行，只有 `\r` 的不切。一行都没有的，`output` 是空字符串、`lines` 是 0。
+3. 一次最多交 128 KiB（131,072 字节，照 UTF-8 算）：一行最长 1 MiB（「一行一条」），字写进 JSON 最坏一个字节变六个（控制字符写成 `\u001b` 这样），回应的其余部分不到 1 KiB，6 × 128 KiB + 1 KiB 放得进一行。最后 `tail` 行超了的，从前面按整行去掉；最后一行自己就超了的，只交它的末尾：不过 128 KiB，从一个字的开头起，前面的行都不交（接着别的行，看着就像它从那里开头）。
+4. `truncated` 是前面还有没交的：去掉了前面的行，或者只交了最后一行的末尾。
+5. 在阻塞线程里读，整份边读边数，不整份读进内存：一行再长，留在内存里的也只有它的末尾。不带 `after` 的每读一次都从头数；头一直往下接的带 `after`、`wait`（第 9、10 条，施工 V-6 上）。
+6. `tail` 先查：写了 0、负数、超过 2000、不是整数的（小数、字符串、`null`……）：`bad_params`，不找会话。`job` 照 `job.stop` 第 3 条，不合写法的 `bad_params`。先找会话，找不到的回的是找不到；没在跑的照「会话表」载入。
+7. 这个会话没派过这个任务（不认识的种类也算）：`unknown_job`，和 `job.stop` 同一个原因码。是子代理的：`not_a_command`，它说了什么，头订阅它的子会话看（`agents.md`）。
+9. **带 `after` 的**（施工 V-6 上）：头一直往下接的写它，不再每次从头数。第一次不带 `after` 拿最后几行和 `size`，之后照上一次的 `size` 写 `after`。回应是 `{"more", "output", "running", "size"}`：
+   - 从第 `after` 个字节读起（输出文件、blob 都是能跳着读的文件，跳过去读，不从头读），最多 128 KiB（同第 3 条）；`after` 过了结尾的照结尾算。这 128 KiB 照输出文件的字节算（审计 #035，施工 AU-P1 核实时写明）：解不开的字节换成 `�` 以后交出去的字最多三倍，一个字节写进 JSON 最多 6 个，照样放得进一行；`size` 照输出文件的字节记，不能改成照交出去的字算。
+   - `size` 是到这一段为止一共多少字节，停在一个完整的字后面：最后几个字节是半个字的（后面还会写进来，或者被上限截在了字中间）先不交，留到下一次。命令已经结束、后面也没有了的照原样交，解不开的换成 `�`。下一次照 `size` 写 `after`。
+   - `more` 是这一段后面还有没交的（上限截住了）。不给 `lines`：头自己数（第一次带 `tail` 拿到的 `lines`，加上之后每段里的换行；上一段末尾没有换行的那一行别再加一）。
+   - `after` 和 `tail` 都写了的，`after` 不是非负整数的（写 `null` 的也算），`wait` 没带 `after` 的：`bad_params`，不找会话。
+10. **带 `wait` 的**（施工 V-6 上）：有新的字、或者命令已经不在跑了，当场答；不然在后台等（这个连接别的请求照答），等会话的任务那一层叫一声（这个会话哪一条后台命令的输出写进了一段、关上了，哪一条的回报落了盘，都叫一声，`Handle::job_changes`）再读一遍，照这时的答。先拿着信号再读：读完到开始等之间长出来的也叫得醒。不设上限、没有定时器；会话停了的照那时的答；连接断了的，等着的那一条跟着丢掉。头收起浮层以后，晾着的那一条回来了丢掉就是。
+
+**`human.get`**（施工 W-1，`web-module.md`「二、给人看的字」）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `language` | 字符串，可以不写 | 2 到 8 个小写字母，例如 `zh`。不写照这个连接的语言（握手回应的 `language`） |
+
+回应：`{"language": <语言>, "said": {<说法的编号>: <模板>}, "tools": {<工具名>: <样子>}}`。查询，不改会话：不推送。例子（格照名字的字母先后排）：
+
+```json
+{"id":"h1","jsonrpc":"2.0","result":{"language":"zh","said":{"core/tool-results/unattended":"需要确认，无人确认"},"tools":{"read":{"icon":"→","name":"读取","subject":"file_path"}}}}
+```
+
+1. 每次现读资源目录，照 `store/resources.md`「怎么走」第 3 条的读法：先读内核的 `core/human/<语言>.json`，再照名字的先后读 `software/` 下每个软件包的 `human/<语言>.json`，哪一份没有这种语言照英文。开发时改了资源，下一次调就是新的，不用重启核心。在阻塞线程里读。
+2. `tools` 合成一张，软件包盖掉内核的同名工具；`said` 的编号前面加上它在资源目录里的位置（`core/…`、`software/<包>/…`），模板原样给、一个字不换：换字段是头的事，照 `store/resources.md`「怎么走」第 4 条，控制字符换成 `�`。
+3. 不给 `config` 那一格：配置的名字、说明在 `config.schema` 里。
+4. 工具目录里这一刻写了显示名的工具（脚本的「显示名称」、MCP 服务给的 `title`、扩展登记时写的 `display_name`，施工 9-8 七补）并进 `tools`：照要的语言挑（这种语言没写的照英文、中文、日文的先后），`{"name": <显示名>}`，扩展登记时写了 `subject`（名字后面跟哪一个参数）的多一格 `subject`，只写了它、没写显示名的名字是工具名（施工 S-6 上，`providers.md`）；没有 `icon`；上面两种字里已经有的照那一份。回应另多一格 `packages`：工具目录里这一刻每件工具属于哪个包，`{<工具名>: <包编号>}`（施工 X-24 补，终端照它判收起那一行「只为发一张图」）。不写进 `tools` 的每一格：头照固定的样子读那一格、不认识的格子整格不收（X-24 曾写进去，现有的终端读不出工具的样子）。这是「这一刻」的：调用那一刻的显示名记在 `tool.result` 的 `display_name` 里（施工 9-8 六补），头画跑完了的那一步照记下的。装卸包、开关 MCP 服务以后工具目录变了，头收到 `package.changed`、`mcp.changed` 重取。
+4. `language` 不合写法：`bad_params`。读得到却读不懂：`internal_error`，记一行 `WARN human not read error=…`，写明是哪一份。
+5. 回应的 `language` 是要的那一种；哪一份退回了英文，回应里不分，和 `miyu ask` 读到的一样。
+
+**`mermaid.render`**（施工 W-4，`mermaid.md`）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `source` | 字符串，必写 | mermaid 源码 |
+
+回应 `{"marks": {"label": <色>, "line": <色>, "text": <色>}, "svg": <SVG 的字>}`：SVG 里字、线、连线标签垫底用的三种记号色，头照它们换成自己的颜色。详细的怎么走、出错、缓存、懒初始化都在 `mermaid.md`，这一页只列进方法表、出错表（照 `config.md` 的先例）。
+
+1. 编进了 `base-mermaid` 包才有（核心起来时经 `crates/miyu-core/src/packages.rs` 往查询表 `crates/miyu-endpoint/src/queries.rs` 里登记）；没编进来的回 `unknown_method`，和没有这个方法一样。
+2. 查询，不改会话：不推送。
+
+**`link.preview`**（施工 W-7，`net.md`）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `url` | 字符串，必写 | 网址 |
+
+回应二选一：`{"card": {"author", "description", "duration", "icon", "image", "kind", "site", "title", "url"}}`，`icon`、`image` 是 `{"blob": <内容哈希>, "media_type": <类型>}` 或者 `null`，`kind` 是 `video`、`article`、`page` 之一，`duration`（秒）、`author` 没有的不写（W-7 再补）；`{"card": null, "why": <原因>}`，`why` 是 `not_a_url`、`unsupported_scheme`、`no_preview`、`unreachable` 之一。做不出卡片不是拒绝。地址闸、代理、记多久都在 `net.md`，这一页只列进方法表、出错表（照 `mermaid.render` 的先例）。
+
+1. 编进了 `base-net` 包才有，登记的路子同 `mermaid.render`；没编进来的回 `unknown_method`。
+2. 在后台答：这个连接上后面的请求不等它，回应照 `id` 对上（「一个连接」第 1 条的例外）。不碰会话，不推送。
+3. 卡片的图是存处里的 blob，头照 `blob.get` 读。
+
+**`model.call`**（施工 8-20，`models.md`「协议」、「怎么走」第十二条）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `model` | 字符串，可以不写 | 模型 `<供应商>/<模型>` 或池 `@<池>`；不写、写 `null` 的照这一刻的 `models.chat` |
+| `purpose` | 字符串，必写 | 用途：1 到 32 个字符，只有小写字母、数字、`-` |
+| `messages` | 数组，必写 | `{"role": "system" 或 "user" 或 "assistant", "text": <字>, "images": [<blob 的哈希>, …]}` |
+| `max_tokens` | 正整数，可以不写 | 最多输出多少 token |
+
+回应 `{"text": <正文>, "provider": <供应商编号>, "model": <模型名>, "usage": <四项> 或 null}`。消息的样子、出错、用量的形状都在 `models.md`「协议」`model.call`，这一页只列进方法表、出错表（照 `mermaid.render` 的先例）。
+
+1. 命令：经一次性入口发一次（`miyu_session::OneShot`），和会话的路由共用冷却表、池的指针。连上来的头都能调；有了扩展以后前面加一道能力的检查。
+2. 不进任何会话的日志，不推送；在后台答（施工 8-20 补）：同一个连接后面的请求不等它说完，回应照 `id` 对上；连接断了，没答完的停下（下面「一个连接」第 1 条）。
+
+**`usage.query`**（施工 8-15，`models.md`「协议」`usage.query`、「怎么走」第九条）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `from`、`until` | 时刻，可以不写 | 只算这一段，左闭右开 |
+| `group` | 字符串的数组，可以不写 | `venue`、`model`、`day`、`session`、`purpose`、`use` 里的几样；不写是一行总计。`use` 是用途（施工 CX-1 上）：`main` 主对话、`compaction` 压缩（当场压的、提前压的）、`subagent` 子代理（派出去的子会话的，连同它们的辅助请求）、`recap`、`title`、`memory`，认不出的 `other` |
+| `session` | 字符串，可以不写 | 只算这个会话 |
+| `tree` | 布尔，不写是 `false` | 写了 `session` 的，连它派的子会话一起算 |
+| `offset` | 字符串，可以不写 | 分天照哪个时区，`+09:00` 这样写，`±14:00` 以内；不写是核心所在机器此刻的 |
+
+回应 `{"rows": [...]}`，一组一行，照分组的几格排（`null` 在前）：分组的几格（没有的是 `null`）、`requests`、`usage` 四项、`amounts`（`[{"currency", "amount"}]`，`usage.currency` 排最前）、`unpriced`。行的写法、例子都在 `models.md`「协议」`usage.query`，这一页只列进方法表、出错表。
+
+1. 参数不对的 `bad_params`；查不到的会话回空的 `rows`。
+2. 先补再查：`journal.jsonl`、会话、回收处里的会话（`models.md` 第九条第 4 条）；读汇总出错的删掉重建再补一次，还不行回 `internal`。
+
+**`session.set_workspace`**（施工 9-7 上，`kernel/session.md`「换工作区」；2026-10-07 项目主人定方向，形状 2026-10-08 和终端界面、网页的会话对过）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+| `cwd` | 字符串，可以不写 | 新的工作目录：绝对路径或者 `~` 开头的。不写的照旧（只换加进来的目录） |
+| `dirs` | 字符串的数组，可以不写 | 新的加进来的目录，整份换掉；空的是去掉全部；不写的照旧 |
+
+回应 `{"cwd", "dirs"}`：实际用的工作目录、现在加进来的目录。
+
+1. 工作区是会话的属性：新会话开在哪就记哪（`session.create` 的 `cwd`、`dirs`），之后哪个头打开都照它，只有人明确换（这个方法、`/workspace`）才变。说话（`session.send`）带的目录照收不理。
+2. `cwd` 写的是工作区本身（网页的「默认工作区」交的就是握手的 `host.workspace`）：换成这个会话自己的默认工作区（订阅回应、会话列表的 `default_workspace`），建好（施工 5-14 中）；`/workspace`、`session.send` 带的 `cwd` 同样。
+2½. `cwd`、`dirs` 都没写、写了别的格：`bad_params`。工作目录换不成真实位置、读不了：`path_unreadable`；是文件：`not_a_directory`；落在数据根里、又不是默认工作区：`path_forbidden`；太宽的（系统的家目录、根目录、包含数据根的）不拒，照人选的用，回应多 `wide: true`（施工 9-7 补，2026-10-09 项目主人定；原来退回默认工作区）；核心读不出家目录时的 `~` 照不了，`path_unreadable`。加进来的目录照造会话的规矩查（`dir_too_wide`）。拒了的什么都不记。
+3. 和现在一样的：接受，什么都不记。不一样的：会话记一条 `session.workspace_changed`（`kernel/events-bodies.md`），订阅着的头照推送跟着换；会话列表那一项的 `cwd` 跟着变（`sessions.changed`）。这一轮里照旧，下一轮开始照新的。
+4. `subscribe`（events）的回应带 `workspace: {"cwd", "dirs"}`，接进来就知道她在哪干活。
+
+**`session.set_meta`**（施工 3-8 三补，`kernel/session.md`「改标题、置顶」）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+| `title` | 字符串或 `null`，可以不写 | 新的标题：去掉前后空白以后 1 到 200 个字（Unicode 字符）。写 `null` 是去掉标题 |
+| `pinned` | 布尔，可以不写 | `true` 置顶，`false` 取消置顶 |
+
+回应：`{}`。改了什么，看推送里的 `session.meta_changed`。
+
+1. 改哪样写哪样，没写的那一格照旧。`title` 和别的「可以不写」的格不一样：写 `null` 有意思，是去掉标题；`pinned` 写 `null` 照旧等于没写。两格都不写（`pinned` 写 `null` 也算没写）：`bad_params`，不找会话。
+2. `title` 去掉前后空白（Unicode 的空白）再量：空的、超过 200 个字的、不是字符串的：`bad_params`。中间的空白、换行照原样。`pinned` 不是布尔的：`bad_params`。
+3. 和现在一样的格去掉：标题照去掉空白以后的比，没有标题时去掉标题、没置顶时取消置顶都算一样。一格都不剩的，什么都不记，照样回 `{}`。
+4. 还剩的记一条 `session.meta_changed`，只写还剩的那几格；去掉标题写成 `"title":""`（`kernel/events-bodies.md`）。`by` 取自连接，`cause` 是这一条的 `id`，回合进行中改的带上这个回合；落了盘才回应。改名不影响回合：标题、置顶不进请求。
+5. 先找会话，找不到的回的是找不到；没在跑的照「会话表」载入。
+6. **内核自己起的标题**（施工 3-8 五补，`kernel/session.md`「起标题」）：没起名的会话一轮答完，核心单独发一次起标题的请求，起好了也记成 `session.meta_changed`（只写 `title`），推给订阅着这个会话的头，前面紧跟着那一次请求的 `model.called`（`purpose` 是 `title`）；两条都是 `by` 内核，没有 `cause`、不带 `turn`。和人改的一样出现在 `session.list` 里。人起过名、去掉过的会话不起，子会话、一次性的会话不起。头分得出是谁起的：看 `by`。协议的形状没变，只是 `session.meta_changed` 多了由内核起的这一种。
+
+**`session.retitle`**（施工 TT-1，`kernel/session.md`「起标题」第 9 条；2026-11-11 项目主人定：`miyu rename` 不带标题时用一次模型请求更新标题，不是清掉标题，用的模型同自动起标题的那一个）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+
+回应：`{}`。新的标题看推送里的 `session.meta_changed`。
+
+1. 换成内核的 `Retitle`，`by` 取自连接。走的是 `session.set_meta` 第 6 条那一条路：同一份指令、同样的上限（没有新的给模型看的字），喂的对话换成最近答过的至多三轮，不喂第一轮（`kernel/request.md`「起标题的请求」第 7 条；只答过一轮的和自动起的那一次逐字节一样）、同一个用途 `title`、同一个模型（`models.md` 里起标题用的那一个）、用量照样记。
+2. 内核收下就回应 `{}`，不等模型、不等落盘；起好了推那一次请求的 `model.called`（`purpose` 是 `title`）和 `session.meta_changed`（只写 `title`），两条都没有 `cause`、不带 `turn`；`model.called` 的 `by` 是内核，`session.meta_changed` 的 `by` 是要它的人，照 `session.set_meta` 取自连接（施工 TT-2，2026-11-13 core1 定：标题是人亲手要的，算人起的）。`session.list`、会话列表的推送那一项写 `named`，重启以后照样；以后自动起标题不再盖掉它（「标题动过」）。
+3. 不看自动起的那几条：人起过名的、去掉过的也换掉；造的时候写了 `titles: false` 的、一次性的会话、子会话、场所会话照样起（改不改得了标题照 `session.set_meta` 的，都没有限制）；不看试过几次。
+4. 有一次起标题的请求在路上的（自动起的、上一次要的）：不再发，并进去，照样回 `{}`。
+5. 回合正在进行不碍事：照已经走完的几轮起，正在进行的这一轮不带、不打断。一轮都还没走完的（第一轮正在进行）：收下，等这一轮的 `turn.ended` 落了盘再起。
+6. 没东西可起：她一个带正文的回复都没有、这时也没有回合在进行，或者快照里没有起标题的字和数（以前造的、整理会话的）：`bad_params`，不带 `data`（内核的原因码是 `nothing_to_title`，端点换成它）。`session` 没写、写法不对：`bad_params`。先找会话，找不到的回的是找不到；没在跑的照「会话表」载入。
+7. 没起成：模型出错、过了辅助请求的总时限（180 秒，从发出去起算，`session/actor.md`「7. 请求模型」第 7 条，施工 TT-3）、回复里没有正文、要了工具（施工 TT-3）：标题不变，记那一条出错的 `model.called`，推给订阅着事件流的头一条瞬时的 `session.retitle_failed`（`by` 是要它的人，`body` 是 `error` 和给人看的那一句 `human`：`{"key": "core/sessions/retitle-failed"}`，`kernel/events.md`），视图流出一条只在视图流里有的旁白 `retitle_failed`（`text` 照连接的语言：「更改标题失败」，`view.md`）；不自己再试。要了以后、起好之前人又改了标题的：留人改的，什么都不推。自动起的没起成照旧什么都不推（2026-11-13 项目主人定）。
+8. 权限同 `session.set_meta`：扩展要 `sessions.drive`。封存了的会话照收。
+
+**`session.configure`**（施工 8-10，`models.md`「协议」「怎么走」第六条，`kernel/session.md`「换模型」；`effort` 施工 SM-1，设计 51）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+| `model` | 字符串或 `null` | 换成的模型 `<供应商>/<模型>` 或 `@池`（`models.md`「两种写法」）；`null` 是回到跟着 `models.chat`（施工 8-10 再补） |
+| `persona` | 字符串或 `null` | 换成的人格；`null` 是无人格（施工 P-13） |
+| `preset` | 字符串 | 换成的预设（施工 P-13） |
+| `effort` | 字符串或 `null` | 换会话的思考强度（施工 SM-1）：一档的名字，照会话这时的模型的档位查；`null` 是回到跟着配置（`models.md`「怎么走」第十一条） |
+| `vision` | 字符串或 `null` | 钉会话的看图模型（施工 VM-1）：写法、解析、校验同 `model`；`null` 是去掉、回到跟着 `models.vision`。替看图发给它（`models.md`「怎么走」第十三条第 4 条），钉的后来解析不出照转述没成办、不退回 `models.vision`。`view.status`、`subscribe` 的回应钉了带 `vision`（`subscribe` 的施工 CT-1补），没钉的不写 |
+| `context` | 整数或 `null` | 会话的上下文上限（施工 CTX-1，设计 68）：token 数；`null` 去掉。生效的窗口取模型的窗口和它里小的，压缩线照生效的窗口算；记下当场交给路由，不等下一轮。设得太小、照它和这时的模型的最大输出算不出压缩线的，`bad_params`，`data.field` 是 `context`，`data.min` 是最少要多少 |
+| `compaction_line` | 整数或 `null` | 钉会话的压缩触发线（施工 CT-1，`compaction.md` 第二条第 2 条）：窗口的百分之几，20 到 95（照配置项 `compaction.line` 的范围）；`null` 是去掉、回到跟着 `compaction.line`。不在范围里的 `bad_params`，`data.field` 是 `compaction_line`；不是整数的 `bad_params`。什么都不换。下一个回合开始时换上，`limits.compaction_line` 跟着换；`view.status`、`subscribe` 的回应钉了带 `compaction_line`（`subscribe` 的施工 CT-1补），没钉的不写 |
+
+七格至少写一格。施工 8-18 收过的 `effort` 是对象（`{"model":…,"level":…}`，会话给一个模型记的一档），8-18（补）去掉了；SM-1 加回来的是字或 `null`，那种对象照旧读不成，`bad_params`。
+
+回应：`{}`。换了没有，看推送里的 `session.policy_changed`。
+
+1. 一格都没写、写了空字（`""`）、类型不对的：`bad_params`，不找会话；`session` 不合写法的也是。
+2. 先找会话，找不到的回的是找不到；没在跑的照「会话表」载入。再照这时不算项目配置的最终值解析（和 `session.create` 的 `model` 一样；`vision` 同样，施工 VM-1）：解析不出的 `unknown_model`，什么都不记（一起写的别的格也不换），原话记一行 `DEBUG unknown model`。
+3. 和会话现在记着的一样的：什么都不记，照样回 `{}`。别的记一条 `session.policy_changed`，只写 `model`，`by` 取自连接，`cause` 是这一条的 `id`，回合进行中换的带上这个回合；落了盘才回应。
+4. 显示当场变，请求下一轮变（施工 MC-1，2026-11-16 项目主人定「当场报新的」）：真发请求下一个回合开始照新的，一轮里前后一致；撤掉的回合里换的也算。给头看的当场换：落了盘、回应以前，核心照这一刻的配置预演下一个回合开始会怎么解析（改过名的照新编号，解析不出的退回 `models.chat`），订阅着的头收到一条 `model.changed`（`why` 是 `turn`），之后的 `subscribe`（切走再切回来、重连）、`view.status` 的 `model` 和 `session.quota` 照换成的。换成模型的带 `endpoint`、`model`，`effort` 照这一刻的配置、会话记的一档算得出的才带；换成池的只有 `ref`，下一个回合开始钉了成员才有 `endpoint`、`model`。限额（窗口、压缩线）下一个回合开始才换。下一个回合开始真解析了，和刚报的一样不再推；不一样的（池钉了成员、窗口变了、解析不出退回了）照旧推一条。换回钉着的那一个照钉着的报。换思考强度（第 6 条）同样当场报。预演着的时候这一轮里出错换了成员不推 `failover`：头看的是下一轮的。
+5. 以后别的临时开关（`04-核心协议.md` 第九节）加进来也是这个方法，参数至少写一个。
+6. **换思考强度**（施工 SM-1，设计 51，`kernel/session.md`「换思考强度」）：照会话这时的模型的档位查：同一条换了模型的是换成的那个（`model: null` 的是这一刻的 `models.chat`），没换的是会话记着的引用（`Handle::current` 的 `model`，SM-1 补：原来照 `subscribe` 的 `model.ref`，刚换了模型、还没开回合的那还是上一轮的；没记的照这一刻的 `models.chat`）；用着池的设不了，写了 `bad_params`（SM-1 补，项目主人 10-30），池里每个成员照它自己的配置。名字先规整（`none`、`disabled` 读成 `off`），不在里面的 `bad_params`，`data.field` 是 `effort`，原话记一行 `DEBUG unknown effort`，什么都不记（一起写的模型也不换）；`null` 不查。模型先换，再换思考强度（命令编号接 `/effort`），再换人格、预设。和现在一样的什么都不记；别的记一条 `session.policy_changed`，只写 `effort`（`{"level": …}`，`null` 照写），`by` 取自连接，回合进行中换的带上这个回合。下一个回合开始时生效（给头看的 `effort` 当场换，第 4 条，施工 MC-1）：真发的那个模型有这一档的照它，没有的（换了模型、池里别的成员）照配置，不报错；换模型不清它。生效的那一刻 `model.changed`、之后的 `subscribe` 的 `effort.from` 是 `session`。
+7. **换人格、预设**（施工 P-13，`16-人格与预设.md` Y5，`kernel/session.md`「换人格、预设」）：先查人格、预设在不在（`unknown_persona`、`persona_invalid`、`unknown_preset`），子代理（有父会话、不是分叉出来的）不能换，`bad_params`，`data.field` 是写了的那一格；都在模型那一条之前查完。模型先换，再换人格、预设（命令编号接 `/recast`）。有回合在进行的 `turn_running`；和现在一样的什么都不记。收下的记一条 `session.policy_changed`（`persona`、`preset`，`by` 是人），能压的马上单开一轮压缩。下一个回合开始真换：执行器照新的人格、预设重拼快照，记一条带 `policy` 的 `session.policy_changed`；记忆的范围照旧，跟着人格的从这一轮起在新人格那一间（以前记的留在原来那一间，换之前还没抽的几轮不再抽）；知识库照新人格查。`session.list`、`subscribe` 回应、会话状态的 `persona`、`preset` 照换成的写（人换了就算，不等真换上）。
+
+**`session.delete`**（施工 3-8 三补，`store.md` 第 12 条，`agents.md` 第七条第 5 条）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 哪个会话 |
+
+回应：`{}`，目录都挪好了才回。
+
+1. 会话表拿着锁办完一整件：这期间别的连接载入不了会话、给会话发不了命令，会话里也造不了子会话。
+2. 先认出它派出去的子会话：放会话的目录里每个会话 `session.created` 的 `parent`，一层层往下（子、孙……）。第一条读不出来的会话认不出父会话，不算。读不了放会话的目录：`internal_error`，什么都没动。
+3. 删的是一个子会话、它的父会话还在的，等于人先停掉它再删（2026-09-30 主会话定：父会话不会白等）。任务编号照子会话 `session.created` 的 `cause`（`<父会话>/<编号>`）读回；父会话照「会话表」找，没在跑的载入。它在跑的，不问忙不忙就停下（`Handle::discard`，它派的、它的后台命令照第 6 条）：正忙的子会话因此也删得了。第 6 条停完子会话以后，父会话照人停它的样子记一条 `child.reported`（`stopped`，`by` 是子会话，不带 `by_model`，正文照它的日志看它这一轮最后说的，截法同 `job.stop`），叫醒父会话：回报在父会话的 actor 里当场记下，不经会话表（`Handle::stopped_child`）。父会话照名册认它：已经报过、被停过的不再记；父会话已经不在的（删了、连带删的）、载入不了的，不送，照样往下删。施工 7-8 把这一步挪进锁里：原来经会话表的端口来回、在拿锁之前，父会话记下它停了以后、这一头拿到锁之前，有人给它发一句，它就又开了一轮，删的时候说有回合在进行，父会话却以为它停了。
+4. 别的，它在跑的：交给它的 actor，内核说删不删得了（`kernel/session.md` 的 `deletable()`）。有回合在进行（结束了 `turn.ended` 还没落盘的也算）：`turn_running`；正在读回日志：`restoring`。被拒的什么都没动，会话照常：头先打断，或者等它做完。删得了的，actor 把它在跑的后台命令整组杀掉、不记回报，关上日志，退出（`session/actor.md` 第 9 条）。它自己已经停了的（写不进去、出了 bug），照样往下删。
+5. 它没在跑的：不载入。载入会收尾崩了的那一轮、接着干被重启打断的那一轮、叫起子会话，删之前都不该做。磁盘上没有它的日志（第一行还没写完的也算）：`session_not_found`。
+6. 在跑的子会话一层层往下停：不问忙不忙，路上的请求叫停、在跑的工具掐掉、后台命令整组杀掉，都不记（`Handle::discard`）；连带删的子会话不向它们的父会话送回报：父会话也在删。
+7. 目录挪进回收处 `trash/sessions/<会话编号>/`，一个会话一个，先写 `deleted_at`（`store.md` 第 12 条）。从最深的子会话挪起，它自己最后：半路崩了、挪不了的，它还在原处、列得出来，再删一次接着挪完。挪不了：记一条运行日志，`internal_error`。
+8. 删了的：不在 `session.list` 里；再对它发命令、订阅、改标题、再删，都是 `session_not_found`；订阅着它的头收到 `resync`（它停了），重新订阅时是没有这个会话。重发的造会话不再交回它。
+9. 子会话向上交的回报、派子代理，碰上删了的会话：父会话没了的回报丢掉（`agents.md` 第二条第 5 条）；父会话已经不在会话表里的，不再造子会话（「会话表」第 7 条）。
+
+**`view.page`**（施工 9-6 下，2026-10-08 形状和终端界面、网页的会话对过）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 会话编号 |
+| `before` | 正整数，可以不写 | 只要序号小于它的；不写的是最新一页。往前翻拿上一页的 `first` |
+| `turns` | 整数 1 到 50，可以不写 | 最多几轮，不写是 20 |
+| `view` | 布尔，可以不写 | 写 `true` 的交条目、不交事件（施工 9-8 中，`view.md`）。不写是 `false` |
+
+回应 `{"events", "more"}`，有事件的再带 `first`、`last`，因为字节少给了轮数的带 `capped: true`，这一页里报完了、在更早派出去的任务带 `jobs`，日志中间坏了一行、这一页照它以前的读的带 `broken`（第 6 条，施工 YC-6）。`events` 是原始事件，写法同补发（`event` 推送里的那一个），照序号；核心不做视图投影。
+
+1. 页的边界落在回合之间：从 `before` 往前数 `turn.started`，每一轮从它的 `turn.started` 起，到下一轮的 `turn.started` 之前；不在回合里的事件（改标题、回顾、斜杠命令、撤销）跟着它们所在的位置走。数到第一轮的，连它前面的（`session.created` 这些）一起给，`more` 是假。
+2. 数够 `turns` 轮，或者再加一轮就超过 1 MiB（照事件写成一行的字节数），停；至少给一整轮，一轮自己超了也整轮给。因为字节停的带 `capped: true`。
+3. 这一页里每一轮的触发消息（`turn.started` 的 `trigger`）在切点前的，也带上，排在最前面：可能和更早的一页重复，头照序号去重。`first` 照切点算，不算带进来的这几条。
+4. 这一页里报完了的任务（`job.reported`、`child.reported`，带进来的触发消息也算：后台命令跑完常引起下一轮），派它的 `job.started` 在切点前的，带在 `jobs` 里：照派出的先后，每一个照 `job.started` 的写法（`job`、`what`、`title`，子代理带 `session`），没有的不写这一格。头照它写「后台命令跑完了」那一行，不用为找标题往前翻（施工 9-6 再补）。
+5. `last` 是这一页最后一条：最新一页的 `last` 就是读的那一刻落了盘的最后一条，头接着 `subscribe {"after": last}`，只接新的。压缩、撤销照原样在页里，头照有效历史自己画：先拿到的总是更新的页，撤销总比被撤的那几轮先到。
+6. 只读地读会话目录里的日志，不为翻历史载入会话；读的时候会话照常跑，正在写的那半行不算。只读要的那一截（施工 V-41 上，`view.md`「怎么走」第 2 条）：先数一遍 `before` 以前的行、不解，记下每一轮从哪一行起、派出了结任务的那几行；再只解最后几轮，切点前要的触发消息、派任务那次调用所在的回复照位置读回那一行。读、解了的行照旧自检；数过去的行只查段末半行、段名接不上，别的坏了不报（同补发定位跳过的那一截，`store.md` 第 7 条 `read_range`）：日志被外人改坏、坏的地方不在这一页要读的那几行里的，原来回 `session_broken`，现在照没坏的交这一页；下次打开这个会话照样整份自检、报出来。要读的行里碰到坏行的（施工 YC-6，压测报告 F6；2026-11-10 项目主人定只读打开、不给修）：照坏行以前的交这一页，好像日志到坏行前一条为止，带上 `broken: {"segment", "line"}`：哪一段（只写文件名，例如 `000000000001.jsonl`）、第几行（从这一段的开头数），头照它说坏在哪；坏行是第几条照段名加行号算，拿它当 `before` 再读，那一截里又碰到更早的坏行的再往前收。坏在第一条的（连 `session.created` 都读不成）、算不出更早的（段名接不上这一类）照旧 `session_broken`。日志一个字节都不动（不截、不修）；没坏的、坏行不在要读的行里的，回应一个字节都不变、不带 `broken`。所以坏行以后的轮次，最新一页没碰到坏行时照样看得到，往前翻到碰上坏行的那一页起只给坏行以前的。视图流订阅时的最新一页同样（第 9 条；要载入会话，载入时日志就坏了的订阅不上，回 `session_read_only`，见「会话表」第 2 条）。
+7. 写了 `view: true` 的（施工 9-8 中）：`events` 换成 `entries`，这一页的条目，照显示的先后、读的那一刻的状态，写法见 `view.md`「条目」；字照这个连接的语言。别的格（`first`、`last`、`more`、`capped`、`jobs`）照旧，切法同第 1 到 3 条。切点前派出去、在这一页报完的任务，条目里照样有标题和命令：核心先照切点前的日志学一遍派出去的任务。投影要的字读不成的：`internal_error`，记一行 `WARN view words not read`。
+8. 会话编号不合写法、`before` 是 0 或不是正整数、`turns` 不在 1 到 50、写了别的格：`bad_params`。没有这个会话（删了的也是）：`session_not_found`。日志读不懂、照第 6 条也没有能看的：`session_broken`；读的时候读写出错（权限、打开文件数用光）：`session_unavailable`（施工 YC-2）；都记一行 `WARN log not read`。
+
+
+
+**`session.prompts`**（施工 SP-2，2026-11-03 网页 W-1069 要：右边的「问话跳转」把一个会话里的问话都列出来，没读进来的也能跳）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 会话编号 |
+
+回应 `{"prompts": [{"seq", "turn", "at", "text"}, …]}`，照先后；没人问过的是空的数组。头要跳到没读进来的一句：照它的 `seq` 用 `view.page` 的 `before` 一页页往前读到那一页再跳。
+
+1. 一句是有效历史里一条主人本人说的 `message.user`：`by` 是主人（`person`），带不带 `via` 都算（桥代主人在私聊里转进来的、经平台身份认出来的也是主人本人说的：主人在 QQ 私聊里说的话都带 `via`，不列的话那种会话列出来是空的）。子会话、父会话发来的（`session`），平台上别的人说的（`external`，群里的主人也是），模块注入的（长期目标的续轮这些），别的 harness 的，定时任务、循环交进来的，内核的都不列。只有图、文件的照样列，`text` 是空的。
+2. 有效历史照留着一切的那一份（`History::whole`，同 `venue.records`）：撤销掉的不列，恢复的放回原处，重做（网页的「编辑上一句」）撤掉了原来那句、列重发的那一句，撤回的排着的话不列；压缩换出去的照样列。
+3. `seq` 是那条 `message.user` 的序号；`turn` 是它的回合：回合里来的（排着的）是那一轮，闲着时说的是它开的那一轮（有效历史里 `trigger` 是它的 `turn.started`），都没有的不写；`at` 是它的时刻，写法同事件的 `at`。
+4. `text` 同 `session.list` 的 `preview` 的取法（`miyu_store::index::said`，一处代码）：斜杠命令模板展开的照人敲的那一行（`command.text`），别的照头一块文字；第一个不是空白的那一行，去掉前后空白，只是最多 100 个字（`preview` 是 50 个）。
+5. 分叉出来的会话（`session.fork`、fork 子代理）只列它自己日志里的：底子里那一段的话在父会话的日志里，`view.page` 在这个会话上也翻不到；父会话照列它自己的。
+6. 只读地读会话目录里的日志，不载入会话；读的时候会话照常跑，正在写的那半行不算，一整行都还没写完的是空的（同 `view.page`）。读法同判官（`venues.md`「判官看的群聊记录」施工 V-39 上、上补）：一遍读下来，只全解 `message.user` 和有效历史照种类认的那几种，别的种类只认外壳；事件照先后交给真的有效历史，谁都碰不到的那一截收下问话就放掉（`sweep.rs`）；撤销、撤回比放掉的还早的，照骨架算的下界再读一遍；骨架认不得的整份读到头一遍读到的那一条。不落缓存、不常驻。不要的种类正文合 JSON、不合那一种写法的不报坏了（同判官，2026-11-03 项目主人拍板接受）。
+7. 出错同 `view.page`：会话编号不合写法、写了别的格：`bad_params`。没有这个会话（删了的也是）：`session_not_found`。日志读不懂：`session_broken`（日志中间坏了一行的也是：`view.page` 照坏行以前的交一页，这里照旧拒，施工 YC-6）；读的时候读写出错（权限、打开文件数用光）：`session_unavailable`（施工 YC-2）；都记一行 `WARN log not read`。扩展要 `events.read`（同 `view.page`），照它看得到的会话。
+
+**`session.export`**（施工 SE-1 上，设计 `58-会话导出和导入.md` 第一节；Markdown 施工 SE-1 中下上、中下中、中下下）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 会话编号 |
+| `format` | 字符串，必写 | `bundle`：原始包。`markdown`：Markdown |
+| `to` | 对象或字符串，必写 | `{"path": "<绝对路径>"}`：核心写到这个文件。`"inline"`：放进回应（只对 Markdown） |
+| `for` | 字符串，默认 `read` | 只对 Markdown：给谁用，定预设。`read` 自己看、`agent` 给别的 agent、`chat` 贴进网页 chat（`view.md`「导出成 Markdown」） |
+| `range` | 字符串或对象，默认照预设 | 只对 Markdown：导多少。`all` 全部（`read`、`chat` 的默认）；`context` 她现在的上下文，从最近一次还算数的检查点起（`agent` 的默认）；`{"turns": N}` 最近 N 轮，N ≥ 1 |
+| `thinking` | 布尔，默认照预设 | 只对 Markdown，盖过预设：带不带思考（`read` 带，`agent`、`chat` 不带） |
+| `tools` | 字符串，默认照预设 | 只对 Markdown，盖过预设：`line` 一行；`seen` 她当时看到的（`read`、`agent` 的默认）；`full` 全文，后台命令的输出、脚本里调的工具交回的结果去 blob 取 |
+| `children` | 字符串，默认 `reports` | 只对 Markdown：子代理。`reports` 照预设写交代、回报；`append` 再把子会话照同一套开关渲染好，照任务编号附在后面（`view.md`「子会话附在后面」） |
+| `assets` | 字符串，默认 `placeholder` | 只对 Markdown：图片、附件。`placeholder` 写占位；`files` 拷进 Markdown 旁边的 `<名字>_files/` 文件夹，Markdown 里写相对路径（`view.md`「附件文件夹」），只配 `to: {"path"}` |
+| `locale` | 字符串 | 只对 Markdown：给人看的字用哪种语言（`zh`、`ja` 开头的照它，别的英文），不写的照连接握手时的 |
+
+原始包的回应 `{"path", "bytes", "upto", "sessions", "blobs"}`：写到哪、包多大、主会话取到的最后一条、包里的会话（照放进去的先后）、几个 blob。
+
+Markdown 的回应 `{"path" | "text", "bytes", "tokens", "upto", "redacted", "children", "assets"?}`：写到哪（`to` 是路径的）或者 Markdown 本身（`inline` 的）、多少字节、`tokens` 估算（同底栏上下文用量的本地估算：UTF-8 字节数除以 4，往上取整）、主会话导到的最后一条、`redacted` 隐去了哪几个密钥各几处（`{"<名字>": <几处>}`，附在后面的子会话合计，一处都没有的是 `{}`）、`children` 附在后面的子会话（`[{"job", "session", "title"}]` 照先后，不写 `append` 的是 `[]`）；`assets` 只有 `assets: files` 才有：`{"dir"?, "files", "missing"}`，拷进文件夹的几个、文件夹的绝对路径（一个都没拷的不建、不写 `dir`）、要写进来却取不到（blob 不在、对不上）的那几个 blob 的哈希（照占位写了）。
+
+1. 包里的会话：这个会话；它的全部后代（父子关系照会话列表的索引，索引里没有的读它的第一条 `session.created` 的 `parent`；分叉出来的支线也挂在父会话下面，一起带走），照编号一层层找；再是分叉来源：包里哪个会话的 `session.created` 写了 `forked`、来源又不在包里的，带上来源到 `upto` 为止的那几段，来源自己是分叉出来的接着往上找；同一个来源被要了几次的取最远的那一点。
+2. 打包照 `miyu_store::bundle`（`store.md`「原始包」）：段原文、到最后一个换行为止、写了 `upto` 的到那一条；日志里写成内容哈希的字，blob 库里有的放进 `blobs/<64 位>`，边拷边核对，对不上整个失败；没有的记进清单的 `absent`；主会话照 `read` 预设渲染一份 `transcript.md`（施工 SE-1 中下中：语言照连接握手时的，配了的密钥照样换掉，日志原样不改），清单的 `transcript` 记它的字节数和 SHA-256；`manifest.json` 最后写。先写同目录的临时文件，写完挂到 `to.path`，已经有的不覆盖。
+3. 只读地读会话目录，不载入会话；在跑的会话照这一刻已经落盘的整行取（日志只追加，取到的是一致的一份）。
+4. 不写进会话日志；运行日志记一行 `INFO session exported`（会话、几个会话、几个 blob、多大；Markdown 的是 `format=markdown`、多大、隐去几处、附了几个子会话、拷了几个附件，不记密钥的名字和值）。
+5. 只给人的头（`connection/rights.rs` 的 `People`）：包和事件流一个级别，还带着 blob。
+6. Markdown（施工 SE-1 中下上）：整个会话照先后一块块读、喂给一台投影（`view/whole.rs`，不整份读成事件），条目同 `view.page` 写 `view: true` 从头翻到尾的；只取这个会话自己的日志（同 `view.page`：分叉出来的会话不带底子那一段；子代理只写交代和回报，`children: append` 的子会话另照它自己的日志一个个读、接在后面，日志没了的跳过）。条目照 `for` 的预设渲染，写了的开关盖过预设（`view.md`「导出成 Markdown」）；`range: context` 照请求组装用的有效历史算（每一条另交给内核的 `History::whole`，喂完落到检查点上），`tools: full` 再去 blob 库取后台命令的输出、脚本里调的工具交回的结果（取不到的照没有）。配了的密钥（`secrets.toml` 的值，至少 8 个字）原样出现的换成 `[redacted: <名字>]`，原始包不改。写文件同原始包的规矩（绝对路径、数据根里面不写、已经有的不覆盖、先写临时文件同步了再挂上去）；`assets: files` 先拷附件（文件夹用 `create_dir` 建，文件一个个新建、同步），Markdown 最后写，后面出错的把建了的文件夹整个删掉；`inline` 的超过 512 KiB（524288 字节，照换完密钥的那一份算）拒 `export_too_big`，头改成存文件（协议一行最长 1 MiB，给转义留余量）。
+7. 出错：会话编号不合写法、`format` 不认得、`to` 不是这两种写法、`to.path` 不是绝对路径或没有文件名、写了别的格：`bad_params`。原始包写了 `inline` 或者只对 Markdown 的参数：`bad_params`。Markdown 的 `for` 不认得、`range` 不是那三种、`turns` 不是正整数、`thinking` 不是布尔、`tools` 不是那三种、`children`、`assets` 写了别的、`assets: files` 配 `inline`：`bad_params`。没有这个会话：`session_not_found`。日志读不了（`children: append` 的子会话的也算）、blob 和它的哈希对不上（`assets: files` 查过以后拷的那一刻才对不上、没了的也算）：`session_broken`，记一行 `WARN export not read` / `WARN export blob mismatch`（Markdown 读不了日志的记 `WARN log not read`）。`to.path` 已经有了，`assets: files` 的文件夹已经有了：`export_exists`。放它的目录照真实的位置在数据根里面：`export_in_data_root`。目录不在、写不进：`export_unwritable`，记一行 `WARN export not written`。`inline` 太大：`export_too_big`。
+
+**`session.import`**（施工 SE-1 下，设计 `58-会话导出和导入.md` 第二、三节）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `blob` | 字符串 | 先 `blob.put` 传上来的包的哈希 |
+| `path` | 字符串 | 本机的包，绝对路径；`blob`、`path` 只写一样 |
+| `archive` | 布尔，默认 `false` | 导成只读存档 |
+
+回应 `{"main", "sessions", "present"}`：包的主会话、这一次新落盘的会话、早就在的（跳过的），都照清单的先后。
+
+1. 导入照 `miyu_store::bundle::import`（`store.md`「导入原始包」）：先核对再落盘，坏了什么都不留；同编号内容一样的跳过、不一样的拒。
+2. 导完：新落盘的每个会话推一条会话列表的变化（`Listing::changed`）；交给记忆在后台接进回合库（`Memory::index_imported`，照每个会话快照里的人格进那一间，不载入、不抽取），导完就搜得到。
+3. 只读存档（会话目录的 `imported.json` 写了 `archive`）：`session.list` 那一项写 `archived: true`；改会话的方法照它拒 `archived`（`import.rs` 的 `refused`，在分发之前查一次）：`session.send`、`interrupt`、`withdraw`、`revert`、`unrevert`、`redo`、`compact`、`clear`、`configure`、`fork`、`respond`、`answer`、`set_permission_level`、`set_workspace`、`set_state`、`command.run`、`job.stop`，`schedule.add` 的 `target.session` 指到存档的也拒。读的（`view.page`、`session.prompts`、导出……）、删、改标题照常。记忆照它不交工具端口：存档载入了也不抽取、不记用到几次。
+4. 运行日志记一行 `INFO sessions imported`（主会话、新的几个、早就在的几个、是不是存档）；读不成的、对不上的各记一行 `WARN bundle not read` / `WARN bundle mismatch`，原因照它说。
+5. 出错：两样都写或都没写、`path` 不是绝对路径、`blob` 不合写法、写了别的格：`bad_params`。`blob` 不在：`unknown_attachment`。不是认得的包：`bad_bundle`。对不上：`bundle_mismatch`。清单的格式比核心新：`bundle_too_new`。同编号内容不一样：`session_exists`（`data.session`）。只给人的头（`People`）。
+
+**`view.detail`**（施工 9-6 三补，2026-10-09 形状和终端界面、网页的会话对过；`04-核心协议.md` 第九节「条目只带摘要，完整的 diff 头展开时用 `view.detail` 按需取」）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 会话编号 |
+| `call` | 字符串 | 那一次工具调用的编号（`tool.result` 的 `call_id`） |
+| `compaction` | 正整数 | 那一次压缩替代到的序号，就是压缩那一条的编号 `c<序号>` 里的数（施工 9-8 中，`view.md`） |
+| `job` | 字符串 | 后台任务的编号：交它下面的嵌套调用（施工 M-5 上） |
+| `nested_after` | 整数，可以不写 | 嵌套调用只交序号比它大的，加上它以前还在跑的（施工 M-5 上，网页要的：在跑时不用每次重拉整份） |
+
+`call`、`job`、`compaction` 正好写一个。
+
+嵌套调用（施工 M-5 上，设计 `39-脚本调工具.md` 第七节第 4 条）：调用的回应多 `nested`（有的才写），任务的回应是 `{"nested"}`；那次 `shell` 还没结果、下面调过工具的，回应只有 `{"nested"}`，都没有的照旧 `unknown_call`。一项照 `miyu_view::listed`：日志里挂在这个父级下面的 `tool.nested`，加上会话这一刻在跑的（载入着才有，`Current.nested`），照序号：`n`、`name`、`title`（`{name, object}`，同工具那一步的标题，照连接的语言；结果那一句不写）、`args`、`state`（`running` 或 `tool.nested` 的 `status`），有的另带 `started`（在跑的开始时刻）、`took_ms`（`duration_ms`）、`reason`、`result`（`{blob, bytes}`）。读字照 `view.page` 拿到阻塞线程里，一个都没有的不读。
+
+调用的回应 `{"files": [...], "output"}`：`output` 是这次调用的结果原文，给模型看的文字块照先后接起来、块之间空一行，整份不截（施工 9-8 中；图片在条目的 `images` 里）。`files` 照那次调用的工具结果里效果的先后，一个文件一项：
+
+| 格 | 说明 |
+|---|---|
+| `path` | 换成真实位置以后的绝对路径 |
+| `action` | `write`（`file.changed`：新建、覆盖、编辑）或 `trash`（`file.trashed`，没有差异） |
+| `diff` | 整份差异，几行字：和撤销回应的同一套（`protocol/undo.md` 第 8 条第 5 款）——统一格式、上下文 3 行，每段 `@@ -旧起始,行数 +新起始,行数 @@` 起头，不带 `---`、`+++`，文件末尾没有换行的不写那一句；不截断。两边一样的是空的 |
+| `added`、`removed` | 新增、删掉了几行，照整份差异数；有 `diff` 的才有 |
+| `skipped` | 算不出差异的原因，有它的没有 `diff`、`added`、`removed`：`too_big`（一边超过 1 MiB）、`binary`（不是 UTF-8）、`missing`（改前改后的 blob 取不出来） |
+
+```json
+{"id":"d1","jsonrpc":"2.0","result":{"files":[{"action":"write","added":1,"diff":["@@ -1,3 +1,3 @@"," a","-b","+B"," c"],"path":"/home/me/proj/a.txt","removed":1}],"output":"Updated \"/home/me/proj/a.txt\"."}}
+```
+
+1. 只读地读会话的日志（和 `view.page` 一样，不为它载入会话），找这次调用的工具结果；改前、改后先用效果里写着的原文（`before_text`、`after_text`，施工 V-18：它的哈希要和 `before`、`after` 对得上，对不上的当没写），没写的从存处的 blob 取，不读磁盘：之后又被改过的照样是那一次的。视图条目 `diff` 的真数（`view.md`）照同一个办法取两边。改前是 `null`（新建的文件）的当空的算：`diff` 只有 `+` 行，头一行 `@@ -0,0 +1,N @@`。
+2. 读文件、派任务这些效果不算；这次调用没改文件的，`files` 是空的。同一次调用的结果不会变，头照 `call` 记着、问一次就够。
+3. 压缩的回应 `{"summary"}`：替代到这个序号的检查点的摘要原文（`context.compacted` 的 `summary`；清空上下文的是空的）。
+4. 会话编号、调用编号写错、`call` 和 `compaction` 都写或都不写、写了别的格：`bad_params`。没有这个会话：`session_not_found`。日志里没有这次调用的结果（编号对不上、还没回）、没有替代到这个序号的压缩：`unknown_call`。日志读不懂：`session_broken`；读的时候读写出错（权限、打开文件数用光）：`session_unavailable`（施工 YC-2）；都记一行 `WARN log not read`。
+5. 字段只加不改。
+
+**`subscribe`、`unsubscribe`**
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串 | 哪个会话：`events`、`view` 必写，`config`、`sessions` 不写（写了 `bad_params`）；`memory` 可以写，是那个会话用的那一间（施工 R-12 上） |
+| `persona` | 字符串 | 只有 `memory` 认：这个人格那一间（施工 R-12 上）。别的流写了不理 |
+| `stream` | 字符串，必写 | `events` 会话的事件流；`view` 会话的视图流（施工 9-8 下，下面第 9 条、`view.md`「视图流」）；`config` 配置的推送（施工 8-4，`config.md`「订阅配置的推送」）；`sessions` 会话列表的推送（施工 9-5，下面「会话列表的推送」）；`extensions` 扩展的状态的推送（施工 9-4 补，`extensions.md`「推送」）；`packages` 软件包列表的推送（施工 F-8 三补，下面「软件包列表的推送」）；`memory` 一间的记忆日志（施工 R-12 上，下面「记忆日志的推送」）；`widgets` 界面块（施工 X-15 中，`widgets.md`「头」：带 `session`、`showing`、`page`）；`prefs` 一个界面包的设置（施工 HP-1，带 `package`，下面「头自己的设置」）。别的 `bad_params` |
+| `after` | 非负整数，可以不写 | 只有 `subscribe` 的 `events`、`memory` 认（施工 3-8 六补、R-12 上，`view`、`config`、`sessions`、`extensions` 写了 `bad_params`）：先补发日志里序号大于它、落了盘的事件，`0` 是从头。见下面「补发」、「记忆日志的推送」 |
+
+回应：`config` 的都是 `{}`；`sessions` 的 `subscribe` 是 `{"sessions": [<一项>, …]}`，`unsubscribe` 是 `{}`（施工 9-5）；`extensions` 的 `subscribe` 是 `{"extensions": [<一个>, …]}`，`unsubscribe` 是 `{}`（施工 9-4 补）；`memory` 的 `subscribe` 是 `{"upto": <序号>}`，`unsubscribe` 是 `{}`（施工 R-12 上）。`subscribe` 的是 `{"limits": <限额>, "model": <模型>}`，写了 `after` 的多一格 `upto`（补到哪一条）：`{"limits": <限额>, "model": <模型>, "upto": <序号>}`。当前的待办不空的多一格 `todos`（施工 D-3，照 `todo.written` 的写法）；会话用哪个人格写在 `persona`（施工 P-1 下）、哪个预设写在 `preset`（施工 P-2 上），都照日志第一条 `session.created` 读，以前的日志没有的不写；之后变了照推送的瞬时事件 `todos.changed`，头只认这两样，不自己翻效果。施工 9-6 上起再多三格「当前的」，和订阅在会话 actor 的同一步里拿，头之后照推过来的事件往上加、不重不漏：`usage` 这个会话（不带子会话）累计的，写法、口径同 `usage.query {"session": <它>}` 那一行（`requests`、`usage`、`amounts`、`unpriced`），另加 `main`（只算主请求的四项用量：`purpose` 是空的，压缩的摘要请求也算，回顾、起标题这些辅助请求不算；头照它算命中率、上下文，施工 9-6 上补）、`compactions`（压缩的检查点有几个）、`cache_breaks`（意外断了缓存的主请求有几次：带 `first_difference`、`purpose` 是空的；压缩的摘要请求（带 `compaction`，或者看到的比之前的主请求少）不算；压缩、撤销以后的头一个主请求本来就会断，也不算；口径同终端，施工 9-6 再补）；`permission` 人这一刻设的权限 `{"level", "read_only"}`；`jobs` 还在跑的后台命令和子代理，照编号，每一个照 `job.started` 的写法（`job`、`what`、`title`，子代理带 `session`）。施工 9-7 上起再多 `workspace`：`{"cwd", "dirs"}`，会话在哪个目录干活，之后照推过来的 `session.workspace_changed` 换。施工 M-1 起再多 `nested`：在跑的嵌套调用（脚本里的 `miyu call`），照编号，每一个 `{id, name}`（施工 M-5 上起 `{id, name, args, at}`：参数原文、派去跑的时刻，头重连以后照它接着计时），没有的不写；之后照推过来的瞬时事件 `tool.nested_started`、事件 `tool.nested` 增减（`kernel/session.md`「嵌套调用」）。施工 X-8 补起再多 `goal`：这个会话的长期目标，写法同视图流会话状态的 `goal`（`view.md`「会话状态」），没有目标的不写；之后变了照推过来的瞬时事件 `goal.changed` 换（`kernel/events.md`），头不自己照 `goal.*` 和回合算第几轮、在不在等人。施工 CT-1补起再多 `compaction_line`、`vision`：会话钉的压缩触发线、看图模型，没钉的不写（下面）。已经订阅着、再订阅一次不带 `after` 的（「还是那一个」），这几格另要一份这一刻的。`unsubscribe` 的是空对象 `{}`。
+
+**模型** `model`（施工 8-10，`models.md`「协议」）：会话接下来请求的。`ref` 是会话的引用（模型或 `@池`），`endpoint`、`model` 是接下来发给哪一家的哪个模型；轮换的池（每次都换）、解析不出的没有 `endpoint`、`model`，没配 `models.chat` 的会话没有 `ref`。一个都没有的不写这一格。回合开始重新解析过的、出错换了成员的是换了以后的。施工 8-18 多一格 `effort`：`{"level": <一档>, "from": …}`，接下来那个模型真用的思考强度和从哪来：`session` 是会话记的那一档（`session.configure` 的 `effort`，这个模型有它，施工 SM-1），`system` 是配置；请求里什么都不带的、轮换的池不写。
+
+**限额** `limits`：会话实际用的模型给这个会话多少地方（施工 6-3 补）。两格都是 token 数，没有的不写，从不写 `null`；两格都没有就是 `{}`。
+
+| 格 | 类型 | 说明 |
+|---|---|---|
+| `window` | 非负整数，可以没有 | 上下文窗口。模型的资料没报的没有（`compaction.md`「对外的样子」模型的资料） |
+| `compaction_line` | 非负整数，可以没有 | 压缩线：用量过了它，发下一次请求之前自动压（`compaction.md` 第二条第 2 条）。没有窗口的、窗口太小算不出正数的没有 |
+
+**默认工作区** `default_workspace`（施工 5-14 中）：这个会话的默认工作区，同会话列表那一格；造好以后不变，不另推。
+
+**有没有能压的** `compactable`（施工 W-12）：`session.compact` 这一刻会不会回 `nothing_to_compact`，判法同内核；之后照视图流的会话状态（`view.md`）换；事件流上变了推瞬时的 `compactable.changed`（施工 W-12 补，`kernel/events.md`）。
+
+**钉的压缩触发线** `compaction_line`（施工 CT-1补）：会话钉的百分数（`session.configure`、`session.create` 的 `compaction_line`），同 `view.status` 顶层的那一格，内核这一刻的：刚钉了、还没开回合的也是钉的；没钉的（跟着 `compaction.line`）不写。和 `limits.compaction_line` 同名、不同层：那一格是生效的压缩线，token 数，钉了以后下一个回合开始才跟着换；这一格是钉的百分数。之后变了照推过来的 `session.policy_changed` 的 `compaction_line` 换。头照它画会话设置：以前只能从最近一页事件里找 `session.policy_changed`，很早以前钉的找不到（终端的 `/compact-line` 报的，2026-11-12）。
+
+**钉的看图模型** `vision`（施工 CT-1补）：会话钉的看图模型的引用（`session.configure`、`session.create` 的 `vision`，施工 VM-1），同 `view.status` 的那一格；没钉的（跟着 `models.vision`）不写。之后变了照推过来的 `session.policy_changed` 的 `vision` 换（空的是去掉）。
+
+例子：会话照 `models.chat` 记下 `deepseek/deepseek-v4`，核心照 DeepSeek 的资料，窗口 1000000、最大输出 393216，压缩线 = 1000000 − min(393216, 20000) − 13000；没设默认人格，会话无人格，没有 `persona` 这一格（施工 P-4 上）（键照字母先后排）：
+
+```json
+{"id":"c2","jsonrpc":"2.0","result":{"compactable":false,"default_workspace":"<默认工作区>","jobs":[],"limits":{"compaction_line":850000,"window":1000000},"model":{"endpoint":"deepseek","model":"deepseek-v4","ref":"deepseek/deepseek-v4"},"permission":{"level":"full","read_only":false},"preset":"full","usage":{"amounts":[],"cache_breaks":0,"compactions":0,"main":{"cache_read":0,"cache_write":0,"output":0,"uncached":0},"requests":0,"unpriced":0,"usage":{"cache_read":0,"cache_write":0,"output":0,"uncached":0}},"workspace":{"cwd":"<工作区>","dirs":[]}}}
+```
+
+（`<工作区>` 是在 `~` 里造的会话退回的默认工作区，照真实的那个写，施工 9-7 上。）
+
+模型的资料没报窗口的：`{"id":"c2","jsonrpc":"2.0","result":{"limits":{},"model":{…}}}`。
+
+上面那个会话钉了压缩触发线 50、看图模型 `c/w`，还没开回合的（只列变了的几格，键照字母先后排）：`{"id":"c2","jsonrpc":"2.0","result":{"compactable":false,"compaction_line":50,…,"limits":{"compaction_line":850000,"window":1000000},…,"vision":"c/w","workspace":{…}}}`；开过一个回合以后 `limits.compaction_line` 是 500000。
+
+1. 订阅：从这一刻起的推送都转给这个连接。不写 `after` 的，以前的不补。没在跑的会话先载入。
+2. 不写 `after` 的：这个连接已经订阅着这个会话、还在推的，还是那一个，回应照样带限额；停了推的（掉了队、会话停了），换一个新的。写了 `after` 的总是换一个新的（「补发」第 6 条）。
+3. 取消订阅：停掉转发。不载入会话，没订阅过的也回 `{}`。
+4. 不写 `after` 的，订阅的回应不排在推送后面：会话正忙的，回应之前可能已经有这个会话的推送。写了 `after` 的排在补发的后面（「补发」第 2 条）。
+5. 限额、模型是造会话、载入时定的：会话 actor 把模型的限额交给内核以后，向内核要一份（`kernel/session.md` 的 `context_limits()`），连同端口的引用和接下来发给谁，`Handle` 带着它（`session/actor.md`）。会话中途会变：钉住的池出错换了成员、成了以后（施工 8-9），回合开始重新解析换了模型、钉着的没了、配置改了窗口的（施工 8-10），人换了模型、思考强度当场照预演的（施工 MC-1，`session.configure` 第 4 条），`Handle` 跟着换，之后的 `subscribe` 交新的，订阅着的头收到一条 `model.changed`（`models.md`「瞬时事件」，`why` 是 `failover` 或 `turn`）。
+6. 压缩线由内核算好，和它自己判到线用的是同一条；头照 `window` 画「用量 / 窗口」、照 `compaction_line` 算离压缩还有多少，不照公式自己算（公式里的输出预留、余量在策略里）。
+7. 限额不进日志：头每次接进来（造完会话、中途接进一个在跑的会话、掉了队重新订阅、核心重启以后）都经 `subscribe`，从回应里拿（为什么见 `04-核心协议.md` 第九节「先做的几样怎么写」）；接着的时候变了的，照推过来的瞬时 `model.changed` 换（施工 8-9）。
+8. 订阅着就算这个头在看着这个会话（施工 7-9）：一次性的会话没有头订阅着，回报只记下、不叫醒她（`agents.md` 第三条第 3 条）。取消订阅、连接断了，就不算了；会话 actor 数着拿着订阅的头（`session/actor.md` 第 3 条），不进日志，协议上不另说。头要知道还有几个子代理没报、叫醒的那一轮会不会来，照推过来的事件自己数（`job.started`、`child.reported`、`job.messaged`，`cli/ask.md`「等子代理」），协议不另给：施工 7-9 照最简单、不加协议定。
+
+9. **视图流**（施工 9-8 下，`view.md`「视图流」）：`subscribe {session, stream: "view"}` 总是换一个新的（这个连接原来订阅着这个会话的事件流、视图流都换掉：一个会话在一个连接上只有一个订阅，命令的回应都经它写出去）。回应除了上面几格，多最新一页的条目，格同 `view.page {view: true}`（`entries`、`more`，有条目的 `first`、`last`，`capped`），字照这个连接的语言；`jobs` 照旧是「当前的」在跑的任务，那一页里切点前派出、这一页报完的任务，条目里已经写了标题、命令。那一页和订阅在会话 actor 的同一步里拿，回应排在所有推送前面；之后推 `view.add`、`view.update`、`view.append`、`view.hidden`、`view.remove`（`{session, …}`，写法见 `view.md`）。读得慢的：攒着的一起算，同一条接着的 `view.append` 并成一条；还是掉了队、会话停了的推 `resync`（`{"session", "stream": "view"}`），头重新订阅。回应另带整份会话状态 `status`，之后变了推整份 `view.status {session, status}`（施工 9-8 补上，`view.md`「会话状态」）；视图流不推原始事件。工具在跑时印的进度（`tool.progress` 里 `miyu-progress: ` 开头的行）写进那一步的 `progress`，同一个调用最多每 0.5 秒推一次 `view.update`，压着的最新那条最迟 0.5 秒内推出来，结果到了去掉（施工 X-45 补，`view.md` 的 `tool` 条目）；事件流照旧推原样的 `tool.progress`。连接的 `ui.language` 改了，之后的条目照新的字，已经推过的不重推。`unsubscribe {session, stream: "view"}` 同第 3 条。
+
+**补发**（施工 3-8 六补，`04-核心协议.md` 第六节第 9 条、第七节）
+
+头切进一个已有的会话、掉了队、断了线重连，都带上 `after` 订阅，拿回以前的事件：头不读核心的存储（`01-架构.md` 第五节第 1 条）。
+
+1. 写了 `after` 的：日志里序号大于 `after`、订阅那一刻落了盘的事件，照原样一条条推过来（`event`，和实时推的一样），再接着推之后的，中间不丢不重。`upto` 是订阅那一刻落了盘的最后一条：补的是 `after + 1` 到 `upto`，之后推的从 `upto + 1` 起。
+   例子：日志里有 42 条，头看到第 30 条掉了线，重连以后 `{"session": …, "stream": "events", "after": 30}`：先推第 31 到 42 条，再是回应 `{"id":"c2","jsonrpc":"2.0","result":{"limits":{},"upto":42}}`；第 43 条以后的新推送可能在回应之前就到（第 2 条），头照序号认，不靠先后。
+2. 补的都在回应之前到（「先见结果，后见回应」）：回应交给新订阅的转发任务，排在补的后面。补完到回应之间，可能已经有新推的。
+3. `after` 不比 `upto` 小的，什么都不补，照常推新的；`upto` 照样是日志里最后一条，比 `after` 小的，是头记的比日志还多。
+4. 只补落了盘的：瞬时事件（`model.delta`、`tool.progress`、`status`、`model.changed` 这些）没有序号，不补。撤销、压缩、清空、撤回的事件照原样补，头照有效历史自己算怎么画（视图投影随 M9）。
+   例外（施工 9-8 八补，终端的会话 2026-10-17 要的）：订阅那一刻（写不写 `after` 都一样）这个会话正有一次模型请求在流的，补完落了盘的那一截以后、接着推之前，单给这个订阅推一遍这次请求到目前为止的块：每块先 `{seen, index, start, name?}`，有字的再一条 `{seen, index, text}`（到目前为止拼好的字，工具调用是参数的原文），供应商侧工具收到了结果的再一条 `{seen, index, outcome}`（施工 HT-1），收全了的再 `{seen, index, end: true}`，照块的先后。都是 `model.delta` 瞬时事件，形状和实时推的一样，`turn`、`by`、`cause` 也一样，`at` 是订阅那一刻；不带序号、不进日志、别的订阅收不到。之后的增量照常推，接得上：拼的和订阅在会话 actor 的同一步里（第 5 条），之前推过的都在拼好的里面。没在流的（还没发出去、一段都还没来、摘要请求、说完了的）什么都不补。中途接进来的头没见过前面的 `start`，后面的 `{index, text}` 不知道是哪一种块，以前只能丢。
+5. 补的那一截和新的订阅在会话 actor 的同一步里拿（`session/actor.md` 第 6 条）：那一步之前落了盘的都推过了，之后的都还没推。读日志不占 actor：端点在这个连接上读完这一截（阻塞线程里一次读完，不分批：载入会话本来就整份读进内存，照最简单的做），交给转发任务先写。从 `after + 1` 照序号定位着读，读到 `upto` 就停（施工 V-37 下：原来从头读到最后一段的末尾，`after` 以前的整个解完再扔），读的时候就一条条写成 `event` 通知、事件当场放掉，攒着的是写好的行（原来攒着整份事件，推的时候才写）：推出去的字节、先后和原来一样，读不了的照旧在推第一条以前就知道（第 9 条）；读的时候会话照常跑，新推的攒在这个订阅里。这个连接上的下一条请求，等读完才办（「一个连接」第 1 条）。
+6. 写了 `after` 的总是换一个新的订阅。这个连接原来订阅着这个会话的，先不再交回应给它，等它把手里的推送、回应都放进写队列，补的才开始写：两段不交错。新的订阅拿到了才放下旧的，这个头一直算看着（`subscribe` 第 8 条）。旧的推过、补的又补了的，序号是重的：头照序号认，补的是回应之前、从 `after + 1` 起连着到 `upto` 的那一段。
+7. 补的走同一个订阅，受同一个限：会话给每个订阅最多攒 1024 份（「慢和掉队」）。一次补得多、头读得慢、会话同时推得多的，照样掉队、推 `resync`，头带上最后看到的序号再来。
+8. `after` 不是非负整数的（负数、小数（`1.0` 也算）、字符串、布尔、数组、对象、超过 2^64 − 1 的）：`bad_params`，先查参数、不找会话，什么都没订阅。写 `null` 等于没写。`unsubscribe` 不认 `after`，写了不理。
+9. 读不了日志的（坏了、读的时候会话被删了）：`session_broken`，记一行运行日志 `replay not read`，什么都没订阅（原来订阅着的也停了）。没有要补的（第 3 条）不读日志。只读要补的那一截（第 5 条，施工 V-37 下）：坏的地方在 `after` 以前（定位只数换行、跳过的那一截不自检）、在 `upto` 以后的，不读、不报（2026-11-03 项目主人定；原来从头读到末尾，坏在哪都回 `session_broken`），下次打开这个会话照样整份自检、查得出来。
+10. 会话停了、没在跑的，照「会话表」：停了的回 `session_stopped`，下一次再载入；没在跑的（核心重启过、停下过全部会话）先载入，再照样补。
+
+**会话列表的推送**（施工 9-5，2026-10-07 项目主人批准 M9 头几步时定、提到 O 线前面：网页的侧边栏要对每个会话订阅整份日志才画得出标题、在跑，会话一多就慢；形状先给终端界面、网页看过）
+
+1. `subscribe` 的 `sessions`：回应 `{"sessions": […]}`，每一项和 `session.list` 的一样（`busy`、`cwd`、`last_active`、`named`、`oneshot`、`parent`、`pinned`、`session`、`title`，有的才写照那边），从新到旧，全部：一次性的、子会话都在。一个连接至多一个；再订阅换一个新的（交回一份新的列表，旧的停掉）。`unsubscribe` 停掉它，没订阅过的也回 `{}`。
+2. 之后推 `sessions.changed`：`{"session": <编号>, "entry": <一项>}`，头照编号整项替换；删掉的是 `{"session": <编号>, "removed": true}`。
+3. 什么时候推：造了会话（主会话、子会话、一次性的）；改名、置顶（人改的、内核起的标题都算）；一轮开始（`busy`、`cwd`、`last_active` 跟着变）；一轮结束、会话空下来（`busy` 去掉，`last_active` 跟着变）；人发了话（`last_spoken` 跟着变，施工 SX-1：开一轮的那一句和 `turn.started` 同一批，回合中途插的一句只有它）；删了。`last_active` 只在这几个时刻跟着走，不是每条事件都推。「未读」由头自己拿 `last_active` 和自己看过的比。
+4. 先后：一项一项照核心里一个排队的任务算，一个接一个；订阅的回应里的列表也由它算。所以回应里的列表包含回应之前的每一次变化，之后推的每一条都比它新，旧的一项盖不住新的。推送和别的命令（例如 `session.create`）的回应之间不保证先后：推的是整项，晚到的照样对。
+5. 读得太慢、掉了队：推 `resync`（`{"stream": "sessions"}`），这个订阅停了，头重新订阅。
+6. 场所会话以后也不进这个流（`18-通讯平台.md` 第十一节）。推给订阅着的全部连接。
+7. 怎么知道变了（`session/actor.md`「推送和订阅」第 7 条）：会话每送完一批，照这一批推过的事件（`session.created`、`session.meta_changed`、`turn.started`、`turn.ended`、人说的 `message.user`）和忙不忙变没变，经会话表的端口报一声「这个会话的那一项变了」（`SessionPort::listing`）；端点照会话列表的索引只算这一个会话的一项（和 `session.list` 同一个函数）。造会话、删会话由会话表自己报。不靠订阅每个会话的事件流：订阅着就算有头在看着它（`subscribe` 第 8 条）。
+
+**软件包列表的推送**（施工 F-8 三补，0.0.1 差距清单「别的头装卸软件包时推」，主会话定的形状：照会话列表、扩展的状态的推送）
+
+1. `subscribe {"stream": "packages"}`：要先握手（`hello_first`），不带 `after`（写了 `bad_params`）。回应 `{"packages": […]}`，同 `package.list`，照这个连接的语言。一个连接至多一个；再订阅换一个新的。`unsubscribe` 停掉它，没订阅过的也回 `{}`。
+2. 之后推 `package.changed`：`{"package": <编号>, "entry": <一项>}`，头照编号整项替换；列表里没有了的（装上的卸掉了）`entry` 是 `null`。卸掉的出厂包照旧列着，`entry` 带 `removed: true`。
+3. 什么时候推：核心重读清单的前后（装、升级、卸、装回、关掉出厂的内置包，哪个连接、命令行做的都算），照英文各算一份每个包在列表里的样子，多了的、少了的、变了的各推一条（`packages/changes.rs`）；扩展的开关、状态变了，列表里那一项的 `status`、`enabled` 跟着变，也推（和 `extension.changed` 同一个时候）。推的是这一刻照这个连接的语言算的整项，重复了、晚到的都对。
+4. 读得太慢、掉了队：推 `resync`（`{"stream": "packages"}`），这个订阅停了，头重新订阅。
+5. 系统配置里的 MCP 服务（施工 F-9 补）：状态变了、系统配置里加了、删了，推 `mcp.changed`：`{"name": <服务名>, "server": <一项>}`，一项同 `mcp.list` 的一项，删掉了的 `server` 是 `null`。它们不是包，不推 `package.changed`。盖住、放开了包里同名服务的，那个包的 `package.changed` 照推（`covered` 变了）。
+
+**头自己的设置**（施工 HP-1，2026-11-03 主会话定：网页把皮肤、配色、主题、吉祥物、网页包的设置存在浏览器里，浏览器照地址分，`127.0.0.1`、`localhost`、局域网地址、手机各看到一份，旧版就是这样；存进数据根，跟着人走）
+
+1. 只有界面包有：`package` 是装着的包（`Core::system_packages` 里有它），清单是 `[ui]`（`PackageKind::Ui`）。没装的、编号不合写法的 `unknown_package`，装着别的种类的 `not_a_ui_package`，都不碰文件。只开给界面包：文件写在那个包的状态目录里，扩展、小程序的状态目录归它们自己的程序，核心不往里放东西；以后要开给别的种类是只加不改（反过来收窄就是改意思了）。
+2. 存在 `DataRoot::package_state(<包>)` 里的 `prefs.json`（`var/lib/<包>/prefs.json`），整份就是那个 JSON 对象，一行、末尾一个换行，照只给自己看的 JSON 小文件写（`private_json`：临时文件建在 `run/`、改名盖上，Unix 上 0600，替换前再读一次、撞上手改的从头再来，最多三次）。卸包时随状态目录一起删（`DataRoot::package_places`）。这个名字归核心，头自己别用。
+3. `prefs.get {"package"}` → `{"values": {…}}`：整份；没有这个文件的是 `{}`。
+4. `prefs.set {"package", "values": {键: 值或 null}}` → `{"values": {…}}`：照顶层的键并，写了的整个换成新值（值是任意 JSON，对象不往里并），`null` 的删掉这个键；交回并好的整份。`values` 不是对象、没写 `package` 的 `bad_params`。并好的整份写成紧凑的 JSON（`serde_json::to_vec`，不带空白）超过 64 KiB（65536 字节）的 `prefs_too_big`，`data` 带 `size`、`limit`，什么都不写；正好 64 KiB 的收。并好了和原来一样的（`values` 是 `{}`、写的和原来的一样）不写文件、不推。
+5. 改、写、推在一把锁里排着做（`Core::prefs`），推的先后就是写的先后。推给订着这个包的别的连接：`prefs.changed {"package", "values"}`，`values` 是改好的整份。改的那个连接不推：回应里就是整份，再推一次头会照它把人正拖着的滑块拉回去。它是不是改的那个照写队列认（`reverse::Peer::writes_to`：广播里带着改的连接那一头，转发任务拿自己的写队列比）。
+6. `subscribe {"stream": "prefs", "package"}`：先过第 1 条（同样的拒绝），先拿收推送的一头再读一份，回应 `{"values": {…}}` 交给新的转发任务先写，之后推的都不比它旧。一个连接一个包一个，再订阅换一个新的；`unsubscribe {"stream": "prefs", "package"}` 停掉，没订过的也回 `{}`。不带 `after`（写了 `bad_params`），没写 `package` 的 `bad_params`。读得慢掉了队推 `resync {"stream": "prefs", "package"}`，这个订阅停了，头重新订阅。
+7. 只给人（施工 HP-1，主会话定）：扩展、平台桥调 `prefs.*`、订 `prefs` 流一律 `local_only`（`extensions.md`「谁能调」）；用一次性码连上的照旧 `setup_first`。远程的连接（网页软件转来的手机、局域网）照常能用：这本来就是给它们的。
+8. 文件读不了、超过 1 MiB、不是 UTF-8 的：`internal_error`，记一行 `WARN prefs unreadable`。是 JSON 但不是一个对象的（手改坏了）当没有：`get` 回 `{}`、`set` 从空的并起、盖掉它，记一行 `WARN prefs not an object`。写不进的 `internal_error`，记一行 `WARN prefs not written`。
+
+**`mcp.*`**（施工 F-9 补，系统配置里的 MCP 服务，`mcp.md`「系统配置里的一张表」；只给本机的人用，扩展调回 `local_only`）
+
+- `mcp.list`：不带参数。回应 `{"servers": [...]}`，照系统配置里写的先后；一项同软件包列表上服务的那一格（施工 X-4）：`name`、`command`（照写的，`~/` 没换）、`venues`、`state`、`failures`，在跑的 `pid`，在等的 `retry_in`，停下的 `reason`、`stderr`；另带 `covers`：它盖住了哪些包里的同名服务（包的编号）；知道有哪些工具的另带 `tools`：这个服务这时在工具目录里的工具名，照目录的先后，起好列完的、照目录缓存先登记的都算（同 `preset.get` 里 `mcp-<名字>` 的工具），还不知道的（没起过、没缓存）没有这一格（施工 X-26）。`on` 是全局开关 `features.mcp-<服务名>`，没写的是 `true`（施工 X-27）。编辑页要先填上原来写的（施工 X-27 补）：`env` 照写的，值是字（照原样，它本来就明文写在系统配置里；要藏的写成密钥的引用）或者 `{"secret": 名字}`、`{"env": 变量}`，没写的没有这一格；`timeout_ms` 不是默认的才带。`command` 是程序加参数，交回 `mcp.set` 时拆成 `command`、`args`。
+- `mcp.restart {"name"}`：停下、再起，连续失败从零数，工具留在目录里、起好列完照新的换（同 `package.restart`）。回应是那一项。系统配置里没有这个名字的 `unknown_server`。
+- `mcp.set {"name", "command", "args"?, "env"?, "venues"?, "timeout_ms"?, "clicall"?}`（施工 X-26，网页设置页要的编辑页；以前的 `need_load` 施工 AUD-2 起不认，同别的不认识的格 `bad_params`）：在系统配置里加上一张 `[mcp.<名字>]`，或者整条换掉同名的那一张；`command` 是程序，`args` 接在后面，写成 TOML 的 `command` 数组；`env` 的值是字，或者 `{"secret": …}`、`{"env": …}`；没交的格子不写（照读服务表时的默认），只有 `clicall` 没交的照原来写的 `clicall = false` 留着（施工 M-2：网页的编辑页还不认这一格）。写之前照读服务表的规矩查这一张（名字的写法、命令不空、给哪种会话、时限），写错的 `mcp_invalid`（`data.problem` 照连接的语言说哪里不对，同装包时清单写错的说法）；写法照 `config.set`（拿着配置服务的锁先重读、带版本替换、撞上手改从头再来，写成了记日志、推 `config.changed`，`keys` 是空的）。系统配置里没写这个名字、有包带着同名服务的 `server_from_package`：随包来的不经它改。新写的一张接在文件末尾；换掉的放在原来表头的位置，连同它的子表一起换，别的字节不动。系统配置读不进来、`mcp` 写成了值、行内表、`[[mcp]]` 的 `config_file_broken`。回应 `{"name"}`，服务随后照「系统配置手改了」那条路换（`mcp.md`「系统配置里的一张表」第 6 条），状态变了推 `mcp.changed`。
+- `script.list {}`（施工 X-27，`skills.md`「脚本」；人、扩展都能调）：回应 `{"scripts": [...], "dir"}`（`dir` 是你自己放脚本的文件夹，数据根的 `root/scripts/`，还没建的也照写、家目录下的写成 `~/…`，网页「打开目录」用，施工 X-27 补；`skill.list` 同样多 `dir`，是数据根的 `root/skills/`），登记上的脚本照工具名排，一项 `{"tool", "display_name"?, "description"?, "from", "package"?, "path", "timeout", "on"}`：`display_name`、`description` 是脚本开头给人看的一槽，照连接的语言挑（同 `skill.list`）；`from`、`package`、`path` 同 `skill.list`；`timeout` 是秒；`on` 是全局开关 `features.script-<工具名>`，没写的是 `true`。`skill.list` 每项同样多 `on`（`features.skill-<名字>`）。
+- 改加载方式的 `tool.set_loading`（施工 X-27）没有了（施工 AUD-2，2026-11-13 项目主人定：还没发版，不背旧兼容）：施工 FL-1 起工具一律全量，它成了什么都不改的空方法，两个头早已不调；从协议 1 的方法清单 `docs/reference/methods-v1.txt` 里拿掉，再调是 `unknown_method`。
+- `feature.set {"feature", "on": true|false|null}`（施工 X-27）：写系统配置的 `features.<功能编号>`，`null` 删掉；只收 `skill-`、`script-`、`mcp-` 开头的，别的 `bad_params`。写法照 `config.set` 改一项（带版本、撞上手改从头再来、推 `config.changed`），回应 `{}`；写不进键的、少了 `on` 的 `bad_params`，别的同 `config.set`。只给人。
+- `mcp.remove {"name"}`（施工 X-26）：从系统配置里删掉这一张（连同子表、后面的空行；在文件末尾的连前面的空行），回应 `{}`；没写这个名字的 `unknown_server`。
+
+**记忆日志的推送**（施工 R-12 上，`memory.md`「协议」；2026-10-11 项目主人定：给什么核心定、照仿 Linux 的原则给，一切皆文件、日志式，怎么画是头的事）
+
+记忆日志就是真相：订阅它就是 `tail -f`，`memory.list` 是照它算好的现在的样子（`/proc`）。条数、分类、时间线这些头照这两样自己算，核心不另给汇总。
+
+1. `subscribe {"stream": "memory", "persona"? | "session"?, "after"?}`：找哪一间、装没装、听众同 `memory.*`（上面「`memory.*`」第一段）：人格记忆没装的 `memory_not_installed`，两样都写的 `bad_params`，没有记忆的 `memory_unavailable`，找不到的照那边。`after` 照「补发」第 8 条，写错了 `bad_params`、先于找那一间。记忆日志开不了、补的那一截读不出来：`internal_error`，记一行 `memory failed`，什么都没订阅。
+2. 写了 `after` 的：记忆日志里序号大于它、订阅那一刻落了盘的，照先后一条条推过来，再回应 `{"upto": <那一刻的最后一条，一条都没有的是 0>}`，之后从 `upto + 1` 接着推，中间不丢不重（读和登记在记忆日志的同一把锁里）。不写的不补，只推之后的。补的那一截在阻塞线程里一次读完。
+3. 推 `memory.event`：`{"event": <日志里那一行>, "persona"? | "session"?}`。`event` 是记忆日志里的事件原样（外壳同会话日志：`seq`、`at`、`kind`、`by`，人经协议、斜杠命令写的带 `cause`；`body` 照 `memory.md`「记忆日志」那张表），`persona`、`session` 照订阅时写的原样带回去（都没写的都不带）。
+4. 挑哪些：说的是一条的（`ext.memory.saved` 是它自己，`ext.memory.retired`、`ext.memory.restored` 是它说的那一条，后者施工 R-12 下），那一条的听众不合这个连接的人的不推（同 `memory.*`）；整间的（`extracted`、`merged`、`summary`、`cleared`，施工 R-17 起还有 `merging`、`merge_failed`，R-19 起还有 `swept`，E-1 下起还有人卡 `card`、`card_retired`）照推。补的时候另外不补：清掉了的那几条和作废它们的、清空以前的摘要、整间清空以前的人卡（施工 E-1 下）（里面有清掉的字；清掉的哪里都不出来，`memory.md` 第二条第 5 款），出处全死了的那几条和作废它们的（当它不在，`17-记忆.md` 第六节）。之后追加的推的时候还没清、出处刚记下，照推；之后清空了、撤销了一轮，现在的样子照 `memory.list` 重新列。
+5. 一个连接一间至多一个，照订阅时写的原样认（写法不同的，例如不写人格和写了默认人格，算两个）：再订阅同一间换一个新的；`unsubscribe {"stream": "memory", "persona"? | "session"?}` 停掉它，没订阅过的也回 `{}`，不找那一间。
+6. 读得太慢、掉了队：之后的最多攒 64 条没写出去的（「慢和掉队」第 1 条），再多推 `resync`（`{"stream": "memory", "persona"? | "session"?}`），这个订阅停了；头带上最后看到的序号（`after`）重新订阅，掉的那一截补回来。
+7. 整理时她正在写什么（施工 R-21，`memory.md` 第七条第 12 款；2026-10-19 项目主人要「能实时把当前处理的条目显示出来」）：订阅回应以后，这一间整理的每一批，模型写完一条改的、作废的就推一条 `memory.dreaming`，摘要推写到第几个字。不落盘、不补、掉了就掉了（同压缩的 `compaction.progress`）：落的照全部核对过，可能少几条，真相是之后那几行 `memory.event`。说的那一条这个连接听不见的不推（同第 4 条）；推以前遮过 key。
+
+#### 推送
+
+| 方法 | `params` | 什么时候 |
+|---|---|---|
+| `event` | `{"session": <编号>, "event": <事件>}` | 订阅着的会话的每一条事件，一条一个；补发的也是它（施工 3-8 六补） |
+| `resync` | `{"session": <编号>, "stream": "events"}`；配置的是 `{"stream": "config"}`（施工 8-4），会话列表的是 `{"stream": "sessions"}`（施工 9-5），记忆日志的是 `{"stream": "memory"}` 加订阅时写的 `persona` 或 `session`（施工 R-12 上），界面块的是 `{"stream": "widgets"}`（施工 X-15 中），定时任务的是 `{"stream": "schedules"}`（施工 J-1 下），头自己的设置的是 `{"stream": "prefs", "package"}`（施工 HP-1） | 读得太慢，掉了队：这个订阅停了 |
+| `sessions.changed` | `{"session": <编号>, "entry": <一项>}`，删了的 `{"session": <编号>, "removed": true}`（施工 9-5） | 订阅着会话列表的：上面「会话列表的推送」第 3 条那几种时刻 |
+| `schedules.changed` | `{"id", "entry": <一项>}`，删了的、一次的跑完了的 `{"id", "removed": true}`（施工 J-1 下，`schedules.md` 第五节） | 订阅着 `schedules` 的：一个任务建了、停了、续了、删了、到点交过了 |
+| `prefs.changed` | `{"package", "values"}`：改好的整份（施工 HP-1） | 订阅着这个界面包的设置的别的连接：「头自己的设置」第 5 条 |
+| `notice` | `{"kind", "at", …}`：`schedule.ran {schedule, session, ok}`、`schedules.reset {}`（施工 J-3 中，`schedules.md` 第七节） | 订阅着 `notices` 的：每次新开会话的定时那一轮结束了、唤醒表坏了换了一份空的 |
+| `notices.claimed` | `{"claimed"}`：有没有连接认领了发后台通知（`notices.claim`）变了（施工 TR-1） | 订阅着 `notices` 的：第一个认领的来了、最后一个走了 |
+| `config.changed` | 见 `config.md`「推送 `config.changed`」（施工 8-4） | 订阅着配置的：系统配置每变一次 |
+| `models.changed` | `{"providers": [<编号>…]}`，不带条目（施工 V-26，`models.md` 第二条第 10 条） | 订阅着配置的：核心在后台拉到的供应商模型列表和原来的不一样 |
+| `memory.event` | `{"event": <记忆日志里那一行>}` 加订阅时写的 `persona` 或 `session`（施工 R-12 上） | 订阅着一间的记忆日志的：上面「记忆日志的推送」第 3、4 条 |
+| `memory.dreaming` | `{"upto": <这一批，同它的 merging>, "kind": "revised", "id", "text"}`；`{"upto", "kind": "retired", "id", "retire": "outdated" \| "repeat" \| "worthless", "kept"?, "why"}`；`{"upto", "kind": "summary", "chars", "done"}`；都加订阅时写的 `persona` 或 `session`（施工 R-21） | 订阅着一间的记忆日志的：上面「记忆日志的推送」第 7 条，整理时她每写完一条（摘要每多 20 个字、写完）一条 |
+
+推送的事件不都由这个连接的命令引起：内核自己起的标题（`session.set_meta` 第 6 条，施工 3-8 五补）一轮答完以后自己来，没有 `cause`。
+
+`event` 里的事件照原样嵌进去：落了盘的照 `kernel/events.md` 的写法，样本在 `internal/designs/samples/events/`；瞬时的 `model.delta`、`tool.progress`、`status`（施工 8-9 起换了端点的多 `failover`）、`model.changed`（施工 8-9，会话接下来请求的模型、限额变了，`models.md`「瞬时事件」）这些没有 `seq`，样本在 `internal/designs/samples/transient/`。
+
+### 怎么走
+
+**一个连接**
+
+1. 请求一条条办：上一条的回应放进了写队列（订阅着的会话的，交给了它的转发任务，下面「先见结果，后见回应」），才读下一行。要等的（`session.send` 等落盘，撤销等改完文件，载入会话）等着的时候，这个连接上的下一条也等着。例外是在后台答的：登记成在后台答的查询（现在只有 `link.preview`，施工 W-7），和自带的 `model.call`（要等模型说完，施工 8-20 补）、`memory.dream`、`command.run` 的 `/dream`（几秒到十几秒，施工 R-7 补）、`job.stop`（停子代理要等它连它派的停下、回报落了盘，几秒；一下子停上百个不能排成一队，施工 7-4 修，2026-10-26；`command.run` 的照命令表问，别的命令照旧按顺序答），由 `methods.rs` 的 `answered_later` 认：交给这个连接的一个后台任务，接着读下一行；办完了回应照 `id` 对上，照办完那一刻的订阅走「先见结果，后见回应」第 1 条（`/dream` 的回应排在它那条 `command.ran` 后面，和按顺序答的命令一样；`subscriptions/later.rs`），别的直接放进写队列；连接断了，这些任务一起停。
+2. 读和写分开：写的一头从写队列里一行行写出去，队列最多攒 256 行。这时已经排在队列里的几行一起写、只冲一次（施工 V-22，`connection/outbox.rs`）：不等后面的，一次最多攒 256 KiB；写出去的字节、先后和一行行写的一模一样（回应、推送都从这一个队列出来）。流式时一个字一条推送，以前每条两次写、一次冲。写不出去就停；读的一头往写队列放回应、放不进去时发现，断开（交给转发任务的那一条放得进，要到再下一条）。
+3. 断开：`protocol_mismatch`、`bad_token` 回完；对方关了、读出错。一行太长的只回 `line_too_long`（施工 YC-5），不断开（施工 FX-1）。
+4. 断开以后，这个连接的订阅都停了。会话照常跑：头走了，在跑的那一轮照样跑完。
+
+**办之前过的几道**（施工 Y-2 上收到一处，`crates/miyu-endpoint/src/connection/checks.rs`：每一条路都过同一道检查）
+
+1. 凭据决定的闸（施工 W-8、Y-1 上）：一次性码连上的只能设密码（`setup_first`）。
+2. 本机才能用的（施工 Y-1 下）：远程连上的当场拒。
+3. 扩展照它声明的能力挡（施工 X-30，`extensions.md`「谁能调」）。
+4. **关着的场所会话只给桥**（施工 Y-2 上，SU-4 中改）：参数里写了 `session` 的，那个会话关在沙盒里（群、陌生人的私聊）、这个连接又不是接这个平台的桥的，一律 `session_not_found`，参数都不看（看不到的不露，不回「没有权限」）；没写、写法不对、没有这个会话的照方法自己的说法。参数里别处写着会话的照同一套判（`sessions::reachable`）：`schedule.add` 的 `target.session` 碰不到的回 `bad_params`、`data.problem` 是 `session`，和没有这个会话一个说法（施工 AS-3）。人的头（没有包的连接）对它们只读（施工 VW-1；2026-10-23 项目主人定场所会话只读、不从头上交互，2026-11-12 定「查看会话只看不发」）：只读的方法放行，表在 `sessions/peek.rs` 的 `READS`，默认拒——`subscribe`、`unsubscribe`、`view.page`、`view.detail`、`session.prompts`、`session.tools`、`session.context`、`session.usage_parts`、`job.output`，再加不走这一道的 `blob.get`、`session.shown`；表外的（发话、重做、换配置、`set_*`、打断、撤销、压缩、删这些）照旧 `session_not_found`。三处共用一个判法（`sessions::peeks`），`sessions::reaches`（`schedule.add` 的 `target.session`、HK-2 挑 `tool.after` 收件人）不变。平台桥、扩展照旧。主人本人的私聊不关（`venues.md`「不在本机的头上」）。`blob.get` 不走这一道，它照会话找 blob 另有规矩、拒的一律 `unknown_blob`；`session.shown` 同样不走（施工 SW-1），拒的一律 `unknown_shown`。
+5. 连接从接上起就算连着，握没握手都算，断开才不算；没握手的最多连 10 秒（握手第 7 条）。
+
+**先见结果，后见回应**
+
+1. 方法的回应，`params.session` 这个会话在这个连接上有订阅的，交给这个订阅的转发任务；`config.set` 的回应，这个连接订阅着配置的，交给配置的转发任务（施工 8-4）：它先把已经到了的推送都放进写队列，再放回应。会话先推送、后回应（`session/actor.md`），回应到的时候，这条命令产生的推送一定已经到了。在后台答的（「一个连接」第 1 条）照办完那一刻有没有订阅（施工 R-7 补）。
+2. 别的回应直接放进写队列：没订阅的会话的；`params` 是数组的；`hello`、不写 `after` 的和被拒的 `subscribe`、`unsubscribe` 的；握手以前的拒绝；读不懂的行的。写了 `after`、订阅上了的 `subscribe`，回应交给新订阅的转发任务，排在补发的后面（「补发」第 2 条，施工 3-8 六补）。
+3. 订阅停了推（掉了队、会话停了），转发任务接着替这个会话转回应，直到这个订阅被取消、被新的换掉，或者连接断了。
+
+**慢和掉队**
+
+1. 头读得慢：写队列满了，转发任务等着，不再从会话那里拿。会话给每个订阅最多攒 1024 份没读走的推送，再多就掉了队。配置的推送最多攒 16 条（施工 8-4），记忆日志的 64 条（施工 R-12 上：一轮至多追加几条，整理一次几十条）。核心和会话都不等这个头。
+2. 掉了队：推一条 `resync`，这个订阅停了，之后不再推；回应照样到。头重新 `subscribe`：不写 `after` 的从那一刻起再推，掉了的不补；带上最后看到的序号（`after`）的，掉的那一截补回来（「补发」，施工 3-8 六补）。
+3. 会话停了：这个订阅也停了，推一条 `resync`（施工 4-9 再补三上）：头重新订阅，会话照「会话表」重新载入。
+
+**同一个命令编号**
+
+1. 会话接受过的编号再来（每个会话记最近 1024 个）：照上一次回应，不再产生事件；那几条事件还没落盘的，落了盘再回。载入时从日志里认回来：`cause` 是这个编号的那几条就是回应的 `events`，和当时的回应不一定一样。
+2. 同一个编号换了参数再来（换了一句话、换成了别的命令）：拒绝，`id_reused`，不交回上一次的结果，什么都不记（施工 YC-7）。比的是收下时记的指纹，只在内存里：核心重启以后从日志认回来的编号没有指纹，再来照第 1 条回（老规矩）。回顾不记编号，也不比。
+3. 被拒绝的编号不记：再发，重新判。
+4. `session.create` 另记，见上。
+5. `command.run` 在交给会话之前先照 `id` 查一遍（「`command.run`」第 7 条，施工 YC-7补）：斜杠命令先做事、后交内核记，等到这里才去重就晚了。
+
+**会话表**
+
+1. 在跑的会话直接用；没在跑的从磁盘载入。载入时整张表锁着：两个连接同时说给同一个没在跑的会话，只载入一次、只起一个。
+2. 没有这个会话的日志：`session_not_found`。日志中间坏了一行、坏行以前还有的（施工 YC-6）：`session_read_only`，`data.segment` 是哪一段（只写文件名），`data.line` 是第几行；坏行以前的照 `view.page` 看得到，会话不载入、不能接着聊，要继续新开一个会话；日志不截、不修（2026-11-10 项目主人定）。别的载入不了（日志坏在第一条、策略快照坏了、读不了）：`session_broken`。都把原因记进运行日志（`WARN load failed`）。
+3. 发命令、订阅时会话已经停了（写不进去、出了 bug）：从表里拿掉，回 `session_stopped`；下一次用到再载入。
+4. `session.send` 带着 `cwd`、`dirs`，和这个会话上一次报的不一样：照「工作目录太宽」重新定实际干活的目录，送进会话，到下一个边界才注入（`kernel/request.md`）；会话这时停了的，回 `session_stopped`。不带的、一样的，照旧。
+5. 载入时没有报来的 `cwd`（`session.interrupt`、`session.revert`、`session.unrevert`、`session.redo`、`session.compact`、`session.set_permission_level`、`session.clear`、`session.recap`、`session.set_meta`、`subscribe` 载入的）：照日志里最后一条带 `cwd` 的 `turn.started`（加进来的目录照最后一条 `turn.started` 的 `dirs`，没有就是没有（施工 5-10 上）），没有就照 `session.created` 的，都没有（之前的日志）才当报来的是 `~`，退回默认工作区（施工 4-9 再补三上）。施工 V-2 三补起由载入读日志时顺手认（`Workplace::Remembered`，`session/actor.md` 第 2 条），会话表只交挑法，不另读一遍日志。核心重启以后撤销，路径照会话真正的目录写短。
+6. 会话留在表里，直到核心退出、停下全部会话、删了它（`session.delete`）、用到时发现它停了，或者闲够了退下（第 9 条）、内存紧时闲着退下（第 10 条）。
+7. 造会话、载入时，交给会话一份造子会话的端口（施工 7-5，`session/tools.md`「派子代理」）：会话里派出去的子会话由会话表造，放进表里，和头造的一样照编号找得到、只起一个；子会话也算进「有没有会话忙着」，停下全部会话时一起停。父会话已经不在表里的（删了、停了）不再造，派不了（施工 3-8 三补：不留下没有父会话的子会话）。
+8. 载入一个会话、放进表以后，在后台收掉它派到一半的空子会话（施工 7-8，`agents.md` 第一条第 8 条；施工 V-2 三补起不挡着载入：认在阻塞线程里、不拿表的锁，认出来有的才拿锁收）：它的日志里有没派成的 `subagent` 调用（以前造的会话里叫 `agent`，也算；结果里没有 `job.started`，或者还没有结果）才去认，认的是放会话的目录里 `session.created` 的 `parent` 是它、它的日志里又没有这个子会话的 `job.started` 的，连同它们派的。有没有没派成的、记下了哪些，是载入读日志时顺手记下交回的（施工 V-37 上），认的时候不另读它的日志；照的是载入读完日志的那一刻，比原来后台读完日志的那一刻早，不晚：载入以后才记下的 `job.started` 不在里面（原来后台那一读以前记下的在里面）。这只在要认的时候有差别：载入以后才派出去的子会话正赶上这一趟认，会被当成空子会话收掉；原来是还没记下 `job.started` 就赶上的才会。这条缝原来就有，一样窄（要恢复的那一轮在认完以前就派了子代理），另记（施工 V-37 上施工单「不做什么」）。在跑的停下（`Handle::discard`），目录挪进回收处，最深的在前，照 `session.delete` 第 7 条。一个记一行 `INFO orphan subagent removed`；挪不走的记一行 `WARN`，不耽误载入。
+9. 闲够了退下（施工 V-2 再补，`07-存储.md` 第七节第 3 条，`sessions/idle.rs`）：表里第一次放进会话时起一个任务，隔一阵拿着表的锁问一遍。没有回合在跑、没人订阅、除了表里那一个没有别的把手（正在办的请求、订阅着的头都拿着一个）的，问它闲够 3 分钟了没有（`Handle::retire`，会话照自己的账答，`session/actor.md` 第 9 条）；退下了的、已经停了的从表里拿掉，下次用到照第 1 条载入。拿着锁问：这时谁也拿不到新的把手，退下和再载入不会同时有两个写者。一批批问（施工 MEM-5）：拿着锁照编号往后挑出至多 64 个要问的（`BATCH`；有回合、有人订阅、有别的把手的照旧只计数，不占名额），一起问（`Handle::retire_each`：问话先都送进收件箱，再一个个收回答，整批共用 1 秒的时限），拿掉退下了的、放锁；下一批从上一批挑到的编号后面接着挑，挑不满一批的是到了表尾。每一批照旧拿着锁看、问、拿掉，握手不变；批与批之间别的请求（开会话、说话、列会话）拿得到锁（锁先来先得，卸的这一头排在它们后面），这一遍中途放进表里、编号排在后面的接着问，排在前面的等下一遍。原来问完整张表才放锁，机器被挤满时问一个要排两圈运行队列，一万个会话拿着锁 43 秒，测活请求等锁超时（2026-11-13 bm 复测，施工单 `MEM-5-卸会话不长拿锁.md`；不放锁问的理由也在那里）。下一次隔多久问：答了还差多久的，取最少的那个；都没得问的，过 3 分钟（两次之间至少 10 毫秒）。退下的会话 actor 放掉的内存还给系统（`heap.md`）。封存了的会话（支线）没事了自己报一声（施工 V-51，`SessionPort::retirable`，`session/actor.md` 第 9 条）：记下、叫醒这个任务，它当场拿着表的锁只问报了的那几个，问法同上（有回合、有人订阅、有别的把手的不问，问了照会话的账答）；没问成、答了还有事的不再记着，等会话下一次报；不在表里的不管。报可能是在表的锁里放下把手时来的，只记下、不拿表的锁。隔一阵问的那一遍照旧按原来的点。
+10. **内存紧时卸闲着的会话**（施工 MEM-2，`sessions/pressure.rs`；2026-11-12 项目主人定，取代施工 MEM-1 的「内存不够不开新会话」）：内存紧时，表里闲着的会话当场退下，不等闲够 3 分钟；退下就是第 9 条那个退下（一批批问、批间放锁，施工 MEM-5；同一个挑法：没有回合在跑、没人订阅、除了表里那一个没有别的把手的才问，会话照自己的账答，还有事的不退），日志都在盘上，下次用到照第 1 条载入。问法是 `Handle::retire(Retiring::Tight)`（施工 MEM-3）：不看闲多久；记忆抽取的闹钟上着、还没响的不算还有事（`memory.md` 第六条第 1 款：退下就和核心退出一样，这一段等它下次载入、闲下来再抽），在路上的、不等闲的那一次在等着的照旧算；别的还有事照第 9 条（`session/actor.md`「退下」）。有头订阅着的不卸（2026-11-12 项目主人定）。MEM-2 照 0 问、闹钟也算还有事，本机开着记忆的会话每一轮结束上一个 30 分钟的闹钟，闲着、断开了的会话一个都卸不动（2026-11-12 bm 复测：限 1.5 GB 时近两千个断开了的一个没卸，只卸得动刚造好、还没说话的；限 18 GB 时一次都没卸成）。不拒开会话、载入、分叉、造子会话：机器卡死的时候人也得开得了会话救场（MEM-1 低于 5% 一律拒，别的程序吃光内存、核心才几百 MB 时人也开不了；一下子涌进来的几百个会话读数留 1 秒全放行，开着的接着长照样撑爆，2026-11-12 复测）。
+   - **紧不紧**（`judge`）：读 `miyu_heap::room`（`heap.md`「还剩多少内存」）。门槛（`threshold`，施工 MEM-4，2026-11-13 core1 定）：总量的 10%、最多 2 GiB，不低于总量的 5%，即 max(5%, min(10%, 2 GiB))，照整数往下取整（`FLOOR_PERCENT` 5、`SPARE_PERCENT` 10、`SPARE_CAP` 2 GiB，常量，不做配置项）：1.5 GiB 的是 153.6 MiB，18 GiB 的是 1843.2 MiB，20 到 40 GiB 的是 2 GiB，100 GiB 的是 5 GiB。核心所在的 cgroup 有上限、可用少于上限的门槛的紧；整台机器可用少于物理内存的门槛、而且核心自己的常驻（`miyu_heap::usage::resident`，只在整台机器近线时读）占整台机器已用（总量减可用）的一半以上（`MOSTLY_MINE`，50，正好一半的算）的紧。别的不紧：整台机器紧、核心占得少的（别的程序吃的，卸会话腾不出多少），正好等于门槛的，读不到的（平台不支持、读的那一下崩了，当作不知道）。MEM-2、MEM-3 的门槛是 5%：18 GiB 的上限只剩 921 MiB 才算紧，那时核心已经顶着上限、交换区满着，卸一万个会话卸了 43 秒（2026-11-13 bm 复测，施工单 `MEM-4-大容器提前判紧.md`）。可用少于门槛两倍（`NEAR_TIMES`）的是「近」：cgroup 那一路照可用算，整台机器那一路也要核心是大头才算。Windows 量不出核心自己占多少（`heap.md`「对外的样子」`usage`），又没有 cgroup，等于不卸，量法定了再接。
+   - **什么时候看**：表里第一次放进会话时和看空闲的任务一起起一个任务。表里有会话的隔 10 秒看一眼，上一眼近线（含紧）的隔 1 秒（`NEAR_EVERY`，施工 MEM-4），回到两倍门槛以外恢复 10 秒；往表里放进会话（造、载入、子代理、fork 子代理、顾问会话、整理会话）时叫它一声、当场看一眼，不等那 10 秒（一阵开会话是涨得最快的时候）；两次看之间至少隔 1 秒，一阵叫了几百声并成一次。表空着的不读，只等叫（隔会话表的闲置时长醒一下，看核心还在不在）。读在阻塞线程里。不等系统通知：PSI、cgroup 的 `memory.events` 报的是卡了多久、撞没撞 `memory.high`，不是这里要的这两样，醒了还得读一遍数；macOS、Windows 各一套。读一次是 `/proc`、`/sys` 下几个小文件，隔 10 秒的开销不计；每秒一次只在近线时有（18 GiB 的上限是可用少于 3.6 GiB）。
+   - **记什么**（施工 MEM-3 改）：判成紧的记一行 `INFO memory tight`：`retired` 卸了几个、`asked` 问了会话的几个、`held` 没卸的照原因各几个（`"turn=939 watched=3"`，照 `Hold` 的先后，只写有的，一个都没有的是 `none`；原因：`turn` 有回合在跑、在重启、在等子代理，`watched` 有头订阅着，`handles` 有别的把手，`replies` 有等着回应的命令，`requests` 有请求在路上，`jobs` 派出去的没回报、没落盘，`memory` 记忆抽取在路上，`peers` 会话之间等着，`mail` 有没办的信，`goal` 长期目标在跑，`slow` 1 秒没答上）、`loaded` 表里还剩几个、`available_mib`、`percent` 卸之前读到紧的那一份还剩多少、`threshold_mib` 那一份的门槛（MiB，往下取整，施工 MEM-4）、`took_ms` 问这一遍花了多久（头一批拿锁起到最后一批放锁，毫秒，施工 MEM-5）；不推给头。卸了会话的、一段紧刚开始的（上一次看不紧、表空着）当场记；同一段紧着、一个都没卸的，隔 60 秒（`REPEAT`）才再记一行，不每 10 秒刷一行一样的。MEM-2 只在卸了会话时记，紧着卸不动的一行都没有（18 GB 那趟日志里一条都没有）。
+
+**工作目录太宽**
+
+`session.create`、`session.send` 报来的 `cwd`，照这几条定会话实际在哪个目录里干活：
+
+1. 去掉前后空白是 `~` 的：宽（家目录）。
+2. 换成真实的位置（`fs.md`）：`~`、`~/…` 接在系统的家目录上（家目录先换成真实的位置），相对的接在 `/` 上，链接顺着找到本体。换不成的：照原样用，说不清它宽不宽，用到时工具自己报错。
+3. 真实的位置是系统的家目录、是根目录、包含数据根，或者落在数据根里却不在默认工作区里：宽（`miyu_fs::broad`）。太宽的只有根目录、落在数据根里的；Windows 上宽的都太宽（施工 5-14 改，2026-10-22 项目主人定：Linux、macOS 上家目录、包含数据根的就是工作区，数据根靠边界表挡写，施工 RO-2 起沙盒不藏它，`11-权限与沙盒.md` 第四节「太宽」）。
+4. 落在数据根里、却不在工作区 `<数据根>/root/workspace/` 里的，第 1 条的 `~` 读不出家目录的，退回这个会话的默认工作区 `<数据根>/root/workspace/<会话编号>/`（施工 5-14，原来是工作区本身）；它还没有的，当场建（建不成的记一条运行日志，照样用它）。`session.set_workspace`、`/workspace` 明着要换去这种地方的照旧拒（`path_forbidden`、`path_unreadable`）。
+5. 别的太宽的（根目录；Windows 上还有家目录、包含数据根的）照用，回应多 `wide: true`：工作目录跟着人（命令从这里起、她看到的 `cwd` 是它），能随便写的工作区由会话退回它的默认工作区（`session/guard.md`、`session/tools.md`，施工 5-14，`11-权限与沙盒.md` 第四节「工作目录和工作区分开」；原来头自己带上的退回、人明着选的才照用，施工 9-7 补）。数据根不管工作区设在哪都挡着（`session/guard.md`）。
+6. 造会话时（施工 5-14）：工作目录就是工作区本身的（网页不选目录时交的，握手的 `host.workspace`）换成这个会话的默认工作区；场所会话宽的（第 1、3 条，`venue.session` 没写 `cwd` 的是 `~`；施工 5-14 改照旧照宽算，不照太宽）也用它：外部身份只碰得到自己的工作区，几个群不再共用一个。
+7. 不太宽的，照原样用，不换成真实的位置。
+8. 会话载入时（核心重启以后）照日志里最后记下的那一个：记下的就是当时挑好的；落在数据根里、不在工作区的照第 4 条退回；什么都没记下的照 `~` 判。
+9. 子会话、分叉出来的会话的默认工作区用父会话、来源会话的那一个（`session.created` 的 `workspace_from`，`kernel/events-bodies.md`），一路追到主会话。
+
+**加进来的目录**（施工 5-10 上）
+
+`session.create`、`session.send` 报来的 `dirs`，每一条照「工作目录太宽」的第 1 到 3 条的宽判（施工 5-14 改照旧，主会话 2026-10-22 定）：是 `~`，或者换成真实的位置以后是系统的家目录、根目录、包含数据根、落在数据根里的，太宽。有一条太宽，整条命令都不收，回 `dir_too_wide`，什么都没写：说的话照拒绝的规矩是固定的一句，不带是哪一条，头知道自己报了哪几条。不太宽的照报的原样用；换不成真实位置的也照原样，边界表里那一片不算（`session/guard.md`）。
+
+**空闲和停下**
+
+- `Core::idle`：没有连接，执行器的任务表里没有在跑的后台命令（结束了、记录还没落盘的也算，施工 7-3），会话表里也没有哪个会话忙着：在跑回合、回合结束了 `turn.ended` 还没落盘，都算忙；停了的会话不算。核心照它空闲退出（`core.md`）。
+- `Core::stop_sessions`：有计划地停下表里全部的会话，跑到一半的回合记成「重启了」，下次载入接着干（`kernel/session.md`）；各会话在跑的后台命令先记 `restarted`、落了盘再整组杀（`session/actor.md` 第 9 条，施工 7-3）；会话表清空。
+- 任务表（`miyu_session::Jobs`）是核心的家底里的一张，造会话、载入时交给会话（施工 7-3）。
+- 接不了连接（例如打开的文件太多）：歇 100 毫秒再接，不空转。
+
+### 出错
+
+JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写在 `data.reason`。
+
+| 原因码 | `code` | 什么时候 |
+|---|---|---|
+| `parse_error` | -32700 | 不是 JSON |
+| `line_too_long` | -32010 | 一行超过 1 MiB：只拒这一行，连接照旧（施工 FX-1）；`data.limit` 是上限，`id` 照开头认得出的（施工 YC-5） |
+| `invalid_request` | -32600 | 是 JSON，不是请求（「请求」的表） |
+| `unknown_method` | -32601 | 握手以后，没有这个方法 |
+| `bad_params` | -32602 | 参数读不成、类型不对；会话编号、人格编号不合写法；`turn` 写了 0；`stream` 不是 `events`、`config`，`config` 带了 `session`、`after`（施工 8-4）；切权限级别两格都不写、`level` 不是 `full`；`blob.put` 第 1 条那几种；`session.send`、`session.redo` 的附件缺了格、格不合写法；`session.send` 的 `from` 不是字符串、去掉控制字符以后是空的（施工 7-10）；改标题两格都不写，标题去掉空白以后是空的、超过 200 个字；`job.stop`、`job.output` 的任务编号不合写法（施工 7-4），`job.output` 的 `tail` 不是 1 到 2000 的整数（施工 7-4 补），`after` 不是非负整数、和 `tail` 都写了、`wait` 没带 `after`（施工 V-6 上）；`model.list` 的 `models` 不是字符串数组、哪一个没有 `/` 或者 `/` 一边是空的（施工 V-6 上）；`human.get` 的 `language` 不合写法（施工 W-1）；`fs.realpath` 的 `path` 是相对的、没给 `cwd`（施工 W-3）；`mermaid.render` 的源码是空的（去掉前后空白以后，施工 W-4）；`blob.write` 的 `data` 不是 base64、解出来超过 512 KiB、加上它超过 `size`（施工 W-5）；`model.call` 的 `purpose` 不合写法、`messages` 不是那个样子、`max_tokens` 是 0 或者太大、`model` 是空字、图的 blob 不是图（施工 8-20）；`fs.read` 的 `path` 是相对的；`blob.get`、`fs.read` 的 `length` 超过 512 KiB（施工 W-6）；`link.preview` 的 `url` 没写、不是字符串（施工 W-7）；`usage.query` 的分组不认识、时刻和时区写法不对、会话编号不合写法、类型不对（施工 8-15）；`session.answer` 的 `decision`、`answers` 两样都写或都不写、`decision` 不是那三种、回答提问带了 `reason`、`call` 不合写法（施工 D-1）；`command.run` 的 `text` 不以 `/` 开头、本机的会话带了 `as`（施工 O-6），`/loop` 写错了（`data.why` 是用法，施工 LO-1）；`view.page` 第 7 条那几种（施工 9-6 下）；`session.prompts` 第 7 条那几种（施工 SP-2） |
+| `internal_error` | -32603 | 造会话时装坏了、磁盘上建不成、`session.created` 没落盘；列会话时读不了放会话的目录、崩了；附件存不下来、读不出来；删会话时读不了放会话的目录、挪不进回收处、崩了；读后台命令的输出时崩了（施工 7-4 补）；给人看的字读不懂（施工 W-1）；画图的库初始化不了：`style.json` 读不懂，或者这台机器上一种字体都读不到（施工 W-4）；分块上传的暂存文件建不了、写不进（施工 W-5）；`link_preview.json` 读不懂（施工 W-7） |
+| `hello_first` | -32010 | 握手以前发了别的方法 |
+| `protocol_mismatch` | -32010 | 头支持的主版本里没有 1（之后断开） |
+| `bad_token` | -32010 | 凭据一种都没写、本机令牌不对（之后断开） |
+| `bad_code`、`bad_login`、`bad_password`、`login_throttled`、`setup_first`、`local_only` | -32010 | 网页登录的几种（施工 W-8，`web-module.md`「出错」）；扩展调 `extension.*` 也回 `local_only`（施工 9-4 上），调 `preset.set`、`preset.delete` 也是（施工 P-3 中），`persona.set`、`persona.delete` 也是（施工 P-3 下），`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.file`、`package.call` 也是（施工 F-5 上、F-6 上、F-6 中），`config.set`、`config.trust`、`secret.set`、`secret.delete` 也是（施工 T-9） |
+| `unknown_persona` | -32010 | 造会话、`persona.get` 时三层都没有这个人格（施工 P-1 上起三层，`personas.md`） |
+| `persona_invalid` | -32010 | 人格的文件写错了；`data.problem` 写明哪一层、哪个文件第几行（施工 P-1 上）；`persona.*` 里另带 `data.message`（照连接的语言）、`data.line`（施工 P-3 补） |
+| `unknown_preset` | -32010 | 造会话、`preset.get` 时三层都没有这个预设，默认预设指着没有的也一样（施工 P-2 上，`presets.md`） |
+| `preset_invalid` | -32010 | 预设的文件写错了；`data.problem` 写明哪一层、哪个文件第几行（施工 P-2 上）；`preset.set` 改完的一份写错（施工 P-3 中）；`preset.*` 里另带 `data.message`、`data.line`（施工 P-3 补） |
+| `preset_conflict` | -32010 | `preset.set` 的 `expect` 对不上（`data.current`），写的那一瞬间有人手改、重来三次都不行（施工 P-3 中） |
+| `persona_conflict` | -32010 | `persona.set` 的 `expect` 对不上（`data.current`），写到一半撞上有人手改（施工 P-3 下） |
+| `nothing_to_delete` | -32010 | `preset.delete`、`persona.delete` 删的在你那一层本来就没有（施工 P-3 中、下） |
+| `unknown_file` | -32010 | `check` 写的文件不是 Miyu 读的那几种（施工 8-30） |
+| `not_a_directory` | -32010 | `session.set_workspace` 换到的是文件（施工 9-7 上）；`/workspace` 也一样（施工 9-7 下） |
+| `unknown_package`、`not_an_extension`、`extension_off` | -32010 | `extension.*`：没有这个包、清单读不成；是界面包；重启一个关着的（施工 9-4 上，`extensions.md`）。`package.remove`、`package.install {"package"}` 也回 `unknown_package`（施工 F-5 上） |
+| `unknown_source` | -32010 | `package.install` 写的 `from` 没有这个软件源：配置里没加、写错了（施工 U23 下下） |
+| `not_a_ui_package`、`prefs_too_big` | -32010 | `prefs.*`、订 `prefs` 流：装着的包不是界面包；并好的整份超过 64 KiB，`data` 带 `size`、`limit`（施工 HP-1，「头自己的设置」） |
+| `depends_missing`、`package_depended` | -32010 | `package.install`：依赖的包没装、装着的版本不够下限（施工 PK-2），`data.missing`（照清单写的原样）；`package.remove`、`package.disable`：别的装着的包依赖它，`data.by`（施工 F-11，`packages.md`「依赖」） |
+| `package_invalid`、`package_conflict`、`package_exists` | -32010 | `package.install`、`package.remove`：清单写错了；带的名字和装着的别的包撞了（施工 F-8 六补，`data.conflicts`；人格、预设还和几层里有的撞，施工 P-11 下）；和出厂的同编号 |
+| `program_missing` | -32010 | `package.enable`、`extension.enable`：包的程序没找到（包文件夹的 `bin/`、`miyu` 旁边都没有），当没装，开不了（施工 UX-1 补起每个包都有开关，原来同一行的 `not_switchable` 删了） |
+| `not_restartable`、`package_off` | -32010 | `package.restart`：包没有能重启的进程、服务（内置包、界面、小程序、吉祥物包）；包关着，卸掉了的出厂包也算（施工 X-4） |
+| `unknown_server` | -32010 | `mcp.restart`、`mcp.remove`：系统配置里没有这个名字的 MCP 服务（施工 F-9 补、X-26） |
+| `mcp_invalid`、`server_from_package` | -32010 | `mcp.set`：交来的服务写错了，`data.problem`；系统配置里没写这个名字、有包带着同名服务（施工 X-26） |
+| `no_page`、`not_found`、`program_not_running`、`unregistered`、`method_failed`、`method_timeout` | -32010 | `package.file`：没有后台页；后台页里没有这份文件。`package.call`：程序没连着；没登记这个方法（`data.method`）；程序回了错（`data.message`、`data.code`）；到时限没回（施工 F-6 中，`package-pages.md`） |
+| `unknown_widget`、`bad_widget_content` | -32010 | `widget.set`、`widget.clear`：块不在这个包的清单里（`data.widget`）；内容写法不对（`data.path`、`data.problem`）（施工 X-15 中，`widgets.md`） |
+| `avatar_not_image`、`avatar_too_big` | -32010 | `persona.set` 的 `avatar`：不是 PNG、JPEG、WebP；超过 1 MiB 或 1024 像素，`data` 带量到的和上限（施工 P-5，`personas.md`「头像」） |
+| `background_not_image`、`background_too_big` | -32010 | `persona.set` 的 `background`：不是 PNG、JPEG、WebP；超过 5 MiB 或 4096 像素，`data` 同头像的（施工 P-6，`personas.md`「主题色、背景图」） |
+| `needs_approval` | -32010 | `extension.enable`、`extension.restart`：要的能力还有没批的，`data.capabilities` 是那几个（施工 9-4 下上，`extensions.md`「能力」）；`provide` 登记写了 `runs_commands` 的工具、包没批 `tools.commands` 的，`data.capabilities` 是 `["tools.commands"]`（施工 XG-1 下，`providers.md`「会跑命令的」） |
+| `session_not_found` | -32010 | 没有这个会话，删了的也是 |
+| `unknown_call` | -32010 | `view.detail` 的会话日志里没有这次调用的结果：编号对不上，或者还没回（施工 9-6 三补）；没有替代到这个序号的压缩（施工 9-8 中） |
+| `shell_not_allowed` | -32010 | `session.send` 的 `shell` 不是人在头里打的：带 `from`、`as` 的，扩展说的，场所会话（施工 SH-1 上） |
+| `shell_unavailable` | -32010 | `session.send` 的 `shell`：核心的工具目录里没有声明跑命令的工具（施工 SH-1 上） |
+| `venue_session` | -32010 | 场所会话只收代表外部的人说的话：不带 `as` 的 `session.send`（施工 O-3）、`command.run`（施工 O-6）；`command.catalog` 只收本机的会话（施工 O-6 补） |
+| `unknown_command` | -32010 | `command.run` 认不出这个命令（施工 O-6） |
+| `command_not_allowed` | -32010 | `command.run`：场所里既不是主人、也不是管理的人（施工 O-6） |
+| `command_unavailable`、`command_failed` | -32010 | `command.run` 扩展声明的命令（施工 X-14 下，`slash.md`「扩展的命令」）：扩展没连上、断了、一分钟没答；扩展答了错、答的写法不对，`data.why` 是它的原话 |
+| `owner_only` | -32010 | `command.run`：这个命令只有主人本人能用，管理的人也不行（`/workspace`，施工 9-7 下） |
+| `session_stopped` | -32010 | 会话停了：写不进去、出了 bug |
+| `session_broken` | -32010 | 会话载入不了：日志、策略快照坏了、读不了 |
+| `session_read_only` | -32010 | 会话日志中间坏了一行，坏行以前的只能看（`view.page`），载入不了、不能接着聊；`data.segment` 是哪一段（只写文件名），`data.line` 是第几行（施工 YC-6） |
+| `empty_message` | -32010 | `session.send` 的 `text` 是空的、又没有附件、也没带场所的东西（施工 O-13 补）；`session.redo` 换过的那一句一块都不剩 |
+| `dir_too_wide` | -32010 | 加进来的目录太宽（「加进来的目录」（施工 5-10 上）） |
+| `attachment_unreadable` | -32010 | `blob.put` 读不了 `path`：换不成真实的位置、没有、不是普通文件、没有权限（施工 3-9 三补） |
+| `attachment_too_big` | -32010 | 附件超过 20 MiB；图片超过 5 MiB，或者哪一边超过 8000 像素、又缩不了（施工 3-9 三补、I-S）；`blob.open` 的 `size` 超过 20 MiB（施工 W-5） |
+| `attachment_in_data_root` | -32010 | `blob.put` 的 `path` 在数据根里、默认工作区以外，扩展自己的包目录除外（施工 3-9 三补、W-6 四补） |
+| `unknown_attachment` | -32010 | `session.send`、`session.redo` 附的 blob 这个核心里没有（施工 3-9 三补）；`model.call` 的图存处里没有（施工 8-20） |
+| `path_unreadable` | -32010 | `fs.list`、`fs.find` 换不成真实的位置、不在、该是目录的不是目录、没有权限（施工 W-2）；`fs.realpath` 换不成真实的位置——一层都不在、路上的链接指向不存在的地方、没有家目录（施工 W-3）；`fs.read` 换不成真实的位置、没有、不是普通文件、没有权限（施工 W-6）；`session.set_workspace`、`/workspace` 换不成真实的位置、不在、读不了（施工 9-7 上、下） |
+| `path_forbidden` | -32010 | `fs.list`、`fs.find` 的目录落在数据根里、又不在默认工作区里（施工 W-2）；`fs.read` 的路径也一样（施工 W-6）；`session.set_workspace`、`/workspace` 换去的目录也一样，默认工作区可以（施工 9-7 上、下） |
+| `mermaid_too_long` | -32010 | `mermaid.render` 的源码超过 64 KiB（施工 W-4） |
+| `mermaid_failed` | -32010 | `mermaid.render` 画不出；`data.detail` 是画图的库的原话（施工 W-4） |
+| `embedding_off` | -32010 | `model.embed`：配置的 `models.embedding` 是 `off`，或者要本机的却没装内置模型（施工 X-17） |
+| `embedding_failed` | -32010 | `model.embed`：有一条算不出、等不到；`data.why` 是原因，英文一句（施工 X-17） |
+| `too_many_uploads` | -32010 | 这个连接同时开着 4 个分块上传（施工 W-5） |
+| `upload_unknown` | -32010 | 没有这个上传：编号不对、作废了、不是这个连接开的（施工 W-5） |
+| `upload_offset` | -32010 | `blob.write` 的 `offset` 和已经收到的对不上；`data.received` 是实际收到的几个（施工 W-5） |
+| `upload_incomplete` | -32010 | `blob.close` 时没收齐；`data.received` 是实际收到的几个（施工 W-5） |
+| `unknown_blob` | -32010 | `blob.get` 的 blob 存处里没有（施工 W-6） |
+| `unknown_shown` | -32010 | `session.shown`：没有这次展示，或者这个连接读不到那个会话（施工 SW-1） |
+| `file_changed` | -32010 | `session.shown`：展示的文件大小或修改时间和记的对不上（施工 SW-1） |
+| `file_gone` | -32010 | `session.shown`：展示的文件没了，或者不是普通文件了（施工 SW-1） |
+| `not_running` | -32010 | 打断时没有回合在进行 |
+| `turn_running` | -32010 | 撤销、重做、手动压缩、清空、删会话时有回合在进行 |
+| `id_reused` | -32010 | 同一个命令编号换了参数再来：会话里的命令（「同一个命令编号」第 2 条），`session.create` 除了 `cwd`、`dirs` 的参数（施工 YC-7），`command.run`（命令不执行，施工 YC-7补） |
+| `unknown_turn` | -32010 | 要撤的那一轮不在有效历史里：没有，或者已经撤掉了 |
+| `nothing_to_unrevert` | -32010 | 没有能恢复的撤销：没撤过，或者撤了以后开过回合、压缩过 |
+| `nothing_to_revert` | -32010 | 不写 `turn` 的撤销，一轮都没有 |
+| `nothing_to_compact` | -32010 | 手动压缩时没有能压的：上一次压缩以后没有新的消息、回复、工具结果，或者全在尾巴里（施工 6-8） |
+| `nothing_to_clear` | -32010 | 清空时上下文本来就是空的：没有摘要，最近的检查点后面也没有人的消息、回复、工具结果、回报（施工 6-8 补） |
+| `unknown_job` | -32010 | `job.stop` 时没有这个任务，或者它已经结束了（施工 7-4）；`job.output` 时没有这个任务（施工 7-4 补） |
+| `not_a_command` | -32010 | `job.output` 读的是子代理，不是后台命令（施工 7-4 补） |
+| `not_redoable` | -32010 | 重做时最后一轮不是人说的话开的，或者一轮都没有（施工 4-7 再补） |
+| `nothing_to_recap` | -32010 | 回顾时她一个带正文的回复都还没有；以前造的快照里没有回顾的字（施工 3-8 四补） |
+| `not_asking` | -32010 | `session.answer` 回答的调用没在等回答：答过了、了结了、等的不是这一种（施工 D-1） |
+| `not_exported` | -32010 | 扩展调了清单 `[export]` 里没有的方法：`bus.call` 照名字找到的那一家的，`package.call` 调自己的；`data.method` 是哪一个（施工 X-18、BUS-2） |
+| `own_package_only` | -32010 | 扩展的 `package.call` 写了别的包的编号：照包编号它只调得到自己，跨包走 `bus.call`；`data.package` 是它写的那个编号（施工 BUS-5，设计 67 B5） |
+| `not_a_provider` | -32010 | `provide` 不是核心拉起的扩展发的（施工 O-2 上） |
+| `bad_tool` | -32010 | `provide` 的一件工具规格不对、撞名；`data.tool` 是哪一件，`data.problem` 是 `duplicate`、`name`、`parameters`、`access`、`venues`、`timeout`（施工 O-2 下）、`clicall`（施工 M-2）、`result`（施工 M-4：不是字、空白的）、`display_name`、`subject`、`feature`、`plugin`、`role`、`scope`、`paths`、`background_parameters`（施工 XG-1 上，`providers.md`）、`runs_commands`（施工 XG-1 下：写了真假、`null` 以外的）之一（施工 O-2 上） |
+| `not_ambient` | -32010 | `session.respond` 的 `to` 里有不是这个会话里旁听的 `message.user` 的；`data.messages` 是那几条（施工 O-14 上） |
+| `already_answered` | -32010 | `session.respond` 的 `to` 里有已经当过触发的；`data.messages` 是那几条（施工 O-14 上） |
+| `session_sealed` | -32010 | 会话封存了（分叉时写了 `seal_after`、跑满了），改对话的命令不收（施工 C-8 下，`session/fork.md`「封存」） |
+| `goal_exists`、`no_goal`、`goal_paused`、`goal_running` | -32010 | 改长期目标不合现在的样子（施工 X-7，`goal.md`）：已经有一个没完成的（跑着、停着、卡住）再设；没有的改、停、接着跑、结束；停着、卡住的再停；跑着的接着跑。`/goal` 回它们（`command.run` 第 10 条，施工 X-8 下） |
+| `goal_unavailable` | -32010 | `/goal`：这个会话没有长期目标（`command.run` 第 10 条，施工 X-8 下） |
+| `prefix_changing` | -32010 | 文件改了、前缀要变，开新一轮之前先问人；`data.files` 是改了的文件，`data.more` 是还有几个（`session.send` 第 9 条，施工 OV-1 下） |
+| `no_rule` | -32010 | `session.answer` 选了本会话都允许，请求却没提放行规则（施工 D-1） |
+| `unexpected_reason` | -32010 | `session.answer` 允许却带了理由（施工 D-1） |
+| `bad_answer` | -32010 | `session.answer` 的回答和题目对不上：条数不对、选了题目里没有的、单选的选了几项、选重了（施工 D-1） |
+| `recap_failed` | -32010 | 回顾没写成：请求出了错，或者回复里没有正文（施工 3-8 四补） |
+| `unknown_config_key` | -32010 | `config.schema`、`config.get` 的 `keys`、`config.set` 的 `changes` 里有清单里没有的键：`data.problems` 里每个不认识的一条，`code` 是 `unknown_key`、`level` 是 `error`，带最近的键名 `suggest`（施工 8-2） |
+| `config_invalid` | -32010 | `config.set` 的值不对、不能写在这一层，整份换的字里有错误：整条不收，`data.problems` 里是每一处（施工 8-3） |
+| `config_conflict` | -32010 | `config.set` 的 `expect` 对不上（`data.current`），整份换的、`config.trust` 的 `version` 对不上，写的那一瞬间有人手改、重来三次都不行（`data.version`）（施工 8-3） |
+| `config_file_broken` | -32010 | `config.set` 改几项时文件读不进来，或者这一项放不进去：`data.problems` 是这份文件现在的问题（施工 8-3）；`secret.set`、`secret.delete` 时密钥文件读不进来、名字写成了一张表（施工 8-5） |
+| `no_project_config` | -32010 | `config.trust` 时这个目录找不到项目配置（施工 8-3） |
+| `unknown_secret` | -32010 | `secret.delete` 删的密钥没有（施工 8-5） |
+| `unknown_provider` | -32010 | `model.list`、`provider.test` 的 `provider` 不是配好了的（施工 8-7、8-11） |
+| `provider_exists` | -32010 | `provider.rename` 的 `to` 已经有了（施工 8-34） |
+| `unknown_model` | -32010 | `session.create`、`session.configure` 的 `model` 解析不出：写法不对（连同以前的挡位名）、没有这家供应商、没有这个池、池是空的（施工 8-8、8-8 补）；`model.call` 的 `model` 解析不出（施工 8-20） |
+| `no_model` | -32010 | `model.call` 没有能用的模型：没写 `model`、`models.chat` 也没配，那一家用不了、key 取不到；`data.message` 是原话（施工 8-20） |
+| `cooling` | -32010 | `model.call` 的候选全在冷却，没发；`data.message` 是原话，`data.wait_ms` 是最早恢复的那一个还要多久（施工 8-20） |
+| `model_failed` | -32010 | `model.call` 发了、出错了：`data.class`、`data.status`（有状态码的才写）、`data.message`，和 `model.called` 的 `error` 一样（施工 8-20） |
+| `memory_unavailable` | -32010 | 这里没有记忆：不带人格（没写人格、又没设默认人格的也是）、范围 `off`、场所会话（施工 R-3 补，`memory.*`、`/remember`；施工 R-3 再补那句话也说没有人格） |
+| `memory_not_installed` | -32010 | 人格记忆这个软件包没装：`memory.*` 六个（施工 R-10）；装上就能用，以前记的都在 |
+| `memory_busy` | -32010 | 这一间正在整理记忆：定时的那一次在合，或者别人先叫了 `memory.dream`、`/dream`（施工 R-7 补） |
+| `not_dreaming` | -32010 | `/dream stop`：这个会话这时没有在跑的整理（施工 R-22）；`memory.dream_stop`：这一间这时没有人叫的整理（施工 R-23） |
+| `dream_failed` | -32010 | 整理记忆没成：请求模型出错、交回的读不成、记忆日志写不进；`data.message` 是英文的一句为什么（施工 R-7 补） |
+| `unknown_memory` | -32010 | 没有这一条记忆，或者听众不合（施工 R-3 补） |
+| `memory_not_current` | -32010 | 那一条记忆已经改掉、作废、清掉了（施工 R-3 补） |
+| `memory_too_long` | -32010 | 一条记忆超过 120 字；`data.chars`、`data.limit`（施工 R-3 补） |
+| `unknown_kb` | -32010 | 没有这个知识库（施工 K-1 上，`kb.*`） |
+| `unknown_document` | -32010 | 知识库里没有这个文档：不是文档的、不在库里的、路径跑出去的（施工 K-1 上，`kb.read`） |
+| `restoring` | -32010 | 撤销还没做完（正在读回更早的日志）时来的命令、删会话。兜底：会话做完才接下一个命令，照常碰不到 |
+
+- 从 `empty_message` 起，除了 `dir_too_wide`、附件的四个和 `not_a_command`，十三个是内核拒命令时给的原因码（`kernel/session.md`）；施工 D-1 起加上 `session.answer` 的四个（`not_asking`、`no_rule`、`unexpected_reason`、`bad_answer`），十七个。
+- 内核还有两个原因码，现在没有方法碰得到：`unknown_level`（协议上的级别只认两种，别的先是 `bad_params`）、`unknown_decision`（协议上的决定只认三种，施工 D-1）。它们没有配话，说的是最后那一句「已拒绝。」。
+
+运行日志（目标 `miyu::endpoint`，`log.md`）：
+
+| 级别 | 这件事 | 什么时候 |
+|---|---|---|
+| `DEBUG` | `connected` | 接上一个连接 |
+| `INFO` | `connected head=… version=… protocol=1 via=…` | 握手过了；`via` 是 `token`、`code`、`login`、`password`（施工 W-8） |
+| `WARN` | `protocol mismatch head=… low=… high=…`、`bad token head=…`、`bad code head=…`、`bad login head=…`、`bad password head=…`、`bad ticket head=…`（施工 LT-1）、`login throttled head=…` | 握手被拒、断开 |
+| `INFO` | `login revoked, closed` | 这个连接靠的登录令牌作废了，断开（施工 W-8） |
+| `INFO` | `ticket issued purpose=… by=…`；扩展要的多 `package=…` | 发了一张交接票：`purpose` 是 `via`（没写的 `unknown`），`by` 是这个连接怎么认出来的（`token`、`login`、`password`、`extension`），不记票（施工 LT-2、LP-1） |
+| `WARN` | `ticket for this machine refused off it` | `page` 的票（扩展、人要的）拿到远程的连接上换，回 `bad_ticket`、票作废（施工 LP-1、LP-2） |
+| `DEBUG` | `request method=…` | 每一条请求 |
+| `WARN` | `line too long, refused` | 一行太长（施工 FX-1 起不断开） |
+| `INFO` | `disconnected` | 握过手的连接断了 |
+| `WARN` | `accept failed error=…` | 接不了连接 |
+| `WARN` | `memory failed error=…`；崩了的是 `panic=…` | `memory.*`、`/remember` 写不进、读不了记忆日志（施工 R-3 补）；订阅记忆日志读不了（施工 R-12 上） |
+| `WARN` | `knowledge document skipped kb=… reason=…` | `kb.list`、`kb.search` 照文件补时跳过一个文档：太大、不是 UTF-8、读不了（施工 K-1 上） |
+| `WARN` | `knowledge failed error=…`；崩了的是 `panic=…` | `kb.*` 读不了知识库的目录、索引（施工 K-1 上） |
+| `ERROR` | `connection task failed panic=…` | 一个连接的任务崩了 |
+| `WARN` | `create failed error=…`、`load failed session=… error=…` | 造不成、载入不了 |
+| `WARN` | `lagged, resync session=…` | 掉了队 |
+| `WARN` | `lagged, resync stream=config` | 配置的订阅掉了队（施工 8-4） |
+| `WARN` | `lagged, resync stream=memory` | 记忆日志的订阅掉了队（施工 R-12 上） |
+| `WARN` | `lagged, resync stream=prefs` | 头自己的设置的订阅掉了队（施工 HP-1） |
+| `WARN` | `prefs unreadable package=… error=…`、`prefs not an object package=… error=…`、`prefs not written package=… error=…` | 头自己的设置读不了；不是一个对象、当没有；写不进（施工 HP-1，「头自己的设置」第 8 条） |
+| `WARN` | `replay not read session=… error=…` | 带 `after` 订阅，补发的那一截读不了（施工 3-8 六补） |
+| `INFO` | `session stopped, resync session=…` | 订阅着的会话停了（施工 4-9 再补三上） |
+| `WARN` | `sessions not listed error=…`、`first event not read session=… error=…` | 列会话读不了 |
+| `ERROR` | `list panicked panic=…` | 列会话崩了 |
+| `WARN` | `meta not read session=… error=…` | 列会话时后面的日志读不下去，标题、置顶照坏的那一段以前的算（施工 3-8 三补） |
+| `INFO` | `session index created` | 起来时会话列表的索引没有，新建了一份（施工 3-8 七补，`store/index.md`） |
+| `WARN` | `session index rebuilt reason=…` | 起来时索引读不了、坏了、版本不对，删掉换了一份空的 |
+| `WARN` | `package invalid package=… file=… error=…` | 起来时读到一份写错的、撞了的软件包清单（施工 9-1 上，`packages.md`）；照样起来 |
+| `WARN` | `package unreadable package=… file=… error=…` | 起来时一份软件包清单读不了（施工 9-1 上） |
+| `WARN` | `session index unusable error=…` | 删了重建也打不开：这一回每次列会话都整份读 |
+| `WARN` | `session index not read error=…` | 列会话时读出索引坏了：删掉重建，这一次整份读 |
+| `WARN` | `session index not updated session=… error=…` | 列会话时补好的一行写不回去 |
+| `WARN` | `session index row not removed session=… error=…` | 删会话时删不掉索引里那一行 |
+| `WARN` | `session not deleted session=… error=…` | 删会话时这一个挪不进回收处 |
+| `ERROR` | `delete panicked panic=…` | 删会话崩了 |
+| `WARN` | `workspace not prepared kind=…` | 退回的工作区建不成 |
+| `DEBUG` | `already stopped session=…` | 停下全部会话、删会话时，这一个已经停了 |
+| `DEBUG` | `stopped before deletion session=… job=…` | 删一个子会话时照人停掉了它，父会话（`session`）记了回报（施工 3-8 三补；施工 7-8 起在表的锁里） |
+| `INFO` | `orphan subagent removed session=… parent=…` | 载入父会话时收掉了一个派到一半的空子会话（施工 7-8，「会话表」第 8 条） |
+| `WARN` | `orphan subagent not removed session=… error=…` | 这一个挪不进回收处 |
+| `ERROR` | `orphan sweep panicked panic=…` | 认、挪空子会话时崩了 |
+| `INFO` | `memory tight, idle sessions retired retired=… loaded=… available_mib=… percent=…` | 内存紧，闲着的会话当场退下了几个、表里还剩几个、卸之前紧的那一份还剩多少（施工 MEM-2，「会话表」第 10 条） |
+| `WARN` | `attachment not stored error=…` | `blob.put` 存不下来（施工 3-9 三补） |
+| `WARN` | `attachment not read blob=… error=…` | `session.send` 的附件读不出来：坏了、读不了 |
+| `ERROR` | `attachment panicked panic=…` | 读、存附件时崩了 |
+| `ERROR` | `job output panicked panic=…` | 读后台命令的输出时崩了（施工 7-4 补） |
+| `WARN` | `human not read error=…` | `human.get` 给人看的字读不懂（施工 W-1） |
+| `ERROR` | `human panicked panic=…` | 读给人看的字时崩了（施工 W-1，照别的 `spawn_blocking` 同一个写法） |
+| `WARN` | `files index failed` | `fs.find` 建清单时读不了一层目录，跳过它接着建（施工 W-2）；哪一层、原话都带路径，不写（施工 LG-1 上） |
+| `ERROR` | `files panicked panic=…` | `fs.list`、`fs.find` 在阻塞线程里崩了（施工 W-2） |
+| `WARN` | `upload not stored error=…` | 分块上传暂存、改名进位置没成（施工 W-5） |
+| `ERROR` | `upload panicked panic=…`、`upload cleanup panicked` | 分块上传在阻塞线程里崩了；连接断了、作废时删暂存那一步崩了（施工 W-5） |
+
+`mermaid.render` 的日志目标是 `miyu::mermaid`，不是 `miyu::endpoint`：`WARN not ready error=…`，画图的库初始化不了。见 `mermaid.md`「出错」。
+
+`link.preview` 的日志目标是 `miyu::net`：`WARN link preview failed why=…`、`WARN link image not stored error=…`、`WARN not ready error=…`，见 `net.md`「出错」。在后台答的任务崩了（它的回应永远不会来了）记 `ERROR background request panicked panic=…`，目标 `miyu::endpoint`（施工 W-7）。
+
+`model.call` 的 `model` 解析不出记 `DEBUG unknown model why=…`（目标 `miyu::endpoint`）；调一次记一行 `INFO model call …` 或 `INFO model call failed …`，目标 `miyu::session`，不带会话编号（施工 8-20，`models.md`「出错」）。
+
+撤销、恢复的回应写不成的两行见 `protocol/undo.md`。
+
+### 给人看的字
+
+`message` 照握手时的语言，中文、英文各一句：
+
+| 原因码 | 中文 | 英文 |
+|---|---|---|
+| `parse_error` | 消息格式错误。 | Malformed message. |
+| `line_too_long` | 消息超过 1 MiB，没有收。大的内容请用附件发。 | Message over 1 MiB, not accepted. Send large content as an attachment. |
+| `invalid_request` | 无效的请求。 | Invalid request. |
+| `unknown_method` | 方法不存在。 | Method not found. |
+| `bad_params` | 参数错误。 | Invalid parameters. |
+| `id_reused` | 同一个请求编号换了参数，没有收。请换一个新的编号。 | This request id was already used with different parameters. Use a new id. |
+| `internal_error` | 内部错误，详见运行日志。 | Internal error. See the runtime log. |
+| `hello_first` | 请先握手（hello）。 | Send hello first. |
+| `protocol_mismatch` | 协议版本不兼容，请升级到同一版本。 | Protocol version mismatch. Upgrade to the same release. |
+| `bad_token` | 本机令牌无效。 | Invalid local token. |
+| `bad_code` 到 `local_only` | 照 `web-module.md`「给人看的字」（施工 W-8） | |
+| `unknown_persona` | 人格不存在。 | Persona not found. |
+| `persona_invalid` | 人格文件有误。 | Invalid persona files. |
+| `unknown_preset` | 预设不存在。 | Preset not found. |
+| `preset_invalid` | 预设文件有误。 | Invalid preset file. |
+| `preset_conflict` | 预设已被修改，请刷新后重试。 | Preset was modified. Refresh and try again. |
+| `persona_conflict` | 人格已被修改，请刷新后重试。 | Persona was modified. Refresh and try again. |
+| `nothing_to_delete` | 没有可删除的内容。 | Nothing to delete. |
+| `unknown_file` | 不支持检查这个文件。 | This file cannot be checked. |
+| `not_a_directory` | 不是目录。 | Not a directory. |
+| `unknown_package` | 软件包不存在。 | Package not found. |
+| `package_exists` | 编号与内置软件包重复。 | Id conflicts with a built-in package. |
+| `package_invalid` | 清单有误，无法安装。 | Invalid manifest, cannot install. |
+| `package_conflict` | 名称已被占用，无法安装。 | Names already in use, cannot install. |
+| `program_missing` | 程序未安装。 | Program not installed. |
+| `depends_missing` | 缺少依赖的软件包。 | Required packages are missing. |
+| `package_depended` | 其他软件包依赖它，无法卸载。 | Other packages depend on it. |
+| `not_restartable` | 不能重启。 | Cannot be restarted. |
+| `package_off` | 软件包已停用。 | Package disabled. |
+| `unknown_server` | 系统配置里没有这个 MCP 服务。 | No such MCP server in the system config. |
+| `no_page` | 没有后台页。 | No admin page. |
+| `not_found` | 文件不存在。 | File not found. |
+| `program_not_running` | 程序未运行。 | Program not running. |
+| `unregistered` | 方法未登记。 | Method not registered. |
+| `method_failed` | 方法执行失败。 | Method failed. |
+| `method_timeout` | 方法超时。 | Method timed out. |
+| `avatar_not_image` | 头像只支持 PNG、JPEG、WebP。 | Avatars must be PNG, JPEG or WebP. |
+| `avatar_too_big` | 头像超过 1 MiB 或 1024 像素。 | Avatar over 1 MiB or 1024 pixels. |
+| `background_not_image` | 背景图只支持 PNG、JPEG、WebP。 | Backgrounds must be PNG, JPEG or WebP. |
+| `background_too_big` | 背景图超过 5 MiB 或 4096 像素。 | Background over 5 MiB or 4096 pixels. |
+| `not_an_extension` | 不是扩展。 | Not an extension. |
+| `extension_off` | 扩展已停用。 | Extension disabled. |
+| `needs_approval` | 扩展权限未批准。 | Extension permissions not approved. |
+| `session_not_found` | 会话不存在。 | Session not found. |
+| `unknown_call` | 调用不存在。 | Call not found. |
+| `shell_not_allowed` | 只有你自己能在这里跑命令。 | Only you can run commands here. |
+| `shell_unavailable` | 没有能跑命令的工具（软件包没装或已关闭）。 | No tool can run commands (package missing or disabled). |
+| `venue_session` | 平台会话不能直接发消息。 | Cannot send messages directly to a platform session. |
+| `unknown_command` | 命令不存在。 | Command not found. |
+| `command_not_allowed` | 仅主人和群管理员可用。 | Owner and group admins only. |
+| `command_unavailable` | 命令暂时不可用。 | Command unavailable for now. |
+| `command_failed` | 命令执行失败。 | Command failed. |
+| `owner_only` | 仅主人可用。 | Owner only. |
+| `session_stopped` | 会话已停止，重新发送即可载入。 | Session stopped. Send again to reload. |
+| `session_broken` | 会话已损坏，无法载入。 | Session is corrupted and cannot be loaded. |
+| `session_read_only` | 会话日志第 N 行坏了，只能看到这一行以前的内容，不能接着聊。要继续请新开一个会话。（N 是 `data.line`；没有的说「会话日志坏了，只能看到坏的地方以前的内容，不能接着聊。要继续请新开一个会话。」） | The session log is broken at line N; only the part before it can be viewed and the session can't continue. Start a new session to go on. (N is `data.line`; without it: "The session log is broken; only the part before it can be viewed and the session can't continue. Start a new session to go on.") |
+| `empty_message` | 消息为空。 | Empty message. |
+| `dir_too_wide` | 目录范围过大。 | Directory too broad. |
+| `attachment_unreadable` | 无法读取文件。 | Cannot read file. |
+| `attachment_too_big` | 附件过大（最大 20 MiB，图片 5 MiB、8000 像素）。 | Attachment too large (max 20 MiB; images 5 MiB, 8000 px). |
+| `attachment_in_data_root` | 不能附加数据目录里的文件。 | Files in the data directory cannot be attached. |
+| `unknown_attachment` | 附件不存在。 | Attachment not found. |
+| `path_unreadable` | 无法读取路径。 | Cannot read path. |
+| `path_forbidden` | 无权访问。 | Access denied. |
+| `mermaid_too_long` | 图表源码过长。 | Diagram source too long. |
+| `mermaid_failed` | 图表渲染失败。 | Diagram rendering failed. |
+| `embedding_off` | 未配置 Embedding。 | Embedding is not configured. |
+| `embedding_failed` | Embedding 计算失败。 | Embedding failed. |
+| `too_many_uploads` | 同时上传的文件过多。 | Too many uploads at once. |
+| `upload_unknown` | 上传已失效，请重新上传。 | Upload expired. Upload again. |
+| `upload_offset` | 上传位置不一致。 | Upload offset mismatch. |
+| `upload_incomplete` | 上传未完成。 | Upload incomplete. |
+| `unknown_blob` | 内容不存在。 | Content not found. |
+| `unknown_shown` | 没有这个展示。 | Shown file not found. |
+| `file_changed` | 文件已变。 | The file has changed. |
+| `file_gone` | 文件已不在。 | The file is gone. |
+| `not_running` | 没有进行中的回合。 | No turn in progress. |
+| `turn_running` | 回合进行中。 | A turn is in progress. |
+| `unknown_turn` | 回合不存在。 | Turn not found. |
+| `nothing_to_unrevert` | 没有可恢复的撤销。 | Nothing to restore. |
+| `restoring` | 正在撤销或恢复。 | Undo or restore in progress. |
+| `nothing_to_revert` | 没有可撤销的回合。 | Nothing to undo. |
+| `nothing_to_compact` | 没有可压缩的内容。 | Nothing to compact. |
+| `nothing_to_clear` | 上下文为空。 | Context is empty. |
+| `unknown_job` | 任务不存在或已结束。 | Job not found or finished. |
+| `not_a_command` | 不是后台命令。 | Not a background command. |
+| `not_redoable` | 无法重做。 | Cannot redo. |
+| `nothing_to_recap` | 没有可回顾的内容。 | Nothing to recap. |
+| `not_asking` | 不在等待回答。 | Not waiting for an answer. |
+| `not_ambient` | 不是旁听消息。 | Not an overheard message. |
+| `not_exported` | 对方软件没有开放这个方法。 | The other package does not offer this method. |
+| `own_package_only` | 扩展照包编号只能调自己，调别的软件包请用 bus.call。 | An extension can call only itself by package id; use bus.call for other packages. |
+| `not_a_provider` | 仅扩展可提供工具。 | Only extensions can provide tools. |
+| `bad_tool` | 工具规格有误。 | Invalid tool spec. |
+| `already_answered` | 已回复。 | Already answered. |
+| `session_sealed` | 会话已封存。 | Session sealed. |
+| `goal_exists` | 已有一个长期目标。 | A goal is already set. |
+| `no_goal` | 没有长期目标。 | No goal. |
+| `goal_paused` | 长期目标已暂停。 | Goal paused. |
+| `goal_running` | 长期目标正在进行。 | Goal running. |
+| `goal_unavailable` | 此会话不支持长期目标。 | Goals are not available in this session. |
+| `prefix_changing` | 检测到文件变动，继续对话会因缓存失效多付输入费用。 | Files changed; continuing will cost extra input because the cache is invalidated. |
+| `no_rule` | 只能允许本次或拒绝。 | Only allow once or deny. |
+| `unexpected_reason` | 仅拒绝可附理由。 | Only a denial can carry a reason. |
+| `bad_answer` | 回答与题目不匹配。 | Answers do not match the questions. |
+| `unknown_config_key` | 配置项不存在。 | Config key not found. |
+| `config_invalid` | 配置有误，未保存。 | Invalid config, not saved. |
+| `config_conflict` | 配置已被修改，请刷新后重试。 | Config was modified. Refresh and try again. |
+| `config_file_broken` | 配置文件有误，请先修复。 | Config file is invalid. Fix it first. |
+| `no_project_config` | 未找到项目配置。 | Project config not found. |
+| `unknown_secret` | 密钥不存在。 | Secret not found. |
+| `unknown_provider` | 供应商不存在。 | Provider not found. |
+| `unknown_model` | 模型或模型池不存在。 | Model or pool not found. |
+| `no_model` | 没有可用的模型。 | No model is available. |
+| `cooling` | 模型冷却中，请稍后重试。 | Models cooling down. Try again later. |
+| `model_failed` | 模型请求失败。 | Model request failed. |
+| `recap_failed` | 生成回顾失败。 | Recap failed. |
+| `memory_unavailable` | 记忆不可用。 | Memory unavailable. |
+| `memory_not_installed` | 人格记忆未安装。 | Persona memory not installed. |
+| `memory_busy` | 正在整理记忆。 | Memory is being organized. |
+| `not_dreaming` | 没有正在进行的整理。 | No memory organizing in progress. |
+| `dream_failed` | 整理记忆失败。 | Memory organization failed. |
+| `unknown_memory` | 记忆不存在。 | Memory not found. |
+| `memory_not_current` | 记忆已失效。 | Memory no longer current. |
+| `memory_too_long` | 记忆过长。 | Memory too long. |
+| `unknown_kb` | 知识库不存在。 | Knowledge base not found. |
+| `unknown_document` | 文档不存在。 | Document not found. |
+| 别的 | 已拒绝。 | Refused. |
+
+### 守着它的
+
+| 测试 | 守哪几条 |
+|---|---|
+| `crates/miyu-endpoint/src/connection/outbox/tests.rs`（施工 V-22） | 写的一头：回应、推送交错入队，写出去的照入队的先后、字节同一行行写的一样；排着的一次冲完；没排着的来一行写一行不等；攒到上限分几次写、字节不变；写不出去就停 |
+| `crates/miyu-endpoint/src/wire/tests.rs` | 认请求的每一条、回应是一行、去掉行尾、太长的；太长的跳到换行、下一行照读（施工 FX-1） |
+| `crates/miyu-endpoint/tests/endpoint.rs` | 握手先行、令牌（长短也比）、版本对不上，被拒的断开；握手的回应照核心探到的报沙盒，四种（施工 5-4 下）；造会话、说话；同一个造会话只造一个；没有的会话；载入上一次运行的会话；两个连接只载入一次；照头的语言拒绝；JSON-RPC 的错误码、通知不回应；太长的只拒这一行、连接照旧（施工 FX-1）；工作目录跟着头；不能输入的头造的会话没人确认；空消息；停了的会话下次再载入；打断时排着的接着发 |
+| `crates/miyu-endpoint/tests/limits.rs` | 订阅的回应带限额（施工 6-3 补）：窗口、压缩线照核心的模型算；没报窗口的是 `{}`，窗口太小的只有 `window`；已经订阅着的再订阅也带；核心重启以后载入的照样带；`unsubscribe` 还是 `{}`；回应带 `model`，照蓝图的例子一字不差（施工 8-10） |
+| `crates/miyu-endpoint/tests/subscribe.rs` | 先见结果后见回应；两个会话不串；取消订阅以后不推；掉队推 `resync`、回应一条不丢、重新订阅照常推；积压时回应排在推送后面；取消订阅时已经交给转发任务的回应照样到；会话停了推 `resync`；订阅要握手、要有这个会话、只认 `events` |
+| `crates/miyu-endpoint/tests/replay.rs`（施工 3-8 六补） | 补发推出去的行逐字节和原来的写法（推的时候一条条 `event.to_line()` 写成通知）一样，`after` 落在头、中间、最后一条前面（施工 V-37 下）；补发：`after` 是 0 补整份日志、一字不差、都在回应前面、回应带 `upto`、没有瞬时的，补完接着推下一条；中间的序号补之后的；最后一条、比最后一条大的什么都不补、照常推、一条不重；不写、写 `null` 的照旧、回应没有 `upto`；写错的八种 `bad_params`、先查参数不找会话、一个都没订阅上；核心重启以后要载入的照样补；订阅着、推送堵着时带 `after` 再订阅，旧的手里的回应照样到、补的中间不夹旧的、之后只有新的在推；日志坏了的 `session_broken`、没订阅上，没有要补的不读日志 |
+| `crates/miyu-endpoint/tests/replay_race.rs`（施工 3-8 六补） | 掉了队的头带上最后看到的序号重新订阅，看到的和补的合起来就是日志；真核心：另一个头一句接一句地说、会话一直在追加，中途几个头先后从头订阅，每个头补的和推的合起来都和日志一字不差 |
+| `crates/miyu-endpoint/tests/restart.rs` | 核心重启以后：不带 `cwd` 载入的会话照最后一轮的工作目录、没开过回合的照造会话时的；重发的造会话交回原来那一个、重启以后也认得 |
+| `crates/miyu-endpoint/tests/session_read_only.rs`（施工 YC-6） | 日志中间坏了一行（换成别的、写到一半、序号重了、末尾多了一整行）：`view.page`（事件、条目）交坏行以前的、带 `broken`，不碰坏行的一页不带；说话、订阅拒 `session_read_only`，带哪一段、第几行，给人看的话说第几行；照样列得出来；日志一个字节都不动。坏在第一行的照旧 `session_broken` |
+| `crates/miyu-endpoint/tests/reused_ids.rs`（施工 YC-7） | 同一个编号换了参数再来：造会话只换 `cwd` 的交回原来那一个、`cwd` 照这一次，换了 `memory` 的 `id_reused`、只造了一个；说话原样再来照上一次回应，换了一句的 `id_reused`、只记了第一句；重启以后补回来的造会话编号照旧交回 |
+| `crates/miyu-endpoint/tests/memory_pressure.rs`、`src/sessions/pressure/tests.rs`（施工 MEM-2） | 读数照测试给的（`Core::with_memory_probe`）：别的程序吃满（整台机器只剩 3%、核心 300 MB）照常开会话、看了几次一个都不卸；核心是大头、只剩 3% 的，闲着的会话退下，有回合在跑的、有人订阅的不动，退下的再说话照常载入回来、接着上一轮；cgroup 快撞上限（18 GiB 剩 0.5 GiB）的核心占得再少也卸；限 18 GiB 剩 1.7 GiB 的也卸（施工 MEM-4，`a_large_cgroup_is_tight_with_a_tenth_left`）；隔一小时才看的，开会话时叫一声就当场看、卸的不是删。判法：cgroup、整台机器两种紧，正好一半的算、少一个字节不算，正好等于门槛、读不到的不紧，整台机器离线还远的不读核心自己；门槛对 1.5、18、20、40、100 GiB 的值；远、近、紧三种和下一次隔多久（远 10 秒、近和紧 1 秒、出来恢复，施工 MEM-4）；读的那一下崩了的不紧；表空着的不读 |
+| `crates/miyu-endpoint/tests/memory_pressure.rs` 的 `released_sessions_with_memory_retire_when_tight`、`tests/memory_pressure_log.rs`、`src/sessions/held.rs`（施工 MEM-3） | 开着记忆的会话订阅、说一轮、断开（闹钟上着），判成紧以后都卸，有回合在跑的、还订阅着的留着，卸了的再说话载入回来；紧着一个都卸不动的也记一行 `memory tight`、写清原因，接着看几次不再记，又卸了会话的当场再记；原因的计数和写法 |
+| `crates/miyu-endpoint/tests/memory_pressure.rs` 的 `others_get_the_table_while_a_large_batch_retires`、`tests/memory_pressure_log.rs`（施工 MEM-5） | 200 个闲着的会话判成紧全卸，单线程的运行时被几个任务轮流占着（问一个会话要排一圈队），卸的期间每 10 毫秒拿一次表的锁，最久不过 1 秒；`memory tight` 那一行带 `took_ms` |
+| `crates/miyu-endpoint/tests/loop_command.rs`、`src/commands/resent.rs`（施工 YC-7补） | `command.run` 同一个编号重发：`/loop <话>` 原样再来回应和头一次一样、还是原来那一行循环、没有再交一次，新编号照旧换掉；`/loop 5m x` 的编号换成 `/loop off` 的 `id_reused`、循环还在；被拒的不记、换了参数再来照样跑，别的会话的同一个编号是另一条，只留最新的 1024 条 |
+| `crates/miyu-endpoint/tests/check.rs`（施工 8-30） | `check`：不写文件的照磁盘上现在的字查配置、照核心手里的查密钥、人格每一层各查各的，先后、代码、级别、行对，给人看的那一句照连接的语言；写了文件的照位置认、只查那一份，项目配置照 `.miyu/config.toml` 认、相对的照 `cwd` 接，还没有的人格文件读不了，认不出的 `unknown_file`，多写格的参数不对 |
+| `crates/miyu-endpoint/tests/personas.rs`（施工 P-1 上） | 你那一层的人格进 system、示范对话排在前面；不写人格照默认、都没设的无人格；没有的、编号不对的、写错的拒绝，默认人格指着没有的当没设（施工 P-4 上）；`null` 明着无人格、不写进会话列表和订阅回应；`venue.session` 带人格造、找回时不看；`persona.list`、`persona.get` |
+| `crates/miyu-endpoint/tests/persona_set.rs`（施工 P-3 下、补） | 不写编号新建、核心起 `persona-1`、`persona-2`，一次带名字、人设、一对一对的示范对话、角色扮演提示，写成文件的写法、空行去掉，开会话用得上，一样的字不再写，只删不写的新建参数不对；读原文和版本、不给来处，出厂的没改过 `remove` 是空的、改过是 `restore`，旧版本存撞上什么都不写，空的字是这一段空的；删提示词回到下面的、删没有的不出错；写错的示范对话、`memory.scope`、写不回原样的 `pairs` 什么都不写、带照连接语言的 `message` 和行；参数不对的十种、读的两种、没有的人格；删了挪进回收处、整个目录、读不到了，盖在出厂上的回到出厂、本来没有的、编号不对的 |
+| `crates/miyu-endpoint/tests/preset_set.rs`（施工 P-3 中、补） | 不写编号新建、核心起 `preset-1`、`preset-2`，别的照旧全开，`remove` 是 `delete`，开会话用得上，只删不写的新建参数不对；改出厂的只写改了的项、`remove` 是 `restore`，没改过的是空的；注释、顺序照原样，以前的语言表换成一句字；删一项回到下面的；`expect` 对不上的两种、对得上的照写；写错的值、不认识的键、空的名字、默认人格写法不对的整条不收、什么都不写、带照连接语言的 `message`；参数不对的九种；删你那一层回到下面的、只有你那一层的就没了、本来没有的、编号不对的；一样的值不写 |
+| `crates/miyu-endpoint/tests/presets.rs`（施工 P-2 上） | 不写预设照默认、指定的压着默认；人格照「指定、预设的默认人格、`persona.default`」；没有的、编号不对的、写错的拒绝、什么都不造，默认预设指着没有的也拒；会话列表、`subscribe` 写 `preset`，以前的日志不写；`venue.session` 带预设造、找回时不看；`preset.list`、`preset.get`；`check` 查预设 |
+| `crates/miyu-endpoint/tests/edges.rs` | 不握手的到时断开、握手了的不受管；数组的 `params` 参数不对；握手被拒照它报的语言说；人格目录不存在是 `unknown_persona`、目录在而读不了是 `internal_error` |
+| `crates/miyu-endpoint/tests/list.rs` | 从新到旧、只要一次性的、`limit`、参数不对、空的；每一项带 `cwd`、合写法的 `last_active`，闲着的不写 `busy`（施工 C-3） |
+| `crates/miyu-endpoint/tests/last_spoken.rs`（施工 SX-1） | 人说一句有 `last_spoken`，循环、定时任务、她的回复只动 `last_active`；没人说过话的不带；索引重建以后一样；回合中途插的一句推 `sessions.changed`；场所会话里旁听的一句也算 |
+| `crates/miyu-endpoint/src/list/tests/indexed.rs`、`tests/index.rs`、`tests/index_log.rs`（施工 3-8 七补） | 读索引的和整份读的一字不差；补上、重读、重建；索引那一行跟着会话走、删会话删行；几行运行日志（`store/index.md`「守着它的」） |
+| `crates/miyu-endpoint/src/list/tests/limited.rs`（施工 YC-13） | 带 `limit` 的就是不带的头几个（各种会话、几种挑法、空的和缺行的索引、跨批）；200 个会话里列 5 个，从索引里读的整行不跟着会话总数走 |
+| `crates/miyu-endpoint/tests/sessions.rs`、`src/list/tests.rs`（施工 C-3） | 工作目录跟着头报的换、忙着的写 `busy`（子会话也算）、最近一次动静是日志最后一条（`tool.nested` 不算，施工 M-1）；工作目录照最后一条带 `cwd` 的、不带的不盖、一条都没记的写 `~`，哪种事件都算动静，叫停的旗举了一个都不读；她用 `sessions` 列的和它是同一份（`tools/sessions.md`） |
+| `crates/miyu-endpoint/tests/meta.rs` | 改标题、置顶（施工 3-8 三补）：改名去掉空白、只写改了的那一格、推送在回应前面、`by`、`cause`；置顶、取消、两样一起；`null` 去掉标题记成空的；和现在一样的六种什么都不记；200 个字收、201 个字和空白的不收；两格都不写（含 `pinned` 写 `null`、会话没有的）、类型不对、会话编号不对是参数不对，没有的会话找不到；回合进行中改的带上回合；`session.list` 带标题、置顶，取消了、去掉了的不写，核心重启以后照样，载入以后照日志接着比；日志坏了的照样列出来，工作目录、最近一次动静照第一条（施工 C-3） |
+| `crates/miyu-endpoint/tests/sessions_changed.rs`、`src/listing/tests.rs`、`src/subscriptions/sessions/tests.rs`（施工 9-5） | 订阅的回应是整张列表、没标题的带 `preview`；造会话、一轮开始、空下来、改名、置顶、删会话各推一项，整项和 `session.list` 的一样，有标题就不带预览；内核起的标题也推；取消以后不推；`sessions` 带 `session`、`after` 是参数不对；另一个连接一直改名时订阅，回应以后推来的不比回应里的旧；列表记的号盖住它前面的变化；转发任务先写回应、丢掉号不大于它的、掉队推 `resync` 停下 |
+| `crates/miyu-endpoint/tests/delete.rs` | 删除会话（施工 3-8 三补）：空闲的整个目录挪进回收处、日志不变、`deleted_at` 是删的时刻，列不出来，再发命令、订阅、改名、打断、再删都是没有这个会话，重发造它的那一条另造一个；回合进行中的拒绝、什么都没动，打断以后删得掉；核心重启以后没在跑的不载入就删（被重启打断的那一轮不接着干）；参数不对、没有的会话 |
+| `crates/miyu-endpoint/src/sessions/delete/tests.rs`（施工 7-8） | 删子会话在表的锁里停它、父会话记回报：父会话一记下它停了就去叫醒它，拿到表的锁时它已经删掉了，删得掉（挪进锁以前，这时它又开了一轮，删的时候说有回合在进行） |
+| `crates/miyu-endpoint/tests/orphans.rs`（施工 7-8） | 真核心：父会话派出去一个子代理，没来得及记下 `job.started` 就崩了（日志截在派它的那条回复后面），再载入父会话时子会话挪进回收处；一次派两个、只记下一个的只收那一个；记下了的照留 |
+| `crates/miyu-endpoint/tests/delete_children.rs` | 删会话连子会话（施工 3-8 三补）：主会话派的子代理、子代理派的孙代理一起停下、各自挪进回收处，两条后台命令各杀一次、谁都不记回报；删一个正忙的子会话，主会话记一条 `stopped` 的回报（`by` 是子会话、不带 `by_model`）、被叫醒，子会话挪走、主会话还在；报过 `done` 又被留了言、主会话又在等它的，删它也记一条 `stopped`、叫醒主会话（施工 7-7）；主会话已经进了回收处的，删子会话照样删、不送；子代理派的编号带着它自己的 `j1`（`j1.1`、`j1.2`），删孙会话时子会话记的 `stopped` 回报是 `j1.1`（施工 7-1 补） |
+| `crates/miyu-endpoint/tests/spawn.rs` | 会话里派子代理，会话表造出子会话、交代送进去、替身模型在子会话里答话；`session.list` 里子会话写着父会话、主会话写 `null`（施工 7-5） |
+| `crates/miyu-endpoint/tests/revert.rs` | 协议上撤销、恢复；三种拒绝的中文；`turn` 写 0 |
+| `crates/miyu-endpoint/tests/permission.rs` | 协议上切权限级别（施工 3-8 再补）：开只读、关只读、写着级别再开只读，各记一条、推给订阅着的头、回应 `{}`，推送带着切以前的 `from`（施工 PL-1）；和现在一样的四种什么都不记不推；两格都不写（含写 `null`、会话没有的）、级别和只读的值不对（以前的 `workspace` 也算，施工 AUD-4）、会话编号不对、没写会话是参数不对；没有的会话找不到，停了的会话是停了；回合进行中收紧成只读，真核心走一遍：等着的写入当场补 `denied`、和切权限同一批、推送在回应前面，放行以后请求之前注入只读那一块（切换那一份，带上一级 `full`，施工 2-7 补），写的一次没跑 |
+| `crates/miyu-endpoint/tests/answer.rs`（施工 D-1） | `session.answer` 真核心走一遍：允许这一次照常跑、回应列出事件；本会话都允许以后同一个目录不再问；拒绝的理由她看得到、这一轮接着走；参数不对的七种 `bad_params`、什么都没记；`unexpected_reason`、答过了 `not_asking`，话照握手的语言 |
+| `crates/miyu-endpoint/tests/job_stop.rs` | 协议上停子代理（施工 7-4）：回应 `{}`、回应之前父会话记下了回报、子会话那一轮被父会话打断；停过的、没有的 `unknown_job`，中文、英文；编号不合写法、不是字符串的参数不对；没有这个会话 |
+| `crates/miyu-endpoint/tests/job_output.rs` | 协议上读后台命令的输出（施工 7-4 补），后台命令用假的：跑着的读到这时为止的、`running` 是真，和她用 `jobs` 读到的一样；结束了的读 blob（拿掉输出文件照样读得到）、`running` 是假，和 `jobs` 读到的一字不差；`tail` 截尾、`truncated`、`lines`，最后一段没有换行的照样，不写 `tail` 交最后 200 行；超了上限从前面按整行去掉；开不了的输出文件当是空的；空的；没有这个任务、编号不合写法、`tail` 不对的七种（先查、不找会话）、没有这个会话、子代理的拒绝，中文、英文；拒绝的什么都不写。施工 V-6 上：`after` 只读新长出来的、`size`，带 `wait` 的等到长了、结束了才答，等着的那一条不挡这个连接别的请求，`after`、`tail`、`wait` 写错的几种 `bad_params`；`after/tests.rs` 停在完整的字后面、一次最多 128 KiB、过了结尾照结尾算 |
+| `crates/miyu-endpoint/src/job_output/tests.rs` | 取尾巴（施工 7-4 补）：照 `jobs` 数行、只照换行切；最后几行；上限正好 131,072 字节的一行整行给、多一个字节只留末尾；超了从前面按整行去掉；最后一行太长只交末尾、前面的不接上（前面那一行正好放得下也不接），读的时候就去掉过前面的也一样；中间太长的一行、截过的一行后面又来了行，整行去掉；截处从一个字的开头起，剩半个字的跳过；解不开的字节换成 `�`；读不下去的读到多少算多少；最坏的回应（每个字节都转义成六个、编号全是引号）放得进一行；回应的格 |
+| `crates/miyu-endpoint/tests/human.rs`（施工 W-1） | 协议上 `human.get`：和 `Human::load` 读到的一样，工具的样子一样、说法的编号带位置（`core/…`、`software/<包>/…`）、模板是原文一个字不换；软件包盖掉内核的同名工具；没有这种语言照英文；不写 `language` 照握手的语言；`language` 不合写法参数不对；回应里没有 `config` 那一格；读不懂 `internal_error`；改了资源，核心不重启下一次调就是新的；真核心照源码树的资源，`zh`、`en`、`ja` 三种都交得出 `tools`、`said` |
+| `crates/miyu-endpoint/src/queries.rs` 里的测试、`crates/miyu-core/tests/packages.rs`（施工 W-4） | 查询表：没登记的方法交回 `None`、照协议是 `unknown_method`；登记过的名字正好对上才找得到。`mermaid.render`：真核心走一遍，一张流程图、一张时序图都出 SVG，回应的 `marks` 和 SVG 里用的三种记号色对得上，同一份源码两次拿到一样的回应；空的 `bad_params`、超过 64 KiB `mermaid_too_long`、画不出 `mermaid_failed`（`data.detail` 不是空的）。细节见 `mermaid.md`「守着它的」 |
+| `crates/miyu-endpoint/src/queries.rs` 里的测试、`crates/miyu-core/tests/packages.rs`、`crates/miyu/tests/link_preview.rs`（施工 W-7） | 在后台答的只有照 `register_background` 登记的；同一个名字两种登记也 panic。`link.preview`：没登记回 `unknown_method`；登记了的读不成地址、不是 http 不碰网络就答；`url` 没写、不是字符串、`params` 是数组 `bad_params`；在后台答的不挡后面的请求、回应照 `id` 对上、连接断了它跟着停；真的核心照环境变量里的代理做出卡片、图用 `blob.get` 读得回来。细节见 `net.md`「守着它的」 |
+| `crates/miyu-endpoint/tests/redo.rs` | 协议上重做（施工 4-7 再补）：回应带撤销的几样和重发的那一句、推送里是一批撤销、原话、新的一轮，新的一轮的请求和撤掉的那一轮的一字不差；换了话的推送里是新的话、`said` 是原来的；改过文件的照样同一批重发、文件不动、回应没有 `files`（施工 U-1）；重做以后恢复不了；最后一轮是清空、没说过话的，有回合在进行、换成空的拒绝，中文、英文；`text` 不是字符串、会话编号不对的参数不对，写 `null` 当没写；附件照带、换掉、不要，没有的 blob `unknown_attachment` 什么都不写 |
+| `crates/miyu-endpoint/tests/compact.rs` | 协议上手动压缩（施工 6-8）：回应是那一轮的开头、推送里压好了；要求原样到了摘要请求里；撤掉那一轮的回应里没有 `said`；有回合在进行、没有能压的两种拒绝，中文、英文；`instructions` 不是字符串的参数不对 |
+| `crates/miyu-endpoint/tests/recap.rs`（施工 3-8 四补） | 协议上要回顾：回应是那一句、照到的、不是交回的；推送里先有回顾的 `model.called`、`session.recapped`，都不带回合编号、`cause` 是这一条，再是回应，别的头也收到；请求是一条 user、没有 system 和工具面；没有新内容再要一次交回上一句、不请求；有回合在进行时照收、照到的是这一轮那句话；没有能回顾的、没写成的两种拒绝，中文、英文，没写成的不再来；会话编号不对、没写、不是字符串的参数不对，没有的会话找不到 |
+| `crates/miyu-endpoint/tests/retitle.rs`（施工 TT-1） | `session.retitle`：四轮的会话，模型收到的是同一份指令接最近三轮、没有第一轮（自动起的那一次照旧只有第一轮），推来 `model.called`（`purpose: "title"`）和 `by` 是人的 `session.meta_changed`，列表里算人起的，重启核心以后照样、再答完一轮不自动起（施工 TT-2）；人起过名的换掉；没说过话的、没写 `session` 的 `bad_params`；一次在路上时再要的只发一次；`titles: false` 的照样起 |
+| `crates/miyu-endpoint/tests/retitle_failed.rs`（施工 TT-3） | 辅助请求的总时限和人要的重起标题没起成：剧本设短的总时限，起标题一直不说完的到时叫停端口、推 `by` 是人的 `session.retitle_failed`（`retryable`、「总超时」、`human` 的编号），视图流出 `retitle_failed` 旁白（中文连接是「更改标题失败」），`model.called` 照出错记，标题不动；出错的也推，下一次起成了的不推、过了总时限也不当超时；自动起的超时了不推、下一轮照试；回顾到时拒 `recap_failed`；回复里要了工具、带着占位字的算没起成、推失败、标题不动 |
+| `crates/miyu-endpoint/tests/title.rs`（施工 3-8 五补） | 自动起标题：第一轮答完，订阅着的头收到起标题的 `model.called`（`purpose: "title"`）和 `session.meta_changed`，`by` 是内核、不带回合编号和 `cause`；请求是一条 user、没有 system 和工具面，只喂第一轮；`session.list` 带上标题，核心重启以后照样；第二轮不再起；人先起过名的不起 |
+| `crates/miyu-endpoint/tests/person_shell.rs`（施工 SH-1 上） | `session.send` 的 `shell`：真核心、真的基础系统，本人发的不问权限就跑、记 `shell.ran`、她的请求里是那条命令和输出；带 `from` 的 `shell_not_allowed`，带附件的 `bad_params`，空的 `empty_message`，工具目录里没有跑命令的工具的 `shell_unavailable`，都什么都不记；场所会话带不带 `as` 都 `shell_not_allowed`（`venues.rs`） |
+| `crates/miyu-endpoint/tests/commands.rs`（施工 O-6） | `command.run`：`/clear`、别名 `/reset`（开头空白、后面跟的字照认）清空并记 `command.ran`，回执是中文那一句；`/stop` 打断、排着的留在日志里不接着开、子代理停了，没有回合也照样记；认不出的、`/` 后面是空白的 `unknown_command`，不以 `/` 开头的、多写格的参数不对，都什么都不写；内核拒的照原因回；同一个编号再发、重启以后再发回应一样、只记一次；场所里主人、管理的人能用，别人 `command_not_allowed`，不带 `as` 的 `venue_session`，本机的会话带 `as` 参数不对；`session.interrupt` 收 `keep` |
+| `crates/miyu-endpoint/tests/goal_heads.rs`（施工 X-8 补） | 事件流订阅的回应没有目标的不写 `goal`、有的同会话状态；设了、开一轮、等人开口各推一条 `goal.changed`（`by` 模块 `goal`，带上限）；续轮消息的 `cause` 是 `goal-1-…`；视图条目带 `round` |
+| `crates/miyu-endpoint/tests/goal_command.rs`、`src/commands/goal/tests.rs`（施工 X-8 下） | `command.run` 第 10 条：设了就开续轮，看、停、改、继续、清掉各一句回执，`goal.*` 的 `by` 是打命令的人，执行了的记 `command.ran`、被拒的不记；没写上限的改照原来的；卡住的再设、停拒，改了上限能接着跑；工具面上没有、预设关了（带预设的名字）、通讯平台的会话 `goal_unavailable`，命令菜单不列；子命令只在后面没字时认，`--rounds` 的几种写法 |
+| `crates/miyu-endpoint/tests/prefix_ask.rs`、`src/presets/edits/tests.rs`、`miyu-session` 的 `actor/persona/tests.rs`（施工 OV-1 下） | `session.send` 第 9 条：覆盖改了，声明了的头 `send`、`redo`、模板命令、`/goal` 都拒 `prefix_changing` 带文件；`keep` 照常说、这一轮照新的拼、拼过不再问；没声明的头不问；`compact` 压完了才开这一句的那一轮；改动表挪出去的数进 `more`；不换快照的会话不问 |
+| `crates/miyu-endpoint/tests/workspace_command.rs`（施工 9-7 下） | `/workspace <路径>` 同 `set_workspace` 只换工作目录、加进来的目录照旧，回执是中文那一句，一样的不记换；相对的照 `cwd` 接、没带的照会话的接，路径里的空白照留，`cwd` 不是绝对的参数不对；不带路径的只说现在在哪；不在的、文件、数据根里的照原因拒绝、什么都不记；`~` 太宽回执说一声；场所里管理的人 `owner_only`，主人能换 |
+| `crates/miyu-endpoint/tests/clear.rs` | 协议上清空（施工 6-8 补）：回应是那一轮的开头、订阅的推送里是那一批三条、不请求模型；下一次请求里没有清空以前的；撤掉那一轮回应里撤掉了一次压缩、没有 `said`，再问看得到了；有回合在进行、本来就空的两种拒绝，中文、英文；会话编号不对、没写的参数不对 |
+| `crates/miyu-endpoint/src/sessions/tests.rs` | 父会话不在会话表里的不再造子会话、什么都没建（施工 3-8 三补） |
+| `crates/miyu-endpoint/tests/workspace.rs` | 太宽的五种（`~`、家目录、根目录、数据根、数据根里面）和读不出家目录时的 `~`；项目目录、默认工作区照旧；回应里的 `cwd`、重发的造会话 |
+| `crates/miyu-endpoint/tests/dirs.rs` | 加进来的目录（施工 5-10 上）：造会话、说话时报的记进这一轮，不写的照旧、写空的就没有；太宽的五种整条命令都不收、什么都没写；核心重启以后照最后一轮的 |
+| `crates/miyu-endpoint/tests/idle.rs` | 连着连接、跑着回合不空闲；停下全部会话，跑到一半的记成重启了 |
+| `crates/miyu-endpoint/tests/attach.rs` | `blob.put`（施工 3-9 三补）：传路径、传内容；照内容认图片（扩展名不算）、PDF、文本、别的文件，量宽高，回应的格照字母排、存成 blob；写了的媒体类型什么时候算、改名、写 `null` 等于没写；太大（20 MiB、图片的宽高和 5 MiB，正好在线上的收）；数据根里的不给、默认工作区给、指到数据根里的链接不给；读不了（没有、目录、没有家目录时的 `~`）；参数不对的十二种、一个都没存；四种拒绝的中英文 |
+| `crates/miyu-endpoint/tests/uploads.rs`、`crates/miyu-core/tests/packages.rs`（施工 W-5） | `blob.open`、`blob.write`、`blob.close`：分块传完和 `blob.put` 同一个回应、同一个 blob；接不上回 `upload_offset`（`data.received` 对）；没收齐 `close` 回 `upload_incomplete`，还能接着写完；别的连接拿编号用不了；连接断了、60 秒不写都作废并删暂存；`size` 超过 20 MiB 当场 `attachment_too_big`；同时开到第 5 个 `too_many_uploads`，关掉一个腾出位置；`data` 不是 base64、一块超过 512 KiB、加起来超过 `size` 都是 `bad_params`；图片照 `blob.put` 的规矩认、查上限。`packages.rs` 另测 `packages::clear_uploads`：崩了留下的 `upload-*` 清掉、真的 blob 不碰、还没存过东西时不出错 |
+| `crates/miyu-endpoint/tests/attach_send.rs` | `session.send` 带附件（施工 3-9 三补）：照先后接在文字后面，宽高、种类照核心量的，图片块带着 `blob.put` 的名字（施工 3-9 四补），她收到的请求里就是这几块；只有附件也是一句话，`null` 是没有；blob 不在的拒绝、什么都没写、换的工作目录也没送进会话；附件的格不对的七种 |
+| `crates/miyu-endpoint/tests/attach_path_only.rs`（施工 AT-1） | 只有路径的附件：记成一块 `path`，核心不读、不查在不在，和有 `blob` 的混着先后不乱，她收到的请求里就是这几块，不建附件目录，视图里带 `path_only`；只有它也是一句话；写法不对的十九种（`session.send`、`session.redo` 都是 `bad_params`）、一项不对整句不送；重做照带、照换，撤销恢复以后还在；压缩以后摘要请求里还是那一块；导出再导入还在；场所会话（带 `as` 的、重做的）、`session.answer` 不收 |
+| `crates/miyu-endpoint/tests/files.rs` | `fs.list`、`fs.find`（施工 W-2）：真核心上数据根不列不找、默认工作区照样列；开头对、大小写不论、点开头的打了点才列、目录在前、50 条截断、`marks`；模糊找有 `marks`、子目录的 `path` 用 `/`；清单没建完先给一部分、`building`；`fresh` 隔一段时间才重建、不是 `true` 不重建；最多记 4 份、多了丢最久没用的；换不成真实的位置、不是目录的 `path_unreadable`；没写 `cwd` 的 `bad_params`。施工 V-6 上起等清单建完都带 `wait`（一次请求，`building` 一定是 `false`）；`miyu-fs` 的 `find/tests.rs` 守着 `wait` 建完了才醒、建的线程崩了也醒 |
+| `crates/miyu-endpoint/tests/hello.rs`（施工 W-3） | 握手的 `host`：三格总有、`platform` 是这台机器的、`workspace` 换成真实的位置（链接也换成指的地方）、没有系统的家目录 `home` 是 `null`、没人建过工作区就回原样的路径（不替连上来的头造目录）。`fs.realpath`：`~` 照家目录接、`cwd` 可以不写也可以本身是 `~`；相对的没给 `cwd` 的 `bad_params`；往上找最近在的一层、后面几段原样接上；路中间的链接换成指的地方；落在数据根里的照样换，不查边界；一层都不在（没有家目录）`path_unreadable` |
+| `crates/miyu-endpoint/tests/core_stop.rs`（施工 DT-4 下） | `core.stop`：本机令牌连上的回 `{}` 以后叫停；设备令牌连上的 `local_only`、远程的 `local_machine_only`，没叫停、核心照旧能用 |
+| `crates/miyu-endpoint/tests/login.rs`、`login_log.rs`（施工 W-8） | 握手的四种凭据、`account.setup_code`、`account.setup`、`account.logout`、作废了断开、运行日志里没有码、密码、令牌（`web-module.md`「守着它的」）；交接票换一次、换出的登录令牌认得（W-8 补）；扩展要票一张一行、带包编号和 `via`，远程换不了记一行，日志里没有票（LP-1） |
+| `crates/miyu-store/src/access/tests.rs`（施工 SU-6 上） | 访问密码 `access.json` 读写：没设的是空的、设了验得过 |
+| `crates/miyu-endpoint/tests/login_ticket.rs`（施工 LT-1） | 握手交 `ticket`：连上来、回应带新的登录令牌、换出的认得、同一张只能用一次（再交、再 `login.redeem` 都是 `bad_ticket`，断开）；不认得的票 `bad_ticket`；和本机令牌、密码、登录令牌一起写的 `bad_params`，票没被用掉；人要的 `page` 票本机握手、本机 `login.redeem` 换得到，局域网、`127.0.0.1` 的远程握手、远程登录着的 `login.redeem` 都 `bad_ticket`、票作废，`open`、不写 `via` 的远程照旧换得到（LP-2） |
+| `crates/miyu-endpoint/tests/ticket_extension.rs`、`src/login/ticket/tests.rs`、`crates/miyu/tests/login_ticket.rs`（施工 W-8 补、LP-1） | 扩展没批 `login.page` 要 `page` 的票回 `needs_approval`，不写、别的 `via` 回 `local_only`；批过的要得到，本机握手、本机 `login.redeem` 换得到设备令牌，局域网、回环地址（同机反向代理）的远程握手、远程登录着的 `login.redeem` 都 `bad_ticket`、票作废，人要的 `open` 票远程照旧换得到（LP-1）；`page` 的票记成只在本机换、别的哪儿都能换（LP-2）；一张只换一次、过期的不认、最多 16 张；真核心、真套接字上照登录令牌连（`connect_login`）、要票、换票，登录令牌不认的连不上 |
+| `crates/miyu-endpoint/tests/reads.rs`（施工 W-6） | `blob.get`：读一段、读到结尾就停、`offset` 过了结尾是空的、不写 `offset`、`length` 的默认值、`length` 写 0 只问大小；没有这个 blob `unknown_blob`。`fs.read`：数据根拒、工作区能读、相对的 `bad_params`、`~` 接系统的家目录；没有、目录、（Unix）套接字 `path_unreadable`。两个方法 `length` 超过 512 KiB 都是 `bad_params`；拒绝的中英文 |
+| `crates/miyu-endpoint/tests/session_shown.rs`（施工 SW-1） | `session.shown`：`show` 过了 20 MiB 的文件照常成、日志里的 `file.shown` 没有 `blob`、存处没多东西；远程的连接读开头、读到结尾就停、过了结尾是空的、写 0 只问大小、不写读 512 KiB、超过 512 KiB `bad_params`，本机的也读得到；读的调用、没有的调用、没有的会话 `unknown_shown`，写法不对、多写 `path` 的 `bad_params`；只改修改时间、只改大小 `file_changed`，改回去又读得到，删了 `file_gone` |
+| `crates/miyu-endpoint/tests/blob_grants_restart.rs`、`src/attach/grants/tests.rs`、`crates/miyu-store/src/blob/grants/tests.rs`（施工 BG-1） | 扩展自己存的 blob 核心重起以后还读得到、别的包照旧读不到；自己存的落盘、读得回，同一个哈希只写一行，经 `package.call` 转来的、人交来的不落盘，卸了文件删掉；坏行跳过数得出，写到一半的最后一行不和下一行粘在一起 |
+| `crates/miyu-endpoint/tests/blob_grants_backfill.rs`、`src/attach/grants/backfill/tests.rs`、`crates/miyu-store/src/blob/grants/scan/tests.rs`（施工 BG-1补） | 删掉 `var/lib/blob-grants/` 以后再起：包状态目录里记着、存处有的补登记给它，没记的、别的包照旧读不到，目录建出来；目录在了以后再写进状态目录的不补；存处没有的不登记，一个包扫不了不拦别的，留着半截的暂存目录照样完整补上、暂存目录没了；扫描找得到文本里、二进制里、跨着两块的，写法不对的不认，不跟链接，太大、太多、太深的数得出 |
+| `crates/miyu-endpoint/tests/blob_grants.rs`、`src/attach/grants/tests.rs`（施工 W-6 三补） | 扩展不写 `session`：自己存的读得到、主人存的读不到、别的包存的没拿到过读不到；经 `bus.call` 拿回来、答的包拿得到的读得到，答的包写进回应、自己拿不到的读不到；包卸了从空的开始。扩展写了 `session`：会话引用过的读得到、没引用过的读不到。人的连接照旧 |
+| `crates/miyu-endpoint/tests/blob_bridge.rs`、`sent_media.rs`、`crates/miyu-core/tests/packages.rs`（施工 Y-2 中下，SU-4 中改） | 桥一次传、分块传的都在同一个存处，发出去以后主人那边读得到；替主人干活的扩展 `blob.put` 存的，`model.call` 带这张图找得到（施工 BUG-2）；包工具交回的图在存处里；核心起来时留下的分块暂存清掉 |
+| `crates/miyu-endpoint/tests/list_bridge.rs`、`src/subscriptions/sessions/tests.rs`（施工 Y-12 上） | 桥和主人列出来的本机会话一样；新造的会话推给订阅着的连接 |
+| `crates/miyu-endpoint/tests/from.rs`、`src/from/tests.rs` | `session.send` 带 `from`（施工 7-10）：记成 `harness`、带着名字，不带的、`null` 照旧记成本人；闲着开一轮、`cause` 是这一条，正忙排进这一轮；附件照收；控制字符去掉、截到 128 字节不截断一个字；空的、只有控制字符的、不是字符串的参数不对，什么都没写；`session.create`、`session.redo` 写了不理 |
+| `crates/miyu-tool/src/attachment/tests.rs` | 认附件：量得出的图是图片、头写的不算，量不出的当文件；图片的上限和线上的；PDF 照开头认；别的文件照头写的，写成 PDF、图片的照内容认，文本、空的、二进制、不是 UTF-8 的 |
+| `crates/miyu-endpoint/tests/tools.rs` | 造会话、载入时用核心的工具目录；核心的沙盒造会话、载入时都交给会话，沙盒用不了的核心上执行命令没人能确认就拒（施工 5-4 上） |
+| `crates/miyu-endpoint/tests/socket.rs` | 真的套接字（Windows 上是命名管道）上握手、造会话、说话，第二个头也连得上 |
+| `crates/miyu-endpoint/tests/config.rs`、`config_trust.rs`（施工 8-2） | 握手的 `language`、`config_errors`；`config.schema`、`config.get`、`config.check`；`unknown_config_key` 带 `problems`；开局只读照配置、照信任着的项目配置；造会话、说话的回应带 `untrusted_project`（`config.md`「守着它的」）。`config.trust` 的回答、拒绝、日志（施工 8-3） |
+| `crates/miyu-endpoint/tests/models.rs`（施工 8-7） | `model.list` 的形状、来源、状态；`provider` 只看一家、`unknown_provider`、参数不对；`refresh` 拉完再答、不写的在后台拉；冷却（施工 8-9）：模型照能用的 key 里最好的那个，都在冷却的带最早恢复的 `until`、`class`，认证失败停了整个 key 的那个 key 也是 `cooling`，取不到值的 key 不算（`models.md`「守着它的」） |
+| `crates/miyu-endpoint/tests/models_pools.rs`（施工 8-8） | `model.list` 的 `pools`（8-8 补多 `subagent`、`description`，没有 `tiers`）、`uses`；`session.create` 的 `model` 记下解析出的、`unknown_model` 什么都不造、不是字符串的 `bad_params`；`session.configure` 照这时的配置解析好记一条、先推再回应、一样的不记，参数不对的几种 `bad_params`、先找会话、解析不出的 `unknown_model`、都什么都不记；`subscribe` 的 `model` 照真路由解析出的写，轮换的池只有 `ref`，一个都没有的不写（施工 8-10，`models.md`「守着它的」） |
+| `crates/miyu-endpoint/tests/models_effort.rs`（施工 8-18；8-18（补）去掉会话那一层；SM-1 加回来） | `session.configure` 的 `effort` 记一条、一样的不记、`null` 回到跟着配置、和模型一起换的照换成的查、池上设的拒（SM-1 补），不在档位里的、空字、8-18 那种对象 `bad_params`（`data.field` 是 `effort`）、什么都不记；一格都没写的 `bad_params`；重启以后订阅说 `from: session`；`subscribe` 的 `model` 多 `effort`，`from` 是会话或者配置的哪一层；`model.list` 的 `facts.effort`、多一格 `key`；配置里写错的 `unknown_effort`（`models.md`「守着它的」） |
+| `crates/miyu-endpoint/tests/providers.rs`、`providers_test.rs`、`providers_log.rs`（施工 8-11） | `provider.detect`、`provider.catalog`、`provider.test` 的形状、参数不对、`unknown_provider`，`{value}` 的 key 不进回应和运行日志（`models.md`「守着它的」） |
+| `crates/miyu-endpoint/tests/provider_rename.rs`（施工 8-34） | 表连同子表、密钥的引用换名，引用、池的成员都换，别处的字照原样；改名记进模型资料；新编号已有、旧编号没有、写法不对的拒，什么都不写 |
+| `crates/miyu-endpoint/tests/memory_dream.rs`、`src/commands/tests.rs` 的 `only_dream_is_answered_later`、`src/subscriptions/later/tests.rs`（施工 R-7 补） | `memory.dream` 的回应、再叫一次是零、`memory_busy`、`memory_not_installed`、在后台答（同一个连接后面的请求先回）；`/dream` 的回执、命令表里列、在后台答，订阅着的 `command.ran` 先到；在后台答的命令只有 `/dream`；在后台答的回应照办完那一刻的订阅走：订阅着的交给转发任务，没订阅的、不是给会话的、放下了的直接写，换了的交给新的，只拿弱的一头、转发任务退得了，放下了的下一次开通道时清掉（细节见 `memory.md`「守着它的」） |
+| `crates/miyu-endpoint/tests/memory_dream.rs` 的 `slash_stop_stops_the_sessions_dream`、`slash_dream_stop_stops_only_the_dream`（施工 R-22） | `/stop`、`/dream stop` 叫停这个会话的整理：`/dream` 照样回应、回执说中断了，记忆流推 `merge_failed`（`stopped`）；`/dream stop` 的回执，没在整理的 `not_dreaming`，跟别的字的 `bad_params` |
+| `crates/miyu-endpoint/tests/memory_dream_stop.rs`（施工 R-23） | `memory.dream_stop`：照人格叫停同一条连接上在后台答的 `memory.dream`，两条回应都带 `stopped`，记忆流推 `stopped`；叫之前、整理回了以后都是 `not_dreaming`；下次接着合 |
+| `crates/miyu-endpoint/tests/model_call.rs`、`model_call_log.rs`（施工 8-20） | `model.call` 的回应形状、参数校验、blob 不在存处里的、几种出错的 `data`、不进会话日志、运行日志那两行（`models.md`「守着它的」） |
+| `crates/miyu-endpoint/tests/secrets.rs`、`secrets_log.rs`（施工 8-5） | `secret.*` 的回应、拒绝、日志；值不进回应、拒绝、系统日志、运行日志（`config.md`「守着它的」） |
+| `crates/miyu-endpoint/tests/config_set.rs`（施工 8-3） | `config.set` 的回应、每一种拒绝、`expect`、版本、手改重读、全收或者全不收、写不成什么都没变、日志（`config.md`「守着它的」） |
+| `crates/miyu-endpoint/tests/memory_follow.rs`（施工 R-12 上） | 记忆日志的推送：带 `after` 的先补、再回应 `upto`、再推，推的是日志那一行原样（`body`、`by`、`cause`）；她在聊天里经工具记的照样推（`by` 是那次调用、出处是那个会话）；不写的只推之后的，另一个连接从中间补；会话那一间推的带 `session`，人格那一间的不串；再订阅换掉、取消了不推、没订阅的取消回 `{}`；写入堵着的连接掉队推 `resync`、回应一条不丢；`after` 写错、两样都写、没有的人格、没有记忆的会话、没装的照原因拒（挑哪些见 `memory.md`「守着它的」） |
+| `crates/miyu-endpoint/tests/memory_restore.rs`、`memory_turns.rs`（施工 R-12 下） | `memory.restore`：忘了的恢复以后照常列出、搜得到，同一个编号只算一次，本来就算数的不写，拒绝的几种；`memory.turns`：搜得到以前那一轮的会话、轮、时刻、字，`limit`，会话那一间的不串，写错的几种（细节见 `memory.md`「守着它的」） |
+| `crates/miyu-endpoint/tests/knowledge.rs`（施工 K-1 上） | 「`kb.*`」：三个方法的回应一格一格对、`kb.toml` 写错的带 `error`、挂的目录用不了的带 `error`、`kb.search` 跳过它（施工 K-4）、只搜一个；写错的几种 `bad_params`、`unknown_kb`、`unknown_document`、`kb.` 开头的别的方法 `unknown_method`（细节见 `knowledge.md`「守着它的」） |
+| `crates/miyu-endpoint/tests/knowledge_manage.rs`（施工 K-7 上） | 「`kb.*`」管理的七个：建、改、挂、加、换、删文档、删库、重建的回应；各自的拒绝（细节见 `knowledge.md`「守着它的」） |
+| `crates/miyu-endpoint/tests/knowledge_package.rs`（施工 K-8） | 「`kb.*`」软件包带来的库：装上当场列得出、带 `package`、搜得到；改名字、删拒 `kb_packaged`，建同编号 `kb_exists`，`auto` 照改；卸掉当场没了；核心起来时照核对过的清单，没收的包不带库 |
+| `crates/miyu-endpoint/tests/config_watch.rs`、`config_watch_log.rs`（施工 8-4） | 订阅配置、取消、参数不对；手改推 `config.changed`；`config.set` 先见推送后见回应；掉队推 `resync`；改了语言下一句照新的（`config.md`「守着它的」） |
+| `crates/miyu-endpoint/tests/prefs.rs`、`extension_rights.rs` 的 `heads_own_prefs_are_people_only`、`src/connection/tests.rs`、`crates/miyu-store/src/prefs/tests.rs`（施工 HP-1） | 「头自己的设置」：没有的是 `{}`；照顶层的键并、`null` 删、对象整个换、`{}` 不改照样交回整份，文件在包的状态目录里、不留临时文件，重启以后照样读得回；正好 64 KiB 的收、多一点的 `prefs_too_big` 带 `size`、`limit`，什么都不改；订了的别的连接收整份、改的那个不收、没订的不收，订阅回应是这一刻的整份，取消了不再收；没装的、编号带 `..` 的 `unknown_package`，别的种类 `not_a_ui_package`、不写文件，三个入口一样；参数不对的几种 `bad_params`；批了能力的扩展调、订都是 `local_only`，权限表里 `prefs` 流只给人；文件不是对象的当空的、带版本盖得掉，中间手改了的不盖 |
+
+### 出处
+
+- `04-核心协议.md` 第二节（JSON-RPC、分帧、拒绝的写法）、第三节（一次连接的全过程：订阅时先拿会话状态）、第四节（连接即身份、本机令牌）、第五节（事件流；会话状态由核心算）、第六节第 1、2、4、9 条、第七节（慢、`resync`、重连时补发）、第八节（版本）、第九节「先做的几样怎么写」；P1、P2。
+- `09-压缩.md` 第二节：压缩线。
+- `04-核心协议.md` 第九节 `session.recap`：回顾（2026-10-01 项目主人定），照 codex 的做法单独发一次辅助请求。
+- `04-核心协议.md` 第九节 `session.set_permission_level`、`02-内核.md` 第六节「权限级别怎么切」、`11-权限与沙盒.md` 第二节：切权限级别。
+- `04-核心协议.md` 第九节 `blob.put`、`22-命令行.md` 第三节 `--file`、`03-事件模型.md` 第四节（量不出尺寸的不当图片）、E4：附件（施工 3-9 三补）。
+- `04-核心协议.md` 第九节 `session.set_meta`、`session.delete`，`03-事件模型.md` 第三节 `session.meta_changed`：改标题、置顶、删除会话；删了的进回收处、留 7 天（2026-09-30 项目主人定）。
+- `04-核心协议.md` 第九节 `mermaid.render`：mermaid 源码画成 SVG，细节见 `mermaid.md`（施工 W-4）。
+- `04-核心协议.md` 第九节、`10-自带软件.md` 第四节 `net`：`link.preview`，细节见 `net.md`（施工 W-7）。
+- `04-核心协议.md` 第十节「后续再定」（分块上传）：`blob.open`、`blob.write`、`blob.close`，细节见 `web-module.md`「六、分块上传」（施工 W-5）。
+- `blob.get`、`fs.read`：分块读，细节见 `web-module.md`「七、分块读」（施工 W-6）。
+- `02-内核.md` 第四节（拒绝附原因码）、不变量 9（同一个编号只生效一次）。
+- `07-存储.md` 第七节：会话按需载入。
+- `11-权限与沙盒.md` 第四节：当前目录太宽。
+
+### 还没有的
+
+设计里有、还没做的：
+
+- 第九节表里的其余方法：`session.fork`、`command.run`、查询……（`04-核心协议.md` 第九节）。
+- blob 的一般回收（删会话以后没人引用的、`blob.put` 自己崩溃留下的那种临时文件）：`store.md`「还没有的」。
+- 视图流，`view.*` 这些推送；核心决定「显示什么」（第五节、P3）。会话列表流 `sessions.changed` 施工 9-5 做了。
+- 找回删了的会话、自动起标题（照第一句话生成，要请求模型）：以后（施工 3-8 三补）。回收处里的文件留着，找回时挪回去。
+- 队列紧张时先合并同一条目的连续增量（第七节）。
+- 头发现核心比自己旧，请求它空闲时重启（第八节，`kernel.restart_when_idle`）。
+- 远程连接、登录令牌、WebSocket 和它的 Origin 检查；扩展、桥当提供者，反向调用（第二节、第四节）。
+- 扩展包在清单里声明、交给包的程序办的斜杠命令（2026-10-15 项目主人定了要做，`slash.md`）：施工 X-14 下。
+- 后台命令的输出不推给头（施工 7-4 补定不做）：头带 `after`、`wait` 读 `job.output`，长了再答（施工 V-6 上，`job.output` 第 9、10 条），不用推送。
+- 消息结构只在 Rust 类型里定义一次，生成 JSON Schema 和 TypeScript 类型（第二节）。
+- 会话空闲一段时间后 actor 退出（`07-存储.md` 第七节）。
+- 视图流的会话状态（第五节，M8）里也带限额，字段只加不改。

@@ -1,4 +1,4 @@
-//! `session.configure` 换人格、预设（施工 P-13，`docs/designs/16-人格与预设.md` Y5）：人格、预设要在，子代理不能换（`data.field`
+//! `session.configure` 换人格、预设（施工 P-13，`internal/designs/16-人格与预设.md` Y5）：人格、预设要在，子代理不能换（`data.field`
 //! 是写了的那一格）。内核记下要换成的、马上压缩一轮，下一个回合开始真换；有回合在跑的拒 `turn_running`。命令编号照这条请求
 //! 的接 `/recast`：模型那一条已经用了原来的。
 

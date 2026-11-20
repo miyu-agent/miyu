@@ -1,4 +1,4 @@
-//! 扩展的开关 `extensions.json`（`docs/blueprint/extensions.md`「对外的样子」，施工 9-4 上）：哪几个 `process` 包开着，
+//! 扩展的开关 `extensions.json`（`internal/blueprint/extensions.md`「对外的样子」，施工 9-4 上）：哪几个 `process` 包开着，
 //! 每个包批过哪些扩展能力（施工 9-4 下上；Y-5 下上挪去组表，SU-2 中挪回来）。
 //! 没写的照清单的 `start`，由用它的一方定；这里只存人明着开、关过的。放在数据根下、不放 `state/`：`state/` 是派生的、
 //! 能删掉重建，开关是人做的决定。读写照只给自己看的 JSON 小文件的规矩。

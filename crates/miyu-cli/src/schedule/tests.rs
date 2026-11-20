@@ -1,4 +1,4 @@
-//! `miyu schedule` 印的样子、读的时刻和间隔、`add` 交的参数（`docs/blueprint/cli/schedule.md`）。时区照测试交的，不看这台机器。
+//! `miyu schedule` 印的样子、读的时刻和间隔、`add` 交的参数（`internal/blueprint/cli/schedule.md`）。时区照测试交的，不看这台机器。
 
 use std::path::PathBuf;
 

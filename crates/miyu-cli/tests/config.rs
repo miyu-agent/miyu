@@ -1,4 +1,4 @@
-//! `miyu config set`、`unset`、`edit`、`trust`（施工 8-3，`docs/blueprint/config.md`「命令行」第十条、「样子」）：在进程里
+//! `miyu config set`、`unset`、`edit`、`trust`（施工 8-3，`internal/blueprint/config.md`「命令行」第十条、「样子」）：在进程里
 //! 起一个核心，在真的套接字上走一遍。人那一头是照剧本回的：在不在终端里、敲什么、编辑器改成什么。
 //!
 //! 印的那一行照「样子」一字不差；`edit` 改字、不改、改错再改好、放弃、编辑器出错、存的时候别处改过了、项目配置由命令行

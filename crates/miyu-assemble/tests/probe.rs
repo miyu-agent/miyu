@@ -1,10 +1,10 @@
-//! 请求形状探针（`docs/designs/08-上下文投影.md` 第七节「测试门禁」，`26-提示词.md` 第七节）：
+//! 请求形状探针（`internal/designs/08-上下文投影.md` 第七节「测试门禁」，`26-提示词.md` 第七节）：
 //! 一段终端会话，由真内核照剧本跑出来（执行器替身，施工 2-9 下），每一次请求和存档逐字节比对，
 //! 再查五条性质。另一段是有回报的会话（施工 7-2）：派出去的任务回报到了，闲着时开一轮、正忙时排在工具结果后面。还有一段
 //! 是子代理的会话（施工 7-5）：父会话的交代开了第一轮，system 多一段场所说明，会话编号那一块写的是它自己的编号（施工 1-13
 //! 再补）。清空过的会话（施工 6-8 补）：清空以后的第一次请求只剩工具面、system、三块事实和那一句。
 //!
-//! 存档在 `docs/designs/samples/probe/<会话>/`（`terminal`、`reports`、`subagent`、`cleared`）：`log.jsonl` 是真内核记下的日志，`requests/`
+//! 存档在 `internal/designs/samples/probe/<会话>/`（`terminal`、`reports`、`subagent`、`cleared`）：`log.jsonl` 是真内核记下的日志，`requests/`
 //! 下一次请求一个文件，写的是规范字节，末尾一个换行；`openai-chat/` 下是同一次请求编码成 OpenAI
 //! 兼容接口的字节（施工 3-4 上）。字节变了必须是有意的：设上 `MIYU_PROBE_WRITE=1` 跑一遍，重写
 //! 存档，提交说明里写为什么变。怎么存、怎么比在 `support/archive.rs`；有别的 harness 来话的会话在 `probe_harness.rs`。

@@ -487,7 +487,7 @@ fn random_inputs_keep_the_rules() {
     }
 }
 
-/// 长跑：接着平时的往后跑两万例（`docs/designs/02-内核.md` 第九节「不变量怎么查」）。平时的
+/// 长跑：接着平时的往后跑两万例（`internal/designs/02-内核.md` 第九节「不变量怎么查」）。平时的
 /// `cargo test` 跳过它，CI 的长跑那一项用 `--ignored`、release 模式跑。
 #[test]
 #[ignore = "长跑，CI 的长跑那一项用 --ignored 跑（施工 2-10）"]

@@ -1,4 +1,4 @@
-//! 照规格写 Seatbelt 配置和参数（`docs/blueprint/sandbox/macos.md`「配置怎么写」）：只拼字，不碰系统，别的 Unix 上也
+//! 照规格写 Seatbelt 配置和参数（`internal/blueprint/sandbox/macos.md`「配置怎么写」）：只拼字，不碰系统，别的 Unix 上也
 //! 编进测试。交进来的是换过的规格（`resolve.rs`）。
 //!
 //! Seatbelt 定先后的规矩（施工 5-7 在 CI 的 macOS 上量的）：同一件事，写得细的规则压过笼统的（`file-read-metadata`
@@ -89,7 +89,7 @@ pub(crate) fn build(paths: &Resolved) -> Profile {
     }
 }
 
-/// 照规格生成的那一段：接在底子后面（样本 `docs/designs/samples/sandbox/macos.sb` 就是它）。
+/// 照规格生成的那一段：接在底子后面（样本 `internal/designs/samples/sandbox/macos.sb` 就是它）。
 pub(crate) fn rules(paths: &Resolved) -> Profile {
     let none = Vec::new();
     let read = paths.read.as_ref().unwrap_or(&none);

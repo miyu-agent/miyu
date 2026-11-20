@@ -1,4 +1,4 @@
-//! 网址的服务登录的运行日志（施工 X-42 上，`docs/construction/X-42上-网址的服务登录.md`）：真核心登录一遍（假的要登录的服务、
+//! 网址的服务登录的运行日志（施工 X-42 上，`internal/construction/X-42上-网址的服务登录.md`）：真核心登录一遍（假的要登录的服务、
 //! 假授权服务器），整份运行日志（`TRACE`）、系统日志里搜不到令牌、`refresh_token`、授权码、`code_verifier`、`state`；只有
 //! `mcp oauth login started`、`mcp oauth logged in` 这几行，带服务名。续期这一路（施工 X-42 下）同样：续成了的、续不成的各一行，
 //! 续不成的只写 OAuth 的 `error` 码，新换来的令牌、`refresh_token` 也搜不到。

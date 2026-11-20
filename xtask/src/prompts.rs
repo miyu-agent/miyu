@@ -1,4 +1,4 @@
-//! 「给模型看的字」那一页（`docs/blueprint/prompts.md`，施工 4-9 三补）：照登记簿（`docs/designs/26-提示词.md` 第十节）
+//! 「给模型看的字」那一页（`internal/blueprint/prompts.md`，施工 4-9 三补）：照登记簿（`internal/designs/26-提示词.md` 第十节）
 //! 和 `resources/` 生成。按进到请求的哪里分组，组照在登记簿里第一次出现的先后，组里照登记簿的先后；每一份写什么时候
 //! 加进来、多少 token、为什么加、指纹，下面是原文。
 //!
@@ -10,7 +10,7 @@ use std::path::Path;
 use crate::{drawing, ledger};
 
 /// 这一页在仓库里的位置。
-pub const PATH: &str = "docs/blueprint/prompts.md";
+pub const PATH: &str = "internal/blueprint/prompts.md";
 
 /// 登记簿里的一行。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -115,7 +115,7 @@ pub(crate) fn page(rows: &[Row], texts: &BTreeMap<String, String>) -> String {
     }
     let mut out = String::from(
         "## 给模型看的字\n\n\
-         这一页是生成的：`cargo xtask prompts` 照 `resources/` 和登记簿（`docs/designs/26-提示词.md` 第十节）写出来，\
+         这一页是生成的：`cargo xtask prompts` 照 `resources/` 和登记簿（`internal/designs/26-提示词.md` 第十节）写出来，\
          别手改；`cargo xtask check` 查它和两边对得上（施工 4-9 三补）。给模型看的每一份字都在这里，按进到请求的哪里分组；\
          每一份写什么时候加进来、多少 token、为什么加、指纹，下面是原文。\n",
     );

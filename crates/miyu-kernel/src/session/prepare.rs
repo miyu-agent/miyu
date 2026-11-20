@@ -1,4 +1,4 @@
-//! 提前压好、到线换上（`docs/blueprint/compaction.md` 第十五条，`09-压缩.md` 第十节，施工 6-11 上）：用量过了起压线（压缩线
+//! 提前压好、到线换上（`internal/blueprint/compaction.md` 第十五条，`09-压缩.md` 第十节，施工 6-11 上）：用量过了起压线（压缩线
 //! 减 G），就照现在的切法切出 N、发一次摘要的旁路请求（`purpose` 是 `compaction`），主请求照发；取到的摘要只放在内存里。
 //! 到线（自动压缩、手动压缩没附要求的）时手里有一份还用得上的、N 以后的尾巴放得下的，不再请求：交执行器重读，回来了写
 //! `context.compacted`，推带 `prepared` 的 `compaction.done`。用不上的扔掉，照现在的办法当场压。

@@ -1,6 +1,6 @@
 [package]
 name = "miyu-knowledge"
-description = "知识库这个软件包：她用来查知识库的两件工具（施工 K-1 下，docs/blueprint/knowledge.md）"
+description = "知识库这个软件包：她用来查知识库的两件工具（施工 K-1 下，internal/blueprint/knowledge.md）"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

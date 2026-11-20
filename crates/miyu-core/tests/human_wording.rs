@@ -1,4 +1,4 @@
-//! 中文界面的用词（施工 WD-1，`docs/blueprint/config.md`「给人看的字」的「用词的规矩」）：中文字表里说到 API 密钥一律写「密钥」，
+//! 中文界面的用词（施工 WD-1，`internal/blueprint/config.md`「给人看的字」的「用词的规矩」）：中文字表里说到 API 密钥一律写「密钥」，
 //! 不写「key」；不用「她」「他」称呼 AI。
 
 use std::path::Path;

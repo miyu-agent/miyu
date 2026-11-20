@@ -1,4 +1,4 @@
-//! `cargo xtask dev-home <目录>`（`docs/blueprint/models.md`「怎么走」第十条第 2 条，施工 8-6；8-6b 起地址也不写进文件）：
+//! `cargo xtask dev-home <目录>`（`internal/blueprint/models.md`「怎么走」第十条第 2 条，施工 8-6；8-6b 起地址也不写进文件）：
 //! 开发时真模型自测，照三个环境变量造一个带配置的数据根，之后照平常
 //! `MIYU_DEV_BASE_URL=… MIYU_DEV_API_KEY=… MIYU_HOME=<目录> miyu ask …`。
 //!

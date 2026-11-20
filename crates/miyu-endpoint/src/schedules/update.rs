@@ -1,4 +1,4 @@
-//! 改一项（施工 J-5，`docs/blueprint/schedules.md` 第四节、第五节第 3a 条）：换时间、换那句话，编号、建的时刻、上一次、跑在哪
+//! 改一项（施工 J-5，`internal/blueprint/schedules.md` 第四节、第五节第 3a 条）：换时间、换那句话，编号、建的时刻、上一次、跑在哪
 //! 都不变。以前只能删了重建：编号换了、上一次没了，她那边循环的 `by.loop` 也对不上。
 
 use miyu_kernel::time::Timestamp;

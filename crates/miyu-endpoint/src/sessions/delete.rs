@@ -1,4 +1,4 @@
-//! 删会话（施工 3-8 三补，`docs/blueprint/protocol.md` 的 `session.delete`，`agents.md` 第七条第 5、6 条）。
+//! 删会话（施工 3-8 三补，`internal/blueprint/protocol.md` 的 `session.delete`，`agents.md` 第七条第 5、6 条）。
 //!
 //! 会话表拿着锁办完一整件，这期间谁都载入不了、造不了子会话、给它发不了命令（施工 7-8：停子会话、给父会话送回报原来在拿
 //! 锁之前经端口来回，中间人能再叫醒它）：

@@ -1,4 +1,4 @@
-//! OpenAI 兼容的对话接口（`docs/designs/05-内核接口.md` 第七节「OpenAI 兼容的对话接口怎么编码」）：
+//! OpenAI 兼容的对话接口（`internal/designs/05-内核接口.md` 第七节「OpenAI 兼容的对话接口怎么编码」）：
 //! DeepSeek、智谱、OpenRouter、opencode Zen，本机的 Ollama、LM Studio 都说这一种。
 //!
 //! 统一的请求照那张表写成一个 JSON：顶层字段的先后固定，每条消息照 `wire.rs` 里写的来，同样的
@@ -150,7 +150,7 @@ impl OutputLimit {
 pub enum ReasoningReplay {
     /// 不回传。
     Drop,
-    /// 照来路回传（施工 RP-1，`docs/blueprint/drivers/openai-chat.md`「编码」第 4 条）：解码时记下思考来自
+    /// 照来路回传（施工 RP-1，`internal/blueprint/drivers/openai-chat.md`「编码」第 4 条）：解码时记下思考来自
     /// `reasoning_content` 还是 `reasoning`，照原样写回那一格；没记来路的、别的驱动的不写。模型回了思考就是会思考，交回去
     /// 才接得上上一步的思路。
     Echo,

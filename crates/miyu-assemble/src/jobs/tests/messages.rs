@@ -1,4 +1,4 @@
-//! 子代理发来的留言（施工 7-7，`docs/blueprint/kernel/request.md`「子代理的留言」）：出厂的字渲染出来和样本逐字节一样；人、
+//! 子代理发来的留言（施工 7-7，`internal/blueprint/kernel/request.md`「子代理的留言」）：出厂的字渲染出来和样本逐字节一样；人、
 //! 别的会话（父会话发给子代理的交代、留言）发来的原样；开这一轮的那条挪到回合开始的地方，排在事实后面；回合中途到的排在那
 //! 一步的工具结果后面；派它的那一轮撤掉了的不渲染；旧快照没有标签的只剩它的话。
 
@@ -9,9 +9,9 @@ use miyu_kernel::template::Template;
 
 use super::*;
 
-/// 样本 `docs/designs/samples/reports/subagent-message.txt`。
+/// 样本 `internal/designs/samples/reports/subagent-message.txt`。
 const SAMPLE: &str =
-    include_str!("../../../../../docs/designs/samples/reports/subagent-message.txt");
+    include_str!("../../../../../internal/designs/samples/reports/subagent-message.txt");
 
 /// 子会话发的 `by`。
 fn from(session: &str) -> String {

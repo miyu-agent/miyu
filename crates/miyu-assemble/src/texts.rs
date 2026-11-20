@@ -1,4 +1,4 @@
-//! 给模型看的几句固定的字：检查点的包装、回合没走完的那一句、压缩的摘要指令（`docs/designs/08-上下文投影.md`
+//! 给模型看的几句固定的字：检查点的包装、回合没走完的那一句、压缩的摘要指令（`internal/designs/08-上下文投影.md`
 //! 第四节第 5 条，`26-提示词.md` 第八节）。
 //!
 //! 出厂的放在资源目录的 `core/` 下，由执行器读好交进来（施工 M3）；这里只管拿来拼，
@@ -64,7 +64,7 @@ pub struct Texts {
     pub private_media: Option<PrivateMedia>,
 }
 
-/// 私聊里带的东西的记号要用的（施工 O-35，`docs/blueprint/kernel/request.md`「群里的一行」私聊那一条）。
+/// 私聊里带的东西的记号要用的（施工 O-35，`internal/blueprint/kernel/request.md`「群里的一行」私聊那一条）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PrivateMedia {
     /// 语音后面接的那一句（`core/venues/voice.txt`，同群会话的 `voice`），不带行尾的换行。
@@ -74,7 +74,7 @@ pub struct PrivateMedia {
     pub poke: Option<Template>,
 }
 
-/// 合并转发那几行的三句（施工 O-34，`docs/blueprint/kernel/request.md`「合并转发」），都不带行尾的换行；缩进由代码加。
+/// 合并转发那几行的三句（施工 O-34，`internal/blueprint/kernel/request.md`「合并转发」），都不带行尾的换行；缩进由代码加。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ForwardTexts {
     /// 一条消息只有一个转发时的头一行（`core/venues/forward/label.txt`）。
@@ -115,7 +115,7 @@ pub struct GroupRecent {
     pub limit: Option<usize>,
 }
 
-/// 转述一张图的请求要用的两份（施工 8-17，`docs/blueprint/kernel/request.md`「替它看的图」）：换行都在文件里，拼的时候不加字。
+/// 转述一张图的请求要用的两份（施工 8-17，`internal/blueprint/kernel/request.md`「替它看的图」）：换行都在文件里，拼的时候不加字。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Vision {
     /// 指令（`instruction.txt`），以换行结尾。
@@ -124,7 +124,7 @@ pub struct Vision {
     pub question: String,
 }
 
-/// 起标题的请求要用的（施工 3-8 五补，`docs/blueprint/kernel/request.md`「起标题的请求」）：指令，和一个数，是策略数据。
+/// 起标题的请求要用的（施工 3-8 五补，`internal/blueprint/kernel/request.md`「起标题的请求」）：指令，和一个数，是策略数据。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Title {
     /// 指令（`instruction.txt`）：最后一行是 `Conversation:`，后面紧跟对话记录。
@@ -133,7 +133,7 @@ pub struct Title {
     pub tokens: u64,
 }
 
-/// 回顾的请求要用的（施工 3-8 四补，`docs/blueprint/kernel/request.md`「回顾的请求」）：指令、两种标签、两句记号，照 codex 的
+/// 回顾的请求要用的（施工 3-8 四补，`internal/blueprint/kernel/request.md`「回顾的请求」）：指令、两种标签、两句记号，照 codex 的
 /// `recap_prompt.rs`、`recap_history.rs`；和两个数，是策略数据。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Recap {
@@ -210,7 +210,7 @@ impl TurnEndedTexts {
     }
 }
 
-/// 两种回报的写法（施工 7-2，`docs/blueprint/kernel/request.md`「回报」）：一块带标签的事实，开头一行是标签，中间一行
+/// 两种回报的写法（施工 7-2，`internal/blueprint/kernel/request.md`「回报」）：一块带标签的事实，开头一行是标签，中间一行
 /// 一句，最后是收尾的标签。每一份以一个换行结尾。子代理发来的留言也照这样包一层标签（施工 7-7）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct JobTexts {
@@ -263,7 +263,7 @@ pub struct JobTexts {
     pub shell_close: String,
 }
 
-/// 别的 harness 发来的话的标签（施工 7-10，`docs/blueprint/kernel/request.md`「别的 harness 发来的话」）：一块带标签的事实，
+/// 别的 harness 发来的话的标签（施工 7-10，`internal/blueprint/kernel/request.md`「别的 harness 发来的话」）：一块带标签的事实，
 /// 写法照子代理的留言。每一份以一个换行结尾。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HarnessTexts {
@@ -273,7 +273,7 @@ pub struct HarnessTexts {
     pub close: String,
 }
 
-/// 到点的定时任务、循环交进来的话的标签（施工 J-1 上，`docs/blueprint/schedules.md`）：一块带标签的事实，写法照别的 harness
+/// 到点的定时任务、循环交进来的话的标签（施工 J-1 上，`internal/blueprint/schedules.md`）：一块带标签的事实，写法照别的 harness
 /// 发来的话。每一份以一个换行结尾。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ScheduleTexts {
@@ -287,7 +287,7 @@ pub struct ScheduleTexts {
     pub loop_close: String,
 }
 
-/// 别的会话发来的话的标签（施工 C-2，`docs/blueprint/kernel/request.md`「别的会话发来的话」）：一块带标签的事实，写法照
+/// 别的会话发来的话的标签（施工 C-2，`internal/blueprint/kernel/request.md`「别的会话发来的话」）：一块带标签的事实，写法照
 /// 别的 harness 发来的话。每一份以一个换行结尾。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PeerTexts {
@@ -300,7 +300,7 @@ pub struct PeerTexts {
     pub idle: Option<IdleTexts>,
 }
 
-/// 空了的通知那一块（施工 C-6，`docs/blueprint/kernel/request.md`「空了的通知」）：标签那一行，里面一句，收尾。每一份以
+/// 空了的通知那一块（施工 C-6，`internal/blueprint/kernel/request.md`「空了的通知」）：标签那一行，里面一句，收尾。每一份以
 /// 一个换行结尾。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IdleTexts {

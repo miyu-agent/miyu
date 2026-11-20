@@ -1,4 +1,4 @@
-//! 展示的文件不拷进核心（施工 SW-1，`docs/construction/SW-1-展示不拷不限大小.md`）：`show` 一个过了 20 MiB 的文件照常成，
+//! 展示的文件不拷进核心（施工 SW-1，`internal/construction/SW-1-展示不拷不限大小.md`）：`show` 一个过了 20 MiB 的文件照常成，
 //! `file.shown` 只记路径、大小、修改时间，不存 blob；`session.shown` 照会话加调用编号分段读它，本机、远程的连接都读得到；
 //! 读到结尾、只问大小、一段太长；没展示过的、没有的会话一律 `unknown_shown`，写了路径的参数不对；文件改了 `file_changed`，
 //! 没了 `file_gone`。

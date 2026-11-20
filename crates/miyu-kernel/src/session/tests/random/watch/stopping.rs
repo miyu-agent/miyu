@@ -1,4 +1,4 @@
-//! 看守查打断和停着的（`docs/designs/02-内核.md` 第六节「打断和急着插话」，蓝图 `kernel/session.md`「打断」，
+//! 看守查打断和停着的（`internal/designs/02-内核.md` 第六节「打断和急着插话」，蓝图 `kernel/session.md`「打断」，
 //! 施工 4-9 再补一）：
 //!
 //! - 一次新的打断：回合开着的，这一批以被打断的 `turn.ended` 收尾；没开着的，拒绝，原因码 `not_running`；

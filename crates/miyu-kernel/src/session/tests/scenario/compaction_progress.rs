@@ -1,4 +1,4 @@
-//! 场景：压缩的进度（`docs/blueprint/compaction.md` 第三条第 8 条，施工 6-3 下；6-11 再补带上 `trigger`）。数同
+//! 场景：压缩的进度（`internal/blueprint/compaction.md` 第三条第 8 条，施工 6-3 下；6-11 再补带上 `trigger`）。数同
 //! `compaction.rs`：压缩线 100，替身的回复报 110。
 
 use super::compaction::{after_one_turn, compacting, line};

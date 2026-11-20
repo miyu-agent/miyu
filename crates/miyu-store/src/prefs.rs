@@ -1,4 +1,4 @@
-//! 头自己的设置 `prefs.json`（施工 HP-1，`docs/blueprint/protocol.md`「头自己的设置」）：一个界面包一份，放在它的状态目录
+//! 头自己的设置 `prefs.json`（施工 HP-1，`internal/blueprint/protocol.md`「头自己的设置」）：一个界面包一份，放在它的状态目录
 //! （`DataRoot::package_state`）里，卸包时随状态目录一起删。整份就是一个 JSON 对象，键、值由头自己定，这里不认。读照配置文件的
 //! 规矩（没有的是空的、1 MiB、UTF-8、版本），写照只给自己看的 JSON 小文件（`private_json`：临时文件、替换前再读一次、Unix 上 0600）。
 

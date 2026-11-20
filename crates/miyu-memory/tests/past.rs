@@ -1,4 +1,4 @@
-//! 以前的对话打不开的不给编号（施工 E-6，`docs/blueprint/memory.md`「工具」）：`memory_search` 照端口交回的打不打得开、在哪个
+//! 以前的对话打不开的不给编号（施工 E-6，`internal/blueprint/memory.md`「工具」）：`memory_search` 照端口交回的打不打得开、在哪个
 //! 场所写那一行。端口是假的：真的在 `miyu-session` 的 `memory_past_opens.rs` 里测。
 
 use std::sync::Arc;

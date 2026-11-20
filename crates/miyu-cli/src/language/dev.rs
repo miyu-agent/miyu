@@ -1,4 +1,4 @@
-//! `miyu dev` 给人看的字（施工 MD-3，`docs/blueprint/cli/dev.md`「给人看的字」）：结果行不带句号；原因照核心的英文原话接在后面。
+//! `miyu dev` 给人看的字（施工 MD-3，`internal/blueprint/cli/dev.md`「给人看的字」）：结果行不带句号；原因照核心的英文原话接在后面。
 
 use super::Language;
 

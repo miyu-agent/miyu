@@ -1,4 +1,4 @@
-//! 检索库里每个来源的指纹（施工 K-1 上，`docs/blueprint/recall.md`「库的结构」，`knowledge.md`「怎么走」第三条）：整份换掉
+//! 检索库里每个来源的指纹（施工 K-1 上，`internal/blueprint/recall.md`「库的结构」，`knowledge.md`「怎么走」第三条）：整份换掉
 //! 一个来源（原来的块拿掉、新的放进去、指纹记下），别的来源不动；列出指纹；拿掉一个来源连指纹一起。
 
 use std::path::PathBuf;

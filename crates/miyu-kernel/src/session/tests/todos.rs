@@ -1,4 +1,4 @@
-//! 待办（施工 D-3，`docs/blueprint/kernel/session.md`「待办」）：换了一份、落了盘才推 `todos.changed`，和上次一样的不推；
+//! 待办（施工 D-3，`internal/blueprint/kernel/session.md`「待办」）：换了一份、落了盘才推 `todos.changed`，和上次一样的不推；
 //! 撤销写它的那一轮退回更早的一份，恢复回来；载入以后照日志算回来，不重推。
 
 use super::executor::*;

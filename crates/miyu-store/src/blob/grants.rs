@@ -1,4 +1,4 @@
-//! 包自己存过哪些 blob，落在盘上的那一份（施工 BG-1，`docs/blueprint/protocol.md` 的 `blob.get` 第 1 条）：扩展不带 `session` 只读
+//! 包自己存过哪些 blob，落在盘上的那一份（施工 BG-1，`internal/blueprint/protocol.md` 的 `blob.get` 第 1 条）：扩展不带 `session` 只读
 //! 得到它拿得到的 blob，其中「它自己存的」要过得了核心重起：表情包这样的包把图只存在 blob 里、自己只记哈希，重起以后手里没有
 //! 内容，没法再存一次。经总线（`bus.call`）转来的、别人交来的不记在这里：那是一次调用里临时给的。
 //!

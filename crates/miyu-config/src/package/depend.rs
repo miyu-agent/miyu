@@ -1,4 +1,4 @@
-//! 依赖的一项（施工 PK-2，`docs/blueprint/packages.md`「依赖」第 1 条）：`[depends]`、`[recommends]` 的 `packages` 里写的一个，
+//! 依赖的一项（施工 PK-2，`internal/blueprint/packages.md`「依赖」第 1 条）：`[depends]`、`[recommends]` 的 `packages` 里写的一个，
 //! 只有编号（`onebot`），或者编号带版本下限（`onebot>=1.2.0`）。只认 `>=` 这一种；下限、装着的版本都照 semver 2.0.0 读、照它的
 //! 先后比（预发布的比正式的低，构建信息不算）。读索引也照它（`miyu-source` 的 `index.rs`）：别人的软件源写的不全信。
 //!

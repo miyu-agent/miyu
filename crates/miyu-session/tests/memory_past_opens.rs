@@ -1,4 +1,4 @@
-//! 以前的对话打不开的不给编号（施工 E-6，`docs/blueprint/memory.md`「工具」）：她拿 `memory_search` 搜到的会话编号去 `history`
+//! 以前的对话打不开的不给编号（施工 E-6，`internal/blueprint/memory.md`「工具」）：她拿 `memory_search` 搜到的会话编号去 `history`
 //! 读整段，`history` 只认本机的主会话（`SessionsPort::list`）。回合库记下每个会话是不是主会话（`origins`）、在哪个场所，搜的
 //! 时候照它判：打得开的照旧给编号，分叉出来的支线、场所会话不给编号、写在哪聊的。真会话、
 //! 真回合库，执行器替身照剧本调工具；名字、群号是编的。

@@ -1,5 +1,5 @@
 //! 人格图片一眼看得出的两样：版本（`persona.list`、`persona.get` 的 `avatar`、`background`，图的字节的哈希取前 16 位）和
-//! 头像的候选主色（`seeds`，施工 P-6 补，`docs/blueprint/personas.md`「主题色、背景图」第 4 条：照 `miyu-seeds` 挑最多 4 个）。
+//! 头像的候选主色（`seeds`，施工 P-6 补，`internal/blueprint/personas.md`「主题色、背景图」第 4 条：照 `miyu-seeds` 挑最多 4 个）。
 //!
 //! 算一次要整份读图、解图：debug 编的核心解一张 577 KB 的 JPEG 要 0.77 秒，release 编 0.04 秒（施工 V-16 量的）。原来只记在
 //! 这个进程里，核心一重启第一次 `persona.list` 就要现场算，终端的人格框跟着等。现在记在人格图片的缓存里（`DataRoot::persona_picture_cache` 下的 `pictures.json`）：照图的

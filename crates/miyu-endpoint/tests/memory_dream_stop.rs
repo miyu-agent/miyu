@@ -1,4 +1,4 @@
-//! 叫停人叫的整理（施工 R-23，`docs/blueprint/memory.md` 第七条第 13 款，`protocol.md` 的 `memory.dream_stop`）：真核心，整理
+//! 叫停人叫的整理（施工 R-23，`internal/blueprint/memory.md` 第七条第 13 款，`protocol.md` 的 `memory.dream_stop`）：真核心，整理
 //! 记忆照 `models.chat` 发给假服务器，合并的请求一直不回。
 //!
 //! `memory.dream_stop` 照人格找那一间，叫停这时人叫的那一趟：回 `{"stopped": true}`；被叫停的 `memory.dream` 照样回应，带

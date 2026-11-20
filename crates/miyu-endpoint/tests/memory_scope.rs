@@ -1,4 +1,4 @@
-//! 记忆的范围（施工 R-3 下，`docs/blueprint/memory.md`「范围」，`protocol.md` 的 `session.create`）：真核心走一遍。`memory`
+//! 记忆的范围（施工 R-3 下，`internal/blueprint/memory.md`「范围」，`protocol.md` 的 `session.create`）：真核心走一遍。`memory`
 //! 两种照写的记进快照，写错的参数不对、什么都不造；不写的跟着人格。「只在这个会话里」去掉了（施工 FH-1，设计 55 第六节第 3
 //! 条）：写 `session` 的照写错的回，人格的 `persona.toml` 里不再有 `[memory]`。
 

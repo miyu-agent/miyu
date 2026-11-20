@@ -1,4 +1,4 @@
-//! 编辑、写入加减的行数，照参数估（结果来之前，`docs/blueprint/view.md`「种类」`tool` 的 `diff`）：写入的全部算加上的，
+//! 编辑、写入加减的行数，照参数估（结果来之前，`internal/blueprint/view.md`「种类」`tool` 的 `diff`）：写入的全部算加上的，
 //! 编辑的每一处按行比。和终端原来照参数算的一样。
 
 use serde::Deserialize;

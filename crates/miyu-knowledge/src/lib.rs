@@ -1,5 +1,5 @@
-//! 知识库这个软件包（施工 K-1 下，`docs/blueprint/knowledge.md`「她的工具」）：她用来查、写知识库的几件工具。不放进基础
-//! 系统：知识库是可选、能关的软件包（`docs/designs/19-知识库.md` N10）。
+//! 知识库这个软件包（施工 K-1 下，`internal/blueprint/knowledge.md`「她的工具」）：她用来查、写知识库的几件工具。不放进基础
+//! 系统：知识库是可选、能关的软件包（`internal/designs/19-知识库.md` N10）。
 //!
 //! - [`kb_search`]：照关键词搜她查得到的库；
 //! - [`kb_read`]：读一个文档的一页；

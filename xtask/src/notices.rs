@@ -1,4 +1,4 @@
-//! 第三方许可证清单 `THIRD-PARTY-LICENSES.txt`（施工 AU-2，`docs/blueprint/licenses.md`「第三方许可证清单」）：发出去的程序
+//! 第三方许可证清单 `THIRD-PARTY-LICENSES.txt`（施工 AU-2，`internal/blueprint/licenses.md`「第三方许可证清单」）：发出去的程序
 //! 里编进了的第三方包，每个的版权和许可证原文，随安装包发（MIT、BSD、Apache 都要求分发时附上）。
 //!
 //! 取发布的四个平台上正常依赖的并集（开发依赖、构建依赖不编进程序，不算），每个包读它源码目录里带的许可证文件；一份都没带的

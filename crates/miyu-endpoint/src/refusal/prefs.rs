@@ -1,4 +1,4 @@
-//! 头自己的设置的拒绝（施工 HP-1，`docs/blueprint/protocol.md`「头自己的设置」）。
+//! 头自己的设置的拒绝（施工 HP-1，`internal/blueprint/protocol.md`「头自己的设置」）。
 
 use serde_json::json;
 

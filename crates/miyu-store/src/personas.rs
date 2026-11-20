@@ -1,4 +1,4 @@
-//! 人格在哪、几层怎么叠（施工 P-1 上，`docs/blueprint/personas.md`，`16-人格与预设.md` 第四节）：出厂的
+//! 人格在哪、几层怎么叠（施工 P-1 上，`internal/blueprint/personas.md`，`16-人格与预设.md` 第四节）：出厂的
 //! `<资源目录>/personas/<编号>/`、装着的软件包带的 `<包文件夹>/personas/<编号>/`（施工 P-11 上，一个编号只认一份，
 //! `layers::covered`）、数据根里的 `personas/<编号>/`，同名的后面
 //! 的叠在前面的上面：`persona.toml` 逐项盖，`prompts/` 里的文件同名替换、没写的沿用。读法同配置文件：顺着链接读。文件怎么读成样子在 `miyu_policy::persona`。

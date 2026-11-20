@@ -1,4 +1,4 @@
-//! 场景：只有路径的附件（施工 AT-1，`docs/blueprint/kernel/blocks.md` 第 14 条）。内核把它当一块普通的附件：记进
+//! 场景：只有路径的附件（施工 AT-1，`internal/blueprint/kernel/blocks.md` 第 14 条）。内核把它当一块普通的附件：记进
 //! `message.user`，只有它也是一句话；重做照带、照换，撤销恢复以后还在；压缩把带着它的那一轮收进摘要以后照常往下走；
 //! 本地估算照这一块规范的 JSON 数。
 

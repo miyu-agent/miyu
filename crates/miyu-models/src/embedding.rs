@@ -1,4 +1,4 @@
-//! 哪些模型能出向量（施工 R-5 再补，`docs/blueprint/models.md`「协议」`model.list` 的「能出向量的」）：设置页的「语义模型」
+//! 哪些模型能出向量（施工 R-5 再补，`internal/blueprint/models.md`「协议」`model.list` 的「能出向量的」）：设置页的「语义模型」
 //! 从这几个里挑。目录不标 embedding 的输出种类，照名字认；规矩是数据，住在资源目录的 `models/embedding.toml`，核心读好原文
 //! 交进来，这里只认写法、照它认。
 

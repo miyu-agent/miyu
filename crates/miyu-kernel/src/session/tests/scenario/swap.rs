@@ -1,4 +1,4 @@
-//! 场景：换策略快照（施工 P-1 再补，`docs/blueprint/kernel/session.md`「换策略快照」）。执行器在回合开始时交来新的一份：
+//! 场景：换策略快照（施工 P-1 再补，`internal/blueprint/kernel/session.md`「换策略快照」）。执行器在回合开始时交来新的一份：
 //! 内核记一条带 `policy` 的 `session.policy_changed`（内核记的，排在注入前面），这一轮第一次请求就照新的拼；撤掉那一轮
 //! 不换回去；挂接点跑完时没带哈希的，放着的扔掉。
 

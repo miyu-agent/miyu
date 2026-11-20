@@ -1,4 +1,4 @@
-//! 各项怎么量（施工 V-1，`docs/blueprint/perf.md`）：每一项一个模块，这里放它们共用的两步：造一个会话并订阅它，
+//! 各项怎么量（施工 V-1，`internal/blueprint/perf.md`）：每一项一个模块，这里放它们共用的两步：造一个会话并订阅它，
 //! 在会话里说一句。
 
 pub mod append;

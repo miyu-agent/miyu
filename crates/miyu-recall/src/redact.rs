@@ -1,4 +1,4 @@
-//! 发出去以前、记下以前把 key 遮掉（施工 R-6 上，`docs/blueprint/memory.md` 第六条第 7 款）：配置里引用的密钥的原文，和
+//! 发出去以前、记下以前把 key 遮掉（施工 R-6 上，`internal/blueprint/memory.md` 第六条第 7 款）：配置里引用的密钥的原文，和
 //! 常见的 key 写法（前缀加够长的一串），换成 `[REDACTED]`。写法是数据：资源目录的 `core/memory/secrets.toml`，这里只认
 //! 写法、照它遮。纯逻辑。
 

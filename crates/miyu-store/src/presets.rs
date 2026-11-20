@@ -1,4 +1,4 @@
-//! 预设在哪、几层怎么叠（施工 P-2 上，`docs/blueprint/presets.md`，`16-人格与预设.md` 第三、四节）：出厂的
+//! 预设在哪、几层怎么叠（施工 P-2 上，`internal/blueprint/presets.md`，`16-人格与预设.md` 第三、四节）：出厂的
 //! `<资源目录>/presets/<编号>.toml`、装着的软件包带的 `<包文件夹>/presets/<编号>.toml`（施工 P-11 上，一个编号只认一份）、数据根里的 `presets/<编号>.toml`，同名的
 //! 后面的叠在前面的上面，逐格盖。文件怎么读成样子在 `miyu_policy::preset`。
 

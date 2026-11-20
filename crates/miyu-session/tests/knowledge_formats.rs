@@ -1,4 +1,4 @@
-//! PDF 和网页（施工 K-5，`docs/blueprint/knowledge.md`「她的工具」）：真会话、真知识库的目录，执行器替身照剧本调工具。搜到
+//! PDF 和网页（施工 K-5，`internal/blueprint/knowledge.md`「她的工具」）：真会话、真知识库的目录，执行器替身照剧本调工具。搜到
 //! PDF 的那一块头一行说第几页，照那一页读得到；写 PDF、网页拒，说只有文字的写得了，什么都没动、不建库。
 
 use miyu_kernel::block::{Block, Text};

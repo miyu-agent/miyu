@@ -1,4 +1,4 @@
-//! `kb.documents`（施工 K-10，`docs/blueprint/knowledge.md`「对外的样子」）：真核心。一篇一项、读不了的带 `reason`、`why`，读不了
+//! `kb.documents`（施工 K-10，`internal/blueprint/knowledge.md`「对外的样子」）：真核心。一篇一项、读不了的带 `reason`、`why`，读不了
 //! 的子目录在 `folders`；挂进来的库在 `kb.list` 里带 `mount`；挂的目录用不了的 `folder_unavailable`；参数写错的、没有的库照拒。
 
 use std::sync::Arc;

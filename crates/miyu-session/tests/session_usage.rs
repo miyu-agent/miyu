@@ -1,4 +1,4 @@
-//! 金额和查用量走一遍真会话（施工 8-15，`docs/blueprint/models.md`「怎么走」第九条）：端口照价格算好的金额记进 `model.called`
+//! 金额和查用量走一遍真会话（施工 8-15，`internal/blueprint/models.md`「怎么走」第九条）：端口照价格算好的金额记进 `model.called`
 //! 的 `cost`，落了盘写进用量汇总；她调 `session_usage` 看到的就是这个会话到这时的用量、金额，上下文照内核的估算、窗口、
 //! 压缩线。
 

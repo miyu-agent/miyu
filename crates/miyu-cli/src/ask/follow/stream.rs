@@ -1,4 +1,4 @@
-//! 事件流（施工 AP-3，设计 50 第四节，`docs/blueprint/cli/ask.md`「样子：`--format jsonl`」）：`--format jsonl` 的，标准输出
+//! 事件流（施工 AP-3，设计 50 第四节，`internal/blueprint/cli/ask.md`「样子：`--format jsonl`」）：`--format jsonl` 的，标准输出
 //! 一行一个事件，边跑边出；标准错误照旧只印出错。形状是命令行自己定的一份，从核心的事件裁出来，不原样转发：核心的事件以后
 //! 加格、改说法，这一份照旧。每一行是一个 JSON 对象，`type` 说是什么，格照名字的字母先后排（`serde_json` 的 `Map` 是
 //! `BTreeMap`：工作区没开 `preserve_order`）。

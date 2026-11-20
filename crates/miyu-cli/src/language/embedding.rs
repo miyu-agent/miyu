@@ -1,4 +1,4 @@
-//! `miyu check` 合计后面那一段：语义模型的状态（施工 R-25，`docs/blueprint/cli/check.md`）。照核心 `check` 回应的 `embedding`
+//! `miyu check` 合计后面那一段：语义模型的状态（施工 R-25，`internal/blueprint/cli/check.md`）。照核心 `check` 回应的 `embedding`
 //! 写：用哪个模型、补着没有，记忆、以前的对话、知识库各补到了哪；关着的、没装的说为什么，没装的另起一行提示怎么装（CL-2 下
 //! 照设计 47）。没有的那几样不写。这个模型不自动联想的（门槛表里没有它，施工 FX-4）最后一行说哪几样，搜索照常。
 

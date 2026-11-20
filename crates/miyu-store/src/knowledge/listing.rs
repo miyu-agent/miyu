@@ -1,4 +1,4 @@
-//! 列出库里的文档（施工 K-10，`docs/blueprint/knowledge.md`「对外的样子」`kb.documents`）：先照文件补，交回补的时候列出来的
+//! 列出库里的文档（施工 K-10，`internal/blueprint/knowledge.md`「对外的样子」`kb.documents`）：先照文件补，交回补的时候列出来的
 //! 每一篇（照路径排）、索引里它有几块、这一回读不了的为什么，和读不了的子目录。不是文档的文件、点开头的、链接不列，同补的时候。
 
 use std::collections::BTreeMap;

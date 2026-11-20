@@ -1,4 +1,4 @@
-//! 驱动写给模型的几句占位（`resources/core/drivers/`，`docs/designs/26-提示词.md` 第八节）：英文
+//! 驱动写给模型的几句占位（`resources/core/drivers/`，`internal/designs/26-提示词.md` 第八节）：英文
 //! 短句，只说发生了什么（26 J3）。
 //!
 //! - 图片发不了：模型不能看图，没有字段；

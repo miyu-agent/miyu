@@ -1,4 +1,4 @@
-//! 项目指令（施工 P-14，`docs/blueprint/project-docs.md`）：本机的会话第一轮把仓库里的 AGENTS.md 交给她；没变的下一轮不重交；
+//! 项目指令（施工 P-14，`internal/blueprint/project-docs.md`）：本机的会话第一轮把仓库里的 AGENTS.md 交给她；没变的下一轮不重交；
 //! 改了的换一份；场所会话不读。施工 P-14 下：第一次读子目录里的文件时，那几层的接在结果后面，读同一个子目录的不重交。
 
 use std::path::PathBuf;

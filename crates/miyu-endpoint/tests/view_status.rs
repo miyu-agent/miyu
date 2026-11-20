@@ -1,4 +1,4 @@
-//! 会话状态（施工 9-8 补上，`docs/blueprint/view.md`「会话状态」）：订阅视图流的回应带整份 `status`；跑一轮时推 `view.status`，
+//! 会话状态（施工 9-8 补上，`internal/blueprint/view.md`「会话状态」）：订阅视图流的回应带整份 `status`；跑一轮时推 `view.status`，
 //! 先 `running`、最后 `idle`，用量跟着变；切权限、改待办这些落了盘的变化也推；没变的不推。
 
 use serde_json::{Value, json};

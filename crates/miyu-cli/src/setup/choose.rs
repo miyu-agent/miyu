@@ -1,4 +1,4 @@
-//! 选一家（`docs/blueprint/cli/setup.md`「怎么走」第 3 到 6 条，施工 8-11、8-11 再补）：常用的几家、本机跑着的服务、自定义，
+//! 选一家（`internal/blueprint/cli/setup.md`「怎么走」第 3 到 6 条，施工 8-11、8-11 再补）：常用的几家、本机跑着的服务、自定义，
 //! 或者 `--provider` 写的。
 //!
 //! - 常用的几家照 `provider.catalog {"featured": true}` 的先后（2026-10-08 项目主人定）：配好了的标「已配好」，找到了 key 的

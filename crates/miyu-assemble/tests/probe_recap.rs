@@ -1,8 +1,8 @@
-//! 请求形状探针：回顾的那一张脸（施工 3-8 四补，`docs/blueprint/kernel/request.md`「回顾的请求」）。真内核照剧本跑，组装、
+//! 请求形状探针：回顾的那一张脸（施工 3-8 四补，`internal/blueprint/kernel/request.md`「回顾的请求」）。真内核照剧本跑，组装、
 //! 给模型看的字都是出厂的：人问一句，她读了文件答；Claude Code 闲着时说一句，开了一轮；人再问，她正答着时要一句回顾；答完
 //! 再要一句；中间没有新内容再要一次，交回上一句、不请求。
 //!
-//! 回顾的请求是单独的一次：一条 user，指令接对话记录，没有 system、工具面；和存档（`docs/designs/samples/probe/recap/`
+//! 回顾的请求是单独的一次：一条 user，指令接对话记录，没有 system、工具面；和存档（`internal/designs/samples/probe/recap/`
 //! 的 `recaps/`）逐字节比。主请求照样查五条性质、和存档比：回顾夹在中间，不改它们。
 
 use crate::support::{check, files, matches_the_archive, recap, sent, stage};

@@ -1,4 +1,4 @@
-//! 内容块：消息和工具结果由它们组成（`docs/designs/03-事件模型.md` 第四节）。
+//! 内容块：消息和工具结果由它们组成（`internal/designs/03-事件模型.md` 第四节）。
 //!
 //! 图片、文件这些大内容不放进事件，按内容哈希存成 blob，块里只放引用（03 E4）。
 
@@ -23,7 +23,7 @@ pub enum Block {
     Path(PathOnly),
     /// 模型发起的一次工具调用。
     ToolCall(ToolCall),
-    /// 供应商自己跑了的一次工具（施工 HT-1，`docs/designs/71-供应商侧工具.md` 第三节第 1 条）：核心不派、不等结果，照实记下。
+    /// 供应商自己跑了的一次工具（施工 HT-1，`internal/designs/71-供应商侧工具.md` 第三节第 1 条）：核心不派、不等结果，照实记下。
     HostedTool(HostedTool),
     /// 不认识的种类，新版本才有的：整块原样留着，写出去还是原样。
     #[serde(untagged)]
@@ -66,7 +66,7 @@ pub struct Reasoning {
 pub struct Image {
     /// 图片本身存成的 blob。
     pub blob: ContentHash,
-    /// 文件名，例如 `晚霞.png`，只是名字，不带路径（施工 3-9 四补，`docs/blueprint/kernel/blocks.md` 第 14 条）。人附的
+    /// 文件名，例如 `晚霞.png`，只是名字，不带路径（施工 3-9 四补，`internal/blueprint/kernel/blocks.md` 第 14 条）。人附的
     /// 图片带着，她分得清一句话里的几张图哪张是哪个文件；`read` 读出来的不带，那一次调用本来写着路径。以前的日志里没有
     /// 这一格，读成没有；没有的不写，旧日志读进来再写出去一字不差。
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -97,7 +97,7 @@ pub struct File {
     pub path: Option<SourcePath>,
 }
 
-/// 只有路径的附件（施工 AT-1，`docs/blueprint/kernel/blocks.md` 第 14 条）：超过上传上限的文件，头只把它在核心那台
+/// 只有路径的附件（施工 AT-1，`internal/blueprint/kernel/blocks.md` 第 14 条）：超过上传上限的文件，头只把它在核心那台
 /// 机器上的路径交上来，核心不读它、不查它在不在。请求里它写成一句（名字、路径、大小，内容没带上），她要看，照路径用
 /// 工具去读。
 ///
@@ -129,11 +129,11 @@ pub struct ToolCall {
     pub private: Option<Private>,
 }
 
-/// 供应商自己跑了的一次工具，例如供应商那边的搜索（施工 HT-1，`docs/designs/71-供应商侧工具.md` 第三节第 1 条）。
+/// 供应商自己跑了的一次工具，例如供应商那边的搜索（施工 HT-1，`internal/designs/71-供应商侧工具.md` 第三节第 1 条）。
 ///
 /// 核心不派它、不过权限、不等结果，只照模型说的先后记在回复里。编号写法同 [`ToolCall`]，但不和工具调用混着数：一条
 /// 回复里工具调用排 `_1` 到 `_k`，供应商侧工具照先后接着排 `_k+1` 起。旧版本把这种块当不认识的原样留着，混着数的话
-/// 旧版本查工具调用编号就对不上，整份日志读不进（`docs/blueprint/kernel/ids.md`）。
+/// 旧版本查工具调用编号就对不上，整份日志读不进（`internal/blueprint/kernel/ids.md`）。
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct HostedTool {
     /// 内核分配的调用编号，只用来在视图、日志里认它。
@@ -165,7 +165,7 @@ pub struct Outcome {
 }
 
 /// 驱动私有的原样数据。内核不解读，同一类驱动发请求时原样带上，别的驱动不理它
-/// （`docs/designs/03-事件模型.md` 第九节）。
+/// （`internal/designs/03-事件模型.md` 第九节）。
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Private {
     /// 哪一类驱动的数据。同一类驱动发请求时原样带上，别的驱动不理它。

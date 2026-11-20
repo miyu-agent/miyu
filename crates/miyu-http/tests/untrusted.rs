@@ -1,4 +1,4 @@
-//! 对方的证书不被信任（施工 TLS-1，`docs/blueprint/http.md`「出错」）：当场报错、`other`、不重试，报错里说是证书不被信任。
+//! 对方的证书不被信任（施工 TLS-1，`internal/blueprint/http.md`「出错」）：当场报错、`other`、不重试，报错里说是证书不被信任。
 //! 原来没有状态的失败一律落成可重试，内核照它重来五次，三十秒以后才报。
 //!
 //! 假服务器用一张自签的测试证书（`support/self-signed.cert.der`、`self-signed.key.der`，只给这份测试用）做 TLS 握手：

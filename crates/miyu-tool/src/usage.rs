@@ -1,4 +1,4 @@
-//! 查用量的端口（施工 8-15，`docs/blueprint/tools/session_usage.md`、`tools/interface.md`）：`session_usage` 这件工具只拿它，
+//! 查用量的端口（施工 8-15，`internal/blueprint/tools/session_usage.md`、`tools/interface.md`）：`session_usage` 这件工具只拿它，
 //! 不认识用量汇总和内核。执行器照这一次调用造一个，交给 [`crate::Call::usage`]：
 //!
 //! - 上下文（[`UsagePort::context`]）：派出去那一刻内核照压缩线的算法估的用量、窗口、压缩线（`Session::context_used()`）。

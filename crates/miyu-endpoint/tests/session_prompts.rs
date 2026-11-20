@@ -1,4 +1,4 @@
-//! 列出会话里主人问过的话（施工 SP-2，`docs/blueprint/protocol.md`「`session.prompts`」）：真核心走一遍。每一条是有效历史里
+//! 列出会话里主人问过的话（施工 SP-2，`internal/blueprint/protocol.md`「`session.prompts`」）：真核心走一遍。每一条是有效历史里
 //! 主人本人说的 `message.user`（桥代主人在私聊里转进来的、带 `via` 的也算）：撤销掉的不列、恢复的放回、重做照最后那一版；命令
 //! 模板展开的照人敲的那一行；子会话的、平台上别的人的、模块注入的、别的 harness 的、定时的都不列。每一次都和准绳对一遍：整份 `read_events` → `History::whole`
 //! → 有效历史里主人本人的 `message.user` → 照会话表 `preview` 的取法取字。坏行、没有这个会话、参数不对、缺能力的拒，同

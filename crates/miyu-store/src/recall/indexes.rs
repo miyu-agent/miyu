@@ -1,5 +1,5 @@
-//! 回合库的登记（施工 R-2 上，`docs/blueprint/memory.md`「怎么走」第一条第 4、7 款）：一个人格一份，
-//! `index/recall/turns-<人格>.db`。开过的留着、一直开着：一个库一个进程只开一个连接（`docs/designs/07-存储.md`
+//! 回合库的登记（施工 R-2 上，`internal/blueprint/memory.md`「怎么走」第一条第 4、7 款）：一个人格一份，
+//! `index/recall/turns-<人格>.db`。开过的留着、一直开着：一个库一个进程只开一个连接（`internal/designs/07-存储.md`
 //! 第六节）。
 
 use std::collections::BTreeMap;

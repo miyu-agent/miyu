@@ -1,4 +1,4 @@
-//! 派出去抽的那一件活（施工 R-6 上，`docs/blueprint/memory.md` 第六条第 6 到 8 款；施工 R-7 补从 `extract.rs` 挪出来）：照
+//! 派出去抽的那一件活（施工 R-6 上，`internal/blueprint/memory.md` 第六条第 6 到 8 款；施工 R-7 补从 `extract.rs` 挪出来）：照
 //! 定好的办法跳过、发、读、遮、记，记下以后看一眼够不够合并。
 
 use miyu_models::side::ORGANIZE;

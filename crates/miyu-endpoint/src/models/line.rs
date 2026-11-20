@@ -1,4 +1,4 @@
-//! 会话钉的压缩触发线（施工 CT-1，`docs/blueprint/compaction.md` 第二条第 2 条）：`session.configure`、`session.create` 的
+//! 会话钉的压缩触发线（施工 CT-1，`internal/blueprint/compaction.md` 第二条第 2 条）：`session.configure`、`session.create` 的
 //! `compaction_line` 共用的查法。
 //!
 //! 窗口的百分之几，整数，范围照配置项 `compaction.line` 声明的（`CompactionSettings::line_range`，不另抄一份）；不在范围里的

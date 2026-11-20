@@ -1,4 +1,4 @@
-//! 斜杠命令 `/workspace`（施工 9-7 下，`docs/blueprint/protocol.md` 的 `command.run`）：真核心走一遍。`/workspace <路径>` 同
+//! 斜杠命令 `/workspace`（施工 9-7 下，`internal/blueprint/protocol.md` 的 `command.run`）：真核心走一遍。`/workspace <路径>` 同
 //! `session.set_workspace` 只换工作目录，加进来的目录照旧；相对的照 `command.run` 带的 `cwd`（头所在的目录）接，没带的照会话
 //! 现在的工作区接；不带路径的只说现在在哪。写错的照那几种原因拒绝、什么都不记；太宽的退回 `workspace/`，回执说一声。场所里
 //! 只有主人能换。

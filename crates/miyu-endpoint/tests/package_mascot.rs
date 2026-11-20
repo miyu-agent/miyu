@@ -1,4 +1,4 @@
-//! 吉祥物包（施工 F-7，`docs/blueprint/packages.md`「吉祥物包」）：真核心走一遍。清单只有 `[package]`、`[mascot]`，不说协议；
+//! 吉祥物包（施工 F-7，`internal/blueprint/packages.md`「吉祥物包」）：真核心走一遍。清单只有 `[package]`、`[mascot]`，不说协议；
 //! `package.list` 带 `mascot`，`package.file` 只给模型那一份，`miyu check` 查模型文件在、不超过 256 KiB、是 JSON 的对象；
 //! 没有开关。
 

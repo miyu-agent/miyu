@@ -1,4 +1,4 @@
-//! 子代理在做什么（施工 7-4，`docs/blueprint/tools/jobs.md`「output」）：照子会话的日志看它最近的回答、这一轮完没完、这一步
+//! 子代理在做什么（施工 7-4，`internal/blueprint/tools/jobs.md`「output」）：照子会话的日志看它最近的回答、这一轮完没完、这一步
 //! 在跑哪几件工具。会话表照子会话的日志读出来，交给 [`peek`] 算（`SessionPort::peek`）。
 
 use std::collections::BTreeSet;

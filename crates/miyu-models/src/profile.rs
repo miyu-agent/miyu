@@ -1,4 +1,4 @@
-//! 供应商的档案（`docs/blueprint/models.md`「在哪」`resources/models/profiles.toml`、「怎么走」第一条第 2、3 条，施工 8-6）：
+//! 供应商的档案（`internal/blueprint/models.md`「在哪」`resources/models/profiles.toml`、「怎么走」第一条第 2、3 条，施工 8-6）：
 //! 认得出的供应商可以少写，驱动、地址、开关照档案推。档案是资源目录里的 TOML，核心读成 JSON 再交进来（这一层不读 TOML
 //! 的资源文件，`models.md`「在哪」末尾）。
 //!

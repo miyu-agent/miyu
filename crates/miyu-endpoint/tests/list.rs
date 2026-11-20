@@ -1,4 +1,4 @@
-//! 列出会话（`docs/construction/3-9-miyu-ask（下）.md`）：造会话时标了一次性的，`session.list` 看得出来；
+//! 列出会话（`internal/construction/3-9-miyu-ask（下）.md`）：造会话时标了一次性的，`session.list` 看得出来；
 //! 从新到旧；只要一次性的、最多几个。主会话的 `parent` 是 `null`（施工 7-5；子会话的见 `spawn.rs`）。每一项带工作目录、最近
 //! 一次动静，忙的写 `busy`（施工 C-3；忙不忙、工作目录跟着头换、她列会话的见 `sessions.rs`）。
 

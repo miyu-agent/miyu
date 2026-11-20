@@ -1,4 +1,4 @@
-//! `session.prompts {session}`（施工 SP-2，`docs/blueprint/protocol.md`「`session.prompts`」）：一个会话里主人问过的所有话，
+//! `session.prompts {session}`（施工 SP-2，`internal/blueprint/protocol.md`「`session.prompts`」）：一个会话里主人问过的所有话，
 //! 回应 `{"prompts": [{seq, turn, at, text}]}`，照先后。网页的「问话跳转」照它列出来，没读进来的先照 `seq` 用 `view.page` 的
 //! `before` 往前读到那一页再跳。
 //!

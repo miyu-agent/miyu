@@ -1,4 +1,4 @@
-//! 场所插件（施工 O-60，`docs/blueprint/venues.md`「场所插件」）：扩展 `provide` 的工具可以带 `plugin`（[`miyu_tool::Spec::plugin`]），
+//! 场所插件（施工 O-60，`internal/blueprint/venues.md`「场所插件」）：扩展 `provide` 的工具可以带 `plugin`（[`miyu_tool::Spec::plugin`]），
 //! 带了的是场所插件的工具。场所会话里，只有那个场所开着这个插件才给（通讯平台的桥照场所说开哪些，`venue.plugins`）；核心、
 //! 桥刚重启、桥还没说过的场所一件都不给（2026-10-24 项目主人：不开就不该出现在工具集，白耗 token）。本机会话不看这个标记。
 //! 核心在内存里记。会话两处照它：

@@ -1,4 +1,4 @@
-//! 真跑 `miyu undo`（别名 `miyu rewind`）、`miyu restore`（`docs/construction/4-7-miyu undo、miyu redo（下）.md`，改名施工
+//! 真跑 `miyu undo`（别名 `miyu rewind`）、`miyu restore`（`internal/construction/4-7-miyu undo、miyu redo（下）.md`，改名施工
 //! 4-7 补）：说明跟着界面语言；核心在跑的，撤掉上一次 `miyu ask` 的那一轮、再恢复它，几条命令各接对了自己的那一个。`miyu redo` 施工 4-7 再补又有了，是重做（`tests/redo.rs`）。
 
 use std::path::{Path, PathBuf};

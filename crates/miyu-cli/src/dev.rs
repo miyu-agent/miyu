@@ -1,4 +1,4 @@
-//! `miyu dev`（`docs/blueprint/cli/dev.md`，施工 MD-3）：给写包的人用的几样。现在只有 `driver-check <包编号>`：连上核心（没在跑就
+//! `miyu dev`（`internal/blueprint/cli/dev.md`，施工 MD-3）：给写包的人用的几样。现在只有 `driver-check <包编号>`：连上核心（没在跑就
 //! 拉起），发 `driver.check`（核心照样本调扩展的 `driver.encode`、中途重启扩展、比字节，设计 66 第七节第 2 条），把每个驱动、每份
 //! 样本过没过印在标准输出上。
 //!

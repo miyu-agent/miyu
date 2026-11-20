@@ -1,4 +1,4 @@
-//! 步数上限（施工 AE-1，`docs/blueprint/policy.md`「对外的样子」）：造会话时照会话的种类、预设给两个数，记进快照；没人看着的
+//! 步数上限（施工 AE-1，`internal/blueprint/policy.md`「对外的样子」）：造会话时照会话的种类、预设给两个数，记进快照；没人看着的
 //! 会话照预设写的数停。真会话、真日志，数据根在临时目录。
 
 use miyu_kernel::event::{Body, EndReason, Event};

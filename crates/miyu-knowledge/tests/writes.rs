@@ -1,4 +1,4 @@
-//! 知识库写的三件工具（施工 K-3，`docs/blueprint/knowledge.md`「她的工具」）：说的话、报的效果（改前改后的内容、回收站里的
+//! 知识库写的三件工具（施工 K-3，`internal/blueprint/knowledge.md`「她的工具」）：说的话、报的效果（改前改后的内容、回收站里的
 //! 位置），`append` 不写是新建，写的拒绝如实说、没写成的不报效果。端口是假的：真的在 `miyu-session` 里测。
 
 use std::path::PathBuf;

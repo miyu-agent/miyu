@@ -1,4 +1,4 @@
-//! 无工具（施工 P-16 下，`docs/blueprint/presets.md`「无工具」）：真核心走一遍。开会话交 `preset: null` 的一件工具都不给，会话
+//! 无工具（施工 P-16 下，`internal/blueprint/presets.md`「无工具」）：真核心走一遍。开会话交 `preset: null` 的一件工具都不给，会话
 //! 信息写 `preset: null`、`no_tools: true`；中途换成它、再换回来；交空字的照旧拒。`preset.list` 不再拼它（施工 P-17：换成出厂
 //! 的「无功能」`none`），协议照旧认，以前的会话不变。
 

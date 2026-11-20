@@ -1,4 +1,4 @@
-//! `miyu pkg install` 从软件源装时分阶段印的字（施工 IN-3，设计 `49-装包照pacman.md` 第二节，`docs/blueprint/cli/pkg.md`「给人看的
+//! `miyu pkg install` 从软件源装时分阶段印的字（施工 IN-3，设计 `49-装包照pacman.md` 第二节，`internal/blueprint/cli/pkg.md`「给人看的
 //! 字」）：解析依赖、检查冲突、要装的和推荐的两行、来源、两句问、下载、核对、安装。
 
 use super::super::Language;

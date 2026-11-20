@@ -1,4 +1,4 @@
-//! 基础系统（`docs/designs/10-自带软件.md` 第三节）：随发行附带、几乎每个预设都打开的几件工具，软件包的编号
+//! 基础系统（`internal/designs/10-自带软件.md` 第三节）：随发行附带、几乎每个预设都打开的几件工具，软件包的编号
 //! 是 `basesystem`。
 //!
 //! 工具的说明、参数格式、输出里给她看的几句都放在资源目录的 `software/basesystem/` 下（`26-提示词.md`
@@ -45,7 +45,7 @@ use miyu_tool::Tool;
 
 pub use load::LoadError;
 
-/// 一个脚本当一件工具（施工 X-12 上，`docs/blueprint/skills.md`「脚本」）：开头读好的 `head`、脚本文件 `file`，给她看的几句
+/// 一个脚本当一件工具（施工 X-12 上，`internal/blueprint/skills.md`「脚本」）：开头读好的 `head`、脚本文件 `file`，给她看的几句
 /// 照资源目录 `resources` 里的字。`source` 是它的来处：包的编号，数据根里自己放的是 `~home`（施工 X-44：状态目录照它分）。
 ///
 /// # Errors

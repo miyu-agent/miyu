@@ -1,4 +1,4 @@
-//! 软件包清单的读法（施工 9-1 上，`docs/blueprint/packages.md`「清单的格式」，`05-内核接口.md` 第二节）：一份 TOML 读成
+//! 软件包清单的读法（施工 9-1 上，`internal/blueprint/packages.md`「清单的格式」，`05-内核接口.md` 第二节）：一份 TOML 读成
 //! [`Manifest`]。只收图纸上的几张表、几个键，不认识的报错，免得写错了没人知道；报第一处，带代码、第几行、英文一句。
 //! `[settings]` 的读法在 `settings.rs`（施工 9-1 下）。纯逻辑，不碰磁盘：在哪找、两层怎么认在 `miyu-store`。
 

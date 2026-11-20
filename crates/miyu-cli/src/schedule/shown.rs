@@ -1,4 +1,4 @@
-//! `miyu schedule` 印的样子和读的时刻、间隔（`docs/blueprint/cli/schedule.md`「样子」）：一项一行，编号、什么时候、停着、下一次、
+//! `miyu schedule` 印的样子和读的时刻、间隔（`internal/blueprint/cli/schedule.md`「样子」）：一项一行，编号、什么时候、停着、下一次、
 //! 上一次、跑在哪、那句话，两个空格隔开；时刻照本机时区印到分钟。纯逻辑，时区由调的一方交。
 
 use jiff::Timestamp;

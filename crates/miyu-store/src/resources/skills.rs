@@ -1,4 +1,4 @@
-//! 技能那一块的两份（施工 X-10 上，`docs/blueprint/skills.md`「技能」第 2 条），都在 `core/skills/` 下。
+//! 技能那一块的两份（施工 X-10 上，`internal/blueprint/skills.md`「技能」第 2 条），都在 `core/skills/` 下。
 
 use super::{ResourceRoot, SourceError};
 

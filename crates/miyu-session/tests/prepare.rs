@@ -1,4 +1,4 @@
-//! 提前压好的开关（施工 6-11 上，`docs/blueprint/compaction.md` 第十五条第 7 条）：配置 `compaction.prepare = false` 的，过了起压线
+//! 提前压好的开关（施工 6-11 上，`internal/blueprint/compaction.md` 第十五条第 7 条）：配置 `compaction.prepare = false` 的，过了起压线
 //! 也不提前压，到线照现在的办法当场压。开着的另见 `prepare_log.rs`。提前压的摘要不受辅助请求的总时限管（施工 TT-3）。
 
 use std::time::Duration;

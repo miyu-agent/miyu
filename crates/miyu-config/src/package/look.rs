@@ -1,4 +1,4 @@
-//! 清单里给头看的几格（施工 F-6 上，`docs/blueprint/package-pages.md`「清单多的几格」，设计 `30-插件框架.md` 第十三节）：
+//! 清单里给头看的几格（施工 F-6 上，`internal/blueprint/package-pages.md`「清单多的几格」，设计 `30-插件框架.md` 第十三节）：
 //! `[package] icon` 是 Lucide 的图标名，`[page] dir` 是软件后台页在包目录里的哪个子目录，`[tray] name` 是托盘菜单里打开后台页
 //! 的那一行（施工 TR-2）。只查写法：图标名在 Lucide 里有没有、
 //! 目录里有没有 `index.html`，核心不管（头认不出的图标照没写画，没有入口的 `package.list` 不带 `page`）。

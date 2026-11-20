@@ -1,4 +1,4 @@
-//! 加进来的目录（施工 5-10 上，`docs/blueprint/session/guard.md` 边界表第 3 条）：权限策略照工作区算，只读照旧拒绝。
+//! 加进来的目录（施工 5-10 上，`internal/blueprint/session/guard.md` 边界表第 3 条）：权限策略照工作区算，只读照旧拒绝。
 //! 场地和 `guard.rs` 一样不在系统的临时目录里：工作区 `work/`、加进来的 `other/`。
 
 use std::sync::Arc;

@@ -1,4 +1,4 @@
-//! `human.get`（施工 W-1，`docs/blueprint/web-module.md`「二、给人看的字」、`protocol.md`「`human.get`」）：工具的
+//! `human.get`（施工 W-1，`internal/blueprint/web-module.md`「二、给人看的字」、`protocol.md`「`human.get`」）：工具的
 //! 样子、说法的模板原文，和 `Human::load` 读到的一样；软件包盖掉内核的同名工具；没有这种语言照英文；不写 `language`
 //! 照握手的语言；`language` 不合写法是参数不对；回应里没有 `config` 那一格；读不懂是内部出错；改了资源，下一次调
 //! 就是新的；真核心照源码树的资源，三种语言都交得出来。

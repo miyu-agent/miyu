@@ -38,7 +38,7 @@ pub trait Models: Send + Sync {
     /// 造这个会话的端口。
     fn port(&self, session: ForSession) -> Arc<dyn ModelPort>;
 
-    /// 模型调用口的一次性入口（施工 8-20，`docs/blueprint/models.md`「怎么走」第十二条）：发一次、拿整段回答，和会话的
+    /// 模型调用口的一次性入口（施工 8-20，`internal/blueprint/models.md`「怎么走」第十二条）：发一次、拿整段回答，和会话的
     /// 端口共用一份底子（冷却表、池的指针）。路由交它自己；照剧本回的（测试的端口）没有。
     fn one_shot(&self) -> Option<OneShot> {
         None
@@ -181,7 +181,7 @@ pub trait ModelPort: Send + Sync {
     /// 换快照了、载入了（设计 72）：要声明的供应商侧工具换成 `hosted`，发给满足条件的端点时接在 `tools` 末尾。
     fn declare(&self, _hosted: Vec<String>) {}
 
-    /// 替看不了图的模型看图（施工 8-17，`docs/blueprint/models.md`「怎么走」第十三条第 4 条）：照这一轮的配置 `config` 把
+    /// 替看不了图的模型看图（施工 8-17，`internal/blueprint/models.md`「怎么走」第十三条第 4 条）：照这一轮的配置 `config` 把
     /// `request` 经一次性入口发给会话钉的看图模型（施工 VM-1，回合开始交的），没钉的发给 `models.vision`，说完了交给 `sight`。马上返回，在别的任务里发，带上当前的 span。没有一次性
     /// 入口的（测试的端口）当场交没成。
     fn describe(&self, request: Request, config: &TurnConfig, sight: Sight) {
@@ -260,7 +260,7 @@ impl Reports {
         self.lead
     }
 
-    /// 这一次照 `tariff` 算金额（施工 8-15，`docs/blueprint/models.md`「怎么走」第九条第 3 条）：端口挑定了真发给的模型以后
+    /// 这一次照 `tariff` 算金额（施工 8-15，`internal/blueprint/models.md`「怎么走」第九条第 3 条）：端口挑定了真发给的模型以后
     /// 交，说完了照报的用量算好，随说完了交给内核。不交的（测试的剧本）不算，`model.called` 不写 `cost`。
     #[must_use]
     pub fn billed(mut self, tariff: Option<Tariff>) -> Reports {

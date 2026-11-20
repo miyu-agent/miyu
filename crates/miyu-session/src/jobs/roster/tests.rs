@@ -6,9 +6,9 @@ use super::*;
 /// 事件样本里 `kinds` 这几种的每一条：派出去的后台命令 `j1`（07:52:03.200）和子代理 `j2`（07:52:03.420），它们的回报。
 fn samples(kinds: &[&str]) -> Vec<Event> {
     [
-        include_str!("../../../../../docs/designs/samples/events/tool.result.jsonl"),
-        include_str!("../../../../../docs/designs/samples/events/job.reported.jsonl"),
-        include_str!("../../../../../docs/designs/samples/events/child.reported.jsonl"),
+        include_str!("../../../../../internal/designs/samples/events/tool.result.jsonl"),
+        include_str!("../../../../../internal/designs/samples/events/job.reported.jsonl"),
+        include_str!("../../../../../internal/designs/samples/events/child.reported.jsonl"),
     ]
     .concat()
     .lines()

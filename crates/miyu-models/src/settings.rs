@@ -1,4 +1,4 @@
-//! 模型这一块的配置项（`docs/blueprint/models.md`「配置：模型这一块的键」，`config.md`「配置清单」，施工 8-6）：
+//! 模型这一块的配置项（`internal/blueprint/models.md`「配置：模型这一块的键」，`config.md`「配置清单」，施工 8-6）：
 //! 一家供应商 `[providers.<id>]`、一个模型手写的资料 `[providers.<id>.models."<model>"]`、用途 `[models]`、池
 //! `[pools.<名字>]`。
 //!

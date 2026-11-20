@@ -1,4 +1,4 @@
-//! 订阅时补发之前的事件（施工 3-8 六补，`docs/blueprint/protocol.md` 的 `subscribe`）：写了 `after` 的，先补日志里序号
+//! 订阅时补发之前的事件（施工 3-8 六补，`internal/blueprint/protocol.md` 的 `subscribe`）：写了 `after` 的，先补日志里序号
 //! 大于它、落了盘的，都在回应前面，回应带 `upto`；不写的照旧；写错的 `bad_params`；瞬时事件不补；要载入的会话照样补；
 //! 已经订阅着的换一个新的。掉了队带 `after` 补回来、补的同时会话在追加，在 `replay_race.rs`。
 

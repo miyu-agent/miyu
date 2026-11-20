@@ -1,4 +1,4 @@
-//! 回合开始交给挂接点的「有效历史里模块注入过的那几块」（施工 R-4 上，`docs/blueprint/kernel/session.md` 的
+//! 回合开始交给挂接点的「有效历史里模块注入过的那几块」（施工 R-4 上，`internal/blueprint/kernel/session.md` 的
 //! `RunTurnStartHooks`）：模块交的一块下一轮在 `present` 里，`refs` 原样记、原样交回；清空、撤掉带着它的那一轮以后不在了；
 //! 内核自己注入的不算；没有模块注入的会话 `present` 是空的。
 

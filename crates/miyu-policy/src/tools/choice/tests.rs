@@ -1,4 +1,4 @@
-//! 会话开局时填上能选的几个（施工 8-8 补，`docs/blueprint/policy.md`「在哪」、`tools/subagent.md`「会话开局时拼 `pool`」）：
+//! 会话开局时填上能选的几个（施工 8-8 补，`internal/blueprint/policy.md`「在哪」、`tools/subagent.md`「会话开局时拼 `pool`」）：
 //! 一个都没有的拿掉这个参数、和资源去掉它一字不差；有的插 `enum`、说明一行一个；别的字节不动；照快照读回。
 
 use miyu_kernel::tool::Access;

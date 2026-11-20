@@ -1,4 +1,4 @@
-//! 选项由包在运行时给、语音平台主人不用填号（施工 SG-2，`docs/blueprint/packages.md`「配置项」第 1 条、`config.md`「协议」）：
+//! 选项由包在运行时给、语音平台主人不用填号（施工 SG-2，`internal/blueprint/packages.md`「配置项」第 1 条、`config.md`「协议」）：
 //! 真核心走一遍。清单写了 `choices_from` 的项，`config.schema` 里带 `{"package", "method"}`，没写的项不带；值照旧是普通
 //! 文字，不在列表里的照样写得进。平台是 `voice` 的包，`package.list` 的 `connection` 带 `owner_builtin`，别的平台不带。
 

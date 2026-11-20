@@ -4,7 +4,7 @@ use super::*;
 use crate::event::{Body, Event};
 use crate::test_support::{event_line, read_body, rejected};
 
-/// 图纸上的那一份 `body`（`docs/designs/samples/events/image.described.jsonl` 的那一条）。
+/// 图纸上的那一份 `body`（`internal/designs/samples/events/image.described.jsonl` 的那一条）。
 const BODY: &str = r#"{"blob":"sha256:5f2c8e1a9b3d7c4e6f0a2b8d1c5e9f3a7b4d6c0e8f2a1b5c9d3e7f4a6b0c8d2e","endpoint":"bigmodel","model":"glm-5.3-flash","text":"A terminal window.\nThe last line reads: test result: FAILED."}"#;
 
 #[test]

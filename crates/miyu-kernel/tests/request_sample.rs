@@ -1,4 +1,4 @@
-//! 样本请求（`docs/designs/samples/requests/second-step.json`，`08-上下文投影.md` 第二节）：
+//! 样本请求（`internal/designs/samples/requests/second-step.json`，`08-上下文投影.md` 第二节）：
 //! 样本会话里 42 号回合的第二次请求，也就是工具结果回来以后那一次。在代码里造出同一份请求，
 //! 规范的字节要和样本文件一字不差；请求的哈希就是这串字节的 SHA-256。
 
@@ -70,7 +70,7 @@ fn second_step() -> Request {
 /// 样本文件的内容，去掉行尾的换行。
 fn sample() -> String {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/requests/second-step.json");
+        .join("../../internal/designs/samples/requests/second-step.json");
     let text =
         fs::read_to_string(&path).unwrap_or_else(|e| panic!("读不了 {}：{e}", path.display()));
     text.strip_suffix('\n')

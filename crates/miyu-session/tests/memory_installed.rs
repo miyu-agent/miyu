@@ -1,4 +1,4 @@
-//! 记忆照包启用（施工 R-10，`docs/blueprint/memory.md` 第十一条）：核心照装没装人格记忆设 `Memory::set_installed`，开着的
+//! 记忆照包启用（施工 R-10，`internal/blueprint/memory.md` 第十一条）：核心照装没装人格记忆设 `Memory::set_installed`，开着的
 //! 会话照这时的：没装的这一轮不交摘要、闲了不抽，装回来接着。真会话、真记忆日志；整理记忆的模型是一台假服务器。
 //! 闹钟上了以后才卸掉的那一条在 `memory_installed_log.rs`（施工 BUG-5：照运行日志认先后）。
 

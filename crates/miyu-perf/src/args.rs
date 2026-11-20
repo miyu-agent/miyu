@@ -20,7 +20,7 @@ pub struct Args {
     pub miyu: PathBuf,
     /// 资源目录：源码树的 `resources/`。
     pub resources: PathBuf,
-    /// `docs/designs/23-性能预算.md`：预算照它第二节的表。
+    /// `internal/designs/23-性能预算.md`：预算照它第二节的表。
     pub design: PathBuf,
     /// 沙盒放哪：要在真的磁盘上，同步才算数。
     pub work: PathBuf,

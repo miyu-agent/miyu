@@ -1,4 +1,4 @@
-//! 找回的场所会话也认语音的上限（施工 VM-2，`docs/blueprint/venues.md`「`venue.session`」）：造的时候桥没报 `voice_max_ms`
+//! 找回的场所会话也认语音的上限（施工 VM-2，`internal/blueprint/venues.md`「`venue.session`」）：造的时候桥没报 `voice_max_ms`
 //! 的会话，找回时报了，记一条带它的 `session.policy_changed`（`by` 是桥），之后的 `tool.call` 带上；再报一样的、不报的什么都
 //! 不记，照记过的。
 

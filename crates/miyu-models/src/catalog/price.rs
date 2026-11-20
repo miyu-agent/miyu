@@ -1,4 +1,4 @@
-//! 价格（`docs/blueprint/models.md`「模型的资料」`price` 那一行，施工 8-7）：每一百万 token 的价，四项、币种，目录里的另带
+//! 价格（`internal/blueprint/models.md`「模型的资料」`price` 那一行，施工 8-7）：每一百万 token 的价，四项、币种，目录里的另带
 //! 按上下文分的档（`tiers`）、超过 20 万的价（`context_over_200k`）、思考的价。价格是一整格：从哪一层来，四项和币种就都
 //! 照那一层的。怎么照它算金额在 [`crate::price`]（施工 8-15）。
 

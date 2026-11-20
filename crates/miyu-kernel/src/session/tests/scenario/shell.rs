@@ -1,4 +1,4 @@
-//! 人用 `!` 打的命令（施工 SH-1 上，设计 57 第三节，`docs/blueprint/kernel/session.md`「人跑的命令」）：闲着收到就开一轮、
+//! 人用 `!` 打的命令（施工 SH-1 上，设计 57 第三节，`internal/blueprint/kernel/session.md`「人跑的命令」）：闲着收到就开一轮、
 //! 第一件跑、记下再问；忙着排着、到两步之间先跑；几条照先后跑；退回的不跑；打断时在跑的叫停、记 `interrupted`、她不回；
 //! 不接着发的没跑的也记 `interrupted`；重启时在跑的记 `aborted`、崩了的载入时补；撤销连同 `shell.ran` 一起撤；不是人的拒绝。
 

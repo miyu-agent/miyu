@@ -1,4 +1,4 @@
-//! Anthropic 的服务端工具（`docs/blueprint/drivers/anthropic.md`「怎么走：解码」第 6 条、「怎么走：编码」第 5 条，施工 HT-5）：
+//! Anthropic 的服务端工具（`internal/blueprint/drivers/anthropic.md`「怎么走：解码」第 6 条、「怎么走：编码」第 5 条，施工 HT-5）：
 //! 私有数据是 `use`、`result` 两块原文，超过上限的、参数坏了的不交；拼好的块带着这一家的私有数据；编码时照原样写回两块，
 //! 和流里的逐字节相同，别家的、读不懂的、没带的照 HT-2 写成字；稳定区的打点落在它后面时不乱。流的样本由
 //! `anthropic_streams.rs` 比。

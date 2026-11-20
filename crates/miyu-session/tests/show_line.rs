@@ -1,4 +1,4 @@
-//! show 的那一句（施工 D-5 补二，`docs/blueprint/tools/show.md`）：工具面上有 `show`、开关开着的会话 system 里带；从
+//! show 的那一句（施工 D-5 补二，`internal/blueprint/tools/show.md`）：工具面上有 `show`、开关开着的会话 system 里带；从
 //! `tools.rs` 拆出来守 500 行上限。
 
 use std::sync::Arc;

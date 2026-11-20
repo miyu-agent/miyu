@@ -1,4 +1,4 @@
-//! 网址的服务登录（施工 X-42 上，`docs/construction/X-42上-网址的服务登录.md`）：真核心连假的要登录的服务（`HttpServer::protect`），
+//! 网址的服务登录（施工 X-42 上，`internal/construction/X-42上-网址的服务登录.md`）：真核心连假的要登录的服务（`HttpServer::protect`），
 //! 假授权服务器（`AuthServer`），测试自己当浏览器。回 `401` 的停在 `needs_login`、不算失败；`mcp.login` 交回带 PKCE、`state`、
 //! `resource` 的授权页，点了同意以后令牌存进密钥文件（0600）、服务自己连上、请求带 `Bearer`；`state` 对不上的不认；表里写了令牌的
 //! 不走登录；没有的服务 `unknown_server`；第二次登录绑同一个端口；删了服务，存的那一份跟着清掉。

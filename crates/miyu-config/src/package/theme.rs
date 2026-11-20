@@ -1,4 +1,4 @@
-//! 外观包的 `[theme]`（施工 F-16，TH-1 起分终端、网页两样，`docs/blueprint/packages.md`「外观包」）：`[theme.tui] file` 是终端
+//! 外观包的 `[theme]`（施工 F-16，TH-1 起分终端、网页两样，`internal/blueprint/packages.md`「外观包」）：`[theme.tui] file` 是终端
 //! 主题文件，`[theme.web] dir` 是网页主题目录，至少写一样。
 
 use toml_edit::{Item, TableLike};

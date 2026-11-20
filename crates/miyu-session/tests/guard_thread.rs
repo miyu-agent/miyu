@@ -1,5 +1,5 @@
 //! 权限策略在阻塞线程里判（施工 4-9 再补四下）：判的时候跑异步任务的线程空着；问人时写出的 `detail` 和样本
-//! `docs/designs/samples/events/tool.approval_requested.jsonl` 是同一个样子，都不提放行规则（施工 PV-RM）。
+//! `internal/designs/samples/events/tool.approval_requested.jsonl` 是同一个样子，都不提放行规则（施工 PV-RM）。
 //!
 //! 场地不在系统的临时目录里（[`Home::outside_temp`]）：工作区 `work/`、假的家 `home/`。
 
@@ -158,7 +158,7 @@ async fn asking_writes_what_the_sample_shows() {
         .find(|event| matches!(event.body, Body::ApprovalRequested(_)))
         .expect("有一条确认请求");
     let sample = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/events/tool.approval_requested.jsonl");
+        .join("../../internal/designs/samples/events/tool.approval_requested.jsonl");
     let line = std::fs::read_to_string(&sample).expect("有样本");
     let drawn = Event::from_line(line.trim_end()).expect("样本读得进来");
     let (rule, detail) = rule_and_detail(&asked);

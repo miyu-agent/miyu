@@ -1,4 +1,4 @@
-//! 压缩触发线换上（施工 CT-1，`docs/blueprint/compaction.md` 第二条第 2 条，`session/actor.md`「换快照」第 5 条）：每个回合
+//! 压缩触发线换上（施工 CT-1，`internal/blueprint/compaction.md` 第二条第 2 条，`session/actor.md`「换快照」第 5 条）：每个回合
 //! 开始，人格、预设那一步看完以后，照会话钉的（内核从日志算的 `Session::pinned_line`）、没钉的照这一轮的配置
 //! `compaction.line` 定这一轮的百分数，和现在的快照比：一样的什么都不做；不一样的只换快照里的那一个数
 //! （`Snapshot::with_line`），存成 blob，策略交给内核放着，交回新快照的哈希，内核记成换快照（`session.policy_changed` 的

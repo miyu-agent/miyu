@@ -1,5 +1,5 @@
 //! 本机 embedding 的测试共用的（施工 R-5 三补）：手造的小模型（`tests/fixtures/embed-tiny/`）摆成一份「内置语义模型」
-//! 的包目录（模型清单 `model.toml` 加两个文件，`docs/blueprint/recall.md` 第四条第 2 款），和 cargo 编出来的测试用小程序
+//! 的包目录（模型清单 `model.toml` 加两个文件，`internal/blueprint/recall.md` 第四条第 2 款），和 cargo 编出来的测试用小程序
 //! `miyu-test-embed`（施工 S-7 上：`miyu-embed` 在自己的仓库里，这里手算小模型、不编 ONNX Runtime）。
 
 use std::path::{Path, PathBuf};

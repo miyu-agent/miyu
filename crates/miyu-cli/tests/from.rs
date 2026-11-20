@@ -1,4 +1,4 @@
-//! `miyu ask --from`（施工 7-10，`docs/blueprint/cli/ask.md`）：在进程里起一个核心，替身模型照请求里人这边的那句话答。和
+//! `miyu ask --from`（施工 7-10，`internal/blueprint/cli/ask.md`）：在进程里起一个核心，替身模型照请求里人这边的那句话答。和
 //! `-s`、`-c` 一起用往那个会话里发，都不写开一个新会话，记成 `harness`、带着名字，她收到的是带标签的那一块；不带 `cwd`，
 //! 写了 `--add-dir` 才带 `dirs`；往正忙的会话里发，平常的和 `--from` 都跟住听到它的那一轮；`--from` 按 Ctrl+C、到了
 //! `--timeout` 只是不等了，不打断她那一轮。

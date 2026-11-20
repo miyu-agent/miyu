@@ -1,4 +1,4 @@
-//! `miyu pkg`（`docs/blueprint/cli/pkg.md`，施工 T-3）：在终端里列出软件包、从一份清单装、把卸掉的出厂的装回来、卸掉；看一个包
+//! `miyu pkg`（`internal/blueprint/cli/pkg.md`，施工 T-3）：在终端里列出软件包、从一份清单装、把卸掉的出厂的装回来、卸掉；看一个包
 //! 的信息、装了哪些文件、一个文件归哪个包、装好的文件改没改（施工 F-8 下）。连上核心（照 `miyu memory`：没在跑就拉起来），发
 //! `package.*`（`protocol.md`），照回应印一句或者一行一个。pacman 的 `-U`、`-R`、`-Q`、`-Qi`、`-Ql`、`-Qo`、`-Qk` 当别名也认。
 //!

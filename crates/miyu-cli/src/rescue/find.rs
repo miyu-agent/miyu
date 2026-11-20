@@ -1,4 +1,4 @@
-//! 找 `litemiyu`（施工 RC-1，`docs/blueprint/cli/rescue.md`「找程序」）：LiteMiyu 由系统的包管理器装，多半和 `miyu` 在同一个
+//! 找 `litemiyu`（施工 RC-1，`internal/blueprint/cli/rescue.md`「找程序」）：LiteMiyu 由系统的包管理器装，多半和 `miyu` 在同一个
 //! 目录（AUR 的 `/usr/bin`、Homebrew 的 `bin/`）。照这个先后，取第一个是文件的：
 //!
 //! 1. `miyu` 被敲的那个路径（`argv[0]`）的同一个目录：不解链接。AUR 的 `/usr/bin/miyu` 链到 `/usr/lib/miyu/miyu`，`litemiyu`

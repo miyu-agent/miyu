@@ -1,4 +1,4 @@
-//! `check`：一次查完人手写的、Miyu 读的文件（施工 8-30，`docs/blueprint/protocol.md`「`check`」，`cli/check.md`）。
+//! `check`：一次查完人手写的、Miyu 读的文件（施工 8-30，`internal/blueprint/protocol.md`「`check`」，`cli/check.md`）。
 //!
 //! 照磁盘上现在的字查，不是核心手里的那一份：人刚改完、核心还没重读的也查得到。不写文件的查全部：配置、
 //! `cwd` 的项目配置（没写 `cwd` 的不查）、密钥文件（照核心手里的问题：它的字是密钥，不另读）、几层里每个

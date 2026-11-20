@@ -1,4 +1,4 @@
-//! 后台更新目录（`docs/blueprint/models.md`「怎么走」第二条第 3 条，施工 8-7）：`models.catalog.update` 开着的，缓存的
+//! 后台更新目录（`internal/blueprint/models.md`「怎么走」第二条第 3 条，施工 8-7）：`models.catalog.update` 开着的，缓存的
 //! `fetched` 旧过 `every` 的，GET `url`，带上次的 `ETag`，连接 10 秒、整个 60 秒、最多 32 MiB。
 //!
 //! - 200：先读一遍，至少有一家供应商才算好的；写进缓存目录（临时文件再改名，`meta` 一起），换上新的，记

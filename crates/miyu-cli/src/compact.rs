@@ -1,4 +1,4 @@
-//! `miyu compact`（`docs/blueprint/cli/compact.md`，施工 6-8，命令名 2026-09-29 项目主人定）：连上核心（压缩要请求
+//! `miyu compact`（`internal/blueprint/cli/compact.md`，施工 6-8，命令名 2026-09-29 项目主人定）：连上核心（压缩要请求
 //! 模型，照 `miyu ask` 的规矩拉起），找当前会话（和 `miyu undo` 一样，最新的那个一次性会话；`--session` 指定别的），
 //! 发 `session.compact`，跟着单开的那一轮，照 `miyu ask` 压缩那一行、用量那一行的样子印，全在标准错误上。
 //!

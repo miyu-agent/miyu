@@ -1,4 +1,4 @@
-//! 列一层目录（`fs.list`，施工 W-2，`docs/blueprint/web-module.md`「三、列文件、找文件」第 3 条）：像 shell
+//! 列一层目录（`fs.list`，施工 W-2，`internal/blueprint/web-module.md`「三、列文件、找文件」第 3 条）：像 shell
 //! 补全那样只读这一层，不往下走。
 
 use std::fs;

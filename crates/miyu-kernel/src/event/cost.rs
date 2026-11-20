@@ -1,4 +1,4 @@
-//! 一次请求的金额（施工 8-15，`docs/blueprint/models.md`「事件」`model.called` 的 `cost`、「怎么走」第九条第 3 条）：执行器
+//! 一次请求的金额（施工 8-15，`internal/blueprint/models.md`「事件」`model.called` 的 `cost`、「怎么走」第九条第 3 条）：执行器
 //! 照价格、倍率算好，随「说完了」交给内核，内核原样记进 `model.called`。以后目录更新、人改倍率，已经记下的不重算。内核不碰
 //! 价格，只记。
 

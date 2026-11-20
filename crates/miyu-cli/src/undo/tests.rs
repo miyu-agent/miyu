@@ -52,10 +52,10 @@ fn agreed() -> Value {
     })
 }
 
-/// 读一份样本：`docs/designs/samples/cli/` 下，蓝图里的那一块门禁和同一份比。
+/// 读一份样本：`internal/designs/samples/cli/` 下，蓝图里的那一块门禁和同一份比。
 fn sample(name: &str) -> String {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/cli")
+        .join("../../internal/designs/samples/cli")
         .join(name);
     std::fs::read_to_string(path).expect("有样本")
 }

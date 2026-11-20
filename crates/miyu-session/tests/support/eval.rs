@@ -1,4 +1,4 @@
-//! 记忆的测评集（施工 R-11，`docs/blueprint/memory/eval.md`）：读 `tests/fixtures/memory-eval/` 的两份、照规矩查、照搜出来的
+//! 记忆的测评集（施工 R-11，`internal/blueprint/memory/eval.md`）：读 `tests/fixtures/memory-eval/` 的两份、照规矩查、照搜出来的
 //! 算分。数据和规矩见那一页「格式」；这里只管读、查、算，不碰记忆。
 
 use std::collections::{BTreeMap, BTreeSet};

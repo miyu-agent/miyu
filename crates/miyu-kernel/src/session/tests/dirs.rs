@@ -1,4 +1,4 @@
-//! 加进来的目录跟着回合走（施工 5-10 上，`docs/blueprint/kernel/session.md`、`kernel/events-bodies.md`）：开回合时取
+//! 加进来的目录跟着回合走（施工 5-10 上，`internal/blueprint/kernel/session.md`、`kernel/events-bodies.md`）：开回合时取
 //! 会话现在的环境，这一轮里不变；`turn.started` 带着它，没有就不写；判权限、派工具的两个动作都带上。
 
 use super::executor::*;

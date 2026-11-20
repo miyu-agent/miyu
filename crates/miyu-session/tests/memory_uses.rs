@@ -1,4 +1,4 @@
-//! 想起过什么（施工 R-4 下，`docs/blueprint/memory.md` 第八条）：真会话、真记忆日志、真回合库。常驻那一块带过的、她
+//! 想起过什么（施工 R-4 下，`internal/blueprint/memory.md` 第八条）：真会话、真记忆日志、真回合库。常驻那一块带过的、她
 //! `memory_search` 搜到的，各算用到一次，最近一次是那一条事件的时刻；跟着回合索引写进这一间的回合库。
 
 use std::collections::BTreeMap;

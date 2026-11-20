@@ -1,4 +1,4 @@
-//! 在跑的工具的进度（施工 X-45 补，`docs/blueprint/view.md` 的 `tool` 条目）：`tool.progress` 的字里一整行以
+//! 在跑的工具的进度（施工 X-45 补，`internal/blueprint/view.md` 的 `tool` 条目）：`tool.progress` 的字里一整行以
 //! [`PREFIX`] 开头的，去了前缀、首尾空白，写进那一步的 `progress`。
 //!
 //! - 照调用编号攒半行：一段的末尾没有换行的留着等下一段。只留可能是进度行的：开头和前缀对不上的当场扔掉、丢到换行；

@@ -1,4 +1,4 @@
-//! `provider.rename`（施工 8-34，`docs/blueprint/models.md`「供应商改名」）：改一家供应商的编号，一次改完。
+//! `provider.rename`（施工 8-34，`internal/blueprint/models.md`「供应商改名」）：改一家供应商的编号，一次改完。
 //!
 //! 1. `to` 照编号的写法查，和 `from` 一样的、写法不对的 `bad_params`；合出来的配置里没有 `from` 的 `unknown_provider`，已经有
 //!    `to` 的 `provider_exists`。

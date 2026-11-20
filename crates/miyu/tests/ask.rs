@@ -1,4 +1,4 @@
-//! 真跑 `miyu ask`（`docs/construction/3-9-miyu-ask（下）.md`）：核心没配模型的，退出码 5、不造会话（施工 8-6 起 key 来自配置，头
+//! 真跑 `miyu ask`（`internal/construction/3-9-miyu-ask（下）.md`）：核心没配模型的，退出码 5、不造会话（施工 8-6 起 key 来自配置，头
 //! 一律拉起核心；施工 8-11 起说话之前先看）；参数不对的退出码 2；帮助页跟着界面语言。
 
 use std::process::{Command, Output};

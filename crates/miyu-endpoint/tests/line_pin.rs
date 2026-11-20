@@ -1,4 +1,4 @@
-//! 会话钉的压缩触发线在协议上的样子（施工 CT-1，`docs/blueprint/compaction.md` 第二条第 2 条）：`session.configure` 的 `compaction_line`
+//! 会话钉的压缩触发线在协议上的样子（施工 CT-1，`internal/blueprint/compaction.md` 第二条第 2 条）：`session.configure` 的 `compaction_line`
 //! 记一条 `session.policy_changed`（`{"compaction_line":{"percent":…}}`），下一个回合开始时换上：订阅回应的 `limits.compaction_line` 照
 //! 新的百分数算；`null` 去掉、回到跟着 `compaction.line`；`view.status` 钉了的带 `compaction_line`，没钉的不写。不在 20 到 95 里的、不是
 //! 整数的 `bad_params`，什么都不记。`session.create` 也收：造好以后记一条，回应的 `events` 多它。

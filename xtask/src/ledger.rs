@@ -1,4 +1,4 @@
-//! 登记簿（`docs/designs/26-提示词.md` 第十节，J12）：给模型看的每一份字都登记在那张表里。
+//! 登记簿（`internal/designs/26-提示词.md` 第十节，J12）：给模型看的每一份字都登记在那张表里。
 //!
 //! 门禁查两边一一对上：`resources/` 下每一份文件都在表里，表里每一行都有文件，指纹对得上。指纹是
 //! 文件字节的 SHA-256 的前 8 位：字改了就对不上，逼着回登记簿重新量 token、写上为什么改。算在
@@ -12,7 +12,7 @@ use sha2::{Digest, Sha256};
 use crate::drawing;
 
 /// 登记簿在仓库里的位置。
-pub const PATH: &str = "docs/designs/26-提示词.md";
+pub const PATH: &str = "internal/designs/26-提示词.md";
 
 pub(crate) const SECTION: &str = "登记簿";
 pub(crate) const HEADER: [&str; 6] = [

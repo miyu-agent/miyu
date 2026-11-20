@@ -1,4 +1,4 @@
-//! 一项的声明 [`Item`] 和声明的写法 [`settings!`](crate::settings)（`docs/blueprint/config.md`「配置清单」）。
+//! 一项的声明 [`Item`] 和声明的写法 [`settings!`](crate::settings)（`internal/blueprint/config.md`「配置清单」）。
 //!
 //! 一项有这几格：键、类型、默认值、能放在哪几层、哪个环境变量压过它、什么时候生效、界面提示。名字和说明
 //! 给人看，跟着界面语言，不在这里，住在资源目录里（[`crate::words`]）。各格的取值照「不为以后写代码」一样一样加：

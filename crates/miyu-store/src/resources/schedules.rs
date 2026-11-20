@@ -1,4 +1,4 @@
-//! 到点交进来的话的标签（施工 J-1 上，`docs/blueprint/schedules.md` 第六节）：`software/schedule/common/`、`software/loop/common/`
+//! 到点交进来的话的标签（施工 J-1 上，`internal/blueprint/schedules.md` 第六节）：`software/schedule/common/`、`software/loop/common/`
 //! 下各一对 `message-open.txt`、`message-close.txt`（施工 J-2 写）。造会话时冻结进快照的 `core.schedule`；缺一份的当没有，那种话
 //! 照人的话原样渲染。
 //! 光打 `/loop` 交进去的那句 `software/loop/autonomous.txt`（施工 LO-1）也不进快照：敲命令那一刻读，原样存进定时表那一行的 `prompt`。

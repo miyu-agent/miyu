@@ -1,4 +1,4 @@
-//! `system.append {content, session?}`（施工 X-20，`docs/designs/34-表情包.md` 第五节第 5 条）：扩展往 system 尾部放一段。不写
+//! `system.append {content, session?}`（施工 X-20，`internal/designs/34-表情包.md` 第五节第 5 条）：扩展往 system 尾部放一段。不写
 //! `session` 的管它出现的全部会话，写了的只管那一个、优先；`content` 写 `null` 去掉那一层。只记在核心的内存里：会话在下一轮
 //! 开头经端口问（`hooks.rs`），和快照里钉的不一样就换；核心重启以后照钉的，扩展再设一样的不再换。
 //!

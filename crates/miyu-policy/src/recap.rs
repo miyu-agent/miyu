@@ -1,4 +1,4 @@
-//! 回顾装进快照（施工 3-8 四补，`docs/blueprint/kernel/request.md`「回顾的请求」）：`resources/core/recap/` 下的五份原文，和
+//! 回顾装进快照（施工 3-8 四补，`internal/blueprint/kernel/request.md`「回顾的请求」）：`resources/core/recap/` 下的五份原文，和
 //! 两个数。以前造的快照里没有，读成没有：那些会话不做回顾，要了是没有能回顾的。
 
 use miyu_assemble::Recap;

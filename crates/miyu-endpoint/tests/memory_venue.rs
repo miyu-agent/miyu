@@ -1,4 +1,4 @@
-//! 在哪个场所说的（施工 R-13 上，`docs/blueprint/memory.md` 第九条，`protocol.md` 的 `memory.*` 第 1 条）：人经协议是主人那边，
+//! 在哪个场所说的（施工 R-13 上，`internal/blueprint/memory.md` 第九条，`protocol.md` 的 `memory.*` 第 1 条）：人经协议是主人那边，
 //! 一个大脑全部列得出；一条带 `venue`，本机的是 `null`。发生过的事带涉及谁（施工 E-1 修四），没有的是空列表；在哪个群（施工 E-4 上），没有的是 `null`。
 
 use serde_json::{Value, json};

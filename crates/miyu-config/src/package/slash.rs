@@ -1,4 +1,4 @@
-//! 扩展声明的斜杠命令（施工 X-14 下，`docs/blueprint/slash.md`「扩展的命令」）：`[[slash]]` 一段一条，读成 [`SlashCommand`]。
+//! 扩展声明的斜杠命令（施工 X-14 下，`internal/blueprint/slash.md`「扩展的命令」）：`[[slash]]` 一段一条，读成 [`SlashCommand`]。
 //! 只查写法；人敲了怎么交给扩展的程序在核心那一边。只有扩展包能写（`kinds::tables`），要在 `[process] capabilities` 里声明
 //! `commands`（[`needs_capability`]，读完整份以后查）。
 
@@ -9,7 +9,7 @@ use super::reader::{Reader, command_name, line_of};
 use super::{Code, Problem};
 use crate::phrases::Phrases;
 
-/// 一条斜杠命令谁能用（施工 O-6 六补，`docs/blueprint/slash.md`「谁能用」）：配置 `commands.<名字>.access`、清单
+/// 一条斜杠命令谁能用（施工 O-6 六补，`internal/blueprint/slash.md`「谁能用」）：配置 `commands.<名字>.access`、清单
 /// `[[slash]]` 的出厂值都是这三种。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Access {

@@ -1,4 +1,4 @@
-//! 步数上限（施工 AE-1，`docs/blueprint/policy.md`「对外的样子」`step_limit`、`auto_step_limit`）：一个回合最多请求几次模型。
+//! 步数上限（施工 AE-1，`internal/blueprint/policy.md`「对外的样子」`step_limit`、`auto_step_limit`）：一个回合最多请求几次模型。
 //! 快照里两格：每一轮都照的 `step_limit`，不是人开的回合（定时任务、长期目标的续轮、重启接着干、回报叫醒……）照的 `auto_step_limit`，内核对这种回合取
 //! 两者里小的那个（`miyu_kernel::session::Policy::steps_for`）。数照「这是什么会话」给（2026-10-30 项目主人定，照 Claude Code
 //! 主对话不设上限、子代理设的分法）：
@@ -73,7 +73,7 @@ impl StepLimits {
 
 impl StepLimits {
     /// 照这两个数换掉内核策略里的两格：fork 子代理用（施工 AE-1）。它的快照就是父会话那一份（同一个快照哈希，请求前缀才一样，
-    /// `docs/blueprint/agents.md`「一补」第 2 条），快照里的数是父会话的，载入造好策略以后换成 fork 的。
+    /// `internal/blueprint/agents.md`「一补」第 2 条），快照里的数是父会话的，载入造好策略以后换成 fork 的。
     #[must_use]
     pub fn applied(self, mut policy: Policy) -> Policy {
         policy.step_limit = self.every;

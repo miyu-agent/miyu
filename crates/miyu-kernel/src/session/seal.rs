@@ -1,4 +1,4 @@
-//! 跑完几轮封存（施工 C-8 下，`docs/blueprint/session/fork.md`「封存」）：分叉时写了 `seal_after` 的，跑满这几轮、这一轮结束、没有
+//! 跑完几轮封存（施工 C-8 下，`internal/blueprint/session/fork.md`「封存」）：分叉时写了 `seal_after` 的，跑满这几轮、这一轮结束、没有
 //! 接着开的，同一批在 `turn.ended` 后面记一条 `session.sealed`。之后不再开轮：改对话的命令拒 `session_sealed`，别处来的回报、
 //! 留言照记、不叫醒她（`jobs.rs` 的「这时开得了一轮」）。
 //!

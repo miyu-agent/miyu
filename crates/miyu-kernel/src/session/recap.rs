@@ -1,4 +1,4 @@
-//! 回顾（施工 3-8 四补，`docs/blueprint/kernel/session.md`「回顾」）：头要一句回顾，照这一刻落了盘的有效历史组装一次单独的
+//! 回顾（施工 3-8 四补，`internal/blueprint/kernel/session.md`「回顾」）：头要一句回顾，照这一刻落了盘的有效历史组装一次单独的
 //! 辅助请求（`Assembler::recap`，`kernel/request.md`「回顾的请求」），说完了记 `model.called`（`purpose` 是 `recap`）和
 //! `session.recapped`，回应那一句。
 //!

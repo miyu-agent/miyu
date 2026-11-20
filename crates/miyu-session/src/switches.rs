@@ -1,4 +1,4 @@
-//! 技能、脚本、MCP 服务的全局开关在配置里的那一项（施工 X-27，`docs/blueprint/presets.md`「全局开关」，2026-10-20 项目主人定）：
+//! 技能、脚本、MCP 服务的全局开关在配置里的那一项（施工 X-27，`internal/blueprint/presets.md`「全局开关」，2026-10-20 项目主人定）：
 //! `features.<功能编号>`，写在配置里，`unlisted` 开着的预设照它，预设里明写了的照预设（`miyu_policy::preset` 的
 //! `switches.rs`）。设置页不画：技能、脚本、MCP 那三页另给写法（`feature.set`）。
 //!

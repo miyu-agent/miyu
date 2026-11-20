@@ -1,4 +1,4 @@
-//! 带名字的图片怎么进请求（施工 3-9 四补，`docs/blueprint/drivers/openai-chat.md` 第 9 条）：人附的图片带着文件名，能看图
+//! 带名字的图片怎么进请求（施工 3-9 四补，`internal/blueprint/drivers/openai-chat.md` 第 9 条）：人附的图片带着文件名，能看图
 //! 的前后各一段标签，不能看图的占位写上名字；不带名字的照旧（`media.json`、`tool-attachments.json` 这几份样本不变）；
 //! 以前造的快照里没有那三句的，带名字的也照不带名字的写。
 

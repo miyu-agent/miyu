@@ -1,4 +1,4 @@
-//! 给头看的会话的模型（施工 8-10；思考强度施工 8-18，`docs/blueprint/models.md`「协议」的 `subscribe`、「瞬时事件」的 `model.changed`）：限额，
+//! 给头看的会话的模型（施工 8-10；思考强度施工 8-18，`internal/blueprint/models.md`「协议」的 `subscribe`、「瞬时事件」的 `model.changed`）：限额，
 //! 和会话接下来请求的模型。actor 造会话、载入时，交了新的限额、回合开始重新解析完写一次，和 `Handle` 共用：`subscribe` 照它
 //! 答，`model.changed` 照它推，两边说的是同一份。施工 D-3 起还有当前的待办：内核推 `todos.changed` 时跟着换，`subscribe` 照它
 //! 回 `todos`。

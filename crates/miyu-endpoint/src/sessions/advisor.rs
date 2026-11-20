@@ -1,4 +1,4 @@
-//! 顾问会话，会话表这一头（施工 ADV-1，设计 `69-旗舰顾问.md` 第三节，`docs/blueprint/tools/advisor.md`）：`advisor` 经会话端口
+//! 顾问会话，会话表这一头（施工 ADV-1，设计 `69-旗舰顾问.md` 第三节，`internal/blueprint/tools/advisor.md`）：`advisor` 经会话端口
 //! （`miyu_session::SessionPort::advise`）来问。旗舰池里没有可用模型的不造会话、不发请求；有的新开一个顾问会话（`continue` 的
 //! 找父会话最近一次的那一个），把问题作为父会话发来的话送进去，等这一轮答完交回回答。
 //!

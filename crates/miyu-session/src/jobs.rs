@@ -1,4 +1,4 @@
-//! 执行器的任务表（施工 7-3，`docs/blueprint/session/tools.md`「后台命令」，`agents.md` 第四条）：后台命令活过起它的那一次
+//! 执行器的任务表（施工 7-3，`internal/blueprint/session/tools.md`「后台命令」，`agents.md` 第四条）：后台命令活过起它的那一次
 //! 调用，由这里管。核心里一张（[`Jobs`]），所有会话共用：核心看它空不空闲。
 //!
 //! - 一个会话 actor 一份 [`SessionJobs`]：编号照日志往后数（[`JobIds`]，和派子代理的共用一串），每次调用造一个任务端口

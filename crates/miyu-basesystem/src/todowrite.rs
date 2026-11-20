@@ -1,4 +1,4 @@
-//! `todowrite`（`docs/blueprint/tools/todowrite.md`，施工 D-3）：她做多步的活时维护一张待办清单，头照着显示。每次整份换，
+//! `todowrite`（`internal/blueprint/tools/todowrite.md`，施工 D-3）：她做多步的活时维护一张待办清单，头照着显示。每次整份换，
 //! 照 Claude Code 的 TodoWrite、codex 的 `update_plan`、opencode 的 `todowrite`（2026-10-07 项目主人定）。访问类别是读：只改
 //! 这个会话自己的清单，只读开着也能写。
 //!

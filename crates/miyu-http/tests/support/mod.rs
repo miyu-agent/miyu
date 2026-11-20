@@ -57,7 +57,7 @@ fn texts() -> DriverTexts {
 /// 驱动的流的样本。
 pub fn sample(name: &str) -> Vec<u8> {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/drivers/openai-chat/streams")
+        .join("../../internal/designs/samples/drivers/openai-chat/streams")
         .join(format!("{name}.sse"));
     std::fs::read(&path).unwrap_or_else(|e| panic!("读不了 {}：{e}", path.display()))
 }

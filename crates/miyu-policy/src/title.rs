@@ -1,4 +1,4 @@
-//! 起标题装进快照（施工 3-8 五补，`docs/blueprint/kernel/request.md`「起标题的请求」、`kernel/session.md`「起标题」）：
+//! 起标题装进快照（施工 3-8 五补，`internal/blueprint/kernel/request.md`「起标题的请求」、`kernel/session.md`「起标题」）：
 //! `resources/core/title/` 下的指令，和三个数。对话记录的标签、截断的记号借回顾的（`recap.rs`）。以前造的快照里没有，读成
 //! 没有：那些会话不起标题。
 

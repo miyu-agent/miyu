@@ -1,4 +1,4 @@
-//! 扩展能力（施工 9-4 下上，`docs/designs/05-内核接口.md` 第三节）：清单的 `[process] capabilities` 声明要哪些，主人
+//! 扩展能力（施工 9-4 下上，`internal/designs/05-内核接口.md` 第三节）：清单的 `[process] capabilities` 声明要哪些，主人
 //! 在开的那一下批（`extensions.md`）。只认这张表里的二十三个名字（施工 X-15 上加了 `widgets`，施工 X-20 加了 `context.system`，施工 X-18 加了 `packages.call`，施工 N-5 加了 `search`，施工 X-30 加了 `memory.write`，施工 XG-1 下加了 `tools.commands`，施工 LP-1 加了 `login.page`，施工 MD-1 加了 `model.driver`，施工 VC-1 加了 `audio.record`、`audio.play`，施工 PK-1 加了 `provider.key`），先后照这张表。
 //! 出厂的包算批过声明的全部，[`Capability::needs_person`] 的几项除外（施工 LP-1：`login.page` 出厂的也要人批；施工 PK-1：
 //! `provider.key` 也是）。

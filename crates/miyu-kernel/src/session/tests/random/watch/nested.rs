@@ -1,4 +1,4 @@
-//! 看守查嵌套调用（施工 M-1，`docs/blueprint/kernel/session.md`「嵌套调用」）：
+//! 看守查嵌套调用（施工 M-1，`internal/blueprint/kernel/session.md`「嵌套调用」）：
 //!
 //! - 两条不变式：父调用的 `tool.result`、任务的 `job.reported` 之前，挂在下面收下了的都已了结；
 //! - 每个收下的只了结一次；前台的带回合，后台的不带；`clicall` 没开的当场拒、一条都不记（施工 M-2）；

@@ -1,4 +1,4 @@
-//! 组装请求的接口：给一段有效历史，出一份统一的请求（`docs/designs/05-内核接口.md`
+//! 组装请求的接口：给一段有效历史，出一份统一的请求（`internal/designs/05-内核接口.md`
 //! 第五节「组装请求」，`08-上下文投影.md` 第四节「默认的组装怎么写」）。
 //!
 //! 这是一个独占的挂接点：一个会话只用一种组装，按策略选定。内核只定这个接口，默认的做法
@@ -10,7 +10,7 @@ use crate::id::{Seq, TurnId};
 use crate::request::Request;
 use crate::time::Timestamp;
 
-/// 一段话（施工 R-6 上，`docs/blueprint/memory.md` 第六条）：人这边说的一句，或者她一轮最后一条有正文的回答，照组装器的
+/// 一段话（施工 R-6 上，`internal/blueprint/memory.md` 第六条）：人这边说的一句，或者她一轮最后一条有正文的回答，照组装器的
 /// 写法渲染成字。抽取的那一段照它取，取法和回顾的请求同一份。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Spoken {
@@ -61,7 +61,7 @@ pub trait Assembler {
     /// 一对，所以都归组装。
     fn summary(&self, reply: &[Block]) -> Option<String>;
 
-    /// 回顾的请求（施工 3-8 四补，`docs/blueprint/kernel/request.md`「回顾的请求」）：单独的一次辅助请求，不接主对话的前缀，
+    /// 回顾的请求（施工 3-8 四补，`internal/blueprint/kernel/request.md`「回顾的请求」）：单独的一次辅助请求，不接主对话的前缀，
     /// 只喂 `history` 里最近几轮人说的话和她的回答正文。交回请求，和它照到的那一条：喂进去的最新那一条消息的序号。
     /// `history` 是这一刻落了盘的有效历史。同样是纯函数。
     ///
@@ -71,7 +71,7 @@ pub trait Assembler {
         None
     }
 
-    /// 起标题的请求（施工 3-8 五补，`docs/blueprint/kernel/request.md`「起标题的请求」）：和回顾一样单独的一次辅助请求，只喂
+    /// 起标题的请求（施工 3-8 五补，`internal/blueprint/kernel/request.md`「起标题的请求」）：和回顾一样单独的一次辅助请求，只喂
     /// `history` 里的第一轮：第一个回答以前人这边的话，和那个回答的正文。交回请求，和它照到的那一条：那个回答的序号。
     /// `history` 是这一刻落了盘的有效历史。同样是纯函数。
     ///
@@ -81,7 +81,7 @@ pub trait Assembler {
         None
     }
 
-    /// 人要求重起标题的请求（施工 TT-1，`docs/blueprint/kernel/request.md`「起标题的请求」第 7 条）：和 [`Assembler::title`]
+    /// 人要求重起标题的请求（施工 TT-1，`internal/blueprint/kernel/request.md`「起标题的请求」第 7 条）：和 [`Assembler::title`]
     /// 同一份指令、同样的上限，只是喂 `history` 里最近答过的几轮，不喂第一轮；最新那一轮还没答的不带。交回请求，和它照到的
     /// 那一条：喂进去的最新那个回答的序号。同样是纯函数。
     ///
@@ -99,7 +99,7 @@ pub trait Assembler {
         Vec::new()
     }
 
-    /// 转述一张图的请求（施工 8-17，`docs/blueprint/kernel/request.md`「替它看的图」）：主对话的模型看不了图，内核把 `image`
+    /// 转述一张图的请求（施工 8-17，`internal/blueprint/kernel/request.md`「替它看的图」）：主对话的模型看不了图，内核把 `image`
     /// 交给 `models.vision` 转成字之前组装。`said` 是人这一轮最近说的那一句，内核找好交进来，没有的是 `None`。同样是纯函数。
     ///
     /// 快照里没有转述的字的是 `None`：不转述，照旧写占位。默认的是 `None`。
@@ -108,7 +108,7 @@ pub trait Assembler {
         None
     }
 
-    /// `text` 的开头是不是这个组装器写「别人说的一条话」时的行首（施工 FT-1，`docs/blueprint/kernel/session.md`「截掉模型编的
+    /// `text` 的开头是不是这个组装器写「别人说的一条话」时的行首（施工 FT-1，`internal/blueprint/kernel/session.md`「截掉模型编的
     /// 下一轮」）：默认的组装器是群里的一行，`[时:分] 发的人 [msg=编号]:`。模型在回答后面写出一个角色词、接着照这个样子编的，
     /// 内核照它认出来截掉（[`crate::forged::find`]）。写法是组装器的，认法和它是一对，所以归组装。同样是纯函数。
     ///

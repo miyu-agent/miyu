@@ -1,4 +1,4 @@
-//! 拉供应商的模型列表（`docs/blueprint/models.md`「怎么走」第二条第 10 条，施工 8-7）：照驱动的 `models_path()` GET，带这
+//! 拉供应商的模型列表（`internal/blueprint/models.md`「怎么走」第二条第 10 条，施工 8-7）：照驱动的 `models_path()` GET，带这
 //! 家的第一个取得到值的 key，整个 30 秒；读出来的存 `state/models/providers/<编号>.json`。拉不到的记一行
 //! `WARN provider list failed`，照旧用上一份。
 //!

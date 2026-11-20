@@ -1,4 +1,4 @@
-//! 待办（施工 D-3，`docs/blueprint/kernel/session.md`「待办」）：当前的清单由有效历史另记的那张表算（`history/todos.rs`），
+//! 待办（施工 D-3，`internal/blueprint/kernel/session.md`「待办」）：当前的清单由有效历史另记的那张表算（`history/todos.rs`），
 //! 这里管交给头的那一份。
 //!
 //! - 变了才推：落了盘、推完事件以后，当前的清单和上次告诉头的那份不一样，推一条瞬时的 `todos.changed`。写了、撤销、恢复都

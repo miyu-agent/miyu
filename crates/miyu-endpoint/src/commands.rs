@@ -1,4 +1,4 @@
-//! 斜杠命令由核心解析（施工 O-6，`docs/designs/04-核心协议.md` P4，`docs/blueprint/protocol.md`「`command.run`」）：头把人打的
+//! 斜杠命令由核心解析（施工 O-6，`internal/designs/04-核心协议.md` P4，`internal/blueprint/protocol.md`「`command.run`」）：头把人打的
 //! 原文交过来，核心认命令、判谁能用、执行、记一条 `command.ran`，回执的那一句照连接的语言写好交回去。
 //!
 //! 认哪些命令照登记表（施工 O-6 三补，[`registry`]）：核心自己的 `/clear`（别名 `/reset`）、`/stop`、`/workspace` 在

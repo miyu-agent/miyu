@@ -1,4 +1,4 @@
-//! 跑包自己的检查（施工 9-2，`docs/blueprint/packages.md`）：真核心走一遍。`check` 不写文件时，照起来时读到的清单跑有
+//! 跑包自己的检查（施工 9-2，`internal/blueprint/packages.md`）：真核心走一遍。`check` 不写文件时，照起来时读到的清单跑有
 //! `[check]` 的包，收它一行一个的问题，接在核心自己查的后面；格式不对的行、跑坏了的、程序没找到的各报一条警告。
 
 use serde_json::{Value, json};

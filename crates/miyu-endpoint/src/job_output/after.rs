@@ -1,4 +1,4 @@
-//! `job.output` 带 `after`（施工 V-6 上，`docs/blueprint/protocol.md` 的 `job.output` 第 9、10 条）：头已经有了前 `after`
+//! `job.output` 带 `after`（施工 V-6 上，`internal/blueprint/protocol.md` 的 `job.output` 第 9、10 条）：头已经有了前 `after`
 //! 个字节，只要后面新长出来的那一段，从那里跳过去读，不从头数。带 `wait` 的没有新的就睡着等输出长了、命令结束了再答。
 
 use std::io::{Read, Seek, SeekFrom};

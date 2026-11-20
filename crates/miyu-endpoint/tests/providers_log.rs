@@ -1,4 +1,4 @@
-//! `provider.test` 的运行日志（施工 8-11，`docs/blueprint/models.md`「出错」、「怎么走」第七条第 4 条第 6、7 款）：试一次记
+//! `provider.test` 的运行日志（施工 8-11，`internal/blueprint/models.md`「出错」、「怎么走」第七条第 4 条第 6、7 款）：试一次记
 //! 一行 `INFO provider tested`；候选的 `{value}` 的 key 只在那一次的内存里，整份运行日志（`TRACE`）、回应里都搜不到。
 //!
 //! 全局装一个写进内存的订阅者，一个进程只能装一次，所以这个文件单独一个测试程序，只有一个测试。

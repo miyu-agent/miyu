@@ -1,4 +1,4 @@
-//! 人用 `!` 打的命令（施工 SH-1 上，设计 57，`docs/blueprint/protocol.md` 的 `session.send`）：真核心、真的基础系统。本人发
+//! 人用 `!` 打的命令（施工 SH-1 上，设计 57，`internal/blueprint/protocol.md` 的 `session.send`）：真核心、真的基础系统。本人发
 //! `shell: true` 的，记成写了 `shell` 的 `message.user`，不问权限、不进沙盒就跑，记 `shell.ran`，她接着回一轮、请求里是那条
 //! 命令和输出；她自己的同一句照旧要问人。别的 harness、带附件的、空的、没有跑命令的工具的拒绝，会话里什么都不记。
 

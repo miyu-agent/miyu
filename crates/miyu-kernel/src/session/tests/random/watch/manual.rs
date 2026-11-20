@@ -1,4 +1,4 @@
-//! 看守查手动压缩（`docs/blueprint/compaction.md` 第七条，施工 6-8）：
+//! 看守查手动压缩（`internal/blueprint/compaction.md` 第七条，施工 6-8）：
 //!
 //! - 有回合在进行的拒绝，`turn_running`；照规矩算不出 N 的（没交过限额、前面没有能压的）拒绝，`nothing_to_compact`；
 //!   拒绝的只有一个回应；

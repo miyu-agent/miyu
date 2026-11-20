@@ -1,4 +1,4 @@
-//! `session.send` 的 `from`（施工 7-10，`docs/blueprint/protocol.md` 的 `session.send` 第 6 条，`agents.md` 第十一条第 4
+//! `session.send` 的 `from`（施工 7-10，`internal/blueprint/protocol.md` 的 `session.send` 第 6 条，`agents.md` 第十一条第 4
 //! 条）：别的 harness 报的自己的名字，这一句记成它说的，`by` 是 `harness`。
 //!
 //! 名字是对方自己报的，不核对，只管写法：照短名字的规矩（`kernel/ids.md`），先去掉控制字符，再截到 128 字节以内，不截断

@@ -1,4 +1,4 @@
-//! `preset.get` 的 `sections`（施工 FG-1，设计 `52-功能分组.md` 第一节、第三节，`docs/blueprint/presets.md`「功能分组」）：核心把
+//! `preset.get` 的 `sections`（施工 FG-1，设计 `52-功能分组.md` 第一节、第三节，`internal/blueprint/presets.md`「功能分组」）：核心把
 //! 功能分好组、排好先后，头照着画，不翻译、不排序、不认编号。
 //!
 //! - 先是出厂的组，照组表 `resources/packages/groups.toml` 的先后（`kind: "group"`）：组里的功能照组的 `order`（包的先后），包里

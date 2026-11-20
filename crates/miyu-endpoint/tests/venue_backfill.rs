@@ -1,4 +1,4 @@
-//! 补拉回来的群消息（施工 O-40，`docs/blueprint/venues.md`「场所的格」）：`venue.backfill`、`venue.sent` 原样记；补拉的要带着
+//! 补拉回来的群消息（施工 O-40，`internal/blueprint/venues.md`「场所的格」）：`venue.backfill`、`venue.sent` 原样记；补拉的要带着
 //! `ambient`，平台的时刻要合写法，不合的 `bad_params`，什么都不记。
 
 use serde_json::{Value, json};

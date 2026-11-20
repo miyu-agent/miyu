@@ -1,4 +1,4 @@
-//! `subagent`（`docs/blueprint/tools/subagent.md`，施工 7-5）：派一个子代理去做一件事。只声明 `description`（短标题）、
+//! `subagent`（`internal/blueprint/tools/subagent.md`，施工 7-5）：派一个子代理去做一件事。只声明 `description`（短标题）、
 //! `prompt`（整段交代）；经 [`Call::agents`] 交给执行器，执行器照父会话抄好权限、目录，造子会话、把交代送进去，交回编号就
 //! 返回，不等它做完。回报由子会话自己送来（7-6）。
 //!

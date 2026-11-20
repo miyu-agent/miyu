@@ -1,4 +1,4 @@
-//! `miyu pkg` 印的那一行、装的是包目录还是编号（施工 T-3，`docs/blueprint/cli/pkg.md`）。
+//! `miyu pkg` 印的那一行、装的是包目录还是编号（施工 T-3，`internal/blueprint/cli/pkg.md`）。
 
 use serde_json::json;
 

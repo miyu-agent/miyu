@@ -1,4 +1,4 @@
-//! `cargo xtask dev-home`（施工 8-6，`docs/blueprint/models.md`「怎么走」第十条）：照三个环境变量造的数据根，配置照清单读
+//! `cargo xtask dev-home`（施工 8-6，`internal/blueprint/models.md`「怎么走」第十条）：照三个环境变量造的数据根，配置照清单读
 //! 一处错都没有；已经有配置的不盖、别人的目录不动；真的核心认得出它，照配置连上假服务器，带着 `MIYU_DEV_API_KEY` 的值、
 //! 发给写的那个模型，`miyu ask` 答得上来。
 //!
@@ -158,7 +158,7 @@ fn an_existing_config_or_a_foreign_directory_is_left_alone() {
 async fn a_real_core_on_a_dev_home_answers_through_the_config() {
     let sample = std::fs::read(
         crate::support::resources()
-            .join("../docs/designs/samples/drivers/openai-chat/streams/openai-text.sse"),
+            .join("../internal/designs/samples/drivers/openai-chat/streams/openai-text.sse"),
     )
     .expect("样本读得到");
     let server = Server::start(

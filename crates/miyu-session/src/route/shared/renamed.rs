@@ -1,4 +1,4 @@
-//! 供应商改名（施工 8-34，`docs/blueprint/models.md`「供应商改名」）：用出来的、供应商的列表跟着换编号，改名记进
+//! 供应商改名（施工 8-34，`internal/blueprint/models.md`「供应商改名」）：用出来的、供应商的列表跟着换编号，改名记进
 //! `renamed.json`，钉着旧编号的会话每轮照它换（`route/turn.rs`）。
 
 use miyu_models::observed::Renamed;

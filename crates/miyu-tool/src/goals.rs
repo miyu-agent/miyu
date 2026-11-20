@@ -1,4 +1,4 @@
-//! 长期目标的端口（施工 X-8 上，`docs/blueprint/tools/goal.md`）：`goal` 经它看、设、结束这个会话的目标。实现在会话层：
+//! 长期目标的端口（施工 X-8 上，`internal/blueprint/tools/goal.md`）：`goal` 经它看、设、结束这个会话的目标。实现在会话层：
 //! 交给 actor，看的照会话状态答，改的交内核 `Goal` 命令（`by` 是这次调用），内核拒的原因原样交回来。
 
 use std::fmt;

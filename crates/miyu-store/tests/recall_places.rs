@@ -1,4 +1,4 @@
-//! 回合库里哪个会话在哪个场所（施工 R-13 下，`docs/blueprint/recall.md`「库的结构」、`memory.md` 第一条第 1 款）：记一次、再记
+//! 回合库里哪个会话在哪个场所（施工 R-13 下，`internal/blueprint/recall.md`「库的结构」、`memory.md` 第一条第 1 款）：记一次、再记
 //! 换成新的；照来源列出；删会话（`forget`）跟着拿掉；重开还在，重建是空的。每个会话从哪来（`origins`，施工 E-6）同样。
 
 use std::path::PathBuf;

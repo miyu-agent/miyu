@@ -1,4 +1,4 @@
-//! 驱动的占位进快照（施工 3-9 三补、四补、五补，施工 AT-1，`docs/blueprint/policy.md`「`CoreTexts`」的 `drivers`）：出厂的快照每
+//! 驱动的占位进快照（施工 3-9 三补、四补、五补，施工 AT-1，`internal/blueprint/policy.md`「`CoreTexts`」的 `drivers`）：出厂的快照每
 //! 一句各是各的；以前造的快照没有带名字的图片那三句、只有路径的附件那两句，读回来一字不差，照没有的写。施工 3-9 五补从 `tests.rs` 挪出来：那一份到了
 //! 行数上限。
 

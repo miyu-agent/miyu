@@ -1,4 +1,4 @@
-//! 服务端工具（施工 HT-5，`docs/blueprint/drivers/anthropic.md`「怎么走：解码」第 6 条、「怎么走：编码」第 5 条）：这一家
+//! 服务端工具（施工 HT-5，`internal/blueprint/drivers/anthropic.md`「怎么走：解码」第 6 条、「怎么走：编码」第 5 条）：这一家
 //! 自己跑的 `web_search`、`web_fetch` 这类，线上是一块 `server_tool_use` 加一块 `*_tool_result`，并成内核的一块供应商侧工具。
 //!
 //! - 解码：`server_tool_use` 开块时记下它的每一格（原文）和编号，参数照工具调用攒；结果块来了照 `tool_use_id` 找到它，算出

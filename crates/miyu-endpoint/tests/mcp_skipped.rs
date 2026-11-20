@@ -1,4 +1,4 @@
-//! MCP 服务列出来却没登记的工具（施工 X-37 第三处，`docs/construction/X-37-脚本技能的三处小毛病.md`）：软件包列表上服务那一格、
+//! MCP 服务列出来却没登记的工具（施工 X-37 第三处，`internal/construction/X-37-脚本技能的三处小毛病.md`）：软件包列表上服务那一格、
 //! `mcp.list` 的一项带 `skipped`，照原名排，没有的不写；`miyu check` 一个服务报一条 `mcp_tool_skipped`；照缓存先登记的那一回
 //! 不算。
 

@@ -1,4 +1,4 @@
-//! `sessions`（`docs/blueprint/tools/sessions.md`，施工 C-3）：列出你别的主会话，第一行是她自己，最近有动静的在前，一行一个，
+//! `sessions`（`internal/blueprint/tools/sessions.md`，施工 C-3）：列出你别的主会话，第一行是她自己，最近有动静的在前，一行一个，
 //! 分页。经 [`Call::sessions`] 交给执行器，执行器经会话表去列：和协议的 `session.list` 同一个函数算。
 //!
 //! 短编号在这一张列表里撞了的放长（`cross-session.md`「对外的样子」会话的短编号）：后 8 位撞了写后 12 位，还撞写整个编号。

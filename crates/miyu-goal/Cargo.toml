@@ -1,6 +1,6 @@
 [package]
 name = "miyu-goal"
-description = "长期目标这个软件包：她用来看、设、结束长期目标的工具 goal（施工 X-8 上，docs/blueprint/goal.md）"
+description = "长期目标这个软件包：她用来看、设、结束长期目标的工具 goal（施工 X-8 上，internal/blueprint/goal.md）"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

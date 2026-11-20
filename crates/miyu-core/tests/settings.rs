@@ -1,6 +1,6 @@
-//! 登记的全部配置清单（`docs/blueprint/config.md`「守着它的」，施工 8-1）：清单写得对（键不重复、不互为前缀、合写法，
+//! 登记的全部配置清单（`internal/blueprint/config.md`「守着它的」，施工 8-1）：清单写得对（键不重复、不互为前缀、合写法，
 //! 默认值过自己的校验）；中文、英文、日文里每一项都有名字、说明，选项、用到的页和组都有名字，资源里没有多出来的；
-//! 照源码树的资源生成的两份 Schema、参考文件和样本 `docs/designs/samples/config/` 逐字节一样（中文、英文），日文也
+//! 照源码树的资源生成的两份 Schema、参考文件和样本 `internal/designs/samples/config/` 逐字节一样（中文、英文），日文也
 //! 生成得出来。
 
 use std::path::{Path, PathBuf};
@@ -44,7 +44,7 @@ fn words(language: &str) -> Human {
 fn sample(name: &str, language: &str) -> PathBuf {
     let (stem, extension) = name.rsplit_once('.').expect("有扩展名");
     repository()
-        .join("docs/designs/samples/config")
+        .join("internal/designs/samples/config")
         .join(format!("{stem}.{language}.{extension}"))
 }
 

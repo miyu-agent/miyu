@@ -1,4 +1,4 @@
-//! 外观包带网页主题（施工 TH-1，`docs/blueprint/packages.md`「外观包」）：真核心走一遍。`[theme.web] dir` 指包里的一个目录，
+//! 外观包带网页主题（施工 TH-1，`internal/blueprint/packages.md`「外观包」）：真核心走一遍。`[theme.web] dir` 指包里的一个目录，
 //! `package.list` 的 `theme` 分 `tui`、`web` 两格；`package.file` 给终端主题文件那一份和网页目录下的任何一份普通文件，路径照包目录
 //! 写，出了网页目录的、链接指出去的不给；只带网页主题的包照装；网页目录不在 `miyu check` 报 `theme_missing`。
 

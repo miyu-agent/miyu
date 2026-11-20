@@ -1,4 +1,4 @@
-//! `miyu service enable|disable|status`（施工 Z-1 下，`docs/designs/12-进程形态与分发.md` 第二节）：替本人装、卸、看开机或登录
+//! `miyu service enable|disable|status`（施工 Z-1 下，`internal/designs/12-进程形态与分发.md` 第二节）：替本人装、卸、看开机或登录
 //! 就起核心的那一份服务，只管本人这一层（系统级的要 root、要建用户，照 `packaging/README.md` 手做）。
 //!
 //! - [`Service`]：参数；[`service()`]：跑一次，交回退出码；

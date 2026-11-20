@@ -1,4 +1,4 @@
-//! 补拉回来的群消息（施工 O-40，`docs/blueprint/tools/history.md`「时刻」）：平台给了时刻的照它显示、照它筛，序号照记下的先后。
+//! 补拉回来的群消息（施工 O-40，`internal/blueprint/tools/history.md`「时刻」）：平台给了时刻的照它显示、照它筛，序号照记下的先后。
 
 use super::*;
 

@@ -1,4 +1,4 @@
-//! 场所消息「戳一戳」（施工 VP-1，`docs/construction/VP-1-场所消息戳一戳.md`）：`venue.poke` 只收 `true`，带它的 `text` 可以是空的；
+//! 场所消息「戳一戳」（施工 VP-1，`internal/construction/VP-1-场所消息戳一戳.md`）：`venue.poke` 只收 `true`，带它的 `text` 可以是空的；
 //! `poke_text` 可选，只跟着 `poke` 来，同名字的规矩（不是空白、最多 64 个字符、没有控制字符），原样记进 `message.user`。写错的
 //! `bad_params`，不带 `poke` 的空消息照旧 `empty_message`；都什么都不记。
 

@@ -1,4 +1,4 @@
-//! 判官看的群聊记录（施工 O-24，`docs/blueprint/chat.md` 第六条 `Ask.records`、`Ask.current`）：要判的那一条渲染成一行，它之前的
+//! 判官看的群聊记录（施工 O-24，`internal/blueprint/chat.md` 第六条 `Ask.records`、`Ask.current`）：要判的那一条渲染成一行，它之前的
 //! 群里的话一行一条，和她看到的同一个写法（18 第七节「判官和她各看各的」）。
 //!
 //! 收场所的 `message.user`（旁听的、开过回合的都收，睡着时收到的不收）和 `venue.delivered` 的 `[you]` 行（判官看不到她的回复，

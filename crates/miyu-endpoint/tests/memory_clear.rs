@@ -1,4 +1,4 @@
-//! 人经协议清空记忆（施工 R-3 补，`docs/blueprint/memory.md` 第二条第 5 款）：真核心、真记忆日志，数据根在临时目录。清掉从
+//! 人经协议清空记忆（施工 R-3 补，`internal/blueprint/memory.md` 第二条第 5 款）：真核心、真记忆日志，数据根在临时目录。清掉从
 //! 一个会话来的、清掉整间。
 
 use serde_json::json;

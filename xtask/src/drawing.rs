@@ -1,10 +1,10 @@
-//! 读图纸：从 `docs/designs/01-架构.md` 的「代码的分层」一节，读出门禁要用的数据。
+//! 读图纸：从 `internal/designs/01-架构.md` 的「代码的分层」一节，读出门禁要用的数据。
 //!
 //! 图纸就是真相源（01-架构 D4），门禁不另存一份层序表。图纸的格式被改坏了，
 //! 这里说清楚读不出来的是什么。
 
 /// 图纸在仓库里的位置。
-pub const PATH: &str = "docs/designs/01-架构.md";
+pub const PATH: &str = "internal/designs/01-架构.md";
 
 const SECTION: &str = "代码的分层";
 const LAYER_HEADER: [&str; 5] = ["层", "名字", "放什么", "纯逻辑", "crate"];

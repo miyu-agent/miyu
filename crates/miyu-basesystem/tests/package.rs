@@ -1,4 +1,4 @@
-//! `package`（`docs/blueprint/tools/package.md`，施工 F-10 下）：访问类别 `install`；装的包文件夹报那个路径是读，卸不报；装、卸
+//! `package`（`internal/blueprint/tools/package.md`，施工 F-10 下）：访问类别 `install`；装的包文件夹报那个路径是读，卸不报；装、卸
 //! 经端口，说装上了、卸掉了；核心拒了的照 `packages` 那几句说；问人之前看一眼：装的看文件夹、卸的看卸之前那一份，看不了的照
 //! 拒绝交回；参数写错的、相对路径的不问端口；没有端口说做不了。给人看的说法中文、英文都换得出字。
 

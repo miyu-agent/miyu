@@ -5,7 +5,7 @@
 //!   内容（`content`，照被带的包的编号，施工 G-9）、斜杠命令（`slash`）。
 //! - 包文件夹里放的：技能（`skills/<名>/SKILL.md` 在的）、脚本（`scripts/` 下那一层的文件）、人格（`personas/` 下的目录）、预设
 //!   （`presets/` 下的 `.toml`，去掉后缀）、知识库（`knowledge`，施工 PV-3：`kb/` 下编号写法对的目录，`kb.toml` 可以没有，
-//!   同核心认包里的库，`docs/blueprint/knowledge.md` K-8、`miyu_store::knowledge::carried`）。
+//!   同核心认包里的库，`internal/blueprint/knowledge.md` K-8、`miyu_store::knowledge::carried`）。
 //!
 //! 每一种照名字排、去重；空的种类不写，什么都没带的是空表。碰磁盘，读不了的目录当没有。
 

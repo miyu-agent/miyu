@@ -1,4 +1,4 @@
-//! 登录来的服务现场给令牌（施工 X-42 下，`docs/blueprint/mcp.md`「怎么走」第八条）：转接每个请求问一次。离 `expires_at` 不到
+//! 登录来的服务现场给令牌（施工 X-42 下，`internal/blueprint/mcp.md`「怎么走」第八条）：转接每个请求问一次。离 `expires_at` 不到
 //! [`EARLY`] 秒的先续再给；回 `401` 的续一次（几个请求同时撞上的只续一次：有的授权服务器续一次就作废旧的 `refresh_token`）。
 //! 续：照存着的 `issuer` 再取一次授权服务器的元数据，`grant_type=refresh_token`，带登录时的 `resource`、`scope`。成了的照密钥
 //! 现有的写法存回 `mcp-oauth-<服务名>`（新给了 `refresh_token` 的换上，没给的留旧的），记下摘要：跟着配置的那一圈不当人改的、

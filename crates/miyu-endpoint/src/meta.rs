@@ -1,4 +1,4 @@
-//! 改标题、置顶、项目的参数（施工 3-8 三补、H-2，`docs/blueprint/protocol.md` 的 `session.set_meta`）：标题去掉前后空白，1 到
+//! 改标题、置顶、项目的参数（施工 3-8 三补、H-2，`internal/blueprint/protocol.md` 的 `session.set_meta`）：标题去掉前后空白，1 到
 //! 200 个字；写 `null` 是去掉标题，记成空的标题（`kernel/events-bodies.md` 的 `session.meta_changed`）；项目写 `null` 是移出来，
 //! 同样记成空的；三格都不写的是参数不对。
 //!
@@ -91,7 +91,7 @@ struct RetitleParams {
     session: String,
 }
 
-/// `session.retitle`：照现在的对话重起一次标题（施工 TT-1，`docs/blueprint/protocol.md` 的 `session.retitle`）。请求发出去
+/// `session.retitle`：照现在的对话重起一次标题（施工 TT-1，`internal/blueprint/protocol.md` 的 `session.retitle`）。请求发出去
 /// 就回 `{}`，不等模型：起好了的标题经 `session.meta_changed` 推来，`by` 是要它的人，算人起的（施工 TT-2）。
 ///
 /// # Errors

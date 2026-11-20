@@ -1,4 +1,4 @@
-//! 「AI 怎么认识你」（施工 P-9、P-9 补，`docs/blueprint/prompts.md`「关于你」）：这个人写的称呼、更多描述、回复语言，造会话时照模板
+//! 「AI 怎么认识你」（施工 P-9、P-9 补，`internal/blueprint/prompts.md`「关于你」）：这个人写的称呼、更多描述、回复语言，造会话时照模板
 //! `core/profile.txt` 拼成一块，接在人设、场所说明后面（`26-提示词.md` 第四节），记进快照，会话中途不改。
 
 use crate::Snapshot;

@@ -1,4 +1,4 @@
-//! 知识库只照意思找到的那一路的下限照模型（施工 K-2 修，`docs/blueprint/knowledge.md` 第四条）：门槛表里有的照它，没有的照
+//! 知识库只照意思找到的那一路的下限照模型（施工 K-2 修，`internal/blueprint/knowledge.md` 第四条）：门槛表里有的照它，没有的照
 //! 0.40（`miyu_recall::FLOOR`）；出厂的表里 granite 是 0.82（bge 那一行施工 R-18 删掉了）。
 
 use std::path::{Path, PathBuf};

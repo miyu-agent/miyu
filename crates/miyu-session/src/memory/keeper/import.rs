@@ -1,4 +1,4 @@
-//! 人经协议把别处的记忆导进来（施工 MI-1，`docs/blueprint/memory.md`「协议」的 `memory.import`）：旧版的迁移包照它把知识点
+//! 人经协议把别处的记忆导进来（施工 MI-1，`internal/blueprint/memory.md`「协议」的 `memory.import`）：旧版的迁移包照它把知识点
 //! 导成新的记忆，保住原来记下的时刻。参数端点查过了；这里只管去重、记下，和记下以后的那几样。
 
 use miyu_kernel::time::{Timestamp, UtcOffset};

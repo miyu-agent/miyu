@@ -29,7 +29,7 @@ use super::entry::{self, Entry, Placeholders, Sender};
 use super::page::{self, Footers, PAGE, Page};
 use super::{NAME, Wanted, picked};
 
-/// 只解要的种类（施工 V-49，`docs/construction/V-49-history只解要的种类.md`；2026-11-05 项目主人批，同 V-39 上补的口径）：
+/// 只解要的种类（施工 V-49，`internal/construction/V-49-history只解要的种类.md`；2026-11-05 项目主人批，同 V-39 上补的口径）：
 /// 这几种全解——
 ///
 /// - `message.assistant`、`tool.result`：算一条、写原文（`entry.rs`）；她自己翻记录的调用照回复里的调用、结果的编号认

@@ -1,4 +1,4 @@
-//! 真跑 `miyu kb`（施工 K-7 下，`docs/blueprint/cli/kb.md`）：`kb -h`、各个子命令的 `-h`、`help kb` 印的都是那一页，跟着界面
+//! 真跑 `miyu kb`（施工 K-7 下，`internal/blueprint/cli/kb.md`）：`kb -h`、各个子命令的 `-h`、`help kb` 印的都是那一页，跟着界面
 //! 语言；参数写错的退出码 2：子命令写错、少了库、少了文件、少了目录、少了词。
 
 use std::path::Path;

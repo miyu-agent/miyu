@@ -2,7 +2,7 @@
 # requires-python = ">=3.11"
 # dependencies = ["pyte"]
 # ///
-"""三家对比（施工 V-7，蓝图 `docs/blueprint/perf.md`「三家对比」）：同一台机器、同一个模型端点、各自干净的沙箱家目录，
+"""三家对比（施工 V-7，蓝图 `internal/blueprint/perf.md`「三家对比」）：同一台机器、同一个模型端点、各自干净的沙箱家目录，
 量 Miyu、jcode、codex 的 CPU、内存、读写、硬盘。发版前跑一次，结果写进 `target/perf-out/`。
 
     uv run bench/rivals/main.py --tui <终端仓库> all --into target/perf-out

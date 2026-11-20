@@ -1,4 +1,4 @@
-//! 发话，执行器这一头（`docs/blueprint/agents.md` 第六条、`docs/blueprint/cross-session.md` 第三条，`session/tools.md`
+//! 发话，执行器这一头（`internal/blueprint/agents.md` 第六条、`internal/blueprint/cross-session.md` 第三条，`session/tools.md`
 //! 「父子之间留言」，施工 7-7、C-5）：`to` 认出是哪个会话，把话作为这个会话发来的话（`by` 是这个会话）经会话表的端口
 //! （[`SessionPort`]）送过去，对方落了盘就交回。
 //!

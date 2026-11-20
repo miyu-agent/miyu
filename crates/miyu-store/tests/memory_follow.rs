@@ -1,4 +1,4 @@
-//! 跟着看记忆日志（施工 R-12 上，`docs/blueprint/memory.md`「协议」的流 `memory`）：交回 `after` 以后的、到哪为止，之后追加的
+//! 跟着看记忆日志（施工 R-12 上，`internal/blueprint/memory.md`「协议」的流 `memory`）：交回 `after` 以后的、到哪为止，之后追加的
 //! 交给回调，连同这时的底账；回调交回 `false` 的不再交；不写 `after` 的不补；补的和交的不丢不重。
 
 use std::sync::{Arc, Mutex};

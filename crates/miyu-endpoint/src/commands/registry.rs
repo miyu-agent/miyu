@@ -1,4 +1,4 @@
-//! 斜杠命令的登记表（施工 O-6 三补，`docs/blueprint/protocol.md`「`command.run`」第 11 条）：一条命令一个 [`Slash`]，各自
+//! 斜杠命令的登记表（施工 O-6 三补，`internal/blueprint/protocol.md`「`command.run`」第 11 条）：一条命令一个 [`Slash`]，各自
 //! 在管它的模块里写，起来时登记进 [`Commands`]。`command.run` 照它认、判、执行，`command.catalog` 照它列；中心不再写名字。
 //! 以前是一张写死的枚举，记忆、长期目标要加一条命令都得改中心（记忆的会话提，2026-10-14）。
 //!

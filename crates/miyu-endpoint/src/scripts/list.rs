@@ -1,4 +1,4 @@
-//! `script.list`（施工 X-27，`docs/blueprint/skills.md`「脚本」，网页设置页「脚本」那一页）：列出这一刻登记上的脚本，照工具名排。
+//! `script.list`（施工 X-27，`internal/blueprint/skills.md`「脚本」，网页设置页「脚本」那一页）：列出这一刻登记上的脚本，照工具名排。
 //! 一项：
 //!
 //! - `tool`：工具名；`display_name`、`description` 是给人看的那一槽（脚本开头的 `Display name`、`显示名称`、`描述`），照连接的

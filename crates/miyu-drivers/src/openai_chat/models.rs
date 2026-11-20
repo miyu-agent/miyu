@@ -1,4 +1,4 @@
-//! 列模型（`docs/blueprint/models.md`「驱动要守的约定」第 3 条、「怎么走」第二条第 10 条，施工 8-7）：OpenAI 兼容的
+//! 列模型（`internal/blueprint/models.md`「驱动要守的约定」第 3 条、「怎么走」第二条第 10 条，施工 8-7）：OpenAI 兼容的
 //! `GET <地址>/models`，回 `{"data":[{"id":…},…]}`。报了窗口的照 `context_window`、`context_length`、`max_context_length`
 //! 先有的算（OpenRouter、Ollama、各家中转的写法）。OpenAI 的这一条不分页；分页的几家另写的驱动随它们自己。
 

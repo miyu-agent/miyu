@@ -1,4 +1,4 @@
-//! 人要求重起标题（施工 TT-1，`docs/blueprint/protocol.md` 的 `session.retitle`）：照自动起标题的那一条路再发一次请求，
+//! 人要求重起标题（施工 TT-1，`internal/blueprint/protocol.md` 的 `session.retitle`）：照自动起标题的那一条路再发一次请求，
 //! 喂的是最近三轮（自动起的照旧只喂第一轮），
 //! 请求发出去就回 `{}`，标题经 `session.meta_changed` 推来（`by` 是要它的人，算人起的，施工 TT-2：重启以后照样，
 //! 以后自动起标题不再盖掉它）；人起过名的也换掉；说了不自动起的照样起；一次在路上时再要的不重复发；没东西可起的拒。

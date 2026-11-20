@@ -1,4 +1,4 @@
-//! 戳一戳那一句（施工 VP-1，`docs/blueprint/kernel/request.md`「群里的一行」）：带 `venue.poke` 的一条（桥当成戳的人发来的一条
+//! 戳一戳那一句（施工 VP-1，`internal/blueprint/kernel/request.md`「群里的一行」）：带 `venue.poke` 的一条（桥当成戳的人发来的一条
 //! 空消息交进来）照造会话时冻下的 `core/venues/poke.txt` 写成 `小林 poked you (a QQ nudge: they double-clicked your avatar)`，
 //! 有 `poke_text`（平台上那个人自己设的后缀）的空一格转义接在后面。群里那一行的内容（群聊近况、判官看的那一行同一份写法）、
 //! 私聊那一条都照它。

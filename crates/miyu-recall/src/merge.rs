@@ -1,4 +1,4 @@
-//! 合并交回来的怎么读（施工 R-7 上，`docs/blueprint/memory.md` 第七条第 3 款）：模型交回一个 JSON 对象
+//! 合并交回来的怎么读（施工 R-7 上，`internal/blueprint/memory.md` 第七条第 3 款）：模型交回一个 JSON 对象
 //! `{"revised": [{"id", "text"}], "retired": [{"id", "kind", "by", "why"}], "summary": "…"}`。纯逻辑：调的一方把这一次交进去的
 //! 编号、一条最多几个字、摘要最多几个字交进来。
 //!

@@ -1,4 +1,4 @@
-//! `miyu undo`、`miyu redo`（`docs/construction/4-7-miyu undo、miyu redo（下）.md`）：在进程里起一个核心，工具是真的；
+//! `miyu undo`、`miyu redo`（`internal/construction/4-7-miyu undo、miyu redo（下）.md`）：在进程里起一个核心，工具是真的；
 //! 她用 `miyu ask` 改了一个文件，`miyu undo` 撤掉那一轮、照定的样子印在标准输出上，`miyu restore` 恢复；文件一直是她改完的
 //! 样子（施工 U-1：撤销不再改回文件，回执不提文件）；一轮都没有的、一个会话都没有的，说清楚，退出码 1。
 

@@ -1,4 +1,4 @@
-//! 推荐哪个模型（`docs/blueprint/models.md`「怎么走」第七条第 4 条第 3 款，施工 8-11）：`provider.test` 没写 `model` 时试它，
+//! 推荐哪个模型（`internal/blueprint/models.md`「怎么走」第七条第 4 条第 3 款，施工 8-11）：`provider.test` 没写 `model` 时试它，
 //! `miyu setup` 把它排在最前。
 //!
 //! 能调工具、窗口不小于 64000、不是 `deprecated` 的够格；够格的里面发布最晚的（目录的 `release_date`，照字比，没有的排

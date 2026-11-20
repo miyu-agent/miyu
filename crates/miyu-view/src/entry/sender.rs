@@ -1,4 +1,4 @@
-//! 别处来的话的来处（`user` 条目的 `from`）：写法同 `by`；场所里的人说的再多一格 `name`（施工 VW-2，`docs/blueprint/view.md`
+//! 别处来的话的来处（`user` 条目的 `from`）：写法同 `by`；场所里的人说的再多一格 `name`（施工 VW-2，`internal/blueprint/view.md`
 //! 「条目」的 `user`）：那条消息的 `venue.name`，只当显示名，不可信，头照常转义。名字会变，每条各写各的。
 //!
 //! `By` 是内核里「先整块读原文、再照 `kind` 分派」的那种（`relay.rs`），不能和别的格 `flatten` 在一起：写的时候先写成 JSON

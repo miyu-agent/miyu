@@ -1,4 +1,4 @@
-//! 带角色扮演提示的策略（施工 P-1 补，`docs/blueprint/kernel/request.md`「事实」）：探针 `probe_reminder.rs` 和随机日志里
+//! 带角色扮演提示的策略（施工 P-1 补，`internal/blueprint/kernel/request.md`「事实」）：探针 `probe_reminder.rs` 和随机日志里
 //! 三分之一的种子用。
 
 use miyu_kernel::session::Policy;

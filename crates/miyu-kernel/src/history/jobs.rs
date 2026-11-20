@@ -1,7 +1,7 @@
-//! 有效历史另记的一张表：派出去过的任务（施工 7-2，`docs/blueprint/kernel/history.md`「派出去过的任务」）。
+//! 有效历史另记的一张表：派出去过的任务（施工 7-2，`internal/blueprint/kernel/history.md`「派出去过的任务」）。
 //!
 //! 渲染回报要知道任务的标题、是后台命令还是子代理；派它的那一轮撤掉了的，回报不渲染、也不叫醒她
-//! （`docs/blueprint/agents.md` 第七条第 2 条）。这些都在派它的那条 `tool.result` 里，可那一条会被压缩换掉、被撤销拿走，
+//! （`internal/blueprint/agents.md` 第七条第 2 条）。这些都在派它的那条 `tool.result` 里，可那一条会被压缩换掉、被撤销拿走，
 //! 回报却可能在那以后才到，所以另记一张表：压缩不丢，撤销、恢复只改「撤掉了没有」。一个任务一项，随任务数长。
 
 use std::collections::BTreeMap;

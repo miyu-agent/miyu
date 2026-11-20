@@ -1,4 +1,4 @@
-//! 记下了几条以后（施工 MI-1 从抽取的那一件活挪出来，`docs/blueprint/memory.md` 第二条、第六条第 8 款）：给刚记下的写关键词、
+//! 记下了几条以后（施工 MI-1 从抽取的那一件活挪出来，`internal/blueprint/memory.md` 第二条、第六条第 8 款）：给刚记下的写关键词、
 //! 补向量。抽取记下以后、人经协议导进来以后（`memory.import`）都照它；之后看一眼够不够整理是调的一方的事（`MergeJob`）。
 
 use std::sync::Arc;

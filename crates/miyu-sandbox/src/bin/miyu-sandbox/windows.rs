@@ -1,4 +1,4 @@
-//! Windows 上的收紧（施工 5-9 改上，`docs/blueprint/sandbox/windows.md`）：照规格拼一个 MXC 的请求（`mxc-sdk`，ProcessContainer），
+//! Windows 上的收紧（施工 5-9 改上，`internal/blueprint/sandbox/windows.md`）：照规格拼一个 MXC 的请求（`mxc-sdk`，ProcessContainer），
 //! 起那条命令、把标准输入、输出、错误原样转过去，照它的退出码退出。Windows 换不了进程，助手一直在：助手被杀，容器里的整棵
 //! 进程树跟着停（MXC 的作业对象，2026-10-21 虚拟机上量过）。
 //!

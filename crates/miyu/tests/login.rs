@@ -1,4 +1,4 @@
-//! 真核心上的 `miyu provider login`、`list`、`logout`（施工 8-5，`docs/blueprint/config.md`「守着它的」）：管道进来的 key 存进
+//! 真核心上的 `miyu provider login`、`list`、`logout`（施工 8-5，`internal/blueprint/config.md`「守着它的」）：管道进来的 key 存进
 //! `secrets.toml`，`list` 两种格式里没有 key，`provider logout` 删掉、没设过的退出码 1；名字写错、不写名字又不在终端里、
 //! `--format` 不在 `list` 上、SU-3 起没有 `--system`、老写法 `miyu login` 退出码 2；核心没在跑的拉起来（施工 8-6）；帮助页两种语言。整份运行日志（`trace`）、
 //! 系统日志、屏幕上都搜不到 key。

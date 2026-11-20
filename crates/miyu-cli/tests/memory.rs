@@ -1,4 +1,4 @@
-//! `miyu memory`（施工 R-3 再补，`docs/blueprint/cli/memory.md`）：在进程里起一个核心，每个子命令走一遍：印什么、退出码；
+//! `miyu memory`（施工 R-3 再补，`internal/blueprint/cli/memory.md`）：在进程里起一个核心，每个子命令走一遍：印什么、退出码；
 //! `--persona`、`-s` 找哪一间；`clear session` 不写会话的照上一次 `miyu ask`；没设默认人格、核心拒的照原话说。`dream`（施工
 //! R-7 补）在请求模型是真路由的核心上：整理记忆发给假服务器，印几样数。
 

@@ -1,4 +1,4 @@
-//! 回合索引（施工 R-2 上，`docs/blueprint/memory.md`「怎么走」第一条）：真会话、执行器替身，数据根在临时目录。说过的每一轮
+//! 回合索引（施工 R-2 上，`internal/blueprint/memory.md`「怎么走」第一条）：真会话、执行器替身，数据根在临时目录。说过的每一轮
 //! 进这个人格的回合库；撤销的拿掉、恢复的放回；核心重启载入以后照旧，落下的补上；子会话的不进。
 
 use miyu_kernel::id::{SessionId, TurnId, VenueId};

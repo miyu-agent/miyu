@@ -1,4 +1,4 @@
-//! 私密路径门禁（施工 SCRUB-1）：仓库是公开的，被 git 跟踪的文本里（`docs/` 除外）不许出现开发机上真实用户的痕迹：
+//! 私密路径门禁（施工 SCRUB-1）：仓库是公开的，被 git 跟踪的文本里（`docs/`、`internal/` 除外）不许出现开发机上真实用户的痕迹：
 //! `/home/<名字>`、`/tmp/claude-<数字>`、`-home-<名字>-Documents`（后者是按工作目录起的会话存档目录名）。
 //!
 //! 测试里要用家目录的，写 [`FICTIONAL`] 里的虚构名字。这里不写任何具体的人名、机器名、地址：规则只认形状。
@@ -14,7 +14,7 @@ const FICTIONAL: &[&str] = &[
 ];
 
 /// 不扫的目录前缀（相对仓库根）。
-const SKIPPED: &[&str] = &["docs/"];
+const SKIPPED: &[&str] = &["docs/", "internal/"];
 
 /// 名字里能出现的字符。
 fn is_name(c: char) -> bool {
@@ -74,7 +74,7 @@ fn allowed(name: &str) -> bool {
 
 /// 门禁结果表里的一行。
 pub fn outcome(root: &Path) -> crate::Outcome {
-    println!("\n── 私密路径：被跟踪的文本里（docs/ 除外）不许有真实用户的路径 ──");
+    println!("\n── 私密路径：被跟踪的文本里（docs/、internal/ 除外）不许有真实用户的路径 ──");
     crate::Outcome {
         name: "私密路径",
         problems: check(root),

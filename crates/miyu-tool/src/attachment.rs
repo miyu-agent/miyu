@@ -1,6 +1,6 @@
-//! 认一个附件是什么（`docs/blueprint/protocol.md` 的 `blob.put` 第 4 条）：照内容，不看扩展名。`blob.put` 存之前认一遍，
+//! 认一个附件是什么（`internal/blueprint/protocol.md` 的 `blob.put` 第 4 条）：照内容，不看扩展名。`blob.put` 存之前认一遍，
 //! `session.send` 造块之前照同一份代码再认一遍：进到会话里的块，宽高、媒体类型都是核心自己量的。她发给别的会话、交代
-//! 子代理时带的附件（施工 C-9，`docs/blueprint/tools/send_message.md`）也照它认：施工 C-9 从协议端点挪到这里共用。
+//! 子代理时带的附件（施工 C-9，`internal/blueprint/tools/send_message.md`）也照它认：施工 C-9 从协议端点挪到这里共用。
 //!
 //! - 四种图之一、量得出宽高的是图片，媒体类型照认出的；超了上限的存之前缩到上限以内（[`fit`]，施工 I-S），缩不了的不收
 //!   （`miyu_tool::picture`，和 `read` 同一套）。

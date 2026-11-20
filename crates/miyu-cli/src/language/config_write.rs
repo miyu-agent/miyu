@@ -1,4 +1,4 @@
-//! `miyu config set`、`unset`、`edit`、`trust` 给人看的字（施工 8-3，`docs/blueprint/config.md`「给人看的字」的「命令行」
+//! `miyu config set`、`unset`、`edit`、`trust` 给人看的字（施工 8-3，`internal/blueprint/config.md`「给人看的字」的「命令行」
 //! 那张表、「样子」；CL-2 下照设计 47 第三节改：结果行动词打头、不带句号，报错交 [`Problem`]，建议另起一行）。值由调用的
 //! 一方写成 TOML 交进来（`"zh"`、`true`）。
 

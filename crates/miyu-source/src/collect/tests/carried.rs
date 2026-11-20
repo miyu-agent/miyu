@@ -14,7 +14,7 @@ fn with_kb(root: &std::path::Path, more: &str) -> (String, Vec<u8>) {
     );
     put(&folder, "kb/lighthouse/kb.toml", b"name = \"Lighthouse\"\n");
     put(&folder, "kb/lighthouse/keeper.md", b"# Keeper\n");
-    // 没有 `kb.toml` 的照样是一个库（`docs/blueprint/knowledge.md`：`kb.toml` 可以没有）。
+    // 没有 `kb.toml` 的照样是一个库（`internal/blueprint/knowledge.md`：`kb.toml` 可以没有）。
     put(&folder, "kb/atlas/map.md", b"# Map\n");
     // 编号写法不对的目录、`kb/` 下的文件都不算库。
     put(&folder, "kb/Bad Name/kb.toml", b"name = \"Bad\"\n");

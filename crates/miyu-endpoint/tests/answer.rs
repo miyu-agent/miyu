@@ -1,4 +1,4 @@
-//! 回答确认（施工 D-1，`docs/blueprint/protocol.md` 的 `session.answer`）：真核心走一遍。允许这一次的照常跑；没提放行规则的
+//! 回答确认（施工 D-1，`internal/blueprint/protocol.md` 的 `session.answer`）：真核心走一遍。允许这一次的照常跑；没提放行规则的
 //! 选「本会话都允许」是 `no_rule`；拒绝带的理由她看得到，这一轮接着走；参数不对的几种 `bad_params`；没在等的 `not_asking`，
 //! 允许却带了理由的 `unexpected_reason`。
 //!

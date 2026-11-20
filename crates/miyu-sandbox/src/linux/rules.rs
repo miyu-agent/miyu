@@ -1,4 +1,4 @@
-//! Landlock 的规则（`docs/blueprint/sandbox/linux.md`）：建规则集、照规格排出要加的规则、加上、收紧自己。施工 V-47 从助手
+//! Landlock 的规则（`internal/blueprint/sandbox/linux.md`）：建规则集、照规格排出要加的规则、加上、收紧自己。施工 V-47 从助手
 //! （原来的 `src/bin/miyu-sandbox/linux/landlock.rs`）挪进库里：助手每条命令从头建的、核心按规格缓存的，用的是同一份。
 //!
 //! 第 2 版的全部文件操作必须管得住：第 2 版起才管得了跨目录的改名、链接，更老的一律不许，很多工具会坏。更新的
@@ -8,7 +8,7 @@
 //!
 //! 规则排成三种（[`Layer`]）：从头建的一层（[`Layer::Whole`]，和施工 V-47 以前一样）；核心缓存的那一层（[`Layer::Base`]，
 //! 不管「连 Unix 套接字」）和助手每条命令再叠的一小层（[`Layer::Unix`]，只管「连 Unix 套接字」和「跨目录改名、链接」）。
-//! 后两层叠起来和第一种放行的一样，理由见 `docs/construction/V-47-沙盒规则集缓存.md`「两层」。
+//! 后两层叠起来和第一种放行的一样，理由见 `internal/construction/V-47-沙盒规则集缓存.md`「两层」。
 
 use std::io;
 use std::path::{Path, PathBuf};

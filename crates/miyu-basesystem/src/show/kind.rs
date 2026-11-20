@@ -1,4 +1,4 @@
-//! `show` 认种类（施工 D-5，`docs/blueprint/tools/show.md`「怎么走」第 4 条）：图片、PDF、音视频照内容，svg、HTML、Markdown
+//! `show` 认种类（施工 D-5，`internal/blueprint/tools/show.md`「怎么走」第 4 条）：图片、PDF、音视频照内容，svg、HTML、Markdown
 //! 照后缀，别的 UTF-8 是文本（认得出语言的带上），认不出的二进制再照后缀认音视频（施工 D-5 补），再别的是文件。只给头选显示法，
 //! 不给模型看。
 

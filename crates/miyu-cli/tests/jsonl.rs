@@ -1,4 +1,4 @@
-//! `miyu ask --format jsonl`（施工 AP-3，设计 50 第四节，`docs/blueprint/cli/ask.md`「样子：`--format jsonl`」）：在进程里起一个
+//! `miyu ask --format jsonl`（施工 AP-3，设计 50 第四节，`internal/blueprint/cli/ask.md`「样子：`--format jsonl`」）：在进程里起一个
 //! 核心，在真的套接字上走一遍。标准输出一行一个 JSON 对象，格照名字的字母先后排，以 `session` 开头、`done` 结尾，退出码和
 //! `text` 一样；标准错误上什么都不印。
 

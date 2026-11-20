@@ -1,4 +1,4 @@
-//! `ask_user`（`docs/blueprint/tools/ask_user.md`，施工 D-2）：她干活中途问人一组题、等回答，回答成了这次调用的结果。
+//! `ask_user`（`internal/blueprint/tools/ask_user.md`，施工 D-2）：她干活中途问人一组题、等回答，回答成了这次调用的结果。
 //! 参数照 Claude Code 的 AskUserQuestion，题数、选项数都不设上限（`10-自带软件.md` 第三节）。访问类别是读：只问人，
 //! 什么都不改。经 [`Call::questions`] 交给执行器：执行器交给内核记 `question.asked`，人用 `session.answer` 回答，回答落了盘
 //! 再送回来。

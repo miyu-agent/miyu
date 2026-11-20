@@ -132,7 +132,7 @@ pub fn render(results: &ToolResults, name: &str) -> String {
     };
     line(format!("# 工具一步 {name}"));
     line(String::new());
-    line("照 `docs/blueprint/perf.md`「工具一步」量：假模型把带一个工具调用的回答写完（`[DONE]` 写出去）到读全带着结果的下一个请求头。".to_string());
+    line("照 `internal/blueprint/perf.md`「工具一步」量：假模型把带一个工具调用的回答写完（`[DONE]` 写出去）到读全带着结果的下一个请求头。".to_string());
     line(String::new());
     line("## 条件".to_string());
     line(String::new());

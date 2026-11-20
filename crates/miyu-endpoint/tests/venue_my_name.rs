@@ -1,4 +1,4 @@
-//! 场所消息里她叫什么（施工 E-1 修三，`docs/construction/E-1修三-她在场所里叫什么.md`）：`venue.my_name` 同 `name` 的规矩，
+//! 场所消息里她叫什么（施工 E-1 修三，`internal/construction/E-1修三-她在场所里叫什么.md`）：`venue.my_name` 同 `name` 的规矩，
 //! 原样记进 `message.user` 的 `venue`，没写的不写；空白、超长、带控制字符、不是字的 `bad_params`，什么都不记。
 
 use serde_json::{Value, json};

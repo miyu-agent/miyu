@@ -11,7 +11,7 @@ rust-version = "1.97"
 license = "AGPL-3.0-or-later"
 publish = false
 
-# 每一条的理由见 docs/construction/0-1-仓库骨架.md「我定的」。
+# 每一条的理由见 internal/construction/0-1-仓库骨架.md「我定的」。
 [workspace.lints.rust]
 # 以后确实要用 unsafe 的 crate（例如沙盒助手），只在它自己那里放开。
 unsafe_code = "forbid"

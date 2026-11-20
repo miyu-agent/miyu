@@ -1,4 +1,4 @@
-//! 命令行的头（`docs/designs/22-命令行.md`，施工 3-9 下）：`miyu ask`，最薄的头，也是协议的参考实现；`miyu undo`（`miyu rewind`）、
+//! 命令行的头（`internal/designs/22-命令行.md`，施工 3-9 下）：`miyu ask`，最薄的头，也是协议的参考实现；`miyu undo`（`miyu rewind`）、
 //! `miyu restore`（施工 4-7 下，改名施工 4-7 补）。
 //!
 //! - [`Ask`]：`miyu ask` 的参数；[`ask()`]：跑一次，交回退出码；

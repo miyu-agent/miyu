@@ -1,4 +1,4 @@
-//! 私聊里带的东西的记号那一行（施工 O-35，`docs/blueprint/kernel/request.md`「群里的一行」私聊那一条）：O-35 起造的会话（快照里
+//! 私聊里带的东西的记号那一行（施工 O-35，`internal/blueprint/kernel/request.md`「群里的一行」私聊那一条）：O-35 起造的会话（快照里
 //! 有 `core.private_media`），私聊里带了东西（`venue.media` 不空）的那条，正文后面单独一个文本块
 //! `[msg=编号] [image #1: 834 KB] [file #2: 排班.pdf, 1.2 MB]`：她照 `msg=`、`#n` 调 `fetch_media`。
 //!

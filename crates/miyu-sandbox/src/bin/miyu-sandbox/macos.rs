@@ -1,4 +1,4 @@
-//! macOS 上的收紧（`docs/blueprint/sandbox/macos.md`，施工 5-7）：把规格写成一份 Seatbelt 配置，装到自己身上，再换成
+//! macOS 上的收紧（`internal/blueprint/sandbox/macos.md`，施工 5-7）：把规格写成一份 Seatbelt 配置，装到自己身上，再换成
 //! 命令。配置只管读写，网络不管；能替命令到别处读写的系统服务照样挡（设计 `11-权限与沙盒.md` 第六节、A8）。
 //!
 //! - [`resolve`]：规格里的路径换成真实的位置，Seatbelt 照真实的位置比；

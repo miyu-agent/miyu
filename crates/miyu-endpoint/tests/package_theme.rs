@@ -1,4 +1,4 @@
-//! 主题包（施工 F-16，`docs/blueprint/packages.md`「主题包」）：真核心走一遍，同吉祥物包。清单只有 `[package]`、`[theme]`，不说
+//! 主题包（施工 F-16，`internal/blueprint/packages.md`「主题包」）：真核心走一遍，同吉祥物包。清单只有 `[package]`、`[theme]`，不说
 //! 协议、不带吉祥物；`package.list` 带 `theme`，`package.file` 只给主题文件那一份，`miyu check` 查主题文件在、不超过 256 KiB、
 //! 是 JSON 的对象；没有开关。
 

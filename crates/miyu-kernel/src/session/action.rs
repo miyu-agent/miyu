@@ -1,4 +1,4 @@
-//! 会话要做的事，和命令的结局（`docs/designs/02-内核.md` 第四节「输入、动作、命令怎么写」）。
+//! 会话要做的事，和命令的结局（`internal/designs/02-内核.md` 第四节「输入、动作、命令怎么写」）。
 //!
 //! 会话自己不做 I/O：要追加的事件、要回应的命令、要推送的事件，都写成动作交给执行器。
 
@@ -55,7 +55,7 @@ pub enum Action {
         /// 执行器照它写运行日志：缓存没命中时，一看就知道是不是前缀变了（施工 3-9 下）。
         changed: Option<Difference>,
     },
-    /// 替看不了图的模型看图（施工 8-17，`docs/blueprint/models.md`「怎么走」第十三条第 4 条）：把这份请求经一次性入口发给这一轮
+    /// 替看不了图的模型看图（施工 8-17，`internal/blueprint/models.md`「怎么走」第十三条第 4 条）：把这份请求经一次性入口发给这一轮
     /// 的 `models.vision`，说完了送回 [`super::Input::Described`]。叫不停：之后到的照样收。
     Describe {
         /// 哪一张图：也是这一次的名字，回报照它对上。
@@ -180,7 +180,7 @@ pub enum Action {
         /// 统一的请求：一条 user，没有 system、工具面。
         request: Request,
     },
-    /// 嵌套调用的动作（施工 M-1，`docs/blueprint/kernel/session.md`「嵌套调用」）：过链、跑、掐掉、答脚本那头。
+    /// 嵌套调用的动作（施工 M-1，`internal/blueprint/kernel/session.md`「嵌套调用」）：过链、跑、掐掉、答脚本那头。
     Nested(super::NestedAction),
     /// 跑人打的一条命令（施工 SH-1 上，`shell.rs`）：执行器找声明跑命令的那件工具、调给人跑的钩子，不判权限、不进沙盒，
     /// 跑完交回 `ShellRan`。没有那件工具、起不来的，也交回，输出写为什么。
@@ -295,9 +295,9 @@ pub enum Reason {
     /// `compaction.md` 第十四条第 2 条）。
     NothingToClear,
     /// 子会话交来的回报对不上一个还会报的子代理（施工 7-2）：没有这个任务、不是子代理、会话不对、不是那个子会话发的、
-    /// 被停掉过（账本的几条，`docs/blueprint/kernel/history.md`）。
+    /// 被停掉过（账本的几条，`internal/blueprint/kernel/history.md`）。
     UnknownJob,
-    /// 重做不了（施工 4-7 再补，`docs/blueprint/kernel/history.md`「重做」）：最后一轮不是人说的话开的（回报叫醒的、
+    /// 重做不了（施工 4-7 再补，`internal/blueprint/kernel/history.md`「重做」）：最后一轮不是人说的话开的（回报叫醒的、
     /// 手动压缩、清空、重启以后接着干的），或者一轮都没有。一个原因码管两种（2026-09-30 项目主人定）。
     NotRedoable,
     /// 没有能回顾的（施工 3-8 四补，`recap.rs`）：有效历史里她一个带正文的回复都没有；以前造的快照没有回顾的字的也是它，只在
@@ -309,14 +309,14 @@ pub enum Reason {
     /// 回顾没写成（施工 3-8 四补）：请求出了错，或者回复里没有正文。原因记在那一次的 `model.called` 里；不再来，头要再要一次
     /// 就是。
     RecapFailed,
-    /// 别的会话发来的话（施工 C-2，`docs/blueprint/cross-session.md` 第五条第 1 款）：这个发话方在过去一个窗口里已经记下了
+    /// 别的会话发来的话（施工 C-2，`internal/blueprint/cross-session.md` 第五条第 1 款）：这个发话方在过去一个窗口里已经记下了
     /// 够数的几句。只回给核心里别的会话，不经协议给头。
     TooManyMessages,
     /// 别的会话发来的话（施工 C-2，第五条第 2 款）：这个发话方在过去一个窗口里发过一字不差的一句。
     DuplicateMessage,
     /// 别的会话发来的话（施工 C-2，第五条第 3 款）：还没听到的别的会话的话已经够数了。
     InboxFull,
-    /// 空了的通知来了，这边不在等它（施工 C-6，`docs/blueprint/cross-session.md` 第六条第 7 款）：没订过、订它的那一轮撤掉了、
+    /// 空了的通知来了，这边不在等它（施工 C-6，`internal/blueprint/cross-session.md` 第六条第 7 款）：没订过、订它的那一轮撤掉了、
     /// 已经收到过、作废了。只回给核心里别的会话，不经协议给头。
     UnknownWatch,
     /// 照记下的几条开一轮（施工 O-14 上）：有的不是这个会话里旁听的 `message.user`。拒绝带上是哪几条。

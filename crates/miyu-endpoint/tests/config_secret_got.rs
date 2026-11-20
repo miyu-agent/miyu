@@ -1,4 +1,4 @@
-//! 密钥项写错时不回显原值（施工 SEC-1，`docs/blueprint/config.md`「报错」`got` 那一行）：`config.set` 照字（`value`）、照人敲的
+//! 密钥项写错时不回显原值（施工 SEC-1，`internal/blueprint/config.md`「报错」`got` 那一行）：`config.set` 照字（`value`）、照人敲的
 //! （`input`）写明文，配置文件里手写明文，`config.get`、`config.check`、`check` 报的问题里都没有那一串字，只说写的是几个字符的字；
 //! 不是密钥的项照旧照抄。
 

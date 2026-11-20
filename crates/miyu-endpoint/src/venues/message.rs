@@ -1,6 +1,6 @@
-//! `session.send` 的 `venue`（施工 O-13 上，`docs/blueprint/chat.md` 第七条第 2 条）：通讯平台上的一条消息的那几格，查过写法
+//! `session.send` 的 `venue`（施工 O-13 上，`internal/blueprint/chat.md` 第七条第 2 条）：通讯平台上的一条消息的那几格，查过写法
 //! 换成内核的 [`VenueMessage`]，原样记进 `message.user`。写错的整条 `bad_params`。合并转发的内容（施工 O-34）查写法和上限：
-//! 单层的照查，整条消息合起来的另有上限（`docs/blueprint/venues.md`「场所的格」）。引用的那一条的内容 `quoted`（施工 QT-1）
+//! 单层的照查，整条消息合起来的另有上限（`internal/blueprint/venues.md`「场所的格」）。引用的那一条的内容 `quoted`（施工 QT-1）
 //! 和转发里的一条同一个形状、同一套查法，套在里面的转发从第一层数，条数、字节数算进同一个上限。
 //! 戳一戳（施工 VP-1）：`poke` 只收 `true`，`poke_text` 只跟着它来、同名字的规矩；带 `poke` 的内容块可以是空的（内核认它当内容）。
 

@@ -1,4 +1,4 @@
-//! Unix 上关掉回显读一行（施工 8-5 补，`docs/blueprint/cli/login.md`「怎么走」第 4 条）：存下标准输入的 termios，
+//! Unix 上关掉回显读一行（施工 8-5 补，`internal/blueprint/cli/login.md`「怎么走」第 4 条）：存下标准输入的 termios，
 //! 关 `ECHO`（回显）、`ISIG`（信号键）、`ICANON`（行缓冲），自己一个字节一个字节读（[`read_line`]）。
 //!
 //! 关了 `ISIG`，`Ctrl+C` 不再触发 `SIGINT`——它变成普通的一个字节（`0x03`），我们自己认出来当取消；进程不会被信号

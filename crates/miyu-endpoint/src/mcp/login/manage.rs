@@ -1,4 +1,4 @@
-//! 登出、手贴回调（施工 X-42 下，`docs/blueprint/mcp.md`「怎么走」第八条）。
+//! 登出、手贴回调（施工 X-42 下，`internal/blueprint/mcp.md`「怎么走」第八条）。
 //!
 //! - `mcp.logout {service}`（只给人）：在等回调的那一次登录一起取消，删掉 `mcp-oauth-<服务名>` 那一份（客户端、端口一起）；服务照
 //!   密钥变了那一路重起、回 `401`、停在 `needs_login`。没登录过的 `not_logged_in`。

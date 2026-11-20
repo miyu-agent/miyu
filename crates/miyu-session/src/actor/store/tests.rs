@@ -1,4 +1,4 @@
-//! 哪一批要同步到磁盘（施工 V-18，`docs/blueprint/session/actor.md` 第 5 条第 1 款）：会碰外面的要，别的只交给系统。后台同步一串做完、当场交回应（施工 V-19）。
+//! 哪一批要同步到磁盘（施工 V-18，`internal/blueprint/session/actor.md` 第 5 条第 1 款）：会碰外面的要，别的只交给系统。后台同步一串做完、当场交回应（施工 V-19）。
 //! 事件照真日志里的样子写（`message.assistant` 的块、`by` 的几种），不照代码拼。
 
 use miyu_kernel::event::Event;

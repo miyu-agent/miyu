@@ -1,4 +1,4 @@
-//! 规格里的路径换成真实的位置（`docs/blueprint/sandbox/macos.md`「怎么走」第 1 条）。
+//! 规格里的路径换成真实的位置（`internal/blueprint/sandbox/macos.md`「怎么走」第 1 条）。
 //!
 //! 规格说路径都是真实的位置（`sandbox.md`），助手再换一次，防着给的是经过链接的写法：Seatbelt 照真实的位置比，
 //! 写法对不上的规则等于没写，要挡的就漏了。macOS 上 `/tmp`、`/var`、`/etc` 都是 `/private` 下的链接，`TMPDIR` 在

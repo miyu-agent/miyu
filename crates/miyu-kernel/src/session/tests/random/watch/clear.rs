@@ -1,4 +1,4 @@
-//! 看守查清空上下文（`docs/blueprint/compaction.md` 第十四条，施工 6-8 补）：
+//! 看守查清空上下文（`internal/blueprint/compaction.md` 第十四条，施工 6-8 补）：
 //!
 //! - 有回合在进行的拒绝，`turn_running`；上下文本来就是空的（还算数的最近一次压缩不是一份摘要，它后面也没有人的消息、
 //!   回复、工具结果、回报）拒绝，`nothing_to_clear`；拒绝的只有一个回应；

@@ -1,4 +1,4 @@
-//! 扩展照能力挡（施工 X-30，`docs/blueprint/extensions.md`「谁能调」）：核心拉起的扩展调只给人的回 `local_only`，缺能力的回
+//! 扩展照能力挡（施工 X-30，`internal/blueprint/extensions.md`「谁能调」）：核心拉起的扩展调只给人的回 `local_only`，缺能力的回
 //! `needs_approval`、`data.capabilities` 是缺的那一项，表里没有的当只给人；声明了的照常；扩展不带 `as` 说的话记成名字是包编号的
 //! `harness`，自己写 `from` 参数不对。
 

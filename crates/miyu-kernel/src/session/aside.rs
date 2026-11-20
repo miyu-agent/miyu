@@ -1,4 +1,4 @@
-//! 辅助请求在路上的那一次（施工 3-8 五补从 `recap.rs` 分出来，`docs/blueprint/kernel/session.md`「回顾」「起标题」）：回顾、
+//! 辅助请求在路上的那一次（施工 3-8 五补从 `recap.rs` 分出来，`internal/blueprint/kernel/session.md`「回顾」「起标题」）：回顾、
 //! 起标题都是单独的一次请求，不接主对话的前缀、不碰主请求的「上一次请求」。回报照用途分给各自的一路（[`Session::aside_sent`]
 //! 这几个），名字是它照到的那一条 `upto`，不和主请求的 `seen` 撞。
 //!

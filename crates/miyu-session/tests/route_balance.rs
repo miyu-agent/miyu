@@ -1,4 +1,4 @@
-//! DeepSeek 官方的余额（施工 QU-2，`docs/blueprint/models.md`「怎么走」第十七条）：供应商的地址是官方的（没写，或者字面地址的
+//! DeepSeek 官方的余额（施工 QU-2，`internal/blueprint/models.md`「怎么走」第十七条）：供应商的地址是官方的（没写，或者字面地址的
 //! 主机是 api.deepseek.com）才查，GET 档案的地址、key 在 `Authorization` 里，读成余额；经中转站跑的、写了 catalog 指中转站的、
 //! 地址是环境变量引用的一律不发，配置改了查的地址也不发；60 秒内再问不再发；401、500、乱码当没有、不报错。
 //!

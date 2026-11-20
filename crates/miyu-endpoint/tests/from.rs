@@ -1,4 +1,4 @@
-//! 别的 harness 发来的话（施工 7-10，`docs/blueprint/protocol.md` 的 `session.send` 第 6 到 8 条）：带 `from` 的记成
+//! 别的 harness 发来的话（施工 7-10，`internal/blueprint/protocol.md` 的 `session.send` 第 6 到 8 条）：带 `from` 的记成
 //! `harness`、带着名字，闲着开一轮，她收到的请求里是带标签的那一块；不带的、`null` 照旧是本人；名字去掉控制字符、截到 128
 //! 字节；空的、不是字符串的参数不对，什么都没写；正忙时不排进这一轮、打断不撤回；`session.create`、`session.redo` 不理它。
 

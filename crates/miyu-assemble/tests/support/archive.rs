@@ -1,4 +1,4 @@
-//! 探针的存档（施工 7-10 从 `probe.rs` 挪出来，`probe_harness.rs` 也用）：存档在 `docs/designs/samples/probe/<会话>/`，
+//! 探针的存档（施工 7-10 从 `probe.rs` 挪出来，`probe_harness.rs` 也用）：存档在 `internal/designs/samples/probe/<会话>/`，
 //! `log.jsonl` 是真内核记下的日志，`requests/` 下一次请求一个文件（规范字节，末尾一个换行），`openai-chat/` 下是同一次请求
 //! 编码成 OpenAI 兼容接口的字节。要过回顾的（施工 3-8 四补），回顾的请求另放在 `recaps/`、`recaps/openai-chat/` 下：它是
 //! 单独的一次请求，照它自己的存档比；起标题的（施工 3-8 五补）照样放在 `titles/`、`titles/openai-chat/` 下。替它看图的转述请求
@@ -20,7 +20,7 @@ use super::{anthropic_wire, lines, responses_wire, wire};
 /// 存档所在的目录：这个 crate 的目录往上两级是仓库根。
 fn archive(name: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/probe")
+        .join("../../internal/designs/samples/probe")
         .join(name)
 }
 

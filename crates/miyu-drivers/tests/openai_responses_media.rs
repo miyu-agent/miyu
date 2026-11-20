@@ -1,4 +1,4 @@
-//! Responses 的图片、文件（`docs/blueprint/drivers/openai-responses.md`「编码」第 3、5 条，施工 8-13）：能收的写成
+//! Responses 的图片、文件（`internal/blueprint/drivers/openai-responses.md`「编码」第 3、5 条，施工 8-13）：能收的写成
 //! `input_image`、`input_file`，不能收的换成字；工具结果里的图、PDF 放在 `output` 里；文本文件、带名字的图片、替它看的图照
 //! openai-chat 一样换成字（`media.rs` 共用）；缺 blob 报错。
 

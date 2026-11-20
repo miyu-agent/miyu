@@ -1,4 +1,4 @@
-//! 认时代（`docs/blueprint/mcp.md`「怎么走」第一条）：新时代答 `server/discover`，之后每个请求带 `_meta`；旧时代回别的错、
+//! 认时代（`internal/blueprint/mcp.md`「怎么走」第一条）：新时代答 `server/discover`，之后每个请求带 `_meta`；旧时代回别的错、
 //! 不回的退回 `initialize`，认得的旧版本照它说；规范自己的错照报、不退回；缓存说是旧时代的直接握手，握不成再探。
 
 use serde_json::Value;

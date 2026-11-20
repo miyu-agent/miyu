@@ -1,4 +1,4 @@
-//! 带名字的图片的三句（施工 3-9 四补，`docs/blueprint/drivers/openai-chat.md` 第 9 条）：随核心附带的字，存进策略快照的
+//! 带名字的图片的三句（施工 3-9 四补，`internal/blueprint/drivers/openai-chat.md` 第 9 条）：随核心附带的字，存进策略快照的
 //! `core.drivers.image_name`；以前造的快照里没有，读成没有，带名字的图片照不带名字的写。
 
 use miyu_drivers::ImageNameSources;

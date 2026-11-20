@@ -1,4 +1,4 @@
-//! `miyu rescue`（施工 RC-1，`docs/blueprint/cli/rescue.md`）：核心坏了时进 LiteMiyu 的应急模式（`litemiyu --rescue`）修。核心
+//! `miyu rescue`（施工 RC-1，`internal/blueprint/cli/rescue.md`）：核心坏了时进 LiteMiyu 的应急模式（`litemiyu --rescue`）修。核心
 //! 可能正坏着，所以整条路不经过核心：不连、不拉起。
 //!
 //! 1. 找程序（[`find`]）：`miyu` 被敲的那个路径的同一个目录、`miyu` 真实位置的同一个目录、`PATH`。找不到的照平台说怎么装，

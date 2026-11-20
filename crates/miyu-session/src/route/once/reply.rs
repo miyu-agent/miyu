@@ -1,4 +1,4 @@
-//! 一次性入口把增量拼成整段回答（施工 8-20，`docs/blueprint/models.md`「怎么走」第十二条第 4 条）：照内核的累积器拼，正文块
+//! 一次性入口把增量拼成整段回答（施工 8-20，`internal/blueprint/models.md`「怎么走」第十二条第 4 条）：照内核的累积器拼，正文块
 //! 的字照先后接起来，思考不要。增量对不上的（驱动的错）交 `model_failed`，分类 `bad_stream`。
 
 use miyu_http::Progress;

@@ -1,4 +1,4 @@
-//! `miyu rename`（`docs/blueprint/cli/rename.md`，施工 3-8 五补）：连上核心（照 `miyu undo` 的规矩：没设 key 的不拉起），找
+//! `miyu rename`（`internal/blueprint/cli/rename.md`，施工 3-8 五补）：连上核心（照 `miyu undo` 的规矩：没设 key 的不拉起），找
 //! 当前会话（最新的那个一次性会话；`--session` 指定别的），发 `session.set_meta` 给它起名。没写标题的发 `session.retitle`
 //! （施工 TT-1）：让核心照自动起标题的办法重起一个，请求发出去就回，不等模型。
 //!

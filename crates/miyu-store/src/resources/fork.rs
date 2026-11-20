@@ -1,4 +1,4 @@
-//! fork 子代理要的两句（施工 A-F 中，`docs/blueprint/agents.md`「fork 子代理」）：都只在派 fork 子代理时读，不进快照（子会话
+//! fork 子代理要的两句（施工 A-F 中，`internal/blueprint/agents.md`「fork 子代理」）：都只在派 fork 子代理时读，不进快照（子会话
 //! 用父会话那一份快照）。
 
 use super::{ResourceRoot, SourceError};

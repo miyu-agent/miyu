@@ -1,4 +1,4 @@
-//! 查供应商的额度（施工 QU-1，`docs/blueprint/models.md`「怎么走」第十七条）：档案写了 `quota` 的一家（[`miyu_models::quota`]），
+//! 查供应商的额度（施工 QU-1，`internal/blueprint/models.md`「怎么走」第十七条）：档案写了 `quota` 的一家（[`miyu_models::quota`]），
 //! GET 那个地址，读成几个窗口或者余额（施工 QU-2，DeepSeek 官方；供应商的地址不是官方的，`quota` 那一格就没有，不查）。
 //!
 //! - 谁来查：协议的 `session.quota` 照会话接下来请求的那一家查；会话每轮结束在后台查一次（[`refresh`]，不挡回合）。

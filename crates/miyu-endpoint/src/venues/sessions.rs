@@ -1,4 +1,4 @@
-//! `venue.sessions {}`（施工 O-32 前，`docs/blueprint/venues.md`「列场所会话」）：这个桥的平台的场所会话，每个场所一个，回应
+//! `venue.sessions {}`（施工 O-32 前，`internal/blueprint/venues.md`「列场所会话」）：这个桥的平台的场所会话，每个场所一个，回应
 //! `{"sessions": [{"session", "venue"}]}`。通讯平台的桥起来时照它订阅，不用等每个场所来一条消息才找。
 //!
 //! 一个场所只看最新的那一个（和 `venue.session` 找回的是同一个；删了的挪进了回收处，本来就不在）；场所编号的平台前缀（第一个

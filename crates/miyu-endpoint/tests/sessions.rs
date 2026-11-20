@@ -1,4 +1,4 @@
-//! 列会话，真核心走一遍（施工 C-3，`docs/blueprint/cross-session.md` 第一条）：`session.list` 每一项的工作目录跟着头报的换、
+//! 列会话，真核心走一遍（施工 C-3，`internal/blueprint/cross-session.md` 第一条）：`session.list` 每一项的工作目录跟着头报的换、
 //! 忙着的写 `busy`；她在一个主会话里调 `sessions`，列出别的本机主会话，不列她自己、她派的子代理、删了的，和
 //! `session.list` 是同一份。
 //!

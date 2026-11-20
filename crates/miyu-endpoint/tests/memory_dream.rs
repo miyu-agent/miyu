@@ -1,4 +1,4 @@
-//! 现在就整理记忆（施工 R-7 补，`docs/blueprint/memory.md` 第七条第 9 款，`protocol.md` 的 `memory.dream`、`/dream`）：真核心，
+//! 现在就整理记忆（施工 R-7 补，`internal/blueprint/memory.md` 第七条第 9 款，`protocol.md` 的 `memory.dream`、`/dream`）：真核心，
 //! 请求模型是真的路由、整理记忆照 `models.chat` 发给假服务器。
 //!
 //! `memory.dream` 照人格那一间现在就合、交回几样数，没有要整理的是零、不发；在后台答，同一个连接后面的请求先回；同一间同时

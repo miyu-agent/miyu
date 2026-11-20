@@ -93,7 +93,7 @@ fn over_is_over() {
 fn the_real_design_has_every_item() {
     let path = concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../docs/designs/23-性能预算.md"
+        "/../../internal/designs/23-性能预算.md"
     );
     let budgets = parse(&std::fs::read_to_string(path).unwrap()).unwrap();
     for item in crate::report::ITEMS {

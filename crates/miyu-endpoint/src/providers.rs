@@ -1,4 +1,4 @@
-//! 第一次接入的三个方法（`docs/blueprint/models.md`「协议」、「怎么走」第七条，施工 8-11）：`provider.detect` 找现成的
+//! 第一次接入的三个方法（`internal/blueprint/models.md`「协议」、「怎么走」第七条，施工 8-11）：`provider.detect` 找现成的
 //! key 和本机的模型服务，`provider.catalog` 搜目录，`provider.test` 试一家（`providers/trial.rs`）。
 //!
 //! - 都先等目录读完（核心写了 `ready` 以后才读）。

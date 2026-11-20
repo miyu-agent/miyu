@@ -1,4 +1,4 @@
-//! 冷却的测试（`docs/blueprint/models.md`「守着它的」`cooldown/tests.rs`，施工 8-9）：翻倍、封顶、供应商说的更长、成功清零、
+//! 冷却的测试（`internal/blueprint/models.md`「守着它的」`cooldown/tests.rs`，施工 8-9）：翻倍、封顶、供应商说的更长、成功清零、
 //! 到期先试、认证失败停整家供应商（施工 8-25），只有四类记冷却（施工 Q-4 中多额度用完），规矩照配置；额度用完照说的重置时刻。
 
 use std::time::Duration;

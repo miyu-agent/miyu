@@ -1,4 +1,4 @@
-//! 场所显示不了图片（施工 X-25，`docs/blueprint/venues.md`「`venue.session`」的 `images`）：`session.create` 写了 `images: false`
+//! 场所显示不了图片（施工 X-25，`internal/blueprint/venues.md`「`venue.session`」的 `images`）：`session.create` 写了 `images: false`
 //! 的会话里，清单写了 `needs = ["images"]` 的包整包当没开：工具不进工具面、回合开始不问它、它放的 system 那一段不拼，也不算进
 //! 「装了没开」；会话退下再载入、预设的文件改了、换快照以后照旧扣着。别的包、显示得了图片的会话一切照旧，`session.created` 不写这一格。
 

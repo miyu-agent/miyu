@@ -1,4 +1,4 @@
-//! 真跑 `miyu setup`（施工 8-11，`docs/blueprint/cli/setup.md`）：帮助页跟着界面语言；不在终端里又没写 `--provider` 的退出码
+//! 真跑 `miyu setup`（施工 8-11，`internal/blueprint/cli/setup.md`）：帮助页跟着界面语言；不在终端里又没写 `--provider` 的退出码
 //! 2，不拉起核心。在终端里走一遍的在 `crates/miyu-cli/tests/setup.rs`（假终端照剧本回）。
 
 use std::process::{Command, Output, Stdio};

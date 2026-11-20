@@ -1,4 +1,4 @@
-//! 手动压缩（施工 6-8，`docs/blueprint/protocol.md` 的 `session.compact`）：协议上压一次，回应是单开的那一轮的开头，
+//! 手动压缩（施工 6-8，`internal/blueprint/protocol.md` 的 `session.compact`）：协议上压一次，回应是单开的那一轮的开头，
 //! 人附的要求原样到了摘要请求里、记进了压缩，撤掉那一轮的回应里没有人说的话；有回合在进行、没有能压的，照头的语言
 //! 拒绝；要求不是字的是参数错误。
 

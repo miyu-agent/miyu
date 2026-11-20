@@ -1,4 +1,4 @@
-//! 密钥的留痕和样本（`docs/designs/samples/journal/secret.changed.jsonl`）一字不差，只有名字；两份密钥文件之间变了的名字：
+//! 密钥的留痕和样本（`internal/designs/samples/journal/secret.changed.jsonl`）一字不差，只有名字；两份密钥文件之间变了的名字：
 //! 新设、换掉、删掉，一样的不算。
 
 use std::path::{Path, PathBuf};
@@ -11,7 +11,7 @@ use super::*;
 /// 仓库里的样本。
 fn sample(name: &str) -> String {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/journal")
+        .join("../../internal/designs/samples/journal")
         .join(name);
     std::fs::read_to_string(&path).unwrap_or_else(|error| panic!("{}：{error}", path.display()))
 }

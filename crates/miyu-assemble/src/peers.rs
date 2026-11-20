@@ -1,4 +1,4 @@
-//! 别的会话发来的话（施工 C-2，`docs/blueprint/kernel/request.md`「别的会话发来的话」，`cross-session.md` 第八条）：`by` 是
+//! 别的会话发来的话（施工 C-2，`internal/blueprint/kernel/request.md`「别的会话发来的话」，`cross-session.md` 第八条）：`by` 是
 //! 别的会话（既不是父会话、也不是这个会话派的子代理，`History::is_peer`）的 `message.user` 包一层标签，标签里是发话的
 //! 会话的短编号，她分得清这句是别的会话说的，不是人说的。
 //!

@@ -1,4 +1,4 @@
-//! 模型调用的事件（`docs/designs/03-事件模型.md` 第三节「模型调用怎么写」）。
+//! 模型调用的事件（`internal/designs/03-事件模型.md` 第三节「模型调用怎么写」）。
 
 use serde::{Deserialize, Serialize};
 
@@ -121,11 +121,11 @@ impl ModelCalled {
 text_enum!(
     /// 辅助请求的用途（施工 3-8 四补）。
     Purpose {
-        /// 回顾：`session.recap` 要的一句（`docs/blueprint/kernel/session.md`「回顾」）。
+        /// 回顾：`session.recap` 要的一句（`internal/blueprint/kernel/session.md`「回顾」）。
         Recap = "recap",
-        /// 起标题：没起名的会话一轮答完以后内核自己要的（施工 3-8 五补，`docs/blueprint/kernel/session.md`「起标题」）。
+        /// 起标题：没起名的会话一轮答完以后内核自己要的（施工 3-8 五补，`internal/blueprint/kernel/session.md`「起标题」）。
         Title = "title",
-        /// 提前压好：用量过了起压线，内核在后台先要的摘要（施工 6-11 上，`docs/blueprint/compaction.md` 第十五条）。
+        /// 提前压好：用量过了起压线，内核在后台先要的摘要（施工 6-11 上，`internal/blueprint/compaction.md` 第十五条）。
         Compaction = "compaction",
         /// 整理会话的主请求（施工 D-1 上，设计 `41-整理会话.md` DS5）：不是辅助请求，照会话记用量时用途记成记忆，和原来合并的
         /// 一次性请求一样。

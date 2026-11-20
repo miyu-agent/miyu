@@ -1,4 +1,4 @@
-//! 手动压缩压好了也记一行度量（施工 6-8，`docs/blueprint/compaction.md` 第十三条）：`trigger` 照 `compaction.done` 写
+//! 手动压缩压好了也记一行度量（施工 6-8，`internal/blueprint/compaction.md` 第十三条）：`trigger` 照 `compaction.done` 写
 //! `manual`，不是写死的 `auto`。
 //!
 //! 只有这一个测试，自己一个进程：`tracing` 的调用点第一次被碰到时记下谁在听，别的测试同时碰到，这里装的订阅者可能

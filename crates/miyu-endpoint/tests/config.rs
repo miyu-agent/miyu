@@ -1,4 +1,4 @@
-//! 读配置（施工 8-2，`docs/blueprint/config.md`「协议」「守着它的」）：真核心照磁盘上的几份配置起来。握手的 `language`
+//! 读配置（施工 8-2，`internal/blueprint/config.md`「协议」「守着它的」）：真核心照磁盘上的几份配置起来。握手的 `language`
 //! （`auto` 照头报的系统语言，`zh`、`ja`、别的）、`config_errors`；`config.schema`、`config.get`（`cwd`、`all`、`files`、
 //! `problems`）、`config.check` 的样子和报错的话；不认识的键；造会话时开局只读照配置、照信任着的项目配置。
 

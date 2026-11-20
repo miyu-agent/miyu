@@ -1,4 +1,4 @@
-//! 给发往 opencode Zen 的请求补占位工具（施工 8-14 补，`docs/blueprint/models.md`「八、opencode Zen」第 2 条）：免费档按客户端
+//! 给发往 opencode Zen 的请求补占位工具（施工 8-14 补，`internal/blueprint/models.md`「八、opencode Zen」第 2 条）：免费档按客户端
 //! 识别，请求体的工具面里要有 `shell` 和 `read`。档案点名了哪几件（`placeholder_tools`），说明是
 //! `resources/core/drivers/placeholder-tool.txt` 那一句。
 //!

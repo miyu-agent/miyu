@@ -1,4 +1,4 @@
-//! 删会话之前停下（施工 3-8 三补，`docs/blueprint/session/actor.md` 第 9 条）：`delete` 先问内核，有回合在进行的说删不了、
+//! 删会话之前停下（施工 3-8 三补，`internal/blueprint/session/actor.md` 第 9 条）：`delete` 先问内核，有回合在进行的说删不了、
 //! 会话照常；删得了的，后台命令整组杀掉、不记回报，回了以后会话就停了。`discard` 不问：跑到一半的也停，后台命令一样杀掉、
 //! 不记，那一轮不收尾。假的后台命令（`miyu_tool::testkit::Held`），三个平台一样。
 

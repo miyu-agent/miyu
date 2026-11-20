@@ -1,4 +1,4 @@
-//! 知识库查的两件工具（施工 K-1 下，`docs/blueprint/knowledge.md`「她的工具」）：参数，端口交回的几种，结果的句子逐字节比，
+//! 知识库查的两件工具（施工 K-1 下，`internal/blueprint/knowledge.md`「她的工具」）：参数，端口交回的几种，结果的句子逐字节比，
 //! 给人看的说法。端口是假的：真的在 `miyu-session` 里测。写的三件在 `writes.rs`（施工 K-3）。
 
 use std::sync::{Arc, PoisonError};

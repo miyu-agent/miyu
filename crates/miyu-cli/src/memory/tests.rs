@@ -1,4 +1,4 @@
-//! 一条记忆印成一行（`docs/blueprint/cli/memory.md`「样子」）：编号照最长的对齐、日期照时区换天、作废的带原因。
+//! 一条记忆印成一行（`internal/blueprint/cli/memory.md`「样子」）：编号照最长的对齐、日期照时区换天、作废的带原因。
 
 use serde_json::json;
 

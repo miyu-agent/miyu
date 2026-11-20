@@ -1,4 +1,4 @@
-//! 金额（施工 8-15，`docs/blueprint/kernel/session.md`「收回复」）：执行器随「说完了」交来的金额原样记进 `model.called`，
+//! 金额（施工 8-15，`internal/blueprint/kernel/session.md`「收回复」）：执行器随「说完了」交来的金额原样记进 `model.called`，
 //! 排在用量后面；出错的带着用量和金额的也照记（钱已经花了）；没交的不写；被打断的没有。
 
 use super::executor::*;

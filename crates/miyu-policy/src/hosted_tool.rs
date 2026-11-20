@@ -1,4 +1,4 @@
-//! 供应商侧工具写成的字的四份（施工 HT-2，`docs/blueprint/drivers/openai-chat.md` 第 4 条）：随核心附带的字，存进策略快照的
+//! 供应商侧工具写成的字的四份（施工 HT-2，`internal/blueprint/drivers/openai-chat.md` 第 4 条）：随核心附带的字，存进策略快照的
 //! `core.drivers.hosted_tool`；以前造的快照里没有，读成没有，供应商侧工具不写进请求。
 
 use miyu_drivers::HostedToolSources;

@@ -1,4 +1,4 @@
-//! 一个库在哪（施工 K-8 从 `knowledge.rs` 挪出来、加了包里的，`docs/blueprint/knowledge.md`「对外的样子」）：自己的在
+//! 一个库在哪（施工 K-8 从 `knowledge.rs` 挪出来、加了包里的，`internal/blueprint/knowledge.md`「对外的样子」）：自己的在
 //! `kb/<编号>/`（挂进来的也是，`kb.toml` 写着挂哪），软件包带来的在包目录的 `kb/<编号>/`（照约定，同 `skills/`）。
 //! 这里管看得见哪几个、索引放哪、包里的库自动想起的开关人改了记在哪，装卸以后怎么跟上。
 //!

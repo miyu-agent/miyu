@@ -1,4 +1,4 @@
-//! `miyu kb` 给人看的字（施工 K-7 下，`docs/blueprint/cli/kb.md`「给人看的字」；CL-2 补照设计 47 第三节改：结果行动词打头、
+//! `miyu kb` 给人看的字（施工 K-7 下，`internal/blueprint/cli/kb.md`「给人看的字」；CL-2 补照设计 47 第三节改：结果行动词打头、
 //! 不带句号，报错交 [`Problem`]，建议另起一行）。
 
 use super::Language;

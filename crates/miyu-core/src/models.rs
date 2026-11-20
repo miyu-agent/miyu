@@ -1,4 +1,4 @@
-//! 模型（`docs/blueprint/models.md`、`core.md`「模型」，施工 8-6、8-7）：起来时读资源目录里的供应商档案
+//! 模型（`internal/blueprint/models.md`、`core.md`「模型」，施工 8-6、8-7）：起来时读资源目录里的供应商档案
 //! （`models/profiles.toml`）、认原厂的表（`models/vendors.toml`），造每个会话的路由（`miyu_session::Routes`）和核心一份的
 //! 模型资料（`miyu_session::ModelData`）。写了 `ready` 以后在阻塞线程里读目录（[`catalog`]）、用出来的、供应商的列表，
 //! 读完放行等着它的；再在后台更新目录（[`refresh`]）。另造一个不走代理的 GET 客户端给第一次接入探本机的服务（施工

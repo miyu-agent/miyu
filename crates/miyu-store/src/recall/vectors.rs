@@ -1,4 +1,4 @@
-//! 检索库里的向量（施工 R-5 下，`docs/blueprint/recall.md` 第三条第 1、2 款）：`vectors(key, model, data)`，一条照一个模型一份，
+//! 检索库里的向量（施工 R-5 下，`internal/blueprint/recall.md` 第三条第 1、2 款）：`vectors(key, model, data)`，一条照一个模型一份，
 //! `data` 是 f32 的小端字节（`miyu_recall::vector`）。条目拿掉、换了字的时候向量跟着拿掉（`recall.rs` 的 `put`、`remove_key`、
 //! `forget`）。
 //!

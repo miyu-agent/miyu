@@ -1,4 +1,4 @@
-//! 整页的命令（施工 X-15 下，`docs/blueprint/widgets.md`「整页的命令」）：菜单里列出来、带 `opens`；打了回 `opens`、不碰会话；
+//! 整页的命令（施工 X-15 下，`internal/blueprint/widgets.md`「整页的命令」）：菜单里列出来、带 `opens`；打了回 `opens`、不碰会话；
 //! 自己放的同名模板盖住它；场所会话里不认；关着的扩展的不算。
 
 use serde_json::{Value, json};

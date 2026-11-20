@@ -1,4 +1,4 @@
-//! 引用的东西没有（`docs/blueprint/config.md`「报错」的 `bad_reference`，`models.md`「怎么走」第三条第 2 条，施工 8-8）：
+//! 引用的东西没有（`internal/blueprint/config.md`「报错」的 `bad_reference`，`models.md`「怎么走」第三条第 2 条，施工 8-8）：
 //! 引用（`models.chat`、挡位的值）、模型的列表（池的成员）指的供应商、池，在合出来的最终值里没有。
 //!
 //! 这是跨项的查：一项写在项目配置里，指的供应商可以配在系统配置里，所以照最终值查，不照这一份文件查。和引用的密钥、

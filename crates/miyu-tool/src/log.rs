@@ -1,4 +1,4 @@
-//! 这个会话日志的只读入口（`docs/blueprint/tools/interface.md`，施工 6-4）：`history` 翻会话自己的记录用；订阅时补发的那一截
+//! 这个会话日志的只读入口（`internal/blueprint/tools/interface.md`，施工 6-4）：`history` 翻会话自己的记录用；订阅时补发的那一截
 //! 也照它读（施工 3-8 六补，照序号读一截的施工 V-37 下）；`history` 只解要的种类（施工 V-49）。
 //!
 //! 工具不知道日志存在哪、怎么存：执行器照会话的目录造一个 [`ReadLog`]，包成 [`Log`] 交给这次调用。

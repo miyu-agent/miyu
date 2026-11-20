@@ -1,4 +1,4 @@
-//! `view.detail`：一次调用的完整差异（施工 9-6 三补，`docs/blueprint/protocol.md`「`view.detail`」，`04-核心协议.md` 第九节
+//! `view.detail`：一次调用的完整差异（施工 9-6 三补，`internal/blueprint/protocol.md`「`view.detail`」，`04-核心协议.md` 第九节
 //! 「条目只带摘要，完整的 diff 头展开时按需取」）。照调用编号找那次调用的工具结果，照它的效果一个文件一项：改了的从
 //! blob 拿改前改后算差异（[`crate::diffs`]，不读磁盘：之后又被改过的照样是那一次的），移进回收站的只写一项。施工 9-8 中
 //! 多交结果原文 `output`，另认 `compaction` 交那一次压缩的摘要；字段只加不改。施工 M-5 上多交 `nested`：挂在这次调用、

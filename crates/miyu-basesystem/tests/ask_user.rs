@@ -1,4 +1,4 @@
-//! `ask_user`（`docs/blueprint/tools/ask_user.md`，施工 D-2）：参数照 Claude Code，题交给端口原样（`multiSelect` 记成
+//! `ask_user`（`internal/blueprint/tools/ask_user.md`，施工 D-2）：参数照 Claude Code，题交给端口原样（`multiSelect` 记成
 //! `multiple`、`preview` 带着）；回答一道一行写成结果，逐字节比；参数不对的、一道题都没有的，端口一次都不问；没有端口的说这里
 //! 没人能回答；没答到就了结的照叫停收场。
 

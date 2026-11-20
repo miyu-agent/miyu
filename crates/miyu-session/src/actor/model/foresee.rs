@@ -1,4 +1,4 @@
-//! 换了模型当场报新的（施工 MC-1，2026-11-16 项目主人定，`docs/blueprint/models.md`「怎么走」第六条第 3 条第 5 款）：人
+//! 换了模型当场报新的（施工 MC-1，2026-11-16 项目主人定，`internal/blueprint/models.md`「怎么走」第六条第 3 条第 5 款）：人
 //! `session.configure` 换了模型、思考强度，落了盘就照这一刻的配置预演下一个回合开始会怎么解析（`ModelPort::upcoming`），给头看的
 //! `next` 换成它，变了推一条 `model.changed`（`why` 是 `turn`，同回合开始头看得到的变了）。头选完、切走再切回来（重新
 //! `subscribe`）、`session.quota` 照的都是这一份。真发请求照旧下一个回合开始照新的：路由钉着的不动。

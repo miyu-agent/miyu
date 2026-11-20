@@ -1,5 +1,5 @@
-//! 冻结在会话上的策略（`docs/designs/02-内核.md` K3，第六节「回合怎么开、请求怎么发」第 7 条），和回合开始时换上新的一份
-//! （施工 P-1 再补，`docs/blueprint/kernel/session.md`「换策略快照」）。
+//! 冻结在会话上的策略（`internal/designs/02-内核.md` K3，第六节「回合怎么开、请求怎么发」第 7 条），和回合开始时换上新的一份
+//! （施工 P-1 再补，`internal/blueprint/kernel/session.md`「换策略快照」）。
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -51,7 +51,7 @@ pub struct Policy {
     /// 起标题的两个数（施工 3-8 五补，`title.rs`）；没有的不起标题：以前造的快照里没有。
     pub titles: Option<Titles>,
     /// 别的会话发来的话怎么防刷屏（施工 C-2，`peers.rs`）。以前造的快照里没有的，执行器照出厂的数交进来：防刷屏不能因为
-    /// 会话旧就不管（`docs/blueprint/cross-session.md`「对外的样子」）。
+    /// 会话旧就不管（`internal/blueprint/cross-session.md`「对外的样子」）。
     pub peers: Peers,
     /// 嵌套调用的两道上限（施工 M-1，`nested.rs`）。以前造的快照里没有的，执行器照出厂的数交进来。
     pub nested: NestedLimits,
@@ -59,7 +59,7 @@ pub struct Policy {
     pub foreground: bool,
 }
 
-/// 嵌套调用的两道上限（施工 M-1，`docs/blueprint/kernel/session.md`「嵌套调用」第 2 条）：同时过链、在跑的最多几个，到了的排着，
+/// 嵌套调用的两道上限（施工 M-1，`internal/blueprint/kernel/session.md`「嵌套调用」第 2 条）：同时过链、在跑的最多几个，到了的排着，
 /// 不拒。数是策略数据，放在策略快照里。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NestedLimits {
@@ -69,7 +69,7 @@ pub struct NestedLimits {
     pub per_session: usize,
 }
 
-/// 起标题的两个数（施工 3-8 五补，`docs/blueprint/kernel/session.md`「起标题」）：数值是数据，放在策略快照里。
+/// 起标题的两个数（施工 3-8 五补，`internal/blueprint/kernel/session.md`「起标题」）：数值是数据，放在策略快照里。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Titles {
     /// 一个会话最多试几次，都没起成就不再试：出厂 2。
@@ -78,7 +78,7 @@ pub struct Titles {
     pub chars: usize,
 }
 
-/// 别的会话发来的话怎么防刷屏（施工 C-2，`docs/blueprint/cross-session.md` 第五条第 1 到 3 款），「空了告诉我」等多久、
+/// 别的会话发来的话怎么防刷屏（施工 C-2，`internal/blueprint/cross-session.md` 第五条第 1 到 3 款），「空了告诉我」等多久、
 /// 通知带多长的一行（施工 C-6，第六条第 6、8 款）。数是策略数据，放在策略快照里。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Peers {
@@ -95,7 +95,7 @@ pub struct Peers {
     pub status_chars: usize,
 }
 
-/// 子会话向上回报的正文怎么截（施工 7-6，`docs/blueprint/agents.md` 第二条第 3 条）：超过 `chars` 个字的留头尾各一半，
+/// 子会话向上回报的正文怎么截（施工 7-6，`internal/blueprint/agents.md` 第二条第 3 条）：超过 `chars` 个字的留头尾各一半，
 /// 中间接一行 `omitted`。数和字都是数据，放在策略快照里。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Reports {
@@ -242,7 +242,7 @@ pub struct Pause {
 }
 
 impl Policy {
-    /// 由 `by` 开的回合最多请求几次模型（施工 AE-1，`docs/blueprint/kernel/session.md`「工具怎么调、下一步怎么走」第 7 条）：
+    /// 由 `by` 开的回合最多请求几次模型（施工 AE-1，`internal/blueprint/kernel/session.md`「工具怎么调、下一步怎么走」第 7 条）：
     /// 人（`person`）开的照 [`Policy::step_limit`]；别的一律取它和 [`Policy::auto_step_limit`] 里小的那个，只有一个的照它
     /// （2026-10-30 主会话定：只有人开的不限）。都没有的是不限。
     pub fn steps_for(&self, by: Option<&By>) -> Option<u32> {

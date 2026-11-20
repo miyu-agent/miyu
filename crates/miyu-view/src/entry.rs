@@ -1,4 +1,4 @@
-//! 条目：头直接画的一条（`docs/blueprint/view.md`「对外的样子」）。格照图纸，写成 JSON 就是交给头的样子。
+//! 条目：头直接画的一条（`internal/blueprint/view.md`「对外的样子」）。格照图纸，写成 JSON 就是交给头的样子。
 
 use serde::{Deserialize, Serialize};
 
@@ -112,7 +112,7 @@ pub struct User {
     pub shell: Option<Shell>,
 }
 
-/// 一件附件。只有路径的（施工 AT-1，`docs/blueprint/view.md`「条目」的 `user`）没有 `media_type`、`blob`，带着 `path`、
+/// 一件附件。只有路径的（施工 AT-1，`internal/blueprint/view.md`「条目」的 `user`）没有 `media_type`、`blob`，带着 `path`、
 /// `path_only`，头写了大小的有 `size`；别的两格都有。
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Attachment {
@@ -270,7 +270,7 @@ pub struct Tool {
     /// 读的是技能的 `SKILL.md`（施工 9-8 四补）：照结果的 `file.read` 效果。没有的不写。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub skill: Option<SkillUsed>,
-    /// 给人看的文件（施工 D-5，`docs/blueprint/tools/show.md`）：照结果的 `file.shown` 效果，格同它。没有的不写。
+    /// 给人看的文件（施工 D-5，`internal/blueprint/tools/show.md`）：照结果的 `file.shown` 效果，格同它。没有的不写。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub shown: Option<miyu_kernel::event::FileShown>,
     /// 给头看的结构化结果（施工 W-11）：照结果的 `detail` 原样带上，形状由那件工具定。没有的不写。

@@ -1,4 +1,4 @@
-//! OpenAI 兼容对话接口的编码（`docs/designs/05-内核接口.md` 第七节那张表）：每一种写法一个样本，
+//! OpenAI 兼容对话接口的编码（`internal/designs/05-内核接口.md` 第七节那张表）：每一种写法一个样本，
 //! 逐字节比对。图片、文件和思考在 `openai_chat_media.rs`。
 
 use std::collections::BTreeMap;

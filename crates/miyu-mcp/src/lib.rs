@@ -1,7 +1,7 @@
-//! MCP 的客户端（施工 X-1，`docs/blueprint/mcp.md`）：经一对读写管道（服务进程的标准输出、标准输入）说 MCP，一行一条
+//! MCP 的客户端（施工 X-1，`internal/blueprint/mcp.md`）：经一对读写管道（服务进程的标准输出、标准输入）说 MCP，一行一条
 //! JSON-RPC 2.0。不认识 Miyu 的工具目录、不起进程：起进程、登记工具、换结果块是核心那一边的事。
 //!
-//! - [`Client::connect`]：认这个服务是哪个时代（`docs/blueprint/mcp.md`「怎么走」第一条）：先发 `server/discover`，答得上的
+//! - [`Client::connect`]：认这个服务是哪个时代（`internal/blueprint/mcp.md`「怎么走」第一条）：先发 `server/discover`，答得上的
 //!   是新时代（2026-07-28 起，每个请求自己带版本）；答别的错、5 秒没答的是旧时代，退回 `initialize` 握手。认出来的时代
 //!   交给调的一方缓存，下次照它直接说。
 //! - [`Client::tools`]：`tools/list`，翻页列全。

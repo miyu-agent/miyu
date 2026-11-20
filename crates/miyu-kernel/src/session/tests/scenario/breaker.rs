@@ -1,4 +1,4 @@
-//! 场景：熔断（`docs/blueprint/compaction.md` 第十条、第二条第 5 条，施工 6-6 上）。自动压缩连续失败 3 次、压完 3 个
+//! 场景：熔断（`internal/blueprint/compaction.md` 第十条、第二条第 5 条，施工 6-6 上）。自动压缩连续失败 3 次、压完 3 个
 //! 回合内又到线连着 3 次，写 `context.compaction_paused`；暂停着到线不压，放得下的照发，放不下的记一条没发出去的
 //! `model.called`、这一轮出错结束。
 //!

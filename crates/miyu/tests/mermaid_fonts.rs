@@ -1,4 +1,4 @@
-//! 画 mermaid 时字体只记在哪、不存副本（施工 V-35，`docs/blueprint/mermaid.md`「怎么走」第 2 条）：真的 `miyu core`，画一张
+//! 画 mermaid 时字体只记在哪、不存副本（施工 V-35，`internal/blueprint/mermaid.md`「怎么走」第 2 条）：真的 `miyu core`，画一张
 //! 图以后数据根的 `cache/mermaid` 里只有几十字节的位置记录，没有拷下来的字体；画图的库原来写的 `$XDG_CACHE_HOME/mmdr` 一个
 //! 字都不写。重起核心照记下的位置再画，出来的 SVG 和头一回一字不差。
 

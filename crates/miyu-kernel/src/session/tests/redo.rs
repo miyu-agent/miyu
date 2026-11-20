@@ -1,4 +1,4 @@
-//! 重做（`docs/blueprint/kernel/history.md`「重做」，施工 4-7 再补）这一层：一批追加、落了盘才回应；改过文件的照样同一批
+//! 重做（`internal/blueprint/kernel/history.md`「重做」，施工 4-7 再补）这一层：一批追加、落了盘才回应；改过文件的照样同一批
 //! 重发，文件不动（施工 U-1）；同一个编号再来照上一次回应。走一整轮的场景在 `scenario/redo.rs`。
 
 use super::edits::edited;

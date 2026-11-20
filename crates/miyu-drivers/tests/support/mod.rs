@@ -1,6 +1,6 @@
 //! 驱动测试用的：出厂的占位、造块、造一次调用、和样本逐字节比对。
 //!
-//! 样本在 `docs/designs/samples/drivers/<驱动家族>/`，一种写法一个文件，写的是请求字节，末尾一个
+//! 样本在 `internal/designs/samples/drivers/<驱动家族>/`，一种写法一个文件，写的是请求字节，末尾一个
 //! 换行。字节变了必须是有意的：设上 `MIYU_PROBE_WRITE=1` 跑一遍，重写样本，提交说明里写为什么变。
 //! `sample`、`sample_file`、`dir` 是 openai-chat 的，`anthropic_*` 是 Anthropic 的（施工 8-12），`responses_*` 是 Responses 的
 //! （施工 8-13）。
@@ -275,7 +275,7 @@ pub fn dir() -> PathBuf {
 /// 驱动家族 `family` 的样本目录。
 pub fn family_dir(family: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/drivers")
+        .join("../../internal/designs/samples/drivers")
         .join(family)
 }
 

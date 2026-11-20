@@ -1,4 +1,4 @@
-//! `miyu rescue` 照 Miyu 的对话模型配 LiteMiyu 的应急模式（施工 RC-1，`docs/blueprint/cli/rescue.md`）：核心可能正坏着，所以
+//! `miyu rescue` 照 Miyu 的对话模型配 LiteMiyu 的应急模式（施工 RC-1，`internal/blueprint/cli/rescue.md`）：核心可能正坏着，所以
 //! 不连核心、不拉起核心，在这个进程里照磁盘读一遍，同 CPU-1 在建运行时以前读系统配置（`workers.rs`）。
 //!
 //! 读的：系统配置（只认模型这一块的几项）、密钥文件、资源目录里的供应商档案和认原厂的表、models.dev 的目录（快照和缓存挑新的，

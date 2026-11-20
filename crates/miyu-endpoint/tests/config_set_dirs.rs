@@ -1,4 +1,4 @@
-//! 改别的技能目录（施工 PT-2 外，`docs/blueprint/config.md` 的 `bad_format`）：相对路径整条不收，说的是那一个；别的照收。
+//! 改别的技能目录（施工 PT-2 外，`internal/blueprint/config.md` 的 `bad_format`）：相对路径整条不收，说的是那一个；别的照收。
 
 use serde_json::{Value, json};
 

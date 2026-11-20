@@ -1,4 +1,4 @@
-//! 换了还没开回合的给头看什么（施工 MC-1，2026-11-16 项目主人定「当场报新的」，`docs/blueprint/models.md`「怎么走」第六条
+//! 换了还没开回合的给头看什么（施工 MC-1，2026-11-16 项目主人定「当场报新的」，`internal/blueprint/models.md`「怎么走」第六条
 //! 第 3 条第 5 款）：人 `session.configure` 换了模型、思考强度，真发请求照旧下一个回合开始照新的（[`Route::begin`]）；`subscribe`
 //! 的 `model`、`model.changed` 当场照会话记着的报。
 //!

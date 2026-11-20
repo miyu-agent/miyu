@@ -1,4 +1,4 @@
-//! 用量汇总的一行（施工 8-15，`docs/blueprint/models.md`「怎么走」第九条第 4 条）：一次请求，或者删掉的会话一个小时里一个
+//! 用量汇总的一行（施工 8-15，`internal/blueprint/models.md`「怎么走」第九条第 4 条）：一次请求，或者删掉的会话一个小时里一个
 //! （供应商、模型、用途）的合计。照哪来的写：会话日志里的 `model.called`（[`Spent::called`]）、日志里的
 //! `usage.oneshot`（[`Spent::one_shot`]）、`usage.purged` 的一格（[`super::purged`]）。
 //!

@@ -1,4 +1,4 @@
-//! 场所消息里这个群叫什么（施工 E-4 上，`docs/construction/E-4上-记下在哪个群.md`）：`venue.place` 同 `name` 的规矩，原样记进
+//! 场所消息里这个群叫什么（施工 E-4 上，`internal/construction/E-4上-记下在哪个群.md`）：`venue.place` 同 `name` 的规矩，原样记进
 //! `message.user` 的 `venue`，没写的不写；空白、超长、带控制字符、不是字的 `bad_params`，什么都不记。核心不看是群还是私聊（私聊
 //! 桥不写）。群名是编的。
 

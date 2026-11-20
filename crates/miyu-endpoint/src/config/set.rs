@@ -1,4 +1,4 @@
-//! 协议上的 `config.set`（`docs/blueprint/config.md`「协议」、「怎么走」第五、六条，G4、G5，施工 8-3）：在系统配置或个人
+//! 协议上的 `config.set`（`internal/blueprint/config.md`「协议」、「怎么走」第五、六条，G4、G5，施工 8-3）：在系统配置或个人
 //! 设置里改一项或几项、恢复默认，或者整份换掉（`miyu config edit` 用）。
 //!
 //! 1. 参数不对的（`changes`、`text` 不是正好一个，一项里 `value`、`input`、`unset` 不是正好一个，同一个键写了两次，整份换的

@@ -1,4 +1,4 @@
-//! 看守查回顾（施工 3-8 四补，`docs/blueprint/kernel/session.md`「回顾」）：
+//! 看守查回顾（施工 3-8 四补，`internal/blueprint/kernel/session.md`「回顾」）：
 //!
 //! - 送进去之前照看守记下的有效历史判：落了盘的里面一条回复都没有的拒绝，`nothing_to_recap`；照到的（落了盘的最后一条人的
 //!   消息、回复，替身的组装照这样算）和有效历史里最近一条 `session.recapped` 一样的，交回它；有一次在路上的，并进去，什么

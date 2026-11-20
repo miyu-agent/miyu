@@ -1,4 +1,4 @@
-//! 冷却（`docs/blueprint/models.md`「怎么走」第五条第 2 条，施工 8-9）：一个端点出错以后多久不再挑它。
+//! 冷却（`internal/blueprint/models.md`「怎么走」第五条第 2 条，施工 8-9）：一个端点出错以后多久不再挑它。
 //!
 //! - 四类记冷却：限速 `rate_limited`、可重试 `retryable`、认证失败 `auth`、额度用完 `quota`（施工 Q-4 中从认证失败里分出来：
 //!   供应商说了什么时候重置的照说的，最多一天；没说的照 `[models.cooldown.quota]`，默认 30 分钟）。别的分类（超长、

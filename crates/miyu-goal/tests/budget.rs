@@ -1,4 +1,4 @@
-//! 长期目标这个软件包的工具面预算（`docs/designs/10-自带软件.md` 第九节，施工 X-8 上）：`resources/software/goal/tools/` 下的
+//! 长期目标这个软件包的工具面预算（`internal/designs/10-自带软件.md` 第九节，施工 X-8 上）：`resources/software/goal/tools/` 下的
 //! 一份说明不超过 [`BUDGET`] 字节。
 //!
 //! 照记忆的办法：量法、实测的 token 数记在设计里；预算是实测加一成。改说明超了，重新量过再改这里和设计。

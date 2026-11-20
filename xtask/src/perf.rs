@@ -1,4 +1,4 @@
-//! `cargo xtask perf [量尺的参数…]`（施工 V-1，`docs/blueprint/perf.md`）：编 release 的 `miyu`、`miyu-sandbox`，
+//! `cargo xtask perf [量尺的参数…]`（施工 V-1，`internal/blueprint/perf.md`）：编 release 的 `miyu`、`miyu-sandbox`，
 //! 再编量尺 `miyu-perf`、跑它，结果写进 target 目录下的 `perf-out/`（不入库）。
 //!
 //! 两次分开编：量的二进制只照它自己的依赖编，别的包（测试夹具打开的开关）混不进去。沙盒放在 `target/perf/` 下：要在
@@ -46,7 +46,7 @@ pub fn run(cargo: &str, root: &Path, extra: &[String]) -> ExitCode {
         .arg("--resources")
         .arg(root.join("resources"))
         .arg("--design")
-        .arg(root.join("docs/designs/23-性能预算.md"))
+        .arg(root.join("internal/designs/23-性能预算.md"))
         .arg("--work")
         .arg(target.join("perf"))
         .arg("--out")

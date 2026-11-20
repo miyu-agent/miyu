@@ -1,4 +1,4 @@
-//! 到点交进来的话的标签装进快照（施工 J-1 上，`docs/blueprint/schedules.md`）：`resources/software/schedule/common/`、
+//! 到点交进来的话的标签装进快照（施工 J-1 上，`internal/blueprint/schedules.md`）：`resources/software/schedule/common/`、
 //! `resources/software/loop/common/` 下各两份原文（施工 J-2 写）。以前造的快照里没有、这一版还没写字的读成没有：那种话照人的
 //! 话原样渲染。
 

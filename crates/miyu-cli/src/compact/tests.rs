@@ -1,4 +1,4 @@
-//! `miyu compact` 印什么（施工 6-8，`docs/blueprint/cli/compact.md`）：几个词连成一句要求、不写就没有；跟着单开的那一轮
+//! `miyu compact` 印什么（施工 6-8，`internal/blueprint/cli/compact.md`）：几个词连成一句要求、不写就没有；跟着单开的那一轮
 //! 照 `miyu ask` 的样子印：压好了、用量，和样本逐字节一样；改走隔离式的那一句；失败、被拒绝、被打断的几行和退出码；
 //! 英文。
 
@@ -153,10 +153,10 @@ fn feed(language: Language, live: bool, messages: &[Value]) -> Fed {
     }
 }
 
-/// 蓝图 `cli/compact.md` 的例子：`docs/designs/samples/cli/compact-text.txt`。
+/// 蓝图 `cli/compact.md` 的例子：`internal/designs/samples/cli/compact-text.txt`。
 fn sample() -> String {
     let sample = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/cli/compact-text.txt");
+        .join("../../internal/designs/samples/cli/compact-text.txt");
     std::fs::read_to_string(&sample).expect("有样本")
 }
 

@@ -1,5 +1,5 @@
 //! 人叫的整理，把手这一头（施工 R-7 补；R-22 加叫停，从 `handle.rs` 挪出来）：现在就整理这个会话的记忆、叫停这个会话叫的
-//! 那几趟（`docs/blueprint/memory.md` 第七条第 9、13 款），actor 那一头在 `actor/extract.rs`。
+//! 那几趟（`internal/blueprint/memory.md` 第七条第 9、13 款），actor 那一头在 `actor/extract.rs`。
 
 use tokio::sync::oneshot;
 

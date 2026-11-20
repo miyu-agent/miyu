@@ -1,4 +1,4 @@
-//! 给头看的限额（施工 6-3 补，`docs/blueprint/kernel/session.md` 的 `context_limits()`）：窗口照交来的，压缩线和内核判到线
+//! 给头看的限额（施工 6-3 补，`internal/blueprint/kernel/session.md` 的 `context_limits()`）：窗口照交来的，压缩线和内核判到线
 //! 用的是同一条（`compaction.md` 第二条第 2 条）。
 //!
 //! 策略里压缩的数照出厂的：输出预留的上限 20000、余量 13000，压缩线至多窗口的 85%、余量至多窗口的 5%（施工 6-11 再补）。

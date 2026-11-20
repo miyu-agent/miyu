@@ -1,4 +1,4 @@
-//! `miyu session`（施工 SE-1 中上，`docs/blueprint/cli/session.md`）：在进程里起两个核心。一个里 `miyu ask` 说一句，
+//! `miyu session`（施工 SE-1 中上，`internal/blueprint/cli/session.md`）：在进程里起两个核心。一个里 `miyu ask` 说一句，
 //! `export` 不写会话、`-o` 写相对路径，包写到当前目录下、标准输出印绝对路径；另一个 `import --archive` 印出新会话的编号，
 //! 再导一次什么都不印；写到已经有的文件照核心的话说、退出码 1。`--md`（施工 SE-1 中下下）：默认写到 `.md`、印路径；`-o -`
 //! 打到标准输出，`--for`、`--last` 照传；超了上限的照核心的话说、提示改成写文件。

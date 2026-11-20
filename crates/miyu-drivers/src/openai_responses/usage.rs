@@ -1,4 +1,4 @@
-//! 用量归成内核的四项（`docs/blueprint/drivers/openai-responses.md`「用量」）：取收尾那个事件的 `response.usage`。
+//! 用量归成内核的四项（`internal/blueprint/drivers/openai-responses.md`「用量」）：取收尾那个事件的 `response.usage`。
 //! `input_tokens` 含命中的，没命中的是减出来的；这一家不报写入，写入是 0；输出含思考，思考占了多少照
 //! `output_tokens_details.reasoning_tokens`（施工 2-3 再补，0 的当没报）。供应商那边替模型跑的搜索、抓取的次数照
 //! `server_tool_use.tool_search`、`server_tool_use.tool_fetch`（施工 DSR-4，DeepSeek 报；是次数，不是 token；0 的当没报）。

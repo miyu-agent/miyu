@@ -1,4 +1,4 @@
-//! 线上的写法：Responses 接口 `input` 里的一项项、工具面（`docs/blueprint/drivers/openai-responses.md`「怎么走：编码」）。
+//! 线上的写法：Responses 接口 `input` 里的一项项、工具面（`internal/blueprint/drivers/openai-responses.md`「怎么走：编码」）。
 //!
 //! 全用结构体，字段照声明的先后写出去，不经过 `serde_json::Value` 的映射。参数格式原样照抄。
 

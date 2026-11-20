@@ -142,7 +142,7 @@ pub(crate) struct Taken {
     pub(crate) streaming: Vec<miyu_kernel::event::Transient>,
 }
 
-/// 停掉派出去的任务（施工 7-4，`docs/blueprint/session/actor.md`「停掉任务」）。
+/// 停掉派出去的任务（施工 7-4，`internal/blueprint/session/actor.md`「停掉任务」）。
 #[derive(Debug)]
 pub(crate) enum Halt {
     /// 人用 `job.stop` 停一个：`by` 是人，`cause` 是那条命令。停好了、回报落了盘才回；没有、已经结束了的回
@@ -247,7 +247,7 @@ impl Handle {
         &self.venue
     }
 
-    /// 给头看的限额：窗口、压缩线（施工 6-3 补）。协议照它回 `subscribe`（`docs/blueprint/protocol.md`）。会话中途变了的
+    /// 给头看的限额：窗口、压缩线（施工 6-3 补）。协议照它回 `subscribe`（`internal/blueprint/protocol.md`）。会话中途变了的
     /// 是变了以后的（施工 8-9、8-10）。
     pub fn limits(&self) -> ContextLimits {
         self.shown
@@ -374,7 +374,7 @@ impl Handle {
         answer.await.map_err(|_| Stopped)
     }
 
-    /// 删会话之前停下（施工 3-8 三补，`docs/blueprint/session/actor.md` 第 9 条）：有回合在进行、正在读回日志、改回文件的
+    /// 删会话之前停下（施工 3-8 三补，`internal/blueprint/session/actor.md` 第 9 条）：有回合在进行、正在读回日志、改回文件的
     /// 删不了，交回内核说的原因，会话照常；删得了的，这个会话在跑的后台命令整组杀掉、不记回报，什么都不再写，放开日志的
     /// 文件，actor 退出。交回的时候日志已经关了：会话表接着就挪它的目录（Windows 上开着的文件挪不走）。
     ///

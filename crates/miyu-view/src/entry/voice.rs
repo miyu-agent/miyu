@@ -1,4 +1,4 @@
-//! 她说出来的一段语音（施工 SD-1，`docs/blueprint/view.md`「条目」的 `voice`）：工具交的 `tool.result.sent` 里写了 `voice` 的那一项，
+//! 她说出来的一段语音（施工 SD-1，`internal/blueprint/view.md`「条目」的 `voice`）：工具交的 `tool.result.sent` 里写了 `voice` 的那一项，
 //! 画在正文里一个播放条。放不放由头照这一轮是谁开的定：`cause` 是自己发的那条请求的编号的，是这个头上说的话，当场放；`by`
 //! 是到点叫醒的（`schedule`）、没有的，是没人开口的一轮，开着这个会话的头都放；别的头上说的只画播放条。
 

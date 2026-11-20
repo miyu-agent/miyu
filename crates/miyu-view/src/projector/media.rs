@@ -1,4 +1,4 @@
-//! 她发出去的图（施工 X-19，`docs/blueprint/view.md`「条目」）：`tool.result.sent` 一张一条 `media`，排在那一步工具后面，和她的
+//! 她发出去的图（施工 X-19，`internal/blueprint/view.md`「条目」）：`tool.result.sent` 一张一条 `media`，排在那一步工具后面，和她的
 //! 正文一样把前面那段时间线收起。语音（施工 SD-1）一段一条 `voice`，带上这一轮是谁开的（[`crate::entry::Voice`]）。
 
 use miyu_kernel::event::{Event, Sent, ToolResult};

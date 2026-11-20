@@ -1,4 +1,4 @@
-//! 流式累积器：模型的输出一段一段地来，拼成完整的内容块（`docs/designs/03-事件模型.md`
+//! 流式累积器：模型的输出一段一段地来，拼成完整的内容块（`internal/designs/03-事件模型.md`
 //! 第五节「增量和累积器怎么写」）。
 //!
 //! 驱动把各家的响应分片解码成几种统一的增量（[`Delta`]），累积器照块收下来。正常说完，
@@ -10,7 +10,7 @@ use std::fmt;
 use crate::block::{Block, HostedTool, Outcome, Private, Reasoning, Text, ToolCall};
 use crate::id::{CallId, Seq};
 
-/// 供应商侧工具的结果最多留多少字节（施工 HT-1，`docs/designs/71-供应商侧工具.md` 第三节第 1 条）：64 KiB。
+/// 供应商侧工具的结果最多留多少字节（施工 HT-1，`internal/designs/71-供应商侧工具.md` 第三节第 1 条）：64 KiB。
 /// 长的留前面：搜到的条目、读到的正文都是前面要紧。
 pub const OUTCOME_BYTES: usize = 64 * 1024;
 

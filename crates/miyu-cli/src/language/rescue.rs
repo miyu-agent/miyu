@@ -1,4 +1,4 @@
-//! `miyu rescue` 给人看的字（施工 RC-1，`docs/blueprint/cli/rescue.md`「给人看的字」）：照设计 47 第三节，报错、警告由
+//! `miyu rescue` 给人看的字（施工 RC-1，`internal/blueprint/cli/rescue.md`「给人看的字」）：照设计 47 第三节，报错、警告由
 //! [`crate::diagnostic`] 加程序名、去句号。别处交来的原话（读配置的原因）里的控制字符换成 `�`：可能混着终端的控制序列。
 
 use miyu_store::human::clean;

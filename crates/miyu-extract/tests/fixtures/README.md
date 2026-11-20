@@ -1,4 +1,4 @@
-知识库的 PDF 测试数据（施工 K-5，`docs/blueprint/knowledge.md`「怎么走」第二条）：
+知识库的 PDF 测试数据（施工 K-5，`internal/blueprint/knowledge.md`「怎么走」第二条）：
 
 - `cat.pdf`：三页，第一页中文、第二页英文、第三页中文带数字。照 `cat-source.html` 用 Chromium 打出来的：
 

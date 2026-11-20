@@ -1,4 +1,4 @@
-//! `jobs`（`docs/blueprint/tools/jobs.md`，施工 7-4）：三个动作的输出逐字节比；读输出照 `read` 分页；停交给端口，没有、结束了
+//! `jobs`（`internal/blueprint/tools/jobs.md`，施工 7-4）：三个动作的输出逐字节比；读输出照 `read` 分页；停交给端口，没有、结束了
 //! 的出错；参数不对的照共用的那一句。给人看的说法两种语言都换得出字。
 
 use std::io::Cursor;

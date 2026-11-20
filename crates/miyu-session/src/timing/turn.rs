@@ -1,4 +1,4 @@
-//! 回合开始的挂接点每一段等了多久（施工 PF-3，`docs/blueprint/session/actor.md`「运行日志」的 `turn start timed`）：CPU 被抢
+//! 回合开始的挂接点每一段等了多久（施工 PF-3，`internal/blueprint/session/actor.md`「运行日志」的 `turn start timed`）：CPU 被抢
 //! 时回合开始 93 毫秒到 5.5 秒（施工 PF-2 第 4 条），日志里分不出慢在哪一跳。`actor/model.rs` 的 `turn_start` 串着冻结配置
 //! → 刷新人格和找技能（并着）→ 压缩线 → 记忆、知识库、扩展、项目指令一起等最慢的那一个，每一段用 [`Lap::run`] 套着量，
 //! 回合开始的输入交给内核之前记一行（[`TurnStart::log`]）。

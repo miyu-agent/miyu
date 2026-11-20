@@ -1,4 +1,4 @@
-//! 技能 `SKILL.md` 的开头（施工 X-10 上，`docs/blueprint/skills.md`「技能」第 1 条）：照公开的 Agent Skills 格式读。第一行是
+//! 技能 `SKILL.md` 的开头（施工 X-10 上，`internal/blueprint/skills.md`「技能」第 1 条）：照公开的 Agent Skills 格式读。第一行是
 //! `---`，到下一个只有 `---` 的行之间是 YAML：
 //!
 //! - `name`：1 到 64 个字，只用小写字母、数字、`-`，不在头尾、不连着两个，和技能的文件夹同名；

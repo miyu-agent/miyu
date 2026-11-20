@@ -1,4 +1,4 @@
-//! 叫停整理，剧本的一次性入口卡住不答（施工 test-once 补，`docs/construction/R-22-叫停整理.md`）：测试核心不起假服务器，
+//! 叫停整理，剧本的一次性入口卡住不答（施工 test-once 补，`internal/construction/R-22-叫停整理.md`）：测试核心不起假服务器，
 //! 整理合并的那一问卡在 `Once::Holds`，`/dream stop` 把它丢掉。
 
 use std::time::Duration;

@@ -1,4 +1,4 @@
-//! 量尺（施工 VQ-1，`docs/construction/VQ-1-向量检索量一次.md`）：照意思检索（`RecallIndex::nearest`，`docs/blueprint/recall.md`
+//! 量尺（施工 VQ-1，`internal/construction/VQ-1-向量检索量一次.md`）：照意思检索（`RecallIndex::nearest`，`internal/blueprint/recall.md`
 //! 第三条第 2 款）在 661、5035、5 万、50 万条时查一次要多久，分开量「从库里读出来」「算」「排」「取字」四段，热的（页缓存里
 //! 有）和冷的（清掉这几个文件的系统页缓存）各 20 次取 p50、p95，再记头一次查时进程常驻内存涨了多少；另量一个对照：向量整块留在
 //! 内存里扫一遍要多久（不是生产的做法，给要不要改一个数）。只断言结果，不断言耗时。

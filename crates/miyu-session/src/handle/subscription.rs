@@ -1,4 +1,4 @@
-//! 订阅一个会话的推送（`docs/blueprint/session/actor.md`「推送和订阅」）：施工 9-6 上从 `handle.rs` 挪出来（那一份到了 500 行）。
+//! 订阅一个会话的推送（`internal/blueprint/session/actor.md`「推送和订阅」）：施工 9-6 上从 `handle.rs` 挪出来（那一份到了 500 行）。
 
 use std::collections::VecDeque;
 use std::sync::Arc;
@@ -25,7 +25,7 @@ pub struct Subscription {
 }
 
 /// 一个看着会话的头：跟着订阅走，放下时往 actor 的收件箱送一声（施工 7-9）。拿的是弱的一头：不因为还有订阅，就不让
-/// 拿着 `Handle` 的都放下以后 actor 退出（`docs/blueprint/session/actor.md` 第 9 条）。
+/// 拿着 `Handle` 的都放下以后 actor 退出（`internal/blueprint/session/actor.md` 第 9 条）。
 #[derive(Debug)]
 pub(super) struct Watching(pub(super) mpsc::WeakUnboundedSender<Message>);
 

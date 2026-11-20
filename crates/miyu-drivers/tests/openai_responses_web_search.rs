@@ -1,4 +1,4 @@
-//! 供应商那边跑的搜索（施工 DSR-4，`docs/blueprint/drivers/openai-responses.md`「怎么走：解码」第 5 条、「怎么走：编码」
+//! 供应商那边跑的搜索（施工 DSR-4，`internal/blueprint/drivers/openai-responses.md`「怎么走：解码」第 5 条、「怎么走：编码」
 //! 第 4 条）：DeepSeek 官方 Responses 接口真的流（样本 `streams/deepseek-web-search.sse`，2026-11-19 录的，只有公开的
 //! 搜索结果）解出来，每一项 `web_search_call` 是一块供应商侧工具：名字、参数原文、结果的字、整项原文的私有数据；思考、正文
 //! 照旧；用量多搜索、抓取的次数。编码回去每一项照原样、照原来的先后写回，留着历史的编码和整份编码一字不差；别家的、超过

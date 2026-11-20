@@ -1,4 +1,4 @@
-//! `send_message`（`docs/blueprint/tools/send_message.md`，施工 7-7、C-5）：给自己派的、还没被停掉的子代理（`to` 写它的
+//! `send_message`（`internal/blueprint/tools/send_message.md`，施工 7-7、C-5）：给自己派的、还没被停掉的子代理（`to` 写它的
 //! 任务编号）留言，给自己的父（`to: parent`），或者给不在这棵树上的别的会话（`to` 写它的会话编号，施工 C-5）。留言作为
 //! 这个会话发来的话送过去，对方落了盘就返回，不等它回答：对方在跑，下一步看到；闲着，开一轮；是没人看着的一次性会话，
 //! 只记下（`cross-session.md` 第三条第 4 款）。

@@ -1,4 +1,4 @@
-//! 压后重建装进快照的字和数（`docs/blueprint/compaction.md` 第八、九条，施工 6-5）：检查点里代码写的几段的模板、
+//! 压后重建装进快照的字和数（`internal/blueprint/compaction.md` 第八、九条，施工 6-5）：检查点里代码写的几段的模板、
 //! 重读的文件那一块的头尾，和重读几个、多大的数。以前造的快照里没有，读成没有：那些会话不写那几段、不重读。
 
 use miyu_assemble::RestoredWrap;

@@ -1,4 +1,4 @@
-//! `goal`（施工 X-8 上，`docs/blueprint/tools/goal.md`）：四个动作交给端口的、结果的句子逐字节比、续轮里的收尾、端口拒的几种、
+//! `goal`（施工 X-8 上，`internal/blueprint/tools/goal.md`）：四个动作交给端口的、结果的句子逐字节比、续轮里的收尾、端口拒的几种、
 //! 参数不对、没有端口、给人看的说法。端口是假的：真的在 `miyu-session` 里测。
 
 use std::num::NonZeroU32;

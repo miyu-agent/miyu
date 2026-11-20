@@ -1,4 +1,4 @@
-//! 搜以前的对话（施工 R-12 下，`docs/blueprint/memory.md`「协议」，`protocol.md` 的 `memory.turns`）：查这一间的回合索引，
+//! 搜以前的对话（施工 R-12 下，`internal/blueprint/memory.md`「协议」，`protocol.md` 的 `memory.turns`）：查这一间的回合索引，
 //! 同她的 `memory_search` 搜以前的对话那一路，只是人看得见所有的会话，不跳过哪一个。
 
 use std::sync::Arc;

@@ -1,4 +1,4 @@
-//! 工作区是会话的属性（施工 9-7 上，`docs/blueprint/protocol.md`「`session.set_workspace`」）：一个头换了，订阅着的另一个头
+//! 工作区是会话的属性（施工 9-7 上，`internal/blueprint/protocol.md`「`session.set_workspace`」）：一个头换了，订阅着的另一个头
 //! 收到 `session.workspace_changed`、会话列表那一项跟着变；订阅的回应带 `workspace`；一样的不记；写错的当场拒绝。
 
 use serde_json::{Value, json};

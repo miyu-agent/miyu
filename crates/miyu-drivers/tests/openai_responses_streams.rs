@@ -1,5 +1,5 @@
-//! OpenAI Responses 接口的解码（`docs/blueprint/drivers/openai-responses.md`「怎么走：解码」，施工 8-13）：流的样本在
-//! `docs/designs/samples/drivers/openai-responses/streams/`，`.sse` 是进去的字节（照官方文档手写），`.txt` 是解出来的，一行
+//! OpenAI Responses 接口的解码（`internal/blueprint/drivers/openai-responses.md`「怎么走：解码」，施工 8-13）：流的样本在
+//! `internal/designs/samples/drivers/openai-responses/streams/`，`.sse` 是进去的字节（照官方文档手写），`.txt` 是解出来的，一行
 //! 一条，逐字节比对。还查：从哪里切开喂都一样；内核的累积器一条都不拒；解出来的编码回去，`call_id`、加密内容原样；驱动的
 //! 接口走一遍；`finished()` 在收尾事件以后才说是。
 

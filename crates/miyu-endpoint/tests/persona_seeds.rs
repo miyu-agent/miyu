@@ -1,4 +1,4 @@
-//! 人格头像的候选主色（施工 P-6 补，`docs/blueprint/personas.md`「主题色、背景图」第 4 条）：真核心走一遍。`persona.list`、
+//! 人格头像的候选主色（施工 P-6 补，`internal/blueprint/personas.md`「主题色、背景图」第 4 条）：真核心走一遍。`persona.list`、
 //! `persona.get`、`persona.set` 的回应带 `seeds`，照 `miyu-seeds` 从头像挑，和两个头经门面算的一样；没有头像、解不开的是
 //! `null`；换了头像跟着换。
 

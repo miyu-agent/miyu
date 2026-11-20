@@ -1,4 +1,4 @@
-//! `session.quota`（施工 QU-1，`docs/blueprint/protocol.md`「`session.quota`」）：这个会话接下来请求的那一家的额度，几个窗口
+//! `session.quota`（施工 QU-1，`internal/blueprint/protocol.md`「`session.quota`」）：这个会话接下来请求的那一家的额度，几个窗口
 //! 各用了百分之几、什么时候重置（`windows`，opencode Go），或者账户余额（`balance`，施工 QU-2，DeepSeek 官方）。只有档案写了
 //! 查额度接口的供应商有，两格各是各的，没查到的那一格不带；别的、轮换的池、查不到的回 `{}`。
 //!

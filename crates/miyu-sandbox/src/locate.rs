@@ -1,4 +1,4 @@
-//! 找助手（`docs/blueprint/sandbox.md`「怎么走」第 1 条）：主程序真实位置旁边的 `miyu-sandbox`。
+//! 找助手（`internal/blueprint/sandbox.md`「怎么走」第 1 条）：主程序真实位置旁边的 `miyu-sandbox`。
 
 use std::path::{Path, PathBuf};
 

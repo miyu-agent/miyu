@@ -1,4 +1,4 @@
-//! `miyu rescue`（施工 RC-1，`docs/blueprint/cli/rescue.md`）：不经过核心，照 Miyu 的对话模型填好 `LITEMIYU_RESCUE_*`，拉起
+//! `miyu rescue`（施工 RC-1，`internal/blueprint/cli/rescue.md`）：不经过核心，照 Miyu 的对话模型填好 `LITEMIYU_RESCUE_*`，拉起
 //! `litemiyu --rescue`，其余参数原样交过去、退出码照它的；本来设了的变量不覆盖；配置读不了的一样都不填、照常拉起；找不到的
 //! 说怎么装、退出码 1。新命令：改之前 `rescue` 是不认识的命令（退出码 2），这些测试本身就是红的证明。
 //!

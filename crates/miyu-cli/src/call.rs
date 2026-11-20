@@ -1,4 +1,4 @@
-//! `miyu call`（施工 M-3，设计 `39-脚本调工具.md` 第六节，`docs/blueprint/cli/main.md`「miyu call」）：在 Miyu 跑的命令里调
+//! `miyu call`（施工 M-3，设计 `39-脚本调工具.md` 第六节，`internal/blueprint/cli/main.md`「miyu call」）：在 Miyu 跑的命令里调
 //! 这个会话的工具。连上环境变量 `MIYU_CALL_SOCK` 说的端点（Unix 套接字、Windows 命名管道），带上 `MIYU_CALL_TOKEN` 发一个请求，照答回来的印、退出。
 //!
 //! 不读清单、不连核心的协议、不读本机令牌：没有这两个变量的、连不上的一律退出码 2，不退回去经协议调（MC11：会话里跑在沙盒

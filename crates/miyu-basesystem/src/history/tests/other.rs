@@ -1,4 +1,4 @@
-//! 读别的会话（施工 C-4，`docs/blueprint/tools/history.md`「怎么走」第二条，`cross-session.md` 第二条）：`session` 参数认出来
+//! 读别的会话（施工 C-4，`internal/blueprint/tools/history.md`「怎么走」第二条，`cross-session.md` 第二条）：`session` 参数认出来
 //! 的是另一个会话，读的是它的日志，不是这次调用自己的；认成她自己的照没写，不开任何别的日志；找不到、对得上不止一个、
 //! 这个会话不能读别的会话（没有列会话的端口）各一句拒绝，一条日志都不读；时刻照这个会话自己的时区。
 

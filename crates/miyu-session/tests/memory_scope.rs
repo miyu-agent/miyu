@@ -1,4 +1,4 @@
-//! 记忆的范围（施工 R-3 下，`docs/blueprint/memory.md`「范围」）：真会话、真记忆日志、真回合库，数据根在临时目录。`off` 的
+//! 记忆的范围（施工 R-3 下，`internal/blueprint/memory.md`「范围」）：真会话、真记忆日志、真回合库，数据根在临时目录。`off` 的
 //! 工具面上没有三件、说过的不进回合库，载入以后照旧；子会话的快照写 `off`。「只在这个会话里」施工 FH-1 去掉了。
 
 use miyu_kernel::event::Body;

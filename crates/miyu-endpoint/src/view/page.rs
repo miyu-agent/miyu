@@ -1,4 +1,4 @@
-//! 怎么切一页（施工 9-6 下，`docs/blueprint/protocol.md`「`view.page`」）：纯函数，读日志、写回应在 `view.rs`。
+//! 怎么切一页（施工 9-6 下，`internal/blueprint/protocol.md`「`view.page`」）：纯函数，读日志、写回应在 `view.rs`。
 //!
 //! - 页的边界落在回合之间：从 `before` 往前数 `turn.started`，每一轮从它的 `turn.started` 起，到下一轮的 `turn.started` 之前；
 //!   不在回合里的事件跟着它们所在的位置走。数到第一轮的，连前面的（`session.created` 这些）一起给，`more` 是假。

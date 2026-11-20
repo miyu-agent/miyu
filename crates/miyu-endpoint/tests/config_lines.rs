@@ -1,4 +1,4 @@
-//! 更多描述能分行（施工 P-9 三补，`docs/blueprint/config.md` 的几行字 `lines`）：`config.set` 写带换行的值存得进、读回来一样；
+//! 更多描述能分行（施工 P-9 三补，`internal/blueprint/config.md` 的几行字 `lines`）：`config.set` 写带换行的值存得进、读回来一样；
 //! 一行的文字照旧不收换行。
 
 use serde_json::{Value, json};

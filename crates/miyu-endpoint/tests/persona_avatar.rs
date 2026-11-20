@@ -1,4 +1,4 @@
-//! 人格的头像、预设的图标（施工 P-5，`docs/blueprint/personas.md`「头像」、`presets.md`「图标」）：真核心走一遍。头像先
+//! 人格的头像、预设的图标（施工 P-5，`internal/blueprint/personas.md`「头像」、`presets.md`「图标」）：真核心走一遍。头像先
 //! `blob.put` 传上来，`persona.set` 交它的哈希，写进家目录那一层；`persona.avatar` 读回来；删了回到下面那一层的。
 
 use base64::Engine;

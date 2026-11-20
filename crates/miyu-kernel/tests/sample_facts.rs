@@ -1,4 +1,4 @@
-//! 样本会话里该注入的事实（`docs/designs/08-上下文投影.md` 第五节「环境和状态的事实怎么写」）：
+//! 样本会话里该注入的事实（`internal/designs/08-上下文投影.md` 第五节「环境和状态的事实怎么写」）：
 //! 用出厂的两个模板，照样本会话当时的环境和权限，算出每个边界上内核该注入的几块。
 //!
 //! - 42 号回合开始时：两块都要注入，就是样本里的 43、44 号；
@@ -34,7 +34,8 @@ fn templates() -> FactTemplates {
 
 /// 样本会话的全部事件，照序号排好。一份样本可以有几行。
 fn events() -> Vec<Event> {
-    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/designs/samples/events");
+    let dir =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../internal/designs/samples/events");
     let entries =
         fs::read_dir(&dir).unwrap_or_else(|e| panic!("读不了样本目录 {}：{e}", dir.display()));
     let mut events = Vec::new();

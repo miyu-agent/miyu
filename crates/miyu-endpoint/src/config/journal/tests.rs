@@ -1,4 +1,4 @@
-//! 日志里的一条和样本（`docs/designs/samples/journal/`）一字不差：`body` 的格照图纸的先后；之前没写的不带
+//! 日志里的一条和样本（`internal/designs/samples/journal/`）一字不差：`body` 的格照图纸的先后；之前没写的不带
 //! `old`，删掉的不带 `new`；写不进去的不往上报。
 
 use std::path::{Path, PathBuf};
@@ -12,7 +12,7 @@ use super::*;
 /// 仓库里的样本。
 fn sample(name: &str) -> String {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/journal")
+        .join("../../internal/designs/samples/journal")
         .join(name);
     std::fs::read_to_string(&path).unwrap_or_else(|error| panic!("{}：{error}", path.display()))
 }

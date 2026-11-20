@@ -1,4 +1,4 @@
-//! 只有路径的附件（施工 AT-1，`docs/blueprint/protocol.md`「`session.send`」第 5 条）：超过上传上限的文件，头不 `blob.put`，
+//! 只有路径的附件（施工 AT-1，`internal/blueprint/protocol.md`「`session.send`」第 5 条）：超过上传上限的文件，头不 `blob.put`，
 //! 只把它在核心那台机器上的路径交上来：`{"path", "name", "size"?}`，没有 `blob`。核心不读它、不查它在不在，只查写法，
 //! 记成一块 `path`（[`PathOnly`]）；她要看，照路径用工具去读，读的时候照权限策略判。
 //!

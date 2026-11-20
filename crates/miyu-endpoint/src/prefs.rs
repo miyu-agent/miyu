@@ -1,4 +1,4 @@
-//! 头自己的设置（施工 HP-1，`docs/blueprint/protocol.md`「头自己的设置」）：`prefs.get`、`prefs.set`，和 `prefs` 流的订阅要的那一份。
+//! 头自己的设置（施工 HP-1，`internal/blueprint/protocol.md`「头自己的设置」）：`prefs.get`、`prefs.set`，和 `prefs` 流的订阅要的那一份。
 //!
 //! 网页原来把皮肤、配色、主题这些存在浏览器里，浏览器照地址分，换个地址、换台设备就是另一份；存进数据根，跟着人走。只有装着的
 //! 界面包有（第 1 条），文件是它状态目录里的 `prefs.json`（`miyu_store::prefs`）。改、写、推在 [`Prefs`] 的一把锁里排着做，推的

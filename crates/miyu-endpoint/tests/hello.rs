@@ -1,4 +1,4 @@
-//! 握手回应里的 `host`，`fs.realpath`（施工 W-3，`docs/blueprint/web-module.md`「四、路径」、`protocol.md`
+//! 握手回应里的 `host`，`fs.realpath`（施工 W-3，`internal/blueprint/web-module.md`「四、路径」、`protocol.md`
 //! 「握手」「`fs.realpath`」）：`host` 三格总有，`workspace` 是真实的位置；握手不造工作区（工作区
 //! 核心起来时就建好了，`core.md`），没建过的就照原样交回。`fs.realpath` 往上找最近在的一层换成真实的位置，
 //! 相对的要配 `cwd`，不查边界。

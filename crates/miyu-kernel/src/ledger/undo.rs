@@ -1,4 +1,4 @@
-//! 账本里撤销、恢复的几条（`docs/blueprint/kernel/history.md`「账本查的规矩」「账本记下的变化」）：撤的是哪几轮，
+//! 账本里撤销、恢复的几条（`internal/blueprint/kernel/history.md`「账本查的规矩」「账本记下的变化」）：撤的是哪几轮，
 //! 能不能恢复；撤掉的压缩跟着这一次撤销记着，恢复时一起回来（施工 6-9）。
 
 use super::{Compaction, Ledger};

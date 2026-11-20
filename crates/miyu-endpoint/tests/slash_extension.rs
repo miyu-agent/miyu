@@ -1,4 +1,4 @@
-//! 扩展声明的斜杠命令（施工 X-14 下，`docs/blueprint/slash.md`「扩展的命令」）：真核心拉起测试用的扩展，清单 `[[slash]]` 声明
+//! 扩展声明的斜杠命令（施工 X-14 下，`internal/blueprint/slash.md`「扩展的命令」）：真核心拉起测试用的扩展，清单 `[[slash]]` 声明
 //! 了 `/weather`。人敲了核心反向调用它的 `command.call`，它答的一段话（可以多行）原样当回执，记一条 `command.ran`；它答错的
 //! `command_failed`、`data.why` 是原话，没连上的 `command_unavailable`。菜单、预设页列出来；自己放的同名模板盖住它；在后台答。
 

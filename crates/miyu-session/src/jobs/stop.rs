@@ -1,4 +1,4 @@
-//! 停掉一个任务（施工 7-4，`docs/blueprint/session/tools.md`「查和停」，`agents.md` 第五条）：她用 `jobs` 停、人用 `job.stop`
+//! 停掉一个任务（施工 7-4，`internal/blueprint/session/tools.md`「查和停」，`agents.md` 第五条）：她用 `jobs` 停、人用 `job.stop`
 //! 停、父会话被停下时连它派的一起停，都走这里；撤销停掉那几轮派出去的也走这里，回报记 `undone`（施工 7-8）。
 //!
 //! - 后台命令：还在表里、还没人报过结束的，拿着表的锁记成报了（之后它自己退出了也不再报：只认先到的那一个），整组杀掉，

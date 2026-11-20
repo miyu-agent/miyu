@@ -1,4 +1,4 @@
-//! 会话状态里的会话树（施工 9-8 补下，`docs/blueprint/view.md`「会话状态」）：派出去的子代理在跑一轮时，那一项带 `busy`、
+//! 会话状态里的会话树（施工 9-8 补下，`internal/blueprint/view.md`「会话状态」）：派出去的子代理在跑一轮时，那一项带 `busy`、
 //! `spawned`、`running_deep`、`usage`；整份带 `running_deep`、连子代理一起的 `usage_tree`。子会话动了（一轮开始）父会话的
 //! 视图流跟着推。
 

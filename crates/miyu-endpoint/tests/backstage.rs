@@ -1,4 +1,4 @@
-//! 软件后台（施工 F-6 中，`docs/blueprint/package-pages.md`「`package.file`」「`package.methods`、`package.call`、`method.call`」）：
+//! 软件后台（施工 F-6 中，`internal/blueprint/package-pages.md`「`package.file`」「`package.methods`、`package.call`、`method.call`」）：
 //! 真核心走一遍。后台页的文件放在测试自己装的扩展的包目录里；方法由测试用的扩展登记、答。
 
 use std::sync::Arc;

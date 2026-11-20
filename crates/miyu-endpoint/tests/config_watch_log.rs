@@ -1,4 +1,4 @@
-//! 监视记的运行日志（施工 8-4，`docs/blueprint/config.md`「出错」）：手改被看到的记 `INFO config changed`（`via=file`，
+//! 监视记的运行日志（施工 8-4，`internal/blueprint/config.md`「出错」）：手改被看到的记 `INFO config changed`（`via=file`，
 //! 只有键名）；监视起不来记 `WARN config watch unavailable`，退回轮询，照旧看得到手改（Linux 上让配置所在的目录列不了，
 //! inotify 拒绝）。
 //!

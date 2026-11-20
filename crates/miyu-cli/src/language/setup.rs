@@ -1,4 +1,4 @@
-//! `miyu setup` 给人看的字（施工 8-11，`docs/blueprint/cli/setup.md`「给人看的字」；CL-2 下照设计 47 第三节改：进度、结果行
+//! `miyu setup` 给人看的字（施工 8-11，`internal/blueprint/cli/setup.md`「给人看的字」；CL-2 下照设计 47 第三节改：进度、结果行
 //! 不带「·」和句号，报错交 [`Problem`]，建议另起一行。选模型的那几句等改选模型的那一步一起改）。key 从不出现在这里的任何
 //! 一句里。「未选择」「未收到密钥」「已保存」和贴 key 那一句照 `miyu provider login` 的（`language/login.rs`）。
 

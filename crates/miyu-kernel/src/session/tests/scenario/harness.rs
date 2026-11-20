@@ -1,4 +1,4 @@
-//! 别的 harness 发来的话（施工 7-10，`docs/blueprint/kernel/session.md`「别的 harness 发来的话」，`agents.md` 第十一条第 4
+//! 别的 harness 发来的话（施工 7-10，`internal/blueprint/kernel/session.md`「别的 harness 发来的话」，`agents.md` 第十一条第 4
 //! 条）：它是别处来的，照子代理的留言走。闲着时开一轮、`trigger`、`cause` 是它；正忙时下一步听到，最后一步里到的回合结束时
 //! 接着开；不带回合编号；打断两种都不撤回、不接着开；不作废在等人回答的题；没人看着的一次性会话只记下；还能恢复撤销时记在
 //! 一边、载入以后恢复了接着开；撤掉它开的那一轮它留着，那一轮重做不了；发到子会话里不欠父会话回报。

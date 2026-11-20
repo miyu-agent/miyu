@@ -1,4 +1,4 @@
-//! 内置模型接到核心上（施工 R-5 下；R-5 三补改成照包，`docs/blueprint/recall.md` 第四条第 1 款，设计 `30-插件框架.md` 第六节）：
+//! 内置模型接到核心上（施工 R-5 下；R-5 三补改成照包，`internal/blueprint/recall.md` 第四条第 1 款，设计 `30-插件框架.md` 第六节）：
 //! 人格记忆装着、它推荐的小程序包 `embed` 也装着（读成了、种类是小程序），就照它拼 `Embedder` 要的：程序照小程序清单的
 //! `program` 在主程序真实位置的旁边找，模型清单是包目录里的 `model.toml`，模型的文件在包目录里。没装的本机那一路没有，记一行
 //! `INFO embedder unavailable reason=no embed package`（出厂不装，这是常态）；程序不在、模型清单读不了的由 `Embedder` 造的

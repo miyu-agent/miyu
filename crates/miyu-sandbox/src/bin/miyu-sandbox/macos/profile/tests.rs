@@ -4,10 +4,10 @@ use miyu_sandbox::Spec;
 
 use super::*;
 
-/// `docs/designs/samples/sandbox/` 下的一份样本：门禁拿它和蓝图 `sandbox/macos.md` 里的那一块逐字节比。
+/// `internal/designs/samples/sandbox/` 下的一份样本：门禁拿它和蓝图 `sandbox/macos.md` 里的那一块逐字节比。
 fn sample(name: &str) -> String {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/sandbox")
+        .join("../../internal/designs/samples/sandbox")
         .join(name);
     std::fs::read_to_string(path).expect("读得出")
 }

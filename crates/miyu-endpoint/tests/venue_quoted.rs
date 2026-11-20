@@ -1,4 +1,4 @@
-//! 场所消息带被引用的那一条的内容（施工 QT-1，`docs/construction/QT-1-场所消息带引用的内容.md`）：`venue.quoted` 和转发里的一条
+//! 场所消息带被引用的那一条的内容（施工 QT-1，`internal/construction/QT-1-场所消息带引用的内容.md`）：`venue.quoted` 和转发里的一条
 //! 同一个形状，原样记进 `message.user`；写法不对的、没写 `reply_to` 的、里面的转发套到第 9 层的 `bad_params`，什么都不记；条数、
 //! 字节数同 `forwards` 不另设上限（施工 O-34 补）。
 

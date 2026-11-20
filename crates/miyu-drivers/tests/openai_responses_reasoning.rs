@@ -1,4 +1,4 @@
-//! Responses 的思考（`docs/blueprint/drivers/openai-responses.md`「编码」第 4 条、「思考强度」，施工 8-13）：加密的思考回传、
+//! Responses 的思考（`internal/blueprint/drivers/openai-responses.md`「编码」第 4 条、「思考强度」，施工 8-13）：加密的思考回传、
 //! 空摘要写 `[]`、别家的和没有加密内容的不写、和正文、调用的先后；思考强度两种写法接在最后，没写的、`on` 一个字节不加。
 
 use std::collections::BTreeMap;

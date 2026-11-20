@@ -1,4 +1,4 @@
-//! `miyu undo`（`miyu rewind`）、`miyu restore`（`docs/designs/22-命令行.md` 第三节，施工 4-7 下，改名施工 4-7 补）：连上核心（没在跑就拉起来：撤销、恢复
+//! `miyu undo`（`miyu rewind`）、`miyu restore`（`internal/designs/22-命令行.md` 第三节，施工 4-7 下，改名施工 4-7 补）：连上核心（没在跑就拉起来：撤销、恢复
 //! 用不着模型），找当前会话（和 `miyu ask --continue` 一样，最新的那个一次性会话；`--session` 指定别的），撤掉最后
 //! 一轮或者恢复最近一次撤销，照核心交回的几样印出改回了哪些文件（`undo/print.rs`）。
 //!

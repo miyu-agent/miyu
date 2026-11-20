@@ -1,4 +1,4 @@
-//! 认时代（施工 X-1，`docs/blueprint/mcp.md`「怎么走」第一条）：先探 `server/discover`，答不上的退回 `initialize` 握手；顺手记下
+//! 认时代（施工 X-1，`internal/blueprint/mcp.md`「怎么走」第一条）：先探 `server/discover`，答不上的退回 `initialize` 握手；顺手记下
 //! 服务的说明、声明了哪些本事、哪几种「变了」要订（施工 PT-1 下）。
 
 use serde_json::{Value, json};

@@ -1,4 +1,4 @@
-//! 解码（`docs/blueprint/drivers/anthropic.md`「怎么走：解码」）：SSE 流解成内核的四种增量，说完时交出收块的增量、用量和
+//! 解码（`internal/blueprint/drivers/anthropic.md`「怎么走：解码」）：SSE 流解成内核的四种增量，说完时交出收块的增量、用量和
 //! 出错。
 //!
 //! 一条事件照名字（`event`），没有名字的照 `data` 里的 `type`。块照第一次出现的先后编号，从 0 数起，不认的块不占编号，它

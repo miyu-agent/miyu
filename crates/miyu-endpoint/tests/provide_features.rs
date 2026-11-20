@@ -1,4 +1,4 @@
-//! 扩展登记的工具要归功能（施工 T-2，设计 `30-插件框架.md` 第十二节，`docs/blueprint/providers.md`「怎么走」第 3 条）：清单写了
+//! 扩展登记的工具要归功能（施工 T-2，设计 `30-插件框架.md` 第十二节，`internal/blueprint/providers.md`「怎么走」第 3 条）：清单写了
 //! 几个功能的，登记了哪个功能都没列的工具，整个不收，`bad_tool`（`problem` 是 `feature`）；只登记列了的照收。写了空的
 //! `[features]` 的一件都不收。只写了一个功能的（接入QQ 那样不列工具的）都归它；没写 `[features]` 的整个包算一个功能，照旧
 //! （`provide.rs`）。归法同预设认工具归哪个功能（`Features::of_tool`）。

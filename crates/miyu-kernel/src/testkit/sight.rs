@@ -1,4 +1,4 @@
-//! 替身替它看图（施工 8-17，`docs/blueprint/kernel/session.md`「替它看图」）：内核交出来的转述请求记下来，照剧本回。转述和
+//! 替身替它看图（施工 8-17，`internal/blueprint/kernel/session.md`「替它看图」）：内核交出来的转述请求记下来，照剧本回。转述和
 //! 主请求分开记、分开排剧本：不占主请求的剧本，也不算在 [`Stage::requests`] 里。没排剧本就来转述是测试写错了，当场 panic。
 
 use std::collections::VecDeque;

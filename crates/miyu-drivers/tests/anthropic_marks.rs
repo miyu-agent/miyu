@@ -1,4 +1,4 @@
-//! Anthropic 的缓存打点（`docs/blueprint/drivers/anthropic.md`「缓存打点」，施工 8-12）：四处各在哪，第一次请求、system 空、
+//! Anthropic 的缓存打点（`internal/blueprint/drivers/anthropic.md`「缓存打点」，施工 8-12）：四处各在哪，第一次请求、system 空、
 //! `stable` 是 0 的，思考块不打、往前找，同一块只打一次、最多 4 处；`unmarked` 去掉以后，一段随机的会话每次请求都是上一次的
 //! 前缀延伸。
 

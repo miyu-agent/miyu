@@ -1,4 +1,4 @@
-//! 会话的附件目录（施工 3-9 六补，`docs/blueprint/fs.md` 第一节第 2 行）：落成文件的附件放在会话目录的 `attachments/` 里，
+//! 会话的附件目录（施工 3-9 六补，`internal/blueprint/fs.md` 第一节第 2 行）：落成文件的附件放在会话目录的 `attachments/` 里，
 //! 这个会话读得到、写不了；别的会话的附件目录照数据根，读得到、写不进（施工 RO-2）。
 
 use std::path::Path;

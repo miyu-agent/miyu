@@ -1,4 +1,4 @@
-//! `skill.list`（施工 X-26，`docs/blueprint/skills.md`「技能」）：三种来处各列一个（你自己放的、出厂的包带的、装的包带的），
+//! `skill.list`（施工 X-26，`internal/blueprint/skills.md`「技能」）：三种来处各列一个（你自己放的、出厂的包带的、装的包带的），
 //! 同名的只列核心实际用的那一份；给人看的名字、说明照连接的语言挑，没写的不带；路径在家目录下的写成 `~/…`。
 
 use serde_json::{Value, json};

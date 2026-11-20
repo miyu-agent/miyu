@@ -1,4 +1,4 @@
-//! `schedule.*` 和 `schedules` 流（施工 J-1 下，`docs/blueprint/schedules.md` 第五节）：建、列、停、续、删，一项的写法；写错的
+//! `schedule.*` 和 `schedules` 流（施工 J-1 下，`internal/blueprint/schedules.md` 第五节）：建、列、停、续、删，一项的写法；写错的
 //! 照哪一样拒（`data.problem`），别人的编号、没有的编号 `unknown_schedule`；每次新开的照这时的默认定下人格、预设、工作目录；
 //! 订阅的回应是整张表，之后另一个连接改了的、到点交过的推 `schedules.changed`（整项，删了的 `removed`）。
 

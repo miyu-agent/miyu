@@ -1,4 +1,4 @@
-//! 事实的模板装进快照（`docs/blueprint/policy.md`「`CoreTexts`」）：`resources/core/facts/` 下的几份原文。会话编号那一份
+//! 事实的模板装进快照（`internal/blueprint/policy.md`「`CoreTexts`」）：`resources/core/facts/` 下的几份原文。会话编号那一份
 //! （施工 1-13 再补）、切了级别以后的权限那一份（施工 2-7 补）以前造的快照里没有，读成没有、不写。施工 2-7 补从
 //! `snapshot.rs` 挪出来（行数门禁）。
 

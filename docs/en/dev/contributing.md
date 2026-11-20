@@ -10,9 +10,9 @@ This page is for developers who want to propose a change to the core or to a hea
 
 | Directory | What it holds | When to look |
 |---|---|---|
-| `docs/blueprint/` | Blueprints: what Miyu looks like now, one page per part, including formats, every cell of the UI, the text shown to the model, and which code it lives in and which tests guard it | Before changing a part, read its page first |
-| `docs/designs/` | Design documents: what was decided, why, and what was not chosen; read them by number, starting with `00-设计理念.md` | When you want to know why something is done a certain way, or want to change a settled approach |
-| `docs/construction/` | Work orders: how one change is made, which blueprint sections it changes, and how it is accepted; `README.md` is the master table and the work order format | When you want to see which step added a feature and how it was verified at the time |
+| `internal/blueprint/` | Blueprints: what Miyu looks like now, one page per part, including formats, every cell of the UI, the text shown to the model, and which code it lives in and which tests guard it | Before changing a part, read its page first |
+| `internal/designs/` | Design documents: what was decided, why, and what was not chosen; read them by number, starting with `00-设计理念.md` | When you want to know why something is done a certain way, or want to change a settled approach |
+| `internal/construction/` | Work orders: how one change is made, which blueprint sections it changes, and how it is accepted; `README.md` is the master table and the work order format | When you want to see which step added a feature and how it was verified at the time |
 | `docs/reference/`, `docs/authors/` | The protocol reference and the author guides, in Chinese and English, with the Chinese authoritative | When you changed the protocol or how packages are written |
 
 Development follows the order "blueprint → work order → code": when the design changes, change the blueprint page first, then the code; when merged, the code and the blueprint must match.
@@ -161,14 +161,14 @@ Local acceptance and the three-platform CI both run this same command. It runs t
 | clippy | `cargo clippy --workspace --all-targets -- -D warnings`; the workspace forbids `unwrap` (allowed in tests), forbids swallowing errors with `let _ =` and `.ok()`, and forbids `unsafe` | Fix what it reports; if you really need to discard a result, write `#[expect(..., reason = "...")]` |
 | clippy (core without optional packages) | `cargo clippy -p miyu-core --no-default-features -- -D warnings`: the core must also build with `mermaid` and `net` turned off; CI runs this item on Linux only, but you must still run it locally | Put code used only by an optional package behind the matching `cfg(feature)` |
 | Docs | `cargo doc --workspace --no-deps --document-private-items`, with warnings treated as errors; it also runs the seven checks below | Fix broken doc links and malformed syntax |
-| Docs: ledger | Every file under `resources/` that the model sees is registered in the ledger in `docs/designs/26-提示词.md`, and its fingerprint (the first 8 hex digits of the SHA-256 of the file's bytes) matches | For a new or changed file, add a row to the ledger or change its row: file, where it goes, when it was added, tokens, why it was added, fingerprint |
-| Docs: prompts page | `docs/blueprint/prompts.md` agrees with the ledger and the resources | Run `cargo xtask prompts` to regenerate it |
+| Docs: ledger | Every file under `resources/` that the model sees is registered in the ledger in `internal/designs/26-提示词.md`, and its fingerprint (the first 8 hex digits of the SHA-256 of the file's bytes) matches | For a new or changed file, add a row to the ledger or change its row: file, where it goes, when it was added, tokens, why it was added, fingerprint |
+| Docs: prompts page | `internal/blueprint/prompts.md` agrees with the ledger and the resources | Run `cargo xtask prompts` to regenerate it |
 | Docs: sample blocks | A code block in a blueprint marked `样本` ("sample") is identical, character for character, to the file it points to | Change both sides together |
 | Docs: `heads.toml` | Exactly two tables, `tui` and `webui`, each with only `repo` and `rev`; the repository is under `miyu-agent`; `rev` is a full commit id or a tag starting with `v` | Write it that way |
 | Docs: protocol reference | Every method the code dispatches has an entry in both the Chinese and the English reference; every method written as a heading in the reference exists in the code; every `#anchor` in `docs/reference/` finds a matching heading | Add the reference entry, in both languages |
 | Docs: what extensions can call | Every method the code dispatches is listed in the table in `crates/miyu-endpoint/src/connection/rights.rs`, stating whether extensions may call it | Add a row to the table |
 | Docs: the frozen method list | `docs/reference/methods-v1.txt` matches the code: it reports methods that are in the snapshot but gone from the code (deleted or renamed), and it also reports methods newly added to the code | For a new method, run `cargo xtask methods` to register it; an existing method cannot be deleted or renamed |
-| Layers | Every crate is registered in the code layering table in `docs/designs/01-架构.md`, and depends only on its own layer or a lower one; the external dependencies of the two pure-logic layers must come from an allowlist | Register a new crate in the table; move the dependency to the right layer |
+| Layers | Every crate is registered in the code layering table in `internal/designs/01-架构.md`, and depends only on its own layer or a lower one; the external dependencies of the two pure-logic layers must come from an allowlist | Register a new crate in the table; move the dependency to the right layer |
 | Pure logic | The `src/` of the kernel and module layers has no files, network, subprocesses, environment variables, threads, clocks or standard I/O, and uses no `HashMap` or `HashSet` | Move the I/O to the executor layer; use `BTreeMap` and `BTreeSet` instead |
 | Line count | No `.rs` file is over 500 lines, test files included | Split the file |
 | Logs | The runtime log does not write conversation text, tool arguments and results, or paths: field names may not be a path or body text, values may not contain `.display()` or `format!(`, and messages may not interpolate | Write only ids, lengths and categories; running `cargo xtask logs` on its own is faster |
@@ -183,7 +183,7 @@ Local acceptance and the three-platform CI both run this same command. It runs t
 | `cargo xtask dev-home <dir>` | Creates a development data root with a config (see step 2 of "Build and run" above) |
 | `cargo xtask logs` | Runs only the "Logs" item of the gate |
 | `cargo xtask methods` | Registers protocol methods newly added in the code into `docs/reference/methods-v1.txt`, only adding and never deleting |
-| `cargo xtask prompts` | Regenerates `docs/blueprint/prompts.md` from the ledger and the resources |
+| `cargo xtask prompts` | Regenerates `internal/blueprint/prompts.md` from the ledger and the resources |
 | `cargo xtask notices` | Regenerates `THIRD-PARTY-LICENSES.txt` |
 | `cargo xtask perf [measuring tool args]` | Builds the release `miyu`, `miyu-sandbox` and the measuring tool `miyu-perf`, and measures startup, memory, requests on a long session and binary size, writing the result into `target/perf-out/`; the remaining arguments go to the measuring tool unchanged, for example `--runs 3`. Memory can only be measured on Linux; on macOS and Windows those cells in the table say `not measured` |
 | `cargo xtask dist [--target <os>] [--out <dir>]` | Builds the command-line archive for the system you are on: takes the terminal and web UI according to `heads.toml`, builds the release `miyu`, `miyu-sandbox`, `miyu-extract`, `miyu-tui` and `miyu-web`, and packs them as `miyu-<version>-<os>.tar.gz` (`.zip` on Windows), placed under `dist/` in the target directory by default; `--target` can only name the system you are on |
@@ -201,7 +201,7 @@ Tests follow these rules:
 - Tests of the measuring-tool kind are marked `#[ignore]`, and they assert on results, not on timing.
 - Test toward the bad cases: edge cases, odd combinations, breaking it on purpose.
 
-The core's CI (`.github/workflows/ci.yml`) runs `cargo xtask check` once on each of `ubuntu-24.04`, `macos-latest` and `windows-latest`; it also runs the long runs on Linux (random `#[ignore]` tests whose names end in `for_longer`) and the measuring tool, and going over the budget in the measuring tool also counts as a failure. CI runs on pushes to `main` and to branches starting with `step/`, and on PRs to `main`, including PRs from forks; it does not run when the change touches only `docs/construction/`, `docs/authors/` or `docs/designs/` (except `01-架构.md`, `23-性能预算.md` and `26-提示词.md`). For changes that touch paths, the file system, subprocesses or the terminal, merge only after all three platforms pass.
+The core's CI (`.github/workflows/ci.yml`) runs `cargo xtask check` once on each of `ubuntu-24.04`, `macos-latest` and `windows-latest`; it also runs the long runs on Linux (random `#[ignore]` tests whose names end in `for_longer`) and the measuring tool, and going over the budget in the measuring tool also counts as a failure. CI runs on pushes to `main` and to branches starting with `step/`, and on PRs to `main`, including PRs from forks; it does not run when the change touches only `internal/construction/`, `docs/authors/` or `internal/designs/` (except `01-架构.md`, `23-性能预算.md` and `26-提示词.md`). For changes that touch paths, the file system, subprocesses or the terminal, merge only after all three platforms pass.
 
 ## Code rules
 

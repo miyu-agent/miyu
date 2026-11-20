@@ -1,4 +1,4 @@
-//! `human.get`（给人看的字，施工 W-1，`docs/blueprint/web-module.md`「二、给人看的字」）：工具的样子、说法的模板，
+//! `human.get`（给人看的字，施工 W-1，`internal/blueprint/web-module.md`「二、给人看的字」）：工具的样子、说法的模板，
 //! 核心经协议交出去，终端、网页都不用再自己去资源目录里读。
 //!
 //! 每次现读资源目录（`web-module.md`「起草时定的」第 32 条）：一个连接只要一次，读几份 JSON 很快；开发时改了资源，

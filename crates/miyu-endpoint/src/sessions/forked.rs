@@ -1,4 +1,4 @@
-//! 会话表造 fork 子代理（施工 A-F 中，`docs/blueprint/agents.md`「fork 子代理」）：照父会话落了盘的日志，从派它的那次调用那一步
+//! 会话表造 fork 子代理（施工 A-F 中，`internal/blueprint/agents.md`「fork 子代理」）：照父会话落了盘的日志，从派它的那次调用那一步
 //! 分叉（`miyu_session::fork` 的 `within`），头几条落了盘再载入它。同造子会话：父会话已经不在表里的不再造，拿着表的锁写第
 //! 一条，删父会话的一头照样认得出它。
 

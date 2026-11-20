@@ -1,4 +1,4 @@
-//! 提问的事件（`docs/designs/03-事件模型.md` 第三节「提问的事件怎么写」）：一个在跑的调用请人
+//! 提问的事件（`internal/designs/03-事件模型.md` 第三节「提问的事件怎么写」）：一个在跑的调用请人
 //! 回答一组题；人的回答。
 
 use serde::{Deserialize, Serialize};

@@ -1,4 +1,4 @@
-//! 取汇率（施工 UC-1，`docs/blueprint/models.md`「怎么走」第九条第 8 条）：用量汇总的取汇率端口（[`RateSource`]）的 HTTP 实现，
+//! 取汇率（施工 UC-1，`internal/blueprint/models.md`「怎么走」第九条第 8 条）：用量汇总的取汇率端口（[`RateSource`]）的 HTTP 实现，
 //! 核心起来时装上。主源 Frankfurter（`/v2/rates?base=USD&quotes=<币种>&from=<日>&to=<日>`，一个币种缺的几天并成一段一次取），
 //! 主源连不上、出错的，当天和昨天的照兜底源 open.er-api.com 的最新一份（只有最新的，更早的日子不用它）。源说不认识的币种
 //! （422）记成没有汇率。只交币种和日子，不交任何用量。走核心拉目录用的那个客户端（照环境的代理），5 秒、64 KiB 封顶。

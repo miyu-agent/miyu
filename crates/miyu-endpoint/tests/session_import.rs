@@ -1,4 +1,4 @@
-//! 导入原始包（施工 SE-1 下，`docs/blueprint/protocol.md`「`session.import`」）：真核心走一遍。一个数据根导出、另一个导入，
+//! 导入原始包（施工 SE-1 下，`internal/blueprint/protocol.md`「`session.import`」）：真核心走一遍。一个数据根导出、另一个导入，
 //! 日志一个字节不差；存档在会话列表里标出来、改它的方法回 `archived`、读的照常；重导是空操作；传上来的、本机路径两种都认；
 //! 坏包、参数不对的拒。
 

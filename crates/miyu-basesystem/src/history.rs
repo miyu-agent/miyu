@@ -1,4 +1,4 @@
-//! `history`（`docs/blueprint/tools/history.md`，施工 6-4）：翻这个会话自己的日志，按关键词找、按序号读，也能按
+//! `history`（`internal/blueprint/tools/history.md`，施工 6-4）：翻这个会话自己的日志，按关键词找、按序号读，也能按
 //! 时间、谁说的筛。压缩换出去的旧内容都还在日志里，她用它取回。只读日志，不碰文件，不报效果。
 //!
 //! 日志经 [`Call::log`] 从头一块块读，交给内核的 `History::whole()` 算出哪些还算数（撤掉的、撤回的不算），再挑出

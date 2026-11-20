@@ -1,4 +1,4 @@
-//! 会话的事件（`docs/designs/03-事件模型.md` 第三节「会话与回合的事件怎么写」）。
+//! 会话的事件（`internal/designs/03-事件模型.md` 第三节「会话与回合的事件怎么写」）。
 
 use std::num::NonZeroU32;
 
@@ -232,7 +232,7 @@ pub struct MetaChanged {
     pub project: Option<String>,
 }
 
-/// `session.workspace_changed`：人换了会话在哪个目录干活（施工 9-7 上，`docs/blueprint/kernel/events-bodies.md`）。工作区是会话的
+/// `session.workspace_changed`：人换了会话在哪个目录干活（施工 9-7 上，`internal/blueprint/kernel/events-bodies.md`）。工作区是会话的
 /// 属性：只有人明确换才变（`session.set_workspace`、`/workspace`），头每句话报的目录不再换它。`by` 是换的人；回合进行中换的带上
 /// 这个回合，这一轮里照旧用原来的，下一轮开始照新的。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -244,7 +244,7 @@ pub struct WorkspaceChanged {
     pub dirs: Option<Vec<String>>,
 }
 
-/// `command.ran`：人用了一个斜杠命令（施工 O-6，`docs/blueprint/kernel/events-bodies.md`）。谁发的写在 `by`，`cause` 是派生的
+/// `command.ran`：人用了一个斜杠命令（施工 O-6，`internal/blueprint/kernel/events-bodies.md`）。谁发的写在 `by`，`cause` 是派生的
 /// 命令编号（`<那个命令>/ran`）。只给人和聊天记录看，不进她的上下文；执行了的才记，被拒的什么都不记。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CommandRan {
@@ -254,12 +254,12 @@ pub struct CommandRan {
     pub command: String,
 }
 
-/// `todos.cleared`：人清掉了待办（施工 D-3 再补，`/todo clear`，`docs/blueprint/kernel/events-bodies.md`）。谁发的写在 `by`，
+/// `todos.cleared`：人清掉了待办（施工 D-3 再补，`/todo clear`，`internal/blueprint/kernel/events-bodies.md`）。谁发的写在 `by`，
 /// `cause` 是那个命令；回合进行中的带上这个回合。有效历史从这一条起当前的清单是空的（`history/todos.rs`），不进她的上下文。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TodosCleared {}
 
-/// `session.recapped`：一句回顾（施工 3-8 四补，`docs/blueprint/kernel/session.md`「回顾」）。头要的，推给所有订阅着的头，
+/// `session.recapped`：一句回顾（施工 3-8 四补，`internal/blueprint/kernel/session.md`「回顾」）。头要的，推给所有订阅着的头，
 /// 不进她的上下文；不带回合编号。`by` 是内核，`cause` 是要它的那个命令。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SessionRecapped {

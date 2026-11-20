@@ -1,4 +1,4 @@
-//! `miyu kb`（`docs/blueprint/cli/kb.md`，施工 K-7 下）：在 shell 里管知识库：列、搜、读、建、改、加、删、挂、重建。连上核心
+//! `miyu kb`（`internal/blueprint/cli/kb.md`，施工 K-7 下）：在 shell 里管知识库：列、搜、读、建、改、加、删、挂、重建。连上核心
 //! （照 `miyu memory`：没在跑就拉起来），照子命令发 `kb.*`（`protocol.md`），照回应印。加文件照附件上传：每个文件先 `blob.put`
 //! 本机路径，再 `kb.add`（2026-10-13 项目主人定）。
 //!

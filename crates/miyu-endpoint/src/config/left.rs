@@ -1,4 +1,4 @@
-//! 已经卸掉的包留在配置里的设置项（施工 PK-5补，`docs/blueprint/packages.md`「装卸」第 7 条）：照 pacman，不带 `purge` 卸包
+//! 已经卸掉的包留在配置里的设置项（施工 PK-5补，`internal/blueprint/packages.md`「装卸」第 7 条）：照 pacman，不带 `purge` 卸包
 //! 时 `etc/config.toml` 里它的设置项原样留着。核心读配置时这样认、这样跳过：
 //!
 //! - 认：手里有一份「前缀 → 留下它的包」（[`Left`]）。来处两样（`crate::packages::settings_left::left`）：卸掉的出厂包照资源目录里

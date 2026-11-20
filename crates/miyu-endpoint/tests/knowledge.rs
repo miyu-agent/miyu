@@ -1,4 +1,4 @@
-//! 知识库的协议（施工 K-1 上，`docs/blueprint/knowledge.md`「对外的样子」，`protocol.md` 的 `kb.*`）：真核心，知识库是数据根
+//! 知识库的协议（施工 K-1 上，`internal/blueprint/knowledge.md`「对外的样子」，`protocol.md` 的 `kb.*`）：真核心，知识库是数据根
 //! 里的真目录。`kb.list`、`kb.search`、`kb.read` 的回应一格一格对；写错的几种 `bad_params`，没有的库 `unknown_kb`，没有的
 //! 文档 `unknown_document`。
 

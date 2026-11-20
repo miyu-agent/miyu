@@ -1,4 +1,4 @@
-//! 一次 GET（`docs/blueprint/models.md`「在哪」、`http.md`「一次 GET」，施工 8-7）：拉 models.dev 的目录、拉供应商的模型
+//! 一次 GET（`internal/blueprint/models.md`「在哪」、`http.md`「一次 GET」，施工 8-7）：拉 models.dev 的目录、拉供应商的模型
 //! 列表。和发请求（[`crate::send()`]）分开：不是流，整个读完再交回，有总时限、有大小上限，可以带上次的 `ETag` 问「变了
 //! 没有」。
 //!

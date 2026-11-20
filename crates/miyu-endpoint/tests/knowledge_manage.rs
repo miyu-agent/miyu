@@ -1,4 +1,4 @@
-//! 人管理知识库的协议（施工 K-7 上，`docs/blueprint/knowledge.md`「怎么走」第八条，`protocol.md` 的 `kb.*`）：真核心。建库、
+//! 人管理知识库的协议（施工 K-7 上，`internal/blueprint/knowledge.md`「怎么走」第八条，`protocol.md` 的 `kb.*`）：真核心。建库、
 //! 改名字说明、挂目录、加文档（照上传好的 blob）、删文档、重建索引、删库的回应一格一格对；已经有的、挂进来的、挂不上的、没有的
 //! 各自的拒绝；参数写错的 `bad_params`。
 

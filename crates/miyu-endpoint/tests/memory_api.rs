@@ -1,4 +1,4 @@
-//! 人经协议碰记忆（施工 R-3 补，`docs/blueprint/memory.md`「协议」、第二条第 5 款）：真核心、真记忆日志，数据根在临时目录。
+//! 人经协议碰记忆（施工 R-3 补，`internal/blueprint/memory.md`「协议」、第二条第 5 款）：真核心、真记忆日志，数据根在临时目录。
 //! 五个方法各走一遍；照人格、照会话、照默认找哪一间；写错的几种；同一个命令编号只算一次。清空在 `memory_clear.rs`。
 
 use serde_json::{Value, json};

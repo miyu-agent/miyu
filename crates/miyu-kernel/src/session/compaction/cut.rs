@@ -1,4 +1,4 @@
-//! 替代到哪、切在哪（`docs/blueprint/compaction.md` 第三条第 2 条，施工 6-2 下）：留尾巴、切得开的地方、一组不拆。截短重试
+//! 替代到哪、切在哪（`internal/blueprint/compaction.md` 第三条第 2 条，施工 6-2 下）：留尾巴、切得开的地方、一组不拆。截短重试
 //! （`shorten.rs`）也照这里的切法。
 
 use crate::estimate::{self, Price};

@@ -1,4 +1,4 @@
-//! 扩展进程（施工 9-4 上，`docs/blueprint/extensions.md`）：核心拉起 `kind = "process"` 的包，经标准输入输出说同一套协议。
+//! 扩展进程（施工 9-4 上，`internal/blueprint/extensions.md`）：核心拉起 `kind = "process"` 的包，经标准输入输出说同一套协议。
 //!
 //! 一个包一格：看管它的任务、任务报上来的状态。开关存在 `extensions.json`，没写的照清单的 `start`（`always` 的开着）。
 //! 核心起来时照开关拉起开着的（[`Core::start_extensions`]），停的时候一起请它们退出（[`Core::stop_extensions`]）；有开着、没停下的，

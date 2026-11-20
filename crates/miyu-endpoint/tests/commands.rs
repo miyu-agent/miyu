@@ -1,4 +1,4 @@
-//! 斜杠命令（施工 O-6，`docs/blueprint/protocol.md` 的 `command.run`）：真核心走一遍。`/clear`、别名 `/reset` 清空上下文，
+//! 斜杠命令（施工 O-6，`internal/blueprint/protocol.md` 的 `command.run`）：真核心走一遍。`/clear`、别名 `/reset` 清空上下文，
 //! `/stop` 打断这一轮（排着的话留着）、停掉子代理；执行了的记一条 `command.ran`，回执照连接的语言。认不出的回
 //! `unknown_command`，不是 `/` 开头的参数不对；场所里只有主人、管理的人能用；内核拒了的照原因回、什么都不记；同一个编号只算一次。
 

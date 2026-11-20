@@ -1,4 +1,4 @@
-//! 预设（施工 P-2 上，`docs/blueprint/presets.md`）：造会话时照「开会话时指定、配置」找预设、几层叠好；
+//! 预设（施工 P-2 上，`internal/blueprint/presets.md`）：造会话时照「开会话时指定、配置」找预设、几层叠好；
 //! `preset.list`、`preset.get`。找哪几层、怎么叠在 `miyu_store::presets`。
 
 use std::sync::Arc;

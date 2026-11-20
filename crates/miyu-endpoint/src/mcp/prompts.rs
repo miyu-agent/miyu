@@ -1,4 +1,4 @@
-//! 服务的提示词（施工 X-39 之二，`docs/blueprint/mcp.md`「怎么走」第六条）：列完工具接着列（服务声明了 `prompts` 的才列），
+//! 服务的提示词（施工 X-39 之二，`internal/blueprint/mcp.md`「怎么走」第六条）：列完工具接着列（服务声明了 `prompts` 的才列），
 //! 名字清理成斜杠命令名 `<服务名>:<提示词名>`，记在看管那一格；撞名的不登记，进 `skipped`。菜单、`command.run` 照它
 //! （`commands/prompts.rs`）。
 

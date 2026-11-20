@@ -137,7 +137,7 @@ pub fn served(base_url: &str, profile: serde_json::Value, model: &str) -> (Route
 /// 说「你好！」的流，`n` 份。
 pub fn hellos(n: usize) -> Vec<Reply> {
     let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/drivers/openai-chat/streams/openai-text.sse");
+        .join("../../internal/designs/samples/drivers/openai-chat/streams/openai-text.sse");
     let bytes = std::fs::read(&path).expect("样本读得到");
     (0..n)
         .map(|_| Reply::stream(vec![Piece::Bytes(bytes.clone())]))
@@ -148,7 +148,7 @@ pub fn hellos(n: usize) -> Vec<Reply> {
 /// `http.rs` 挪来，`route_failover.rs` 也用。
 pub fn cut_after(n: usize) -> Reply {
     let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/drivers/openai-chat/streams/openai-text.sse");
+        .join("../../internal/designs/samples/drivers/openai-chat/streams/openai-text.sse");
     let bytes = std::fs::read(&path).unwrap_or_else(|e| panic!("读不了 {}：{e}", path.display()));
     let mut end = 0;
     for _ in 0..n {

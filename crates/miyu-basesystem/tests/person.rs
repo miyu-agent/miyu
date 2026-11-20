@@ -1,4 +1,4 @@
-//! 给人跑一条命令（施工 SH-1 上，设计 57，`docs/blueprint/tools/shell.md`「给人跑」）：真的起进程，三个平台都跑。交回结构化的
+//! 给人跑一条命令（施工 SH-1 上，设计 57，`internal/blueprint/tools/shell.md`「给人跑」）：真的起进程，三个平台都跑。交回结构化的
 //! 结果；人打的 `sleep` 照跑，她的同一句照旧被拒；叫停的整组杀、交回到这时的输出；不跑命令的工具没有这个钩子。
 
 use std::time::Duration;

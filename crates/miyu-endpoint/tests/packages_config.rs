@@ -1,4 +1,4 @@
-//! 装卸以后配置项当场换（施工 F-5 补，`docs/blueprint/packages.md`「配置项」第 2 条、`config.md` 推送 `config.changed`）：
+//! 装卸以后配置项当场换（施工 F-5 补，`internal/blueprint/packages.md`「配置项」第 2 条、`config.md` 推送 `config.changed`）：
 //! 真核心装上一个声明了配置项的包，系统配置里早写着的它的键当场认得、推 `config.changed`（`via: package`）、`config.get`
 //! 和 `config.schema` 有它；卸掉不生效、留下的不报不认识（施工 PK-5补）；清单换了、认得的没变的不推。端口照 `miyu-core` 的拼法：核心自己的接上包的。
 

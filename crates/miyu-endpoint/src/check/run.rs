@@ -1,4 +1,4 @@
-//! 跑包自己的检查（施工 9-2，`docs/blueprint/packages.md`「格式」第 2 条、「怎么走」）：照核心起来时读到的清单，有
+//! 跑包自己的检查（施工 9-2，`internal/blueprint/packages.md`「格式」第 2 条、「怎么走」）：照核心起来时读到的清单，有
 //! `[check]` 的每个包跑 `<程序> <args…>`。程序找包文件夹的 `bin/`、`miyu` 旁边的（`miyu_store::packages::locate`），标准输入是
 //! 空的、环境照核心的，最多等 [`LIMIT`]。标准输出一行一个 JSON，照 `check` 回应的格子收；退出码 0、1 是正常的。跑不起来、
 //! 别的退出码、到时没完的报一条 `check_failed`，程序没找到的报 `check_unavailable`，有看不懂的行的报 `check_output`，都是

@@ -1,4 +1,4 @@
-//! `session.configure` 的 `effort`（施工 SM-1，设计 51，`docs/blueprint/models.md`「协议」）：要换成的一档照会话这时的模型的
+//! `session.configure` 的 `effort`（施工 SM-1，设计 51，`internal/blueprint/models.md`「协议」）：要换成的一档照会话这时的模型的
 //! 档位查，不在里面的 `bad_params`（`data.field` 是 `effort`），什么都不记；`null` 是回到跟着配置，不查。
 //!
 //! 「会话这时的模型」：这一条一起换了模型的是换成的那个（回到跟着配置的照这一刻的 `models.chat`），没换的是会话记着的引用

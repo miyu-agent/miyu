@@ -1,4 +1,4 @@
-//! `shell` 照命令的字面认高危（施工 5-17，`miyu_policy::hazard`，`docs/blueprint/tools/shell.md`「高危」；施工 HZ-1 从 `shell.rs`
+//! `shell` 照命令的字面认高危（施工 5-17，`miyu_policy::hazard`，`internal/blueprint/tools/shell.md`「高危」；施工 HZ-1 从 `shell.rs`
 //! 挪出来）：报给权限策略，不进 `run`。灭顶的交拒的那一句；问人的每一种连同归的类全交，关没关掉由权限策略照这一轮的配置判。
 
 use std::path::Path;

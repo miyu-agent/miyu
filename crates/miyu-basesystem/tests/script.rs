@@ -1,4 +1,4 @@
-//! 脚本当工具（施工 X-12 上，`docs/blueprint/skills.md`「脚本」第 3 条）：照 `#!` 起；参数从环境变量 `MIYU_ARGS_JSON`、标准输入
+//! 脚本当工具（施工 X-12 上，`internal/blueprint/skills.md`「脚本」第 3 条）：照 `#!` 起；参数从环境变量 `MIYU_ARGS_JSON`、标准输入
 //! 都拿得到；在这一轮的工作目录里跑；有一个能写的缓存目录；退出码不是 0 的出错；到时整组杀掉、说一句；起不来的说清楚。
 //! 交图（施工 X-35）：拷进 `MIYU_SCRIPT_IMAGES_DIR` 的照文件名排、至多 4 张，链接、超大的不交，到时被杀的不看，跑完目录删掉。
 //! 链接成的脚本照它指到的真实位置起（施工 X-37）。调用的事实进 `MIYU_CALLER_*`，开头的 `Venues` 定给哪种会话（施工 X-43）。状态目录（施工 X-44）在 `script_state.rs`。Python 的几条三个平台都跑（Windows 上照 `python` 找）；用 `sh` 的、要建链接

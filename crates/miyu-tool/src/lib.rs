@@ -1,4 +1,4 @@
-//! 工具的接口和工具目录（`docs/designs/05-内核接口.md` 第六节「工具的规格」、第八节「启用、注册与
+//! 工具的接口和工具目录（`internal/designs/05-内核接口.md` 第六节「工具的规格」、第八节「启用、注册与
 //! 目录快照」，施工 4-1）。
 //!
 //! 工具是内核之外的软件（`10-自带软件.md` B1）：每件工具报出自己的规格，核心起来时登记进工具目录，
@@ -132,14 +132,14 @@ pub struct Spec {
     /// 场所插件（施工 O-60，`venues.md`「场所插件」）：带了的，场所会话里只有那个场所开着它才给，本机会话照旧。只有扩展
     /// `provide` 写；内置工具、脚本工具、MCP 没有。
     pub plugin: Option<String>,
-    /// 职能（施工 XG-2 上，`docs/designs/64-工具职能.md` 第四节）：核心要找「哪件是干这个的」时照它认，不照名字。没写的没有。
+    /// 职能（施工 XG-2 上，`internal/designs/64-工具职能.md` 第四节）：核心要找「哪件是干这个的」时照它认，不照名字。没写的没有。
     pub role: Option<Role>,
     /// 范围（施工 XG-2 上，设计 64 第五节）：给哪种会话，组工具面时照它筛。只能收窄、不能放宽：别处原有的限制（场所的
     /// `venues`、子代理的层数）照旧都算。不写的是 [`Scope::Any`]。
     pub scope: Scope,
 }
 
-/// 提供者的工具给哪种会话（施工 O-2 上，`docs/blueprint/providers.md`）：本机的、通讯平台的私聊、群。
+/// 提供者的工具给哪种会话（施工 O-2 上，`internal/blueprint/providers.md`）：本机的、通讯平台的私聊、群。
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Venues {
     /// 本机的会话。
@@ -219,7 +219,7 @@ pub trait Tool: Send + Sync {
         Vec::new()
     }
 
-    /// 问人之前先看一眼（施工 F-10 下，`docs/blueprint/tools/package.md`）：权限策略要问人时，执行器带着端口调它（只有端口，
+    /// 问人之前先看一眼（施工 F-10 下，`internal/blueprint/tools/package.md`）：权限策略要问人时，执行器带着端口调它（只有端口，
     /// 没有沙盒、日志这些）。成了的整份放进确认请求的说明，键 `preview`，人看到的就是日志里记下的；不成的不问，交回的那一份
     /// 照拒绝交给她。默认不看。
     fn preview(&self, _call: Call) -> Option<Previewing<'_>> {

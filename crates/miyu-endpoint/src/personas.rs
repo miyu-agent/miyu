@@ -1,4 +1,4 @@
-//! 人格（施工 P-1 上，`docs/blueprint/personas.md`）：造会话时照「开会话时指定、配置」找人格、几层叠好；
+//! 人格（施工 P-1 上，`internal/blueprint/personas.md`）：造会话时照「开会话时指定、配置」找人格、几层叠好；
 //! `persona.list`、`persona.get`。找哪几层、怎么叠在 `miyu_store::personas`。
 
 use serde::Deserialize;

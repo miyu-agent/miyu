@@ -1,4 +1,4 @@
-//! 扩展的标准错误（施工 9-4 上，`docs/blueprint/extensions.md`「怎么走」第 1 条）：直接接到 `state/logs/<编号>.stderr` 上，
+//! 扩展的标准错误（施工 9-4 上，`internal/blueprint/extensions.md`「怎么走」第 1 条）：直接接到 `state/logs/<编号>.stderr` 上，
 //! 追加；核心不读它、不拷它。拉起前超过 [`LARGEST`] 的先挪成 `<编号>.stderr.old`（盖掉上一份）。停下了的，状态里给最后几行。
 
 #[cfg(test)]

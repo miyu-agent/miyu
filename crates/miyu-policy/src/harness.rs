@@ -1,4 +1,4 @@
-//! 别的 harness 发来的话的标签装进快照（施工 7-10，`docs/blueprint/kernel/request.md`「别的 harness 发来的话」）：
+//! 别的 harness 发来的话的标签装进快照（施工 7-10，`internal/blueprint/kernel/request.md`「别的 harness 发来的话」）：
 //! `resources/core/harness/` 下的两份原文。以前造的快照里没有，读成没有：那种话照人的话原样渲染。
 
 use std::collections::BTreeMap;

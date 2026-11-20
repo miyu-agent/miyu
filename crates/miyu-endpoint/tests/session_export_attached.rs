@@ -1,4 +1,4 @@
-//! 导出 Markdown 的第三截（施工 SE-1 中下下，`docs/blueprint/protocol.md`「`session.export`」）：真核心走一遍。
+//! 导出 Markdown 的第三截（施工 SE-1 中下下，`internal/blueprint/protocol.md`「`session.export`」）：真核心走一遍。
 //!
 //! - `children: append`：主会话一步派一个（`j1`，它又派一个 `j1.1`），再一步派一个（`j2`）；三个子会话照任务编号接在后面，
 //!   回应的 `children` 照同样的先后；子会话里的密钥照样换、`redacted` 合计；`agent` 的开头那一段只写一次，连接是中文旁白

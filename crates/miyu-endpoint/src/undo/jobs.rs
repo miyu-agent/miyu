@@ -1,4 +1,4 @@
-//! 撤销的回应里停掉的任务（施工 7-8，`docs/blueprint/protocol/undo.md`「jobs」，`agents.md` 第七条第 1 条）：撤掉的那几轮
+//! 撤销的回应里停掉的任务（施工 7-8，`internal/blueprint/protocol/undo.md`「jobs」，`agents.md` 第七条第 1 条）：撤掉的那几轮
 //! 派出去、撤销那一刻还在跑的，就是内核交给执行器停的那几个（`kernel/history.md`「撤销」）。回应不等它们的回报落盘，所以
 //! 照日志算撤销那一刻的：派它的调用在撤掉的那几轮里、照撤销以前的日志还在跑（`running_jobs`）的。
 //!

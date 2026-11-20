@@ -1,4 +1,4 @@
-//! 回合索引接在核心上（施工 R-2 上，`docs/blueprint/memory.md`「怎么走」第一条第 4、7 款）：真核心造的主会话说过的一轮进
+//! 回合索引接在核心上（施工 R-2 上，`internal/blueprint/memory.md`「怎么走」第一条第 4、7 款）：真核心造的主会话说过的一轮进
 //! 软件工程师的回合库；删会话以后拿掉。
 
 use serde_json::json;

@@ -1,4 +1,4 @@
-//! 看守查提前压好（施工 6-11 上、下，`docs/blueprint/compaction.md` 第十五条）：
+//! 看守查提前压好（施工 6-11 上、下，`internal/blueprint/compaction.md` 第十五条）：
 //!
 //! - 旁路请求只在这一轮开着时发，一次至多一次在路上；请求是有效历史到 N 的清单加 `summarize`；
 //! - 它的 `model.called`：不带回合编号、不带 `compaction`，`seen` 是 N，写没写成和替身送的算出来的一样；

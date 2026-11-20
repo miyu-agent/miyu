@@ -1,4 +1,4 @@
-//! 截了模型编的下一轮，运行日志记一行（施工 FT-1，`docs/blueprint/kernel/session.md`「截掉模型编的下一轮」），真的会话：模型在
+//! 截了模型编的下一轮，运行日志记一行（施工 FT-1，`internal/blueprint/kernel/session.md`「截掉模型编的下一轮」），真的会话：模型在
 //! 回答后面写 `user`，接着照请求里环境那块事实的样子编一句人的话；落盘的回复只有她真说的，`model.called` 记着截在哪，运行日志
 //! 一行 `WARN forged turn cut`，带会话、模型、截掉多少字节，不带截掉的原文。
 //!

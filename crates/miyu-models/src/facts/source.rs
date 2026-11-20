@@ -1,4 +1,4 @@
-//! 一格资料的来源（`docs/blueprint/models.md`「模型的资料」「来源写成一个对象」那张表，施工 8-7）：头照它说一句。
+//! 一格资料的来源（`internal/blueprint/models.md`「模型的资料」「来源写成一个对象」那张表，施工 8-7）：头照它说一句。
 
 use miyu_config::Layer;
 use miyu_kernel::time::Timestamp;

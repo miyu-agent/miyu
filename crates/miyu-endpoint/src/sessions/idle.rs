@@ -1,4 +1,4 @@
-//! 闲够了的会话退下（`docs/designs/07-存储.md` 第七节「会话按需载入」第 3 条，施工 V-2 再补）：会话表第一次放进会话时起一个
+//! 闲够了的会话退下（`internal/designs/07-存储.md` 第七节「会话按需载入」第 3 条，施工 V-2 再补）：会话表第一次放进会话时起一个
 //! 任务，隔一阵拿着表的锁问一遍。没有别的把手、没人订阅、没有在跑的回合的，问它的 actor 闲够了没有（`Handle::retire`，它照
 //! 自己的账答）；退下了的、已经停了的从表里拿掉，下次用到再载入。actor 退出时把放下的内存还给系统（`miyu-heap`）。
 //!
@@ -28,7 +28,7 @@ use super::held::Held;
 use super::{Open, Sessions};
 use crate::Core;
 
-/// 闲多久退下：三分钟（`docs/blueprint/perf.md` 量尺的大会话那一项照它等）。
+/// 闲多久退下：三分钟（`internal/blueprint/perf.md` 量尺的大会话那一项照它等）。
 pub(crate) const IDLE: Duration = Duration::from_secs(180);
 
 /// 两次问之间至少隔多久：差几毫秒的不连着问。

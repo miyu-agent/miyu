@@ -1,5 +1,5 @@
-//! 两种回报的写法（施工 7-2，`docs/blueprint/kernel/request.md`「回报」）：出厂的字渲染出来和样本逐字节一样，每种原因、
-//! 截过的、人插过话的、没说话的各一个，停掉的分她停的、人停的（施工 7-2 补）（`docs/designs/samples/reports/`）；以前造的
+//! 两种回报的写法（施工 7-2，`internal/blueprint/kernel/request.md`「回报」）：出厂的字渲染出来和样本逐字节一样，每种原因、
+//! 截过的、人插过话的、没说话的各一个，停掉的分她停的、人停的（施工 7-2 补）（`internal/designs/samples/reports/`）；以前造的
 //! 快照没有人停的那一句，照原来的写；闲着时开这一轮的那条挪到回合开始的地方，排在事实后面；回合中途到的排在那一步的工具
 //! 结果后面；派它的那一轮撤掉了的不渲染；派它的那一条压缩掉了，照样有标题。
 
@@ -107,7 +107,10 @@ fn child(reason: ChildReason, text: &str, truncated: bool, person: bool) -> Chil
 
 macro_rules! sample {
     ($name:literal) => {
-        include_str!(concat!("../../../../docs/designs/samples/reports/", $name))
+        include_str!(concat!(
+            "../../../../internal/designs/samples/reports/",
+            $name
+        ))
     };
 }
 

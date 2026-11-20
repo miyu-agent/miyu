@@ -1,4 +1,4 @@
-//! `miyu pkg files`、`owns`、`check` 印成几行（施工 F-8 下，`docs/blueprint/cli/pkg.md`「样子」，照 pacman 的 `-Ql`、`-Qo`、
+//! `miyu pkg files`、`owns`、`check` 印成几行（施工 F-8 下，`internal/blueprint/cli/pkg.md`「样子」，照 pacman 的 `-Ql`、`-Qo`、
 //! `-Qk`；`info` 在 [`super::info`]）：纯的，测试里照它算。只放人要的：哈希、哪一层不印（`--format json` 照原样有）。
 
 use std::path::{Path, PathBuf};

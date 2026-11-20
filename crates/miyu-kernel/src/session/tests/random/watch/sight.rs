@@ -1,4 +1,4 @@
-//! 看守替它看图（施工 8-17，`docs/blueprint/kernel/session.md`「替它看图」）：
+//! 看守替它看图（施工 8-17，`internal/blueprint/kernel/session.md`「替它看图」）：
 //!
 //! - 交出转述时：限额说看不了图，回合开着，这张图没转述过、没在路上，请求里是这张图；
 //! - 记 `image.described` 时：内核记的，不带回合编号，转述就是送回去的那一句，同一张图只记一次；

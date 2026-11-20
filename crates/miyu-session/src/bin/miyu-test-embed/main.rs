@@ -1,5 +1,5 @@
 //! 测试用的语义模型小程序（施工 S-7 上）：`miyu-embed` 拆进自己的仓库以后，核心的测试照它当 `miyu-embed` 拉起，不编 ONNX
-//! Runtime。不随发行带出去。说的协议和 `miyu-embed` 一样（`docs/blueprint/recall.md` 第四条第 4 款）：
+//! Runtime。不随发行带出去。说的协议和 `miyu-embed` 一样（`internal/blueprint/recall.md` 第四条第 4 款）：
 //!
 //! - `miyu-test-embed --manifest <清单> --dir <模型文件的目录>`；载入成了先印一行 `{"ready":{"model":"local:<id>","dims":4}}`，
 //!   然后标准输入一行 `{"id","text"}`、标准输出回一行 `{"id","vector"}`，读不懂的回 `{"id","error"}`；标准输入关了退出码 0。

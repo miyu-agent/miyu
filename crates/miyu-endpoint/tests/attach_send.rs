@@ -1,4 +1,4 @@
-//! 说话带附件（施工 3-9 三补，`docs/blueprint/protocol.md` 的 `session.send`）：`blob.put` 的回应照先后变成
+//! 说话带附件（施工 3-9 三补，`internal/blueprint/protocol.md` 的 `session.send`）：`blob.put` 的回应照先后变成
 //! `message.user` 里文字后面的图片块、文件块，宽高、媒体类型照核心自己量的；只有附件也是一句话；blob 不在的拒绝，
 //! 什么都不写。
 

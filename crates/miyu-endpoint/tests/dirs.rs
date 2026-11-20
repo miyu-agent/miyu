@@ -1,4 +1,4 @@
-//! 加进来的目录（施工 5-10 上，`docs/blueprint/protocol.md`「加进来的目录」）：造会话时报来，记进每一轮的 `turn.started`；
+//! 加进来的目录（施工 5-10 上，`internal/blueprint/protocol.md`「加进来的目录」）：造会话时报来，记进每一轮的 `turn.started`；
 //! 施工 9-7 上起是会话的属性：说话带着的不理，换的是 `session.set_workspace`（`dirs` 不写的照旧，写空的就是没有）；太宽的
 //! 整条命令都不收；核心重启以后照最后一次记下的找回来。
 

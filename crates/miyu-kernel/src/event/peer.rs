@@ -1,4 +1,4 @@
-//! 跨会话的事件 `peer.idle`（施工 C-1，`docs/blueprint/cross-session.md`「事件 peer.idle」，`03-事件模型.md` 第三节）：
+//! 跨会话的事件 `peer.idle`（施工 C-1，`internal/blueprint/cross-session.md`「事件 peer.idle」，`03-事件模型.md` 第三节）：
 //! 等的那个会话空下来了，或者等不到了，记在等的那一边。订的记录是那次调用的效果 `peer.watch`（`effect.rs`）。
 //!
 //! 在不在等、`by` 对不对得上，由账本查（`ledger/peers.rs`）。谁交来、到了叫不叫醒她、渲染成什么样，随施工 C-6。名字不叫

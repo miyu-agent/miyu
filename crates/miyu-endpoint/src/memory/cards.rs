@@ -1,4 +1,4 @@
-//! 人卡的协议（施工 E-1 下，`docs/blueprint/memory.md`「协议」、第七条第 15 款）：`memory.cards` 列、`memory.card_update` 人写一张、
+//! 人卡的协议（施工 E-1 下，`internal/blueprint/memory.md`「协议」、第七条第 15 款）：`memory.cards` 列、`memory.card_update` 人写一张、
 //! `memory.card_forget` 作废一张。找哪一间同 `memory.*`；怎么查、怎么写在会话那一层的 [`miyu_session::Keeper`]。
 
 use std::sync::Arc;

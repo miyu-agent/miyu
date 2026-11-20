@@ -1,4 +1,4 @@
-//! 条目的编号（`docs/blueprint/view.md`「编号」）：只看日志里的位置，谁算、从哪一条开始算都一样。
+//! 条目的编号（`internal/blueprint/view.md`「编号」）：只看日志里的位置，谁算、从哪一条开始算都一样。
 
 use std::fmt;
 

@@ -1,4 +1,4 @@
-//! 包带的功能（施工 F-1，设计 `30-插件框架.md` 第三节，`docs/blueprint/packages.md`「格式」）：`[features.<编号>]` 读成
+//! 包带的功能（施工 F-1，设计 `30-插件框架.md` 第三节，`internal/blueprint/packages.md`「格式」）：`[features.<编号>]` 读成
 //! [`Feature`]；没写 `[features]` 的内置包、扩展包整个算一个（[`Manifest::features_of`]）。
 
 use toml_edit::{Item, TableLike};

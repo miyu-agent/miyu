@@ -1,5 +1,5 @@
 //! `miyu ask` 等子代理、后台命令时给人看的字（施工 7-9，样子 2026-09-30 项目主人定；施工 AP-4 多了后台命令，
-//! `docs/blueprint/cli/ask.md`「给人看的字」）。
+//! `internal/blueprint/cli/ask.md`「给人看的字」）。
 
 use super::Language;
 

@@ -1,4 +1,4 @@
-//! 读输出的一页（`docs/blueprint/tools/jobs.md`「output」）：照 `read` 的分页，从第几行起，一页最多 [`LIMIT`] 个字，停在
+//! 读输出的一页（`internal/blueprint/tools/jobs.md`「output」）：照 `read` 的分页，从第几行起，一页最多 [`LIMIT`] 个字，停在
 //! 整行上；一行就超过的截在上限、补一个 `…`。边读边数，不把整份读进内存：一直开着的服务的输出可能很长。
 
 use std::io::{BufRead, BufReader, Read};

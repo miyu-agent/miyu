@@ -83,26 +83,26 @@ fn prose_that_only_starts_with_the_word_is_not_a_sample() {
 #[test]
 fn every_page_under_the_blueprint_is_checked() {
     let dir = std::env::temp_dir().join(format!("xtask-samples-{}", std::process::id()));
-    std::fs::create_dir_all(dir.join("docs/blueprint/tools")).unwrap();
+    std::fs::create_dir_all(dir.join("internal/blueprint/tools")).unwrap();
     std::fs::create_dir_all(dir.join("r")).unwrap();
     std::fs::write(dir.join("r/a.json"), "{\"a\":1}\n\nsecond\n").unwrap();
-    std::fs::write(dir.join("docs/blueprint/tools/p.md"), PAGE).unwrap();
+    std::fs::write(dir.join("internal/blueprint/tools/p.md"), PAGE).unwrap();
     std::fs::write(
-        dir.join("docs/blueprint/notes.txt"),
+        dir.join("internal/blueprint/notes.txt"),
         PAGE.replace("second", "x"),
     )
     .unwrap();
     assert!(check(&dir).is_empty(), "{:?}", check(&dir));
     // 子目录里的一页改了一边：报的是那一页。
     std::fs::write(
-        dir.join("docs/blueprint/tools/p.md"),
+        dir.join("internal/blueprint/tools/p.md"),
         PAGE.replace("second\n```", "2nd\n```"),
     )
     .unwrap();
     let problems = check(&dir);
     assert_eq!(problems.len(), 1, "{problems:?}");
     assert!(
-        problems[0].starts_with("docs/blueprint/tools/p.md 第 5 行"),
+        problems[0].starts_with("internal/blueprint/tools/p.md 第 5 行"),
         "{problems:?}"
     );
     drop(std::fs::remove_dir_all(&dir));

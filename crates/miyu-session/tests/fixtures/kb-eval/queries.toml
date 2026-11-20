@@ -1,4 +1,4 @@
-# 知识库自动想起的测评集（施工 K-6 上，`docs/blueprint/knowledge/eval.md`）：问句照人在聊天里真会说的话写，`expect` 是该想起的
+# 知识库自动想起的测评集（施工 K-6 上，`internal/blueprint/knowledge/eval.md`）：问句照人在聊天里真会说的话写，`expect` 是该想起的
 # 几段，写成「文档:标题」（标题路径的最后一段）。虚构的世界观，人名、地名都是编的。
 
 [[query]]

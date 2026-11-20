@@ -1,4 +1,4 @@
-//! 回合开始问扩展要加的字（施工 X-16，`docs/blueprint/extensions.md`「回合开始的挂接点」）：记忆、知识库的挂接点之后问协议
+//! 回合开始问扩展要加的字（施工 X-16，`internal/blueprint/extensions.md`「回合开始的挂接点」）：记忆、知识库的挂接点之后问协议
 //! 端点交进来的端口，交回的每一块换成内核的注入，`by` 是那个包。
 
 use miyu_kernel::event::ContextInjected;

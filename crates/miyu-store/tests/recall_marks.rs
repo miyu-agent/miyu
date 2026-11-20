@@ -1,4 +1,4 @@
-//! 检索库照到的位置怎么挪（施工 R-2 下，`docs/blueprint/recall.md` 的 `apply`）：落后的一批不写、埋了墓碑的会话不再写、
+//! 检索库照到的位置怎么挪（施工 R-2 下，`internal/blueprint/recall.md` 的 `apply`）：落后的一批不写、埋了墓碑的会话不再写、
 //! 删会话先埋再拿掉。后台补旧会话读日志在前、写在后，这几条挡着它把撤销了的、删掉的又放回去。
 
 use std::path::PathBuf;

@@ -1,4 +1,4 @@
-//! 标题那一句（`docs/blueprint/view.md`「标题那一句」，终端蓝图 `tui.md`「时间线」第 3、6–9 条）：显示名、对象、
+//! 标题那一句（`internal/blueprint/view.md`「标题那一句」，终端蓝图 `tui.md`「时间线」第 3、6–9 条）：显示名、对象、
 //! 别的会话的短编号、结果那一句，照连接的语言。
 
 use std::collections::BTreeMap;
@@ -84,7 +84,7 @@ pub(crate) fn of(
     }
 }
 
-/// 供应商侧工具那一步的标题（施工 HT-3，`docs/blueprint/view.md`「标题那一句」）：`core/view.json` 的 `hosted` 表对得上的照
+/// 供应商侧工具那一步的标题（施工 HT-3，`internal/blueprint/view.md`「标题那一句」）：`core/view.json` 的 `hosted` 表对得上的照
 /// 核心那件工具的显示名、对象照表里说的参数（是数组的取第一个）；对不上的写原名、没有对象。`via` 是谁跑的（写这条回复的
 /// 供应商，照 [`via`] 挑好的），准备中也带。没有结果那一句：供应商不报给人看的一句。
 pub(crate) fn hosted(

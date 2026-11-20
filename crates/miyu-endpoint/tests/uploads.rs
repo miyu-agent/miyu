@@ -1,4 +1,4 @@
-//! 分块上传 `blob.open`、`blob.write`、`blob.close`（施工 W-5，`docs/blueprint/web-module.md`「六、分块上传」）：
+//! 分块上传 `blob.open`、`blob.write`、`blob.close`（施工 W-5，`internal/blueprint/web-module.md`「六、分块上传」）：
 //! 传完和 `blob.put` 同一个回应、同一个 blob；接不上回 `upload_offset`；没收齐不收；别的连接用不了；断开、
 //! 60 秒不写作废并删暂存；超过 20 MiB 当场拒；同时最多 4 个；参数不对的几种；图片照 `blob.put` 的规矩认；
 //! 核心起来时清掉留下的暂存。

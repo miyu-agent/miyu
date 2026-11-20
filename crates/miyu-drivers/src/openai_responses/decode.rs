@@ -1,4 +1,4 @@
-//! 解码（`docs/blueprint/drivers/openai-responses.md`「怎么走：解码」）：SSE 流解成内核的四种增量，说完时交出收块的增量、
+//! 解码（`internal/blueprint/drivers/openai-responses.md`「怎么走：解码」）：SSE 流解成内核的四种增量，说完时交出收块的增量、
 //! 用量和出错。
 //!
 //! 一项开一块，照项第一次出现的先后编号，从 0 数起；线上的 `output_index` 只拿来找是哪一块，不认的项不占编号。供应商那边

@@ -1,4 +1,4 @@
-//! 派子代理，执行器这一头（`docs/blueprint/agents.md` 第一条，`session/tools.md`「派子代理」，施工 7-5）：照父会话这一刻的
+//! 派子代理，执行器这一头（`internal/blueprint/agents.md` 第一条，`session/tools.md`「派子代理」，施工 7-5）：照父会话这一刻的
 //! 样子填好一个子会话，经会话表的端口（[`SessionPort`]）造出来，再把交代作为父会话发来的话送进去，开它的第一轮。
 //!
 //! 一个会话一份 [`Agents`]：场所、第几层、父会话、有没有人能确认，造会话、载入时定。每一次调用照这一轮的工作目录、
@@ -223,7 +223,7 @@ impl Agents {
         let foreground = Agents::foreground(preset.map(|(file, _)| file));
         // 「脚本调工具」关着的预设（施工 M-6）：每件都当不能在脚本里调。
         let scripted = clicall::on(preset.map(|(file, _)| file));
-        // 照工具自己声明的范围筛（施工 XG-2 上，`docs/designs/64-工具职能.md` 第五节）：只多拿掉，别处原有的限制照旧算。
+        // 照工具自己声明的范围筛（施工 XG-2 上，`internal/designs/64-工具职能.md` 第五节）：只多拿掉，别处原有的限制照旧算。
         let in_scope = |scope: Scope| match scope {
             Scope::Any => true,
             Scope::Local => local,

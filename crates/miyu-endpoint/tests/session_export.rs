@@ -1,4 +1,4 @@
-//! 导出会话的原始包（施工 SE-1 上，`docs/blueprint/protocol.md`「`session.export`」）：真核心走一遍。包里的段和数据根里的
+//! 导出会话的原始包（施工 SE-1 上，`internal/blueprint/protocol.md`「`session.export`」）：真核心走一遍。包里的段和数据根里的
 //! 一个字节不差；导主会话连着挂在它下面的支线整份带；导分叉出来的连着来源到分叉点为止的那几段；写到数据根里、已经有的、目录不在、相对路径、没有这个会话的拒。
 
 use std::fs::File;

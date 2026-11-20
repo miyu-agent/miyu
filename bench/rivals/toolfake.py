@@ -1,4 +1,4 @@
-"""工具一步的假模型（施工 V-29，蓝图 `docs/blueprint/perf.md`「工具一步」的「和 jcode 比」）：本机回环上的 OpenAI 兼容端点。
+"""工具一步的假模型（施工 V-29，蓝图 `internal/blueprint/perf.md`「工具一步」的「和 jcode 比」）：本机回环上的 OpenAI 兼容端点。
 
 和量尺的假模型（`crates/miyu-perf/src/fake.rs`、`fake/script.rs`）同一个回法：提到记号、带工具表的请求，照请求体里
 已经有前几次调用的结果，回下一次调用；回完了回一句话收尾。不带工具表的（起标题这些辅助请求）、不提记号的回一句话，

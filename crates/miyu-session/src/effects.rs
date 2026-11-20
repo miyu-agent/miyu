@@ -1,5 +1,5 @@
-//! 效果（`docs/designs/10-自带软件.md` 第五节，施工 4-6 上）：工具报的效果带着改前改后的内容，这里换成哈希，小的照原文
-//! 写在效果里、别的存成 blob（施工 V-18，`docs/blueprint/session/tools.md` 第 2 条），写成内核的效果；照内核的效果记下她看过的文件，会话里记、载入时从日志里重建，走的是同一个函数。
+//! 效果（`internal/designs/10-自带软件.md` 第五节，施工 4-6 上）：工具报的效果带着改前改后的内容，这里换成哈希，小的照原文
+//! 写在效果里、别的存成 blob（施工 V-18，`internal/blueprint/session/tools.md` 第 2 条），写成内核的效果；照内核的效果记下她看过的文件，会话里记、载入时从日志里重建，走的是同一个函数。
 //! 撤掉的那几轮里看过的、改过的不算（施工 4-7 上）：撤销、恢复落了盘，照日志重算一遍。
 
 use std::collections::BTreeSet;
@@ -195,7 +195,7 @@ pub(crate) fn reverts(events: &[Event]) -> bool {
         .any(|event| matches!(event.body, Body::TurnReverted(_) | Body::TurnUnreverted(_)))
 }
 
-/// 改前、改后的内容最多多长照原文写进效果（施工 V-18，`docs/blueprint/session/tools.md` 第 2 条）：32 KiB，照常见的源文件
+/// 改前、改后的内容最多多长照原文写进效果（施工 V-18，`internal/blueprint/session/tools.md` 第 2 条）：32 KiB，照常见的源文件
 /// 定。写进去的跟着工具结果落盘、不单独同步；一次改动最多给日志多写两份。
 pub(crate) const INLINE_MOST: usize = 32 * 1024;
 

@@ -1,4 +1,4 @@
-//! 探本机的模型服务（`docs/blueprint/models.md`「怎么走」第七条第 2 条，施工 8-11）：`provider.detect` 的 `local`。
+//! 探本机的模型服务（`internal/blueprint/models.md`「怎么走」第七条第 2 条，施工 8-11）：`provider.detect` 的 `local`。
 //!
 //! 探哪几家由调的一方照目录和档案挑好（`miyu_models::onboard::local_services`：能用、地址在本机的），这里各发一次列模型
 //! （驱动的 `models_path()`，不带 key），几家一起发，各等 [`LOCAL_WAIT`]：没回的、回的不是 2xx、读不出模型列表的当没有。

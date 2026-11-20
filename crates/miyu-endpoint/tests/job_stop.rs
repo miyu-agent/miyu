@@ -1,4 +1,4 @@
-//! 协议上停掉一个任务（施工 7-4，`docs/blueprint/protocol.md` 的 `job.stop`）：真核心走一遍。人停子代理：子会话那一轮被打断，
+//! 协议上停掉一个任务（施工 7-4，`internal/blueprint/protocol.md` 的 `job.stop`）：真核心走一遍。人停子代理：子会话那一轮被打断，
 //! 父会话记下 `child.reported`（`stopped`，不是她停的）；回应是 `{}`。没有这个任务、已经结束了的拒绝，`unknown_job`，中文、英文
 //! 各一句；任务编号不合写法的参数错误。
 

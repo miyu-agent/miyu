@@ -1,4 +1,4 @@
-//! 会话钉自己的看图模型（施工 VM-1，`docs/blueprint/models.md`「怎么走」第十三条第 4 条）：`session.configure` 的 `vision`
+//! 会话钉自己的看图模型（施工 VM-1，`internal/blueprint/models.md`「怎么走」第十三条第 4 条）：`session.configure` 的 `vision`
 //! 照这时的配置解析好记一条 `session.policy_changed`，下一轮替看图的请求发给它；`null` 去掉、回到跟着 `models.chat`
 //! 那样跟着 `models.vision`；解析不出的 `unknown_model`、写法不对的 `bad_params`，什么都不记。`session.create` 也收：造好
 //! 以后记一条，回应的 `events` 多它。`view.status` 钉了的带 `vision`，没钉的不写。

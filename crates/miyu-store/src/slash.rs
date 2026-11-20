@@ -1,4 +1,4 @@
-//! 找斜杠命令模板（施工 X-14 上，`docs/blueprint/slash.md`「找、盖住、开关」）：两处找 `<名字>.md`：
+//! 找斜杠命令模板（施工 X-14 上，`internal/blueprint/slash.md`「找、盖住、开关」）：两处找 `<名字>.md`：
 //!
 //! - 本机自己放的 `commands/`；
 //! - 装了的软件包（清单读成了的）的 `commands/`，出厂的先于家目录、同一层照编号（同技能，`skills.rs`）。

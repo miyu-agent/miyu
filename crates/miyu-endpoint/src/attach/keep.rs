@@ -1,4 +1,4 @@
-//! 没有本机路径的附件落成会话里的文件（施工 3-9 六补，`docs/blueprint/protocol.md`「`session.send`」第 5 条）：剪贴板贴的、
+//! 没有本机路径的附件落成会话里的文件（施工 3-9 六补，`internal/blueprint/protocol.md`「`session.send`」第 5 条）：剪贴板贴的、
 //! 截图、远程的头传内容的，块里没有 `path`；核心读 blob，存进会话目录的 `attachments/`
 //! （[`miyu_store::attachments`]），把路径填回块里。记进日志的块带着路径，以后每次请求照它拼，字节不变。
 //! 头交了路径的（本机文件）不拷：她读原文件，照权限判。

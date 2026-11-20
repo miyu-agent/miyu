@@ -1,0 +1,278 @@
+## 策略快照
+
+### 是什么
+
+一个会话发请求要用的全部字和几样开关：人格、拼好的 system、工具面、随核心附带的字、步数上限、有没有人能确认、重启以后接着干几次。造会话时拼一份，写成规范的字节，按内容哈希存成 blob，`session.created` 记着它的哈希。以后载入，照哈希取回来重建策略：核心升级改了出厂的字，老会话发出的请求照样和当时逐字节一样。
+
+模型、供应商、密钥不在里面：同一份快照可以交给不同的端点，发请求时才定。
+
+### 在哪
+
+| 代码 | 管什么 |
+|---|---|
+| `crates/miyu-policy/src/lib.rs` | 对外的几样 |
+| `crates/miyu-policy/src/compose.rs` | 拼快照：system 怎么拼、重启以后接着干几次 |
+| `crates/miyu-policy/src/steps.rs`（施工 AE-1） | 步数上限：四种会话给的两个数、出厂的常量，以前造的快照怎么读，fork 子代理换策略里的数（下面「步数上限」） |
+| `crates/miyu-policy/src/snapshot.rs` | 快照的类型、字节、哈希、读回来、造会话的那一条、造策略、驱动的占位 |
+| `crates/miyu-policy/src/facts.rs` | 快照里事实的模板 `FactTexts`，造成内核的 `FactTemplates`（施工 2-7 补从 `snapshot.rs` 挪出来） |
+| `crates/miyu-policy/src/drivers.rs` | 快照里驱动的几句占位 `DriverPlaceholders`，读成驱动的占位（施工 3-9 四补从 `snapshot.rs` 挪出来） |
+| `crates/miyu-policy/src/tools.rs` | 工具面：排序、拆成两份；执行器替工具写的两句 |
+| `crates/miyu-policy/src/tools/choice.rs` | 工具面上一件的一个参数照会话开局时的配置填上能选的几个（`ToolEntry::offer`：插 `enum`、说明后面一行一个，一个都没有的拿掉这个参数），照快照读回能选的（`ToolEntry::offered`）；照原样的 JSON 搬，别的字节不动（施工 8-8 补，`subagent` 的 `pool`） |
+| `crates/miyu-policy/src/guard.rs` | 权限策略拒绝时写的三句 |
+| `crates/miyu-policy/src/image_name.rs` | 带名字的图片的三句（施工 3-9 四补） |
+| `crates/miyu-policy/src/attached_path.rs` | 看不了的附件带上原来的路径的两句（施工 3-9 五补） |
+| `crates/miyu-policy/src/path_only.rs` | 只有路径的附件写成的两句（施工 AT-1） |
+| `crates/miyu-policy/src/hosted_tool.rs` | 供应商侧工具写成的字的四份（施工 HT-2） |
+| `crates/miyu-policy/src/recap.rs` | 回顾的字 `RecapTexts`、数 `RecapNumbers` 和出厂的数 `RECAP`，交给组装器的样子（施工 3-8 四补） |
+| `crates/miyu-policy/src/vision.rs` | 替看不了图的模型看图的字（施工 8-17）：转述请求的两份 `VisionTexts`、图的位置的三句标签 `ImageDescriptionTexts`，交给组装器、驱动的样子 |
+| `crates/miyu-policy/src/forward.rs`（施工 O-34） | 合并转发那几行的三句 `ForwardTexts`（`core.forward`），交给组装器时两份照模板读 |
+| `crates/miyu-policy/src/private_media.rs`（施工 O-35） | 私聊记号的语音那一句 `PrivateMediaTexts`（`core.private_media`），交给组装器时去掉行尾空白 |
+| `crates/miyu-policy/src/title.rs` | 起标题的字 `TitleTexts`、数 `TitleNumbers` 和出厂的数 `TITLE`，交给组装器、内核的样子（施工 3-8 五补） |
+| `crates/miyu-policy/src/jobs.rs` | 回报的写法、任务用的数；子会话回报的正文怎么截（`reports()`，施工 3-8 五补从 `snapshot.rs` 挪来，那边放不下了） |
+| `crates/miyu-policy/src/memory.rs` | 记忆的范围 `MemoryScope`，快照的 `memory` 怎么写（`with_memory`）、怎么读（`memory_scope`，施工 R-3 下） |
+| `crates/miyu-policy/src/peers.rs` | 别的会话发来的话：防刷屏的数 `PeerNumbers` 和出厂的数 `PEERS`，交给内核的样子；标签的两份 `PeerTexts`，交给组装器的样子（施工 C-2）。「空了告诉我」的两个数和通知的五份字 `PeerIdleTexts`，作废那一句照快照的小时数换好（施工 C-6） |
+| `crates/miyu-policy/src/bare.rs`（施工 D-1 上） | 裸的快照：整理会话用，下面「裸的快照」 |
+| `crates/miyu-policy/src/hazard.rs`（施工 5-17） | 高危命令照规则认，纯的判法，不进快照：`session/guard.md` 第四条末、`tools/shell.md`「高危」。问人的那几种归的五类（`Group`，施工 HZ-1）也在这里 |
+| `crates/miyu-store/src/resources.rs` | 从资源目录读原文（`store/resources.md`） |
+| `crates/miyu-store/src/blob.rs` | 存 blob、取 blob（`store.md`） |
+| `crates/miyu-session/src/open.rs` | 造会话时存、载入时取 |
+
+### 对外的样子
+
+**`Snapshot`**，字段的先后就是字节里的先后：
+
+| 字段 | 取值 | 是什么 |
+|---|---|---|
+| `persona` | 字符串 | 人格的编号，就是资源目录 `personas/` 下那一层目录的名字 |
+| `system` | 字符串 | 拼好的 system |
+| `tools` | `ToolEntry` 的列表 | 工具面，照名字排好。一件都没有的不写这一格 |
+| `core` | `CoreTexts` | 随核心附带的字 |
+| `step_limit` | 整数或 `null` | 一个回合最多请求几次模型，每一轮都照它；`null` 是不限（施工 AE-1，下面「步数上限」）：有人看着的主会话是 `null`，没人看着的主会话照预设 `[limits] unattended_steps`（出厂 500），通用子代理 800 |
+| `auto_step_limit` | 整数 | 不是人开的回合（定时任务、长期目标的续轮、重启接着干、回报叫醒、别的会话和 harness 发来的……）最多请求几次模型，内核取它和 `step_limit` 里小的（施工 AE-1）：主会话照预设 `[limits] unattended_steps`（出厂 500），通用子代理 800。排在 `step_limit` 后面。以前造的快照里没有（那时 `step_limit` 一律是 `null`），不读成不限：照 `attended` 读成出厂的，有人看着的 `(null, 500)`，没人看着的 `(500, 500)`；没有的不写，旧快照字节、哈希不变 |
+| `attended` | 布尔 | 有没有人能确认 |
+| `resumes` | 整数 | 有计划的重启打断了一轮，再起来时接着干：从人最后说的那句话起最多接几次，现在是 3（`kernel/session.md`「载入和崩溃」第 6 条，施工 RS-1） |
+| `compaction` | 对象 | 压缩用的数：`reserve_cap` 输出预留的上限、`margin` 余量、`image`、`file` 估算时一张图、一个文件各算多少 token、`tail` 尾巴的上限，现在是 20000、13000、2000、2000、16000（施工 6-2）。以前造的快照里没有，读成没有；没有的不写。6-2（上）造的没有 `tail`，读成 16000。`rebuild` 压后重建的数（施工 6-5）。`pause` 熔断的数：`failures` 连续失败几次、`turns` 几个回合内又到线算快、`refills` 连着快几次，现在都是 3（施工 6-6 上）；以前造的没有，读成没有：不熔断。`shorten` 截短重试的数：`tries` 最多再试几次、`percent` 没说超多少时截百分之几，现在是 3、20（施工 6-6 中）；以前造的没有，或者只有数、没有字的，不截短。`line_percent`、`margin_percent` 压缩线、余量各至多窗口的百分之几，现在是 85、5，排在 `margin` 后面（施工 6-11 再补，`compaction.md` 第二条第 2 条）；以前造的没有，读成 85、5：老会话也照它。`line_percent` 造会话时照配置 `compaction.line` 写，回合开始照会话钉的、配置的换（施工 CT-1，`Snapshot::with_line`；下面「压缩触发线」） |
+| `jobs` | 对象 | 任务用的数（施工 7-6）：`report_chars` 子会话回报的正文最多几个字，现在是 30000（`agents.md`「对外的样子」）。以前造的快照里没有，读成没有、不写：照出厂的 30000 截。施工 M-1 多两格：`nested_per_parent`、`nested_per_session` 嵌套调用一个父级、整个会话同时过链、在跑的最多几个（出厂 8、16，设计 `39-脚本调工具.md` 第四节第 5 条）；以前造的快照里没有，读成没有、不写，照出厂的数 |
+| `recap` | 对象 | 回顾用的数（施工 3-8 四补，`kernel/request.md`「回顾的请求」）：`turns` 最多喂几轮她答过的、`tokens` 整份最多约多少 token，现在是 8、8192（2026-10-01 项目主人定，照 codex）。以前造的快照里没有，读成没有、不写：不做回顾 |
+| `title` | 对象 | 起标题用的数（施工 3-8 五补，`kernel/request.md`「起标题的请求」、`kernel/session.md`「起标题」）：`tokens` 整份请求最多约多少 token、`chars` 标题最多几个字、`tries` 一个会话最多试几次，现在是 1024、50、2（1024 照回顾的截法施工时定；50 是 2026-10-01 项目主人定；2 是施工单定的）。以前造的快照里没有，读成没有、不写：不起标题 |
+| `peers` | 对象 | 别的会话发来的话怎么防刷屏（施工 C-2，`cross-session.md`「对外的样子」）：`burst` 同一个发话方一个窗口里最多几句、`window` 窗口多少秒、`unread` 没听到的最多几句，现在是 5、600、50（数是估的，待 C-7 实测）。排在 `title` 后面。以前造的快照里没有，读成没有、不写：照出厂的数，防刷屏不能因为会话旧就不管。施工 C-6 加两格，排在后面：`watch_hours` 订了多久没等到就作废（小时，出厂 12）、`status_chars` 通知那一行最多几个字（出厂 200）；C-2 时造的快照里没有这两格，读成没有、不写，照出厂的数 |
+| `memory` | 字符串 | 记忆的范围（施工 R-3 下，`memory.md`「范围」）：`persona`、`off`（`session` 施工 FH-1 去掉，读到的照认不出的），造会话时定（`with_memory`），新造的都写明；排在 `peers` 后面、最后。以前造的快照里没有，读成没有、不写，照 `persona`；认不出的照 `off` |
+
+**`ToolEntry`**：`name`、`description`、`parameters`（参数的 JSON Schema，原样的 JSON）、`access`（`read`、`write`、`execute`、`network`、`outbound`、`venue`（施工 O-31 前）、`install`（施工 F-10 下），不认识的原样留着），照这个先后；`clicall`（施工 M-2：脚本里能调，来处的默认、配置的 `clicall.*` 算好了写进来；预设关了「脚本调工具」的一律假，施工 M-6）是真的才写，以前造的快照读成假，字节不变（以前的会话里脚本一件都调不了，2026-10-20 项目主人定）。`package`（施工 WK-2：这件从哪个软件包来，组工具面时照目录的 `Catalog::package_of` 写进来；回合开始重筛时目录里没了的这件照它认是不是程序升级拿掉的，`providers.md`「目录换代」第 3 条）有才写，不进 tools 数组，以前造的快照读成没有，字节不变。以前造的快照里还可能有 `need_load`（施工 L-1，FL-1 拆了）：读的时候不认，照完整格式发。
+
+**`CoreTexts`**，每一格是 `resources/core/` 下一份文件的原文：
+
+| 格 | 里面的格 | 文件 |
+|---|---|---|
+| `checkpoint_open`、`checkpoint_close`、`checkpoint_end` | | `checkpoint-open.txt`、`checkpoint-close.txt`、`checkpoint-end.txt`（施工 6-5 从 close 里拆出来。以前造的快照里没有 end，读成空的：close 里原本就带着那一句，拼出来一字不差） |
+| `turn_ended` | `interrupted`、`error`、`step_limit`、`aborted`、`restarted` | `turn-ended/<同名>.txt` |
+| `facts` | `env`、`permission`、`reply_cut`、`session`、`permission_changed`、`preset_changed`、`channel` | `facts/env.txt`、`facts/permission.txt`、`facts/reply-cut.txt`、`facts/session.txt`（施工 1-13 再补，会话编号。以前造的快照里没有，读成没有、不写：那些会话不注入这一块）、`facts/permission-changed.txt`（施工 2-7 补，切了级别以后的权限那一块，读法照 `session`：以前造的快照里没有，读成没有、不写，那些会话切了照旧写平常那一份，快照的字节、请求的前缀都一字不变）、`facts/preset-changed.txt`（施工 DM-8，换了预设那一块，读法同上：以前造的快照里没有，那些会话换了预设不注入）；`channel`（施工 VN-1）：`facts/channel/` 下 `head/` 里一种头一份（文件名去掉 `.txt` 是种类，照名字排）、`other.txt`、`nobody.txt`，存成 `{"heads": {<种类>: <原文>}, "other", "nobody"}`；只给本机会话，场所会话拼快照时去掉（`miyu-session` 的 `Parts::local`），换快照照旧快照有没有；以前造的快照里没有，读成没有、不写，那些会话不注入 |
+| `tool_results` | `unknown`、`not_an_object`、`cancelled_before`、`cancelled_running`、`skipped`、`read_only`、`denied`、`denied_with_reason`、`unattended`、`question_interrupted`、`question_voided`、`question_unattended`、`restarted`、`unavailable`、`crashed` | `tool-results/` 下，下划线换成 `-` 的同名文件 |
+| `drivers` | `image_omitted`、`file_omitted`、`no_output`、`tool_attachments`、`tool_attachments_only`；`text_file` 里的 `file_open`、`file_cut`、`file_close`；`image_name` 里的 `image_open`、`image_close`、`image_omitted_named` | `drivers/` 下，下划线换成 `-` 的同名文件。`text_file`（施工 3-9 三补，文本文件照字放进消息，`drivers/openai-chat.md` 第 9 条）以前造的快照里没有，读成没有、不写：文本文件照别的文件写占位。`image_name`（施工 3-9 四补，带名字的图片，同一条）也是：以前造的快照里没有，读成没有、不写，带名字的图片照不带名字的写。`attached_path` 里的 `image_omitted_path`、`file_omitted_path`（施工 3-9 五补，看不了的附件带上原来的路径）同样：以前造的快照里没有，读成没有、不写，照旧不带路径。`path_only` 里的 `file_path_only`、`file_path_only_sized`（施工 AT-1，只有路径的附件写成的那一句，同一条）也是：以前造的快照里没有，读成没有、不写，这种附件只写路径本身。`hosted_tool` 里的 `hosted_tool`、`hosted_tool_failed`、`hosted_tool_open`、`hosted_tool_cut`（施工 HT-2，供应商侧工具写成的那一段字，`drivers/openai-chat.md` 第 4 条）也是：以前造的快照里没有，读成没有、不写，供应商侧工具不写进请求。`image_description` 里的 `image_description_open`、`image_description_open_named`、`image_description_close`（施工 8-17，替它看的图的标签，同一条）也是：以前造的快照里没有，读成没有、不写，看不了图的照旧写占位 |
+| `permissions` | `unresolvable` | `permissions/unresolvable.txt`（写数据根的 `forbidden`、`knowledge` 两格施工 RO-3 删了：以前造的快照里有，读的时候跳过） |
+| `compaction` | `summarize_task`、`summarize_instructions`、`summarize_end`、`notes_files`、`notes_files_more`、`notes_retrieve`、`notes_too_large`、`restored_open`、`restored_close`、`truncated`、`notes_uncovered`、`summarize_system` | `compaction/` 下，下划线换成 `-` 的同名文件（摘要指令施工 6-2 上，截短重试的两份施工 6-6 中，隔离式那一句施工 6-6 下，别的施工 6-5；`summarize_instructions`、`summarize_end` 施工 6-8 从摘要指令里拆出来）。以前造的快照里没有，读成没有；没有的不写：没有 `notes_*` 的不写那一段，没有 `restored_*` 的不重读，没有截短重试的两份的不截短，没有 `summarize_system` 的不改走隔离式；有 `summarize_task`、没有 `summarize_instructions`、`summarize_end` 的，那两份读成空的：那时的 `summarize_task` 里本来就带着最后那一句，拼出来一字不差 |
+| `jobs` | `command_open`、`command_exit`、`command_signal`、`command_duration`、`command_output`、`command_close`、`subagent_open`、`subagent_person`、`subagent_truncated`、`subagent_silent`、`subagent_close`、`subagent_omitted`、`stopped_by_user`、`subagent_message_open`、`subagent_message_close` | `jobs/` 下，下划线换成 `-` 的同名文件（施工 7-2，两种回报的写法，`kernel/request.md`「回报」）。以前造的快照里没有，读成没有、不写：回报不渲染，那些会话也派不出任务。`subagent_omitted` 是子会话回报的正文截在中间的那一行，内核截的时候用、不交给组装器（施工 7-6）；7-2 到 7-5 造的没有，读成空的、不写：头尾之间只换一行。`stopped_by_user` 是人停的那一句，两种回报共用（施工 7-2 补，`kernel/request.md`「回报」第 3 条）；以前造的没有，读成空的、不写：人停的照原来的写。`subagent_message_open`、`subagent_message_close` 是子代理发来的留言的标签（施工 7-7，`kernel/request.md`「子代理的留言」）；以前造的没有，读成空的、不写：留言只剩它的话 |
+| `harness` | `message_open`、`message_close` | `harness/` 下，下划线换成 `-` 的同名文件（施工 7-10，别的 harness 发来的话的标签，`kernel/request.md`「别的 harness 发来的话」）。以前造的快照里没有，读成没有、不写：那种话照人的话原样渲染 |
+| `peers` | `message_open`、`message_close`；`idle_open`、`idle_silent`、`idle_expired`、`idle_gone`、`idle_close` | `peers/` 下，下划线换成 `-` 的同名文件（施工 C-2，别的会话发来的话的标签，`kernel/request.md`「别的会话发来的话」；施工 C-6，空了的通知，「空了的通知」）。排在 `harness` 后面。以前造的快照里没有，读成没有、不写：那种话照人的话原样渲染。通知的五份是一组、和标签平铺在同一层，C-2 时造的快照里没有，读成没有、不写：通知不出 |
+| `recap` | `instruction`、`user`、`assistant`、`omitted`、`excerpted` | `recap/` 下的同名文件（施工 3-8 四补，回顾的请求，`kernel/request.md`「回顾的请求」）。以前造的快照里没有，读成没有、不写：不做回顾 |
+| `title` | `instruction` | `title/instruction.txt`（施工 3-8 五补，起标题的请求，`kernel/request.md`「起标题的请求」）；标签、截断的记号借 `recap` 的。以前造的快照里没有，读成没有、不写：不起标题 |
+| `vision` | `instruction`、`question` | `vision/` 下的同名文件（施工 8-17，转述一张图的请求，`kernel/request.md`「替它看的图」）。以前造的快照里没有，读成没有、不写：不转述 |
+| `forward` | `label`、`numbered`、`more` | `venues/forward/` 下的同名文件（施工 O-34，`kernel/request.md`「合并转发」）：放在 `core` 这一层、不放进群会话的 `group`，因为私聊会话的快照没有 `group`、私聊里的转发也要写（2026-10-11 主会话、核心定）。交给组装器时去掉行尾空白；`numbered` 的字段只能是 `number`、`more` 的只能是 `count`，试换不过的造不出策略（`BuildError::Texts`，`which` 是 `forward`）。以前造的快照里没有，读成没有、不写：收到转发不写那几行，只看得到正文里的占位 |
+| `private_media` | `voice` | `venues/voice.txt`（施工 O-35，同群会话 `group.voice` 的那一份，`kernel/request.md`「群里的一行」私聊那一条）：放在 `core` 这一层，私聊会话的快照没有 `group`（同 `forward`）。交给组装器时去掉行尾空白。它也是「O-35 起造的会话」的标志：以前造的快照里没有，读成没有、不写，私聊照以前渲染、一个字节不变 |
+
+**函数**：
+
+| 名字 | 做什么 |
+|---|---|
+| `compose(人格, Sources, attended)` | 拼一份快照。`Sources` 是读好的原文：`core`（`CoreTexts`）、`persona`（`PersonaTexts { persona, examples, reminders }`：人设、示范对话、角色扮演提示的原文）、`reminder`（角色扮演提示的包装 `Wrap { open, close }`，施工 P-1 补） |
+| `Snapshot::with_tools(工具)` | 带上工具面 |
+| `Snapshot::with_venue(说明)` | 带上场所说明：system 的第二块，接在人设后面（施工 7-5）。子会话有 |
+| `Snapshot::with_group(说明, GroupChat)` | 带上群会话（施工 O-13 中）：格式说明照 `with_venue` 接在人设后面（`core/venues/group.txt`），快照记下 `group` |
+| `Snapshot::with_core_lines(&CoreLines, os)` | 带上核心的几行（施工 2-7 补）：system 的第三块，所以在 `with_tools`、`with_venue` 以后调。`CoreLines` 有这几格：`permission`（`permission-rule.txt`）、`local_paths`（`local-paths-rule.txt`）、`machine`（`machine.txt`，施工 2-7 再补，`{os}` 换成 `os`）、`harness`（`agent-version.txt`，施工 E-M，读的时候 `{version}` 已换好，接在最后、工具面空的也带）、`style_lock`（`style-lock.txt`，施工 P-1 补，交给 `with_style_lock`）、`clicall`（`core/clicall.txt`，施工 M-4，交给 `with_clicall`）。一行一句，先权限、再路径、最后本机是什么系统；工具面是空的不带权限、系统那两句 |
+| `Snapshot::with_provider_search(pin, note)` | 钉上供应商自己的联网工具的判断结果（第 11 条的 `provider_search`），并带上换成的供应商侧工具的说明（施工 DSR-4补）。`note` 是会话那一层从 `core/hosted/<工具名>.txt` 读好的说明，接在核心的几行后面单成一段，所以在 `with_core_lines` 以后调。没有说明时 system 一字不变 |
+| `Snapshot::with_clicall(&CoreLines, tells)` | 什么时候写成调工具的程序的那一段（施工 M-4，设计 39 第九节）：`tells` 是工具面上有跑命令的工具（`ToolEntry::runs_commands`，施工 BS-1 上）、有脚本里能调的工具（会话那一层照 `clicall`、`Access::scriptable` 算），接在核心的几行后面单成一段；没有的不带，system 一字不变 |
+| `Snapshot::swappable(新的)` | 能不能换成 `新的`（施工 P-1 再补）：除了 `system`、`demos`、`tools`、`reminder`、`persona_digest`、`preset`（后两格施工 P-2 下：换预设时工具面重新筛过，留着的那几件是原样），别的格都一样 |
+| `Snapshot::with_knowledge(那一块)` | 带上她查得到的知识库那一块（施工 K-1 补，`knowledge.md`「列出来的那一块」）：system 第 4 块（`26-提示词.md` 第四节），记进快照的 `knowledge`。在 `with_core_lines` 以后、`with_preset` 以前调；没有的 system 一字不变 |
+| `Snapshot::with_preset(预设)` | 带上预设（施工 P-2 中）：记进快照的 `preset`（编号、装了没开的软件）；没开角色扮演的去掉 `reminder`。system 一字不加：原来接在后面的装了没开那一行 2026-10-23 删掉（施工 P-OFF） |
+| `Snapshot::with_style_lock(风格锁)` | 带上风格锁（施工 P-1 补）：system 的最后一块（`26-提示词.md` 第四节第 7 块），在 `with_core_lines` 以后调。快照有 `reminder` 的才带，别的 system 一字不变 |
+| `REPORT_CHARS` | 策略数据 `jobs.report_chars` 的出厂值 30000（施工 7-6）：拼快照时写进 `jobs` |
+| `NESTED_PER_PARENT`、`NESTED_PER_SESSION` | 策略数据 `jobs.nested_per_parent`、`jobs.nested_per_session` 的出厂值 8、16（施工 M-1）：拼快照时写进 `jobs`，造策略时交进内核的 `NestedLimits` |
+| `JOB_DEPTH` | 策略数据 `jobs.depth` 的出厂值 2（`agents.md`「对外的样子」，施工 7-5）：造会话定工具面时用，不进快照 |
+| `RECAP` | 回顾用的数的出厂值：8 轮、8192 个 token（施工 3-8 四补）：拼快照时写进 `recap` |
+| `TITLE` | 起标题用的数的出厂值：1024 个 token、50 个字、试 2 次（施工 3-8 五补）：拼快照时写进 `title` |
+| `PEERS` | 防刷屏的数的出厂值：5 句、600 秒、50 句（施工 C-2），12 小时、200 个字（施工 C-6）：拼快照时写进 `peers`，以前造的快照没有的照它 |
+| `to_bytes()`、`hash()`、`from_bytes(字节)` | 规范的字节、内容哈希、读回来 |
+| `session_created(场所, 权限)` | 造会话那一条的 `body`：`venue`、`policy`（这份快照的哈希）、`permission`、`oneshot: false` |
+| `policy()` | 照快照造出内核的 `Policy` |
+| `driver_texts()` | 驱动的五句占位（`drivers/openai-chat.md`） |
+| `run_texts()` | 执行器替工具写的两句：`unavailable(工具名)`、`crashed(工具名)` |
+| `guard_texts()` | 权限策略拒绝时的三句：`forbidden(路径)`、`unresolvable(路径, 原因)`、`read_only()` |
+
+### 怎么走
+
+**读原文**（`ResourceRoot::sources`，资源目录怎么找见 `store/resources.md`）
+
+1. 人格的编号要合写法：小写字母开头，只有小写字母、数字、`-`、`_`，最长 64 个字符。它是一层目录的名字，不许带路径。
+2. 读 `CoreTexts` 表里的每一份，再读 `personas/<编号>/prompts/persona.md`。原文照抄，行尾的换行也算。
+3. 核心的几行 `core/permission-rule.txt`、`core/local-paths-rule.txt`、`core/machine.txt`（施工 2-7 再补）另读（`ResourceRoot::core_lines`，施工 2-7 补），和本机系统的名字（`miyu_store::env::os_name`，核心头一次要时认一次）一起交给 `with_core_lines`；它们只拼进 system，不另存进快照的 `core`。风格锁 `core/style-lock.txt` 和它们一起读（施工 P-1 补），装了没开的那一行 `core/preset-off.txt` 原来也是（施工 P-2 中），2026-10-23 删掉（施工 P-OFF）。
+4. 角色扮演提示的包装 `core/facts/reminder-open.txt`、`reminder-close.txt` 读进 `Sources.reminder`（施工 P-1 补）：拼进快照的 `reminder`，也不另存进 `core`，没有角色扮演提示的快照字节不变。
+
+**拼**（`compose`）
+
+1. `system` 照 `26-提示词.md` 第四节的先后拼：每一块去掉末尾的空白，空的块不要，块和块之间空一行（`\n\n`）。开头的空白是人格自己写的，照留。现在只有人设这一块，所以软件工程师的 system 就是 `You are a helpful software engineer.`；子会话多一块场所说明（`core/jobs/subagent-venue.txt`），`with_venue` 照同样的规矩接在人设后面（施工 7-5，`agents.md` 第九条第 3 条）。造会话时最后接上核心的几行（`with_core_lines`，施工 2-7 补）：`You are a helpful software engineer.`、空一行、权限那一句、换行、路径那一句。以前造的快照 system 已经拼好存着，载入照它发，前缀一字不变。
+2. `tools` 先是空的；`with_tools` 带上工具面，照名字的字节序排，稳定排序：交进来的先后不影响字节。
+3. `step_limit`、`auto_step_limit` 照 `attended` 给出厂的（有人看着的 `null`、500，没人看着的 500、500，施工 AE-1），`resumes` 是 3，`attended` 照交进来的，`compaction` 是出厂的四个数，`recap` 是出厂的两个数（施工 3-8 四补），`title` 是出厂的三个数（施工 3-8 五补），`peers` 是出厂的五个数（施工 C-2、C-6），`memory` 不写（造会话时 `with_memory` 写上，施工 R-3 下）。
+4. `reminder`（施工 P-1 补）：人格的角色扮演提示去掉末尾空白，是空的不写；不空的拼成一块：包装的开头、原文、换行、包装的收尾。原文不转义：是人格的作者写的。`policy()` 把它交给内核的事实模板（`FactTemplates::with_reminder`），回合开始时隔几轮注入（`kernel/request.md`「事实」）。造会话时最后带上风格锁（`with_style_lock`）：有 `reminder` 的 system 末尾空一行接上 `core/style-lock.txt`。
+6. `preset`（施工 P-2 中）：会话的预设，`{"id", "off", "digest"}`，`off` 是造会话时装了、这个预设没开的软件，照编号排，都开着的不写；`digest` 是叠好的预设文件的指纹（`PresetFile::digest`，施工 P-2 下），回合开始时执行器照它认出预设改了，P-2（中）造的没有、不换。工具面、记忆的范围造会话时已经照预设筛过；换人格重拼时照它（`with_preset`）去掉角色扮演提示、写那一行，所以人格的指纹照旧算人格原来的字，不会每轮都当成改过。以前造的快照没有：全开。
+7. `group`（施工 O-13 中）：群会话钉下的 `{"offset", "no_text", "recent", "voice"}`（`recent` 施工 O-13 下：群聊近况的块头、缺口提示的原文和预算 `budget`，出厂 `RECENT_BUDGET` 80000；O-13 中造的没有、不写，不出近况；缺口提示的字段只能是 `count`，不合的造不出策略。`voice` 施工 O-33：语音那一句 `core/venues/voice.txt` 的原文，交给组装器时去掉行尾空白；有它的带的东西标第几个，O-33 以前造的没有、不写，照以前写，`kernel/request.md`「群里的一行」）：造会话时这台机器的时区（比 UTC 早多少分钟），正文、带的东西都没有的那一条写什么（`core/venues/no-text.txt` 的原文）。`policy()` 交给组装器（时区换成内核的类型、空的那一句去掉行尾空白），群里的人说的照它渲染成一行一条；时区超出 ±14:00 的造不出策略（`BuildError::Offset`）。私聊、本机的会话没有、不写，字节和以前一样。换人格、换预设重拼时照旧快照的时区。
+8. `foreground`（施工 T-1 上）：后台运行关着的会话是真（预设关了 `basesystem` 的 `background`，设计 30 第三节第 7 条）：执行器不给任务端口，工具面上 `shell` 没有放到后台那一项。开着的、以前造的不写，字节和以前一样。
+9. `knowledge`（施工 K-1 补）：她查得到的知识库那一块拼好的原文（`with_knowledge`，已经拼进 `system`）。回合开始时执行器照这一刻重拼、和它比，不一样就换快照（`knowledge.md`「怎么走」第六条第 3 款）。它变了算改过、照换（`swappable` 照旧比它，变了的已经算改过，用不上）。没有库、没有知识库那两件工具的、以前造的不写，字节和以前一样。
+10. `plugin_tools`（施工 O-60，`venues.md`「场所插件」）：场所会话的工具面上给了的场所插件工具（写了 `plugin` 的），照名字排。回合开始时执行器照这一刻那个场所开着的场所插件重筛工具面，筛出来的和工具面上现有的那几件不一样就换快照。没有的、本机会话、以前造的不写，字节和以前一样。
+11. `provider_search`（设计 72，施工 DSR-3，`crates/miyu-policy/src/provider_search.rs`）：供应商自己的联网工具换掉 Miyu 的搜索工具的判断结果。模型这边满足条件时（供应商的档案写了 `search`、地址是官方地址、模型走档案写的驱动、思考没有设成关；模型池要每个成员都满足），回合开始钉下三样：`model` 是判断时会话的模型引用，`active` 是当时「联网服务」有没有选档案写的那个值，`declared` 是换掉的几件（`tool` 是 Miyu 的工具名，`with` 是换成的供应商侧工具名，按档案的顺序；工具面里原本有的才换，没有换掉任何一件时不写）。换掉的工具不在 `tools` 里。判断的规则：模型这边不满足时不钉；满足并且 `model` 和现在的引用一样时沿用钉着的 `active`，所以会话中途只改「联网服务」不会改变工具面；引用变了或者原来没有钉时，读这一轮的「联网服务」重新判断。模型这边不满足的会话没有这一格，快照的字节和以前一样。换成的供应商侧工具有说明时（`resources/core/hosted/<工具名>.txt`，施工 DSR-4补），说明拼进 `system`，和这一格一起钉下：`declared` 不变，`system` 里的这一段就不变；`declared` 变成空的或者这一格没有了，这一段跟着拿掉。
+5. `persona_digest`（施工 P-1 再补）：人格三份字（人设、示范对话、角色扮演提示，叠好的）的 SHA-256（`PersonaTexts::digest`，三样写成一个 JSON 数组再算）。回合开始时执行器照它认出人格的文件改了（`session/actor.md`「换快照」）。以前造的快照没有，读成没有、不写：那些会话不换。
+
+**字节和哈希**
+
+1. 规范的字节：紧凑的 JSON，字段照结构体的先后，同样的内容字节一定一样。参数格式原样照抄。
+2. `tools` 是空的不写这一格：带上一张空的工具面，字节、哈希不变。
+3. 哈希：规范字节的 SHA-256，写成 `sha256:` 加 64 位小写十六进制。存成 blob 用的、`session.created` 记的，都是它。
+4. 读回来：不认识的字段不理。缺了 `tools`、`core.permissions`、`core.tool_results.unavailable`、`core.tool_results.crashed` 的，读成空的：没有工具的会话用不到它们。缺了 `step_limit` 的读成不限；缺了 `auto_step_limit` 的照「步数上限」第 4 条读。缺了别的，读不回来。格式改了不背兼容。
+
+**造会话**（`crates/miyu-session/src/open.rs` 的 `create`，在阻塞线程里做）
+
+1. 照人格读原文；拼快照，带上核心工具目录里每一件的规格（名字、说明、参数格式、访问类别）。人格是 `session.create` 写的，不写是 `engineer`；`attended` 是握手时头报的能不能输入（`protocol.md`）。不能派子代理的会话（不在本机、到了深度上限）不带 `subagent`；子会话带上场所说明（施工 7-5，`session/tools.md`「工具面」）。快照的格式不变：施工 8-8 给 `subagent` 加了参数 `tier`，施工 8-8 补换成 `pool`：`pool` 那一格照造会话时的配置拼好（列哪几个池、每个一行说明，一个都没有的拿掉，`session/tools.md`「工具面」、`tools/subagent.md`「会话开局时拼 `pool`」），快照里存的是拼好的。以前造的照旧，前缀一个字节不变；同一个核心上开着的几个会话，这一格可以不一样。施工 8-15 目录里多了 `session_usage`：新造的本机会话工具面多这一件，群里的没有；以前造的快照没有它，照快照发，前缀一个字节不变。
+2. 先造一遍策略、驱动的占位、执行器的两句、权限策略的三句：哪一样造不出来，会话造不成，什么都不存。
+3. 快照存成数据根里的 blob。先落 blob，再写引用它的事件。
+4. 建会话目录和日志，内核记第 1 条 `session.created`：`owner`、`venue`、`policy`（快照的哈希）、`permission`，一次性的再带 `"oneshot":true`。
+5. 以后这个会话的工具面一直照快照发，核心的目录变了也不变。
+
+**载入**（`open.rs` 的 `load`）
+
+1. 打开日志；第 1 条不是 `session.created` 的，载入不了。
+2. 照它的 `policy` 从 blob 里取字节。取的时候核对内容哈希：没有、对不上、读不了，都载入不了。
+3. 读回快照，造策略、驱动的占位、执行器的两句、权限策略的三句，交给内核从日志重建。
+4. 工具面照快照；执行时照名字在核心的工具目录里找：快照里有、目录里没有的，结果写 `unavailable` 那一句（`session/tools.md`）。
+
+**造策略**（`policy()`），照这个先后查，先错的先报：
+
+1. 检查点的包装、回合没走完的五句、摘要指令（没有的是空的）、回顾的字和数（两样都有的才有，缺一样就是没有、不做回顾，施工 3-8 四补）、起标题的字和数（两样都有的才有，施工 3-8 五补；组装时还要有回顾的标签）、转述一张图的两份（有的才有，施工 8-17）、回报的写法（没有的是没有；有的，带字段的七份读成模板，拿各自的字段试换一次：标签的两份 `job`、`title`、`reason`，另外四份各一个 `code`、`signal`、`ms`、`chars`，写坏了、要了别的字段的造不出，说是 `job report texts`），交给组装器（`kernel/request.md`）。
+2. 工具面拆成两份，照快照里的先后：组装器的工具面（名字、说明、参数格式），内核的工具规则（名字 → 访问类别、参数格式）。两件同名的，造不出。
+3. 稳定区：工具面、`system`，示范对话是空的。
+4. 事实模板，造的时候试换（`kernel/request.md`）：三份，加上会话编号、切换那两份（有的话）。
+5. 内核替工具写的十三句（`kernel/tools.md`）。
+6. `Policy` 的几格：`assembler`、`facts`、`tools`、`step_limit`、`auto_step_limit`（以前造的照「步数上限」第 4 条读）、`tool_texts`、`attended`、`resumes`，照快照的带；`compaction`：快照里压缩的数和摘要指令都有的，照数带上，缺一样就是没有，不主动压；`titles`：快照里起标题的字和数都有的，带上 `tries`、`chars`，缺一样就是没有，不起标题（施工 3-8 五补）。
+
+**步数上限**（施工 AE-1，`crates/miyu-policy/src/steps.rs`；2026-10-30 项目主人定，照 Claude Code 主对话不设、子代理设的分法）
+
+1. 照会话的种类给两格（`StepLimits::of`），数是 `miyu-policy` 里有名字的常量：有人看着的主会话 `(null, U)`；没人看着的主会话（通讯平台、定时新开的、`miyu ask` 一次性的）`(U, U)`；通用子代理 `(800, 800)`（`SUBAGENT_STEPS`）；fork 子代理 `(500, 500)`（`FORK_STEPS`）。`U` 是预设 `[limits] unattended_steps`（`presets.md`「格式」），几层都没写的是 500（`UNATTENDED_STEPS`）；子代理不看预设。
+2. 造会话（`miyu-session` 的 `open/draft.rs`）：子会话照通用子代理，主会话照 `attended` 和预设。`compose` 自己先照 `attended` 给出厂的。
+3. 换快照重拼（`actor/persona/steps.rs`）：主会话照这一刻的预设重算，改了 `[limits]` 下一个回合换上的快照就是新的数（预设的指纹跟着变，`presets.md`「改了文件」）；子代理、预设找不回来的照旧快照的。
+4. 以前造的快照没有 `auto_step_limit`：照 `attended` 读成出厂的（`Snapshot::step_limits`），不读成不限，老会话没人看着时一样有个头。
+5. fork 子代理的快照是父会话那一份（同一个哈希，请求前缀才一样，`agents.md`「一补」第 2 条），里面的数是父会话的：载入时造好策略以后换成 fork 的两个数（`StepLimits::applied`，`open/load.rs`），快照不改。
+6. 两个数只在快照和内核的策略里，不发给模型：system、工具面、请求的字节都不变。
+7. 内核怎么用（`kernel/session.md`「工具怎么调、下一步怎么走」第 7 条）：开这一轮的那一条是人（`person`）说的，照 `step_limit`；别的一律取两格里小的。有人看着只对人自己开的那一轮成立：人不在场时被叫醒、被接着干的就是没人看着，500 步对人在场时偶尔被叫醒的那一轮也足够宽（2026-10-30 主会话定：只有人开的不限）。
+8. 回报叫醒的连着几轮（后台命令、子代理的回报和子代理的留言开的）从人上一次说话以后合起来数，最多也是不是人开的回合的那个数；用完了回报只记下、不开轮，人说话重新算（发布前第三轮审计 R3E-2，2026-11-02 项目主人定，`kernel/session.md`「回报」第 11 条）。
+
+**压缩触发线**（施工 CT-1，`crates/miyu-policy/src/snapshot/compaction.rs`；2026-11-12 项目主人定）
+
+1. 快照里压缩的 `line_percent` 就是这一轮的 N（`compaction.md` 第二条第 2 条）：造会话时照这时的配置 `compaction.line`（`open.rs`、`open/draft.rs`）。
+2. 回合开始（`actor/model/line.rs`，在人格、预设那一步以后）：会话钉的（`Session::pinned_line`）压过这一轮冻结的配置，和快照里的不一样的只换这一个数（`Snapshot::with_line`），存成新的快照，照「换策略快照」那样交给内核（`session.policy_changed` 只写 `policy`）。一样的什么都不做。人格那一步重拼的快照照旧快照的数（`with_line(old.line_percent())`），不为重拼换回出厂的。
+3. 这个数不发给模型：system、工具面、请求的字节都不变，换了也不断缓存。重放、载入照日志里最后记的那一份快照。
+4. fork 子代理的快照冻住，不换；裸的快照没有压缩的数，也不换。
+
+**几句模板**，造的时候拿空的字段试换一次，要了不该要的字段就报错：
+
+| 哪几句 | 字段 | 给人看的说法 |
+|---|---|---|
+| `run_texts` 的 `unavailable`、`crashed` | `name` | `core/tool-results/unavailable`、`core/tool-results/crashed`，带 `name` |
+| `guard_texts` 的 `unresolvable` | `path`、`reason` | `core/permissions/unresolvable`，带 `path`、`reason` |
+| `guard_texts` 的 `read_only` | 没有，用的是 `tool_results.read_only` | `core/tool-results/read-only` |
+
+给模型看的那一句，字段照模板的规矩转义；给人看的说法里，字段原样（`kernel/tools.md`）。
+
+**裸的快照**（施工 D-1 上，设计 `41-整理会话.md` 第二节第 2 条）：整理会话用，`Snapshot::bare()` 在拼好的那一份上去掉人格、system、示范、工具，记忆、知识库、技能、「关于你」、项目、扩展的几段，不压缩、不起标题、不复述、不跨会话、没有任务的字；随核心附带的字照留（回合没走完的几句、驱动的占位这些照样用得上）。字节里多一格 `bare: true`（不裸的不写，以前的快照字节不变）；`policy()` 照它让事实模板安静（`quiet()`：回合开始一块事实都不注入）。请求就只有日志里的消息，和原来记忆整理的一次性请求逐字节一样（没有 system、没有工具，一条 user）。裸的快照不随人格、预设、工具架换（`actor/persona.rs` 照旧快照的 `bare` 跳过），换了就拼回 system 和工具。
+
+**为什么能逐字节重现**
+
+1. 请求里的字只有两个来处：日志里记下的（人说的、她说的、工具的结果、注入的事实、图的转述），和快照里的（system、工具面、检查点的包装、回合没走完的五句、驱动的占位和标签）。事实、内核和执行器和权限策略替工具写的几句，照快照里的模板写成字，记进日志。
+2. 快照的字节就是存下来的那一份，取的时候核对过哈希；参数格式原样。
+3. 组装、事实、驱动都是纯函数：同样的快照、同样的日志，出同样的请求。
+
+### 样子
+
+规范的字节，一行紧凑的 JSON（软件工程师，带两件工具，中间省略）：
+
+```text
+{"persona":"engineer","system":"You are a helpful software engineer.","tools":[{"name":"edit","description":"…","parameters":{"type":"object"},"access":"write"},{"name":"read",…}],"core":{"checkpoint_open":"<conversation-checkpoint>\n…","checkpoint_close":…,"turn_ended":{…},"facts":{…},"tool_results":{…},"drivers":{…},"permissions":{…},"compaction":{"summarize_task":"Respond with text only. …"}},"step_limit":null,"auto_step_limit":500,"attended":true,"resumes":3,"compaction":{"reserve_cap":20000,"margin":13000,"image":2000,"file":2000,"tail":16000}}
+```
+
+- blob 的位置：`blobs/<哈希的前两位>/<64 位十六进制>`（`store.md`）。
+- `session.created` 的样本：`internal/designs/samples/events/session.created.jsonl`。
+- 给模型看的原文见 `kernel/request.md`、`kernel/tools.md`、`drivers/openai-chat.md` 的「样子」，登记在 `26-提示词.md` 第十节。
+
+### 出错
+
+报错是英文，给查问题的人看，写进运行日志，不进请求（施工 4-9 再补四中：原来是中文）。
+
+| 什么时候 | 怎么说 |
+|---|---|
+| 字节读不回来 | `policy snapshot not readable: <serde 的原因>` |
+| 模板坏了 | `bundled <哪一类> not usable: bad template: …`，哪一类是 `fact templates`、`kernel's tool result texts`、`driver placeholders`、`executor's tool result texts`、`permission denial texts` |
+| 工具面上两件同名 | `two tools named "<名字>"` |
+
+造会话、载入时的说法（`open.rs`）：
+
+| 什么时候 | 怎么说 |
+|---|---|
+| 人格读不出来 | `persona not readable: persona id "<编号>" is not valid: …`，或者 `persona not readable: cannot read <路径>: <原因>` |
+| 造不出策略 | `policy not built: <上表>` |
+| 存不下快照、建不了目录和日志 | `session not created on disk: <原因>` |
+| 造会话那一条没落盘 | `session.created not stored; the session stopped` |
+| 日志打不开（没有这个会话、日志坏了） | `session log not opened: <原因>` |
+| 日志里第 1 条不是造会话 | `the session log has no session.created` |
+| 取不出快照 | `policy snapshot not fetched: no blob <哈希>`，或者 `…: blob <哈希> does not match its name; left as it is`，或者读的错 |
+| 读不懂快照 | `policy snapshot not understood: policy snapshot not readable: …` |
+| 快照造不出策略 | `policy not built from the snapshot: <上表>` |
+| 内核载入不了（日志过不了账本） | `not loaded: <原因>` |
+
+协议上怎么回（人格编号不合写法、没有这个人格），见 `protocol.md`。
+
+### 守着它的
+
+| 测试 | 守哪几条 |
+|---|---|
+| `crates/miyu-policy/src/snapshot/tests.rs`、`snapshot/tests/facts.rs` | 软件工程师的 system 就是那一句、`step_limit`、`resumes`；同样的原文同样的字节和哈希，读得回来，开头结尾的样子，改一个字哈希就变；坏字节读不回来；造得出策略，坏模板说是哪一类；`session.created` 带着哈希；开关照给的带；五句占位各是各的，带名字的图片的三句也是，以前造的快照没有这三句的读回来一字不差、照不带名字的写（施工 3-9 四补）；会话编号的模板进快照、造的策略写得出那一块、坏了说是事实的模板，以前造的快照没有这一格的读进来再写出去一字不差、没有那一块（`facts.rs`，施工 1-13 再补）；切了级别以后的那一份一样：进快照、写得出那一块、坏了说是事实的模板，以前造的没有这一格的读回来一字不差、没有那一块（`facts.rs`，施工 2-7 补）；供应商侧工具写成的字的四份进快照、以前造的快照没有的读写一字不差、不写它（`snapshot/tests/drivers.rs` 的 `the_hosted_tool_texts_are_in_new_snapshots_and_absent_from_older_ones`，施工 HT-2） |
+| `crates/miyu-policy/src/compose.rs`（内嵌的测试） | system 每块去掉末尾空白、空的不要、空一行；场所说明接在人设后面、空的不留空行（施工 7-5）；核心的几行排在人设、场所说明后面，一行一句，工具面是空的不带权限那一句，没接它的 system 和原来一样、空的几行不留空行（施工 2-7 补） |
+| `crates/miyu-policy/src/tools/tests.rs` | 工具面照名字排、读回来一样、交进来的先后不影响字节；没有工具的不写 `tools`，带上空的字节不变；造策略时拆成两份；同名的造不出（读回来的也造不出）；执行器的两句带名字、转义、说法；坏的说是哪一类；缺了这两格的快照读成空的 |
+| `crates/miyu-policy/src/tools/choice/tests.rs` | 拼：一个都没有的拿掉这个参数、和资源去掉它一字不差；有的插 `enum`、说明一行一个、没写说明的只写名字；别的字节不动；读回的和拼进去的一样，没有这一格、写坏的是空的（施工 8-8 补） |
+| `crates/miyu-policy/src/snapshot/tests/recap.rs`（施工 3-8 四补） | 回顾进快照：出厂的快照带着五份字和两个数，造出的组装器回顾得出来；字、数少一样都不回顾；快照里的数照快照的；以前造的快照没有这两格，读进来再写出去一字不差，不回顾 |
+| `crates/miyu-policy/src/snapshot/tests/vision.rs`（施工 8-17） | 替看图进快照：出厂的快照带着两份字和三句标签，造出的组装器交得出转述的请求、驱动写得出带标签的转述；以前造的快照没有这两格，读进来再写出去一字不差，不转述、照旧写占位 |
+| `crates/miyu-policy/src/forward/tests.rs`（施工 O-34） | 出厂的三句交给组装器时去掉行尾换行、两份照模板换得出；快照字节读得回来；以前造的没有这一格，读成没有、读进来再写出去一个字节不变、照样造得出策略；模板没配上括号、字段名不对的造不出策略 |
+| `crates/miyu-policy/src/private_media/tests.rs`（施工 O-35） | 出厂的语音那一句交给组装器时去掉行尾换行；快照字节读得回来；以前造的没有这一格，读成没有、读进来再写出去一个字节不变、照样造得出策略 |
+| `crates/miyu-policy/src/snapshot/tests/title.rs`（施工 3-8 五补） | 起标题进快照：出厂的快照带着指令和三个数，造出的组装器起得出标题、内核拿到 `tries`、`chars`；字、数少一样都不起，没有回顾的标签的组装器也不起；快照里的数照快照的；以前造的快照没有这两格，读进来再写出去一字不差，不起 |
+| `crates/miyu-policy/src/snapshot/tests/jobs.rs`（施工 3-8 五补从 `tests.rs` 挪出来） | 子会话回报的正文怎么截：出厂的 30000 和截在中间的那一行；以前造的快照没有，读成出厂的数、空的那一行，读写一字不差；快照里的数照快照的 |
+| `crates/miyu-policy/src/peers/tests.rs`（施工 C-2、C-6） | 空了的通知（C-6）：出厂的快照多两个数、通知的五份字（平铺在 `core.peers` 里），作废那一句照快照的小时数换；通知的字坏了照名字报；C-2 时造的快照没有这几格，数照出厂的、通知不出、读回写出一字不差。别的会话发来的话进快照：出厂的快照带着三个数（排在最后）和两份标签，造出的策略照出厂的数、组装器渲染出带短编号的标签；快照里的数照快照的；标签坏了照名字报；以前造的快照没有这两格，读进来再写出去一字不差，照出厂的数防刷屏，那种话和人的话一字不差 |
+| `crates/miyu-policy/src/steps/tests.rs`、`crates/miyu-session/tests/steps.rs`、`crates/miyu-session/src/actor/persona/steps/tests.rs`、`crates/miyu-session/tests/fork_subagent/limits.rs`（施工 AE-1） | 四种会话给的数、预设只改主会话的；没人看着造出的快照有上限；两个数写进字节读得回来；以前造的快照不读成不限、字节不变；造会话时有人看着、没人看着（带不带预设的数）、子代理各照各的，没人看着的照预设的数停在第 2 次请求；改了预设的 `[limits]` 下一个回合换上、system 和工具面一字不变、子代理不跟；fork 子代理请求到第 500 次停 |
+| `crates/miyu-policy/src/memory/tests.rs`（施工 R-3 下） | 记忆的范围进快照：三种写进去读回一字不差、排在最后；以前造的快照没有这一格，字节不变、照 `persona`；认不出的照 `off` |
+| `crates/miyu-policy/src/jobs/tests.rs` | 人停的那一句：出厂的快照带着、交给组装器；以前造的快照没有，读成空的，读回来一字不差（施工 7-2 补） |
+| `crates/miyu-policy/src/guard/tests.rs` | 三句带路径和原因、转义；说法；坏的说是哪一类；缺了 `permissions` 的快照读成空的 |
+| `crates/miyu-store/tests/snapshot.rs` | 从源码树的资源拼出快照，存成 blob，哈希就是快照的哈希；取回来一样；两份策略跑同一个剧本，每一次请求逐字节一样 |
+| `crates/miyu-store/src/resources/tests.rs` | 读出软件工程师的一句和随核心附带的字（会话编号的模板是它那份文件，施工 1-13 再补；回顾的五份各是各的文件，施工 3-8 四补；切了级别以后的权限那一份也是，施工 2-7 补；起标题的指令，施工 3-8 五补；合并转发那几行的三句各是各的文件，施工 O-34）；没有的人格说是哪个文件，坏编号被拒 |
+| `crates/miyu-session/tests/actor.rs` | 造会话先存快照：`session.created` 记的哈希取得出快照 |
+| `crates/miyu-endpoint/tests/tools.rs` | 协议上造的会话，工具面照核心的目录存进快照；换一份核心以后载入，照新核心的目录执行 |
+| `crates/miyu-endpoint/tests/endpoint.rs` | 不能输入的头造的会话，快照里没人能确认 |
+
+### 出处
+
+- `03-事件模型.md` E5：策略按内容哈希存档，会话里记引用；写法。
+- `26-提示词.md` 第四节「怎么拼」；第八节（出厂的字放在哪）。
+- `02-内核.md` K3（策略冻结在会话上）、第六节「载入、崩溃、重启」（接着干的次数）。
+- `07-存储.md` 第四节（先落 blob，再写引用它的事件）、第五节（blob）、第九节（密钥不进快照）。
+- `08-上下文投影.md` 第二节：模型和供应商不在请求里，也就不在快照里。
+
+### 还没有的
+
+- 示范对话：快照里还没有这一格（`03-事件模型.md` E5，`16-人格与预设.md`）。
+- system 还没有的几块：别的场所的说明、软件包的几行、技能与知识库的列表、子代理能选的人格（`26-提示词.md` 第四节）。
+- 预设、人格的覆盖链：你的、包带的、出厂的（`16-人格与预设.md` 第四节）；现在只读资源目录。
+- 会话中途换快照：`session.policy_changed` 带新的 `policy`，下一个回合开始时换（`02-内核.md` K3，`03-事件模型.md` 第三节）。

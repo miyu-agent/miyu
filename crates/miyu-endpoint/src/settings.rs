@@ -1,4 +1,4 @@
-//! 端点的配置项（`docs/blueprint/config.md`「M8 的配置项」）：界面语言 `ui.language`（施工 8-1），新会话开局只读
+//! 端点的配置项（`internal/blueprint/config.md`「M8 的配置项」）：界面语言 `ui.language`（施工 8-1），新会话开局只读
 //! `permission.start_read_only`（施工 8-2；新会话的权限级别 `permission.level` 施工 AUD-4 去掉了：A16 起开局一律是完全放开），
 //! 默认人格 `persona.default`（施工 P-1 上），终端会话 `terminal.*`（施工 8-33），软件源 `packages.source`、`packages.mirrors`
 //! （施工 G-3 上）。
@@ -47,7 +47,7 @@ miyu_config::settings! {
 }
 
 miyu_config::settings! {
-    /// 人格的配置（施工 P-1 上，`docs/blueprint/personas.md`）。
+    /// 人格的配置（施工 P-1 上，`internal/blueprint/personas.md`）。
     pub struct PersonaSettings in "persona" {
         /// 新会话默认用哪个人格：人格目录的编号。开会话时指定的、通讯平台的桥照场所规则交来的优先。出厂不设：没设的新会话
         /// 无人格（施工 P-4 上）；指着没有的人格的当没设。类型是选人格（施工 CK-1）：头照人格列表让人挑，`check` 照现有的人格查。
@@ -61,7 +61,7 @@ miyu_config::settings! {
 }
 
 miyu_config::settings! {
-    /// 预设的配置（施工 P-2 上，`docs/blueprint/presets.md`）。
+    /// 预设的配置（施工 P-2 上，`internal/blueprint/presets.md`）。
     pub struct PresetSettings in "preset" {
         /// 新会话默认用哪个预设：预设文件的编号。开会话时指定的、通讯平台的桥照场所规则交来的优先。指着没有的不悄悄换
         /// （Y12）。类型是选预设（施工 CK-1）。
@@ -220,7 +220,7 @@ const fn source_feed(key: &'static str, kind: miyu_config::Kind) -> miyu_config:
     }
 }
 
-/// 主人的平台账号（施工 O-3；以前叫主人对应表，`docs/blueprint/venues.md`）：`external.bindings.<external>`，键是通讯平台上的身份，
+/// 主人的平台账号（施工 O-3；以前叫主人对应表，`internal/blueprint/venues.md`）：`external.bindings.<external>`，键是通讯平台上的身份，
 /// 值不空就算主人本人（施工 SU-3 下：`external.me` 并进来；im 写 `owner`）。
 /// `settings!` 只认「段加字段名」，最后一段是占位的这一项手写。写在配置里，当场生效：下一句就照新的认。
 pub const EXTERNAL_BINDINGS: &[miyu_config::Item] = &[miyu_config::Item {

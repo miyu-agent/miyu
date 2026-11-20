@@ -1,4 +1,4 @@
-//! 一个会话的回合索引（施工 R-2 起，`docs/blueprint/memory.md` 第一条）：它的回合库（用到才开）、增量的 `TurnFeed`、
+//! 一个会话的回合索引（施工 R-2 起，`internal/blueprint/memory.md` 第一条）：它的回合库（用到才开）、增量的 `TurnFeed`、
 //! `UseFeed`；场所会话记下在哪个场所（施工 R-13 下），每个会话记下从哪来（是不是主会话，施工 E-6）。
 
 use std::sync::{Arc, OnceLock};

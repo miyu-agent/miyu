@@ -1,4 +1,4 @@
-//! 思考强度怎么写（`docs/blueprint/drivers/openai-responses.md`「思考强度」，`models.md`「驱动要守的约定」第 13 条）：接在请求
+//! 思考强度怎么写（`internal/blueprint/drivers/openai-responses.md`「思考强度」，`models.md`「驱动要守的约定」第 13 条）：接在请求
 //! 的最后。
 //!
 //! - 没有：什么都不加，照供应商的默认；思考不回传、也看不到摘要（图纸「起草时定的」第 12 条）。

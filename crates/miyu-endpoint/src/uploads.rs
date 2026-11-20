@@ -1,4 +1,4 @@
-//! 分块上传（`docs/blueprint/web-module.md`「六、分块上传」，施工 W-5）：`blob.open` 开一个上传、`blob.write`
+//! 分块上传（`internal/blueprint/web-module.md`「六、分块上传」，施工 W-5）：`blob.open` 开一个上传、`blob.write`
 //! 一块一块写、`blob.close` 收齐了存好，回应和 `blob.put` 一样（`attach.rs`）。
 //!
 //! [`Uploads`] 跟着连接走：住在这个连接的读循环里（`connection.rs`），编号只认开它的那个连接，别的连接拿来用

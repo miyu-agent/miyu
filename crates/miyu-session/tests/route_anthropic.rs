@@ -1,4 +1,4 @@
-//! 路由接上 Anthropic 的消息接口（`docs/blueprint/drivers/anthropic.md`、`models.md`「驱动要守的约定」第 2、11、13 条，施工
+//! 路由接上 Anthropic 的消息接口（`internal/blueprint/drivers/anthropic.md`、`models.md`「驱动要守的约定」第 2、11、13 条，施工
 //! 8-12）：驱动照供应商的 `driver` 造，发到 `/messages`，带 `x-api-key` 和版本头；输出上限照一次性入口写的、再照模型资料的最大
 //! 输出、再是 8192，openai-chat 照旧不写；思考强度照这一家的写法；回来的流照这一家解。
 //!
@@ -17,7 +17,7 @@ use serde_json::json;
 /// Anthropic 说「你好！」的流，`n` 份。
 fn anthropic_hellos(n: usize) -> Vec<Reply> {
     let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/drivers/anthropic/streams/text.sse");
+        .join("../../internal/designs/samples/drivers/anthropic/streams/text.sse");
     let bytes = std::fs::read(&path).expect("样本读得到");
     (0..n)
         .map(|_| Reply::stream(vec![Piece::Bytes(bytes.clone())]))

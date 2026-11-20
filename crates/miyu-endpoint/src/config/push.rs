@@ -1,4 +1,4 @@
-//! 推送 `config.changed`（`docs/blueprint/config.md`「协议」「推送 `config.changed`」，施工 8-4）：配置每变
+//! 推送 `config.changed`（`internal/blueprint/config.md`「协议」「推送 `config.changed`」，施工 8-4）：配置每变
 //! 一次，推给订阅着配置的连接。
 //!
 //! 配置服务换上新的一份时造一个 [`Changed`]，带着那一刻的整份配置；每个连接的转发任务照自己的语言写成一行（问题的话、

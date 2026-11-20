@@ -1,4 +1,4 @@
-//! 包自己的配置（施工 9-4 下下，`docs/blueprint/extensions.md`「配置」）：核心拉起的扩展握手时交给它，之后变了推
+//! 包自己的配置（施工 9-4 下下，`internal/blueprint/extensions.md`「配置」）：核心拉起的扩展握手时交给它，之后变了推
 //! `extension.config`。是 `config.md` 第九条「密钥不经协议交出去」的例外：只在核心亲手拉起、走标准输入输出的连接上，只给
 //! 这个包自己的键（清单里声明的那几项，键照前缀起，施工 PN-1），值不进运行日志、不进事件。批了 `provider.key` 的另多一格
 //! `provider_key`（施工 PK-1，`provider_key.rs`）。

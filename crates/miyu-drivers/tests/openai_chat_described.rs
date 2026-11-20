@@ -1,4 +1,4 @@
-//! 替它看的图怎么进请求（施工 8-17，`docs/blueprint/drivers/openai-chat.md` 第 9 条）：不能看图、请求的 `described` 里有这张图
+//! 替它看的图怎么进请求（施工 8-17，`internal/blueprint/drivers/openai-chat.md` 第 9 条）：不能看图、请求的 `described` 里有这张图
 //! 的转述的，换成带标签的转述，照文字拼（带名字的标签写上名字）；没有转述的照旧是占位；能看图的照旧发原图，`described`
 //! 一个字节都不影响；工具结果里的图一样；以前造的快照里没有标签的，照旧写占位。
 

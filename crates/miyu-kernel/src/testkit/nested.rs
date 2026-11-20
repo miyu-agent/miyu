@@ -1,4 +1,4 @@
-//! 替身怎么回嵌套调用（施工 M-1，`docs/blueprint/kernel/session.md`「嵌套调用」）：脚本那头由测试扮，`nested_call` 送进一次
+//! 替身怎么回嵌套调用（施工 M-1，`internal/blueprint/kernel/session.md`「嵌套调用」）：脚本那头由测试扮，`nested_call` 送进一次
 //! `miyu call`；链照排好的结论回（没排的放行）；派去跑的停住，等测试 `nested_done` 交回；掐掉的、答脚本的都记下来。
 
 use std::collections::VecDeque;

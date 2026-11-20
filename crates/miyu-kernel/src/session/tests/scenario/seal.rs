@@ -1,4 +1,4 @@
-//! 跑完几轮封存（施工 C-8 下，`docs/blueprint/session/fork.md`「封存」）：跑满 `seal_after` 轮、这一轮结束、没有接着开的，
+//! 跑完几轮封存（施工 C-8 下，`internal/blueprint/session/fork.md`「封存」）：跑满 `seal_after` 轮、这一轮结束、没有接着开的，
 //! 同一批记 `session.sealed`；跑的时候发来的、被有计划的重启打断以后接着干的不另算一轮；崩了载入时收尾的那一轮、重启太多次
 //! 不再接着干的那一轮也封；载入接着数。封存以后改对话的命令拒 `session_sealed`，改标题照常；后台命令结束只记下、不开轮。
 

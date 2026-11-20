@@ -1,4 +1,4 @@
-//! 人停的那一句进快照（施工 7-2 补，`docs/blueprint/policy.md` 的 `CoreTexts` 那张表里的 `jobs`）：出厂的快照带着、交给
+//! 人停的那一句进快照（施工 7-2 补，`internal/blueprint/policy.md` 的 `CoreTexts` 那张表里的 `jobs`）：出厂的快照带着、交给
 //! 组装器；以前造的快照里没有，读成空的，读进来再写出去一字不差。
 
 use crate::snapshot::Snapshot;

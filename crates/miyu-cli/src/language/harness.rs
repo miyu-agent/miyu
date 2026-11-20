@@ -1,4 +1,4 @@
-//! `miyu ask --from` 不等了时给人看的字（施工 7-10，2026-09-30 主会话定，`docs/blueprint/cli/ask.md`「给人看的字」）：别的
+//! `miyu ask --from` 不等了时给人看的字（施工 7-10，2026-09-30 主会话定，`internal/blueprint/cli/ask.md`「给人看的字」）：别的
 //! harness 不打断她那一轮，只是不等了。
 
 use super::Language;

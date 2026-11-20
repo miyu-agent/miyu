@@ -1,4 +1,4 @@
-//! 订阅的回应带上「当前的」（施工 9-6 上，`docs/blueprint/protocol.md` 的 `subscribe`）：真核心走一遍。累计的用量和
+//! 订阅的回应带上「当前的」（施工 9-6 上，`internal/blueprint/protocol.md` 的 `subscribe`）：真核心走一遍。累计的用量和
 //! `usage.query {"session"}` 那一行一样，另带压缩、缓存断了几次；人设的权限；还在跑的后台命令和子代理。核心重启、会话重新
 //! 载入以后照日志算出来的还是那一份。
 

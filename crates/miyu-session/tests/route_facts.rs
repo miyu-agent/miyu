@@ -1,4 +1,4 @@
-//! 路由照模型资料（施工 8-7，`docs/blueprint/models.md`「怎么走」第二条）：目录在写了 `ready` 以后才读完，造会话先等它；
+//! 路由照模型资料（施工 8-7，`internal/blueprint/models.md`「怎么走」第二条）：目录在写了 `ready` 以后才读完，造会话先等它；
 //! 窗口、最大输出照目录交给内核；换上的新目录，新会话当场用。
 
 use std::sync::Arc;

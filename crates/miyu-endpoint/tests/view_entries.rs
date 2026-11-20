@@ -1,4 +1,4 @@
-//! 视图投影接上协议（施工 9-8 中，`docs/blueprint/view.md`）：握手报 `view: 1`；`view.page` 写了 `view: true` 的交条目、
+//! 视图投影接上协议（施工 9-8 中，`internal/blueprint/view.md`）：握手报 `view: 1`；`view.page` 写了 `view: true` 的交条目、
 //! 不交事件，字照连接的语言，页的边界照旧；`view.detail` 多交调用的结果原文，另认 `compaction` 交那一次压缩的摘要。
 
 use std::path::Path;

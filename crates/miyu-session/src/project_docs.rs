@@ -1,4 +1,4 @@
-//! 项目指令（施工 P-14，`docs/blueprint/project-docs.md`）：仓库里的 `AGENTS.md`（没有的找 `CLAUDE.md`）回合开始作为一块事实
+//! 项目指令（施工 P-14，`internal/blueprint/project-docs.md`）：仓库里的 `AGENTS.md`（没有的找 `CLAUDE.md`）回合开始作为一块事实
 //! 交给她，不进 system（文件一变整段重算、缓存就断）。基础系统的功能 `project-docs`，预设能关；场所会话不读。
 //!
 //! - 找哪些：工作目录在 git 仓库里的，从仓库根（有 `.git` 的那一层）到工作目录逐层找，离工作目录越近的排得越后；不在仓库里的

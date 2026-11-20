@@ -1,4 +1,4 @@
-//! 订阅哪一个流、订阅会话的事件流（`docs/blueprint/protocol.md`「`subscribe`、`unsubscribe`」「补发」）：施工 9-4 补从
+//! 订阅哪一个流、订阅会话的事件流（`internal/blueprint/protocol.md`「`subscribe`、`unsubscribe`」「补发」）：施工 9-4 补从
 //! `connection.rs` 挪出来（那一份到了 500 行）。会话的视图流（施工 9-8 下）也在这里订。
 
 use std::sync::Arc;

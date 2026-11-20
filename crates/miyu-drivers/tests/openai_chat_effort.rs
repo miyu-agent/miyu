@@ -1,4 +1,4 @@
-//! OpenAI 兼容对话接口的思考强度（施工 8-18，`docs/blueprint/models.md`「驱动要守的约定」第 13 条）：没写的一个字节不变；
+//! OpenAI 兼容对话接口的思考强度（施工 8-18，`internal/blueprint/models.md`「驱动要守的约定」第 13 条）：没写的一个字节不变；
 //! 档位发 `reasoning_effort`；`off`、`on` 照档案的开关（DeepSeek 的 `thinking`），没写开关的 `off` 发
 //! `reasoning_effort: "none"`、`on` 什么都不加；都接在最后，前面的字节一个不动。
 

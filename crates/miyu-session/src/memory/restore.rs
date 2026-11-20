@@ -1,4 +1,4 @@
-//! 恢复作废的（施工 R-12 下，`docs/blueprint/memory.md` 第二条第 6 款）：人恢复误删的，追加 `ext.memory.restored`，那一条
+//! 恢复作废的（施工 R-12 下，`internal/blueprint/memory.md` 第二条第 6 款）：人恢复误删的，追加 `ext.memory.restored`，那一条
 //! 不算作废了。只恢复作废的：改掉的旧版本、清掉的不恢复（清掉的哪里都不出来，第二条第 5 款）；本来就算数的什么都不写。
 
 use miyu_recall::{MemoryEvent, MemoryId, Restored};

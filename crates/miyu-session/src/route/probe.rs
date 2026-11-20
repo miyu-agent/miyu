@@ -1,4 +1,4 @@
-//! 试一家供应商（`docs/blueprint/models.md`「协议」`provider.test`、「怎么走」第七条第 4 条，施工 8-11、8-11 五补）：推驱动、
+//! 试一家供应商（`internal/blueprint/models.md`「协议」`provider.test`、「怎么走」第七条第 4 条，施工 8-11、8-11 五补）：推驱动、
 //! 地址、key，列模型。列得出来就算通，不发请求（2026-10-13 项目主人定：列模型就验过了地址和 key）。
 //!
 //! 1. 照最终值推这一家（和会话的路由同一个 `miyu_models::provider::provider`）。推不出的、地址或 key 取不到的：`config`，

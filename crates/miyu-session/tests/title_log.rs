@@ -1,4 +1,4 @@
-//! 起标题的请求也记收场的那几行（施工 3-8 五补，`docs/blueprint/session/actor.md` 第 7 条）：交给端口前一行 `title request`，
+//! 起标题的请求也记收场的那几行（施工 3-8 五补，`internal/blueprint/session/actor.md` 第 7 条）：交给端口前一行 `title request`，
 //! 说完了一行 `title ended`，没起成的一行 `title failed`，名字都是它照到的那一条；两次都没起成就不再试，第二行
 //! `title failed` 就是那一行。和主请求的几行一样，不写对话的字。
 //!

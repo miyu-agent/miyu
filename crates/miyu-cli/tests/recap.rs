@@ -1,4 +1,4 @@
-//! `miyu recap`（施工 3-8 四补，`docs/blueprint/cli/recap.md`）：在进程里起一个核心，她用 `miyu ask` 答过一轮，`miyu recap`
+//! `miyu recap`（施工 3-8 四补，`internal/blueprint/cli/recap.md`）：在进程里起一个核心，她用 `miyu ask` 答过一轮，`miyu recap`
 //! 回顾上一次 `miyu ask` 开的那个会话，标准输出上只有那一句，退出码 0；中间没有新内容再要一次，还是那一句、不请求；`--session`
 //! 回顾的是指定的那个；没写成的照核心的话说，退出码 1；一个会话都没有的，说清楚，退出码 1。
 

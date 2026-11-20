@@ -1,4 +1,4 @@
-//! 扩展的四个方法（施工 9-4 上，`docs/blueprint/extensions.md`「对外的样子」）：`extension.status` 列起来时读到的 `process` 包，
+//! 扩展的四个方法（施工 9-4 上，`internal/blueprint/extensions.md`「对外的样子」）：`extension.status` 列起来时读到的 `process` 包，
 //! `extension.enable`、`extension.disable` 先写开关再动进程，`extension.restart` 请它退出、重新拉起。开、关、重启一件件办。扩展
 //! 自己调不了（`connection.rs` 先拒）。要的能力还有没批的，`enable` 要带上 `approve` 批、`restart` 拒绝（施工 9-4 下上，
 //! `approval.rs`）。

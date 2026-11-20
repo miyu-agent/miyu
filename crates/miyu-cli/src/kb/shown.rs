@@ -1,4 +1,4 @@
-//! `miyu kb` 印的样子（`docs/blueprint/cli/kb.md`「样子」）：纯的，测试里照它算。
+//! `miyu kb` 印的样子（`internal/blueprint/cli/kb.md`「样子」）：纯的，测试里照它算。
 
 use std::collections::BTreeMap;
 

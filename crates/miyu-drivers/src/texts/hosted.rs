@@ -1,5 +1,5 @@
-//! 供应商侧工具写成的那一段字（施工 HT-2，`docs/designs/71-供应商侧工具.md` 第三节第 5 条，
-//! `docs/blueprint/drivers/openai-chat.md` 第 4 条）：模型在供应商那边自己跑了一次工具（搜索、读网页），日志里记成一块
+//! 供应商侧工具写成的那一段字（施工 HT-2，`internal/designs/71-供应商侧工具.md` 第三节第 5 条，
+//! `internal/blueprint/drivers/openai-chat.md` 第 4 条）：模型在供应商那边自己跑了一次工具（搜索、读网页），日志里记成一块
 //! `hosted_tool`（`kernel/blocks.md`）。发请求时三个内置驱动都把它写成一段字，放回它在 assistant 消息里原来的位置，让
 //! 这一次的模型知道上一个模型搜过什么、看到了什么；交给扩展驱动的请求里，别家的也换成同一段字（`miyu-session` 的
 //! `route/extension/wire.rs`）。

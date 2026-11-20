@@ -1,4 +1,4 @@
-//! 记忆的测评集（施工 R-11，`docs/blueprint/memory/eval.md`）：仓库里那一份合规矩，故意写坏的几种查得出来，分照定义算；量尺
+//! 记忆的测评集（施工 R-11，`internal/blueprint/memory/eval.md`）：仓库里那一份合规矩，故意写坏的几种查得出来，分照定义算；量尺
 //! （`#[ignore]`）照每条记下的日期记进一间、作废的作废，每句照 `Keeper::search` 搜前 5 条，先只走关键词，设了
 //! `MIYU_EMBED_PACKAGE` 的再接上真的内置模型两路合并搜一遍，照种类印表。
 //!

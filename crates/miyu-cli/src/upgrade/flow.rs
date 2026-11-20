@@ -1,4 +1,4 @@
-//! `miyu upgrade` 怎么走（`docs/blueprint/cli/upgrade.md`「怎么走」）：认谁装的，脚本装的才自己升——问 GitHub 有没有新版，
+//! `miyu upgrade` 怎么走（`internal/blueprint/cli/upgrade.md`「怎么走」）：认谁装的，脚本装的才自己升——问 GitHub 有没有新版，
 //! 下载校验和清单和签名、照编进来的发版公钥验，下载压缩包、对 SHA-256，解开、查一遍、跑新的 `miyu --version`，再和装着的
 //! 对换。哪一步不对都停下，暂存删掉，装着的不动。数据根一个字节都不碰。
 

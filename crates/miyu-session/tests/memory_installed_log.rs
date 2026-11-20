@@ -1,4 +1,4 @@
-//! 闹钟上了以后才卸掉人格记忆（施工 R-10，`docs/blueprint/memory.md` 第十一条；施工 BUG-5 改成不赛跑）：响的时候没装就不抽。
+//! 闹钟上了以后才卸掉人格记忆（施工 R-10，`internal/blueprint/memory.md` 第十一条；施工 BUG-5 改成不赛跑）：响的时候没装就不抽。
 //!
 //! 先后照运行日志认，不靠睡多久：看到第二轮结束上的闹钟（`memory extraction alarm set`）就卸，等到它响了、记下「没装、跳过」
 //! （`memory extraction skipped`）再看假服务器。第二句的回应不等：回应要等这一批后台同步完才交，盘慢时闹钟早就响过了（原来

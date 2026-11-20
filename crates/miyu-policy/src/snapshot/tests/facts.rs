@@ -1,4 +1,4 @@
-//! 会话编号的模板进快照（施工 1-13 再补，`docs/blueprint/policy.md`「`CoreTexts`」）：出厂的快照带着它，以前造的没有。
+//! 会话编号的模板进快照（施工 1-13 再补，`internal/blueprint/policy.md`「`CoreTexts`」）：出厂的快照带着它，以前造的没有。
 //! 切了级别以后的权限那一份也一样（施工 2-7 补）。
 
 use miyu_kernel::event::{Level, Permission};

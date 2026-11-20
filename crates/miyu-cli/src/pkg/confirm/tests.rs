@@ -1,4 +1,4 @@
-//! 装、卸之前印的那一份、问的那一句（施工 F-8 下补，`docs/blueprint/cli/pkg.md`）。
+//! 装、卸之前印的那一份、问的那一句（施工 F-8 下补，`internal/blueprint/cli/pkg.md`）。
 
 use serde_json::json;
 

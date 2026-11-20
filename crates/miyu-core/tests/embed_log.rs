@@ -1,4 +1,4 @@
-//! 「没装内置语义模型」那一行（施工 F-5 再补，`docs/blueprint/recall.md` 第四条第 1 款）：只有核心起来时那一路
+//! 「没装内置语义模型」那一行（施工 F-5 再补，`internal/blueprint/recall.md` 第四条第 1 款）：只有核心起来时那一路
 //! （`embed::setup`）记，装卸时照清单拼的（`embed::find`）不记。装日志订阅者：自己一个程序（调用点记下谁在听是全进程的）。
 
 use std::path::Path;

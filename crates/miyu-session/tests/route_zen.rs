@@ -1,4 +1,4 @@
-//! 路由接 opencode 的 Go、Zen（`docs/blueprint/models.md`「怎么走」第八条、`drivers/openai-chat.md`「接 opencode Zen」，施工
+//! 路由接 opencode 的 Go、Zen（`internal/blueprint/models.md`「怎么走」第八条、`drivers/openai-chat.md`「接 opencode Zen」，施工
 //! 8-14）：只写 key，驱动、地址照档案和目录推；同一家的模型照目录各走各的驱动，发到各自的路径；没有驱动的模型当场 `no_model`，
 //! 别的照常；请求带档案另配的头，值照种子换（会话是会话编号，一次性的是用途）；交错思考的照目录回传；8-14 补：Zen 免费档的
 //! `User-Agent` 和占位工具（工具面里缺 `shell`、`read` 时补）照档案。
@@ -81,7 +81,7 @@ fn hello(driver: &str) -> Reply {
         other => &format!("{other}/streams/text.sse"),
     };
     let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/designs/samples/drivers")
+        .join("../../internal/designs/samples/drivers")
         .join(file);
     Reply::stream(vec![Piece::Bytes(
         std::fs::read(&path).expect("样本读得到"),

@@ -1,4 +1,4 @@
-//! 同一个命令编号换了参数再来（施工 YC-7，`docs/blueprint/protocol.md`「同一个命令编号」）：拒 `id_reused`，不悄悄交回上一次
+//! 同一个命令编号换了参数再来（施工 YC-7，`internal/blueprint/protocol.md`「同一个命令编号」）：拒 `id_reused`，不悄悄交回上一次
 //! 的结果；参数一样的照旧去重；造会话只比 `cwd`、`dirs` 以外的；重启以后照老规矩。
 
 use serde_json::json;

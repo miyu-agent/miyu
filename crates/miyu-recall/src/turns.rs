@@ -1,5 +1,5 @@
-//! 回合索引里的一条怎么从会话日志算出来（`docs/blueprint/memory.md`「怎么走」第一条，施工 R-2 上）：新版的「日记」，不另存，
-//! 照日志派生（`docs/designs/17-记忆.md` L8）。
+//! 回合索引里的一条怎么从会话日志算出来（`internal/blueprint/memory.md`「怎么走」第一条，施工 R-2 上）：新版的「日记」，不另存，
+//! 照日志派生（`internal/designs/17-记忆.md` L8）。
 //!
 //! - 只收人开的回合：`turn.started` 的 `trigger` 指的那条 `message.user` 是人（`person`、`external`）说的。别的 harness、
 //!   子代理、别的会话发来的话开的，回报叫醒的，重启以后接着干的，没有 `trigger` 的，都不收（旧版自己造的回合进了日记）。

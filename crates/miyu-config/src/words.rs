@@ -1,4 +1,4 @@
-//! 给人看的字（`docs/blueprint/config.md`「给人看的字」）：每一项的名字、说明、选项名，页和组的名字，和生成
+//! 给人看的字（`internal/blueprint/config.md`「给人看的字」）：每一项的名字、说明、选项名，页和组的名字，和生成
 //! 文件要的几句。
 //!
 //! 字跟着界面语言，住在资源目录的 `core/human/<语言>.json` 里：前几样在 `config` 那一格（[`ConfigWords`]），几句话在

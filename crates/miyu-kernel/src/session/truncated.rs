@@ -1,4 +1,4 @@
-//! 回复写到了输出上限（施工 3-10，`docs/blueprint/kernel/session.md`「回复怎么收」）。
+//! 回复写到了输出上限（施工 3-10，`internal/blueprint/kernel/session.md`「回复怎么收」）。
 //!
 //! 驱动说照常说完、却是写到上限停的（[`crate::accumulate::Delta::Truncated`]）：回复里的工具调用一个都不派，回复记成
 //! 被打断的（`call/settle.rs`）。只截在正文里的照被打断的回复接着写（`reply_cut`，会接着写的供应商从断处续写）；截掉了

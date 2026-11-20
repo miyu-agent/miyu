@@ -1,4 +1,4 @@
-//! 替身的等确认到时（施工 CD-1，`docs/blueprint/kernel/asking.md`「到时没人确认」）：回合开始交给内核的等多久；内核交出的截止
+//! 替身的等确认到时（施工 CD-1，`internal/blueprint/kernel/asking.md`「到时没人确认」）：回合开始交给内核的等多久；内核交出的截止
 //! 时刻只记下、不计时，测试照记下的那一条送「到时了」。
 
 use super::Stage;

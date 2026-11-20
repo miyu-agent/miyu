@@ -1,4 +1,4 @@
-//! `advisor`（`docs/blueprint/tools/advisor.md`，设计 `69-旗舰顾问.md`，施工 ADV-2）：她卡住了，把问题交给旗舰池里的模型，同步
+//! `advisor`（`internal/blueprint/tools/advisor.md`，设计 `69-旗舰顾问.md`，施工 ADV-2）：她卡住了，把问题交给旗舰池里的模型，同步
 //! 等它答完，回答原文当工具结果交回。只声明 `question`（必写）、`continue`（布尔）；经 [`Call::agents`] 交给执行器
 //! （[`miyu_tool::AgentPort::advise`]），顾问会话怎么造、找哪一个接着说是执行器、会话表的事。
 //!

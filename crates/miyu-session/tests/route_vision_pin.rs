@@ -1,4 +1,4 @@
-//! 会话钉的看图模型（施工 VM-1，`docs/blueprint/models.md`「怎么走」第十三条第 4 条）：钉了的替看图发给它，`models.vision`
+//! 会话钉的看图模型（施工 VM-1，`internal/blueprint/models.md`「怎么走」第十三条第 4 条）：钉了的替看图发给它，`models.vision`
 //! 照旧配着也不问；去掉的回到 `models.vision`；重启以后照日志算回来；钉的解析不出的照「`models.vision` 解析不出」那条路：
 //! 这张图写占位、主请求照发，不退回配置的那一个。
 //!

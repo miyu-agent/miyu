@@ -1,4 +1,4 @@
-//! 消息的事件（`docs/designs/03-事件模型.md` 第三节）。
+//! 消息的事件（`internal/designs/03-事件模型.md` 第三节）。
 
 use serde::{Deserialize, Serialize};
 
@@ -15,7 +15,7 @@ pub struct MessageUser {
     /// 通讯平台上的一条消息（施工 O-13 上）：平台编号、引用、@ 了谁、带的东西、旁听。本机的没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub venue: Option<VenueMessage>,
-    /// 斜杠命令模板展开成的这一句（施工 X-14 上，`docs/blueprint/slash.md`「模板」第 4 条）：人敲的那一行。`blocks` 是展开的
+    /// 斜杠命令模板展开成的这一句（施工 X-14 上，`internal/blueprint/slash.md`「模板」第 4 条）：人敲的那一行。`blocks` 是展开的
     /// 那段，模型照它看；给人看的地方（时间线、撤销的回执、会话列表）照这一行。别的消息没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub command: Option<TypedCommand>,

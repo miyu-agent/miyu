@@ -1,4 +1,4 @@
-//! 喂一条事件引起的变化（`docs/blueprint/view.md`「视图流」）：视图流照它推 `view.add`、`view.update`、`view.append`、
+//! 喂一条事件引起的变化（`internal/blueprint/view.md`「视图流」）：视图流照它推 `view.add`、`view.update`、`view.append`、
 //! `view.hidden`、`view.remove`。
 
 use serde::{Deserialize, Serialize};

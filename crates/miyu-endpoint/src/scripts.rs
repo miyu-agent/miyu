@@ -1,4 +1,4 @@
-//! 脚本登记进工具目录（施工 X-12 中，`docs/blueprint/skills.md`「脚本」）：核心起来时、装卸包以后照这一刻装了的包和数据根
+//! 脚本登记进工具目录（施工 X-12 中，`internal/blueprint/skills.md`「脚本」）：核心起来时、装卸包以后照这一刻装了的包和数据根
 //! 里的再找一遍（`miyu_store::scripts`），经内置包的端口造成工具（`Builtins::script`，只有 `miyu-core` 编进了
 //! `miyu-basesystem`），整份换进工具目录（`Catalog::replacing_scripts`）：撞了别的工具名字的不登记、记一行。每个脚本算一个
 //! 功能 `script-<名字>`（[`features`]），预设照它开关。

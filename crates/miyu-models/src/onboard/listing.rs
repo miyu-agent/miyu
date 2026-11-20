@@ -1,4 +1,4 @@
-//! 目录和档案里的每一家（`docs/blueprint/models.md`「协议」`provider.catalog`、「怎么走」第七条第 1 到 3 条，施工 8-11）。
+//! 目录和档案里的每一家（`internal/blueprint/models.md`「协议」`provider.catalog`、「怎么走」第七条第 1 到 3 条，施工 8-11）。
 //!
 //! - 一家的名字照档案的、再是目录的、都没有的是编号；驱动照档案的、再是目录的 `npm` 照 `[npm]` 换的；地址照档案的、再是
 //!   目录的 `api`。和配好的一家推驱动、地址的先后一样（[`crate::provider`] 第 1 条），只是这里没有手写的。

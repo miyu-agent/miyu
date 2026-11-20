@@ -1,4 +1,4 @@
-//! 搜以前的对话（施工 R-3 中，`docs/blueprint/memory.md` 第一条、「工具」）：查这一间的回合索引，她的 `memory_search` 和协议的
+//! 搜以前的对话（施工 R-3 中，`internal/blueprint/memory.md` 第一条、「工具」）：查这一间的回合索引，她的 `memory_search` 和协议的
 //! `memory.turns`（施工 R-12 下）共用；哪儿都搜得到全部（施工 R-29，第九条）。
 
 use std::collections::BTreeMap;
@@ -17,7 +17,7 @@ impl Keeper {
     /// 到哪，这以后开的轮还在上下文里、不算，以前的照常搜得到；没压缩、清空过的整个会话都不算（施工 R-13 补：一直开着的群会话
     /// 里清空掉的几轮原来搜不到）。人经协议搜的不跳过（施工 R-12 下）。哪儿都搜得到全部（施工 R-29：原来一个场所里只搜得到会话在
     /// 这个场所的）。照关键词找；有问句的向量 `near` 的（施工 R-5 下）再照意思找，两路照名次合。下限照模型（施工 R-20，
-    /// `docs/blueprint/recall.md` 第三条第 3 款）：只照意思找到的照 `core/memory/turns.toml`（表里没有的 0.40），只照关键词找到的
+    /// `internal/blueprint/recall.md` 第三条第 3 款）：只照意思找到的照 `core/memory/turns.toml`（表里没有的 0.40），只照关键词找到的
     /// 和问句不够像的照记忆搜那张 `core/memory/search.toml` 不要（表里没有的不设，还没补上向量的照留）。每一段带上那个会话在哪个
     /// 场所、`asking`（是会话里她在搜）的打不打得开它（施工 E-6，不是的一律打不开）。
     ///

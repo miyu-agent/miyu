@@ -1,4 +1,4 @@
-//! 落了盘的事件顺手交给旁边看着的（施工 V-44，`docs/construction/V-44-判官记录窗.md`）：端点照它给载入着的群会话维护判官的
+//! 落了盘的事件顺手交给旁边看着的（施工 V-44，`internal/construction/V-44-判官记录窗.md`）：端点照它给载入着的群会话维护判官的
 //! 记录窗（`miyu-endpoint` 的 `venues/records/recent.rs`）。一个会话至多一个，第一次要的时候装上（[`crate::Handle::onlooker`]），
 //! 和 actor 共用；会话退下、停了跟着放掉。没装的会话 actor 什么都不多做。
 

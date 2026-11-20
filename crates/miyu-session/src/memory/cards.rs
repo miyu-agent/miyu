@@ -1,4 +1,4 @@
-//! 人经协议碰人卡（施工 E-1 下，`docs/blueprint/memory.md` 第七条第 15 款、「协议」）：列、改一张、作废一张。卡是整理合的，人
+//! 人经协议碰人卡（施工 E-1 下，`internal/blueprint/memory.md` 第七条第 15 款、「协议」）：列、改一张、作废一张。卡是整理合的，人
 //! 改的另写一张（`by` 是这个人），作废的追加 `ext.memory.card_retired`；原文都在日志里。
 
 use miyu_recall::merge::{CARD_CHARS, NAME_CHARS, NAMES};

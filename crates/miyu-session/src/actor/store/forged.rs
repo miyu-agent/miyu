@@ -1,5 +1,5 @@
-//! 截了模型编的下一轮，记一行运行日志（施工 FT-1，`docs/blueprint/session/actor.md`「运行日志」）。截是内核在写回复之前做的
-//! （`docs/blueprint/kernel/session.md`「截掉模型编的下一轮」），内核不记运行日志，这里照它记在 `model.called` 上的那一格记。
+//! 截了模型编的下一轮，记一行运行日志（施工 FT-1，`internal/blueprint/session/actor.md`「运行日志」）。截是内核在写回复之前做的
+//! （`internal/blueprint/kernel/session.md`「截掉模型编的下一轮」），内核不记运行日志，这里照它记在 `model.called` 上的那一格记。
 
 use miyu_kernel::event::{Body, Event};
 

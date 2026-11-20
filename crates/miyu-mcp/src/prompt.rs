@@ -1,4 +1,4 @@
-//! 服务的提示词（施工 X-39，`docs/blueprint/mcp.md`「怎么走」第六条）：`prompts/list` 列出来的一项、`prompts/get` 回来的
+//! 服务的提示词（施工 X-39，`internal/blueprint/mcp.md`「怎么走」第六条）：`prompts/list` 列出来的一项、`prompts/get` 回来的
 //! 几条消息。照 MCP 的写法读，消息的内容同工具结果（[`Content`]）。变成斜杠命令、并成人说的一句是核心那一边的事。
 
 use std::time::Duration;

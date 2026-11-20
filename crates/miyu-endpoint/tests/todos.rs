@@ -1,4 +1,4 @@
-//! 待办（施工 D-3，`docs/blueprint/protocol.md` 的 `subscribe`、推送的 `todos.changed`）：真核心、真的 `todowrite`。还没写过的，
+//! 待办（施工 D-3，`internal/blueprint/protocol.md` 的 `subscribe`、推送的 `todos.changed`）：真核心、真的 `todowrite`。还没写过的，
 //! `subscribe` 的回应不带 `todos`；她写了一份，订阅着的头收到 `todos.changed`；之后再订阅的，回应里带着当前的这一份。
 
 use serde_json::{Value, json};

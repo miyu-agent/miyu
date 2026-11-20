@@ -1,4 +1,4 @@
-//! `web_fetch`（施工 N-1，设计 36 第一节，`docs/blueprint/tools/web_fetch.md`）：抓一个网址，直接交正文。
+//! `web_fetch`（施工 N-1，设计 36 第一节，`internal/blueprint/tools/web_fetch.md`）：抓一个网址，直接交正文。
 //!
 //! 网页换成 Markdown，文字照原样（[`Pages`]）；太长的分页，一页至多 `page_chars` 个字，不止一页的末尾另起一行说第几页、一共
 //! 几页，她带 `page` 接着读：同一个地址十分钟内翻页照记着的，不重抓。跳转过的另起一行说落到了哪；超了大小截了后面的，最后

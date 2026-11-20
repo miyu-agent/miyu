@@ -10,7 +10,7 @@ publish.workspace = true
 [dependencies]
 # 只用来读 cargo metadata 的输出。
 serde_json = "1.0"
-# 登记簿的指纹：资源文件字节的 SHA-256（`docs/designs/26-提示词.md` 第十节）。版本和内核的一样。
+# 登记簿的指纹：资源文件字节的 SHA-256（`internal/designs/26-提示词.md` 第十节）。版本和内核的一样。
 sha2 = { version = "0.11", default-features = false }
 
 # 读 heads.toml（施工 S-5）：和核心读配置用的是同一个。

@@ -1,4 +1,4 @@
-//! `/goal`（施工 X-8 下，`docs/blueprint/goal.md`「在新的架构里怎么放」第 6 条，`protocol.md` 的 `command.run`）：人交代、看、
+//! `/goal`（施工 X-8 下，`internal/blueprint/goal.md`「在新的架构里怎么放」第 6 条，`protocol.md` 的 `command.run`）：人交代、看、
 //! 停、继续、改、清掉长期目标。照旧版的写法：
 //!
 //! - `/goal` 看现在的目标；`/goal <目标>` 设一个（当场算授权过，会话闲着就开续轮）；已经有一个没完成的，就是改它（施工 X-8 再补，

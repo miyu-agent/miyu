@@ -1,4 +1,4 @@
-//! 后台命令也等（施工 AP-4，2026-10-31 项目主人定，`docs/blueprint/cli/ask.md`「等子代理」）：和子代理一起数，等的
+//! 后台命令也等（施工 AP-4，2026-10-31 项目主人定，`internal/blueprint/cli/ask.md`「等子代理」）：和子代理一起数，等的
 //! 那一行照实写几样；报回来了那一行同子代理；不等了、到时间了那一句说是哪几样在跑；事件流写一行 `job.reported`。
 
 use serde_json::{Value, json};

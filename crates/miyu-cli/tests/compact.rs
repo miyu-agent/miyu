@@ -1,4 +1,4 @@
-//! `miyu compact`（施工 6-8，`docs/blueprint/cli/compact.md`）：在进程里起一个核心，她用 `miyu ask` 说过一轮，`miyu compact`
+//! `miyu compact`（施工 6-8，`internal/blueprint/cli/compact.md`）：在进程里起一个核心，她用 `miyu ask` 说过一轮，`miyu compact`
 //! 压上一次 `miyu ask` 开的那个会话，附的要求记进压缩，印压好了那一行，退出码 0；刚压过的再压，照核心的话说没有能压的，
 //! 退出码 1；一个会话都没有的，说清楚，退出码 1；`--session` 压的是指定的那个；按 Ctrl+C 打断，压缩期间别的头说的那句
 //! 接着发。

@@ -1,4 +1,4 @@
-//! 两种回报的写法装进快照（施工 7-2，`docs/blueprint/kernel/request.md`「回报」）：`resources/core/jobs/` 下的十一份原文，
+//! 两种回报的写法装进快照（施工 7-2，`internal/blueprint/kernel/request.md`「回报」）：`resources/core/jobs/` 下的十一份原文，
 //! 人停的那一句（施工 7-2 补），子代理的留言的标签（施工 7-7）。以前造的快照里没有，读成没有：那些会话派不出任务，也就
 //! 没有回报。
 

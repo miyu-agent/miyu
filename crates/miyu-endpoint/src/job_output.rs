@@ -1,4 +1,4 @@
-//! `job.output`（施工 7-4 补，`docs/blueprint/protocol.md` 的 `job.output`）：头读一条后台命令到这时为止的输出，只要最后
+//! `job.output`（施工 7-4 补，`internal/blueprint/protocol.md` 的 `job.output`）：头读一条后台命令到这时为止的输出，只要最后
 //! 几行。读哪一份由执行器定，和她用 `jobs` 读的是同一份（`Handle::job_output`，`session/tools.md` 第 6 条第 3 款）；这里
 //! 只取尾巴、量上限。
 //!

@@ -1,4 +1,4 @@
-//! `miyu config`（`docs/blueprint/cli/config.md`，`config.md`「命令行」第十条）：看配置的四个子命令 `get`、`check`、
+//! `miyu config`（`internal/blueprint/cli/config.md`，`config.md`「命令行」第十条）：看配置的四个子命令 `get`、`check`、
 //! `explain`、`path`（施工 8-2），改配置、信任项目配置的四个 `set`、`unset`、`edit`、`trust`（施工 8-3）。它们只是协议的
 //! 客户端（`22-命令行.md` O5）：连上核心，`config.get`、`config.schema`、`config.check`、`config.set`、`config.trust`，照回应
 //! 印。`edit`、`trust` 要问人、开编辑器，经 [`Console`]：测试换成照剧本回的。

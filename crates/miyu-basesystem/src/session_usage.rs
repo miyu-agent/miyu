@@ -1,4 +1,4 @@
-//! `session_usage`（`docs/blueprint/tools/session_usage.md`，施工 8-15）：她自己查这个会话花了多少、上下文还剩多少。零参数，
+//! `session_usage`（`internal/blueprint/tools/session_usage.md`，施工 8-15）：她自己查这个会话花了多少、上下文还剩多少。零参数，
 //! 访问类别是读。经 [`Call::usage`] 交给执行器：用量、金额照用量汇总（只算这个会话、不带子会话，和头读的是同一份），上下文是
 //! 派出去那一刻内核照压缩线的算法估的。
 //!

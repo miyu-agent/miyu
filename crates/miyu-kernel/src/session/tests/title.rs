@@ -1,4 +1,4 @@
-//! 起标题（施工 3-8 五补，`docs/blueprint/kernel/session.md`「起标题」）的这一层：`turn.ended` 落了盘才起、照落了盘的有效
+//! 起标题（施工 3-8 五补，`internal/blueprint/kernel/session.md`「起标题」）的这一层：`turn.ended` 落了盘才起、照落了盘的有效
 //! 历史组装；对不上在路上的那一次的回报不理（名字、用途都要对得上）；标题记下以前不回什么（没有命令等着它）。整轮怎么走在
 //! `scenario/title.rs`，收回报的共用规矩在 `recap.rs` 测。
 

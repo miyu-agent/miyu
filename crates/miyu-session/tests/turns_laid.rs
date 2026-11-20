@@ -1,4 +1,4 @@
-//! 回合索引接上时边读边铺（施工 V-37 下，`docs/blueprint/memory.md` 第一条第 6 款）：真会话（记、搜记忆，撤销、恢复，中途换
+//! 回合索引接上时边读边铺（施工 V-37 下，`internal/blueprint/memory.md` 第一条第 6 款）：真会话（记、搜记忆，撤销、恢复，中途换
 //! 人格，分叉出来的支线接着说）的日志上，整份读出来照换人格那一条切开、`TurnFeed::primed_on`、`UseFeed::prime` 铺的，和照
 //! `read_range` 一块块读、一条条喂 `Priming`、`UseFeed::see` 的，交回的 `TurnFeed`、`UseFeed`（`Debug` 写出来的每一样）、改动、
 //! 用到的逐个相等，回合库照到哪落在各处。回合库里写进去的逐行一样，在 `memory/lane/tests/laid.rs` 照种子造的日志上比。

@@ -1,4 +1,4 @@
-//! 命令谁能用（施工 O-6 六补，`docs/blueprint/slash.md`「谁能用」，接入QQ 的会话 2026-10-17 要的）：系统配置
+//! 命令谁能用（施工 O-6 六补，`internal/blueprint/slash.md`「谁能用」，接入QQ 的会话 2026-10-17 要的）：系统配置
 //! `commands.<名字>.access` 写 `admin`（照旧：本人、对应表里认得的、管理的人）、`anyone`（谁都行）、`off`（谁都不行，回
 //! `command_not_allowed`）。命令自己的限制照旧：`/workspace` 只给主人本人。菜单照它列。
 

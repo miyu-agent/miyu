@@ -1,4 +1,4 @@
-//! 软件包加的子命令（施工 9-2，`docs/blueprint/packages.md`「转交」，`cli/main.md`「分发」）：`miyu <名字> …` 不是内置的
+//! 软件包加的子命令（施工 9-2，`internal/blueprint/packages.md`「转交」，`cli/main.md`「分发」）：`miyu <名字> …` 不是内置的
 //! 子命令时，照两层的清单找 `[command]` 是它的那个包，原样跑包里的程序：参数、环境、标准输入输出照原样，退出码照它的；环境
 //! 多它在各层的那几处（设计 55 第四节，`miyu_store::program::PackageDirs`：包的文件夹、配置、状态、缓存、日志、暂存、运行时，
 //! 跑之前建好、清掉暂存），同核心拉起扩展。

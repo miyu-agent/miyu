@@ -1,4 +1,4 @@
-//! 装回、卸掉整个组（施工 BS-1 下中，`docs/blueprint/cli/pkg.md`，照 pacman 写组名）：`miyu pkg install basesystem`、
+//! 装回、卸掉整个组（施工 BS-1 下中，`internal/blueprint/cli/pkg.md`，照 pacman 写组名）：`miyu pkg install basesystem`、
 //! `miyu pkg remove basesystem`。核心看一眼回 `{"group", "packages": [<编号>…]}` 的就是组：没写 `--yes` 的印要动哪几个、问一句，
 //! 做完一个一行说装回了、卸掉了谁。组里没有要动的说一句，退出码 0。单个包的卸照旧（[`remove`]）。
 

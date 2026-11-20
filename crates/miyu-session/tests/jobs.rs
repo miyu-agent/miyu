@@ -1,4 +1,4 @@
-//! 后台命令在会话里（施工 7-3，`docs/blueprint/agents.md` 第四条、第八条）：真的 `shell` 放到后台，调用当场结束、命令接着
+//! 后台命令在会话里（施工 7-3，`internal/blueprint/agents.md` 第四条、第八条）：真的 `shell` 放到后台，调用当场结束、命令接着
 //! 跑，输出写进 `jobs/<编号>.out`，结束了记 `job.reported`（`by` 是起它的那次调用，`cause` 是那一轮的，输出存成 blob），闲着
 //! 的她被叫醒；编号照日志往后数，撤掉的回合里用过的不再用；有计划地停下先记 `restarted`、落了盘再杀；没记就停了的，
 //! 再载入时补 `aborted`。假的后台命令（`miyu_tool::testkit::Held`）三个平台一样；真的 `shell` 三个平台都跑，沙盒那一条

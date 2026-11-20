@@ -1,4 +1,4 @@
-//! 界面块（施工 X-15 上，`docs/blueprint/widgets.md`「清单」，设计 `33-界面扩展.md`）：`[[widget]]` 一段一块，读成
+//! 界面块（施工 X-15 上，`internal/blueprint/widgets.md`「清单」，设计 `33-界面扩展.md`）：`[[widget]]` 一段一块，读成
 //! [`Widget`]。只查写法；内容由包的程序推、核心转给头在 `miyu-endpoint`。只有扩展包能写（`kinds::tables`），要在
 //! `[process] capabilities` 里声明 `widgets`（[`check`]，读完整份以后查）。
 

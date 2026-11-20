@@ -1,4 +1,4 @@
-//! 供应商那边跑的搜索（施工 DSR-4，`docs/blueprint/drivers/openai-responses.md`「怎么走：解码」第 5 条）：输出里一项
+//! 供应商那边跑的搜索（施工 DSR-4，`internal/blueprint/drivers/openai-responses.md`「怎么走：解码」第 5 条）：输出里一项
 //! `web_search_call` 是 DeepSeek（或者 OpenAI 自己）替模型跑的一次搜索、读网页，并成内核的一块供应商侧工具（设计 71）。
 //!
 //! - 解码：项开始时（`response.output_item.added`）开块，参数是这一项 `action` 的原文；项完了（`output_item.done`）照那里

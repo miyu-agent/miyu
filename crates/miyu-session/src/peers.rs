@@ -1,5 +1,5 @@
-//! 「空了告诉我」，等的这一边的执行器（施工 C-6，`docs/blueprint/cross-session.md` 第六条第 3、8、9 款，
-//! `docs/blueprint/session/tools.md`「订、计时、再订」）：工具只报效果 `peer.watch`，订是这里的事。
+//! 「空了告诉我」，等的这一边的执行器（施工 C-6，`internal/blueprint/cross-session.md` 第六条第 3、8、9 款，
+//! `internal/blueprint/session/tools.md`「订、计时、再订」）：工具只报效果 `peer.watch`，订是这里的事。
 //!
 //! 每送完一批，照内核这时在等的（[`Session::watching`]）和这里订过的比：新多出来的、换了一次订的（撤掉又订、又订了
 //! 一次；一次订照订的那条工具结果的序号认，施工 FX-3：时钟停住时两次订的起算时刻一样），经会话表交给那个会话的 actor

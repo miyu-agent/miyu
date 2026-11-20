@@ -1,4 +1,4 @@
-//! 斜杠命令模板展开成的一句（施工 X-14 上，`docs/blueprint/slash.md`「模板」第 4、6 条）：照 `session.send` 发，`message.user`
+//! 斜杠命令模板展开成的一句（施工 X-14 上，`internal/blueprint/slash.md`「模板」第 4、6 条）：照 `session.send` 发，`message.user`
 //! 带上人敲的那一行；重做照原样重发的还是那条命令，换了字的不再是。
 
 use super::load::Logged;

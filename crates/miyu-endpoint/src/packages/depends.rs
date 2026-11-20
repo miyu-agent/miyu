@@ -1,4 +1,4 @@
-//! 包之间的依赖（施工 F-11，设计 31 第三节，`docs/blueprint/packages.md`「依赖」）：清单的 `[depends]` 写的是别的包的编号，什么
+//! 包之间的依赖（施工 F-11，设计 31 第三节，`internal/blueprint/packages.md`「依赖」）：清单的 `[depends]` 写的是别的包的编号，什么
 //! 种类都行，照 pacman：缺了的装不上；装着的被人弄缺了（手删、升级以后多依赖了一个）的不起、`package.list`、`miyu check` 报出来；
 //! 被别人依赖着的卸不掉。`[recommends]` 缺了照装、照起。读成了的清单才算装着。施工 PK-2 起依赖能带版本下限：装着的那一份
 //! 清单写的版本照 semver 比不过下限的，同缺了（[`miyu_config::package::Dependency::fits`]）。

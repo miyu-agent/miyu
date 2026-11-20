@@ -1,4 +1,4 @@
-//! 改长期目标（施工 X-7，`docs/blueprint/goal.md`）：`/goal` 命令、`goal` 工具、到了轮数上限都交这一个命令。照账本里现在的目标
+//! 改长期目标（施工 X-7，`internal/blueprint/goal.md`）：`/goal` 命令、`goal` 工具、到了轮数上限都交这一个命令。照账本里现在的目标
 //! 判（`Ledger::goal_running`），合的记对应的那一条 `goal.*`，回合进行中的带上这个回合；不合的拒。不开轮：续轮由会话 actor 开
 //! （`miyu-session` 的 `actor/goal.rs`）。载入时还跑着的记成停着（[`Session::pause_goal_on_load`]）：核心重启以后不自己接着跑，
 //! 要人 `/goal resume`。

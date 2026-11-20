@@ -1,4 +1,4 @@
-//! 附件（施工 3-9 三补，`docs/blueprint/protocol.md` 的 `blob.put`、`session.send`；`04-核心协议.md` 第九节）：人说话时
+//! 附件（施工 3-9 三补，`internal/blueprint/protocol.md` 的 `blob.put`、`session.send`；`04-核心协议.md` 第九节）：人说话时
 //! 附上的图片、文件。
 //!
 //! - [`put`]：`blob.put`，本机的头传路径、核心自己读，远程的头传内容；认是什么（[`miyu_tool::attachment`]），存成

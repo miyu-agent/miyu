@@ -1,4 +1,4 @@
-//! 问人（施工 D-2，`docs/blueprint/session/tools.md`「问人」，`tools/ask_user.md`）：执行器这一头的提问端口。
+//! 问人（施工 D-2，`internal/blueprint/session/tools.md`「问人」，`tools/ask_user.md`）：执行器这一头的提问端口。
 //!
 //! - 一次调用一个端口，只给能问人的会话（[`port`]，`Agents::asks`）：工具面上的 `ask_user` 也只有它们有。
 //! - 工具交题 → 经回传的通道送回 actor（[`ToolBack::Asks`]）→ 记下回信的口子、交给内核 `ToolAsks`，内核记 `question.asked`、等。

@@ -1,4 +1,4 @@
-//! fork 子代理的分叉（施工 A-F 上，`docs/blueprint/agents.md`「fork 子代理」）：分叉点在父会话这一轮当中，就是派它的那一步
+//! fork 子代理的分叉（施工 A-F 上，`internal/blueprint/agents.md`「fork 子代理」）：分叉点在父会话这一轮当中，就是派它的那一步
 //! （那条带调用的 `message.assistant`）。子会话接着那一轮：头几条给那一步的每个调用记一条占位结果（几个兄弟 fork 一字不差，
 //! 请求前缀才一样），再以 `forked` 收住那一轮；它自己的活由交代另开一轮。普通分叉（`session.fork`）的分叉点照旧在一轮之外。
 

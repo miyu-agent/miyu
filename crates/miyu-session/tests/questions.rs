@@ -1,4 +1,4 @@
-//! 问人（施工 D-2，`docs/blueprint/session/tools.md`「问人」）：工具经提问的端口交题，内核记 `question.asked`（选项的
+//! 问人（施工 D-2，`internal/blueprint/session/tools.md`「问人」）：工具经提问的端口交题，内核记 `question.asked`（选项的
 //! `preview` 原样）、等；人回答（带 `notes`），回答落了盘送回工具，成了这次调用的结果。等的时候打断，这次调用只有一条结果。
 //! 没人能回答的会话不给端口。
 

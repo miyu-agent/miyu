@@ -1,4 +1,4 @@
-//! 父子之间的留言，内核这一头（施工 7-7，`docs/blueprint/agents.md` 第六条，`docs/blueprint/kernel/session.md`「子代理的
+//! 父子之间的留言，内核这一头（施工 7-7，`internal/blueprint/agents.md` 第六条，`internal/blueprint/kernel/session.md`「子代理的
 //! 留言」）。
 //!
 //! 父会话发给子代理的留言就是父会话发来的 `message.user`，和交代一样走「发一条消息」：内核不另认。子代理发给父会话的留言，

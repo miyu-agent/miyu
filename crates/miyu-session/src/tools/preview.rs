@@ -1,4 +1,4 @@
-//! 问人之前先看一眼（施工 F-10 下，`docs/blueprint/tools/package.md`）：权限策略要问人时，工具要看一眼的（[`Tool::preview`]，
+//! 问人之前先看一眼（施工 F-10 下，`internal/blueprint/tools/package.md`）：权限策略要问人时，工具要看一眼的（[`Tool::preview`]，
 //! 现在只有 `package`），执行器带着端口调它。成了的整份放进确认请求的说明，键 `preview`：人看到的就是日志里记下的；不成的
 //! 不问，照拒绝交给她。不要看的照原样问。
 

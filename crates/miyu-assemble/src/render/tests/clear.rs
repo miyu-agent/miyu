@@ -1,4 +1,4 @@
-//! 清空上下文（施工 6-8 补，`docs/blueprint/kernel/request.md`「组装」第 2 条）：清空的检查点什么都不出，单开的那一轮也
+//! 清空上下文（施工 6-8 补，`internal/blueprint/kernel/request.md`「组装」第 2 条）：清空的检查点什么都不出，单开的那一轮也
 //! 不出，下一轮只剩那一轮开头注入的事实和触发它的那句。
 
 use super::*;

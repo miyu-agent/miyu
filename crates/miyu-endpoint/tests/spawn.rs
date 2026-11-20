@@ -1,4 +1,4 @@
-//! 派子代理，真核心走一遍（施工 7-5，`docs/blueprint/agents.md` 第一条）：她在主会话里调 `agent`，会话表造出子会话，交代作为
+//! 派子代理，真核心走一遍（施工 7-5，`internal/blueprint/agents.md` 第一条）：她在主会话里调 `agent`，会话表造出子会话，交代作为
 //! 主会话发来的话开了它的第一轮，替身模型在子会话里答话；子会话的日志、快照、请求，`session.list` 的 `parent` 都对。
 
 use serde_json::{Value, json};

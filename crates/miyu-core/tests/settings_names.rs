@@ -1,4 +1,4 @@
-//! 设置项命名的规矩（施工 UX-1，`docs/blueprint/config.md`「给人看的字」的「命名的规矩」，`miyu_config::naming`）：核心登记的项、包的
+//! 设置项命名的规矩（施工 UX-1，`internal/blueprint/config.md`「给人看的字」的「命名的规矩」，`miyu_config::naming`）：核心登记的项、包的
 //! 「启用」、出厂的包的项，中英日三份字表里的名字都是软件术语、开关都正着说。
 
 use std::path::Path;

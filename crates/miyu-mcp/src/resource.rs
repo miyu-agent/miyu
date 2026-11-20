@@ -1,4 +1,4 @@
-//! 资源（施工 X-41，`docs/blueprint/mcp.md`「怎么走」第七条）：`resources/list`、`resources/templates/list` 的一页，只留规范里
+//! 资源（施工 X-41，`internal/blueprint/mcp.md`「怎么走」第七条）：`resources/list`、`resources/templates/list` 的一页，只留规范里
 //! 那几格；`resources/read` 的内容换成 [`Content::Resource`]。
 
 use serde_json::{Map, Value};

@@ -1,4 +1,4 @@
-//! `miyu config` 给人看的字（施工 8-2，`docs/blueprint/cli/config.md`「给人看的字」，样子在 `config.md`「样子」）；
+//! `miyu config` 给人看的字（施工 8-2，`internal/blueprint/cli/config.md`「给人看的字」，样子在 `config.md`「样子」）；
 //! `miyu ask` 起头说配置有错、项目配置没信任的那两行。报错的整句话由核心照连接的语言说，这里只有命令行自己的几个词
 //! （CL-2 下照设计 47：合计、还没有文件的告警）。
 //! 改、写、信任的几个子命令的字在 `config_write.rs`（施工 8-3）。

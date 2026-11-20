@@ -1,4 +1,4 @@
-//! 监视的命令的标准输出攒成批（施工 MN-1 上，设计 56 第三节第 2 条，`docs/blueprint/session/tools.md`「后台命令」）：一行到
+//! 监视的命令的标准输出攒成批（施工 MN-1 上，设计 56 第三节第 2 条，`internal/blueprint/session/tools.md`「后台命令」）：一行到
 //! 了开一个 [`WINDOW`] 的窗口，窗口里到的行合成一批交出去，记一条 `job.lines`。没有换行结尾的半行等到换行、命令结束，或者
 //! 攒满 [`HALF_LINE`] 个字再算一行。
 //!

@@ -1,4 +1,4 @@
-//! 长期目标这个软件包（施工 X-8 上，`docs/blueprint/goal.md`，工具一页 `tools/goal.md`）：她用来看、设、结束这个会话的长期目标
+//! 长期目标这个软件包（施工 X-8 上，`internal/blueprint/goal.md`，工具一页 `tools/goal.md`）：她用来看、设、结束这个会话的长期目标
 //! 的工具 [`goal`]。不放进基础系统：长期目标是能关的软件包（设计 `30-插件框架.md` 第二节的表）。续轮由会话层开
 //! （`miyu-session` 的 `actor/goal.rs`），这里只有工具。
 //!

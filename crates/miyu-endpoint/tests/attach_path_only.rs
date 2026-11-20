@@ -1,4 +1,4 @@
-//! 只有路径的附件（施工 AT-1，`docs/blueprint/protocol.md` 的 `session.send` 第 5 条）：`attachments` 里没有 `blob`、只有
+//! 只有路径的附件（施工 AT-1，`internal/blueprint/protocol.md` 的 `session.send` 第 5 条）：`attachments` 里没有 `blob`、只有
 //! `path` 的项记成一块 `path`，核心不读、不查在不在；和有 `blob` 的混着发先后不乱；视图里照样是附件，带 `path_only`；
 //! 重发、撤销恢复、导出再导入都照带；写法不对的、场所会话里的、回答提问时的参数不对，什么都不写。
 

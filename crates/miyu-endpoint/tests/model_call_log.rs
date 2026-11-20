@@ -1,4 +1,4 @@
-//! `model.call` 的运行日志（施工 8-20，`docs/blueprint/models.md`「出错」、「怎么走」第十二条第 6 条）：成了记一行
+//! `model.call` 的运行日志（施工 8-20，`internal/blueprint/models.md`「出错」、「怎么走」第十二条第 6 条）：成了记一行
 //! `INFO model call`，带用途、真发给的供应商和模型、输入（三项加起来）、输出；没成的记一行 `INFO model call failed`，带
 //! 原因码（`model_failed` 另带分类）；不带会话编号，key 的值不进日志。
 //!

@@ -1,4 +1,4 @@
-//! 核心自己记内存账（`docs/designs/23-性能预算.md` F4，施工 V-4，`docs/blueprint/heap.md`「自己记账」）：起来时、之后每
+//! 核心自己记内存账（`internal/designs/23-性能预算.md` F4，施工 V-4，`internal/blueprint/heap.md`「自己记账」）：起来时、之后每
 //! [`Timing::every`] 采一次自己的内存（RSS；Linux 上另有 PSS、私有的、匿名的、换出去的，macOS 上另有算在头上的；glibc 的堆；载入着几个会话），一行一个 JSON 写进
 //! `state/logs/memory.jsonl`；一阵请求过去、安静下来时看一眼 RSS，比上一次采的时候涨了 [`Timing::grew`] 的多采一次（施工
 //! V-6 下，以前两次之间每五秒看一眼）。

@@ -9,7 +9,8 @@ const USER: &str = r#"{"seq":41,"at":"2026-09-25T07:04:05.123Z","kind":"message.
 
 #[test]
 fn the_kind_of_a_written_line_is_read_without_parsing() {
-    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/designs/samples/events");
+    let dir =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../internal/designs/samples/events");
     let mut seen = 0;
     for entry in std::fs::read_dir(dir).unwrap() {
         let text = std::fs::read_to_string(entry.unwrap().path()).unwrap();

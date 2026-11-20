@@ -1,4 +1,4 @@
-//! 会话导出成 Markdown 的三个预设和范围（施工 SE-1 中下中，`docs/blueprint/protocol.md`「`session.export`」）：真核心跑四轮
+//! 会话导出成 Markdown 的三个预设和范围（施工 SE-1 中下中，`internal/blueprint/protocol.md`「`session.export`」）：真核心跑四轮
 //! （七万字、读文件加思考、手动压缩、再一轮），`read`、`agent`、`chat` 各导一份；`agent` 默认从检查点起（压掉的是那七万字，
 //! 后面那一截照有效历史留着）、摘要放最前；`read` 的 `context` 同一段、压缩那一条照时间线；`{"turns": N}` 写省掉了几轮；
 //! 开关盖过预设；原始包里的 `transcript.md` 是 `read` 预设那一份、换过密钥，日志原样，导入照常。

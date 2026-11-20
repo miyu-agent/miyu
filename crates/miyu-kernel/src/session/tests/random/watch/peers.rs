@@ -1,4 +1,4 @@
-//! 看守查别的会话发来的话（施工 C-2，`docs/blueprint/cross-session.md` 第四条、第五条第 1 到 3 款）：
+//! 看守查别的会话发来的话（施工 C-2，`internal/blueprint/cross-session.md` 第四条、第五条第 1 到 3 款）：
 //!
 //! - 过不了防刷屏的拒绝，原因照看守自己数的：一字不差的 `duplicate_message` 先查、不占数，再查限速 `too_many_messages`，
 //!   最后查没听到的上限 `inbox_full`；拒绝的只有一个回应，什么都不记；

@@ -1,4 +1,4 @@
-//! `fs.list`、`fs.find`、`fs.realpath`、`fs.read`（施工 W-2、W-3、W-6，`docs/blueprint/web-module.md`
+//! `fs.list`、`fs.find`、`fs.realpath`、`fs.read`（施工 W-2、W-3、W-6，`internal/blueprint/web-module.md`
 //! 「三、列文件、找文件」「四、路径」「七、分块读」）：列一层目录、在一个目录里模糊找文件、把一个路径换成真实的
 //! 位置、分块读一份文件。`fs.list`、`fs.find` 的回应一个样子：`items` 每一条 `{dir, full, marks, path, size}`；
 //! 数据根只有工作区能列、能找、能读，落进去的 `path_forbidden`，换不成真实的位置、不是目录的

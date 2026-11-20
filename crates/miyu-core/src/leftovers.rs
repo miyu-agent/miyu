@@ -1,4 +1,4 @@
-//! 核心起来时收拾上一次崩了留下的（`docs/blueprint/core.md`「起来的先后」）：升级装上的包到一半被杀的放回去（施工 AE-7，
+//! 核心起来时收拾上一次崩了留下的（`internal/blueprint/core.md`「起来的先后」）：升级装上的包到一半被杀的放回去（施工 AE-7，
 //! [`miyu_store::packages::install::recover`]）；写配置、密钥时被杀留下的临时文件删掉（施工 AS-11，
 //! [`miyu_store::config_file::sweep_temps`]；施工 R3-1 起看 `run/`）；两个暂存照设计 55 第三节第 5 条清：自己的 `tmp/unpack/`
 //! 整个清，`var/tmp/` 清放了满七天没碰的（施工 FH-3）。读清单、读配置之前做，在这之前没有在装的、在写的。

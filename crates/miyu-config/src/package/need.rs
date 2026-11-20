@@ -1,4 +1,4 @@
-//! 包要这个地方有什么才有用（施工 X-25，`docs/blueprint/packages.md`「清单」）：清单 `[package] needs` 写的。现在只认
+//! 包要这个地方有什么才有用（施工 X-25，`internal/blueprint/packages.md`「清单」）：清单 `[package] needs` 写的。现在只认
 //! `images`：整包都要「这个地方显示得了图片」，显示不了图片的会话里这个包当没开（`venues.md`「`venue.session`」的
 //! `images`）。
 

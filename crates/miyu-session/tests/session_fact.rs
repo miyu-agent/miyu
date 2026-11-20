@@ -1,4 +1,4 @@
-//! 会话编号那一块事实，执行器这一头（施工 1-13 再补，`docs/blueprint/kernel/request.md`「事实」）：造会话、载入时把会话自己的
+//! 会话编号那一块事实，执行器这一头（施工 1-13 再补，`internal/blueprint/kernel/request.md`「事实」）：造会话、载入时把会话自己的
 //! 编号交给内核。第一轮注入的就是它，排在人那一句前面；载入以后编号一样，不重发；子会话注入它自己的编号，不是父会话的。
 
 use miyu_kernel::block::{Block, Text};

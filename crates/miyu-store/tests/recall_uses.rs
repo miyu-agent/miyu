@@ -1,4 +1,4 @@
-//! 回合库里的「用到」（施工 R-4 下，`docs/blueprint/recall.md`「库的结构」、`memory.md` 第八条）：一条事件带上一条记忆写一行，
+//! 回合库里的「用到」（施工 R-4 下，`internal/blueprint/recall.md`「库的结构」、`memory.md` 第八条）：一条事件带上一条记忆写一行，
 //! 同一行再写不重复；照记忆分组数次数、取最近一次；删会话时跟着那个来源拿掉。
 
 use std::path::PathBuf;

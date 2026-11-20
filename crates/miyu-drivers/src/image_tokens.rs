@@ -1,4 +1,4 @@
-//! 一张图在 DeepSeek 上算多少 token（施工 6-3 上，`docs/blueprint/compaction.md`「对外的样子」模型的资料）：官方文档
+//! 一张图在 DeepSeek 上算多少 token（施工 6-3 上，`internal/blueprint/compaction.md`「对外的样子」模型的资料）：官方文档
 //! 「Token 用量」里图片计算器的 v41 配置，照 dsh（`deepseek-harness`，2026-09-28 的版本）的移植一行行搬过来。
 //!
 //! 图片总像素小于 544×544 的先放大；补齐成 14 像素一块的网格，每个方向 3 块合成一格；一行末尾多一个分隔，另加两个首尾；

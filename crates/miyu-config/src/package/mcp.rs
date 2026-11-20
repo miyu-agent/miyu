@@ -1,4 +1,4 @@
-//! 包带的 MCP 服务（施工 X-2，`docs/blueprint/mcp.md`「对外的样子」）：`[[mcp]]` 一段一个，读成 [`McpServer`]。一个服务要么是本机
+//! 包带的 MCP 服务（施工 X-2，`internal/blueprint/mcp.md`「对外的样子」）：`[[mcp]]` 一段一个，读成 [`McpServer`]。一个服务要么是本机
 //! 拉起的一条命令，要么是一个网址（施工 X-32 上，Streamable HTTP），见 [`Reach`]。只查写法；
 //! 怎么起、怎么登记工具在核心那一边（X-3）。一个服务一个功能（[`McpServer::feature_id`]），编号全局不重，两个包撞了照功能
 //! 编号撞了报（`miyu-store` 的 `feature_taken`）。系统配置里的 `[mcp.<名字>]` 照同样的格子读（施工 F-9 上，`configured.rs`）。

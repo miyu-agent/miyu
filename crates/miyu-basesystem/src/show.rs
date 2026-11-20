@@ -1,4 +1,4 @@
-//! `show`（施工 D-5，`docs/blueprint/tools/show.md`，设计 `35-展示.md`）：把一个文件给人看。照 `read` 的规矩打开（一层链接都
+//! `show`（施工 D-5，`internal/blueprint/tools/show.md`，设计 `35-展示.md`）：把一个文件给人看。照 `read` 的规矩打开（一层链接都
 //! 不跟），照打开的句柄取大小和修改时间，读开头一截认种类（[`kind`]），报 `file.shown`。施工 SW-1 起不拷内容、不限大小：头照
 //! 路径读，远程的头经 `session.shown` 读。她只收到一句「已展示给用户」，内容不进上下文。
 

@@ -1,4 +1,4 @@
-//! 列模型（`docs/blueprint/drivers/anthropic.md`「对外的样子」，`models.md`「驱动要守的约定」第 3 条）：
+//! 列模型（`internal/blueprint/drivers/anthropic.md`「对外的样子」，`models.md`「驱动要守的约定」第 3 条）：
 //! `GET <地址>/models?limit=1000`，回 `{"data":[{"id":…,"max_input_tokens":…},…],"has_more":…}`。窗口是 `max_input_tokens`。
 //! `has_more` 不看：一页 1000 个，官方的模型远没有这么多（图纸「起草时定的」第 12 条）。
 

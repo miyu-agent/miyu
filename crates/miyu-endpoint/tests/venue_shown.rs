@@ -1,4 +1,4 @@
-//! 场所消息里交了原图的那几样（施工 O-35，`docs/construction/O-35-私聊看文件.md`）：`venue.media` 每项可选的 `shown` 原样记，
+//! 场所消息里交了原图的那几样（施工 O-35，`internal/construction/O-35-私聊看文件.md`）：`venue.media` 每项可选的 `shown` 原样记，
 //! 假的、没写的不写；带的东西全是交了原图的、又没有正文也没附件的 `empty_message`；转发里的写了 `shown`、写的不是真假的
 //! `bad_params`；都什么都不记。
 

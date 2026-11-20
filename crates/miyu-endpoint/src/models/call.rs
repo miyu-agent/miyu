@@ -1,4 +1,4 @@
-//! 协议上的 `model.call`（`docs/blueprint/models.md`「协议」`model.call`、「怎么走」第十二条，施工 8-20）：经模型调用口的
+//! 协议上的 `model.call`（`internal/blueprint/models.md`「协议」`model.call`、「怎么走」第十二条，施工 8-20）：经模型调用口的
 //! 一次性入口叫一次模型或池，交回整段回答和用量。不进任何会话的日志，不推送。
 //!
 //! 1. 先查参数的样子：`purpose` 1 到 32 个小写字母、数字、`-`；`messages` 里 `system` 最多一条、只能在最前，后面至少一条、

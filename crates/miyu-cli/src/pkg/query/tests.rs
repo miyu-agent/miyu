@@ -1,4 +1,4 @@
-//! `files`、`owns`、`check` 印成的那几行（施工 F-8 下，`docs/blueprint/cli/pkg.md`「样子」）。
+//! `files`、`owns`、`check` 印成的那几行（施工 F-8 下，`internal/blueprint/cli/pkg.md`「样子」）。
 
 use serde_json::json;
 

@@ -1,4 +1,4 @@
-//! 回合库里哪个会话在哪个场所（施工 R-13 下，`docs/blueprint/recall.md`「库的结构」，`memory.md` 第一条第 1 款）：
+//! 回合库里哪个会话在哪个场所（施工 R-13 下，`internal/blueprint/recall.md`「库的结构」，`memory.md` 第一条第 1 款）：
 //! `places(source, venue)`，场所会话接上回合索引时记一次，本机的会话不记。只记在哪说的（原来搜以前的对话照它挑，施工 R-29
 //! 起不挑了，`memory.md` 第九条）。删会话时跟着那个来源拿掉（`recall.rs` 的 `forget`），库删了照会话日志补。
 //!

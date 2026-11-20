@@ -1,4 +1,4 @@
-//! 协议上的 `config.schema`、`config.get`、`config.check`（`docs/blueprint/config.md`「协议」，施工 8-2）：都是查询，
+//! 协议上的 `config.schema`、`config.get`、`config.check`（`internal/blueprint/config.md`「协议」，施工 8-2）：都是查询，
 //! 不改什么。说成话、挑出几项的几个小函数 `config.set`、`config.trust` 也用（施工 8-3）。给人看的字（名字、说明、报错的话）照这个连接的语言（握手时定的）。
 //!
 //! 写了清单里没有的键：`unknown_config_key`，`data.problems` 里每个不认识的一条，带离得最近的键名。

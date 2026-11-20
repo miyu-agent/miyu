@@ -1,4 +1,4 @@
-//! 把一页日志算成条目（施工 9-8 中，`docs/blueprint/view.md`「`view.page`」）：投影要的字、改了多少行的端口，在这里照
+//! 把一页日志算成条目（施工 9-8 中，`internal/blueprint/view.md`「`view.page`」）：投影要的字、改了多少行的端口，在这里照
 //! 资源目录和 blob 接上。投影本身是纯逻辑，在 `miyu-view`。
 
 use std::sync::Arc;

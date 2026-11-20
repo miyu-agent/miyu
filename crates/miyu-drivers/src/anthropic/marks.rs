@@ -1,4 +1,4 @@
-//! 缓存打点放在哪几块（`docs/blueprint/drivers/anthropic.md`「缓存打点」）：前缀即契约，打点只告诉这一家「到这里存一份」。
+//! 缓存打点放在哪几块（`internal/blueprint/drivers/anthropic.md`「缓存打点」）：前缀即契约，打点只告诉这一家「到这里存一份」。
 //!
 //! 照这个先后算，同一块只打一次，最多 4 处：
 //!

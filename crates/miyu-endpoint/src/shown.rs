@@ -1,4 +1,4 @@
-//! `session.shown`（施工 SW-1，`docs/blueprint/protocol.md` 的 `session.shown`，`tools/show.md`「头怎么读内容」）：远程的头分段读
+//! `session.shown`（施工 SW-1，`internal/blueprint/protocol.md` 的 `session.shown`，`tools/show.md`「头怎么读内容」）：远程的头分段读
 //! 她展示过的一个文件。展示的文件不存成 blob，只在 `file.shown` 里记真实路径、大小、修改时间；读不到这台电脑硬盘的头照「会话 +
 //! 调用编号」来要，核心照原路径边读边传。
 //!

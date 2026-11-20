@@ -1,4 +1,4 @@
-//! 向上回报，执行器这一头（施工 7-6，`docs/blueprint/agents.md` 第二条第 5 条，`session/actor.md`「向上回报」）：内核交出的
+//! 向上回报，执行器这一头（施工 7-6，`internal/blueprint/agents.md` 第二条第 5 条，`session/actor.md`「向上回报」）：内核交出的
 //! 回报（[`Upward`]）补上任务编号、子会话，经会话表的端口（[`SessionPort`]）交给父会话，命令 `Report`，发命令的是这个
 //! 子会话。
 //!

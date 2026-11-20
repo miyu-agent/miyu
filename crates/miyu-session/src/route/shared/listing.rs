@@ -1,4 +1,4 @@
-//! `model.list` 不读整份目录（施工 V-32，`docs/blueprint/models.md`「怎么走」第二条第 2 条第 7 款）：列整份要目录里那一家的
+//! `model.list` 不读整份目录（施工 V-32，`internal/blueprint/models.md`「怎么走」第二条第 2 条第 7 款）：列整份要目录里那一家的
 //! 全部模型（清单、每个模型对目录的答），第一次照整份目录算的时候记进 `state/models/listing.json`，以后每次 `model.list` 读这个
 //! 小文件、和路由那份（`catalog.json`，常驻）并在一起照记下的答，用完就放——平时不在内存里。
 //!

@@ -1,4 +1,4 @@
-//! 调系统的 `sandbox_init_with_parameters`，把配置装到自己身上（`docs/blueprint/sandbox/macos.md`「怎么走」第 3 条）。
+//! 调系统的 `sandbox_init_with_parameters`，把配置装到自己身上（`internal/blueprint/sandbox/macos.md`「怎么走」第 3 条）。
 //!
 //! 整个 crate 只有这里（和 macOS 测试里调 `fcntl` 的那一处）用 `unsafe`：这两个函数在系统的库里，不在公开的头文件
 //! 里，Rust 没有现成的安全封装；`sandbox-exec -D` 用的就是它。不经 `/usr/bin/sandbox-exec` 起命令：它自己出了错，印

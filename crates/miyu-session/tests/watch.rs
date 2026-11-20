@@ -1,4 +1,4 @@
-//! 「空了告诉我」，执行器这两头（施工 C-6，`docs/blueprint/cross-session.md` 第六条，2026-10-01 项目主人定改了
+//! 「空了告诉我」，执行器这两头（施工 C-6，`internal/blueprint/cross-session.md` 第六条，2026-10-01 项目主人定改了
 //! 「已经空着」那一条，`session/actor.md`「被等的名单」，`session/tools.md`「订、计时、再订」）。会话表是假的：
 //! 记下每一次订、每一个命令。
 //!

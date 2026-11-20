@@ -1,4 +1,4 @@
-//! 会话的路由（`docs/blueprint/models.md`「守着它的」`route.rs` 那一行 8-6 的一半，施工 8-6）：假服务器收到这一家的 key（施工
+//! 会话的路由（`internal/blueprint/models.md`「守着它的」`route.rs` 那一行 8-6 的一半，施工 8-6）：假服务器收到这一家的 key（施工
 //! 8-25：一家一个 key），重启还是它；老的 `keys` 列表不认；取不到 key、没配 `models.chat` 的当场 `no_model`，不发；没写 key 的不带认证头；
 //! 会话钉着造它时的模型，`models.chat` 改了只影响新会话；造的时候没配的，配好以后下一轮就用上；窗口照配置。地址是环境变量
 //! 的引用时（施工 8-6b）：设了照它连，没设当场 `no_model`，和取不到 key 一样。

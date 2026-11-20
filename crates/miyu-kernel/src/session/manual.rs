@@ -1,4 +1,4 @@
-//! 手动压缩（`docs/blueprint/compaction.md` 第七条，施工 6-8）：`session.compact` 空闲时才收，单开一轮只做压缩。
+//! 手动压缩（`internal/blueprint/compaction.md` 第七条，施工 6-8）：`session.compact` 空闲时才收，单开一轮只做压缩。
 //!
 //! 替代到哪在收下命令时就定，和自动压缩同一套（[`Session::upto_before`]，第三条第 2 条）：尾巴一样留（最后一组比预算大的
 //! 不留，被动压缩才至少留最后一组）；「这一轮要回应的话」换成还没有哪次请求看到过的人的消息；单开的这一轮自己不压进去。定出来前面没有能压的，拒绝，`nothing_to_compact`。

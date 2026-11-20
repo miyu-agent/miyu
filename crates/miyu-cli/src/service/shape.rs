@@ -1,4 +1,4 @@
-//! `miyu service … --format json` 的形状（施工 Z-1 下补，`docs/blueprint/cli/service.md`「机读格式」）：给头照着画开关，字段名
+//! `miyu service … --format json` 的形状（施工 Z-1 下补，`internal/blueprint/cli/service.md`「机读格式」）：给头照着画开关，字段名
 //! 稳定、不随界面语言变。成了的都是同一个形状 `{"installed", "on", "file", "manager"}`；没成的是 `{"error", "step", "said"}`。
 
 use serde_json::{Value, json};

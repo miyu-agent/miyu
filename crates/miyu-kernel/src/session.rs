@@ -1,4 +1,4 @@
-//! 会话：内核的状态机（`docs/designs/02-内核.md` 第四节「输入、动作、命令怎么写」、
+//! 会话：内核的状态机（`internal/designs/02-内核.md` 第四节「输入、动作、命令怎么写」、
 //! 第六节「回合怎么开、请求怎么发」）。
 //!
 //! 送进一条输入，出来一串动作。会话不做 I/O：要追加的事件、要回应的命令、要推送的事件、
@@ -219,13 +219,13 @@ impl Session {
     }
 
     /// 会话现在在哪个目录里干活：头最近一次报来的，回合开始时这一轮照它（施工 8-4）。纯查询：会话 actor 在回合开始时照它
-    /// 读一次项目配置（`docs/blueprint/config.md`「怎么走」第八条第 3 条）。
+    /// 读一次项目配置（`internal/blueprint/config.md`「怎么走」第八条第 3 条）。
     pub fn cwd(&self) -> &str {
         &self.environment.cwd
     }
 
     /// 落了盘的最后一条（施工 3-8 六补）：`Stored` 送进来那一刻就推送了，所以也是推过的最后一条；还没落过盘的没有，载入的
-    /// 是日志里最后一条。纯查询：会话 actor 订阅时照它定补发补到哪一条（`docs/blueprint/session/actor.md` 第 6 条）。
+    /// 是日志里最后一条。纯查询：会话 actor 订阅时照它定补发补到哪一条（`internal/blueprint/session/actor.md` 第 6 条）。
     pub fn landed(&self) -> Option<Seq> {
         self.stored
     }

@@ -1,4 +1,4 @@
-//! 只有路径的附件写成的两句（施工 AT-1，`docs/blueprint/drivers/openai-chat.md` 第 9 条）：随核心附带的字，存进策略快照的
+//! 只有路径的附件写成的两句（施工 AT-1，`internal/blueprint/drivers/openai-chat.md` 第 9 条）：随核心附带的字，存进策略快照的
 //! `core.drivers.path_only`；以前造的快照里没有，读成没有，这种附件只写路径本身。
 
 use miyu_drivers::PathOnlySources;

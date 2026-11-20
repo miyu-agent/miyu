@@ -1,4 +1,4 @@
-//! 能出向量的模型（施工 R-5 再补，`docs/blueprint/models.md`「协议」`model.list` 的「能出向量的」）：照资源目录的
+//! 能出向量的模型（施工 R-5 再补，`internal/blueprint/models.md`「协议」`model.list` 的「能出向量的」）：照资源目录的
 //! `models/embedding.toml` 认，`model.list` 里认得出的模型多一格 `embedding: true`，别的不写这一格。设置页的「语义模型」照它挑。
 
 use serde_json::{Value, json};

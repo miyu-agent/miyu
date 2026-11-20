@@ -1,4 +1,4 @@
-//! 本机 embedding（施工 R-5 中，`docs/blueprint/recall.md` 第三条第 3 款、第四条第 3、4 款）：交给它一句话，交回一个向量。
+//! 本机 embedding（施工 R-5 中，`internal/blueprint/recall.md` 第三条第 3 款、第四条第 3、4 款）：交给它一句话，交回一个向量。
 //! 核心一份 [`Embedder`]，给要向量的一方（R-5 下接进 `memory_search`）。
 //!
 //! - **核对文件**（`embed/files.rs`，施工 R-5 三补）：模型文件在内置模型那个小程序包的目录里，装好就能用、不下。第一次要时在

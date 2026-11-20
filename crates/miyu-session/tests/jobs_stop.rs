@@ -1,4 +1,4 @@
-//! 查和停，执行器这一头（施工 7-4，`docs/blueprint/agents.md` 第五条、`session/tools.md`「查和停」）：真的 `jobs` 在会话里列出、
+//! 查和停，执行器这一头（施工 7-4，`internal/blueprint/agents.md` 第五条、`session/tools.md`「查和停」）：真的 `jobs` 在会话里列出、
 //! 读、停；后台命令用假的（`miyu_tool::testkit::Held`，三个平台一样），子代理的会话表换成假的（停、看它都记下，回报照样送回
 //! 父会话）。她停的只记下、不叫醒她，人停的叫醒；停和自己退出撞在一起只认先到的；父会话停下时连它派的一起停，都不叫醒。
 

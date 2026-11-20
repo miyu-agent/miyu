@@ -1,4 +1,4 @@
-//! 出厂的认能出向量的规矩（施工 R-5 再补，`docs/blueprint/models.md`「协议」`model.list` 的「能出向量的」）照资源目录的目录快照
+//! 出厂的认能出向量的规矩（施工 R-5 再补，`internal/blueprint/models.md`「协议」`model.list` 的「能出向量的」）照资源目录的目录快照
 //! 认：几家常见的 embedding 模型认得出，重排的不算，认出来的没有一个能调工具（聊天模型一个不认）。
 
 use miyu_models::catalog::Catalog;

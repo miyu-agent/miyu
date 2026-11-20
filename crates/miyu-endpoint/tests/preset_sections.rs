@@ -1,4 +1,4 @@
-//! `preset.get` 的 `sections`（施工 FG-1，设计 `52-功能分组.md` 第一节到第三节，`docs/blueprint/presets.md`「功能分组」）：出厂的
+//! `preset.get` 的 `sections`（施工 FG-1，设计 `52-功能分组.md` 第一节到第三节，`internal/blueprint/presets.md`「功能分组」）：出厂的
 //! 四个预设，组的先后、组里的功能和名字、`by`；带几件工具的列工具、一件的不列；出厂预设开的功能和改前一样。装的扩展、重名、
 //! 语言在 `preset_sections_more.rs`。
 

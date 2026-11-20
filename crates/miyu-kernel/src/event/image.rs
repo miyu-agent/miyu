@@ -1,4 +1,4 @@
-//! 替看不了图的模型看图的事件 `image.described`（施工 8-17，`docs/blueprint/kernel/events-bodies.md`、`models.md`「怎么走」
+//! 替看不了图的模型看图的事件 `image.described`（施工 8-17，`internal/blueprint/kernel/events-bodies.md`、`models.md`「怎么走」
 //! 第十三条）：主对话的模型看不了图，`models.vision` 替它看过一张图，内核记下转述。以后每次请求照它把图换成这段字。
 //!
 //! `by` 是内核，不带回合编号：转述挂在图上，不属于哪一轮，撤哪一轮都不拿走。不渲染：转述经统一的请求的 `described`

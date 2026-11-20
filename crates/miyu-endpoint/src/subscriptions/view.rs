@@ -1,4 +1,4 @@
-//! 视图流的转发任务（施工 9-8 下，`docs/blueprint/view.md`「视图流」）：会话的推送喂进订阅时那一页的投影，交出的变化写成
+//! 视图流的转发任务（施工 9-8 下，`internal/blueprint/view.md`「视图流」）：会话的推送喂进订阅时那一页的投影，交出的变化写成
 //! `view.add`、`view.update`、`view.append`、`view.hidden`、`view.remove` 推出去。
 //!
 //! - 订阅的回应带着最新一页的条目，它一定先写出去：之后的推送都是在它上面的变化。

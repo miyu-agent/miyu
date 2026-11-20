@@ -1,4 +1,4 @@
-//! 核心拉起的扩展能调什么（施工 X-30，`docs/blueprint/extensions.md`「谁能调」，`05-内核接口.md` 第三节、I5）：每个方法照这张表
+//! 核心拉起的扩展能调什么（施工 X-30，`internal/blueprint/extensions.md`「谁能调」，`05-内核接口.md` 第三节、I5）：每个方法照这张表
 //! 挡，三种：只给人的回 `local_only`；要某项能力的，包手里没有就回 `needs_approval`，`data.capabilities` 是缺的那一项；都能调的
 //! 照常。包手里有的照开关文件里批过的算（施工 SU-2 中，出厂的包算全有），见 `extensions::held`。
 //!

@@ -1,4 +1,4 @@
-//! 一块块喂的底子（施工 V-39 中，`docs/construction/V-39中-支线底子边读边喂.md`）：父会话的日志照先后一块块交过来，过父会话
+//! 一块块喂的底子（施工 V-39 中，`internal/construction/V-39中-支线底子边读边喂.md`）：父会话的日志照先后一块块交过来，过父会话
 //! 的账本，有效历史的起点往前挪了，挪过去的那一截当场只记派出去的任务、待办（`History::note`），放掉（同施工 V-15 的
 //! [`Loader`](super::super::Loader)）。载入支线（[`Session::loader`](super::super::Session::loader)）、分叉
 //! （[`Session::fork`](super::super::Session::fork)）都吃它：以前两处都要整份底子在手上，父会话三万多条时一处五十多 MB。

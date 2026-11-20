@@ -1,4 +1,4 @@
-//! 统一的请求：投影交给驱动的那一份（`docs/designs/08-上下文投影.md` 第二节
+//! 统一的请求：投影交给驱动的那一份（`internal/designs/08-上下文投影.md` 第二节
 //! 「统一的请求怎么写」）。
 //!
 //! 它和供应商无关，驱动再把它编码成各家的格式（`05-内核接口.md` 第七节）。同样的请求
@@ -32,12 +32,12 @@ pub struct Request {
     /// 别的照原样发。是假的不写进规范字节：以前的请求，字节和哈希都不变。
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub continuation: bool,
-    /// 请求里出现的图在这个会话里的转述（施工 8-17，`docs/blueprint/kernel/request.md`「替它看的图」）：blob → 转述原文。
+    /// 请求里出现的图在这个会话里的转述（施工 8-17，`internal/blueprint/kernel/request.md`「替它看的图」）：blob → 转述原文。
     /// 内核组装完放进来，驱动给看不了图的端点编码时把图的位置换成它；看得了图的不看。空的不写进规范字节：没有图的请求，
     /// 字节和哈希都不变。不算进指纹。
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     pub described: BTreeMap<ContentHash, String>,
-    /// 这一次回答至多多少 token（施工 6-11 三补，`docs/blueprint/compaction.md` 第十五条第 4 条）：用量加输出预留放不下了、
+    /// 这一次回答至多多少 token（施工 6-11 三补，`internal/blueprint/compaction.md` 第十五条第 4 条）：用量加输出预留放不下了、
     /// 加上回答的下限还放得下的主请求，内核写成窗口减用量，驱动发的输出上限照它压。没有的照模型的。不写进规范字节、不算进
     /// 指纹：平常的请求字节和哈希都不变。
     #[serde(skip_serializing_if = "Option::is_none")]

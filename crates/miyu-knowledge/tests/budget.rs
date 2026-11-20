@@ -1,4 +1,4 @@
-//! 知识库这个软件包的工具面预算（`docs/designs/10-自带软件.md` 第九节，施工 K-1 下、K-3）：`resources/software/knowledge/tools/`
+//! 知识库这个软件包的工具面预算（`internal/designs/10-自带软件.md` 第九节，施工 K-1 下、K-3）：`resources/software/knowledge/tools/`
 //! 下的五份说明加起来不超过 [`BUDGET`] 字节。
 //!
 //! 照记忆那个包的办法：2026-10-12 照中转网关的 `relay/deepseek-v4.1-flash` 量，二十五件（基础系统十六件、

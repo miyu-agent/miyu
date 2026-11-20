@@ -1,4 +1,4 @@
-//! 找技能（施工 X-10 上，`docs/blueprint/skills.md`「是什么」第 2 条，设计 `31-软件包.md` 第五节）：一个技能是一个文件夹，
+//! 找技能（施工 X-10 上，`internal/blueprint/skills.md`「是什么」第 2 条，设计 `31-软件包.md` 第五节）：一个技能是一个文件夹，
 //! 里面一份 `SKILL.md`（开头照公开的 Agent Skills 格式，`miyu_policy::skill`）。从三处找：
 //!
 //! - 装了的软件包（清单读成了的）的 `skills/<名字>/SKILL.md`，两层都算（出厂的在资源目录，自己装的在家目录）；

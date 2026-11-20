@@ -275,7 +275,7 @@ fn conditions(text: &mut String, results: &Results) {
             args.idle_wait.as_secs()
         ),
     );
-    text.push_str("- 量法：`docs/blueprint/perf.md`。原始数据在同名的 `.json`。\n\n");
+    text.push_str("- 量法：`internal/blueprint/perf.md`。原始数据在同名的 `.json`。\n\n");
 }
 
 /// 没有预算的几项。

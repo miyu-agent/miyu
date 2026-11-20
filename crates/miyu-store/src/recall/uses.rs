@@ -1,4 +1,4 @@
-//! 回合库里的「用到」（施工 R-4 下，`docs/blueprint/recall.md`「库的结构」，`memory.md` 第八条）：`uses(key, memory, at)`，
+//! 回合库里的「用到」（施工 R-4 下，`internal/blueprint/recall.md`「库的结构」，`memory.md` 第八条）：`uses(key, memory, at)`，
 //! 会话日志里一条事件带上一条记忆写一行，键是 `会话/事件的序号`，同一行再写不重复。照会话日志派生（`miyu_recall::uses`），
 //! 删会话时跟着那个来源拿掉（`recall.rs` 的 `forget`），库删了照日志补。
 

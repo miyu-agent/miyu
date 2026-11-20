@@ -1,4 +1,4 @@
-//! `schedule.*`（施工 J-1 下，`docs/blueprint/schedules.md` 第五节，设计 `45-定时和循环.md` 第三节第 3 条）：人经协议建、列、
+//! `schedule.*`（施工 J-1 下，`internal/blueprint/schedules.md` 第五节，设计 `45-定时和循环.md` 第三节第 3 条）：人经协议建、列、
 //! 删、停、续、改（施工 J-5）定时任务。一项的写法在 [`entry`]，推送
 //! （`schedules.changed`）也用它。
 //!
@@ -359,7 +359,7 @@ fn refusal(error: ScheduleError) -> Refusal {
     }
 }
 
-/// 一项的写法（`docs/blueprint/schedules.md` 第五节第 4 条）。
+/// 一项的写法（`internal/blueprint/schedules.md` 第五节第 4 条）。
 pub(crate) fn entry(schedule: &Schedule) -> Value {
     let (when, recurring) = match &schedule.when {
         When::Cron {

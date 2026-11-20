@@ -1,4 +1,4 @@
-//! 扩展的状态的推送（施工 9-4 补，`docs/blueprint/extensions.md`「推送」）：真核心拉起真进程，订阅着的连接收到整份和每一次
+//! 扩展的状态的推送（施工 9-4 补，`internal/blueprint/extensions.md`「推送」）：真核心拉起真进程，订阅着的连接收到整份和每一次
 //! 变化。夹具同 `tests/extensions.rs`（`support/extensions.rs`）。
 
 use std::sync::Arc;

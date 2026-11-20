@@ -1,4 +1,4 @@
-//! 索引里的一行（施工 3-8 七补，`docs/blueprint/store/index.md`「一行记什么」）：一个会话照日志算出来的几样，和它照到日志的
+//! 索引里的一行（施工 3-8 七补，`internal/blueprint/store/index.md`「一行记什么」）：一个会话照日志算出来的几样，和它照到日志的
 //! 哪里。会话写日志时一批批往上盖（[`super::SessionIndex::advance`]），列会话时照日志补（`miyu-endpoint` 的 `list.rs`）：两处
 //! 照同一个 [`Row::see`] 算，结果才和从头读整份日志的一字不差。
 

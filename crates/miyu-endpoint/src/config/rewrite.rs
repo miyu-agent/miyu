@@ -1,5 +1,5 @@
 //! 照一段代码改一层配置文件的字（施工 X-26，`mcp.set`、`mcp.remove`）：配置清单装不下的表（`[mcp.<名字>]`，
-//! `docs/blueprint/mcp.md`「系统配置里的一张表」第 2 条）也照 `config.set` 的规矩写（`set.rs` 第 3 到 5 步）：
+//! `internal/blueprint/mcp.md`「系统配置里的一张表」第 2 条）也照 `config.set` 的规矩写（`set.rs` 第 3 到 5 步）：
 //!
 //! 1. 拿着配置服务的锁，先把这一层重读一遍：手改过的在新的字上改，那一瞬间之前的手改先当手改推、记。
 //! 2. 文件读不进来的不改：`config_file_broken`。还没有这份文件的，从新建的样子（第一行指向 Schema）改起。

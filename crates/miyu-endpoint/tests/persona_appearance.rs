@@ -1,4 +1,4 @@
-//! 人格的主题色、背景图（施工 P-6，`docs/blueprint/personas.md`「主题色、背景图」）：真核心走一遍。主题色写进家目录那一层的
+//! 人格的主题色、背景图（施工 P-6，`internal/blueprint/personas.md`「主题色、背景图」）：真核心走一遍。主题色写进家目录那一层的
 //! `persona.toml` 的 `[appearance] seed`，读出来一律小写；背景图照头像的办法，只是上限大一些。
 
 use base64::Engine;

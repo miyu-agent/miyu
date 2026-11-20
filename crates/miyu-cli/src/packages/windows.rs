@@ -1,4 +1,4 @@
-//! Windows 上跑包的程序（施工 9-2，`docs/blueprint/packages.md`「转交」）：起它、等它，这期间自己不理 Ctrl+C（同一个控制台，
+//! Windows 上跑包的程序（施工 9-2，`internal/blueprint/packages.md`「转交」）：起它、等它，这期间自己不理 Ctrl+C（同一个控制台，
 //! 它自己会收到），退出码照它的。Windows 没有换成别的程序那一招（`exec`）。
 
 #![allow(

@@ -1,4 +1,4 @@
-//! `sessions`（`docs/blueprint/tools/sessions.md`，施工 C-3）：输出逐字节比；第一行是她自己，最近有动静的在前；没标题的；分页、
+//! `sessions`（`internal/blueprint/tools/sessions.md`，施工 C-3）：输出逐字节比；第一行是她自己，最近有动静的在前；没标题的；分页、
 //! 过了结尾、没有别的；短编号撞了放长；参数不对的不问端口；没有端口、列不出来、叫停。给人看的说法三种语言都换得出字。
 
 use std::sync::Arc;

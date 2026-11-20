@@ -33,7 +33,7 @@ use std::sync::Arc;
 /// 拉起核心的命令：主程序 `miyu` 加 `core`。
 pub type CoreCommand = Arc<dyn Fn() -> Command + Send + Sync>;
 
-/// 照钉住的那份核心检出的根目录（仓库根）：界面的测试照它读 `resources/`、`docs/designs/samples/`（设计 32 第四节第 3 条）。
+/// 照钉住的那份核心检出的根目录（仓库根）：界面的测试照它读 `resources/`、`internal/designs/samples/`（设计 32 第四节第 3 条）。
 /// git 依赖在 cargo 的检出里是整个仓库，资源和样本跟着钉住的提交走。只在 `testkit` 打开时有。
 #[cfg(feature = "testkit")]
 pub const WORKSPACE_ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
@@ -126,7 +126,7 @@ pub mod protocol {
 }
 
 /// 界面块的内容（施工 X-28，接入QQ 的插件往它的页面加卡片、浮窗、整页要的）：查写法（`check`、`check_title`），照连接的
-/// 语言挑字（`localize`、`pick`）。和核心收 `widget.set` 时查的是同一份（`docs/blueprint/widgets.md`「内容」）。
+/// 语言挑字（`localize`、`pick`）。和核心收 `widget.set` 时查的是同一份（`internal/blueprint/widgets.md`「内容」）。
 pub mod widgets {
     pub use miyu_config::package::WidgetPlace;
     pub use miyu_config::widget::{Bad, Problem, check, check_title, localize, pick};
@@ -140,7 +140,7 @@ pub mod wallpaper {
 }
 
 /// 视图流读回来的类型（施工 V-D；feature `view`，默认不开）：`view.page {view: true}` 的条目、视图流的推送（`Change`）、会话
-/// 状态（`Status`）、`view.detail` 的嵌套调用（`NestedItem`），和核心写出去的是同一份（`docs/blueprint/view.md`）。读的时候
+/// 状态（`Status`）、`view.detail` 的嵌套调用（`NestedItem`），和核心写出去的是同一份（`internal/blueprint/view.md`）。读的时候
 /// 可以没有的格照没有，不认识的格不管：核心加格子，旧的头照样读得懂。
 #[cfg(feature = "view")]
 pub mod view {

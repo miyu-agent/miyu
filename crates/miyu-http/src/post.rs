@@ -1,4 +1,4 @@
-//! 一次 POST，整个读完（施工 R-5 补：远程的 embedding，`docs/blueprint/recall.md` 第四条第 1 款）：带着头和 JSON 的请求体
+//! 一次 POST，整个读完（施工 R-5 补：远程的 embedding，`internal/blueprint/recall.md` 第四条第 1 款）：带着头和 JSON 的请求体
 //! 发出去，2xx 的交回整个响应体，有总时限、有大小上限。出错的说法同一次 GET（[`crate::get_full`]）：原话不带地址，回的不是
 //! 2xx 的另有状态码、响应头、最多 64 KiB 的响应体。
 

@@ -1,4 +1,4 @@
-//! 自动起标题（施工 3-8 五补，`docs/blueprint/protocol.md` 的 `session.meta_changed`）：没起名的会话第一轮答完，订阅着的头
+//! 自动起标题（施工 3-8 五补，`internal/blueprint/protocol.md` 的 `session.meta_changed`）：没起名的会话第一轮答完，订阅着的头
 //! 收到起标题的 `model.called`（`purpose: "title"`）和 `session.meta_changed`，`by` 是内核、不带回合编号和 `cause`；
 //! `session.list` 里带上这个标题，核心重启以后照样；请求是单独的一次，没有 system、工具面，只喂第一轮；人先起过名的不起。
 

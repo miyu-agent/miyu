@@ -1,4 +1,4 @@
-//! 请求形状探针：看不了图的那一张脸（施工 8-17，`docs/blueprint/kernel/request.md`「替它看的图」，`models.md`「怎么走」第十三
+//! 请求形状探针：看不了图的那一张脸（施工 8-17，`internal/blueprint/kernel/request.md`「替它看的图」，`models.md`「怎么走」第十三
 //! 条）。真内核照剧本跑，组装、给模型看的字都是出厂的，限额说看不了图：
 //!
 //! 1. 人附一张带名字的截图问第三行，先转述（转述请求带着人这句话），再请求：图的位置是带名字的标签和转述；她读了文件再答，
@@ -6,7 +6,7 @@
 //! 2. 人又附一张不带名字的图，转述没成：这一轮写占位，主请求照发。
 //! 3. 人再问一句，没有新图：上一轮没成的那张下一轮再转，成了；那条消息从占位换成转述（登记在案的改写），截图的转述照旧。
 //!
-//! 和存档（`docs/designs/samples/probe/vision/`）逐字节比：`requests/`、`openai-chat/` 是主请求，`describes/` 是转述请求。
+//! 和存档（`internal/designs/samples/probe/vision/`）逐字节比：`requests/`、`openai-chat/` 是主请求，`describes/` 是转述请求。
 //! 主请求照样查五条性质。
 
 use crate::support::{check, files, matches_the_archive, sent, stage, vision, wire};

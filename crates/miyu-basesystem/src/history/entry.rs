@@ -1,10 +1,10 @@
-//! 哪些算一条、一条的原文怎么写（`docs/blueprint/tools/history.md`「哪些算一条」「一条的原文」，施工 6-4）。
+//! 哪些算一条、一条的原文怎么写（`internal/blueprint/tools/history.md`「哪些算一条」「一条的原文」，施工 6-4）。
 //!
 //! 撤掉的、撤回的交给内核的 `History::whole()` 算过（边读边算，`collect.rs`），这里一条条看剩下的：人说的话、她的回复、工具
 //! 结果、以前的摘要。她自己翻记录的那几步（`history` 的调用和结果）不算：找的时候会找到自己这一次调用，翻出来的旧结果又和原文
 //! 重复。
 //!
-//! 人切权限级别另算（[`switched`]，施工 2-7 补）：撤销不改现在的权限（`docs/blueprint/kernel/session.md`「载入和崩溃」
+//! 人切权限级别另算（[`switched`]，施工 2-7 补）：撤销不改现在的权限（`internal/blueprint/kernel/session.md`「载入和崩溃」
 //! 第 2 条），所以撤掉的回合里切的也列，不经 `History::whole()`。
 
 use miyu_kernel::block::Block;
@@ -214,7 +214,7 @@ fn from(event: &Event, placeholders: &Placeholders) -> Option<String> {
     }
 }
 
-/// 场所里发的人，同群里那一行（`miyu-assemble` 的 `group::sender`，`docs/blueprint/chat.md`）：名字（没有的写平台身份），后面
+/// 场所里发的人，同群里那一行（`miyu-assemble` 的 `group::sender`，`internal/blueprint/chat.md`）：名字（没有的写平台身份），后面
 /// 括号里是 `id=`（这一条 `show_ids`、又有名字的才写）和身份（`owner` 对应表里有的、`manager` 桥报的）。名字、平台身份是
 /// 不可信的，照模板的规矩转义成一行。不是外部身份、不是认出来的本人的没有。
 fn sender(by: &By, venue: &VenueMessage) -> Option<String> {

@@ -1,4 +1,4 @@
-//! 第一次引导走过了（施工 8-11 四补，`docs/blueprint/config.md`「M8 的配置项」）：`ui.welcomed` 写在系统配置里，
+//! 第一次引导走过了（施工 8-11 四补，`internal/blueprint/config.md`「M8 的配置项」）：`ui.welcomed` 写在系统配置里，
 //! 设置页不画（Schema 里带 `hidden`），头走完引导写 `true`、经 `config.get` 读。
 
 use serde_json::json;

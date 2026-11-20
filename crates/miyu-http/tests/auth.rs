@@ -1,4 +1,4 @@
-//! 认证头照驱动（`docs/blueprint/models.md`「驱动要守的约定」第 2 条，施工 8-6）：HTTP 执行器不自己写 `Bearer`，驱动交回
+//! 认证头照驱动（`internal/blueprint/models.md`「驱动要守的约定」第 2 条，施工 8-6）：HTTP 执行器不自己写 `Bearer`，驱动交回
 //! 什么头就带什么头；没有 key 的端点一个认证头都不带；运行日志、调试输出里没有 key。
 
 use std::collections::BTreeSet;

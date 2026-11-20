@@ -1,4 +1,4 @@
-//! 合并转发那几行（施工 O-34，`docs/blueprint/kernel/request.md`「合并转发」）：一条场所消息的 `venue.forwards` 写成缩进的
+//! 合并转发那几行（施工 O-34，`internal/blueprint/kernel/request.md`「合并转发」）：一条场所消息的 `venue.forwards` 写成缩进的
 //! 几行，群里的接在那一行下面（`group.rs` 的 `record`），私聊的接在正文后面（`render.rs` 的 `spoken`）。
 //!
 //! 只有一个转发的头一行写 `label`，不止一个的每个写 `numbered`（第几个从 1 数）；下面每条一行 `名字: 正文 [记号]`，套在里面的

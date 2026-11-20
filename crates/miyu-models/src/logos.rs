@@ -1,4 +1,4 @@
-//! 供应商的图标（施工 8-31，`docs/blueprint/models.md`「图标」）：哪一家从哪拉、拉到的收不收。纯逻辑：拉、存、交给头在
+//! 供应商的图标（施工 8-31，`internal/blueprint/models.md`「图标」）：哪一家从哪拉、拉到的收不收。纯逻辑：拉、存、交给头在
 //! `miyu-core` 的 `models/logos.rs`、`miyu-endpoint`。
 //!
 //! - 来源照出厂的 `models/logos.json`：`colored` 里有的照 lobe-icons 的彩色版（照原样画），`mono` 里有的照 lobe-icons 的单色版

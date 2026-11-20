@@ -1,4 +1,4 @@
-//! 三种驱动的温度（施工 8-22，`docs/blueprint/models.md`「驱动要守的约定」第 14 条）：没有的一个字节不变；有的写顶层
+//! 三种驱动的温度（施工 8-22，`internal/blueprint/models.md`「驱动要守的约定」第 14 条）：没有的一个字节不变；有的写顶层
 //! `"temperature":<数>`，接在思考强度那几样的前面，数照最短的十进制写；Anthropic 开着思考（档位、`on`）不带。
 
 use std::collections::BTreeMap;

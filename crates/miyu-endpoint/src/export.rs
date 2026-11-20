@@ -1,4 +1,4 @@
-//! `session.export {session, format, to}`（施工 SE-1 上，设计 `58-会话导出和导入.md` 第一节，`docs/blueprint/protocol.md`
+//! `session.export {session, format, to}`（施工 SE-1 上，设计 `58-会话导出和导入.md` 第一节，`internal/blueprint/protocol.md`
 //! 「`session.export`」）：把一个会话打成原始包（`format: "bundle"`）写到人给的路径。Markdown（`format: "markdown"`，施工
 //! SE-1 中下上、中下中、中下下）在 `export/markdown.rs`，写文件照同样的规矩；`assets: files` 的附件文件夹在 `export/assets.rs`。
 //!

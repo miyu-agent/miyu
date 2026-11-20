@@ -1,4 +1,4 @@
-//! 封存（施工 C-8 下，`docs/blueprint/session/fork.md`「封存」）：`session.sealed` 只在两轮之间记、只记一次；封存以后不再开轮。
+//! 封存（施工 C-8 下，`internal/blueprint/session/fork.md`「封存」）：`session.sealed` 只在两轮之间记、只记一次；封存以后不再开轮。
 
 use super::Ledger;
 use crate::event::{Body, Event};

@@ -31,7 +31,7 @@ pub enum Command {
         /// 同 `Send` 的。
         urgent: bool,
     },
-    /// `session.respond`：照已经记下的几条旁听消息开一轮（施工 O-14 上，`docs/blueprint/chat.md` 第七条第 3 条第 1 项）。
+    /// `session.respond`：照已经记下的几条旁听消息开一轮（施工 O-14 上，`internal/blueprint/chat.md` 第七条第 3 条第 1 项）。
     /// 不新记消息；`facts` 原样记成 `context.injected`，排在触发前面。
     Respond {
         /// 开这一轮的那几条的序号：都要是这个会话里旁听的 `message.user`、没当过触发的。
@@ -108,7 +108,7 @@ pub enum Command {
     /// `session.set_meta`：改标题、置顶，改哪样写哪样（施工 3-8 三补，`meta.rs`）。
     SetMeta {
         /// 新的标题，照 `session.meta_changed` 的写法：空的是去掉标题；不改就没有。去掉前后空白、量长短是协议端点的事
-        /// （`docs/blueprint/protocol.md` 的 `session.set_meta`），内核照原样比、照原样记。
+        /// （`internal/blueprint/protocol.md` 的 `session.set_meta`），内核照原样比、照原样记。
         title: Option<String>,
         /// 置顶还是取消置顶；不改就没有。
         pinned: Option<bool>,
@@ -126,7 +126,7 @@ pub enum Command {
         /// 新的加进来的目录；不换就没有。
         dirs: Option<Vec<String>>,
     },
-    /// 斜杠命令模板展开成的一句（施工 X-14 上，`docs/blueprint/slash.md`「模板」第 4 条）：照 `session.send` 发（闲着开一轮，
+    /// 斜杠命令模板展开成的一句（施工 X-14 上，`internal/blueprint/slash.md`「模板」第 4 条）：照 `session.send` 发（闲着开一轮，
     /// 正忙的排队，不急着插话），`message.user` 带上人敲的那一行。
     Typed {
         /// 展开的那段，成一块文字。
@@ -166,7 +166,7 @@ pub enum Command {
     },
     /// `session.unrevert`：恢复最近一次撤销，在下一轮开始、压缩之前。
     Unrevert,
-    /// `session.redo`：重做最后一轮（`docs/blueprint/kernel/history.md`「重做」，施工 4-7 再补）：撤掉它，把开它的那几句
+    /// `session.redo`：重做最后一轮（`internal/blueprint/kernel/history.md`「重做」，施工 4-7 再补）：撤掉它，把开它的那几句
     /// 人的话再发一次，开新的一轮。最后一轮不是人的话开的、一轮都没有的，拒绝，`not_redoable`。
     Redo {
         /// 开这一轮的那一句里的字换成这几块（原来的文字块全换掉，空的是不要字）；`None` 是字照原来的。
@@ -183,25 +183,25 @@ pub enum Command {
     /// `session.clear`：清空上下文，空闲时才收，单开一轮压成一个空的检查点，不请求模型（`compaction.md` 第十四条，
     /// 施工 6-8 补）。
     Clear,
-    /// `/todo clear`：清掉待办（施工 D-3 再补，`docs/blueprint/kernel/session.md`「待办」）。回合进行中照收；没有待办的拒绝，
+    /// `/todo clear`：清掉待办（施工 D-3 再补，`internal/blueprint/kernel/session.md`「待办」）。回合进行中照收；没有待办的拒绝，
     /// `nothing_to_clear`。收下的记一条 `todos.cleared`，落了盘回应。
     ClearTodos,
     /// `session.set_state`：包的程序直接换上它在这个会话里的一份状态（施工 TW-1，设计 46）。回合进行中、空闲时都收，不开回合；
     /// 记一条 `package.state`（回合进行中的带上这个回合），落了盘回应。
     SetState(crate::event::PackageState),
-    /// `session.recap`：要一句回顾（施工 3-8 四补，`docs/blueprint/kernel/session.md`「回顾」）。有回合在进行时照收，照这一刻
+    /// `session.recap`：要一句回顾（施工 3-8 四补，`internal/blueprint/kernel/session.md`「回顾」）。有回合在进行时照收，照这一刻
     /// 落了盘的有效历史；不开回合、不进她的上下文。
     Recap,
     /// 子会话交来的回报（施工 7-2，`agents.md` 第二条第 5 条）：子会话的执行器经端口交，发命令的一方就是子会话。记一条
     /// `child.reported`，不带回合编号。对不上一个还会报的子代理的，拒绝，`unknown_job`。
     Report(ChildReported),
-    /// 被等的会话交来的「空了」（施工 C-6，`docs/blueprint/cross-session.md` 第六条第 6、7 款）：发命令的一方就是它。这边
+    /// 被等的会话交来的「空了」（施工 C-6，`internal/blueprint/cross-session.md` 第六条第 6、7 款）：发命令的一方就是它。这边
     /// 在等它的，记一条 `peer.idle`（`idle`），不带回合编号，照回报的规矩叫不叫醒她；不在等的拒绝，`unknown_watch`。
     PeerIdle {
         /// 它最近结束的那一轮最后一条有字的回复的第一行，被等的那一边截好的；一个字都没说的没有。
         status: Option<String>,
     },
-    /// 改长期目标（施工 X-7，`docs/blueprint/goal.md`，`session/goal.rs`）：`/goal` 命令、`goal` 工具、到了轮数上限都走它。
+    /// 改长期目标（施工 X-7，`internal/blueprint/goal.md`，`session/goal.rs`）：`/goal` 命令、`goal` 工具、到了轮数上限都走它。
     /// 合的记一条 `goal.*`，不合的拒。
     Goal(GoalChange),
     /// 整理会话跑完了一趟（施工 DR-1，设计 `41-整理会话.md`）：只有核心以记忆模块的名义发给它开的整理会话。记一条
@@ -268,7 +268,7 @@ pub enum Queued {
     Keep,
 }
 
-/// `events.append` 记的一条（施工 O-13 上，`docs/blueprint/chat.md` 第七条第 3 条）：扩展自己命名空间的，或者核心认得的两种场所
+/// `events.append` 记的一条（施工 O-13 上，`internal/blueprint/chat.md` 第七条第 3 条）：扩展自己命名空间的，或者核心认得的两种场所
 /// 的事件。别的种类经不了这条路：内核自己的事件只由内核记。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Appended {

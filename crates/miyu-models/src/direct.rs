@@ -1,4 +1,4 @@
-//! 不经核心、照配置直接连的那一个模型（施工 RC-1，`docs/blueprint/cli/rescue.md`）：`miyu rescue` 拉起 LiteMiyu 的应急模式时，
+//! 不经核心、照配置直接连的那一个模型（施工 RC-1，`internal/blueprint/cli/rescue.md`）：`miyu rescue` 拉起 LiteMiyu 的应急模式时，
 //! 照 Miyu 的 `models.chat` 交给它地址、模型名、驱动和 key。核心可能正坏着，所以这里只照这一刻的配置和资料算，不问核心。
 //!
 //! - 模型 `p/m`：照 [`crate::provider::provider`] 合出那一家，再照真发的那个模型换驱动（[`Provider::for_model`]），和核心发请求时

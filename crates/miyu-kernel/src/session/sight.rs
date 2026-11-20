@@ -1,4 +1,4 @@
-//! 替它看图（施工 8-17，`docs/blueprint/kernel/session.md`「替它看图」，`models.md`「怎么走」第十三条）：主对话的模型看不了
+//! 替它看图（施工 8-17，`internal/blueprint/kernel/session.md`「替它看图」，`models.md`「怎么走」第十三条）：主对话的模型看不了
 //! 图时，`models.vision` 替它看，转述记成 `image.described`，以后每次请求照它把图换成字。
 //!
 //! - 什么时候：到了「准备好」、组装完，限额说看不了图（`Limits.blind`）。请求里每一张不同的图，转述过的、正在转的、这一轮

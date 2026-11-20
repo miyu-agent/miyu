@@ -1,4 +1,4 @@
-//! 思考强度怎么写（`docs/blueprint/drivers/anthropic.md`「思考强度」，`models.md`「驱动要守的约定」第 13 条）：接在请求的最后。
+//! 思考强度怎么写（`internal/blueprint/drivers/anthropic.md`「思考强度」，`models.md`「驱动要守的约定」第 13 条）：接在请求的最后。
 //!
 //! - 没有：什么都不加，照供应商的默认（Opus 5 这一代默认会思考，4.7、4.8 默认不思考）。
 //! - 档位：`"thinking":{"type":"adaptive","display":"summarized"}`，`"output_config":{"effort":"<档位>"}`。`display` 写

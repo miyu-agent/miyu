@@ -1,4 +1,4 @@
-//! 包之间的依赖（施工 F-11，`docs/blueprint/packages.md`「依赖」）：真核心走一遍。`[depends] packages` 写别的包，什么种类都行；
+//! 包之间的依赖（施工 F-11，`internal/blueprint/packages.md`「依赖」）：真核心走一遍。`[depends] packages` 写别的包，什么种类都行；
 //! 缺了的装不上；被依赖着的卸不掉；装着的缺了依赖的列表里写明、`miyu check` 报出来；以前写的 `workers` 照认；列表带 `[export]`。
 
 use std::path::{Path, PathBuf};

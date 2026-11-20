@@ -1,4 +1,4 @@
-//! 人格、预设共用的三层（`docs/blueprint/personas.md`、`presets.md`，`16-人格与预设.md` 第四节，设计 `31-软件包.md` 第十节）：出厂的、
+//! 人格、预设共用的三层（`internal/blueprint/personas.md`、`presets.md`，`16-人格与预设.md` 第四节，设计 `31-软件包.md` 第十节）：出厂的、
 //! 软件包带的（施工 P-11 上）、数据根里的，同名的后面的叠在前面的上面。这里只有层本身、包那一层认哪一份
 //! （`covered`）和两样读盘的小事，各自怎么叠在 `personas`、`presets`。
 

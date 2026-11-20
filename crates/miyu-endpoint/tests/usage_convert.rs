@@ -1,4 +1,4 @@
-//! 金额换算（施工 UC-1，`docs/blueprint/models.md`「协议」`usage.query`）：人民币、美元两种价格各调一次，`usage.currency` 是人民币，
+//! 金额换算（施工 UC-1，`internal/blueprint/models.md`「协议」`usage.query`）：人民币、美元两种价格各调一次，`usage.currency` 是人民币，
 //! 汇率从假的汇率服务器取：`converted` 是换算好的一个数，`amounts` 原样；再查不再取；主源出错照兜底源、回应带 `rates`；
 //! 取不到汇率的只换得了人民币本身那一笔、美元那一笔在 `rest`。
 

@@ -1,4 +1,4 @@
-//! 换策略快照（施工 P-1 再补，`docs/blueprint/kernel/session.md`「换策略快照」）：下一个回合开始时换上另一份策略，像执行器
+//! 换策略快照（施工 P-1 再补，`internal/blueprint/kernel/session.md`「换策略快照」）：下一个回合开始时换上另一份策略，像执行器
 //! 看到人格的文件改了那样。
 
 use super::Stage;

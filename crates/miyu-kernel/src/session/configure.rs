@@ -1,4 +1,4 @@
-//! 会话里换模型（施工 8-10，`docs/blueprint/models.md`「怎么走」第六条，`kernel/session.md`「换模型」）、换思考强度（施工
+//! 会话里换模型（施工 8-10，`internal/blueprint/models.md`「怎么走」第六条，`kernel/session.md`「换模型」）、换思考强度（施工
 //! SM-1，设计 51，「怎么走」第十一条）：人换，内核记；和现在的一样的不记，下一个回合开始时生效。
 //!
 //! 会话的引用从日志算：`session.created` 的 `model`，被后来带 `model` 的 `session.policy_changed` 盖掉，撤掉的回合里的也算

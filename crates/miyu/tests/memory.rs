@@ -1,4 +1,4 @@
-//! 真跑 `miyu memory`（施工 R-3 再补，`docs/blueprint/cli/memory.md`）：`memory -h`、各个子命令的 `-h`、`help memory` 印的都是
+//! 真跑 `miyu memory`（施工 R-3 再补，`internal/blueprint/cli/memory.md`）：`memory -h`、各个子命令的 `-h`、`help memory` 印的都是
 //! 那一页，跟着界面语言；参数写错的退出码 2：`--persona` 和 `-s` 一起写、`--class` 写错、少了话、少了编号、`clear` 没写清哪一种。
 
 use std::path::Path;

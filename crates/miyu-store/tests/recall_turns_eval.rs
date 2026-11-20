@@ -1,4 +1,4 @@
-//! 量尺：以前的对话（回合索引）搜的下限（施工 R-20，`docs/blueprint/recall.md` 第三条第 3 款）。读仓库外的一份回合和问句
+//! 量尺：以前的对话（回合索引）搜的下限（施工 R-20，`internal/blueprint/recall.md` 第三条第 3 款）。读仓库外的一份回合和问句
 //! （`MIYU_TURNS_EVAL_IN`：`{"model", "turns": [{"key", "text", "vector"}…], "questions": [{"id", "text", "vector"}…]}`，向量是
 //! 那个模型算好的），照真的检索库放进去，每句照关键词、照意思各找前 40 条，带上和问句的相似度，写到 `MIYU_TURNS_EVAL_OUT`；
 //! 判哪几条对、比几种下限在仓库外做。没设的什么都不量。数据是人的，不进仓库。

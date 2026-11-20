@@ -1,4 +1,4 @@
-//! 提前压好、到线换上（施工 6-11 上，`docs/blueprint/compaction.md` 第十五条、第十三条），真的会话：配置没写（默认开），
+//! 提前压好、到线换上（施工 6-11 上，`internal/blueprint/compaction.md` 第十五条、第十三条），真的会话：配置没写（默认开），
 //! 过了起压线旁路发一次摘要请求，到线直接换上，不再请求；日志 `compacted` 那一行带 `prepared=yes`。提前压出错的记一行
 //! `WARN compaction failed`。
 //!
