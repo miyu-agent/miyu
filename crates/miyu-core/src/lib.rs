@@ -263,7 +263,9 @@ fn groups(resources: &ResourceRoot, found: &[Found], kit: &Kit) -> Result<Vec<Bu
 }
 
 /// 交给端点的内置包工具的端口（施工 F-5 中，`miyu_endpoint::builtins`）：装卸以后照清单重新登记，工具的字从 `resources` 读；
-/// 本机的向量模型照核心起来时的环境 `env` 找小程序（施工 F-5 再补）。
+/// 本机的向量模型照核心起来时的环境 `env` 找小程序（施工 F-5 再补）。只有测试用（施工 AU-P1d，`testkit` 特性）：核心起来时
+/// 照 [`builtin_tools_in`]，和登记工具的那一份共用家底。
+#[cfg(any(test, feature = "testkit"))]
 pub fn builtin_tools(
     resources: &ResourceRoot,
     env: &Env,
@@ -271,7 +273,7 @@ pub fn builtin_tools(
     builtin_tools_in(resources, env, Kit::new(resources))
 }
 
-/// 同 [`builtin_tools`]，有家底的内置包照 `kit`（施工 N-2 下）：和起来时登记工具的那一份共用。
+/// 交给端点的内置包工具的端口，有家底的内置包照 `kit`（施工 N-2 下）：和起来时登记工具的那一份共用。
 pub fn builtin_tools_in(
     resources: &ResourceRoot,
     env: &Env,
@@ -284,7 +286,7 @@ pub fn builtin_tools_in(
     })
 }
 
-/// [`builtin_tools`] 那一个。
+/// [`builtin_tools_in`] 那一个。
 struct BuiltinTools {
     resources: ResourceRoot,
     env: Env,

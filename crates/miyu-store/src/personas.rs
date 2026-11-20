@@ -220,7 +220,8 @@ impl Personas {
         Ok(found)
     }
 
-    /// 人格 `id` 有你的那一层（数据根下的 `personas/<编号>/`）：只看目录在不在，不读文件。
+    /// 人格 `id` 有你的那一层（数据根下的 `personas/<编号>/`）：只看目录在不在，不读文件。只有这个模块的测试用（施工 AU-P1d）。
+    #[cfg(test)]
     pub fn at_home(&self, id: &str) -> bool {
         self.dirs
             .iter()

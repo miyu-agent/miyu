@@ -31,16 +31,16 @@
 | AU-036 | 四个反引号的块被三个合上；`İ` 让文件名打分错位；`glob("~")` 落回工作目录；`packages` 参数写错列全表 | 部分成立：第 3 条结果是「找不到」，不越权 | 第 1、2、4 条修；第 3 条不改 |
 | AU-038 | `miyu-web.service` 的程序路径哪种装法都不在；OpenRC 的开头写死 `openrc-run` | 部分成立：前一条样例和 README 都写明要换；后一条是 OpenRC 的规矩 | 不改，前一条交项目主人 |
 | AU-039 | `.worktrees/try-onebot.sh` 三重损坏 | 不成立（不在仓库里）：本机检出里没进版本库的旧脚本 | 不改，进可删清单 |
-| AU-040 | `miyu-heap` 漏了 `undocumented_unsafe_blocks` | 部分成立：八处 `unsafe` 都写了 `SAFETY` | 不改，交项目主人 |
+| AU-040 | `miyu-heap` 漏了 `undocumented_unsafe_blocks` | 部分成立：八处 `unsafe` 都写了 `SAFETY` | 施工 AU-P1d 加上了 |
 | AU-041 | 快速上手是占位稿；`DOC-2` 有断链；`FH-盘点` 和代码对不上；新版 clippy 三处告警 | 部分成立：快速上手项目主人已经写好（不成立）；`DOC-2` 那一处在代码格里、不是链接；盘点表那一格写错了；工具链钉在 1.97 | 不改（文档类只核实） |
 | AU-042 | 模型的 `tools` 开关、`inputs` 的 `audio`、`video` 是假的 | 部分成立：都是只声明、不改请求，项目主人 10-07 定的 | 不改，交项目主人 |
 | AU-043 | `Sandbox.workplace` 只写不读 | 不成立（现在）：AU-002 起关起来的会话读它 | 不改 |
-| AU-044 | `miyu-core` 的正式依赖里有没用的 `miyu-drivers` | 成立 | 不删，进可删清单 |
-| AU-045 | `DataRoot::imported_file` 没人调 | 成立 | 不删，进可删清单 |
+| AU-044 | `miyu-core` 的正式依赖里有没用的 `miyu-drivers` | 成立 | 施工 AU-P1d 删了 |
+| AU-045 | `DataRoot::imported_file` 没人调 | 成立 | 施工 AU-P1d 删了 |
 | AU-046 | `Sampling.task` 标着 `allow(dead_code)`、丢了不停 | 不成立：没有那个标，测试拿它停，采样照核心在不在自己停 | 不改 |
-| AU-047 | 私有模块里的 `pub const` 用不到；只有测试用的公开函数编进正式库 | 部分成立：常量在 crate 里用着；那几个函数只有集成测试用 | 不删，进可删清单 |
-| AU-048 | 画图库带着 1751 行没用的命令行和 `layout_dump` | 部分成立：命令行在 `cli` 特性后面、不编；`layout_dump` 编进来没人用 | 不删，进可删清单 |
-| AU-049 | 测试用的 `miyu-test-embed` 正式构建也编 | 部分成立：发版只编 `miyu`、`miyu-sandbox`、`miyu-extract`，不编它；`--workspace` 才编 | 不改，进可删清单 |
+| AU-047 | 私有模块里的 `pub const` 用不到；只有测试用的公开函数编进正式库 | 部分成立：常量在 crate 里用着；那几个函数只有集成测试用 | 施工 AU-P1d 挪到 `testkit` 特性、`cfg(test)` 后面 |
+| AU-048 | 画图库带着 1751 行没用的命令行和 `layout_dump` | 部分成立：命令行在 `cli` 特性后面、不编；`layout_dump` 编进来没人用 | 施工 AU-P1d：`layout_dump` 只跟着 `cli` 特性编，没有删文件 |
+| AU-049 | 测试用的 `miyu-test-embed` 正式构建也编 | 部分成立：发版只编 `miyu`、`miyu-sandbox`、`miyu-extract`，不编它；`--workspace` 才编 | 施工 AU-P1d：保留，只在开了 `testkit` 时编（项目主人 2026-11-20 定） |
 
 ### 逐条
 

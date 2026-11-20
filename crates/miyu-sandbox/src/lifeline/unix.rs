@@ -65,6 +65,7 @@ impl Lifeline {
         {
             return Ok(Watcher {
                 child,
+                #[cfg(any(test, feature = "testkit"))]
                 helper: true,
             });
         }
@@ -72,6 +73,7 @@ impl Lifeline {
         shell.args(["-c", SCRIPT]);
         Ok(Watcher {
             child: self.spawn(&mut shell)?,
+            #[cfg(any(test, feature = "testkit"))]
             helper: false,
         })
     }
@@ -121,7 +123,8 @@ pub(super) fn keep(command: &mut Command) -> io::Result<Watcher> {
 #[derive(Debug)]
 pub struct Watcher {
     child: Child,
-    /// 照助手起的；退回 `/bin/sh` 的是 `false`。
+    /// 照助手起的；退回 `/bin/sh` 的是 `false`。只有测试问（[`Watcher::by_helper`]）。
+    #[cfg(any(test, feature = "testkit"))]
     helper: bool,
 }
 
@@ -131,7 +134,8 @@ impl Watcher {
         self.child.id()
     }
 
-    /// 是不是照助手起的：退回 `/bin/sh` 的不是。
+    /// 是不是照助手起的：退回 `/bin/sh` 的不是。只有测试问（施工 AU-P1d，`testkit` 特性）。
+    #[cfg(any(test, feature = "testkit"))]
     pub fn by_helper(&self) -> bool {
         self.helper
     }

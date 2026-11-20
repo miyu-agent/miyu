@@ -95,6 +95,8 @@ mod edge_geometry;
 pub mod error;
 pub mod ir;
 pub mod layout;
+// Miyu patch (AU-P1d): only the CLI writes layout dumps, so this module is built with the CLI only.
+#[cfg(feature = "cli")]
 pub mod layout_dump;
 pub mod parser;
 pub mod render;

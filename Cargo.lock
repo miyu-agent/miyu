@@ -2016,6 +2016,7 @@ version = "2026.11.0"
 dependencies = [
  "miyu-basesystem",
  "miyu-config",
+ "miyu-core",
  "miyu-drivers",
  "miyu-endpoint",
  "miyu-goal",
@@ -2344,6 +2345,7 @@ version = "2026.11.0"
 dependencies = [
  "landlock",
  "libc",
+ "miyu-sandbox",
  "mxc-sdk",
  "rustix",
  "serde",
@@ -2436,6 +2438,7 @@ dependencies = [
  "miyu-kernel",
  "miyu-policy",
  "miyu-recall",
+ "miyu-store",
  "notify",
  "rusqlite",
  "serde",

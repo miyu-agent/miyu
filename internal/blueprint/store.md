@@ -81,7 +81,6 @@
 | `sessions()` | 会话编号，从新到旧 |
 | `session_dir(会话)` | `root/sessions/<会话编号>/` |
 | `sessions_dir()` | `root/sessions/`（施工 SE-1 下：导入在这里暂存） |
-| `imported_file(会话)` | `root/sessions/<会话编号>/imported.json`（施工 SE-1 下：导进来的会话的标记） |
 | `trashed_sessions()` | 回收处 `root/trash/sessions/`（施工 3-8 三补） |
 | `trashed_personas()` | 删掉的人格 `root/trash/personas/`（施工 P-3 下） |
 | `blobs()` | `root/blobs/` |

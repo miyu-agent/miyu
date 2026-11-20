@@ -31,7 +31,7 @@ fn program() -> PathBuf {
     let program = dir.join(format!("miyu-test-embed{}", std::env::consts::EXE_SUFFIX));
     assert!(
         program.is_file(),
-        "{} 不在：先 cargo build -p miyu-session（cargo test --workspace 会编它）",
+        "{} 不在：先 cargo build -p miyu-session --features testkit（cargo test --workspace 会编它）",
         program.display()
     );
     program

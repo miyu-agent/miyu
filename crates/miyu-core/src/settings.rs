@@ -130,7 +130,9 @@ impl Packaged {
         Packaged::with(found, &|one| !miyu_endpoint::packages::absent(one))
     }
 
-    /// 照发行包的样子拼：程序都在 `miyu` 旁边（施工 F-6 上）。生成配置的样本、测出厂的清单用：不照跑的这台机器。
+    /// 照发行包的样子拼：程序都在 `miyu` 旁边（施工 F-6 上）。生成配置的样本、测出厂的清单用：不照跑的这台机器。只有测试用
+    /// （施工 AU-P1d，`testkit` 特性）。
+    #[cfg(any(test, feature = "testkit"))]
     pub fn as_released(found: &mut [Found]) -> Packaged {
         Packaged::with(found, &|_| true)
     }

@@ -15,7 +15,7 @@ exclude` 把它们排除在工作区外（路径依赖照样会被 `cargo fmt --
 `[[bench]]`、`[[example]]` 和开发依赖 `criterion` 跟着删掉。原版自带的单元测试 `include_str!` 了发布包里没有的 `docs/` 文件，
 从 crates.io 下下来本来就编不过，不跑。
 
-改了的只有 `src/text_metrics.rs`（量字宽）、`src/lib.rs`（多导出两个函数）和 `src/parser.rs`（第 6 条施工 MS-1，第 8 到 10 条施工 AU-P0），`Cargo.toml` 多一个依赖 `memmap2`、开头多一个空的 `[workspace]`（第 7 条）：
+改了的只有 `src/text_metrics.rs`（量字宽）、`src/lib.rs`（多导出两个函数；第 11 条施工 AU-P1d）和 `src/parser.rs`（第 6 条施工 MS-1，第 8 到 10 条施工 AU-P0），`Cargo.toml` 多一个依赖 `memmap2`、开头多一个空的 `[workspace]`（第 7 条）：
 
 1. 字体文件映射进来（`FontData::Mapped`），不整份拷进内存。原版 `data.to_vec()`：中文字体一个文件十几 MB，画过一张图就一直
    常驻。字体不在文件里的（`fontdb::Source::Binary`）照旧拷一份。
@@ -46,6 +46,10 @@ exclude` 把它们排除在工作区外（路径依赖照样会被 `cargo fmt --
 10. 反着的括号不 panic（施工 AU-019，外部审计 #019）：`parse_shape_from_brackets` 等几处 `&trimmed[2..len - 2]` 遇到 `[/]` 这种
     起止重叠的切出 `2..1`；架构图 `service` 的 `[…]` 标签、`(…)` 图标 `]`、`)` 在前面时同样反着切。换成 `get(..)`，切不出来的当
     空的。`reversed_brackets_render_instead_of_panicking` 守着。
+
+11. `layout_dump` 只跟着命令行编（施工 AU-P1d，审计 AU-048）：`src/lib.rs` 里 `pub mod layout_dump;` 前面加
+    `#[cfg(feature = "cli")]`。这个模块只有 `cli.rs` 用，`cli.rs` 本来就在 `cli` 特性后面；Miyu 不开这个特性，所以这 159 行
+    不再编进来。没有删文件：删了以后 `cli` 特性编不过，和上游的差别也更大。
 
 怎么验：同一批图（中文、英文、带重音的拉丁字母、emoji、时序图、类图、状态图、甘特图、饼图、三十个节点的长图）补前补后画出来的
 SVG 逐字节一样，头一回和照记下的位置画的那一回都比；`crates/miyu/tests/mermaid_fonts.rs` 守着只记位置、不写默认目录、重起以后

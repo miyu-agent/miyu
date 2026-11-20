@@ -53,6 +53,10 @@ windows-sys = { version = "0.61", features = [
 # 钉死版本：策略的写法、档位的探测随版本变，升级照虚拟机上重走一遍。MIT。
 mxc-sdk = "=1.0.1"
 
+[dev-dependencies]
+# 集成测试要的只给测试的函数（施工 AU-P1d：`Watcher::by_helper`）。
+miyu-sandbox = { path = ".", features = ["testkit"] }
+
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 # macOS 的测试里在只读的文件描述符上试 `fcntl`、拿它的错误码（施工 5-7）。MIT OR Apache-2.0，工作区里本来就有。
 libc = "0.2"

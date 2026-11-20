@@ -20,6 +20,8 @@ unused_result_ok = "deny"
 unwrap_used = "deny"
 missing_errors_doc = "warn"
 missing_panics_doc = "warn"
+# 每个 unsafe 块都写清为什么安全（施工 AU-P1d，同 `miyu-sandbox`）。
+undocumented_unsafe_blocks = "deny"
 
 # Linux 上关掉这个进程的透明大页（施工 YC-12，`lib.rs` 的 `tune`）：`prctl` 的安全封装，不用自己写 unsafe。MIT OR Apache-2.0，
 # 工作区里本来就有。

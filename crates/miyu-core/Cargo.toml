@@ -15,12 +15,12 @@ autotests = false
 default = ["mermaid", "net"]
 mermaid = ["dep:miyu-mermaid"]
 net = ["dep:miyu-net"]
+# 只有这个 crate 自己的集成测试用的几个函数（施工 AU-P1d）：`builtin_tools`、`Packaged::as_released`，不编进正式程序。
+testkit = []
 
 [dependencies]
 # 空闲时把空着的堆还给系统、glibc 上限制 arena（23 F3，施工 V-2 再补）。
 miyu-heap = { path = "../miyu-heap" }
-# 驱动：DeepSeek 那一套写法、一次调用要定的（施工 3-4）。
-miyu-drivers = { path = "../miyu-drivers" }
 # 协议端点：核心的家底、一个个接连接、空不空闲（施工 3-8）。
 miyu-endpoint = { path = "../miyu-endpoint" }
 # 可选软件包 mermaid：mermaid 源码画成 SVG（施工 W-4，`packages.rs`）。
@@ -71,7 +71,10 @@ tracing = { version = "0.1", default-features = false, features = ["std"] }
 [dev-dependencies]
 # 读 `packaging/` 里的 plist、任务计划的 XML（施工 Z-1 上）：依赖图里本来就有的那一版。MIT 或 Apache-2.0。
 roxmltree = "0.20"
+# 模型档案的测试读驱动的开关写法（`src/models/tests.rs`），另用它的测试工具。
 miyu-drivers = { path = "../miyu-drivers", features = ["testkit"] }
+# 集成测试要的那几个只给测试的函数（上面的 `testkit`）。
+miyu-core = { path = ".", features = ["testkit"] }
 # 测试里的假服务器：后台更新目录（施工 8-7），CI 不连外网。
 miyu-http = { path = "../miyu-http", features = ["testkit"] }
 # 测试里拿核心的记忆，让它的读慢下来（施工 TMP-1 补3）。

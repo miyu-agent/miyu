@@ -9,11 +9,14 @@ publish.workspace = true
 autotests = false
 
 # 测试用的语义模型小程序（施工 S-7 上）：核心的测试把它当 `miyu-embed` 拉起，手算小模型，不编 ONNX Runtime。不随发行带出去。
+# 只在开了 `testkit` 时编（施工 AU-P1d，审计 AU-049）：跑测试时这个 crate 的开发依赖带着自己的 `testkit`，照样编；
+# `cargo build --workspace` 这类不带测试的构建不编它。
 [[bin]]
 name = "miyu-test-embed"
 path = "src/bin/miyu-test-embed/main.rs"
 test = false
 doc = false
+required-features = ["testkit"]
 
 [dependencies]
 # 空闲时把空着的堆还给系统、glibc 上限制 arena（23 F3，施工 V-2 再补）。

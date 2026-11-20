@@ -156,6 +156,7 @@ impl Human {
     /// # Errors
     ///
     /// 那一份读得到、却读不懂（不是 JSON、写法不对、模板坏了），说是哪一份。
+    #[cfg(any(test, feature = "testkit"))]
     pub fn with_dir(
         mut self,
         dir: &Path,
