@@ -10,6 +10,9 @@
 //! 订不上的：那个会话不在了，交内核 `gone`；别的（它停了、核心正在停）记一行 `WARN watch not placed`，计时照走，到点作废。
 //! 计时到了交内核 `expired`：订了又订的，旧的计时到了，内核照账本的起算时刻不理。
 //!
+//! 交给那个会话的起算时刻照系统时间（施工 FX-5，[`asked`]）：账本里的起算时刻是这个会话的钟记的，会话的钟不往回走，系统
+//! 时间往回拨过以后停在前头；那个会话照系统时间记自己忙完的时刻，两边才比得了。作废的计时照旧照账本里的。
+//!
 //! [`Session::watching`]: miyu_kernel::session::Session::watching
 
 use std::collections::BTreeMap;
@@ -93,6 +96,16 @@ impl Drop for Watches {
     }
 }
 
+/// 交给被等的那一边的这次订（施工 FX-5）：序号照旧，起算时刻换成系统时间——账本里的（`watching.since`，这个会话的钟记的）
+/// 和这一刻的系统时间里早的那个。钟没停在前头的，账本里的不晚于系统时间，原样交；停在前头的（账本里的在未来），交这一刻的
+/// 系统时间。在送完一批的这一刻取，不在起的任务里取：任务可能排到那个会话忙完以后才跑。
+fn asked(watching: PeerWatching) -> PeerWatching {
+    PeerWatching {
+        seq: watching.seq,
+        since: watching.since.min(crate::clock::wall_now()),
+    }
+}
+
 /// 起一个任务，经会话表把「`agents.session` 在等 `peer`」交过去。不在了的交回 `gone`，别的订不上的记一行运行日志。
 fn place(
     agents: &Arc<Agents>,
@@ -102,6 +115,7 @@ fn place(
 ) {
     let port = Arc::clone(&agents.port);
     let watcher = agents.session.clone();
+    let watching = asked(watching);
     tokio::spawn(
         async move {
             match port.watch(peer.clone(), watcher, watching).await {

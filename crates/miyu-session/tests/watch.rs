@@ -366,6 +366,77 @@ async fn the_notice_id_follows_the_watch_not_the_moment() {
     );
 }
 
+/// 八十年多一点，照小时：日志往后挪这么多，会话的时钟就停在 2100 年以后（`clock.rs`：会话里的时刻不往回走）。
+const FAR: i64 = 80 * 366 * 24;
+
+/// 施工 FX-5，等的这一边：会话的时钟停在前头时（日志里的时刻在未来，系统时间往回拨了），订的那条结果的时刻是未来的那一刻。
+/// 交给被等的那一边的起算时刻得照系统时间：两个会话的钟不能互相比。原来原样交过去，被等的那一边拿它和自己记的忙完时刻比，
+/// 订在它忙完以前的被当成订在以后，通知不来。
+#[tokio::test]
+async fn a_watcher_whose_clock_stands_ahead_places_the_watch_at_the_system_time() {
+    let home = Home::new();
+    let table = Arc::new(Table::default());
+    let script = Script::new([
+        Play::Says("先说一句。"),
+        watch_other(),
+        Play::Says("等它。"),
+    ]);
+    let handle = session(&home, &script, &table).await;
+    turn(&home, &handle, 1).await;
+    let id = handle.id().clone();
+    stop(&handle).await;
+    drop(handle);
+    age(&home, &id, -FAR);
+    let before = crate::support::now();
+    let stuck = reload(&home, &id, &script, &table).await;
+    let log = turn(&home, &stuck, 2).await;
+    until("订", || !table.placed().is_empty()).await;
+    let after = crate::support::now();
+    let ledger = watched(&log);
+    assert!(ledger.since > after, "账本里的起算时刻照会话的钟，在未来");
+    let (_, _, placed) = table.placed().remove(0);
+    assert_eq!(placed.seq, ledger.seq, "还是那一次订");
+    assert!(
+        before <= placed.since && placed.since <= after,
+        "交过去的起算时刻是订的那一刻的系统时间：{:?}",
+        placed.since
+    );
+}
+
+/// 施工 FX-5，被等的这一边：它的时钟停在前头时，忙完的时刻不能照会话的钟记。原来照会话的钟记成未来的那一刻，谁来订一个
+/// 早就空着的它，都被当成「订在它忙完以前」，当场收到它上一轮的旧话。
+#[tokio::test]
+async fn a_watched_session_whose_clock_stands_ahead_does_not_send_its_old_answer() {
+    let home = Home::new();
+    let table = Arc::new(Table::default());
+    let script = Script::new([
+        Play::Says("开头。"),
+        Play::Says("上一轮的话。"),
+        Play::Says("这一轮的话。"),
+    ]);
+    let handle = session(&home, &script, &table).await;
+    turn(&home, &handle, 1).await;
+    let id = handle.id().clone();
+    stop(&handle).await;
+    drop(handle);
+    age(&home, &id, -FAR);
+    let stuck = reload(&home, &id, &script, &table).await;
+    turn(&home, &stuck, 2).await;
+    until("它真空下来再取起算时刻", || !stuck.busy()).await;
+    tokio::time::sleep(Duration::from_millis(20)).await;
+    let since = crate::support::now();
+    stuck.watch(sid(WAITER), watching(7, since)).expect("在跑");
+    a_while().await;
+    assert!(
+        table.notices().is_empty(),
+        "订进来的时候它早就空着：不当场发上一轮的话"
+    );
+    turn(&home, &stuck, 3).await;
+    until("通知", || table.notices().len() == 1).await;
+    let [(_, _, _, status)] = table.notices().try_into().unwrap();
+    assert_eq!(status.as_deref(), Some("这一轮的话。"));
+}
+
 /// 把会话 `id` 的日志里每一条的时刻往前挪 `hours` 小时。
 fn age(home: &Home, id: &SessionId, hours: i64) {
     let dir = home.root.session_dir(id);
