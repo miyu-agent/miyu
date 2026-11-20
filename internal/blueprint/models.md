@@ -675,7 +675,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `opencodego/deepseek-v4.1-flash` | `opencode-go/deepseek-v4.1-flash` | 2 | 编号去掉 `-` 一样 |
 | `deepseek`（地址 `https://api.deepseek.com/v1`）的 `deepseek-flash` | `deepseek/deepseek-flash` | 2 | 编号一样。地址去掉 `/v1` 也一样 |
 | `newapi` 的 `deepseek-v4.1-flash` | 目录里有它的十几家都不是原厂，取编号排第一的，价格照原厂 `deepseek/deepseek-v4-flash` 借 | 3 | 自己配的中转。原厂 `deepseek` 没列这个名字，同家族段对得最多的是它（施工 PR-1） |
-| `marvis`（认不出的网关）的 `marvis/deepseek-v4-1-flash-261017` | `byteplus/deepseek-v4-1-flash-261017`，价格照原厂 `deepseek` 借 | 4 | 规整以后只有 byteplus 列了这个名字。原厂列了 `deepseek-v4.1-flash` 的借它，没列的照家族借（施工 PR-1） |
+| `relay`（认不出的网关）的 `relay/deepseek-v4-1-flash-261017` | `byteplus/deepseek-v4-1-flash-261017`，价格照原厂 `deepseek` 借 | 4 | 规整以后只有 byteplus 列了这个名字。原厂列了 `deepseek-v4.1-flash` 的借它，没列的照家族借（施工 PR-1） |
 | `newapi` 的 `claude-sonnet-4-5` | `anthropic/claude-sonnet-4-5` | 3 | 原厂 `anthropic` 列了 |
 | `newapi` 的 `deepseek-flash-expire-xxxx` | `deepseek/deepseek-flash` | 4 | 前缀，原厂列了 |
 | `newapi` 的 `DeepSeek V4 Flash` | 规整成 `deepseek-v4-flash`，原厂的那一条 | 4 | 大小写、空格不分 |
@@ -765,7 +765,7 @@ flowchart TB
 6. **全在冷却**（第四条第 2 条）：`model.called` 没有端点，分类 `cooling`，原话写每个候选为什么、到什么时候，照候选的先后，英文，例如 `all candidates cooling: deepseek/deepseek-flash key 1 rate_limited until 2026-10-01T08:12:30.412Z, bigmodel/glm-5.3-flash key 1 auth until 2026-10-01T08:20:00.077Z`（没写 key 的不写 `key <第几个>`）。`wait_ms` 是最早恢复的还要多久。内核照「出错再来」：不超过 2 分钟的等着再来，超过的这一轮以出错结束。头照 `model.list` 的 `state` 说清哪个模型为什么不能用、多久以后恢复。`miyu ask` 以退出码 5 结束。
 7. **换了模型出通知**：每次请求说完（主请求、辅助请求都算），actor 比端口的 `limits()` 和上一次交给内核的：变了的交 `Input::Limits`，`Handle` 的限额跟着换。限额里的模型变了（钉住的池换了成员、成了以后），推 `model.changed`（`why` 是 `failover`）。轮换的池限额里的模型总是 `none`，不推（`session/actor.md` 第 7 条第 8 款）。
 8. 出错收场时，还有别的候选这时就能用的，记一行 `INFO failover from=<供应商/模型> to=<供应商/模型> class=…`，带会话编号（`to` 是照第四条这一刻会挑到的下一个；8-25 起一家一个 key，没有只换 key 的那一种）。别的候选都在冷却、只剩等的不记。
-9. **全冷却只探一个**（施工 Q-4 下，设计 43 第三节第 5 条第 4 款，照 magpie 的半开探测）：冷却到期、失败次数还没清零的是半开（`Cooldowns::recovered`）。不止一个候选、没有一个健康的（每个不是在冷却、就是半开）时，这一次只挑半开里最早恢复的那一个，不留别的候选：它失败了不再往下换，冷却照记，下一次请求再探下一个；它成了，失败次数清零，池就回来了。有健康的候选时照旧照先后挑、出错换下一个。说到一半断了的那一个照旧先发它（第四条第 3 条）。不另发探测请求，用的是真请求。
+9. **全冷却只探一个**（施工 Q-4 下，设计 43 第三节第 5 条第 4 款，照中转站的半开探测）：冷却到期、失败次数还没清零的是半开（`Cooldowns::recovered`）。不止一个候选、没有一个健康的（每个不是在冷却、就是半开）时，这一次只挑半开里最早恢复的那一个，不留别的候选：它失败了不再往下换，冷却照记，下一次请求再探下一个；它成了，失败次数清零，池就回来了。有健康的候选时照旧照先后挑、出错换下一个。说到一半断了的那一个照旧先发它（第四条第 3 条）。不另发探测请求，用的是真请求。
 
 **六、会话里换模型**（8-10）
 
@@ -1256,7 +1256,7 @@ mimo = ["xiaomi"]
 | `crates/miyu-endpoint/tests/models_recall.rs` | 不常驻和常驻逐字一样（V-25 下）：同一份配置、裁出来的目录，常驻、起来时记好的、什么都没记的三种各导一份逐字节比：每一家合出来的供应商、配置过的模型和池成员、没写过的几个模型的资料（`Debug` 和 `model.list` 的写法）、引用解析的结果、思考强度的档位，`model.list` 三种问法的整份回应，`config.get` 的 `unknown_effort`/`unusable_temperature`、`config.check`、`session.configure` 照档位查的 `effort`；记好的问配置里写过的不读整份目录，`model.list` 临时读 | V-25 下 |
 | `crates/miyu-endpoint/tests/models_listing.rs` | `model.list` 不读整份目录（V-32）：裁出来的目录里每一家都配上（加照地址认的、认不出的、手写 `catalog` 的、列表里才有的、能出向量的），照整份目录现算和照 `listing.json` 记下的，列整份、带 `refresh`、只要几个、只看每一家的回应逐字节比；头一回读一次、记下，以后、重启以后一次都不读；坏了的、版本串对不上的读一次、重记；配置里新加的一家补一次；后台拉到新目录跟着重算、不读、答的和新目录常驻的一样；过了上限的那一家不记、每次读、答的照样一样，只问别的几家不读 | V-32 |
 | `crates/miyu-models/src/matching/tests.rs` | 第二条第 7 条那张表的每一行，规整，单段通用名，几家同名先取第 2 层认出的那家、再原厂、再字节序且价格照原厂借 | 8-7、PR-1 |
-| `crates/miyu-models/src/matching/borrow/tests.rs`（PR-1） | 网关认不出的 `marvis/deepseek-v4-1-flash-261017` 对到 byteplus、价格借原厂的 `deepseek-v4.1-flash`；原厂没列这个版本的照家族借段对得最多的、一样多的取字节序在前的，家族不同的、没价格的不挑；认不出原厂、原厂里名字家族都对不上的不借 | PR-1 |
+| `crates/miyu-models/src/matching/borrow/tests.rs`（PR-1） | 网关认不出的 `relay/deepseek-v4-1-flash-261017` 对到 byteplus、价格借原厂的 `deepseek-v4.1-flash`；原厂没列这个版本的照家族借段对得最多的、一样多的取字节序在前的，家族不同的、没价格的不挑；认不出原厂、原厂里名字家族都对不上的不借 | PR-1 |
 | `crates/miyu-models/src/facts/tests.rs` | 每一格各查各的，窗口照手写、用出来的、列表、目录的先后，价格整份不拼，第 3、4 层借哪些（中转站的价格照原厂借、来源写借的那一条、倍率照乘，PR-1），本机的当免费，倍率谁盖谁，手写指定不存在的什么都不借，来源一字不差；来源是配置的带 `layer`，别的来源不带这一格（8-7（补）） | 8-7；8-7（补） |
 | `crates/miyu-models/src/observed/tests.rs`、`provider/tests.rs`（8-7 那几条） | 用出来的只记小的、读写一字不差，列表读写；照目录推驱动、地址，本机的认法 | 8-7 |
 | `crates/miyu-models/src/observed/tests.rs`（8-34 那一条） | 改名：学到的跟着换、前缀像的不动；改名记下来，连着改的拉平，改回去的删掉，读写一字不差 | 8-34 |
@@ -1379,7 +1379,7 @@ mimo = ["xiaomi"]
 | 5 | 8-6 的「出错才换」挪到 8-9，和池的出错换用同一套冷却。8-6 只做钉 key、排候选 | 换 key 和换池里的成员是同一件事，两步各写一套会对不上 | 8-6 先写一个简单的换 key：8-9 再推倒 |
 | 6 | 第 2 层在认出的那一家里也认规整以后一样的名字。第 3、4 层同名几家的，先取第 2 层认出的那一家，再取原厂 | 你用的就是那一家，它列的价就是它的官方价（例如 opencode 给 `deepseek-v4.1-flash` 标的价是 opencode-go 的两倍，按原厂算就少算了一半） | 严格照「取原厂」：走 opencode 的请求按 DeepSeek 的价算，数不对 |
 | 7 | 原厂照 `vendors.toml` 认：家族的第一段去掉末尾数字，查表 | 目录里没有「原厂」这一格。试过「哪家列这个家族的占比最高」，`gpt`、`qwen`、`gemma` 都认错。一张十几行的表是数据，不进代码 | 照供应商编号是不是名字的前缀：`claude`、`gpt`、`glm`、`kimi` 全对不上。没有原厂就不借：`deepseek-v4.1-flash` 在十几家都有，只好一格格手写 |
-| 8 | 认不出原厂的，能力、窗口借编号排第一的；价格照原厂里同一个模型的借（施工 PR-1 改，2026-11-17 项目主人定「借原厂价、不标」），借不到的没有 | 价格要的是官方价，拿中转的价顶就不是准数（M9 的原则）。PR-1 以前一概不借，主人看不到中转站模型的价（例：magpie 网关的 `marvis/deepseek-v4-1-flash-261017` 对到 byteplus 的条目，没有价格）。原厂的同一个模型的价就是官方价；用量里不另标估算。能力、窗口换渠道不变 | 一概不借（PR-1 以前）：中转站的模型都看不到钱。取最低价：中转有时比原厂低，数也不准 |
+| 8 | 认不出原厂的，能力、窗口借编号排第一的；价格照原厂里同一个模型的借（施工 PR-1 改，2026-11-17 项目主人定「借原厂价、不标」），借不到的没有 | 价格要的是官方价，拿中转的价顶就不是准数（M9 的原则）。PR-1 以前一概不借，主人看不到中转站模型的价（例：中转站的 `relay/deepseek-v4-1-flash-261017` 对到 byteplus 的条目，没有价格）。原厂的同一个模型的价就是官方价；用量里不另标估算。能力、窗口换渠道不变 | 一概不借（PR-1 以前）：中转站的模型都看不到钱。取最低价：中转有时比原厂低，数也不准 |
 | 9 | 第 4 层跳过只有一段、没有数字的通用名，除非正好相等 | 真目录里有 47 个这样的名字（`custom`、`fast`、`free`），不跳 `custom-7b` 会对上 `custom` | 不跳：错借。要求前缀至少两段：`codestral-latest` 对不上 `codestral`，要手写 |
 | 10 | 手写指定的目录条目不存在，不往下猜，标出来 | 人写明了要哪一个，猜到别的反而藏住了错 | 往下三层接着找 |
 | 11 | 供应商认目录：手写的 `catalog`、编号、去掉分隔的编号、地址（去掉 `/v1`）。几家都对上取字节序第一 | 设计的先后，加上可以手写。`/v1` 两种写法 DeepSeek 都收 | 地址压过编号：设计定的是编号先 |

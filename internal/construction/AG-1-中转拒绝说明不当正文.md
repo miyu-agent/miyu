@@ -1,12 +1,12 @@
 ## 施工单 AG-1：中转转来的拒绝说明不当她说的话
 
-状态：核心的分会话做。onebot 报（2026-10-27）：项目主人那份部署上，`antigravity/gemini-3.8-flash` 碰到 Google 的内容政策，中转把 Google 的拒绝说明（「The prompt could not be submitted. The prompt contains sensitive words that violate Google's Generative AI Prohibited Use policy …」）当正文流回来，接着断开；核心记成一条被打断的 `message.assistant` 带着那段字，`model.called` 记 `retryable`「Antigravity: the reply ended before it was complete」，终端、网页当成她说的显示，im 发到了 QQ（im 那边先改成被打断的回复不发，I-52）。主会话派：认出这类中转报错，整轮按出错处理，不落正文。方案 B 主会话、项目主人定了（magpie 不是项目主人的程序，网关那边改不了；C 不做）。
+状态：核心的分会话做。onebot 报（2026-10-27）：项目主人那份部署上，`antigravity/gemini-3.8-flash` 碰到 Google 的内容政策，中转把 Google 的拒绝说明（「The prompt could not be submitted. The prompt contains sensitive words that violate Google's Generative AI Prohibited Use policy …」）当正文流回来，接着断开；核心记成一条被打断的 `message.assistant` 带着那段字，`model.called` 记 `retryable`「Antigravity: the reply ended before it was complete」，终端、网页当成她说的显示，im 发到了 QQ（im 那边先改成被打断的回复不发，I-52）。主会话派：认出这类中转报错，整轮按出错处理，不落正文。方案 B 主会话、项目主人定了（中转站不是项目主人的程序，网关那边改不了；C 不做）。
 
 ### 查下来的
 
 取证只读：会话日志拷一份到 `~/.cache` 再看，没有用主人的数据根起核心。
 
-1. 那条线不是专门的驱动：端点是 `openai-chat`，地址是局域网里的 magpie 网关，`antigravity/gemini-3.8-flash` 是网关的模型名。
+1. 那条线不是专门的驱动：端点是 `openai-chat`，地址是局域网里的 中转站，`antigravity/gemini-3.8-flash` 是网关的模型名。
 2. 日志：seq 3061 `message.assistant`（`interrupted: true`，一个正文块就是 Google 那段话）；3062 `model.called`（`first_token_ms` 1、`duration_ms` 46、一个块，`error` 是 `retryable`、原话「Antigravity: the reply ended before it was complete」）；3063 内核补的 `reply_cut`。
 3. 那句原话 Miyu 里没有，是网关写的；它进 `model.called` 的路子只有解码器的「流里报的错」（`event: error`，或者带 `error` 的一段），分类认不出就是 `retryable`。所以原始流是：网关先把拒绝说明当一段普通的 `delta.content` 流出来，再发一个出错事件。解码器把前一段当正文交出去，内核照「说到一半断了」留成被打断的回复。
 4. 一段正文分块本身有没有别的记号（`finish_reason`、`id`、`model`）没法从日志看：日志不存原始流，网关不是我们的程序。重放原来那条请求不做（会把那段内容再发一次）。

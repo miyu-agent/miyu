@@ -90,7 +90,7 @@ rc.3 实测（不带 `--prerelease` 报「还没有正式版」、退出码 1；
 
 RL-4补3 那一趟碰上两次和改动无关的失败（这一步只改 `miyu-cli`）：
 
-- 门禁（.91 忙，在本机跑）红在 `miyu-sandbox` 的 `tests/lifeline.rs` `the_watcher_holds_nothing_but_the_lifeline`（读 `/proc` 下的文件报
+- 门禁（另一台测试机忙，在本机跑）红在 `miyu-sandbox` 的 `tests/lifeline.rs` `the_watcher_holds_nothing_but_the_lifeline`（读 `/proc` 下的文件报
   NotFound，像是看门的进程先退了）；单独重跑三次都过。
 - 分支 CI run 41994268890 只有 Windows 红：`miyu-session` 的 `fork_subagent::limits::a_fork_stops_at_the_fork_step_limit`，
   「六十秒内磁盘上没等到」预期的那串事件；`rerun --failed` 重跑。core1 11-05 定：再出一次就开 FL 步修。

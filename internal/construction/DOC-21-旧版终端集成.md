@@ -11,7 +11,7 @@
 
 ### 实测
 
-都在 .91 上、挡住真家目录的沙箱里跑（`bwrap --tmpfs` 家目录，只把编好的程序只读放回来），沙箱家目录里放旧版的痕迹：`.bashrc` 里两段、`.zshrc` 里一段、`.profile` 里只有开头的一段、`conf.d/miyu.fish`（带旧版的戳）。
+都在另一台测试机上、挡住真家目录的沙箱里跑（`bwrap --tmpfs` 家目录，只把编好的程序只读放回来），沙箱家目录里放旧版的痕迹：`.bashrc` 里两段、`.zshrc` 里一段、`.profile` 里只有开头的一段、`conf.d/miyu.fish`（带旧版的戳）。
 
 - 终端界面（main f8c9ebc6）：`shellhook status` 逐个报出旧版的那一份在哪个文件第几行；`install --shell bash` 清掉第 3–5 行、原文件备份成 `.bashrc.miyu-old-hook.bak`，别的行没变，再来一次备份叫 `.bak.1`；`install --shell fish` 把 `miyu.fish` 改名成 `miyu.fish.miyu-old-hook.bak`，换成悬空链接时只删链接；不是旧版写的 `miyu.fish`、只有开头没有结尾的一段都没动、各说了一句。中英两种语言的输出都看了，手册里引的是实际印出来的话。
 - 迁移包 0.1.4（main 145cf03）装进核心（main cc886dd3a），对一个只有布局标记的旧目录真跑了中文、英文各一遍：报告「数据根外面」列出 `~/.config/fish/conf.d/miyu.fish`、`~/.bashrc`（「第 3～5 行、第 7～9 行」）、`~/.zshrc`；只有开头的 `.profile` 没报；fish 那一份换成悬空链接后英文报告写的是链接原来指到哪。迁移前后四个文件的校验和没变，没有多出备份文件。

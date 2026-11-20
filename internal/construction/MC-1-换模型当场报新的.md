@@ -39,8 +39,8 @@ QU-2修（main 6b79cd048）在 `crates/miyu-endpoint/src/quota.rs` 另算了一�
 ### 施工结果
 
 1. **测试**：退回改前的源码（测试留着），新两条、`models_pools` 那一段、跟着改的三条都红（`Handle::next` 还是 `a/m`、一条 `model.changed` 都没推）；改后 `miyu-session` 的 `route_` 91 条、`miyu-endpoint` 的 `models_`、`session_balance`、`session_quota` 40 条都过，QU-2修 两条照旧过。
-2. **实测**（沙箱数据根，magpie 网关同一个模型配成 `dev`、`dev2` 两家，另配钉住的池 `@both` = `dev2`、`dev`；协议原文）：
+2. **实测**（沙箱数据根，中转站同一个模型配成 `dev`、`dev2` 两家，另配钉住的池 `@both` = `dev2`、`dev`；协议原文）：
    - 开会话用 `dev/…`，说一轮：请求 `endpoint=dev`。
-   - `session.configure` 换 `dev2/…`、不说话：回应前推来 1 条 `model.changed` `{"ref":"dev2/marvis/deepseek-v4-1-flash-261017","endpoint":"dev2","model":"marvis/deepseek-v4-1-flash-261017","limits":{…},"why":"turn"}`；另开一条连接重新订阅，`model` 是 `{"endpoint":"dev2","model":"marvis/deepseek-v4-1-flash-261017","ref":"dev2/…"}`。说一轮：请求 `endpoint=dev2`，这一轮推来 0 条。
+   - `session.configure` 换 `dev2/…`、不说话：回应前推来 1 条 `model.changed` `{"ref":"dev2/relay/deepseek-v4-1-flash-261017","endpoint":"dev2","model":"relay/deepseek-v4-1-flash-261017","limits":{…},"why":"turn"}`；另开一条连接重新订阅，`model` 是 `{"endpoint":"dev2","model":"relay/deepseek-v4-1-flash-261017","ref":"dev2/…"}`。说一轮：请求 `endpoint=dev2`，这一轮推来 0 条。
    - 换 `@both`：当场 1 条，只有 `ref: "@both"`、没有 `endpoint`/`model`；重新订阅的 `model` 是 `{"ref":"@both"}`。说一轮：请求 `endpoint=dev2`，这一轮推来 1 条（`endpoint: "dev2"`，钉的成员）。
-   - 终端头（miyu-tui main 65d0ab79 编的，连沙箱核心）：说一轮、`/model` 换到 `marvis/claude-sonnet-4-6`、不说话，`/sessions` 切到另一个会话再切回来，底栏是 `marvis/claude-sonnet-4-6 dev`（改前切回来画回旧的）。
+   - 终端头（miyu-tui main 65d0ab79 编的，连沙箱核心）：说一轮、`/model` 换到 `relay/claude-sonnet-4-6`、不说话，`/sessions` 切到另一个会话再切回来，底栏是 `relay/claude-sonnet-4-6 dev`（改前切回来画回旧的）。

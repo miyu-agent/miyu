@@ -651,7 +651,7 @@ A file was attached here ({name}, {size} bytes, at {path}). Its content is not i
 #### `core/drivers/hosted-tool.txt`
 
 - 什么时候加进来：历史里有模型在供应商那边自己跑了的工具（施工 HT-2：`hosted_tool` 块，搜索、读网页），有结果的；三个内置驱动都写，交给扩展驱动的请求里别家的、没带私有数据的也换成它；以前造的快照没有，不写
-- token：外壳 21（2026-11-17 照 magpie 网关的 `marvis/deepseek-v4-1-flash-261017` 量（DeepSeek V4.1 Flash 的分词），每份接在 `hi` 和一个换行后面，字段空着，带行尾换行；`web_search`、参数 `{"query":"rust 1.97 release date"}`、结果 `Rust 1.97 was released on 2026-07-07.` 原样填进去、去掉末尾换行的整块 51。施工 TK-1 补的真端点数，HT-2 照 o200k 本机估的是 18、47）；结果至多 4 KiB
+- token：外壳 21（2026-11-17 照中转站的 `relay/deepseek-v4-1-flash-261017` 量（DeepSeek V4.1 Flash 的分词），每份接在 `hi` 和一个换行后面，字段空着，带行尾换行；`web_search`、参数 `{"query":"rust 1.97 release date"}`、结果 `Rust 1.97 was released on 2026-07-07.` 原样填进去、去掉末尾换行的整块 51。施工 TK-1 补的真端点数，HT-2 照 o200k 本机估的是 18、47）；结果至多 4 KiB
 - 为什么加：换了模型、换了驱动以后，新的模型不知道上一个模型搜过什么、看到了什么（设计 71 第三节第 5 条，2026-11-14 项目主人定：照推荐）。外壳写成标签包着工具名、参数、结果，照 J13 只写事实；工具名照模板的规矩转义；参数、结果原样（JSON 的引号、结果的换行转义了模型读不顺），只把 `</` 写成 `<\/`，网上来的结果收不住外壳。结果截到 4 KiB：日志里的 64 KiB 是给人看的，进上下文的只要够模型知道搜过什么
 - 指纹：`766d3a49`
 
@@ -696,7 +696,7 @@ A file was attached here ({name}, {size} bytes, at {path}). Its content is not i
 #### `core/drivers/hosted-tool-cut.txt`
 
 - 什么时候加进来：结果截过的（块里记着截过，或者进请求时又截到 4 KiB 的）
-- token：6（2026-11-17 照 magpie 网关的 `marvis/deepseek-v4-1-flash-261017` 量（DeepSeek V4.1 Flash 的分词），每份接在 `hi` 和一个换行后面，带行尾换行。o200k 本机估的是 5）
+- token：6（2026-11-17 照中转站的 `relay/deepseek-v4-1-flash-261017` 量（DeepSeek V4.1 Flash 的分词），每份接在 `hi` 和一个换行后面，带行尾换行。o200k 本机估的是 5）
 - 为什么加：接在结果的字后面另起一行，仍在 `<result>`/`<error>` 里面，让模型知道看到的不是整份。没用 `file-cut.txt`：那一句要总字节数，日志里截过的不知道总数；只说截过，不带数
 - 指纹：`ace38d3d`
 
@@ -940,7 +940,7 @@ Not run: no one answered the approval request in time.
 #### `core/mcp/not-shown.txt`
 
 - 什么时候加进来：MCP 服务回了声音、二进制的资源、收不了的图（不是那四种、解不开、超上限），一样一行（施工 X-3 上）
-- token：13（2026-10-11 主会话在 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 上量：接在 `hi` 和一个换行后面；`mime` 填 `audio/wav`、`bytes` 填 `48000` 是 14）
+- token：13（2026-10-11 主会话在 中转站的 `cline-pass/deepseek-v4.1-flash` 上量：接在 `hi` 和一个换行后面；`mime` 填 `audio/wav`、`bytes` 填 `48000` 是 14）
 - 为什么加：每样回来的都要让她知道有过，不然她以为服务什么都没给；写类型和大小，不写给不了的原因（`mcp.md`「怎么走」第四条第 3 款）
 - 指纹：`eb50bc30`
 
@@ -2766,7 +2766,7 @@ That is {chars} characters, over the {limit} limit.
 #### `software/memory/remember/unknown-class.txt`
 
 - 什么时候加进来：`remember` 的类不是四类之一（字段按 `mood` 填）
-- token：TX-1 后 17（o200k 数，改前 16）；原来 13（2026-10-07 量；施工 E-1 上多列 `person`，2026-10-21 照 magpie 网关的 `group/auto-deepseek-v4-1-flash` 量 15 → 17）
+- token：TX-1 后 17（o200k 数，改前 16）；原来 13（2026-10-07 量；施工 E-1 上多列 `person`，2026-10-21 照中转站的 `auto-deepseek-v4-1-flash` 量 15 → 17）
 - 为什么加：参数格式里有 `enum`，模型照样可能写别的：说清能写哪几类（施工 R-3 中；E-1 上起五类）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
 - 指纹：`5594ab10`
 
@@ -2777,7 +2777,7 @@ Unknown class {class}. Classes are user, feedback, episode, reference, person.
 #### `software/memory/remember/no-who.txt`
 
 - 什么时候加进来：`remember` 新记的 `person` 没写 `who`
-- token：TX-1 后 20（o200k 数，改前 26）；原来 28（2026-10-21 照 magpie 网关的 `group/auto-deepseek-v4-1-flash` 量）
+- token：TX-1 后 20（o200k 数，改前 26）；原来 28（2026-10-21 照中转站的 `auto-deepseek-v4-1-flash` 量）
 - 为什么加：认识的人要知道是谁才合得成卡、认得出（施工 E-1 上，设计 42）；说清写在哪、写名字还是平台编号。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
 - 指纹：`0fae9668`
 
@@ -3005,7 +3005,7 @@ The goal is marked blocked and this autonomous run is ending. Write the closing 
 #### `software/schedule/common/bad-args.txt`
 
 - 什么时候加进来：`cron_*` 的参数读不出来、`prompt` 是空的
-- token：TX-1 后 6（o200k 数，改前 9）；原来 10（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- token：TX-1 后 6（o200k 数，改前 9）；原来 10（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量）
 - 为什么加：说清哪里不对（施工 J-2），同 `goal`。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
 - 指纹：`06985eec`
 
@@ -3016,7 +3016,7 @@ Bad arguments: {error}.
 #### `software/schedule/common/off.txt`
 
 - 什么时候加进来：这次调用没有定时的端口、唤醒表用不了
-- token：11（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- token：11（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量）
 - 为什么加：说清楚，不当成别的错（施工 J-2）
 - 指纹：`1ac894a9`
 
@@ -3027,7 +3027,7 @@ Scheduled jobs are not available in this session.
 #### `software/schedule/cron/created.txt`
 
 - 什么时候加进来：`cron_create` 成了
-- token：12（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- token：12（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量）
 - 为什么加：编号和下一次几点（施工 J-2）：照会话时区写到分钟，她告诉人什么时候跑照这个时刻，不照 cron 原文猜
 - 指纹：`d04d72a9`
 
@@ -3038,7 +3038,7 @@ Scheduled {id}. Next run: {next}.
 #### `software/schedule/cron/full.txt`
 
 - 什么时候加进来：她在这个会话里已经挂满 20 个（设计 45 第三节第 3 条）
-- token：TX-1 后 15（o200k 数，改前 16）；原来 17（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- token：TX-1 后 15（o200k 数，改前 16）；原来 17（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量）
 - 为什么加：上限写在报错里，不写进说明（施工 J-2），叫她先删。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
 - 指纹：`9f0c309a`
 
@@ -3060,7 +3060,7 @@ There are already {limit} scheduled jobs, the safety limit. Tell the user to rem
 #### `software/schedule/cron/bad-cron.txt`
 
 - 什么时候加进来：唤醒表说 cron 写法不对
-- token：11（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- token：11（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量）
 - 为什么加：照唤醒表的原话说哪里不对（施工 J-2）
 - 指纹：`45bc9c29`
 
@@ -3071,7 +3071,7 @@ The cron expression is not valid: {error}.
 #### `software/schedule/cron/not-found.txt`
 
 - 什么时候加进来：`cron_delete` 的编号不在这个会话上
-- token：12（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- token：12（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量）
 - 为什么加：带上她给的编号（施工 J-2）
 - 指纹：`7b28b21d`
 
@@ -3082,7 +3082,7 @@ There is no job {id} in this session.
 #### `software/schedule/cron/deleted.txt`
 
 - 什么时候加进来：`cron_delete` 成了
-- token：5（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- token：5（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量）
 - 为什么加：删了哪个（施工 J-2）
 - 指纹：`d8706690`
 
@@ -3093,7 +3093,7 @@ Deleted {id}.
 #### `software/schedule/cron/none.txt`
 
 - 什么时候加进来：`cron_list` 时这个会话上一个都没有
-- token：9（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- token：9（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量）
 - 为什么加：说没有，不交空字（施工 J-2）
 - 指纹：`424ca87c`
 
@@ -3104,7 +3104,7 @@ No jobs are scheduled in this session.
 #### `software/schedule/cron/row.txt`
 
 - 什么时候加进来：`cron_list` 的一行，一项一行
-- token：23（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- token：23（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量）
 - 为什么加：编号、什么时候、哪一种（`once`、`recurring`、`loop:fixed`、`loop:dynamic`）、下一次（暂停的 `paused`、停着的 `stopped`）、到点交进来的话（施工 J-2）：她删之前认得出是哪一个
 - 指纹：`e8fa7d2b`
 
@@ -3115,7 +3115,7 @@ No jobs are scheduled in this session.
 #### `software/loop/common/bad-args.txt`
 
 - 什么时候加进来：`schedule_next` 的参数读不出来
-- token：TX-1 后 6（o200k 数，改前 9）；原来 10（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- token：TX-1 后 6（o200k 数，改前 9）；原来 10（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量）
 - 为什么加：同上。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
 - 指纹：`06985eec`
 
@@ -3126,7 +3126,7 @@ Bad arguments: {error}.
 #### `software/loop/common/off.txt`
 
 - 什么时候加进来：这次调用没有定时的端口、唤醒表用不了
-- token：10（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- token：10（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量）
 - 为什么加：同上
 - 指纹：`7cc085ef`
 
@@ -3137,7 +3137,7 @@ Loops are not available in this session.
 #### `software/loop/next/set.txt`
 
 - 什么时候加进来：`schedule_next` 定好了下一次
-- token：7（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- token：7（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量）
 - 为什么加：下一次几点（施工 J-2），照会话时区写到分钟。施工 WK-2：目录 `wakeup/` 改名 `next/`，字没改
 - 指纹：`3d388faf`
 
@@ -3148,7 +3148,7 @@ Next iteration at {next}.
 #### `software/loop/next/stopped.txt`
 
 - 什么时候加进来：`schedule_next` 带 `stop: true`
-- token：4（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- token：4（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量）
 - 为什么加：循环停了（施工 J-2）。施工 WK-2：目录 `wakeup/` 改名 `next/`，字没改
 - 指纹：`00ba36a9`
 
@@ -3159,7 +3159,7 @@ Loop stopped.
 #### `software/loop/next/no-loop.txt`
 
 - 什么时候加进来：这个会话没开过动态循环
-- token：9（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- token：9（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量）
 - 为什么加：说没有在跑的循环（设计 45 第四节，施工 J-2）。施工 WK-2：目录 `wakeup/` 改名 `next/`，字没改
 - 指纹：`507f2e2b`
 
@@ -3170,7 +3170,7 @@ No loop is running in this session.
 #### `software/loop/next/no-delay.txt`
 
 - 什么时候加进来：没写 `delay_seconds` 也不是 `stop`
-- token：11（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- token：11（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量）
 - 为什么加：说要写间隔（施工 J-2）：参数都能不写，缺了才在这里说。施工 WK-2：目录 `wakeup/` 改名 `next/`，字没改
 - 指纹：`45f7b4e6`
 
@@ -4701,7 +4701,7 @@ $ {command}
 #### `software/schedule/common/message-open.txt`
 
 - 什么时候加进来：标签那一行，`by` 是定时任务、不是动态循环的（普通定时任务、固定间隔循环；施工 J-1 交进会话时照 `by` 的种类包，造会话时进快照），之后每次请求照原文带
-- token：9（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- token：9（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量）
 - 为什么加：注明是定时任务叫的、哪一个，不是人刚说的（施工 J-2）：A/B 两家各 24 次，她照抄人的第一人称原话（「提醒我起来活动一下」）时，不带标签 nemotron 有 1 次当成人又要她建一个，带了 48 次都直接提醒；2026-10-26 主会话定带。写法同别的 harness、别的会话发来的话
 - 指纹：`a39ce18f`
 
@@ -4714,7 +4714,7 @@ $ {command}
 #### `software/schedule/common/message-close.txt`
 
 - 什么时候加进来：收尾那一行，同 `message-open.txt`
-- token：6（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- token：6（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量）
 - 为什么加：标签的收尾（施工 J-2）
 - 指纹：`a3eb61f2`
 
@@ -4727,7 +4727,7 @@ $ {command}
 #### `software/loop/common/message-open.txt`
 
 - 什么时候加进来：标签那一行，`by` 是动态循环的（施工 J-1 交进会话时照 `by` 的种类包，造会话时进快照），之后每次请求照原文带
-- token：WK-2 后 8（2026-11-17 照 o200k 数，`id` 按 `t3` 填；改前 o200k 9）；原来 11（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- token：WK-2 后 8（2026-11-17 照 o200k 数，`id` 按 `t3` 填；改前 o200k 9）；原来 11（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量）
 - 为什么加：注明是动态循环叫醒的、哪一个（施工 J-2），写法同上。施工 WK-2（2026-11-17 项目主人定）：标签 `<loop-wakeup>` 改名 `<loop-round>`，不说醒
 - 指纹：`15082f76`
 
@@ -4740,7 +4740,7 @@ $ {command}
 #### `software/loop/common/message-close.txt`
 
 - 什么时候加进来：收尾那一块：一句提醒加收尾的标签，同 `message-open.txt`
-- token：WK-2 后 12（2026-11-17 照 o200k 数；改前 o200k 14）；原来 17（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- token：WK-2 后 12（2026-11-17 照 o200k 数；改前 o200k 14）；原来 17（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量）
 - 为什么加：不说她不会续：A/B（两家各 12 次，她查了一次 CI 还在跑，之后每次查都还在跑，推到她只回话或者调了 `schedule_wakeup`，最多 5 步）只有标签时续上 1/24，加这一句 12/24；换成一句更长的说明 5/24。没续上的都是一轮里一直盯着等（施工 J-2）。施工 WK-2（2026-11-17 项目主人定）：工具名改 `schedule_next`、收尾标签改 `</loop-round>`，不说醒
 - 指纹：`8fa4b3b7`
 
@@ -5343,7 +5343,7 @@ Start a subagent in a new session to do one task and wait for it. Its report arr
 #### `software/memory/tools/remember.json`
 
 - 什么时候加进来：会话的工具面里有 `remember`：记忆开着的主会话有，本机的、场所的都有（施工 R-13 下），子会话没有（每次请求都带）
-- token：TX-2 后 177（o200k 数，改前 183）；原来 184（2026-10-07 照开发端点量，十八件一起时的边际份量 149；施工 R-15 上多一格可选的 `keywords`，2026-10-19 照 magpie 网关的 `group/auto-deepseek-v4-1-flash` 量，三件一起时 149 → 184，多 35；施工 E-1 上加 `person` 一类和可选的 `who`，2026-10-21 照同一个网关、同样量，184 → 225，多 41）
+- token：TX-2 后 177（o200k 数，改前 183）；原来 184（2026-10-07 照开发端点量，十八件一起时的边际份量 149；施工 R-15 上多一格可选的 `keywords`，2026-10-19 照中转站的 `auto-deepseek-v4-1-flash` 量，三件一起时 149 → 184，多 35；施工 E-1 上加 `person` 一类和可选的 `who`，2026-10-21 照同一个网关、同样量，184 → 225，多 41）
 - 为什么加：记一条或改一条：她能碰自己的记忆（施工 R-3 中，`17-记忆.md` L9、L11，`memory.md`「工具」）；人说「记住」「忘掉」她当场调（2026-10-07 项目主人定）。说明写四类各是什么、只记以后还用得上的；`text` 一句、120 字以内、日期写全（旧版实测：整理出来的超长的多半是技术问答全文，相对日期过了就看不懂）；`replaces` 改一条。施工 R-15 上加 `keywords`（项目主人 2026-10-19 定：她当场记的也能带关键词，没写的由整理补）：一句，可选、逗号隔开、找得到它的别的说法、别的语言、用途；不进 `required`。真数据上补了关键词的混合联想带对了 23% → 30%、带了的里该带的 52% → 59%（施工单 `R-15-记忆的关键词（上）.md`）；只写在说明里，不常驻 system。施工 E-1 上（设计 42，项目主人 2026-10-21 提）：说明多「someone else you know」，`enum` 多 `person`，`who` 一句（她认识的别人是谁、名字或平台编号），不进 `required`（别的类不用写；`person` 没写的工具说一句）。施工 TX-2（2026-10-30，项目主人定做、照重测换）：删「Only what will matter later.」。重测：一段话里三件长期的事、三件一次性的小事各 6 次，改前记长期的 17 条、小事 0，改后 15 条、小事 0（基准测试仓库 `runs/2026-10-30/tx2/`，OpenCode Go 的 `deepseek-v4.1-flash`）
 - 指纹：`8af0895d`
 
@@ -5402,7 +5402,7 @@ Start a subagent in a new session to do one task and wait for it. Its report arr
 #### `software/schedule/tools/cron_create.json`
 
 - 什么时候加进来：会话的工具面里有定时任务这个包（预设开着 `schedule`；施工 J-2 起），每次请求都带
-- token：TX-1 后 135（o200k 数，改前 147）；原来 183（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量，录到的 24 件工具面上的边际份量）
+- token：TX-1 后 135（o200k 数，改前 147）；原来 183（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量，录到的 24 件工具面上的边际份量）
 - 为什么加：在这个会话上建定时任务（设计 45 第三节第 3 条，施工 J-2）：照 Claude Code 的 `CronCreate` 改短成三句，是什么、五段 cron 照本机时区、一次性的怎么写；Claude Code 里「避开整点」「会话关了就没了」「7 天过期」三段不照搬（我们一个人用、表落盘、不过期），20 个的上限、下一次几点写在结果里。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
 - 指纹：`01f06107`
 
@@ -5416,7 +5416,7 @@ Start a subagent in a new session to do one task and wait for it. Its report arr
 #### `software/schedule/tools/cron_delete.json`
 
 - 什么时候加进来：同 `cron_create.json`
-- token：TX-1 后 31（o200k 数，改前 41）；原来 60（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量，同上）
+- token：TX-1 后 31（o200k 数，改前 41）；原来 60（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量，同上）
 - 为什么加：删这个会话上的一个（施工 J-2）：照 Claude Code 的 `CronDelete`。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
 - 指纹：`106a0797`
 
@@ -5430,7 +5430,7 @@ Start a subagent in a new session to do one task and wait for it. Its report arr
 #### `software/schedule/tools/cron_list.json`
 
 - 什么时候加进来：同 `cron_create.json`
-- token：40（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量，同上）
+- token：40（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量，同上）
 - 为什么加：列这个会话上的，带下一次几点（施工 J-2）：照 Claude Code 的 `CronList`
 - 指纹：`501a9fcd`
 
@@ -5444,7 +5444,7 @@ Start a subagent in a new session to do one task and wait for it. Its report arr
 #### `software/loop/tools/schedule_next.json`
 
 - 什么时候加进来：会话的工具面里有循环这个包（预设开着 `loop`；施工 J-2 起），每次请求都带；没开着动态循环的会话里调了说没有在跑的循环
-- token：WK-2 后 98（2026-11-17 照 o200k 数，-1：名字 `schedule_wakeup` 3 个 token、`schedule_next` 2 个，说明没改）；TX-1 后 99（o200k 数，改前 115）；原来 约 148（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量的 152，WK-1 参数说明短了按 o200k 估）
+- token：WK-2 后 98（2026-11-17 照 o200k 数，-1：名字 `schedule_wakeup` 3 个 token、`schedule_next` 2 个，说明没改）；TX-1 后 99（o200k 数，改前 115）；原来 约 148（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量的 152，WK-1 参数说明短了按 o200k 估）
 - 为什么加：动态循环每轮定下一次（设计 45 第三节第 4 条，施工 J-2）：照 Claude Code 的 `ScheduleWakeup` 改短成三句，什么时候调、不调循环就停、照在等什么挑间隔；下限 60 秒写在参数里（WK-1 去掉 3600 秒的上限，项目主人 10-30 定），`reason` 只给人看。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明。施工 WK-2（2026-11-17 项目主人定）：工具改名 `schedule_next`（文件跟着改名），旧名不留兼容，说明一字不改
 - 指纹：`e10ca74a`
 
@@ -5995,7 +5995,7 @@ What I know: {text}
 #### `software/memory/card/person.txt`
 
 - 什么时候加进来：群里、私聊里和她说话的那个人（这一轮开口的人里最后一个不是主人的）有人卡、这一段上下文里还没带过他的那一轮（施工 E-1 补，`memory.md` 第三条第 8 款）；排在常驻摘要后面、联想前面
-- token：外壳 11（2026-10-23 照 tiktoken `o200k_base` 量，不算换进去的字：magpie 网关这一次没量成）；一块连字：常见的一张（100 来字）42 到 56，满 300 字的约 250
+- token：外壳 11（2026-10-23 照 tiktoken `o200k_base` 量，不算换进去的字：中转站这一次没量成）；一块连字：常见的一张（100 来字）42 到 56，满 300 字的约 250
 - 为什么加：她一见到熟人就知道对面是谁、怎么相处（设计 42 PN4，项目主人 2026-10-21：「让它知道对面是谁从而知道怎么合理地调整自己的说话方式」）；只带一张、一段一次，追加在这一轮的话前面，不改以前的前缀
 - 指纹：`f9c2dfef`
 
@@ -6050,7 +6050,7 @@ Talking to you: {who}
 #### `software/memory/extract/instruction.txt`
 
 - 什么时候加进来：会话闲了、上次抽到以后答了的轮数够了的每一次抽取（`memory.md` 第六条）：一条 user 的开头，后面紧跟这一段的几轮
-- token：386（2026-10-21 照 magpie 网关的 `group/auto-deepseek-v4-1-flash` 量，`{owner}` 原样，同样量改以前是 337；施工 E-1 上多 49；原来 336、351）；施工 E-1 修多 9（2026-10-26 照 tiktoken `o200k_base` 量改前改后的差，380 → 389）；施工 E-1 修四多 65（2026-10-26 同样量，389 → 454）；施工 E-7 多 43（2026-10-28 照 tiktoken `o200k_base` 量，454 → 497）；施工 E-8 多 4（2026-10-30 同样量，497 → 501）；施工 E-8 补多 40（2026-11-05 照 tiktoken `o200k_base` 量，501 → 541）；施工 E-10 多 22（2026-11-11 照 tiktoken `o200k_base` 在本机量，541 → 563，没上真端点量）
+- token：386（2026-10-21 照中转站的 `auto-deepseek-v4-1-flash` 量，`{owner}` 原样，同样量改以前是 337；施工 E-1 上多 49；原来 336、351）；施工 E-1 修多 9（2026-10-26 照 tiktoken `o200k_base` 量改前改后的差，380 → 389）；施工 E-1 修四多 65（2026-10-26 同样量，389 → 454）；施工 E-7 多 43（2026-10-28 照 tiktoken `o200k_base` 量，454 → 497）；施工 E-8 多 4（2026-10-30 同样量，497 → 501）；施工 E-8 补多 40（2026-11-05 照 tiktoken `o200k_base` 量，501 → 541）；施工 E-10 多 22（2026-11-11 照 tiktoken `o200k_base` 在本机量，541 → 563，没上真端点量）
 - 为什么加：人不用说「记住」她也记得（施工 R-6 上，`17-记忆.md`，2026-10-07 项目主人定抽取）。四类和「不记什么」照 Claude Code、Codex 的做法（调研第七节第 4 条）；交回的 JSON 的样子；外面来的只当数据（`memory.md` 第五条）。施工 R-13 上改成她自己的视角（2026-10-11 项目主人定：记忆只有一份）：记下这段对话里的人和事，说话的人标出来、正文写名字；施工 R-6 再修改成主人照称呼写（项目主人 2026-10-13、14 定：统一成称呼，没设的写「用户」）：`{owner}` 换成称呼，没有的换成 `common/owner-unnamed.txt`，实测改前 4 次 12 处全写「主人」，改后有称呼的 4 次 13 处全写称呼；写清 `turn` 是哪一块的编号、`about` 是日期（不写清的群聊里填成消息序号、填人名，候选整条丢掉）。施工 E-1 上（设计 42）：`user` 写成「你的主人是谁、有什么」，多一类 `person`（她认识的别人：是谁、喜好、有什么、打算、怎么认识的、生日、联系方式），交回的 `person` 多 `who`（照这一段写的名字，核心换成平台编号）。施工 E-1 修：标着 `You` 的「被人叫名字也是你」、认识的人写明「不是你」（通讯平台的长测里她把自己记成认识的人、合出自己的卡）。施工 E-1 修四（主人旧主群真数据实测查出）：名字里的说明是名字的一部分、不是说的事（群名片「被写只读版」被记成了事）；关于某个认识的人的事是 `person` 不是 `reference`；关于她自己的事记 `episode`、不记 `user`、`person`（抽出过「user 我是 Miyu」）；不记琐事（动漫角色的生日）；`episode` 多交 `people`（涉及谁，核心照说话人换成平台编号；合卡时看得出相处的事是谁的）。施工 E-7（2026-10-28 项目主人看了主人旧主群真数据的对比定）：群里的人顺口说起自己的事（在忙什么、用什么、喜欢什么、怎么对她）也记成 `person`，一人一句——只照原来的指令每段约 1 条 `person`，人卡只能写成一两句清单；加了以后每段约 2.8 条，多出来的大半有用，名片当事实没变多；另试过加「玩笑和自嘲不算」，噪音少了几条、有用的丢得更多，不加。施工 E-8（2026-10-30 项目主人定「补进主线抽取」）：群主线这一段里多了支线替她回的话，写成群聊近况的 `[you]` 行，说明那也是她。施工 E-8 补（2026-11-05 项目主人看了主人本机主群真数据的对比定）：`You`、`[you]` 那几行里她讲给别人的事实、解释、建议哪一类都不记，只留她遇到的事、和人定下的打算和答应的事——她讲的常识被记成 `reference`、`user`、`feedback`，她的话被当成群友的事实；句尾试过写「和人说好的事」（agreed），抽出过「她同意某人」，换成打算和答应的事。施工 E-10（2026-11-11 项目主人定记忆里她自己都用第一人称）：「每条写清说的是谁」那一句后面加两句 `Call yourself "I". "I" is only you: what others say about themselves is written with their name.`（头一句同人卡、摘要）：原来没规定自称，她写成人格的名字、「你」；只说用第一人称的话，一行里的人说的「我喜欢 Arch」会被照抄成她的事，所以写明「我」只指她、别人说自己的事照名字写。核心同时照第一人称起头认她自己的事（`memory/her.rs`）；旧的单条不重写
 - 指纹：`74545796`
 
@@ -6221,7 +6221,7 @@ Other older memories to look over again:
 #### `software/memory/merge/people.txt`
 
 - 什么时候加进来：这一批（新记的、相关的、顺带重看的）里有 `person` 的才接在最后（施工 E-1 下，`memory.md` 第七条第 15 款）：`{people}` 是这一批里的人（施工 E-1 修四起，发生过的事涉及的人也算）
-- token：329（2026-11-11 施工 E-10 照 tiktoken `o200k_base` 在本机量，改以前也是 329，这一步没上真端点量；2026-10-28 施工 E-2 修同一个分词器量 329，改以前 312；E-1 修六改以前 272；`{people}` 每个人后面的名字另算，一个人约 4 到 14；E-2 改以前 177；E-1 修二 169，改以前同一个分词器量 128；2026-10-22 照 magpie 网关的 `group/auto-claude-haiku-4-5` 单量，`group/auto-hy3` 129；deepseek flash 那几条这天 key 过期、限流，用不了）；同一个分词器量整条请求，没有现在的卡的一批多 127 到 135（hy3 127 到 132）
+- token：329（2026-11-11 施工 E-10 照 tiktoken `o200k_base` 在本机量，改以前也是 329，这一步没上真端点量；2026-10-28 施工 E-2 修同一个分词器量 329，改以前 312；E-1 修六改以前 272；`{people}` 每个人后面的名字另算，一个人约 4 到 14；E-2 改以前 177；E-1 修二 169，改以前同一个分词器量 128；2026-10-22 照中转站的 `auto-claude-haiku-4-5` 单量，`group/auto-hy3` 129；deepseek flash 那几条这天 key 过期、限流，用不了）；同一个分词器量整条请求，没有现在的卡的一批多 127 到 135（hy3 127 到 132）
 - 为什么加：人卡由整理合（设计 42 PN3）：照这一批里关于他的记忆接着现在的卡写、过时的换掉、只照记忆写、300 字以内（PN4）、不提不知道的（hy3 原来 9 次里 2 次写「生日未知」「其余未知」，加了以后 0 次），交回多 `cards` 的样子；没有这一句模型不知道要交卡。施工 E-1 修二（2026-10-26，虚构群聊和主人旧主群真数据实测）：一张卡只照标着这个人的那几行写、不照正文里提到的名字归人（实测记在一个群友名下的两条合进了别人的卡）；正文不写平台编号（实测写进了「qq:号」，核心另外去掉）；这几个人不写进摘要、他们有卡（实测摘要被十几个群友的事占满）（+41 token）。施工 E-1 修四（2026-10-26）：涉及这个人的发生过的事（请求里那一行标着 `episode with <是谁>`）也算标着他的（相处的事——被她禁言、把她 P 成猪——原来记成不带是谁的 `episode`，通讯平台的测具量 6 次只进卡 2 次）（tiktoken `o200k_base` 169 → 177，+8）。施工 E-2（2026-10-26，项目主人定人卡写成印象、熟人 200～400 字）：「卡上写什么」那一句换成印象的写法（是谁、是什么样的人、对你怎么样，每一句有他的言行撑着，兴趣近况概括着写、不写型号价格日期；熟人一般 200～400 字，知道得少就短、不凑字；旧卡照这样重写；自称「你」；生日和编号以外的联系方式照留；这几个人没有一个是主人），上限 300 → 400，「不写平台编号」收窄成「不重复他自己的编号」（他的小号、别人的编号、手机号是联系方式）。通讯平台的离线测具（照 `compose.rs` 拼合卡请求，主人旧主群副本九个情形）照 `clinepass/cline-pass/deepseek-v4.1-flash` 各三遍：原来的写法 27 张里像印象的 0、清单 26；改了以后像印象的 20、一半 2、清单 5，安错人 0，判官说编了的 13 → 4，平均 146 → 129 字（记忆多的那个人 197 字，没凑字）（177 → 272，+95）。施工 E-1 修六（2026-10-27，主人旧主群真数据离线比）：`{people}` 每个人后面接他在出处里用过的名字（`qq:10086 (小林, 林林)`），加一句「记忆里的名字是群名片，名片里多出来的话（玩笑、注释、「不是 X」）是名字的一部分，不是他的事」：带说明名片的人卡原来 48%（40 张里 19 张）把名片里的话写成他的事（「米鱼说自己不是Miyu」），列出来加这一句以后 5%（2 张），卡数、长度没变（272 → 312，+40；名字另算，一个人约 4 到 14）。施工 E-2 修（2026-10-28，主人旧主群真数据录下的 4 份合卡请求各重放 3 遍）：「不凑字」后面接半句「也不以你对他知道得少、交集少的话收尾」：原来 117 张卡 10 张以「你对他了解不多」「你们目前只有这些群聊交集」这类收尾，加了以后 112 张 0 张，长度（平均 46 字）、事实不变，「群友」开头 67 → 28；「写成印象」「记忆少的写一两句印象」这类句子比过不加：记忆少（多数人只有 1 条）时只换来从一件事推的性格和新的套话（312 → 329，+17）。施工 E-10（2026-11-10、11-11 项目主人定）：自称从「你」改成第一人称，`Call yourself "you".` 换成 `Call yourself "I".`：卡给人看（各个头的「认识的人」页）、也带进她的提示词当她自己的笔记，「她希望你多回复」「你因群主是 shorin 拒绝」读着别扭，写成「我」两处都通；旧卡下次合到时照新写法重写，不一次全量重写（329 → 329，+0）
 - 指纹：`b5136dd8`
 

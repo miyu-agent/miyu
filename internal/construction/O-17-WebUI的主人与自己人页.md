@@ -60,7 +60,7 @@
    - 改的：`status.rs`、`no_token.rs`（`/status` 多 `platform: "qq"`）。
    - 「不是管理员的账号改系统配置被拒」：核心现在只有管理员一个账号，没有这种账号可测；照实测的是还没设好密码的连接，图纸「施工时定的」第 35 条。
 2. 手写变异 12 个，全被逮住：`/status` 不带平台名、平台名写错（`status.rs`、`no_token.rs`）；自己人也能写进个人设置（`settings`、样本、`people.rs`）；元素最多 127 个字、129 个字（`settings`、样本）；生效时机写成下次启动（`settings`、样本、`people.rs`）；界面放进运行日志那一组、控件写成一行字（`settings`）；核心的中文说明少一句（样本）；核心的日文没有这一项（`every_language_names_every_item_and_nothing_more`、`japanese_has_every_sentence_the_files_need`）；桥的日文少一句代价、中文少了「加一个」（`miyu-store` 的 `human_languages`）。页面里的逻辑（号的格式、重复、改动才能存、账号的下拉）没有浏览器里的自动测试，照施工单靠截图和项目主人试一次兜底；截图那一趟的脚本里顺手核了：空表两个「保存」灰着、填了对的号亮、有标着的灰、存主人时自己人没存的三行留着、核心回问题时表里三行留着、写进系统配置的就是页面上的那几行。
-3. 截图（无头 Chromium，真的核心和桥，临时数据根，用完停掉）：`/tmp/claude-1000/-home-shorin-Documents-github-miyu-agent-remake/1dce34c0-a651-41a2-97ec-7cae11e86ec6/scratchpad/o17/` 里的 `empty-{light,dark}.png`（两张表空着）、`filled-{light,dark}.png`（号以 0 开头、重复、已经是主人，代价点开）、`saved-{light,dark}.png`（两张表都存好了）、`problem-{light,dark}.png`（系统配置文件手改坏了再存，核心的原话在主人表下面）、`narrow-{light,dark}.png`、`narrow-drawer-dark.png`（窄屏），另有 `connection-light.png`（「连接」页照旧）。
+3. 截图（无头 Chromium，真的核心和桥，临时数据根，用完停掉）：`scratchpad/o17/` 里的 `empty-{light,dark}.png`（两张表空着）、`filled-{light,dark}.png`（号以 0 开头、重复、已经是主人，代价点开）、`saved-{light,dark}.png`（两张表都存好了）、`problem-{light,dark}.png`（系统配置文件手改坏了再存，核心的原话在主人表下面）、`narrow-{light,dark}.png`、`narrow-drawer-dark.png`（窄屏），另有 `connection-light.png`（「连接」页照旧）。
 4. `CARGO_BUILD_JOBS=5 cargo xtask check`：八项全过（第一趟就过）。
 5. 三台机器的 CI 和长跑全绿（run 1232）。
 6. 浏览器里试：项目主人 2026-10-08 让主会话自己看（试 O-16 时说的），主会话看过截图（空表、填了几行、核心回问题、窄屏，亮暗两套）和真核心加真桥的那条测试（照页面的办法加主人、存进去，仿 NapCat 的私聊以这个号发进来认成管理员本人），没有再请项目主人试。

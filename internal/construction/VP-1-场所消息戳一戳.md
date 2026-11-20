@@ -27,7 +27,7 @@ QQ 的拍一拍改名「戳一戳」（英文 poke：双击对方头像）。im 
 1. 改前红：`miyu-endpoint` `venue_poke` 两条（main 上 `venue.poke` 回 `bad_params`）；`miyu-assemble` `poke::tests` 三条（main 上没有这一句）；`miyu-kernel` `session::tests::venue::a_poke_without_blocks_is_kept`（main 上没有 `poke`，空消息回 `empty_message`）。沙箱里 main 的核心收到 im 的形状回 `bad_params`。
 2. 跟着改的：`miyu-policy` 群会话、私聊记号的测试（新的一格、写错造不出策略、以前造的字节不变），`miyu-store` 资源的测试。
 3. 门禁十一项、`random::` 长跑、Windows 版 clippy、`cargo xtask prompts`、`cargo xtask logs`。
-4. 实测：沙箱数据根装一个假桥（扩展，`[connection] platform = "qq"`），经它发 im 的形状；请求经一个记请求的转发到真模型（magpie 网关）：群里一行、判官看的那一行、私聊那一条照上面的写法；真模型私聊里被戳回「诶——被戳了！（捂住小脑袋）主人有什么事吗？」。
+4. 实测：沙箱数据根装一个假桥（扩展，`[connection] platform = "qq"`），经它发 im 的形状；请求经一个记请求的转发到真模型（中转站）：群里一行、判官看的那一行、私聊那一条照上面的写法；真模型私聊里被戳回「诶——被戳了！（捂住小脑袋）主人有什么事吗？」。
 
 ### 风险
 

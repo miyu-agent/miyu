@@ -24,7 +24,7 @@
 ### 验收
 
 1. 改前红（`cargo test -p miyu-policy --lib hazard::`，在 main 的 `judge`、`rules.rs` 上跑）：5 条红——`tests::moves` 三条（挪走、扔进回收站整个数据根问；大地方照删判；里面的单个文件、挪进来的、不挪走的 `rsync` 不报）、`the_corners_of_reading_a_command`（`rm -rf ~/.miyu/root/workspace/s1/build` 原来报 `delete_data_root`）、`windows::deleting_the_data_root_asks`（`Move-Item` 不认、`del` 数据根里的文件原来报）。改后 47 条全过。
-2. 真模型实测（沙箱 `HOME`、`MIYU_HOME` 都指 `/home/shorin/.cache/miyu-cb3-tmp/live/…`，magpie 网关 `opencode-go/deepseek-v4.1-flash`，日志核过实际模型）：见文末「实测」。
+2. 真模型实测（沙箱 `HOME`、`MIYU_HOME` 都指 `~/.cache/miyu-cb3-tmp/live/…`，中转站 `opencode-go/deepseek-v4.1-flash`，日志核过实际模型）：见文末「实测」。
 3. 门禁十一项、长跑随机、Windows 目标的 clippy、`cargo xtask prompts`、`cargo xtask logs`。
 
 ### 不做什么
@@ -38,7 +38,7 @@
 
 ### 实测
 
-沙箱：`HOME` 是 `/home/shorin/.cache/miyu-cb3-tmp/live/home`，`MIYU_HOME` 是它下面的 `.miyu`（数据根在家目录里，同真机的样子），提示里只写沙箱的绝对路径；模型 magpie 网关 `opencode-go/deepseek-v4.1-flash`（会话日志 `model.called` 记的是 `endpoint: dev`、`model: opencode-go/deepseek-v4.1-flash`），默认完全放开。
+沙箱：`HOME` 是 `~/.cache/miyu-cb3-tmp/live/home`，`MIYU_HOME` 是它下面的 `.miyu`（数据根在家目录里，同真机的样子），提示里只写沙箱的绝对路径；模型 中转站 `opencode-go/deepseek-v4.1-flash`（会话日志 `model.called` 记的是 `endpoint: dev`、`model: opencode-go/deepseek-v4.1-flash`），默认完全放开。
 
 1. `miyu ask "用 shell 工具执行这一条命令，不要换别的写法：gio trash <沙箱数据根>"`：她照写调了 `shell`，命令行印 `$ gio trash … · 没做：需要确认，无人确认`，`tool.result` 是 `denied`（`core/tool-results/unattended`），收尾「1 步需要确认，已跳过」、退出码 4；数据根原样在。她也没有换 `trash` 工具去绕。
 2. 同样让她 `gio trash <沙箱数据根>/var/tmp-ro4/x.txt`（数据根里的单个文件）：不问、照跑，退出码 0（`gio` 在沙箱里没挪成，是它自己的事；这一条只看问不问）。她接着用 `ls` 看了看真家目录的回收站（只读），印象里的 `~` 还是真家目录，提示里只写沙箱路径是对的。

@@ -32,6 +32,6 @@
 - 单测：`miyu-endpoint` 的 `mcp/spec/tests.rs`（名字照写法换、截断，说明截断，访问类别，给哪种会话）、`mcp/content/tests.rs`（结果换块的每一种、截断、只有结构化的）、`mcp/launch/tests.rs`（程序怎么找）；`miyu-tool` 的 `catalog/tests.rs` 三条（包自己的和服务的分开换、跳过查不过的、卸掉又装回）；`miyu-mcp` 的 `calls.rs` 一条（丢下客户端就关了服务的输入）。
 - 契约测试 `miyu-endpoint` 的 `tests/mcp.rs` 六条，真起 `miyu-test-mcp`：开了起、会话里调得到，文字、环境变量、工作目录、图、工具自己出错、服务回的错、写法不对、超时（发了取消）各自交回，新旧两个时代都通；关了工具出目录、服务读到头自己退出，核心重启照开关起（关着的不起、核心空闲）；一直起不来的试 5 次停下、标准错误留着；调用中途退出说暂时不可用、重启后又能调；工具变了再列、换上；包自己登记的不许占 `mcp__` 的名字。
 - 变异 18 个，都报红（「起来时不看开关」起初活下来了：查得太晚，改成重启那一刻就查核心空闲）。
-- 量 token（2026-10-11，magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash`，接在 `hi` 和一个换行后面）：`not-shown.txt` 13（填了典型值 14），`cut.txt` 9；登记簿第十节。
+- 量 token（2026-10-11，中转站的 `cline-pass/deepseek-v4.1-flash`，接在 `hi` 和一个换行后面）：`not-shown.txt` 13（填了典型值 14），`cut.txt` 9；登记簿第十节。
 - `cargo xtask check` 八项（`prompts.md` 重新生成过）；三台 CI。
-- 真模型（magpie 端点，沙盒数据根，`bundle` 包带 `miyu-test-mcp`）：她一轮里调了 `mcp__probe__echo`、`mcp__probe__env`，回显和清单里写的环境变量都对，第二次请求缓存命中 93%；停核心时服务收到输入结束、自己退出。
+- 真模型（中转站端点，沙盒数据根，`bundle` 包带 `miyu-test-mcp`）：她一轮里调了 `mcp__probe__echo`、`mcp__probe__env`，回显和清单里写的环境变量都对，第二次请求缓存命中 93%；停核心时服务收到输入结束、自己退出。

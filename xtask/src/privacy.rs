@@ -1,4 +1,4 @@
-//! 私密路径门禁（施工 SCRUB-1）：仓库是公开的，被 git 跟踪的文本里（`docs/`、`internal/` 除外）不许出现开发机上真实用户的痕迹：
+//! 私密路径门禁（施工 SCRUB-1）：仓库是公开的，被 git 跟踪的文本里不许出现开发机上真实用户的痕迹：
 //! `/home/<名字>`、macOS 的 `/Users/<名字>`、Windows 的 `C:\Users\<名字>`（`/`、`\\` 的写法也算）、`/tmp/claude-<数字>`、
 //! `-home-<名字>-Documents`（后者是按工作目录起的会话存档目录名）。
 //!
@@ -28,14 +28,12 @@ const FICTIONAL: &[&str] = &[
     "user",
     "example",
     "test",
+    "runner",
     "runneradmin",
     "public",
     "default",
     "shared",
 ];
-
-/// 不扫的目录前缀（相对仓库根）。
-const SKIPPED: &[&str] = &["docs/", "internal/"];
 
 /// 名字里能出现的字符。
 fn is_name(c: char) -> bool {
@@ -81,7 +79,7 @@ fn names_after<'a>(line: &'a str, marker: &str) -> Vec<&'a str> {
 }
 
 /// 一行里每个用户目录的（写法，名字）：`/home/`、`/Users/` 和 Windows 的 `X:\Users\`，`\` 和 `\\` 都当 `/`。
-/// 前面紧挨着名字字符或 `.` 的是路径中间的一段（`pages/home/`、`foo/Users/`、`/api/users/42`），不算；
+/// 前面紧挨着名字字符、`.` 或省略号 `…` 的是路径中间的一段（`pages/home/`、`foo/Users/`、`/api/users/42`），不算；
 /// 盘符和 `/mnt/c` 这类 WSL 的挂载点除外。
 fn user_dirs(line: &str) -> Vec<(&'static str, String)> {
     // `/home/` 只认正斜杠：`/home\134x` 这类转义（挂载表里的空格写法）不是路径分隔。Windows 的写法才把反斜杠当 `/`。
@@ -97,7 +95,7 @@ fn user_dirs(line: &str) -> Vec<(&'static str, String)> {
                 || before
                     .rsplit_once("/mnt/")
                     .is_some_and(|(_, drive)| drive.len() == 1);
-            if mount || !before.ends_with(is_name) {
+            if mount || !before.ends_with(|c| is_name(c) || c == '…') {
                 found.push((shown, name_at(&text[i + m.len()..]).to_string()));
             }
         }
@@ -121,7 +119,7 @@ fn allowed(name: &str) -> bool {
 
 /// 门禁结果表里的一行。
 pub fn outcome(root: &Path) -> crate::Outcome {
-    println!("\n── 私密路径：被跟踪的文本里（docs/、internal/ 除外）不许有真实用户的路径 ──");
+    println!("\n── 私密路径：被跟踪的文本里不许有真实用户的路径 ──");
     crate::Outcome {
         name: "私密路径",
         problems: check(root),
@@ -141,9 +139,6 @@ pub fn check(root: &Path) -> Vec<String> {
     };
     let mut problems = Vec::new();
     for name in names {
-        if SKIPPED.iter().any(|prefix| name.starts_with(prefix)) {
-            continue;
-        }
         // 二进制、读不了的（已删未提交的、链接）不算文本。
         let Ok(bytes) = std::fs::read(root.join(&name)) else {
             continue;
@@ -275,6 +270,25 @@ mod tests {
     }
 
     #[test]
+    fn an_elided_prefix_makes_it_a_path_middle() {
+        let text = ["cwd=…/ho", "me/home/onebot and …/ho", "me/owner"].concat();
+        assert_eq!(scan("a.md", &text), Vec::<String>::new());
+    }
+
+    #[test]
+    fn documents_are_scanned_too() {
+        let dir = std::env::temp_dir().join(format!("xtask-privacy-docs-{}", std::process::id()));
+        std::fs::create_dir_all(dir.join("docs")).expect("建得了目录");
+        std::fs::create_dir_all(dir.join("internal")).expect("建得了目录");
+        for name in ["docs/b.md", "internal/c.md"] {
+            std::fs::write(dir.join(name), home("zhangsan")).expect("写得进");
+        }
+        let problems = check(&dir);
+        std::fs::remove_dir_all(&dir).expect("删得掉");
+        assert_eq!(problems.len(), 2, "{problems:?}");
+    }
+
+    #[test]
     fn session_temp_dirs_and_archive_names_are_caught() {
         let temp = ["/tmp/", "claude-", "1000/x"].concat();
         let archive = ["-ho", "me-zhangsan-", "Documents"].concat();
@@ -286,7 +300,7 @@ mod tests {
     #[test]
     fn a_tracked_file_with_a_violation_fails_the_check() {
         let dir = std::env::temp_dir().join(format!("xtask-privacy-{}", std::process::id()));
-        std::fs::create_dir_all(dir.join("docs")).expect("建得了目录");
+        std::fs::create_dir_all(&dir).expect("建得了目录");
         let git = |args: &[&str]| {
             Command::new("git")
                 .current_dir(&dir)
@@ -296,7 +310,6 @@ mod tests {
         };
         git(&["init", "-q"]);
         std::fs::write(dir.join("a.txt"), home("zhangsan")).expect("写得进");
-        std::fs::write(dir.join("docs/b.txt"), home("zhangsan")).expect("写得进");
         git(&["add", "-A"]);
         let problems = check(&dir);
         // 没有 `.git` 的拷贝照目录走：同样的结果。

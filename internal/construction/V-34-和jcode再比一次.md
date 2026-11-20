@@ -11,7 +11,7 @@ V-27 以后合进核心 main 的性能步子：V-24（图片、文件核对过�
 照 `internal/blueprint/perf.md`「三家对比」和 V-27 一样的跑法、一样的参数，测具（`bench/rivals/`）一行没改：
 
 ```
-MIYU_BENCH_MODEL=beam-free uv run bench/rivals/main.py --tui <终端工作树> --jcode <jcode 启动脚本> --cpus 12-15 \
+MIYU_BENCH_MODEL=<免费模型> uv run bench/rivals/main.py --tui <终端工作树> --jcode <jcode 启动脚本> --cpus 12-15 \
     --upstream https://opencode.ai/zen/go/v1 --upstream-key-env OPENCODE_GO_API_KEY --only miyu --only jcode \
     all --into docs/perf --tag v34
 ```
@@ -19,7 +19,7 @@ MIYU_BENCH_MODEL=beam-free uv run bench/rivals/main.py --tui <终端工作树> -
 - 核心：`origin/main` c83b775bf（V-33），`cargo build --release -p miyu -p miyu-sandbox -p miyu-extract`（照 `cargo xtask perf` 的编法）。
 - 终端：`miyu-tui` 的 `origin/main` 4e5a6be（TM-5），就是 `heads.toml` 钉的那一份，`cargo build --release`。
 - jcode：同上次一个版本 v0.99.1（`jcode v0.99.1 (7206efd0c)`，官方 linux-x86_64 发行包，压缩包的 SHA-256 和它的 `SHA256SUMS` 对得上），启动脚本加程序。
-- 模型：opencode-go 的 `beam-free`，经本机转发（`relay.py`）；两家的真任务都 5/5 过，对话请求一个没出错，没换模型。
+- 模型：opencode-go 的免费模型，经本机转发（`relay.py`）；两家的真任务都 5/5 过，对话请求一个没出错，没换模型。
 - 绑 12–15 号核，同上次。这一次 12–15 号核本身就被别的程序占满（量之前采样四个核都是 100%），别的会话同时在编译：量之前 1、5、15 分钟负载 17.1、21.2、20.3，各轮开头 3.8–21.8（上次 15.4、19.9、20.0，各轮 4.5–17.9）。时间类的数和 CPU 毫秒都受影响，看下面 jcode 那一列：同一个程序，冷启动 CPU 多了 19%、长会话 CPU 多了 85%、空闲 CPU 翻倍。比 Miyu 前后先看内存、读写、硬盘、指令数这些不跟负载走的。
 - 补一项指令数（不进测具，量法见下面「补充：指令数」）。
 

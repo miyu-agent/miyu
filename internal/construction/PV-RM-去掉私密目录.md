@@ -107,7 +107,7 @@
 
 ### 实测（真模型，沙箱数据根）
 
-- 环境：`cargo xtask dev-home` 造的数据根（`MIYU_HOME` 指草稿目录），`HOME` 也指沙箱里的假家，模型照 magpie 网关的 `deepseek-v4-1-flash`；配置写 `[permission] start_read_only = true` 和 `[sandbox.private] add = ["~/notes"]`；假家里造 `~/.ssh/id_test`（`FAKE-SSH-KEY-PVRM-OK`），数据根里造 `etc/private/secrets.toml`（假的标记）。用这一版 `cargo build` 出来的 `miyu`、`miyu-sandbox`。
+- 环境：`cargo xtask dev-home` 造的数据根（`MIYU_HOME` 指草稿目录），`HOME` 也指沙箱里的假家，模型照中转站的 `deepseek-v4-1-flash`；配置写 `[permission] start_read_only = true` 和 `[sandbox.private] add = ["~/notes"]`；假家里造 `~/.ssh/id_test`（`FAKE-SSH-KEY-PVRM-OK`），数据根里造 `etc/private/secrets.toml`（假的标记）。用这一版 `cargo build` 出来的 `miyu`、`miyu-sandbox`。
 - `miyu check`：`etc/config.toml:17:1 警告：没有 sandbox.private.add 这一项。已忽略此行。`（退出码 0，另两条是没设环境变量的警告）。
 - `miyu ask --permission read-only`（没人能确认，要问人的会直接拒）：她调 `read` 读 `~/.ssh/id_test` 成功，结果第一行 `FAKE-SSH-KEY-PVRM-OK`；读 `secrets.toml` 被拒，原文 `"…/data/etc/private/secrets.toml" is inside Miyu's own data, which no tool can read or change.`。会话日志里没有一条 `tool.approval_requested`，会话的权限是 `{"level":"full","read_only":true}`。
 - 头一趟她自己改用 `shell`（只读沙盒里跑）：`~/.ssh/id_test` 读得到内容（`file` 判出 ASCII text），`secrets.toml` 读不到（`grep: …secrets.toml: 权限不够`）。

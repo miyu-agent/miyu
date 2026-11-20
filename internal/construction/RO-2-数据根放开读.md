@@ -85,7 +85,7 @@
 
 ### 实测（真模型，沙箱数据根）
 
-环境：`cargo xtask dev-home` 造的数据根（`MIYU_HOME`、`HOME` 都指草稿目录里的沙箱），magpie 网关的 `marvis/deepseek-v4-1-flash-261017`，`etc/private/secrets.toml` 放假 key `FAKE-KEY-RO2-SANDBOX-0001`；这一版 `cargo build` 出来的 `miyu`、`miyu-sandbox`。工具结果原文（会话日志里的）：
+环境：`cargo xtask dev-home` 造的数据根（`MIYU_HOME`、`HOME` 都指草稿目录里的沙箱），中转站的 `relay/deepseek-v4-1-flash-261017`，`etc/private/secrets.toml` 放假 key `FAKE-KEY-RO2-SANDBOX-0001`；这一版 `cargo build` 出来的 `miyu`、`miyu-sandbox`。工具结果原文（会话日志里的）：
 
 | 级别 | 叫她做的 | 结果 |
 |---|---|---|

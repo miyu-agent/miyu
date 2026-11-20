@@ -28,7 +28,7 @@ SD-1 让 `venue.session` 收 `voice_max_ms`，可核心只在**造**场所会话
 ### 验收
 
 1. 改前红：`miyu-endpoint` 的 `venue_voice_limit::a_found_venue_session_takes_the_voice_limit_reported_now`（找回时报 60000，`tool.call` 没带，红在 `voice_max_ms` 是 `null`）。另加：`miyu-kernel` 的 `session::tests::voice_limit` 三条、`event::session::tests::a_policy_change_records_the_venue_voice_limit`，`miyu-session` 的 `caller::a_reported_voice_limit_reaches_later_calls_and_survives_a_reload`（拿掉 `follow_context` 那一段红在「开着的会话当场换」，载入改回 `created` 的红在「载入照日志算回来」）。
-2. 实测（沙箱数据根，真模型 magpie `opencode-go/deepseek-v4.1-flash`）：假桥先不带、再带 60000 两次找回同一个群会话，真模型调了 `note`，`tool.call` 带 `voice_max_ms: 60000`，日志里只一条 `policy_changed`、`by` 是 `bridge`；核心停了重起、找回时不带，`tool.call` 照旧 60000。
+2. 实测（沙箱数据根，真模型 中转站 `opencode-go/deepseek-v4.1-flash`）：假桥先不带、再带 60000 两次找回同一个群会话，真模型调了 `note`，`tool.call` 带 `voice_max_ms: 60000`，日志里只一条 `policy_changed`、`by` 是 `bridge`；核心停了重起、找回时不带，`tool.call` 照旧 60000。
 3. 门禁十一项、长跑随机、Windows 目标的 clippy、`cargo xtask prompts`、`cargo xtask logs`。
 
 ### 不做什么

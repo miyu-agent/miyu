@@ -31,7 +31,7 @@
 5. **实测以 CI 为主**：
    - 新 workflow 在 ubuntu、macos、windows 上装、核、卸，资产用公开的 rc.3；
    - 容器里另跑 Arch、Fedora；
-   - 主人的 Mac Studio、gaming 虚拟机不动。
+   - 主人的 Mac Studio、Windows 虚拟机不动。
 
 ### 做什么
 

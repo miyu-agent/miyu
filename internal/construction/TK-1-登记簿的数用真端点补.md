@@ -8,7 +8,7 @@ HT-2 的四段字（`resources/core/drivers/hosted-tool.txt`、`hosted-tool-fail
 
 ### 怎么量
 
-- 端点：magpie 网关的 `marvis/deepseek-v4-1-flash-261017`（OpenAI 兼容的 chat completions），量的是 DeepSeek V4.1 Flash 的分词。地址、key 只在命令的环境变量里，不进仓库。
+- 端点：中转站的 `relay/deepseek-v4-1-flash-261017`（OpenAI 兼容的 chat completions），量的是 DeepSeek V4.1 Flash 的分词。地址、key 只在命令的环境变量里，不进仓库。
 - 量法照登记簿已有的「真端点量」：一条 user 消息 `hi` 量一次 `prompt_tokens`，同一条消息换成 `hi`、一个换行、那段字再量一次，相减。每样量两次，两次一样。
 - 字段：外壳照字段空着、带行尾换行；整块照 HT-2 登记时的例子（`web_search`、参数 `{"query":"rust 1.97 release date"}`、结果 `Rust 1.97 was released on 2026-07-07.`）填好、去掉末尾的换行（同驱动交出去的样子）。
 

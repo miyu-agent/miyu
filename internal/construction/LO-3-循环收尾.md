@@ -38,7 +38,7 @@
 2. 守住的（改前改后都绿）：`a_dynamic_loop_whose_turn_sets_the_next_stays`（调了的留着、下一次是她定的、到点再跑）、`a_turn_a_person_starts_while_the_loop_waits_does_not_end_it`（循环等着时人插的一轮没调，不删）；存储那一层 `an_unpaced_dynamic_loop_ends_and_nothing_else_does`。
 3. J-2、LO-1、LO-2 那几条照新规矩改：`loop_command.rs` 三条（动态的、光打的、重发的）让她在那一轮里定下一次，断言照她定的；`loop_busy.rs` 第一条断言那一行删了；`schedules.rs` 的「停着等她定」那条换成第 1 条那一条；命令菜单、写错带用法两条照新的用法字。
 4. 门禁全过；`cargo test -p miyu-kernel random:: -- --include-ignored`；整个工作区 Windows 版 clippy；`cargo xtask prompts`、`cargo xtask logs` 没有要改的。
-5. 实测（2026-11-16，沙箱数据根、真模型 marvis/deepseek-v4-1-flash-261017、终端界面在 niri 代理窗口里操作）：
+5. 实测（2026-11-16，沙箱数据根、真模型 relay/deepseek-v4-1-flash-261017、终端界面在 niri 代理窗口里操作）：
    - `/loop 用一句话报一下现在几点，不要定下一次`：她答「现在是 2026年11月16日 22:30（JST，UTC+9）。下一次唤醒不安排，循环到此结束。」，答完图标「◷」没了；日志 `22:30:11.234 schedule fired schedule=t1 result=ran`、`22:30:16.997 loop ended without a next wakeup schedule=t1`。
    - `/loop 报时，然后定 1 分钟后再报`：她调 `schedule_wakeup`，图标「◷ 22:31」留着；22:31:48 到点再跑（`schedule fired schedule=t2 result=ran`），又定了一次，图标「◷ 22:32」。
    - `/loop clear`：日志 `22:32:08.267 schedule cancelled schedule=t2`，图标当场没了，没有新建的一行，22:33 以后也没再到点。

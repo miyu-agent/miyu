@@ -220,14 +220,14 @@ FH-7 第三轮没做到装包调用，这次补上（下面「验收」）。13 
 
 ## 八、FH-7：主人那一份部署
 
-数据根是 `/home/shorin/.cache/miyu-tui-home`（包装脚本 `~/.local/bin/miyu-remake` 里 `MIYU_HOME` 写死）；`~/.miyu` 是旧版 Miyu 的活数据，不碰。新数据根放在同一个路径（旧的整个改名留着），套接字的指纹、终端记的样子、恢复命令都不变。只拷几样，别的不要（设计 55 第六节第 2 条）。真跑由主人自己用 `!` 执行，sub1 写一次性脚本、在拷贝上演练过再交。
+数据根是 `~/.cache/miyu-tui-home`（包装脚本 `~/.local/bin/miyu-remake` 里 `MIYU_HOME` 写死）；`~/.miyu` 是旧版 Miyu 的活数据，不碰。新数据根放在同一个路径（旧的整个改名留着），套接字的指纹、终端记的样子、恢复命令都不变。只拷几样，别的不要（设计 55 第六节第 2 条）。真跑由主人自己用 `!` 执行，sub1 写一次性脚本、在拷贝上演练过再交。
 
 **赞助账本一条都不能丢**（2026-11-02 项目主人再三说）：`miyu-im-sponsor` 的 `sponsors.json`（11-02 是 66 条，`version`、`next`、`entries` 三格）连同旁边的 `.bak-*` 一起拷；拷之前先另存一份到数据根以外（脚本做，路径写进输出），拷完逐字节比 SHA-256，条数、`next` 对得上才算搬完；`.before-fh` 和这份另存的都留到主人说可以删。脚本演练时也照这一条验。
 
 - [ ] 停之前在旧核心上记下底数：Miyu 那一间 `memory.list` 的条数、会话列表的会话数、赞助账本的条数（脚本经协议只读地问，写进输出）、终端输入历史的行数、im 场所卡片的张数。
 - [ ] 停 im、停核心（`run/core.lock` 放开）。
-- [ ] `/home/shorin/.cache/miyu-tui-home` 整个改名成 `miyu-tui-home.before-fh`；包装脚本的 `D=` 换成装 FH-3 以后核心的新部署目录。
-- [ ] 新核心对空的 `/home/shorin/.cache/miyu-tui-home` 起一次建好骨架后停下。
+- [ ] `~/.cache/miyu-tui-home` 整个改名成 `miyu-tui-home.before-fh`；包装脚本的 `D=` 换成装 FH-3 以后核心的新部署目录。
+- [ ] 新核心对空的 `~/.cache/miyu-tui-home` 起一次建好骨架后停下。
 - [ ] 拷（都从 `.before-fh` 拷）：
   - `config.toml` → `etc/config.toml`（首行 `#:schema` 换新的）；
   - `secrets.toml`、`access.json`、`logins.json` → `etc/private/`（0600）；

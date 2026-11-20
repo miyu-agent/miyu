@@ -33,7 +33,7 @@
    - `tests/schedule_life.rs` 的 `a_missed_life_loop_wakes_once_on_restart_and_a_dynamic_one_ends`（原来守「照旧停着等」，改成删掉、没交）。
 2. 循环、定时、人生相关的测试全过。
 3. 门禁全过；`cargo test -p miyu-kernel random:: -- --include-ignored`；整个工作区 Windows 版 clippy；`cargo xtask prompts`、`cargo xtask logs` 没有要改的。
-4. 实测（2026-11-16 至 17，沙箱数据根、真模型 marvis/deepseek-v4-1-flash-261017、终端界面在 niri 代理窗口里操作），两次都敲 `/loop 用一句话报一下现在几点，然后定 2 分钟后再报`，看到 `schedule fired` 马上按 pid 停核心：
+4. 实测（2026-11-16 至 17，沙箱数据根、真模型 relay/deepseek-v4-1-flash-261017、终端界面在 niri 代理窗口里操作），两次都敲 `/loop 用一句话报一下现在几点，然后定 2 分钟后再报`，看到 `schedule fired` 马上按 pid 停核心：
    - **强杀**（`SIGKILL`）：`23:03:18.590 schedule fired schedule=t4`，`23:03:20` 杀掉。起来时 `23:03:24.339` 会话载入（空着），`23:03:24.348 loop ended without a next wakeup schedule=t4`，表空了，头上的图标没了。
    - **正常停**（`SIGTERM`）：`23:03:42.063 schedule fired schedule=t5`，`23:03:44.064 stopped`，停的时候不删，表里 `t5|dynamic|`（下一次空着）。起来时 `23:03:47.713` 会话载入，那一轮接着干：`23:03:51.666 tool=schedule_wakeup`，成功，表里下一次 23:05:51，图标「◷ 23:05」。`23:05:51.736 schedule fired schedule=t5` 到点再跑，她又定了下一次，图标「◷ 23:07」。
 
