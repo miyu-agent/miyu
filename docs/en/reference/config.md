@@ -44,7 +44,7 @@ Above the three layers sit the environment variables the core was started with, 
 | `title`, `fields` | When the element is `record`: `title` is the field that titles each entry (without it, entries are numbered), and `fields` has one entry per field, shaped like this table (`key` is the field name) |
 | `default` | The default value |
 | `layers` | The layers it may be written in: `system`, `project` |
-| `applies` | When it takes effect: `now`, `next_turn`, `new_session`, `restart`, or `head_start` (the next start of the head, the interface program that connects to the core, such as the terminal interface or the web interface) |
+| `applies` | When it takes effect: `now` is at once, `next_turn` is from the next turn, `new_session` is in sessions opened from now on, `restart` is after the core restarts, and `head_start` is the next start of the head (the head being the interface program that connects to the core, such as the terminal interface or the web interface) |
 | `name`, `description` | The display name and description, in the connection's language |
 | `name_en` | The English name. It is present only when the connection's language isn't English, so that heads can search with it alongside `name` (typing web in a Chinese UI then finds 网络搜索); it is absent when there is no English name |
 | `page`, `group`, `common`, `control` | Where the setting goes on the settings screen, whether it is common, and which control draws it: `select`, `toggle`, `number`, `text`, `list`, `combo`, `textarea` (a box of several lines) or `slider` |

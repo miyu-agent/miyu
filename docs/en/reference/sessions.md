@@ -96,7 +96,7 @@ If you send the same `id` again, the core returns the session it created the fir
 
 | `data.reason` | When |
 |---|---|
-| `bad_params` (`-32602`) | The persona or preset id is malformed; `memory` is not one of the three values; `model` or `vision` is not a string; `compaction_line` is not an integer from 20 to 95 |
+| `bad_params` (`-32602`) | The persona or preset id is malformed; `memory` is not `persona` or `off`; `model` or `vision` is not a string; `compaction_line` is not an integer from 20 to 95 |
 | `unknown_persona`, `persona_invalid` | There is no such persona, or the persona's files are wrong (`data.problem` says which layer, which file and which line) |
 | `unknown_preset`, `preset_invalid` | The same as the row above, for presets |
 | `unknown_model` | `model` or `vision` can't be resolved: it is malformed, the provider doesn't exist, or the pool doesn't exist |

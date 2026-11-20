@@ -129,9 +129,9 @@ Subscribes to a push stream: from then on, the stream's pushes go to this connec
 | `projects` | A project changed | `{"projects": […]}`, with all projects |
 | `bus` | Names on the bus, or their readiness, changed ([`bus.list`](bus.md#buscall-buslist)) | `{"names": […]}`, with all names |
 | `schedules` | A schedule changed or ran | `{"schedules": […]}`, with all schedules |
-| `notices` | Notices for people: a new-session schedule's run has ended, or the schedule table broke and was replaced by an empty one. Heads show system notifications from it | `{}`, plus `claimed: true` while a connection has claimed background notices ([`notices.claim`](#noticesclaim)); earlier notices are not replayed |
+| `notices` | Notices for people: a new-session schedule's run has ended, or the schedule table broke and was replaced by an empty one. Heads show system notifications from it | `{}`, or `{"claimed": true}` while a connection has claimed background notices ([`notices.claim`](#noticesclaim)); earlier notices are not replayed |
 | `package` | With `package`: what that package pushes to people; its pages update from these pushes instead of polling. A package that isn't installed gets `unknown_package` | `{}`; earlier pushes are not replayed |
-| `prefs` | With `package`: another connection changed that UI package's own settings (see [A head's own settings](prefs.md)). A package that isn't installed gets `unknown_package`, and one that isn't a UI package gets `not_a_ui_package` | `{"values": {…}}`, the whole object at that moment |
+| `prefs` | With `package`: another connection changed that UI package's own settings, which pushes `prefs.changed` (see [A head's own settings](prefs.md)). A package that isn't installed gets `unknown_package`, and one that isn't a UI package gets `not_a_ui_package` | `{"values": {…}}`, the whole object at that moment |
 | `kb` | Index-building progress of knowledge bases: `kb.indexing`, `kb.indexed` | `{}`; the current state comes from `kb.list` |
 | `memory` | One memory's log | `{"upto": <last sequence number at that moment>}` |
 | `widgets` | Widgets | See [Packages and commands](packages.md) |

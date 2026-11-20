@@ -31,7 +31,7 @@
 ## 拉起
 
 - **程序**：核心先在包文件夹的 `bin/` 里找程序，再到 `miyu` 所在的目录里找，不从 `PATH` 里找；启动参数是清单的 `[process] args`。
-- **环境**：扩展继承核心的环境变量，核心另外设置 `MIYU_HOME`（数据根）、`MIYU_RESOURCES`（资源目录）、`MIYU_PROGRAM`（主程序 `miyu` 的真实位置），以及这个包在各层里各自的目录（都已经创建好，给出的是真实位置）：`MIYU_APP_DIR`（包的文件夹）、`MIYU_CONFIG_DIR`、`MIYU_STATE_DIR`（也是工作目录）、`MIYU_CACHE_DIR`、`MIYU_LOG_DIR`、`MIYU_TMP_DIR`（拉起之前清空）、`MIYU_RUNTIME_DIR`，还有 `MIYU_PICTURES_DIR` 这一类的四个目录。旧的变量名 `MIYU_PACKAGE_DIR`、`MIYU_PACKAGE_STATE` 在过渡期间也会一起设置。
+- **环境**：扩展继承核心的环境变量，核心另外设置 `MIYU_HOME`（数据根）、`MIYU_RESOURCES`（资源目录）、`MIYU_PROGRAM`（主程序 `miyu` 的真实位置），以及这个包在各层里各自的目录（都已经创建好，给出的是真实位置）：`MIYU_APP_DIR`（包的文件夹）、`MIYU_CONFIG_DIR`、`MIYU_STATE_DIR`（也是工作目录）、`MIYU_CACHE_DIR`、`MIYU_LOG_DIR`、`MIYU_TMP_DIR`（拉起之前清空）、`MIYU_RUNTIME_DIR`，还有 `MIYU_PICTURES_DIR`、`MIYU_VIDEOS_DIR`、`MIYU_DOCUMENTS_DIR`、`MIYU_DOWNLOADS_DIR` 四个目录（数据根里的 `root/pictures/`、`root/videos/`、`root/documents/`、`root/downloads/`）。旧的变量名 `MIYU_PACKAGE_DIR`、`MIYU_PACKAGE_STATE` 在过渡期间也会一起设置。
 - **工作目录**：工作目录是这个包存放状态的目录 `var/lib/<编号>/`。
 - **标准错误**：标准错误追加写入 `var/log/<编号>/stderr`；文件超过 1 MiB 时，核心先把它改名成 `.old`。
 - **握手**：扩展照常发送 `hello`，不需要出示凭据。回应里的 `config` 是它自己的配置项的最终值（密钥给出的是真实的值）；批准了 `provider.key` 的扩展，回应里还多一个字段 `provider_key`（见下面「`provider_key`」）。
@@ -157,7 +157,7 @@
 | `tool` | 工具名 |
 | `args` | 参数 |
 | `cwd` | 这一轮的工作目录：真实的绝对路径，`~` 已经按照家目录替换好（不知道家目录时，按照会话记录的原样给出） |
-| `pictures` | 放图片的目录（数据根里按照 XDG 规范的 `pictures/`）：画出来的、生成的图片放在这里，人可以在终端界面、网页界面里找到它们。给出的是真实位置，但是目录可能还没有创建，写入之前要自己创建好（缺少的上级目录一起创建）。只有本机的会话才有这个字段：会话以外的调用、场所会话（群聊、私聊，关在自己的工作区里）没有这个字段，图片仍然放在工作区里 |
+| `pictures` | 放图片的目录（数据根里的 `root/pictures/`）：画出来的、生成的图片放在这里，人可以在终端界面、网页界面里找到它们。给出的是真实位置，但是目录可能还没有创建，写入之前要自己创建好（缺少的上级目录一起创建）。只有本机的会话才有这个字段：会话以外的调用、场所会话（群聊、私聊，关在自己的工作区里）没有这个字段，图片仍然放在工作区里 |
 | `by` | 是谁要 AI 做这件事：触发这一轮的那条消息的 `by`；没有触发消息的回合不写 |
 | `owner` | 核心是否认定 `by` 是主人本人 |
 | `permission` | 派发这次调用那一刻实际生效的权限 `{"level", "read_only"}`：`level` 是 `full`，`read_only` 打开时就是只读。根据它决定能碰多大的范围，例如完全放开的会话可以发送任何文件。外人的会话另外被关着（`owner` 是假），你自己按照对外人的规矩处理 |
@@ -173,7 +173,7 @@
 | `blocks` | 给模型看的内容块：`{"type": "text", "text"}`、`{"type": "image", "blob", …}`。图片要先用 `blob.put` 上传 |
 | `error` | 表示这次调用算作出错 |
 | `end_turn` | 这一步的结果全部到达以后，不再请求模型，这一轮结束 |
-| `sent` | AI「发出去」的东西，不给模型看；头（连接核心的界面程序，例如终端界面、网页界面）把它画在正文里，聊天平台按照它发送。图片最多 4 张：`{"blob", "media_type", "width", "height", "name"?, "alt"?, "sticker"?}`；语音最多一段：`{"blob", "media_type", "voice": true, "duration_ms"?, "name"?}`，`media_type` 以 `audio/` 开头（`audio/mpeg`、`audio/wav`、`audio/ogg`），blob 最大 10 MiB。数量超过上限、写法不对时，整份结果算作出错，原话交给 AI；语音太大时不交付，并且回复 AI 一句「没交出去、超过 10 MB」。头根据这一轮是谁开启的来决定放不放语音（见 [视图流](view.md) 的 `voice`）；在本机会话里，没有人开口的一轮（到点的定时任务、循环）产生了语音，而此时又没有头打开这个会话时，核心通过总线调用 `tts.play {"audio": <blob>}`，从这台电脑的音箱播放；场所会话的语音由桥发送成语音消息 |
+| `sent` | AI「发出去」的东西，不给模型看；头（连接核心的界面程序，例如终端界面、网页界面）把它画在正文里，聊天平台按照它发送。图片最多 4 张：`{"blob", "media_type", "width", "height", "name"?, "alt"?, "sticker"?}`；语音最多一段：`{"blob", "media_type", "voice": true, "duration_ms"?, "name"?}`，`media_type` 以 `audio/` 开头（`audio/mpeg`、`audio/wav`、`audio/ogg`），blob 最大 10 MiB。数量超过上限、写法不对时，整份结果算作出错，原话交给 AI；语音太大时不交付，并且回复 AI 一句 `The audio was not delivered: it is larger than 10 MB.`（这里的 10 MB 就是上面的 10 MiB）。头根据这一轮是谁开启的来决定放不放语音（见 [视图流](view.md) 的 `voice`）；在本机会话里，没有人开口的一轮（到点的定时任务、循环）产生了语音，而此时又没有头打开这个会话时，核心通过总线调用 `tts.play {"audio": <blob>}`，从这台电脑的音箱播放；场所会话的语音由桥发送成语音消息 |
 | `detail` | 给头看的结构化结果，按照下面三种通用形状中的一种书写；不给模型看。形状不对、或者 `error` 是真时，核心丢掉这个字段，其余的结果照常处理 |
 | `data` | 给脚本的结构化结果，可以是任意 JSON：AI 在命令里用 `miyu call` 调用到这件工具时（`clicall`），它会输出成一行 JSON 交给脚本；它不给模型看，也不记进 `tool.result`。`error` 是真时不交付 |
 | `state` | 你这个包在这个会话里的一份状态，写法见下面「`session.set_state`、`session.state`」：核心按会话记录最新的一份，撤销、清空上下文时状态会跟着变化。写坏了时整份丢掉，其余的结果照常处理；`null` 当作没写，要清除就写 `{}`；`error` 是真时不接受 |

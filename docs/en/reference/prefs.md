@@ -11,7 +11,7 @@ This page covers the settings of a UI package (a package whose manifest has `[ui
 
 **Who can call**: only people can call these methods (through head connections); when an extension or a platform bridge calls them, it gets `local_only`. If a head wants to follow changes made by other heads, it can subscribe to the `prefs` stream (with `package`); after that the core pushes `prefs.changed` (see [Pushes](pushes.md)).
 
-**Where it is stored**: the settings are stored in `prefs.json` in that package's state directory (`var/lib/<package id>/prefs.json`, which is the directory `MIYU_STATE_DIR` points to). The whole file is one JSON object on one line, and on Unix only you can read it. The core owns this file name, so a head shouldn't use it for its own files in the state directory. When you remove the package, the settings are removed along with the state directory.
+**Where it is stored**: the settings are stored in `prefs.json` in that package's state directory (`var/lib/<package id>/prefs.json`, which is the directory `MIYU_STATE_DIR` points to). The whole file is one JSON object on one line, and on Unix only you can read it. The core owns this file name, so a head must not use it for its own files in the state directory: what a head writes there is read back as settings, and a file in the wrong format is overwritten by the next `prefs.set`. When you remove the package, the settings are removed along with the state directory.
 
 **Limit**: the whole object, serialized as JSON (without whitespace), is at most 64 KiB (65536 bytes).
 

@@ -38,14 +38,14 @@ When you give neither, the default persona's memory is used. To keep following t
 
 ## A memory
 
-A memory is `{"id", "class", "text", "by", "at", "sources", "retired", "used", "used_at", "venue", "keywords", "who"}`, with these fields:
+A memory is `{"id", "class", "text", "by", "at", "sources", "retired", "used", "used_at", "venue", "keywords", "who", "people", "place"}`, with these fields:
 
 | Name | Notes |
 |---|---|
 | `id` | Written as `m<number>` |
 | `class` | `user` (about the owner), `feedback` (what the person wants from the AI), `episode` (something that happened), `reference` (where to find something), `person` (someone else the AI knows, shown as "people you know") |
 | `text` | The text of the memory, at most 120 characters |
-| `by` | `person` (a person remembered it) or `tool` (the AI remembered it) |
+| `by` | Who recorded it, as a kind only: `tool` (the AI recorded it by calling a memory tool), `module` (written by the memory module while extracting, merging or tagging), `person` (recorded or changed by the owner through the `memory.*` methods or `/remember`), or `harness` (a `/remember` sent with `miyu ask --from` in a local session, once the administrator has set `commands.remember.access` to `anyone`) |
 | `at` | When it was remembered |
 | `sources` | Where it came from, written as `[{"session", "turn"}]` |
 | `retired` | Why it was retired; `null` if it wasn't retired |
@@ -101,7 +101,7 @@ This method imports memories from elsewhere in batches and keeps the time each o
 | `class` | The same as in `memory.remember`. Required |
 | `text` | The text, at most 120 characters. Required |
 | `origin` | Which entry it was in the place it came from, 1 to 200 characters, unique within the batch (such as `legacy:default:facts:57`). Required |
-| `who` | Required when `class` is `person`, and refused for the other classes |
+| `who` | Required when `class` is `person`, and refused for the other classes (`null` counts as not given) |
 | `people` | Who was involved (a list of strings); allowed only when `class` is `episode` |
 | `keywords` | Keywords used only for search, at most 200 characters; optional |
 

@@ -1583,6 +1583,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC27"><span class="n">DOC-27</span>协议参考搬进语言目录<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC28"><span class="n">DOC-28</span>作者教程并进开发者文档<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC29"><span class="n">DOC-29</span>协议参考和教程照规范改写<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sDOC30"><span class="n">DOC-30</span>参考里对不上的 14 处照代码改<span class="st">…</span></a></li>
         <li><a class="step review" href="#sHLP1"><span class="n">HLP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
@@ -61822,6 +61823,55 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/DOC-29-参考和教程照规范改写.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sDOC30" aria-labelledby="h-sDOC30">
+  <div class="sheet-head"><h2 id="h-sDOC30"><span class="no">DOC-30</span>协议参考和教程里前后对不上、中英对不上的 14 处，回代码核对后改正</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">改写协议参考时查出一批原文自己前后对不上、中英两份对不上的地方，当时只换写法没有核实。这一步逐条回代码查清实际行为，文档错的照代码改。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">docs/zh、docs/en · reference（sessions、packages、extensions、memory、venues、connection、config、prefs）　dev（extensions、mcp、packages）</span><span class="dir-note">DOC-30</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>派子代理只读核对 14 条，每条给出实际行为和代码的文件、行号；抽读其中六处代码确认以后再改</li>
+              <li>改正的例子：session.create 的 memory 只接受两种；扩展工具声明了 paths 时数据根不另外保护；memory.remember 多写的 who 是忽略不是拒绝；内置样本是五份</li>
+              <li>英文少的、说错的照中文和代码补齐：场所会话的默认工作区、订阅流推什么、applies 的五个取值、只给网址的 MCP 服务</li>
+              <li>另外两处交主会话核对，结论一并补进来（清单 prefix 的长度、记忆回应里 by 的四种取值）</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">文档写的行为以代码为准；中英两份说的是同一件事</span><span class="rl">AGENTS.md「文档的规矩」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DOC-30</dd></div>
+        <div><dt>名称</dt><dd>协议参考和教程里前后对不上、中英对不上的 14 处，回代码核对后改正</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-20</dd></div>
+        <div><dt>提交</dt><dd class="mono">DOC-30</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>14 条每一条都有代码或测试的出处，写在施工单的表里</span></li>
+        <li><span class="ok">✓</span><span>文档检查问题 0 个</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/DOC-30-参考里对不上的核对.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

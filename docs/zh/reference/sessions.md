@@ -96,7 +96,7 @@
 
 | `data.reason` | 什么时候 |
 |---|---|
-| `bad_params`（`-32602`） | 人格或预设的编号写法不对；`memory` 不是那三种取值之一；`model`、`vision` 不是字符串；`compaction_line` 不是 20 到 95 之间的整数 |
+| `bad_params`（`-32602`） | 人格或预设的编号写法不对；`memory` 不是 `persona`、`off` 之一；`model`、`vision` 不是字符串；`compaction_line` 不是 20 到 95 之间的整数 |
 | `unknown_persona`、`persona_invalid` | 没有这个人格；或者人格的文件写错了（`data.problem` 说明是哪一层、哪个文件的第几行） |
 | `unknown_preset`、`preset_invalid` | 和上一行相同，只是对象换成预设 |
 | `unknown_model` | 无法解析 `model`、`vision`：写法不对、没有这家供应商，或者没有这个池 |

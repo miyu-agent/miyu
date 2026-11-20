@@ -38,14 +38,14 @@
 
 ## 一条记忆
 
-一条记忆是 `{"id", "class", "text", "by", "at", "sources", "retired", "used", "used_at", "venue", "keywords", "who"}`，各字段如下：
+一条记忆是 `{"id", "class", "text", "by", "at", "sources", "retired", "used", "used_at", "venue", "keywords", "who", "people", "place"}`，各字段如下：
 
 | 名字 | 说明 |
 |---|---|
 | `id` | 写法是 `m<序号>` |
 | `class` | `user`（关于主人的）、`feedback`（人对 AI 的要求）、`episode`（发生过的事）、`reference`（资料在哪里）、`person`（AI 认识的其他人，界面上叫「认识的人」） |
 | `text` | 这一条记忆的正文，最多 120 个字 |
-| `by` | `person`（人记下的）或 `tool`（AI 记下的） |
+| `by` | 谁记下的，只给出种类：`tool`（AI 调用记忆工具记下的）、`module`（记忆模块抽取、合并、打标签时写的）、`person`（主人通过 `memory.*` 的方法或者 `/remember` 记下、修改的）、`harness`（管理员把 `commands.remember.access` 配成 `anyone` 以后，本机会话里用 `miyu ask --from` 发来的 `/remember`） |
 | `at` | 记下这一条的时刻 |
 | `sources` | 这一条的出处，写法是 `[{"session", "turn"}]` |
 | `retired` | 作废的原因；没有作废时是 `null` |
@@ -73,7 +73,7 @@
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `memory.remember` | `class`、`text`（都必须填写）；`keywords` 可以不填写；`who`：`class` 是 `person` 时必须填写，其他类填写了也不接受 | `{"id"}` |
+| `memory.remember` | `class`、`text`（都必须填写）；`keywords` 可以不填写；`who`：`class` 是 `person` 时必须填写，其他类填写了会被忽略 | `{"id"}` |
 | `memory.update` | `id`，以及 `text`、`keywords`、`who` 中至少一个 | `{"id"}`：填写了 `text` 时，返回的是改完以后的新一条（旧的一条作废，没有填写的 `keywords`、`who` 沿用旧的）；只填写 `keywords` 时还是同一条，编号不变；只填写 `who` 时用原来的正文新记一条；`keywords` 填写空值表示去掉关键词 |
 | `memory.forget` | `id`（可以带 `why`）；或者 `clear`：`session`（清掉这个会话记下的记忆，此时必须填写 `session`）、`me`（清空整间） | 作废时返回 `{}`，清空时返回 `{"cleared": <几条>}` |
 | `memory.restore` | `id` | `{}`：作废了的那一条重新生效 |
@@ -101,7 +101,7 @@
 | `class` | 和 `memory.remember` 相同。必须填写 |
 | `text` | 正文，不超过 120 个字。必须填写 |
 | `origin` | 这一条在原来那边是哪一条，1 到 200 个字，同一批里不能重复（例如 `legacy:default:facts:57`）。必须填写 |
-| `who` | `class` 是 `person` 时必须填写，其他类不接受 |
+| `who` | `class` 是 `person` 时必须填写，其他类不接受（写 `null` 等于没有填写） |
 | `people` | 涉及哪些人（字符串的列表），只有 `class` 是 `episode` 时才能填写 |
 | `keywords` | 只用来检索的关键词，不超过 200 个字，可以不填写 |
 
