@@ -12,6 +12,7 @@ use std::path::Path;
 use serde::Deserialize;
 
 use miyu_kernel::session::Reason;
+use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
 use miyu_tool::load::{self, LoadError};
 use miyu_tool::{
@@ -112,13 +113,22 @@ impl Goal {
             }
             GoalRefused::Kernel(Reason::NoGoal) => Texts::error(&texts.none, "goal/none", &[]),
             GoalRefused::Kernel(reason) => {
-                Texts::error(&texts.failed, "goal/failed", &[("reason", reason.code())])
+                let key = match reason {
+                    Reason::GoalPaused => "goal/paused",
+                    Reason::GoalRunning => "goal/running",
+                    _ => "goal/unchanged",
+                };
+                unchanged(&texts.failed, reason.code(), key)
             }
-            GoalRefused::Stopped => {
-                Texts::error(&texts.failed, "goal/failed", &[("reason", "stopped")])
-            }
+            GoalRefused::Stopped => unchanged(&texts.failed, "stopped", "goal/stopped"),
         }
     }
+}
+
+/// 目标没改成：给模型的那一句照 `template` 带原因码 `reason`；给人看的是 `key`，不把原因码填进去（施工 WD-6：原来一律说
+/// 「目标未更改：{reason}」，人看到的是 `goal_paused` 这样的码）。
+fn unchanged(template: &Template, reason: &str, key: &str) -> Done {
+    Done::error(line(template, &[("reason", reason)])).said(said(key, &[]))
 }
 
 /// `get`：现在的目标；没有的说没有。

@@ -14,14 +14,14 @@ fn bases_one_line_each() {
     let listed = [
         json!({"id": "notes", "name": "日语笔记", "description": "学日语的", "documents": 12, "chunks": 40}),
         json!({"id": "world", "name": "world", "description": "", "documents": 1, "chunks": 3}),
-        json!({"id": "usb", "name": "U 盘", "description": "", "documents": 3, "chunks": 9, "error": "mounted folder /mnt/usb: not found"}),
+        json!({"id": "usb", "name": "U 盘", "description": "", "documents": 3, "chunks": 9, "error": "mounted folder /mnt/usb: No such file or directory (os error 2)"}),
     ];
     assert_eq!(
         bases(&listed, &BTreeMap::new(), &Language::Chinese),
         [
             "notes  日语笔记  12 篇  学日语的",
             "world  1 篇",
-            "usb    U 盘  3 篇（不可用：mounted folder /mnt/usb: not found）",
+            "usb    U 盘  3 篇（不可用：目录 /mnt/usb 不存在）",
         ]
     );
     assert_eq!(
@@ -156,4 +156,45 @@ fn documents_one_line_each() {
         documents(&listed[1..2], &[], &Language::English),
         ["scan.pdf  12 B  2026-10-18  (unreadable: no text in the PDF (scanned or images only))"]
     );
+}
+
+/// 施工 WD-6：挂的目录为什么用不了，中文界面照中文说：认得出是哪一种的说自己的话，认不出的带上系统的原话；英文界面
+/// 照核心给的原样。
+#[test]
+fn why_a_folder_is_unavailable_is_said_in_chinese() {
+    let denied = std::io::Error::from(std::io::ErrorKind::PermissionDenied);
+    let cases = [
+        (
+            "mounted folder /mnt/usb: No such file or directory (os error 2)".to_string(),
+            "目录 /mnt/usb 不存在".to_string(),
+        ),
+        (
+            "mounted folder /mnt/usb: something odd".to_string(),
+            "无法读取目录 /mnt/usb，系统报错：something odd".to_string(),
+        ),
+        (
+            "mount notes is not an absolute path or ~/".to_string(),
+            "notes 不是绝对路径，也不是以 ~/ 开头的路径".to_string(),
+        ),
+        (
+            "mount starts with ~ but the home directory is not known".to_string(),
+            "路径以 ~ 开头，但无法确定家目录".to_string(),
+        ),
+        ("something else".to_string(), "something else".to_string()),
+    ];
+    for (why, said) in cases {
+        assert_eq!(Language::Chinese.folder_why(&why), said, "{why}");
+        assert_eq!(Language::English.folder_why(&why), why, "英文照原样");
+    }
+    // 没有权限的错误号各个系统不一样：拿这台机器上的一个真的来试。
+    if let Some(code) = [13, 5]
+        .into_iter()
+        .find(|code| std::io::Error::from_raw_os_error(*code).kind() == denied.kind())
+    {
+        assert_eq!(
+            Language::Chinese
+                .folder_why(&format!("mounted folder /root/x: denied (os error {code})")),
+            "没有权限读取目录 /root/x"
+        );
+    }
 }

@@ -15,6 +15,10 @@
     "goal/blocked": "目標が行き詰まり：{reason}",
     "goal/too-early": "{round} ラウンド目、まだ行き詰まりにできません",
     "goal/failed": "目標を変更できません：{reason}",
+    "goal/paused": "目標は一時停止中のため、変更していません",
+    "goal/running": "目標は進行中のため、変更していません",
+    "goal/stopped": "呼び出しが中断されたため、目標は変更していません",
+    "goal/unchanged": "目標は変更していません",
     "common/bad-args": "引数が正しくない：{error}",
     "common/off": "このセッションでは長期目標を使えません"
   }

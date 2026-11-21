@@ -65,6 +65,7 @@ hello/
 | 看到的 | 怎么办 |
 |---|---|
 | 无法打包：清单没有写版本 | 在 `[package]` 里写上 `version = "0.1.0"`。 |
+| 无法打包：package.toml:<行>: … | 清单的这一行写错了，后面是原因（例如 `未知的键：package.id`），和安装时报的是同一句。按照原因修改清单，见 [清单](manifest.md)。 |
 | 无法打包：… 把 enum 写在了不是字符串的类型上 | 包里 `tools/<名字>.json` 的参数把 `enum` 写在了整数、数字或真假上。把这几个选项改成字符串，或者去掉 `enum`、写进说明（见 [写扩展](extensions.md)）。 |
 | 需要指定目标系统 | 清单里写了 `targets`：运行 `miyu pkg pack --target <系统>`，每种系统打一个包。 |
 | `[[slash]] needs the commands capability`（`bad_slash`）这类「要某项能力」 | 带了 `[[slash]]`、`[[search]]`、`[guard]`、`[after]`、`[[driver]]` 的包，要在 `[process] capabilities` 里写上对应的能力（见 [清单](manifest.md) 的各节）。 |

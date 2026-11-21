@@ -247,15 +247,26 @@ async fn refusals_say_what_went_wrong() {
             "No goal is set.",
             "software/goal/goal/none",
         ),
+        // 施工 WD-6：给模型的那一句照旧带原因码；给人看的那一句各有各的说法，不把原因码填进去。
+        (
+            GoalRefused::Kernel(Reason::GoalPaused),
+            "The goal was not changed: goal_paused.",
+            "software/goal/goal/paused",
+        ),
+        (
+            GoalRefused::Kernel(Reason::GoalRunning),
+            "The goal was not changed: goal_running.",
+            "software/goal/goal/running",
+        ),
         (
             GoalRefused::Kernel(Reason::EmptyMessage),
             "The goal was not changed: empty_message.",
-            "software/goal/goal/failed",
+            "software/goal/goal/unchanged",
         ),
         (
             GoalRefused::Stopped,
             "The goal was not changed: stopped.",
-            "software/goal/goal/failed",
+            "software/goal/goal/stopped",
         ),
     ];
     for (refused, expected, key) in cases {
@@ -265,6 +276,15 @@ async fn refusals_say_what_went_wrong() {
         assert!(done.error, "{refused:?}");
         assert_eq!(text(&done), expected);
         assert_eq!(said(&done).0, key);
+        let codes = ["goal_paused", "goal_running", "empty_message", "stopped"];
+        assert!(
+            said(&done)
+                .1
+                .iter()
+                .all(|(_, value)| !codes.contains(&value.as_str())),
+            "给人看的那一句不带原因码：{:?}",
+            said(&done)
+        );
     }
 }
 

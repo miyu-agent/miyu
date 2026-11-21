@@ -65,6 +65,7 @@ hello/
 | You see | What to do |
 |---|---|
 | Cannot pack: the manifest has no version | Write `version = "0.1.0"` in `[package]`. |
+| Cannot pack: package.toml:<line>: … | That line of the manifest is wrong, and the reason follows (for example `Unknown key: package.id`); it is the same sentence you get when installing. Fix the manifest as the reason says; see [The manifest](manifest.md). |
 | Cannot pack: … put enum on a type that is not a string | The parameters in a `tools/<name>.json` in the package put `enum` on an integer, number or boolean. Turn those choices into strings, or drop `enum` and say them in the description (see [Writing extensions](extensions.md)). |
 | A target system is needed | The manifest lists `targets`: run `miyu pkg pack --target <system>`, once per system. |
 | `[[slash]] needs the commands capability` (`bad_slash`) and other "needs a capability" errors | A package that brings `[[slash]]`, `[[search]]`, `[guard]`, `[after]` or `[[driver]]` needs the matching capability in `[process] capabilities` (see each section of [The manifest](manifest.md)). |

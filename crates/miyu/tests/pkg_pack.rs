@@ -166,3 +166,31 @@ async fn pkg_pack_leaves_the_data_root_alone() {
     assert_eq!(again.status.code(), Some(0), "{again:?}");
     assert!(out.join("xpkg-1.0.miyu").exists());
 }
+
+/// 施工 WD-6：清单写错了的，原因照界面语言说（同装包时 `package.toml:<行>: <哪里不对>`），不把英文的原话接在中文后面。
+#[tokio::test]
+async fn a_broken_manifest_is_said_in_the_interface_language() {
+    let home = Home::new();
+    let root = home.root.path().to_path_buf();
+    let cwd = home.dir.with_extension("pack-broken");
+    std::fs::create_dir_all(cwd.join("xpkg")).expect("建得了目录");
+    std::fs::write(
+        cwd.join("xpkg/package.toml"),
+        "[package]\nid = \"xpkg\"\nversion = \"1.0\"\n",
+    )
+    .expect("写得进");
+    for (lang, said) in [
+        (
+            "zh_CN.UTF-8",
+            "miyu: 无法打包：package.toml:2: 未知的键：package.id\n",
+        ),
+        (
+            "en_US.UTF-8",
+            "miyu: cannot pack: package.toml:2: Unknown key: package.id\n",
+        ),
+    ] {
+        let refused = run(&root, &cwd, lang, &["pkg", "pack", "xpkg"]).await;
+        assert_eq!(refused.status.code(), Some(1), "{refused:?}");
+        assert_eq!(stderr(&refused), said, "{lang}");
+    }
+}

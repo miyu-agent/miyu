@@ -74,6 +74,25 @@ async fn a_wakeup_says_when_and_shows_the_reason() {
     );
 }
 
+/// 施工 WD-6：端口答的那一项没有下一次的时刻（真端口不会这样答），是答错了，照用不了说，不说成「下次 」后面空着。
+#[tokio::test]
+async fn a_wakeup_without_a_time_is_not_said_as_set() {
+    let port = Fake::answering(Ok(ScheduleAnswer::Woken(Scheduled {
+        kind: Some("dynamic"),
+        recurring: false,
+        next: None,
+        ..item("t5", "at", "盯 CI")
+    })));
+    let done = run(
+        "schedule_next",
+        Some(&port),
+        json!({"delay_seconds": 1200, "reason": "x"}),
+    )
+    .await;
+    assert!(done.error, "{}", text(&done));
+    assert_eq!(said(&done).0, "software/loop/common/off");
+}
+
 #[tokio::test]
 async fn a_blank_prompt_keeps_the_old_one() {
     let port = Fake::answering(Ok(woken()));

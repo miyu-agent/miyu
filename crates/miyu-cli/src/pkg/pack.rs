@@ -1,5 +1,5 @@
 //! `miyu pkg pack`（施工 G-1，设计 `37-软件源.md` 第二节第 4 条）：照装的那一套读清单，把包文件夹打成 `.miyu`，印文件名、
-//! SHA-256、大小。不连核心：作者在自己的机器、CI 上打。
+//! SHA-256、大小。不连核心：作者在自己的机器、CI 上打。清单写错的照界面语言说（施工 WD-6），字从资源目录读。
 
 use std::io::Write;
 use std::path::Path;
@@ -8,8 +8,11 @@ use serde_json::json;
 
 use std::collections::BTreeMap;
 
+use miyu_config::Words;
 use miyu_config::package::{self, LOGO_MAX_BYTES, LOGO_MAX_SIDE, Target};
 use miyu_source::archive;
+use miyu_store::env::Env;
+use miyu_store::human::Human;
 use miyu_tool::picture::{Encoding, shrink_as};
 
 use super::joined;
@@ -91,8 +94,10 @@ fn packed(wanted: &Wanted<'_>, cwd: &Path, language: &Language) -> Result<Made, 
     }
     let text = std::fs::read_to_string(folder.join("package.toml"))
         .map_err(|_| language.unreadable(&folder.join("package.toml").display().to_string()))?;
-    let manifest =
-        package::read(&text).map_err(|problem| language.cannot_pack(&problem.to_string()))?;
+    let manifest = package::read(&text).map_err(|problem| {
+        let words = crate::ask::human(&Env::current(), language);
+        language.cannot_pack(&manifest_problem(&words, &problem))
+    })?;
     let version = manifest.version.ok_or_else(|| language.no_version())?;
     // 工具说明里不是各家都收的参数写法（施工 FX-10）：打包时就拦，不让它进软件源。
     if let Some(found) = miyu_tool::portable::scan(&folder).first() {
@@ -114,6 +119,21 @@ fn packed(wanted: &Wanted<'_>, cwd: &Path, language: &Language) -> Result<Made, 
     let packed = archive::pack_replacing(&folder, &id, &file, &replaced)
         .map_err(|error| language.cannot_pack(&error.to_string()))?;
     Ok(((packed, shrunk), id, version, target))
+}
+
+/// 清单哪里不对：照界面语言说，和核心装包时说的是同一句（`package-problems/<代码>`），知道第几行的照 `package.toml:<行>`
+/// 带上；字表读不到的照英文原话（施工 WD-6：原来一律把英文的 `line 2: … is not a known key` 接在「无法打包：」后面）。
+fn manifest_problem(words: &Human, problem: &package::Problem) -> String {
+    let said = Words::sentence(
+        words,
+        &format!("package-problems/{}", problem.code.as_str()),
+        &[("detail", &problem.detail)],
+    )
+    .unwrap_or_else(|| problem.message.clone());
+    match problem.line {
+        Some(line) => format!("package.toml:{line}: {said}"),
+        None => said,
+    }
 }
 
 /// 包的图标（施工 F-18 上，`[package] logo`）：没写的什么都不换；在上限以内的照原样；超了的缩到上限以内（PNG 照 PNG、WebP

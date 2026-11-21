@@ -396,10 +396,13 @@ async fn ask(
     .await
 }
 
-/// 核心拒了说的那一句：原话；挂不上的目录、挪不进回收站的接上它给的为什么。
+/// 核心拒了说的那一句：原话；挂不上的目录、挪不进回收站的接上它给的为什么。挂不上的目录那一句为什么照界面语言说
+/// （[`Language::folder_why`]，施工 WD-6）。
 fn refusal(error: &Value, language: &Language) -> Problem {
     let said = error["message"].as_str().unwrap_or_default();
+    let folder = error["data"]["reason"] == "folder_unavailable";
     match error["data"]["message"].as_str() {
+        Some(why) if folder => language.refused_because(said, &language.folder_why(why)),
         Some(why) => language.refused_because(said, why),
         None => language.refused(said),
     }

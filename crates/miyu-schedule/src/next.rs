@@ -66,7 +66,12 @@ impl Wakeup {
     fn answered(&self, answer: ScheduleAnswer, offset: UtcOffset, reason: &str) -> Done {
         match answer {
             ScheduleAnswer::Woken(item) => {
-                let next = item.next.map_or_else(String::new, |at| clock(at, offset));
+                // 没有下一次时刻的不是它要的（真端口定了时刻才答）：端口答错了，照用不了说，不说成「下次」后面空着
+                // （施工 WD-6）。
+                let Some(at) = item.next else {
+                    return self.common.off();
+                };
+                let next = clock(at, offset);
                 Done::ok(crate::texts::line(&self.set, &[("next", &next)]))
                     .said(PACKAGE.said("next/set", &[("next", &next), ("reason", reason)]))
             }

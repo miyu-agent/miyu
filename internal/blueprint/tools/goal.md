@@ -74,7 +74,11 @@
 | `goal/completed` | 目标已完成 | Goal complete |
 | `goal/blocked` | 目标受阻：{reason} | Goal blocked: {reason} |
 | `goal/too-early` | 第 {round} 轮，暂不能标记受阻 | Round {round}, too early to mark blocked |
-| `goal/failed` | 目标未更改：{reason} | Goal not changed: {reason} |
+| `goal/failed`（施工 WD-6 起不再发，留给以前的会话记录） | 目标未更改：{reason} | Goal not changed: {reason} |
+| `goal/paused` | 目标已暂停，未更改 | Goal is paused; not changed |
+| `goal/running` | 目标正在进行，未更改 | Goal is running; not changed |
+| `goal/stopped` | 调用已中断，目标未更改 | Call interrupted; goal not changed |
+| `goal/unchanged` | 目标未更改 | Goal not changed |
 | `common/bad-args` | 参数错误：{error} | Bad arguments: {error} |
 | `common/off` | 这个会话不支持长期目标 | Goals are not available in this session |
 

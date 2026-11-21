@@ -65,7 +65,7 @@
 ```text
 notes  日语笔记  12 篇  学日语的
 world  雾港  4 篇  来自 雾港世界观  自动想起  世界观
-usb    U 盘  3 篇（不可用：mounted folder /mnt/usb: No such file or directory (os error 2)）
+usb    U 盘  3 篇（不可用：目录 /mnt/usb 不存在）
 ```
 
 ```text
@@ -100,7 +100,7 @@ manuals  cat.pdf  第 3 页
 | 读不了（`list <库>`） | （无法读取：{原因}）：`too_large` 文件过大、`not_utf8` 不是 UTF-8 编码、`no_text` PDF 里没有文字（扫描件或只有图片）、`no_extractor` 缺少 miyu-extract、`extract_failed` 提取文字失败、`unreadable` 没有权限或读取失败 | (unreadable: {reason})：too large、not UTF-8、no text in the PDF (scanned or images only)、miyu-extract is missing、text extraction failed、no permission or read failed |
 | 没找到（`search`） | 未找到结果 | no matches |
 | 几篇 | {n} 篇 | 1 document、{n} documents |
-| 用不了 | （不可用：{why}） | (unavailable: {why}) |
+| 用不了 | （不可用：{why}）；`{why}` 是核心给的英文一句（`mounted folder <路径>: <系统的原话>`），中文界面换成中文说（施工 WD-6，`Language::folder_why`）：目录 <路径> 不存在、没有权限读取目录 <路径>、<路径> 不是目录，认不出的是「无法读取目录 <路径>，系统报错：<原话>」；`mount` 被拒时接在「无法挂载这个目录：」后面的也是这一句 | (unavailable: {why})，照核心给的原样 |
 | PDF 第几页 | 第 {page} 页 | page {page} |
 | 读的第几页 | （第 {page}/{pages} 页） | (page {page} of {pages}) |
 | 建好了 | 已创建 {kb} | created {kb} |

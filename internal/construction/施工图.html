@@ -1586,6 +1586,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC30"><span class="n">DOC-30</span>参考里对不上的 14 处照代码改<span class="st">…</span></a></li>
         <li><a class="step review" href="#sWD4"><span class="n">WD-4</span>核心字表清理成标准短句<span class="st">…</span></a></li>
         <li><a class="step review" href="#sWD5"><span class="n">WD-5</span>拒绝原因、命令行、出厂软件包的字清理<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sWD6"><span class="n">WD-6</span>四处给人看的字的程序问题<span class="st">…</span></a></li>
         <li><a class="step review" href="#sHLP1"><span class="n">HLP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
@@ -61977,6 +61978,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/WD-5-拒绝原因和命令行文案清理.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sWD6" aria-labelledby="h-sWD6">
+  <div class="sheet-head"><h2 id="h-sWD6"><span class="no">WD-6</span>四处给人看的字的程序问题：打包、知识库挂载、长期目标、循环</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">WD-5 真跑和读代码时发现四处：打包命令在中文界面报英文原因、知识库挂载失败把英文系统报错接在中文后面、长期目标失败时人看到英文原因码、循环没有下一次时刻时显示「下次 」后面空着。这一步每处先用测试证明修之前出现，再修。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-cli/src/pkg/pack.rs　crates/miyu-cli/src/kb.rs、language/kb.rs　crates/miyu-goal/src/goal.rs　crates/miyu-schedule/src/next.rs　resources/software/goal/human</span><span class="dir-note">WD-6</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>miyu pkg pack：清单的问题按界面语言从字表取核心装包时说的同一句，带上 package.toml 的行号</li>
+              <li>miyu kb mount、kb list：中文界面把核心给的英文原因换成中文（目录不存在、没有权限、不是目录），认不出的带系统原话</li>
+              <li>goal 工具：给人看的那一句按情形各说一句（已暂停、正在进行、调用已中断），不再把原因码填进去；给模型的字不变</li>
+              <li>schedule_next：没有下一次时刻的答复按端口答错处理，不再输出「下次 」</li>
+              <li>协议字段和给模型的字都没有改动，各个界面不用跟着改</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">给人看的那一句不带原因码、不接英文原话；给模型的字和协议字段不动</span><span class="rl">internal/blueprint/config.md「用词的规矩」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">WD-6</dd></div>
+        <div><dt>名称</dt><dd>四处给人看的字的程序问题：打包、知识库挂载、长期目标、循环</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-21</dd></div>
+        <div><dt>提交</dt><dd class="mono">WD-6</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>四个测试在没有改程序的树上全部失败，改完以后通过</span></li>
+        <li><span class="ok">✓</span><span>沙箱数据根里真跑 miyu pkg pack（五种情形）、miyu kb mount（五种情形）、kb list，输出抄在施工单里</span></li>
+        <li><span class="ok">✓</span><span>全仓测试、门禁十二项通过；文档检查问题 0 个</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/WD-6-四处给人看的字的程序问题.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

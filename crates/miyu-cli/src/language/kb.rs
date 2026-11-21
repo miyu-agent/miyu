@@ -57,8 +57,41 @@ impl Language {
         }
     }
 
+    /// 挂的目录为什么用不了：核心给的是英文一句（`mounted folder <路径>: <系统的原话>`，`miyu_store` 的 `mounted`）。中文界面
+    /// 换成中文说（施工 WD-6：原来把英文原样接在中文后面）：认得出是哪一种的（不存在、没有权限、不是目录，照系统的错误号
+    /// 分）说自己的话，认不出的带上系统的原话（「无法读取目录 <路径>，系统报错：<原话>」）；英文界面照原样。
+    pub(crate) fn folder_why(&self, why: &str) -> String {
+        if matches!(self, Language::English) {
+            return why.to_string();
+        }
+        if let Some(rest) = why.strip_prefix("mounted folder ") {
+            let Some((path, error)) = rest.rsplit_once(": ") else {
+                return format!("无法读取目录 {rest}");
+            };
+            return match os_error_kind(error) {
+                Some(std::io::ErrorKind::NotFound) => format!("目录 {path} 不存在"),
+                Some(std::io::ErrorKind::PermissionDenied) => {
+                    format!("没有权限读取目录 {path}")
+                }
+                Some(std::io::ErrorKind::NotADirectory) => format!("{path} 不是目录"),
+                _ => format!("无法读取目录 {path}，系统报错：{error}"),
+            };
+        }
+        if let Some(mount) = why
+            .strip_prefix("mount ")
+            .and_then(|rest| rest.strip_suffix(" is not an absolute path or ~/"))
+        {
+            return format!("{mount} 不是绝对路径，也不是以 ~/ 开头的路径");
+        }
+        if why == "mount starts with ~ but the home directory is not known" {
+            return "路径以 ~ 开头，但无法确定家目录".to_string();
+        }
+        why.to_string()
+    }
+
     /// 挂的目录用不了的库，接在那一行后面。
     pub(crate) fn kb_unavailable(&self, why: &str) -> String {
+        let why = &self.folder_why(why);
         match self {
             Language::Chinese => format!("（不可用：{why}）"),
             Language::English => format!(" (unavailable: {why})"),
@@ -209,4 +242,15 @@ impl Language {
             Language::English => format!("reindexed {kb}: {}", self.kb_documents(documents)),
         }
     }
+}
+
+/// 系统的原话末尾 `(os error <号>)` 是哪一种错：照这台机器的错误号认（命令行和核心在同一台机器上）。没有号的不知道。
+fn os_error_kind(error: &str) -> Option<std::io::ErrorKind> {
+    let code = error
+        .rsplit_once("(os error ")?
+        .1
+        .strip_suffix(')')?
+        .parse()
+        .ok()?;
+    Some(std::io::Error::from_raw_os_error(code).kind())
 }

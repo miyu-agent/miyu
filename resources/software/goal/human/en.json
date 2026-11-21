@@ -15,6 +15,10 @@
     "goal/blocked": "Goal blocked: {reason}",
     "goal/too-early": "Round {round}, too early to mark blocked",
     "goal/failed": "Goal not changed: {reason}",
+    "goal/paused": "Goal is paused; not changed",
+    "goal/running": "Goal is running; not changed",
+    "goal/stopped": "Call interrupted; goal not changed",
+    "goal/unchanged": "Goal not changed",
     "common/bad-args": "Bad arguments: {error}",
     "common/off": "Goals are not available in this session"
   }

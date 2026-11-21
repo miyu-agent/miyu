@@ -182,8 +182,15 @@ async fn mounting_a_folder_and_deleting_it_from_the_shell() {
     );
     let gone = run(&home, &cwd, &["mount", "gone", "nowhere"]).await;
     assert_eq!(gone.code, 1);
+    // 施工 WD-6：为什么挂不上照中文说，不把核心给的英文一句（mounted folder …: … (os error 2)）接在后面。
     assert!(
-        gone.err.starts_with("miyu: 无法挂载这个目录："),
+        gone.err.starts_with("miyu: 无法挂载这个目录：目录 ")
+            && gone.err.ends_with("nowhere 不存在\n"),
+        "{}",
+        gone.err
+    );
+    assert!(
+        !gone.err.contains("mounted folder") && !gone.err.contains("os error"),
         "{}",
         gone.err
     );
