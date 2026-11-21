@@ -11,7 +11,7 @@ fn shell_ran_from_the_drawing_round_trips() {
     match read_body("shell.ran", body) {
         Body::ShellRan(ran) => assert_eq!(
             ran,
-            ShellRan {
+            Box::new(ShellRan {
                 message: Seq::new(180).unwrap(),
                 exit: Some(0),
                 signal: None,
@@ -19,7 +19,7 @@ fn shell_ran_from_the_drawing_round_trips() {
                 text: " M a.rs\n".to_string(),
                 omitted: 0,
                 reason: None,
-            }
+            })
         ),
         other => panic!("{other:?}"),
     }

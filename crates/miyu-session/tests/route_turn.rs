@@ -107,11 +107,14 @@ fn model_changes(home: &Home, handle: &Handle) -> Vec<(String, Option<String>, b
     home.log(handle.id())
         .into_iter()
         .filter_map(|event| match event.body {
-            Body::PolicyChanged(PolicyChanged {
-                model: Some(model),
-                replaced,
-                ..
-            }) => Some((model, replaced, event.turn.is_some())),
+            Body::PolicyChanged(changed) => match *changed {
+                PolicyChanged {
+                    model: Some(model),
+                    replaced,
+                    ..
+                } => Some((model, replaced, event.turn.is_some())),
+                _ => None,
+            },
             _ => None,
         })
         .collect()

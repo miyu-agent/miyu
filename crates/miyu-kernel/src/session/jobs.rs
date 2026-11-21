@@ -111,7 +111,7 @@ impl Session {
             return self.reply_when_stored(id, vec![seq]);
         }
         let job = reported.job.clone();
-        let body = Body::ChildReported(reported);
+        let body = Body::ChildReported(Box::new(reported));
         let Ok(mut events) = self.arrive(at, by, Some(id.clone()), body) else {
             return vec![rejected(id, Reason::UnknownJob)];
         };
@@ -156,7 +156,7 @@ impl Session {
             });
             return Vec::new();
         }
-        match self.arrive(at, by, cause, Body::JobReported(reported)) {
+        match self.arrive(at, by, cause, Body::JobReported(Box::new(reported))) {
             Ok(events) => vec![Action::Append(events)],
             Err(_) => Vec::new(),
         }
@@ -263,7 +263,7 @@ impl Session {
                 chars: None,
                 tail: None,
             };
-            match self.arrive(at, By::Kernel, None, Body::JobReported(reported)) {
+            match self.arrive(at, By::Kernel, None, Body::JobReported(Box::new(reported))) {
                 Ok(recorded) => events.extend(recorded),
                 Err(error) => {
                     panic!("the kernel's own event failed the ledger, a kernel bug: {error}")

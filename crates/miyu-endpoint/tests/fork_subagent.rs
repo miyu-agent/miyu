@@ -98,7 +98,7 @@ fn reports(log: &[Event]) -> usize {
 /// 第一条（造会话）。
 fn created(log: &[Event]) -> miyu_kernel::event::SessionCreated {
     match &log[0].body {
-        Body::SessionCreated(created) => created.clone(),
+        Body::SessionCreated(created) => (**created).clone(),
         other => panic!("第 1 条应该是造会话：{other:?}"),
     }
 }

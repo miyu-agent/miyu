@@ -137,7 +137,7 @@ fn the_child_in_the_samples_is_the_one_the_parent_started() {
     let reports: Vec<(&Event, &ChildReported)> = events
         .iter()
         .filter_map(|event| match &event.body {
-            Body::ChildReported(reported) => Some((event, reported)),
+            Body::ChildReported(reported) => Some((event, &**reported)),
             _ => None,
         })
         .collect();

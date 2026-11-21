@@ -65,12 +65,12 @@ fn a_typed_command_is_sent_like_a_message_and_keeps_the_line() {
     );
     assert_eq!(
         events[0].body,
-        Body::MessageUser(MessageUser {
+        Body::MessageUser(Box::new(MessageUser {
             blocks: text("Review a.rs carefully."),
             venue: None,
             command: Some(review()),
             shell: false,
-        })
+        }))
     );
     let Body::MessageUser(message) = &events[0].body else {
         unreachable!()
@@ -120,7 +120,7 @@ fn resent(actions: &[Action]) -> MessageUser {
     appended_events(actions)
         .into_iter()
         .find_map(|event| match event.body {
-            Body::MessageUser(message) => Some(message),
+            Body::MessageUser(message) => Some(*message),
             _ => None,
         })
         .expect("重发了一句")

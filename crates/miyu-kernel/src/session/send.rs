@@ -71,12 +71,12 @@ impl Session {
             return self.elsewhere_says(id, by, at, blocks, waker);
         }
         let ambient = venue.as_ref().is_some_and(|venue| venue.ambient);
-        let body = Body::MessageUser(MessageUser {
+        let body = Body::MessageUser(Box::new(MessageUser {
             blocks,
             venue,
             command,
             shell,
-        });
+        }));
         if ambient {
             // 旁听的：只记下，不开回合，回合进行中也不排进这一轮（施工 O-13 上）。
             let message = self.record_outside(at, by, Some(id.clone()), body);

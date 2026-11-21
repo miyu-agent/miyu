@@ -19,7 +19,7 @@ pub(crate) fn rans(history: &History) -> BTreeMap<Seq, &ShellRan> {
         .events()
         .iter()
         .filter_map(|event| match &event.body {
-            Body::ShellRan(ran) => Some((ran.message, ran)),
+            Body::ShellRan(ran) => Some((ran.message, &**ran)),
             _ => None,
         })
         .collect()

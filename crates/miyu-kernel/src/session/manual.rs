@@ -57,13 +57,13 @@ impl Session {
         upto: Seq,
         instructions: Option<String>,
     ) -> Event {
-        let body = Body::TurnStarted(TurnStarted {
+        let body = Body::TurnStarted(Box::new(TurnStarted {
             trigger: None,
             triggers: Vec::new(),
             cwd: Some(self.environment.cwd.clone()),
             dirs: self.environment.dirs.clone(),
             tail: None,
-        });
+        }));
         let started = self.record(at, By::Kernel, Some(id.clone()), body);
         let mut turn = self.new_turn(started.seq, Some(id.clone()), Stage::Ready);
         turn.manual = Some(Manual { upto, instructions });

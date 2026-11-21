@@ -47,7 +47,7 @@ fn said_hello() -> Reply {
 fn called(log: &[Event]) -> Vec<&ModelCalled> {
     log.iter()
         .filter_map(|event| match &event.body {
-            Body::ModelCalled(called) if called.purpose.is_none() => Some(called),
+            Body::ModelCalled(called) if called.purpose.is_none() => Some(&**called),
             _ => None,
         })
         .collect()

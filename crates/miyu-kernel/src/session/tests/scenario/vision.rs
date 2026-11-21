@@ -62,7 +62,7 @@ fn descriptions(stage: &Stage) -> Vec<(&Event, &ImageDescribed)> {
         .log()
         .iter()
         .filter_map(|event| match &event.body {
-            Body::ImageDescribed(described) => Some((event, described)),
+            Body::ImageDescribed(described) => Some((event, &**described)),
             _ => None,
         })
         .collect()

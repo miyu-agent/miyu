@@ -99,7 +99,7 @@ async fn made_up_effects_are_dropped_and_logged_and_the_rest_of_the_result_stand
         .log(&session)
         .into_iter()
         .filter_map(|event| match event.body {
-            Body::ToolResult(result) => Some(result),
+            Body::ToolResult(result) => Some(*result),
             _ => None,
         })
         .collect();

@@ -65,7 +65,7 @@ impl Session {
                 display_name: Default::default(),
                 detail: None,
             };
-            events.push(self.stamped_in(at, turn, id, Body::ToolResult(result)));
+            events.push(self.stamped_in(at, turn, id, Body::ToolResult(Box::new(result))));
         }
         let ended = TurnEnded {
             reason: EndReason::Forked,

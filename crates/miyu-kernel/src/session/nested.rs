@@ -370,7 +370,7 @@ impl Session {
             status: outcome.status.clone(),
             reason: outcome.reason.clone(),
         };
-        let body = Body::ToolNested(ToolNested {
+        let body = Body::ToolNested(Box::new(ToolNested {
             id: id.clone(),
             name,
             args,
@@ -379,7 +379,7 @@ impl Session {
             result,
             bytes,
             reason: outcome.reason,
-        });
+        }));
         let event = match self.turn_of(id.parent()) {
             Some((_, cause)) => self.record(at, By::Kernel, cause, body),
             None => self.record_outside(at, By::Kernel, None, body),

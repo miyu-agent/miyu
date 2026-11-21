@@ -220,17 +220,17 @@ fn compact_rereading(log: &mut Vec<Event>, restored: Vec<RestoredFile>) {
     };
     log.push(event(
         turn.started(),
-        Body::TurnStarted(TurnStarted {
+        Body::TurnStarted(Box::new(TurnStarted {
             trigger: Some(upto),
             triggers: Vec::new(),
             cwd: None,
             dirs: Vec::new(),
             tail: None,
-        }),
+        })),
     ));
     log.push(event(
         upto.next().next(),
-        Body::ContextCompacted(ContextCompacted {
+        Body::ContextCompacted(Box::new(ContextCompacted {
             upto,
             summary: "S".to_string(),
             trigger: None,
@@ -240,7 +240,7 @@ fn compact_rereading(log: &mut Vec<Event>, restored: Vec<RestoredFile>) {
             refills: None,
             prepared: false,
             truncated: None,
-        }),
+        })),
     ));
     log.push(event(
         upto.next().next().next(),

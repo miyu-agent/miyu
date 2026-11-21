@@ -11,7 +11,7 @@ fn rans(s: &Stage) -> Vec<(Seq, ShellRan)> {
     s.log()
         .iter()
         .filter_map(|event| match &event.body {
-            Body::ShellRan(ran) => Some((event.seq, ran.clone())),
+            Body::ShellRan(ran) => Some((event.seq, (**ran).clone())),
             _ => None,
         })
         .collect()

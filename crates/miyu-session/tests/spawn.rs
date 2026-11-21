@@ -241,7 +241,7 @@ async fn one_turn(home: &Home, handle: &Handle, turns: usize) -> Vec<miyu_kernel
 fn results(log: &[miyu_kernel::event::Event]) -> Vec<&ToolResult> {
     log.iter()
         .filter_map(|event| match &event.body {
-            Body::ToolResult(result) => Some(result),
+            Body::ToolResult(result) => Some(&**result),
             _ => None,
         })
         .collect()

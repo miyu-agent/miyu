@@ -81,10 +81,10 @@ fn the_turn_after_a_swap_asks_with_the_new_policy() {
     let changed = &stage.log()[10];
     assert_eq!(
         changed.body,
-        Body::PolicyChanged(PolicyChanged {
+        Body::PolicyChanged(Box::new(PolicyChanged {
             policy: Some(ContentHash::parse(NEW).unwrap()),
             ..PolicyChanged::default()
-        })
+        }))
     );
     assert_eq!(changed.cause, stage.log()[9].cause, "cause 是这一轮的");
     stage.say("还在吗");

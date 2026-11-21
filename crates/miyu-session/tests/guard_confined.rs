@@ -104,7 +104,7 @@ async fn turn(home: &Home, handle: &Handle) -> Vec<Event> {
 fn results(log: &[Event]) -> Vec<ToolResult> {
     log.iter()
         .filter_map(|event| match &event.body {
-            Body::ToolResult(result) => Some(result.clone()),
+            Body::ToolResult(result) => Some((**result).clone()),
             _ => None,
         })
         .collect()

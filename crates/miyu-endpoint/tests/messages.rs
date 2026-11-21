@@ -156,7 +156,7 @@ fn started_child(log: &[Event]) -> SessionId {
 fn reports(log: &[Event]) -> Vec<&ChildReported> {
     log.iter()
         .filter_map(|event| match &event.body {
-            Body::ChildReported(reported) => Some(reported),
+            Body::ChildReported(reported) => Some(&**reported),
             _ => None,
         })
         .collect()

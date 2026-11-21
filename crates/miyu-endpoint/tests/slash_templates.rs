@@ -5,7 +5,7 @@
 use serde_json::{Value, json};
 
 use miyu_kernel::block::Block;
-use miyu_kernel::event::{Body, Event, MessageUser, TypedCommand};
+use miyu_kernel::event::{Body, Event, TypedCommand};
 use miyu_session::testkit::{Play, Script};
 use miyu_tool::Catalog;
 
@@ -22,10 +22,9 @@ async fn run(client: &mut Client, id: &str, session: &str, text: &str) -> Value 
 fn said(log: &[Event]) -> Vec<(String, Option<TypedCommand>)> {
     log.iter()
         .filter_map(|event| match &event.body {
-            Body::MessageUser(MessageUser {
-                blocks, command, ..
-            }) => Some((
-                blocks
+            Body::MessageUser(message) => Some((
+                message
+                    .blocks
                     .iter()
                     .filter_map(|block| match block {
                         Block::Text(text) => Some(text.text.clone()),
@@ -33,7 +32,7 @@ fn said(log: &[Event]) -> Vec<(String, Option<TypedCommand>)> {
                     })
                     .collect::<Vec<_>>()
                     .join(""),
-                command.clone(),
+                message.command.clone(),
             )),
             _ => None,
         })

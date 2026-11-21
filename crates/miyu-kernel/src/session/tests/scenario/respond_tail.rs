@@ -27,7 +27,7 @@ fn started(s: &Stage) -> Vec<TurnStarted> {
     s.log()
         .iter()
         .filter_map(|event| match &event.body {
-            Body::TurnStarted(started) => Some(started.clone()),
+            Body::TurnStarted(started) => Some((**started).clone()),
             _ => None,
         })
         .collect()

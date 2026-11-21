@@ -9,7 +9,7 @@ const CALLED: &str = r#"{"seen":44,"endpoint":"deepseek","model":"deepseek-v4","
 
 fn called(body: &str) -> ModelCalled {
     match read_body("model.called", body) {
-        Body::ModelCalled(called) => called,
+        Body::ModelCalled(called) => *called,
         other => panic!("应该认得出 model.called：{other:?}"),
     }
 }
@@ -119,7 +119,7 @@ fn reasoning_tokens_round_trip_and_old_logs_without_them_still_read() {
     );
     let line = crate::test_support::event_line("model.called", &counted);
     let read = crate::event::Event::from_line(&line).expect("读得进");
-    assert_eq!(read.body, crate::event::Body::ModelCalled(old));
+    assert_eq!(read.body, crate::event::Body::ModelCalled(Box::new(old)));
 }
 
 #[test]

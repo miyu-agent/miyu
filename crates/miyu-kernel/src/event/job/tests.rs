@@ -16,7 +16,7 @@ fn job_reported_from_the_drawing_round_trips() {
     match read_body("job.reported", &exited) {
         Body::JobReported(reported) => assert_eq!(
             reported,
-            JobReported {
+            Box::new(JobReported {
                 job: JobId::parse("j1").unwrap(),
                 reason: JobReason::Exited,
                 exit_code: Some(0),
@@ -26,7 +26,7 @@ fn job_reported_from_the_drawing_round_trips() {
                 output: Some(ContentHash::parse(OUTPUT).unwrap()),
                 chars: Some(48213),
                 tail: None,
-            }
+            })
         ),
         other => panic!("{other:?}"),
     }
@@ -98,7 +98,7 @@ fn child_reported_from_the_drawing_round_trips() {
     match read_body("child.reported", &done) {
         Body::ChildReported(reported) => assert_eq!(
             reported,
-            ChildReported {
+            Box::new(ChildReported {
                 job: JobId::parse("j2").unwrap(),
                 session: SessionId::parse(CHILD).unwrap(),
                 reason: ChildReason::Done,
@@ -106,7 +106,7 @@ fn child_reported_from_the_drawing_round_trips() {
                 truncated: false,
                 person: false,
                 by_model: false,
-            }
+            })
         ),
         other => panic!("{other:?}"),
     }

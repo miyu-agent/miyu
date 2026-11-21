@@ -27,7 +27,7 @@ fn read(seq: u64, path: &str, content: &[u8]) -> Event {
         turn: Some(TurnId::new(Seq::new(1).unwrap())),
         by: By::Tool(Tool { call_id }),
         cause: None,
-        body: Body::ToolResult(ToolResult {
+        body: Body::ToolResult(Box::new(ToolResult {
             call_id,
             status: miyu_kernel::event::ToolStatus::Ok,
             blocks: Vec::new(),
@@ -44,7 +44,7 @@ fn read(seq: u64, path: &str, content: &[u8]) -> Event {
             sent: Vec::new(),
             display_name: Default::default(),
             detail: None,
-        }),
+        })),
     }
 }
 

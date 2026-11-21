@@ -289,7 +289,7 @@ impl Appended {
                 body: ext.body,
             },
             Appended::Recalled(recalled) => Body::VenueRecalled(recalled),
-            Appended::Delivered(delivered) => Body::VenueDelivered(delivered),
+            Appended::Delivered(delivered) => Body::VenueDelivered(Box::new(delivered)),
         }
     }
 }

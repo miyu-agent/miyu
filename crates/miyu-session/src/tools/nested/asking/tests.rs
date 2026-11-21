@@ -11,28 +11,28 @@ fn shell() -> CallId {
 }
 
 fn requested(n: u32) -> Body {
-    Body::ApprovalRequested(ApprovalRequested {
+    Body::ApprovalRequested(Box::new(ApprovalRequested {
         call_id: shell(),
         access: Access::Network,
         rule: None,
         detail: None,
         nested: Some(n),
         expires_at: None,
-    })
+    }))
 }
 
 fn decided(n: Option<u32>) -> Body {
-    Body::ApprovalDecided(ApprovalDecided {
+    Body::ApprovalDecided(Box::new(ApprovalDecided {
         call_id: shell(),
         decision: Decision::Once,
         reason: None,
         attachments: Vec::new(),
         nested: n,
-    })
+    }))
 }
 
 fn settled(n: u32) -> Body {
-    Body::ToolNested(ToolNested {
+    Body::ToolNested(Box::new(ToolNested {
         id: NestedId::parse(&format!("call_6_1#{n}")).unwrap(),
         name: "fetch".to_string(),
         args: "{}".to_string(),
@@ -41,7 +41,7 @@ fn settled(n: u32) -> Body {
         result: None,
         bytes: None,
         reason: None,
-    })
+    }))
 }
 
 #[test]
@@ -70,7 +70,7 @@ fn the_shell_ending_ends_the_wait_and_direct_calls_are_not_counted() {
     let mut asking = Asking::default();
     assert_eq!(asking.note(&decided(None)), None, "直接调用的决定不算");
     asking.note(&requested(1));
-    let ended = Body::ToolResult(miyu_kernel::event::ToolResult {
+    let ended = Body::ToolResult(Box::new(miyu_kernel::event::ToolResult {
         call_id: shell(),
         status: miyu_kernel::event::ToolStatus::Ok,
         blocks: Vec::new(),
@@ -81,6 +81,6 @@ fn the_shell_ending_ends_the_wait_and_direct_calls_are_not_counted() {
         sent: Vec::new(),
         display_name: std::collections::BTreeMap::new(),
         detail: None,
-    });
+    }));
     assert_eq!(asking.note(&ended), Some((shell(), false)));
 }

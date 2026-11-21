@@ -58,7 +58,7 @@ fn results(home: &Home, handle: &Handle) -> Vec<ToolResult> {
     home.log(handle.id())
         .into_iter()
         .filter_map(|event| match event.body {
-            Body::ToolResult(result) => Some(result),
+            Body::ToolResult(result) => Some(*result),
             _ => None,
         })
         .collect()

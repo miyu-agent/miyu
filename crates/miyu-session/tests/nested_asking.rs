@@ -42,7 +42,7 @@ async fn scripted(home: &Home, attended: bool) -> miyu_session::Handle {
 fn requests(log: &[Event]) -> Vec<ApprovalRequested> {
     log.iter()
         .filter_map(|event| match &event.body {
-            Body::ApprovalRequested(request) => Some(request.clone()),
+            Body::ApprovalRequested(request) => Some((**request).clone()),
             _ => None,
         })
         .collect()

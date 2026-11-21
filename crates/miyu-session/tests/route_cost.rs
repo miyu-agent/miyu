@@ -40,7 +40,7 @@ async fn called(price: &str) -> ModelCalled {
     home.log(handle.id())
         .into_iter()
         .find_map(|event| match event.body {
-            Body::ModelCalled(called) => Some(called),
+            Body::ModelCalled(called) => Some(*called),
             _ => None,
         })
         .expect("记了 model.called")

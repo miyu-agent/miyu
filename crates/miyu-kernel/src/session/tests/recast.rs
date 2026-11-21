@@ -5,7 +5,7 @@
 use super::compact::{after_one_turn, compaction, loaded, one_turn_log, rejected_reply};
 use super::load::Logged;
 use super::*;
-use crate::event::{PolicyChanged, TurnStarted};
+use crate::event::PolicyChanged;
 
 /// 编号是 `n` 的命令：主人换人格 `persona`（外层没有是不换）、预设 `preset`。
 fn recast(n: u64, persona: Option<Option<&str>>, preset: Option<&str>) -> Input {
@@ -28,17 +28,17 @@ fn a_change_is_recorded_then_compacted_and_answered_once_both_are_stored() {
     assert_eq!(appended(&actions), seqs(&[9, 10]));
     assert_eq!(
         events[0].body,
-        Body::PolicyChanged(PolicyChanged {
+        Body::PolicyChanged(Box::new(PolicyChanged {
             persona: Some("miyu".to_string()),
             preset: Some("chat".to_string()),
             ..PolicyChanged::default()
-        })
+        }))
     );
     assert_eq!((&events[0].by, &events[0].cause), (&person(), &Some(id(3))));
     assert!(
         matches!(
             &events[1].body,
-            Body::TurnStarted(TurnStarted { trigger: None, .. })
+            Body::TurnStarted(turn) if turn.trigger.is_none()
         ),
         "单开一轮压缩：{:?}",
         events[1].body
@@ -70,10 +70,10 @@ fn nothing_to_compact_records_only_the_change() {
     let actions = session.handle(recast(4, Some(None), None));
     assert_eq!(
         appended_events(&actions)[0].body,
-        Body::PolicyChanged(PolicyChanged {
+        Body::PolicyChanged(Box::new(PolicyChanged {
             persona: Some(String::new()),
             ..PolicyChanged::default()
-        }),
+        })),
         "换成无人格写空的"
     );
     assert_eq!(session.persona(), None);

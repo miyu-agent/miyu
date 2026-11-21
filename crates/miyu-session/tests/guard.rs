@@ -102,7 +102,7 @@ async fn turn(handle: &Handle) {
 fn first_result(log: &[Event]) -> (ToolResult, By) {
     log.iter()
         .find_map(|event| match &event.body {
-            Body::ToolResult(result) => Some((result.clone(), event.by.clone())),
+            Body::ToolResult(result) => Some(((**result).clone(), event.by.clone())),
             _ => None,
         })
         .expect("有一条工具结果")
@@ -388,7 +388,7 @@ async fn trash_is_judged_on_the_link_itself() {
         .log(handle.id())
         .into_iter()
         .filter_map(|event| match event.body {
-            Body::ToolResult(result) => Some(result),
+            Body::ToolResult(result) => Some(*result),
             _ => None,
         })
         .collect();

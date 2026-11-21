@@ -71,7 +71,7 @@ async fn shell_as(
     home.log(handle.id())
         .into_iter()
         .find_map(|event| match event.body {
-            Body::ToolResult(result) => Some(result),
+            Body::ToolResult(result) => Some(*result),
             _ => None,
         })
         .expect("有一条工具结果")

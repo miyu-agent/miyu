@@ -104,7 +104,7 @@ fn result_of(call_id: CallId) -> Event {
         turn: None,
         by: By::Tool(Tool { call_id }),
         cause: cause(),
-        body: Body::ToolResult(ToolResult {
+        body: Body::ToolResult(Box::new(ToolResult {
             call_id,
             status: ToolStatus::Ok,
             blocks: Vec::new(),
@@ -115,7 +115,7 @@ fn result_of(call_id: CallId) -> Event {
             sent: Vec::new(),
             display_name: Default::default(),
             detail: None,
-        }),
+        })),
     }
 }
 

@@ -17,9 +17,7 @@ use super::meta::Meta;
 use super::policy::Policy;
 use super::recent::Recent;
 use super::turn::Stage;
-use crate::event::{
-    Body, EndReason, Event, Permission, PolicyChanged, ShellReason, ToolStatus, TurnJoined,
-};
+use crate::event::{Body, EndReason, Event, Permission, ShellReason, ToolStatus, TurnJoined};
 use crate::facts::Environment;
 use crate::id::{CommandId, Seq, SessionId};
 use crate::ledger::LedgerError;
@@ -378,10 +376,9 @@ impl Replay {
                 self.oneshot = created.oneshot;
                 self.dream = created.dream.is_some();
             }
-            Body::PolicyChanged(PolicyChanged {
-                permission: Some(permission),
-                ..
-            }) => self.permission = Some(permission.clone()),
+            Body::PolicyChanged(changed) if changed.permission.is_some() => {
+                self.permission.clone_from(&changed.permission);
+            }
             Body::TurnStarted(started) => {
                 if self.resumes(started.trigger) {
                     self.resumed = self.resumed.saturating_add(1);

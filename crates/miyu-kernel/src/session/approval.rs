@@ -121,7 +121,12 @@ impl Session {
                 )]
             }
             Settled::Asked(by, request) => {
-                vec![self.record(at, by, cause.clone(), Body::ApprovalRequested(request))]
+                vec![self.record(
+                    at,
+                    by,
+                    cause.clone(),
+                    Body::ApprovalRequested(Box::new(request)),
+                )]
             }
         };
         if finished {
@@ -162,7 +167,12 @@ impl Session {
             attachments: Vec::new(),
             nested: None,
         };
-        let decided = self.record(at, By::Kernel, cause.clone(), Body::ApprovalDecided(body));
+        let decided = self.record(
+            at,
+            By::Kernel,
+            cause.clone(),
+            Body::ApprovalDecided(Box::new(body)),
+        );
         let mut events = vec![decided];
         events.extend(self.denied_by(at, (By::Kernel, cause), call_id, (worded, Vec::new())));
         let mut actions = vec![Action::Append(events)];
@@ -222,7 +232,7 @@ impl Session {
             at,
             by.clone(),
             Some(id.clone()),
-            Body::ApprovalDecided(body),
+            Body::ApprovalDecided(Box::new(body)),
         );
         let seq = decided.seq;
         let mut events = vec![decided];

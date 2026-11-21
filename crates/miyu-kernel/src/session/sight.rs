@@ -114,12 +114,12 @@ impl Session {
         let mut events = Vec::new();
         match seen {
             Some((model, text)) if !self.sight.described.contains_key(&blob) => {
-                let body = Body::ImageDescribed(ImageDescribed {
+                let body = Body::ImageDescribed(Box::new(ImageDescribed {
                     blob: blob.clone(),
                     endpoint: model.endpoint,
                     model: model.model,
                     text,
-                });
+                }));
                 events.push(self.record_aside(at, cause, body));
             }
             Some(_) => {}

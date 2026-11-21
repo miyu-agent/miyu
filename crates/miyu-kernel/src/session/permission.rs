@@ -40,11 +40,11 @@ impl Session {
             return vec![accepted(id, Vec::new())];
         }
         // 带上换以前人设的那一级（施工 PL-1）：头照它画这一条以前的几句。
-        let body = Body::PolicyChanged(PolicyChanged {
+        let body = Body::PolicyChanged(Box::new(PolicyChanged {
             permission: Some(new.clone()),
             from: Some(self.permission.clone()),
             ..PolicyChanged::default()
-        });
+        }));
         let event = self.record(at, by, Some(id.clone()), body);
         self.accept(id, vec![event.seq]);
         let mut events = vec![event];

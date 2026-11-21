@@ -30,27 +30,27 @@ fn call(n: u64) -> CallId {
 fn asked(n: u64, rule: Option<&str>) -> Event {
     event(
         n,
-        Body::ApprovalRequested(ApprovalRequested {
+        Body::ApprovalRequested(Box::new(ApprovalRequested {
             call_id: call(n),
             access: Access::Write,
             rule: rule.map(raw),
             detail: None,
             nested: None,
             expires_at: None,
-        }),
+        })),
     )
 }
 
 fn decided(n: u64, asked: u64, decision: Decision) -> Event {
     event(
         n,
-        Body::ApprovalDecided(ApprovalDecided {
+        Body::ApprovalDecided(Box::new(ApprovalDecided {
             call_id: call(asked),
             decision,
             reason: None,
             attachments: Vec::new(),
             nested: None,
-        }),
+        })),
     )
 }
 

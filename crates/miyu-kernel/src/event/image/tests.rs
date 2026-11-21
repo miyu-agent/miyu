@@ -12,7 +12,7 @@ fn the_description_from_the_drawing_round_trips() {
     match read_body("image.described", BODY) {
         Body::ImageDescribed(described) => assert_eq!(
             described,
-            ImageDescribed {
+            Box::new(ImageDescribed {
                 blob: ContentHash::parse(
                     "sha256:5f2c8e1a9b3d7c4e6f0a2b8d1c5e9f3a7b4d6c0e8f2a1b5c9d3e7f4a6b0c8d2e"
                 )
@@ -20,7 +20,7 @@ fn the_description_from_the_drawing_round_trips() {
                 endpoint: ProviderId::parse("bigmodel").unwrap(),
                 model: ModelName::parse("glm-5.3-flash").unwrap(),
                 text: "A terminal window.\nThe last line reads: test result: FAILED.".to_string(),
-            }
+            })
         ),
         other => panic!("{other:?}"),
     }

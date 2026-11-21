@@ -96,7 +96,7 @@ impl Watch {
             turn: None,
             by: person(),
             cause: Some(id(0)),
-            body: Body::SessionCreated(created),
+            body: Body::SessionCreated(Box::new(created)),
         }
     }
 }

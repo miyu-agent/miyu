@@ -326,10 +326,10 @@ impl Session {
         if let Some(turn) = self.turn.as_mut() {
             turn.limit = self.policy.current.steps_for(turn.asked.as_ref());
         }
-        let body = Body::PolicyChanged(PolicyChanged {
+        let body = Body::PolicyChanged(Box::new(PolicyChanged {
             policy: Some(hash),
             ..PolicyChanged::default()
-        });
+        }));
         let mut events = vec![self.record(at, By::Kernel, cause.clone(), body)];
         if let Some(fact) = self.policy.facts.reminder(&self.history) {
             events.push(self.record(at, By::Kernel, cause, Body::ContextInjected(fact)));

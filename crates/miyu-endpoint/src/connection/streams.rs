@@ -76,7 +76,7 @@ async fn created_of(
         .ok()?
         .ok()?;
     match first.body {
-        miyu_kernel::event::Body::SessionCreated(created) => Some(created),
+        miyu_kernel::event::Body::SessionCreated(created) => Some(*created),
         _ => None,
     }
 }

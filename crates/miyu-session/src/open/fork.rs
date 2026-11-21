@@ -346,7 +346,7 @@ fn read_parent<H: Hand>(
     read_range(dir, Seq::FIRST, None, |events| {
         if created.is_none() {
             let first = match events.first().map(|event| &event.body) {
-                Some(Body::SessionCreated(created)) => Some(created.clone()),
+                Some(Body::SessionCreated(created)) => Some((**created).clone()),
                 _ => None,
             };
             if first.as_ref().is_some_and(|first| !refused(first, call)) {

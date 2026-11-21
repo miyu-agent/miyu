@@ -173,7 +173,7 @@ pub fn called(home: &Home, handle: &Handle) -> Vec<ModelCalled> {
     home.log(handle.id())
         .into_iter()
         .filter_map(|event| match event.body {
-            Body::ModelCalled(called) => Some(called),
+            Body::ModelCalled(called) => Some(*called),
             _ => None,
         })
         .collect()

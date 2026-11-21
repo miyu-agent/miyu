@@ -39,7 +39,7 @@ pub async fn talk(handle: &miyu_session::Handle, id: &str, words: &str) {
 pub fn reports(log: &[Event]) -> Vec<(&Event, &JobReported)> {
     log.iter()
         .filter_map(|event| match &event.body {
-            Body::JobReported(reported) => Some((event, reported)),
+            Body::JobReported(reported) => Some((event, &**reported)),
             _ => None,
         })
         .collect()
@@ -49,7 +49,7 @@ pub fn reports(log: &[Event]) -> Vec<(&Event, &JobReported)> {
 pub fn results(log: &[Event]) -> Vec<&ToolResult> {
     log.iter()
         .filter_map(|event| match &event.body {
-            Body::ToolResult(result) => Some(result),
+            Body::ToolResult(result) => Some(&**result),
             _ => None,
         })
         .collect()

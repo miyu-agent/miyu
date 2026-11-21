@@ -49,7 +49,7 @@ async fn ran(home: &Home, (read_only, attended): (bool, bool), command: &str) ->
 fn requests(log: &[Event]) -> Vec<ApprovalRequested> {
     log.iter()
         .filter_map(|event| match &event.body {
-            Body::ApprovalRequested(request) => Some(request.clone()),
+            Body::ApprovalRequested(request) => Some((**request).clone()),
             _ => None,
         })
         .collect()
@@ -58,7 +58,7 @@ fn requests(log: &[Event]) -> Vec<ApprovalRequested> {
 fn results(log: &[Event]) -> Vec<ToolResult> {
     log.iter()
         .filter_map(|event| match &event.body {
-            Body::ToolResult(result) => Some(result.clone()),
+            Body::ToolResult(result) => Some((**result).clone()),
             _ => None,
         })
         .collect()

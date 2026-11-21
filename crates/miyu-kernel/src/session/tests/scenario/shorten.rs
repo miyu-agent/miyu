@@ -111,7 +111,7 @@ fn last_compaction(stage: &Stage) -> Option<crate::event::ContextCompacted> {
         .iter()
         .rev()
         .find_map(|event| match &event.body {
-            Body::ContextCompacted(compacted) => Some(compacted.clone()),
+            Body::ContextCompacted(compacted) => Some((**compacted).clone()),
             _ => None,
         })
 }

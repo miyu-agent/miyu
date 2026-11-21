@@ -8,7 +8,7 @@ use super::compaction::{compacting, line};
 use super::reports::{CHILD, dispatched};
 use super::*;
 use crate::block::{Image, Text};
-use crate::event::{ChildReason, MessageUser};
+use crate::event::ChildReason;
 use crate::id::{ContentHash, MediaType};
 
 /// 一段话写成的一块文字。
@@ -43,12 +43,9 @@ fn event(s: &Stage, n: u64) -> &Event {
 /// 第 `n` 条人的话的内容块。
 fn said(s: &Stage, n: u64) -> &[Block] {
     match &event(s, n).body {
-        Body::MessageUser(MessageUser {
-            blocks,
-            venue: None,
-            command: None,
-            ..
-        }) => blocks,
+        Body::MessageUser(message) if message.venue.is_none() && message.command.is_none() => {
+            &message.blocks
+        }
         body => panic!("第 {n} 条应该是 message.user：{body:?}"),
     }
 }

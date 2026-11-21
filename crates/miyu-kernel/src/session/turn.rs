@@ -221,13 +221,13 @@ impl Session {
         cause: Option<CommandId>,
         tail: Option<String>,
     ) -> Vec<Event> {
-        let body = Body::TurnStarted(TurnStarted {
+        let body = Body::TurnStarted(Box::new(TurnStarted {
             trigger: Some(trigger),
             triggers,
             cwd: Some(self.environment.cwd.clone()),
             dirs: self.environment.dirs.clone(),
             tail: tail.clone(),
-        });
+        }));
         let started = self.record(at, By::Kernel, cause.clone(), body);
         let opened = Stage::Opening {
             opened: started.seq,

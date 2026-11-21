@@ -42,11 +42,11 @@ impl Session {
             self.recent.insert(id.clone(), Vec::new());
             return vec![accepted(id, Vec::new())];
         }
-        let body = Body::PolicyChanged(PolicyChanged {
+        let body = Body::PolicyChanged(Box::new(PolicyChanged {
             persona,
             preset,
             ..PolicyChanged::default()
-        });
+        }));
         let mut events = vec![self.record(at, by, Some(id.clone()), body)];
         if let Some(upto) = self.manual_upto() {
             events.push(self.open_manual(&id, at, upto, None));

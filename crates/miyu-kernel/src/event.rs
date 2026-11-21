@@ -93,14 +93,19 @@ pub struct Event {
     pub body: Body,
 }
 
-/// 事件的种类：每一种写一行，类型和它在 JSON 里的名字。
+/// 事件的种类：每一种写一行，内容的类型和它在 JSON 里的名字。
 /// `Body` 本身、`kind`、按种类读、写出去，都照这一张表生成，加一种只加一行。
+///
+/// 内容大过 80 字节的几种装在盒子里（施工 LW-10 上）：枚举照最大的一种占地方，`session.created` 一种就把每一条事件（连
+/// `turn.ended` 这样 24 字节的）撑到 528 字节；有效历史整条留着事件，一千条的有效历史光这一格就多占三百多 KB。人说的话
+/// （`message.user`，带着场所的那一格有 328 字节）、回合的开头也装盒子：它们装盒子以后和原来一样大，别的每一条都小了。
+/// 读写的 JSON 不变，盒子只是放在哪。`tests.rs` 的 `an_event_stays_small` 守着大小。
 macro_rules! bodies {
-    ($($(#[$doc:meta])* $variant:ident = $kind:literal,)+) => {
+    ($($(#[$doc:meta])* $variant:ident($ty:ty) = $kind:literal,)+) => {
         /// 事件的种类，连同它自己的内容。
         #[derive(Debug, Clone, PartialEq, Eq)]
         pub enum Body {
-            $($(#[$doc])* $variant($variant),)+
+            $($(#[$doc])* $variant($ty),)+
             /// 不认识的种类，包括不认识的 `ext.*`：`body` 原样留着，投影跳过它。
             Unknown {
                 /// 外壳里写的种类名。
@@ -127,7 +132,7 @@ macro_rules! bodies {
             /// 同 [`Body::read`]。
             fn read_from<'de, D: Deserializer<'de>>(kind: &EventKind, d: D) -> Result<Body, D::Error> {
                 let read = match kind.as_str() {
-                    $($kind => $variant::deserialize(d).map(Body::$variant),)+
+                    $($kind => <$ty>::deserialize(d).map(Body::$variant),)+
                     _ => {
                         return RawJson::deserialize(d).map(|body| Body::Unknown {
                             kind: kind.clone(),
@@ -141,7 +146,7 @@ macro_rules! bodies {
             /// 按种类读 `body`。认识的种类读不出来是坏数据，报错写明是哪一种。
             fn read(kind: EventKind, body: RawJson) -> Result<Body, String> {
                 let read = match kind.as_str() {
-                    $($kind => raw::parse(body.get()).map(Body::$variant),)+
+                    $($kind => raw::parse::<$ty>(body.get()).map(Body::$variant),)+
                     _ => return Ok(Body::Unknown { kind, body }),
                 };
                 read.map_err(|e| format!("body of {kind} not readable: {e}"))
@@ -162,87 +167,87 @@ macro_rules! bodies {
 
 bodies! {
     /// 会话创建。
-    SessionCreated = "session.created",
+    SessionCreated(Box<SessionCreated>) = "session.created",
     /// 换了策略快照，或者换了权限。
-    PolicyChanged = "session.policy_changed",
+    PolicyChanged(Box<PolicyChanged>) = "session.policy_changed",
     /// 改了标题、置顶。
-    MetaChanged = "session.meta_changed",
+    MetaChanged(MetaChanged) = "session.meta_changed",
     /// 换了会话在哪个目录干活（施工 9-7 上）。
-    WorkspaceChanged = "session.workspace_changed",
+    WorkspaceChanged(WorkspaceChanged) = "session.workspace_changed",
     /// 一句回顾（施工 3-8 四补）。
-    SessionRecapped = "session.recapped",
+    SessionRecapped(SessionRecapped) = "session.recapped",
     /// 跑满了轮数，封存了（施工 C-8 下）。
-    SessionSealed = "session.sealed",
+    SessionSealed(SessionSealed) = "session.sealed",
     /// 人用了一个斜杠命令（施工 O-6）。
-    CommandRan = "command.ran",
+    CommandRan(CommandRan) = "command.ran",
     /// 人清掉了待办（施工 D-3 再补）。
-    TodosCleared = "todos.cleared",
+    TodosCleared(TodosCleared) = "todos.cleared",
     /// 包的程序直接换上了它在这个会话里的一份状态（施工 TW-1）。
-    PackageState = "package.state",
+    PackageState(PackageState) = "package.state",
     /// 回合开始。
-    TurnStarted = "turn.started",
+    TurnStarted(Box<TurnStarted>) = "turn.started",
     /// 照记下的几条并进正在跑的这一轮（施工 O-14 下）。
-    TurnJoined = "turn.joined",
+    TurnJoined(TurnJoined) = "turn.joined",
     /// 回合结束。
-    TurnEnded = "turn.ended",
+    TurnEnded(TurnEnded) = "turn.ended",
     /// 撤销了几个回合。
-    TurnReverted = "turn.reverted",
+    TurnReverted(TurnReverted) = "turn.reverted",
     /// 恢复了最近一次撤销的回合。
-    TurnUnreverted = "turn.unreverted",
+    TurnUnreverted(TurnUnreverted) = "turn.unreverted",
     /// 人发来的消息，或者另一个会话发来的消息。
-    MessageUser = "message.user",
+    MessageUser(Box<MessageUser>) = "message.user",
     /// 模型一次响应的完整内容，工具调用也在里面。
-    MessageAssistant = "message.assistant",
+    MessageAssistant(MessageAssistant) = "message.assistant",
     /// 撤回排着队、她还没听到的消息。
-    MessageWithdrawn = "message.withdrawn",
+    MessageWithdrawn(MessageWithdrawn) = "message.withdrawn",
     /// 一个工具调用的结果。
-    ToolResult = "tool.result",
+    ToolResult(Box<ToolResult>) = "tool.result",
     /// 脚本里的一次 `miyu call` 了结了（施工 M-1）。
-    ToolNested = "tool.nested",
+    ToolNested(Box<ToolNested>) = "tool.nested",
     /// 请人确认一次工具调用。
-    ApprovalRequested = "tool.approval_requested",
+    ApprovalRequested(Box<ApprovalRequested>) = "tool.approval_requested",
     /// 人对确认请求的决定。
-    ApprovalDecided = "tool.approval_decided",
+    ApprovalDecided(Box<ApprovalDecided>) = "tool.approval_decided",
     /// 一个在跑的调用请人回答一组题。
-    QuestionAsked = "question.asked",
+    QuestionAsked(QuestionAsked) = "question.asked",
     /// 人对一组题的回答。
-    QuestionAnswered = "question.answered",
+    QuestionAnswered(QuestionAnswered) = "question.answered",
     /// 注入进上下文的一块事实。
-    ContextInjected = "context.injected",
+    ContextInjected(ContextInjected) = "context.injected",
     /// 压缩的检查点。
-    ContextCompacted = "context.compacted",
+    ContextCompacted(Box<ContextCompacted>) = "context.compacted",
     /// 暂停了自动压缩（施工 6-6 上）。
-    CompactionPaused = "context.compaction_paused",
+    CompactionPaused(CompactionPaused) = "context.compaction_paused",
     /// 一次模型请求的记录。
-    ModelCalled = "model.called",
+    ModelCalled(Box<ModelCalled>) = "model.called",
     /// 后台命令结束了（施工 7-1）。
-    JobReported = "job.reported",
+    JobReported(Box<JobReported>) = "job.reported",
     /// 子会话的回报（施工 7-1）。
-    ChildReported = "child.reported",
+    ChildReported(Box<ChildReported>) = "child.reported",
     /// 监视的后台命令出的一批行（施工 MN-1 上）。
-    JobLines = "job.lines",
+    JobLines(JobLines) = "job.lines",
     /// 人在输入框里用 `!` 打的一条命令跑完了（施工 SH-1 上）。
-    ShellRan = "shell.ran",
+    ShellRan(Box<ShellRan>) = "shell.ran",
     /// 等的那个会话空下来了，或者等不到了（施工 C-1）。
-    PeerIdle = "peer.idle",
+    PeerIdle(PeerIdle) = "peer.idle",
     /// 一张图的转述：看不了图的模型由 `models.vision` 替它看过（施工 8-17）。
-    ImageDescribed = "image.described",
+    ImageDescribed(Box<ImageDescribed>) = "image.described",
     /// 场所里有人撤回了一条消息（施工 O-13 上，桥经 `events.append` 记）。
-    VenueRecalled = "venue.recalled",
+    VenueRecalled(VenueRecalled) = "venue.recalled",
     /// 她的一句话实际发到了平台上（施工 O-13 上，桥经 `events.append` 记）。
-    VenueDelivered = "venue.delivered",
+    VenueDelivered(Box<VenueDelivered>) = "venue.delivered",
     /// 设了一个长期目标（施工 X-6）。
-    GoalSet = "goal.set",
+    GoalSet(GoalSet) = "goal.set",
     /// 改了长期目标的原文或上限（施工 X-6）。
-    GoalChanged = "goal.changed",
+    GoalChanged(GoalChanged) = "goal.changed",
     /// 长期目标停下（施工 X-6）。
-    GoalPaused = "goal.paused",
+    GoalPaused(GoalPaused) = "goal.paused",
     /// 长期目标接着跑（施工 X-6）。
-    GoalResumed = "goal.resumed",
+    GoalResumed(GoalResumed) = "goal.resumed",
     /// 长期目标结束了（施工 X-6）。
-    GoalEnded = "goal.ended",
+    GoalEnded(GoalEnded) = "goal.ended",
     /// 整理会话跑完了一趟（施工 DR-1）。
-    DreamEnded = "dream.ended",
+    DreamEnded(DreamEnded) = "dream.ended",
 }
 
 impl Event {

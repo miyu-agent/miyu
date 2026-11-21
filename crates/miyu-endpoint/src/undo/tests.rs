@@ -31,7 +31,7 @@ fn compaction_of(seq: u64, turn: u64, trigger: Option<CompactTrigger>) -> Event 
         turn: Seq::new(turn).map(TurnId::new),
         by: By::Kernel,
         cause: None,
-        body: Body::ContextCompacted(ContextCompacted {
+        body: Body::ContextCompacted(Box::new(ContextCompacted {
             upto: Seq::FIRST,
             summary: "S".to_string(),
             trigger,
@@ -41,7 +41,7 @@ fn compaction_of(seq: u64, turn: u64, trigger: Option<CompactTrigger>) -> Event 
             refills: None,
             prepared: false,
             truncated: None,
-        }),
+        })),
     }
 }
 

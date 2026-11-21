@@ -39,13 +39,13 @@ fn wrote(n: u64, turn: u64, content: &str) -> Event {
     event(
         n,
         turn,
-        Body::ToolResult(ToolResult {
+        Body::ToolResult(Box::new(ToolResult {
             effects: vec![Effect::TodoWritten(TodoWritten {
                 todos,
                 done: Vec::new(),
             })],
             ..result
-        }),
+        })),
     )
 }
 
@@ -95,7 +95,7 @@ fn compacted(n: u64, turn: u64, upto: u64, trigger: CompactTrigger) -> Event {
     event(
         n,
         turn,
-        Body::ContextCompacted(ContextCompacted {
+        Body::ContextCompacted(Box::new(ContextCompacted {
             upto: seq(upto),
             summary: String::new(),
             trigger: Some(trigger),
@@ -105,7 +105,7 @@ fn compacted(n: u64, turn: u64, upto: u64, trigger: CompactTrigger) -> Event {
             refills: None,
             prepared: false,
             truncated: None,
-        }),
+        })),
     )
 }
 

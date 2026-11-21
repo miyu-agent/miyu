@@ -31,19 +31,19 @@ impl Session {
             return vec![rejected(id, Reason::NothingToClear)];
         };
         let cause = Some(id.clone());
-        let body = Body::TurnStarted(TurnStarted {
+        let body = Body::TurnStarted(Box::new(TurnStarted {
             trigger: None,
             triggers: Vec::new(),
             cwd: Some(self.environment.cwd.clone()),
             dirs: self.environment.dirs.clone(),
             tail: None,
-        });
+        }));
         let started = self.record(at, By::Kernel, cause.clone(), body);
         // 这一轮当场就结束，只在这个函数里在进行。
         self.turn = Some(self.new_turn(started.seq, cause.clone(), Stage::Settling));
         // 记在一边的回报不再由它们另开一轮（施工 7-2）：随便哪一轮开了就清掉，它们也跟着清空了。
         self.deferred.clear();
-        let body = Body::ContextCompacted(ContextCompacted {
+        let body = Body::ContextCompacted(Box::new(ContextCompacted {
             upto,
             summary: String::new(),
             trigger: Some(CompactTrigger::Clear),
@@ -53,7 +53,7 @@ impl Session {
             refills: None,
             prepared: false,
             truncated: None,
-        });
+        }));
         let compacted = self.record(at, By::Kernel, cause.clone(), body);
         let ended = self.end_turn(at, By::Kernel, cause, EndReason::Completed);
         self.accept(id, vec![started.seq]);

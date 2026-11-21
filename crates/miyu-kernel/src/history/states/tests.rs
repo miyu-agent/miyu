@@ -48,10 +48,10 @@ fn by_tool(n: u64, turn: u64, package: &str, note: &str) -> Event {
     event(
         n,
         turn,
-        Body::ToolResult(ToolResult {
+        Body::ToolResult(Box::new(ToolResult {
             effects: vec![Effect::PackageState(written(package, note))],
             ..result
-        }),
+        })),
     )
 }
 
@@ -102,7 +102,7 @@ fn compacted(n: u64, turn: u64, upto: u64, trigger: CompactTrigger) -> Event {
     event(
         n,
         turn,
-        Body::ContextCompacted(ContextCompacted {
+        Body::ContextCompacted(Box::new(ContextCompacted {
             upto: seq(upto),
             summary: String::new(),
             trigger: Some(trigger),
@@ -112,7 +112,7 @@ fn compacted(n: u64, turn: u64, upto: u64, trigger: CompactTrigger) -> Event {
             refills: None,
             prepared: false,
             truncated: None,
-        }),
+        })),
     )
 }
 

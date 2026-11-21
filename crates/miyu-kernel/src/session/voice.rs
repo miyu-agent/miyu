@@ -31,10 +31,10 @@ impl Session {
             self.recent.insert(id.clone(), Vec::new());
             return vec![accepted(id, Vec::new())];
         }
-        let body = Body::PolicyChanged(PolicyChanged {
+        let body = Body::PolicyChanged(Box::new(PolicyChanged {
             voice_max_ms: Some(ms),
             ..PolicyChanged::default()
-        });
+        }));
         let event = self.record(at, by, Some(id.clone()), body);
         self.accept(id, vec![event.seq]);
         vec![Action::Append(vec![event])]

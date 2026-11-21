@@ -26,10 +26,10 @@ fn report(n: u64, ms: u64) -> Input {
 
 /// 报成 `ms` 的那一条的 `body`。
 fn to(ms: u64) -> Body {
-    Body::PolicyChanged(PolicyChanged {
+    Body::PolicyChanged(Box::new(PolicyChanged {
         voice_max_ms: Some(ms),
         ..PolicyChanged::default()
-    })
+    }))
 }
 
 #[test]

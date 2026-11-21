@@ -63,7 +63,7 @@ async fn she_finds_and_searches_in_the_workspace_and_outside() {
         .log(handle.id())
         .into_iter()
         .filter_map(|event| match event.body {
-            Body::ToolResult(result) => Some(result),
+            Body::ToolResult(result) => Some(*result),
             _ => None,
         })
         .collect();
@@ -122,7 +122,7 @@ async fn searching_from_above_never_goes_into_miyus_own_data() {
         .log(handle.id())
         .into_iter()
         .filter_map(|event| match event.body {
-            Body::ToolResult(result) => Some(result),
+            Body::ToolResult(result) => Some(*result),
             _ => None,
         })
         .collect();

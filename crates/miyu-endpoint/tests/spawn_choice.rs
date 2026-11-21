@@ -27,7 +27,7 @@ fn children(log: &[miyu_kernel::event::Event]) -> Vec<SessionId> {
 
 fn created(home: &Home, session: &SessionId) -> SessionCreated {
     match &home.log(session.as_str())[0].body {
-        Body::SessionCreated(created) => created.clone(),
+        Body::SessionCreated(created) => (**created).clone(),
         other => panic!("第 1 条应该是造会话：{other:?}"),
     }
 }

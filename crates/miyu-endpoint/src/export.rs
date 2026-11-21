@@ -302,7 +302,7 @@ pub(crate) fn gather(
 fn created(root: &DataRoot, id: &SessionId) -> io::Result<miyu_kernel::event::SessionCreated> {
     let first = first_event(&root.session_dir(id)).map_err(io::Error::other)?;
     match first.body {
-        Body::SessionCreated(created) => Ok(created),
+        Body::SessionCreated(created) => Ok(*created),
         _ => Err(io::Error::other(format!(
             "{id}: first event is not session.created"
         ))),

@@ -8,7 +8,7 @@
 //! - 检查点是还算数的最近一次压缩：之后的请求照它以后的（`watch/compaction.rs`），撤销能撤掉它（`watch/undo.rs`）。
 
 use super::*;
-use crate::event::{CompactTrigger, ContextCompacted, DreamEnded, TurnEnded, TurnStarted};
+use crate::event::{CompactTrigger, ContextCompacted, DreamEnded, TurnEnded};
 
 /// 送进去之前判出来的：哪个命令，该怎样。
 pub(super) enum Expect {
@@ -143,13 +143,13 @@ impl Watch {
         assert!(
             matches!(
                 &started.body,
-                Body::TurnStarted(TurnStarted { trigger: None, .. })
+                Body::TurnStarted(turn) if turn.trigger.is_none()
             ),
             "种子 {seed}：清空那一轮没有触发：{started:?}"
         );
         assert_eq!(
             compacted.body,
-            Body::ContextCompacted(ContextCompacted {
+            Body::ContextCompacted(Box::new(ContextCompacted {
                 upto,
                 summary: String::new(),
                 trigger: Some(CompactTrigger::Clear),
@@ -159,7 +159,7 @@ impl Watch {
                 refills: None,
                 prepared: false,
                 truncated: None,
-            }),
+            })),
             "种子 {seed}：清空写一个空的检查点，替代到那一轮前面那一条"
         );
         assert_eq!(

@@ -141,11 +141,12 @@ fn plan_upto(events: &[Event], upto: Seq, within: Option<TurnId>) -> Result<Fork
                 permission = Some(created.permission.clone());
                 policy = Some(created.policy.clone());
             }
-            Body::PolicyChanged(PolicyChanged {
-                permission: changed,
-                policy: swapped,
-                ..
-            }) => {
+            Body::PolicyChanged(policy_changed) => {
+                let PolicyChanged {
+                    permission: changed,
+                    policy: swapped,
+                    ..
+                } = &**policy_changed;
                 if let Some(changed) = changed {
                     permission = Some(changed.clone());
                 }
@@ -216,7 +217,12 @@ pub(super) fn fork_on(
         &base,
     );
     let mut session = Session::blank(session, ledger, history, &created, policy, environment);
-    let mut events = vec![session.record(at, by, Some(id.clone()), Body::SessionCreated(created))];
+    let mut events = vec![session.record(
+        at,
+        by,
+        Some(id.clone()),
+        Body::SessionCreated(Box::new(created)),
+    )];
     if let Some((turn, placeholder)) = placeholder {
         events.extend(session.settle_inherited(at, &id, turn, placeholder));
     }

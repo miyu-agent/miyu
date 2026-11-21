@@ -330,7 +330,7 @@ fn a_checkpoint_with_reread_files_recalls_them_first() {
         turn: Some(turn3()),
         by: By::Kernel,
         cause: None,
-        body: Body::ContextCompacted(crate::event::ContextCompacted {
+        body: Body::ContextCompacted(Box::new(crate::event::ContextCompacted {
             upto: seq(2),
             summary: "S".to_string(),
             trigger: None,
@@ -344,7 +344,7 @@ fn a_checkpoint_with_reread_files_recalls_them_first() {
             refills: None,
             prepared: false,
             truncated: None,
-        }),
+        })),
     });
     let (_, actions) = load(logged.log);
     assert_eq!(actions[0], Action::Recall { blobs: vec![blob] });

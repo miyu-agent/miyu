@@ -65,7 +65,7 @@ fn compactions(stage: &Stage) -> Vec<&ContextCompacted> {
         .log()
         .iter()
         .filter_map(|event| match &event.body {
-            Body::ContextCompacted(compacted) => Some(compacted),
+            Body::ContextCompacted(compacted) => Some(&**compacted),
             _ => None,
         })
         .collect()

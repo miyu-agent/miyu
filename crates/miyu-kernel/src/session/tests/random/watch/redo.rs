@@ -127,12 +127,15 @@ impl Watch {
         self.trigger_of(turn)
             .and_then(|trigger| self.find(trigger))
             .is_some_and(|event| match &event.body {
-                Body::MessageUser(MessageUser {
-                    blocks,
-                    venue: None,
-                    command: None,
-                    shell: false,
-                }) => edited(blocks, change).is_empty(),
+                Body::MessageUser(message) => match &**message {
+                    MessageUser {
+                        blocks,
+                        venue: None,
+                        command: None,
+                        shell: false,
+                    } => edited(blocks, change).is_empty(),
+                    _ => false,
+                },
                 _ => false,
             })
     }
@@ -273,12 +276,16 @@ impl Watch {
         );
         for (event, seq) in events.iter().zip(&resend.said) {
             let original = self.find(*seq).unwrap();
-            let Body::MessageUser(MessageUser {
+            let said = match &original.body {
+                Body::MessageUser(message) => Some(&**message),
+                _ => None,
+            };
+            let Some(MessageUser {
                 blocks,
                 venue: None,
                 command: None,
                 shell: false,
-            }) = &original.body
+            }) = said
             else {
                 panic!("种子 {seed}：要重发的 {seq} 不是人的话");
             };
@@ -288,12 +295,12 @@ impl Watch {
             };
             assert_eq!(
                 event.body,
-                Body::MessageUser(MessageUser {
+                Body::MessageUser(Box::new(MessageUser {
                     blocks: expected,
                     venue: None,
                     command: None,
                     shell: false,
-                }),
+                })),
                 "种子 {seed}：重发的内容照原来的"
             );
             assert_eq!(

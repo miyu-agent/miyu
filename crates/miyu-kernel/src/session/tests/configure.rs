@@ -23,10 +23,10 @@ fn configure(n: u64, model: &str) -> Input {
 
 /// 换成 `model` 的那一条的 `body`。
 fn to(model: &str) -> Body {
-    Body::PolicyChanged(PolicyChanged {
+    Body::PolicyChanged(Box::new(PolicyChanged {
         model: Some(model.to_string()),
         ..PolicyChanged::default()
-    })
+    }))
 }
 
 /// 叫跑回合开始的挂接点时交出去的引用。

@@ -100,7 +100,7 @@ fn last_turn(log: &[Event]) -> Seq {
 /// 日志里唯一的一条回报，和紧跟着它开的那一轮。
 fn the_report(log: &[Event]) -> (&Event, &ChildReported) {
     let mut reports = log.iter().filter_map(|event| match &event.body {
-        Body::ChildReported(reported) => Some((event, reported)),
+        Body::ChildReported(reported) => Some((event, &**reported)),
         _ => None,
     });
     let found = reports.next().expect("有一条回报");

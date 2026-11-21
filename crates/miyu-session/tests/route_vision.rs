@@ -75,7 +75,7 @@ fn described(home: &Home, handle: &Handle) -> Vec<(By, bool, ImageDescribed)> {
     home.log(handle.id())
         .into_iter()
         .filter_map(|event| match event.body {
-            Body::ImageDescribed(described) => Some((event.by, event.turn.is_some(), described)),
+            Body::ImageDescribed(described) => Some((event.by, event.turn.is_some(), *described)),
             _ => None,
         })
         .collect()

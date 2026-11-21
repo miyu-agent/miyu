@@ -111,7 +111,7 @@ pub(super) fn seen<'de, D: serde::Deserializer<'de>>(
         result,
         error,
     } = Called::deserialize(d)?;
-    Ok(Body::ModelCalled(ModelCalled {
+    Ok(Body::ModelCalled(Box::new(ModelCalled {
         sent: None,
         seen,
         endpoint: None,
@@ -131,7 +131,7 @@ pub(super) fn seen<'de, D: serde::Deserializer<'de>>(
         truncated: false,
         fell_back: false,
         cut: Vec::new(),
-    }))
+    })))
 }
 
 #[cfg(test)]

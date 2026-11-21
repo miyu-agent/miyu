@@ -209,26 +209,26 @@ fn a_forced_read_stops_at_the_last_ended_turn() {
         ended(8, "2026-10-27T08:01:00.000Z"),
         ended(12, "2026-10-27T08:02:00.000Z"),
     ];
-    events[2].body = Body::TurnStarted(miyu_kernel::event::TurnStarted {
+    events[2].body = Body::TurnStarted(Box::new(miyu_kernel::event::TurnStarted {
         trigger: None,
         triggers: Vec::new(),
         cwd: None,
         dirs: Vec::new(),
         tail: None,
-    });
+    }));
     ended_only(&mut events);
     assert_eq!(
         events.iter().map(|event| event.seq).collect::<Vec<_>>(),
         [seq(4), seq(8)]
     );
     let mut none = vec![ended(4, "2026-10-27T08:00:00.000Z")];
-    none[0].body = Body::TurnStarted(miyu_kernel::event::TurnStarted {
+    none[0].body = Body::TurnStarted(Box::new(miyu_kernel::event::TurnStarted {
         trigger: None,
         triggers: Vec::new(),
         cwd: None,
         dirs: Vec::new(),
         tail: None,
-    });
+    }));
     ended_only(&mut none);
     assert!(none.is_empty());
 }

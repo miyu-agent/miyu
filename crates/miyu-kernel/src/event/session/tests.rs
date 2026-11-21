@@ -217,8 +217,8 @@ fn a_policy_change_records_the_permission_it_switched_from() {
     let event = Event::from_line(&old).unwrap();
     assert_eq!(event.to_line(), old, "以前的日志写回去一个字节不变");
     assert!(matches!(
-        event.body,
-        Body::PolicyChanged(PolicyChanged { from: None, .. })
+        &event.body,
+        Body::PolicyChanged(changed) if changed.from.is_none()
     ));
     let nulled = r#"{"permission":{"level":"full","read_only":true},"from":null}"#;
     let event = Event::from_line(&event_line("session.policy_changed", nulled)).unwrap();

@@ -58,7 +58,7 @@ async fn turn(handle: &Handle, command: &str) -> Vec<Arc<Pushed>> {
 fn results(log: &[Event]) -> Vec<&ToolResult> {
     log.iter()
         .filter_map(|event| match &event.body {
-            Body::ToolResult(result) => Some(result),
+            Body::ToolResult(result) => Some(&**result),
             _ => None,
         })
         .collect()

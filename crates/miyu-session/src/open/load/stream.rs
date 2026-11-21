@@ -173,7 +173,7 @@ fn start(
             body: Body::SessionCreated(created),
             cause,
             ..
-        }) => (created.clone(), cause.clone()),
+        }) => ((**created).clone(), cause.clone()),
         _ => return Err(LoadError::NotCreated),
     };
     // 分叉出来的（施工 C-8 上）：父会话的日志里到分叉点为止的是底子，照只读读（父会话可能正在写）。一块块喂给内核（施工

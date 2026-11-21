@@ -111,7 +111,7 @@ fn called(actions: &[Action]) -> ModelCalled {
     appended_events(actions)
         .into_iter()
         .find_map(|event| match event.body {
-            Body::ModelCalled(called) => Some(called),
+            Body::ModelCalled(called) => Some(*called),
             _ => None,
         })
         .expect("记了一条 model.called")

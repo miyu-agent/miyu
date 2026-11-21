@@ -40,17 +40,17 @@ impl Stage {
         };
         let opened = event(
             turn.started(),
-            Body::TurnStarted(TurnStarted {
+            Body::TurnStarted(Box::new(TurnStarted {
                 trigger: Some(upto),
                 triggers: Vec::new(),
                 cwd: Some(self.environment.cwd.clone()),
                 dirs: Vec::new(),
                 tail: None,
-            }),
+            })),
         );
         let compacted = event(
             turn.started().next(),
-            Body::ContextCompacted(ContextCompacted {
+            Body::ContextCompacted(Box::new(ContextCompacted {
                 upto,
                 summary: summary.to_string(),
                 trigger: None,
@@ -60,7 +60,7 @@ impl Stage {
                 refills: None,
                 prepared: false,
                 truncated: None,
-            }),
+            })),
         );
         let closed = event(
             compacted.seq.next(),

@@ -148,6 +148,10 @@
 13. 内核自己写出去的每一行，读回来再写出去一字不差：样本测试守着。
 14. 这一层只查写法。时刻的先后不查：时钟可能往回拨。别的规矩在追加时由账本查（`kernel/history.md`）。
 
+**在内存里多大**（施工 LW-10 上）：
+
+- `Body` 是枚举，占用的空间由最大的一种内容决定。因此内容大于 80 字节的十五种都装在盒子（`Box`）里：`session.created`、`session.policy_changed`、`turn.started`、`message.user`、`tool.result`、`tool.nested`、`tool.approval_requested`、`tool.approval_decided`、`context.compacted`、`model.called`、`job.reported`、`child.reported`、`shell.ran`、`image.described`、`venue.delivered`。原来只是 `session.created` 一种，就把每一条事件（包括内容只有 24 字节的 `turn.ended`）撑到 528 字节；因为有效历史整条保留事件，所以一千条的有效历史只是这一项就占半兆。装进盒子以后，一条事件是 200 字节。`message.user`（带着场所那一项时有 328 字节）、`turn.started` 虽然常见，也装进盒子：这两种装了以后和原来一样大，而其他每一条事件都变小了。读写的 JSON 不变，盒子只改变内容存放的位置。如果新加一种大的内容，测试 `an_event_stays_small` 会先失败。
+
 **瞬时事件**：
 
 15. `model.delta`：驱动交来的增量，照收到的先后一段推一条。私有数据不推；对不上的（累积器不收的）不推，这次请求按出错算（`kernel/session.md`）。`index` 是驱动给的块编号，`seen` 是这次请求的。
@@ -197,6 +201,7 @@ serde_json 在每一句后面加上 ` at line <几> column <几>`（没有测试
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu-kernel/src/event/tests.rs` | 图纸上的两行读写一字不差（`lines_from_the_drawing_round_trip`）；认识的读成对应的类型；第 12 条（`an_unknown_kind_keeps_its_body_byte_for_byte`）；第 2 条字段顺序（`fields_are_written_in_the_drawing_order`）；第 3、7 条（`optional_fields_missing_or_null_read_as_absent`）；第 9 条（`new_fields_on_the_envelope_are_ignored`）；「出错」表里的几种（`broken_lines_say_what_is_wrong`） |
+| `crates/miyu-kernel/src/event/tests.rs` 的 `an_event_stays_small`（施工 LW-10 上） | 「在内存里多大」：`Body` 不超过 88 字节，`Event` 不超过 200 字节 |
 | `crates/miyu-kernel/tests/only_samples.rs`、`src/event/only/tests.rs`（施工 V-39 上补） | `Event::from_line_only`：样本里每一行外壳和全解的一样，有效历史认的（测试里照规矩另抄一份，不引 `only.rs` 的表）、要的种类全解的一样，回复、请求那几格一样，别的读成 `null`，要的写全了的和全解一样（`each_kind_reads_as_deep_as_it_should`）；种类写在 `body` 后面的照样分（`a_kind_after_its_body_reads_the_same`）；外壳坏了、正文不是合法 JSON、要的种类正文不合写法、那几格不对的，报的错和全解一字不差（`a_broken_line_is_refused_word_for_word`）；不要的种类正文合 JSON、不合写法的不报（`a_skipped_body_that_is_still_json_is_not_checked`） |
 | `crates/miyu-kernel/tests/kind_written.rs`（施工 V-41 上） | `Event::kind_written`：样本里每一种写出去的都认得、和读成的种类一样；带空白、换了先后、种类转义了、序号写成字符串、半行的认不出；打头之后又写了一遍 `kind` 的读不成 |
 | `crates/miyu-kernel/src/event/transient/tests.rs` | 图纸上的那一行照写；每样增量各自的写法，供应商侧工具的开始和结果也在（`each_piece_is_written_its_own_way`，施工 HT-1）；没有 `turn`、`cause` 的不写；`tool.progress` 的写法 |

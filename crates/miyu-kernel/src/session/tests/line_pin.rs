@@ -67,10 +67,10 @@ fn configure(n: u64, model: &str) -> Input {
 
 /// 钉成 `percent` 的那一条的 `body`。
 fn to(percent: Option<u64>) -> Body {
-    Body::PolicyChanged(PolicyChanged {
+    Body::PolicyChanged(Box::new(PolicyChanged {
         compaction_line: Some(LinePin { percent }),
         ..PolicyChanged::default()
-    })
+    }))
 }
 
 #[test]

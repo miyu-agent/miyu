@@ -55,17 +55,17 @@ fn a_clear_writes_an_empty_checkpoint_in_a_turn_of_its_own() {
     }
     assert_eq!(
         events[0].body,
-        Body::TurnStarted(TurnStarted {
+        Body::TurnStarted(Box::new(TurnStarted {
             trigger: None,
             triggers: Vec::new(),
             cwd: Some("~/src/miyu".to_string()),
             dirs: Vec::new(),
             tail: None,
-        })
+        }))
     );
     assert_eq!(
         events[1].body,
-        Body::ContextCompacted(ContextCompacted {
+        Body::ContextCompacted(Box::new(ContextCompacted {
             upto: seq(8),
             summary: String::new(),
             trigger: Some(CompactTrigger::Clear),
@@ -75,7 +75,7 @@ fn a_clear_writes_an_empty_checkpoint_in_a_turn_of_its_own() {
             refills: None,
             prepared: false,
             truncated: None,
-        })
+        }))
     );
     assert_eq!(
         events[2].body,

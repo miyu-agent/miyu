@@ -101,13 +101,13 @@ fn a_manual_compaction_opens_a_turn_of_its_own_and_answers_once_it_is_stored() {
     assert_eq!(started.cause, Some(id(3)));
     assert_eq!(
         started.body,
-        Body::TurnStarted(TurnStarted {
+        Body::TurnStarted(Box::new(TurnStarted {
             trigger: None,
             triggers: Vec::new(),
             cwd: Some("~/src/miyu".to_string()),
             dirs: Vec::new(),
             tail: None,
-        })
+        }))
     );
     assert!(replies(&actions).is_empty(), "落了盘才回应");
     assert!(!session.idle(), "那一轮在跑");

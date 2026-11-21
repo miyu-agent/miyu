@@ -80,7 +80,7 @@ impl Session {
             None => Stage::Ready,
         };
         let cause = self.shell_cause(ran.message);
-        let mut events = vec![self.record(at, By::Kernel, cause, Body::ShellRan(ran))];
+        let mut events = vec![self.record(at, By::Kernel, cause, Body::ShellRan(Box::new(ran)))];
         if let Some(Interrupting {
             by, cause, queued, ..
         }) = waiting
@@ -140,7 +140,7 @@ impl Session {
                     omitted: 0,
                     reason: Some(reason.clone()),
                 };
-                self.record(at, by.clone(), cause.clone(), Body::ShellRan(ran))
+                self.record(at, by.clone(), cause.clone(), Body::ShellRan(Box::new(ran)))
             })
             .collect()
     }

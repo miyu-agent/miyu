@@ -288,8 +288,12 @@ impl Session {
             base.ledger(),
         );
         let mut session = Session::blank(session, ledger, history, &created, policy, environment);
-        let mut events =
-            vec![session.record(at, by, Some(id.clone()), Body::SessionCreated(created))];
+        let mut events = vec![session.record(
+            at,
+            by,
+            Some(id.clone()),
+            Body::SessionCreated(Box::new(created)),
+        )];
         if let Some((turn, placeholder)) = placeholder {
             events.extend(session.settle_inherited(at, &id, turn, placeholder));
         }

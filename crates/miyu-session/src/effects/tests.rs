@@ -257,7 +257,7 @@ fn result(seq: u64, effects: Vec<Effect>) -> Event {
         turn: Some(TurnId::new(Seq::new(1).unwrap())),
         by: By::Tool(Tool { call_id }),
         cause: None,
-        body: Body::ToolResult(ToolResult {
+        body: Body::ToolResult(Box::new(ToolResult {
             call_id,
             status: miyu_kernel::event::ToolStatus::Ok,
             blocks: Vec::new(),
@@ -268,7 +268,7 @@ fn result(seq: u64, effects: Vec<Effect>) -> Event {
             sent: Vec::new(),
             display_name: Default::default(),
             detail: None,
-        }),
+        })),
     }
 }
 

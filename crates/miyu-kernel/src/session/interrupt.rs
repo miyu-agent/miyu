@@ -176,7 +176,7 @@ impl Session {
             )
         } else {
             let by = By::Tool(Tool { call_id });
-            self.record(at, by, turn_cause, Body::ToolResult(result))
+            self.record(at, by, turn_cause, Body::ToolResult(Box::new(result)))
         };
         let mut events = vec![settled];
         if !left {

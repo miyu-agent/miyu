@@ -107,8 +107,12 @@ impl Session {
             fell_back: false,
             cut: Vec::new(),
         };
-        let mut events =
-            vec![self.record(at, By::Kernel, cause.clone(), Body::ModelCalled(called))];
+        let mut events = vec![self.record(
+            at,
+            By::Kernel,
+            cause.clone(),
+            Body::ModelCalled(Box::new(called)),
+        )];
         events.extend(self.finish_turn(at, By::Kernel, cause, EndReason::Error));
         vec![Action::Append(events)]
     }

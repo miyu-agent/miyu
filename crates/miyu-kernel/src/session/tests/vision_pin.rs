@@ -32,10 +32,10 @@ fn configure(n: u64, model: &str) -> Input {
 
 /// 钉成 `vision` 的那一条的 `body`：去掉的是空的。
 fn to(vision: &str) -> Body {
-    Body::PolicyChanged(PolicyChanged {
+    Body::PolicyChanged(Box::new(PolicyChanged {
         vision: Some(vision.to_string()),
         ..PolicyChanged::default()
-    })
+    }))
 }
 
 #[test]

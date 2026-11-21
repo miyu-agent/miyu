@@ -99,10 +99,10 @@ impl Watch {
                 self.seen_paths.insert("换了模型");
                 assert_eq!(appended.len(), 1, "种子 {seed}：换模型只记一条");
                 let event = appended[0];
-                let body = Body::PolicyChanged(PolicyChanged {
+                let body = Body::PolicyChanged(Box::new(PolicyChanged {
                     model: Some(model),
                     ..PolicyChanged::default()
-                });
+                }));
                 assert_eq!(event.body, body, "种子 {seed}");
                 assert_eq!(event.by, person(), "种子 {seed}：换的人");
                 assert_eq!(event.cause, Some(id), "种子 {seed}");
@@ -176,9 +176,9 @@ impl Watch {
 
 /// 换模型的那一条的 `body`。
 fn changed(model: Option<String>, replaced: Option<String>) -> Body {
-    Body::PolicyChanged(PolicyChanged {
+    Body::PolicyChanged(Box::new(PolicyChanged {
         model,
         replaced,
         ..PolicyChanged::default()
-    })
+    }))
 }

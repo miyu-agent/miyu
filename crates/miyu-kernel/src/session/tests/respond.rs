@@ -85,13 +85,13 @@ fn responding_opens_a_turn_on_what_was_overheard() {
     let events = appended_events(&actions);
     assert_eq!(
         events[0].body,
-        Body::TurnStarted(TurnStarted {
+        Body::TurnStarted(Box::new(TurnStarted {
             trigger: Some(seq(3)),
             triggers: seqs(&[2, 3]),
             cwd: Some("~/src/miyu".to_string()),
             dirs: Vec::new(),
             tail: None,
-        }),
+        })),
         "排好、去重，trigger 是最后一条"
     );
     assert_eq!(events[0].turn, Some(TurnId::new(seq(4))));

@@ -4,7 +4,7 @@
 use std::collections::BTreeSet;
 
 use miyu_kernel::block::Block;
-use miyu_kernel::event::{Body, Event, PolicyChanged, VenueMessage};
+use miyu_kernel::event::{Body, Event, VenueMessage};
 use miyu_kernel::facts::effective_level;
 use miyu_kernel::history::History as Kept;
 use miyu_kernel::id::CallId;
@@ -112,11 +112,10 @@ fn entries(kept: &Kept, placeholders: &Placeholders, own: &str) -> Vec<Entry> {
 }
 
 fn switched(event: &Event, placeholders: &Placeholders) -> Option<Entry> {
-    let Body::PolicyChanged(PolicyChanged {
-        permission: Some(permission),
-        ..
-    }) = &event.body
-    else {
+    let Body::PolicyChanged(changed) = &event.body else {
+        return None;
+    };
+    let Some(permission) = &changed.permission else {
         return None;
     };
     Some(Entry {

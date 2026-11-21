@@ -200,7 +200,7 @@ fn result_text(log: &[Event], n: usize) -> String {
 fn job_reported(log: &[Event]) -> Vec<(&Event, &JobReported)> {
     log.iter()
         .filter_map(|event| match &event.body {
-            Body::JobReported(reported) => Some((event, reported)),
+            Body::JobReported(reported) => Some((event, &**reported)),
             _ => None,
         })
         .collect()
@@ -209,7 +209,7 @@ fn job_reported(log: &[Event]) -> Vec<(&Event, &JobReported)> {
 fn child_reported(log: &[Event]) -> Vec<(&Event, &ChildReported)> {
     log.iter()
         .filter_map(|event| match &event.body {
-            Body::ChildReported(reported) => Some((event, reported)),
+            Body::ChildReported(reported) => Some((event, &**reported)),
             _ => None,
         })
         .collect()

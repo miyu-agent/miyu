@@ -38,7 +38,7 @@ async fn a_result_records_the_name_people_see_when_it_was_called() {
     let results = |log: Vec<miyu_kernel::event::Event>| -> Vec<ToolResult> {
         log.into_iter()
             .filter_map(|event| match event.body {
-                Body::ToolResult(result) => Some(result),
+                Body::ToolResult(result) => Some(*result),
                 _ => None,
             })
             .collect()

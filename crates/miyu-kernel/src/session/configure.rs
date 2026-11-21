@@ -78,10 +78,8 @@ impl Reference {
                 self.announce = None;
             }
             // 空的是回到跟着 `models.chat`（施工 8-10 再补）。
-            Body::PolicyChanged(PolicyChanged {
-                model: Some(model), ..
-            }) => {
-                self.model = Some(model.clone()).filter(|model| !model.is_empty());
+            Body::PolicyChanged(changed) if changed.model.is_some() => {
+                self.model = changed.model.clone().filter(|model| !model.is_empty());
                 self.changed = Some(event.seq);
             }
             _ => {}
@@ -195,10 +193,10 @@ impl Session {
             self.recent.insert(id.clone(), Vec::new());
             return vec![accepted(id, Vec::new())];
         }
-        let body = Body::PolicyChanged(PolicyChanged {
+        let body = Body::PolicyChanged(Box::new(PolicyChanged {
             model: Some(model),
             ..PolicyChanged::default()
-        });
+        }));
         let event = self.record(at, by, Some(id.clone()), body);
         self.accept(id, vec![event.seq]);
         vec![Action::Append(vec![event])]
@@ -223,10 +221,10 @@ impl Session {
             self.recent.insert(id.clone(), Vec::new());
             return vec![accepted(id, Vec::new())];
         }
-        let body = Body::PolicyChanged(PolicyChanged {
+        let body = Body::PolicyChanged(Box::new(PolicyChanged {
             effort: Some(Effort { model: None, level }),
             ..PolicyChanged::default()
-        });
+        }));
         let event = self.record(at, by, Some(id.clone()), body);
         self.accept(id, vec![event.seq]);
         vec![Action::Append(vec![event])]
@@ -251,10 +249,10 @@ impl Session {
             self.recent.insert(id.clone(), Vec::new());
             return vec![accepted(id, Vec::new())];
         }
-        let body = Body::PolicyChanged(PolicyChanged {
+        let body = Body::PolicyChanged(Box::new(PolicyChanged {
             context: Some(ContextCap { tokens }),
             ..PolicyChanged::default()
-        });
+        }));
         let event = self.record(at, by, Some(id.clone()), body);
         self.accept(id, vec![event.seq]);
         vec![Action::Append(vec![event])]
@@ -281,10 +279,10 @@ impl Session {
             self.recent.insert(id.clone(), Vec::new());
             return vec![accepted(id, Vec::new())];
         }
-        let body = Body::PolicyChanged(PolicyChanged {
+        let body = Body::PolicyChanged(Box::new(PolicyChanged {
             vision: Some(vision.unwrap_or_default()),
             ..PolicyChanged::default()
-        });
+        }));
         let event = self.record(at, by, Some(id.clone()), body);
         self.accept(id, vec![event.seq]);
         vec![Action::Append(vec![event])]
@@ -309,10 +307,10 @@ impl Session {
             self.recent.insert(id.clone(), Vec::new());
             return vec![accepted(id, Vec::new())];
         }
-        let body = Body::PolicyChanged(PolicyChanged {
+        let body = Body::PolicyChanged(Box::new(PolicyChanged {
             compaction_line: Some(LinePin { percent }),
             ..PolicyChanged::default()
-        });
+        }));
         let event = self.record(at, by, Some(id.clone()), body);
         self.accept(id, vec![event.seq]);
         vec![Action::Append(vec![event])]
@@ -331,11 +329,11 @@ impl Session {
         if self.reference() != Some(from.as_str()) || from == to {
             return None;
         }
-        let body = Body::PolicyChanged(PolicyChanged {
+        let body = Body::PolicyChanged(Box::new(PolicyChanged {
             model: Some(to),
             replaced: Some(from),
             ..PolicyChanged::default()
-        });
+        }));
         Some(self.record(at, By::Kernel, cause, body))
     }
 }

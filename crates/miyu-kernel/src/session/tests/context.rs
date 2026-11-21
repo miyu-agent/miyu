@@ -33,10 +33,10 @@ fn configure(n: u64, model: &str) -> Input {
 
 /// 换成 `tokens` 的那一条的 `body`。
 fn to(tokens: Option<u64>) -> Body {
-    Body::PolicyChanged(PolicyChanged {
+    Body::PolicyChanged(Box::new(PolicyChanged {
         context: Some(ContextCap { tokens }),
         ..PolicyChanged::default()
-    })
+    }))
 }
 
 #[test]

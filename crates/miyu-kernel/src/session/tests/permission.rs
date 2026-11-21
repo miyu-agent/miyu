@@ -28,8 +28,12 @@ fn level_fact(level: &str) -> String {
 
 /// 一条只换了权限的 `session.policy_changed`：换成的权限。
 fn switched_to(event: &Event) -> &Permission {
-    match &event.body {
-        Body::PolicyChanged(PolicyChanged {
+    let changed = match &event.body {
+        Body::PolicyChanged(changed) => Some(&**changed),
+        _ => None,
+    };
+    match changed {
+        Some(PolicyChanged {
             policy: None,
             permission: Some(permission),
             model: None,
@@ -43,7 +47,10 @@ fn switched_to(event: &Event) -> &Permission {
             from: _,
             voice_max_ms: None,
         }) => permission,
-        body => panic!("应该是只换了权限的 session.policy_changed：{body:?}"),
+        _ => panic!(
+            "应该是只换了权限的 session.policy_changed：{:?}",
+            event.body
+        ),
     }
 }
 

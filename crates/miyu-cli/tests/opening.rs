@@ -23,7 +23,7 @@ async fn created(home: &Home, opening: Opening) -> SessionCreated {
         .expect("读得到")
         .body
     {
-        Body::SessionCreated(created) => created,
+        Body::SessionCreated(created) => *created,
         other => panic!("第 1 条应该是造会话：{other:?}"),
     }
 }

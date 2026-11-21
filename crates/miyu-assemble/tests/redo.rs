@@ -18,7 +18,7 @@ fn calls(stage: &Stage) -> Vec<&ModelCalled> {
         .log()
         .iter()
         .filter_map(|event| match &event.body {
-            Body::ModelCalled(called) => Some(called),
+            Body::ModelCalled(called) => Some(&**called),
             _ => None,
         })
         .collect()

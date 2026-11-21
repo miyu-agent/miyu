@@ -102,9 +102,12 @@ async fn a_prompt_is_said_as_one_line_with_its_arguments() {
         .log(&session)
         .into_iter()
         .filter_map(|event| match event.body {
-            Body::MessageUser(MessageUser {
-                blocks, command, ..
-            }) => Some((blocks, command)),
+            Body::MessageUser(message) => {
+                let MessageUser {
+                    blocks, command, ..
+                } = *message;
+                Some((blocks, command))
+            }
             _ => None,
         })
         .collect();

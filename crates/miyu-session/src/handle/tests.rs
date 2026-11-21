@@ -14,7 +14,7 @@ fn one() -> Arc<Pushed> {
         turn: None,
         by: By::Kernel,
         cause: None,
-        body: Body::SessionCreated(created),
+        body: Body::SessionCreated(Box::new(created)),
     }]))
 }
 
@@ -22,7 +22,7 @@ fn one() -> Arc<Pushed> {
 fn created() -> SessionCreated {
     let line = r#"{"seq":1,"at":"2026-09-27T07:00:00.000Z","by":{"kind":"kernel"},"kind":"session.created","body":{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"full","read_only":false}}}"#;
     match Event::from_line(line).expect("造会话那一条合写法").body {
-        Body::SessionCreated(created) => created,
+        Body::SessionCreated(created) => *created,
         other => panic!("应该是造会话那一条：{other:?}"),
     }
 }

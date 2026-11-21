@@ -32,13 +32,13 @@ fn configure(n: u64, model: &str) -> Input {
 
 /// 换成 `level` 的那一条的 `body`。
 fn to(level: Option<&str>) -> Body {
-    Body::PolicyChanged(PolicyChanged {
+    Body::PolicyChanged(Box::new(PolicyChanged {
         effort: Some(Effort {
             model: None,
             level: level.map(str::to_string),
         }),
         ..PolicyChanged::default()
-    })
+    }))
 }
 
 #[test]
@@ -86,13 +86,13 @@ fn loading_counts_every_change_even_in_undone_turns_and_skips_the_8_18_cells() {
     logged.handle(stored(last + 1));
     assert_eq!(logged.session.effort(), Some("max"), "撤掉的回合里换的也算");
     // 8-18 那时的一格：带 `model`，不算会话的。
-    let old = Body::PolicyChanged(PolicyChanged {
+    let old = Body::PolicyChanged(Box::new(PolicyChanged {
         effort: Some(Effort {
             model: Some("a/m".to_string()),
             level: Some("low".to_string()),
         }),
         ..PolicyChanged::default()
-    });
+    }));
     let mut events = logged.log.clone();
     let mut tail = events.last().cloned().expect("有日志");
     tail.seq = seq(tail.seq.get() + 1);

@@ -118,7 +118,7 @@ impl Session {
             "the recap reply has no text",
         );
         let cause = waiting.first().cloned();
-        let called = self.record_aside(at, cause.clone(), Body::ModelCalled(called));
+        let called = self.record_aside(at, cause.clone(), Body::ModelCalled(Box::new(called)));
         // 先见结果，后见回应：拒绝也等那条 `model.called` 落了盘。
         let mut after = called.seq;
         let mut events = vec![called];

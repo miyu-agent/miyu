@@ -238,7 +238,7 @@ impl Session {
             let text = self.policy.tool_texts.cancelled_running();
             self.written_result(at, by, cause.clone(), call_id, ToolStatus::Cancelled, text)
         } else {
-            self.record(at, by, cause.clone(), Body::ToolResult(result))
+            self.record(at, by, cause.clone(), Body::ToolResult(Box::new(result)))
         };
         let mut events = vec![recorded];
         if finished {
@@ -389,7 +389,7 @@ impl Session {
             display_name: Default::default(),
             detail: None,
         };
-        self.record(at, by, cause, Body::ToolResult(result))
+        self.record(at, by, cause, Body::ToolResult(Box::new(result)))
     }
 
     /// 收紧成了只读：这一步里还没跑过、要写入的调用当场拦下，`by` 是内核：写文件的调用，和请人

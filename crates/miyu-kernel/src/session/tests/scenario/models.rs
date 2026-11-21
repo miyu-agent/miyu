@@ -6,7 +6,7 @@
 
 use super::super::executor::injection;
 use super::*;
-use crate::event::{Body, PolicyChanged, Status, TransientBody};
+use crate::event::{Body, Status, TransientBody};
 
 /// 推过的重试状态。
 fn statuses(stage: &Stage) -> Vec<&Status> {
@@ -175,9 +175,7 @@ fn cooling_longer_than_two_minutes_ends_the_turn() {
 /// 换模型的那一条：换成的、原来的。
 fn changed(event: &Event) -> (Option<&str>, Option<&str>) {
     match &event.body {
-        Body::PolicyChanged(PolicyChanged {
-            model, replaced, ..
-        }) => (model.as_deref(), replaced.as_deref()),
+        Body::PolicyChanged(changed) => (changed.model.as_deref(), changed.replaced.as_deref()),
         body => panic!("应该是 session.policy_changed：{body:?}"),
     }
 }

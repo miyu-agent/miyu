@@ -52,7 +52,7 @@ fn results(home: &Home, session: &str) -> Vec<ToolResult> {
     home.log(session)
         .into_iter()
         .filter_map(|event| match event.body {
-            Body::ToolResult(result) => Some(result),
+            Body::ToolResult(result) => Some(*result),
             _ => None,
         })
         .collect()

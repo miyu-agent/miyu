@@ -38,7 +38,7 @@ fn rans(home: &Home, session: &str) -> Vec<ShellRan> {
     home.log(session)
         .into_iter()
         .filter_map(|event| match event.body {
-            Body::ShellRan(ran) => Some(ran),
+            Body::ShellRan(ran) => Some(*ran),
             _ => None,
         })
         .collect()

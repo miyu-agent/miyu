@@ -47,20 +47,23 @@ fn policy_pushes(pushed: &[Value]) -> Vec<&Value> {
 /// 一条只换了权限的 `session.policy_changed` 换成的权限；别的是 `None`。
 fn switched_to(event: &Event) -> Option<&Permission> {
     match &event.body {
-        Body::PolicyChanged(PolicyChanged {
-            policy: None,
-            permission: Some(permission),
-            model: None,
-            replaced: None,
-            persona: None,
-            preset: None,
-            effort: None,
-            context: None,
-            vision: None,
-            compaction_line: None,
-            from: _,
-            voice_max_ms: None,
-        }) => Some(permission),
+        Body::PolicyChanged(changed) => match &**changed {
+            PolicyChanged {
+                policy: None,
+                permission: Some(permission),
+                model: None,
+                replaced: None,
+                persona: None,
+                preset: None,
+                effort: None,
+                context: None,
+                vision: None,
+                compaction_line: None,
+                from: _,
+                voice_max_ms: None,
+            } => Some(permission),
+            _ => None,
+        },
         _ => None,
     }
 }

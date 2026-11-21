@@ -401,7 +401,7 @@ impl Stage {
         self.log
             .iter()
             .filter_map(|event| match &event.body {
-                Body::ModelCalled(called) => Some(called),
+                Body::ModelCalled(called) => Some(&**called),
                 _ => None,
             })
             .collect()

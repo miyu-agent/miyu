@@ -232,7 +232,7 @@ impl Session {
             turn: None,
             by: By::Kernel,
             cause: None,
-            body: Body::ContextCompacted(ContextCompacted {
+            body: Body::ContextCompacted(Box::new(ContextCompacted {
                 upto,
                 summary: summary.to_string(),
                 trigger: Some(CompactTrigger::Auto),
@@ -242,7 +242,7 @@ impl Session {
                 refills: None,
                 prepared: false,
                 truncated: None,
-            }),
+            })),
         });
         let request = self.policy.assembler.assemble(&trial);
         let base = self.used_in(&trial, &request)?;

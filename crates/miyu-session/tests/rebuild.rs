@@ -90,7 +90,7 @@ async fn a_small_file_read_before_the_cut_comes_back_and_survives_a_reload() {
         .log(&id)
         .into_iter()
         .find_map(|event| match event.body {
-            Body::ContextCompacted(compacted) => Some(compacted),
+            Body::ContextCompacted(compacted) => Some(*compacted),
             _ => None,
         })
         .expect("压了");
@@ -171,7 +171,7 @@ async fn a_command_still_running_is_not_listed_in_the_checkpoint() {
         .log(handle.id())
         .into_iter()
         .find_map(|event| match event.body {
-            Body::ContextCompacted(compacted) => Some(compacted),
+            Body::ContextCompacted(compacted) => Some(*compacted),
             _ => None,
         })
         .expect("压了");

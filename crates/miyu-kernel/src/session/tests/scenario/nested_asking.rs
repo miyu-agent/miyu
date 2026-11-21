@@ -31,7 +31,7 @@ fn requests(stage: &Stage) -> Vec<(ApprovalRequested, By)> {
         .log()
         .iter()
         .filter_map(|event| match &event.body {
-            Body::ApprovalRequested(request) => Some((request.clone(), event.by.clone())),
+            Body::ApprovalRequested(request) => Some(((**request).clone(), event.by.clone())),
             _ => None,
         })
         .collect()

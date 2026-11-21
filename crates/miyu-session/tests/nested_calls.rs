@@ -25,7 +25,7 @@ fn catalog(tools: &[&Arc<Fake>]) -> Catalog {
 fn nested(log: &[Event]) -> Vec<&ToolNested> {
     log.iter()
         .filter_map(|event| match &event.body {
-            Body::ToolNested(nested) => Some(nested),
+            Body::ToolNested(nested) => Some(&**nested),
             _ => None,
         })
         .collect()
@@ -35,7 +35,7 @@ fn shell_result(log: &[Event]) -> (usize, &ToolResult) {
     log.iter()
         .enumerate()
         .find_map(|(at, event)| match &event.body {
-            Body::ToolResult(result) => Some((at, result)),
+            Body::ToolResult(result) => Some((at, &**result)),
             _ => None,
         })
         .expect("shell 有结果")

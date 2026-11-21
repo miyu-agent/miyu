@@ -52,14 +52,14 @@ fn fields_are_written_in_the_drawing_order() {
         turn: None,
         by: By::Person(Person::default()),
         cause: Some(CommandId::parse("cmd-7f3a").unwrap()),
-        body: Body::MessageUser(MessageUser {
+        body: Body::MessageUser(Box::new(MessageUser {
             blocks: vec![Block::Text(Text {
                 text: "看看 src 目录".to_string(),
             })],
             venue: None,
             command: None,
             shell: false,
-        }),
+        })),
     };
     assert_eq!(event.to_line(), USER);
 }
@@ -103,4 +103,20 @@ fn broken_lines_say_what_is_wrong() {
         "duplicate field",
     );
     rejected::<Event>(r#"{"seq":1}"#, "missing field");
+}
+
+/// 一条事件的大小（施工 LW-10 上，`kernel/events.md`「在内存里多大」）：`Body` 不被最大的那一种撑大，大过 80 字节的几种都装在
+/// 盒子里。新加一种大的、忘了装箱，这里先红：每条事件大一格，有效历史就跟着每条大一格。
+#[test]
+fn an_event_stays_small() {
+    assert!(
+        std::mem::size_of::<Body>() <= 88,
+        "Body 有 {} 字节",
+        std::mem::size_of::<Body>()
+    );
+    assert!(
+        std::mem::size_of::<Event>() <= 200,
+        "Event 有 {} 字节",
+        std::mem::size_of::<Event>()
+    );
 }

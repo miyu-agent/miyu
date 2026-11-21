@@ -42,13 +42,13 @@ fn facts_alone_open_a_turn_on_the_last_one() {
     assert_eq!(fact_of(&events[1]).text, "<glance/>");
     assert_eq!(
         events[2].body,
-        Body::TurnStarted(TurnStarted {
+        Body::TurnStarted(Box::new(TurnStarted {
             trigger: Some(events[1].seq),
             triggers: Vec::new(),
             cwd: Some("~/src/miyu".to_string()),
             dirs: Vec::new(),
             tail: None,
-        }),
+        })),
         "由最后一块开"
     );
     assert_eq!(events[2].cause, Some(id(5)));

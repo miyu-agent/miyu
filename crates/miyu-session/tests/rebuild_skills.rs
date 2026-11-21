@@ -90,7 +90,7 @@ async fn a_used_skill_comes_back_after_the_files_fill_their_slots() {
         .log(handle.id())
         .into_iter()
         .find_map(|event| match event.body {
-            Body::ContextCompacted(compacted) => Some(compacted),
+            Body::ContextCompacted(compacted) => Some(*compacted),
             _ => None,
         })
         .expect("压了");

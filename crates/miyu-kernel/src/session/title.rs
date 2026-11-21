@@ -185,7 +185,7 @@ impl Session {
             next,
             "the title reply has no text",
         );
-        let mut events = vec![self.record_aside(at, None, Body::ModelCalled(called))];
+        let mut events = vec![self.record_aside(at, None, Body::ModelCalled(Box::new(called)))];
         let chars = self.policy.titles.map_or(0, |titles| titles.chars);
         // 人要求重起的那一次盖得掉动过的标题（施工 TT-1）；没起成的也放下，不留到下一轮。
         let asked = std::mem::take(&mut self.naming.asked);

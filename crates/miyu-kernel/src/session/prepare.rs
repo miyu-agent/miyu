@@ -202,7 +202,7 @@ impl Session {
             failed(&mut called, error);
         }
         let (usage, duration_ms) = (called.usage, called.duration_ms);
-        let event = self.record_aside(at, None, Body::ModelCalled(called));
+        let event = self.record_aside(at, None, Body::ModelCalled(Box::new(called)));
         let mut actions = vec![Action::Append(vec![event])];
         // 回合在等它（施工 6-11 下）：用得上的换上；别的（出错、取不出、调了工具、用不上了）不再补发隔离式的，回到「准备
         // 好」，这条 `model.called` 落了盘再组装、照现在的办法当场压（请求要等事件都落了盘才发）。回到「准备好」照别处一样

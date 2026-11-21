@@ -447,7 +447,7 @@ impl Session {
             truncated,
         } = summarized;
         let rebuilt = self.rebuild(at, upto, cut, &summary, &paths, reread.as_deref());
-        let body = Body::ContextCompacted(ContextCompacted {
+        let body = Body::ContextCompacted(Box::new(ContextCompacted {
             upto,
             summary,
             trigger: Some(trigger.clone()),
@@ -457,7 +457,7 @@ impl Session {
             refills,
             prepared,
             truncated,
-        });
+        }));
         let mut events = vec![self.record(at, By::Kernel, cause.clone(), body)];
         self.history.recall(rebuilt.texts);
         let turn = self.turn.as_mut().map(|turn| {

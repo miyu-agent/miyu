@@ -47,7 +47,7 @@ fn compactions(home: &Home, session: &SessionId) -> Vec<ContextCompacted> {
     home.log(session)
         .into_iter()
         .filter_map(|event| match event.body {
-            Body::ContextCompacted(compacted) => Some(compacted),
+            Body::ContextCompacted(compacted) => Some(*compacted),
             _ => None,
         })
         .collect()

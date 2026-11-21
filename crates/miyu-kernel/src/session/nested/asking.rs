@@ -81,7 +81,7 @@ impl Session {
         };
         let cause = turn.and_then(|turn| turn.cause.clone());
         let by = By::Module(Module { id: module });
-        let event = self.record(at, by, cause, Body::ApprovalRequested(request));
+        let event = self.record(at, by, cause, Body::ApprovalRequested(Box::new(request)));
         let expiry = expires_at.map(|at| Action::ExpireApproval {
             at,
             call_id,
@@ -115,7 +115,7 @@ impl Session {
             attachments: Vec::new(),
             nested: Some(n),
         };
-        let decided = self.record(at, By::Kernel, cause, Body::ApprovalDecided(body));
+        let decided = self.record(at, By::Kernel, cause, Body::ApprovalDecided(Box::new(body)));
         let outcome = Outcome::denied(worded.text);
         let settled = self.nested_event(at, call.id, call.name, call.args, outcome);
         vec![Action::Append(vec![decided, settled])]
@@ -167,7 +167,12 @@ impl Session {
             attachments,
             nested: Some(asked.n()),
         };
-        let mut events = vec![self.record(at, by, Some(id.clone()), Body::ApprovalDecided(body))];
+        let mut events = vec![self.record(
+            at,
+            by,
+            Some(id.clone()),
+            Body::ApprovalDecided(Box::new(body)),
+        )];
         let mut then = Vec::new();
         if deny {
             let call = self.nested.calls.remove(k);

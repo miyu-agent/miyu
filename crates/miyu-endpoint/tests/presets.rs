@@ -46,7 +46,7 @@ fn created(home: &Home, session: &str) -> miyu_kernel::event::SessionCreated {
     home.log(session)
         .into_iter()
         .find_map(|event| match event.body {
-            miyu_kernel::event::Body::SessionCreated(created) => Some(created),
+            miyu_kernel::event::Body::SessionCreated(created) => Some(*created),
             _ => None,
         })
         .expect("有造会话那一条")

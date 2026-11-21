@@ -326,11 +326,12 @@ impl Planning {
                 self.permission = Some(created.permission.clone());
                 self.policy = Some(created.policy.clone());
             }
-            Body::PolicyChanged(PolicyChanged {
-                permission: changed,
-                policy: swapped,
-                ..
-            }) => {
+            Body::PolicyChanged(policy_changed) => {
+                let PolicyChanged {
+                    permission: changed,
+                    policy: swapped,
+                    ..
+                } = &**policy_changed;
                 if let Some(changed) = changed {
                     self.permission = Some(changed.clone());
                 }

@@ -8,7 +8,7 @@
 //! 第 2 条），所以撤掉的回合里切的也列，不经 `History::whole()`。
 
 use miyu_kernel::block::Block;
-use miyu_kernel::event::{Body, Event, PolicyChanged, VenueMessage};
+use miyu_kernel::event::{Body, Event, VenueMessage};
 use miyu_kernel::facts::effective_level;
 use miyu_kernel::id::SessionId;
 use miyu_kernel::origin::{By, Role};
@@ -140,11 +140,10 @@ pub(super) fn peer(session: &SessionId, placeholders: &Placeholders) -> String {
 /// 事实里的一样（施工 2-7 补）。别的事件、只换了策略快照的没有。照日志原样读来的事件交给它，不管撤没撤掉：现在的权限就是
 /// 这样算的，撤销不改它。
 pub(super) fn switched(event: &Event, placeholders: &Placeholders) -> Option<Entry> {
-    let Body::PolicyChanged(PolicyChanged {
-        permission: Some(permission),
-        ..
-    }) = &event.body
-    else {
+    let Body::PolicyChanged(changed) = &event.body else {
+        return None;
+    };
+    let Some(permission) = &changed.permission else {
         return None;
     };
     Some(Entry {

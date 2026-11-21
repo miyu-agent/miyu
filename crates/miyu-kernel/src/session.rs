@@ -209,7 +209,12 @@ impl Session {
         let ledger = Ledger::for_session(session.clone());
         let history = History::default().owned_by(session.clone());
         let mut session = Session::blank(session, ledger, history, &created, policy, environment);
-        let event = session.record(at, by, Some(id.clone()), Body::SessionCreated(created));
+        let event = session.record(
+            at,
+            by,
+            Some(id.clone()),
+            Body::SessionCreated(Box::new(created)),
+        );
         session.accept(id, vec![event.seq]);
         (session, vec![Action::Append(vec![event])])
     }
