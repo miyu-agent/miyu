@@ -38,7 +38,7 @@
 
 ### 量到的
 
-量尺（.91，`cargo xtask perf --idle-wait 0`，同一份代码先 `--no-order` 再排）：
+量尺（另一台测试机，`cargo xtask perf --idle-wait 0`，同一份代码先 `--no-order` 再排）：
 
 | 项目 | 没排 | 排过 | 预算 |
 |---|---|---|---|

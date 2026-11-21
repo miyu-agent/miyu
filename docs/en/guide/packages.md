@@ -478,7 +478,7 @@ Errors are printed on standard error, and they start with `miyu: `.
 | `cannot install <what you wrote>: <kind> <name> exists in <package>` | A tool, skill, command, MCP server or the like that it brings has the same name as one in another installed package, with one line per clash. Remove that other package, or ask the author to rename. |
 | `Id conflicts with a built-in package` | A package on this machine uses the id of a shipped package; you need to rename the folder. |
 | `Required packages are missing` | A package it depends on is not in the package source, or its version is too old. |
-| `cannot install <what you wrote>: This package needs Miyu <version> or newer: update Miyu first` | Run `miyu upgrade`. |
+| `cannot install <what you wrote>: …This package needs Miyu <version> or newer: update Miyu first` | Run `miyu upgrade`. |
 | `Other packages depend on it, so it cannot be uninstalled` | Remove the packages that depend on it first. |
 | `Program not installed` | The package's program is missing; you need to install the package again. |
 | `Extension permissions not approved` | Approve the capabilities it needs when you turn it on. |

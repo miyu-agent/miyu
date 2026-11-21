@@ -211,13 +211,13 @@
 | 看到的现象 | 怎么办 |
 |---|---|
 | 这一版启动不了，提示 `… 无法确认它是 Miyu 的数据根 …` 或 `… 是旧版 Miyu 的数据根，当前版本无法使用 …` | 旧目录还在 `~/.miyu`。按照上面的第 2 步把它挪开 |
-| `old Miyu is still running (pid <进程号>); stop it first` | 旧版还在运行。关闭旧版，或者运行 `kill <进程号>`（Linux、macOS） |
-| `old Miyu is still running; stop it first` | 旧版还在运行，但是迁移找不到它的进程号。Windows 上报的都是这一句。关闭旧版 Miyu 的窗口和后台程序以后再迁移；在 Windows 上，可以在任务管理器里找到它并结束 |
-| `<路径> is not an old Miyu data folder` | 这个目录不是旧版的数据目录。检查一下是不是写错了路径 |
-| `old Miyu did not finish moving its files (…); start the old version once to let it recover` | 旧版上一次搬移自己的文件时没有完成。用旧版启动一次，让它收尾，关闭以后再迁移 |
-| `not enough disk space for the archive and its check under <目录>: need <N> MiB, have <M> MiB` | 磁盘空间不够：放压缩包的位置需要旧目录两倍大小的空间。腾出空间以后再运行 |
-| `cannot reach the core: …` | 连接不上这一版的核心。见 [出了问题怎么查](troubleshooting.md) |
-| ``run this as `miyu migrate <old folder>`: MIYU_STATE_DIR is not set`` | 你直接运行了软件包里的程序。需要改用 `miyu migrate` |
+| `旧版 Miyu 还在运行（进程号 <进程号>），请先停止它` | 旧版还在运行。关闭旧版，或者运行 `kill <进程号>`（Linux、macOS） |
+| `旧版 Miyu 还在运行，请先停止它` | 旧版还在运行，但是迁移找不到它的进程号。Windows 上报的都是这一句。关闭旧版 Miyu 的窗口和后台程序以后再迁移；在 Windows 上，可以在任务管理器里找到它并结束 |
+| `<路径> 不是旧版 Miyu 的数据目录` | 这个目录不是旧版的数据目录。检查一下是不是写错了路径 |
+| `旧版 Miyu 没有搬完文件（…）；请先启动一次旧版，让它自行恢复` | 旧版上一次搬移自己的文件时没有完成。用旧版启动一次，让它收尾，关闭以后再迁移 |
+| `<目录> 所在磁盘空间不足，放不下压缩包和核对用的副本：需要 <N> MiB，可用 <M> MiB` | 磁盘空间不够：放压缩包的位置需要旧目录两倍大小的空间。腾出空间以后再运行 |
+| `无法连接核心：…` | 连接不上这一版的核心。见 [出了问题怎么查](troubleshooting.md) |
+| ``没有设置 MIYU_STATE_DIR；请用 `miyu migrate <旧目录>` 运行`` | 你直接运行了软件包里的程序。需要改用 `miyu migrate` |
 | 报告里写着 `整理没成（…）` | 迁移记忆时还没有可用的模型。配置好模型以后运行 `miyu memory dream --persona <编号>` |
 | 报告里某一类是 `没迁，在压缩包里`，补充说明里说某个软件包没有安装 | 安装那个软件包，然后运行补充说明里的那一行命令，或者重新运行迁移 |
 | 报告里写着 ``技能 `<名字>` 里有 N 个链接没拷…`` | 迁移不会跟随技能目录里的链接（它们可能指向技能外面），这些链接留在压缩包里。需要的话自己从压缩包里复制出来 |

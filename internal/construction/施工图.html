@@ -1584,6 +1584,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC28"><span class="n">DOC-28</span>作者教程并进开发者文档<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC29"><span class="n">DOC-29</span>协议参考和教程照规范改写<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC30"><span class="n">DOC-30</span>参考里对不上的 14 处照代码改<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sDOC31"><span class="n">DOC-31</span>界面原话复核和内部文档遗留<span class="st">…</span></a></li>
         <li><a class="step review" href="#sWD4"><span class="n">WD-4</span>核心字表清理成标准短句<span class="st">…</span></a></li>
         <li><a class="step review" href="#sWD5"><span class="n">WD-5</span>拒绝原因、命令行、出厂软件包的字清理<span class="st">…</span></a></li>
         <li><a class="step review" href="#sWD6"><span class="n">WD-6</span>四处给人看的字的程序问题<span class="st">…</span></a></li>
@@ -10845,7 +10846,7 @@ a.step:hover{border-color:var(--primary)}
         <div><dt>名称</dt><dd>三家对比照现在的样子</dd></div>
         <div><dt>日期</dt><dd class="mono">2026-10-31</dd></div>
         <div><dt>提交</dt><dd class="mono">V-27</dd></div>
-        <div><dt>验收</dt><dd>免费模型 跑完 all，两家真任务都 5/5，结果进 docs/perf</dd></div>
+        <div><dt>验收</dt><dd>免费模型跑完 all，两家真任务都 5/5，结果进 docs/perf</dd></div>
       </dl>
     </figcaption>
   </figure>
@@ -11399,7 +11400,7 @@ a.step:hover{border-color:var(--primary)}
             <div class="dir-label"><span class="path">和 jcode 再比一次</span><span class="dir-note">V-34</span></div>
             <ol class="pipe" aria-label="做了什么">
               <li>核心 c83b775bf、终端 4e5a6be 编 release，jcode 同一个版本</li>
-              <li>opencode-go 的免费模型 经本机转发跑完一整套，测具不改</li>
+              <li>opencode-go 的免费模型经本机转发跑完一整套，测具不改</li>
               <li>补量后台进程起来一次的用户态指令；诊断真任务直接杀掉时多的是哪些文件</li>
               <li>结果进 <code>docs/perf/2026-11-02-rivals-v34.md</code>，和 10-31 逐项对照</li>
             </ol>
@@ -61876,6 +61877,56 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/DOC-30-参考里对不上的核对.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sDOC31" aria-labelledby="h-sDOC31">
+  <div class="sheet-head"><h2 id="h-sDOC31"><span class="no">DOC-31</span>手册引用的界面原话复核、网页界面一页对代码、内部文档清理后的遗留</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">发版前把手册里没有清完的收尾：手册引用的界面原话对各仓库最新的字表再核一遍；讲界面的几页对着代码核对行为；SCRUB 清理以后的内部文档查漏掉的和改坏的。项目主人中途收回并行的额度，界面三页停在一半。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">docs/zh、docs/en · guide/heads、guide（migrate、automation、tools、permissions、packages、troubleshooting）、reference/blob、dev/manifest　internal/</span><span class="dir-note">DOC-31</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>手册里没找到原文的引用 244 条逐条核对，真过时的 11 条，中英 17 页修改：权限图标、打开浏览器的命令、迁移程序的中文报错、目标标签等</li>
+              <li>网页界面一页 272 条说法读代码核对，17 条不对的抽读代码确认后中英两页一起修改</li>
+              <li>内部文档：漏掉的 30 处（测试机称呼、真实号码、渠道前缀、内部代号）和改坏的 22 处全部修改，提示词页重新生成</li>
+              <li>终端界面、通讯平台、托盘三页核对到一半停下，已查出的 21 条不对的列在施工单里，没有修改</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">手册引用的界面原话和程序逐字一致；写界面行为的话以代码为准</span><span class="rl">AGENTS.md「文档的规矩」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DOC-31</dd></div>
+        <div><dt>名称</dt><dd>手册引用的界面原话复核、网页界面一页对代码、内部文档清理后的遗留</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">DOC-31</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>每条修改都有字表或代码的出处；网页那一页抽读了六处代码</span></li>
+        <li><span class="ok">✓</span><span>文档检查问题 0 个；工作树里搜测试机称呼和渠道前缀 0 处</span></li>
+        <li><span class="ok">✓</span><span>门禁十二项通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/DOC-31-手册引用的界面原话复核.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

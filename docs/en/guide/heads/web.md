@@ -14,7 +14,7 @@ miyu web
 
 The web interface is served by the program `miyu-web`, called the "web app" below. If the web app is not running, `miyu web` first starts it in the background (and starts the core too if the core is not running), then hands the page to the system browser. The terminal prints one line, `opened in browser: <url>`, and the command returns right away, so it does not hold the terminal. The web app keeps running after you close the browser, so a bookmarked address opens directly. The default address is `http://127.0.0.1:8300`.
 
-The command used to hand the page to the browser is `xdg-open` on Linux, `open` on macOS, and `cmd /C start "" <url>` on Windows. If that command cannot start, or fails and exits within 3 seconds, the hand-off counts as failed, and the terminal prints `miyu: cannot open a browser; open the address above`. The address is still printed on the line above it.
+The command used to hand the page to the browser is `xdg-open` on Linux, `open` on macOS, and `rundll32.exe url.dll,FileProtocolHandler <url>` on Windows. If that command cannot start, or fails and exits within 3 seconds, the hand-off counts as failed, and the terminal prints `miyu: cannot open a browser; open the address above`. The address is still printed on the line above it.
 
 `miyu web` accepts the following options:
 
@@ -50,11 +50,11 @@ If you want to close only the web interface and keep the core running, run `miyu
 
 ### Using it on phones and other devices
 
-After you turn on LAN access (see "Access and security"), a phone or tablet can open the web interface at this computer's address; sign in with the access password and you are in. When the window is narrower than 836 pixels, the page switches to its narrow layout:
+After you turn on LAN access (see "Access and security"), a phone or tablet can open the web interface at this computer's address; sign in with the access password and you are in. When the window is 836 pixels wide or narrower, the page switches to its narrow layout:
 
 - The left column folds away, and a menu button `Expand sidebar` sits in the top left corner. Tap it and the column slides in from the left; swipe left to fold it again.
 - The right sidebar covers the conversation, with a close button at the top; swipe right to fold it.
-- Buttons that normally appear only on hover (copy and edit under your messages, copy and redo at the end of a turn, multi-select in the left column) are always visible.
+- On touch devices (whatever the window width), buttons that normally appear only on hover (copy and edit under your messages, copy and redo at the end of a turn, multi-select in the left column) are always visible.
 - On a page opened over plain `http` on the LAN, the browser gives no clipboard access, and a failed copy shows `Can’t copy here. Select the text and copy it manually.`
 
 ## First run
@@ -62,19 +62,19 @@ After you turn on LAN access (see "Access and security"), a phone or tablet can 
 The first time you open the web interface, first-run setup covers the whole page, one step per screen. The row of small boxes at the top is the step bar. Press `Enter` to go to the next step, click `Back` to go back, and use the top right corner to switch between light and dark.
 
 1. Welcome: the page shows `Miyu`. Click `Start`.
-2. Interface language: choose 中文, English, 日本語, or `Follow system`.
+2. Interface language: choose 中文, English or 日本語. The row that matches your browser's language is marked `Follow system`; choosing it keeps following the browser's language.
 3. Model: in `Select a model provider`, pick a provider, fill in the key, click `Test connection`, then pick the default model. For how to fill these in, see [Models](../models.md).
 4. Persona: in `Create persona`, fill in the name, avatar and detailed prompt. You can click `Skip` here; if you skip, no persona is used.
 5. Appearance: in `Appearance`, choose light or dark, the main color, the color scheme and the theme. If you skipped the persona in the previous step, this step is skipped too.
 6. About you: in `How the AI knows you`, fill in `Preferred name` and `Additional details (optional)`; above them is a `Reply language (optional)` row. If both are empty, the button reads `Skip`.
 7. Preset: in `Select preset`, click a preset; choose `Custom` to tick the features yourself.
 8. Semantic model: in `Turn on the built-in semantic model?`, choosing `Yes (recommended)` downloads and installs the semantic model, and choosing `No` uses keyword search only. If the package source does not have this package and it is not installed, this step is absent.
-9. Other devices: in `Use on other devices`, choosing `Open` first asks you to set an access password; once it is set, the page shows the address and QR code for other devices. Choosing `Don't open` means only this computer can open the web interface. If the page was not opened through `miyu web`, this step is absent.
+9. Other devices: in `Use on other devices`, choosing `Open` first asks you to set an access password; once it is set, the page shows the address and QR code for other devices. Choosing `Don't open` means only this computer can open the web interface.
 10. Done: the page lists the chosen model, persona and preset. Click `▶ Start chatting` to enter a new session.
 
-If you sign in from another device and are setting the access password for the first time, the first step is `Password`, and setup then continues from the interface language.
+If you open the link with a one-time code that `miyu web --reset` prints, the `Set an access password` screen comes first (the first step in the step bar is `Password`), and after you set it setup continues from the interface language.
 
-When you finish setup, it writes `ui.welcomed = true`, and neither the terminal interface nor the web interface shows first-run setup again. Changing the interface language reloads the page and continues from that step; if you close the page midway, setup starts over next time. To go through it again, run:
+When you finish setup, it writes `ui.welcomed = true`, and neither the terminal interface nor the web interface shows first-run setup again. Changing the interface language reloads the page and continues from the next step; if you close the page midway, setup starts over next time. To go through it again, run:
 
 ```sh
 miyu config set ui.welcomed false
@@ -107,13 +107,13 @@ When you hover over a row, `⋮` appears on the right. Its menu has: Pin (or Unp
 ### Conversation area
 
 - The top left shows the session title; for a session in a project, the project name comes in front of it. Click the title for a card listing the session ID (click to copy), persona, preset and workspace. Click the persona or preset row to switch; it asks you first, and compacts the context before switching. The pen on the persona row opens the persona's edit card, and clicking the workspace row changes the working directory.
-- For a subagent session, the levels above it are listed in front of the title; click one to go to that level. Right above the input box, `Back to “…”` takes you back to the session that dispatched it.
+- For a subagent session, the levels above it are listed in front of the title; click one to go to that level. Right above the input box, the `Back` button (its tooltip says `Back to “…”`) takes you back to the session that dispatched it.
 - The middle holds the timeline; for details, see "Timeline" below. After you scroll up, `Jump to bottom` appears at the bottom.
 - A jump bar runs along the right side of the conversation area, with a short dash for each message you sent. Move the pointer close to it to list every message, and click one to scroll to it.
 - The top right corner holds the right column's toggle, `Expand right sidebar`.
 - Both side edges of the conversation column can be dragged to change its width; double-click to restore the shipped width.
 
-In an empty session (before you send the first message), three buttons sit above the input box: `Select persona`, `Select preset` and `Set workspace`. If you do not click them, the defaults are used. If the default preset or persona cannot be used, the input box is locked and says `Select a preset` or `Select a persona`, and you can type only after choosing one.
+In an empty session (before you send the first message), an `Options` button sits above the input box. Clicking it opens a menu with three rows, `Persona`, `Preset` and `Workspace`, each showing the current choice on the right; click a row to change it. If you do not click, the defaults are used. If the default preset or persona cannot be used, the input box is locked and says `Select a preset` or `Select a persona`, and you can type only after choosing one.
 
 When you choose a working directory (for example `Set workspace`, or a project's `Workspace folder`), the web interface opens the system's folder picker on this computer, one at a time:
 
@@ -131,8 +131,8 @@ Click the toggle in the top right corner to open the right sidebar, which is a s
 |---|---|---|
 | To-do | The AI's to-do items, with the finished ones folded into `N done`. | |
 | Background tasks | This session's background commands and subagents, with the subagents they dispatch nested below; it has `Stop` and `Stop all` buttons. | For background commands, `View output`; for subagents, it opens their session in the main area. |
-| File changes | The files this session changed; you can search them. | Shows the diff of this change; switch with `Previous file` and `Next file`, and enlarge it with `Open large view`. |
-| Shown files | Files the AI showed you with `show`. | Opens the file in the right column (the preview panel). |
+| File changes | The files this session changed. | Opens a large view of the diff of this change: the file list is on the left and the diff on the right, and you switch with `Previous file` and `Next file`. `Open large view` at the right of the card's title row opens the same view. |
+| Shown files | Files the AI showed you with `show`; you can search them. | Opens the file in the right column (the preview panel). |
 | Scheduled tasks | The scheduled tasks attached to this session. | |
 
 When the window is not wide enough, the right column covers the conversation; click outside it or press `Esc` to fold it. You set the order of the cards, whether each one is on, and how many rows each shows at most on the settings page, under `Packages`, in the `Web` section, in `Right sidebar`. The left edge of the right column can be dragged to change its width.
@@ -211,14 +211,14 @@ The row under the input box holds the following:
 
 | Position | What it is | Clicking does |
 |---|---|---|
-| Left | The permission level, shown as `⏵⏵ Full access` or `⏸ Read-only`. | Switches to the other level; for details, see [Permissions and sandbox](../permissions.md). |
+| Left | The permission level, shown as `▣ Full access` or `⏸ Read-only`. | Switches to the other level; for details, see [Permissions and sandbox](../permissions.md). |
 | Left | The model name. | Opens the model menu, which has two pages, `Models` and `Model pools`; press `Tab` to switch pages. For a model with thinking levels, pointing at it expands `Thinking effort` to the right. |
-| Middle | `Background tasks: N`, shown only while something is running. | Lists the background commands and subagents, which you can stop. |
+| Middle | `Background tasks: N`, shown only while something is running and the window has no room for the right sidebar (or the right sidebar is turned off); when the window is wide enough, background tasks are in the `Background tasks` card in the right sidebar. | Lists the background commands and subagents, which you can stop. |
 | Right | A ring, the total tokens (cache hit rate in brackets) and the cost. | Opens a popover in three parts: context, total usage and cost. |
 
 The ring shows how much of the window the context fills. While compacting, after a failed compaction, or when the context is over the window, this cell turns red and says `Compacting context`, `Context compaction failed` or `Context exceeds the window`. Extensions' UI blocks may also sit on the right.
 
-There is also a row above the input box: on the left is the run status line (what the AI is doing, how long it has taken, and retries), and on the right are the goal and the next loop time. To-dos sit above this row.
+There is also a row above the input box: on the left is the run status line (what the AI is doing, how long it has taken, and retries), and on the right are the goal and the next loop time. When the window has no room for the right sidebar (or the right sidebar is turned off), to-dos sit above this row; when the window is wide enough, they are in the `To-do` card in the right sidebar.
 
 ## Timeline
 
@@ -247,7 +247,7 @@ Buttons on the timeline:
 
 When the AI needs you to confirm something or asks you a question, the whole input box turns into a drawer. What you have already typed in the box is kept and comes back once you answer.
 
-Confirmation: the first line says what the AI wants to do (for example `Run command`, `Write N file(s)`, `Install or remove a package`), and protected commands are marked `Dangerous command`. Below are two choices:
+Confirmation: the first line says what the AI wants to do (for a command, the short title the AI gave it, or `Run command` when there is none; for installing or removing a package, `Install package <id>` or `Remove package <id>`; when an extension's guard asks you, `<package> asks you to confirm: <tool>`; otherwise `Use <tool name>`), and protected commands are marked `Dangerous command`. Below are two choices:
 
 1. `Allow once`
 2. `Don't allow`: you can write a sentence under `Reason (optional)`, and the AI sees it.
@@ -275,7 +275,7 @@ A project groups sessions together and gives the new sessions in the group a pre
    | Workspace folder | Sessions created in the project work in this folder; if you do not choose one, it is `Default workspace`. |
    | Persona, Preset | Choosing `Default` uses the default from Settings. |
    | Extra instructions | Every session in this project gets these instructions, at most 8000 characters. |
-   | Messages | The switch `Can message sessions outside the project`, off by default. |
+   | Messages | The switch `Cross-project messages`, off by default. |
 
 3. Click `Create`.
 
@@ -292,7 +292,7 @@ In the left column each project takes one row; click it to expand all its sessio
 ### Changing and deleting
 
 - Change: click `⋯` on the project row → `Project settings`, or click `Project settings` in the top right corner of the project page. The form is the same as when creating; click `Save` when you are done.
-- Delete: click `⋯` → `Delete project`, then click `Delete`; or click `Delete project` twice in the bottom left of `Project settings`. The sessions in the project are deleted with it and cannot be recovered.
+- Delete: click `⋯` → `Delete project`, then click `Delete`; or click `Delete project` in the bottom left of `Project settings` and confirm in the dialog that opens. The sessions in the project are deleted with it and cannot be recovered.
 
 Project page (click `Projects` in the left column, then a project card): `‹ All projects` at the top takes you back; below it are the title and description, then a block `Defaults for new sessions in this project` listing the workspace folder, persona, preset, extra instructions and messages, and below that the sessions in the project.
 
@@ -331,7 +331,7 @@ The settings page is a dialog in the middle of the page. You can open it with th
 | Dashboards | Software with its own page; click one to open that page. |
 | Advanced | Compaction, core, runtime log, model catalog, cooldown, package source and the like, one group per row; click in to change them. |
 
-The last section of `Packages` on the settings page, `Web`, lists the web interface's own components, for example `Right sidebar`, `Notifications`, `Jump bar on the right` and `mermaid diagrams`. Each has a switch, and those with settings can be clicked into. These switches are remembered only in this browser on this device.
+The last section of `Packages` on the settings page, `Web`, lists the web interface's own components, for example `Right sidebar`, `Notifications`, `Jump bar on the right` and `mermaid diagrams`. Each has a switch, and those with settings can be clicked into. These switches are stored in the core, so another browser or another device opening the web interface sees the same ones.
 
 ## Appearance
 
@@ -362,7 +362,7 @@ Video wallpapers cannot be read. To keep up with wallpaper changes, follow wallp
 
 The background image can follow the persona: choose an image under `Background` in the persona's edit card, and the conversation area of sessions using this persona shows it.
 
-The only shipped theme is `Default theme`. A `Pixel` theme also comes along, off by default; turn it on in the `Web` section of `Packages` on the settings page, then choose it under `Theme`. The package source has community-made web appearance packages (their names start with `webui-theme-`); once installed, they appear under `Theme` and `Color scheme`. For how to install them, see [Packages](../packages.md). After you install or remove an appearance package, the page says `Appearance "…" changed. Reload the page to apply it.`
+The only shipped theme is `Default theme`. A `Pixel` theme also comes along, off by default; turn it on in the `Web` section of `Packages` on the settings page, then choose it under `Theme`. The package source has community-made web appearance packages (their names start with `webui-theme-`); once installed, they appear under `Theme` and `Color scheme`. For how to install them, see [Packages](../packages.md). Installing or removing an appearance package takes effect at once; when you upgrade or reinstall one that was already loaded, the page says `Appearance "…" changed. Reload the page to apply it.`
 
 `/gallery` opens the skin gallery: a session that exists only on this page, with every kind of element laid out, so you can check against it when you change themes.
 
@@ -426,7 +426,7 @@ For how to make these, see [Putting things on the interface](../../dev/ui-surfac
 | `Wrong access password` | Enter it again; if you forgot it, run `miyu web --reset` on the computer where Miyu is installed. |
 | `Too many attempts. Try again in N s` | Wait the number of seconds it says, then try again. |
 | `No access password yet` | Set it with `miyu web --settings access` on the computer where Miyu is installed, then sign in here. |
-| `This link was already used or has expired: run miyu web in the terminal again` | Do what it says; a link with a ticket is valid for 60 seconds and works only once. |
+| `This link was already used or has expired: run miyu web in the terminal again` | The link with a one-time code that `miyu web --reset` printed was already used or has expired: such a link is valid for 5 minutes and works only once, so run `miyu web --reset` again. A link with a ticket (valid for 60 seconds, usable once) does not show this message when it expires; the page either goes straight in or shows the sign-in page. |
 | `Your sign-in expired. Enter the access password again` | Enter the access password again. |
 | `No password is needed on this computer, but the core couldn't be reached this time…` | Run `miyu web` in a terminal to see why. |
 | `Appearance "…" changed. Reload the page to apply it.` | Reload the page. |

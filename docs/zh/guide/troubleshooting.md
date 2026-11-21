@@ -273,7 +273,7 @@ AI 运行的命令可能被权限设置拦下，或者停在等待确认的状�
 | `miyu shellhook install` 提示 `PowerShell 的执行策略是 …，不加载启动文件，装了也不生效：在 PowerShell 里执行 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned 再开新窗口` | Windows | 在这个执行策略下，PowerShell 不加载 `$PROFILE`，所以 shell 集成即使写进去也不生效。 | 按照提示执行一次那条命令，然后打开新窗口，见 [终端](heads/tui.md#shell-集成)。 |
 | 终端界面里显示 `Linux 控制台显示不了中文：可在设置里把界面语言换成英文` | Linux | 终端界面是在 Linux 的文字控制台（`TERM=linux`）里打开的。 | 在设置页里把界面语言换成英文，或者在图形桌面的终端程序里使用。 |
 | 卸载脚本报 `删不掉 …（…）：还有 Miyu 的程序开着的，关掉再卸` | Windows | 还有 Miyu 的程序开着，所以安装目录删不掉。 | 关掉终端界面、网页界面这些 Miyu 的程序之后再卸载，见 [安装、升级、卸载](install.md#卸载)。 |
-| `old Miyu is still running; stop it first` | Windows | 迁移时旧版 Miyu 还开着。 | 关掉旧版 Miyu 之后再迁移，见 [从 0.7 旧版迁过来](migrate.md)。 |
+| `旧版 Miyu 还在运行，请先停止它` | Windows | 迁移时旧版 Miyu 还开着。 | 关掉旧版 Miyu 之后再迁移，见 [从 0.7 旧版迁过来](migrate.md)。 |
 
 ## 原因码
 

@@ -170,7 +170,7 @@ Before every read, the core checks the file's size and modification time: if the
 | `bad_params` (`-32602`) | `session` or `call` is malformed; `length` is over 512 KiB; another field was given |
 | `unknown_shown` | There is no such shown file: the session doesn't exist, this connection can't read it, or the step didn't show anything. These cases aren't told apart |
 | `file_changed` | The file's size or modification time has changed. Heads show "The file has changed" |
-| `file_gone` | The file is gone, or is no longer a regular file. Heads show "The file is gone" |
+| `file_gone` | The file is gone, or is no longer a regular file. Heads show "The file no longer exists" |
 | `internal_error` (`-32603`) | The core couldn't read it |
 
 Reasons without a code in the table are `-32010`.

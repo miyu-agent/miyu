@@ -36,7 +36,7 @@
 ### 验收
 
 1. 改前红：`miyu-endpoint` 的 `usage_names::rows_by_purpose_carry_a_name_in_the_connection_s_language`（把写名字的那一句拿掉，每一行的 `purpose_name` 都是 `null`）。另加 `miyu-config` 的 `package::purpose::tests` 三条。
-2. 实测（沙箱数据根，真模型 中转站 `opencode-go/deepseek-v4.1-flash`）：一个声明了 `join-approval` 的假扩展照 `join-approval`、`plain-test` 各调一次 `model.call`，本机会话说一轮（自动起标题），中、英、日三个连接 `usage.query {"group":["purpose"]}` 看 `purpose_name`。
+2. 实测（沙箱数据根，真模型是中转站的 `opencode-go/deepseek-v4.1-flash`）：一个声明了 `join-approval` 的假扩展照 `join-approval`、`plain-test` 各调一次 `model.call`，本机会话说一轮（自动起标题），中、英、日三个连接 `usage.query {"group":["purpose"]}` 看 `purpose_name`。
 3. 门禁十一项、长跑随机、Windows 目标的 clippy、`cargo xtask prompts`、`cargo xtask logs`。
 
 ### 不做什么

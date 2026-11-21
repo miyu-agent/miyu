@@ -32,7 +32,7 @@
 
 ### 量到的
 
-量尺（.91，`cargo xtask perf --idle-wait 0`，都排过函数）：
+量尺（另一台测试机，`cargo xtask perf --idle-wait 0`，都排过函数）：
 
 | 项目 | LW-1 | LW-2 | 预算 |
 |---|---|---|---|

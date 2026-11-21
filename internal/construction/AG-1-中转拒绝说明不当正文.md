@@ -6,7 +6,7 @@
 
 取证只读：会话日志拷一份到 `~/.cache` 再看，没有用主人的数据根起核心。
 
-1. 那条线不是专门的驱动：端点是 `openai-chat`，地址是局域网里的 中转站，`antigravity/gemini-3.8-flash` 是网关的模型名。
+1. 那条线不是专门的驱动：端点是 `openai-chat`，地址是局域网里的中转站，`antigravity/gemini-3.8-flash` 是网关的模型名。
 2. 日志：seq 3061 `message.assistant`（`interrupted: true`，一个正文块就是 Google 那段话）；3062 `model.called`（`first_token_ms` 1、`duration_ms` 46、一个块，`error` 是 `retryable`、原话「Antigravity: the reply ended before it was complete」）；3063 内核补的 `reply_cut`。
 3. 那句原话 Miyu 里没有，是网关写的；它进 `model.called` 的路子只有解码器的「流里报的错」（`event: error`，或者带 `error` 的一段），分类认不出就是 `retryable`。所以原始流是：网关先把拒绝说明当一段普通的 `delta.content` 流出来，再发一个出错事件。解码器把前一段当正文交出去，内核照「说到一半断了」留成被打断的回复。
 4. 一段正文分块本身有没有别的记号（`finish_reason`、`id`、`model`）没法从日志看：日志不存原始流，网关不是我们的程序。重放原来那条请求不做（会把那段内容再发一次）。

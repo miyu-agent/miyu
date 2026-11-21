@@ -217,7 +217,7 @@ After the migration is done, a few things are left to take care of:
 | `old Miyu did not finish moving its files (…); start the old version once to let it recover` | The old version did not finish moving its own files last time. Start the old version once to let it finish, close it, then migrate |
 | `not enough disk space for the archive and its check under <folder>: need <N> MiB, have <M> MiB` | There is not enough disk space: the place where the archive goes needs twice the old folder's size. Free up space and run again |
 | `cannot reach the core: …` | Migration cannot connect to this version's core. See [Troubleshooting](troubleshooting.md) |
-| ``run this as `miyu migrate <old folder>`: MIYU_STATE_DIR is not set`` | You ran the program inside the package directly. Use `miyu migrate` instead |
+| ``MIYU_STATE_DIR is not set; run this as `miyu migrate <old-folder>` `` | You ran the program inside the package directly. Use `miyu migrate` instead |
 | The report says `consolidation failed (…)` | There was no usable model when memories were migrated. After setting up a model, run `miyu memory dream --persona <id>` |
 | In the report, some category is `Not migrated, kept in the archive`, and the note says a package is not installed | Install that package, then run the line given in the note, or run the migration again |
 | The report says ``N link(s) in the skill `<name>` were not copied …`` | Migration does not follow links in a skill folder (they may point outside the skill), so these links stay in the archive. If you need them, copy them out of the archive yourself |

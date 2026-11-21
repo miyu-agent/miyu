@@ -34,7 +34,7 @@ Commands under read-only behave like this:
 
 You can switch the permission level in the following ways:
 
-- Terminal interface and web interface: press `Tab` or `Shift+Tab` in the input box. In the terminal interface, while the command list or the `@` file list is open, `Tab` goes to the list, and `Shift+Tab` still switches. In the web interface you can also click `⏵⏵ Full access` or `⏸ Read-only` at the left of the line below the input box.
+- Terminal interface and web interface: press `Tab` or `Shift+Tab` in the input box. In the terminal interface, while the command list or the `@` file list is open, `Tab` goes to the list, and `Shift+Tab` still switches. In the web interface you can also click `▣ Full access` or `⏸ Read-only` at the left of the line below the input box.
 - Command line: add `--permission` when you start a new session, with the value `read-only` or `full`. It only applies to a new session and cannot be used together with `-c` or `-s`. For example:
 
   ```bash

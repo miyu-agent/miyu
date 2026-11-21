@@ -295,7 +295,7 @@ Apart from `--rounds`, goals have no limit on time or cost. Each turn's own limi
 
 ### Seeing the progress
 
-- Terminal UI: the right of the line above the input box says `Goal · round N` (`Round N/M` when a round limit is set), and when the goal is paused, waiting for a reply or blocked, the state is shown there instead. Click it with the mouse to open a floating window showing the goal, state, rounds, time spent and usage.
+- Terminal UI: the right of the line above the input box says `◎ Goal · Running · Round N` (`Round N/M` when a round limit is set), followed by the time spent; when the goal is paused, waiting for a reply or blocked, `Running` becomes `Paused`, `Waiting for reply` or `Blocked`. Click it with the mouse to open a floating window showing the goal, state, rounds, time spent and usage.
 - Web UI: the top right of the input box shows the goal and which round it is on. Click it to open a layer where you can change the goal text, and also click `Pause`, `Resume` and `Clear`.
 
 ## When nobody is watching
