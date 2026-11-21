@@ -6,6 +6,10 @@
 //! `rustc-link-arg-bin` 只加在 `miyu` 这一个程序的链接上，符号名不变、依赖不重编。清单由 `cargo xtask perf`、
 //! `cargo xtask dist` 录好再设这个变量（`xtask/src/order.rs`）。
 //!
+//! 重定位打包（施工 LW-2，同一页「重定位打包」）：Linux x86_64（glibc）的 release 构建给 `miyu` 加 `-z pack-relative-relocs`。
+//! 位置无关的程序起来时，动态链接器要把整张重定位表读一遍（核心的 `.rela.dyn` 有 1.2 MB，读过就留在内存里）；打包成 RELR
+//! 以后只有二十来 KB。要 glibc 2.36 以上，Linux 的基线是 2.39（设计 12）。只加在 release：日常的编译、测试不变。
+//!
 //! 只做了 Linux（工具链在 x86_64 Linux 上默认用自带的 rust-lld）。别的系统上设了这个变量的让构建失败：只给一句警告的话，
 //! 编出来的程序没排，人却以为排了。
 
@@ -17,6 +21,15 @@ const VARIABLE: &str = "MIYU_LINK_ORDER";
 
 fn main() {
     println!("cargo:rerun-if-env-changed={VARIABLE}");
+    let cfg = |name: &str| std::env::var(name).unwrap_or_default();
+    if packs(
+        &cfg("CARGO_CFG_TARGET_OS"),
+        &cfg("CARGO_CFG_TARGET_ARCH"),
+        &cfg("CARGO_CFG_TARGET_ENV"),
+        &cfg("PROFILE"),
+    ) {
+        println!("cargo:rustc-link-arg-bin=miyu=-Wl,-z,pack-relative-relocs");
+    }
     let order = std::env::var_os(VARIABLE);
     let os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
     match lines(&os, order.as_deref()) {
@@ -26,6 +39,12 @@ fn main() {
             std::process::exit(1);
         }
     }
+}
+
+/// 这一次的构建开不开重定位打包（施工 LW-2）：只有 Linux、x86_64、glibc 的 release。aarch64 的链接器（GNU ld）到 2.43 才认
+/// 这个参数，musl 的静态程序另是一回事，都没有量过，不开。
+fn packs(os: &str, arch: &str, env: &str, profile: &str) -> bool {
+    os == "linux" && arch == "x86_64" && env == "gnu" && profile == "release"
 }
 
 /// 给 cargo 的几行指令：没设变量的一行都没有。
