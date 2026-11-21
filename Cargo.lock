@@ -2299,11 +2299,16 @@ dependencies = [
 name = "miyu-perf"
 version = "2026.11.0"
 dependencies = [
+ "bytes",
+ "h2",
+ "http",
  "miyu-ipc",
  "miyu-kernel",
  "miyu-store",
+ "rustls",
  "serde_json",
  "tokio",
+ "tokio-rustls",
 ]
 
 [[package]]

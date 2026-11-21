@@ -78,6 +78,11 @@ jobs:
           now=$(sed -n '/^\[workspace\.package\]/,/^\[/s/^version = "\(.*\)"$/\1/p' Cargo.toml)
           [ "${now}" = "${wanted}" ] || { echo "::error::工作区版本没改成 ${wanted}，现在是 ${now}"; exit 1; }
           cargo metadata --format-version 1 > /dev/null
+      # 排函数（施工 LW-1）：linux-x86_64 的核心在模拟器里照剧本运行、录清单再重链，`cargo xtask dist` 没有模拟器当场报错。
+      # 别的三种不排，不装。
+      - name: 装 QEMU 的用户态模拟器
+        if: matrix.target == 'linux-x86_64'
+        run: sudo apt-get update && sudo apt-get install -y qemu-user
       # 放在默认的 target/dist/：相对仓库的路径在 Windows 的 bash 里也照常通配（$RUNNER_TEMP 在那边带反斜杠）。
       - name: 打包
         run: cargo xtask dist --target "${{ matrix.target }}"

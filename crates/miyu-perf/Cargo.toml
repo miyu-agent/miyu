@@ -20,6 +20,14 @@ miyu-kernel = { path = "../miyu-kernel" }
 miyu-store = { path = "../miyu-store" }
 # 协议是一行一个 JSON；原始数据也写成 JSON。
 serde_json = "1.0"
+# 排函数那一场（施工 LW-1）假模型另开 HTTPS 的口：真用的人连供应商走 TLS、多半是 HTTP/2，不开就录不到那几路的函数。TLS 照
+# miyu-http 那样用 rustls（ring），h2 的服务端用 h2，帧里的请求、回应是 http、bytes 的类型。几个都是核心本来就带进来的同一版，
+# 没有新包。许可证是 MIT，或者 MIT、Apache-2.0（rustls 另可 ISC）任选。
+bytes = "1"
+h2 = "0.4"
+http = "1"
+rustls = { version = "0.23", default-features = false, features = ["std", "tls12", "ring"] }
+tokio-rustls = { version = "0.26", default-features = false }
 # 假模型服务和连核心都是异步的，跑在同一个进程里，时刻可以直接比。
 tokio = { version = "1", features = ["io-util", "macros", "net", "rt-multi-thread", "sync", "time"] }
 

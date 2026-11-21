@@ -11,6 +11,7 @@ mod fake;
 mod machine;
 mod measure;
 mod memory;
+mod order;
 mod report;
 mod rpc;
 mod sandbox;
@@ -53,8 +54,11 @@ async fn main() -> ExitCode {
     }
 }
 
-/// 照 `args` 量一遍，写结果；带 `--render` 的不量，照原始数据重出表。
+/// 照 `args` 量一遍，写结果；带 `--render` 的不量，照原始数据重出表；带 `--order` 的不量、不读预算，录排函数的清单（施工 LW-1）。
 async fn run(args: Args) -> Result<(), String> {
+    if let (Some(order), Some(emulator), Some(tree)) = (&args.order, &args.emulator, &args.tree) {
+        return order::record(&args, order, emulator, tree).await;
+    }
     let design = std::fs::read_to_string(&args.design)
         .map_err(|e| format!("读不了 {}：{e}", args.design.display()))?;
     // 预算先读：表对不上的，不白量几分钟。
