@@ -217,9 +217,9 @@ b
     )
     .text;
     for local in [
-        "> 上下文压缩了",
+        "> 上下文已压缩",
         "[图片：shot.png, 800×600]",
-        "> 这一轮被打断了",
+        "> 本轮已中断",
     ] {
         assert!(read.contains(local), "read 照旧跟语言：{local}\n{read}");
     }

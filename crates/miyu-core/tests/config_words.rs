@@ -102,12 +102,12 @@ fn chinese_says_what_the_blueprint_shows() {
     assert_eq!(
         told("zh"),
         [
-            "没有 ui.langauge 这一项。是不是想写 ui.language？已忽略此行。",
-            "log.level 只能是 error、warn、info、debug、trace 或 off，写的是 \"verbose\"。改成其中一个，例如 log.level = \"info\"。暂用 \"info\"（默认值）。",
-            "项目配置只能让限制更严。permission.start_read_only 现在是 true，这里写的 false 更宽，不生效。",
-            "TOML 写法不对：invalid basic string。暂用上次的有效配置。",
-            "log.level 只能写在系统配置里，写在项目配置里不生效。挪到系统配置里去。",
-            "permission.start_read_only 要写 true 或 false，写的是 \"yes\"。改成 permission.start_read_only = true。暂用 false（默认值）。",
+            "配置项 ui.langauge 不存在。是否应为 ui.language？已忽略这一行。",
+            "log.level 只能是 error、warn、info、debug、trace 或 off，当前为 \"verbose\"。可以改为其中一个，例如 log.level = \"info\"。暂用 \"info\"（默认值）。",
+            "项目配置只能让限制更严格。permission.start_read_only 当前为 true，这里的 false 更宽松，不会生效。",
+            "TOML 语法错误：invalid basic string。暂用上次的有效配置。",
+            "log.level 只能在系统配置中设置，在项目配置中设置不会生效。改为在系统配置中设置。",
+            "permission.start_read_only 必须是 true 或 false，当前为 \"yes\"。可以改为 permission.start_read_only = true。暂用 false（默认值）。",
         ]
     );
 }
@@ -117,12 +117,12 @@ fn english_says_what_the_blueprint_shows() {
     assert_eq!(
         told("en"),
         [
-            "There is no ui.langauge. Did you mean ui.language? Line ignored.",
+            "Unknown setting: ui.langauge. Did you mean ui.language? Line ignored.",
             "log.level must be error, warn, info, debug, trace or off, not \"verbose\". Write one of them, e.g. log.level = \"info\". Using \"info\" (the default) for now.",
-            "A project config can only make limits stricter. permission.start_read_only is true, and false here is looser, so it does not count.",
+            "A project config can only make limits stricter. permission.start_read_only is true, and false here is looser, so it has no effect.",
             "Not valid TOML: invalid basic string. Using the last valid config.",
-            "log.level belongs in the system config. It does not count in a project config. Move it to the system config.",
-            "permission.start_read_only needs true or false, not \"yes\". Write permission.start_read_only = true. Using false (the default) for now.",
+            "log.level can only be set in the system config; it has no effect in a project config. Move it to the system config.",
+            "permission.start_read_only must be true or false, not \"yes\". Write permission.start_read_only = true. Using false (the default) for now.",
         ]
     );
 }
@@ -201,7 +201,7 @@ fn a_hidden_value_is_said_in_every_language() {
     };
     assert_eq!(
         said("zh"),
-        ["24 个字符的字", "2 项的列表", "一张表", "5 个字符的值"]
+        ["24 个字符的字符串", "2 项的列表", "一张表", "5 个字符的值"]
     );
     assert_eq!(
         said("en"),

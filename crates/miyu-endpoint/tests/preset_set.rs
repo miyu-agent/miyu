@@ -399,7 +399,7 @@ async fn a_broken_preset_is_listed_with_its_problem_and_is_not_written() {
             .iter()
             .find(|one| one["preset"] == id)
             .unwrap_or_else(|| panic!("{id}：{listed}"));
-        assert_eq!(one["problem"], format!("不认识的键 {key}"), "{listed}");
+        assert_eq!(one["problem"], format!("未知的键：{key}"), "{listed}");
         assert_eq!(one["line"], 2, "{listed}");
         let reply = set(
             &mut client,

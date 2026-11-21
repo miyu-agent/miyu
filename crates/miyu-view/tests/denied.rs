@@ -60,7 +60,7 @@ fn a_write_blocked_by_a_guard_says_why_in_the_title() {
         guarded(),
     );
     let zh = title(&paged_in(&stage, "zh"));
-    assert_eq!(zh["said"], "acme-guard 拦下了：周五不许写", "{zh}");
+    assert_eq!(zh["said"], "已被 acme-guard 阻止：周五不许写", "{zh}");
     let en = title(&same(&stage));
     assert_eq!(en["said"], "Blocked by acme-guard: 周五不许写", "{en}");
     assert_eq!(en["object"], "~/a.txt", "对象照旧：{en}");
@@ -74,7 +74,7 @@ fn an_edit_blocked_by_a_guard_says_why_too() {
         guarded(),
     );
     let zh = title(&paged_in(&stage, "zh"));
-    assert_eq!(zh["said"], "acme-guard 拦下了：周五不许写", "{zh}");
+    assert_eq!(zh["said"], "已被 acme-guard 阻止：周五不许写", "{zh}");
 }
 
 #[test]

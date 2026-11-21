@@ -77,7 +77,7 @@ metadata:
 miyu config set skills.external.enabled true
 ```
 
-也可以在网页界面 `技能` 页面的顶部打开 `读取其他目录的 Skills`。读取哪些目录由 `skills.external.dirs` 决定，出厂值是 `["~/.agents/skills"]`；可以写 `~/…` 或绝对路径，按先后顺序读取，重名时排在前面的优先。在 Windows 上也可以写 `~\…`：
+也可以在网页界面 `技能` 页面的顶部打开 `读取其他目录的技能`。读取哪些目录由 `skills.external.dirs` 决定，出厂值是 `["~/.agents/skills"]`；可以写 `~/…` 或绝对路径，按先后顺序读取，重名时排在前面的优先。在 Windows 上也可以写 `~\…`：
 
 ```bash
 miyu config set skills.external.dirs '["~/.agents/skills", "~/src/team-skills"]'
@@ -248,16 +248,16 @@ print("Drew 1 chart.")
 
 | 看到的提示 | 怎么解决 |
 |---|---|
-| `跳过了这个脚本`：`Description is missing or empty` | 补上 `Description`。 |
-| `跳过了这个脚本`：`Parameters is not valid JSON: …` | JSON 没有写完，或者写错了。 |
-| `跳过了这个脚本`：`Parameters must be a JSON object schema` | 在顶层写上 `"type": "object"`。 |
-| `跳过了这个脚本`：`Timeout "…" is not a positive number of seconds` | 写一个正整数。 |
-| `跳过了这个脚本`：`Clicall "…" is not yes or no` | 写 `yes` 或 `no`。 |
-| `跳过了这个脚本`：`Venues "…" must list some of local, private, group, each once` | 只写这三种，不要重复。 |
-| `跳过了这个脚本`：`Role …`、`Scope …` | 按照上面的表格写键名和值。 |
-| `脚本 <名字> 和其他工具重名，没有登记上` | 修改文件名。 |
-| `核心还没读到脚本 <名字>` | 脚本刚放进去，过一会儿再查；如果一直是这样，就重启核心。 |
-| `这个脚本的状态目录（…）还在，但脚本已经不存在` | 如果用不上了，就删掉那个目录。 |
+| `已跳过这个脚本`：`Description is missing or empty` | 补上 `Description`。 |
+| `已跳过这个脚本`：`Parameters is not valid JSON: …` | JSON 没有写完，或者写错了。 |
+| `已跳过这个脚本`：`Parameters must be a JSON object schema` | 在顶层写上 `"type": "object"`。 |
+| `已跳过这个脚本`：`Timeout "…" is not a positive number of seconds` | 写一个正整数。 |
+| `已跳过这个脚本`：`Clicall "…" is not yes or no` | 写 `yes` 或 `no`。 |
+| `已跳过这个脚本`：`Venues "…" must list some of local, private, group, each once` | 只写这三种，不要重复。 |
+| `已跳过这个脚本`：`Role …`、`Scope …` | 按照上面的表格写键名和值。 |
+| `脚本 <名字> 与其他工具重名，未注册` | 修改文件名。 |
+| `核心还没有加载脚本 <名字>` | 脚本刚放进去，过一会儿再查；如果一直是这样，就重启核心。 |
+| `脚本 <名字> 的状态目录仍然存在，但这个脚本已不存在` | 如果用不上了，就删掉那个目录。 |
 
 ## 斜杠命令模板
 
@@ -305,7 +305,7 @@ Style: $ARGUMENTS
 - 如果重名，你的模板优先于软件包带的模板；和 Miyu 自带的命令重名时，你的模板不算数，自带的命令优先。
 - 谁能使用模板，和 Miyu 自带的命令一样，详细的见 [斜杠命令](commands.md)。
 
-`miyu check` 会报 `跳过了这个斜杠命令：…`（开头的 YAML 无法解析，或者不是一张表）、`和 <别的> 同名，被它覆盖了，这一份不使用`、`和 Miyu 自带的 /<名字> 同名，这一份不用`。
+`miyu check` 会报 `已跳过这个斜杠命令：…`（开头的 YAML 无法解析，或者不是一张表）、`已被同名的 <别的> 覆盖，不会使用`、`与 Miyu 内置的 /<名字> 同名，不会使用`。
 
 ## MCP 服务
 
@@ -400,7 +400,7 @@ miyu provider login acme-docs
 
 ### 写法错误和启动失败
 
-- `miyu check` 会报 `MCP 服务的写法不对：…`，并带上行号。写错的那个服务不会启动，其他服务照常运行。
+- `miyu check` 会报 `MCP 服务格式不正确：…`，并带上行号。写错的那个服务不会启动，其他服务照常运行。
 - 本机程序的工作目录是 `~/.miyu/var/lib/mcp/<服务名>/`（也在环境变量 `MIYU_STATE_DIR` 里），不在沙盒里运行。它的标准错误在 `~/.miyu/var/log/mcp/<服务名>.stderr`，启动失败时先查看这个文件。
 - 启动失败或者崩溃的服务会隔一会儿重试，连续失败 5 次后停止。修好以后，在 `MCP` 页面点击 `重启`。
 - 用 `npx`、`uvx` 启动的服务，需要你先自己安装 Node、Python 这些环境。

@@ -91,7 +91,7 @@ async fn a_self_paced_loop_runs_once_then_waits_for_her_next_and_off_removes_it(
     core.start_schedules();
     let reply = typed(&mut client, &session, "/loop 盯着部署").await;
     assert_eq!(
-        reply["result"]["said"], "已开始循环：由 AI 定下一次 · 盯着部署",
+        reply["result"]["said"], "已开始循环：由 AI 决定下一次运行的时间 · 盯着部署",
         "{reply}"
     );
     home.until_turns(&session, 1).await;
@@ -109,10 +109,10 @@ async fn a_self_paced_loop_runs_once_then_waits_for_her_next_and_off_removes_it(
     assert_eq!(now.len(), 1, "{now:?}");
     assert_eq!(now[0].prompt, "换一句");
     let off = typed(&mut client, &session, "/loop off").await;
-    assert_eq!(off["result"]["said"], "已停止此会话的循环。", "{off}");
+    assert_eq!(off["result"]["said"], "已停止这个会话的循环。", "{off}");
     assert!(rows(&core).is_empty());
     let again = typed(&mut client, &session, "/loop off").await;
-    assert_eq!(again["result"]["said"], "此会话没有循环。", "{again}");
+    assert_eq!(again["result"]["said"], "这个会话没有循环。", "{again}");
 }
 
 /// `/loop off` 只删循环：同一个会话上的定时任务照旧留着。
@@ -136,7 +136,7 @@ async fn off_leaves_the_session_s_other_schedules() {
     };
     core.schedules().add(plain).expect("建得了");
     let off = typed(&mut client, &session, "/loop off").await;
-    assert_eq!(off["result"]["said"], "此会话没有循环。", "{off}");
+    assert_eq!(off["result"]["said"], "这个会话没有循环。", "{off}");
     assert_eq!(rows(&core).len(), 1, "定时任务留着");
 }
 
@@ -223,7 +223,7 @@ async fn a_resent_id_with_another_command_is_refused_before_it_runs() {
     assert_eq!(now[0].prompt, "x");
     // 被拒的不记，新的编号照旧执行。
     let off = typed_as(&mut client, "reuse-2", &session, "/loop off").await;
-    assert_eq!(off["result"]["said"], "已停止此会话的循环。", "{off}");
+    assert_eq!(off["result"]["said"], "已停止这个会话的循环。", "{off}");
     assert!(rows(&core).is_empty());
 }
 
@@ -248,7 +248,7 @@ async fn a_bare_loop_runs_now_on_the_fixed_sentence() {
     core.start_schedules();
     let reply = typed(&mut client, &session, "/loop").await;
     assert_eq!(
-        reply["result"]["said"], "已开始循环：由 AI 自己定做什么、下一次什么时候",
+        reply["result"]["said"], "已开始循环：由 AI 决定执行的内容和下一次运行的时间",
         "{reply}"
     );
     home.until_turns(&session, 1).await;
@@ -315,11 +315,11 @@ async fn a_wrong_loop_answers_with_the_usage() {
     assert_eq!(reason(&reply), Some("bad_params"), "{reply}");
     assert_eq!(
         reply["error"]["data"]["why"],
-        "参数不对。用法：\n\
-         /loop　不给具体要求，由 AI 自己定做什么、什么时候\n\
-         /loop <间隔> <要说的话>　每隔一段时间说一次，例如 5m、2h\n\
-         /loop <要说的话>　由 AI 自己定下一次什么时候\n\
-         /loop off　停止此会话的循环（也可以写 clear、stop）",
+        "参数错误。用法：\n\
+         /loop　不指定内容：由 AI 决定执行的内容和时间\n\
+         /loop <间隔> <内容>　按固定间隔发送，例如 5m、2h\n\
+         /loop <内容>　由 AI 决定下一次运行的时间\n\
+         /loop off　停止这个会话的循环（也可以使用 clear、stop）",
         "{reply}"
     );
     assert!(rows(&core).is_empty());

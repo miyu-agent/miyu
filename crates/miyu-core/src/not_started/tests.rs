@@ -59,7 +59,7 @@ fn the_reason_is_only_the_part_that_changes() {
         say(Failure::socket(&OpenError::NotPrivate(PathBuf::from(
             "/run/x"
         )))),
-        "The core couldn't start: /run/x isn't yours or others can enter it, so the socket isn't put there"
+        "The core couldn't start: /run/x is not owned by the current user or is accessible to other users, so the socket was not created there"
     );
     let root = DataRoot::at(PathBuf::from("/d"));
     assert!(

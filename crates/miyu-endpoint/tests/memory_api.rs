@@ -373,7 +373,7 @@ async fn without_a_persona_memory_has_a_room_of_its_own() {
             json!({"session": first, "text": "/remember 用户养猫"}),
         )
         .await;
-    assert_eq!(reply["result"]["said"], "记下了：用户养猫", "{reply}");
+    assert_eq!(reply["result"]["said"], "已添加记忆：用户养猫", "{reply}");
     let second = client.create("c2", "~").await;
     let listed = client
         .call("l2", "memory.list", json!({"session": second}))
@@ -411,7 +411,7 @@ async fn a_loaded_session_without_a_persona_finds_its_room_again() {
             json!({"session": session, "text": "/remember 用户养猫"}),
         )
         .await;
-    assert_eq!(reply["result"]["said"], "记下了：用户养猫", "{reply}");
+    assert_eq!(reply["result"]["said"], "已添加记忆：用户养猫", "{reply}");
     drop(client);
     drop(core);
 

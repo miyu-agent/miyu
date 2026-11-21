@@ -157,14 +157,14 @@ async fn clear_and_stop_alone_turn_the_loop_off() {
         assert_eq!(rows(&core).len(), 1);
         let reply = typed(&mut client, &format!("off{n}"), &session, off).await;
         assert_eq!(
-            reply["result"]["said"], "已停止此会话的循环。",
+            reply["result"]["said"], "已停止这个会话的循环。",
             "{off:?}：{reply}"
         );
         assert!(rows(&core).is_empty(), "{off:?}：{:?}", rows(&core));
     }
     let reply = typed(&mut client, "words", &session, "/loop clear the cache").await;
     assert_eq!(
-        reply["result"]["said"], "已开始循环：由 AI 定下一次 · clear the cache",
+        reply["result"]["said"], "已开始循环：由 AI 决定下一次运行的时间 · clear the cache",
         "{reply}"
     );
     let row = rows(&core).pop().expect("开了一个");

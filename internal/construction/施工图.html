@@ -1584,6 +1584,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC28"><span class="n">DOC-28</span>作者教程并进开发者文档<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC29"><span class="n">DOC-29</span>协议参考和教程照规范改写<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC30"><span class="n">DOC-30</span>参考里对不上的 14 处照代码改<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sWD4"><span class="n">WD-4</span>核心字表清理成标准短句<span class="st">…</span></a></li>
         <li><a class="step review" href="#sHLP1"><span class="n">HLP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
@@ -61872,6 +61873,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/DOC-30-参考里对不上的核对.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sWD4" aria-labelledby="h-sWD4">
+  <div class="sheet-head"><h2 id="h-sWD4"><span class="no">WD-4</span>核心给人看的字表清理成标准的软件短句</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">核心给人看的字表有不少施工时随手写的口语和半截话（「不认识的键」「没登记上」「已拦下」）。这一步把整张表（开工时 931 句）逐句过一遍，改成标准的软件短句；设置项的说明不再写配置文件的写法。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">resources/core/human/{zh,en,ja}.json　crates/*/tests　internal/designs/samples/config　internal/blueprint　docs/zh、docs/en</span><span class="dir-note">WD-4</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>931 句分六批，子代理各出一份改动清单，逐条看过以后用脚本写回；脚本逐句校验占位符、首尾空白、末尾标点不变</li>
+              <li>中文改 360 句、英文 129 句、日文 60 句：「未知的键：{detail}」「{detail} 必须是…」「已跳过这个脚本：{detail}」「{key} 必须是 {expected}，当前为 {got}」</li>
+              <li>回代码核对后改正七处事实；设置项说明里拿掉的六处配置文件写法，手册的配置键全表里原来都有</li>
+              <li>53 个测试文件的断言、四份配置样本、蓝图表格 101 格、手册和协议参考 18 页跟着换成新话</li>
+              <li>「社区包」四句、给 AI 读的英文导出句子没有修改；FX-9 改过的几句保持它的意思，FX-10、FX-12 新加的四句一并润色，原因写在施工单里</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">界面上的字写成标准的软件短句；设置项说明不写配置文件的写法</span><span class="rl">internal/blueprint/config.md「用词的规矩」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">WD-4</dd></div>
+        <div><dt>名称</dt><dd>核心给人看的字表清理成标准的软件短句</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-21</dd></div>
+        <div><dt>提交</dt><dd class="mono">WD-4</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>新测试 chinese_words_avoid_construction_slang：基点的字表有 71 行被拦住，修改后通过</span></li>
+        <li><span class="ok">✓</span><span>全仓测试、门禁十二项通过；文档检查问题 0 个</span></li>
+        <li><span class="ok">✓</span><span>549 行旧→新对照表在施工单里，其他仓库换钉时按它修改</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/WD-4-核心给人看的字表清理.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

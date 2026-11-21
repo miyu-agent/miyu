@@ -45,7 +45,7 @@
   miyu ask -C $HOME\src\app --permission read-only "检查这里的代码"
   ```
 
-- 让新会话一开始就是只读：在设置页打开 `通用 → 新会话 → 新会话开局只读`，或者运行：
+- 让新会话一开始就是只读：在设置页打开 `通用 → 新会话 → 新会话默认只读`，或者运行：
 
   ```sh
   miyu config set permission.start_read_only true

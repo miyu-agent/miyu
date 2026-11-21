@@ -46,7 +46,7 @@ fn asked() -> Vec<Entry> {
 fn read_shows_the_approval_and_the_questions_in_the_connection_language() {
     let got = rendered(&asked(), &Sources::default(), Options::READ).text;
     assert!(
-        got.contains("### Tool: 执行命令 `rm -rf build`\n\n被拒\n\n要确认（执行命令）：拒绝，理由：先别删\n\n```text"),
+        got.contains("### Tool: 执行命令 `rm -rf build`\n\n已拒绝\n\n权限确认（执行命令）：拒绝，理由：先别删\n\n```text"),
         "{got}"
     );
     assert!(
@@ -54,7 +54,7 @@ fn read_shows_the_approval_and_the_questions_in_the_connection_language() {
         "{got}"
     );
     assert!(
-        got.contains("> 回答了提问\n\n- 要不要继续？: 继续\n- 先看哪个文件？: 写 main.rs"),
+        got.contains("> 已回答提问\n\n- 要不要继续？: 继续\n- 先看哪个文件？: 写 main.rs"),
         "{got}"
     );
 }
@@ -68,7 +68,7 @@ fn agent_writes_the_approval_raw_and_chat_puts_everything_on_one_line() {
     );
     let chat = rendered(&asked(), &Sources::default(), Options::CHAT).text;
     assert!(
-        chat.contains("- Tool: `shell` `rm -rf build` · denied · approval (execute): deny — 先别删\n- Tool: `ask` · asked: 要不要继续？; 先看哪个文件？\n\n> 回答了提问：要不要继续？: 继续; 先看哪个文件？: 写 main.rs"),
+        chat.contains("- Tool: `shell` `rm -rf build` · denied · approval (execute): deny — 先别删\n- Tool: `ask` · asked: 要不要继续？; 先看哪个文件？\n\n> 已回答提问：要不要继续？: 继续; 先看哪个文件？: 写 main.rs"),
         "{chat}"
     );
     let english = {
@@ -147,11 +147,11 @@ fn nested_calls_are_listed_in_each_style_and_full_brings_their_results() {
     let (entries, mut sources) = scripted();
     let read = rendered(&entries, &sources, Options::READ).text;
     let list = read
-        .find("脚本里调了 3 个工具\n- #1 ")
+        .find("脚本调用了 3 个工具\n- #1 ")
         .expect("read 列出脚本里调的");
     assert!(
         read[list..].contains("\n- #2 ")
-            && read[list..].contains(" · 被拒 · no\n- #3 ")
+            && read[list..].contains(" · 已拒绝 · no\n- #3 ")
             && read[list..].contains(" · 出错"),
         "{read}"
     );

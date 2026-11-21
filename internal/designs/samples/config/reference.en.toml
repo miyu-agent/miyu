@@ -1,442 +1,442 @@
 # Every Miyu setting and its default. This file is generated. Editing it has no effect.
-# Write the config in config.toml in the data root.
+# The config file is config.toml in the data root.
 
 [clicall.mcp]
 # Allow script calls: When on, all of this server's tools can be called with miyu call; when off, only directly. A tool with its own setting follows that one.
-# Allowed: true or false. Only in the system config. Takes effect next turn.
+# Allowed values: true or false. Can be set only in the system config. Takes effect next turn.
 # "<id>" =
 
 [clicall.tools]
 # Allow script calls: When on, the AI can also call this tool with miyu call inside a command, and the result goes to the script; when off, it can only be called directly. Unset follows how it was registered (MCP servers and script tools are callable, among built-in tools only search, fetching pages, memory search and the knowledge base tools are, extension tools are not). Tools that write or send messages stay uncallable even when on.
-# Allowed: true or false. Only in the system config. Takes effect next turn.
+# Allowed values: true or false. Can be set only in the system config. Takes effect next turn.
 # "<name>" =
 
 [commands."<id>"]
 # Access: Who can use this slash command: you and group admins, anyone in the chat, or off for no one. When unset, the command's own setting applies, otherwise you and group admins.
-# Allowed: admin, anyone or off. Only in the system config. Takes effect immediately.
+# Allowed values: admin, anyone or off. Can be set only in the system config. Takes effect immediately.
 # access =
 
 [compaction]
 # Compaction line: Compact automatically once the context fills this percent of the window. Small windows keep room for the reply, so compaction may start earlier. With a 200K window, values above 85 have no effect. A 1M window can reach 95.
-# Allowed: a whole number from 20 to 95. Only in the system config. Takes effect next turn.
+# Allowed values: a whole number from 20 to 95. Can be set only in the system config. Takes effect next turn.
 line = 85
 
-# Pre-compaction: When the context is nearly full, the older part is summarized in the background, so the switch happens without a wait when compaction is due. Off means compacting only once the limit is reached, as before.
-# Allowed: true or false. Only in the system config. Takes effect next turn.
+# Pre-compaction: When the context is nearly full, the older part is summarized in the background, so the switch happens without a wait when compaction is due. Off means compacting only once the limit is reached.
+# Allowed values: true or false. Can be set only in the system config. Takes effect next turn.
 prepare = true
 
 [core]
 # Idle exit time: Minutes with no connection and no running turn before the core exits. 0 keeps it running (the default); an interface starts the core again when it can't reach it.
-# Allowed: a whole number from 0 to 525600. Only in the system config. Takes effect immediately.
+# Allowed values: a whole number from 0 to 525600. Can be set only in the system config. Takes effect immediately.
 idle_exit = 0
 
 # Core worker threads: How many threads the core uses for connections, sessions and requests. 0 follows the CPU core count (the default); 1 counts as 2.
-# Allowed: a whole number from 0 to 64. Only in the system config. Takes effect after the core restarts.
+# Allowed values: a whole number from 0 to 64. Can be set only in the system config. Takes effect after the core restarts.
 workers = 0
 
 [external.bindings]
-# Platform accounts: Which platform identities are you. The key is the platform identity (for example qq:10001), the value is owner. In private chats that identity is you.
-# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Takes effect immediately.
+# Platform accounts: Which platform identities are you. In private chats that identity is you.
+# Allowed values: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Can be set only in the system config. Takes effect immediately.
 # "<external>" =
 
 [features]
 # Enabled: Presets that turn on what they don't list follow this switch for the skill, script or MCP server, except where a preset turns it on or off itself. Presets that leave unlisted features off ignore it.
-# Allowed: true or false. Only in the system config. Takes effect next turn.
+# Allowed values: true or false. Can be set only in the system config. Takes effect next turn.
 # "<name>" =
 
 [jobs]
-# Longest background command: A command the AI runs in the background is stopped after this long, and the AI is told. At most 2 hours.
-# Allowed: a length of time from 1m to 2h, written like 30s, 10m or 1h. Only in the system config. Takes effect next turn.
+# Maximum background command runtime: A command the AI runs in the background is stopped after this long, and the AI is told. At most 2 hours.
+# Allowed values: a length of time from 1m to 2h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect next turn.
 max_running = "30m"
 
 [log]
-# Runtime log level: How much the runtime log records. Set debug when chasing a problem. MIYU_LOG, when set, wins for that launch.
-# Allowed: error, warn, info, debug, trace or off. Only in the system config. Takes effect immediately.
+# Runtime log level: How much the runtime log records. Choose "Detailed, for debugging" when chasing a problem. MIYU_LOG, when set, wins for that launch.
+# Allowed values: error, warn, info, debug, trace or off. Can be set only in the system config. Takes effect immediately.
 level = "info"
 
 [memory]
 # Organizing records kept: Keep only this many of the latest consolidation runs for each memory. Older ones go to the trash. 0 deletes each run when it ends.
-# Allowed: a whole number from 0 to 1000. Only in the system config. Takes effect next turn.
+# Allowed values: a whole number from 0 to 1000. Can be set only in the system config. Takes effect next turn.
 dream_keep = 20
 
 # Idle time before organizing: Once the conversation has been quiet this long, the AI turns what is worth keeping from the new part into memories.
-# Allowed: a length of time from 1m to 1h, written like 30s, 10m or 1h. Only in the system config. Takes effect next turn.
+# Allowed values: a length of time from 1m to 1h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect next turn.
 extract_idle = "30m"
 
 # Organizing interval in continuous chats (turns): When a chat never goes quiet, the AI organizes in the background once this many turns have passed since the last time, without waiting for a pause.
-# Allowed: a whole number from 2 to 500. Only in the system config. Takes effect next turn.
+# Allowed values: a whole number from 2 to 500. Can be set only in the system config. Takes effect next turn.
 extract_max_turns = 20
 
 # Longest wait in continuous chats: When a chat never goes quiet, the AI organizes in the background once the earliest unorganized turn is this old, without waiting for a pause.
-# Allowed: a length of time from 10m to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect next turn.
+# Allowed values: a length of time from 10m to 24h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect next turn.
 extract_max_wait = "1h"
 
 # Organizing interval (turns): The AI organizes only after at least this many turns since the last time.
-# Allowed: a whole number from 1 to 100. Only in the system config. Takes effect next turn.
+# Allowed values: a whole number from 1 to 100. Can be set only in the system config. Takes effect next turn.
 extract_turns = 2
 
 # Consolidation interval: After this long the AI goes over new and older memories together: drops repeats and outdated ones, and writes a summary of what it knows about you.
-# Allowed: a length of time from 1h to 720h, written like 30s, 10m or 1h. Only in the system config. Takes effect next turn.
+# Allowed values: a length of time from 1h to 720h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect next turn.
 merge_every = "16h"
 
 [models]
-# Chat model: The model new sessions use, written as provider/model, for example deepseek/deepseek-flash, or @pool.
-# Allowed: <provider>/<model> or @<pool>. Only in the system config. Applies to new sessions.
+# Chat model: The model new sessions use.
+# Allowed values: <provider>/<model> or @<pool>. Can be set only in the system config. Applies to new sessions.
 # chat =
 
 # Semantic model: Improves search quality for memories, knowledge bases and more. Only the built-in model recalls memories and knowledge on its own; other models are used for search only.
-# Allowed: local, off or <provider>/<model>. Only in the system config. Takes effect next turn.
+# Allowed values: local, off or <provider>/<model>. Can be set only in the system config. Takes effect next turn.
 # embedding =
 
 # Multimodal model: Provides multimodal abilities when the chat model doesn't support them.
-# Allowed: <provider>/<model> or @<pool>. Only in the system config. Takes effect next turn.
+# Allowed values: <provider>/<model> or @<pool>. Can be set only in the system config. Takes effect next turn.
 # vision =
 
 [models.catalog]
 # Update interval: Fetch again once the cached catalog is this old.
-# Allowed: a length of time from 1h to 720h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.
+# Allowed values: a length of time from 1h to 720h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect immediately.
 every = "24h"
 
 # Update the catalog: Fetch a newer model catalog from models.dev in the background. Off uses only the bundled and already fetched ones.
-# Allowed: true or false. Only in the system config. Takes effect immediately.
+# Allowed values: true or false. Can be set only in the system config. Takes effect immediately.
 update = true
 
 # Catalog address: Where to fetch the model catalog from.
-# Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config. Takes effect immediately.
+# Allowed values: an address starting with http:// or https:// or { env = "…" }. Can be set only in the system config. Takes effect immediately.
 url = "https://models.dev/api.json"
 
 [models.cooldown.auth]
 # Auth failure suspension (initial): How long a pool model rests the first time it fails to authenticate. It doubles each time in a row.
-# Allowed: a length of time from 1s to 1h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.
+# Allowed values: a length of time from 1s to 1h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect immediately.
 base = "10m"
 
 # Auth failure suspension (max): The auth failure pause stops doubling here.
-# Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.
+# Allowed values: a length of time from 1s to 24h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect immediately.
 max = "2h"
 
 [models.cooldown.quota]
 # Quota exhausted suspension (initial): How long a pool model rests the first time it runs out of quota or credit and the provider doesn't say when it comes back. When it does say, that time is used, up to a day.
-# Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.
+# Allowed values: a length of time from 1s to 24h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect immediately.
 base = "30m"
 
 # Quota exhausted suspension (max): Without a stated reset time, the pause doubles each time in a row up to this.
-# Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.
+# Allowed values: a length of time from 1s to 24h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect immediately.
 max = "30m"
 
 [models.cooldown.rate_limited]
 # Rate limit cooldown (initial): How long an endpoint rests the first time it is rate limited. It doubles each time in a row.
-# Allowed: a length of time from 1s to 1h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.
+# Allowed values: a length of time from 1s to 1h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect immediately.
 base = "30s"
 
 # Rate limit cooldown (max): The rate limit cooldown stops doubling here, even when the provider asks for longer.
-# Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.
+# Allowed values: a length of time from 1s to 24h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect immediately.
 max = "10m"
 
 [models.cooldown.retryable]
 # Error cooldown (initial): How long an endpoint rests the first time it cannot be reached or fails on its side. It doubles each time in a row.
-# Allowed: a length of time from 1s to 1h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.
+# Allowed values: a length of time from 1s to 1h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect immediately.
 base = "10s"
 
 # Error cooldown (max): The cooldown for these errors stops doubling here.
-# Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.
+# Allowed values: a length of time from 1s to 24h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect immediately.
 max = "5m"
 
 [net]
 # Internal domains: Domains the AI never visits on behalf of others (people in group chats, strangers), subdomains included, whatever they resolve to and whether or not a proxy is used; you are not affected. For example example-corp.com.
-# Allowed: a list of text of at most 253 characters. Only in the system config. Takes effect next turn.
+# Allowed values: a list of text of at most 253 characters. Can be set only in the system config. Takes effect next turn.
 # internal_domains =
 
 [net.search]
 # Web provider: Which service AI uses to search and fetch the web. Auto sticks to free tiers: searches try Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rest any that hit a rate limit, and pages that can't be fetched directly are fetched by Exa, Firecrawl or Parallel. These services are outside China and receive the search terms and addresses. A chosen one is tried first (the DeepSeek search API also fetches pages before AI tries them itself), and Auto takes over when it fails.
-# Allowed: auto, exa, anysearch, deepseek, deepseek-responses, tavily, brave or searxng. Only in the system config. Takes effect next turn.
+# Allowed values: auto, exa, anysearch, deepseek, deepseek-responses, tavily, brave or searxng. Can be set only in the system config. Takes effect next turn.
 source = "auto"
 
 [net.search.anysearch]
 # AnySearch: With a key, searches use your own AnySearch quota; without one, the free daily quota per IP.
-# Allowed: { secret = "…" } or { env = "…" }. Only in the system config. Takes effect next turn.
+# Allowed values: { secret = "…" } or { env = "…" }. Can be set only in the system config. Takes effect next turn.
 # key =
 
 [net.search.brave]
 # Brave Search: Needed when Brave is the web provider.
-# Allowed: { secret = "…" } or { env = "…" }. Only in the system config. Takes effect next turn.
+# Allowed values: { secret = "…" } or { env = "…" }. Can be set only in the system config. Takes effect next turn.
 # key =
 
 [net.search.deepseek]
 # DeepSeek: Needed when DeepSeek is the web provider; if unset, the key of your official DeepSeek model provider is borrowed (shown as inherited). Searches and fetched pages are charged per use.
-# Allowed: { secret = "…" } or { env = "…" }. Only in the system config. Takes effect next turn.
+# Allowed values: { secret = "…" } or { env = "…" }. Can be set only in the system config. Takes effect next turn.
 # key =
 
 [net.search.exa]
 # Exa: With a key, searches use your own Exa quota; without one, the free quota.
-# Allowed: { secret = "…" } or { env = "…" }. Only in the system config. Takes effect next turn.
+# Allowed values: { secret = "…" } or { env = "…" }. Can be set only in the system config. Takes effect next turn.
 # key =
 
 [net.search.searxng]
 # SearXNG address: Your own SearXNG instance, for example http://127.0.0.1:8888, with the JSON format enabled. Used when SearXNG is the web provider.
-# Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config. Takes effect next turn.
+# Allowed values: an address starting with http:// or https:// or { env = "…" }. Can be set only in the system config. Takes effect next turn.
 # url =
 
 [net.search.tavily]
 # Tavily: Needed when Tavily is the web provider.
-# Allowed: { secret = "…" } or { env = "…" }. Only in the system config. Takes effect next turn.
+# Allowed values: { secret = "…" } or { env = "…" }. Can be set only in the system config. Takes effect next turn.
 # key =
 
 [packages]
 # Held packages: Packages (by id) skipped when upgrading; the installed version stays.
-# Allowed: a list of text of at most 64 characters. Only in the system config. Takes effect immediately.
+# Allowed values: a list of text of at most 64 characters. Can be set only in the system config. Takes effect immediately.
 # hold =
 
 # Mirrors: Tried in order before the source when it is slow or unreachable. Content is still checked against the signature and hashes, so a mirror can't change it.
-# Allowed: a list of an address starting with http:// or https:// or { env = "…" }. Only in the system config. Takes effect immediately.
+# Allowed values: a list of an address starting with http:// or https:// or { env = "…" }. Can be set only in the system config. Takes effect immediately.
 mirrors = []
 
 # Packages for other systems: Also list packages that don't support this system in the package source, marked "Not supported on this system". They can't be installed.
-# Allowed: true or false. Only in the system config. Takes effect immediately.
+# Allowed values: true or false. Can be set only in the system config. Takes effect immediately.
 other_systems = false
 
 # Package source address: Where to look up and download packages. The official source by default; any other address must serve content signed by the official key.
-# Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config. Takes effect immediately.
+# Allowed values: an address starting with http:// or https:// or { env = "…" }. Can be set only in the system config. Takes effect immediately.
 source = "https://miyu-agent.github.io/packages/"
 
 [packages.sources."<id>"]
 # Other source key: The Ed25519 public key (base64) its index is signed with. An index that doesn't verify isn't taken.
-# Allowed: text of at most 64 characters. Only in the system config. Takes effect immediately.
+# Allowed values: text of at most 64 characters. Can be set only in the system config. Takes effect immediately.
 # key =
 
 # Other source address: The folder holding its index. Together with a key it makes a source you trust. It goes in the system config.
-# Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config. Takes effect immediately.
+# Allowed values: an address starting with http:// or https:// or { env = "…" }. Can be set only in the system config. Takes effect immediately.
 # url =
 
 [permission]
 # Start new sessions read-only: When on, new sessions begin read-only. The AI can look around and plan, and you turn read-only off when files should change. A project config can only turn it on.
-# Allowed: true or false. Only in the system config or a project config. Applies to new sessions.
+# Allowed values: true or false. Can be set only in the system config or a project config. Applies to new sessions.
 start_read_only = false
 
 [permission.confirm]
 # Containers using host devices: Ask before a container takes the host's devices, process or network namespace.
-# Allowed: true or false. Only in the system config. Takes effect next turn.
+# Allowed values: true or false. Can be set only in the system config. Takes effect next turn.
 container = true
 
 # Recursive deletes: Ask before deleting the working directory or a parent of it, Miyu's data, or a whole directory whose target is only known at run time.
-# Allowed: true or false. Only in the system config. Takes effect next turn.
+# Allowed values: true or false. Can be set only in the system config. Takes effect next turn.
 delete = true
 
 # Destructive git operations: Ask before a force push, reset --hard, clean -f, discarding changes or dropping a stash.
-# Allowed: true or false. Only in the system config. Takes effect next turn.
+# Allowed values: true or false. Can be set only in the system config. Takes effect next turn.
 git = true
 
 # Running a download directly: Ask before commands like curl … | sh or irm … | iex.
-# Allowed: true or false. Only in the system config. Takes effect next turn.
+# Allowed values: true or false. Can be set only in the system config. Takes effect next turn.
 pipe_to_shell = true
 
 # Shutdown and restart: Ask before shutting down or restarting.
-# Allowed: true or false. Only in the system config. Takes effect next turn.
+# Allowed values: true or false. Can be set only in the system config. Takes effect next turn.
 power = true
 
 # Confirmation timeout: Anything waiting for your confirmation is denied after this many seconds. 0 waits forever.
-# Allowed: a whole number from 0 to 86400. Only in the system config. Takes effect next turn.
+# Allowed values: a whole number from 0 to 86400. Can be set only in the system config. Takes effect next turn.
 timeout = 300
 
 [persona]
 # Default persona: The persona new sessions use. When unset, new sessions have no persona: no character prompt, and a memory of their own.
-# Allowed: a persona id. Only in the system config. Applies to new sessions.
+# Allowed values: a persona id. Can be set only in the system config. Applies to new sessions.
 # default =
 
 [pools."<id>"]
-# Description: One line the AI sees after the pool name when it starts a subagent. Write it in English.
-# Allowed: one line of English, at most 60 characters. Only in the system config. Applies to new sessions.
+# Description: One line the AI sees after the pool name when it starts a subagent. Enter it in English.
+# Allowed values: one line of English, at most 60 characters. Can be set only in the system config. Applies to new sessions.
 # description =
 
-# Pool members: A group of models, each written as provider/model.
-# Allowed: a list of <provider>/<model>. Only in the system config. Takes effect next turn.
+# Pool members: A group of models.
+# Allowed values: a list of <provider>/<model>. Can be set only in the system config. Takes effect next turn.
 # models =
 
-# Allocation strategy: Keep a session on one member, take the next member for every request, or start from the first member every time (a main model with backups used only on errors). Left out, a pool whose members are all billed per request rotates and the others pin.
-# Allowed: pin, rotate or ordered. Only in the system config. Takes effect next turn.
+# Allocation strategy: Keep a session on one member, take the next member for every request, or start from the first member every time (a main model with backups used only on errors). When unset, a pool whose members are all billed per request rotates and the others pin.
+# Allowed values: pin, rotate or ordered. Can be set only in the system config. Takes effect next turn.
 # strategy =
 
 # Available to subagents: When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members.
-# Allowed: true or false. Only in the system config. Applies to new sessions.
+# Allowed values: true or false. Can be set only in the system config. Applies to new sessions.
 subagent = false
 
 [pools.flagship]
 # Available to subagents: When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members.
-# Allowed: true or false. Only in the system config. Applies to new sessions.
+# Allowed values: true or false. Can be set only in the system config. Applies to new sessions.
 subagent = true
 
 [pools.lite]
 # Available to subagents: When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members.
-# Allowed: true or false. Only in the system config. Applies to new sessions.
+# Allowed values: true or false. Can be set only in the system config. Applies to new sessions.
 subagent = true
 
 [pools.normal]
 # Available to subagents: When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members.
-# Allowed: true or false. Only in the system config. Applies to new sessions.
+# Allowed values: true or false. Can be set only in the system config. Applies to new sessions.
 subagent = true
 
 [preset]
 # Default preset: The preset new sessions use.
-# Allowed: a preset id. Only in the system config. Applies to new sessions.
+# Allowed values: a preset id. Can be set only in the system config. Applies to new sessions.
 default = "full"
 
 [profile]
 # Additional details: Anything you want the AI to know about you; can be left empty. Not included in group chats on messaging platforms.
-# Allowed: text of at most 2000 characters; line breaks allowed. Only in the system config. Applies to new sessions.
+# Allowed values: text of at most 2000 characters; line breaks allowed. Can be set only in the system config. Applies to new sessions.
 # about =
 
 # Preferred name: How the AI addresses you, such as your name or a nickname.
-# Allowed: text of at most 64 characters. Only in the system config. Applies to new sessions.
+# Allowed values: text of at most 64 characters. Can be set only in the system config. Applies to new sessions.
 # name =
 
 # Reply language: The language the AI replies in by default. You can ask it to switch at any time.
-# Allowed: text of at most 64 characters. Only in the system config. Applies to new sessions.
+# Allowed values: text of at most 64 characters. Can be set only in the system config. Applies to new sessions.
 # preferred_reply_language =
 
 [providers."<id>"]
-# Address: The address of this provider's API; the driver adds the path. Known providers can leave it out.
-# Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config. Takes effect next turn.
+# Address: The address of this provider's API; the driver adds the path. Not needed for providers Miyu recognizes.
+# Allowed values: an address starting with http:// or https:// or { env = "…" }. Can be set only in the system config. Takes effect next turn.
 # base_url =
 
-# Cache class: How this provider bills its cache. For now it only decides how a pool without a strategy splits. Left out, it follows the driver.
-# Allowed: contract, best_effort or per_request. Only in the system config. Takes effect next turn.
+# Cache class: How this provider bills its cache. For now it only decides how a pool without a strategy splits. When unset, it follows the driver.
+# Allowed values: contract, best_effort or per_request. Can be set only in the system config. Takes effect next turn.
 # cache =
 
-# Catalog provider: Which provider in the model data this one is, for example deepseek for a relay that only forwards DeepSeek.
-# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Takes effect next turn.
+# Catalog provider: Which provider in the model catalog this one is, for example deepseek for a relay that only forwards DeepSeek.
+# Allowed values: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Can be set only in the system config. Takes effect next turn.
 # catalog =
 
-# Driver: How to talk to this provider. Known providers can leave it out.
-# Allowed: openai-chat, anthropic or openai-responses. Only in the system config. Takes effect next turn.
+# Driver: How to talk to this provider. Not needed for providers Miyu recognizes.
+# Allowed values: openai-chat, anthropic or openai-responses. Can be set only in the system config. Takes effect next turn.
 # driver =
 
-# Key: Write { secret = "name" } (saved with miyu provider login) or { env = "VARIABLE" }. One per provider; to use several quotas together, set up several providers and put them in a pool. Without one, no auth header is sent.
-# Allowed: { secret = "…" } or { env = "…" }. Only in the system config. Takes effect next turn.
+# Key: One key per provider; to use several quotas together, set up several providers and put them in a pool. Without one, no auth header is sent.
+# Allowed values: { secret = "…" } or { env = "…" }. Can be set only in the system config. Takes effect next turn.
 # key =
 
-# Local service: A model service on this machine, counted as free. Left out, it follows the address: on this machine means yes.
-# Allowed: true or false. Only in the system config. Takes effect next turn.
+# Local service: A model service on this machine, counted as free. When unset, it follows the address: an address on this machine counts as local.
+# Allowed values: true or false. Can be set only in the system config. Takes effect next turn.
 # local =
 
-# Display name: The name people see. The id is only for referring to models; without one, the model data's name for this provider is used, then the id.
-# Allowed: text of at most 64 characters. Only in the system config. Takes effect immediately.
+# Display name: The name people see. The id is only for referring to models; without one, the model catalog's name for this provider is used, then the id.
+# Allowed values: text of at most 64 characters. Can be set only in the system config. Takes effect immediately.
 # name =
 
 # Package: Which package this provider comes from. When set, the entries here override the provider that package brings; without it this is your own provider and the package's one with the same id is not added. Written automatically when you change a provider a package brings.
-# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Takes effect immediately.
+# Allowed values: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Can be set only in the system config. Takes effect immediately.
 # package =
 
-# Price multiplier: Prices of this provider are multiplied by it. 1 if left out. A multiplier on the model wins.
-# Allowed: a number from 0 to 1000. Only in the system config. Takes effect next turn.
+# Price multiplier: Prices of this provider are multiplied by it. 1 when unset. A multiplier set on the model wins.
+# Allowed values: a number from 0 to 1000. Can be set only in the system config. Takes effect next turn.
 # price_multiplier =
 
 [providers."<id>".models."<model>"]
-# Catalog model: Which models.dev entry to use: <provider>/<model>. Left out, it is found by name.
-# Allowed: text of at most 256 characters. Only in the system config. Takes effect next turn.
+# Catalog model: Which models.dev entry to use: <provider>/<model>. When unset, it is found by name.
+# Allowed values: text of at most 256 characters. Can be set only in the system config. Takes effect next turn.
 # catalog =
 
-# Thinking effort: The thinking effort this model uses by default: one of its levels, for example high, or off where thinking can be turned off. Left out, the provider decides.
-# Allowed: text of at most 32 characters. Only in the system config. Takes effect next turn.
+# Thinking effort: The thinking effort this model uses by default: one of its levels, for example high, or off where thinking can be turned off. When unset, the provider decides.
+# Allowed values: text of at most 32 characters. Can be set only in the system config. Takes effect next turn.
 # effort =
 
 # Input types: What this model can read: text, images, PDF, audio, video.
-# Allowed: a list of text, image, pdf, audio or video. Only in the system config. Takes effect next turn.
+# Allowed values: a list of text, image, pdf, audio or video. Can be set only in the system config. Takes effect next turn.
 # inputs =
 
 # Max output: How many tokens this model can write at most in one reply.
-# Allowed: a whole number from 1 to 100000000. Only in the system config. Takes effect next turn.
+# Allowed values: a whole number from 1 to 100000000. Can be set only in the system config. Takes effect next turn.
 # max_output =
 
 # Price multiplier: Prices of this model are multiplied by it, over the one on the provider.
-# Allowed: a number from 0 to 1000. Only in the system config. Takes effect next turn.
+# Allowed values: a number from 0 to 1000. Can be set only in the system config. Takes effect next turn.
 # price_multiplier =
 
 # Thinking effort levels: Which thinking effort levels this model offers.
-# Allowed: a list of text of at most 32 characters. Only in the system config. Takes effect next turn.
+# Allowed values: a list of text of at most 32 characters. Can be set only in the system config. Takes effect next turn.
 # reasoning =
 
-# Default temperature: The temperature this model uses by default, from 0 to 2; higher gives looser answers. Left out, the provider decides. Not sent to models that do not take one.
-# Allowed: a number from 0 to 2. Only in the system config. Takes effect next turn.
+# Default temperature: The temperature this model uses by default, from 0 to 2; higher gives looser answers. When unset, the provider decides. Not sent to models that do not take one.
+# Allowed values: a number from 0 to 2. Can be set only in the system config. Takes effect next turn.
 # temperature =
 
 # Tool calls: Whether this model can call tools.
-# Allowed: true or false. Only in the system config. Takes effect next turn.
+# Allowed values: true or false. Can be set only in the system config. Takes effect next turn.
 # tools =
 
 # Context window: The context window of this model, in tokens.
-# Allowed: a whole number from 1 to 100000000. Only in the system config. Takes effect next turn.
+# Allowed values: a whole number from 1 to 100000000. Can be set only in the system config. Takes effect next turn.
 # window =
 
 [providers."<id>".models."<model>".price]
 # Cache read price: Price per million tokens read from the cache.
-# Allowed: a number from 0 to 1000000. Only in the system config. Takes effect next turn.
+# Allowed values: a number from 0 to 1000000. Can be set only in the system config. Takes effect next turn.
 # cache_read =
 
 # Cache write price: Price per million tokens written to the cache.
-# Allowed: a number from 0 to 1000000. Only in the system config. Takes effect next turn.
+# Allowed values: a number from 0 to 1000000. Can be set only in the system config. Takes effect next turn.
 # cache_write =
 
-# Currency: Currency of the price, three capital letters such as USD or CNY. USD if left out.
-# Allowed: text of at most 3 characters. Only in the system config. Takes effect next turn.
+# Currency: Currency of the price, three capital letters such as USD or CNY. USD when unset.
+# Allowed values: text of at most 3 characters. Can be set only in the system config. Takes effect next turn.
 # currency =
 
-# Input price: Price per million input tokens. A written price is used whole.
-# Allowed: a number from 0 to 1000000. Only in the system config. Takes effect next turn.
+# Input price: Price per million input tokens. Once any price is set, all of this model's prices come from the values you set.
+# Allowed values: a number from 0 to 1000000. Can be set only in the system config. Takes effect next turn.
 # input =
 
 # Output price: Price per million output tokens.
-# Allowed: a number from 0 to 1000000. Only in the system config. Takes effect next turn.
+# Allowed values: a number from 0 to 1000000. Can be set only in the system config. Takes effect next turn.
 # output =
 
 [providers."<id>".quota]
 # Quota address: Full address for checking this provider's quota, replacing the bundled one. Providers without a quota interface in the bundled data are not checked even if set. For a provider with a known official address such as DeepSeek, nothing is checked unless the provider's own address is the official one.
-# Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config. Takes effect next turn.
+# Allowed values: an address starting with http:// or https:// or { env = "…" }. Can be set only in the system config. Takes effect next turn.
 # url =
 
 [show]
 # Show hint: Has the AI hand over images, web pages, documents, video and audio it makes or fetches with Show, so you see them right away instead of just a path.
-# Allowed: true or false. Only in the system config. Applies to new sessions.
+# Allowed values: true or false. Can be set only in the system config. Applies to new sessions.
 system_hint = true
 
 [skills.external]
-# Other skill folders: Folders read while "Read skills from other folders" is on, in order; on a name clash the earlier one wins. Write ~/… or an absolute path.
-# Allowed: a list of text of at most 4096 characters. Only in the system config. Takes effect next turn.
+# Other skill folders: Folders read while "Read skills from other folders" is on, in order; on a name clash the earlier one wins. Enter ~/… or an absolute path.
+# Allowed values: a list of text of at most 4096 characters. Can be set only in the system config. Takes effect next turn.
 dirs = ["~/.agents/skills"]
 
 # Read skills from other folders: When on, skills in "Other skill folders" can be used too: apps like Codex and opencode often install theirs in ~/.agents/skills. Miyu's own skills win on a name clash, and Miyu never deletes these.
-# Allowed: true or false. Only in the system config. Takes effect next turn.
+# Allowed values: true or false. Can be set only in the system config. Takes effect next turn.
 enabled = false
 
 [terminal]
 # New session after idle: After this many minutes without a message, the next one starts a new shell integration session; the old one is kept. 0 never starts a new one.
-# Allowed: a whole number from 0 to 525600. Only in the system config. Takes effect immediately.
+# Allowed values: a whole number from 0 to 525600. Can be set only in the system config. Takes effect immediately.
 idle_new_after = 180
 
 # Shell integration session persona: The persona for a new shell integration session. Unset follows the default persona. A shell integration session in use keeps its own.
-# Allowed: a persona id. Only in the system config. Applies to new sessions.
+# Allowed values: a persona id. Can be set only in the system config. Applies to new sessions.
 # persona =
 
 # Shell integration session preset: The preset for a new shell integration session. Unset follows the default preset.
-# Allowed: a preset id. Only in the system config. Applies to new sessions.
+# Allowed values: a preset id. Can be set only in the system config. Applies to new sessions.
 # preset =
 
 [ui]
-# Default interface: The interface plain miyu opens.
-# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Takes effect after restart.
+# Default interface: The interface that opens when you run miyu by itself.
+# Allowed values: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Can be set only in the system config. Takes effect after restart.
 head = "tui"
 
-# Interface language: The language terminals, the web page and the command line use for you. auto follows the terminal or browser.
-# Allowed: auto, zh, en or ja. Only in the system config. Takes effect immediately.
+# Interface language: The language terminals, the web page and the command line use for you. "Follow the system" uses the language of the terminal or browser.
+# Allowed values: auto, zh, en or ja. Can be set only in the system config. Takes effect immediately.
 language = "auto"
 
 # On start, open: Whether a terminal interface or the web page opens a new session or picks up the most recent one.
-# Allowed: new or recent. Only in the system config. Takes effect after restart.
+# Allowed values: new or recent. Can be set only in the system config. Takes effect after restart.
 startup = "new"
 
 # First-run guide completed: The first-run guide is done; the terminal and web pages no longer open it.
-# Allowed: true or false. Only in the system config. Takes effect immediately.
+# Allowed values: true or false. Can be set only in the system config. Takes effect immediately.
 welcomed = false
 
 [usage]
-# Currency shown first: Amounts are shown in this currency, converted at each entry's day's rate; without a rate the amount is not shown. Three capital letters such as USD or CNY.
-# Allowed: text of at most 3 characters. Only in the system config. Takes effect immediately.
+# Display currency: Amounts are shown in this currency, converted at each entry's day's rate; without a rate the amount is not shown. Three capital letters such as USD or CNY.
+# Allowed values: text of at most 3 characters. Can be set only in the system config. Takes effect immediately.
 currency = "USD"

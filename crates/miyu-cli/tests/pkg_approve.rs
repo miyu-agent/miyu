@@ -53,7 +53,7 @@ async fn the_screen_says_where_and_what_and_yes_approves_it() {
     assert_eq!(
         out,
         format!(
-            "将安装 kit\n包含：扩展程序、命令 miyu kit\n需要：提供工具：给 AI 加能调用的工具\n      联网：访问网络、开端口\n\
+            "将安装 kit\n包含：扩展程序、命令 miyu kit\n需要：提供工具：给 AI 添加可以调用的工具\n      联网：访问网络、开端口\n\
              来源：本机文件\n大小：{bytes} B，1 个文件\n\n\
              注意：这个包来自本机文件，没有经过官方审核，可能存在风险。\n\
              安装 'kit' 并批准它要的能力？[Y/n] 已安装 kit\n已批准 kit 的能力：提供工具、联网\n"

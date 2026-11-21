@@ -1,5 +1,5 @@
 //! 中文界面的用词（施工 WD-1，`internal/blueprint/config.md`「给人看的字」的「用词的规矩」）：中文字表里说到 API 密钥一律写「密钥」，
-//! 不写「key」；不用「她」「他」称呼 AI。
+//! 不写「key」；不用「她」「他」称呼 AI。施工 WD-4 起另外不出现施工时的口语和文言字眼（[`SLANG`]）。
 
 use std::path::Path;
 
@@ -97,6 +97,44 @@ fn chinese_words_do_not_say_the_ambiguous_yao_gengxin_de() {
     let wrong: Vec<String> = all
         .iter()
         .filter(|(_, text)| text.contains("要更新的"))
+        .map(|(path, text)| format!("{path}：{text}"))
+        .collect();
+    assert_eq!(wrong, Vec::<String>::new());
+}
+
+/// 施工时随手写的口语、内部说法和文言字眼（施工 WD-4，`AGENTS.md`「文档的规矩」的词表）：中文字表里不出现，写成后面括号里的说法。
+/// 只拦一眼看得出的词，句子是否完整仍然由人审。
+const SLANG: [&str; 18] = [
+    "不认识",   // 未知的
+    "写法不对", // 格式不正确
+    "登记",     // 注册
+    "拦下",     // 已阻止
+    "这一份",   // 这个版本、这个软件包
+    "那一份",
+    "写的是", // 当前为
+    "没加上", // 未添加
+    "起不来", // 无法启动
+    "照旧",   // 仍然
+    "印出",   // 输出
+    "此会话", // 这个会话
+    "此文件", // 这个文件
+    "尚未",   // 还没有
+    "无需",   // 不需要
+    "如需",   // 如果需要
+    "即可",   // 就可以
+    "您",     // 你
+];
+
+#[test]
+fn chinese_words_avoid_construction_slang() {
+    let file = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources/core/human/zh.json");
+    let json: Value =
+        serde_json::from_str(&std::fs::read_to_string(&file).expect("读得到")).expect("是 JSON");
+    let mut all = Vec::new();
+    texts(&json, "", &mut all);
+    let wrong: Vec<String> = all
+        .iter()
+        .filter(|(_, text)| SLANG.iter().any(|word| text.contains(word)))
         .map(|(path, text)| format!("{path}：{text}"))
         .collect();
     assert_eq!(wrong, Vec::<String>::new());

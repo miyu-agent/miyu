@@ -140,8 +140,8 @@ async fn model_list_has_pools_and_both_uses() {
     assert_eq!(
         result["side"],
         json!([
-            {"id": "core/title", "tier": "lite", "name": "起标题", "summary": "会话说完第一轮以后起一个短标题。", "resolved": "session"},
-            {"id": "memory/organize", "tier": "normal", "name": "整理记忆", "summary": "抽取、合并、整理记忆，要读懂一整段对话。", "resolved": "session"},
+            {"id": "core/title", "tier": "lite", "name": "起标题", "summary": "会话的第一轮结束后，为它起一个简短的标题。", "resolved": "session"},
+            {"id": "memory/organize", "tier": "normal", "name": "整理记忆", "summary": "抽取、合并、整理记忆，需要理解一整段对话。", "resolved": "session"},
         ])
     );
     assert_eq!(result["uses"], json!({"chat": "a/m", "vision": "b/v"}));

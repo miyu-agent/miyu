@@ -59,7 +59,7 @@ async fn clear_memory_takes_only_what_this_session_made() {
 
     let reply = run(&mut client, "k2", &cat, "/clear-memory").await;
     assert_eq!(reply["result"]["command"], "clear-memory", "{reply}");
-    assert_eq!(reply["result"]["said"], "清掉了这个会话记下的 1 条记忆。");
+    assert_eq!(reply["result"]["said"], "已清除这个会话添加的 1 条记忆。");
     let listed = client
         .call("l1", "memory.list", json!({"forgotten": true}))
         .await;
@@ -69,13 +69,13 @@ async fn clear_memory_takes_only_what_this_session_made() {
         "别的会话来的、人记的不动；清掉的作废的里也没有"
     );
     let again = run(&mut client, "k3", &cat, "/clear-memory").await;
-    assert_eq!(again["result"]["said"], "这个会话没有记下的记忆。");
+    assert_eq!(again["result"]["said"], "这个会话没有添加过记忆。");
     let same = run(&mut client, "k2", &cat, "/clear-memory").await;
     assert_eq!(same["result"], reply["result"], "同一个编号只算一次");
 
     let alias = run(&mut client, "k4", &tea, "/reset-memory 跟了字也不看").await;
     assert_eq!(alias["result"]["command"], "clear-memory", "{alias}");
-    assert_eq!(alias["result"]["said"], "清掉了这个会话记下的 1 条记忆。");
+    assert_eq!(alias["result"]["said"], "已清除这个会话添加的 1 条记忆。");
     let listed = client.call("l2", "memory.list", json!({})).await;
     assert_eq!(texts(&listed), pairs(&[("m3", "用户住在上海")]));
     assert_eq!(

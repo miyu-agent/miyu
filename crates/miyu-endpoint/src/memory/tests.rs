@@ -40,9 +40,9 @@ fn clearing_says_how_many_and_one_in_the_singular() {
             .collect();
         miyu_config::Words::sentence(&human, said.key, &fields).expect("有这一句")
     };
-    assert_eq!(say("zh", 0), "这个会话没有记下的记忆。");
-    assert_eq!(say("zh", 1), "清掉了这个会话记下的 1 条记忆。");
-    assert_eq!(say("zh", 3), "清掉了这个会话记下的 3 条记忆。");
+    assert_eq!(say("zh", 0), "这个会话没有添加过记忆。");
+    assert_eq!(say("zh", 1), "已清除这个会话添加的 1 条记忆。");
+    assert_eq!(say("zh", 3), "已清除这个会话添加的 3 条记忆。");
     assert_eq!(say("en", 1), "Cleared 1 memory this session made.");
     assert_eq!(say("en", 3), "Cleared 3 memories this session made.");
     assert_eq!(say("ja", 1), "この会話で覚えた記憶を 1 件消しました。");
@@ -50,7 +50,7 @@ fn clearing_says_how_many_and_one_in_the_singular() {
 
 #[test]
 fn the_dream_receipt_leaves_out_zeros_and_says_how_long_it_took() {
-    // `/dream` 的回执（施工 R-22 再补，2026-10-20 项目主人定）：是 0 的不写，都是 0 的说没有要改的，末尾写用时。
+    // `/dream` 的回执（施工 R-22 再补，2026-10-20 项目主人定）：是 0 的不写，都是 0 的说不需要修改，末尾写用时。
     let resources = ResourceRoot::at(resources());
     let say = |language: &str, dreamed: [u32; 3], summary: bool, stopped: bool, took: u64| {
         let human = miyu_store::human::Human::load(&resources, language).expect("读得出");
@@ -71,7 +71,7 @@ fn the_dream_receipt_leaves_out_zeros_and_says_how_long_it_took() {
     );
     assert_eq!(
         say("zh", [9, 0, 0], false, false, 12_000),
-        "整理完成：检查 9 条，没有要改的，用时 12s。"
+        "整理完成：检查 9 条，不需要修改，用时 12s。"
     );
     assert_eq!(
         say("zh", [9, 1, 3], true, false, 3_723_000),
@@ -84,7 +84,7 @@ fn the_dream_receipt_leaves_out_zeros_and_says_how_long_it_took() {
     );
     assert_eq!(
         say("zh", [0, 0, 0], false, false, 2_000),
-        "无需整理，用时 2s。"
+        "不需要整理，用时 2s。"
     );
     assert_eq!(
         say("zh", [0, 0, 0], false, true, 2_000),

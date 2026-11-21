@@ -130,7 +130,7 @@ async fn set_and_unset_say_what_happened_in_one_gray_line() {
     assert_eq!(wrong.code, 1);
     assert_eq!(
         wrong.err,
-        "miyu: ui.language 只能是 auto、zh、en 或 ja，写的是 cn。改成其中一个，例如 ui.language = \"auto\"\n"
+        "miyu: ui.language 只能是 auto、zh、en 或 ja，当前为 cn。可以改为其中一个，例如 ui.language = \"auto\"\n"
     );
     let unknown = run(&home, &cwd, set("ui.langauge", "zh"), &mut none).await;
     assert_eq!(unknown.code, 1);
@@ -164,9 +164,9 @@ async fn edit_asks_again_until_it_checks_out_and_keeps_what_was_typed() {
     assert_eq!(
         asked.err,
         format!(
-            "{shown}:2:12 错误：ui.language 只能是 auto、zh、en 或 ja，写的是 \"cn\"。改成其中一个，例如 ui.language = \"auto\"。暂用 \"auto\"（默认值）。\n\
+            "{shown}:2:12 错误：ui.language 只能是 auto、zh、en 或 ja，当前为 \"cn\"。可以改为其中一个，例如 ui.language = \"auto\"。暂用 \"auto\"（默认值）。\n\
              有 1 处错误，未保存。按回车继续编辑，输入 q 放弃：\
-             {shown}:4:1 警告：没有 ui.langauge 这一项。是不是想写 ui.language？已忽略此行。\n\
+             {shown}:4:1 警告：配置项 ui.langauge 不存在。是否应为 ui.language？已忽略这一行。\n\
              已保存（立即生效）\n"
         )
     );
@@ -320,7 +320,7 @@ async fn a_project_config_is_edited_and_saved_by_the_command_line_then_trusted()
     let edited = run(&home, &cwd, edit(true), &mut console).await;
     assert_eq!(edited.code, 0, "{}", edited.err);
     assert!(
-        edited.err.contains("ui.language 只能写在系统配置里"),
+        edited.err.contains("ui.language 只能在系统配置中设置"),
         "{}",
         edited.err
     );
@@ -333,7 +333,7 @@ async fn a_project_config_is_edited_and_saved_by_the_command_line_then_trusted()
 
     let listed = run(&home, &cwd, trust(false, false), &mut Fake::default()).await;
     let header = format!(
-        "{} 会修改以下设置（项目配置只能收紧限制）：\n  permission.start_read_only = true  新会话开局只读\n",
+        "{} 会修改以下设置（项目配置只能收紧限制）：\n  permission.start_read_only = true  新会话默认只读\n",
         shown(&file)
     );
     assert_eq!(listed.out, header);
@@ -405,8 +405,8 @@ async fn trust_lists_problems_and_refuses_a_version_that_changed_while_looking()
     assert_eq!(
         asked.out,
         format!(
-            "{0} 会修改以下设置（项目配置只能收紧限制）：\n  permission.start_read_only = true  新会话开局只读\n\
-             {0}:4:12 错误：ui.language 只能写在系统配置里，写在项目配置里不生效。挪到系统配置里去。\n",
+            "{0} 会修改以下设置（项目配置只能收紧限制）：\n  permission.start_read_only = true  新会话默认只读\n\
+             {0}:4:12 错误：ui.language 只能在系统配置中设置，在项目配置中设置不会生效。改为在系统配置中设置。\n",
             shown(&file)
         ),
         "不能写的那一项不列，照报错一行印在后面"

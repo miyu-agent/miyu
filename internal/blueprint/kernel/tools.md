@@ -174,10 +174,10 @@
 | `core/tool-results/skipped` | 已跳过 | Skipped |
 | `core/tool-results/question-voided` | 已作废 | Voided |
 | `core/tool-results/question-unattended` | 无人回答 | No one to answer |
-| `core/tool-results/restarted` | 重启中断 | Interrupted by restart |
+| `core/tool-results/restarted` | 因重启而中断 | Interrupted by restart |
 | `core/tool-results/unavailable` | 不可用 | not available right now |
-| `core/tool-results/crashed` | 内部错误，可能已部分执行 | Internal error, may be partly done |
-| `core/permissions/unresolvable` | 说不清它指向哪里：{reason} | can't tell where it points: {reason} |
+| `core/tool-results/crashed` | 内部错误，可能已部分执行 | Internal error; may have partially run |
+| `core/permissions/unresolvable` | 无法确定路径指向的位置：{reason} | Cannot determine where the path points: {reason} |
 
 - 给人看的只用给模型的那一句有的字段，可以少用：`unknown` 给模型的有 `name`，给人的不用。
 - 没有这种界面语言的，照英文那一份（`store.md`）。

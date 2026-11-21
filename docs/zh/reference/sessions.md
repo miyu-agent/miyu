@@ -234,7 +234,7 @@
 块的编号如下：`system`（下面按拼接的先后有 `system.persona`、`system.venue`、`system.group`、`system.profile`、`system.project`、`system.core`、`system.clicall`、`system.show`、`system.skills`、`system.knowledge`、`system.style_lock`、`system.appended:<包>`；老会话里和此刻的文字对不上的那几段合并成 `system.other`）、`tools`（下面有 `tools.builtin`、`tools.package:<包>`、`tools.mcp:<服务>`、`tools.scripts`）、`demos`、`summary`、`messages`（下面有 `messages.user`、`messages.assistant`、`messages.memory`（下面有 `messages.memory.resident`、`messages.memory.recall`）、`messages.knowledge`、`messages.facts`、`messages.project_docs`（仓库里的 AGENTS.md）、`messages.reports`（子代理、后台命令的回报）、`messages.tool_results`）。软件包、服务的 `label` 是它们的原名。
 
 ```json
-{"window":128000,"line":102400,"used":45231,"basis":"measured","anchor":41000,"estimated_total":43800,"parts":[{"part":"system","label":"系统提示","tokens":6100,"children":[{"part":"system.persona","label":"人设","tokens":4300},{"part":"system.core","label":"核心说明","tokens":900},{"part":"system.skills","label":"技能目录","tokens":900}]},{"part":"messages","label":"对话","tokens":37700,"children":[{"part":"messages.user","label":"你说的","tokens":4200},{"part":"messages.assistant","label":"AI 说的","tokens":33500}]}]}
+{"window":128000,"line":102400,"used":45231,"basis":"measured","anchor":41000,"estimated_total":43800,"parts":[{"part":"system","label":"系统提示词","tokens":6100,"children":[{"part":"system.persona","label":"人设","tokens":4300},{"part":"system.core","label":"核心说明","tokens":900},{"part":"system.skills","label":"技能目录","tokens":900}]},{"part":"messages","label":"对话","tokens":37700,"children":[{"part":"messages.user","label":"你说的","tokens":4200},{"part":"messages.assistant","label":"AI 说的","tokens":33500}]}]}
 ```
 
 **出错**：`bad_params`（写了 `session`，又写了 `persona` 或 `preset`）；查找会话时的那几种错误；新会话拼不出上下文时返回 `internal`。
@@ -248,7 +248,7 @@
 **回应**：`{"requests", "input", "output", "parts": [...]}`。`requests` 是主请求的次数，`input` 是供应商报告的输入（未命中、命中、写缓存）的总和，`output` 是输出的总和。`parts` 的块和 `session.context` 一样，最后多一块 `output`；各块加起来正好等于 `input + output`。每次请求的输入按那一刻各块所占的比例分摊，再累加起来；命中和未命中的输入不分开分摊，所以有一部分命中的输入会算到新内容上。
 
 ```json
-{"requests":503,"input":80000000,"output":203822,"parts":[{"part":"system","label":"系统提示","tokens":220000},{"part":"tools","label":"工具说明","tokens":1900000},{"part":"messages","label":"对话","tokens":77880000},{"part":"output","label":"AI 输出","tokens":203822}]}
+{"requests":503,"input":80000000,"output":203822,"parts":[{"part":"system","label":"系统提示词","tokens":220000},{"part":"tools","label":"工具说明","tokens":1900000},{"part":"messages","label":"对话","tokens":77880000},{"part":"output","label":"AI 输出","tokens":203822}]}
 ```
 
 **出错**：`bad_params`；以及查找会话时的那几种错误。
@@ -297,7 +297,7 @@ AI 做需要确认的事情时会停下来询问（推送 `tool.approval_request
 
 `decision`、`answers` 两者正好写一个。**回应**：`{"events": [序号…]}`。
 
-**选 `session` 记住的是什么**：记住的是推送里的 `rule`（如果没有 `rule`，就不能选 `session`，选了会返回 `no_rule`）。目前核心发出的确认请求都不带 `rule`（包括命令、高危命令、安装软件包、扩展的守卫发出的确认），所以只能允许这一次或者拒绝；以前在只读模式下读取其他程序的私密目录时，询问里带过 `rule`（放行读取的那几个目录），私密目录去掉以后就没有了。头根据有没有 `rule` 决定是否提供「本会话都允许」这个选项。
+**选 `session` 记住的是什么**：记住的是推送里的 `rule`（如果没有 `rule`，就不能选 `session`，选了会返回 `no_rule`）。目前核心发出的确认请求都不带 `rule`（包括命令、高危命令、安装软件包、扩展的守卫发出的确认），所以只能允许这一次或者拒绝；以前在只读模式下读取其他程序的私密目录时，询问里带过 `rule`（放行读取的那几个目录），私密目录去掉以后就没有了。头根据有没有 `rule` 决定是否提供「在本会话内允许」这个选项。
 
 ```json
 {"read":["/home/me/.ssh"],"tool":"read"}

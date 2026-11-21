@@ -177,7 +177,7 @@ async fn get_with_a_directory_shows_the_project_and_its_trust() {
     assert_eq!(problem["code"], "not_tightening");
     assert_eq!(
         problem["message"],
-        "项目配置只能让限制更严。permission.start_read_only 现在是 true，这里写的 false 更宽，不生效。"
+        "项目配置只能让限制更严格。permission.start_read_only 当前为 true，这里的 false 更宽松，不会生效。"
     );
     let layers = &reply["result"]["items"]["permission.start_read_only"]["layers"];
     assert_eq!(layers[0]["problem"], "not_tightening");
@@ -222,7 +222,7 @@ async fn trusting_records_the_answer_once_per_repository() {
     let written = std::fs::read_to_string(&trust).expect("写了");
     assert!(
         written.starts_with(
-            "# Miyu 记着的项目配置的信任：哪个仓库、哪一份内容、信不信任。\n[[project]]\n"
+            "# Miyu 记录的项目配置信任情况：仓库、配置内容和是否信任。\n[[project]]\n"
         ),
         "{written}"
     );

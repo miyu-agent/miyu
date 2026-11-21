@@ -104,7 +104,7 @@ When the core stops or restarts, all running background commands are stopped and
 | How much one background command can output at most | 5 GB; when it is reached, the command is stopped and recorded as `stopped: output too large` |
 | How many times a watched command can reach the AI within an hour | 120 |
 
-To change the longest running time, change it in `General → Sessions → Longest background command` on the settings page (type `/settings` in the terminal UI or the web UI to open it), or run:
+To change the longest running time, change it in `General → Sessions → Maximum background command runtime` on the settings page (type `/settings` in the terminal UI or the web UI to open it), or run:
 
 ```sh
 miyu config set jobs.max_running 1h

@@ -322,12 +322,12 @@ fn config_words_go_to_the_settings_list_with_the_core_prefix() {
     assert_eq!(level.name, "运行日志的级别");
     assert_eq!(
         level.options.get("debug").map(String::as_str),
-        Some("详细，排查用")
+        Some("详细（用于排查）")
     );
     assert!(Words::item(&zh, "log.nope").is_none());
     // 运行日志的选项照多少排，一眼看出哪个更细（施工 8-28）。
     for (language, names) in [
-        ("zh", ["常规", "详细，排查用", "最详细"]),
+        ("zh", ["常规", "详细（用于排查）", "最详细"]),
         ("en", ["Normal", "Detailed, for debugging", "Most detailed"]),
         ("ja", ["通常", "詳細（調査用）", "最も詳細"]),
     ] {

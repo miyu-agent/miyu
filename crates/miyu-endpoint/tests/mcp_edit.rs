@@ -166,7 +166,7 @@ async fn bad_servers_and_package_ones_are_refused_and_nothing_is_written() {
         assert!(
             reply["error"]["data"]["problem"]
                 .as_str()
-                .is_some_and(|problem| problem.starts_with("MCP 服务的写法不对")),
+                .is_some_and(|problem| problem.starts_with("MCP 服务格式不正确")),
             "照连接的语言说：{reply}"
         );
     }

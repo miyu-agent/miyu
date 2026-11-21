@@ -66,7 +66,7 @@ async fn three_presets_from_a_real_core() {
     );
     lacks(
         &agent,
-        &[&long, "<details>", "上下文压缩了", "文件里有个 token。"],
+        &[&long, "<details>", "上下文已压缩", "文件里有个 token。"],
     );
 
     let (all, _) = inline(
@@ -92,7 +92,7 @@ async fn three_presets_from_a_real_core() {
             "文件里有个 token。",
             "### Tool: 读取",
             SECRET,
-            "上下文压缩了",
+            "上下文已压缩",
             "摘要",
         ],
     );
@@ -103,7 +103,7 @@ async fn three_presets_from_a_real_core() {
         &[
             &format!("- token 估算：约 {tokens}\n"),
             "## Assistant\n\n- Tool: `read` `a.txt`\n\n读完了。",
-            "> 上下文压缩了",
+            "> 上下文已压缩",
             &long,
         ],
     );
@@ -138,7 +138,7 @@ async fn context_and_last_turns_say_what_is_left_out() {
     has(
         &context,
         &[
-            "> 上下文压缩了",
+            "> 上下文已压缩",
             "## User\n\n读一下 a.txt",
             "## User\n\n再见",
         ],
@@ -151,8 +151,8 @@ async fn context_and_last_turns_say_what_is_left_out() {
         json!({"for": "chat", "range": {"turns": 1}}),
     )
     .await;
-    has(&last, &["\n\n> 前面省掉了 3 轮\n\n## User\n\n再见"]);
-    lacks(&last, &["上下文压缩了", "读完了。"]);
+    has(&last, &["\n\n> 已省略前 3 轮\n\n## User\n\n再见"]);
+    lacks(&last, &["上下文已压缩", "读完了。"]);
     let (agent, _) = inline(
         &mut client,
         "x3",

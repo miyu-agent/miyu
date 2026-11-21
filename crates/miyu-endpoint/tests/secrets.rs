@@ -19,7 +19,8 @@ const SECRETS: &str = "etc/private/secrets.toml";
 const JOURNAL: &str = "var/lib/journal.jsonl";
 
 /// 中文的开头注释。
-const HEADER: &str = "# Miyu 的密钥：只经 Miyu 写入、替换、删除。不要把这份文件发给其他人。\n";
+const HEADER: &str =
+    "# Miyu 的密钥文件：只能通过 Miyu 写入、替换和删除。不要把这个文件发给其他人。\n";
 
 /// 类型是密钥的一项：出厂的清单里还没有，测试自己加。
 fn secret_item(key: &'static str) -> Item {
@@ -263,7 +264,7 @@ async fn missing_references_warn_until_set_and_env_is_the_cores() {
     );
     assert_eq!(
         got["result"]["problems"][0]["message"],
-        "providers.demo 引用的密钥 deepseek 还没有设置。"
+        "providers.demo 引用的密钥 deepseek 未设置。"
     );
     assert_eq!(got["result"]["problems"][0]["file"], "etc/config.toml");
     assert_eq!(

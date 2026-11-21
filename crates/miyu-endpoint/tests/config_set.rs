@@ -205,7 +205,7 @@ async fn one_bad_item_stops_them_all() {
     assert_eq!(codes, ["wrong_type"]);
     assert_eq!(
         problems[0]["message"],
-        "permission.start_read_only 要写 true 或 false，写的是 yes。改成 permission.start_read_only = true。"
+        "permission.start_read_only 必须是 true 或 false，当前为 yes。可以改为 permission.start_read_only = true。"
     );
     assert!(problems[0].get("line").is_none() && problems[0].get("file").is_none());
     assert_eq!(

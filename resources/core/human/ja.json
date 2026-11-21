@@ -12,7 +12,7 @@
       },
       "compaction.prepare": {
         "name": "事前圧縮",
-        "description": "コンテキストがいっぱいに近づくと、古い部分を裏で先に要約しておき、圧縮が必要になった時点で待たずに差し替えます。オフにすると、従来どおり上限に達してから圧縮します。"
+        "description": "コンテキストがいっぱいに近づくと、古い部分を裏で先に要約しておき、圧縮が必要になった時点で待たずに差し替えます。オフにすると、上限に達してから圧縮します。"
       },
       "net.search.exa.key": {"name": "Exa", "description": "設定すると自分の Exa の枠を使います。未設定なら無料枠です。"},
       "net.search.anysearch.key": {"name": "AnySearch", "description": "設定すると自分の AnySearch の枠を使います。未設定なら IP ごとの1日の無料枠です。"},
@@ -56,7 +56,7 @@
       },
       "log.level": {
         "name": "実行ログのレベル",
-        "description": "実行ログにどこまで記録するかです。問題を調べるときは debug にします。環境変数 MIYU_LOG があれば、その起動ではそちらが優先されます。",
+        "description": "実行ログにどこまで記録するかです。問題を調べるときは「詳細（調査用）」を選びます。環境変数 MIYU_LOG があれば、その起動ではそちらが優先されます。",
         "options": {
           "error": "エラーのみ",
           "warn": "エラーと警告",
@@ -68,7 +68,7 @@
       },
       "ui.language": {
         "name": "表示言語",
-        "description": "端末、ウェブ、コマンドラインで表示する言語です。auto は端末やブラウザの言語に合わせます。",
+        "description": "端末、ウェブ、コマンドラインで表示する言語です。「システムに合わせる」を選ぶと、端末やブラウザの言語に合わせます。",
         "options": {
           "auto": "システムに合わせる",
           "zh": "中文",
@@ -77,7 +77,7 @@
         }
       },
       "usage.currency": {
-        "name": "先に表示する通貨",
+        "name": "表示する通貨",
         "description": "使用量の金額は、それぞれの日のレートでこの通貨に換算して表示します。レートが取れないものは金額を表示しません。USD、CNY のような大文字 3 文字。"
       },
       "ui.startup": {
@@ -156,7 +156,7 @@
       },
       "skills.external.dirs": {
         "name": "ほかのスキルフォルダ",
-        "description": "「ほかのフォルダのスキルを読む」がオンのときに読むフォルダです。順番どおりに読み、同じ名前なら先のものが優先されます。~/… か絶対パスで書きます。"
+        "description": "「ほかのフォルダのスキルを読む」がオンのときに読むフォルダです。順番どおりに読み、同じ名前なら先のものが優先されます。~/… か絶対パスで入力します。"
       },
       "permission.start_read_only": {
         "name": "新しいセッションを読み取り専用で始める",
@@ -189,7 +189,7 @@
       },
       "models.chat": {
         "name": "会話のモデル",
-        "description": "新しいセッションが使うモデル。プロバイダー/モデル の形で書きます。例：deepseek/deepseek-flash。@プール でもかまいません。"
+        "description": "新しいセッションが使うモデル。"
       },
       "models.vision": {
         "name": "マルチモーダルモデル",
@@ -205,11 +205,11 @@
       },
       "pools.<id>.models": {
         "name": "プールのメンバー",
-        "description": "いくつかのモデルをひとまとめにします。それぞれ プロバイダー/モデル の形で書きます。"
+        "description": "いくつかのモデルをひとまとめにします。"
       },
       "pools.<id>.strategy": {
         "name": "割り当て方式",
-        "description": "ひとつのセッションでずっと同じメンバーを使うか、リクエストごとに次のメンバーに替えるか、毎回先頭のメンバーから使うか（主力と予備。エラーのときだけ後ろを使う）。書かなければ、メンバーがすべてリクエストごとの課金なら順番に替え、ほかは固定します。",
+        "description": "ひとつのセッションでずっと同じメンバーを使うか、リクエストごとに次のメンバーに替えるか、毎回先頭のメンバーから使うか（主力と予備。エラーのときだけ後ろを使う）。設定しない場合は、メンバーがすべてリクエストごとの課金なら順番に替え、ほかは固定します。",
         "options": {
           "pin": "固定",
           "rotate": "順番に替える",
@@ -234,11 +234,11 @@
       },
       "pools.<id>.description": {
         "name": "説明",
-        "description": "サブエージェントを出すときに、プール名のあとに見える一行です。英語で書きます。"
+        "description": "サブエージェントを出すときに、プール名のあとに見える一行です。英語で入力します。"
       },
       "providers.<id>.driver": {
         "name": "ドライバー",
-        "description": "このプロバイダーとの話し方。知っているプロバイダーなら書かなくてもかまいません。",
+        "description": "このプロバイダーとの話し方。知っているプロバイダーなら設定しなくてもかまいません。",
         "options": {
           "openai-chat": "OpenAI 互換のチャット",
           "anthropic": "Anthropic Messages",
@@ -247,19 +247,19 @@
       },
       "providers.<id>.base_url": {
         "name": "アドレス",
-        "description": "このプロバイダーの API のアドレス。パスはドライバーが付けます。知っているプロバイダーなら書かなくてもかまいません。"
+        "description": "このプロバイダーの API のアドレス。パスはドライバーが付けます。知っているプロバイダーなら設定しなくてもかまいません。"
       },
       "providers.<id>.key": {
         "name": "キー",
-        "description": "{ secret = \"名前\" }（miyu provider login で保存）か { env = \"環境変数\" } を書きます。プロバイダーごとに一つ。複数の利用枠をまとめて使うなら、プロバイダーを分けてプールに入れます。書かなければ認証ヘッダーを付けません。"
+        "description": "キーはプロバイダーごとに一つ。複数の利用枠をまとめて使うなら、プロバイダーを分けてプールに入れます。設定しない場合は認証ヘッダーを付けません。"
       },
       "providers.<id>.name": {
         "name": "表示名",
-        "description": "画面に出す名前。ID はモデルの参照にだけ使います。書かなければモデル資料のプロバイダー名、それもなければ ID を使います。"
+        "description": "画面に出す名前。ID はモデルの参照にだけ使います。設定しない場合はモデルカタログのプロバイダー名、それもなければ ID を使います。"
       },
       "providers.<id>.catalog": {
         "name": "カタログのプロバイダー",
-        "description": "モデル資料のどのプロバイダーに当たるか。DeepSeek だけを中継するなら deepseek と書きます。"
+        "description": "モデルカタログのどのプロバイダーに当たるか。DeepSeek だけを中継するなら deepseek と入力します。"
       },
       "providers.<id>.models.<model>.window": {
         "name": "コンテキストウィンドウ",
@@ -267,16 +267,16 @@
       },
       "providers.<id>.price_multiplier": {
         "name": "倍率",
-        "description": "このプロバイダーの価格に掛ける数。書かなければ 1。モデルに書いたほうが優先されます。"
+        "description": "このプロバイダーの価格に掛ける数。設定しない場合は 1。モデルに設定したほうが優先されます。"
       },
       "providers.<id>.local": {
         "name": "ローカルサービス",
-        "description": "このマシンで動くモデルのサービスで、価格は 0 として数えます。書かなければアドレスで決まります。"
+        "description": "このマシンで動くモデルのサービスで、価格は 0 として数えます。設定しない場合はアドレスで決まります。"
       },
       "providers.<id>.package": {"name": "提供元パッケージ", "description": "このプロバイダーを追加したパッケージ。書いてあると、ここの項目がそのパッケージのプロバイダーを上書きします。書いていなければ自分のプロバイダーで、同じ ID のパッケージのものは追加されません。パッケージのプロバイダーを変更すると自動で書かれます。"},
       "providers.<id>.cache": {
         "name": "キャッシュの種類",
-        "description": "このプロバイダーのキャッシュの課金のしかた。いまは分け方を書いていないプールの分け方を決めるだけです。書かなければドライバーの既定に従います。",
+        "description": "このプロバイダーのキャッシュの課金のしかた。いまは分け方を設定していないプールの分け方を決めるだけです。設定しない場合はドライバーの既定に従います。",
         "options": {
           "contract": "前置きで課金",
           "best_effort": "できるだけ当てる",
@@ -285,7 +285,7 @@
       },
       "providers.<id>.models.<model>.catalog": {
         "name": "カタログのモデル",
-        "description": "models.dev のどの項目に合わせるか：<プロバイダー>/<モデル>。書かなければ名前で探します。"
+        "description": "models.dev のどの項目に合わせるか：<プロバイダー>/<モデル>。設定しない場合は名前で探します。"
       },
       "providers.<id>.models.<model>.max_output": {
         "name": "最大出力",
@@ -312,19 +312,19 @@
       },
       "providers.<id>.models.<model>.effort": {
         "name": "思考の程度",
-        "description": "このモデルが既定で使う思考の程度。段階のひとつを書きます（例：high）。思考を切れるモデルは off。書かなければプロバイダーの既定に従います。"
+        "description": "このモデルが既定で使う思考の程度。段階のひとつを入力します（例：high）。思考を切れるモデルは off。設定しない場合はプロバイダーの既定に従います。"
       },
       "providers.<id>.models.<model>.temperature": {
         "name": "既定の温度",
-        "description": "このモデルが既定で使う温度。0 から 2 で、高いほど答えが自由になります。書かなければプロバイダーの既定に従います。温度を受け付けないモデルには送りません。"
+        "description": "このモデルが既定で使う温度。0 から 2 で、高いほど答えが自由になります。設定しない場合はプロバイダーの既定に従います。温度を受け付けないモデルには送りません。"
       },
       "providers.<id>.models.<model>.price_multiplier": {
         "name": "倍率",
-        "description": "このモデルの価格に掛ける数。プロバイダーに書いたものより優先されます。"
+        "description": "このモデルの価格に掛ける数。プロバイダーに設定したものより優先されます。"
       },
       "providers.<id>.models.<model>.price.input": {
         "name": "入力の価格",
-        "description": "入力 100 万トークンあたりの価格。書いた価格はまるごと使われます。"
+        "description": "入力 100 万トークンあたりの価格。価格を設定すると、このモデルの価格はすべて設定した値を使います。"
       },
       "providers.<id>.models.<model>.price.output": {
         "name": "出力の価格",
@@ -340,7 +340,7 @@
       },
       "providers.<id>.models.<model>.price.currency": {
         "name": "通貨",
-        "description": "価格の通貨。USD、CNY のような大文字 3 文字。書かなければ USD。"
+        "description": "価格の通貨。USD、CNY のような大文字 3 文字。設定しない場合は USD。"
       },
       "providers.<id>.quota.url": {
         "name": "利用枠の取得先",
@@ -398,7 +398,7 @@
       },
       "external.bindings.<external>": {
         "name": "プラットフォームのアカウント",
-        "description": "通信プラットフォームのどの番号があなた本人かです。キーにプラットフォーム上の ID（例：qq:10001）、値に owner を書きます。個人チャットでは、その番号があなたです。"
+        "description": "通信プラットフォームのどの番号があなた本人かです。個人チャットでは、その番号があなたです。"
       }
     },
     "pages": {
@@ -627,65 +627,65 @@
     "extensions/capabilities/audio.play": "音を鳴らす",
     "extensions/capabilities/audio.play/summary": "このコンピューターのスピーカーやヘッドホンで音を鳴らす",
     "extensions/capabilities/memory.write": "記憶とナレッジベースを書き込み",
-    "extensions/capabilities/memory.write/summary": "記憶を覚える・変える・忘れる、ナレッジベースを追加・変更・削除する",
+    "extensions/capabilities/memory.write/summary": "記憶を覚える・変える・忘れる、ナレッジベースとその内容を追加・変更・削除する",
     "packages/notice/unreviewed": "これはコミュニティパッケージです。公式の審査を受けておらず、リスクがある可能性があります。",
     "packages/notice/unreviewed/named": "{packages} はコミュニティパッケージです。公式の審査を受けておらず、リスクがある可能性があります。",
     "packages/notice/file": "このパッケージはローカルファイルからのものです。公式の審査を受けておらず、リスクがある可能性があります。",
     "packages/notice/file/named": "{packages} はローカルファイルからのものです。公式の審査を受けておらず、リスクがある可能性があります。",
     "packages/notice/separator": "、",
     "persona-problems/syntax": "TOML として読めません：{detail}",
-    "persona-problems/unknown_table": "知らない表 [{detail}]：persona.toml に書けるのは [persona]、[memory]、[appearance] だけです",
-    "persona-problems/not_a_table": "{detail} は表 [{detail}] として書きます",
-    "persona-problems/unknown_key": "知らないキー {detail}",
-    "persona-problems/not_phrases": "{detail} には一文を書いてください",
+    "persona-problems/unknown_table": "不明な表 [{detail}]：persona.toml に書けるのは [persona]、[memory]、[appearance] だけです",
+    "persona-problems/not_a_table": "{detail} は表 [{detail}] でなければなりません",
+    "persona-problems/unknown_key": "不明なキー：{detail}",
+    "persona-problems/not_phrases": "{detail} は文字列でなければなりません",
     "persona-problems/unknown_language": "{detail}：言語は zh、en、ja のどれかです",
-    "persona-problems/empty_phrase": "{detail} には空でない一文を書きます",
+    "persona-problems/empty_phrase": "{detail} は空でない文字列にしてください",
     "persona-problems/bad_knowledge_bases": "{detail} はナレッジベースの ID のリストです（例：[\"notes\"]）",
     "persona-problems/bad_seed": "{detail} は #rrggbb の形の色です",
     "persona-problems/bad_subagent": "{detail} は true か false です",
     "persona-problems/bad_background_opacity": "{detail} は 0 から 100 の整数です",
     "persona-problems/bad_background_focus": "{detail} は [x, y] の形で、どちらも 0 から 100 の整数です",
     "persona-problems/bad_background_blur": "{detail} は 1 から 100 の整数です",
-    "persona-problems/first_line": "最初の行は user: で始めます",
+    "persona-problems/first_line": "最初の行は user: で始まる必要があります",
     "persona-problems/take_turns": "user と assistant は交互に書きます",
     "persona-problems/last_line": "最後の行は assistant のものにします",
     "persona-problems/empty_line": "この行は空です",
     "persona-problems/pair_clash": "{pair} 組目に user: か assistant: で始まる行があり、保存できません",
     "preset-problems/syntax": "TOML として読めません：{detail}",
-    "preset-problems/unknown_table": "知らない表 [{detail}]：プリセットに書けるのは [preset]、[features]、[software]、[tools]、[limits] だけです",
-    "preset-problems/not_a_table": "{detail} は表 [{detail}] で書いてください",
-    "preset-problems/unknown_key": "知らないキー {detail}",
-    "preset-problems/not_phrases": "{detail} には一文を書いてください",
+    "preset-problems/unknown_table": "不明な表 [{detail}]：プリセットに書けるのは [preset]、[features]、[software]、[tools]、[limits] だけです",
+    "preset-problems/not_a_table": "{detail} は表 [{detail}] でなければなりません",
+    "preset-problems/unknown_key": "不明なキー：{detail}",
+    "preset-problems/not_phrases": "{detail} は文字列でなければなりません",
     "preset-problems/unknown_language": "{detail}：言語は zh、en、ja のどれかです",
-    "preset-problems/empty_phrase": "{detail} には空でない文を書いてください",
+    "preset-problems/empty_phrase": "{detail} は空でない文字列にしてください",
     "preset-problems/bad_unlisted": "{detail} は on か off です",
     "preset-problems/bad_software": "{detail}：パッケージの ID は英小文字で始まり、英小文字、数字、-、_ だけです",
     "preset-problems/not_bool": "{detail} は true か false です",
     "preset-problems/bad_tool": "{detail}：ツール名は英字、数字、-、_ だけで、64 文字までです",
     "preset-problems/not_false": "{detail} には false しか書けません：プリセットではツールを一つずつ無効にすることしかできません",
-    "preset-problems/bad_feature": "機能 ID の書き方が正しくありません: {detail}",
+    "preset-problems/bad_feature": "機能 ID の形式が正しくありません: {detail}",
     "preset-problems/bad_icon": "{detail} は Lucide のアイコン名で書きます：小文字で始まり、小文字・数字・- だけ",
     "preset-problems/bad_limit": "{detail} は正の整数で書きます",
     "package-problems/syntax": "TOML として読めません：{detail}",
-    "package-problems/unknown_table": "知らない表 [{detail}]：マニフェストに書けるのは [package]、[ui]、[process]、[builtin]、[worker]、[mascot]、[theme]、[command]、[check]、[settings]、[features]、[connection]、[depends]、[recommends]、[page] だけです",
-    "package-problems/not_a_table": "{detail} は表 [{detail}] で書いてください",
-    "package-problems/unknown_key": "知らないキー {detail}",
+    "package-problems/unknown_table": "不明な表 [{detail}]：マニフェストに書けるのは [package]、[ui]、[process]、[builtin]、[worker]、[mascot]、[theme]、[command]、[check]、[settings]、[features]、[connection]、[depends]、[recommends]、[page] だけです",
+    "package-problems/not_a_table": "{detail} は表 [{detail}] でなければなりません",
+    "package-problems/unknown_key": "不明なキー：{detail}",
     "package-problems/missing_key": "{detail} がありません",
     "package-problems/wrong_kind": "この種類のパッケージには {detail} を書けません",
     "package-problems/needs_command": "[{detail}] にはプログラムを示す [command] が要ります",
-    "package-problems/two_programs": "1 つのパッケージに入れられるプログラムは 1 つだけ：{detail} のどちらか 1 つにする",
+    "package-problems/two_programs": "1 つのパッケージに入れられるプログラムは 1 つだけです：{detail} のどちらか 1 つにしてください",
     "package-problems/bad_protocol": "{detail} は 0 以上の整数二つ [最低, 最高] で、最低が最高を超えないように書いてください",
     "package-problems/not_text": "{detail} は文字列で書いてください",
     "package-problems/not_texts": "{detail} は文字列の配列で書いてください",
     "package-problems/not_phrases": "{detail} は言語から一文への表で書いてください。言語は zh、en、ja です",
     "package-problems/unknown_language": "{detail}：言語は zh、en、ja のどれかです",
-    "package-problems/empty_phrase": "{detail} は空でない一文を書いてください",
+    "package-problems/empty_phrase": "{detail} は空でない文字列にしてください",
     "package-problems/bad_command_name": "{detail} は小文字で始め、小文字・数字・- だけを使ってください",
     "package-problems/bad_program": "{detail} はパスを含まないプログラム名だけを書いてください",
     "package-problems/bad_start": "{detail} は manual か always です",
     "package-problems/bad_page": "{detail} のページ名は小文字・数字・-・_ だけです",
-    "package-problems/bad_pages_dir": "{detail} はリソースディレクトリ内の相対ディレクトリで、.. や先頭の / は使えません",
-    "package-problems/command_taken": "サブコマンド {detail} はほかのパッケージが使っています。こちらは数えません",
+    "package-problems/bad_pages_dir": "{detail} はパッケージディレクトリ内の相対ディレクトリで、.. や先頭の / は使えません",
+    "package-problems/command_taken": "サブコマンド {detail} はほかのパッケージが使っているため、このパッケージでは無効です",
     "package-problems/shadowed": "{by}のものに隠されています（これは {version}、使用中は {over}）。これは読み込まれません",
     "package-problems/shadowed_newer": "これは使用中のものより新しいです。戻すには 'miyu pkg remove {id}' を実行してください。",
     "package-problems/shadowed_newer_distro": "これは使用中のものより新しいです。戻すにはシステムのパッケージマネージャーで {id} を削除してください。",
@@ -708,11 +708,11 @@
     "package-problems/not_bool": "{detail} は true か false です",
     "package-problems/settings_taken": "プレフィックス {detail} がコアの設定と重なるため、その設定項目は一つも使いません。別のプレフィックスにしてください",
     "package-problems/bad_capability": "不明な拡張能力、または重複しています: {detail}",
-    "package-problems/bad_feature": "機能 ID の書き方が正しくありません: {detail}",
+    "package-problems/bad_feature": "機能 ID の形式が正しくありません: {detail}",
     "package-problems/bad_tool": "ツール名の書き方が正しくないか、このパッケージで重複しています: {detail}",
     "package-problems/bad_platform": "{detail} の書き方が正しくありません",
     "package-problems/bad_dependency": "依存するパッケージ ID の書き方が正しくないか、重複しています: {detail}",
-    "package-problems/feature_taken": "機能 {detail} はほかのパッケージが使っています。こちらは数えません",
+    "package-problems/feature_taken": "機能 {detail} はほかのパッケージが使っているため、このパッケージでは無効です",
     "package-problems/not_built_in": "このコアには組み込みパッケージ {detail} のコードがありません",
     "package-problems/bad_icon": "{detail} は Lucide のアイコン名で書きます：小文字で始まり、小文字・数字・- だけ",
     "package-problems/bad_logo": "{detail} はパッケージディレクトリ内の .png か .webp への相対パスで書きます",
@@ -747,7 +747,7 @@
     "package-problems/bad_needs": "要件の書き方が正しくありません。使えるのは images だけです: {detail}",
     "package-problems/bad_group": "グループ名の書き方が正しくないか、重複しているか、出荷時にないグループです: {detail}",
     "package-problems/bad_prefix": "プレフィックスの書き方がパッケージ ID の形ではありません: {detail}",
-    "package-problems/prefix_taken": "プレフィックス {detail} はほかのパッケージが使っています。こちらは数えません",
+    "package-problems/prefix_taken": "プレフィックス {detail} はほかのパッケージが使っているため、このパッケージでは無効です",
     "package-problems/bad_targets": "システムの書き方が正しくありません。使えるのは linux-x86_64、linux-aarch64、macos-aarch64、windows-x86_64 で、重複はできません: {detail}",
     "package-problems/bad_systems": "システムの書き方が正しくありません。使えるのは linux、macos、windows で、重複はできず、targets のシステムはすべて書く必要があります: {detail}",
     "package-problems/bad_provider": "同梱のプロバイダーの書き方が正しくありません：{detail}",
@@ -768,21 +768,21 @@
     "package-problems/theme_not_json": "{detail} は JSON オブジェクトではありません",
     "package-problems/check_failed": "パッケージ自身のチェックが終わりませんでした：{detail}",
     "package-problems/check_unavailable": "{detail} が見つからないため、パッケージ自身のチェックは動きませんでした",
-    "package-problems/check_output": "パッケージ自身のチェックが読めない行を {detail} 行出したので、飛ばしました",
+    "package-problems/check_output": "パッケージ自身のチェックが読み取れない行を {detail} 行出力したため、スキップしました",
     "package-problems/files_modified": "{detail} 個のファイルがインストール時と違います",
     "package-problems/files_missing": "インストール時にあったファイルが {detail} 個ありません",
     "package-problems/prompt_override_bad": "このプロンプトの上書きは使われず、下の層か出荷時のものになります：{detail}",
     "package-problems/override_bad": "このツール説明の上書きは使われず、出荷時のものになります：{detail}",
     "package-problems/script_skipped": "このスクリプトはスキップされました：{detail}",
-    "package-problems/script_link_outside": "このスクリプトはデータルート内の {detail} へのリンクで、あなたがものを置くフォルダーの外なので、スキップしました",
+    "package-problems/script_link_outside": "このスクリプトはデータルート内の {detail} へのリンクで、自分のファイルを置くフォルダーの外にあるため、スキップしました",
     "package-problems/script_state_left": "スクリプト {detail} の状態フォルダーがありますが、今はそのスクリプトがありません。不要ならこのフォルダーを自分で削除してください",
     "package-problems/schedule_unreadable": "この定時タスクは読めないため、時刻になっても実行されません。他のタスクには影響しません（{detail}）。不要なら番号で削除してください",
     "package-problems/script_clashed": "スクリプト {detail} は他のツールと同じ名前なので登録されませんでした",
-    "package-problems/script_not_made": "このスクリプトは登録されませんでした：{detail}",
+    "package-problems/script_not_made": "スクリプトは登録されませんでした：{detail}",
     "package-problems/script_not_loaded": "コアはまだスクリプト {detail} を読み込んでいません。少し待って再確認し、変わらなければコアを再起動してください",
     "package-problems/mcp_tool_skipped": "MCP サーバーが挙げたツールやプロンプトのうち登録されなかったものがあります：{detail}（プロンプトは /名前 と書きます）。name_taken は名前が使われている（短くしたり整えたりしたら重なった、またはほかのツールがその名前）、name は名前が使えない、parameters はパラメーターの形式が違う",
     "package-problems/skill_skipped": "このスキルはスキップされました：{detail}",
-    "package-problems/skill_link_outside": "このスキルフォルダーはデータルート内の {detail} へのリンクで、あなたがものを置くフォルダーの外なので、スキップしました",
+    "package-problems/skill_link_outside": "このスキルフォルダーはデータルート内の {detail} へのリンクで、自分のファイルを置くフォルダーの外にあるため、スキップしました",
     "package-problems/skill_name_mismatch": "名前がフォルダー名と違います。書かれた名前 {detail} を使います",
     "package-problems/skill_name_from_folder": "名前がないか、書き方が正しくありません（1～64 文字の小文字・数字・単独のハイフン）。フォルダー名 {detail} を使います",
     "package-problems/skill_yaml_lenient": "先頭が正しい YAML ではありません。引用符のない値をひとつの文として読み直しました。コロンを含む値は引用符で囲んでください",
@@ -797,7 +797,7 @@
     "package-problems/persona_left": "パッケージ {detail} はアンインストール済みで、これはその残した変更です",
     "package-problems/preset_left": "パッケージ {detail} はアンインストール済みで、これはその残した変更です",
     "package-problems/slash_skipped": "このスラッシュコマンドはスキップされました：{detail}",
-    "package-problems/slash_link_outside": "このコマンドテンプレートはデータルート内の {detail} へのリンクで、あなたがものを置くフォルダーの外なので、スキップしました",
+    "package-problems/slash_link_outside": "このコマンドテンプレートはデータルート内の {detail} へのリンクで、自分のファイルを置くフォルダーの外にあるため、スキップしました",
     "package-problems/slash_covered": "{detail} と同じ名前のため上書きされ、こちらは使われません",
     "package-problems/slash_builtin": "Miyu 組み込みの /{detail} と同じ名前のため、こちらは使われません",
     "config/reference-header": "Miyu のすべての設定項目と既定値です。このファイルは生成されたもので、編集しても効果はありません。",
@@ -832,7 +832,7 @@
     "config/too-big": "このファイルは 1 MiB を超えているので読みません",
     "config/settings-left": "{count} 項目はアンインストール済みの {package} が残した設定です。{package} を再インストールするとそのまま有効になります。不要なら miyu pkg remove {package} --purge で削除できます",
     "config/not-utf8": "このファイルは UTF-8 ではありません",
-    "config/syntax": "TOML の書き方が正しくありません：{why}",
+    "config/syntax": "TOML の構文エラー：{why}",
     "config/unknown-key": "{key} という項目はありません。{suggest} のことですか？",
     "config/unknown-key-plain": "{key} という項目はありません",
     "config/wrong-type": "{key} には {expected} を書きます。書かれているのは {got} です",
@@ -863,7 +863,7 @@
     "config/sentence": "{text}。",
     "config/then": "{rest}{next}",
     "config/stops": "。？！",
-    "config/applies/next_turn": "次のターンから反映されます",
+    "config/applies/next_turn": "次のターンから反映",
     "config/expected/int": "{min} から {max} までの整数",
     "config/expected/float": "{min} から {max} までの数",
     "config/expected/text": "{max} 文字までのテキスト",
@@ -886,11 +886,11 @@
     "start/data_root_not_ours": "{path} にはほかのものがあり、Miyu のデータルートではないので触れていません。Miyu 0.7 のデータフォルダなら、mv {path} {path}-0.7 のあと miyu pkg install migrate、miyu migrate {path}-0.7 を実行してください。そうでなければ MIYU_HOME を空のフォルダにしてください",
     "start/data_root_old_layout": "{path} は旧版 Miyu のデータルートで、このバージョンでは読めないので触れていません。MIYU_HOME を空のフォルダにしてください",
     "start/data_root_other_layout": "{path} のレイアウトはこのバージョンのものではないので、触れていません",
-    "start/miyu_home_relative": "MIYU_HOME は絶対パスで書いてください（{path} と書かれています）",
+    "start/miyu_home_relative": "MIYU_HOME は絶対パスである必要があります（現在の値：{path}）",
     "start/no_home": "ホームディレクトリが見つかりません",
     "start/no_local_app_data": "LOCALAPPDATA がないか、絶対パスではありません",
     "start/not_running": "コアが動いていません",
-    "start/not_private_socket": "{path} は自分のものではないか、ほかの人も入れるので、接続しませんでした",
+    "start/not_private_socket": "{path} は現在のユーザーのものではないか、他のユーザーもアクセスできるため、接続しませんでした",
     "start/not_private_pipe": "名前付きパイプ {path} の向こう側が自分のプロセスではないので、接続しませんでした",
     "start/refused": "コアを起動できません：{reason}",
     "start/silent": "コアが起動せず、理由もありません。データルートの {log} を見てください",
@@ -901,13 +901,13 @@
     "start/data_root_failed": "コアを起動できません：データルートを用意できません：{reason}",
     "start/lock_failed": "コアを起動できません：データルートのロックを取れません：{reason}",
     "start/log_failed": "コアを起動できません：ログを書けません：{reason}",
-    "start/resources_relative": "コアを起動できません：MIYU_RESOURCES は絶対パスで書いてください（{reason} と書かれています）",
+    "start/resources_relative": "コアを起動できません：MIYU_RESOURCES は絶対パスである必要があります（現在の値：{reason}）",
     "start/resources_missing": "コアを起動できません：MIYU_RESOURCES の {reason} はフォルダではありません",
     "start/resources_not_found": "コアを起動できません：リソースフォルダが見つかりません（{reason} を探しました）。開発時は MIYU_RESOURCES をソースツリーの resources/ にしてください",
     "start/resources_unknown": "コアを起動できません：プログラムの場所がわからず、リソースフォルダが見つかりません。開発時は MIYU_RESOURCES をソースツリーの resources/ にしてください",
     "start/runtime_failed": "コアを起動できません：ランタイムを作れません：{reason}",
     "start/socket_too_long": "コアを起動できません：ソケットのパス {reason} が長すぎ、一時フォルダにも置けません",
-    "start/socket_not_private": "コアを起動できません：{reason} は自分のものではないか、ほかの人も入れるので、ソケットを置きません",
+    "start/socket_not_private": "コアを起動できません：{reason} は現在のユーザーのものではないか、他のユーザーもアクセスできるため、ソケットを作成しません",
     "start/socket_occupied": "コアを起動できません：{reason} にはほかのものがあります（ソケットではないファイルか、ほかのプログラムが待ち受けています）。触れていません",
     "start/pipe_occupied": "コアを起動できません：名前付きパイプ {reason} はほかのプログラムが使っています。触れていません",
     "start/socket_failed": "コアを起動できません：ソケットを開けません：{reason}",
@@ -1004,13 +1004,13 @@
     "export/end/error": "このターンはエラーで終了しました：{why}",
     "export/end/interrupted": "このターンは中断されました",
     "export/end/step-limit": "このターンはステップ上限に達しました",
-    "export/end/aborted": "Miyu が停止し、このターンは完了しませんでした",
+    "export/end/aborted": "コアが停止し、このターンは完了しませんでした",
     "export/shell/running": "実行中",
     "export/shell/exit": "終了コード {code}",
     "export/shell/signal": "シグナル {signal}",
     "export/shell/timed-out": "時間切れで停止",
     "export/shell/interrupted": "中断されました",
-    "export/shell/aborted": "Miyu が停止し、完了しませんでした",
+    "export/shell/aborted": "コアが停止し、完了しませんでした",
     "export/head/estimate": "推定トークン数：約 {count}",
     "export/omitted": "前の {count} ターンは省略しました",
     "export/approval": "確認（{access}）：{decision}",

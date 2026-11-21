@@ -102,14 +102,14 @@ async fn a_session_reads_the_same_in_a_file_and_inline_with_secrets_redacted() {
         "<summary>思考",
         "文件里有个 token。",
         "读完了。",
-        "> 上下文压缩了",
+        "> 上下文已压缩",
         "<details>\n<summary>摘要</summary>\n\nThe user read a file.\n\n</details>",
         "## User\n\n再见\n\n## Assistant\n\n再见。",
         "- token 合计：",
     ] {
         assert!(text.contains(wanted), "少了 {wanted:?}：\n{text}");
     }
-    let compacted = text.find("> 上下文压缩了").expect("有");
+    let compacted = text.find("> 上下文已压缩").expect("有");
     assert!(
         text.find("读完了。").expect("有") < compacted
             && compacted < text.find("再见。").expect("有"),

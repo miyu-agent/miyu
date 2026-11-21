@@ -36,7 +36,10 @@ async fn remember_saves_in_the_sessions_room_without_asking_the_model() {
     let session = client.create("c1", "~").await;
     let reply = run(&mut client, "k1", &session, "/remember   用户喜欢猫  ").await;
     assert_eq!(reply["result"]["command"], "remember", "{reply}");
-    assert_eq!(reply["result"]["said"], "记下了：用户喜欢猫", "不露编号");
+    assert_eq!(
+        reply["result"]["said"], "已添加记忆：用户喜欢猫",
+        "不露编号"
+    );
     assert_eq!(noted(&home.log(&session)), ["remember"]);
     assert!(script.requests().is_empty(), "不请求模型");
     let again = run(&mut client, "k1", &session, "/remember   用户喜欢猫  ").await;
@@ -75,7 +78,7 @@ async fn remember_saves_in_the_sessions_room_without_asking_the_model() {
     )
     .await;
     assert_eq!(
-        reply["result"]["said"], "记下了：第一行 {id} 第二行",
+        reply["result"]["said"], "已添加记忆：第一行 {id} 第二行",
         "{reply}"
     );
     let listed = client

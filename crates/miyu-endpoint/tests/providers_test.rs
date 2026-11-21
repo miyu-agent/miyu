@@ -374,12 +374,12 @@ async fn what_cannot_be_worked_out_is_the_config_stage() {
     for (provider, said) in [
         (
             "deepseek",
-            "providers.deepseek.key 引用的环境变量 DEEPSEEK_API_KEY 在核心启动时没有设置",
+            "providers.deepseek.key 引用的环境变量 DEEPSEEK_API_KEY 在核心启动时未设置",
         ),
-        ("gone", "providers.gone.key 引用的密钥 gone-key 还没有设置"),
+        ("gone", "providers.gone.key 引用的密钥 gone-key 未设置"),
         (
             "far",
-            "providers.far.base_url 引用的环境变量 FAR_URL 在核心启动时没有设置",
+            "providers.far.base_url 引用的环境变量 FAR_URL 在核心启动时未设置",
         ),
     ] {
         let reply = test(&home, &[], fresh(), json!({"provider": provider})).await;

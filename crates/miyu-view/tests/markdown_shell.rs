@@ -1,5 +1,5 @@
 //! 人用 `!` 跑的命令导出成 Markdown（施工 SH-2，`miyu_view::markdown`）：`read` 写成 `$ <命令>`、怎么结束的、用时、输出，长的
-//! 折起来；还在跑的写「还在运行」；异常结束的先写原因；`agent` 一律英文、输出截头尾；`tools: line` 不写输出；普通的话照旧。
+//! 折起来；还在跑的写「运行中」；异常结束的先写原因；`agent` 一律英文、输出截头尾；`tools: line` 不写输出；普通的话照旧。
 
 use serde_json::json;
 
@@ -52,18 +52,18 @@ fn a_long_output_folds_like_a_tool_output() {
 fn a_running_command_says_so_and_an_odd_ending_says_why_first() {
     let text = read(&ran(json!({"running": true})));
     assert!(
-        text.contains("$ cat nope\n```\n\n还在运行\n\n## Assistant"),
+        text.contains("$ cat nope\n```\n\n运行中\n\n## Assistant"),
         "{text}"
     );
     let text = read(&ran(
         json!({"signal": 9, "text": "half\n", "omitted": 0, "reason": "timed_out", "duration_ms": 120000}),
     ));
-    assert!(text.contains("到时被停了 · 信号 9 · 2m 00s"), "{text}");
+    assert!(text.contains("超时已停止 · 信号 9 · 2m 00s"), "{text}");
     let text = read(&ran(
         json!({"text": "", "omitted": 0, "reason": "interrupted", "duration_ms": 300}),
     ));
     assert!(
-        text.contains("```\n\n被打断了 · 1s\n\n## Assistant"),
+        text.contains("```\n\n已中断 · 1s\n\n## Assistant"),
         "{text}"
     );
 }

@@ -95,7 +95,7 @@ async fn a_core_with_a_config_says_where_each_value_came_from() {
     assert_eq!(unknown.status.code(), Some(1));
     assert_eq!(
         stderr(&unknown),
-        "miyu: 没有 ui.langauge 这一项。是不是想写 ui.language？\n"
+        "miyu: 配置项 ui.langauge 不存在。是否应为 ui.language？\n"
     );
 
     // 日志照系统配置记到 debug：连接的每一条请求都记下了（`log.level` 真的换上了）。
@@ -128,11 +128,11 @@ async fn check_reports_each_problem_on_a_line_and_the_total() {
     let lines: Vec<&str> = text.lines().collect();
     assert_eq!(lines.len(), 5, "{text}");
     assert!(
-        lines[0].ends_with("config.toml:1:1 warning: There is no x.y. Line ignored."),
+        lines[0].ends_with("config.toml:1:1 warning: Unknown setting: x.y. Line ignored."),
         "系统配置定了英文：{text}"
     );
     assert!(
-        lines[1].ends_with("config.toml:9:19 error: permission.start_read_only needs true or false, not \"yes\". Write permission.start_read_only = true. Using false (the default) for now."),
+        lines[1].ends_with("config.toml:9:19 error: permission.start_read_only must be true or false, not \"yes\". Write permission.start_read_only = true. Using false (the default) for now."),
         "{text}"
     );
     assert_eq!(lines[2], "1 error, 1 warning");

@@ -164,7 +164,7 @@ fn a_real_compaction_sits_on_the_timeline_with_its_summary_folded() {
     }
     let markdown = zh(projector.entries(), &sources, &[]).text;
     let first = markdown.find("first").expect("有第一句");
-    let notice = markdown.find("> 上下文压缩了").expect("有压缩的旁白");
+    let notice = markdown.find("> 上下文已压缩").expect("有压缩的旁白");
     let second = markdown.find("second").expect("有第二句");
     assert!(first < notice && notice < second, "照时间线：{markdown}");
     assert!(
@@ -271,7 +271,7 @@ fn a_subagent_shows_its_brief_and_its_report() {
     let markdown = text(&entries);
     assert!(
         markdown.contains(
-            "<details>\n<summary>交代</summary>\n\n列出 Cargo.toml 里的依赖。\n\n</details>"
+            "<details>\n<summary>任务说明</summary>\n\n列出 Cargo.toml 里的依赖。\n\n</details>"
         ),
         "{markdown}"
     );
@@ -355,7 +355,7 @@ fn notices_and_errors_are_one_line_each() {
     let markdown = text(&entries);
     assert!(
         markdown.contains(
-            "> 工作目录换成了 ~/proj\n\n> 这一轮出错了：认证失败： key 不对\n\n> 上下文清空了"
+            "> 工作目录已切换为 ~/proj\n\n> 本轮出错：认证失败： key 不对\n\n> 上下文已清空"
         ),
         "{markdown}"
     );

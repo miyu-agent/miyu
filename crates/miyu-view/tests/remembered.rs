@@ -1,4 +1,4 @@
-//! 收起那一行「记住」单算一类（项目主人 2026-10-17 在终端定，两个头一样）：`remember` 一次算一条，打头写「记住了 N 条」
+//! 收起那一行「记住」单算一类（项目主人 2026-10-17 在终端定，两个头一样）：`remember` 一次算一条，打头写「记住了 N 条记忆」
 //! （`Remembered N memories`），不打头写「N 条记忆」；排在留言之后、别的工具之前。`memory_search` 不单算，算在工具里。
 
 use std::sync::Arc;
@@ -38,10 +38,10 @@ fn remembering_counts_on_its_own() {
     let remember = ("remember", r#"{"class":"user","text":"养猫"}"#);
     let search = ("memory_search", r#"{"query":"猫"}"#);
     let (zh, en) = lines(&[remember]);
-    assert!(zh.starts_with("记住了 1 条 · "), "{zh}");
+    assert!(zh.starts_with("记住了 1 条记忆 · "), "{zh}");
     assert!(en.starts_with("Remembered 1 memory · "), "{en}");
     let (zh, en) = lines(&[remember, remember, search]);
-    assert!(zh.starts_with("记住了 2 条 · 1 个工具 · "), "{zh}");
+    assert!(zh.starts_with("记住了 2 条记忆 · 1 个工具 · "), "{zh}");
     assert!(en.starts_with("Remembered 2 memories · 1 tool · "), "{en}");
     let (zh, en) = lines(&[("shell", r#"{"command":"ls"}"#), remember]);
     assert!(

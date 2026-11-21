@@ -40,7 +40,7 @@
 
 **`tool` 的 `state`**：`preparing`（还在写参数）、`running`、`ok`、`error`、`denied`、`cancelled`、`skipped`。
 
-**`tool` 的 `title`**：`{"name", "object", "said", "via"}`：分别是给人看的工具名、对象（路径、命令的短标题……）、结果的那一句话、经谁完成（例如网络搜索的来源 `Exa`，写在名字后面的括号里；没有时不写）。被拒绝的步骤（`state` 是 `denied`）不论是哪件工具，都带结果的那一句话，说明是谁拦下的、为什么（例如 `acme-guard 拦下了：理由`、`只读模式，未执行`）；结果没有带给人看的说法时不写。
+**`tool` 的 `title`**：`{"name", "object", "said", "via"}`：分别是给人看的工具名、对象（路径、命令的短标题……）、结果的那一句话、经谁完成（例如网络搜索的来源 `Exa`，写在名字后面的括号里；没有时不写）。被拒绝的步骤（`state` 是 `denied`）不论是哪件工具，都带结果的那一句话，说明是谁拦下的、为什么（例如 `已被 acme-guard 阻止：理由`、`只读模式，未执行`）；结果没有带给人看的说法时不写。
 
 **供应商侧工具**（`hosted: true`）：这是模型在供应商那边自己运行的搜索、读网页，核心不执行，画成同样的一步工具。`name` 是供应商自己的工具名，原样保留；核心能识别的工具（`search_web`、`web_search`、`WebSearch`，`read_url_content`、`web_fetch`、`WebFetch`），`title` 按核心的网络搜索、抓网页写显示名和对象，不能识别的工具 `title.name` 写原名，没有对象。`title.via` 说明是由谁运行的：写这条回复的供应商的显示名（配置里写的，或者目录里那一家的），没有显示名时写供应商编号。状态：参数还在写时是 `preparing`，参数收全以后是 `running`，结果到了是 `ok`（供应商说失败了时是 `error`）；回复已经落盘、但还没有结果时，如果回复被打断了写 `cancelled`，否则写 `ok`。这类工具没有 `approval`、`said`，也不会是 `denied`。`output`、`output_cut` 按供应商交来的结果填写，整份用 `view.detail` 带上这一步的 `call` 获取；`call` 在回复落盘以后才有。
 

@@ -138,7 +138,7 @@ print("Grabbed 1 frame.")
 
 ## 技能
 
-技能使用公开的 Agent Skills 格式（Claude Code、Codex 等都支持），网上现成的技能放进来就能用。在设置里打开「读取其他目录的 Skills」（`skills.external.enabled`）以后，其他客户端安装到 `~/.agents/skills/` 的技能 Miyu 也会识别（目录列表 `skills.external.dirs` 可以增删），它们排在你自己放的、软件包带的技能后面，同名时以 Miyu 自己的为准；Miyu 不会删除那里的技能。技能放在 `skills/<名字>/SKILL.md`：
+技能使用公开的 Agent Skills 格式（Claude Code、Codex 等都支持），网上现成的技能放进来就能用。在设置里打开「读取其他目录的技能」（`skills.external.enabled`）以后，其他客户端安装到 `~/.agents/skills/` 的技能 Miyu 也会识别（目录列表 `skills.external.dirs` 可以增删），它们排在你自己放的、软件包带的技能后面，同名时以 Miyu 自己的为准；Miyu 不会删除那里的技能。技能放在 `skills/<名字>/SKILL.md`：
 
 ```markdown
 ---

@@ -397,7 +397,7 @@ async fn a_default_effort_the_model_does_not_have_is_reported() {
     );
     assert_eq!(
         problem["message"],
-        "providers.a.models.x.effort is max, which is not one of this model's levels now. Requests go out as if it were not set."
+        "providers.a.models.x.effort is max, which this model does not support; requests are sent as if it were not set."
     );
     // 查一段还没生效的字：照字里新写的档位查。
     let text = CONFIG.replace("reasoning = [\"high\"]", "reasoning = [\"high\", \"max\"]");

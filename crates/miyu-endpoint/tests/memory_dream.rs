@@ -243,7 +243,7 @@ async fn slash_dream_extracts_the_session_merges_in_the_background_and_says_how_
     // 是 0 的不写、末尾写用时（施工 R-22 再补），用时每次不同，只看头尾。
     let said = dreamed["result"]["said"].as_str().unwrap_or_default();
     assert!(
-        said.starts_with("整理完成：检查 1 条，没有要改的，摘要已更新，用时 ")
+        said.starts_with("整理完成：检查 1 条，不需要修改，摘要已更新，用时 ")
             && said.ends_with("s。"),
         "{dreamed}"
     );
@@ -267,7 +267,7 @@ async fn slash_dream_extracts_the_session_merges_in_the_background_and_says_how_
     let (pushed, again) = client.until_reply("k3").await;
     let said = again["result"]["said"].as_str().unwrap_or_default();
     assert!(
-        said.starts_with("整理完成：检查 1 条，没有要改的，用时 ") && said.ends_with("s。"),
+        said.starts_with("整理完成：检查 1 条，不需要修改，用时 ") && said.ends_with("s。"),
         "没有新记的照样重看（施工 R-19）：{again}"
     );
     assert!(

@@ -57,7 +57,7 @@ async fn an_enum_on_an_integer_installs_with_a_warning() {
     assert_eq!(warnings[0]["level"], "warning");
     assert_eq!(
         warnings[0]["message"],
-        "工具说明 data/qq/tools/ranking.json /properties/days 把 enum 写在了不是字符串的类型上，有的模型供应商会拒绝整个请求"
+        "工具说明 data/qq/tools/ranking.json /properties/days 在非字符串类型上使用了 enum，部分模型供应商会拒绝整个请求"
     );
     let checked = client.call("k1", "check", json!({})).await;
     let said = unportable(&checked);

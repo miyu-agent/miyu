@@ -143,7 +143,7 @@ A capability is a permission that an extension, the resident kind of program, ne
 | `Write files` | `fs.write` | Writes to the specified files and folders. |
 | `Use the microphone` | `audio.record` | Records sound from this computer's microphone. |
 | `Play sound` | `audio.play` | Plays sound through this computer's speakers or headphones. |
-| `Write memories and knowledge bases` | `memory.write` | Remembers, changes and forgets memories for the AI, and adds, changes and removes content in knowledge bases. |
+| `Write memories and knowledge bases` | `memory.write` | Remembers, changes and forgets memories for the AI, and adds, changes and removes knowledge bases and their content. |
 
 This layer of permissions governs what the program can do through the core. The extension's program itself runs on this computer as you, and it is not in the sandbox. Do not install packages from unknown sources; for details, see [Security](security.md).
 

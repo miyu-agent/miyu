@@ -42,7 +42,7 @@ AI 还可以搜索同一个人格以前的对话，但只搜索由你发起的�
 |---|---|
 | 自动 | 会话空闲下来以后，AI 会从上一次保存以后的对话里挑出值得记住的内容保存下来。如果 AI 在某一轮里已经自己记住或忘掉了什么，那一轮就不再重新看 |
 | AI | AI 调用 `remember` 工具保存。这个工具也能修改一条记忆：用新的一条替换旧的一条 |
-| 你 | 在本机的会话里输入 `/remember <内容>`，内容会保存成 `关于用户` 这一类，回复是 `记下了：…` |
+| 你 | 在本机的会话里输入 `/remember <内容>`，内容会保存成 `关于用户` 这一类，回复是 `已添加记忆：…` |
 | 你 | 运行 `miyu memory add`，或者点击网页界面记忆页上的 `记一条` |
 
 自动保存要同时满足两个条件：
@@ -164,7 +164,7 @@ miyu memory --persona captain list --class feedback
 | 使用某个预设的会话 | 在预设里关掉 `人格记忆`：在 `[features]` 下写 `memory = false` |
 | 全部 | 运行 `miyu pkg remove base-memory`。已经保存的记忆留在数据根里，重新安装（`miyu pkg install base-memory`）以后还在 |
 | 一条记忆 | 让 AI 忘掉它（AI 会调用 `forget` 把它作废），或者运行 `miyu memory forget <编号>` |
-| 一个会话保存的记忆 | 在那个会话里输入 `/clear-memory`（别名 `/reset-memory`），不会再询问，回复 `清掉了这个会话记下的 N 条记忆。`。也可以运行 `miyu memory clear session <会话>` |
+| 一个会话保存的记忆 | 在那个会话里输入 `/clear-memory`（别名 `/reset-memory`），不会再询问，回复 `已清除这个会话添加的 N 条记忆。`。也可以运行 `miyu memory clear session <会话>` |
 | 一整份记忆 | 运行 `miyu memory clear me`，或者点击网页界面上的 `清空` |
 
 一个会话开不开记忆，是在新建会话时决定的，之后换预设也不会改变。`/remember`、`/dream`、`/clear-memory` 只能在开着记忆的会话里使用；如果会话的预设没有开记忆，输入这些命令会提示 `预设「…」未启用记忆。`。

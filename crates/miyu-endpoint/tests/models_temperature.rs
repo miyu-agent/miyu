@@ -159,12 +159,12 @@ async fn a_temperature_the_model_cannot_use_is_reported() {
             (
                 "unusable_temperature".to_string(),
                 "providers.anthropic.models.claude-sonnet-4-5.temperature".to_string(),
-                "providers.anthropic.models.claude-sonnet-4-5.temperature is 1.5, above this model's limit of 1. Requests go out as if it were not set.".to_string(),
+                "providers.anthropic.models.claude-sonnet-4-5.temperature is 1.5, above this model's limit of 1; requests are sent as if it were not set.".to_string(),
             ),
             (
                 "unusable_temperature".to_string(),
                 "providers.openai.models.gpt-5.temperature".to_string(),
-                "providers.openai.models.gpt-5.temperature: this model does not take a temperature. Requests go out as if it were not set.".to_string(),
+                "providers.openai.models.gpt-5.temperature: this model does not support temperature; requests are sent as if it were not set.".to_string(),
             ),
         ],
         "{reply}"

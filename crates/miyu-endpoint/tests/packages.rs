@@ -323,7 +323,7 @@ async fn broken_taken_and_mismatched_ones_carry_a_code_and_a_sentence() {
             "layer": "home",
             "code": "two_programs",
             "line": 5,
-            "problem": "一个包只带一个程序：[ui], [process] 只能留一张",
+            "problem": "一个软件包只能包含一个程序：[ui], [process] 只能保留其中一个",
         })]
     );
     let mermaid = by_id("base-mermaid");
@@ -391,7 +391,7 @@ async fn check_reads_the_manifests_from_disk() {
             "code": "two_programs",
             "level": "error",
             "line": 5,
-            "message": "一个包只带一个程序：[ui], [process] 只能留一张",
+            "message": "一个软件包只能包含一个程序：[ui], [process] 只能保留其中一个",
         })],
         "{reply}"
     );

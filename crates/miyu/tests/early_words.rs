@@ -16,7 +16,7 @@ fn a_relative_miyu_home_is_said_in_the_interface_language() {
         ),
         (
             "zh_CN.UTF-8",
-            "miyu: MIYU_HOME 要写绝对路径，写的是 rel/path\n",
+            "miyu: MIYU_HOME 必须是绝对路径，当前为 rel/path\n",
         ),
     ] {
         let output = command(home.root.path(), &cwd, lang, &["check"])

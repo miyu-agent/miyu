@@ -256,7 +256,7 @@
 | 说法 | 中文 | 英文 |
 |---|---|---|
 | `core/tool-results/unavailable` | 不可用 | not available right now |
-| `core/tool-results/crashed` | 内部错误，可能已部分执行 | Internal error, may be partly done |
+| `core/tool-results/crashed` | 内部错误，可能已部分执行 | Internal error; may have partially run |
 
 ### 守着它的
 

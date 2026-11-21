@@ -95,7 +95,7 @@ async fn a_server_wanting_a_login_connects_after_the_person_agrees() {
     );
     let (status, page) = browse(&url).await;
     assert_eq!(status, 200, "{page}");
-    assert!(page.contains("登录好了"), "照连接的语言：{page}");
+    assert!(page.contains("登录成功"), "照连接的语言：{page}");
     let running = until_listed(&mut client, "notes", |one| one["state"] == "running").await;
     assert_eq!(running["failures"], 0, "{running}");
     assert!(
@@ -136,7 +136,7 @@ async fn a_callback_with_another_state_is_not_taken() {
     let forged = format!("{redirect}?code=stolen&state=not-the-one");
     let (status, page) = browse(&forged).await;
     assert_eq!(status, 400, "{page}");
-    assert!(page.contains("登录没成"), "{page}");
+    assert!(page.contains("登录失败"), "{page}");
     let (status, _) = browse(&url).await;
     assert_eq!(status, 200, "对的那一次照样接着等得到");
     until_listed(&mut client, "notes", |one| one["state"] == "running").await;

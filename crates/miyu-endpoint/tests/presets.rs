@@ -317,7 +317,7 @@ async fn presets_are_listed_and_read_by_layer() {
     assert_eq!(
         listed["result"]["presets"],
         json!([
-            {"preset": "broken", "problem": "不认识的表 [colors]：预设文件里只能有 [preset]、[features]、[software]、[tools]、[limits]", "line": 1},
+            {"preset": "broken", "problem": "未知的表 [colors]：预设文件中只能包含 [preset]、[features]、[software]、[tools]、[limits]", "line": 1},
             {"preset": "dev", "name": "我的开发", "summary": "在极简开发的基础上增加记忆、网络搜索、子代理、Agent间交流等开发常用工具。", "icon": "box"},
             {"preset": "full", "name": "全部功能", "summary": "开放全部工具。", "icon": "boxes"},
             {"preset": "minimal", "name": "极简开发", "summary": "只提供运行命令和读写文件的工具。", "icon": "square-terminal"},
@@ -448,7 +448,7 @@ async fn check_reads_presets_from_disk() {
             "code": "not_false",
             "level": "error",
             "line": 2,
-            "message": "tools.shell 只能写 false：预设里只能关掉单件工具",
+            "message": "tools.shell 只能是 false：预设只能单独关闭某个工具",
         })],
         "{reply}"
     );

@@ -50,7 +50,7 @@ async fn a_loop_typed_while_a_revert_is_pending_says_it_waits() {
     let reply = typed(&mut client, "k1", &session, "/loop 5m 看看 CI").await;
     assert_eq!(
         reply["result"]["said"],
-        "已开始循环：每 5m · 看看 CI。有一处撤回还没处理，循环先搁着：发一句话或 /restore 以后开始",
+        "已开始循环：每 5m · 看看 CI。有一次撤回还没有处理，循环暂不运行；发送一条消息或运行 /restore 后开始",
         "{reply}"
     );
     // 规矩不动：循环交来的那一句记下了，不开一轮。

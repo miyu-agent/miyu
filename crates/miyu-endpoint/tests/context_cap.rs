@@ -150,7 +150,7 @@ async fn the_context_command_sets_shows_and_takes_off() {
     let session = client.create("c1", "~").await;
     let said = |reply: &Value| reply["result"]["said"].clone();
     let shown = run(&mut client, &session, "k1", "/context").await;
-    assert_eq!(said(&shown), "未设上下文上限，压缩线约 850k。", "{shown}");
+    assert_eq!(said(&shown), "未设置上下文上限，压缩线约 850k。", "{shown}");
     assert_eq!(
         shown["result"]["events"].as_array().map(Vec::len),
         Some(1),
@@ -159,7 +159,7 @@ async fn the_context_command_sets_shows_and_takes_off() {
     let set = run(&mut client, &session, "k2", "/context 128K").await;
     assert_eq!(
         said(&set),
-        "上下文上限设为约 128k，压缩线约 101k。",
+        "上下文上限已设为约 128k，压缩线约 101k。",
         "{set}"
     );
     assert_eq!(
@@ -168,15 +168,15 @@ async fn the_context_command_sets_shows_and_takes_off() {
     );
     assert_eq!(
         said(&run(&mut client, &session, "k4", "/context 200000").await),
-        "上下文上限设为约 200k，压缩线约 170k。"
+        "上下文上限已设为约 200k，压缩线约 170k。"
     );
     assert_eq!(
         said(&run(&mut client, &session, "k5", "/context 1m").await),
-        "上下文上限设为约 1m，压缩线约 850k。"
+        "上下文上限已设为约 1m，压缩线约 850k。"
     );
     assert_eq!(
         said(&run(&mut client, &session, "k6", "/context unset").await),
-        "已去掉上下文上限，压缩线约 850k。"
+        "已取消上下文上限，压缩线约 850k。"
     );
     for (id, wrong) in [
         ("k7", "/context abc"),

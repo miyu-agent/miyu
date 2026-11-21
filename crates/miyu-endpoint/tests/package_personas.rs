@@ -262,10 +262,7 @@ async fn edits_left_by_an_uninstalled_package_are_noted_and_it_can_come_back() {
     assert_eq!(noted.len(), 1, "{checked}");
     assert_eq!(noted[0]["file"], "root/personas/cat");
     assert_eq!(noted[0]["level"], "warning");
-    assert_eq!(
-        noted[0]["message"],
-        "软件包 kitty 已经卸载，这一份是它留下的改动"
-    );
+    assert_eq!(noted[0]["message"], "软件包 kitty 已卸载，这是它留下的改动");
 
     let back = client.call("i3", "package.install", path).await;
     assert!(back["result"].is_object(), "重装它不算撞：{back}");

@@ -53,7 +53,7 @@ fn agent_context_starts_from_the_checkpoint_with_the_summary_first() {
         ),
         "{got}"
     );
-    for gone in ["first", "one", "Context compacted", "上下文压缩了"] {
+    for gone in ["first", "one", "Context compacted", "上下文已压缩"] {
         assert!(
             !got.contains(gone),
             "检查点以前的、压缩那一条不进：{gone}\n{got}"
@@ -71,7 +71,7 @@ fn agent_context_starts_from_the_checkpoint_with_the_summary_first() {
             && all.contains("> Context compacted\n\n<details>\n<summary>Summary</summary>"),
         "写了 range: all 的全要，旁白照 agent 的英文：{all}"
     );
-    assert!(!all.contains("上下文压缩了"), "{all}");
+    assert!(!all.contains("上下文已压缩"), "{all}");
 }
 
 #[test]
@@ -85,9 +85,9 @@ fn read_and_chat_context_say_how_many_turns_are_left_out() {
                 ..options
             },
         );
-        assert!(got.contains("\n\n> 前面省掉了 1 轮\n\n"), "{got}");
+        assert!(got.contains("\n\n> 已省略前 1 轮\n\n"), "{got}");
         assert!(!got.contains("first"), "{got}");
-        let notice = got.find("> 上下文压缩了").expect("压缩那一条照时间线留着");
+        let notice = got.find("> 上下文已压缩").expect("压缩那一条照时间线留着");
         assert!(notice < got.find("second").expect("有"), "{got}");
         assert!(
             got.contains("<summary>摘要</summary>\n\nsummary of the talk"),
@@ -142,7 +142,7 @@ fn the_last_turns_are_cut_by_turn_and_undone_ones_stay_out() {
     );
     assert!(
         read.contains(
-            "\n\n> 前面省掉了 1 轮\n\n## User\n\nsecond\n\n## Assistant\n\ntwo\n\n## User\n\nthird"
+            "\n\n> 已省略前 1 轮\n\n## User\n\nsecond\n\n## Assistant\n\ntwo\n\n## User\n\nthird"
         ),
         "撤掉的不算一轮：{read}"
     );

@@ -53,7 +53,7 @@ The search order and fallback work like this:
 - `auto`: it tries the services one by one in the order of the table above, and uses the results of the first one that succeeds.
 - A chosen service: it uses that service first; if the service has no key or address, errors, or is rate limited, it tries the others in the order of auto.
 - A service that times out (20 seconds) or errors is skipped for this search, and the next one is tried.
-- A service that reports a rate limit rests for a while: consecutive rate limits rest it for 30 minutes, 1 hour, 2 hours and 6 hours in turn, then 6 hours each time; one success starts the count over. Which services are resting is kept in the core's memory and is cleared when the core restarts. DeepSeek search and fetching on its behalf rest together. In the dropdown on the settings page, a resting service shows a time such as `Resting until 15:30` after it.
+- A service that reports a rate limit rests for a while: consecutive rate limits rest it for 30 minutes, 1 hour, 2 hours and 6 hours in turn, then 6 hours each time; one success starts the count over. Which services are resting is kept in the core's memory and is cleared when the core restarts. DeepSeek search and fetching on its behalf rest together. In the dropdown on the settings page, a resting service shows a time such as `Cooling down until 15:30` after it.
 - If all of them are resting, this search fails, and the timeline shows `All search sources are rate limited, try again later`.
 
 For the order of fetching pages, see [The order of fetching pages](#the-order-of-fetching-pages) below.

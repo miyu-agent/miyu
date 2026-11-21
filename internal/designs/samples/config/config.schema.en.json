@@ -5,7 +5,7 @@
       "properties": {
         "mcp": {
           "additionalProperties": {
-            "description": "When on, all of this server's tools can be called with miyu call; when off, only directly. A tool with its own setting follows that one. Allowed: true or false. Only in the system config. Takes effect next turn.",
+            "description": "When on, all of this server's tools can be called with miyu call; when off, only directly. A tool with its own setting follows that one. Allowed values: true or false. Can be set only in the system config. Takes effect next turn.",
             "title": "Allow script calls",
             "type": "boolean"
           },
@@ -13,7 +13,7 @@
         },
         "tools": {
           "additionalProperties": {
-            "description": "When on, the AI can also call this tool with miyu call inside a command, and the result goes to the script; when off, it can only be called directly. Unset follows how it was registered (MCP servers and script tools are callable, among built-in tools only search, fetching pages, memory search and the knowledge base tools are, extension tools are not). Tools that write or send messages stay uncallable even when on. Allowed: true or false. Only in the system config. Takes effect next turn.",
+            "description": "When on, the AI can also call this tool with miyu call inside a command, and the result goes to the script; when off, it can only be called directly. Unset follows how it was registered (MCP servers and script tools are callable, among built-in tools only search, fetching pages, memory search and the knowledge base tools are, extension tools are not). Tools that write or send messages stay uncallable even when on. Allowed values: true or false. Can be set only in the system config. Takes effect next turn.",
             "title": "Allow script calls",
             "type": "boolean"
           },
@@ -26,7 +26,7 @@
       "additionalProperties": {
         "properties": {
           "access": {
-            "description": "Who can use this slash command: you and group admins, anyone in the chat, or off for no one. When unset, the command's own setting applies, otherwise you and group admins. Allowed: admin, anyone or off. Only in the system config. Takes effect immediately.",
+            "description": "Who can use this slash command: you and group admins, anyone in the chat, or off for no one. When unset, the command's own setting applies, otherwise you and group admins. Allowed values: admin, anyone or off. Can be set only in the system config. Takes effect immediately.",
             "enum": [
               "admin",
               "anyone",
@@ -44,7 +44,7 @@
       "properties": {
         "line": {
           "default": 85,
-          "description": "Compact automatically once the context fills this percent of the window. Small windows keep room for the reply, so compaction may start earlier. With a 200K window, values above 85 have no effect. A 1M window can reach 95. Allowed: a whole number from 20 to 95. Only in the system config. Takes effect next turn.",
+          "description": "Compact automatically once the context fills this percent of the window. Small windows keep room for the reply, so compaction may start earlier. With a 200K window, values above 85 have no effect. A 1M window can reach 95. Allowed values: a whole number from 20 to 95. Can be set only in the system config. Takes effect next turn.",
           "maximum": 95,
           "minimum": 20,
           "title": "Compaction line",
@@ -52,7 +52,7 @@
         },
         "prepare": {
           "default": true,
-          "description": "When the context is nearly full, the older part is summarized in the background, so the switch happens without a wait when compaction is due. Off means compacting only once the limit is reached, as before. Allowed: true or false. Only in the system config. Takes effect next turn.",
+          "description": "When the context is nearly full, the older part is summarized in the background, so the switch happens without a wait when compaction is due. Off means compacting only once the limit is reached. Allowed values: true or false. Can be set only in the system config. Takes effect next turn.",
           "title": "Pre-compaction",
           "type": "boolean"
         }
@@ -63,7 +63,7 @@
       "properties": {
         "idle_exit": {
           "default": 0,
-          "description": "Minutes with no connection and no running turn before the core exits. 0 keeps it running (the default); an interface starts the core again when it can't reach it. Allowed: a whole number from 0 to 525600. Only in the system config. Takes effect immediately.",
+          "description": "Minutes with no connection and no running turn before the core exits. 0 keeps it running (the default); an interface starts the core again when it can't reach it. Allowed values: a whole number from 0 to 525600. Can be set only in the system config. Takes effect immediately.",
           "maximum": 525600,
           "minimum": 0,
           "title": "Idle exit time",
@@ -71,7 +71,7 @@
         },
         "workers": {
           "default": 0,
-          "description": "How many threads the core uses for connections, sessions and requests. 0 follows the CPU core count (the default); 1 counts as 2. Allowed: a whole number from 0 to 64. Only in the system config. Takes effect after the core restarts.",
+          "description": "How many threads the core uses for connections, sessions and requests. 0 follows the CPU core count (the default); 1 counts as 2. Allowed values: a whole number from 0 to 64. Can be set only in the system config. Takes effect after the core restarts.",
           "maximum": 64,
           "minimum": 0,
           "title": "Core worker threads",
@@ -84,7 +84,7 @@
       "properties": {
         "bindings": {
           "additionalProperties": {
-            "description": "Which platform identities are you. The key is the platform identity (for example qq:10001), the value is owner. In private chats that identity is you. Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Takes effect immediately.",
+            "description": "Which platform identities are you. In private chats that identity is you. Allowed values: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Can be set only in the system config. Takes effect immediately.",
             "title": "Platform accounts",
             "type": "string"
           },
@@ -95,7 +95,7 @@
     },
     "features": {
       "additionalProperties": {
-        "description": "Presets that turn on what they don't list follow this switch for the skill, script or MCP server, except where a preset turns it on or off itself. Presets that leave unlisted features off ignore it. Allowed: true or false. Only in the system config. Takes effect next turn.",
+        "description": "Presets that turn on what they don't list follow this switch for the skill, script or MCP server, except where a preset turns it on or off itself. Presets that leave unlisted features off ignore it. Allowed values: true or false. Can be set only in the system config. Takes effect next turn.",
         "title": "Enabled",
         "type": "boolean"
       },
@@ -105,9 +105,9 @@
       "properties": {
         "max_running": {
           "default": "30m",
-          "description": "A command the AI runs in the background is stopped after this long, and the AI is told. At most 2 hours. Allowed: a length of time from 1m to 2h, written like 30s, 10m or 1h. Only in the system config. Takes effect next turn.",
+          "description": "A command the AI runs in the background is stopped after this long, and the AI is told. At most 2 hours. Allowed values: a length of time from 1m to 2h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect next turn.",
           "pattern": "^[0-9]+[smh]?$",
-          "title": "Longest background command",
+          "title": "Maximum background command runtime",
           "type": "string"
         }
       },
@@ -117,7 +117,7 @@
       "properties": {
         "level": {
           "default": "info",
-          "description": "How much the runtime log records. Set debug when chasing a problem. MIYU_LOG, when set, wins for that launch. Allowed: error, warn, info, debug, trace or off. Only in the system config. Takes effect immediately.",
+          "description": "How much the runtime log records. Choose \"Detailed, for debugging\" when chasing a problem. MIYU_LOG, when set, wins for that launch. Allowed values: error, warn, info, debug, trace or off. Can be set only in the system config. Takes effect immediately.",
           "enum": [
             "error",
             "warn",
@@ -136,7 +136,7 @@
       "properties": {
         "dream_keep": {
           "default": 20,
-          "description": "Keep only this many of the latest consolidation runs for each memory. Older ones go to the trash. 0 deletes each run when it ends. Allowed: a whole number from 0 to 1000. Only in the system config. Takes effect next turn.",
+          "description": "Keep only this many of the latest consolidation runs for each memory. Older ones go to the trash. 0 deletes each run when it ends. Allowed values: a whole number from 0 to 1000. Can be set only in the system config. Takes effect next turn.",
           "maximum": 1000,
           "minimum": 0,
           "title": "Organizing records kept",
@@ -144,14 +144,14 @@
         },
         "extract_idle": {
           "default": "30m",
-          "description": "Once the conversation has been quiet this long, the AI turns what is worth keeping from the new part into memories. Allowed: a length of time from 1m to 1h, written like 30s, 10m or 1h. Only in the system config. Takes effect next turn.",
+          "description": "Once the conversation has been quiet this long, the AI turns what is worth keeping from the new part into memories. Allowed values: a length of time from 1m to 1h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect next turn.",
           "pattern": "^[0-9]+[smh]?$",
           "title": "Idle time before organizing",
           "type": "string"
         },
         "extract_max_turns": {
           "default": 20,
-          "description": "When a chat never goes quiet, the AI organizes in the background once this many turns have passed since the last time, without waiting for a pause. Allowed: a whole number from 2 to 500. Only in the system config. Takes effect next turn.",
+          "description": "When a chat never goes quiet, the AI organizes in the background once this many turns have passed since the last time, without waiting for a pause. Allowed values: a whole number from 2 to 500. Can be set only in the system config. Takes effect next turn.",
           "maximum": 500,
           "minimum": 2,
           "title": "Organizing interval in continuous chats (turns)",
@@ -159,14 +159,14 @@
         },
         "extract_max_wait": {
           "default": "1h",
-          "description": "When a chat never goes quiet, the AI organizes in the background once the earliest unorganized turn is this old, without waiting for a pause. Allowed: a length of time from 10m to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect next turn.",
+          "description": "When a chat never goes quiet, the AI organizes in the background once the earliest unorganized turn is this old, without waiting for a pause. Allowed values: a length of time from 10m to 24h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect next turn.",
           "pattern": "^[0-9]+[smh]?$",
           "title": "Longest wait in continuous chats",
           "type": "string"
         },
         "extract_turns": {
           "default": 2,
-          "description": "The AI organizes only after at least this many turns since the last time. Allowed: a whole number from 1 to 100. Only in the system config. Takes effect next turn.",
+          "description": "The AI organizes only after at least this many turns since the last time. Allowed values: a whole number from 1 to 100. Can be set only in the system config. Takes effect next turn.",
           "maximum": 100,
           "minimum": 1,
           "title": "Organizing interval (turns)",
@@ -174,7 +174,7 @@
         },
         "merge_every": {
           "default": "16h",
-          "description": "After this long the AI goes over new and older memories together: drops repeats and outdated ones, and writes a summary of what it knows about you. Allowed: a length of time from 1h to 720h, written like 30s, 10m or 1h. Only in the system config. Takes effect next turn.",
+          "description": "After this long the AI goes over new and older memories together: drops repeats and outdated ones, and writes a summary of what it knows about you. Allowed values: a length of time from 1h to 720h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect next turn.",
           "pattern": "^[0-9]+[smh]?$",
           "title": "Consolidation interval",
           "type": "string"
@@ -188,20 +188,20 @@
           "properties": {
             "every": {
               "default": "24h",
-              "description": "Fetch again once the cached catalog is this old. Allowed: a length of time from 1h to 720h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.",
+              "description": "Fetch again once the cached catalog is this old. Allowed values: a length of time from 1h to 720h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect immediately.",
               "pattern": "^[0-9]+[smh]?$",
               "title": "Update interval",
               "type": "string"
             },
             "update": {
               "default": true,
-              "description": "Fetch a newer model catalog from models.dev in the background. Off uses only the bundled and already fetched ones. Allowed: true or false. Only in the system config. Takes effect immediately.",
+              "description": "Fetch a newer model catalog from models.dev in the background. Off uses only the bundled and already fetched ones. Allowed values: true or false. Can be set only in the system config. Takes effect immediately.",
               "title": "Update the catalog",
               "type": "boolean"
             },
             "url": {
               "default": "https://models.dev/api.json",
-              "description": "Where to fetch the model catalog from. Allowed: an address starting with http:// or https:// or { env = \"…\" }. Only in the system config. Takes effect immediately.",
+              "description": "Where to fetch the model catalog from. Allowed values: an address starting with http:// or https:// or { env = \"…\" }. Can be set only in the system config. Takes effect immediately.",
               "oneOf": [
                 {
                   "format": "uri",
@@ -226,7 +226,7 @@
           "type": "object"
         },
         "chat": {
-          "description": "The model new sessions use, written as provider/model, for example deepseek/deepseek-flash, or @pool. Allowed: <provider>/<model> or @<pool>. Only in the system config. Applies to new sessions.",
+          "description": "The model new sessions use. Allowed values: <provider>/<model> or @<pool>. Can be set only in the system config. Applies to new sessions.",
           "title": "Chat model",
           "type": "string"
         },
@@ -236,14 +236,14 @@
               "properties": {
                 "base": {
                   "default": "10m",
-                  "description": "How long a pool model rests the first time it fails to authenticate. It doubles each time in a row. Allowed: a length of time from 1s to 1h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.",
+                  "description": "How long a pool model rests the first time it fails to authenticate. It doubles each time in a row. Allowed values: a length of time from 1s to 1h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect immediately.",
                   "pattern": "^[0-9]+[smh]?$",
                   "title": "Auth failure suspension (initial)",
                   "type": "string"
                 },
                 "max": {
                   "default": "2h",
-                  "description": "The auth failure pause stops doubling here. Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.",
+                  "description": "The auth failure pause stops doubling here. Allowed values: a length of time from 1s to 24h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect immediately.",
                   "pattern": "^[0-9]+[smh]?$",
                   "title": "Auth failure suspension (max)",
                   "type": "string"
@@ -255,14 +255,14 @@
               "properties": {
                 "base": {
                   "default": "30m",
-                  "description": "How long a pool model rests the first time it runs out of quota or credit and the provider doesn't say when it comes back. When it does say, that time is used, up to a day. Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.",
+                  "description": "How long a pool model rests the first time it runs out of quota or credit and the provider doesn't say when it comes back. When it does say, that time is used, up to a day. Allowed values: a length of time from 1s to 24h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect immediately.",
                   "pattern": "^[0-9]+[smh]?$",
                   "title": "Quota exhausted suspension (initial)",
                   "type": "string"
                 },
                 "max": {
                   "default": "30m",
-                  "description": "Without a stated reset time, the pause doubles each time in a row up to this. Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.",
+                  "description": "Without a stated reset time, the pause doubles each time in a row up to this. Allowed values: a length of time from 1s to 24h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect immediately.",
                   "pattern": "^[0-9]+[smh]?$",
                   "title": "Quota exhausted suspension (max)",
                   "type": "string"
@@ -274,14 +274,14 @@
               "properties": {
                 "base": {
                   "default": "30s",
-                  "description": "How long an endpoint rests the first time it is rate limited. It doubles each time in a row. Allowed: a length of time from 1s to 1h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.",
+                  "description": "How long an endpoint rests the first time it is rate limited. It doubles each time in a row. Allowed values: a length of time from 1s to 1h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect immediately.",
                   "pattern": "^[0-9]+[smh]?$",
                   "title": "Rate limit cooldown (initial)",
                   "type": "string"
                 },
                 "max": {
                   "default": "10m",
-                  "description": "The rate limit cooldown stops doubling here, even when the provider asks for longer. Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.",
+                  "description": "The rate limit cooldown stops doubling here, even when the provider asks for longer. Allowed values: a length of time from 1s to 24h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect immediately.",
                   "pattern": "^[0-9]+[smh]?$",
                   "title": "Rate limit cooldown (max)",
                   "type": "string"
@@ -293,14 +293,14 @@
               "properties": {
                 "base": {
                   "default": "10s",
-                  "description": "How long an endpoint rests the first time it cannot be reached or fails on its side. It doubles each time in a row. Allowed: a length of time from 1s to 1h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.",
+                  "description": "How long an endpoint rests the first time it cannot be reached or fails on its side. It doubles each time in a row. Allowed values: a length of time from 1s to 1h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect immediately.",
                   "pattern": "^[0-9]+[smh]?$",
                   "title": "Error cooldown (initial)",
                   "type": "string"
                 },
                 "max": {
                   "default": "5m",
-                  "description": "The cooldown for these errors stops doubling here. Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.",
+                  "description": "The cooldown for these errors stops doubling here. Allowed values: a length of time from 1s to 24h, written like 30s, 10m or 1h. Can be set only in the system config. Takes effect immediately.",
                   "pattern": "^[0-9]+[smh]?$",
                   "title": "Error cooldown (max)",
                   "type": "string"
@@ -325,11 +325,11 @@
               "type": "string"
             }
           ],
-          "description": "Improves search quality for memories, knowledge bases and more. Only the built-in model recalls memories and knowledge on its own; other models are used for search only. Allowed: local, off or <provider>/<model>. Only in the system config. Takes effect next turn.",
+          "description": "Improves search quality for memories, knowledge bases and more. Only the built-in model recalls memories and knowledge on its own; other models are used for search only. Allowed values: local, off or <provider>/<model>. Can be set only in the system config. Takes effect next turn.",
           "title": "Semantic model"
         },
         "vision": {
-          "description": "Provides multimodal abilities when the chat model doesn't support them. Allowed: <provider>/<model> or @<pool>. Only in the system config. Takes effect next turn.",
+          "description": "Provides multimodal abilities when the chat model doesn't support them. Allowed values: <provider>/<model> or @<pool>. Can be set only in the system config. Takes effect next turn.",
           "title": "Multimodal model",
           "type": "string"
         }
@@ -339,7 +339,7 @@
     "net": {
       "properties": {
         "internal_domains": {
-          "description": "Domains the AI never visits on behalf of others (people in group chats, strangers), subdomains included, whatever they resolve to and whether or not a proxy is used; you are not affected. For example example-corp.com. Allowed: a list of text of at most 253 characters. Only in the system config. Takes effect next turn.",
+          "description": "Domains the AI never visits on behalf of others (people in group chats, strangers), subdomains included, whatever they resolve to and whether or not a proxy is used; you are not affected. For example example-corp.com. Allowed values: a list of text of at most 253 characters. Can be set only in the system config. Takes effect next turn.",
           "items": {
             "maxLength": 253,
             "minLength": 1,
@@ -353,7 +353,7 @@
             "anysearch": {
               "properties": {
                 "key": {
-                  "description": "With a key, searches use your own AnySearch quota; without one, the free daily quota per IP. Allowed: { secret = \"…\" } or { env = \"…\" }. Only in the system config. Takes effect next turn.",
+                  "description": "With a key, searches use your own AnySearch quota; without one, the free daily quota per IP. Allowed values: { secret = \"…\" } or { env = \"…\" }. Can be set only in the system config. Takes effect next turn.",
                   "oneOf": [
                     {
                       "additionalProperties": false,
@@ -388,7 +388,7 @@
             "brave": {
               "properties": {
                 "key": {
-                  "description": "Needed when Brave is the web provider. Allowed: { secret = \"…\" } or { env = \"…\" }. Only in the system config. Takes effect next turn.",
+                  "description": "Needed when Brave is the web provider. Allowed values: { secret = \"…\" } or { env = \"…\" }. Can be set only in the system config. Takes effect next turn.",
                   "oneOf": [
                     {
                       "additionalProperties": false,
@@ -423,7 +423,7 @@
             "deepseek": {
               "properties": {
                 "key": {
-                  "description": "Needed when DeepSeek is the web provider; if unset, the key of your official DeepSeek model provider is borrowed (shown as inherited). Searches and fetched pages are charged per use. Allowed: { secret = \"…\" } or { env = \"…\" }. Only in the system config. Takes effect next turn.",
+                  "description": "Needed when DeepSeek is the web provider; if unset, the key of your official DeepSeek model provider is borrowed (shown as inherited). Searches and fetched pages are charged per use. Allowed values: { secret = \"…\" } or { env = \"…\" }. Can be set only in the system config. Takes effect next turn.",
                   "oneOf": [
                     {
                       "additionalProperties": false,
@@ -458,7 +458,7 @@
             "exa": {
               "properties": {
                 "key": {
-                  "description": "With a key, searches use your own Exa quota; without one, the free quota. Allowed: { secret = \"…\" } or { env = \"…\" }. Only in the system config. Takes effect next turn.",
+                  "description": "With a key, searches use your own Exa quota; without one, the free quota. Allowed values: { secret = \"…\" } or { env = \"…\" }. Can be set only in the system config. Takes effect next turn.",
                   "oneOf": [
                     {
                       "additionalProperties": false,
@@ -493,7 +493,7 @@
             "searxng": {
               "properties": {
                 "url": {
-                  "description": "Your own SearXNG instance, for example http://127.0.0.1:8888, with the JSON format enabled. Used when SearXNG is the web provider. Allowed: an address starting with http:// or https:// or { env = \"…\" }. Only in the system config. Takes effect next turn.",
+                  "description": "Your own SearXNG instance, for example http://127.0.0.1:8888, with the JSON format enabled. Used when SearXNG is the web provider. Allowed values: an address starting with http:// or https:// or { env = \"…\" }. Can be set only in the system config. Takes effect next turn.",
                   "oneOf": [
                     {
                       "format": "uri",
@@ -519,7 +519,7 @@
             },
             "source": {
               "default": "auto",
-              "description": "Which service AI uses to search and fetch the web. Auto sticks to free tiers: searches try Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rest any that hit a rate limit, and pages that can't be fetched directly are fetched by Exa, Firecrawl or Parallel. These services are outside China and receive the search terms and addresses. A chosen one is tried first (the DeepSeek search API also fetches pages before AI tries them itself), and Auto takes over when it fails. Allowed: auto, exa, anysearch, deepseek, deepseek-responses, tavily, brave or searxng. Only in the system config. Takes effect next turn.",
+              "description": "Which service AI uses to search and fetch the web. Auto sticks to free tiers: searches try Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rest any that hit a rate limit, and pages that can't be fetched directly are fetched by Exa, Firecrawl or Parallel. These services are outside China and receive the search terms and addresses. A chosen one is tried first (the DeepSeek search API also fetches pages before AI tries them itself), and Auto takes over when it fails. Allowed values: auto, exa, anysearch, deepseek, deepseek-responses, tavily, brave or searxng. Can be set only in the system config. Takes effect next turn.",
               "enum": [
                 "auto",
                 "exa",
@@ -536,7 +536,7 @@
             "tavily": {
               "properties": {
                 "key": {
-                  "description": "Needed when Tavily is the web provider. Allowed: { secret = \"…\" } or { env = \"…\" }. Only in the system config. Takes effect next turn.",
+                  "description": "Needed when Tavily is the web provider. Allowed values: { secret = \"…\" } or { env = \"…\" }. Can be set only in the system config. Takes effect next turn.",
                   "oneOf": [
                     {
                       "additionalProperties": false,
@@ -577,7 +577,7 @@
     "packages": {
       "properties": {
         "hold": {
-          "description": "Packages (by id) skipped when upgrading; the installed version stays. Allowed: a list of text of at most 64 characters. Only in the system config. Takes effect immediately.",
+          "description": "Packages (by id) skipped when upgrading; the installed version stays. Allowed values: a list of text of at most 64 characters. Can be set only in the system config. Takes effect immediately.",
           "items": {
             "maxLength": 64,
             "minLength": 1,
@@ -588,7 +588,7 @@
         },
         "mirrors": {
           "default": [],
-          "description": "Tried in order before the source when it is slow or unreachable. Content is still checked against the signature and hashes, so a mirror can't change it. Allowed: a list of an address starting with http:// or https:// or { env = \"…\" }. Only in the system config. Takes effect immediately.",
+          "description": "Tried in order before the source when it is slow or unreachable. Content is still checked against the signature and hashes, so a mirror can't change it. Allowed values: a list of an address starting with http:// or https:// or { env = \"…\" }. Can be set only in the system config. Takes effect immediately.",
           "items": {
             "oneOf": [
               {
@@ -614,13 +614,13 @@
         },
         "other_systems": {
           "default": false,
-          "description": "Also list packages that don't support this system in the package source, marked \"Not supported on this system\". They can't be installed. Allowed: true or false. Only in the system config. Takes effect immediately.",
+          "description": "Also list packages that don't support this system in the package source, marked \"Not supported on this system\". They can't be installed. Allowed values: true or false. Can be set only in the system config. Takes effect immediately.",
           "title": "Packages for other systems",
           "type": "boolean"
         },
         "source": {
           "default": "https://miyu-agent.github.io/packages/",
-          "description": "Where to look up and download packages. The official source by default; any other address must serve content signed by the official key. Allowed: an address starting with http:// or https:// or { env = \"…\" }. Only in the system config. Takes effect immediately.",
+          "description": "Where to look up and download packages. The official source by default; any other address must serve content signed by the official key. Allowed values: an address starting with http:// or https:// or { env = \"…\" }. Can be set only in the system config. Takes effect immediately.",
           "oneOf": [
             {
               "format": "uri",
@@ -645,14 +645,14 @@
           "additionalProperties": {
             "properties": {
               "key": {
-                "description": "The Ed25519 public key (base64) its index is signed with. An index that doesn't verify isn't taken. Allowed: text of at most 64 characters. Only in the system config. Takes effect immediately.",
+                "description": "The Ed25519 public key (base64) its index is signed with. An index that doesn't verify isn't taken. Allowed values: text of at most 64 characters. Can be set only in the system config. Takes effect immediately.",
                 "maxLength": 64,
                 "minLength": 1,
                 "title": "Other source key",
                 "type": "string"
               },
               "url": {
-                "description": "The folder holding its index. Together with a key it makes a source you trust. It goes in the system config. Allowed: an address starting with http:// or https:// or { env = \"…\" }. Only in the system config. Takes effect immediately.",
+                "description": "The folder holding its index. Together with a key it makes a source you trust. It goes in the system config. Allowed values: an address starting with http:// or https:// or { env = \"…\" }. Can be set only in the system config. Takes effect immediately.",
                 "oneOf": [
                   {
                     "format": "uri",
@@ -687,37 +687,37 @@
           "properties": {
             "container": {
               "default": true,
-              "description": "Ask before a container takes the host's devices, process or network namespace. Allowed: true or false. Only in the system config. Takes effect next turn.",
+              "description": "Ask before a container takes the host's devices, process or network namespace. Allowed values: true or false. Can be set only in the system config. Takes effect next turn.",
               "title": "Containers using host devices",
               "type": "boolean"
             },
             "delete": {
               "default": true,
-              "description": "Ask before deleting the working directory or a parent of it, Miyu's data, or a whole directory whose target is only known at run time. Allowed: true or false. Only in the system config. Takes effect next turn.",
+              "description": "Ask before deleting the working directory or a parent of it, Miyu's data, or a whole directory whose target is only known at run time. Allowed values: true or false. Can be set only in the system config. Takes effect next turn.",
               "title": "Recursive deletes",
               "type": "boolean"
             },
             "git": {
               "default": true,
-              "description": "Ask before a force push, reset --hard, clean -f, discarding changes or dropping a stash. Allowed: true or false. Only in the system config. Takes effect next turn.",
+              "description": "Ask before a force push, reset --hard, clean -f, discarding changes or dropping a stash. Allowed values: true or false. Can be set only in the system config. Takes effect next turn.",
               "title": "Destructive git operations",
               "type": "boolean"
             },
             "pipe_to_shell": {
               "default": true,
-              "description": "Ask before commands like curl … | sh or irm … | iex. Allowed: true or false. Only in the system config. Takes effect next turn.",
+              "description": "Ask before commands like curl … | sh or irm … | iex. Allowed values: true or false. Can be set only in the system config. Takes effect next turn.",
               "title": "Running a download directly",
               "type": "boolean"
             },
             "power": {
               "default": true,
-              "description": "Ask before shutting down or restarting. Allowed: true or false. Only in the system config. Takes effect next turn.",
+              "description": "Ask before shutting down or restarting. Allowed values: true or false. Can be set only in the system config. Takes effect next turn.",
               "title": "Shutdown and restart",
               "type": "boolean"
             },
             "timeout": {
               "default": 300,
-              "description": "Anything waiting for your confirmation is denied after this many seconds. 0 waits forever. Allowed: a whole number from 0 to 86400. Only in the system config. Takes effect next turn.",
+              "description": "Anything waiting for your confirmation is denied after this many seconds. 0 waits forever. Allowed values: a whole number from 0 to 86400. Can be set only in the system config. Takes effect next turn.",
               "maximum": 86400,
               "minimum": 0,
               "title": "Confirmation timeout",
@@ -728,7 +728,7 @@
         },
         "start_read_only": {
           "default": false,
-          "description": "When on, new sessions begin read-only. The AI can look around and plan, and you turn read-only off when files should change. A project config can only turn it on. Allowed: true or false. Only in the system config or a project config. Applies to new sessions.",
+          "description": "When on, new sessions begin read-only. The AI can look around and plan, and you turn read-only off when files should change. A project config can only turn it on. Allowed values: true or false. Can be set only in the system config or a project config. Applies to new sessions.",
           "title": "Start new sessions read-only",
           "type": "boolean"
         }
@@ -738,7 +738,7 @@
     "persona": {
       "properties": {
         "default": {
-          "description": "The persona new sessions use. When unset, new sessions have no persona: no character prompt, and a memory of their own. Allowed: a persona id. Only in the system config. Applies to new sessions.",
+          "description": "The persona new sessions use. When unset, new sessions have no persona: no character prompt, and a memory of their own. Allowed values: a persona id. Can be set only in the system config. Applies to new sessions.",
           "title": "Default persona",
           "type": "string"
         }
@@ -749,14 +749,14 @@
       "additionalProperties": {
         "properties": {
           "description": {
-            "description": "One line the AI sees after the pool name when it starts a subagent. Write it in English. Allowed: one line of English, at most 60 characters. Only in the system config. Applies to new sessions.",
+            "description": "One line the AI sees after the pool name when it starts a subagent. Enter it in English. Allowed values: one line of English, at most 60 characters. Can be set only in the system config. Applies to new sessions.",
             "maxLength": 60,
             "minLength": 1,
             "title": "Description",
             "type": "string"
           },
           "models": {
-            "description": "A group of models, each written as provider/model. Allowed: a list of <provider>/<model>. Only in the system config. Takes effect next turn.",
+            "description": "A group of models. Allowed values: a list of <provider>/<model>. Can be set only in the system config. Takes effect next turn.",
             "items": {
               "type": "string"
             },
@@ -764,7 +764,7 @@
             "type": "array"
           },
           "strategy": {
-            "description": "Keep a session on one member, take the next member for every request, or start from the first member every time (a main model with backups used only on errors). Left out, a pool whose members are all billed per request rotates and the others pin. Allowed: pin, rotate or ordered. Only in the system config. Takes effect next turn.",
+            "description": "Keep a session on one member, take the next member for every request, or start from the first member every time (a main model with backups used only on errors). When unset, a pool whose members are all billed per request rotates and the others pin. Allowed values: pin, rotate or ordered. Can be set only in the system config. Takes effect next turn.",
             "enum": [
               "pin",
               "rotate",
@@ -775,7 +775,7 @@
           },
           "subagent": {
             "default": false,
-            "description": "When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members. Allowed: true or false. Only in the system config. Applies to new sessions.",
+            "description": "When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members. Allowed values: true or false. Can be set only in the system config. Applies to new sessions.",
             "title": "Available to subagents",
             "type": "boolean"
           }
@@ -788,7 +788,7 @@
       "properties": {
         "default": {
           "default": "full",
-          "description": "The preset new sessions use. Allowed: a preset id. Only in the system config. Applies to new sessions.",
+          "description": "The preset new sessions use. Allowed values: a preset id. Can be set only in the system config. Applies to new sessions.",
           "title": "Default preset",
           "type": "string"
         }
@@ -798,21 +798,21 @@
     "profile": {
       "properties": {
         "about": {
-          "description": "Anything you want the AI to know about you; can be left empty. Not included in group chats on messaging platforms. Allowed: text of at most 2000 characters; line breaks allowed. Only in the system config. Applies to new sessions.",
+          "description": "Anything you want the AI to know about you; can be left empty. Not included in group chats on messaging platforms. Allowed values: text of at most 2000 characters; line breaks allowed. Can be set only in the system config. Applies to new sessions.",
           "maxLength": 2000,
           "minLength": 1,
           "title": "Additional details",
           "type": "string"
         },
         "name": {
-          "description": "How the AI addresses you, such as your name or a nickname. Allowed: text of at most 64 characters. Only in the system config. Applies to new sessions.",
+          "description": "How the AI addresses you, such as your name or a nickname. Allowed values: text of at most 64 characters. Can be set only in the system config. Applies to new sessions.",
           "maxLength": 64,
           "minLength": 1,
           "title": "Preferred name",
           "type": "string"
         },
         "preferred_reply_language": {
-          "description": "The language the AI replies in by default. You can ask it to switch at any time. Allowed: text of at most 64 characters. Only in the system config. Applies to new sessions.",
+          "description": "The language the AI replies in by default. You can ask it to switch at any time. Allowed values: text of at most 64 characters. Can be set only in the system config. Applies to new sessions.",
           "maxLength": 64,
           "minLength": 1,
           "title": "Reply language",
@@ -825,7 +825,7 @@
       "additionalProperties": {
         "properties": {
           "base_url": {
-            "description": "The address of this provider's API; the driver adds the path. Known providers can leave it out. Allowed: an address starting with http:// or https:// or { env = \"…\" }. Only in the system config. Takes effect next turn.",
+            "description": "The address of this provider's API; the driver adds the path. Not needed for providers Miyu recognizes. Allowed values: an address starting with http:// or https:// or { env = \"…\" }. Can be set only in the system config. Takes effect next turn.",
             "oneOf": [
               {
                 "format": "uri",
@@ -847,7 +847,7 @@
             "title": "Address"
           },
           "cache": {
-            "description": "How this provider bills its cache. For now it only decides how a pool without a strategy splits. Left out, it follows the driver. Allowed: contract, best_effort or per_request. Only in the system config. Takes effect next turn.",
+            "description": "How this provider bills its cache. For now it only decides how a pool without a strategy splits. When unset, it follows the driver. Allowed values: contract, best_effort or per_request. Can be set only in the system config. Takes effect next turn.",
             "enum": [
               "contract",
               "best_effort",
@@ -857,12 +857,12 @@
             "type": "string"
           },
           "catalog": {
-            "description": "Which provider in the model data this one is, for example deepseek for a relay that only forwards DeepSeek. Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Takes effect next turn.",
+            "description": "Which provider in the model catalog this one is, for example deepseek for a relay that only forwards DeepSeek. Allowed values: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Can be set only in the system config. Takes effect next turn.",
             "title": "Catalog provider",
             "type": "string"
           },
           "driver": {
-            "description": "How to talk to this provider. Known providers can leave it out. Allowed: openai-chat, anthropic or openai-responses. Only in the system config. Takes effect next turn.",
+            "description": "How to talk to this provider. Not needed for providers Miyu recognizes. Allowed values: openai-chat, anthropic or openai-responses. Can be set only in the system config. Takes effect next turn.",
             "enum": [
               "openai-chat",
               "anthropic",
@@ -872,7 +872,7 @@
             "type": "string"
           },
           "key": {
-            "description": "Write { secret = \"name\" } (saved with miyu provider login) or { env = \"VARIABLE\" }. One per provider; to use several quotas together, set up several providers and put them in a pool. Without one, no auth header is sent. Allowed: { secret = \"…\" } or { env = \"…\" }. Only in the system config. Takes effect next turn.",
+            "description": "One key per provider; to use several quotas together, set up several providers and put them in a pool. Without one, no auth header is sent. Allowed values: { secret = \"…\" } or { env = \"…\" }. Can be set only in the system config. Takes effect next turn.",
             "oneOf": [
               {
                 "additionalProperties": false,
@@ -902,7 +902,7 @@
             "title": "Key"
           },
           "local": {
-            "description": "A model service on this machine, counted as free. Left out, it follows the address: on this machine means yes. Allowed: true or false. Only in the system config. Takes effect next turn.",
+            "description": "A model service on this machine, counted as free. When unset, it follows the address: an address on this machine counts as local. Allowed values: true or false. Can be set only in the system config. Takes effect next turn.",
             "title": "Local service",
             "type": "boolean"
           },
@@ -910,21 +910,21 @@
             "additionalProperties": {
               "properties": {
                 "catalog": {
-                  "description": "Which models.dev entry to use: <provider>/<model>. Left out, it is found by name. Allowed: text of at most 256 characters. Only in the system config. Takes effect next turn.",
+                  "description": "Which models.dev entry to use: <provider>/<model>. When unset, it is found by name. Allowed values: text of at most 256 characters. Can be set only in the system config. Takes effect next turn.",
                   "maxLength": 256,
                   "minLength": 1,
                   "title": "Catalog model",
                   "type": "string"
                 },
                 "effort": {
-                  "description": "The thinking effort this model uses by default: one of its levels, for example high, or off where thinking can be turned off. Left out, the provider decides. Allowed: text of at most 32 characters. Only in the system config. Takes effect next turn.",
+                  "description": "The thinking effort this model uses by default: one of its levels, for example high, or off where thinking can be turned off. When unset, the provider decides. Allowed values: text of at most 32 characters. Can be set only in the system config. Takes effect next turn.",
                   "maxLength": 32,
                   "minLength": 1,
                   "title": "Thinking effort",
                   "type": "string"
                 },
                 "inputs": {
-                  "description": "What this model can read: text, images, PDF, audio, video. Allowed: a list of text, image, pdf, audio or video. Only in the system config. Takes effect next turn.",
+                  "description": "What this model can read: text, images, PDF, audio, video. Allowed values: a list of text, image, pdf, audio or video. Can be set only in the system config. Takes effect next turn.",
                   "items": {
                     "enum": [
                       "text",
@@ -939,7 +939,7 @@
                   "type": "array"
                 },
                 "max_output": {
-                  "description": "How many tokens this model can write at most in one reply. Allowed: a whole number from 1 to 100000000. Only in the system config. Takes effect next turn.",
+                  "description": "How many tokens this model can write at most in one reply. Allowed values: a whole number from 1 to 100000000. Can be set only in the system config. Takes effect next turn.",
                   "maximum": 100000000,
                   "minimum": 1,
                   "title": "Max output",
@@ -948,35 +948,35 @@
                 "price": {
                   "properties": {
                     "cache_read": {
-                      "description": "Price per million tokens read from the cache. Allowed: a number from 0 to 1000000. Only in the system config. Takes effect next turn.",
+                      "description": "Price per million tokens read from the cache. Allowed values: a number from 0 to 1000000. Can be set only in the system config. Takes effect next turn.",
                       "maximum": 1000000,
                       "minimum": 0,
                       "title": "Cache read price",
                       "type": "number"
                     },
                     "cache_write": {
-                      "description": "Price per million tokens written to the cache. Allowed: a number from 0 to 1000000. Only in the system config. Takes effect next turn.",
+                      "description": "Price per million tokens written to the cache. Allowed values: a number from 0 to 1000000. Can be set only in the system config. Takes effect next turn.",
                       "maximum": 1000000,
                       "minimum": 0,
                       "title": "Cache write price",
                       "type": "number"
                     },
                     "currency": {
-                      "description": "Currency of the price, three capital letters such as USD or CNY. USD if left out. Allowed: text of at most 3 characters. Only in the system config. Takes effect next turn.",
+                      "description": "Currency of the price, three capital letters such as USD or CNY. USD when unset. Allowed values: text of at most 3 characters. Can be set only in the system config. Takes effect next turn.",
                       "maxLength": 3,
                       "minLength": 1,
                       "title": "Currency",
                       "type": "string"
                     },
                     "input": {
-                      "description": "Price per million input tokens. A written price is used whole. Allowed: a number from 0 to 1000000. Only in the system config. Takes effect next turn.",
+                      "description": "Price per million input tokens. Once any price is set, all of this model's prices come from the values you set. Allowed values: a number from 0 to 1000000. Can be set only in the system config. Takes effect next turn.",
                       "maximum": 1000000,
                       "minimum": 0,
                       "title": "Input price",
                       "type": "number"
                     },
                     "output": {
-                      "description": "Price per million output tokens. Allowed: a number from 0 to 1000000. Only in the system config. Takes effect next turn.",
+                      "description": "Price per million output tokens. Allowed values: a number from 0 to 1000000. Can be set only in the system config. Takes effect next turn.",
                       "maximum": 1000000,
                       "minimum": 0,
                       "title": "Output price",
@@ -986,14 +986,14 @@
                   "type": "object"
                 },
                 "price_multiplier": {
-                  "description": "Prices of this model are multiplied by it, over the one on the provider. Allowed: a number from 0 to 1000. Only in the system config. Takes effect next turn.",
+                  "description": "Prices of this model are multiplied by it, over the one on the provider. Allowed values: a number from 0 to 1000. Can be set only in the system config. Takes effect next turn.",
                   "maximum": 1000,
                   "minimum": 0,
                   "title": "Price multiplier",
                   "type": "number"
                 },
                 "reasoning": {
-                  "description": "Which thinking effort levels this model offers. Allowed: a list of text of at most 32 characters. Only in the system config. Takes effect next turn.",
+                  "description": "Which thinking effort levels this model offers. Allowed values: a list of text of at most 32 characters. Can be set only in the system config. Takes effect next turn.",
                   "items": {
                     "maxLength": 32,
                     "minLength": 1,
@@ -1003,19 +1003,19 @@
                   "type": "array"
                 },
                 "temperature": {
-                  "description": "The temperature this model uses by default, from 0 to 2; higher gives looser answers. Left out, the provider decides. Not sent to models that do not take one. Allowed: a number from 0 to 2. Only in the system config. Takes effect next turn.",
+                  "description": "The temperature this model uses by default, from 0 to 2; higher gives looser answers. When unset, the provider decides. Not sent to models that do not take one. Allowed values: a number from 0 to 2. Can be set only in the system config. Takes effect next turn.",
                   "maximum": 2,
                   "minimum": 0,
                   "title": "Default temperature",
                   "type": "number"
                 },
                 "tools": {
-                  "description": "Whether this model can call tools. Allowed: true or false. Only in the system config. Takes effect next turn.",
+                  "description": "Whether this model can call tools. Allowed values: true or false. Can be set only in the system config. Takes effect next turn.",
                   "title": "Tool calls",
                   "type": "boolean"
                 },
                 "window": {
-                  "description": "The context window of this model, in tokens. Allowed: a whole number from 1 to 100000000. Only in the system config. Takes effect next turn.",
+                  "description": "The context window of this model, in tokens. Allowed values: a whole number from 1 to 100000000. Can be set only in the system config. Takes effect next turn.",
                   "maximum": 100000000,
                   "minimum": 1,
                   "title": "Context window",
@@ -1027,19 +1027,19 @@
             "type": "object"
           },
           "name": {
-            "description": "The name people see. The id is only for referring to models; without one, the model data's name for this provider is used, then the id. Allowed: text of at most 64 characters. Only in the system config. Takes effect immediately.",
+            "description": "The name people see. The id is only for referring to models; without one, the model catalog's name for this provider is used, then the id. Allowed values: text of at most 64 characters. Can be set only in the system config. Takes effect immediately.",
             "maxLength": 64,
             "minLength": 1,
             "title": "Display name",
             "type": "string"
           },
           "package": {
-            "description": "Which package this provider comes from. When set, the entries here override the provider that package brings; without it this is your own provider and the package's one with the same id is not added. Written automatically when you change a provider a package brings. Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Takes effect immediately.",
+            "description": "Which package this provider comes from. When set, the entries here override the provider that package brings; without it this is your own provider and the package's one with the same id is not added. Written automatically when you change a provider a package brings. Allowed values: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Can be set only in the system config. Takes effect immediately.",
             "title": "Package",
             "type": "string"
           },
           "price_multiplier": {
-            "description": "Prices of this provider are multiplied by it. 1 if left out. A multiplier on the model wins. Allowed: a number from 0 to 1000. Only in the system config. Takes effect next turn.",
+            "description": "Prices of this provider are multiplied by it. 1 when unset. A multiplier set on the model wins. Allowed values: a number from 0 to 1000. Can be set only in the system config. Takes effect next turn.",
             "maximum": 1000,
             "minimum": 0,
             "title": "Price multiplier",
@@ -1048,7 +1048,7 @@
           "quota": {
             "properties": {
               "url": {
-                "description": "Full address for checking this provider's quota, replacing the bundled one. Providers without a quota interface in the bundled data are not checked even if set. For a provider with a known official address such as DeepSeek, nothing is checked unless the provider's own address is the official one. Allowed: an address starting with http:// or https:// or { env = \"…\" }. Only in the system config. Takes effect next turn.",
+                "description": "Full address for checking this provider's quota, replacing the bundled one. Providers without a quota interface in the bundled data are not checked even if set. For a provider with a known official address such as DeepSeek, nothing is checked unless the provider's own address is the official one. Allowed values: an address starting with http:// or https:// or { env = \"…\" }. Can be set only in the system config. Takes effect next turn.",
                 "oneOf": [
                   {
                     "format": "uri",
@@ -1081,7 +1081,7 @@
       "properties": {
         "system_hint": {
           "default": true,
-          "description": "Has the AI hand over images, web pages, documents, video and audio it makes or fetches with Show, so you see them right away instead of just a path. Allowed: true or false. Only in the system config. Applies to new sessions.",
+          "description": "Has the AI hand over images, web pages, documents, video and audio it makes or fetches with Show, so you see them right away instead of just a path. Allowed values: true or false. Can be set only in the system config. Applies to new sessions.",
           "title": "Show hint",
           "type": "boolean"
         }
@@ -1096,7 +1096,7 @@
               "default": [
                 "~/.agents/skills"
               ],
-              "description": "Folders read while \"Read skills from other folders\" is on, in order; on a name clash the earlier one wins. Write ~/… or an absolute path. Allowed: a list of text of at most 4096 characters. Only in the system config. Takes effect next turn.",
+              "description": "Folders read while \"Read skills from other folders\" is on, in order; on a name clash the earlier one wins. Enter ~/… or an absolute path. Allowed values: a list of text of at most 4096 characters. Can be set only in the system config. Takes effect next turn.",
               "items": {
                 "maxLength": 4096,
                 "minLength": 1,
@@ -1107,7 +1107,7 @@
             },
             "enabled": {
               "default": false,
-              "description": "When on, skills in \"Other skill folders\" can be used too: apps like Codex and opencode often install theirs in ~/.agents/skills. Miyu's own skills win on a name clash, and Miyu never deletes these. Allowed: true or false. Only in the system config. Takes effect next turn.",
+              "description": "When on, skills in \"Other skill folders\" can be used too: apps like Codex and opencode often install theirs in ~/.agents/skills. Miyu's own skills win on a name clash, and Miyu never deletes these. Allowed values: true or false. Can be set only in the system config. Takes effect next turn.",
               "title": "Read skills from other folders",
               "type": "boolean"
             }
@@ -1121,19 +1121,19 @@
       "properties": {
         "idle_new_after": {
           "default": 180,
-          "description": "After this many minutes without a message, the next one starts a new shell integration session; the old one is kept. 0 never starts a new one. Allowed: a whole number from 0 to 525600. Only in the system config. Takes effect immediately.",
+          "description": "After this many minutes without a message, the next one starts a new shell integration session; the old one is kept. 0 never starts a new one. Allowed values: a whole number from 0 to 525600. Can be set only in the system config. Takes effect immediately.",
           "maximum": 525600,
           "minimum": 0,
           "title": "New session after idle",
           "type": "integer"
         },
         "persona": {
-          "description": "The persona for a new shell integration session. Unset follows the default persona. A shell integration session in use keeps its own. Allowed: a persona id. Only in the system config. Applies to new sessions.",
+          "description": "The persona for a new shell integration session. Unset follows the default persona. A shell integration session in use keeps its own. Allowed values: a persona id. Can be set only in the system config. Applies to new sessions.",
           "title": "Shell integration session persona",
           "type": "string"
         },
         "preset": {
-          "description": "The preset for a new shell integration session. Unset follows the default preset. Allowed: a preset id. Only in the system config. Applies to new sessions.",
+          "description": "The preset for a new shell integration session. Unset follows the default preset. Allowed values: a preset id. Can be set only in the system config. Applies to new sessions.",
           "title": "Shell integration session preset",
           "type": "string"
         }
@@ -1144,13 +1144,13 @@
       "properties": {
         "head": {
           "default": "tui",
-          "description": "The interface plain miyu opens. Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Takes effect after restart.",
+          "description": "The interface that opens when you run miyu by itself. Allowed values: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Can be set only in the system config. Takes effect after restart.",
           "title": "Default interface",
           "type": "string"
         },
         "language": {
           "default": "auto",
-          "description": "The language terminals, the web page and the command line use for you. auto follows the terminal or browser. Allowed: auto, zh, en or ja. Only in the system config. Takes effect immediately.",
+          "description": "The language terminals, the web page and the command line use for you. \"Follow the system\" uses the language of the terminal or browser. Allowed values: auto, zh, en or ja. Can be set only in the system config. Takes effect immediately.",
           "enum": [
             "auto",
             "zh",
@@ -1162,7 +1162,7 @@
         },
         "startup": {
           "default": "new",
-          "description": "Whether a terminal interface or the web page opens a new session or picks up the most recent one. Allowed: new or recent. Only in the system config. Takes effect after restart.",
+          "description": "Whether a terminal interface or the web page opens a new session or picks up the most recent one. Allowed values: new or recent. Can be set only in the system config. Takes effect after restart.",
           "enum": [
             "new",
             "recent"
@@ -1172,7 +1172,7 @@
         },
         "welcomed": {
           "default": false,
-          "description": "The first-run guide is done; the terminal and web pages no longer open it. Allowed: true or false. Only in the system config. Takes effect immediately.",
+          "description": "The first-run guide is done; the terminal and web pages no longer open it. Allowed values: true or false. Can be set only in the system config. Takes effect immediately.",
           "title": "First-run guide completed",
           "type": "boolean"
         }
@@ -1183,10 +1183,10 @@
       "properties": {
         "currency": {
           "default": "USD",
-          "description": "Amounts are shown in this currency, converted at each entry's day's rate; without a rate the amount is not shown. Three capital letters such as USD or CNY. Allowed: text of at most 3 characters. Only in the system config. Takes effect immediately.",
+          "description": "Amounts are shown in this currency, converted at each entry's day's rate; without a rate the amount is not shown. Three capital letters such as USD or CNY. Allowed values: text of at most 3 characters. Can be set only in the system config. Takes effect immediately.",
           "maxLength": 3,
           "minLength": 1,
-          "title": "Currency shown first",
+          "title": "Display currency",
           "type": "string"
         }
       },

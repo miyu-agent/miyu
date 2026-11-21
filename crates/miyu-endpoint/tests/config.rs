@@ -122,7 +122,7 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
         .await;
     assert_eq!(
         reply["result"],
-        json!({"groups":[{"id":"display","name":"显示","name_en":"Display","page":"general"}],"items":[{"applies":"now","common":true,"control":"select","default":"auto","description":"终端界面、网页界面和命令行显示的文字使用哪种语言。auto 表示跟随终端或浏览器的语言。","group":"display","key":"ui.language","layers":["system"],"name":"界面语言","name_en":"Interface language","options":[{"name":"跟随系统","value":"auto"},{"name":"中文","value":"zh"},{"name":"English","value":"en"},{"name":"日本語","value":"ja"}],"page":"general","type":"option"}],"pages":[{"id":"general","name":"通用"}]}),
+        json!({"groups":[{"id":"display","name":"显示","name_en":"Display","page":"general"}],"items":[{"applies":"now","common":true,"control":"select","default":"auto","description":"终端界面、网页界面和命令行显示的文字使用哪种语言。「跟随系统」表示跟随终端或浏览器的语言。","group":"display","key":"ui.language","layers":["system"],"name":"界面语言","name_en":"Interface language","options":[{"name":"跟随系统","value":"auto"},{"name":"中文","value":"zh"},{"name":"English","value":"en"},{"name":"日本語","value":"ja"}],"page":"general","type":"option"}],"pages":[{"id":"general","name":"通用"}]}),
         "和图纸的例子一字不差"
     );
     let all = client.call("c2", "config.schema", json!({})).await;
@@ -203,8 +203,8 @@ async fn unknown_keys_are_refused_with_the_nearest_ones() {
         assert_eq!(
             reply["error"]["data"]["problems"],
             json!([
-                {"code":"unknown_key","key":"ui.langauge","level":"error","message":"没有 ui.langauge 这一项。是不是想写 ui.language？","suggest":"ui.language"},
-                {"code":"unknown_key","key":"no.such","level":"error","message":"没有 no.such 这一项。"},
+                {"code":"unknown_key","key":"ui.langauge","level":"error","message":"配置项 ui.langauge 不存在。是否应为 ui.language？","suggest":"ui.language"},
+                {"code":"unknown_key","key":"no.such","level":"error","message":"配置项 no.such 不存在。"},
             ]),
             "{method}"
         );
@@ -307,12 +307,12 @@ async fn a_broken_item_is_dropped_and_reported_with_what_is_used() {
         reply["result"]["problems"],
         json!([
             {"code":"not_an_option","column":9,"expected":"error、warn、info、debug、trace 或 off","file":"etc/config.toml","got":"\"verbose\"","key":"log.level","level":"error","line":2,
-             "message":"log.level 只能是 error、warn、info、debug、trace 或 off，写的是 \"verbose\"。改成其中一个，例如 log.level = \"info\"。暂用 \"info\"（默认值）。",
+             "message":"log.level 只能是 error、warn、info、debug、trace 或 off，当前为 \"verbose\"。可以改为其中一个，例如 log.level = \"info\"。暂用 \"info\"（默认值）。",
              "using":{"from":"default","value":"info"}},
-            {"code":"unknown_key","column":1,"file":"etc/config.toml","got":"2 个字符的字","key":"ui.langauge","level":"warning","line":7,
-             "message":"没有 ui.langauge 这一项。是不是想写 ui.language？已忽略此行。","suggest":"ui.language"},
+            {"code":"unknown_key","column":1,"file":"etc/config.toml","got":"2 个字符的字符串","key":"ui.langauge","level":"warning","line":7,
+             "message":"配置项 ui.langauge 不存在。是否应为 ui.language？已忽略这一行。","suggest":"ui.language"},
             {"code":"wrong_type","column":19,"expected":"true 或 false","file":"etc/config.toml","got":"\"yes\"","key":"permission.start_read_only","level":"error","line":9,
-             "message":"permission.start_read_only 要写 true 或 false，写的是 \"yes\"。改成 permission.start_read_only = true。暂用 false（默认值）。",
+             "message":"permission.start_read_only 必须是 true 或 false，当前为 \"yes\"。可以改为 permission.start_read_only = true。暂用 false（默认值）。",
              "using":{"from":"default","value":false}},
         ])
     );
@@ -384,10 +384,10 @@ async fn check_looks_at_a_text_without_using_it() {
                 "log.level must be error, warn, info, debug, trace or off, not \"verbose\". Write one of them, e.g. log.level = \"info\". Using \"info\" (the default) for now."
             ]),
             json!([
-                "log.level belongs in the system config. It does not count in a project config. Move it to the system config."
+                "log.level can only be set in the system config; it has no effect in a project config. Move it to the system config."
             ]),
             json!([
-                "A project config can only make limits stricter. permission.start_read_only is true, and false here is looser, so it does not count."
+                "A project config can only make limits stricter. permission.start_read_only is true, and false here is looser, so it has no effect."
             ]),
             json!([]),
         ]

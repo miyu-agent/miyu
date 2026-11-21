@@ -305,7 +305,7 @@ Other fields (`allowed-tools`, `model` and so on) are recognized by Miyu but not
 - If names are the same, your template takes priority over one a package brings; if it has the same name as a command that comes with Miyu, your template does not count, and the built-in command takes priority.
 - Who can use a template is the same as for the commands that come with Miyu; for details, see [Slash commands](commands.md).
 
-`miyu check` reports `This slash command was skipped: …` (the YAML at the top cannot be parsed, or is not a table), `Same name as <other>, which covers it; this one is not used` and `Same name as Miyu's built-in /<name>; this one is not used`.
+`miyu check` reports `This slash command was skipped: …` (the YAML at the top cannot be parsed, or is not a table), `Covered by <other>, which has the same name; this one is not used` and `Same name as Miyu's built-in /<name>; this one is not used`.
 
 ## MCP servers
 
@@ -400,7 +400,7 @@ The read-only mark: if the server marks a tool `readOnlyHint: true`, you are not
 
 ### Config mistakes and start failures
 
-- `miyu check` reports `Badly written MCP server: …`, with the line number. The server that is written wrongly does not start, and the other servers work as usual.
+- `miyu check` reports `Invalid MCP server: …`, with the line number. The server that is written wrongly does not start, and the other servers work as usual.
 - The working directory of a program on this machine is `~/.miyu/var/lib/mcp/<server name>/` (also in the environment variable `MIYU_STATE_DIR`), and it does not run in the sandbox. Its standard error is in `~/.miyu/var/log/mcp/<server name>.stderr`; if it fails to start, look at this file first.
 - A server that fails to start or crashes is retried after a while, and stops after 5 failures in a row. After you fix it, click `Restart` on the `MCP` page.
 - For a server started with `npx` or `uvx`, you need to install Node, Python and the like yourself first.

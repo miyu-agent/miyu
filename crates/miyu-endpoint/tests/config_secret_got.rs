@@ -51,10 +51,12 @@ async fn a_plain_key_set_on_a_secret_item_is_refused_without_echoing_it() {
     let problem = &problems(&by_value)[0];
     assert_eq!(problem["code"], "wrong_type");
     assert_eq!(problem["key"], KEY);
-    assert_eq!(problem["got"], "24 个字符的字", "{by_value}");
+    assert_eq!(problem["got"], "24 个字符的字符串", "{by_value}");
     assert_eq!(
         problem["message"],
-        format!("{KEY} 要写 {{ secret = \"…\" }} 或 {{ env = \"…\" }}，写的是 24 个字符的字。")
+        format!(
+            "{KEY} 必须是 {{ secret = \"…\" }} 或 {{ env = \"…\" }}，当前为 24 个字符的字符串。"
+        )
     );
     never_echoes(&by_value, FAKE);
     // 人敲的（`miyu config set`）同样不回显；超过 80 个字的也不留下截出来的那一段。
@@ -68,7 +70,7 @@ async fn a_plain_key_set_on_a_secret_item_is_refused_without_echoing_it() {
         .await;
     assert_eq!(
         problems(&by_input)[0]["got"],
-        "120 个字符的字",
+        "120 个字符的字符串",
         "{by_input}"
     );
     never_echoes(&by_input, &long);
@@ -104,7 +106,7 @@ async fn a_plain_key_in_the_file_is_not_echoed_by_get_check_or_config_check() {
     let problem = found.iter().find(|problem| problem["key"] == KEY);
     let problem = problem.unwrap_or_else(|| panic!("报了这一项：{got}"));
     assert_eq!(problem["code"], "wrong_type");
-    assert_eq!(problem["got"], "24 个字符的字", "{got}");
+    assert_eq!(problem["got"], "24 个字符的字符串", "{got}");
     never_echoes(&got, FAKE);
     let checked = client.call("k1", "check", json!({})).await;
     assert!(checked["result"]["problems"].is_array(), "{checked}");
@@ -117,7 +119,7 @@ async fn a_plain_key_in_the_file_is_not_echoed_by_get_check_or_config_check() {
         )
         .await;
     assert_eq!(
-        config_check["result"]["problems"][0]["got"], "24 个字符的字",
+        config_check["result"]["problems"][0]["got"], "24 个字符的字符串",
         "{config_check}"
     );
     never_echoes(&config_check, FAKE);
@@ -136,7 +138,7 @@ async fn a_misspelled_secret_key_does_not_echo_its_value() {
         .find(|problem| problem["key"] == "providers.dev.kye");
     let problem = problem.unwrap_or_else(|| panic!("报了这一项：{got}"));
     assert_eq!(problem["code"], "unknown_key");
-    assert_eq!(problem["got"], "24 个字符的字", "{got}");
+    assert_eq!(problem["got"], "24 个字符的字符串", "{got}");
     never_echoes(&got, FAKE);
     let checked = client
         .call(
@@ -165,7 +167,7 @@ async fn a_key_written_where_a_group_belongs_is_not_echoed() {
         .find(|problem| problem["key"] == "providers.dev");
     let problem = problem.unwrap_or_else(|| panic!("报了这一组：{got}"));
     assert_eq!(problem["code"], "wrong_type");
-    assert_eq!(problem["got"], "24 个字符的字", "{got}");
+    assert_eq!(problem["got"], "24 个字符的字符串", "{got}");
     never_echoes(&got, FAKE);
     let checked = client
         .call(
@@ -193,6 +195,6 @@ async fn a_wrong_value_on_an_item_that_is_not_a_secret_is_still_echoed() {
     assert_eq!(problem["got"], "\"yes\"");
     assert_eq!(
         problem["message"],
-        "permission.start_read_only 要写 true 或 false，写的是 \"yes\"。改成 permission.start_read_only = true。"
+        "permission.start_read_only 必须是 true 或 false，当前为 \"yes\"。可以改为 permission.start_read_only = true。"
     );
 }

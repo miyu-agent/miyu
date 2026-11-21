@@ -412,7 +412,7 @@ async fn background_blur_is_set_listed_and_unset() {
     );
     assert_eq!(
         via_changes["error"]["data"]["message"],
-        "appearance.background_blur 要写成 1 到 100 的整数",
+        "appearance.background_blur 必须是 1 到 100 之间的整数",
         "照这个连接的语言说哪里错了"
     );
     assert_eq!(mine(&home), before, "什么都没写");
