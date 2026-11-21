@@ -3,14 +3,16 @@
 //!
 //! 1. 数一遍 `before` 以前的行，不解（`scan_lines`）：照写出去的样子认种类（`Event::kind_written`），记下每一轮
 //!    `turn.started` 在哪一行、隔一阵记一个位置；只解派出、了结任务的那几行（`job.reported`、`child.reported`、`tool.nested`，
-//!    原文里有 `"job.` 或者转义 `\u` 的 `tool.result`，认不出样子的也解了再看），留下派出、留言叫醒任务的工具结果和那几条。
+//!    原文里有 `"job.` 或者转义 `\u` 的 `tool.result`，认不出样子的也解了再看）和定人格、预设、权限级别的那几行
+//!    （`session.created`、`session.policy_changed`，施工 FX-16），留下派出、留言叫醒任务的工具结果和那几条。
 //! 2. 只读、只解最后几轮：从倒数第 `turns` 个 `turn.started` 读到最后一条（不够 `turns` 轮的从第一条读），照原来的切法切
 //!    （`page::cut`：多一轮的不用读，数够了就停在这一截的开头，同整份数到这里）。
 //! 3. 切点前要的另外读回那几行：这一页里每一轮的触发消息在这一截前面的、派任务的那次调用所在的回复（投影照它记命令；调用编号
 //!    带着回复的序号），从最近记下的位置数过去读那一行。
 //!
-//! 投影学的是切点前派出、了结任务的那几条加上那几条回复，不是整份：`Projector::learn` 只看回复里的调用、工具结果里派出和留言
-//! 叫醒的效果、回报、子会话回报、脚本里调的工具，别的种类、不派任务的工具结果学了也什么都不改，所以学出来的和整份一样。
+//! 投影学的是切点前派出、了结任务的那几条、定人格预设的那几条加上那几条回复，不是整份：`Projector::learn` 只看回复里的调用、
+//! 工具结果里派出和留言叫醒的效果、回报、子会话回报、脚本里调的工具、`session.created`、`session.policy_changed`，别的种类、
+//! 不派任务的工具结果学了也什么都不改，所以学出来的和整份一样。
 //! 回复只读派任务那几次调用所在的那一条：调用编号是内核照回复的序号起的，别的回复里不会有同一个编号。
 //!
 //! 数过去的行不自检（同补发定位跳过的那一截，`store.md` 第 7 条 `read_range`）：读、解了的行照旧报坏了，数过去的那些坏了不报。
@@ -34,8 +36,14 @@ const TURN: &str = "turn.started";
 /// 工具结果：派出、留言叫醒任务的效果在它里面。
 const RESULT: &str = "tool.result";
 
-/// 投影学的、整种都留下的：回报、子会话回报、脚本里调的工具。
-const KEPT: &[&str] = &["job.reported", "child.reported", "tool.nested"];
+/// 投影学的、整种都留下的：回报、子会话回报、脚本里调的工具，定人格、预设、权限级别的两种（施工 FX-16）。
+const KEPT: &[&str] = &[
+    "job.reported",
+    "child.reported",
+    "tool.nested",
+    "session.created",
+    "session.policy_changed",
+];
 
 /// 至少隔多少行记一个位置：读回触发消息、回复时从最近的一个数过去，最多数这么多行（每一轮的开头、每一段的开头也记）。
 const EVERY: u64 = 1024;
@@ -52,7 +60,8 @@ pub(crate) struct Slice {
     more: bool,
     /// `region` 前面、这一页要带上的触发消息，照序号。
     outside: Vec<Event>,
-    /// 切点前派出、了结任务的那几条和派任务那几次调用所在的回复，照序号：投影照它学，`jobs` 照它找。
+    /// 切点前派出、了结任务的那几条，定人格、预设、权限级别的那几条，和派任务那几次调用所在的回复，照序号：投影照它学，
+    /// `jobs` 照它找。
     learned: Vec<Event>,
     /// 要读的行里坏了一行，这一页照它以前的读的：坏在哪（施工 YC-6，`view/broken.rs`）。没坏的没有。
     pub(super) broken: Option<BrokenAt>,
@@ -195,7 +204,7 @@ struct Seen {
     starts: Vec<Mark>,
     /// 记下的位置，照先后：每一段的第一行、每一轮的开头，此外至少每 [`EVERY`] 行一个。
     marks: Vec<Mark>,
-    /// 派出、了结任务的那几条，照先后。
+    /// 派出、了结任务的那几条，定人格、预设、权限级别的那几条，照先后。
     kept: Vec<Event>,
 }
 
@@ -265,14 +274,19 @@ fn look(line: &Line<'_>, needles: &Needles, seen: &mut Seen) -> Result<(), OpenE
     Ok(())
 }
 
-/// 投影学、`jobs` 找的那几种留下：派出、留言叫醒任务的工具结果，回报、子会话回报、脚本里调的工具。
+/// 投影学、`jobs` 找的那几种留下：派出、留言叫醒任务的工具结果，回报、子会话回报、脚本里调的工具，`session.created`、
+/// `session.policy_changed`。
 fn keep(event: Event, kept: &mut Vec<Event>) {
     let wanted = match &event.body {
         Body::ToolResult(result) => result
             .effects
             .iter()
             .any(|effect| matches!(effect, Effect::JobStarted(_) | Effect::JobMessaged(_))),
-        Body::JobReported(_) | Body::ChildReported(_) | Body::ToolNested(_) => true,
+        Body::JobReported(_)
+        | Body::ChildReported(_)
+        | Body::ToolNested(_)
+        | Body::SessionCreated(_)
+        | Body::PolicyChanged(_) => true,
         _ => false,
     };
     if wanted {

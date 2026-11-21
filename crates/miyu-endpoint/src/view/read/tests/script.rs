@@ -2,7 +2,7 @@
 //! 字样的）、开回合（照刚才一句、照很早以前一句、照一条回报、不带触发、触发写成日志里没有的序号）、她的回复和请求、工具结果
 //! （派后台命令、派子代理、给子代理留言，结果原文里带转义的控制字符、带 `"job.` 字样）、脚本里调的工具（挂在一次调用、挂在一个
 //! 后台任务下面）、回报、子会话回报（一轮里到的、闲着到的、照它开下一轮的）、撤回排着的话、结束一轮（做完、打断）、撤销（最近
-//! 一轮、最近几轮、压缩以前的一轮）、恢复、重做（撤了接着重说一遍）、压缩、改标题、斜杠命令、不认识的种类。
+//! 一轮、最近几轮、压缩以前的一轮）、恢复、重做（撤了接着重说一遍）、压缩、改标题、换人格和预设、换上快照、斜杠命令、不认识的种类。
 //!
 //! 内核写不出来、但读得成的样子也造一些：种类写在 `body` 后面的、外壳字段换了先后的（翻页认不出样子，照解）、效果的种类写成
 //! 转义的（`"job\u002estarted"`）。子会话的第一条带 `parent`；分叉出来的会话从中间的序号起，回合的触发、调用编号可能指到
@@ -11,6 +11,8 @@
 use serde_json::{Value, json};
 
 use miyu_kernel::event::Event;
+
+mod misc;
 
 /// 照种子走的随机数（xorshift，同 V-37 下、V-39 上的对照测试）。
 pub(super) struct Dice(pub(super) u64);
@@ -101,7 +103,7 @@ impl Script {
             command: 0,
             now: 0,
         };
-        let mut body = json!({"venue": "local", "policy": POLICY, "permission": {"level": "full", "read_only": false}});
+        let mut body = json!({"venue": "local", "policy": POLICY, "permission": {"level": "full", "read_only": false}, "persona": "persona-1", "preset": "full"});
         if child {
             body["parent"] = json!(PARENT);
             body["depth"] = json!(1);
@@ -455,33 +457,6 @@ impl Script {
             shape,
         );
         self.undone.clear();
-    }
-
-    /// 改标题、斜杠命令、不认识的种类。
-    fn misc(&mut self, dice: &mut Dice, shape: Shape) {
-        match dice.below(3) {
-            0 => self.push(
-                "session.meta_changed",
-                None,
-                PERSON,
-                &json!({"title": "标题"}),
-                shape,
-            ),
-            1 => self.push(
-                "command.ran",
-                None,
-                PERSON,
-                &json!({"text": "/clear", "command": "clear"}),
-                shape,
-            ),
-            _ => self.push(
-                "ext.memory.recalled",
-                self.open,
-                KERNEL,
-                &json!({"hits": [{"id": "m1"}]}),
-                shape,
-            ),
-        };
     }
 }
 

@@ -48,11 +48,18 @@ impl Projector {
             triggers.dedup();
         }
         self.bring_in(&triggers);
+        // 叫她的那一条（施工 FX-16）：照记下的几条开的，别的是一起收进来的旁听。
+        if let Some(trigger) = started.trigger {
+            self.mark_trigger(trigger);
+        }
     }
 
-    /// 照记下的几条并进正在跑的这一轮。
+    /// 照记下的几条并进正在跑的这一轮：这一批的最后一条叫的她（同 `turn.started` 的 `trigger` 是最后一条，施工 FX-16）。
     pub(super) fn joined(&mut self, _event: &Event, joined: &TurnJoined) {
         self.bring_in(&joined.triggers);
+        if let Some(&last) = joined.triggers.iter().max() {
+            self.mark_trigger(last);
+        }
     }
 
     /// 一轮结束了：收起在写的块、在进行的那一段，没结果的步记成打断了，写收尾那一条。

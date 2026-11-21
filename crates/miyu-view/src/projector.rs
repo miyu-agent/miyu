@@ -5,6 +5,7 @@
 //! 一条事件里同一条可能改好几次：先记下动过哪些（`Op`），喂完一条再照最后的样子交出变化（[`Projector::drain`]）。
 
 mod blocks;
+mod cast;
 mod hosted;
 mod media;
 mod nested;
@@ -153,11 +154,7 @@ impl Projector {
         self.last = (event.seq.get(), 0);
         self.now = event.at;
         match &event.body {
-            EventBody::SessionCreated(created) => {
-                self.level = Some(users::level(&created.permission));
-                self.persona = (created.persona.clone(), None);
-                self.preset = (created.preset.clone(), None);
-            }
+            EventBody::SessionCreated(created) => self.created(created),
             EventBody::PolicyChanged(changed) => self.policy(event, changed),
             EventBody::WorkspaceChanged(changed) => self.workspace(event, changed),
             EventBody::SessionRecapped(recap) => self.recap(event, recap),
@@ -214,7 +211,8 @@ impl Projector {
     }
 
     /// 翻页时，这一页之前的日志：只学派出去的后台任务（标题、命令），不出条目（施工 9-8 中）。这一页里报完了、派在更早的
-    /// 任务照它写那一行；不学的话，那一行没有标题、命令。会话状态的任务表也照它补上更早派出、了结的（施工 9-8 补上）。
+    /// 任务照它写那一行；不学的话，那一行没有标题、命令。会话状态的任务表也照它补上更早派出、了结的（施工 9-8 补上）。人格、
+    /// 预设、权限级别照先后学，在 [`Projector::feed_page`] 里。
     pub fn learn(&mut self, earlier: &[Event]) {
         self.learn_jobs(earlier);
         self.learn_rows(earlier);

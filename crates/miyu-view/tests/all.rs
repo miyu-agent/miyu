@@ -6,6 +6,7 @@ mod deadline;
 mod denied;
 mod doing;
 mod forged;
+mod group_page;
 mod hosted;
 mod hosted_stream;
 mod lines;

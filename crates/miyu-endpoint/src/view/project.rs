@@ -76,7 +76,8 @@ pub(super) fn texts(resources: &ResourceRoot, language: &str) -> Result<Texts, U
     })
 }
 
-/// 喂过这一页的投影：先照 `earlier`（切点前的日志）学派出去的任务，再把这一页的事件 `page` 喂一遍。
+/// 喂过这一页的投影：照 `earlier`（切点前的日志，照序号）学派出去的任务和人格、预设、权限级别，把这一页的事件 `page` 喂一遍
+/// （[`Projector::feed_page`]）。
 pub(super) fn fed(
     texts: Arc<Texts>,
     blobs: Blobs,
@@ -84,10 +85,7 @@ pub(super) fn fed(
     page: &[&Event],
 ) -> Projector {
     let mut projector = fresh(texts, blobs);
-    projector.learn(earlier);
-    for event in page {
-        projector.event(event);
-    }
+    projector.feed_page(earlier, page);
     projector
 }
 

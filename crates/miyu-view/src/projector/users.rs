@@ -7,7 +7,7 @@ use miyu_kernel::id::Seq;
 use miyu_kernel::origin::By;
 
 use super::Projector;
-use crate::entry::{Attachment, Body, Entry, EntryId, Sender, Shell, User};
+use crate::entry::{Attachment, Body, Entry, EntryId, Sender, Shell, User, VenueMedia};
 
 /// 长期目标的续轮是第几轮（施工 X-8 补）：模块 `goal` 发的、命令编号照约定写的才有。
 fn round(event: &Event) -> Option<u32> {
@@ -53,6 +53,12 @@ impl Projector {
             command,
             round: round(event),
             shell: message.shell.then(Shell::running),
+            media: message
+                .venue
+                .as_ref()
+                .map(|venue| VenueMedia::unshown(&venue.media))
+                .unwrap_or_default(),
+            trigger: false,
         };
         if queued {
             self.queued.insert(event.seq, id.clone());
@@ -128,6 +134,19 @@ impl Projector {
                 }
                 None => self.touch(&id, |entry| entry.turn = turn),
             }
+        }
+    }
+
+    /// 第 `seq` 条叫的她（施工 FX-16）：那条 `user` 记上 `trigger`。对不上一条画着的话的不理（回报、后台命令开的一轮）。
+    pub(super) fn mark_trigger(&mut self, seq: Seq) {
+        if let Some(id) = self.users.get(&seq).cloned() {
+            self.touch_if(&id, |entry| match &mut entry.body {
+                Body::User(user) if !user.trigger => {
+                    user.trigger = true;
+                    true
+                }
+                _ => false,
+            });
         }
     }
 

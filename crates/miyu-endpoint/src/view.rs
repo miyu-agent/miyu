@@ -231,7 +231,7 @@ fn paged(slice: &Slice, view: Option<(Arc<Texts>, Blobs)>) -> (Value, Option<Pro
     let cut = slice.page();
     let (mut reply, projector) = match view {
         Some((texts, blobs)) => {
-            // 切点前的日志只学派出去的任务：只交派出、了结任务的那几条（`view/read.rs`），学出来的和整份一样。
+            // 切点前的日志只学派出去的任务和人格、预设、权限级别：只交要的那几条（`view/read.rs`），学出来的和整份一样。
             let projector = project::fed(texts, blobs, slice.learned(), &cut.events);
             (
                 json!({"entries": projector.entries(), "more": cut.more}),

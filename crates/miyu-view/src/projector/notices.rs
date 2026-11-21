@@ -5,16 +5,14 @@
 use miyu_kernel::event::{
     ChildReason, ChildReported, CompactTrigger, CompactionDone, CompactionPaused,
     CompactionProgress, ContextCompacted, Event, JobLines, JobReason, JobReported, ModelCalled,
-    ModelChanged, PeerIdle, PolicyChanged, RetitleFailed, SessionRecapped, Usage, WorkspaceChanged,
+    ModelChanged, PeerIdle, RetitleFailed, SessionRecapped, Usage, WorkspaceChanged,
 };
 use miyu_kernel::id::{JobId, Seq};
 use miyu_kernel::time::Timestamp;
 
 use super::Projector;
-use super::users::level;
 use crate::entry::{
-    Body, EntryId, JobDone, JobEnd, Mark, ModelSwap, Output, Peer, Recast, Swapped, Was,
-    WatchedLines,
+    Body, EntryId, JobDone, JobEnd, Mark, ModelSwap, Output, Peer, Was, WatchedLines,
 };
 use crate::explain::explain;
 use crate::notice::{Compaction, CompactionState, Notice};
@@ -28,61 +26,6 @@ fn compaction_id(upto: Seq) -> EntryId {
 }
 
 impl Projector {
-    /// 换了策略：记下权限级别；钉着的模型没了、退回默认的，另起一条。
-    pub(super) fn policy(&mut self, event: &Event, changed: &PolicyChanged) {
-        if let Some(permission) = &changed.permission {
-            self.level = Some(level(permission));
-        }
-        // 人换的人格、预设先记着，下一回换上快照（带 `policy` 的那一条）才算数（施工 9-8 十三补，同内核、会话那一层）；
-        // 换上的那一刻出一条旁白（施工 9-8 十四补）。
-        if let Some(persona) = &changed.persona {
-            self.persona.1 = Some(Some(persona.clone()).filter(|persona| !persona.is_empty()));
-        }
-        if let Some(preset) = &changed.preset {
-            self.preset.1 = Some(preset.clone());
-        }
-        if changed.policy.is_some() {
-            self.recast(event);
-        }
-        let (Some(replaced), Some(model)) = (&changed.replaced, &changed.model) else {
-            return;
-        };
-        self.notice(
-            EntryId::event(event.seq),
-            event.at,
-            Notice::Model(ModelSwap {
-                endpoint: None,
-                model: model.clone(),
-                from: Some(Was {
-                    endpoint: None,
-                    model: replaced.clone(),
-                }),
-                why: "replaced".to_string(),
-                class: None,
-            }),
-        );
-    }
-
-    /// 快照换上了：记着的人格、预设算数，真变了的出一条旁白。
-    fn recast(&mut self, event: &Event) {
-        let persona = self.persona.1.take().and_then(|to| {
-            let from = std::mem::replace(&mut self.persona.0, to.clone());
-            (from != to).then_some(Swapped { from, to })
-        });
-        let preset = self.preset.1.take().and_then(|to| {
-            let from = self.preset.0.replace(to.clone());
-            (from.as_ref() != Some(&to)).then_some(Swapped { from, to: Some(to) })
-        });
-        if persona.is_none() && preset.is_none() {
-            return;
-        }
-        self.notice(
-            EntryId::event(event.seq),
-            event.at,
-            Notice::Persona(Recast { persona, preset }),
-        );
-    }
-
     /// 出错换了模型（瞬时的）：只在视图流里有。
     pub(super) fn model_changed(&mut self, at: Timestamp, changed: &ModelChanged) {
         if changed.why.as_str() != "failover" {
