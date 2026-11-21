@@ -134,8 +134,11 @@ impl InputKind {
                     venue: Some(venue), ..
                 } if venue.ambient => InputKind::Overheard,
                 Command::Send { urgent: false, .. } => InputKind::Send,
-                // 随机测试不造人打的命令（施工 SH-1 上，场景测试测）：照发消息算。
-                Command::Typed { .. } | Command::Shell { .. } => InputKind::Send,
+                // 随机测试不造人打的命令（施工 SH-1 上，场景测试测）、人敲 `/loop` 的第一次（施工 FX-14，`scenario/kickoff.rs`）：
+                // 照发消息算。
+                Command::Typed { .. } | Command::Shell { .. } | Command::Kickoff { .. } => {
+                    InputKind::Send
+                }
                 Command::Send { urgent: true, .. } => InputKind::Urgent,
                 Command::Interrupt {
                     queued: Queued::Send,

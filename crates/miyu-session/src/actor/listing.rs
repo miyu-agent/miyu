@@ -75,7 +75,7 @@ impl Actor {
         {
             agents.port.moved(agents.session.clone());
         }
-        // 有没有能恢复的撤销（施工 FX-12）：人敲 `/loop` 的回执照它说循环先搁着，搁着的循环照它等（施工 FX-13）。先写再报：
+        // 有没有能恢复的撤销（施工 FX-12）：搁着的循环照它等（施工 FX-13）。先写再报：
         // 核心听到这一声再看的时候已经是新的。
         let restorable = self.session.restorable();
         let was_restorable = std::mem::replace(&mut self.counted().restorable, restorable);

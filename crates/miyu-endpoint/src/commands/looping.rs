@@ -87,13 +87,9 @@ impl Slash for LoopCommand {
                 Asked::Autonomous => Some(autonomous(call.core).await?),
                 _ => None,
             };
+            // 有能恢复的撤销时敲的也照常说（施工 FX-14，2026-11-22 项目主人定）：人敲命令同人发一句话，第一次马上开一轮、
+            // 清掉撤销（`schedules/fire.rs` 的 `kickoff`）。FX-12 时回执说循环先搁着。
             let stopped = stop(call.core, call.session)?;
-            // 有能恢复的撤销时循环先搁着、不交那一句（施工 FX-12、FX-13，`schedules/fire.rs` 的 `waits`）：回执照实说。
-            let restorable = call.found.handle.restorable();
-            let held = |plain: &'static str, waiting: &'static str| match restorable {
-                true => waiting,
-                false => plain,
-            };
             let said = match asked {
                 Asked::Off if stopped => Said::plain("commands/loop-off"),
                 Asked::Off => Said::plain("commands/loop-none"),
@@ -106,7 +102,7 @@ impl Slash for LoopCommand {
                         prompt,
                     )?;
                     Said::with(
-                        held("commands/loop-fixed", "commands/loop-fixed-held"),
+                        "commands/loop-fixed",
                         vec![("every", interval(every)), ("text", one_line(prompt))],
                     )
                 }
@@ -119,10 +115,7 @@ impl Slash for LoopCommand {
                         Loop::Dynamic,
                         prompt,
                     )?;
-                    Said::with(
-                        held("commands/loop-dynamic", "commands/loop-dynamic-held"),
-                        vec![("text", one_line(prompt))],
-                    )
+                    Said::with("commands/loop-dynamic", vec![("text", one_line(prompt))])
                 }
                 Asked::Autonomous => {
                     let at = call.core.schedules().now();
@@ -134,7 +127,7 @@ impl Slash for LoopCommand {
                         Loop::Dynamic,
                         &prompt,
                     )?;
-                    Said::plain(held("commands/loop-auto", "commands/loop-auto-held"))
+                    Said::plain("commands/loop-auto")
                 }
             };
             Ok(Ran {

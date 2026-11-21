@@ -177,6 +177,7 @@ impl Session {
             Command::Typed { blocks, command } => {
                 apart::sync(|| self.send(id, by, at, (blocks, None, Some(command)), false))
             }
+            Command::Kickoff { blocks } => apart::sync(|| self.kickoff(id, by, at, blocks)),
             Command::Shell { text, urgent } => {
                 apart::sync(|| self.send_shell(id, by, at, text, urgent))
             }

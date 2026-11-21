@@ -56,6 +56,27 @@ impl Session {
         sent_by(&self.ledger, by)
     }
 
+    /// 人敲 `/loop` 的第一次（施工 FX-14，`kernel/session.md`「定时交进来的话」第 3 条）：`by` 是 `schedule` 的同定时交进来的话，
+    /// 只是叫醒她时不看撤销（[`Waker::Schedule`] 的 `typed`），由它开的那一轮清掉能恢复的撤销。别的、空的照 `Send`。
+    pub(super) fn kickoff(
+        &mut self,
+        id: CommandId,
+        by: By,
+        at: Timestamp,
+        blocks: Vec<Block>,
+    ) -> Vec<Action> {
+        match self.elsewhere(&by) {
+            Some(Waker::Schedule { unattended, .. }) if !blocks.is_empty() => {
+                let waker = Waker::Schedule {
+                    unattended,
+                    typed: true,
+                };
+                self.elsewhere_says(id, by, at, blocks, waker)
+            }
+            _ => self.send(id, by, at, (blocks, None, None), false),
+        }
+    }
+
     /// 别处来的一句（子代理的留言、别的 harness 发来的话、别的会话发来的话）：记一条 `message.user`，`by` 照发的，`cause`
     /// 是这个命令，不带回合编号；照回报的规矩叫不叫醒她。落了盘回应，附上这一条的序号。别的会话发来的先过防刷屏
     /// （[`Session::flooding`]），过不了的拒绝，什么都不记。
@@ -113,6 +134,7 @@ pub(super) fn sent_by(ledger: &Ledger, by: &By) -> Option<Waker> {
         By::Harness(_) => Some(Waker::Harness),
         By::Schedule(schedule) => Some(Waker::Schedule {
             unattended: schedule.unattended(),
+            typed: false,
         }),
         _ => None,
     }

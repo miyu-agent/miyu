@@ -243,7 +243,7 @@ While a loop is running, you can check on it in the interface:
 - Terminal UI: the time of the next run is shown on the right of the line above the input box, and a goal, if there is one, is shown to its left; the sidebar gets a `Loop` section, showing how often it runs, the time of the next run, and the message.
 - Web UI: the time of the next run is shown at the top right of the input box; the `Scheduled tasks` card in the right sidebar also lists the loop, marked `Loop`.
 
-If you have just reverted a turn and not dealt with it yet, the loop waits instead of running right away: typing `/loop` then ends its reply with `A revert is still pending, so the loop waits: it starts after you say something or run /restore`. Because what happens after a revert is up to you, the loop starts only after you say something or run `/restore`.
+If you have reverted a turn and not dealt with it yet, typing `/loop` counts the same as saying something: it accepts the revert, so the loop starts running right away and the reverted turns can no longer be brought back with `/restore`. If the loop was set up before you reverted, and its next run comes while the revert is still pending, the loop waits, because what happens after a revert is up to you; it runs again after you say something or run `/restore`.
 
 ### Stopping a loop
 

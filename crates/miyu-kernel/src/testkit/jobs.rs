@@ -246,6 +246,14 @@ impl Stage {
         self.run(Input::Watched { watched });
     }
 
+    /// 以 `by` 的名义交人敲 `/loop` 的第一次（施工 FX-14，`Command::Kickoff`），一块字。返回这个命令的编号。
+    pub fn kicks_off_as(&mut self, by: By, words: &str) -> CommandId {
+        let blocks = vec![Block::Text(Text {
+            text: words.to_string(),
+        })];
+        self.command_as(by, Command::Kickoff { blocks })
+    }
+
     /// 以 `by` 的名义说一句（定时表交进来的那一句），一块字。返回这个命令的编号。
     pub fn says_as(&mut self, by: By, words: &str) -> CommandId {
         let blocks = vec![Block::Text(Text {

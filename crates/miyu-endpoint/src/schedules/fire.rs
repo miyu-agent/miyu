@@ -1,7 +1,8 @@
 //! 交进会话（施工 J-1 上，设计 `45-定时和循环.md` 第三节第 2 条）：照「跑在哪」交给已有的会话，或者照建时定下的人格、预设、
 //! 工作目录新开一个。交进去的那句记成 `by: schedule`（带任务编号），照「别处来的话」的规矩叫醒她：正在跑一轮的排在这一轮
 //! 后面。跑在已有会话上的循环不交进正在跑的这一轮，等它结束再交（施工 LO-2，[`waits`]、`busy.rs`）；撤回没处理时也这样等
-//! （施工 FX-13）。她自己定节奏的循环交进去开的那一轮结束时没定下一次的，删掉这一行（施工 LO-3，`ended.rs`）。
+//! （施工 FX-13），人刚敲的 `/loop` 的第一次除外：交 `Kickoff`，同人发一句话，由它开一轮、清掉撤销（施工 FX-14，[`kickoff`]）。
+//! 她自己定节奏的循环交进去开的那一轮结束时没定下一次的，删掉这一行（施工 LO-3，`ended.rs`）。
 //!
 //! - 她自己建的（`by` 是会话里的她）到点时看那个会话现在的预设：关了建它的那个包（定时任务看 `schedule`，循环看 `loop`）的
 //!   这一次不跑，记 `skipped:preset_off`，下一次照算。人建的、包建的不看预设。
@@ -48,7 +49,7 @@ impl Delivered {
 /// 跑在已有会话上的循环（固定的、她自己定节奏的）到点时那个会话正在跑一轮（施工 LO-2），或者还有能恢复的撤销（施工 FX-13）：
 /// 记下等它（`busy.rs`），交回真，这一次先不交、表不动。先记再看：看完到记下之间变了的也叫得醒。会话找不到的交回假，照常交
 /// （交的时候记没了）。撤销没处理时以前照常交，内核只记下（`can_wake`），日志里多一条没人回答的话，`/loop off` 以后恢复撤销
-/// 还由它开一轮。
+/// 还由它开一轮。人刚敲的 `/loop` 的第一次（[`kickoff`]）不因撤销等（施工 FX-14）。
 pub(super) async fn waits(core: &Arc<Core>, schedule: &Schedule) -> bool {
     let (Some(Loop::Fixed | Loop::Dynamic), Target::Session { session }) =
         (schedule.looping, &schedule.target)
@@ -60,11 +61,21 @@ pub(super) async fn waits(core: &Arc<Core>, schedule: &Schedule) -> bool {
     };
     let waiting = &core.schedules.waiting;
     waiting.hold(&schedule.id, session);
-    if found.handle.busy() || found.handle.restorable() {
+    if found.handle.busy() || (found.handle.restorable() && !kickoff(schedule)) {
         return true;
     }
     waiting.drop_one(&schedule.id);
     false
+}
+
+/// 人刚敲的 `/loop` 的第一次（施工 FX-14，2026-11-22 项目主人定）：人建的、跑在已有会话上、还没跑过的循环。只有 `/loop`
+/// 建人建的循环，第一次就是敲的那一刻（正忙的等这一轮结束，表不动、`last` 还是空的）。人亲手敲命令同人发一句话，接受了
+/// 撤回：交 `Kickoff`，还能恢复撤销也由它开一轮。之后每一次照旧，撤回没处理时搁着（施工 FX-13）。
+fn kickoff(schedule: &Schedule) -> bool {
+    matches!(schedule.by, Creator::Person)
+        && matches!(schedule.looping, Some(Loop::Fixed | Loop::Dynamic))
+        && matches!(schedule.target, Target::Session { .. })
+        && schedule.last.is_none()
 }
 
 /// 把 `schedule` 的这一次（到点在 `due`）交出去。
@@ -122,12 +133,16 @@ pub(super) async fn deliver(core: &Arc<Core>, schedule: &Schedule, due: Timestam
         (Target::Session { .. } | Target::Package { .. }, _) => None,
     };
     let busy = found.handle.busy();
-    let send = Command::Send {
-        blocks: vec![Block::Text(Text {
-            text: schedule.prompt.clone(),
-        })],
-        urgent: false,
-        venue: None,
+    let blocks = vec![Block::Text(Text {
+        text: schedule.prompt.clone(),
+    })];
+    let send = match kickoff(schedule) {
+        true => Command::Kickoff { blocks },
+        false => Command::Send {
+            blocks,
+            urgent: false,
+            venue: None,
+        },
     };
     match found.handle.command(id, by, send).await {
         Ok(Outcome::Accepted { events }) => {

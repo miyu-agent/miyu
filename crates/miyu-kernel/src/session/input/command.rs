@@ -134,6 +134,13 @@ pub enum Command {
         /// 人敲的那一条命令。
         command: TypedCommand,
     },
+    /// 人敲 `/loop` 的第一次（施工 FX-14，`internal/blueprint/kernel/session.md`「定时交进来的话」第 3 条）：核心的唤醒表交，
+    /// `by` 是 `schedule`，记下的同 `Send` 交的一样。人亲手敲命令同人发一句话：还能恢复撤销也由它开一轮，开轮清掉撤销。
+    /// `by` 不是 `schedule` 的照 `Send`。
+    Kickoff {
+        /// 那一行存着的话，成一块文字。
+        blocks: Vec<Block>,
+    },
     /// 记下人用了一个斜杠命令（施工 O-6，`command.run`）：命令本身已经照它自己的编号执行了，这一条只记 `command.ran`。
     Ran {
         /// 人打的原文。

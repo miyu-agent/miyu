@@ -93,8 +93,8 @@ impl Handle {
         self.waiting.load(std::sync::atomic::Ordering::Acquire)
     }
 
-    /// 有没有能恢复的撤销（施工 FX-12）：有的时候跑在这个会话上的循环先搁着、不交（施工 FX-13），`/loop` 的回执照它说一句循环
-    /// 先搁着。内核收下一条输入就写，同 `Handle::busy`。
+    /// 有没有能恢复的撤销（施工 FX-12）：有的时候跑在这个会话上的循环先搁着、不交（施工 FX-13；人刚敲的 `/loop` 的第一次除外，
+    /// 施工 FX-14）。内核收下一条输入就写，同 `Handle::busy`。
     pub fn restorable(&self) -> bool {
         self.shown
             .lock()

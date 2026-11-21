@@ -18,6 +18,7 @@ mod foreground;
 mod forged;
 mod harness;
 mod isolate;
+mod kickoff;
 mod manual;
 mod messages;
 mod model_fact;
