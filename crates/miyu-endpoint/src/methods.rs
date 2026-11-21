@@ -96,9 +96,7 @@ pub(crate) fn call<'a>(
         .iter()
         .any(|at| name.starts_with(at)) =>
         {
-            answer(move || async move {
-                crate::packages::methods::call(core, peer, caller, request).await
-            })
+            crate::packages::methods::call(core, peer, caller, request)
         }
         // 头自己的设置（施工 HP-1）。
         "prefs.get" => answer(move || async move { crate::prefs::get(core, &params(request)?) }),
@@ -417,7 +415,7 @@ pub(crate) type Answer<'a> = Pin<Box<dyn Future<Output = Result<Value, Refusal>>
 /// 照 `make` 造出办这条请求的 future，放到堆上。造在这个函数自己的一帧里：调试版不复用栈槽，八十来个方法的 future 写在
 /// 一个 async 函数里，每个都在它那一帧里占一份，一帧上 1 MB，Windows 上的调试版跟着请求往下走就栈溢出了（施工 L-2 时
 /// 撞上的）。
-fn answer<'a, F, Fut>(make: F) -> Answer<'a>
+pub(crate) fn answer<'a, F, Fut>(make: F) -> Answer<'a>
 where
     F: FnOnce() -> Fut,
     Fut: Future<Output = Result<Value, Refusal>> + Send + 'a,

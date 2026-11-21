@@ -107,9 +107,41 @@ enum CoreAction {
 }
 
 fn main() -> ExitCode {
+    let args: Vec<OsString> = std::env::args_os().collect();
+    // 头拉起核心的快路（施工 LW-8，`core.md`「起来的先后」）：认得出的直接进核心，不搭整棵命令行树。
+    if let Some(idle) = running_core(args.get(1..).unwrap_or_default()) {
+        return miyu_core::main(miyu_core::Options {
+            idle: idle.map(Duration::from_secs),
+        });
+    }
+    dispatch(args)
+}
+
+/// 前台跑核心的那几种写法：`core`、`core --idle-seconds <秒>`、`core --idle-seconds=<秒>`，认得出的交回空闲秒数（没写的
+/// 是 `Some(None)`）。别的一律交回 `None`，照整棵命令行树解析：管理用的子命令、要帮助的、写错的、不是 UTF-8 的，报错的字
+/// 都由 clap 照原样说（施工 LW-8）。秒数照 clap 解析 `u64` 的同一个 `str::parse`，认不出的也交给 clap 报。
+///
+/// 为什么要这条路：核心进程只认这一种写法，原来也要先搭整棵命令行树（`Cli::command()` 两次、各子命令的参数表、整套解析），
+/// 一共 266 kB 的代码执行一遍就留在核心的内存里（蓝图 `perf.md`「排函数」：留在内存里的约等于执行过的）。
+fn running_core(words: &[OsString]) -> Option<Option<u64>> {
+    let words: Vec<&str> = words
+        .iter()
+        .map(|word| word.to_str())
+        .collect::<Option<_>>()?;
+    match words.as_slice() {
+        ["core"] => Some(None),
+        ["core", "--idle-seconds", seconds] => seconds.parse().ok().map(Some),
+        ["core", word] => word.strip_prefix("--idle-seconds=")?.parse().ok().map(Some),
+        _ => None,
+    }
+}
+
+/// 照整棵命令行树解析、分发：快路（[`running_core`]）认不出的都走这里。
+// 单拎成一个不内联的函数（施工 LW-8）：并进 `main` 的话，核心进程走快路也算执行过整个 `main`，这一大块跟着留在内存里。
+#[inline(never)]
+fn dispatch(args: Vec<OsString>) -> ExitCode {
     let language = language::current();
     // 软件包加的子命令（施工 9-2）：第一个词不是内置的（不认识的、`help`、选项）才照清单找，`miyu core`、`miyu ask` 不多读盘。
-    let args: Vec<OsString> = std::env::args_os().collect();
     // 脚本调工具（施工 M-3，设计 39）：不读清单、不连核心的协议，经命令自己的端点调。
     if args.get(1).is_some_and(|first| first == "call") {
         return miyu_cli::call(&args[2..], language);
@@ -341,6 +373,101 @@ mod tests {
             path.push(sub.get_name().to_owned());
             differing(command, sub, &path, help, wrong);
         }
+    }
+
+    /// `miyu <words…>` 照 [`dispatch`] 用的那棵命令行树（换好帮助页的）解析出来的样子：跑核心的写成 `core idle=<秒>`，别的
+    /// 子命令写成 `other`，出错的写成错误的种类和 clap 印的那几行。
+    fn parsed(words: &[&str]) -> String {
+        let command = dressed(Cli::command(), Language::English, String::from("miyu\n"));
+        match command
+            .try_get_matches_from(std::iter::once("miyu").chain(words.iter().copied()))
+            .and_then(|matches| Cli::from_arg_matches(&matches))
+        {
+            Ok(Cli {
+                command:
+                    Some(Command::Core {
+                        idle_seconds,
+                        action: None,
+                    }),
+            }) => format!("core idle={idle_seconds:?}"),
+            Ok(_) => String::from("other"),
+            Err(error) => format!("{:?}: {error}", error.kind()),
+        }
+    }
+
+    /// 同 [`parsed`]，只是先走快路：快路认得出的照它，认不出的照 clap。
+    fn fast(words: &[&str]) -> String {
+        let os: Vec<OsString> = words.iter().map(OsString::from).collect();
+        match running_core(&os) {
+            Some(idle_seconds) => format!("core idle={idle_seconds:?}"),
+            None => parsed(words),
+        }
+    }
+
+    #[test]
+    fn the_fast_way_into_the_core_parses_as_clap_does() {
+        // 施工 LW-8：快路认的和整棵命令行树认的一样；认不出的交给 clap，报错的字一字不差。
+        let cases: &[&[&str]] = &[
+            &["core"],
+            &["core", "--idle-seconds", "5"],
+            &["core", "--idle-seconds", "0"],
+            &["core", "--idle-seconds", "+7"],
+            &["core", "--idle-seconds", "18446744073709551615"],
+            &["core", "--idle-seconds=3600"],
+            &["core", "--idle-seconds=+1"],
+            // 写错的、要帮助的、管理用的：都该落到 clap。
+            &["core", "--idle-seconds", "18446744073709551616"],
+            &["core", "--idle-seconds", "-5"],
+            &["core", "--idle-seconds", ""],
+            &["core", "--idle-seconds", "five"],
+            &["core", "--idle-seconds", " 5"],
+            &["core", "--idle-seconds="],
+            &["core", "--idle-seconds=x"],
+            &["core", "--idle-seconds"],
+            &["core", "--idle-seconds", "5", "--idle-seconds", "6"],
+            &["core", "--idle-second", "5"],
+            &["core", "--idle", "5"],
+            &["core", "--help"],
+            &["core", "-h"],
+            &["core", "--version"],
+            &["core", "-V"],
+            &["core", "--idle-seconds", "5", "--help"],
+            &["core", "start"],
+            &["core", "status", "--format", "json"],
+            &["core", "stop"],
+            &["core", "--idle-seconds", "5", "stop"],
+            &["core", "restart"],
+            &["core", "--"],
+            &["core", "-"],
+            &["Core"],
+            &["cor"],
+            &["core", "core"],
+        ];
+        for words in cases {
+            assert_eq!(fast(words), parsed(words), "{words:?}");
+        }
+        // 快路真的认得出跑核心的几种写法，别的一个都不认。
+        let words = |list: &[&str]| list.iter().map(OsString::from).collect::<Vec<_>>();
+        assert_eq!(running_core(&words(&["core"])), Some(None));
+        assert_eq!(
+            running_core(&words(&["core", "--idle-seconds", "5"])),
+            Some(Some(5))
+        );
+        assert_eq!(
+            running_core(&words(&["core", "--idle-seconds=9"])),
+            Some(Some(9))
+        );
+        assert_eq!(running_core(&words(&["core", "--help"])), None);
+        assert_eq!(running_core(&words(&["core", "start"])), None);
+        assert_eq!(running_core(&[]), None);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn the_fast_way_leaves_words_that_are_not_utf8_to_clap() {
+        use std::os::unix::ffi::OsStringExt;
+        let words = [OsString::from("core"), OsString::from_vec(vec![0xff])];
+        assert_eq!(running_core(&words), None);
     }
 
     #[test]

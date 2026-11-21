@@ -12,6 +12,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 mod asking;
 mod query;
+mod splice;
 mod types;
 
 pub use types::{NestedAction, NestedAnswer, NestedInput, NestedRefusal, NestedRunning};
@@ -217,6 +218,16 @@ impl Session {
     /// 轮到的交给链（「嵌套调用」第 2、3 条）：一个父级一条队，读的一起、别的一个一个；两道上限，在问人的也占；有一件在问人的
     /// 父级不派。每次送进一条输入以后看一次。
     pub(super) fn dispatch_nested(&mut self) -> Vec<Action> {
+        // 嵌套调用少见：没有的时候派不出什么，直接回；有的时候下面这一大截单独成一个函数（施工 LW-8，`crate::apart`）。每次送
+        // 进一条输入都走到这里，并在一起的话这一截跟着 `handle` 算执行过、留在核心的内存里。
+        if self.nested.calls.is_empty() {
+            return Vec::new();
+        }
+        crate::apart::sync(|| self.dispatch_queued())
+    }
+
+    /// [`Self::dispatch_nested`] 有还没了结的调用时：照上面的规矩挑出轮到的。
+    fn dispatch_queued(&mut self) -> Vec<Action> {
         let limits = self.policy.nested;
         let busy = |phase: Phase| phase != Phase::Waiting;
         let mut total = self
@@ -293,6 +304,15 @@ impl Session {
             Body::JobReported(reported) => Parent::Job(reported.job.clone()),
             _ => return,
         };
+        // 同 [`Self::dispatch_nested`]：一个嵌套调用都没来过的什么都不用做（施工 LW-8）。
+        if self.nested.calls.is_empty() && self.nested.seen.is_empty() {
+            return;
+        }
+        crate::apart::sync(|| self.close_under(at, parent));
+    }
+
+    /// [`Self::close_nested`] 有嵌套调用时：了结 `parent` 下面的。
+    fn close_under(&mut self, at: Timestamp, parent: Parent) {
         let (closing, kept): (Vec<Call>, Vec<Call>) = std::mem::take(&mut self.nested.calls)
             .into_iter()
             .partition(|call| *call.id.parent() == parent);
@@ -306,39 +326,6 @@ impl Session {
             let event = self.nested_event(at, call.id, call.name, call.args, outcome);
             self.nested.flushed.push(event);
         }
-    }
-
-    /// 送完一条输入：父级结束时记下的「已取消」放进追加的那一批，排在父级那一条前面；要掐的接在最后。
-    ///
-    /// # Panics
-    ///
-    /// 记下的「已取消」后面那一条不在这一次的动作里：造事件的一处没把父级那一条交出去，是内核的 bug。
-    pub(super) fn splice_nested(&mut self, actions: &mut Vec<Action>) {
-        let mut flushed = std::mem::take(&mut self.nested.flushed);
-        flushed.sort_by_key(|event| event.seq);
-        // 从后往前插：每一条插在序号紧接着它的那一条前面，那一条也可能是刚插进去的「已取消」。
-        for event in flushed.into_iter().rev() {
-            let after = event.seq.next();
-            let placed = actions.iter_mut().find_map(|action| match action {
-                Action::Append(events) => events
-                    .iter()
-                    .position(|later| later.seq == after)
-                    .map(|k| (events, k)),
-                _ => None,
-            });
-            let Some((events, k)) = placed else {
-                panic!(
-                    "nested call {} was cancelled but its parent's event is not appended, a kernel bug",
-                    event.seq
-                );
-            };
-            events.insert(k, event);
-        }
-        actions.extend(
-            std::mem::take(&mut self.nested.stops)
-                .into_iter()
-                .map(|id| Action::Nested(NestedAction::Cancel { id })),
-        );
     }
 
     /// 落到了 `upto`：了结的那一条落了盘的，答执行器。

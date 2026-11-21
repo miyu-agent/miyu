@@ -69,12 +69,25 @@ pub struct Purged {
 ///
 /// 回收处读不了。
 pub fn purge(root: &DataRoot, now: Timestamp, keep: Duration) -> io::Result<Purged> {
-    let mut purged = Purged::default();
+    let purged = Purged::default();
     let entries = match fs::read_dir(root.trashed_sessions()) {
         Ok(entries) => entries,
         Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(purged),
         Err(error) => return Err(error),
     };
+    sweep(root, entries, (now, keep), purged)
+}
+
+/// [`purge`] 的后一半：回收处在的时候一条条看、删。
+// 单拎成不内联的函数（施工 LW-8）：回收处常常不在，核心起来时只走到上面那几行；并在一起的话这一大块算执行过、留在核心的
+// 内存里（`perf.md`「排函数」）。
+#[inline(never)]
+fn sweep(
+    root: &DataRoot,
+    entries: fs::ReadDir,
+    (now, keep): (Timestamp, Duration),
+    mut purged: Purged,
+) -> io::Result<Purged> {
     let keep = i64::try_from(keep.as_millis()).unwrap_or(i64::MAX);
     for entry in entries {
         let entry = entry?;

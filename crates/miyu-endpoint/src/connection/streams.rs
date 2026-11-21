@@ -7,6 +7,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use tokio::sync::mpsc;
 
+use miyu_kernel::apart;
 use miyu_kernel::id::SessionId;
 use miyu_session::Handle;
 
@@ -93,42 +94,45 @@ pub(super) async fn subscribe(
         Ok((result, target)) => (Ok(result), target.map(Target::Session)),
         Err(refusal) => (Err(refusal), None),
     };
+    // 每一种流各自一个函数（施工 LW-8，`miyu_kernel::apart`）：头连上来只订阅其中几种。
     match (stream_of(request), shaken) {
         (Ok(Stream::Config), shook) => {
             let system = shook.as_ref().map_or("en", Shaken::system);
-            subscriptions.add_config(core, system, out);
+            apart::sync(|| subscriptions.add_config(core, system, out));
             (Ok(json!({})), None)
         }
-        (Ok(Stream::Sessions), _) => match subscriptions.add_sessions(core, out).await {
-            Ok(result) => (Ok(result), Some(Target::Sessions)),
-            Err(refusal) => (Err(refusal), None),
-        },
+        (Ok(Stream::Sessions), _) => {
+            match apart::future(subscriptions.add_sessions(core, out)).await {
+                Ok(result) => (Ok(result), Some(Target::Sessions)),
+                Err(refusal) => (Err(refusal), None),
+            }
+        }
         (Ok(Stream::Extensions), Some(shook)) => {
-            let listed = subscriptions.add_listed(core, false, shook, out);
+            let listed = apart::sync(|| subscriptions.add_listed(core, false, shook, out));
             (listed, Some(Target::Extensions))
         }
         (Ok(Stream::Packages), Some(shook)) => {
-            let listed = subscriptions.add_listed(core, true, shook, out);
+            let listed = apart::sync(|| subscriptions.add_listed(core, true, shook, out));
             (listed, Some(Target::Packages))
         }
         (Ok(Stream::Projects), Some(shook)) => {
-            let listed = subscriptions.add_projects(core, shook, out).await;
+            let listed = apart::future(subscriptions.add_projects(core, shook, out)).await;
             (listed, Some(Target::Projects))
         }
         (Ok(Stream::Bus), Some(shook)) => {
-            let reply = subscriptions.add_bus(core, shook, out);
+            let reply = apart::sync(|| subscriptions.add_bus(core, shook, out));
             (Ok(reply), Some(Target::Bus))
         }
         (Ok(Stream::Schedules), Some(shook)) => {
-            let listed = subscriptions.add_schedules(core, shook, out);
+            let listed = apart::sync(|| subscriptions.add_schedules(core, shook, out));
             (listed, Some(Target::Schedules))
         }
         (Ok(Stream::Knowledge), Some(shook)) => {
-            let reply = subscriptions.add_kb(core, shook, out);
+            let reply = apart::sync(|| subscriptions.add_kb(core, shook, out));
             (Ok(reply), Some(Target::Knowledge))
         }
         (Ok(Stream::Notices), Some(shook)) => {
-            let reply = subscriptions.add_notices(core, shook, out);
+            let reply = apart::sync(|| subscriptions.add_notices(core, shook, out));
             (Ok(reply), Some(Target::Notices))
         }
         (Ok(Stream::Package(package)), Some(shook)) => {
@@ -140,28 +144,31 @@ pub(super) async fn subscribe(
                 return (Err(Refusal::UNKNOWN_PACKAGE), None);
             }
             let whose = package.clone();
-            let reply = subscriptions.add_package_events(core, whose, shook, out);
+            let reply = apart::sync(|| subscriptions.add_package_events(core, whose, shook, out));
             (Ok(reply), Some(Target::PackageEvents(package)))
         }
         (Ok(Stream::Events(session)), _) => {
-            session_reply(events(core, subscriptions, request, session, out).await)
+            session_reply(apart::future(events(core, subscriptions, request, session, out)).await)
         }
         (Ok(Stream::View(session)), Some(shook)) => {
-            session_reply(view(core, subscriptions, session, shook, out).await)
+            session_reply(apart::future(view(core, subscriptions, session, shook, out)).await)
         }
         (Ok(Stream::Widgets(looking)), Some(shook)) => {
-            let reply = subscriptions.add_widgets(core, looking, shook, out);
+            let reply = apart::sync(|| subscriptions.add_widgets(core, looking, shook, out));
             (Ok(reply), Some(Target::Widgets))
         }
-        (Ok(Stream::Prefs(package)), Some(_)) => match subscriptions.add_prefs(core, &package, out)
-        {
-            Ok(reply) => (Ok(reply), Some(Target::Prefs(package))),
-            Err(refusal) => (Err(refusal), None),
-        },
-        (Ok(Stream::Memory(at)), _) => match memory(core, subscriptions, request, at, out).await {
-            Ok((result, at)) => (Ok(result), Some(Target::Memory(at))),
-            Err(refusal) => (Err(refusal), None),
-        },
+        (Ok(Stream::Prefs(package)), Some(_)) => {
+            match apart::sync(|| subscriptions.add_prefs(core, &package, out)) {
+                Ok(reply) => (Ok(reply), Some(Target::Prefs(package))),
+                Err(refusal) => (Err(refusal), None),
+            }
+        }
+        (Ok(Stream::Memory(at)), _) => {
+            match apart::future(memory(core, subscriptions, request, at, out)).await {
+                Ok((result, at)) => (Ok(result), Some(Target::Memory(at))),
+                Err(refusal) => (Err(refusal), None),
+            }
+        }
         (
             Ok(
                 Stream::Extensions

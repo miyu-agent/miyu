@@ -19,6 +19,7 @@
 //! - [`estimate`]：用量和压缩线，锚加本地估算（施工 6-1）；
 //! - [`session`]：会话的状态机，送进一条输入，出来一串动作；
 //! - [`accumulate`]：流式累积器，模型输出的增量拼成完整的内容块；
+//! - [`apart`]：让一段代码单独成一个函数，执行过的函数才留在内存里（施工 LW-8）；
 //! - [`forged`]：模型在回答后面编出下一轮的，认出从哪儿起是编的（施工 FT-1）；
 //! - [`raw`]：原样的 JSON，驱动私有数据和不认识的种类都用它；
 //! - [`template`]：模板与转义，给模型看的字怎么拼，不可信的字段怎么转；
@@ -26,6 +27,7 @@
 //! - `testkit`：测试用的执行器替身，只在 `testkit` 开关打开时编进去，内核自己的测试里总是有。
 
 pub mod accumulate;
+pub mod apart;
 pub mod assemble;
 pub mod block;
 pub mod estimate;

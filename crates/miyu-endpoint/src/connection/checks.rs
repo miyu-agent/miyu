@@ -39,8 +39,9 @@ pub(super) async fn refuse(core: &Arc<Core>, who: &Who<'_>, request: &Request) -
     if let Some(refusal) = reach::refuse(who.reach, request) {
         return Some(refusal);
     }
+    // 只有核心拉起的扩展走这一道，单拎出去（施工 LW-8，`miyu_kernel::apart`）。
     if who.via == Some(&Via::Spawned)
-        && let Some(refusal) = rights::refuse(request, who.declared)
+        && let Some(refusal) = miyu_kernel::apart::sync(|| rights::refuse(request, who.declared))
     {
         return Some(refusal);
     }

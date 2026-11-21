@@ -10,6 +10,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use miyu_kernel::apart;
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Body, CompactTrigger, ContextCompacted, Event, MessageUser, ToolStatus};
 use miyu_kernel::facts::REMINDER;
@@ -46,25 +47,28 @@ pub(crate) fn render_in(history: &History, ordered: &[&Event], texts: &Texts) ->
         transcript.add(
             checkpoint.seq,
             Place::Here,
-            vec![text_block(checkpoint_block(history, compacted, texts))],
+            vec![text_block(apart::sync(|| {
+                checkpoint_block(history, compacted, texts)
+            }))],
         );
     }
     for &event in ordered {
+        // 每种事件怎么渲染各自一个函数（施工 LW-8，`miyu_kernel::apart`）：一个会话里常常只有其中几种。
         match &event.body {
             // 旁听的场所消息这一步先不进上下文，O-13 下渲染成群聊近况（施工 O-13 上）。
             Body::MessageUser(message) if message.venue.as_ref().is_some_and(|venue| venue.ambient) => {}
             // 人用 `!` 跑的命令（施工 SH-1 上）：和它的 `shell.ran` 拼成一块，`shell.ran` 自己不出字。
             Body::MessageUser(message) if message.shell => {
-                let blocks = shell::spoken(message, rans.get(&event.seq).copied(), texts);
+                let blocks = apart::sync(|| shell::spoken(message, rans.get(&event.seq).copied(), texts));
                 transcript.add(event.seq, Place::Here, blocks);
             }
             Body::MessageUser(message) => {
-                let blocks = spoken(history, event, message, known(&message.blocks), texts);
+                let blocks = apart::sync(|| spoken(history, event, message, known(&message.blocks), texts));
                 transcript.add(event.seq, Place::Here, blocks);
             }
             // 并进正在跑的一轮的那几条（施工 O-14 下）：在它自己的位置；接着开的那一轮由它触发，和开始时的事实一组。
             Body::TurnJoined(joined) => {
-                let blocks = opening::joined(history, &joined.triggers, texts);
+                let blocks = apart::sync(|| opening::joined(history, &joined.triggers, texts));
                 transcript.add(event.seq, Place::Here, blocks);
             }
             Body::ContextInjected(fact) => {
@@ -77,7 +81,7 @@ pub(crate) fn render_in(history: &History, ordered: &[&Event], texts: &Texts) ->
                 transcript.add(event.seq, place, vec![text_block(fact.text.clone())]);
             }
             Body::TurnStarted(started) => match started.trigger {
-                Some(_) => opening(&mut transcript, history, event, started, &opened, texts),
+                Some(_) => apart::sync(|| opening(&mut transcript, history, event, started, &opened, texts)),
                 // 手动压缩单开的那一轮（施工 6-8）：不是哪一句引起的，她也没看到过它。
                 None => transcript.silence(event.turn),
             },
@@ -110,12 +114,12 @@ pub(crate) fn render_in(history: &History, ordered: &[&Event], texts: &Texts) ->
                 let block = texts
                     .jobs
                     .as_ref()
-                    .and_then(|jobs| jobs::report(history, &event.body, jobs));
+                    .and_then(|jobs| apart::sync(|| jobs::report(history, &event.body, jobs)));
                 transcript.add(event.seq, Place::Here, block.into_iter().map(text_block).collect());
             }
             // 空了的通知（施工 C-6，`peers.rs`）：不带回合编号，照回报排。
             Body::PeerIdle(notice) => {
-                let block = peers::idle(notice, texts.peers.as_ref());
+                let block = apart::sync(|| peers::idle(notice, texts.peers.as_ref()));
                 transcript.add(event.seq, Place::Here, block.into_iter().map(text_block).collect());
             }
             Body::ToolResult(result) => transcript.push(Message::Tool {

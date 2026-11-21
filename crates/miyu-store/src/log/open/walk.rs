@@ -267,6 +267,20 @@ pub(super) fn read_windows(
             check.block(events, sink)
         }));
     }
+    read_ahead_windows(file, total, (window, how), check, sink)
+}
+
+/// [`read_windows`] 里比一窗大的那一段：另一个线程一窗窗读、解，这个线程照先后查、交。
+// 单拎成不内联的函数（施工 LW-8）：比一窗大的会话日志很少，并在一起的话这一截跟着上面算执行过、留在核心的内存里
+// （`perf.md`「排函数」）。
+#[inline(never)]
+fn read_ahead_windows(
+    file: &mut File,
+    total: u64,
+    (window, how): (usize, Parse<'_>),
+    check: &mut Check<'_>,
+    sink: &mut dyn FnMut(Piece) -> Flow,
+) -> io::Result<Option<(usize, String)>> {
     let (sender, receiver) = mpsc::sync_channel(QUEUE);
     std::thread::scope(|scope| {
         let reader = scope.spawn(move || read_ahead(file, total, (window, how), &sender));

@@ -94,7 +94,8 @@ impl Logos {
                 },
             };
             if due {
-                failed = match self.once().await {
+                // 到点才拉，单拎出去（施工 LW-8，`miyu_kernel::apart`）。
+                failed = match miyu_kernel::apart::future(self.once()).await {
                     Ok(count) => {
                         tracing::info!(target: TARGET, logos = count, "logos refreshed");
                         None

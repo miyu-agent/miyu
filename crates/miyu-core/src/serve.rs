@@ -118,11 +118,11 @@ pub async fn serve_then(
         tokio::select! {
             never = &mut running => match never {},
             () = &mut stop => {
-                core.stop_sessions().await;
+                miyu_kernel::apart::future(core.stop_sessions()).await;
                 break Stopped::Signal;
             }
             () = &mut asked => {
-                core.stop_sessions().await;
+                miyu_kernel::apart::future(core.stop_sessions()).await;
                 break Stopped::Request;
             }
             // 有动静了（连上、断开、来请求）：回到上面重新看。信号断不了（核心在它就在），断了也当没动静。
@@ -133,10 +133,10 @@ pub async fn serve_then(
                 // 核心永远开着，新建的数据根上还能再起一个。
                 if !held.here() {
                     tracing::warn!(target: TARGET, "data root gone, stopping");
-                    core.stop_sessions().await;
+                    miyu_kernel::apart::future(core.stop_sessions()).await;
                     break Stopped::Gone;
                 }
-                if !core.idle().await {
+                if !miyu_kernel::apart::future(core.idle()).await {
                     quiet = None;
                     continue;
                 }
@@ -147,12 +147,16 @@ pub async fn serve_then(
             }
         }
     };
-    // 扩展随核心退出（施工 9-4 上）：关它们的标准输入，一起等，没退的杀掉。
-    core.stop_extensions().await;
-    // 记忆在后台的读写做完（施工 TMP-1 补3）：空闲退出的没停会话，这里等；收到信号的停会话时等过了（`stop_sessions`）。
-    if stopped == Stopped::Idle {
-        core.finish_writes().await;
-    }
+    // 停下以后的收尾只走一次，单拎出去（施工 LW-8，`miyu_kernel::apart`）。
+    miyu_kernel::apart::future(async {
+        // 扩展随核心退出（施工 9-4 上）：关它们的标准输入，一起等，没退的杀掉。
+        core.stop_extensions().await;
+        // 记忆在后台的读写做完（施工 TMP-1 补3）：空闲退出的没停会话，这里等；收到信号的停会话时等过了（`stop_sessions`）。
+        if stopped == Stopped::Idle {
+            core.finish_writes().await;
+        }
+    })
+    .await;
     // 锁跟着 `running` 里的监听器，交回时才放：收尾在这之前。
     closing.await;
     tracing::info!(target: TARGET, reason = stopped.as_str(), "stopped");

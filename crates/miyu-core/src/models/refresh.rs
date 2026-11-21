@@ -123,7 +123,8 @@ impl Refresher {
             };
             if due {
                 let refreshed = match &now.url {
-                    Some(url) => self.once(url).await,
+                    // 到点才拉，单拎出去（施工 LW-8，`miyu_kernel::apart`）。
+                    Some(url) => miyu_kernel::apart::future(self.once(url)).await,
                     None => {
                         tracing::warn!(target: TARGET, error = "models.catalog.url has no address", "catalog refresh failed");
                         Refreshed::Failed

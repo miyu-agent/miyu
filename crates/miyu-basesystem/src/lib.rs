@@ -69,28 +69,40 @@ pub fn script(
 /// 哪一份字读不出来、写法不对，说是哪一份。
 pub fn tools(resources: &Path) -> Result<Vec<Arc<dyn Tool>>, LoadError> {
     let common = common::Common::load(resources)?;
-    Ok(vec![
-        Arc::new(read::Read::load(resources, common.clone())?),
-        Arc::new(glob::Glob::load(resources, common.clone())?),
-        Arc::new(grep::Grep::load(resources, common.clone())?),
-        Arc::new(write::Write::load(resources, common.clone())?),
-        Arc::new(edit::Edit::load(resources, common.clone())?),
-        Arc::new(trash::Trash::load(resources, common.clone())?),
-        Arc::new(show::Show::load(resources, common.clone())?),
-        Arc::new(shell::Shell::load(resources, common.clone())?),
-        Arc::new(history::History::load(resources, common.clone())?),
-        Arc::new(subagent::Subagent::load(resources, common.clone())?),
-        Arc::new(advisor::Advisor::load(resources, common.clone())?),
-        Arc::new(jobs::Jobs::load(resources, common.clone())?),
-        Arc::new(send_message::SendMessage::load(resources, common.clone())?),
-        Arc::new(sessions::Sessions::load(resources, common.clone())?),
-        Arc::new(session_usage::SessionUsage::load(resources)?),
-        Arc::new(ask_user::AskUser::load(resources, common.clone())?),
-        Arc::new(todowrite::TodoWrite::load(resources, common.clone())?),
-        Arc::new(packages::Packages::load(resources, common)?),
-        Arc::new(package::Package::load(resources)?),
-    ])
+    // 照一张表一件件读（施工 LW-8）：原来写成一个 `vec![…]`，十九件的读法都并进这一个函数，哪一件读不出来时要放掉前面已经
+    // 读好的那几件，这一截收尾的代码在函数里占了一大半，平时一次都不走，却跟着留在核心的内存里（`perf.md`「排函数」）。
+    // 表里每一件各是一个函数。
+    let loads: [Load; 19] = [
+        |at, common| Ok(Arc::new(read::Read::load(at, common.clone())?)),
+        |at, common| Ok(Arc::new(glob::Glob::load(at, common.clone())?)),
+        |at, common| Ok(Arc::new(grep::Grep::load(at, common.clone())?)),
+        |at, common| Ok(Arc::new(write::Write::load(at, common.clone())?)),
+        |at, common| Ok(Arc::new(edit::Edit::load(at, common.clone())?)),
+        |at, common| Ok(Arc::new(trash::Trash::load(at, common.clone())?)),
+        |at, common| Ok(Arc::new(show::Show::load(at, common.clone())?)),
+        |at, common| Ok(Arc::new(shell::Shell::load(at, common.clone())?)),
+        |at, common| Ok(Arc::new(history::History::load(at, common.clone())?)),
+        |at, common| Ok(Arc::new(subagent::Subagent::load(at, common.clone())?)),
+        |at, common| Ok(Arc::new(advisor::Advisor::load(at, common.clone())?)),
+        |at, common| Ok(Arc::new(jobs::Jobs::load(at, common.clone())?)),
+        |at, common| {
+            Ok(Arc::new(send_message::SendMessage::load(
+                at,
+                common.clone(),
+            )?))
+        },
+        |at, common| Ok(Arc::new(sessions::Sessions::load(at, common.clone())?)),
+        |at, _| Ok(Arc::new(session_usage::SessionUsage::load(at)?)),
+        |at, common| Ok(Arc::new(ask_user::AskUser::load(at, common.clone())?)),
+        |at, common| Ok(Arc::new(todowrite::TodoWrite::load(at, common.clone())?)),
+        |at, common| Ok(Arc::new(packages::Packages::load(at, common.clone())?)),
+        |at, _| Ok(Arc::new(package::Package::load(at)?)),
+    ];
+    loads.iter().map(|load| load(resources, &common)).collect()
 }
+
+/// 读一件工具：资源目录、几件共用的字。
+type Load = fn(&Path, &common::Common) -> Result<Arc<dyn Tool>, LoadError>;
 
 /// 基础系统拆成的内置包（施工 BS-1 上中，设计 44 第三节第 1 条）：编号照清单的先后，`base-project-docs`、`base-clicall`
 /// 没有工具。施工 PN-5 起是 `base-*`（设计 48 第一节第 2 条），和工具名不再相同，工具归哪个包照 [`TOOLS`]。

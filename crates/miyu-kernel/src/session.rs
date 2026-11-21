@@ -18,6 +18,7 @@ mod chain;
 mod clear;
 mod compaction;
 mod configure;
+mod dispatch;
 mod dream;
 mod fork;
 mod goal;
@@ -88,6 +89,7 @@ pub use policy::{
 pub use report::Upward;
 pub use watch::{CHATTY, LINE_CHARS};
 
+use crate::apart;
 use crate::event::{Body, Event, Permission, SessionCreated, ToolResult, ToolStatus};
 use crate::facts::Environment;
 use crate::history::History;
@@ -257,212 +259,6 @@ impl Session {
         self.splice_nested(&mut actions);
         actions.extend(self.dispatch_nested());
         actions
-    }
-
-    /// 照输入的种类分派。嵌套调用的收尾、派发在 [`Self::handle`] 里统一做（施工 M-1，`nested.rs`）。
-    fn react(&mut self, input: Input) -> Vec<Action> {
-        match input {
-            Input::Command(received) => self.receive(received),
-            Input::Stored { at, upto } => self.stored(at, upto),
-            Input::Environment(environment) => {
-                self.environment = environment;
-                Vec::new()
-            }
-            Input::Limits(limits) => self.take_limits(limits),
-            Input::Reread { at, seen, files } => self.reread_done(at, seen, files),
-            Input::Recalled { texts } => {
-                self.history.recall(texts);
-                Vec::new()
-            }
-            hooked @ Input::TurnStartHooksDone { .. } => self.turn_start_hooked(hooked),
-            Input::RequestSent {
-                at,
-                seen,
-                model,
-                request,
-            } => self.request_sent(at, seen, model, request),
-            Input::ModelDelta { at, seen, delta } => self.model_delta(at, seen, delta),
-            ended @ Input::ModelEnded { .. } => self.model_ended_input(ended),
-            Input::Woke { at, seen } => self.woke(at, seen),
-            expired @ Input::ApprovalExpired { .. } => self.approval_expired(expired),
-            Input::ShellRan { at, ran } => self.shell_ran(at, ran),
-            Input::ToolDone {
-                at,
-                call_id,
-                error,
-                blocks,
-                duration_ms,
-                human,
-                effects,
-                stopped,
-                end_turn,
-                sent,
-                display_name,
-                detail,
-            } => self.tool_done(
-                at,
-                ToolResult {
-                    call_id,
-                    status: if stopped {
-                        ToolStatus::Cancelled
-                    } else if error {
-                        ToolStatus::Error
-                    } else {
-                        ToolStatus::Ok
-                    },
-                    blocks,
-                    duration_ms,
-                    human,
-                    effects,
-                    end_turn: end_turn && !stopped && !error,
-                    sent,
-                    display_name,
-                    detail,
-                },
-            ),
-            Input::ToolProgress { at, call_id, text } => self.tool_progress(at, call_id, text),
-            Input::ToolGuarded {
-                at,
-                call_id,
-                verdict,
-            } => self.tool_guarded(at, call_id, verdict),
-            Input::ToolAsks {
-                at,
-                call_id,
-                questions,
-            } => self.tool_asks(at, call_id, questions),
-            Input::ReadBack { at, from, events } => self.read_back(at, from, events),
-            Input::Restarting { at } => self.restart(at),
-            Input::JobEnded {
-                at,
-                by,
-                cause,
-                reported,
-            } => self.job_ended(at, by, cause, reported),
-            Input::JobLines {
-                at,
-                by,
-                cause,
-                lines,
-            } => self.job_lines(at, by, cause, lines),
-            Input::AsideSent {
-                at,
-                purpose,
-                upto,
-                model,
-                request,
-                fell_back,
-            } => self.aside_sent(at, &purpose, upto, (model, request), fell_back),
-            Input::AsideDelta {
-                at,
-                purpose,
-                upto,
-                delta,
-            } => self.aside_delta(at, &purpose, upto, delta),
-            Input::AsideEnded {
-                at,
-                purpose,
-                upto,
-                usage,
-                cost,
-                error,
-                sent,
-            } => self.aside_ended(at, &purpose, upto, (usage, cost), error, sent),
-            Input::Watched { watched } => {
-                self.watched = watched;
-                Vec::new()
-            }
-            Input::WatchEnded {
-                at,
-                session,
-                reason,
-            } => self.watch_ended(at, session, reason),
-            Input::Described { at, blob, seen } => self.described(at, blob, seen),
-            Input::Nested(nested) => self.nested(nested),
-        }
-    }
-
-    /// 收到一个命令。接受过的编号照上一次回应，换了参数的拒绝，`id_reused`（施工 YC-7，`recent.rs`）；新的照命令判。回顾不记
-    /// 编号（施工 3-8 四补）：再来一次就是再要一次，没有新内容的照样交回上一句。
-    fn receive(&mut self, received: Received) -> Vec<Action> {
-        let Received {
-            id,
-            by,
-            at,
-            command,
-        } = received;
-        let digest = recent::digest(&command);
-        if !matches!(command, Command::Recap)
-            && let Some(events) = self.recent.get(&id)
-        {
-            if self.recent.reused(&id, digest) {
-                return vec![rejected(id, Reason::IdReused)];
-            }
-            let events = events.to_vec();
-            return self.reply_when_stored(id, events);
-        }
-        // 读回日志的时候不接命令：会话 actor 做完才接下一个，这是兜底（施工 6-9）。
-        if self.reading.is_some() {
-            return vec![rejected(id, Reason::Restoring)];
-        }
-        if self.ledger.sealed() && !seal::taken_when_sealed(&command) {
-            return vec![rejected(id, Reason::Sealed)];
-        }
-        self.recent.expect(&id, digest);
-        match command {
-            Command::Send {
-                blocks,
-                urgent,
-                venue,
-            } => self.send(id, by, at, (blocks, venue, None), urgent),
-            Command::Typed { blocks, command } => {
-                self.send(id, by, at, (blocks, None, Some(command)), false)
-            }
-            Command::Shell { text, urgent } => self.send_shell(id, by, at, text, urgent),
-            Command::Append { event } => self.append(id, by, at, event),
-            Command::Respond { to, facts, tail } => self.respond(id, by, at, to, (facts, tail)),
-            Command::Note { facts } => self.note(id, by, at, facts),
-            Command::Interrupt { queued } => self.interrupt(id, by, at, queued),
-            Command::Withdraw { message } => self.withdraw(id, by, at, message),
-            Command::SetMeta {
-                title,
-                pinned,
-                project,
-            } => self.set_meta(id, by, at, (title, pinned, project)),
-            Command::Retitle => self.retitle(id, by, at),
-            Command::SetWorkspace { cwd, dirs } => self.set_workspace(id, by, at, cwd, dirs),
-            Command::Ran { text, command } => self.ran(id, by, at, text, command),
-            Command::Configure { model } => self.configure(id, by, at, model),
-            Command::SetEffort { level } => self.set_effort(id, by, at, level),
-            Command::SetContext { tokens } => self.set_context(id, by, at, tokens),
-            Command::SetVision { vision } => self.set_vision(id, by, at, vision),
-            Command::SetCompactionLine { percent } => self.set_line(id, by, at, percent),
-            Command::SetVoiceLimit { ms } => self.set_voice_limit(id, by, at, ms),
-            Command::Recast { persona, preset } => self.recast(id, by, at, (persona, preset)),
-            Command::SetPermission { level, read_only } => {
-                self.set_permission(id, by, at, level, read_only)
-            }
-            Command::Answer {
-                call_id,
-                answer: answer @ Answer::Approval { .. },
-            } => self.answer(id, by, at, call_id, answer),
-            Command::Answer {
-                call_id,
-                answer: Answer::Questions(answers),
-            } => self.answer_question(id, by, at, call_id, answers),
-            Command::Revert { turn } => self.revert(id, by, at, turn),
-            Command::Unrevert => self.unrevert(id, by, at),
-            Command::Redo { text, attachments } => self.redo(id, by, at, text, attachments),
-            Command::Compact { instructions } => self.compact(id, at, instructions),
-            Command::Clear => self.clear(id, at),
-            Command::ClearTodos => self.clear_todos(id, by, at),
-            Command::SetState(written) => self.set_package_state(id, by, at, written),
-            Command::Recap => self.recap(id),
-            Command::Report(reported) => self.report(id, by, at, reported),
-            Command::PeerIdle { status } => self.peer_idle(id, by, at, status),
-            Command::Goal(change) => self.goal(id, by, at, change),
-            Command::EndDream(ended) => self.end_dream(id, by, at, ended),
-        }
     }
 
     /// 到第 `upto` 条为止落了盘：先推送这些事件，再回应事件全落了盘的命令（`04-核心协议.md`

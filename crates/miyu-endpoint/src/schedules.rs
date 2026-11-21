@@ -305,9 +305,12 @@ impl Schedules {
         if !create && !table::path(&self.root).exists() {
             return Err(ScheduleError::Unknown);
         }
-        let (opened, how) = Table::open(&self.root);
-        said(&how, (&self.notices, self.now()));
-        let opened = opened.map(Arc::new);
+        // 头一次用到、表在的时候才开，单拎出去（施工 LW-8，`miyu_kernel::apart`）：多数核心没有定时任务。
+        let opened = miyu_kernel::apart::sync(|| {
+            let (opened, how) = Table::open(&self.root);
+            said(&how, (&self.notices, self.now()));
+            opened.map(Arc::new)
+        });
         *table = Some(opened.clone());
         opened.ok_or(ScheduleError::Unusable)
     }
