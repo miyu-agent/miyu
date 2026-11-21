@@ -35,6 +35,8 @@ pub struct Shown {
     pub goals: Goals,
     /// 上一次推给头的有没有能压的（施工 W-12 补，`actor/store.rs` 的 `push_now`）：还没算过的没有。
     pub compactable: Option<bool>,
+    /// 有没有能恢复的撤销（施工 FX-12）：造会话时没有，载入时照内核的（`count_from`），之后每送完一批照内核的换（`push_now`，都在 `actor/store.rs`）。
+    pub restorable: bool,
 }
 
 impl Shown {
@@ -54,6 +56,7 @@ impl Shown {
             tally: Tally::default(),
             goals: Goals::default(),
             compactable: None,
+            restorable: false,
         }
     }
 }

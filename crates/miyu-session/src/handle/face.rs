@@ -93,6 +93,15 @@ impl Handle {
         self.waiting.load(std::sync::atomic::Ordering::Acquire)
     }
 
+    /// 有没有能恢复的撤销（施工 FX-12）：有的时候循环交来的那一句只记下、不开一轮，`/loop` 的回执照它说一句循环先搁着。落了盘
+    /// 以后的。
+    pub fn restorable(&self) -> bool {
+        self.shown
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .restorable
+    }
+
     /// 包 `package` 当前的状态（施工 TW-1）：没写过、清掉了的没有。落了盘推出去以后的。
     pub fn package_state(&self, package: &str) -> Option<miyu_kernel::event::State> {
         self.shown

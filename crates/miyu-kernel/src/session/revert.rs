@@ -167,6 +167,12 @@ impl Session {
         actions
     }
 
+    /// 这一刻有没有能恢复的撤销（施工 FX-12）：有的时候循环、后台命令交来的那一句只记下、不开一轮（`jobs.rs` 的 `can_wake`），
+    /// 人敲 `/loop` 的回执照它说一句循环先搁着。
+    pub fn restorable(&self) -> bool {
+        self.ledger.last_reverted().is_some()
+    }
+
     /// 恢复最近一次撤销：记一条 `turn.unreverted`，列的就是那一次撤掉的那几轮，`by` 是恢复的人，
     /// `cause` 是这个命令。文件不动（施工 U-1）。没有能恢复的（没撤过，或者撤了以后开过回合、压缩过），拒绝，原因码
     /// `nothing_to_unrevert`。那一次撤掉了压缩的，压缩跟着回来，不读磁盘；检查点换了、重读过文件的，紧跟着 `Append` 出

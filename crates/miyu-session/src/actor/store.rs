@@ -88,6 +88,9 @@ impl Actor {
     /// 算只记下：订阅的回应带着这一刻的。`moved` 是假的（这一批全是流式的碎片，施工 V-22）不看有没有能压的：变不了。
     pub(super) fn push_now(&mut self, moved: bool) {
         self.push_goal();
+        // 有没有能恢复的撤销（施工 FX-12）：人敲 `/loop` 的回执照它说循环先搁着。
+        let restorable = self.session.restorable();
+        self.counted().restorable = restorable;
         if !moved {
             return;
         }
@@ -110,11 +113,13 @@ impl Actor {
         }));
     }
 
-    /// 载入时照整份日志算的累计（施工 9-6 上）、长期目标（施工 X-6）：放进给头看的那一份，之后每落一批盘加上这一批。
+    /// 载入时照整份日志算的累计（施工 9-6 上）、长期目标（施工 X-6）、有没有能恢复的撤销（施工 FX-12）：放进给头看的那一份，之后每落一批盘加上这一批。
     pub(crate) fn count_from(&self, tally: Tally, goals: Goals) {
         let mut counted = self.counted();
         counted.tally = tally;
         counted.goals = goals;
+        // 载入时有没有能恢复的撤销（施工 FX-12）：之后每送完一批照内核的换（`push_now`）。
+        counted.restorable = self.session.restorable();
     }
 
     /// 给头看的那一份，拿着锁。

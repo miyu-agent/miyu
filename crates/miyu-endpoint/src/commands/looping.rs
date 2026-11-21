@@ -88,6 +88,12 @@ impl Slash for LoopCommand {
                 _ => None,
             };
             let stopped = stop(call.core, call.session)?;
+            // 有能恢复的撤销时循环交来的那一句只记下、不开一轮（`jobs.rs` 的 `can_wake`，施工 FX-12）：回执照实说循环先搁着。
+            let restorable = call.found.handle.restorable();
+            let held = |plain: &'static str, waiting: &'static str| match restorable {
+                true => waiting,
+                false => plain,
+            };
             let said = match asked {
                 Asked::Off if stopped => Said::plain("commands/loop-off"),
                 Asked::Off => Said::plain("commands/loop-none"),
@@ -100,7 +106,7 @@ impl Slash for LoopCommand {
                         prompt,
                     )?;
                     Said::with(
-                        "commands/loop-fixed",
+                        held("commands/loop-fixed", "commands/loop-fixed-held"),
                         vec![("every", interval(every)), ("text", one_line(prompt))],
                     )
                 }
@@ -113,7 +119,10 @@ impl Slash for LoopCommand {
                         Loop::Dynamic,
                         prompt,
                     )?;
-                    Said::with("commands/loop-dynamic", vec![("text", one_line(prompt))])
+                    Said::with(
+                        held("commands/loop-dynamic", "commands/loop-dynamic-held"),
+                        vec![("text", one_line(prompt))],
+                    )
                 }
                 Asked::Autonomous => {
                     let at = call.core.schedules().now();
@@ -125,7 +134,7 @@ impl Slash for LoopCommand {
                         Loop::Dynamic,
                         &prompt,
                     )?;
-                    Said::plain("commands/loop-auto")
+                    Said::plain(held("commands/loop-auto", "commands/loop-auto-held"))
                 }
             };
             Ok(Ran {
