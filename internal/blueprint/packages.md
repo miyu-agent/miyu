@@ -398,7 +398,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 一件工具的参数格式里有一处某家模型供应商不收的写法，那一家会拒绝整个请求，不只是这件工具用不了：接入通讯平台的 `qq_activity_ranking` 写了 `"days": {"type": "integer", "enum": [1, 7, 30]}`，用 Antigravity（Gemini）时每一轮都被拒。
 
 1. **查什么**（`miyu_tool::portable`）：`enum` 写在不是字符串的类型上（`integer`、`number`、`boolean`），或者 `enum` 里有不是字符串的值。只走 schema 的位置（`properties` 的每个值、`items`、`additionalProperties`、`anyOf`、`oneOf`、`allOf` 的每一项）。位置照 JSON Pointer 写，例如 `/properties/days`。
-2. **查哪里**：包文件夹里每一份 `tools/<名字>.json`、里面有 `parameters` 的（同 `miyu_tool::load::spec_in` 读的写法，自己带着工具说明的扩展照它放），不跟符号链接；读不了、不是 JSON 的跳过。扩展运行时经 `provide` 交的工具不在这里查。
+2. **查哪里**：包文件夹里每一份 `tools/<名字>.json`、里面有 `parameters` 的（同 `miyu_tool::load::spec_in` 读的写法，自己带着工具说明的扩展照它放），不跟符号链接；读不了、不是 JSON 的跳过。扩展运行时经 `provide` 交的工具照收，参数格式有这种写法的一件记一行运行日志 `WARN tool not portable`（`tool` 工具名、`at` 几处用逗号连起来，施工 FX-10，2026-11-21 主会话审时加）；读缓存再登记时同样记。
 3. **打包**（`miyu pkg pack`）：有一处就无法打包，说是哪一份、哪几处、怎么改。
 4. **装包**（`package.install` 的 `path`、`source`，`from_path` 装好以后）：照装，回应多一格 `warnings`：`[{"code": "tool_not_portable", "level": "warning", "message"}]`，一份一条；命令行在标准错误上一条一句。没有的不带这一格。
 5. **`miyu check`**：读成了的每个包照第 2 条查，一份一条警告 `tool_not_portable`，说法 `core/human` 的 `package-problems/tool_not_portable`，字段 `detail` 是「那一份 那几处」。

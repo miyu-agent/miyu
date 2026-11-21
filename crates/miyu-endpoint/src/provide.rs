@@ -325,6 +325,11 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
     }
     let parameters: RawJson = serde_json::from_str(&tool.input_schema.to_string())
         .map_err(|_| bad_tool(&tool.name, "parameters"))?;
+    // 不是各家都收的参数写法（施工 FX-10）：照收，记一行警告；位置是参数格式里的 JSON Pointer，不是对话的字。
+    let unportable = miyu_tool::portable::unportable(&tool.input_schema);
+    if !unportable.is_empty() {
+        tracing::warn!(target: "miyu::endpoint", tool = tool.name.as_str(), at = unportable.join(",").as_str(), "tool not portable");
+    }
     // 显示名：语言、名字都不能是空白的。
     if tool
         .display_name
