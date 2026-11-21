@@ -87,7 +87,9 @@
 
 进核心之前（施工 LW-8，2026-11-22）：主程序先看参数是不是前台跑核心的三种写法之一：`core`、`core --idle-seconds <秒>`、`core --idle-seconds=<秒>`，秒数照 `u64` 解析得出（同 clap 解析这个参数用的 `str::parse`）。认得出的直接进核心，不搭整棵命令行树、不读界面语言（`crates/miyu/src/main.rs` 的 `running_core`）；认不出的（`start`、`status`、`stop`，要帮助的、写错的、不是 UTF-8 的）照原来整棵树解析，报错的字由 clap 照原样说。原因：核心进程只认这一种写法，原来搭整棵树、解析一遍要执行 266 kB 代码，执行过的函数都留在核心的内存里（`perf.md`「排函数」）。`main.rs` 的测试拿一组参数对照快路和整棵树的结果。
 
-0. 进程的堆（施工 V-2 再补，`heap.md`）：起别的线程之前，glibc 上把 arena 限到 8 个、大块的门槛定在 128 KiB；记一行 `DEBUG heap tuned tuned=<真假> arenas=8 mmap_from=131072`（装了日志以后补记）。别的平台什么都不做。
+进核心之前还有一步（施工 LW-12，`heap.md`「线程缓存」）：如果这个进程没有带着「线程缓存少留」的环境变量（不是由 `miyu` 拉起的核心，例如 systemd 托管的、直接运行 `miyu core` 的），主程序带上它、用原来的参数重新执行自己一次，进程号不变；已经带着时直接往下运行。只有 glibc 上有这一步。
+
+0. 进程的堆（施工 V-2 再补，`heap.md`）：起别的线程之前，glibc 上把 arena 限到 8 个、大块的门槛定在 128 KiB；记一行 `DEBUG heap tuned tuned=<真假> arenas=8 mmap_from=131072 huge_pages_off=<真假> tunables=<这个进程带着的 GLIBC_TUNABLES>`（装了日志以后补记）。别的平台什么都不做。
 1. 读一次环境的快照（`MIYU_HOME`、`MIYU_RESOURCES`、家目录、程序的真实位置这些），数据根、资源目录、沙盒的助手照它找；`MIYU_LOG`、放套接字的目录到用的那一步才读；配置里 `{ env }` 引用的变量到用的时候才查（施工 8-6 起核心不再读开发用的环境变量、`DEEPSEEK_API_KEY`）。
 2. 找数据根，建骨架（`store.md`）。
 3. 拿单实例锁 `run/core.lock`，不等。拿不到：已经有一个核心在跑，写 `running`，退出码 0，运行日志一个字都不写。先拿锁、再装日志：两个核心不写同一份日志。

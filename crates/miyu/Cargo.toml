@@ -17,6 +17,8 @@ path = "src/main.rs"
 clap = { version = "4", features = ["derive"] }
 # 命令行的头：miyu ask、给人看的话（施工 3-9 下）。
 miyu-cli = { path = "../miyu-cli" }
+# 拉起核心时带上线程缓存少留的那一项（施工 LW-12，`src/tuned.rs`）。
+miyu-heap = { path = "../miyu-heap" }
 # 核心进程：miyu core（施工 3-9 上）。
 miyu-core = { path = "../miyu-core" }
 

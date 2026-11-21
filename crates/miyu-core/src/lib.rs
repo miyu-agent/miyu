@@ -107,6 +107,7 @@ pub fn main(options: Options) -> ExitCode {
         arenas = miyu_heap::ARENAS,
         mmap_from = miyu_heap::MMAP_FROM,
         huge_pages_off = miyu_heap::huge_pages_off(),
+        tunables = %miyu_heap::launch::tunables(),
         "heap tuned"
     );
     // 打开文件数的软上限调高（施工 YC-1，压测 F1）：系统给的 1024 几百个会话就用光。调不上去照旧起来。

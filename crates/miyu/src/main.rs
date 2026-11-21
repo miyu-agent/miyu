@@ -19,6 +19,8 @@ use miyu_cli::help::{Page, page};
 use miyu_cli::language::{self, Language};
 use miyu_cli::{Direction, misuse_offering};
 
+mod tuned;
+
 /// 退出码：用法不对（`22-命令行.md` 第二节）。
 const USAGE: u8 = 2;
 
@@ -110,6 +112,7 @@ fn main() -> ExitCode {
     let args: Vec<OsString> = std::env::args_os().collect();
     // 头拉起核心的快路（施工 LW-8，`core.md`「起来的先后」）：认得出的直接进核心，不搭整棵命令行树。
     if let Some(idle) = running_core(args.get(1..).unwrap_or_default()) {
+        tuned::relaunch();
         return miyu_core::main(miyu_core::Options {
             idle: idle.map(Duration::from_secs),
         });
@@ -220,9 +223,12 @@ fn dispatch(args: Vec<OsString>) -> ExitCode {
             action: Some(CoreAction::Stop),
             ..
         }) => miyu_cli::core_stop(),
-        Some(Command::Core { idle_seconds, .. }) => miyu_core::main(miyu_core::Options {
-            idle: idle_seconds.map(Duration::from_secs),
-        }),
+        Some(Command::Core { idle_seconds, .. }) => {
+            tuned::relaunch();
+            miyu_core::main(miyu_core::Options {
+                idle: idle_seconds.map(Duration::from_secs),
+            })
+        }
         // 不带子命令（施工 9-3）：在终端里打开 `ui.head` 指的界面；不在终端里（被脚本调、接管道）印帮助、退出码 2。
         None if terminal() => match miyu_cli::head::open(None, core) {
             miyu_cli::head::Opened::Ran(code) => ExitCode::from(code),
@@ -304,12 +310,13 @@ fn builtins() -> Vec<String> {
         .collect()
 }
 
-/// 拉起核心的命令：自己这个程序，加上 `core`。
+/// 拉起核心的命令：自己这个程序，加上 `core`，带上线程缓存少留的那一项（施工 LW-12，`tuned.rs`）。
 fn core() -> std::process::Command {
     let mut core = std::process::Command::new(
         std::env::current_exe().unwrap_or_else(|_| PathBuf::from("miyu")),
     );
     core.arg("core");
+    tuned::on(&mut core);
     core
 }
 

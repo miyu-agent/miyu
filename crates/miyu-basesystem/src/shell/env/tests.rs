@@ -194,3 +194,52 @@ fn the_model_the_effort_and_the_log_are_told_when_known() {
     assert!(told(Some(&caller(None, None))).is_empty());
     assert!(told(None).is_empty());
 }
+
+/// 值，照名字找。
+fn value(passed: &[(OsString, OsString)], name: &str) -> Option<String> {
+    passed
+        .iter()
+        .find(|(have, _)| have == name)
+        .map(|(_, value)| value.to_string_lossy().into_owned())
+}
+
+/// 核心带着起的那一项分配器参数不传给命令（施工 LW-12）：照拉起的一方原来的那一份，原来没设的不传；核心不是带着起的照原样。
+#[test]
+fn the_allocator_setting_the_core_was_launched_with_is_not_passed_on() {
+    let unset = passed_as(
+        vars(&[
+            ("GLIBC_TUNABLES", "glibc.malloc.tcache_count=4"),
+            ("MIYU_GLIBC_TUNABLES", ""),
+            ("HOME", "/home/alice"),
+        ]),
+        false,
+        false,
+    );
+    assert_eq!(names(&unset), then_ours(&["HOME"]));
+    let set = passed_as(
+        vars(&[
+            ("MIYU_GLIBC_TUNABLES", "glibc.malloc.arena_max=2"),
+            (
+                "GLIBC_TUNABLES",
+                "glibc.malloc.arena_max=2:glibc.malloc.tcache_count=4",
+            ),
+        ]),
+        true,
+        false,
+    );
+    assert_eq!(names(&set), then_ours(&["GLIBC_TUNABLES"]));
+    assert_eq!(
+        value(&set, "GLIBC_TUNABLES").as_deref(),
+        Some("glibc.malloc.arena_max=2")
+    );
+    let plain = passed_as(
+        vars(&[("GLIBC_TUNABLES", "glibc.malloc.tcache_count=0")]),
+        false,
+        false,
+    );
+    assert_eq!(
+        value(&plain, "GLIBC_TUNABLES").as_deref(),
+        Some("glibc.malloc.tcache_count=0"),
+        "核心不是带着起的：照核心自己的"
+    );
+}

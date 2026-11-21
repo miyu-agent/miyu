@@ -16,7 +16,7 @@
 | `budget.rs` | 预算照 23 第二节的表读，判超没超 |
 | `fake.rs` | 假模型服务；`fake/script.rs`：照剧本回工具调用（施工 V-29） |
 | `cpu.rs` | 读核心花的 CPU：各线程的 `schedstat`；放进了自己的 scope 的再读 cgroup 的 `cpu.stat`，连子进程（施工 V-29） |
-| `sandbox.rs` | 沙盒数据根，拉起、停掉核心 |
+| `sandbox.rs` | 沙盒数据根，拉起、停掉核心；拉起时和 `miyu` 一样带上线程缓存少留的环境变量（施工 LW-12，`heap.md`「线程缓存」第 7 条） |
 | `rpc.rs` | 在连接上说 JSON-RPC，等一轮结束 |
 | `memory.rs` | 读进程的内存 |
 | `machine.rs` | 量的条件 |

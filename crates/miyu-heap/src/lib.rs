@@ -56,6 +56,7 @@ pub fn stats() -> Option<Stats> {
     imp::stats()
 }
 
+pub mod launch;
 pub mod room;
 pub mod usage;
 

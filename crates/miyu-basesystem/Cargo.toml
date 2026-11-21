@@ -27,6 +27,8 @@ miyu-kernel = { path = "../miyu-kernel" }
 # 调用带了沙盒的，shell 经沙盒的助手起命令（施工 5-1）。
 miyu-policy = { path = "../miyu-policy" }
 miyu-sandbox = { path = "../miyu-sandbox" }
+# 核心带着起的分配器参数不传给命令（施工 LW-12，`shell/env.rs`）。
+miyu-heap = { path = "../miyu-heap" }
 # 工具的接口。
 miyu-tool = { path = "../miyu-tool" }
 # 脚本照 `#!` 找解释器：和包里的程序共用一份（施工 X-34，`miyu_store::packages::launcher`）；测试里核对工具会说的每一种

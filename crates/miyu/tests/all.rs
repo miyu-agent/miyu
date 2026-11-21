@@ -45,5 +45,6 @@ mod rename;
 mod rescue;
 mod settings;
 mod setup;
+mod tuned;
 mod undo;
 mod wal;

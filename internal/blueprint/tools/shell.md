@@ -168,6 +168,7 @@
 | 像密钥的 | 名字里有 `KEY`、`SECRET`、`TOKEN`、`PASSWORD`、`PASSWD`、`CREDENTIAL`（不分大小写）：`DEEPSEEK_API_KEY`、`AWS_ACCESS_KEY_ID`、`GH_TOKEN`、`PGPASSWORD` 都在里面 |
 | Miyu 自己的 | `MIYU_` 开头 |
 | 沙盒里另去掉的：桌面、D-Bus、ssh-agent | `DISPLAY`、`WAYLAND_DISPLAY`、`XAUTHORITY`、`DBUS_SESSION_BUS_ADDRESS`、`XDG_RUNTIME_DIR`、`SSH_AUTH_SOCK`（2026-10-17 项目主人定：沙盒里的命令不开窗口） |
+| 核心自己带着的分配器参数（施工 LW-12，`heap.md`「线程缓存」） | `GLIBC_TUNABLES`：如果核心的环境里有 `MIYU_GLIBC_TUNABLES`（拉起核心的一方原来的值），命令拿到的是这个值，这个值是空的时不传；核心的环境里没有它时，`GLIBC_TUNABLES` 按原样传 |
 | 另外设上的，原来的那一份不要 | `GIT_TERMINAL_PROMPT=0`：git 要密码时直接失败，不等人输入；`PAGER=cat`、`GIT_PAGER=cat`、`NO_COLOR=1`：不翻页、不上色（照 dsh）；`TERM=dumb`（施工 4-8 再补）：有的程序不认 `NO_COLOR`、也不看输出接没接终端，只照终端的种类上色（实测 `cargo fmt --check` 的 diff），`dumb` 的一律不上 |
 | 这一轮的事实（施工 E-M） | `MIYU_MODEL`、`MIYU_EFFORT`：这一轮发给的模型名、思考强度，同尾巴上模型那一块（还没解析过模型的不设）；`MIYU_SESSION_LOG`：会话日志的目录，只给不关起来的会话（群、陌生人的私聊看不到运行它的那台电脑）。核心环境里原有的 `MIYU_*` 照旧不传，这三个是另设的 |
 
@@ -329,7 +330,7 @@ Exit code 2
 | `crates/miyu-basesystem/tests/shell_sandbox.rs` | 带了沙盒的真跑一次（Unix）：假助手 `/bin/echo` 收到的是 `run --spec <规格> -- <shell> <参数…>`；规格写不成 JSON 的说起不来，命令没跑（施工 5-1）；`a_sandboxed_command_gets_no_desktop`（4-8 补）：假助手 `/bin/sh` 读工作目录里的 `run`，沙盒里拿不到 `DISPLAY` |
 | `crates/miyu-basesystem/src/shell/process/tests.rs` | 杀不掉的命令，最多再等那么久就交回超时 |
 | `crates/miyu-basesystem/tests/log.rs` | 运行日志的来源是 `shell`；输出还没关那一行在阻塞线程里发，带会话编号（Linux） |
-| `crates/miyu-basesystem/src/shell/env/tests.rs` | 去掉像密钥的、`MIYU_*`，别的照传；沙盒里另去掉桌面的；另设的四个总是我们的；Windows 上名字不分大小写；密钥的词在名字哪里都算；不是 UTF-8 的名字照传（4-8 补） |
+| `crates/miyu-basesystem/src/shell/env/tests.rs` | 去掉像密钥的、`MIYU_*`，别的照传；沙盒里另去掉桌面的；另设的四个总是我们的；Windows 上名字不分大小写；密钥的词在名字哪里都算；不是 UTF-8 的名字照传（4-8 补）；核心带着的分配器参数不传给命令，命令拿到的是拉起核心的一方原来的值（施工 LW-12） |
 | `crates/miyu-basesystem/tests/script.rs` 的 `a_script_gets_the_same_environment_as_shell`（4-8 补） | 脚本拿到的环境变量和 `shell` 一样，自己那两个照设（Unix） |
 | `crates/miyu-basesystem/tests/human.rs` | 每一种结果的说法，两种语言都换得出字 |
 | `crates/miyu-session/tests/write.rs` | 会话里真的跑：结果进日志，给她的是输出加退出码，说法里有退出码，没有效果 |

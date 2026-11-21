@@ -16,6 +16,8 @@ path = "src/main.rs"
 miyu-ipc = { path = "../miyu-ipc" }
 # 追加并同步在进程里量：会话日志的事件。
 miyu-kernel = { path = "../miyu-kernel" }
+# 起核心时照 `miyu` 的样子带上线程缓存少留的那一项（施工 LW-12，`sandbox.rs`）。
+miyu-heap = { path = "../miyu-heap" }
 # 沙盒数据根，会话的目录，会话日志。
 miyu-store = { path = "../miyu-store" }
 # 协议是一行一个 JSON；原始数据也写成 JSON。

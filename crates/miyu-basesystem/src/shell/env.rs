@@ -2,12 +2,16 @@
 //! 名字像密钥的（例如从终端带来的 `DEEPSEEK_API_KEY`）和 Miyu 自己的 `MIYU_*`。原来只传白名单，名单外的工具链、桌面
 //! 变量（`DISPLAY`、`KUBECONFIG`……）一律丢掉，终端里能跑的命令到这里就不行，名单补不完。
 //!
+//! 核心自己带着起的分配器参数（`GLIBC_TUNABLES` 里线程缓存那一项，施工 LW-12，`heap.md`「线程缓存」）不传：命令拿到的是拉起核心的
+//! 一方原来的那一份（核心环境里的 `MIYU_GLIBC_TUNABLES`），原来没设的不传。
+//!
 //! 沙盒里另去掉连本机桌面、D-Bus、ssh-agent 的（2026-10-17 项目主人定：沙盒里的命令不开窗口）：内核 7.1 起的 Landlock
 //! 本来就连不上那些套接字，更老的内核拦不住，不传变量至少不会顺手连过去。这里只防不小心带出去，不是安全边界：同一个
 //! 系统用户的命令读得到核心的 `/proc/<pid>/environ`。
 
 use std::ffi::{OsStr, OsString};
 
+use miyu_heap::launch;
 use miyu_tool::Caller;
 
 #[cfg(test)]
@@ -76,9 +80,23 @@ fn passed_as(
     sandboxed: bool,
     fold: bool,
 ) -> Vec<(OsString, OsString)> {
+    let vars: Vec<(OsString, OsString)> = vars.into_iter().collect();
+    // 核心自己带着起的那一项分配器参数不传给命令（施工 LW-12）：照拉起核心的一方原来的那一份。
+    let named =
+        |(name, _): &&(OsString, OsString), want: &str| same(&name.to_string_lossy(), want, fold);
+    let inherited = vars
+        .iter()
+        .find(|var| named(var, launch::INHERITED))
+        .map(|(_, value)| value.clone());
     let mut passed: Vec<(OsString, OsString)> = vars
         .into_iter()
         .filter(|(name, _)| kept(name, sandboxed, fold))
+        .filter_map(
+            |(name, value)| match same(&name.to_string_lossy(), launch::TUNABLES, fold) {
+                true => launch::restored(inherited.clone(), Some(value)).map(|value| (name, value)),
+                false => Some((name, value)),
+            },
+        )
         .collect();
     passed.extend(
         SET.iter()

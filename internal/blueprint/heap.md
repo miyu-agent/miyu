@@ -9,6 +9,8 @@
 | 代码 | 管什么 |
 |---|---|
 | `crates/miyu-heap/src/lib.rs` | `tune`、`trim`、`stats`、`huge_pages_off`；glibc 上声明、调 `mallopt`、`malloc_trim`、`mallinfo2`，Linux 上关透明大页（施工 YC-12），别的平台是空的 |
+| `crates/miyu-heap/src/launch.rs`（施工 LW-12） | 拉起核心时带的环境变量：线程缓存每种大小留几块（`TCACHE`）、拼出要设的两项（`vars`）、核心起的命令恢复成原来的值（`restored`）；下面「线程缓存」 |
+| `crates/miyu/src/tuned.rs`（施工 LW-12） | 主程序拉起核心的命令带上这两项；前台跑核心的进程没带着时，带上以后重新执行自己（下面「线程缓存」第 2、3 条） |
 | `crates/miyu-heap/src/usage.rs` | 进程这时占了多少内存：Linux 上读 `/proc/self/smaps_rollup`、`/proc/self/status`，两份的读法是纯的（施工 V-4）；macOS 上问内核 `proc_pid_rusage`（施工 V-4 补） |
 | `crates/miyu-heap/src/room.rs`、`room/macos.rs`、`room/windows.rs`（施工 MEM-1，MEM-2 分开交） | 还剩多少可用内存：Linux 上读 `/proc/meminfo` 和 cgroup v2 一路往上的几层，读法是纯的、读文件的照传进来的函数；macOS 上问 sysctl，Windows 上问 `GlobalMemoryStatusEx` |
 | `crates/miyu-endpoint/src/sessions/pressure.rs`（施工 MEM-2，MEM-4 改门槛、近线快查） | 隔 10 秒（近线时隔 1 秒）、开会话时照它和 `usage::resident` 判紧不紧（门槛离总量还有 10%、最多 2 GiB、不低于 5%），紧的把闲着的会话卸出内存（`protocol.md`「会话表」第 10 条） |
@@ -30,6 +32,10 @@
 - `MMAP_FROM`：128 KiB，多大的一块直接向系统要、放掉当场还。写明了 glibc 就不再自己往上调：默认放掉一块大的以后把门槛抬到它那么大（最多 32 MB），之后每一轮拼的请求（几百 KB）都落进堆里，和长住的穿插着放，空出来的碎成小片、`malloc_trim` 也还不回去。
 - `tune() -> bool`：起别的线程之前调一次，glibc 上照 `M_ARENA_MAX`、`M_MMAP_THRESHOLD` 设成这两个，交回都设成了没有；别的平台交回假。Linux 上（不管是不是 glibc）还给这个进程关掉透明大页（`PR_SET_THP_DISABLE`，施工 YC-12，下面「怎么走」第 4 条），关没关上不在交回的里面。
 - `huge_pages_off() -> bool`（施工 YC-12）：这个进程的透明大页关着没有（`PR_GET_THP_DISABLE`），核心记进 `DEBUG heap tuned` 的 `huge_pages_off`；别的平台交回假。
+- `launch::TCACHE`（施工 LW-12）：4。glibc 每条线程的缓存每种大小最多留几块，默认是 16（下面「线程缓存」）。
+- `launch::vars(拉起的一方自己的 GLIBC_TUNABLES) -> 要另外设的环境变量`（施工 LW-12）：glibc 上交回两项，`GLIBC_TUNABLES`（原来的值后面接上 `glibc.malloc.tcache_count=4`）和 `MIYU_GLIBC_TUNABLES`（原来的值，没有设置时是空的）；其他平台、原来的值里已经写了 `glibc.malloc.tcache_count` 时不交回任何变量。
+- `launch::restored(核心环境里的 MIYU_GLIBC_TUNABLES, 核心自己的 GLIBC_TUNABLES) -> 命令拿到的 GLIBC_TUNABLES`（施工 LW-12）：有前者时使用前者，前者是空的时不传；没有前者时使用后者。
+- `launch::tunables() -> String`（施工 LW-12）：这个进程带着的 `GLIBC_TUNABLES`，核心记进 `DEBUG heap tuned` 的 `tunables`；没有设置时是空的。
 - `trim() -> bool`：`malloc_trim(0)`，交回还了没有；别的平台交回假。要走一遍堆，在阻塞线程里调。
 - `stats() -> Option<Stats>`（施工 V-4）：glibc 的 `mallinfo2`，各个 arena 加起来：`arenas`（各 arena 从系统要来的）、`mmapped`（单独 mmap 的大块）、`used`（arena 里在用的）、`free`（arena 里空着的），字节；别的平台没有。
 - `usage::usage() -> Option<Usage>`、`usage::resident() -> Option<u64>`（施工 V-4）：字节。`rss` 哪个平台都有，别的几样只有量得出的平台有。Linux 上前者读 `smaps_rollup`，多 `pss`、`private`（`Private_Clean` 加 `Private_Dirty`）、`anon`、`swap`；后者只读 `status` 的 `VmRSS`，便宜，看涨没涨用。macOS 上两个都问内核 `proc_pid_rusage`（`RUSAGE_INFO_V2`，一次系统调用），前者多 `footprint`（`phys_footprint`：算在这个进程头上的，活动监视器「内存」那一列，压缩了的也算；施工 V-4 补）。Windows 没有（`23` 第五节「后续再定」）。
@@ -44,7 +50,20 @@
 
 4. **透明大页**（施工 YC-12，`23` F3）：系统设成 `always` 时，`khugepaged` 把还有一页在用的 2 MB 一段合成大页，trim 还掉的空洞又被填回去（2026-11-10 压测量过：高压过后 trim 以后 PSS 569 MB 降到 82 MB，五分钟里每分钟涨约 90 MB，回到约 476 MB，在用的堆只有 13 MB，`AnonHugePages` 约等于整个匿名内存）。所以 `tune` 照 `prctl(PR_SET_THP_DISABLE, 1)` 关掉，用 `rustix` 的安全封装，不写 `unsafe`；关不上（3.15 以前的内核）照旧起来，`huge_pages_off` 如实交回假。这个标记 `fork`、`exec` 都传下去：经助手跑的命令由助手换成命令之前恢复（`sandbox.md`「助手的命令行」第 4 步）；扩展、MCP 服务、不经助手的命令跟着关着，只是用不上大页，不碍事。
 
-5. **一次性的大活不放在长住的线程上**（施工 LW-5）：一条线程分配、放掉的块先进它自己的缓存（glibc 的 tcache），线程退出时才交回 arena；长住的线程上做完一件分配得多、做完全放掉的活，放掉的块和长住的块穿插在同一个 arena 里，`malloc_trim` 只能还整页，夹在中间的还不回去。所以起来时读模型目录在 `catalog` 线程里（施工 V-2 下补），生成参考文件在 `generate` 线程里（`core.md`「起来的先后」第 6 步），都是做完就退出。2026-11-22 量过：核心连着一个头空闲时，各 arena 合计从 4.3 MB 降到 4.0 MB（连同下面「本机时区」），活着的堆只有 1.7 MB；glibc 2.44 每条线程的缓存每种大小留 16 块，核心 28 条线程的缓存里攒着约 0.8 MB（用 `GLIBC_TUNABLES=glibc.malloc.tcache_count=0` 关掉时合计降到 2.5 MB），这一部分在进程里调不了（`mallopt` 没有这一项），没有做（施工单 `LW-5-分配器余量.md`「没做成的」）。
+5. **一次性的大活不放在长住的线程上**（施工 LW-5）：一条线程分配、放掉的块先进它自己的缓存（glibc 的 tcache），线程退出时才交回 arena；长住的线程上做完一件分配得多、做完全放掉的活，放掉的块和长住的块穿插在同一个 arena 里，`malloc_trim` 只能还整页，夹在中间的还不回去。所以起来时读模型目录在 `catalog` 线程里（施工 V-2 下补），生成参考文件在 `generate` 线程里（`core.md`「起来的先后」第 6 步），都是做完就退出。2026-11-22 量过：核心连着一个头空闲时，各 arena 合计从 4.3 MB 降到 4.0 MB（连同下面「本机时区」），活着的堆只有 1.7 MB；glibc 2.44 每条线程的缓存每种大小留 16 块，核心 28 条线程的缓存里攒着约 0.8 MB（用 `GLIBC_TUNABLES=glibc.malloc.tcache_count=0` 关掉时合计降到 2.5 MB），这一部分在进程里调不了（`mallopt` 没有这一项），施工 LW-5 没有做；施工 LW-12 改成在拉起核心时用环境变量设置（下面「线程缓存」）。
+
+### 线程缓存（施工 LW-12）
+
+glibc 的每条线程有自己的缓存（tcache）：线程释放的小块先进入缓存，不回到 arena，每种大小默认最多留 16 块。核心有十几条常驻的线程，每一条都留着一份，所以空闲时这些缓存里的块白白占着内存。这个上限在进程里无法修改（`mallopt` 没有这一项），glibc 只在进程启动时读取环境变量 `GLIBC_TUNABLES`，因此由拉起核心的一方把它设在核心的环境里。
+
+1. 设成多少：每种大小留 4 块（`launch::TCACHE`）。2026-11-22 实测（施工单 `LW-12-线程缓存少留.md`「量到的」）：留 4 块时，核心连着一个头空闲时的堆和匿名内存合计少约 0.7 MB，说过一句以后少约 0.7 MB，量尺的各项时延没有退步。一块都不留时只再少 0.3 MB，但是重开大会话、追加事件、流式一轮都慢一成左右，所以没有选它。
+2. `miyu` 自己拉起核心时（打开界面时顺带拉起、`miyu core start`），把 `launch::vars` 交回的两项设在命令上（`crates/miyu/src/tuned.rs` 的 `on`），核心启动时就已经调好。
+3. 用其他方式启动的核心（systemd 等托管方式、直接运行 `miyu core`）没有带着这两项。此时主程序在进入核心之前，带上这两项、用原来的参数重新执行自己一次（`tuned.rs` 的 `relaunch`，Unix 上的 `exec`）。重新执行不改变进程号，标准输入输出保持不变，所以托管的一方看到的仍然是同一个进程；带上以后不会再次重新执行。如果重新执行失败（找不到程序自己的位置、系统不允许），核心仍然正常启动，只是线程缓存使用 glibc 的默认值。因为打包目录里的托管文件有六种（systemd 用户服务和系统服务、dinit、runit、OpenRC、XDG 自启动），所以没有在每一份文件里写环境变量，而是由程序自己补上。
+4. 人自己设置的 `GLIBC_TUNABLES` 保留：新的一项接在原来的值后面。如果原来的值里已经写了 `glibc.malloc.tcache_count`，核心不做任何修改，也不重新执行。
+5. 核心运行的命令不带核心自己的这一项：拉起的一方把原来的 `GLIBC_TUNABLES` 记在 `MIYU_GLIBC_TUNABLES` 里，核心为命令挑选环境变量时用它恢复（`tools/shell.md`「环境变量」）。这样，AI 运行的命令和你在自己的终端里运行同一条命令时，分配器的行为相同。扩展、MCP 服务这些由核心直接启动的进程会继承核心的值。
+6. 核心启动时在 `DEBUG heap tuned` 那一行记下 `tunables`（这个进程带着的 `GLIBC_TUNABLES`），可以用它确认这一项有没有生效。
+7. 量尺拉起核心时也带上这两项（`crates/miyu-perf/src/sandbox.rs`），所以量尺量的是用户实际使用的状态；在模拟器里录排函数的清单时，核心也不会因为补环境变量而重新执行自己、离开模拟器。
+8. 其他平台（macOS、Windows、musl）不使用 glibc，`launch::vars` 不交回任何变量，以上各条都不发生。
 
 ### 本机时区（施工 LW-5）
 
@@ -84,6 +103,8 @@
 | 测试 | 守什么 |
 |---|---|
 | `crates/miyu-log/src/zone/tests.rs`（施工 LW-5） | 本机时区新旧对照：一年多里每隔 22 小时一个时刻，运行日志的时刻、和 UTC 差多少写出来和 jiff 照系统认的一样；读不出来的、不是时区文件的交给 jiff；照抄的一份照它认；链到 zoneinfo 里的名字和 jiff 认的一样 |
+| `crates/miyu-heap/src/launch.rs` 里的测试（施工 LW-12） | 没有设置时设上线程缓存那一项、原来的值记成空的；原来有其他项时保留在前面并记下；人自己写了留几块时不设；只有 glibc 上交回变量；命令拿回拉起的一方原来的值 |
+| `crates/miyu/tests/tuned.rs`（施工 LW-12） | 真的拉起核心、读它的环境：直接运行的核心也带上了那两项；人自己设置的其他项保留并记下；人自己写了留几块时保持原样；其他平台什么都不带 |
 | `crates/miyu-heap/src/tests.rs` | glibc 上调得成；放掉一堆小块以后还得回去；别的平台都交回假；glibc 上有堆的统计、分出去的算在用的里（施工 V-4）；Linux 上 `tune` 以后透明大页关着（施工 YC-12） |
 | `crates/miyu-heap/src/usage/tests.rs`（施工 V-4） | 真机的 `smaps_rollup` 读成字节；不是它的读不出来；`VmRSS`；Linux 上量得到自己、有 PSS 这几样，macOS 上量得到自己、有 `footprint`、没有 Linux 那几样（施工 V-4 补，CI 的 macOS 上跑），Windows 没有 |
 | `crates/miyu-heap/src/room/tests.rs`（施工 MEM-1，MEM-2 改） | `meminfo` 读成字节，少了一行、总量是 0 的没有；只认 v2 那一行；一层是 `max`、读不懂的不算，上限减在用的、扣 `inactive_file`、超了的是 0；往上走取比例最紧的那一层，系统的另交；没有上限的没有 `cgroup`；什么都读不到的两份都没有；百分比往下取整、总量 0 不除；正好 5% 不算低于；macOS 的算法；三个平台的真机上读得到整台机器的、可用的不比总量多，不是 Linux 的没有 `cgroup` |

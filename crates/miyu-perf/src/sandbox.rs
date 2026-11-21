@@ -118,6 +118,11 @@ impl Sandbox {
             command
         };
         command.env_remove("MIYU_LOG");
+        // 照 `miyu` 拉起核心的样子带上线程缓存少留的那一项（施工 LW-12）：量的是人用到的那个样子；模拟器里录的时候核心也就
+        // 不会为了补上它重新执行自己、跑出模拟器。
+        command.envs(miyu_heap::launch::vars(
+            std::env::var_os(miyu_heap::launch::TUNABLES).as_deref(),
+        ));
         if let Some(level) = launch.log {
             command.env("MIYU_LOG", level);
         }
