@@ -73,26 +73,26 @@ function Without-Lib([string]$path) {
 
 function Uninstall-Miyu {
     if (-not (Test-Path $Lib)) {
-        Say '\u6ca1\u6709\u88c5\u7740\uff08{0} \u4e0d\u5728\uff09' "Not installed ({0} doesn't exist)" @($Lib)
+        Say '\u672a\u5b89\u88c5\uff08{0} \u4e0d\u5b58\u5728\uff09' "Not installed ({0} doesn't exist)" @($Lib)
         return
     }
     $marker = Join-Path $Lib 'install.toml'
     if (-not ((Test-Path $marker) -and (Select-String -Path $marker -Pattern '^channel = "script"' -Quiet))) {
-        Die '{0} \u4e0d\u662f\u8fd9\u4e2a\u811a\u672c\u88c5\u7684\uff08\u6ca1\u6709 install.toml\uff09\uff0c\u4e0d\u52a8\u5b83' "{0} wasn't installed by this script (no install.toml); leaving it alone" @($Lib)
+        Die '{0} \u4e0d\u662f\u8fd9\u4e2a\u811a\u672c\u5b89\u88c5\u7684\uff08\u6ca1\u6709 install.toml\uff09\uff0c\u6ca1\u6709\u4fee\u6539\u5b83' "{0} wasn't installed by this script (no install.toml); leaving it alone" @($Lib)
     }
     $miyu = Join-Path $Lib 'miyu.exe'
     if (Test-Path $miyu) {
         if ((Run $miyu @('service', 'disable')) -ne 0) {
-            Say '\u5f00\u673a\u542f\u52a8\u7684\u4efb\u52a1\u8ba1\u5212\u6ca1\u62ff\u6389\uff0c\u63a5\u7740\u5378\uff08\u4e4b\u540e\u7167 packaging/README.md \u624b\u52a8\u5220\uff09' "Couldn't remove the startup task; going on (remove it by hand as in packaging/README.md)"
+            Say '\u65e0\u6cd5\u79fb\u9664\u5f00\u673a\u542f\u52a8\u7684\u4efb\u52a1\u8ba1\u5212\uff0c\u7ee7\u7eed\u5378\u8f7d\uff08\u4e4b\u540e\u9700\u8981\u6309 packaging/README.md \u624b\u52a8\u5220\u9664\uff09' "Couldn't remove the startup task; going on (remove it by hand as in packaging/README.md)"
         }
         if ((Run $miyu @('core', 'stop')) -ne 0) {
-            Say '\u6838\u5fc3\u6ca1\u505c\u4e0b\uff0c\u63a5\u7740\u5378' "Couldn't stop the core; going on"
+            Say '\u65e0\u6cd5\u505c\u6b62\u6838\u5fc3\uff0c\u7ee7\u7eed\u5378\u8f7d' "Couldn't stop the core; going on"
         }
     }
     try {
         Remove-Item -Recurse -Force $Lib
     } catch {
-        Die '\u5220\u4e0d\u6389 {0}\uff08{1}\uff09\uff1a\u8fd8\u6709 Miyu \u7684\u7a0b\u5e8f\u5f00\u7740\u7684\uff0c\u5173\u6389\u518d\u5378' "can't remove {0} ({1}): close any running Miyu program and try again" @($Lib, $_.Exception.Message)
+        Die '\u65e0\u6cd5\u5220\u9664 {0}\uff08{1}\uff09\uff1a\u8fd8\u6709 Miyu \u7684\u7a0b\u5e8f\u6b63\u5728\u8fd0\u884c\uff0c\u5173\u95ed\u4ee5\u540e\u518d\u5378\u8f7d' "can't remove {0} ({1}): close any running Miyu program and try again" @($Lib, $_.Exception.Message)
     }
     $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
     if ($userPath) {
@@ -100,7 +100,7 @@ function Uninstall-Miyu {
     }
     $env:Path = Without-Lib $env:Path
     $data = if ($env:MIYU_HOME) { $env:MIYU_HOME } else { Join-Path $env:USERPROFILE '.miyu' }
-    Say '\u5df2\u5378\u8f7d Miyu\u3002\u6570\u636e\u8fd8\u5728 {0}\uff0c\u4e0d\u8981\u4e86\u81ea\u5df1\u5220\u3002' "Miyu is uninstalled. Your data is still in {0}; delete it yourself if you don't need it." @($data)
+    Say '\u5df2\u5378\u8f7d Miyu\u3002\u6570\u636e\u4ecd\u7136\u4fdd\u7559\u5728 {0}\uff0c\u5982\u679c\u4e0d\u518d\u9700\u8981\uff0c\u53ef\u4ee5\u81ea\u884c\u5220\u9664\u3002' "Miyu is uninstalled. Your data is still in {0}; delete it yourself if you don't need it." @($data)
 }
 
 # 照 API 找标签；没有的空字符串。
@@ -115,9 +115,9 @@ function Find-Tag([bool]$pre) {
         if ($_.Exception.Response) { $code = [int]$_.Exception.Response.StatusCode }
         if ($code -eq 404) { return '' }
         if ($code -eq 403 -or $code -eq 429) {
-            Die 'GitHub \u9650\u6d41\u4e86\uff08\u533f\u540d\u6bcf\u5c0f\u65f6 60 \u6b21\uff09\uff0c\u8fc7\u4e00\u4f1a\u513f\u518d\u8bd5' 'GitHub rate limit reached (60 an hour without signing in); try again later'
+            Die 'GitHub \u9650\u6d41\uff1a\u533f\u540d\u8bbf\u95ee\u6bcf\u5c0f\u65f6 60 \u6b21\uff0c\u5df2\u7ecf\u7528\u5b8c\uff0c\u7a0d\u540e\u91cd\u8bd5' 'GitHub rate limit reached (60 an hour without signing in); try again later'
         }
-        Die '\u8fde\u4e0d\u4e0a GitHub\uff08{0}\uff09\uff1a{1}' "can't reach GitHub ({0}): {1}" @($url, $_.Exception.Message)
+        Die '\u65e0\u6cd5\u8fde\u63a5 GitHub\uff08{0}\uff09\uff1a{1}' "can't reach GitHub ({0}): {1}" @($url, $_.Exception.Message)
     }
     # 列表照新到旧排、匿名看不到草稿：第一个 v 打头的就是最新的。
     foreach ($release in @($answer)) {
@@ -130,7 +130,7 @@ function Fetch([string]$url, [string]$to) {
     try {
         Invoke-WebRequest -Uri $url -OutFile $to -UseBasicParsing
     } catch {
-        Die '\u4e0b\u8f7d\u4e0d\u6210\uff1a{0}\uff08{1}\uff09' 'download failed: {0} ({1})' @($url, $_.Exception.Message)
+        Die '\u4e0b\u8f7d\u5931\u8d25\uff1a{0}\uff08{1}\uff09' 'download failed: {0} ({1})' @($url, $_.Exception.Message)
     }
 }
 
@@ -138,11 +138,11 @@ function Fetch([string]$url, [string]$to) {
 function Test-Signature([string]$sums, [string]$sigFile, [string]$work) {
     $sig = Get-Content -Raw $sigFile | ConvertFrom-Json
     if ($sig.key -ne $KeyId) {
-        Die 'SHA256SUMS \u662f\u522b\u7684\u94a5\u5319\u7b7e\u7684\uff08{0}\uff09\uff0c\u4e0d\u88c5' 'SHA256SUMS is signed by another key ({0}); not installing' @($sig.key)
+        Die 'SHA256SUMS \u7684\u7b7e\u540d\u6765\u81ea\u5176\u4ed6\u5bc6\u94a5\uff08{0}\uff09\uff0c\u4e0d\u5b89\u88c5' 'SHA256SUMS is signed by another key ({0}); not installing' @($sig.key)
     }
     $openssl = Get-Command openssl -ErrorAction SilentlyContinue
     if (-not $openssl) {
-        Say '\u8fd9\u53f0\u6ca1\u6709 openssl\uff08Windows \u81ea\u5e26\u7684\u5de5\u5177\u4e0d\u8ba4 Ed25519\uff09\uff0c\u7b7e\u540d\u6ca1\u6838\uff08\u4e0d\u662f\u7b7e\u540d\u574f\u4e86\uff09\uff1b\u53ea\u6838 SHA-256\u3002\u8981\u6838\u7b7e\u540d\uff1agh attestation verify <\u6587\u4ef6> -R {0}' `
+        Say '\u8fd9\u53f0\u673a\u5668\u6ca1\u6709 openssl\uff08Windows \u81ea\u5e26\u7684\u5de5\u5177\u4e0d\u652f\u6301 Ed25519\uff09\uff0c\u6ca1\u6709\u6838\u5bf9\u7b7e\u540d\uff08\u4e0d\u662f\u7b7e\u540d\u6709\u95ee\u9898\uff09\uff0c\u53ea\u6838\u5bf9 SHA-256\u3002\u5982\u679c\u8981\u6838\u5bf9\u7b7e\u540d\uff0c\u8fd0\u884c\uff1agh attestation verify <\u6587\u4ef6> -R {0}' `
             "No openssl here (Windows' own tools don't support Ed25519), so the signature wasn't checked (it isn't broken); checking SHA-256 only. To check it: gh attestation verify <file> -R {0}" @($Repo)
         return
     }
@@ -158,30 +158,30 @@ function Test-Signature([string]$sums, [string]$sigFile, [string]$work) {
     $help = (& $openssl pkeyutl -help 2>&1 | Out-String)
     $ErrorActionPreference = 'Stop'
     if ((Run $openssl @('pkey', '-pubin', '-in', $pem, '-noout')) -ne 0 -or $help -notmatch '-rawin') {
-        Say '\u8fd9\u53f0\u7684 openssl \u4e0d\u8ba4 Ed25519\uff0c\u7b7e\u540d\u6ca1\u6838\uff08\u4e0d\u662f\u7b7e\u540d\u574f\u4e86\uff09\uff1b\u53ea\u6838 SHA-256\u3002\u8981\u6838\u7b7e\u540d\uff1agh attestation verify <\u6587\u4ef6> -R {0}' `
+        Say '\u8fd9\u53f0\u673a\u5668\u7684 openssl \u4e0d\u652f\u6301 Ed25519\uff0c\u6ca1\u6709\u6838\u5bf9\u7b7e\u540d\uff08\u4e0d\u662f\u7b7e\u540d\u6709\u95ee\u9898\uff09\uff0c\u53ea\u6838\u5bf9 SHA-256\u3002\u5982\u679c\u8981\u6838\u5bf9\u7b7e\u540d\uff0c\u8fd0\u884c\uff1agh attestation verify <\u6587\u4ef6> -R {0}' `
             "This machine's openssl doesn't support Ed25519, so the signature wasn't checked (it isn't broken); checking SHA-256 only. To check it: gh attestation verify <file> -R {0}" @($Repo)
         return
     }
     if ((Run $openssl @('pkeyutl', '-verify', '-pubin', '-inkey', $pem, '-rawin', '-in', $sums, '-sigfile', $raw)) -ne 0) {
-        Die 'SHA256SUMS \u7684\u7b7e\u540d\u6838\u4e0d\u8fc7\uff0c\u4e0d\u88c5' "the signature on SHA256SUMS doesn't match; not installing"
+        Die 'SHA256SUMS \u7684\u7b7e\u540d\u6838\u5bf9\u5931\u8d25\uff0c\u4e0d\u5b89\u88c5' "the signature on SHA256SUMS doesn't match; not installing"
     }
-    Say '\u7b7e\u540d\u6838\u8fc7\u4e86\uff08\u53d1\u7248\u94a5\u5319 {0}\uff09' 'Signature checked (release key {0})' @($KeyId)
+    Say '\u7b7e\u540d\u6838\u5bf9\u901a\u8fc7\uff08\u53d1\u7248\u516c\u94a5 {0}\uff09' 'Signature checked (release key {0})' @($KeyId)
 }
 
 function Install-Miyu {
     if ($env:PROCESSOR_ARCHITECTURE -ne 'AMD64') {
-        Die '\u6ca1\u6709 {0} \u7684 Windows \u53d1\u884c\u5305\uff08\u53ea\u6709 x86_64\uff09' 'no Windows release for {0} (only x86_64)' @($env:PROCESSOR_ARCHITECTURE)
+        Die '\u6ca1\u6709 {0} \u7684 Windows \u53d1\u884c\u5305\uff08\u76ee\u524d\u53ea\u6709 x86_64 \u7684\u53d1\u884c\u5305\uff09' 'no Windows release for {0} (only x86_64)' @($env:PROCESSOR_ARCHITECTURE)
     }
     $miyu = Join-Path $Lib 'miyu.exe'
     if (Test-Path $miyu) {
         $ErrorActionPreference = 'Continue'
         $now = [string](& $miyu --version 2>$null)
         $ErrorActionPreference = 'Stop'
-        Say '\u5df2\u7ecf\u88c5\u4e86 {0}\uff08{1}\uff09\uff0c\u5347\u7ea7\u7528 miyu upgrade' '{0} is already installed ({1}); use miyu upgrade to upgrade' @($now, $Lib)
+        Say '\u5df2\u5b89\u88c5 {0}\uff08{1}\uff09\uff1b\u5982\u679c\u8981\u5347\u7ea7\uff0c\u8fd0\u884c miyu upgrade' '{0} is already installed ({1}); use miyu upgrade to upgrade' @($now, $Lib)
         return
     }
     if (Test-Path $Lib) {
-        Die '{0} \u5df2\u7ecf\u6709\u4e86\u3001\u91cc\u9762\u5374\u6ca1\u6709 miyu.exe\uff0c\u5148\u632a\u8d70\u5b83' '{0} exists but has no miyu.exe in it; move it away first' @($Lib)
+        Die '{0} \u5df2\u5b58\u5728\uff0c\u4f46\u91cc\u9762\u6ca1\u6709 miyu.exe\uff0c\u9700\u8981\u5148\u628a\u5b83\u79fb\u8d70' '{0} exists but has no miyu.exe in it; move it away first' @($Lib)
     }
 
     New-Item -ItemType Directory -Force -Path $Programs | Out-Null
@@ -194,10 +194,10 @@ function Install-Miyu {
             $tag = "v$wanted"
         } elseif ($Prerelease) {
             $tag = Find-Tag $true
-            if (-not $tag) { Die '\u6ca1\u6709\u627e\u5230\u53ef\u7528\u7684\u53d1\u884c\u7248' 'no release found' }
+            if (-not $tag) { Die '\u672a\u627e\u5230\u53ef\u7528\u7684\u53d1\u884c\u7248' 'no release found' }
         } else {
             $tag = Find-Tag $false
-            if (-not $tag) { Die '\u8fd8\u6ca1\u6709\u6b63\u5f0f\u7248\uff1b\u8981\u88c5\u9884\u53d1\u5e03\u7684\u52a0 -Prerelease' 'no stable release yet; add -Prerelease to install a pre-release' }
+            if (-not $tag) { Die '\u8fd8\u6ca1\u6709\u6b63\u5f0f\u7248\uff1b\u5982\u679c\u8981\u5b89\u88c5\u9884\u53d1\u5e03\u7248\uff0c\u52a0\u4e0a -Prerelease' 'no stable release yet; add -Prerelease to install a pre-release' }
         }
         $ver = $tag.Substring(1)
         $name = "miyu-$ver-$Target"
@@ -218,23 +218,23 @@ function Install-Miyu {
         $zip = Join-Path $work $archive
         Fetch "$Base/$tag/$archive" $zip
         $got = (Get-FileHash -Algorithm SHA256 -Path $zip).Hash.ToLower()
-        if ($got -ne $want) { Die '{0} \u7684 SHA-256 \u5bf9\u4e0d\u4e0a\uff0c\u4e0d\u88c5' "the SHA-256 of {0} doesn't match; not installing" @($archive) }
+        if ($got -ne $want) { Die '{0} \u7684 SHA-256 \u548c\u6e05\u5355\u4e0d\u4e00\u81f4\uff0c\u4e0d\u5b89\u88c5' "the SHA-256 of {0} doesn't match; not installing" @($archive) }
 
         $unpacked = Join-Path $work 'unpacked'
         try {
             Expand-Archive -Path $zip -DestinationPath $unpacked
         } catch {
-            Die '\u89e3\u4e0d\u5f00 {0}\uff08{1}\uff09' "can't unpack {0} ({1})" @($archive, $_.Exception.Message)
+            Die '\u65e0\u6cd5\u89e3\u538b {0}\uff08{1}\uff09' "can't unpack {0} ({1})" @($archive, $_.Exception.Message)
         }
         $top = Join-Path $unpacked $name
         if (-not ((Test-Path (Join-Path $top 'miyu.exe')) -and (Test-Path (Join-Path $top 'resources')))) {
-            Die '{0} \u91cc\u7f3a\u4e1c\u897f' '{0} is missing files' @($archive)
+            Die '{0} \u91cc\u7f3a\u5c11\u6587\u4ef6' '{0} is missing files' @($archive)
         }
         $ErrorActionPreference = 'Continue'
         $reported = [string](& (Join-Path $top 'miyu.exe') --version 2>$null)
         $ErrorActionPreference = 'Stop'
         if ($reported.Trim() -ne "miyu $ver") {
-            Die '\u65b0\u7684 miyu --version \u62a5\u7684\u662f\u300c{0}\u300d\uff0c\u4e0d\u662f {1}' 'the new miyu --version says "{0}", not {1}' @($reported, $ver)
+            Die '\u65b0\u7248 miyu --version \u62a5\u544a\u7684\u662f\u300c{0}\u300d\uff0c\u5e94\u4e3a {1}' 'the new miyu --version says "{0}", not {1}' @($reported, $ver)
         }
 
         $utf8 = New-Object Text.UTF8Encoding $false
@@ -250,12 +250,12 @@ function Install-Miyu {
     if (-not ($entries | Where-Object { $_.TrimEnd('\') -eq $Lib })) {
         $joined = (@($entries | Where-Object { $_ }) + $Lib) -join ';'
         [Environment]::SetEnvironmentVariable('Path', $joined, 'User')
-        Say '\u5df2\u628a {0} \u52a0\u8fdb\u4f60\u7684 PATH\uff1a\u65b0\u5f00\u7684\u7ec8\u7aef\u91cc\u8ba4\u5f97 miyu' 'Added {0} to your PATH: new terminals will find miyu' @($Lib)
+        Say '\u5df2\u628a {0} \u52a0\u5165\u4f60\u7684 PATH\uff1a\u65b0\u6253\u5f00\u7684\u7ec8\u7aef\u91cc\u53ef\u4ee5\u76f4\u63a5\u8fd0\u884c miyu' 'Added {0} to your PATH: new terminals will find miyu' @($Lib)
     }
     if (($env:Path -split ';') -notcontains $Lib) { $env:Path = "$env:Path;$Lib" }
 
     Say '\u5df2\u5b89\u88c5 Miyu {0}\uff08{1}\uff09' 'Installed Miyu {0} ({1})' @($ver, $Lib)
-    Say '\u4e0b\u4e00\u6b65\uff1a\u8fd0\u884c miyu \u5f00\u59cb\uff1b\u8981\u767b\u5f55\u5c31\u8d77\uff0c\u8fd0\u884c miyu service enable\u3002\u5347\u7ea7\u7528 miyu upgrade\uff0c\u5378\u8f7d\u7528\u8fd9\u4e2a\u811a\u672c\u52a0 -Uninstall\u3002' `
+    Say '\u4e0b\u4e00\u6b65\uff1a\u8fd0\u884c miyu \u5f00\u59cb\u4f7f\u7528\uff1b\u5982\u679c\u8981\u767b\u5f55\u65f6\u542f\u52a8\uff0c\u8fd0\u884c miyu service enable\u3002\u5347\u7ea7\u8fd0\u884c miyu upgrade\uff0c\u5378\u8f7d\u8fd0\u884c\u8fd9\u4e2a\u811a\u672c\u5e76\u52a0\u4e0a -Uninstall\u3002' `
         'Next: run miyu to start; run miyu service enable to start it at sign-in. Upgrade with miyu upgrade; uninstall with this script and -Uninstall.'
 }
 

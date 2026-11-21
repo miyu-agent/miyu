@@ -65,7 +65,7 @@ while [ $# -gt 0 ]; do
     --prerelease) PRE=1 ;;
     --uninstall) UNINSTALL=1 ;;
     --version)
-      [ $# -ge 2 ] || die "--version 后面要写版本" "--version needs a version"
+      [ $# -ge 2 ] || die "--version 后面需要写明版本" "--version needs a version"
       WANT="$2"
       shift
       ;;
@@ -85,7 +85,7 @@ target() {
     Linux-x86_64 | Linux-amd64) echo "linux-x86_64" ;;
     Linux-aarch64 | Linux-arm64) echo "linux-aarch64" ;;
     Darwin-arm64 | Darwin-aarch64) echo "macos-aarch64" ;;
-    *) die "没有 ${os} ${arch} 的发行包（有 Linux x86_64、aarch64，macOS Apple 芯片）" \
+    *) die "没有 ${os} ${arch} 的发行包（目前有 Linux x86_64、aarch64 和 macOS Apple 芯片的发行包）" \
            "no release for ${os} ${arch} (there are Linux x86_64 and aarch64, and macOS on Apple silicon)" ;;
   esac
 }
@@ -101,18 +101,18 @@ sha256() {
 # 卸：先停服务、停核心，再删安装目录、链接、文件类型。数据根不碰。
 uninstall() {
   if [ ! -e "${LIB}" ]; then
-    say "没有装着（${LIB} 不在）" "Not installed (${LIB} doesn't exist)"
+    say "未安装（${LIB} 不存在）" "Not installed (${LIB} doesn't exist)"
     exit 0
   fi
   grep -q '^channel = "script"' "${LIB}/install.toml" 2>/dev/null \
-    || die "${LIB} 不是这个脚本装的（没有 install.toml），不动它" \
+    || die "${LIB} 不是这个脚本安装的（没有 install.toml），没有修改它" \
            "${LIB} wasn't installed by this script (no install.toml); leaving it alone"
   if [ -x "${LIB}/miyu" ]; then
     "${LIB}/miyu" service disable >/dev/null 2>&1 \
-      || say "开机启动的服务没拿掉，接着卸（之后自己 miyu service disable 不了的，照 packaging/README.md 手动删）" \
+      || say "无法移除开机启动的服务，继续卸载（卸载以后不能再运行 miyu service disable，需要按 packaging/README.md 手动删除）" \
              "Couldn't remove the startup service; going on (remove it by hand as in packaging/README.md)"
     "${LIB}/miyu" core stop >/dev/null 2>&1 \
-      || say "核心没停下，接着卸" "Couldn't stop the core; going on"
+      || say "无法停止核心，继续卸载" "Couldn't stop the core; going on"
   fi
   rm -rf "${LIB}"
   if [ -L "${BIN}/miyu" ] && [ "$(readlink "${BIN}/miyu")" = "${LIB}/miyu" ]; then
@@ -124,7 +124,7 @@ uninstall() {
       update-mime-database "${MIME}" >/dev/null 2>&1 || true
     fi
   fi
-  say "已卸载 Miyu。数据还在 ${MIYU_HOME:-${HOME}/.miyu}，不要了自己删。" \
+  say "已卸载 Miyu。数据仍然保留在 ${MIYU_HOME:-${HOME}/.miyu}，如果不再需要，可以自行删除。" \
       "Miyu is uninstalled. Your data is still in ${MIYU_HOME:-${HOME}/.miyu}; delete it yourself if you don't need it."
 }
 
@@ -134,17 +134,17 @@ find_tag() {
   if [ "$1" = latest ]; then url="${API}/releases/latest"; else url="${API}/releases?per_page=30"; fi
   if [ -n "${GITHUB_TOKEN:-}" ]; then
     code=$(curl -sS -L -o "${answer}" -w '%{http_code}' -H 'Accept: application/vnd.github+json' \
-      -H "Authorization: Bearer ${GITHUB_TOKEN}" "${url}") || die "连不上 GitHub（${url}）" "can't reach GitHub (${url})"
+      -H "Authorization: Bearer ${GITHUB_TOKEN}" "${url}") || die "无法连接 GitHub（${url}）" "can't reach GitHub (${url})"
   else
     code=$(curl -sS -L -o "${answer}" -w '%{http_code}' -H 'Accept: application/vnd.github+json' "${url}") \
-      || die "连不上 GitHub（${url}）" "can't reach GitHub (${url})"
+      || die "无法连接 GitHub（${url}）" "can't reach GitHub (${url})"
   fi
   case "${code}" in
     200) ;;
     404) return 0 ;;
-    403 | 429) die "GitHub 限流了（匿名每小时 60 次），过一会儿再试" \
+    403 | 429) die "GitHub 限流：匿名访问每小时 60 次，已经用完，稍后重试" \
                   "GitHub rate limit reached (60 an hour without signing in); try again later" ;;
-    *) die "GitHub 回了 ${code}（${url}）" "GitHub answered ${code} (${url})" ;;
+    *) die "GitHub 返回 HTTP ${code}（${url}）" "GitHub answered ${code} (${url})" ;;
   esac
   # 回应可能压成一行：照逗号拆开，第一个 tag_name 就是最新的（列表照新到旧排，匿名看不到草稿）。
   tr ',' '\n' < "${answer}" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\(v[^"]*\)".*/\1/p' | head -n 1
@@ -152,7 +152,7 @@ find_tag() {
 
 # 下载 $1 到 $2；不成的停。
 fetch() {
-  curl -fsSL -o "$2" "$1" || die "下载不成：$1" "download failed: $1"
+  curl -fsSL -o "$2" "$1" || die "下载失败：$1" "download failed: $1"
 }
 
 # 照写在这里的公钥核 SHA256SUMS 的签名。核得了却核不过的停；这台的 openssl 不认 Ed25519 的说一句、接着装。
@@ -161,9 +161,9 @@ verify_signature() {
   sig="$2"
   key_of_sig=$(tr ',' '\n' < "${sig}" | sed -n 's/.*"key"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)
   [ "${key_of_sig}" = "${KEY_ID}" ] \
-    || die "SHA256SUMS 是别的钥匙签的（${key_of_sig}），不装" "SHA256SUMS is signed by another key (${key_of_sig}); not installing"
+    || die "SHA256SUMS 的签名来自其他密钥（${key_of_sig}），不安装" "SHA256SUMS is signed by another key (${key_of_sig}); not installing"
   if ! command -v openssl >/dev/null 2>&1; then
-    say "这台没有 openssl，没法核签名；只核 SHA-256。要核签名：gh attestation verify <文件> -R ${REPO}" \
+    say "这台机器没有 openssl，无法核对签名，只核对 SHA-256。如果要核对签名，运行：gh attestation verify <文件> -R ${REPO}" \
         "No openssl here, so the signature can't be checked; checking SHA-256 only. To check it: gh attestation verify <file> -R ${REPO}"
     return 0
   fi
@@ -180,28 +180,28 @@ verify_signature() {
   # 认不认 Ed25519：读得了这把公钥、pkeyutl 有 -rawin（OpenSSL 3 起）。macOS 自带的 LibreSSL 两样都不行。
   if ! openssl pkey -pubin -in "${pem}" -noout >/dev/null 2>&1 \
     || ! openssl pkeyutl -help 2>&1 | grep -q -- '-rawin'; then
-    say "这台的 openssl 不认 Ed25519，签名没核（不是签名坏了）；只核 SHA-256。要核签名：gh attestation verify <文件> -R ${REPO}" \
+    say "这台机器的 openssl 不支持 Ed25519，没有核对签名（不是签名有问题），只核对 SHA-256。如果要核对签名，运行：gh attestation verify <文件> -R ${REPO}" \
         "This machine's openssl doesn't support Ed25519, so the signature wasn't checked (it isn't broken); checking SHA-256 only. To check it: gh attestation verify <file> -R ${REPO}"
     return 0
   fi
   openssl pkeyutl -verify -pubin -inkey "${pem}" -rawin -in "${sums}" -sigfile "${WORK}/sums.sig" >/dev/null 2>&1 \
-    || die "SHA256SUMS 的签名核不过，不装" "the signature on SHA256SUMS doesn't match; not installing"
-  say "签名核过了（发版钥匙 ${KEY_ID}）" "Signature checked (release key ${KEY_ID})"
+    || die "SHA256SUMS 的签名核对失败，不安装" "the signature on SHA256SUMS doesn't match; not installing"
+  say "签名核对通过（发版公钥 ${KEY_ID}）" "Signature checked (release key ${KEY_ID})"
 }
 
 install() {
-  command -v curl >/dev/null 2>&1 || die "要 curl" "curl is needed"
-  command -v tar >/dev/null 2>&1 || die "要 tar" "tar is needed"
+  command -v curl >/dev/null 2>&1 || die "需要 curl" "curl is needed"
+  command -v tar >/dev/null 2>&1 || die "需要 tar" "tar is needed"
   t=$(target) || exit 1
   if [ -e "${LIB}/miyu" ]; then
     now=$("${LIB}/miyu" --version 2>/dev/null || echo miyu)
-    say "已经装了 ${now}（${LIB}），升级用 miyu upgrade" "${now} is already installed (${LIB}); use miyu upgrade to upgrade"
+    say "已安装 ${now}（${LIB}）；如果要升级，运行 miyu upgrade" "${now} is already installed (${LIB}); use miyu upgrade to upgrade"
     exit 0
   fi
-  [ ! -e "${LIB}" ] || die "${LIB} 已经有了、里面却没有 miyu，先挪走它" "${LIB} exists but has no miyu in it; move it away first"
+  [ ! -e "${LIB}" ] || die "${LIB} 已存在，但里面没有 miyu，需要先把它移走" "${LIB} exists but has no miyu in it; move it away first"
   if [ -e "${BIN}/miyu" ] || [ -L "${BIN}/miyu" ]; then
     [ -L "${BIN}/miyu" ] && [ "$(readlink "${BIN}/miyu")" = "${LIB}/miyu" ] \
-      || die "${BIN}/miyu 已经有了（不是这个脚本放的），先挪走它" "${BIN}/miyu already exists (not placed by this script); move it away first"
+      || die "${BIN}/miyu 已存在（不是这个脚本创建的），需要先把它移走" "${BIN}/miyu already exists (not placed by this script); move it away first"
   fi
 
   mkdir -p "${HOME}/.local/lib"
@@ -213,10 +213,10 @@ install() {
     tag="v${WANT}"
   elif [ "${PRE}" = 1 ]; then
     tag=$(find_tag list) || exit 1
-    [ -n "${tag}" ] || die "没有找到可用的发行版" "no release found"
+    [ -n "${tag}" ] || die "未找到可用的发行版" "no release found"
   else
     tag=$(find_tag latest) || exit 1
-    [ -n "${tag}" ] || die "还没有正式版；要装预发布的加 --prerelease" "no stable release yet; add --prerelease to install a pre-release"
+    [ -n "${tag}" ] || die "还没有正式版；如果要安装预发布版，加上 --prerelease" "no stable release yet; add --prerelease to install a pre-release"
   fi
   version="${tag#v}"
   name="miyu-${version}-${t}"
@@ -230,15 +230,15 @@ install() {
   [ -n "${want}" ] || die "SHA256SUMS 里没有 ${archive}" "${archive} isn't listed in SHA256SUMS"
   fetch "${BASE}/${tag}/${archive}" "${WORK}/${archive}"
   got=$(sha256 "${WORK}/${archive}")
-  [ "${got}" = "${want}" ] || die "${archive} 的 SHA-256 对不上，不装" "the SHA-256 of ${archive} doesn't match; not installing"
+  [ "${got}" = "${want}" ] || die "${archive} 的 SHA-256 和清单不一致，不安装" "the SHA-256 of ${archive} doesn't match; not installing"
 
   mkdir "${WORK}/unpacked"
-  tar -xzf "${WORK}/${archive}" -C "${WORK}/unpacked" || die "解不开 ${archive}" "can't unpack ${archive}"
+  tar -xzf "${WORK}/${archive}" -C "${WORK}/unpacked" || die "无法解压 ${archive}" "can't unpack ${archive}"
   top="${WORK}/unpacked/${name}"
-  [ -x "${top}/miyu" ] && [ -d "${top}/resources" ] || die "${archive} 里缺东西" "${archive} is missing files"
+  [ -x "${top}/miyu" ] && [ -d "${top}/resources" ] || die "${archive} 里缺少文件" "${archive} is missing files"
   reported=$("${top}/miyu" --version 2>/dev/null || true)
   [ "${reported}" = "miyu ${version}" ] \
-    || die "新的 miyu --version 报的是「${reported}」，不是 ${version}" "the new miyu --version says \"${reported}\", not ${version}"
+    || die "新版 miyu --version 报告的是「${reported}」，应为 ${version}" "the new miyu --version says \"${reported}\", not ${version}"
 
   printf '# 安装脚本装的（施工 RL-3）：miyu upgrade 照它自己下载、核对、替换。\nchannel = "script"\n' > "${top}/install.toml"
   mv "${top}" "${LIB}"
@@ -255,14 +255,14 @@ install() {
   say "已安装 Miyu ${version}（${LIB}）" "Installed Miyu ${version} (${LIB})"
   case ":${PATH}:" in
     *":${BIN}:"*) ;;
-    *) say "提示：${BIN} 不在 PATH 里，在 shell 的配置里加一行：export PATH=\"${BIN}:\$PATH\"" \
+    *) say "提示：${BIN} 不在 PATH 中，需要在 shell 的配置文件里加一行：export PATH=\"${BIN}:\$PATH\"" \
            "Note: ${BIN} isn't on PATH; add this line to your shell's config: export PATH=\"${BIN}:\$PATH\"" ;;
   esac
   other=$(command -v miyu 2>/dev/null || true)
   if [ -n "${other}" ] && [ "${other}" != "${BIN}/miyu" ]; then
-    say "提示：PATH 里先找到的是 ${other}，不是刚装的这一份" "Note: ${other} comes first on PATH, not the one just installed"
+    say "提示：PATH 中先找到的是 ${other}，不是刚安装的这个版本" "Note: ${other} comes first on PATH, not the one just installed"
   fi
-  say "下一步：运行 miyu 开始；要开机就起，运行 miyu service enable。升级用 miyu upgrade，卸载用这个脚本加 --uninstall。" \
+  say "下一步：运行 miyu 开始使用；如果要开机启动，运行 miyu service enable。升级运行 miyu upgrade，卸载运行这个脚本并加上 --uninstall。" \
       "Next: run miyu to start; run miyu service enable to start it at login. Upgrade with miyu upgrade; uninstall with this script and --uninstall."
 }
 

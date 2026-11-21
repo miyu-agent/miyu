@@ -62,7 +62,7 @@ curl -fsSL https://raw.githubusercontent.com/miyu-agent/miyu/main/packaging/inst
 - 在 Linux 上，脚本还会写入 `~/.local/share/mime/packages/miyu.xml`（如果设置了 `XDG_DATA_HOME`，就写在它下面），让系统能识别 `.miyu` 软件包文件。
 - 脚本不会修改 shell 的配置。如果 `~/.local/bin` 不在 `PATH` 里，脚本最后会提示 `提示：… 不在 PATH 里`，把 `export PATH="$HOME/.local/bin:$PATH"` 加进 shell 的配置文件即可。如果 `PATH` 里先找到的是别处的 `miyu`，脚本也会提示。
 
-如果已经安装过，脚本会提示 `已经装了 …，升级用 miyu upgrade`，不做任何修改。
+如果已经安装过，脚本会提示 `已安装 …；如果要升级，运行 miyu upgrade`，不做任何修改。
 
 ### Windows
 
@@ -101,7 +101,7 @@ curl -fsSL https://raw.githubusercontent.com/miyu-agent/miyu/main/packaging/inst
 
 如果想自己校验签名，可以使用提示里给出的 `gh attestation verify <文件> -R miyu-agent/miyu`。
 
-如果设置了 `GITHUB_TOKEN`，脚本访问 GitHub 接口时会带上它（下载文件时不带）。由于匿名访问每小时只有 60 次，几个人共用一个出口的网络容易触发限流，此时脚本会提示 `GitHub 限流了`。
+如果设置了 `GITHUB_TOKEN`，脚本访问 GitHub 接口时会带上它（下载文件时不带）。由于匿名访问每小时只有 60 次，几个人共用一个出口的网络容易触发限流，此时脚本会提示 `GitHub 限流：匿名访问每小时 60 次，已经用完，稍后重试`。
 
 ## 从 AUR 安装（Arch Linux）
 
@@ -267,9 +267,9 @@ miyu core stop
 | Homebrew | `brew uninstall --cask miyu-applet`，然后运行 `brew uninstall miyu-agent miyu-tui miyu-webui miyu-core` |
 | 托盘安装包 | 按照系统卸载软件的方法：`apt remove`、`dnf remove`；Windows 在 `设置 → 应用` 里卸载；macOS 把 `Miyu.app` 拖进废纸篓 |
 
-卸载脚本会先停掉开机启动的服务（`miyu service disable`）和核心（`miyu core stop`），再删除安装目录、`~/.local/bin/miyu` 链接和 `.miyu` 文件类型；在 Windows 上还会从你的 `PATH` 里去掉安装目录。如果目录不是安装脚本安装的，卸载脚本不会改动它。最后脚本会提示 `已卸载 Miyu。数据还在 …，不要了自己删。`
+卸载脚本会先停掉开机启动的服务（`miyu service disable`）和核心（`miyu core stop`），再删除安装目录、`~/.local/bin/miyu` 链接和 `.miyu` 文件类型；在 Windows 上还会从你的 `PATH` 里去掉安装目录。如果目录不是安装脚本安装的，卸载脚本不会改动它。最后脚本会提示 `已卸载 Miyu。数据仍然保留在 …，如果不再需要，可以自行删除。`
 
-在 Windows 上，如果还有 Miyu 的程序开着，安装目录就删不掉，此时脚本会报错 `删不掉 …（…）：还有 Miyu 的程序开着的，关掉再卸` 并停下，`PATH` 也不会修改。关掉终端界面、网页界面等 Miyu 的程序，再卸载一次即可。
+在 Windows 上，如果还有 Miyu 的程序开着，安装目录就删不掉，此时脚本会报错 `无法删除 …（…）：还有 Miyu 的程序正在运行，关闭以后再卸载` 并停下，`PATH` 也不会修改。关掉终端界面、网页界面等 Miyu 的程序，再卸载一次即可。
 
 其他安装方式需要你在卸载之前自己先停掉服务和核心：
 

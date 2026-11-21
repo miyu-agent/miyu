@@ -6,7 +6,9 @@ use std::borrow::Cow;
 use serde_json::{Map, Value};
 
 /// 一句拒绝的中文、英文：照 [`of`]，只是带着 `data` 里的数说的几种照它填（施工 YC-6：`session_read_only` 照 `data.line` 说坏在
-/// 第几行；`data` 里没有那个数的照 [`of`]）。
+/// 第几行；`data` 里没有那个数的照 [`of`]）。`command_not_allowed` 有三种情形共用（身份不够；命令停用了；预设没开这个
+/// 技能或模板）：后两种 `data.why` 另说了原因，那时不说「仅主人和群管理员可用」，说一句不带原因的（施工 WD-7）。身份不够的
+/// `data.why` 就是这一句本身（`commands/why.rs` 照拒绝的那一句填），照旧。
 pub(super) fn said(
     reason: &str,
     data: Option<&Map<String, Value>>,
@@ -14,7 +16,16 @@ pub(super) fn said(
     let line = data
         .and_then(|data| data.get("line"))
         .and_then(Value::as_u64);
+    let (zh, en) = of(reason);
+    let other_why = data
+        .and_then(|data| data.get("why"))
+        .and_then(Value::as_str)
+        .is_some_and(|why| why != zh && why != en);
     match (reason, line) {
+        ("command_not_allowed", _) if other_why => (
+            "不能使用这条命令。".into(),
+            "This command can't be used.".into(),
+        ),
         ("session_read_only", Some(line)) => (
             format!(
                 "会话日志第 {line} 行已损坏，只能查看这一行之前的内容，不能继续对话。如果要继续，请新建一个会话。"
@@ -25,10 +36,7 @@ pub(super) fn said(
             )
             .into(),
         ),
-        _ => {
-            let (zh, en) = of(reason);
-            (zh.into(), en.into())
-        }
+        _ => (zh.into(), en.into()),
     }
 }
 
@@ -379,7 +387,10 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "请先设置用户名和密码。",
             "Set a username and password first.",
         ),
-        "local_only" => ("仅限本机。", "Local only."),
+        "local_only" => (
+            "只有本机上的用户可以执行这个操作。",
+            "Only a user on this machine can do this.",
+        ),
         // 施工 SW-1（`session.shown`）。
         "unknown_shown" => ("展示不存在。", "Shown file not found."),
         "file_changed" => ("文件已更改。", "The file has changed."),

@@ -1587,6 +1587,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sWD4"><span class="n">WD-4</span>核心字表清理成标准短句<span class="st">…</span></a></li>
         <li><a class="step review" href="#sWD5"><span class="n">WD-5</span>拒绝原因、命令行、出厂软件包的字清理<span class="st">…</span></a></li>
         <li><a class="step review" href="#sWD6"><span class="n">WD-6</span>四处给人看的字的程序问题<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sWD7"><span class="n">WD-7</span>安装脚本和三句拒绝原因<span class="st">…</span></a></li>
         <li><a class="step review" href="#sHLP1"><span class="n">HLP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
@@ -62029,6 +62030,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/WD-6-四处给人看的字的程序问题.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sWD7" aria-labelledby="h-sWD7">
+  <div class="sheet-head"><h2 id="h-sWD7"><span class="no">WD-7</span>安装脚本的口语和三句拒绝原因</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">WD-5 留下两件：安装脚本的中文输出还是口语（「没有装着」「连不上 GitHub」「核不过，不装」）；三句拒绝原因没有找到能覆盖所有场合的说法。这一步把它们处理完。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">packaging/install.sh、install.ps1　crates/miyu-endpoint/src/refusal/message.rs　docs/zh/guide/install.md</span><span class="dir-note">WD-7</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>install.sh 30 句、install.ps1 25 句中文输出改成规范的说法，和 miyu upgrade 说同一件事的用同一句；英文和脚本逻辑不动</li>
+              <li>install.ps1 的中文按 \\uXXXX 解码、改写、再编码，注释以外仍然只有 ASCII</li>
+              <li>local_only 改成说「谁可以」：只有本机上的用户可以执行这个操作</li>
+              <li>command_not_allowed：命令停用、预设没开时整句话不再说「仅主人和群管理员可用」，改说「不能使用这条命令」，原因在 data.why 里</li>
+              <li>unknown_server 逐个场合核对后不改：这句话在每个场合都是真的</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">一句话要在它返回的每个场合都说得通</span><span class="rl">internal/blueprint/config.md「用词的规矩」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">WD-7</dd></div>
+        <div><dt>名称</dt><dd>安装脚本的口语和三句拒绝原因</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">WD-7</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>sh -n 通过；install.ps1 注释以外没有非 ASCII；沙箱家目录里运行了三条不安装的路径</span></li>
+        <li><span class="ok">✓</span><span>新测试覆盖 command_not_allowed 的三种情形和 local_only；miyu-endpoint 全部测试通过</span></li>
+        <li><span class="ok">✓</span><span>门禁十二项通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/WD-7-安装脚本和三句拒绝原因.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

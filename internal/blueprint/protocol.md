@@ -1808,7 +1808,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `shell_unavailable` | 没有可以运行命令的工具（软件包未安装或已停用）。 | No tool can run commands (package missing or disabled). |
 | `venue_session` | 平台会话不能直接发消息。 | Cannot send messages directly to a platform session. |
 | `unknown_command` | 命令不存在。 | Command not found. |
-| `command_not_allowed` | 仅主人和群管理员可用。 | Owner and group admins only. |
+| `command_not_allowed` | 仅主人和群管理员可用。`data.why` 另说了原因的（命令停用了、预设没开这个技能或模板，施工 WD-7）：不能使用这条命令。 | Owner and group admins only. 另有原因的：This command can't be used. |
 | `command_unavailable` | 命令暂时不可用。 | Command unavailable for now. |
 | `command_failed` | 命令执行失败。 | Command failed. |
 | `owner_only` | 仅主人可用。 | Owner only. |

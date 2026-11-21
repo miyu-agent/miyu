@@ -75,6 +75,8 @@ async fn access_lets_anyone_in_or_turns_a_command_off() {
         "off：主人也不行 {reply}"
     );
     assert_eq!(reply["error"]["data"]["why"], "/stop 已停用。");
+    // 施工 WD-7：停用的不是身份不够，整句话不说「仅主人和群管理员可用。」。
+    assert_eq!(reply["error"]["message"], "不能使用这条命令。");
     let reply = run(
         &mut client,
         "k3",
