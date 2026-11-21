@@ -14,14 +14,14 @@ use miyu_kernel::raw::RawJson;
 use miyu_kernel::request::{Message, Request, ToolSpec};
 
 /// 几样附件的字节：内容是造的，写法照真的（PNG、JPEG、PDF 的头，大的那张图编出来过 128 KiB，走单独映射的大块）。
-pub(super) struct Media {
-    pub(super) png: Vec<u8>,
-    pub(super) jpeg: Vec<u8>,
-    pub(super) pdf: Vec<u8>,
-    pub(super) notes: Vec<u8>,
+pub(in crate::route) struct Media {
+    pub(in crate::route) png: Vec<u8>,
+    pub(in crate::route) jpeg: Vec<u8>,
+    pub(in crate::route) pdf: Vec<u8>,
+    pub(in crate::route) notes: Vec<u8>,
 }
 
-pub(super) fn media() -> Media {
+pub(in crate::route) fn media() -> Media {
     let filler = |seed: u32, len: usize| -> Vec<u8> {
         (0..len)
             .map(|i| {

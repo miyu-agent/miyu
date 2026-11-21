@@ -3,8 +3,8 @@
 //! 流式读回来，「发出去了」和每一段增量交给挑的一方。报上下文超长、说了上限、比手头的窗口小的，记下用出来的窗口（施工
 //! 8-7，`models.md`「怎么走」第二条第 9 条），再交回说完了。
 //!
-//! 主请求编码时前面没变的历史接着用会话留着的那一份（施工 V-42，[`Memo`]）：发出去的字节和整份编的一个都不差；旁路请求、
-//! 一次性的照旧整份编。
+//! 主请求编码时前面没变的历史接着用会话留着的那一份（施工 V-42，[`miyu_drivers::Memo`]；什么时候放掉见 [`Kept`]，施工
+//! LW-3）：发出去的字节和整份编的一个都不差；旁路请求、一次性的照旧整份编。
 //!
 //! 请求体边编边发（施工 V-38）：照原样发的图片、PDF 只核对、量大小，发的时候 HTTP 执行器才从 blob 一小块一小块地读出来编
 //! （[`StoreBlobs`]）；照字放进消息的文件照旧取整份。编码完，交进来的请求（主请求那一份）、取来的字节、线上的中间结构当场
@@ -14,10 +14,10 @@ use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 use std::future::Future;
 use std::io::{self, Read};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use miyu_drivers::classify::Classified;
-use miyu_drivers::{BlobBytes, Call, EncodeError, Memo};
+use miyu_drivers::{BlobBytes, Call, EncodeError};
 use miyu_http::{Attempt, BlobSource, Body, Outcome, Progress, send};
 use miyu_kernel::event::{CallError, ErrorClass, Usage};
 use miyu_kernel::id::ContentHash;
@@ -25,6 +25,7 @@ use miyu_kernel::request::Request;
 use miyu_store::blob::{BlobError, Blobs};
 
 use super::base::{Ready, Speaker};
+use super::kept::Kept;
 use crate::blocking::blocking;
 use crate::clock::wall_now;
 use crate::route::shared::ModelData;
@@ -87,7 +88,7 @@ pub(super) fn capped(call: &Call, cap: Option<u64>) -> Option<Call> {
 pub(super) async fn exchange(
     ready: &Ready,
     request: Cow<'_, Request>,
-    memo: Option<&Mutex<Memo>>,
+    memo: Option<&Arc<Kept>>,
     blobs: &Blobs,
     lead: Lead,
     cancel: impl Future<Output = ()> + Send,
@@ -125,16 +126,7 @@ pub(super) async fn exchange(
     let call = capped(&ready.call, request.output_cap);
     let call = call.as_ref().unwrap_or(&ready.call);
     let encoded = match memo {
-        Some(memo) => {
-            let mut kept = memo.lock().unwrap_or_else(|poisoned| {
-                // 编到一半 panic 过：留着的不一定齐，整份扔掉重来。
-                let mut kept = poisoned.into_inner();
-                kept.clear();
-                memo.clear_poison();
-                kept
-            });
-            driver.fragments_memo(&request, call, &fetched, &mut kept)
-        }
+        Some(kept) => kept.encode(|memo| driver.fragments_memo(&request, call, &fetched, memo)),
         None => driver.fragments(&request, call, &fetched),
     };
     watch.encoded();
@@ -239,8 +231,8 @@ pub(super) fn missing(hash: &ContentHash) -> CallError {
 }
 
 #[cfg(test)]
-mod golden;
+pub(super) mod golden;
 #[cfg(test)]
-mod samples;
+pub(super) mod samples;
 #[cfg(test)]
 mod tests;

@@ -15,7 +15,6 @@ use std::sync::{Arc, Mutex};
 
 use tracing::Instrument;
 
-use miyu_drivers::Memo;
 use miyu_http::Progress;
 use miyu_kernel::event::ErrorClass;
 use miyu_kernel::request::Request;
@@ -24,6 +23,7 @@ use miyu_store::blob::Blobs;
 use super::base::Ready;
 use super::ended::{Picked, Switch};
 use super::exchange::{Exchanged, exchange};
+use super::kept::Kept;
 use super::{Pinned, lock};
 use crate::config::TurnConfig;
 use crate::port::{Cancel, Reports};
@@ -32,8 +32,8 @@ use crate::port::{Cancel, Reports};
 pub(super) struct Chosen {
     pub(super) ready: Ready,
     pub(super) blobs: Blobs,
-    /// 会话留着的编好的历史（施工 V-42）：主请求有，旁路请求没有。
-    pub(super) memo: Option<Arc<Mutex<Memo>>>,
+    /// 会话留着的编好的历史（施工 V-42，没有主请求满 3 分钟放掉，施工 LW-3）：主请求有，旁路请求没有。
+    pub(super) memo: Option<Arc<Kept>>,
     /// 说完了路由照它记（施工 8-9）。
     pub(super) tried: Tried,
 }
@@ -135,7 +135,7 @@ pub(super) async fn attempt(
     let mut exchanged = exchange(
         ready,
         request,
-        chosen.memo.as_deref(),
+        chosen.memo.as_ref(),
         &chosen.blobs,
         reports.lead(),
         stop,

@@ -11,13 +11,13 @@
 
 use std::borrow::Cow;
 use std::collections::BTreeMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::Duration;
 
 use miyu_drivers::openai_chat::{
     Compat, Continuation, ContinuationField, ReasoningField, ReasoningReplay, Toggle,
 };
-use miyu_drivers::{Anthropic, Call, Driver, EFFORT_ON, Inputs, Memo, OpenAiChat, OpenAiResponses};
+use miyu_drivers::{Anthropic, Call, Driver, EFFORT_ON, Inputs, OpenAiChat, OpenAiResponses};
 use miyu_http::testkit::{Piece, Reply, Server};
 use miyu_http::{Endpoint, Progress, Proxy, client};
 use miyu_kernel::id::{ContentHash, ProviderId};
@@ -28,6 +28,7 @@ use miyu_models::profile::Profiles;
 use miyu_store::blob::Blobs;
 
 use super::super::base::{Ready, Speaker};
+use super::super::kept::Kept;
 use super::super::shared::ModelData;
 use super::samples::{Media, media, model, request, texts};
 use super::{Learn, exchange};
@@ -69,10 +70,10 @@ const CASES: [Case; 4] = [
 ];
 
 /// 一份：驱动、调用、请求、占位工具。
-pub(super) type Setup = (Box<dyn Driver>, Call, Request, Vec<(String, String)>);
+pub(in crate::route) type Setup = (Box<dyn Driver>, Call, Request, Vec<(String, String)>);
 
 /// 这一批的四份。
-pub(super) fn cases(media: &Media) -> Vec<Setup> {
+pub(in crate::route) fn cases(media: &Media) -> Vec<Setup> {
     let deepseek = Compat {
         reasoning: ReasoningReplay::Replay {
             field: ReasoningField::ReasoningContent,
@@ -216,7 +217,7 @@ pub(super) fn ready(
 async fn send(
     ready: &Ready,
     request: Cow<'_, Request>,
-    memo: Option<&Mutex<Memo>>,
+    memo: Option<&Arc<Kept>>,
     blobs: &Blobs,
 ) -> Option<ContentHash> {
     let mut sent = None;
@@ -270,14 +271,10 @@ async fn the_bytes_on_the_wire_are_the_same_as_before() {
         let owned = send(&ready, Cow::Owned(request.clone()), None, &blobs).await;
         let borrowed = send(&ready, Cow::Borrowed(&request), None, &blobs).await;
         // 主请求留着编好的历史（施工 V-42）：头一回从头编、留下，第二回整份接着用。
-        let memo = Mutex::new(Memo::new());
+        let memo = Arc::new(Kept::default());
         let cold = send(&ready, Cow::Owned(request.clone()), Some(&memo), &blobs).await;
         let warm = send(&ready, Cow::Owned(request.clone()), Some(&memo), &blobs).await;
-        assert!(
-            !memo.lock().expect("锁好的").is_empty(),
-            "{}：留下了",
-            case.name
-        );
+        assert!(!memo.is_empty(), "{}：留下了", case.name);
         let received = server.received();
         assert_eq!(received.len(), 4, "{}：四回都发出去了", case.name);
         for (index, other) in received.iter().enumerate().skip(1) {
