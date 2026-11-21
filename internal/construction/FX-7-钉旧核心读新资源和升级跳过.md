@@ -13,6 +13,7 @@
 ### 改成什么样
 
 - **字表不认识的格不管**：`human/<语言>.json` 的最外层（`File`）、工具的样子（`Face`）、`config` 那一格（`ConfigWords`）、一项的字（`ItemWords`）去掉 `deny_unknown_fields`。别的带 `deny_unknown_fields` 的结构逐个看过，只有这四个是「钉旧核心的程序读新核心装的资源」：协议参数、包清单 `package.toml`、配置文件、知识库 `kb.toml`、向量模型的清单、工具说明（接入通讯平台只读自己包里的）、`core/view.json`（只有核心读）照旧严格，软件源索引本来就不严格。
+- **工具样子的 `block` 写了不认识的一种当没写**（主会话 2026-11-21 审时定）：头只印标题，不让整份字表读不成；认识的 `command`、`edits` 照读。
 - **出厂的字表写错了格照样红**：`miyu-store` 的单元测试 `human/tests.rs` 把每一份出厂的字表（资源目录的 `core/`、`software/*/`、`packages/*/data/`，每种语言）读一遍、照读到的样子写回 JSON，原文里写回去没有的格就是这一版不认识的，报出路径。为此 `ConfigWords`、`ItemWords` 多派生 `Serialize`，`File` 只在测试里派生。另一条测试证明这个检查拦得住拼错的格。
 - **升级的盘点只看家目录这一层**：`package.upgrades` 只看认的那一份在 `home` 的包；出厂的、系统加装的不看，本地库里留着旧记录也不看。照 pacman：别的包管理器装的不归它升级。
 - **新版要更新的 Miyu 的不算能升**：软件源索引的每个包多一格可选的 `miyu`（清单 `[package] miyu` 的原样，`miyu-index` 收录时写）；盘点照它和正在跑的这一版比，比不过的进新的一格 `needs_newer_miyu: [{"package", "to", "miyu"}]`，不进 `upgrades`，所以 `package.upgrade` 不升它、别的照升。命令行在标准错误上警告一句「tui 2026.11.0 需要 Miyu 2026.11.0，跳过」，退出码 0。比法同读清单时的 `needs_newer_miyu`（`miyu_config::package::needs_newer`，开发版 `0.0.0` 都给得了）。
@@ -22,7 +23,6 @@
 
 - 不改「升级一个包失败就整次失败」的一般规矩：要更新 Miyu 的在盘点时就分出去了，下载失败这类真出错照旧报错。
 - 软件源要用这一版以后的 `miyu-index` 重新生成索引才有 `miyu` 这一格；没有时照旧算能升，装的时候照旧报 `needs_newer_miyu`。重新生成索引是打包仓库的事，不在这一步。
-- 工具样子的 `block` 写了不认识的值仍然整份读不成（这是值，不是格），等真加第三种时再定。
 
 ### 验收
 

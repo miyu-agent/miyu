@@ -269,13 +269,17 @@ fn a_broken_file_is_named_and_a_missing_one_is_fine() {
     scratch.file("core/human/zh.json", r#"{"said":{"a":"{nope"}}"#);
     let error = Human::load(&ResourceRoot::at(&scratch.0), "zh").expect_err("模板坏了");
     assert!(error.why.starts_with("a: "), "{error}");
-    // 下面那一块只认两种。
+    // 下面那一块只认两种；不认识的当没写（施工 FX-7：新核心加一种，钉旧核心的头照只印标题）。
     scratch.file(
         "core/human/zh.json",
-        r#"{"tools":{"t":{"name":"T","block":"diff"}}}"#,
+        r#"{"tools":{"t":{"name":"T","block":"diff"},"u":{"name":"U","block":"edits"}}}"#,
     );
-    let error = Human::load(&ResourceRoot::at(&scratch.0), "zh").expect_err("不认识的块");
-    assert!(error.why.contains("diff"), "{error}");
+    let words = Human::load(&ResourceRoot::at(&scratch.0), "zh").expect("不认识的块当没写");
+    assert_eq!(words.tool("t").map(|face| face.block), Some(None));
+    assert_eq!(
+        words.tool("u").and_then(|face| face.block),
+        Some(Block::Edits)
+    );
 }
 
 /// 从一个文件夹补读一份（施工 S-6 上）：编号前缀照给的，资源目录那一份照旧；没有这种语言的照英文，补读完也补单数；

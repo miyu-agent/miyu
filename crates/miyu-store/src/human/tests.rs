@@ -81,11 +81,12 @@ fn shipped_words_have_no_fields_this_version_does_not_know() {
     assert_eq!(problems, Vec::<String>::new());
 }
 
-/// 上面那条拦得住东西：每一层拼错、多出来的格都报出路径，认识的格（包括可以不写的）不报。
+/// 上面那条拦得住东西：每一层拼错、多出来的格都报出路径，`block` 写了不认识的一种也报，认识的格（包括可以不写的）不报。
 #[test]
 fn a_misspelled_field_is_found_at_every_level() {
     let text = r#"{
-        "tools": {"read": {"name": "读取", "subject": "file_path", "icon": "→", "block": "command", "colour": "red"}},
+        "tools": {"read": {"name": "读取", "subject": "file_path", "icon": "→", "block": "command", "colour": "red"},
+                  "edit": {"name": "编辑", "block": "diff"}},
         "said": {"a": "A"},
         "config": {
             "items": {"log.level": {"name": "级别", "description": "", "optoins": {},
@@ -105,6 +106,7 @@ fn a_misspelled_field_is_found_at_every_level() {
             "/config/items/log.level/fields/x/sugestions",
             "/config/items/log.level/optoins",
             "/extra",
+            "/tools/edit/block",
             "/tools/read/colour",
         ]
     );

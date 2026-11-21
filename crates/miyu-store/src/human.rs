@@ -77,9 +77,22 @@ pub struct Face {
     /// 写在最前面的符号，例如 `→`（施工 4-11）。没有的由头定。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
-    /// 标题下面还印一块什么（施工 4-11）。没有的只印标题。
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    /// 标题下面还印一块什么（施工 4-11）。没有的只印标题。写了这一版不认识的那一种的当没写（施工 FX-7：新核心加一种，钉旧核心
+    /// 的头照只印标题，不让整份字表读不成）；出厂的写错了由这个模块的测试拦（`human/tests.rs`）。
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "known_block"
+    )]
     pub block: Option<Block>,
+}
+
+/// `block` 那一格：认识的两种照读，别的字（不认识的、不是字的）当没写。
+fn known_block<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<Block>, D::Error> {
+    let written = serde_json::Value::deserialize(deserializer)?;
+    Ok(serde_json::from_value(written).ok())
 }
 
 /// 标题下面的那一块。

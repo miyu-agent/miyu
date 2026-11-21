@@ -146,7 +146,7 @@
 
 1. 先读内核的：`core/human/<语言>.json`；读不到的读 `core/human/en.json`；也读不到的，这一处没有字，不算错。
 2. 再照名字的先后读 `software/` 下的每个目录（链接不算），每个读 `human/<语言>.json`，同样退到英文。`software/` 读不了的，当没有软件包。
-3. 读得到却读不懂的，报错，写明是哪一份：不是 JSON、写法不对（工具少了 `name`、类型不对、`block` 不是认识的那两种）、哪一句的模板坏了（写明是哪一句）。
+3. 读得到却读不懂的，报错，写明是哪一份：不是 JSON、写法不对（工具少了 `name`、类型不对）、哪一句的模板坏了（写明是哪一句）。
    **不认识的格不管**（施工 FX-7，2026-11-20 主会话定）：最外层、工具的样子、`config` 那一格、一项的字里多出来的格都略过，认识的照读。因为扩展、头钉着旧的核心 crate，读的却是新核心装好的字表（`miyu-client` 的 `texts`，`client.md`），新核心给字表加一格，旧的读法就整份读不成：接入通讯平台钉着施工 DSR-2 以前的核心，读到新加的 `option_notices` 起不来。同视图流的读法（`view.md`「读的时候」第 1 条）、软件源索引的读法（`miyu-source` 的 `index.rs`）。出厂的字表写错了格照样拦，拦在测试里：`miyu-store` 的单元测试把每一份出厂的字表读一遍、照读到的样子写回去，原文里写回去没有的格就是这一版不认识的，报出路径（下面「守着它的」）。没选：读的时候数出略过的格、记进运行日志（`miyu-store` 不写日志，读字表的地方十来处，记一次要另找地方）。
 4. `said` 里每一句的编号，前面加上这一份在资源目录里的位置：内核的加 `core/`，软件包的加 `software/<软件包>/`。例如 `core/human/zh.json` 里的 `tool-results/unattended`，就是说法 `core/tool-results/unattended`。
 5. `tools` 合成一张表：后读的盖掉先读的同名工具。`config` 的项、页、组、组的说明（施工 HZ-1）也各合成一张表，后读的盖掉先读的（现在只有内核那一份写它）。
@@ -201,7 +201,7 @@
 }
 ```
 
-- `tools` 里每件工具认 `name`（必填）、`subject`、`icon`、`block`（都可以不写）；`block` 只能是 `command` 或者 `edits`。
+- `tools` 里每件工具认 `name`（必填）、`subject`、`icon`、`block`（都可以不写）；`block` 认 `command`、`edits`，写了别的当没写，头只印标题（施工 FX-7，2026-11-21 主会话定：同不认识的格，新核心加一种不让旧的头整份读不成；出厂的写错了由测试拦）。
 - 这一份在 `software/basesystem/human/zh.json` 里，`read/lines` 就是说法 `software/basesystem/read/lines`：字段 `count` 是 `37` 时，换成「37 行」。
 - 中文不挑单复数，这一份不用写 `read/lines/one`；`software/basesystem/human/en.json` 里那一句是 `"{count} lines"`，另写了一句 `"read/lines/one": "{count} line"`（上面「怎么走」第 3 条第 7 款）。
 - 每件工具的显示名、结果那一句，见 `tools/*.md` 和 `cli/ask.md`。
@@ -233,7 +233,7 @@
 |---|---|
 | `crates/miyu-store/src/resources/tests.rs` | `MIYU_RESOURCES` 优先、开头的 `~` 照家目录接、要是绝对路径、要是目录；程序旁边的 `resources/`、上一级的 `share/miyu/`、上一级的 `Resources/miyu/`（`.app`，只有 `Resources/` 的不算），三处照先后（施工 DT-4 上）；都没有时写明找过哪三处、不知道程序在哪；读出软件工程师的人设和随核心附带的字（会话编号的模板是它那份文件，施工 1-13 再补；切了级别以后的权限那一份也是，施工 2-7 补）；人设文件缺了写明是哪一份；不合写法的编号拒绝；子会话的场所说明是它自己那份文件，没有的写明是哪一份（施工 7-5）；核心的几行是它们那两份文件，没有的写明是哪一份（施工 2-7 补）；合并转发那几行的三句各是各的文件、`forward()` 和随核心附带的字读的一样（施工 O-34）；私聊记号的语音那一句是 `voice.txt`、`private_media()` 和随核心附带的字读的一样（施工 O-35） |
 | `crates/miyu-store/src/resources/overlay/tests.rs`、`crates/miyu-endpoint/tests/prompt_override.rs`（施工 OV-1 中） | 上一层合规矩的压着下一层、占位不对和中文的照下一层、都不合照出厂；`.json` 不盖；报不合的、出厂没有的、不是 `.txt`、`.md` 的；真核心开会话的 system 照覆盖换、`check` 报；核心重启后载入的会话换快照也照覆盖拼 |
-| `crates/miyu-store/tests/human.rs` | 内核给模型的每一句（`core/tool-results/`、`core/permissions/`）两种语言都有给人看的一句，要的字段不多于给模型的；照语言换成字，没有的语言照英文，没有这一句、少了字段的换不出；工具的显示名、后面跟的参数、符号、下面那一块，`block` 写别的读不懂；控制字符换掉、引号反斜杠照原样；什么都没有不算错，只有英文的照英文，读不懂的写明是哪一份、哪一句；配置那一格照 `Words` 交出去、句子的编号加 `core/`、写错了说是哪一份（施工 8-1）；中文、日文没写 `X/one` 的，退到 `X` 的字，英文自己写的不一样；每种语言的 `said_entries()` 都交得出清单上每一句的 `/one`；软件包自己写了 `X/one` 的，补的规矩不盖掉它（施工 4-5 再补） |
+| `crates/miyu-store/tests/human.rs` | 内核给模型的每一句（`core/tool-results/`、`core/permissions/`）两种语言都有给人看的一句，要的字段不多于给模型的；照语言换成字，没有的语言照英文，没有这一句、少了字段的换不出；工具的显示名、后面跟的参数、符号、下面那一块，`block` 写别的当没写（施工 FX-7）；控制字符换掉、引号反斜杠照原样；什么都没有不算错，只有英文的照英文，读不懂的写明是哪一份、哪一句；配置那一格照 `Words` 交出去、句子的编号加 `core/`、写错了说是哪一份（施工 8-1）；中文、日文没写 `X/one` 的，退到 `X` 的字，英文自己写的不一样；每种语言的 `said_entries()` 都交得出清单上每一句的 `/one`；软件包自己写了 `X/one` 的，补的规矩不盖掉它（施工 4-5 再补） |
 | `crates/miyu-store/tests/human_languages.rs`（施工 4-5 补；4-5 再补加了单数的门禁） | 内核和每个软件包都有中文、英文、日文三份，说法的键、每一句要的字段、工具的样子（显示名以外）、配置那一格的项和选项、页、组（施工 8-1）都和英文那一份一样（没写 `X/one` 的按 `Human::load` 的规矩补齐了再比）；每件工具都有显示名，配置的名字、说明都不空；日文照语言换得出（找不到的语言会退回英文，所以直接查文件）；门禁：英文 `{count}`、`{total}` 后面紧跟着词的每一句，都有 `/one` 那一句对着 |
 | `crates/miyu-store/tests/human.rs` 的 `fields_this_version_does_not_know_are_skipped`、`crates/miyu-store/src/human/tests.rs`（施工 FX-7） | 字表最外层、工具的样子、`config`、一项的字里不认识的格不管，认识的照读，资源目录读的、从包文件夹补读的都是；出厂的每一份字表（`core/`、`software/*/`、`packages/*/data/`，每种语言）读一遍写回去，没有不认识的格；这个检查拦得住每一层拼错、多出来的格 |
 | `crates/miyu-store/tests/snapshot.rs` | 从源码树的资源目录拼出软件工程师的快照 |
