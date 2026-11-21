@@ -6,6 +6,7 @@
 use std::fs;
 use std::sync::mpsc::{Receiver, channel};
 use std::sync::{Arc, Mutex};
+use std::time::Instant;
 
 use notify::event::{AccessKind, AccessMode, CreateKind, ModifyKind, RenameMode};
 
@@ -134,18 +135,21 @@ fn changes_in_a_row_are_handed_over_once_after_a_quiet_spell() {
     let (_temp, dir) = scratch();
     let file = dir.join("config.toml");
     let table = Table::of(std::slice::from_ref(&file));
-    let (send, events) = channel();
+    let (send, messages) = channel();
     let seen: Arc<Mutex<Vec<(PathBuf, Instant)>>> = Arc::default();
     let kept = Arc::clone(&seen);
     // 合并的时长放宽到 600 毫秒：忙的机器上歇 50 毫秒可能歇得更久，别让它自己隔开。
     let quiet = QUIET * 3;
-    let thread = std::thread::spawn(move || {
-        run(&events, &table, quiet, &|path: &Path| {
-            kept.lock()
-                .unwrap()
-                .push((path.to_path_buf(), Instant::now()));
-        });
-    });
+    // 一个自己的 `miyu-watch`（不用整个进程的那一个），事件当作共用的监视器报来的送进去（施工 LW-11）。
+    let thread = std::thread::spawn(move || hub::dispatch(&messages));
+    let on_change = move |path: &Path| {
+        kept.lock()
+            .unwrap()
+            .push((path.to_path_buf(), Instant::now()));
+    };
+    let sub = hub::Sub::new(table, quiet, true, Box::new(on_change));
+    send.send(hub::Message::Add(0, sub)).unwrap();
+    let shared = |event| hub::Message::Event(hub::Source::Shared, Ok(event));
     let kinds = [
         EventKind::Create(CreateKind::File),
         EventKind::Modify(ModifyKind::Any),
@@ -155,7 +159,7 @@ fn changes_in_a_row_are_handed_over_once_after_a_quiet_spell() {
     let mut last = Instant::now();
     for kind in kinds {
         last = Instant::now();
-        send.send(Ok(event(kind, &file))).unwrap();
+        send.send(shared(event(kind, &file))).unwrap();
         std::thread::sleep(Duration::from_millis(50));
     }
     // 送事件的那一头丢掉以前等它交出来：丢掉了线程就退了。
@@ -165,7 +169,7 @@ fn changes_in_a_row_are_handed_over_once_after_a_quiet_spell() {
     }
     // 再来一下：隔得远的另算一次。
     let again = Instant::now();
-    send.send(Ok(event(kinds[1], &file))).unwrap();
+    send.send(shared(event(kinds[1], &file))).unwrap();
     let deadline = Instant::now() + WAIT;
     while seen.lock().unwrap().len() < 2 && Instant::now() < deadline {
         std::thread::sleep(Duration::from_millis(20));
@@ -406,3 +410,5 @@ fn a_new_folder_in_a_watched_tree_hands_over_what_is_already_in_it() {
         "还在的目录别的变动不算"
     );
 }
+
+mod shared;

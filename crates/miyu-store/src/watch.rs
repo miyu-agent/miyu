@@ -9,19 +9,21 @@
 //! 5. 系统的监视起不来（Linux 上 inotify 的名额用完了这类），退回每 2 秒看一次修改时间和长短（`notify` 的轮询），交回
 //!    起不来的原因，由调用的一方记日志。
 //! 6. 监视报错、事件太多丢了的，当这几份都变了：重读一遍，一样的调用的一方什么都不做。
+//! 7. 整个进程的监视共用一组线程（施工 LW-11，`hub`）：一个系统的监视器、一条收事件去抖的 `miyu-watch`；看的目录和共用的那一个
+//!    叠在一起的、系统的监视加目录会停下别的目录的（macOS 的 FSEvents），这一份自己开一个系统的监视器。
 //!
-//! 交出去的是调用的一方给的那个路径（不是真实的位置），在监视自己的线程上调 `on_change`。丢掉 [`Watch`] 就停。
+//! 交出去的是调用的一方给的那个路径（不是真实的位置），在一条短命的 `miyu-watch-call` 线程上调 `on_change`：同一份订阅一个接一个地
+//! 交，交得慢的不耽误别的订阅。丢掉 [`Watch`] 就停。
 //!
 //! 也能看一整个目录（[`watch_dir`]，施工 X-12 补，数据根里的脚本）：目录里点开头的以外，哪个名字变了都算，交出去的是这个目录；
 //! 不递归，别的同上。
 
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
-use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use notify::event::{AccessKind, AccessMode, ModifyKind};
-use notify::{Event, EventKind, PollWatcher, RecommendedWatcher, RecursiveMode, Watcher};
+use notify::{Event, EventKind, Watcher};
 
 /// 一份文件这么久没有新的变动了，才交出去（第七条第 3 条）。
 pub const QUIET: Duration = Duration::from_millis(200);
@@ -29,12 +31,22 @@ pub const QUIET: Duration = Duration::from_millis(200);
 /// 系统的监视起不来时，多久看一次（第七条第 4 条）。
 pub const POLL: Duration = Duration::from_secs(2);
 
-/// 在监视着：丢掉它就停，监视的线程跟着退。
+/// 在监视着：丢掉它就停（施工 LW-11 起：从监视中心退订，自己开的监视器跟着丢掉）。
 pub struct Watch {
-    /// 系统的监视或者轮询：它拿着送事件的那一头，丢掉它，监视的线程收不到了就退。
-    _watcher: Box<dyn Watcher + Send>,
+    /// 在监视中心登记的号。
+    id: u64,
+    /// 自己开的系统的监视或者轮询（`hub` 第 2、3 条、退回的轮询）：丢掉它，它的线程跟着退。用共用的那一个的是空的。
+    _own: Option<Box<dyn Watcher + Send>>,
+    /// 在共用的那一个上看着的目录（真实的位置）和递归不递归：退订时不再看。
+    shared: Vec<(PathBuf, bool)>,
     /// 系统的监视起不来的原因：退回了轮询。
     unavailable: Option<String>,
+}
+
+impl Drop for Watch {
+    fn drop(&mut self) {
+        hub::leave(self.id, &self.shared);
+    }
 }
 
 impl Watch {
@@ -52,12 +64,12 @@ impl std::fmt::Debug for Watch {
     }
 }
 
-/// 监视 `files` 这几份：哪一份变了（合并过的），在监视的线程上调 `on_change`，交的是 `files` 里的那个路径。先用系统的
+/// 监视 `files` 这几份：哪一份变了（合并过的），在交出去的线程上调 `on_change`，交的是 `files` 里的那个路径。先用系统的
 /// 监视，起不来的退回轮询（[`Watch::unavailable`] 说为什么）。文件所在的目录要已经有了。
 ///
 /// # Errors
 ///
-/// 轮询也起不来（目录没有、线程开不了）：原因。
+/// 轮询也起不来（目录没有、线程开不了）、监视中心的线程开不了：原因。
 pub fn watch(
     files: &[PathBuf],
     on_change: impl Fn(&Path) + Send + 'static,
@@ -65,12 +77,12 @@ pub fn watch(
     start(files, Backend::Native, QUIET, on_change)
 }
 
-/// 监视目录 `dir` 里的文件（施工 X-12 补）：点开头的以外哪一个变了（合并过的），在监视的线程上调 `on_change`，交的是 `dir`。
+/// 监视目录 `dir` 里的文件（施工 X-12 补）：点开头的以外哪一个变了（合并过的），在交出去的线程上调 `on_change`，交的是 `dir`。
 /// 子文件夹里的不算。目录要已经有了。别的同 [`watch`]。
 ///
 /// # Errors
 ///
-/// 轮询也起不来（目录没有、线程开不了）：原因。
+/// 轮询也起不来（目录没有、线程开不了）、监视中心的线程开不了：原因。
 pub fn watch_dir(dir: &Path, on_change: impl Fn(&Path) + Send + 'static) -> Result<Watch, String> {
     begin(Table::of_dir(dir), Backend::Native, QUIET, on_change)
 }
@@ -80,7 +92,7 @@ pub fn watch_dir(dir: &Path, on_change: impl Fn(&Path) + Send + 'static) -> Resu
 ///
 /// # Errors
 ///
-/// 轮询也起不来（目录没有、线程开不了）：原因。
+/// 轮询也起不来（目录没有、线程开不了）、监视中心的线程开不了：原因。
 pub fn watch_tree(dir: &Path, on_change: impl Fn(&Path) + Send + 'static) -> Result<Watch, String> {
     begin(Table::of_tree(dir), Backend::Native, QUIET, on_change)
 }
@@ -104,63 +116,14 @@ pub(crate) fn start(
     begin(Table::of(files), backend, quiet, on_change)
 }
 
-/// 照排好的表 `table` 开始监视。
+/// 照排好的表 `table` 开始监视：登记进整个进程共用的监视中心（`hub`，施工 LW-11）。
 pub(crate) fn begin(
     table: Table,
     backend: Backend,
     quiet: Duration,
     on_change: impl Fn(&Path) + Send + 'static,
 ) -> Result<Watch, String> {
-    let (send, events) = channel();
-    let (watcher, unavailable) = watcher(&table, backend, send)?;
-    spawn(events, table, quiet, on_change)?;
-    Ok(Watch {
-        _watcher: watcher,
-        unavailable,
-    })
-}
-
-/// 造看表里几个目录的那一个：系统的起不来的换成轮询，交回起不来的原因。
-fn watcher(
-    table: &Table,
-    backend: Backend,
-    send: Sender<notify::Result<Event>>,
-) -> Result<(Box<dyn Watcher + Send>, Option<String>), String> {
-    match backend {
-        Backend::Poll(every) => {
-            let config = notify::Config::default().with_poll_interval(every);
-            let watcher = PollWatcher::new(send, config)
-                .and_then(|watcher| table.watch(watcher))
-                .map_err(|error| error.to_string())?;
-            Ok((Box::new(watcher), None))
-        }
-        Backend::Native => {
-            match RecommendedWatcher::new(send.clone(), notify::Config::default())
-                .and_then(|watcher| table.watch(watcher))
-            {
-                Ok(watcher) => Ok((Box::new(watcher), None)),
-                Err(error) => {
-                    let (watcher, _) = watcher(table, Backend::Poll(POLL), send)
-                        .map_err(|poll| format!("{error}; polling: {poll}"))?;
-                    Ok((watcher, Some(error.to_string())))
-                }
-            }
-        }
-    }
-}
-
-/// 开监视的线程。
-fn spawn(
-    events: Receiver<notify::Result<Event>>,
-    table: Table,
-    quiet: Duration,
-    on_change: impl Fn(&Path) + Send + 'static,
-) -> Result<(), String> {
-    std::thread::Builder::new()
-        .name("miyu-watch".to_string())
-        .spawn(move || run(&events, &table, quiet, &on_change))
-        .map(|_| ())
-        .map_err(|error| error.to_string())
+    hub::join(table, backend, quiet, Box::new(on_change))
 }
 
 /// 要看的：哪个目录（真实的位置）里的哪个名字，是调用的一方的哪一份。
@@ -244,19 +207,17 @@ impl Table {
         }
     }
 
-    /// 让 `watcher` 看表里的每个目录，不递归。
-    fn watch<W: Watcher>(&self, mut watcher: W) -> notify::Result<W> {
+    /// 表里要看的目录，不重；有往下递归看的那一行的递归看。
+    fn dirs(&self) -> Vec<(PathBuf, bool)> {
         let mut dirs: Vec<&Path> = self.targets.iter().map(|t| t.dir.as_path()).collect();
         dirs.sort_unstable();
         dirs.dedup();
-        for dir in dirs {
-            let mode = match self.targets.iter().any(|t| t.tree && t.dir == dir) {
-                true => RecursiveMode::Recursive,
-                false => RecursiveMode::NonRecursive,
-            };
-            watcher.watch(dir, mode)?;
-        }
-        Ok(watcher)
+        dirs.into_iter()
+            .map(|dir| {
+                let tree = self.targets.iter().any(|t| t.tree && t.dir == dir);
+                (dir.to_path_buf(), tree)
+            })
+            .collect()
     }
 
     /// 表里全部的几份，照给的先后，不重。
@@ -362,41 +323,7 @@ fn real(path: &Path) -> PathBuf {
     std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
 }
 
-/// 监视的线程：收变动，记下碰到的每一份最后一次动的时刻，`quiet` 里没有新的变动了交出去。送事件的那一头没了就退。
-pub(crate) fn run(
-    events: &Receiver<notify::Result<Event>>,
-    table: &Table,
-    quiet: Duration,
-    on_change: &dyn Fn(&Path),
-) {
-    let mut pending: Vec<(PathBuf, Instant)> = Vec::new();
-    loop {
-        let due = pending.iter().map(|(_, at)| *at + quiet).min();
-        let received = match due {
-            Some(due) => events.recv_timeout(due.saturating_duration_since(Instant::now())),
-            None => events.recv().map_err(|_| RecvTimeoutError::Disconnected),
-        };
-        let touched: Vec<PathBuf> = match &received {
-            Ok(Ok(event)) => table.touched(event),
-            // 监视报错：当这几份都变了，重读一遍（第 6 条）。
-            Ok(Err(_)) => table.files(),
-            Err(RecvTimeoutError::Timeout) => Vec::new(),
-            Err(RecvTimeoutError::Disconnected) => return,
-        };
-        let now = Instant::now();
-        for file in touched {
-            pending.retain(|(waiting, _)| *waiting != file);
-            pending.push((file, now));
-        }
-        let (ready, waiting): (Vec<_>, Vec<_>) = pending
-            .into_iter()
-            .partition(|(_, at)| now.saturating_duration_since(*at) >= quiet);
-        pending = waiting;
-        for (file, _) in ready {
-            on_change(&file);
-        }
-    }
-}
+mod hub;
 
 #[cfg(test)]
 mod tests;

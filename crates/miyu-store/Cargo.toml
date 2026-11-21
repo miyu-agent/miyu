@@ -66,3 +66,8 @@ path = "tests/all.rs"
 [[test]]
 name = "recall_vectors_measure"
 path = "tests/recall_vectors_measure.rs"
+
+# 整个进程的监视共用一组线程（施工 LW-11）：数的是整个进程的线程，自己一个程序。
+[[test]]
+name = "watch_threads"
+path = "tests/watch_threads.rs"
