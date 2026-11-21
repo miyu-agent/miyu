@@ -43,8 +43,8 @@ pub use search::{
     Answered, Fetched, Found, Hit, Missed, Query, Search, SearchPort, Unanswered, Using,
 };
 pub use settings::{
-    AUTO, BraveKey, DeepseekKey, ExaKey, ITEMS, Missing, SearchSettings, SearxngAddress, TavilyKey,
-    missing, with_extension_sources,
+    AUTO, BraveKey, DeepseekKey, ExaKey, ITEMS, SearchSettings, SearxngAddress, TavilyKey,
+    with_extension_sources,
 };
 pub use web_fetch::{PACKAGE, SOFTWARE, WEB_FETCH};
 pub use web_search::WEB_SEARCH;

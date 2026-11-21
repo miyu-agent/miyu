@@ -16,11 +16,10 @@
 - `miyu-endpoint` 的 `OptionState` 去掉 `NeedsKey`、`NeedsAddress`，`miyu-core` 的 `Kit::option_state` 只说冷却；`config.schema` 的选项不再带这两种 `note`。
 - 手册、协议参考里给人看的叫法：中文「看图的模型」「看图模型」改成「多模态模型」，英文 `vision model`、`the model that looks at images` 改成 `multimodal model`；反引号里照抄的程序原话不改（例如表情包后台的 `未配置看图模型`，那是表情包自己的字）。`models.md`、`config-keys.md` 里 `models.vision` 的说明照新说明写。联网服务那一页去掉「需要密钥」「需要地址」的说法。
 - 配置的样本（`internal/designs/samples/config/`）照新字重新生成。
+- 主会话 2026-11-21 审时定的两件：用量里用途的名字 `usage/purpose/vision` 也改成「多模态」（`Multimodal`、`マルチモーダル`）；`miyu_net::missing`（「这一家少配了什么」，原来只给下拉里那两句用）连同 `Missing` 和它的测试删掉。
 
 ### 不做什么
 
-- `miyu_net::missing`（「这一家少配了什么」）留着：它原来只给下拉里那两句用，现在核心正式代码里没人调了，只剩它自己的测试和 `settings/tests.rs` 里两处借它判断。删不删列进回报等拍板。
-- 用量里用途的名字 `usage/purpose/vision` 照旧是「看图」：这次只改默认模型那一项，要不要一起改列进回报问。
 - 接入通讯平台、网页、表情包这些仓库自己写的「看图模型」不在这个仓库里。
 
 ### 验收

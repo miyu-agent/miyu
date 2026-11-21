@@ -269,7 +269,7 @@
 **回应**：`{"rows": [...]}`。每一行包含：分组用的那几格（按 `purpose` 分组时另外带 `purpose_name`，是这个用途给人看的名字，使用连接的语言：核心自己的用途使用核心的说法，`purpose` 是 `null` 的那一行是主对话，扩展写的用途使用它的清单里 `[[purpose]]` 声明的名字；都没有名字时不带 `purpose_name`，界面按 `purpose` 原样显示）、`requests`（请求数）、`usage`（四项用量加起来的结果）、`amounts`（按币种各自累加，保持原样）、`unpriced`（有用量但是算不出金额的次数）、`converted`（换算成 `usage.currency` 以后的一个数：每一笔按它那一天的汇率换算，格式是 `{"currency","amount"}`；取不到汇率的那几笔放在它的 `rest` 里，写法和 `amounts` 相同；一笔都没有换算成功时不写这一格）、`converted_parts`（换算成功的那几笔按四种用量分别是多少：`{"uncached","cache_read","cache_write","output"}`，币种和 `converted` 相同，四种都在时加起来就是 `converted.amount`；用量是 0 的那一种是准确的 0；如果有一笔用到了某一种、而那一种的价格又不知道，那一种不写；如果这一行里有旧的、没有分成四种记录的账，整个 `converted_parts` 不写；没有 `converted` 时也不写）。每一种都按那一次请求自己记下的价格算好，跟着那一次请求记账，以后修改价格也不会变。所有会话都会记账。金额按配置的 `usage.currency` 排序、换算。如果用到了 open.er-api.com 的汇率，回应的顶层多一格 `rates`（来源和链接），界面要注明汇率的来源。
 
 ```json
-{"rows":[{"purpose":"vision","purpose_name":"看图","model":"deepseek/deepseek-flash","requests":2,"usage":{"uncached":1624,"cache_read":0,"cache_write":0,"output":18},"amounts":[{"currency":"USD","amount":0.0002544}],"unpriced":0,"converted":{"currency":"CNY","amount":0.00181896},"converted_parts":{"uncached":0.00174174,"cache_read":0,"cache_write":0,"output":0.00007722}}]}
+{"rows":[{"purpose":"vision","purpose_name":"多模态","model":"deepseek/deepseek-flash","requests":2,"usage":{"uncached":1624,"cache_read":0,"cache_write":0,"output":18},"amounts":[{"currency":"USD","amount":0.0002544}],"unpriced":0,"converted":{"currency":"CNY","amount":0.00181896},"converted_parts":{"uncached":0.00174174,"cache_read":0,"cache_write":0,"output":0.00007722}}]}
 ```
 
 这一行里缓存写入的价格不知道，但是它的用量是 0，所以 `cache_write` 仍然是 0；四种加起来就是 `converted.amount`。

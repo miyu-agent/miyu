@@ -17,7 +17,7 @@
 | `crates/miyu-net/src/search/scrape.rs` | 读 DuckDuckGo（HTML 版）、Bing 的结果页：建树照 class 找，链接解包，人机验证页当限额（N-3 下） |
 | `crates/miyu-net/src/search/rest.rs` | 发 REST 的请求，429、402 当限额（N-3 上） |
 | `crates/miyu-net/src/search/using.rs` | 这一次用得上的：挑的那一家、配的 key、SearXNG 的地址（N-3 上） |
-| `crates/miyu-net/src/settings.rs` | 设置项：联网服务（NF-1）、几家的 key、SearXNG 的地址；照这一轮的配置拼 `Using`，DeepSeek 照用供应商的 key；「少配了什么」；扩展的来源加进下拉的选项（N-5） |
+| `crates/miyu-net/src/settings.rs` | 设置项：联网服务（NF-1）、几家的 key、SearXNG 的地址；照这一轮的配置拼 `Using`，DeepSeek 照用供应商的 key；扩展的来源加进下拉的选项（N-5） |
 | `crates/miyu-net/src/search/extension.rs` | 扩展的来源（N-5）：问扩展的端口 `SearchPort`、挑了它的先问、冷却 |
 | `crates/miyu-core/src/kit/search.rs` | `SearchPort` 的实现：经 `miyu_endpoint::search_sources` 反向调扩展的 `search.query`，读回应（N-5） |
 | `crates/miyu-endpoint/src/search_sources.rs` | 找声明了这个来源的包、它的连接，发 `search.query`，认限额（N-5） |
@@ -96,7 +96,7 @@ Waits on multiple concurrent branches, ……
 | `crates/miyu-session/tests/tools.rs` 的 `a_call_runs_in_the_turns_directory_and_she_hears_the_result` | 派出去的调用带着这一轮冻结的配置 |
 | `crates/miyu-net/tests/search_keys.rs`（N-3 上） | 挑了带 key 的几家，key 放在各家要的地方；没配 key、没配地址的跳过；DeepSeek 只在挑了时用；SearXNG 照配的地址；Exa 的 key 接在地址后面 |
 | `crates/miyu-net/tests/net_service.rs`（施工 NF-1） | 联网服务选了 DeepSeek 的：搜索、代抓都打到 DeepSeek，key 照模型那边的 DeepSeek 供应商，代抓的网址写在正文里；DeepSeek 回 429、402、503 的搜、抓都退回免费的几家；搜索报了限额，抓也一起歇；选了 DeepSeek 时先交 DeepSeek Fetch、本机直抓不碰，它失败了才自己抓；自动的免费几家都不成、模型那边配了 DeepSeek 也一次不问它；没 key 的跳过 DeepSeek |
-| `crates/miyu-net/src/settings/tests.rs`（N-3 上） | 「少配了什么」和 `search.json` 的 `needs` 一致；照这一轮的配置拼 `Using`：key 照引用取、取不到的当没配、地址写成环境变量的、DeepSeek 照用供应商的 key |
+| `crates/miyu-net/src/settings/tests.rs`（N-3 上；「少配了什么」施工 FX-9 删了） | 照这一轮的配置拼 `Using`：key 照引用取、取不到的当没配、地址写成环境变量的、DeepSeek 照用供应商的 key |
 | `crates/miyu-core/src/kit/tests.rs` 的 `sources_missing_a_key_or_an_address_say_nothing`（N-3 上，施工 FX-9 改） | 下拉里没配 key、没配地址的什么都不写（原来写「需要密钥」「需要地址」，项目主人 2026-11-20 验收时定去掉），配了的、免 key 的也不写 |
 | `crates/miyu-net/src/web_search/tests.rs`（N-2 补） | 站点是主机名去掉 `www.`、小写，读不成的没有 |
 | `crates/miyu-net/src/search/scrape/tests.rs`（N-3 下） | DuckDuckGo 解 `uddg`、摘录跟着上一条标题、没摘录的不借；Bing 解 base64、广告不算、摘录不要「阅读更多」；人机验证页当限额、空页不算出错 |

@@ -6,7 +6,7 @@ use std::path::Path;
 use miyu_config::secret::{Reference, Secret};
 use miyu_config::{Value, Values};
 
-use super::{AUTO, ITEMS, Missing, SearchSettings, missing, using};
+use super::{AUTO, ITEMS, SearchSettings, using};
 
 /// 「DeepSeek Responses 接口内置」这个选项（设计 72）。
 const DEEPSEEK_RESPONSES: &str = "deepseek-responses";
@@ -68,30 +68,6 @@ fn the_deepseek_responses_option_is_listed_and_is_not_a_shipped_source() {
     .expect("读得了");
     let shipped: serde_json::Value = serde_json::from_str(&text).expect("是 JSON");
     assert!(shipped["sources"].get(DEEPSEEK_RESPONSES).is_none());
-    assert_eq!(
-        missing(DEEPSEEK_RESPONSES, &Values::defaults(&ITEMS.concat())),
-        None
-    );
-}
-
-/// 「少配了什么」和 `search.json` 里每家的 `needs` 一致（施工 N-3 上）：什么都没配时，要 key 的说要 key，要地址的说要地址，
-/// 别的不说。
-#[test]
-fn the_missing_check_agrees_with_what_each_source_needs() {
-    let text = std::fs::read_to_string(
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources/software/net/search.json"),
-    )
-    .expect("读得了");
-    let shipped: serde_json::Value = serde_json::from_str(&text).expect("是 JSON");
-    let values = Values::defaults(&ITEMS.concat());
-    for (id, source) in shipped["sources"].as_object().expect("有 sources") {
-        let expected = match source["needs"].as_str().expect("写了 needs") {
-            "key" => Some(Missing::Key),
-            "address" => Some(Missing::Address),
-            _ => None,
-        };
-        assert_eq!(missing(id, &values), expected, "{id}");
-    }
 }
 
 /// 这一轮的配置：最终值是 `values`，密钥照 `secrets` 取（名字或者环境变量 → 值）。
@@ -151,8 +127,4 @@ fn using_reads_the_picked_source_keys_and_address_from_the_turn() {
         "照用模型那边 DeepSeek 供应商的 key"
     );
     assert_eq!(got.address.as_deref(), Some("http://searx.local"));
-    assert!(
-        missing("deepseek", &turn.0).is_none(),
-        "供应商配了 DeepSeek 的也算配了"
-    );
 }

@@ -206,33 +206,3 @@ fn deepseek_provider(values: &miyu_config::Values) -> Option<Reference> {
 
 /// 联网包的 DeepSeek 的 key 这一项。
 const DEEPSEEK_KEY: &str = "net.search.deepseek.key";
-
-/// 来源少配了什么（施工 N-3 上）。原来设置页的下拉里照它在那一家后面写「需要密钥」「需要地址」，施工 FX-9 起不写了（项目主人
-/// 2026-11-20 验收时定）。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Missing {
-    /// 要 key，没配。
-    Key,
-    /// 要地址，没配。
-    Address,
-}
-
-/// 选项 `source` 照最终值 `values` 少配了什么：只看写没写，不取密钥本身。DeepSeek 照模型那边的供应商也算配了。和
-/// `search.json` 里每家的 `needs` 一致（`settings/tests.rs` 查）。
-pub fn missing(source: &str, values: &miyu_config::Values) -> Option<Missing> {
-    let set = match source {
-        "deepseek" => {
-            DeepseekKey::from(values).key.is_some() || deepseek_provider(values).is_some()
-        }
-        "tavily" => TavilyKey::from(values).key.is_some(),
-        "brave" => BraveKey::from(values).key.is_some(),
-        "searxng" => {
-            return SearxngAddress::from(values)
-                .url
-                .is_none()
-                .then_some(Missing::Address);
-        }
-        _ => return None,
-    };
-    (!set).then_some(Missing::Key)
-}

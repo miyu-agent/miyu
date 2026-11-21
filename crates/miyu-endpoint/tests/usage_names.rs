@@ -93,7 +93,7 @@ async fn rows_by_purpose_carry_a_name_in_the_connection_s_language() {
             (json!("join-approval"), json!("入群审核")),
             (json!("plain"), Value::Null),
             (json!("title"), json!("起标题")),
-            (json!("vision"), json!("看图")),
+            (json!("vision"), json!("多模态")),
         ],
         "没写用途的是主对话；扩展声明的照编号排第一的包；核心自己的扩展改不了名；都没有的不写"
     );
@@ -110,7 +110,7 @@ async fn rows_by_purpose_carry_a_name_in_the_connection_s_language() {
             json!("Join review"),
             Value::Null,
             json!("Titles"),
-            json!("Vision")
+            json!("Multimodal")
         ]
     );
     let reply = client
