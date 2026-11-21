@@ -8,14 +8,17 @@
 
 use miyu_kernel::event::{Body, Event};
 use miyu_kernel::id::{CallId, NestedId};
-use miyu_kernel::session::{Input, NestedInput, Verdict};
+use miyu_kernel::session::{Action, Input, NestedInput, Verdict};
 use miyu_kernel::time::Timestamp;
 use miyu_kernel::tool::Access;
 use miyu_tool::{GuardAsk, Guarded, Where};
 use tokio::task::AbortHandle;
 
+use std::sync::Arc;
+
 use super::Actor;
 use super::back::answer_back;
+use crate::blocking::blocking;
 use crate::port::Back;
 
 /// 在等守卫的一次调用：直接调的，脚本里调的（设计 65 第三节第 7 条）。
@@ -166,6 +169,49 @@ pub(crate) fn merged(policy: Verdict, guarded: Guarded, access: Access) -> Verdi
             detail,
         },
         (policy, _) => policy,
+    }
+}
+
+impl Actor {
+    /// 回内核的 `GuardTool`（施工 LW-10 下从 `actor.rs` 挪来，那个文件到了行数上限）：照权限策略判、看一眼要问人的、挂着扩展
+    /// 守卫的另起任务问；当场判完的交回送进内核的那一条。别的动作不归这里，不回。
+    pub(super) async fn guard_tool(&mut self, action: Action) -> Option<Input> {
+        let Action::GuardTool {
+            call_id,
+            name,
+            args,
+            cwd,
+            dirs,
+            permission,
+            // 本会话放行过的规则：权限策略不提规则了（施工 PV-RM），不看。
+            grants: _,
+        } = action
+        else {
+            return None;
+        };
+        // 判要碰磁盘（换真实的位置、造边界表）：在阻塞线程里判，不占跑异步任务的线程，慢盘上只让这个会话
+        // 自己等（施工 4-9 再补四下：原来当场在这里判）。
+        let guard = Arc::clone(&self.guard);
+        let asked = (name.clone(), args.clone(), cwd.clone());
+        let (verdict, checked) =
+            blocking(move || guard.judge(&name, args, cwd, &dirs, &permission)).await;
+        // 判过的真实位置派的时候交给工具（施工 5-18）。
+        self.tools.checked(call_id, checked);
+        // 要问人的先看一眼（施工 F-10 下）：装包问人的卡片照看一眼的那一份。
+        let (verdict, preview) = self
+            .tools
+            .previewed(&asked.0, asked.1.clone(), asked.2.clone(), verdict)
+            .await;
+        // 卡片上那一份跑的时候交给工具（施工 PK-3 上：装包照它批能力）。
+        self.tools.preview_for(call_id, preview);
+        // 挂着扩展守卫的另起任务问，答了再送（施工 HK-1，`guarding.rs`）。
+        let call = (asked.0.as_str(), asked.1.as_str(), asked.2.as_str());
+        self.guarded(Waiting::Call(call_id), call, verdict)
+            .map(|verdict| Input::ToolGuarded {
+                at: self.clock.now(),
+                call_id,
+                verdict,
+            })
     }
 }
 

@@ -51,6 +51,7 @@ mod said;
 mod seal;
 mod session_fact;
 mod shell;
+mod shelved;
 mod shorten;
 mod spans;
 mod steps;

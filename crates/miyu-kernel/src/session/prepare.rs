@@ -76,6 +76,11 @@ pub(super) struct Awaiting {
 }
 
 impl Prepare {
+    /// 有一次在路上（[`super::Session::resting`] 看它）。
+    pub(super) fn asking(&self) -> bool {
+        matches!(self.state, Some(State::Asking { .. }))
+    }
+
     /// 在路上、名字是 `upto` 的那一次。
     pub(super) fn aside(&mut self, upto: Seq) -> Option<&mut Aside> {
         match &mut self.state {

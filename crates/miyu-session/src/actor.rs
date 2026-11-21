@@ -16,7 +16,6 @@ use miyu_kernel::session::{Action, Input, Limits, Outcome, Session};
 use miyu_kernel::time::Timestamp;
 
 use crate::TARGET;
-use crate::blocking::blocking;
 use crate::clock::Clock;
 use crate::config::Turning;
 use crate::guard::Guard;
@@ -48,6 +47,7 @@ mod nested;
 pub(crate) mod persona;
 mod project_docs;
 mod run;
+mod shelf;
 mod skills;
 mod stop;
 mod store;
@@ -136,6 +136,10 @@ pub(crate) struct Actor {
     quiet: Instant,
     /// 封存了的退得下了的那面旗，和 `Handle` 共用（施工 V-51，`handle/retire.rs`）：每办完一封照账立起、放下（`life.rs`）。
     bell: Arc<crate::handle::Bell>,
+    /// 歇着满这一刻收成槽（施工 LW-10 下，`shelf.rs`）：没记的不等。
+    shelf_due: Option<tokio::time::Instant>,
+    /// 收成槽的历史上一次从日志读不回来，为什么（`shelf.rs`）：读回来了就没有。
+    unread: Option<String>,
 }
 
 /// 会话停了：写不进去。
@@ -214,6 +218,8 @@ impl Actor {
             persona: None,
             goal_run: goal::GoalRun::default(),
             quiet: Instant::now(),
+            shelf_due: None,
+            unread: None,
         }
     }
 
@@ -245,6 +251,7 @@ impl Actor {
             }
             // 后台命令还在跑、续轮先不开的（施工 X-7 再补，`goal.rs`）：等满保底时长醒一次，回到上面照常开。
             let wake = self.goal_run.wake;
+            let due = self.shelf_due;
             let input = tokio::select! {
                 biased;
                 Some(back) = self.back.recv() => match self.back(back) {
@@ -269,6 +276,15 @@ impl Actor {
                         true => return,
                         false => continue,
                     },
+                    // 头要上下文的明细（`session.context`）：收成了槽的先放回来再要（`shelf.rs`）。
+                    Some(Mail::Context(reply)) => match self.unshelve().await {
+                        Ok(()) => {
+                            self.context(reply);
+                            self.rest_later();
+                            continue;
+                        }
+                        Err(Stop) => return,
+                    },
                     None => {
                         self.settle_sync().await;
                         tracing::info!(target: TARGET, "closed");
@@ -277,6 +293,12 @@ impl Actor {
                 },
                 () = tokio::time::sleep_until(wake.unwrap_or_else(tokio::time::Instant::now)),
                     if wake.is_some() => continue,
+                // 歇着满 3 分钟收成槽（施工 LW-10 下，`shelf.rs`）。
+                () = tokio::time::sleep_until(due.unwrap_or_else(tokio::time::Instant::now)),
+                    if due.is_some() => {
+                    self.rest();
+                    continue;
+                }
             };
             if self.drain(VecDeque::from([input])).await.is_err() {
                 return;
@@ -306,6 +328,8 @@ impl Actor {
                 true => tracing::trace!(target: TARGET, kind, "input"),
                 false => tracing::debug!(target: TARGET, kind, "input"),
             }
+            // 闲下来收成了槽的，要看历史以前先读回来（施工 LW-10 下，`actor/shelf.rs`）。
+            self.unshelve_for(&input).await?;
             let actions = crate::timing::handle(&mut self.session, input, &mut self.asked);
             // 内核一收下就写「有没有在跑的回合」：回应在批中间就发出去了，回合开头慢的那一阵不能算闲着（`tests/busy.rs`）。
             self.settle_busy();
@@ -320,6 +344,7 @@ impl Actor {
         self.after_batch();
         self.settle_busy();
         self.push_now(!fragments);
+        self.rest_later();
         Ok(())
     }
 
@@ -398,40 +423,8 @@ impl Actor {
                 self.tools.forget_checked();
                 None
             }
-            Action::GuardTool {
-                call_id,
-                name,
-                args,
-                cwd,
-                dirs,
-                permission,
-                // 本会话放行过的规则：权限策略不提规则了（施工 PV-RM），不看。
-                grants: _,
-            } => {
-                // 判要碰磁盘（换真实的位置、造边界表）：在阻塞线程里判，不占跑异步任务的线程，慢盘上只让这个会话
-                // 自己等（施工 4-9 再补四下：原来当场在这里判）。
-                let guard = Arc::clone(&self.guard);
-                let asked = (name.clone(), args.clone(), cwd.clone());
-                let (verdict, checked) =
-                    blocking(move || guard.judge(&name, args, cwd, &dirs, &permission)).await;
-                // 判过的真实位置派的时候交给工具（施工 5-18）。
-                self.tools.checked(call_id, checked);
-                // 要问人的先看一眼（施工 F-10 下）：装包问人的卡片照看一眼的那一份。
-                let (verdict, preview) = self
-                    .tools
-                    .previewed(&asked.0, asked.1.clone(), asked.2.clone(), verdict)
-                    .await;
-                // 卡片上那一份跑的时候交给工具（施工 PK-3 上：装包照它批能力）。
-                self.tools.preview_for(call_id, preview);
-                // 挂着扩展守卫的另起任务问，答了再送（施工 HK-1，`guarding.rs`）。
-                let call = (asked.0.as_str(), asked.1.as_str(), asked.2.as_str());
-                self.guarded(guarding::Waiting::Call(call_id), call, verdict)
-                    .map(|verdict| Input::ToolGuarded {
-                        at: self.clock.now(),
-                        call_id,
-                        verdict,
-                    })
-            }
+            // 交给执行前的链判（`guarding.rs` 的 `guard_tool`）。
+            guard @ Action::GuardTool { .. } => self.guard_tool(guard).await,
             action @ Action::RunTool { .. } => self.run_tool(action), // `actor/run.rs`
             // 叫它停（施工 4-9 再补一）：只举旗，工具交回来照常送回。
             Action::StopTool { call_id } => {

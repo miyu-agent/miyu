@@ -31,6 +31,11 @@ pub(super) struct Sight {
 }
 
 impl Sight {
+    /// 有图正在转（[`super::Session::resting`] 看它）。
+    pub(super) fn looking(&self) -> bool {
+        !self.looking.is_empty()
+    }
+
     /// 记下追加的一条：`image.described` 记下它的转述。
     pub(super) fn note(&mut self, event: &Event) {
         if let Body::ImageDescribed(described) = &event.body {

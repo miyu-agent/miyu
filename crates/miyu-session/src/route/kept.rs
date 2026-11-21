@@ -18,7 +18,7 @@ use crate::TARGET;
 /// 没有主请求满这么久，放掉留着的历史：3 分钟。和会话闲够 3 分钟退下（`protocol.md`「会话表」第 9 条）是同一个数：窗口开着、
 /// 会话退不下的时候，闲着的会话也像退下了一样不留这一份。不做成配置项（施工单 LW-3「不做什么」）：它只是缓存，放掉以后下一次
 /// 请求多编十几毫秒，发出去的字节不变，没有要人来选的。
-pub(super) const KEEP: Duration = Duration::from_secs(180);
+pub(crate) const KEEP: Duration = Duration::from_secs(180);
 
 /// 一个会话留着的编好的历史，和放掉它的定时。路由里一个会话一份，放在 `Arc` 里：定时的任务只拿弱引用。
 #[derive(Debug, Default)]

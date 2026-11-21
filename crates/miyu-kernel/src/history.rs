@@ -8,6 +8,8 @@
 //! 检查点上（[`History::settle`]，`internal/blueprint/kernel/history.md`「从日志的一段重建」）。载入也这样重建。
 //!
 //! 压缩以后多出来的容量放掉（施工 V-37 上）：不然压缩以前长到多少条，就一直占着多少条的地方。
+//!
+//! 会话闲下来以后连这一段的正文也不留（施工 LW-10 下，`history/shelf.rs`）：收成槽，只记序号，要用时由执行器从日志原样读回。
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -15,11 +17,13 @@ use crate::event::{Body, Event};
 use crate::id::{ContentHash, JobId, Seq, SessionId, TurnId};
 
 mod jobs;
+mod shelf;
 mod states;
 mod todos;
 mod undo;
 
 pub use jobs::Dispatched;
+pub use shelf::Missing;
 pub use states::touches as touches_states;
 pub(crate) use todos::clears;
 
@@ -53,6 +57,8 @@ pub struct History {
     own: Option<SessionId>,
     /// 分叉来源（施工 C-8 上）：底子里那个会话自己的回复也算这个会话的线，群聊近况不把它们再渲染成 `[you]` 行。
     forked_from: Option<SessionId>,
+    /// 闲下来收成了槽（施工 LW-10 下，`history/shelf.rs`）：这时检查点、事件、放在一边的几截都是空的，整条要从日志读回来放回。
+    shelf: Option<shelf::Shelf>,
 }
 
 impl History {
@@ -194,6 +200,7 @@ impl History {
             states: self.states.clone(),
             own: self.own.clone(),
             forked_from: self.forked_from.clone(),
+            shelf: None,
         }
     }
 
@@ -216,6 +223,7 @@ impl History {
             states: self.states.clone(),
             own: self.own.clone(),
             forked_from: self.forked_from.clone(),
+            shelf: None,
         }
     }
 
@@ -283,8 +291,16 @@ impl History {
     /// 恢复放回来再落。
     ///
     /// 留着一切的那一份（[`History::whole`]）调过它，就成了平时那一份：从日志的一段重建就是这样收完的。平时那一份的
-    /// 事件里只有恢复放回来的才有压缩。
+    /// 事件里只有恢复放回来的才有压缩。成了平时那一份，工具结果里改了的文件的原文也去掉（同 [`History::append`]，施工 V-18）：
+    /// 重建的和一路追加的一样，收成槽再放回的也一样（施工 LW-10 下，`history/shelf.rs`）。
     pub fn settle(&mut self) -> bool {
+        if self.whole {
+            let all = self
+                .events
+                .iter_mut()
+                .chain(self.undone.iter_mut().flatten());
+            all.chain(self.checkpoint.as_mut()).for_each(forget_texts);
+        }
         self.whole = false;
         let Some(k) = self
             .events
@@ -312,7 +328,8 @@ impl History {
     /// （`history/undo.rs`）；下一轮开始、压缩了，放在一边的就丢掉。撤回：丢掉撤回的消息。`turn.reverted`、
     /// `turn.unreverted`、`message.withdrawn` 本身用过就丢，它们不进上下文。其余的照先后留着。放回来的里面有压缩的（撤掉
     /// 压缩的那一次撤销放在一边的），再落到检查点上（[`History::settle`]）。每一条都先记派出去的任务（[`History::note`]）。
-    /// 工具结果里改了的文件的原文去掉，只留哈希（施工 V-18）；留着一切的那一份照留。
+    /// 工具结果里改了的文件的原文去掉，只留哈希（施工 V-18）；留着一切的那一份照留。收成了槽的（`history/shelf.rs`）先另放着，
+    /// 放回来时再照先后接上。
     pub fn append(&mut self, mut event: Event) {
         self.jobs.note(&event);
         self.todos.note(&event);
@@ -320,6 +337,13 @@ impl History {
         if !self.whole {
             forget_texts(&mut event);
         }
+        if let Some(event) = self.hold(event) {
+            self.apply(event);
+        }
+    }
+
+    /// 收一条记过任务、待办、包的状态的事件：压缩、撤销、恢复、撤回照 [`History::append`] 说的规矩，其余的照先后留着。
+    fn apply(&mut self, event: Event) {
         match &event.body {
             Body::ContextCompacted(_) if self.whole => {
                 self.events.push(event);

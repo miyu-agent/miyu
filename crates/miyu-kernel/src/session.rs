@@ -55,10 +55,12 @@ mod revert;
 mod seal;
 mod send;
 mod shell;
+mod shelve;
 mod shorten;
 mod sight;
 mod spans;
 mod states;
+mod status;
 mod step;
 mod summary;
 mod supersede;
@@ -187,6 +189,9 @@ pub struct Session {
     told_states: states::Told,
     /// 嵌套调用（施工 M-1，`nested.rs`）：只在内存里，载入以后没有。
     nested: nested::Nested,
+    /// 收成了槽（施工 LW-10 下，`shelve.rs`）时算好的「有没有能压的」：收着时答 [`Session::compactable`]。没收着的、收着又送了要看
+    /// 历史的输入（读不回来的那段时间）的没有。
+    rested: Option<bool>,
 }
 
 impl Session {
@@ -231,35 +236,15 @@ impl Session {
         &self.environment.cwd
     }
 
-    /// 落了盘的最后一条（施工 3-8 六补）：`Stored` 送进来那一刻就推送了，所以也是推过的最后一条；还没落过盘的没有，载入的
-    /// 是日志里最后一条。纯查询：会话 actor 订阅时照它定补发补到哪一条（`internal/blueprint/session/actor.md` 第 6 条）。
-    pub fn landed(&self) -> Option<Seq> {
-        self.stored
-    }
-
-    /// 删得了没有（施工 3-8 三补，`protocol.md` 的 `session.delete`）：不空闲的删不了，正在读回日志的是
-    /// [`Reason::Restoring`]，别的（有回合在进行、结束了 `turn.ended` 还没落盘）是 [`Reason::TurnRunning`]。纯查询：会话
-    /// actor 照它答应删、停下，挪目录是会话表的事。
-    ///
-    /// # Errors
-    ///
-    /// 删不了，交回原因。
-    pub fn deletable(&self) -> Result<(), Reason> {
-        if self.reading.is_some() {
-            return Err(Reason::Restoring);
-        }
-        match self.idle() {
-            true => Ok(()),
-            false => Err(Reason::TurnRunning),
-        }
-    }
-
     /// 送进一条输入，出来一串动作。
     ///
     /// # Panics
     ///
     /// 内核自己造出的事件过不了账本时 panic：那是内核的 bug，不是命令的拒绝。
+    ///
+    /// 收成了槽的（[`Session::shelve`]）执行器先放回来再送要看历史的输入（[`Session::needs_history`]，`shelve.rs`）。
     pub fn handle(&mut self, input: Input) -> Vec<Action> {
+        self.forget_rested(&input);
         let mut actions = self.react(input);
         self.splice_nested(&mut actions);
         actions.extend(self.dispatch_nested());

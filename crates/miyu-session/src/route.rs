@@ -107,6 +107,7 @@ use crate::config::TurnConfig;
 use crate::port::{Cancel, ForSession, ModelPort, Models, Reports, Sight};
 use base::Seat;
 use choice::Unsent;
+pub(crate) use kept::KEEP;
 use kept::Kept;
 
 /// 空闲超时的初值：多久没收到新的字节就算断了（`05-内核接口.md` 第七节）。每次请求照它的思考强度放大（施工 8-18，

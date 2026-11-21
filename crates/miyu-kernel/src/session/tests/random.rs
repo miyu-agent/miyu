@@ -63,6 +63,7 @@ mod replies;
 mod reporting;
 mod rereading;
 mod rng;
+mod shelving;
 mod sighting;
 mod stopping;
 mod undoing;

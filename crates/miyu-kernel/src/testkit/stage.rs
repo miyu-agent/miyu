@@ -101,6 +101,8 @@ pub struct Stage {
     pub(super) shells: super::shell::Bench,
     /// 等确认到时：等多久、交出的截止时刻（施工 CD-1，`expiry.rs`）。
     pub(super) expiries: super::expiry::Expiries,
+    /// 歇着就收成槽（施工 LW-10 下，`shelf.rs`）：收不收、收了几次、收起来以前的有效历史。
+    pub(super) shelf: super::shelf::Shelving,
 }
 
 impl Stage {
@@ -434,11 +436,13 @@ impl Stage {
     /// 一条条送，回每个动作，直到没有要送的。
     pub(super) fn drain(&mut self, mut inputs: VecDeque<Input>) {
         while let Some(input) = inputs.pop_front() {
+            self.put_back(&input);
             let actions = self.session.handle(input);
             for action in actions {
                 inputs.extend(self.act(action));
             }
         }
+        self.rest();
     }
 
     /// 载入吐出来的、造会话吐出来的动作，也照样回。

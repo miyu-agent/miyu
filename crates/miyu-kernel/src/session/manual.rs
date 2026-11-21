@@ -74,9 +74,13 @@ impl Session {
     }
 
     /// 这一刻有没有能压的（施工 W-12，网页要的：换人格、预设之前问不问「切换前会压缩」）：和 `session.compact` 回不回
-    /// `nothing_to_compact` 同一个判法（手动压缩替代到哪，`manual_upto`）。有回合在进行不影响它。
+    /// `nothing_to_compact` 同一个判法（手动压缩替代到哪，`manual_upto`）。有回合在进行不影响它。收成了槽的（`shelve.rs`）照收的
+    /// 时候算好的；读不回来、收着又送了输入的算不了，当没有。
     pub fn compactable(&self) -> bool {
-        self.manual_upto().is_some()
+        match self.shelved() {
+            Some(_) => self.rested_compactable().unwrap_or(false),
+            None => self.manual_upto().is_some(),
+        }
     }
 
     /// 手动压缩替代到哪（`compaction.md` 第七条第 2 条）：照还没开的那一轮算，没有触发；尾巴的预算见

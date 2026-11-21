@@ -31,6 +31,7 @@ mod rebuild;
 mod recap;
 mod redo;
 mod reports;
+pub(super) mod shelf;
 mod shorten;
 mod sight;
 mod stopping;
@@ -119,6 +120,8 @@ pub(super) struct Watch {
     /// 替它看图（施工 8-17）：在路上的、转述过的、每一轮没成的。
     pub(super) sight: sight::Sight,
     pub(super) nesting: nested::Nesting,
+    /// 在随机的时刻收成槽、要看历史以前放回（施工 LW-10 下，`watch/shelf.rs`）。
+    pub(super) shelf: shelf::Shelf,
 }
 
 impl Watch {
@@ -170,6 +173,7 @@ impl Watch {
             models: configure::Models::default(),
             sight: sight::Sight::default(),
             nesting: nested::Nesting::default(),
+            shelf: shelf::Shelf::new(seed),
         }
     }
 
@@ -264,7 +268,7 @@ impl Watch {
             _ => {}
         }
         let nested = nested::of(&input);
-        let actions = session.handle(input);
+        let actions = self.handled(session, input);
         self.nested_fed(nested, &actions);
         if let Some(id) = &repeated {
             self.applied_once(id, &actions);

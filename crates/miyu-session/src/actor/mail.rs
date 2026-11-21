@@ -29,6 +29,8 @@ pub(super) enum Mail {
     Delete(bool, oneshot::Sender<Result<(), Reason>>),
     /// 闲够了，答了会话表，退出（施工 V-2 再补，`life.rs`）。
     Retired,
+    /// 头要上下文的明细（`session.context`）：收成了槽的要先从日志读回来，在 `run` 里办（施工 LW-10 下，`shelf.rs`）。
+    Context(oneshot::Sender<crate::Context>),
 }
 
 impl Actor {
@@ -82,10 +84,7 @@ impl Actor {
                 self.settle_prefix();
                 Mail::Done
             }
-            Message::Context(crate::handle::context::Asked::Now(reply)) => {
-                self.context(reply);
-                Mail::Done
-            }
+            Message::Context(crate::handle::context::Asked::Now(reply)) => Mail::Context(reply),
             Message::Context(crate::handle::context::Asked::Spent(reply)) => {
                 self.usage_parts(reply);
                 Mail::Done

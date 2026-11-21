@@ -10,6 +10,7 @@ mod jobs;
 mod ordered;
 mod recall;
 mod settle;
+mod shelf;
 mod texts;
 mod undo;
 mod whole;

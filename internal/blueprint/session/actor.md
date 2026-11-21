@@ -21,6 +21,7 @@
 | `crates/miyu-session/src/actor/model/hooks.rs` | 回合开始问记忆、知识库两个挂接点，各自限时（施工 PF-3 从 `model.rs` 挪出来） |
 | `crates/miyu-session/src/timing.rs`、`timing/turn.rs` | `DEBUG` 时量用时：一次模型请求每一段（`request timed`，施工 YC-14）、回合开始的挂接点每一段（`turn start timed`，施工 PF-3）；`blocking.rs` 在量着的那一段里记阻塞线程来回等的 |
 | `crates/miyu-session/src/actor/life.rs` | 起 actor 的任务、看着它，停了以后把堆还给系统；闲够了退下：照自己的账答会话表（施工 V-2 再补从 `actor.rs` 挪出来，那个文件到了行数上限；第 9 条）；封存了的每办完一封照这本账看一次，退得下了报会话表（`offer_retire`，施工 V-51）；交给 `Handle` 的几份（`busy`、`shown`、`watched`、`leaving`，施工 V-51 从 `actor.rs` 挪来，同样的原因） |
+| `crates/miyu-session/src/actor/shelf.rs` | 闲下来收成槽（施工 LW-10 下）：歇着满 3 分钟叫内核收、要看历史以前从日志读回放回、读不回时请求一律不发（「闲下来收成槽」） |
 | `crates/miyu-session/src/actor/stop.rs` | 有计划地停下：要重启了、后台命令记 `restarted`、落了盘再整组杀（施工 7-3） |
 | `crates/miyu-session/src/actor/store.rs` | 写盘，哪一批要同步（`must_sync`，施工 V-18）；撤掉压缩时读回日志（施工 6-9） |
 | `crates/miyu-session/src/handle.rs` | `Handle`：发命令、订阅、停下；推送 |
@@ -280,6 +281,15 @@
 | 写不进去、写盘的线程 panic 了 | 第 5 条 |
 | actor 自己 panic 了（内核的 bug、端口的 bug） | 看着它的任务记一行 `panicked, stopped`，别的会话照常 |
 
+**闲下来收成槽**（施工 LW-10 下，`actor/shelf.rs`，`kernel/session.md`「闲下来收成槽」。2026-11-22 项目主人定：没有回合在运行的会话占用的堆不超过 150 kB，并且和历史的长短无关；再说话时第一次请求多十几毫秒可以接受）：窗口开着时，会话一直被订阅着，不会退下（第 9 条），所以有效历史的正文原来一直留在内存里。
+
+1. 什么时候收：每处理完一批输入（`drain` 收尾），如果内核歇着（`resting()`）并且历史还没有收起来，执行器记下「这一刻加 3 分钟」（`KEEP`，和请求体缓存放掉、会话闲够退下是同一个数，见第 8 条第 5 款、`protocol.md`「会话表」第 9 条）；如果内核不在歇着，就擦掉记下的时刻。主循环的 `select!` 只在记着时刻的时候睡到那一刻，不轮询；醒来时如果内核仍然歇着，执行器让内核收起来（`shelve()`）。如果其间又处理了一批输入，就从那一批重新计时。载入完成、只是被订阅着的会话也使用这个时刻，因为载入产生的那一串动作处理完就算一批。收完以后，执行器不会再为这件事醒来。
+2. 收的时候取出来的整条事件，交给一个释放完就退出的线程去释放（`blocking::release`），然后攒一次还给系统（`trim_soon`，`heap.md`「怎么走」第 2 条）。这样做是因为：如果在常驻的线程上释放，glibc 的线程缓存会钉住解日志的那几个分配区的页（`kernel/history.md`「闲下来收成槽」）。
+3. 什么时候放回：对于送进内核的每一条输入，如果内核说这条输入要看历史（`needs_history`），并且历史已经收起来，执行器就先放回。执行器在一个做完就退出的线程里，按照内核给出的序号读日志（`Store::events_from`；`miyu_store::log::read_range` 按序号定位着读，前面的行只数换行、不解析，和撤掉压缩时读回的做法相同，见第 4 条），把读到的事件交给内核（`unshelve`，内核拷贝需要的那几条），读到的那一份按照第 2 条的做法交出去释放。分叉出来的会话会连同父会话日志里的底子一起读（`Indexed::events_from`）。头查询上下文的明细（`session.context`）时不经过内核的输入，执行器也先放回历史，再向内核查询（`breakdown()`）。放回成功以后记一行 `DEBUG history unshelved`。
+4. 读不回来（日志损坏、被截短、读盘出错、读的时候被改短，内核报 `Missing`）：会话仍然运行，执行器记一行 `WARN history unreadable`（`from`、`why`）。内核的历史仍然保持收起来的状态，执行器仍然送进这一条输入，此时投影看到的是空的历史。这种情况下执行器一律不发请求：主请求、辅助请求当场按「没有发出去」结束（分类 `other`，原话「这个会话的历史从日志读不回来，请求没有发出去：<为什么>」），替它看图当场 `unseen`（同一句话）。这一轮按没有发出去收场，因此不会拼出缺少一段历史的请求。同一轮里执行器不再读日志；之后会话空闲时来了要看历史的输入，执行器再读一次，读回来以后恢复正常，收着时追加的事件按先后接上（`kernel/history.md`「闲下来收成槽」第 5 条）。`session.context` 在读不回来时使用收起来的那一份回答，对话部分是空的。
+5. 写日志的那一份（`Store`）在读的时候交给读日志的线程，读完以后拿回来。如果读日志的线程 panic，执行器记一行 `panicked, stopped`，会话停下（和第 4 条读回日志时相同）。
+6. 一个回合里，有效历史仍然整条留在内存里，每一步都不读盘。只有人说话以后（或者回报、定时叫醒以后）的第一次请求，需要多读、多解析一遍日志里检查点以后的那一段。
+
 **换快照**（施工 P-1 再补，`actor/persona.rs`、`snapshot.rs`，`kernel/session.md`「换策略快照」）：
 
 1. 造会话、载入时交给 actor 一份 `Refresh`：人格的几层、资源目录、存 blob 的地方、现在的快照、是不是子会话；预设的几层和装了的软件（`Create.presets`、`Load.presets`，端点交）、工具目录、场所、父会话（施工 P-2 下，重新筛工具面用）。载入照整份日志里最近一条带 `policy` 的 `session.policy_changed` 取快照，没有的照 `session.created` 的。
@@ -303,6 +313,9 @@ actor 退出以后：等着回应的命令、要订阅的、要停下的，都�
 |---|---|---|---|
 | INFO | `created` | `persona`、`venue`、`tools`（几件） | 造好会话，起 actor 之前 |
 | INFO | `retired` | — | 闲够了退下（第 9 条，施工 V-2 再补） |
+| DEBUG | `history shelved` | `events`（拿出来几条） | 歇着满 3 分钟，有效历史收成槽（「闲下来收成槽」第 1 条，施工 LW-10 下） |
+| DEBUG | `history unshelved` | `from`（从第几条读起）、`took_us`（读日志、解、放回一共多少微秒） | 要看历史以前从日志读回、放回了（「闲下来收成槽」第 3 条） |
+| WARN | `history unreadable` | `from`、`why` | 收成槽的历史从日志读不回来（「闲下来收成槽」第 4 条） |
 | — | （载入以后、会话停了以后） | — | 载入交回把手、actor 的任务结束它占的放掉以后，在阻塞线程里把堆里空着的还给系统（施工 V-2 再补，`heap.md`） |
 | INFO | `loaded` | `events`（几条）；`read_ms`、`snapshot_ms`、`memory_ms`、`scan_ms`、`replay_ms`、`total_ms`：读、解日志，读快照，接上记忆，几样从日志重建的（看过的文件、任务、发给谁、累计用量），内核重放，各用了多少毫秒，和载入一共用了多少（含等模型目录读完；施工 V-2 中、下） | 载入，起 actor 之前 |
 | INFO | `request` | `seen`、`endpoint`、`model`、`changed`（变了的才有）、`tools`（这一次请求的工具名，照请求里的先后用逗号连起来；没有工具的不写，施工 FX-8） | 第 7 条 |

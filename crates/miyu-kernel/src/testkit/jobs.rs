@@ -13,8 +13,9 @@ use crate::origin::{By, Session};
 use crate::session::{Command, Input, Received, Subagent, Upward};
 
 impl Stage {
-    /// 这时的上下文一块块的（施工 CX-2，`Session::breakdown`）：看回报算进明细没有。
-    pub fn breakdown(&self) -> crate::session::Breakdown {
+    /// 这时的上下文一块块的（施工 CX-2，`Session::breakdown`）：看回报算进明细没有。收成了槽的先放回来（`shelf.rs`，同会话 actor）。
+    pub fn breakdown(&mut self) -> crate::session::Breakdown {
+        self.unshelve();
         self.session.breakdown()
     }
 

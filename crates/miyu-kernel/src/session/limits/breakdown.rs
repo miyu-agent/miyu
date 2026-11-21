@@ -136,7 +136,8 @@ pub fn breakdown_in(frame: &Frame, history: &History, price: &dyn Price) -> Brea
 }
 
 impl Session {
-    /// 这时的上下文一块块的（施工 CX-1 上）：会话 actor 收到头问的时候向内核要一份。
+    /// 这时的上下文一块块的（施工 CX-1 上）：会话 actor 收到头问的时候向内核要一份。收成了槽的（`shelve.rs`）执行器先放回来再要：
+    /// 收着时算的是空的历史。
     pub fn breakdown(&self) -> Breakdown {
         let request = self.policy.assembler.assemble(&self.history);
         let priced = self.price();

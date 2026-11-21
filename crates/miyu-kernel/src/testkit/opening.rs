@@ -235,6 +235,7 @@ impl Stage {
             swap: None,
             shells: Default::default(),
             expiries: super::expiry::Expiries::default(),
+            shelf: super::shelf::Shelving::default(),
         };
         stage.settle(actions);
         stage

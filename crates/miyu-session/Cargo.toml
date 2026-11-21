@@ -164,6 +164,16 @@ path = "tests/read_back_log.rs"
 name = "recap_log"
 path = "tests/recap_log.rs"
 
+# 闲下来收成槽（施工 LW-10 下）：装日志订阅者，照暂停的时钟拨。
+[[test]]
+name = "shelf_log"
+path = "tests/shelf_log.rs"
+
+# 量尺（施工 LW-10 下）：量整个进程的堆。
+[[test]]
+name = "shelved_bytes"
+path = "tests/shelved_bytes.rs"
+
 [[test]]
 name = "route_learned"
 path = "tests/route_learned.rs"

@@ -46,8 +46,12 @@ impl Session {
 
     /// 这时的上下文用量（施工 8-15，`internal/blueprint/models.md`「怎么走」第九条第 7 条）：照有效历史组装这时的请求，用和压缩线
     /// 同一个算法估（`compaction.md` 第一条：锚加上锚以后的本地估算）。她自己查用量的工具（`session_usage`）派出去时，执行器
-    /// 向内核要一份。策略里没有压缩、没交过限额的算不了，没有。只读，不出动作。
+    /// 向内核要一份。策略里没有压缩、没交过限额的算不了，没有。收成了槽的（`shelve.rs`）也算不了，没有：执行器只在回合里要，那时
+    /// 已经放回来了。只读，不出动作。
     pub fn context_used(&self) -> Option<u64> {
+        if self.shelved().is_some() {
+            return None;
+        }
         self.used(&self.assembled())
     }
 

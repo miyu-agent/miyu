@@ -55,6 +55,11 @@ impl Actor {
         let (stop, cancel) = oneshot::channel();
         self.calls.insert(seen, (stop, Instant::now()));
         let reports = Reports::new(seen, self.backs.clone()).timed(self.asked.take());
+        // 收成槽的历史读不回来：不发，当场照没发出去说完（施工 LW-10 下，`shelf.rs`）。
+        if let Some(error) = self.unreadable() {
+            reports.ended(None, Some(error), None, None);
+            return;
+        }
         let config = self.config.current();
         self.model
             .call(seen, request, config, reports, Cancel::new(cancel));
@@ -79,6 +84,10 @@ impl Actor {
         self.asides.push((purpose.clone(), upto, stop, asked));
         self.overdue(purpose.clone(), upto, asked);
         let reports = Reports::aside(purpose, upto, self.backs.clone());
+        if let Some(error) = self.unreadable() {
+            reports.ended(None, Some(error), None, None);
+            return;
+        }
         let config = self.config.current();
         self.model
             .call(upto, request, config, reports, Cancel::new(cancel));
@@ -88,6 +97,10 @@ impl Actor {
     /// 回来的没人收。
     pub(super) fn describe(&mut self, blob: ContentHash, request: Request) {
         let sight = Sight::new(blob, self.backs.clone());
+        if let Some(error) = self.unreadable() {
+            sight.unseen(error.message);
+            return;
+        }
         let config = self.config.current();
         self.model.describe(request, config, sight);
     }

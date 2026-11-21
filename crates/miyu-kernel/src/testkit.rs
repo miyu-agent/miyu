@@ -23,6 +23,7 @@ mod prepare;
 mod respond;
 mod routing;
 mod script;
+mod shelf;
 mod shell;
 mod sight;
 mod stage;
