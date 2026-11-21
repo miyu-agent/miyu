@@ -30,6 +30,10 @@ pub trait SessionPort: Send + Sync {
     /// 不做。
     fn moved(&self, _session: SessionId) {}
 
+    /// 会话 `session` 有没有能恢复的撤销变了（施工 FX-13）：撤了、恢复了、撤了以后开过回合。核心照它放掉等这个会话撤回处理
+    /// 的循环、再挑一遍（`schedules.md` 第三节第 9 条）。只报「变了」，现在是什么看 `Handle::restorable`。默认什么都不做。
+    fn restorable(&self, _session: SessionId) {}
+
     /// 封存了的会话 `session` 没事了、退得下了（施工 V-51，`session/actor.md`「退下」）：会话表照它当场问一次退不退，不等
     /// 隔一阵问的那一遍。只报一声：可能是在会话表的锁里放下把手时报的，不能等那把锁。默认什么都不做。
     fn retirable(&self, _session: SessionId) {}

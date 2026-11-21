@@ -57,8 +57,8 @@ impl Actor {
         Arc::clone(&self.waiting)
     }
 
-    /// 每批送完：写「有没有在跑的回合」（和 `Handle` 共用）；记下了、或者忙不忙变了的，经会话表的端口报这一项变了。没有会话表
-    /// 端口的（测试里自己造的会话）不报。
+    /// 每批送完：写「有没有在跑的回合」（和 `Handle` 共用）；记下了、或者忙不忙变了的，经会话表的端口报这一项变了。有没有能恢复
+    /// 的撤销同一处写（施工 FX-13），变了的另报一声。没有会话表端口的（测试里自己造的会话）不报。
     pub(super) fn settle_busy(&mut self) {
         let busy = !self.session.idle();
         let was = self.busy.swap(busy, Ordering::AcqRel);
@@ -74,6 +74,15 @@ impl Actor {
             && let Some(agents) = self.tools.agents()
         {
             agents.port.moved(agents.session.clone());
+        }
+        // 有没有能恢复的撤销（施工 FX-12）：人敲 `/loop` 的回执照它说循环先搁着，搁着的循环照它等（施工 FX-13）。先写再报：
+        // 核心听到这一声再看的时候已经是新的。
+        let restorable = self.session.restorable();
+        let was_restorable = std::mem::replace(&mut self.counted().restorable, restorable);
+        if was_restorable != restorable
+            && let Some(agents) = self.tools.agents()
+        {
+            agents.port.restorable(agents.session.clone());
         }
     }
 }

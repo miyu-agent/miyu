@@ -88,7 +88,7 @@ impl Slash for LoopCommand {
                 _ => None,
             };
             let stopped = stop(call.core, call.session)?;
-            // 有能恢复的撤销时循环交来的那一句只记下、不开一轮（`jobs.rs` 的 `can_wake`，施工 FX-12）：回执照实说循环先搁着。
+            // 有能恢复的撤销时循环先搁着、不交那一句（施工 FX-12、FX-13，`schedules/fire.rs` 的 `waits`）：回执照实说。
             let restorable = call.found.handle.restorable();
             let held = |plain: &'static str, waiting: &'static str| match restorable {
                 true => waiting,

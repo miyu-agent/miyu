@@ -58,6 +58,13 @@ impl SessionPort for Table {
         }
     }
 
+    fn restorable(&self, session: SessionId) {
+        if let Ok(core) = self.core() {
+            // 撤回处理了：等这个会话撤回处理的循环再挑一遍（施工 FX-13）。
+            core.schedules().session_changed(&session);
+        }
+    }
+
     fn retirable(&self, session: SessionId) {
         if let Ok(core) = self.core() {
             core.sessions.retirable(session);

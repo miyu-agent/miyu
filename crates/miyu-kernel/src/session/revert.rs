@@ -167,8 +167,8 @@ impl Session {
         actions
     }
 
-    /// 这一刻有没有能恢复的撤销（施工 FX-12）：有的时候循环、后台命令交来的那一句只记下、不开一轮（`jobs.rs` 的 `can_wake`），
-    /// 人敲 `/loop` 的回执照它说一句循环先搁着。
+    /// 这一刻有没有能恢复的撤销（施工 FX-12）：有的时候后台命令、定时任务交来的那一句只记下、不开一轮（`jobs.rs` 的 `can_wake`），
+    /// 人敲 `/loop` 的回执照它说一句循环先搁着，核心照它先不交循环的那一句（施工 FX-13）。
     pub fn restorable(&self) -> bool {
         self.ledger.last_reverted().is_some()
     }

@@ -88,9 +88,6 @@ impl Actor {
     /// 算只记下：订阅的回应带着这一刻的。`moved` 是假的（这一批全是流式的碎片，施工 V-22）不看有没有能压的：变不了。
     pub(super) fn push_now(&mut self, moved: bool) {
         self.push_goal();
-        // 有没有能恢复的撤销（施工 FX-12）：人敲 `/loop` 的回执照它说循环先搁着。
-        let restorable = self.session.restorable();
-        self.counted().restorable = restorable;
         if !moved {
             return;
         }
@@ -118,7 +115,7 @@ impl Actor {
         let mut counted = self.counted();
         counted.tally = tally;
         counted.goals = goals;
-        // 载入时有没有能恢复的撤销（施工 FX-12）：之后每送完一批照内核的换（`push_now`）。
+        // 载入时有没有能恢复的撤销（施工 FX-12）：之后内核每收下一条输入照它的换（`settle_busy`，施工 FX-13）。
         counted.restorable = self.session.restorable();
     }
 
