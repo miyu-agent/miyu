@@ -12,6 +12,7 @@
 | `crates/miyu-log/src/level.rs` | `MIYU_LOG` 的值怎么读 |
 | `crates/miyu-log/src/settings.rs` | 配置项 `log.level`（施工 8-1，`config.md`「M8 的配置项」）：只声明，进配置清单；选项和 `MIYU_LOG` 的写法一样 |
 | `crates/miyu-log/src/line.rs` | 一行怎么写：几列、转义、加不加引号、时刻、和 UTC 差多少 |
+| `crates/miyu-log/src/zone.rs`（施工 LW-5） | 本机时区：时刻、和 UTC 差多少照它算，会话的环境里的时区偏移也照它（`miyu-endpoint` 的 `sessions.rs`）；做法见 `heap.md`「本机时区」 |
 | `crates/miyu-log/src/home.rs` | 家目录写成 `~` |
 | `crates/miyu-log/src/layer.rs` | 把一条事件写成一行；会话编号跟着 span 走 |
 | `crates/miyu-log/src/rotate.rs` | 按大小轮换的文件 |
@@ -264,6 +265,7 @@
 |---|---|
 | `crates/miyu-log/src/level/tests.rs` | 不分大小写、前后空白不算、没设和空的是 `INFO`、读不懂的照 `INFO` 并交回原值 |
 | `crates/miyu-log/src/line/tests.rs` | 几列、占几格；什么时候加引号、怎么转义；会话编号、正文不断行；来源去掉 `miyu::`；时刻到毫秒、23 个字符；和 UTC 差多少的写法 |
+| `crates/miyu-log/src/zone/tests.rs`（施工 LW-5） | 本机时区新旧对照：一年多里每隔 22 小时一个时刻，时刻、和 UTC 差多少两种写法和 jiff 照系统认的一样；读不出来的、不是时区文件的交给 jiff；照抄的一份照它认、叫 `Local`；链到 zoneinfo 里的名字和 jiff 认的一样 |
 | `crates/miyu-log/src/home/tests.rs` | 家目录换成 `~`：本身、后面接着路径的；前缀相同的别的目录、前面还接着路径的不换；一段里有几处；末尾带分隔符的家目录；Windows 的 `\\?\`；空的、根不换 |
 | `crates/miyu-log/src/layer/tests.rs` | 一条事件一行；会话编号从 span 来，调到 `WARN` 也在；离得最近的 span 胜、后来记进去的也算；低于级别的、别人家低于 `WARN` 的不写；`off` 什么都不写，比 `WARN` 严的别人家也照它；正文和值里的家目录写成 `~` |
 | `crates/miyu-log/src/rotate/tests.rs` | 在两行之间换、只留几份、每一份都是整行；比上限长的一行整行写、空的不换；再起来接着写、量了原来多长；Unix 上新建的目录 0700、文件 0600，已经有的不改 |

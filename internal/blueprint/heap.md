@@ -15,6 +15,8 @@
 | `crates/miyu-core/src/memlog.rs` | 核心自己记账：什么时候采、一行的样子、采样的任务（施工 V-4） |
 | `crates/miyu-core/src/lib.rs` | 起来时最先调好（`core.md`「起来的先后」第 0 步） |
 | `crates/miyu-core/src/models.rs` | 读完模型目录 trim 一次 |
+| `crates/miyu-core/src/start.rs`（施工 LW-5） | 生成参考文件放在一条做完就退出的线程里（下面「怎么走」第 5 条） |
+| `crates/miyu-log/src/zone.rs`（施工 LW-5） | 本机时区：运行日志的时刻、会话的环境里的偏移照它算，不打开 jiff 的时区库（下面「本机时区」） |
 | `crates/miyu-session/src/heap.rs`（施工 MEM-3） | `trim_soon`：会话这一层要 trim 的几处攒一阵还一次（下面「怎么走」第 2 条） |
 | `crates/miyu-session/src/open/load.rs` | 载入一个会话以后 trim 一次（`session/actor.md` 第 2 条；经 `trim_soon`） |
 | `crates/miyu-session/src/actor/life.rs` | 会话的 actor 结束、它占的放掉以后 trim 一次（`session/actor.md`；经 `trim_soon`）：停下、删掉、闲够了退下（`protocol.md`「会话表」第 9 条）、内存紧时退下（第 10 条）都算 |
@@ -41,6 +43,17 @@
 3. 量到的（施工 V-2 再补）：只 trim 的时候，大会话退下以后堆里还有 16 MB 空着的碎片、核心匿名内存比空闲时多 8.8 MB；写明大块的门槛以后只多 3.9 MB，重开大会话、说一句以后 92 MB 降到 49 MB。
 
 4. **透明大页**（施工 YC-12，`23` F3）：系统设成 `always` 时，`khugepaged` 把还有一页在用的 2 MB 一段合成大页，trim 还掉的空洞又被填回去（2026-11-10 压测量过：高压过后 trim 以后 PSS 569 MB 降到 82 MB，五分钟里每分钟涨约 90 MB，回到约 476 MB，在用的堆只有 13 MB，`AnonHugePages` 约等于整个匿名内存）。所以 `tune` 照 `prctl(PR_SET_THP_DISABLE, 1)` 关掉，用 `rustix` 的安全封装，不写 `unsafe`；关不上（3.15 以前的内核）照旧起来，`huge_pages_off` 如实交回假。这个标记 `fork`、`exec` 都传下去：经助手跑的命令由助手换成命令之前恢复（`sandbox.md`「助手的命令行」第 4 步）；扩展、MCP 服务、不经助手的命令跟着关着，只是用不上大页，不碍事。
+
+5. **一次性的大活不放在长住的线程上**（施工 LW-5）：一条线程分配、放掉的块先进它自己的缓存（glibc 的 tcache），线程退出时才交回 arena；长住的线程上做完一件分配得多、做完全放掉的活，放掉的块和长住的块穿插在同一个 arena 里，`malloc_trim` 只能还整页，夹在中间的还不回去。所以起来时读模型目录在 `catalog` 线程里（施工 V-2 下补），生成参考文件在 `generate` 线程里（`core.md`「起来的先后」第 6 步），都是做完就退出。2026-11-22 量过：核心连着一个头空闲时，各 arena 合计从 4.3 MB 降到 4.0 MB（连同下面「本机时区」），活着的堆只有 1.7 MB；glibc 2.44 每条线程的缓存每种大小留 16 块，核心 28 条线程的缓存里攒着约 0.8 MB（用 `GLIBC_TUNABLES=glibc.malloc.tcache_count=0` 关掉时合计降到 2.5 MB），这一部分在进程里调不了（`mallopt` 没有这一项），没有做（施工单 `LW-5-分配器余量.md`「没做成的」）。
+
+### 本机时区（施工 LW-5）
+
+运行日志每一行的时刻、核心起来那一行的 `tz`（`log.md`）、会话的环境里的时区偏移（`miyu-endpoint` 的 `sessions.rs`）照 `miyu_log::zone::local()` 算，不直接用 `jiff::Zoned::now()`：jiff 认本机时区时每次都先打开它的 zoneinfo 库，库第一次打开时把 `/usr/share/zoneinfo` 整个目录走一遍，一千多个时区名连同完整路径留在堆上不放（2026-11-21 量过：核心活着的堆里 111 kB）。
+
+1. 没设 `TZ`、`TZDIR` 的 Unix 上，直接读 `/etc/localtime`：jiff 照它的链接认出名字以后在库里读的是同一份文件，链接认不出名字的 jiff 也是直接读它，所以规则一样，写出来的时刻和偏移一样。时区名照链接里 `zoneinfo/` 后面的那一段（和 jiff 认的一样），不是链接的叫 `Local`；这几处都不印时区名。
+2. 别的情况照旧交给 jiff（`TimeZone::system()`）：设了 `TZ` 的、设了 `TZDIR` 的、`/etc/localtime` 读不出来或者不是时区文件的、不是 Unix 的。
+3. 读到的留 5 分钟（和 jiff 自己留的一样久），过了重读一次：核心开着时改了本机时区，照旧 5 分钟以内跟上。
+4. 定时任务照名字记时区、照名字找（`schedules.md`），名字要和 jiff 库里的对得上，仍然用 jiff；回收站记删除时间（`miyu-fs`）也仍然用 jiff。这两处用到时才打开库。
 
 ### 自己记账（施工 V-4，23 F4）
 
@@ -70,6 +83,7 @@
 
 | 测试 | 守什么 |
 |---|---|
+| `crates/miyu-log/src/zone/tests.rs`（施工 LW-5） | 本机时区新旧对照：一年多里每隔 22 小时一个时刻，运行日志的时刻、和 UTC 差多少写出来和 jiff 照系统认的一样；读不出来的、不是时区文件的交给 jiff；照抄的一份照它认；链到 zoneinfo 里的名字和 jiff 认的一样 |
 | `crates/miyu-heap/src/tests.rs` | glibc 上调得成；放掉一堆小块以后还得回去；别的平台都交回假；glibc 上有堆的统计、分出去的算在用的里（施工 V-4）；Linux 上 `tune` 以后透明大页关着（施工 YC-12） |
 | `crates/miyu-heap/src/usage/tests.rs`（施工 V-4） | 真机的 `smaps_rollup` 读成字节；不是它的读不出来；`VmRSS`；Linux 上量得到自己、有 PSS 这几样，macOS 上量得到自己、有 `footprint`、没有 Linux 那几样（施工 V-4 补，CI 的 macOS 上跑），Windows 没有 |
 | `crates/miyu-heap/src/room/tests.rs`（施工 MEM-1，MEM-2 改） | `meminfo` 读成字节，少了一行、总量是 0 的没有；只认 v2 那一行；一层是 `max`、读不懂的不算，上限减在用的、扣 `inactive_file`、超了的是 0；往上走取比例最紧的那一层，系统的另交；没有上限的没有 `cgroup`；什么都读不到的两份都没有；百分比往下取整、总量 0 不除；正好 5% 不算低于；macOS 的算法；三个平台的真机上读得到整台机器的、可用的不比总量多，不是 Linux 的没有 `cgroup` |

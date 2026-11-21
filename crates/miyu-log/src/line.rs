@@ -44,14 +44,14 @@ pub(crate) fn source(target: &str) -> &str {
 
 /// 本机时间，到毫秒。
 pub(crate) fn now() -> String {
-    jiff::Zoned::now()
+    crate::zone::now()
         .strftime("%Y-%m-%d %H:%M:%S%.3f")
         .to_string()
 }
 
 /// 本机现在和 UTC 差多少：`+09:00` 这样。核心起来那一行的 `tz`（`28-运行日志.md` 第二节，施工 4-9 再补四上）。
 pub fn utc_offset() -> String {
-    jiff::Zoned::now().strftime("%:z").to_string()
+    crate::zone::now().strftime("%:z").to_string()
 }
 
 /// 一行里不出现换行和别的控制字符。

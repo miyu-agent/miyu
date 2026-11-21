@@ -454,7 +454,7 @@ fn environment(workspace: String, dirs: Vec<String>) -> Environment {
 
 /// 核心所在的机器现在的时区偏移，到分钟。读不出来的当 UTC。
 pub(crate) fn offset() -> UtcOffset {
-    let minutes = jiff::Zoned::now().offset().seconds() / 60;
+    let minutes = miyu_log::zone::now().offset().seconds() / 60;
     UtcOffset::from_minutes(minutes)
         .or_else(|| UtcOffset::from_minutes(0))
         .unwrap_or_else(|| unreachable!("UTC 在偏移的范围里"))

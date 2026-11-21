@@ -39,14 +39,29 @@ pub(super) async fn start(
     let config = settings::read(&root, env.home.as_deref(), &packaged, left);
     settings::log_level(&config, level, log);
     let locale = miyu_store::env::locale();
-    settings::generate(
-        &root,
-        &resources,
-        locale.as_deref(),
-        &config.resolved().values(),
-        config.items(),
-        &packaged.manifests,
-    );
+    // 生成参考文件在一条做完就退出的线程里（施工 LW-5，`heap.md`「怎么走」第 5 条）：读给人看的字、拼三份文件分配的写完就
+    // 全放掉，放在主线程上会和长住的穿插着，主线程的 arena 碎成小片还不回去。等它写完再往下走，和原来一样在 `ready` 之前
+    // 写好。线程起不来的照旧在这里写。
+    let values = config.resolved().values();
+    let generate = || {
+        settings::generate(
+            &root,
+            &resources,
+            locale.as_deref(),
+            &values,
+            config.items(),
+            &packaged.manifests,
+        );
+    };
+    std::thread::scope(|scope| {
+        let thread = std::thread::Builder::new()
+            .name("generate".to_string())
+            .spawn_scoped(scope, generate);
+        if let Err(error) = thread {
+            tracing::warn!(target: crate::TARGET, error = %error, "generate thread not started");
+            generate();
+        }
+    });
     let live = Live {
         levels: log.levels(),
         locale,

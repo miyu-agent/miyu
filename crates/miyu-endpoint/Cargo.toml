@@ -29,8 +29,11 @@ doc = false
 testkit = ["miyu-http/testkit", "miyu-session/testkit"]
 
 [dependencies]
-# 时区：核心所在的机器现在的偏移，写进会话的环境。
+# 时区：定时任务照本机时区算 cron。
 jiff = "0.2"
+# 核心所在的机器现在的偏移，写进会话的环境：照运行日志的那一份本机时区算，不打开 jiff 的时区库（施工 LW-5）。测试里的配置
+# 清单也带上 `log.level`（施工 8-2）：和核心登记的一样。
+miyu-log = { path = "../miyu-log" }
 # 定时任务的 cron（施工 J-1 上）：标准五段写法，照本机时区算下一次，夏令时照 OCPS 规范；直接认 jiff 的时刻，不带 chrono。
 croner = { version = "4.0.1", default-features = false, features = ["jiff"] }
 # 本机的监听器：一个个接连接（施工 3-8 下）。
@@ -111,8 +114,6 @@ image = { version = "0.25", default-features = false, features = ["png", "jpeg"]
 miyu-basesystem = { path = "../miyu-basesystem" }
 # 测试用的假工具（施工 4-2）。
 miyu-tool = { path = "../miyu-tool", features = ["testkit"] }
-# 测试里的配置清单带上 `log.level`（施工 8-2）：和核心登记的一样。
-miyu-log = { path = "../miyu-log" }
 # 测试里的假服务器：`model.list` 带 `refresh` 去拉供应商的列表（施工 8-7）。
 miyu-http = { path = "../miyu-http", features = ["testkit"] }
 # 个人层软件源的地址闸照测试的口子走（施工 U23 下下）。
