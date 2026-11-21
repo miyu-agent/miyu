@@ -137,7 +137,15 @@ pub(super) const PURPOSE: &[&str] = &["id", "name"];
 /// `[[search]]`。
 pub(super) const SEARCH: &[&str] = &["id", "name"];
 /// `[[driver]]`（施工 MD-1，设计 66 第四节）。
-pub(super) const DRIVER: &[&str] = &["name", "cache", "key", "images", "hosted", "quiet_secs"];
+pub(super) const DRIVER: &[&str] = &[
+    "name",
+    "cache",
+    "key",
+    "base_url",
+    "images",
+    "hosted",
+    "quiet_secs",
+];
 
 /// `[providers.<编号>]`（施工 PV-4）：同配置里 `[providers.<编号>]` 的几格，`key` 不收（人的 key 在人那一层配）。
 pub(super) const PROVIDER: &[&str] = &[

@@ -18,6 +18,9 @@ pub struct DriverDecl {
     pub cache: DriverCache,
     /// 要不要核心交 key（设计 66 第九节第 3 条）。
     pub key: DriverKey,
+    /// 要不要供应商的地址（施工 FX-11）：同 `key` 的三种写法，没写的是可有可无。头照它和 `key` 只画这家真要的那几项
+    /// （`model.list` 的 `needs`）。只给头看：配置里写了的地址照旧交给扩展（`miyu-session` 的 `route/extension.rs`）。
+    pub base_url: DriverKey,
     /// 看得了图的：请求里的图交过去（设计 66 第五节）。
     pub images: bool,
     /// 会让供应商自己跑的工具名（设计 71 第三节第 7 条）：装包确认屏照它列出来，交上来的不在里面的核心照收、记一行 `WARN`。
@@ -60,7 +63,7 @@ pub enum DriverCache {
     None,
 }
 
-/// 驱动要不要 key。
+/// 驱动要不要 key、要不要地址（施工 FX-11 起地址也用它）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DriverKey {
     /// 不要：配置里写了也不交。
@@ -132,6 +135,18 @@ pub(super) fn read(reader: &Reader<'_>, node: &Item) -> Result<Vec<DriverDecl>, 
                 ));
             }
         };
+        let base_url = match table.get("base_url").map(|item| item.as_str()) {
+            None | Some(Some("optional")) => DriverKey::Optional,
+            Some(Some("none")) => DriverKey::None,
+            Some(Some("required")) => DriverKey::Required,
+            Some(_) => {
+                return Err(bad(
+                    line,
+                    &format!("{at}.base_url"),
+                    format!("{at}.base_url must be \"none\", \"optional\" or \"required\""),
+                ));
+            }
+        };
         let images = match table.get("images") {
             None => false,
             Some(item) => item.as_bool().ok_or_else(|| {
@@ -164,6 +179,7 @@ pub(super) fn read(reader: &Reader<'_>, node: &Item) -> Result<Vec<DriverDecl>, 
             name,
             cache,
             key,
+            base_url,
             images,
             hosted,
             quiet_secs,

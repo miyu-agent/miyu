@@ -10,8 +10,7 @@ fn extension(capabilities: &str, rest: &str) -> String {
     )
 }
 
-const ONE: &str =
-    "[[driver]]\nname = \"antigravity\"\ncache = \"contract\"\nkey = \"none\"\nimages = true\n";
+const ONE: &str = "[[driver]]\nname = \"antigravity\"\ncache = \"contract\"\nkey = \"none\"\nbase_url = \"none\"\nimages = true\n";
 
 #[test]
 fn a_driver_reads_its_name_cache_key_and_images() {
@@ -21,12 +20,13 @@ fn a_driver_reads_its_name_cache_key_and_images() {
     assert_eq!(driver.name, "antigravity");
     assert_eq!(driver.cache, DriverCache::Contract);
     assert_eq!(driver.key, DriverKey::None);
+    assert_eq!(driver.base_url, DriverKey::None, "不要地址（施工 FX-11）");
     assert!(driver.images);
     assert_eq!(
         driver.reference("pi-antigravity"),
         "pi-antigravity/antigravity"
     );
-    // 不写的：尽力而为的缓存、key 可有可无、不看图。
+    // 不写的：尽力而为的缓存、key 和地址可有可无、不看图。
     let plain = read(&extension(
         "\"model.driver\"",
         "[[driver]]\nname = \"plain\"\n",
@@ -34,8 +34,13 @@ fn a_driver_reads_its_name_cache_key_and_images() {
     .unwrap();
     let driver = &plain.drivers[0];
     assert_eq!(
-        (driver.cache, driver.key, driver.images),
-        (DriverCache::BestEffort, DriverKey::Optional, false)
+        (driver.cache, driver.key, driver.base_url, driver.images),
+        (
+            DriverCache::BestEffort,
+            DriverKey::Optional,
+            DriverKey::Optional,
+            false
+        )
     );
 }
 
@@ -57,6 +62,11 @@ fn wrong_drivers_are_refused() {
         ("\"antigravity\"", "\"Anti/Gravity\"", "驱动名的写法"),
         ("cache = \"contract\"", "cache = \"always\"", "缓存类型"),
         ("key = \"none\"", "key = \"maybe\"", "要不要 key"),
+        (
+            "base_url = \"none\"",
+            "base_url = \"http://x\"",
+            "要不要地址",
+        ),
         ("images = true", "images = \"yes\"", "看不看图"),
     ] {
         assert_eq!(

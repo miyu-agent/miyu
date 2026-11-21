@@ -21,6 +21,7 @@ mod drivers;
 pub(crate) mod effort;
 mod entry;
 pub(crate) mod line;
+mod needs;
 pub(crate) mod pin;
 mod retire;
 mod side;
@@ -218,7 +219,9 @@ pub(crate) async fn list(core: &Core, language: &str, params: Value) -> Result<V
             Refusal::INTERNAL
         })?
     };
-    let providers = listed.answers;
+    let mut providers = listed.answers;
+    // 这一家真要哪几项、是不是软件包带的（施工 FX-11）：头照它只画真有的项。
+    needs::stamp(&mut providers, &snapshot.resolved, &core.system_packages());
     let catalog = listed.catalog.map_or(
         Value::Null,
         |(source, fetched)| json!({"source": source.as_str(), "fetched": fetched}),
