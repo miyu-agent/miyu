@@ -17,6 +17,8 @@ url='https://github.com/miyu-agent/miyu'
 license=('AGPL-3.0-or-later')
 depends=('glibc' 'gcc-libs')
 makedepends=('git' 'rustup' 'python')
+# x86_64 上 `cargo xtask dist` 把核心排函数（施工 LW-1）：在 QEMU 的用户态模拟器里照剧本运行核心录清单，没有它会报错停下。
+makedepends_x86_64=('qemu-user')
 provides=('miyu-core' 'miyu-tui' 'miyu-webui' 'miyu-agent')
 conflicts=('miyu<2026' 'miyu-core' 'miyu-tui' 'miyu-webui' 'miyu-agent')
 options=('!strip' '!debug' '!lto')

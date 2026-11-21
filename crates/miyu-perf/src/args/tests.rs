@@ -97,3 +97,34 @@ fn the_tool_step_needs_a_tree() {
     );
     assert!(parse(&words(&format!("{PATHS_GIVEN} --tools x --tree /t"))).is_err());
 }
+
+/// 排函数（施工 LW-1）：`--order`、`--emulator` 一起写，`--tree` 必写；预算、结果目录用不着。
+#[test]
+fn recording_the_order_needs_an_emulator_and_a_tree() {
+    const ORDER: &str = "--miyu /m --resources /r --work /w --tree /t";
+    let args = parse(&words(&format!(
+        "{ORDER} --order /o.txt --emulator qemu-x86_64"
+    )))
+    .unwrap();
+    assert_eq!(args.order, Some(PathBuf::from("/o.txt")));
+    assert_eq!(args.emulator, Some(PathBuf::from("qemu-x86_64")));
+    assert_eq!(args.tree, Some(PathBuf::from("/t")));
+    assert_eq!(parse(&words(PATHS_GIVEN)).unwrap().order, None);
+    for half in ["--order /o.txt", "--emulator qemu-x86_64"] {
+        let error = parse(&words(&format!("{PATHS_GIVEN} {half}"))).unwrap_err();
+        assert!(
+            error.starts_with("--order 要和 --emulator 一起写\n"),
+            "{error}"
+        );
+    }
+    let error = parse(&words(
+        "--miyu /m --resources /r --work /w --order /o.txt --emulator qemu-x86_64",
+    ))
+    .unwrap_err();
+    assert!(error.starts_with("缺 --tree\n"), "{error}");
+    let error = parse(&words(
+        "--miyu /m --work /w --tree /t --order /o.txt --emulator qemu-x86_64",
+    ))
+    .unwrap_err();
+    assert!(error.starts_with("缺 --resources\n"), "{error}");
+}

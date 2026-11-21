@@ -9,22 +9,33 @@
 //! （施工 V-29）照 [`Fake::script`] 给的剧本回工具调用（`fake/script.rs`），每个回答写完（`[DONE]` 写出去）也记下时刻；
 //! 给了 [`Fake::probe`] 的，头读全、回答写完的那一刻各读一次核心花的 CPU。
 //!
+//! 排函数那一场（施工 LW-1）另开两个 HTTPS 的口（[`Fake::secure`]，`fake/tls.rs`）：一个只说 HTTP/1.1，一个说 HTTP/2
+//! （`fake/http2.rs`），真用的人连供应商走的是这两种，只录明文的话 TLS、h2 那几路的函数一个都录不到。三种传输只管读请求、
+//! 写回应，回什么、记什么都走同一份（`fake/shared.rs`），剧本、[`Fake::request_with`]、切块照样用；收到的请求记着是从
+//! 哪个口来的（[`Arrival::via`]）。别的几场只有明文的口。
+//!
 //! 和 `miyu_http::testkit` 的假服务器不同：那个照剧本回、回完就不收了；这里一直收，回的字多长由量尺定。
 
+mod http1;
+mod http2;
 pub mod script;
+mod shared;
+mod tls;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
-use std::time::{Instant, SystemTime};
+use std::time::{Duration, Instant, SystemTime};
 
 use serde_json::json;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::{TcpListener, TcpStream};
+use tokio::net::TcpListener;
 use tokio::sync::{mpsc, oneshot};
 
 use crate::cpu::{Cpu, Probe};
 use crate::rpc::PATIENCE;
 use script::Script;
+use shared::{Setup, Shared};
+
+pub use tls::pem;
 
 /// 收到的一个请求：头读全的时刻，和请求体。
 pub struct Arrival {
@@ -36,6 +47,8 @@ pub struct Arrival {
     pub cpu: Option<Cpu>,
     /// 照剧本回的（施工 V-29）：请求体里已经有前几次调用的结果；不归剧本的是 `None`。
     pub step: Option<usize>,
+    /// 从哪个口来的（施工 LW-1）：排函数照它确认 HTTPS 的那几句真的走了 TLS。
+    pub via: Transport,
     /// 请求体。
     pub body: Vec<u8>,
     /// 回答写完时交来（施工 V-29）；没写完（连接断了）的不交。
@@ -53,12 +66,25 @@ pub struct Answered {
     pub cpu: Option<Cpu>,
 }
 
-/// 几个连接共用的设定（施工 V-29）：剧本、读谁的 CPU；回答的事件之间隔多久（施工 MD-4）。
-#[derive(Default)]
-struct Setup {
-    script: Option<Script>,
-    probe: Option<Probe>,
-    pace: Option<std::time::Duration>,
+/// 假模型的口（施工 LW-1）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Transport {
+    /// 明文的 HTTP/1.1：[`Fake::base_url`]。
+    Plain,
+    /// HTTPS，ALPN 只给 `http/1.1`：[`Secure::http1`]。
+    Http1,
+    /// HTTPS，ALPN 只给 `h2`：[`Secure::h2`]。
+    H2,
+}
+
+/// 两个 HTTPS 的口（施工 LW-1，[`Fake::secure`]）：给核心写进配置的地址。证书是仓库里那张给 `127.0.0.1` 的自签测试证书，
+/// 核心照 `SSL_CERT_FILE` 信任它（[`pem`]）。
+#[derive(Debug, Clone)]
+pub struct Secure {
+    /// `https://127.0.0.1:<端口>/v1`，只说 HTTP/1.1。
+    pub http1: String,
+    /// `https://127.0.0.1:<端口>/v1`，只说 HTTP/2。
+    pub h2: String,
 }
 
 /// 跑着的假服务。
@@ -66,10 +92,19 @@ pub struct Fake {
     /// 给核心写进配置的地址：`http://127.0.0.1:<端口>/v1`。
     pub base_url: String,
     arrivals: mpsc::UnboundedReceiver<Arrival>,
-    /// 之后的回答正文切成几块（施工 V-22）。
-    pieces: Arc<AtomicUsize>,
-    /// 剧本、读谁的 CPU（施工 V-29）。
-    setup: Arc<Mutex<Setup>>,
+    shared: Arc<Shared>,
+}
+
+/// 在本机回环上随便挑个端口绑上，交回它和端口。
+async fn bind() -> Result<(TcpListener, u16), String> {
+    let listener = TcpListener::bind("127.0.0.1:0")
+        .await
+        .map_err(|e| format!("假模型服务绑不上端口：{e}"))?;
+    let port = listener
+        .local_addr()
+        .map_err(|e| format!("假模型服务的端口读不出：{e}"))?
+        .port();
+    Ok((listener, port))
 }
 
 impl Fake {
@@ -79,67 +114,78 @@ impl Fake {
     ///
     /// 绑不上端口。
     pub async fn start(reply_bytes: usize) -> Result<Fake, String> {
-        let listener = TcpListener::bind("127.0.0.1:0")
-            .await
-            .map_err(|e| format!("假模型服务绑不上端口：{e}"))?;
-        let port = listener
-            .local_addr()
-            .map_err(|e| format!("假模型服务的端口读不出：{e}"))?
-            .port();
-        let reply: Arc<str> = filler(reply_bytes).into();
+        let (listener, port) = bind().await?;
         let (sender, arrivals) = mpsc::unbounded_channel();
-        let pieces = Arc::new(AtomicUsize::new(1));
-        let split = Arc::clone(&pieces);
-        let setup = Arc::new(Mutex::new(Setup::default()));
-        let shared = Arc::clone(&setup);
+        let shared = Arc::new(Shared {
+            reply: filler(reply_bytes),
+            pieces: AtomicUsize::new(1),
+            setup: Mutex::new(Setup::default()),
+            arrivals: sender,
+        });
+        let serving = Arc::clone(&shared);
         tokio::spawn(async move {
             while let Ok((socket, _)) = listener.accept().await {
-                let pieces = split.load(Ordering::Relaxed);
-                let reply = Arc::clone(&reply);
-                tokio::spawn(serve(
-                    socket,
-                    reply,
-                    pieces,
-                    Arc::clone(&shared),
-                    sender.clone(),
-                ));
+                tokio::spawn(http1::serve(socket, Arc::clone(&serving), Transport::Plain));
             }
         });
         Ok(Fake {
             base_url: format!("http://127.0.0.1:{port}/v1"),
             arrivals,
-            pieces,
-            setup,
+            shared,
         })
+    }
+
+    /// 另开两个 HTTPS 的口（施工 LW-1）：一个 ALPN 只给 `http/1.1`，一个只给 `h2`。回的、记的和明文的口一样，收到的请求
+    /// 都交到 [`Fake::request_with`]。只有排函数那一场开。
+    ///
+    /// # Errors
+    ///
+    /// 绑不上端口、证书和私钥配不上。
+    pub async fn secure(&self) -> Result<Secure, String> {
+        Ok(Secure {
+            http1: self.listen_tls(Transport::Http1).await?,
+            h2: self.listen_tls(Transport::H2).await?,
+        })
+    }
+
+    /// 开一个 `via` 那种 HTTPS 的口，交回它的地址。
+    async fn listen_tls(&self, via: Transport) -> Result<String, String> {
+        let (listener, port) = bind().await?;
+        let acceptor = tls::acceptor(via)?;
+        tokio::spawn(tls::accept(
+            listener,
+            acceptor,
+            Arc::clone(&self.shared),
+            via,
+        ));
+        Ok(format!("https://127.0.0.1:{port}/v1"))
     }
 
     /// 之后提到剧本记号的请求照剧本回工具调用（施工 V-29）；`None` 收回。
     pub fn script(&self, script: Option<Script>) {
-        self.setup
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .script = script;
+        self.setup().script = script;
     }
 
     /// 之后的回答一个事件一个事件地写、隔开 `gap`（施工 MD-4：像真模型那样匀着来，和扩展驱动匀着交的比 CPU）；`None` 一次写完。
-    pub fn pace(&self, gap: Option<std::time::Duration>) {
-        self.setup
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .pace = gap;
+    pub fn pace(&self, gap: Option<Duration>) {
+        self.setup().pace = gap;
     }
 
     /// 之后每个请求头读全、每个回答写完时读一次 `probe` 的 CPU（施工 V-29）；`None` 不读。
     pub fn probe(&self, probe: Option<Probe>) {
-        self.setup
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .probe = probe;
+        self.setup().probe = probe;
     }
 
     /// 之后的回答正文切成 `pieces` 块（至少一块），一块一个事件（施工 V-22）：量流式时核心每收一块做了多少。
     pub fn split_into(&self, pieces: usize) {
-        self.pieces.store(pieces.max(1), Ordering::Relaxed);
+        self.shared.pieces.store(pieces.max(1), Ordering::Relaxed);
+    }
+
+    fn setup(&self) -> std::sync::MutexGuard<'_, Setup> {
+        self.shared
+            .setup
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
     }
 
     /// 等第一个提到 `marker` 的请求，交回它；之前到的别的请求（起标题这些辅助请求）跳过。
@@ -163,100 +209,6 @@ impl Fake {
             )
         })?
     }
-}
-
-/// 一个连接：读一个请求，记下，回完关上，记下回完的时刻。正文切成 `pieces` 块；归剧本的照剧本回（施工 V-29）。
-async fn serve(
-    mut socket: TcpStream,
-    reply: Arc<str>,
-    pieces: usize,
-    setup: Arc<Mutex<Setup>>,
-    arrivals: mpsc::UnboundedSender<Arrival>,
-) {
-    let Some((head, body, at)) = read_request(&mut socket).await else {
-        return;
-    };
-    let wall = SystemTime::now();
-    // 剧本、读谁照这一刻的；读 CPU 放在记下时刻之后，读的那一点不算进核心的这一段。
-    let (scripted, probe, pace) = {
-        let setup = setup.lock().unwrap_or_else(PoisonError::into_inner);
-        let scripted = setup
-            .script
-            .as_ref()
-            .and_then(|script| Some((script.clone(), script.answered(&body)?)));
-        (scripted, setup.probe.clone(), setup.pace)
-    };
-    let cpu = probe.as_ref().map(Probe::sample);
-    let response = if head.method == "POST" {
-        let mut response =
-            b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nConnection: close\r\n\r\n"
-                .to_vec();
-        let stream = match &scripted {
-            Some((script, done)) => script.answer(&body, *done),
-            None => answer(&body, &reply, pieces),
-        };
-        response.extend_from_slice(stream.as_bytes());
-        response
-    } else {
-        let list = r#"{"object":"list","data":[]}"#;
-        format!(
-            "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{list}",
-            list.len()
-        )
-        .into_bytes()
-    };
-    // 先记下再回：量尺等到这一条时，核心那边正在收回答，不会因为记晚了少算。
-    let (written, answered) = oneshot::channel();
-    let step = scripted.map(|(_, done)| done);
-    let arrival = Arrival {
-        at,
-        wall,
-        cpu,
-        step,
-        body,
-        answered,
-    };
-    if arrivals.send(arrival).is_err() {
-        return;
-    }
-    let wrote = match pace {
-        Some(gap) => paced(&mut socket, &response, gap).await,
-        None => socket.write_all(&response).await.is_ok(),
-    };
-    if wrote {
-        let at = Instant::now();
-        let wall = SystemTime::now();
-        let cpu = probe.as_ref().map(Probe::sample);
-        #[expect(clippy::let_underscore_must_use, reason = "量尺不等这一次的就没人收")]
-        let _ = written.send(Answered { at, wall, cpu });
-        #[expect(clippy::let_underscore_must_use, reason = "回完了，关不干净也不影响量")]
-        let _ = socket.shutdown().await;
-    }
-}
-
-/// 读一个请求：头读全记下时刻，再照 `Content-Length` 读完请求体。连接断了、头读不懂的是 `None`。
-async fn read_request(socket: &mut TcpStream) -> Option<(Head, Vec<u8>, Instant)> {
-    let mut data = Vec::new();
-    let mut buffer = vec![0u8; 64 * 1024];
-    let (head, at) = loop {
-        let read = socket.read(&mut buffer).await.ok()?;
-        if read == 0 {
-            return None;
-        }
-        data.extend_from_slice(&buffer[..read]);
-        if let Some(head) = parse_head(&data) {
-            break (head, Instant::now());
-        }
-    };
-    let mut body = data.split_off(head.size);
-    while body.len() < head.length {
-        let read = socket.read(&mut buffer).await.ok()?;
-        if read == 0 {
-            return None;
-        }
-        body.extend_from_slice(&buffer[..read]);
-    }
-    Some((head, body, at))
 }
 
 /// 一个请求的头：方法、请求体多长、头本身占几个字节（连同空行）。
@@ -316,30 +268,6 @@ pub fn answer(body: &[u8], text: &str, pieces: usize) -> String {
 /// 字节数折成 token：四个字节一个，往上取整。
 fn tokens(bytes: usize) -> usize {
     bytes.div_ceil(4)
-}
-
-/// 匀着写一个回答（施工 MD-4）：响应头一次写完，之后一个事件（`\n\n` 收尾）一写，事件之间隔 `gap`。
-async fn paced(socket: &mut TcpStream, response: &[u8], gap: std::time::Duration) -> bool {
-    let text = String::from_utf8_lossy(response);
-    let Some((head, events)) = text.split_once("\r\n\r\n") else {
-        return socket.write_all(response).await.is_ok();
-    };
-    if socket
-        .write_all(format!("{head}\r\n\r\n").as_bytes())
-        .await
-        .is_err()
-    {
-        return false;
-    }
-    for (n, event) in events.split_inclusive("\n\n").enumerate() {
-        if n > 0 {
-            tokio::time::sleep(gap).await;
-        }
-        if socket.write_all(event.as_bytes()).await.is_err() {
-            return false;
-        }
-    }
-    true
 }
 
 /// 回答的事件流：正文照字切成 `pieces` 块（至少一块、不切开一个字；字比块少的一个字一块），一块一个事件，头一块带

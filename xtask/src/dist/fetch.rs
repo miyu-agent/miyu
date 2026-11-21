@@ -122,7 +122,7 @@ pub(super) fn git(dir: &Path) -> Command {
 }
 
 /// 跑完要成功；输出照旧给终端。
-pub(super) fn status(command: &mut Command) -> Result<(), String> {
+pub(crate) fn status(command: &mut Command) -> Result<(), String> {
     let done = command
         .status()
         .map_err(|error| format!("{command:?} 起不来（{error}）"))?;
@@ -133,7 +133,7 @@ pub(super) fn status(command: &mut Command) -> Result<(), String> {
 }
 
 /// 跑完要成功，交回标准输出。
-pub(super) fn output(command: &mut Command) -> Result<String, String> {
+pub(crate) fn output(command: &mut Command) -> Result<String, String> {
     let done = command
         .output()
         .map_err(|error| format!("{command:?} 起不来（{error}）"))?;

@@ -4,7 +4,9 @@
 //!    `windows-x86_64`），写了 `--target` 的要和本机一样，不交叉编。
 //! 2. 照 `heads.toml` 把两个头取进 `<dist>/heads/<编号>/`（克隆过的拉一下），检出钉的那一份、清掉多余的文件，核对检出的提交。
 //! 3. 编，都是 release、`--locked`：核心的 `miyu`、`miyu-sandbox`、`miyu-extract`；终端的 `miyu-tui`；网页的 `miyu-web`。头在各自的
-//!    检出里照各自的工具链编：外面这个 cargo 给的 `RUSTUP_TOOLCHAIN`、`CARGO_TARGET_DIR` 这些不带过去。
+//!    检出里照各自的工具链编：外面这个 cargo 给的 `RUSTUP_TOOLCHAIN`、`CARGO_TARGET_DIR` 这些不带过去。本机是 `linux-x86_64`
+//!    的，核心照排函数的流程编（施工 LW-1，`order.rs`：带空清单编、量尺录清单、照清单重链 `miyu`、核对）；要 QEMU 的用户态
+//!    模拟器，取头之前先找，没有的当场报错。带 `--no-order` 的照原来的办法编，不排；别的三种系统一直是原来的办法。
 //! 4. 搭目录 `<dist>/miyu-<版本>-<系统>/`：
 //!    - 五个程序放一起（头的程序放在 `miyu` 旁边，`heads.toml` 开头那段）；
 //!    - `resources/`：仓库里登记了的资源（`git ls-files`，不带没登记的），加上两个头的包文件夹：`packages/tui/` 是终端仓库的
@@ -29,10 +31,10 @@ use std::process::{Command, ExitCode};
 
 use toml_edit::DocumentMut;
 
-use crate::heads;
+use crate::{heads, order};
 use archive::{digest, pack};
-pub(crate) use fetch::target_dir;
-use fetch::{fetch, head_cargo, python, status, tracked};
+use fetch::{fetch, head_cargo, python, tracked};
+pub(crate) use fetch::{output, status, target_dir};
 use layout::{Sources, copy_tree, notices, readme, remove, stage};
 #[cfg(test)]
 use {crate::heads::Pin, layout::executable};
@@ -50,18 +52,20 @@ pub const HOST: Option<&str> = if cfg!(all(target_os = "linux", target_arch = "x
     None
 };
 
-/// 核心的三个程序，照这个先后编、放。
-const CORE: [&str; 3] = ["miyu", "miyu-sandbox", "miyu-extract"];
+/// 核心的三个程序，照这个先后编、放（排函数的流程也照它编，`order.rs`）。
+pub(crate) const CORE: [&str; 3] = ["miyu", "miyu-sandbox", "miyu-extract"];
 
 /// 终端、网页的程序。
 const TUI_PROGRAM: &str = "miyu-tui";
 const WEB_PROGRAM: &str = "miyu-web";
 
-/// 命令行：打给哪一种、放在哪。
+/// 命令行：打给哪一种、放在哪、排不排函数。
 #[derive(Debug, PartialEq, Eq)]
 struct Options {
     target: String,
     out: Option<PathBuf>,
+    /// 没写 `--no-order` 的是 `true`；只在能排的机器上起作用（`order::SUPPORTED`）。
+    order: bool,
 }
 
 /// 打好的一个压缩包。
@@ -72,7 +76,7 @@ struct Packed {
     bytes: u64,
 }
 
-/// `cargo xtask dist [--target <系统>] [--out <目录>]`。
+/// `cargo xtask dist [--target <系统>] [--out <目录>] [--no-order]`。
 pub fn run(root: &Path, cargo: &str, args: &[String]) -> ExitCode {
     match dist(root, cargo, args) {
         Ok(all) => {
@@ -92,6 +96,11 @@ pub fn run(root: &Path, cargo: &str, args: &[String]) -> ExitCode {
 
 fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Vec<Packed>, String> {
     let options = options(args, HOST)?;
+    // 缺模拟器、缺 nm 的在取头、编之前就报。
+    let emulator = match options.order && order::SUPPORTED {
+        true => Some(order::tools()?),
+        false => None,
+    };
     let version = version(&read(&root.join("Cargo.toml"))?)?;
     let pins = heads::pins(&read(&root.join(heads::PATH))?).map_err(|found| found.join("\n"))?;
     let target_dir = target_dir(root, cargo)?;
@@ -117,12 +126,20 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Vec<Packed>, String
         stamp::head(&pin.id, dir, &version)?;
     }
 
-    say("编核心");
-    let mut core = Command::new(cargo);
-    core.current_dir(root)
-        .args(["build", "--release", "--locked"])
-        .args(CORE.iter().flat_map(|name| ["-p", name]));
-    status(&mut core)?;
+    match &emulator {
+        Some(emulator) => {
+            say("编核心（排函数）");
+            order::run(cargo, root, emulator, true, &say)?;
+        }
+        None => {
+            say("编核心");
+            let mut core = Command::new(cargo);
+            core.current_dir(root)
+                .args(["build", "--release", "--locked"])
+                .args(CORE.iter().flat_map(|name| ["-p", name]));
+            status(&mut core)?;
+        }
+    }
     say("编终端");
     status(head_cargo(tui).args(["build", "--release", "--locked"]))?;
     say("编网页");
@@ -263,14 +280,16 @@ fn options(args: &[String], host: Option<&str>) -> Result<Options, String> {
     };
     let mut target = None;
     let mut out = None;
+    let mut order = true;
     let mut rest = args.iter();
     while let Some(arg) = rest.next() {
         match arg.as_str() {
             "--target" => target = Some(rest.next().ok_or("--target 后面要写系统")?.clone()),
             "--out" => out = Some(PathBuf::from(rest.next().ok_or("--out 后面要写目录")?)),
+            order::NO_ORDER => order = false,
             other => {
                 return Err(format!(
-                    "不认识的参数 {other}；用法：cargo xtask dist [--target <系统>] [--out <目录>]"
+                    "不认识的参数 {other}；用法：cargo xtask dist [--target <系统>] [--out <目录>] [--no-order]"
                 ));
             }
         }
@@ -281,7 +300,7 @@ fn options(args: &[String], host: Option<&str>) -> Result<Options, String> {
             "只打本机那一种（{host}），写的是 {target}：别的系统在那种系统上打"
         ));
     }
-    Ok(Options { target, out })
+    Ok(Options { target, out, order })
 }
 
 /// `Cargo.toml` 的 `[workspace.package] version`。

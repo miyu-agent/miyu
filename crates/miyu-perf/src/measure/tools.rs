@@ -125,6 +125,7 @@ pub async fn tool_steps(
     let running = sandbox.start_with(Launch {
         scoped,
         log: plan.log,
+        ..Launch::default()
     })?;
     let pid = running.pid();
     let mut rpc = Rpc::connect(&sandbox.root).await?;
@@ -272,8 +273,12 @@ async fn baseline(
     Ok(baseline)
 }
 
-/// 一种调用：一轮里调 `samples + 1` 次，头一次不算。
-async fn steps(
+/// 一种调用：一轮里调 `samples + 1` 次，头一次不算。排函数的剧本（施工 LW-1）照 `samples` 为 0 调：每种调一次、不量。
+///
+/// # Errors
+///
+/// 造不了会话、哪一步没等到、请求带着的结果对不上。
+pub async fn steps(
     rpc: &mut Rpc,
     fake: &mut Fake,
     workspace: &Workspace,

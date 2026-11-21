@@ -5,13 +5,23 @@ use std::str::FromStr;
 use std::time::Duration;
 
 /// 用法，参数不对时印出来。
-pub const USAGE: &str = "用法：miyu-perf --miyu <release 的 miyu> --resources <resources/> --design <23-性能预算.md> --work <沙盒目录> --out <结果目录> [--runs 10] [--sessions 10] [--events 10000] [--tail 30] [--reloads 20] [--appends 2000] [--reply-bytes 3500] [--streams 10] [--pieces 300] [--idle-wait 200] [--gate 倍数]\n      miyu-perf --tools 20 --tree <拷进工作区的树> --miyu … --resources … --design … --work … --out … [--tools-log debug] [--tag 名]\n      miyu-perf --render <原始数据.json> --design <23-性能预算.md> --out <结果目录>";
+pub const USAGE: &str = "用法：miyu-perf --miyu <release 的 miyu> --resources <resources/> --design <23-性能预算.md> --work <沙盒目录> --out <结果目录> [--runs 10] [--sessions 10] [--events 10000] [--tail 30] [--reloads 20] [--appends 2000] [--reply-bytes 3500] [--streams 10] [--pieces 300] [--idle-wait 200] [--gate 倍数]\n      miyu-perf --tools 20 --tree <拷进工作区的树> --miyu … --resources … --design … --work … --out … [--tools-log debug] [--tag 名]\n      miyu-perf --render <原始数据.json> --design <23-性能预算.md> --out <结果目录>\n      miyu-perf --order <清单文件> --emulator <qemu-x86_64> --tree <拷进工作区的树> --miyu … --resources … --work …";
 
 /// 量的时候必写的几个路径。
 const PATHS: [&str; 5] = ["--miyu", "--resources", "--design", "--work", "--out"];
 
 /// 照原始数据重出表时必写的。
 const RENDER_PATHS: [&str; 2] = ["--design", "--out"];
+
+/// 录排函数的清单时必写的（施工 LW-1）：不量、不出表，用不着预算和结果目录。
+const ORDER_PATHS: [&str; 6] = [
+    "--miyu",
+    "--resources",
+    "--work",
+    "--tree",
+    "--order",
+    "--emulator",
+];
 
 /// 量什么、量多少次、放哪。
 #[derive(Debug, Clone, PartialEq)]
@@ -58,6 +68,10 @@ pub struct Args {
     pub tools_log: Option<String>,
     /// 工具一步：结果的文件名后面接的标签。
     pub tag: Option<String>,
+    /// 排函数（施工 LW-1）：写了的不量，在模拟器里照剧本录一遍，把执行过的函数照头一回执行的先后写进这个文件。
+    pub order: Option<PathBuf>,
+    /// 排函数：QEMU 的用户态模拟器，例如 `qemu-x86_64`。要和 `--order` 一起写。
+    pub emulator: Option<PathBuf>,
 }
 
 /// 读命令行参数（不含程序名）。
@@ -88,6 +102,8 @@ pub fn parse(words: &[String]) -> Result<Args, String> {
         tree: None,
         tools_log: None,
         tag: None,
+        order: None,
+        emulator: None,
     };
     let mut given = Vec::new();
     let mut words = words.iter();
@@ -117,11 +133,18 @@ pub fn parse(words: &[String]) -> Result<Args, String> {
             "--tree" => args.tree = Some(value.into()),
             "--tools-log" => args.tools_log = Some(value.clone()),
             "--tag" => args.tag = Some(value.clone()),
+            "--order" => args.order = Some(value.into()),
+            "--emulator" => args.emulator = Some(value.into()),
             _ => return Err(format!("不认识 {flag}\n{USAGE}")),
         }
         given.push(flag.as_str());
     }
-    let needed = if args.render.is_some() {
+    if args.order.is_some() != args.emulator.is_some() {
+        return Err(format!("--order 要和 --emulator 一起写\n{USAGE}"));
+    }
+    let needed = if args.order.is_some() {
+        &ORDER_PATHS[..]
+    } else if args.render.is_some() {
         &RENDER_PATHS[..]
     } else {
         &PATHS[..]

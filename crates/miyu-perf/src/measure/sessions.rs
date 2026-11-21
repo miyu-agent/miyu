@@ -77,8 +77,8 @@ pub async fn hot(sandbox: &Sandbox, fake: &mut Fake, count: usize) -> Result<Hot
     })
 }
 
-/// 头起来时问的几样（终端、网页都问）：读配置、读人、列模型、人格、预设、软件包。
-const HEAD_ASKS: [&str; 6] = [
+/// 头起来时问的几样（终端、网页都问）：读配置、读人、列模型、人格、预设、软件包。排函数的剧本也照它问（施工 LW-1）。
+pub const HEAD_ASKS: [&str; 6] = [
     "config.get",
     "human.get",
     "model.list",

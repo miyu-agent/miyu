@@ -237,6 +237,10 @@ jobs:
       - name: 三家对比的测具
         if: needs.tested.outputs.already != 'true' || steps.cache.outputs.cache-hit != 'true'
         run: python3 -m unittest discover -s bench/rivals -p 'test_*.py'
+      # 排函数（施工 LW-1）：`cargo xtask perf` 在模拟器里照剧本运行核心录清单，量的是排过的程序；没有模拟器它当场报错。
+      - name: 装 QEMU 的用户态模拟器
+        if: needs.tested.outputs.already != 'true' || steps.cache.outputs.cache-hit != 'true'
+        run: sudo apt-get update && sudo apt-get install -y qemu-user
       - name: 量尺
         if: needs.tested.outputs.already != 'true' || steps.cache.outputs.cache-hit != 'true'
         run: cargo xtask perf --idle-wait 0 --gate 1 --out "$GITHUB_WORKSPACE/target/perf-out"

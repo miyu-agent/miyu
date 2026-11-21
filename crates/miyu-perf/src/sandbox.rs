@@ -20,6 +20,10 @@ use miyu_store::root::DataRoot;
 /// 核心起来最多等多久。
 const START_PATIENCE: Duration = Duration::from_secs(60);
 
+/// 在模拟器里起来最多等多久（施工 LW-1，[`Traced`]）：模拟器头一回执行每一块代码都要先翻译、写进日志，核心起来比原生慢十几
+/// 倍，CI 的机器再慢几倍；只在排函数那一场用，别的几场照 [`START_PATIENCE`]。
+const TRACED_PATIENCE: Duration = Duration::from_secs(600);
+
 /// 一个沙盒数据根，和拉起核心要的几样。
 pub struct Sandbox {
     /// 数据根。
@@ -81,7 +85,8 @@ impl Sandbox {
         self.start_with(Launch::default())
     }
 
-    /// 照 `launch` 拉起核心（施工 V-29）：放不放进自己的 systemd scope、运行日志记到哪一级。别的同 [`Sandbox::start`]。
+    /// 照 `launch` 拉起核心（施工 V-29）：放不放进自己的 systemd scope、运行日志记到哪一级；在不在模拟器里、信任哪份证书
+    /// （施工 LW-1）。别的同 [`Sandbox::start`]。
     ///
     /// # Errors
     ///
@@ -89,9 +94,18 @@ impl Sandbox {
     pub fn start_with(&self, launch: Launch<'_>) -> Result<Running, String> {
         let cache = self.root.perf_cache();
         let began = Instant::now();
+        // 在模拟器里的（施工 LW-1）：模拟器拉起核心，进程号是模拟器的，`/proc` 里读到的映射就是核心的；不放进 scope。
         // 放进 scope 的经 `systemd-run --scope`：它登记好 scope 就把自己换成核心（`env` 也是换，进程号不变），环境照传。
         // `XDG_RUNTIME_DIR` 留给 systemd-run 找用户的总线，进了 scope 再由 `env` 去掉。
-        let mut command = if launch.scoped {
+        let mut command = if let Some(traced) = launch.traced {
+            let mut command = Command::new(traced.emulator);
+            command
+                .args(["-d", "in_asm", "-D"])
+                .arg(traced.log)
+                .arg(&self.miyu)
+                .env_remove("XDG_RUNTIME_DIR");
+            command
+        } else if launch.scoped {
             let mut command = Command::new("systemd-run");
             command
                 .args(["--user", "--scope", "--quiet", "--collect", "--"])
@@ -106,6 +120,9 @@ impl Sandbox {
         command.env_remove("MIYU_LOG");
         if let Some(level) = launch.log {
             command.env("MIYU_LOG", level);
+        }
+        if let Some(trust) = launch.trust {
+            command.env("SSL_CERT_FILE", trust);
         }
         let mut child = command
             .args(["core", "--idle-seconds", "3600"])
@@ -123,7 +140,10 @@ impl Sandbox {
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
             .spawn()
-            .map_err(|e| format!("拉不起 {}：{e}", self.miyu.display()))?;
+            .map_err(|e| match launch.traced {
+                Some(traced) => format!("拉不起模拟器 {}：{e}", traced.emulator.display()),
+                None => format!("拉不起 {}：{e}", self.miyu.display()),
+            })?;
         let stdout = child.stdout.take().ok_or("核心的标准输出没接上")?;
         // 读那一行放到别的线程：核心卡住不写也不走的时候，这里照样能按时放弃。
         let (sender, line) = mpsc::channel();
@@ -137,7 +157,11 @@ impl Sandbox {
             child,
             ready: Duration::ZERO,
         };
-        match line.recv_timeout(START_PATIENCE) {
+        let patience = match launch.traced {
+            Some(_) => TRACED_PATIENCE,
+            None => START_PATIENCE,
+        };
+        match line.recv_timeout(patience) {
             Ok(Ok(text)) if text == "ready\n" => {
                 running.ready = began.elapsed();
                 Ok(running)
@@ -177,6 +201,20 @@ pub struct Launch<'a> {
     pub scoped: bool,
     /// `MIYU_LOG`：拆开一步各段时记到 `debug`，核心每处理一条输入、每做一个动作记一行（`log.md`）。
     pub log: Option<&'a str>,
+    /// 放进模拟器里起（施工 LW-1，排函数）：给了的不看 [`Launch::scoped`]。
+    pub traced: Option<Traced<'a>>,
+    /// 核心的 `SSL_CERT_FILE`（施工 LW-1）：假模型 HTTPS 的口要核心信任测试证书；没给的不设，照宿主的环境。
+    pub trust: Option<&'a Path>,
+}
+
+/// 在模拟器里起核心（施工 LW-1）：`<emulator> -d in_asm -D <log> <miyu> core …`。QEMU 的用户态模拟器头一回要执行一块代码时
+/// 先翻译它，`in_asm` 把这一块每条指令的地址写进日志：日志就是执行过的代码，先后是头一回执行的先后。
+#[derive(Debug, Clone, Copy)]
+pub struct Traced<'a> {
+    /// 模拟器，例如 `qemu-x86_64`。
+    pub emulator: &'a Path,
+    /// 这一次的日志写到哪。
+    pub log: &'a Path,
 }
 
 /// 跑着的核心。丢掉时结束它。
@@ -187,9 +225,25 @@ pub struct Running {
 }
 
 impl Running {
-    /// 核心的进程号。
+    /// 核心的进程号；在模拟器里的是模拟器的（施工 LW-1）。
     pub fn pid(&self) -> u32 {
         self.child.id()
+    }
+
+    /// 程序 `program` 装在进程的哪个地址起（施工 LW-1）：读 `/proc/<进程号>/maps`。在模拟器里的，日志里的地址减去它就是
+    /// 符号表里的地址。
+    ///
+    /// # Errors
+    ///
+    /// 找不到程序（路径不对）、映射读不了（不是 Linux）、映射里没有它。
+    pub fn base(&self, program: &Path) -> Result<u64, String> {
+        let program = program
+            .canonicalize()
+            .map_err(|e| format!("找不到 {}：{e}", program.display()))?;
+        let maps = format!("/proc/{}/maps", self.pid());
+        let text = std::fs::read_to_string(&maps).map_err(|e| format!("读不了 {maps}：{e}"))?;
+        load_base(&text, &program)
+            .ok_or_else(|| format!("{maps} 里没有 {} 的映射", program.display()))
     }
 
     fn kill(&mut self) {
@@ -209,9 +263,32 @@ impl Drop for Running {
     }
 }
 
+/// 照 `/proc/<进程号>/maps` 的原文 `maps` 找程序 `program` 的装载起点：路径是它、文件偏移是 0 的那一段的起点。一行是
+/// `<起>-<止> <权限> <偏移> <设备> <节点> <路径>`，路径里可以有空格，读到行尾。没有的是 `None`。
+pub fn load_base(maps: &str, program: &Path) -> Option<u64> {
+    maps.lines().find_map(|line| {
+        let mut rest = line;
+        let mut fields = [""; 5];
+        for field in &mut fields {
+            let trimmed = rest.trim_start();
+            let end = trimmed.find(' ')?;
+            *field = &trimmed[..end];
+            rest = &trimmed[end..];
+        }
+        let [range, _, offset, _, _] = fields;
+        if u64::from_str_radix(offset, 16).ok()? != 0 || Path::new(rest.trim_start()) != program {
+            return None;
+        }
+        u64::from_str_radix(range.split_once('-')?.0, 16).ok()
+    })
+}
+
 /// 运行日志的最后几行：核心起不来时附在报错后面。
 fn tail(log: &Path) -> String {
     let text = std::fs::read_to_string(log).unwrap_or_default();
     let lines: Vec<&str> = text.lines().collect();
     lines[lines.len().saturating_sub(20)..].join("\n")
 }
+
+#[cfg(test)]
+mod tests;

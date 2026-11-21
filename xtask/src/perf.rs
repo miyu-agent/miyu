@@ -4,12 +4,23 @@
 //! 两次分开编：量的二进制只照它自己的依赖编，别的包（测试夹具打开的开关）混不进去。沙盒放在 `target/perf/` 下：要在
 //! 真的磁盘上，同步才算数。后面跟的参数原样交给量尺（`--runs 3` 这些）；带 `--render <原始数据>` 的只编量尺，照现在的预算
 //! 重出表，不量。工具一步（`--tools`，施工 V-29）拷进工作区的树照源码树的 `crates/`。
+//!
+//! 排函数（施工 LW-1，`order.rs`）：能排的机器上（Linux x86_64）核心照排函数的流程编，闸门量的就是排过的程序；流程里已经
+//! 编过量尺，不再编。带 `--no-order` 的照原来的办法编、不排，这个词不交给量尺；`--render` 不编核心，也不排。
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
+use crate::order;
+
 /// 编、跑。
 pub fn run(cargo: &str, root: &Path, extra: &[String]) -> ExitCode {
+    let no_order = extra.iter().any(|word| word == order::NO_ORDER);
+    let extra: Vec<String> = extra
+        .iter()
+        .filter(|word| *word != order::NO_ORDER)
+        .cloned()
+        .collect();
     let target = std::env::var_os("CARGO_TARGET_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|| root.join("target"));
@@ -17,7 +28,21 @@ pub fn run(cargo: &str, root: &Path, extra: &[String]) -> ExitCode {
     let exe = |name: &str| release.join(format!("{name}{}", std::env::consts::EXE_SUFFIX));
     // 照原始数据重出表（`--render`）不量，不用编要量的二进制。
     let render = extra.iter().any(|word| word == "--render");
-    let builds: &[&[&str]] = if render {
+    let ordered = order::SUPPORTED && !render && !no_order;
+    if ordered {
+        let done = order::tools().and_then(|emulator| {
+            order::run(cargo, root, &emulator, false, &|what| {
+                println!("── {what} ──")
+            })
+        });
+        if let Err(e) = done {
+            eprintln!("排函数没成：{e}");
+            return ExitCode::FAILURE;
+        }
+    }
+    let builds: &[&[&str]] = if ordered {
+        &[]
+    } else if render {
         &[&["miyu-perf"]]
     } else {
         &[&["miyu", "miyu-sandbox", "miyu-extract"], &["miyu-perf"]]
@@ -53,7 +78,7 @@ pub fn run(cargo: &str, root: &Path, extra: &[String]) -> ExitCode {
         .arg(target.join("perf-out"))
         .arg("--tree")
         .arg(root.join("crates"))
-        .args(extra)
+        .args(&extra)
         .current_dir(root)
         .status();
     match status {
