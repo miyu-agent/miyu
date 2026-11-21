@@ -48,7 +48,7 @@ impl Language {
                 }
                 if let Some(left) = left {
                     lines.push(pick(
-                        format!("提示：旧版目录 {} 还在用，下次运行 'miyu upgrade' 时删除", shown(left)),
+                        format!("提示：旧版目录 {} 仍在使用，下次运行 'miyu upgrade' 时删除", shown(left)),
                         format!("hint: the old version in {} is still in use and is removed by the next 'miyu upgrade'", shown(left)),
                     ));
                 }
@@ -68,7 +68,7 @@ impl Language {
                 };
                 return vec![
                     pick(
-                        format!("这份 Miyu 由 {manager} 安装，用包管理器升级"),
+                        format!("当前的 Miyu 由 {manager} 安装，使用包管理器升级"),
                         format!("this Miyu was installed with {manager}; upgrade it with the package manager"),
                     ),
                     format!("  {command}"),
@@ -77,10 +77,10 @@ impl Language {
             Said::Unmarked(page) => {
                 return vec![
                     pick(
-                        "这份 Miyu 不是用安装脚本或包管理器装的，不自动升级".to_string(),
+                        "当前的 Miyu 不是用安装脚本或包管理器安装的，不自动升级".to_string(),
                         "this Miyu was not installed by the install script or a package manager, so it does not upgrade itself".to_string(),
                     ),
-                    pick(format!("提示：新版在 {page}"), format!("hint: get the new version from {page}")),
+                    pick(format!("提示：从 {page} 获取新版"), format!("hint: get the new version from {page}")),
                 ];
             }
             Said::Cancelled => return vec![pick("已取消".to_string(), "cancelled".to_string())],
@@ -118,9 +118,9 @@ impl Language {
                     .and_then(|reset| jiff::Timestamp::from_second(reset).ok())
                     .map(|at| at.to_zoned(jiff::tz::TimeZone::system()).strftime("%H:%M").to_string());
                 let hint = match (&when, zh) {
-                    (Some(at), true) => format!("{at} 以后再试"),
+                    (Some(at), true) => format!("{at} 以后重试"),
                     (Some(at), false) => format!("try again after {at}"),
-                    (None, true) => "过一会儿再试".to_string(),
+                    (None, true) => "稍后重试".to_string(),
                     (None, false) => "try again later".to_string(),
                 };
                 pick_problem(
@@ -133,13 +133,13 @@ impl Language {
                 .hint(hint)
             }
             Said::Net(NetError::Status(status)) => Problem::new(pick(
-                format!("GitHub 回应了 HTTP {status}"),
+                format!("GitHub 返回 HTTP {status}"),
                 format!("GitHub answered HTTP {status}"),
             )),
-            Said::NoRelease => pick_problem(zh, ("没有找到可用的发行版", "no release found")),
+            Said::NoRelease => pick_problem(zh, ("未找到可用的发行版", "no release found")),
             Said::OnlyPre => pick_problem(zh, ("还没有正式版", "there is no stable release yet"))
                 .hint(pick(
-                    "加 '--prerelease' 可以看预发布".to_string(),
+                    "加 '--prerelease' 可以升级到预发布版".to_string(),
                     "pass '--prerelease' to include pre-releases".to_string(),
                 )),
             Said::MissingAsset(name) => Problem::new(pick(
@@ -151,7 +151,7 @@ impl Language {
                 format!("the signature does not verify, not upgrading: {}", clean(why)),
             )),
             Said::BadSums(why) => Problem::new(pick(
-                format!("校验和清单格式不对，不升级：{}", clean(why)),
+                format!("校验和清单格式不正确，不升级：{}", clean(why)),
                 format!("the checksum list is malformed, not upgrading: {}", clean(why)),
             )),
             Said::HashMismatch(name) => Problem::new(pick(

@@ -166,16 +166,16 @@ fn explain_marks_the_environment_and_what_does_not_count() {
     let lines = explain("log.level", &item, &said, Language::Chinese, &places());
     assert_eq!(
         lines[1].paint(false),
-        "  \"debug\"  环境变量 MIYU_LOG  ← 生效，只管这一次启动\n"
+        "  \"debug\"  环境变量 MIYU_LOG  ← 生效，仅限本次启动\n"
     );
     let project = places().shown("~/src/app/.miyu/config.toml");
     assert_eq!(
         lines[2].paint(false),
-        format!("  false    项目配置           {project}:3  ← 不算：比下面几层宽\n")
+        format!("  false    项目配置           {project}:3  ← 未生效：比下面几层更宽松\n")
     );
     let painted = lines[2].paint(true);
     assert!(
-        painted.starts_with("\u{1b}[90m") && painted.contains("\u{1b}[31m← 不算"),
+        painted.starts_with("\u{1b}[90m") && painted.contains("\u{1b}[31m← 未生效"),
         "{painted:?}"
     );
     assert_eq!(lines[3].paint(false), "  \"info\"   默认值\n");
@@ -355,7 +355,7 @@ fn edit_and_trust_words_match_the_blueprint() {
         zh.untrusted_project("~/src/app/.miyu/config.toml")
             .lines(zh, Level::Warning),
         [
-            "miyu: 警告：项目配置 ~/src/app/.miyu/config.toml 尚未信任，本次没有使用",
+            "miyu: 警告：项目配置 ~/src/app/.miyu/config.toml 未信任，本次没有使用",
             "提示：运行 'miyu config trust' 查看后决定",
         ]
     );

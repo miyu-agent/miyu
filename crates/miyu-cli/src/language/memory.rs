@@ -24,7 +24,7 @@ impl Language {
     /// `search` 一条都没找到。
     pub fn nothing_found(&self) -> &'static str {
         match self {
-            Language::Chinese => "没有找到结果",
+            Language::Chinese => "未找到结果",
             Language::English => "no matches",
         }
     }
@@ -59,7 +59,7 @@ impl Language {
     pub fn dreamed(&self, organized: &Organized) -> String {
         let took = miyu_view::clock(organized.took_ms);
         match (self, organized.given) {
-            (Language::Chinese, 0) => format!("无需整理，用时 {took}"),
+            (Language::Chinese, 0) => format!("不需要整理，用时 {took}"),
             (Language::English, 0) => format!("nothing to organize, took {took}"),
             (Language::Chinese, _) => {
                 format!("已整理：{}，用时 {took}", self.organized(organized, true))
@@ -97,7 +97,7 @@ impl Language {
         if organized.revised == 0 && organized.retired == 0 {
             parts.push(
                 if zh {
-                    "没有要改的"
+                    "不需要修改"
                 } else {
                     "nothing to change"
                 }

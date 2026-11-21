@@ -102,7 +102,7 @@ a.rs
 
 | 什么时候 | 文件 | 原文 |
 |---|---|---|
-| 一个都没找到 | `common/no-files.txt` | `No files found` |
+| 未找到文件 | `common/no-files.txt` | `No files found` |
 | 多过 100 个 | `glob/more.txt` | `({rest} more of {total} matches not listed. A narrower pattern or path shows them.)` |
 
 ### 出错
@@ -125,10 +125,10 @@ a.rs
 | 说法 | 什么时候 | 中文 | 英文 |
 |---|---|---|---|
 | `glob/files`（`count`） | 全列了 | `{count} 个文件` | `{count} files` |
-| `glob/files-more`（`shown`、`total`） | 多过 100 个 | `{total} 个文件，列了 {shown} 个` | `{total} files, {shown} listed` |
-| `common/no-files` | 一个都没找到 | 一个都没找到 | none found |
+| `glob/files-more`（`shown`、`total`） | 多过 100 个 | `{total} 个文件，已列出 {shown} 个` | `{total} files, {shown} listed` |
+| `common/no-files` | 未找到文件 | 未找到文件 | none found |
 | `glob/not-a-directory`（`path`） | 搜的不是目录 | 不是目录 | not a directory |
-| `common/bad-glob`（`glob`、`error`） | 模式写得不对 | `通配写得不对：{error}` | `bad glob: {error}` |
+| `common/bad-glob`（`glob`、`error`） | 模式写得不对 | `通配符格式不正确：{error}` | `bad glob: {error}` |
 | `common/missing`、`common/missing-similar`、`common/failed`、`common/bad-args` | 见 `tools/read.md` | | |
 
 ### 三个平台

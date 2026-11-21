@@ -40,7 +40,7 @@ impl Language {
     pub(crate) fn verified_source(&self, official: bool, source: &str) -> String {
         match (self, official) {
             (Language::Chinese, true) => "官方，签名已验证".to_string(),
-            (Language::Chinese, false) => format!("{source}，签名已验证，未经审核"),
+            (Language::Chinese, false) => format!("{source}，签名已验证，未经官方审核"),
             (Language::English, true) => "official, signature verified".to_string(),
             (Language::English, false) => format!("{source}, signature verified, not reviewed"),
         }

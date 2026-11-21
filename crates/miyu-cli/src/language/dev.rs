@@ -7,8 +7,8 @@ impl Language {
     pub(crate) fn driver_checked(&self, driver: &str, cache: &str, outcome: &str) -> String {
         let said = match (self, outcome) {
             (Language::Chinese, "passed") => "通过",
-            (Language::Chinese, "failed") => "没通过",
-            (Language::Chinese, "skipped") => "跳过",
+            (Language::Chinese, "failed") => "未通过",
+            (Language::Chinese, "skipped") => "已跳过",
             (Language::English, "passed") => "passed",
             (Language::English, "failed") => "failed",
             (Language::English, "skipped") => "skipped",
@@ -24,7 +24,7 @@ impl Language {
     pub(crate) fn sample_checked(&self, sample: &str, ok: bool) -> String {
         match (self, ok) {
             (Language::Chinese, true) => format!("通过 {sample}"),
-            (Language::Chinese, false) => format!("没通过 {sample}"),
+            (Language::Chinese, false) => format!("未通过 {sample}"),
             (Language::English, true) => format!("ok {sample}"),
             (Language::English, false) => format!("failed {sample}"),
         }

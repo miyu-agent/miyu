@@ -122,7 +122,7 @@ The closest text is at lines 2-2:
 | 什么时候 | 文件 | 原文 |
 |---|---|---|
 | 改好了 | `edit/edited.txt` | `Edited "{path}".` |
-| 没给要改的 | `edit/no-edits.txt` | `No edits were given.` |
+| 未指定要修改的内容 | `edit/no-edits.txt` | `No edits were given.` |
 | `old_string` 是空的 | `edit/empty.txt` | `Edit {index}: old_string is empty. write creates files.` |
 | 改前改后一样 | `edit/same.txt` | `Edit {index}: old_string and new_string are the same.` |
 | 没对上 | `edit/not-found.txt` | `Edit {index}: old_string was not found in "{path}".` |
@@ -141,7 +141,7 @@ The closest text is at lines 2-2:
 | 什么时候 | 给她的字 | 说法 |
 |---|---|---|
 | 参数不对 | `common/bad-args.txt` | `common/bad-args`，字段 `error` |
-| 没给要改的 | `edit/no-edits.txt` | `edit/no-edits` |
+| 未指定要修改的内容 | `edit/no-edits.txt` | `edit/no-edits` |
 | 换不成真实的位置、看不了、读不了 | `common/failed.txt`：`Could not read "{path}": {error}.` | `common/failed`，字段 `path`、`error` |
 | 没有 | `common/missing.txt`，加上相近的名字 | `common/missing` 或 `common/missing-similar` |
 | 是目录 | `common/directory.txt` | `common/directory` |
@@ -161,14 +161,14 @@ The closest text is at lines 2-2:
 
 | 说法 | 中文 | 英文 |
 |---|---|---|
-| `edit/edited`（`count`：换了几段，`replace_all` 的每一个都算） | `改了 {count} 处` | `{count} replaced` |
-| `edit/no-edits` | 没给要改的 | no edits given |
-| `edit/empty`（`index`） | `第 {index} 处的原文是空的` | `edit {index} has an empty old_string` |
-| `edit/same`（`index`） | `第 {index} 处改前改后一样` | `edit {index} changes nothing` |
-| `edit/not-found`（`index`） | `第 {index} 处没找到` | `edit {index} not found` |
-| `edit/not-found-near`（`index`、`line`） | `第 {index} 处没找到，最像的在第 {line} 行` | `edit {index} not found, closest at line {line}` |
-| `edit/not-unique`（`index`、`count`） | `第 {index} 处对得上 {count} 个地方` | `edit {index} matches {count} places` |
-| `edit/overlap`（`first`、`second`） | `第 {first} 处和第 {second} 处重叠了` | `edits {first} and {second} overlap` |
+| `edit/edited`（`count`：换了几段，`replace_all` 的每一个都算） | `编辑了 {count} 处` | `{count} replaced` |
+| `edit/no-edits` | 未指定要修改的内容 | no edits given |
+| `edit/empty`（`index`） | `第 {index} 处的原文为空` | `edit {index} has an empty old_string` |
+| `edit/same`（`index`） | `第 {index} 处修改前后相同` | `edit {index} changes nothing` |
+| `edit/not-found`（`index`） | `第 {index} 处未找到` | `edit {index} not found` |
+| `edit/not-found-near`（`index`、`line`） | `第 {index} 处未找到，最接近的在第 {line} 行` | `edit {index} not found, closest at line {line}` |
+| `edit/not-unique`（`index`、`count`） | `第 {index} 处匹配到 {count} 个位置` | `edit {index} matches {count} places` |
+| `edit/overlap`（`first`、`second`） | `第 {first} 处和第 {second} 处重叠` | `edits {first} and {second} overlap` |
 | `edit/not-text` | 不是文本文件 | not a text file |
 | `common/*` | 见 `tools/write.md`、`tools/read.md` | |
 

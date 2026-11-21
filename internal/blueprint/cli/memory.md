@@ -77,7 +77,7 @@ m2   2026-10-07  [qq:10086] 小林用 RX 7800 XT
 | 键 | 中文 | 英文 |
 |---|---|---|
 | 一条都没有（`list`） | 没有记忆 | no memories |
-| 没找到（`search`） | 没有找到结果 | no matches |
+| 没找到（`search`） | 未找到结果 | no matches |
 | 一张卡都没有（`cards`，施工 E-1 下） | 没有人物卡 | no person cards |
 | 记下了 | 已添加 {id} | added {id} |
 | 改好了 | 已修改，新编号 {id} | updated, new id {id} |
@@ -87,7 +87,7 @@ m2   2026-10-07  [qq:10086] 小林用 RX 7800 XT
 | 没写是谁（报错，施工 E-1 上） | --class person 缺少 --who；提示：加上 '--who <平台编号或名字>' | --class person needs --who; hint: add '--who <platform id or name>' |
 | 整理完了 | 已整理：{几段}，用时 {took} | organized memories: {几段}, took {took} |
 | 几段（照先后，中文「，」、英文「, 」连起来） | 检查 {given} 条；修改 {revised} 条（是 0 不写）；作废 {retired} 条（是 0 不写）；没有要改的（改、作废都是 0）；摘要已更新（摘要换了，叫停的不写） | {given} checked; {revised} revised; {retired} retired; nothing to change; summary updated |
-| 没有要整理的 | 无需整理，用时 {took} | nothing to organize, took {took} |
+| 没有要整理的 | 不需要整理，用时 {took} | nothing to organize, took {took} |
 | 叫停中（标准错误） | 正在停止整理，再按一次 Ctrl+C 立即退出 | stopping, press Ctrl+C again to quit now |
 | 叫停了 | 已中断整理：{几段}，用时 {took}，其余下次继续。一批都没合完的：已中断整理，用时 {took}，下次继续 | stopped organizing: {几段}, took {took}, the rest continues next time / stopped organizing, took {took}, the rest continues next time |
 

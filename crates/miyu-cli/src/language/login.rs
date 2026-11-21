@@ -49,7 +49,7 @@ impl Language {
     pub(crate) fn bad_key_name(&self, name: &str) -> Problem {
         match self {
             Language::Chinese => Problem::new(format!("密钥名字无效：{name}"))
-                .hint("以小写字母开头，只含小写字母、数字、- 和 _，最多 64 个字符"),
+                .hint("名字以小写字母开头，只含小写字母、数字、- 和 _，最多 64 个字符"),
             Language::English => Problem::new(format!("invalid key name: {name}")).hint(
                 "start with a lowercase letter, use only lowercase letters, digits, - and _, at most 64 characters",
             ),

@@ -75,8 +75,8 @@
 | `goal/blocked` | 目标受阻：{reason} | Goal blocked: {reason} |
 | `goal/too-early` | 第 {round} 轮，暂不能标记受阻 | Round {round}, too early to mark blocked |
 | `goal/failed` | 目标未更改：{reason} | Goal not changed: {reason} |
-| `common/bad-args` | 参数不对：{error} | Bad arguments: {error} |
-| `common/off` | 此会话不支持长期目标 | Goals are not available in this session |
+| `common/bad-args` | 参数错误：{error} | Bad arguments: {error} |
+| `common/off` | 这个会话不支持长期目标 | Goals are not available in this session |
 
 ### 守着它的
 

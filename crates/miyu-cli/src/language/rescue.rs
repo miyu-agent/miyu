@@ -12,9 +12,9 @@ impl Language {
         let (what, hint) = match (self, linux) {
             (Language::Chinese, true) => (
                 "未找到 litemiyu",
-                "安装：Arch Linux 用 AUR（paru -S litemiyu 或 yay -S litemiyu）；其他发行版从 https://github.com/miyu-agent/litemiyu/releases 下载",
+                "在 Arch Linux 上从 AUR 安装（paru -S litemiyu 或 yay -S litemiyu）；其他发行版从 https://github.com/miyu-agent/litemiyu/releases 下载",
             ),
-            (Language::Chinese, false) => ("未找到 litemiyu", "暂只支持 Linux"),
+            (Language::Chinese, false) => ("未找到 litemiyu", "目前只支持 Linux"),
             (Language::English, true) => (
                 "litemiyu not found",
                 "to install it, use the AUR on Arch Linux (paru -S litemiyu or yay -S litemiyu); on other distributions, download it from https://github.com/miyu-agent/litemiyu/releases",

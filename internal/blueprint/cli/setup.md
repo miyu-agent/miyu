@@ -243,9 +243,9 @@ Outside a terminal, give --provider and pipe the key in:
 | 照目录列 | · 供应商无法列出模型，下面按 models.dev 的目录列出。 | · The provider listed no models; the list below is from the models.dev catalog. |
 | 不通 | miyu: 连接失败（{哪一步}）：{分类}：{原话} | miyu: connection failed ({stage}): {class}: {message} |
 | 哪一步 | 配置；列模型；发请求 | config; listing models; request |
-| 选模型的头一行 | 选主对话的模型： | Pick the model for chat: |
+| 选模型的头一行 | 选择主对话的模型： | Pick the model for chat: |
 | 推荐 | （推荐） | (recommended) |
-| 问模型 | 选一个编号，直接回车用推荐的： | Pick a number, or press Enter for the recommended one: |
+| 问模型 | 选择编号，直接回车使用推荐的模型： | Pick a number, or press Enter for the recommended one: |
 | 不在列表里 | {敲的} 不在列表里 | {typed} is not in the list |
 | 写好了 | 已设置 models.chat = {ref} | set models.chat = {ref} |
 | `miyu ask` 先走 setup | 未配置模型，开始设置 | no model configured, starting setup |

@@ -1,5 +1,5 @@
 //! 升级的确认屏（施工 PK-3 下，设计 `61-装包说清来源和能力.md` 第三节「升级」、定了的 5）：每个包下面列新多要的能力（批过的不
-//! 印），一起装的新依赖列它要的；社区的照样有「注意」；有新要的问「并批准新要的能力」，没有的照旧。
+//! 印），一起装的新依赖列它要的；社区的照样有「注意」；有新要的问「并批准新增的能力」，没有的照旧。
 
 use serde_json::{Value, json};
 
@@ -27,7 +27,7 @@ fn preview() -> Value {
                   "capabilities": [{"id": "search", "name": "提供联网服务", "summary": "在联网服务里列出来"},
                                    {"id": "network", "name": "联网", "summary": "访问网络、开端口"}]}],
         "download": 2048,
-        "notice": ["lib 是社区包，没有经过官方审核，可能存在风险。"],
+        "notice": ["lib 是社区软件包，未经官方审核，可能存在风险。"],
     })
 }
 
@@ -37,7 +37,7 @@ fn an_upgrade_lists_only_the_new_capabilities_under_each_package() {
         rows(&survey(), &preview(), &Language::Chinese),
         [
             "将升级 app 1.0 → 2.0",
-            "  新要：联网：访问网络、开端口",
+            "  新增：联网：访问网络、开端口",
             "将升级 old 1.0 → 1.1",
             "将安装 lib 1.0",
             "  需要：提供联网服务：在联网服务里列出来",
@@ -54,11 +54,11 @@ fn an_upgrade_lists_only_the_new_capabilities_under_each_package() {
     );
     assert_eq!(
         question(&survey(), &preview(), &Language::Chinese),
-        "注意：lib 是社区包，没有经过官方审核，可能存在风险。\n升级 2 个软件包并批准新要的能力？[Y/n] "
+        "注意：lib 是社区软件包，未经官方审核，可能存在风险。\n升级 2 个软件包并批准新增的能力？[Y/n] "
     );
     assert_eq!(
         question(&survey()[..1], &preview(), &Language::English),
-        "Note: lib 是社区包，没有经过官方审核，可能存在风险。\nUpgrade 'app' and approve the new capabilities? [Y/n] "
+        "Note: lib 是社区软件包，未经官方审核，可能存在风险。\nUpgrade 'app' and approve the new capabilities? [Y/n] "
     );
 }
 
@@ -108,8 +108,8 @@ fn a_package_needing_a_newer_miyu_is_said_and_skipped() {
     assert_eq!(
         said(Language::Chinese),
         [
-            "跳过设为不升级的 pinned",
-            "tui 2026.11.0 需要 Miyu 2026.11.0，跳过"
+            "已跳过设为不升级的 pinned",
+            "tui 2026.11.0 需要 Miyu 2026.11.0，已跳过"
         ]
     );
     assert_eq!(

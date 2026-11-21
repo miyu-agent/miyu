@@ -15,7 +15,7 @@ fn a_name_is_one_aligned_line() {
         lines(&listed, Language::Chinese),
         [
             "stt         提供  voice-input  可用",
-            "tts.engine  接进  gptsovits    不可用",
+            "tts.engine  接入  gptsovits    不可用",
         ]
     );
     assert_eq!(

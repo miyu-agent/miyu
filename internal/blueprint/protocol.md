@@ -874,7 +874,7 @@
   - 看一眼（`preview: true`）只照索引说，不下载：`{"package", "version", "official", "source", "feed", "origin", "capabilities", "provides", "download", "with", "recommends", "installed"?, "replaces"?, "notice"?, "recommends_notice"?, "hosted"?}`：`hosted` 照索引那一格原样（施工 RB-1，写法同从包文件夹装的那一份，以前的索引没有的不写），`download` 是要下的字节数（连依赖），`with` 是一起装的依赖 `[{"package", "version", "source", "feed", "capabilities"?}]`，同编号已经装着的带 `replaces: {"version"}`。施工 PK-3 上起（设计 `61-装包说清来源和能力.md` 第二节）：`source` 是这个包从哪来，`official`（官方源里官方的条目）或 `community`（官方源里社区收录的；配置里自己加的源里的一律算社区：加源是信那把钥匙，包里的东西还是没人审过）；原来那一格源的名字改叫 `feed`（官方的写 `official`）；`with`、`recommends` 每一项同样带 `source`、`feed`，声明了能力的带 `capabilities`（顶上那一个照旧总有这一格，没声明的是空的）；能力每一项这一刻批过、装完照旧留着的多 `held: true`（来路没变才算，见下面「装的时候批」）；`notice` 是这一次要装的（顶上的和 `with`）里有社区的时候要给人看的话，`recommends_notice` 是推荐的里有的时候，都是照连接的语言挑好的一句一个字符串（核心的字，见下面「注意」），没有的不写。只照索引说：能力照索引条目的 `capabilities`。施工 IN-3 起多两格：`recommends` 是这一次要装的包（连依赖）推荐的、还没装的、这一次也不装的，去重，照要装的先后、各自写的先后，每一项 `{"package", "version", "download", "installed_size"?}`（照索引；索引里找不到的、没有本机能用的文件的不列，没有的是空的）；`installed` 是这一次要装的全部包（不含推荐的）照索引的 `installed` 加起来的字节数，有一个没写的不写这一格。`capabilities` 施工 IN-3 起同从包目录装的那一格（`{"id", "name", "summary"}`，名字照连接的语言；以前只有 `name`，写的是编号）。
   - 拒绝：编号不合写法的 `bad_params`；`approve` 写法不对的 `bad_params`（见下面「装的时候批」）；索引里没有的 `unknown_package`；索引里也找不到的依赖、哪个源的那一版都不够下限的 `depends_missing`（`data.missing`，照写的原样）；没有本机能用的文件 `wrong_target`；哪一处都没下成、核对时哈希对不上 `download_failed`（`data.why` 是每一处的原因，英文，照先后用 `; ` 接起来；施工 IN-3 起全下完才装，下不成的一个都不装；装到一半出错的，前面已经装好的依赖留着）；拿不到索引的同 `package.sync`；装的时候的拒绝同装包文件。
 - **装的时候批**（施工 PK-3 上，设计 `61-装包说清来源和能力.md` 第四节）：`package.install`（`path`、`source` 两种）、`package.upgrade` 多一个参数 `approve`：`{"<编号>": ["<能力>", …], …}`，这一次装上的每个包（要装的、一起装的依赖、升级的）各写各的。能力名不是能力表里的（`Capability::ALL`）、编号写法不对的 `bad_params`；是能力、但装上的这一份清单没声明的不理（看一眼和真装之间清单、索引可能变了，照表批，表里没有的就是没批）；编号不是这一次装的不理。不写的照旧：装上，不批，打开时再批（`extension.enable`、`package.enable` 的 `approve` 照旧留着当兜底）。批不完不拒装。装成以后、拉起扩展之前重算这个包在 `etc/extensions.json` 的 `approved`（形状不变）：「(来路没变时旧的 ∪ `approve` 里它的那几样) ∩ 这一份清单声明的」，空的不写；来路没变是装之前本地库 `desc` 记的和这一次一样都是从软件源装的、`origin`、`feed` 都一样，本机文件夹、包文件装的、换了源的、换了来源仓库的、本地库没记的都算变了，前面批过的不接着用；清单不再要的从 `approved` 里去掉，以后加回来要重新批。所以 `start = "always"` 的扩展带着 `approve` 装上就当场拉起。写不进 `extensions.json` 的装照算成，记一行 `WARN extension approval not recorded`，这个包照旧停在要批准。装回出厂的、系统加装的不写（出厂的本来算全批过，`login.page`、`provider.key` 除外，施工 LP-1、PK-1；系统加装的照旧打开时批）。`extension.enable`、`package.enable` 批的时候也照这个算法记（结果照旧是声明的全部）。
-- **从哪来、注意**（施工 PK-3 上）：看一眼的 `source` 一共五种：`official`、`community`（从软件源装的，见上）、`file`（`package.install {"path"}` 的，本机文件夹、包文件都是；从软件源缓存里拿 `.miyu` 手装的也是）、`shipped`、`distro`（装回卸掉的出厂的、系统加装的，`restores: true` 的那一种）。`notice` 是社区的、本机文件的那几个要给人看的话（施工 CM-1 改字）：社区的「这是个社区包，没有经过官方审核，可能存在风险。」，本机文件的「这个包来自本机文件，没有经过官方审核，可能存在风险。」；只装一个包的说「这个包」，几个的写出是哪几个（「weather 是社区包，……」「kit 来自本机文件，……」），两样都有的先社区后本机文件各一句。字在 `resources/core/human/<语言>.json` 的 `packages/notice/*`，中、英、日三份。官方的、出厂的、系统加装的没有这一格。头照它排版，前面的「注意：」这类是头自己的字。
+- **从哪来、注意**（施工 PK-3 上）：看一眼的 `source` 一共五种：`official`、`community`（从软件源装的，见上）、`file`（`package.install {"path"}` 的，本机文件夹、包文件都是；从软件源缓存里拿 `.miyu` 手装的也是）、`shipped`、`distro`（装回卸掉的出厂的、系统加装的，`restores: true` 的那一种）。`notice` 是社区的、本机文件的那几个要给人看的话（施工 CM-1 改字）：社区的「这是社区软件包，未经官方审核，可能存在风险。」，本机文件的「这个软件包来自本机文件，未经官方审核，可能存在风险。」；只装一个包的说「这个包」，几个的写出是哪几个（「weather 是社区包，……」「kit 来自本机文件，……」），两样都有的先社区后本机文件各一句。字在 `resources/core/human/<语言>.json` 的 `packages/notice/*`，中、英、日三份。官方的、出厂的、系统加装的没有这一格。头照它排版，前面的「注意：」这类是头自己的字。
 - `package.remove {"package", "purge"?}`：装上的删掉；出厂的、系统加装的（施工 SD-1）记一笔，文件不动。回应 `{"package", "removed": true, "layer"}`，`layer` 是卸的那一份在哪一层（施工 SD-1 加）。配置目录 `etc/<编号>/`、系统配置里这个包的设置项照 pacman 默认留下、重装同编号照旧用（施工 PK-5、PK-5补）；`purge: true`（布尔，默认 `false`）的连它们一起删（目录不跟符号链接，同状态目录）。留下的是空目录的删掉。留下的设置项不生效、不报不认识（`check` 说一句 `settings_left`）。状态目录、别的几处照旧删（`packages.md`「装卸」第 7 条）。没装、但还留着设置项、`etc/<编号>/` 或 `etc/leftover/<编号>.toml` 的编号，带 `purge: true` 的只删这三样、回应 `{"package", "removed": true}`（不带 `layer`，施工 PK-5补）；不带 `purge` 的、什么都没留的照旧 `unknown_package`。
 - 带 `preview: true` 的只看一眼、什么都不动（施工 F-8 下补，`packages.md`「装卸」第 8 条）：拒绝照真做的那一样。`package.install` 回 `package`、写了的 `version`，同编号已经装了的 `replaces: {"version"}`（原来没写版本的是 `null`），装回出厂的、系统加装的 `restores: true`；从哪来 `source`（施工 PK-3 上：从路径装的 `file`，装回的 `shipped`、`distro`）；从路径装的另有 `notice`（同上）；带了什么：`program`（`ui`、`process`、`worker`、`builtin`，只带吉祥物的、`bundle` 没有）、`mcp`（带的 MCP 服务的名字，施工 X-2）、`command`（子命令名）、`page`、`mascot`、`theme`、`connection`（平台名）、`settings`（几项）、`capabilities`（同 `extension.status` 那一格）；从路径装的另有 `files`（几个文件）、`size`（字节）。没有的不写。`package.remove` 回 `package`、`layer`、写了的 `version`，装上的 `files`、`size`；`settings` 是系统配置里写了的这个包的键（要一并删掉的：施工 PK-5补起只有 `purge` 的列，不 `purge` 的是 `[]`）；`state` 是会一并删掉的状态目录 `{"path", "size"}`（施工 PK-4，`packages.md`「装卸」第 8 条）：`path` 是 `var/lib/<编号>/` 的位置，`size` 是底下普通文件的字节数（不跟符号链接），没有状态目录的不写。PK-4 以前这一格是 `true`/`false`，照 `state == true` 判的头要改成看有没有这一格。`config` 是配置目录和设置项 `{"path"?, "kept", "settings"?}`（施工 PK-5、PK-5补）：`path` 是 `etc/<编号>/` 的位置，不在的、空的（是普通文件的也算不在）不写，`purge` 的也一样，本身是符号链接的照写（留的、删的都只是链接）；`settings` 是系统配置里写了的这个包的设置项有几项，0 的不写；`kept` 是 `true` 两样都留下（没写 `purge`）、`false` 都删掉（`purge: true`）。`path`、`settings` 都没有的不写这一格。没装的编号带 `purge` 的看一眼回 `{"package", "settings", "config"?}`（`settings` 是要删的键）。
 - 从包目录、包文件真装的（施工 IN-3）：查清单、冲突之前往发起的连接推一次 `package.progress {"package", "stage": "verify", "index": 1, "count": 1}`，拷进去之前推一次 `stage: "install"`；没有下载那一段。编号照文件夹名，路径认不出编号的不推核对。
@@ -1760,11 +1760,11 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | 原因码 | 中文 | 英文 |
 |---|---|---|
 | `parse_error` | 消息格式错误。 | Malformed message. |
-| `line_too_long` | 消息超过 1 MiB，没有收。大的内容请用附件发。 | Message over 1 MiB, not accepted. Send large content as an attachment. |
+| `line_too_long` | 消息超过 1 MiB，未接收。较大的内容请用附件发送。 | Message over 1 MiB, not accepted. Send large content as an attachment. |
 | `invalid_request` | 无效的请求。 | Invalid request. |
 | `unknown_method` | 方法不存在。 | Method not found. |
 | `bad_params` | 参数错误。 | Invalid parameters. |
-| `id_reused` | 同一个请求编号换了参数，没有收。请换一个新的编号。 | This request id was already used with different parameters. Use a new id. |
+| `id_reused` | 这个请求编号已经用于参数不同的请求，未接收。请换一个新的编号。 | This request id was already used with different parameters. Use a new id. |
 | `internal_error` | 内部错误，详见运行日志。 | Internal error. See the runtime log. |
 | `hello_first` | 请先握手（hello）。 | Send hello first. |
 | `protocol_mismatch` | 协议版本不兼容，请升级到同一版本。 | Protocol version mismatch. Upgrade to the same release. |
@@ -1785,14 +1785,14 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `package_conflict` | 名称已被占用，无法安装。 | Names already in use, cannot install. |
 | `program_missing` | 程序未安装。 | Program not installed. |
 | `depends_missing` | 缺少依赖的软件包。 | Required packages are missing. |
-| `package_depended` | 其他软件包依赖它，无法卸载。 | Other packages depend on it. |
+| `package_depended` | 其他软件包依赖它，无法卸载。 | Other packages depend on it, so it cannot be uninstalled. |
 | `not_restartable` | 不能重启。 | Cannot be restarted. |
 | `package_off` | 软件包已停用。 | Package disabled. |
 | `unknown_server` | 系统配置里没有这个 MCP 服务。 | No such MCP server in the system config. |
 | `no_page` | 没有后台页。 | No admin page. |
 | `not_found` | 文件不存在。 | File not found. |
 | `program_not_running` | 程序未运行。 | Program not running. |
-| `unregistered` | 方法未登记。 | Method not registered. |
+| `unregistered` | 方法未注册。 | Method not registered. |
 | `method_failed` | 方法执行失败。 | Method failed. |
 | `method_timeout` | 方法超时。 | Method timed out. |
 | `avatar_not_image` | 头像只支持 PNG、JPEG、WebP。 | Avatars must be PNG, JPEG or WebP. |
@@ -1804,15 +1804,15 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `needs_approval` | 扩展权限未批准。 | Extension permissions not approved. |
 | `session_not_found` | 会话不存在。 | Session not found. |
 | `unknown_call` | 调用不存在。 | Call not found. |
-| `shell_not_allowed` | 只有你自己能在这里跑命令。 | Only you can run commands here. |
-| `shell_unavailable` | 没有能跑命令的工具（软件包没装或已关闭）。 | No tool can run commands (package missing or disabled). |
+| `shell_not_allowed` | 只有你本人可以在这里运行命令。 | Only you can run commands here. |
+| `shell_unavailable` | 没有可以运行命令的工具（软件包未安装或已停用）。 | No tool can run commands (package missing or disabled). |
 | `venue_session` | 平台会话不能直接发消息。 | Cannot send messages directly to a platform session. |
 | `unknown_command` | 命令不存在。 | Command not found. |
 | `command_not_allowed` | 仅主人和群管理员可用。 | Owner and group admins only. |
 | `command_unavailable` | 命令暂时不可用。 | Command unavailable for now. |
 | `command_failed` | 命令执行失败。 | Command failed. |
 | `owner_only` | 仅主人可用。 | Owner only. |
-| `session_stopped` | 会话已停止，重新发送即可载入。 | Session stopped. Send again to reload. |
+| `session_stopped` | 会话已停止，重新发送就可以载入。 | Session stopped. Send again to reload. |
 | `session_broken` | 会话已损坏，无法载入。 | Session is corrupted and cannot be loaded. |
 | `session_read_only` | 会话日志第 N 行坏了，只能看到这一行以前的内容，不能接着聊。要继续请新开一个会话。（N 是 `data.line`；没有的说「会话日志坏了，只能看到坏的地方以前的内容，不能接着聊。要继续请新开一个会话。」） | The session log is broken at line N; only the part before it can be viewed and the session can't continue. Start a new session to go on. (N is `data.line`; without it: "The session log is broken; only the part before it can be viewed and the session can't continue. Start a new session to go on.") |
 | `empty_message` | 消息为空。 | Empty message. |
@@ -1832,9 +1832,9 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `upload_offset` | 上传位置不一致。 | Upload offset mismatch. |
 | `upload_incomplete` | 上传未完成。 | Upload incomplete. |
 | `unknown_blob` | 内容不存在。 | Content not found. |
-| `unknown_shown` | 没有这个展示。 | Shown file not found. |
-| `file_changed` | 文件已变。 | The file has changed. |
-| `file_gone` | 文件已不在。 | The file is gone. |
+| `unknown_shown` | 展示不存在。 | Shown file not found. |
+| `file_changed` | 文件已更改。 | The file has changed. |
+| `file_gone` | 文件已不存在。 | The file no longer exists. |
 | `not_running` | 没有进行中的回合。 | No turn in progress. |
 | `turn_running` | 回合进行中。 | A turn is in progress. |
 | `unknown_turn` | 回合不存在。 | Turn not found. |
@@ -1850,7 +1850,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `not_asking` | 不在等待回答。 | Not waiting for an answer. |
 | `not_ambient` | 不是旁听消息。 | Not an overheard message. |
 | `not_exported` | 对方软件没有开放这个方法。 | The other package does not offer this method. |
-| `own_package_only` | 扩展照包编号只能调自己，调别的软件包请用 bus.call。 | An extension can call only itself by package id; use bus.call for other packages. |
+| `own_package_only` | 扩展按软件包编号只能调用自己，调用其他软件包请使用 bus.call。 | An extension can call only itself by package id; use bus.call for other packages. |
 | `not_a_provider` | 仅扩展可提供工具。 | Only extensions can provide tools. |
 | `bad_tool` | 工具规格有误。 | Invalid tool spec. |
 | `already_answered` | 已回复。 | Already answered. |
@@ -1859,11 +1859,11 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `no_goal` | 没有长期目标。 | No goal. |
 | `goal_paused` | 长期目标已暂停。 | Goal paused. |
 | `goal_running` | 长期目标正在进行。 | Goal running. |
-| `goal_unavailable` | 此会话不支持长期目标。 | Goals are not available in this session. |
+| `goal_unavailable` | 这个会话不支持长期目标。 | Goals are not available in this session. |
 | `prefix_changing` | 检测到文件变动，继续对话会因缓存失效多付输入费用。 | Files changed; continuing will cost extra input because the cache is invalidated. |
 | `no_rule` | 只能允许本次或拒绝。 | Only allow once or deny. |
 | `unexpected_reason` | 仅拒绝可附理由。 | Only a denial can carry a reason. |
-| `bad_answer` | 回答与题目不匹配。 | Answers do not match the questions. |
+| `bad_answer` | 回答与提问不匹配。 | Answers do not match the questions. |
 | `unknown_config_key` | 配置项不存在。 | Config key not found. |
 | `config_invalid` | 配置有误，未保存。 | Invalid config, not saved. |
 | `config_conflict` | 配置已被修改，请刷新后重试。 | Config was modified. Refresh and try again. |

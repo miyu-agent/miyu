@@ -76,11 +76,11 @@ async fn a_key_in_the_environment_is_referenced_never_copied() {
          \x20 4  自定义\n\
          选择编号：正在测试 DeepSeek…\n\
          已连通：列出 3 个模型\n\
-         选主对话的模型：\n\
+         选择主对话的模型：\n\
          \x20 1  deepseek-flash（推荐）\n\
          \x20 2  a-tiny\n\
          \x20 3  deepseek-v4-pro\n\
-         选一个编号，直接回车用推荐的：已设置 models.chat = deepseek/deepseek-flash\n"
+         选择编号，直接回车使用推荐的模型：已设置 models.chat = deepseek/deepseek-flash\n"
     );
     let config = home.system_config();
     assert!(
@@ -120,14 +120,14 @@ async fn a_pasted_key_is_tried_first_and_kept_only_once_it_works() {
          \x20    OpenAI        不可用：目录中没有地址\n\
          \x20 4  自定义\n\
          选择编号：粘贴 deepseek 的密钥（不显示）：正在测试 DeepSeek…\n\
-         miyu: 连接失败（列模型）：认证失败：HTTP 401: Authentication Fails (no such user)\n\
+         miyu: 连接失败（列出模型）：认证失败：HTTP 401: Authentication Fails (no such user)\n\
          仍然保存？[y/N] 粘贴 deepseek 的密钥（不显示）：正在测试 DeepSeek…\n\
          已连通：列出 2 个模型\n\
          已保存 deepseek 的密钥\n\
-         选主对话的模型：\n\
+         选择主对话的模型：\n\
          \x20 1  deepseek-flash（推荐）\n\
          \x20 2  deepseek-v4-pro\n\
-         选一个编号，直接回车用推荐的：已设置 models.chat = deepseek/deepseek-v4-pro\n"
+         选择编号，直接回车使用推荐的模型：已设置 models.chat = deepseek/deepseek-v4-pro\n"
     );
     assert_eq!(typist.hidden, 2, "试不通、不保存，回到贴 key");
     assert_eq!(server.received().len(), 2, "两次都只列了模型");
@@ -164,7 +164,7 @@ async fn a_failed_try_can_be_saved_anyway() {
     assert_eq!(
         after,
         "正在测试 DeepSeek…\n\
-         miyu: 连接失败（列模型）：认证失败：HTTP 401: Authentication Fails (no such user)\n\
+         miyu: 连接失败（列出模型）：认证失败：HTTP 401: Authentication Fails (no such user)\n\
          仍然保存？[y/N] 模型名：\
          已保存 deepseek 的密钥\n\
          已设置 models.chat = deepseek/my-model\n"
@@ -290,7 +290,7 @@ async fn nothing_picked_or_no_key_ends_with_1() {
     let asked = home.setup(&plan(Setup::default(), &[]), &mut typist).await;
     assert!(
         asked.screen.contains(
-            "选择编号：miyu: 无效的编号：9\n选择编号：miyu: 无效的编号：x\n选择编号：miyu: 未选择\n"
+            "选择编号：miyu: 编号无效：9\n选择编号：miyu: 编号无效：x\n选择编号：miyu: 未选择\n"
         ),
         "{}",
         asked.screen

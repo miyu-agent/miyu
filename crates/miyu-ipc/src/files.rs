@@ -67,7 +67,7 @@ pub(crate) fn read_location(root: &DataRoot) -> io::Result<PathBuf> {
         true => Ok(path),
         false => Err(io::Error::new(
             io::ErrorKind::InvalidData,
-            format!("run/socket 写的不是绝对路径：{}", path.display()),
+            format!("run/socket 中的路径不是绝对路径：{}", path.display()),
         )),
     }
 }

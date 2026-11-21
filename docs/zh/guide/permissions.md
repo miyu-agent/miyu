@@ -154,7 +154,7 @@ Windows 上 AI 用 PowerShell 运行命令（见 [工具](tools.md#shell)）。�
 | `只读模式，未执行` | 切换回开放权限即可。 |
 | `需要确认，无人确认`，`miyu ask` 的退出码是 `4` | 到终端界面或网页界面里做这件事，或者关掉对应的那一类受保护的命令。 |
 | `无人确认，已自动拒绝` | 调大 `permission.confirm.timeout`，设置为 `0` 时会一直等待。 |
-| `没有执行：会删掉家目录` 这类提示 | 这几类命令无法放行，如果确实要做，需要你自己在终端里操作。 |
+| `未执行：会删除家目录` 这类提示 | 这几类命令无法放行，如果确实要做，需要你自己在终端里操作。 |
 | `miyu-sandbox: cannot confine: no desktop session, programs in the sandbox cannot start here; use Miyu from the desktop, or turn the sandbox off`（退出码 `125`） | 在 Windows 上从已登录的桌面启动 Miyu，或者切换到开放权限。 |
 | Windows 只读下，命令输出后面跟着 `The sandbox blocks WMI. Commands that need it work outside the sandbox.` | 这条命令要用 WMI，在沙盒里无法运行。切换到开放权限，再让 AI 运行这条命令。 |
 | `沙盒不可用：内核没有可用的 Landlock` | 换用 Linux 5.13 或更新的内核，并在启动参数 `lsm=` 里加上 `landlock`。 |

@@ -15,7 +15,7 @@ impl Language {
     pub(crate) fn bus_kind<'a>(&self, kind: &'a str) -> &'a str {
         match (self, kind) {
             (Language::Chinese, "provides") => "提供",
-            (Language::Chinese, "plugs") => "接进",
+            (Language::Chinese, "plugs") => "接入",
             _ => kind,
         }
     }

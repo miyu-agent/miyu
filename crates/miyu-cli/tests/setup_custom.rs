@@ -58,10 +58,10 @@ async fn a_custom_provider_asks_address_protocol_and_key_and_is_named_after_its_
          选择编号：密钥（不显示，可留空）：正在测试 127.1…\n\
          已连通：列出 2 个模型\n\
          ID（回车使用 local）：已保存 local 的密钥\n\
-         选主对话的模型：\n\
+         选择主对话的模型：\n\
          \x20 1  m-large（推荐）\n\
          \x20 2  m-small\n\
-         选一个编号，直接回车用推荐的：已设置 models.chat = local/m-small\n"
+         选择编号，直接回车使用推荐的模型：已设置 models.chat = local/m-small\n"
     );
     let config = home.system_config();
     let wanted = format!(
@@ -192,12 +192,12 @@ async fn the_id_can_be_typed_and_a_bad_or_taken_one_is_asked_again() {
         .expect("试通了");
     assert_eq!(
         after,
-        "ID（回车使用 local）：miyu: ID 无效：Lan Box\n提示：以小写字母开头，只含小写字母、数字、- 和 _，最多 32 个字符\n\
+        "ID（回车使用 local）：miyu: ID 无效：Lan Box\n提示：ID 以小写字母开头，只含小写字母、数字、- 和 _，最多 32 个字符\n\
          ID（回车使用 local）：miyu: ID 'lan-box' 已存在\n\
          ID（回车使用 local）：已保存 office-gpu 的密钥\n\
-         选主对话的模型：\n\
+         选择主对话的模型：\n\
          \x20 1  m-small（推荐）\n\
-         选一个编号，直接回车用推荐的：已设置 models.chat = office-gpu/m-small\n"
+         选择编号，直接回车使用推荐的模型：已设置 models.chat = office-gpu/m-small\n"
     );
     let written = home.system_config();
     let wanted = format!(

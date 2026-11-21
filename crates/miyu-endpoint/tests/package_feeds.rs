@@ -149,7 +149,7 @@ async fn a_source_added_in_settings_is_searched_installed_and_remembered() {
     );
     assert_eq!(
         preview["notice"],
-        json!(["这是个社区包，没有经过官方审核，可能存在风险。"]),
+        json!(["这是社区软件包，未经官方审核，可能存在风险。"]),
         "别人加的源里的也算社区包"
     );
     let installed = owner

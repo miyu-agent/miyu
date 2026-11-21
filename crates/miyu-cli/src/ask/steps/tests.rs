@@ -102,12 +102,12 @@ fn each_status_reads_as_decided() {
         (
             "error",
             said("common/missing-similar", json!({"similar": "src/main.rs"})),
-            "→ 读取 src/lib.rs · 出错：没有这个文件，是不是 src/main.rs\n",
+            "→ 读取 src/lib.rs · 出错：文件不存在，相近的文件：src/main.rs\n",
         ),
         (
             "denied",
             core("unattended"),
-            "→ 读取 src/lib.rs · 没做：需要确认，无人确认\n",
+            "→ 读取 src/lib.rs · 未执行：需要确认，无人确认\n",
         ),
         (
             "cancelled",
@@ -128,8 +128,8 @@ fn each_status_reads_as_decided() {
     let cases = [
         ("ok", "⚙ mcp_lookup\n"),
         ("error", "⚙ mcp_lookup · 出错\n"),
-        ("denied", "⚙ mcp_lookup · 没做\n"),
-        ("cancelled", "⚙ mcp_lookup · 打断了\n"),
+        ("denied", "⚙ mcp_lookup · 未执行\n"),
+        ("cancelled", "⚙ mcp_lookup · 已中断\n"),
         ("skipped", "⚙ mcp_lookup · 已跳过\n"),
         ("later", "⚙ mcp_lookup\n"),
     ];
@@ -225,11 +225,11 @@ fn titles_are_plain_results_gray_and_failures_red() {
             true
         )
         .as_deref(),
-        Some("→ 读取 src/mian.rs\x1b[90m · \x1b[31m出错\x1b[90m：没有这个文件\x1b[0m\n")
+        Some("→ 读取 src/mian.rs\x1b[90m · \x1b[31m出错\x1b[90m：文件不存在\x1b[0m\n")
     );
     assert_eq!(
         painted(&plan, "mcp_lookup", "{}", "denied", Value::Null, true).as_deref(),
-        Some("⚙ mcp_lookup\x1b[90m · \x1b[31m没做\x1b[0m\n"),
+        Some("⚙ mcp_lookup\x1b[90m · \x1b[31m未执行\x1b[0m\n"),
         "没有原因的，红的写完就回到原色"
     );
     assert_eq!(
@@ -353,7 +353,7 @@ fn values_are_tidied_before_printing() {
         said("common/failed", json!({ "error": error })),
     )
     .expect("有这一行");
-    let reason = format!("读不了：{}", "e".repeat(200));
+    let reason = format!("无法读取：{}", "e".repeat(200));
     let kept: String = reason.chars().take(120).collect();
     assert_eq!(printed, format!("→ 读取 a · 出错：{kept}…\n"));
     let name = format!("\u{1b}{}", "n".repeat(49));

@@ -45,7 +45,7 @@ impl Language {
             }
             (Unusable::NoMechanism, Platform::Linux, true) => (
                 "内核没有可用的 Landlock",
-                Some("需要 Linux 5.13 或更新，并在启动参数 lsm= 里启用 Landlock"),
+                Some("需要 Linux 5.13 或更高版本，并在启动参数 lsm= 里启用 Landlock"),
             ),
             (Unusable::NoMechanism, Platform::Linux, false) => (
                 "the kernel has no usable Landlock",
@@ -66,7 +66,7 @@ impl Language {
             (Unusable::NoMechanism, Platform::Windows, false) => {
                 ("this Windows cannot start an MXC base container", None)
             }
-            (Unusable::NoMechanism, Platform::Other, true) => ("此系统上没有可用的沙盒", None),
+            (Unusable::NoMechanism, Platform::Other, true) => ("这个系统上没有可用的沙盒", None),
             (Unusable::NoMechanism, Platform::Other, false) => {
                 ("no sandbox is available on this system", None)
             }

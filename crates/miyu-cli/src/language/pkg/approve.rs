@@ -68,7 +68,7 @@ impl Language {
     /// 升级确认屏里每个包下面那一行的开头（施工 PK-3 下）：新版多要的能力、一起装的新依赖要的能力。缩进两格。
     pub(crate) fn upgrade_needs(&self, new: bool) -> &'static str {
         match (self, new) {
-            (Language::Chinese, true) => "  新要：",
+            (Language::Chinese, true) => "  新增：",
             (Language::Chinese, false) => "  需要：",
             (Language::English, true) => "  New: ",
             (Language::English, false) => "  Needs: ",
@@ -78,8 +78,8 @@ impl Language {
     /// 有要批的能力时问的那一句，后面不换行（施工 PK-3 下）：装、升级一个包的。
     pub(crate) fn proceed_approving(&self, doing: Doing, id: &str) -> String {
         match (self, doing) {
-            (Language::Chinese, Doing::Upgrade) => format!("升级 '{id}' 并批准新要的能力？[Y/n] "),
-            (Language::Chinese, _) => format!("安装 '{id}' 并批准它要的能力？[Y/n] "),
+            (Language::Chinese, Doing::Upgrade) => format!("升级 '{id}' 并批准新增的能力？[Y/n] "),
+            (Language::Chinese, _) => format!("安装 '{id}' 并批准它需要的能力？[Y/n] "),
             (Language::English, Doing::Upgrade) => {
                 format!("Upgrade '{id}' and approve the new capabilities? [Y/n] ")
             }
@@ -93,9 +93,9 @@ impl Language {
     pub(crate) fn proceed_many_approving(&self, doing: Doing, count: usize) -> String {
         match (self, doing) {
             (Language::Chinese, Doing::Upgrade) => {
-                format!("升级 {count} 个软件包并批准新要的能力？[Y/n] ")
+                format!("升级 {count} 个软件包并批准新增的能力？[Y/n] ")
             }
-            (Language::Chinese, _) => format!("安装 {count} 个软件包并批准它们要的能力？[Y/n] "),
+            (Language::Chinese, _) => format!("安装 {count} 个软件包并批准它们需要的能力？[Y/n] "),
             (Language::English, Doing::Upgrade) => {
                 format!("Upgrade {count} packages and approve the new capabilities? [Y/n] ")
             }
@@ -109,10 +109,10 @@ impl Language {
     pub(crate) fn proceed_recommended_approving(&self, count: usize) -> String {
         match (self, count) {
             (Language::Chinese, 1) => {
-                "同时安装推荐的 1 个软件包并批准它要的能力？[Y/n] ".to_string()
+                "同时安装推荐的 1 个软件包并批准它需要的能力？[Y/n] ".to_string()
             }
             (Language::Chinese, _) => {
-                format!("同时安装推荐的 {count} 个软件包并批准它们要的能力？[Y/n] ")
+                format!("同时安装推荐的 {count} 个软件包并批准它们需要的能力？[Y/n] ")
             }
             (Language::English, 1) => {
                 "Also install 1 recommended package and approve the capabilities it needs? [Y/n] "

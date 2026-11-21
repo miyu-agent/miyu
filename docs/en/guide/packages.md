@@ -281,7 +281,7 @@ The two lines in the middle show full paths. The above is how it looks on Linux;
 
 - Deleted: the package folder `~/.miyu/opt/<id>/`; its `<id>/` under `var/lib/`, `var/cache/`, `var/log/`, `tmp/` and `run/` in `~/.miyu/`; the state folders of the scripts it brings.
 - Kept: the config folder `~/.miyu/etc/<id>/`, and its settings in `~/.miyu/etc/config.toml`. If you install the same id again, they are used as before. They are deleted too only if you add `--purge` (the same as `-n`).
-- If other installed packages depend on it, it cannot be removed, and the command reports `Other packages depend on it`.
+- If other installed packages depend on it, it cannot be removed, and the command reports `Other packages depend on it, so it cannot be uninstalled`.
 
 In the web interface, a package's page has `Uninstall` and `Uninstall and delete config`; in the terminal interface, select the package under `Installed` and press `d`.
 
@@ -479,7 +479,7 @@ Errors are printed on standard error, and they start with `miyu: `.
 | `Id conflicts with a built-in package` | A package on this machine uses the id of a shipped package; you need to rename the folder. |
 | `Required packages are missing` | A package it depends on is not in the package source, or its version is too old. |
 | `cannot install <what you wrote>: This package needs Miyu <version> or newer: update Miyu first` | Run `miyu upgrade`. |
-| `Other packages depend on it` | Remove the packages that depend on it first. |
+| `Other packages depend on it, so it cannot be uninstalled` | Remove the packages that depend on it first. |
 | `Program not installed` | The package's program is missing; you need to install the package again. |
 | `Extension permissions not approved` | Approve the capabilities it needs when you turn it on. |
 | `cancelled: no confirmation` | When running in a script, add `--yes`. |

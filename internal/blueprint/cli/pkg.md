@@ -211,7 +211,7 @@ pudding：多出 cache.db
 需要的能力  : 联网：访问网络、开端口
               提供工具：给 AI 加能调用的工具
 
-注意：这是个社区包，没有经过官方审核，可能存在风险。
+注意：这是社区软件包，未经官方审核，可能存在风险。
 安装 'weather' 并批准它要的能力？[Y/n]
 ```
 
@@ -228,11 +228,11 @@ pudding：多出 cache.db
               weather  联网：访问网络、开端口
               weather  提供工具：给 AI 加能调用的工具
 
-注意：weather 是社区包，没有经过官方审核，可能存在风险。
+注意：weather 是社区软件包，未经官方审核，可能存在风险。
 安装 2 个软件包并批准它们要的能力？[Y/n] y
 
 推荐的包要的能力  : rec  联网：访问网络、开端口
-注意：rec 是社区包，没有经过官方审核，可能存在风险。
+注意：rec 是社区软件包，未经官方审核，可能存在风险。
 同时安装推荐的 1 个软件包并批准它要的能力？[Y/n]
 ```
 
@@ -246,7 +246,7 @@ pudding：多出 cache.db
 来源：本机文件
 大小：1.5 KiB，12 个文件
 
-注意：这个包来自本机文件，没有经过官方审核，可能存在风险。
+注意：这个软件包来自本机文件，未经官方审核，可能存在风险。
 安装 'weather' 并批准它要的能力？[Y/n]
 已安装 weather 0.3.0
 已批准 weather 的能力：联网、提供工具
@@ -257,7 +257,7 @@ pudding：多出 cache.db
   需要：提供联网服务：它会出现在联网服务的选项里；选择它之后，搜索词会交给它
 下载：2.0 KiB
 
-注意：lib 是社区包，没有经过官方审核，可能存在风险。
+注意：lib 是社区软件包，未经官方审核，可能存在风险。
 升级 'app' 并批准新要的能力？[Y/n]
 ```
 
@@ -306,7 +306,7 @@ pudding：多出 cache.db
 | 大小 | {size}，{n} 个文件 | {size}, {n} files（一个的写 1 file） |
 | 出厂的 | 出厂自带 | shipped with Miyu |
 | 属于 | {path} 属于 {id} | {path} is owned by {id} |
-| 在目录里 | {path} 在 {id} 的目录里，不是安装时带的 | {path} is in the directory of {id} but was not installed with it |
+| 在目录里 | {path} 在 {id} 的目录中，不是随软件包安装的文件 | {path} is in the directory of {id} but was not installed with it |
 | 没有包（报错） | 没有软件包包含 {path} | no package owns {path} |
 | 查文件 | {id}：已修改 {path}、{id}：缺失 {path}、{id}：多出 {path}、{id}：正常 | {id}: modified {path}、missing、extra、{id}: OK |
 | 没得查 | 没有可检查的软件包 | no packages to check |
@@ -318,7 +318,7 @@ pudding：多出 cache.db
 | 行首 | 包含：、无法读取：、需要：、一并删除：、大小：、一起装：、下载：、来源： | Includes: 、Unreadable: 、Needs: 、Also deletes: 、Size: 、Also installs: 、Download: 、From:  |
 | 来源 | （官方）、（社区，未经审核） | (official), (community, not reviewed) |
 | 删的 | 设置 {keys}、状态目录（旧的核心） | settings {keys}、state directory (older cores) |
-| 会删掉的状态目录（施工 PK-4） | 会删掉 {path}（{size}） | Will delete {path} ({size}) |
+| 会删掉的状态目录（施工 PK-4） | 将删除 {path}（{size}） | Will delete {path} ({size}) |
 | 配置目录（施工 PK-5） | 配置留在 {path}、会删掉 {path}（`--purge`） | Config kept in {path}、Will delete {path} (`--purge`) |
 | 留下的设置项（施工 PK-5补） | 配置留在 {path}，另有 {n} 项设置、{n} 项设置留在配置里 | Config kept in {path}, plus {n} setting(s)、{n} setting(s) kept in the config |
 | 问 | 安装 '{id}'？[Y/n] 、装回 '{id}'？[Y/n] 、卸载 '{id}'？[Y/n] 、升级 '{id}'？[Y/n] 、升级 {n} 个软件包？[Y/n]  | Install '{id}'? [Y/n] 、Restore …、Remove …、Upgrade …、Upgrade {n} packages? [Y/n]  |
@@ -335,7 +335,7 @@ pudding：多出 cache.db
 | 能力一项（施工 PK-3 下） | {name}：{summary}、批过的接（已批准） | {name}: {summary}、 (approved) |
 | 注意（施工 PK-3 下，后面接核心的句子） | 注意： | Note:  |
 | 升级时每个包下面（施工 PK-3 下） | `  新要：`、`  需要：`（前面两个空格） | `  New: `、`  Needs: ` |
-| 推荐的那一段的键（施工 PK-3 下） | 推荐的包要的能力 | Recommended Capabilities |
+| 推荐的那一段的键（施工 PK-3 下） | 推荐的软件包需要的能力 | Recommended Capabilities |
 | 带批准问（施工 PK-3 下） | 安装 '{id}' 并批准它要的能力？[Y/n] 、安装 {n} 个软件包并批准它们要的能力？[Y/n] 、同时安装推荐的 {n} 个软件包并批准它（们）要的能力？[Y/n] 、升级 '{id}' 并批准新要的能力？[Y/n] 、升级 {n} 个软件包并批准新要的能力？[Y/n]  | Install '{id}' and approve the capabilities it needs? [Y/n] 、Install {n} packages and approve the capabilities they need? [Y/n] 、Also install {n} recommended package(s) and approve the capabilities it needs / they need? [Y/n] 、Upgrade '{id}' and approve the new capabilities? [Y/n] 、Upgrade {n} packages and approve the new capabilities? [Y/n]  |
 | 批了哪些（施工 PK-3 下） | 已批准 {id} 的能力：{names} | approved capabilities for {id}: {names} |
 | 下载、核对、安装（施工 IN-3） | 正在下载…、已下载 {name} {size}、({i}/{n}) 正在核对完整性、({i}/{n}) 正在安装 {id} | downloading packages...、downloaded {name} {size}、({i}/{n}) checking package integrity、({i}/{n}) installing {id} |

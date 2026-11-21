@@ -69,7 +69,7 @@ impl Language {
     /// 核心拒了 `schedule.add`、`schedule.resume` 时 `data.problem` 说的是哪一样；不认得的没有。
     pub(crate) fn schedule_problem(&self, problem: &str) -> Option<&'static str> {
         let (chinese, english) = match problem {
-            "when" => ("时间格式不对", "invalid time"),
+            "when" => ("时间格式不正确", "invalid time"),
             "cron" => (
                 "cron 表达式无效，需要标准五段",
                 "invalid cron expression, use the standard five fields",
@@ -95,7 +95,7 @@ impl Language {
     /// 循环的那一种。
     pub(crate) fn schedule_loop(&self, kind: &str) -> &'static str {
         match (self, kind) {
-            (Language::Chinese, "dynamic") => "循环，节奏自定",
+            (Language::Chinese, "dynamic") => "循环，由 AI 决定节奏",
             (Language::Chinese, _) => "循环",
             (Language::English, "dynamic") => "loop, self-paced",
             (Language::English, _) => "loop",
@@ -105,7 +105,7 @@ impl Language {
     /// 停着。
     pub(crate) fn schedule_paused_mark(&self) -> &'static str {
         match self {
-            Language::Chinese => "停着",
+            Language::Chinese => "已暂停",
             Language::English => "paused",
         }
     }
@@ -135,11 +135,11 @@ impl Language {
             (Language::English, "held") => "recorded, handled at the next message",
             (Language::Chinese, "sent") => "已发给软件包",
             (Language::English, "sent") => "sent to package",
-            (Language::Chinese, "skipped:package_unavailable") => "跳过：软件包未运行",
+            (Language::Chinese, "skipped:package_unavailable") => "已跳过：软件包未运行",
             (Language::English, "skipped:package_unavailable") => "skipped: package not running",
-            (Language::Chinese, "skipped:session_gone") => "跳过：会话已不存在",
-            (Language::Chinese, "skipped:preset_off") => "跳过：预设已关闭",
-            (Language::Chinese, "skipped:not_opened") => "跳过：无法新建会话",
+            (Language::Chinese, "skipped:session_gone") => "已跳过：会话已不存在",
+            (Language::Chinese, "skipped:preset_off") => "已跳过：预设已关闭",
+            (Language::Chinese, "skipped:not_opened") => "已跳过：无法新建会话",
             (Language::English, "skipped:session_gone") => "skipped: session gone",
             (Language::English, "skipped:preset_off") => "skipped: disabled by preset",
             (Language::English, "skipped:not_opened") => "skipped: new session failed to open",

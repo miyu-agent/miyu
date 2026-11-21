@@ -727,7 +727,7 @@ miyu rescue [<参数>…]
 miyu rescue
 ```
 
-LiteMiyu 只有 Linux 版。在 macOS、Windows 上找不到它，会输出 `未找到 litemiyu`，并提示 `暂只支持 Linux`。
+LiteMiyu 只有 Linux 版。在 macOS、Windows 上找不到它，会输出 `未找到 litemiyu`，并提示 `目前只支持 Linux`。
 
 退出码使用 `litemiyu` 的退出码；找不到 `litemiyu` 时是 `1`。见 [应急修复](rescue.md)。
 

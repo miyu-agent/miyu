@@ -65,7 +65,7 @@ impl Language {
         match self {
             Language::Chinese => {
                 format!(
-                    "提示：{id} 由系统的包管理器安装，文件仍然保留，Miyu 不再加载它；要删除文件，使用系统的包管理器"
+                    "提示：{id} 由系统的包管理器安装，文件仍然保留，Miyu 不再加载它；如果要删除文件，使用系统的包管理器"
                 )
             }
             Language::English => format!(
@@ -148,7 +148,7 @@ impl Language {
                 let said = match (self, core) {
                     (Language::Chinese, true) => format!("{kind} {name} 是核心自带的"),
                     (Language::English, true) => format!("{kind} {name} is built into the core"),
-                    (Language::Chinese, false) => format!("{kind} {name} 已在 {holder} 中"),
+                    (Language::Chinese, false) => format!("{kind} {name} 已存在于 {holder} 中"),
                     (Language::English, false) => format!("{kind} {name} exists in {holder}"),
                 };
                 Problem::new(format!("{head}{said}"))
@@ -241,7 +241,7 @@ impl Language {
     /// `owns`：`path` 在包 `id` 的目录里，装的时候没有它（包自己后来写的）。
     pub(crate) fn inside_of(&self, path: &str, id: &str) -> String {
         match self {
-            Language::Chinese => format!("{path} 在 {id} 的目录里，不是安装时带的"),
+            Language::Chinese => format!("{path} 在 {id} 的目录中，不是随软件包安装的文件"),
             Language::English => {
                 format!("{path} is in the directory of {id} but was not installed with it")
             }
@@ -259,7 +259,7 @@ impl Language {
     /// `page`：包 `id` 的后台页是它的程序自己起的服务，程序没在跑、还没听上（施工 BP-2）。
     pub(crate) fn page_not_running(&self, id: &str) -> Problem {
         match self {
-            Language::Chinese => Problem::new(format!("{id} 没有在运行，启用它以后再打开")),
+            Language::Chinese => Problem::new(format!("{id} 未运行，启用它以后再打开")),
             Language::English => Problem::new(format!(
                 "{id} is not running; enable it, then open it again"
             )),

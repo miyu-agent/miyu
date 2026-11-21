@@ -9,9 +9,9 @@
   "said": {
     "next/set": "下次 {next}",
     "next/stopped": "已停止循环",
-    "next/no-loop": "没有在跑的循环",
-    "next/no-delay": "没给间隔",
-    "common/bad-args": "参数不对：{error}",
-    "common/off": "此会话不支持循环"
+    "next/no-loop": "没有运行中的循环",
+    "next/no-delay": "未指定间隔",
+    "common/bad-args": "参数错误：{error}",
+    "common/off": "这个会话不支持循环"
   }
 }

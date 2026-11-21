@@ -39,7 +39,7 @@ impl Language {
     /// 敲的不是列出的编号：说完接着问。
     pub(crate) fn not_a_number(&self, typed: &str) -> Problem {
         match self {
-            Language::Chinese => Problem::new(format!("无效的编号：{typed}")),
+            Language::Chinese => Problem::new(format!("编号无效：{typed}")),
             Language::English => Problem::new(format!("invalid number: {typed}")),
         }
     }
@@ -128,8 +128,8 @@ impl Language {
     pub(crate) fn did_not_work(&self, stage: &str, class: &str, message: &str) -> Problem {
         let stage = match (self, stage) {
             (Language::Chinese, "config") => "配置",
-            (Language::Chinese, "list") => "列模型",
-            (Language::Chinese, _) => "发请求",
+            (Language::Chinese, "list") => "列出模型",
+            (Language::Chinese, _) => "发送请求",
             (Language::English, "config") => "config",
             (Language::English, "list") => "listing models",
             (Language::English, _) => "request",
@@ -153,7 +153,7 @@ impl Language {
     /// 选模型的头一行。
     pub(crate) fn models_heading(&self) -> &'static str {
         match self {
-            Language::Chinese => "选主对话的模型：",
+            Language::Chinese => "选择主对话的模型：",
             Language::English => "Pick the model for chat:",
         }
     }
@@ -169,7 +169,7 @@ impl Language {
     /// 问模型。
     pub(crate) fn pick_model(&self) -> &'static str {
         match self {
-            Language::Chinese => "选一个编号，直接回车用推荐的：",
+            Language::Chinese => "选择编号，直接回车使用推荐的模型：",
             Language::English => "Pick a number, or press Enter for the recommended one: ",
         }
     }
@@ -308,7 +308,7 @@ impl Language {
     pub(crate) fn bad_custom_id(&self, typed: &str) -> Problem {
         match self {
             Language::Chinese => Problem::new(format!("ID 无效：{typed}"))
-                .hint("以小写字母开头，只含小写字母、数字、- 和 _，最多 32 个字符"),
+                .hint("ID 以小写字母开头，只含小写字母、数字、- 和 _，最多 32 个字符"),
             Language::English => Problem::new(format!("invalid ID: {typed}")).hint(
                 "start with a lowercase letter, use only lowercase letters, digits, - and _, at most 32 characters",
             ),

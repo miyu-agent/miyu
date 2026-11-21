@@ -273,11 +273,11 @@ fn a_missing_litemiyu_says_how_to_install_it() {
     };
     assert_eq!(
         lines(Language::Chinese, true),
-        "miyu: 未找到 litemiyu\n提示：安装：Arch Linux 用 AUR（paru -S litemiyu 或 yay -S litemiyu）；其他发行版从 https://github.com/miyu-agent/litemiyu/releases 下载"
+        "miyu: 未找到 litemiyu\n提示：在 Arch Linux 上从 AUR 安装（paru -S litemiyu 或 yay -S litemiyu）；其他发行版从 https://github.com/miyu-agent/litemiyu/releases 下载"
     );
     assert_eq!(
         lines(Language::Chinese, false),
-        "miyu: 未找到 litemiyu\n提示：暂只支持 Linux"
+        "miyu: 未找到 litemiyu\n提示：目前只支持 Linux"
     );
     assert_eq!(
         lines(Language::English, true),

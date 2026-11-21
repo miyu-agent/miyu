@@ -86,7 +86,7 @@ async fn a_folder_says_it_is_a_local_file_and_only_what_was_approved_is_kept() {
     );
     assert_eq!(
         preview["notice"],
-        json!(["这个包来自本机文件，没有经过官方审核，可能存在风险。"]),
+        json!(["这个软件包来自本机文件，未经官方审核，可能存在风险。"]),
         "本机文件的不说成社区包，也不再说沙盒"
     );
 

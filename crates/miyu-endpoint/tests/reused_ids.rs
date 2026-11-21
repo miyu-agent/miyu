@@ -37,7 +37,7 @@ async fn a_resent_create_with_other_params_is_refused() {
     assert_eq!(reason(&changed), Some("id_reused"), "{changed}");
     assert_eq!(
         changed["error"]["message"],
-        json!("同一个请求编号换了参数，没有收。请换一个新的编号。")
+        json!("这个请求编号已经用于参数不同的请求，未接收。请换一个新的编号。")
     );
     assert_eq!(home.root.sessions().expect("列得出").len(), 1, "只造了一个");
 }

@@ -1620,7 +1620,8 @@ currency = "USD"
 - 报错、回执写成标准的软件短句（施工 WD-4，项目主人 2026-11-21 定）：「未知的键：{detail}」「{detail} 必须是 1 到 100 之间的整数」「功能编号格式不正确：{detail}」「脚本未注册：{detail}」「已跳过这个脚本：{detail}」「{key} 必须是 {expected}，当前为 {got}」。状态词写「已拒绝」「已中断」「已跳过」「待确认」「运行中」。不用施工时的口语（「不认识的」「写法不对」「登记」「拦下」「这一份」「写的是」），也不用文言、官腔字眼（「此」「尚未」「无需」「如需」「即可」「您」），写「这个」「还没有」「不需要」「如果需要」「就可以」「你」。
 - 设置项的说明画在设置页上那一项的按钮、输入框旁边，里面不写配置文件的写法（「写成 供应商/模型」「也能写 @池」`{ secret = "名字" }` 这一类）：只说这一项是什么、起什么作用、对人有什么影响；取值范围、单位、输入框里填什么格式、留空时怎么样仍然写。说到选项时用选项的名字（「跟随系统」），不用配置里的值（`auto`）。配置文件的写法写在手册的配置键全表（`docs/zh/guide/config-keys.md`）里。
 - 英文那一份的 `export/*` 有几句会被给 AI 读的导出预设原样使用，算给模型的字，改的时候按提示词的规矩走。
-- 「社区包」那四句提示（`packages/notice/*`）是项目主人 2026-11-12 定的原话（设计 61），不按上面的词表改。
+- 「社区软件包」那四句提示（`packages/notice/*`）的说法由项目主人定（2026-11-12 设计 61，2026-11-21 施工 WD-5 改成「这是社区软件包，未经官方审核，可能存在风险。」）。
+- 写在代码里的给人看的字（拒绝原因表 `crates/miyu-endpoint/src/refusal/message.rs`、命令行文案 `crates/miyu-cli/src/language*`）守同一套规矩（施工 WD-5）。
 - 门禁：`miyu-core` 的 `tests/human_wording.rs` 检查中文字表：除了上面说的两句键名，不出现单独成词的 `key`；不出现「她」，也不出现「其他」以外的「他」；不出现上面列的口语和文言字眼（施工 WD-4）。句子是否完整由人审。
 
 **生成的文件要的几句**（`core/human/<语言>.json` 的 `said`，编号前面加 `core/`，8-1）。日文照中文写，用词照终端界面的日文（施工 4-5 补），句子里用全角的「：」：
@@ -1661,7 +1662,7 @@ currency = "USD"
 | `config/sentence` | `text` | {text}。 | {text}. |
 | `config/then` | `rest`、`next` | {rest}{next} | {rest} {next} |
 | `config/stops` | | 。？！ | .?! |
-| `config/untrusted` | | 还没信任 | not trusted yet |
+| `config/untrusted` | | 未信任 | not trusted yet |
 | `config/env-not-set` | `key`、`name` | {key} 引用的环境变量 {name} 在核心启动时未设置 | {key} refers to {name}, which was not set when the core started |
 | `config/bad-secret-name`（8-5） | `key` | {key} 不是有效的密钥名：必须以小写字母开头，只能包含小写字母、数字、- 和 _，最长 64 个字符 | {key} is not a valid secret name: it must start with a lowercase letter and contain only lowercase letters, digits, - and _, up to 64 characters |
 | `config/bad-secret-value`（8-5） | `key` | {key} 的值必须是带引号的非空字符串 | The value of {key} must be a non-empty quoted string |

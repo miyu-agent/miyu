@@ -191,8 +191,8 @@ async fn markdown_too_big_for_standard_output_says_to_save_a_file() {
     assert_eq!(printed.code, 1);
     assert_eq!(printed.out, "", "标准输出上什么都没有");
     assert!(
-        printed.err.contains("导出超过 512 KiB")
-            && printed.err.contains("提示：用 -o <文件> 存成文件"),
+        printed.err.contains("导出内容超过 512 KiB")
+            && printed.err.contains("提示：用 -o <文件> 保存到文件"),
         "{}",
         printed.err
     );

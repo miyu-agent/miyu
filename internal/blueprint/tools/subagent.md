@@ -109,9 +109,9 @@ Started subagent j1: "查导出".
 
 | 说法 | 中文 | 英文 |
 |---|---|---|
-| `agent/started`（`job`、`title`） | `派出去了：{job}` | `Started {job}` |
-| `agent/not-started` | 派不出去 | Could not start |
-| `agent/no-fork` | 分叉出来的不能再分叉 | A fork cannot fork |
+| `agent/started`（`job`、`title`） | `已派出：{job}` | `Started {job}` |
+| `agent/not-started` | 无法派出子代理 | Could not start |
+| `agent/no-fork` | 分叉出的子代理不能再分叉 | A fork cannot fork |
 | `common/bad-args` | 见 `tools/read.md` | |
 
 ### 守着它的

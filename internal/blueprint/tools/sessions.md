@@ -101,9 +101,9 @@ You are session 22334455.
 | 说法 | 中文 | 英文 | 日文 |
 |---|---|---|---|
 | `sessions/listed`（`count`） | 列出 {count} 个会话 | Listed {count} sessions | {count} 件のセッション |
-| `sessions/none` | 没有别的会话 | No other sessions | ほかのセッションはありません |
-| `sessions/past-end`（`total`） | 一共 {total} 个别的会话，已经列完了 | All {total} other sessions are listed | ほかのセッション {total} 件はすべて表示済みです |
-| `sessions/failed`（`error`） | 没列出来：{error} | Could not list sessions: {error} | 一覧を取得できませんでした：{error} |
+| `sessions/none` | 没有其他会话 | No other sessions | ほかのセッションはありません |
+| `sessions/past-end`（`total`） | 一共 {total} 个其他会话，已全部列出 | All {total} other sessions are listed | ほかのセッション {total} 件はすべて表示済みです |
+| `sessions/failed`（`error`） | 无法列出会话：{error} | Could not list sessions: {error} | 一覧を取得できませんでした：{error} |
 
 ### 守着它的
 

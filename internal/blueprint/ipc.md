@@ -160,7 +160,7 @@
 | `OpenError::NotPrivate` | 套接字要放的目录不是自己的，或者别人也能进 | <目录> 不属于当前用户，或者其他用户也能访问：套接字不放在这里 |
 | `OpenError::Occupied` | 位置上有别的东西；Windows 上管道名被占了 | <位置> 上有其他内容：不是套接字的文件，或者其他程序正在监听。没有修改它 |
 | `OpenError::Io` | 读写出错 | 系统的原话 |
-| `ConnectError::NotRunning` | 核心没在跑 | 核心没有在运行 |
+| `ConnectError::NotRunning` | 核心没在跑 | 核心未运行 |
 | `ConnectError::NotPrivate` | 套接字的目录别人也能进；Windows 上管道另一头不是自己的进程 | <目录或管道> 不属于当前用户，或者其他用户也能访问：不连接 |
 | `ConnectError::Io` | 读写出错，`run/socket` 写的不是绝对路径 | 系统的原话；`run/socket 写的不是绝对路径：<路径>` |
 | `StartError::Refused` | 核心说了起不来 | 核心无法启动：<原因> |

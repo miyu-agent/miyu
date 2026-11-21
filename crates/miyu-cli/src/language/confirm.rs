@@ -31,7 +31,7 @@ impl Language {
     pub(crate) fn replacing(&self, version: Option<&str>) -> String {
         match (self, version) {
             (Language::Chinese, Some(version)) => format!("（替换 {version}）"),
-            (Language::Chinese, None) => "（替换已装的）".to_string(),
+            (Language::Chinese, None) => "（替换已安装的版本）".to_string(),
             (Language::English, Some(version)) => format!(" (replaces {version})"),
             (Language::English, None) => " (replaces the installed one)".to_string(),
         }
@@ -115,7 +115,7 @@ impl Language {
             (Language::Chinese, PlanLabel::Needs) => "需要：",
             (Language::Chinese, PlanLabel::AlsoDeletes) => "一并删除：",
             (Language::Chinese, PlanLabel::Size) => "大小：",
-            (Language::Chinese, PlanLabel::With) => "一起装：",
+            (Language::Chinese, PlanLabel::With) => "一并安装：",
             (Language::Chinese, PlanLabel::Download) => "下载：",
             (Language::Chinese, PlanLabel::From) => "来源：",
             (Language::English, PlanLabel::Includes) => "Includes: ",
@@ -141,7 +141,7 @@ impl Language {
     pub(crate) fn origin_mark(&self, official: bool) -> &'static str {
         match (self, official) {
             (Language::Chinese, true) => "（官方）",
-            (Language::Chinese, false) => "（社区，未经审核）",
+            (Language::Chinese, false) => "（社区，未经官方审核）",
             (Language::English, true) => " (official)",
             (Language::English, false) => " (community, not reviewed)",
         }
@@ -158,7 +158,7 @@ impl Language {
     /// 卸的时候会删掉的状态目录（施工 PK-4）：真实位置、多大（`pkg/query.rs` 的 `size` 照 pacman 写好的）。
     pub(crate) fn deletes_state(&self, path: &str, size: &str) -> String {
         match self {
-            Language::Chinese => format!("会删掉 {path}（{size}）"),
+            Language::Chinese => format!("将删除 {path}（{size}）"),
             Language::English => format!("Will delete {path} ({size})"),
         }
     }
@@ -176,12 +176,12 @@ impl Language {
         Some(match (self, kept, path) {
             (_, true, None) if settings == 0 => return None,
             (_, false, None) => return None,
-            (Language::Chinese, true, Some(path)) if settings == 0 => format!("配置留在 {path}"),
+            (Language::Chinese, true, Some(path)) if settings == 0 => format!("配置保留在 {path}"),
             (Language::Chinese, true, Some(path)) => {
-                format!("配置留在 {path}，另有 {settings} 项设置")
+                format!("配置保留在 {path}，另有 {settings} 项设置")
             }
-            (Language::Chinese, true, None) => format!("{settings} 项设置留在配置里"),
-            (Language::Chinese, false, Some(path)) => format!("会删掉 {path}"),
+            (Language::Chinese, true, None) => format!("{settings} 项设置保留在配置中"),
+            (Language::Chinese, false, Some(path)) => format!("将删除 {path}"),
             (Language::English, true, Some(path)) if settings == 0 => {
                 format!("Config kept in {path}")
             }

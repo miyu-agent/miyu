@@ -91,9 +91,9 @@ fn a_missing_litemiyu_says_how_to_get_it_and_exits_1() {
     assert_eq!(said.status.code(), Some(1), "{said:?}");
     let second = match cfg!(target_os = "linux") {
         true => {
-            "提示：安装：Arch Linux 用 AUR（paru -S litemiyu 或 yay -S litemiyu）；其他发行版从 https://github.com/miyu-agent/litemiyu/releases 下载"
+            "提示：在 Arch Linux 上从 AUR 安装（paru -S litemiyu 或 yay -S litemiyu）；其他发行版从 https://github.com/miyu-agent/litemiyu/releases 下载"
         }
-        false => "提示：暂只支持 Linux",
+        false => "提示：目前只支持 Linux",
     };
     assert_eq!(
         String::from_utf8_lossy(&said.stderr),

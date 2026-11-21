@@ -101,7 +101,7 @@ fn plain_refusals_in_both_languages() {
     assert!(bad[1].ends_with("such as con, nul or com1"), "{bad:?}");
     assert_eq!(
         said(zh, zh.kb_no_page(9, 3)),
-        ["miyu: 没有第 9 页：共 3 页"]
+        ["miyu: 第 9 页不存在：共 3 页"]
     );
     assert_eq!(
         said(en, en.kb_no_page(9, 1)),

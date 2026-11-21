@@ -60,7 +60,9 @@ impl Language {
             InfoKey::Provides => ("提供", "Provides"),
             InfoKey::Skipped => ("无法读取", "Unreadable"),
             InfoKey::Capabilities => ("需要的能力", "Capabilities"),
-            InfoKey::RecommendedCapabilities => ("推荐的包要的能力", "Recommended Capabilities"),
+            InfoKey::RecommendedCapabilities => {
+                ("推荐的软件包需要的能力", "Recommended Capabilities")
+            }
             InfoKey::Origin => ("来源", "Origin"),
             InfoKey::Author => ("作者", "Author"),
             InfoKey::Upstream => ("上游", "Upstream"),
@@ -90,10 +92,10 @@ impl Language {
         let word = match (self, from) {
             (Language::Chinese, CameFrom::Shipped) => "出厂",
             (Language::Chinese, CameFrom::Official) => "官方",
-            (Language::Chinese, CameFrom::Community) => "社区，没有经过官方审核",
+            (Language::Chinese, CameFrom::Community) => "社区，未经官方审核",
             (Language::Chinese, CameFrom::Source) => "软件源",
             (Language::Chinese, CameFrom::Local) => "本地",
-            (Language::Chinese, CameFrom::Distro) => "系统的包管理器安装",
+            (Language::Chinese, CameFrom::Distro) => "由系统的包管理器安装",
             (Language::Chinese, CameFrom::Unknown) => "未知",
             (Language::English, CameFrom::Shipped) => "shipped",
             (Language::English, CameFrom::Official) => "official",
@@ -117,7 +119,7 @@ impl Language {
             false => "-Qi",
         };
         match self {
-            Language::Chinese => Problem::new(format!("{flag} 只接软件包编号"))
+            Language::Chinese => Problem::new(format!("{flag} 只接受软件包编号"))
                 .hint("运行 'miyu pkg info <路径>' 查看软件包目录或文件"),
             Language::English => Problem::new(format!("{flag} takes a package id"))
                 .hint("run 'miyu pkg info <path>' to look at a package folder or file"),

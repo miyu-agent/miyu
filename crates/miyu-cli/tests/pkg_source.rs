@@ -151,7 +151,7 @@ async fn update_fetches_the_index_and_says_how_many() {
         updated,
         (
             0,
-            "已更新 official：2 个包（2026-10-19T03:00:00Z）\n".to_string(),
+            "已更新 official：2 个软件包（2026-10-19T03:00:00Z）\n".to_string(),
             String::new()
         )
     );
@@ -202,7 +202,7 @@ async fn update_says_one_line_for_each_source() {
         updated,
         (
             0,
-            "已更新 official：2 个包（2026-10-19T03:00:00Z）\n已更新 friend：3 个包（2026-10-18T03:00:00Z）\n"
+            "已更新 official：2 个软件包（2026-10-19T03:00:00Z）\n已更新 friend：3 个软件包（2026-10-18T03:00:00Z）\n"
                 .to_string(),
             "miyu: 警告：无法更新 extra：无法连接\n".to_string()
         )
@@ -217,7 +217,7 @@ async fn update_with_no_source_and_no_index_is_refused() {
     let home = home(&server.base_url, trusted);
     let refused = pkg(&home, &["update"]).await;
     assert_eq!(refused.0, 1, "{refused:?}");
-    assert_eq!(refused.2, "miyu: 软件源连不上\n");
+    assert_eq!(refused.2, "miyu: 无法连接软件源\n");
 }
 
 #[tokio::test]
@@ -414,7 +414,7 @@ async fn upgrade_shows_what_changes_and_asks() {
     assert_eq!(upgraded.0, 0, "{upgraded:?}");
     assert!(
         upgraded.1.starts_with(
-            "已更新 official：1 个包（2026-10-20T03:00:00Z）\n将升级 app 1.0 → 2.0\n下载："
+            "已更新 official：1 个软件包（2026-10-20T03:00:00Z）\n将升级 app 1.0 → 2.0\n下载："
         ),
         "{upgraded:?}"
     );

@@ -168,11 +168,11 @@ This session cannot read other sessions.
 | 显示名 | 翻记录 | History |
 | 找到了 | 找到 <n> 条 | Found <n> entries |
 | 读了 | 读了第 <a>–<b> 条 | Read entries <a>–<b> |
-| 什么都没有 | 没有找到 | Nothing found |
+| 什么都没有 | 未找到 | Nothing found |
 | 读不了日志 | 读不了记录：<原因> | Could not read the history: <reason> |
 | 找不到会话（施工 C-4） | 没有会话 <session> | No session <session> |
 | 对得上不止一个（施工 C-4） | <session> 对得上不止一个会话 | <session> matches more than one session |
-| 这个会话不能读别的会话（施工 C-4） | 这里不能读别的会话 | Cannot read other sessions here |
+| 这个会话不能读别的会话（施工 C-4） | 这里不能读取其他会话 | Cannot read other sessions here |
 
 显示名那一格照别的工具：图标 `✱`，参数里挑 `query` 写在后面，没有 `query` 的只写名字。
 

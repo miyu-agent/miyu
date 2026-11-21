@@ -108,7 +108,7 @@ fn an_answer_cut_by_a_step_ends_its_line_first() {
     );
     assert_eq!(
         screen,
-        format!("我先看看。\n→ 读取 src{sep}lib.rs · 出错：没有这个文件\n\n看完了。\n"),
+        format!("我先看看。\n→ 读取 src{sep}lib.rs · 出错：文件不存在\n\n看完了。\n"),
         "这一步不接在回答后面"
     );
     assert_eq!(out, "我先看看。\n看完了。\n", "文件里两段回答也隔开了");

@@ -55,7 +55,7 @@ miyu check ~/.miyu/root/personas/miyu/prompts/examples.md
 - `错误`：写法不对，这一处的设置不生效；如果 TOML 本身就读不懂，整份文件都不生效。有错误时，退出码是 `1`。
 - `警告`：不认识的键，或者引用的密钥、环境变量、人格、预设、知识库还不存在。Miyu 照常运行，只是这几处设置没有用上。只有警告时，退出码是 `0`。
 - 没有任何问题时，会显示 `没有问题`。
-- 语义模型那几行不算问题，它们说明正在使用哪个模型，以及记忆、以前的对话、知识库各有多少条建好了索引（建好的/总共）。没有安装语义模型时显示 `语义模型：未安装，仅按关键词搜索`，并提示运行 `miyu pkg install embed`；关闭了语义模型时显示 `语义模型：已关闭（models.embedding = "off"），仅按关键词搜索`。如果换成了远程模型，末尾会多一行 `不自动联想：记忆、知识库（这个模型没有测试过门槛，搜索不受影响）`，因为只有内置的模型会自动想起记忆和知识库，其他模型只在搜索时用到。
+- 语义模型那几行不算问题，它们说明正在使用哪个模型，以及记忆、以前的对话、知识库各有多少条建好了索引（建好的/总共）。没有安装语义模型时显示 `语义模型：未安装，仅按关键词搜索`，并提示运行 `miyu pkg install embed`；关闭了语义模型时显示 `语义模型：已关闭（models.embedding = "off"），仅按关键词搜索`。如果换成了远程模型，末尾会多一行 `不自动联想：记忆、知识库（这个模型没有实测的阈值，搜索不受影响）`，因为只有内置的模型会自动想起记忆和知识库，其他模型只在搜索时用到。
 
 加上 `--format json` 时会输出一行 `{"problems": […]}`，每一处问题带 `kind`、`file`、`code`、`level`、`message`，有行列的还带 `line`、`column`；检查全部内容时另外带 `embedding`。
 
@@ -187,7 +187,7 @@ AI 运行的命令可能被权限设置拦下，或者停在等待确认的状�
 | `清单有误，无法安装。` | 运行 `miyu pkg info <包目录>`，它只查看、不安装，会说明清单哪里不对。 |
 | `缺少依赖的软件包。` | 先安装它依赖的软件包，可以用 `miyu pkg info <编号>` 查看依赖。 |
 | `不支持当前系统。` | 这个软件包没有适合你这种系统的版本。 |
-| `软件源连不上。` `软件包下载失败。` | 检查网络，过一会儿运行 `miyu pkg update` 再试。 |
+| `无法连接软件源。` `软件包下载失败。` | 检查网络，过一会儿运行 `miyu pkg update` 再试。 |
 | `没有找到 <程序>：清单 … 写明 miyu <名字> 由它运行。重新安装这个软件包后再试。` | 运行 `miyu pkg install <编号>` 重新安装。 |
 | `界面 'tui' 没有安装` | 运行 `miyu pkg install tui` 重新装回来。 |
 | 扩展停了 | 查看 `~/.miyu/var/log/<编号>/stderr`，那里是扩展自己报的错。 |
@@ -248,7 +248,7 @@ AI 运行的命令可能被权限设置拦下，或者停在等待确认的状�
 - 如果核心启动时某一份配置整份读不进来，这一份按空的处理，核心照常启动。如果核心运行时你手动把配置改坏了，核心会继续使用上一次成功读取的那一份。
 - 文件读不进来时，`miyu config set` 不会修改它，而是报 `配置文件有误，请先修复。`。`miyu config edit` 在保存之前会先检查。
 - 如果某一项设置不生效，运行 `miyu config explain <键>`，它会列出每一层写了什么、哪一层生效，以及写了却不生效的原因。
-- 如果提示 `项目配置 … 尚未信任，本次没有使用`，就在那个目录里运行 `miyu config trust`，看过内容之后再决定是否信任。
+- 如果提示 `项目配置 … 未信任，本次没有使用`，就在那个目录里运行 `miyu config trust`，看过内容之后再决定是否信任。
 
 详细的见 [配置](config.md)。
 
@@ -258,7 +258,7 @@ AI 运行的命令可能被权限设置拦下，或者停在等待确认的状�
 
 | 看到的 | 系统 | 原因 | 怎么办 |
 |---|---|---|---|
-| `miyu ask` 开头显示 `沙盒不可用：内核没有可用的 Landlock`，下一行是 `提示：需要 Linux 5.13 或更新，并在启动参数 lsm= 里启用 Landlock` | Linux | 内核版本低于 5.13，或者启动参数 `lsm=` 里没有 `landlock`。 | 按照提示更换内核、修改启动参数。在那之前，只读模式下的命令改为询问你。 |
+| `miyu ask` 开头显示 `沙盒不可用：内核没有可用的 Landlock`，下一行是 `提示：需要 Linux 5.13 或更高版本，并在启动参数 lsm= 里启用 Landlock` | Linux | 内核版本低于 5.13，或者启动参数 `lsm=` 里没有 `landlock`。 | 按照提示更换内核、修改启动参数。在那之前，只读模式下的命令改为询问你。 |
 | `miyu ask` 开头显示 `沙盒不可用：无法应用 Seatbelt 配置，Miyu 可能运行在另一个沙盒里` | macOS | Seatbelt 配置无法应用。 | 不要在其他沙盒里运行 Miyu。在那之前，只读模式下的命令改为询问你。 |
 | `miyu ask` 开头显示 `沙盒不可用：这台 Windows 无法启动 MXC 的基础容器` | Windows | 沙盒需要的基础容器在这台 Windows 上无法启动。 | 只读模式下的命令改为询问你。 |
 | 只读模式下命令的输出是 `miyu-sandbox: cannot confine: no desktop session, programs in the sandbox cannot start here; use Miyu from the desktop, or turn the sandbox off`，退出码 `125` | Windows | 核心不在桌面会话里，例如核心是通过 SSH 连进来以后启动的。 | 从已登录的桌面使用 Miyu，或者切换到开放权限，见 [常驻和服务器](service.md#windows-上的只读会话)。 |
@@ -266,7 +266,7 @@ AI 运行的命令可能被权限设置拦下，或者停在等待确认的状�
 | 只读模式下命令的输出后面跟着 `The sandbox blocks WMI. Commands that need it work outside the sandbox.` | Windows | 这条命令需要用到 WMI，而沙盒里连不上 WMI。 | 切换到开放权限，再让 AI 运行一次，见 [权限和沙盒](permissions.md#三个平台)。 |
 | `无法安装服务：Windows 任务计划无法携带 MIYU_HOME`，下一行是 `提示：取消设置 MIYU_HOME 后重试`；终端界面设置页的 `开机启动核心` 一项显示 `设置了 MIYU_HOME 时，Windows 上不能设为开机启动` | Windows | 任务计划无法携带环境变量。 | 用默认的数据根安装服务；如果要使用其他数据根，就使用系统托盘的 `开机时启动`，见 [数据和备份](data.md#更换数据根的位置)。 |
 | `core.log` 里有 `catalog cache unavailable`，原因写的是 `no LOCALAPPDATA` | Windows | 环境变量 `LOCALAPPDATA` 不存在，或者不是绝对路径，因此算不出缓存目录。 | 把 `LOCALAPPDATA` 设成绝对路径，然后运行 `miyu core stop`，再重新打开 Miyu。 |
-| `未找到 litemiyu`，下一行是 `提示：暂只支持 Linux` | macOS、Windows | LiteMiyu 只有 Linux x86_64 的版本，所以 `miyu rescue` 无法使用。 | 按照这一页上面的「核心无法启动或无法连接」排查，见 [应急修复](rescue.md#其他系统)。 |
+| `未找到 litemiyu`，下一行是 `提示：目前只支持 Linux` | macOS、Windows | LiteMiyu 只有 Linux x86_64 的版本，所以 `miyu rescue` 无法使用。 | 按照这一页上面的「核心无法启动或无法连接」排查，见 [应急修复](rescue.md#其他系统)。 |
 | `无法升级：没有这种系统的发行包`，下一行是 `提示：发行包只有 Linux x86_64、aarch64，macOS Apple 芯片，Windows x86_64；其他系统到 … 下载源码自行编译` | Intel 芯片的 Mac、ARM 的 Windows 这类系统 | Miyu 没有为这种系统发布发行包。 | 按照提示到发行页下载源码自己编译，见 [安装、升级、卸载](install.md#选择安装方式)。 |
 | `不支持当前系统。` | 取决于软件包，例如 `im` 没有 Linux aarch64 的版本 | 这个软件包没有为你这种系统打包。 | 换到这个软件包支持的系统，或者等它发布这种系统的版本。 |
 | `miyu call … --json '…'` 报 `--json takes one JSON object.`，后面一句是 `Its double quotes were lost on the way, as Windows PowerShell 5.1 does. Pipe the JSON instead: '<json>' \| miyu call <tool> --json -` | Windows | Windows PowerShell 5.1 把参数交给程序时吃掉了参数里的双引号。 | 按照提示改用管道传入：`'<json>' \| miyu call <工具> --json -`，见 [命令行](cli.md)。 |

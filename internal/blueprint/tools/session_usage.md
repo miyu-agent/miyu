@@ -93,8 +93,8 @@ Working time so far: 1h 2m 3s, not counting waits for the user.
 
 | 说法 | 中文 | 英文 | 日文 |
 |---|---|---|---|
-| `session_usage/shown` | 查了用量 | Checked the usage | 使用量を確認しました |
-| `session_usage/failed`（`error`） | 用量读不出来：{error} | Could not read the usage: {error} | 使用量を読めませんでした：{error} |
+| `session_usage/shown` | 查看了用量 | Checked the usage | 使用量を確認しました |
+| `session_usage/failed`（`error`） | 无法读取用量：{error} | Could not read the usage: {error} | 使用量を読めませんでした：{error} |
 
 ### 守着它的
 

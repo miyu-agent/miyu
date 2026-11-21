@@ -26,7 +26,9 @@ impl Language {
     /// 消息太长，核心一行收不下（审计 R3E-5）：长的存成文件用 `--file` 附上。
     pub(crate) fn message_too_long(&self) -> Problem {
         match self {
-            Language::Chinese => Problem::new("消息过长").hint("长内容存成文件，用 --file 附上"),
+            Language::Chinese => {
+                Problem::new("消息过长").hint("把长内容保存到文件，用 --file 附上")
+            }
             Language::English => Problem::new("message too long")
                 .hint("save long text to a file and attach it with --file"),
         }

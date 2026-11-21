@@ -21,7 +21,7 @@ fn the_report_lists_drivers_and_samples_and_fails_on_red() {
     );
     let (text, _) = report(&result, Language::Chinese);
     assert!(
-        text.starts_with("ag/ag（contract）没通过\n  通过 plain\n  没通过 pair: "),
+        text.starts_with("ag/ag（contract）未通过\n  通过 plain\n  未通过 pair: "),
         "{text}"
     );
     let skipped = json!({"drivers": [{"driver": "ag/lite", "cache": "none", "result": "skipped"}]});

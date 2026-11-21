@@ -3,14 +3,14 @@ miyu: 警告：工作目录 ~ 范围过大，改用 ~/.miyu/root/workspace
 先读一下笔记。
 
 → 读取 notes.md · 3 行
-→ 读取 missing.md · 出错：没有这个文件
-→ 读取 ~/.gitconfig · 没做：需要确认，无人确认
+→ 读取 missing.md · 出错：文件不存在
+→ 读取 ~/.gitconfig · 未执行：需要确认，无人确认
 
 $ ls
 notes.md
 todo.md
 
-← 编辑 notes.md · 改了 1 处
+← 编辑 notes.md · 编辑了 1 处
 -旧的一行
 +新的一行
 

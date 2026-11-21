@@ -121,7 +121,7 @@ async fn outside_a_terminal_a_failed_try_is_1_and_nothing_is_written() {
         .await;
     assert_eq!(asked.code, 1, "{}", asked.screen);
     assert!(
-        asked.screen.contains("连接失败（列模型）：认证失败"),
+        asked.screen.contains("连接失败（列出模型）：认证失败"),
         "{}",
         asked.screen
     );

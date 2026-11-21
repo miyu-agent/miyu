@@ -131,11 +131,11 @@ fn a_conflict_says_cannot_install_and_one_line_each() {
     assert_eq!(
         said(Language::Chinese),
         [
-            "miyu: 无法安装 ./pudding：工具 read 已在 basesystem 中",
-            "miyu: 无法安装 ./pudding：技能 pdf 已在 kit 中",
-            "miyu: 无法安装 ./pudding：MCP 服务 lone 已在 svc 中",
-            "miyu: 无法安装 ./pudding：斜杠命令 review 已在 kit 中",
-            "miyu: 无法安装 ./pudding：人格 dog 已在 数据根 中",
+            "miyu: 无法安装 ./pudding：工具 read 已存在于 basesystem 中",
+            "miyu: 无法安装 ./pudding：技能 pdf 已存在于 kit 中",
+            "miyu: 无法安装 ./pudding：MCP 服务 lone 已存在于 svc 中",
+            "miyu: 无法安装 ./pudding：斜杠命令 review 已存在于 kit 中",
+            "miyu: 无法安装 ./pudding：人格 dog 已存在于 数据根 中",
         ]
     );
     assert_eq!(

@@ -60,7 +60,7 @@
 
 | 什么时候 | 中文 | 英文 |
 |---|---|---|
-| 找不到，Linux | `miyu: 未找到 litemiyu`，`提示：安装：Arch Linux 用 AUR（paru -S litemiyu 或 yay -S litemiyu）；其他发行版从 https://github.com/miyu-agent/litemiyu/releases 下载` | `miyu: litemiyu not found`，`hint: to install it, use the AUR on Arch Linux (paru -S litemiyu or yay -S litemiyu); on other distributions, download it from https://github.com/miyu-agent/litemiyu/releases` |
+| 找不到，Linux | `miyu: 未找到 litemiyu`，`提示：在 Arch Linux 上从 AUR 安装（paru -S litemiyu 或 yay -S litemiyu）；其他发行版从 https://github.com/miyu-agent/litemiyu/releases 下载` | `miyu: litemiyu not found`，`hint: to install it, use the AUR on Arch Linux (paru -S litemiyu or yay -S litemiyu); on other distributions, download it from https://github.com/miyu-agent/litemiyu/releases` |
 | 找不到，macOS、Windows | `miyu: 未找到 litemiyu`，`提示：暂只支持 Linux` | `miyu: litemiyu not found`，`hint: only Linux is supported for now` |
 | 算不出模型（照常拉起） | `miyu: 警告：无法读取 Miyu 的配置：<原因>，由 litemiyu 自己查找模型` | `miyu: warning: cannot read Miyu's configuration: <reason>; litemiyu will find a model itself` |
 | 对话模型走扩展驱动（照常拉起） | `miyu: 警告：对话模型使用扩展驱动 <驱动>，litemiyu 不支持，由它自己查找模型` | `miyu: warning: the chat model uses the extension driver <driver>, which litemiyu cannot use; litemiyu will find a model itself` |

@@ -177,7 +177,7 @@ fn in_a_terminal_the_waiting_line_is_redrawn_and_wiped() {
     assert_eq!(step, Step::Done(exit::OK));
     assert_eq!(
         screen,
-        "↗ 派子代理 查 · 派出去了：j1\n\n派出去了。\n\
+        "↗ 派子代理 查 · 已派出：j1\n\n派出去了。\n\
          \r\x1b[2K· 等待 2 个子代理回报…（按 Ctrl+C 停止等待）\
          \r\x1b[2K· j1「查 A」已回报\n\
          \r\x1b[2K· 等待 1 个子代理回报…（按 Ctrl+C 停止等待）\
@@ -203,7 +203,7 @@ fn a_turn_woken_by_something_else_wipes_the_line_and_goes_on_as_usual() {
     assert_eq!(step, Step::Going);
     assert_eq!(
         screen,
-        "↗ 派子代理 查 · 派出去了：j1\n\n派出去了。\n\
+        "↗ 派子代理 查 · 已派出：j1\n\n派出去了。\n\
          \r\x1b[2K· 等待 2 个子代理回报…（按 Ctrl+C 停止等待）\r\x1b[2K后台的跑完了。\n\
          \r\x1b[2K· 等待 2 个子代理回报…（按 Ctrl+C 停止等待）"
     );
@@ -250,7 +250,7 @@ fn the_waiting_line_is_printed_once_when_not_a_terminal() {
     assert_eq!(step, Step::Done(exit::OK));
     assert_eq!(
         screen,
-        "↗ 派子代理 查 · 派出去了：j1\n\n派出去了。\n· 等待 2 个子代理回报…（按 Ctrl+C 停止等待）\n\
+        "↗ 派子代理 查 · 已派出：j1\n\n派出去了。\n· 等待 2 个子代理回报…（按 Ctrl+C 停止等待）\n\
          · j1「查 A」已回报\n\nA 好了。\n· j2「查 B」已回报\n\nB 好了。\n\
          · 输入 300 · 命中缓存 120（40%）· 输出 30\n"
     );

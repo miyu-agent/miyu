@@ -99,7 +99,7 @@ fn a_block_has_a_blank_line_before_and_after() {
     assert_eq!(step, Step::Done(exit::OK));
     assert_eq!(
         screen,
-        "先看看\n\n$ ls\na\nb\n\n→ 读取 notes.md · 3 行\n\n← 编辑 notes.md · 改了 1 处\n-x\n+y\n\n好了。\n",
+        "先看看\n\n$ ls\na\nb\n\n→ 读取 notes.md · 3 行\n\n← 编辑 notes.md · 编辑了 1 处\n-x\n+y\n\n好了。\n",
         "一块前后各空一行；一块后面接着回答的，也只空一行"
     );
     assert_eq!(out, "好了。\n");
@@ -169,6 +169,6 @@ fn a_step_with_nothing_under_it_is_just_a_line() {
     let Fed { screen, .. } = feed(&plan, false, &messages);
     assert_eq!(
         screen,
-        "改一下\n\n← 编辑 notes.md · 出错：第 1 处没找到\n\n没找到。\n"
+        "改一下\n\n← 编辑 notes.md · 出错：第 1 处未找到\n\n没找到。\n"
     );
 }

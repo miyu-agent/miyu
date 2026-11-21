@@ -163,7 +163,7 @@ async fn list_add_search_edit_and_forget() {
         found.out
     );
     let none = run(&home, &["search", "狗"]).await;
-    assert_eq!((none.code, none.out.as_str()), (0, "没有找到结果\n"));
+    assert_eq!((none.code, none.out.as_str()), (0, "未找到结果\n"));
 
     let edited = run(&home, &["edit", "m1", "用户养了两只猫"]).await;
     assert_eq!(
@@ -306,7 +306,7 @@ async fn dream_organizes_now_and_says_how_much() {
     );
     // 没有新记的照样重看轮到的旧记忆（施工 R-19）：留下的那一条。
     let again = run(&home, &["dream"]).await;
-    receipt(&again, 0, "已整理：检查 1 条，没有要改的，用时 ", "s\n");
+    receipt(&again, 0, "已整理：检查 1 条，不需要修改，用时 ", "s\n");
     let forgotten = run(&home, &["list", "--forgotten"]).await;
     assert!(
         forgotten.out.contains("（已作废：重复）"),
@@ -354,7 +354,7 @@ async fn ctrl_c_stops_the_dream() {
     receipt(
         &next,
         0,
-        "已整理：检查 1 条，没有要改的，摘要已更新，用时 ",
+        "已整理：检查 1 条，不需要修改，摘要已更新，用时 ",
         "s\n",
     );
     // 按两次：不等回应，直接退。

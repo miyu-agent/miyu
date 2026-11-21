@@ -124,7 +124,7 @@ macOS 和 Windows 上没有 LiteMiyu。`miyu rescue` 找不到它时会输出：
 
 ```text
 miyu: 未找到 litemiyu
-提示：暂只支持 Linux
+提示：目前只支持 Linux
 ```
 
 退出码是 `1`。在 Linux 上找不到 LiteMiyu 时，提示会换成安装方法。

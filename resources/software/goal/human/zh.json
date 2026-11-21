@@ -15,7 +15,7 @@
     "goal/blocked": "目标受阻：{reason}",
     "goal/too-early": "第 {round} 轮，暂不能标记受阻",
     "goal/failed": "目标未更改：{reason}",
-    "common/bad-args": "参数不对：{error}",
-    "common/off": "此会话不支持长期目标"
+    "common/bad-args": "参数错误：{error}",
+    "common/off": "这个会话不支持长期目标"
   }
 }

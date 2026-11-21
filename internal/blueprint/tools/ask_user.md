@@ -68,7 +68,7 @@ Go on with these answers in mind.
 |---|---|---|
 | 显示名 `ask_user` | 提问 | Ask |
 | `ask_user/answered` | 你答了 | You answered |
-| `ask_user/unattended` | 这里没人能回答 | No one can answer here |
+| `ask_user/unattended` | 这里没有人可以回答 | No one can answer here |
 
 ### 守着它的
 

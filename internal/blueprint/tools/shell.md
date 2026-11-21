@@ -282,19 +282,19 @@ Exit code 2
 | `shell/done`（`count`） | `{count} 行`（施工 T-8 补：「输出」两个字多余，项目主人 2026-10-22 定） | `{count} lines` |
 | `shell/quiet` | 没有输出 | no output |
 | `shell/exited`（`code`） | `退出码 {code}` | `exit code {code}` |
-| `shell/signal`（`signal`） | `被信号 {signal} 停掉了` | `killed by signal {signal}` |
-| `shell/timed-out`（`seconds`） | `超过 {seconds} 秒，停掉了` | `stopped after {seconds} s` |
-| `shell/failed`（`error`） | `执行不了：{error}` | `can't run: {error}` |
-| `shell/no-background` | 这里不能放到后台跑 | can't run in the background here |
-| `shell/hazard-delete_root` | 没有执行：会删掉根目录 | not run: would delete the root directory |
-| `shell/hazard-delete_home` | 没有执行：会删掉家目录 | not run: would delete the home directory |
-| `shell/hazard-delete_system` | 没有执行：会删掉系统目录 | not run: would delete a system directory |
-| `shell/hazard-disk_format` | 没有执行：会格式化磁盘 | not run: would format a disk |
-| `shell/hazard-disk_write` | 没有执行：会直接写磁盘设备 | not run: would write to a disk device |
-| `shell/hazard-container_host` | 没有执行：会让容器拿到整台机器的设备 | not run: would give a container full access to this machine's devices |
-| `shell/background`（`job`） | `放到后台了：{job}` | `running in the background as {job}` |
-| `shell/moved`（`job`） | `超时，挪到后台了：{job}` | `timed out, moved to the background as {job}` |
-| `common/bad-args`（`error`） | `参数不对：{error}` | `bad arguments: {error}` |
+| `shell/signal`（`signal`） | `被信号 {signal} 终止` | `killed by signal {signal}` |
+| `shell/timed-out`（`seconds`） | `超过 {seconds} 秒，已停止` | `stopped after {seconds} s` |
+| `shell/failed`（`error`） | `无法执行：{error}` | `can't run: {error}` |
+| `shell/no-background` | 这里不能放到后台运行 | can't run in the background here |
+| `shell/hazard-delete_root` | 未执行：会删除根目录 | not run: would delete the root directory |
+| `shell/hazard-delete_home` | 未执行：会删除家目录 | not run: would delete the home directory |
+| `shell/hazard-delete_system` | 未执行：会删除系统目录 | not run: would delete a system directory |
+| `shell/hazard-disk_format` | 未执行：会格式化磁盘 | not run: would format a disk |
+| `shell/hazard-disk_write` | 未执行：会直接写入磁盘设备 | not run: would write to a disk device |
+| `shell/hazard-container_host` | 未执行：会让容器访问整台机器的设备 | not run: would give a container full access to this machine's devices |
+| `shell/background`（`job`） | `已放到后台运行：{job}` | `running in the background as {job}` |
+| `shell/moved`（`job`） | `超时，已转到后台运行：{job}` | `timed out, moved to the background as {job}` |
+| `common/bad-args`（`error`） | `参数错误：{error}` | `bad arguments: {error}` |
 
 ### 三个平台
 

@@ -160,17 +160,17 @@ Did you mean "notes.txt"?
 | `read/entries`（`count`） | 目录从第 1 项列到最后一项 | `{count} 项` | `{count} entries` |
 | `read/entries-part`（`from`、`to`、`total`） | 目录列了一段 | `第 {from}–{to} 项，一共 {total} 项` | `entries {from}–{to} of {total}` |
 | `read/empty` | 空文件、空目录 | 空的 | empty |
-| `read/past-end`（`total`、`offset`） | 文件过了结尾 | `过了结尾，一共 {total} 行` | `past the end, {total} lines` |
-| `read/past-end-entries`（`total`、`offset`） | 目录过了结尾 | `过了结尾，一共 {total} 项` | `past the end, {total} entries` |
+| `read/past-end`（`total`、`offset`） | 文件过了结尾 | `超出末尾，一共 {total} 行` | `past the end, {total} lines` |
+| `read/past-end-entries`（`total`、`offset`） | 目录过了结尾 | `超出末尾，一共 {total} 项` | `past the end, {total} entries` |
 | `read/not-a-file`（`path`） | 不是普通文件，也不是目录 | 不是普通文件，也不是目录 | not a regular file or directory |
-| `read/binary`（`path`） | 二进制 | 是二进制文件，没读 | binary file, not read |
+| `read/binary`（`path`） | 二进制 | 二进制文件，未读取 | binary file, not read |
 | `read/image`（`width`、`height`） | 读了一张图 | `图片 {width}×{height}` | `image {width}×{height}` |
-| `read/image-too-big`（`path`、`size`） | 图的文件太大 | `图太大（{size}），没读` | `image too large ({size}), not read` |
-| `read/image-too-wide`（`path`、`width`、`height`） | 图的边太长 | `图太大（{width}×{height}），没读` | `image too large ({width}×{height}), not read` |
-| `common/missing`（`path`） | 没有 | 没有这个文件 | no such file |
-| `common/missing-similar`（`path`、`similar`） | 没有，有相近的 | `没有这个文件，是不是 {similar}` | `no such file, did you mean {similar}` |
-| `common/failed`（`path`、`error`） | 读的时候出错 | `读不了：{error}` | `can't read it: {error}` |
-| `common/bad-args`（`error`） | 参数不对 | `参数不对：{error}` | `bad arguments: {error}` |
+| `read/image-too-big`（`path`、`size`） | 图的文件太大 | `图片太大（{size}），未读取` | `image too large ({size}), not read` |
+| `read/image-too-wide`（`path`、`width`、`height`） | 图的边太长 | `图片太大（{width}×{height}），未读取` | `image too large ({width}×{height}), not read` |
+| `common/missing`（`path`） | 没有 | 文件不存在 | no such file |
+| `common/missing-similar`（`path`、`similar`） | 没有，有相近的 | `文件不存在，相近的文件：{similar}` | `no such file, did you mean {similar}` |
+| `common/failed`（`path`、`error`） | 读的时候出错 | `无法读取：{error}` | `can't read it: {error}` |
+| `common/bad-args`（`error`） | 参数不对 | `参数错误：{error}` | `bad arguments: {error}` |
 
 `miyu ask` 怎么印这一行：`cli/ask.md`「每一步那一行」。
 

@@ -220,9 +220,9 @@ miyu upgrade
 | `channel` | 安装方式 | `miyu upgrade` 的行为 |
 |---|---|---|
 | `script` | 安装脚本 | 自己升级，过程见下文 |
-| `aur` | AUR | 提示 `这份 Miyu 由 AUR 安装，用包管理器升级`，下一行是 `paru -Syu` |
-| `brew` | Homebrew | 提示 `这份 Miyu 由 Homebrew 安装，用包管理器升级`，下一行是 `brew upgrade` |
-| 没有 `install.toml` | 托盘安装包、手动解压的压缩包 | 提示 `这份 Miyu 不是用安装脚本或包管理器装的，不自动升级`，并给出下载地址 |
+| `aur` | AUR | 提示 `当前的 Miyu 由 AUR 安装，使用包管理器升级`，下一行是 `paru -Syu` |
+| `brew` | Homebrew | 提示 `当前的 Miyu 由 Homebrew 安装，使用包管理器升级`，下一行是 `brew upgrade` |
+| 没有 `install.toml` | 托盘安装包、手动解压的压缩包 | 提示 `当前的 Miyu 不是用安装脚本或包管理器安装的，不自动升级`，并给出下载地址 |
 
 如果 Miyu 是用安装脚本安装的，`miyu upgrade` 会这样升级：
 

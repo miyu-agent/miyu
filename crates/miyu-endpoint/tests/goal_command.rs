@@ -237,7 +237,7 @@ async fn without_goals_it_is_refused_and_says_why() {
     let session = client.create("c1", "~").await;
     let reply = run(&mut client, "k1", &session, "/goal 把测试修绿").await;
     assert_eq!(reason(&reply), Some("goal_unavailable"), "{reply}");
-    assert_eq!(reply["error"]["data"]["why"], "此会话不支持长期目标。");
+    assert_eq!(reply["error"]["data"]["why"], "这个会话不支持长期目标。");
 
     // 预设关了长期目标的：带上预设的名字。
     let home = Home::new();

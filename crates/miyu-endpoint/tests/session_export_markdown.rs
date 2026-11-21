@@ -158,7 +158,7 @@ async fn a_big_session_is_refused_inline_and_still_goes_to_a_file() {
     assert_eq!(reason(&inline), Some("export_too_big"), "{inline}");
     assert_eq!(
         inline["error"]["message"],
-        json!("导出超过 512 KiB，请存成文件。")
+        json!("导出内容超过 512 KiB，请保存到文件。")
     );
     let out = home.work.join("big.md");
     let written = markdown(

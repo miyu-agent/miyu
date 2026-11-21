@@ -55,8 +55,8 @@ async fn the_screen_says_where_and_what_and_yes_approves_it() {
         format!(
             "将安装 kit\n包含：扩展程序、命令 miyu kit\n需要：提供工具：给 AI 添加可以调用的工具\n      联网：访问网络、开端口\n\
              来源：本机文件\n大小：{bytes} B，1 个文件\n\n\
-             注意：这个包来自本机文件，没有经过官方审核，可能存在风险。\n\
-             安装 'kit' 并批准它要的能力？[Y/n] 已安装 kit\n已批准 kit 的能力：提供工具、联网\n"
+             注意：这个软件包来自本机文件，未经官方审核，可能存在风险。\n\
+             安装 'kit' 并批准它需要的能力？[Y/n] 已安装 kit\n已批准 kit 的能力：提供工具、联网\n"
         )
     );
     assert_eq!(approved(&home), serde_json::json!(["network", "tools"]));
@@ -161,11 +161,11 @@ async fn an_upgrade_lists_what_is_newly_needed_and_yes_approves_it() {
     let out = tape.text(|err| !err);
     assert_eq!(code, 1, "{out}");
     assert!(
-        out.starts_with("将升级 app 1.0 → 2.0\n  新要：联网：访问网络、开端口\n下载："),
+        out.starts_with("将升级 app 1.0 → 2.0\n  新增：联网：访问网络、开端口\n下载："),
         "{out}"
     );
     assert!(
-        out.ends_with("\n\n升级 'app' 并批准新要的能力？[Y/n] "),
+        out.ends_with("\n\n升级 'app' 并批准新增的能力？[Y/n] "),
         "官方的没有「注意」：{out}"
     );
     assert_eq!(approved_of(&home, "app"), Value::Null, "答「否」的不批");
@@ -206,8 +206,8 @@ async fn a_recommended_package_is_shown_apart_and_approved_when_taken() {
     assert_eq!(code, 0, "{out}");
     assert!(
         out.contains(
-            "\n安装 'app'？[Y/n] \n推荐的包要的能力  : rec  联网：访问网络、开端口\n\
-             同时安装推荐的 1 个软件包并批准它要的能力？[Y/n] "
+            "\n安装 'app'？[Y/n] \n推荐的软件包需要的能力  : rec  联网：访问网络、开端口\n\
+             同时安装推荐的 1 个软件包并批准它需要的能力？[Y/n] "
         ),
         "{out}"
     );

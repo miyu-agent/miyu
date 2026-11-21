@@ -70,7 +70,7 @@ fn a_community_package_in_the_official_source_says_so_right_under_the_source() {
         shown[..3],
         [
             "软件源  : official",
-            "来源    : github.com/ann/weather（社区，没有经过官方审核）",
+            "来源    : github.com/ann/weather（社区，未经官方审核）",
             "编号    : weather",
         ]
     );
@@ -161,7 +161,7 @@ fn an_installed_package_says_where_it_came_from_and_admits_when_it_does_not_know
     );
     let distro = json!({"package": "x", "layer": "distro", "from": "distro", "source": "distro",
         "files": 1, "size": 1});
-    assert_eq!(origin_row(distro), "来源        : 系统的包管理器安装");
+    assert_eq!(origin_row(distro), "来源        : 由系统的包管理器安装");
 }
 
 #[test]

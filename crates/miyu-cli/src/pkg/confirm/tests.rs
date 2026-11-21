@@ -101,8 +101,8 @@ fn a_removal_says_what_goes_with_it() {
         [
             "将卸载 pudding 1.2.0",
             "一并删除：设置 pudding.port、pudding.zones",
-            "会删掉 /home/a/.miyu/var/lib/pudding（3.5 MiB）",
-            "配置留在 /home/a/.miyu/etc/pudding",
+            "将删除 /home/a/.miyu/var/lib/pudding（3.5 MiB）",
+            "配置保留在 /home/a/.miyu/etc/pudding",
             "大小：1.5 KiB，3 个文件",
         ]
     );
@@ -122,7 +122,7 @@ fn a_removal_says_what_goes_with_it() {
                         "config": {"path": "/x/etc/pudding", "kept": false}});
     assert_eq!(
         plan(&purged, Doing::Remove, &Language::Chinese),
-        ["将卸载 pudding", "会删掉 /x/etc/pudding"]
+        ["将卸载 pudding", "将删除 /x/etc/pudding"]
     );
     assert_eq!(
         plan(&purged, Doing::Remove, &Language::English),
@@ -148,7 +148,7 @@ fn a_removal_says_how_many_settings_stay() {
                       "config": {"path": "/x/etc/pudding", "kept": true, "settings": 2}});
     assert_eq!(
         plan(&both, Doing::Remove, &Language::Chinese),
-        ["将卸载 pudding", "配置留在 /x/etc/pudding，另有 2 项设置"]
+        ["将卸载 pudding", "配置保留在 /x/etc/pudding，另有 2 项设置"]
     );
     assert_eq!(
         plan(&both, Doing::Remove, &Language::English),
@@ -161,7 +161,7 @@ fn a_removal_says_how_many_settings_stay() {
         json!({"package": "pudding", "settings": [], "config": {"kept": true, "settings": 1}});
     assert_eq!(
         plan(&only, Doing::Remove, &Language::Chinese),
-        ["将卸载 pudding", "1 项设置留在配置里"]
+        ["将卸载 pudding", "1 项设置保留在配置中"]
     );
     assert_eq!(
         plan(&only, Doing::Remove, &Language::English),
@@ -235,7 +235,7 @@ fn a_local_folder_says_it_is_a_local_file_and_asks_to_approve() {
             Language::Chinese => (
                 ("联网", "访问网络、开端口"),
                 ("提供工具", "给 AI 加能调用的工具"),
-                ["这个包来自本机文件，没有经过官方审核，可能存在风险。"],
+                ["这个软件包来自本机文件，未经官方审核，可能存在风险。"],
             ),
             Language::English => (
                 ("Network", "Access the network and open ports"),
@@ -265,8 +265,8 @@ fn a_local_folder_says_it_is_a_local_file_and_asks_to_approve() {
     );
     assert_eq!(
         question(&zh, Doing::Install, "weather", &Language::Chinese),
-        "注意：这个包来自本机文件，没有经过官方审核，可能存在风险。\n\
-         安装 'weather' 并批准它要的能力？[Y/n] "
+        "注意：这个软件包来自本机文件，未经官方审核，可能存在风险。\n\
+         安装 'weather' 并批准它需要的能力？[Y/n] "
     );
     let en = shown(Language::English);
     assert_eq!(
@@ -289,7 +289,7 @@ fn a_local_folder_says_it_is_a_local_file_and_asks_to_approve() {
     nothing["capabilities"] = json!([]);
     assert_eq!(
         question(&nothing, Doing::Install, "weather", &Language::Chinese),
-        "注意：这个包来自本机文件，没有经过官方审核，可能存在风险。\n\
+        "注意：这个软件包来自本机文件，未经官方审核，可能存在风险。\n\
          安装 'weather'？[Y/n] ",
         "没有要批的照旧那一句"
     );

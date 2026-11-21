@@ -98,8 +98,8 @@ impl Language {
     pub(crate) fn word(&self, word: Word) -> &'static str {
         let (chinese, english) = match word {
             Word::Failed => ("出错", "failed"),
-            Word::Denied => ("没做", "not done"),
-            Word::Cancelled => ("打断了", "interrupted"),
+            Word::Denied => ("未执行", "not done"),
+            Word::Cancelled => ("已中断", "interrupted"),
             Word::Skipped => ("已跳过", "skipped"),
         };
         match self {
@@ -186,7 +186,7 @@ impl Language {
     /// `miyu session export --md -o -` 超了放进回应的上限（施工 SE-1 中下下）：改成存文件的那条建议。
     pub(crate) fn export_to_file(&self) -> &'static str {
         match self {
-            Language::Chinese => "用 -o <文件> 存成文件",
+            Language::Chinese => "用 -o <文件> 保存到文件",
             Language::English => "use -o <file> to save it to a file",
         }
     }

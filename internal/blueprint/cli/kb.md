@@ -98,7 +98,7 @@ manuals  cat.pdf  第 3 页
 | 一个库都没有 | 没有知识库 | no knowledge bases |
 | 一篇文档都没有（`list <库>`） | 没有文档 | no documents |
 | 读不了（`list <库>`） | （无法读取：{原因}）：`too_large` 文件过大、`not_utf8` 不是 UTF-8 编码、`no_text` PDF 里没有文字（扫描件或只有图片）、`no_extractor` 缺少 miyu-extract、`extract_failed` 提取文字失败、`unreadable` 没有权限或读取失败 | (unreadable: {reason})：too large、not UTF-8、no text in the PDF (scanned or images only)、miyu-extract is missing、text extraction failed、no permission or read failed |
-| 没找到（`search`） | 没有找到结果 | no matches |
+| 没找到（`search`） | 未找到结果 | no matches |
 | 几篇 | {n} 篇 | 1 document、{n} documents |
 | 用不了 | （不可用：{why}） | (unavailable: {why}) |
 | PDF 第几页 | 第 {page} 页 | page {page} |
@@ -110,11 +110,11 @@ manuals  cat.pdf  第 3 页
 | 软件包带来的 | 来自 {package} | from {package} |
 | 不认的格式（报错） | 无法添加 {name}：不支持的格式；提示：支持的格式：.md、.markdown、.txt、.pdf、.html、.htm | cannot add {name}: unsupported format; hint: supported formats: .md, .markdown, .txt, .pdf, .html, .htm |
 | 编号写错（报错） | 知识库编号无效：{id}；提示：编号以小写字母开头，只含小写字母、数字、- 和 _，最多 64 个字符 | invalid knowledge base id: {id}; hint: start with a lowercase letter, use only lowercase letters, digits, - and _, at most 64 characters |
-| 页码出界（报错） | 没有第 {page} 页：共 {pages} 页 | no page {page}: the document has 1 page、… has {pages} pages |
+| 页码出界（报错） | 第 {page} 页不存在：共 {pages} 页 | no page {page}: the document has 1 page、… has {pages} pages |
 | 加进去了 | 已添加 {kb}/{path} | added {kb}/{path} |
-| 删了一篇 | 已移到回收站：{trash} | moved to trash: {trash} |
+| 删了一篇 | 已移入回收站：{trash} | moved to trash: {trash} |
 | 挂上了 | 已挂载 {kb}：{n} 篇 | mounted {kb}: {n} documents |
-| 删了库 | 已删除 {kb}，移到回收站：{trash}；没进回收站的：已删除 {kb} | deleted {kb}, moved to trash: {trash}; deleted {kb} |
+| 删了库 | 已删除 {kb}，已移入回收站：{trash}；没进回收站的：已删除 {kb} | deleted {kb}, moved to trash: {trash}; deleted {kb} |
 | 重建好了 | 已重建 {kb} 的索引：{n} 篇 | reindexed {kb}: {n} documents |
 
 报错、警告照设计 47 印在标准错误上：`miyu: <事>`（警告是 `miyu: 警告：`，英文 `miyu: warning: `），建议另起一行 `提示：`（英文 `hint: `）；下表报错那几行写的是 `miyu: ` 后面那一截。
@@ -135,11 +135,11 @@ manuals  cat.pdf  第 3 页
   search <词>         搜索知识库
   read <库> <文档>    读取文档的一页
   new <库>            新建知识库
-  edit <库>           修改名字和说明，或开关自动想起
+  edit <库>           修改名字和说明，或者开启或关闭自动想起
   add <库> <文件>...  向知识库添加文件，每个最多 20 MiB
   remove <库> <文档>  删除一篇文档
   mount <库> <目录>   把现有目录挂载为只读知识库
-  delete <库>         删除知识库（挂载的库只取消登记，目录不动）
+  delete <库>         删除知识库（挂载的库只取消挂载，目录保持不变）
   reindex <库>        重建索引
 
 选项：

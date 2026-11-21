@@ -231,7 +231,7 @@ async fn misuse_is_refused_before_anything() {
     assert_eq!(asked.code, 2);
     assert_eq!(
         asked.err,
-        "miyu: 密钥名字无效：Deep Seek\n提示：以小写字母开头，只含小写字母、数字、- 和 _，最多 64 个字符\n"
+        "miyu: 密钥名字无效：Deep Seek\n提示：名字以小写字母开头，只含小写字母、数字、- 和 _，最多 64 个字符\n"
     );
     let asked = run(
         &home,
@@ -339,7 +339,7 @@ async fn picking_takes_a_number_or_a_new_name() {
     assert_eq!(asked.code, 2);
     assert!(
         asked.err.ends_with(
-            "miyu: 密钥名字无效：9\n提示：以小写字母开头，只含小写字母、数字、- 和 _，最多 64 个字符\n"
+            "miyu: 密钥名字无效：9\n提示：名字以小写字母开头，只含小写字母、数字、- 和 _，最多 64 个字符\n"
         ),
         "{}",
         asked.err

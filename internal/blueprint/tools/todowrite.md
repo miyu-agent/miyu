@@ -57,8 +57,8 @@
 | 键 | 中文 | 英文 |
 |---|---|---|
 | 显示名 `todowrite` | 待办 | Todos |
-| `todowrite/updated` | 更新了待办：做完 {done}/{total} | Updated the todos, done: {done}/{total} |
-| `todowrite/cleared` | 待办都做完了，清空 | All todos done, list cleared |
+| `todowrite/updated` | 更新了待办：已完成 {done}/{total} | Updated the todos, done: {done}/{total} |
+| `todowrite/cleared` | 待办已全部完成，已清空 | All todos done, list cleared |
 
 ### 守着它的
 

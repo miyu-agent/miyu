@@ -136,18 +136,18 @@ fn a_command_not_run_says_why_on_its_title() {
             false
         ),
         (
-            "$ rm -rf build · 没做：需要确认，无人确认\n".to_string(),
+            "$ rm -rf build · 未执行：需要确认，无人确认\n".to_string(),
             false
         )
     );
     // 几行的命令，续行照样在下面。
     let (text, block) = drawn("shell", &json!({"command": "a\nb"}), &result, false, false);
-    assert_eq!(text, "$ a · 没做：需要确认，无人确认\n> b\n");
+    assert_eq!(text, "$ a · 未执行：需要确认，无人确认\n> b\n");
     assert!(block);
     // 没有命令的：只写符号。
     assert_eq!(
         drawn("shell", &json!({}), &result, false, false).0,
-        "$ · 没做：需要确认，无人确认\n"
+        "$ · 未执行：需要确认，无人确认\n"
     );
 }
 
@@ -199,18 +199,18 @@ fn an_edit_prints_what_went_out_and_what_came_in() {
     let (text, block) = edit(&edits, "ok", false);
     assert!(block);
     assert_eq!(
-        text, "← 编辑 a.rs · 改了 2 处\n-a - b\n+a + b\n…\n-x\n-y\n",
+        text, "← 编辑 a.rs · 编辑了 2 处\n-a - b\n+a + b\n…\n-x\n-y\n",
         "末尾的换行不多出空行，\\r\\n 当一个换行，改成空的没有 + 行"
     );
     assert_eq!(
         edit(&edits, "ok", true).0,
-        "← 编辑 a.rs\x1b[90m · 改了 2 处\x1b[0m\n\x1b[31m-a - b\x1b[0m\n\x1b[32m+a + b\x1b[0m\n\x1b[90m…\x1b[0m\n\x1b[31m-x\x1b[0m\n\x1b[31m-y\x1b[0m\n"
+        "← 编辑 a.rs\x1b[90m · 编辑了 2 处\x1b[0m\n\x1b[31m-a - b\x1b[0m\n\x1b[32m+a + b\x1b[0m\n\x1b[90m…\x1b[0m\n\x1b[31m-x\x1b[0m\n\x1b[31m-y\x1b[0m\n"
     );
     // 制表符照留，别的控制字符换掉。
     let edits = json!([{"old_string": "\tfn a()\x1b[0m", "new_string": "\tfn b()"}]);
     assert_eq!(
         edit(&edits, "ok", false).0,
-        "← 编辑 a.rs · 改了 2 处\n-\tfn a()\u{FFFD}[0m\n+\tfn b()\n"
+        "← 编辑 a.rs · 编辑了 2 处\n-\tfn a()\u{FFFD}[0m\n+\tfn b()\n"
     );
 }
 
@@ -224,13 +224,13 @@ fn an_edit_that_cannot_be_read_or_did_not_happen_prints_only_its_title() {
     ]);
     assert_eq!(
         edit(&edits, "ok", false).0,
-        "← 编辑 a.rs · 改了 2 处\n-a\n+b\n",
+        "← 编辑 a.rs · 编辑了 2 处\n-a\n+b\n",
         "印得出的只有一处：前面不写 …"
     );
     for edits in [json!("a"), json!([{"old_string": null, "new_string": "b"}])] {
         assert_eq!(
             edit(&edits, "ok", false),
-            ("← 编辑 a.rs · 改了 2 处\n".to_string(), false),
+            ("← 编辑 a.rs · 编辑了 2 处\n".to_string(), false),
             "{edits}"
         );
     }

@@ -1585,6 +1585,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sDOC29"><span class="n">DOC-29</span>协议参考和教程照规范改写<span class="st">…</span></a></li>
         <li><a class="step review" href="#sDOC30"><span class="n">DOC-30</span>参考里对不上的 14 处照代码改<span class="st">…</span></a></li>
         <li><a class="step review" href="#sWD4"><span class="n">WD-4</span>核心字表清理成标准短句<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sWD5"><span class="n">WD-5</span>拒绝原因、命令行、出厂软件包的字清理<span class="st">…</span></a></li>
         <li><a class="step review" href="#sHLP1"><span class="n">HLP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
@@ -61924,6 +61925,58 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/WD-4-核心给人看的字表清理.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sWD5" aria-labelledby="h-sWD5">
+  <div class="sheet-head"><h2 id="h-sWD5"><span class="no">WD-5</span>「社区软件包」四句、拒绝原因表、命令行文案和出厂软件包的字表清理</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">WD-4 清理了核心的字表，留下四块：项目主人原话的「社区包」四句、写在代码里的拒绝原因表和命令行文案、七个出厂软件包自己的字表。这一步按同一套规矩逐句清理，同一件事在各处说同一句话。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">resources/core/human　resources/software/*/human　crates/miyu-endpoint/src/refusal/message.rs　crates/miyu-cli/src/language*、help/zh　crates/miyu-ipc/src　docs、internal/blueprint</span><span class="dir-note">WD-5</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>「社区软件包」四句改成项目主人 2026-11-21 定的说法：「这是社区软件包，未经官方审核，可能存在风险。」</li>
+              <li>拒绝原因表 58 处、命令行文案 80 处、连接层的报错 8 处：只替换代码里的字符串字面量，脚本校验占位符、不带名字的 {} 的先后、首尾空白、末尾标点</li>
+              <li>七个出厂软件包的字表 164 句：「没有这个文件」「改了 {count} 处」「挪不进回收站」改成「文件不存在」「编辑了 {count} 处」「无法移入回收站」</li>
+              <li>回代码核对后改正七处事实；英文那一份里会进给模型的句子、网页界面有副本的句子没有修改</li>
+              <li>45 个测试文件的断言、三份命令行样本、蓝图 28 页、手册和协议参考 19 页跟着换成新话；命令行在沙箱数据根里真跑过</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">写在代码里的给人看的字和字表守同一套用词；给模型的字不改</span><span class="rl">internal/blueprint/config.md「用词的规矩」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">WD-5</dd></div>
+        <div><dt>名称</dt><dd>「社区软件包」四句、拒绝原因表、命令行文案和出厂软件包的字表清理</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-21</dd></div>
+        <div><dt>提交</dt><dd class="mono">WD-5</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>新测试 shipped_package_words_avoid_construction_slang：基点上有 6 句被拦住，修改后通过</span></li>
+        <li><span class="ok">✓</span><span>全仓测试、门禁十二项通过；文档检查问题 0 个</span></li>
+        <li><span class="ok">✓</span><span>沙箱里真跑 miyu core、config、kb、schedule、mcp、pkg、rescue、upgrade，输出抄在施工单里</span></li>
+        <li><span class="ok">✓</span><span>314 处旧→新对照表在施工单里，其他仓库换钉时按它修改</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/WD-5-拒绝原因和命令行文案清理.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

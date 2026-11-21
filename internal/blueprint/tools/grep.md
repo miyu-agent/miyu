@@ -159,10 +159,10 @@ f.txt-9-line 9
 | `grep/counts-part`（`from`、`to`、`total`） | 计数，列了一段 | `第 {from}–{to} 个文件，一共 {total} 个` | `files {from}–{to} of {total}` |
 | `grep/matches`（`count`） | 匹配的行，从头写到完 | `{count} 处` | `{count} matches` |
 | `grep/matches-part`（`from`、`to`） | 匹配的行，跳过了一些、后面没有了 | `第 {from}–{to} 处` | `matches {from}–{to}` |
-| `grep/matches-more`（`from`、`to`） | 匹配的行，后面还有 | `第 {from}–{to} 处，后面还有` | `matches {from}–{to}, more after` |
+| `grep/matches-more`（`from`、`to`） | 匹配的行，后面还有 | `第 {from}–{to} 处，后面还有更多` | `matches {from}–{to}, more after` |
 | `grep/none` | 一个都没有（三种都是） | 没搜到 | no matches |
-| `grep/past-end`（`total`、`offset`） | `offset` 全跳过了 | `跳过了全部，一共 {total} 条` | `all skipped, {total} results` |
-| `grep/bad-pattern`（`error`） | 正则写得不对 | `正则写得不对：{error}` | `bad regex: {error}` |
+| `grep/past-end`（`total`、`offset`） | `offset` 全跳过了 | `已跳过全部结果，一共 {total} 条` | `all skipped, {total} results` |
+| `grep/bad-pattern`（`error`） | 正则写得不对 | `正则表达式格式不正确：{error}` | `bad regex: {error}` |
 | `common/bad-glob`、`common/missing`、`common/missing-similar`、`common/failed`、`common/bad-args` | 见 `tools/glob.md`、`tools/read.md` | | |
 
 - 「全列了」是 `offset` 为 0、写到了最后一条；别的是「一段」。

@@ -104,7 +104,7 @@ async fn add_list_pause_resume_and_remove() {
         paused.code == 0
             && paused
                 .out
-                .starts_with("已暂停 t1  every 10m  停着  新会话 无人格 ")
+                .starts_with("已暂停 t1  every 10m  已暂停  新会话 无人格 ")
             && !paused.out.contains("下一次"),
         "停着的没有下一次：{}{}",
         paused.out,

@@ -140,6 +140,32 @@ fn chinese_words_avoid_construction_slang() {
     assert_eq!(wrong, Vec::<String>::new());
 }
 
+/// 出厂软件包自己的字表（`resources/software/<包>/human/zh.json`）守同一张词表（施工 WD-5）：工具的结果句、报错和核心字表、
+/// 拒绝原因表说同一套话。
+#[test]
+fn shipped_package_words_avoid_construction_slang() {
+    let software = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources/software");
+    let mut all = Vec::new();
+    let mut tables = 0;
+    for entry in std::fs::read_dir(&software).expect("读得到出厂软件包的目录") {
+        let package = entry.expect("读得到这一项").file_name();
+        let file = software.join(&package).join("human/zh.json");
+        let Ok(text) = std::fs::read_to_string(&file) else {
+            continue;
+        };
+        let json: Value = serde_json::from_str(&text).expect("是 JSON");
+        texts(&json, &package.to_string_lossy(), &mut all);
+        tables += 1;
+    }
+    assert!(tables >= 7, "出厂软件包的字表读全了：{tables}");
+    let wrong: Vec<String> = all
+        .iter()
+        .filter(|(_, text)| SLANG.iter().any(|word| text.contains(word)))
+        .map(|(path, text)| format!("{path}：{text}"))
+        .collect();
+    assert_eq!(wrong, Vec::<String>::new());
+}
+
 #[test]
 fn the_word_checks_catch_what_they_should() {
     for text in ["要 key", "API Key 和地址", "{provider} 的 key", "几个 keys"] {

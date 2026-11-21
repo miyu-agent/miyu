@@ -115,10 +115,7 @@ async fn building_a_base_from_the_shell() {
         added.err
     );
     let again = run(&home, &cwd, &["add", "notes", "cat.md", "--to", "pets"]).await;
-    assert_eq!(
-        (again.code, again.err.as_str()),
-        (1, "miyu: 这一篇已经有了\n")
-    );
+    assert_eq!((again.code, again.err.as_str()), (1, "miyu: 文档已存在\n"));
     std::fs::write(cwd.join("cat.md"), "# 猫\n\n团子改名叫小橘。\n").expect("写得进");
     let replaced = run(
         &home,
@@ -136,7 +133,7 @@ async fn building_a_base_from_the_shell() {
     let found = run(&home, &cwd, &["search", "小橘"]).await;
     assert_eq!(found.out, "notes  pets/cat.md  猫\n  团子改名叫小橘。\n");
     let missing = run(&home, &cwd, &["search", "鹦鹉"]).await;
-    assert_eq!(missing.out, "没有找到结果\n");
+    assert_eq!(missing.out, "未找到结果\n");
     let read = run(&home, &cwd, &["read", "notes", "pets/dog.txt"]).await;
     assert_eq!(read.out, "阿黄是小狗。\n");
     let edited = run(&home, &cwd, &["edit", "notes", "--name", "家"]).await;
@@ -154,9 +151,9 @@ async fn building_a_base_from_the_shell() {
     let removed = run(&home, &cwd, &["remove", "notes", "pets/dog.txt"]).await;
     // 有的机器上临时目录那块盘没有能放的回收站：照实报。
     match removed.code {
-        0 => assert!(removed.out.starts_with("已移到回收站："), "{}", removed.out),
+        0 => assert!(removed.out.starts_with("已移入回收站："), "{}", removed.out),
         _ => assert!(
-            removed.err.starts_with("miyu: 挪不进回收站："),
+            removed.err.starts_with("miyu: 无法移入回收站："),
             "{}",
             removed.err
         ),
@@ -186,20 +183,20 @@ async fn mounting_a_folder_and_deleting_it_from_the_shell() {
     let gone = run(&home, &cwd, &["mount", "gone", "nowhere"]).await;
     assert_eq!(gone.code, 1);
     assert!(
-        gone.err.starts_with("miyu: 这个目录挂不上："),
+        gone.err.starts_with("miyu: 无法挂载这个目录："),
         "{}",
         gone.err
     );
     let refused = run(&home, &cwd, &["remove", "mine", "a.md"]).await;
     assert_eq!(
         (refused.code, refused.err.as_str()),
-        (1, "miyu: 挂进来的知识库是只读的\n")
+        (1, "miyu: 挂载的知识库是只读的\n")
     );
     let deleted = run(&home, &cwd, &["delete", "mine"]).await;
     match deleted.code {
         0 => assert!(deleted.out.starts_with("已删除 mine"), "{}", deleted.out),
         _ => assert!(
-            deleted.err.starts_with("miyu: 挪不进回收站："),
+            deleted.err.starts_with("miyu: 无法移入回收站："),
             "{}",
             deleted.err
         ),
@@ -284,7 +281,7 @@ async fn what_the_core_would_refuse_is_said_plainly() {
     let page = run(&home, &cwd, &["read", "notes", "long.md", "--page", "9"]).await;
     assert_eq!(
         (page.code, page.err.as_str()),
-        (1, "miyu: 没有第 9 页：共 2 页\n")
+        (1, "miyu: 第 9 页不存在：共 2 页\n")
     );
     let missing = run(&home, &cwd, &["read", "notes", "dog.md", "--page", "2"]).await;
     assert_eq!(
@@ -370,7 +367,10 @@ async fn a_base_from_a_package_from_the_shell() {
     let renamed = run(&home, &cwd, &["edit", "world", "--name", "新名字"]).await;
     assert_eq!(
         (renamed.code, renamed.err.as_str()),
-        (1, "miyu: 随软件包来的知识库是只读的，只能开关自动想起\n")
+        (
+            1,
+            "miyu: 随软件包提供的知识库是只读的，只能开启或关闭自动想起\n"
+        )
     );
 }
 

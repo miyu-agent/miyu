@@ -158,7 +158,7 @@ async fn pacman_forms_take_an_id_not_a_path() {
         let (out, err) = (tape.text(|err| !err), tape.text(|err| err));
         assert_eq!((code, out.as_str()), (2, ""), "{words:?}：{err}");
         assert!(
-            err.starts_with(&format!("miyu: {flag} 只接软件包编号")),
+            err.starts_with(&format!("miyu: {flag} 只接受软件包编号")),
             "{words:?}：{err}"
         );
     }

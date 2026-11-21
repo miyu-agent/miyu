@@ -277,7 +277,7 @@ For backing up knowledge bases and moving them to another computer, see [Data an
 |---|---|
 | `cannot add X: unsupported format` | A knowledge base takes only the kinds of files in the table above |
 | `A mounted knowledge base is read-only.` | You cannot add documents to or delete documents from a mounted base; change them in the original directory |
-| `A knowledge base from a package is read-only; only auto recall can be switched.` | A base that comes with a package only allows turning auto recall on or off and rebuilding the index |
+| `A knowledge base from a package is read-only; only auto recall can be turned on or off.` | A base that comes with a package only allows turning auto recall on or off and rebuilding the index |
 | `Folder cannot be mounted.` | The directory does not exist, or cannot be read |
 | A document shows `miyu-extract is missing` after it | Text cannot be extracted from PDFs and web pages; `miyu-extract` must be in the same directory as `miyu` |
 | The AI does not look things up | Try a search with `miyu kb search`; check the persona's `[knowledge]` and whether the preset has knowledge bases on; give the base a clear name and description |

@@ -71,7 +71,7 @@ async fn nothing_running_says_so_with_code_three() {
     assert_eq!(code, NOT_RUNNING, "{err}");
     assert_eq!(
         out,
-        format!("核心没有在运行\n数据根：{place}\n提示：运行 'miyu core start' 启动\n")
+        format!("核心未运行\n数据根：{place}\n提示：运行 'miyu core start' 启动\n")
     );
     assert!(err.is_empty(), "{err}");
     let (code, out, _) = asked(&root, Format::Text, Language::English).await;

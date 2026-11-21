@@ -103,7 +103,7 @@ You are an advisor to another AI agent. You see only the question it sends you, 
 |---|---|---|---|
 | `advisor/answered`（`session`） | 答了 | Answered | 回答しました |
 | `advisor/no-model` | 旗舰池里没有模型 | No model in the flagship pool | フラッグシッププールにモデルがありません |
-| `advisor/failed`（`reason`） | 没答成：{reason} | Could not answer: {reason} | 回答できませんでした：{reason} |
+| `advisor/failed`（`reason`） | 回答失败：{reason} | Could not answer: {reason} | 回答できませんでした：{reason} |
 
 ### 守着它的
 

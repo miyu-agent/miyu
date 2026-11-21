@@ -121,7 +121,7 @@ impl Language {
     pub(crate) fn in_effect(&self, env: bool) -> &'static str {
         match (self, env) {
             (Language::Chinese, false) => "← 生效",
-            (Language::Chinese, true) => "← 生效，只管这一次启动",
+            (Language::Chinese, true) => "← 生效，仅限本次启动",
             (Language::English, false) => "← in effect",
             (Language::English, true) => "← in effect, for this launch only",
         }
@@ -130,15 +130,15 @@ impl Language {
     /// 写了、不算的那一行的记号，照原因码。
     pub(crate) fn not_counted(&self, problem: &str) -> String {
         let why = match (self, problem) {
-            (Language::Chinese, "untrusted_project") => "还没信任",
-            (Language::Chinese, "not_tightening") => "比下面几层宽",
-            (Language::Chinese, _) => "不能写在这一层",
+            (Language::Chinese, "untrusted_project") => "未信任",
+            (Language::Chinese, "not_tightening") => "比下面几层更宽松",
+            (Language::Chinese, _) => "不能在这一层设置",
             (Language::English, "untrusted_project") => "not trusted yet",
             (Language::English, "not_tightening") => "looser than the layers below",
             (Language::English, _) => "not allowed in this layer",
         };
         match self {
-            Language::Chinese => format!("← 不算：{why}"),
+            Language::Chinese => format!("← 未生效：{why}"),
             Language::English => format!("← does not count: {why}"),
         }
     }
@@ -146,7 +146,7 @@ impl Language {
     /// `path --project` 还没有这个文件：印了路径以后的告警。
     pub(crate) fn no_file_yet(&self) -> Problem {
         match self {
-            Language::Chinese => Problem::new("文件尚不存在"),
+            Language::Chinese => Problem::new("文件还不存在"),
             Language::English => Problem::new("the file does not exist yet"),
         }
     }
@@ -154,7 +154,7 @@ impl Language {
     /// `miyu ask` 起头的告警：这里的项目配置 `file` 还没信任，这次没用它（施工 8-3，设计 47）。
     pub(crate) fn untrusted_project(&self, file: &str) -> Problem {
         match self {
-            Language::Chinese => Problem::new(format!("项目配置 {file} 尚未信任，本次没有使用"))
+            Language::Chinese => Problem::new(format!("项目配置 {file} 未信任，本次没有使用"))
                 .hint("运行 'miyu config trust' 查看后决定"),
             Language::English => Problem::new(format!(
                 "project config {file} is not trusted; not used this time"

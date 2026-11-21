@@ -136,22 +136,22 @@ Message sent to j1.
 
 | 说法 | 中文 | 英文 |
 |---|---|---|
-| `send_message/sent`（`to`） | `送到了：{to}` | `Sent to {to}` |
-| `send_message/held`（`to`） | `存下了：{to} 是没人看着的一次性会话` | `Saved: {to} is a one-shot session nobody is watching` |
+| `send_message/sent`（`to`） | `已送达：{to}` | `Sent to {to}` |
+| `send_message/held`（`to`） | `已保存：{to} 是没人看着的一次性会话` | `Saved: {to} is a one-shot session nobody is watching` |
 | `send_message/no-parent` | 没有父会话 | No parent session |
-| `send_message/not-yours`（`to`） | `{to} 不是它派的子代理` | `{to} is not its subagent` |
-| `send_message/stopped`（`to`） | `{to} 已经停了` | `{to} was stopped` |
+| `send_message/not-yours`（`to`） | `{to} 不是这个会话派出的子代理` | `{to} is not its subagent` |
+| `send_message/stopped`（`to`） | `{to} 已停止` | `{to} was stopped` |
 | `send_message/not-sent` | 没送到 | Not delivered |
-| `send_message/no-session`（`to`） | `没有会话 {to}` | `No session {to}` |
-| `send_message/ambiguous`（`to`） | `{to} 对得上不止一个会话` | `{to} matches more than one session` |
+| `send_message/no-session`（`to`） | `会话 {to} 不存在` | `No session {to}` |
+| `send_message/ambiguous`（`to`） | `{to} 匹配到多个会话` | `{to} matches more than one session` |
 | `send_message/self`（`to`） | `{to} 就是这个会话` | `{to} is this session` |
-| `send_message/not-here` | 这里不能给别的会话发话 | Cannot message other sessions here |
-| `send_message/too-long`（`chars`、`limit`） | `太长了：{chars} 个字，最多 {limit}` | `Too long: {chars} characters, at most {limit}` |
-| `send_message/too-many`（`to`） | `刚给 {to} 发得太多了` | `Too many messages to {to} just now` |
-| `send_message/duplicate`（`to`） | `{to} 刚收到过一样的话` | `{to} already got the same message` |
-| `send_message/inbox-full`（`to`） | `{to} 没看的话太多了` | `{to} has too many unread messages` |
+| `send_message/not-here` | 这里不能给其他会话发消息 | Cannot message other sessions here |
+| `send_message/too-long`（`chars`、`limit`） | `消息过长：{chars} 个字，最多 {limit} 个字` | `Too long: {chars} characters, at most {limit}` |
+| `send_message/too-many`（`to`） | `短时间内发给 {to} 的消息过多` | `Too many messages to {to} just now` |
+| `send_message/duplicate`（`to`） | `{to} 刚刚收到过相同的消息` | `{to} already got the same message` |
+| `send_message/inbox-full`（`to`） | `{to} 的未读消息已达上限` | `{to} has too many unread messages` |
 | `send_message/watching`（`to`，施工 C-6） | `{to} 空下来时告诉她` | `Will tell her when {to} is idle` |
-| `send_message/watch-peers-only`（施工 C-6） | 只能等别的会话空下来 | Only other sessions can be watched |
+| `send_message/watch-peers-only`（施工 C-6） | 只能等待其他会话空闲 | Only other sessions can be watched |
 | `common/bad-args` | 见 `tools/read.md` | |
 
 ### 守着它的

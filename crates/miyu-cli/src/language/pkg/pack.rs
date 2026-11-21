@@ -41,7 +41,7 @@ impl Language {
     pub(crate) fn bad_logo(&self, logo: &str, why: LogoWhy) -> Problem {
         match (self, why) {
             (Language::Chinese, LogoWhy::Missing) => {
-                Problem::new(format!("无法打包：找不到图标 {logo}"))
+                Problem::new(format!("无法打包：未找到图标 {logo}"))
             }
             (Language::English, LogoWhy::Missing) => {
                 Problem::new(format!("cannot pack: logo {logo} not found"))
@@ -110,7 +110,7 @@ impl Language {
     pub(crate) fn no_version(&self) -> Problem {
         match self {
             Language::Chinese => Problem::new("无法打包：清单没有写版本")
-                .hint("在 package.toml 的 [package] 里写上 version"),
+                .hint("在 package.toml 的 [package] 里填写 version"),
             Language::English => Problem::new("cannot pack: the manifest has no version")
                 .hint("add version to [package] in package.toml"),
         }

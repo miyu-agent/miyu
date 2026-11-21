@@ -8,7 +8,7 @@ impl Language {
     /// 软件源 `source` 拿到了新的索引：几个包、索引的时刻。
     pub(crate) fn index_updated(&self, source: &str, count: u64, generated: &str) -> String {
         match (self, count) {
-            (Language::Chinese, _) => format!("已更新 {source}：{count} 个包（{generated}）"),
+            (Language::Chinese, _) => format!("已更新 {source}：{count} 个软件包（{generated}）"),
             (Language::English, 1) => format!("updated {source}: 1 package ({generated})"),
             (Language::English, _) => {
                 format!("updated {source}: {count} packages ({generated})")
@@ -153,7 +153,7 @@ impl Language {
     /// `packages.hold` 里的：跳过。
     pub(crate) fn upgrade_held(&self, id: &str) -> Problem {
         match self {
-            Language::Chinese => Problem::new(format!("跳过设为不升级的 {id}")),
+            Language::Chinese => Problem::new(format!("已跳过设为不升级的 {id}")),
             Language::English => Problem::new(format!("skipping held package {id}")),
         }
     }
@@ -161,7 +161,7 @@ impl Language {
     /// 新版要更新的 Miyu：跳过，别的照升（施工 FX-7）。`to` 是软件源里的版本，`miyu` 是它要的 Miyu。
     pub(crate) fn upgrade_needs_newer_miyu(&self, id: &str, to: &str, miyu: &str) -> Problem {
         match self {
-            Language::Chinese => Problem::new(format!("{id} {to} 需要 Miyu {miyu}，跳过")),
+            Language::Chinese => Problem::new(format!("{id} {to} 需要 Miyu {miyu}，已跳过")),
             Language::English => Problem::new(format!("skipping {id} {to}: needs Miyu {miyu}")),
         }
     }

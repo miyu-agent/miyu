@@ -80,7 +80,7 @@ Moved "a.txt" to the trash.
 
 | 什么时候 | 文件 | 原文 |
 |---|---|---|
-| 移进了回收站 | `trash/trashed.txt` | `Moved "{path}" to the trash.` |
+| 已移入回收站 | `trash/trashed.txt` | `Moved "{path}" to the trash.` |
 | 收不了，没删 | `trash/unavailable.txt` | `"{path}" was not deleted: its drive has no trash to move it into. Ask the user, or use rm in the shell to delete it for good.` |
 | 不许删 | `trash/protected.txt` | `"{path}" cannot be deleted: it is the working directory, one of its parents, the home directory, Miyu's data or a folder holding it, or the root.` |
 | 挪了却找不到 | `trash/lost.txt` | `"{path}" was deleted, but it was not found in the trash afterwards, so it may not come back.` |
@@ -111,11 +111,11 @@ Moved "a.txt" to the trash.
 
 | 说法 | 中文 | 英文 |
 |---|---|---|
-| `trash/trashed` | 移进了回收站 | moved to the trash |
-| `trash/unavailable` | 放不进回收站，没删 | no trash here, not deleted |
+| `trash/trashed` | 已移入回收站 | moved to the trash |
+| `trash/unavailable` | 无法移入回收站，未删除 | no trash here, not deleted |
 | `trash/protected` | 工作目录、它的上级、家目录、Miyu 的数据、根目录不能删 | the working directory, its parents, home, Miyu's data and root can't be deleted |
-| `trash/lost` | 删了，可回收站里找不到 | deleted, but not found in the trash |
-| `trash/failed`（`error`） | `删不了：{error}` | `can't delete: {error}` |
+| `trash/lost` | 已删除，但在回收站里找不到 | deleted, but not found in the trash |
+| `trash/failed`（`error`） | `无法删除：{error}` | `can't delete: {error}` |
 | `common/missing`、`common/missing-similar`、`common/failed`、`common/bad-args` | 见 `tools/read.md` | |
 
 ### 守着它的

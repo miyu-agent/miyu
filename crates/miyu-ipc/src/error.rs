@@ -29,12 +29,12 @@ impl fmt::Display for OpenError {
             OpenError::Running => write!(f, "这个数据根上已经有一个核心在运行"),
             OpenError::TooLong(path) => write!(
                 f,
-                "套接字的路径太长，放不下：{}；临时目录下也放不下",
+                "套接字路径过长：{}；改放到临时目录下也超出长度限制",
                 path.display()
             ),
             OpenError::NotPrivate(dir) => write!(
                 f,
-                "{} 不属于当前用户，或者其他用户也能访问：套接字不放在这里",
+                "{} 不属于当前用户，或者其他用户也能访问，因此不在这里创建套接字",
                 dir.display()
             ),
             OpenError::Occupied(path) => f.write_str(&occupied(path, cfg!(windows))),
@@ -51,7 +51,7 @@ fn occupied(path: &Path, pipe: bool) -> String {
     match pipe {
         true => format!("命名管道 {} 已经被其他程序占用。没有修改它", path.display()),
         false => format!(
-            "{} 上有其他内容：不是套接字的文件，或者其他程序正在监听。没有修改它",
+            "{} 已被占用，可能是一个不是套接字的文件，或者其他程序正在监听。没有修改它",
             path.display()
         ),
     }
@@ -62,11 +62,11 @@ fn occupied(path: &Path, pipe: bool) -> String {
 fn not_private(place: &Path, pipe: bool) -> String {
     match pipe {
         true => format!(
-            "命名管道 {} 另一头不是当前用户的进程：不连接",
+            "命名管道 {} 的另一端不是当前用户的进程，因此没有连接",
             place.display()
         ),
         false => format!(
-            "{} 不属于当前用户，或者其他用户也能访问：不连接",
+            "{} 不属于当前用户，或者其他用户也能访问，因此没有连接",
             place.display()
         ),
     }
@@ -93,7 +93,7 @@ pub enum ConnectError {
 impl fmt::Display for ConnectError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ConnectError::NotRunning => write!(f, "核心没有在运行"),
+            ConnectError::NotRunning => write!(f, "核心未运行"),
             ConnectError::NotPrivate(place) => f.write_str(&not_private(place, cfg!(windows))),
             ConnectError::Io(error) => error.fmt(f),
         }
@@ -167,7 +167,7 @@ impl fmt::Display for StartError {
             // 照数据根取的相对位置（施工 FX-4：原来写死 `state/logs/core.log`，FH-3 挪到 `var/log/` 以后指错了地方）。
             StartError::Silent => write!(
                 f,
-                "核心没有启动，也没有给出原因：查看数据根的 {}",
+                "核心没有启动，也没有给出原因，可以查看数据根中的 {}",
                 DataRoot::at(PathBuf::new()).core_log().display()
             ),
             StartError::Timeout => write!(f, "等待核心启动超时"),

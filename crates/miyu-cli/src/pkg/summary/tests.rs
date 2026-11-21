@@ -35,7 +35,7 @@ fn capability(id: &str, language: &Language) -> Value {
 /// 设计 61 第三节的第一个样子：社区的 weather，一个包，要联网、提供工具，带程序。
 fn weather(language: &Language) -> Value {
     let notice = match language {
-        Language::Chinese => json!(["这是个社区包，没有经过官方审核，可能存在风险。"]),
+        Language::Chinese => json!(["这是社区软件包，未经官方审核，可能存在风险。"]),
         Language::English => {
             json!(["This is a community package. It has not been reviewed and may be risky."])
         }
@@ -57,7 +57,7 @@ fn weather_with_onebot(language: &Language) -> Value {
     shown["download"] = json!(1_992_295);
     shown["installed"] = json!(5_242_880);
     shown["notice"] = match language {
-        Language::Chinese => json!(["weather 是社区包，没有经过官方审核，可能存在风险。"]),
+        Language::Chinese => json!(["weather 是社区软件包，未经官方审核，可能存在风险。"]),
         Language::English => {
             json!(["Community packages that have not been reviewed and may be risky: weather."])
         }
@@ -82,8 +82,8 @@ fn a_community_package_says_where_it_comes_from_what_it_needs_and_asks_to_approv
     );
     assert_eq!(
         question(&zh, &Language::Chinese),
-        "注意：这是个社区包，没有经过官方审核，可能存在风险。\n\
-         安装 'weather' 并批准它要的能力？[Y/n] "
+        "注意：这是社区软件包，未经官方审核，可能存在风险。\n\
+         安装 'weather' 并批准它需要的能力？[Y/n] "
     );
     let en = weather(&Language::English);
     assert_eq!(
@@ -144,8 +144,8 @@ fn several_packages_from_different_places_are_named_on_each_line() {
     );
     assert_eq!(
         question(&zh, &Language::Chinese),
-        "注意：weather 是社区包，没有经过官方审核，可能存在风险。\n\
-         安装 2 个软件包并批准它们要的能力？[Y/n] "
+        "注意：weather 是社区软件包，未经官方审核，可能存在风险。\n\
+         安装 2 个软件包并批准它们需要的能力？[Y/n] "
     );
     let en = weather_with_onebot(&Language::English);
     assert_eq!(
@@ -192,7 +192,7 @@ fn official_packages_have_no_notice_and_one_origin_line() {
     );
     assert_eq!(
         question(&preview(), &Language::Chinese),
-        "安装 2 个软件包并批准它们要的能力？[Y/n] ",
+        "安装 2 个软件包并批准它们需要的能力？[Y/n] ",
         "官方的没有「注意」"
     );
 }
@@ -246,7 +246,7 @@ fn an_older_core_is_printed_and_asked_as_before() {
             "软件包 (1)  im-0.2.1",
             "",
             "下载大小    : 12.3 MiB",
-            "来源        : friend，签名已验证，未经审核",
+            "来源        : friend，签名已验证，未经官方审核",
             "需要的能力  : 联网",
             "              替主人说话",
         ]
@@ -275,11 +275,11 @@ fn recommended_packages_that_need_capabilities_get_their_own_part() {
     shown["recommends"] = json!([{"package": "rec", "version": "1.0", "source": "community",
                                   "feed": "official", "capabilities": [capability("network", &Language::Chinese)]},
                                  {"package": "plain", "version": "1.0", "source": "official", "feed": "official"}]);
-    shown["recommends_notice"] = json!(["rec 是社区包，没有经过官方审核，可能存在风险。"]);
+    shown["recommends_notice"] = json!(["rec 是社区软件包，未经官方审核，可能存在风险。"]);
     assert_eq!(
         recommended_question(&shown, &Language::Chinese),
-        "\n推荐的包要的能力  : rec    联网：访问网络、开端口\n注意：rec 是社区包，没有经过官方审核，可能存在风险。\n\
-         同时安装推荐的 2 个软件包并批准它们要的能力？[Y/n] "
+        "\n推荐的软件包需要的能力  : rec    联网：访问网络、开端口\n注意：rec 是社区软件包，未经官方审核，可能存在风险。\n\
+         同时安装推荐的 2 个软件包并批准它们需要的能力？[Y/n] "
     );
     let mut english = weather(&Language::English);
     english["recommends"] = json!([{"package": "rec", "version": "1.0", "source": "official",

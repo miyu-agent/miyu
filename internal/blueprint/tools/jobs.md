@@ -118,10 +118,10 @@ Reading the tests first.
 |---|---|---|
 | `jobs/listed`（`count`） | `列出 {count} 个任务` | `Listed {count} jobs` |
 | `jobs/none` | 没有任务 | No jobs |
-| `jobs/output`（`job`） | `读了 {job} 的输出` | `Read the output of {job}` |
-| `jobs/stopped`（`job`） | `停掉了 {job}` | `Stopped {job}` |
-| `jobs/unknown`（`id`） | `没有任务 {id}` | `No job {id}` |
-| `jobs/ended`（`job`） | `{job} 已经结束了` | `{job} has already ended` |
+| `jobs/output`（`job`） | `读取了 {job} 的输出` | `Read the output of {job}` |
+| `jobs/stopped`（`job`） | `已停止 {job}` | `Stopped {job}` |
+| `jobs/unknown`（`id`） | `任务 {id} 不存在` | `No job {id}` |
+| `jobs/ended`（`job`） | `{job} 已结束` | `{job} has already ended` |
 
 ### 守着它的
 

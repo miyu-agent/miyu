@@ -129,7 +129,7 @@ impl Language {
     /// 页码出界（施工 K-7 修）：第 `page` 页没有，一共 `pages` 页。
     pub(crate) fn kb_no_page(&self, page: u64, pages: u64) -> Problem {
         Problem::new(match (self, pages) {
-            (Language::Chinese, _) => format!("没有第 {page} 页：共 {pages} 页"),
+            (Language::Chinese, _) => format!("第 {page} 页不存在：共 {pages} 页"),
             (Language::English, 1) => format!("no page {page}: the document has 1 page"),
             (Language::English, _) => format!("no page {page}: the document has {pages} pages"),
         })
@@ -172,7 +172,7 @@ impl Language {
     /// `remove` 挪进回收站了，在 `trash`。
     pub fn kb_removed(&self, trash: &str) -> String {
         match self {
-            Language::Chinese => format!("已移到回收站：{trash}"),
+            Language::Chinese => format!("已移入回收站：{trash}"),
             Language::English => format!("moved to trash: {trash}"),
         }
     }
@@ -189,7 +189,7 @@ impl Language {
     pub fn kb_deleted(&self, kb: &str, trash: &str) -> String {
         match self {
             _ if trash.is_empty() => self.kb_deleted_only(kb),
-            Language::Chinese => format!("已删除 {kb}，移到回收站：{trash}"),
+            Language::Chinese => format!("已删除 {kb}，已移入回收站：{trash}"),
             Language::English => format!("deleted {kb}, moved to trash: {trash}"),
         }
     }

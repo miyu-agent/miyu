@@ -21,7 +21,7 @@ async fn core_start_brings_one_up_and_status_tells_whether_it_runs() {
     assert_eq!(idle.status.code(), Some(3), "{idle:?}");
     assert_eq!(
         crate::support::cli::stdout(&idle),
-        format!("核心没有在运行\n数据根：{place}\n提示：运行 'miyu core start' 启动\n")
+        format!("核心未运行\n数据根：{place}\n提示：运行 'miyu core start' 启动\n")
     );
     assert_eq!(count(&home.core_log(), "starting"), 0, "只看，不拉起");
 

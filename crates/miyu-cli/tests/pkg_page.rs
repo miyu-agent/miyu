@@ -45,7 +45,7 @@ async fn a_served_page_whose_program_is_not_running_says_so() {
         pkg_speaking(&home, &["page", "site", "--print"], b"", Language::Chinese).await;
     let (out, err) = (tape.text(|err| !err), tape.text(|err| err));
     assert_eq!((code, out.as_str()), (1, ""), "{err}");
-    assert!(err.contains("site 没有在运行"), "{err}");
+    assert!(err.contains("site 未运行"), "{err}");
 }
 
 #[tokio::test]

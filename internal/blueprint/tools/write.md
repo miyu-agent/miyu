@@ -105,12 +105,12 @@ Created "src/new/a.rs".
 |---|---|---|---|
 | `write/created`（`count`） | 新建了 | `新建，{count} 行` | `new, {count} lines` |
 | `write/updated`（`count`） | 覆盖了 | `覆盖，{count} 行` | `replaced, {count} lines` |
-| `common/not-read` | 没读过（施工 ED-2 起不再说，以前的日志里有） | 没读过，要先读 | not read yet, read it first |
-| `common/stale` | 读过以后又改过了 | 读过以后又改过了，要重读 | changed since read, read it again |
-| `common/directory` | 是目录 | 是个目录 | is a directory |
+| `common/not-read` | 没读过（施工 ED-2 起不再说，以前的日志里有） | 还没有读取，需要先读取 | not read yet, read it first |
+| `common/stale` | 读过以后又改过了 | 读取之后文件又被修改，需要重新读取 | changed since read, read it again |
+| `common/directory` | 是目录 | 是目录 | is a directory |
 | `common/not-a-regular-file` | 不是普通文件 | 不是普通文件 | not a regular file |
-| `common/write-failed`（`error`） | 写不了 | `写不了：{error}` | `can't write: {error}` |
-| `common/bad-args`（`error`） | 参数不对 | `参数不对：{error}` | `bad arguments: {error}` |
+| `common/write-failed`（`error`） | 写不了 | `无法写入：{error}` | `can't write: {error}` |
+| `common/bad-args`（`error`） | 参数不对 | `参数错误：{error}` | `bad arguments: {error}` |
 
 `count` 是她给的 `content` 有几行：空的是 0 行；以换行结尾的，最后那一段空的不算；`\r\n` 算一个换行。
 

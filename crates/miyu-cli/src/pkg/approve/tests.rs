@@ -20,7 +20,7 @@ fn preview() -> Value {
                  {"package": "bare", "version": "1.0", "source": "official", "feed": "official"}],
         "recommends": [{"package": "rec", "version": "1.0",
                         "capabilities": [{"id": "network", "name": "联网"}]}],
-        "notice": ["app 是社区包，没有经过官方审核，可能存在风险。", "kit 来自本机文件，没有经过官方审核，可能存在风险。"],
+        "notice": ["app 是社区软件包，未经官方审核，可能存在风险。", "kit 来自本机文件，未经官方审核，可能存在风险。"],
     })
 }
 
@@ -119,7 +119,7 @@ fn the_notice_is_the_core_words_as_they_are() {
     assert_eq!(
         notice(&shown["notice"], &Language::Chinese).as_deref(),
         Some(
-            "注意：app 是社区包，没有经过官方审核，可能存在风险。kit 来自本机文件，没有经过官方审核，可能存在风险。"
+            "注意：app 是社区软件包，未经官方审核，可能存在风险。kit 来自本机文件，未经官方审核，可能存在风险。"
         )
     );
     let english = json!(["This is a community package.", "Outside."]);

@@ -415,23 +415,23 @@ No notice came within 12 hours, so the request was dropped.
 | `sessions` 的显示名 | 列会话，不跟参数，符号 `≡` | Sessions | C-3 |
 | `send_message` 的显示名 | 留言，后面跟 `to` 的值，符号 `↗`，和原来的一样 | Message | C-5 |
 | `sessions/listed`（`count`） | 列出 {count} 个会话 | Listed {count} sessions | C-3 |
-| `sessions/none` | 没有别的会话 | No other sessions | C-3 |
-| `sessions/past-end`（`total`） | 一共 {total} 个别的会话，已经列完了 | All {total} other sessions are listed | C-3 |
-| `sessions/failed`（`error`） | 没列出来：{error} | Could not list sessions: {error} | C-3 |
-| `history/no-session`（`session`） | 没有会话 {session} | No session {session} | C-4 |
-| `history/ambiguous`（`session`） | {session} 对得上不止一个会话 | {session} matches more than one session | C-4 |
-| `history/not-here` | 这里不能读别的会话 | Cannot read other sessions here | C-4 |
-| `send_message/held`（`to`） | 存下了：{to} 是没人看着的一次性会话 | Saved: {to} is a one-shot session nobody is watching | C-5 |
-| `send_message/no-session`（`to`） | 没有会话 {to} | No session {to} | C-5 |
-| `send_message/ambiguous`（`to`） | {to} 对得上不止一个会话 | {to} matches more than one session | C-5 |
+| `sessions/none` | 没有其他会话 | No other sessions | C-3 |
+| `sessions/past-end`（`total`） | 一共 {total} 个其他会话，已全部列出 | All {total} other sessions are listed | C-3 |
+| `sessions/failed`（`error`） | 无法列出会话：{error} | Could not list sessions: {error} | C-3 |
+| `history/no-session`（`session`） | 会话 {session} 不存在 | No session {session} | C-4 |
+| `history/ambiguous`（`session`） | {session} 匹配到多个会话 | {session} matches more than one session | C-4 |
+| `history/not-here` | 这里不能读取其他会话 | Cannot read other sessions here | C-4 |
+| `send_message/held`（`to`） | 已保存：{to} 是没人看着的一次性会话 | Saved: {to} is a one-shot session nobody is watching | C-5 |
+| `send_message/no-session`（`to`） | 会话 {to} 不存在 | No session {to} | C-5 |
+| `send_message/ambiguous`（`to`） | {to} 匹配到多个会话 | {to} matches more than one session | C-5 |
 | `send_message/self`（`to`） | {to} 就是这个会话 | {to} is this session | C-5 |
-| `send_message/not-here` | 这里不能给别的会话发话 | Cannot message other sessions here | C-5 |
-| `send_message/too-long`（`chars`、`limit`） | 太长了：{chars} 个字，最多 {limit} | Too long: {chars} characters, at most {limit} | C-5 |
-| `send_message/too-many`（`to`） | 刚给 {to} 发得太多了 | Too many messages to {to} just now | C-5 |
-| `send_message/duplicate`（`to`） | {to} 刚收到过一样的话 | {to} already got the same message | C-5 |
-| `send_message/inbox-full`（`to`） | {to} 没看的话太多了 | {to} has too many unread messages | C-5 |
+| `send_message/not-here` | 这里不能给其他会话发消息 | Cannot message other sessions here | C-5 |
+| `send_message/too-long`（`chars`、`limit`） | 消息过长：{chars} 个字，最多 {limit} 个字 | Too long: {chars} characters, at most {limit} | C-5 |
+| `send_message/too-many`（`to`） | 短时间内发给 {to} 的消息过多 | Too many messages to {to} just now | C-5 |
+| `send_message/duplicate`（`to`） | {to} 刚刚收到过相同的消息 | {to} already got the same message | C-5 |
+| `send_message/inbox-full`（`to`） | {to} 的未读消息已达上限 | {to} has too many unread messages | C-5 |
 | `send_message/watching`（`to`） | {to} 空下来时告诉她 | Will tell her when {to} is idle | C-6 |
-| `send_message/watch-peers-only` | 只能等别的会话空下来 | Only other sessions can be watched | C-6 |
+| `send_message/watch-peers-only` | 只能等待其他会话空闲 | Only other sessions can be watched | C-6 |
 
 头在时间线上显示的：灰色一行预览，点开看全文（「定的」第 2 条）。预览照这几句：
 

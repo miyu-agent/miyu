@@ -131,7 +131,7 @@ impl Language {
                 format!("data root: {data_root}"),
             ],
             (Language::Chinese, None) => vec![
-                "核心没有在运行".to_string(),
+                "核心未运行".to_string(),
                 format!("数据根：{data_root}"),
                 "提示：运行 'miyu core start' 启动".to_string(),
             ],

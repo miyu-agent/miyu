@@ -107,14 +107,14 @@ fn the_day_follows_the_time_zone() {
 #[test]
 fn nothing_says_so() {
     assert_eq!(Language::Chinese.no_memories(), "没有记忆");
-    assert_eq!(Language::Chinese.nothing_found(), "没有找到结果");
+    assert_eq!(Language::Chinese.nothing_found(), "未找到结果");
     assert_eq!(Language::English.no_memories(), "no memories");
     assert_eq!(Language::Chinese.remembered("m4"), "已添加 m4");
     assert_eq!(Language::Chinese.changed("m5"), "已修改，新编号 m5");
     assert_eq!(Language::Chinese.cleared(3), "已清除 3 条记忆");
     assert_eq!(Language::English.cleared(3), "cleared 3 memories");
     assert_eq!(Language::English.cleared(1), "cleared 1 memory");
-    // 同 `/dream` 的回执（施工 R-22 三补）：是 0 的不写、都是 0 的说没有要改的，末尾写用时。
+    // 同 `/dream` 的回执（施工 R-22 三补）：是 0 的不写、都是 0 的说不需要修改，末尾写用时。
     let organized = |given, revised, retired, summary, took_ms| Organized {
         given,
         revised,
@@ -124,7 +124,7 @@ fn nothing_says_so() {
     };
     assert_eq!(
         Language::Chinese.dreamed(&organized(0, 0, 0, false, 2_000)),
-        "无需整理，用时 2s"
+        "不需要整理，用时 2s"
     );
     assert_eq!(
         Language::Chinese.dreamed(&organized(4, 1, 2, false, 65_000)),
@@ -132,7 +132,7 @@ fn nothing_says_so() {
     );
     assert_eq!(
         Language::Chinese.dreamed(&organized(9, 0, 0, true, 12_000)),
-        "已整理：检查 9 条，没有要改的，摘要已更新，用时 12s"
+        "已整理：检查 9 条，不需要修改，摘要已更新，用时 12s"
     );
     assert_eq!(
         Language::English.dreamed(&organized(4, 0, 2, true, 12_000)),

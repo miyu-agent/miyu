@@ -78,7 +78,7 @@ async fn each_step_is_one_line_before_the_answer() {
     assert_eq!(
         screen,
         format!(
-            "→ 读取 notes.md · 3 行\n→ 读取 missing.md · 出错：没有这个文件\n← 写入 {outside} · 覆盖，1 行\n$ git reset --hard · 没做：需要确认，无人确认\n\n读完了。\n· 输入 500 · 命中缓存 200（40%）· 输出 50\nmiyu: 警告：1 步需要确认，已跳过\n提示：在终端界面中运行可以确认\n"
+            "→ 读取 notes.md · 3 行\n→ 读取 missing.md · 出错：文件不存在\n← 写入 {outside} · 覆盖，1 行\n$ git reset --hard · 未执行：需要确认，无人确认\n\n读完了。\n· 输入 500 · 命中缓存 200（40%）· 输出 50\nmiyu: 警告：1 步需要确认，已跳过\n提示：在终端界面中运行可以确认\n"
         ),
         "工作区里的写相对的，外面的照原样；最后说有几步因为要确认没做（施工 4-9）"
     );
@@ -108,7 +108,7 @@ async fn a_command_and_an_edit_print_what_happened_under_them() {
     assert_eq!(code, 0, "{err}");
     assert_eq!(
         screen,
-        "→ 读取 notes.md · 3 行\n\n$ echo hi\nhi\n\n← 编辑 notes.md · 改了 1 处\n-二\n+贰\n\n改好了。\n· 输入 400 · 命中缓存 160（40%）· 输出 40\n"
+        "→ 读取 notes.md · 3 行\n\n$ echo hi\nhi\n\n← 编辑 notes.md · 编辑了 1 处\n-二\n+贰\n\n改好了。\n· 输入 400 · 命中缓存 160（40%）· 输出 40\n"
     );
 }
 
@@ -137,7 +137,7 @@ async fn a_directory_too_wide_is_said_first_and_once() {
     assert_eq!(
         screen,
         format!(
-            "miyu: 警告：工作目录 ~ 范围过大，改用 {}\n✱ 找文件 *.md · 一个都没找到\n\n没有。\n· 输入 200 · 命中缓存 80（40%）· 输出 20\n",
+            "miyu: 警告：工作目录 ~ 范围过大，改用 {}\n✱ 找文件 *.md · 未找到文件\n\n没有。\n· 输入 200 · 命中缓存 80（40%）· 输出 20\n",
             own[0].display()
         )
     );

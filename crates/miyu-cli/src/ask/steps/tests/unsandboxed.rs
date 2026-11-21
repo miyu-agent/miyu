@@ -47,7 +47,7 @@ fn an_unusable_sandbox_is_said_with_why_and_how_to_fix() {
             &[Platform::Linux],
             &[
                 "miyu: 警告：沙盒不可用：内核没有可用的 Landlock",
-                "提示：需要 Linux 5.13 或更新，并在启动参数 lsm= 里启用 Landlock",
+                "提示：需要 Linux 5.13 或更高版本，并在启动参数 lsm= 里启用 Landlock",
             ],
             &[
                 "miyu: warning: sandbox unavailable: the kernel has no usable Landlock",
@@ -73,7 +73,7 @@ fn an_unusable_sandbox_is_said_with_why_and_how_to_fix() {
         (
             "no_mechanism",
             &[Platform::Other],
-            &["miyu: 警告：沙盒不可用：此系统上没有可用的沙盒"],
+            &["miyu: 警告：沙盒不可用：这个系统上没有可用的沙盒"],
             &["miyu: warning: sandbox unavailable: no sandbox is available on this system"],
         ),
     ];
