@@ -2305,6 +2305,7 @@ dependencies = [
  "miyu-ipc",
  "miyu-kernel",
  "miyu-store",
+ "rustix",
  "rustls",
  "serde_json",
  "tokio",

@@ -5,7 +5,7 @@ use std::str::FromStr;
 use std::time::Duration;
 
 /// 用法，参数不对时印出来。
-pub const USAGE: &str = "用法：miyu-perf --miyu <release 的 miyu> --resources <resources/> --design <23-性能预算.md> --work <沙盒目录> --out <结果目录> [--runs 10] [--sessions 10] [--events 10000] [--tail 30] [--reloads 20] [--appends 2000] [--reply-bytes 3500] [--streams 10] [--pieces 300] [--idle-wait 200] [--gate 倍数]\n      miyu-perf --tools 20 --tree <拷进工作区的树> --miyu … --resources … --design … --work … --out … [--tools-log debug] [--tag 名]\n      miyu-perf --render <原始数据.json> --design <23-性能预算.md> --out <结果目录>\n      miyu-perf --order <清单文件> --emulator <qemu-x86_64> --tree <拷进工作区的树> --miyu … --resources … --work …";
+pub const USAGE: &str = "用法：miyu-perf --miyu <release 的 miyu> --resources <resources/> --design <23-性能预算.md> --work <沙盒目录> --out <结果目录> [--runs 10] [--sessions 10] [--events 10000] [--tail 30] [--reloads 20] [--appends 2000] [--reply-bytes 3500] [--streams 10] [--pieces 300] [--idle-wait 200] [--gate 倍数]\n      miyu-perf --tools 20 --tree <拷进工作区的树> --miyu … --resources … --design … --work … --out … [--tools-log debug] [--tag 名]\n      miyu-perf --render <原始数据.json> --design <23-性能预算.md> --out <结果目录>\n      miyu-perf --order <清单文件> --emulator <qemu-x86_64> --tree <拷进工作区的树> --miyu … --resources … --work … [--head <终端界面程序> [--head-order <终端界面的清单文件>]]";
 
 /// 量的时候必写的几个路径。
 const PATHS: [&str; 5] = ["--miyu", "--resources", "--design", "--work", "--out"];
@@ -72,6 +72,12 @@ pub struct Args {
     pub order: Option<PathBuf>,
     /// 排函数：QEMU 的用户态模拟器，例如 `qemu-x86_64`。要和 `--order` 一起写。
     pub emulator: Option<PathBuf>,
+    /// 排函数（施工 LW-6）：真的终端界面程序。给了的在照协议问的两段以后，再配着它录第三段（核心在模拟器里，
+    /// `order/head.rs`）。只在 `--order` 的跑法里认。
+    pub head: Option<PathBuf>,
+    /// 排函数：终端界面自己的清单写到哪（施工 LW-6）。给了的再录第四段（终端界面在模拟器里）；要和 [`Args::head`] 一起写。
+    /// 只写 `--head` 的不录第四段：终端界面钉的提交还不认清单时，`cargo xtask dist` 只排核心。
+    pub head_order: Option<PathBuf>,
 }
 
 /// 读命令行参数（不含程序名）。
@@ -104,6 +110,8 @@ pub fn parse(words: &[String]) -> Result<Args, String> {
         tag: None,
         order: None,
         emulator: None,
+        head: None,
+        head_order: None,
     };
     let mut given = Vec::new();
     let mut words = words.iter();
@@ -135,12 +143,20 @@ pub fn parse(words: &[String]) -> Result<Args, String> {
             "--tag" => args.tag = Some(value.clone()),
             "--order" => args.order = Some(value.into()),
             "--emulator" => args.emulator = Some(value.into()),
+            "--head" => args.head = Some(value.into()),
+            "--head-order" => args.head_order = Some(value.into()),
             _ => return Err(format!("不认识 {flag}\n{USAGE}")),
         }
         given.push(flag.as_str());
     }
     if args.order.is_some() != args.emulator.is_some() {
         return Err(format!("--order 要和 --emulator 一起写\n{USAGE}"));
+    }
+    if args.head_order.is_some() && args.head.is_none() {
+        return Err(format!("--head-order 要和 --head 一起写\n{USAGE}"));
+    }
+    if args.head.is_some() && args.order.is_none() {
+        return Err(format!("--head 只在 --order 的跑法里认\n{USAGE}"));
     }
     let needed = if args.order.is_some() {
         &ORDER_PATHS[..]

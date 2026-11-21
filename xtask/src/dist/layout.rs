@@ -192,6 +192,25 @@ pub(super) fn copy_tree(from: &Path, to: &Path, skip: &[&str]) -> Result<(), Str
     Ok(())
 }
 
+/// 把重新编过的程序 `program` 拷进搭好的目录 `dir`，盖掉同名的那一份、带上执行位（施工 LW-6：排函数照新清单重链以后）：
+/// 交回目录里的那一份。
+pub(super) fn replace(program: &Path, dir: &Path) -> Result<PathBuf, String> {
+    let name = program
+        .file_name()
+        .ok_or_else(|| format!("{} 不是文件", program.display()))?;
+    let to = dir.join(name);
+    if !to.is_file() {
+        return Err(format!(
+            "{} 里没有 {}，不是搭好的目录",
+            dir.display(),
+            name.to_string_lossy()
+        ));
+    }
+    copy(program, &to)?;
+    executable(&to)?;
+    Ok(to)
+}
+
 /// 程序带上执行位（Unix）。
 pub(super) fn executable(file: &Path) -> Result<(), String> {
     #[cfg(unix)]

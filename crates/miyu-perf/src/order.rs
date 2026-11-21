@@ -11,13 +11,21 @@
 //!    模型目录的摘要缓存好，后面录的是用户平常的样子（第三次启动才是稳定的）。
 //! 2. 第一段（模拟器里）：见 [`script::first`]。
 //! 3. 第二段（模拟器里，同一个数据根）：见 [`script::second`]。
-//! 4. 两段的日志各一个文件，放在沙盒目录下；清单写完删掉（一份几十 MB）。
+//! 4. 带了 `--head` 的（施工 LW-6）：再配着真的终端界面录第三段（核心在模拟器里），日志接在核心清单后面；另带了
+//!    `--head-order` 的再录第四段（终端界面在模拟器里），日志是终端界面自己的清单，写进 `--head-order`。见 `order/head.rs`。
+//! 5. 每段的日志各一个文件，放在沙盒目录下；清单写完删掉（一份几十 MB）。
 
+#[cfg(unix)]
+mod head;
 mod listing;
+#[cfg(unix)]
+mod screen;
 mod script;
+#[cfg(unix)]
+mod terminal;
 
 use std::io::BufReader;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::args::Args;
@@ -81,20 +89,77 @@ pub async fn record(args: &Args, order: &Path, emulator: &Path, tree: &Path) -> 
     let second_base = second_base?;
     second.map_err(|e| format!("第二段：{e}"))?;
 
-    let symbols = Symbols::parse(&nm(&args.miyu)?);
+    let [first_log, second_log] = logs;
+    let mut core = vec![(first_log, first_base), (second_log, second_base)];
+    let mut head_log = None;
+    if let Some(program) = &args.head {
+        let fourth = args.head_order.is_some();
+        let (third, fourth) =
+            with_head(args, &sandbox, &mut fake, emulator, &trust, program, fourth).await?;
+        core.push(third);
+        head_log = args.head_order.as_deref().zip(fourth);
+    }
+    write(&args.miyu, &core, order)?;
+    if let (Some(program), Some((head_order, log))) = (&args.head, head_log)
+        && write(program, &[log], head_order)? == 0
+    {
+        return Err(format!(
+            "终端界面的清单是空的（{}）：第四段的日志里一个终端界面的函数都没认出来",
+            head_order.display()
+        ));
+    }
+    Ok(())
+}
+
+/// 配着真的终端界面录第三段、`fourth` 的再录第四段（施工 LW-6，`order/head.rs`）：交回核心、终端界面各自的日志和装载起点。
+#[cfg(unix)]
+async fn with_head(
+    args: &Args,
+    sandbox: &Sandbox,
+    fake: &mut Fake,
+    emulator: &Path,
+    trust: &Path,
+    program: &Path,
+    fourth: bool,
+) -> Result<((PathBuf, u64), Option<(PathBuf, u64)>), String> {
+    let logs = head::record(args, sandbox, fake, emulator, trust, program, fourth).await?;
+    Ok((logs.core, logs.head))
+}
+
+/// 伪终端只在 Unix 上开（`order/terminal.rs`）；排函数本来也只在 Linux 上做。
+#[cfg(not(unix))]
+async fn with_head(
+    _: &Args,
+    _: &Sandbox,
+    _: &mut Fake,
+    _: &Path,
+    _: &Path,
+    _: &Path,
+    _: bool,
+) -> Result<((PathBuf, u64), Option<(PathBuf, u64)>), String> {
+    Err("配着终端界面录（--head）只在 Unix 上做".to_string())
+}
+
+/// 照 `program` 的符号表读几段日志（照先后，各带程序在那一段里的装载起点），清单写进 `order`，日志删掉：交回清单里几个函数。
+///
+/// # Errors
+///
+/// `nm` 不在、日志读不了、清单写不进、日志删不掉。
+fn write(program: &Path, logs: &[(PathBuf, u64)], order: &Path) -> Result<usize, String> {
+    let symbols = Symbols::parse(&nm(program)?);
     let mut listing = Listing::new(&symbols);
-    for (log, base) in logs.iter().zip([first_base, second_base]) {
+    for (log, base) in logs {
         let file =
             std::fs::File::open(log).map_err(|e| format!("读不了 {}：{e}", log.display()))?;
         listing
-            .read(base, BufReader::new(file))
+            .read(*base, BufReader::new(file))
             .map_err(|e| format!("读不了 {}：{e}", log.display()))?;
     }
     let names = listing.names();
     let mut text = names.join("\n");
     text.push('\n');
     std::fs::write(order, text).map_err(|e| format!("清单写不进 {}：{e}", order.display()))?;
-    for log in &logs {
+    for (log, _) in logs {
         std::fs::remove_file(log).map_err(|e| format!("删不掉 {}：{e}", log.display()))?;
     }
     eprintln!(
@@ -104,7 +169,7 @@ pub async fn record(args: &Args, order: &Path, emulator: &Path, tree: &Path) -> 
         listing.bytes() / 1024,
         order.display()
     );
-    Ok(())
+    Ok(names.len())
 }
 
 /// `nm --defined-only --numeric-sort -S <program>` 的输出。

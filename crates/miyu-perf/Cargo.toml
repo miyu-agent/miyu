@@ -28,6 +28,9 @@ h2 = "0.4"
 http = "1"
 rustls = { version = "0.23", default-features = false, features = ["std", "tls12", "ring"] }
 tokio-rustls = { version = "0.26", default-features = false }
+# 排函数配着真的终端界面录（施工 LW-6，`src/order/terminal.rs`）：开一对伪终端、设窗口大小，不用 `unsafe`，同
+# `crates/miyu/tests/support/pty.rs`；`termios`、`pty` 两个模块本身就只在 Unix 编。工作区里本来就有的同一版。
+rustix = { version = "1", features = ["termios", "pty"] }
 # 假模型服务和连核心都是异步的，跑在同一个进程里，时刻可以直接比。
 tokio = { version = "1", features = ["io-util", "macros", "net", "rt-multi-thread", "sync", "time"] }
 

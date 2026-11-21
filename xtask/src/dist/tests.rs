@@ -265,6 +265,41 @@ fn staging_lays_out_programs_resources_heads_and_licenses() {
     );
 }
 
+/// 排函数照新清单重编以后（施工 LW-6）：程序盖掉搭好的目录里同名的那一份，带执行位；目录里本来没有的不拷（不是搭好的目录）。
+#[test]
+fn a_relinked_program_replaces_the_staged_one() {
+    let scratch = Scratch::new("replace");
+    let sources = sources(&scratch);
+    let dir = scratch.0.join("out/miyu-1.0.0-linux-x86_64");
+    stage(&sources, &dir).unwrap();
+    let relinked = scratch.put("relinked/miyu-tui", "tui program, ordered");
+    let shipped = replace(&relinked, &dir).unwrap();
+    assert_eq!(shipped, dir.join("miyu-tui"));
+    assert_eq!(
+        fs::read_to_string(&shipped).unwrap(),
+        "tui program, ordered"
+    );
+    assert_eq!(
+        fs::read_to_string(dir.join("miyu")).unwrap(),
+        "core program"
+    );
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        assert_eq!(
+            fs::metadata(&shipped).unwrap().permissions().mode() & 0o777,
+            0o755
+        );
+    }
+    let stray = scratch.put("relinked/miyu-other", "x");
+    assert!(
+        replace(&stray, &dir)
+            .unwrap_err()
+            .contains("不是搭好的目录")
+    );
+    assert!(!dir.join("miyu-other").exists());
+}
+
 #[test]
 fn a_head_folder_already_in_the_core_resources_is_refused() {
     let scratch = Scratch::new("clash");
@@ -410,85 +445,4 @@ fn head_builds_drop_the_outer_cargo_settings() {
     );
 }
 
-/// 在 `dir` 里跑一条 git，要成功，交回输出（去掉末尾换行）。
-fn git_in(dir: &Path, args: &[&str]) -> String {
-    let done = Command::new("git")
-        .arg("-C")
-        .arg(dir)
-        .args([
-            "-c",
-            "user.name=t",
-            "-c",
-            "user.email=t@t",
-            "-c",
-            "commit.gpgsign=false",
-        ])
-        .args(args)
-        .output()
-        .expect("git 起得来");
-    assert!(
-        done.status.success(),
-        "git {args:?}：{}",
-        String::from_utf8_lossy(&done.stderr)
-    );
-    String::from_utf8(done.stdout)
-        .unwrap()
-        .trim_end()
-        .to_string()
-}
-
-#[test]
-fn fetching_checks_out_the_pin_cleans_strays_and_keeps_target() {
-    let scratch = Scratch::new("fetch");
-    let upstream = scratch.0.join("upstream");
-    fs::create_dir_all(&upstream).unwrap();
-    git_in(&upstream, &["init", "--quiet", "-b", "main"]);
-    scratch.put("upstream/tui/package.toml", "one");
-    git_in(&upstream, &["add", "-A"]);
-    git_in(&upstream, &["commit", "--quiet", "-m", "one"]);
-    let first = git_in(&upstream, &["rev-parse", "HEAD"]);
-    git_in(&upstream, &["tag", "v0.1.0"]);
-    let dir = scratch.0.join("heads/tui");
-    let pinned = |rev: &str| Pin {
-        id: "tui".to_string(),
-        repo: upstream.to_string_lossy().into_owned(),
-        rev: rev.to_string(),
-    };
-    fetch(&dir, &pinned(&first)).unwrap();
-    assert_eq!(git_in(&dir, &["rev-parse", "HEAD"]), first);
-    assert_eq!(
-        fs::read_to_string(dir.join("tui/package.toml")).unwrap(),
-        "one"
-    );
-    assert_eq!(
-        tracked(&dir, "tui").unwrap(),
-        vec![PathBuf::from("tui/package.toml")]
-    );
-
-    // 上游在克隆以后又提交了一份：要先拉才检得出来。
-    scratch.put("upstream/tui/package.toml", "two");
-    scratch.put("upstream/tui/extra.json", "{}");
-    git_in(&upstream, &["add", "-A"]);
-    git_in(&upstream, &["commit", "--quiet", "-m", "two"]);
-    let second = git_in(&upstream, &["rev-parse", "HEAD"]);
-
-    // 再取一次换成第二份：拉、检出、清掉多余的，target/ 留着。
-    scratch.put("heads/tui/stray.txt", "left over");
-    scratch.put("heads/tui/target/release/keep", "built");
-    fetch(&dir, &pinned(&second)).unwrap();
-    assert_eq!(git_in(&dir, &["rev-parse", "HEAD"]), second);
-    assert!(!dir.join("stray.txt").exists(), "多余的清掉");
-    assert!(dir.join("target/release/keep").exists(), "target/ 留着");
-    assert_eq!(
-        tracked(&dir, "tui").unwrap(),
-        vec![
-            PathBuf::from("tui/extra.json"),
-            PathBuf::from("tui/package.toml")
-        ]
-    );
-
-    // 标签也认；钉的不在的报错。
-    fetch(&dir, &pinned("v0.1.0")).unwrap();
-    assert_eq!(git_in(&dir, &["rev-parse", "HEAD"]), first);
-    assert!(fetch(&dir, &pinned("v9.9.9")).is_err());
-}
+mod fetching;

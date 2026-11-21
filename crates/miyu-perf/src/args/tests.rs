@@ -128,3 +128,37 @@ fn recording_the_order_needs_an_emulator_and_a_tree() {
     .unwrap_err();
     assert!(error.starts_with("缺 --resources\n"), "{error}");
 }
+
+/// 排函数配着真的终端界面（施工 LW-6）：`--head-order` 要和 `--head` 一起写（只写 `--head` 的只录第三段），只在 `--order`
+/// 的跑法里认；不写的和原来一样。
+#[test]
+fn the_head_goes_with_its_own_order_and_only_when_recording() {
+    const ORDER: &str =
+        "--miyu /m --resources /r --work /w --tree /t --order /o.txt --emulator qemu-x86_64";
+    let args = parse(&words(ORDER)).unwrap();
+    assert_eq!((args.head, args.head_order), (None, None));
+    let args = parse(&words(&format!(
+        "{ORDER} --head /d/miyu-tui --head-order /tui.txt"
+    )))
+    .unwrap();
+    assert_eq!(args.head, Some(PathBuf::from("/d/miyu-tui")));
+    assert_eq!(args.head_order, Some(PathBuf::from("/tui.txt")));
+    let args = parse(&words(&format!("{ORDER} --head /d/miyu-tui"))).unwrap();
+    assert_eq!(
+        (args.head, args.head_order),
+        (Some(PathBuf::from("/d/miyu-tui")), None)
+    );
+    let error = parse(&words(&format!("{ORDER} --head-order /tui.txt"))).unwrap_err();
+    assert!(
+        error.starts_with("--head-order 要和 --head 一起写\n"),
+        "{error}"
+    );
+    let error = parse(&words(&format!(
+        "{PATHS_GIVEN} --head /d/miyu-tui --head-order /tui.txt"
+    )))
+    .unwrap_err();
+    assert!(
+        error.starts_with("--head 只在 --order 的跑法里认\n"),
+        "{error}"
+    );
+}

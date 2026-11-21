@@ -89,7 +89,7 @@ pub(crate) fn target_dir(root: &Path, cargo: &str) -> Result<PathBuf, String> {
 }
 
 /// 在头的检出里跑的 cargo：照 PATH 找（rustup 的代理认那个仓库的 `rust-toolchain.toml`），外面这个 cargo 的环境变量不带。
-pub(super) fn head_cargo(dir: &Path) -> Command {
+pub(crate) fn head_cargo(dir: &Path) -> Command {
     let mut command = Command::new("cargo");
     command.current_dir(dir);
     for (name, _) in std::env::vars_os() {

@@ -124,6 +124,9 @@ impl Sandbox {
         if let Some(trust) = launch.trust {
             command.env("SSL_CERT_FILE", trust);
         }
+        if let Some(home) = launch.home {
+            command.envs(home_vars(home));
+        }
         let mut child = command
             .args(["core", "--idle-seconds", "3600"])
             .env("MIYU_HOME", self.root.path())
@@ -205,6 +208,24 @@ pub struct Launch<'a> {
     pub traced: Option<Traced<'a>>,
     /// 核心的 `SSL_CERT_FILE`（施工 LW-1）：假模型 HTTPS 的口要核心信任测试证书；没给的不设，照宿主的环境。
     pub trust: Option<&'a Path>,
+    /// 家目录指进沙盒（施工 LW-6，[`home_vars`]）：配着真的终端界面录的两段，核心和终端界面看到同一个家目录；没给的照宿主的。
+    pub home: Option<&'a Path>,
+}
+
+/// 家目录 `home` 和跟着它的几个目录（施工 LW-6）：`HOME`、`XDG_CONFIG_HOME`、`XDG_DATA_HOME`、`XDG_STATE_HOME`，
+/// 系统加装的软件包只看 `MIYU_DISTRO_PACKAGES`（一个空目录，宿主装过的 Miyu 软件包不混进来）。`XDG_CACHE_HOME` 不在里面：
+/// 核心的照 [`Sandbox::start_with`] 放进数据根，终端界面的由调用方另给。`MIYU_DISTRO_PACKAGES` 要先建好。
+///
+/// `TMPDIR` 不指进沙盒：数据根的路径长了，核心的套接字放不进数据根的 `run/`，要退到临时目录下（`miyu-ipc` 的 `place.rs`），
+/// 临时目录也在沙盒里的话照样超过套接字路径的上限，核心起不来（工作树的路径带中文时实测撞上过）。别的几场也是照宿主的。
+pub fn home_vars(home: &Path) -> [(&'static str, PathBuf); 5] {
+    [
+        ("HOME", home.to_path_buf()),
+        ("XDG_CONFIG_HOME", home.join(".config")),
+        ("XDG_DATA_HOME", home.join(".local").join("share")),
+        ("XDG_STATE_HOME", home.join(".local").join("state")),
+        ("MIYU_DISTRO_PACKAGES", home.join("distro")),
+    ]
 }
 
 /// 在模拟器里起核心（施工 LW-1）：`<emulator> -d in_asm -D <log> <miyu> core …`。QEMU 的用户态模拟器头一回要执行一块代码时
@@ -237,13 +258,7 @@ impl Running {
     ///
     /// 找不到程序（路径不对）、映射读不了（不是 Linux）、映射里没有它。
     pub fn base(&self, program: &Path) -> Result<u64, String> {
-        let program = program
-            .canonicalize()
-            .map_err(|e| format!("找不到 {}：{e}", program.display()))?;
-        let maps = format!("/proc/{}/maps", self.pid());
-        let text = std::fs::read_to_string(&maps).map_err(|e| format!("读不了 {maps}：{e}"))?;
-        load_base(&text, &program)
-            .ok_or_else(|| format!("{maps} 里没有 {} 的映射", program.display()))
+        base_of(self.pid(), program)
     }
 
     fn kill(&mut self) {
@@ -281,6 +296,21 @@ pub fn load_base(maps: &str, program: &Path) -> Option<u64> {
         }
         u64::from_str_radix(range.split_once('-')?.0, 16).ok()
     })
+}
+
+/// 进程 `pid` 里程序 `program` 装在哪个地址起（施工 LW-1，[`Running::base`]；施工 LW-6 也给伪终端里在模拟器中跑的终端界面用）：
+/// 读 `/proc/<进程号>/maps`。
+///
+/// # Errors
+///
+/// 找不到程序（路径不对）、映射读不了（不是 Linux）、映射里没有它。
+pub fn base_of(pid: u32, program: &Path) -> Result<u64, String> {
+    let program = program
+        .canonicalize()
+        .map_err(|e| format!("找不到 {}：{e}", program.display()))?;
+    let maps = format!("/proc/{pid}/maps");
+    let text = std::fs::read_to_string(&maps).map_err(|e| format!("读不了 {maps}：{e}"))?;
+    load_base(&text, &program).ok_or_else(|| format!("{maps} 里没有 {} 的映射", program.display()))
 }
 
 /// 运行日志的最后几行：核心起不来时附在报错后面。
