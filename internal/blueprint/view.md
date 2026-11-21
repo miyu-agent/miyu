@@ -30,6 +30,7 @@
 | `crates/miyu-view/tests/forged.rs`（施工 FT-1） | 内核截掉了回答后面模型编的下一轮（`kernel/session.md`「截掉模型编的下一轮」）：流式时照增量画、看得到编的那一段，回复落了盘那一条正文换成截过的；整块都是编的那一条拿掉；视图流和翻页最后一样 |
 | `crates/miyu-view/tests/deadline.rs`（施工 CD-1） | 要人确认的那一步带 `expires_at`，到时内核替人拒以后 `decision` 是 `deny`、`by` 是内核、`expires_at` 照旧留着；没配等多久的不带；翻页和视图流一样 |
 | `crates/miyu-view/tests/status.rs`（9-8 补上） | 闲着、在跑、在等人（确认、提问到了结）；正在写、在调工具；重试和都在冷却出现又消失；上下文用了多少；任务从派出到了结、停了的为什么 |
+| `crates/miyu-view/tests/doing.rs`（施工 LM-25） | 晚订阅只拿到落了盘的：工具在跑时 `doing` 是 `tool`、对着同一步，和一直订阅着的一样；两件并行、一件先完对着还在跑的那件；结果到了、下一块还没开始两边都不写 |
 | `crates/miyu-endpoint/src/diffs/tests.rs`（施工 V-18） | `view.detail` 的差异和条目 `diff` 的真数共用的两边：效果里写着、哈希对得上的原文先用，一个 blob 都没有也算得出；新建的改前当空的；原文和哈希对不上的当没写、照哈希取 blob；以前的日志没写原文的照旧取 blob；不是 UTF-8、太大、取不出来各说原因 |
 | `crates/miyu-endpoint/tests/view_tree.rs`（9-8 补下） | 派出去的子代理在跑一轮：那一项带 `busy`、`spawned`、`running_deep`、`usage`，整份带 `running_deep`、`usage_tree`；子代理派了孙代理也数进来；连子代理一起的用量（等「子代理那一次算进树里」，不等树上恰好是哪个数：中间数可能并进一次推送，施工 BUG-4） |
 | `crates/miyu-endpoint/tests/view_status.rs`（9-8 补上） | 订阅回应带整份状态；跑一轮推 `running` 再推 `idle`、用量跟着变、没变的不推；切权限也推 |
@@ -179,7 +180,7 @@
 | `waiting` | `[{what: "approve"\|"ask", entry, call, nested?}]`：没了结的确认、提问，照先后；脚本里调的确认带 `nested`（施工 M-7 上）；要确认的工具和参数、题目在那一步的条目里（`args`、`approval`）。没有的不写 |
 | `since` | 这一轮开始的时刻；用时由头算。没在跑的不写 |
 | `waited_ms`、`waiting_since` | 等人不算用时（施工 9-8 十四补，项目主人 2026-10-23 定，各处统一）：`waited_ms` 是这一轮等人等完了的那几段一共多少毫秒，没等过的不写；`waiting_since` 是正在等的这一段从什么时候起，没在等的不写。等人照内核的事件认：`tool.approval_requested` 起、定了（到时内核替人拒的也算，施工 CD-1）或有了结果止，`question.asked` 起、答了或有了结果止；等的从没有到有时起一段、全了结时止，同时等几件只算一段。头照「现在 − `since` − `waited_ms` − (现在 − `waiting_since`)」算，等人时计时停住。条目里的用时（`tool`、`group`、`end` 的 `took_ms`）照同一个函数刨掉这几段（内核的 `miyu_kernel::waits::Waits`，施工 E-M 下挪进内核，9-8 十四补修起视图也调它，内核记的用时一个口径） |
-| `doing` | 在跑时正在做什么：`{what: "thinking"\|"writing"\|"tool", entry}`；`{what: "retrying", attempt, limit, at, class, message, status?, failover?}`（`at` 是再试的时刻，照 `status` 瞬时事件）；`{what: "compacting", entry, trigger, written, expected}`（`trigger` 是 `auto`、`manual`、`overflow`，施工 6-11 三补：头照它分，自动的只写一行，手动的画进度）。没在跑的不写 |
+| `doing` | 在跑时正在做什么：`{what: "thinking"\|"writing"\|"tool", entry}`；`{what: "retrying", attempt, limit, at, class, message, status?, failover?}`（`at` 是再试的时刻，照 `status` 瞬时事件）；`{what: "compacting", entry, trigger, written, expected}`（`trigger` 是 `auto`、`manual`、`overflow`，施工 6-11 三补：头照它分，自动的只写一行，手动的画进度）。工具在跑（回复落了盘、结果还没到）时是 `tool`，对着最后调的、还没结果的那一步，晚订阅只拿到落了盘的也一样；都有了结果不写，等下一块开始（施工 LM-25）。没在跑的不写 |
 | `context` | `{window?, compaction_line?, used?}`：限额同订阅回应的 `limits`；`used` 是最近一次主请求的输入（三项加起来）加输出（施工 9-8 十四补，终端、核心主会话 2026-10-22 定：她回的下一次请求要带上，算上更接近这一刻占了多少），压完的照 `compaction.done` 的 `after`，压缩落了盘还没有新请求的不写 |
 | `speed` | `{output, ms}`：最近一次主请求的输出 token、首字到结束的毫秒数（没报首字的照整次）；每秒多少由头算 |
 | `cooling_until` | 候选都在冷却时最早恢复的时刻（照 `class: cooling` 的重试算），说成了一次就不写。只认订阅以后看到的 |

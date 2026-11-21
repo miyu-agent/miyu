@@ -4,6 +4,7 @@ mod support;
 
 mod deadline;
 mod denied;
+mod doing;
 mod forged;
 mod hosted;
 mod hosted_stream;

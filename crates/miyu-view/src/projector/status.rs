@@ -2,9 +2,11 @@
 //! 最近一次的速度、都在冷却到几时、任务表；[`Projector::status`] 照它们和在跑的这一轮交出整份。
 
 use miyu_kernel::accumulate::Kind;
+use miyu_kernel::block::Block as Content;
 use miyu_kernel::event::{
     Body as EventBody, CallResult, ChildReason, ChildReported, Effect, ErrorClass, Event,
-    JobReason, JobReported, ModelCalled, Piece, Purpose, Transient, TransientBody,
+    JobReason, JobReported, MessageAssistant, ModelCalled, Piece, Purpose, Transient,
+    TransientBody,
 };
 use miyu_kernel::id::{CallId, JobId};
 use miyu_kernel::time::Timestamp;
@@ -26,6 +28,8 @@ pub(super) struct Tracking {
     cooling_until: Option<Timestamp>,
     preparing: Option<Preparing>,
     jobs: Vec<JobRow>,
+    /// 落了盘、还没有结果的工具调用，照回复里的先后（施工 LM-25）：晚订阅的只拿到落了盘的，`doing` 照它补上在跑的那一步。
+    running: Vec<CallId>,
     /// 这一轮等人的那几段（施工 9-8 十四补；9-8 十四补修起用内核的 [`Waits`]，内核记用时也照它，一个口径）。
     waits: Waits,
     /// 脚本里调的工具（施工 M-5 上）：每个父级下面见过的。
@@ -73,8 +77,10 @@ impl Projector {
             }
             EventBody::ApprovalDecided(decided) => self.settled(decided.call_id, event.at),
             EventBody::QuestionAnswered(answered) => self.settled(answered.call_id, event.at),
+            EventBody::MessageAssistant(reply) => self.tools_running(reply),
             EventBody::ToolResult(result) => {
                 self.settled(result.call_id, event.at);
+                self.tool_done(result.call_id);
                 self.track_effects(event.at, &result.effects);
             }
             EventBody::JobReported(reported) => self.job_ended(event.at, reported),
@@ -82,11 +88,13 @@ impl Projector {
             EventBody::ToolNested(nested) => self.nested_settled(nested),
             EventBody::TurnStarted(_) => {
                 self.tracking.doing = None;
+                self.tracking.running.clear();
                 self.tracking.waits.clear();
             }
             EventBody::TurnEnded(_) => {
                 self.tracking.waiting.clear();
                 self.tracking.doing = None;
+                self.tracking.running.clear();
                 self.tracking.waits.clear();
             }
             EventBody::ModelCalled(called) => {
@@ -204,6 +212,35 @@ impl Projector {
     fn settled(&mut self, call: CallId, at: Timestamp) {
         self.tracking.waiting.retain(|waiting| waiting.call != call);
         self.tracking.waits.settled(&call, at);
+    }
+
+    /// 回复落了盘（施工 LM-25）：它调的工具开始跑，`doing` 是最后调的那一步，和流式时最后开的那一块一样。没调工具的不动。
+    fn tools_running(&mut self, reply: &MessageAssistant) {
+        let calls = reply.blocks.iter().filter_map(|block| match block {
+            Content::ToolCall(call) => Some(call.call_id),
+            _ => None,
+        });
+        let before = self.tracking.running.len();
+        self.tracking.running.extend(calls);
+        if self.tracking.running.len() > before {
+            self.tracking.doing = self.running_step();
+        }
+    }
+
+    /// 一次调用有了结果（施工 LM-25）：`doing` 正对着它的，换成还在跑的最后一步，都跑完了不写，等下一块开始。
+    fn tool_done(&mut self, call: CallId) {
+        self.tracking.running.retain(|running| *running != call);
+        let done = self.calls.get(&call);
+        if matches!(&self.tracking.doing, Some(Doing::Tool { entry }) if Some(entry) == done) {
+            self.tracking.doing = self.running_step();
+        }
+    }
+
+    /// 还在跑的最后一步。
+    fn running_step(&self) -> Option<Doing> {
+        let call = self.tracking.running.last()?;
+        let entry = self.calls.get(call)?.clone();
+        Some(Doing::Tool { entry })
     }
 
     /// `from` 到 `to` 刨掉这一轮等人的那几段，多少毫秒（施工 9-8 十四补，项目主人 2026-10-23 定等人不算用时）：一步、一段、
