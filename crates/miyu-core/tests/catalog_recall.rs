@@ -18,7 +18,7 @@ use miyu_core::models::catalog::{FILE, META, Meta};
 use miyu_core::models::digest;
 use miyu_core::models::recall::Version;
 use miyu_core::models::refresh::{Refreshed, Refresher};
-use miyu_core::models::{begin, read_early};
+use miyu_core::models::{begin, read_early, settled};
 use miyu_http::testkit::{Piece, Reply, Server};
 use miyu_http::{Proxy, fetcher};
 use miyu_models::catalog::Recall;
@@ -67,8 +67,10 @@ impl Dir {
 }
 
 impl Drop for Dir {
+    // 先等后台写整理好的那一份的线程写完再删（施工 FL-13）：它在读完目录以后才起，测试走完时可能还没写，目录删了它会建回来。
     #[expect(clippy::let_underscore_must_use, reason = "删不掉就留在临时目录里")]
     fn drop(&mut self) {
+        settled();
         let _ = std::fs::remove_dir_all(&self.0);
     }
 }

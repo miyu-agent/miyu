@@ -173,6 +173,14 @@ pub(crate) fn dirs(root: &miyu_store::root::DataRoot) -> ModelDirs {
     }
 }
 
+/// 等后台读目录的、写整理好的那一份的线程都做完（施工 FL-13）：只有测试用（`testkit` 特性）。测试的夹具删临时目录之前调：
+/// 写整理好的那一份的线程（[`digest`]）是读完目录才起的，[`ModelData::wait`] 等到的时候它可能还没写；夹具先删了目录，它会
+/// 把目录一层层建回来、留在临时目录里。核心自己放锁之前等的是同一处（`pending.rs`）。会阻塞到都做完。
+#[cfg(any(test, feature = "testkit"))]
+pub fn settled() {
+    crate::pending::finish();
+}
+
 /// 造好路由以后（施工 V-2 下）：在阻塞线程里等 [`read_early`] 的目录、读用出来的，读完放行要它的（造会话、载入、
 /// `model.list`）。不等写 `ready`。交回读好的图标表，[`follow`] 照它在后台拉图标。
 ///
