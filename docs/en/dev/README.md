@@ -14,7 +14,7 @@ This part is for developers who want to extend Miyu, connect to it, or change it
 | Put your own things on the terminal UI or the web UI | [Putting things on the screen](ui-surfaces.md) |
 | Write a theme or a skin | [Writing themes and appearance](themes.md) |
 | Write a new head (a head is an interface program that connects to the core, such as the terminal UI or the web UI) | [Writing a head](head.md) |
-| Write a plugin for a chat platform | [Writing plugins for chat platform access](https://github.com/miyu-agent/miyu-im/blob/main/docs/authors/README.md) in the `miyu-im` repository |
+| Write a plugin for a chat platform | [Writing plugins for chat platform access](https://github.com/miyu-agent/miyu-im/blob/main/docs/authors/README.en.md) in the `miyu-im` repository |
 | Write an extension with the Python or Rust development kit | [miyu-agent/miyu-sdk](https://github.com/miyu-agent/miyu-sdk) |
 | Look up a protocol method's params, reply and errors | [Protocol reference](../reference/README.md) |
 | Understand which processes, crates and repositories make up Miyu | [Architecture](architecture.md) |
