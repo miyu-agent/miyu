@@ -323,7 +323,7 @@ async fn features_with_several_tools_list_them() {
         tools("sessions"),
         json!([
             {"id": "sessions", "name": "列出会话", "on": true},
-            {"id": "send_message", "name": "发消息", "on": true},
+            {"id": "send_message", "name": "跨会话消息", "on": true},
         ])
     );
     assert_eq!(

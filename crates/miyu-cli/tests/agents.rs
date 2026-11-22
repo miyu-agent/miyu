@@ -193,7 +193,7 @@ async fn a_subagent_messaged_after_it_reported_is_waited_for_again() {
     assert_eq!(code, 0, "{err}");
     assert_eq!(
         screen,
-        "↗ 派子代理 查 A · 已派出：j1\n\n派出去了。\n· 等待 1 个子代理回报…（按 Ctrl+C 停止等待）\n· j1「查 A」已回报\n↗ 发消息 j1 · 已送达：j1\n\n答它了。\n· j1「查 A」已回报\n\nA 加好了。\n· 输入 500 · 命中缓存 200（40%）· 输出 50\n",
+        "↗ 子代理 查 A · 已派出：j1\n\n派出去了。\n· 等待 1 个子代理回报…（按 Ctrl+C 停止等待）\n· j1「查 A」已回报\n↗ 跨会话消息 j1 · 已送达：j1\n\n答它了。\n· j1「查 A」已回报\n\nA 加好了。\n· 输入 500 · 命中缓存 200（40%）· 输出 50\n",
         "答了它以后还在等，它再报、叫醒的那一轮也印了"
     );
 }
@@ -310,7 +310,7 @@ async fn ctrl_c_while_waiting_leaves_and_the_late_report_is_only_recorded() {
     assert_eq!(code, 3, "{err}");
     assert_eq!(
         screen,
-        "↗ 派子代理 查 A · 已派出：j1\n\n派出去了。\n· 等待 1 个子代理回报…（按 Ctrl+C 停止等待）\n· 输入 200 · 命中缓存 80（40%）· 输出 20\n· 已停止等待，子代理仍在后台运行，下次 miyu ask -c 时会收到结果\n"
+        "↗ 子代理 查 A · 已派出：j1\n\n派出去了。\n· 等待 1 个子代理回报…（按 Ctrl+C 停止等待）\n· 输入 200 · 命中缓存 80（40%）· 输出 20\n· 已停止等待，子代理仍在后台运行，下次 miyu ask -c 时会收到结果\n"
     );
     // 头走了才回报：只记下，不叫醒她。
     let main = home.oneshot().await;
@@ -348,7 +348,7 @@ async fn the_timeout_while_waiting_leaves_with_3() {
     assert_eq!(code, 3, "{err}");
     assert_eq!(
         screen,
-        "↗ 派子代理 查 A · 已派出：j1\n\n派出去了。\n· 等待 1 个子代理回报…（按 Ctrl+C 停止等待）\n· 输入 200 · 命中缓存 80（40%）· 输出 20\n· 已到等待时限，未回报的子代理仍在后台运行\n"
+        "↗ 子代理 查 A · 已派出：j1\n\n派出去了。\n· 等待 1 个子代理回报…（按 Ctrl+C 停止等待）\n· 输入 200 · 命中缓存 80（40%）· 输出 20\n· 已到等待时限，未回报的子代理仍在后台运行\n"
     );
 }
 

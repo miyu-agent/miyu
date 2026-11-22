@@ -43,12 +43,12 @@
       "block": "command"
     },
     "history": {
-      "name": "翻记录",
+      "name": "翻历史",
       "subject": "query",
       "icon": "✱"
     },
     "subagent": {
-      "name": "派子代理",
+      "name": "子代理",
       "subject": "description",
       "icon": "↗"
     },
@@ -58,7 +58,7 @@
       "icon": "?"
     },
     "jobs": {
-      "name": "任务",
+      "name": "后台任务",
       "subject": "action",
       "icon": "≡"
     },
@@ -89,7 +89,7 @@
       "icon": "≡"
     },
     "send_message": {
-      "name": "发消息",
+      "name": "跨会话消息",
       "subject": "to",
       "icon": "↗"
     }

@@ -48,7 +48,7 @@
       "icon": "✱"
     },
     "subagent": {
-      "name": "サブエージェント起動",
+      "name": "サブエージェント",
       "subject": "description",
       "icon": "↗"
     },
@@ -58,7 +58,7 @@
       "icon": "?"
     },
     "jobs": {
-      "name": "タスク",
+      "name": "バックグラウンドタスク",
       "subject": "action",
       "icon": "≡"
     },
@@ -89,7 +89,7 @@
       "icon": "≡"
     },
     "send_message": {
-      "name": "メッセージを送る",
+      "name": "セッション間メッセージ",
       "subject": "to",
       "icon": "↗"
     }

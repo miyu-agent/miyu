@@ -44,7 +44,7 @@ In the tables below, the `In read-only` column says what the tool does after you
 | Tool | Shown as | What it does | In read-only | Shipped package | Limits |
 |---|---|---|---|---|---|
 | `shell` | `Run` | It runs a command in a shell and returns the output and exit code; it can also run the command in the background. | It runs in the sandbox, where nothing can be written anywhere. | `base-shell` | It waits 120 seconds by default and 600 seconds at most; at most 30000 characters of output are shown to the AI. See the details below. |
-| `jobs` | `Jobs` | It lists background commands and subagents, reads a command's output, or stops one of them. | It works as usual. | `base-jobs` | A background command runs at most `jobs.max_running` (default `30m`), and it is stopped when that time is up. |
+| `jobs` | `Background jobs` | It lists background commands and subagents, reads a command's output, or stops one of them. | It works as usual. | `base-jobs` | A background command runs at most `jobs.max_running` (default `30m`), and it is stopped when that time is up. |
 
 ### Subagents and between sessions
 
@@ -53,7 +53,7 @@ In the tables below, the `In read-only` column says what the tool does after you
 | `subagent` | `Subagent` | It opens another session and has a subagent do a task in the background, and when the task is done, the report comes back as a message. | It works as usual. | `base-subagent` | It takes up to 8 attachments at a time. A subagent can dispatch one more level of subagents, and no further. |
 | `advisor` | `Ask the flagship model` | When the AI is stuck, it asks a model in the flagship pool and waits for the full answer. | It works as usual. | `base-advisor` | If the flagship pool has no model, it answers `No model in the flagship pool`. |
 | `sessions` | `List sessions` | It lists your other sessions, most recently used first. | It works as usual. | `base-sessions` | It lists 20 at a time by default. |
-| `send_message` | `Send message` | It sends a message to a subagent it dispatched, to the parent session, or to another of your sessions; it can also ask to be notified once when that session becomes idle. | It works as usual. | `base-sessions` | A message can be at most 100000 characters long with at most 8 attachments. If the recipient is busy, it sees the message at its next step; if it is idle, it starts a new turn with the message. |
+| `send_message` | `Cross-session message` | It sends a message to a subagent it dispatched, to the parent session, or to another of your sessions; it can also ask to be notified once when that session becomes idle. | It works as usual. | `base-sessions` | A message can be at most 100000 characters long with at most 8 attachments. If the recipient is busy, it sees the message at its next step; if it is idle, it starts a new turn with the message. |
 | `history` | `History` | It searches and looks back at earlier content of this session, including content that was compacted away. | It works as usual. | `base-history` | It returns 20 entries at a time by default. |
 | `session_usage` | `Usage` | It shows how many tokens this session has used, how much it has cost, and how full the context is. | It works as usual. | `base-session-usage` | |
 
