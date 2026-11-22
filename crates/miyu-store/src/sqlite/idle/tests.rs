@@ -1,5 +1,5 @@
 //! 闲时合回（施工 V-28）：写过的库合一遍以后 `-wal` 是 0 字节、数据都在；SQLite 自己做完检查点以后下一次提交把 `-wal` 截回去
-//! （`journal_size_limit`）；有过提交才等得到安静；放下了的库不再合。
+//! （`journal_size_limit`）；有过提交才等得到安静；放下了的库不再合；合完放掉页缓存以后库照常读写（施工 LW-15）。
 //!
 //! 合一遍合的是这个进程里登记着的全部库，并着跑的别的测试也会合到这里的：量 `-wal` 的那几步拿着连接的锁做，合的一方排在后面。
 
@@ -175,4 +175,30 @@ fn merging_puts_the_busy_timeout_back() {
         assert_eq!(truncate(conn).expect("合得了"), Outcome::Done);
         assert_eq!(timeout(conn), before);
     });
+}
+
+/// 合完放掉页缓存（施工 LW-15）：放掉以后这个连接读到的还是原来那些行，接着写得进，再合一遍也照常。放掉了多少在这里看
+/// 不到（SQLite 不经 SQL 交出页缓存的用量），量的结果在施工单 `LW-15-库闲下来放掉页缓存.md`。
+#[test]
+fn after_merging_lets_go_of_cached_pages_the_database_still_reads_and_writes() {
+    let scratch = Scratch::bare();
+    let (path, db) = kept(scratch.path());
+    with(&db, |conn| {
+        write(conn, 0..400);
+        assert_eq!(count(conn), 400, "读一遍，页都在缓存里");
+    });
+    let done = checkpoint_all();
+    assert!(done.failed.is_empty(), "{:?}", done.failed);
+    with(&db, |conn| {
+        assert_eq!(wal(&path), 0, "合回了");
+        let body: String = conn
+            .query_row("SELECT body FROM t WHERE x = 399", [], |row| row.get(0))
+            .expect("读得了");
+        assert_eq!(body, "x".repeat(2000), "放掉的页读回来还是那一行");
+        write(conn, 400..410);
+        assert_eq!(count(conn), 410, "接着写得进");
+    });
+    let done = checkpoint_all();
+    assert!(done.failed.is_empty(), "{:?}", done.failed);
+    with(&db, |conn| assert_eq!(count(conn), 410, "再合一遍数据都在"));
 }

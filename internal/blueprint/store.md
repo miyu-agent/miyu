@@ -36,7 +36,7 @@
 | `crates/miyu-store/src/usage.rs`、`usage/` | 用量汇总 `var/cache/usage.db`（施工 8-15，`models.md`「怎么走」第九条第 4、5 条） |
 | `crates/miyu-store/src/recall/salt.rs` | 运行日志里写记忆的一间：数据根的盐 `var/lib/log-salt`（读、没有就造）、照盐算的短号（施工 LG-1 下，`log.md`「怎么走」第 7 条第 6 款） |
 | `crates/miyu-store/src/sqlite.rs` | 派生数据的 SQLite 库怎么开、坏了怎么删掉重建（施工 8-15 从 `index.rs` 挪出来，索引和用量汇总共用）；库所在的目录照第四条建，数据根没了的开不成（施工 TMP-1）；写连接装提交钩子、`journal_size_limit` 是 0（施工 V-28，「怎么走」第 14 条） |
-| `crates/miyu-store/src/sqlite/idle.rs` | 闲时合回库的写前日志（施工 V-28，「怎么走」第 14 条）：一个进程一份登记（开着的写连接的弱引用、最后一次提交的时刻），等到安静 `wait_quiet`，合回、截短 `checkpoint_all` |
+| `crates/miyu-store/src/sqlite/idle.rs` | 闲时合回库的写前日志（施工 V-28，「怎么走」第 14 条）：一个进程一份登记（开着的写连接的弱引用、最后一次提交的时刻），等到安静 `wait_quiet`，合回、截短 `checkpoint_all`；合完放掉这个连接的页缓存（施工 LW-15，第 14 条第 7 款） |
 | `crates/miyu-core/src/wal.rs` | 核心起来时起合的那个线程（施工 V-28）：安静 2 秒 `QUIET`，合完记日志 |
 
 ### 对外的样子
@@ -280,6 +280,7 @@
 4. 崩溃安全不变：合是 SQLite 自己的检查点，先同步 `-wal`，抄回主库、同步主库，最后才截短；中途断电，下次开库照 `-wal` 接着合，不丢、不坏。日志是真相、库是派生的（`07-存储.md` 第六节）照旧：断电最多丢最后几次更新，库不坏，丢了的照日志补；唤醒表（真相）照旧 `synchronous = FULL`。
 5. 被杀、断电时留在数据根里的：每个开着的库一个 `-shm`（32 KiB，SQLite 的共享内存索引，下次开库重用）、一个 `-wal`：闲下来以后被杀的是 0 字节，还没闲下来就被杀的是最后那一阵的提交，下次开库合回。好好退出时 SQLite 关上连接自己合回、删掉这两个（以前就这样）。
 6. 运行日志（`log.md`）：合了的、没合完的一轮一行 `DEBUG wal checkpointed done=… busy=…`，都没有的不记；合不了的一个库一行 `WARN wal not checkpointed db=… error=…`，`db` 是哪一种库（`sessions`、`usage`、`rates`、`schedules`、`recall`），不写路径（路径里有人格的编号）；线程起不来的 `WARN wal checkpoints not started error=…`，库照旧用，`-wal` 照第 3 款缩、好好退出时照第 5 款删。
+7. 合完放掉页缓存（施工 LW-15）：SQLite 的每个连接把读过、写过的页留在自己的页缓存里，默认最多留 2 MB，连接开着就一直占着。一个库合回以后，核心在同一把锁里对这个连接执行 `PRAGMA shrink_memory`，把页缓存放掉；之后用到哪一页，SQLite 再从系统的文件缓存读回来，读写的结果不变。只放合过的库：`-wal` 是空的库在上一次合过以后没有写过，这一次不处理。如果放不掉，只是多占内存，不算合坏。全部合完以后，如果有库合过，核心接着调一次 `miyu_heap::trim`，把空出来的页还给系统（`heap.md`「怎么走」第 2 条）。2026-11-22 实测：开着记忆的会话说到第 30 轮时，检索库的页缓存在堆里占约 0.5 MB，放掉以后核心的堆和匿名内存合计少约 0.5 MB（施工单 `LW-15-库闲下来放掉页缓存.md`）。
 
 ### 出错
 

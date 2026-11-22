@@ -180,6 +180,9 @@ fn truncate(db: &Connection) -> Result<Outcome, DbError> {
     db.busy_timeout(Duration::ZERO)?;
     let busy = db.query_row::<i64, _, _>("PRAGMA wal_checkpoint(TRUNCATE)", [], |row| row.get(0));
     db.pragma_update(None, "busy_timeout", waited)?;
+    // 合完顺手放掉这个连接攒着的页缓存（施工 LW-15）：SQLite 默认每个连接最多留 2 MB，读过、写过的页一直留着；库这时闲着，
+    // 之后用到哪一页再从系统的文件缓存读回来，结果不变。放不掉只是多占内存，不算合坏了（同 `sqlite::connect` 开库时那一次）。
+    drop(db.execute_batch("PRAGMA shrink_memory"));
     Ok(if busy? == 0 {
         Outcome::Done
     } else {

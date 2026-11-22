@@ -1,6 +1,6 @@
 //! 闲时把库的写前日志合回主库（施工 V-28，`internal/blueprint/store.md`「怎么走」的「库的写前日志」）：起一个线程，照
 //! `miyu_store::sqlite::idle` 等到库有过提交、之后 [`QUIET`] 这么久再没有提交，把每个开着的库的 `-wal` 合回主库、截成 0 字节，
-//! 再回去等。
+//! 再回去等。合过的库同时放掉自己的页缓存，这里接着把空出来的页还给系统（施工 LW-15）。
 //!
 //! 照「库最后一次写过去一阵子」算，不照「最后一个请求过去一阵子」（`settle.rs`）：一轮任务跑着的时候多半没有请求，会话照样
 //! 一批批写索引、用量、回合库；照请求等，任务跑完以前一直合不上，被杀时那一截全留在 `-wal` 里。没有写的时候它一直睡着，不定时
@@ -26,7 +26,13 @@ pub fn spawn() {
             .spawn(|| {
                 loop {
                     idle::wait_quiet(QUIET);
-                    report(&idle::checkpoint_all());
+                    let done = idle::checkpoint_all();
+                    // 合过的库放掉了页缓存（施工 LW-15，`heap.md`「怎么走」第 2 条）：空出来的页还给系统。没有库合过的
+                    // 时候没有新放掉的，不走这一遍堆。
+                    if done.done + done.busy > 0 {
+                        miyu_heap::trim();
+                    }
+                    report(&done);
                 }
             });
         if let Err(error) = spawned {
