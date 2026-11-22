@@ -91,3 +91,21 @@ async fn a_file_that_cannot_go_is_named_and_nothing_is_said() {
     );
     assert!(home.sessions().is_empty(), "没造会话");
 }
+
+/// 施工 FX-25：`target/tmp` 底下跑 git 找不到真的仓库，测试放行的 `git push --force` 推不出去。
+#[test]
+fn git_under_the_test_scratch_finds_no_repository() {
+    let outside = Outside::new();
+    let scratch = outside.0.clone();
+    let found = std::process::Command::new("git")
+        .args(["rev-parse", "--git-dir"])
+        .current_dir(&scratch)
+        .output()
+        .expect("有 git");
+    assert_eq!(
+        found.status.code(),
+        Some(128),
+        "找到了仓库：{}",
+        String::from_utf8_lossy(&found.stdout)
+    );
+}

@@ -199,3 +199,21 @@ async fn a_group_switched_off_runs_without_asking_until_it_is_back_on() {
     assert!(detail.contains(r#""hazard":"git_reset_hard""#), "{detail}");
     assert_eq!(results(&log).len(), 1, "第二次还没回答，没跑");
 }
+
+/// 施工 FX-25：`target/tmp` 底下跑 git 找不到真的仓库，测试放行的 `git push --force` 推不出去。
+#[test]
+fn git_under_the_test_scratch_finds_no_repository() {
+    let home = Home::outside_temp();
+    let scratch = home.scratch.0.join("work");
+    let found = std::process::Command::new("git")
+        .args(["rev-parse", "--git-dir"])
+        .current_dir(&scratch)
+        .output()
+        .expect("有 git");
+    assert_eq!(
+        found.status.code(),
+        Some(128),
+        "找到了仓库：{}",
+        String::from_utf8_lossy(&found.stdout)
+    );
+}
