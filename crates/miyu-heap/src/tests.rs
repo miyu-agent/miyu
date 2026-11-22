@@ -1,4 +1,4 @@
-//! glibc 上真的改得成、还得回去；macOS 上还得回去（施工 LW-18）；Linux 上透明大页关得上（施工 YC-12）；别的平台什么都不做。
+//! glibc 上真的改得成、还得回去，线程分配区的顶上不多留（施工 LW-25）；macOS 上还得回去（施工 LW-18）；Linux 上透明大页关得上（施工 YC-12）；别的平台什么都不做。
 
 #[test]
 fn the_allocator_can_be_tuned_where_glibc_is() {
@@ -23,13 +23,17 @@ fn freed_small_blocks_are_given_back_where_the_allocator_keeps_them() {
     let _alone = ONE_AT_A_TIME
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    // 一堆小块（不走 mmap，留在堆里），放掉以后堆里有一大片空着的。
+    super::tune();
+    // 一堆小块（不走 mmap，留在堆里），放掉以后堆里有一大片空着的。上面再压一块留着：不然放掉的并进顶上那一块，调好以后
+    // glibc 放的时候当场就还了（施工 LW-25「顶上不多留」），再叫它还就没有东西可还；压住以后放掉的只能等 `trim` 来还。
     let blocks: Vec<Vec<u8>> = (0..32 * 1024)
         .map(|n| vec![(n % 251) as u8; 1024])
         .collect();
+    let fence = vec![1_u8; 1024];
     assert_eq!(blocks.len(), 32 * 1024);
     drop(blocks);
     let released = super::trim();
+    drop(fence);
     if cfg!(all(target_os = "linux", target_env = "gnu")) {
         assert!(released, "glibc 上空着的还得回去");
     } else if cfg!(target_os = "macos") {
@@ -65,8 +69,46 @@ fn what_is_given_back_leaves_the_footprint_on_macos() {
     );
 }
 
+/// 顶上不多留（施工 LW-25）：调好以后，一条新线程在它的分配区里写过 4 MB 的中块（不走 mmap）、全部放掉，放掉的并进
+/// 顶上那一块，当场还给系统，各个 arena 从系统要来的合计回到原来的样子，差不到 64 KiB。glibc 默认顶上留 128 KiB，
+/// 这一条在没调过的进程里过不了。
+#[cfg(all(target_os = "linux", target_env = "gnu"))]
+#[test]
+fn a_thread_arena_gives_its_top_back_after_tuning() {
+    let _alone = ONE_AT_A_TIME
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    assert!(super::tune());
+    let arenas = || super::stats().expect("glibc 上有").arenas;
+    // 先让一条线程把分配区建好再量：头一次建分配区要来的那一截不算在这里面。
+    std::thread::spawn(|| drop(vec![1_u8; 1024]))
+        .join()
+        .expect("线程跑得完");
+    let before = arenas();
+    let held = std::thread::spawn(move || {
+        let blocks: Vec<Vec<u8>> = (0..40).map(|n| vec![(n % 251) as u8; 100 * 1024]).collect();
+        let held = arenas();
+        drop(blocks);
+        held
+    })
+    .join()
+    .expect("线程跑得完");
+    let after = arenas();
+    assert!(
+        held >= before + 3 * 1024 * 1024,
+        "写的时候要来了：{before} → {held}"
+    );
+    assert!(
+        after < before + 64 * 1024,
+        "放掉以后还回去：写之前 {before}，写的时候 {held}，放掉以后 {after}"
+    );
+}
+
 #[test]
 fn heap_stats_are_there_where_glibc_is() {
+    let _alone = ONE_AT_A_TIME
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     let kept: Vec<Vec<u8>> = (0..1024).map(|n| vec![(n % 251) as u8; 1024]).collect();
     let stats = super::stats();
     if cfg!(all(target_os = "linux", target_env = "gnu")) {

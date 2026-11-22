@@ -16,8 +16,17 @@ pub const ARENAS: i32 = 8;
 /// 大会话退下以后核心匿名内存比空闲时多 8.8 MB，写明以后多 3.9 MB；重开大会话、说一句以后 75 MB 降到 49 MB）。
 pub const MMAP_FROM: i32 = 128 * 1024;
 
-/// 起来时、还没起别的线程时调一次：glibc 上 arena 限到 [`ARENAS`] 个，大块的门槛定在 [`MMAP_FROM`]。交回两样都设成了没有；
-/// 别的平台什么都不做，交回假。
+/// 一个 arena 的顶上那一块空着的（top）往上要的时候多要多少、往回还的时候留多少：0（glibc 默认 128 KiB）。施工 LW-25
+/// 量过：核心的线程分配区放掉东西以后，每个 arena 顶上都留着这么一截不还，`malloc_trim` 只还主分配区的顶，线程分配区的顶它不管。
+pub const TOP_PAD: i32 = 0;
+
+/// 顶上空着的攒到多大才往回还：4 KiB（glibc 默认 128 KiB），和 [`TOP_PAD`] 一起，线程分配区放掉一块大的、并进顶以后当场还到
+/// 只剩不满一页。施工 LW-25 量过（`internal/blueprint/heap.md`「怎么走」第 7 条）：核心连着一个头时堆和匿名内存少约 0.15 到
+/// 0.35 MB，长会话说到第 30 轮少约 0.4 MB；量尺只有重开大会话后的头一次投影慢 0.15 到 0.5 ms，每一轮都走的几项没有变慢。
+pub const TRIM_FROM: i32 = 4 * 1024;
+
+/// 起来时、还没起别的线程时调一次：glibc 上 arena 限到 [`ARENAS`] 个，大块的门槛定在 [`MMAP_FROM`]，顶上不多留（[`TOP_PAD`]、
+/// [`TRIM_FROM`]，施工 LW-25）。交回这几样都设成了没有；别的平台什么都不做，交回假。
 ///
 /// Linux 上（不管是不是 glibc）还给这个进程关掉透明大页（`PR_SET_THP_DISABLE`，施工 YC-12）：系统设成 `always` 时，
 /// `khugepaged` 把还有一页在用的 2 MB 一段合成大页，[`trim`] 还掉的空洞又被填回去（2026-11-10 压测量过：高压过后会话退下、
@@ -26,7 +35,7 @@ pub const MMAP_FROM: i32 = 128 * 1024;
 /// 经助手跑的命令由助手换成命令之前恢复（`miyu-sandbox`），扩展、MCP 服务和不经助手的命令跟着关着，只是用不上大页。
 pub fn tune() -> bool {
     huge::disable();
-    imp::tune(ARENAS, MMAP_FROM)
+    imp::tune()
 }
 
 /// 这个进程的透明大页关着没有（`PR_GET_THP_DISABLE`，施工 YC-12）：给核心记一笔 [`tune`] 关上没有。别的平台交回假。
@@ -91,6 +100,10 @@ mod imp {
     const M_ARENA_MAX: c_int = -8;
     /// glibc 的 `M_MMAP_THRESHOLD`（`malloc.h`）。
     const M_MMAP_THRESHOLD: c_int = -3;
+    /// glibc 的 `M_TOP_PAD`（`malloc.h`）。
+    const M_TOP_PAD: c_int = -2;
+    /// glibc 的 `M_TRIM_THRESHOLD`（`malloc.h`）。
+    const M_TRIM_THRESHOLD: c_int = -1;
 
     /// glibc 的 `struct mallinfo2`（`malloc.h`，2.33 起）：十格，都是 `size_t`，照这个先后。
     #[repr(C)]
@@ -116,13 +129,21 @@ mod imp {
         fn mallinfo2() -> Mallinfo2;
     }
 
-    pub(super) fn tune(arenas: i32, mmap_from: i32) -> bool {
-        set(M_ARENA_MAX, arenas) && set(M_MMAP_THRESHOLD, mmap_from)
+    /// 一样一样设，前一样没设成的照样设后面的：交回的是都设成了没有。
+    pub(super) fn tune() -> bool {
+        [
+            (M_ARENA_MAX, super::ARENAS),
+            (M_MMAP_THRESHOLD, super::MMAP_FROM),
+            (M_TOP_PAD, super::TOP_PAD),
+            (M_TRIM_THRESHOLD, super::TRIM_FROM),
+        ]
+        .into_iter()
+        .fold(true, |all, (param, value)| set(param, value) && all)
     }
 
     /// 设一个分配器参数，交回设成了没有。
     fn set(param: c_int, value: c_int) -> bool {
-        // SAFETY: `mallopt` 只改 glibc 分配器自己的参数，不读写调的一方的内存；参数是 glibc 认得的常量和一个正数。
+        // SAFETY: `mallopt` 只改 glibc 分配器自己的参数，不读写调的一方的内存；参数是 glibc 认得的常量和一个不小于 0 的数。
         #[allow(unsafe_code, reason = "调 glibc 的 mallopt，见上一行")]
         let done = unsafe { mallopt(param, value) };
         done == 1
@@ -162,7 +183,7 @@ mod imp {
         fn malloc_zone_pressure_relief(zone: *mut std::ffi::c_void, goal: usize) -> usize;
     }
 
-    pub(super) fn tune(_arenas: i32, _mmap_from: i32) -> bool {
+    pub(super) fn tune() -> bool {
         false
     }
 
@@ -189,7 +210,7 @@ mod imp {
 /// 别的（Linux 的 musl、Windows、BSD）：分配器自己会还，什么都不做。
 #[cfg(not(any(all(target_os = "linux", target_env = "gnu"), target_os = "macos")))]
 mod imp {
-    pub(super) fn tune(_arenas: i32, _mmap_from: i32) -> bool {
+    pub(super) fn tune() -> bool {
         false
     }
 
