@@ -29,6 +29,38 @@ pub const BACK: &str = "perf/perf-model";
 /// 回到对话时也算数的另一种字：工具调用那几行开头的 [`PREAMBLE`]。
 const BACK_TOO: &str = PREAMBLE;
 
+/// 设置页的分类页底下那一行（`j/k 移动 Enter 进入 q/Esc 返回`）：进了分类再退回来时重画，分类里面的页底下没有这一句。
+const MENU: &str = "Enter 进入";
+
+/// 进「通用」以后等的字：「新会话」一组里的一项，分类页上的说明里没有。
+const GENERAL: &str = "新会话默认人格";
+
+/// 设置页里「外观」后面的几个分类，照分类页上的先后（终端界面 `ff3834fa`，量尺的沙箱里实际列出来的九个分类里除去
+/// 「通用」「外观」，2026-11-22 看屏幕定的）：名字、分类页上它底下那一行的说明（往下选到它时这一行换了样子、重画）、
+/// 进去以后等的字（这一页独有、分类页上没有的；页签那一行用「·」隔开，分类页上的说明用「、」）。「预设」只在核心给了
+/// 预设时列，「软件包」一直列；核心以后多了分类、换了先后，这张表跟着改。进「软件包」时核心去取软件包的目录（要连网），
+/// 等的是页签那一行，取没取到都画。
+const CATEGORIES: [(&str, &str, &str); 7] = [
+    (
+        "供应商和模型",
+        "供应商、默认模型、模型池",
+        "供应商 · 默认模型 · 模型池",
+    ),
+    ("用户", "个人资料", "回复语言"),
+    ("隐私与安全", "受保护的命令、权限", "破坏性 git 操作"),
+    ("人格", "决定 AI 的人格和记忆", "先用最简单的办法"),
+    ("预设", "决定开关哪些功能", "极简开发"),
+    (
+        "软件包",
+        "下载软件、已安装、软件后台",
+        "下载软件 · 已安装 · 软件后台",
+    ),
+    ("高级", "压缩、核心、运行日志、技能", "压缩触发线"),
+];
+
+/// `/theme` 里往下选到的那一项（沙箱里只列「自动」和它）：选中的那一行重画，终端界面照它预览配色。
+const THEME_NEXT: &str = "终端配色";
+
 /// 按键。
 const ENTER: &[u8] = b"\r";
 const ESC: &[u8] = b"\x1b";
@@ -122,22 +154,41 @@ pub fn steps() -> Vec<Step> {
     ] {
         steps.extend(page(name, until));
     }
-    // 设置页：进「外观」、进「配色」的选单，再一层层退出来。
+    // 设置页：先进「通用」再退回分类，往下选到「外观」进去、打开「配色」的选单，再一层层退回分类；然后往下把剩下的分类
+    // 一个个进一遍、退回来，最后关掉设置页。
     steps.extend(command("/config", "隐私与安全"));
     steps.extend([
+        key("/config 进通用", ENTER, GENERAL),
+        key("/config 从通用退回分类", ESC, MENU),
         key("/config 往下选到外观", DOWN, "主题、配色方案"),
         key("/config 进外观", ENTER, "首页形象"),
         key("/config 往下选到配色", DOWN, "配色"),
         key("/config 打开配色的选单", ENTER, "Esc 取消"),
         key("/config 按 Esc 关掉选单", ESC, "Esc 返回"),
-        key("/config 按 Esc 回到分类", ESC, "Enter 进入"),
-        key("/config 按 Esc 关掉设置页", ESC, BACK),
+        key("/config 从外观退回分类", ESC, MENU),
     ]);
+    for (category, described, inside) in CATEGORIES {
+        steps.extend([
+            key(&format!("/config 往下选到{category}"), DOWN, described),
+            key(&format!("/config 进{category}"), ENTER, inside),
+            key(&format!("/config 从{category}退回分类"), ESC, MENU),
+        ]);
+    }
+    steps.push(key("/config 按 Esc 关掉设置页", ESC, BACK));
     for (name, until) in [
         ("/model", "perftls"),
         ("/persona", "不使用人格"),
         ("/preset", "开放全部工具"),
-        ("/theme", "终端配色"),
+    ] {
+        steps.extend(page(name, until));
+    }
+    // 配色：往下选一项，终端界面照它预览；按 Esc 关掉，回到原来的配色。
+    steps.extend(command("/theme", "终端配色"));
+    steps.extend([
+        key("/theme 往下选一项预览", DOWN, THEME_NEXT),
+        key("/theme 按 Esc 关掉", ESC, BACK),
+    ]);
+    for (name, until) in [
         ("/files", "切换文件"),
         ("/jump", "跳过去"),
         ("/sessions", "置顶"),

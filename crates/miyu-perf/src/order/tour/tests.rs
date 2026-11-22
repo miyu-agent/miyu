@@ -99,3 +99,51 @@ fn only_the_unsure_redraws_accept_a_second_text() {
         }
     }
 }
+
+/// 设置页（施工 LW-19）：每个分类都进一次、退回分类页，最后才关掉设置页；进去以后等的字和分类页上的说明不一样。
+#[test]
+fn the_settings_page_enters_every_category() {
+    let keyed = keyed();
+    let opened = keyed
+        .iter()
+        .position(|(_, keys, _)| *keys == b"/config")
+        .expect("有 /config");
+    let closed = keyed[opened..]
+        .iter()
+        .position(|(_, _, until)| *until == BACK)
+        .map(|at| at + opened)
+        .expect("关掉设置页");
+    let inside = &keyed[opened..closed];
+    let mut entered = vec!["通用", "外观"];
+    entered.extend(CATEGORIES.iter().map(|(category, _, _)| *category));
+    for category in entered {
+        let at = inside
+            .iter()
+            .position(|(name, keys, _)| *keys == ENTER && name == &format!("/config 进{category}"))
+            .unwrap_or_else(|| panic!("没进{category}"));
+        let back = inside[at..]
+            .iter()
+            .position(|(_, keys, until)| *keys == ESC && *until == MENU);
+        assert!(back.is_some(), "{category} 没退回分类");
+    }
+    for (category, described, waited) in CATEGORIES {
+        assert_ne!(
+            described.replace(' ', ""),
+            waited.replace(' ', ""),
+            "{category}"
+        );
+    }
+}
+
+/// `/theme`（施工 LW-19）：打开以后先往下选一项，再关掉。
+#[test]
+fn the_theme_picker_moves_once_before_closing() {
+    let keyed = keyed();
+    let at = keyed
+        .iter()
+        .position(|(_, keys, _)| *keys == b"/theme")
+        .expect("有 /theme");
+    assert_eq!(keyed[at + 1].1, ENTER);
+    assert_eq!((keyed[at + 2].1, keyed[at + 2].2), (DOWN, THEME_NEXT));
+    assert_eq!((keyed[at + 3].1, keyed[at + 3].2), (ESC, BACK));
+}
