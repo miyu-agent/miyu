@@ -16,14 +16,14 @@ use miyu_kernel::origin::{self, By, ScheduleLoop};
 use miyu_kernel::session::{Command, Outcome};
 use miyu_kernel::time::Timestamp;
 use miyu_session::new_id;
-use miyu_store::schedules::{Creator, Loop, Schedule, Target};
+use miyu_store::schedules::{Creator, Loop, Schedule, Target, When};
 
 use crate::Core;
 use crate::sessions::Opening;
 
 /// 定时任务的包：她用 `cron_create` 建的看它（施工 J-2 建清单）。
 const SCHEDULE_PACKAGE: &str = "base-schedule";
-/// 循环的包：`/loop`、`schedule_next` 建的看它。
+/// 循环的包：`/loop`、`schedule_next` 建的看它（`schedule_next` 挂的定时触发也是，施工 FX-21）。
 const LOOP_PACKAGE: &str = "base-loop";
 
 /// 交的结果。
@@ -119,9 +119,10 @@ pub(super) async fn deliver(core: &Arc<Core>, schedule: &Schedule, due: Timestam
         return Delivered::skipped("session_gone", Some(session), true);
     };
     if let Creator::Model { .. } = schedule.by {
-        let package = match schedule.looping {
-            None => SCHEDULE_PACKAGE,
-            Some(_) => LOOP_PACKAGE,
+        // 她建的、某个时刻跑一次的只有 `schedule_next` 挂的定时触发（`cron_create` 写的是 cron），看循环的包（施工 FX-21）。
+        let package = match (schedule.looping, &schedule.when) {
+            (Some(_), _) | (None, When::At { .. }) => LOOP_PACKAGE,
+            (None, _) => SCHEDULE_PACKAGE,
         };
         let preset = found
             .handle

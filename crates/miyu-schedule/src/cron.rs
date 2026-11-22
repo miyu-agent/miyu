@@ -235,7 +235,9 @@ impl Texts {
             ScheduleRefused::NotFound => {
                 PACKAGE.error(&self.not_found, "cron/not-found", &[("id", id)])
             }
-            ScheduleRefused::NoLoop | ScheduleRefused::Unavailable => self.common.off(),
+            ScheduleRefused::NoLoop | ScheduleRefused::NoPrompt | ScheduleRefused::Unavailable => {
+                self.common.off()
+            }
         }
     }
 }

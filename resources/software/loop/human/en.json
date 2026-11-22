@@ -1,17 +1,18 @@
 {
   "tools": {
     "schedule_next": {
-      "name": "Next round",
+      "name": "Schedule",
       "subject": "reason",
       "icon": "↻"
     }
   },
   "said": {
     "next/set": "Next at {next}",
-    "next/stopped": "Loop stopped",
-    "next/no-loop": "No loop is running",
+    "next/stopped": "Stopped",
+    "next/no-loop": "No loop or scheduled trigger is running",
     "next/no-delay": "No delay given",
     "common/bad-args": "Bad arguments: {error}",
-    "common/off": "Loops are not available in this session"
+    "common/off": "Loops are not available in this session",
+    "next/no-prompt": "No prompt given"
   }
 }

@@ -63,14 +63,15 @@ pub enum ScheduleAsk {
     },
     /// 列这个会话上的。
     List,
-    /// 动态循环过多少秒再醒：已经照 [`WAKEUP_MIN`] 收过下限。
+    /// 过多少秒接着做：开着动态循环的定它下一次；没开的挂一次定时触发（施工 FX-21），到点交一次就删。已经照 [`WAKEUP_MIN`]
+    /// 收过下限。
     Wakeup {
         /// 过多少秒。
         delay: u64,
-        /// 醒来交进来的话，覆盖原来的；不写的照旧。
+        /// 醒来交进来的话，覆盖原来的；不写的照旧。没开着循环的要写（施工 FX-21）。
         prompt: Option<String>,
     },
-    /// 停掉这个会话的动态循环。
+    /// 停掉这个会话的动态循环；没开着的撤掉挂着的定时触发（施工 FX-21）。
     StopLoop,
 }
 
@@ -102,9 +103,9 @@ pub enum ScheduleAnswer {
     Deleted(Scheduled),
     /// 这个会话上的，照编号排。
     Listed(Vec<Scheduled>),
-    /// 动态循环改好的那一行。
+    /// 动态循环改好的那一行，或者挂上的定时触发（施工 FX-21）。
     Woken(Scheduled),
-    /// 动态循环停了。
+    /// 动态循环停了，或者定时触发撤了。
     LoopStopped,
 }
 
@@ -119,8 +120,10 @@ pub enum ScheduleRefused {
     BadCron(String),
     /// 这个会话上没有这个编号。
     NotFound,
-    /// 这个会话没开着动态循环。
+    /// 这个会话没开着动态循环，也没挂着定时触发（停的时候）。
     NoLoop,
+    /// 没开着动态循环、又没写到点交进来的话（施工 FX-21）。
+    NoPrompt,
     /// 唤醒表用不了、会话停了：没办成。
     Unavailable,
 }

@@ -1,17 +1,18 @@
 {
   "tools": {
     "schedule_next": {
-      "name": "定下次继续",
+      "name": "定时触发",
       "subject": "reason",
       "icon": "↻"
     }
   },
   "said": {
     "next/set": "下次 {next}",
-    "next/stopped": "已停止循环",
-    "next/no-loop": "没有运行中的循环",
+    "next/stopped": "已停止",
+    "next/no-loop": "没有运行中的循环或定时触发",
     "next/no-delay": "未指定间隔",
     "common/bad-args": "参数错误：{error}",
-    "common/off": "这个会话不支持循环"
+    "common/off": "这个会话不支持循环",
+    "next/no-prompt": "没有写到点要做的事"
   }
 }

@@ -3167,6 +3167,17 @@ Loop stopped.
 No loop is running in this session.
 ```
 
+#### `software/loop/next/no-prompt.txt`
+
+- 什么时候加进来：没开着动态循环、`schedule_next` 又没写 `prompt`
+- token：约 11（估，o200k 没数）
+- 为什么加：说没开循环时要写到点交进来的话（施工 FX-21，同 LiteMiyu LM-20 的那一句，一字不差）
+- 指纹：`17b9cf0d`
+
+```text
+prompt is required when no loop is running in this session.
+```
+
 #### `software/loop/next/no-delay.txt`
 
 - 什么时候加进来：没写 `delay_seconds` 也不是 `stop`
@@ -5443,15 +5454,15 @@ Start a subagent in a new session to do one task and wait for it. Its report arr
 
 #### `software/loop/tools/schedule_next.json`
 
-- 什么时候加进来：会话的工具面里有循环这个包（预设开着 `loop`；施工 J-2 起），每次请求都带；没开着动态循环的会话里调了说没有在跑的循环
-- token：WK-2 后 98（2026-11-17 照 o200k 数，-1：名字 `schedule_wakeup` 3 个 token、`schedule_next` 2 个，说明没改）；TX-1 后 99（o200k 数，改前 115）；原来 约 148（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量的 152，WK-1 参数说明短了按 o200k 估）
-- 为什么加：动态循环每轮定下一次（设计 45 第三节第 4 条，施工 J-2）：照 Claude Code 的 `ScheduleWakeup` 改短成三句，什么时候调、不调循环就停、照在等什么挑间隔；下限 60 秒写在参数里（WK-1 去掉 3600 秒的上限，项目主人 10-30 定），`reason` 只给人看。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明。施工 WK-2（2026-11-17 项目主人定）：工具改名 `schedule_next`（文件跟着改名），旧名不留兼容，说明一字不改
-- 指纹：`e10ca74a`
+- 什么时候加进来：会话的工具面里有循环这个包（预设开着 `loop`；施工 J-2 起），每次请求都带；没开着动态循环的会话里调了挂一次定时触发（施工 FX-21）
+- token：FX-21 后约 125（估，o200k 没数：说明多两个分句、`prompt` 说明多半句）；WK-2 后 98（2026-11-17 照 o200k 数，-1：名字 `schedule_wakeup` 3 个 token、`schedule_next` 2 个，说明没改）；TX-1 后 99（o200k 数，改前 115）；原来 约 148（2026-10-26 照中转站的 `cline-pass/deepseek-v4.1-flash` 量的 152，WK-1 参数说明短了按 o200k 估）
+- 为什么加：动态循环每轮定下一次（设计 45 第三节第 4 条，施工 J-2）：照 Claude Code 的 `ScheduleWakeup` 改短成三句，什么时候调、不调循环就停、照在等什么挑间隔；下限 60 秒写在参数里（WK-1 去掉 3600 秒的上限，项目主人 10-30 定），`reason` 只给人看。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明。施工 WK-2（2026-11-17 项目主人定）：工具改名 `schedule_next`（文件跟着改名），旧名不留兼容，说明一字不改。施工 FX-21（2026-11-21 项目主人定、11-22 做，照 LiteMiyu LM-20）：不开 `/loop` 也能用，说明改成「过一段时间接着做」打头，循环那一句留着；`prompt` 说明写明没开循环时要写；`stop` 也撤定时触发
+- 指纹：`f851f002`
 
 ```json
 {
-  "description": "Set when the next iteration of a self-paced /loop runs. The loop stops after an iteration that doesn't call it. Pass stop to end the loop.",
-  "parameters": {"type":"object","properties":{"delay_seconds":{"type":"integer","description":"At least 60."},"prompt":{"type":"string","description":"The /loop prompt, passed back unchanged."},"reason":{"type":"string","description":"Why this delay, one short sentence."},"stop":{"type":"boolean"}}}
+  "description": "Schedule this session to continue after a delay with the given prompt. A self-paced /loop uses it to set its next iteration; the loop stops after an iteration that doesn't call it. Pass stop to cancel.",
+  "parameters": {"type":"object","properties":{"delay_seconds":{"type":"integer","description":"At least 60."},"prompt":{"type":"string","description":"Required unless a /loop is running; in a /loop, the /loop prompt, passed back unchanged."},"reason":{"type":"string","description":"Why this delay, one short sentence."},"stop":{"type":"boolean"}}}
 }
 ```
 

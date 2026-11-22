@@ -78,7 +78,7 @@ In the tables below, the `In read-only` column says what the tool does after you
 | `cron_create` | `Schedule` | It sets a message to be sent back to this session later, either once or on a recurring schedule. | It works as usual. | `base-schedule` | It uses a five-field cron expression in this machine's time zone. If nothing is specified, the schedule is recurring; a schedule that runs only once is deleted after it runs. |
 | `cron_delete` | `Unschedule` | It deletes one schedule set in this session. | It works as usual. | `base-schedule` | |
 | `cron_list` | `Scheduled jobs` | It lists the schedules set in this session, and when each one runs next. | It works as usual. | `base-schedule` | |
-| `schedule_next` | `Next round` | In a `/loop` with no interval given, the AI decides in each turn how long until the next turn starts, and it can also stop the loop. | It works as usual. | `base-loop` | The interval is at least 60 seconds, and a shorter value counts as 60 seconds. It is not accepted in a session where `/loop` is not on. |
+| `schedule_next` | `Schedule` | Makes this session carry on with something after a while. Without a `/loop`, the AI can use it to schedule one follow-up for itself, which runs once and is then gone; in a `/loop` with no interval given, the AI decides in each turn how long until the next turn starts, and it can also stop the loop. | It works as usual. | `base-loop` | The interval is at least 60 seconds, and a shorter value counts as 60 seconds. Without a `/loop` the AI has to say what to do then; a session holds one at a time, and scheduling again replaces it. |
 
 For how to use `/loop` and schedules, see [Letting the AI keep working on its own](automation.md).
 

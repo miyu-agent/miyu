@@ -1,17 +1,18 @@
 {
   "tools": {
     "schedule_next": {
-      "name": "次の回",
+      "name": "定時トリガー",
       "subject": "reason",
       "icon": "↻"
     }
   },
   "said": {
     "next/set": "次は {next}",
-    "next/stopped": "ループを停止",
-    "next/no-loop": "動いているループはありません",
+    "next/stopped": "停止しました",
+    "next/no-loop": "動いているループや定時トリガーはありません",
     "next/no-delay": "間隔が指定されていません",
     "common/bad-args": "引数が正しくありません：{error}",
-    "common/off": "このセッションではループを使えません"
+    "common/off": "このセッションではループを使えません",
+    "next/no-prompt": "続きにやることが書かれていません"
   }
 }

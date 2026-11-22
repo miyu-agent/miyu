@@ -33,6 +33,7 @@ pub(crate) struct Wakeup {
     stopped: Template,
     no_loop: Template,
     no_delay: Template,
+    no_prompt: Template,
 }
 
 /// 她给的参数：都能不写，`stop` 以外要有 `delay_seconds`。间隔收成整数以前不挑大小：负的、太大的照边界。
@@ -59,6 +60,7 @@ impl Wakeup {
             stopped: wakeup("stopped", &[])?,
             no_loop: wakeup("no-loop", &[])?,
             no_delay: wakeup("no-delay", &[])?,
+            no_prompt: wakeup("no-prompt", &[])?,
         })
     }
 
@@ -87,6 +89,7 @@ impl Wakeup {
     fn refused(&self, refused: ScheduleRefused) -> Done {
         match refused {
             ScheduleRefused::NoLoop => PACKAGE.error(&self.no_loop, "next/no-loop", &[]),
+            ScheduleRefused::NoPrompt => PACKAGE.error(&self.no_prompt, "next/no-prompt", &[]),
             ScheduleRefused::Full
             | ScheduleRefused::AllFull
             | ScheduleRefused::BadCron(_)

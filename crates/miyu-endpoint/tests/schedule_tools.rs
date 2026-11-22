@@ -1,6 +1,6 @@
 //! 她用定时工具（施工 J-2，设计 `45-定时和循环.md` 第三节第 3、4 条）：真核心的会话里她照剧本调 `cron_create`、`cron_list`、
 //! `cron_delete`、`schedule_next`，经端口动唤醒表。她建的记成这个会话建的、跑在这个会话上；动态循环那一行她定下一次、
-//! 换那句话；没开循环的说没有在跑的循环。
+//! 换那句话；没开循环的挂一次定时触发（施工 FX-21），没写那句话的说要写。
 
 use std::sync::Arc;
 
@@ -162,8 +162,9 @@ async fn a_wakeup_too_far_to_write_waits_until_the_last_moment() {
     );
 }
 
+/// 没开循环、没写那句话（施工 FX-21）：说要写，什么都不建。
 #[tokio::test]
-async fn without_a_loop_she_hears_there_is_none() {
+async fn without_a_loop_she_must_say_what_to_do() {
     let home = Home::new();
     let plays = vec![
         Play::calls(&[("schedule_next", r#"{"delay_seconds":120}"#)]),
@@ -171,18 +172,55 @@ async fn without_a_loop_she_hears_there_is_none() {
     ];
     let (core, session) = ran(&home, plays, |_, _| {}).await;
     assert!(listed(&core).is_empty());
-    let said = home.log(&session.to_string());
-    let result = said
-        .iter()
-        .find_map(|event| match &event.body {
-            miyu_kernel::event::Body::ToolResult(result) => Some(format!("{:?}", result.blocks)),
-            _ => None,
-        })
-        .expect("有结果");
+    let said = format!("{:?}", home.log(&session.to_string()));
     assert!(
-        result.contains("No loop is running") || result.contains("no loop"),
-        "{result}"
+        said.contains("prompt is required when no loop is running"),
+        "{said}"
     );
+}
+
+/// 没开循环也能定时（施工 FX-21，项目主人 2026-11-21 定）：挂一次定时触发，记成她在这个会话里建的、某个时刻跑一次、
+/// 不是循环；再定换掉原来的，一个会话只挂一个；`stop` 撤掉。
+#[tokio::test]
+async fn without_a_loop_she_schedules_one_trigger_and_can_replace_and_stop_it() {
+    let home = Home::new();
+    let plays = vec![
+        Play::calls(&[(
+            "schedule_next",
+            r#"{"delay_seconds":120,"prompt":"看看构建好了没有"}"#,
+        )]),
+        Play::calls(&[(
+            "schedule_next",
+            r#"{"delay_seconds":600,"prompt":"再看一次构建"}"#,
+        )]),
+        Play::Says("好。"),
+    ];
+    let (core, session) = ran(&home, plays, |_, _| {}).await;
+    let rows = listed(&core);
+    assert_eq!(rows.len(), 1, "再定换掉原来的：{rows:?}");
+    let row = &rows[0];
+    assert_eq!(row.prompt, "再看一次构建");
+    assert!(row.looping.is_none(), "不是循环");
+    assert!(matches!(row.when, When::At { .. }), "某个时刻跑一次");
+    assert!(matches!(&row.by, Creator::Model { session: by } if *by == session));
+    let next = row.next.expect("有下一次").unix_millis();
+    let now = core.schedules().now().unix_millis();
+    assert!(
+        (now + 500_000..=now + 600_000).contains(&next),
+        "约十分钟以后：{next} 对 {now}"
+    );
+
+    let home = Home::new();
+    let plays = vec![
+        Play::calls(&[(
+            "schedule_next",
+            r#"{"delay_seconds":120,"prompt":"看看构建好了没有"}"#,
+        )]),
+        Play::calls(&[("schedule_next", r#"{"stop":true}"#)]),
+        Play::Says("好。"),
+    ];
+    let (core, _) = ran(&home, plays, |_, _| {}).await;
+    assert!(listed(&core).is_empty(), "撤掉了");
 }
 
 #[tokio::test]
