@@ -34,6 +34,8 @@ pub struct Decoder {
     sse: Sse,
     /// 线上的 `output_index` → 这一块：认得的有，不认的没有。
     blocks: BTreeMap<u64, Option<Opened>>,
+    /// 被同一个 `output_index` 上新加的一项顶掉的块（施工 FX-20）：收尾时照样收。
+    retired: Vec<Opened>,
     /// 下一块的编号。
     next: usize,
     /// 收尾的事件报的用量。
@@ -70,6 +72,8 @@ struct Opened {
     arguments: String,
     /// 工具调用的参数交过了。
     settled: bool,
+    /// 项的 `id`（施工 FX-20）：同一个 `output_index` 来了 `id` 不一样的一项，是新的一项。
+    id: Option<String>,
 }
 
 /// 认得的项。
@@ -130,13 +134,19 @@ impl Decoder {
         let error = self.error.take().or_else(|| self.ending_error());
         if error.is_none() {
             // 没等到这一项完了的工具调用：照攒的交。
-            for opened in self.blocks.values_mut().flatten() {
+            for opened in self
+                .blocks
+                .values_mut()
+                .flatten()
+                .chain(self.retired.iter_mut())
+            {
                 settle(&mut deltas, opened, None);
             }
             let mut open: Vec<usize> = self
                 .blocks
                 .values()
                 .flatten()
+                .chain(&self.retired)
                 .map(|block| block.index)
                 .collect();
             open.sort_unstable();
@@ -293,9 +303,19 @@ impl Decoder {
     /// 照 `item.type` 开一块；开过的、不认的不再开。交回这一块。`data` 是这一条事件的原文：搜索的参数要原文（施工 DSR-4）。
     fn opened(&mut self, value: &Value, data: &str, out: &mut Vec<Delta>) -> Option<&mut Opened> {
         let at = value.get("output_index").and_then(Value::as_u64)?;
+        let item = &value["item"];
+        let field = |name: &str| item.get(name).and_then(Value::as_str).unwrap_or_default();
+        // 同一个 `output_index` 来了 `id` 不一样的一项（施工 FX-20，同 AU-020 的 OpenAI Chat、LiteMiyu LM-36）：照协议不会有；
+        // 有的兼容层并行的几次调用都写 0，是新的一项，之后这个 `output_index` 的增量归新的那一项，原来那块收尾时照样收。没有
+        // `id`、`id` 一样的照旧是那一项。
+        if let Some(Some(known)) = self.blocks.get(&at)
+            && !field("id").is_empty()
+            && known.id.as_deref().is_some_and(|id| id != field("id"))
+            && let Some(Some(old)) = self.blocks.remove(&at)
+        {
+            self.retired.push(old);
+        }
         if !self.blocks.contains_key(&at) {
-            let item = &value["item"];
-            let field = |name: &str| item.get(name).and_then(Value::as_str).unwrap_or_default();
             let (kind, delta_kind) = match field("type") {
                 "message" => (ItemKind::Message, Kind::Text),
                 "reasoning" => (ItemKind::Reasoning, Kind::Reasoning),
@@ -337,6 +357,7 @@ impl Decoder {
                 summary: None,
                 arguments: String::new(),
                 settled: false,
+                id: Some(field("id").to_string()).filter(|id| !id.is_empty()),
             };
             if kind == ItemKind::Hosted {
                 push(

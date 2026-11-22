@@ -29,5 +29,6 @@ mod openai_responses_streams;
 mod openai_responses_web_search;
 mod path_only;
 mod robust_streams;
+mod shared_index;
 mod tail;
 mod temperature;
