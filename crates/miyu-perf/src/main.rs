@@ -54,10 +54,16 @@ async fn main() -> ExitCode {
     }
 }
 
-/// 照 `args` 量一遍，写结果；带 `--render` 的不量，照原始数据重出表；带 `--order` 的不量、不读预算，录排函数的清单（施工 LW-1）。
+/// 照 `args` 量一遍，写结果；带 `--render` 的不量，照原始数据重出表；带 `--order` 的不量、不读预算，录排函数的清单（施工 LW-1；macOS 上带页探针，施工 MO-2）。
 async fn run(args: Args) -> Result<(), String> {
-    if let (Some(order), Some(emulator), Some(tree)) = (&args.order, &args.emulator, &args.tree) {
-        return order::record(&args, order, emulator, tree).await;
+    if let (Some(order), Some(tree)) = (&args.order, &args.tree) {
+        // `--emulator`、`--probe` 二者择一，`args::parse` 查过（施工 MO-2）。
+        let recorder = match (&args.emulator, &args.probe) {
+            (Some(emulator), _) => order::Recorder::Emulator(emulator),
+            (None, Some(probe)) => order::Recorder::Probe(probe),
+            (None, None) => return Err("--order 要和 --emulator 或者 --probe 一起写".to_string()),
+        };
+        return order::record(&args, order, recorder, tree).await;
     }
     let design = std::fs::read_to_string(&args.design)
         .map_err(|e| format!("读不了 {}：{e}", args.design.display()))?;

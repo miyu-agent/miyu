@@ -61,6 +61,11 @@ const CATEGORIES: [(&str, &str, &str); 7] = [
 /// `/theme` 里往下选到的那一项（沙箱里只列「自动」和它）：选中的那一行重画，终端界面照它预览配色。
 const THEME_NEXT: &str = "终端配色";
 
+/// macOS 上（施工 MO-2）`/theme` 在「自动」下面先列「跟随壁纸」：终端界面在那里找得到桌面的壁纸，不看沙箱的家目录
+/// （2026-11-23 在一台 M1 MacBook 上看到的）。等 [`THEME_NEXT`] 的时候等到它也算（[`tour`] 里等字的那一处加上，步骤表
+/// 不变）；Linux 的沙箱里不列它，那边照旧只等得到 [`THEME_NEXT`]。
+const THEME_WALLPAPER: &str = "跟随壁纸";
+
 /// 按键。
 const ENTER: &[u8] = b"\r";
 const ESC: &[u8] = b"\x1b";
@@ -293,7 +298,9 @@ pub async fn tour(
                 let began = Instant::now();
                 let mark = talk.terminal.mark();
                 talk.terminal.write(keys)?;
-                let needles: Vec<&str> = [Some(until), or].into_iter().flatten().collect();
+                let wallpaper = (until == THEME_NEXT).then_some(THEME_WALLPAPER);
+                let needles: Vec<&str> =
+                    [Some(until), or, wallpaper].into_iter().flatten().collect();
                 talk.terminal
                     .wait_for_any(&needles, mark, STEP_PATIENCE, &what)
                     .await?;

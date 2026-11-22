@@ -17,10 +17,16 @@
 //!    [`remember::SETTINGS`]（开着记忆的会话每说 11 轮就抽一次记忆），前面几段的会话照出厂的门槛，不在半路抽。日志排在核心
 //!    清单的最后：前面几段的清单和没有这一段时一样，只有抽记忆才头一回执行的函数接在后面。
 //! 6. 每段的日志各一个文件，放在沙盒目录下；清单写完删掉（一份几十 MB）。
+//!
+//! macOS 上（施工 MO-2）没有 QEMU 的用户态模拟器，`--probe` 代替 `--emulator`（[`Recorder`]）：五段的剧本、先后都一样，只是
+//! 被测的程序不放进模拟器，而是带着页探针原生起（[`Probed`]）。探针每个进程写一份记录（`order/pages.rs`），写下的已经是
+//! 符号表里的地址，不用读装载起点（macOS 也没有 `/proc`）。它一遍只记得到每一页上（每一次重关以后）第一个碰它的函数，
+//! 不像模拟器那样记全，所以这一路写出的清单是「这一遍看到的函数」，照第一次看到的先后，格式和模拟器那一路一样。
 
 #[cfg(unix)]
 mod head;
 mod listing;
+mod pages;
 mod remember;
 #[cfg(unix)]
 mod screen;
@@ -37,15 +43,86 @@ use std::process::Command;
 use crate::args::Args;
 use crate::fake::Fake;
 use crate::measure::tools::calls::Workspace;
-use crate::sandbox::{Launch, Sandbox, Traced};
+use crate::sandbox::{Launch, Probed, Running, Sandbox, Traced};
 use listing::{Listing, Symbols};
 
-/// 录一遍、写清单：清单写到 `order`，核心在模拟器 `emulator` 里起，工具一步的工作区拷 `tree`。
+/// 用什么录（施工 MO-2）：`--emulator` 或者 `--probe`，二者择一（`args.rs` 查过）。
+#[derive(Debug, Clone, Copy)]
+pub enum Recorder<'a> {
+    /// Linux：放进 QEMU 的用户态模拟器（[`Traced`]），每段一份日志，地址要减去装载起点。
+    Emulator(&'a Path),
+    /// macOS：插页探针（[`Probed`]），每段一个输出前缀，每个进程一份记录，地址已经是符号表里的。
+    Probe(&'a Path),
+}
+
+/// 一段录下来的、写清单时读的东西。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Trace {
+    /// 模拟器的日志，和程序在这一段里的装载起点。
+    Log(PathBuf, u64),
+    /// 探针的输出前缀：这一段的记录是 `<前缀>.<进程号>`（`order/pages.rs`）。
+    Pages(PathBuf),
+}
+
+impl<'a> Recorder<'a> {
+    /// 第 `name` 段录到哪：模拟器的是 `<work>/<name>.log`，探针的前缀是 `<work>/<name>.pages`。
+    fn at(self, work: &Path, name: &str) -> PathBuf {
+        match self {
+            Recorder::Emulator(_) => work.join(format!("{name}.log")),
+            Recorder::Probe(_) => work.join(format!("{name}.pages")),
+        }
+    }
+
+    /// 照 `plain` 起、录到 `at`、被测程序是 `program` 的起法：放进模拟器，或者带探针。
+    fn launch<'b>(self, plain: Launch<'b>, at: &'b Path, program: &'b Path) -> Launch<'b>
+    where
+        'a: 'b,
+    {
+        match self {
+            Recorder::Emulator(emulator) => Launch {
+                traced: Some(Traced { emulator, log: at }),
+                ..plain
+            },
+            Recorder::Probe(library) => Launch {
+                probed: Some(Probed {
+                    library,
+                    out: at,
+                    program,
+                }),
+                ..plain
+            },
+        }
+    }
+
+    /// 刚起来的 `running` 这一段录到 `at`：模拟器的另读程序 `program` 的装载起点（读 `/proc`，[`Running::base`]），探针的
+    /// 不读。起来以后马上调，报错留到停了以后再交（和以前一样）。
+    fn trace(self, running: &Running, at: &Path, program: &Path) -> Result<Trace, String> {
+        match self {
+            Recorder::Emulator(_) => Ok(Trace::Log(at.to_path_buf(), running.base(program)?)),
+            Recorder::Probe(_) => Ok(Trace::Pages(at.to_path_buf())),
+        }
+    }
+
+    /// 进度里说核心在哪：「模拟器里」「带探针」。
+    fn inside(self) -> &'static str {
+        match self {
+            Recorder::Emulator(_) => "模拟器里",
+            Recorder::Probe(_) => "带探针",
+        }
+    }
+}
+
+/// 录一遍、写清单：清单写到 `order`，核心照 `recorder` 放进模拟器或者带探针起，工具一步的工作区拷 `tree`。
 ///
 /// # Errors
 ///
-/// 哪一步没成（起不来、哪一句没说成、HTTPS 没走 TLS、`nm` 不在、日志读不了、清单写不进），报是在做哪一步。
-pub async fn record(args: &Args, order: &Path, emulator: &Path, tree: &Path) -> Result<(), String> {
+/// 哪一步没成（起不来、哪一句没说成、HTTPS 没走 TLS、`nm` 不在、日志读不了、探针没有记录、清单写不进），报是在做哪一步。
+pub async fn record(
+    args: &Args,
+    order: &Path,
+    recorder: Recorder<'_>,
+    tree: &Path,
+) -> Result<(), String> {
     let mut fake = Fake::start(args.reply_bytes).await?;
     let secure = fake.secure().await?;
     let sandbox = Sandbox::new(&args.work, &args.miyu, &args.resources, &fake.base_url)?;
@@ -72,120 +149,134 @@ pub async fn record(args: &Args, order: &Path, emulator: &Path, tree: &Path) -> 
     sandbox.stop(running)?;
     drop(warmed.map_err(|e| format!("原生的第二遍：{e}"))?);
 
-    let logs = [
-        args.work.join("order-1.log"),
-        args.work.join("order-2.log"),
-        args.work.join("order-remembered.log"),
-    ];
-    let [first_launch, second_launch, remembered_launch] = logs.each_ref().map(|log| Launch {
-        traced: Some(Traced {
-            emulator,
-            log: log.as_path(),
-        }),
-        ..native
-    });
-    eprintln!("排函数：第一段（模拟器里）");
+    let at = ["order-1", "order-2", "order-remembered"].map(|name| recorder.at(&args.work, name));
+    let [first_launch, second_launch, remembered_launch] = at
+        .each_ref()
+        .map(|at| recorder.launch(native, at, &args.miyu));
+    let [first_at, second_at, remembered_at] = &at;
+    let inside = recorder.inside();
+    eprintln!("排函数：第一段（{inside}）");
     let running = sandbox.start_with(first_launch)?;
-    let first_base = running.base(&args.miyu);
+    let first_trace = recorder.trace(&running, first_at, &args.miyu);
     let first = script::first(&sandbox, &mut fake, &workspace).await;
     sandbox.stop(running)?;
-    let first_base = first_base?;
+    let first_trace = first_trace?;
     let session = first.map_err(|e| format!("第一段：{e}"))?;
-    eprintln!("排函数：第二段（模拟器里，打开第一段的会话）");
+    eprintln!("排函数：第二段（{inside}，打开第一段的会话）");
     let running = sandbox.start_with(second_launch)?;
-    let second_base = running.base(&args.miyu);
+    let second_trace = recorder.trace(&running, second_at, &args.miyu);
     let second = script::second(&sandbox, &mut fake, &session).await;
     sandbox.stop(running)?;
-    let second_base = second_base?;
+    let second_trace = second_trace?;
     second.map_err(|e| format!("第二段：{e}"))?;
 
-    let [first_log, second_log, remembered_log] = &logs;
-    let mut core = vec![
-        (first_log.clone(), first_base),
-        (second_log.clone(), second_base),
-    ];
-    let mut head_log = None;
+    let mut core = vec![first_trace, second_trace];
+    let mut head_trace = None;
     if let Some(program) = &args.head {
         let fourth = args.head_order.is_some();
         let (third, fourth) =
-            with_head(args, &sandbox, &mut fake, emulator, &trust, program, fourth).await?;
+            with_head(args, &sandbox, &mut fake, recorder, &trust, program, fourth).await?;
         core.push(third);
-        head_log = args.head_order.as_deref().zip(fourth);
+        head_trace = args.head_order.as_deref().zip(fourth);
     }
-    eprintln!("排函数：抽记忆的那一段（模拟器里，日志排在核心清单的最后）");
+    let record = match recorder {
+        Recorder::Emulator(_) => "日志",
+        Recorder::Probe(_) => "记录",
+    };
+    eprintln!("排函数：抽记忆的那一段（{inside}，{record}排在核心清单的最后）");
     let config = sandbox.root.config_file();
     let plain = std::fs::read_to_string(&config).map_err(|e| format!("系统配置读不了：{e}"))?;
     std::fs::write(&config, format!("{plain}{}", remember::SETTINGS))
         .map_err(|e| format!("系统配置写不进：{e}"))?;
     let running = sandbox.start_with(remembered_launch)?;
-    let remembered_base = running.base(&args.miyu);
+    let remembered_trace = recorder.trace(&running, remembered_at, &args.miyu);
     let remembered = script::remembered(&sandbox, &mut fake).await;
     sandbox.stop(running)?;
     std::fs::write(&config, plain).map_err(|e| format!("系统配置写不进：{e}"))?;
     remembered.map_err(|e| format!("抽记忆的那一段：{e}"))?;
-    core.push((remembered_log.clone(), remembered_base?));
+    core.push(remembered_trace?);
     write(&args.miyu, &core, order)?;
-    if let (Some(program), Some((head_order, log))) = (&args.head, head_log)
-        && write(program, &[log], head_order)? == 0
+    if let (Some(program), Some((head_order, trace))) = (&args.head, head_trace)
+        && write(program, &[trace], head_order)? == 0
     {
         return Err(format!(
-            "终端界面的清单是空的（{}）：第四段的日志里一个终端界面的函数都没认出来",
+            "终端界面的清单是空的（{}）：第四段的{record}里一个终端界面的函数都没认出来",
             head_order.display()
         ));
     }
     Ok(())
 }
 
-/// 配着真的终端界面录第三段、`fourth` 的再录第四段（施工 LW-6，`order/head.rs`）：交回核心、终端界面各自的日志和装载起点。
+/// 配着真的终端界面录第三段、`fourth` 的再录第四段（施工 LW-6，`order/head.rs`）：交回核心、终端界面各自录下的。
 #[cfg(unix)]
 async fn with_head(
     args: &Args,
     sandbox: &Sandbox,
     fake: &mut Fake,
-    emulator: &Path,
+    recorder: Recorder<'_>,
     trust: &Path,
     program: &Path,
     fourth: bool,
-) -> Result<((PathBuf, u64), Option<(PathBuf, u64)>), String> {
-    let logs = head::record(args, sandbox, fake, emulator, trust, program, fourth).await?;
+) -> Result<(Trace, Option<Trace>), String> {
+    let logs = head::record(args, sandbox, fake, recorder, trust, program, fourth).await?;
     Ok((logs.core, logs.head))
 }
 
-/// 伪终端只在 Unix 上开（`order/terminal.rs`）；排函数本来也只在 Linux 上做。
+/// 伪终端只在 Unix 上开（`order/terminal.rs`）；排函数本来也只在 Linux、macOS 上做。
 #[cfg(not(unix))]
 async fn with_head(
     _: &Args,
     _: &Sandbox,
     _: &mut Fake,
-    _: &Path,
+    _: Recorder<'_>,
     _: &Path,
     _: &Path,
     _: bool,
-) -> Result<((PathBuf, u64), Option<(PathBuf, u64)>), String> {
+) -> Result<(Trace, Option<Trace>), String> {
     Err("配着终端界面录（--head）只在 Unix 上做".to_string())
 }
 
-/// 照 `program` 的符号表读几段日志（照先后，各带程序在那一段里的装载起点），清单写进 `order`，日志删掉：交回清单里几个函数。
+/// 照 `program` 的符号表读几段录下的（照先后：模拟器的日志各带程序在那一段里的装载起点，探针的记录照 `order/pages.rs` 挑
+/// 被测程序的那几份），清单写进 `order`，录下的文件删掉：交回清单里几个函数。
 ///
 /// # Errors
 ///
-/// `nm` 不在、日志读不了、清单写不进、日志删不掉。
-fn write(program: &Path, logs: &[(PathBuf, u64)], order: &Path) -> Result<usize, String> {
+/// `nm` 不在、日志读不了、探针没有记录或者记录坏了、清单写不进、录下的文件删不掉。
+fn write(program: &Path, traces: &[Trace], order: &Path) -> Result<usize, String> {
     let symbols = Symbols::parse(&nm(program)?);
     let mut listing = Listing::new(&symbols);
-    for (log, base) in logs {
-        let file =
-            std::fs::File::open(log).map_err(|e| format!("读不了 {}：{e}", log.display()))?;
-        listing
-            .read(*base, BufReader::new(file))
-            .map_err(|e| format!("读不了 {}：{e}", log.display()))?;
+    for trace in traces {
+        match trace {
+            Trace::Log(log, base) => {
+                let file = std::fs::File::open(log)
+                    .map_err(|e| format!("读不了 {}：{e}", log.display()))?;
+                listing
+                    .read(*base, BufReader::new(file))
+                    .map_err(|e| format!("读不了 {}：{e}", log.display()))?;
+            }
+            Trace::Pages(prefix) => {
+                let read = pages::read(prefix, program, &mut listing)?;
+                eprintln!(
+                    "排函数：探针 {}：{} 个进程的记录，{} 条，执行的 {} 条",
+                    prefix.display(),
+                    read.files,
+                    read.records,
+                    read.executed
+                );
+            }
+        }
     }
     let names = listing.names();
     let mut text = names.join("\n");
     text.push('\n');
     std::fs::write(order, text).map_err(|e| format!("清单写不进 {}：{e}", order.display()))?;
-    for (log, _) in logs {
-        std::fs::remove_file(log).map_err(|e| format!("删不掉 {}：{e}", log.display()))?;
+    for trace in traces {
+        match trace {
+            Trace::Log(log, _) => {
+                std::fs::remove_file(log).map_err(|e| format!("删不掉 {}：{e}", log.display()))?
+            }
+            Trace::Pages(prefix) => pages::remove(prefix)?,
+        }
     }
     eprintln!(
         "排函数：程序里 {} 个函数，排进清单 {} 个，合计 {} kB（{}）",

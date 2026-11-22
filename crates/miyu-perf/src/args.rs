@@ -5,7 +5,7 @@ use std::str::FromStr;
 use std::time::Duration;
 
 /// 用法，参数不对时印出来。
-pub const USAGE: &str = "用法：miyu-perf --miyu <release 的 miyu> --resources <resources/> --design <23-性能预算.md> --work <沙盒目录> --out <结果目录> [--runs 10] [--sessions 10] [--events 10000] [--tail 30] [--reloads 20] [--appends 2000] [--reply-bytes 3500] [--streams 10] [--pieces 300] [--idle-wait 200] [--gate 倍数]\n      miyu-perf --tools 20 --tree <拷进工作区的树> --miyu … --resources … --design … --work … --out … [--tools-log debug] [--tag 名]\n      miyu-perf --render <原始数据.json> --design <23-性能预算.md> --out <结果目录>\n      miyu-perf --order <清单文件> --emulator <qemu-x86_64> --tree <拷进工作区的树> --miyu … --resources … --work … [--head <终端界面程序> [--head-order <终端界面的清单文件>]]";
+pub const USAGE: &str = "用法：miyu-perf --miyu <release 的 miyu> --resources <resources/> --design <23-性能预算.md> --work <沙盒目录> --out <结果目录> [--runs 10] [--sessions 10] [--events 10000] [--tail 30] [--reloads 20] [--appends 2000] [--reply-bytes 3500] [--streams 10] [--pieces 300] [--idle-wait 200] [--gate 倍数]\n      miyu-perf --tools 20 --tree <拷进工作区的树> --miyu … --resources … --design … --work … --out … [--tools-log debug] [--tag 名]\n      miyu-perf --render <原始数据.json> --design <23-性能预算.md> --out <结果目录>\n      miyu-perf --order <清单文件> (--emulator <qemu-x86_64> | --probe <pagetrace.dylib>) --tree <拷进工作区的树> --miyu … --resources … --work … [--head <终端界面程序> [--head-order <终端界面的清单文件>]]";
 
 /// 量的时候必写的几个路径。
 const PATHS: [&str; 5] = ["--miyu", "--resources", "--design", "--work", "--out"];
@@ -13,15 +13,9 @@ const PATHS: [&str; 5] = ["--miyu", "--resources", "--design", "--work", "--out"
 /// 照原始数据重出表时必写的。
 const RENDER_PATHS: [&str; 2] = ["--design", "--out"];
 
-/// 录排函数的清单时必写的（施工 LW-1）：不量、不出表，用不着预算和结果目录。
-const ORDER_PATHS: [&str; 6] = [
-    "--miyu",
-    "--resources",
-    "--work",
-    "--tree",
-    "--order",
-    "--emulator",
-];
+/// 录排函数的清单时必写的（施工 LW-1）：不量、不出表，用不着预算和结果目录。`--emulator`、`--probe` 二者择一（施工 MO-2），
+/// 由 [`parse`] 另外查，不在这里。
+const ORDER_PATHS: [&str; 5] = ["--miyu", "--resources", "--work", "--tree", "--order"];
 
 /// 量什么、量多少次、放哪。
 #[derive(Debug, Clone, PartialEq)]
@@ -70,8 +64,11 @@ pub struct Args {
     pub tag: Option<String>,
     /// 排函数（施工 LW-1）：写了的不量，在模拟器里照剧本录一遍，把执行过的函数照头一回执行的先后写进这个文件。
     pub order: Option<PathBuf>,
-    /// 排函数：QEMU 的用户态模拟器，例如 `qemu-x86_64`。要和 `--order` 一起写。
+    /// 排函数：QEMU 的用户态模拟器，例如 `qemu-x86_64`。要和 `--order` 一起写，和 [`Args::probe`] 二者择一。
     pub emulator: Option<PathBuf>,
+    /// 排函数（施工 MO-2）：macOS 上不用模拟器，给被测进程插这个页探针动态库（`crates/miyu-perf/probe/pagetrace.c` 编出来
+    /// 的）。要和 `--order` 一起写，和 [`Args::emulator`] 二者择一。
+    pub probe: Option<PathBuf>,
     /// 排函数（施工 LW-6）：真的终端界面程序。给了的在照协议问的两段以后，再配着它录第三段（核心在模拟器里，
     /// `order/head.rs`）。只在 `--order` 的跑法里认。
     pub head: Option<PathBuf>,
@@ -110,6 +107,7 @@ pub fn parse(words: &[String]) -> Result<Args, String> {
         tag: None,
         order: None,
         emulator: None,
+        probe: None,
         head: None,
         head_order: None,
     };
@@ -143,14 +141,25 @@ pub fn parse(words: &[String]) -> Result<Args, String> {
             "--tag" => args.tag = Some(value.clone()),
             "--order" => args.order = Some(value.into()),
             "--emulator" => args.emulator = Some(value.into()),
+            "--probe" => args.probe = Some(value.into()),
             "--head" => args.head = Some(value.into()),
             "--head-order" => args.head_order = Some(value.into()),
             _ => return Err(format!("不认识 {flag}\n{USAGE}")),
         }
         given.push(flag.as_str());
     }
-    if args.order.is_some() != args.emulator.is_some() {
-        return Err(format!("--order 要和 --emulator 一起写\n{USAGE}"));
+    if args.emulator.is_some() && args.probe.is_some() {
+        return Err(format!(
+            "--emulator 和 --probe 只能写一个：Linux 上用模拟器录，macOS 上用页探针录\n{USAGE}"
+        ));
+    }
+    if args.probe.is_some() && args.order.is_none() {
+        return Err(format!("--probe 要和 --order 一起写\n{USAGE}"));
+    }
+    if args.order.is_some() != (args.emulator.is_some() || args.probe.is_some()) {
+        return Err(format!(
+            "--order 要和 --emulator 或者 --probe 一起写\n{USAGE}"
+        ));
     }
     if args.head_order.is_some() && args.head.is_none() {
         return Err(format!("--head-order 要和 --head 一起写\n{USAGE}"));

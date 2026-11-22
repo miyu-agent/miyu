@@ -6,6 +6,11 @@
 //! - 第四段：核心原生，终端界面放进模拟器（`<模拟器> -d in_asm -D <日志> <终端界面>`），照第三段看到的命令行参数、主程序给
 //!   它加的环境变量起（[`Launched`]）；这一段的日志是终端界面自己的清单。
 //!
+//! 带页探针的（施工 MO-2，`--probe`，macOS）：第三段核心带探针起，主程序、终端界面原生；第四段核心原生，原生起主程序，
+//! 只给它加上探针的几个变量，`MIYU_PAGES_PROGRAM` 是终端界面（[`Probed`]）。主程序换成终端界面时进程号不变，环境照传，
+//! 探针在主程序里不动手、在换成的终端界面里动手：命令行参数、环境就是主程序真给的那一份，不用照第三段读（macOS 没有
+//! `/proc`，[`Launched::read`] 读不了）。主程序起的要不是 `--head` 给的那一个，探针一份记录都写不下，写清单时报错。
+//!
 //! 两段的剧本一样（[`converse`]）：等输入框画出来（屏幕上出现 [`PROMPT`]），说一句，等假模型收到这一轮的主请求、屏幕上
 //! 画出回答、这一轮结束；再说一句触发工具调用的话（工具一步的几种各调一次），等这一轮结束；再逛一圈（施工 LW-14，
 //! `order/tour.rs`）；歇 [`QUIET`]。哪一样等不到都报错停下，不悄悄少录。
@@ -24,11 +29,12 @@ use std::time::{Duration, Instant};
 use super::script::QUIET;
 use super::terminal::Terminal;
 use super::tour::tour;
+use super::{Recorder, Trace};
 use crate::args::Args;
 use crate::fake::script::{Script, ToolCall};
 use crate::fake::{Arrival, Fake, mentions};
 use crate::measure::tools::calls::{KINDS, Workspace};
-use crate::sandbox::{Launch, Sandbox, Traced, base_of, home_vars};
+use crate::sandbox::{Launch, Probed, Sandbox, base_of, home_vars};
 
 /// 等终端界面最多多久：核心或者终端界面在模拟器里，头一回执行每一块代码都要先翻译，比原生慢十几倍（同
 /// `sandbox.rs` 的 `TRACED_PATIENCE`）。
@@ -55,16 +61,16 @@ const SETTLE_CAP: Duration = Duration::from_secs(30);
 /// 多久看一次会话日志里这一轮结束了没有。
 const POLL: Duration = Duration::from_millis(200);
 
-/// 录好的日志：核心的（第三段）、终端界面的（第四段，录了的话），各带程序在那一段里的装载起点。
+/// 录好的：核心的（第三段）、终端界面的（第四段，录了的话）。
 pub struct Logs {
-    /// 第三段：核心的日志和装载起点。
-    pub core: (PathBuf, u64),
-    /// 第四段：终端界面的日志和装载起点；没录的是 `None`。
-    pub head: Option<(PathBuf, u64)>,
+    /// 第三段：核心的。
+    pub core: Trace,
+    /// 第四段：终端界面的；没录的是 `None`。
+    pub head: Option<Trace>,
 }
 
-/// 录第三段，`fourth` 的再录第四段：终端界面是 `program`，核心在模拟器 `emulator` 里，核心信任 `trust`，工具一步的工作区
-/// 拷 `--tree`。
+/// 录第三段，`fourth` 的再录第四段：终端界面是 `program`，照 `recorder` 放进模拟器或者带探针，核心信任 `trust`，工具一步
+/// 的工作区拷 `--tree`。
 ///
 /// # Errors
 ///
@@ -73,7 +79,7 @@ pub async fn record(
     args: &Args,
     sandbox: &Sandbox,
     fake: &mut Fake,
-    emulator: &Path,
+    recorder: Recorder<'_>,
     trust: &Path,
     program: &Path,
     fourth: bool,
@@ -86,24 +92,24 @@ pub async fn record(
     let mut text = std::fs::read_to_string(&config).map_err(|e| format!("系统配置读不了：{e}"))?;
     text.push_str(SETTINGS);
     std::fs::write(&config, text).map_err(|e| format!("系统配置写不进：{e}"))?;
-    let given = environment(sandbox, args, trust, &home);
+    let mut given = environment(sandbox, args, trust, &home);
+    if let Recorder::Probe(_) = recorder {
+        chinese(&mut given);
+    }
     let native = Launch {
         trust: Some(trust),
         home: Some(&home),
         ..Launch::default()
     };
 
-    eprintln!("排函数：第三段（核心在模拟器里，真的终端界面）");
-    let log = args.work.join("order-3.log");
+    match recorder {
+        Recorder::Emulator(_) => eprintln!("排函数：第三段（核心在模拟器里，真的终端界面）"),
+        Recorder::Probe(_) => eprintln!("排函数：第三段（核心带探针，真的终端界面）"),
+    }
+    let log = recorder.at(&args.work, "order-3");
     let workspace = Workspace::prepare(&sandbox.work.join("tools-3"), tree)?;
-    let running = sandbox.start_with(Launch {
-        traced: Some(Traced {
-            emulator,
-            log: &log,
-        }),
-        ..native
-    })?;
-    let base = running.base(&args.miyu);
+    let running = sandbox.start_with(recorder.launch(native, &log, &args.miyu))?;
+    let core = recorder.trace(&running, &log, &args.miyu);
     let mut command = Command::new(&args.miyu);
     command
         .current_dir(&workspace.dir)
@@ -115,7 +121,11 @@ pub async fn record(
         terminal
             .wait_for(PROMPT, 0, PATIENCE, "主程序拉起终端界面、画出输入框")
             .await?;
-        let launched = Launched::read(terminal.pid(), program, &given)?;
+        // 探针那一路第四段不照第三段起（见模块的说明），也就不读 `/proc`。
+        let launched = match recorder {
+            Recorder::Emulator(_) => Some(Launched::read(terminal.pid(), program, &given)?),
+            Recorder::Probe(_) => None,
+        };
         converse(&mut terminal, fake, &turns, &workspace, "perf-order-head-3").await?;
         tour(&mut terminal, fake, &turns, &workspace, "perf-order-head-3").await?;
         tokio::time::sleep(QUIET).await;
@@ -123,44 +133,70 @@ pub async fn record(
     }
     .await;
     sandbox.stop(running)?;
-    let core = (log, base?);
+    let core = core?;
     let launched = third.map_err(|e| format!("第三段：{e}"))?;
     if !fourth {
         return Ok(Logs { core, head: None });
     }
 
-    eprintln!("排函数：第四段（终端界面在模拟器里）");
-    let log = args.work.join("order-4.log");
+    match recorder {
+        Recorder::Emulator(_) => eprintln!("排函数：第四段（终端界面在模拟器里）"),
+        Recorder::Probe(_) => eprintln!("排函数：第四段（终端界面带探针，由主程序拉起）"),
+    }
+    let log = recorder.at(&args.work, "order-4");
     let workspace = Workspace::prepare(&sandbox.work.join("tools-4"), tree)?;
+    let (command, what) = match (recorder, launched) {
+        (Recorder::Emulator(emulator), Some(launched)) => {
+            let mut command = Command::new(emulator);
+            command
+                .current_dir(&workspace.dir)
+                .args(["-d", "in_asm", "-D"])
+                .arg(&log)
+                .arg(program)
+                .args(&launched.args)
+                .env_clear()
+                .envs(given.iter().cloned())
+                .envs(launched.extra.iter().cloned());
+            (command, "终端界面在模拟器里画出输入框")
+        }
+        (Recorder::Emulator(_), None) => {
+            return Err("第三段没有读到主程序怎么拉起终端界面".to_string());
+        }
+        (Recorder::Probe(library), _) => {
+            let probed = Probed {
+                library,
+                out: &log,
+                program,
+            };
+            let mut command = Command::new(&args.miyu);
+            command
+                .current_dir(&workspace.dir)
+                .env_clear()
+                .envs(given.iter().cloned())
+                .envs(probed.vars()?);
+            (command, "主程序拉起带探针的终端界面、画出输入框")
+        }
+    };
     let running = sandbox.start_with(native)?;
-    let mut command = Command::new(emulator);
-    command
-        .current_dir(&workspace.dir)
-        .args(["-d", "in_asm", "-D"])
-        .arg(&log)
-        .arg(program)
-        .args(&launched.args)
-        .env_clear()
-        .envs(given.iter().cloned())
-        .envs(launched.extra.iter().cloned());
     let turns = Turns::new(sandbox)?;
     let recorded = async {
         let mut terminal = Terminal::spawn(command)?;
-        terminal
-            .wait_for(PROMPT, 0, PATIENCE, "终端界面在模拟器里画出输入框")
-            .await?;
-        let base = base_of(terminal.pid(), program)?;
+        terminal.wait_for(PROMPT, 0, PATIENCE, what).await?;
+        let trace = match recorder {
+            Recorder::Emulator(_) => Trace::Log(log.clone(), base_of(terminal.pid(), program)?),
+            Recorder::Probe(_) => Trace::Pages(log.clone()),
+        };
         converse(&mut terminal, fake, &turns, &workspace, "perf-order-head-4").await?;
         tour(&mut terminal, fake, &turns, &workspace, "perf-order-head-4").await?;
         tokio::time::sleep(QUIET).await;
-        Ok::<_, String>(base)
+        Ok::<_, String>(trace)
     }
     .await;
     sandbox.stop(running)?;
-    let base = recorded.map_err(|e| format!("第四段：{e}"))?;
+    let head = recorded.map_err(|e| format!("第四段：{e}"))?;
     Ok(Logs {
         core,
-        head: Some((log, base)),
+        head: Some(head),
     })
 }
 
@@ -195,6 +231,14 @@ fn environment(
             .map(|(name, value)| (OsString::from(name), value)),
     );
     vars
+}
+
+/// 带页探针的（施工 MO-2，macOS）把终端界面的语言定成中文：逛一圈等的界面上的字是中文的（`order/tour.rs`）。终端界面照
+/// `LC_ALL`、`LC_MESSAGES`、`LANG` 认语言，都没有的照系统设置里的语言；Linux 上宿主的 `LANG` 是中文，2026-11-23 在一台
+/// 系统语言是英文、没设 `LANG` 的 M1 MacBook 上画出来的是英文，等不到中文的字。只换这三个，核心的语言不动。
+fn chinese(vars: &mut Vec<(OsString, OsString)>) {
+    vars.retain(|(name, _)| !matches!(name.as_bytes(), b"LC_ALL" | b"LC_MESSAGES" | b"LANG"));
+    vars.push((OsString::from("LANG"), OsString::from("zh_CN.UTF-8")));
 }
 
 /// 主程序是怎么拉起终端界面的（第三段原生看到的）：第四段照着在模拟器里起。

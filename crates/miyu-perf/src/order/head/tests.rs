@@ -52,3 +52,24 @@ fn the_answer_mark_is_in_every_reply() {
         assert!(crate::fake::filler(bytes).contains(ANSWERED), "{bytes}");
     }
 }
+
+/// 带页探针的（施工 MO-2）把终端界面的语言换成中文：去掉宿主的三个语言变量，换上 `LANG=zh_CN.UTF-8`，别的不动。
+#[test]
+fn the_probe_path_speaks_chinese_to_the_head() {
+    let mut vars = vec![
+        (os("PATH"), os("/usr/bin")),
+        (os("LC_ALL"), os("en_US.UTF-8")),
+        (os("LC_MESSAGES"), os("en_US.UTF-8")),
+        (os("LC_CTYPE"), os("UTF-8")),
+        (os("LANG"), os("en_US.UTF-8")),
+    ];
+    chinese(&mut vars);
+    assert_eq!(
+        vars,
+        vec![
+            (os("PATH"), os("/usr/bin")),
+            (os("LC_CTYPE"), os("UTF-8")),
+            (os("LANG"), os("zh_CN.UTF-8")),
+        ]
+    );
+}

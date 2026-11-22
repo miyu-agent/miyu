@@ -173,10 +173,6 @@ impl<'a> Listing<'a> {
 
     /// 照先后记一串符号表里的地址（页探针的记录，[`Probe::executed`]）：落在哪个函数里，那个函数第一次出现时接在后面。
     /// 和 [`Listing::read`] 记的是同一份，几份记录、几段日志可以接着记。
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "施工 MO-2 接上 --probe 以前只有测试用")
-    )]
     pub fn add(&mut self, addresses: &[u64]) {
         for &at in addresses {
             self.note(at);
@@ -214,10 +210,6 @@ impl<'a> Listing<'a> {
 
 /// 读好的一份页探针的记录（格式见模块的说明）。
 #[derive(Debug, PartialEq, Eq)]
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "施工 MO-2 接上 --probe 以前只有测试用")
-)]
 pub struct Probe {
     /// 「执行」的记录碰的地址，照记录的先后；「读」的不在这里。
     pub executed: Vec<u64>,
@@ -236,10 +228,6 @@ const HEAD: usize = 8;
 /// 标志里认得的位：第 0 位是「满了」。
 const FULL: u64 = 1;
 
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "施工 MO-2 接上 --probe 以前只有测试用")
-)]
 impl Probe {
     /// 读一份记录文件的字节 `bytes`。
     ///

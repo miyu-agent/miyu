@@ -4,6 +4,7 @@
 //! `$XDG_RUNTIME_DIR`，不走代理。模型的窗口写成 [`WINDOW`]（施工 V-2 上）：长会话照真用时那样到线就压，量的是压过的会话；
 //! V-1 没写窗口，会话一直不压，大会话的投影是把一万条事件整份组装，真用时到不了。
 
+use std::ffi::OsString;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
@@ -21,7 +22,8 @@ use miyu_store::root::DataRoot;
 const START_PATIENCE: Duration = Duration::from_secs(60);
 
 /// 在模拟器里起来最多等多久（施工 LW-1，[`Traced`]）：模拟器头一回执行每一块代码都要先翻译、写进日志，核心起来比原生慢十几
-/// 倍，CI 的机器再慢几倍；只在排函数那一场用，别的几场照 [`START_PATIENCE`]。
+/// 倍，CI 的机器再慢几倍；只在排函数那一场用，别的几场照 [`START_PATIENCE`]。带页探针起的（[`Probed`]）也照
+/// [`START_PATIENCE`]：程序以接近原生的速度跑。
 const TRACED_PATIENCE: Duration = Duration::from_secs(600);
 
 /// 一个沙盒数据根，和拉起核心要的几样。
@@ -96,7 +98,8 @@ impl Sandbox {
         let began = Instant::now();
         // 在模拟器里的（施工 LW-1）：模拟器拉起核心，进程号是模拟器的，`/proc` 里读到的映射就是核心的；不放进 scope。
         // 放进 scope 的经 `systemd-run --scope`：它登记好 scope 就把自己换成核心（`env` 也是换，进程号不变），环境照传。
-        // `XDG_RUNTIME_DIR` 留给 systemd-run 找用户的总线，进了 scope 再由 `env` 去掉。
+        // `XDG_RUNTIME_DIR` 留给 systemd-run 找用户的总线，进了 scope 再由 `env` 去掉。带页探针的（施工 MO-2）不换程序，
+        // 只多几个环境变量（[`Probed::vars`]），也不放进 scope；`traced`、`probed` 都给了的照 `traced`。
         let mut command = if let Some(traced) = launch.traced {
             let mut command = Command::new(traced.emulator);
             command
@@ -105,7 +108,14 @@ impl Sandbox {
                 .arg(&self.miyu)
                 .env_remove("XDG_RUNTIME_DIR");
             command
+        } else if let Some(probed) = launch.probed {
+            let mut command = Command::new(&self.miyu);
+            command.envs(probed.vars()?).env_remove("XDG_RUNTIME_DIR");
+            command
         } else if launch.scoped {
+            if !cfg!(target_os = "linux") {
+                return Err("放进自己的 systemd scope 只在 Linux 上做".to_string());
+            }
             let mut command = Command::new("systemd-run");
             command
                 .args(["--user", "--scope", "--quiet", "--collect", "--"])
@@ -205,12 +215,15 @@ impl Sandbox {
 /// 怎么拉起核心（施工 V-29）。默认的照别的几场：不放进 scope，不记运行日志的级别（核心照配置，出厂 `info`）。
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Launch<'a> {
-    /// 放进自己的 systemd scope：量连子进程的 CPU 要它（`cpu.rs`）。要 systemd 的用户会话。
+    /// 放进自己的 systemd scope：量连子进程的 CPU 要它（`cpu.rs`）。要 systemd 的用户会话，只在 Linux 上做，别的系统上
+    /// 给了的 [`Sandbox::start_with`] 报错。
     pub scoped: bool,
     /// `MIYU_LOG`：拆开一步各段时记到 `debug`，核心每处理一条输入、每做一个动作记一行（`log.md`）。
     pub log: Option<&'a str>,
-    /// 放进模拟器里起（施工 LW-1，排函数）：给了的不看 [`Launch::scoped`]。
+    /// 放进模拟器里起（施工 LW-1，排函数）：给了的不看 [`Launch::scoped`]、[`Launch::probed`]。
     pub traced: Option<Traced<'a>>,
+    /// 带页探针起（施工 MO-2，排函数，macOS）：和 [`Launch::traced`] 并列的另一种录法，给了的不看 [`Launch::scoped`]。
+    pub probed: Option<Probed<'a>>,
     /// 核心的 `SSL_CERT_FILE`（施工 LW-1）：假模型 HTTPS 的口要核心信任测试证书；没给的不设，照宿主的环境。
     pub trust: Option<&'a Path>,
     /// 家目录指进沙盒（施工 LW-6，[`home_vars`]）：配着真的终端界面录的两段，核心和终端界面看到同一个家目录；没给的照宿主的。
@@ -243,6 +256,52 @@ pub struct Traced<'a> {
     pub log: &'a Path,
 }
 
+/// 页探针重新关上代码页的间隔（毫秒，施工 MO-2，探针的 `MIYU_PAGES_REARM_MS`）。来由：MO-1 在一台 M1 MacBook 上量过，
+/// 每 20 毫秒重关一轮，一轮记到的函数是不重关时的 2.7 倍，用时看不出变慢。
+pub const REARM_MS: u32 = 20;
+
+/// 带页探针起被测程序（施工 MO-2，macOS 上代替 [`Traced`]）：不换程序，只给进程加几个环境变量（[`Probed::vars`]）。探针
+/// （`crates/miyu-perf/probe/pagetrace.c`）由 `DYLD_INSERT_LIBRARIES` 插进去，只在可执行文件是 [`Probed::program`] 的进程里
+/// 动手，每个进程写 `<out>.<进程号>` 和旁边的 `<out>.<进程号>.exe`。它写下的已经是符号表里的地址，所以这一路用不着装载起点。
+#[derive(Debug, Clone, Copy)]
+pub struct Probed<'a> {
+    /// 探针的动态库。
+    pub library: &'a Path,
+    /// 这一段的输出前缀（探针的 `MIYU_PAGES_OUT`）。
+    pub out: &'a Path,
+    /// 被测程序（探针的 `MIYU_PAGES_PROGRAM`）：别的进程载入了探针也什么都不做，例如核心起的沙盒子进程、换成终端界面以前的
+    /// 主程序。
+    pub program: &'a Path,
+}
+
+impl Probed<'_> {
+    /// 交给被测进程的环境变量：`DYLD_INSERT_LIBRARIES`、`MIYU_PAGES_OUT`、`MIYU_PAGES_PROGRAM`、`MIYU_PAGES_REARM_MS`
+    /// （[`REARM_MS`]）。三个路径都换成绝对路径：被测进程的工作目录不是量尺的（终端界面在工具一步的工作区里起），探针照
+    /// 相对路径找会找错地方。
+    ///
+    /// # Errors
+    ///
+    /// 探针、被测程序找不到；输出前缀换不成绝对路径。
+    pub fn vars(&self) -> Result<[(&'static str, OsString); 4], String> {
+        let library = self
+            .library
+            .canonicalize()
+            .map_err(|e| format!("找不到探针 {}：{e}", self.library.display()))?;
+        let program = self
+            .program
+            .canonicalize()
+            .map_err(|e| format!("找不到 {}：{e}", self.program.display()))?;
+        let out = std::path::absolute(self.out)
+            .map_err(|e| format!("探针的输出前缀 {} 换不成绝对路径：{e}", self.out.display()))?;
+        Ok([
+            ("DYLD_INSERT_LIBRARIES", library.into_os_string()),
+            ("MIYU_PAGES_OUT", out.into_os_string()),
+            ("MIYU_PAGES_PROGRAM", program.into_os_string()),
+            ("MIYU_PAGES_REARM_MS", OsString::from(REARM_MS.to_string())),
+        ])
+    }
+}
+
 /// 跑着的核心。丢掉时结束它。
 pub struct Running {
     child: Child,
@@ -257,7 +316,7 @@ impl Running {
     }
 
     /// 程序 `program` 装在进程的哪个地址起（施工 LW-1）：读 `/proc/<进程号>/maps`。在模拟器里的，日志里的地址减去它就是
-    /// 符号表里的地址。
+    /// 符号表里的地址。只在模拟器那一路用：带页探针的（[`Probed`]）用不着，macOS 上也没有 `/proc`。
     ///
     /// # Errors
     ///

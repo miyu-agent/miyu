@@ -113,7 +113,7 @@ fn recording_the_order_needs_an_emulator_and_a_tree() {
     for half in ["--order /o.txt", "--emulator qemu-x86_64"] {
         let error = parse(&words(&format!("{PATHS_GIVEN} {half}"))).unwrap_err();
         assert!(
-            error.starts_with("--order 要和 --emulator 一起写\n"),
+            error.starts_with("--order 要和 --emulator 或者 --probe 一起写\n"),
             "{error}"
         );
     }
@@ -161,4 +161,44 @@ fn the_head_goes_with_its_own_order_and_only_when_recording() {
         error.starts_with("--head 只在 --order 的跑法里认\n"),
         "{error}"
     );
+}
+
+/// 排函数带页探针（施工 MO-2）：`--probe` 代替 `--emulator`，两个只能写一个；只写 `--probe` 不写 `--order` 的说清楚；
+/// 两个都不写的照原来的报错。
+#[test]
+fn the_probe_replaces_the_emulator() {
+    const ORDER: &str = "--miyu /m --resources /r --work /w --tree /t --order /o.txt";
+    let args = parse(&words(&format!(
+        "{ORDER} --probe /p/pagetrace.dylib --head /d/miyu-tui --head-order /tui.txt"
+    )))
+    .unwrap();
+    assert_eq!(args.probe, Some(PathBuf::from("/p/pagetrace.dylib")));
+    assert_eq!(args.emulator, None);
+    assert_eq!(args.head_order, Some(PathBuf::from("/tui.txt")));
+    assert_eq!(parse(&words(PATHS_GIVEN)).unwrap().probe, None);
+    let error = parse(&words(&format!(
+        "{ORDER} --emulator qemu-x86_64 --probe /p/pagetrace.dylib"
+    )))
+    .unwrap_err();
+    assert!(
+        error.starts_with("--emulator 和 --probe 只能写一个："),
+        "{error}"
+    );
+    let error = parse(&words(&format!("{PATHS_GIVEN} --probe /p/pagetrace.dylib"))).unwrap_err();
+    assert!(
+        error.starts_with("--probe 要和 --order 一起写\n"),
+        "{error}"
+    );
+    let error = parse(&words(ORDER)).unwrap_err();
+    assert!(
+        error.starts_with("--order 要和 --emulator 或者 --probe 一起写\n"),
+        "{error}"
+    );
+    // 用法里写着两种录法。
+    assert!(error.contains("--probe <pagetrace.dylib>"), "{error}");
+    let error = parse(&words(
+        "--miyu /m --resources /r --work /w --order /o.txt --probe /p/pagetrace.dylib",
+    ))
+    .unwrap_err();
+    assert!(error.starts_with("缺 --tree\n"), "{error}");
 }
