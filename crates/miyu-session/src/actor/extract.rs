@@ -267,7 +267,7 @@ impl Actor {
                     name: name.as_deref(),
                 },
             );
-            runtime.spawn(woken(job, plan, backs).instrument(span));
+            runtime.spawn(Box::pin(woken(job, plan, backs)).instrument(span));
         });
     }
 }
@@ -286,7 +286,7 @@ impl Actor {
         let dir = self.store.as_ref().and_then(|store| store.dir());
         let (Some(dir), true) = (dir, self.session.vacant()) else {
             let keeper = keeper.clone();
-            let dreaming = async move { keeper.dream_until(config, offset, hush).await };
+            let dreaming = Box::pin(async move { keeper.dream_until(config, offset, hush).await });
             tokio::spawn(async move { answer(reply, dreaming.await) });
             return;
         };
@@ -338,7 +338,7 @@ impl Actor {
         let Some((read, extraction)) = read else {
             extractor.disarm(generation);
             let keeper = keeper.clone();
-            let dreaming = async move { keeper.dream_until(config, offset, hush).await };
+            let dreaming = Box::pin(async move { keeper.dream_until(config, offset, hush).await });
             tokio::spawn(async move { answer(reply, dreaming.await) });
             return;
         };
@@ -372,7 +372,7 @@ impl Actor {
             extractor: Arc::clone(extractor),
             again: Box::new(|| {}),
         };
-        tokio::spawn(woken(job, plan, self.backs.clone()).in_current_span());
+        tokio::spawn(Box::pin(woken(job, plan, self.backs.clone())).in_current_span());
     }
 }
 

@@ -43,7 +43,8 @@ pub(crate) struct Refresh {
     pub(crate) personas: Personas,
     pub(crate) resources: ResourceRoot,
     pub(crate) blobs: Blobs,
-    pub(crate) snapshot: Snapshot,
+    /// 放在堆上（施工 LW-21）：快照近 4 KB，按值带着的话每个干算、刷新的任务都要多装几份。
+    pub(crate) snapshot: Box<Snapshot>,
     pub(crate) child: bool,
     pub(crate) presets: Option<PresetPlaces>,
     pub(crate) tools: Shelf,
@@ -152,7 +153,7 @@ impl Actor {
                 self.tools.lettering().set(run, guard);
                 let to = snapshot.persona.clone();
                 if let Some(refresh) = self.persona.as_mut() {
-                    refresh.snapshot = *snapshot;
+                    refresh.snapshot = snapshot;
                     refresh.seen = Some(seen);
                     refresh.baseline = None;
                 }
@@ -391,7 +392,7 @@ fn look(
     // 目录换了代、这个会话的工具面没变的（只给群的、预设关着的），什么都不记。直接比两份快照（施工 V-24补）：快照没有跳过不写的
     // 字段、没有浮点、没有 JSON 值，一样就是字节一样；以前两份各写一遍 JSON、各算一遍 SHA-256 再比。步数照预设重算的
     // （`steps::restepped`）也在比的里面。
-    if new == *old {
+    if new == **old {
         return Seen::Same;
     }
     // 程序升级过（核心的字变了），人格、预设都没改、工具面也没变的：照旧，不为升级断一次缓存（施工 P-1 三补）。

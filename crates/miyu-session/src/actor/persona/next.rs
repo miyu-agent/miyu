@@ -35,7 +35,8 @@ impl Actor {
             .as_ref()
             .map_or(0, crate::open::PresetPlaces::edits)
             > refresh.prefix.seen();
-        tokio::spawn(async move {
+        // 装箱再交给 tokio（施工 LW-21）：没装箱的 future 在交进任务的路上要在栈上拷好几份。
+        tokio::spawn(Box::pin(async move {
             let tools = blocking(move || {
                 match look(
                     &refresh,
@@ -50,7 +51,7 @@ impl Actor {
             })
             .await;
             super::super::answer(reply, tools);
-        });
+        }));
     }
 }
 

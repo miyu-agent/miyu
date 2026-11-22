@@ -47,7 +47,8 @@ impl Actor {
         };
         let (values, now, asked, project, wanted) = self.dry_inputs(&refresh);
         let (settle, baseline) = watch::channel(None);
-        tokio::spawn(async move {
+        // 装箱再交给 tokio（施工 LW-21）：没装箱的 future 在交进任务的路上要在栈上拷好几份。
+        tokio::spawn(Box::pin(async move {
             let seen = blocking(move || {
                 look(
                     &refresh,
@@ -63,7 +64,7 @@ impl Actor {
                 _ => None,
             };
             drop(settle.send(Some(settled)));
-        });
+        }));
         if let Some(refresh) = self.persona.as_mut() {
             refresh.baseline = Some(Baseline(baseline));
         }
@@ -96,7 +97,8 @@ impl Actor {
         let (values, now, asked, project, wanted) = self.dry_inputs(&refresh);
         let prefix = Arc::clone(&refresh.prefix);
         let baseline = refresh.baseline.clone();
-        tokio::spawn(async move {
+        // 装箱再交给 tokio（施工 LW-21）：没装箱的 future 在交进任务的路上要在栈上拷好几份。
+        tokio::spawn(Box::pin(async move {
             let seen = blocking(move || {
                 look(
                     &refresh,
@@ -131,7 +133,7 @@ impl Actor {
                 Seen::Unreadable(_) | Seen::Kept(_) => PrefixCheck::Unchanged,
             };
             super::super::answer(reply, found);
-        });
+        }));
     }
 }
 

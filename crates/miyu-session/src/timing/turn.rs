@@ -10,6 +10,7 @@
 //! 不套 task-local。量的都是用时，没有对话的字。
 
 use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
@@ -54,7 +55,14 @@ pub(crate) struct Lap {
 
 impl Lap {
     /// 等 `work` 做完，量着：跑几回的（人格换了照新快照再找一次技能）加在一起。
-    pub(crate) async fn run<T>(&mut self, work: impl Future<Output = T>) -> T {
+    ///
+    /// `work` 先装箱（施工 LW-21）：它按值进来再挪进 `scope` 等，没装箱的话这个 future 里有两份，人格刷新那一段一份十几 KB，
+    /// 回合开始那几段并着等，又叠进回合开始的 future 里。一个回合装十来次，比起回合本身可以不计。
+    pub(crate) fn run<T>(&mut self, work: impl Future<Output = T>) -> impl Future<Output = T> {
+        self.timed(Box::pin(work))
+    }
+
+    async fn timed<T>(&mut self, work: Pin<Box<impl Future<Output = T>>>) -> T {
         if !on() {
             return work.await;
         }

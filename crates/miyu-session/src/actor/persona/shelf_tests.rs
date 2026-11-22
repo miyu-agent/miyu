@@ -42,7 +42,7 @@ fn swap(refresh: &mut Refresh) -> Snapshot {
     let Seen::Swapped(snapshot, ..) = look_now(refresh) else {
         panic!("该换");
     };
-    refresh.snapshot = (*snapshot).clone();
+    refresh.snapshot = snapshot.clone();
     refresh.seen = Some(refresh.tools.edition());
     *snapshot
 }
@@ -194,7 +194,7 @@ fn a_session_without_a_preset_follows_the_catalog_too() {
         steps: miyu_policy::steps::StepLimits::of(miyu_policy::steps::Watched::Attended, None),
         search: None,
     };
-    refresh.snapshot = build(&refresh.resources, parts).expect("拼得成");
+    *refresh.snapshot = build(&refresh.resources, parts).expect("拼得成");
     assert!(matches!(look_now(&refresh), Seen::Same), "没换代的不换");
     provide(&refresh, vec![provided("send", LOCAL)]);
     let snapshot = swap(&mut refresh);
@@ -342,7 +342,7 @@ fn frozen(name: &str) -> miyu_policy::ToolEntry {
 fn loaded_with(refresh: &mut Refresh, extra: Vec<miyu_policy::ToolEntry>, catalog: Catalog) {
     let mut tools = refresh.snapshot.tools.clone();
     tools.extend(extra);
-    refresh.snapshot = refresh.snapshot.clone().with_tools(tools);
+    *refresh.snapshot = refresh.snapshot.clone().with_tools(tools);
     refresh.seen = None;
     refresh
         .tools

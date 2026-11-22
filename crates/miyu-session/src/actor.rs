@@ -164,7 +164,7 @@ impl Actor {
         inbox: mpsc::UnboundedReceiver<Message>,
         clock: Clock,
         config: Turning,
-    ) -> Actor {
+    ) -> Box<Actor> {
         let (backs, back) = mpsc::unbounded_channel();
         let (syncs, synced) = mpsc::unbounded_channel();
         let tools = Tools::new(tools, backs.clone());
@@ -179,7 +179,8 @@ impl Actor {
             Next::of(&*model),
             (session.todos(), session.package_states()),
         )));
-        Actor {
+        // 放在堆上（施工 LW-21）：一个 actor 有十几 KB，按值带着的话造会话、载入的 future 和 `run` 的 future 都要多装一两份。
+        Box::new(Actor {
             session,
             store: Some(store),
             model,
@@ -220,7 +221,7 @@ impl Actor {
             quiet: Instant::now(),
             shelf_due: None,
             unread: None,
-        }
+        })
     }
 
     /// 向上回报交给 `reporter`（施工 7-6）：子会话造好、载入时交。
@@ -234,7 +235,7 @@ impl Actor {
     }
 
     /// 跑：先回造会话、载入吐出来的动作，再一封封收。执行器的回报先收，读流不断。
-    pub(crate) async fn run(mut self, first: Vec<Action>) {
+    pub(crate) async fn run(mut self: Box<Self>, first: Vec<Action>) {
         if self.settle(first).await.is_err() {
             return;
         }

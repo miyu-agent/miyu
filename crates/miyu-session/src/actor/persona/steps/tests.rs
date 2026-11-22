@@ -47,7 +47,7 @@ fn a_changed_limit_is_swapped_in_next_turn() {
 fn a_subagent_keeps_its_own_numbers() {
     let (_scratch, root, mut refresh) = setup("steps-child", "");
     refresh.child = true;
-    refresh.snapshot = refresh
+    *refresh.snapshot = refresh
         .snapshot
         .clone()
         .with_steps(StepLimits::of(Watched::Subagent, None));

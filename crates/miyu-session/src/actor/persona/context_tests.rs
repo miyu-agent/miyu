@@ -69,7 +69,7 @@ fn an_older_session_is_still_laid_out_block_by_block() {
     let (_scratch, _root, mut refresh) = setup("context-older", "");
     refresh.snapshot.skills = Some("技能：写周报。\n".to_string());
     let parts = parts_of(&refresh).expect("有料");
-    refresh.snapshot = build(&refresh.resources, parts).expect("拼得成");
+    *refresh.snapshot = build(&refresh.resources, parts).expect("拼得成");
     let fresh = relaid(&refresh).expect("对得上");
     let (_, core) = fresh
         .iter()
@@ -189,7 +189,7 @@ fn a_roleplaying_persona_s_style_lock_is_its_own_block() {
     let mut parts = parts_of(&refresh).expect("有料");
     parts.texts = refresh.personas.find("miyu").expect("找得到 Miyu").texts;
     parts.roleplay = true;
-    refresh.snapshot = build(&refresh.resources, parts).expect("拼得成");
+    *refresh.snapshot = build(&refresh.resources, parts).expect("拼得成");
     assert!(refresh.snapshot.reminder.is_some(), "有角色扮演提示");
     let layout = relaid(&refresh).expect("对得上");
     assert_eq!(

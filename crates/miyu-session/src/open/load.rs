@@ -166,7 +166,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
             log,
             (loaded, base, scan),
             (created, command),
-            (snapshot, pools),
+            (Box::new(snapshot), pools),
             policy,
             texts,
             run,

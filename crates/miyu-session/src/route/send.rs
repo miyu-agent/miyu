@@ -98,7 +98,10 @@ impl Tried {
 
 /// 在派出去的任务里发，带着当前的 span。
 pub(super) fn spawn(chosen: Chosen, request: Request, reports: Reports, cancel: Cancel) {
-    tokio::spawn(ask(chosen, request, reports, cancel).instrument(tracing::Span::current()));
+    // 装箱再交给 tokio（施工 LW-21）：没装箱的 future 在交进任务的路上要在栈上拷好几份。
+    tokio::spawn(
+        Box::pin(ask(chosen, request, reports, cancel)).instrument(tracing::Span::current()),
+    );
 }
 
 /// 叫停：等到被叫停的那一个，钉住了好在几次尝试之间借用（施工 Q-2：旁路请求在池里换人）。

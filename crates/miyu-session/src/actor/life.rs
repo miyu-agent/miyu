@@ -29,7 +29,7 @@ pub(crate) fn span(id: &SessionId) -> tracing::Span {
 
 /// 起一个 actor 的任务，外面再套一个看着它的：它 panic 了（内核自己的 bug、端口的 bug），记一条
 /// `ERROR`，别的会话照常（`28-运行日志.md` 第三节：`ERROR` 一定是 bug）。
-pub(crate) fn spawn(actor: Actor, first: Vec<Action>, span: tracing::Span) {
+pub(crate) fn spawn(actor: Box<Actor>, first: Vec<Action>, span: tracing::Span) {
     let busy = actor.busy();
     let task = tokio::spawn(actor.run(first).instrument(span.clone()));
     tokio::spawn(

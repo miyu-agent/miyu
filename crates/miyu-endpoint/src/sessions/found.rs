@@ -47,7 +47,9 @@ impl Open {
         let confined = super::confined_of(core, id).await;
         // 你写的提示词覆盖（施工 OV-1 中）。
         let resources = crate::presets::overrides::resources(core);
-        let loaded = load_placed(Load {
+        // 装箱再等（施工 LW-21）：载入的 future 有二十几 KB，不装箱的话凡是等「找会话」的（几乎每个带会话的方法）都多装这么大。
+        // 只在要从磁盘载入时装，在跑的会话照旧直接交回。
+        let loaded = Box::pin(load_placed(Load {
             root: &core.root,
             personas: crate::personas::personas(core),
             resources: &resources,
@@ -75,7 +77,7 @@ impl Open {
             presets: Some(crate::presets::places(core)),
             configs: core.configs_of(),
             forked,
-        })
+        }))
         .await;
         let (handle, placed) = match loaded {
             Ok(loaded) => loaded,

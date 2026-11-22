@@ -243,14 +243,15 @@ async fn read_all<R: AsyncRead + Unpin>(
             && methods::answered_later(&core, &request)
         {
             let later = subscriptions.later();
-            background.spawn(call_later(
+            // 装箱再交（施工 LW-21）：没装箱的 future 在交进任务的路上要在栈上拷好几份。
+            background.spawn(Box::pin(call_later(
                 Arc::clone(&core),
                 peer,
                 caller.clone(),
                 request,
                 later,
                 out.clone(),
-            ));
+            )));
             continue;
         }
         let id = || Value::String(request.id.as_str().to_string());

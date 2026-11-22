@@ -236,7 +236,8 @@ struct Asked {
 impl MergeJob {
     /// 抽取记下以后调：够了的在后台合（`memory.md` 第七条第 1 款）。同一间已经在合的、不够的什么都不做。
     pub(crate) fn start(self) {
-        tokio::spawn(async move {
+        // 装箱再交给 tokio（施工 LW-21）：没装箱的 future 在交进任务的路上要在栈上拷好几份。
+        tokio::spawn(Box::pin(async move {
             let room = self.keeper.room().clone();
             let Some(_running) = Merges::begin(&self.keeper.memory, &room) else {
                 return;
@@ -246,7 +247,7 @@ impl MergeJob {
             if let Err(why) = self.run(Some(settings.merge_every)).await {
                 tracing::debug!(target: TARGET, room_kind = room.kind(), room_id = self.keeper.room_id().as_str(), error = why.as_str(), "memory merge stopped");
             }
-        });
+        }));
     }
 
     /// 现在就整理（施工 R-7 补）：不看间隔，合到没有剩下的，交回几样数。
@@ -262,10 +263,11 @@ impl MergeJob {
         let room = self.keeper.room().clone();
         let running = Merges::begin(&self.keeper.memory, &room).ok_or(NotDreamed::Busy)?;
         // 在自己的任务里合（施工 R-30）：叫的那一头半路不等了（连接断了）照样合完、放锁，不然这一间一直忙。
-        let task = tokio::spawn(async move {
+        // 装箱再交给 tokio（施工 LW-21）：没装箱的 future 在交进任务的路上要在栈上拷好几份。
+        let task = tokio::spawn(Box::pin(async move {
             let _running = running;
             self.run(None).await.map_err(NotDreamed::Failed)
-        });
+        }));
         task.await
             .unwrap_or_else(|_| Err(NotDreamed::Failed("memory merge task failed".to_string())))
     }

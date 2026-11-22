@@ -103,8 +103,10 @@ pub(super) fn spawn(
     cancel: Cancel,
 ) {
     let config = Arc::clone(config);
+    // 装箱再交给 tokio（施工 LW-21）：没装箱的 future 在交进任务的路上要在栈上拷好几份。
     tokio::spawn(
-        ask(route, side, config, request, reports, cancel).instrument(tracing::Span::current()),
+        Box::pin(ask(route, side, config, request, reports, cancel))
+            .instrument(tracing::Span::current()),
     );
 }
 

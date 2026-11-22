@@ -73,7 +73,7 @@ fn setup_with(
         personas,
         resources,
         blobs: Blobs::new(root.blobs()),
-        snapshot,
+        snapshot: Box::new(snapshot),
         child: false,
         presets: None,
         seen: Some(Shelf::new(tools.clone()).edition()),
@@ -114,7 +114,7 @@ fn an_unchanged_persona_is_the_same_and_a_changed_one_swaps() {
 fn a_swap_keeps_the_skills_it_was_made_with() {
     let (_scratch, root, mut refresh) = setup("skills-swap", "You are Miyu.\n");
     let block = "Skills you can use, each with its instructions in the file:\n- notes: Take notes. (/s/notes/SKILL.md)";
-    refresh.snapshot = refresh
+    *refresh.snapshot = refresh
         .snapshot
         .clone()
         .with_skills(Some(block.to_string()));
@@ -131,7 +131,7 @@ fn a_swap_keeps_the_skills_it_was_made_with() {
 fn a_swap_keeps_the_profile_it_was_made_with() {
     let (_scratch, root, mut refresh) = setup("profile-swap", "You are Miyu.\n");
     let block = "<user>\nname: 小林\n</user>";
-    refresh.snapshot = refresh
+    *refresh.snapshot = refresh
         .snapshot
         .clone()
         .with_profile(Some(block.to_string()));
@@ -235,7 +235,7 @@ fn roleplay_stays_off_across_a_swap() {
         snapshot.system
     );
     assert_eq!(snapshot.preset, Some(pin));
-    refresh.snapshot = *snapshot;
+    refresh.snapshot = snapshot;
     assert!(matches!(seen(&refresh), Seen::Same), "换过以后不再换");
 }
 

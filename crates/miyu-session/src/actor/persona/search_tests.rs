@@ -69,7 +69,7 @@ fn looked(refresh: &Refresh, values: &Values, search: &SearchNow) -> Seen {
 fn step(refresh: &mut Refresh, values: &Values, search: &SearchNow) -> bool {
     match looked(refresh, values, search) {
         Seen::Swapped(snapshot, ..) => {
-            refresh.snapshot = *snapshot;
+            refresh.snapshot = snapshot;
             true
         }
         Seen::Same => false,

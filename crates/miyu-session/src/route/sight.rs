@@ -52,7 +52,8 @@ pub(super) fn spawn(
         venue: None,
     };
     let config = TurnConfig::clone(config);
-    let task = async move {
+    // 装箱再交给 tokio（施工 LW-21）：没装箱的 future 在交进任务的路上要在栈上拷好几份。
+    let task = Box::pin(async move {
         match OneShot::new(routes).call(&config, &blobs, ask).await {
             Ok(answer) => match seen(answer) {
                 Ok((model, text)) => sight.seen(model, text),
@@ -60,7 +61,7 @@ pub(super) fn spawn(
             },
             Err(unanswered) => sight.unseen(why(unanswered)),
         }
-    };
+    });
     tokio::spawn(task.instrument(tracing::Span::current()));
 }
 

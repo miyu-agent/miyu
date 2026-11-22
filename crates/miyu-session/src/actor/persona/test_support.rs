@@ -152,7 +152,7 @@ pub(super) fn setup_in(name: &str, text: &str, tools: Catalog) -> (Scratch, Data
         personas,
         resources,
         blobs: Blobs::new(root.blobs()),
-        snapshot,
+        snapshot: Box::new(snapshot),
         child: false,
         presets: Some(PresetPlaces {
             presets,

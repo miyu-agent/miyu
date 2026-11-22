@@ -32,10 +32,13 @@ impl Actor {
         if from.is_none_or(|from| from == wanted) {
             return swapped;
         }
-        let new = refresh.snapshot.clone().with_line(Some(wanted));
+        // 快照和策略都装在箱子里来回（施工 LW-21）：按值的话这一段的 future 和它在栈上的帧要装好几份近 4 KB 的快照，
+        // 每个回合开始都走到这里。
+        let old = refresh.snapshot.clone();
         let blobs = refresh.blobs.clone();
         let built = blocking(move || -> Result<_, String> {
-            let policy = new.policy().map_err(|error| error.to_string())?;
+            let new = Box::new(old.with_line(Some(wanted)));
+            let policy = Box::new(new.policy().map_err(|error| error.to_string())?);
             let hash = blobs
                 .put(&new.to_bytes())
                 .map_err(|error| error.to_string())?;
@@ -45,7 +48,7 @@ impl Actor {
         match built {
             Ok((new, policy, hash)) => {
                 tracing::info!(target: TARGET, from, to = wanted, "compaction line changed");
-                self.session.stage_policy(policy);
+                self.session.stage_policy(*policy);
                 if let Some(refresh) = self.persona.as_mut() {
                     refresh.snapshot = new;
                 }

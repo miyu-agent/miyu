@@ -26,7 +26,7 @@ fn a_changed_preset_refilters_the_face_and_keeps_old_entries() {
     assert_eq!(names(&snapshot), ["read", "remember"]);
     assert_eq!(snapshot.tools[0], read, "留着的那一件原样");
     assert!(!snapshot.system.contains(OFF), "包都开着");
-    refresh.snapshot = *snapshot;
+    refresh.snapshot = snapshot;
     assert!(matches!(look_now(&refresh), Seen::Same), "换过以后不再换");
     write_preset(&root, "[software]\nbasesystem = false\n");
     let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
@@ -34,7 +34,7 @@ fn a_changed_preset_refilters_the_face_and_keeps_old_entries() {
     };
     assert_eq!(names(&snapshot), ["remember"]);
     assert!(!snapshot.system.contains(OFF), "{}", snapshot.system);
-    refresh.snapshot = *snapshot;
+    refresh.snapshot = snapshot;
     write_preset(&root, "");
     let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
         panic!("改回来也换");
@@ -133,7 +133,7 @@ fn without_a_persona_a_changed_preset_still_swaps() {
         steps: miyu_policy::steps::StepLimits::of(miyu_policy::steps::Watched::Attended, None),
         search: None,
     };
-    refresh.snapshot = build(&refresh.resources, parts).expect("拼得成");
+    *refresh.snapshot = build(&refresh.resources, parts).expect("拼得成");
     assert_eq!(
         (&refresh.snapshot.persona, &refresh.snapshot.persona_digest),
         (&None, &None)
@@ -277,7 +277,7 @@ fn a_preset_turning_background_off_marks_the_snapshot() {
         "以前就有的照原样：{:?}",
         snapshot.tools
     );
-    refresh.snapshot = *snapshot;
+    refresh.snapshot = snapshot;
     write_preset(&root, "");
     let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
         panic!("改回来也换");
@@ -326,7 +326,7 @@ fn a_preset_turning_tools_from_scripts_off_takes_them_back() {
             "说明原样"
         );
     }
-    refresh.snapshot = *snapshot;
+    refresh.snapshot = snapshot;
     write_preset(&root, "");
     let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
         panic!("改回来也换");

@@ -36,7 +36,8 @@ impl Actor {
             super::super::answer(reply, Spent::default());
             return;
         };
-        tokio::spawn(async move {
+        // 装箱再交给 tokio（施工 LW-21）：没装箱的 future 在交进任务的路上要在栈上拷好几份。
+        tokio::spawn(Box::pin(async move {
             let spent = blocking(move || {
                 let Ok(events) = miyu_store::log::read_events(&dir) else {
                     return Spent::default();
@@ -49,7 +50,7 @@ impl Actor {
             })
             .await;
             super::super::answer(reply, spent);
-        });
+        }));
     }
 }
 
