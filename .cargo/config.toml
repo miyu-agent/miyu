@@ -8,3 +8,8 @@ xtask = "run --quiet --package xtask --"
 # 拉起真核心的测试原来会认到 /usr/share/miyu/packages/ 里的，帮助页、默认的头都跟着变，还会真拉起装着的终端。外面已经设了的
 # 照外面的（不 force），演练、dist-check 指到自己的临时目录照旧。
 MIYU_DISTRO_PACKAGES = { value = "target/no-distro-packages", relative = true }
+# 自带的 SQLite 不给连接预留小块内存池（lookaside，施工 LW-23，`store.md`「怎么走」第 15 条）：默认每个连接开库时先分配
+# 48 KB（1200 字节 × 40 格），核心开着三到五个连接，空闲时这些池子一格都不用，却一直占着。关掉以后执行语句时的小分配
+# 照常向系统的分配器要。libsqlite3-sys 编自带的 SQLite 时把这里的每一项当成一个 `-D`；外面已经设了的照外面的（不 force），
+# 那样这一项就不在了，内存多占一点，行为不变。
+LIBSQLITE3_FLAGS = "-DSQLITE_DEFAULT_LOOKASIDE=0,0"

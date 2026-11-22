@@ -70,3 +70,22 @@ fn a_kept_database_still_reads_back_after_the_check() {
         .expect("读得回来");
     assert_eq!((count, sum), (5001, 5001 * 5002 / 2));
 }
+
+/// 自带的 SQLite 是照「不给连接预留小块内存池」编的（施工 LW-23，仓库 `.cargo/config.toml` 的 `LIBSQLITE3_FLAGS`）：这一项
+/// 不是代码里设的，哪天配置被改掉、被外面的环境变量盖掉，每个连接又会多占 48 KB，没有别的地方看得出来。
+#[test]
+fn the_bundled_sqlite_keeps_no_lookaside_pool() {
+    let db = Connection::open_in_memory().expect("开得了");
+    let mut options = Vec::new();
+    db.pragma_query(None, "compile_options", |row| {
+        options.push(row.get::<_, String>(0)?);
+        Ok(())
+    })
+    .expect("问得到");
+    // MSVC 编出来的这一项末尾多一个逗号（`DEFAULT_LOOKASIDE=0,0,`）：只认开头，别的数（比如默认的 `1200,40`）对不上。
+    let off = |o: &String| {
+        o.strip_prefix("DEFAULT_LOOKASIDE=0,0")
+            .is_some_and(|rest| rest.trim_end_matches(',').is_empty())
+    };
+    assert!(options.iter().any(off), "{options:?}");
+}
