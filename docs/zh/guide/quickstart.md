@@ -2,9 +2,11 @@
 
 ## 快速安装
 
-快速安装会帮你装上 Miyu 的整合包，包含核心、基本功能、终端界面（`tui`）、网页界面（`webui`）和系统托盘（`applet`）。Mac 和 Linux 还会装上极其轻量的`litemiyu`备用和救急。
+快速安装会帮你装上 Miyu 的整合包，包含核心、基本功能、终端界面（`tui`）、网页界面（`webui`）和系统托盘（`applet`）。Mac 和 Linux 还会装上极其轻量的[`litemiyu`](https://github.com/miyu-agent/litemiyu)备用和救急。
 
 > Agent 最好有两个，一个坏了还有另一个。
+
+如果你仅使用 TUI，并且想要最极致的轻量化设计，我推荐使用 [`litemiyu`](https://github.com/miyu-agent/litemiyu)。
 
 不同的操作系统安装包不同，请选择自己使用的操作系统
 

@@ -2,9 +2,11 @@
 
 ## Quick install
 
-A quick install gives you the Miyu bundle: the core, the basic features, the terminal interface (`tui`), the web interface (`webui`) and the system tray (`applet`). On Mac and Linux it also installs the extremely light `litemiyu` as a spare and for emergencies.
+A quick install gives you the Miyu bundle: the core, the basic features, the terminal interface (`tui`), the web interface (`webui`) and the system tray (`applet`). On Mac and Linux it also installs the extremely light [`litemiyu`](https://github.com/miyu-agent/litemiyu) as a spare and for emergencies.
 
 > It is best to have two agents: when one breaks, there is still the other.
+
+If you only use the TUI and want the most extreme lightweight design, I recommend [`litemiyu`](https://github.com/miyu-agent/litemiyu).
 
 The installer differs by operating system, so pick the one you use
 

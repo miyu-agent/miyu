@@ -19,6 +19,8 @@
 
 Miyu is an Agent Harness that is simple and easy to pick up, clean and good-looking, extremely lightweight, fast, and extensible and customizable. It is designed the Linux way, and all of its code is written by the world's frontier AI. Memory, knowledge bases, subagents, cross-session messaging, Loop, Skills, MCP and other basic features work out of the box, and you can install extra packages for all kinds of abilities, such as connecting chat platforms, voice input, a voice assistant and more.
 
+If you only use the TUI and want the most extreme lightweight design, I recommend [`litemiyu`](https://github.com/miyu-agent/litemiyu).
+
 ## Preview
 
 **Web · in a conversation**
