@@ -13,16 +13,22 @@
 //! 3. 第二段（模拟器里，同一个数据根）：见 [`script::second`]。
 //! 4. 带了 `--head` 的（施工 LW-6）：再配着真的终端界面录第三段（核心在模拟器里），日志接在核心清单后面；另带了
 //!    `--head-order` 的再录第四段（终端界面在模拟器里），日志是终端界面自己的清单，写进 `--head-order`。见 `order/head.rs`。
-//! 5. 每段的日志各一个文件，放在沙盒目录下；清单写完删掉（一份几十 MB）。
+//! 5. 抽记忆的那一段（模拟器里，同一个数据根，施工 LW-14）：见 [`script::remembered`]。这一段的沙箱配置另加
+//!    [`remember::SETTINGS`]（开着记忆的会话每说 11 轮就抽一次记忆），前面几段的会话照出厂的门槛，不在半路抽。日志排在核心
+//!    清单的最后：前面几段的清单和没有这一段时一样，只有抽记忆才头一回执行的函数接在后面。
+//! 6. 每段的日志各一个文件，放在沙盒目录下；清单写完删掉（一份几十 MB）。
 
 #[cfg(unix)]
 mod head;
 mod listing;
+mod remember;
 #[cfg(unix)]
 mod screen;
 mod script;
 #[cfg(unix)]
 mod terminal;
+#[cfg(unix)]
+mod tour;
 
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
@@ -66,8 +72,12 @@ pub async fn record(args: &Args, order: &Path, emulator: &Path, tree: &Path) -> 
     sandbox.stop(running)?;
     drop(warmed.map_err(|e| format!("原生的第二遍：{e}"))?);
 
-    let logs = [args.work.join("order-1.log"), args.work.join("order-2.log")];
-    let [first_launch, second_launch] = logs.each_ref().map(|log| Launch {
+    let logs = [
+        args.work.join("order-1.log"),
+        args.work.join("order-2.log"),
+        args.work.join("order-remembered.log"),
+    ];
+    let [first_launch, second_launch, remembered_launch] = logs.each_ref().map(|log| Launch {
         traced: Some(Traced {
             emulator,
             log: log.as_path(),
@@ -89,8 +99,11 @@ pub async fn record(args: &Args, order: &Path, emulator: &Path, tree: &Path) -> 
     let second_base = second_base?;
     second.map_err(|e| format!("第二段：{e}"))?;
 
-    let [first_log, second_log] = logs;
-    let mut core = vec![(first_log, first_base), (second_log, second_base)];
+    let [first_log, second_log, remembered_log] = &logs;
+    let mut core = vec![
+        (first_log.clone(), first_base),
+        (second_log.clone(), second_base),
+    ];
     let mut head_log = None;
     if let Some(program) = &args.head {
         let fourth = args.head_order.is_some();
@@ -99,6 +112,18 @@ pub async fn record(args: &Args, order: &Path, emulator: &Path, tree: &Path) -> 
         core.push(third);
         head_log = args.head_order.as_deref().zip(fourth);
     }
+    eprintln!("排函数：抽记忆的那一段（模拟器里，日志排在核心清单的最后）");
+    let config = sandbox.root.config_file();
+    let plain = std::fs::read_to_string(&config).map_err(|e| format!("系统配置读不了：{e}"))?;
+    std::fs::write(&config, format!("{plain}{}", remember::SETTINGS))
+        .map_err(|e| format!("系统配置写不进：{e}"))?;
+    let running = sandbox.start_with(remembered_launch)?;
+    let remembered_base = running.base(&args.miyu);
+    let remembered = script::remembered(&sandbox, &mut fake).await;
+    sandbox.stop(running)?;
+    std::fs::write(&config, plain).map_err(|e| format!("系统配置写不进：{e}"))?;
+    remembered.map_err(|e| format!("抽记忆的那一段：{e}"))?;
+    core.push((remembered_log.clone(), remembered_base?));
     write(&args.miyu, &core, order)?;
     if let (Some(program), Some((head_order, log))) = (&args.head, head_log)
         && write(program, &[log], head_order)? == 0

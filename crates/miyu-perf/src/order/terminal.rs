@@ -130,6 +130,21 @@ impl Terminal {
         patience: Duration,
         what: &str,
     ) -> Result<(), String> {
+        self.wait_for_any(&[needle], from, patience, what).await
+    }
+
+    /// 同 [`Terminal::wait_for`]，`needles` 里出现哪一个都算（施工 LW-14：回到对话时重画哪几行说不准）。
+    ///
+    /// # Errors
+    ///
+    /// 同 [`Terminal::wait_for`]。
+    pub async fn wait_for_any(
+        &mut self,
+        needles: &[&str],
+        from: usize,
+        patience: Duration,
+        what: &str,
+    ) -> Result<(), String> {
         let began = Instant::now();
         loop {
             let (output, broken) = {
@@ -139,7 +154,7 @@ impl Terminal {
                     seen.broken.clone(),
                 )
             };
-            if shows(&output, needle) {
+            if needles.iter().any(|needle| shows(&output, needle)) {
                 return Ok(());
             }
             let problem = if let Some(broken) = broken {
@@ -157,7 +172,8 @@ impl Terminal {
             };
             if let Some(problem) = problem {
                 return Err(format!(
-                    "{what}：屏幕上没等到「{needle}」，{problem}。屏幕上最后是：{}",
+                    "{what}：屏幕上没等到「{}」，{problem}。屏幕上最后是：{}",
+                    needles.join("」或「"),
                     tail(&output, TAIL)
                 ));
             }

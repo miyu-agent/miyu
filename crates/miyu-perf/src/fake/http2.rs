@@ -25,7 +25,7 @@ where
     }
 }
 
-/// 一个流：头到了记下时刻，读完请求体（读多少还对方多少窗口），回 200 和定好的回应，写完交给量尺。
+/// 一个流：头到了记下时刻，读完请求体（读多少还对方多少窗口），回定好的状态和回应，写完交给量尺。
 async fn stream(
     request: http::Request<RecvStream>,
     mut respond: SendResponse<Bytes>,
@@ -58,7 +58,7 @@ async fn stream(
         return;
     };
     let head = http::Response::builder()
-        .status(http::StatusCode::OK)
+        .status(reply.status().0)
         .header(http::header::CONTENT_TYPE, reply.content_type())
         .body(());
     let Ok(head) = head else {

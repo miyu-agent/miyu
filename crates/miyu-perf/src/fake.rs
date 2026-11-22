@@ -18,6 +18,7 @@
 
 mod http1;
 mod http2;
+pub mod organizer;
 pub mod script;
 mod shared;
 mod tls;
@@ -164,6 +165,19 @@ impl Fake {
     /// 之后提到剧本记号的请求照剧本回工具调用（施工 V-29）；`None` 收回。
     pub fn script(&self, script: Option<Script>) {
         self.setup().script = script;
+    }
+
+    /// 之后整理记忆的三种请求（抽取、写关键词、合并）照真的模型那样回（施工 LW-14，`fake/organizer.rs`）；`false` 收回，
+    /// 回占地方的字。
+    pub fn organize(&self, on: bool) {
+        self.setup().organize = on;
+    }
+
+    /// 下一个提到 `marker`、带工具表的请求回 500（施工 LW-14）：核心照可重试的错误等一会儿再发，再发的那一次照常回。
+    /// 只有逛一圈用（`order/tour.rs`，伪终端只在 Unix 上开），别的平台不编。
+    #[cfg(unix)]
+    pub fn fail_once(&self, marker: &str) {
+        self.setup().fail = Some(marker.to_string());
     }
 
     /// 之后的回答一个事件一个事件地写、隔开 `gap`（施工 MD-4：像真模型那样匀着来，和扩展驱动匀着交的比 CPU）；`None` 一次写完。

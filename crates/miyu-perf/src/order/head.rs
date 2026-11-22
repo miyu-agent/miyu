@@ -7,8 +7,8 @@
 //!   它加的环境变量起（[`Launched`]）；这一段的日志是终端界面自己的清单。
 //!
 //! 两段的剧本一样（[`converse`]）：等输入框画出来（屏幕上出现 [`PROMPT`]），说一句，等假模型收到这一轮的主请求、屏幕上
-//! 画出回答、这一轮结束；再说一句触发工具调用的话（工具一步的几种各调一次），等这一轮结束；歇 [`QUIET`]。哪一样等不到都
-//! 报错停下，不悄悄少录。
+//! 画出回答、这一轮结束；再说一句触发工具调用的话（工具一步的几种各调一次），等这一轮结束；再逛一圈（施工 LW-14，
+//! `order/tour.rs`）；歇 [`QUIET`]。哪一样等不到都报错停下，不悄悄少录。
 //!
 //! 沙盒：配置加上 `[ui] welcomed = true`、`[tui] auto_pick = true`，跳过欢迎和选人格（没人点）；家目录、`XDG_*` 都指进
 //! 量尺的工作目录（[`home_vars`]），终端界面和核心都不碰真的家目录。都不设 `XDG_RUNTIME_DIR`：核心、主程序、终端界面照
@@ -23,6 +23,7 @@ use std::time::{Duration, Instant};
 
 use super::script::QUIET;
 use super::terminal::Terminal;
+use super::tour::tour;
 use crate::args::Args;
 use crate::fake::script::{Script, ToolCall};
 use crate::fake::{Arrival, Fake, mentions};
@@ -31,13 +32,13 @@ use crate::sandbox::{Launch, Sandbox, Traced, base_of, home_vars};
 
 /// 等终端界面最多多久：核心或者终端界面在模拟器里，头一回执行每一块代码都要先翻译，比原生慢十几倍（同
 /// `sandbox.rs` 的 `TRACED_PATIENCE`）。
-const PATIENCE: Duration = Duration::from_secs(600);
+pub(super) const PATIENCE: Duration = Duration::from_secs(600);
 
 /// 终端界面画好输入框的记号：输入框前面的提示符。
 const PROMPT: &str = "❯";
 
 /// 屏幕上画出回答的记号：假模型的回答（[`crate::fake::filler`]）里反复出现的一段英文，不会被宽字符劈开。
-const ANSWERED: &str = "measuring reply";
+pub(super) const ANSWERED: &str = "measuring reply";
 
 /// 主请求才带工具表：起标题、记忆这些辅助请求也提到这一句的记号，不算。
 const TOOLS: &[u8] = b"\"tools\"";
@@ -116,6 +117,7 @@ pub async fn record(
             .await?;
         let launched = Launched::read(terminal.pid(), program, &given)?;
         converse(&mut terminal, fake, &turns, &workspace, "perf-order-head-3").await?;
+        tour(&mut terminal, fake, &turns, &workspace, "perf-order-head-3").await?;
         tokio::time::sleep(QUIET).await;
         Ok::<_, String>(launched)
     }
@@ -149,6 +151,7 @@ pub async fn record(
             .await?;
         let base = base_of(terminal.pid(), program)?;
         converse(&mut terminal, fake, &turns, &workspace, "perf-order-head-4").await?;
+        tour(&mut terminal, fake, &turns, &workspace, "perf-order-head-4").await?;
         tokio::time::sleep(QUIET).await;
         Ok::<_, String>(base)
     }
@@ -325,7 +328,11 @@ async fn converse(
 /// 往输入框里打 `text`，等它出现在屏幕上（`marker`）再回车：交回回车以前屏幕记到哪，之后画的从这里找。打字以前先等屏幕
 /// 安静下来（[`SETTLE`]）：终端界面画出输入框的那一刻还没开始读按键，这时打的字会丢（实测原生起来以后立刻打就丢了，
 /// 隔 0.3 秒就不丢；模拟器里慢十几倍）。
-async fn send(terminal: &mut Terminal, text: &str, marker: &str) -> Result<usize, String> {
+pub(super) async fn send(
+    terminal: &mut Terminal,
+    text: &str,
+    marker: &str,
+) -> Result<usize, String> {
     terminal.quiet(SETTLE, SETTLE_CAP).await;
     let mark = terminal.mark();
     terminal.write(text.as_bytes())?;
@@ -338,7 +345,7 @@ async fn send(terminal: &mut Terminal, text: &str, marker: &str) -> Result<usize
 }
 
 /// 等这一轮的主请求：提到 `marker`、带工具表的那一个（[`TOOLS`]）。
-async fn main_request(fake: &mut Fake, marker: &str) -> Result<Arrival, String> {
+pub(super) async fn main_request(fake: &mut Fake, marker: &str) -> Result<Arrival, String> {
     loop {
         let arrival = fake.request_with(marker).await?;
         if mentions(&arrival.body, TOOLS) {
@@ -349,7 +356,7 @@ async fn main_request(fake: &mut Fake, marker: &str) -> Result<Arrival, String> 
 
 /// 数这一段的会话里结束了几轮：终端界面开的会话日志里的 `turn.ended`。这一段起终端界面以前就有的会话（前几段的）不看：
 /// 不白读，也不会被它们的回合数混进来。
-struct Turns<'a> {
+pub(super) struct Turns<'a> {
     sandbox: &'a Sandbox,
     old: HashSet<String>,
 }
@@ -373,7 +380,7 @@ impl<'a> Turns<'a> {
     /// # Errors
     ///
     /// 会话的目录读不了。
-    fn ended(&self) -> Result<usize, String> {
+    pub(super) fn ended(&self) -> Result<usize, String> {
         Ok(self.count()?.0)
     }
 
@@ -405,7 +412,7 @@ impl<'a> Turns<'a> {
     /// # Errors
     ///
     /// 等太久、会话的目录读不了。
-    async fn over(&self, before: usize, what: &str) -> Result<(), String> {
+    pub(super) async fn over(&self, before: usize, what: &str) -> Result<(), String> {
         let began = Instant::now();
         loop {
             let (total, unread) = self.count()?;

@@ -27,6 +27,9 @@ const MODELS: [(&str, Transport); 3] = [
 /// 一段录完以后歇多久再停：核心最后一个请求过去 2 秒还内存、记账（`heap.md` 第 2 条），这些也要录到。
 pub const QUIET: Duration = Duration::from_secs(4);
 
+/// 抽记忆那一段录完以后歇多久再停：最后一次合并记下以后，核心还要关掉整理用的会话、清掉旧的整理会话、把它退掉。
+const SETTLED: Duration = Duration::from_secs(12);
+
 /// 系统的证书库常在的几处（`rustls-native-certs` 照 `openssl-probe` 找的那几处里常见的）：有的接在信任的那份前面，核心读
 /// 证书时和真用的人一样要读一整批。
 const SYSTEM_BUNDLES: [&str; 3] = [
@@ -234,5 +237,41 @@ pub async fn second(sandbox: &Sandbox, fake: &mut Fake, session: &str) -> Result
     say(&mut rpc, fake, session, "perf-order-second").await?;
     watching(&mut rpc, session).await?;
     tokio::time::sleep(QUIET).await;
+    Ok(())
+}
+
+/// 抽记忆的那一段（在模拟器里，同一个数据根，施工 LW-14，`order/remember.rs`；沙箱配置要先加上
+/// [`super::remember::SETTINGS`]）：头起来时问的那些，开一个开着记忆的新会话，每说够一次抽取的轮数就等它抽完一次，一共抽
+/// 两次（轮数和次数的来由见 `order/remember.rs` 开头），歇 [`SETTLED`]。
+///
+/// 这一段单独录、日志排在核心清单的最后：清单照头一回执行的先后排，抽记忆要用的函数里有一部分平常对话、载入会话也用。
+/// 抽记忆录在前面几段中间的话，这一部分函数抢先在这里头一回执行，和只有抽记忆才用的函数排在一起，平常每执行到一个就
+/// 带进一片用不着的邻居页（2026-11-22 实测：录在第一段里，核心的代码页在空闲、说过一句、九次工具调用三个状态都多
+/// 0.26 到 0.45 MB）。录在最后，前面几段的清单和没有这一段时一样，新执行到的只接在后面。
+///
+/// # Errors
+///
+/// 哪一步没成，报是在做哪一步。
+pub async fn remembered(sandbox: &Sandbox, fake: &mut Fake) -> Result<(), String> {
+    use super::remember::{ROUNDS, TURNS, extracted};
+    let mut rpc = head(sandbox).await?;
+    let session = open(&mut rpc, &sandbox.work, REMEMBERING).await?;
+    fake.organize(true);
+    let talked = async {
+        for round in 1..=ROUNDS {
+            for turn in 1..=TURNS {
+                let marker = format!("perf-order-remembered-{round}-{turn}");
+                say(&mut rpc, fake, &session, &marker).await.map_err(|e| {
+                    format!("开着记忆的会话第 {round} 次抽取以前的第 {turn} 句：{e}")
+                })?;
+            }
+            extracted(sandbox, fake, &session, round).await?;
+        }
+        Ok::<_, String>(())
+    }
+    .await;
+    fake.organize(false);
+    talked?;
+    tokio::time::sleep(SETTLED).await;
     Ok(())
 }

@@ -69,8 +69,9 @@ where
         true => String::new(),
         false => format!("Content-Length: {}\r\n", reply.body.len()),
     };
+    let (code, reason) = reply.status();
     let head = format!(
-        "HTTP/1.1 200 OK\r\nContent-Type: {}\r\n{length}Connection: close\r\n\r\n",
+        "HTTP/1.1 {code} {reason}\r\nContent-Type: {}\r\n{length}Connection: close\r\n\r\n",
         reply.content_type()
     );
     let Some(gap) = reply.pace else {
