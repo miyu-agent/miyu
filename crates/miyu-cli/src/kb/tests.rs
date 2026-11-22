@@ -186,6 +186,18 @@ fn why_a_folder_is_unavailable_is_said_in_chinese() {
         assert_eq!(Language::Chinese.folder_why(&why), said, "{why}");
         assert_eq!(Language::English.folder_why(&why), why, "英文照原样");
     }
+    // 没有错误号的（施工 FX-23）：核心用 io::Error::from(种类) 造的，原话是标准库的说法，照它认。
+    for (kind, said) in [
+        (std::io::ErrorKind::NotFound, "目录 /mnt/usb 不存在"),
+        (
+            std::io::ErrorKind::PermissionDenied,
+            "没有权限读取目录 /mnt/usb",
+        ),
+        (std::io::ErrorKind::NotADirectory, "/mnt/usb 不是目录"),
+    ] {
+        let why = format!("mounted folder /mnt/usb: {}", std::io::Error::from(kind));
+        assert_eq!(Language::Chinese.folder_why(&why), said, "{why}");
+    }
     // 没有权限的错误号各个系统不一样：拿这台机器上的一个真的来试。
     if let Some(code) = [13, 5]
         .into_iter()

@@ -244,13 +244,22 @@ impl Language {
     }
 }
 
-/// 系统的原话末尾 `(os error <号>)` 是哪一种错：照这台机器的错误号认（命令行和核心在同一台机器上）。没有号的不知道。
+/// 系统的原话是哪一种错：末尾带 `(os error <号>)` 的照这台机器的错误号认（命令行和核心在同一台机器上）。没有号的，是核心
+/// 用 `io::Error::from(<种类>)` 造的（施工 FX-23，LiteMiyu 报的），原话就是标准库给那一种的说法（`entity not found` 这类），
+/// 照它认我们要说的那几种。都不是的不知道。
 fn os_error_kind(error: &str) -> Option<std::io::ErrorKind> {
-    let code = error
-        .rsplit_once("(os error ")?
-        .1
-        .strip_suffix(')')?
-        .parse()
-        .ok()?;
-    Some(std::io::Error::from_raw_os_error(code).kind())
+    use std::io::{Error, ErrorKind};
+    if let Some(code) = error
+        .rsplit_once("(os error ")
+        .and_then(|(_, rest)| rest.strip_suffix(')')?.parse().ok())
+    {
+        return Some(Error::from_raw_os_error(code).kind());
+    }
+    [
+        ErrorKind::NotFound,
+        ErrorKind::PermissionDenied,
+        ErrorKind::NotADirectory,
+    ]
+    .into_iter()
+    .find(|kind| Error::from(*kind).to_string() == error.trim())
 }
