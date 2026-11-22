@@ -161,11 +161,13 @@ impl Talk<'_, '_> {
         Ok(())
     }
 
-    /// 等屏幕上（`from` 以后）出现 `needle`，最多等 [`STEP_PATIENCE`]，`when` 说是在等什么。
+    /// 等屏幕上（`from` 以后）出现 `needle`，最多等 [`STEP_PATIENCE`]，`when` 说是在等什么。`needle` 里用 `|` 隔开的几种
+    /// 写法出现哪一种都算（施工 FX-24：收起的那一行跟着界面语言写，中英都认）。
     async fn screen(&mut self, needle: &str, from: usize, when: &str) -> Result<(), String> {
+        let needles: Vec<&str> = needle.split('|').collect();
         self.terminal
-            .wait_for(
-                needle,
+            .wait_for_any(
+                &needles,
                 from,
                 STEP_PATIENCE,
                 &format!("{}，{when}", self.what),

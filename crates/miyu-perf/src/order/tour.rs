@@ -246,8 +246,9 @@ pub fn steps() -> Vec<Step> {
             call(
                 "subagent",
                 r#"{"description": "measure a child", "prompt": "Answer in one line."}"#,
-                // 子代理一下就答完了，「派子代理」那一行一闪而过；收起来以后的这一行一直在。
-                "Spawned 1 agent",
+                // 子代理一下就答完了，「派子代理」那一行一闪而过；收起来以后的这一行一直在。它跟着界面语言写（终端界面
+                // 2026-11-23 起撤掉了「跟随系统时收起的那一行写英文」），中英两种都认（施工 FX-24）。
+                "Spawned 1 agent|派了 1 个子代理",
                 false,
             ),
         ),
