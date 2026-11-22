@@ -50,7 +50,7 @@ pub(super) struct Request {
 pub(super) struct Reply {
     /// 回的是事件流（`POST`）还是 JSON 的模型列表。
     pub(super) stream: bool,
-    /// 回的是 500（[`super::Fake::fail_once`]）：正文是一段 JSON 的错误。
+    /// 回的是 500（`Fake::fail_once` 要的，那个方法只在 Unix 上编，所以这里不写成链接）：正文是一段 JSON 的错误。
     pub(super) failed: bool,
     pub(super) body: String,
     pub(super) pace: Option<Duration>,
