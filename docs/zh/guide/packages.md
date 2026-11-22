@@ -407,7 +407,7 @@ key = "bWl5dS1leGFtcGxlLWtleS1ub3QtcmVhbC0wMDAwMDA="
 | `douyin-dl` | 抖音下载 | 下载抖音、TikTok 的视频和图文，不带水印；它是脚本。 |
 | `exchange-rate` | 汇率查询 | 按最新汇率或某一天的汇率换算金额，也能识别中文的币种名称；它是脚本。 |
 | `fortune` | 吉凶占 | 从大吉到大凶的七档里抽取一档；它是脚本。 |
-| `game-compat` | 游戏 Linux 兼容性 | 查询游戏在 Linux 上能不能玩，参考 ProtonDB、反作弊状态、caniplayonlinux；它是脚本。 |
+| `game-compat` | 游戏兼容性 | 查询游戏在 Linux（含 Steam Deck）、Apple 芯片的 Mac 上能不能玩，参考 ProtonDB、反作弊状态、caniplayonlinux、MacGamingDB；它是技能。 |
 | `goofish` | 闲鱼 | 不用登录就能搜索闲鱼上的二手商品，也可以盯住关键词查看新上架的商品；它是脚本。 |
 | `juya-daily` | 橘鸦AI早报 | 按日期、小节阅读橘鸦AI早报；它是脚本。 |
 | `moegirl-query` | 萌娘百科 | 查询萌娘百科的 ACG 条目，可以按小节阅读；它是脚本。 |

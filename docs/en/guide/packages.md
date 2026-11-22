@@ -407,7 +407,7 @@ Official packages come from repositories under `miyu-agent`, and from repositori
 | `douyin-dl` | Douyin downloader | Downloads Douyin and TikTok videos and photo posts without the watermark; it is a script. |
 | `exchange-rate` | Exchange rate | Converts amounts between currencies at the latest rate or a past day's rate, and accepts Chinese currency names too; it is a script. |
 | `fortune` | Fortune | Draws one of seven fortunes, from great blessing to great misfortune; it is a script. |
-| `game-compat` | Game Linux compatibility | Checks how a game runs on Linux, using ProtonDB, anti-cheat status and caniplayonlinux; it is a script. |
+| `game-compat` | Game compatibility | Checks how a game runs on Linux (including the Steam Deck) and on Apple Silicon Macs, using ProtonDB, anti-cheat status, caniplayonlinux and MacGamingDB; it is a skill. |
 | `goofish` | Goofish | Searches Goofish second-hand listings without logging in, and can watch keywords for new listings; it is a script. |
 | `juya-daily` | Juya AI Daily | Reads the Juya AI daily news digest by date and section; it is a script. |
 | `moegirl-query` | Moegirlpedia | Looks up ACG topics on Moegirlpedia, section by section; it is a script. |
