@@ -165,7 +165,7 @@
 | 名字 | 说明 |
 |---|---|
 | `providers` | 配置好的供应商，按编号排序。每家供应商包含：`id`、`name`（`{value, from, key}`）、`driver`、`base_url`、`key`（`{ref, set, state}`，从不返回密钥的值）、`catalog`（对应目录里的哪一家）、`logo`（`{svg, tint}` 或 `null`）、`models`；无法使用的供应商另外带 `problem`。`needs` 是这家供应商真正需要的两项：`{"key", "base_url"}`，每项是 `none`（不需要，界面不显示这一项）、`optional`（可以不填）、`required`（必须填）；使用扩展驱动的供应商照驱动在清单里的声明，扩展没有安装、驱动名对不上时没有这一格。软件包自带的供应商另外带 `package`（包的编号）：界面把包给的值显示成默认值，人仍然可以覆盖 |
-| `models` 里每个 | `model`、`ref`、`listed`（从哪几处列出：`config`、`provider`、`catalog`）、`facts`（窗口、最大输出、输入种类、能不能使用工具、思考、价格、名字……每一格都有 `value` 和来源）、`state`（`ok`、`cooling`（这时带 `until`/`class`）、`no_key`）；能输出向量的模型带 `embedding: true`；供应商自己的列表里已经没有、但用途或池里还在用的模型带 `gone: true` |
+| `models` 里每个 | `model`、`ref`、`listed`（从哪几处列出：`config`、`provider`、`catalog`）、`facts`（窗口、最大输出、输入种类、能不能使用工具、思考、价格、名字……每一格都有 `value` 和来源）、`state`（`ok`、`cooling`（这时带 `until`/`class`）、`no_key`）；能输出向量的模型带 `embedding: true` |
 | `pools` | 每个模型池包含：`name`、`strategy`、`models`、`usable`、`subagent`、`description`、`fixed`（`lite`、`normal`、`flagship` 这三个固定池的 `fixed` 是 `true`：它们永远存在，配置里没有写也会列出来，不能删除、不能改名，`subagent` 默认是 `true`） |
 | `side` | 旁路请求（不在对话里的那些模型请求）的登记，每条包含：`id`（`core/title` 表示起标题，`memory/organize` 表示整理记忆）、`tier`（需要哪一档：`lite`、`normal`、`flagship`）、`name`、`summary`（使用连接的语言）、`resolved`（这一刻请求会落到哪里：这一档的池有成员时是池名，池是空的时是 `session`，表示使用会话的模型）、`package`（由扩展登记的旁路请求写明是哪个软件包登记的，出厂的没有这一格）。如果池里的模型全都在冷却或者都出错了，请求也会退回使用会话的模型。扩展在清单的 `[[side]]` 里登记的旁路请求也列在这里，`id` 是 `<包>/<编号>`，名字和说明使用它的清单里写的内容 |
 | `uses` | `chat`、`vision` 各自配置的引用，没有配置的是 `null` |

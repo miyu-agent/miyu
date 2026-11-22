@@ -7,10 +7,10 @@ use miyu_http::testkit::{Piece, Reply, Server};
 use super::{config, data, list};
 use crate::support::*;
 
-/// 拉到了列表：只写了资料、列表里没有的不列（`retired`、`x`），用途里点名、列表里没有的照列、带 `gone`（`vanished`），列表里
-/// 有的不带。没拉过列表的那一次照旧都列。
+/// 拉到了列表：照它为准（施工 FX-19），只写了资料的（`retired`、`x`）、用途里点名的（`vanished`）列表里没有都不列。没拉过
+/// 列表的那一次照旧都列。
 #[tokio::test]
-async fn models_the_provider_no_longer_offers_are_left_out_unless_in_use() {
+async fn models_the_provider_no_longer_offers_are_left_out_even_in_use() {
     let page = r#"{"data":[{"id":"claude-sonnet-4-5"},{"id":"only-here"}]}"#;
     // 两份：头一次不带 refresh 的在后台拉掉一份，带 refresh 的拉另一份。
     let reply = || Reply::stream(vec![Piece::Bytes(page.as_bytes().to_vec())]);
@@ -45,17 +45,8 @@ async fn models_the_provider_no_longer_offers_are_left_out_unless_in_use() {
         json!({"provider": "newapi", "refresh": true}),
     )
     .await;
-    assert_eq!(
-        names(&after),
-        ["claude-sonnet-4-5", "only-here", "vanished"]
-    );
+    assert_eq!(names(&after), ["claude-sonnet-4-5", "only-here"]);
     let newapi = &after["result"]["providers"][0];
-    assert_eq!(super::model(newapi, "vanished")["gone"], json!(true));
-    assert!(
-        super::model(newapi, "claude-sonnet-4-5")
-            .get("gone")
-            .is_none()
-    );
     assert_eq!(
         super::model(newapi, "claude-sonnet-4-5")["listed"],
         json!(["config", "provider"])

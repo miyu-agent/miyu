@@ -2,8 +2,7 @@
 //! 哪一家、模型。
 //!
 //! - 列哪些模型：供应商的列表里的、目录里对上的那一家的、配置里手写了的、用途池里点名的（施工 8-8），合在一起去重，
-//!   照模型名排。这一家报得出自己的列表的（施工 FX-18），手写了资料的、目录里的只列列表里有的；用途、池里点名的列表里
-//!   没有了也照列，带 `gone: true`；
+//!   照模型名排。这一家报得出自己的列表的（施工 FX-18、FX-19），配置里提到的、目录里的只列列表里有的；
 //!   `listed` 照 `config`、`provider`、`catalog` 的先后写从哪几处列出来的。
 //! - 模型的 `state`：写了 key、一个都没有值的是 `no_key`。别的照这个模型能用的 key（取得到值的，没写 key 的是那一个）里
 //!   最好的那个：有一个不在冷却就是 `ok`；都在冷却的是 `cooling`，带最早恢复的那一个的 `until`、`class`（施工 8-9，整个 key
@@ -89,8 +88,8 @@ pub(crate) fn provider(
             entry
         }
         Ok(found) => {
-            // 这一家报得出自己的列表的，照它的列表为准（施工 FX-18，项目主人 2026-11-22 定）：只写了资料、列表里没有的不列，
-            // 目录里有、列表里没有的不列；用途、池里点名的照列，带 `gone`。报不出列表的照旧都列。
+            // 这一家报得出自己的列表的，照它的列表为准（施工 FX-18、FX-19，项目主人 2026-11-22 定：「上游的模型列表是什么样子
+            // 显示就应该是什么样子」）：配置里写了的、用途池里点名的、目录里的，列表里没有就不列。报不出列表的照旧都列。
             let offered: Option<BTreeSet<&str>> = knowledge
                 .lists
                 .get(id)
@@ -98,17 +97,10 @@ pub(crate) fn provider(
                 .map(|list| list.models.iter().map(|model| model.id.as_str()).collect());
             let offers = |model: &str| offered.as_ref().is_none_or(|ids| ids.contains(model));
             let mut listed: BTreeMap<String, BTreeSet<&str>> = BTreeMap::new();
-            let mut gone: BTreeSet<String> = BTreeSet::new();
-            for model in configured_models(&values, id) {
+            for model in written_models(&values, id) {
                 if offers(&model) {
                     listed.entry(model).or_default().insert("config");
                 }
-            }
-            for model in models_in_use(&values, id) {
-                if !offers(&model) {
-                    gone.insert(model.clone());
-                }
-                listed.entry(model).or_default().insert("config");
             }
             if let Some(list) = knowledge.lists.get(id) {
                 for model in &list.models {
@@ -163,9 +155,6 @@ pub(crate) fn provider(
                     }
                     if let Found::Missing(missing) = matched {
                         entry["catalog_missing"] = json!(missing);
-                    }
-                    if gone.contains(&model) {
-                        entry["gone"] = json!(true);
                     }
                     let family = catalog_models
                         .as_ref()
@@ -251,16 +240,14 @@ fn address_json(address: &Address) -> Value {
     }
 }
 
-/// 配置里手写了资料的这一家的模型（`providers.<id>.models."<模型>"`）。
-fn configured_models(values: &miyu_config::Values, id: &str) -> Vec<String> {
-    miyu_config::key::names(values.keys(), "providers.<id>.models.<model>", &[id])
-}
-
-/// 用途、池里点名的这一家的模型（施工 8-8，`miyu_models::reference::named`）：正在用的，供应商的列表里没有了也照列。
-fn models_in_use(values: &miyu_config::Values, id: &str) -> Vec<String> {
-    named(values)
-        .into_iter()
-        .filter(|(provider, _)| provider == id)
-        .map(|(_, model)| model)
-        .collect()
+/// 配置里提到的这一家的模型：手写了资料的，用途、池里点名的（施工 8-8，`miyu_models::reference::named`）。
+fn written_models(values: &miyu_config::Values, id: &str) -> Vec<String> {
+    let mut models = miyu_config::key::names(values.keys(), "providers.<id>.models.<model>", &[id]);
+    models.extend(
+        named(values)
+            .into_iter()
+            .filter(|(provider, _)| provider == id)
+            .map(|(_, model)| model),
+    );
+    models
 }
