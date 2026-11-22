@@ -249,7 +249,8 @@ impl Core {
         self.tools.current()
     }
 
-    /// 一份家底：会话表是空的，会话用到时再载入；会话列表的索引用到时开（施工 3-8 七补），坏了的删掉重建。
+    /// 一份家底：会话表是空的，会话用到时再载入；会话列表的索引用到时开（施工 3-8 七补），坏了的删掉重建。软件包清单自己读
+    /// 一遍；核心起来时已经读好、核对过的，照 [`Core::with_found`] 交进来。
     pub fn new(
         root: DataRoot,
         resources: ResourceRoot,
@@ -258,10 +259,25 @@ impl Core {
         home: Option<PathBuf>,
         token: String,
     ) -> Core {
+        let found = packages::load(&resources, &root, Vec::new());
+        Core::with_found(root, resources, models, tools, home, token, found)
+    }
+
+    /// 同 [`Core::new`]，软件包清单照交进来的 `found`，不再自己读（施工 LW-16）：核心起来时已经把每个包的清单读过、照自己的
+    /// 模块认过撞没撞（`packages::settle`），`Core::new` 再读一遍等于把三十来份清单多解析一次，随后又整个换掉。人格记忆装
+    /// 没装、知识库带的包、`package.list`、包的配置项的字都照这一份，和 [`Core::new`] 以后接 [`Core::with_packages`] 一样。
+    pub fn with_found(
+        root: DataRoot,
+        resources: ResourceRoot,
+        models: Arc<dyn Models>,
+        tools: Catalog,
+        home: Option<PathBuf>,
+        token: String,
+        found: Vec<miyu_store::packages::Found>,
+    ) -> Core {
         let mut config = Config::defaults(&root, settings::core_items());
         let model_data = models::empty_data();
         config.set_models(Arc::clone(&model_data));
-        let found = packages::load(&resources, &root, Vec::new());
         let usage = Arc::new(usage::open(&root));
         model_data.keep_ledger(Arc::clone(&usage));
         // 常驻的摘要那一块的字（施工 R-4 上）：读不出来的（安装坏了）这个核心不交摘要，别的照常。

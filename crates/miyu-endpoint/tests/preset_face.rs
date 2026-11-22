@@ -418,6 +418,29 @@ async fn memory_not_in_the_given_list_says_not_installed() {
     assert_eq!(reason(&reply), Some("memory_not_installed"), "{reply}");
 }
 
+/// 造家底时就交进清单的（`Core::with_found`，施工 LW-16：核心起来时不让它自己再读一遍）：照交进来的那一份，不照磁盘上的。
+/// 磁盘上有人格记忆、交进来的清单里没有，`memory.*` 说没装。
+#[tokio::test]
+async fn a_core_built_with_a_given_list_goes_by_it_not_by_the_disk() {
+    let home = Home::new();
+    let resources = miyu_store::resources::ResourceRoot::at(default_resources());
+    let mut found = miyu_endpoint::packages::load(&resources, &home.root, Vec::new());
+    assert!(found.iter().any(|one| one.id == "base-memory"), "磁盘上有");
+    found.retain(|one| one.id != "base-memory");
+    let core = miyu_endpoint::Core::with_found(
+        home.root.clone(),
+        resources,
+        Arc::new(Script::new([])),
+        catalog(),
+        None,
+        TOKEN.to_string(),
+        found,
+    );
+    let mut client = connected(Arc::new(core)).await;
+    let reply = client.call("m1", "memory.list", json!({})).await;
+    assert_eq!(reason(&reply), Some("memory_not_installed"), "{reply}");
+}
+
 /// 没装人设遵循提醒（施工 F-3 上）：人格写了提醒短语，全部功能的预设里也没有提醒、没有风格锁。
 #[tokio::test]
 async fn reminders_not_installed_drop_the_reminder_and_the_lock() {

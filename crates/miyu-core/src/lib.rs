@@ -391,17 +391,18 @@ async fn run(
     let builtins = builtin_tools_in(&resources, &env, kit);
     packages::clear_uploads(&root);
     let distro = distro_dirs(&resources);
-    let mut core = Core::new(
+    // 清单照起来时读好、核对过的那一份交进去，不让它自己再读一遍（施工 LW-16）。
+    let mut core = Core::with_found(
         root,
         resources,
         Arc::new(routes),
         tools,
         env.home,
         opened.token,
+        live.found,
     )
     .with_sandbox(sandbox)
     .with_config(config)
-    .with_packages(live.found)
     .with_built_in(built_in())
     .with_distro(distro)
     .with_builtins(builtins)

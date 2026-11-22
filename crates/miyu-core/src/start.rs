@@ -62,6 +62,9 @@ pub(super) async fn start(
             generate();
         }
     });
+    // 照清单拼的配置项、清单的副本和配置的值只在读配置、生成参考文件时用（施工 LW-16）：下面的 `run` 一直等到核心停下才
+    // 交回，这个函数的局部变量不在这里放下，就跟着留到那时（2026-11-22 量过：空闲时活着的堆里约 0.19 MB）。
+    drop((packaged, values, places));
     let live = Live {
         levels: log.levels(),
         locale,
