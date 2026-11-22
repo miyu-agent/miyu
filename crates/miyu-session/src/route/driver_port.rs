@@ -22,6 +22,8 @@ pub struct Declared {
     pub key: DriverKey,
     /// 看得了图：请求里的图照原样交过去（第五节第 1 条）。
     pub images: bool,
+    /// 读得了文件：请求里的文件块也照原样交过去（施工 FX-17）。
+    pub files: bool,
     /// 会让供应商自己跑的工具名（清单的 `hosted`，设计 71 第三节第 7 条）：交上来的不在里面的照收，执行器记一行 `WARN`。
     pub hosted: Vec<String>,
     /// 多久没动静才算断（清单的 `quiet_secs`，施工 DR-2）：比这一轮的空闲时限长的照它等，等第一个字、两段之间都算；没写的没有。

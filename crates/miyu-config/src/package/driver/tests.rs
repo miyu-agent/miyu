@@ -10,10 +10,10 @@ fn extension(capabilities: &str, rest: &str) -> String {
     )
 }
 
-const ONE: &str = "[[driver]]\nname = \"antigravity\"\ncache = \"contract\"\nkey = \"none\"\nbase_url = \"none\"\nimages = true\n";
+const ONE: &str = "[[driver]]\nname = \"antigravity\"\ncache = \"contract\"\nkey = \"none\"\nbase_url = \"none\"\nimages = true\nfiles = true\n";
 
 #[test]
-fn a_driver_reads_its_name_cache_key_and_images() {
+fn a_driver_reads_its_name_cache_key_images_and_files() {
     let manifest = read(&extension("\"model.driver\"", ONE)).unwrap();
     assert_eq!(manifest.drivers.len(), 1);
     let driver = &manifest.drivers[0];
@@ -22,11 +22,12 @@ fn a_driver_reads_its_name_cache_key_and_images() {
     assert_eq!(driver.key, DriverKey::None);
     assert_eq!(driver.base_url, DriverKey::None, "不要地址（施工 FX-11）");
     assert!(driver.images);
+    assert!(driver.files, "读得了文件（施工 FX-17）");
     assert_eq!(
         driver.reference("pi-antigravity"),
         "pi-antigravity/antigravity"
     );
-    // 不写的：尽力而为的缓存、key 和地址可有可无、不看图。
+    // 不写的：尽力而为的缓存、key 和地址可有可无、不看图、不读文件。
     let plain = read(&extension(
         "\"model.driver\"",
         "[[driver]]\nname = \"plain\"\n",
@@ -34,11 +35,18 @@ fn a_driver_reads_its_name_cache_key_and_images() {
     .unwrap();
     let driver = &plain.drivers[0];
     assert_eq!(
-        (driver.cache, driver.key, driver.base_url, driver.images),
+        (
+            driver.cache,
+            driver.key,
+            driver.base_url,
+            driver.images,
+            driver.files
+        ),
         (
             DriverCache::BestEffort,
             DriverKey::Optional,
             DriverKey::Optional,
+            false,
             false
         )
     );
@@ -68,6 +76,7 @@ fn wrong_drivers_are_refused() {
             "要不要地址",
         ),
         ("images = true", "images = \"yes\"", "看不看图"),
+        ("files = true", "files = 1", "读不读文件"),
     ] {
         assert_eq!(
             wrong(extension(declared, &ONE.replace(from, to))),

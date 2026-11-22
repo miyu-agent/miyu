@@ -3,7 +3,7 @@
 //! 写（`kinds::tables`）；写了它必须在 `[process] capabilities` 里声明 `model.driver`，声明了 `model.driver` 也必须写它
 //! （[`check`]，读完整份以后查）。
 
-use toml_edit::Item;
+use toml_edit::{Item, Table};
 
 use super::capability::Capability;
 use super::reader::{Reader, command_name, line_of};
@@ -23,6 +23,8 @@ pub struct DriverDecl {
     pub base_url: DriverKey,
     /// 看得了图的：请求里的图交过去（设计 66 第五节）。
     pub images: bool,
+    /// 读得了文件的：请求里的文件块（PDF、音频、视频这类）也交过去（施工 FX-17）。
+    pub files: bool,
     /// 会让供应商自己跑的工具名（设计 71 第三节第 7 条）：装包确认屏照它列出来，交上来的不在里面的核心照收、记一行 `WARN`。
     /// 每个 1 到 64 个字节、不带控制字符、不重；没写的是空的。
     pub hosted: Vec<String>,
@@ -147,16 +149,8 @@ pub(super) fn read(reader: &Reader<'_>, node: &Item) -> Result<Vec<DriverDecl>, 
                 ));
             }
         };
-        let images = match table.get("images") {
-            None => false,
-            Some(item) => item.as_bool().ok_or_else(|| {
-                bad(
-                    line,
-                    &format!("{at}.images"),
-                    format!("{at}.images must be true or false"),
-                )
-            })?,
-        };
+        let images = switch(table, "images", line, &at)?;
+        let files = switch(table, "files", line, &at)?;
         let hosted = hosted(table.get("hosted"), line, &at)?;
         let quiet_secs = match table.get("quiet_secs") {
             None => None,
@@ -181,12 +175,27 @@ pub(super) fn read(reader: &Reader<'_>, node: &Item) -> Result<Vec<DriverDecl>, 
             key,
             base_url,
             images,
+            files,
             hosted,
             quiet_secs,
             line,
         });
     }
     Ok(drivers)
+}
+
+/// 开关格（`images`、`files`）：`true`、`false`，没写的是 `false`。
+fn switch(table: &Table, key: &str, line: Option<usize>, at: &str) -> Result<bool, Problem> {
+    match table.get(key) {
+        None => Ok(false),
+        Some(item) => item.as_bool().ok_or_else(|| {
+            bad(
+                line,
+                &format!("{at}.{key}"),
+                format!("{at}.{key} must be true or false"),
+            )
+        }),
+    }
 }
 
 /// `hosted`：工具名的数组，没写的是空的；每个 1 到 [`HOSTED_NAME_BYTES`] 个字节、不带控制字符、一段里不重（施工 HT-4）。

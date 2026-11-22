@@ -59,13 +59,14 @@ pub(super) use listing::listed;
 use wires::Undeclared;
 pub(super) use wires::Wires;
 
-use wire::{Outgoing, Picture, Said};
+use wire::{Media, Outgoing, Said};
 
-/// 挑候选时备下的（扩展驱动的那一家）：看不看得了图，这一家的 key（照驱动的声明，`none` 的没有），这一家写的地址，声明了会让
+/// 挑候选时备下的（扩展驱动的那一家）：看不看得了图、读不读得了文件，这一家的 key（照驱动的声明，`none` 的没有），这一家写的地址，声明了会让
 /// 供应商自己跑的工具名，声明了多久没动静才算断的（施工 DR-2）。
 #[derive(Debug, Clone)]
 pub(super) struct Reach {
     pub(super) images: bool,
+    pub(super) files: bool,
     pub(super) hosted: Vec<String>,
     pub(super) key: Option<Secret>,
     pub(super) base_url: Option<String>,
@@ -127,6 +128,7 @@ pub(super) fn reach(
     let base_url = provider::resolve_base_url(provider, secret)?;
     Ok(Reach {
         images: declared.images,
+        files: declared.files,
         hosted: declared.hosted,
         key,
         base_url: (!base_url.is_empty()).then_some(base_url),
@@ -161,12 +163,10 @@ pub(super) async fn exchange(
     // 别家驱动的私有数据只回给它自己（设计 66 第四节第 3 条），别家的供应商侧工具换成字（施工 HT-2）：有要改的拷一份改，
     // 没有的原样交。
     let request = wire::handed(request, &family, &reached.texts);
-    let pictures = match reached.reach.images {
-        false => BTreeMap::new(),
-        true => match pictures(blobs, wire::images(&request)).await {
-            Ok(pictures) => pictures,
-            Err(hash) => return Exchanged::Missing(missing(&hash)),
-        },
+    let wanted = wire::media(&request, reached.reach.images, reached.reach.files);
+    let media = match handed(blobs, wanted).await {
+        Ok(media) => media,
+        Err(hash) => return Exchanged::Missing(missing(&hash)),
     };
     let call = capped(&ready.call, request.output_cap);
     let bytes = request.canonical_bytes();
@@ -181,10 +181,10 @@ pub(super) async fn exchange(
         params: call.as_ref().unwrap_or(&ready.call),
         key: reached.reach.key.as_ref().map(Secret::expose),
         base_url: reached.reach.base_url.as_deref(),
-        blobs: &pictures,
+        blobs: &media,
     });
     let hash = ContentHash::of(&bytes);
-    drop((bytes, pictures));
+    drop((bytes, media));
     let (tell, mut heard) = mpsc::unbounded_channel();
     let pending = match reached.port.call(&reached.driver, &id, params, tell) {
         Ok(pending) => pending,
@@ -344,11 +344,11 @@ fn said(classified: Classified) -> Exchanged {
     }
 }
 
-/// 照原样交过去的图（声明了看得了图的驱动）：在阻塞线程里取、写成 base64。取不出来的交回是哪一个。
-async fn pictures(
+/// 照原样交过去的图、文件（声明了看得了图、读得了文件的驱动）：在阻塞线程里取、写成 base64。取不出来的交回是哪一个。
+async fn handed(
     blobs: &Blobs,
     wanted: BTreeMap<ContentHash, String>,
-) -> Result<BTreeMap<String, Picture>, ContentHash> {
+) -> Result<BTreeMap<String, Media>, ContentHash> {
     if wanted.is_empty() {
         return Ok(BTreeMap::new());
     }
@@ -359,7 +359,7 @@ async fn pictures(
             .map(|(hash, media_type)| {
                 let bytes = blobs.get(&hash).map_err(|_| hash.clone())?;
                 let data = base64::engine::general_purpose::STANDARD.encode(bytes);
-                Ok((hash.to_string(), Picture { media_type, data }))
+                Ok((hash.to_string(), Media { media_type, data }))
             })
             .collect()
     })

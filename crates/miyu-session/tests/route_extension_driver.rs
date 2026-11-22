@@ -159,6 +159,7 @@ fn declared(key: DriverKey) -> Result<Declared, String> {
     Ok(Declared {
         key,
         images: false,
+        files: false,
         hosted: Vec::new(),
         quiet: None,
     })

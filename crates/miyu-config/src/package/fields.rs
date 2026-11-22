@@ -143,6 +143,7 @@ pub(super) const DRIVER: &[&str] = &[
     "key",
     "base_url",
     "images",
+    "files",
     "hosted",
     "quiet_secs",
 ];

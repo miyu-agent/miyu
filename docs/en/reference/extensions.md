@@ -375,7 +375,7 @@ The model driver you provide takes one whole model call (core → extension, wit
 | `params` | `{"model", "max_output"?, "effort"?, "temperature"?}` |
 | `key` | The key this provider's config refers to; it isn't handed to you when you declared `key = "none"` or the provider has no key written |
 | `base_url` | The address this provider wrote; it isn't handed to you when the provider wrote none |
-| `blobs` | Only for drivers that declare `images = true`: the request's images as `{"<blob hash>": {"media_type", "data"}}`, with `data` in base64. Without that declaration it isn't handed to you, and the request uses the descriptions in `described` instead |
+| `blobs` | Only for drivers that declare `images = true` or `files = true`: with `images`, the request's images, and with `files`, the request's files (`file` blocks such as PDFs, audio and video), as `{"<blob hash>": {"media_type", "data"}}`, with `data` in base64. Without `images`, the request uses the descriptions in `described` for its images; without `files`, a file is only the name and type on its block |
 
 **Deltas** `driver.delta` (extension → core, notification): `{"call", "deltas": [...]}`; one notification can carry several deltas, in order:
 

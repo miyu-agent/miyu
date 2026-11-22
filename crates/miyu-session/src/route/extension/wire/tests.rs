@@ -3,9 +3,9 @@
 use serde_json::json;
 
 use miyu_drivers::Inputs;
-use miyu_kernel::block::{HostedTool, Image, Text};
+use miyu_kernel::block::{File, HostedTool, Image, Text};
 use miyu_kernel::id::CallId;
-use miyu_kernel::id::{MediaType, ModelName};
+use miyu_kernel::id::{FileName, MediaType, ModelName};
 
 use super::*;
 
@@ -212,8 +212,9 @@ fn errors_are_classified_cut_and_only_rate_limits_wait() {
     }
 }
 
+/// 交过去的图、文件（施工 FX-17）：各照声明交，同一个 blob 只交一次，类型照块上写的。
 #[test]
-fn images_are_listed_once_with_their_type() {
+fn images_and_files_are_listed_once_each_as_declared() {
     let image = |hash: &str| {
         Block::Image(Image {
             blob: ContentHash::parse(&format!("sha256:{}", hash.repeat(64))).expect("哈希"),
@@ -224,6 +225,14 @@ fn images_are_listed_once_with_their_type() {
             path: None,
         })
     };
+    let file = |hash: &str| {
+        Block::File(File {
+            blob: ContentHash::parse(&format!("sha256:{}", hash.repeat(64))).expect("哈希"),
+            name: FileName::parse("报告.pdf").expect("名字"),
+            media_type: MediaType::parse("application/pdf").expect("类型"),
+            path: None,
+        })
+    };
     let request = Request {
         tools: Vec::new(),
         system: String::new(),
@@ -231,13 +240,14 @@ fn images_are_listed_once_with_their_type() {
             Message::User {
                 blocks: vec![
                     image("a"),
+                    file("c"),
                     Block::Text(Text {
                         text: "x".to_string(),
                     }),
                 ],
             },
             Message::User {
-                blocks: vec![image("a"), image("b")],
+                blocks: vec![image("a"), image("b"), file("c")],
             },
         ],
         stable: 0,
@@ -247,9 +257,16 @@ fn images_are_listed_once_with_their_type() {
         used: None,
         tail: None,
     };
-    let listed = images(&request);
-    assert_eq!(listed.len(), 2);
-    assert!(listed.values().all(|media_type| media_type == "image/png"));
+    let types = |images: bool, files: bool| -> Vec<String> {
+        media(&request, images, files).into_values().collect()
+    };
+    assert_eq!(types(true, false), ["image/png", "image/png"]);
+    assert_eq!(types(false, true), ["application/pdf"]);
+    assert_eq!(
+        types(true, true),
+        ["image/png", "image/png", "application/pdf"]
+    );
+    assert!(types(false, false).is_empty());
 }
 
 /// 供应商侧工具（施工 HT-1）带的私有数据同工具调用：别家的认得出、拿掉，自己家的留着。

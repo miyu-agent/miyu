@@ -339,6 +339,7 @@ access = ["execute"]
 | `key` | 是否需要 Miyu 交给它这一家供应商的密钥：`none`、`optional`（默认）、`required`。 |
 | `base_url` | 是否需要这一家供应商的地址：`none`、`optional`（默认）、`required`。写 `none` 的驱动（例如自己登录、走本机程序的），设置界面不显示地址那一项；`key = "none"` 同样让界面不显示认证和密钥。 |
 | `images` | 能看图片时写 `true`（默认是 `false`）。 |
+| `files` | 能读文件（PDF、音频、视频这类附件）时写 `true`（默认是 `false`）：Miyu 会把请求里的文件内容交给你，见 [`driver.call`](../reference/extensions.md#drivercalldriverdeltadrivercancel) 的 `blobs`。 |
 | `hosted` | 这个驱动会让供应商自己运行的工具名，例如 `["search_web", "read_url_content"]`（默认为空）：安装包时，核心根据它向主人显示 `会让供应商自己运行：…`。每个名字 1 到 64 个字节，不能带控制字符，不能重复。如果驱动交上来的名字不在这个列表里，Miyu 仍然接受、仍然显示，只在运行日志里记一行警告；见 [写扩展](extensions.md#供应商自己跑的工具)。 |
 | `quiet_secs` | 多久没有动静才算连接断开，单位是秒，1 到 900（默认使用 Miyu 的空闲时限，从 180 秒起）：等待第一个字、两段输出之间都按照它等待；比 Miyu 的时限短的值不会让等待变短。如果供应商不流式输出思考过程、第一个字常常要等一两分钟，驱动就写这一格，例如 `quiet_secs = 300`。 |
 

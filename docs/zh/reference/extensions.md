@@ -375,7 +375,7 @@ access = ["network"]         # 访问类别，可以不写；两样至少一样
 | `params` | `{"model", "max_output"?, "effort"?, "temperature"?}` |
 | `key` | 这一家供应商的配置里引用的那一把 key；你声明了 `key = "none"`、或者这一家没有写 key 时，不交给你 |
 | `base_url` | 这一家供应商写的地址；没有写时不交给你 |
-| `blobs` | 只给声明了 `images = true` 的驱动：请求里的图片，`{"<blob 哈希>": {"media_type", "data"}}`，`data` 是 base64；没有声明时不交给你，请求里按照 `described` 使用转述 |
+| `blobs` | 只给声明了 `images = true` 或 `files = true` 的驱动：声明了 `images` 时有请求里的图片，声明了 `files` 时有请求里的文件（PDF、音频、视频这类 `file` 块），写成 `{"<blob 哈希>": {"media_type", "data"}}`，`data` 是 base64。没有声明 `images` 时，请求里的图片按照 `described` 使用转述；没有声明 `files` 时，文件只有块上的名字和类型 |
 
 **增量** `driver.delta`（扩展 → 核心，通知）：`{"call", "deltas": [...]}`，一份通知里可以有几条增量，按照先后顺序排列：
 

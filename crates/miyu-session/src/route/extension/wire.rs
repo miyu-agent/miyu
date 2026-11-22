@@ -1,7 +1,7 @@
 //! 扩展驱动线上的写法（施工 MD-2，设计 66 第五节）：`driver.call` 的参数怎么写，`driver.delta` 的增量、`driver.call` 的回答怎么读。
 //!
 //! - 参数：`{"call", "driver", "request", "fingerprint", "params", "key"?, "base_url"?, "blobs"?}`。`request` 是规范字节原样，拼进
-//!   去、不重新解析；指纹的哈希写成 16 位十六进制的字（JSON 的数到 2⁵³ 以上就不准了）；`blobs` 只有声明了 `images` 的才有。
+//!   去、不重新解析；指纹的哈希写成 16 位十六进制的字（JSON 的数到 2⁵³ 以上就不准了）；`blobs` 只有声明了 `images`、`files` 的才有（文件是施工 FX-17）。
 //! - 请求：别家驱动的私有数据拿掉（设计 66 第四节第 3 条）；供应商侧工具带着这个家族的私有数据的原样交，别家的、没带私有
 //!   数据的换成一块正文，同内置驱动写的那一段字（施工 HT-2，设计 71 第三节第 5 条）。没有要改的原样交、不拷贝。
 //! - 增量：一条一样，和内核的 [`Delta`] 一一对应；私有数据记成这个驱动的家族（`<包编号>/<驱动名>`）。供应商侧工具开一块是
@@ -28,9 +28,9 @@ use miyu_kernel::request::{Fingerprint, Message, Request};
 /// 第三方写的原话最多留多少个字（设计 66 第八节第 3 条）：只给人看，不进模型的上下文。
 const MESSAGE_CHARS: usize = 500;
 
-/// 一张交过去的图（声明了 `images` 的驱动）。
+/// 一件交过去的图（声明了 `images` 的驱动）或者文件（声明了 `files` 的，施工 FX-17）。
 #[derive(Serialize)]
-pub(super) struct Picture {
+pub(super) struct Media {
     pub(super) media_type: String,
     /// base64。
     pub(super) data: String,
@@ -48,7 +48,7 @@ struct Rest<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     base_url: Option<&'a str>,
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
-    blobs: &'a BTreeMap<String, Picture>,
+    blobs: &'a BTreeMap<String, Media>,
 }
 
 /// 指纹：工具面、system、每条消息各一个哈希。
@@ -80,7 +80,7 @@ pub(super) struct Outgoing<'a> {
     pub(super) params: &'a Call,
     pub(super) key: Option<&'a str>,
     pub(super) base_url: Option<&'a str>,
-    pub(super) blobs: &'a BTreeMap<String, Picture>,
+    pub(super) blobs: &'a BTreeMap<String, Media>,
 }
 
 /// 写成参数的原文：一个 JSON 对象，`request` 是规范字节原样（规范字节一定是 JSON 对象，不再解析一遍）。
@@ -195,14 +195,17 @@ pub(super) fn strip(request: &mut Request, family: &DriverFamily) {
     }
 }
 
-/// 请求里的图：blob 和类型，照先后、去重。
-pub(super) fn images(request: &Request) -> BTreeMap<ContentHash, String> {
+/// 请求里要交过去的图（`images`）、文件（`files`，施工 FX-17）：blob 和类型，去重。
+pub(super) fn media(request: &Request, images: bool, files: bool) -> BTreeMap<ContentHash, String> {
     request
         .messages
         .iter()
         .flat_map(blocks)
         .filter_map(|block| match block {
-            Block::Image(image) => Some((image.blob.clone(), image.media_type.to_string())),
+            Block::Image(image) if images => {
+                Some((image.blob.clone(), image.media_type.to_string()))
+            }
+            Block::File(file) if files => Some((file.blob.clone(), file.media_type.to_string())),
             _ => None,
         })
         .collect()
