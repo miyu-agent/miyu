@@ -1589,6 +1589,16 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sWD5"><span class="n">WD-5</span>拒绝原因、命令行、出厂软件包的字清理<span class="st">…</span></a></li>
         <li><a class="step review" href="#sWD6"><span class="n">WD-6</span>四处给人看的字的程序问题<span class="st">…</span></a></li>
         <li><a class="step review" href="#sWD7"><span class="n">WD-7</span>安装脚本和三句拒绝原因<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW1"><span class="n">LW-1</span>核心按执行顺序排函数<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW2"><span class="n">LW-2</span>核心打包重定位表<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW3"><span class="n">LW-3</span>闲下来放掉编好的历史<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW8"><span class="n">LW-8</span>核心启动少执行用不着的代码<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW6"><span class="n">LW-6</span>打包时照真的终端界面录清单<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW5"><span class="n">LW-5</span>核心的分配器少留没在用的内存<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW10"><span class="n">LW-10</span>闲着的会话历史不常驻<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW11"><span class="n">LW-11</span>文件监视合成一组线程<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW12"><span class="n">LW-12</span>核心的线程缓存少留<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW13"><span class="n">LW-13</span>收紧两行内存预算<span class="st">…</span></a></li>
         <li><a class="step review" href="#sHLP1"><span class="n">HLP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
@@ -62132,6 +62142,499 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/WD-7-安装脚本和三句拒绝原因.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW1" aria-labelledby="h-sLW1">
+  <div class="sheet-head"><h2 id="h-sLW1"><span class="no">LW-1</span>核心的发行程序按执行顺序排函数</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">核心空闲时留在内存里的 17.9 MB 代码里，实际执行过的只有 4.0 MB：执行过的函数散落在整个代码段里，每碰到一个就带进周围的一片页。这一步在打包时录下执行过的函数，让链接器把它们排在代码段的开头。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu/build.rs　xtask/src/order.rs　crates/miyu-perf/src/order.rs</span><span class="dir-note">LW-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>量尺在 QEMU 用户态模拟器里运行核心，照剧本连上、说话、调用工具，录下执行过的每一个函数</li>
+              <li>build.rs 认环境变量 MIYU_LINK_ORDER，把清单交给链接器；排完以后核对九成以上的函数落在代码段开头</li>
+              <li>cargo xtask dist、cargo xtask perf 在 Linux x86_64 上按照这个流程编核心；其他平台保持原来的做法</li>
+              <li>两行内存预算从 30 MB 收到 11、15 MB</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">发行程序量的、发的都是排过函数的那一个</span><span class="rl">internal/blueprint/perf.md「排函数」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-1</dd></div>
+        <div><dt>名称</dt><dd>核心的发行程序按执行顺序排函数</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-21</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-1</dd></div>
+        <div><dt>验收</dt><dd>量尺：核心空闲 20.8 → 9.5 MB，连着一个头 26.4 → 13.0 MB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>量尺：核心空闲 20.8 → 9.5 MB，连着一个头 26.4 → 13.0 MB</span></li>
+        <li><span class="ok">✓</span><span>Ubuntu 自带的不带反汇编的 QEMU 也能录出清单</span></li>
+        <li><span class="ok">✓</span><span>门禁全过，三平台 CI 通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-1-核心按执行顺序排函数.md</code>；蓝图 <code>perf.md</code>「排函数」。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW2" aria-labelledby="h-sLW2">
+  <div class="sheet-head"><h2 id="h-sLW2"><span class="no">LW-2</span>核心的发行程序打包重定位表</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">位置无关的程序启动时，动态链接器要把整张重定位表读一遍，读过的页留在内存里。核心的这张表有 1.2 MB。这一步让链接器把它打包成十几 kB。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu/build.rs　internal/designs/12-进程形态与分发.md</span><span class="dir-note">LW-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>Linux x86_64、glibc、release 四个条件都满足时，链接参数加上 -z pack-relative-relocs</li>
+              <li>Linux 的发行程序因此要求 glibc 2.36 以上（基线本来是 2.39）</li>
+              <li>两行内存预算再收到 9.5、14 MB</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">Linux 的发行程序要求 glibc 2.36 以上</span><span class="rl">internal/designs/12-进程形态与分发.md</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-2</dd></div>
+        <div><dt>名称</dt><dd>核心的发行程序打包重定位表</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-21</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-2</dd></div>
+        <div><dt>验收</dt><dd>量尺：核心空闲 9.5 → 8.2 MB，连着一个头 13.0 → 12.0 MB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>量尺：核心空闲 9.5 → 8.2 MB，连着一个头 13.0 → 12.0 MB</span></li>
+        <li><span class="ok">✓</span><span>.rela.dyn 从 1239 kB 变成 .relr.dyn 16.5 kB 加 .rela.dyn 5.4 kB</span></li>
+        <li><span class="ok">✓</span><span>门禁全过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-2-重定位打包.md</code>；蓝图 <code>perf.md</code>「重定位打包」。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW3" aria-labelledby="h-sLW3">
+  <div class="sheet-head"><h2 id="h-sLW3"><span class="no">LW-3</span>会话闲下来以后放掉编好的历史</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">同一份会话历史在核心的堆里存了四份，其中两份是请求体缓存（原样的消息和编好的字节）。窗口开着时会话不会退下，这两份一直占着内存。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-session/src/route/kept.rs</span><span class="dir-note">LW-3</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>会话没有主请求满 3 分钟，放掉请求体缓存，然后把空出来的内存还给系统</li>
+              <li>下一次请求重新编一遍，发出去的字节不变</li>
+              <li>计时只在缓存里有内容的时候存在，放掉以后不再醒来</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">缓存放掉的时刻和会话闲够退下是同一个数：3 分钟</span><span class="rl">internal/blueprint/session/actor.md「8. 经路由请求」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-3</dd></div>
+        <div><dt>名称</dt><dd>会话闲下来以后放掉编好的历史</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-3</dd></div>
+        <div><dt>验收</dt><dd>日志 228 kB 的会话，和历史有关的堆从 736 kB 降到 339 kB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>日志 228 kB 的会话，和历史有关的堆从 736 kB 降到 339 kB</span></li>
+        <li><span class="ok">✓</span><span>门禁全过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-3-闲着放掉编好的历史.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW8" aria-labelledby="h-sLW8">
+  <div class="sheet-head"><h2 id="h-sLW8"><span class="no">LW-8</span>核心启动、连上头时少执行用不着的代码</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">排函数以后，执行过的函数整个留在内存里。核心进程启动时要先搭整棵命令行树、解析一遍，这 266 kB 代码只为认出「core」这一个词。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu/src/main.rs　crates/miyu-kernel/src/apart.rs、session/dispatch.rs</span><span class="dir-note">LW-8</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>主程序先看参数是不是前台运行核心的三种写法，是的话直接进核心，不搭命令行树</li>
+              <li>内核按输入分发的那个大函数拆开：每一种输入单独成一个函数，走到一种不会带进整块</li>
+              <li>为了行数上限，session.rs、nested.rs 各搬出一部分</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">认不出的参数仍然交给整棵命令行树，报错的文字不变</span><span class="rl">internal/blueprint/core.md「起来的先后」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-8</dd></div>
+        <div><dt>名称</dt><dd>核心启动、连上头时少执行用不着的代码</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-8</dd></div>
+        <div><dt>验收</dt><dd>量尺：核心空闲 8.2 → 7.6 MB，连着一个头 12.0 → 11.7 MB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>量尺：核心空闲 8.2 → 7.6 MB，连着一个头 12.0 → 11.7 MB</span></li>
+        <li><span class="ok">✓</span><span>一组参数对照快路和整棵树的解析结果</span></li>
+        <li><span class="ok">✓</span><span>门禁全过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-8-核心启动瘦身.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW6" aria-labelledby="h-sLW6">
+  <div class="sheet-head"><h2 id="h-sLW6"><span class="no">LW-6</span>打包时照真的终端界面录排函数的清单</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">LW-1 的清单是量尺按照协议自己问出来的，配着真的终端界面时核心空闲的代码页多 1.5 MB；终端界面自己的程序也还没有排。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">xtask/src/order.rs、dist.rs　crates/miyu-perf/src/order/head.rs、terminal.rs、screen.rs</span><span class="dir-note">LW-6</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>cargo xtask dist 搭好发行包目录以后，在伪终端里启动真的终端界面，对着它再录一遍</li>
+              <li>核心按照新清单重新链接；终端界面带着自己的清单再编一遍</li>
+              <li>两个程序重新拷进发行包目录，各自核对排上了</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">发行包里的两个程序都按真实使用时的执行顺序排</span><span class="rl">internal/blueprint/perf.md「排函数」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-6</dd></div>
+        <div><dt>名称</dt><dd>打包时照真的终端界面录排函数的清单</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-6</dd></div>
+        <div><dt>验收</dt><dd>真发行包：核心空闲的代码页 6.1 → 5.2 MB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>真发行包：核心空闲的代码页 6.1 → 5.2 MB</span></li>
+        <li><span class="ok">✓</span><span>本机真运行 cargo xtask dist 通过</span></li>
+        <li><span class="ok">✓</span><span>门禁全过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-6-打包时照真的终端界面录清单.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW5" aria-labelledby="h-sLW5">
+  <div class="sheet-head"><h2 id="h-sLW5"><span class="no">LW-5</span>核心的分配器少留没在用的内存</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">核心连着一个头空闲时，分配区占着 4.4 MB，活着的堆只有 1.8 MB。多出来的一部分来自启动时在常驻线程上做的一次性工作，和读本机时区时遍历整个时区目录。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-core/src/start.rs　crates/miyu-log/src/zone.rs</span><span class="dir-note">LW-5</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>启动时生成参考文件改在一条做完就退出的线程里</li>
+              <li>运行日志的时刻和会话环境里的时区偏移直接读 /etc/localtime，不再打开时区库</li>
+              <li>设了 TZ、TZDIR 或者不是 Unix 时，仍然交给 jiff</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">一次性的大工作不放在常驻的线程上</span><span class="rl">internal/blueprint/heap.md「怎么走」第 5 条</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-5</dd></div>
+        <div><dt>名称</dt><dd>核心的分配器少留没在用的内存</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-5</dd></div>
+        <div><dt>验收</dt><dd>分配区合计 4344 → 3962 kB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>分配区合计 4344 → 3962 kB</span></li>
+        <li><span class="ok">✓</span><span>本机时区新旧对照：一年多里每隔 22 小时一个时刻，结果和 jiff 一样</span></li>
+        <li><span class="ok">✓</span><span>门禁全过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-5-分配器余量.md</code>；蓝图 <code>heap.md</code>「本机时区」。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW10" aria-labelledby="h-sLW10">
+  <div class="sheet-head"><h2 id="h-sLW10"><span class="no">LW-10</span>闲着的会话历史不常驻</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">LW-3 以后，闲着的会话在堆里还留着内核的事件正文和有效历史的事件数组。窗口开着时会话不退下，上下文约 1 MB 的会话这两处各占一兆多。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-kernel/src/event.rs、history/shelf.rs、session/shelve.rs　crates/miyu-session/src/actor/shelf.rs</span><span class="dir-note">LW-10</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>上：事件里大于 80 字节的十五种内容装进盒子，一条事件从 528 字节降到 200 字节，日志的读写不变</li>
+              <li>下：会话歇着满 3 分钟，内核把有效历史收成槽，只记序号</li>
+              <li>再说话时，执行器从日志原样读回并放回；一个回合里有效历史仍然整条留在内存里</li>
+              <li>读不回来时这一轮不发请求，并且如实报错</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">没有回合在运行的会话占用的堆不超过 150 kB，和历史的长短无关</span><span class="rl">internal/blueprint/kernel/history.md「闲下来收成槽」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-10</dd></div>
+        <div><dt>名称</dt><dd>闲着的会话历史不常驻</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-10</dd></div>
+        <div><dt>验收</dt><dd>上下文约 1 MB 的会话，内核这一份从 1609 kB 降到 74 kB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>上下文约 1 MB 的会话，内核这一份从 1609 kB 降到 74 kB</span></li>
+        <li><span class="ok">✓</span><span>同一个种子收与不收，每一次请求逐字节相同（平时六十例，全量两千例）</span></li>
+        <li><span class="ok">✓</span><span>闲置以后第一句只多约 2 ms</span></li>
+        <li><span class="ok">✓</span><span>门禁全过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-10-闲着的会话历史不常驻.md</code>；蓝图 <code>kernel/history.md</code>、<code>kernel/session.md</code>、<code>session/actor.md</code>「闲下来收成槽」。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW11" aria-labelledby="h-sLW11">
+  <div class="sheet-head"><h2 id="h-sLW11"><span class="no">LW-11</span>文件监视合成整个进程共用的一组线程</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">核心的文件监视每一份订阅各开两条线程，常驻的六份订阅占了空闲时 28 条线程里的 12 条。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-store/src/watch.rs、watch/hub.rs</span><span class="dir-note">LW-11</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>整个进程共用一个系统的监视器和一条收事件、去抖的 miyu-watch 线程</li>
+              <li>回调在短命的线程上一个接一个地执行，一份订阅卡住或者 panic 只影响它自己</li>
+              <li>和共用的监视器已经在看的目录重叠的订阅自己开监视器；macOS 上每一份订阅仍然自己开</li>
+              <li>对外的接口、去抖的时长、过滤的规则、退回轮询的行为都不变</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">工作线程以外，核心常驻的线程在 4 条以内</span><span class="rl">internal/blueprint/config.md「怎么走」第七条第 6 条</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-11</dd></div>
+        <div><dt>名称</dt><dd>文件监视合成整个进程共用的一组线程</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-11</dd></div>
+        <div><dt>验收</dt><dd>核心的线程 28 → 18 条，堆和匿名内存少约 0.4 MB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>核心的线程 28 → 18 条，堆和匿名内存少约 0.4 MB</span></li>
+        <li><span class="ok">✓</span><span>沙箱实测：手动修改配置、往脚本目录放文件，核心都读到了</span></li>
+        <li><span class="ok">✓</span><span>门禁全过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-11-文件监视合成一组线程.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW12" aria-labelledby="h-sLW12">
+  <div class="sheet-head"><h2 id="h-sLW12"><span class="no">LW-12</span>核心的线程缓存少留</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">glibc 的每条线程把释放的小块留在自己的缓存里，每种大小默认留 16 块。核心有十几条常驻的线程，这些缓存白白占着内存。这个上限只能在进程启动时用环境变量设置。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-heap/src/launch.rs　crates/miyu/src/tuned.rs　crates/miyu-basesystem/src/shell/env.rs</span><span class="dir-note">LW-12</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>miyu 拉起核心时，在命令上设好「每种大小留 4 块」</li>
+              <li>用其他方式启动的核心（systemd 托管的、直接运行的）带上这一项重新执行自己一次，进程号不变</li>
+              <li>你自己设置的 GLIBC_TUNABLES 保留；自己写了留几块时，核心不做修改</li>
+              <li>核心运行的命令不带这一项，拿到的是原来的环境</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">线程缓存每种大小留 4 块：不留时更省，但是慢一成，不选</span><span class="rl">internal/blueprint/heap.md「线程缓存」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-12</dd></div>
+        <div><dt>名称</dt><dd>核心的线程缓存少留</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-12</dd></div>
+        <div><dt>验收</dt><dd>核心连着一个头空闲时少约 0.7 MB，各项时延没有退步</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>核心连着一个头空闲时少约 0.7 MB，各项时延没有退步</span></li>
+        <li><span class="ok">✓</span><span>真的拉起核心、读它的环境：三种情形都符合</span></li>
+        <li><span class="ok">✓</span><span>门禁全过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-12-线程缓存少留.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW13" aria-labelledby="h-sLW13">
+  <div class="sheet-head"><h2 id="h-sLW13"><span class="no">LW-13</span>LW 线这一批做完以后收紧两行内存预算</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">LW-8 到 LW-12 是一起交的，中间没有逐步收紧预算。闸门按预算的 1 倍判定，预算收紧以后，内存涨回去时才报得出来。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">internal/designs/23-性能预算.md</span><span class="dir-note">LW-13</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>「核心空闲、没有会话载入」从 9.5 MB 收到 9 MB</li>
+              <li>「核心空闲、连着一个头」从 14 MB 收到 12.5 MB</li>
+              <li>「核心里每多一个活动会话」（5 MB，实测约 0.9 MB）没有修改，是否收紧由项目主人决定</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">预算每一步收到实测值加两成以内</span><span class="rl">internal/designs/23-性能预算.md 第二节</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-13</dd></div>
+        <div><dt>名称</dt><dd>LW 线这一批做完以后收紧两行内存预算</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-13</dd></div>
+        <div><dt>验收</dt><dd>带排函数的量尺：本机 7.3、9.9 MB，另一台测试机 7.6、10.6 MB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>带排函数的量尺：本机 7.3、9.9 MB，另一台测试机 7.6、10.6 MB</span></li>
+        <li><span class="ok">✓</span><span>门禁全过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-13-预算收紧.md</code>；蓝图 <code>perf.md</code>「闸门」第 11 条。</li>
       </ul>
     </div>
   </div>
