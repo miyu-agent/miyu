@@ -1,6 +1,6 @@
 ## 量尺
 
-状态：施工 V-1（2026-10-10）；V-3 进 CI、加闸门（2026-10-11）；V-7 三家对比（2026-10-15）；V-27 三家对比照现在的样子跑（2026-10-30）；V-29 工具一步（2026-10-31）；V-34 和 jcode 再比一次（2026-11-02）；LW-1 排函数（2026-11-21）；LW-2 重定位打包（2026-11-21）；LW-14 录清单的剧本补上常用操作和抽记忆（2026-11-22）；LW-19 逛一圈补上设置页的每个分类和 `/theme` 的预览（2026-11-22）。
+状态：施工 V-1（2026-10-10）；V-3 进 CI、加闸门（2026-10-11）；V-7 三家对比（2026-10-15）；V-27 三家对比照现在的样子跑（2026-10-30）；V-29 工具一步（2026-10-31）；V-34 和 jcode 再比一次（2026-11-02）；LW-1 排函数（2026-11-21）；LW-2 重定位打包（2026-11-21）；LW-14 录清单的剧本补上常用操作和抽记忆（2026-11-22）；LW-19 逛一圈补上设置页的每个分类和 `/theme` 的预览（2026-11-22）；MO-1 macOS 的页探针和苹果的符号表（2026-11-22）。
 
 ### 是什么
 
@@ -150,7 +150,7 @@
 |---|---|
 | `crates/miyu/build.rs` | 环境变量 `MIYU_LINK_ORDER` 指着清单时，给 `miyu` 这一个程序的链接加上清单；没有设置时不加清单。目标不是 Linux、路径不是绝对路径的让构建失败。另管重定位打包（施工 LW-2，下面一节） |
 | `xtask/src/order.rs` | 排函数的流程：找模拟器和 `nm`、写空清单、编、录、重链；`cargo xtask perf`、`cargo xtask dist` 共用。另有 `cargo xtask dist` 用的几样（施工 LW-6）：终端界面钉的提交认不认清单（`tui_list`）、对着搭好的发行包目录再录一遍并重编两个程序（`staged`）、核对任意一个程序（`check`） |
-| `xtask/src/order/verify.rs` | 核对排上了没有（纯函数） |
+| `xtask/src/order/verify.rs` | 核对排上了没有（纯函数）；苹果的 `nm` 不给符号大小时照下一个符号的起点补，和 `listing.rs` 是同一个算法（施工 MO-1） |
 | `xtask/src/dist.rs`、`dist/layout.rs` | `cargo xtask dist` 的先后（施工 LW-6 接上再录的一遍）；把重编过的程序盖回发行包目录（`replace`） |
 | `crates/miyu-perf/src/order.rs` | `miyu-perf --order`：原生先运行两遍、模拟器里录两段、带 `--head` 的再录两段、拉 `nm`、写清单 |
 | `crates/miyu-perf/src/order/script.rs` | 剧本：沙箱怎么配、连上以后照先后做哪几样 |
@@ -159,7 +159,8 @@
 | `crates/miyu-perf/src/order/tour.rs`、`tour/talk.rs` | 逛一圈（施工 LW-14）：第三、四段说完话以后照一张步骤表用一遍常用的页面和命令（名字、按键、等的字）；新会话里说话的几步（说一句、回一次工具调用、回 500 以后重试、说话途中停下） |
 | `crates/miyu-perf/src/order/terminal.rs` | 伪终端（施工 LW-6）：建一对、设窗口大小、起程序，一个线程一直读主端、当场回答问终端的几样，等屏幕上出现某段字 |
 | `crates/miyu-perf/src/order/screen.rs` | 像 kitty 那样回答终端界面问终端的几样、去掉转义序列看屏幕上的字（纯函数，施工 LW-6） |
-| `crates/miyu-perf/src/order/listing.rs` | 读符号表、读模拟器的日志、照第一次执行的先后记函数（纯函数） |
+| `crates/miyu-perf/src/order/listing.rs` | 读符号表、读模拟器的日志、照第一次执行的先后记函数（纯函数）。另读页探针的记录（`Probe::parse`，施工 MO-1）、把探针记下的地址照先后交给同一份清单（`Listing::add`）；苹果的 `nm` 不给符号大小时照下一个符号的起点补（下面「macOS」） |
+| `crates/miyu-perf/probe/pagetrace.c` | macOS 的页探针（施工 MO-1）：录清单时插进被测进程的动态库，把代码页关上、记下碰的地址，可以定时重新关上；记录文件的格式写在源码开头，和 `listing.rs` 的模块说明一致 |
 | `crates/miyu-perf/src/sandbox.rs` | 在模拟器里拉起核心（`Launch::traced`）、交给核心信任的证书（`Launch::trust`）、读装载起点（`base_of`）；家目录指进沙箱（`Launch::home`、`home_vars`，施工 LW-6） |
 | `crates/miyu-perf/src/fake/shared.rs`、`http1.rs`、`http2.rs`、`tls.rs` | 假模型：三种传输共用的一份逻辑；明文和 HTTPS 上的 HTTP/1.1；HTTPS 上的 HTTP/2；TLS 的两个口（只差 ALPN）。测试证书在 `crates/miyu-perf/tls/`，是 `miyu-http` 测试用的同一张自签证书。另有排函数的剧本用的一样（施工 LW-14）：下一个提到某个记号的请求回一次 500（`Fake::fail_once`） |
 | `crates/miyu-perf/src/fake/organizer.rs` | 假模型照真的模型那样回整理记忆的三种请求（施工 LW-14）：抽取、写关键词、合并，照出厂指令里的一句认是哪一种；只在 `Fake::organize` 打开时这样回 |
@@ -200,6 +201,13 @@
    4. 核心照新清单重链；终端界面认清单的，在它的检出里带着它的清单再编一遍。两个程序重新拷进发行包目录，各自照自己的清单核对（第 6 条，核对的函数对任意程序都一样）。
    5. 然后才打压缩包、搭分包。每一步说一行在做什么；哪一步失败就报哪一步、哪条命令，停下，不悄悄不排。没有装模拟器又没有写 `--no-order` 的，当场报错并说明要装什么（Debian、Ubuntu、Arch 的包都叫 `qemu-user`）。CI 的 `perf` 一项和发版的 `linux-x86_64` 一项先装模拟器。
 8. 排核心的 `miyu`；`cargo xtask dist` 另排终端界面的 `miyu-tui`（施工 LW-6）。`miyu-sandbox`、`miyu-extract` 用完就退出，不排。Linux aarch64、macOS、Windows 的程序和原来一样。
+
+**macOS（施工 MO-1 起）。** macOS 的发行包现在还没有排，这件事分几步做，做法和先后写在总施工单 `internal/construction/MO-macOS的发行包排函数.md` 里。到施工 MO-1 为止，仓库里只有两样基础，打包、量尺的跑法都和以前一样：
+
+1. 页探针的源码 `crates/miyu-perf/probe/pagetrace.c`。macOS 上没有能录执行轨迹的用户态模拟器，所以用一个经 `DYLD_INSERT_LIBRARIES` 插进被测进程的动态库代替：进 `main` 以前它把主程序 `__text` 节整页的部分设成不可访问，每有一个线程碰到其中一页，就记下碰的地址、放开这一页。环境变量 `MIYU_PAGES_REARM_MS` 设了毫秒数的，后台线程照这个间隔把代码页重新全部关上，下一个碰到的会再记一次，一轮能记到更多的函数；同一个地址只记一次。因为不关整个 `__TEXT` 段，所以只读数据记不到（核心把 `__cstring` 里的串交给内核时，关上的页会让系统调用失败）。环境变量、记录文件的格式、线程和信号怎么处理，都写在源码开头的注释里。macOS 的 CI 编一次这个探针（`cc -O2 -dynamiclib … -Wall -Wextra -Werror`），只编不跑。
+2. 量尺和核对认得 macOS 的符号表和探针的记录。苹果的 `nm`（llvm-nm）读 Mach-O 时 `-S` 那一列全是 0，所以整张表里列出的函数大小都是 0 时，每个函数的大小改用「下一个符号（任何类型）的起点减去自己的起点」；后面一个符号都没有的函数给 16 kB（一页）。苹果列成 `T` 的文件头 `__mh_execute_header` 不算函数。Linux 的表里总有带大小的函数，所以不补，行为和以前一样。符号的名字原样留着，Mach-O 开头多出来的下划线不去掉：地址换成符号用不到名字，名字和清单互换是后面的步骤。探针的记录只收「执行」的那几条；记满了的照样读，另外交回一个标记给调用方报提醒。
+
+量尺加 `--probe`、`cargo xtask dist` 在 macOS 上带链接器垫片排、跑探针更新起点清单，都是后面几步的事。
 
 **剧本要跟着用户的真实状态走。** 用户平常会执行、剧本却没有录到的路径，函数散在清单以外，每碰到一处带进一片邻居页，而闸门量的场景和剧本是同一套，看不出来。新加了用户平常会用到的路径（新的工具、新的后台任务），在剧本里补一段。打包时配着真的终端界面录的两段（上面第 5 条第 7 款）补上的是终端界面那一边的路径，闸门量的仍然是量尺自己的剧本。
 
@@ -322,6 +330,7 @@ MIYU_BENCH_MODEL=… uv run bench/rivals/main.py --tui <终端仓库> --upstream
 
 | `crates/miyu-perf/src/order/listing/tests.rs`、`sandbox/tests.rs`、`fake/tls/tests.rs`、`args/tests.rs`（施工 LW-1） | 清单：只留代码段里的函数，线程交错的块、程序以外的地址、同一个函数出现多次、两个函数之间的空隙、同名的局部函数、两段日志接着读；装载起点的读法；测试证书编成 PEM 读回来一样、两个 HTTPS 口各用真的 TLS 客户端回一次（HTTP/2 那次请求体比一个流控窗口大）；`--order` 和 `--emulator` 要一起写、要 `--tree` |
 | `xtask/src/order/verify/tests.rs`、`dist/tests.rs`（施工 LW-1） | 核对：排上了的过，完全没排的、不到九成的报错，清单里有符号表里没有的名字不算，空清单报错；`--no-order` 的读法 |
+| `crates/miyu-perf/src/order/listing/tests.rs`、`xtask/src/order/verify/tests.rs`（施工 MO-1） | 苹果的符号表（一台 M1 MacBook 上真的 `nm` 输出，两边各放一份 `apple-nm.txt`）：大小照下一个符号补，相邻的函数、C 函数、代码段最后一个接着别的节的符号，后面没有符号的给一页，起点相同的别名一样大，文件头不算；Linux 的表里大小是 0 的仍然当一个字节；核对在大小是 0 的表上算出的比例和手算的一样、和带大小的同一个程序结果相同。探针的记录：正常的照先后交出执行的地址、交给清单以后和别的记录接着记；空文件报错、没有记录的是空的；文件头不全、少半条、多出字节报截断或多出；魔数、标志、超过上限、种类不认得的报错；满了的照样读、交回标记；只有读的记录什么都不排 |
 | `crates/miyu-perf/src/order/screen/tests.rs`、`order/head/tests.rs`、`args/tests.rs`（施工 LW-6） | 回答终端：光标、DA1、状态、版本、键盘协议、前景背景和 16 色（16 色以外的、设颜色的不答）、三种大小、图形协议只答 `a=q`、模式只答问的、一块里问几样都答；去转义序列留下画的字，没写完的序列到末尾就停；`/proc` 的 NUL 列表只去掉末尾那一个、空参数照留；主程序加的、改了的环境变量才算；认回答的那段字在假模型每种长度的回答里；`--head-order` 要 `--head`、`--head` 只在 `--order` 里认 |
 | `crates/miyu-perf/src/fake/organizer/tests.rs`、`order/remember/tests.rs`、`order/tour/tests.rs`（施工 LW-14） | 整理记忆的三种请求认的那一句真在出厂指令里，抽取照第一轮的编号记一条、写关键词给列出的每一条写、合并不改不作废写摘要，别的请求不归它；记忆日志只认种类那一栏、给了会话的要提到它，目录还没建的当空的；逛一圈的步骤表每一步都有按键和等的字，打的命令先等它本身再回车，工作单要的命令和按键都在表里，说一句的那一步在 `/new` 以后 |
 | `xtask/src/order/tests.rs`、`dist/tests.rs`（施工 LW-6） | 终端界面的检出认不认清单（没有 `build.rs`、不认变量、认变量、`build.rs` 读不了的报错）；认的写出空清单、名字照程序；空清单、只有空行的清单报错；录清单的命令行每个路径都带上；重编过的程序盖回搭好的目录、带执行位，目录里没有的不拷 |

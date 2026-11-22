@@ -100,6 +100,11 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
           df -h / | tail -1
       - uses: actions/checkout@v7
+      # macOS 排函数用的页探针（施工 MO-1，`crates/miyu-perf/probe/pagetrace.c`）只在 macOS 上编得过，平时没有别处编它：
+      # 在这里编一次，免得它坏了到发版才发现。只编不跑，编出来的放在 runner 的临时目录，不进缓存。
+      - name: 编页探针
+        if: runner.os == 'macOS'
+        run: cc -O2 -dynamiclib -o "$RUNNER_TEMP/pagetrace.dylib" crates/miyu-perf/probe/pagetrace.c -Wall -Wextra -Werror
       # 机器自带的别的工具链卸掉（施工 CI-3）：取缓存时键里算的是装着的每一个工具链的版本，GitHub 的机器自带的 stable 一批
       # 一批地换（同一天有 1.98.1 的、有 1.99.0 的，0-3 再补撞见过），留着它分支就对不上 main 存的那一份，连按前缀退回都退不到。
       - name: 装上 rust-toolchain.toml 钉住的工具链

@@ -3,9 +3,23 @@
 //! 清单里在符号表里找得到的函数合计 L 字节；这些函数里，起点落在「代码段最低的函数地址起、往后 1.25 L」以内的，按字节算
 //! 要占九成以上。留两成五的余量是给对齐的空隙和链接器挪不动、插在中间的几段；九成以上才算数，换了链接器、参数没生效时
 //! 这些函数散在整个代码段里，落在开头的只有一小部分。
+//!
+//! 苹果的 `nm`（llvm-nm）读 Mach-O 时 `-S` 那一列全是 0（施工 MO-1）：列出的函数大小都是 0 时，每个函数的大小改用「下一个
+//! 符号（任何类型）的起点减去自己的起点」，最后一个后面没有符号的给 [`LAST`] 字节。和
+//! `crates/miyu-perf/src/order/listing.rs` 的 `Symbols::parse` 是同一个算法，改一边要改另一边。Linux 的表里总有带大小的
+//! 函数，不补，行为和以前一样。苹果列成 `T` 的文件头 [`HEADER`] 不算函数。名字照原样比：Mach-O 的符号开头多一个下划线，
+//! 清单里写的也是符号的原名。
 
 use std::collections::{HashMap, HashSet};
 use std::fmt;
+
+/// 苹果的符号表里，最后一个函数后面一个符号都没有时给它的大小：一页（Apple 芯片上是 16 kB）。`nm` 不列节的范围，拿不到
+/// `__text` 的末尾；真实的程序里代码段后面总还有别的节的符号，用不到这一条。
+const LAST: u64 = 16 * 1024;
+
+/// Mach-O 的文件头：苹果的 `nm` 把它列成 `T`，地址是 `__TEXT` 段的起点、在第一个函数前面，它不是函数。算进来的话代码段的
+/// 起点要往前挪一截（核心是 0xac0 字节）。Linux 的符号表里没有这个名字。
+const HEADER: &str = "__mh_execute_header";
 
 /// 落在开头的字节要占的比例：分子、分母。
 const SHARE: (u64, u64) = (9, 10);
@@ -111,8 +125,10 @@ struct Function<'a> {
 }
 
 /// 读 `nm -S` 的输出：`地址 大小 类型 名字`；没有大小的那种（`地址 类型 名字`）大小记作 0，地址仍然算进代码段的起点。
+/// 列出的函数大小全是 0 的（苹果的 `nm`），大小照下一个符号的起点补（见模块的说明）。
 fn functions(nm: &str) -> Vec<Function<'_>> {
-    nm.lines()
+    let rows: Vec<(u64, u64, &str, &str)> = nm
+        .lines()
         .filter_map(|line| {
             let fields: Vec<&str> = line.split_whitespace().collect();
             let (address, size, kind, name) = match fields.as_slice() {
@@ -120,21 +136,35 @@ fn functions(nm: &str) -> Vec<Function<'_>> {
                 [address, kind, name] => (*address, None, *kind, *name),
                 _ => return None,
             };
-            if !matches!(kind, "t" | "T" | "w" | "W") {
-                return None;
-            }
             let address = u64::from_str_radix(address, 16).ok()?;
             let size = match size {
                 Some(size) => u64::from_str_radix(size, 16).ok()?,
                 None => 0,
             };
-            Some(Function {
-                address,
-                size,
-                name,
-            })
+            Some((address, size, kind, name))
         })
-        .collect()
+        .collect();
+    let mut functions: Vec<Function<'_>> = rows
+        .iter()
+        .filter(|&&(_, _, kind, name)| matches!(kind, "t" | "T" | "w" | "W") && name != HEADER)
+        .map(|&(address, size, _, name)| Function {
+            address,
+            size,
+            name,
+        })
+        .collect();
+    if !functions.is_empty() && functions.iter().all(|function| function.size == 0) {
+        let mut starts: Vec<u64> = rows.iter().map(|&(address, ..)| address).collect();
+        starts.sort_unstable();
+        starts.dedup();
+        for function in &mut functions {
+            let next = starts.partition_point(|&start| start <= function.address);
+            function.size = starts
+                .get(next)
+                .map_or(LAST, |&start| start - function.address);
+        }
+    }
+    functions
 }
 
 /// 整数的百分比，向下取整。
