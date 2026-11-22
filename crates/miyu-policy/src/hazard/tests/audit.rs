@@ -138,3 +138,34 @@ fn audit_ansi_c_escapes_are_not_taken_as_plain_text() {
     assert_ne!(kind("rm -rf $'\\x2f'"), None);
     assert_eq!(kind("echo $'plain'"), None);
 }
+
+/// 施工 FX-22（LiteMiyu LM-37 顺着 AU-007 查出、照搬过来）的几种读错（修以前都判成安全，或者只问不拒）：`$"…"` 当双引号；`~名字` 说不清；`find` 起点前面的
+/// `-L` 这类选项、`-ok rm`；`rsync --delete` 清空的去处；`setsid`、`pkexec`、`run0`、`busybox`、`ionice` 这几层外壳。
+#[test]
+fn audit_reads_that_fx22_fixed() {
+    for (command, expected) in [
+        ("rm -rf $\"/\"", Some("delete_root")),
+        ("rm -rf ~me", Some("delete_unresolved")),
+        ("rm ~me/notes.txt", None),
+        ("find -L ~ -delete", Some("delete_home")),
+        ("find -H -O2 / -exec rm {} +", Some("delete_root")),
+        ("find ~ -ok rm {} +", Some("delete_home")),
+        ("find -L build -delete", None),
+        ("rsync -a --delete empty/ ~/", Some("delete_home")),
+        ("rsync -a --delete-after empty/ /", Some("delete_root")),
+        ("rsync -a --del empty/ ~/.miyu/", Some("delete_data_root")),
+        ("rsync -a --delete src/ ./", Some("delete_working_dir")),
+        ("rsync -a --delete src/ backup/", None),
+        ("rsync -a --delay-updates src/ ~/", None),
+        ("rsync -a --delete src/ host:/", None),
+        ("setsid rm -rf ~", Some("delete_home")),
+        ("pkexec --user root rm -rf /", Some("delete_root")),
+        ("run0 -u root rm -rf /usr", Some("delete_system")),
+        ("busybox rm -rf ~", Some("delete_home")),
+        ("nice -n 19 ionice -c3 rm -rf /", Some("delete_root")),
+        ("ionice -c 3 rm -rf ~", Some("delete_home")),
+        ("setsid -f sleep 1", None),
+    ] {
+        assert_eq!(kind(command), expected, "{command}");
+    }
+}

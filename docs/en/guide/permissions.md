@@ -65,7 +65,7 @@ Under full access, the five kinds of commands below ask you first. On the settin
 | `Running a download directly` | `permission.confirm.pipe_to_shell` | It catches commands that download with `curl` or `wget` and hand the result to a shell, `python`, `python3`, `perl`, `ruby` or `node` to run, for example `curl … \| sh`, `bash <(curl …)` and `sh -c "$(curl …)"`. |
 | `Containers using host devices` | `permission.confirm.container` | It catches `run` or `create` of `docker`, `podman` or `nerdctl` with `--device` or `--device-cgroup-rule`, with `--pid`, `--net`, `--network` or `--ipc` set to `host`, or mounting something under `/dev` or `/sys`, for example `-v /dev/snd:/dev/snd`. |
 
-Miyu still recognizes these when the command is prefixed with `sudo`, `doas`, `env`, `nice`, `nohup`, `timeout`, `time`, `stdbuf`, `command`, `exec` or `xargs`, or written inside `sh -c '…'`, `bash -lc '…'` or `eval`. A command whose substitutions are nested too deeply for Miyu to see through also asks you first, and this rule has no switch.
+Miyu still recognizes these when the command is prefixed with `sudo`, `doas`, `env`, `nice`, `nohup`, `timeout`, `time`, `stdbuf`, `command`, `exec`, `xargs`, `setsid`, `pkexec`, `run0`, `busybox` or `ionice`, or written inside `sh -c '…'`, `bash -lc '…'`, `eval`, `env -S '…'` or `su -c '…'`. The same goes for a script a shell reads from its standard input, such as the body of `bash <<'EOF'`, `sh <<< '…'` or `echo '…' | sh`. A command whose substitutions are nested too deeply for Miyu to see through also asks you first, and this rule has no switch.
 
 To turn off one kind, switch it off on the settings page, or run:
 

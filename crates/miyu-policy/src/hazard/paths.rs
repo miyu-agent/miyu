@@ -124,6 +124,10 @@ pub(super) fn absolute(word: &Word, places: &Places<'_>, cwd: Option<&str>) -> O
         return None;
     } else if text == "~" || text.starts_with("~/") {
         (places.home?, &text[1..])
+    } else if text.starts_with('~') {
+        // `~名字`（施工 FX-22）：那个用户的家目录，不知道在哪，说不清。原来当成工作目录下一个叫 `~名字` 的文件，`rm -rf ~me`
+        // 删的是自己的家目录却判成安全。
+        return None;
     } else if text.starts_with('/') {
         ("/", text)
     } else {

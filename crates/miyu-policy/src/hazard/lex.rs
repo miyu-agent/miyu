@@ -29,11 +29,13 @@ pub(crate) struct Substitution {
     pub(crate) inner: String,
 }
 
-/// 一个简单命令：几个词，加上它往哪里写（`>`、`>>` 后面的那个）。
+/// 一个简单命令：几个词，加上它往哪里写（`>`、`>>` 后面的那个）、从标准输入读进什么。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct Simple {
     pub(crate) words: Vec<Word>,
     pub(crate) writes: Vec<Word>,
+    /// 喂进它标准输入的字（施工 FX-22）：here-string（`<<<`）的词、heredoc 的正文。`bash <<'EOF'` 这类 shell 把它当脚本跑。
+    pub(crate) stdin: Vec<String>,
 }
 
 /// 拆出来的：几条管道（一条管道是几个接在一起的简单命令），加上替换里面的那几段原文。
@@ -80,6 +82,8 @@ enum Redirect {
     Write,
     /// 从那里读（`<`、`<<`）：那个词不是参数，丢掉。
     Read,
+    /// here-string（`<<<`，施工 FX-22）：那个词是喂进标准输入的字，记在 [`Simple::stdin`]。
+    Input,
 }
 
 impl Lexer {
@@ -118,6 +122,11 @@ impl Lexer {
                     self.ansi_c();
                 }
                 '"' => self.double(),
+                // `$"…"`（照语言环境翻译的字，施工 FX-22）：读法同双引号。原来 `$` 记成说不清，`rm -rf $"/"` 只问不拒。
+                '$' if self.peek(1) == Some('"') => {
+                    self.at += 1;
+                    self.double();
+                }
                 '`' => {
                     let inner = self.until_backtick();
                     self.substitution(inner, true);
@@ -148,7 +157,12 @@ impl Lexer {
                 '<' if self.peek(1) == Some('<') && self.peek(2) != Some('<') => {
                     self.descriptor();
                     self.at += 2;
-                    self.heredoc_start();
+                    self.heredoc_start(true);
+                }
+                '<' if self.peek(1) == Some('<') && self.peek(2) == Some('<') => {
+                    self.descriptor();
+                    self.at += 3;
+                    self.redirect = Some(Redirect::Input);
                 }
                 '<' => {
                     self.descriptor();
@@ -352,7 +366,7 @@ impl Lexer {
                 (None, '\'' | '"') => quote = Some(c),
                 (None, '<') if self.peek(0) == Some('<') && self.peek(1) != Some('<') => {
                     self.at += 1;
-                    self.heredoc_start();
+                    self.heredoc_start(false);
                 }
                 (None, '\n') if !self.heredocs.is_empty() => self.heredoc_bodies(),
                 (None, '(') => depth += 1,
@@ -403,6 +417,7 @@ impl Lexer {
             match self.redirect.take() {
                 Some(Redirect::Write) => self.simple.writes.push(word),
                 Some(Redirect::Read) => {}
+                Some(Redirect::Input) => self.simple.stdin.push(word.text),
                 None => self.simple.words.push(word),
             }
         }
@@ -411,7 +426,7 @@ impl Lexer {
     fn end_simple(&mut self) {
         self.end_word();
         let simple = std::mem::take(&mut self.simple);
-        if !simple.words.is_empty() || !simple.writes.is_empty() {
+        if !simple.words.is_empty() || !simple.writes.is_empty() || !simple.stdin.is_empty() {
             self.pipeline.push(simple);
         }
     }

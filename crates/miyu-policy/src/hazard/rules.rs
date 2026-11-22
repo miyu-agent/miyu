@@ -1,6 +1,7 @@
 //! 照拆出来的简单命令认（施工 5-17）：外壳剥掉、删的目标照字面换成绝对路径、git 跳过全局选项。几处都认出来的，有拒的交回
 //! 拒的那一种，都是问的全交回（施工 HZ-1：一类一个开关，要知道每一种）。
 
+use super::fed;
 use super::fresh::Fresh;
 use super::lex::{Simple, Word, parse};
 use super::paths::{absolute, moved_away, target};
@@ -52,8 +53,12 @@ fn look(text: &str, places: &Places<'_>, depth: usize, found: &mut Vec<Kind>) {
     // 这时的当前目录（施工 AS-9）：单独成句的 `cd` 照它换，`cd` 到说不清的地方以后是空的。
     let mut cwd = Some(places.cwd.to_string());
     for (at, pipeline) in parsed.pipelines.iter().enumerate() {
-        if fetch_into_shell(pipeline) {
+        if fed::fetch_into_shell(pipeline) {
             found.push(Kind::PipeToShell);
+        }
+        // `echo 'rm -rf ~' | sh`、`cat <<'EOF' | bash`：管道前面印的字是后面 shell 跑的脚本（施工 FX-22）。
+        for script in fed::piped_scripts(pipeline) {
+            look(&script, places, depth + 1, found);
         }
         for simple in pipeline {
             one(
@@ -71,7 +76,7 @@ fn look(text: &str, places: &Places<'_>, depth: usize, found: &mut Vec<Kind>) {
         }
     }
     for inner in &parsed.inner {
-        if fetches(inner) && pipeline_feeds_shell(&parsed) {
+        if fed::fetches(inner) && fed::pipeline_feeds_shell(&parsed) {
             found.push(Kind::PipeToShell);
         }
         look(inner, places, depth + 1, found);
@@ -120,11 +125,16 @@ fn one(
     let fed = simple.words[..simple.words.len() - words.len()]
         .iter()
         .any(|word| base(&word.text) == "xargs");
+    // `env -S '…'`（`--split-string`）：值拆开就是要跑的命令（施工 FX-22）。剥外壳时它整个当成了 `-S` 的值，后面可能一个词都不剩。
+    if let Some(script) = fed::split_string(&simple.words[..simple.words.len() - words.len()]) {
+        look(script, places, depth + 1, found);
+    }
     let Some((first, rest)) = words.split_first() else {
         return;
     };
     let name = base(&first.text);
     // `sh -c '…'`、`bash -lc '…'`：里面的另认（施工 AS-9：`-c` 和别的选项连写的也算，脚本是它后面第一个不是选项的词）。
+    // 没有 `-c`、也没写脚本文件的从标准输入读脚本（施工 FX-22）：`bash <<'EOF'`、`sh <<< '…'` 喂进去的另认。
     if is_shell(name) {
         if let Some(script) = rest
             .iter()
@@ -136,7 +146,18 @@ fn one(
             })
         {
             look(&script.text, places, depth + 1, found);
+        } else if fed::reads_stdin(rest) {
+            for script in &simple.stdin {
+                look(script, places, depth + 1, found);
+            }
         }
+        return;
+    }
+    // `su -c '…'`（`--command`）：里面的另认（施工 FX-22）。
+    if name == "su"
+        && let Some(script) = fed::su_command(rest)
+    {
+        look(script, places, depth + 1, found);
         return;
     }
     if name == "eval" {
@@ -193,21 +214,27 @@ fn one(
         {
             found.push(Kind::Power);
         }
-        name => match super::moves::sources(name, rest) {
-            // 挪走、扔进回收站的只管数据根（施工 RO-4、RO-4补）：来源是整个数据根或装着它的问，别的照不报。
-            Some(sources) => {
-                for word in sources.iter().filter(|word| !here.1.covers(word)) {
-                    found.extend(moved_away(&here.0.expand(word), places, here.2));
-                }
+        name => {
+            // `rsync --delete`：去处里来源没有的都删掉，照删去处里的全部判（施工 FX-22，照 LiteMiyu LM-37）。去处说不清的不报。
+            if let Some(cleared) = super::moves::cleared(name, rest) {
+                found.extend(target(&here.0.expand(&cleared), places, here.2, false));
             }
-            // 容器把宿主交出去（施工 5-17 三补）。
-            None => found.extend(super::container::container(name, rest)),
-        },
+            match super::moves::sources(name, rest) {
+                // 挪走、扔进回收站的只管数据根（施工 RO-4、RO-4补）：来源是整个数据根或装着它的问，别的照不报。
+                Some(sources) => {
+                    for word in sources.iter().filter(|word| !here.1.covers(word)) {
+                        found.extend(moved_away(&here.0.expand(word), places, here.2));
+                    }
+                }
+                // 容器把宿主交出去（施工 5-17 三补）。
+                None => found.extend(super::container::container(name, rest)),
+            }
+        }
     }
 }
 
-/// 剥掉外壳：`sudo`、`doas`、`env`、`nice`、`nohup`、`timeout`、`time`、`stdbuf`、`command`、`exec`、`xargs`，连同它们的选项、
-/// `env` 的 `名字=值`、`timeout` 的时长。
+/// 剥掉外壳：`sudo`、`doas`、`env`、`nice`、`nohup`、`timeout`、`time`、`stdbuf`、`command`、`exec`、`xargs`，施工 FX-22 加上
+/// `setsid`、`pkexec`、`run0`、`busybox`、`ionice`（施工 FX-22，照 LiteMiyu LM-37），连同它们的选项、`env` 的 `名字=值`、`timeout` 的时长。
 pub(super) fn unwrap(words: &[Word]) -> &[Word] {
     let words = after_keywords(words);
     let mut at = 0;
@@ -234,6 +261,11 @@ pub(super) fn unwrap(words: &[Word]) -> &[Word] {
                 | "command"
                 | "exec"
                 | "xargs"
+                | "setsid"
+                | "pkexec"
+                | "run0"
+                | "busybox"
+                | "ionice"
         ) {
             return &words[at..];
         }
@@ -244,11 +276,30 @@ pub(super) fn unwrap(words: &[Word]) -> &[Word] {
                 "-u" | "-g" | "-C" | "-D" | "-h" | "-p" | "-r" | "-t" | "-U"
             ),
             "doas" => matches!(flag, "-u" | "-C"),
-            "env" => matches!(flag, "-u" | "-C" | "-S"),
+            "env" => matches!(
+                flag,
+                "-u" | "-C" | "-S" | "--unset" | "--chdir" | "--split-string"
+            ),
             "nice" => matches!(flag, "-n"),
             "timeout" => matches!(flag, "-s" | "-k"),
             "stdbuf" => matches!(flag, "-i" | "-o" | "-e"),
             "xargs" => matches!(flag, "-I" | "-L" | "-n" | "-P" | "-s" | "-d" | "-E" | "-a"),
+            "pkexec" => matches!(flag, "--user"),
+            "run0" => matches!(
+                flag,
+                "-u" | "-g"
+                    | "-D"
+                    | "--user"
+                    | "--group"
+                    | "--chdir"
+                    | "--setenv"
+                    | "--unit"
+                    | "--property"
+                    | "--slice"
+                    | "--description"
+                    | "--nice"
+            ),
+            "ionice" => matches!(flag, "-c" | "-n"),
             _ => false,
         };
         while let Some(word) = words.get(at) {
@@ -278,11 +329,11 @@ pub(super) fn base(text: &str) -> &str {
 }
 
 /// 短选项（`-` 打头、不是 `--`）里有 `letter`：`-c`、`-lc`、`-ec`。
-fn short_option(text: &str, letter: char) -> bool {
+pub(super) fn short_option(text: &str, letter: char) -> bool {
     text.starts_with('-') && !text.starts_with("--") && text.contains(letter)
 }
 
-fn is_shell(name: &str) -> bool {
+pub(super) fn is_shell(name: &str) -> bool {
     matches!(name, "sh" | "bash" | "zsh" | "dash" | "ksh" | "fish")
 }
 
@@ -328,13 +379,27 @@ fn finding(
 ) {
     let deletes = rest.iter().any(|word| word.text == "-delete")
         || rest.windows(2).any(|pair| {
-            matches!(pair[0].text.as_str(), "-exec" | "-execdir")
-                && matches!(base(&pair[1].text), "rm" | "shred")
+            matches!(
+                pair[0].text.as_str(),
+                "-exec" | "-execdir" | "-ok" | "-okdir"
+            ) && matches!(base(&pair[1].text), "rm" | "shred")
         });
     if !deletes {
         return;
     }
+    // 起点前面的 `-H`、`-L`、`-P`、`-D 调试项`、`-O级别`（施工 FX-22）：原来见了 `-` 就当起点读完，`find -L ~ -delete` 一个起点都没有。
+    let mut at = 0;
+    while let Some(word) = rest.get(at) {
+        match word.text.as_str() {
+            "-H" | "-L" | "-P" => at += 1,
+            "-D" => at += 2,
+            text if text.starts_with("-O") => at += 1,
+            _ => break,
+        }
+    }
     for word in rest
+        .get(at..)
+        .unwrap_or_default()
         .iter()
         .take_while(|word| !word.text.starts_with(['-', '(', '!']))
     {
@@ -414,48 +479,4 @@ pub(super) fn git(rest: &[Word], found: &mut Vec<Kind>) {
         _ => None,
     };
     found.extend(kind);
-}
-
-/// 一条管道里先下载、后面接着 shell 或者解释器（读标准输入的那种）：`curl … | sh`。
-fn fetch_into_shell(pipeline: &[Simple]) -> bool {
-    let mut fetched = false;
-    for simple in pipeline {
-        let words = unwrap(&simple.words);
-        let Some(first) = words.first() else {
-            continue;
-        };
-        let name = base(&first.text);
-        if matches!(name, "curl" | "wget") {
-            fetched = true;
-        } else if fetched
-            && interpreter(name)
-            && !words[1..].iter().any(|word| !word.text.starts_with('-'))
-        {
-            return true;
-        }
-    }
-    false
-}
-
-/// `bash <(curl …)`、`sh -c "$(curl …)"`：替换里在下载，外面是 shell、解释器；在这个 shell 里执行的 `source`、`.`、`eval`
-/// 也算（施工 AS-9）。
-fn pipeline_feeds_shell(parsed: &super::lex::Parsed) -> bool {
-    parsed.pipelines.iter().flatten().any(|simple| {
-        unwrap(&simple.words).first().is_some_and(|word| {
-            let name = base(&word.text);
-            interpreter(name) || matches!(name, "source" | "." | "eval")
-        })
-    })
-}
-
-fn fetches(text: &str) -> bool {
-    parse(text).pipelines.iter().flatten().any(|simple| {
-        unwrap(&simple.words)
-            .first()
-            .is_some_and(|word| matches!(base(&word.text), "curl" | "wget"))
-    })
-}
-
-fn interpreter(name: &str) -> bool {
-    is_shell(name) || matches!(name, "python" | "python3" | "perl" | "ruby" | "node")
 }

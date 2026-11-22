@@ -10,6 +10,7 @@
 //! 配置拿。
 
 mod container;
+mod fed;
 mod fresh;
 mod lex;
 mod moves;

@@ -41,6 +41,15 @@ pub(super) fn sources(name: &str, rest: &[Word]) -> Option<Vec<Word>> {
     Some(found.into_iter().map(local).collect())
 }
 
+/// `rsync --delete`（`--del`、`--delete-after` 这几种都是，`--delay-updates` 不是）：交回去处（最后一个不是选项的词，施工 FX-22）；不是的交回空的。
+pub(super) fn cleared(name: &str, rest: &[Word]) -> Option<Word> {
+    let deletes = |text: &str| text == "--del" || text.starts_with("--delete");
+    if name != "rsync" || !rest.iter().any(|word| deletes(&word.text)) {
+        return None;
+    }
+    operands(rest, |flag| RSYNC_VALUED.contains(&flag)).pop()
+}
+
 /// `rsync` 带值、值另写一个词的选项（不是来源）。
 const RSYNC_VALUED: &[&str] = &[
     "-e",

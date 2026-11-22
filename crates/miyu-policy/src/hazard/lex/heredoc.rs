@@ -1,6 +1,7 @@
 //! heredoc（施工 AS-9）：`<<结束符`、`<<-结束符` 的正文从下一行起，到正好是结束符的那一行为止，不是命令、不拆；正文里的撇号
 //! （`don't`）不当引号。原来照命令拆，从撇号起一直吞到结尾，后面的删除就认不出了（常见的 `git commit -m "$(cat <<'EOF' …`）。
-//! 结束符没加引号的，正文里的 `$( )`、反引号照样会执行：里面的另拆一遍。
+//! 结束符没加引号的，正文里的 `$( )`、反引号照样会执行：里面的另拆一遍。正文记在开它的那个简单命令上（[`super::Simple::stdin`]，
+//! 施工 FX-22）：`bash <<'EOF'` 把正文当脚本跑。
 
 use super::Lexer;
 
@@ -12,11 +13,14 @@ pub(super) struct Heredoc {
     strip: bool,
     /// 结束符加了引号：正文原样，不展开。
     quoted: bool,
+    /// 开它的那个简单命令：第几条管道里的第几个（施工 FX-22）。`$( )` 里的另拆时再记，这里是空的。
+    feeds: Option<(usize, usize)>,
 }
 
 impl Lexer {
-    /// `<<` 已经吃掉了：读结束符，记下来，正文等这一行完了再读。没有结束符的不算。
-    pub(super) fn heredoc_start(&mut self) {
+    /// `<<` 已经吃掉了：读结束符，记下来，正文等这一行完了再读。没有结束符的不算。`here` 是开它的就是这时的简单命令（不在
+    /// `$( )` 里）：正文读完记在它上面。
+    pub(super) fn heredoc_start(&mut self, here: bool) {
         let strip = self.peek(0) == Some('-');
         if strip {
             self.at += 1;
@@ -56,7 +60,13 @@ impl Lexer {
             }
         }
         if !end.is_empty() {
-            self.heredocs.push(Heredoc { end, strip, quoted });
+            let feeds = here.then_some((self.parsed.pipelines.len(), self.pipeline.len()));
+            self.heredocs.push(Heredoc {
+                end,
+                strip,
+                quoted,
+                feeds,
+            });
         }
     }
 
@@ -83,10 +93,18 @@ impl Lexer {
                     break;
                 }
             }
+            let body: String = self.chars[start..body_end].iter().collect();
             if !heredoc.quoted {
-                let body: String = self.chars[start..body_end].iter().collect();
                 let inner = substitutions(&body);
                 self.parsed.inner.extend(inner);
+            }
+            if let Some(simple) = heredoc.feeds.and_then(|(pipeline, simple)| {
+                self.parsed
+                    .pipelines
+                    .get_mut(pipeline)
+                    .and_then(|pipeline| pipeline.get_mut(simple))
+            }) {
+                simple.stdin.push(body);
             }
         }
     }
