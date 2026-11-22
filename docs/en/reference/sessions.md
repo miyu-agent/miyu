@@ -316,7 +316,7 @@ Give exactly one of `decision` and `answers`. **Response**: `{"events": [numbers
 
 ## `session.revert`, `session.unrevert`
 
-Undo takes the last turn (or every turn from a given turn on) out of the conversation; files the AI changed are left as they are. Restore takes back the last undo.
+Undo takes the last turn (or every turn from a given turn on) out of the conversation; files the AI changed are left as they are. Restore takes back the last undo. When the undone turns include the turn a typed `/loop` started, that loop is deleted too; restoring that undo puts it back as it was (same id, same next run). Once a new turn has started or the context was compacted after the undo, or the core restarted, it is not put back, and you type `/loop` again.
 
 **Params**: `session`; `revert` also takes `turn`: which turn to undo from (that turn's `turn.started` number); when it is omitted, the last turn is undone.
 
@@ -327,7 +327,7 @@ Undo takes the last turn (or every turn from a given turn on) out of the convers
 | `events` | The events appended this time: `turn.reverted` or `turn.unreverted` |
 | `cwd` | The session's working directory (its real path) |
 | `turns` | How many turns were undone (or restored) |
-| `said` | The first line of what the person said in the first of those turns; omitted when there is none |
+| `said` | The first line of what the person said in the first of those turns; when that message came from a slash command the person typed (it has `command`, as in the turn a typed `/loop` starts), the line the person typed. Omitted when there is none |
 | `compactions`, `clears` | Undo only: how many compactions and clears were inside the undone turns; the context is back to the state before them. Omitted when 0 |
 | `jobs` | Undo only: the background jobs that were stopped, `[{"job", "what", "title"}]`; omitted when there are none |
 

@@ -269,6 +269,8 @@ pub(super) async fn revert(core: &Arc<Core>, request: &Request) -> Result<Value,
     let found = core.sessions.get(core, &session).await?;
     let command = Command::Revert { turn };
     let events = command_to(core, request, &session, &found.handle, command).await?;
+    // 撤掉的有人敲 `/loop` 当场开的那一轮：循环也停（施工 FX-15，`schedules/undone.rs`）。
+    core.schedules().reverted(&session, &events).await;
     Ok(undo::reply(core, &session, &found.cwd, events).await)
 }
 
@@ -277,8 +279,17 @@ pub(super) async fn unrevert(core: &Arc<Core>, request: &Request) -> Result<Valu
     let params: UnrevertParams = params(request)?;
     let session = session(&params.session)?;
     let found = core.sessions.get(core, &session).await?;
+    // 那一次撤销删掉的循环先拿走，恢复成了照原样放回（施工 FX-15，`schedules/undone.rs`）。
+    let taken = core.schedules().unreverting(&session);
     let command = Command::Unrevert;
-    let events = command_to(core, request, &session, &found.handle, command).await?;
+    let events = match command_to(core, request, &session, &found.handle, command).await {
+        Ok(events) => events,
+        Err(refusal) => {
+            core.schedules().unrevert_refused(&session, taken);
+            return Err(refusal);
+        }
+    };
+    core.schedules().unreverted(taken);
     Ok(undo::reply(core, &session, &found.cwd, events).await)
 }
 

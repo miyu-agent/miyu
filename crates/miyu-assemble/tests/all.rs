@@ -15,6 +15,7 @@ mod probe_recap;
 mod probe_reminder;
 mod probe_tail;
 mod probe_title;
+mod probe_typed;
 mod probe_vision;
 mod random_logs;
 mod redo;

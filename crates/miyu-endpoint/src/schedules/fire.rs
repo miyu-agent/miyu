@@ -78,6 +78,17 @@ fn kickoff(schedule: &Schedule) -> bool {
         && schedule.last.is_none()
 }
 
+/// 循环交进去的正文就是出厂的那一句（施工 FX-15，光打 `/loop` 的自主循环）：`by` 写 `builtin`，头照它画「由 AI 自己决定」。
+/// 照这一行现在的 `prompt` 和出厂的原文（去掉行尾空白，同 `commands/looping.rs` 存的）比；读不出的、定时任务不写。
+async fn builtin(core: &Core, schedule: &Schedule) -> bool {
+    if schedule.looping.is_none() {
+        return false;
+    }
+    let resources = core.resources.clone();
+    let read = tokio::task::spawn_blocking(move || resources.loop_autonomous()).await;
+    matches!(read, Ok(Ok(text)) if text.trim_end() == schedule.prompt)
+}
+
 /// 把 `schedule` 的这一次（到点在 `due`）交出去。
 pub(super) async fn deliver(core: &Arc<Core>, schedule: &Schedule, due: Timestamp) -> Delivered {
     // 每一次到点新造一个编号（施工 FX-2，`schedules.md` 第三节第 4 条）：以前用到点的毫秒，系统时间往回拨以后同一时刻又到点，
@@ -90,6 +101,7 @@ pub(super) async fn deliver(core: &Arc<Core>, schedule: &Schedule, due: Timestam
             Loop::Dynamic => ScheduleLoop::Dynamic,
         }),
         person: matches!(schedule.by, Creator::Person),
+        builtin: builtin(core, schedule).await,
     });
     let session = match &schedule.target {
         Target::Package { missed } => return pushed(core, schedule, due, *missed).await,
@@ -137,7 +149,11 @@ pub(super) async fn deliver(core: &Arc<Core>, schedule: &Schedule, due: Timestam
         text: schedule.prompt.clone(),
     })];
     let send = match kickoff(schedule) {
-        true => Command::Kickoff { blocks },
+        // 人敲的那一行一起交（施工 FX-15）：头照它显示「/loop …」。
+        true => Command::Kickoff {
+            blocks,
+            command: core.schedules.take_typed(&session),
+        },
         false => Command::Send {
             blocks,
             urgent: false,

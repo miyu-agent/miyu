@@ -11,10 +11,10 @@
 use std::num::NonZeroU32;
 use std::sync::Arc;
 
-use miyu_kernel::event::GoalOutcome;
+use miyu_kernel::event::{GoalOutcome, TypedCommand};
 use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::origin::By;
-use miyu_kernel::session::{Command, GoalChange};
+use miyu_kernel::session::{Command, GoalChange, Outcome};
 use miyu_session::{Goal, GoalState, Handle};
 
 use super::registry::{Call, Commands, Ran, Running, Slash};
@@ -78,7 +78,7 @@ impl Slash for GoalCommand {
                 (call.session, handle),
                 call.id,
                 (call.by, call.prefix),
-                call.rest,
+                (call.rest, call.text),
             )
             .await?;
             Ok(Ran { events, said })
@@ -105,14 +105,15 @@ enum Asked<'a> {
     Clear,
 }
 
-/// 照 `asked`（命令后面跟的字，去掉了前后空白）办会话 `handle` 的目标，交回追加的序号和回执。
+/// 照 `asked`（命令后面跟的字，去掉了前后空白）办会话 `handle` 的目标，交回追加的序号和回执。`line` 是人敲的整一行：设下、
+/// 停着时改了接着跑的，由它开的第一轮带上（施工 FX-15，`Handle::command_typed`）。
 pub(super) async fn run(
     core: &Core,
     peer: &Peer,
     (session, handle): (&SessionId, &Handle),
     id: &CommandId,
     (by, prefix): (&By, Option<crate::sessions::prefix::Choice>),
-    asked: &str,
+    (asked, line): (&str, &str),
 ) -> Result<(Vec<u64>, Said), Refusal> {
     // 停着、卡住的改完接着跑（施工 X-8 再补）。
     let mut resume = false;
@@ -152,22 +153,49 @@ pub(super) async fn run(
         crate::sessions::prefix::ask(core, (*peer, by), (handle, id), prefix).await?;
     }
     let said = receipt(&change);
-    let mut events =
-        accepted(command(core, session, handle, id, by, Command::Goal(change)).await?)?;
+    // 人敲 `/goal <目标>` 当场开的第一轮带上这一行（施工 FX-15）：新设的交在设下的那一条上，停着时改了的交在接着跑的那一条上。
+    let typed = TypedCommand {
+        name: "goal".to_string(),
+        text: line.to_string(),
+    };
+    let set = matches!(change, GoalChange::Set { .. }).then(|| typed.clone());
+    let mut events = accepted(goal(core, (session, handle), (id, by), change, set).await?)?;
     if resume {
         // 另一条命令，编号照这一条接 `/resume`：两条各记各的 `goal.*`，回执只说改了。
         let again = CommandId::parse(&format!("{id}/resume")).map_err(|_| Refusal::BAD_PARAMS)?;
-        let resumed = command(
+        let resumed = goal(
             core,
-            session,
-            handle,
-            &again,
-            by,
-            Command::Goal(GoalChange::Resume),
+            (session, handle),
+            (&again, by),
+            GoalChange::Resume,
+            Some(typed),
         );
         events.extend(accepted(resumed.await?)?);
     }
     Ok((events, said))
+}
+
+/// 交一个改目标的命令；`typed` 有的连人敲的那一行一起交（施工 FX-15）。会话停了的忘掉它。
+async fn goal(
+    core: &Core,
+    (session, handle): (&SessionId, &Handle),
+    (id, by): (&CommandId, &By),
+    change: GoalChange,
+    typed: Option<TypedCommand>,
+) -> Result<Outcome, Refusal> {
+    let Some(typed) = typed else {
+        return command(core, session, handle, id, by, Command::Goal(change)).await;
+    };
+    match handle
+        .command_typed(id.clone(), by.clone(), Command::Goal(change), typed)
+        .await
+    {
+        Ok(outcome) => Ok(outcome),
+        Err(_) => {
+            core.sessions.forget(session).await;
+            Err(Refusal::STOPPED)
+        }
+    }
 }
 
 /// 现在没完成的目标（跑着、等人、停着、卡住）；没有的、完成了的没有。

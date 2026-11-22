@@ -103,7 +103,8 @@ async fn an_autonomous_loop_typed_while_a_revert_is_pending_starts_right_away() 
     assert_eq!(reason(&restored), Some("nothing_to_unrevert"), "{restored}");
 }
 
-/// 起好的一份：没有撤销时敲 `/loop 10m 看一眼时间`、跑了第一次，人撤掉这一轮，到了第二次（施工 FX-13）。
+/// 起好的一份：没有撤销时敲 `/loop 10m 看一眼时间`、跑了第一次，人又说了一句，撤掉人说的这一轮，到了第二次（施工 FX-13）。
+/// 撤的是人后来说的那一轮：撤 `/loop` 自己开的那一轮循环跟着删掉（施工 FX-15，`typed_shown.rs`）。
 async fn undone_then_due(home: &Home, script: &Script) -> (Client, String) {
     let hand = Hand::at(START);
     let core = core_with_tools(home, script, &hand, looping());
@@ -117,13 +118,16 @@ async fn undone_then_due(home: &Home, script: &Script) -> (Client, String) {
         "没有撤销的照原来的说：{reply}"
     );
     home.until_turns(&session, 1).await;
+    client.say("s1", &session, "顺便看下磁盘").await;
+    home.until_turns(&session, 2).await;
     let reverted = client
         .call("r1", "session.revert", json!({"session": session}))
         .await;
     assert!(reverted.get("error").is_none(), "{reverted}");
+    assert_eq!(reverted["result"]["said"], "顺便看下磁盘", "{reverted}");
     hand.advance(600_000);
     tokio::time::sleep(Duration::from_millis(200)).await;
-    assert_eq!(script.requests().len(), 1, "撤销还在，到点的不开一轮");
+    assert_eq!(script.requests().len(), 2, "撤销还在，到点的不开一轮");
     assert_eq!(
         from_schedule(&home.log(&session)).len(),
         1,
@@ -137,13 +141,17 @@ async fn undone_then_due(home: &Home, script: &Script) -> (Client, String) {
 #[tokio::test]
 async fn a_loop_due_while_a_revert_is_pending_waits_for_restore() {
     let home = Home::new();
-    let script = Script::new([Play::Says("好。"), Play::Says("又看了。")]);
+    let script = Script::new([
+        Play::Says("好。"),
+        Play::Says("磁盘还行。"),
+        Play::Says("又看了。"),
+    ]);
     let (mut client, session) = undone_then_due(&home, &script).await;
     let restored = client
         .call("r2", "session.unrevert", json!({"session": session}))
         .await;
     assert!(restored.get("error").is_none(), "{restored}");
-    home.until_turns(&session, 2).await;
+    home.until_turns(&session, 3).await;
     assert_eq!(
         from_schedule(&home.log(&session)).len(),
         2,
@@ -155,7 +163,11 @@ async fn a_loop_due_while_a_revert_is_pending_waits_for_restore() {
 #[tokio::test]
 async fn a_loop_held_then_turned_off_does_not_run_after_restore() {
     let home = Home::new();
-    let script = Script::new([Play::Says("好。"), Play::Says("不该有这一轮。")]);
+    let script = Script::new([
+        Play::Says("好。"),
+        Play::Says("磁盘还行。"),
+        Play::Says("不该有这一轮。"),
+    ]);
     let (mut client, session) = undone_then_due(&home, &script).await;
     let off = typed(&mut client, "k2", &session, "/loop off").await;
     assert_eq!(off["result"]["said"], "已停止这个会话的循环。", "{off}");
@@ -164,21 +176,25 @@ async fn a_loop_held_then_turned_off_does_not_run_after_restore() {
         .await;
     assert!(restored.get("error").is_none(), "{restored}");
     tokio::time::sleep(Duration::from_millis(300)).await;
-    assert_eq!(script.requests().len(), 1, "停掉的循环不开轮");
+    assert_eq!(script.requests().len(), 2, "停掉的循环不开轮");
 }
 
 /// 搁着时停掉的循环，人再说一句：她看不到那句陈旧的话（施工 FX-13）。
 #[tokio::test]
 async fn a_loop_held_then_turned_off_leaves_nothing_for_the_next_message() {
     let home = Home::new();
-    let script = Script::new([Play::Says("好。"), Play::Says("在的。")]);
+    let script = Script::new([
+        Play::Says("好。"),
+        Play::Says("磁盘还行。"),
+        Play::Says("在的。"),
+    ]);
     let (mut client, session) = undone_then_due(&home, &script).await;
     let off = typed(&mut client, "k2", &session, "/loop off").await;
     assert_eq!(off["result"]["said"], "已停止这个会话的循环。", "{off}");
     client.say("s2", &session, "还在吗").await;
-    home.until_turns(&session, 2).await;
+    home.until_turns(&session, 3).await;
     let requests = script.requests();
     let last = serde_json::to_string(&requests.last().expect("发了").1.messages).expect("JSON");
-    // 第一次交进去的那句撤销不带走（不是人说的话，`kernel/session.md`「定时交进来的话」）；搁着的那一次没交，不多一句。
+    // 第一次交进去的那句不在撤掉的那一轮里，照旧在；搁着的那一次没交，不多一句。
     assert_eq!(last.matches("看一眼时间").count(), 1, "{last}");
 }

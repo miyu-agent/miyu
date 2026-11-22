@@ -16,6 +16,7 @@ fn hers_by_a_person() -> By {
         schedule: "t1".to_string(),
         looping: None,
         person: true,
+        builtin: false,
     })
 }
 
@@ -25,6 +26,7 @@ fn her_own() -> By {
         schedule: "t2".to_string(),
         looping: None,
         person: false,
+        builtin: false,
     })
 }
 
@@ -69,6 +71,7 @@ fn a_loop_a_person_started_there_is_only_recorded() {
         schedule: "t3".to_string(),
         looping: Some(ScheduleLoop::Fixed),
         person: true,
+        builtin: false,
     });
     s.says_as(by, "再看一眼。");
     assert!(s.turns().is_empty(), "循环不算：没人看着的不由它一轮一轮跑");

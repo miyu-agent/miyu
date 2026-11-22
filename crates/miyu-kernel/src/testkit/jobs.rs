@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 
 use super::Stage;
 use crate::block::{Block, Text};
-use crate::event::{ChildReason, ChildReported, JobLines, JobReason, JobReported};
+use crate::event::{ChildReason, ChildReported, JobLines, JobReason, JobReported, TypedCommand};
 use crate::id::{CommandId, ContentHash, JobId, SessionId};
 use crate::origin::{By, Session};
 use crate::session::{Command, Input, Received, Subagent, Upward};
@@ -251,7 +251,25 @@ impl Stage {
         let blocks = vec![Block::Text(Text {
             text: words.to_string(),
         })];
-        self.command_as(by, Command::Kickoff { blocks })
+        self.command_as(
+            by,
+            Command::Kickoff {
+                blocks,
+                command: None,
+            },
+        )
+    }
+
+    /// 同 [`Stage::kicks_off_as`]，带上人敲的那一行 `typed`（施工 FX-15，命令名 `loop`）。
+    pub fn kicks_off_typed(&mut self, by: By, words: &str, typed: &str) -> CommandId {
+        let blocks = vec![Block::Text(Text {
+            text: words.to_string(),
+        })];
+        let command = Some(TypedCommand {
+            name: "loop".to_string(),
+            text: typed.to_string(),
+        });
+        self.command_as(by, Command::Kickoff { blocks, command })
     }
 
     /// 以 `by` 的名义说一句（定时表交进来的那一句），一块字。返回这个命令的编号。

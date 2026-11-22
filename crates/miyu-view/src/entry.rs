@@ -104,6 +104,10 @@ pub struct User {
     /// 排着的被退回了：不画。
     #[serde(default, skip_serializing_if = "is_false")]
     pub withdrawn: bool,
+    /// 人敲的斜杠命令发出的这一句（施工 FX-15）：命令名，例如 `loop`、`goal`、模板命令的名字。`text` 这时是人敲的那一行。
+    /// 别的话没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub command: Option<String>,
     /// 长期目标的续轮是第几轮（施工 X-8 补）：`from` 是模块 `goal` 的，照那条消息的命令编号（`goal-<第几轮>-<UUIDv7>`）读。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub round: Option<u32>,

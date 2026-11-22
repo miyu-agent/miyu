@@ -35,8 +35,9 @@ impl Projector {
         // 回答进行中来的、不是旁听的：排着，等哪一次请求看到它。
         let queued = self.turn.is_some() && !ambient;
         let (text, attachments) = content(&message.blocks);
-        // 斜杠命令模板展开成的（施工 X-14 上）：给人看人敲的那一行，展开的那段只给模型。
+        // 人敲的斜杠命令发出的（施工 X-14 上、FX-15）：给人看人敲的那一行，发给模型的那段只给模型。
         let text = message.typed().map_or(text, str::to_string);
+        let command = message.command.as_ref().map(|command| command.name.clone());
         let user = User {
             text,
             attachments,
@@ -49,6 +50,7 @@ impl Projector {
             level: self.level.clone(),
             queued,
             withdrawn: false,
+            command,
             round: round(event),
             shell: message.shell.then(Shell::running),
         };

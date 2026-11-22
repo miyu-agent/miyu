@@ -44,9 +44,14 @@ impl Actor {
                 id,
                 by,
                 command,
+                typed,
                 reply,
             } => {
                 self.wait_for(id.clone(), reply, super::durable::outside(&by));
+                // 人敲的那一行（施工 FX-15）：长期目标照这个编号认出由它设下、接着跑的那一条，第一轮带上。
+                if let Some(typed) = typed {
+                    self.goal_run.typed(id.clone(), typed);
+                }
                 let at = self.clock.now();
                 Mail::Input(Box::new(Input::Command(Received {
                     id,

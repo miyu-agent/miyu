@@ -11,7 +11,7 @@
 use super::action::{Action, Reason};
 use super::{Session, rejected};
 use crate::block::Block;
-use crate::event::{Body, Event, MessageUser};
+use crate::event::{Body, Event, MessageUser, said_by_the_person};
 use crate::id::{CommandId, Seq, TurnId};
 use crate::origin::By;
 use crate::time::Timestamp;
@@ -125,8 +125,8 @@ impl Session {
         let said: Vec<(Seq, By, MessageUser)> = undone
             .iter()
             .filter(|event| event.turn != Some(redo.turn))
-            .filter_map(|event| match (&event.body, &event.by) {
-                (Body::MessageUser(message), By::Person(_)) => {
+            .filter_map(|event| match &event.body {
+                Body::MessageUser(message) if said_by_the_person(event) => {
                     Some((event.seq, event.by.clone(), (**message).clone()))
                 }
                 _ => None,
@@ -183,11 +183,7 @@ pub(super) fn opener(events: &[Event], turn: TurnId) -> Opener<'_> {
     };
     match find(trigger) {
         None => Opener::Unknown,
-        Some(event)
-            if matches!(event.body, Body::MessageUser(_)) && matches!(event.by, By::Person(_)) =>
-        {
-            Opener::Person(event)
-        }
+        Some(event) if said_by_the_person(event) => Opener::Person(event),
         Some(_) => Opener::Not,
     }
 }

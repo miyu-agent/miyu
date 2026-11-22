@@ -188,6 +188,7 @@ fn fresh<'a>(
             id,
             by: &by,
             rest,
+            text: params.text.trim(),
             head: params.cwd.as_deref(),
             prefix: params.prefix,
         };

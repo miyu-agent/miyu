@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 use tokio::sync::{broadcast, mpsc, oneshot, watch};
 
-use miyu_kernel::event::{Event, Transient};
+use miyu_kernel::event::{Event, Transient, TypedCommand};
 use miyu_kernel::id::{CommandId, JobId, SessionId, VenueId};
 use miyu_kernel::ledger::PeerWatching;
 use miyu_kernel::origin::By;
@@ -20,6 +20,7 @@ use miyu_tool::{JobError, Log, Output};
 
 use crate::backlog::Backlog;
 
+mod commands;
 mod dream;
 mod face;
 mod jobs;
@@ -78,10 +79,12 @@ pub struct Handle {
 pub(crate) enum Message {
     /// 一个命令，和等它回应的那一头。命令装在盒子里：场所消息的格多了（施工 E-4 上的 `place`）以后它比别的种类大出两百多
     /// 字节，收件箱里每一封都照最大的那一种占地方（clippy 的 `large_enum_variant`）。
+    /// `typed` 是人敲的那一行（施工 FX-15，`handle/commands.rs`）：`/goal <目标>` 交它，续轮的第一轮带上。
     Command {
         id: CommandId,
         by: By,
         command: Box<Command>,
+        typed: Option<TypedCommand>,
         reply: oneshot::Sender<Outcome>,
     },
     /// 要订阅：从这一刻起的推送都交给它。一个订阅算一个在看着的头（施工 7-9）。
@@ -282,28 +285,6 @@ impl Handle {
             .unwrap_or_else(PoisonError::into_inner)
             .next
             .clone()
-    }
-
-    /// 发一个命令，等它的回应：接受的，它产生的事件落了盘才回（`07-存储.md` S4）；拒绝的当场回。
-    /// 编号 `id` 由发命令的一方生成，同一个编号只生效一次（`02-内核.md` 不变量 9）。
-    ///
-    /// # Errors
-    ///
-    /// 会话停了：写不进去、出了 bug、有计划地停下了。
-    pub async fn command(
-        &self,
-        id: CommandId,
-        by: By,
-        command: Command,
-    ) -> Result<Outcome, Stopped> {
-        let (reply, answer) = oneshot::channel();
-        self.send(Message::Command {
-            id,
-            by,
-            command: Box::new(command),
-            reply,
-        })?;
-        answer.await.map_err(|_| Stopped)
     }
 
     /// 这一刻「当前的」几样（施工 9-6 上）：已经订阅着、再订阅一次（协议上「还是那一个」）的，回应照它答。和那个订阅不在

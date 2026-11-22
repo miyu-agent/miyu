@@ -16,7 +16,7 @@
 | `at` | 事件发生的时刻，使用 UTC，精确到毫秒。 |
 | `kind` | 事件的种类，见下表。 |
 | `turn` | 事件属于哪一轮，值是那一轮 `turn.started` 的序号；不属于任何一轮的事件不写这一项。 |
-| `by` | 谁产生了这条事件：`person`（主人；在平台上识别出是主人的另外带 `via`；在本机的头上说的话、输入的命令另外带 `head`，值是说话的那个连接在握手时报告的 `head.kind`，例如 `tui`、`web`、`cli`，它以小写字母开头，只含小写字母、数字、`-` 和 `_`，最多 32 个，写法不符合的就不带）、`external`（平台上的人，带 `venue`、`id`、`role`，对应表识别出是主人的另外带 `owner: true`）、`model`、`kernel`、`tool`（带 `call_id`）、`module`（带 `id`，例如一个软件包）、`harness`（带 `name`）、`session`（其他会话）。 |
+| `by` | 谁产生了这条事件：`person`（主人；在平台上识别出是主人的另外带 `via`；在本机的头上说的话、输入的命令另外带 `head`，值是说话的那个连接在握手时报告的 `head.kind`，例如 `tui`、`web`、`cli`，它以小写字母开头，只含小写字母、数字、`-` 和 `_`，最多 32 个，写法不符合的就不带）、`external`（平台上的人，带 `venue`、`id`、`role`，对应表识别出是主人的另外带 `owner: true`）、`model`、`kernel`、`tool`（带 `call_id`）、`module`（带 `id`，例如一个软件包）、`harness`（带 `name`）、`session`（其他会话）、`schedule`（到点的定时任务、循环交进会话的话：带 `schedule`，是任务的编号；循环另带 `loop`，值是 `fixed` 或 `dynamic`；人建的任务带 `person: true`；交进去的正文是出厂的那一句（光打 `/loop` 开的自主循环）时带 `builtin: true`，头根据它画「由 AI 自己决定」，不带的画那句原话）。 |
 | `cause` | 哪条命令引起了这条事件，值是那次请求的 `id`。 |
 | `body` | 这一种事件自己的字段。 |
 
@@ -36,7 +36,7 @@
 | `turn.started`、`turn.ended` | 一轮开始、一轮结束；`turn.ended` 的 `reason` 是 `completed`、`interrupted`、`error`、`restarted` 等。 |
 | `turn.joined` | 已经记下的几条消息并入了正在运行的这一轮。 |
 | `turn.reverted`、`turn.unreverted` | 撤销了几轮；恢复了最近一次撤销。 |
-| `message.user` | 人（或者其他会话、其他 agent、平台上的人）说的一句话；人用 `!` 输入的命令多带一个 `shell: true`，`blocks` 是那一行命令。只给出路径的附件（见 `session.send` 的第 3 条）在 `blocks` 里写成 `{"type": "path", "name", "path", "size"?}`：它没有 blob，`size` 是头填写的字节数。 |
+| `message.user` | 人（或者其他会话、其他 agent、平台上的人）说的一句话；人用 `!` 输入的命令多带一个 `shell: true`，`blocks` 是那一行命令。由人敲的斜杠命令发出的那一句多带 `command`：`{"name", "text"}`，`name` 是命令名，`text` 是人敲的那一行（去掉了前后空白），例如 `{"name": "loop", "text": "/loop 5m 看看 CI"}`；命令模板、MCP 提示词展开的那一句，人敲 `/loop` 当场开的第一轮（`by` 是 `schedule`），`/goal <目标>` 当场开的第一轮（`by` 是模块 `goal`）都带，之后到点的、续轮不带。头显示 `text`，`blocks` 是发给 AI 的内容；`command` 不进给 AI 的请求。只给出路径的附件（见 `session.send` 的第 3 条）在 `blocks` 里写成 `{"type": "path", "name", "path", "size"?}`：它没有 blob，`size` 是头填写的字节数。 |
 | `message.withdrawn` | 正在排队、AI 还没有听到的消息被退回了。 |
 | `message.assistant` | 模型一次响应的完整内容：正文、思考、工具调用和供应商侧工具（`hosted_tool`：供应商自己运行的一次工具，例如供应商那边的搜索，核心不执行它，只如实记下；带 `call_id`、`name`、`args`，有结果的另外带 `outcome`：`{"text", "failed"?, "cut"?}`，`cut` 表示结果超过 64 KiB，后面的部分被截掉了）。如果模型在回答后面编出了下一轮（一行开头是一个角色词，后面模仿这一次请求里人这一边的标签或者群消息的那一行），这一段在写入磁盘以前就被截掉了，这里只有截剩下的内容；流式推送的 `model.delta` 是原样的内容，应当以这一条事件为准。 |
 | `model.called` | 一次模型请求的记录：用了哪个模型、用量、花费，出错时带 `error`。回复被截过的带 `cut`，每一块文字一项：`[{"block", "at", "bytes", "role"}]`（`block` 是第几块，和 `model.delta` 的 `index` 相同；`at` 是从那一块原文的第几个字节开始截；`bytes` 是截掉了多少字节；`role` 是那个角色词：`user`、`assistant`、`system`、`human`、`tool`）。截掉的原文不记录；没有截过的就不写。 |

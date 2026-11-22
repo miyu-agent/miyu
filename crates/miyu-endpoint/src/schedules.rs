@@ -19,6 +19,8 @@ pub(crate) mod notices;
 pub(crate) mod port;
 mod ran;
 mod run;
+mod typed;
+mod undone;
 mod update;
 
 use std::sync::{Arc, Mutex};
@@ -95,6 +97,10 @@ pub struct Schedules {
     changes: tokio::sync::broadcast::Sender<String>,
     /// 给人的通知（`notices.rs`，施工 J-3 下）。
     notices: notices::Notices,
+    /// 人敲的 `/loop` 那一行，等第一次交（`typed.rs`，施工 FX-15）。
+    typed: typed::Typed,
+    /// 撤回人敲的 `/loop` 时删掉的循环，等恢复（`undone.rs`，施工 FX-15）。
+    undone: undone::Undone,
 }
 
 impl crate::Core {
@@ -123,6 +129,8 @@ impl Schedules {
             waiting: busy::Waiting::default(),
             changes: tokio::sync::broadcast::channel(changes::CHANGES).0,
             notices: notices::Notices::default(),
+            typed: typed::Typed::default(),
+            undone: undone::Undone::default(),
         }
     }
 

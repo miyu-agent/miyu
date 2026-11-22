@@ -90,6 +90,10 @@ impl Slash for LoopCommand {
             // 有能恢复的撤销时敲的也照常说（施工 FX-14，2026-11-22 项目主人定）：人敲命令同人发一句话，第一次马上开一轮、
             // 清掉撤销（`schedules/fire.rs` 的 `kickoff`）。FX-12 时回执说循环先搁着。
             let stopped = stop(call.core, call.session)?;
+            // 人敲的那一行（施工 FX-15）：建循环之前记下，第一次交的时候带上（建了马上就到点）。
+            if !matches!(asked, Asked::Off) {
+                call.core.schedules().typed_loop(call.session, call.text);
+            }
             let said = match asked {
                 Asked::Off if stopped => Said::plain("commands/loop-off"),
                 Asked::Off => Said::plain("commands/loop-none"),

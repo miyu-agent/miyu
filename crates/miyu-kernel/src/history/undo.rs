@@ -5,9 +5,8 @@
 use std::collections::BTreeSet;
 
 use super::History;
-use crate::event::{Body, ErrorClass, Event};
+use crate::event::{Body, ErrorClass, Event, said_by_the_person};
 use crate::id::{Seq, TurnId};
-use crate::origin::By;
 
 impl History {
     /// 撤掉这几轮：`turn` 是它们的事件，和它们接过去的、人亲口说的话，一起拿走，放在一边。
@@ -145,9 +144,4 @@ impl History {
             .ok()
             .map(|k| &self.events[k])
     }
-}
-
-/// 人亲口发来的消息：`message.user`，`by` 是主人。
-fn said_by_the_person(event: &Event) -> bool {
-    matches!(event.body, Body::MessageUser(_)) && matches!(event.by, By::Person(_))
 }

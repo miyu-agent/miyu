@@ -17,9 +17,8 @@ use serde::Serialize;
 use serde_json::{Value, json};
 
 use miyu_kernel::block::Block;
-use miyu_kernel::event::{Body, CompactTrigger, Event};
+use miyu_kernel::event::{Body, CompactTrigger, Event, said_by_the_person};
 use miyu_kernel::id::{Seq, SessionId, TurnId};
-use miyu_kernel::origin::By;
 use miyu_store::log::{Flow, OpenError, read_one, read_range_only};
 
 use crate::Core;
@@ -208,12 +207,16 @@ fn said(dir: &Path, started: Option<&Event>) -> Result<Option<String>, OpenError
     Ok(read_one(dir, trigger)?.as_ref().and_then(first_line))
 }
 
-/// 人亲口说的那一条的第一行；不是人话、不是人亲口说的没有。
+/// 人亲口说的那一条的第一行；不是人话、不是人亲口说的没有。人敲 `/loop` 当场开的那一句也算人亲口说的（施工 FX-15，内核的
+/// `said_by_the_person`）。
 fn first_line(event: &Event) -> Option<String> {
-    let (Body::MessageUser(message), By::Person(_)) = (&event.body, &event.by) else {
+    let Body::MessageUser(message) = &event.body else {
         return None;
     };
-    // 斜杠命令模板展开成的照人敲的那一行（施工 X-14 上）。
+    if !said_by_the_person(event) {
+        return None;
+    }
+    // 人敲的斜杠命令发出的照人敲的那一行（施工 X-14 上、FX-15）。
     if let Some(typed) = message.typed() {
         return Some(typed.to_string());
     }

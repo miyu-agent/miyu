@@ -13,7 +13,7 @@ use std::time::Duration;
 use tokio::time::Instant;
 
 use miyu_kernel::block::{Block, Text};
-use miyu_kernel::event::{Body, Event, GoalOutcome, round_command};
+use miyu_kernel::event::{Body, Event, GoalOutcome, TypedCommand, round_command};
 use miyu_kernel::id::{CommandId, ModuleId, Seq, TurnId};
 use miyu_kernel::origin::{By, Module};
 use miyu_kernel::session::{Command, GoalChange, Input, Received};
@@ -61,6 +61,10 @@ pub(super) struct GoalRun {
     pushed: Option<Goal>,
     /// 这一次运行里人插过话（施工 X-9）：说过话、答过她的题。报卡住不再受三轮下限（人说停随时停）；设下、接着跑时重新算。
     heard: bool,
+    /// 人敲 `/goal <目标>` 交来的那一行，连同那个命令的编号（施工 FX-15）：等那一条 `goal.set`、`goal.resumed` 落盘。
+    typed: Option<(CommandId, TypedCommand)>,
+    /// 下一轮带上的那一行（施工 FX-15）：由人敲的 `/goal` 设下、接着跑的第一轮。续轮不带。
+    first: Option<TypedCommand>,
 }
 
 impl GoalRun {
@@ -73,6 +77,10 @@ impl GoalRun {
                     self.full_sent = false;
                     self.sent_at = None;
                     self.heard = false;
+                    let typed = self.typed.take();
+                    self.first = typed
+                        .filter(|(id, _)| event.cause.as_ref() == Some(id))
+                        .map(|(_, typed)| typed);
                 }
                 Body::GoalChanged(_) => self.full_sent = false,
                 Body::MessageUser(_) if is_ours(&event.by) => self.ours = Some(event.seq),
@@ -123,6 +131,11 @@ impl GoalRun {
                 _ => {}
             }
         }
+    }
+
+    /// 人敲的 `/goal` 交来的那一行（施工 FX-15）：编号是 `id` 的那一条落盘时认。
+    pub(super) fn typed(&mut self, id: CommandId, typed: TypedCommand) {
+        self.typed = Some((id, typed));
     }
 
     /// 后台命令还在跑（施工 X-7 再补）：头一回看到时记下起点；没等满 [`FALLBACK`] 交回到点的时刻（先不开），等满了交回
@@ -185,10 +198,15 @@ impl Actor {
             _ => {
                 let text = self.round_text(&goal, next)?;
                 self.goal_run.full_sent = true;
-                Command::Send {
-                    blocks: vec![Block::Text(Text { text })],
-                    urgent: false,
-                    venue: None,
+                let blocks = vec![Block::Text(Text { text })];
+                // 人敲 `/goal <目标>` 当场开的第一轮（施工 FX-15）：带上那一行，头照它显示；内容块、请求不变。
+                match self.goal_run.first.take() {
+                    Some(command) => Command::Typed { blocks, command },
+                    None => Command::Send {
+                        blocks,
+                        urgent: false,
+                        venue: None,
+                    },
                 }
             }
         };

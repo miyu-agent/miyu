@@ -47,7 +47,9 @@ pub use goal::{
 };
 pub use image::ImageDescribed;
 pub use job::{ChildReason, ChildReported, JobLines, JobReason, JobReported};
-pub use message::{MessageAssistant, MessageUser, MessageWithdrawn, TypedCommand};
+pub use message::{
+    MessageAssistant, MessageUser, MessageWithdrawn, TypedCommand, said_by_the_person,
+};
 pub use model::{
     BlockSpan, CallError, CallResult, ErrorClass, FirstDifference, ForgedCut, ForgedRole,
     MessageRole, ModelCalled, Part, Purpose, Usage,

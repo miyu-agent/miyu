@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::block::Block;
 use crate::id::Seq;
+use crate::origin::By;
 
 use super::VenueMessage;
 
@@ -15,8 +16,9 @@ pub struct MessageUser {
     /// 通讯平台上的一条消息（施工 O-13 上）：平台编号、引用、@ 了谁、带的东西、旁听。本机的没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub venue: Option<VenueMessage>,
-    /// 斜杠命令模板展开成的这一句（施工 X-14 上，`internal/blueprint/slash.md`「模板」第 4 条）：人敲的那一行。`blocks` 是展开的
-    /// 那段，模型照它看；给人看的地方（时间线、撤销的回执、会话列表）照这一行。别的消息没有。
+    /// 人敲的斜杠命令发出的这一句：人敲的那一行。命令模板、MCP 提示词展开成的（施工 X-14 上，`internal/blueprint/slash.md`
+    /// 「模板」第 4 条），人敲 `/loop`、`/goal <目标>` 当场开的第一轮（施工 FX-15）。`blocks` 是发给模型的那段，模型照它看；
+    /// 给人看的地方（时间线、撤销的回执、会话列表）照这一行。别的消息没有，不进请求。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub command: Option<TypedCommand>,
     /// 人在头的输入框里用 `!` 打的一条命令（施工 SH-1 上，设计 57）：`blocks` 是一块字，就是那一行命令；核心在她听到它的那
@@ -32,6 +34,19 @@ pub struct TypedCommand {
     pub name: String,
     /// 人敲的那一行原文。
     pub text: String,
+}
+
+/// 人亲口说的一句（`internal/blueprint/kernel/history.md`「拿走什么」）：`message.user`，`by` 是主人；`by` 是人建的定时、
+/// 带人敲的那一行的也算，那是人敲 `/loop` 当场开的第一轮（施工 FX-15）。撤销照它拿走、重做照它重发，撤销的回执照它挑那一句。
+#[must_use]
+pub fn said_by_the_person(event: &super::Event) -> bool {
+    match (&event.body, &event.by) {
+        (super::Body::MessageUser(_), By::Person(_)) => true,
+        (super::Body::MessageUser(message), By::Schedule(schedule)) => {
+            schedule.person && message.command.is_some()
+        }
+        _ => false,
+    }
 }
 
 impl MessageUser {

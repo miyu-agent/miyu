@@ -140,6 +140,8 @@ pub enum Command {
     Kickoff {
         /// 那一行存着的话，成一块文字。
         blocks: Vec<Block>,
+        /// 人敲的那一行（施工 FX-15）：记进 `message.user` 的 `command`，头照它显示，撤销照人说的话拿走。核心记不得的没有。
+        command: Option<TypedCommand>,
     },
     /// 记下人用了一个斜杠命令（施工 O-6，`command.run`）：命令本身已经照它自己的编号执行了，这一条只记 `command.ran`。
     Ran {

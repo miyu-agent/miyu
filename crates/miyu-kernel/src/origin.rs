@@ -124,6 +124,9 @@ pub struct Schedule {
     /// 这个任务是人建的（施工 SC-1）：`miyu schedule add`、头里建的。她自己用工具建的、扩展建的、以前的日志没有。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub person: bool,
+    /// 交进去的正文是出厂的那一句（施工 FX-15）：光打 `/loop` 的自主循环。头照它画「由 AI 自己决定」；组装不看它，不进请求。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub builtin: bool,
 }
 
 impl Schedule {

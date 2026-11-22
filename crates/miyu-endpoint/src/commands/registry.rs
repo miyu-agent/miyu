@@ -35,6 +35,8 @@ pub(crate) struct Call<'a> {
     pub(crate) by: &'a By,
     /// 命令名后面跟的字，去掉了前后空白。
     pub(crate) rest: &'a str,
+    /// 人敲的整一行，去掉了前后空白（施工 FX-15）：`/loop`、`/goal` 照它记 `message.user` 的 `command`。
+    pub(crate) text: &'a str,
     /// 头所在的目录（`command.run` 的 `cwd`）。
     pub(crate) head: Option<&'a str>,
     /// 前缀要变了时人选的（施工 OV-1 下）：开新一轮的命令先问人。

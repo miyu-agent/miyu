@@ -42,7 +42,7 @@ impl Projector {
             .iter()
             .filter(|entry| match &entry.body {
                 Body::User(user) => {
-                    user.from.is_none() && entry.turn.is_some_and(|t| turns.contains(&t))
+                    said_by_the_person(user) && entry.turn.is_some_and(|t| turns.contains(&t))
                 }
                 Body::Notice(Notice::Recap { covers, .. }) => {
                     covers.is_some_and(|t| turns.contains(&t))
@@ -63,5 +63,17 @@ impl Projector {
             }
             _ => None,
         })
+    }
+}
+
+/// 撤销跟着藏的人话（同内核的 `said_by_the_person`，`kernel/history.md`「拿走什么」）：人在本机说的；人建的定时交进来、
+/// 带着人敲的那一行的（人敲 `/loop` 当场开的第一轮，施工 FX-15）。别处来的话不跟着藏。
+fn said_by_the_person(user: &crate::entry::User) -> bool {
+    match &user.from {
+        None => true,
+        Some(sender) => {
+            user.command.is_some()
+                && matches!(&sender.by, miyu_kernel::origin::By::Schedule(schedule) if schedule.person)
+        }
     }
 }

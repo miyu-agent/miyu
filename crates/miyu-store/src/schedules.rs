@@ -294,6 +294,24 @@ impl Schedules {
         row::update(&db, schedule)
     }
 
+    /// 照原样放回删掉的一行（施工 FX-15：撤回人敲的 `/loop` 时删掉，恢复那一次撤销时放回）：编号、几格都照 `schedule`。
+    /// 同编号的已经有了的不动，交回假。
+    ///
+    /// # Errors
+    ///
+    /// 读写不了库。
+    pub fn restore(&self, schedule: &Schedule) -> Result<bool, DbError> {
+        let db = self.lock();
+        let there = db
+            .query_row(row::SELECT_ONE, params![schedule.id], |_| Ok(()))
+            .optional()?;
+        if there.is_some() {
+            return Ok(false);
+        }
+        row::insert(&db, schedule)?;
+        Ok(true)
+    }
+
     /// 只记上一次（到点交过以后）：`stop` 的同时停掉、清掉下一次。别的几格不动：她在那一轮里改了的下一次（施工 J-2）照她的。
     /// 没有的交回假。
     ///

@@ -346,6 +346,7 @@ mod tool_guard;
 mod tool_guard_more;
 mod tool_override;
 mod tools;
+mod typed_shown;
 mod undo;
 mod undo_jobs;
 mod uploads;

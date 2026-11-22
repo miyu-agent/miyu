@@ -18,6 +18,7 @@ fn task(looping: Option<ScheduleLoop>) -> Schedule {
         schedule: "t3".to_string(),
         looping,
         person: false,
+        builtin: false,
     }
 }
 
