@@ -128,10 +128,12 @@ uninstall() {
       "Miyu is uninstalled. Your data is still in ${MIYU_HOME:-${HOME}/.miyu}; delete it yourself if you don't need it."
 }
 
-# 照 API 地址的回应找标签；没有的空。$1 是 latest 或 list。
+# 照 API 地址的回应找标签；没有的空。$1 是 stable（只要正式版）或 any（预发布也算）。
+# 只认现在的版本号 v<年>.<月>.<第几版>（设计 59）：仓库里还留着旧版 Miyu 的发行版（v0.7.x）和早先演练的 v0.0.0，它们的包
+# 不是这个脚本装得了的，一律跳过（施工 WD-8：原来问 releases/latest，拿到的是旧版的 v0.7.4，下载它的 SHA256SUMS 得 404）。
 find_tag() {
   answer="${WORK}/release.json"
-  if [ "$1" = latest ]; then url="${API}/releases/latest"; else url="${API}/releases?per_page=30"; fi
+  url="${API}/releases?per_page=100"
   if [ -n "${GITHUB_TOKEN:-}" ]; then
     code=$(curl -sS -L -o "${answer}" -w '%{http_code}' -H 'Accept: application/vnd.github+json' \
       -H "Authorization: Bearer ${GITHUB_TOKEN}" "${url}") || die "无法连接 GitHub（${url}）" "can't reach GitHub (${url})"
@@ -146,8 +148,23 @@ find_tag() {
                   "GitHub rate limit reached (60 an hour without signing in); try again later" ;;
     *) die "GitHub 返回 HTTP ${code}（${url}）" "GitHub answered ${code} (${url})" ;;
   esac
-  # 回应可能压成一行：照逗号拆开，第一个 tag_name 就是最新的（列表照新到旧排，匿名看不到草稿）。
-  tr ',' '\n' < "${answer}" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\(v[^"]*\)".*/\1/p' | head -n 1
+  # 回应可能压成一行：照逗号拆开。列表照新到旧排，每个发行版先有 tag_name，后面是 draft、prerelease：记下标签，看到
+  # prerelease 那一格时决定要不要它。草稿不要；只要正式版时，标成预发布的、标签带 - 的（v2026.11.0-rc.1）都不要。
+  tr ',' '\n' < "${answer}" | awk -v want="$1" '
+    /"tag_name"[ \t]*:/ {
+      tag = $0
+      sub(/.*"tag_name"[ \t]*:[ \t]*"/, "", tag)
+      sub(/".*/, "", tag)
+      draft = 0
+    }
+    /"draft"[ \t]*:[ \t]*true/ { draft = 1 }
+    /"prerelease"[ \t]*:/ {
+      ok = tag ~ /^v[0-9][0-9][0-9][0-9]\.[0-9]+\.[0-9]+/ && !draft
+      if (ok && want != "any" && ($0 ~ /true/ || tag ~ /-/)) ok = 0
+      if (ok) { print tag; exit }
+      tag = ""
+    }
+  '
 }
 
 # 下载 $1 到 $2；不成的停。
@@ -212,10 +229,10 @@ install() {
   if [ -n "${WANT}" ]; then
     tag="v${WANT}"
   elif [ "${PRE}" = 1 ]; then
-    tag=$(find_tag list) || exit 1
+    tag=$(find_tag any) || exit 1
     [ -n "${tag}" ] || die "未找到可用的发行版" "no release found"
   else
-    tag=$(find_tag latest) || exit 1
+    tag=$(find_tag stable) || exit 1
     [ -n "${tag}" ] || die "还没有正式版；如果要安装预发布版，加上 --prerelease" "no stable release yet; add --prerelease to install a pre-release"
   fi
   version="${tag#v}"

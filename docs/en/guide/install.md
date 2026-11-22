@@ -49,6 +49,8 @@ You can add arguments after `sh -s --`:
 | `--prerelease` | Counts pre-releases too, and installs the latest of them |
 | `--uninstall` | Uninstalls |
 
+Without `--version` or `--prerelease`, the script installs the latest stable release. If there is no stable release yet, the script stops and says `no stable release yet; add --prerelease to install a pre-release`, and installs nothing.
+
 For example, to install version 2026.11.0:
 
 ```sh

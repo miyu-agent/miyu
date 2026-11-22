@@ -119,7 +119,7 @@ $ErrorActionPreference = 'Continue'
 $ErrorActionPreference = 'Stop'
 $zh = Get-Content -Raw -Encoding utf8 $said
 Write-Host $zh
-if ($zh -notmatch '没有装着') { Fail "中文提示没解出来：$zh" }
+if ($zh -notmatch '未安装') { Fail "中文提示没解出来：$zh" }
 
 # PowerShell 7 也装、卸一遍。
 $seven = Invoke-Install 'pwsh' @('-Prerelease')

@@ -103,9 +103,10 @@ function Uninstall-Miyu {
     Say '\u5df2\u5378\u8f7d Miyu\u3002\u6570\u636e\u4ecd\u7136\u4fdd\u7559\u5728 {0}\uff0c\u5982\u679c\u4e0d\u518d\u9700\u8981\uff0c\u53ef\u4ee5\u81ea\u884c\u5220\u9664\u3002' "Miyu is uninstalled. Your data is still in {0}; delete it yourself if you don't need it." @($data)
 }
 
-# 照 API 找标签；没有的空字符串。
+# 照 API 找标签；没有的空字符串。只认现在的版本号 v<年>.<月>.<第几版>（设计 59）：仓库里还留着旧版 Miyu 的发行版（v0.7.x）和
+# 早先演练的 v0.0.0，它们的包不是这个脚本装得了的，一律跳过（施工 WD-8：原来问 releases/latest，拿到的是旧版的 v0.7.4）。
 function Find-Tag([bool]$pre) {
-    $url = if ($pre) { "$Api/releases?per_page=30" } else { "$Api/releases/latest" }
+    $url = "$Api/releases?per_page=100"
     try {
         $headers = @{ Accept = 'application/vnd.github+json' }
         if ($env:GITHUB_TOKEN) { $headers['Authorization'] = "Bearer $($env:GITHUB_TOKEN)" }
@@ -119,9 +120,13 @@ function Find-Tag([bool]$pre) {
         }
         Die '\u65e0\u6cd5\u8fde\u63a5 GitHub\uff08{0}\uff09\uff1a{1}' "can't reach GitHub ({0}): {1}" @($url, $_.Exception.Message)
     }
-    # 列表照新到旧排、匿名看不到草稿：第一个 v 打头的就是最新的。
+    # 列表照新到旧排：第一个合格的就是最新的。草稿不要；只要正式版时，标成预发布的、标签带 - 的（v2026.11.0-rc.1）都不要。
     foreach ($release in @($answer)) {
-        if ($release.tag_name -like 'v*') { return [string]$release.tag_name }
+        $tag = [string]$release.tag_name
+        if ($tag -notmatch '^v\d{4}\.\d+\.\d+') { continue }
+        if ($release.draft) { continue }
+        if (-not $pre -and ($release.prerelease -or $tag.Contains('-'))) { continue }
+        return $tag
     }
     return ''
 }

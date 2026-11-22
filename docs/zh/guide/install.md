@@ -49,6 +49,8 @@ curl -fsSL https://raw.githubusercontent.com/miyu-agent/miyu/main/packaging/inst
 | `--prerelease` | 把预发布版也算进来，安装其中最新的一版 |
 | `--uninstall` | 卸载 |
 
+不加 `--version` 和 `--prerelease` 时，脚本安装最新的正式版。如果还没有正式版，脚本会停下并提示 `还没有正式版；如果要安装预发布版，加上 --prerelease`，不会安装任何东西。
+
 例如安装 2026.11.0 这一版：
 
 ```sh

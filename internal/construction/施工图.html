@@ -1599,6 +1599,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sLW11"><span class="n">LW-11</span>文件监视合成一组线程<span class="st">…</span></a></li>
         <li><a class="step review" href="#sLW12"><span class="n">LW-12</span>核心的线程缓存少留<span class="st">…</span></a></li>
         <li><a class="step review" href="#sLW13"><span class="n">LW-13</span>收紧两行内存预算<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sWD8"><span class="n">WD-8</span>安装脚本只认新版本号<span class="st">…</span></a></li>
         <li><a class="step review" href="#sHLP1"><span class="n">HLP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
@@ -62149,6 +62150,9 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
 <section class="sheet" id="sLW1" aria-labelledby="h-sLW1">
   <div class="sheet-head"><h2 id="h-sLW1"><span class="no">LW-1</span>核心的发行程序按执行顺序排函数</h2><span class="pill done">已完成</span></div>
   <p class="purpose">核心空闲时留在内存里的 17.9 MB 代码里，实际执行过的只有 4.0 MB：执行过的函数散落在整个代码段里，每碰到一个就带进周围的一片页。这一步在打包时录下执行过的函数，让链接器把它们排在代码段的开头。</p>
+<section class="sheet" id="sWD8" aria-labelledby="h-sWD8">
+  <div class="sheet-head"><h2 id="h-sWD8"><span class="no">WD-8</span>安装脚本只认新格式的版本号</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">安装脚本不加 --prerelease 时询问 releases/latest，拿到的是旧版 Miyu 的 v0.7.4，下载它的校验文件得到 404，安装测试流程三个平台都失败。项目主人定做过滤。</p>
   <figure class="frame">
     <div class="drawing">
       <div class="d01">
@@ -62160,12 +62164,19 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
               <li>build.rs 认环境变量 MIYU_LINK_ORDER，把清单交给链接器；排完以后核对九成以上的函数落在代码段开头</li>
               <li>cargo xtask dist、cargo xtask perf 在 Linux x86_64 上按照这个流程编核心；其他平台保持原来的做法</li>
               <li>两行内存预算从 30 MB 收到 11、15 MB</li>
+            <div class="dir-label"><span class="path">packaging/install.sh、install.ps1　docs/zh、docs/en · guide/install.md</span><span class="dir-note">WD-8</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>install.sh、install.ps1 一律询问发行版列表，只认 v<年>.<月>.<第几版> 格式的标签，旧版的 v0.7.x 和演练用的 v0.0.0 跳过</li>
+              <li>草稿跳过；不加 --prerelease 时预发布和标签带 - 的也跳过，一个都没有时停下并提示加 --prerelease</li>
+              <li>给人看的句子、--version 指定版本的行为没有变化；miyu upgrade 不受影响，没有改动</li>
+              <li>手册安装页中英各加一句</li>
             </ol>
           </div>
         </div>
         <div class="rules">
           <p class="rules-title">这一步定下的</p>
           <div class="tile new"><span class="nm">发行程序量的、发的都是排过函数的那一个</span><span class="rl">internal/blueprint/perf.md「排函数」</span></div>
+          <div class="tile new"><span class="nm">安装脚本只安装它装得了的发行版；没有时说清楚并停下</span><span class="rl">设计 59「版本号」</span></div>
         </div>
       </div>
     </div>
@@ -62274,6 +62285,11 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
         <div><dt>日期</dt><dd class="mono">2026-11-22</dd></div>
         <div><dt>提交</dt><dd class="mono">LW-3</dd></div>
         <div><dt>验收</dt><dd>日志 228 kB 的会话，和历史有关的堆从 736 kB 降到 339 kB</dd></div>
+        <div><dt>图号</dt><dd class="mono">WD-8</dd></div>
+        <div><dt>名称</dt><dd>安装脚本只认新格式的版本号</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">WD-8</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
       </dl>
     </figcaption>
   </figure>
@@ -62283,6 +62299,9 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <ul class="checks">
         <li><span class="ok">✓</span><span>日志 228 kB 的会话，和历史有关的堆从 736 kB 降到 339 kB</span></li>
         <li><span class="ok">✓</span><span>门禁全过</span></li>
+        <li><span class="ok">✓</span><span>挑选逻辑用真实的发行版列表和五种假想的列表试过</span></li>
+        <li><span class="ok">✓</span><span>沙箱家目录里对着真实的 GitHub 运行 install.sh，得到「还没有正式版」的提示、退出码 1、没有安装任何东西</span></li>
+        <li><span class="ok">✓</span><span>install-test 流程三个平台通过</span></li>
       </ul>
     </div>
     <div>
@@ -62635,6 +62654,7 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/LW-13-预算收紧.md</code>；蓝图 <code>perf.md</code>「闸门」第 11 条。</li>
+        <li>施工单 <code>internal/construction/WD-8-安装脚本只认新版本号.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>
