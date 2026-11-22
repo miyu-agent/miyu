@@ -48,7 +48,7 @@ async fn a_turn_is_undone_and_redone_over_the_protocol() {
         .call("c5", "session.unrevert", json!({"session": session}))
         .await;
     assert_eq!(reason(&reply), Some("nothing_to_unrevert"), "{reply}");
-    assert_eq!(reply["error"]["message"], json!("没有可恢复的撤销。"));
+    assert_eq!(reply["error"]["message"], json!("没有可恢复的撤回。"));
 }
 
 #[tokio::test]
@@ -87,5 +87,5 @@ async fn with_no_turn_there_is_nothing_to_undo() {
         .call("c2", "session.revert", json!({"session": session}))
         .await;
     assert_eq!(reason(&reply), Some("nothing_to_revert"), "{reply}");
-    assert_eq!(reply["error"]["message"], json!("没有可撤销的回合。"));
+    assert_eq!(reply["error"]["message"], json!("没有可撤回的回合。"));
 }

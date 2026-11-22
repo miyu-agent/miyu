@@ -418,8 +418,8 @@ INFO  session  <会话> compacted seen=24 trigger=auto before=15465 after=2675 s
 | 暂停着、这一次放不下（出错那一行的分类） | 自动压缩已暂停 | Auto-compaction paused |
 | 没有能压的（`nothing_to_compact` 的那一句，`protocol.md`） | 没有可压缩的内容。 | Nothing to compact. |
 | 上下文本来就是空的（`nothing_to_clear` 的那一句，头当一条提示通知显示，2026-09-30 项目主人定） | 上下文为空。 | Context is empty. |
-| 撤掉了压缩（撤掉一次、几次都是这一句，2026-09-29 项目主人定） | 已撤销压缩，上下文恢复到压缩前 | undid the compaction; the context is as it was before |
-| 撤掉了清空（撤掉一次、几次都是这一句，2026-09-30 项目主人定） | 已撤销清空，上下文恢复到清空前 | undid the clear; the context is as it was before |
+| 撤掉了压缩（撤掉一次、几次都是这一句，2026-09-29 项目主人定） | 已撤回压缩，上下文恢复到压缩前 | undid the compaction; the context is as it was before |
+| 撤掉了清空（撤掉一次、几次都是这一句，2026-09-30 项目主人定） | 已撤回清空，上下文恢复到清空前 | undid the clear; the context is as it was before |
 | 快满了（M8） | 上下文快满了，到线会自动压缩 | The context is nearly full; it will be compacted automatically |
 | 裁剪了（随通讯平台） | 移出了最早的 <几> 条消息，还能用 history 查 | Moved the <n> oldest messages out of context; history can still find them |
 

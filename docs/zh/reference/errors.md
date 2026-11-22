@@ -51,7 +51,7 @@
 | `archived` | 会话是只读的存档，不能接着对话 | |
 | `session_stopped` | 会话已经停止；再发送一次会重新载入会话 | |
 | `session_sealed` | 会话已经封存，修改对话的命令不再接受 | |
-| `restoring` | 撤销还没有完成时收到了命令 | |
+| `restoring` | 撤回还没有完成时收到了命令 | |
 | `venue_session` | 向场所会话发送消息时没有带 `as` | |
 | `shell_not_allowed` | `session.send` 的 `shell` 不是人在头（连接核心的界面程序，例如终端界面、网页界面）里输入的（带了 `from`、`as`，由扩展发送，或者是场所会话） | |
 | `shell_unavailable` | `session.send` 带了 `shell`，但是没有能运行命令的工具 | |
@@ -59,10 +59,10 @@
 | `dir_too_wide` | 另外加入的目录太宽 | |
 | `not_running` | 打断时没有正在进行的回合 | |
 | `nothing_queued`、`already_heard` | 退回排队中的消息（`session.withdraw`）时：没有排队中的消息；要退回的那一条已经被请求带上了 | |
-| `turn_running` | 撤销、重做、压缩、清空、删除会话、更换人格或预设时，有回合正在进行 | |
+| `turn_running` | 撤回、重做、压缩、清空、删除会话、更换人格或预设时，有回合正在进行 | |
 | `id_reused` | 同一个请求编号换了参数再次发送（`session.create` 只比较 `cwd`、`dirs` 以外的参数）；参数相同时返回上一次的回应。核心重启以后不再比较参数 | |
-| `unknown_turn` | 要撤销的那一轮不在现在的历史里 | |
-| `nothing_to_revert`、`nothing_to_unrevert` | 没有可以撤销的内容；没有可以恢复的撤销 | |
+| `unknown_turn` | 要撤回的那一轮不在现在的历史里 | |
+| `nothing_to_revert`、`nothing_to_unrevert` | 没有可以撤回的内容；没有可以恢复的撤回 | |
 | `not_redoable` | 最后一轮不是由人说话开始的 | |
 | `nothing_to_compact`、`nothing_to_clear` | 没有可以压缩的内容；上下文本来就是空的 | |
 | `nothing_to_recap`、`recap_failed` | 没有可以回顾的内容；回顾没有生成成功 | |

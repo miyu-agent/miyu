@@ -1600,6 +1600,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sLW12"><span class="n">LW-12</span>核心的线程缓存少留<span class="st">…</span></a></li>
         <li><a class="step review" href="#sLW13"><span class="n">LW-13</span>收紧两行内存预算<span class="st">…</span></a></li>
         <li><a class="step review" href="#sWD8"><span class="n">WD-8</span>安装脚本只认新版本号<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sWD9"><span class="n">WD-9</span>/undo 统一叫「撤回」<span class="st">…</span></a></li>
         <li><a class="step review" href="#sHLP1"><span class="n">HLP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
         <li><a class="step done" href="#sSX1"><span class="n">SX-1</span>会话列表记下人最后一次发话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sQU2"><span class="n">QU-2</span>DeepSeek 余额<span class="st">✓</span></a></li>
@@ -62655,6 +62656,55 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <ul>
         <li>施工单 <code>internal/construction/LW-13-预算收紧.md</code>；蓝图 <code>perf.md</code>「闸门」第 11 条。</li>
         <li>施工单 <code>internal/construction/WD-8-安装脚本只认新版本号.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sWD9" aria-labelledby="h-sWD9">
+  <div class="sheet-head"><h2 id="h-sWD9"><span class="no">WD-9</span>/undo 在界面上统一叫「撤回」</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">项目主人 2026-11-22 定：/undo 在界面上统一叫「撤回」，不叫「撤销」；/restore 仍然叫「恢复」。核心这边给人看的字在命令行、帮助页和拒绝原因里。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-cli/src/language/undo.rs、help/zh　crates/miyu-endpoint/src/refusal/message.rs　docs/zh　internal/blueprint、internal/designs/samples/cli</span><span class="dir-note">WD-9</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>miyu undo、restore、redo 的回执：已撤销 → 已撤回，已恢复撤销的那一轮 → 已恢复撤回的那一轮</li>
+              <li>四页中文帮助和三句拒绝原因（没有可撤回的回合、没有可恢复的撤回、正在撤回或恢复）</li>
+              <li>7 个测试文件的断言、四份命令行样本、蓝图里引用的 25 处原话跟着换</li>
+              <li>中文手册 20 页 67 行改成「撤回」，「批准会被撤销」不是说 /undo，保留；英文和给模型的字不动</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">同一个动作在各处用同一个词：/undo 是「撤回」，/restore 是「恢复」</span><span class="rl">项目主人 2026-11-22 定</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">WD-9</dd></div>
+        <div><dt>名称</dt><dd>/undo 在界面上统一叫「撤回」</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">WD-9</dd></div>
+        <div><dt>验收</dt><dd>门禁全过；改过的页中英对得齐，链接指得到</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>全仓测试、门禁十二项通过</span></li>
+        <li><span class="ok">✓</span><span>文档检查问题 0 个，小节标题改了以后链接仍然对得上</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/WD-9-undo统一叫撤回.md</code>。不改蓝图。</li>
       </ul>
     </div>
   </div>

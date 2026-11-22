@@ -21,7 +21,7 @@
 **主人看场所会话**：关在沙盒里的场所会话（群、陌生人的私聊）只有接入这个平台的桥能往里面说话、修改它、删除它；主人这边的连接（人用的头，头是连接核心的界面程序，例如终端界面、网页界面）只能以只读的方式查看它：读取类的方法正常可用，写入类的方法返回 `session_not_found`，和没有这个会话一样：
 
 - 读取类的方法：`subscribe`、`unsubscribe`（`events`、`view` 流，用 `after` 补发也正常可用）、`view.page`、`view.detail`、`session.prompts`、`session.tools`、`session.context`、`session.usage_parts`、`session.quota`、`job.output`、带 `session` 的 `blob.get`、`session.shown`。
-- 其他带 `session` 的方法一律返回 `session_not_found`：说话、`command.run`、重做、撤销、打断、压缩、清空、更换配置、`set_*`、分叉、修改标题、删除等等。
+- 其他带 `session` 的方法一律返回 `session_not_found`：说话、`command.run`、重做、撤回、打断、压缩、清空、更换配置、`set_*`、分叉、修改标题、删除等等。
 - 扩展和平台桥不受这一条影响：桥仍然只能接触到它接入的平台的场所会话，读取也是一样。
 
 **场所编号**：桥自己定的短名字（1 到 128 字节，不含控制字符），例如 `qq:private:10001`、`qq:group:123456`。核心不解读场所编号，只识别第一个 `:` 前面的平台前缀。

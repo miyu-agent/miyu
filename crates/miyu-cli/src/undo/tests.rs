@@ -91,7 +91,7 @@ fn long_words_are_cut() {
     let result = json!({"cwd": under(&["w"]), "turns": 1, "said": said});
     let printed = printed_as(&result, Direction::Undo);
     let first = printed.lines().next().expect("有第一行");
-    assert_eq!(first, format!("已撤销「{}…」这一轮", "说".repeat(40)));
+    assert_eq!(first, format!("已撤回「{}…」这一轮", "说".repeat(40)));
 }
 
 /// 恢复的是几轮的（一次撤了几轮）：写「起的几轮」。
@@ -103,7 +103,7 @@ fn several_turns_are_counted() {
         "已恢复「第一句」起的 3 轮\n"
     );
     assert!(
-        printed_as(&result, Direction::Undo).starts_with("已撤销「第一句」起的 3 轮\n"),
+        printed_as(&result, Direction::Undo).starts_with("已撤回「第一句」起的 3 轮\n"),
         "撤销的也一样"
     );
 }
@@ -126,7 +126,7 @@ fn every_first_line_of_a_restore_names_it_restore() {
     );
     assert_eq!(
         Language::Chinese.undo_header(Direction::Restore, None, 1),
-        "已恢复撤销的那一轮"
+        "已恢复撤回的那一轮"
     );
 }
 
@@ -135,7 +135,7 @@ fn every_first_line_of_a_restore_names_it_restore() {
 #[test]
 fn an_undone_compaction_is_said_once_below_the_first_line() {
     let result = |compactions: u64| json!({"cwd": under(&["w"]), "turns": 1, "said": "接着来", "compactions": compactions});
-    let once = "已撤销「接着来」这一轮\n已撤销压缩，上下文恢复到压缩前\n提示：发送下一句之前，可以运行 'miyu restore' 恢复\n";
+    let once = "已撤回「接着来」这一轮\n已撤回压缩，上下文恢复到压缩前\n提示：发送下一句之前，可以运行 'miyu restore' 恢复\n";
     assert_eq!(printed_as(&result(1), Direction::Undo), once);
     assert_eq!(
         printed_as(&result(2), Direction::Undo),
@@ -169,7 +169,7 @@ fn an_undone_clear_is_said_after_an_undone_compaction() {
     );
     let alone = printed(&result(0, 1), &chinese);
     assert!(
-        alone.contains("起的 3 轮\n已撤销清空，上下文恢复到清空前\n"),
+        alone.contains("起的 3 轮\n已撤回清空，上下文恢复到清空前\n"),
         "{alone}"
     );
     assert!(!alone.contains("压缩"), "{alone}");

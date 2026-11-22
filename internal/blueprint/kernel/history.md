@@ -319,9 +319,9 @@
 |---|---|---|
 | `turn_running` | 回合进行中。 | A turn is in progress. |
 | `unknown_turn` | 回合不存在。 | Turn not found. |
-| `nothing_to_unrevert` | 没有可恢复的撤销。 | Nothing to restore. |
-| `restoring` | 正在撤销或恢复。 | Undo or restore in progress. |
-| `nothing_to_revert` | 没有可撤销的回合。 | Nothing to undo. |
+| `nothing_to_unrevert` | 没有可恢复的撤回。 | Nothing to restore. |
+| `restoring` | 正在撤回或恢复。 | Undo or restore in progress. |
+| `nothing_to_revert` | 没有可撤回的回合。 | Nothing to undo. |
 | `not_redoable` | 无法重做。 | Cannot redo. |
 
 给人看的话由核心照头的语言配（`crates/miyu-endpoint/src/refusal.rs`）。`not_redoable` 一个原因码管两种（最后一轮不是人的话开的、一轮都没有），说法 2026-09-30 项目主人定，头当一条提示通知显示。

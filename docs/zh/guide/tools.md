@@ -137,7 +137,7 @@ AI 能用的工具有下面几种来源：
 
 ## trash
 
-`trash` 删除的东西会进入系统的回收站：Linux 上是 freedesktop 规范的回收站，macOS 上是废纸篓，Windows 上是回收站。如果要找回，从系统的回收站里还原即可。用 `/undo` 撤销那一轮不会把删除的东西放回来。
+`trash` 删除的东西会进入系统的回收站：Linux 上是 freedesktop 规范的回收站，macOS 上是废纸篓，Windows 上是回收站。如果要找回，从系统的回收站里还原即可。用 `/undo` 撤回那一轮不会把删除的东西放回来。
 
 ## show
 

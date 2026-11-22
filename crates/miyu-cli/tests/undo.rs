@@ -63,7 +63,7 @@ async fn undo_and_restore_leave_the_file_as_she_left_it() {
     assert_eq!(undone.code, 0, "{}", undone.err);
     assert_eq!(
         undone.out,
-        "已撤销「改一下」这一轮\n提示：发送下一句之前，可以运行 'miyu restore' 恢复\n"
+        "已撤回「改一下」这一轮\n提示：发送下一句之前，可以运行 'miyu restore' 恢复\n"
     );
     assert_eq!(undone.err, "", "结果走标准输出");
     assert_eq!(
@@ -87,7 +87,7 @@ async fn with_nothing_left_to_undo_it_says_so() {
     let again = home.undo(&undo(Direction::Undo)).await;
     assert_eq!(again.code, 1);
     assert_eq!(again.out, "");
-    assert_eq!(again.err, "miyu: 没有可撤销的回合\n");
+    assert_eq!(again.err, "miyu: 没有可撤回的回合\n");
 }
 
 #[tokio::test]
@@ -127,7 +127,7 @@ async fn a_given_session_is_the_one_undone() {
         })
         .await;
     assert!(
-        undone.out.starts_with("已撤销「改一下」这一轮\n"),
+        undone.out.starts_with("已撤回「改一下」这一轮\n"),
         "{}",
         undone.out
     );

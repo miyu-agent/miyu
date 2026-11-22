@@ -1838,9 +1838,9 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `not_running` | 没有进行中的回合。 | No turn in progress. |
 | `turn_running` | 回合进行中。 | A turn is in progress. |
 | `unknown_turn` | 回合不存在。 | Turn not found. |
-| `nothing_to_unrevert` | 没有可恢复的撤销。 | Nothing to restore. |
-| `restoring` | 正在撤销或恢复。 | Undo or restore in progress. |
-| `nothing_to_revert` | 没有可撤销的回合。 | Nothing to undo. |
+| `nothing_to_unrevert` | 没有可恢复的撤回。 | Nothing to restore. |
+| `restoring` | 正在撤回或恢复。 | Undo or restore in progress. |
+| `nothing_to_revert` | 没有可撤回的回合。 | Nothing to undo. |
 | `nothing_to_compact` | 没有可压缩的内容。 | Nothing to compact. |
 | `nothing_to_clear` | 上下文为空。 | Context is empty. |
 | `unknown_job` | 任务不存在或已结束。 | Job not found or finished. |

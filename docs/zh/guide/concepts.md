@@ -91,7 +91,7 @@ Miyu 的功能是以软件包为单位安装的：工具、技能、人格、界
 | 安装 Miyu | [安装、升级、卸载](install.md) |
 | 接入一家模型供应商 | [模型](models.md) |
 | 在终端界面、网页界面里使用 | [终端](heads/tui.md)、[网页](heads/web.md) |
-| 管理会话：接着聊、换目录、撤销、导出 | [会话](sessions.md) |
+| 管理会话：接着聊、换目录、撤回、导出 | [会话](sessions.md) |
 | 控制 AI 能做什么 | [权限和沙盒](permissions.md)、[安全](security.md) |
 | 更换 AI 的性格、开关功能 | [人格和预设](personas-presets.md) |
 | 增加工具、技能、MCP 服务 | [扩展 Miyu](extending.md)、[软件包](packages.md) |

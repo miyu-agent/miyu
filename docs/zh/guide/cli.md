@@ -11,9 +11,9 @@
 | 用途 | 命令 | 做什么 |
 |---|---|---|
 | 对话 | [`ask`](#miyu-ask) | 说一句话，输出 AI 的回答 |
-| | [`undo`](#miyu-undo)（别名 `rewind`） | 撤销最后一轮 |
-| | [`restore`](#miyu-restore) | 恢复刚刚撤销的那一轮 |
-| | [`redo`](#miyu-redo) | 撤销最后一轮，用原来的话或者换一句话重新来一次 |
+| | [`undo`](#miyu-undo)（别名 `rewind`） | 撤回最后一轮 |
+| | [`restore`](#miyu-restore) | 恢复刚刚撤回的那一轮 |
+| | [`redo`](#miyu-redo) | 撤回最后一轮，用原来的话或者换一句话重新来一次 |
 | | [`compact`](#miyu-compact) | 把上下文压缩成摘要 |
 | | [`recap`](#miyu-recap) | 让 AI 写一段回顾 |
 | 会话 | [`rename`](#miyu-rename) | 修改会话的名字 |
@@ -172,7 +172,7 @@ miyu ask --format jsonl --file 改动.diff "审查这些改动"
 miyu undo [-s <编号>]
 ```
 
-`miyu undo` 撤销会话的最后一轮，只回退对话，不会把文件改回去。这个命令也可以写成 `miyu rewind`。
+`miyu undo` 撤回会话的最后一轮，只回退对话，不会把文件改回去。这个命令也可以写成 `miyu rewind`。
 
 | 参数 | 做什么 |
 |---|---|
@@ -184,7 +184,7 @@ miyu undo [-s <编号>]
 miyu undo
 ```
 
-如果请求被拒绝（例如 `没有可撤销的回合`），退出码是 `1`。见 [会话](sessions.md#撤销恢复重做)。
+如果请求被拒绝（例如 `没有可撤回的回合`），退出码是 `1`。见 [会话](sessions.md#撤回恢复重做)。
 
 ## miyu restore
 
@@ -192,7 +192,7 @@ miyu undo
 miyu restore [-s <编号>]
 ```
 
-`miyu restore` 恢复刚刚撤销的那一轮，需要在发送下一句话之前使用。参数和 `miyu undo` 相同。
+`miyu restore` 恢复刚刚撤回的那一轮，需要在发送下一句话之前使用。参数和 `miyu undo` 相同。
 
 例如：
 
@@ -200,7 +200,7 @@ miyu restore [-s <编号>]
 miyu restore
 ```
 
-如果没有可以恢复的内容，会报错 `没有可恢复的撤销`，退出码是 `1`。
+如果没有可以恢复的内容，会报错 `没有可恢复的撤回`，退出码是 `1`。
 
 ## miyu redo
 
@@ -208,7 +208,7 @@ miyu restore
 miyu redo [-s <编号>] [<话>]
 ```
 
-`miyu redo` 撤销最后一轮，把你说的那句话重新发送一次；如果写了新的话，就换成新的话。参数和 `miyu undo` 相同，回答的输出方式和 `miyu ask` 一样。
+`miyu redo` 撤回最后一轮，把你说的那句话重新发送一次；如果写了新的话，就换成新的话。参数和 `miyu undo` 相同，回答的输出方式和 `miyu ask` 一样。
 
 例如：
 

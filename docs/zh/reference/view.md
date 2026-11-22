@@ -13,7 +13,7 @@
 | `view.add {session, entry, after}` | 新的一条条目，排在 `after` 那一条的后面（`null` 表示排在最前面） |
 | `view.update {session, entry}` | 一条条目换成新的内容（状态变了）；位置也变了时带 `after` |
 | `view.append {session, id, text}` | 正在写的回复、思考的文字，或者正在写参数的工具的 `args`：新的文字接在后面 |
-| `view.hidden {session, ids, hidden}` | 撤销、恢复时：把这几条藏起来，或者重新显示出来 |
+| `view.hidden {session, ids, hidden}` | 撤回、恢复时：把这几条藏起来，或者重新显示出来 |
 | `view.remove {session, id}` | 拿掉一条条目（打断时丢掉的半截内容、一轮结束时还没有压缩完的压缩） |
 | `view.status {session, status}` | 会话状态变了：推送整份状态 |
 | `resync {session, stream: "view"}` | 连接掉了队：需要重新订阅 |
@@ -22,7 +22,7 @@
 
 ## 条目
 
-每一条条目是一个对象，共有的字段是：`id`、`kind`、`turn`（属于哪一轮）、`hidden`（是否被撤销藏起来了）、`at`（开始的时刻）。
+每一条条目是一个对象，共有的字段是：`id`、`kind`、`turn`（属于哪一轮）、`hidden`（是否被撤回藏起来了）、`at`（开始的时刻）。
 
 **编号**按日志里的位置计算，翻页和订阅算出来的编号相同：`m<序号>` 是一条消息，`b<seen>.<块号>` 是回复里的一块，`g…` 是时间线的一段，`c<序号>` 是一次压缩，`e<序号>` 是一轮的收尾和旁白，`s<序号>.<第几张>` 是 AI 发出去的图，`x<序号>.<第几个>` 是只在视图流里出现的旁白。
 
@@ -53,7 +53,7 @@
 | `compaction` | `trigger`（`auto`、`manual`、`overflow`）、`state`（`running`、`done`、`failed`）、`written`、`expected`、`prepared`、`before`、`after`、`took_ms`、`usage`、`instructions`、`truncated`（摘要请求太长、截掉了最老的几组时，这一项是截掉的组数，最早的那一段没有进入摘要；没有截过时不写）；摘要原文用 `view.detail` 获取 |
 | `cleared` | 上下文被清空了 |
 | `paused` | 自动压缩暂停了：`reason`、`failures` |
-| `reverted` | 撤销了几轮：`turns`、`said`、`jobs` |
+| `reverted` | 撤回了几轮：`turns`、`said`、`jobs` |
 | `job` | 一件后台任务结束了：`job`、`job_kind`、`title`、`mark`（`done`、`failed`、`stopped`）、`report`、`command`、`output`（`{blob, chars}`）、`exit_code`、`signal`、`took_ms`、`nested`（后台命令的脚本调用过工具时才有，和 `tool` 的相同） |
 | `lines` | 被监视的后台命令输出了一批行（`job.lines`）：`job`、`title`、`command`、`text`（这一批的全文，最多 4000 个字，截断过的中间有一行写明省略了多少）、`lines`（有几行）、`omitted`（截掉了几个字）。这不表示任务结束，`jobs` 里那一行仍然在运行 |
 | `answered` | 一组提问得到了回答：`questions`、`answers`、`by` |

@@ -67,7 +67,7 @@
 
 这个方法搜索这一间记忆以前的对话：人开始的每一轮是一段，按照关键词和意思查找。
 
-**参数**：`query`（必须填写）、`limit`（1 到 500，默认 10）。**回应**：`{"turns": [{"session", "turn", "at", "text"}…]}`：`text` 是人说的话、一个空行，再加上 AI 最后的回答。已经撤销的轮和已经删除的会话不在结果里。
+**参数**：`query`（必须填写）、`limit`（1 到 500，默认 10）。**回应**：`{"turns": [{"session", "turn", "at", "text"}…]}`：`text` 是人说的话、一个空行，再加上 AI 最后的回答。已经撤回的轮和已经删除的会话不在结果里。
 
 ## `memory.remember`、`memory.update`、`memory.forget`、`memory.restore`
 

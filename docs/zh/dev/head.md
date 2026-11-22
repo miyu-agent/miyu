@@ -218,9 +218,9 @@ AI 回答时，核心会推送下面这些消息：
 
 画出回答时要注意以下几点：
 
-- 按 `id` 保存条目。`view.add` 表示新的一条，排在 `after` 指定的那一条后面（`null` 表示排在最前面）；`view.update` 表示整条替换，如果带了 `after`，说明这一条挪了位置；`view.append` 表示把文字接在那一条的 `text`（工具条目是 `args`）后面；`view.hidden` 用于撤销、恢复，把几条藏起来或者重新显示；`view.remove` 表示删掉一条。
+- 按 `id` 保存条目。`view.add` 表示新的一条，排在 `after` 指定的那一条后面（`null` 表示排在最前面）；`view.update` 表示整条替换，如果带了 `after`，说明这一条挪了位置；`view.append` 表示把文字接在那一条的 `text`（工具条目是 `args`）后面；`view.hidden` 用于撤回、恢复，把几条藏起来或者重新显示；`view.remove` 表示删掉一条。
 - 同一条可能先收到 `add` 再收到 `update`，`update` 里的文字可能已经包含了没有单独 `append` 过的部分。所以要按整条的文字来画，不要只拼接增量。例子里记录了每一条已经输出到第几个字，只输出多出来的部分。
-- `kind` 有这几种：`user`（人说的话）、`reply`（回答正文，是 Markdown 原文，由头负责渲染）、`media`（AI 发出的图片）、`group`（时间线里的一段）、`thought`（一步思考）、`tool`（一步工具调用）、`end`（一轮的结束）、`notice`（旁白，例如压缩、撤销、换模型，具体是哪一种要看 `what`）。
+- `kind` 有这几种：`user`（人说的话）、`reply`（回答正文，是 Markdown 原文，由头负责渲染）、`media`（AI 发出的图片）、`group`（时间线里的一段）、`thought`（一步思考）、`tool`（一步工具调用）、`end`（一轮的结束）、`notice`（旁白，例如压缩、撤回、换模型，具体是哪一种要看 `what`）。
 - `open: true` 表示这一条还在写。工具运行时的 `progress`（最新一行进度）和 `retitle_failed` 旁白只在视图流里推送，翻页或者重新订阅时拿不到。
 - 一轮结束时，核心会加一条 `kind` 为 `end` 的条目，同时会话状态 `status.state` 回到 `idle`。
 
@@ -266,7 +266,7 @@ AI 要做受保护的操作时（例如开放权限下的危险命令、只读�
 | 带附件发送 | 先用 `blob.put` 上传（用 `path` 交本机文件，或者用 `data` 交 base64 内容），再把回应里的 `blob`、`name`、`media_type` 放进 `session.send` 的 `attachments` |
 | 打断 | `session.interrupt`，必须写 `queued`，它决定排队中的话怎么处理：`send`（打断后马上发送）、`return`（退回来）、`keep`（继续留着） |
 | 退回一条排队中的话 | `session.withdraw` |
-| 撤销、恢复 | `session.revert`、`session.unrevert` |
+| 撤回、恢复 | `session.revert`、`session.unrevert` |
 | 重做最后一轮 | `session.redo` |
 | 压缩、清空上下文 | `session.compact`、`session.clear` |
 | 更换人格、预设、模型、多模态模型、思考强度 | `session.configure` |

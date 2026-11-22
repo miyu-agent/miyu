@@ -16,7 +16,7 @@
 | [`session.usage_parts`](#sessionusage_parts) | 查看累计用量，按上下文的各块分开统计 |
 | [`session.quota`](#sessionquota) | 查看模型供应商的额度：每个窗口用了多少、什么时候重置，或者账户余额 |
 | [`session.answer`](#sessionanswer) | 回答一次确认请求，或者一组提问 |
-| [`session.revert`、`session.unrevert`](#sessionrevertsessionunrevert) | 撤销；恢复最近一次撤销 |
+| [`session.revert`、`session.unrevert`](#sessionrevertsessionunrevert) | 撤回；恢复最近一次撤回 |
 | [`session.redo`](#sessionredo) | 重做最后一轮 |
 | [`session.compact`](#sessioncompact) | 手动压缩上下文 |
 | [`session.clear`](#sessionclear) | 清空上下文 |
@@ -41,7 +41,7 @@
 ## 通用
 
 - **会话编号**是 UUIDv7 字符串，按创建的先后排序。
-- **谁能调用**：人可以调用下面所有的方法；对于关在沙盒里的场所会话（群聊、陌生人的私聊），人只能以只读的方式查看，读取类的几个方法仍然可用，其他方法返回 `session_not_found`（见[场所](venues.md)「主人看场所会话」）。扩展只能对它看得到的会话调用这些方法（平台桥只看得到它自己平台上的场所会话，其他扩展看得到本机的会话和你自己的私聊），并且还需要相应的能力：读取类的方法（`session.list`、`session.recap`、`session.tools`、`session.context`、`session.usage_parts`、`session.quota`、`session.prompts`、`view.page`、`view.detail`）需要 `events.read`；创建会话、发送消息、打断、撤销、恢复、重做、压缩、清空、更换配置、分叉、修改标题、重起标题需要 `sessions.drive`；`session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`、`session.delete`、`session.export`、`session.import` 只给人调用（`local_only`）。扩展发送消息时如果不带 `as`，这句话记成扩展自己说的（`harness`，名字是软件包的编号）；扩展不能填写 `from`。
+- **谁能调用**：人可以调用下面所有的方法；对于关在沙盒里的场所会话（群聊、陌生人的私聊），人只能以只读的方式查看，读取类的几个方法仍然可用，其他方法返回 `session_not_found`（见[场所](venues.md)「主人看场所会话」）。扩展只能对它看得到的会话调用这些方法（平台桥只看得到它自己平台上的场所会话，其他扩展看得到本机的会话和你自己的私聊），并且还需要相应的能力：读取类的方法（`session.list`、`session.recap`、`session.tools`、`session.context`、`session.usage_parts`、`session.quota`、`session.prompts`、`view.page`、`view.detail`）需要 `events.read`；创建会话、发送消息、打断、撤回、恢复、重做、压缩、清空、更换配置、分叉、修改标题、重起标题需要 `sessions.drive`；`session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`、`session.delete`、`session.export`、`session.import` 只给人调用（`local_only`）。扩展发送消息时如果不带 `as`，这句话记成扩展自己说的（`harness`，名字是软件包的编号）；扩展不能填写 `from`。
 - **没有在运行的会话会先载入**：核心重启过，或者会话闲置太久已经退下，这样的会话在第一次用到时会自动载入，头不需要处理。
 - **变化通过推送告知**：多数方法只返回 `{}` 或者几条事件的序号，变化本身以事件的形式推送给订阅了这个会话的头（见 [推送](pushes.md)）。
 - **查找会话时的出错**：每个带 `session` 参数的方法都可能返回下面这些错误：
@@ -54,7 +54,7 @@
 | `session_unavailable` | 会话此刻无法读取：读取日志时发生了读写错误，日志本身没有损坏，过一会儿再试即可 |
 | `session_stopped` | 会话已经停止（写不进日志，或者出了 bug）；再发送一次会重新载入会话 |
 | `session_sealed` | 会话已经封存（分叉时写了 `seal_after`，并且已经运行满了这么多轮），修改对话的命令不再接受 |
-| `restoring` | 撤销还没有完成时收到了命令（正常情况下不会遇到） |
+| `restoring` | 撤回还没有完成时收到了命令（正常情况下不会遇到） |
 
 ## `session.create`
 
@@ -316,9 +316,9 @@ AI 做需要确认的事情时会停下来询问（推送 `tool.approval_request
 
 ## `session.revert`、`session.unrevert`
 
-撤销会把最后一轮（或者从某一轮开始的所有轮）从对话里撤掉，AI 改过的文件保持原样。恢复会撤回最近一次撤销。撤掉的几轮里有人敲 `/loop` 当场开的那一轮时，那个循环也一起删掉；恢复这一次撤销时照原样放回（编号、下一次的时刻都不变）。撤销以后又开启过新的一轮、压缩过，或者核心重启过，就不会再放回，要再敲一次 `/loop`。
+撤回会把最后一轮（或者从某一轮开始的所有轮）从对话里撤掉，AI 改过的文件保持原样。恢复会把最近一次撤回的内容放回来。撤掉的几轮里有人敲 `/loop` 当场开的那一轮时，那个循环也一起删掉；恢复这一次撤回时照原样放回（编号、下一次的时刻都不变）。撤回以后又开启过新的一轮、压缩过，或者核心重启过，就不会再放回，要再敲一次 `/loop`。
 
-**参数**：`session`；`revert` 另外可以填写 `turn`：从哪一轮开始撤销（值是那一轮 `turn.started` 的序号），不填写时撤销最后一轮。
+**参数**：`session`；`revert` 另外可以填写 `turn`：从哪一轮开始撤回（值是那一轮 `turn.started` 的序号），不填写时撤回最后一轮。
 
 **回应**
 
@@ -326,10 +326,10 @@ AI 做需要确认的事情时会停下来询问（推送 `tool.approval_request
 |---|---|
 | `events` | 这一次追加的事件：`turn.reverted` 或 `turn.unreverted` |
 | `cwd` | 会话的工作目录（真实位置） |
-| `turns` | 撤销（或者恢复）了几轮 |
+| `turns` | 撤回（或者恢复）了几轮 |
 | `said` | 第一轮里人说的那句话的第一行；那句话是人敲的斜杠命令发出的（带 `command`，例如人敲 `/loop` 当场开的那一轮），写人敲的那一行。没有时不写 |
-| `compactions`、`clears` | 只有撤销才有：撤掉的几轮里有几次压缩、几次清空，上下文已经回到它们之前的状态；值为 0 时不写 |
-| `jobs` | 只有撤销才有：停掉的后台任务 `[{"job", "what", "title"}]`；没有时不写 |
+| `compactions`、`clears` | 只有撤回才有：撤掉的几轮里有几次压缩、几次清空，上下文已经回到它们之前的状态；值为 0 时不写 |
+| `jobs` | 只有撤回才有：停掉的后台任务 `[{"job", "what", "title"}]`；没有时不写 |
 
 **出错**
 
@@ -339,7 +339,7 @@ AI 做需要确认的事情时会停下来询问（推送 `tool.approval_request
 | `turn_running` | 有回合正在进行，需要先打断 |
 | `nothing_to_revert` | 一轮都没有 |
 | `unknown_turn` | 那一轮不在现在的历史里 |
-| `nothing_to_unrevert` | 没有可以恢复的撤销：没有撤销过，或者撤销以后又开启过新的一轮、压缩过 |
+| `nothing_to_unrevert` | 没有可以恢复的撤回：没有撤回过，或者撤回以后又开启过新的一轮、压缩过 |
 
 ## `session.redo`
 
@@ -347,7 +347,7 @@ AI 做需要确认的事情时会停下来询问（推送 `tool.approval_request
 
 **参数**：`session`；`text`：替换开启这一轮的那句话的文字（不填写时使用原来的文字）；`attachments`：替换那句话的附件（不填写时使用原来的附件，空数组表示不要附件）；`prefix`：和 `session.send` 的「前缀要变」相同。
 
-**回应**：和撤销相同，`events` 的最后是重新发送的每一句话的序号。新的一轮的 `turn.started` 里，`cause` 是这一条请求的 `id`。
+**回应**：和撤回相同，`events` 的最后是重新发送的每一句话的序号。新的一轮的 `turn.started` 里，`cause` 是这一条请求的 `id`。
 
 **出错**：`not_redoable`（最后一轮不是由人说话开启的，或者一轮都没有）、`turn_running`、`empty_message`（替换以后一块内容都不剩），附件相关的错误和 `session.send` 相同，以及 `prefix_changing`。
 
@@ -500,7 +500,7 @@ AI 做需要确认的事情时会停下来询问（推送 `tool.approval_request
 | `text` | 第一行，去掉前后的空白，最多 100 个字；由斜杠命令模板展开的话，显示你输入的那一行（取法和 `session.list` 的 `preview` 相同）。只有图片、文件时是空的 |
 
 - **只列出你本人在这里说的话**：本机说的话、平台桥替你从平台私聊里转进来的话都会列出；子会话或父会话发来的话、平台上其他人说的话（群里识别出是你的也算平台上的人）、注入的话（例如长期目标的续轮）、其他 harness 或定时任务提交进来的话都不列出。
-- **按有效历史列出**：撤销掉的话不列出，恢复的话放回来，重做（编辑上一句）的话按最后那一版列出，撤回的排队消息不列出；压缩过的话仍然列出。
+- **按有效历史列出**：撤回掉的话不列出，恢复的话放回来，重做（编辑上一句）的话按最后那一版列出，撤回的排队消息不列出；压缩过的话仍然列出。
 - **分叉出来的会话**只列出它自己的话：分叉前的那部分话在父会话里列出。
 
 **出错**：`bad_params`；`session_not_found`；`session_broken`。
@@ -557,7 +557,7 @@ AI 做需要确认的事情时会停下来询问（推送 `tool.approval_request
 
 - **先核对，再写入磁盘**：包里每一项的哈希、日志的序号都对得上才会写入；有一项不对，整个包都不接受，数据目录里不会多出任何东西。
 - **编号保持原样**：如果已经有同样编号、内容也一样的会话，就当作已经导入过，跳过它；内容不一样时拒绝导入。同一个包再导入一次，什么都不会变化。
-- **存档**：可以翻看、搜索、导出，AI 搜索以前的对话时也能搜到；但是不能接着对话，发送消息、撤销、压缩这些修改会话的操作会返回 `archived`。包里标明是存档的会话，导入以后仍然是存档。不是存档的会话导入以后就能接着对话。
+- **存档**：可以翻看、搜索、导出，AI 搜索以前的对话时也能搜到；但是不能接着对话，发送消息、撤回、压缩这些修改会话的操作会返回 `archived`。包里标明是存档的会话，导入以后仍然是存档。不是存档的会话导入以后就能接着对话。
 - 导入完马上就能搜索到，不需要先打开一次。会话列表会推送一条变化。
 
 **出错**：`bad_params`；`unknown_attachment`（`blob` 不存在）；`bad_bundle`（不是会话包）；`bundle_mismatch`（包已损坏）；`bundle_too_new`（包是更新的版本导出的）；`session_exists`（已经有同样编号、内容不一样的会话，`data.session` 说明是哪一个）。

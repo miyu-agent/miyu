@@ -35,7 +35,7 @@
 | `command.ran` | 人使用了一个斜杠命令，这条事件不进入 AI 的上下文。 |
 | `turn.started`、`turn.ended` | 一轮开始、一轮结束；`turn.ended` 的 `reason` 是 `completed`、`interrupted`、`error`、`restarted` 等。 |
 | `turn.joined` | 已经记下的几条消息并入了正在运行的这一轮。 |
-| `turn.reverted`、`turn.unreverted` | 撤销了几轮；恢复了最近一次撤销。 |
+| `turn.reverted`、`turn.unreverted` | 撤回了几轮；恢复了最近一次撤回。 |
 | `message.user` | 人（或者其他会话、其他 agent、平台上的人）说的一句话；人用 `!` 输入的命令多带一个 `shell: true`，`blocks` 是那一行命令。由人敲的斜杠命令发出的那一句多带 `command`：`{"name", "text"}`，`name` 是命令名，`text` 是人敲的那一行（去掉了前后空白），例如 `{"name": "loop", "text": "/loop 5m 看看 CI"}`；命令模板、MCP 提示词展开的那一句，人敲 `/loop` 当场开的第一轮（`by` 是 `schedule`），`/goal <目标>` 当场开的第一轮（`by` 是模块 `goal`）都带，之后到点的、续轮不带。头显示 `text`，`blocks` 是发给 AI 的内容；`command` 不进给 AI 的请求。只给出路径的附件（见 `session.send` 的第 3 条）在 `blocks` 里写成 `{"type": "path", "name", "path", "size"?}`：它没有 blob，`size` 是头填写的字节数。 |
 | `message.withdrawn` | 正在排队、AI 还没有听到的消息被退回了。 |
 | `message.assistant` | 模型一次响应的完整内容：正文、思考、工具调用和供应商侧工具（`hosted_tool`：供应商自己运行的一次工具，例如供应商那边的搜索，核心不执行它，只如实记下；带 `call_id`、`name`、`args`，有结果的另外带 `outcome`：`{"text", "failed"?, "cut"?}`，`cut` 表示结果超过 64 KiB，后面的部分被截掉了）。如果模型在回答后面编出了下一轮（一行开头是一个角色词，后面模仿这一次请求里人这一边的标签或者群消息的那一行），这一段在写入磁盘以前就被截掉了，这里只有截剩下的内容；流式推送的 `model.delta` 是原样的内容，应当以这一条事件为准。 |
@@ -60,7 +60,7 @@
 | `venue.recalled`、`venue.delivered` | 平台上有人撤回了一条消息；AI 的话发送到了平台上。 |
 | `ext.<前缀>.<名字>` | 扩展自己记录的事件（通过 `events.append` 记录；前缀是清单里的 `prefix`，没有写的时候是软件包编号）。 |
 
-撤销、压缩、清空都不会删除事件：头需要根据有效的历史自己计算该绘制什么，或者直接使用视图流。
+撤回、压缩、清空都不会删除事件：头需要根据有效的历史自己计算该绘制什么，或者直接使用视图流。
 
 ## 瞬时事件
 
