@@ -1608,6 +1608,10 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sLW21"><span class="n">LW-21</span>大的异步任务挪到堆上<span class="st">…</span></a></li>
         <li><a class="step review" href="#sLW23"><span class="n">LW-23</span>SQLite 不留小块内存池<span class="st">…</span></a></li>
         <li><a class="step review" href="#sLW25"><span class="n">LW-25</span>线程分配区的顶当场还<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW26"><span class="n">LW-26</span>给人看的字共用一份<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW28"><span class="n">LW-28</span>看门的拆成 miyu-watchdog、共用一个<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW29"><span class="n">LW-29</span>每个连接的页缓存闲时都放<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW30"><span class="n">LW-30</span>录清单的剧本照真实使用补全<span class="st">…</span></a></li>
         <li><a class="step review" href="#sMO1"><span class="n">MO-1</span>macOS 排函数：页探针进仓库<span class="st">…</span></a></li>
         <li><a class="step review" href="#sMO2"><span class="n">MO-2</span>macOS 排函数：量尺带探针录清单<span class="st">…</span></a></li>
         <li><a class="step review" href="#sMO3"><span class="n">MO-3</span>macOS 排函数：发行包照起点清单排<span class="st">…</span></a></li>
@@ -63109,6 +63113,208 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/LW-25-线程分配区的留存.md</code>；蓝图 <code>heap.md</code>「线程缓存」第 9 条。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW26" aria-labelledby="h-sLW26">
+  <div class="sheet-head"><h2 id="h-sLW26"><span class="no">LW-26</span>给人看的字取出来共用一份，不再整份拷贝</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">核心里给人看的字（一千三百来句）读好以后放在架子上，谁要就整份拷一份。数了一遍：终端界面连上一次，核心整份拷贝 52 到 53 遍，每遍 2617 次分配、约 229 kB，占这一阵核心全部分配次数的三成多。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-store/src/human.rs、human/shelf.rs</span><span class="dir-note">LW-26</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>读好的三样（工具的样子、说法、配置那一格）各放进一个 Arc，拷一份只是计数加一</li>
+              <li>并进软件包的配置项的字另放一小份，查的时候先看它，不改读好的那一份</li>
+              <li>对外的接口不变，核心、命令行、经 miyu-client 用它的头都不用改</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">读好的给人看的字大家共用一份，要改的另放</span><span class="rl">internal/blueprint/store/resources.md 第 9 条</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-26</dd></div>
+        <div><dt>名称</dt><dd>给人看的字取出来共用一份，不再整份拷贝</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-23</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-26</dd></div>
+        <div><dt>验收</dt><dd>连上一次核心的分配 384062 → 245398 次</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>连上一次核心的分配 384062 → 245398 次</span></li>
+        <li><span class="ok">✓</span><span>连上到出现输入框核心用的 CPU 30.0–31.6 → 21.0–23.8 ms</span></li>
+        <li><span class="ok">✓</span><span>三个状态的内存没有变化；核心安静以后再连上一个界面时少约 0.3 MB</span></li>
+        <li><span class="ok">✓</span><span>门禁全过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-26-给人看的字共用一份.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW28" aria-labelledby="h-sLW28">
+  <div class="sheet-head"><h2 id="h-sLW28"><span class="no">LW-28</span>看门的拆成单独的小程序，长住的子进程共用一个</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">核心被强行结束时，它起的进程靠「看门的」跟着走。看门的一直借沙盒的助手来做，进程列表里是一串 miyu-sandbox lifeline；扩展、命令型 MCP 服务、语义模型小程序又是一个配一个：装了十个扩展加语义模型的机器上常驻十一个，合计约 1.6 MB。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-watchdog　crates/miyu-sandbox/src/lifeline/unix/shared.rs　xtask/src/dist.rs</span><span class="dir-note">LW-28</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>新的小程序 miyu-watchdog：不带参数，读标准输入到结尾就杀掉自己所在的整个组；沙盒的助手去掉 lifeline</li>
+              <li>长住的子进程共用一个看门进程和一个组；它被杀了的，下一次拉起时补一个进同一个组</li>
+              <li>命令仍然一条一个看门的、一个组</li>
+              <li>Unix 的发行包多一个程序；Windows 上核心进作业对象，不带它</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">看门的是 miyu-watchdog；长住的子进程共用一个，命令一条一个</span><span class="rl">internal/blueprint/core.md「子进程随核心退出」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-28</dd></div>
+        <div><dt>名称</dt><dd>看门的拆成单独的小程序，长住的子进程共用一个</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-23</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-28</dd></div>
+        <div><dt>验收</dt><dd>10 个扩展时看门进程 10 → 1 个，合计 PSS 1579 → 286 kB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>10 个扩展时看门进程 10 → 1 个，合计 PSS 1579 → 286 kB</span></li>
+        <li><span class="ok">✓</span><span>强行杀掉核心，20 个进程连同看门进程 3 秒内全没；先杀看门进程再重启一个扩展再杀核心，同样全没</span></li>
+        <li><span class="ok">✓</span><span>一条命令的看门进程 CPU 没有变差</span></li>
+        <li><span class="ok">✓</span><span>门禁全过，三平台 CI 通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-28-看门进程拆出并共用.md</code>；蓝图 <code>core.md</code>、<code>sandbox.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW29" aria-labelledby="h-sLW29">
+  <div class="sheet-head"><h2 id="h-sLW29"><span class="no">LW-29</span>库安静下来，每个连接的页缓存都放掉</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">SQLite 的每个连接默认最多留 2 MB 页缓存。LW-15 只放合过的库的：检索库（记忆、回合、知识库）只读的那个连接、这一阵只读没写的库都不在里面。在一台实际使用的机器上，核心开着十来个索引库，大的有十几到一百多 MB，线程分配区里有一块驻留 20 MB。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-store/src/sqlite/idle.rs、recall/conn.rs　crates/miyu-core/src/wal.rs</span><span class="dir-note">LW-29</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>只读的连接也登记，拿它读一次和提交一次一样叫一声</li>
+              <li>库安静下来时对每个登记着的连接都放一遍页缓存；正被用着的跳过，下一遍再放</li>
+              <li>只要有连接放过，接着把空出来的页还给系统</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">库安静下来时每个连接的页缓存都不常驻</span><span class="rl">internal/blueprint/store.md「怎么走」第 14 条第 7 款</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-29</dd></div>
+        <div><dt>名称</dt><dd>库安静下来，每个连接的页缓存都放掉</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-23</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-29</dd></div>
+        <div><dt>验收</dt><dd>沙箱里挂一个 30 MB 文字的只读知识库、搜 40 次、安静 20 秒：只读连接留着的页缓存 2054 → 5 kB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>沙箱里挂一个 30 MB 文字的只读知识库、搜 40 次、安静 20 秒：只读连接留着的页缓存 2054 → 5 kB</span></li>
+        <li><span class="ok">✓</span><span>核心的匿名内存 5.6–6.4 → 2.1–2.7 MB（各三遍）</span></li>
+        <li><span class="ok">✓</span><span>搜的用时没有变化</span></li>
+        <li><span class="ok">✓</span><span>门禁全过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-29-读连接闲时放掉页缓存.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW30" aria-labelledby="h-sLW30">
+  <div class="sheet-head"><h2 id="h-sLW30"><span class="no">LW-30</span>录排函数清单的剧本照真实使用补九段</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">清单是照「一个人用终端界面」的剧本录的。在一台实际使用的机器上，核心的代码 25 MB 里常驻 17.9 MB：排好的前 8 MB 几乎全在，后面没排的 17 MB 里有六成常驻。扩展、MCP、定时任务、知识库、多会话这些流程走到的函数散在后面，用到一个就带进一片相邻的页。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-perf/src/order/heavy.rs、order/heavy/　crates/miyu-perf/src/fake/embed.rs</span><span class="dir-note">LW-30</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>在抽记忆那一段后面再录九段，接在清单最后，前面几段不变：扩展和平台桥、多会话、网页界面那样的头、知识库、记忆整理、MCP、定时任务、抓网页、软件包</li>
+              <li>扩展、平台桥、命令型 MCP 服务由量尺自己扮；网页代理、搜索、OAuth、语义模型是量尺里只听本机回环的假服务</li>
+              <li>画 mermaid、会话闲三分钟退下再载入不录</li>
+              <li>产品代码不改</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">录清单的剧本要走到扩展、MCP、知识库这些真实使用的流程，新加的段排在清单最后</span><span class="rl">internal/blueprint/perf.md「排函数」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-30</dd></div>
+        <div><dt>名称</dt><dd>录排函数清单的剧本照真实使用补九段</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-23</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-30</dd></div>
+        <div><dt>验收</dt><dd>沙箱里的重场景：核心常驻的代码 20.4 → 16.4 MB，其中清单外约 12.5 → 4.0 MB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>沙箱里的重场景：核心常驻的代码 20.4 → 16.4 MB，其中清单外约 12.5 → 4.0 MB</span></li>
+        <li><span class="ok">✓</span><span>不装扩展的三个状态都在 ±0.2 MB 以内</span></li>
+        <li><span class="ok">✓</span><span>打包多花约 80 秒；清单 8.17 → 12.74 MB</span></li>
+        <li><span class="ok">✓</span><span>门禁全过，三平台 CI 通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-30-录清单的剧本照真实使用补全.md</code>；蓝图 <code>perf.md</code>「排函数」。</li>
       </ul>
     </div>
   </div>
