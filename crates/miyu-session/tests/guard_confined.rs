@@ -179,11 +179,12 @@ async fn a_group_session_only_touches_its_workspace_and_runs_no_command() {
     assert_eq!(text(&all[4]), shipped("no-commands.txt"));
 }
 
-/// 数据根在关起来的会话里读写都拒（施工 SEC-5）。权限策略照工具报的路径判，不看是哪件工具：内置的文件工具、声明了 `paths`
-/// 的扩展工具（`miyu-endpoint` 的 `provide/declared.rs` 把声明换成同样的路径）走的是这同一条。完全放开下本人的会话读写得了
-/// 数据根（施工 RO-3），关起来的会话不行：密钥文件、自带的技能、别的场所的工作区，一处都碰不到。
+/// 数据根在关起来的会话里读得到、写不进，凭据那几处连读都拒（施工 RD-1，2026-11-23 项目主人定；施工 SEC-5 起原来读写都拒，
+/// 别的包放在数据根里的图她读不到，一轮反复重试到上下文爆掉）。权限策略照工具报的路径判，不看是哪件工具：内置的文件工具、
+/// 声明了 `paths` 的扩展工具（`miyu-endpoint` 的 `provide/declared.rs` 把声明换成同样的路径）走的是这同一条。包住凭据的目录
+/// （数据根本身、`etc/`）也拒：从那里往下搜会走进去。
 #[tokio::test]
-async fn a_confined_session_touches_nothing_in_the_data_root() {
+async fn a_confined_session_reads_the_data_root_but_not_its_secrets() {
     let home = Home::new();
     let kit = Kit::new();
     let root = home.root.path();
@@ -193,28 +194,36 @@ async fn a_confined_session_touches_nothing_in_the_data_root() {
         std::fs::write(&file, "x").expect("写得进");
         file.to_string_lossy().into_owned()
     };
-    let secrets = inside("etc/private/secrets.toml");
+    let picture = inside("var/lib/antigravity/media/x.jpg");
     let skill = inside("root/skills/notes/SKILL.md");
+    let secrets = inside("etc/private/secrets.toml");
+    let token = inside("run/token");
     let script = Script::new([
-        one("read", &secrets),
-        one("write", &secrets),
+        one("read", &picture),
         one("read", &skill),
         one("write", &skill),
+        one("read", &secrets),
+        one("write", &secrets),
+        one("read", &token),
+        one("read", &root.join("etc").to_string_lossy()),
+        one("read", &root.to_string_lossy()),
         Play::Says("好。"),
     ]);
     let handle = session(&home, &script, &kit, "qq:group:1", false).await;
     let log = turn(&home, &handle).await;
-    assert!(kit.read.calls().is_empty(), "数据根里的读一律拒：{log:#?}");
+    assert_eq!(kit.read.calls().len(), 2, "数据根别处读得到：{log:#?}");
     assert!(kit.write.calls().is_empty(), "数据根里的写一律拒");
     let statuses: Vec<ToolStatus> = results(&log)
         .iter()
         .map(|result| result.status.clone())
         .collect();
-    assert_eq!(statuses, vec![ToolStatus::Denied; 4]);
+    let mut expected = vec![ToolStatus::Ok, ToolStatus::Ok];
+    expected.extend(vec![ToolStatus::Denied; 6]);
+    assert_eq!(statuses, expected);
 }
 
-/// 场所会话的默认工作区自己就在数据根里（`root/workspace/…`）：它只碰得到自己那一处，数据根别处、别的场所的工作区照样拒
-/// （施工 SEC-5）。
+/// 场所会话的默认工作区自己就在数据根里（`root/workspace/…`）：它只写得进自己那一处；别的场所的工作区读得到、写不进（施工
+/// RD-1 起同数据根别处），凭据照样拒（施工 SEC-5）。
 #[tokio::test]
 async fn a_confined_session_working_inside_the_data_root_stays_in_its_own_place() {
     let home = Home::new();
@@ -249,14 +258,14 @@ async fn a_confined_session_working_inside_the_data_root_stays_in_its_own_place(
         [
             ToolStatus::Ok,
             ToolStatus::Ok,
-            ToolStatus::Denied,
+            ToolStatus::Ok,
             ToolStatus::Denied,
             ToolStatus::Denied,
             ToolStatus::Denied
         ],
         "{log:#?}"
     );
-    assert_eq!((kit.read.calls().len(), kit.write.calls().len()), (1, 1));
+    assert_eq!((kit.read.calls().len(), kit.write.calls().len()), (2, 1));
 }
 
 #[tokio::test]

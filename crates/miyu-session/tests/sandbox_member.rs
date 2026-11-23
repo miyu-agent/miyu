@@ -1,6 +1,6 @@
 //! 关起来的场所会话的沙盒（施工 MB-1；群、陌生人的私聊这些外部身份的会话）：真的经助手跑 `shell`。
-//! 读得到自己的工作区和程序跑起来要的系统文件（证书、域名解析、`/etc/hosts`、`git`）；读不到别的工作区、数据根、
-//! 跑核心的那个用户的家目录、机器上别处的文件、`/etc` 里名单外的、`/opt`；参数里写了在沙盒外跑的（A16 起守卫不看它，施工
+//! 读得到自己的工作区、程序跑起来要的系统文件（证书、域名解析、`/etc/hosts`、`git`）和数据根（施工 RD-1：别的包存在数据根里
+//! 的图）；读不到数据根里的凭据（`etc/private/`、`run/`）、跑核心的那个用户的家目录、机器上别处的文件、`/etc` 里名单外的、`/opt`；参数里写了在沙盒外跑的（A16 起守卫不看它，施工
 //! LV-1）照样关着。关不住读的平台（Windows）上不跑，回 `no-commands`。没有收紧手段的机器到此为止。
 
 use std::path::{Path, PathBuf};
@@ -100,7 +100,8 @@ async fn run(home: &Home, kind: Kind, cwd: &Path, command: &str) -> ToolResult {
     .await
 }
 
-/// 场地：这种会话的工作目录，里面放好 `own.txt`；别的工作区、数据根、跑核心的用户的家目录、别处各放一份要藏住的。
+/// 场地：这种会话的工作目录，里面放好 `own.txt`；数据根里的凭据那两处、跑核心的用户的家目录、别处各放一份要藏住的。数据根里
+/// 包的图 `var/lib/pkg/media/x.jpg` 放好，读得到（施工 RD-1）。
 fn site(home: &Home, kind: Kind) -> (PathBuf, Vec<PathBuf>) {
     let cwd = match kind {
         Kind::Group => home.scratch.0.join("work"),
@@ -113,9 +114,12 @@ fn site(home: &Home, kind: Kind) -> (PathBuf, Vec<PathBuf>) {
         std::fs::write(&file, "secret\n").expect("写得进");
         file
     };
+    let media = home.root.path().join("var/lib/pkg/media");
+    std::fs::create_dir_all(&media).expect("建得了目录");
+    std::fs::write(media.join("x.jpg"), "picture\n").expect("写得进");
     let hidden = vec![
-        secret(home.root.path().join("home").join("bob").join("workspace")),
-        secret(home.root.path().join("system")),
+        secret(home.root.path().join("etc").join("private")),
+        secret(home.root.path().join("run")),
         secret(home.home.clone()),
         secret(home.scratch.0.join("elsewhere")),
     ];
@@ -156,6 +160,14 @@ async fn a_confined_command_reads_only_its_own_places_and_what_programs_need() {
         )
         .await;
         assert_eq!(result.status, ToolStatus::Ok, "{kind:?}：{}", text(&result));
+        // 数据根里别的包存的图读得到（施工 RD-1）。
+        let picture = home.root.path().join("var/lib/pkg/media/x.jpg");
+        let result = run(&home, kind, &cwd, &format!("cat '{}'", picture.display())).await;
+        assert_eq!(
+            (result.status.clone(), text(&result).trim().to_string()),
+            (ToolStatus::Ok, "picture".to_string()),
+            "{kind:?}"
+        );
         let mut denied: Vec<String> = hidden
             .iter()
             .map(|file| file.display().to_string())

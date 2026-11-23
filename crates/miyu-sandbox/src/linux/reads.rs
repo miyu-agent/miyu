@@ -39,6 +39,35 @@ pub(super) fn plan_seen<S: Seen>(hidden: &[PathBuf], seen: &mut S) -> Result<Vec
     below_seen(root, &real, seen)
 }
 
+/// 写了 `read` 的规格（关起来的会话）读怎么放（施工 RD-1）：名单里的每一条整个放读，里面有藏起来的照 [`plan`] 的走法一级级绕开，
+/// 就是藏起来的那一条的不放。落在藏起来的里面的照放：Landlock 只放行，同 macOS 越深的越算数（`macos/profile.rs`）。
+///
+/// # Errors
+///
+/// 通向藏起来的那条路上的目录读不了：说是哪一个、系统的原话。
+pub(super) fn listed(read: &[PathBuf], hidden: &[PathBuf]) -> Result<Vec<PathBuf>, String> {
+    let real = reals(hidden)?;
+    let real = super::aliases::with_table(&real, super::aliases::table().as_deref());
+    let mut out = Vec::new();
+    for path in read {
+        let at = fs::canonicalize(path).unwrap_or_else(|_| path.clone());
+        if real.contains(&at) {
+            continue;
+        }
+        let inner: Vec<PathBuf> = real
+            .iter()
+            .filter(|hidden| hidden.starts_with(&at))
+            .cloned()
+            .collect();
+        if inner.is_empty() {
+            out.push(path.clone());
+        } else {
+            out.extend(below_seen(&at, &inner, &mut ())?);
+        }
+    }
+    Ok(out)
+}
+
 /// 一级级走时目录里的一样怎么放的（施工 V-47）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum Step {

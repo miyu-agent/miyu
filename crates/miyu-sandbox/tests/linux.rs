@@ -343,3 +343,49 @@ fn a_read_list_keeps_everything_else_unreadable() {
         denied(&spec, &script);
     }
 }
+
+/// 名单里一条包住藏起来的（施工 RD-1，外部身份的会话读得到数据根、读不到凭据）：名单里别处照常读，藏起来的读不到、列不出，
+/// 它旁边的照常读。macOS 上同一条在 `macos/reads.rs`。
+#[test]
+fn a_read_list_still_hides_what_is_hidden_inside_it() {
+    let _serial = serial();
+    let work = Dir::new();
+    let data = Dir::new();
+    let media = data.path().join("var/lib/pkg/media");
+    std::fs::create_dir_all(&media).expect("建得了目录");
+    std::fs::write(media.join("x.jpg"), b"picture\n").expect("写得进");
+    let private = data.path().join("etc/private");
+    std::fs::create_dir_all(&private).expect("建得了目录");
+    std::fs::write(private.join("secrets.toml"), b"key\n").expect("写得进");
+    std::fs::write(data.path().join("etc/config.toml"), b"config\n").expect("写得进");
+    let read: Vec<std::path::PathBuf> = [
+        "/usr", "/bin", "/sbin", "/lib", "/lib32", "/lib64", "/etc", "/dev",
+    ]
+    .iter()
+    .map(std::path::PathBuf::from)
+    .chain([work.path().to_path_buf(), data.path().to_path_buf()])
+    .collect();
+    let spec = Spec {
+        write: vec![work.path().to_path_buf()],
+        hidden: vec![private.clone(), data.path().join("run")],
+        read: Some(read),
+        reveal: Vec::new(),
+        sockets: Vec::new(),
+    };
+    if refused_without_landlock(&spec) {
+        return;
+    }
+    let root = data.path().display();
+    let out = run(
+        &spec,
+        &format!("cat '{root}/var/lib/pkg/media/x.jpg' '{root}/etc/config.toml'"),
+    );
+    assert_eq!(out.status.code(), Some(0), "{out:?}");
+    assert_eq!(text(&out.stdout), "picture\nconfig\n");
+    for script in [
+        format!("cat '{}/secrets.toml'", private.display()),
+        format!("ls '{}'", private.display()),
+    ] {
+        denied(&spec, &script);
+    }
+}

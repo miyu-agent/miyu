@@ -99,9 +99,12 @@ async fn a_confined_command_reads_and_writes_only_its_workspace() {
                 (OsString::from("HOME"), work.clone().into_os_string()),
             ]
         );
+        // 数据根整个读得到，凭据那两处藏着（施工 RD-1）。
+        let root = std::fs::canonicalize(home.root.path()).expect("在");
+        assert!(read.contains(&root), "{read:?}");
         assert_eq!(
             sandboxed.spec.hidden,
-            [std::fs::canonicalize(home.root.path()).expect("在")]
+            [root.join("etc").join("private"), root.join("run")]
         );
     }
 }

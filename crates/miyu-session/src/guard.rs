@@ -326,6 +326,10 @@ impl Guard {
             places,
             boundary,
         } = self.bounds(&call.cwd, dirs);
+        let secrets = match &self.confined {
+            Some(_) => self.secrets(),
+            None => Vec::new(),
+        };
         for target in targets {
             let real = match self.real(&cwd, &target) {
                 Ok(real) => real,
@@ -339,10 +343,12 @@ impl Guard {
             };
             checked.push(real.clone());
             let zone = boundary.zone(&real);
-            // 只碰得到自己工作区的：工作区、加进来的目录以外的一律拒（施工 5-12），读放开只读的技能文件夹除外（施工 X-10 上）。
+            // 只碰得到自己工作区的：工作区、加进来的目录以外的一律拒（施工 5-12），读放开只读的技能文件夹除外（施工 X-10 上）；
+            // 读数据根除外，凭据那几处照旧拒（施工 RD-1）。
             if let Some(confined) = &self.confined
                 && !confined.inside(&real, &workspace, &places.dirs)
                 && !(zone == Zone::Shelf && !target.write)
+                && !(zone == Zone::DataRoot && !target.write && confined.clear(&real, &secrets))
             {
                 return deny(confined.outside(&target.path));
             }
@@ -367,6 +373,13 @@ impl Guard {
             tracing::warn!(target: crate::TARGET, error = %error, "default workspace not made");
             place.of(cwd, home, &root)
         })
+    }
+
+    /// 数据根里凭据那几处的真实位置（施工 RD-1，[`DataRoot::secret_places`]）：只碰得到自己工作区的会话读不到。
+    fn secrets(&self) -> Vec<PathBuf> {
+        let root =
+            std::fs::canonicalize(&self.data_root).unwrap_or_else(|_| self.data_root.clone());
+        DataRoot::at(root).secret_places().to_vec()
     }
 
     /// 要碰的这一条换成真实的位置。碰的是这一条本身的（`trash`，施工 4-9 再补二）：最后一段不跟链接，和工具碰的是

@@ -1,4 +1,5 @@
-//! 关起来的会话的沙盒（施工 5-12 下，`11-权限与沙盒.md` 第三节「外部身份」）：读写都只限这一轮的工作区和加进来的目录，
+//! 关起来的会话的沙盒（施工 5-12 下，`11-权限与沙盒.md` 第三节「外部身份」）：写只限这一轮的工作区和加进来的目录；读还加上
+//! 数据根，只藏凭据那几处（施工 RD-1，2026-11-23 项目主人定，[`miyu_store::root::DataRoot::secret_places`]）；
 //! 程序跑起来必需的系统那一片（施工 MB-1 收窄，[`system_reads`]）、`/dev`、自己的 `/proc/self` 只读；临时目录用工作区里的 `.tmp`（系统的临时目录里有别的程序的文件），家目录照工作目录（施工 MB-1）；
 //! 工具链的缓存不给。不看级别：完全放开也照样关进来，只读的照样能读工作区、哪儿都不能写。
 //!
@@ -12,6 +13,7 @@ use std::path::{Path, PathBuf};
 use miyu_fs::resolve;
 use miyu_kernel::event::Permission;
 use miyu_sandbox::{Sandboxed, Spec};
+use miyu_store::root::DataRoot;
 
 use super::{Sandbox, real};
 use crate::guard::{Effective, effective};
@@ -104,7 +106,7 @@ impl Sandbox {
     ///
     /// 名单里只放命令改不了的路径（施工 AU-001、AU-002）：助手照路径打开、顺着链接走，名单里一条被命令换成了链接，下一条命令
     /// 就能读写链接指到的地方。工作目录、加进来的目录宽的（[`DefaultWorkspace::broad`](crate::default_workspace::DefaultWorkspace::broad)）
-    /// 不给：只准读的名单里一条包住数据根，数据根就藏不住（写了 `read` 的规格不另挖 `hidden`）。
+    /// 不给：只准读的名单里一条包住家目录，家目录就整个读得到。数据根整个在名单里，凭据那几处照 `hidden` 挖掉（施工 RD-1）。
     ///
     /// # Errors
     ///
@@ -132,7 +134,11 @@ impl Sandbox {
         let home_dir = cwd;
         let mut read = system_reads();
         read.extend(own.iter().cloned());
-        // 开着的技能文件夹只读（施工 X-10 中）：在名单里就读得到，比藏起来的数据根深，压得过它。
+        // 数据根整个读得到，凭据那几处藏着（施工 RD-1）：别的包存在数据根里的图、文件她要读。
+        let root = real(&self.data_root);
+        let hidden = DataRoot::at(root.clone()).secret_places().to_vec();
+        read.push(root);
+        // 开着的技能文件夹只读（施工 X-10 中）：在数据根里，名单里照旧列上（数据根以外的也有）。
         read.extend(self.shelves.iter().map(|dir| real(dir)));
         let write = match effective(permission) {
             Effective::ReadOnly => Vec::new(),
@@ -142,7 +148,7 @@ impl Sandbox {
             helper: self.helper.clone(),
             spec: Spec {
                 write,
-                hidden: vec![real(&self.data_root)],
+                hidden,
                 read: Some(read),
                 reveal: Vec::new(),
                 sockets: Vec::new(),

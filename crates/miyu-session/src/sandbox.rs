@@ -20,7 +20,7 @@ pub(crate) struct Sandbox {
     helper: PathBuf,
     home: Option<PathBuf>,
     data_root: PathBuf,
-    /// 关起来的会话（施工 5-12 下）：读写都只限工作区（`confined.rs`），数据根藏着。
+    /// 关起来的会话（施工 5-12 下）：写只限工作区，读另加数据根、藏着凭据那几处（`confined.rs`，施工 RD-1）。
     confined: bool,
     /// 开着的技能文件夹（施工 X-10 中）：关起来的会话加进只准读的名单。
     shelves: Vec<PathBuf>,

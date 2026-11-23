@@ -46,6 +46,12 @@ impl DataRoot {
         self.private().join(crate::logins::FILE)
     }
 
+    /// 外部身份的会话读不到的几处（施工 RD-1，2026-11-23 项目主人定：数据根照读，只藏凭据）：凭据 `etc/private/`（密钥、访问
+    /// 密码和设备令牌的哈希），运行时 `run/`（本机令牌 `run/token`、套接字、锁，包的运行时目录）。读到本机令牌就能冒充本人。
+    pub fn secret_places(&self) -> [PathBuf; 2] {
+        [self.private(), self.run()]
+    }
+
     /// 卸掉的出厂包的记号放在哪：`etc/removed/`，一个包一个空文件 `<编号>`（施工 F-5 上，像 systemd 的 mask）。
     pub fn removed_markers(&self) -> PathBuf {
         self.etc().join(super::REMOVED)

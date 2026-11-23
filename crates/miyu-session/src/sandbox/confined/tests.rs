@@ -1,5 +1,5 @@
 //! 关起来的会话的规格（施工 AU-001、AU-002）：命令能改的 `.tmp` 不进名单，宽的工作目录退回默认工作区、宽的加进来的目录不给，
-//! 数据根怎么都不落进只准读、能写的名单。
+//! 数据根别处怎么都不落进只准读、能写的名单；只准读的名单里数据根本身在、凭据那几处藏着（施工 RD-1）。
 
 use std::path::{Path, PathBuf};
 
@@ -84,6 +84,41 @@ fn reaches(paths: &[PathBuf], scratch: &Scratch) -> Option<PathBuf> {
         .cloned()
 }
 
+/// 只准读的名单去掉数据根本身那一条（施工 RD-1 起整个读得到，凭据照 `hidden` 藏），再照 [`reaches`] 查。
+fn reaches_beyond_root(read: &[PathBuf], scratch: &Scratch) -> Option<PathBuf> {
+    let rest: Vec<PathBuf> = read
+        .iter()
+        .filter(|path| **path != scratch.root)
+        .cloned()
+        .collect();
+    reaches(&rest, scratch)
+}
+
+/// 外部身份的会话读得到数据根（施工 RD-1，2026-11-23 项目主人定）：只准读的名单里有数据根，凭据 `etc/private/`、运行时 `run/`
+/// （本机令牌）藏着。修以前名单里没有数据根，别的包放在数据根里的图她读不到。
+#[test]
+fn the_data_root_is_readable_but_its_secrets_are_hidden() {
+    let scratch = Scratch::new("secrets");
+    let workspace = scratch.workspace().join("venue");
+    std::fs::create_dir_all(&workspace).expect("建得了工作区");
+    let sandboxed = scratch
+        .sandbox(&session())
+        .for_call(&full(), &workspace.to_string_lossy(), &[])
+        .expect("写得成")
+        .expect("进沙盒");
+    let read = sandboxed.spec.read.clone().expect("写了只准读的名单");
+    assert!(read.contains(&scratch.root), "{read:?}");
+    assert_eq!(
+        sandboxed.spec.hidden,
+        vec![scratch.root.join("etc/private"), scratch.root.join("run")]
+    );
+    let media = scratch.root.join("var/lib/pkg/media/x.jpg");
+    assert!(!sandboxed.spec.hides(&media), "包放在数据根里的图读得到");
+    for secret in ["etc/private/secrets.toml", "run/token"] {
+        assert!(sandboxed.spec.hides(&scratch.root.join(secret)), "{secret}");
+    }
+}
+
 /// 修以前：命令把工作区里的 `.tmp` 删了换成指向数据根的链接，下一条命令的规格把 `.tmp` 原样放进只准读、能写的名单，助手顺着
 /// 链接打开，数据根整个能读能写（审计 #001）。现在 `.tmp` 不单独进名单（它在工作区里，工作区已经在），链接换回真的目录。
 #[cfg(unix)]
@@ -103,7 +138,11 @@ fn a_tmp_link_planted_by_a_command_never_opens_the_data_root() {
         .read
         .clone()
         .expect("关起来的写了只准读的名单");
-    assert_eq!(reaches(&read, &scratch), None, "只准读的名单碰到了数据根");
+    assert_eq!(
+        reaches_beyond_root(&read, &scratch),
+        None,
+        "只准读的名单碰到了数据根"
+    );
     assert_eq!(
         reaches(&sandboxed.spec.write, &scratch),
         None,
@@ -160,7 +199,7 @@ fn a_broad_working_directory_falls_back_to_the_default_workspace() {
             .expect("进沙盒");
         let read = sandboxed.spec.read.clone().expect("写了只准读的名单");
         assert_eq!(
-            reaches(&read, &scratch),
+            reaches_beyond_root(&read, &scratch),
             None,
             "{cwd}：只准读的碰到了数据根"
         );

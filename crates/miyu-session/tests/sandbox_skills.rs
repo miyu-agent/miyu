@@ -1,5 +1,6 @@
 //! 沙盒里的命令读得到开着的技能文件夹（施工 X-10 中，`internal/blueprint/skills.md`「技能」第 3 条）：本机的会话只读时什么都不藏
-//! （施工 RO-2），技能文件夹、旁边的数据根都读得到、写不进；外部身份的会话照旧藏数据根，技能文件夹加进只准读的名单。Unix 上
+//! （施工 RO-2），技能文件夹、旁边的数据根都读得到、写不进；外部身份的会话施工 RD-1 起也读得到数据根，只藏凭据 `etc/private/`、
+//! `run/`，技能文件夹照旧加进只准读的名单。Unix 上
 //! 有收紧手段的，真的经助手跑 `shell`。自己放的脚本（施工 X-12 下）也在数据根里，经真助手跑照样读得到它自己；往交图的目录里写的图（施工 X-35）经真助手照样写得进、交得上来。脚本是链接、指到数据根里自己装的包的（施工
 //! X-37），照它指到的那一个文件放开，照样跑得起来。
 
@@ -358,10 +359,11 @@ async fn a_script_in_the_sandbox_writes_only_its_own_state() {
     assert_eq!(std::fs::read_to_string(kept).expect("留着"), "kept\n");
 }
 
-/// 场所会话的状态目录照场所分（施工 X-44 补）：经真助手跑，A 群的脚本读不到 B 群的那一格；同一个群开了新会话，写的还在。
+/// 场所会话的状态目录照场所分（施工 X-44 补）：经真助手跑，A 群的脚本写自己那一格，同一个群开了新会话，写的还在。B 群的那一格
+/// 读得到（2026-11-23 项目主人定，施工 RD-1 取代 X-44 补的「A 群读不到 B 群的」：外部身份的会话读得到数据根，只藏凭据），写不进。
 #[cfg(unix)]
 #[tokio::test]
-async fn a_group_s_script_cannot_read_another_group_s_state() {
+async fn a_group_s_script_reads_but_cannot_write_another_group_s_state() {
     let helper = miyu_sandbox::testkit::built_helper();
     let probe = miyu_sandbox::probe(&helper, std::time::Duration::from_secs(60)).expect("探得了");
     if probe.mechanisms.is_empty() {
@@ -375,15 +377,26 @@ async fn a_group_s_script_cannot_read_another_group_s_state() {
     std::fs::create_dir_all(&group2).expect("建得了");
     std::fs::write(group2.join("n"), "secret\n").expect("写得进");
     let text = format!(
-        "#!/bin/sh\n# Description: Keep.\ncat \"$MIYU_SCRIPT_STATE_DIR/n\" 2>/dev/null || echo new\necho kept > \"$MIYU_SCRIPT_STATE_DIR/n\"\ncat '{}' 2>/dev/null || echo blocked-other\n",
+        "#!/bin/sh\n# Description: Keep.\ncat \"$MIYU_SCRIPT_STATE_DIR/n\" 2>/dev/null || echo new\necho kept > \"$MIYU_SCRIPT_STATE_DIR/n\"\ncat '{0}' 2>/dev/null || echo blocked-read\n(echo x >> '{0}') 2>/dev/null && echo wrote-other || echo blocked-other\n",
         group2.join("n").display()
     );
     let group1 = ("qq:group:1", false);
     let (status, first) = keep(&home, &helper, &text, group1).await;
     assert_eq!(status, ToolStatus::Ok, "{first}");
-    assert_eq!(first, "new\nblocked-other\n", "B 群的那一格读不到");
+    assert_eq!(
+        first, "new\nsecret\nblocked-other\n",
+        "B 群的那一格读得到、写不进（施工 RD-1）"
+    );
     let (_, again) = keep(&home, &helper, &text, group1).await;
-    assert_eq!(again, "kept\nblocked-other\n", "同一个群的新会话接得上");
+    assert_eq!(
+        again, "kept\nsecret\nblocked-other\n",
+        "同一个群的新会话接得上"
+    );
+    assert_eq!(
+        std::fs::read_to_string(group2.join("n")).expect("在"),
+        "secret\n",
+        "B 群的那一格没被改"
+    );
     let kept = home
         .root
         .path()

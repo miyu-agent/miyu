@@ -1,6 +1,6 @@
 //! 只碰得到自己工作区的会话（施工 5-12，`11-权限与沙盒.md` 第三节「外部身份」，2026-10-11 项目主人定）：`session.created`
 //! 写了 `confined` 的场所会话（群会话、陌生人的私聊）。文件类工具要碰的每一条都要在这一轮的工作区（或者加进来的目录）里，越过的一律
-//! 拒（这些会话没人能确认，A11）；命令要等沙盒把读也关进工作区（5-12 下）才放开，现在一律拒。主人本人的会话不限。
+//! 拒（这些会话没人能确认，A11）；读数据根除外，凭据那几处和包住它们的目录照旧拒（施工 RD-1，2026-11-23 项目主人定，同沙盒）；命令要等沙盒把读也关进工作区（5-12 下）才放开，现在一律拒。主人本人的会话不限。
 //!
 //! 拒绝时的两句不进策略快照，这种会话造、载入时读（同 `not-in-venue.txt`）。
 
@@ -38,6 +38,13 @@ impl Confined {
     /// 真实位置 `real` 碰得到：在工作区 `workspace`、加进来的目录 `dirs` 里（都是真实位置）。
     pub(crate) fn inside(&self, real: &Path, workspace: &Path, dirs: &[PathBuf]) -> bool {
         within(real, workspace) || dirs.iter().any(|dir| within(real, dir))
+    }
+
+    /// 读真实位置 `real` 碰不到凭据（施工 RD-1）：不在 `secrets` 哪一处里面，也不包住哪一处（从包住的目录往下搜会走进去）。
+    pub(crate) fn clear(&self, real: &Path, secrets: &[PathBuf]) -> bool {
+        !secrets
+            .iter()
+            .any(|secret| within(real, secret) || within(secret, real))
     }
 
     /// `path` 在工作区外面。说法是 `core/permissions/outside-workspace`。
