@@ -1,10 +1,13 @@
 //! 读好的字放一阵（施工 V-30）：文件没变只读一遍；改了、多出一份、多一个包的照旧重读；拷出来的资源目录共用；放掉以后
-//! 再读；读不懂的不放。
+//! 再读；读不懂的不放。取出来的几份共用读好的字，谁往里添的只改自己那一份（施工 LW-26）。
 
 use std::cell::Cell;
 use std::fs;
 use std::path::Path;
+use std::sync::Arc;
 
+use miyu_config::Words;
+use miyu_config::package::enabled::KEY as ENABLED;
 use miyu_kernel::event::Said;
 
 use crate::human::{Human, places};
@@ -124,4 +127,68 @@ fn languages_without_their_own_words_do_not_each_hold_a_copy() {
         held <= 3,
         "200 种没有自己那份字的语言，架子上放了 {held} 份"
     );
+}
+
+/// 一个提供模型驱动的扩展包（同 `miyu-core` 设置的测试）。
+const GRAVITY: &str = "[package]\nprotocol = [1, 1]\nname = { en = \"Gravity\" }\n\n[command]\nname = \"gravity\"\nprogram = \"miyu-nothing\"\nabout = { en = \"G\" }\n\n[process]\ncapabilities = [\"model.driver\"]\n\n[[driver]]\nname = \"ag\"\n";
+
+/// 施工 LW-26：从架子上取的几份共用读好的字，不拷。并进软件包的字（`with_packages`）不改读好的那一份；补读一个目录（`with_dir`）
+/// 的自己拷一份再补。放着的那一份、别人拿着的那几份都不变。
+#[test]
+fn copies_share_the_words_and_what_one_adds_stays_its_own() {
+    let scratch = Scratch::new();
+    let core = scratch.path().join("core").join("human");
+    fs::create_dir_all(&core).unwrap();
+    let driver = miyu_config::driver_ref::PROVIDER_DRIVER;
+    let body = serde_json::json!({
+        "said": {"hello": "hi"},
+        "config": {"items": {
+            driver: {"name": "Driver", "description": "", "options": {"openai": "OpenAI"}},
+            ENABLED: {"name": "On", "description": ""},
+        }},
+    });
+    fs::write(core.join("en.json"), body.to_string()).unwrap();
+    let root = ResourceRoot::at(scratch.path());
+    let first = Human::load(&root, "en").unwrap();
+    let second = Human::load(&root, "en").unwrap();
+    assert!(Arc::ptr_eq(&first.tools, &second.tools));
+    assert!(Arc::ptr_eq(&first.said, &second.said));
+    assert!(Arc::ptr_eq(&first.config, &second.config));
+
+    let manifest = miyu_config::package::read(GRAVITY).unwrap();
+    let packaged = second.with_packages([("gravity", &manifest)], "en");
+    assert_eq!(packaged.group("gravity"), Some("Gravity"));
+    let options = |words: &Human| words.item(driver).map(|item| item.options.clone());
+    assert_eq!(
+        options(&packaged).and_then(|options| options.get("gravity/ag").cloned()),
+        Some("Gravity: ag".to_string())
+    );
+    let enabled = miyu_config::key::fill(ENABLED, &["gravity"]);
+    assert_eq!(
+        packaged.item(&enabled).map(|item| item.name.as_str()),
+        Some("On")
+    );
+    assert!(
+        Arc::ptr_eq(&first.config, &packaged.config),
+        "并进软件包的字不拷读好的那一份"
+    );
+    let again = Human::load(&root, "en").unwrap();
+    for words in [&first, &again] {
+        assert_eq!(words.group("gravity"), None);
+        assert_eq!(options(words).map(|options| options.len()), Some(1));
+    }
+
+    write_words(&scratch.path().join("own"), "en", "own");
+    let own = again
+        .clone()
+        .with_dir(&scratch.path().join("own"), "software/own", "en")
+        .unwrap();
+    assert_eq!(
+        own.say(&Said::new("software/own/hello")).as_deref(),
+        Some("own")
+    );
+    assert!(!Arc::ptr_eq(&own.said, &first.said), "补读的自己拷一份");
+    let shelved = Human::load(&root, "en").unwrap();
+    assert_eq!(shelved.say(&Said::new("software/own/hello")), None);
+    assert!(Arc::ptr_eq(&shelved.said, &first.said));
 }

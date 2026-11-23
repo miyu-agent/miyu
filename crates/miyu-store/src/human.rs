@@ -49,12 +49,25 @@ pub use shelf::Shelf;
 pub const FALLBACK: &str = "en";
 
 /// 读好的一种语言的字。
+///
+/// 读好的三样各放在一个 `Arc` 里（施工 LW-26）：拷一份只是多数一次，不拷里面的字。架子上放着的一份交出去、要字的
+/// 各处拿着用都共用读好的那一份；要往里补的（[`Human::with_dir`]、读的时候）用 `Arc::make_mut`，只有共用着的时候才拷。
+/// 并进软件包的配置项的字（[`Human::with_packages`]）不改读好的那一份，另放在 `packaged` 里、查的时候先看它。
 #[derive(Debug, Clone, Default)]
 pub struct Human {
-    tools: BTreeMap<String, Face>,
-    /// 每一句共用：拷一份 [`Human`]（放着的那份交出去时、补单数时）不重新解模板（施工 V-30）。
-    said: BTreeMap<String, Arc<Phrase>>,
-    config: ConfigWords,
+    tools: Arc<BTreeMap<String, Face>>,
+    /// 每一句也共用：补单数时 `X/one` 和 `X` 是同一句，不重新解模板（施工 V-30）。
+    said: Arc<BTreeMap<String, Arc<Phrase>>>,
+    config: Arc<ConfigWords>,
+    /// [`Human::with_packages`] 并进来的项和组，盖在 `config` 上面：查一项、一组先看这里。
+    packaged: Packaged,
+}
+
+/// 并进软件包的配置项的字（[`Human::with_packages`]）：每次连上都并一遍，只放并进来的那几项和改了选项的那两项，不拷读好的整份。
+#[derive(Debug, Clone, Default)]
+struct Packaged {
+    items: BTreeMap<String, ItemWords>,
+    groups: BTreeMap<String, String>,
 }
 
 /// 一句说法：原文和解好的模板。`human.get` 要交出原文，一个字不换（施工 W-1）。
@@ -147,14 +160,12 @@ impl Human {
     /// 英文，英文也没有的，那一处就没有字。
     ///
     /// 读好的放在资源目录的架子上（[`Shelf`]，施工 V-30）：再要同一种语言的，先看读过的那几份文件（连同当时没有的）
-    /// 长短、修改时刻变没变，没变的交回放着的那份的拷贝，不再读、不再解模板；变了的照旧重读（改了资源，核心不重启下一次
-    /// 就是新的）。[`ResourceRoot::forget_words`] 以后再读。
+    /// 长短、修改时刻变没变，没变的交回和放着的那份共用的一份（施工 LW-26，不拷里面的字），不再读、不再解模板；变了的照旧
+    /// 重读（改了资源，核心不重启下一次就是新的）。[`ResourceRoot::forget_words`] 以后再读。
     pub fn load(root: &ResourceRoot, language: &str) -> Result<Human, HumanError> {
         let places = places(root);
-        let held = root
-            .shelf
-            .get(language, &places, |language| Human::read(&places, language))?;
-        Ok(Human::clone(&held))
+        root.shelf
+            .get(language, &places, |language| Human::read(&places, language))
     }
 
     /// 照 `places` 的先后读 `language` 这一种，不看架子。
@@ -197,7 +208,9 @@ impl Human {
                 (!self.said.contains_key(&one)).then(|| (one, Arc::clone(phrase)))
             })
             .collect();
-        self.said.extend(missing);
+        if !missing.is_empty() {
+            Arc::make_mut(&mut self.said).extend(missing);
+        }
     }
 
     /// 读 `dir` 下 `human/` 里 `language` 那一份，没有就读英文那一份；说法的编号前面加上 `prefix`。
@@ -214,19 +227,29 @@ impl Human {
             why,
         };
         let parsed: File = serde_json::from_str(&text).map_err(|error| bad(error.to_string()))?;
+        let mut said = Vec::with_capacity(parsed.said.len());
         for (key, source) in parsed.said {
             let template =
                 Template::parse(&source).map_err(|error| bad(format!("{key}: {error}")))?;
-            self.said.insert(
+            said.push((
                 format!("{prefix}/{key}"),
                 Arc::new(Phrase { source, template }),
-            );
+            ));
         }
-        self.tools.extend(parsed.tools);
-        self.config.items.extend(parsed.config.items);
-        self.config.pages.extend(parsed.config.pages);
-        self.config.groups.extend(parsed.config.groups);
-        self.config
+        Arc::make_mut(&mut self.said).extend(said);
+        Arc::make_mut(&mut self.tools).extend(parsed.tools);
+        // 后读的盖掉先并进来的同名项、同名组，同原来都放在一处时一样。
+        for key in parsed.config.items.keys() {
+            self.packaged.items.remove(key);
+        }
+        for id in parsed.config.groups.keys() {
+            self.packaged.groups.remove(id);
+        }
+        let config = Arc::make_mut(&mut self.config);
+        config.items.extend(parsed.config.items);
+        config.pages.extend(parsed.config.pages);
+        config.groups.extend(parsed.config.groups);
+        config
             .group_descriptions
             .extend(parsed.config.group_descriptions);
         Ok(())
@@ -274,26 +297,25 @@ impl Human {
                 .find_map(|language| phrases.get(*language).cloned())
         };
         // 包的「启用」（施工 UX-1）：每个包一份，字照带占位的那一项。
-        let enabled = self.config.items.get(ENABLED).cloned();
+        let enabled = self.own_item(ENABLED).cloned();
         for (id, manifest) in packages {
             if let Some(name) = pick(&manifest.name) {
-                self.config.groups.insert(id.to_string(), name);
+                self.packaged.groups.insert(id.to_string(), name);
             }
             if let Some(words) = enabled.as_ref() {
-                self.config
+                self.packaged
                     .items
                     .insert(miyu_config::key::fill(ENABLED, &[id]), words.clone());
             }
             for setting in &manifest.settings {
                 let key = format!("{}.{}", manifest.prefix_of(id), setting.name);
                 let words = setting_words(setting, &key, &pick);
-                self.config.items.insert(key, words);
+                self.packaged.items.insert(key, words);
             }
             // 扩展的模型驱动（施工 MD-1）：下拉里写「包的名字：驱动名」，没有名字的照 `<包>/<驱动名>`。
-            if let Some(words) = self
-                .config
-                .items
-                .get_mut(miyu_config::driver_ref::PROVIDER_DRIVER)
+            if let Some(words) = (!manifest.drivers.is_empty())
+                .then(|| self.packaged_item(miyu_config::driver_ref::PROVIDER_DRIVER))
+                .flatten()
             {
                 for driver in &manifest.drivers {
                     let name = pick(&manifest.name).map_or_else(
@@ -304,10 +326,9 @@ impl Human {
                 }
             }
             // 扩展的搜索来源（施工 N-5）：下拉里的名字照清单。
-            if let Some(words) = self
-                .config
-                .items
-                .get_mut(miyu_config::package::SEARCH_SOURCE)
+            if let Some(words) = (!manifest.search.is_empty())
+                .then(|| self.packaged_item(miyu_config::package::SEARCH_SOURCE))
+                .flatten()
             {
                 for source in &manifest.search {
                     let name = pick(&source.name).unwrap_or_else(|| source.option(id));
@@ -318,6 +339,24 @@ impl Human {
         self
     }
 
+    /// 键 `key` 这一项的字：并进来的盖着读好的（不含「启用」的退路，那一条在 [`Words::item`]）。
+    fn own_item(&self, key: &str) -> Option<&ItemWords> {
+        self.packaged
+            .items
+            .get(key)
+            .or_else(|| self.config.items.get(key))
+    }
+
+    /// 要往键 `key` 这一项里添选项：并进来的那份里还没有的，先从读好的那份拷这一项过来（读好的那份大家共用，不改它）。读好的
+    /// 那份也没有这一项的是空的。
+    fn packaged_item(&mut self, key: &str) -> Option<&mut ItemWords> {
+        if !self.packaged.items.contains_key(key) {
+            let read = self.config.items.get(key)?.clone();
+            self.packaged.items.insert(key.to_string(), read);
+        }
+        self.packaged.items.get_mut(key)
+    }
+
     /// 设置页编号 `id` 那一页的名字；没有的是空的（施工 8-2，`config.schema`）。
     pub fn page(&self, id: &str) -> Option<&str> {
         self.config.pages.get(id).map(String::as_str)
@@ -325,7 +364,11 @@ impl Human {
 
     /// 设置页编号 `id` 那一组的名字；没有的是空的（施工 8-2，`config.schema`）。
     pub fn group(&self, id: &str) -> Option<&str> {
-        self.config.groups.get(id).map(String::as_str)
+        self.packaged
+            .groups
+            .get(id)
+            .or_else(|| self.config.groups.get(id))
+            .map(String::as_str)
     }
 
     /// 设置页编号 `id` 那一组的说明（施工 HZ-1，`config.schema` 那一组的 `description`）；没写的是空的。
@@ -344,8 +387,8 @@ impl Words for Human {
     /// 包的「启用」（施工 UX-1）没并进来的（卸掉了的出厂包不在装着的包里，`with_packages` 没给它拼）照带占位的那一项的字：
     /// 名字、说明人人一样。
     fn item(&self, key: &str) -> Option<&ItemWords> {
-        self.config.items.get(key).or_else(|| {
-            miyu_config::package::enabled::id_of(key).and_then(|_| self.config.items.get(ENABLED))
+        self.own_item(key).or_else(|| {
+            miyu_config::package::enabled::id_of(key).and_then(|_| self.own_item(ENABLED))
         })
     }
 

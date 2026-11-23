@@ -2,8 +2,8 @@
 //!
 //! 给人看的字只从资源目录读（内核那一份、`software/` 下每个出厂包一份）。原来每一处要字的都从头读：读几十份 JSON、每一句
 //! 解成模板、补单数，用完扔掉。头一连上，配置、给人看的字、软件包列表、人格、预设、订阅推的每一样各读一遍，一次冷启动读了
-//! 41 遍，占核心冷启动 CPU 的四成。现在读好的照语言放在 [`Shelf`] 里，[`Human::load`] 先看这里；放着的一份交出去是拷一份
-//! （每一句说法共用，不重新解）。
+//! 41 遍，占核心冷启动 CPU 的四成。现在读好的照语言放在 [`Shelf`] 里，[`Human::load`] 先看这里；放着的一份交出去是共用的
+//! 一份（施工 LW-26：[`Human`] 里的字都放在 `Arc` 里，拷一份只是多数一次；原来是整份拷贝，一次连上拷五十来遍）。
 //!
 //! 放着的什么时候不算数：读的时候记下每一处的这种语言、英文两份文件的长短和修改时刻（没有的记「没有」），连同有哪几处
 //! （[`Stamp`]）；再要的时候照样看一遍（几十次 `stat`、列一次 `software/`），有一样不同就重读。改了资源，核心不重启下一次
@@ -32,7 +32,7 @@ pub struct Shelf {
 
 /// 放着的一份和读它的时候那几份文件的样子。
 struct Held {
-    human: Arc<Human>,
+    human: Human,
     stamp: Stamp,
 }
 
@@ -78,15 +78,15 @@ impl Shelf {
         language: &str,
         places: &[(PathBuf, String)],
         read: impl FnOnce(&str) -> Result<Human, HumanError>,
-    ) -> Result<Arc<Human>, HumanError> {
+    ) -> Result<Human, HumanError> {
         let (language, stamp) = Stamp::of(places, language);
         let mut held = self.lock();
         if let Some(found) = held.get(language).filter(|found| found.stamp == stamp) {
-            return Ok(Arc::clone(&found.human));
+            return Ok(found.human.clone());
         }
-        let human = Arc::new(read(language)?);
+        let human = read(language)?;
         let kept = Held {
-            human: Arc::clone(&human),
+            human: human.clone(),
             stamp,
         };
         held.insert(language.to_string(), kept);
