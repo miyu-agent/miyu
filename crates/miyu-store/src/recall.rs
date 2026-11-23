@@ -75,7 +75,8 @@ pub struct RecallIndex {
     db: Arc<Mutex<Option<Connection>>>,
     /// 读的连接（施工 V-14）：WAL 里读不等写，回合开始找记忆不用等后台那一批写完、等它提交时顺手做的检查点（一次十几到二十几
     /// 毫秒）。用不了的是空的，这时找不到任何一条。
-    reader: Mutex<Option<Connection>>,
+    /// 登记给闲时放页缓存（施工 LW-29）：只读的连接不合，库安静下来时放掉它读进来的页。
+    reader: Arc<Mutex<Option<Connection>>>,
 }
 
 /// 一批里的一处改动（[`RecallIndex::apply`]）。

@@ -202,3 +202,67 @@ fn after_merging_lets_go_of_cached_pages_the_database_still_reads_and_writes() {
     assert!(done.failed.is_empty(), "{:?}", done.failed);
     with(&db, |conn| assert_eq!(count(conn), 410, "再合一遍数据都在"));
 }
+
+/// 只读的连接（施工 LW-29）：登记以后合的那一遍不合它（它是只读的），只放它的页缓存；放掉以后照常读得到。
+#[test]
+fn a_reader_is_not_merged_and_still_reads_after_its_pages_are_let_go() {
+    let scratch = Scratch::bare();
+    let (path, db) = kept(scratch.path());
+    with(&db, |conn| write(conn, 0..300));
+    let reader = Connection::open(&path).expect("开得了");
+    reader
+        .pragma_update(None, "query_only", true)
+        .expect("设得了");
+    let reader = keep_reader("test-reader", Mutex::new(Some(reader)));
+    with(&reader, |conn| {
+        assert_eq!(count(conn), 300, "读一遍，页进了缓存")
+    });
+    let done = checkpoint_all();
+    assert!(done.failed.is_empty(), "{:?}", done.failed);
+    assert!(done.shrunk >= 2, "写的、只读的都放了：{}", done.shrunk);
+    with(&reader, |conn| {
+        assert_eq!(count(conn), 300, "放掉以后照常读")
+    });
+    with(&db, |conn| {
+        write(conn, 300..310);
+        assert_eq!(count(conn), 310);
+    });
+    with(&reader, |conn| {
+        assert_eq!(count(conn), 310, "读得到后来写的")
+    });
+}
+
+/// 正被用着的连接不等（施工 LW-29）：放页缓存那一遍拿不到锁就跳过，不挡在那里。
+#[test]
+fn a_connection_in_use_is_skipped_not_waited_for() {
+    let scratch = Scratch::bare();
+    let (_, db) = kept(scratch.path());
+    with(&db, |conn| write(conn, 0..5));
+    let held = db.lock().unwrap_or_else(PoisonError::into_inner);
+    assert!(!Wal::shrink(&*db), "锁被拿着：跳过");
+    drop(held);
+    assert!(Wal::shrink(&*db), "放开以后放得了");
+    let empty: Mutex<Option<Connection>> = Mutex::new(None);
+    assert!(!Wal::shrink(&empty), "没开成的没有可放的");
+}
+
+/// 读了一次也等得到安静（施工 LW-29）：只读不写的那一阵过去以后，等着的一方照样醒来放页缓存。
+#[test]
+fn waiting_for_quiet_returns_after_a_read() {
+    let (done, got) = mpsc::channel();
+    let waiter = std::thread::spawn(move || {
+        wait_quiet(Duration::from_millis(50));
+        done.send(()).expect("送得出");
+    });
+    // 登记是一个进程一份：并着跑的别的测试里等着的一方会先醒、把这一声收走，所以隔一会儿再读一次，直到这一个等到。
+    let mut waited = Err(mpsc::RecvTimeoutError::Timeout);
+    for _ in 0..100 {
+        read();
+        waited = got.recv_timeout(Duration::from_millis(200));
+        if waited.is_ok() {
+            break;
+        }
+    }
+    waited.expect("读过以后安静下来了");
+    waiter.join().expect("没崩");
+}

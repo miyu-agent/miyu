@@ -31,7 +31,7 @@ impl RecallIndex {
         RecallIndex {
             path: path.to_path_buf(),
             db: idle::keep("recall", Mutex::new(None)),
-            reader: Mutex::new(None),
+            reader: idle::keep_reader("recall", Mutex::new(None)),
         }
     }
 
@@ -96,8 +96,10 @@ impl RecallIndex {
         Ok(())
     }
 
-    /// 读的连接。别的线程拿着锁崩了，库还是好的，照常用。
+    /// 读的连接。别的线程拿着锁崩了，库还是好的，照常用。拿一次算读了一次（[`idle::read`]，施工 LW-29）：这一阵读过去、
+    /// 库安静下来以后，读进来的页放掉。
     pub(super) fn reading(&self) -> MutexGuard<'_, Option<Connection>> {
+        idle::read();
         self.reader
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
