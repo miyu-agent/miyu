@@ -117,6 +117,15 @@ pub(crate) fn check(nm: &str, list: &str) -> Result<Placed, String> {
     Ok(placed)
 }
 
+/// `nm --defined-only --numeric-sort -S` 输出里代码段的函数：（符号原名、起点、大小），大小的补法同 [`check`]。合并起点清单时
+/// 照它认每个名字落在哪几页上（施工 MO-4，`seed.rs` 的 `merge`）。
+pub(crate) fn sized(nm: &str) -> Vec<(&str, u64, u64)> {
+    functions(nm)
+        .into_iter()
+        .map(|function| (function.name, function.address, function.size))
+        .collect()
+}
+
 /// 代码段里的一个函数。
 #[derive(Debug)]
 struct Function<'a> {

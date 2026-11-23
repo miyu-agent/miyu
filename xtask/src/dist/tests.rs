@@ -52,7 +52,8 @@ fn the_target_is_this_machine_unless_written_the_same() {
         Ok(Options {
             target: "linux-x86_64".to_string(),
             out: None,
-            order: true
+            order: true,
+            probe: true,
         })
     );
     assert_eq!(
@@ -63,7 +64,8 @@ fn the_target_is_this_machine_unless_written_the_same() {
         Ok(Options {
             target: "linux-x86_64".to_string(),
             out: Some(PathBuf::from("d")),
-            order: true
+            order: true,
+            probe: true,
         })
     );
     // 排函数（施工 LW-1）：`--no-order` 放在哪都认，只关掉排函数。
@@ -72,7 +74,8 @@ fn the_target_is_this_machine_unless_written_the_same() {
         Ok(Options {
             target: "linux-x86_64".to_string(),
             out: Some(PathBuf::from("d")),
-            order: false
+            order: false,
+            probe: true,
         })
     );
     assert_eq!(
@@ -82,6 +85,12 @@ fn the_target_is_this_machine_unless_written_the_same() {
         )
         .map(|options| options.order),
         Ok(false)
+    );
+    // 施工 MO-4：`--no-probe` 只关掉探针那一轮，照样排。
+    assert_eq!(
+        options(&words(&["--no-probe"]), Some("macos-aarch64"))
+            .map(|options| (options.order, options.probe)),
+        Ok((true, false))
     );
     let other = options(
         &words(&["--target", "windows-x86_64"]),

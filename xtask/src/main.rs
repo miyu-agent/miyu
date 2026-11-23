@@ -51,7 +51,7 @@ fn main() -> ExitCode {
         Some("check") => check(),
         Some("dev-home") => dev_home::run(std::env::args().nth(2).as_deref()),
         Some("dist") => {
-            let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
+            let cargo = cargo();
             let rest: Vec<String> = std::env::args().skip(2).collect();
             dist::run(&root(), &cargo, &rest)
         }
@@ -60,19 +60,22 @@ fn main() -> ExitCode {
             dist::check::run(&root(), &rest)
         }
         Some("packaging") => {
-            let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
+            let cargo = cargo();
             let rest: Vec<String> = std::env::args().skip(2).collect();
             packaging::run(&root(), dist::target_dir(&root(), &cargo).ok(), &rest)
         }
         Some("version") => version::run(&root()),
         Some("order-link") => order::link::run(&std::env::args().skip(2).collect::<Vec<_>>()),
+        Some("order-seed") => {
+            order::adopt::run(&root(), &std::env::args().skip(2).collect::<Vec<_>>())
+        }
         Some("perf") => {
-            let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
+            let cargo = cargo();
             let extra: Vec<String> = std::env::args().skip(2).collect();
             perf::run(&cargo, &root(), &extra)
         }
         Some("logs") => {
-            let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
+            let cargo = cargo();
             match logged(&cargo, &root()) {
                 Ok(problems) if problems.is_empty() => {
                     println!("日志：没有要改的");
@@ -89,44 +92,39 @@ fn main() -> ExitCode {
                 }
             }
         }
-        Some("methods") => match frozen::add(&root()) {
-            Ok(added) => {
-                println!("登记了 {added} 个新方法进 {}", frozen::PATH);
-                ExitCode::SUCCESS
-            }
-            Err(e) => {
-                eprintln!("{e}");
-                ExitCode::FAILURE
-            }
-        },
-        Some("notices") => match notices::write(
-            &root(),
-            &std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_string()),
-        ) {
-            Ok(()) => {
-                println!("写好了 {}", notices::PATH);
-                ExitCode::SUCCESS
-            }
-            Err(e) => {
-                eprintln!("{e}");
-                ExitCode::FAILURE
-            }
-        },
-        Some("prompts") => match prompts::write(&root()) {
-            Ok(()) => {
-                println!("写好了 {}", prompts::PATH);
-                ExitCode::SUCCESS
-            }
-            Err(e) => {
-                eprintln!("{e}");
-                ExitCode::FAILURE
-            }
-        },
+        Some("methods") => {
+            said(frozen::add(&root()).map(|n| format!("登记了 {n} 个新方法进 {}", frozen::PATH)))
+        }
+        Some("notices") => {
+            said(notices::write(&root(), &cargo()).map(|()| format!("写好了 {}", notices::PATH)))
+        }
+        Some("prompts") => {
+            said(prompts::write(&root()).map(|()| format!("写好了 {}", prompts::PATH)))
+        }
         _ => {
             eprintln!(
-                "用法：cargo xtask check | cargo xtask logs | cargo xtask methods | cargo xtask prompts | cargo xtask notices | cargo xtask dev-home <目录> | cargo xtask perf [--no-order] [量尺的参数] | cargo xtask dist [--target <系统>] [--out <目录>] [--no-order] | cargo xtask dist-check <压缩包> | cargo xtask packaging <标签> --sums <SHA256SUMS> [--out <目录>] | cargo xtask version <年.月.序号> | cargo xtask order-link <cc 的参数>（macOS 排函数的链接器垫片，由 cargo xtask dist 经 cargo 调）"
+                "用法：cargo xtask check | cargo xtask logs | cargo xtask methods | cargo xtask prompts | cargo xtask notices | cargo xtask dev-home <目录> | cargo xtask perf [--no-order] [量尺的参数] | cargo xtask dist [--target <系统>] [--out <目录>] [--no-order] [--no-probe] | cargo xtask dist-check <压缩包> | cargo xtask packaging <标签> --sums <SHA256SUMS> [--out <目录>] | cargo xtask version <年.月.序号> | cargo xtask order-link <cc 的参数>（macOS 排函数的链接器垫片，由 cargo xtask dist 经 cargo 调） | cargo xtask order-seed <目录>（收回 macOS 的起点清单）"
             );
             ExitCode::from(2)
+        }
+    }
+}
+
+/// 外面的 cargo：照 `CARGO`，没有的是 `cargo`。
+fn cargo() -> String {
+    std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_string())
+}
+
+/// 只做一件事、成了说一句的子命令：成了在标准输出上说，没成在标准错误上报。
+fn said(done: Result<String, String>) -> ExitCode {
+    match done {
+        Ok(line) => {
+            println!("{line}");
+            ExitCode::SUCCESS
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            ExitCode::FAILURE
         }
     }
 }
@@ -147,7 +145,7 @@ fn root() -> PathBuf {
 
 fn check() -> ExitCode {
     let root = root();
-    let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
+    let cargo = cargo();
 
     let mut outcomes = vec![
         cargo_step(

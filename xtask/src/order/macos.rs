@@ -122,9 +122,7 @@ impl Ordered {
         command: &mut Command,
         say: &dyn Fn(&str),
     ) -> Result<PathBuf, String> {
-        command
-            .arg("--config")
-            .arg(config(&self.shim)?)
+        self.linker(command)?
             .env(NAMES, &self.seed)
             .env(REPORT, &self.report);
         status(command).map_err(|error| format!("带着排函数的垫片编{}：{error}", self.label))?;
@@ -142,6 +140,28 @@ impl Ordered {
             say(&line);
         }
         Ok(report.order)
+    }
+}
+
+impl Ordered {
+    /// 只给 `command` 加上同一个 `--config`、不设 `link::NAMES`（施工 MO-4）：垫片原样调 `cc`。同一个 target 目录里编别的
+    /// 程序（量尺）用它，链接器的参数一样，共同的依赖不用重编。
+    ///
+    /// # Errors
+    ///
+    /// 垫片的路径不是 UTF-8、带控制字符。
+    pub(crate) fn linker<'c>(&self, command: &'c mut Command) -> Result<&'c mut Command, String> {
+        Ok(command.arg("--config").arg(config(&self.shim)?))
+    }
+
+    /// 起点清单的绝对路径。
+    pub(crate) fn seed(&self) -> &Path {
+        &self.seed
+    }
+
+    /// 说给人听的名字。
+    pub(crate) fn label(&self) -> &'static str {
+        self.label
     }
 }
 

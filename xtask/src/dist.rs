@@ -73,6 +73,9 @@ struct Options {
     out: Option<PathBuf>,
     /// 没写 `--no-order` 的是 `true`；只在能排的机器上起作用（`order::WAY`）。
     order: bool,
+    /// 没写 `--no-probe` 的是 `true`：macOS 上照起点清单排完、核对过以后带探针跑一轮，写出下一次的起点清单（施工 MO-4）。
+    /// 别的系统上不起作用；`--no-order` 时也不跑。
+    probe: bool,
 }
 
 /// 打好的一个压缩包。
@@ -115,6 +118,11 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Vec<Packed>, String
     let shims = match options.order && order::WAY == order::Way::Shim {
         true => Some(order::macos::prepare(root, &target_dir)?),
         false => None,
+    };
+    // 带探针跑一轮的（施工 MO-4）：探针也在取头、编之前编好，编不过当场报。
+    let library = match (&shims, options.probe) {
+        (Some(_), true) => Some(order::probe::build(root, &target_dir)?),
+        _ => None,
     };
     let work = options
         .out
@@ -278,6 +286,23 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Vec<Packed>, String
             say(&format!("排函数：{placed}"));
         }
     }
+    if let (Some(shims), Some(library)) = (&shims, &library) {
+        let round = order::probe::Round {
+            root,
+            cargo,
+            target: &target_dir,
+            dir: &dir,
+            out: &work.join("order"),
+            library,
+            shims,
+        };
+        order::probe::round(&round, &say)?;
+    }
+    // 打压缩包以前，每个要打的目录都核对一次里面没有探针（总施工单「core1 审的时候补的」第 1 条）。
+    let unprobed = |dir: &Path| match &library {
+        Some(library) => order::probe::clean(dir, library),
+        None => Ok(()),
+    };
     let archive = work.join(archive_name(&version, &options.target));
     say("打压缩包");
     pack(&dir, &name, &archive)?;
@@ -301,6 +326,7 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Vec<Packed>, String
         &core_dir,
     )?;
     let core_archive = work.join(format!("{core}.{suffix}"));
+    unprobed(&core_dir)?;
     pack(&core_dir, &core, &core_archive)?;
     all.push(packed(core_archive)?);
 
@@ -318,6 +344,7 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Vec<Packed>, String
         }
         let name = split::head_name(id, head_version, &options.target);
         let archive = work.join(format!("{name}.{suffix}"));
+        unprobed(&folder)?;
         pack(&folder, id, &archive)?;
         all.push(packed(archive)?);
     }
@@ -342,15 +369,18 @@ fn options(args: &[String], host: Option<&str>) -> Result<Options, String> {
     let mut target = None;
     let mut out = None;
     let mut order = true;
+    let mut probe = true;
     let mut rest = args.iter();
     while let Some(arg) = rest.next() {
         match arg.as_str() {
             "--target" => target = Some(rest.next().ok_or("--target 后面要写系统")?.clone()),
             "--out" => out = Some(PathBuf::from(rest.next().ok_or("--out 后面要写目录")?)),
             order::NO_ORDER => order = false,
+            order::NO_PROBE => probe = false,
             other => {
                 return Err(format!(
-                    "不认识的参数 {other}；用法：cargo xtask dist [--target <系统>] [--out <目录>] [--no-order]"
+                    "不认识的参数 {other}；用法：cargo xtask dist [--target <系统>] [--out <目录>] [--no-order] \
+                     [--no-probe]"
                 ));
             }
         }
@@ -361,7 +391,12 @@ fn options(args: &[String], host: Option<&str>) -> Result<Options, String> {
             "只打本机那一种（{host}），写的是 {target}：别的系统在那种系统上打"
         ));
     }
-    Ok(Options { target, out, order })
+    Ok(Options {
+        target,
+        out,
+        order,
+        probe,
+    })
 }
 
 /// `Cargo.toml` 的 `[workspace.package] version`。

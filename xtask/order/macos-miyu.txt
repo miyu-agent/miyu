@@ -7304,40 +7304,8 @@ regex_automata::meta::reverse_inner::prefilter_with_literals
 <aho_corasick::packed::pattern::PatternIter as core::iter::traits::iterator::Iterator>::next
 <aho_corasick::packed::rabinkarp::RabinKarp>::hash
 <aho_corasick::packed::teddy::generic::Teddy<8>>::new
-<alloc::vec::Vec<aho_corasick::util::primitives::PatternID> as alloc::vec::spec_from_elem::SpecFromElem>::from_elem::<alloc::alloc::Global>
-core::ptr::drop_glue::<alloc::vec::Vec<alloc::vec::Vec<aho_corasick::util::primitives::PatternID>>>
-<alloc::collections::btree::map::BTreeMap<alloc::boxed::Box<[u8]>, usize> as core::ops::drop::Drop>::drop
-<aho_corasick::packed::teddy::generic::SlimMaskBuilder>::add
-core::ptr::drop_glue::<aho_corasick::packed::api::Builder>
-<aho_corasick::nfa::noncontiguous::Builder>::build::<&[regex_syntax::hir::literal::Literal], &regex_syntax::hir::literal::Literal>
-<aho_corasick::nfa::noncontiguous::Compiler>::new
-<alloc::raw_vec::RawVec<aho_corasick::nfa::noncontiguous::Transition>>::grow_one
-<aho_corasick::nfa::noncontiguous::NFA>::alloc_state
 <alloc::raw_vec::RawVec<aho_corasick::nfa::noncontiguous::State>>::grow_one
-<aho_corasick::nfa::noncontiguous::Compiler>::init_unanchored_start_state
-<aho_corasick::nfa::noncontiguous::NFA>::init_full_state
-<aho_corasick::nfa::noncontiguous::NFA>::alloc_transition
-<aho_corasick::nfa::noncontiguous::Compiler>::build_trie::<&[regex_syntax::hir::literal::Literal], &regex_syntax::hir::literal::Literal>
-<aho_corasick::nfa::noncontiguous::NFA>::add_transition
-<aho_corasick::nfa::noncontiguous::NFA>::add_match
-<alloc::vec::Vec<aho_corasick::nfa::noncontiguous::State>>::shrink_to_fit
-<aho_corasick::util::alphabet::ByteClassSet>::byte_classes
-<aho_corasick::nfa::noncontiguous::Compiler>::set_anchored_start_state
-<aho_corasick::nfa::noncontiguous::NFA>::next_link
-<aho_corasick::nfa::noncontiguous::NFA>::copy_matches
-<aho_corasick::nfa::noncontiguous::Compiler>::add_unanchored_start_state_loop
-<aho_corasick::nfa::noncontiguous::Compiler>::densify
-<aho_corasick::nfa::noncontiguous::Compiler>::fill_failure_transitions
-<alloc::collections::vec_deque::VecDeque<aho_corasick::util::primitives::StateID>>::push_back_mut
-<alloc::collections::vec_deque::VecDeque<aho_corasick::util::primitives::StateID>>::grow
-<aho_corasick::nfa::noncontiguous::Compiler>::close_start_state_loop_for_leftmost
-<aho_corasick::nfa::noncontiguous::Compiler>::shuffle
-<aho_corasick::util::remapper::Remapper>::swap::<aho_corasick::nfa::noncontiguous::NFA>
-<aho_corasick::util::prefilter::Builder>::build
-<alloc::vec::Vec<aho_corasick::nfa::noncontiguous::Transition>>::shrink_to_fit
 <alloc::vec::Vec<aho_corasick::util::primitives::SmallIndex>>::shrink_to_fit
-<alloc::vec::Vec<aho_corasick::nfa::noncontiguous::Match>>::shrink_to_fit
-core::ptr::drop_glue::<aho_corasick::util::prefilter::Builder>
 <aho_corasick::dfa::Builder>::build_from_noncontiguous
 <aho_corasick::util::primitives::StateID as alloc::vec::spec_from_elem::SpecFromElem>::from_elem::<alloc::alloc::Global>
 <aho_corasick::dfa::Builder>::finish_build_one_start::{closure#1}
@@ -10620,3 +10588,26 @@ core::ptr::drop_glue::<hyper::client::conn::http2::Connection<reqwest::connect::
 core::ptr::drop_glue::<h2::proto::streams::store::Store>
 core::ptr::drop_glue::<tokio::runtime::task::core::Stage<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::packages::source::sync::sync_feed::{closure#0}::{closure#2}>>>
 core::ptr::drop_glue::<miyu_endpoint::packages::source::search::search::{closure#0}>
+<alloc::collections::btree::map::BTreeMap<&str, alloc::sync::Arc<miyu_models::catalog::price::Price>> as core::ops::drop::Drop>::drop
+<serde_json::ser::Compound<&mut alloc::vec::Vec<u8>, serde_json::ser::CompactFormatter> as serde_core::ser::SerializeMap>::serialize_entry::<str, miyu_models::catalog::price::Rates>
+core::ptr::drop_glue::<tokio::runtime::task::core::Cell<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::packages::source::sync::sync_feed::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>>
+core::ptr::drop_glue::<ring::rsa::keypair::PrivatePrime<ring::rsa::keypair::P>>
+ring::rsa::padding::pss::pss_digest
+ring_core_0_17_14__x25519_fe_mul_ttt
+core::ptr::drop_glue::<h2::client::SendRequest<hyper::proto::h2::SendBuf<bytes::bytes::Bytes>>>
+core::ptr::drop_glue::<h2::codec::framed_write::Encoder<h2::proto::streams::prioritize::Prioritized<hyper::proto::h2::SendBuf<bytes::bytes::Bytes>>>>
+core::ptr::drop_glue::<slab::Slab<h2::proto::streams::stream::Stream>>
+<tokio::runtime::task::harness::Harness<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::packages::source::sync::sync_feed::{closure#0}::{closure#2}>, tokio::runtime::blocking::schedule::BlockingSchedule>>::complete
+<tokio::runtime::task::harness::Harness<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::packages::source::upgrade::survey_core::{closure#0}::{closure#1}>, tokio::runtime::blocking::schedule::BlockingSchedule>>::complete
+core::ptr::drop_glue::<alloc::vec::Vec<miyu_source::index::Entry>>
+core::ptr::drop_glue::<miyu_endpoint::packages::methods::call::{closure#11}::{closure#0}>
+<serde_json::de::MapAccess<serde_json::read::StrRead> as serde_core::de::MapAccess>::next_value_seed::<core::marker::PhantomData<alloc::vec::Vec<miyu_kernel::event::effect::Todo>>>
+thread_local::deallocate_bucket::<core::cell::RefCell<tracing_subscriber::registry::stack::SpanStack>>
+<alloc::collections::btree::map::BTreeMap<&str, core::option::Option<alloc::sync::Arc<miyu_models::catalog::Reasoning>>> as core::ops::drop::Drop>::drop
+<miyu_models::catalog::price::Rates as serde_core::ser::Serialize>::serialize::<&mut serde_json::ser::Serializer<&mut alloc::vec::Vec<u8>>>
+ring_core_0_17_14__x25519_fe_tobytes
+core::ptr::drop_glue::<<hyper_util::client::legacy::pool::IdleTask<hyper_util::client::legacy::client::PoolClient<reqwest::async_impl::body::Body>, (http::uri::scheme::Scheme, http::uri::authority::Authority)>>::run::{closure#0}>
+core::ptr::drop_glue::<h2::hpack::encoder::Encoder>
+tokio::runtime::task::raw::drop_join_handle_slow::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::packages::source::sync::sync_feed::{closure#0}::{closure#2}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<alloc::vec::Vec<miyu_source::index::Entry> as core::ops::drop::Drop>::drop
+tokio::runtime::task::raw::dealloc::<tokio::runtime::blocking::task::BlockingTask<miyu_session::blocking::blocking<core::result::Result<(alloc::vec::Vec<std::path::PathBuf>, alloc::collections::btree::map::BTreeMap<alloc::string::String, alloc::collections::btree::map::BTreeMap<alloc::string::String, alloc::string::String>>, core::option::Option<miyu_kernel::session::input::Injection>), miyu_store::resources::SourceError>, <miyu_session::actor::Actor>::skills_turn::{closure#2}::{closure#0}>::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>

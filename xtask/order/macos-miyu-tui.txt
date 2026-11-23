@@ -2331,3 +2331,14 @@ jiff::util::fs::last_modified_from_file
 <core::marker::PhantomData<core::option::Option<[alloc::string::String; 2]>> as serde_core::de::DeserializeSeed>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::StrRead>>
 <core::marker::PhantomData<u16> as serde_core::de::DeserializeSeed>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::StrRead>>
 <<miyu_tui::mascot::model::Idle as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+<core::marker::PhantomData<miyu_tui::config::layout::Shimmer> as serde_core::de::DeserializeSeed>::deserialize::<serde_json::value::Value>
+<core::marker::PhantomData<std::collections::hash::map::HashMap<alloc::string::String, miyu_tui::config::timeline::ToolKind>> as serde_core::de::DeserializeSeed>::deserialize::<serde_json::value::Value>
+<core::marker::PhantomData<[u16; 2]> as serde_core::de::DeserializeSeed>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::StrRead>>
+<core::marker::PhantomData<miyu_tui::config::figures::Room> as serde_core::de::DeserializeSeed>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::StrRead>>
+<core::marker::PhantomData<usize> as serde_core::de::DeserializeSeed>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::StrRead>>
+<<miyu_tui::mascot::model::Gaze as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+<core::marker::PhantomData<miyu_tui::ui::usage::Look> as serde_core::de::DeserializeSeed>::deserialize::<serde_json::value::Value>
+<core::marker::PhantomData<f64> as serde_core::de::DeserializeSeed>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::StrRead>>
+<core::marker::PhantomData<[f64; 3]> as serde_core::de::DeserializeSeed>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::StrRead>>
+<core::marker::PhantomData<[f64; 2]> as serde_core::de::DeserializeSeed>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::StrRead>>
+<core::marker::PhantomData<miyu_tui::oobe::look::Stars> as serde_core::de::DeserializeSeed>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::StrRead>>

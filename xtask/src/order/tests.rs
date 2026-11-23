@@ -86,7 +86,8 @@ fn the_recording_command_names_every_path() {
         work: Path::new("/t/perf-order"),
         tree: Path::new("/r/crates"),
         list: Path::new("/t/order/miyu.txt"),
-        emulator: Path::new("/usr/bin/qemu-x86_64"),
+        flag: "--emulator",
+        recorder: Path::new("/usr/bin/qemu-x86_64"),
     };
     let command = recording(Path::new("/t/release/miyu-perf"), &paths);
     assert_eq!(command.get_program(), "/t/release/miyu-perf");

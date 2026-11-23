@@ -40,7 +40,7 @@
 //! 先后排。[`Probe::parse`] 只收「执行」的记录；文件是空的、截断了、多出字节、魔数不对、记录数超过上限、标志或种类
 //! 不认得的都报错；标了「满了」的照样读，另外交回 [`Probe::full`]，调用方报一句提醒。
 
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 use std::io::{self, BufRead};
 
 /// 符号表里的一个函数：起点、大小（字节）、原名（不解码，链接器的排序清单要的就是它）。
@@ -217,6 +217,13 @@ pub struct Probe {
     pub records: usize,
     /// 探针记满了：之后碰到的新地址没有记下来，清单可能缺一截，调用方要报一句。
     pub full: bool,
+    /// 页大小（文件头第 2 个数）。
+    pub page: u64,
+    /// 碰过的代码页（施工 MO-4）：执行的、读的记录都算，每页记它在符号表里的起点（地址向下对齐到 [`Probe::page`]）。
+    pub pages: BTreeSet<u64>,
+    /// 探针关上的那一段（符号表里的地址，起点算、终点不算）：`__text` 整页的部分，同 `pagetrace.c` 的 `lo`、`hi`。段外的
+    /// 代码（`__text` 开头、末尾不满一页的那两截）探针看不见，没有记录不等于没被碰过。
+    pub covered: (u64, u64),
 }
 
 /// 记录文件的魔数：字节是 `MIYUPGT1`。
@@ -245,7 +252,8 @@ impl Probe {
             .iter()
             .map(|chunk| u64::from_le_bytes(*chunk))
             .collect();
-        let Some(&[magic, _, _, _, _, capacity, records, flags]) = words.first_chunk::<HEAD>()
+        let Some(&[magic, _, page, text, length, capacity, records, flags]) =
+            words.first_chunk::<HEAD>()
         else {
             return Err(format!(
                 "探针的记录截断了：只有 {} 字节，文件头要 {} 字节",
@@ -255,6 +263,9 @@ impl Probe {
         };
         if magic.to_le_bytes() != MAGIC {
             return Err(format!("不是探针的记录：魔数是 {magic:#018x}"));
+        }
+        if page == 0 {
+            return Err("探针的记录里页大小是 0".to_string());
         }
         if flags & !FULL != 0 {
             return Err(format!("探针的记录有不认得的标志 {flags:#x}"));
@@ -277,7 +288,11 @@ impl Probe {
             ));
         }
         let mut executed = Vec::new();
+        let mut pages = BTreeSet::new();
         for (index, &[address, kind]) in words[HEAD..].as_chunks::<2>().0.iter().enumerate() {
+            if matches!(kind, 1 | 2) {
+                pages.insert(address - address % page);
+            }
             match kind {
                 1 => executed.push(address),
                 2 => {}
@@ -293,6 +308,9 @@ impl Probe {
             executed,
             records: (words.len() - HEAD) / 2,
             full: flags & FULL != 0,
+            page,
+            pages,
+            covered: (text.div_ceil(page) * page, (text + length) / page * page),
         })
     }
 }

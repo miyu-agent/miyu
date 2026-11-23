@@ -6,6 +6,7 @@
 //! 旁注里写着被测程序的那几份，照进程号从小到大接着交给 [`Listing`]（进程号大致就是起来的先后），每一份里照记录的先后。
 //! 探针改名落盘时留下的 `.tmp`、别的段的前缀都不算。
 
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 use super::listing::{Listing, Probe};
@@ -19,6 +20,12 @@ pub struct Read {
     pub records: usize,
     /// 其中「执行」的几条：交给清单的就是这些。
     pub executed: usize,
+    /// 页大小（几份记录里的一样，`Probe::page`）；一份都没读的是 0。
+    pub page: u64,
+    /// 这几份记录合起来碰过的代码页的起点（施工 MO-4，`Probe::pages`）。
+    pub pages: BTreeSet<u64>,
+    /// 探针关上的那一段（`Probe::covered`，几份记录里的一样）。
+    pub covered: (u64, u64),
 }
 
 /// 读前缀 `prefix` 这一段里被测程序 `program` 的记录，照先后交给 `listing`。记满了的照样读，另在标准错误上提醒一句。
@@ -57,7 +64,16 @@ pub fn read(prefix: &Path, program: &Path, listing: &mut Listing<'_>) -> Result<
                 probe.records
             );
         }
+        if read.page != 0 && (read.page, read.covered) != (probe.page, probe.covered) {
+            return Err(format!(
+                "{} 的页大小或者关上的那一段和同一段里前面的不一样",
+                file.display()
+            ));
+        }
         listing.add(&probe.executed);
+        read.page = probe.page;
+        read.covered = probe.covered;
+        read.pages.extend(&probe.pages);
         read.files += 1;
         read.records += probe.records;
         read.executed += probe.executed.len();
@@ -79,6 +95,24 @@ pub fn read(prefix: &Path, program: &Path, listing: &mut Listing<'_>) -> Result<
         ));
     }
     Ok(read)
+}
+
+/// 一份清单 `order` 旁边写碰过的代码页的文件：`<清单>.pages`（施工 MO-4）。
+pub fn touched_file(order: &Path) -> PathBuf {
+    let mut name = order.as_os_str().to_os_string();
+    name.push(".pages");
+    PathBuf::from(name)
+}
+
+/// 碰过的代码页写成的文本（施工 MO-4，`internal/blueprint/perf.md`「排函数」macOS 一款）：第一行 `page <页大小，十进制>`，
+/// 第二行 `covered <起点> <终点>`（探针关上的那一段，`Probe::covered`），后面每行一页的起点；地址都是符号表里的，十六进制、
+/// 不带 `0x`，从小到大。xtask 合并起点清单时照它去掉关上的那一段里没碰过的页上的名字，段外的不去。
+pub fn touched_text(page: u64, covered: (u64, u64), pages: &BTreeSet<u64>) -> String {
+    let mut text = format!("page {page}\ncovered {:x} {:x}\n", covered.0, covered.1);
+    for start in pages {
+        text.push_str(&format!("{start:x}\n"));
+    }
+    text
 }
 
 /// 删掉前缀 `prefix` 这一段探针写的全部文件：记录、旁注、没改完名的 `.tmp`，别的进程的也删。别的段的不碰。

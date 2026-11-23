@@ -21,7 +21,8 @@
 //! macOS 上（施工 MO-2）没有 QEMU 的用户态模拟器，`--probe` 代替 `--emulator`（[`Recorder`]）：五段的剧本、先后都一样，只是
 //! 被测的程序不放进模拟器，而是带着页探针原生起（[`Probed`]）。探针每个进程写一份记录（`order/pages.rs`），写下的已经是
 //! 符号表里的地址，不用读装载起点（macOS 也没有 `/proc`）。它一遍只记得到每一页上（每一次重关以后）第一个碰它的函数，
-//! 不像模拟器那样记全，所以这一路写出的清单是「这一遍看到的函数」，照第一次看到的先后，格式和模拟器那一路一样。
+//! 不像模拟器那样记全，所以这一路写出的清单是「这一遍看到的函数」，照第一次看到的先后，格式和模拟器那一路一样。这一路另在
+//! 清单旁边写一份这一遍碰过的代码页（`<清单>.pages`，施工 MO-4，格式见 `order/pages.rs` 的 `touched_text`）。
 
 #[cfg(unix)]
 mod head;
@@ -245,6 +246,7 @@ async fn with_head(
 fn write(program: &Path, traces: &[Trace], order: &Path) -> Result<usize, String> {
     let symbols = Symbols::parse(&nm(program)?);
     let mut listing = Listing::new(&symbols);
+    let mut touched = pages::Read::default();
     for trace in traces {
         match trace {
             Trace::Log(log, base) => {
@@ -263,6 +265,9 @@ fn write(program: &Path, traces: &[Trace], order: &Path) -> Result<usize, String
                     read.records,
                     read.executed
                 );
+                touched.page = read.page;
+                touched.covered = read.covered;
+                touched.pages.extend(read.pages);
             }
         }
     }
@@ -270,6 +275,20 @@ fn write(program: &Path, traces: &[Trace], order: &Path) -> Result<usize, String
     let mut text = names.join("\n");
     text.push('\n');
     std::fs::write(order, text).map_err(|e| format!("清单写不进 {}：{e}", order.display()))?;
+    // 探针那一路另写碰过的代码页（施工 MO-4）：xtask 合并起点清单时用。
+    if touched.page != 0 {
+        let file = pages::touched_file(order);
+        std::fs::write(
+            &file,
+            pages::touched_text(touched.page, touched.covered, &touched.pages),
+        )
+        .map_err(|e| format!("碰过的页写不进 {}：{e}", file.display()))?;
+        eprintln!(
+            "排函数：碰过的代码页 {} 页（{}）",
+            touched.pages.len(),
+            file.display()
+        );
+    }
     for trace in traces {
         match trace {
             Trace::Log(log, _) => {

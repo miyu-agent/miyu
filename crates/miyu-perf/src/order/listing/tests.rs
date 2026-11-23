@@ -217,6 +217,11 @@ fn a_probe_file_lists_executed_addresses_in_order() {
             executed: vec![0x1_0007_6600, 0x1_0000_0c70, 0x1_0147_ed30],
             records: 4,
             full: false,
+            page: 0x4000,
+            // 读的那一条也算碰过；同一页的两条只算一页。
+            pages: [0x1_0000_0000, 0x1_0007_4000, 0x1_0147_c000].into(),
+            // `__text` 从 0x1_0000_0ac0 起、0x147_e294 字节：开头、末尾不满一页的两截不在里面。
+            covered: (0x1_0000_4000, 0x1_0147_c000),
         }
     );
     // 交给同一个 `Listing`：地址不用减装载起点；函数中间的地址也认得（从别的页返回到这一页）。

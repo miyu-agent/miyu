@@ -13,8 +13,10 @@
 //! 上面是 Linux x86_64 的做法。macOS aarch64 上不录、不重链，照仓库里的起点清单经链接器垫片排（施工 MO-3，`macos.rs`、
 //! `link.rs`、`seed.rs`），只在 `cargo xtask dist` 里做。别的系统不排，调用方照原来的办法编（[`WAY`]）。
 
+pub(crate) mod adopt;
 pub(crate) mod link;
 pub(crate) mod macos;
+pub(crate) mod probe;
 mod seed;
 mod verify;
 
@@ -48,6 +50,10 @@ pub(crate) const WAY: Way = if cfg!(all(target_os = "linux", target_arch = "x86_
 
 /// `cargo xtask perf`、`cargo xtask dist` 认的参数：带了的照原来的办法编，不排。这个词不往量尺那边传。
 pub(crate) const NO_ORDER: &str = "--no-order";
+
+/// `cargo xtask dist` 认的参数（施工 MO-4）：macOS 上照起点清单排、照样核对，只是不带探针跑那一轮、不写新的起点清单。
+/// 别的系统上不起作用。
+pub(crate) const NO_PROBE: &str = "--no-probe";
 
 /// 构建脚本读的环境变量：清单的绝对路径（同 `crates/miyu/build.rs`，终端界面仓库的 `build.rs` 认同一个）。
 pub(crate) const VARIABLE: &str = "MIYU_LINK_ORDER";
@@ -126,7 +132,8 @@ pub(crate) fn run(
         work: &target.join("perf-order"),
         tree: &root.join("crates"),
         list: &list,
-        emulator,
+        flag: "--emulator",
+        recorder: emulator,
     };
     let mut command = recording(&release.join("miyu-perf"), &paths);
     status(command.current_dir(root)).map_err(|error| format!("录清单：{error}"))?;
@@ -213,7 +220,8 @@ pub(crate) fn staged(
         work: &target.join("perf-order"),
         tree: &root.join("crates"),
         list: &list,
-        emulator,
+        flag: "--emulator",
+        recorder: emulator,
     };
     let mut command = recording(&target.join("release").join("miyu-perf"), &paths);
     command.arg("--head").arg(staged.dir.join(TUI));
@@ -279,7 +287,10 @@ struct Recording<'a> {
     work: &'a Path,
     tree: &'a Path,
     list: &'a Path,
-    emulator: &'a Path,
+    /// `--emulator`（Linux）或者 `--probe`（macOS，施工 MO-4）。
+    flag: &'a str,
+    /// 模拟器或者探针的动态库。
+    recorder: &'a Path,
 }
 
 /// `miyu-perf --order` 的命令行（`perf` 是量尺的程序）。
@@ -296,8 +307,8 @@ fn recording(perf: &Path, paths: &Recording<'_>) -> Command {
         .arg(paths.tree)
         .arg("--order")
         .arg(paths.list)
-        .arg("--emulator")
-        .arg(paths.emulator);
+        .arg(paths.flag)
+        .arg(paths.recorder);
     command
 }
 

@@ -79,8 +79,8 @@ jobs:
           [ "${now}" = "${wanted}" ] || { echo "::error::工作区版本没改成 ${wanted}，现在是 ${now}"; exit 1; }
           cargo metadata --format-version 1 > /dev/null
       # 排函数（施工 LW-1）：linux-x86_64 的核心在模拟器里照剧本运行、录清单再重链，`cargo xtask dist` 没有模拟器当场报错。
-      # macos-aarch64 照仓库里的起点清单经链接器垫片排（施工 MO-3），要的 cc、nm 是 macos-latest 自带的 Xcode 命令行工具，
-      # 不用装。另外两种不排，也不用装。
+      # macos-aarch64 照仓库里的起点清单经链接器垫片排（施工 MO-3），再带页探针跑一轮写出下一次的起点清单（施工 MO-4），
+      # 要的 cc、nm 是 macos-latest 自带的 Xcode 命令行工具，不用装。另外两种不排，也不用装。
       - name: 装 QEMU 的用户态模拟器
         if: matrix.target == 'linux-x86_64'
         run: sudo apt-get update && sudo apt-get install -y qemu-user
@@ -108,6 +108,16 @@ jobs:
             target/dist/miyu-*-${{ matrix.target }}.zip
           if-no-files-found: error
           retention-days: 7
+      # macOS 那一台打包时带探针跑一轮写出的下一次的起点清单（施工 MO-4）：单独一份构建产物，名字不以 dist- 开头，下面
+      # release 那一步照 dist-* 下载，所以它不进 Release。做发版的会话在演练、正式发版以后下载它，用
+      # `cargo xtask order-seed <目录>` 收回仓库的 xtask/order/。
+      - uses: actions/upload-artifact@v7
+        if: matrix.target == 'macos-aarch64'
+        with:
+          name: order-macos-aarch64
+          path: target/dist/order/
+          if-no-files-found: error
+          retention-days: 30
 
   release:
     needs: dist

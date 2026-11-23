@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 #[cfg(unix)]
 use super::names;
-use super::{Read, pid_of, read, remove};
+use super::{Read, pid_of, read, remove, touched_file, touched_text};
 use crate::order::listing::{Listing, Symbols};
 
 /// 造的符号表（苹果的样子，大小全是 0，照下一个符号补）：四个函数，后面接着数据。
@@ -136,6 +136,11 @@ fn a_segment_reads_the_program_files_in_order() {
             files: 2,
             records: 5,
             executed: 4,
+            page: 0x4000,
+            // 只有被测程序的两份算：读过的那一页也算碰过。
+            pages: [0x1_0000_0000].into(),
+            // 造的记录里 `__text` 是 0x1_0000_1000 起 0x1000 字节，不满一页：关上的那一段是空的。
+            covered: (0x1_0000_4000, 0x1_0000_0000),
         }
     );
     // `_helper` 只被读过、只被别的程序执行过，不进清单。
@@ -208,4 +213,17 @@ fn nothing_recorded_is_an_error_with_the_likely_reason() {
     let error = read(&prefix, &dir.join("missing"), &mut Listing::new(&symbols)).unwrap_err();
     assert!(error.starts_with("找不到 "), "{error}");
     std::fs::remove_dir_all(&dir).expect("删得掉");
+}
+
+#[test]
+fn touched_pages_are_written_next_to_the_list() {
+    assert_eq!(
+        touched_file(Path::new("/w/order/probe-miyu.txt")),
+        Path::new("/w/order/probe-miyu.txt.pages")
+    );
+    let pages = [0x1_0000_4000, 0x1_0000_0000].into();
+    assert_eq!(
+        touched_text(0x4000, (0x1_0000_4000, 0x1_0147_c000), &pages),
+        "page 16384\ncovered 100004000 10147c000\n100000000\n100004000\n"
+    );
 }
