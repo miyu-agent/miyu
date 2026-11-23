@@ -22,6 +22,10 @@ tar = { version = "0.4", default-features = false }
 flate2 = "1"
 zip = { version = "9.3", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 
+# 排函数在 macOS 上的名字清单（施工 MO-3，`order/seed.rs`）：Mach-O 的符号和不带哈希的函数名互换。Rust 官方的 crate，
+# 标准库的回溯本来就用它；只进 xtask，不进发出去的程序。
+rustc-demangle = "0.1.28"
+
 # `cargo xtask dev-home`（施工 8-6）：照核心的写法建数据根的骨架。
 miyu-store = { path = "../crates/miyu-store" }
 

@@ -28,7 +28,8 @@ pub fn run(cargo: &str, root: &Path, extra: &[String]) -> ExitCode {
     let exe = |name: &str| release.join(format!("{name}{}", std::env::consts::EXE_SUFFIX));
     // 照原始数据重出表（`--render`）不量，不用编要量的二进制。
     let render = extra.iter().any(|word| word == "--render");
-    let ordered = order::SUPPORTED && !render && !no_order;
+    // macOS 的垫片只在 `cargo xtask dist` 里用：闸门只在 Linux 上量（总施工单 MO「不做什么」）。
+    let ordered = order::WAY == order::Way::Emulator && !render && !no_order;
     if ordered {
         let done = order::tools().and_then(|emulator| {
             order::run(cargo, root, &emulator, false, &|what| {

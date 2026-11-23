@@ -10,8 +10,12 @@
 //! `cargo xtask dist` 另在搭好发行包目录以后对着它再录一遍（施工 LW-6，[`staged`]）：量尺配着真的终端界面多录两段，核心
 //! 照新清单重链，终端界面认清单的（[`tui_list`]）带着它自己的清单再编一遍；`dist.rs` 把两个程序重新拷进目录、核对（[`check`]）。
 //!
-//! 只有 Linux x86_64 做（[`SUPPORTED`]）；别的系统上调用方照原来的办法编。
+//! 上面是 Linux x86_64 的做法。macOS aarch64 上不录、不重链，照仓库里的起点清单经链接器垫片排（施工 MO-3，`macos.rs`、
+//! `link.rs`、`seed.rs`），只在 `cargo xtask dist` 里做。别的系统不排，调用方照原来的办法编（[`WAY`]）。
 
+pub(crate) mod link;
+pub(crate) mod macos;
+mod seed;
 mod verify;
 
 use std::fs;
@@ -21,8 +25,26 @@ use std::process::Command;
 
 use crate::dist::{CORE, head_cargo, output, status, target_dir};
 
-/// 这台机器做不做排函数：只有 Linux x86_64 做，别的系统的程序和原来一样（施工单 LW-1「不做什么」）。
-pub(crate) const SUPPORTED: bool = cfg!(all(target_os = "linux", target_arch = "x86_64"));
+/// 一台机器怎么排函数。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Way {
+    /// 在 QEMU 的用户态模拟器里录清单、重链（施工 LW-1、LW-6）：Linux x86_64。
+    Emulator,
+    /// 照仓库里的起点清单经链接器垫片排（施工 MO-3，`macos.rs`）：macOS aarch64，只在 `cargo xtask dist` 里做。
+    Shim,
+    /// 不排，程序和原来一样。
+    Off,
+}
+
+/// 这台机器怎么排函数：Linux x86_64 用模拟器，macOS aarch64 用垫片，别的系统不排（施工单 LW-1「不做什么」、总施工单 MO
+/// 第 6 条：Intel 的 Mac 不做）。
+pub(crate) const WAY: Way = if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
+    Way::Emulator
+} else if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
+    Way::Shim
+} else {
+    Way::Off
+};
 
 /// `cargo xtask perf`、`cargo xtask dist` 认的参数：带了的照原来的办法编，不排。这个词不往量尺那边传。
 pub(crate) const NO_ORDER: &str = "--no-order";

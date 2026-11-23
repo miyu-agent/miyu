@@ -7,7 +7,9 @@
 //!    检出里照各自的工具链编：外面这个 cargo 给的 `RUSTUP_TOOLCHAIN`、`CARGO_TARGET_DIR` 这些不带过去。本机是 `linux-x86_64`
 //!    的，核心照排函数的流程编（施工 LW-1，`order.rs`：带空清单编、量尺录清单、照清单重链 `miyu`、核对）；要 QEMU 的用户态
 //!    模拟器，取头之前先找，没有的当场报错。终端界面钉的提交认排函数的（检出里的 `build.rs` 认 `MIYU_LINK_ORDER`），编它时
-//!    带上一份空清单；不认的说一句、照原来的办法编。带 `--no-order` 的照原来的办法编，不排；别的三种系统一直是原来的办法。
+//!    带上一份空清单；不认的说一句、照原来的办法编。本机是 `macos-aarch64` 的，核心的三个程序、终端界面照原来的命令编，只
+//!    多带一个链接器垫片，照仓库里的起点清单排 `miyu`、`miyu-tui`（施工 MO-3，`order/macos.rs`）；缺 `nm`、`cc`，起点清单
+//!    读不了的，取头之前当场报错。带 `--no-order` 的照原来的办法编，不排；别的两种系统一直是原来的办法。
 //! 4. 搭目录 `<dist>/miyu-<版本>-<系统>/`：
 //!    - 五个程序放一起（头的程序放在 `miyu` 旁边，`heads.toml` 开头那段）；
 //!    - `resources/`：仓库里登记了的资源（`git ls-files`，不带没登记的），加上两个头的包文件夹：`packages/tui/` 是终端仓库的
@@ -17,7 +19,8 @@
 //!    - `README.txt`：中英两段，怎么用、装在哪、怎么卸。
 //!
 //!    排函数的（施工 LW-6，`order.rs` 的 `staged`）：搭好以后对着这个目录再录一遍，量尺配着真的终端界面多录两段；核心照新
-//!    清单重链，终端界面带着它的清单再编；两个程序重新拷进目录，各自核对排上了。
+//!    清单重链，终端界面带着它的清单再编；两个程序重新拷进目录，各自核对排上了。macOS 上不再录、不重编，只对目录里的
+//!    `miyu`、`miyu-tui` 照垫片写出的符号清单各核对一次。
 //! 5. 打成 `miyu-<版本>-<系统>.tar.gz`（Windows 是 `.zip`），里面一层同名目录，照名字排、不带属主和时刻；印路径、SHA-256、大小。
 //!
 //! `<dist>` 默认是 cargo 的 target 目录下的 `dist/`，`--out` 换地方。查包、签名、Release 是 RL-2 的事。
@@ -68,7 +71,7 @@ const WEB_PROGRAM: &str = "miyu-web";
 struct Options {
     target: String,
     out: Option<PathBuf>,
-    /// 没写 `--no-order` 的是 `true`；只在能排的机器上起作用（`order::SUPPORTED`）。
+    /// 没写 `--no-order` 的是 `true`；只在能排的机器上起作用（`order::WAY`）。
     order: bool,
 }
 
@@ -101,13 +104,18 @@ pub fn run(root: &Path, cargo: &str, args: &[String]) -> ExitCode {
 fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Vec<Packed>, String> {
     let options = options(args, HOST)?;
     // 缺模拟器、缺 nm 的在取头、编之前就报。
-    let emulator = match options.order && order::SUPPORTED {
+    let emulator = match options.order && order::WAY == order::Way::Emulator {
         true => Some(order::tools()?),
         false => None,
     };
     let version = version(&read(&root.join("Cargo.toml"))?)?;
     let pins = heads::pins(&read(&root.join(heads::PATH))?).map_err(|found| found.join("\n"))?;
     let target_dir = target_dir(root, cargo)?;
+    // macOS 照起点清单排的（施工 MO-3）：缺 nm、cc，起点清单读不了的，也在取头、编之前报。
+    let shims = match options.order && order::WAY == order::Way::Shim {
+        true => Some(order::macos::prepare(root, &target_dir)?),
+        false => None,
+    };
     let work = options
         .out
         .clone()
@@ -130,10 +138,11 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Vec<Packed>, String
         stamp::head(&pin.id, dir, &version)?;
     }
 
-    match &emulator {
+    let core_order = match &emulator {
         Some(emulator) => {
             say("编核心（排函数）");
             order::run(cargo, root, emulator, true, &say)?;
+            None
         }
         None => {
             say("编核心");
@@ -141,9 +150,13 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Vec<Packed>, String
             core.current_dir(root)
                 .args(["build", "--release", "--locked"])
                 .args(CORE.iter().flat_map(|name| ["-p", name]));
-            status(&mut core)?;
+            // 带垫片编过以后，不能再对 `-p miyu` 跑不带垫片的 cargo build：它会重编、盖掉排过的那一份（`order/macos.rs`）。
+            match &shims {
+                Some(shims) => Some(shims.core.build(&mut core, &say)?),
+                None => status(&mut core).map(|()| None)?,
+            }
         }
-    }
+    };
     // 终端界面认清单的，先带一份空清单编（符号名和排过的一样，量尺照它的符号表换函数名）。
     let tui_list = match &emulator {
         Some(_) => order::tui_list(tui, &target_dir)?,
@@ -154,7 +167,11 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Vec<Packed>, String
     if let Some(list) = &tui_list {
         tui_build.env(order::VARIABLE, list);
     }
-    status(tui_build.args(["build", "--release", "--locked"]))?;
+    tui_build.args(["build", "--release", "--locked"]);
+    let tui_order = match &shims {
+        Some(shims) => Some(shims.tui.build(&mut tui_build, &say)?),
+        None => status(&mut tui_build).map(|()| None)?,
+    };
     say("编网页");
     status(head_cargo(web).args(["build", "--release", "--locked", "-p", WEB_PROGRAM]))?;
     let web_binary = web
@@ -247,6 +264,15 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Vec<Packed>, String
                 program.display()
             ));
             let shipped = replace(program, &dir)?;
+            let placed = order::check(&shipped, list)
+                .map_err(|error| format!("核对 {}：{error}", shipped.display()))?;
+            say(&format!("排函数：{placed}"));
+        }
+    }
+    if let (Some(core_order), Some(tui_order)) = (&core_order, &tui_order) {
+        for (program, list) in [(CORE[0], core_order), (TUI_PROGRAM, tui_order)] {
+            let shipped = dir.join(format!("{program}{exe}"));
+            say(&format!("排函数：核对 {}", shipped.display()));
             let placed = order::check(&shipped, list)
                 .map_err(|error| format!("核对 {}：{error}", shipped.display()))?;
             say(&format!("排函数：{placed}"));

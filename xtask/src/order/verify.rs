@@ -110,7 +110,8 @@ pub(crate) fn check(nm: &str, list: &str) -> Result<Placed, String> {
     };
     if near * SHARE.1 < bytes * SHARE.0 {
         return Err(format!(
-            "{placed}，不到九成：可能换了链接器（排序清单是 lld 的参数），或者链接参数没生效"
+            "{placed}，不到九成：可能换了链接器，或者链接参数没生效（排序清单在 Linux 上是 lld 的参数，在 macOS 上是 ld64 的 \
+             -order_file）"
         ));
     }
     Ok(placed)
