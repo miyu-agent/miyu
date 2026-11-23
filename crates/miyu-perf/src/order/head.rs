@@ -92,10 +92,7 @@ pub async fn record(
     let mut text = std::fs::read_to_string(&config).map_err(|e| format!("系统配置读不了：{e}"))?;
     text.push_str(SETTINGS);
     std::fs::write(&config, text).map_err(|e| format!("系统配置写不进：{e}"))?;
-    let mut given = environment(sandbox, args, trust, &home);
-    if let Recorder::Probe(_) = recorder {
-        chinese(&mut given);
-    }
+    let given = environment(sandbox, args, trust, &home);
     let native = Launch {
         trust: Some(trust),
         home: Some(&home),
@@ -200,20 +197,16 @@ pub async fn record(
     })
 }
 
-/// 给主程序、终端界面的环境（整份，不接宿主的）：宿主的 `PATH`、`LANG`、`LC_*`；终端是 `xterm-256color`、真彩色；家目录
-/// 照 [`home_vars`]，缓存在家目录里；数据根、资源、证书和量尺拉起的核心一样；不拉 models.dev 的目录，不走代理。
+/// 给主程序、终端界面的环境（整份，不接宿主的）：宿主的 `PATH`、`LC_*`，语言定成中文（[`inherited`]）；终端是
+/// `xterm-256color`、真彩色；家目录照 [`home_vars`]，缓存在家目录里；数据根、资源、证书和量尺拉起的核心一样；不拉
+/// models.dev 的目录，不走代理。
 fn environment(
     sandbox: &Sandbox,
     args: &Args,
     trust: &Path,
     home: &Path,
 ) -> Vec<(OsString, OsString)> {
-    let mut vars: Vec<(OsString, OsString)> = std::env::vars_os()
-        .filter(|(name, _)| {
-            let name = name.as_bytes();
-            name == b"PATH" || name == b"LANG" || name.starts_with(b"LC_")
-        })
-        .collect();
+    let mut vars = inherited(std::env::vars_os());
     let set = [
         ("TERM", OsString::from("xterm-256color")),
         ("COLORTERM", OsString::from("truecolor")),
@@ -233,12 +226,20 @@ fn environment(
     vars
 }
 
-/// 带页探针的（施工 MO-2，macOS）把终端界面的语言定成中文：逛一圈等的界面上的字是中文的（`order/tour.rs`）。终端界面照
-/// `LC_ALL`、`LC_MESSAGES`、`LANG` 认语言，都没有的照系统设置里的语言；Linux 上宿主的 `LANG` 是中文，2026-11-23 在一台
-/// 系统语言是英文、没设 `LANG` 的 M1 MacBook 上画出来的是英文，等不到中文的字。只换这三个，核心的语言不动。
-fn chinese(vars: &mut Vec<(OsString, OsString)>) {
-    vars.retain(|(name, _)| !matches!(name.as_bytes(), b"LC_ALL" | b"LC_MESSAGES" | b"LANG"));
+/// 从宿主的环境 `host` 里接过来的：`PATH`、`LC_*`；语言定成中文（施工 MO-2、LW-32）。逛一圈等的界面上的字是中文的
+/// （`order/tour.rs`），终端界面照 `LC_ALL`、`LC_MESSAGES`、`LANG` 认语言，都没有的照系统设置里的语言，所以宿主的这三个
+/// 一个不接，换成 `LANG=zh_CN.UTF-8`；核心的语言不动。不看宿主是什么语言、是哪个系统：2026-11-23 先在一台系统语言是英文
+/// 的 M1 MacBook 上、后在发版的 Linux 机器上（`LANG` 是 `C.UTF-8`）画出来的都是英文，等不到中文的字。
+fn inherited(host: impl Iterator<Item = (OsString, OsString)>) -> Vec<(OsString, OsString)> {
+    let mut vars: Vec<(OsString, OsString)> = host
+        .filter(|(name, _)| {
+            let name = name.as_bytes();
+            (name == b"PATH" || name.starts_with(b"LC_"))
+                && !matches!(name, b"LC_ALL" | b"LC_MESSAGES")
+        })
+        .collect();
     vars.push((OsString::from("LANG"), OsString::from("zh_CN.UTF-8")));
+    vars
 }
 
 /// 主程序是怎么拉起终端界面的（第三段原生看到的）：第四段照着在模拟器里起。
