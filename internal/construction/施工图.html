@@ -1600,6 +1600,18 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sLW11"><span class="n">LW-11</span>文件监视合成一组线程<span class="st">…</span></a></li>
         <li><a class="step review" href="#sLW12"><span class="n">LW-12</span>核心的线程缓存少留<span class="st">…</span></a></li>
         <li><a class="step review" href="#sLW13"><span class="n">LW-13</span>收紧两行内存预算<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW14"><span class="n">LW-14</span>录清单的剧本补常用操作和抽记忆<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW15"><span class="n">LW-15</span>库闲下来放掉页缓存<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW16"><span class="n">LW-16</span>启动只读一遍包清单<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW18"><span class="n">LW-18</span>macOS 闲下来也归还堆<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW19"><span class="n">LW-19</span>逛一圈补设置页和主题预览<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW21"><span class="n">LW-21</span>大的异步任务挪到堆上<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW23"><span class="n">LW-23</span>SQLite 不留小块内存池<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW25"><span class="n">LW-25</span>线程分配区的顶当场还<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sMO1"><span class="n">MO-1</span>macOS 排函数：页探针进仓库<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sMO2"><span class="n">MO-2</span>macOS 排函数：量尺带探针录清单<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sMO3"><span class="n">MO-3</span>macOS 排函数：发行包照起点清单排<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sMO4"><span class="n">MO-4</span>macOS 排函数：打包时带探针跑一轮<span class="st">…</span></a></li>
         <li><a class="step review" href="#sWD8"><span class="n">WD-8</span>安装脚本只认新版本号<span class="st">…</span></a></li>
         <li><a class="step review" href="#sWD9"><span class="n">WD-9</span>/undo 统一叫「撤回」<span class="st">…</span></a></li>
         <li><a class="step review" href="#sHLP1"><span class="n">HLP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
@@ -62706,6 +62718,595 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <ul>
         <li>施工单 <code>internal/construction/LW-13-预算收紧.md</code>；蓝图 <code>perf.md</code>「闸门」第 11 条。</li>
         <li>施工单 <code>internal/construction/WD-8-安装脚本只认新版本号.md</code>。不改蓝图。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW14" aria-labelledby="h-sLW14">
+  <div class="sheet-head"><h2 id="h-sLW14"><span class="no">LW-14</span>录排函数清单的剧本补上常用操作和抽记忆</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">排函数只对剧本走到的路径有效。剧本原来只录到「启动、说一句、工具一步」：把常用命令都用一遍，核心的代码页多 6.0 MB、终端界面多 4.3 MB；会话说到二十轮、核心在后台抽记忆，核心的代码页再多约 3.8 MB。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-perf/src/order.rs、order/script.rs、order/tour.rs、order/remember.rs　fake/organizer.rs</span><span class="dir-note">LW-14</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>配着终端界面录的两段说完话以后把常用的页面和命令用一遍：翻页、斜杠菜单、十几个命令、设置页、待办、提问、确认框、子代理、出错重试、中途停下</li>
+              <li>另加一段抽记忆：开着记忆的会话每 11 轮等后台抽一次，抽两次；假模型照真模型那样回抽取、写关键词</li>
+              <li>抽记忆这一段单独录、排在核心清单的最后：平常也用到的函数不被它带偏</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">新加的不常走的路径单独录成一段，排在清单最后</span><span class="rl">internal/blueprint/perf.md「排函数」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-14</dd></div>
+        <div><dt>名称</dt><dd>录排函数清单的剧本补上常用操作和抽记忆</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-14</dd></div>
+        <div><dt>验收</dt><dd>常用命令都用一遍：核心多 6.0 → 0.6 MB，终端界面多 4.3 → 1.7 MB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>常用命令都用一遍：核心多 6.0 → 0.6 MB，终端界面多 4.3 → 1.7 MB</span></li>
+        <li><span class="ok">✓</span><span>30 轮里抽记忆带进来的代码约 3.8 → 0.9 MB</span></li>
+        <li><span class="ok">✓</span><span>空闲、说过一句、九次工具调用三个状态和这一步以前持平</span></li>
+        <li><span class="ok">✓</span><span>产品代码一行不改；门禁全过，三平台 CI 通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-14-录清单的剧本补上常用操作和抽记忆.md</code>；蓝图 <code>perf.md</code>「排函数」。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW15" aria-labelledby="h-sLW15">
+  <div class="sheet-head"><h2 id="h-sLW15"><span class="no">LW-15</span>库闲下来放掉 SQLite 的页缓存</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">开着记忆的会话说到第 30 轮时，记忆的检索库在堆里占约 0.5 MB 页缓存：SQLite 的每个连接默认最多留 2 MB，连接开着就一直占着。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-store</span><span class="dir-note">LW-15</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>库闲下来、合回写前日志的时候，放掉这个连接的页缓存</li>
+              <li>再把空出来的页还给系统</li>
+              <li>之后用到的页从系统的文件缓存读回来</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">库闲下来时页缓存不常驻</span><span class="rl">internal/blueprint/heap.md</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-15</dd></div>
+        <div><dt>名称</dt><dd>库闲下来放掉 SQLite 的页缓存</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-15</dd></div>
+        <div><dt>验收</dt><dd>第 30 轮核心的堆和匿名内存合计少约 0.6 MB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>第 30 轮核心的堆和匿名内存合计少约 0.6 MB</span></li>
+        <li><span class="ok">✓</span><span>门禁全过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-15-库闲下来放掉页缓存.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW16" aria-labelledby="h-sLW16">
+  <div class="sheet-head"><h2 id="h-sLW16"><span class="no">LW-16</span>核心启动时只读一遍软件包清单，用完的副本放掉</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">核心启动时照清单拼的一份包的配置项和清单的副本只在读配置、生成参考文件时使用，却一直留到核心停下，约 0.19 MB；核心的家底还会把三十来份清单再读、再解析一遍，随后整个换掉。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-core/src/start.rs　crates/miyu-core（Core::with_found）</span><span class="dir-note">LW-16</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>读配置、生成参考文件用完的那几份放下</li>
+              <li>造家底时直接交进已经读好的清单，不再读第二遍</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">启动时一次性用的数据用完就放</span><span class="rl">internal/blueprint/core.md「起来的先后」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-16</dd></div>
+        <div><dt>名称</dt><dd>核心启动时只读一遍软件包清单，用完的副本放掉</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-16</dd></div>
+        <div><dt>验收</dt><dd>空闲时活着的堆 1660 → 1443 kB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>空闲时活着的堆 1660 → 1443 kB</span></li>
+        <li><span class="ok">✓</span><span>核心冷启动快约 1.5 ms</span></li>
+        <li><span class="ok">✓</span><span>门禁全过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-16-启动用完的设置项放掉.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW18" aria-labelledby="h-sLW18">
+  <div class="sheet-head"><h2 id="h-sLW18"><span class="no">LW-18</span>macOS 上闲下来也把堆里空着的还给系统</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">头一次在 macOS 上量占用（一台 M1，核心加终端界面，活动监视器「内存」那一列的口径）：空闲 18.1 MB，其中两个进程的堆里有 10 MB 是放掉以后分配器留着没还的。「安静下来把空着的还给系统」在 macOS 上原来是空的，实测系统的分配器要等内存紧了才还。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-heap/src/lib.rs</span><span class="dir-note">LW-18</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>macOS 上调系统的归还接口 malloc_zone_pressure_relief，调的时机和 Linux 上一样</li>
+              <li>交回「还了没有」时另看一眼这个进程的占用前后少没少（接口有时交回 0）</li>
+              <li>测试改成 512 字节的块、串行跑，在那台 M1 上稳定通过</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">macOS 上归还堆不等系统内存紧</span><span class="rl">internal/blueprint/heap.md 第 6 条</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-18</dd></div>
+        <div><dt>名称</dt><dd>macOS 上闲下来也把堆里空着的还给系统</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-18</dd></div>
+        <div><dt>验收</dt><dd>核心的占用：空闲 10.2 → 8.2 MB，九次工具调用以后 12.3 → 9.7 MB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>核心的占用：空闲 10.2 → 8.2 MB，九次工具调用以后 12.3 → 9.7 MB</span></li>
+        <li><span class="ok">✓</span><span>两个进程合计空闲 18.1 → 14.8 MB</span></li>
+        <li><span class="ok">✓</span><span>门禁全过，三平台 CI 通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-18-macOS闲下来也归还堆.md</code>；蓝图 <code>heap.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW19" aria-labelledby="h-sLW19">
+  <div class="sheet-head"><h2 id="h-sLW19"><span class="no">LW-19</span>逛一圈补上设置页的每个分类和主题预览</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">LW-14 的逛一圈在设置页里只进了「外观」，在 /theme 里打开就关。实测把设置页九个分类各进一遍，核心的代码页多 2.0 MB、终端界面多 1.4 MB；在 /theme 里往下选一项，终端界面多 0.5 MB。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-perf/src/order/tour.rs</span><span class="dir-note">LW-19</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>设置页九个分类都进一遍再退出来，最后才关掉设置页</li>
+              <li>/theme 里先往下选一项（终端界面照它预览配色）再关</li>
+              <li>真的压缩查清了触发条件（会话要有约 6.4 万字），没有加进剧本</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">逛一圈走到设置页的每个分类</span><span class="rl">internal/blueprint/perf.md「排函数」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-19</dd></div>
+        <div><dt>名称</dt><dd>逛一圈补上设置页的每个分类和主题预览</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-19</dd></div>
+        <div><dt>验收</dt><dd>九个分类各进一遍：核心多 2.0 → 0.06 MB，终端界面多 1.4 → 0.26 MB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>九个分类各进一遍：核心多 2.0 → 0.06 MB，终端界面多 1.4 → 0.26 MB</span></li>
+        <li><span class="ok">✓</span><span>/theme 那一步终端界面多 0.5 → 0.06 MB</span></li>
+        <li><span class="ok">✓</span><span>三个状态没有变高；门禁全过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-19-逛一圈补设置页和主题预览.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW21" aria-labelledby="h-sLW21">
+  <div class="sheet-head"><h2 id="h-sLW21"><span class="no">LW-21</span>特别大的异步任务挪到堆上</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">长会话里核心 5 条工作线程的栈各驻留 240 kB。反汇编发行版看到四十多个函数的栈帧在 32 kB 以上，最大的 90 kB：会话的 actor、人格的干算、记忆的合并、发请求这些异步任务本身有十几到三十几 kB，按值放在栈上、按值交给运行时，路上要拷好几份，踩过的页一直驻留。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-session　crates/miyu-endpoint/src/sessions/found.rs、connection.rs</span><span class="dir-note">LW-21</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>这些任务和它们带着的大结构（actor、人格的快照）放到堆上再交给运行时</li>
+              <li>等「找会话」的一百多处只在真要从磁盘载入时才装箱</li>
+              <li>不改行为</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">十几 kB 以上的异步任务装箱以后再交给运行时</span><span class="rl">internal/blueprint/session/actor.md</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-21</dd></div>
+        <div><dt>名称</dt><dd>特别大的异步任务挪到堆上</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-23</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-21</dd></div>
+        <div><dt>验收</dt><dd>32 kB 以上的栈帧 42 → 12 个</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>32 kB 以上的栈帧 42 → 12 个</span></li>
+        <li><span class="ok">✓</span><span>第 30 轮工作线程的栈 1.5 → 0.7 MB，核心的堆加匿名少约 0.8 MB</span></li>
+        <li><span class="ok">✓</span><span>门禁全过，三平台 CI 通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-21-大的异步任务挪到堆上.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW23" aria-labelledby="h-sLW23">
+  <div class="sheet-head"><h2 id="h-sLW23"><span class="no">LW-23</span>自带的 SQLite 不给连接预留小块内存池</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">SQLite 的每个连接开库时先分配 48 KB 的小块内存池，整块写过一遍，一直占着。核心空闲时开着三个连接、说过话以后五个，合计约 0.24 MB。每秒读一次每个连接的用量：平常一格都不用，最忙时用满以后本来就改向系统的分配器要。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">.cargo/config.toml　crates/miyu-store/src/sqlite/tests.rs</span><span class="dir-note">LW-23</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>仓库的 cargo 配置里给自带的 SQLite 加一个编译选项（SQLITE_DEFAULT_LOOKASIDE=0,0），池子关掉</li>
+              <li>产品代码不改：rusqlite 对运行期设这一项没有安全的封装</li>
+              <li>加一条测试问 SQLite 的编译选项，守着这一项（外面的环境变量盖掉它时会红）</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">自带的 SQLite 不留小块内存池</span><span class="rl">internal/blueprint/store.md「怎么走」第 15 条</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-23</dd></div>
+        <div><dt>名称</dt><dd>自带的 SQLite 不给连接预留小块内存池</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-23</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-23</dd></div>
+        <div><dt>验收</dt><dd>核心的堆加匿名内存：空闲少约 0.22 MB，九次工具调用少约 0.26 MB，第 30 轮少约 0.49 MB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>核心的堆加匿名内存：空闲少约 0.22 MB，九次工具调用少约 0.26 MB，第 30 轮少约 0.49 MB</span></li>
+        <li><span class="ok">✓</span><span>量尺改前改后各两遍，都在改前的波动以内</span></li>
+        <li><span class="ok">✓</span><span>门禁全过，三平台 CI 通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-23-SQLite的小块内存池调小.md</code>；蓝图 <code>store.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW25" aria-labelledby="h-sLW25">
+  <div class="sheet-head"><h2 id="h-sLW25"><span class="no">LW-25</span>线程分配区顶上空着的当场还给系统</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">核心空闲时 7 个线程分配区驻留约 1.4 MB、在用只有 0.2 MB。空着的分三样：各线程缓存里的小块压着的页约 0.6 MB，每个分配区顶上留着备用的一截合计约 0.2 MB，活块所在页上的空当约 0.3 MB。「安静下来归还」只收主分配区的顶。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-heap/src/lib.rs</span><span class="dir-note">LW-25</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>tune 里多设两个分配器参数：顶上不多要、不多留（M_TOP_PAD 0、M_TRIM_THRESHOLD 4 KiB）</li>
+              <li>放掉的块并进顶以后当场还到只剩不满一页</li>
+              <li>线程缓存没有动：调小的四种做法能再省 1 到 2.5 MB，但从头投影都慢约四成</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">分配区的顶不留备用的一截</span><span class="rl">internal/blueprint/heap.md「怎么走」第 7 条</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-25</dd></div>
+        <div><dt>名称</dt><dd>线程分配区顶上空着的当场还给系统</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-23</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-25</dd></div>
+        <div><dt>验收</dt><dd>核心的堆加匿名：空闲少约 0.14 MB，说过一句、九次工具调用各少约 0.18 MB，第 30 轮少约 0.4 MB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>核心的堆加匿名：空闲少约 0.14 MB，说过一句、九次工具调用各少约 0.18 MB，第 30 轮少约 0.4 MB</span></li>
+        <li><span class="ok">✓</span><span>代价：重开一万条事件的大会话后头一次投影慢 0.15 到 0.5 ms（预算 50 ms）</span></li>
+        <li><span class="ok">✓</span><span>门禁全过，三平台 CI 通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-25-线程分配区的留存.md</code>；蓝图 <code>heap.md</code>「线程缓存」第 9 条。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sMO1" aria-labelledby="h-sMO1">
+  <div class="sheet-head"><h2 id="h-sMO1"><span class="no">MO-1</span>macOS 排函数第一步：页探针的源码进仓库，量尺和核对认苹果的符号表</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">MO 这一组让 macOS 的发行包也照执行的先后排函数：在一台 M1 MacBook 上做的原型里，核心加终端界面在内存里的代码空闲时少 10 MB。macOS 上没有能录执行轨迹的用户态模拟器，改用一个插进被测进程的页探针。这一步只放基础，还什么都不排。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-perf/probe/pagetrace.c　crates/miyu-perf/src/order/listing.rs　xtask/src/order/verify.rs</span><span class="dir-note">MO-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>页探针的 C 源码进仓库：把代码段整页关上，碰到就记下地址再放开，每 20 毫秒重新关上</li>
+              <li>量尺能读探针写的记录；清单和核对认苹果 nm 没有符号大小的输出</li>
+              <li>macOS 的 CI 编一次探针</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">探针只在录清单时插进量尺自己起的被测进程，不进发行包</span><span class="rl">internal/construction/MO-macOS的发行包排函数.md</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">MO-1</dd></div>
+        <div><dt>名称</dt><dd>macOS 排函数第一步：页探针的源码进仓库，量尺和核对认苹果的符号表</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-22</dd></div>
+        <div><dt>提交</dt><dd class="mono">MO-1</dd></div>
+        <div><dt>验收</dt><dd>带「定时重新关上」一轮记到的函数是不带时的 2.7 倍，起来和说一句的用时看不出变慢</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>带「定时重新关上」一轮记到的函数是不带时的 2.7 倍，起来和说一句的用时看不出变慢</span></li>
+        <li><span class="ok">✓</span><span>门禁全过，三平台 CI 通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>总施工单 <code>internal/construction/MO-macOS的发行包排函数.md</code>（MO-1 到 MO-5）。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sMO2" aria-labelledby="h-sMO2">
+  <div class="sheet-head"><h2 id="h-sMO2"><span class="no">MO-2</span>macOS 排函数第二步：量尺能不靠模拟器、带着页探针录清单</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">量尺原来只能在 QEMU 用户态模拟器里录清单。这一步让它换一种起法：不换程序，只给被测进程加几个环境变量把探针插进去。还不碰打包，还什么都不排。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-perf/src/args.rs、sandbox.rs、order/head.rs、order/pages.rs、pages/mac.rs</span><span class="dir-note">MO-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>量尺加参数 --probe（和 --emulator 二者择一）和带探针的起法</li>
+              <li>五段剧本和逛一圈一步不删，核心、终端界面各写出一份清单，格式和模拟器那条路一样</li>
+              <li>真跑时修了三处：英文系统上界面画成英文、/theme 多一项「跟随壁纸」、落在代码段末尾不满一页的函数记不到</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">录清单有两种起法：Linux 用模拟器，macOS 用页探针</span><span class="rl">internal/blueprint/perf.md「排函数」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">MO-2</dd></div>
+        <div><dt>名称</dt><dd>macOS 排函数第二步：量尺能不靠模拟器、带着页探针录清单</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-23</dd></div>
+        <div><dt>提交</dt><dd class="mono">MO-2</dd></div>
+        <div><dt>验收</dt><dd>在一台 M1 MacBook 上五段 70 秒录完，核心记到 3328 个函数、终端界面 1065 个</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>在一台 M1 MacBook 上五段 70 秒录完，核心记到 3328 个函数、终端界面 1065 个</span></li>
+        <li><span class="ok">✓</span><span>Linux 上模拟器那条路回归通过</span></li>
+        <li><span class="ok">✓</span><span>门禁全过，三平台 CI 通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>总施工单 <code>internal/construction/MO-macOS的发行包排函数.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sMO3" aria-labelledby="h-sMO3">
+  <div class="sheet-head"><h2 id="h-sMO3"><span class="no">MO-3</span>macOS 排函数第三步：macOS 的发行包照起点清单排好</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">在一台 M1 MacBook 上量：没排的核心空闲时常驻的代码 12.2 MB、终端界面 6.5 MB。这一步让 macOS 上打包真的照清单排；打包时还不跑探针、不更新清单。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">xtask/src/order/seed.rs、link.rs、macos.rs　xtask/src/dist.rs　xtask/order/macos-miyu.txt、macos-miyu-tui.txt</span><span class="dir-note">MO-3</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>仓库里放两份起点清单（一行一个函数名，不带哈希），在那台 M1 上用量尺的五段带探针迭代得到</li>
+              <li>链接器垫片：链接的当场对输入跑 nm，把清单里的名字换成这一次的符号，加上 -order_file 再调真的链接器</li>
+              <li>三个包仍然一起编，出厂的程序只由 cargo 链一次；垫片自己出错时让链接失败</li>
+              <li>搭好发行包目录以后核对两个程序都排上了，不到九成就停下</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">macOS 的发行包照仓库里的起点清单排；排不上就停下，不悄悄发没排的包</span><span class="rl">internal/blueprint/perf.md「排函数」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">MO-3</dd></div>
+        <div><dt>名称</dt><dd>macOS 排函数第三步：macOS 的发行包照起点清单排好</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-23</dd></div>
+        <div><dt>提交</dt><dd class="mono">MO-3</dd></div>
+        <div><dt>验收</dt><dd>一台 M1 MacBook 上完整打一次包：两个程序都 100% 排在代码段开头，签名校验通过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>一台 M1 MacBook 上完整打一次包：两个程序都 100% 排在代码段开头，签名校验通过</span></li>
+        <li><span class="ok">✓</span><span>空闲时常驻的代码：核心 12.2 → 5.0 MB，终端界面 6.5 → 3.8 MB；两个进程的 RSS 合计少约 11 MB</span></li>
+        <li><span class="ok">✓</span><span>Linux 的打包流程回归通过；门禁全过，三平台 CI 通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>总施工单 <code>internal/construction/MO-macOS的发行包排函数.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sMO4" aria-labelledby="h-sMO4">
+  <div class="sheet-head"><h2 id="h-sMO4"><span class="no">MO-4</span>macOS 排函数第四步：打包时带探针跑一轮，写出下一次的起点清单</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">MO-3 的起点清单是固定的：代码一改，新走到的函数不在清单里，排在前面的那一段会一版比一版不准。这一步让每次打包都对着要发出去的两个程序实跑一遍，把结果合回清单，供下一次用。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">xtask/src/order/probe.rs、adopt.rs、seed.rs　xtask/src/dist.rs　.github/workflows/release.yml</span><span class="dir-note">MO-4</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>macOS 上照清单排好、核对过以后，带页探针跑量尺的五段；跑完核对两个程序逐字节没变、发行包里没有探针</li>
+              <li>合并：原来的名字照先后留着，新看到的接在后面，落在这一轮一页都没被碰过的页上的去掉；探针看不见的代码段开头和末尾不去</li>
+              <li>新清单作为构建产物传上去，不进 Release；cargo xtask order-seed 把它收回仓库</li>
+              <li>dist --no-probe：照排、照核对，不跑这一轮</li>
+              <li>逛一圈「派子代理」那一步只等开头一截：整句在 macOS 和 Linux 的打包上都有等不到的时候</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">每次演练、发版以后把产出的起点清单提交回仓库；发行包里不许有探针</span><span class="rl">internal/designs/59-发版.md　internal/blueprint/perf.md「排函数」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">MO-4</dd></div>
+        <div><dt>名称</dt><dd>macOS 排函数第四步：打包时带探针跑一轮，写出下一次的起点清单</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-23</dd></div>
+        <div><dt>提交</dt><dd class="mono">MO-4</dd></div>
+        <div><dt>验收</dt><dd>一台 M1 MacBook 上连打两次包：新看到的清单外函数核心 14、9 个，终端界面 6、5 个，第二次去掉的是 0 个</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>一台 M1 MacBook 上连打两次包：新看到的清单外函数核心 14、9 个，终端界面 6、5 个，第二次去掉的是 0 个</span></li>
+        <li><span class="ok">✓</span><span>探针那一轮约两分半；空闲时常驻的代码核心 5.0 MB、终端界面 3.8 MB，和 MO-3 持平</span></li>
+        <li><span class="ok">✓</span><span>Linux 的打包流程回归通过；门禁全过，三平台 CI 通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>总施工单 <code>internal/construction/MO-macOS的发行包排函数.md</code>；设计 <code>59-发版.md</code>。</li>
       </ul>
     </div>
   </div>
