@@ -16,7 +16,9 @@
 //! 5. 抽记忆的那一段（模拟器里，同一个数据根，施工 LW-14）：见 [`script::remembered`]。这一段的沙箱配置另加
 //!    [`remember::SETTINGS`]（开着记忆的会话每说 11 轮就抽一次记忆），前面几段的会话照出厂的门槛，不在半路抽。日志排在核心
 //!    清单的最后：前面几段的清单和没有这一段时一样，只有抽记忆才头一回执行的函数接在后面。
-//! 6. 每段的日志各一个文件，放在沙盒目录下；清单写完删掉（一份几十 MB）。
+//! 6. 带了 `--head` 的（施工 LW-30）：抽记忆那一段以后再录重场景的九段（扩展和平台桥、多会话、网页界面那样的头、知识库、
+//!    记忆的整理、MCP、定时任务、抓网页、软件包和命令行），日志依次接在核心清单的最后。见 `order/heavy.rs`。
+//! 7. 每段的日志各一个文件，放在沙盒目录下；清单写完删掉（一份几十 MB）。
 //!
 //! macOS 上（施工 MO-2）没有 QEMU 的用户态模拟器，`--probe` 代替 `--emulator`（[`Recorder`]）：五段的剧本、先后都一样，只是
 //! 被测的程序不放进模拟器，而是带着页探针原生起（[`Probed`]）。探针每个进程写一份记录（`order/pages.rs`），写下的已经是
@@ -26,6 +28,8 @@
 
 #[cfg(unix)]
 mod head;
+#[cfg(unix)]
+mod heavy;
 mod listing;
 mod pages;
 mod remember;
@@ -46,6 +50,9 @@ use crate::fake::Fake;
 use crate::measure::tools::calls::Workspace;
 use crate::sandbox::{Launch, Probed, Running, Sandbox, Traced};
 use listing::{Listing, Symbols};
+
+#[cfg(unix)]
+pub use heavy::{EXTENSION_ARG, MCP_ARG, serve_extension, serve_mcp};
 
 /// 用什么录（施工 MO-2）：`--emulator` 或者 `--probe`，二者择一（`args.rs` 查过）。
 #[derive(Debug, Clone, Copy)]
@@ -196,6 +203,9 @@ pub async fn record(
     std::fs::write(&config, plain).map_err(|e| format!("系统配置写不进：{e}"))?;
     remembered.map_err(|e| format!("抽记忆的那一段：{e}"))?;
     core.push(remembered_trace?);
+    if args.head.is_some() {
+        core.extend(with_heavy(args, &sandbox, &mut fake, recorder, &trust).await?);
+    }
     write(&args.miyu, &core, order)?;
     if let (Some(program), Some((head_order, trace))) = (&args.head, head_trace)
         && write(program, &[trace], head_order)? == 0
@@ -235,6 +245,30 @@ async fn with_head(
     _: bool,
 ) -> Result<(Trace, Option<Trace>), String> {
     Err("配着终端界面录（--head）只在 Unix 上做".to_string())
+}
+
+/// 重场景的九段（施工 LW-30，`order/heavy.rs`）：交回各段录下的。
+#[cfg(unix)]
+async fn with_heavy(
+    args: &Args,
+    sandbox: &Sandbox,
+    fake: &mut Fake,
+    recorder: Recorder<'_>,
+    trust: &Path,
+) -> Result<Vec<Trace>, String> {
+    heavy::record(args, sandbox, fake, recorder, trust).await
+}
+
+/// 重场景只配着终端界面的那一遍录（带 `--head`），那一遍只在 Unix 上做。
+#[cfg(not(unix))]
+async fn with_heavy(
+    _: &Args,
+    _: &Sandbox,
+    _: &mut Fake,
+    _: Recorder<'_>,
+    _: &Path,
+) -> Result<Vec<Trace>, String> {
+    Err("重场景（--head）只在 Unix 上录".to_string())
 }
 
 /// 照 `program` 的符号表读几段录下的（照先后：模拟器的日志各带程序在那一段里的装载起点，探针的记录照 `order/pages.rs` 挑

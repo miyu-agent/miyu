@@ -142,6 +142,13 @@ impl Sandbox {
         if let Some(home) = launch.home {
             command.envs(home_vars(home));
         }
+        command
+            .env_remove("HTTP_PROXY")
+            .env_remove("HTTPS_PROXY")
+            .env_remove("ALL_PROXY");
+        if let Some(proxy) = launch.proxy {
+            command.env("HTTP_PROXY", proxy);
+        }
         let mut child = command
             .args(["core", "--idle-seconds", "3600"])
             .env("MIYU_HOME", self.root.path())
@@ -151,9 +158,6 @@ impl Sandbox {
             .env("LOCALAPPDATA", &cache)
             .env("MIYU_PERF_KEY", "perf")
             .env("NO_PROXY", "127.0.0.1")
-            .env_remove("HTTP_PROXY")
-            .env_remove("HTTPS_PROXY")
-            .env_remove("ALL_PROXY")
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
@@ -194,6 +198,41 @@ impl Sandbox {
         }
     }
 
+    /// 在沙盒里跑一次命令行 `miyu <words>`（施工 LW-30，重场景里的 `miyu kb`、`miyu ask` 这些）：数据根、资源、缓存同核心，
+    /// 家目录和跟着它的几个目录指到 `home`（[`home_vars`]），不走代理；它连上正在运行的核心。交回标准输出。
+    ///
+    /// # Errors
+    ///
+    /// 拉不起来、退出码不是 0（报错里带它的标准错误）。
+    #[cfg(unix)]
+    pub fn cli(&self, words: &[&str], home: &Path) -> Result<String, String> {
+        let output = Command::new(&self.miyu)
+            .args(words)
+            .envs(home_vars(home))
+            .env("MIYU_HOME", self.root.path())
+            .env("MIYU_RESOURCES", &self.resources)
+            .env("MIYU_CATALOG_UPDATE", "false")
+            .env("XDG_CACHE_HOME", self.root.perf_cache())
+            .env("NO_PROXY", "127.0.0.1")
+            .env_remove("XDG_RUNTIME_DIR")
+            .env_remove("MIYU_LOG")
+            .env_remove("HTTP_PROXY")
+            .env_remove("HTTPS_PROXY")
+            .env_remove("ALL_PROXY")
+            .stdin(Stdio::null())
+            .output()
+            .map_err(|e| format!("拉不起 {}：{e}", self.miyu.display()))?;
+        if !output.status.success() {
+            return Err(format!(
+                "miyu {} 退出了（{}）：{}",
+                words.join(" "),
+                output.status,
+                String::from_utf8_lossy(&output.stderr).trim()
+            ));
+        }
+        Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+    }
+
     /// 停掉核心，等它放开数据根的锁：下一次拉起量的才是干净的冷启动。
     ///
     /// # Errors
@@ -228,6 +267,9 @@ pub struct Launch<'a> {
     pub trust: Option<&'a Path>,
     /// 家目录指进沙盒（施工 LW-6，[`home_vars`]）：配着真的终端界面录的两段，核心和终端界面看到同一个家目录；没给的照宿主的。
     pub home: Option<&'a Path>,
+    /// 核心的 `HTTP_PROXY`（施工 LW-30）：重场景里网页从量尺的假代理抓（地址闸不放回环，本机解析不出的名字交给代理）；
+    /// 回环上的假模型、假服务照 `NO_PROXY` 直连。没给的不走代理。
+    pub proxy: Option<&'a str>,
 }
 
 /// 家目录 `home` 和跟着它的几个目录（施工 LW-6）：`HOME`、`XDG_CONFIG_HOME`、`XDG_DATA_HOME`、`XDG_STATE_HOME`，

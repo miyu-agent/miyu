@@ -16,6 +16,7 @@
 //!
 //! 和 `miyu_http::testkit` 的假服务器不同：那个照剧本回、回完就不收了；这里一直收，回的字多长由量尺定。
 
+mod embed;
 mod http1;
 mod http2;
 pub mod organizer;

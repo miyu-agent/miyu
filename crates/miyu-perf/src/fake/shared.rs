@@ -90,8 +90,16 @@ impl Shared {
         let organized = organize
             .then(|| super::organizer::answer(&request.body))
             .flatten();
+        // 语义模型的请求（施工 LW-30，`fake/embed.rs`）回一份 JSON，不是事件流。
+        let embedded = request
+            .post
+            .then(|| super::embed::answer(&request.body))
+            .flatten();
+        let streamed = request.post && embedded.is_none();
         let body = if failed {
             FAILURE.to_string()
+        } else if let Some(vectors) = embedded {
+            vectors
         } else if request.post {
             match (&scripted, organized) {
                 (Some((script, done)), _) => script.answer(&request.body, *done),
@@ -122,7 +130,7 @@ impl Shared {
         };
         self.arrivals.send(arrival).ok()?;
         Some(Reply {
-            stream: request.post && !failed,
+            stream: streamed && !failed,
             failed,
             body,
             pace,

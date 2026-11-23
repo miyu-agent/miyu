@@ -41,6 +41,15 @@ async fn main() -> ExitCode {
     if words.first().map(String::as_str) == Some(measure::driver::ARG) {
         return measure::driver::serve();
     }
+    // 重场景里扮的扩展、平台桥和命令型的 MCP 服务（施工 LW-30）：同样是量尺自己，只在 Unix 上录。
+    #[cfg(unix)]
+    if words.first().map(String::as_str) == Some(order::EXTENSION_ARG) {
+        return order::serve_extension(&words);
+    }
+    #[cfg(unix)]
+    if words.first().map(String::as_str) == Some(order::MCP_ARG) {
+        return order::serve_mcp();
+    }
     let outcome = match args::parse(&words) {
         Ok(args) => run(args).await,
         Err(error) => Err(error),

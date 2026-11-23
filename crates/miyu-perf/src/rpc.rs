@@ -36,6 +36,16 @@ impl Rpc {
     ///
     /// 连不上、握手被拒、等太久。
     pub async fn connect(root: &DataRoot) -> Result<Rpc, String> {
+        Rpc::connect_as(root, "perf", json!({"input": false})).await
+    }
+
+    /// 同 [`Rpc::connect`]，握手时说自己是 `kind` 这种头、本事是 `caps`（施工 LW-30：重场景里照网页界面的样子连一次，
+    /// 核心照头的种类、`caps.input` 走的路不一样）。
+    ///
+    /// # Errors
+    ///
+    /// 连不上、握手被拒、等太久。
+    pub async fn connect_as(root: &DataRoot, kind: &str, caps: Value) -> Result<Rpc, String> {
         let (connection, token) = miyu_ipc::connect(root)
             .await
             .map_err(|e| format!("连不上核心：{e}"))?;
@@ -46,8 +56,8 @@ impl Rpc {
             pushes: VecDeque::new(),
             hello: Value::Null,
         };
-        let hello = json!({"protocol": [1, 1], "head": {"kind": "perf", "version": "0.0.0"},
-            "caps": {"input": false}, "token": token});
+        let hello = json!({"protocol": [1, 1], "head": {"kind": kind, "version": "0.0.0"},
+            "caps": caps, "token": token});
         rpc.hello = rpc.call("hello", hello).await?;
         Ok(rpc)
     }
@@ -97,6 +107,32 @@ impl Rpc {
             if ended(&self.line("turn.ended").await?) {
                 return Ok(());
             }
+        }
+    }
+
+    /// 等一条合 `wanted` 的推送（施工 LW-30：重场景等定时任务跑完的通知）：先看攒着的，再往下读；别的推送留着。
+    ///
+    /// # Errors
+    ///
+    /// 读不到、等太久。
+    #[cfg(unix)]
+    pub async fn push(
+        &mut self,
+        what: &str,
+        wanted: impl Fn(&Value) -> bool,
+    ) -> Result<Value, String> {
+        if let Some(at) = self.pushes.iter().position(&wanted) {
+            return self
+                .pushes
+                .remove(at)
+                .ok_or_else(|| format!("{what} 不见了"));
+        }
+        loop {
+            let push = self.line(what).await?;
+            if wanted(&push) {
+                return Ok(push);
+            }
+            self.pushes.push_back(push);
         }
     }
 
