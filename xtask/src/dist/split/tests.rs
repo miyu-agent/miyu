@@ -66,9 +66,9 @@ fn names_carry_their_own_versions() {
 }
 
 #[test]
-fn the_core_one_has_three_programs_and_only_the_core_resources() {
+fn the_core_one_has_the_core_programs_and_only_the_core_resources() {
     let scratch = Scratch::new("core");
-    let programs: Vec<PathBuf> = ["miyu", "miyu-sandbox", "miyu-extract"]
+    let programs: Vec<PathBuf> = crate::dist::CORE
         .iter()
         .map(|name| scratch.put(&format!("build/{name}"), name))
         .collect();
@@ -88,8 +88,8 @@ fn the_core_one_has_three_programs_and_only_the_core_resources() {
         &dir,
     )
     .unwrap();
-    for name in ["miyu", "miyu-sandbox", "miyu-extract"] {
-        assert_eq!(fs::read_to_string(dir.join(name)).unwrap(), name);
+    for name in crate::dist::CORE {
+        assert_eq!(fs::read_to_string(dir.join(name)).unwrap(), *name);
     }
     assert!(!dir.join("miyu-tui").exists() && !dir.join("README.txt").exists());
     assert_eq!(

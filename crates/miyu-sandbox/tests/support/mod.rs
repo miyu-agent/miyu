@@ -2,6 +2,8 @@
 
 #![allow(dead_code, reason = "几份测试各用其中几样")]
 
+#[cfg(unix)]
+pub mod family;
 #[cfg(target_os = "linux")]
 pub mod linux;
 
@@ -11,6 +13,24 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 
 /// cargo 编出来的助手。
 pub const HELPER: &str = env!("CARGO_BIN_EXE_miyu-sandbox");
+
+/// cargo 编出来的看门的小程序 `miyu-watchdog`（施工 LW-28，Unix）：`target/<profile>/`，和测试程序所在的 `deps/` 同一层。
+/// `cargo test --workspace` 编了它；只测这一个包时，先 `cargo build -p miyu-watchdog`。
+#[cfg(unix)]
+pub fn watchdog() -> PathBuf {
+    let exe = std::env::current_exe().expect("知道测试程序在哪");
+    let dir = exe
+        .parent()
+        .and_then(Path::parent)
+        .expect("测试程序在 target/<profile>/deps/ 里");
+    let watchdog = dir.join(miyu_sandbox::lifeline::WATCHDOG);
+    assert!(
+        watchdog.is_file(),
+        "{} 不在：先 cargo build -p miyu-watchdog（cargo test --workspace 会编它）",
+        watchdog.display()
+    );
+    watchdog
+}
 
 /// 写了脚本马上执行的几份测试排着跑：别的线程恰好在这时起子进程，子进程带着还没关的写句柄，执行脚本就会碰上
 /// 「文件正忙」（Linux 的 `ETXTBSY`）。同一份测试里起子进程的都先拿它。

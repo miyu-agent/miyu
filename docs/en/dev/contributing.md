@@ -42,7 +42,7 @@ The four steps below take you from building the core to running it with a develo
    cargo build
    ```
 
-   When the build finishes, `target/debug/` holds the main program `miyu`, the sandbox helper `miyu-sandbox` and `miyu-extract` (all with `.exe` on Windows). If you build only `-p miyu`, the sandbox helper stays at the old version, and commands in read-only mode fail with a message saying the helper and the core are not the same build.
+   When the build finishes, `target/debug/` holds the main program `miyu`, the sandbox helper `miyu-sandbox`, `miyu-extract` and the watchdog `miyu-watchdog` (all with `.exe` on Windows; on Windows `miyu-watchdog` does nothing and is not packed into the release archive). If you build only `-p miyu`, the sandbox helper stays at the old version, and commands in read-only mode fail with a message saying the helper and the core are not the same build.
 
 2. Create a data root for development, so that your own `~/.miyu` is left alone:
 
@@ -186,7 +186,7 @@ Local acceptance and the three-platform CI both run this same command. It runs t
 | `cargo xtask prompts` | Regenerates `internal/blueprint/prompts.md` from the ledger and the resources |
 | `cargo xtask notices` | Regenerates `THIRD-PARTY-LICENSES.txt` |
 | `cargo xtask perf [measuring tool args]` | Builds the release `miyu`, `miyu-sandbox` and the measuring tool `miyu-perf`, and measures startup, memory, requests on a long session and binary size, writing the result into `target/perf-out/`; the remaining arguments go to the measuring tool unchanged, for example `--runs 3`. Memory can only be measured on Linux; on macOS and Windows those cells in the table say `not measured` |
-| `cargo xtask dist [--target <os>] [--out <dir>]` | Builds the command-line archive for the system you are on: takes the terminal and web UI according to `heads.toml`, builds the release `miyu`, `miyu-sandbox`, `miyu-extract`, `miyu-tui` and `miyu-web`, and packs them as `miyu-<version>-<os>.tar.gz` (`.zip` on Windows), placed under `dist/` in the target directory by default; `--target` can only name the system you are on |
+| `cargo xtask dist [--target <os>] [--out <dir>]` | Builds the command-line archive for the system you are on: takes the terminal and web UI according to `heads.toml`, builds the release `miyu`, `miyu-sandbox`, `miyu-extract`, `miyu-watchdog` (only on Linux and macOS), `miyu-tui` and `miyu-web`, and packs them as `miyu-<version>-<os>.tar.gz` (`.zip` on Windows), placed under `dist/` in the target directory by default; `--target` can only name the system you are on |
 | `cargo xtask dist-check <archive>` | Checks an archive before release: compares the name, the programs, the licenses and the resources byte by byte, and runs `miyu --version` and `miyu check` from the archive |
 | `cargo xtask packaging <tag> --sums <SHA256SUMS> [--applet <tray tag> --applet-sums <tray SHA256SUMS>] [--out <dir>]` | Fills in the AUR `PKGBUILD` and the Homebrew formula from a release's `SHA256SUMS` |
 | `cargo xtask version <year.month.number>` | Changes the workspace version (for example `2026.12.0`), and `Cargo.lock` is updated to match |

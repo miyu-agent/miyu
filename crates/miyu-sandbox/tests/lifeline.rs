@@ -1,111 +1,58 @@
-//! Unix 上的生命线（施工 7-8，看门的换成助手是施工 V-48）：看门的照助手的 `lifeline` 起、退回 `/bin/sh`（没给助手、助手
-//! 不在）都一样——生命线还在，组里的照常跑；写端一关（核心没了的样子），看门的把整个组杀掉，命令和它起的孙进程都在里面；
-//! 经沙盒的助手起的命令（Landlock、macOS 的 Seatbelt）也一样。`setsid` 出去的、自己换了进程组的，改前改后
-//! 都收不掉。看门的被杀了，那一条命令没人看着，照常跑，别的组不受影响；命令 `kill 0` 连看门的一起打到（看门的在组里）。
+//! Unix 上的生命线（施工 7-8；看门的换成助手是施工 V-48，换成单独的 `miyu-watchdog` 是施工 LW-28）：看门的照 `miyu-watchdog`
+//! 起、退回 `/bin/sh`（没给、给的不在）都一样——生命线还在，组里的照常跑；写端一关（核心没了的样子），看门的把整个组杀掉，
+//! 命令和它起的孙进程都在里面；经沙盒的助手起的命令（Landlock、macOS 的 Seatbelt）也一样。`setsid` 出去的、自己换了进程组的，
+//! 改前改后都收不掉。看门的被杀了，那一条命令没人看着，照常跑，别的组不受影响；命令 `kill 0` 连看门的一起打到（看门的在组里）。
 //! 两根生命线（两个核心）各管各的。Linux 上再看看门的手里：环境变量是空的、工作目录是 `/`、只有 0、1、2 三个文件描述符。
+//! 沙盒的助手不再认 `lifeline`（施工 LW-28：不留旧的写法）。长住的子进程共用一个看门的，见 `lifeline_kept.rs`。
 
 #![cfg(unix)]
 
 mod support;
 
-use std::io::{BufRead, BufReader, Lines};
 use std::os::unix::process::{CommandExt, ExitStatusExt};
-use std::path::Path;
-use std::process::{Child, ChildStdout, Command, Stdio};
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
 use miyu_sandbox::lifeline::{Lifeline, Watcher};
+use support::family::{FAMILY, Running, alive, gone, kill, killed, running, zombie};
 use support::{Dir, HELPER};
 
-/// 进程 `pid` 还在不在：`kill -0` 问一声（只问测试自己起的）。
-fn alive(pid: &str) -> bool {
-    Command::new("/bin/sh")
-        .args(["-c", &format!("kill -0 {pid} 2>/dev/null")])
-        .status()
-        .is_ok_and(|status| status.success())
-}
-
-/// 等 `pid` 没了，最多 5 秒；交回没没。
-fn gone(pid: &str) -> bool {
-    let deadline = Instant::now() + Duration::from_secs(5);
-    while alive(pid) && Instant::now() < deadline {
-        std::thread::sleep(Duration::from_millis(20));
-    }
-    !alive(pid)
-}
-
-/// 收拾测试自己起的、没被收掉的进程（按进程号）。
-fn kill(pid: &str) {
-    #[expect(clippy::let_underscore_must_use, reason = "已经没了的杀不了也不要紧")]
-    let _ = Command::new("kill").args(["-9", pid]).status();
-}
-
-/// 起在看门的组里的一条命令：它自己、它的进程号（`$$`）、它在后台起的孙进程的进程号，还有没读完的输出。
-struct Running {
-    command: Child,
-    pid: String,
-    grandchild: String,
-    rest: Lines<BufReader<ChildStdout>>,
-}
-
-/// 在 `watcher` 的组里起 `program args…`，最后一个参数是一段 shell，先印 `$$`、再印孙进程的进程号。
+/// 在 `watcher` 的组里起 `program args…`（`support::family::start`）。
 fn start(watcher: &Watcher, program: &str, args: &[&str]) -> Running {
-    let group = i32::try_from(watcher.group()).expect("进程号放得下");
-    let mut command = Command::new(program)
-        .args(args)
-        .stdout(Stdio::piped())
-        .stdin(Stdio::null())
-        .process_group(group)
-        .spawn()
-        .expect("起得来");
-    let mut lines = BufReader::new(command.stdout.take().expect("接了管道")).lines();
-    let mut line = || lines.next().expect("还有一行").expect("读得到");
-    let (pid, grandchild) = (line(), line());
-    Running {
-        command,
-        pid,
-        grandchild,
-        rest: lines,
-    }
+    support::family::start(watcher.group(), program, args)
 }
-
-/// 印出自己和孙进程的那一段。
-const FAMILY: &str = "echo $$; sleep 60 & echo $!; wait";
 
 /// 直接在 `watcher` 的组里起 `sh -c FAMILY`。
 fn family(watcher: &Watcher) -> Running {
     start(watcher, "/bin/sh", &["-c", FAMILY])
 }
 
+/// 两种看门的：`miyu-watchdog`、退回 `/bin/sh`（没给）。
+fn both() -> [Option<PathBuf>; 2] {
+    [Some(support::watchdog()), None]
+}
+
 /// 生命线还在，命令和孙进程都照常跑；丢掉生命线，命令被 SIGKILL，孙进程也没了。
-fn dies_with(lifeline: Lifeline, mut running: Running) {
+fn dies_with(lifeline: Lifeline, mut started: Running) {
     std::thread::sleep(Duration::from_millis(200));
-    assert!(
-        running.command.try_wait().expect("问得了").is_none(),
-        "生命线还在，照常跑"
-    );
-    assert!(alive(&running.grandchild));
+    assert!(running(&mut started), "生命线还在，照常跑");
     drop(lifeline);
-    let status = running.command.wait().expect("等得到");
-    let grandchild_gone = gone(&running.grandchild);
-    if !grandchild_gone {
-        kill(&running.grandchild);
-    }
-    assert_eq!(status.signal(), Some(9), "整组被 SIGKILL");
-    assert!(grandchild_gone, "孙进程也跟着没了");
+    assert!(killed(&mut started), "整组被 SIGKILL，孙进程也跟着没了");
 }
 
 #[test]
-fn the_helper_and_the_shell_both_kill_the_group_when_the_lifeline_breaks() {
-    let missing = Path::new("/nonexistent/miyu-sandbox");
-    for (helper, by_helper) in [
-        (Some(Path::new(HELPER)), true),
+fn the_watchdog_and_the_shell_both_kill_the_group_when_the_lifeline_breaks() {
+    let watchdog = support::watchdog();
+    let missing = Path::new("/nonexistent/miyu-watchdog");
+    for (given, by_watchdog) in [
+        (Some(watchdog.as_path()), true),
         (None, false),
         (Some(missing), false),
     ] {
         let lifeline = Lifeline::new().expect("建得起管道");
-        let watcher = lifeline.watcher(helper).expect("起得来看门的");
-        assert_eq!(watcher.by_helper(), by_helper, "{helper:?}");
+        let watcher = lifeline.watcher(given).expect("起得来看门的");
+        assert_eq!(watcher.by_watchdog(), by_watchdog, "{given:?}");
         let running = family(&watcher);
         dies_with(lifeline, running);
         drop(watcher);
@@ -129,7 +76,7 @@ fn sandboxed_commands_die_with_the_lifeline_on_every_path() {
     for spec in specs {
         let lifeline = Lifeline::new().expect("建得起管道");
         let watcher = lifeline
-            .watcher(Some(Path::new(HELPER)))
+            .watcher(Some(&support::watchdog()))
             .expect("起得来看门的");
         let spec = spec.to_string();
         let running = start(
@@ -144,9 +91,9 @@ fn sandboxed_commands_die_with_the_lifeline_on_every_path() {
 
 #[test]
 fn escapees_from_the_group_are_not_killed_before_or_after() {
-    for helper in [Some(Path::new(HELPER)), None] {
+    for given in both() {
         let lifeline = Lifeline::new().expect("建得起管道");
-        let watcher = lifeline.watcher(helper).expect("起得来看门的");
+        let watcher = lifeline.watcher(given.as_deref()).expect("起得来看门的");
         // 一个 `setsid` 出去（新的会话、新的组），一个自己换了进程组：都不在看门的组里了。
         let escape = "import os, sys, time; getattr(os, sys.argv[1])(*map(int, sys.argv[2:])); print(os.getpid(), flush=True); time.sleep(60)";
         let script = format!(
@@ -166,7 +113,7 @@ fn escapees_from_the_group_are_not_killed_before_or_after() {
         assert_eq!(
             left,
             [true, true],
-            "出了组的收不掉（改前也收不掉）：{helper:?}"
+            "出了组的收不掉（改前也收不掉）：{given:?}"
         );
         drop(watcher);
     }
@@ -174,11 +121,11 @@ fn escapees_from_the_group_are_not_killed_before_or_after() {
 
 #[test]
 fn a_killed_watcher_leaves_only_its_own_command_unwatched() {
-    for helper in [Some(Path::new(HELPER)), None] {
+    for given in both() {
         let lifeline = Lifeline::new().expect("建得起管道");
         let (first, second) = (
-            lifeline.watcher(helper).expect("起得来看门的"),
-            lifeline.watcher(helper).expect("起得来看门的"),
+            lifeline.watcher(given.as_deref()).expect("起得来看门的"),
+            lifeline.watcher(given.as_deref()).expect("起得来看门的"),
         );
         // 命令 `kill -TERM 0`：看门的在组里，跟着没了（附带的行为，改前就这样）；命令自己不理 TERM，照常跑。
         let mut unwatched = start(
@@ -188,25 +135,18 @@ fn a_killed_watcher_leaves_only_its_own_command_unwatched() {
         );
         let watched = family(&second);
         let deadline = Instant::now() + Duration::from_secs(5);
-        while alive(&first.group().to_string()) && Instant::now() < deadline {
-            // 看门的没了还是僵尸（等它的是 `Watcher`），`kill -0` 照样成：看它的状态。
-            let state = Command::new("ps")
-                .args(["-o", "stat=", "-p", &first.group().to_string()])
-                .output()
-                .expect("问得了");
-            if String::from_utf8_lossy(&state.stdout)
-                .trim()
-                .starts_with('Z')
-            {
-                break;
-            }
+        // 看门的没了还是僵尸（等它的是 `Watcher`），`kill -0` 照样成：看它的状态。
+        while alive(&first.group().to_string())
+            && !zombie(&first.group().to_string())
+            && Instant::now() < deadline
+        {
             std::thread::sleep(Duration::from_millis(20));
         }
         drop(lifeline);
         dies_with_nothing(&mut unwatched);
         let mut watched = watched;
         let status = watched.command.wait().expect("等得到");
-        assert_eq!(status.signal(), Some(9), "别的组照样被收掉：{helper:?}");
+        assert_eq!(status.signal(), Some(9), "别的组照样被收掉：{given:?}");
         assert!(gone(&watched.grandchild));
         drop((first, second));
     }
@@ -229,8 +169,9 @@ fn two_lifelines_watch_their_own_groups() {
         Lifeline::new().expect("建得起管道"),
         Lifeline::new().expect("建得起管道"),
     );
-    let first = one.watcher(Some(Path::new(HELPER))).expect("起得来看门的");
-    let second = two.watcher(Some(Path::new(HELPER))).expect("起得来看门的");
+    let watchdog = support::watchdog();
+    let first = one.watcher(Some(&watchdog)).expect("起得来看门的");
+    let second = two.watcher(Some(&watchdog)).expect("起得来看门的");
     let mut running = family(&first);
     let other = family(&second);
     drop(one);
@@ -279,9 +220,9 @@ fn descriptors(proc: &str) -> Option<Vec<(String, String)>> {
 #[test]
 fn the_watcher_holds_nothing_but_the_lifeline() {
     let inherited = inherited();
-    for helper in [Some(Path::new(HELPER)), None] {
+    for given in both() {
         let lifeline = Lifeline::new().expect("建得起管道");
-        let watcher = lifeline.watcher(helper).expect("起得来看门的");
+        let watcher = lifeline.watcher(given.as_deref()).expect("起得来看门的");
         let proc = format!("/proc/{}", watcher.group());
         // `/bin/sh` 读到 `-c` 那一段才算起好：等它的 0 号接上管道以后再看。
         let deadline = Instant::now() + Duration::from_secs(5);
@@ -305,7 +246,7 @@ fn the_watcher_holds_nothing_but_the_lifeline() {
             std::thread::sleep(Duration::from_millis(20));
         }
         let names: Vec<&str> = fds.iter().map(|(name, _)| name.as_str()).collect();
-        assert_eq!(names, ["0", "1", "2"], "{helper:?}：{fds:?}");
+        assert_eq!(names, ["0", "1", "2"], "{given:?}：{fds:?}");
         assert!(fds[0].1.starts_with("pipe:"), "{fds:?}");
         assert_eq!(
             (fds[1].1.as_str(), fds[2].1.as_str()),
@@ -339,11 +280,12 @@ fn the_watcher_holds_nothing_but_the_lifeline() {
     }
 }
 
-/// 助手只认光秃秃的 `lifeline`：后面多了参数的不是看门，照用法错退出 125。起在自己的组里：认错了真去看门，也只杀它自己。
+/// 沙盒的助手不再看门（施工 LW-28：看门的换成 `miyu-watchdog`，不留旧的写法）：`miyu-sandbox lifeline` 照用法错退出 125，
+/// 什么都不杀。起在自己的组里：认错了真去看门，也只杀它自己。
 #[test]
-fn the_helper_watches_only_for_the_bare_mode() {
+fn the_helper_no_longer_watches() {
     let out = Command::new(HELPER)
-        .args(["lifeline", "extra"])
+        .arg("lifeline")
         .stdin(Stdio::null())
         .process_group(0)
         .output()
@@ -353,13 +295,8 @@ fn the_helper_watches_only_for_the_bare_mode() {
         Some(i32::from(miyu_sandbox::EXIT_HELPER)),
         "{out:?}"
     );
-    // 光秃秃的：标准输入是空的，马上读到结尾，杀掉自己的组。
-    let out = Command::new(HELPER)
-        .arg("lifeline")
-        .stdin(Stdio::null())
-        .process_group(0)
-        .output()
-        .expect("起得来");
-    assert_eq!(out.status.signal(), Some(9), "{out:?}");
-    assert!(out.stdout.is_empty() && out.stderr.is_empty());
+    assert!(
+        String::from_utf8_lossy(&out.stderr).contains("usage"),
+        "{out:?}"
+    );
 }

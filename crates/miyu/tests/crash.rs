@@ -5,7 +5,7 @@
 //! 上组里看门的杀了整组，Windows 上核心所在的作业对象跟着关。
 //!
 //! - 她放到后台的（三个平台）；Unix 上再测她在前台跑着的、她监视的（MN-1 上）、人用 `!` 跑的（SH-1 上，不经模型）：命令自己、
-//!   孙进程都要没了；主程序旁边有助手的，组里看门的是助手（施工 V-48），没有的是 `/bin/sh`。
+//!   孙进程都要没了；主程序旁边有看门的小程序 `miyu-watchdog` 的，组里看门的是它（施工 LW-28），没有的是 `/bin/sh`。
 //! - 两个核心各有各的看门的：硬杀一个只停它的；另一个有计划地停下（SIGTERM），命令停、看门的也没了。
 //!
 //! 没停下的（修之前的样子），测试最后照心跳记下的进程号把它杀掉：只杀测试自己起的。
@@ -284,8 +284,8 @@ async fn stopped(beat: &Beat) -> bool {
     stopped
 }
 
-/// 照 `how` 起心跳，硬杀核心，心跳要停：核心没了，命令跟着没。Unix 上命令自己、写心跳的孙进程都要没了；主程序旁边有助手的，
-/// 组里看门的是助手（施工 V-48），没有的是 `/bin/sh`。
+/// 照 `how` 起心跳，硬杀核心，心跳要停：核心没了，命令跟着没。Unix 上命令自己、写心跳的孙进程都要没了；主程序旁边有
+/// `miyu-watchdog` 的，组里看门的是它（施工 LW-28），没有的是 `/bin/sh`。
 async fn dies_with_a_killed_core(how: How) {
     let home = Home::new();
     let work: PathBuf = home.dir.join("work");
@@ -309,9 +309,9 @@ async fn dies_with_a_killed_core(how: How) {
             let pid = std::fs::read_to_string(pid).expect("记下了");
             assert!(gone(pid.trim()), "{how:?}：{pid} 还在");
         }
-        let helper = Path::new(crate::support::MIYU).with_file_name("miyu-sandbox");
-        let expected = if helper.is_file() {
-            "miyu-sandbox"
+        let watchdog = Path::new(crate::support::MIYU).with_file_name("miyu-watchdog");
+        let expected = if watchdog.is_file() {
+            "miyu-watchdog"
         } else {
             "sh"
         };

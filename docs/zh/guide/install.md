@@ -184,7 +184,7 @@ miyu --version
 
 安装脚本装的是一体包，一个目录里包含以下内容：
 
-- 五个程序：`miyu`（核心和命令行；核心就是 `miyu` 在后台运行时的状态）、`miyu-sandbox`、`miyu-extract`、`miyu-tui`（终端界面）、`miyu-web`（网页界面）。在 Windows 上它们都带 `.exe` 后缀，例如 `miyu.exe`、`miyu-sandbox.exe`。
+- 五个程序：`miyu`（核心和命令行；核心就是 `miyu` 在后台运行时的状态）、`miyu-sandbox`、`miyu-extract`、`miyu-tui`（终端界面）、`miyu-web`（网页界面）。Linux 和 macOS 上还有第六个程序 `miyu-watchdog`：如果核心意外退出，它会结束核心启动的命令和扩展；Windows 上用系统自带的作业对象做这件事，所以没有这个程序。在 Windows 上这些程序都带 `.exe` 后缀，例如 `miyu.exe`、`miyu-sandbox.exe`。
 - `resources/`：核心的出厂资源，以及终端界面、网页界面两个软件包（`resources/packages/tui/`、`resources/packages/webui/`）。
 - `LICENSE`、`THIRD-PARTY-LICENSES.txt`、`README.txt`。`README.txt` 说明了自己解压压缩包之后怎么使用：Linux、macOS 上是 `把这个目录加进 PATH，或者在 ~/.local/bin 里放一个指向 miyu 的链接`，Windows 上是 `把这个目录加进 PATH（或者直接写 miyu.exe 的完整路径）`。
 - 安装脚本写入的 `install.toml`。

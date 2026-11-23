@@ -200,7 +200,7 @@ async fn once(
 enum Running {
     Child {
         child: Box<Child>,
-        /// 看门的（施工 XH-1）：进程收掉以后才丢。
+        /// 共用的组（施工 XH-1、LW-28）：进程收掉以后才丢。
         _kept: Kept,
     },
     Remote(miyu_mcp::http::Expired, miyu_mcp::http::Challenged),

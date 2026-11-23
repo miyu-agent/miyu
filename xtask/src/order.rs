@@ -312,7 +312,7 @@ fn recording(perf: &Path, paths: &Recording<'_>) -> Command {
     command
 }
 
-/// 编核心的三个程序，带着清单（只有 `miyu` 的链接用它，见 `crates/miyu/build.rs`）。
+/// 编核心的程序（`CORE`），带着清单（只有 `miyu` 的链接用它，见 `crates/miyu/build.rs`）。
 fn core_build(cargo: &str, root: &Path, list: &Path, locked: bool) -> Command {
     let mut command = Command::new(cargo);
     command

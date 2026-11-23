@@ -34,6 +34,7 @@
 | MCP 服务 | 清单或配置里写的命令 | 核心 | 通过标准输入输出使用 MCP 通信；写成网址的服务不启动进程 |
 | 沙盒助手 | `miyu-sandbox` | 核心，每条需要关起来的命令启动一个 | 不使用协议：它先按照核心写好的规格收紧自己的权限，再替换成那条命令 |
 | 抽字 | `miyu-extract` | 核心，知识库抽取 PDF、网页的文字时，每一份文件启动一次 | 在标准输出交出一个 JSON 字符串数组，然后退出 |
+| 看门 | `miyu-watchdog`（只在 Linux、macOS 上） | 核心：每条命令启动一个；扩展、MCP 服务、worker 共用一个 | 不使用协议：标准输入是核心手里一根管道的读端，读到结尾（核心已经退出）就结束自己所在的整个进程组 |
 | worker | 软件包 `[worker]` 里写的程序，例如 `miyu-embed` | 核心在需要时启动，空闲一段时间后自己退出 | 标准输入输出，一问一答 |
 | 包加的命令 | 软件包 `[command]` 里写的程序 | 主程序：`miyu <名字>` 不是内置子命令时，原样转交给它 | 由软件包自己决定 |
 
@@ -100,6 +101,7 @@
 | `miyu-mcp` | MCP 的客户端：通过标准输入输出使用 MCP，列出工具、调用工具 | 3 执行器 |
 | `miyu-knowledge` | 知识库的工具：`kb_search`、`kb_read`、`kb_save` | 3 执行器 |
 | `miyu-extract` | 小程序 `miyu-extract`：抽取一份 PDF 或网页的文字 | 3 执行器 |
+| `miyu-watchdog` | 小程序 `miyu-watchdog`：核心意外退出时结束它启动的命令和扩展（只在 Linux、macOS 上工作） | 3 执行器 |
 | `miyu-source` | 软件源：包文件的打包和解包、索引、签名、收录；程序 `miyu-index` | 3 执行器 |
 | `miyu-wallpaper` | 读取桌面壁纸，只在头的进程里使用 | 3 执行器 |
 | `miyu-session` | 会话 actor：把内核接到磁盘、模型、工具上；路由、权限、沙盒规格 | 4 核心 |
@@ -197,7 +199,7 @@ miyu-sdk ──── miyu-ocr
 | 本机传输（`miyu-ipc`） | Unix 套接字：设置了 `$XDG_RUNTIME_DIR` 时在 `$XDG_RUNTIME_DIR/miyu-<指纹>/core.sock`，没有设置时在 `~/.miyu/run/core.sock` | Unix 套接字 `~/.miyu/run/core.sock` | 命名管道 `\\.\pipe\miyu-<指纹>`，只对本人开放；头连接以后会核对另一头的进程是不是同一个用户的（`miyu-pipe`） |
 | 只读命令的沙盒（`miyu-sandbox`） | Landlock | Seatbelt | MXC 进程容器；没有桌面会话时拒绝每一条命令，退出码 `125` |
 | 沙盒是否把读取也限制住（`miyu-sandbox` 的 `CONFINES_READS`） | 能；在 Landlock、seccomp 都管不住 Unix 套接字的机器上，通讯平台上别人的会话不运行命令 | 能 | 不能：在通讯平台上别人的会话（群聊、不是本人的私聊）里，命令一律拒绝（`miyu-session` 的 `guard.rs`） |
-| 核心退出后，它启动的命令跟着停止 | 每个进程组一个看门狗（watchdog） | 每个进程组一个看门狗（watchdog） | 作业对象 |
+| 核心退出后，它启动的命令跟着停止 | 看门的小程序 `miyu-watchdog`：每条命令的进程组一个，扩展、MCP 服务、worker 共用一个进程组和一个 | 同 Linux | 作业对象 |
 | AI 运行命令用的 shell（`miyu-basesystem` 的 `shell/program.rs`） | bash：在 `PATH` 里查找，找不到时用 `/bin/bash` | zsh：固定是 `/bin/zsh` | PowerShell 7：先找资源目录的 `pwsh/pwsh.exe`，再找 `PATH` 里的 `pwsh.exe`；都没有时用 `%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe`（5.1） |
 | 危险命令的识别（`shell/hazard.rs`，规则在 `miyu-policy` 的 `hazard`） | 识别 bash 的写法 | 识别 zsh 的写法 | 识别 PowerShell 和 cmd 的写法（`hazard/windows*`）；直接写入磁盘设备的那一类不识别 |
 | 停止核心的信号（`miyu-core` 的 `serve.rs`） | `Ctrl+C`、`SIGTERM` | `Ctrl+C`、`SIGTERM` | 只有 `Ctrl+C`。`miyu core stop` 通过协议停止核心，三个平台一样 |

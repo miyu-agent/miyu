@@ -184,7 +184,7 @@ Run `miyu` in a terminal to open the interface. The first time you open it, an o
 
 The install script installs a one-piece bundle, a single directory that contains:
 
-- Five programs: `miyu` (core and command line; the core is simply `miyu` running in the background), `miyu-sandbox`, `miyu-extract`, `miyu-tui` (the terminal UI) and `miyu-web` (the web UI). On Windows they all have the `.exe` suffix, for example `miyu.exe` and `miyu-sandbox.exe`.
+- Five programs: `miyu` (core and command line; the core is simply `miyu` running in the background), `miyu-sandbox`, `miyu-extract`, `miyu-tui` (the terminal UI) and `miyu-web` (the web UI). Linux and macOS have a sixth program, `miyu-watchdog`: if the core exits unexpectedly, it ends the commands and extensions that the core started; Windows does this with the system's job objects, so it has no such program. On Windows these programs all have the `.exe` suffix, for example `miyu.exe` and `miyu-sandbox.exe`.
 - `resources/`: the core's shipped resources, plus the two packages for the terminal UI and the web UI (`resources/packages/tui/`, `resources/packages/webui/`).
 - `LICENSE`, `THIRD-PARTY-LICENSES.txt`, `README.txt`. `README.txt` explains how to use the archive if you unpack it yourself: on Linux and macOS it says `Add this folder to PATH, or link miyu into ~/.local/bin`, and on Windows `Add this folder to PATH (or call miyu.exe by its full path)`.
 - The `install.toml` written by the install script.

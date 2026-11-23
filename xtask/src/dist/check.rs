@@ -2,7 +2,7 @@
 //! 查包。解开 `cargo xtask dist` 打的压缩包，一样一样对：
 //!
 //! 1. 名字是 `miyu-<工作区版本>-<本机>.tar.gz`（Windows `.zip`），里面只有一层同名目录；
-//! 2. 五个程序都在（Unix 上能跑）；`LICENSE` 和仓库的一字不差；`THIRD-PARTY-LICENSES.txt` 里有核心那一份；`README.txt` 写的是这一版、
+//! 2. 核心的程序（`CORE`，Unix 上四个、Windows 上三个）和终端、网页的程序都在（Unix 上能跑）；`LICENSE` 和仓库的一字不差；`THIRD-PARTY-LICENSES.txt` 里有核心那一份；`README.txt` 写的是这一版、
 //!    这一种；
 //! 3. `resources/` 照仓库登记的清单逐项比字节（旧版漏过资源文件），多出来的也报；两个头的包文件夹齐（终端的清单和许可证，网页的
 //!    清单和 `pages/index.html`，网页不带 `bin/`）；

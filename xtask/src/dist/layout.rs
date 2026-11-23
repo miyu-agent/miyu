@@ -9,10 +9,11 @@ use crate::heads::Pin;
 
 /// 合三份第三方许可证清单：核心的，终端、网页各自 `cargo xtask notices` 生成的，前面写清每一段是谁的、取的哪一份。
 pub(super) fn notices(core: &str, tui: (&Pin, &str), web: (&Pin, &str)) -> String {
-    let mut text = String::from(
+    let mut text = format!(
         "Third-party licenses of Miyu / Miyu 的第三方许可证\n\n\
          This file joins three lists / 这份文件合了三份清单:\n\
-         1. Miyu core: miyu, miyu-sandbox, miyu-extract / 核心\n",
+         1. Miyu core: {} / 核心\n",
+        super::CORE.join(", ")
     );
     text.push_str(&format!(
         "2. Terminal interface {}: {} @ {} / 终端界面\n",

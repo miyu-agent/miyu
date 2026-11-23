@@ -24,7 +24,7 @@ pub(super) fn head_of(name: &str, target: &str) -> Option<(&'static str, String)
     })
 }
 
-/// 核心那一份：三个程序能跑、没有两个头的程序；`LICENSE`、第三方清单和仓库的核心那一份一字不差；`resources/` 照登记的逐项
+/// 核心那一份：核心的程序（`CORE`）能跑、没有两个头的程序；`LICENSE`、第三方清单和仓库的核心那一份一字不差；`resources/` 照登记的逐项
 /// 比字节，多出来的报，两个头的包文件夹不该有。
 pub(super) fn core_contents(
     root: &Path,

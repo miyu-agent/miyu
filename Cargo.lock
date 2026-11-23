@@ -2493,6 +2493,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "miyu-watchdog"
+version = "2026.11.0"
+dependencies = [
+ "rustix",
+]
+
+[[package]]
 name = "moxcms"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -45,6 +45,7 @@ fn good(scratch: &Scratch) -> Vec<PathBuf> {
         "miyu",
         "miyu-sandbox",
         "miyu-extract",
+        "miyu-watchdog",
         "miyu-tui",
         "miyu-web",
     ] {

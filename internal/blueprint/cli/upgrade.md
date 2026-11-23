@@ -49,10 +49,10 @@ channel = "script"   # script：安装脚本；aur：AUR 的包；brew：Homebre
    签名照发版公钥验（签法同软件源的索引，`sign::verify`），清单照 `sums::check` 查写法，里面要有这个压缩包那一行。哪一样不对都停。
 7. **暂存**：在安装目录里建 `.miyu-upgrade/`（和装着的同一块盘，对换只是改名）。没有写权限的说清楚、提示不提权，退出码 1：
    不 `sudo`、不提权；装进系统目录又没写标记的也停在这里。
-8. **下载、查新版**：下载压缩包，SHA-256 要和清单一致；解开（不许写到目录外面），`miyu-<版本>-<系统>/` 里要有五个程序和
+8. **下载、查新版**：下载压缩包，SHA-256 要和清单一致；解开（不许写到目录外面），`miyu-<版本>-<系统>/` 里要有五个程序（Unix 上六个，多一个看门的 `miyu-watchdog`，施工 LW-28）和
    `resources/`；跑新的 `miyu --version` 要报 `miyu <新版本>`。
 9. **对换**：照安装目录的第一层分（施工 RL-4补3，core1 11-05 定）。Miyu 自己的整样换：新压缩包第一层有的每一样，加上一张固定的名单
-   （`miyu`、`miyu-tui`、`miyu-web`、`miyu-sandbox`、`miyu-extract`，Windows 带 `.exe`；`resources`、`LICENSE`、`README.txt`、
+   （`miyu`、`miyu-tui`、`miyu-web`、`miyu-sandbox`、`miyu-extract`、`miyu-watchdog`，Windows 带 `.exe`；`resources`、`LICENSE`、`README.txt`、
    `THIRD-PARTY-LICENSES.txt`：以后新版拿掉某个程序，旧的那份也清得掉）；`install.toml`、暂存、`.miyu-old-…` 不动；第一层别的东西
    原样留着，最后说一句「安装目录里还有 N 样不是 Miyu 的，原样留着」、列最多 5 样。`resources/` 整个换，放在里面的照样没了（帮助页
    写着安装目录别放自己的东西）。要换的每一样挪进 `.miyu-old-<旧版本>/`，新版的每一样挪进来，删掉 `.miyu-old-…`。逐样挪、不整个

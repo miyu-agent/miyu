@@ -192,7 +192,7 @@ fn find(first: &str, dir: &Path, path_dirs: &[PathBuf], suffixes: &[&str]) -> Pa
 }
 
 /// 起：程序正被开着写的等 [`BUSY_WAIT`] 再试，最多 [`BUSY_TRIES`] 次；别的错误照旧交回。网址的服务不起进程，交回出错（调的一方先照
-/// [`How`] 分开走，不会走到这里）。交回的看门的拿到进程退出、收掉以后再丢（施工 XH-1）。
+/// [`How`] 分开走，不会走到这里）。交回的共用的组拿到进程退出、收掉以后再丢（施工 XH-1）。
 pub(super) async fn spawn(plan: &Plan) -> io::Result<(Child, Kept)> {
     let mut tries = 1;
     loop {

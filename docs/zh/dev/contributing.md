@@ -42,7 +42,7 @@
    cargo build
    ```
 
-   编译完成后，`target/debug/` 里有主程序 `miyu`、沙盒助手 `miyu-sandbox` 和 `miyu-extract`（Windows 上都带 `.exe`）。如果只编译 `-p miyu`，沙盒助手会停留在旧版，只读模式下的命令会报错，说助手和核心不是同一份。
+   编译完成后，`target/debug/` 里有主程序 `miyu`、沙盒助手 `miyu-sandbox`、`miyu-extract` 和看门的小程序 `miyu-watchdog`（Windows 上都带 `.exe`；Windows 上的 `miyu-watchdog` 什么都不做，也不打进发行包）。如果只编译 `-p miyu`，沙盒助手会停留在旧版，只读模式下的命令会报错，说助手和核心不是同一份。
 
 2. 创建一个开发用的数据根，不碰你自己的 `~/.miyu`：
 
@@ -186,7 +186,7 @@ cargo xtask check
 | `cargo xtask prompts` | 根据登记簿和资源重新生成 `internal/blueprint/prompts.md` |
 | `cargo xtask notices` | 重新生成 `THIRD-PARTY-LICENSES.txt` |
 | `cargo xtask perf [量尺的参数]` | 编译 release 版的 `miyu`、`miyu-sandbox` 和量尺 `miyu-perf`，测量启动、内存、长会话上的请求、二进制大小，结果写进 `target/perf-out/`；后面的参数原样交给量尺，例如 `--runs 3`。内存只能在 Linux 上测量，macOS、Windows 上表里那几格写的是 `不量` |
-| `cargo xtask dist [--target <系统>] [--out <目录>]` | 打出本机这一种系统的命令行版压缩包：按照 `heads.toml` 取终端、网页，编译 release 版的 `miyu`、`miyu-sandbox`、`miyu-extract`、`miyu-tui`、`miyu-web`，打包成 `miyu-<版本>-<系统>.tar.gz`（Windows 上是 `.zip`），默认放在 target 目录的 `dist/` 下；`--target` 只能写本机的系统 |
+| `cargo xtask dist [--target <系统>] [--out <目录>]` | 打出本机这一种系统的命令行版压缩包：按照 `heads.toml` 取终端、网页，编译 release 版的 `miyu`、`miyu-sandbox`、`miyu-extract`、`miyu-watchdog`（只在 Linux、macOS 上）、`miyu-tui`、`miyu-web`，打包成 `miyu-<版本>-<系统>.tar.gz`（Windows 上是 `.zip`），默认放在 target 目录的 `dist/` 下；`--target` 只能写本机的系统 |
 | `cargo xtask dist-check <压缩包>` | 发布前检查压缩包：名字、程序、许可证、资源逐字节比较，并运行包里的 `miyu --version` 和 `miyu check` |
 | `cargo xtask packaging <标签> --sums <SHA256SUMS> [--applet <托盘的标签> --applet-sums <托盘的 SHA256SUMS>] [--out <目录>]` | 根据一次发布的 `SHA256SUMS` 填写 AUR 的 `PKGBUILD` 和 Homebrew 的 formula |
 | `cargo xtask version <年.月.序号>` | 修改工作区的版本号（例如 `2026.12.0`），`Cargo.lock` 跟着修改 |

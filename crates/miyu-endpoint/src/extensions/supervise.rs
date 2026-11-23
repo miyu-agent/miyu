@@ -135,7 +135,7 @@ pub(super) async fn run(
         let Some(owner) = core.upgrade() else {
             return;
         };
-        // 看门的拿到这一次退出、收掉以后才丢（施工 XH-1）：核心没了它杀整组。
+        // 共用的组拿到这一次退出、收掉以后才丢（施工 XH-1、LW-28）：核心没了，组里看门的杀整组。
         let (mut child, _kept) = match spawn_settled(&plan).await {
             Ok(spawned) => spawned,
             Err(error) => {
@@ -275,7 +275,7 @@ async fn spawn_settled(plan: &Plan) -> io::Result<(Child, Kept)> {
 
 /// 拉起：先清掉它上一回的短命暂存、建好给它的几处（设计 55 第四节，[`miyu_store::program::PackageDirs::ready`]，只在数据根
 /// 里建），标准错误接到它的文件上，核心丢下它时杀掉。核心没了它跟着走（施工 XH-1，[`miyu_sandbox::lifeline::keep`]）：Unix 上
-/// 自成一组、组里有看门的，Windows 上在核心的作业对象里；看门的起不来的记一行 `WARN`，照旧拉起。
+/// 起在长住的子进程共用的那个组里、组里有看门的（施工 LW-28），Windows 上在核心的作业对象里；看门的起不来的记一行 `WARN`，照旧拉起。
 fn spawn(plan: &Plan) -> io::Result<(Child, Kept)> {
     use miyu_store::program;
     let root = miyu_store::root::DataRoot::at(plan.home.clone());

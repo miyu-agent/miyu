@@ -1,7 +1,7 @@
 //! 系统源分包用的三份（施工 SD-2，设计 `60-系统源分包.md` 第二节、第六节第 2 条）：AUR、Homebrew 照 Release 里这几份装，包管理器
 //! 只管把文件放到位。一体的压缩包照旧。
 //!
-//! - `miyu-core-<核心版本>-<系统>.tar.gz`：一层同名目录，`miyu`、`miyu-sandbox`、`miyu-extract`，`resources/`（只有核心自己登记的，
+//! - `miyu-core-<核心版本>-<系统>.tar.gz`：一层同名目录，`miyu`、`miyu-sandbox`、`miyu-extract`、`miyu-watchdog`，`resources/`（只有核心自己登记的，
 //!   不带两个头的包文件夹，免得出厂、系统加装两层各有一份），`LICENSE`，`THIRD-PARTY-LICENSES.txt`（只有核心那一段）。AUR 整层放到
 //!   `/usr/lib/miyu/`，Homebrew 放 `libexec/`；
 //! - `tui-<终端版本>-<系统>.tar.gz`、`webui-<网页版本>-<系统>.tar.gz`：里面直接是包文件夹（`tui/`、`webui/`），
@@ -43,7 +43,7 @@ pub(super) fn version_of(manifest: &str) -> Result<String, String> {
         .ok_or_else(|| "package.toml 的 [package] 里没有 version".to_string())
 }
 
-/// 搭核心那一份：`programs` 是三个程序（完整路径），`resources` 下 `files`（相对它）照拷，`license`、`notices` 原样。`dir` 不能已经有。
+/// 搭核心那一份：`programs` 是核心的程序（完整路径，`CORE`），`resources` 下 `files`（相对它）照拷，`license`、`notices` 原样。`dir` 不能已经有。
 pub(super) fn stage_core(
     programs: &[PathBuf],
     (resources, files): (&Path, &[PathBuf]),

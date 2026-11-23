@@ -30,7 +30,7 @@ impl Drop for Scratch {
     }
 }
 
-/// 一个新版的目录 `<root>/miyu-<版本>-t/`：五个程序（写着 `new`）、一份资源。
+/// 一个新版的目录 `<root>/miyu-<版本>-t/`：要有的程序（写着 `new`）、一份资源。
 pub(crate) fn new_version(scratch: &Scratch, top: &str) -> PathBuf {
     for program in PROGRAMS {
         scratch.put(&format!("{top}/{program}"), "new");
@@ -89,7 +89,11 @@ fn what_the_new_version_lacks_is_listed() {
         missing(&top, ""),
         vec!["miyu-web".to_string(), "resources/".to_string()]
     );
-    assert_eq!(missing(&top, ".exe").len(), 6, "Windows 上找带 .exe 的");
+    assert_eq!(
+        missing(&top, ".exe").len(),
+        PROGRAMS.len() + 1,
+        "Windows 上找带 .exe 的"
+    );
 }
 
 /// 装着的旧版：两个程序、一份资源、标记、上次没删的暂存。
@@ -163,8 +167,8 @@ fn a_failure_halfway_puts_everything_back() {
         assert_eq!(fs::read_to_string(top.join("miyu-web")).unwrap(), "new");
         assert_eq!(
             fs::read_dir(&top).unwrap().count(),
-            6,
-            "挪进来的也退回暂存：新版六样都在"
+            PROGRAMS.len() + 1,
+            "挪进来的也退回暂存：新版的程序和 resources/ 都在"
         );
         assert!(!old.exists(), "挪回去以后空的旧版目录删了");
     }

@@ -10,7 +10,7 @@
 
 | 文件 | 管什么 |
 |---|---|
-| `xtask/src/perf.rs` | `cargo xtask perf`：编 release 的 `miyu`、`miyu-sandbox`、`miyu-extract`（施工 K-5），再编量尺、跑它 |
+| `xtask/src/perf.rs` | `cargo xtask perf`：编 release 的 `miyu`、`miyu-sandbox`、`miyu-extract`（施工 K-5）、`miyu-watchdog`（施工 LW-28），再编量尺、跑它 |
 | `crates/miyu-perf/src/main.rs` | 照先后量一遍，写结果 |
 | `args.rs` | 参数 |
 | `budget.rs` | 预算照 23 第二节的表读，判超没超 |
@@ -78,7 +78,7 @@
    4. **流式一轮**（施工 V-22，`measure/stream.rs`）：重启核心、订阅关着记忆的大会话，假模型的回答切成 `--pieces` 块（`Fake::split_into`，一块一个事件，接起来是原文），先说一句不量（载入以后头一次从头投影），再说 `--streams` 轮：每一轮记核心进程花的 CPU（各线程 `/proc/<进程号>/task/*/schedstat` 头一格加起来，只有 Linux 上有）、说出去到 `turn.ended`。量完假模型换回一块。别的几场假模型一次回一整块，核心每收一块要做的活量不出来。
    5. **扩展驱动**（施工 MD-4，`measure/driver.rs`，core1 11-07 照推荐定：进预算、CI 的 perf 那一项拦）：装上 `perf-driver`、配上 `perf/big`（同一个假服务）和 `perfx/big`（扩展驱动），重启核心、打开它（`extension.enable` 带 `approve`）；两个会话各垫四句、每句约 250 KB 的话（协议一行最长 1 MiB），之后每次请求约 1 MB。说至少 20 对（`--streams` 大的照它，`FIRST_PAIRS`），一对里两边各说一句、先后一对一换，记说出去到推来第一段正文的 `model.delta`，一对一对除、取中位数，表里另写一对一对减的中位数（23「扩展提供的模型驱动比内置驱动多的首字时延」，施工 FL-9：原来比两边的 p95，CI 上一边冒一次尖就超；倍数不随机器快慢变，闸门照预算拦、不乘 `--gate`）；再各说 `--streams` 轮，两边都在一秒里匀着交：内置的照假服务切成 `--pieces` 块、一个事件隔一下写（`Fake::pace`），扩展的照记号 `perf-pace` 交 300 段，记每一轮核心花的 CPU，比两边的中位数（23「扩展驱动流式时核心多用的 CPU」）。
    6. **追加并同步**：在进程里，大会话日志里的事件从第一条起，一条一条追加进 `target/perf/append/` 下的一份新日志，每条写一次、同步一次，走会话 actor 落盘用的同一个函数。
-   7. **二进制**：`miyu`、`miyu-sandbox`、`miyu-extract`（施工 K-5，知识库抽字的小程序，随主程序放在旁边）的字节数；拷一份 `strip` 以后再量，没有 `strip` 的平台不写。
+   7. **二进制**：`miyu`、`miyu-sandbox`、`miyu-extract`（施工 K-5，知识库抽字的小程序，随主程序放在旁边）、`miyu-watchdog`（施工 LW-28，看门的小程序，只在 Unix 上有）的字节数；拷一份 `strip` 以后再量，没有 `strip` 的平台不写。
 8. 内存读 `/proc/<进程号>/smaps_rollup` 的 `Pss`、`Anonymous`、`Rss`，核心和它拉起的子进程各一行，子进程照 `/proc/<进程号>/task/*/children` 找。只有 Linux 上读得到，别的平台写「不量」。
 9. 对照预算的表：
    - 预算照 23 第二节的表读，第一格是名字。只写了一个数的照 p50 比，写了分位的照那个分位比；内存照核心进程的 PSS 比。
@@ -208,7 +208,7 @@
    3. 编网页、搭好发行包目录以后，对着这个目录运行 `miyu-perf --order <核心清单> --emulator … --miyu <目录>/miyu --resources <目录>/resources --work … --tree … --head <目录>/miyu-tui --head-order <终端界面清单>`（终端界面不认清单的不写 `--head-order`）。量尺整份重写核心清单，前两段也重录：清单以对着真发行包录的为准。
    4. 核心照新清单重链；终端界面认清单的，在它的检出里带着它的清单再编一遍。两个程序重新拷进发行包目录，各自照自己的清单核对（第 6 条，核对的函数对任意程序都一样）。
    5. 然后才打压缩包、搭分包。每一步说一行在做什么；哪一步失败就报哪一步、哪条命令，停下，不悄悄不排。没有装模拟器又没有写 `--no-order` 的，当场报错并说明要装什么（Debian、Ubuntu、Arch 的包都叫 `qemu-user`）。CI 的 `perf` 一项和发版的 `linux-x86_64` 一项先装模拟器。
-8. 排核心的 `miyu`；`cargo xtask dist` 另排终端界面的 `miyu-tui`（施工 LW-6）。`miyu-sandbox`、`miyu-extract` 用完就退出，不排。macOS aarch64 照下面「macOS」一款排；Linux aarch64、Windows 的程序和原来一样。
+8. 排核心的 `miyu`；`cargo xtask dist` 另排终端界面的 `miyu-tui`（施工 LW-6）。`miyu-sandbox`、`miyu-extract` 用完就退出，`miyu-watchdog` 只读、只杀，都不排。macOS aarch64 照下面「macOS」一款排；Linux aarch64、Windows 的程序和原来一样。
 
 **macOS（施工 MO-1 起）。** macOS aarch64 的发行包从施工 MO-3 起照仓库里的起点清单排；施工 MO-4 起，打包时再带页探针对着要发出去的两个程序跑一轮，写出给下一次用的起点清单。做法和先后写在总施工单 `internal/construction/MO-macOS的发行包排函数.md` 里。仓库里现在有下面五样：
 
@@ -229,7 +229,7 @@
    - 起点清单是 `xtask/order/macos-miyu.txt`（核心）和 `macos-miyu-tui.txt`（终端界面），一行一个函数名。Rust 的函数写 `rustc-demangle` 不带哈希的写法（`{:#}`），C 的函数写源码里的名字；名字后面编译器加的 `.llvm.<数字>`、`.<数字>` 后缀去掉。写名字而不写符号，是因为 crate 的哈希跟着版本号、工具链变，名字不变。头一版是 2026-11-23 在一台 M1 MacBook 上用量尺的五段带探针手工迭代到收敛的：核心 10622 个名字，终端界面 2333 个。
    - 编之前（取头、对版本以前），`order/macos.rs` 找 `nm` 和 `/usr/bin/cc`（都是 Xcode 命令行工具自带的），读两份起点清单，在 cargo 的 target 目录下的 `order/shim/<起点清单的指纹>/cc` 写垫片脚本；缺什么当场报错。
    - 编核心的三个程序、编终端界面的命令和别的系统一样，只多一个 `--config target.aarch64-apple-darwin.linker="<垫片>"`，环境里带上 `MIYU_ORDER_NAMES`（起点清单）和 `MIYU_ORDER_REPORT`（报告）。三个包仍然一起编：单独编 `-p miyu` 时 cargo 给共同依赖合的特性不一样，编出来的核心不是同一份（2026-11-23 实测 `getrandom` 的特性不同）。换了链接器以后 cargo 会把全部依赖重编一遍，所以同一个 target 目录里的每一条编译都要带同一个 `--config`，编完以后也不能再对 `-p miyu` 跑不带垫片的编译。垫片的路径里带着起点清单的指纹：清单改了，cargo 自己就会重链。网页在它自己的检出、自己的 target 里只编一次，也不排，所以不带垫片。
-   - 垫片有两层。第一层是 shell 脚本：`MIYU_ORDER_NAMES` 没有设置时直接调 `/usr/bin/cc`，设置了的交给第二层 `cargo xtask order-link`（`order/link.rs`）。第二层认 `-o` 后面的输出：只有 `deps/miyu-<16 位十六进制>`、`deps/miyu_tui-<16 位十六进制>` 才排，其他的（`miyu-sandbox`、`miyu-extract`、构建脚本、过程宏）原样交给 `cc`。要排的，从参数里找出输出所在的 `deps/` 下面的 `.o` 和 `.rlib`、`.a`（rustc 链接时在 `deps/` 下面建的临时目录里），`@` 开头的响应文件先读开；对它们跑一次 `nm --defined-only`，把起点清单换成这一次的符号（`order/seed.rs`：符号去掉开头的一个下划线、去掉后缀，`_R`、`_ZN` 开头的用 `rustc-demangle` 解；一个名字对上几个符号的都排，对不上的跳过），写进报告旁边的符号清单，再加上 `-Wl,-order_file,<符号清单>` 调 `cc`。链接器的警告照原样输出，不算失败。垫片自己出错（`nm` 不在、起点清单读不了、写不进）时，在标准错误上说明是哪一样、退出码非零、不调 `cc`，于是链接失败、打包停下。
+   - 垫片有两层。第一层是 shell 脚本：`MIYU_ORDER_NAMES` 没有设置时直接调 `/usr/bin/cc`，设置了的交给第二层 `cargo xtask order-link`（`order/link.rs`）。第二层认 `-o` 后面的输出：只有 `deps/miyu-<16 位十六进制>`、`deps/miyu_tui-<16 位十六进制>` 才排，其他的（`miyu-sandbox`、`miyu-extract`、`miyu-watchdog`、构建脚本、过程宏）原样交给 `cc`。要排的，从参数里找出输出所在的 `deps/` 下面的 `.o` 和 `.rlib`、`.a`（rustc 链接时在 `deps/` 下面建的临时目录里），`@` 开头的响应文件先读开；对它们跑一次 `nm --defined-only`，把起点清单换成这一次的符号（`order/seed.rs`：符号去掉开头的一个下划线、去掉后缀，`_R`、`_ZN` 开头的用 `rustc-demangle` 解；一个名字对上几个符号的都排，对不上的跳过），写进报告旁边的符号清单，再加上 `-Wl,-order_file,<符号清单>` 调 `cc`。链接器的警告照原样输出，不算失败。垫片自己出错（`nm` 不在、起点清单读不了、写不进）时，在标准错误上说明是哪一样、退出码非零、不调 `cc`，于是链接失败、打包停下。
    - 编完以后读报告，输出一行 `排函数：核心的起点清单 … 个名字，对上 … 个（…%），写出 … 个符号，读符号表用了 … 秒`（终端界面同样一行）。对上的不到一半时再输出一行提醒「起点清单太旧」，不算失败：清单旧了不会出错，只是排的效果打了折扣。
    - 搭好发行包目录以后，对目录里的 `miyu`、`miyu-tui` 各核对一次（上面第 6 条，用垫片写出的符号清单），不到九成就报错停下。release 照默认只去调试信息、符号表留着，`-order_file` 在这种设置下排得上（2026-11-23 实测）。
    - 带 `--no-order` 的不带垫片，照原来的办法编，不排。
@@ -276,7 +276,7 @@
 
 1. **为什么。** 位置无关的程序启动时，动态链接器要把整张重定位表读一遍，读过的页留在内存里。核心的 `.rela.dyn` 有 1.2 MB，几乎全是「这个位置加上装载起点」这一种。打包成 RELR 以后是 `.relr.dyn` 16.5 KB 加 `.rela.dyn` 5.4 KB。
 2. **要什么。** glibc 2.36 以上（程序里多一个 `GLIBC_ABI_DT_RELR` 的版本要求，低于它的动态链接器直接拒绝启动）。Linux 的基线是 glibc 2.39（设计 12），发版在 Ubuntu 24.04 上编。
-3. **只加在哪。** 只有 Linux、x86_64、glibc、release 四样都对上才加（`build.rs` 的 `packs`）；dev 构建不加，日常的编译、测试不变。aarch64 的链接器（GNU ld）到 2.43 才认这个参数，没有做。`miyu-sandbox`、`miyu-extract` 没有做。
+3. **只加在哪。** 只有 Linux、x86_64、glibc、release 四样都对上才加（`build.rs` 的 `packs`）；dev 构建不加，日常的编译、测试不变。aarch64 的链接器（GNU ld）到 2.43 才认这个参数，没有做。`miyu-sandbox`、`miyu-extract`、`miyu-watchdog` 没有做。
 4. **量到的**（2026-11-21，另一台测试机，`cargo xtask perf --idle-wait 0`，都排过函数）：核心空闲 9.5 → 8.2 MB，连着一个头 13.0 → 12.0 MB。
 
 ### 三家对比（施工 V-7，23 F6）

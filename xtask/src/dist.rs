@@ -3,7 +3,8 @@
 //! 1. 版本照 `Cargo.toml` 的 `[workspace.package] version`；系统照本机（`linux-x86_64`、`linux-aarch64`、`macos-aarch64`、
 //!    `windows-x86_64`），写了 `--target` 的要和本机一样，不交叉编。
 //! 2. 照 `heads.toml` 把两个头取进 `<dist>/heads/<编号>/`（克隆过的拉一下），检出钉的那一份、清掉多余的文件，核对检出的提交。
-//! 3. 编，都是 release、`--locked`：核心的 `miyu`、`miyu-sandbox`、`miyu-extract`；终端的 `miyu-tui`；网页的 `miyu-web`。头在各自的
+//! 3. 编，都是 release、`--locked`：核心的 `miyu`、`miyu-sandbox`、`miyu-extract`、`miyu-watchdog`（只在 Unix 上，[`CORE`]）；
+//!    终端的 `miyu-tui`；网页的 `miyu-web`。头在各自的
 //!    检出里照各自的工具链编：外面这个 cargo 给的 `RUSTUP_TOOLCHAIN`、`CARGO_TARGET_DIR` 这些不带过去。本机是 `linux-x86_64`
 //!    的，核心照排函数的流程编（施工 LW-1，`order.rs`：带空清单编、量尺录清单、照清单重链 `miyu`、核对）；要 QEMU 的用户态
 //!    模拟器，取头之前先找，没有的当场报错。终端界面钉的提交认排函数的（检出里的 `build.rs` 认 `MIYU_LINK_ORDER`），编它时
@@ -11,7 +12,7 @@
 //!    多带一个链接器垫片，照仓库里的起点清单排 `miyu`、`miyu-tui`（施工 MO-3，`order/macos.rs`）；缺 `nm`、`cc`，起点清单
 //!    读不了的，取头之前当场报错。带 `--no-order` 的照原来的办法编，不排；别的两种系统一直是原来的办法。
 //! 4. 搭目录 `<dist>/miyu-<版本>-<系统>/`：
-//!    - 五个程序放一起（头的程序放在 `miyu` 旁边，`heads.toml` 开头那段）；
+//!    - 程序放一起：核心的（[`CORE`]）、终端、网页的（头的程序放在 `miyu` 旁边，`heads.toml` 开头那段）；
 //!    - `resources/`：仓库里登记了的资源（`git ls-files`，不带没登记的），加上两个头的包文件夹：`packages/tui/` 是终端仓库的
 //!      `tui/` 加它的 `LICENSE`、`THIRD-PARTY-LICENSES.txt`（同它的发版模板），`packages/webui/` 是网页仓库
 //!      `tools/pack-web.py --stage` 搭的、去掉 `bin/`；
@@ -59,8 +60,14 @@ pub const HOST: Option<&str> = if cfg!(all(target_os = "linux", target_arch = "x
     None
 };
 
-/// 核心的三个程序，照这个先后编、放（排函数的流程也照它编，`order.rs`）。
-pub(crate) const CORE: [&str; 3] = ["miyu", "miyu-sandbox", "miyu-extract"];
+/// 核心的程序，照这个先后编、放（排函数的流程也照它编，`order.rs`）：Unix 上四个，多一个看门的 `miyu-watchdog`（施工 LW-28，
+/// 核心照它看着自己起的子进程）；Windows 上核心进作业对象、用不到它，三个，不编也不放。打包、查包都只打、只查本机这一种系统，
+/// 所以照编 xtask 的这一种系统分。
+#[cfg(unix)]
+pub(crate) const CORE: &[&str] = &["miyu", "miyu-sandbox", "miyu-extract", "miyu-watchdog"];
+/// 同上：Windows 上的三个。
+#[cfg(not(unix))]
+pub(crate) const CORE: &[&str] = &["miyu", "miyu-sandbox", "miyu-extract"];
 
 /// 终端、网页的程序。
 const TUI_PROGRAM: &str = "miyu-tui";

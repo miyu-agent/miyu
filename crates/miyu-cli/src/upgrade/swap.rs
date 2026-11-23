@@ -30,16 +30,28 @@ const OWNED: [&str; 4] = [
 ];
 
 /// 一定归 Miyu 的程序（不带 `.exe`）：以后新版拿掉的，旧的那份也清掉。
-const PROGRAMS_OWNED: [&str; 5] = [
+const PROGRAMS_OWNED: [&str; 6] = [
     "miyu",
     "miyu-tui",
     "miyu-web",
     "miyu-sandbox",
     "miyu-extract",
+    "miyu-watchdog",
 ];
 
-/// 新版里一定要有的程序（不带 `.exe`）。
-const PROGRAMS: [&str; 5] = [
+/// 新版里一定要有的程序（不带 `.exe`）：Unix 上多一个看门的 `miyu-watchdog`（施工 LW-28，核心照它看着自己起的子进程）。
+#[cfg(unix)]
+const PROGRAMS: &[&str] = &[
+    "miyu",
+    "miyu-sandbox",
+    "miyu-extract",
+    "miyu-watchdog",
+    "miyu-tui",
+    "miyu-web",
+];
+/// 同上：Windows 上核心进作业对象，没有看门的小程序。
+#[cfg(not(unix))]
+const PROGRAMS: &[&str] = &[
     "miyu",
     "miyu-sandbox",
     "miyu-extract",
@@ -61,7 +73,7 @@ pub(crate) fn unpack(archive: &Path, into: &Path) -> Result<(), String> {
     }
 }
 
-/// 新版的目录 `top` 缺了什么：五个程序、`resources/`。都在的是空的。
+/// 新版的目录 `top` 缺了什么：程序（[`PROGRAMS`]）、`resources/`。都在的是空的。
 pub(crate) fn missing(top: &Path, exe: &str) -> Vec<String> {
     let mut missing: Vec<String> = PROGRAMS
         .iter()

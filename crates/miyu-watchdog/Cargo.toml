@@ -1,0 +1,26 @@
+[package]
+name = "miyu-watchdog"
+description = "看门的小程序 miyu-watchdog：读到标准输入的结尾就杀掉自己所在的整个进程组（施工 LW-28，internal/blueprint/core.md「子进程随核心退出」）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+autotests = false
+
+# 只有一个程序，没有库：核心照子进程拉起它，别的 crate 不依赖它。Windows 上核心进作业对象、用不到它，那里编出来的程序什么都
+# 不做（`src/main.rs`），发行包里也不带（`xtask/src/dist.rs` 的 `CORE`）。
+[[bin]]
+name = "miyu-watchdog"
+path = "src/main.rs"
+
+[[test]]
+name = "all"
+path = "tests/all.rs"
+
+[target.'cfg(unix)'.dependencies]
+# 读标准输入、杀自己所在的整个组：安全的系统调用封装，不用自己写 unsafe。MIT OR Apache-2.0，工作区里本来就有。
+rustix = { version = "1", features = ["process", "stdio"] }
+
+[lints]
+workspace = true

@@ -124,12 +124,12 @@ impl<R: AsyncBufRead + Unpin, W: AsyncWrite + Unpin> Conversation<R, W> {
 }
 
 /// 一个拉起着的 `miyu-embed`。核心丢下它（[`Worker`] 被放下）时杀掉：`kill_on_drop`；核心整个没了，Windows 上作业对象收掉它，
-/// Unix 上组里看门的杀掉整组（施工 XH-1，[`miyu_sandbox::lifeline::keep`]；原来靠它读到标准输入关了自己退出，卡住了、起了
+/// Unix 上长住的子进程共用的组里看门的杀掉整组（施工 XH-1、LW-28，[`miyu_sandbox::lifeline::keep`]；原来靠它读到标准输入关了自己退出，卡住了、起了
 /// 子进程的收不掉）。
 pub(super) struct Worker {
     child: Child,
     talk: Conversation<BufReader<ChildStdout>, ChildStdin>,
-    /// 看门的：进程收掉以后才丢（放在 `child` 后面，丢下时先杀进程）。
+    /// 共用的组：进程收掉以后才丢（放在 `child` 后面，丢下时先杀进程）。
     _kept: miyu_sandbox::lifeline::Kept,
 }
 

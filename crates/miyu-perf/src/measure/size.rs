@@ -24,9 +24,10 @@ impl Size {
     }
 }
 
-/// `miyu` 和它旁边的 `miyu-sandbox`、`miyu-extract`（施工 K-5：知识库抽字的小程序）。拷贝放在 `scratch` 下。没有的程序不列。
+/// `miyu` 和它旁边的 `miyu-sandbox`、`miyu-extract`（施工 K-5：知识库抽字的小程序）、`miyu-watchdog`（施工 LW-28：看门的
+/// 小程序，只在 Unix 上有）。拷贝放在 `scratch` 下。没有的程序不列。
 pub fn sizes(miyu: &Path, scratch: &Path) -> Vec<Size> {
-    ["miyu", "miyu-sandbox", "miyu-extract"]
+    ["miyu", "miyu-sandbox", "miyu-extract", "miyu-watchdog"]
         .iter()
         .filter_map(|name| {
             let file = format!("{name}{}", std::env::consts::EXE_SUFFIX);

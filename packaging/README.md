@@ -15,13 +15,13 @@
 | `init/{openrc,runit,dinit}/` | 服务器的样例：别的初始化系统 |
 
 命令行版的压缩包由 `cargo xtask dist` 打（设计见 `internal/designs/59-发版.md`）：本机打本机那一种
-`miyu-<版本>-<系统>.tar.gz`（Windows 是 `.zip`），照 `heads.toml` 取两个头一起编，里面是五个程序、`resources/`（带两个头的包文件夹）、
+`miyu-<版本>-<系统>.tar.gz`（Windows 是 `.zip`），照 `heads.toml` 取两个头一起编，里面是五个程序（Linux、macOS 上六个，多一个看门的 `miyu-watchdog`）、`resources/`（带两个头的包文件夹）、
 `LICENSE`、合了核心和两个头的 `THIRD-PARTY-LICENSES.txt`、`README.txt`。放在 cargo 的 target 目录下的 `dist/`，`--out` 换地方。`cargo xtask dist-check <压缩包>` 发布前查包；推 `v<版本>`
 标签时 `.github/workflows/release.yml` 在四种机器上打包、查包，写 `SHA256SUMS`、用发版钥匙签、加构建出处证明，建草稿 Release。
 
 Linux 两种和 macOS 上 `cargo xtask dist` 另打三份给系统源（AUR、Homebrew）分包用（设计见 `internal/designs/60-系统源分包.md`），Windows 不打：
 
-- `miyu-core-<版本>-<系统>.tar.gz`：一层同名目录，`miyu`、`miyu-sandbox`、`miyu-extract`、只有核心的 `resources/`（不带两个头）、`LICENSE`、
+- `miyu-core-<版本>-<系统>.tar.gz`：一层同名目录，`miyu`、`miyu-sandbox`、`miyu-extract`、`miyu-watchdog`、只有核心的 `resources/`（不带两个头）、`LICENSE`、
   核心的 `THIRD-PARTY-LICENSES.txt`。整层放进 `/usr/lib/miyu/`（Homebrew 是 `libexec/`），`miyu` 链进 `bin/`。
 - `tui-<终端版本>-<系统>.tar.gz`、`webui-<网页版本>-<系统>.tar.gz`（名字照包编号）：里面直接是包文件夹，程序在它的 `bin/`。
   原样拷进 `share/miyu/packages/`（`/usr/share/miyu/packages/tui/`），核心照系统加装那一层认它。版本照头自己的清单。系统源里的包名

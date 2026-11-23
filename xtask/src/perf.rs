@@ -46,7 +46,10 @@ pub fn run(cargo: &str, root: &Path, extra: &[String]) -> ExitCode {
     } else if render {
         &[&["miyu-perf"]]
     } else {
-        &[&["miyu", "miyu-sandbox", "miyu-extract"], &["miyu-perf"]]
+        &[
+            &["miyu", "miyu-sandbox", "miyu-extract", "miyu-watchdog"],
+            &["miyu-perf"],
+        ]
     };
     for packages in builds {
         let mut args = vec!["build", "--release"];

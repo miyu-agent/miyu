@@ -3,7 +3,7 @@
 //!
 //! 1. 编任何东西之前（[`prepare`]）：找 `nm` 和真的 `cc`，读两份起点清单（`xtask/order/macos-miyu.txt`、
 //!    `macos-miyu-tui.txt`），在 `<target>/order/shim/<指纹>/cc` 写垫片脚本（`link.rs` 说明它的两层）。
-//! 2. 编核心的三个程序、编终端界面（[`Ordered::build`]）：命令照原样，只多一个 `--config
+//! 2. 编核心的程序（`CORE`）、编终端界面（[`Ordered::build`]）：命令照原样，只多一个 `--config
 //!    target.aarch64-apple-darwin.linker="<垫片>"` 和两个环境变量（`link::NAMES`、`link::REPORT`）。编完读垫片的报告，印
 //!    「清单几个名字、对上几个、写出几个符号、读符号表用了多久」，对上的不到一半时提醒起点清单太旧（不算失败）。
 //! 3. 搭好发行包目录以后，`dist.rs` 对目录里的 `miyu`、`miyu-tui` 各用 `order::check` 核对一次（不到九成报错停下），核对用的

@@ -34,6 +34,7 @@ The core is a process with no interface, and it holds all the state. A head (an 
 | MCP server | The command written in the manifest or config | The core | Speaks MCP over stdin and stdout; a server given as a URL starts no process |
 | Sandbox helper | `miyu-sandbox` | The core, one for each command that must be confined | Uses no protocol: it first tightens its own permissions according to the spec the core wrote, then replaces itself with that command |
 | Text extractor | `miyu-extract` | The core, one run per file when the knowledge base extracts the text of a PDF or web page | Hands over one JSON array of strings on stdout, then exits |
+| Watchdog | `miyu-watchdog` (only on Linux and macOS) | The core: one for each command; extensions, MCP servers and workers share one | Uses no protocol: its stdin is the read end of a pipe that the core holds, and when it reads the end (the core has exited) it ends its whole process group |
 | Worker | The program named in a package's `[worker]`, for example `miyu-embed` | The core starts it when needed, and it exits by itself after sitting idle for a while | Stdin and stdout, one question and one answer at a time |
 | Command added by a package | The program named in a package's `[command]` | The main program: when `miyu <name>` is not a built-in subcommand, it hands the command over unchanged | Up to the package |
 
@@ -100,6 +101,7 @@ The core repository's workspace members are `crates/*` and `xtask`. The crates f
 | `miyu-mcp` | The MCP client: speaks MCP over stdin and stdout, lists tools and calls tools | 3 executors |
 | `miyu-knowledge` | The knowledge base tools: `kb_search`, `kb_read`, `kb_save` | 3 executors |
 | `miyu-extract` | The small program `miyu-extract`: extracts the text of one PDF or web page | 3 executors |
+| `miyu-watchdog` | The small program `miyu-watchdog`: when the core exits unexpectedly, it ends the commands and extensions that the core started (works only on Linux and macOS) | 3 executors |
 | `miyu-source` | Package sources: packing and unpacking package files, the index, signing, listing; the program `miyu-index` | 3 executors |
 | `miyu-wallpaper` | Reads the desktop wallpaper, used only inside a head's process | 3 executors |
 | `miyu-session` | The session actor: connects the kernel to disk, the model and tools; routing, permissions, sandbox specs | 4 core |
@@ -197,7 +199,7 @@ The main places where the three platforms differ are listed below. When you add 
 | Local transport (`miyu-ipc`) | Unix socket: with `$XDG_RUNTIME_DIR` set, at `$XDG_RUNTIME_DIR/miyu-<fingerprint>/core.sock`; without it, at `~/.miyu/run/core.sock` | Unix socket `~/.miyu/run/core.sock` | Named pipe `\\.\pipe\miyu-<fingerprint>`, open to the owner only; after a head connects, it checks that the process on the other end belongs to the same user (`miyu-pipe`) |
 | Sandbox for read-only commands (`miyu-sandbox`) | Landlock | Seatbelt | MXC process container; with no desktop session, every command is refused with exit code `125` |
 | Whether the sandbox also confines reads (`CONFINES_READS` in `miyu-sandbox`) | Yes; on machines where neither Landlock nor seccomp can control Unix sockets, other people's sessions on a chat platform do not run commands | Yes | No: in other people's sessions on a chat platform (group chats, and private chats that are not the owner's), commands are always refused (`guard.rs` in `miyu-session`) |
-| After the core exits, the commands it started stop too | One watchdog per process group | One watchdog per process group | A job object |
+| After the core exits, the commands it started stop too | The watchdog `miyu-watchdog`: one in each command's process group, and one shared by extensions, MCP servers and workers in their own shared process group | Same as Linux | A job object |
 | The shell the AI runs commands in (`shell/program.rs` in `miyu-basesystem`) | bash: looked up in `PATH`, falling back to `/bin/bash` if not found | zsh: always `/bin/zsh` | PowerShell 7: first `pwsh/pwsh.exe` in the resources directory, then `pwsh.exe` in `PATH`; if neither exists, `%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe` (5.1) |
 | Recognizing dangerous commands (`shell/hazard.rs`, with the rules in `hazard` of `miyu-policy`) | Recognizes bash syntax | Recognizes zsh syntax | Recognizes PowerShell and cmd syntax (`hazard/windows*`); the kind that writes directly to disk devices is not recognized |
 | Signals that stop the core (`serve.rs` in `miyu-core`) | `Ctrl+C`, `SIGTERM` | `Ctrl+C`, `SIGTERM` | Only `Ctrl+C`. `miyu core stop` stops the core through the protocol, the same way on all three platforms |
