@@ -72,12 +72,32 @@ fn what_is_given_back_leaves_the_footprint_on_macos() {
 /// 顶上不多留（施工 LW-25）：调好以后，一条新线程在它的分配区里写过 4 MB 的中块（不走 mmap）、全部放掉，放掉的并进
 /// 顶上那一块，当场还给系统，各个 arena 从系统要来的合计回到原来的样子，差不到 64 KiB。glibc 默认顶上留 128 KiB，
 /// 这一条在没调过的进程里过不了。
+///
+/// 量的是整个进程各个 arena 的合计，所以另起一个只跑这一条的进程来量（施工 LW-31）：这个测试程序里别的测试在别的线程上
+/// 同时分、同时放，它们的 arena 涨了、缩了都算进合计里，同一个进程里量会偶尔差出几百 KiB 到几 MB。
 #[cfg(all(target_os = "linux", target_env = "gnu"))]
 #[test]
 fn a_thread_arena_gives_its_top_back_after_tuning() {
-    let _alone = ONE_AT_A_TIME
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if std::env::var_os(ALONE).is_none() {
+        let exe = std::env::current_exe().expect("找得到测试程序自己");
+        let out = std::process::Command::new(exe)
+            .args([
+                "--exact",
+                "tests::a_thread_arena_gives_its_top_back_after_tuning",
+                "--test-threads=1",
+                "--nocapture",
+            ])
+            .env(ALONE, "1")
+            .output()
+            .expect("起得来");
+        let said = String::from_utf8_lossy(&out.stdout);
+        assert!(
+            out.status.success() && said.contains("1 passed"),
+            "{said}{}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        return;
+    }
     assert!(super::tune());
     let arenas = || super::stats().expect("glibc 上有").arenas;
     // 先让一条线程把分配区建好再量：头一次建分配区要来的那一截不算在这里面。
@@ -103,6 +123,10 @@ fn a_thread_arena_gives_its_top_back_after_tuning() {
         "放掉以后还回去：写之前 {before}，写的时候 {held}，放掉以后 {after}"
     );
 }
+
+/// [`a_thread_arena_gives_its_top_back_after_tuning`] 另起的那个进程带着的记号：带着的才真的量。
+#[cfg(all(target_os = "linux", target_env = "gnu"))]
+const ALONE: &str = "MIYU_HEAP_TEST_ALONE";
 
 #[test]
 fn heap_stats_are_there_where_glibc_is() {
