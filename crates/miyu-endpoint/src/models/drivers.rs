@@ -14,7 +14,7 @@ use tokio::sync::mpsc;
 
 use miyu_config::package::Capability;
 use miyu_models::provider::DriverRef;
-use miyu_session::{Broken, Declared, DriverPending, DriverPort, NotYet};
+use miyu_session::{Broken, Declared, DriverAsk, DriverPending, DriverPort, NotYet};
 
 use crate::Core;
 use crate::extensions::State;
@@ -69,10 +69,13 @@ impl DriverPort for Drivers {
         driver: &DriverRef,
         call: &str,
         params: String,
-        deltas: mpsc::UnboundedSender<Value>,
+        listen: (
+            mpsc::UnboundedSender<Value>,
+            mpsc::UnboundedSender<DriverAsk>,
+        ),
     ) -> Result<DriverPending, NotYet> {
         let peer = self.link(driver)?;
-        peer.stream(call, deltas);
+        peer.stream(call, listen);
         let live = Live {
             peer,
             call: call.to_string(),

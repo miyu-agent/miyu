@@ -42,13 +42,15 @@ pub(super) struct Call {
     /// 第一段增量到的时刻。
     first_token: Option<Timestamp>,
     /// 收到的增量。
-    accumulator: Accumulator,
+    pub(super) accumulator: Accumulator,
     /// 每一块的起止，照流里的编号（施工 2-3 补）。
     spans: Spans,
     /// 这是压缩的摘要请求：替代到哪、进度（施工 6-2 上）。主请求没有。
     pub(super) compaction: Option<Box<Compacting>>,
     /// 这一次请求里人这一边出现过的外壳（施工 FT-1）：收回复时照它认模型编的下一轮。摘要请求不写回复，是空的。
     shells: Shells,
+    /// 驱动在这一次进行中问的、还在等人的确认（施工 ACP-8，`driver_ask.rs`）：这一次一有结局就了结。
+    pub(super) asks: Vec<super::driver_ask::Asking>,
 }
 
 /// 请求发出去时，执行器报来的。
@@ -75,6 +77,7 @@ impl Call {
             spans: Spans::default(),
             compaction: None,
             shells: Shells::default(),
+            asks: Vec::new(),
         }
     }
 

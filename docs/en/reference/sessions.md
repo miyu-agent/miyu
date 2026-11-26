@@ -281,7 +281,7 @@ A response with `windows` or `balance` also has `provider`: `{"id", "name"}`, wh
 
 ## `session.answer`
 
-When the AI does something that needs approval, it stops and asks (pushed as `tool.approval_requested`); when the AI asks a question with `ask_user`, it waits too (pushed as `question.asked`). This method answers both. If an approval request has `expires_at` and no one has answered by then, it is denied automatically (set by the config `permission.confirm.timeout`, 5 minutes by default); questions wait forever.
+When the AI does something that needs approval, it stops and asks (pushed as `tool.approval_requested`); when the AI asks a question with `ask_user`, it waits too (pushed as `question.asked`). This method answers both. If an approval request has `expires_at` and no one has answered by then, it is denied automatically (set by the config `permission.confirm.timeout`, 5 minutes by default); questions wait forever. An extension driver can also ask in the middle of a model call ([`driver.approve`](extensions.md#driverapprove)); such a request has `driver` and is answered the same way, with `once` or `deny` only, and the reason for a denial goes to that driver (attachments are kept in the log but not handed to it).
 
 **Params**
 

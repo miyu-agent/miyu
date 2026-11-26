@@ -99,6 +99,7 @@ impl Session {
             spans,
             compaction,
             shells,
+            asks,
         } = call;
         let (usage, cost, mut error, stopped, wire) = match ending {
             Ending::Said {
@@ -113,7 +114,8 @@ impl Session {
         let cut = stopped.is_some();
         let limited = accumulator.truncated();
         let mut truncated = None;
-        let mut events = Vec::new();
+        // 还在等人的驱动的确认先了结（施工 ACP-8）：这一次没了，问的那一头没人等了。
+        let mut events = self.settle_asks(at, asks, cause.as_ref());
         let mut reply = None;
         let mut calls = Vec::new();
         let mut summary = None;

@@ -32,6 +32,7 @@ mod clock;
 mod config;
 mod current;
 mod default_workspace;
+mod driver_ask;
 mod effects;
 mod embed;
 mod goal;
@@ -106,10 +107,10 @@ pub use path_text::path_text;
 pub use plugins::VenuePlugins;
 pub use port::{ASIDE_LIMIT, Cancel, ForSession, ModelPort, Models, Reports, Sight};
 pub use route::{
-    Answer, Ask, Broken, CatalogReader, Declared, DriverPending, DriverPort, Holding, IDLE,
-    LISTING_CAP, LISTING_FILE, LOCAL_WAIT, Listed, Missing, ModelData, ModelDirs, NotYet, Observed,
-    OneShot, Probe, Probed, QUOTA_REUSE, RECALL_CAP, RECALL_FILE, REFETCH, Retirement, Routes,
-    Running, STALE, Stage, Unanswered, Watched, driver_check, find_local, probe, quota,
+    Answer, Ask, Broken, CatalogReader, Declared, DriverAsk, DriverPending, DriverPort, Holding,
+    IDLE, LISTING_CAP, LISTING_FILE, LOCAL_WAIT, Listed, Missing, ModelData, ModelDirs, NotYet,
+    Observed, OneShot, Probe, Probed, QUOTA_REUSE, RECALL_CAP, RECALL_FILE, REFETCH, Retirement,
+    Routes, Running, STALE, Stage, Unanswered, Watched, driver_check, find_local, probe, quota,
     read_observed, refresh_list,
 };
 pub use shown::{Next, Shown};

@@ -24,8 +24,10 @@ use crate::shown::Next;
 use crate::timing::{Kernel, Lead};
 
 mod cancel;
+mod sight;
 
 pub use cancel::Cancel;
+pub use sight::Sight;
 
 /// 给一个会话造请求模型的端口（施工 3-7 下）。造会话、载入时，拿到了这个会话的策略快照再造：驱动的
 /// 占位冻结在快照里，核心升级改了字，老会话照样逐字节重现当时的请求（施工 3-6 上）。
@@ -282,6 +284,15 @@ impl Reports {
         self.wire = wire;
     }
 
+    /// 扩展驱动进行中要人确认时问哪个会话（施工 ACP-8）：主请求问这个会话，辅助请求没有。
+    pub(crate) fn asker(&self) -> Option<crate::route::Asker> {
+        let back = self.back.clone();
+        self.purpose.is_none().then_some(crate::route::Asker {
+            seen: self.seen,
+            back,
+        })
+    }
+
     /// 是哪一种辅助请求；主请求没有（施工 3-8 五补）。端口照请求发，用不着它；测试的端口照它分剧本。
     pub fn purpose(&self) -> Option<&Purpose> {
         self.purpose.as_ref()
@@ -359,40 +370,6 @@ impl Reports {
             },
         };
         let _ = self.back.send(back);
-    }
-}
-
-/// 一次转述的结果送回哪里（施工 8-17）：成了的交替它看的模型和转述，没成的交为什么。都送回 actor 的收件箱。
-#[derive(Debug)]
-pub struct Sight {
-    blob: ContentHash,
-    back: mpsc::UnboundedSender<Back>,
-}
-
-impl Sight {
-    pub(crate) fn new(blob: ContentHash, back: mpsc::UnboundedSender<Back>) -> Sight {
-        Sight { blob, back }
-    }
-
-    /// 转述成了：替它看的是 `model`，转述是 `text`（去掉了前后空白，不是空的）。
-    pub fn seen(self, model: Model, text: String) {
-        self.send(Ok((model, text)));
-    }
-
-    /// 转述没成：为什么，记进运行日志。
-    pub fn unseen(self, why: String) {
-        self.send(Err(why));
-    }
-
-    #[expect(
-        clippy::let_underscore_must_use,
-        reason = "会话停了就送不进去：转述没人要了，丢掉"
-    )]
-    fn send(self, seen: Result<(Model, String), String>) {
-        let _ = self.back.send(Back::Described {
-            blob: self.blob,
-            seen,
-        });
     }
 }
 
@@ -491,6 +468,13 @@ pub(crate) enum Back {
             tokio::sync::oneshot::Sender<Result<crate::memory::Dreamed, crate::memory::NotDreamed>>,
         /// 人叫停了就停（施工 R-22）：叫的那一刻起听着。
         hush: crate::memory::Hush,
+    },
+    /// 扩展驱动在请求 `seen` 进行中要人确认（施工 ACP-8，`actor/driver_asks.rs`）：哪个驱动、`driver.approve` 的参数、答的那一头。
+    DriverAsk {
+        seen: Seq,
+        driver: miyu_models::provider::DriverRef,
+        params: serde_json::Value,
+        reply: crate::route::Answerer,
     },
     /// 等会话 `session` 等不到了（施工 C-6，`peers.rs`）：到点了是 `expired`，订的时候它不在了是 `gone`。
     WatchEnded {

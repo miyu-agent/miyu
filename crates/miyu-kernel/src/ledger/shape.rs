@@ -1,7 +1,7 @@
 //! 只看事件本身的几条规矩（施工 X-6 从 `ledger.rs` 挪出来，那边到了 500 行）：哪几种只在回合里发生，助手消息里工具调用的编号。
 
 use crate::block::Block;
-use crate::event::Body;
+use crate::event::{ApprovalRequested, Body};
 use crate::id::{CallId, Seq};
 
 /// 只在回合里发生的种类：模型的回复、工具的结果、请人确认和人的决定、问人和人的回答、
@@ -52,4 +52,20 @@ pub(super) fn check_call_ids(seq: Seq, blocks: &[Block]) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+/// 请人确认的那一条要对着哪一次在等结果的调用：工具调用的确认交回它的编号；驱动问的（施工 ACP-8）不对着调用，编号得是
+/// `call_<这一条的序号>_1`，交回没有。
+pub(super) fn asked_call(
+    seq: Seq,
+    requested: &ApprovalRequested,
+) -> Result<Option<CallId>, String> {
+    match requested.driver {
+        None => Ok(Some(requested.call_id)),
+        Some(_) if CallId::new(seq, 1) == Some(requested.call_id) => Ok(None),
+        Some(_) => Err(format!(
+            "a driver's approval request #{seq} must be numbered call_{seq}_1, not {}",
+            requested.call_id
+        )),
+    }
 }

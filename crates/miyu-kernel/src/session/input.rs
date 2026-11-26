@@ -306,6 +306,8 @@ pub enum Input {
         /// 链的结论。
         verdict: Verdict,
     },
+    /// 驱动在一次请求进行中要人确认（施工 ACP-8，`driver_ask.rs`）。
+    DriverAsked(Box<super::DriverAsked>),
     /// 等人确认等到了截止的时刻（施工 CD-1，`internal/blueprint/kernel/asking.md`「到时没人确认」）：[`super::Action::ExpireApproval`]
     /// 到时候了。这件还在等确认的，内核替人拒绝，`by` 是内核；人已经定了、有了结果、不在等的，不理。
     ApprovalExpired {

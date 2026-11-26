@@ -117,6 +117,11 @@ struct Building {
 }
 
 impl Accumulator {
+    /// 第 `index` 块是哪一种；还没开始的没有（施工 ACP-8：驱动问的确认要画在已经开始的供应商侧工具上）。
+    pub fn kind(&self, index: usize) -> Option<&Kind> {
+        self.blocks.get(index).map(|block| &block.kind)
+    }
+
     /// 收下一段增量。
     ///
     /// # Errors

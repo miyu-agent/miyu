@@ -92,6 +92,7 @@ impl Session {
                     detail,
                     nested: None,
                     expires_at,
+                    driver: None,
                 };
                 Settled::Asked(By::Module(Module { id: module }), request)
             }
@@ -152,6 +153,9 @@ impl Session {
         else {
             return Vec::new();
         };
+        if nested.is_none() && self.driver_asking(call_id) {
+            return self.expire_driver(at, call_id);
+        }
         let worded = Worded { text, said: human };
         if let Some(n) = nested {
             return self.expire_nested(at, (call_id, n), worded);
@@ -194,6 +198,10 @@ impl Session {
         call_id: CallId,
         answer: Answer,
     ) -> Vec<Action> {
+        // 驱动问的（施工 ACP-8，`driver_ask.rs`）：不对着调用，另走一路。
+        if self.driver_asking(call_id) {
+            return self.answer_driver((id, by), at, call_id, answer);
+        }
         let Answer::Approval {
             decision,
             reason,

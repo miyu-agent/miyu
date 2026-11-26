@@ -94,6 +94,7 @@ mod env_package;
 mod extension_approval;
 mod extension_config;
 mod extension_driver;
+mod extension_driver_approve;
 mod extension_driver_call;
 mod extension_driver_check;
 mod extension_driver_hosted;

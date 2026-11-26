@@ -37,6 +37,7 @@ fn asked(n: u64, rule: Option<&str>) -> Event {
             detail: None,
             nested: None,
             expires_at: None,
+            driver: None,
         })),
     )
 }

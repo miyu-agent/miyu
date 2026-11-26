@@ -64,8 +64,8 @@ pub use session::{
 };
 pub use shell::{ShellRan, ShellReason};
 pub use tool::{
-    ApprovalDecided, ApprovalRequested, Decision, Said, Sent, SentImage, ToolResult, ToolStatus,
-    Voice, VoiceMark,
+    ApprovalDecided, ApprovalRequested, Decision, DriverBlock, Said, Sent, SentImage, ToolResult,
+    ToolStatus, Voice, VoiceMark,
 };
 pub use transient::{
     ChangeWhy, CompactableChanged, CompactionDone, CompactionProgress, CompactionStarted,

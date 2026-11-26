@@ -78,6 +78,7 @@ impl Session {
             detail,
             nested: Some(id.n()),
             expires_at,
+            driver: None,
         };
         let cause = turn.and_then(|turn| turn.cause.clone());
         let by = By::Module(Module { id: module });

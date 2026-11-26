@@ -130,6 +130,13 @@ pub enum Action {
         /// 照题目的先后，每道题的回答。
         answers: Vec<Response>,
     },
+    /// 回驱动问的一次确认（施工 ACP-8，`driver_ask.rs`）：执行器照 `token` 找到问的那一头交过去。人定了的决定已经落了盘。
+    AnswerDriver {
+        /// 执行器问的时候给的编号（[`super::DriverAsked::token`]）。
+        token: u64,
+        /// 怎么答。
+        answer: super::DriverAnswer,
+    },
     /// 停掉撤掉的那几轮派出去、还在跑的任务（施工 7-8，`agents.md` 第七条第 1 条）：后台命令整组杀掉，子代理连它派的一起
     /// 停，回报都记 `undone`、不叫醒她。打断时停这一步在等的前台子代理也是它（施工 T-1 下，`undone` 是假：记 `stopped`，前台
     /// 的回报一律不叫醒）。后台命令的回报交回 [`super::Input::JobEnded`]（`by`、`cause` 照这里的），子代理的

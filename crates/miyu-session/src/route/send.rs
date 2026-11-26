@@ -20,7 +20,7 @@ use miyu_kernel::event::ErrorClass;
 use miyu_kernel::request::Request;
 use miyu_store::blob::Blobs;
 
-use super::base::Ready;
+use super::base::{Ready, Speaker};
 use super::ended::{Picked, Switch};
 use super::exchange::{Exchanged, exchange};
 use super::kept::Kept;
@@ -126,12 +126,16 @@ async fn ask(chosen: Chosen, request: Request, reports: Reports, cancel: Cancel)
 /// 试一次：经底子发，说完了照这个模型的价格算金额（施工 8-15）。`retry`：还没收到增量就出了会冷却的错的，不报，交回
 /// [`Attempt::Retry`]。`request` 交进来的编码完就放，借来的（旁路请求换人还要再发）照旧借着（施工 V-38）。
 pub(super) async fn attempt(
-    chosen: Chosen,
+    mut chosen: Chosen,
     request: Cow<'_, Request>,
     reports: Reports,
     stop: &mut Stop,
     retry: bool,
 ) -> Attempt {
+    // 扩展驱动进行中要人确认的问哪个会话（施工 ACP-8）：主请求的问这个会话，辅助请求的没有、当场拒。
+    if let Speaker::Extension(reached) = &mut chosen.ready.speaker {
+        reached.asker = reports.asker();
+    }
     let ready = &chosen.ready;
     let mut reports = reports.billed(ready.tariff.clone());
     let mut received = false;

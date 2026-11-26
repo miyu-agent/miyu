@@ -280,6 +280,12 @@ fn main() {
                 {
                     send(&answer);
                 }
+                // 核心回了请它问人的（施工 ACP-8）：那一次的回应都到了的收尾。
+                if line.contains(r#""id":"approve-"#) && !line.contains(r#""method""#) {
+                    for out in drivers::approved(&line, &mut held) {
+                        send(&out);
+                    }
+                }
                 // 扩展提供的模型驱动（施工 MD-2）：照 `driver` 交增量、回答。
                 if line.contains(r#""method":"driver."#)
                     && let Some(id) = field(&line, "id")

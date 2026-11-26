@@ -2,7 +2,7 @@
 
 ### 是什么
 
-派一个调用之前，内核先把它交给执行前的链（权限策略和各扩展的守卫）判：放行、拒绝，或者要问人。要问人的，这个调用停下来，等人确认；等到配置的时限还没人确认，内核替人拒绝（施工 CD-1）。在跑的调用也能问人一组题，等人回答，回答落了盘交给它。
+派一个调用之前，内核先把它交给执行前的链（权限策略和各扩展的守卫）判：放行、拒绝，或者要问人。要问人的，这个调用停下来，等人确认；等到配置的时限还没人确认，内核替人拒绝（施工 CD-1）。在跑的调用也能问人一组题，等人回答，回答落了盘交给它。扩展驱动在一次请求进行中也能请内核问人（施工 ACP-8，下面「驱动问的确认」）：同一种请求和决定，不对着调用。
 
 这一页写链的结论、确认、到时没人确认、提问，和在等的调用遇上来了一句话、打断、收紧成只读、重启、崩了时怎么了结。会话别的部分在 `session.md`，账本怎么查这几种事件在 `history.md`。
 
@@ -13,6 +13,8 @@
 | `crates/miyu-kernel/src/session/approval.rs` | 链的结论；人的确认；到时没人确认（施工 CD-1） |
 | `crates/miyu-kernel/src/session/nested/asking.rs` | 脚本里调的要人确认：问不问、一父一问、人的回答（施工 M-7 上）；到时没人确认（施工 CD-1） |
 | `crates/miyu-session/src/actor/back.rs`、`actor/model.rs`、`settings.rs` 的 `ConfirmSettings`（施工 CD-1） | 执行器那一半：回合开始照配置 `permission.confirm.timeout` 交等多久；照内核交出的截止时刻起定时的任务，到时交回，带上编进程序的那一句 |
+| `crates/miyu-kernel/src/session/driver_ask.rs`（施工 ACP-8） | 驱动问的确认：问不问得了、记请求、人的回答、到时没人确认、请求有了结局时了结；回驱动的话落了盘再交 |
+| `crates/miyu-session/src/driver_ask.rs`、`actor/driver_asks.rs`、`route/extension/approve.rs`（施工 ACP-8） | 执行器那一半：`driver.approve` 的参数读成内核的输入和 `detail`，结论写回给驱动；问着时停表；辅助请求的当场拒 |
 | `crates/miyu-kernel/src/session/grants.rs` | 本会话放行过的规则：每追加一条记一次，交给链（施工 D-1） |
 | `crates/miyu-kernel/src/session/question.rs` | 在跑的调用问人；人的回答；来了一句话，在等人的作废 |
 | `crates/miyu-kernel/src/session/step.rs` | 每个调用走到了哪 |
@@ -150,6 +152,16 @@
 - 收紧成只读、重启、崩了、到时没人确认：`by` 是内核，`cause` 是回合的。
 - 这一步因此齐了的，往下走。
 
+**驱动问的确认**（施工 ACP-8，设计 73 第四节第 7 条；扩展那一头见 `extensions.md`「驱动要人确认」）：
+
+1. 执行器交 `Input::DriverAsked { at, seen, token, module, access, index, detail }`：`module` 是驱动所在的包，`index` 是要画在哪一块，`detail` 执行器写好（跑命令的写 `{driver, tool, title, command}`，别的写 `{driver, guard, tool, reason}`：头照已有的两种样子画），`token` 是执行器给这一问的编号。
+2. 照这个先后判，问不了的不记事件，当场出 `AnswerDriver { token, answer }`：不在等请求、在路上的不是第 `seen` 次的 → `Cancelled`；第 `index` 块不是这一次已经开始了的供应商侧工具 → `NotHosted`；是压缩的摘要请求 → `Auto(Aside)`；没人能确认（策略的 `attended` 是假：场所会话、不是能输入的头开的会话）→ `Auto(Unattended)`；只读时要的是写入或者执行（对方跑的不在 Miyu 的沙盒里，执行也拦）→ `Auto(ReadOnly)`。
+3. 问得了的：记一条 `tool.approval_requested`，`by` 是那个包，`cause` 是回合的，`call_id` 是 `call_<这一条的序号>_1`（不对着调用；账本照 `driver` 不查它在不在等结果，只查编号是这么写的），`rule` 不写，`driver` 是 `{seen, index}`，这一轮配了等多久的带截止的时刻、出到时叫醒。这一问记在在路上的那次请求上。
+4. 人回答（`session.answer`）：先看是不是在等的这种；照工具调用的确认查（没有规则，`session` 回 `no_rule`；写了 `nested` 的 `not_asking`），记一条决定，`by` 是回答的人，`cause` 是这个命令；落了盘才出 `AnswerDriver`（`Allowed` 或者带理由的 `Denied`）。附件照记进决定，不交给驱动。
+5. 到时没人确认：记内核替人拒的决定，`cause` 是回合的，不记结果（没有调用）；落了盘才出 `AnswerDriver { Auto(Expired) }`。
+6. 请求有了结局（说完了、出错、被打断、撤掉重发、重启，都经 `call/settle.rs` 的 `settle`）：还在等的各记一条内核替人拒的决定，排在回复前面、在回合里；当场出 `AnswerDriver { Cancelled }`。之后的回答 `not_asking`。
+7. 崩了，载入时：账本里那一问留着在等，没有人再认领（不对着调用，载入时不补结果）；视图里那一步照旧带着没定的请求，回合收了尾就不再算在等人。
+
 ### 样子：给模型看的
 
 内核写的结果，原文在 `resources/core/tool-results/<名字>.txt`，末尾带一个换行；字段照模板的规矩转义。token 数、指纹在 `26-提示词.md` 第十节的登记簿里。链拒绝时，结果的内容是那个模块写的那一句，不是这里的（权限策略写的三句：`resources/core/permissions/` 的两句，和只读时的 `read-only`，见 `session/guard.md`）。
@@ -196,6 +208,8 @@
 | `crates/miyu-kernel/src/session/tests/random/asking.rs`、`random/watch/approval.rs`、`random/watch/question.rs` | 随机输入里的结论、题目、回答、到时了；每一步查请求只在链要问人时记、没人能确认和只读的当场拒绝、回答照规矩接受或拒绝、到时了还在等的才记内核替人拒的决定、`by` 写对 |
 | `crates/miyu-kernel/src/session/tests/approval/expiring.rs`、`tests/scenario/approval_expiry.rs`（施工 CD-1） | 请求带截止的时刻、出到时叫醒；没配的一直等；到时内核替人拒、她接着干、之后的回答 `not_asking`；人先定了的、来了一句话作废了的、对不上的不理；脚本里调的到时拒、交给脚本、后面的接着过链 |
 | `crates/miyu-session/tests/confirm_timeout.rs`、`crates/miyu-session/src/settings/tests.rs`（施工 CD-1） | 真的 actor：配 1 秒不理，到时 `denied`、`by` 是内核、她拿到那一句接着说话；到时前允许的照常跑、到时不理；配 0 不带截止、一直等；没配的 5 分钟；配置项的默认、范围、生效时机 |
+| `crates/miyu-kernel/src/session/tests/driver_ask.rs`（施工 ACP-8） | 驱动问的记请求、画在哪一块、编号；允许、拒绝落了盘才回、记住的 `no_rule`；没人能确认、只读时执行当场拒、读的照问；问的不是这一次、不是供应商侧工具的；打断、说完了时先了结再写回复、回「没了」；到时没人确认 |
+| `crates/miyu-endpoint/tests/extension_driver_approve.rs`、`crates/miyu-session/src/driver_ask/tests.rs`（施工 ACP-8） | 真核心、真扩展：问到、视图里那一步带着、允许、拒绝带理由、没人能确认、打断回 `cancelled`、别的 `call` 和没开始的块被拒；参数怎么读、选项怎么挑 |
 | `crates/miyu-kernel/src/event/question/tests.rs` | 回答对不对得上题目 |
 | `crates/miyu-kernel/src/tool/texts/tests.rs`、`crates/miyu-kernel/tests/resources.rs` | 拒绝的理由照模板转义、只收 `reason` 一个字段；样本里被拒绝的那一条就是资源里带理由的那一句 |
 

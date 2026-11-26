@@ -62,6 +62,8 @@ pub struct Projector {
     request: Option<Seq>,
     /// 调用编号到那一步。
     calls: BTreeMap<CallId, EntryId>,
+    /// 驱动问的确认、画它的那一步还没开条目的（读回日志时，施工 ACP-8，`hosted.rs`）：开了条目再写上。
+    held: BTreeMap<EntryId, (CallId, crate::entry::Approval)>,
     /// 还排着的消息：序号到条目。
     queued: BTreeMap<Seq, EntryId>,
     /// 每条消息：序号到条目（撤回、开轮时照它找）。
@@ -128,6 +130,7 @@ impl Projector {
             blocks: BTreeMap::new(),
             request: None,
             calls: BTreeMap::new(),
+            held: BTreeMap::new(),
             queued: BTreeMap::new(),
             users: BTreeMap::new(),
             speakers: BTreeMap::new(),
