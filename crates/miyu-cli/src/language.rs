@@ -5,6 +5,7 @@
 use crate::ask::usage_line;
 use crate::diagnostic::Problem;
 
+mod acp;
 mod agents;
 mod bus;
 mod config;

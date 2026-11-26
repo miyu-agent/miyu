@@ -7,7 +7,7 @@ use clap::{Args, Command};
 
 use super::{Page, page};
 use crate::language::Language;
-use crate::{Ask, Compact, Config, Provider, Recap, Redo, Rename, Rescue, Setup, Undo};
+use crate::{Acp, Ask, Compact, Config, Provider, Recap, Redo, Rename, Rescue, Setup, Undo};
 
 /// 一个选项：几种写法（`-c`、`--continue`），和后面写的值（没有的是空的）。
 type Listed = BTreeSet<(Vec<String>, String)>;
@@ -185,6 +185,13 @@ fn each_page_lists_exactly_the_options_there_are() {
             real(&rescue, id),
             "{language:?} rescue"
         );
+        // `acp` 那一页（施工 ACP-6）：只有 `-h`。
+        let acp = Acp::augment_args(Command::new("acp"));
+        assert_eq!(
+            listed(page(language, Page::Acp)),
+            real(&acp, id),
+            "{language:?} acp"
+        );
         // 主程序那一页（设计 50 第五节）：只列全局选项 `-h`、`-V`，`ask` 和会话那几条命令的选项在各自的页上。
         let all: Listed = [
             (vec!["--help".to_string(), "-h".to_string()], String::new()),
@@ -285,6 +292,7 @@ fn each_page_is_its_own_file() {
             (Page::Schedule, "schedule"),
             (Page::Session, "session"),
             (Page::Rescue, "rescue"),
+            (Page::Acp, "acp"),
             (Page::Mcp, "mcp"),
             (Page::Core, "core"),
         ] {
@@ -331,6 +339,7 @@ fn pages_fit_in_eighty_columns_and_end_with_one_newline() {
             Page::Kb,
             Page::Schedule,
             Page::Rescue,
+            Page::Acp,
             Page::Mcp,
             Page::Core,
         ] {

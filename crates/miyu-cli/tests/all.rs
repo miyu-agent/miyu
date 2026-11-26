@@ -5,6 +5,7 @@
 
 mod support;
 
+mod acp;
 mod agents;
 mod ask;
 mod attach;

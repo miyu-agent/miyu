@@ -25,8 +25,11 @@
 //!   在连上了的连接上办一次，测试照它在进程里走一遍（施工 8-5）；
 //! - [`Setup`]：`miyu setup` 的参数；[`setup()`]：第一次接入模型，交回退出码；[`setup_on`]：在连上了的连接上走一遍；
 //!   [`model_ready_on`]：`miyu ask` 说话之前看有没有模型、没有就先走一遍（施工 8-11）；
+//! - [`Acp`]：`miyu acp` 的参数；[`acp()`]：当编辑器的 ACP agent，交回退出码；[`acp_on`]：在连上了的连接上对着一对读写跑，
+//!   测试照它在进程里当编辑器（施工 ACP-6）；
 //! - [`language`]：给人看的话跟着界面语言。
 
+mod acp;
 mod ask;
 mod bus;
 mod call;
@@ -64,6 +67,7 @@ mod text_rules;
 mod undo;
 mod upgrade;
 
+pub use acp::{Acp, acp, serve as acp_on};
 pub use ask::{
     Ask, Format, Opening, Output, Permission, PersonaChoice, Plan, Screen, Target, ask, exit, talk,
 };

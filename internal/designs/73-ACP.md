@@ -139,4 +139,15 @@ GitHub Copilot、Kimi、Qwen Code 都在。这份设计做两个方向：
 
 ### 八、做下来和这里不一样的、没做的
 
-（施工时补。）
+施工 ACP-6（方向二，2026-11-26）：
+
+- 第五节第 6 条：核心的 MCP 服务一个核心一份、所有会话共用，没有只对一个会话的接法。`miyu acp` 不收编辑器给的 `mcpServers`、不声明
+  `mcpCapabilities`（规范说 stdio 的每个 agent 都必须支持，这一条现在没守）。
+- 第五节第 3 条的金额：只有一种币的照原样写那种币，几种币的照换算成 `usage.currency` 的那一个；有算不出钱的请求、有换算不了的不报
+  金额。
+- 第五节第 5 条：别的头切的权限、模型报 `current_mode_update`、`config_option_update`；编辑器自己切的不另报。
+- 第五节第 2 条：`session/load`、`resume` 不换会话的工作目录，编辑器给的 `cwd` 只用来补全工具参数里的相对路径。
+- 第五节第 4 条：编辑器不能弹表单时，提问一道一道走 `session/request_permission`，没有选项的题、多选题多选的那几项收不到。
+- 第五节第 7 条：头自己加了 `/compact`（核心的命令表里没有它，同终端界面）。
+- 没做的：子代理的会话（`subagent_update`）和子会话里的确认、压缩（`compaction_update`）、旁白（`notice`）、`plan_update`、
+  `session/list` 分页；重放时人附的图、文件不报，改文件的对比只在正在发生时要。

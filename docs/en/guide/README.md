@@ -20,6 +20,7 @@ The user guide is written for people who use Miyu. If this is your first time, r
 | [Web UI](heads/web.md) | Every part of the web interface, projects, settings, and how to access it from other devices. |
 | [Tray](heads/applet.md) | The system tray's menu, notifications and starting at login. |
 | [Chat platforms](heads/im.md) | Connecting QQ and Telegram, who in a group can call the AI, and what the AI can do in groups. |
+| [Using Miyu in an editor](editors.md) | Using Miyu as the AI assistant of editors such as Zed. |
 
 ## Everyday use
 

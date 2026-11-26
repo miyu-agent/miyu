@@ -11,6 +11,7 @@
   recap               总结当前会话
   rename [<标题>]     重命名会话
   session <命令>      导入导出会话
+  acp                 在编辑器里作为 AI 助手运行（ACP）
 
 内容：
   memory <命令>       管理记忆

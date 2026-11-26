@@ -34,6 +34,7 @@ Here are all the built-in commands, grouped by purpose:
 | Troubleshooting | [`check`](#miyu-check) | Checks hand-written files for mistakes |
 | | [`rescue`](#miyu-rescue) | Fixes the core with LiteMiyu when it has a problem |
 | For scripts | [`call`](#miyu-call) | Calls this session's tools from a command the AI runs |
+| For editors | [`acp`](#miyu-acp) | Lets editors such as Zed use Miyu as their AI assistant |
 
 The packages that ship with Miyu provide three more commands:
 
@@ -730,6 +731,18 @@ miyu rescue
 LiteMiyu exists only for Linux. On macOS and Windows it cannot be found, and the command prints `litemiyu not found` with the hint `only Linux is supported for now`.
 
 The exit code is `litemiyu`'s exit code; it is `1` when `litemiyu` cannot be found. See [Rescue](rescue.md).
+
+## miyu acp
+
+```text
+miyu acp
+```
+
+`miyu acp` runs Miyu as the AI assistant of an editor. It is not a command you run in a terminal: editors that speak ACP (Agent Client Protocol), such as Zed and JetBrains IDEs, start it as a subprocess and talk to it over standard input and output. It connects to the core on this machine, and starts the core first if it is not running; sessions in the editor are Miyu sessions, so the terminal and web interfaces show them too and you can continue them there. The command takes no arguments.
+
+Standard output carries only protocol messages; errors such as not being able to reach the core go to standard error, which the editor collects into its own log.
+
+Exit codes: `0` means the editor closed the connection; `1` means it could not connect to the core, or the connection to the core was lost. To set it up in an editor, see [Using Miyu in an editor](editors.md).
 
 ## miyu call
 

@@ -101,6 +101,12 @@ impl Rpc {
         Ok(None)
     }
 
+    /// 等回应时留下的下一条推送；没有留着的是 `None`（施工 ACP-6：`miyu acp` 发完一条斜杠命令先把它引出的推送办完，
+    /// 再看要不要等一轮结束）。
+    pub(crate) fn held(&mut self) -> Option<Value> {
+        self.held.pop_front()
+    }
+
     /// 下一条回应或推送，先交留着的。核心断开了是 `None`。
     pub(crate) async fn next(&mut self) -> Option<Value> {
         match self.held.pop_front() {

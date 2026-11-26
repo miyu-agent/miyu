@@ -1,0 +1,11 @@
+Usage: miyu acp
+
+Run as the AI assistant of an editor. Editors that speak ACP (Agent Client
+Protocol), such as Zed and JetBrains IDEs, start it as a subprocess and talk
+over standard input and output; you do not run it in a terminal yourself.
+
+Sessions in the editor are Miyu sessions: the terminal and web interfaces show
+them too, and you can continue them there.
+
+Options:
+  -h, --help  Print help

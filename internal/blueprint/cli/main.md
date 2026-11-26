@@ -9,7 +9,7 @@
 | 代码 | 管什么 |
 |---|---|
 | `crates/miyu/src/main.rs` | 子命令；换上帮助页；参数不对时交给 `misuse`；拉起核心用的命令 |
-| `crates/miyu-cli/src/help.rs`、`help/{zh,en}/{miyu,ask,undo,restore,redo,compact,recap,rename,memory,pkg,kb,bus,schedule,config,provider,setup,rescue,mcp,core}.txt` | 帮助页（施工 CL-7 起没有 `web` 那一页，网页包自己印）（`pkg` 那一页施工 T-3，`kb` 那一页施工 K-7 下，`schedule` 那一页施工 J-3 下），编进程序（施工 4-11；`web` 那一页施工 W-9，`setup` 那一页施工 8-11，`sandbox` 那一页施工 5-8，`compact` 那一页施工 6-8，`redo` 那一页施工 4-7 再补，`recap` 那一页施工 3-8 四补，`rename` 那一页施工 3-8 五补，`config` 那一页施工 8-2，`provider` 那一页施工 8-5，原来是 `login`、`logout` 两页，Y-13 上并成一页） |
+| `crates/miyu-cli/src/help.rs`、`help/{zh,en}/{miyu,ask,acp,undo,restore,redo,compact,recap,rename,memory,pkg,kb,bus,schedule,config,provider,setup,rescue,mcp,core}.txt` | 帮助页（施工 CL-7 起没有 `web` 那一页，网页包自己印）（`pkg` 那一页施工 T-3，`kb` 那一页施工 K-7 下，`schedule` 那一页施工 J-3 下），编进程序（施工 4-11；`web` 那一页施工 W-9，`setup` 那一页施工 8-11，`sandbox` 那一页施工 5-8，`compact` 那一页施工 6-8，`redo` 那一页施工 4-7 再补，`recap` 那一页施工 3-8 四补，`rename` 那一页施工 3-8 五补，`config` 那一页施工 8-2，`provider` 那一页施工 8-5，原来是 `login`、`logout` 两页，Y-13 上并成一页） |
 | `crates/miyu-cli/src/misuse.rs` | 参数写错时说的话，不认识的子命令也在这里（施工 4-11）；嵌着的子命令写错、要一起写的选项少了一个（施工 5-8） |
 | `crates/miyu-cli/src/diagnostic.rs` | 报错、警告、提示的写法（设计 47，施工 CL-2 上）：`miyu: ` 打头、警告多 `warning:`（「警告：」）、建议另起一行 `hint:`（「提示：」）；别处交来的原话去掉句末句号、开头大写词改小写；命令行往标准错误上报错都经它 |
 | `crates/miyu-cli/src/startup.rs` | 连上核心以前出的错（找数据根、建骨架、连核心、拉起核心）照握手以前的界面语言说：底层交的说法（`said()`）从资源目录的字里取，取不到的照原话（施工 EN-1） |
@@ -99,6 +99,7 @@
   recap               总结当前会话
   rename [<标题>]     重命名会话
   session <命令>      导入导出会话
+  acp                 在编辑器里作为 AI 助手运行（ACP）
 
 内容：
   memory <命令>       管理记忆
@@ -151,6 +152,7 @@ Conversation:
   recap               Summarize the session
   rename [<title>]    Rename the session
   session <command>   Export and import sessions
+  acp                 Run as the AI assistant of an editor (ACP)
 
 Content:
   memory <command>    Manage memories
@@ -246,7 +248,7 @@ Run 'miyu help <command>' for more on a command.
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu/tests/commands.rs` | 不认识的子命令：中文、英文的那一句，退出码 2，不拉起核心、核心没起来过；只敲 `miyu`：退出码 2、说用 `miyu ask`；`-h`、`--help`、`help` 印那一页，中文、英文各和样本一样，退出码 0；`--version` 印 `miyu ` 开头；参数写错的几种，中文、英文各说那一句，退出码 2；主程序换了文件名，说的还是 `miyu`（施工 5-8） |
-| `crates/miyu/src/main.rs` 的 `tests` | 每个子命令（连同下面每一层）的 `-h` 印的是它那个命令的帮助页，两种语言；顶层子命令都在 `PAGES` 里（施工 HLP-1） |
+| `crates/miyu/src/tests.rs`（施工 ACP-6 从 `main.rs` 挪出来） | 每个子命令（连同下面每一层）的 `-h` 印的是它那个命令的帮助页，两种语言；顶层子命令都在 `PAGES` 里（施工 HLP-1） |
 | `crates/miyu-cli/src/help/tests.rs` | 每一页列的选项和程序真有的一一对得上（长短写法、值名），最宽 80 列，以一个换行结尾；值名照表换成页里的写法（`<编号>`、`<目录>`）（施工 5-10 上）、`<时长>`（施工 7-9） |
 | `crates/miyu-cli/src/misuse/tests.rs` | 七种错各说哪一句、两种语言；值的连法；控制字符换掉；全部子命令里必写的只有 `ask` 的要说的话；要一起写的选项少了一个、嵌着的子命令写错（施工 5-8）；`--add-dir` 后面不是已经有的目录（施工 5-10 上）；`--timeout` 后面不是时长（施工 7-9）；`--from` 后面是空的、只有空白（施工 7-10）；嵌着的子命令少了必写的照帮助页说怎么写，有必写的子命令在帮助页上都有那一行（施工 K-7 修） |
 | `crates/miyu/tests/ask.rs` | 参数不对退出码 2（什么都不写、`--session` 和 `--continue` 一起写）；`miyu ask --help` 跟着界面语言；没有 key、核心没在跑的不拉起 |

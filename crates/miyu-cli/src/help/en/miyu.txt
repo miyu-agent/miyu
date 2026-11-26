@@ -11,6 +11,7 @@ Conversation:
   recap               Summarize the session
   rename [<title>]    Rename the session
   session <command>   Export and import sessions
+  acp                 Run as the AI assistant of an editor (ACP)
 
 Content:
   memory <command>    Manage memories

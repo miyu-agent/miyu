@@ -34,6 +34,7 @@
 | 排错 | [`check`](#miyu-check) | 检查手写的文件有没有写错 |
 | | [`rescue`](#miyu-rescue) | 核心出问题时用 LiteMiyu 修复 |
 | 供脚本使用 | [`call`](#miyu-call) | 在 AI 运行的命令里调用这个会话的工具 |
+| 供编辑器使用 | [`acp`](#miyu-acp) | 让 Zed 这类编辑器把 Miyu 当作 AI 助手 |
 
 出厂自带的软件包还另外提供三个命令：
 
@@ -730,6 +731,18 @@ miyu rescue
 LiteMiyu 只有 Linux 版。在 macOS、Windows 上找不到它，会输出 `未找到 litemiyu`，并提示 `目前只支持 Linux`。
 
 退出码使用 `litemiyu` 的退出码；找不到 `litemiyu` 时是 `1`。见 [应急修复](rescue.md)。
+
+## miyu acp
+
+```text
+miyu acp
+```
+
+`miyu acp` 让 Miyu 作为编辑器里的 AI 助手运行。它不是给你在终端里运行的命令：Zed、JetBrains 这类支持 ACP（Agent Client Protocol）的编辑器会把它当作子进程启动，在标准输入、标准输出上和它对话。它连接本机的核心，如果核心没有在运行就先启动核心；编辑器里的会话就是 Miyu 的会话，在终端界面、网页界面里也能看到、接着说。这个命令没有参数。
+
+标准输出上只有协议的消息；连接不上核心这类错误写在标准错误上，编辑器会把它收进自己的日志。
+
+退出码：`0` 表示编辑器关闭了连接；`1` 表示连接不上核心，或者和核心的连接断开了。怎么在编辑器里配置，见 [在编辑器里使用](editors.md)。
 
 ## miyu call
 
