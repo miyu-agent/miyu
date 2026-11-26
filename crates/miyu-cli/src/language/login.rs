@@ -100,7 +100,7 @@ impl Language {
         }
     }
 
-    /// 存了密钥、顺手在系统配置里写上了引用（施工 PL-1）。
+    /// 存了密钥、顺手在系统配置里写上了引用（施工 KR-1）。
     pub(crate) fn key_linked(&self, name: &str) -> String {
         match self {
             Language::Chinese => {

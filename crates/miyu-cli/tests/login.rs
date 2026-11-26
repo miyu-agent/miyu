@@ -463,7 +463,7 @@ async fn logout_deletes_by_name_or_pick() {
 
 #[tokio::test]
 async fn a_provider_written_in_the_config_gets_its_key_reference_once() {
-    // 施工 PL-1：自己写的供应商顺手写上引用；写过的不再写，配置里没写的（deepseek）不碰。
+    // 施工 KR-1：自己写的供应商顺手写上引用；写过的不再写，配置里没写的（deepseek）不碰。
     let config =
         "[providers.magpie]\ndriver = \"openai-chat\"\nbase_url = \"https://magpie.invalid/v1\"\n";
     let home = Home::configured(Arc::new(Script::new([])), config);
