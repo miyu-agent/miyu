@@ -24,7 +24,7 @@
 | `crates/miyu-session/src/actor/life.rs` | 会话的 actor 结束、它占的放掉以后 trim 一次（`session/actor.md`；经 `trim_soon`）：停下、删掉、闲够了退下（`protocol.md`「会话表」第 9 条）、内存紧时退下（第 10 条）都算 |
 | `crates/miyu-session/src/route/kept.rs`（施工 LW-3） | 会话没有主请求满 3 分钟、放掉编好的历史以后 trim 一次（`session/actor.md`「8. 经路由请求」第 5 款第 2 条；经 `trim_soon`） |
 | `crates/miyu-endpoint/src/sessions/pressure.rs`（施工 MEM-3） | 内存紧时卸完一批、从表里拿掉以后 trim 一次（经 `trim_soon`） |
-| `crates/miyu-core/src/wal.rs`（施工 LW-15、LW-29） | 库安静下来（写过或者读过以后）合回写前日志、每个连接放掉页缓存以后 trim 一次（`store.md`「怎么走」第 14 条第 7 款） |
+| `crates/miyu-core/src/wal.rs`（施工 LW-15、LW-29） | 库安静下来（写过或者读过以后满 2 秒）每个连接放掉页缓存以后 trim 一次；安静满 30 秒合回写前日志以后再放一遍、再 trim 一次（施工 BO-3，`store.md`「怎么走」第 14 条第 1、7 款） |
 | `crates/miyu-core/src/settle.rs` | 一阵请求过去、安静 2 秒以后 trim 一次（施工 V-5 中），再看内存涨得快不快（施工 V-6 下）；连接每读到一个请求、连上、断开都叫一声，信号是 `miyu-endpoint` 的 `Activity`（`activity.rs`，几处各拿一份都叫得醒） |
 
 ### 对外的样子

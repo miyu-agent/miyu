@@ -6,7 +6,14 @@
 //! 一个进程一份登记：开着的写连接和只读的连接（弱引用，库放下了自己掉）、最后一次提交或者读的时刻。每次提交叫一声
 //! （`sqlite::connect` 装的提交钩子，`wrote`），开库也算一声（上一回被杀留下的 `-wal` 也合），拿只读的连接读也算一声（`read`，
 //! 施工 LW-29）。等着的一方（核心起的一个线程，`miyu-core` 的 `wal.rs`）照 [`wait_quiet`] 等到有过这样一声、之后这么久再
-//! 没有，照 [`checkpoint_all`] 把每个 `-wal` 不空的库合回、截成 0 字节，再把每个登记着的连接的页缓存放掉，再回去等。
+//! 没有，先照 [`shrink_all`] 把每个登记着的连接的页缓存放掉；照 [`stays_quiet`] 再等一阵还是没有的，才照
+//! [`checkpoint_all`] 把每个 `-wal` 不空的库合回、截成 0 字节，再回去等。
+//!
+//! 合为什么比放页缓存等得久（施工 BO-3）：合完以后 `-wal` 是空的，这个库的下一次提交要先写一个新的日志头、对它同步一次
+//! （SQLite 的 `syncHeader`，`synchronous = NORMAL` 也做）。会话每写一批都在同一个调用里提交索引和用量两个库，工具要等它
+//! 写完才开始跑；真模型答一步通常要几秒，原来安静 2 秒就合，于是每一步都先合一遍（同步 `-wal`、同步主库），下一步再接连等
+//! 两次头的同步。2026-11-27 的基准测试里，安静满 2 秒以后的那一步，回答到了以后要多等约 10 毫秒工具才开始。放页缓存不碰
+//! 磁盘，照旧 2 秒就放。
 //!
 //! 页缓存为什么每个连接都放（施工 LW-29）：SQLite 的每个连接把读过、写过的页留在自己的页缓存里，默认最多 2 MB，连接开着就
 //! 一直占着。原来只放合过的库（施工 LW-15），只读的连接和这一阵只读没写的库不在里面：带着几个大的知识库、回合库、记忆库
@@ -190,23 +197,47 @@ pub fn wait_quiet(quiet: Duration) {
     }
 }
 
+/// [`wait_quiet`] 回来以后接着等 `longer` 这么久：这期间一直没有提交（开库、拿只读的连接读）的交回真；有过一声的马上
+/// 交回假，那一声留着，下一次 [`wait_quiet`] 照它重新等安静（施工 BO-3：合比放页缓存等得久）。
+pub fn stays_quiet(longer: Duration) -> bool {
+    let due = Instant::now() + longer;
+    let mut state = lock();
+    loop {
+        if state.last.is_some() {
+            return false;
+        }
+        let now = Instant::now();
+        if now >= due {
+            return true;
+        }
+        state = WROTE
+            .wait_timeout(state, due - now)
+            .unwrap_or_else(PoisonError::into_inner)
+            .0;
+    }
+}
+
+/// 登记着的、还开着的连接：哪一种库、连接、是不是写的。顺手把放下了的从登记里去掉。
+fn open() -> Vec<(&'static str, Arc<dyn Wal>, bool)> {
+    let mut state = lock();
+    state.open.retain(|kept| kept.db.strong_count() > 0);
+    state
+        .open
+        .iter()
+        .filter_map(|kept| Some((kept.kind, kept.db.upgrade()?, kept.writes)))
+        .collect()
+}
+
+/// 每个登记着的连接放一遍页缓存（施工 LW-29），不合：交回放成了几个。库刚安静下来就调（施工 BO-3），合要再等一阵。
+pub fn shrink_all() -> usize {
+    open().iter().filter(|(_, db, _)| db.shrink()).count()
+}
+
 /// 把登记着的、还开着的库一个一个合回、截短（`PRAGMA wal_checkpoint(TRUNCATE)`）：`-wal` 不在、是空的跳过；只读的连接不合。
 /// 每个登记着的连接再放一遍页缓存（施工 LW-29）。一次拿一个库的锁，合完放开。会等磁盘，在阻塞的线程里调。
 pub fn checkpoint_all() -> Checkpointed {
-    let open: Vec<(&'static str, Weak<dyn Wal>, bool)> = {
-        let mut state = lock();
-        state.open.retain(|kept| kept.db.strong_count() > 0);
-        state
-            .open
-            .iter()
-            .map(|kept| (kept.kind, Weak::clone(&kept.db), kept.writes))
-            .collect()
-    };
     let mut done = Checkpointed::default();
-    for (kind, db, writes) in open {
-        let Some(db) = db.upgrade() else {
-            continue;
-        };
+    for (kind, db, writes) in open() {
         if writes {
             match db.truncate() {
                 Ok(Outcome::Clean) => {}
@@ -216,7 +247,7 @@ pub fn checkpoint_all() -> Checkpointed {
             }
         }
         // 每个连接的页缓存都放一遍（施工 LW-29）：只读的连接、这一阵只读没写的写连接没有东西要合，读进来的页照样留着
-        // （默认每个连接最多 2 MB），原来只有合过的库才放。
+        // （默认每个连接最多 2 MB），原来只有合过的库才放。刚安静下来时已经放过一遍（[`shrink_all`]），合又读进来几页。
         if db.shrink() {
             done.shrunk += 1;
         }

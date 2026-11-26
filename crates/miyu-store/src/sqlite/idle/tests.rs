@@ -266,3 +266,48 @@ fn waiting_for_quiet_returns_after_a_read() {
     waited.expect("读过以后安静下来了");
     waiter.join().expect("没崩");
 }
+
+/// 刚安静下来只放页缓存、不合（施工 BO-3）：`-wal` 原样留着，库照旧读得到写过的。
+#[test]
+fn letting_go_of_cached_pages_leaves_the_wal_alone() {
+    let scratch = Scratch::bare();
+    let (path, db) = kept(scratch.path());
+    with(&db, |conn| write(conn, 0..50));
+    let before = wal(&path);
+    assert!(before > 0, "写过的还在 -wal 里");
+    assert!(shrink_all() >= 1, "这个连接放了一遍");
+    assert_eq!(wal(&path), before, "没合、没截");
+    with(&db, |conn| assert_eq!(count(conn), 50));
+}
+
+/// 接着等的那一阵里有过一声就马上交回假，不等到头（施工 BO-3）：一轮任务当中下一批提交来了，不合。
+#[test]
+fn a_write_while_staying_quiet_calls_the_merge_off() {
+    let (done, got) = mpsc::channel();
+    let waiter = std::thread::spawn(move || {
+        done.send(stays_quiet(Duration::from_secs(600)))
+            .expect("送得出");
+    });
+    // 登记是一个进程一份：并着跑的别的测试里等着的一方会把这一声收走，所以隔一会儿再叫一次，直到这一个看到。
+    let mut stayed = Err(mpsc::RecvTimeoutError::Timeout);
+    for _ in 0..100 {
+        wrote();
+        stayed = got.recv_timeout(Duration::from_millis(200));
+        if stayed.is_ok() {
+            break;
+        }
+    }
+    assert_eq!(stayed, Ok(false), "有过一声的不合，也没有等满十分钟");
+    waiter.join().expect("没崩");
+}
+
+/// 接着等的那一阵里一声都没有的交回真（施工 BO-3）。
+#[test]
+fn staying_quiet_to_the_end_lets_the_merge_go_ahead() {
+    // 登记是一个进程一份：并着跑的别的测试随时会叫一声，所以多试几次，有一次安静到头就行。
+    let stayed = (0..200).any(|_| {
+        wait_quiet(Duration::ZERO);
+        stays_quiet(Duration::from_millis(1))
+    });
+    assert!(stayed, "一声都没有的那一次安静到了头");
+}

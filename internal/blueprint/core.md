@@ -22,7 +22,7 @@
 | `crates/miyu-core/src/leftovers.rs` | 起来时收拾上一次崩了留下的：升级到一半的包（施工 AE-7）、写配置和密钥剩下的临时文件（施工 AS-11） |
 | `crates/miyu-core/src/trash.rs` | 起来时清一次回收处；删了的会话留多久 `KEEP`（施工 3-8 三补）；删了的人格同样清（施工 P-3 下） |
 | `crates/miyu-core/src/settle.rs` | 一阵请求过去、安静 2 秒以后还内存（施工 V-5 中，`heap.md` 第 2 条） |
-| `crates/miyu-core/src/wal.rs` | 库最后一次提交过去 2 秒，把写前日志合回主库、截短（施工 V-28，`store.md`「怎么走」第 14 条） |
+| `crates/miyu-core/src/wal.rs` | 库最后一次提交过去 2 秒放掉页缓存，过去 30 秒把写前日志合回主库、截短（施工 V-28、BO-3，`store.md`「怎么走」第 14 条） |
 | `crates/miyu-core/src/memlog.rs` | 自己记内存账：什么时候采、一行的样子、采样的任务（施工 V-4，`heap.md`「自己记账」） |
 | `crates/miyu-core/src/settings.rs` | 配置清单：登记各模块的几项；起来时读配置（施工 8-5 起连同密钥文件，环境照进程的）、照 `log.level` 换运行日志的级别（施工 8-2），生成两份 JSON Schema 和参考文件（施工 8-1，`config.md`「怎么走」第一、二条）；运行中跟着配置换级别、重写这三份（`settings/follow.rs`，施工 8-4） |
 | `crates/miyu-sandbox/src/lifeline.rs`、`lifeline/` | 核心没了，它起的命令跟着没（施工 7-8，下面「子进程随核心退出」）：Unix 上每条命令的组里一个看门的（照主程序旁边的 `miyu-watchdog` 起，退回 `/bin/sh`，施工 LW-28），Windows 上核心进作业对象；扩展、MCP 服务、语义模型小程序照 `keep` 起在共用的那一个看门的组里（施工 XH-1，`lifeline/unix/shared.rs` 是施工 LW-28） |
