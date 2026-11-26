@@ -201,3 +201,23 @@ GitHub Copilot、Kimi、Qwen Code 都在。这份设计做两个方向：
   回、没有的才照「总是允许」。没人能确认的会话（场所会话、不是能输入的头开的会话）、只读时要写要跑命令的当场拒；问着时这一次
   调用不计时限。`acp` 包去掉了借 `ask_user` 的做法；旧核心回「没有这个方法」的照「只用 Miyu 的工具」那一档拒绝，日志里写一句。
 - 没做的：崩了以后载入时，在等的那一问不补决定（不对着调用），视图里那一步留着没定的请求；收紧成只读时不回头拦下已经在问的。
+
+施工 ACP-10（方向一，真人实测撞到的三处，2026-11-26）：
+
+- 第四节第 7 条「也放行对方的工具」：对方不来要权限就自己跑了 Bash。根因是 Claude 适配器 0.112.0 起会话的权限模式不由客户端定：
+  有 `permissions.defaultMode` 的照主人本机给 Claude Code 的设置（主人设的是 `bypassPermissions`），没有的起在 `auto`（它自己判
+  要不要问），两种都不发 `session/request_permission`。改成开会话以后照 ACP 的会话模式切到「每次都问」的那一档：`session/new` 报了
+  `modes` 的发 `session/set_mode`，只有配置项的发 `session/set_config_option`；哪一档照编号认，`default`（Claude 适配器、Gemini
+  CLI、Antigravity）、`manual`、`ask`、`read-only`（Codex 适配器没有每次都问的一档，这一档最紧），都对不上的不切、日志里记一句。
+  两档都切（只用 Miyu 的工具时主人本机的 MCP 服务这类也不该不问就跑）。Claude 适配器另在 `_meta.claudeCode.options` 写
+  `allowDangerouslySkipPermissions: false`，主人设的 `bypassPermissions` 当场退回 `default`、模式表里也不列。仍然不问就跑了会动
+  本机的工具（`read`、搜索、抓网页、思考以外的）的，供应商侧工具块的结果前面照界面语言写「未经确认已执行」（协议里结果模型和人都看，
+  没有只给人的一格）。主人本机设置里的允许规则（`permissions.allow`）还会放行，包不改主人的设置，靠这一句标出来。
+- 第四节第 4 条转录：登录失败那一轮没有回答，核心把「这一轮出错了」那一句（`<turn-ended reason="error">`）和下一句人话攒在同一条
+  user 消息里。包以前把整条当这一轮交，agent 两句都答、还说自己是被打断后重试。改成照那一句分开：它和前面的人话归进历史（`User:`
+  那一段以那一句结尾），后面的才是这一轮；字一个不加。
+- 第四节第 9 条窗口、模型表：Claude 适配器的模型表里简称（`opus`、`haiku`）跟着当代走，全名（`claude-haiku-4-5-20251001`）钉在
+  那一版，不是同一个模型；`haiku` 记的 1M 是 Haiku 5.5 的真窗口，全名那一行的 200k 是还没用过、照保守值写的，Haiku 4.5 本来就是
+  200k。改成 `usage_update` 的 `_meta["_claude/model"]` 报了真用的模型时，窗口也记在那个全名上、记下「简称 → 全名」，列表里简称
+  照它解到的全名取窗口。驱动的模型表协议（`driver.models`）没有名字这一格，包交不出 agent 给的显示名（「Haiku 5.5」），简称在
+  编辑器里照编号显示、全名照核心的目录显示名字，看着像两套：留给项目主人定（见施工 ACP-10 的汇报）。
