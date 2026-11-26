@@ -3,13 +3,16 @@
 //! （照 `miyu ask` 一样连、没在跑就拉起来），把 ACP 翻成核心的会话协议。不另起模型、不另存会话：编辑器里的会话就是 Miyu 的
 //! 会话，终端、网页里也看得到、接得上。
 //!
-//! 标准输出上只有协议的行；连不上核心这类开局的错误写在标准错误上，编辑器收进它的日志。
+//! 标准输出上只有协议的行；连不上核心这类开局的错误写在标准错误上，编辑器收进它的日志。之后核心断了不退出，再连上
+//! （施工 ACP-9，`relink.rs`）。
 
 mod asking;
+mod choosing;
 mod editor;
 mod forms;
 mod options;
 mod prompt;
+mod relink;
 mod server;
 mod session;
 mod setup;
@@ -18,6 +21,7 @@ mod tool;
 mod turns;
 mod view;
 
+pub use relink::{Linked, Reconnect};
 pub use server::serve;
 
 use std::process::{Command, ExitCode};
@@ -35,8 +39,9 @@ use crate::language;
 #[derive(Debug, Clone, Args)]
 pub struct Acp {}
 
-/// 跑 `miyu acp`，交回退出码：编辑器关了管道是 0，连不上核心、核心断了是 1。`start` 给出拉起核心的命令。
-pub fn acp(_args: Acp, start: impl FnOnce() -> Command) -> ExitCode {
+/// 跑 `miyu acp`，交回退出码：编辑器关了管道是 0，头一次连不上核心是 1。`start` 给出拉起核心的命令：头一次、断了以后
+/// 再连都用它。
+pub fn acp(_args: Acp, start: impl Fn() -> Command + Send + Sync + 'static) -> ExitCode {
     let language = language::current();
     let runtime = match tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -54,11 +59,20 @@ pub fn acp(_args: Acp, start: impl FnOnce() -> Command) -> ExitCode {
         if let Err(error) = root.prepare() {
             return diagnostic::fail(crate::startup::spoken(&error));
         }
-        let (connection, token) = match connect_or_start(&root, start).await {
+        let (connection, token) = match connect_or_start(&root, &start).await {
             Ok(connected) => connected,
             Err(error) => return diagnostic::fail(crate::startup::spoken(&error)),
         };
+        let reconnect = Box::new(relink::Local { root, start });
         let input = tokio::io::BufReader::new(tokio::io::stdin());
-        serve(connection, &token, input, tokio::io::stdout(), language).await
+        serve(
+            connection,
+            &token,
+            reconnect,
+            input,
+            tokio::io::stdout(),
+            language,
+        )
+        .await
     }))
 }

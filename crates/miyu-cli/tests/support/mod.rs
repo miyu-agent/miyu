@@ -11,6 +11,7 @@ pub mod logging_in;
 pub mod modeled;
 pub mod onboarding;
 pub mod outside;
+mod restart;
 pub mod router;
 
 use std::path::{Path, PathBuf};

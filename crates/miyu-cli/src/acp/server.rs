@@ -1,6 +1,7 @@
 //! `miyu acp` 的主循环（`internal/blueprint/cli/acp.md`「怎么走」）：一头是编辑器（标准输入读、标准输出写），一头是核心（一条
 //! 连接，几个会话的视图流都订在它上面）。编辑器的请求照方法分到 `setup.rs`（握手、会话）、`turns.rs`（说一句、打断、斜杠
-//! 命令）、`asking.rs`（编辑器回的确认、表单）；核心的推送照会话交给 `view.rs`、`status.rs` 翻，翻出来的事在这里办。
+//! 命令）、`asking.rs`（编辑器回的确认、表单）；核心的推送照会话交给 `view.rs`、`status.rs` 翻，翻出来的事在这里办，不属于
+//! 哪个会话的（配置、模型列表变了）交给 `choosing.rs`。核心断了不退出，照 `relink.rs` 再连上。
 
 use std::collections::HashMap;
 
@@ -11,7 +12,8 @@ use miyu_ipc::Connection;
 
 use super::asking::Ask;
 use super::editor::{self, Editor};
-use super::options::{self, Choices};
+use super::options::Choices;
+use super::relink::Reconnect;
 use super::session::{Session, Stop};
 use super::tool;
 use super::view::{Action, Pace};
@@ -28,8 +30,12 @@ pub(crate) struct Client {
 
 /// 两头之间的那一个。
 pub(crate) struct Server {
-    /// 连着核心。
+    /// 连着核心：断了以后是那条断了的，`linked` 是假。
     pub(crate) rpc: Rpc,
+    /// 连着核心（施工 ACP-9）。
+    pub(crate) linked: bool,
+    /// 断了以后怎么再连上。
+    pub(crate) reconnect: Box<dyn Reconnect>,
     /// 对着编辑器。
     pub(crate) editor: Editor,
     /// 界面语言：握手以后照核心回的。
@@ -44,28 +50,22 @@ pub(crate) struct Server {
     pub(crate) initialized: bool,
     /// 编辑器能做的。
     pub(crate) client: Client,
-    /// 能选的模型：第一次开会话时问一次核心。
+    /// 能选的模型：每次开会话、列表变了时重问（`choosing.rs`）。
     pub(crate) choices: Option<Choices>,
 }
 
 /// 连上了核心的 `connection`：握手（本机令牌 `token`），之后一行行读编辑器的 `input`、往 `output` 写，直到编辑器关了管道
-/// （退出码 0）或者核心断了（退出码 1）。`language` 是握手以前的界面语言。
+/// （退出码 0）。核心断了的照 `reconnect` 再连（施工 ACP-9）；头一次握手就被拒的退出码 1。`language` 是握手以前的界面语言。
 pub async fn serve(
     connection: Connection,
     token: &str,
+    reconnect: Box<dyn Reconnect>,
     input: impl AsyncBufRead + Unpin + Send,
     output: impl AsyncWrite + Unpin + Send + 'static,
     language: Language,
 ) -> u8 {
     let mut rpc = Rpc::new(connection, "acp");
-    let hello = json!({
-        "protocol": [1, 1],
-        "head": {"kind": "acp", "version": env!("CARGO_PKG_VERSION")},
-        "locale": language.locale(),
-        "caps": {"input": true},
-        "token": token,
-    });
-    let hello = match super::prompt::answered(rpc.call("hello", hello).await) {
+    let hello = match super::relink::hello(&mut rpc, token, language).await {
         Ok(hello) => hello,
         Err(error) => {
             tracing::warn!(target: "miyu::acp", %error, "hello refused");
@@ -74,15 +74,18 @@ pub async fn serve(
     };
     let mut server = Server {
         rpc,
+        linked: true,
+        reconnect,
         editor: Editor::new(Box::new(output)),
-        language: crate::link::spoken(&hello, language),
-        home: hello["host"]["home"].as_str().map(str::to_string),
+        language,
+        home: None,
         sessions: HashMap::new(),
         asks: HashMap::new(),
         initialized: false,
         client: Client::default(),
         choices: None,
     };
+    server.greeted(&hello).await;
     let mut lines = input.lines();
     loop {
         tokio::select! {
@@ -90,12 +93,9 @@ pub async fn serve(
                 Ok(Some(line)) => server.line(&line).await,
                 _ => return exit::OK,
             },
-            message = server.rpc.next() => match message {
+            message = server.rpc.next(), if server.linked => match message {
                 Some(message) => server.core(message).await,
-                None => {
-                    server.core_gone().await;
-                    return exit::ERROR;
-                }
+                None => server.core_gone().await,
             },
         }
     }
@@ -132,6 +132,9 @@ impl Server {
                 .error(id, editor::INVALID_REQUEST, message, None)
                 .await;
         }
+        if !matches!(method, "initialize" | "session/close") && !self.linked_for(id).await {
+            return;
+        }
         match method {
             "initialize" => self.initialize(id, params).await,
             "session/new" => self.new_session(id, params).await,
@@ -158,7 +161,7 @@ impl Server {
         }
     }
 
-    /// 核心的一条：推送照会话翻；回应（发了不等的那几条）不管。
+    /// 核心的一条：推送照会话翻，不属于哪个会话的交给 `choosing.rs`；回应（发了不等的那几条）不管。
     pub(crate) async fn core(&mut self, message: Value) {
         if message.get("id").is_some() {
             return;
@@ -166,7 +169,7 @@ impl Server {
         let method = message["method"].as_str().unwrap_or_default();
         let params = &message["params"];
         let Some(id) = params["session"].as_str().map(str::to_string) else {
-            return;
+            return self.config_pushed(method, params).await;
         };
         if method == "resync" {
             return self.resync(&id).await;
@@ -178,8 +181,8 @@ impl Server {
         self.act(&id, actions).await;
     }
 
-    /// 掉了队：重新订阅，回应里那一页条目照「正在发生」再过一遍（报过的只报变了的），会话状态也是。
-    async fn resync(&mut self, id: &str) {
+    /// 掉了队、重连上了：重新订阅，回应里那一页条目照「正在发生」再过一遍（报过的只报变了的），会话状态也是。
+    pub(crate) async fn resync(&mut self, id: &str) {
         if !self.sessions.contains_key(id) {
             return;
         }
@@ -252,26 +255,8 @@ impl Server {
         };
         let mode =
             json!({"sessionUpdate": "current_mode_update", "currentModeId": session.current.mode});
-        let choices = self.choices.clone().unwrap_or_default();
-        let configured = options::options(self.language, &choices, &session.current);
-        let update = json!({"sessionUpdate": "config_option_update", "configOptions": configured});
         self.editor.update(id, mode).await;
-        self.editor.update(id, update).await;
-    }
-
-    /// 核心断了：等着回的 `session/prompt` 都照出错回。
-    async fn core_gone(&mut self) {
-        let message = self.language.acp_disconnected().to_string();
-        let waiting: Vec<Value> = self
-            .sessions
-            .values_mut()
-            .filter_map(|session| session.prompt.take().map(|prompt| prompt.id))
-            .collect();
-        for id in waiting {
-            self.editor
-                .error(&id, editor::INTERNAL, &message, None)
-                .await;
-        }
+        self.options_changed(id).await;
     }
 
     /// 等回应时留下的推送都办完：斜杠命令引出的推送比命令的回应先到（`04-核心协议.md` 第六节第 2 条），办完了才知道它开没

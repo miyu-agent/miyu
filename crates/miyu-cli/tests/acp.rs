@@ -2,18 +2,26 @@
 //! 上直接写 JSON-RPC，看 `miyu acp` 回什么、报什么。
 
 mod asking;
+mod choosing;
+mod relink;
 mod sessions;
 mod turns;
 
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
+use std::time::Duration;
 
 use serde_json::{Value, json};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, DuplexStream, Lines};
+use tokio::sync::Notify;
 use tokio::task::JoinHandle;
 
 use crate::support::{Home, within};
 use miyu_cli::language::Language;
+use miyu_cli::{AcpLinked, AcpReconnect};
 use miyu_session::testkit::{Play, Script};
+use miyu_store::root::DataRoot;
 
 /// 起一个核心：请求模型照 `plays`，工具是出厂的那一套。
 pub fn home(plays: impl IntoIterator<Item = Play>) -> Home {
@@ -30,18 +38,65 @@ pub struct Editor {
     next: u64,
     /// `miyu acp` 跑完交回的退出码。
     running: JoinHandle<u8>,
+    /// 核心断了、`miyu acp` 知道了（[`Relink::dropped`]）。
+    pub dropped: Arc<Notify>,
+}
+
+/// 测试的再连（施工 ACP-9）：照数据根连进程里的核心。断了以后自己重连的那一次，`eager` 的等新核心起来再连（最多六十秒），
+/// 不是的不连（像人停了核心），等编辑器要用时再连。
+pub struct Relink {
+    pub root: DataRoot,
+    pub eager: bool,
+    /// 断了以后自己重连的那一次来过：`miyu acp` 知道断了。
+    pub dropped: Arc<Notify>,
+}
+
+impl AcpReconnect for Relink {
+    fn connect(&mut self, asked: bool) -> Pin<Box<dyn Future<Output = AcpLinked> + Send + '_>> {
+        Box::pin(async move {
+            if !asked {
+                self.dropped.notify_one();
+            }
+            if !asked && !self.eager {
+                return Err("left stopped".to_string());
+            }
+            let waited = tokio::time::timeout(Duration::from_secs(60), async {
+                loop {
+                    match miyu_ipc::connect(&self.root).await {
+                        Ok(linked) => return Ok(linked),
+                        Err(error) if asked => return Err(error.to_string()),
+                        Err(_) => tokio::time::sleep(Duration::from_millis(10)).await,
+                    }
+                }
+            });
+            waited.await.unwrap_or_else(|_| Err("no core".to_string()))
+        })
+    }
 }
 
 impl Editor {
-    /// 连上 `home` 的核心，起一个 `miyu acp`，握好手（编辑器能做的照 `capabilities`）。交回握手的回应。
+    /// 连上 `home` 的核心，起一个 `miyu acp`，握好手（编辑器能做的照 `capabilities`）。交回握手的回应。核心断了以后照
+    /// [`Relink`] 再连，自己重连的那一次不连。
     pub async fn with(home: &Home, capabilities: Value) -> (Editor, Value) {
+        Editor::relinking(home, capabilities, false).await
+    }
+
+    /// 同 [`Editor::with`]，断了以后自己重连的那一次照 `eager` 连不连。
+    pub async fn relinking(home: &Home, capabilities: Value, eager: bool) -> (Editor, Value) {
         let (connection, token) = miyu_ipc::connect(&home.root).await.expect("连得上");
+        let dropped = Arc::new(Notify::new());
+        let relink = Box::new(Relink {
+            root: home.root.clone(),
+            eager,
+            dropped: Arc::clone(&dropped),
+        });
         let (to_agent, agent_in) = tokio::io::duplex(1 << 20);
         let (agent_out, from_agent) = tokio::io::duplex(1 << 20);
         let running = tokio::spawn(async move {
             miyu_cli::acp_on(
                 connection,
                 &token,
+                relink,
                 BufReader::new(agent_in),
                 agent_out,
                 Language::Chinese,
@@ -53,6 +108,7 @@ impl Editor {
             from_agent: BufReader::new(from_agent).lines(),
             next: 0,
             running,
+            dropped,
         };
         let params = json!({"protocolVersion": 1, "clientCapabilities": capabilities,
             "clientInfo": {"name": "test", "version": "0"}});
@@ -147,7 +203,7 @@ impl Editor {
             .await;
         let session = reply["result"]["sessionId"]
             .as_str()
-            .expect("开出来了")
+            .unwrap_or_else(|| panic!("开出来了：{reply}"))
             .to_string();
         self.until(|message| kind(message) == Some("available_commands_update"))
             .await;

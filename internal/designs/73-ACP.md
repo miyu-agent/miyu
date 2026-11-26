@@ -138,6 +138,7 @@ GitHub Copilot、Kimi、Qwen Code 都在。这份设计做两个方向：
 | ACP-5 | `acp` 包：真 agent 实测（Claude 适配器、Antigravity、Gemini CLI），README、发版 |
 | ACP-6 | 核心 `miyu acp`：握手、会话（new、load、resume、list）、一轮的翻译、确认、模式、斜杠命令 |
 | ACP-7 | `miyu acp` 用真编辑器（Zed）实测；用户手册（中英） |
+| ACP-9 | `miyu acp`：能选的模型每次接上会话、列表变了时重问；核心断了不退出、再连上 |
 
 ### 八、做下来和这里不一样的、没做的
 
@@ -153,6 +154,15 @@ GitHub Copilot、Kimi、Qwen Code 都在。这份设计做两个方向：
 - 第五节第 7 条：头自己加了 `/compact`（核心的命令表里没有它，同终端界面）。
 - 没做的：子代理的会话（`subagent_update`）和子会话里的确认、压缩（`compaction_update`）、旁白（`notice`）、`plan_update`、
   `session/list` 分页；重放时人附的图、文件不报，改文件的对比只在正在发生时要。
+
+施工 ACP-9（方向二，Zed 实测撞到的，2026-11-26）：
+
+- 第五节第 5 条：能选的模型以前一个进程只问一次 `model.list`。新装的 `acp` 包带的供应商不要密钥，核心照常列，但头一次问的时候它的
+  列表还在后台拉（核心先照手头的答空的，拉到了推 `models.changed`），`miyu acp` 不订这个推送，之后一直列不出。改成每次接上会话
+  重问，订配置的推送、列表或模型这一块的配置变了也重问，变了报 `config_option_update`。终端界面、网页本来就照 `models.changed`
+  重问，不受影响。
+- 核心断了以前 `miyu acp` 直接退出。改成不退出：正在进行的那一轮回出错，当场照头自己重连的连法试一次（人停的不拉），没连上的
+  等编辑器下一次要用时照 `miyu ask` 的连法连（核心没开就拉起），连上了重新订阅开着的会话。
 
 施工 ACP-2 到 ACP-4（方向一，2026-11-26）：
 

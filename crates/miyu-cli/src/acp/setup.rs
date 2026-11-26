@@ -10,7 +10,7 @@ use std::path::Path;
 use serde_json::{Value, json};
 
 use super::editor;
-use super::options::{self, Choices};
+use super::options;
 use super::prompt::answered;
 use super::server::Server;
 use super::session::Session;
@@ -110,6 +110,8 @@ impl Server {
         actions.extend(opened.status(&result["status"]));
         opened.commands = self.catalog(session).await;
         let commands = opened.commands.clone();
+        // 能选的模型每次都重问（施工 ACP-9）：新装的包带的供应商，列表可能是上一次以后才拉到的。变了的，别的会话也报一次。
+        self.refresh_choices().await;
         self.sessions.insert(session.to_string(), opened);
         // 回应里带着整份配置项，变了的那一下不另报；在等人的回了编辑器再问。
         let (now, later): (Vec<Action>, Vec<Action>) = actions
@@ -117,7 +119,7 @@ impl Server {
             .filter(|action| *action != Action::Config)
             .partition(|action| matches!(action, Action::Update(_)));
         self.act(session, now).await;
-        let mut reply = self.described(session).await;
+        let mut reply = self.described(session);
         if created {
             reply["sessionId"] = json!(session);
         }
@@ -158,12 +160,8 @@ impl Server {
             .unwrap_or_default()
     }
 
-    /// 回 `session/new`、`load`、`resume` 时带的模式和配置项。能选的模型第一次用到时问一次核心。
-    async fn described(&mut self, session: &str) -> Value {
-        if self.choices.is_none() {
-            let listed = answered(self.rpc.call("model.list", json!({})).await).unwrap_or_default();
-            self.choices = Some(Choices::of(&listed, self.language));
-        }
+    /// 回 `session/new`、`load`、`resume` 时带的模式和配置项。
+    fn described(&self, session: &str) -> Value {
         let choices = self.choices.clone().unwrap_or_default();
         let current = self
             .sessions

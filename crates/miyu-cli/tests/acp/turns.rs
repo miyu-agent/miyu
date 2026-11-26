@@ -31,6 +31,11 @@ async fn the_handshake_offers_what_miyu_has() {
 async fn requests_before_the_handshake_are_refused() {
     let home = home([]);
     let (connection, token) = miyu_ipc::connect(&home.root).await.expect("连得上");
+    let relink = Box::new(super::Relink {
+        root: home.root.clone(),
+        eager: false,
+        dropped: std::sync::Arc::default(),
+    });
     let (mut to_agent, agent_in) = tokio::io::duplex(1 << 16);
     let (agent_out, from_agent) = tokio::io::duplex(1 << 16);
     let running = tokio::spawn(async move {
@@ -38,6 +43,7 @@ async fn requests_before_the_handshake_are_refused() {
         miyu_cli::acp_on(
             connection,
             &token,
+            relink,
             input,
             agent_out,
             miyu_cli::language::Language::Chinese,

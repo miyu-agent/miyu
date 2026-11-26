@@ -2,7 +2,7 @@
 
 ### 是什么
 
-Miyu 当 ACP（Agent Client Protocol，规范 <https://agentclientprotocol.com>，v1）的 agent：Zed、JetBrains 这类编辑器把 `miyu acp` 当子进程拉起，在标准输入、标准输出上说 JSON-RPC 2.0，一行一条。它连本机的核心（照 `miyu ask` 一样连、没在跑就拉起来），把 ACP 翻成核心的会话协议。不另起模型、不另存会话：编辑器里的会话就是 Miyu 的会话，编号同一个，终端、网页里也看得到、接得上（设计 73 第五节，施工 ACP-6）。
+Miyu 当 ACP（Agent Client Protocol，规范 <https://agentclientprotocol.com>，v1）的 agent：Zed、JetBrains 这类编辑器把 `miyu acp` 当子进程拉起，在标准输入、标准输出上说 JSON-RPC 2.0，一行一条。它连本机的核心（照 `miyu ask` 一样连、没在跑就拉起来；断了再连上，施工 ACP-9），把 ACP 翻成核心的会话协议。不另起模型、不另存会话：编辑器里的会话就是 Miyu 的会话，编号同一个，终端、网页里也看得到、接得上（设计 73 第五节，施工 ACP-6）。
 
 ### 在哪
 
@@ -10,7 +10,9 @@ Miyu 当 ACP（Agent Client Protocol，规范 <https://agentclientprotocol.com>�
 |---|---|
 | `crates/miyu/src/main.rs` | 子命令 `acp`；换上帮助页；拉起核心用的命令是自己加上 `core`（`cli/main.md`） |
 | `crates/miyu-cli/src/acp.rs` | 找数据根、连核心（`connect_or_start`），拿标准输入、标准输出交给主循环；开局的错误写在标准错误上 |
-| `crates/miyu-cli/src/acp/server.rs` | 主循环：编辑器的一行照方法分派，核心的推送照会话翻，翻出来的事办掉（报、要对比、回请求、问人、报配置项） |
+| `crates/miyu-cli/src/acp/relink.rs` | 握手；核心断了以后再连上、重新订阅开着的会话（「核心断了」，施工 ACP-9） |
+| `crates/miyu-cli/src/acp/choosing.rs` | 能选的模型跟着核心变：重问 `model.list`、报 `config_option_update`（施工 ACP-9） |
+| `crates/miyu-cli/src/acp/server.rs` | 主循环：编辑器的一行照方法分派，核心的推送照会话翻（不属于哪个会话的交给 `choosing.rs`），翻出来的事办掉（报、要对比、回请求、问人、报配置项） |
 | `crates/miyu-cli/src/acp/editor.rs` | 对着编辑器的那一头：回应、出错、`session/update`、向编辑器发的请求 |
 | `crates/miyu-cli/src/acp/setup.rs` | 握手、`session/new`、`load`、`resume`、`list`、`close`、`set_mode`、`set_config_option` |
 | `crates/miyu-cli/src/acp/turns.rs` | `session/prompt`、`session/cancel`、斜杠命令、`available_commands_update` |
@@ -25,9 +27,18 @@ Miyu 当 ACP（Agent Client Protocol，规范 <https://agentclientprotocol.com>�
 
 ### 对外的样子
 
-- 没有参数。标准输出上只有协议的行；连不上核心这类开局的错误照 `miyu ask` 的写法写在标准错误上（`miyu: …`），退出码 1。编辑器关了管道：退出码 0，正在进行的回合留在核心里接着跑。核心断了：等着回的 `session/prompt` 都回出错（`-32603`），退出码 1。
+- 没有参数。标准输出上只有协议的行；连不上核心这类开局的错误照 `miyu ask` 的写法写在标准错误上（`miyu: …`），退出码 1。编辑器关了管道：退出码 0，正在进行的回合留在核心里接着跑。核心断了不退出，见「核心断了」（施工 ACP-9；以前退出码 1，编辑器下一次开会话报「Incoming transport closed」）。
 - 用到的环境变量：`MIYU_HOME`（数据根）；拉起的核心照它自己的一套（`core.md`）。
-- 握手时向核心报 `head.kind` 是 `acp`、`caps.input` 是 `true`（有人能确认，核心照常等）、不带 `prefix_ask`。
+- 握手时向核心报 `head.kind` 是 `acp`、`caps.input` 是 `true`（有人能确认，核心照常等）、不带 `prefix_ask`。握手以后订配置的推送（`subscribe {stream: "config"}`，施工 ACP-9），只为模型列表变了要知道。
+
+### 核心断了
+
+施工 ACP-9（Zed 实测：`miyu core stop` 换了核心以后，下一次新建会话报「Failed to Launch: Incoming transport closed」）：
+
+1. 断的那一下：等着回的 `session/prompt` 都回出错（`-32603`，`与核心的连接已断开`；规范里的 `cancelled` 只给编辑器自己打断的），问编辑器还没等到回答的确认、提问作废。
+2. 当场照头自己重连的连法连一次（`miyu_ipc::reconnect_or_start`，施工 CS-5）：崩了的拉起来，人停的（`run/stopped`）不拉。连不上的先放着，不轮询。
+3. 没连着时编辑器又发了要用核心的请求（`initialize`、`session/close` 以外的）：照 `miyu ask` 的连法连（`connect_or_start`，核心没开就拉起，人停的也拉）。连不上的那一条回 `-32603`（照 `miyu ask` 起不来时的那一句），之后的请求再试。主循环还没顾上的断开（编辑器的这一行和断开同时到）先办完再连。
+4. 连上了：重新握手、订配置，编辑器里还开着的会话一个个重新订阅视图流，回应里的条目照「正在发生」再过一遍（同掉队以后的 `resync`），再重问一次能选的模型。核心重启时跑到一半的那一轮照核心的规矩载入时接着干，编辑器里照别处开的一轮报。
 
 ### 握手
 
@@ -143,7 +154,7 @@ Miyu 当 ACP（Agent Client Protocol，规范 <https://agentclientprotocol.com>�
 
 - 模式两种：`full`（`开放权限`）、`read-only`（`只读`），照会话状态的 `permission.read_only`。`session/set_mode`：`full` 发 `session.set_permission_level {level: "full", read_only: false}`，`read-only` 发 `{read_only: true}`，回 `{}`；认不得的 `-32602`。
 - 配置项照先后三项：`mode`（`权限`，category `mode`）；`model`（`模型`，category `model`，现在的模型知道才有）；`effort`（`思考强度`，category `thought_level`，现在的模型有思考档位、会话状态里有这一档才有）。
-- 能选的模型：第一次接上会话时问一次 `model.list`：每家供应商一组（组名是供应商的名字），有密钥（`state` 不是 `no_key`）、不是向量模型的模型，名字照 `facts.name`；能用的池另一组 `模型池`（`@<名字>`）。现在用的不在里面的单列在最前面一组。思考档位照 `facts.reasoning`。
+- 能选的模型：每次 `session/new`、`load`、`resume` 接上会话时重问 `model.list`（施工 ACP-9；以前一个进程只问一次，新装的包带的供应商头一次问时列表还在后台拉，之后一直列不出）；订着配置的推送，收到 `models.changed`、`config.changed` 里有 `providers.`、`models.`、`pools.` 开头的键、配置的 `resync`（先重新订阅）也重问；问到的和原来不一样的，开着的会话各报一次整份 `config_option_update`，问不到的照旧用上一份。每家供应商一组（组名是供应商的名字），有密钥（`state` 不是 `no_key`）、不是向量模型的模型，名字照 `facts.name`；能用的池另一组 `模型池`（`@<名字>`）。现在用的不在里面的单列在最前面一组。思考档位照 `facts.reasoning`。
 - `session/set_config_option {configId, value}`：`mode` 同上；`model` 要是能选的或者现在的，`session.configure {model}`；`effort` 要是现在的模型的档位，`session.configure {effort}`。回整份配置项（照换了的写，核心推来的会话状态随后再对一遍）；认不得的 `-32602`，核心拒了的 `-32603`。编辑器自己切的不再另报 `current_mode_update`。
 
 ### 给人看的字
@@ -169,7 +180,7 @@ Miyu 当 ACP（Agent Client Protocol，规范 <https://agentclientprotocol.com>�
 | `crates/miyu-cli/src/acp/tool/tests.rs` | 执行命令的内容先是命令原文、标题不变、写到一半的不报；`kind`、标题、写参数时 `pending`、等确认 `pending`、只写变了的、围栏、统一格式差异拆成对比 |
 | `crates/miyu-cli/src/acp/prompt/tests.rs` | 内容块照先后、`file://` 解成路径、解不开的整句不收 |
 | `crates/miyu-cli/src/acp/forms/tests.rs`、`options/tests.rs`、`setup/tests.rs` | 表单的格和读回答；能选的模型、配置项的先后、换的值查过；`~` 写成绝对路径、只收绝对的目录 |
-| `crates/miyu-cli/tests/acp.rs`、`tests/acp/{turns,sessions,asking}.rs` | 真的核心、假模型，测试当编辑器：握手的能力、握手前的请求、新会话（目录、默认权限、斜杠命令）、相对目录、一轮的思考和正文、工具步骤（标题、`kind`、位置、对比）、打断、被拒、斜杠命令；载入重放（先后、往前翻页的长历史）、接上不重放、没有的会话、照目录列、切模式、别处切的模式报过来、关掉；确认（选项、拒绝回核心）、提问一道一道问、提问走表单 |
+| `crates/miyu-cli/tests/acp.rs`、`tests/acp/{turns,sessions,asking,choosing,relink}.rs` | 真的核心、假模型，测试当编辑器：握手的能力、握手前的请求、新会话（目录、默认权限、斜杠命令）、相对目录、一轮的思考和正文、工具步骤（标题、`kind`、位置、对比）、打断、被拒、斜杠命令；载入重放（先后、往前翻页的长历史）、接上不重放、没有的会话、照目录列、切模式、别处切的模式报过来、关掉；确认（选项、拒绝回核心）、提问一道一道问、提问走表单；不要密钥的供应商列表后来才拉到：编辑器收到新的配置项、之后开的会话列得出（施工 ACP-9）；核心重启：正在进行的那一轮回出错、之后照常开会话、原来的会话重新订阅说得了话，自己重连的那一次连得上的什么都不发也接着报（施工 ACP-9，`tests/support/restart.rs` 在同一个数据根上重启核心） |
 
 ### 出处
 

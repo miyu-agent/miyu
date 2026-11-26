@@ -14,8 +14,8 @@ pub(crate) const FULL: &str = "full";
 /// 只读。
 pub(crate) const READ_ONLY: &str = "read-only";
 
-/// 能选的模型，握手以后问一次核心（`model.list`）。
-#[derive(Debug, Clone, Default)]
+/// 能选的模型：照核心的 `model.list`，开会话时、列表变了时重问（`choosing.rs`）。
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct Choices {
     /// 分组：组名（供应商的名字、「模型池」）到这一组的 `(引用, 名字)`，照先后。
     groups: Vec<(String, Vec<(String, String)>)>,

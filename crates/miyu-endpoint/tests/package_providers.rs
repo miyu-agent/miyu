@@ -4,7 +4,9 @@
 //!   `driver.models`；`config.get` 的来源是 `package`；切到它的模型说得出话；
 //! - 人改这一家的名字：写进配置文件、带上 `package = "ag"`，名字的来源换成 `system`，没改的照旧是包给的；
 //! - 关掉包：这一家没了，配置文件里盖在它上面的那一段也不算；
-//! - 配置里原来就有自己的同编号供应商：人的优先，包带的不出现，`check` 提示 `provider_shadowed`。
+//! - 配置里原来就有自己的同编号供应商：人的优先，包带的不出现，`check` 提示 `provider_shadowed`；
+//! - 不要密钥、头一次问的时候还没拉过列表（施工 ACP-9：`miyu acp` 撞到的）：这一次先答空的、在后台拉，拉到了推
+//!   `models.changed`，再问列得出、都能用（不是 `no_key`），头照推送重问就选得到。
 
 use serde_json::{Value, json};
 
@@ -142,5 +144,54 @@ async fn a_person_provider_with_the_same_id_wins() {
         .filter_map(|problem| problem["code"].as_str())
         .collect();
     assert!(codes.contains(&"provider_shadowed"), "{reply}");
+    core.stop_extensions().await;
+}
+
+#[tokio::test]
+async fn a_keyless_package_provider_lists_its_models_once_fetched_in_the_background() {
+    let home = Home::new();
+    let program = Program::new();
+    install(&home, &program.name());
+    let (mut client, core) = connected(&home).await;
+    let reply = client
+        .call("s", "subscribe", json!({"stream": "config"}))
+        .await;
+    assert_eq!(reply["result"], json!({}), "{reply}");
+    let models = |reply: &Value| -> Vec<(String, Value)> {
+        let found = reply["result"]["providers"]
+            .as_array()
+            .unwrap_or_else(|| panic!("{reply}"))
+            .iter()
+            .find(|one| one["id"] == "ag")
+            .cloned()
+            .unwrap_or_else(|| panic!("列得出包带的这一家：{reply}"));
+        assert!(found.get("key").is_none(), "没写密钥：{found}");
+        found["models"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(|model| {
+                (
+                    model["ref"].as_str().unwrap_or_default().to_string(),
+                    model["state"].clone(),
+                )
+            })
+            .collect()
+    };
+    let first = client.call("l1", "model.list", json!({})).await;
+    assert_eq!(models(&first), Vec::new(), "还没拉过：先答空的");
+    let pushed = client.next().await.expect("拉到了就推");
+    assert_eq!(pushed["method"], "models.changed", "{pushed}");
+    assert_eq!(pushed["params"]["providers"], json!(["ag"]), "{pushed}");
+    let again = client.call("l2", "model.list", json!({})).await;
+    let ok = json!("ok");
+    assert_eq!(
+        models(&again),
+        [
+            ("ag/ag-lite".to_string(), ok.clone()),
+            ("ag/ag-pro".to_string(), ok)
+        ],
+        "{again}"
+    );
     core.stop_extensions().await;
 }

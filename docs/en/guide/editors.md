@@ -62,7 +62,7 @@ This page explains how to use Miyu as the AI assistant of an editor such as Zed.
 | Approve | When the AI wants to run a command that needs approval, the editor shows a confirmation with the full command and the options `Allow once` and `Deny`, and sometimes `Allow for this session`. When the AI asks you questions, the choices also appear in a confirmation; if the editor supports forms, it shows a form where you can pick a choice or write your own answer. |
 | Interrupt | Click the editor's stop button to interrupt the turn; if your message is still queued, it is withdrawn. |
 | Switch permission | The editor's mode selector has `Full access` and `Read-only`, Miyu's two permission levels; new sessions start with full access. See [Permissions and sandbox](permissions.md). |
-| Change the model or thinking effort | The editor's option selector lists the models you have keys for and the model pools; when the current model has thinking levels, you can switch the thinking effort too. |
+| Change the model or thinking effort | The editor's option selector lists the models you can use and the model pools (providers that need a key must have one set up first). Models from a newly installed package appear by themselves once Miyu has fetched their model list. When the current model has thinking levels, you can switch the thinking effort too. |
 | Slash commands | Typing `/` lists Miyu's slash commands, such as `/clear` and `/todo`, plus `/compact` to compact the context by hand. See [Slash commands](commands.md). |
 | The AI going on by itself | When a background job reports back and wakes the AI, the editor first shows a line such as `Background job "run tests" finished`, then the AI's reply. |
 | To-dos and usage | The AI's to-do list appears as the editor's plan; how much of the context is used and how much has been spent are shown too (the amount is left out when it cannot be computed exactly). |
@@ -72,6 +72,7 @@ This page explains how to use Miyu as the AI assistant of an editor such as Zed.
 
 - The AI reads and writes the files on disk. It cannot see changes you have not saved in the editor, so save before asking the AI to read a file.
 - MCP servers configured in the editor are not passed to Miyu. To let the AI use an MCP server, add it to Miyu; see [Extending Miyu](extending.md).
+- If the core stops or restarts, the turn in progress in the editor ends with an error, and everything after that works as usual: Miyu connects to the core again and starts it first if it is not running.
 - Closing the editor does not stop a turn in progress: Miyu finishes it in the background, and you can see the result in the terminal or web interface. If the AI is waiting for your approval at that moment, the request is denied automatically after `permission.confirm.timeout`, 5 minutes by default.
 
 ## When something goes wrong

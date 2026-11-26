@@ -107,6 +107,11 @@ impl Rpc {
         self.held.pop_front()
     }
 
+    /// 核心那头已经断了（读的任务读完了）：手里可能还有没交出去的几条，照 [`Rpc::next`] 交完再是 `None`（施工 ACP-9）。
+    pub(crate) fn closed(&self) -> bool {
+        self.incoming.is_closed()
+    }
+
     /// 下一条回应或推送，先交留着的。核心断开了是 `None`。
     pub(crate) async fn next(&mut self) -> Option<Value> {
         match self.held.pop_front() {
