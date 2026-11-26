@@ -16,6 +16,8 @@ use miyu_kernel::session::Outcome;
 use super::answer;
 use crate::store::Flush;
 
+pub(crate) mod later;
+
 /// 后台同步的账，`T` 是扣着的回应。
 #[derive(Debug)]
 pub(crate) struct Durable<T> {
@@ -134,6 +136,8 @@ pub(crate) struct Syncing {
     pub(crate) flush: Option<Arc<dyn Flush>>,
     /// 同步出过错：扣着的回应不再交。
     pub(crate) failed: bool,
+    /// 带工具调用的那一批晚一点同步的账（施工 BO-4）。
+    pub(crate) later: later::Later,
 }
 
 impl Syncing {
@@ -143,6 +147,7 @@ impl Syncing {
             durable: Durable::default(),
             flush: None,
             failed: false,
+            later: later::Later::default(),
         }
     }
 }

@@ -124,7 +124,7 @@ async fn a_sync_chain_answers_on_its_own_and_reports_once_done() {
         assert_eq!(route(&mut syncing.durable, reply, accepted), None);
     }
     let (done, mut reported) = tokio::sync::mpsc::unbounded_channel();
-    dispatch(Arc::clone(&shared), done, seq(3));
+    dispatch(Arc::clone(&shared), done, seq(3), None);
     let (upto, result) = reported.recv().await.expect("报回来了");
     assert!(result.is_ok());
     assert_eq!(upto, seq(5), "接着同步到了 5");
@@ -179,10 +179,78 @@ async fn a_failed_sync_is_reported_and_answers_nothing() {
         assert_eq!(route(&mut syncing.durable, reply, accepted), None);
     }
     let (done, mut reported) = tokio::sync::mpsc::unbounded_channel();
-    dispatch(Arc::clone(&shared), done, seq(4));
+    dispatch(Arc::clone(&shared), done, seq(4), None);
     let (_, result) = reported.recv().await.expect("报回来了");
     assert!(result.is_err(), "报了出错");
     assert!(shared.lock().expect("没 panic").failed, "记下出过错");
     drop(shared);
     assert!(back.await.is_err(), "回应没交");
+}
+
+/// 等着工具结果的那一次同步（施工 BO-4）：没被叫以前不做；一叫就做，不等满时限。
+#[tokio::test]
+async fn a_sync_that_waits_for_tool_results_starts_when_told() {
+    use std::sync::atomic::Ordering;
+    use std::sync::{Arc, Mutex};
+    use std::time::Duration;
+
+    use miyu_kernel::id::Seq;
+
+    use super::super::durable::Syncing;
+    use super::dispatch;
+
+    let seq = |n| Seq::new(n).expect("从 1 数起");
+    let counting = Arc::new(Counting(std::sync::atomic::AtomicUsize::new(0)));
+    let shared = Arc::new(Mutex::new(Syncing::new()));
+    {
+        let mut syncing = shared.lock().expect("没 panic");
+        let flush: Arc<dyn crate::store::Flush> = counting.clone();
+        syncing.flush = Some(flush);
+        assert_eq!(syncing.durable.written(seq(3), true), Some(seq(3)));
+    }
+    let go = Arc::new(tokio::sync::Notify::new());
+    let (done, mut reported) = tokio::sync::mpsc::unbounded_channel();
+    dispatch(Arc::clone(&shared), done, seq(3), Some(Arc::clone(&go)));
+    tokio::time::sleep(Duration::from_millis(20)).await;
+    assert_eq!(counting.0.load(Ordering::Relaxed), 0, "还在等工具的结果");
+    assert!(shared.lock().expect("没 panic").durable.busy(), "算在路上");
+    go.notify_one();
+    let (upto, result) = tokio::time::timeout(Duration::from_millis(80), reported.recv())
+        .await
+        .expect("叫了就做，不等满 100 毫秒")
+        .expect("报回来了");
+    assert!(result.is_ok());
+    assert_eq!(upto, seq(3));
+    assert_eq!(counting.0.load(Ordering::Relaxed), 1);
+}
+
+/// 工具一直不出结果的（施工 BO-4）：等到时限照样同步。
+#[tokio::test(start_paused = true)]
+async fn a_sync_that_waits_for_tool_results_gives_up_waiting_in_time() {
+    use std::sync::atomic::Ordering;
+    use std::sync::{Arc, Mutex};
+
+    use miyu_kernel::id::Seq;
+
+    use super::super::durable::Syncing;
+    use super::super::durable::later::AFTER_TOOLS;
+    use super::dispatch;
+
+    let seq = |n| Seq::new(n).expect("从 1 数起");
+    let counting = Arc::new(Counting(std::sync::atomic::AtomicUsize::new(0)));
+    let shared = Arc::new(Mutex::new(Syncing::new()));
+    {
+        let mut syncing = shared.lock().expect("没 panic");
+        let flush: Arc<dyn crate::store::Flush> = counting.clone();
+        syncing.flush = Some(flush);
+        assert_eq!(syncing.durable.written(seq(3), true), Some(seq(3)));
+    }
+    let go = Arc::new(tokio::sync::Notify::new());
+    let (done, mut reported) = tokio::sync::mpsc::unbounded_channel();
+    let started = tokio::time::Instant::now();
+    dispatch(Arc::clone(&shared), done, seq(3), Some(go));
+    let (_, result) = reported.recv().await.expect("报回来了");
+    assert!(result.is_ok());
+    assert!(started.elapsed() >= AFTER_TOOLS, "等满了时限才做");
+    assert_eq!(counting.0.load(Ordering::Relaxed), 1);
 }

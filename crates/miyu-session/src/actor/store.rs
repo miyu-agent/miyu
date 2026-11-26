@@ -21,6 +21,7 @@ mod forged;
 
 use super::Synced;
 use super::durable::Syncing;
+use super::durable::later::{AFTER_TOOLS, Seen};
 use super::{Actor, Stop, answer, durable};
 use crate::TARGET;
 use crate::current::{Current, Tally};
@@ -164,6 +165,8 @@ impl Actor {
         // 阻塞线程带着会话的 span：那边记的 `session index not updated` 也有会话编号（施工 3-8 七补）。
         let span = tracing::Span::current();
         let sync = must_sync(&events);
+        // 带工具调用的那一批等结果写进去了再同步（施工 BO-4，`durable/later.rs`）。
+        let tools = Seen::of(&events);
         // 这一批结束了几轮：落了盘再交给抽取，从落盘那一刻起算等了多久（施工 FL-2，`Extractor::note_ended`）。
         let ended = events
             .iter()
@@ -206,7 +209,7 @@ impl Actor {
                         memory.landed(mark);
                     }
                 }
-                self.written(upto, sync, handle);
+                self.written(upto, (sync, tools), handle);
                 self.send_afters(afters);
                 match seen {
                     Some(Ok(seen)) => self.tools.see(seen),
@@ -265,15 +268,17 @@ impl Actor {
 impl Actor {
     /// 写进去了一批（施工 V-19，`session/actor.md` 第 5 条第 9 款）：有句柄的记下，要同步的交给后台；没有句柄的（不做后台
     /// 同步的）写的时候已经同步过，当场算同步到了这一条。
-    fn written(&mut self, upto: Seq, sync: bool, handle: Option<Arc<dyn Flush>>) {
+    fn written(&mut self, upto: Seq, (sync, tools): (bool, Seen), handle: Option<Arc<dyn Flush>>) {
         let mut shared = lock(&self.sync);
         match handle {
             Some(handle) => {
                 shared.flush = Some(handle);
                 let start = shared.durable.written(upto, sync);
+                // 这一次同步等不等工具的结果（施工 BO-4）；不等的顺手把正等着的那一次叫起来。
+                let wait = shared.later.written(tools, sync, start.is_some());
                 drop(shared);
                 if let Some(upto) = start {
-                    self.dispatch(upto);
+                    dispatch(Arc::clone(&self.sync), self.syncs.clone(), upto, wait);
                 }
             }
             None => {
@@ -306,7 +311,10 @@ impl Actor {
                 .sync
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            durable::route(&mut shared.durable, reply, outcome)
+            let start = durable::route(&mut shared.durable, reply, outcome);
+            // 有回应等着同步了：等着工具结果的那一次现在就做（施工 BO-4）。
+            shared.later.go();
+            start
         };
         if let Some(upto) = start {
             self.dispatch(upto);
@@ -315,7 +323,7 @@ impl Actor {
 
     /// 派一次后台同步，同步到 `upto`（`dispatch`）。
     pub(super) fn dispatch(&self, upto: Seq) {
-        dispatch(Arc::clone(&self.sync), self.syncs.clone(), upto);
+        dispatch(Arc::clone(&self.sync), self.syncs.clone(), upto, None);
     }
 
     /// 一串后台同步做完了报回来的：出错的和写不进去一样，记一行，会话停下（扣着的回应不再交，`Syncing` 记着出过错）。
@@ -332,6 +340,8 @@ impl Actor {
     /// 停下以前（第 11 款）：等路上的同步做完，把写了还没同步的同步完，交扣着的回应，放下句柄（Windows 上开着的句柄挡着挪
     /// 目录）。同步不了的记一行，扣着的回应不交：等的那一头收到会话停了。
     pub(super) async fn settle_sync(&mut self) {
+        // 等着工具结果的那一次同步现在就做（施工 BO-4）：要停下了，不再等。
+        lock(&self.sync).later.go();
         while lock(&self.sync).durable.busy() {
             match self.synced.recv().await {
                 Some((_, Ok(()))) => {}
@@ -374,10 +384,15 @@ impl Actor {
 
 /// 派一串后台同步，从同步到 `upto` 起（施工 V-19）：在阻塞线程里对最新的句柄做，做完当场放出等到了的回应，账上还要再做的
 /// 接着做，都做完了、或者出了错，报回 actor（`synced`）。放回应不经过 actor：它正等着别的（权限策略在判）时，回应照样一落盘
-/// 就交出去。
-fn dispatch(shared: Arc<Mutex<Syncing>>, done: mpsc::UnboundedSender<Synced>, mut upto: Seq) {
+/// 就交出去。`wait` 不是空的先等它被叫（工具的结果写进去了，施工 BO-4 的 `Later`），最多等 `AFTER_TOOLS`，再做。
+fn dispatch(
+    shared: Arc<Mutex<Syncing>>,
+    done: mpsc::UnboundedSender<Synced>,
+    mut upto: Seq,
+    wait: Option<Arc<tokio::sync::Notify>>,
+) {
     let span = tracing::Span::current();
-    tokio::task::spawn_blocking(move || {
+    let run = move || {
         let _entered = span.enter();
         loop {
             let flush = lock(&shared).flush.clone();
@@ -401,7 +416,17 @@ fn dispatch(shared: Arc<Mutex<Syncing>>, done: mpsc::UnboundedSender<Synced>, mu
                 }
             }
         }
-    });
+    };
+    match wait {
+        None => drop(tokio::task::spawn_blocking(run)),
+        Some(go) => drop(tokio::spawn(async move {
+            tokio::select! {
+                () = go.notified() => {}
+                () = tokio::time::sleep(AFTER_TOOLS) => {}
+            }
+            drop(tokio::task::spawn_blocking(run));
+        })),
+    }
 }
 
 /// 拿着账的锁：拿锁的那一方 panic 过的照样用（账上的都是完整的一步一步记的）。
